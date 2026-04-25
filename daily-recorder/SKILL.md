@@ -94,6 +94,29 @@ today_ts = int(today_start.timestamp())  # 北京时间00:00:00的Unix时间戳
 - `today_ts = 1776873600` 对应 `2026-04-23 00:00:00` 北京时间
 - state.db 中 07:46:56 的 timestamp = `1776901616`
 
+### ⚠️ 重要：timestamp 可能是浮点数
+state.db 中 `timestamp` 字段类型是 `REAL`（SQLite float），部分消息的时间戳存储为带毫秒精度的浮点数（如 `1777121213.5775926`），而大多数消息是整数。
+
+**追加逻辑中的陷阱：**
+- 读取文件最后一行得到的时间戳是整数形式（如 `1777119722`）
+- 直接用 `timestamp > last_ts` 查新消息，浮点型时间戳（如 `1777121213.5775926`）会被正确比较
+- 但如果用 `timestamp >= last_ts` 且 last_ts 是刚记录的那条消息的时间戳，会产生重复
+- **正确做法：** 用 `timestamp > last_ts`（不含等号）来追加新消息
+
+**边界查询示例：**
+```python
+# 查询 20:22:02 之后到 20:46:53 的消息（含首尾）
+start_ts = 1777119722.0  # 用浮点数避免整数截断
+end_ts = 1777121213.5775926  # 目标消息的原始浮点时间戳
+
+cursor.execute("""
+    SELECT timestamp, content FROM messages
+    WHERE role = 'user'
+    AND timestamp > ? AND timestamp <= ?
+    ...
+""", (start_ts, end_ts))
+```
+
 ## 使用示例
 ### 提取今日语录
 用户："记录今日语录"

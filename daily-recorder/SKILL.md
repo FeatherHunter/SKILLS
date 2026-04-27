@@ -78,6 +78,49 @@ AND content NOT LIKE '[The user sent%'
 3. **文件存在**：读取最后一行，解析时间戳，提取该时间之后的新消息
 4. 将新消息追加到文件末尾
 
+### ⚠️ 追加时的格式陷阱
+**问题：** 如果文件最后一行（不含空行）不以换行符 `\n` 结尾，直接追加会导致新内容与旧内容合并到同一行。
+
+**示例：**  
+原文件最后一行为 `2026-04-26 20:59:29 - 需要一个男生一个女生。璀璨的星空。`（无换行符）  
+追加时直接写入 `\n2026-04-26 21:31:53 - 我玩了会儿电脑`  
+结果变成：`2026-04-26 20:59:29 - 需要一个男生一个女生。璀璨的星空。2026-04-26 21:31:53 - 我玩了会儿电脑`
+
+**正确做法：** 追加前检查最后一行的格式：
+```python
+with open(file_path, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+last_line = lines[-1].rstrip('\n')  # 去掉末尾换行符
+last_ts = float(last_line.split(' - ', 1)[0].replace('20', '20'))  # 提取时间戳
+```
+
+如果最后一行是空行（`\n`），则 `last_line` 为空字符串，需要用倒数第二行。
+
+**安全追加代码：**
+```python
+# 构建追加内容（每条消息带换行符）
+entries = []
+for ts, content in new_messages:
+    dt = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+    first_line = str(content).strip().split("\n")[0][:200]
+    entries.append(f"{dt} - {first_line}")
+
+# 读取文件，检查末尾是否有换行符
+with open(file_path, 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# 如果文件末尾不是换行符，先补上
+if content and not content.endswith('\n'):
+    content += '\n'
+
+# 追加新内容
+content += '\n'.join(entries) + '\n'
+
+with open(file_path, 'w', encoding='utf-8') as f:
+    f.write(content)
+```
+
 ## 时间计算
 **重要：** 系统时区是 Asia/Shanghai (CST, +0800)，state.db 的 timestamp 是北京时间。
 
@@ -99,9 +142,56 @@ state.db 中 `timestamp` 字段类型是 `REAL`（SQLite float），部分消息
 
 **追加逻辑中的陷阱：**
 - 读取文件最后一行得到的时间戳是整数形式（如 `1777119722`）
-- 直接用 `timestamp > last_ts` 查新消息，浮点型时间戳（如 `1777121213.5775926`）会被正确比较
-- 但如果用 `timestamp >= last_ts` 且 last_ts 是刚记录的那条消息的时间戳，会产生重复
-- **正确做法：** 用 `timestamp > last_ts`（不含等号）来追加新消息
+- 直接用 `timestamp > last_ts` 查新消息，当 last_ts 是整数时，**浮点型时间戳（如 `1777242289.587249`）会错误地大于整数 `1777242289.0`**，导致最后一条消息被重复追加
+- 即使 `timestamp >= last_ts` 也会因浮点精度产生重复
+
+**正确做法（二选一）：**
+
+**方案A（推荐）：内容去重**
+```python
+# 从文件最后一行提取内容作为去重依据
+last_line = lines[-1].rstrip('\n')
+last_content = last_line.split(' - ', 1)[1].strip()
+
+# 查询今天所有消息，过滤掉已存在的
+cursor.execute("""
+    SELECT timestamp, content FROM messages
+    WHERE role = 'user'
+    AND timestamp >= ?
+    AND content NOT LIKE "[SYSTEM%"
+    AND content NOT LIKE "[System note%"
+    AND content NOT LIKE "[The user sent%"
+    ORDER BY timestamp ASC
+""", (today_ts,))
+
+all_messages = cursor.fetchall()
+messages = [(ts, c) for ts, c in all_messages if c.strip() != last_content]
+```
+
+**方案B：时间戳+内容双保险**
+```python
+last_ts = 1777242289.0  # 文件最后一秒的整数时间戳（秒级）
+cursor.execute("""
+    SELECT timestamp, content FROM messages
+    WHERE role = 'user'
+    AND timestamp > ?
+    AND content NOT LIKE "[SYSTEM%"
+    AND content NOT LIKE "[System note%"
+    AND content NOT LIKE "[The user sent%"
+    ORDER BY timestamp ASC
+""", (last_ts,))
+# 之后再用内容去重过滤掉 last_ts 秒内的浮点型时间戳消息
+messages = [(ts, c) for ts, c in cursor.fetchall() if c.strip() != last_content]
+```
+
+**⚠️ 从文件提取时间戳的坑：**
+旧代码示例 `float(last_line.split(' - ', 1)[0].replace('20', '20'))` 中的 `replace('20','20')` 无意义，应直接解析：
+```python
+from datetime import datetime
+last_dt_str = last_line.split(' - ', 1)[0].strip()  # e.g. "2026-04-27 06:24:49"
+last_dt = datetime.strptime(last_dt_str, "%Y-%m-%d %H:%M:%S")
+last_ts = last_dt.replace(tzinfo=beijing_tz).timestamp()
+```
 
 **边界查询示例：**
 ```python

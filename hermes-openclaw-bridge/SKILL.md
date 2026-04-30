@@ -112,6 +112,19 @@ def call_openclaw(task: str, context: str = "") -> str:
 | OpenClaw 调试 | 想单独在 OpenClaw 环境测试 | `--thinking high` 深度思考 |
 | 负载分担 | 两个系统跑不同类型任务 | Hermes 跑对话，OpenClaw 跑定时脚本 |
 
+## 吸收的专项知识（references/）
+
+以下专项经验已沉淀为 reference 文件，伞技能本身保留通用框架：
+
+| 文件 | 内容 |
+|------|------|
+| `references/openclaw-npm-update.md` | OpenClaw npm 更新 + PM2 重启 + 双 Gateway 架构辨别 |
+| `references/hermes-wechat-file-send-debug.md` | 微信文件发送调试：两个独立通道、getUploadUrl 错误分析 |
+| `references/hermes-wechat-voice-limitation.md` | 微信语音发送能力调查：所有路径均不可用 |
+| `references/openclaw-weixin-upload-bug.md` | openclaw-weixin 文件上传 Bug：iLink API v2.1 字段变更 |
+| `references/hermes-wechat-send.md` | OpenClaw CLI 发送微信消息的正确命令 |
+| `references/hermes-wechat-system-notification-suppression.md` | 屏蔽微信 ⚡打断通知的配置方法 |
+
 ## 限制与注意事项
 
 - **不是消息通道** — 这是 Hermes 主动调用 OpenClaw，不是 OpenClaw 收到微信消息转发 Hermes

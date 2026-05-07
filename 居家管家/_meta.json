@@ -1,0 +1,7 @@
+{
+    "ownerId": "kn7dm9chfy9vn80xdcr9xq8w1s80k7bv",
+    "slug": "居家管家",
+    "version": "1.0.0",
+    "publishedAt": "",
+    "notes": "家庭物品管理系统。3张SQLite表，纯Python标准库，CLI接口。"
+}

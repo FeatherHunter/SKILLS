@@ -1,0 +1,203 @@
+---
+name: 饼干记账
+description: 饼干记账技能。当用户提到"饼干记账"时必须使用此技能，支持文字输入和图片账单识别。当用户提到记账、记录花费、添加支出/收入、上传账单图片、查看账单、统计消费时必须使用此技能。用户单独发送图片（无任何文字）时也必须触发此技能，直接看图判断金额并记账，不要等待用户补充说明。所有账单按天存储在 bills/ 文件夹中，同一天的账单累加到同一文件。
+---
+
+# 记账技能 (personal-accounting Skill) v2.0
+
+## 功能概述
+
+- **文字记账**：解析自然语言，提取金额、分类、备注
+- **图片记账**：直接看图识别账单金额，由模型判断最终支付金额
+- **双存储架构**：
+  - **SQLite 数据库**：存储在 `workspace/skills/personal-accounting/accounting.db`，用于快速查询
+  - **每日账单文件**：CSV格式，人类可读
+
+## 目录结构
+
+```
+personal-accounting/
+├── SKILL.md
+├── accounting.db         # SQLite 数据库（查询用）
+├── bills/                # 本地备份账单目录
+└── scripts/
+    └── record_bill.py    # 账单写入/查询脚本
+```
+
+## 每日账单文件路径（动态）
+
+| 环境 | 路径 |
+|------|------|
+| **WSL** | `/mnt/d/2Study/StudyNotes/{年份}/个人/{日期}/bills_{日期}.md` |
+| **Windows** | `D:\2Study\StudyNotes\{年份}\个人\{日期}\bills_{日期}.md` |
+
+**示例（今日 2026-05-07）：**
+- WSL：`/mnt/d/2Study/StudyNotes/2026/个人/20260507/bills_2026-05-07.md`
+- Windows：`D:\2Study\StudyNotes\2026\个人\20260507\bills_2026-05-07.md`
+
+## 数据库结构
+
+**表名**：`bills`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 自增主键 |
+| category | TEXT | 分类（如：餐饮、交通、购物） |
+| time | TEXT | 时间（YYYY-MM-DD HH:MM:SS） |
+| amount | REAL | 金额（负数为支出，正数为收入） |
+| account | TEXT | 账户（默认空） |
+| ledger | TEXT | 账本（默认"生活"） |
+| currency | TEXT | 货币（默认"人民币"） |
+| note | TEXT | 备注（默认空） |
+| created_at | TEXT | 创建时间 |
+
+## 每日文件格式
+
+`bills_YYYY-MM-DD.md` 为 CSV 格式：
+
+```csv
+分类,时间,金额,账户,账本,货币,备注
+餐饮,2026-05-07 12:30:00,-35.0,,生活,人民币,午饭
+交通,2026-05-07 08:15:00,-4.0,,生活,人民币,地铁
+```
+
+---
+
+## ⚠️ 使用前提
+
+图片记账依赖多模态模型（能看图的模型）。如果你只发图片但模型没有识别，请检查当前使用的模型是否支持图片输入。
+
+推荐模型：Claude 3.5 Sonnet / Claude 3 Opus / GPT-4o 等支持视觉的模型。
+
+---
+
+## 使用流程
+
+### Step 1：判断输入类型
+
+| 输入类型 | 处理方式 |
+|----------|----------|
+| 纯文字 | 直接解析金额、分类、备注 |
+| **纯图片（无文字）** | **直接看图记账**，不询问用户意图 |
+| 图片+文字 | 看图判断金额，用户文字作为备注或分类提示 |
+
+### Step 2：解析账单信息
+
+提取字段：
+
+| 字段 | 说明 |
+|------|------|
+| `amount` | 金额（元，负数为支出，正数为收入） |
+| `category` | 分类，参考 `references/categories.md` |
+| `time` | 时间（默认当前时间） |
+| `account` | 账户（默认空） |
+| `ledger` | 账本（默认"生活"） |
+| `currency` | 货币（默认"人民币"） |
+| `note` | 备注（可选） |
+
+**文字解析关键词：**
+- "花了 / 付了 / 消费 / 支出" → 负数金额
+- "收到 / 收入 / 进账" → 正数金额
+
+### Step 3：图片识别（如有图片）
+
+**直接观察图片内容，按以下优先级判断金额：**
+
+1. 🥇 「实付 / 实收 / 已支付 / 需付 / 支付金额」→ 用户最终付出的钱
+2. 🥈 「合计 / 总计 / 总额 / 应付」→ 订单总价
+3. ❌ 忽略：单品价格、优惠减免、配送费、税额、找零
+4. 若有多个候选，选语义最接近「最终实际支付」的数字
+5. 无法判断时，描述看到的内容并请用户确认金额
+
+### Step 4：双写数据库和文件
+
+```bash
+python scripts/record_bill.py add \
+  --category 餐饮 \
+  --amount -35.0 \
+  --time "2026-05-07 12:30:00" \
+  --note "午饭"
+```
+
+### Step 5：回复用户
+
+```
+✅ 已记录
+📅 2026-05-07 12:30  🏷️ 餐饮  💸 -¥35.00
+📊 今日支出：¥126.40 | 收入：¥0.00 | 净额：-¥126.40
+```
+
+---
+
+## 命令行功能
+
+### 添加记录
+```bash
+python scripts/record_bill.py add --category 餐饮 --amount -35.0 --note "午饭"
+```
+
+### 查询今日
+```bash
+python scripts/record_bill.py list
+```
+
+### 查询指定日期
+```bash
+python scripts/record_bill.py list --date 2026-05-07
+```
+
+### 今日摘要
+```bash
+python scripts/record_bill.py summary
+```
+
+### 月度汇总
+```bash
+python scripts/record_bill.py monthly --month 2026-05
+```
+
+---
+
+## 错误处理
+
+| 场景 | 处理方式 |
+|------|----------|
+| 图片模糊/看不清金额 | 描述看到的内容，请用户确认 |
+| 图片非账单 | 告知用户并询问是否手动输入 |
+| 未指定分类 | 根据内容推断，告知用户可纠正 |
+
+---
+
+## AI 触发指引
+
+**重要提示**：技能目录在 `workspace/skills/personal-accounting/`。所有命令使用此路径前缀。
+
+### 触发场景：用户提到记账/消费/收入
+
+触发词：
+- "记账"、"花了"、"付了"、"消费"
+- "收到钱"、"进账"、"收入"
+- 发截图/账单图片（无需文字，AI 自动识别）
+
+操作步骤：
+1. 解析用户输入，提取：分类、时间、金额、备注
+2. 执行：`python3 workspace/skills/personal-accounting/scripts/record_bill.py add --category <分类> --amount <金额> --time "<时间>" --note "<备注>"`
+3. 返回确认信息
+
+### 触发场景：用户要查看账单
+
+触发词：
+- "今天花了多少"、"查一下账单"
+- "今日支出"、"今日收入"
+
+操作步骤：
+1. 执行：`python3 workspace/skills/personal-accounting/scripts/record_bill.py summary`
+
+### 触发场景：用户要查历史
+
+触发词：
+- "上周花了多少"、"上月账单"
+- "这个月消费"
+
+操作步骤：
+1. 执行：`python3 workspace/skills/personal-accounting/scripts/record_bill.py monthly --month <YYYY-MM>`

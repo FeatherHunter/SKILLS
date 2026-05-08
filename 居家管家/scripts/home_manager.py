@@ -48,6 +48,8 @@ def init_db():
             status TEXT DEFAULT '在家',
             quantity INTEGER DEFAULT 1,
             purchase_price REAL,
+            purchase_date TEXT,
+            expiration_date TEXT,
             remark TEXT,
             photo TEXT,
             access_count INTEGER DEFAULT 0,
@@ -148,7 +150,8 @@ def _format_item(row, tags_str=None):
 # ── 添加物品 ─────────────────────────────────────────────────────────────────
 
 def add_item(name, category, location, owner="使用者", status="在家",
-             quantity=1, purchase_price=None, remark="", tags="", photo=""):
+             quantity=1, purchase_price=None, purchase_date=None, expiration_date=None,
+             remark="", tags="", photo=""):
     """添加新物品"""
     conn = _get_conn()
     cursor = conn.cursor()
@@ -156,10 +159,10 @@ def add_item(name, category, location, owner="使用者", status="在家",
 
     cursor.execute("""
         INSERT INTO items (name, category, location, owner, status, quantity,
-                          purchase_price, remark, photo, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          purchase_price, purchase_date, expiration_date, remark, photo, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (name, category, location, owner, status, quantity,
-          purchase_price, remark, photo, now, now))
+          purchase_price, purchase_date, expiration_date, remark, photo, now, now))
 
     item_id = cursor.lastrowid
 
@@ -235,7 +238,7 @@ def search_items(name=None, category=None, location=None, tag=None, status=None,
 
 def update_item(item_id, location=None, status=None, quantity=None,
                 remark=None, tags=None, name=None, category=None, owner=None,
-                purchase_price=None, photo=None):
+                purchase_price=None, purchase_date=None, expiration_date=None, photo=None):
     """更新物品字段（支持部分更新）"""
     conn = _get_conn()
     cursor = conn.cursor()
@@ -284,6 +287,12 @@ def update_item(item_id, location=None, status=None, quantity=None,
     if purchase_price is not None:
         updates.append("purchase_price = ?")
         params_list.append(purchase_price)
+    if purchase_date is not None:
+        updates.append("purchase_date = ?")
+        params_list.append(purchase_date)
+    if expiration_date is not None:
+        updates.append("expiration_date = ?")
+        params_list.append(expiration_date)
     if photo is not None:
         updates.append("photo = ?")
         params_list.append(photo)
@@ -623,6 +632,8 @@ def main():
     p_add.add_argument("--status", default="在家", help="状态")
     p_add.add_argument("--quantity", type=int, default=1, help="数量（默认1）")
     p_add.add_argument("--price", type=float, default=None, help="购买价格")
+    p_add.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
+    p_add.add_argument("--expiration-date", default=None, help="过期日期（YYYY-MM-DD）")
     p_add.add_argument("--remark", default="", help="备注")
     p_add.add_argument("--tags", default="", help="标签（逗号分隔）")
     p_add.add_argument("--photo", default="", help="图片路径")
@@ -647,6 +658,8 @@ def main():
     p_update.add_argument("--status", default=None, help="状态")
     p_update.add_argument("--quantity", type=int, default=None, help="数量")
     p_update.add_argument("--price", type=float, default=None, help="购买价格")
+    p_update.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
+    p_update.add_argument("--expiration-date", default=None, help="过期日期（YYYY-MM-DD）")
     p_update.add_argument("--remark", default=None, help="备注")
     p_update.add_argument("--tags", default=None, help="标签（逗号分隔，覆盖）")
     p_update.add_argument("--photo", default=None, help="图片路径")
@@ -697,7 +710,8 @@ def main():
         return add_item(
             name=args.name, category=args.category, location=args.location,
             owner=args.owner, status=args.status, quantity=args.quantity,
-            purchase_price=args.price, remark=args.remark, tags=args.tags,
+            purchase_price=args.price, purchase_date=args.purchase_date,
+            expiration_date=args.expiration_date, remark=args.remark, tags=args.tags,
             photo=args.photo
         )
 
@@ -712,7 +726,8 @@ def main():
             item_id=args.id, location=args.location, status=args.status,
             quantity=args.quantity, remark=args.remark, tags=args.tags,
             name=args.name, category=args.category, owner=args.owner,
-            purchase_price=args.price, photo=args.photo
+            purchase_price=args.price, purchase_date=args.purchase_date,
+            expiration_date=args.expiration_date, photo=args.photo
         )
 
     elif args.command == "list":

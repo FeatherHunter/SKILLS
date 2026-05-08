@@ -21,9 +21,34 @@ from pathlib import Path
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
 
-# 数据库路径（workspace目录）
-DB_DIR = Path(__file__).parent.parent
-DB_PATH = DB_DIR / "accounting.db"
+# 数据库路径 - 三层查找：环境变量 > 技能目录 > 父目录.db
+SKILL_DIR = Path(__file__).parent.parent
+DB_FILENAME = "accounting.db"
+
+def _find_db_path(skill_dir, db_filename):
+    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
+    # 1. 环境变量（最高优先级）
+    env_path = os.environ.get('SKILLS_DB_PATH')
+    if env_path:
+        p = Path(env_path) / db_filename
+        if p.exists() or Path(env_path).is_dir():
+            return p
+    # 2. 技能目录（默认）
+    p = skill_dir / db_filename
+    if p.exists():
+        return p
+    # 3. 父目录层层找 .db 文件夹
+    for parent in skill_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            p = db_dir / db_filename
+            if p.exists():
+                return p
+            return p
+    return p
+
+DB_DIR = SKILL_DIR
+DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
 # 获取今日日期
 TODAY = date.today()

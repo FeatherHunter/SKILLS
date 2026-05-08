@@ -201,3 +201,45 @@ python scripts/record_bill.py monthly --month 2026-05
 
 操作步骤：
 1. 执行：`python3 workspace/skills/personal-accounting/scripts/record_bill.py monthly --month <YYYY-MM>`
+
+---
+
+## 高级配置
+
+### 数据库路径查找顺序
+
+1. **环境变量** `SKILLS_DB_PATH`（最高优先级）
+   - 设置后所有技能db统一存放
+   - 例：`export SKILLS_DB_PATH=/mnt/d/2Study/Notes/.db`
+
+2. **技能所在目录**（默认）
+   - 开箱即用，适合他人clone后直接使用
+
+3. **父目录层层查找 `.db` 文件夹**
+   - 适合集中管理多个技能的db文件
+   - 脚本从技能目录向上搜索，找到 `.db` 目录为止
+
+### 推荐做法
+
+将db文件统一存放在 `~/.db/` 或项目根目录的 `.db/` 文件夹中：
+
+```
+D:\2Study\Notes\SKILLS\
+├── .db\
+│   ├── 居家管家.db
+│   ├── 卡路里.db
+│   └── 饼干记账.db
+├── 居家管家\
+├── 卡路里\
+└── 饼干记账\
+```
+
+设置环境变量后，所有技能自动使用统一目录：
+
+```bash
+# Windows (WSL)
+export SKILLS_DB_PATH=/mnt/d/2Study/Notes/.db
+
+# Windows (PowerShell)
+$env:SKILLS_DB_PATH="D:\2Study\Notes\.db"
+```

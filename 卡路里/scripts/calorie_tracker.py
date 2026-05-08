@@ -5,13 +5,38 @@
 """
 
 import sqlite3
+import os
 import sys
 from datetime import date, datetime
 from pathlib import Path
 
-# Database path relative to skill directory
+# Database path - three-tier lookup: env var > skill dir > parent .db folder
 SKILL_DIR = Path(__file__).parent.parent
-DB_PATH = SKILL_DIR / "calorie_data.db"
+DB_FILENAME = "calorie_data.db"
+
+def _find_db_path(skill_dir, db_filename):
+    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
+    # 1. 环境变量（最高优先级）
+    env_path = os.environ.get('SKILLS_DB_PATH')
+    if env_path:
+        p = Path(env_path) / db_filename
+        if p.exists() or Path(env_path).is_dir():
+            return p
+    # 2. 技能目录（默认）
+    p = skill_dir / db_filename
+    if p.exists():
+        return p
+    # 3. 父目录层层找 .db 文件夹
+    for parent in skill_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            p = db_dir / db_filename
+            if p.exists():
+                return p
+            return p
+    return p
+
+DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
 
 def init_db():
@@ -62,9 +87,30 @@ def init_db():
         )
     ''')
 
+    # Nutrition products table - for storing nutrition facts per 100g
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS nutrition_products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            brand TEXT,
+            calories REAL NOT NULL,
+            protein REAL NOT NULL,
+            fat REAL NOT NULL,
+            saturated_fat REAL,
+            carbohydrates REAL NOT NULL,
+            sugar REAL,
+            dietary_fiber REAL,
+            sodium REAL NOT NULL,
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Create indexes
     c.execute('CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_weight_date ON weight_log(date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_product_name ON nutrition_products(product_name)')
 
     conn.commit()
     conn.close()
@@ -402,6 +448,154 @@ def weight_history(days=30):
     print()
 
 
+def add_product(product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note=''):
+    """添加食品营养成分表"""
+    try:
+        conn = get_db()
+        c = conn.cursor()
+
+        c.execute('''
+            INSERT INTO nutrition_products 
+            (product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note))
+
+        product_id = c.lastrowid
+        conn.commit()
+        conn.close()
+
+        print(f"✓ 已添加营养成分表：{product_name}")
+        print(f"  品牌：{brand or '-'}")
+        print(f"  热量：{calories}千卡/100g")
+        print(f"  蛋白质：{protein}克 | 脂肪：{fat}克 | 碳水：{carbohydrates}克")
+        print(f"  饱和脂肪：{saturated_fat or '-'}克 | 糖：{sugar or '-'}克 | 膳食纤维：{dietary_fiber or '-'}克")
+        print(f"  钠：{sodium}毫克")
+        if note:
+            print(f"  备注：{note}")
+        print(f"  ID：{product_id}")
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def search_product(keyword):
+    """搜索食品营养成分"""
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT id, product_name, brand, calories, protein, fat, saturated_fat, 
+               carbohydrates, sugar, dietary_fiber, sodium, note, updated_at
+        FROM nutrition_products
+        WHERE product_name LIKE ? OR brand LIKE ?
+        ORDER BY product_name
+    ''', (f'%{keyword}%', f'%{keyword}%'))
+
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        print(f"未找到包含「{keyword}」的食品")
+        return []
+
+    print(f"\n找到 {len(rows)} 个匹配的食品：")
+    print("-" * 90)
+    print(f"{'ID':>3} | {'产品名称':20} | {'品牌':10} | {'热量':>5} | {'蛋白':>5} | {'脂':>4} | {'碳':>5} | {'钠':>6} | 更新日期")
+    print("-" * 90)
+
+    for row in rows:
+        id_, name, brand, cal, pro, fat_, sat_fat, carb, sugar, fiber, sodium, note, updated = row
+        brand = brand or '-'
+        sat_fat_str = f"{sat_fat}" if sat_fat else '-'
+        sugar_str = f"{sugar}" if sugar else '-'
+        fiber_str = f"{fiber}" if fiber else '-'
+        print(f"{id_:>3} | {name:20} | {brand:10} | {cal:>5} | {pro:>5} | {fat_:>4} | {carb:>5} | {sodium:>6} | {updated[:10]}")
+
+    print("-" * 90)
+    return rows
+
+
+def update_product(product_id, **kwargs):
+    """更新食品营养成分"""
+    allowed_fields = ['product_name', 'brand', 'calories', 'protein', 'fat', 
+                      'saturated_fat', 'carbohydrates', 'sugar', 'dietary_fiber', 
+                      'sodium', 'note']
+
+    # Filter valid fields
+    update_data = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
+
+    if not update_data:
+        print("Error: No valid fields to update")
+        return False
+
+    if not product_id:
+        print("Error: Product ID is required")
+        return False
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # Check if product exists
+    c.execute('SELECT product_name FROM nutrition_products WHERE id = ?', (product_id,))
+    row = c.fetchone()
+    if not row:
+        print(f"Error: Product ID {product_id} not found")
+        conn.close()
+        return False
+
+    old_name = row[0]
+
+    # Build update query
+    set_clause = ', '.join([f"{k} = ?" for k in update_data.keys()])
+    set_clause += ", updated_at = CURRENT_TIMESTAMP"
+    values = list(update_data.values())
+    values.append(product_id)
+
+    c.execute(f'UPDATE nutrition_products SET {set_clause} WHERE id = ?', values)
+    conn.commit()
+    conn.close()
+
+    print(f"✓ 已更新「{old_name}」营养成分表")
+    for k, v in update_data.items():
+        print(f"  {k}: {v}")
+    return True
+
+
+def list_products(limit=50):
+    """列出所有食品营养成分"""
+    conn = get_db()
+    c = conn.cursor()
+
+    c.execute('''
+        SELECT id, product_name, brand, calories, protein, fat, saturated_fat,
+               carbohydrates, sugar, dietary_fiber, sodium, note, created_at
+        FROM nutrition_products
+        ORDER BY updated_at DESC
+        LIMIT ?
+    ''', (limit,))
+
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        print("营养成分库为空，请先添加食品营养成分")
+        return []
+
+    print(f"\n食品营养成分库（共{len(rows)}条）：")
+    print("-" * 90)
+    print(f"{'ID':>3} | {'产品名称':20} | {'品牌':10} | {'热量':>5} | {'蛋白':>5} | {'脂':>4} | {'碳':>5} | {'钠':>6}")
+    print("-" * 90)
+
+    for row in rows:
+        id_, name, brand, cal, pro, fat_, sat_fat, carb, sugar, fiber, sodium, note, created = row
+        brand = brand or '-'
+        print(f"{id_:>3} | {name:20} | {brand:10} | {cal:>5} | {pro:>5} | {fat_:>4} | {carb:>5} | {sodium:>6}")
+
+    print("-" * 90)
+    return rows
+
+
 def history(days=7):
     """显示热量历史"""
     conn = get_db()
@@ -458,11 +652,20 @@ def usage():
   weight-history [天数]              体重历史（默认30天）
   history [天数]                    热量历史（默认7天）
 
+  add-product <名称> <品牌> <热量> <蛋白质> <脂肪> <饱和脂肪> <碳水> <糖> <膳食纤维> <钠> [备注]
+                                   添加食品营养成分表
+  search-product <关键词>             搜索营养成分
+  update-product <id> [--字段 值]    更新营养成分
+  list-products [数量]               列出所有营养成分
+
 示例：
   add "鸡胸肉" 165 31 0 3 150
   add "米饭" 116 2 25 0 200
   goal 1800 156 200 60
   weight 70 178
+  add-product "可口可乐" "可口可乐" 42 0 0 0 10.6 10.6 0 20 "经典款330ml"
+  search-product "可乐"
+  update-product 1 --calories 45 --note "更新包装"
 """)
 
 
@@ -525,6 +728,54 @@ def main():
         elif command == "history":
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 7
             history(days)
+
+        elif command == "add-product":
+            if len(sys.argv) < 11:
+                print("Error: add-product requires <name> <brand> <cal> <protein> <fat> <saturated_fat> <carbs> <sugar> <fiber> <sodium> [note]")
+                sys.exit(1)
+            product_name = sys.argv[2]
+            brand = sys.argv[3]
+            calories = float(sys.argv[4])
+            protein = float(sys.argv[5])
+            fat = float(sys.argv[6])
+            saturated_fat = float(sys.argv[7]) if sys.argv[7] != '0' else None
+            carbs = float(sys.argv[8])
+            sugar = float(sys.argv[9]) if sys.argv[9] != '0' else None
+            fiber = float(sys.argv[10]) if sys.argv[10] != '0' else None
+            sodium = float(sys.argv[11])
+            note = sys.argv[12] if len(sys.argv) > 12 else ''
+            add_product(product_name, brand, calories, protein, fat, saturated_fat, carbs, sugar, fiber, sodium, note)
+
+        elif command == "search-product":
+            if len(sys.argv) < 3:
+                print("Error: search-product requires <keyword>")
+                sys.exit(1)
+            search_product(sys.argv[2])
+
+        elif command == "update-product":
+            if len(sys.argv) < 3:
+                print("Error: update-product requires <product_id> [--field value ...]")
+                sys.exit(1)
+            product_id = sys.argv[2]
+            # Parse --key value pairs
+            kwargs = {}
+            args = sys.argv[3:]
+            i = 0
+            while i < len(args):
+                if args[i].startswith('--'):
+                    key = args[i][2:]
+                    if i + 1 < len(args) and not args[i+1].startswith('--'):
+                        kwargs[key] = args[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    i += 1
+            update_product(product_id, **kwargs)
+
+        elif command == "list-products":
+            limit = int(sys.argv[2]) if len(sys.argv) > 2 else 50
+            list_products(limit)
 
         else:
             print(f"Error: Unknown command '{command}'")

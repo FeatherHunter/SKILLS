@@ -18,9 +18,10 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 
 ```
 calorie_data.db
-├── entries       # 食物记录
-├── daily_goal    # 每日目标
-└── weight_log   # 体重记录
+├── entries           # 食物记录
+├── daily_goal        # 每日目标
+├── weight_log        # 体重记录
+└── nutrition_products  # 食品营养成分库
 ```
 
 ### entries 表（食物记录）
@@ -60,6 +61,27 @@ calorie_data.db
 | bmi | REAL | BMI（自动计算） |
 | note | TEXT | 备注 |
 
+### nutrition_products 表（食品营养成分库）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| product_name | TEXT | 产品名称 |
+| brand | TEXT | 品牌（可选） |
+| calories | REAL | 热量（千卡/100g） |
+| protein | REAL | 蛋白质（克/100g） |
+| fat | REAL | 脂肪（克/100g） |
+| saturated_fat | REAL | 饱和脂肪（克/100g，可NULL） |
+| carbohydrates | REAL | 碳水化合物（克/100g） |
+| sugar | REAL | 糖（克/100g，可NULL） |
+| dietary_fiber | REAL | 膳食纤维（克/100g，可NULL） |
+| sodium | REAL | 钠（毫克/100g） |
+| note | TEXT | 备注 |
+| created_at | TEXT | 创建时间 |
+| updated_at | TEXT | 更新时间 |
+
+> **营养学知识**：糖是碳水化合物的子部分，饱和脂肪是脂肪的子部分。数据库存储独立数值，业务逻辑在应用层处理。
+
 ## 命令行用法
 
 ### 添加食物记录
@@ -95,6 +117,24 @@ python scripts/calorie_tracker.py weight-history 30
 python scripts/calorie_tracker.py history 7
 ```
 
+### 添加食品营养成分表
+```bash
+python scripts/calorie_tracker.py add-product "可口可乐" "可口可乐" 42 0 0 0 10.6 10.6 0 20 "经典款330ml"
+# 参数：产品名称 品牌 热量 蛋白质 脂肪 饱和脂肪 碳水 糖 膳食纤维 钠 备注
+```
+
+### 查询食品营养成分
+```bash
+python scripts/calorie_tracker.py search-product "可乐"
+# 参数：搜索关键词
+```
+
+### 更新食品营养成分
+```bash
+python scripts/calorie_tracker.py update-product 1 --calories 45 --note "更新为新包装"
+# 参数：产品ID + 要更新的字段
+```
+
 ## AI 触发指引
 
 **重要提示**：技能目录在 `workspace/skills/卡路里/`。所有命令使用此路径前缀。
@@ -105,12 +145,108 @@ python scripts/calorie_tracker.py history 7
 - "卡路里"、"热量"
 - "吃了什么"、"记录饮食"
 - "我吃了..."
+- "记录吃了..."
+
+**完整流程（重要）**：
+
+#### Step 1：解析用户输入
+提取：食物名、克数（如有）
+
+#### Step 2：模糊查询 nutrition_products 表
+执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py search-product <食物名>`
+
+#### Step 3：根据查询结果分流
+
+**Path A：找到匹配结果（≥1条）**
+```
+列表显示所有匹配项，格式：
+  ID | 产品名称 | 品牌 | 热量
+请用户选择是哪个（或输入新的）
+         ↓
+用户确认后，询问克数（如用户未提供）
+         ↓
+计算：热量/100 × 克数
+         ↓
+执行 add 命令记录到 entries 表
+         ↓
+返回今日汇总
+```
+
+**Path B：库中没找到，用户提供了营养成分表图片**
+```
+AI：未找到该食品，请提供营养成分表图片
+         ↓
+用户发送图片
+         ↓
+AI 调用 mmx vision describe 识别：
+  mmx vision describe --image <图片路径> \
+    --prompt "请识别这张营养成分表，提取：产品名称、品牌、热量(千卡)、蛋白质(克)、脂肪(克)、饱和脂肪(克)、碳水化合物(克)、糖(克)、膳食纤维(克)、钠(毫克)。请以JSON格式返回。"
+         ↓
+AI 展示识别结果，确认是否正确
+         ↓
+用户确认后，询问是否保存到营养成分库
+         ↓
+执行 add-product 命令存入 nutrition_products 表
+         ↓
+继续 Path A 流程（让用户确认克数 → 计算 → add）
+```
+
+**Path C：库中没找到，用户无法提供营养成分表**
+```
+AI：未找到该食品，请问有营养成分表图片吗？
+         ↓
+用户：没有图片 / 不知道营养成分 / 不确定
+         ↓
+交互式讨论：
+  - 询问用户大概吃了多少克
+  - 可以描述食物外观、大小、份量
+  - 讨论后估算一个合理克数
+  - 若讨论不出结果 → 跳过本次记录
+         ↓
+若讨论出克数：
+  AI 调用 mmx search 查询该食品参考营养数据：
+    mmx search query --q "<食物名> 营养成分表 每100克热量"
+         ↓
+展示参考数据（注明：仅供参考，不存入营养成分库）
+         ↓
+用户确认后，计算热量并执行 add 命令
+         ↓
+返回：✓ 已记录（参考数据） + 今日汇总
+```
+
+**注意**：Path C 查询到的营养数据**不存入** nutrition_products 表，因数据来源为外部搜索，结果仅供参考。
+
+#### Step 4：返回确认信息
+执行 add 命令后，返回：
+```
+✓ 已记录：<食物名> (<热量>卡, <克数>克)
+餐次：<早/午/晚/下午茶/夜宵>
+今日：<热量>/<目标>卡 | 蛋白<蛋白>/<目标>g | 碳<碳>/<目标>g | 脂<脂>/<目标>g
+```
+
+### 触发场景：用户要添加食品营养成分表
+
+触发词：
+- "添加营养成分"、"录入营养成分"
+- "这个食品的营养成分是..."
+- 发营养成分表图片
 
 操作步骤：
-1. 解析用户输入，提取：食物名、克数、热量、蛋白质、碳水、脂肪
-2. 如果用户没说具体数值，AI 估算
-3. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py add <食物> <热量> <蛋白质> [碳水] [脂肪] [克数]`
-4. 返回今日汇总
+1. 解析用户输入或图片，提取：产品名称、品牌、热量、蛋白质、脂肪、饱和脂肪、碳水、糖、膳食纤维、钠、备注
+2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py add-product <产品名> <品牌> <热量> <蛋白质> <脂肪> <饱和脂肪> <碳水> <糖> <膳食纤维> <钠> [备注]`
+3. 返回确认信息
+
+### 触发场景：用户要查询/搜索营养成分
+
+触发词：
+- "查询营养成分"、"搜索营养成分"
+- "这个食品有多少卡"
+- "XXX的营养成分是什么"
+
+操作步骤：
+1. 解析用户输入，提取搜索关键词
+2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py search-product <关键词>`
+3. 返回匹配的食品列表
 
 ### 触发场景：用户要查看今日摄入
 
@@ -186,3 +322,45 @@ python scripts/calorie_tracker.py history 7
 **AI**：（执行：weight 70 178）
 ✓ 体重已记录：70.0公斤
 BMI：22.1（正常范围）
+
+---
+
+## 高级配置
+
+### 数据库路径查找顺序
+
+1. **环境变量** `SKILLS_DB_PATH`（最高优先级）
+   - 设置后所有技能db统一存放
+   - 例：`export SKILLS_DB_PATH=/mnt/d/2Study/Notes/.db`
+
+2. **技能所在目录**（默认）
+   - 开箱即用，适合他人clone后直接使用
+
+3. **父目录层层查找 `.db` 文件夹**
+   - 适合集中管理多个技能的db文件
+   - 脚本从技能目录向上搜索，找到 `.db` 目录为止
+
+### 推荐做法
+
+将db文件统一存放在 `~/.db/` 或项目根目录的 `.db/` 文件夹中：
+
+```
+D:\2Study\Notes\SKILLS\
+├── .db\
+│   ├── 居家管家.db
+│   ├── 卡路里.db
+│   └── 饼干记账.db
+├── 居家管家\
+├── 卡路里\
+└── 饼干记账\
+```
+
+设置环境变量后，所有技能自动使用统一目录：
+
+```bash
+# Windows (WSL)
+export SKILLS_DB_PATH=/mnt/d/2Study/Notes/.db
+
+# Windows (PowerShell)
+$env:SKILLS_DB_PATH="D:\2Study\Notes\.db"
+```

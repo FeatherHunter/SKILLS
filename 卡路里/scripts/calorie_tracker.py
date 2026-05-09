@@ -20,7 +20,7 @@ def _find_db_path(skill_dir, db_filename):
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
-        if p.exists() or Path(env_path).is_dir():
+        if p.exists():
             return p
     # 2. 技能目录（默认）
     p = skill_dir / db_filename
@@ -33,8 +33,10 @@ def _find_db_path(skill_dir, db_filename):
             p = db_dir / db_filename
             if p.exists():
                 return p
-            return p
-    return p
+    # 4. 都找不到则创建在 .db 目录
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / db_filename
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
@@ -69,7 +71,23 @@ def init_db():
             protein_goal INTEGER DEFAULT 150,
             carbs_goal INTEGER DEFAULT 200,
             fat_goal INTEGER DEFAULT 60,
+            weight_goal REAL,
+            goal_deadline TEXT,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Exercise log - v1.0
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS exercise_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            time TEXT,
+            exercise_type TEXT NOT NULL,
+            duration_minutes INTEGER,
+            calories_burned INTEGER NOT NULL,
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
@@ -110,6 +128,17 @@ def init_db():
     # Create indexes
     c.execute('CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_weight_date ON weight_log(date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_date ON exercise_log(date)')
+
+    # Migration: add weight_goal/goal_deadline if not exist
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN weight_goal REAL')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN goal_deadline TEXT')
+    except:
+        pass
     c.execute('CREATE INDEX IF NOT EXISTS idx_product_name ON nutrition_products(product_name)')
 
     conn.commit()
@@ -402,29 +431,60 @@ def log_weight(weight_kg, height_cm=None, note='', target_date=None, target_time
     return True
 
 
-def weight_history(days=30):
-    """显示体重历史"""
+def weight_history(days=30, start_date=None, end_date=None):
+    """显示体重历史
+    
+    支持三种调用方式：
+    - weight_history(days=30)              # 最近N天（向后兼容）
+    - weight_history(start_date='2026-01-01', end_date='2026-05-09')  # 日期范围
+    - weight_history(start_date='2026-05-09', end_date='2026-05-09')  # 单日查询
+    """
     conn = get_db()
     c = conn.cursor()
 
-    c.execute('''
-        SELECT date, time, weight_kg, bmi, note
-        FROM weight_log
-        ORDER BY date DESC, time DESC
-        LIMIT ?
-    ''', (days,))
+    # 构建查询条件
+    if start_date and end_date:
+        # 日期范围查询
+        c.execute('''
+            SELECT date, time, weight_kg, bmi, note
+            FROM weight_log
+            WHERE date >= ? AND date <= ?
+            ORDER BY date DESC, time DESC
+        ''', (start_date, end_date))
+        if start_date == end_date:
+            range_desc = start_date
+        else:
+            range_desc = f"{start_date} ~ {end_date}"
+    elif start_date:
+        # 单日查询
+        c.execute('''
+            SELECT date, time, weight_kg, bmi, note
+            FROM weight_log
+            WHERE date = ?
+            ORDER BY time DESC
+        ''', (start_date,))
+        range_desc = start_date
+    else:
+        # 默认最近N天（向后兼容）
+        c.execute('''
+            SELECT date, time, weight_kg, bmi, note
+            FROM weight_log
+            ORDER BY date DESC, time DESC
+            LIMIT ?
+        ''', (days,))
+        range_desc = f"最近{days}天"
 
     rows = c.fetchall()
     conn.close()
 
     if not rows:
-        print("无体重记录")
-        return
+        print(f"无体重记录（{range_desc}）")
+        return None
 
-    print(f"\n体重历史（最近{days}天）：")
-    print("-" * 50)
+    print(f"\n体重历史（{range_desc}）：{len(rows)}条记录")
+    print("-" * 60)
     print(f"{'日期':>10} | {'时间':>5} | {'体重(kg)':>8} | {'BMI':>5} | 备注")
-    print("-" * 50)
+    print("-" * 60)
 
     for date_str, time_str, weight, bmi, note in rows:
         bmi_str = f"{bmi:.1f}" if bmi else "-"
@@ -436,16 +496,239 @@ def weight_history(days=30):
         first_weight = rows[-1][2]
         last_weight = rows[0][2]
         change = last_weight - first_weight
+        day_span = (datetime.strptime(rows[0][0], '%Y-%m-%d') - datetime.strptime(rows[-1][0], '%Y-%m-%d')).days + 1
+        daily_avg = change / day_span if day_span > 0 else 0
 
-        print("-" * 50)
+        print("-" * 60)
+        print(f"时间跨度：{day_span}天 | 首日：{first_weight:.1f}kg → 末日：{last_weight:.1f}kg")
         if change > 0:
-            print(f"变化：+{change:.1f}公斤")
+            print(f"变化：+{change:.1f}公斤 | 日均：+{daily_avg:.2f}公斤/天")
         elif change < 0:
-            print(f"变化：{change:.1f}公斤")
+            print(f"变化：{change:.1f}公斤 | 日均：{daily_avg:.2f}公斤/天")
         else:
             print(f"变化：无变化")
 
     print()
+    return rows
+
+
+def set_weight_goal(weight_goal, deadline=None):
+    """设置体重目标
+    
+    Args:
+        weight_goal: 目标体重(kg)，如 73.0
+        deadline: 目标日期，如 '2026-07-01'，可选
+    """
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        INSERT OR REPLACE INTO daily_goal (id, weight_goal, goal_deadline, updated_at)
+        VALUES (1, ?, ?, datetime('now'))
+    ''', (weight_goal, deadline))
+    conn.commit()
+    conn.close()
+    print(f"✓ 体重目标已设定：{weight_goal} kg" + (f" | 目标日期：{deadline}" if deadline else ""))
+
+
+def get_weight_goal():
+    """获取体重目标，返回 (weight_goal, deadline, days_left, daily_change_rate, calorie_adjustment)"""
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT weight_goal, goal_deadline FROM daily_goal WHERE id = 1')
+    row = c.fetchone()
+    conn.close()
+
+    if not row or not row[0]:
+        return None
+
+    weight_goal, deadline = row
+
+    # 获取最近一次体重
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT weight_kg, date FROM weight_log ORDER BY date DESC LIMIT 1')
+    wrow = c.fetchone()
+    conn.close()
+
+    if not wrow:
+        return (weight_goal, deadline, None, None, None)
+
+    current_weight, current_date = wrow
+
+    # 计算日均变化（近30天有记录期间）
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT MIN(weight_kg), MAX(weight_kg), date FROM weight_log
+        WHERE date >= date('now', '-30 days')
+    ''')
+    min_w, max_w, _ = c.fetchone()
+    conn.close()
+
+    daily_change_rate = None
+    days_left = None
+    calorie_adjustment = None
+
+    if deadline:
+        from datetime import datetime
+        deadline_dt = datetime.strptime(deadline, '%Y-%m-%d')
+        today_dt = datetime.strptime(current_date, '%Y-%m-%d')
+        days_left = (deadline_dt - today_dt).days
+
+    if days_left is not None and days_left > 0:
+        gap = current_weight - weight_goal
+        required_daily = gap / days_left  # kg/day
+
+        # 7700kcal ≈ 1kg 脂肪
+        calorie_adjustment = int(required_daily * 7700)  # 正=需增加缺口，负=需减少缺口
+
+    return (weight_goal, deadline, days_left, daily_change_rate, calorie_adjustment)
+
+
+def add_exercise(exercise_type, calories_burned, duration_minutes=None, reps=None, note='', target_date=None, target_time=None):
+    """记录运动消耗
+    
+    Args:
+        exercise_type: 运动类型，如 '跑步'、'钻石俯卧撑'
+        calories_burned: 消耗卡路里
+        duration_minutes: 运动时长（分钟）
+        reps: 动作次数/组数，如 20个
+        note: 备注
+        target_date: 记录日期，默认今天
+    """
+    from datetime import date
+    if target_date is None:
+        target_date = date.today().strftime('%Y-%m-%d')
+
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO exercise_log (date, time, exercise_type, duration_minutes, calories_burned, note, reps)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (target_date, target_time or '', exercise_type, duration_minutes, calories_burned, note, reps))
+    conn.commit()
+    conn.close()
+    
+    reps_str = f" {reps}个" if reps else ""
+    dur_str = f" {duration_minutes}分钟" if duration_minutes else ""
+    print(f"✓ 已记录运动：{exercise_type}{reps_str}{dur_str} {calories_burned}卡")
+
+
+def get_exercise_log(target_date=None, days=7):
+    """获取运动记录
+    
+    Args:
+        target_date: 查询日期（单日）
+        days: 查询近N天（默认7）
+    """
+    conn = get_db()
+    c = conn.cursor()
+
+    if target_date:
+        c.execute('''
+            SELECT date, time, exercise_type, duration_minutes, calories_burned, note, reps
+            FROM exercise_log
+            WHERE date = ?
+            ORDER BY time DESC
+        ''', (target_date,))
+    else:
+        c.execute('''
+            SELECT date, time, exercise_type, duration_minutes, calories_burned, note, reps
+            FROM exercise_log
+            WHERE date >= date('now', ?)
+            ORDER BY date DESC, time DESC
+        ''', (f'-{days} days',))
+
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+
+def exercise_summary(days=7):
+    """显示近N天运动汇总"""
+    rows = get_exercise_log(days=days)
+    if not rows:
+        print(f"\n近{days}天无运动记录")
+        return
+
+    # 按日汇总
+    from collections import defaultdict
+    daily = defaultdict(list)
+    for row in rows:
+        # row: (date, time, exercise_type, duration_minutes, calories_burned, note, reps)
+        daily[row[0]].append({
+            'type': row[2],
+            'cal': row[4],
+            'dur': row[3],
+            'reps': row[6]
+        })
+
+    total_cal = sum(sum(r['cal'] for r in items) for items in daily.values())
+    total_days = len(daily)
+
+    print(f"\n近{days}天运动汇总：{total_cal}卡 / {total_days}天")
+    print("-" * 50)
+    for d, items in sorted(daily.items()):
+        detail = []
+        for r in items:
+            s = f"{r['type']}"
+            if r['reps']:
+                s += f" {r['reps']}个"
+            if r['dur']:
+                s += f" {r['dur']}分钟"
+            s += f" {r['cal']}卡"
+            detail.append(s)
+        print(f"  {d}: {' | '.join(detail)}")
+    print(f"\n  日均: {total_cal / total_days:.0f}卡/天" if total_days else "")
+
+
+def goal_progress_report():
+    """体重目标达成进度报告"""
+    result = get_weight_goal()
+    if not result or result[0] is None:
+        print("\n⚠️ 未设定体重目标，请说「设定体重目标 73kg」或「设定体重目标 73kg 目标日期 2026-07-01」")
+        return
+
+    weight_goal, deadline, days_left, daily_change_rate, calorie_adj = result
+
+    # 获取最新体重
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT weight_kg, date FROM weight_log ORDER BY date DESC LIMIT 1')
+    row = c.fetchone()
+    conn.close()
+
+    if not row:
+        print(f"\n⚠️ 未记录体重，无法计算进度")
+        return
+
+    current_weight, current_date = row
+    gap = current_weight - weight_goal
+
+    print(f"\n{'='*45}")
+    print(f"  体重目标进度报告")
+    print(f"{'='*45}")
+    print(f"  当前体重：{current_weight:.1f} kg（{current_date}）")
+    print(f"  目标体重：{weight_goal:.1f} kg" + (f"（{deadline}）" if deadline else ""))
+    print(f"  差距：{'+' if gap > 0 else ''}{gap:.1f} kg")
+    if days_left is not None:
+        print(f"  剩余天数：{days_left}天")
+        if days_left > 0:
+            required_daily = gap / days_left
+            print(f"  每日需{'减' if required_daily > 0 else '增'}{abs(required_daily):.2f} kg")
+    if calorie_adj is not None:
+        if calorie_adj > 1000:
+            print(f"  ⚠️ 警告：每日需增加 {calorie_adj} kcal 缺口（极端目标，建议调整目标或延期）")
+        elif calorie_adj > 0:
+            print(f"  建议：每日需增加 {calorie_adj} kcal 缺口")
+        elif calorie_adj < -1000:
+            print(f"  ⚠️ 警告：当前进度大幅超前，建议适当增加摄入")
+        elif calorie_adj < 0:
+            print(f"  建议：每日需减少 {abs(calorie_adj)} kcal 缺口（当前进度超前）")
+        else:
+            print(f"  状态：完美匹配，按当前节奏可达成目标")
+
+    print(f"{'='*45}\n")
 
 
 def add_product(product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note=''):

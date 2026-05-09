@@ -1,49 +1,61 @@
 ---
 name: daily-recorder-openclaw
-description: 记录用户的语录，从 OpenClaw session 文件提取用户发言（直接执行 Python 脚本）
+description: 记录用户的发言和附件，从 OpenClaw session 文件提取用户消息和媒体附件入库，支持灵活时间范围查询。
 ---
+
 # Daily Recorder - OpenClaw 版
 
-> **架构说明**：本 skill 的核心逻辑在 `record_yulu.py` 脚本中。cron 任务直接调用该脚本，不经过 AI，避免 AI 行为干扰。
+## 触发词
+
+- "记录语录"、"扫描消息"、"每日语录"
+- cron 自动触发（每小时的 15分 和 45分）
 
 ## 执行方式
 
-### cron 自动调用
+### 扫描入库（cron / 手动）
 ```bash
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/record_yulu.py
+python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/record.py
 ```
-- 每小时 15分 和 45分 自动执行
-- 追加到当日语录文件，不覆盖
+- 不带参数：增量扫描（只扫新消息）
+- 每次扫描更新 scan_checkpoint，下次自动增量
 
-### 手动调用
+### 查询消息
 ```bash
-# 今天
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/record_yulu.py
+# 查单日
+python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --date 20260509
 
-# 指定日期
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/record_yulu.py 20260507
+# 查范围
+python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --start 20260509000000 --end 20260509235959
+
+# 单独使用 start 或 end
+python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --start 20260509000000
+
+# 同时查询附件
+python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --date 20260509 --attachments
 ```
 
-## 工作流程
+## 目录结构
 
-1. **扫描所有 session 文件**（跨多个文件，全局处理）
-2. **过滤**：心跳/cron触发/系统元数据
-3. **全局按时间排序**
-4. **去重追加**：基于最后一条内容去重
-5. **更新统计**
+```
+daily-recorder-openclaw/
+├── SKILL.md                  # 本文件
+├── scripts/
+│   ├── record.py             # 主扫描脚本
+│   ├── query.py              # 查询脚本
+│   └── db.py                 # 数据库模块
+└── references/
+    ├── database_schema.md    # 表结构说明
+    ├── design_rationale.md   # 设计思路
+    └── api_reference.md      # 供其他技能调用的接口
+```
 
-## 过滤规则
+## 数据库
 
-以下消息类型会被过滤：
-- `[SYSTEM`、`[System note`、`[The user sent`
-- `[cron:`、`[OpenClaw heartbeat`
-- `Sender (untrusted metadata)`
-- `openclaw-control-ui` 元数据
+路径：`/mnt/d/2Study/StudyNotes/.db/daily_recorder.db`
 
-## 输出路径
+**三个表：**
+- **user_messages**：用户消息（只存有文字内容的）
+- **user_attachments**：用户附件（图片/文件/语音）
+- **scan_checkpoint**：增量扫描进度记录
 
-`D:\2Study\StudyNotes\{YYYY}\个人\{YYYYMMDD}\{YYYYMMDD}_语录.md`
-
-## 数据来源
-
-`/home/feather/.openclaw/agents/main/sessions/*.jsonl`
+详细说明见 references/ 目录。

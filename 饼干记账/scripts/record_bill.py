@@ -31,7 +31,7 @@ def _find_db_path(skill_dir, db_filename):
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
-        if p.exists() or Path(env_path).is_dir():
+        if p.exists():
             return p
     # 2. 技能目录（默认）
     p = skill_dir / db_filename
@@ -44,8 +44,10 @@ def _find_db_path(skill_dir, db_filename):
             p = db_dir / db_filename
             if p.exists():
                 return p
-            return p
-    return p
+    # 4. 都找不到则创建在 .db 目录
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / db_filename
 
 DB_DIR = SKILL_DIR
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)

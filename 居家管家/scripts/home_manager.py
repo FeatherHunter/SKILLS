@@ -30,7 +30,7 @@ def _find_db_path(skill_dir, db_filename):
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
-        if p.exists() or Path(env_path).is_dir():
+        if p.exists():
             return p
     # 2. 技能目录（默认）
     p = skill_dir / db_filename
@@ -43,9 +43,10 @@ def _find_db_path(skill_dir, db_filename):
             p = db_dir / db_filename
             if p.exists():
                 return p
-            # .db 目录存在但没有这个文件，返回None，让调用方在目录创建
-            return p  # 返回目标路径（可能在目录中不存在）
-    return p  # 最后返回技能目录下的默认路径
+    # 4. 都找不到则创建在 .db 目录
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / db_filename
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 PHOTOS_DIR = SKILL_DIR / "photos"
@@ -53,7 +54,7 @@ PHOTOS_DIR = SKILL_DIR / "photos"
 # ── 状态常量 ──────────────────────────────────────────────────────────────────
 
 VALID_STATUSES = ("在家", "备用", "穿着中", "旅游中", "洗护中", "借用中",
-                  "维修中", "已用完", "待处理", "已废弃")
+                  "维修中", "已用完", "快递中", "待处理", "已废弃")
 
 # ── 数据库初始化 ─────────────────────────────────────────────────────────────
 

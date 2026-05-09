@@ -30,41 +30,12 @@ description: 智能分析每日作息，生成作息报告
 - 按用户指定时间段生成报告
 
 ## 数据来源
-**唯一数据源：** `~/.hermes/state.db` (SQLite)
+
+**唯一数据源：** 技能 daily-recorder-openclaw 中的数据库
 
 ### 查询脚本
-```python
-import sqlite3
-from datetime import datetime, timezone, timedelta
 
-db_path = '/home/feather/.hermes/state.db'
-beijing_tz = timezone(timedelta(hours=8))
-
-# 时间段（传入参数）
-start_dt = datetime({start_year}, {start_month}, {start_day}, {start_hour}, {start_min}, 0, tzinfo=beijing_tz)
-end_dt = datetime({end_year}, {end_month}, {end_day}, {end_hour}, {end_min}, 0, tzinfo=beijing_tz)
-
-conn = sqlite3.connect(db_path)
-cursor = conn.cursor()
-cursor.execute("""
-    SELECT timestamp, content FROM messages
-    WHERE role = 'user'
-    AND timestamp >= ? AND timestamp < ?
-    AND content NOT LIKE '[SYSTEM%'
-    AND content NOT LIKE '[System note%'
-    AND content NOT LIKE '[The user sent%'
-    ORDER BY timestamp ASC
-""", (start_dt.timestamp(), end_dt.timestamp()))
-messages = cursor.fetchall()
-conn.close()
-
-for ts, content in messages:
-    dt = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-    first_line = str(content).strip().split('\n')[0]
-    if len(first_line) > 200:
-        first_line = first_line[:200] + '...'
-    print(f'{dt} - {first_line}')
-```
+技能 daily-recorder-openclaw 中定义了如何查询数据库
 
 ### 每日边界
 以**北京时间 07:30** 作为一天的分割点，即：

@@ -84,7 +84,7 @@ def main():
         att_rows = db.query_attachments(start_ts=start_ts, end_ts=end_ts, limit=args.limit)
         if att_rows:
             print(f"\n附件 {len(att_rows)} 条\n")
-            for msg_id, ts, channel, sender_id, file_path, file_type in att_rows:
+            for msg_id, ts, channel, sender_id, file_path, file_type, date in att_rows:
                 print(f"[{ts_to_str(ts)}] [{channel}] [{file_type}]")
                 print(f"  {file_path}")
                 print()

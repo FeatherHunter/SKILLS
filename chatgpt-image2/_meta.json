@@ -1,0 +1,8 @@
+{
+  "name": "chatgpt-image2",
+  "description": "基于 AI Hub API 的 GPT-Image-2 图片生成技能，支持基础生图和参考图垫图。API 地址: https://api.xbai.top/v1",
+  "version": "1.0.0",
+  "created": "2026-05-10",
+  "author": "成真",
+  "tags": ["image", "generation", "gpt-image-2", "ai-hub"]
+}

@@ -136,6 +136,21 @@ def get_open_issues():
     return rows
 
 
+def get_all_open_issues_raw():
+    """获取所有 open 问题的原始数据，用于 AI 判断是否已解决"""
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    c.execute("""
+        SELECT id, skill, key, desc, status, count, found_at, updated_at
+        FROM issues
+        WHERE status='open'
+        ORDER BY skill, key
+    """)
+    rows = c.fetchall()
+    conn.close()
+    return rows  # (id, skill, key, desc, status, count, found_at, updated_at)
+
+
 def get_all_issues():
     """获取所有问题（含 resolved/ignored）"""
     conn = sqlite3.connect(str(DB_PATH))

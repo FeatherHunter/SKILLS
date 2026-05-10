@@ -1,5 +1,5 @@
 ---
-name: daily-schedule
+name: 作息管家
 description: 智能分析每日作息，生成作息报告
 ---
 
@@ -13,7 +13,7 @@ description: 智能分析每日作息，生成作息报告
 
 ## 安装
 触发时检查**当前AI智能体**的 skills 目录：
-- 不存在 `skills/daily-schedule/SKILL.md` → 创建SKILL文件(桥接器文件)，SKILL文件内容指向本文件
+- 不存在 `skills/作息管家/SKILL.md` → 创建SKILL文件(桥接器文件)，SKILL文件内容指向本文件
 - 桥接器只符合SKILL规范且包含SKILL触发条件，和SKILL本体文件路径
 
 ## 触发方式

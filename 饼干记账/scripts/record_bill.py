@@ -23,7 +23,7 @@ from pathlib import Path
 
 # 数据库路径 - 三层查找：环境变量 > 技能目录 > 父目录.db
 SKILL_DIR = Path(__file__).parent.parent
-DB_FILENAME = "accounting.db"
+DB_FILENAME = "biscuit_accountant.db"
 
 def _find_db_path(skill_dir, db_filename):
     """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""

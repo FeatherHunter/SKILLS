@@ -113,6 +113,8 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_item_id ON item_tags(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_item_id ON item_locations(item_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_location ON item_locations(location)")
     cursor.execute("CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY AUTOINCREMENT, location_path TEXT UNIQUE NOT NULL, use_count INTEGER DEFAULT 1, last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_locations_path ON locations(location_path)")
 
@@ -126,6 +128,7 @@ def _get_conn():
     """获取数据库连接（自动初始化）"""
     init_db()
     conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.row_factory = sqlite3.Row
     return conn
 

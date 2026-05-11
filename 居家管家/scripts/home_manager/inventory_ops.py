@@ -47,7 +47,7 @@ def inventory(location):
         locs_str = " | ".join(parts)
         tags_str = get_tags(conn, row["id"])
         print(f"ID:{row['id']} | {row['name']} | {row['category']} | "
-              f"{locs_str} | {row['status'] or ''} | {tags_str}")
+              f"{locs_str} | {tags_str}")
 
     conn.close()
     return 0
@@ -126,7 +126,7 @@ def stats(stat_type="frequent", limit=20):
             accessed_fmt = accessed[:16] if accessed != "从未" else accessed
             print(f"访问{row['access_count']}次 | 最后:{accessed_fmt} | "
                   f"ID:{row['id']} | {row['name']} | {row['category']} | "
-                  f"{row['status'] or ''} | {tags_str}")
+                  f"{tags_str}")
 
     conn.close()
     return 0

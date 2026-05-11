@@ -3,6 +3,12 @@ name: daily-recorder-openclaw
 description: 记录用户的发言和附件，从 OpenClaw session 文件提取用户消息和媒体附件入库，支持灵活时间范围查询。
 ---
 
+## ⚠️ 操作规范（强制）
+
+本技能所有数据操作必须通过 CLI，禁止直连数据库。
+
+---
+
 # Daily Recorder - OpenClaw 版
 
 ## 触发词

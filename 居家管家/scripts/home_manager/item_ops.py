@@ -34,48 +34,34 @@ def _format_item(row, tags_str=None, locations_str=None):
     locs = locations_str if locations_str is not None else "(未设置位置)"
     return (
         f"ID:{row['id']} | {row['name']} | {row['category']} | "
-        f"{locs} | {row['status'] or ''} | {price} | {tags} | {row['remark'] or ''} {photo}"
+        f"{locs} | {price} | {tags} | {row['remark'] or ''} {photo}"
     ).strip()
 
 
 # ── add ─────────────────────────────────────────────────────────────────────
 
 
-def add_item(name, category, primary_location, owner="使用者", status="在家",
-             primary_quantity=1, purchase_price=None, purchase_date=None, expiration_date=None,
-             remark="", tags="", photo="",
-             extra_location=None, extra_quantity=None, extra_reason=None,
-             primary_location_status=None, extra_location_status=None):
-    """添加新物品（per-location status）"""
+def add_item(name, category, location, owner="使用者", quantity=1,
+             purchase_price=None, purchase_date=None, expiration_date=None,
+             remark="", tags="", photo="", location_status="在家"):
+    """添加新物品"""
     conn = get_conn()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # status 参数现在是主位置的 location_status（向后兼容）
-    primary_loc_status = primary_location_status if primary_location_status else (status or "在家")
-
     cursor.execute("""
-        INSERT INTO items (name, category, owner, status,
+        INSERT INTO items (name, category, owner,
                           purchase_price, purchase_date, expiration_date, remark, photo, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, category, owner, status,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, category, owner,
           purchase_price, purchase_date, expiration_date, remark, photo, now, now))
 
     item_id = cursor.lastrowid
 
-    # 主位置
-    add_location(conn, item_id, primary_location, primary_quantity,
-                reason=None, location_status=primary_loc_status)
-    # 额外位置
-    if extra_location:
-        extra_loc_status = extra_location_status if extra_location_status else primary_loc_status
-        add_location(conn, item_id, extra_location, extra_quantity or 1,
-                    extra_reason, location_status=extra_loc_status)
-
+    # 添加位置
+    add_location(conn, item_id, location, quantity, reason=None, location_status=location_status)
     set_tags(conn, item_id, tags)
-    _record_location(conn, primary_location)
-    if extra_location:
-        _record_location(conn, extra_location)
+    _record_location(conn, location)
     conn.commit()
 
     tags_display = get_tags(conn, item_id)
@@ -155,14 +141,13 @@ def search_items(name=None, category=None, location=None, tag=None, status=None,
 # ── update ───────────────────────────────────────────────────────────────
 
 
-def update_item(item_id, name=None, category=None, owner=None, status=None,
+def update_item(item_id, name=None, category=None, owner=None,
                remark=None, tags=None, purchase_price=None, purchase_date=None,
                expiration_date=None, photo=None,
-               primary_location=None, primary_quantity=None,
-               extra_location=None, extra_quantity=None, extra_reason=None,
-               extra_delta=None,
+               new_location=None, quantity=None,
+               minus=None, plus=None,
                location=None, location_status=None):
-    """更新物品字段（per-location status）"""
+    """更新物品字段"""
     conn = get_conn()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -215,74 +200,101 @@ def update_item(item_id, name=None, category=None, owner=None, status=None,
         sql = f"UPDATE items SET {', '.join(updates)} WHERE id = ?"
         cursor.execute(sql, params_list)
 
-    # 2. 处理 extra_delta 数量变更（指定位置）
-    if extra_delta is not None and extra_location:
-        loc = find_location_by_path(conn, item_id, extra_location)
-        if loc:
-            new_qty = loc["quantity"] + extra_delta
-            if new_qty <= 0:
-                remove_location(conn, loc["id"])
-                print(f"✓ 位置「{extra_location}」物品已耗尽，删除该位置记录")
-            else:
-                cursor.execute("""
-                    UPDATE item_locations
-                    SET quantity = ?, updated_at = ?
-                    WHERE id = ?
-                """, (new_qty, now, loc["id"]))
-                print(f"✓ 位置「{extra_location}」数量更新为 {new_qty}")
+    # ── 统一的位置解析函数 ────────────────────────────────────────────────
+    def _resolve_location(item_id, specified_location, conn, cursor):
+        """根据指定位置或唯一位置来确定要操作的位置"""
+        cursor.execute(
+            "SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?",
+            (item_id,)
+        )
+        locations = cursor.fetchall()
+        
+        if not locations:
+            return None, "该物品没有位置记录"
+        
+        if specified_location:
+            # 精确匹配指定位置
+            for loc in locations:
+                if loc[1] == specified_location:
+                    return loc, None
+            return None, f"未找到「{specified_location}」，可用位置："
+        
+        if len(locations) == 1:
+            return locations[0], None
+        
+        locs_str = "、".join([f"{loc[1]}×{loc[2]}" for loc in locations])
+        return None, f"该物品有 {len(locations)} 个位置，请用 --location 指定：{locs_str}"
 
-    # 3. 处理 primary_location 变更（位置路径变化时）
-    if primary_location is not None:
-        cursor.execute("""
-            SELECT id FROM item_locations
-            WHERE item_id = ? AND location = ?
-        """, (item_id, primary_location))
-        existing = cursor.fetchone()
-        if existing:
-            cursor.execute("""
-                UPDATE item_locations
-                SET location = ?, quantity = ?, updated_at = ?
-                WHERE id = ?
-            """, (primary_location, primary_quantity or 1, now, existing["id"]))
+
+    # ── 1. 数量变化（--minus / --plus）────────────────────────────────────
+    if minus is not None or plus is not None:
+        delta = -abs(minus) if minus is not None else abs(plus)
+        loc, err = _resolve_location(item_id, location, conn, cursor)
+        if err:
+            print(f"✗ {err}")
+            for loc in cursor.execute("SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?", (item_id,)).fetchall():
+                print(f"  {loc[1]} × {loc[2]} [{loc[3]}])")
+            conn.close()
+            return 1
+        
+        new_qty = loc[2] + delta
+        if new_qty <= 0:
+            remove_location(conn, loc[0])
+            print(f"✓ 位置「{loc[1]}」物品已耗尽，删除该位置记录")
         else:
-            # 找不到原主位置就新增
-            add_location(conn, item_id, primary_location, primary_quantity or 1,
-                        reason=None, location_status=primary_location_status or "在家")
-        _record_location(conn, primary_location)
+            cursor.execute(
+                "UPDATE item_locations SET quantity = ?, updated_at = ? WHERE id = ?",
+                (new_qty, now, loc[0])
+            )
+            action = "喝掉" if minus else "补充"
+            print(f"✓ {action} {abs(delta)}个，剩余 {new_qty} 个（位置：{loc[1]}）")
 
-    # 4. 处理新增/更新 extra_location（非数量变更）
-    if extra_location and extra_delta is None:
-        loc = find_location_by_path(conn, item_id, extra_location)
-        if loc:
-            if extra_quantity is not None:
-                cursor.execute("""
-                    UPDATE item_locations
-                    SET quantity = ?, reason = ?, updated_at = ?
-                    WHERE id = ?
-                """, (extra_quantity, extra_reason, now, loc["id"]))
-        else:
-            add_location(conn, item_id, extra_location, extra_quantity or 1,
-                        extra_reason, location_status=extra_location_status or "在家")
-        _record_location(conn, extra_location)
+    # ── 2. 位置移动（--new-location）───────────────────────────────────────
+    if new_location is not None:
+        loc, err = _resolve_location(item_id, location, conn, cursor)
+        if err:
+            print(f"✗ {err}")
+            for loc in cursor.execute("SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?", (item_id,)).fetchall():
+                print(f"  {loc[1]} × {loc[2]} [{loc[3]}]")
+            conn.close()
+            return 1
+        
+        old_loc, qty, old_status = loc[1], loc[2], loc[3]
+        cursor.execute(
+            "UPDATE item_locations SET location = ?, updated_at = ? WHERE id = ?",
+            (new_location, now, loc[0])
+        )
+        _record_location(conn, new_location)
+        print(f"✓ 物品已从「{old_loc}」搬到「{new_location}」")
 
-    # 5. 更新指定位置的 location_status（核心新功能）
-    if location is not None and location_status is not None:
+        # 如果同时有 --location-status，作用于新位置（而非旧位置）
+        if location_status is not None:
+            if location_status not in VALID_STATUSES:
+                print(f"✗ 无效状态: {location_status}，有效值: {', '.join(VALID_STATUSES)}")
+                conn.close()
+                return 1
+            update_location_status(conn, loc[0], location_status)
+            print(f"✓ 位置「{new_location}」状态已更新为「{location_status}」")
+            location_status = None  # 标记为已处理，避免 Block 3 重复执行
+
+    # ── 3. 状态变更（--location-status）────────────────────────────────────
+    if location_status is not None:
         if location_status not in VALID_STATUSES:
             print(f"✗ 无效状态: {location_status}，有效值: {', '.join(VALID_STATUSES)}")
             conn.close()
             return 1
-        loc = find_location_by_path(conn, item_id, location)
-        if not loc:
-            print(f"✗ 未找到该位置「{location}」，请检查路径是否正确")
+        
+        loc, err = _resolve_location(item_id, location, conn, cursor)
+        if err:
+            print(f"✗ {err}")
+            for loc in cursor.execute("SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?", (item_id,)).fetchall():
+                print(f"  {loc[1]} × {loc[2]} [{loc[3]}]")
             conn.close()
             return 1
-        update_location_status(conn, loc["id"], location_status)
-        print(f"✓ 位置「{location}」状态已更新为「{location_status}」")
+        
+        update_location_status(conn, loc[0], location_status)
+        print(f"✓ 位置「{loc[1]}」状态已更新为「{location_status}」")
 
-    # 5b. 警告：旧 --status 参数（无 --location）
-    if status is not None and location is None and location_status is None:
-        print(f"⚠️  提示：「--status {status}」已废除，请改用「--location <位置路径> --location-status {status}\」")
-        print(f"   或直接用「--location-status {status}」配合「--location <位置路径>」")
 
     # 6. 标签变更
     old_tags = get_tags(conn, item_id)
@@ -419,8 +431,7 @@ def item_detail(item_id):
         print("位置:     (未设置)")
 
     print(f"所有者:   {item['owner']}")
-    print(f"状态:     {item['status'] or '(已废除，运行时推导)'}")
-    total_qty = sum(loc["quantity"] for loc in locations)
+    total_qty = sum(loc["quantity"] for loc in locations) if locations else 0
     print(f"总数量:   {total_qty}")
     if item["purchase_price"]:
         print(f"购买价:   ¥{item['purchase_price']:.2f}")

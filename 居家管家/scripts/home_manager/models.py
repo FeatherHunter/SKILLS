@@ -9,7 +9,6 @@ class Item:
     name: str
     category: str
     owner: str
-    status: Optional[str]  # 保留但废弃，运行时从 location_status 推导
     purchase_price: Optional[float]
     purchase_date: Optional[str]
     expiration_date: Optional[str]

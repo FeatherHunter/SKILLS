@@ -61,7 +61,6 @@ def init_db():
             name TEXT NOT NULL,
             category TEXT NOT NULL,
             owner TEXT DEFAULT '使用者',
-            status TEXT DEFAULT '在家',
             purchase_price REAL,
             purchase_date TEXT,
             expiration_date TEXT,
@@ -98,8 +97,8 @@ def init_db():
     """)
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_name ON items(name)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_status ON items(status)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_item_id ON item_tags(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)")

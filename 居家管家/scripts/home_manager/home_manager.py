@@ -52,21 +52,16 @@ def main():
     p_add = subparsers.add_parser("add", help="添加物品")
     p_add.add_argument("--name", required=True, help="物品名称")
     p_add.add_argument("--category", required=True, help="分类")
-    p_add.add_argument("--location", required=True, help="主存放位置（路径格式）")
+    p_add.add_argument("--location", required=True, help="存放位置（路径格式）")
     p_add.add_argument("--owner", default="使用者", help="所有者")
-    p_add.add_argument("--status", default="在家", help="状态")
-    p_add.add_argument("--quantity", type=int, default=1, help="主位置数量（默认1）")
+    p_add.add_argument("--quantity", type=int, default=1, help="数量（默认1）")
     p_add.add_argument("--price", type=float, default=None, help="单价（元/件）")
     p_add.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
     p_add.add_argument("--expiration-date", default=None, help="过期日期（YYYY-MM-DD）")
     p_add.add_argument("--remark", default="", help="备注")
     p_add.add_argument("--tags", default="", help="标签（逗号分隔）")
     p_add.add_argument("--photo", default="", help="图片路径")
-    p_add.add_argument("--extra-location", default=None, help="额外存放位置")
-    p_add.add_argument("--extra-quantity", type=int, default=None, help="额外位置的数量")
-    p_add.add_argument("--extra-reason", default=None, help="额外位置的原因")
-    p_add.add_argument("--location-status", default=None, help="主位置的存放状态（默认在家）")
-    p_add.add_argument("--extra-location-status", default=None, help="额外位置的存放状态")
+    p_add.add_argument("--location-status", default="在家", help="存放状态（默认在家）")
 
     # ── search ──
     p_search = subparsers.add_parser("search", help="搜索物品")
@@ -84,21 +79,18 @@ def main():
     p_update.add_argument("--name", default=None, help="物品名称")
     p_update.add_argument("--category", default=None, help="分类")
     p_update.add_argument("--owner", default=None, help="所有者")
-    p_update.add_argument("--status", default=None, help="状态")
     p_update.add_argument("--price", type=float, default=None, help="单价（元/件）")
     p_update.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
     p_update.add_argument("--expiration-date", default=None, help="过期日期（YYYY-MM-DD）")
     p_update.add_argument("--remark", default=None, help="备注")
     p_update.add_argument("--tags", default=None, help="标签（逗号分隔，覆盖）")
     p_update.add_argument("--photo", default=None, help="图片路径")
-    p_update.add_argument("--primary-location", default=None, help="主存放位置")
-    p_update.add_argument("--primary-quantity", type=int, default=None, help="主位置数量")
-    p_update.add_argument("--extra-location", default=None, help="额外位置（如冰箱里那瓶）")
-    p_update.add_argument("--extra-quantity", type=int, default=None, help="额外位置的数量")
-    p_update.add_argument("--extra-reason", default=None, help="额外位置的原因")
-    p_update.add_argument("--extra-delta", type=int, default=None, help="额外位置数量变化（如-1表示喝了一瓶）")
-    p_update.add_argument("--location", default=None, help="要更新状态的具体位置路径")
-    p_update.add_argument("--location-status", default=None, help="该位置的存放状态（如借用中、备用、快递中）")
+    p_update.add_argument("--new-location", default=None, help="新存放位置路径（改变位置）")
+    p_update.add_argument("--location", default=None, help="指定位置（配合--location-status使用）")
+    p_update.add_argument("--quantity", type=int, default=None, help="直接设置数量")
+    p_update.add_argument("--minus", type=int, default=None, help="减少数量（如喝掉1瓶）")
+    p_update.add_argument("--plus", type=int, default=None, help="增加数量（如买了3瓶）")
+    p_update.add_argument("--location-status", default=None, help="存放状态（如借用中、备用、快递中）")
 
     # ── list ──
     p_list = subparsers.add_parser("list", help="列出物品")
@@ -144,15 +136,13 @@ def main():
 
     elif args.command == "add":
         return add_item(
-            name=args.name, category=args.category, primary_location=args.location,
-            owner=args.owner, status=args.status, primary_quantity=args.quantity,
+            name=args.name, category=args.category,
+            location=args.location,
+            owner=args.owner, quantity=args.quantity,
             purchase_price=args.price, purchase_date=args.purchase_date,
             expiration_date=args.expiration_date, remark=args.remark, tags=args.tags,
             photo=args.photo,
-            extra_location=args.extra_location, extra_quantity=args.extra_quantity,
-            extra_reason=args.extra_reason,
-            primary_location_status=args.location_status,
-            extra_location_status=args.extra_location_status
+            location_status=args.location_status
         )
 
     elif args.command == "search":
@@ -164,12 +154,11 @@ def main():
     elif args.command == "update":
         return update_item(
             item_id=args.id, name=args.name, category=args.category, owner=args.owner,
-            status=args.status, remark=args.remark, tags=args.tags,
+            remark=args.remark, tags=args.tags,
             purchase_price=args.price, purchase_date=args.purchase_date,
             expiration_date=args.expiration_date, photo=args.photo,
-            primary_location=args.primary_location, primary_quantity=args.primary_quantity,
-            extra_location=args.extra_location, extra_quantity=args.extra_quantity,
-            extra_reason=args.extra_reason, extra_delta=args.extra_delta,
+            new_location=args.new_location, quantity=args.quantity,
+            minus=args.minus, plus=args.plus,
             location=args.location, location_status=args.location_status
         )
 

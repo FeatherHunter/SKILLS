@@ -2,58 +2,70 @@
 
 ## 简介
 
-基于 AI Hub API 的 GPT-Image-2 模型，支持基础生图和参考图生成（垫图）。
+基于 AI Hub API 的 **GPT-Image-2** 模型，`nano-banana-2` 作为备用模型。
 
 ## 配置
 
-- **API 地址**：https://api.xbai.top/v1
-- **API Key**：sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr
-- **模型**：gpt-image-2（参考图生成）、nano-banana-2（基础生图）
+- **API 地址**：`https://api.xbai.top/v1`
+- **API Key**：`sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr`
+- **主模型**：`gpt-image-2`（高质量生图）
+- **备用模型**：`nano-banana-2`（快速生图）
 
-## 支持功能
+## ⚠️ 重要：接口调用方式
 
-1. **基础生图**：根据提示词生成图片
-2. **参考图生成**：使用 /v1/images/edits 接口，上传 1-2 张参考图，通过提示词让 GPT-Image-2 生成新图片
+**必须使用 `/v1/images/generations` 接口生成图片，不要用 `/v1/images/edits`！**
 
-## 工具调用
+GPT-Image-2 的 `/v1/images/edits`（垫图/参考图）接口响应极慢（经常超时），而生图接口稳定且速度快。
 
-使用 `image_generate` 工具时配置：
+## 工具调用方式
 
+### 方式一：Python requests（推荐）
+
+```python
+import requests
+
+resp = requests.post(
+    'https://api.xbai.top/v1/images/generations',
+    headers={'Authorization': 'Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr'},
+    json={
+        'model': 'gpt-image-2',
+        'prompt': '你的图片描述',
+        'n': 1,
+        'size': '1024x1024',
+        'quality': 'standard',
+        'response_format': 'url'
+    },
+    timeout=180
+)
+
+url = resp.json()['data'][0]['url']
+# 下载图片
+img_data = requests.get(url).content
+with open('output.png', 'wb') as f:
+    f.write(img_data)
 ```
-model: gpt-image-2
-prompt: <描述>
-size: <尺寸>
-quality: standard | hd
-outputFormat: url | b64_json
+
+### 方式二：curl
+
+```bash
+curl -s --max-time 180 --request POST \
+  --url https://api.xbai.top/v1/images/generations \
+  --header "Authorization: Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "model": "gpt-image-2",
+    "prompt": "你的图片描述",
+    "n": 1,
+    "size": "1024x1024",
+    "quality": "standard",
+    "response_format": "url"
+  }'
 ```
 
-## 尺寸选项
-
-| 尺寸 | 说明 |
-|------|------|
-| 256x256 | 小图 |
-| 512x512 | 中图 |
-| 1024x1024 | 常用方图 |
-| 1024x1792 | 竖图 |
-| 1792x1024 | 横图 |
-
-## 参考图生成（垫图）
-
-使用 image_generate 的 image 参数上传 1-2 张参考图，提示词中用"图1""图2"指代。
-
-示例提示词：
-- "图1 的模特穿上图2 的外套"
-- "保留图1的场景，换成图2的天空"
-- "图1 的猫咪戴上图2 的帽子"
-
-## 快速开始
-
-### 基础生图示例
+### 方式三：OpenAI Python 库
 
 ```python
 from openai import OpenAI
-import requests
-from pathlib import Path
 
 client = OpenAI(
     api_key="sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr",
@@ -62,7 +74,7 @@ client = OpenAI(
 
 response = client.images.generate(
     model="gpt-image-2",
-    prompt="一只可爱的橘猫在阳光下打盹，水彩画风格",
+    prompt="你的图片描述",
     n=1,
     size="1024x1024",
     quality="standard",
@@ -70,69 +82,28 @@ response = client.images.generate(
 )
 
 image_url = response.data[0].url
-print(f"图片地址：{image_url}")
 ```
 
-### 参考图生成示例
+## 尺寸选项
 
-```python
-import requests
-from pathlib import Path
+| 尺寸 | 说明 |
+|------|------|
+| `256x256` | 小图 |
+| `512x512` | 中图 |
+| `1024x1024` | 常用方图 |
+| `1024x1792` | 竖图 |
+| `1792x1024` | 横图 |
 
-url = "https://api.xbai.top/v1/images/edits"
+## 支持的参数
 
-with open("image1.jpg", "rb") as f1, open("image2.jpg", "rb") as f2:
-    response = requests.post(
-        url,
-        headers={"Authorization": "Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr"},
-        files=[
-            ("image", ("image1.jpg", f1, "image/jpeg")),
-            ("image", ("image2.jpg", f2, "image/jpeg"))
-        ],
-        data={
-            "model": "gpt-image-2",
-            "prompt": "图1 的模特穿上图2 的外套"
-        }
-    )
-
-result = response.json()
-image_url = result["data"][0]["url"]
-print(f"图片地址：{image_url}")
-
-# 下载保存
-img_data = requests.get(image_url).content
-Path("output.png").write_bytes(img_data)
-```
-
-## curl 示例
-
-### 基础生图
-
-```bash
-curl https://api.xbai.top/v1/images/generations \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr" \
-  -d '{
-    "model": "gpt-image-2",
-    "prompt": "一只可爱的橘猫在阳光下打盹，水彩画风格",
-    "n": 1,
-    "size": "1024x1024",
-    "quality": "standard",
-    "response_format": "url"
-  }'
-```
-
-### 参考图生成
-
-```bash
-curl --request POST \
-  --url https://api.xbai.top/v1/images/edits \
-  --header "Authorization: Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr" \
-  --form "image=@image1.jpg" \
-  --form "image=@image2.jpg" \
-  --form "model=gpt-image-2" \
-  --form "prompt=图1 的模特穿上图2 的外套"
-```
+| 参数 | 类型 | 说明 | 可选值 |
+|------|------|------|--------|
+| model | string | 生图模型 | `gpt-image-2`（默认）、`nano-banana-2` |
+| prompt | string | 图片描述 | 最长 4000 字符 |
+| n | int | 生成数量 | 1-4，默认 1 |
+| size | string | 图片尺寸 | 见上方尺寸选项 |
+| quality | string | 图片质量 | `standard`（默认）、`hd` |
+| response_format | string | 返回格式 | `url`（默认）、`b64_json` |
 
 ## 返回格式
 
@@ -147,25 +118,18 @@ curl --request POST \
 }
 ```
 
-或 Base64 格式（response_format="b64_json"）：
-
-```json
-{
-  "data": [
-    {
-      "b64_json": "<base64编码的图片数据>"
-    }
-  ]
-}
-```
-
 ## 适用场景
 
+- 数据可视化（折线图、柱状图等）
 - 产品图片生成
-- 模特/服装试穿效果
-- 场景合成
 - 艺术风格转换
 - 动漫/游戏角色设计
+
+## ⚠️ 注意事项
+
+1. **不要用 `/v1/images/edits`** - 该接口响应极慢，容易超时
+2. **超时时间设置 120-180 秒** - GPT-Image-2 生成需要时间
+3. **下载图片后及时保存** - 返回的 URL 有时效性
 
 ## 相关文档
 

@@ -106,7 +106,11 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ## dashboard
 "dashboard" / "最近7天综合报告" / "一个月综合报告" / "给我看看整体情况" / "同期综合报告"
 
+## 健身目标
+"设置俯卧撑目标" / "健身目标" / "每天做50个俯卧撑" / "暂停健身目标"
 
+## 睡眠记录
+"昨晚睡了多久" / "记录睡眠" / "睡眠7小时" / "昨晚11点睡的"
 
 ---
 
@@ -117,6 +121,8 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 - **食物记录**：记录热量、蛋白质、碳水、脂肪（克为单位）
 - **每日目标**：设置热量和三大宏量营养素目标
 - **体重追踪**：记录体重，自动计算BMI
+- **健身目标**：设置每日/每周/每月/长期健身目标，支持暂停/进行中状态
+- **睡眠记录**：记录每日睡眠时长和就寝/起床时间，**睡眠归属于就寝那天**
 - **数据分析**：3大类11种分析维度
   - 体重变化分析（趋势/同期对比/目标进度/波动）
   - 饮食分析（热量趋势/营养素占比/食物TOP榜/热量缺口）
@@ -131,7 +137,9 @@ calorie_data.db
 ├── daily_goal           # 每日目标（含体重目标）
 ├── weight_log           # 体重记录
 ├── exercise_log         # 运动记录
-└── nutrition_products  # 食品营养成分库
+├── nutrition_products  # 食品营养成分库
+├── fitness_goals        # 健身目标（每日/每周/每月/长期）
+└── sleep_records        # 睡眠记录（归属于就寝日）
 ```
 
 ### entries 表（食物记录）
@@ -187,7 +195,37 @@ calorie_data.db
 | reps | INTEGER | 动作次数/组数 |
 | created_at | TEXT | 创建时间 |
 
-### nutrition_products 表（食品营养成分库）
+### fitness_goals 表（健身目标）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| name | TEXT | 目标名称，如"每日俯卧撑" |
+| goal_type | TEXT | 类型：daily/weekly/monthly/longterm |
+| exercise_type | TEXT | 运动类型：俯卧撑/骑行/跑步等 |
+| target_unit | TEXT | 单位：个/分钟/公里 |
+| target_value | INTEGER | 目标值，如50 |
+| start_date | TEXT | 开始日期 |
+| end_date | TEXT | 截止日期（NULL表示永久） |
+| status | TEXT | 状态：active/paused |
+| note | TEXT | 备注 |
+| created_at | INTEGER | 创建时间戳 |
+| updated_at | INTEGER | 更新时间戳 |
+
+### sleep_records 表（睡眠记录）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键 |
+| date | TEXT | 日期（YYYY-MM-DD，**归属就寝日**） |
+| sleep_hours | REAL | 睡眠时长（小时） |
+| bedtime | TEXT | 就寝时间（HH:MM） |
+| wake_time | TEXT | 起床时间（HH:MM） |
+| note | TEXT | 备注 |
+| created_at | INTEGER | 创建时间戳 |
+| updated_at | INTEGER | 更新时间戳 |
+
+> **睡眠归属规则**：睡眠记录归属于**就寝那天**，而非起床日。例如5月11日23:30入睡，5月12日07:00醒来，记录在5月11日。
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -292,6 +330,38 @@ python scripts/calorie_tracker.py search-product "可乐"
 python scripts/calorie_tracker.py update-product 1 --calories 45 --note "更新为新包装"
 # 参数：产品ID + 要更新的字段
 ```
+
+### 健身目标 CLI
+```bash
+# 添加目标
+python scripts/fitness_goals.py add "每日俯卧撑" --type daily --exercise 俯卧撑 --unit 个 --target 50 --start 2026-05-11
+
+# 查询目标
+python scripts/fitness_goals.py list                           # 所有
+python scripts/fitness_goals.py list --type daily              # 按类型
+python scripts/fitness_goals.py list --status active           # 按状态
+
+# 更新目标
+python scripts/fitness_goals.py update 1 --target 60          # 修改目标值
+python scripts/fitness_goals.py update 1 --status paused      # 暂停目标
+
+# 删除目标
+python scripts/fitness_goals.py delete 1
+```
+
+### 睡眠记录 CLI
+```bash
+# 添加睡眠记录（归属就寝日）
+python scripts/sleep_tracker.py add 2026-05-11 --hours 7.5 --bed 23:30 --wake 07:00
+
+# 更新睡眠记录
+python scripts/sleep_tracker.py update 2026-05-11 --hours 8 --note "睡得不错"
+
+# 查询睡眠记录
+python scripts/sleep_tracker.py list --days 7
+```
+
+> **睡眠归属规则**：睡眠归属于**就寝那天**。例如"昨晚11:30睡的，今天7:00醒"，记录在就寝日（昨晚的日期）。
 
 ## AI 触发指引
 
@@ -435,6 +505,30 @@ AI：未找到该食品，请问有营养成分表图片吗？
 1. 从输入中提取体重（公斤）和身高（如果知道）
 2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py weight <体重> [身高]`
 3. 自动计算BMI
+
+### 触发场景：用户要管理健身目标
+
+触发词：
+- "健身目标"、"设置俯卧撑目标"、"添加运动目标"
+- "每天做50个俯卧撑"
+
+操作步骤：
+1. 解析用户输入，提取：目标名称、类型、目标值、运动类型
+2. 执行：`python3 workspace/skills/卡路里/scripts/fitness_goals.py add <名称> --type <类型> --exercise <运动> --unit <单位> --target <值> --start <日期>`
+3. 目标类型：daily/weekly/monthly/longterm
+4. 状态只有 active 和 paused（没有completed）
+
+### 触发场景：用户要记录睡眠
+
+触发词：
+- "昨晚睡了多久"、"记录睡眠"
+- "昨晚11点睡的"、"睡眠7小时"
+
+操作步骤：
+1. 解析用户输入，提取：就寝日期、睡眠时长、就寝时间、起床时间
+2. **关键**：睡眠归属于**就寝那天**，不是起床日
+3. 执行：`python3 workspace/skills/卡路里/scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
+4. 返回确认信息
 
 ## 示例对话
 

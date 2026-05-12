@@ -25,6 +25,14 @@ def main():
     from home_manager.inventory_ops import inventory, stats
     from home_manager.tag_ops import tag_merge, list_tags
 
+    # 导入账号模块（路径：../accounts.py）
+    _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, _scripts_dir)
+    from accounts import (
+        is_master_key_set, verify_master_key, set_master_key,
+        account_add, account_list, account_show, account_del, account_set_master
+    )
+
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -126,6 +134,19 @@ def main():
     p_detail = subparsers.add_parser("detail", help="查看物品详情")
     p_detail.add_argument("--id", type=int, required=True, help="物品ID")
 
+    # ── account ──
+    p_account = subparsers.add_parser("account", help="账号管理（密码加密存储）")
+    p_account.add_argument("--action", required=True,
+                           choices=["init", "add", "list", "show", "del", "set-master"],
+                           help="操作：init=初始化密钥, add=添加账号, list=列出账号, show=查看密码, del=删除账号, set-master=修改密钥")
+    p_account.add_argument("--master-key", default=None, help="Master key（验证/设置用）")
+    p_account.add_argument("--platform", default=None, help="平台名（如 zlife）")
+    p_account.add_argument("--user", default=None, help="用户名/账号")
+    p_account.add_argument("--pass", dest="password", default=None, help="密码")
+    p_account.add_argument("--tags", default=None, help="标签（逗号分隔）")
+    p_account.add_argument("--note", default=None, help="备注")
+    p_account.add_argument("--new-master-key", default=None, help="新 master key（用于 set-master）")
+
     args = parser.parse_args()
 
     if args.command == "init":
@@ -182,6 +203,92 @@ def main():
 
     elif args.command == "detail":
         return item_detail(item_id=args.id)
+
+    elif args.command == "account":
+        action = args.action
+
+        if action == "init":
+            if not args.master_key:
+                print("错误：--master-key 是必填的")
+                return 1
+            result = set_master_key(args.master_key)
+            print("✓ " + result["message"])
+
+        elif action == "add":
+            if not args.master_key:
+                print("错误：--master-key 是必填的")
+                return 1
+            if not args.platform:
+                print("错误：--platform 是必填的")
+                return 1
+            if not args.password:
+                print("错误：--pass 是必填的")
+                return 1
+            result = account_add(
+                platform=args.platform,
+                username=args.user or "",
+                password=args.password,
+                master_key=args.master_key,
+                tags=args.tags or "",
+                note=args.note or ""
+            )
+            if result["success"]:
+                print("✓ " + result["message"])
+            else:
+                print("✗ " + result["message"])
+
+        elif action == "list":
+            accounts = account_list()
+            if not accounts:
+                print("(无账号记录)")
+                return 0
+            print(f"=== 共 {len(accounts)} 个账号 ===")
+            for acc in accounts:
+                tags = acc.get('tags', '') or ''
+                note = acc.get('note', '') or ''
+                print(f"{acc['platform']} | {acc['username']} | **** | {tags} | {note}")
+
+        elif action == "show":
+            if not args.master_key:
+                print("错误：--master-key 是必填的")
+                return 1
+            if not args.platform:
+                print("错误：--platform 是必填的")
+                return 1
+            result = account_show(args.platform, args.master_key)
+            if result["success"]:
+                print(f"平台: {result['platform']}")
+                print(f"账号: {result['username']}")
+                print(f"密码: {result['password']}")
+                if result.get('tags'): print(f"标签: {result['tags']}")
+                if result.get('note'): print(f"备注: {result['note']}")
+            else:
+                print("✗ " + result["message"])
+
+        elif action == "del":
+            if not args.platform:
+                print("错误：--platform 是必填的")
+                return 1
+            result = account_del(args.platform)
+            if result["success"]:
+                print("✓ " + result["message"])
+            else:
+                print("✗ " + result["message"])
+
+        elif action == "set-master":
+            if not args.master_key:
+                print("错误：--master-key（旧密钥）是必填的")
+                return 1
+            if not args.new_master_key:
+                print("错误：--new-master-key 是必填的")
+                return 1
+            result = account_set_master(args.master_key, args.new_master_key)
+            if result["success"]:
+                print("✓ " + result["message"])
+            else:
+                print("✗ " + result["message"])
+
+        return 0
 
     else:
         parser.print_help()

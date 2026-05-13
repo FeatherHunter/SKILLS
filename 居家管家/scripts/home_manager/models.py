@@ -10,8 +10,6 @@ class Item:
     category: str
     owner: str
     purchase_price: Optional[float]
-    purchase_date: Optional[str]
-    expiration_date: Optional[str]
     remark: str
     photo: str
     access_count: int
@@ -31,7 +29,9 @@ class ItemLocation:
     location: str
     quantity: int
     reason: Optional[str]
-    location_status: str  # 每个位置独立状态（替代 is_primary）
+    location_status: str
+    purchase_date: Optional[str]
+    expiration_date: Optional[str]
     created_at: str
     updated_at: str
 

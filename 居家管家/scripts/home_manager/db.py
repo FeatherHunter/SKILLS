@@ -62,8 +62,6 @@ def init_db():
             category TEXT NOT NULL,
             owner TEXT DEFAULT '使用者',
             purchase_price REAL,
-            purchase_date TEXT,
-            expiration_date TEXT,
             remark TEXT,
             photo TEXT,
             access_count INTEGER DEFAULT 0,
@@ -90,6 +88,8 @@ def init_db():
             quantity INTEGER NOT NULL DEFAULT 1,
             reason TEXT,
             location_status TEXT DEFAULT '在家',
+            purchase_date TEXT,
+            expiration_date TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE
@@ -98,7 +98,6 @@ def init_db():
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_name ON items(name)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_item_id ON item_tags(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)")
@@ -114,9 +113,53 @@ def init_db():
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_locations_path ON locations(location_path)")
 
+    migrate_add_date_columns(conn)
+
     conn.commit()
     conn.close()
     return True
+
+
+def migrate_add_date_columns(conn):
+    """迁移：添加购买日期和过期日期字段到 item_locations 表，并从 items 表移除"""
+    cursor = conn.cursor()
+
+    cursor.execute("PRAGMA table_info(item_locations)")
+    columns = {row[1] for row in cursor.fetchall()}
+
+    if "purchase_date" not in columns:
+        cursor.execute("ALTER TABLE item_locations ADD COLUMN purchase_date TEXT")
+    if "expiration_date" not in columns:
+        cursor.execute("ALTER TABLE item_locations ADD COLUMN expiration_date TEXT")
+
+    cursor.execute("PRAGMA table_info(items)")
+    items_columns = {row[1] for row in cursor.fetchall()}
+
+    if "purchase_date" in items_columns or "expiration_date" in items_columns:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS items_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                owner TEXT DEFAULT '使用者',
+                purchase_price REAL,
+                remark TEXT,
+                photo TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            INSERT INTO items_new (id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at, created_at, updated_at)
+            SELECT id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at, created_at, updated_at FROM items
+        """)
+        cursor.execute("DROP TABLE items")
+        cursor.execute("ALTER TABLE items_new RENAME TO items")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_name ON items(name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
 
 
 # ── 位置历史记录 ──────────────────────────────────────────────────────────────

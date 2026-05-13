@@ -4,7 +4,7 @@ from .db import get_conn
 from .location_ops import (
     get_locations, add_location, remove_location,
     update_location_quantity, update_location_status,
-    find_location_by_path, _locations_str, _record_location
+    update_location_dates, find_location_by_path, _locations_str, _record_location
 )
 from .tag_ops import get_tags, set_tags
 
@@ -50,16 +50,15 @@ def add_item(name, category, location, owner="使用者", quantity=1,
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
-        INSERT INTO items (name, category, owner,
-                          purchase_price, purchase_date, expiration_date, remark, photo, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, category, owner,
-          purchase_price, purchase_date, expiration_date, remark, photo, now, now))
+        INSERT INTO items (name, category, owner, purchase_price, remark, photo, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, category, owner, purchase_price, remark, photo, now, now))
 
     item_id = cursor.lastrowid
 
-    # 添加位置
-    add_location(conn, item_id, location, quantity, reason=None, location_status=location_status)
+    # 添加位置（日期记录在位置级别）
+    add_location(conn, item_id, location, quantity, reason=None, location_status=location_status,
+                 purchase_date=purchase_date, expiration_date=expiration_date)
     set_tags(conn, item_id, tags)
     _record_location(conn, location)
     conn.commit()
@@ -180,12 +179,6 @@ def update_item(item_id, name=None, category=None, owner=None,
     if purchase_price is not None:
         updates.append("purchase_price = ?")
         params_list.append(purchase_price)
-    if purchase_date is not None:
-        updates.append("purchase_date = ?")
-        params_list.append(purchase_date)
-    if expiration_date is not None:
-        updates.append("expiration_date = ?")
-        params_list.append(expiration_date)
     if photo is not None:
         updates.append("photo = ?")
         params_list.append(photo)
@@ -295,6 +288,23 @@ def update_item(item_id, name=None, category=None, owner=None,
         update_location_status(conn, loc[0], location_status)
         print(f"✓ 位置「{loc[1]}」状态已更新为「{location_status}」")
 
+    # ── 4. 位置日期变更（--purchase-date / --expiration-date）──────────────
+    if purchase_date is not None or expiration_date is not None:
+        loc, err = _resolve_location(item_id, location, conn, cursor)
+        if err:
+            print(f"✗ {err}")
+            for loc in cursor.execute("SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?", (item_id,)).fetchall():
+                print(f"  {loc[1]} × {loc[2]} [{loc[3]}]")
+            conn.close()
+            return 1
+
+        update_location_dates(conn, loc[0], purchase_date=purchase_date, expiration_date=expiration_date)
+        if purchase_date is not None and expiration_date is not None:
+            print(f"✓ 位置「{loc[1]}」日期已更新：购买{purchase_date}，过期{expiration_date}")
+        elif purchase_date is not None:
+            print(f"✓ 位置「{loc[1]}」购买日期已更新为「{purchase_date}」")
+        elif expiration_date is not None:
+            print(f"✓ 位置「{loc[1]}」过期日期已更新为「{expiration_date}」")
 
     # 6. 标签变更
     old_tags = get_tags(conn, item_id)
@@ -410,7 +420,7 @@ def item_detail(item_id):
     tags_str = get_tags(conn, item_id)
 
     cursor.execute("""
-        SELECT location, quantity, reason, location_status
+        SELECT location, quantity, reason, location_status, purchase_date, expiration_date
         FROM item_locations
         WHERE item_id = ?
         ORDER BY id
@@ -426,7 +436,12 @@ def item_detail(item_id):
         print("位置分布：")
         for loc in locations:
             reason_str = f" - {loc['reason']}" if loc["reason"] else ""
-            print(f"  {loc['location']} × {loc['quantity']} [{loc['location_status']}]{reason_str}")
+            date_str = ""
+            if loc["purchase_date"] or loc["expiration_date"]:
+                pd = loc["purchase_date"] or "-"
+                ed = loc["expiration_date"] or "-"
+                date_str = f" | 购买:{pd} 过期:{ed}"
+            print(f"  {loc['location']} × {loc['quantity']} [{loc['location_status']}]{reason_str}{date_str}")
     else:
         print("位置:     (未设置)")
 

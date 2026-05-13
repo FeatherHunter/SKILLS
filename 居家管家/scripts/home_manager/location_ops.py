@@ -7,7 +7,8 @@ def get_locations(conn, item_id):
     """返回该物品所有位置，ORDER BY id"""
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, item_id, location, quantity, reason, location_status, created_at, updated_at
+        SELECT id, item_id, location, quantity, reason, location_status,
+               purchase_date, expiration_date, created_at, updated_at
         FROM item_locations
         WHERE item_id = ?
         ORDER BY id
@@ -16,15 +17,16 @@ def get_locations(conn, item_id):
     return [ItemLocation.from_row(dict(row)) for row in cursor.fetchall()]
 
 
-def add_location(conn, item_id, location, quantity=1, reason=None, location_status="在家"):
+def add_location(conn, item_id, location, quantity=1, reason=None, location_status="在家",
+                 purchase_date=None, expiration_date=None):
     """新增一个位置记录"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO item_locations
-            (item_id, location, quantity, reason, location_status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (item_id, location, quantity, reason, location_status, now, now))
+            (item_id, location, quantity, reason, location_status, purchase_date, expiration_date, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (item_id, location, quantity, reason, location_status, purchase_date, expiration_date, now, now))
 
 
 def remove_location(conn, location_id):
@@ -67,11 +69,33 @@ def update_location_status(conn, location_id, location_status):
     return cursor.rowcount > 0
 
 
+def update_location_dates(conn, location_id, purchase_date=None, expiration_date=None):
+    """更新指定位置的购买日期和过期日期"""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor = conn.cursor()
+    updates = ["updated_at = ?"]
+    params = [now]
+
+    if purchase_date is not None:
+        updates.append("purchase_date = ?")
+        params.append(purchase_date)
+    if expiration_date is not None:
+        updates.append("expiration_date = ?")
+        params.append(expiration_date)
+
+    params.append(location_id)
+    cursor.execute(
+        f"UPDATE item_locations SET {', '.join(updates)} WHERE id = ?",
+        params
+    )
+    return cursor.rowcount > 0
+
+
 def find_location_by_path(conn, item_id, location_path):
     """按路径精确查找该物品下的位置记录"""
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, location, quantity, reason, location_status
+        SELECT id, location, quantity, reason, location_status, purchase_date, expiration_date
         FROM item_locations
         WHERE item_id = ? AND location = ?
     """, (item_id, location_path))
@@ -84,7 +108,7 @@ def _locations_str(item_id):
     conn = get_conn()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT location, quantity, reason, location_status
+        SELECT location, quantity, reason, location_status, purchase_date, expiration_date
         FROM item_locations
         WHERE item_id = ?
         ORDER BY id
@@ -96,7 +120,12 @@ def _locations_str(item_id):
     parts = []
     for r in rows:
         reason_str = f"({r['reason']})" if r['reason'] else ""
-        parts.append(f"{r['location']} ×{r['quantity']}[{r['location_status']}]{reason_str}")
+        date_str = ""
+        if r['purchase_date'] or r['expiration_date']:
+            pd = r['purchase_date'] or "-"
+            ed = r['expiration_date'] or "-"
+            date_str = f" {pd}~{ed}"
+        parts.append(f"{r['location']} ×{r['quantity']}[{r['location_status']}]{reason_str}{date_str}")
     return " | ".join(parts)
 
 

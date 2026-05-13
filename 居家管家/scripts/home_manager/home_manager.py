@@ -43,7 +43,7 @@ def main():
   python home_manager.py add --name "白T恤" --category 衣物 --location "卧室/衣柜/上层" --tags "白色,短袖"
   python home_manager.py search --name "T恤"
   python home_manager.py search --location "卧室" --status "在家"
-  python home_manager.py update --id 1 --status "借用中"
+  python home_manager.py update --id 1 --location-status "借用中"
   python home_manager.py list --location "卧室/衣柜"
   python home_manager.py inventory --location "卧室"
   python home_manager.py stats --type summary

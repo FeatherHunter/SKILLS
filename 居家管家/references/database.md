@@ -1,0 +1,70 @@
+# 数据库结构
+
+## 表1：items（物品表）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键自增 |
+| name | TEXT | 物品名称 |
+| category | TEXT | 大类（参考 references/categories.md） |
+| owner | TEXT | 所有者（默认"使用者"） |
+| purchase_price | REAL | 单价（元/件），按单瓶/单袋/单盒记，方便计算当前库存价值 |
+| remark | TEXT | 备注 |
+| photo | TEXT | 图片路径 |
+| access_count | INTEGER | 被访问次数 |
+| last_accessed_at | TIMESTAMP | 最后访问时间 |
+| created_at | TIMESTAMP | 创建时间 |
+| updated_at | TIMESTAMP | 更新时间 |
+
+> 注意：location、quantity、purchase_date、expiration_date 字段已移除，改为由 item_locations 表管理（每个位置独立记录）
+
+---
+
+## 表2：item_locations（物品位置表）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键自增 |
+| item_id | INTEGER | 关联 items.id |
+| location | TEXT | 存放位置（路径格式，如 `客厅/冰箱/上层`） |
+| quantity | INTEGER | 该位置的数量 |
+| reason | TEXT | 原因（可选，如"已开封需冷藏"） |
+| location_status | TEXT | 位��状态（在家/备用/借用中等） |
+| purchase_date | TEXT | 购买日期（YYYY-MM-DD，可空） |
+| expiration_date | TEXT | 过期日期（YYYY-MM-DD，可空） |
+| created_at | TEXT | 创建时间 |
+| updated_at | TEXT | 更新时间 |
+
+**特性**：
+- 支持同一物品分多个位置存放，每个位置独立记录购买/过期日期
+- quantity=0 时该记录自动删除，不保留空位置
+
+---
+
+## 表3：item_tags（标签表）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键自增 |
+| item_id | INTEGER | 关联 items.id |
+| tag | TEXT | 单个标签 |
+
+**特性**：
+- 同一物品同一标签不可重复（UNIQUE约束）
+- 多个物品可以有相同标签
+- 搜索用精确匹配
+
+---
+
+## 表4：locations（位置历史表）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键自增 |
+| location_path | TEXT UNIQUE | 位置路径 |
+| use_count | INTEGER | 使用次数 |
+| last_used | TIMESTAMP | 最后使用时间 |
+
+**特性**：
+- 录入/更新物品位置时自动记录（autocomplete 用）
+- AI 从中智能提示用户用过的位置

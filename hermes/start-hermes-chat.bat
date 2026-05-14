@@ -1,2 +1,2 @@
 @echo off
-wsl /home/feather/.local/bin/hermes chat --tui
+wsl -e bash -c "cd /home/claire/hermes-agent && ./hermes chat --tui"

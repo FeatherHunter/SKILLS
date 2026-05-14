@@ -1,277 +1,281 @@
 #!/usr/bin/env python3
 """
-私家大厨 - 食材管理脚本 v1.0
-对应表：ingredients（28字段）
+私家大厨 - 食材管理
+管理表：ingredients
+支持：add / list / search / update / disable
 """
 
 import sys
-import json
 import uuid
-from pathlib import Path
-from datetime import datetime
+from db_config import get_connection
 
-sys.path.insert(0, str(Path(__file__).parent))
-from db_config import get_conn
-
-
-def _now():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-def _json(val):
-    if val is None: return None
-    if isinstance(val, list): return json.dumps(val)
-    if isinstance(val, str) and val.startswith('['): return val
-    if isinstance(val, str): return json.dumps([v.strip() for v in val.split(',')])
-    return None
-
-
-def ingredient_add(
-    recipe_id,
-    name,
-    sequence=None,
-    category=None,
-    quantity=None,
-    quantity_text=None,
-    unit=None,
-    state=None,
-    size=None,
-    cut_style=None,
-    quality_grade=None,
-    brand=None,
-    purchase_place=None,
-    supermarkets=None,
-    price_per_unit=None,
-    purchase_specs=None,
-    storage_type=None,
-    frozen_ok=None,
-    shelf_life_days=None,
-    prepped_storage=None,
-    is_optional=None,
-    is_staple=None,
-    substitute=None,
-    substitute_notes=None,
-    introduced_method=None,
-    notes=None,
-    created_at=None,
-    updated_at=None,
-    **kwargs
-):
-    """添加食材（28字段）"""
-    conn = get_conn()
+def add(args):
+    """添加食材"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    name = args.get("--name")
+    if not name:
+        print("错误：请提供食材名称（--name）")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-
-    ingredient_id = str(uuid.uuid4())
-    now = _now()
-
-    cursor.execute('''
-        INSERT INTO ingredients (
-            id, recipe_id, sequence, name, category,
-            quantity, quantity_text, unit, state, size, cut_style,
-            quality_grade, brand, purchase_place, supermarkets,
-            price_per_unit, purchase_specs, storage_type,
-            frozen_ok, shelf_life_days, prepped_storage,
-            is_optional, is_staple, substitute, substitute_notes,
-            introduced_method, notes, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', [
-        ingredient_id, recipe_id, sequence, name, category,
-        quantity, quantity_text, unit, _json(state), _json(size), _json(cut_style),
-        quality_grade, brand, purchase_place, _json(supermarkets),
-        price_per_unit, purchase_specs, storage_type,
-        1 if frozen_ok else 0, shelf_life_days, prepped_storage,
-        1 if is_optional else 0, 1 if is_staple else 0, substitute, substitute_notes,
-        introduced_method, notes, now, now
-    ])
-
-    conn.commit()
-    conn.close()
-    return ingredient_id
-
-
-def ingredient_update(
-    ingredient_id,
-    recipe_id=None,
-    sequence=None,
-    name=None,
-    category=None,
-    quantity=None,
-    quantity_text=None,
-    unit=None,
-    state=None,
-    size=None,
-    cut_style=None,
-    quality_grade=None,
-    brand=None,
-    purchase_place=None,
-    supermarkets=None,
-    price_per_unit=None,
-    purchase_specs=None,
-    storage_type=None,
-    frozen_ok=None,
-    shelf_life_days=None,
-    prepped_storage=None,
-    is_optional=None,
-    is_staple=None,
-    substitute=None,
-    substitute_notes=None,
-    introduced_method=None,
-    notes=None,
-    created_at=None,
-    updated_at=None,
-    **kwargs
-):
-    """更新食材（28字段显式）"""
-    conn = get_conn()
-    cursor = conn.cursor()
-
-    fields = {}
-    if recipe_id is not None: fields['recipe_id'] = recipe_id
-    if sequence is not None: fields['sequence'] = sequence
-    if name is not None: fields['name'] = name
-    if category is not None: fields['category'] = category
-    if quantity is not None: fields['quantity'] = quantity
-    if quantity_text is not None: fields['quantity_text'] = quantity_text
-    if unit is not None: fields['unit'] = unit
-    if state is not None: fields['state'] = _json(state)
-    if size is not None: fields['size'] = _json(size)
-    if cut_style is not None: fields['cut_style'] = _json(cut_style)
-    if quality_grade is not None: fields['quality_grade'] = quality_grade
-    if brand is not None: fields['brand'] = brand
-    if purchase_place is not None: fields['purchase_place'] = purchase_place
-    if supermarkets is not None: fields['supermarkets'] = _json(supermarkets)
-    if price_per_unit is not None: fields['price_per_unit'] = price_per_unit
-    if purchase_specs is not None: fields['purchase_specs'] = purchase_specs
-    if storage_type is not None: fields['storage_type'] = storage_type
-    if frozen_ok is not None: fields['frozen_ok'] = 1 if frozen_ok else 0
-    if shelf_life_days is not None: fields['shelf_life_days'] = shelf_life_days
-    if prepped_storage is not None: fields['prepped_storage'] = prepped_storage
-    if is_optional is not None: fields['is_optional'] = 1 if is_optional else 0
-    if is_staple is not None: fields['is_staple'] = 1 if is_staple else 0
-    if substitute is not None: fields['substitute'] = substitute
-    if substitute_notes is not None: fields['substitute_notes'] = substitute_notes
-    if introduced_method is not None: fields['introduced_method'] = introduced_method
-    if notes is not None: fields['notes'] = notes
-    if created_at is not None: fields['created_at'] = created_at
-    if updated_at is not None: fields['updated_at'] = updated_at
-
-    if not fields:
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
         conn.close()
         return False
-
-    set_clause = ", ".join([f"{k} = ?" for k in fields.keys()])
-    values = list(fields.values()) + [ingredient_id]
-    cursor.execute(f"UPDATE ingredients SET {set_clause} WHERE id = ?", values)
+    
+    # 获取sequence
+    cursor.execute("SELECT MAX(sequence) as max_seq FROM ingredients WHERE recipe_id = ?", (recipe_id,))
+    max_seq = cursor.fetchone()["max_seq"] or 0
+    sequence = args.get("--sequence") or (max_seq + 1)
+    
+    ingredient_id = str(uuid.uuid4())
+    
+    cursor.execute("""
+        INSERT INTO ingredients (
+            id, recipe_id, sequence, name, category, quantity, unit,
+            quantity_text, is_optional, substitute
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        ingredient_id,
+        recipe_id,
+        sequence,
+        name,
+        args.get("--category"),
+        args.get("--quantity"),
+        args.get("--unit"),
+        args.get("--quantity_text"),
+        1 if args.get("--optional") else 0,
+        args.get("--substitute")
+    ))
+    
     conn.commit()
-    affected = cursor.rowcount
     conn.close()
-    return affected > 0
+    
+    print(f"✅ 食材添加成功！")
+    print(f"   食谱：{recipe['name']}")
+    print(f"   食材：{name}")
+    qty = f"{args.get('--quantity', '')}{args.get('--unit', '')}"
+    if qty:
+        print(f"   用量：{qty}")
+    return True
 
-
-def ingredient_list(recipe_id, limit=100):
-    conn = get_conn()
+def list(args):
+    """查看某食谱的食材清单"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence",
-        (recipe_id,)
-    )
-    rows = [dict(r) for r in cursor.fetchall()]
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    cursor.execute("""
+        SELECT * FROM ingredients 
+        WHERE recipe_id = ?
+        ORDER BY sequence
+    """, (recipe_id,))
+    
+    rows = cursor.fetchall()
     conn.close()
-    for r in rows:
-        for f in ['supermarkets', 'state', 'size', 'cut_style']:
-            if r.get(f):
-                try: r[f] = json.loads(r[f])
-                except: pass
-    return rows
+    
+    if not rows:
+        print(f"\n{recipe['name']} - 没有食材记录")
+        return True
+    
+    print(f"\n{recipe['name']} - 食材清单（共{len(rows)}种）：")
+    for row in rows:
+        qty = f"{row['quantity']}{row['unit']}" if row['quantity'] else ""
+        qty_text = row['quantity_text'] or ""
+        opt = "（可选）" if row['is_optional'] else ""
+        cat = f"[{row['category']}]" if row['category'] else ""
+        sub = f" → 可用{row['substitute']}代替" if row['substitute'] else ""
+        print(f"  {row['sequence']}. {cat}{row['name']} {qty}{qty_text} {opt}{sub}")
+    
+    return True
 
-
-def ingredient_get(ingredient_id):
-    conn = get_conn()
+def search(args):
+    """搜索包含某食材的食谱"""
+    keyword = args.get("<食材名>")
+    if not keyword:
+        print("错误：请提供食材名称")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT DISTINCT r.id, r.name, r.difficulty, r.total_time_minutes, i.name as ingredient
+        FROM recipes r
+        JOIN ingredients i ON r.id = i.recipe_id
+        WHERE i.name LIKE ?
+        AND r.status != '已废弃'
+        ORDER BY r.name
+    """, (f"%{keyword}%",))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        print(f"未找到包含'{keyword}'的食谱")
+        return True
+    
+    print(f"\n找到 {len(rows)} 道菜：")
+    print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'时间':<8} {'包含食材'}")
+    print("-" * 70)
+    for i, row in enumerate(rows, 1):
+        time_str = f"{row['total_time_minutes']}分钟" if row['total_time_minutes'] else "-"
+        print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {time_str:<8} {row['ingredient']}")
+    
+    return True
+
+def update(args):
+    """更新食材"""
+    ingredient_id = args.get("<ingredient_id>")
+    if not ingredient_id:
+        print("错误：请提供食材ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
     cursor.execute("SELECT * FROM ingredients WHERE id = ?", (ingredient_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-
-def ingredient_delete(ingredient_id):
-    conn = get_conn()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM ingredients WHERE id = ?", (ingredient_id,))
+    ingredient = cursor.fetchone()
+    if not ingredient:
+        print(f"未找到食材：{ingredient_id}")
+        conn.close()
+        return False
+    
+    updates = []
+    params = []
+    
+    if args.get("--name"):
+        updates.append("name = ?")
+        params.append(args["--name"])
+    if args.get("--category"):
+        updates.append("category = ?")
+        params.append(args["--category"])
+    if args.get("--quantity"):
+        updates.append("quantity = ?")
+        params.append(args["--quantity"])
+    if args.get("--unit"):
+        updates.append("unit = ?")
+        params.append(args["--unit"])
+    if args.get("--quantity_text"):
+        updates.append("quantity_text = ?")
+        params.append(args["--quantity_text"])
+    if args.get("--sequence"):
+        updates.append("sequence = ?")
+        params.append(args["--sequence"])
+    if args.get("--substitute"):
+        updates.append("substitute = ?")
+        params.append(args["--substitute"])
+    
+    if not updates:
+        print("没有提供要更新的字段")
+        conn.close()
+        return False
+    
+    params.append(ingredient_id)
+    cursor.execute(f"UPDATE ingredients SET {', '.join(updates)} WHERE id = ?", params)
     conn.commit()
-    affected = cursor.rowcount
     conn.close()
-    return affected > 0
+    
+    print(f"✅ 食材更新成功！")
+    return True
 
-
-# ── CLI ─────────────────────────────────────────────────────────────────────
+    """废弃食材（非删除）"""
+    ingredient_id = args.get("<ingredient_id>")
+    if not ingredient_id:
+        print("错误：请提供食材ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name FROM ingredients WHERE id = ?", (ingredient_id,))
+    ingredient = cursor.fetchone()
+    if not ingredient:
+        print(f"未找到食材：{ingredient_id}")
+        conn.close()
+        return False
+    
+    conn.commit()
+    conn.close()
+    
+    return True
 
 def main():
     if len(sys.argv) < 2:
-        print("用法:")
-        print("  python ingredient_manager.py add <recipe_id> <食材名> [--field value ...]")
-        print("  python ingredient_manager.py list <recipe_id>")
-        print("  python ingredient_manager.py get <ingredient_id>")
-        print("  python ingredient_manager.py update <ingredient_id> [--field value ...]")
-        print("  python ingredient_manager.py delete <ingredient_id>")
-        sys.exit(1)
+        print("""用法：
+    python ingredient_manager.py add <recipe_id> --name <食材名> [选项]
+    python ingredient_manager.py list <recipe_id>
+    python ingredient_manager.py search <食材名>
+    python ingredient_manager.py update <ingredient_id> [选项]
+    python ingredient_manager.py 
 
-    cmd = sys.argv[1]
-
-    if cmd == "add":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        name = sys.argv[3] if len(sys.argv) > 3 else input("食材名: ")
-        args = sys.argv[4:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
-            i += 1
-        ingredient_id = ingredient_add(recipe_id, name, **fields)
-        print(f"✅ 食材已添加: {name} (ID: {ingredient_id})")
-
-    elif cmd == "list":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        items = ingredient_list(recipe_id)
-        if not items:
-            print("暂无食材")
+选项：
+    --name 食材名称
+    --category 分类（肉类/蔬菜/调料/海鲜/其他）
+    --quantity 用量数值
+    --unit 单位（g/kg/ml/个/勺/把等）
+    --quantity_text 文字描述（适量/少许）
+    --sequence 顺序
+    --optional 设为可选
+    --substitute 替代食材
+""")
+        return
+    
+    action = sys.argv[1]
+    
+    args = {}
+    i = 2
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg.startswith("--"):
+            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
+                args[arg] = sys.argv[i + 1]
+                i += 2
+            else:
+                args[arg] = True
+                i += 1
         else:
-            print(f"\n🥘 {len(items)}种食材:")
-            for ing in items:
-                qty = f"{ing['quantity']}{ing.get('unit','g')}" if ing.get('quantity') else ing.get('quantity_text','')
-                print(f"  - {ing['name']} {qty} | {ing.get('category','-')}")
-
-    elif cmd == "get":
-        ingredient_id = sys.argv[2] if len(sys.argv) > 2 else input("ingredient_id: ")
-        ing = ingredient_get(ingredient_id)
-        if not ing:
-            print("未找到")
-        else:
-            print(f"\n🥘 {ing['name']}")
-            for k, v in ing.items():
-                if v:
-                    print(f"  {k}: {v}")
-
-    elif cmd == "update":
-        ingredient_id = sys.argv[2] if len(sys.argv) > 2 else input("ingredient_id: ")
-        args = sys.argv[3:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
+            if action in ("add", "list") and "<recipe_id>" not in args:
+                args["<recipe_id>"] = arg
+            elif action == "search" and "<食材名>" not in args:
+                args["<食材名>"] = arg
+            elif action == "update" and "<ingredient_id>" not in args:
+                args["<ingredient_id>"] = arg
+            elif action == "discard" and "<ingredient_id>" not in args:
+                args["<ingredient_id>"] = arg
             i += 1
-        ingredient_update(ingredient_id, **fields)
-        print("✅ 已更新")
-
-    elif cmd == "delete":
-        ingredient_id = sys.argv[2] if len(sys.argv) > 2 else input("ingredient_id: ")
-        confirm = input("确认删除？(y/n): ")
-        if confirm.lower() == 'y':
-            ingredient_delete(ingredient_id)
-            print("✅ 已删除")
-
+    
+    if action == "add":
+        add(args)
+    elif action == "list":
+        list(args)
+    elif action == "search":
+        search(args)
+    elif action == "update":
+        update(args)
+    elif action == "discard":
+        print("错误：废弃操作在食谱级别进行，使用 recipe_manager.py discard <recipe_id>")
+    else:
+        print(f"未知操作：{action}")
 
 if __name__ == "__main__":
     main()

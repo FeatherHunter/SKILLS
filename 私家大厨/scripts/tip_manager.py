@@ -1,275 +1,339 @@
 #!/usr/bin/env python3
 """
-私家大厨 - 小贴士管理脚本 v1.0
-对应表：tips（23字段）
+私家大厨 - 小贴士管理
+管理表：tips
+支持：add / list / search / update
 """
 
 import sys
-import json
 import uuid
-from pathlib import Path
-from datetime import datetime
+from db_config import get_connection
 
-sys.path.insert(0, str(Path(__file__).parent))
-from db_config import get_conn
-
-
-CATEGORIES = [
-    '采购技巧', '刀工技巧', '火候控制', '调味技巧',
-    '装盘技巧', '设备巧用', '食材保存', '时间管理', '健康贴士'
-]
-
-
-def _json(val):
-    if val is None: return None
-    if isinstance(val, list): return json.dumps(val)
-    if isinstance(val, str) and val.startswith('['): return val
-    if isinstance(val, str): return json.dumps([v.strip() for v in val.split(',')])
-    return None
-
-
-def tip_add(
-    recipe_id,
-    step_id=None,
-    ingredient_id=None,
-    category=None,
-    content=None,
-    difficulty=None,
-    priority=None,
-    effectiveness_rating=None,
-    estimated_time_saved=None,
-    applicability_scenes=None,
-    related_tips=None,
-    photos=None,
-    user_created=None,
-    created_at=None,
-    updated_at=None,
-    tags=None,
-    source=None,
-    notes=None,
-    apply_to_ingredient=None,
-    apply_to_step=None,
-    show_sequence=None,
-    **kwargs
-):
-    """添加小贴士（23字段全量）"""
-    conn = get_conn()
+def add(args):
+    """添加小贴士"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    content = args.get("--content")
+    if not content:
+        print("错误：请提供小贴士内容（--content）")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-
-    tip_id = str(uuid.uuid4())
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    cursor.execute('''
-        INSERT INTO tips (
-            id, recipe_id, step_id, ingredient_id,
-            category, content,
-            difficulty, priority, effectiveness_rating,
-            estimated_time_saved, applicability_scenes,
-            related_tips, photos, user_created,
-            created_at, updated_at,
-            tags, source, notes,
-            apply_to_ingredient, apply_to_step, show_sequence
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', [
-        tip_id, recipe_id, step_id, ingredient_id,
-        category, content,
-        difficulty, priority, effectiveness_rating,
-        estimated_time_saved, _json(applicability_scenes),
-        _json(related_tips), _json(photos), 1 if user_created else 0,
-        now, now,
-        _json(tags), source, notes,
-        apply_to_ingredient, apply_to_step, show_sequence
-    ])
-
-    conn.commit()
-    conn.close()
-    return tip_id
-
-
-def tip_list(recipe_id, limit=50):
-    conn = get_conn()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tips WHERE recipe_id = ? ORDER BY category", (recipe_id,))
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
-
-
-def tip_get(tip_id):
-    conn = get_conn()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tips WHERE id = ?", (tip_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-
-def tip_update(
-    tip_id,
-    recipe_id=None,
-    step_id=None,
-    ingredient_id=None,
-    category=None,
-    content=None,
-    difficulty=None,
-    priority=None,
-    effectiveness_rating=None,
-    estimated_time_saved=None,
-    applicability_scenes=None,
-    related_tips=None,
-    photos=None,
-    user_created=None,
-    tags=None,
-    source=None,
-    notes=None,
-    apply_to_ingredient=None,
-    apply_to_step=None,
-    show_sequence=None,
-):
-    """更新小贴士（显式23字段）"""
-    conn = get_conn()
-    cursor = conn.cursor()
-    sets = []
-    vals = []
-    if recipe_id is not None: sets.append("recipe_id = ?"); vals.append(recipe_id)
-    if step_id is not None: sets.append("step_id = ?"); vals.append(step_id)
-    if ingredient_id is not None: sets.append("ingredient_id = ?"); vals.append(ingredient_id)
-    if category is not None: sets.append("category = ?"); vals.append(category)
-    if content is not None: sets.append("content = ?"); vals.append(content)
-    if difficulty is not None: sets.append("difficulty = ?"); vals.append(difficulty)
-    if priority is not None: sets.append("priority = ?"); vals.append(priority)
-    if effectiveness_rating is not None: sets.append("effectiveness_rating = ?"); vals.append(effectiveness_rating)
-    if estimated_time_saved is not None: sets.append("estimated_time_saved = ?"); vals.append(estimated_time_saved)
-    if applicability_scenes is not None: sets.append("applicability_scenes = ?"); vals.append(_json(applicability_scenes))
-    if related_tips is not None: sets.append("related_tips = ?"); vals.append(_json(related_tips))
-    if photos is not None: sets.append("photos = ?"); vals.append(_json(photos))
-    if user_created is not None: sets.append("user_created = ?"); vals.append(1 if user_created else 0)
-    if tags is not None: sets.append("tags = ?"); vals.append(_json(tags))
-    if source is not None: sets.append("source = ?"); vals.append(source)
-    if notes is not None: sets.append("notes = ?"); vals.append(notes)
-    if apply_to_ingredient is not None: sets.append("apply_to_ingredient = ?"); vals.append(apply_to_ingredient)
-    if apply_to_step is not None: sets.append("apply_to_step = ?"); vals.append(apply_to_step)
-    if show_sequence is not None: sets.append("show_sequence = ?"); vals.append(show_sequence)
-    if not sets:
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
         conn.close()
         return False
-    import datetime; sets.append("updated_at = ?"); vals.append(datetime.datetime.now().isoformat())
-    cursor.execute(f"UPDATE tips SET {', '.join(sets)} WHERE id = ?", vals + [tip_id])
+    
+    tip_id = str(uuid.uuid4())
+    
+    cursor.execute("""
+        INSERT INTO tips (id, recipe_id, step_id, ingredient_id, category, content, priority)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        tip_id,
+        recipe_id,
+        args.get("--step_id"),
+        args.get("--ingredient_id"),
+        args.get("--category"),
+        content,
+        args.get("--priority")
+    ))
+    
     conn.commit()
-    affected = cursor.rowcount
     conn.close()
-    return affected > 0
+    
+    print(f"✅ 小贴士添加成功！")
+    print(f"   食谱：{recipe['name']}")
+    print(f"   内容：{content}")
+    if args.get("--category"):
+        print(f"   分类：{args['--category']}")
+    return True
 
-
-def tip_delete(tip_id):
-    conn = get_conn()
+def list(args):
+    """查看某食谱的小贴士"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM tips WHERE id = ?", (tip_id,))
-    conn.commit()
-    affected = cursor.rowcount
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    cursor.execute("""
+        SELECT t.*, cs.sequence as step_seq, i.name as ingredient_name
+        FROM tips t
+        LEFT JOIN cooking_steps cs ON t.step_id = cs.id
+        LEFT JOIN ingredients i ON t.ingredient_id = i.id
+        WHERE t.recipe_id = ?
+        ORDER BY t.priority, t.category
+    """, (recipe_id,))
+    
+    rows = cursor.fetchall()
     conn.close()
-    return affected > 0
+    
+    if not rows:
+        print(f"\n{recipe['name']} - 没有小贴士")
+        return True
+    
+    print(f"\n{recipe['name']} - 小贴士：")
+    for row in rows:
+        scope = ""
+        if row['step_seq']:
+            scope = f"[第{row['step_seq']}步]"
+        elif row['ingredient_name']:
+            scope = f"[{row['ingredient_name']}]"
+        
+        cat = f"（{row['category']}）" if row['category'] else ""
+        print(f"  {scope}{cat}{row['content']}")
+    
+    return True
 
-
-def tip_list_all(limit=100):
-    """列出所有小贴士（按分类）"""
-    conn = get_conn()
+def list_by_step(args):
+    """查看某步骤的小贴士"""
+    step_id = args.get("<step_id>")
+    if not step_id:
+        print("错误：请提供步骤ID")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, sequence, action FROM cooking_steps WHERE id = ?", (step_id,))
+    step = cursor.fetchone()
+    if not step:
+        print(f"未找到步骤：{step_id}")
+        conn.close()
+        return False
+    
+    cursor.execute("""
+        SELECT * FROM tips WHERE step_id = ? 
+        ORDER BY priority
+    """, (step_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    print(f"\n第{step['sequence']}步的小贴士：")
+    if rows:
+        for row in rows:
+            cat = f"（{row['category']}）" if row['category'] else ""
+            print(f"  {cat}{row['content']}")
+    else:
+        print(f"  没有小贴士")
+    
+    return True
+
+def list_by_ingredient(args):
+    """查看某食材的小贴士"""
+    ingredient_id = args.get("<ingredient_id>")
+    if not ingredient_id:
+        print("错误：请提供食材ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, name FROM ingredients WHERE id = ?", (ingredient_id,))
+    ingredient = cursor.fetchone()
+    if not ingredient:
+        print(f"未找到食材：{ingredient_id}")
+        conn.close()
+        return False
+    
     cursor.execute("""
         SELECT t.*, r.name as recipe_name
         FROM tips t
-        LEFT JOIN recipes r ON t.recipe_id = r.id
-        ORDER BY t.category, t.created_at DESC
-        LIMIT ?
-    """, (limit,))
-    rows = [dict(r) for r in cursor.fetchall()]
+        JOIN recipes r ON t.recipe_id = r.id
+        WHERE t.ingredient_id = ?
+        ORDER BY r.name, t.priority
+    """, (ingredient_id,))
+    
+    rows = cursor.fetchall()
     conn.close()
-    return rows
+    
+    print(f"\n食材「{ingredient['name']}」的小贴士：")
+    if rows:
+        for row in rows:
+            cat = f"（{row['category']}）" if row['category'] else ""
+            print(f"  [{row['recipe_name']}] {cat}{row['content']}")
+    else:
+        print(f"  没有小贴士")
+    
+    return True
 
+def search(args):
+    """搜索小贴士"""
+    keyword = args.get("<关键词>")
+    if not keyword:
+        print("错误：请提供关键词")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT t.*, r.name as recipe_name
+        FROM tips t
+        JOIN recipes r ON t.recipe_id = r.id
+        WHERE t.content LIKE ?
+        AND r.status != '已废弃'
+        ORDER BY r.name, t.priority
+    """, (f"%{keyword}%",))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        print(f"未找到包含'{keyword}'的小贴士")
+        return True
+    
+    print(f"\n找到 {len(rows)} 条小贴士：")
+    for row in rows:
+        cat = f"（{row['category']}）" if row['category'] else ""
+        print(f"  [{row['recipe_name']}] {cat}{row['content']}")
+    
+    return True
 
-# ── CLI ─────────────────────────────────────────────────────────────────────
+def update(args):
+    """更新小贴士"""
+    tip_id = args.get("<tip_id>")
+    if not tip_id:
+        print("错误：请提供小贴士ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id FROM tips WHERE id = ?", (tip_id,))
+    tip = cursor.fetchone()
+    if not tip:
+        print(f"未找到小贴士：{tip_id}")
+        conn.close()
+        return False
+    
+    updates = []
+    params = []
+    
+    if args.get("--content"):
+        updates.append("content = ?")
+        params.append(args["--content"])
+    if args.get("--category"):
+        updates.append("category = ?")
+        params.append(args["--category"])
+    if args.get("--priority"):
+        updates.append("priority = ?")
+        params.append(args["--priority"])
+    
+    if not updates:
+        print("没有提供要更新的字段")
+        conn.close()
+        return False
+    
+    params.append(tip_id)
+    cursor.execute(f"UPDATE tips SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ 小贴士更新成功！")
+    return True
+
+    """废弃小贴士（非删除）"""
+    tip_id = args.get("<tip_id>")
+    if not tip_id:
+        print("错误：请提供小贴士ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT content FROM tips WHERE id = ?", (tip_id,))
+    tip = cursor.fetchone()
+    if not tip:
+        print(f"未找到小贴士：{tip_id}")
+        conn.close()
+        return False
+    
+    conn.commit()
+    conn.close()
+    
+    content_preview = tip['content'][:30] + "..." if len(tip['content']) > 30 else tip['content']
+    return True
 
 def main():
     if len(sys.argv) < 2:
-        print("用法:")
-        print("  python tip_manager.py add <recipe_id> <分类> <内容> [--field value ...]")
-        print("  python tip_manager.py list <recipe_id>")
-        print("  python tip_manager.py get <tip_id>")
-        print("  python tip_manager.py update <tip_id> [--field value ...]")
-        print("  python tip_manager.py delete <tip_id>")
-        print("  python tip_manager.py list-all")
-        print()
-        print(f"  分类: {', '.join(CATEGORIES)}")
-        sys.exit(1)
+        print("""用法：
+    python tip_manager.py add <recipe_id> --content <内容> [选项]
+    python tip_manager.py list <recipe_id>
+    python tip_manager.py list-by-step <step_id>
+    python tip_manager.py list-by-ingredient <ingredient_id>
+    python tip_manager.py search <关键词>
+    python tip_manager.py update <tip_id> [选项]
 
-    cmd = sys.argv[1]
-
-    if cmd == "add":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        category = sys.argv[3] if len(sys.argv) > 3 else input("分类: ")
-        content = sys.argv[4] if len(sys.argv) > 4 else input("内容: ")
-        args = sys.argv[5:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
-            i += 1
-        tip_id = tip_add(recipe_id, category, content, **fields)
-        print(f"✅ 小贴士已添加 (ID: {tip_id})")
-
-    elif cmd == "list":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        tips = tip_list(recipe_id)
-        if not tips:
-            print("暂无小贴士")
+选项：
+    --step_id 关联步骤ID
+    --ingredient_id 关联食材ID
+    --category 分类（火候/刀工/调味/采购/设备/保存）
+    --content 小贴士内容
+    --priority 优先级
+""")
+        return
+    
+    action = sys.argv[1]
+    
+    args = {}
+    i = 2
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg.startswith("--"):
+            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
+                args[arg] = sys.argv[i + 1]
+                i += 2
+            else:
+                args[arg] = True
+                i += 1
         else:
-            print(f"\n💡 {len(tips)}条小贴士:")
-            for t in tips:
-                print(f"  [{t['category']}] {t['content'][:50]}...")
-
-    elif cmd == "get":
-        tip_id = sys.argv[2] if len(sys.argv) > 2 else input("tip_id: ")
-        t = tip_get(tip_id)
-        if t:
-            print(f"\n💡 [{t['category']}] {t['content']}")
-            for k, v in t.items():
-                if v and k not in ['id', 'content', 'category']:
-                    print(f"   {k}: {v}")
-
-    elif cmd == "update":
-        tip_id = sys.argv[2] if len(sys.argv) > 2 else input("tip_id: ")
-        args = sys.argv[3:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
+            if action == "add" and "<recipe_id>" not in args:
+                args["<recipe_id>"] = arg
+            elif action in ("list-by-step",) and "<step_id>" not in args:
+                args["<step_id>"] = arg
+            elif action in ("list-by-ingredient",) and "<ingredient_id>" not in args:
+                args["<ingredient_id>"] = arg
+            elif action == "search" and "<关键词>" not in args:
+                args["<关键词>"] = arg
+            elif action in ("update", "disable") and "<tip_id>" not in args:
+                args["<tip_id>"] = arg
             i += 1
-        tip_update(tip_id, **fields)
-        print("✅ 已更新")
-
-    elif cmd == "delete":
-        tip_id = sys.argv[2] if len(sys.argv) > 2 else input("tip_id: ")
-        confirm = input("确认删除？(y/n): ")
-        if confirm.lower() == 'y':
-            tip_delete(tip_id)
-            print("✅ 已删除")
-
-    elif cmd == "list-all":
-        tips = tip_list_all()
-        print(f"\n💡 全部小贴士 ({len(tips)}条):")
-        by_cat = {}
-        for t in tips:
-            cat = t.get('category', '未分类')
-            if cat not in by_cat:
-                by_cat[cat] = []
-            by_cat[cat].append(t)
-        for cat, ts in by_cat.items():
-            print(f"\n  [{cat}] ({len(ts)}条):")
-            for t in ts[:5]:
-                print(f"    • {t['content'][:40]}... | {t.get('recipe_name','?')}")
-
+    
+    if action == "add":
+        add(args)
+    elif action == "list":
+        list(args)
+    elif action == "list-by-step":
+        list_by_step(args)
+    elif action == "list-by-ingredient":
+        list_by_ingredient(args)
+    elif action == "search":
+        search(args)
+    elif action == "update":
+        update(args)
+    elif action == "discard":
+        print("错误：废弃操作在食谱级别进行，使用 recipe_manager.py discard <recipe_id>")
+    else:
+        print(f"未知操作：{action}")
 
 if __name__ == "__main__":
     main()

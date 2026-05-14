@@ -1,404 +1,558 @@
 #!/usr/bin/env python3
 """
-私家大厨 - 食谱管理脚本 v1.0
-对应表：recipes（35字段）
+私家大厨 - 食谱管理
+管理表：recipes
+支持：add / show / list / search / update
 """
 
 import sys
-import json
 import uuid
-from pathlib import Path
 from datetime import datetime
+from db_config import get_connection
 
-sys.path.insert(0, str(Path(__file__).parent))
-from db_config import get_conn
-
-
-def _now():
+def get_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
-def _json(val):
-    if val is None: return None
-    if isinstance(val, list): return json.dumps(val)
-    if isinstance(val, str) and val.startswith('['): return val
-    if isinstance(val, str): return json.dumps([v.strip() for v in val.split(',')])
-    return None
-
-
-def recipe_add(
-    name,
-    internal_code=None,
-    name_aliases=None,
-    description=None,
-    appearance_desc=None,
-    taste_desc=None,
-    texture_desc=None,
-    time_total_minutes=None,
-    time_prep_minutes=None,
-    time_cook_minutes=None,
-    time_cleanup_minutes=None,
-    difficulty=None,
-    difficulty_user=None,
-    servings=None,
-    recipe_version=None,
-    parent_recipe_id=None,
-    is_reference=None,
-    status=None,
-    times_cooked=None,
-    user_rating=None,
-    user_feedback=None,
-    want_to_cook_level=None,
-    is_favorite=None,
-    is_staple=None,
-    cost_per_serving=None,
-    source_url=None,
-    source_author=None,
-    video_url=None,
-    photo_urls=None,
-    keywords=None,
-    notes=None,
-
-    energy_level=None,
-    **kwargs
-):
-    """添加食谱（35字段全量）"""
-    conn = get_conn()
+def add(args):
+    """添加食谱"""
+    name = args.get("name") or args.get("<菜名>")
+    if not name:
+        print("错误：请提供菜名")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-
+    
+    # 检查是否已有同名食谱（非废弃）
+    cursor.execute("""
+        SELECT id, name, status FROM recipes 
+        WHERE name = ? AND status != '已废弃'
+    """, (name,))
+    existing = cursor.fetchone()
+    
+    if existing:
+        # 查询历史次数
+        cursor.execute("""
+            SELECT COUNT(*) as cnt, AVG(rating) as avg 
+            FROM recipe_history WHERE recipe_id = ?
+        """, (existing['id'],))
+        hist = cursor.fetchone()
+        hist_cnt = int(hist['cnt']) if hist['cnt'] else 0
+        hist_avg = hist['avg'] if hist['avg'] else 0
+        
+        print(f"\n⚠️ 发现同名食谱「{name}」（ID: {existing['id']}，状态：{existing['status']}）")
+        if hist_cnt > 0:
+            print(f"   做过 {hist_cnt} 次，平均评分 {hist_avg:.1f}")
+        print()
+        print("请选择：")
+        print("1. 查看 — 查看现有食谱详情")
+        print("2. 派生 — 基于现有食谱创建新变体（自行输入新菜名）")
+        print("3. 更新 — 更新现有食谱内容")
+        print("4. 取消 — 放弃本次录入")
+        print()
+        choice = input("请输入序号（1-4）：").strip()
+        
+        if choice == "1":
+            conn.close()
+            show({"<菜名>": existing['id']})
+            return True
+        elif choice == "2":
+            conn.close()
+            print()
+            new_name = input("请输入新菜名：").strip()
+            if not new_name:
+                print("已取消")
+                return False
+            return add({"name": new_name})
+        elif choice == "3":
+            conn.close()
+            update({"<recipe_id>": existing['id']})
+            return True
+        elif choice == "4":
+            conn.close()
+            print("已取消")
+            return False
+        else:
+            conn.close()
+            print("无效选择，已取消")
+            return False
+    
     recipe_id = str(uuid.uuid4())
-    now = _now()
-
-    cursor.execute('''
+    now = get_now()
+    
+    cursor.execute("""
         INSERT INTO recipes (
-            id, internal_code, name, name_aliases,
-            description, appearance_desc, taste_desc, texture_desc,
-            time_total_minutes, time_prep_minutes, time_cook_minutes, time_cleanup_minutes,
-            difficulty, difficulty_user, servings,
-            recipe_version, parent_recipe_id, is_reference,
-            status, times_cooked, user_rating, user_feedback,
-            want_to_cook_level, is_favorite, is_staple, cost_per_serving,
-            created_at, updated_at,
-            source_url, source_author, video_url, photo_urls,
-            keywords, notes, energy_level
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', [
-        recipe_id, internal_code, name, name_aliases,
-        description, appearance_desc, taste_desc, texture_desc,
-        time_total_minutes, time_prep_minutes, time_cook_minutes, time_cleanup_minutes,
-        difficulty, difficulty_user, servings,
-        recipe_version, parent_recipe_id, 1 if is_reference else 0,
-        status or '未做', times_cooked or 0, user_rating, user_feedback,
-        want_to_cook_level, 1 if is_favorite else 0, 1 if is_staple else 0, cost_per_serving,
-        now, now,
-        source_url, source_author, video_url, _json(photo_urls),
-        _json(keywords), notes, energy_level
-    ])
-
+            id, name, description, difficulty, servings, total_time_minutes,
+            status, photo_url, source, source_url, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        recipe_id,
+        name,
+        args.get("--description"),
+        args.get("--difficulty"),
+        args.get("--servings"),
+        args.get("--total_time"),
+        args.get("--status") or "未做",
+        args.get("--photo_url"),
+        args.get("--source"),
+        args.get("--source_url"),
+        now,
+        now
+    ))
+    
     conn.commit()
     conn.close()
-    return recipe_id
+    
+    print(f"✅ 食谱添加成功！")
+    print(f"   ID: {recipe_id}")
+    print(f"   菜名: {name}")
+    return True
 
-
-def recipe_show(name_or_id):
+def show(args):
     """查看食谱详情"""
-    conn = get_conn()
+    name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
+    if not name:
+        print("错误：请提供菜名或ID")
+        return False
+    
+    conn = get_connection()
     cursor = conn.cursor()
-
-    if name_or_id and '-' in name_or_id:
-        cursor.execute("SELECT * FROM recipes WHERE id = ?", (name_or_id,))
-    else:
-        cursor.execute("SELECT * FROM recipes WHERE name = ?", (name_or_id,))
-
+    
+    # 先查主表
+    cursor.execute("SELECT * FROM recipes WHERE id = ? OR name LIKE ?", (name, f"%{name}%"))
     recipe = cursor.fetchone()
+    
     if not recipe:
-        conn.close()
-        return None
-
-    result = dict(recipe)
-
-    cursor.execute("SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence", (result['id'],))
-    result['ingredients'] = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence", (result['id'],))
-    steps = [dict(r) for r in cursor.fetchall()]
-    for s in steps:
-        for f in ['tools', 'common_mistakes', 'mistake_causes', 'mistake_fixes', 'warnings']:
-            if s.get(f):
-                try: s[f] = json.loads(s[f])
-                except: pass
-    result['steps'] = steps
-
-    cursor.execute("SELECT * FROM recipe_locations WHERE recipe_id = ?", (result['id'],))
-    result['location'] = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM tips WHERE recipe_id = ?", (result['id'],))
-    result['tips'] = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM recipe_history WHERE recipe_id = ? ORDER BY cook_date DESC", (result['id'],))
-    result['history'] = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (result['id'],))
-    row = cursor.fetchone()
-    result['nutrition'] = dict(row) if row else None
-
-    cursor.execute("SELECT * FROM background_knowledge WHERE recipe_id = ?", (result['id'],))
-    row = cursor.fetchone()
-    result['background'] = dict(row) if row else None
-
-    cursor.execute("SELECT * FROM beverage_pairings WHERE recipe_id = ?", (result['id'],))
-    result['beverages'] = [dict(r) for r in cursor.fetchall()]
-
-    conn.close()
-    return result
-
-
-def recipe_list(difficulty=None, status=None, limit=50):
-    """列出食谱"""
-    conn = get_conn()
-    cursor = conn.cursor()
-    conditions = []
-    params = []
-
-    if difficulty:
-        conditions.append("difficulty = ?")
-        params.append(difficulty)
-    if status:
-        conditions.append("status = ?")
-        params.append(status)
-
-    where = " AND ".join(conditions) if conditions else "1=1"
-    cursor.execute(f"SELECT * FROM recipes WHERE {where} ORDER BY updated_at DESC LIMIT ?", params + [limit])
-    recipes = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return recipes
-
-
-def recipe_update(
-    recipe_id,
-    internal_code=None,
-    name=None,
-    name_aliases=None,
-    description=None,
-    appearance_desc=None,
-    taste_desc=None,
-    texture_desc=None,
-    time_total_minutes=None,
-    time_prep_minutes=None,
-    time_cook_minutes=None,
-    time_cleanup_minutes=None,
-    difficulty=None,
-    difficulty_user=None,
-    servings=None,
-    recipe_version=None,
-    parent_recipe_id=None,
-    is_reference=None,
-    status=None,
-    times_cooked=None,
-    user_rating=None,
-    user_feedback=None,
-    want_to_cook_level=None,
-    is_favorite=None,
-    is_staple=None,
-    cost_per_serving=None,
-    source_url=None,
-    source_author=None,
-    video_url=None,
-    photo_urls=None,
-    keywords=None,
-    notes=None,
-
-    energy_level=None,
-    **kwargs
-):
-    """更新食谱（35字段全量）"""
-    conn = get_conn()
-    cursor = conn.cursor()
-
-    fields = {}
-    if internal_code is not None: fields['internal_code'] = internal_code
-    if name is not None: fields['name'] = name
-    if name_aliases is not None: fields['name_aliases'] = name_aliases
-    if description is not None: fields['description'] = description
-    if appearance_desc is not None: fields['appearance_desc'] = appearance_desc
-    if taste_desc is not None: fields['taste_desc'] = taste_desc
-    if texture_desc is not None: fields['texture_desc'] = texture_desc
-    if time_total_minutes is not None: fields['time_total_minutes'] = time_total_minutes
-    if time_prep_minutes is not None: fields['time_prep_minutes'] = time_prep_minutes
-    if time_cook_minutes is not None: fields['time_cook_minutes'] = time_cook_minutes
-    if time_cleanup_minutes is not None: fields['time_cleanup_minutes'] = time_cleanup_minutes
-    if difficulty is not None: fields['difficulty'] = difficulty
-    if difficulty_user is not None: fields['difficulty_user'] = difficulty_user
-    if servings is not None: fields['servings'] = servings
-    if recipe_version is not None: fields['recipe_version'] = recipe_version
-    if parent_recipe_id is not None: fields['parent_recipe_id'] = parent_recipe_id
-    if is_reference is not None: fields['is_reference'] = 1 if is_reference else 0
-    if status is not None: fields['status'] = status
-    if times_cooked is not None: fields['times_cooked'] = times_cooked
-    if user_rating is not None: fields['user_rating'] = user_rating
-    if user_feedback is not None: fields['user_feedback'] = user_feedback
-    if want_to_cook_level is not None: fields['want_to_cook_level'] = want_to_cook_level
-    if is_favorite is not None: fields['is_favorite'] = 1 if is_favorite else 0
-    if is_staple is not None: fields['is_staple'] = 1 if is_staple else 0
-    if cost_per_serving is not None: fields['cost_per_serving'] = cost_per_serving
-    if source_url is not None: fields['source_url'] = source_url
-    if source_author is not None: fields['source_author'] = source_author
-    if video_url is not None: fields['video_url'] = video_url
-    if photo_urls is not None: fields['photo_urls'] = _json(photo_urls)
-    if keywords is not None: fields['keywords'] = _json(keywords)
-    if notes is not None: fields['notes'] = notes
-    if energy_level is not None: fields['energy_level'] = energy_level
-
-    fields['updated_at'] = _now()
-
-    if not fields:
+        print(f"未找到食谱：{name}")
         conn.close()
         return False
-
-    set_clause = ", ".join([f"{k} = ?" for k in fields.keys()])
-    values = list(fields.values()) + [recipe_id]
-    cursor.execute(f"UPDATE recipes SET {set_clause} WHERE id = ?", values)
-    conn.commit()
-    affected = cursor.rowcount
-    conn.close()
-    return affected > 0
-
-
-def recipe_delete(recipe_id):
-    """删除食谱（含级联清理）"""
-    conn = get_conn()
-    cursor = conn.cursor()
-    for table in ['tips', 'recipe_history', 'nutrition_info', 'background_knowledge',
-                  'beverage_pairings', 'recipe_locations', 'ingredient_preparations',
-                  'ingredients', 'cooking_steps']:
-        cursor.execute(f"DELETE FROM {table} WHERE recipe_id = ?", (recipe_id,))
-    cursor.execute("DELETE FROM recipes WHERE id = ?", (recipe_id,))
-    conn.commit()
-    affected = cursor.rowcount
-    conn.close()
-    return affected > 0
-
-
-def recipe_lint(recipe_id):
-    """检查食谱完整性"""
-    conn = get_conn()
-    cursor = conn.cursor()
-    issues = []
-
-    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-    if not cursor.fetchone():
-        issues.append("食谱不存在")
+    
+    if recipe['status'] == '已废弃':
+        print(f"⚠️ 「{recipe['name']}」已废弃")
         conn.close()
-        return issues
-
-    cursor.execute("SELECT COUNT(*) FROM ingredients WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()[0] == 0:
-        issues.append("缺少食材")
-
-    cursor.execute("SELECT COUNT(*) FROM cooking_steps WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()[0] == 0:
-        issues.append("缺少烹饪步骤")
-
-    cursor.execute("SELECT COUNT(*) FROM recipe_locations WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()[0] == 0:
-        issues.append("缺少地区分类")
-
+        return True
+    
+    recipe_id = recipe["id"]
+    
+    # 查分类
+    cursor.execute("SELECT * FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
+    categories = cursor.fetchall()
+    
+    # 查季节
+    cursor.execute("SELECT season FROM recipe_seasons WHERE recipe_id = ?", (recipe_id,))
+    seasons = [row["season"] for row in cursor.fetchall()]
+    
+    # 查烹饪方式
+    cursor.execute("SELECT method FROM recipe_cooking_methods WHERE recipe_id = ?", (recipe_id,))
+    methods = [row["method"] for row in cursor.fetchall()]
+    
+    # 查口味
+    cursor.execute("SELECT flavor FROM recipe_flavors WHERE recipe_id = ?", (recipe_id,))
+    flavors = [row["flavor"] for row in cursor.fetchall()]
+    
+    # 查饮食标签
+    cursor.execute("SELECT tag FROM recipe_diet_tags WHERE recipe_id = ?", (recipe_id,))
+    diet_tags = [row["tag"] for row in cursor.fetchall()]
+    
+    # 查用餐类型
+    cursor.execute("SELECT meal_type FROM recipe_meal_types WHERE recipe_id = ?", (recipe_id,))
+    meal_types = [row["meal_type"] for row in cursor.fetchall()]
+    
+    # 查食材
+    cursor.execute("SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
+    ingredients = cursor.fetchall()
+    
+    # 查步骤
+    cursor.execute("SELECT * FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
+    steps = cursor.fetchall()
+    
+    # 查所有步骤的食材投入（用于展示每步用了哪些食材）
+    step_ingredients_map = {}
+    if steps:
+        step_ids = [step['id'] for step in steps]
+        placeholders = ','.join(['?' for _ in step_ids])
+        cursor.execute(f"""
+            SELECT si.step_id, si.quantity_used, si.introduced_at, 
+                   i.name, i.unit, i.quantity as total_quantity
+            FROM step_ingredients si
+            JOIN ingredients i ON si.ingredient_id = i.id
+            WHERE si.step_id IN ({placeholders})
+            ORDER BY si.step_id
+        """, step_ids)
+        for row in cursor.fetchall():
+            sid = row['step_id']
+            if sid not in step_ingredients_map:
+                step_ingredients_map[sid] = []
+            step_ingredients_map[sid].append(row)
+    
+    # 查炊具
+    cursor.execute("SELECT * FROM cookware WHERE recipe_id = ?", (recipe_id,))
+    cookware_list = cursor.fetchall()
+    
+    # 查背景
+    cursor.execute("SELECT * FROM background_knowledge WHERE recipe_id = ?", (recipe_id,))
+    background = cursor.fetchone()
+    
+    # 查营养
+    cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
+    nutrition = cursor.fetchone()
+    
+    # 查历史
+    cursor.execute("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM recipe_history WHERE recipe_id = ?", (recipe_id,))
+    history_stats = cursor.fetchone()
+    
     conn.close()
-    return issues
+    
+    # 打印
+    print(f"\n【{recipe['name']}】")
+    print(f"难度：{recipe['difficulty'] or '未知'}")
+    print(f"总时间：{recipe['total_time_minutes'] or '未知'}分钟")
+    print(f"份量：{recipe['servings'] or '未知'}人份")
+    
+    if history_stats["cnt"]:
+        print(f"状态：{recipe['status']}（做过{history_stats['cnt']}次，评分{history_stats['avg_rating']:.1f}）")
+    else:
+        print(f"状态：{recipe['status']}")
+    
+    if recipe['source']:
+        print(f"来源：{recipe['source']}")
+    
+    if categories:
+        cat = categories[0]
+        if cat["cuisine_type"]:
+            print(f"菜系：{cat['cuisine_type']}")
+        if cat["region"]:
+            print(f"地区：{cat['region']}")
+        if cat["country"]:
+            print(f"国家：{cat['country']}")
+    
+    if seasons:
+        print(f"季节：{'/'.join(seasons)}")
+    if methods:
+        print(f"烹饪方式：{'/'.join(methods)}")
+    if flavors:
+        print(f"口味：{'/'.join(flavors)}")
+    if diet_tags:
+        print(f"饮食标签：{'/'.join(diet_tags)}")
+    if meal_types:
+        print(f"用餐类型：{'/'.join(meal_types)}")
+    
+    if cookware_list:
+        print(f"\n需要的厨具：")
+        for cw in cookware_list:
+            print(f"  - {cw['name']}（{cw['category'] or '其他'}）")
+    
+    if ingredients:
+        print(f"\n食材清单（共{len(list(ingredients))}种）：")
+        for ing in ingredients:
+            qty = f"{ing['quantity']}{ing['unit']}" if ing['quantity'] else ""
+            qty_text = ing['quantity_text'] or ""
+            opt = "（可选）" if ing['is_optional'] else ""
+            print(f"  {ing['sequence']}. {ing['name']} {qty}{qty_text} {opt}")
+    
+    if steps:
+        print(f"\n完整步骤：")
+        for step in steps:
+            dur = f"（{step['duration_minutes']}分钟）" if step['duration_minutes'] else ""
+            heat = f" [{step['heat_level']}]" if step['heat_level'] else ""
+            print(f"  第{step['sequence']}步{dur}{heat}：{step['action']}")
+            # 展示该步骤投入的食材
+            if step['id'] in step_ingredients_map:
+                for si in step_ingredients_map[step['id']]:
+                    qty_used = f"{si['quantity_used']}{si['unit']}" if si['quantity_used'] else si['unit'] or ""
+                    intro = f"（{si['introduced_at']}）" if si['introduced_at'] else ""
+                    print(f"    → 投入：{si['name']} {qty_used}{intro}")
+    
+    if background:
+        if background['origin_story']:
+            print(f"\n背景故事：{background['origin_story']}")
+    
+    if nutrition:
+        print(f"\n营养信息（每{nutrition['serving_size'] or '份'}{nutrition['serving_unit'] or 'g'}）：")
+        if nutrition['calories']:
+            print(f"  热量：{nutrition['calories']}kcal")
+        if nutrition['protein']:
+            print(f"  蛋白质：{nutrition['protein']}g")
+        if nutrition['fat']:
+            print(f"  脂肪：{nutrition['fat']}g")
+        if nutrition['carbs']:
+            print(f"  碳水：{nutrition['carbs']}g")
+    
+    print(f"\nID: {recipe_id}")
+    return True
 
+def list_recipes(args):
+    """列出食谱"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 组合条件
+    conditions = ["status != '已废弃'"]
+    params = []
+    
+    if args.get("--difficulty"):
+        conditions.append("difficulty = ?")
+        params.append(args["--difficulty"])
+    
+    if args.get("--status"):
+        conditions.append("status = ?")
+        params.append(args["--status"])
+    
+    where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    
+    cursor.execute(f"SELECT id, name, difficulty, total_time_minutes, status FROM recipes{where} ORDER BY name", params)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        print("没有找到食谱")
+        return True
+    
+    print(f"\n共 {len(rows)} 道菜：")
+    print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'时间':<8} {'状态'}")
+    print("-" * 60)
+    for i, row in enumerate(rows, 1):
+        time_str = f"{row['total_time_minutes']}分钟" if row['total_time_minutes'] else "-"
+        print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {time_str:<8} {row['status']}")
+    
+    return True
 
-# ── CLI ─────────────────────────────────────────────────────────────────────
+def search(args):
+    """搜索食谱"""
+    keyword = args.get("<关键词>")
+    if not keyword:
+        print("错误：请提供关键词")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT DISTINCT r.id, r.name, r.difficulty, r.total_time_minutes, r.status
+        FROM recipes r
+        LEFT JOIN ingredients i ON r.id = i.recipe_id
+        WHERE (r.name LIKE ? OR i.name LIKE ?)
+        AND r.status != '已废弃'
+        ORDER BY r.name
+    """, (f"%{keyword}%", f"%{keyword}%"))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    if not rows:
+        print(f"未找到包含'{keyword}'的食谱")
+        return True
+    
+    print(f"\n找到 {len(rows)} 道菜：")
+    print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'时间':<8} {'状态'}")
+    print("-" * 60)
+    for i, row in enumerate(rows, 1):
+        time_str = f"{row['total_time_minutes']}分钟" if row['total_time_minutes'] else "-"
+        print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {time_str:<8} {row['status']}")
+    
+    return True
+
+def update(args):
+    """更新食谱"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 检查是否存在
+    cursor.execute("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    # 构建更新语句
+    updates = []
+    params = []
+    
+    if args.get("--name"):
+        updates.append("name = ?")
+        params.append(args["--name"])
+    if args.get("--description"):
+        updates.append("description = ?")
+        params.append(args["--description"])
+    if args.get("--difficulty"):
+        updates.append("difficulty = ?")
+        params.append(args["--difficulty"])
+    if args.get("--servings"):
+        updates.append("servings = ?")
+        params.append(args["--servings"])
+    if args.get("--total_time"):
+        updates.append("total_time_minutes = ?")
+        params.append(args["--total_time"])
+    if args.get("--status"):
+        updates.append("status = ?")
+        params.append(args["--status"])
+    if args.get("--photo_url"):
+        updates.append("photo_url = ?")
+        params.append(args["--photo_url"])
+    if args.get("--source"):
+        updates.append("source = ?")
+        params.append(args["--source"])
+    
+    if not updates:
+        print("错误：没有提供要更新的字段")
+        conn.close()
+        return False
+    
+    updates.append("updated_at = ?")
+    params.append(get_now())
+    params.append(recipe_id)
+    
+    cursor.execute(f"UPDATE recipes SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ 食谱更新成功！")
+    return True
+
+def lint(args):
+    """健康检查"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    issues = []
+    
+    # 检查食材
+    cursor.execute("SELECT COUNT(*) as cnt FROM ingredients WHERE recipe_id = ?", (recipe_id,))
+    if cursor.fetchone()["cnt"] == 0:
+        issues.append("⚠️ 没有食材")
+    
+    # 检查步骤
+    cursor.execute("SELECT COUNT(*) as cnt FROM cooking_steps WHERE recipe_id = ?", (recipe_id,))
+    if cursor.fetchone()["cnt"] == 0:
+        issues.append("⚠️ 没有步骤")
+    
+    # 检查分类
+    cursor.execute("SELECT COUNT(*) as cnt FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
+    if cursor.fetchone()["cnt"] == 0:
+        issues.append("⚠️ 没有分类标签")
+    
+    conn.close()
+    
+    print(f"\n【{recipe['name']} - 健康检查】")
+    if issues:
+        for issue in issues:
+            print(issue)
+    else:
+        print("✅ 数据完整，无问题")
+    
+    return True
 
 def main():
     if len(sys.argv) < 2:
-        print("用法:")
-        print("  python recipe_manager.py add <菜名> [--field value ...]")
-        print("  python recipe_manager.py show <菜名或ID>")
-        print("  python recipe_manager.py list")
-        print("  python recipe_manager.py update <recipe_id> [--field value ...]")
-        print("  python recipe_manager.py delete <recipe_id>")
-        print("  python recipe_manager.py lint <recipe_id>")
-        sys.exit(1)
+        print("""用法：
+    python recipe_manager.py add <菜名> [选项]
+    python recipe_manager.py show <菜名或ID>
+    python recipe_manager.py list [选项]
+    python recipe_manager.py search <关键词>
+    python recipe_manager.py update <recipe_id> [选项]
+    python recipe_manager.py lint <recipe_id>
+    python recipe_manager.py discard <recipe_id>
 
-    cmd = sys.argv[1]
-
-    if cmd == "add":
-        name = sys.argv[2] if len(sys.argv) > 2 else input("菜名: ")
-        args = sys.argv[3:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
+选项：
+    --description "描述"
+    --difficulty 难度（快手菜/简单/中等/困难/大师）
+    --servings 份量
+    --total_time 总时间（分钟）
+    --status 状态（未做/已做/熟练）
+    --source 来源
+    --photo_url 图片URL
+""")
+        return
+    
+    action = sys.argv[1]
+    
+    # 解析参数
+    args = {}
+    i = 2
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg.startswith("--"):
+            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
+                args[arg] = sys.argv[i + 1]
+                i += 2
+            else:
+                args[arg] = True
+                i += 1
+        else:
+            if action == "add" and i == 2:
+                args["name"] = arg
+            elif action == "show" and i == 2:
+                args["<菜名>"] = arg
+            elif action == "search" and i == 2:
+                args["<关键词>"] = arg
+            elif action == "update" and i == 2:
+                args["<recipe_id>"] = arg
+            elif action in ("lint", "discard") and i == 2:
+                args["<recipe_id>"] = arg
+            else:
+                args[f"arg{i}"] = arg
             i += 1
-        recipe_id = recipe_add(name, **fields)
-        print(f"✅ 食谱已添加: {name} (ID: {recipe_id})")
+    
+    if action == "add":
+        add(args)
+    elif action == "show":
+        show(args)
+    elif action == "list":
+        list_recipes(args)
+    elif action == "search":
+        search(args)
+    elif action == "update":
+        update(args)
+    elif action == "lint":
+        lint(args)
+    elif action == "discard":
+        discard(args)
+    else:
+        print(f"未知操作：{action}")
 
-    elif cmd == "show":
-        name = sys.argv[2] if len(sys.argv) > 2 else input("菜名: ")
-        recipe = recipe_show(name)
-        if not recipe:
-            print(f"❌ 未找到食谱: {name}")
-            sys.exit(1)
-        print(f"\n{'='*60}")
-        print(f"📖 {recipe['name']}")
-        print(f"{'='*60}")
-        print(f"难度: {recipe.get('difficulty', '-')} | 时间: {recipe.get('time_total_minutes', '-')}分钟 | 状态: {recipe.get('status', '-')}")
-        print(f"描述: {recipe.get('description', '-')}")
-        if recipe.get('ingredients'):
-            print(f"\n🥘 食材 ({len(recipe['ingredients'])}种):")
-            for ing in recipe['ingredients']:
-                qty = f"{ing['quantity']}{ing.get('unit','g')}" if ing.get('quantity') else ''
-                print(f"  - {ing['name']} {qty}")
-        if recipe.get('steps'):
-            print(f"\n📝 步骤 ({len(recipe['steps'])}步):")
-            for step in recipe['steps']:
-                print(f"  {step['sequence']}. {step['action']}")
-        if recipe.get('tips'):
-            print(f"\n💡 小贴士:")
-            for tip in recipe['tips']:
-                print(f"  [{tip['category']}] {tip['content']}")
 
-    elif cmd == "list":
-        recipes = recipe_list(limit=100)
-        if not recipes:
-            print("暂无食谱")
-        else:
-            print(f"\n共 {len(recipes)} 道菜:")
-            for r in recipes:
-                print(f"  • {r['name']} | {r.get('difficulty','-')} | {r.get('status','-')} | {r.get('times_cooked',0)}次")
 
-    elif cmd == "update":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        args = sys.argv[3:]
-        fields = {}
-        i = 0
-        while i < len(args):
-            if args[i].startswith('--') and i + 1 < len(args):
-                fields[args[i][2:]] = args[i + 1]
-            i += 1
-        recipe_update(recipe_id, **fields)
-        print("✅ 已更新")
-
-    elif cmd == "delete":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        confirm = input("确认删除（含所有子表数据）？(y/n): ")
-        if confirm.lower() == 'y':
-            recipe_delete(recipe_id)
-            print("✅ 已删除")
-        else:
-            print("取消删除")
-
-    elif cmd == "lint":
-        recipe_id = sys.argv[2] if len(sys.argv) > 2 else input("recipe_id: ")
-        issues = recipe_lint(recipe_id)
-        if not issues:
-            print("✅ 食谱完整，无问题")
-        else:
-            print("❌ 问题:")
-            for iss in issues:
-                print(f"  - {iss}")
-
+def discard(args):
+    """废弃食谱（标记为已废弃）"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    cursor.execute("UPDATE recipes SET status = '已废弃' WHERE id = ?", (recipe_id,))
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ 食谱「{recipe['name']}」已废弃")
+    return True
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ from .db import get_conn
 from .location_ops import (
     get_locations, add_location, remove_location,
     update_location_quantity, update_location_status,
-    update_location_dates, find_location_by_path, _locations_str, _record_location
+    update_location_dates, find_location_by_path, _locations_str
 )
 from .tag_ops import get_tags, set_tags
 
@@ -60,7 +60,6 @@ def add_item(name, category, location, owner="使用者", quantity=1,
     add_location(conn, item_id, location, quantity, reason=None, location_status=location_status,
                  purchase_date=purchase_date, expiration_date=expiration_date)
     set_tags(conn, item_id, tags)
-    _record_location(conn, location)
     conn.commit()
 
     tags_display = get_tags(conn, item_id)
@@ -257,7 +256,6 @@ def update_item(item_id, name=None, category=None, owner=None,
             "UPDATE item_locations SET location = ?, updated_at = ? WHERE id = ?",
             (new_location, now, loc[0])
         )
-        _record_location(conn, new_location)
         print(f"✓ 物品已从「{old_loc}」搬到「{new_location}」")
 
         # 如果同时有 --location-status，作用于新位置（而非旧位置）

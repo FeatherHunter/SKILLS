@@ -3,6 +3,22 @@ from datetime import datetime
 from .db import get_conn
 
 
+def suggest_locations(conn, category, limit=10):
+    """根据物品分类推荐位置（同类物品用过的位置）"""
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT il.location, COUNT(*) as cnt
+        FROM item_locations il
+        JOIN items i ON i.id = il.item_id
+        WHERE i.category = ?
+        GROUP BY il.location
+        ORDER BY cnt DESC
+        LIMIT ?
+    """, (category, limit))
+    rows = cursor.fetchall()
+    return [(row['location'], row['cnt']) for row in rows]
+
+
 def get_locations(conn, item_id):
     """返回该物品所有位置，ORDER BY id"""
     cursor = conn.cursor()
@@ -127,15 +143,3 @@ def _locations_str(item_id):
             date_str = f" {pd}~{ed}"
         parts.append(f"{r['location']} ×{r['quantity']}[{r['location_status']}]{reason_str}{date_str}")
     return " | ".join(parts)
-
-
-def _record_location(conn, location_path):
-    """记录位置到 locations 表（autocomplete 历史）"""
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO locations (location_path, use_count, last_used)
-        VALUES (?, 1, CURRENT_TIMESTAMP)
-        ON CONFLICT(location_path) DO UPDATE SET
-            use_count = use_count + 1,
-            last_used = CURRENT_TIMESTAMP
-    """, (location_path,))

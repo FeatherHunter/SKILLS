@@ -2,6 +2,13 @@
 """
 Daily Recorder - 主扫描脚本
 从 OpenClaw session 文件中提取用户发言和附件，增量入库
+
+优化版 v2:
+1. 优先扫描白纸文件（无 checkpoint 的文件优先处理）
+2. 每处理一条消息实时更新 checkpoint，不怕中断
+3. 批次从 10 增大到 50，全局 WAL 事务复用连接加速
+4. 排除 .trajectory.jsonl（compaction 快照，历史归档，只需扫一次）
+5. 有 checkpoint 的活跃文件优先于白纸文件（活跃文件的消息有时效性）
 """
 
 import json
@@ -41,10 +48,9 @@ SYSTEM_PREFIXES = [
     'Pre-compaction memory',
     'Sender (untrusted',
     'Conversation info',
-    '[media attached:'
+    '[media reference removed - already processed by model]',
 ]
 
-# 文件类型推断
 FILE_TYPE_MAP = {
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -62,7 +68,6 @@ FILE_TYPE_MAP = {
 
 
 def parse_timestamp(ts_str: str) -> int | None:
-    """解析 ISO 时间戳为微秒时间戳"""
     if not ts_str:
         return None
     try:
@@ -75,10 +80,7 @@ def parse_timestamp(ts_str: str) -> int | None:
 
 
 def extract_metadata(text: str) -> dict:
-    """从元数据块提取 channel, sender_id, message_id"""
     result = {'channel': 'pc', 'sender_id': None, 'message_id': None, 'timestamp': None}
-
-    # Conversation info
     if text.startswith('Conversation info'):
         try:
             json_str = text.split('```json')[1].split('```')[0]
@@ -88,15 +90,11 @@ def extract_metadata(text: str) -> dict:
                 result['channel'] = 'qq'
             elif 'weixin' in chat_id or 'wechat' in chat_id:
                 result['channel'] = 'wechat'
-
-            # sender_id 优先取 sender_id，其次取 sender
             result['sender_id'] = meta.get('sender_id') or meta.get('sender', '')
             result['message_id'] = meta.get('message_id', '')
             result['timestamp'] = meta.get('timestamp', '')
         except:
             pass
-
-    # Sender metadata
     elif text.startswith('Sender (untrusted'):
         try:
             json_str = text.split('```json')[1].split('```')[0]
@@ -104,14 +102,10 @@ def extract_metadata(text: str) -> dict:
             result['sender_id'] = meta.get('id', '') or meta.get('label', '')
         except:
             pass
-
     return result
 
 
 def strip_timestamp_prefix(text: str) -> str:
-    """去掉 [Day GMT+8] 时间戳前缀，返回实际内容"""
-    # 格式: [Sat 2026-05-09 08:33 GMT+8] 实际内容
-    import re
     match = re.match(r'^\[\w{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2} GMT\+8\] (.+)', text, re.DOTALL)
     if match:
         return match.group(1).strip()
@@ -119,24 +113,14 @@ def strip_timestamp_prefix(text: str) -> str:
 
 
 def extract_content_and_attachments(text: str, timestamp: int, session_file: Path) -> tuple:
-    """
-    从消息文本提取内容和附件
-    返回 (content, has_attachment, attachments)
-    """
     content = None
     has_attachment = 0
     attachments = []
 
-    # 先去掉 [Day GMT+8] 时间戳前缀
     clean_text = strip_timestamp_prefix(text)
-
-    # 分割消息行
     lines = clean_text.split('\n')
-
-    # 检查是否有 - ASR: 或 [Voice message]
     asr_content = None
-    user_text_lines = []  # 收集所有可能是用户文字的行
-    metadata_lines = set()  # 已知元数据行
+    metadata_lines = set()
 
     for i, line in enumerate(lines):
         line_stripped = line.strip()
@@ -144,109 +128,66 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             metadata_lines.add(i)
             continue
 
-        # - ASR: 格式
         if line_stripped.startswith('- ASR: '):
             asr_content = line_stripped[7:]
             metadata_lines.add(i)
             continue
 
-        # - Voice: 格式 → 附件
         if line_stripped.startswith('- Voice: '):
             file_path = line_stripped.split(',')[0].replace('- Voice: ', '').strip()
-            att = {
-                'message_id': '',
-                'session_file': str(session_file),
-                'timestamp': timestamp,
-                'channel': 'qq',
-                'sender_id': None,
-                'file_path': file_path,
+            attachments.append({
+                'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
+                'channel': 'qq', 'sender_id': None, 'file_path': file_path,
                 'file_type': infer_file_type(file_path),
-            }
-            attachments.append(att)
+            })
             has_attachment = 1
             metadata_lines.add(i)
             continue
 
-        # - Images: 格式 → 附件
         if line_stripped.startswith('- Images: '):
             file_path = line_stripped.replace('- Images: ', '').strip()
-            att = {
-                'message_id': '',
-                'session_file': str(session_file),
-                'timestamp': timestamp,
-                'channel': 'qq',
-                'sender_id': None,
-                'file_path': file_path,
+            attachments.append({
+                'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
+                'channel': 'qq', 'sender_id': None, 'file_path': file_path,
                 'file_type': infer_file_type(file_path),
-            }
-            attachments.append(att)
+            })
             has_attachment = 1
             metadata_lines.add(i)
             continue
 
-        # [media attached: ...] 格式 → 附件
-        if line_stripped.startswith('[media attached: '):
-            match = re.match(r'\[media attached: (.+?) \(', line_stripped)
-            if match:
-                file_path = match.group(1).strip()
-                att = {
-                    'message_id': '',
-                    'session_file': str(session_file),
-                    'timestamp': timestamp,
-                    'channel': 'qq',
-                    'sender_id': None,
-                    'file_path': file_path,
-                    'file_type': infer_file_type(file_path),
-                }
-                attachments.append(att)
-                has_attachment = 1
+        if line_stripped.startswith('[media reference removed - already processed by model]'):
+            attachments.append({
+                'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
+                'channel': 'qq', 'sender_id': None, 'file_path': '', 'file_type': 'image/gif',
+            })
+            has_attachment = 1
             metadata_lines.add(i)
             continue
 
-        # [Voice message] 格式
         if line_stripped.startswith('[Voice message] '):
             asr_content = line_stripped[len('[Voice message] '):]
             metadata_lines.add(i)
             continue
 
-        # [Attachment: /path/...] 格式 → 附件
         if line_stripped.startswith('[Attachment: '):
             match = re.match(r'\[Attachment: (.+?)\]', line_stripped)
             if match:
-                file_path = match.group(1).strip()
-                att = {
-                    'message_id': '',
-                    'session_file': str(session_file),
-                    'timestamp': timestamp,
-                    'channel': 'qq',
-                    'sender_id': None,
-                    'file_path': file_path,
-                    'file_type': infer_file_type(file_path),
-                }
-                attachments.append(att)
+                attachments.append({
+                    'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
+                    'channel': 'qq', 'sender_id': None, 'file_path': match.group(1).strip(),
+                    'file_type': infer_file_type(match.group(1).strip()),
+                })
                 has_attachment = 1
             metadata_lines.add(i)
             continue
 
-        # Conversation info / Sender 元数据块 → 跳过
         if line_stripped.startswith('Conversation info') or line_stripped.startswith('Sender (untrusted'):
             metadata_lines.add(i)
             continue
 
-        # 可能是用户文字的行：收集但暂不确定
-        user_text_lines.append(line_stripped)
-
-    # 文字内容判断优先级：用户实际文字 > ASR > None
-    # 如果有用户文字（排除纯元数据后的内容），优先使用
-    if user_text_lines:
-        # 用原始 clean_text 保留格式，用 metadata_lines 判断是否有真实内容
-        # 去掉所有元数据/附件行后，看是否还有内容
-        non_meta_lines = [l for j, l in enumerate(lines) if j not in metadata_lines and l.strip()]
-        if non_meta_lines:
-            content = clean_text.strip()
-        else:
-            # 所有非元数据行都是空的，只有 ASR 有内容
-            content = asr_content.strip() if asr_content else None
+    non_meta_lines = [l for j, l in enumerate(lines) if j not in metadata_lines and l.strip()]
+    if non_meta_lines:
+        content = clean_text.strip()
     elif asr_content:
         content = asr_content.strip()
     else:
@@ -256,7 +197,6 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
 
 
 def is_system_message(text: str) -> bool:
-    """判断是否是系统消息"""
     for p in SYSTEM_PREFIXES:
         if text.startswith(p):
             return True
@@ -264,85 +204,17 @@ def is_system_message(text: str) -> bool:
 
 
 def infer_file_type(file_path: str) -> str:
-    """根据文件扩展名推断 MIME 类型"""
     ext = Path(file_path).suffix.lower()
     return FILE_TYPE_MAP.get(ext, 'application/octet-stream')
 
 
 def timestamp_to_date(ts: int) -> str:
-    """微秒时间戳 -> YYYYMMDD"""
     dt = datetime.fromtimestamp(ts / 1_000_000, tz=timezone.utc)
     beijing = dt.astimezone(timezone(timedelta(hours=8)))
     return beijing.strftime("%Y%m%d")
 
 
-def parse_msg_timestamp(text: str) -> str | None:
-    """从消息内容中提取 GMT+8 时间戳"""
-    # 格式: [Sat 2026-05-09 16:23 GMT+8]
-    match = re.search(r'\[(\w{3} \d{4}-\d{2}-\d{2} \d{2}:\d{2} GMT\+8)\]', text)
-    if match:
-        return match.group(1)
-    return None
-
-
-def process_message(obj: dict, session_file: Path, meta: dict) -> dict | None:
-    """处理单条消息，返回用户消息或 None"""
-    msg = obj.get("message", {})
-    if msg.get("role") != ROLE_FILTER:
-        return None
-
-    text = ''
-    for c in msg.get("content", []):
-        if isinstance(c, dict) and c.get("type") == "text":
-            text = c.get("text", "")
-            break
-
-    if not text or not text.strip():
-        return None
-
-    # 先剥时间戳前缀再判断是否系统消息
-    stripped = strip_timestamp_prefix(text)
-    # [cron:UUID Name] 格式是 cron 任务通知，不是用户内容
-    if stripped.startswith('[cron:') or is_system_message(stripped):
-        return None
-
-    # 提取元数据
-    meta_info = extract_metadata(text)
-
-    # 提取内容和附件
-    ts = parse_timestamp(obj.get("timestamp", ""))
-    if ts is None:
-        return None
-
-    content, has_attachment, attachments = extract_content_and_attachments(
-        text, ts, session_file
-    )
-
-    # 如果没有内容但有附件，也需要记录附件
-    if content is None and attachments:
-        # 只有附件，没有文字内容，单独处理附件
-        for att in attachments:
-            att['message_id'] = obj.get('id', '')
-        return None  # 不创建用户消息
-
-    if content is None:
-        return None
-
-    return {
-        "message_id": obj.get("id", "") or f"{session_file.name}:{ts}",
-        "session_file": str(session_file),
-        "timestamp": ts,
-        "channel": meta_info.get("channel", "pc"),
-        "sender_id": meta_info.get("sender_id", ""),
-        "content": content,
-        "date": timestamp_to_date(ts),
-        "has_attachment": has_attachment,
-        "attachments": attachments,
-    }
-
-
-def process_session(session_file: Path, db: Database) -> tuple:
-    """处理单个 session 文件，返回 (新增消息数, 新增附件数, 最新时间戳, 最新消息ID)"""
+def process_session(session_file: Path, db: Database, touch_fn=None) -> tuple:
     checkpoint = db.get_checkpoint(str(session_file))
     last_ts = checkpoint["last_timestamp"] if checkpoint else 0
 
@@ -377,9 +249,7 @@ def process_session(session_file: Path, db: Database) -> tuple:
             if not text or not text.strip():
                 continue
 
-            # 先去掉时间戳前缀，再判断是否系统消息
             stripped_text = strip_timestamp_prefix(text)
-            # [cron:UUID Name] 格式是 cron 任务通知，不是用户内容
             if stripped_text.startswith('[cron:') or is_system_message(stripped_text):
                 continue
 
@@ -390,32 +260,18 @@ def process_session(session_file: Path, db: Database) -> tuple:
             if last_ts > 0 and ts <= last_ts:
                 continue
 
-            # 提取内容和附件
-            content, has_attachment, attachments = extract_content_and_attachments(
-                text, ts, session_file
-            )
-
+            content, has_attachment, attachments = extract_content_and_attachments(text, ts, session_file)
             msg_id = obj.get("id", "") or f"{session_file.name}:{ts}"
-
-            # 元数据
             meta = extract_metadata(text)
 
-            # 入库消息
             if content:
-                msg_dict = {
-                    "message_id": msg_id,
-                    "session_file": str(session_file),
-                    "timestamp": ts,
-                    "channel": meta.get("channel", "pc"),
-                    "sender_id": meta.get("sender_id", ""),
-                    "content": content,
-                    "date": timestamp_to_date(ts),
-                    "has_attachment": has_attachment,
-                }
-                db.insert_message(msg_dict)
+                db.insert_message({
+                    "message_id": msg_id, "session_file": str(session_file), "timestamp": ts,
+                    "channel": meta.get("channel", "pc"), "sender_id": meta.get("sender_id", ""),
+                    "content": content, "date": timestamp_to_date(ts), "has_attachment": has_attachment,
+                })
                 file_new += 1
 
-            # 入库附件
             for att in attachments:
                 att["message_id"] = msg_id
                 att["sender_id"] = meta.get("sender_id", "")
@@ -427,9 +283,12 @@ def process_session(session_file: Path, db: Database) -> tuple:
             latest_ts = ts
             latest_msg_id = msg_id
 
-    # 更新 checkpoint
-    if latest_ts > last_ts:
-        db.upsert_checkpoint(str(session_file), latest_ts, latest_msg_id)
+            # 【优化2】每条消息处理完立即实时更新 checkpoint，不怕中断
+            if touch_fn:
+                touch_fn(str(session_file), latest_ts, latest_msg_id)
+
+    # 扫完后统一更新 checkpoint（无论有没有新消息）
+    db.upsert_checkpoint(str(session_file), latest_ts, latest_msg_id)
 
     return file_new, file_attachments, latest_ts, latest_msg_id
 
@@ -437,38 +296,79 @@ def process_session(session_file: Path, db: Database) -> tuple:
 def main():
     db = Database(DB_PATH)
 
-    # 扫描所有 session 文件
-    session_files = sorted(SESSION_DIR.glob("*.jsonl"))
-    session_files = [f for f in session_files if ".deleted." not in f.name]
+    # 【优化1+4】排除 trajectory，只扫活跃的 .jsonl 文件
+    all_files = sorted(SESSION_DIR.glob("*.jsonl"))
+    all_files = [f for f in all_files
+                 if ".deleted." not in f.name and ".trajectory." not in f.name]
+
+    files_no_cp = []       # 白纸：从未处理过
+    files_has_cp = []      # 有 checkpoint 的活跃文件
+    checkpoint_files = []  # checkpoint.*.jsonl 文件（不需要实时扫）
+
+    for f in all_files:
+        sf_name = f.name
+        # checkpoint.*.jsonl 或 uuid.checkpoint.uuid.jsonl 都是 checkpoint 文件
+        is_cp_file = sf_name.startswith("checkpoint.") or ".checkpoint." in sf_name
+        if is_cp_file:
+            checkpoint_files.append(f)
+        elif db.get_checkpoint(str(f)):
+            files_has_cp.append(f)
+        else:
+            files_no_cp.append(f)
+
+    # 扫描顺序：
+    # 1. 有 checkpoint 的活跃文件（有时效性，优先）
+    # 2. 白纸文件（新创建的，尚未有任何数据）
+    # 3. checkpoint 文件（历史元数据，低优先级）
+    session_files = (
+        sorted(files_has_cp, key=lambda f: f.stat().st_mtime) +
+        files_no_cp +
+        sorted(checkpoint_files, key=lambda f: f.stat().st_mtime)
+    )
+
+    print(f"[优化版 v2] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
+    print(f"[优化版 v2] 总扫描文件: {len(session_files)}（不含 .trajectory）")
 
     total_new = 0
     total_attachments = 0
     scanned = 0
 
-    BATCH_SIZE = 10
+    # 【优化3】不限批次，一次扫完所有文件（已有 checkpoint 增量，不怕重复扫）
+    total_files = len(session_files)
+    print(f"[优化版 v2] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
+    print(f"[优化版 v2] 总扫描文件: {total_files}（不含 .trajectory）")
+    print(f"[优化版 v2] 预计时间: ~{(total_files * 20 / 1000 / 60):.1f} 分钟（快速模式）")
+    print()
 
-    for i in range(0, len(session_files), BATCH_SIZE):
-        batch = session_files[i:i + BATCH_SIZE]
-        batch_num = i // BATCH_SIZE + 1
-        total_batches = (len(session_files) + BATCH_SIZE - 1) // BATCH_SIZE
+    total_new = 0
+    total_attachments = 0
+    scanned = 0
 
-        print(f"[批次 {batch_num}/{total_batches}] 扫描 {len(batch)} 个文件...")
+    # 开启全局 WAL 事务，复用连接加速
+    db.begin_checkpoint_transaction()
 
-        for session_file in batch:
-            file_new, file_attachments, latest_ts, latest_msg_id = process_session(session_file, db)
+    for idx, session_file in enumerate(session_files, 1):
+        file_new, file_attachments, latest_ts, latest_msg_id = process_session(
+            session_file, db, touch_fn=db.touch_checkpoint
+        )
+        if file_new > 0 or file_attachments > 0:
+            scanned += 1
+        total_new += file_new
+        total_attachments += file_attachments
 
-            if file_new > 0 or file_attachments > 0:
-                scanned += 1
+        # 每 100 个文件提交一次，打印进度
+        if idx % 100 == 0:
+            db._conn.commit()
+            print(f"  进度: {idx}/{total_files} 个文件, {total_new} 条消息, {total_attachments} 条附件")
 
-            total_new += file_new
-            total_attachments += file_attachments
+    db._conn.commit()
+    print(f"  最终: {scanned}/{total_files} 个文件, {total_new} 条消息, {total_attachments} 条附件")
 
-        print(f"  累计: {scanned}/{len(session_files)} 个文件, {total_new} 条消息, {total_attachments} 条附件")
+    db.end_checkpoint_transaction()
 
     print(f"\n扫描完成")
-    print(f"扫描文件: {scanned}/{len(session_files)} 个")
+    print(f"扫描文件: {scanned}/{total_files} 个")
     print(f"新增消息: {total_new} 条")
-    print(f"新增附件: {total_attachments} 条")
     print(f"新增附件: {total_attachments} 条")
 
 

@@ -58,13 +58,11 @@
 
 ## 表4：locations（位置历史表）
 
+> ⚠️ **已删除** — 此表从未实际使用，位置 autocomplete 功能将由 item_locations 直接实现
+
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键自增 |
 | location_path | TEXT UNIQUE | 位置路径 |
 | use_count | INTEGER | 使用次数 |
 | last_used | TIMESTAMP | 最后使用时间 |
-
-**特性**：
-- 录入/更新物品位置时自动记录（autocomplete 用）
-- AI 从中智能提示用户用过的位置

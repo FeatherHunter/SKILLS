@@ -63,70 +63,108 @@ class Database:
         conn.close()
 
     def insert_message(self, msg: dict):
-        conn = sqlite3.connect(str(self.db_path))
+        _conn = getattr(self, '_conn', None)
+        conn = _conn if _conn is not None else sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
-        cur.execute("""
-            INSERT OR IGNORE INTO user_messages
-            (message_id, session_file, timestamp, channel, sender_id, content, date, has_attachment, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            msg.get("message_id", ""),
-            msg.get("session_file", ""),
-            msg["timestamp"],
-            msg.get("channel", ""),
-            msg.get("sender_id", ""),
-            msg["content"],
-            msg["date"],
-            msg.get("has_attachment", 0),
-            int(time.time()),
-        ))
-        conn.commit()
-        conn.close()
+        try:
+            cur.execute("""
+                INSERT OR IGNORE INTO user_messages
+                (message_id, session_file, timestamp, channel, sender_id, content, date, has_attachment, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                msg.get("message_id", ""),
+                msg.get("session_file", ""),
+                msg["timestamp"],
+                msg.get("channel", ""),
+                msg.get("sender_id", ""),
+                msg["content"],
+                msg["date"],
+                msg.get("has_attachment", 0),
+                int(time.time()),
+            ))
+            conn.commit()
+        finally:
+            if conn is not _conn:
+                conn.close()
 
     def insert_attachment(self, att: dict):
-        conn = sqlite3.connect(str(self.db_path))
+        _conn = getattr(self, '_conn', None)
+        conn = _conn if _conn is not None else sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
-        cur.execute("""
-            INSERT OR IGNORE INTO user_attachments
-            (message_id, session_file, timestamp, channel, sender_id, file_path, file_type, date, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            att.get("message_id", ""),
-            att.get("session_file", ""),
-            att["timestamp"],
-            att.get("channel", ""),
-            att.get("sender_id", ""),
-            att["file_path"],
-            att.get("file_type", ""),
-            att.get("date", ""),
-            int(time.time()),
-        ))
-        conn.commit()
-        conn.close()
+        try:
+            cur.execute("""
+                INSERT OR IGNORE INTO user_attachments
+                (message_id, session_file, timestamp, channel, sender_id, file_path, file_type, date, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                att.get("message_id", ""),
+                att.get("session_file", ""),
+                att["timestamp"],
+                att.get("channel", ""),
+                att.get("sender_id", ""),
+                att["file_path"],
+                att.get("file_type", ""),
+                att.get("date", ""),
+                int(time.time()),
+            ))
+            conn.commit()
+        finally:
+            if conn is not _conn:
+                conn.close()
 
     def get_checkpoint(self, session_file: str) -> dict | None:
-        conn = sqlite3.connect(str(self.db_path))
+        _conn = getattr(self, '_conn', None)
+        conn = _conn if _conn is not None else sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
-        cur.execute("""
-            SELECT last_timestamp, last_message_id
-            FROM scan_checkpoint WHERE session_file = ?
-        """, (session_file,))
-        row = cur.fetchone()
-        conn.close()
+        try:
+            cur.execute("""
+                SELECT last_timestamp, last_message_id
+                FROM scan_checkpoint WHERE session_file = ?
+            """, (session_file,))
+            row = cur.fetchone()
+        finally:
+            if conn is not _conn:
+                conn.close()
         if row:
             return {"last_timestamp": row[0], "last_message_id": row[1]}
         return None
 
     def upsert_checkpoint(self, session_file: str, last_timestamp: int, last_message_id: str):
-        conn = sqlite3.connect(str(self.db_path))
+        _conn = getattr(self, '_conn', None)
+        conn = _conn if _conn is not None else sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
-        cur.execute("""
+        try:
+            cur.execute("""
+                INSERT OR REPLACE INTO scan_checkpoint
+                (session_file, last_timestamp, last_message_id, updated_at)
+                VALUES (?, ?, ?, ?)
+            """, (session_file, last_timestamp, last_message_id, int(time.time())))
+            conn.commit()
+        finally:
+            if conn is not _conn:
+                conn.close()
+
+    def touch_checkpoint(self, session_file: str, last_timestamp: int, last_message_id: str):
+        """轻量更新 checkpoint（不关闭连接，用于扫描中途中实时更新）"""
+        self._cur.execute("""
             INSERT OR REPLACE INTO scan_checkpoint
             (session_file, last_timestamp, last_message_id, updated_at)
             VALUES (?, ?, ?, ?)
         """, (session_file, last_timestamp, last_message_id, int(time.time())))
-        conn.commit()
-        conn.close()
+
+    def begin_checkpoint_transaction(self):
+        """开启 checkpoint 事务（搭配 touch_checkpoint 和 end_checkpoint_transaction 使用）"""
+        self._conn = sqlite3.connect(str(self.db_path), timeout=30)
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._cur = self._conn.cursor()
+
+    def end_checkpoint_transaction(self):
+        """提交并关闭 checkpoint 事务"""
+        if self._conn:
+            self._conn.commit()
+            self._conn.close()
+            self._conn = None
+            self._cur = None
 
     def query(self, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
         conn = sqlite3.connect(str(self.db_path))
@@ -186,6 +224,20 @@ class Database:
             LIMIT ?
         """, (*params, limit))
 
+        rows = cur.fetchall()
+        conn.close()
+        return rows
+
+    def query_recent(self, limit: int = 50):
+        """查询最近 N 条消息（按最新时间倒序）"""
+        conn = sqlite3.connect(str(self.db_path))
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT message_id, timestamp, channel, sender_id, content, has_attachment, date
+            FROM user_messages
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (limit,))
         rows = cur.fetchall()
         conn.close()
         return rows

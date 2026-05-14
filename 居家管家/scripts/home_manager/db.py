@@ -103,16 +103,6 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_item_id ON item_locations(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_location ON item_locations(location)")
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS locations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            location_path TEXT UNIQUE NOT NULL,
-            use_count INTEGER DEFAULT 1,
-            last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_locations_path ON locations(location_path)")
-
     migrate_add_date_columns(conn)
 
     conn.commit()
@@ -162,16 +152,3 @@ def migrate_add_date_columns(conn):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
 
 
-# ── 位置历史记录 ──────────────────────────────────────────────────────────────
-
-
-def _record_location(conn, location_path):
-    """记录/更新位置到 locations 表"""
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO locations (location_path, use_count, last_used)
-        VALUES (?, 1, CURRENT_TIMESTAMP)
-        ON CONFLICT(location_path) DO UPDATE SET
-            use_count = use_count + 1,
-            last_used = CURRENT_TIMESTAMP
-    """, (location_path,))

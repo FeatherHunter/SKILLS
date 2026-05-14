@@ -41,6 +41,12 @@ def main():
     parser.add_argument("--start", type=str, help="开始时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
     parser.add_argument("--end", type=str, help="结束时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
     parser.add_argument("--date", type=str, help="单日 YYYYMMDD（优先于 start/end）")
+def main():
+    parser = argparse.ArgumentParser(description="查询用户消息和附件")
+    parser.add_argument("--start", type=str, help="开始时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
+    parser.add_argument("--end", type=str, help="结束时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
+    parser.add_argument("--date", type=str, help="单日 YYYYMMDD（优先于 start/end）")
+    parser.add_argument("--recent", type=int, help="最近 N 条消息（忽略日期过滤，按最新排序）")
     parser.add_argument("--limit", type=int, default=1000, help="最大返回条数")
     parser.add_argument("--attachments", action="store_true", help="同时查询附件")
     args = parser.parse_args()
@@ -50,24 +56,26 @@ def main():
     # 解析时间参数
     start_ts = None
     end_ts = None
+    recent_mode = args.recent is not None
 
-    if args.date:
-        year = int(args.date[:4])
-        month = int(args.date[4:6])
-        day = int(args.date[6:8])
-        beijing = timezone(timedelta(hours=8))
-        start_dt = datetime(year, month, day, 0, 0, 0, tzinfo=beijing)
-        end_dt = datetime(year, month, day, 23, 59, 59, tzinfo=beijing)
-        start_ts = int(start_dt.timestamp() * 1_000_000)
-        end_ts = int(end_dt.timestamp() * 1_000_000)
-    else:
-        if args.start:
-            start_ts = parse_ts(args.start)
-        if args.end:
-            end_ts = parse_ts(args.end)
+    if not recent_mode:
+        if args.date:
+            year = int(args.date[:4])
+            month = int(args.date[4:6])
+            day = int(args.date[6:8])
+            beijing = timezone(timedelta(hours=8))
+            start_dt = datetime(year, month, day, 0, 0, 0, tzinfo=beijing)
+            end_dt = datetime(year, month, day, 23, 59, 59, tzinfo=beijing)
+            start_ts = int(start_dt.timestamp() * 1_000_000)
+            end_ts = int(end_dt.timestamp() * 1_000_000)
+        else:
+            if args.start:
+                start_ts = parse_ts(args.start)
+            if args.end:
+                end_ts = parse_ts(args.end)
 
-    # 查询消息
-    rows = db.query(start_ts=start_ts, end_ts=end_ts, limit=args.limit)
+    # 查询消息（recent 模式按最新排序）
+    rows = db.query_recent(args.recent) if recent_mode else db.query(start_ts=start_ts, end_ts=end_ts, limit=args.limit)
 
     if not rows:
         print("没有找到消息")

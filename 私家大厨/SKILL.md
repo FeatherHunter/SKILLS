@@ -1,6 +1,6 @@
 # 私家大厨 🍳
 
-> 版本：v2.0
+> 版本：v2.1
 > 设计：基于17张表，6个核心用例，无删除操作
 
 ---
@@ -8,6 +8,35 @@
 ## ⚠️ 操作规范（强制）
 
 本技能所有数据操作必须通过 CLI，禁止直连数据库。
+
+---
+
+## AI使用规范（强制）
+
+### 调用任何manager前，必须：
+
+1. **展示完整参数示例** — 让用户知道这条命令会用哪些参数
+2. **对未提供字段进行合理推测** — 基于菜系特点/常见值/烹饪逻辑
+3. **推测不出时询问用户** — 不能留空不填
+
+### 字段推测规则
+
+| 表/字段 | 推测规则 |
+|---------|---------|
+| recipes.description | 从菜名推断，如"经典川菜" |
+| recipes.difficulty | 根据步骤复杂度/时间判断 |
+| recipes.photo_url | 询问用户是否有照片 |
+| recipes.source_url | 询问用户是否有链接 |
+| ingredients.quantity_text | 用户说"适量"时填充，否则留空 |
+| ingredients.is_optional | 用户明确说"可选"时设置1 |
+| ingredients.substitute | 用户提到"可用XX代替"时填充 |
+| ingredients.category | 根据食材名称推断（姜→蔬菜，虾→海鲜） |
+| cooking_steps.temperature | 根据heat_level推断：中火≈160度，大火≈180-200度 |
+| cooking_steps.expected_result | 根据步骤动作推测合理效果 |
+| step_ingredients.quantity_used | 继承ingredients.quantity |
+| step_ingredients.introduced_at | 根据步骤序号推断：开局/第X步加入 |
+
+**无法推测时，必须询问用户。**
 
 ---
 

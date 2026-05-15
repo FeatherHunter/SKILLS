@@ -109,7 +109,7 @@ def add(args):
     return True
 
 def show(args):
-    """查看食谱详情（人类友好格式）"""
+    """查看食谱详情"""
     name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
     if not name:
         print("错误：请提供菜名或ID")
@@ -118,7 +118,7 @@ def show(args):
     conn = get_connection()
     cursor = conn.cursor()
     
-    # 查主表
+    # 先查主表
     cursor.execute("SELECT * FROM recipes WHERE id = ? OR name LIKE ?", (name, f"%{name}%"))
     recipe = cursor.fetchone()
     
@@ -127,8 +127,7 @@ def show(args):
         conn.close()
         return False
     
-    recipe_status = recipe["status"]
-    if recipe_status == '已废弃':
+    if recipe['status'] == '已废弃':
         print(f"⚠️ 「{recipe['name']}」已废弃")
         conn.close()
         return True
@@ -139,30 +138,35 @@ def show(args):
     cursor.execute("SELECT * FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
     categories = cursor.fetchall()
     
+    # 查季节
     cursor.execute("SELECT season FROM recipe_seasons WHERE recipe_id = ?", (recipe_id,))
     seasons = [row["season"] for row in cursor.fetchall()]
     
+    # 查烹饪方式
     cursor.execute("SELECT method FROM recipe_cooking_methods WHERE recipe_id = ?", (recipe_id,))
     methods = [row["method"] for row in cursor.fetchall()]
     
+    # 查口味
     cursor.execute("SELECT flavor FROM recipe_flavors WHERE recipe_id = ?", (recipe_id,))
     flavors = [row["flavor"] for row in cursor.fetchall()]
     
+    # 查饮食标签
     cursor.execute("SELECT tag FROM recipe_diet_tags WHERE recipe_id = ?", (recipe_id,))
     diet_tags = [row["tag"] for row in cursor.fetchall()]
     
+    # 查用餐类型
     cursor.execute("SELECT meal_type FROM recipe_meal_types WHERE recipe_id = ?", (recipe_id,))
     meal_types = [row["meal_type"] for row in cursor.fetchall()]
     
     # 查食材
     cursor.execute("SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
-    ingredients = list(cursor.fetchall())
+    ingredients = cursor.fetchall()
     
     # 查步骤
     cursor.execute("SELECT * FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
-    steps = list(cursor.fetchall())
+    steps = cursor.fetchall()
     
-    # 查步骤食材投入
+    # 查所有步骤的食材投入（用于展示每步用了哪些食材）
     step_ingredients_map = {}
     if steps:
         step_ids = [step['id'] for step in steps]
@@ -181,37 +185,6 @@ def show(args):
                 step_ingredients_map[sid] = []
             step_ingredients_map[sid].append(row)
     
-    # 查步骤技法
-    step_techniques_map = {}
-    if steps:
-        step_ids = [step['id'] for step in steps]
-        placeholders = ','.join(['?' for _ in step_ids])
-        cursor.execute(f"""
-            SELECT st.step_id, st.technique_name, st.description, st.key_points
-            FROM step_techniques st
-            WHERE st.step_id IN ({placeholders})
-        """, step_ids)
-        for row in cursor.fetchall():
-            sid = row['step_id']
-            if sid not in step_techniques_map:
-                step_techniques_map[sid] = []
-            step_techniques_map[sid].append(row)
-    
-    # 查步骤小贴士
-    step_tips_map = {}
-    cursor.execute("SELECT step_id, category, content, priority FROM tips WHERE recipe_id = ?", (recipe_id,))
-    for row in cursor.fetchall():
-        sid = row['step_id']
-        if sid:
-            if sid not in step_tips_map:
-                step_tips_map[sid] = []
-            step_tips_map[sid].append(row)
-    
-    # 查全局小贴士
-    global_tips = []
-    cursor.execute("SELECT category, content, priority FROM tips WHERE recipe_id = ? AND step_id IS NULL", (recipe_id,))
-    global_tips = list(cursor.fetchall())
-    
     # 查炊具
     cursor.execute("SELECT * FROM cookware WHERE recipe_id = ?", (recipe_id,))
     cookware_list = cursor.fetchall()
@@ -224,240 +197,105 @@ def show(args):
     cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
     nutrition = cursor.fetchone()
     
-    # 查历史统计
+    # 查历史
     cursor.execute("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM recipe_history WHERE recipe_id = ?", (recipe_id,))
     history_stats = cursor.fetchone()
     
-    # 查历史详情
-    cursor.execute("SELECT * FROM recipe_history WHERE recipe_id = ? ORDER BY cook_date DESC", (recipe_id,))
-    history_list = list(cursor.fetchall())
-    
-    # 查派生关系
-    cursor.execute("SELECT * FROM recipe_relations WHERE parent_id = ? OR child_id = ?", (recipe_id, recipe_id))
-    relations = list(cursor.fetchall())
-    
     conn.close()
     
-    # ==================== 格式设计开始 ====================
-    SEP = "─" * 54
-    SEP_MID = "─" * 10
-    
-    # 1. 头部信息
-    print(f"\n{'═' * 54}")
-    print(f"  🍳 {recipe['name']}")
-    print(f"{'═' * 54}")
-    
-    # 基本信息横排
-    basic_info = []
-    basic_info.append(f"难度 {recipe['difficulty'] or '?'}")
-    basic_info.append(f"总时间 {recipe['total_time_minutes'] or '?'}分钟")
-    basic_info.append(f"份量 {recipe['servings'] or '?'}人份")
-    print(f"\n  📊 {' | '.join(basic_info)}")
+    # 打印
+    print(f"\n【{recipe['name']}】")
+    print(f"难度：{recipe['difficulty'] or '未知'}")
+    print(f"总时间：{recipe['total_time_minutes'] or '未知'}分钟")
+    print(f"份量：{recipe['servings'] or '未知'}人份")
     
     if history_stats["cnt"]:
-        print(f"  ✅ {recipe_status}（做过{history_stats['cnt']}次，评分{history_stats['avg_rating']:.1f}）")
+        print(f"状态：{recipe['status']}（做过{history_stats['cnt']}次，评分{history_stats['avg_rating']:.1f}）")
     else:
-        print(f"  📌 {recipe_status}")
+        print(f"状态：{recipe['status']}")
     
     if recipe['source']:
-        print(f"  📖 来源：{recipe['source']}")
-    if recipe['description']:
-        print(f"  💬 {recipe['description']}")
+        print(f"来源：{recipe['source']}")
     
-    # 2. 分类信息（横排，紧凑）
-    cat = categories[0] if categories else {}
-    tags_list = []
-    if cat['cuisine_type']:
-        tags_list.append(cat['cuisine_type'])
+    photo_url = recipe['photo_url']
+    if photo_url:
+        print(f"照片：{photo_url}")
+    
+    if categories:
+        cat = categories[0]
+        if cat["cuisine_type"]:
+            print(f"菜系：{cat['cuisine_type']}")
+        if cat["region"]:
+            print(f"地区：{cat['region']}")
+        if cat["country"]:
+            print(f"国家：{cat['country']}")
+    
     if seasons:
-        tags_list.extend(seasons)
+        print(f"季节：{'/'.join(seasons)}")
     if methods:
-        tags_list.extend(methods)
+        print(f"烹饪方式：{'/'.join(methods)}")
     if flavors:
-        tags_list.extend(flavors)
+        print(f"口味：{'/'.join(flavors)}")
     if diet_tags:
-        tags_list.extend(diet_tags)
+        print(f"饮食标签：{'/'.join(diet_tags)}")
     if meal_types:
-        tags_list.extend(meal_types)
+        print(f"用餐类型：{'/'.join(meal_types)}")
     
-    if tags_list:
-        print(f"\n  🏷️  {' · '.join(tags_list)}")
-    
-    # 3. 炊具
     if cookware_list:
-        cw_names = [f"{cw['name']}({cw['category'] or '其他'})" for cw in cookware_list]
-        print(f"\n  🍳 炊具：{', '.join(cw_names)}")
+        print(f"\n需要的厨具：")
+        for cw in cookware_list:
+            print(f"  - {cw['name']}（{cw['category'] or '其他'}）")
     
-    # 4. 食材清单
     if ingredients:
-        print(f"\n{'═' * 54}")
-        print(f"  🥬 食材清单（共{len(ingredients)}种）")
-        print(f"{'═' * 54}")
-        
-        # 食材在哪些步骤使用
-        ing_steps_map = {}
-        conn2 = get_connection()
-        cursor2 = conn2.cursor()
-        cursor2.execute("""
-            SELECT si.ingredient_id, cs.sequence
-            FROM step_ingredients si
-            JOIN cooking_steps cs ON si.step_id = cs.id
-            WHERE cs.recipe_id = ?
-        """, (recipe_id,))
-        for row in cursor2.fetchall():
-            ing_id, seq = row
-            if ing_id not in ing_steps_map:
-                ing_steps_map[ing_id] = []
-            ing_steps_map[ing_id].append(f"{seq}")
-        conn2.close()
-        
+        print(f"\n食材清单（共{len(list(ingredients))}种）：")
         for ing in ingredients:
-            seq = ing['sequence']
-            name_ing = ing['name']
             qty = f"{ing['quantity']}{ing['unit']}" if ing['quantity'] else ""
             qty_text = ing['quantity_text'] or ""
-            opt = " ⭐可选" if ing['is_optional'] else ""
-            sub = f" → 可用{ing['substitute']}" if ing['substitute'] else ""
-            used = ing_steps_map.get(ing['id'], [])
-            used_str = f" [步{','.join(used)}]" if used else ""
-            print(f"  {seq:>2}. {name_ing} {qty}{qty_text}{opt}{sub}{used_str}")
+            opt = "（可选）" if ing['is_optional'] else ""
+            print(f"  {ing['sequence']}. {ing['name']} {qty}{qty_text} {opt}")
     
-    # 5. 完整步骤
     if steps:
-        print(f"\n{'═' * 54}")
-        print(f"  👨‍🍳 烹饪步骤（共{len(steps)}步）")
-        print(f"{'═' * 54}")
-        
+        print(f"\n完整步骤：")
         for step in steps:
-            sid = step['id']
-            seq = step['sequence']
-            
-            # 步骤标题框
-            print(f"\n  ┌{'─' * 22} 第{seq}步 {'─' * 22}┐")
-            
-            # 元信息：时长/火候/温度
-            dur = f"{step['duration_minutes']}分钟" if step['duration_minutes'] else "?"
-            heat = step['heat_level'] or "?"
-            temp = step['temperature'] or "?"
-            print(f"  │ ⏱ {dur}  🔥 {heat}  🌡 {temp}")
-            
-            # 操作（最突出）
-            print(f"  │")
-            print(f"  │ 📝 操作")
-            action_lines = step['action'].split('；')
-            bullets = ['①', '②', '③', '④', '⑤', '⑥']
-            for i, line in enumerate(action_lines):
-                line = line.strip()
-                if line:
-                    bullet = bullets[i] if i < len(bullets) else "•"
-                    print(f"  │    {bullet} {line}")
-            
-            # 预期结果
-            if step['expected_result']:
-                print(f"  │")
-                print(f"  │ 🎯 预期：{step['expected_result']}")
-            
-            # 投入食材
-            if sid in step_ingredients_map:
-                print(f"  │")
-                print(f"  │ 🥬 投入")
-                for si in step_ingredients_map[sid]:
-                    ing_seq = si['ing_seq']
-                    ing_name = si['name']
+            dur = f"（{step['duration_minutes']}分钟）" if step['duration_minutes'] else ""
+            heat = f" [{step['heat_level']}]" if step['heat_level'] else ""
+            temp = f" 温度：{step['temperature']}" if step['temperature'] else ""
+            result = f" → 预期：{step['expected_result']}" if step['expected_result'] else ""
+            print(f"  第{step['sequence']}步{dur}{heat}{temp}{result}：{step['action']}")
+            # 展示该步骤投入的食材（带编号）
+            if step['id'] in step_ingredients_map:
+                for si in step_ingredients_map[step['id']]:
                     qty_used = f"{si['quantity_used']}{si['unit']}" if si['quantity_used'] else si['unit'] or ""
-                    intro = si['introduced_at'] or ""
-                    intro_str = f" ({intro})" if intro else ""
-                    print(f"  │    • [#{ing_seq}] {ing_name} {qty_used}{intro_str}")
-            
-            # 技法
-            if sid in step_techniques_map:
-                print(f"  │")
-                print(f"  │ 🔪 技法")
-                for tech in step_techniques_map[sid]:
-                    print(f"  │    ◆ {tech['technique_name']}")
-                    if tech['key_points']:
-                        kp = tech['key_points'].replace('/', ' | ')
-                        print(f"  │       要点：{kp}")
-            
-            # 小贴士
-            if sid in step_tips_map:
-                print(f"  │")
-                print(f"  │ 💡 贴士")
-                for tip in step_tips_map[sid]:
-                    print(f"  │    ★ [{tip['category']}] {tip['content']}")
-            
-            print(f"  └{'─' * 48}┘")
+                    intro = f"（{si['introduced_at']}）" if si['introduced_at'] else ""
+                    ing_seq = si['ing_seq']
+                    seq_str = f"[食材{ing_seq}]" if ing_seq else ""
+                    print(f"    → 投入：{seq_str}{si['name']} {qty_used}{intro}")
     
-    # 6. 全局小贴士
-    if global_tips:
-        print(f"\n{'═' * 54}")
-        print(f"  💡 全局小贴士")
-        print(f"{'═' * 54}")
-        for tip in global_tips:
-            print(f"  ★ [{tip['category']}] {tip['content']}")
-    
-    # 7. 背景知识
     if background:
-        print(f"\n{'═' * 54}")
-        print(f"  📖 背景故事")
-        print(f"{'═' * 54}")
         if background['origin_story']:
-            print(f"  📜 起源：{background['origin_story']}")
+            print(f"\n背景故事：{background['origin_story']}")
         if background['historical_background']:
-            print(f"  📚 历史：{background['historical_background']}")
+            print(f"历史背景：{background['historical_background']}")
         if background['cultural_significance']:
-            print(f"  🎭 文化：{background['cultural_significance']}")
+            print(f"文化意义：{background['cultural_significance']}")
     
-    # 8. 烹饪历史
-    if history_list:
-        print(f"\n{'═' * 54}")
-        print(f"  📅 烹饪记录（共{len(history_list)}次）")
-        print(f"{'═' * 54}")
-        for h in history_list:
-            seq = h['cook_sequence'] or "?"
-            rating = h['rating'] or "?"
-            feedback = h['feedback'] or ""
-            print(f"  第{seq}次  ⭐{rating}  {h['cook_date']}")
-            if feedback:
-                print(f"         \\\"{feedback}\\\"")
-    
-    # 9. 营养信息
     if nutrition:
-        print(f"\n{'═' * 54}")
-        serving_size = nutrition['serving_size'] or '?'
-        serving_unit = nutrition['serving_unit'] or 'g'
-        print(f"  📊 营养信息（每{serving_size}{serving_unit}）")
-        print(f"{'═' * 54}")
-        nutri_items = []
+        print(f"\n营养信息（每{nutrition['serving_size'] or '份'}{nutrition['serving_unit'] or 'g'}）：")
         if nutrition['calories']:
-            nutri_items.append(f"热量 {nutrition['calories']}kcal")
+            print(f"  热量：{nutrition['calories']}kcal")
         if nutrition['protein']:
-            nutri_items.append(f"蛋白 {nutrition['protein']}g")
+            print(f"  蛋白质：{nutrition['protein']}g")
         if nutrition['fat']:
-            nutri_items.append(f"脂肪 {nutrition['fat']}g")
+            print(f"  脂肪：{nutrition['fat']}g")
         if nutrition['carbs']:
-            nutri_items.append(f"碳水 {nutrition['carbs']}g")
+            print(f"  碳水：{nutrition['carbs']}g")
         if nutrition['fiber'] is not None:
-            nutri_items.append(f"纤维 {nutrition['fiber']}g")
+            print(f"  膳食纤维：{nutrition['fiber']}g")
         if nutrition['sodium'] is not None:
-            nutri_items.append(f"钠 {nutrition['sodium']}mg")
-        print(f"  {' | '.join(nutri_items)}")
+            print(f"  钠：{nutrition['sodium']}mg")
     
-    # 10. 派生关系
-    if relations:
-        print(f"\n{'═' * 54}")
-        print(f"  🔗 派生关系")
-        print(f"{'═' * 54}")
-        for r in relations:
-            rel_type = r['relation_type'] or '?'
-            print(f"  → {r['parent_id'][:20]}... [{rel_type}] {r['child_id'][:20]}...")
-    
-    print(f"\n{'═' * 54}")
-    print(f"  ID: {recipe_id}")
-    print(f"{'═' * 54}\n")
-    
+    print(f"\nID: {recipe_id}")
     return True
-
 
 def list_recipes(args):
     """列出食谱"""

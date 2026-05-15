@@ -19,6 +19,28 @@
 
 ---
 
+## AI调用规范
+
+### 调用任何manager前，必须：
+
+1. **展示完整参数示例** — 让用户知道这条命令会用哪些参数
+2. **对未提供字段进行合理推测** — 基于菜系特点/常见值/烹饪逻辑
+3. **推测不出时询问用户** — 不能留空不填
+
+### 字段推测规则
+
+| 字段 | 推测规则 |
+|------|---------|
+| recipes.description | 从菜名推断，如"经典川菜" |
+| recipes.difficulty | 根据步骤复杂度/时间判断 |
+| ingredients.quantity_text | 用户说"适量"时填充，否则留空 |
+| ingredients.is_optional | 用户明确说"可选"时设置1 |
+| ingredients.substitute | 用户提到"可用XX代替"时填充 |
+| cooking_steps.temperature | 根据heat_level推断：中火≈160度，大火≈180-200度 |
+| cooking_steps.expected_result | 根据步骤动作推测合理效果 |
+
+---
+
 ## 【致调用方AI - 字段清单】
 
 当你准备调用本技能录入食谱时，请尽量提供以下所有字段。调用方AI应从输入中提取并组织这些数据。
@@ -27,17 +49,17 @@
 
 ### 一、食谱主表（recipes）
 
-| 字段名 | 说明 | 示例 |
-|--------|------|------|
-| name | 菜名 | 宫保虾球 |
-| description | 一句话描述 | 川菜经典，虾球Q弹 |
-| difficulty | 难度 | 快手菜/简单/中等/困难/大师 |
-| servings | 份量（人数） | 2 |
-| total_time_minutes | 总时间（分钟） | 25 |
-| status | 状态 | 未做/已做/熟练（默认未做） |
-| photo_url | 模板照URL或路径 | /path/to/photo.jpg |
-| source | 来源说明 | 中餐厅节目 |
-| source_url | 原始链接 | https://example.com/recipe |
+| 字段名 | 说明 | 示例 | 推测规则 |
+|--------|------|------|---------|
+| name | 菜名 | 宫保虾球 | 必需 |
+| description | 一句话描述 | 川菜经典，虾球Q弹 | 从菜名推断 |
+| difficulty | 难度 | 快手菜/简单/中等/困难/大师 | 根据步骤复杂度判断 |
+| servings | 份量（人数） | 2 | 默认2 |
+| total_time_minutes | 总时间（分钟） | 25 | 累加步骤时长 |
+| status | 状态 | 未做/已做/熟练 | 默认未做 |
+| photo_url | 模板照URL或路径 | /path/to/photo.jpg | 询问用户 |
+| source | 来源说明 | 中餐厅节目 | 从内容提取 |
+| source_url | 原始链接 | https://example.com/recipe | 留空，询问用户 |
 
 ---
 
@@ -81,16 +103,16 @@
 
 每种食材需提供以下字段：
 
-| 字段名 | 说明 | 示例 |
-|--------|------|------|
-| sequence | 添加顺序（数字） | 1 |
-| name | 食材名称 | 虾 |
-| category | 分类 | 肉类/蔬菜/调料/海鲜/豆制品/蛋类/主食/干货/其他 |
-| quantity | 用量数值 | 300 |
-| unit | 单位 | g/kg/ml/L/个/勺/把/茶匙/杯/段/瓣 |
-| quantity_text | 文字描述（替代用量） | 适量/少许/一小把/若干 |
-| is_optional | 是否可选（1=可选） | 0 |
-| substitute | 替代食材 | 可用鸡胸肉代替 |
+| 字段名 | 说明 | 示例 | 推测规则 |
+|--------|------|------|---------|
+| sequence | 添加顺序（数字） | 1 | 自动+1 |
+| name | 食材名称 | 虾 | 必需 |
+| category | 分类 | 肉类/蔬菜/调料/海鲜/豆制品/蛋类/主食/干货/其他 | 根据名称推断 |
+| quantity | 用量数值 | 300 | 用户提供时填，否则留空 |
+| unit | 单位 | g/kg/ml/L/个/勺/把/茶匙/杯/段/瓣 | 根据quantity推断 |
+| quantity_text | 文字描述（替代用量） | 适量/少许/一小把/若干 | 用户说"适量"时填 |
+| is_optional | 是否可选（1=可选） | 0 | 用户明确说"可选"时设1 |
+| substitute | 替代食材 | 可用鸡胸肉代替 | 用户提到替代时填 |
 
 ---
 
@@ -98,14 +120,14 @@
 
 每个步骤需提供以下字段：
 
-| 字段名 | 说明 | 示例 |
-|--------|------|------|
-| sequence | 步骤顺序（数字） | 1 |
-| action | 动作描述 | 虾去壳开背，用料酒和盐腌制10分钟 |
-| duration_minutes | 该步时长（分钟） | 10 |
-| heat_level | 火候 | 微火/小火/中火/大火/猛火 |
-| temperature | 温度描述 | 160度/中小火/滚开 |
-| expected_result | 预期效果 | 虾肉变红，表面微焦 |
+| 字段名 | 说明 | 示例 | 推测规则 |
+|--------|------|------|---------|
+| sequence | 步骤顺序（数字） | 1 | 自动+1 |
+| action | 动作描述 | 虾去壳开背，用料酒和盐腌制10分钟 | 必需 |
+| duration_minutes | 该步时长（分钟） | 10 | 从内容提取 |
+| heat_level | 火候 | 微火/小火/中火/大火/猛火 | 根据动作推断 |
+| temperature | 温度描述 | 160度/中小火/滚开 | 根据heat_level推断 |
+| expected_result | 预期效果 | 虾肉变红，表面微焦 | 根据动作推测 |
 
 ---
 
@@ -113,12 +135,12 @@
 
 每个步骤关联的每个食材需提供：
 
-| 字段名 | 说明 | 示例 |
-|--------|------|------|
-| step_sequence | 关联的步骤序号 | 1 |
-| ingredient_name | 食材名称 | 虾 |
-| quantity_used | 该步使用量 | 300 |
-| introduced_at | 引入时机描述 | 开局加入/出锅前/熄火后 |
+| 字段名 | 说明 | 示例 | 推测规则 |
+|--------|------|------|---------|
+| step_sequence | 关联的步骤序号 | 1 | 必需 |
+| ingredient_name | 食材名称 | 虾 | 必需 |
+| quantity_used | 该步使用量 | 300 | 继承ingredients.quantity |
+| introduced_at | 引入时机描述 | 开局加入/出锅前/熄火后 | 根据步骤序号推断 |
 
 ---
 
@@ -220,8 +242,8 @@
 如果某字段无法从输入中识别，请在输出中标注为 `[未知]`，而不是留空。
 
 **示例**：
-- 难度：[未知]（无法从图片判断难度）
-- calories：[未知]（没有提供营养数据）
+- 难度：[未知]（无法从图片判断难度）→ AI根据步骤复杂度推测
+- calories：[未知]（没有提供营养数据）→ AI询问用户或留空
 
 本技能会询问用户补充关键字段。
 
@@ -269,6 +291,109 @@ AI：抱歉，我无法从这张图片中解析出食谱内容。
 1. 确保图片中包含清晰的文字（如菜名、食材、步骤）
 2. 或者直接告诉我这道菜的菜名，我帮你新建一个空的食谱
 3. 也可以发送MD格式的食谱文件
+```
+
+---
+
+## AI执行示例
+
+### 完整录入一道菜
+
+```bash
+# 1. 创建食谱主记录（完整参数）
+python scripts/recipe_manager.py add "宫保虾球" \
+  --description "川菜经典，虾球Q弹，酸甜微辣" \
+  --difficulty 中等 \
+  --servings 2 \
+  --total_time 25 \
+  --status 未做 \
+  --source "中餐厅节目"
+
+# 2. 添加分类
+python scripts/category_manager.py add "<返回的ID>" \
+  --cuisine 川菜 --region 中国-四川 --country 中国
+
+python scripts/season_manager.py add "<ID>" --season 春,夏,秋
+
+python scripts/cooking_method_manager.py add "<ID>" --method 炒
+
+python scripts/flavor_manager.py add "<ID>" --flavor 辣,酸甜
+
+python scripts/diet_tag_manager.py add "<ID>" --tag 荤菜
+
+python scripts/meal_type_manager.py add "<ID>" --meal_type 午,晚
+
+# 3. 添加食材（每种食材完整参数）
+python scripts/ingredient_manager.py add "<ID>" \
+  --name 虾 --quantity 300 --unit g --category 海鲜 --sequence 1
+
+python scripts/ingredient_manager.py add "<ID>" \
+  --name 花生 --quantity 50 --unit g --category 其他 --sequence 2 \
+  --optional --substitute 腰果
+
+python scripts/ingredient_manager.py add "<ID>" \
+  --name 干辣椒 --quantity 10 --unit g --category 调料 --sequence 3
+
+python scripts/ingredient_manager.py add "<ID>" \
+  --name 花椒 --quantity 5 --unit g --category 调料 --sequence 4
+
+# ... 其他食材
+
+# 4. 添加步骤（完整参数）
+python scripts/step_manager.py add "<ID>" \
+  --action "虾去壳开背，用料酒和盐腌制10分钟" \
+  --sequence 1 --duration 10 --heat_level 小火 \
+  --temperature 常温 \
+  --expected_result "虾肉变红，去腥"
+
+python scripts/step_manager.py add "<ID>" \
+  --action "大火热油，虾下锅炸至变色捞出" \
+  --sequence 2 --duration 3 --heat_level 大火 \
+  --temperature 180度 \
+  --expected_result "虾肉变红，表面微焦"
+
+# ... 其他步骤
+
+# 5. 关联步骤×食材
+python scripts/step_ingredient_manager.py add \
+  --step_id "<步骤1ID>" --ingredient_id "<虾ID>" \
+  --quantity_used 300 --introduced_at "开局加入"
+
+# ... 其他关联
+
+# 6. 添加技法
+python scripts/technique_manager.py add \
+  --recipe_id "<ID>" --step_id "<步骤2ID>" \
+  --technique_name 油炸 \
+  --description "高油温快速定型，外焦里嫩" \
+  --key_points "油温要高/炸制时间短/复炸更酥脆"
+
+# 7. 添加小贴士
+python scripts/tip_manager.py add "<ID>" \
+  --step_id "<步骤1ID>" \
+  --content "开背时去虾线更入味" \
+  --category 刀工 --priority 1
+
+# 8. 添加背景知识
+python scripts/background_manager.py add "<ID>" \
+  --origin_story "宫保虾球源自川菜宫保鸡丁的变体，由山东人丁宝桢发明" \
+  --historical_background "清代丁宝桢任四川总督时改良此菜" \
+  --cultural_significance "代表川菜小荔枝口的经典味型"
+
+# 9. 添加炊具
+python scripts/cookware_manager.py add "<ID>" \
+  --name 炒锅 --category 锅
+
+# 10. 添加营养信息（完整参数）
+python scripts/nutrition_manager.py add "<ID>" \
+  --serving_size 200 --serving_unit g \
+  --calories 320 --protein 28 --fat 18 \
+  --carbs 20 --fiber 2 --sodium 800
+
+# 11. 记录烹饪历史
+python scripts/history_manager.py add "<ID>" \
+  --cook_date 2026-05-15 --rating 4.5 \
+  --feedback "味道不错，虾很Q弹"
 ```
 
 ---

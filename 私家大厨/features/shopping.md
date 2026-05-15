@@ -6,112 +6,154 @@
 
 ## 功能说明
 
-根据选择的食谱，生成需要购买的食材清单，并给出AI采购建议。
+根据食谱生成采购清单，包括：
+- 所需食材（数量单位）
+- 按类别分组
+- AI采购建议
 
-**核心能力**：
-1. 单菜采购清单
-2. 多菜合并采购清单
-3. 按食材分类分组
-4. AI采购建议（在哪里买/是否网购）
+---
+
+## AI调用规范
+
+### 调用任何manager前，必须：
+
+1. **展示完整参数示例** — 让用户知道这条命令会用哪些参数
+2. **对未提供字段进行合理推测** — 基于菜系特点/常见值/烹饪逻辑
+3. **推测不出时询问用户** — 不能留空不填
 
 ---
 
 ## 使用场景
 
-### 单菜采购
+### 生成采购清单
 ```
 用户：宫保虾球需要买什么？
-AI：生成采购清单...
-```
-
-### 多菜合并采购
-```
-用户：我明天想做宫保虾球和肉末茄子煲，生成采购清单
-AI：合并两道菜的食材，生成清单...
-```
-
----
-
-## 输出格式
-
-```
-【采购清单 - 宫保虾球】
-
-【肉类】
-- 虾 300g（鲜虾，去壳） → 建议：菜市场或超市水产区
-- （无可选食材）
-
-【调料】
-- 干辣椒 10g → 建议：超市调料区，或网购
-- 花椒 5g → 建议：超市调料区，或网购
-- 盐 适量 → 建议：超市
-- 料酒 15ml → 建议：超市
-
-【其他】
-- 花生 50g（可选） → 建议：超市坚果区
-
----
-AI采购建议：
-- 鲜虾：推荐去菜市场买，比较新鲜；如果网购买冰鲜虾需提前一天下单
-- 干辣椒/花椒：超市常见，也可网购川味调料包更便宜
-- 花生：可有可无，如果没有可以不加
-```
-
----
-
-## 食材分类分组
-
-按 `ingredients.category` 分组：
-- 肉类（鸡/猪/牛/羊/海鲜）
-- 蔬菜（大蒜/葱/姜/青菜）
-- 调料（盐/糖/酱油/醋/料酒）
-- 海鲜（虾/鱼/蟹）
-- 其他（鸡蛋/豆腐/面粉）
-
----
-
-## AI采购建议
-
-对每个食材给出建议：
-1. **购买地点**：菜市场/超市（哪个区）/网购
-2. **选购技巧**：怎么挑好的
-3. **替代方案**：没有这个用什么代替
-4. **价格参考**：大概价位（可选）
-
----
-
-## 命令参考
-
-```bash
-# 单菜采购
+AI：执行命令：
 python scripts/shopping_manager.py generate <recipe_id>
 
-# 多菜合并
-python scripts/shopping_manager.py generate-multi <recipe_id_1>,<recipe_id_2>
+【宫保虾球 - 采购清单】
 
-# 按分类生成
-python scripts/shopping_manager.py generate --cuisine 川菜 --difficulty 简单
+📋 食材清单（共8种）
+1. 虾 300g [海鲜]
+2. 花生 50g [其他]
+3. 干辣椒 10g [调料]
+4. 花椒 5g [调料]
+5. 葱 1段 [蔬菜]
+6. 蒜 3瓣 [蔬菜]
+7. 盐 适量 [调料]
+8. 料酒 15ml [调料]
 
-# 排除可选食材
-python scripts/shopping_manager.py generate <recipe_id> --exclude-optional
+🛒 采购建议
+- 海鲜类：虾建议买活的，新鲜口感好
+- 调料类：花椒、干辣椒一次性多买点，用途广
+- 蔬菜类：葱蒜常用，可多备
+
+✅ 采购清单生成成功！
+```
+
+### 查看已有采购清单
+```
+用户：上次宫保虾球的采购清单还在吗？
+AI：执行命令：
+python scripts/shopping_manager.py list
+
+📋 采购清单列表：
+1. 宫保虾球（2026-05-15） ← 最近
+2. 红烧肉（2026-05-10）
+...
+```
+
+### 标记已购买
+```
+用户：虾买好了
+AI：执行命令：
+python scripts/shopping_manager.py mark <item_id> --purchased
+
+✅ 已标记为已购买：虾
 ```
 
 ---
 
-## 合并逻辑
+## 命令参考（完整参数）
 
-当多道菜有相同食材时，合并数量：
+```bash
+# 生成采购清单（完整参数）
+python scripts/shopping_manager.py generate <recipe_id> \
+  [--servings 份数] \
+  [--group_by 分类方式]
+
+# 参数说明：
+#   <recipe_id>               必需：食谱ID
+#   --servings                可选：份数（默认使用食谱设定的份量）
+#   --group_by                可选：分类方式，category（按食材分类）/ recipe（按食谱分组）
+
+# 示例（完整）：
+python scripts/shopping_manager.py generate "8f3b435b-..." \
+  --servings 4 \
+  --group_by category
+
+# 示例（简单）：
+python scripts/shopping_manager.py generate "8f3b435b-..."
+
+# 查看采购清单列表
+python scripts/shopping_manager.py list
+
+# 示例
+python scripts/shopping_manager.py list
+
+# 标记已购买（完整参数）
+python scripts/shopping_manager.py mark <item_id> \
+  --purchased \
+  [--quantity 购买数量] \
+  [--price 购买价格] \
+  [--store 购买地点]
+
+# 参数说明：
+#   <item_id>                 必需：采购项ID
+#   --purchased               必需：标记为已购买
+#   --quantity                可选：实际购买数量
+#   --price                   可选：购买价格
+#   --store                   可选：购买地点/渠道
+
+# 示例（完整）：
+python scripts/shopping_manager.py mark "item_uuid" \
+  --purchased \
+  --quantity 350g \
+  --price 45.0 \
+  --store 盒马鲜生
+
+# 示例（简单）：
+python scripts/shopping_manager.py mark "item_uuid" --purchased
+
+# 清除采购清单
+python scripts/shopping_manager.py clear [--recipe_id <recipe_id>]
+
+# 参数说明：
+#   --recipe_id                可选：清除指定食谱的采购清单，不填则清除所有
+
+# 示例
+python scripts/shopping_manager.py clear
+python scripts/shopping_manager.py clear --recipe_id "8f3b435b-..."
 ```
-宫保虾球：排骨 200g
-糯米排骨：排骨 300g
-→
-合并后：排骨 500g
-```
+
+---
+
+## 采购建议AI逻辑
+
+生成采购清单时，AI应提供以下建议：
+
+| 食材类型 | 建议 |
+|---------|------|
+| 海鲜 | 选择新鲜的，活虾活鱼最好 |
+| 肉类 | 看清日期，冷链保存 |
+| 蔬菜 | 当天买当天用，避免浪费 |
+| 调料 | 常用调料可一次性多买点 |
+| 干货 | 密封保存，避免受潮 |
 
 ---
 
 ## 参考
 
-- 表结构：references/database_schema.md
+- 分类参考：references/categories.md
 - 命令行参考：references/commands.md
-- 食材分类：references/categories.md
+- 表结构：references/database_schema.md

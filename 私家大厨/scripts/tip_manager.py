@@ -308,6 +308,8 @@ def main():
         else:
             if action == "add" and "<recipe_id>" not in args:
                 args["<recipe_id>"] = arg
+            elif action == "list" and "<recipe_id>" not in args:
+                args["<recipe_id>"] = arg
             elif action in ("list-by-step",) and "<step_id>" not in args:
                 args["<step_id>"] = arg
             elif action in ("list-by-ingredient",) and "<ingredient_id>" not in args:

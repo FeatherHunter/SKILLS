@@ -182,31 +182,55 @@ def search(args):
         print("错误：请提供关键词")
         return False
     
+    recipe_id = args.get("--recipe-id")
+    
     conn = get_connection()
     cursor = conn.cursor()
     
-    cursor.execute("""
-        SELECT t.*, r.name as recipe_name
-        FROM tips t
-        JOIN recipes r ON t.recipe_id = r.id
-        WHERE t.content LIKE ?
-        AND r.status != '已废弃'
-        ORDER BY r.name, t.priority
-    """, (f"%{keyword}%",))
+    if recipe_id:
+        cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+        recipe = cursor.fetchone()
+        if not recipe:
+            print(f"未找到食谱：{recipe_id}")
+            conn.close()
+            return False
+        cursor.execute("""
+            SELECT t.*, r.name as recipe_name
+            FROM tips t
+            JOIN recipes r ON t.recipe_id = r.id
+            WHERE t.content LIKE ?
+            AND t.recipe_id = ?
+            AND r.status != '已废弃'
+            ORDER BY t.priority
+        """, (f"%{keyword}%", recipe_id))
+    else:
+        cursor.execute("""
+            SELECT t.*, r.name as recipe_name
+            FROM tips t
+            JOIN recipes r ON t.recipe_id = r.id
+            WHERE t.content LIKE ?
+            AND r.status != '已废弃'
+            ORDER BY r.name, t.priority
+        """, (f"%{keyword}%",))
     
     rows = cursor.fetchall()
     conn.close()
     
     if not rows:
-        print(f"未找到包含'{keyword}'的小贴士")
+        scope = f"在食谱 {recipe_id} 中" if recipe_id else ""
+        print(f"未找到包含'{keyword}'的小贴士 {scope}")
         return True
     
-    print(f"\n找到 {len(rows)} 条小贴士：")
+    scope = f"[{recipe['name']}]" if recipe_id else ""
+    print(f"\n找到 {len(rows)} 条小贴士 {scope}：")
     for row in rows:
         cat = f"（{row['category']}）" if row['category'] else ""
-        print(f"  [{row['recipe_name']}] {cat}{row['content']}")
+        step_info = f"[第{row['step_id']}步]" if row['step_id'] else ""
+        ing_info = f"[{row['ingredient_id']}]" if row['ingredient_id'] else ""
+        print(f"  {step_info}{ing_info}{cat}{row['content']}")
     
     return True
+
 
 def update(args):
     """更新小贴士"""
@@ -280,7 +304,7 @@ def main():
     python tip_manager.py list <recipe_id>
     python tip_manager.py list-by-step <step_id>
     python tip_manager.py list-by-ingredient <ingredient_id>
-    python tip_manager.py search <关键词>
+    python tip_manager.py search <关键词> [--recipe-id <食谱ID>]
     python tip_manager.py update <tip_id> [选项]
 
 选项：
@@ -310,6 +334,8 @@ def main():
                 args["<recipe_id>"] = arg
             elif action == "list" and "<recipe_id>" not in args:
                 args["<recipe_id>"] = arg
+            elif action == "search" and "<关键词>" not in args:
+                args["<关键词>"] = arg
             elif action in ("list-by-step",) and "<step_id>" not in args:
                 args["<step_id>"] = arg
             elif action in ("list-by-ingredient",) and "<ingredient_id>" not in args:

@@ -185,10 +185,11 @@ python scripts/step_manager.py search <关键词>
 python scripts/step_manager.py search 腌制
 
 # 搜索小贴士
-python scripts/tip_manager.py search <关键词>
+python scripts/tip_manager.py search <关键词> [--recipe-id <食谱ID>]
 
 # 示例
 python scripts/tip_manager.py search 火候
+python scripts/tip_manager.py search 火候 --recipe-id <食谱ID>
 
 # 搜索高蛋白食谱
 python scripts/nutrition_manager.py search-high-protein [--threshold <数值>]

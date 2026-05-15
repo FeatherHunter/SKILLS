@@ -228,9 +228,16 @@ python scripts/technique_manager.py update <technique_id> \
 # 添加小贴士
 python scripts/tip_manager.py add <recipe_id> \
   --step_id <step_id> \
+  --ingredient_id <ingredient_id> \
   --content "新技巧" \
   --category 火候 \
   --priority 1
+
+# 更新小贴士
+python scripts/tip_manager.py update <tip_id> \
+  --content "更新后的内容" \
+  --category 火候 \
+  --priority 2
 
 # 更新背景知识
 python scripts/background_manager.py update <recipe_id> \

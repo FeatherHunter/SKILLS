@@ -69,7 +69,7 @@ def main():
     p_add.add_argument("--remark", default="", help="备注")
     p_add.add_argument("--tags", default="", help="标签（逗号分隔）")
     p_add.add_argument("--photo", default="", help="图片路径")
-    p_add.add_argument("--location-status", default="在家", help="存放状态（默认在家）")
+    p_add.add_argument("--location-status", default=None, help="存放状态（默认根据位置推断：位置含\"快递\"则为\"快递中\"，否则为\"在家\"")
 
     # ── search ──
     p_search = subparsers.add_parser("search", help="搜索物品")

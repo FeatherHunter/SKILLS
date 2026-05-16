@@ -72,7 +72,8 @@ python scripts/recipe_manager.py update <recipe_id> \
   --total_time 45 \
   --status 熟练 \
   --photo_url "新图片URL" \
-  --source "新来源"
+  --source "新来源" \
+  --source_url "新链接"
 
 # 健康检查
 python scripts/recipe_manager.py lint <recipe_id>
@@ -274,6 +275,8 @@ python scripts/ingredient_manager.py update <ingredient_id> \
   --name 新名称 \
   --quantity 350 \
   --unit g \
+  --quantity_text "350g（约为3两）" \
+  --sequence 3 \
   --category 新分类 \
   --substitute 新替代
 ```
@@ -322,6 +325,7 @@ python scripts/step_manager.py search <关键词>
 # 更新步骤
 python scripts/step_manager.py update <step_id> \
   --action 新动作 \
+  --sequence 3 \
   --duration 5 \
   --heat_level 小火 \
   --temperature 120度 \
@@ -416,7 +420,8 @@ python scripts/technique_manager.py search <关键词>
 # 更新技法
 python scripts/technique_manager.py update <technique_id> \
   --technique_name 新名称 \
-  --key_points "新要点1/新要点2"
+  --description "新技法解释" \
+  --key_points "要点1/要点2"
 ```
 
 ---
@@ -471,7 +476,8 @@ python scripts/tip_manager.py search <关键词>
 # 更新小贴士
 python scripts/tip_manager.py update <tip_id> \
   --content 新内容 \
-  --category 新分类
+  --category 新分类 \
+  --priority 2
 ```
 
 ---
@@ -586,6 +592,7 @@ python scripts/relation_manager.py list-all
 
 # 更新关系
 python scripts/relation_manager.py update <relation_id> \
+  --relation_type 变体 \
   --change_summary 新说明
 ```
 
@@ -676,9 +683,14 @@ python scripts/nutrition_manager.py search-high-protein [--threshold 20]
 
 # 更新营养信息
 python scripts/nutrition_manager.py update <recipe_id> \
+  --serving_size 200 \
+  --serving_unit g \
   --calories 300 \
   --protein 30 \
-  --fiber 3
+  --fat 20 \
+  --carbs 25 \
+  --fiber 3 \
+  --sodium 600
 ```
 
 ---

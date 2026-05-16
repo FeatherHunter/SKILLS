@@ -43,8 +43,15 @@ def _format_item(row, tags_str=None, locations_str=None):
 
 def add_item(name, category, location, owner="使用者", quantity=1,
              purchase_price=None, purchase_date=None, expiration_date=None,
-             remark="", tags="", photo="", location_status="在家"):
+             remark="", tags="", photo="", location_status=None):
     """添加新物品"""
+    # 最小实现：如果位置路径包含"快递"，则自动设置状态为"快递中"
+    if location_status is None:
+        if "快递" in location:
+            location_status = "快递中"
+        else:
+            location_status = "在家"
+
     conn = get_conn()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -174,11 +174,11 @@ def infer_meal_type(time_str):
 def add_entry(food_name, calories, protein, carbs=0, fat=0, grams=100, note='', target_date=None, target_time=None):
     """添加食物记录"""
     try:
-        calories = int(calories)
-        protein = int(protein)
-        carbs = int(carbs)
-        fat = int(fat)
-        grams = int(grams)
+        calories = float(calories)
+        protein = float(protein)
+        carbs = float(carbs)
+        fat = float(fat)
+        grams = float(grams)
     except ValueError:
         print("Error: All nutrition values must be numbers")
         return False

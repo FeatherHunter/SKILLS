@@ -18,7 +18,26 @@
 1. 发送食谱图片 → OCR解析 → 确认 → 写入
 2. 发送MD文件 → 文本解析 → 确认 → 写入
 
-**遵循规范**：SKILL.md 中的"AI使用规范"和"字段推测规则"。
+**遵循规范**：SKILL.md 中的"AI使用规范"。字段推测规则见下方。
+
+### 字段推测规则
+
+| 表/字段 | 推测规则 |
+|---------|---------|
+| recipes.description | 从菜名推断，如"经典川菜" |
+| recipes.difficulty | 根据步骤复杂度/时间判断 |
+| recipes.photo_url | 询问用户是否有照片 |
+| recipes.source_url | 询问用户是否有链接 |
+| ingredients.quantity_text | 用户说"适量"时填充，否则留空 |
+| ingredients.is_optional | 用户明确说"可选"时设置1 |
+| ingredients.substitute | 用户提到"可用XX代替"时填充 |
+| ingredients.category | 根据食材名称推断（姜→蔬菜，虾→海鲜） |
+| cooking_steps.temperature | 根据heat_level推断：中火≈160度，大火≈180-200度 |
+| cooking_steps.expected_result | 根据步骤动作推测合理效果 |
+| step_ingredients.quantity_used | 根据步骤动作和食材特性推断该步用量 |
+| step_ingredients.introduced_at | 根据步骤序号推断：开局/第X步加入 |
+
+**无法推测时，必须询问用户。**
 
 ---
 

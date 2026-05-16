@@ -19,24 +19,9 @@
 2. **对未提供字段进行合理推测** — 基于菜系特点/常见值/烹饪逻辑
 3. **推测不出时询问用户** — 不能留空不填
 
-### 字段推测规则
+### 字段推测规则（仅录入时使用）
 
-| 表/字段 | 推测规则 |
-|---------|---------|
-| recipes.description | 从菜名推断，如"经典川菜" |
-| recipes.difficulty | 根据步骤复杂度/时间判断 |
-| recipes.photo_url | 询问用户是否有照片 |
-| recipes.source_url | 询问用户是否有链接 |
-| ingredients.quantity_text | 用户说"适量"时填充，否则留空 |
-| ingredients.is_optional | 用户明确说"可选"时设置1 |
-| ingredients.substitute | 用户提到"可用XX代替"时填充 |
-| ingredients.category | 根据食材名称推断（姜→蔬菜，虾→海鲜） |
-| cooking_steps.temperature | 根据heat_level推断：中火≈160度，大火≈180-200度 |
-| cooking_steps.expected_result | 根据步骤动作推测合理效果 |
-| step_ingredients.quantity_used | 根据步骤动作和食材特性推断该步用量 |
-| step_ingredients.introduced_at | 根据步骤序号推断：开局/第X步加入 |
-
-**无法推测时，必须询问用户。**
+> 详见 `features/add.md` — 仅在录入食谱时调用，查看/做菜模式不需要此规则。
 
 ---
 
@@ -79,21 +64,26 @@ AI：请发送食谱内容（图片或MD文件），我来帮你录入。
 ### 用例2：查看食谱 + 做菜模式
 
 **触发词**（按长度排序）：
-- "看看XX怎么做" → features/view.md
+- "做菜模式" → features/view.md（直接进入做菜模式）
+- "进入做菜模式" → features/view.md（直接进入做菜模式）
+- "开始做这道菜" → features/view.md（直接进入做菜模式）
+- "开始做XX" → features/view.md（直接进入做菜模式）
+- "看看XX怎么做" → features/view.md（先展示食谱）
 - "XX的完整步骤" → features/view.md
 - "XX的菜谱详情" → features/view.md
 - "XX的做法是什么" → features/view.md
 - "给我看看XX" → features/view.md
 - "查看XX食谱" → features/view.md
-- "开始做这道菜" → features/view.md（直接进入做菜模式）
-- "开始做XX" → features/view.md（直接进入做菜模式）
 
 **内部分流逻辑**：
-- 说"开始做这道菜/XX" → 直接进入做菜模式
+- 说"做菜模式"、"进入做菜模式"、"开始做这道菜/XX" → 直接进入做菜模式
 - 说"看看XX怎么做"等 → 先展示食谱，末尾问"要开始做吗？"
 
 **示例输出**：
 ```
+用户：做菜模式
+AI：[直接进入做菜模式，展示厨具清单、食材清单、完整步骤]
+
 用户：看看宫保虾球怎么做
 AI：[展示完整食谱信息]
    要开始做吗？说"开始做这道菜"进入做菜模式。

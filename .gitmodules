@@ -1,0 +1,12 @@
+[submodule "mcp_excalidraw"]
+	path = mcp_excalidraw
+	url = https://github.com/yctimlin/mcp_excalidraw.git
+[submodule "superpowers"]
+	path = superpowers
+	url = https://github.com/obra/superpowers.git
+[submodule "taste-skill"]
+	path = taste-skill
+	url = https://github.com/Leonxlnx/taste-skill.git
+[submodule "ui-ux-pro-max-skill"]
+	path = ui-ux-pro-max-skill
+	url = https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git

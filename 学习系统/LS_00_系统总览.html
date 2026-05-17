@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习系统 v1.0 - 系统总览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:14px;color:#222;background:#f4f7fa;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;padding:12px 20px;background:#1a1a2e;color:#fff;gap:16px;flex-shrink:0}
+header h1{font-size:20px;font-weight:600;white-space:nowrap}
+.search-box{flex:1;display:flex;align-items:center;background:#2d2d4a;border-radius:6px;padding:6px 12px;gap:8px}
+.search-box input{background:transparent;border:none;outline:none;color:#fff;font-size:14px;flex:1}
+.search-box input::placeholder{color:#aaa}
+.search-box label{color:#aaa;font-size:12px;white-space:nowrap}
+header .updated{font-size:12px;color:#aaa;white-space:nowrap}
+
+.layout{display:flex;flex:1;overflow:hidden}
+aside{width:260px;background:#fff;border-right:1px solid #e0e4ec;overflow-y:auto;flex-shrink:0;padding:12px 0}
+.section{margin-bottom:8px}
+.section-title{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;cursor:pointer;font-weight:600;font-size:14px;color:#1a1a2e;background:#f0f2f7;border-radius:6px;user-select:none;min-height:44px}
+.section-title:hover{background:#e4e8f0}
+.section-title span{font-size:11px;color:#888;margin-left:6px}
+.section-title::after{content:'▶';font-size:10px;transition:transform .2s;margin-left:auto}
+.section-title.open::after{transform:rotate(90deg)}
+.section-list{display:none;padding:4px 0}
+.section-list.open{display:block}
+.item{padding:8px 16px 8px 24px;cursor:pointer;font-size:13px;color:#444;border-left:3px solid transparent;min-height:44px;display:flex;align-items:center}
+.item:hover{background:#f0f4ff;color:#1a1a2e;border-left-color:#4a6cf7}
+.item.active{background:#eef1ff;color:#1a1a2e;border-left-color:#4a6cf7;font-weight:600}
+
+main{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.card h2{font-size:20px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #f0f2f7;padding-bottom:10px}
+.card h3{font-size:16px;margin:16px 0 8px;color:#333}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.block{padding:12px 16px;background:#f8f9fc;border-radius:8px;border:1px solid #e8ecf4;font-size:13px;line-height:1.6}
+.block .label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.block .value{font-weight:600;color:#1a1a2e}
+.block.primary{background:#eef1ff;border-color:#c5d0ff}
+.block.success{background:#eef9f0;border-color:#b8e0c4}
+
+.sql-block{background:#1e1e2e;color:#cdd6f4;padding:14px 18px;border-radius:8px;font-family:'Consolas','Monaco',monospace;font-size:13px;margin:8px 0;position:relative}
+.sql-block .copy-btn{position:absolute;top:8px;right:8px;background:#3b3b5c;color:#cdd6f4;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
+
+.breadcrumb{font-size:12px;color:#888;margin-bottom:16px}
+.breadcrumb span{color:#4a6cf7}
+
+.hidden{display:none}
+
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab-btn{padding:8px 16px;border:none;background:#f0f2f7;color:#666;font-size:13px;border-radius:6px;cursor:pointer;font-weight:500}
+.tab-btn.active{background:#1a1a2e;color:#fff}
+
+footer{display:flex;gap:12px;padding:10px 20px;background:#fff;border-top:1px solid #e0e4ec;flex-shrink:0;overflow-x:auto}
+footer a{display:flex;align-items:center;padding:8px 16px;background:#f0f2f7;color:#333;text-decoration:none;border-radius:6px;font-size:13px;white-space:nowrap;min-height:44px}
+footer a:hover{background:#1a1a2e;color:#fff}
+footer a.active{background:#4a6cf7;color:#fff}
+
+.highlight-match{background:#ffe066;color:#222;padding:0 2px;border-radius:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>学习系统 v1.0</h1>
+  <div class="search-box">
+    <label>Search</label>
+    <input type="text" id="searchInput" placeholder="Module / Table / Entry name...">
+  </div>
+  <div class="updated">Last updated: 2026-05-17</div>
+</header>
+
+<div class="layout">
+  <aside>
+    <!-- Module Layer -->
+    <div class="section">
+      <div class="section-title open" onclick="toggleSection(this)">Module Layer <span>(12)</span></div>
+      <div class="section-list open" id="moduleList">
+        <div class="item" onclick="showDetail('module','LS_M01_Knowledge_Points')">LS_M01_Knowledge_Points</div>
+        <div class="item" onclick="showDetail('module','LS_M02_Study_Materials')">LS_M02_Study_Materials</div>
+        <div class="item" onclick="showDetail('module','LS_M03_Study_Plans')">LS_M03_Study_Plans</div>
+        <div class="item" onclick="showDetail('module','LS_M04_Study_Sessions')">LS_M04_Study_Sessions</div>
+        <div class="item" onclick="showDetail('module','LS_M05_Review_Plans')">LS_M05_Review_Plans</div>
+        <div class="item" onclick="showDetail('module','LS_M06_Review_Tasks')">LS_M06_Review_Tasks</div>
+        <div class="item" onclick="showDetail('module','LS_M07_Review_Records')">LS_M07_Review_Records</div>
+        <div class="item" onclick="showDetail('module','LS_M08_Exams')">LS_M08_Exams</div>
+        <div class="item" onclick="showDetail('module','LS_M09_Exam_Records')">LS_M09_Exam_Records</div>
+        <div class="item" onclick="showDetail('module','LS_M10_Statistics')">LS_M10_Statistics</div>
+        <div class="item" onclick="showDetail('module','LS_M11_Daily_Records')">LS_M11_Daily_Records</div>
+        <div class="item" onclick="showDetail('module','LS_M12_System_Config')">LS_M12_System_Config</div>
+      </div>
+    </div>
+
+    <!-- Database Layer -->
+    <div class="section">
+      <div class="section-title open" onclick="toggleSection(this)">Database Layer <span>(15)</span></div>
+      <div class="section-list open" id="dbList">
+        <div class="item" onclick="showDetail('table','knowledge_points')">knowledge_points</div>
+        <div class="item" onclick="showDetail('table','study_materials')">study_materials</div>
+        <div class="item" onclick="showDetail('table','study_plans')">study_plans</div>
+        <div class="item" onclick="showDetail('table','study_sessions')">study_sessions</div>
+        <div class="item" onclick="showDetail('table','review_plans')">review_plans</div>
+        <div class="item" onclick="showDetail('table','review_tasks')">review_tasks</div>
+        <div class="item" onclick="showDetail('table','review_records')">review_records</div>
+        <div class="item" onclick="showDetail('table','exams')">exams</div>
+        <div class="item" onclick="showDetail('table','exam_records')">exam_records</div>
+        <div class="item" onclick="showDetail('table','study_stats_daily')">study_stats_daily</div>
+        <div class="item" onclick="showDetail('table','study_stats_monthly')">study_stats_monthly</div>
+        <div class="item" onclick="showDetail('table','habit_tracking')">habit_tracking</div>
+        <div class="item" onclick="showDetail('table','daily_records')">daily_records</div>
+        <div class="item" onclick="showDetail('table','daily_questions')">daily_questions</div>
+        <div class="item" onclick="showDetail('table','system_config')">system_config</div>
+      </div>
+    </div>
+
+    <!-- Entry Layer -->
+    <div class="section">
+      <div class="section-title open" onclick="toggleSection(this)">Entry Layer <span>(10)</span></div>
+      <div class="section-list open" id="entryList">
+        <div class="item" onclick="showDetail('entry','add_kp')">add_kp</div>
+        <div class="item" onclick="showDetail('entry','find_kp')">find_kp</div>
+        <div class="item" onclick="showDetail('entry','plan')">plan</div>
+        <div class="item" onclick="showDetail('entry','review')">review</div>
+        <div class="item" onclick="showDetail('entry','exam')">exam</div>
+        <div class="item" onclick="showDetail('entry','query')">query</div>
+        <div class="item" onclick="showDetail('entry','stats')">stats</div>
+        <div class="item" onclick="showDetail('entry','habit')">habit</div>
+        <div class="item" onclick="showDetail('entry','daily')">daily</div>
+        <div class="item" onclick="showDetail('entry','backup')">backup</div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="mainContent">
+    <!-- Default: System Overview -->
+    <div class="breadcrumb">System Overview</div>
+    <div class="card">
+      <h2>Learning System Architecture</h2>
+      <p style="color:#555;margin-bottom:20px">Three-layer architecture: Module Layer (12 modules) | Database Layer (15 tables) | Entry Layer (10 entries)</p>
+
+      <h3>Module Layer</h3>
+      <div class="grid">
+        <div class="block primary"><div class="label">Core Modules</div><div class="value">M01 Knowledge Points</div><div class="value">M02 Study Materials</div></div>
+        <div class="block"><div class="label">Study Flow</div><div class="value">M03 Study Plans</div><div class="value">M04 Study Sessions</div></div>
+        <div class="block"><div class="label">Review Flow</div><div class="value">M05 Review Plans</div><div class="value">M06 Review Tasks</div><div class="value">M07 Review Records</div></div>
+        <div class="block"><div class="label">Exam Flow</div><div class="value">M08 Exams</div><div class="value">M09 Exam Records</div></div>
+        <div class="block"><div class="label">Analytics</div><div class="value">M10 Statistics</div></div>
+        <div class="block"><div class="label">Daily Ops</div><div class="value">M11 Daily Records</div><div class="value">M12 System Config</div></div>
+      </div>
+
+      <h3>Database Layer</h3>
+      <div class="grid">
+        <div class="block primary"><div class="label">Knowledge DB (3)</div>knowledge_points, study_materials, system_config</div>
+        <div class="block"><div class="label">Study DB (2)</div>study_plans, study_sessions</div>
+        <div class="block"><div class="label">Review DB (3)</div>review_plans, review_tasks, review_records</div>
+        <div class="block"><div class="label">Exam DB (2)</div>exams, exam_records</div>
+        <div class="block"><div class="label">Stats DB (3)</div>study_stats_daily, study_stats_monthly, habit_tracking</div>
+        <div class="block"><div class="label">Daily DB (2)</div>daily_records, daily_questions</div>
+      </div>
+
+      <h3>Entry Layer</h3>
+      <div class="grid">
+        <div class="block primary"><div class="label">Core Entries</div>add_kp | find_kp | plan | review | exam</div>
+        <div class="block"><div class="label">Support Entries</div>query | stats | habit | daily | backup</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Data Flow Diagram</h2>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px">
+        <div style="background:#eef1ff;border:2px solid #4a6cf7;border-radius:8px;padding:12px 20px;text-align:center;min-width:120px">
+          <div style="font-weight:600">Input Entry</div>
+          <div style="font-size:12px;color:#666">add_kp / plan</div>
+        </div>
+        <div style="font-size:20px;color:#888">→</div>
+        <div style="background:#f8f9fc;border:2px solid #888;border-radius:8px;padding:12px 20px;text-align:center;min-width:120px">
+          <div style="font-weight:600">Module Processing</div>
+          <div style="font-size:12px;color:#666">M01-M12</div>
+        </div>
+        <div style="font-size:20px;color:#888">→</div>
+        <div style="background:#eef9f0;border:2px solid #2e7d32;border-radius:8px;padding:12px 20px;text-align:center;min-width:120px">
+          <div style="font-weight:600">Database Tables</div>
+          <div style="font-size:12px;color:#666">15 tables</div>
+        </div>
+        <div style="font-size:20px;color:#888">→</div>
+        <div style="background:#fff8e1;border:2px solid #f9a825;border-radius:8px;padding:12px 20px;text-align:center;min-width:120px">
+          <div style="font-weight:600">Query / Stats</div>
+          <div style="font-size:12px;color:#666">query / stats</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <a href="LS_00_系统总览.html" class="active">LS_00 System Overview</a>
+  <a href="LS_01_数据库架构.html">LS_01 Database</a>
+  <a href="#">LS_02 Module Detail</a>
+  <a href="#">LS_03 Entry Reference</a>
+  <a href="#">LS_04 Stats Dashboard</a>
+  <a href="#">LS_05 Review Flow</a>
+  <a href="#">LS_06 Exam System</a>
+</footer>
+
+<script>
+// Module detail data
+const moduleData = {
+  'LS_M01_Knowledge_Points': {name:'M01 Knowledge Points',desc:'Knowledge point management. Add, update, delete, search KPs.',depend:'None',output:'knowledge_points table'},
+  'LS_M02_Study_Materials': {name:'M02 Study Materials',desc:'Material library management. Tags, formats, attachments.',depend:'M01',output:'study_materials table'},
+  'LS_M03_Study_Plans': {name:'M03 Study Plans',desc:'Planning study sessions. Daily, weekly, monthly plans.',depend:'M01,M02',output:'study_plans table'},
+  'LS_M04_Study_Sessions': {name:'M04 Study Sessions',desc:'Recording study sessions. Duration, content, notes.',depend:'M03',output:'study_sessions table'},
+  'LS_M05_Review_Plans': {name:'M05 Review Plans',desc:'Spaced repetition planning. Algorithm-based scheduling.',depend:'M01,M03',output:'review_plans table'},
+  'LS_M06_Review_Tasks': {name:'M06 Review Tasks',desc:'Daily review task generation and management.',depend:'M05',output:'review_tasks table'},
+  'LS_M07_Review_Records': {name:'M07 Review Records',desc:'Review session records. Quality, duration, feedback.',depend:'M06',output:'review_records table'},
+  'LS_M08_Exams': {name:'M08 Exams',desc:'Exam question bank and exam configuration.',depend:'M01',output:'exams table'},
+  'LS_M09_Exam_Records': {name:'M09 Exam Records',desc:'Exam history and score tracking.',depend:'M08',output:'exam_records table'},
+  'LS_M10_Statistics': {name:'M10 Statistics',desc:'Daily/monthly statistics aggregation and reporting.',depend:'M04,M07,M09',output:'study_stats_daily/monthly'},
+  'LS_M11_Daily_Records': {name:'M11 Daily Records',desc:'Daily check-ins, habit tracking, Q&A.',depend:'M07,M10',output:'daily_records, daily_questions'},
+  'LS_M12_System_Config': {name:'M12 System Config',desc:'System settings, learning goals, config management.',depend:'None',output:'system_config table'}
+};
+
+const tableData = {
+  'knowledge_points': {name:'knowledge_points',fields:['id','kp_id','title','content','tags','difficulty','priority',' mastery_level','created_at','updated_at'],desc:'Core table for all knowledge points',related:['study_materials','review_plans','review_tasks']},
+  'study_materials': {name:'study_materials',fields:['id','material_id','kp_id','title','format','file_path','tags','created_at'],desc:'Study material library',related:['knowledge_points']},
+  'study_plans': {name:'study_plans',fields:['id','plan_id','title','type','target_kp_ids','start_date','end_date','status','created_at'],desc:'Study plan definitions',related:['study_sessions','review_plans']},
+  'study_sessions': {name:'study_sessions',fields:['id','session_id','plan_id','kp_ids','duration_min','notes','created_at'],desc:'Study session logs',related:['study_plans','study_stats_daily']},
+  'review_plans': {name:'review_plans',fields:['id','plan_id','kp_id','algorithm','interval_days','next_review','created_at'],desc:'Spaced repetition plans',related:['knowledge_points','review_tasks']},
+  'review_tasks': {name:'review_tasks',fields:['id','task_id','plan_id','kp_id','due_date','status','created_at'],desc:'Daily review tasks',related:['review_plans','review_records']},
+  'review_records': {name:'review_records',fields:['id','record_id','task_id','kp_id','quality','duration_min','notes','created_at'],desc:'Review session records',related:['review_tasks','daily_records']},
+  'exams': {name:'exams',fields:['id','exam_id','title','type','total_score','pass_score','duration_min','created_at'],desc:'Exam definitions',related:['exam_records','knowledge_points']},
+  'exam_records': {name:'exam_records',fields:['id','record_id','exam_id','score','duration_min','answers','created_at'],desc:'Exam history',related:['exams']},
+  'study_stats_daily': {name:'study_stats_daily',fields:['id','stat_date','total_study_min','kp_count','session_count','review_count','created_at'],desc:'Daily statistics',related:['study_sessions','review_records']},
+  'study_stats_monthly': {name:'study_stats_monthly',fields:['id','stat_month','total_study_min','kp_count','review_count','exam_count','created_at'],desc:'Monthly statistics',related:['study_stats_daily']},
+  'habit_tracking': {name:'habit_tracking',fields:['id','habit_id','name','target_days','achieved_days','created_at'],desc:'Habit tracking',related:['daily_records']},
+  'daily_records': {name:'daily_records',fields:['id','record_date','study_min','exercise_min','sleep_hour','mood','notes','created_at'],desc:'Daily check-in records',related:['study_stats_daily','habit_tracking']},
+  'daily_questions': {name:'daily_questions',fields:['id','question','answer','tags','created_at'],desc:'Daily Q&A database',related:['daily_records']},
+  'system_config': {name:'system_config',fields:['id','config_key','config_value','updated_at'],desc:'System configuration',related:['knowledge_points']}
+};
+
+const entryData = {
+  'add_kp': {name:'add_kp',desc:'Add a new knowledge point. Input: title, content, tags, difficulty.',path:'Entry → M01 → knowledge_points',cli:'ls-cli add-kp --title "..." --tags "..." --difficulty 2'},
+  'find_kp': {name:'find_kp',desc:'Search and locate knowledge points by keywords or tags.',path:'Entry → M01 → query',cli:'ls-cli find-kp --keyword "..." --tag "..."'},
+  'plan': {name:'plan',desc:'Create study plan. Select KPs, set date range, start.',path:'Entry → M03 → study_plans',cli:'ls-cli plan create --kp-ids "kp1,kp2" --days 7'},
+  'review': {name:'review',desc:'Start a review session. Shows pending tasks from review_plans.',path:'Entry → M06 → review_tasks → M07',cli:'ls-cli review today'},
+  'exam': {name:'exam',desc:'Take an exam or create a new exam.',path:'Entry → M08 → exams → M09',cli:'ls-cli exam start --exam-id "..."'},
+  'query': {name:'query',desc:'Query dashboard. Shows stats, progress, upcoming reviews.',path:'Entry → M10 → stats',cli:'ls-cli query dashboard'},
+  'stats': {name:'stats',desc:'Detailed statistics. Daily/monthly charts and reports.',path:'Entry → M10 → study_stats_daily/monthly',cli:'ls-cli stats --period monthly'},
+  'habit': {name:'habit',desc:'Track daily habits. Morning exercise, sleep time, etc.',path:'Entry → M11 → habit_tracking',cli:'ls-cli habit check --habit exercise'},
+  'daily': {name:'daily',desc:'Daily check-in. Study time, mood, notes.',path:'Entry → M11 → daily_records',cli:'ls-cli daily checkin --study-min 120 --mood good'},
+  'backup': {name:'backup',desc:'Export all data to JSON for backup.',path:'Entry → M12',cli:'ls-cli backup --output ./backup.json'}
+};
+
+function toggleSection(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+function showDetail(type, name) {
+  // Remove active from all items
+  document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (type === 'module') {
+    const d = moduleData[name];
+    if (!d) return;
+    document.getElementById('mainContent').innerHTML = `
+      <div class="breadcrumb">Module Layer &gt; <span>${d.name}</span></div>
+      <div class="card">
+        <h2>${d.name}</h2>
+        <p style="color:#555;margin-bottom:16px">${d.desc}</p>
+        <div class="grid">
+          <div class="block primary"><div class="label">Module ID</div><div class="value">${name}</div></div>
+          <div class="block"><div class="label">Depends On</div><div class="value">${d.depend}</div></div>
+          <div class="block"><div class="label">Output Table</div><div class="value">${d.output}</div></div>
+        </div>
+        <h3>Dependency Graph</h3>
+        <div style="background:#f8f9fc;border-radius:8px;padding:24px;margin-top:12px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            ${d.depend === 'None' ? '<span style="color:#888;font-size:13px">No dependencies</span>' : d.depend.split(',').map(dep => `<div style="background:#eef1ff;border:2px solid #4a6cf7;border-radius:6px;padding:8px 14px;font-weight:600;font-size:13px">${dep.trim()}</div>`).join('<div style="font-size:16px;color:#888">→</div>')}
+            <div style="font-size:16px;color:#888">→</div>
+            <div style="background:#1a1a2e;color:#fff;border-radius:6px;padding:8px 14px;font-weight:600;font-size:13px">${name}</div>
+            <div style="font-size:16px;color:#888">→</div>
+            <div style="background:#eef9f0;border:2px solid #2e7d32;border-radius:6px;padding:8px 14px;font-weight:600;font-size:13px">${d.output}</div>
+          </div>
+        </div>
+        <h3>CLI Command</h3>
+        <div class="sql-block">ls-cli module ${name.toLowerCase().replace('_','-')} --info</div>
+      </div>
+    `;
+  } else if (type === 'table') {
+    const d = tableData[name];
+    if (!d) return;
+    document.getElementById('mainContent').innerHTML = `
+      <div class="breadcrumb">Database Layer &gt; <span>${d.name}</span></div>
+      <div class="card">
+        <h2>Table: ${d.name}</h2>
+        <p style="color:#555;margin-bottom:16px">${d.desc}</p>
+        <h3>Fields</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+          ${d.fields.map((f,i) => {
+            let cls = 'block';
+            if (f === 'id' || f.endsWith('_id')) cls += ' primary';
+            return `<div class="${cls}" style="min-width:160px"><div class="label">${i+1}. ${f}</div><div class="value" style="font-size:11px;color:#666">field</div></div>`;
+          }).join('')}
+        </div>
+        <h3>Related Tables</h3>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          ${d.related.map(t => `<div class="block primary" style="cursor:pointer" onclick="showDetail('table','${t}')"><div class="label">Related</div><div class="value">${t}</div></div>`).join('')}
+        </div>
+        <h3>ER Relationship</h3>
+        <div style="background:#f8f9fc;border-radius:8px;padding:24px;margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="background:#eef1ff;border:2px solid #4a6cf7;border-radius:6px;padding:10px 16px;font-weight:600;font-size:13px">${name}</div>
+          <div style="font-size:16px;color:#888">←→</div>
+          <div style="background:#fff8e1;border:2px solid #f9a825;border-radius:6px;padding:10px 16px;font-size:13px">${d.related.join(', ')}</div>
+        </div>
+        <h3>SQL Example</h3>
+        <div class="sql-block">SELECT * FROM ${name} LIMIT 100;
+<span class="copy-btn" onclick="copyText(this)">Copy</span></div>
+      </div>
+    `;
+  } else if (type === 'entry') {
+    const d = entryData[name];
+    if (!d) return;
+    document.getElementById('mainContent').innerHTML = `
+      <div class="breadcrumb">Entry Layer &gt; <span>${d.name}</span></div>
+      <div class="card">
+        <h2>Entry: ${d.name}</h2>
+        <p style="color:#555;margin-bottom:16px">${d.desc}</p>
+        <h3>Flow Path</h3>
+        <div style="background:#f8f9fc;border-radius:8px;padding:20px;margin:12px 0;font-family:monospace;font-size:13px">
+          ${d.path}
+        </div>
+        <h3>CLI Command</h3>
+        <div class="sql-block">${d.cli}<span class="copy-btn" onclick="copyText(this)">Copy</span></div>
+      </div>
+    `;
+  }
+}
+
+// Search functionality
+const searchInput = document.getElementById('searchInput');
+let searchTimeout;
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(function() {
+    const q = searchInput.value.toLowerCase().trim();
+    if (!q) {
+      document.querySelectorAll('.item').forEach(i => { i.classList.remove('active'); i.innerHTML = i.textContent; });
+      document.querySelectorAll('.item').forEach(i => i.style.display = '');
+      return;
+    }
+    // Highlight matching items
+    document.querySelectorAll('.item').forEach(item => {
+      const text = item.textContent.toLowerCase();
+      if (text.includes(q)) {
+        item.style.display = '';
+        const idx = text.indexOf(q);
+        const original = item.textContent;
+        item.innerHTML = original.substring(0,idx) + '<span class="highlight-match">' + original.substring(idx,idx+q.length) + '</span>' + original.substring(idx+q.length);
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  }, 200);
+});
+
+function copyText(btn) {
+  const text = btn.parentElement.textContent.replace('Copy','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LS_05 阶段流程详解 - Learning System</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+header { background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+h1 { font-size: 28px; color: #1a1a2e; margin-bottom: 16px; }
+.search-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-bar input { flex: 1; min-width: 200px; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.back-link { display: inline-block; padding: 10px 20px; background: #6c757d; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; }
+.back-link:hover { background: #5a6268; }
+
+.timeline-container { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 24px; overflow-x: auto; }
+.timeline-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #444; }
+.timeline { display: flex; gap: 0; position: relative; min-width: 800px; }
+.timeline::before { content: ''; position: absolute; top: 24px; left: 40px; right: 40px; height: 4px; background: #e0e0e0; border-radius: 2px; z-index: 0; }
+.timeline-track { display: flex; justify-content: space-between; position: relative; z-index: 1; width: 100%; }
+.timeline-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; min-width: 100px; }
+.timeline-node { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; transition: all 0.3s; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.timeline-item.foundations .timeline-node { background: #e3f2fd; color: #1565c0; }
+.timeline-item.mastery .timeline-node { background: #f3e5f5; color: #7b1fa2; }
+.timeline-item:hover .timeline-node { transform: scale(1.15); }
+.timeline-item.active .timeline-node { transform: scale(1.2); box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.timeline-item.completed .timeline-node { background: #c8e6c9; color: #2e7d32; }
+.timeline-label { margin-top: 10px; text-align: center; }
+.timeline-label .stage-num { font-size: 12px; color: #888; }
+.timeline-label .stage-name { font-size: 13px; font-weight: 600; color: #333; max-width: 90px; }
+.timeline-label .level { font-size: 11px; color: #666; margin-top: 2px; }
+
+.stage-content { display: none; }
+.stage-content.active { display: block; }
+
+.stage-section { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; }
+.stage-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid; transition: background 0.2s; }
+.stage-header:hover { background: #f8f9fa; }
+.stage-header.foundations { border-left-color: #1565c0; }
+.stage-header.mastery { border-left-color: #7b1fa2; }
+.stage-header h2 { font-size: 20px; color: #1a1a2e; }
+.stage-header .meta { font-size: 13px; color: #666; margin-top: 4px; }
+.stage-header .toggle-icon { font-size: 20px; color: #999; transition: transform 0.3s; }
+.stage-section.open .toggle-icon { transform: rotate(180deg); }
+.stage-body { display: none; padding: 0 24px 24px; }
+.stage-section.open .stage-body { display: block; }
+
+.step-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.step-card { background: #f8f9fa; border-radius: 8px; padding: 16px; border: 1px solid #e9ecef; cursor: pointer; transition: all 0.2s; }
+.step-card:hover { border-color: #adb5bd; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.step-card h4 { font-size: 15px; color: #333; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+.step-card h4 .step-num { background: #e9ecef; color: #666; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+.step-card p { font-size: 13px; color: #666; }
+.step-card .step-cmd { margin-top: 8px; background: #2d2d2d; color: #a5d6a7; padding: 8px 12px; border-radius: 4px; font-family: "Courier New", monospace; font-size: 12px; overflow-x: auto; white-space: nowrap; }
+
+.essence-highlight { background: linear-gradient(135deg, #fff8e1, #ffecb3); border: 2px solid #ffb300; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+.essence-highlight h3 { color: #e65100; font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.essence-highlight h3::before { content: '★'; color: #ff9800; }
+.essence-points { display: flex; flex-direction: column; gap: 10px; }
+.essence-point { background: #fff; border-radius: 6px; padding: 12px 16px; border-left: 4px solid #ff9800; }
+.essence-point strong { color: #e65100; font-size: 14px; }
+.essence-point span { display: block; font-size: 13px; color: #555; margin-top: 4px; }
+
+.cmd-block { background: #263238; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; position: relative; }
+.cmd-block h4 { color: #80cbc4; font-size: 14px; margin-bottom: 10px; }
+.cmd-block pre { color: #ce93d8; font-family: "Courier New", monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; line-height: 1.8; margin: 0; }
+.copy-btn { position: absolute; top: 12px; right: 12px; background: #37474f; color: #b0bec5; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.copy-btn:hover { background: #455a64; color: #fff; }
+
+.transition-arrow { display: flex; align-items: center; gap: 12px; padding: 16px 0; color: #888; font-size: 14px; }
+.transition-arrow .arrow { font-size: 24px; color: #bbb; }
+
+.next-section { margin-top: 24px; }
+.next-link { display: inline-flex; align-items: center; gap: 8px; padding: 14px 24px; background: #e8eaf6; color: #3949ab; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+.next-link:hover { background: #c5cae9; }
+
+.bottom-nav { display: flex; justify-content: center; gap: 16px; padding: 24px 0; }
+.nav-btn { padding: 12px 28px; background: #1a1a2e; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; }
+.nav-btn:hover { background: #2d2d44; }
+
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-btn { padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.filter-btn:hover { background: #f0f0f0; }
+.filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+.highlight-trigger { background: #ff9800; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>阶段流程详解 - Learning System</h1>
+<div class="search-bar">
+<input type="text" id="searchInput" placeholder="搜索关键词过滤步骤或命令..." oninput="filterContent()">
+<a href="LS_00_总览.html" class="back-link">返回总览</a>
+</div>
+</header>
+
+<div class="timeline-container">
+<div class="timeline-title">七阶段学习流程</div>
+<div class="timeline">
+<div class="timeline-track" id="timelineTrack">
+<div class="timeline-item foundations active" onclick="scrollToStage('stage1')" id="tl-stage1">
+<div class="timeline-node">1</div>
+<div class="timeline-label"><div class="stage-num">Stage 1</div><div class="stage-name">认知建构</div><div class="level">Level 1</div></div>
+</div>
+<div class="timeline-item foundations" onclick="scrollToStage('stage2')" id="tl-stage2">
+<div class="timeline-node">2</div>
+<div class="timeline-label"><div class="stage-num">Stage 2</div><div class="stage-name">实践应用</div><div class="level">Level 2</div></div>
+</div>
+<div class="timeline-item foundations" onclick="scrollToStage('stage3')" id="tl-stage3">
+<div class="timeline-node">3</div>
+<div class="timeline-label"><div class="stage-num">Stage 3</div><div class="stage-name">原理内化</div><div class="level">Level 3+4</div></div>
+</div>
+<div class="timeline-item foundations" onclick="scrollToStage('stage4')" id="tl-stage4">
+<div class="timeline-node">4</div>
+<div class="timeline-label"><div class="stage-num">Stage 4</div><div class="stage-name">实现理解</div><div class="level">Level 4</div></div>
+</div>
+<div class="timeline-item mastery" onclick="scrollToStage('stage5')" id="tl-stage5">
+<div class="timeline-node">5</div>
+<div class="timeline-label"><div class="stage-num">Stage 5</div><div class="stage-name">实战深化</div><div class="level">Level 5</div></div>
+</div>
+<div class="timeline-item mastery" onclick="scrollToStage('stage6')" id="tl-stage6">
+<div class="timeline-node">6</div>
+<div class="timeline-label"><div class="stage-num">Stage 6</div><div class="stage-name">边界探索</div><div class="level">Level 6</div></div>
+</div>
+<div class="timeline-item mastery" onclick="scrollToStage('stage7')" id="tl-stage7">
+<div class="timeline-node">7</div>
+<div class="timeline-label"><div class="stage-num">Stage 7</div><div class="stage-name">迁移设计</div><div class="level">Level 7</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="stage1" class="stage-section open foundations">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 1 - 认知建构</h2><div class="meta">Level 1 | 目标：建立基础知识框架</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S1-1</span></h4>
+<p>预测试 - 评估当前水平</p>
+<div class="step-cmd">python3 learning.py knowledge create &lt;name&gt; --level 1</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S1-2</span></h4>
+<p>先备激活 - 唤醒已有知识</p>
+<div class="step-cmd">python3 learning.py knowledge activate &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S1-3</span></h4>
+<p>核心组块 - 掌握核心知识点</p>
+<div class="step-cmd">python3 learning.py knowledge create &lt;name&gt; --level 1</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S1-4</span></h4>
+<p>心理模型可视化 - 构建知识地图</p>
+<div class="step-cmd">python3 learning.py knowledge visualize &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S1-5</span></h4>
+<p>S1_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_1</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>预测试完成后，系统记录初始水平</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>先备激活后，提炼关联术语</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>核心组块掌握后，沉淀精华关键词</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>心理模型构建完成，保存知识拓扑</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_1 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00","essence_keywords":["概念理解","框架搭建"]}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":2}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入 Stage 2 - 实践应用</span>
+</div>
+</div>
+</div>
+
+<div id="stage2" class="stage-section foundations">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 2 - 实践应用</h2><div class="meta">Level 2 | 目标：从理解到应用</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S2-1</span></h4>
+<p>情境观察 - 观察实际应用场景</p>
+<div class="step-cmd">python3 learning.py practice observe &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S2-2</span></h4>
+<p>引导练习 - 在指导下练习</p>
+<div class="step-cmd">python3 learning.py practice guide &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S2-3</span></h4>
+<p>独立实践 - 自主完成练习</p>
+<div class="step-cmd">python3 learning.py practice solo &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S2-4</span></h4>
+<p>变式应用+边界探查 - 扩展与边界测试</p>
+<div class="step-cmd">python3 learning.py practice vary &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S2-5</span></h4>
+<p>面试模拟 - 用面试题检验</p>
+<div class="step-cmd">python3 learning.py interview simulate &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 6 <span class="step-num">S2-6</span></h4>
+<p>S2_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_2</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>情境观察后，记录实际案例</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>引导练习后，提炼关键步骤</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>独立实践后，保存成功路径</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>变式应用后，记录边界条件</span></div>
+<div class="essence-point"><strong>触发点 5：Step5 结束时</strong><span>面试模拟后，更新面试答案</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_2 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":3}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入 Stage 3 - 原理内化+实现探究</span>
+</div>
+</div>
+</div>
+
+<div id="stage3" class="stage-section foundations">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 3 - 原理内化 + 实现探究</h2><div class="meta">Level 3+4部分 | 目标：深入理解原理</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S3-1</span></h4>
+<p>设计动机追溯 - 理解为什么这样设计</p>
+<div class="step-cmd">python3 learning.py principle why &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S3-2</span></h4>
+<p>对比分析 - 与类似方案对比</p>
+<div class="step-cmd">python3 learning.py principle compare &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S3-3</span></h4>
+<p>本质提炼 - 提炼核心本质</p>
+<div class="step-cmd">python3 learning.py principle extract &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S3-4</span></h4>
+<p>主动回忆 - 不看源码复述原理</p>
+<div class="step-cmd">python3 learning.py principle recall &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S3-5</span></h4>
+<p>实现探究 - 追踪源码实现</p>
+<div class="step-cmd">python3 learning.py source trace &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 6 <span class="step-num">S3-6</span></h4>
+<p>S3_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_3</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>设计动机追溯后，记录设计初衷</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>对比分析后，保存对比结论</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>本质提炼后，保存本质描述</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>主动回忆后，验证理解深度</span></div>
+<div class="essence-point"><strong>触发点 5：Step5 结束时</strong><span>实现探究后，记录实现要点</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_3 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":4}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入 Stage 4 - 实现理解</span>
+</div>
+</div>
+</div>
+
+<div id="stage4" class="stage-section foundations">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 4 - 实现理解</h2><div class="meta">Level 4 | 目标：完全掌握源码实现</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S4-1</span></h4>
+<p>实施准备 - 确定追踪目标</p>
+<div class="step-cmd">python3 learning.py source prepare &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S4-2</span></h4>
+<p>L4专项验证 - 深度验证理解</p>
+<div class="step-cmd">python3 learning.py verify level4 &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S4-3</span></h4>
+<p>找入口 - 定位源码入口</p>
+<div class="step-cmd">python3 learning.py source entry &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S4-4</span></h4>
+<p>源码追踪 - 完整链路追踪</p>
+<div class="step-cmd">python3 learning.py source follow &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S4-5</span></h4>
+<p>核心思想提取 - 提炼设计思想</p>
+<div class="step-cmd">python3 learning.py source idea &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 6 <span class="step-num">S4-6</span></h4>
+<p>记忆锚点创造 - 建立记忆关联</p>
+<div class="step-cmd">python3 learning.py memory anchor &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 7 <span class="step-num">S4-7</span></h4>
+<p>闪示回顾 - 快速回顾复习</p>
+<div class="step-cmd">python3 learning.py review flash &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 8 <span class="step-num">S4-8</span></h4>
+<p>生成复习计划 - 创建后续复习</p>
+<div class="step-cmd">python3 learning.py review create_schedule &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 9 <span class="step-num">S4-9</span></h4>
+<p>S4_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_4</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机 (共6次)</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>实施准备后，保存追踪目标</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>专项验证后，记录验证结果</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>找到入口后，保存入口信息</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>源码追踪后，保存完整路径</span></div>
+<div class="essence-point"><strong>触发点 5：Step5 结束时</strong><span>核心思想提取后，保存思想</span></div>
+<div class="essence-point"><strong>触发点 6：Step6 结束时</strong><span>记忆锚点创造后，建立记忆网络</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_4 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_foundation &lt;id&gt; '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py review create_schedule &lt;id&gt;</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入精通流程 Stage 5-7</span>
+</div>
+</div>
+</div>
+
+<div id="stage5" class="stage-section mastery">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 5 - 实战深化</h2><div class="meta">Level 5 | 目标：能举案例 | 面试层级：中级面试</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S5-1</span></h4>
+<p>案例收集 - 收集实战案例</p>
+<div class="step-cmd">python3 learning.py case collect &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S5-2</span></h4>
+<p>案例分析 - 分析案例细节</p>
+<div class="step-cmd">python3 learning.py case analyze &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S5-3</span></h4>
+<p>案例关联 - 将案例与原理关联</p>
+<div class="step-cmd">python3 learning.py case link &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S5-4</span></h4>
+<p>案例复述 - 不看资料复述案例</p>
+<div class="step-cmd">python3 learning.py case recall &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S5-5</span></h4>
+<p>S5_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_5</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>案例收集后，保存案例列表</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>案例分析后，保存分析结果</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>案例关联后，保存关联图谱</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>案例复述后，验证掌握程度</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_mastery &lt;id&gt; stage_5 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":6}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入 Stage 6 - 边界探索</span>
+</div>
+</div>
+</div>
+
+<div id="stage6" class="stage-section mastery">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 6 - 边界探索</h2><div class="meta">Level 6 | 目标：能说极限和坑 | 面试层级：高级面试</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S6-1</span></h4>
+<p>边界识别 - 识别技术边界</p>
+<div class="step-cmd">python3 learning.py boundary identify &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S6-2</span></h4>
+<p>坑点挖掘 - 挖掘常见坑点</p>
+<div class="step-cmd">python3 learning.py pit mine &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S6-3</span></h4>
+<p>极限测试 - 测试性能极限</p>
+<div class="step-cmd">python3 learning.py limit test &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S6-4</span></h4>
+<p>替代方案 - 探索替代技术</p>
+<div class="step-cmd">python3 learning.py alternative explore &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S6-5</span></h4>
+<p>S6_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_6</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>边界识别后，保存边界条件</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>坑点挖掘后，保存坑点列表</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>极限测试后，保存极限数据</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>替代方案后，保存对比结论</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_mastery &lt;id&gt; stage_6 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":7}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="transition-arrow">
+<div class="arrow">&#8594;</div>
+<span>完成后进入 Stage 7 - 迁移设计</span>
+</div>
+</div>
+</div>
+
+<div id="stage7" class="stage-section mastery">
+<div class="stage-header" onclick="toggleSection(this)">
+<div><h2>Stage 7 - 迁移设计</h2><div class="meta">Level 7 | 目标：能延伸设计 | 面试层级：架构师面试</div></div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="stage-body">
+<div class="step-grid">
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 1 <span class="step-num">S7-1</span></h4>
+<p>模式抽象 - 抽象核心模式</p>
+<div class="step-cmd">python3 learning.py pattern abstract &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 2 <span class="step-num">S7-2</span></h4>
+<p>场景迁移 - 迁移到新场景</p>
+<div class="step-cmd">python3 learning.py scenario migrate &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 3 <span class="step-num">S7-3</span></h4>
+<p>设计推演 - 推演新设计</p>
+<div class="step-cmd">python3 learning.py design deduce &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 4 <span class="step-num">S7-4</span></h4>
+<p>架构验证 - 验证架构设计</p>
+<div class="step-cmd">python3 learning.py architecture verify &lt;id&gt;</div>
+</div>
+<div class="step-card" onclick="expandStep(this)">
+<h4>Step 5 <span class="step-num">S7-5</span></h4>
+<p>S7_GATE - 阶段关口考核</p>
+<div class="step-cmd">python3 learning.py progress gate &lt;id&gt; stage_7</div>
+</div>
+</div>
+
+<div class="essence-highlight">
+<h3>精华沉淀触发时机</h3>
+<div class="essence-points">
+<div class="essence-point"><strong>触发点 1：Step1 结束时</strong><span>模式抽象后，保存抽象模式</span></div>
+<div class="essence-point"><strong>触发点 2：Step2 结束时</strong><span>场景迁移后，保存迁移路径</span></div>
+<div class="essence-point"><strong>触发点 3：Step3 结束时</strong><span>设计推演后，保存设计方案</span></div>
+<div class="essence-point"><strong>触发点 4：Step4 结束时</strong><span>架构验证后，保存验证结果</span></div>
+</div>
+</div>
+
+<div class="cmd-block">
+<h4>阶段完成保存操作</h4>
+<pre>python3 learning.py progress update_mastery &lt;id&gt; stage_7 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_foundation &lt;id&gt; '{"status":"mastered"}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<div class="next-section">
+<a href="LS_04_精通之路.html" class="next-link">&#8594; 进入精通之路总览</a>
+</div>
+</div>
+</div>
+
+<div class="bottom-nav">
+<a href="LS_00_总览.html" class="nav-btn">返回总览</a>
+<a href="LS_06_Debug检查清单.html" class="nav-btn">Debug检查清单</a>
+</div>
+</div>
+
+<script>
+function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+}
+
+function expandStep(card) {
+    card.classList.toggle('expanded');
+}
+
+function scrollToStage(stageId) {
+    document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active'));
+    document.getElementById('tl-' + stageId).classList.add('active');
+    
+    document.querySelectorAll('.stage-section').forEach(section => section.classList.remove('open'));
+    const target = document.getElementById(stageId);
+    target.classList.add('open');
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function filterContent() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    if (!query) {
+        document.querySelectorAll('.step-card, .essence-point').forEach(el => {
+            el.style.display = '';
+        });
+        return;
+    }
+    document.querySelectorAll('.step-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+    document.querySelectorAll('.essence-point').forEach(point => {
+        const text = point.textContent.toLowerCase();
+        point.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+
+function copyCmd(btn) {
+    const pre = btn.parentElement.querySelector('pre');
+    navigator.clipboard.writeText(pre.textContent).then(() => {
+        btn.textContent = '已复制';
+        setTimeout(() => btn.textContent = '复制', 2000);
+    });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LS_06 Debug检查清单 - Learning System</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+header { background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+h1 { font-size: 28px; color: #1a1a2e; margin-bottom: 16px; }
+.search-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-bar input { flex: 1; min-width: 200px; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; }
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-btn { padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.filter-btn:hover { background: #f0f0f0; }
+.filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+.back-link { display: inline-block; padding: 10px 20px; background: #6c757d; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; }
+.back-link:hover { background: #5a6268; }
+
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.overview-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+.overview-card .value { font-size: 32px; font-weight: 700; color: #1a1a2e; }
+.overview-card .label { font-size: 13px; color: #666; margin-top: 4px; }
+.overview-card.warning .value { color: #e65100; }
+.overview-card.danger .value { color: #c62828; }
+
+.risk-section { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; overflow: hidden; }
+.risk-header { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid; transition: background 0.2s; }
+.risk-header:hover { background: #f8f9fa; }
+.risk-header.high { border-left-color: #c62828; }
+.risk-header.medium { border-left-color: #ef6c00; }
+.risk-header.low { border-left-color: #f9a825; }
+.risk-header h3 { font-size: 18px; color: #1a1a2e; }
+.risk-header .meta { display: flex; gap: 12px; align-items: center; margin-top: 6px; }
+.risk-header .status-tag { font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 600; }
+.risk-header .status-tag.untreated { background: #ffebee; color: #c62828; }
+.risk-header .status-tag.verified { background: #fff3e0; color: #ef6c00; }
+.risk-header .status-tag.fixed { background: #e8f5e9; color: #2e7d32; }
+.risk-header .toggle-icon { font-size: 20px; color: #999; transition: transform 0.3s; }
+.risk-section.open .toggle-icon { transform: rotate(180deg); }
+.risk-body { display: none; padding: 0 24px 24px; }
+.risk-section.open .risk-body { display: block; }
+
+.section-title { font-size: 15px; font-weight: 600; color: #333; margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 1px solid #e9ecef; }
+.section-title:first-child { margin-top: 0; }
+
+.risk-desc { background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.risk-desc p { font-size: 14px; color: #555; line-height: 1.7; }
+.risk-desc code { background: #e8eaf6; color: #3949ab; padding: 2px 6px; border-radius: 3px; font-family: "Courier New", monospace; font-size: 13px; }
+
+.symptom-list { list-style: none; }
+.symptom-list li { background: #fff3e0; border-left: 4px solid #ff9800; padding: 10px 16px; margin-bottom: 8px; border-radius: 0 6px 6px 0; font-size: 14px; color: #e65100; }
+
+.check-list { display: flex; flex-direction: column; gap: 10px; }
+.check-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: #f8f9fa; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+.check-item:hover { background: #eceff1; }
+.check-item.checked { background: #e8f5e9; }
+.check-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; cursor: pointer; accent-color: #2e7d32; }
+.check-item .check-text { flex: 1; font-size: 14px; color: #333; }
+.check-item.checked .check-text { color: #2e7d32; text-decoration: line-through; }
+.check-item code { background: #e8eaf6; color: #3949ab; padding: 2px 6px; border-radius: 3px; font-family: "Courier New", monospace; font-size: 12px; }
+
+.cmd-block { background: #263238; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; position: relative; }
+.cmd-block h4 { color: #80cbc4; font-size: 14px; margin-bottom: 10px; }
+.cmd-block .cmd-label { font-size: 12px; color: #b0bec5; margin-bottom: 8px; display: block; }
+.cmd-block pre { color: #ce93d8; font-family: "Courier New", monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; line-height: 1.8; margin: 0; }
+.copy-btn { position: absolute; top: 12px; right: 12px; background: #37474f; color: #b0bec5; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.copy-btn:hover { background: #455a64; color: #fff; }
+
+.general-flow { background: #e8eaf6; border-radius: 8px; padding: 20px; margin-top: 24px; }
+.general-flow h3 { font-size: 16px; color: #3949ab; margin-bottom: 12px; }
+.flow-steps { display: flex; flex-direction: column; gap: 8px; }
+.flow-step { display: flex; align-items: center; gap: 12px; font-size: 14px; color: #333; }
+.flow-step .step-num { background: #3949ab; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+.flow-step .step-arrow { color: #9fa8da; font-size: 18px; }
+
+.bottom-nav { display: flex; justify-content: center; gap: 16px; padding: 24px 0; }
+.nav-btn { padding: 12px 28px; background: #1a1a2e; color: #fff; text-decoration: none; border-radius: 8px; font-size: 14px; }
+.nav-btn:hover { background: #2d2d44; }
+
+.timeline-visual { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.timeline-step { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #666; }
+.timeline-step .dot { width: 10px; height: 10px; border-radius: 50%; background: #e0e0e0; }
+.timeline-step.active .dot { background: #e65100; }
+.timeline-step .arrow { color: #bbb; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Debug检查清单</h1>
+<div class="search-bar">
+<input type="text" id="searchInput" placeholder="搜索风险关键词..." oninput="filterRisks()">
+<a href="LS_00_总览.html" class="back-link">返回总览</a>
+</div>
+<div class="filter-bar" style="margin-top: 12px;">
+<button class="filter-btn active" onclick="setFilter('all')">全部 (5)</button>
+<button class="filter-btn" onclick="setFilter('untreated')">未处理 (5)</button>
+<button class="filter-btn" onclick="setFilter('verified')">已验证 (0)</button>
+<button class="filter-btn" onclick="setFilter('fixed')">已修复 (0)</button>
+</div>
+</header>
+
+<div class="overview-grid">
+<div class="overview-card">
+<div class="value">15</div>
+<div class="label">数据库表</div>
+</div>
+<div class="overview-card">
+<div class="value">4</div>
+<div class="label">API模块</div>
+</div>
+<div class="overview-card">
+<div class="value">12</div>
+<div class="label">功能模块</div>
+</div>
+<div class="overview-card warning">
+<div class="value">5</div>
+<div class="label">高风险区域</div>
+</div>
+<div class="overview-card">
+<div class="value">--</div>
+<div class="label">最近检查</div>
+</div>
+</div>
+
+<div class="risk-section open high" data-status="untreated">
+<div class="risk-header high" onclick="toggleRisk(this)">
+<div>
+<h3>高风险1：foundation_path.status 和 current_level 不一致</h3>
+<div class="meta">
+<span class="status-tag untreated">未处理</span>
+<span style="font-size:12px;color:#888;">优先级: P0</span>
+</div>
+</div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="risk-body">
+<div class="risk-desc">
+<p><strong>风险描述：</strong>foundation_path.status 和 current_level 不一致，导致用户无法正常进入精通流程。</p>
+<p><strong>具体表现：</strong><code>foundation_path.status=completed</code> 但 <code>current_level&lt;4</code>，或 <code>status=in_progress</code> 但 <code>level</code> 已到4</p>
+</div>
+
+<div class="timeline-visual">
+<div class="timeline-step active"><span class="dot"></span><span>原因</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>表现</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>验证</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>修复</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>确认</span></div>
+</div>
+
+<p class="section-title">表现症状</p>
+<ul class="symptom-list">
+<li>用户说"我要精通"被拒绝，但实际stage4已完成</li>
+<li>progress get显示level=3但foundation显示completed</li>
+</ul>
+
+<p class="section-title">验证步骤（勾选完成）</p>
+<div class="check-list">
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py progress get &lt;id&gt;</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">对比 foundation_path.status 和 knowledge_progress.current_level</span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">判断是否匹配（level=4 当且仅当 foundation.status=completed）</span>
+</label>
+</div>
+
+<p class="section-title">修复命令（可一键复制）</p>
+<div class="cmd-block">
+<span class="cmd-label">情况1：status不对，重算level</span>
+<pre>python3 learning.py progress update_foundation &lt;id&gt; '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+<div class="cmd-block">
+<span class="cmd-label">情况2：stage进度丢失</span>
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_4 '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+
+<p class="section-title">确认步骤</p>
+<p style="font-size:14px;color:#555;">修复后重新执行 <code>progress get</code>，确认 <code>foundation_path.status</code> 和 <code>current_level</code> 匹配</p>
+</div>
+</div>
+
+<div class="risk-section high" data-status="untreated">
+<div class="risk-header high" onclick="toggleRisk(this)">
+<div>
+<h3>高风险2：stage_progress和current_stage不匹配</h3>
+<div class="meta">
+<span class="status-tag untreated">未处理</span>
+<span style="font-size:12px;color:#888;">优先级: P0</span>
+</div>
+</div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="risk-body">
+<div class="risk-desc">
+<p><strong>风险描述：</strong>stage_2完成了但current_stage还停在1，导致用户重新进入学习时跳过了已完成的阶段。</p>
+</div>
+
+<div class="timeline-visual">
+<div class="timeline-step active"><span class="dot"></span><span>原因</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>表现</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>验证</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>修复</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>确认</span></div>
+</div>
+
+<p class="section-title">表现症状</p>
+<ul class="symptom-list">
+<li>用户重新进入学习时跳过了已完成的阶段</li>
+<li>stage_progress显示stage2已完成但current_stage显示1</li>
+</ul>
+
+<p class="section-title">验证步骤（勾选完成）</p>
+<div class="check-list">
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py progress get &lt;id&gt;</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">对比 current_stage 和各 stage_N.status</span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">确认 current_stage 应该是已完成的最大stage编号</span>
+</label>
+</div>
+
+<p class="section-title">修复命令（可一键复制）</p>
+<div class="cmd-block">
+<pre>python3 learning.py progress update_stage &lt;id&gt; stage_N '{"status":"completed","completed_at":"2026-05-10T14:00:00+08:00"}'
+python3 learning.py progress update_session &lt;id&gt; '{"stage":N}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+</div>
+</div>
+
+<div class="risk-section high" data-status="untreated">
+<div class="risk-header high" onclick="toggleRisk(this)">
+<div>
+<h3>高风险3：review_schedule创建了但review_round没有生成</h3>
+<div class="meta">
+<span class="status-tag untreated">未处理</span>
+<span style="font-size:12px;color:#888;">优先级: P1</span>
+</div>
+</div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="risk-body">
+<div class="risk-desc">
+<p><strong>风险描述：</strong>stage4完成后自动创建复习计划，但5轮复习可能没有全部生成，导致复习任务缺失。</p>
+</div>
+
+<div class="timeline-visual">
+<div class="timeline-step active"><span class="dot"></span><span>原因</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>表现</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>验证</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>修复</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>确认</span></div>
+</div>
+
+<p class="section-title">表现症状</p>
+<ul class="symptom-list">
+<li>review get_due返回空但应该有复习任务</li>
+<li>review get_schedule显示有计划但没有复习记录</li>
+</ul>
+
+<p class="section-title">验证步骤（勾选完成）</p>
+<div class="check-list">
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py review get_schedule &lt;id&gt;</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py review get_history &lt;id&gt;</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">对比计划中的轮次和历史记录数量（应该都是5轮）</span>
+</label>
+</div>
+
+<p class="section-title">修复命令（可一键复制）</p>
+<div class="cmd-block">
+<pre>python3 learning.py review create_schedule &lt;id&gt;</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+<p style="font-size:13px;color:#888;margin-bottom:16px;">注：create_schedule会覆盖旧的计划并重新生成5轮复习</p>
+</div>
+</div>
+
+<div class="risk-section high" data-status="untreated">
+<div class="risk-header high" onclick="toggleRisk(this)">
+<div>
+<h3>高风险4：knowledge_list和knowledge_progress记录不一致</h3>
+<div class="meta">
+<span class="status-tag untreated">未处理</span>
+<span style="font-size:12px;color:#888;">优先级: P1</span>
+</div>
+</div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="risk-body">
+<div class="risk-desc">
+<p><strong>风险描述：</strong>knowledge_list中删除了某知识但progress中还有记录，导致orphaned记录存在。</p>
+</div>
+
+<div class="timeline-visual">
+<div class="timeline-step active"><span class="dot"></span><span>原因</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>表现</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>验证</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>修复</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>确认</span></div>
+</div>
+
+<p class="section-title">表现症状</p>
+<ul class="symptom-list">
+<li>progress get返回数据但knowledge list中找不到该知识</li>
+<li>执行进度查询时返回已删除的知识ID</li>
+</ul>
+
+<p class="section-title">验证步骤（勾选完成）</p>
+<div class="check-list">
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py knowledge list</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py progress get &lt;id&gt;</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">对比 knowledge list 的所有id 和 progress 的 knowledge_id</span>
+</label>
+</div>
+
+<p class="section-title">修复操作</p>
+<p style="font-size:14px;color:#555;margin-bottom:12px;">需要手动查证后清理orphaned记录：</p>
+<div class="cmd-block">
+<pre>python3 learning.py progress cleanup_orphaned &lt;id&gt;</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+</div>
+</div>
+
+<div class="risk-section high" data-status="untreated">
+<div class="risk-header high" onclick="toggleRisk(this)">
+<div>
+<h3>高风险5：integration_scenario记录不完整</h3>
+<div class="meta">
+<span class="status-tag untreated">未处理</span>
+<span style="font-size:12px;color:#888;">优先级: P2</span>
+</div>
+</div>
+<span class="toggle-icon">&#9660;</span>
+</div>
+<div class="risk-body">
+<div class="risk-desc">
+<p><strong>风险描述：</strong>用户做练习但没有update_solution导致历史丢失，integration list显示记录但user_solution_summary为空。</p>
+</div>
+
+<div class="timeline-visual">
+<div class="timeline-step active"><span class="dot"></span><span>原因</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>表现</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>验证</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>修复</span></div>
+<div class="timeline-step"><span class="arrow">-</span></div>
+<div class="timeline-step"><span class="dot"></span><span>确认</span></div>
+</div>
+
+<p class="section-title">表现症状</p>
+<ul class="symptom-list">
+<li>integration list显示记录但user_solution_summary为空</li>
+<li>用户反馈做过练习但历史查不到</li>
+</ul>
+
+<p class="section-title">验证步骤（勾选完成）</p>
+<div class="check-list">
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">执行: <code>python3 learning.py integration get int-XXX</code></span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">检查 user_solution_summary 是否为空</span>
+</label>
+<label class="check-item" onclick="toggleCheck(this)">
+<input type="checkbox">
+<span class="check-text">检查 scenario_solution 和 score 是否存在</span>
+</label>
+</div>
+
+<p class="section-title">修复命令（可一键复制）</p>
+<div class="cmd-block">
+<pre>python3 learning.py integration update_solution int-XXX "用户方案..." '{"score":85}'</pre>
+<button class="copy-btn" onclick="copyCmd(this)">复制</button>
+</div>
+</div>
+</div>
+
+<div class="general-flow">
+<h3>通用调试流程</h3>
+<div class="flow-steps">
+<div class="flow-step"><span class="step-num">1</span><span>怀疑某功能有问题 - 先用对应的 get/list 命令查当前状态</span></div>
+<div class="flow-step"><span class="step-num">2</span><span>对比预期值和实际值 - 确认差异点</span></div>
+<div class="flow-step"><span class="step-num">3</span><span>确认问题后用 update 类命令修复</span></div>
+<div class="flow-step"><span class="step-num">4</span><span>修复后再次 get 确认修复成功</span></div>
+<div class="flow-step"><span class="step-num">5</span><span>记录修复日志到文档</span></div>
+</div>
+</div>
+
+<div class="bottom-nav">
+<a href="LS_00_总览.html" class="nav-btn">返回总览</a>
+<a href="LS_05_阶段流程详解.html" class="nav-btn">阶段流程详解</a>
+</div>
+</div>
+
+<script>
+function toggleRisk(header) {
+    const section = header.parentElement;
+    section.classList.toggle('open');
+}
+
+function toggleCheck(item) {
+    item.classList.toggle('checked');
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+}
+
+function setFilter(filter) {
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    document.querySelectorAll('.risk-section').forEach(section => {
+        const status = section.dataset.status;
+        if (filter === 'all' || status === filter) {
+            section.style.display = '';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+function filterRisks() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    if (!query) {
+        document.querySelectorAll('.risk-section').forEach(el => el.style.display = '');
+        return;
+    }
+    document.querySelectorAll('.risk-section').forEach(section => {
+        const text = section.textContent.toLowerCase();
+        section.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+
+function copyCmd(btn) {
+    const pre = btn.parentElement.querySelector('pre');
+    navigator.clipboard.writeText(pre.textContent).then(() => {
+        btn.textContent = '已复制';
+        setTimeout(() => btn.textContent = '复制', 2000);
+    });
+}
+</script>
+</body>
+</html>

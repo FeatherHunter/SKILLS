@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学习系统 v1.0 - 数据库架构</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:14px;color:#222;background:#f4f7fa;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;padding:12px 20px;background:#1a1a2e;color:#fff;gap:16px;flex-shrink:0}
+header h1{font-size:20px;font-weight:600;white-space:nowrap}
+.search-box{flex:1;display:flex;align-items:center;background:#2d2d4a;border-radius:6px;padding:6px 12px;gap:8px}
+.search-box input{background:transparent;border:none;outline:none;color:#fff;font-size:14px;flex:1}
+.search-box input::placeholder{color:#aaa}
+.search-box label{color:#aaa;font-size:12px}
+header a{color:#4a6cf7;text-decoration:none;font-size:13px;white-space:nowrap}
+
+.layout{display:flex;flex:1;overflow:hidden}
+aside{width:280px;background:#fff;border-right:1px solid #e0e4ec;overflow-y:auto;flex-shrink:0;padding:12px 0}
+
+.group{margin-bottom:12px}
+.group-title{display:flex;align-items:center;padding:8px 16px;cursor:pointer;font-weight:600;font-size:13px;color:#fff;background:#4a6cf7;border-radius:6px;user-select:none;min-height:44px}
+.group-title:hover{background:#3b5ce7}
+.group-title::after{content:'▼';font-size:10px;margin-left:auto;transition:transform .2s}
+.group-title.open::after{transform:rotate(180deg)}
+.group-list{display:none;padding:4px 0}
+.group-list.open{display:block}
+
+.item{padding:8px 16px 8px 24px;cursor:pointer;font-size:13px;color:#444;border-left:3px solid transparent;min-height:44px;display:flex;align-items:center}
+.item:hover{background:#f0f4ff;color:#1a1a2e;border-left-color:#4a6cf7}
+.item.active{background:#eef1ff;color:#1a1a2e;border-left-color:#4a6cf7;font-weight:600}
+
+main{flex:1;overflow-y:auto;padding:24px}
+.breadcrumb{font-size:12px;color:#888;margin-bottom:16px}
+.breadcrumb a{color:#4a6cf7;text-decoration:none}
+
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+.card h2{font-size:20px;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #f0f2f7;padding-bottom:10px}
+.card h3{font-size:16px;margin:16px 0 8px;color:#333}
+
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab-btn{padding:8px 16px;border:none;background:#f0f2f7;color:#666;font-size:13px;border-radius:6px;cursor:pointer;font-weight:500}
+.tab-btn.active{background:#1a1a2e;color:#fff}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;background:#f0f2f7;font-weight:600;font-size:12px;color:#555;text-transform:uppercase;letter-spacing:.5px}
+td{padding:10px 12px;border-bottom:1px solid #eee;color:#333}
+tr:hover td{background:#f8f9fc}
+.pk{background:#1a1a2e;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px;display:inline-block}
+.fk{background:#eef1ff;color:#4a6cf7;padding:2px 6px;border-radius:3px;font-size:11px;display:inline-block;border:1px solid #c5d0ff}
+
+.field-card{display:flex;align-items:center;padding:10px 14px;background:#f8f9fc;border-radius:8px;margin-bottom:8px;border-left:4px solid transparent}
+.field-card.pk-card{border-left-color:#1a1a2e;background:#eef1ff}
+.field-card.fk-card{border-left-color:#4a6cf7;background:#eef1ff}
+.field-card .fname{font-weight:600;font-size:14px;color:#1a1a2e;min-width:180px}
+.field-card .ftype{font-size:12px;color:#666;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #e0e4ec;margin-right:10px}
+.field-card .fconstraint{font-size:11px;color:#888}
+
+.er-diagram{background:#f8f9fc;border-radius:8px;padding:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.er-box{padding:12px 18px;border-radius:8px;font-weight:600;font-size:13px;text-align:center;min-width:120px}
+.er-source{background:#eef1ff;border:2px solid #4a6cf7;color:#1a1a2e}
+.er-target{background:#eef9f0;border:2px solid #2e7d32;color:#1a1a2e}
+.er-arrow{font-size:18px;color:#888}
+
+.sql-block{background:#1e1e2e;color:#cdd6f4;padding:14px 18px;border-radius:8px;font-family:'Consolas','Monaco',monospace;font-size:13px;margin:8px 0;position:relative;line-height:1.6}
+.sql-block .copy-btn{position:absolute;top:8px;right:8px;background:#3b3b5c;color:#cdd6f4;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
+
+.apis-list{display:flex;flex-direction:column;gap:8px}
+.api-item{background:#f8f9fc;padding:10px 14px;border-radius:8px;display:flex;align-items:center;gap:10px}
+.api-item .api-name{font-weight:600;font-size:13px;color:#1a1a2e;min-width:160px}
+.api-item .api-desc{font-size:12px;color:#666}
+
+.rule-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f7}
+.rule-item:last-child{border-bottom:none}
+.rule-num{background:#1a1a2e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:600}
+.rule-text{font-size:13px;color:#333;line-height:1.5}
+
+footer{display:flex;gap:12px;padding:10px 20px;background:#fff;border-top:1px solid #e0e4ec;flex-shrink:0;overflow-x:auto}
+footer a{display:flex;align-items:center;padding:8px 16px;background:#f0f2f7;color:#333;text-decoration:none;border-radius:6px;font-size:13px;white-space:nowrap;min-height:44px}
+footer a:hover{background:#1a1a2e;color:#fff}
+footer a.active{background:#4a6cf7;color:#fff}
+
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Database Architecture</h1>
+  <div class="search-box">
+    <label>Search</label>
+    <input type="text" id="searchInput" placeholder="Table name or field name...">
+  </div>
+  <a href="LS_00_系统总览.html">← Back to Overview</a>
+</header>
+
+<div class="layout">
+  <aside>
+    <!-- Knowledge DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Knowledge DB (3)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('knowledge_points')">knowledge_points</div>
+        <div class="item" onclick="showTable('study_materials')">study_materials</div>
+        <div class="item" onclick="showTable('system_config')">system_config</div>
+      </div>
+    </div>
+    <!-- Study DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Study DB (2)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('study_plans')">study_plans</div>
+        <div class="item" onclick="showTable('study_sessions')">study_sessions</div>
+      </div>
+    </div>
+    <!-- Review DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Review DB (3)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('review_plans')">review_plans</div>
+        <div class="item" onclick="showTable('review_tasks')">review_tasks</div>
+        <div class="item" onclick="showTable('review_records')">review_records</div>
+      </div>
+    </div>
+    <!-- Exam DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Exam DB (2)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('exams')">exams</div>
+        <div class="item" onclick="showTable('exam_records')">exam_records</div>
+      </div>
+    </div>
+    <!-- Stats DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Stats DB (3)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('study_stats_daily')">study_stats_daily</div>
+        <div class="item" onclick="showTable('study_stats_monthly')">study_stats_monthly</div>
+        <div class="item" onclick="showTable('habit_tracking')">habit_tracking</div>
+      </div>
+    </div>
+    <!-- Daily DB -->
+    <div class="group">
+      <div class="group-title" onclick="toggleGroup(this)">Daily DB (2)</div>
+      <div class="group-list">
+        <div class="item" onclick="showTable('daily_records')">daily_records</div>
+        <div class="item" onclick="showTable('daily_questions')">daily_questions</div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="mainContent">
+    <div class="breadcrumb"><a href="LS_00_系统总览.html">Overview</a> &gt; <span>Database</span></div>
+
+    <div class="card">
+      <h2>15 Tables Architecture</h2>
+      <p style="color:#555;margin-bottom:20px;font-size:13px">Learning System uses a normalized relational structure. 6 groups, 15 tables. Click any table in the sidebar to view details.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>Table</th>
+            <th>Records</th>
+            <th>Primary Key</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="showTable('knowledge_points')" style="cursor:pointer"><td>Knowledge</td><td><b>knowledge_points</b></td><td>~500</td><td><span class="pk">id</span></td><td>Core KP storage</td></tr>
+          <tr onclick="showTable('study_materials')" style="cursor:pointer"><td>Knowledge</td><td><b>study_materials</b></td><td>~200</td><td><span class="pk">id</span></td><td>Material library</td></tr>
+          <tr onclick="showTable('system_config')" style="cursor:pointer"><td>Knowledge</td><td><b>system_config</b></td><td>~20</td><td><span class="pk">id</span></td><td>System settings</td></tr>
+          <tr onclick="showTable('study_plans')" style="cursor:pointer"><td>Study</td><td><b>study_plans</b></td><td>~50</td><td><span class="pk">id</span></td><td>Plan definitions</td></tr>
+          <tr onclick="showTable('study_sessions')" style="cursor:pointer"><td>Study</td><td><b>study_sessions</b></td><td>~1000</td><td><span class="pk">id</span></td><td>Session logs</td></tr>
+          <tr onclick="showTable('review_plans')" style="cursor:pointer"><td>Review</td><td><b>review_plans</b></td><td>~500</td><td><span class="pk">id</span></td><td>SR plans</td></tr>
+          <tr onclick="showTable('review_tasks')" style="cursor:pointer"><td>Review</td><td><b>review_tasks</b></td><td>~2000</td><td><span class="pk">id</span></td><td>Daily review tasks</td></tr>
+          <tr onclick="showTable('review_records')" style="cursor:pointer"><td>Review</td><td><b>review_records</b></td><td>~5000</td><td><span class="pk">id</span></td><td>Review history</td></tr>
+          <tr onclick="showTable('exams')" style="cursor:pointer"><td>Exam</td><td><b>exams</b></td><td>~30</td><td><span class="pk">id</span></td><td>Exam definitions</td></tr>
+          <tr onclick="showTable('exam_records')" style="cursor:pointer"><td>Exam</td><td><b>exam_records</b></td><td>~200</td><td><span class="pk">id</span></td><td>Exam history</td></tr>
+          <tr onclick="showTable('study_stats_daily')" style="cursor:pointer"><td>Stats</td><td><b>study_stats_daily</b></td><td>~365</td><td><span class="pk">id</span></td><td>Daily aggregations</td></tr>
+          <tr onclick="showTable('study_stats_monthly')" style="cursor:pointer"><td>Stats</td><td><b>study_stats_monthly</b></td><td>~12</td><td><span class="pk">id</span></td><td>Monthly aggregations</td></tr>
+          <tr onclick="showTable('habit_tracking')" style="cursor:pointer"><td>Stats</td><td><b>habit_tracking</b></td><td>~50</td><td><span class="pk">id</span></td><td>Habit definitions</td></tr>
+          <tr onclick="showTable('daily_records')" style="cursor:pointer"><td>Daily</td><td><b>daily_records</b></td><td>~365</td><td><span class="pk">id</span></td><td>Daily check-ins</td></tr>
+          <tr onclick="showTable('daily_questions')" style="cursor:pointer"><td>Daily</td><td><b>daily_questions</b></td><td>~100</td><td><span class="pk">id</span></td><td>Q&A database</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<footer>
+  <a href="LS_00_系统总览.html">LS_00 System Overview</a>
+  <a href="LS_01_数据库架构.html" class="active">LS_01 Database</a>
+  <a href="#">LS_02 Module Detail</a>
+  <a href="#">LS_03 Entry Reference</a>
+  <a href="#">LS_04 Stats Dashboard</a>
+  <a href="#">LS_05 Review Flow</a>
+  <a href="#">LS_06 Exam System</a>
+</footer>
+
+<script>
+const tableInfo = {
+  'knowledge_points': {
+    desc: 'Core table for all knowledge points. Stores KP metadata, tags, difficulty, mastery level.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'kp_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'title',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'content',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'tags',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'difficulty',type:'INTEGER',constraint:'DEFAULT 3',isPK:false,isFK:false},
+      {name:'priority',type:'INTEGER',constraint:'DEFAULT 5',isPK:false,isFK:false},
+      {name:'mastery_level',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false},
+      {name:'updated_at',type:'DATETIME',constraint:'',isPK:false,isFK:false}
+    ],
+    related: ['study_materials','review_plans','review_tasks','exams'],
+    apis: ['add_kp','find_kp','update_kp','delete_kp','query'],
+    rules: [
+      'kp_id must be unique globally',
+      'difficulty range: 1-5 (1=easy, 5=hard)',
+      'mastery_level 0-100, updated by review records',
+      'tags stored as comma-separated string'
+    ],
+    sql: 'CREATE TABLE knowledge_points (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  kp_id TEXT UNIQUE NOT NULL,\n  title TEXT NOT NULL,\n  content TEXT,\n  tags TEXT,\n  difficulty INTEGER DEFAULT 3,\n  priority INTEGER DEFAULT 5,\n  mastery_level INTEGER DEFAULT 0,\n  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n  updated_at DATETIME\n);\n\nSELECT * FROM knowledge_points WHERE tags LIKE "%algorithm%" LIMIT 50;'
+  },
+  'study_materials': {
+    desc: 'Study material library. Links to KPs, supports multiple formats (PDF, video, code).',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'material_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'kp_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'knowledge_points.kp_id'},
+      {name:'title',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'format',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'file_path',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'tags',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['knowledge_points'],
+    apis: ['add_kp','query'],
+    rules: [
+      'format: pdf, video, code, article',
+      'file_path relative to materials directory',
+      'one KP can have multiple materials'
+    ],
+    sql: 'SELECT sm.*, kp.title as kp_title\nFROM study_materials sm\nJOIN knowledge_points kp ON sm.kp_id = kp.kp_id\nWHERE kp.tags LIKE "%algorithm%";'
+  },
+  'study_plans': {
+    desc: 'Study plan definitions. Contains target KPs, date range, plan type, status.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'plan_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'title',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'type',type:'TEXT',constraint:'daily/weekly/monthly',isPK:false,isFK:false},
+      {name:'target_kp_ids',type:'TEXT',constraint:'comma-separated',isPK:false,isFK:false},
+      {name:'start_date',type:'DATE',constraint:'',isPK:false,isFK:false},
+      {name:'end_date',type:'DATE',constraint:'',isPK:false,isFK:false},
+      {name:'status',type:'TEXT',constraint:'active/completed/paused',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['study_sessions','review_plans'],
+    apis: ['plan'],
+    rules: [
+      'target_kp_ids stored as comma-separated string',
+      'status transitions: active → completed | paused → active',
+      'end_date must be >= start_date'
+    ],
+    sql: '-- Find active plans\nSELECT * FROM study_plans WHERE status = \'active\';\n\n-- Weekly plan example\nSELECT sp.*, COUNT(ss.id) as sessions\nFROM study_plans sp\nLEFT JOIN study_sessions ss ON sp.plan_id = ss.plan_id\nGROUP BY sp.plan_id;'
+  },
+  'study_sessions': {
+    desc: 'Study session logs. Each record = one study session with duration, content.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'session_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'plan_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'study_plans.plan_id'},
+      {name:'kp_ids',type:'TEXT',constraint:'comma-separated',isPK:false,isFK:false},
+      {name:'duration_min',type:'INTEGER',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'notes',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['study_plans','study_stats_daily'],
+    apis: ['plan','query','stats'],
+    rules: [
+      'duration_min > 0, max 480 (8 hours)',
+      'kp_ids references knowledge_points.kp_id',
+      'one session belongs to one plan'
+    ],
+    sql: '-- Today sessions\nSELECT * FROM study_sessions\nWHERE DATE(created_at) = DATE('now');\n\n-- Weekly summary by plan\nSELECT plan_id, SUM(duration_min) as total_min, COUNT(*) as cnt\nFROM study_sessions\nGROUP BY plan_id;'
+  },
+  'review_plans': {
+    desc: 'Spaced repetition plans. One plan per KP, tracks scheduling parameters.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'plan_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'kp_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'knowledge_points.kp_id'},
+      {name:'algorithm',type:'TEXT',constraint:'SM2/FSRS',isPK:false,isFK:false},
+      {name:'interval_days',type:'INTEGER',constraint:'DEFAULT 1',isPK:false,isFK:false},
+      {name:'next_review',type:'DATETIME',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['knowledge_points','review_tasks'],
+    apis: ['review','plan'],
+    rules: [
+      'algorithm: SM2 (default) or FSRS',
+      'interval_days adjusted by review quality',
+      'next_review calculated by algorithm'
+    ],
+    sql: '-- Due reviews today\nSELECT rp.*, kp.title, kp.tags\nFROM review_plans rp\nJOIN knowledge_points kp ON rp.kp_id = kp.kp_id\nWHERE DATE(rp.next_review) <= DATE('now');'
+  },
+  'review_tasks': {
+    desc: 'Daily review tasks. Generated from review_plans based on next_review date.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'task_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'plan_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'review_plans.plan_id'},
+      {name:'kp_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'knowledge_points.kp_id'},
+      {name:'due_date',type:'DATE',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'status',type:'TEXT',constraint:'pending/done/skipped',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['review_plans','review_records'],
+    apis: ['review'],
+    rules: [
+      'status: pending → done | skipped',
+      'due_date = review_plans.next_review date',
+      'one plan generates one task per due date'
+    ],
+    sql: '-- Pending tasks\nSELECT rt.*, kp.title, kp.difficulty\nFROM review_tasks rt\nJOIN knowledge_points kp ON rt.kp_id = kp.kp_id\nWHERE rt.status = \'pending\'\nORDER BY kp.difficulty DESC, rt.due_date;'
+  },
+  'review_records': {
+    desc: 'Review session records. Each record = one review of one KP with quality score.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'record_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'task_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'review_tasks.task_id'},
+      {name:'kp_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'knowledge_points.kp_id'},
+      {name:'quality',type:'INTEGER',constraint:'0-5',isPK:false,isFK:false},
+      {name:'duration_min',type:'INTEGER',constraint:'',isPK:false,isFK:false},
+      {name:'notes',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['review_tasks','knowledge_points','daily_records'],
+    apis: ['review','query','stats'],
+    rules: [
+      'quality: 0=complete blackout, 5=perfect',
+      'quality >= 3 considered passed',
+      'auto-updates knowledge_points.mastery_level'
+    ],
+    sql: '-- Quality distribution last 7 days\nSELECT quality, COUNT(*) as cnt\nFROM review_records\nWHERE created_at > datetime(\'now\', \'-7 days\')\nGROUP BY quality;\n\n-- Update mastery based on review history\nSELECT kp_id, AVG(quality)*20 as mastery\nFROM review_records\nGROUP BY kp_id;'
+  },
+  'exams': {
+    desc: 'Exam definitions. Contains exam metadata, question set, scoring rules.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'exam_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'title',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'type',type:'TEXT',constraint:'quiz/exam/test',isPK:false,isFK:false},
+      {name:'total_score',type:'INTEGER',constraint:'DEFAULT 100',isPK:false,isFK:false},
+      {name:'pass_score',type:'INTEGER',constraint:'DEFAULT 60',isPK:false,isFK:false},
+      {name:'duration_min',type:'INTEGER',constraint:'DEFAULT 60',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['exam_records','knowledge_points'],
+    apis: ['exam'],
+    rules: [
+      'pass_score <= total_score',
+      'duration_min: 15-240',
+      'type determines question format'
+    ],
+    sql: 'SELECT * FROM exams WHERE type = \'exam\' AND pass_score >= 60;'
+  },
+  'exam_records': {
+    desc: 'Exam history. Each record = one exam attempt with score and answers.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'record_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'exam_id',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:true,fkRef:'exams.exam_id'},
+      {name:'score',type:'INTEGER',constraint:'0-total_score',isPK:false,isFK:false},
+      {name:'duration_min',type:'INTEGER',constraint:'',isPK:false,isFK:false},
+      {name:'answers',type:'TEXT',constraint:'JSON string',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['exams'],
+    apis: ['exam','query','stats'],
+    rules: [
+      'score 0 to exams.total_score',
+      'pass if score >= exams.pass_score',
+      'answers stored as JSON'
+    ],
+    sql: '-- Best score per exam\nSELECT exam_id, MAX(score) as best_score, COUNT(*) as attempts\nFROM exam_records\nGROUP BY exam_id;'
+  },
+  'study_stats_daily': {
+    desc: 'Daily statistics. Aggregated from study_sessions and review_records.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'stat_date',type:'DATE',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'total_study_min',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'kp_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'session_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'review_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['study_sessions','review_records'],
+    apis: ['stats','query'],
+    rules: [
+      'One row per calendar day',
+      'Aggregated from other tables by cron',
+      'stat_date is primary unique key'
+    ],
+    sql: '-- Last 30 days trend\nSELECT stat_date, total_study_min, kp_count\nFROM study_stats_daily\nORDER BY stat_date DESC LIMIT 30;'
+  },
+  'study_stats_monthly': {
+    desc: 'Monthly statistics. Rollup of study_stats_daily.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'stat_month',type:'TEXT',constraint:'YYYY-MM format',isPK:false,isFK:false},
+      {name:'total_study_min',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'kp_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'review_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'exam_count',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['study_stats_daily'],
+    apis: ['stats','query'],
+    rules: [
+      'stat_month format: YYYY-MM',
+      'One row per month',
+      'Aggregated from daily stats'
+    ],
+    sql: '-- This year monthly\nSELECT stat_month, total_study_min/60 as study_hours\nFROM study_stats_monthly\nWHERE stat_month LIKE \'2026%\';'
+  },
+  'habit_tracking': {
+    desc: 'Habit definitions and tracking. One row per habit per user.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'habit_id',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'name',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'target_days',type:'INTEGER',constraint:'per week',isPK:false,isFK:false},
+      {name:'achieved_days',type:'INTEGER',constraint:'this week',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['daily_records'],
+    apis: ['habit'],
+    rules: [
+      'target_days: 1-7',
+      'achieved_days resetted weekly',
+      'name must be unique'
+    ],
+    sql: '-- Active habits\nSELECT * FROM habit_tracking ORDER BY achieved_days DESC;'
+  },
+  'daily_records': {
+    desc: 'Daily check-in records. One row per day, stores study time, mood, etc.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'record_date',type:'DATE',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'study_min',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'exercise_min',type:'INTEGER',constraint:'DEFAULT 0',isPK:false,isFK:false},
+      {name:'sleep_hour',type:'REAL',constraint:'4-12',isPK:false,isFK:false},
+      {name:'mood',type:'TEXT',constraint:'great/good/neutral/bad/awful',isPK:false,isFK:false},
+      {name:'notes',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['study_stats_daily','habit_tracking'],
+    apis: ['daily','habit','stats'],
+    rules: [
+      'record_date is unique (one per day)',
+      'sleep_hour: 4.0-12.0',
+      'mood: great/good/neutral/bad/awful'
+    ],
+    sql: '-- Recent check-ins\nSELECT record_date, study_min, mood\nFROM daily_records\nORDER BY record_date DESC LIMIT 7;'
+  },
+  'daily_questions': {
+    desc: 'Daily Q&A database. Q&A pairs for daily review and quiz.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'question',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'answer',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'tags',type:'TEXT',constraint:'',isPK:false,isFK:false},
+      {name:'created_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['daily_records'],
+    apis: ['daily','query'],
+    rules: [
+      'question and answer are plain text',
+      'tags for categorization'
+    ],
+    sql: '-- Random 5 Q&A\nSELECT * FROM daily_questions ORDER BY RANDOM() LIMIT 5;'
+  },
+  'system_config': {
+    desc: 'System configuration. Key-value store for system settings.',
+    fields: [
+      {name:'id',type:'INTEGER',constraint:'PRIMARY KEY AUTOINCREMENT',isPK:true,isFK:false},
+      {name:'config_key',type:'TEXT',constraint:'UNIQUE NOT NULL',isPK:false,isFK:false},
+      {name:'config_value',type:'TEXT',constraint:'NOT NULL',isPK:false,isFK:false},
+      {name:'updated_at',type:'DATETIME',constraint:'DEFAULT CURRENT_TIMESTAMP',isPK:false,isFK:false}
+    ],
+    related: ['knowledge_points'],
+    apis: ['backup','query'],
+    rules: [
+      'key format: group.subkey',
+      'value stored as JSON string',
+      'updated_at auto-timestamped'
+    ],
+    sql: '-- Get all config\nSELECT * FROM system_config;\n\n-- Get specific key\nSELECT config_value FROM system_config\nWHERE config_key = \'learning.goal_daily_min\';'
+  }
+};
+
+let currentTable = null;
+let currentTab = 'fields';
+
+function toggleGroup(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+function showTable(name) {
+  // Update sidebar active
+  document.querySelectorAll('.item').forEach(i => i.classList.remove('active'));
+  event.target.classList.add('active');
+
+  currentTable = name;
+  currentTab = 'fields';
+  renderTable();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  renderTable();
+}
+
+function renderTable() {
+  if (!currentTable) return;
+  const d = tableInfo[currentTable];
+  if (!d) return;
+
+  let fieldsHtml = d.fields.map((f, i) => {
+    let cls = 'field-card';
+    if (f.isPK) cls += ' pk-card';
+    else if (f.isFK) cls += ' fk-card';
+    const badge = f.isPK ? '<span class="pk">PK</span>' : (f.isFK ? `<span class="fk">FK → ${f.fkRef}</span>` : '');
+    return `<div class="${cls}">
+      <span style="font-size:12px;color:#888;min-width:28px">${i+1}.</span>
+      <span class="fname">${f.name}</span>
+      <span class="ftype">${f.type}</span>
+      <span class="fconstraint">${f.constraint || '&nbsp;'}</span>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  let relatedHtml = d.related.map(t => `<div class="er-box er-target" style="cursor:pointer" onclick="showTable('${t}')">${t}</div>`).join('');
+  let apisHtml = d.apis.map(api => `<div class="api-item"><span class="api-name">${api}</span><span class="api-desc">CLI entry for this table</span></div>`).join('');
+  let rulesHtml = d.rules.map((r, i) => `<div class="rule-item"><span class="rule-num">${i+1}</span><span class="rule-text">${r}</span></div>`).join('');
+
+  let tabContent = '';
+  if (currentTab === 'fields') {
+    tabContent = fieldsHtml;
+  } else if (currentTab === 'relations') {
+    tabContent = `
+      <h3>ER Diagram</h3>
+      <div class="er-diagram">
+        <div class="er-box er-source">${currentTable}</div>
+        <div class="er-arrow">←→</div>
+        ${relatedHtml}
+      </div>
+      <h3 style="margin-top:20px">Direct Relationships</h3>
+      <div class="grid" style="margin-top:12px">${d.related.map(t => `<div class="block" style="cursor:pointer" onclick="showTable('${t}')"><div class="label">Related Table</div><div class="value">${t}</div></div>`).join('')}</div>`;
+  } else if (currentTab === 'apis') {
+    tabContent = apisHtml;
+  }
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="breadcrumb"><a href="LS_00_系统总览.html">Overview</a> &gt; <a href="LS_01_数据库架构.html">Database</a> &gt; <span>${currentTable}</span></div>
+
+    <div class="card">
+      <h2>Table: ${currentTable}</h2>
+      <p style="color:#555;margin-bottom:16px">${d.desc}</p>
+
+      <div class="tabs">
+        <button class="tab-btn ${currentTab === 'fields' ? 'active' : ''}" onclick="switchTab('fields')">Fields</button>
+        <button class="tab-btn ${currentTab === 'relations' ? 'active' : ''}" onclick="switchTab('relations')">Relations</button>
+        <button class="tab-btn ${currentTab === 'apis' ? 'active' : ''}" onclick="switchTab('apis')">Used By APIs</button>
+      </div>
+
+      <div id="tabContent">${tabContent}</div>
+    </div>
+
+    <div class="card">
+      <h3>Business Rules</h3>
+      ${rulesHtml}
+    </div>
+
+    <div class="card">
+      <h3>SQL Examples</h3>
+      <div class="sql-block">${d.sql}<span class="copy-btn" onclick="copyText(this)">Copy</span></div>
+    </div>
+  `;
+
+  if (currentTab === 'fields') {
+    document.getElementById('tabContent').innerHTML = fieldsHtml;
+  }
+}
+
+// Search
+const searchInput = document.getElementById('searchInput');
+let searchTimeout;
+searchInput.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(function() {
+    const q = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll('.item').forEach(item => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(q) ? '' : 'none';
+    });
+  }, 200);
+});
+
+function copyText(btn) {
+  const text = btn.parentElement.textContent.replace('Copy','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+</script>
+</body>
+</html>

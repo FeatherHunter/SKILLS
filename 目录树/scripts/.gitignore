@@ -1,0 +1,5 @@
+# 扫描记录（每次运行自动更新）
+.scan_record.json
+
+# find 临时输出
+/tmp/dir-tree-raw.txt

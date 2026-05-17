@@ -1,5 +1,5 @@
 ---
-name: study-planner
+name: 学习规划师
 description: 学习计划制定 - 生成长期计划、每月计划、每周计划、每日计划
 ---
 # Study Planner

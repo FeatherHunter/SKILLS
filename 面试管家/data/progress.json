@@ -1,0 +1,19 @@
+﻿{
+  "version": "1.0",
+  "last_updated": null,
+  
+  "active_session": null,
+  
+  "interview_progress": {},
+  
+  "readiness_status": {
+    "knowledge_depth": false,
+    "mock_pass_rate": false,
+    "no_pending_feedback": true,
+    "star_cases": false,
+    "pressure_test": null,
+    "overall_ready": false
+  },
+  
+  "completed_rounds": []
+}

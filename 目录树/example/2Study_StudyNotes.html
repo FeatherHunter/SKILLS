@@ -38,19 +38,19 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
 .panel-stats{margin-top:14px;font-size:10.5px;font-family:var(--font-mono);color:var(--ink-lt);letter-spacing:0.07em;}
 
 /* 右面板 */
-.panel-right{padding:64px 64px 96px;min-height:100dvh;}
+.panel-right{padding:64px 64px 96px;min-height:100dvh;overflow-x:hidden}}
 
 /* 树 */
 .tree{list-style:none;}
-.nl{display:none;padding-left:20px;list-style:none;position:relative;}
+.nl{display:none;padding-left:20px;list-style:none;position:relative;overflow-x:auto;max-width:100vw;}
 .nl::before{content:'';position:absolute;left:20px;top:0;bottom:8px;width:1px;background:var(--ink-ghost);}
-.ni{position:relative;}
+.ni{position:relative;overflow:visible;}
 .ni::before{content:'';position:absolute;left:-20px;top:50%;width:20px;height:1px;background:var(--ink-ghost);}
 .ni.open>.nr>.ex{transform:rotate(90deg);}
 .ni.open>.nl{display:block;}
 
 /* 行：磨砂玻璃 */
-.nr{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;user-select:none;border:1px solid rgba(180,178,170,0.18);background:rgba(255,255,252,0.55);backdrop-filter:blur(12px);box-shadow:0 1px 3px rgba(0,0,0,0.035),inset 0 1px 2px rgba(255,255,255,0.9),inset 0 -0.5px 0 rgba(180,178,170,0.08);transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .1s ease;}
+.nr{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;user-select:none;border:1px solid rgba(180,178,170,0.18);background:rgba(255,255,252,0.55);backdrop-filter:blur(12px);box-shadow:0 1px 3px rgba(0,0,0,0.035),inset 0 1px 2px rgba(255,255,255,0.9),inset 0 -0.5px 0 rgba(180,178,170,0.08);transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .1s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .nr:hover{background:rgba(255,255,252,0.78);border-color:rgba(180,178,170,0.3);box-shadow:0 0 0 1px rgba(180,178,170,0.1),inset 0 1px 4px rgba(255,255,255,0.95),inset 0 -0.5px 0 rgba(180,178,170,0.1);}
 .nr:active{transform:scale(0.99);}
 
@@ -60,23 +60,100 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
 .ic svg{width:15px;height:15px;}
 .nn{flex:1;font-size:13.5px;font-weight:400;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
 .nm-dir{color:var(--ink-mid);}
-.nm-fi{color:var(--ink-lt);}
-.badge{font-size:9.5px;font-family:var(--font-mono);padding:1px 5px;border-radius:4px;background:rgba(170,168,158,0.1);border:1px solid var(--ink-ghost);color:var(--ink-lt);white-space:nowrap;margin-right:2px;flex-shrink:0;letter-spacing:.04em;}
-.meta{font-size:10.5px;font-family:var(--font-mono);color:var(--ink-lt);opacity:0;transition:opacity .15s;white-space:nowrap;margin-right:6px;}
+.nm-fi{color:#6e6c68}
+.badge{font-size:9.5px;font-family:var(--font-mono);padding:1px 5px;border-radius:4px;background:rgba(165,163,155,0.15);border:1px solid rgba(168,166,158,0.4);color:#6e6c68;white-space:nowrap;margin-right:2px;flex-shrink:0;letter-spacing:.04em;}
+.meta{font-size:10.5px;font-family:var(--font-mono);color:#727070;opacity:1;transition:opacity .15s;white-space:nowrap;margin-right:6px;}
 .nr:hover .meta{opacity:1;}
 
 /* 复制按钮：银蓝微光 */
-.cp{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r-sm);border:1px solid var(--ink-ghost);background:rgba(255,255,250,0.6);color:var(--ink-lt);font-size:10px;font-family:var(--font-mono);cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,box-shadow .15s;white-space:nowrap;flex-shrink:0;letter-spacing:.04em;backdrop-filter:blur(10px);}
-.nr:hover .cp{opacity:1;}
+.cp{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r-sm);border:1px solid var(--ink-ghost);background:rgba(255,255,250,0.6);color:var(--ink-lt);font-size:10px;font-family:var(--font-mono);cursor:pointer;opacity:0;transition:opacity .15s,color .15s,border-color .15s,box-shadow .15s;white-space:nowrap;flex-shrink:0;letter-spacing:.04em;backdrop-filter:blur(10px);touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.nr:hover .cp,.nr:active .cp,.nr:focus-within .cp{opacity:1}
 .cp:hover{color:var(--accent);border-color:rgba(100,140,180,0.35);box-shadow:0 0 10px rgba(100,140,180,0.12),inset 0 0 6px rgba(100,140,180,0.05);}
-.cp:active{transform:scale(0.94);}
+.cp:active{opacity:1;transform:scale(0.94);}
 .cp svg{width:10px;height:10px;}
 
 /* toast */
-.toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(14px);padding:8px 20px;border-radius:var(--r-md);font-size:11.5px;font-family:var(--font-mono);opacity:0;transition:opacity .2s,transform .2s cubic-bezier(0.16,1,0.3,1);pointer-events:none;z-index:1000;white-space:nowrap;letter-spacing:.04em;backdrop-filter:blur(20px);border:1px solid var(--glass-b);background:rgba(255,255,250,0.88);color:var(--ink-mid);box-shadow:0 4px 20px rgba(0,0,0,0.055);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(14px);padding:10px 24px;font-size:13px;border-radius:var(--r-md);font-size:11.5px;font-family:var(--font-mono);opacity:0;transition:opacity .2s,transform .2s cubic-bezier(0.16,1,0.3,1);pointer-events:none;z-index:1000;white-space:nowrap;letter-spacing:.04em;backdrop-filter:blur(20px);border:1px solid var(--glass-b);background:rgba(255,255,250,0.88);color:var(--ink-mid);box-shadow:0 4px 20px rgba(0,0,0,0.055);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-</style>
+
+/* ══════════════════════════════════════════════════════════════════
+   Responsive: Tablet & Mobile
+   ══════════════════════════════════════════════════════════════════ */
+@media screen and (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  
+  .panel-left {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: auto;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 16px 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--ink-ghost);
+    background: rgba(246,245,241,0.92);
+    backdrop-filter: blur(16px);
+    z-index: 100;
+    gap: 16px;
+  }
+  
+  .panel-left-inner { flex-direction: row; gap: 16px; align-items: center; }
+  .geo-mark { width: 48px; height: 48px; }
+  .circuit-mark { display: none; }
+  .circuit-line { width: 1px; height: 32px; }
+  .panel-title { text-align: left; }
+  .panel-title-main { font-size: 9px; margin-bottom: 4px; }
+  .panel-title-sub { font-size: 14px; }
+  .panel-stats { margin-top: 0; font-size: 9px; }
+  
+  .panel-right {
+    padding: 80px 16px 48px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .nl { padding-left: 12px; }
+  .nl::before { left: 10px; }
+  .ni::before { left: -12px; }
+  .ni { overflow-x: visible; }
+  .panel-right { padding-top: 70px; }
+
+  html { font-size: 14px; }
+  
+  .nr {
+    padding: 7px 10px;
+    gap: 6px;
+  }
+  
+  .nn { font-size: 13px; }
+  .badge { font-size: 8.5px; padding: 1px 4px; }
+  .cp span { display: none; }
+  .cp { padding: 3px 6px; }
+  .cp svg { width: 12px; height: 12px; }
+  .ic svg { width: 14px; height: 14px; }
+  
+  .mountains { display: none; }
+  .circuit { display: none; }
+  
+  .panel-left { padding: 12px 16px; }
+  .panel-title-main { display: none; }
+  .geo-mark { width: 36px; height: 36px; }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1917;
+    --ink: #e8e6e1;
+    --ink-mid: #b0aea8;
+    --ink-lt: #787670;
+    --ink-ghost: #3a3830;
+  }
+}
+
+
+.toast.err{background:rgba(255,248,248,0.92);color:#7a5050;border-color:rgba(200,160,160,0.3);}</style>
 </head>
 <body>
 <canvas id="ink-canvas"></canvas>
@@ -102,7 +179,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">16</span>
     <span class="nn nm-dir">...~2022</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/...~2022')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/...~2022')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/...~2022"></ul>
 </li>
@@ -112,7 +189,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">4</span>
     <span class="nn nm-dir">.claude</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.claude')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.claude')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/.claude"></ul>
 </li>
@@ -122,7 +199,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">10</span>
     <span class="nn nm-dir">.db</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.db')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.db')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/.db"></ul>
 </li>
@@ -131,7 +208,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ex" style="visibility:hidden"></span>
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="nn nm-dir">.git</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.git')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.git')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 </li>
 <li class="ni" data-path="/mnt/d/2Study/StudyNotes/.obsidian">
@@ -140,7 +217,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">7</span>
     <span class="nn nm-dir">.obsidian</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.obsidian')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.obsidian')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/.obsidian"></ul>
 </li>
@@ -150,7 +227,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">5</span>
     <span class="nn nm-dir">.opencode</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.opencode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.opencode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/.opencode"></ul>
 </li>
@@ -160,7 +237,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">2</span>
     <span class="nn nm-dir">.vscode</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.vscode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.vscode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/.vscode"></ul>
 </li>
@@ -170,7 +247,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">20</span>
     <span class="nn nm-dir">2023</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/2023')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/2023')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/2023"></ul>
 </li>
@@ -180,7 +257,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">13</span>
     <span class="nn nm-dir">2024</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/2024')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/2024')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/2024"></ul>
 </li>
@@ -190,7 +267,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">18</span>
     <span class="nn nm-dir">2025</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/2025')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/2025')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/2025"></ul>
 </li>
@@ -200,7 +277,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">8</span>
     <span class="nn nm-dir">2026</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/2026')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/2026')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/2026"></ul>
 </li>
@@ -210,7 +287,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">14</span>
     <span class="nn nm-dir">assets</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/assets')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/assets')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/assets"></ul>
 </li>
@@ -220,7 +297,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">3</span>
     <span class="nn nm-dir">docs</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/docs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/docs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/docs"></ul>
 </li>
@@ -230,7 +307,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">42</span>
     <span class="nn nm-dir">images</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/images')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/images')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/images"></ul>
 </li>
@@ -240,7 +317,7 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">56</span>
     <span class="nn nm-dir">SKILLS</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/SKILLS')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/SKILLS')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/SKILLS"></ul>
 </li>
@@ -250,44 +327,44 @@ body{background:var(--bg);background-image:url(data:image/jpeg;base64,/9j/4AAQSk
     <span class="ic" style="color:#6a6a66"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a1 1 0 01-1 1H4a1 1 0 01-1-1V7z"/></svg></span>
     <span class="badge">6</span>
     <span class="nn nm-dir">sources</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/sources')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/sources')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 <ul class="nl" data-path="/mnt/d/2Study/StudyNotes/sources"></ul>
 </li>
 <li class="ni" data-path="/mnt/d/2Study/StudyNotes/.gitattributes">
   <div class="nr" onclick="">
     <span class="ex" style="visibility:hidden"></span>
-    <span class="ic" style="color:#9e9e9a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
+    <span class="ic" style="color:#767270"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
     <span class="nn nm-fi">.gitattributes</span>
     <span class="meta">395B</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.gitattributes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.gitattributes')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 </li>
 <li class="ni" data-path="/mnt/d/2Study/StudyNotes/.gitignore">
   <div class="nr" onclick="">
     <span class="ex" style="visibility:hidden"></span>
-    <span class="ic" style="color:#9e9e9a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
+    <span class="ic" style="color:#767270"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
     <span class="nn nm-fi">.gitignore</span>
     <span class="meta">1KB</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.gitignore')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.gitignore')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 </li>
 <li class="ni" data-path="/mnt/d/2Study/StudyNotes/.gitmodules">
   <div class="nr" onclick="">
     <span class="ex" style="visibility:hidden"></span>
-    <span class="ic" style="color:#9e9e9a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
+    <span class="ic" style="color:#767270"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
     <span class="nn nm-fi">.gitmodules</span>
     <span class="meta">87B</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/.gitmodules')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/.gitmodules')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 </li>
 <li class="ni" data-path="/mnt/d/2Study/StudyNotes/index.html">
   <div class="nr" onclick="">
     <span class="ex" style="visibility:hidden"></span>
-    <span class="ic" style="color:#9e9e9a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
+    <span class="ic" style="color:#767270"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9M9 3l5 4v9a2 2 0 01-2 2H9M9 3v6"/></svg></span>
     <span class="nn nm-fi">index.html</span>
     <span class="meta">851B</span>
-    <button class="cp" onclick="window._dt_copy('/mnt/d/2Study/StudyNotes/index.html')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
+    <button class="cp" onclick="event.stopPropagation();window._dt_copy('/mnt/d/2Study/StudyNotes/index.html')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="10" height="10" rx="2"/><path d="M5 15V6a1 1 0 011-1h9"/></svg><span>复制</span></button>
   </div>
 </li>
     </ul>
@@ -345,7 +422,7 @@ window.__treeData = 'eJzMvdlzE0m3L3qf719BxI64sfeD5smK80QDXzfdQLOB7i9unDihKEtluxp
       out.push('<li class="ni" data-path="' + jp + '">');
       out.push('  <div class="nr" onclick="' + oc + '">');
       out.push('    ' + ei);
-      out.push('    <span class="ic" style="color:#9e9e9a">' + SVGF_FI + '</span>');
+      out.push('    <span class="ic" style="color:#767270">' + SVGF_FI + '</span>');
       if (badge) out.push('    ' + badge);
       out.push('    <span class="nn nm-fi">' + escName + '</span>');
       out.push('    ' + cb);
@@ -375,9 +452,12 @@ window.__treeData = 'eJzMvdlzE0m3L3qf719BxI64sfeD5smK80QDXzfdQLOB7i9unDihKEtluxp
   window._dt_toggle = toggle;
 
   window._dt_copy = async function(path) {
+    var wsl = path;
+    var win = path.replace('/mnt/d/', 'D:\\').replace(/\\/g, '\\\\').replace(/\//g, '\\\\');
+    var text = 'WSL: ' + wsl + '\nWin: ' + win;
     try {
-      await navigator.clipboard.writeText(path);
-      showToast('\u5df2\u590d\u5236: ' + (path.length > 70 ? path.slice(0, 70) + '\u2026' : path));
+      await navigator.clipboard.writeText(text);
+      showToast('\u5df2\u590d\u5236 \u4e24\u79cd\u8def\u5f84', false);
     } catch(e) {
       showToast('\u590d\u5236\u5931\u8d25', true);
     }

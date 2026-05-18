@@ -46,8 +46,6 @@ SYSTEM_PREFIXES = [
     '[Subagent Context]',
     '<<<BEGIN_OPENCLAW',
     'Pre-compaction memory',
-    'Sender (untrusted',
-    'Conversation info',
     '[media reference removed - already processed by model]',
 ]
 
@@ -181,15 +179,17 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             metadata_lines.add(i)
             continue
 
-        if line_stripped.startswith('Conversation info') or line_stripped.startswith('Sender (untrusted'):
+        if line_stripped.startswith('Conversation info') or line_stripped.startswith('Sender (untrusted') or line_stripped.startswith('```'):
             metadata_lines.add(i)
             continue
 
     non_meta_lines = [l for j, l in enumerate(lines) if j not in metadata_lines and l.strip()]
-    if non_meta_lines:
-        content = clean_text.strip()
-    elif asr_content:
+    # 提取真实内容：如果有 ASR 用 ASR；否则用最后一行（非 JSON 垃圾）
+    if asr_content:
         content = asr_content.strip()
+    elif non_meta_lines:
+        # 取最后一行作为真实用户发言（避免 JSON 内容干扰）
+        content = non_meta_lines[-1].strip()
     else:
         content = None
 

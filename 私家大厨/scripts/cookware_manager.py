@@ -164,27 +164,6 @@ def update(args):
     print(f"✅ 炊具更新成功！")
     return True
 
-    """废弃炊具（非删除）"""
-    cookware_id = args.get("<cookware_id>")
-    if not cookware_id:
-        print("错误：请提供炊具ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM cookware WHERE id = ?", (cookware_id,))
-    cookware = cursor.fetchone()
-    if not cookware:
-        print(f"未找到炊具：{cookware_id}")
-        conn.close()
-        return False
-    
-    conn.commit()
-    conn.close()
-    
-    return True
-
 def main():
     if len(sys.argv) < 2:
         print("""用法：

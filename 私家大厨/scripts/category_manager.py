@@ -196,11 +196,10 @@ def main():
                 i += 1
         else:
             if i == 2:
-                args["<recipe_id>"] = arg if action != "search" else None
                 if action == "search":
                     args["<菜系>"] = arg
-            elif i == 3 and action == "search":
-                args["<菜系>"] = arg
+                else:
+                    args["<recipe_id>"] = arg
             else:
                 args[f"arg{i}"] = arg
             i += 1

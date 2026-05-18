@@ -228,27 +228,6 @@ def reorder(args):
     print(f"✅ 步骤顺序已调整：第{from_seq}步 ↔ 第{to_seq}步")
     return True
 
-    """废弃步骤（非删除）"""
-    step_id = args.get("<step_id>")
-    if not step_id:
-        print("错误：请提供步骤ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT sequence, action FROM cooking_steps WHERE id = ?", (step_id,))
-    step = cursor.fetchone()
-    if not step:
-        print(f"未找到步骤：{step_id}")
-        conn.close()
-        return False
-    
-    conn.commit()
-    conn.close()
-    
-    return True
-
 def main():
     if len(sys.argv) < 2:
         print("""用法：

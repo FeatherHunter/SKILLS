@@ -576,6 +576,9 @@ def update(args):
     if args.get("--source"):
         updates.append("source = ?")
         params.append(args["--source"])
+    if args.get("--source_url"):
+        updates.append("source_url = ?")
+        params.append(args["--source_url"])
     
     if not updates:
         print("错误：没有提供要更新的字段")
@@ -638,6 +641,30 @@ def lint(args):
     
     return True
 
+def discard(args):
+    """废弃食谱（标记为已废弃）"""
+    recipe_id = args.get("<recipe_id>")
+    if not recipe_id:
+        print("错误：请提供食谱ID")
+        return False
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        print(f"未找到食谱：{recipe_id}")
+        conn.close()
+        return False
+    
+    cursor.execute("UPDATE recipes SET status = '已废弃' WHERE id = ?", (recipe_id,))
+    conn.commit()
+    conn.close()
+    
+    print(f"✅ 食谱「{recipe['name']}」已废弃")
+    return True
+
 def main():
     if len(sys.argv) < 2:
         print("""用法：
@@ -657,6 +684,7 @@ def main():
     --status 状态（未做/已做/熟练）
     --source 来源
     --photo_url 图片URL
+    --source_url 来源链接
 """)
         return
     
@@ -705,32 +733,6 @@ def main():
         discard(args)
     else:
         print(f"未知操作：{action}")
-
-
-
-def discard(args):
-    """废弃食谱（标记为已废弃）"""
-    recipe_id = args.get("<recipe_id>")
-    if not recipe_id:
-        print("错误：请提供食谱ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
-    if not recipe:
-        print(f"未找到食谱：{recipe_id}")
-        conn.close()
-        return False
-    
-    cursor.execute("UPDATE recipes SET status = '已废弃' WHERE id = ?", (recipe_id,))
-    conn.commit()
-    conn.close()
-    
-    print(f"✅ 食谱「{recipe['name']}」已废弃")
-    return True
 
 if __name__ == "__main__":
     main()

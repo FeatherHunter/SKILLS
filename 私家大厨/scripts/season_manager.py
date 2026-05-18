@@ -134,15 +134,7 @@ def main():
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]
-        if arg.startswith("--season"):
-            key = arg
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[key] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[key] = True
-                i += 1
-        elif arg.startswith("--"):
+        if arg.startswith("--"):
             if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
                 args[arg] = sys.argv[i + 1]
                 i += 2
@@ -150,12 +142,13 @@ def main():
                 args[arg] = True
                 i += 1
         else:
-            if "arg" not in args:
-                args["<recipe_id>"] = arg if action != "search" else None
+            if i == 2:
                 if action == "search":
                     args["<季节>"] = arg
-            elif action == "search" and "<季节>" not in args:
-                args["<季节>"] = arg
+                else:
+                    args["<recipe_id>"] = arg
+            else:
+                args[f"arg{i}"] = arg
             i += 1
     
     if action == "add":

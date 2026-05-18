@@ -207,27 +207,6 @@ def update(args):
     print(f"✅ 技法更新成功！")
     return True
 
-    """废弃技法（非删除）"""
-    technique_id = args.get("<technique_id>")
-    if not technique_id:
-        print("错误：请提供技法ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT technique_name FROM step_techniques WHERE id = ?", (technique_id,))
-    technique = cursor.fetchone()
-    if not technique:
-        print(f"未找到技法：{technique_id}")
-        conn.close()
-        return False
-    
-    conn.commit()
-    conn.close()
-    
-    return True
-
 def main():
     if len(sys.argv) < 2:
         print("""用法：

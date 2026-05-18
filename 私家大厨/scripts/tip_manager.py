@@ -275,28 +275,6 @@ def update(args):
     print(f"✅ 小贴士更新成功！")
     return True
 
-    """废弃小贴士（非删除）"""
-    tip_id = args.get("<tip_id>")
-    if not tip_id:
-        print("错误：请提供小贴士ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT content FROM tips WHERE id = ?", (tip_id,))
-    tip = cursor.fetchone()
-    if not tip:
-        print(f"未找到小贴士：{tip_id}")
-        conn.close()
-        return False
-    
-    conn.commit()
-    conn.close()
-    
-    content_preview = tip['content'][:30] + "..." if len(tip['content']) > 30 else tip['content']
-    return True
-
 def main():
     if len(sys.argv) < 2:
         print("""用法：

@@ -198,27 +198,6 @@ def update(args):
     print(f"✅ 食材更新成功！")
     return True
 
-    """废弃食材（非删除）"""
-    ingredient_id = args.get("<ingredient_id>")
-    if not ingredient_id:
-        print("错误：请提供食材ID")
-        return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM ingredients WHERE id = ?", (ingredient_id,))
-    ingredient = cursor.fetchone()
-    if not ingredient:
-        print(f"未找到食材：{ingredient_id}")
-        conn.close()
-        return False
-    
-    conn.commit()
-    conn.close()
-    
-    return True
-
 def main():
     if len(sys.argv) < 2:
         print("""用法：

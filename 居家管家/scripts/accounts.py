@@ -30,23 +30,22 @@ DB_DIR = DB_PATH.parent
 
 
 def _find_master_key_path(skill_dir):
-    """三层查找.master.key路径：技能目录 → 父目录.db → 祖目录.db → 技能目录.db"""
-    # 1. 技能目录下
+    """三层查找.master.key路径：环境变量 > 技能目录 > 父目录.db（与 db.py 三层查找保持一致）"""
+    import os as _os
+    env_path = _os.environ.get("SKILLS_DB_PATH")
+    if env_path:
+        p = Path(env_path) / ".master.key"
+        if p.exists():
+            return p
     p = skill_dir / ".master.key"
     if p.exists():
         return p
-    # 2. 技能目录的 .db 下
-    p = skill_dir / ".db" / ".master.key"
-    if p.exists():
-        return p
-    # 3. 向上搜索祖先目录中的 .db（和 db.py 逻辑一致）
     for parent in skill_dir.parents:
         db_dir = parent / ".db"
         if db_dir.is_dir():
             p = db_dir / ".master.key"
             if p.exists():
                 return p
-    # 4. 默认：技能目录的 .db 下（不存在则创建）
     default_dir = skill_dir / ".db"
     default_dir.mkdir(parents=True, exist_ok=True)
     return default_dir / ".master.key"

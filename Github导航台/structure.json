@@ -1,0 +1,40 @@
+{
+  "subdirs": [
+    {
+      "name": "directory-tree",
+      "path": "directory-tree/",
+      "files": [
+        {
+          "name": "1.html",
+          "label": "1"
+        },
+        {
+          "name": "2.html",
+          "label": "2"
+        },
+        {
+          "name": "2Study_StudyNotes.html",
+          "label": "2Study StudyNotes"
+        }
+      ]
+    },
+    {
+      "name": "skillboard",
+      "path": "skillboard/",
+      "files": [
+        {
+          "name": "index.html",
+          "label": "skillboard"
+        }
+      ]
+    }
+  ],
+  "rootFiles": [
+    {
+      "name": "index.html",
+      "label": "本导航台",
+      "isEntry": true
+    }
+  ],
+  "githubPagesBase": "https://featherhunter.github.io/StudyNotes/"
+}

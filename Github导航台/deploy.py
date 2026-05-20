@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-deploy.py — 部署导航台到 docs/ 目录
-流程: 1) 运行 generate_nav.py 生成 structure.json
-      2) 复制 index.html 和 structure.json 到 docs/ 目录
+deploy.py — 部署导航台到 $STUDYNOTES_DOCS 目录
+依赖: STUDYNOTES_DOCS, GITHUB_PAGES_BASE
+流程: 1) 运行 generate_nav.py 在 SKILL 目录生成 structure.json
+      2) 复制 index.html 和 structure.json 到 $STUDYNOTES_DOCS/ 目录
       3) 自动 git commit + push（如有变化）
 """
 import os
@@ -19,7 +20,7 @@ sys.path.insert(0, str(SKILL_DIR))
 def run_generate_nav():
     """运行 generate_nav.py 生成 structure.json"""
     gen_script = SKILL_DIR / "generate_nav.py"
-    print("\n[STEP 1/3] 运行 generate_nav.py 扫描 docs/ 目录...")
+    print("\n[STEP 1/3] 运行 generate_nav.py 扫描 $STUDYNOTES_DOCS 目录...")
     result = subprocess.run(
         [sys.executable, str(gen_script)],
         capture_output=False
@@ -31,17 +32,17 @@ def run_generate_nav():
 
 
 def copy_files_to_docs():
-    """复制 index.html 和 structure.json 到 docs/ 目录"""
-    print("\n[STEP 2/3] 复制文件到 docs/ 目录...")
+    """复制 index.html 和 structure.json 到 $STUDYNOTES_DOCS/ 目录"""
+    print("\n[STEP 2/3] 复制文件到 $STUDYNOTES_DOCS/ 目录...")
 
-    # 从环境变量或 .env 获取 docs 路径
+    # 从环境变量或 .env 获取导航台路径
     from generate_nav import load_env_config
     load_env_config()
-    docs_path = Path(os.environ.get("STUDYNOTES_DOCS", SKILL_DIR.parent / "docs")).resolve()
+    docs_path = Path(os.environ.get("STUDYNOTES_DOCS")).resolve()
 
     src_html = SKILL_DIR / "index.html"
     dst_html = docs_path / "index.html"
-    src_json = docs_path / "structure.json"  # generate_nav.py 输出到 docs/
+    src_json = SKILL_DIR / "structure.json"  # generate_nav.py 输出到 SKILL 目录
 
     if not src_html.exists():
         print(f"[ERROR] 源文件不存在: {src_html}")
@@ -78,7 +79,7 @@ def git_commit_push(docs_path: Path):
     changed = result.stdout.strip()
 
     if not changed:
-        print("[INFO] docs/ 已是最新，无需推送")
+        print("[INFO] $STUDYNOTES_DOCS 已是最新，无需推送")
         return
 
     print(f"[INFO] 检测到变化:\n{changed}")
@@ -92,7 +93,7 @@ def git_commit_push(docs_path: Path):
     if len(changed_files) > 5:
         file_summary += f" (+{len(changed_files) - 5} more)"
 
-    commit_msg = f"docs: 更新导航台 {file_summary}"
+    commit_msg = f"chore: 更新导航台 {file_summary}"
 
     subprocess.run(
         ["git", "commit", "-m", commit_msg],

@@ -22,12 +22,23 @@ version: 3.0
 
 当用户触发上述任意关键词时，AI 必须依次执行以下步骤：
 
-### 步骤 1：检查环境变量
+### 步骤 1：检查并配置环境变量
 
-检查 `STUDYNOTES_DOCS` 环境变量是否已设置。
+> **OpenClaw 必须优先执行此步骤，未配置完整不得进入步骤 2。**
 
-- **已设置** → 继续步骤 2
-- **未设置** → 询问用户导航台根目录的绝对路径，保存到 `.env` 文件，然后继续步骤 2
+在继续之前，AI 必须确认两个环境变量已配置：
+
+- `STUDYNOTES_DOCS` — 导航台根目录的绝对路径
+- `GITHUB_PAGES_BASE` — GitHub Pages 根地址，结尾必须带 `/`
+
+**判断逻辑：**
+
+1. AI 先尝试在**自身运行环境**中读取这两个环境变量
+2. 如有任一缺失 → 询问用户缺失变量的值，并将两个变量都写入 `SKILLS/Github导航台/.env` 文件（供 Python 脚本使用）
+3. 两者都缺失 → 依次询问，先问 `STUDYNOTES_DOCS`，再问 `GITHUB_PAGES_BASE`
+4. 询问时给出明确格式要求（路径 vs URL），不要让用户猜测
+
+**注意：** OpenClaw 的进程环境与系统环境变量独立，不要假设系统变量已对 AI 进程可见。未配置完整时必须引导用户配置，不能跳过。
 
 ### 步骤 2：运行 generate_nav.py
 
@@ -38,7 +49,7 @@ cd "$SKILL_DIR"
 python generate_nav.py
 ```
 
-此脚本会扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在该目录下生成 `structure.json`。
+此脚本会扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在 **SKILL 目录下**生成 `structure.json`。
 
 ### 步骤 3：运行 deploy.py
 
@@ -78,15 +89,16 @@ git status --porcelain
 
 ```
 SKILL 目录/
-├── generate_nav.py    # 扫描 STUDYNOTES_DOCS 目录，生成 structure.json
+├── generate_nav.py    # 扫描 $STUDYNOTES_DOCS 目录
 ├── deploy.py          # 一键部署脚本
-├── index.html         # 导航台页面（UI样式不变）
+├── index.html         # 导航台页面
+├── structure.json     # 由 generate_nav.py 生成（部署时复制到目标目录）
 ├── .env               # 路径配置（自动生成）
 └── SKILL.md           # 本文档
 
 STUDYNOTES_DOCS 目录（GitHub Pages 部署目录）/
-├── index.html         # 导航台首页（由 deploy.py 复制）
-├── structure.json     # 动态数据（由 generate_nav.py 生成）
+├── index.html         # 导航台首页（由 deploy.py 从 SKILL 目录复制）
+├── structure.json     # 动态数据（由 deploy.py 从 SKILL 目录复制）
 └── ...                # 其他子目录和 HTML 文件
 ```
 
@@ -95,9 +107,9 @@ STUDYNOTES_DOCS 目录（GitHub Pages 部署目录）/
 ```
 deploy.py 运行
     ↓
-generate_nav.py 扫描 STUDYNOTES_DOCS 目录结构
+generate_nav.py 扫描 $STUDYNOTES_DOCS 目录结构
     ↓
-生成 $STUDYNOTES_DOCS/structure.json（子目录 + 根文件列表）
+在 SKILL 目录下生成 structure.json（子目录 + 根文件列表）
     ↓
 deploy.py 复制 index.html + structure.json → $STUDYNOTES_DOCS/
     ↓
@@ -119,18 +131,22 @@ git commit + push → GitHub Pages 自动更新
 
 ### 第一步：设置环境变量
 
-在系统环境变量中添加：
+在系统环境变量中添加两个变量：
 
 ```
 变量名: STUDYNOTES_DOCS
 值: <你的导航台根目录绝对路径>
+
+变量名: GITHUB_PAGES_BASE
+值: <你的 GitHub Pages 根地址，结尾必须带 />
+  例如: https://<用户名>.github.io/<仓库名>/
 ```
 
 **Windows 方法**：设置 → 系统 → 关于 → 高级系统设置 → 环境变量 → 新建用户变量
 
 ### 或者：让脚本引导配置
 
-如果不设置环境变量，首次运行 `generate_nav.py` 时会提示你输入路径，输入后自动保存到 `.env` 文件。
+如果不设置环境变量，首次运行 `generate_nav.py` 时会依次提示你输入两个路径，输入后自动保存到 `.env` 文件。
 
 ---
 
@@ -165,10 +181,10 @@ python generate_nav.py
 
 ### generate_nav.py
 
-扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在该目录下生成 `structure.json`。
+扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在 **SKILL 目录下**生成 `structure.json`。
 
 **输入**：`STUDYNOTES_DOCS` 目录结构
-**输出**：`$STUDYNOTES_DOCS/structure.json`
+**输出**：`SKILL目录/structure.json`
 
 JSON 格式：
 ```json
@@ -204,11 +220,14 @@ JSON 格式：
 | 变量名 | 必须 | 说明 |
 |--------|------|------|
 | `STUDYNOTES_DOCS` | 是 | 导航台根目录的绝对路径 |
+| `GITHUB_PAGES_BASE` | 是 | GitHub Pages 根地址，结尾带 `/`，如 `https://<用户名>.github.io/<仓库名>/` |
 
 **配置优先级**：
 1. 系统环境变量（永久）
 2. `.env` 文件（同目录，首次运行自动生成）
-3. 脚本内默认路径（`SKILL目录/../<导航台根目录>`，仅作为兜底）
+3. 脚本内兜底值（向上三级到 SKILL 所在项目根目录，仅作为最后兜底）
+
+> 两个环境变量都需要设置，缺一不可。
 
 ---
 
@@ -234,5 +253,5 @@ JSON 格式：
 ## 目录规范
 
 - 所有文件放在 `SKILLS/Github导航台/` 目录下
-- `$STUDYNOTES_DOCS/structure.json` 由脚本自动生成，**不要手动编辑**
-- `$STUDYNOTES_DOCS/index.html` 由 `deploy.py` 复制覆盖，不要在导航台目录里直接修改
+- `SKILL目录/structure.json` 由 `generate_nav.py` 自动生成，**不要手动编辑**
+- `$STUDYNOTES_DOCS/index.html` 和 `$STUDYNOTES_DOCS/structure.json` 由 `deploy.py` 复制覆盖，不要在导航台目录里直接修改

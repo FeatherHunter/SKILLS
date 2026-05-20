@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyNotes 文档导航台</title>
   <meta name="description" content="StudyNotes 文档导航台 — 快速访问所有学习笔记与文档">
-  <link rel="manifest" href="/StudyNotes/docs/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Playfair+Display:wght@700&family=Courier+Prime&display=swap" rel="stylesheet">
@@ -601,7 +601,7 @@
           </svg>
         </div>
         <h2 class="section-title" id="root-files-title">根目录文件</h2>
-        <p class="section-subtitle">docs/ 根目录下的独立 HTML 文档</p>
+        <p class="section-subtitle">导航台根目录下的独立 HTML 文档</p>
       </header>
 
       <!-- Root files list -->
@@ -735,7 +735,7 @@
           itemDiv.innerHTML = iconSvg;
 
           var link = document.createElement('a');
-          link.href = subdir.path + file.name;
+          link.href = (DOCS_STRUCTURE.githubPagesBase || '') + subdir.path + file.name;
           link.target = '_blank';
           link.rel = 'noopener';
           link.textContent = file.name;
@@ -767,7 +767,7 @@
         item.innerHTML = iconSvg;
 
         var link = document.createElement('a');
-        link.href = file.name;
+        link.href = (DOCS_STRUCTURE.githubPagesBase || '') + file.name;
         link.target = '_blank';
         link.rel = 'noopener';
         if (file.isEntry) {

@@ -61,6 +61,23 @@ def copy_files_to_docs():
     shutil.copy2(src_html, dst_html)
     print(f"[OK] index.html -> {dst_html}")
 
+    dst_json = docs_path / "structure.json"
+    shutil.copy2(src_json, dst_json)
+    print(f"[OK] structure.json -> {dst_json}")
+
+    # 复制 manifest.json
+    src_manifest = SKILL_DIR / "manifest.json"
+    if src_manifest.exists():
+        shutil.copy2(src_manifest, docs_path / "manifest.json")
+        print(f"[OK] manifest.json -> {docs_path / 'manifest.json'}")
+
+    # 复制图标文件（Web App Manifest 用）
+    for icon_name in ["icon.png", "icon-512.png"]:
+        src_icon = SKILL_DIR / icon_name
+        if src_icon.exists():
+            shutil.copy2(src_icon, docs_path / icon_name)
+            print(f"[OK] {icon_name} -> {docs_path / icon_name}")
+
     print(f"[OK] 文件复制完成")
     return docs_path
 

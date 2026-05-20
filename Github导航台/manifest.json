@@ -1,0 +1,21 @@
+{
+  "name": "StudyNotes 止息导航台",
+  "short_name": "止息导航台",
+  "description": "王辰浩的学习笔记导航台",
+  "start_url": "/StudyNotes/docs/index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#6B1C23",
+  "icons": [
+    {
+      "src": "/StudyNotes/docs/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/StudyNotes/docs/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

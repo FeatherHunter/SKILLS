@@ -1,8 +1,8 @@
 ---
 name: Github导航台
-description: Github导航台技能 - 扫描 docs/ 目录，生成总览入口页面
+description: Github导航台技能 - 扫描 STUDYNOTES_DOCS 目录，生成 structure.json 动态数据，部署到 GitHub Pages
 tags: [文档导航, GitHub Pages, HTML]
-version: 2.1
+version: 3.0
 ---
 
 # Github导航台 · 技能文档
@@ -18,69 +18,197 @@ version: 2.1
 
 ---
 
-## 核心功能
+## AI 工作流（Agent 执行步骤）
 
-### 1. 扫描 docs/ 目录
+当用户触发上述任意关键词时，AI 必须依次执行以下步骤：
 
-返回：
-- 所有直接子目录名称 + 每个子目录的 HTML 文件数量
-- 根目录下的独立 HTML 文件
+### 步骤 1：检查环境变量
 
-### 2. 生成入口页面
+检查 `STUDYNOTES_DOCS` 环境变量是否已设置。
 
-- 输出到 `docs/index.html`
-- 用户访问 GitHub Pages 时看到的就是这个页面
+- **已设置** → 继续步骤 2
+- **未设置** → 询问用户导航台根目录的绝对路径，保存到 `.env` 文件，然后继续步骤 2
 
-### 3. Git 联动
+### 步骤 2：运行 generate_nav.py
 
-- 生成后对比 git 有无变化
-- 有变化 → commit + push
-- 无变化 → 报告「已是最新」
+在 `SKILLS/Github导航台/` 目录下执行：
+
+```bash
+cd "$SKILL_DIR"
+python generate_nav.py
+```
+
+此脚本会扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在该目录下生成 `structure.json`。
+
+### 步骤 3：运行 deploy.py
+
+在同一个目录下执行：
+
+```bash
+python deploy.py
+```
+
+此脚本完成：扫描 → 复制 index.html → git commit + push。
+
+### 步骤 4：报告结果
+
+告知用户：
+- 生成了哪些子目录和文件
+- 是否已推送到远程仓库
+- GitHub Pages 大约 1-2 分钟后自动更新
 
 ---
 
-## HTML 生成规则（必须遵守）
+### 快速判断：是否需要重新部署
 
-### 规则1：目录层级浏览
+运行前先检查 `STUDYNOTES_DOCS` 目录自上次部署后有无变化：
 
-显示 docs/ 的所有直接子目录，每个子目录显示文件数量。
+```bash
+cd "$STUDYNOTES_DOCS"
+git status --porcelain
+```
 
-### 规则2：文件列表
-
-点击任意子目录 → 显示该子目录下的所有 HTML 文件。每个文件可点击打开。
-
-### 规则3：默认状态
-
-页面加载时显示全部子目录汇总视图，用户点击后进入筛选视图。
-
-### 规则4：纯静态
-
-无需后端，纯 HTML + CSS + JS，双击可打开，部署 GitHub Pages 可访问。
-
-### 规则5：必须使用tast-skill 和 ui-ux-pro-max-skill 这两个技能
-
-### 规则6：必须使用superpowers 技能 写代码
-
-### 规则7：顶级视觉风格，按照该规则实现HTML
-
-历史图书馆数字档案网站，温暖的学术怀旧——泛黄羊皮纸与岁月斑点纹理，dark academia 深勃艮第红、墨黑、黄铜金的色调，维多利亚时代植物铜版画用作雅致的装饰分隔线，Garamond 风格衬线字体与宽裕的行距，一摞古董皮面书在页脚处隐约淡出，钨丝台灯光线投下柔和的暗角阴影，图书馆目录卡的检索美学，博物馆级数字策展，光束中飞舞的微尘，沉静的智性氛围
+如有变化才执行步骤 2-3；如无变化，告知用户"已是最新"。
 
 ---
 
-## 工作流程
+## 设计思路
+
+### 核心架构
 
 ```
-触发「更新文档导航」
-    ↓
-扫描 docs/ 目录结构
-    ↓
-生成或更新 index.html（有变化才写文件）
-    ↓
-有变化 → commit + push
-无变化 → 报告「已是最新」
-    ↓
-报告结果
+SKILL 目录/
+├── generate_nav.py    # 扫描 STUDYNOTES_DOCS 目录，生成 structure.json
+├── deploy.py          # 一键部署脚本
+├── index.html         # 导航台页面（UI样式不变）
+├── .env               # 路径配置（自动生成）
+└── SKILL.md           # 本文档
+
+STUDYNOTES_DOCS 目录（GitHub Pages 部署目录）/
+├── index.html         # 导航台首页（由 deploy.py 复制）
+├── structure.json     # 动态数据（由 generate_nav.py 生成）
+└── ...                # 其他子目录和 HTML 文件
 ```
+
+### 数据流
+
+```
+deploy.py 运行
+    ↓
+generate_nav.py 扫描 STUDYNOTES_DOCS 目录结构
+    ↓
+生成 $STUDYNOTES_DOCS/structure.json（子目录 + 根文件列表）
+    ↓
+deploy.py 复制 index.html + structure.json → $STUDYNOTES_DOCS/
+    ↓
+git commit + push → GitHub Pages 自动更新
+    ↓
+用户访问 GitHub Pages → index.html fetch structure.json → 动态渲染
+```
+
+### 为什么这样设计
+
+1. **静态部署 + 动态内容**：GitHub Pages 只能托管静态文件，通过 JSON 数据文件实现内容动态化
+2. **环境变量隔离**：导航台路径通过环境变量配置，脚本可跨环境复用
+3. **一键部署**：deploy.py 将扫描、复制、推送三步合一
+4. **无需手动维护**：每次部署自动扫描目录结构，永远与实际文件同步
+
+---
+
+## 首次使用：环境变量配置
+
+### 第一步：设置环境变量
+
+在系统环境变量中添加：
+
+```
+变量名: STUDYNOTES_DOCS
+值: <你的导航台根目录绝对路径>
+```
+
+**Windows 方法**：设置 → 系统 → 关于 → 高级系统设置 → 环境变量 → 新建用户变量
+
+### 或者：让脚本引导配置
+
+如果不设置环境变量，首次运行 `generate_nav.py` 时会提示你输入路径，输入后自动保存到 `.env` 文件。
+
+---
+
+## 使用方法
+
+### 方式一：一键部署（推荐）
+
+```bash
+cd "$SKILL_DIR"
+python deploy.py
+```
+
+自动完成：扫描 → 生成 JSON → 复制文件 → git 推送
+
+### 方式二：分步执行
+
+```bash
+# 1. 扫描 STUDYNOTES_DOCS 目录生成 structure.json
+python generate_nav.py
+
+# 2. 将 index.html 和 structure.json 复制到 $STUDYNOTES_DOCS/
+# （需要先设置环境变量 STUDYNOTES_DOCS）
+```
+
+### 方式三：在 Claude Code 中触发
+
+直接对 AI 说「更新文档导航」，AI 会引导你运行部署流程。
+
+---
+
+## 文件说明
+
+### generate_nav.py
+
+扫描 `STUDYNOTES_DOCS` 环境变量指定的目录，在该目录下生成 `structure.json`。
+
+**输入**：`STUDYNOTES_DOCS` 目录结构
+**输出**：`$STUDYNOTES_DOCS/structure.json`
+
+JSON 格式：
+```json
+{
+  "subdirs": [
+    {
+      "name": "directory-tree",
+      "path": "directory-tree/",
+      "files": [{ "name": "2Study_StudyNotes.html", "label": "目录树" }]
+    }
+  ],
+  "rootFiles": [
+    { "name": "index.html", "label": "本导航台", "isEntry": true }
+  ]
+}
+```
+
+### deploy.py
+
+三步流程：
+1. 运行 `generate_nav.py` 生成 `structure.json`
+2. 复制 `index.html` 和 `structure.json` 到 `STUDYNOTES_DOCS` 目录
+3. 检查 git 变化，有变化则 commit + push
+
+### index.html
+
+导航台页面，**UI 样式完全不变**，数据来源从硬编码改为 `fetch('structure.json')` 动态加载。
+
+---
+
+## 环境变量说明
+
+| 变量名 | 必须 | 说明 |
+|--------|------|------|
+| `STUDYNOTES_DOCS` | 是 | 导航台根目录的绝对路径 |
+
+**配置优先级**：
+1. 系统环境变量（永久）
+2. `.env` 文件（同目录，首次运行自动生成）
+3. 脚本内默认路径（`SKILL目录/../<导航台根目录>`，仅作为兜底）
 
 ---
 
@@ -88,6 +216,23 @@ version: 2.1
 
 | 情况 | 处理 |
 |------|------|
-| docs/ 为空 | 正常生成，带空状态提示 |
-| push 失败 | 报错，本地文件保留 |
-| 无写入权限 | 报错并告知 |
+| 环境变量未设置 | 提示用户输入，输入后保存到 `.env` |
+| 目标路径无效 | 报错退出，提示检查 `STUDYNOTES_DOCS` 环境变量 |
+| structure.json 加载失败 | 控制台报错，显示空状态 |
+| git push 失败 | 报错，本地文件保留 |
+
+---
+
+## 部署到 GitHub Pages
+
+1. 确保 `STUDYNOTES_DOCS` 目录是 GitHub 仓库的 GitHub Pages source
+2. 运行 `deploy.py`
+3. 等待 1-2 分钟，GitHub Pages 自动更新
+
+---
+
+## 目录规范
+
+- 所有文件放在 `SKILLS/Github导航台/` 目录下
+- `$STUDYNOTES_DOCS/structure.json` 由脚本自动生成，**不要手动编辑**
+- `$STUDYNOTES_DOCS/index.html` 由 `deploy.py` 复制覆盖，不要在导航台目录里直接修改

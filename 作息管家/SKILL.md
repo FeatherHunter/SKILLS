@@ -35,9 +35,9 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 | duration_minutes | INTEGER | 持续时长（分钟） |
 | activity | TEXT | 活动描述 |
 | category | TEXT | 分类：睡眠/工作/学习/运动/通勤/餐饮/娱乐/社交/休闲/健康/洗漱/兴趣爱好/未知 |
-| source | TEXT | 来源：ai估算 |
-| confidence | TEXT | 可信度：high/medium/unknown |
-| source_message_id | TEXT | 来源消息ID |
+| source_contents | TEXT | 判断依据的消息原文（多条约逗号分隔） |
+| source_timestamps | TEXT | 对应消息时间（逗号分隔） |
+| analysis_reasoning | TEXT | AI分析推理过程（心路历程） |
 
 ### 摘要表：daily_summary
 
@@ -47,6 +47,10 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 | total_sleep_minutes | INTEGER | 睡眠总时长 |
 | total_work_minutes | INTEGER | 工作总时长 |
 | total_exercise_minutes | INTEGER | 运动总时长 |
+| total_commute_minutes | INTEGER | 通勤总时长 |
+| total_eating_minutes | INTEGER | 餐饮总时长 |
+| total_learning_minutes | INTEGER | 学习总时长 |
+| total_entertainment_minutes | INTEGER | 娱乐总时长 |
 | total_unknown_minutes | INTEGER | 未知活动总时长 |
 
 ---

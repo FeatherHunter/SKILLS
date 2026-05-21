@@ -72,7 +72,7 @@ def analyze_messages_to_blocks(messages):
     """
     把一组消息分析成作息时间块
     messages: list of (msg_id, time_str_HHMM, channel, content)
-    返回: list of dict {time_start, time_end, activity, category, source_messages, source_message_times, analysis_reasoning, msg_ids}
+    返回: list of dict {time_start, time_end, activity, category, source_contents, source_timestamps, analysis_reasoning, msg_ids}
     """
     if not messages:
         return []
@@ -104,8 +104,8 @@ def analyze_messages_to_blocks(messages):
             "msg_times": [time_hhmm],
             "msg_contents": [content[:100]],
             "reasonings": [reasoning],
-            "source_messages": content[:200],
-            "source_message_times": time_hhmm,
+            "source_contents": content[:200],
+            "source_timestamps": time_hhmm,
             "analysis_reasoning": reasoning
         })
     
@@ -143,8 +143,8 @@ def _merge_adjacent_blocks(blocks):
             "activity": b["activity"],
             "category": b["category"],
             "confidence": b["confidence"],
-            "source_messages": " || ".join(b["msg_contents"]),
-            "source_message_times": ",".join(b["msg_times"]),
+            "source_contents": " || ".join(b["msg_contents"]),
+            "source_timestamps": ",".join(b["msg_times"]),
             "analysis_reasoning": " --> ".join(b["reasonings"])
         })
     
@@ -242,8 +242,8 @@ def sync_incremental():
                 time_end=block["time_end"],
                 activity=block["activity"],
                 category=block["category"],
-                source_messages=block["source_messages"],
-                source_message_times=block["source_message_times"],
+                source_contents=block["source_contents"],
+                source_timestamps=block["source_timestamps"],
                 analysis_reasoning=block["analysis_reasoning"]
             )
         
@@ -281,8 +281,8 @@ def sync_date(target_date):
             time_end=block["time_end"],
             activity=block["activity"],
             category=block["category"],
-            source_messages=block["source_messages"],
-            source_message_times=block["source_message_times"],
+            source_contents=block["source_contents"],
+            source_timestamps=block["source_timestamps"],
             analysis_reasoning=block["analysis_reasoning"]
         )
     
@@ -338,10 +338,10 @@ def print_records(date_str, records):
     }
     
     for rec in records:
-        _, ts, te, dur, act, cat, src_msgs, src_times, reasoning = rec
+        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
         total_min += dur or 0
         emoji = emoji_map.get(cat, "📌")
-        conf_mark = "✓" if len(src_msgs.split("||")) == 1 else "○"
+        conf_mark = "✓" if len(src_cnt.split("||")) == 1 else "○"
         print(f"  {emoji} {fmt_time(ts)}~{fmt_time(te)} [{cat}] {conf_mark}")
         print(f"     {act[:45]}")
     
@@ -357,11 +357,11 @@ def print_detail(date_str, records):
         return
     
     for rec in records:
-        _, ts, te, dur, act, cat, src_msgs, src_times, reasoning = rec
+        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
         print(f"\n⏰ {fmt_time(ts)} ~ {fmt_time(te)} [{cat}] ({dur}min)")
         print(f"  活动: {act[:60]}")
-        print(f"  消息来源: {src_msgs[:80]}...")
-        print(f"  消息时间: {src_times}")
+        print(f"  消息来源: {src_cnt[:80]}...")
+        print(f"  消息时间: {src_ts}")
         print(f"  推理: {reasoning[:100]}...")
 
 def print_summary(date_str, summary):
@@ -425,7 +425,7 @@ def cmd_timeline(args):
     
     timeline = ["  "] * 24
     for rec in records:
-        _, ts, te, dur, act, cat, src_msgs, src_times, reasoning = rec
+        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
         try:
             h_start = int(ts.split(":")[0])
             h_end = int(te.split(":")[0]) if te else h_start + 1

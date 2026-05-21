@@ -59,8 +59,9 @@ def init_db():
     c = conn.cursor()
 
     # 作息记录主表
+    c.execute('DROP TABLE IF EXISTS schedule_records')
     c.execute('''
-        CREATE TABLE IF NOT EXISTS schedule_records (
+        CREATE TABLE schedule_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
             time_start TEXT NOT NULL,
@@ -68,8 +69,8 @@ def init_db():
             duration_minutes INTEGER,
             activity TEXT NOT NULL,
             category TEXT NOT NULL,
-            source_messages TEXT,
-            source_message_times TEXT,
+            source_contents TEXT,
+            source_timestamps TEXT,
             analysis_reasoning TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
@@ -227,7 +228,7 @@ def _time_str_to_ts(time_str):
 
 # ============ 作息记录操作 ============
 def add_record(date, time_start, time_end, activity, category,
-               source_messages="", source_message_times="", analysis_reasoning="",
+               source_contents="", source_timestamps="", analysis_reasoning="",
                duration_minutes=None):
     """添加一条作息记录"""
     if duration_minutes is None:
@@ -244,9 +245,9 @@ def add_record(date, time_start, time_end, activity, category,
     c = conn.cursor()
     c.execute('''
         INSERT INTO schedule_records
-        (date, time_start, time_end, duration_minutes, activity, category, source_messages, source_message_times, analysis_reasoning)
+        (date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (date, time_start, time_end, duration_minutes, activity, category, source_messages, source_message_times, analysis_reasoning))
+    ''', (date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning))
     conn.commit()
     record_id = c.lastrowid
     conn.close()
@@ -257,7 +258,7 @@ def get_records_by_date(date_str):
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, time_start, time_end, duration_minutes, activity, category, source_messages, source_message_times, analysis_reasoning
+        SELECT id, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning
         FROM schedule_records
         WHERE date = ?
         ORDER BY time_start
@@ -271,7 +272,7 @@ def get_records_range(start_date, end_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, date, time_start, time_end, duration_minutes, activity, category, source_messages, source_message_times, analysis_reasoning
+        SELECT id, date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning
         FROM schedule_records
         WHERE date >= ? AND date <= ?
         ORDER BY date, time_start

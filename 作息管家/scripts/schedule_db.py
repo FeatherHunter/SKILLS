@@ -315,8 +315,10 @@ def update_record(record_id, **kwargs):
     conn.close()
     return affected
 
+RECORD_KEYS = ['id', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning']
+
 def get_records_by_date(date_str):
-    """获取指定日期的所有作息记录（按时间排序）"""
+    """获取指定日期的所有作息记录（按时间排序）返回字典列表"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
@@ -327,10 +329,12 @@ def get_records_by_date(date_str):
     ''', (date_str,))
     rows = c.fetchall()
     conn.close()
-    return rows
+    return [dict(zip(RECORD_KEYS, row)) for row in rows]
+
+RECORD_KEYS_FULL = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning']
 
 def get_records_range(start_date, end_date):
-    """获取日期范围内的所有作息记录"""
+    """获取日期范围内的所有作息记录，返回字典列表"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
@@ -341,7 +345,7 @@ def get_records_range(start_date, end_date):
     ''', (start_date, end_date))
     rows = c.fetchall()
     conn.close()
-    return rows
+    return [dict(zip(RECORD_KEYS_FULL, row)) for row in rows]
 
 def has_records_for_date(date_str):
     """检查指定日期是否已有记录"""

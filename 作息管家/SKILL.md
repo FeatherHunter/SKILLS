@@ -12,16 +12,21 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 
 ---
 
-## ⚠️ 操作规范（强制）
+## ⚠️ 强制要求（必须遵守）
 
-> 详细规范见: `references/00_操作规范.md`
+执行本技能时，**AI 必须先读取以下所有文件并严格遵守**，不得仅凭本文件的口述内容执行：
 
-| 规则 | 说明 |
-|------|------|
-| **严禁直连数据库** | 所有数据操作必须通过 CLI |
-| **增加操作全字段校验** | `add_record_full` / `add_summary_full` 少传一个字段则报错 |
-| **禁止删除操作** | 不得有 DELETE 语句 |
-| **游标机制** | 靠最后一条记录的时间定位 |
+| 文件 | 必须遵守的内容 |
+|------|-------------|
+| `references/操作规范.md` | 禁止直连数据库、禁止DELETE、全字段校验 |
+| `references/数据库结构.md` | source_contents必须为消息原文（一字不差） |
+| `references/同步流程.md` | 滑动窗口(前5后5)、逐条处理、原文完整写入 |
+| `references/接口清单.md` | 所有接口的参数和调用方式 |
+| `references/分类清单.md` | 13个分类的定义和判断原则 |
+| `references/CLI命令.md` | 所有CLI命令的用法 |
+| `references/Cron任务.md` | 推荐定时任务设计 |
+
+**违反以上任何一条，视为违反技能规范，数据操作无效。**
 
 ---
 
@@ -55,7 +60,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 - 按活动切换点细分
 - 宁可多条记录，不要合并
 
-> 详细规范见: `references/02_同步流程.md`
+> 详细规范见: `references/同步流程.md`
 
 ---
 
@@ -95,7 +100,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
   总计: 24h ✓
 ```
 
-> 详细规范见: `references/01_数据库结构.md`
+> 详细规范见: `references/数据库结构.md`
 
 ---
 
@@ -118,7 +123,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 | `report [日期]` | 完整报告 |
 | `range <开始> <结束>` | 日期范围统计 |
 
-> 详细命令见: `references/05_CLI命令.md`
+> 详细命令见: `references/CLI命令.md`
 
 ---
 
@@ -192,15 +197,15 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 ### schedule_records（作息记录）
 
-11个字段，详见 `references/01_数据库结构.md`
+11个字段，详见 `references/数据库结构.md`
 
 ### daily_summary（每日摘要）
 
-9个字段，详见 `references/01_数据库结构.md`
+9个字段，详见 `references/数据库结构.md`
 
 ### schedule_plans（计划作息表）
 
-24小时计划字段，详见 `references/01_数据库结构.md`
+24小时计划字段，详见 `references/数据库结构.md`
 
 > ⚠️ **重要**：`schedule_plans` 表的内容由其他技能设计，本技能只负责存储和查询
 
@@ -210,7 +215,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 共 13 个分类：**睡眠、工作、学习、运动、通勤、餐饮、娱乐、社交、休闲、健康、洗漱、兴趣爱好、未知**
 
-> 详细分类见: `references/04_分类清单.md`
+> 详细分类见: `references/分类清单.md`
 
 ---
 
@@ -218,7 +223,6 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 睡眠记录归属于**就寝那天**，不是起床日。
 
-> 详细规则见: `references/06_睡眠规则.md`
 
 ---
 
@@ -255,7 +259,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 | `get_messages_for_sync(cursor)` | 获取同步所需消息 |
 | `get_last_record_full()` | 获取游标位置 |
 
-> 完整接口清单见: `references/03_接口清单.md`
+> 完整接口清单见: `references/接口清单.md`
 
 ---
 
@@ -277,19 +281,6 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 | **定时同步作息表** | `0 */3 * * *`（每3小时） | prepare-messages + AI分析 + add_record_full |
 | **每日作息摘要** | `30 7 * * *`（每天07:30） | 昨日记录满24h则写入 daily_summary |
 
-> 详细设计见: `references/07_Cron任务.md`
+> 详细设计见: `references/Cron任务.md`
 
 ---
-
-## references/ 目录结构
-
-| 文件 | 内容 |
-|------|------|
-| `00_操作规范.md` | 强制规则、禁止事项 |
-| `01_数据库结构.md` | 表结构、字段说明（含 schedule_plans） |
-| `02_同步流程.md` | AI同步流程、连续性、粒度规则 |
-| `03_接口清单.md` | 完整接口及调用示例 |
-| `04_分类清单.md` | 13个分类
-| `05_CLI命令.md` | CLI命令详解（含计划作息命令） |
-| `06_睡眠规则.md` | 睡眠归属逻辑 |
-| `07_Cron任务.md` | 推荐 cron 任务设计（定时同步 + 每日摘要） |

@@ -7,6 +7,7 @@
 
 import sys
 import uuid
+import json
 from datetime import datetime
 from db_config import get_connection
 
@@ -31,51 +32,69 @@ def add(args):
     existing = cursor.fetchone()
     
     if existing:
-        # 查询历史次数
+        # 检查是否有 --choice 参数（AI传递的选择）
+        choice = args.get("--choice")
+
+        # 如果有选择参数，直接执行
+        if choice:
+            if choice == "view":
+                conn.close()
+                show({"<菜名>": existing['id']})
+                return True
+            elif choice == "update":
+                conn.close()
+                update({"<recipe_id>": existing['id']})
+                return True
+            elif choice == "cancel":
+                conn.close()
+                print(json.dumps({"status": "cancelled", "message": "已取消"}, ensure_ascii=False))
+                return False
+            elif choice == "derive":
+                # 派生需要新菜名，通过 --new_name 参数传递
+                new_name = args.get("--new_name")
+                if not new_name:
+                    conn.close()
+                    print(json.dumps({"error": "派生需要 --new_name 参数"}, ensure_ascii=False))
+                    return False
+                conn.close()
+                return add({"name": new_name})
+            else:
+                conn.close()
+                print(json.dumps({"error": f"无效选择: {choice}", "valid_choices": ["view", "derive", "update", "cancel"]}, ensure_ascii=False))
+                return False
+
+        # 没有选择参数，输出JSON格式的冲突信息供AI决策
         cursor.execute("""
-            SELECT COUNT(*) as cnt, AVG(rating) as avg 
+            SELECT COUNT(*) as cnt, AVG(rating) as avg
             FROM recipe_history WHERE recipe_id = ?
         """, (existing['id'],))
         hist = cursor.fetchone()
         hist_cnt = int(hist['cnt']) if hist['cnt'] else 0
-        hist_avg = hist['avg'] if hist['avg'] else 0
-        
-        print(f"\n⚠️ 发现同名食谱「{name}」（ID: {existing['id']}，状态：{existing['status']}）")
-        if hist_cnt > 0:
-            print(f"   做过 {hist_cnt} 次，平均评分 {hist_avg:.1f}")
-        print()
-        print("请选择：")
-        print("1. 查看 — 查看现有食谱详情")
-        print("2. 派生 — 基于现有食谱创建新变体（自行输入新菜名）")
-        print("3. 更新 — 更新现有食谱内容")
-        print("4. 取消 — 放弃本次录入")
-        print()
-        choice = input("请输入序号（1-4）：").strip()
-        
-        if choice == "1":
-            conn.close()
-            show({"<菜名>": existing['id']})
-            return True
-        elif choice == "2":
-            conn.close()
-            print()
-            new_name = input("请输入新菜名：").strip()
-            if not new_name:
-                print("已取消")
-                return False
-            return add({"name": new_name})
-        elif choice == "3":
-            conn.close()
-            update({"<recipe_id>": existing['id']})
-            return True
-        elif choice == "4":
-            conn.close()
-            print("已取消")
-            return False
-        else:
-            conn.close()
-            print("无效选择，已取消")
-            return False
+        hist_avg = round(float(hist['avg']), 1) if hist['avg'] else 0
+
+        conn.close()
+
+        # 输出JSON格式的冲突信息
+        conflict_info = {
+            "conflict": True,
+            "message": f"发现同名食谱「{name}」",
+            "existing_recipe": {
+                "id": existing['id'],
+                "name": existing['name'],
+                "status": existing['status'],
+                "cook_count": hist_cnt,
+                "avg_rating": hist_avg
+            },
+            "choices": [
+                {"action": "view", "description": "查看现有食谱详情"},
+                {"action": "derive", "description": "基于现有食谱创建新变体（需提供 --new_name）"},
+                {"action": "update", "description": "更新现有食谱内容"},
+                {"action": "cancel", "description": "放弃本次录入"}
+            ],
+            "usage": "再次调用时添加 --choice <action> 参数"
+        }
+        print(json.dumps(conflict_info, ensure_ascii=False, indent=2))
+        return True
     
     recipe_id = str(uuid.uuid4())
     now = get_now()
@@ -685,6 +704,8 @@ def main():
     --source 来源
     --photo_url 图片URL
     --source_url 来源链接
+    --choice 冲突时的选择（view/derive/update/cancel）
+    --new_name 派生时的新菜名
 """)
         return
     

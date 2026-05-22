@@ -195,36 +195,54 @@ def reorder(args):
     if not recipe_id:
         print("错误：请提供食谱ID")
         return False
-    
+
     from_seq = args.get("--from")
     to_seq = args.get("--to")
     if not from_seq or not to_seq:
         print("错误：请提供 --from 和 --to")
         return False
-    
+
+    # 转换为整数
+    try:
+        from_seq = int(from_seq)
+        to_seq = int(to_seq)
+    except ValueError:
+        print("错误：--from 和 --to 必须是整数")
+        return False
+
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # 获取两个步骤
+
+    # 分别查询 from_seq 和 to_seq 对应的步骤
     cursor.execute("""
-        SELECT id, sequence FROM cooking_steps 
-        WHERE recipe_id = ? AND sequence IN (?, ?)
-        ORDER BY sequence
-    """, (recipe_id, from_seq, to_seq))
-    
-    rows = cursor.fetchall()
-    if len(rows) != 2:
-        print(f"未找到对应的步骤")
+        SELECT id, sequence FROM cooking_steps
+        WHERE recipe_id = ? AND sequence = ?
+    """, (recipe_id, from_seq))
+    from_step = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT id, sequence FROM cooking_steps
+        WHERE recipe_id = ? AND sequence = ?
+    """, (recipe_id, to_seq))
+    to_step = cursor.fetchone()
+
+    if not from_step:
+        print(f"未找到第{from_seq}步")
         conn.close()
         return False
-    
+
+    if not to_step:
+        print(f"未找到第{to_seq}步")
+        conn.close()
+        return False
+
     # 交换顺序
-    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (to_seq, rows[0]["id"]))
-    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (from_seq, rows[1]["id"]))
-    
+    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (to_seq, from_step["id"]))
+    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (from_seq, to_step["id"]))
+
     conn.commit()
     conn.close()
-    
+
     print(f"✅ 步骤顺序已调整：第{from_seq}步 ↔ 第{to_seq}步")
     return True
 

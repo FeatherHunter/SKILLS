@@ -22,7 +22,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 | `references/数据库结构.md` | source_contents必须为消息原文（一字不差） |
 | `references/同步流程.md` | 滑动窗口(前5后5)、逐条处理、原文完整写入 |
 | `references/接口清单.md` | 所有接口的参数和调用方式 |
-| `references/分类清单.md` | 13个分类的定义和判断原则 |
+| `references/分类清单.md` | 建议分类列表和分类原则（AI自由判定） |
 | `references/CLI命令.md` | 所有CLI命令的用法 |
 | `references/Cron任务.md` | 推荐定时任务设计 |
 
@@ -81,21 +81,19 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 1. 查询该日期的 schedule_records
 2. 验证是否覆盖 00:00-23:59
 3. 按 category 分组合并 duration_minutes
-4. 调用 add_summary_full() 写入摘要
+4. 逐分类调用 add_summary(date, category, total_minutes) 写入摘要
 ```
 
 **输出格式**：
 ```
 📊 2026-05-22 作息摘要
 ==================================================
-  😴 睡眠: 7h
-  💼 工作: 4h
-  📚 学习: 0h
-  🏋️ 运动: 0h
-  🚴 通勤: 36m
-  🍽️ 餐饮: 1h
-  🎮 娱乐: 1h
-  ❓ 未知: 1h
+  😴 睡眠: 7h0m
+  💼 工作: 4h0m
+  🚴 通勤: 0h36m
+  🍽️ 餐饮: 1h0m
+  🎮 娱乐: 1h0m
+  ❓ 未知: 1h0m
 
   总计: 24h ✓
 ```
@@ -201,7 +199,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 ### daily_summary（每日摘要）
 
-9个字段，详见 `references/数据库结构.md`
+KV结构（date, category, total_minutes），详见 `references/数据库结构.md`
 
 ### schedule_plans（计划作息表）
 
@@ -213,7 +211,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 ## 分类清单
 
-共 13 个分类：**睡眠、工作、学习、运动、通勤、餐饮、娱乐、社交、休闲、健康、洗漱、兴趣爱好、未知**
+**分类由 AI 自由判定**，建议参考以下分类：睡眠、工作、学习、运动、通勤、餐饮、娱乐、社交、休闲、健康、洗漱、兴趣爱好、未知。AI 可根据实际语义使用更精确的分类名。
 
 > 详细分类见: `references/分类清单.md`
 
@@ -232,7 +230,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 | 接口 | 类型 | 说明 |
 |------|------|------|
-| `add_record_full(...)` | 增加 | 9字段全校验 |
+| `add_record_full(...)` | 增加 | 9字段全校验，category自由填写 |
 | `update_record(id, **kwargs)` | 更新 | 按id定位 |
 | `get_records_by_date(date)` | 查询 | 按日期查 |
 
@@ -240,9 +238,9 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 | 接口 | 类型 | 说明 |
 |------|------|------|
-| `add_summary_full(...)` | 增加 | 9字段全校验，满24h才可调用 |
-| `update_summary(date, **kwargs)` | 更新 | 按date定位 |
-| `get_daily_summary(date)` | 查询 | 按日期查 |
+| `add_summary(date, category, total_minutes)` | 增加 | KV结构，满24h才可调用 |
+| `get_daily_summary(date)` | 查询 | 返回 list of {category, total_minutes} |
+| `get_summaries_range(start, end)` | 查询 | 返回 list of {date, category, total_minutes} |
 
 ### schedule_plans 操作
 

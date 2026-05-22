@@ -69,9 +69,8 @@ def init_db():
     c = conn.cursor()
 
     # 作息记录主表
-    c.execute('DROP TABLE IF EXISTS schedule_records')
     c.execute('''
-        CREATE TABLE schedule_records (
+        CREATE TABLE IF NOT EXISTS schedule_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
             time_start TEXT NOT NULL,
@@ -86,20 +85,14 @@ def init_db():
         )
     ''')
 
-    # 每日作息摘要
+    # 每日作息摘要（KV结构，适配任意分类）
     c.execute('''
         CREATE TABLE IF NOT EXISTS daily_summary (
-            date TEXT PRIMARY KEY,
-            total_sleep_minutes INTEGER DEFAULT 0,
-            total_work_minutes INTEGER DEFAULT 0,
-            total_exercise_minutes INTEGER DEFAULT 0,
-            total_commute_minutes INTEGER DEFAULT 0,
-            total_eating_minutes INTEGER DEFAULT 0,
-            total_learning_minutes INTEGER DEFAULT 0,
-            total_entertainment_minutes INTEGER DEFAULT 0,
-            total_unknown_minutes INTEGER DEFAULT 0,
-            
-            generated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            date TEXT NOT NULL,
+            category TEXT NOT NULL,
+            total_minutes INTEGER DEFAULT 0,
+            generated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (date, category)
         )
     ''')
 
@@ -216,10 +209,6 @@ def get_messages_from(from_time_str, to_time_str=None):
     return result
 
 
-def get_record_by_cursor():
-    """获取游标位置的最后一条记录（完整信息）"""
-    return get_last_record_full()
-
 def get_messages_for_sync(cursor_datetime_str, end_time_str=None):
     """
     获取同步所需的全部消息
@@ -315,14 +304,14 @@ def update_record(record_id, **kwargs):
     conn.close()
     return affected
 
-RECORD_KEYS = ['id', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning']
+RECORD_KEYS = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning', 'created_at']
 
 def get_records_by_date(date_str):
     """获取指定日期的所有作息记录（按时间排序）返回字典列表"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning
+        SELECT id, date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning, created_at
         FROM schedule_records
         WHERE date = ?
         ORDER BY time_start
@@ -331,21 +320,19 @@ def get_records_by_date(date_str):
     conn.close()
     return [dict(zip(RECORD_KEYS, row)) for row in rows]
 
-RECORD_KEYS_FULL = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning']
-
 def get_records_range(start_date, end_date):
     """获取日期范围内的所有作息记录，返回字典列表"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT id, date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning
+        SELECT id, date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning, created_at
         FROM schedule_records
         WHERE date >= ? AND date <= ?
         ORDER BY date, time_start
     ''', (start_date, end_date))
     rows = c.fetchall()
     conn.close()
-    return [dict(zip(RECORD_KEYS_FULL, row)) for row in rows]
+    return [dict(zip(RECORD_KEYS, row)) for row in rows]
 
 def has_records_for_date(date_str):
     """检查指定日期是否已有记录"""
@@ -357,101 +344,60 @@ def has_records_for_date(date_str):
     return count > 0
 
 # ============ 摘要操作 ============
-def add_summary_full(date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
-                   total_commute_minutes, total_eating_minutes, total_learning_minutes,
-                   total_entertainment_minutes, total_unknown_minutes):
+def add_summary(date, category, total_minutes):
     """
-    增加一条每日摘要（全部字段校验）
-    必须传入全部9个字段，缺一不可
-    """
-    # 字段完整性校验
-    required = {
-        'date': date,
-        'total_sleep_minutes': total_sleep_minutes,
-        'total_work_minutes': total_work_minutes,
-        'total_exercise_minutes': total_exercise_minutes,
-        'total_commute_minutes': total_commute_minutes,
-        'total_eating_minutes': total_eating_minutes,
-        'total_learning_minutes': total_learning_minutes,
-        'total_entertainment_minutes': total_entertainment_minutes,
-        'total_unknown_minutes': total_unknown_minutes
-    }
-    missing = [k for k, v in required.items() if v is None]
-    if missing:
-        raise ValueError(f"缺少必填字段: {', '.join(missing)}")
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO daily_summary
-        (date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
-         total_commute_minutes, total_eating_minutes, total_learning_minutes,
-         total_entertainment_minutes, total_unknown_minutes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
-          total_commute_minutes, total_eating_minutes, total_learning_minutes,
-          total_entertainment_minutes, total_unknown_minutes))
-    conn.commit()
-    conn.close()
-    return date
-
-def update_summary(date, **kwargs):
-    """
-    更新每日摘要（按date定位）
-    kwargs: 任意8个minute字段
+    增加一条每日摘要记录（KV结构）
+    date: 日期（YYYY-MM-DD）
+    category: 分类名（AI自由填写）
+    total_minutes: 该分类总分钟数
     """
     if not date:
         raise ValueError("date 不能为空")
+    if not category:
+        raise ValueError("category 不能为空")
+    if total_minutes is None or total_minutes < 0:
+        raise ValueError("total_minutes 不能为空且必须 >= 0")
 
-    allowed = {'total_sleep_minutes', 'total_work_minutes', 'total_exercise_minutes',
-               'total_commute_minutes', 'total_eating_minutes', 'total_learning_minutes',
-               'total_entertainment_minutes', 'total_unknown_minutes'}
-
-    updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
-    if not updates:
-        raise ValueError("没有有效的更新字段")
-
-    set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
-    values = list(updates.values()) + [date]
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(f'UPDATE daily_summary SET {set_clause} WHERE date = ?', values)
-    conn.commit()
-    affected = c.rowcount
-    conn.close()
-    return affected
-
-def get_daily_summary(date_str):
-    """获取每日摘要"""
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('SELECT * FROM daily_summary WHERE date = ?', (date_str,))
-    row = c.fetchone()
-    conn.close()
-    if row:
-        return {
-            "date": row[0], "sleep": row[1], "work": row[2], "exercise": row[3],
-            "commute": row[4], "eating": row[5], "learning": row[6],
-            "entertainment": row[7], "unknown": row[8]
-        }
-    return None
-
-def get_summaries_range(start_date, end_date):
-    """获取日期范围内的摘要"""
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
-               total_commute_minutes, total_eating_minutes, total_learning_minutes,
-               total_entertainment_minutes, total_unknown_minutes
+        INSERT INTO daily_summary (date, category, total_minutes)
+        VALUES (?, ?, ?)
+        ON CONFLICT(date, category) DO UPDATE SET
+            total_minutes = excluded.total_minutes,
+            generated_at = CURRENT_TIMESTAMP
+    ''', (date, category, total_minutes))
+    conn.commit()
+    conn.close()
+    return {'date': date, 'category': category, 'total_minutes': total_minutes}
+
+def get_daily_summary(date_str):
+    """获取每日摘要，返回 list of {category, total_minutes}"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT category, total_minutes
+        FROM daily_summary
+        WHERE date = ?
+        ORDER BY total_minutes DESC
+    ''', (date_str,))
+    rows = c.fetchall()
+    conn.close()
+    return [{'category': row[0], 'total_minutes': row[1]} for row in rows] if rows else []
+
+def get_summaries_range(start_date, end_date):
+    """获取日期范围内的摘要，返回 list of {date, category, total_minutes}"""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT date, category, total_minutes
         FROM daily_summary
         WHERE date >= ? AND date <= ?
-        ORDER BY date
+        ORDER BY date, total_minutes DESC
     ''', (start_date, end_date))
     rows = c.fetchall()
     conn.close()
-    return rows
+    return [{'date': row[0], 'category': row[1], 'total_minutes': row[2]} for row in rows]
 
 # ============ 计划作息操作 ============
 def upsert_plan(date, hour_plans):

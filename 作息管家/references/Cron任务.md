@@ -1,17 +1,14 @@
 # Cron 任务 - 作息管家配套
 
 > 本文件列出与作息管家技能配合使用的最佳 cron 任务设计。
-> **已配置的 cron 示例**见下方，实际使用时可直接参考创建。
+> 实际部署时需填入具体的 Cron ID、路径、推送地址等。
 
 ---
 
-## 已配置 Cron（实际运行）
-
-### Cron 1：定时同步作息表
+## Cron 1：定时同步作息表
 
 | 项目 | 内容 |
 |------|------|
-| **ID** | `6f0a8b0e-5364-47f9-9a3b-195c0700fcd6` |
 | **名称** | 作息管家-定时同步 |
 | **调度** | `0 */3 * * *`（每3小时整点） |
 | **时区** | Asia/Shanghai |
@@ -21,7 +18,7 @@
 
 **执行内容：**
 ```
-请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行「定时同步作息表」：
+请读取 <技能目录>/SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行「定时同步作息表」：
 
 1. 调用 prepare-messages 获取游标到现在的消息
 2. AI 分析消息 → 生成细粒度记录
@@ -32,25 +29,12 @@
 完成后静默执行，不需要推送任何消息。
 ```
 
-**创建命令：**
-```bash
-openclaw cron add \
-  --name "作息管家-定时同步" \
-  --cron "0 */3 * * *" \
-  --tz "Asia/Shanghai" \
-  --session isolated \
-  --message "请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行「定时同步作息表」：..." \
-  --timeout-seconds 300 \
-  --no-deliver
-```
-
 ---
 
-### Cron 2：每日作息报告（07:30）
+## Cron 2：每日作息报告（07:30）
 
 | 项目 | 内容 |
 |------|------|
-| **ID** | `62cd3444-6364-4a8a-8b8f-749ff41d9762` |
 | **名称** | 作息管家-每日报告 |
 | **调度** | `30 7 * * *`（每天 07:30） |
 | **时区** | Asia/Shanghai |
@@ -60,13 +44,13 @@ openclaw cron add \
 
 **执行内容：**
 ```
-请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行：
+请读取 <技能目录>/SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行：
 
 1. 读取昨日（date - 1）的 schedule_records
 2. 验证是否覆盖 00:00-23:59（满24小时）
-3. 如果不满24小时 → 通过 WeChat 推送警告，告知哪里不完整
-4. 如果满24小时 → 
-   a. 调用 add_summary_full() 写入 daily_summary
+3. 如果不满24小时 → 推送警告，告知哪里不完整
+4. 如果满24小时 →
+   a. 调用 add_summary() 按分类写入 daily_summary（KV结构）
    b. 生成 HTML 作息报告（禁止emoji，可用SVG，活泼生动）
    c. 通过 WeChat 发送报告给用户
 
@@ -75,20 +59,6 @@ openclaw cron add \
 - 使用 SVG 绘制图表（如时间轴、分类饼图）
 - 页面生动形象
 - 包含昨日各时段活动详情 + 分类汇总
-```
-
-**创建命令：**
-```bash
-openclaw cron add \
-  --name "作息管家-每日报告" \
-  --cron "30 7 * * *" \
-  --tz "Asia/Shanghai" \
-  --session isolated \
-  --message "请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md..." \
-  --timeout-seconds 600 \
-  --announce \
-  --channel openclaw-weixin \
-  --to o9cq800qY4J0M3CqJY7hI40PXKt0@im.wechat
 ```
 
 ---

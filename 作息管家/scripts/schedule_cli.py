@@ -13,41 +13,18 @@
 """
 
 import sys
-import os
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from schedule_db import (
     init_db, get_last_record_full,
-    get_messages_for_sync, get_messages_before, get_messages_from,
-    add_record_full, get_records_by_date, get_records_range,
+    get_messages_for_sync, add_record_full,
+    get_records_by_date, get_records_range,
     has_records_for_date, get_daily_summary,
     get_summaries_range, get_connection, DB_PATH,
-    upsert_plan, get_plan, get_plans
+    upsert_plan, get_plan, get_plans, add_summary
 )
-
-def calculate_daily_summary(records):
-    """根据记录计算每日摘要"""
-    summary = {
-        "sleep": 0, "work": 0, "exercise": 0,
-        "commute": 0, "eating": 0, "learning": 0,
-        "entertainment": 0, "unknown": 0
-    }
-
-    category_map = {
-        "睡眠": "sleep", "工作": "work", "运动": "exercise",
-        "通勤": "commute", "餐饮": "eating", "学习": "learning",
-        "娱乐": "entertainment", "未知": "unknown"
-    }
-
-    for rec in records:
-        _, time_start, time_end, duration, activity, category, _, _, _ = rec
-        minutes = duration or 0
-        key = category_map.get(category, "unknown")
-        summary[key] += minutes
-
-    return summary
 
 # ============ CLI 命令 ============
 def cmd_prepare_messages(args):
@@ -158,31 +135,21 @@ def cmd_prepare_messages(args):
     print("- 空白时间段请生成 category='未知' 的记录填充")
     print("- 按活动切换点生成细粒度记录,不要合并")
     print(f"- 调用 add_record_full() 逐条写入,记录数应 >= {len(new_messages)}")
-    print("\"\"\"")
-    print("作息管家 CLI 用法：")
-    print("    python schedule_cli.py init              # 初始化数据库")
-    print("    python schedule_cli.py prepare-messages # 查询游标到现在的所有消息（供AI分析）")
-    print("    python schedule_cli.py list [日期]        # 查看指定日期作息（默认今天）")
-    print("    python schedule_cli.py detail [日期]     # 详细展示（含分析推理）")
-    print("    python schedule_cli.py summary [日期]     # 查看每日摘要")
-    print("    python schedule_cli.py timeline [日期]    # 时间轴展示")
-    print("    python schedule_cli.py report [日期]      # 完整报告")
-    print("    python schedule_cli.py range <开始> <结束>  # 日期范围统计")
-    print("    python schedule_cli.py status            # 数据库状态")
-    print("\"\"\"")
 
 def cmd_help():
     print("""
 作息管家 CLI 用法：
     python schedule_cli.py init              # 初始化数据库
-    python schedule_cli.py prepare-messages # 查询游标到现在的所有消息（供AI分析）
-    python schedule_cli.py list [日期]        # 查看指定日期作息（默认今天）
+    python schedule_cli.py prepare-messages  # 查询游标到现在的所有消息（供AI分析）
+    python schedule_cli.py list [日期]       # 查看指定日期作息（默认今天）
     python schedule_cli.py detail [日期]     # 详细展示（含分析推理）
-    python schedule_cli.py summary [日期]     # 查看指定日期摘要
-    python schedule_cli.py timeline [日期]    # 时间轴展示
-    python schedule_cli.py report [日期]      # 完整报告
+    python schedule_cli.py summary [日期]    # 查看指定日期摘要
+    python schedule_cli.py timeline [日期]   # 时间轴展示
+    python schedule_cli.py report [日期]     # 完整报告
     python schedule_cli.py range <开始> <结束>  # 日期范围统计
     python schedule_cli.py status            # 数据库状态
+    python schedule_cli.py query-plans <日期>   # 查询计划作息
+    python schedule_cli.py upsert-plan <日期> --json '{...}'  # 新增/更新计划作息
 """)
 
 def fmt_time(t):
@@ -205,10 +172,16 @@ def print_records(date_str, records):
     }
 
     for rec in records:
-        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
+        ts = rec['time_start']
+        te = rec['time_end']
+        dur = rec['duration_minutes']
+        act = rec['activity']
+        cat = rec['category']
+        src_cnt = rec.get('source_contents', '')
         total_min += dur or 0
         emoji = emoji_map.get(cat, "📌")
-        conf_mark = "✓" if len(src_cnt.split("||")) == 1 else "○"
+        msg_count = len(src_cnt.split("\n")) if src_cnt else 0
+        conf_mark = "✓" if msg_count <= 3 else "○"
         print(f"  {emoji} {fmt_time(ts)}~{fmt_time(te)} [{cat}] {conf_mark}")
         print(f"     {act[:45]}")
 
@@ -224,33 +197,43 @@ def print_detail(date_str, records):
         return
 
     for rec in records:
-        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
+        ts = rec['time_start']
+        te = rec['time_end']
+        dur = rec['duration_minutes']
+        act = rec['activity']
+        cat = rec['category']
+        src_cnt = rec.get('source_contents', '')
+        src_ts = rec.get('source_timestamps', '')
+        reasoning = rec.get('analysis_reasoning', '')
         print(f"\n⏰ {fmt_time(ts)} ~ {fmt_time(te)} [{cat}] ({dur}min)")
         print(f"  活动: {act[:60]}")
         print(f"  消息来源: {src_cnt[:80]}...")
         print(f"  消息时间: {src_ts}")
         print(f"  推理: {reasoning[:100]}...")
 
-def print_summary(date_str, summary):
+def print_summary(date_str, summary_list):
+    """打印每日摘要，summary_list 为 list of {category, total_minutes}"""
     print(f"\n📊 {date_str} 作息摘要")
     print(f"{'='*50}")
 
-    items = [
-        ("😴 睡眠", summary.get("sleep", 0)),
-        ("💼 工作", summary.get("work", 0)),
-        ("📚 学习", summary.get("learning", 0)),
-        ("🏋️ 运动", summary.get("exercise", 0)),
-        ("🚴 通勤", summary.get("commute", 0)),
-        ("🍽️ 餐饮", summary.get("eating", 0)),
-        ("🎮 娱乐", summary.get("entertainment", 0)),
-        ("❓ 未知", summary.get("unknown", 0)),
-    ]
+    if not summary_list:
+        print("  (无摘要数据)")
+        return
+
+    emoji_map = {
+        "睡眠": "😴", "工作": "💼", "学习": "📚", "运动": "🏋️",
+        "通勤": "🚴", "餐饮": "🍽️", "娱乐": "🎮", "社交": "💕",
+        "休闲": "🛋️", "健康": "🏥", "洗漱": "🚿",
+        "兴趣爱好": "🎨", "未知": "❓"
+    }
 
     total = 0
-    for label, minutes in items:
-        if minutes > 0:
-            print(f"  {label}: {minutes//60}h{minutes%60}m")
-            total += minutes
+    for item in summary_list:
+        cat = item['category']
+        minutes = item['total_minutes']
+        emoji = emoji_map.get(cat, "📌")
+        print(f"  {emoji} {cat}: {minutes//60}h{minutes%60}m")
+        total += minutes
 
     print(f"\n  总计: {total//60}h{total%60}m")
 
@@ -266,9 +249,9 @@ def cmd_detail(args):
 
 def cmd_summary(args):
     date_str = args[0] if args else date.today().strftime("%Y-%m-%d")
-    summary = get_daily_summary(date_str)
-    if summary:
-        print_summary(date_str, summary)
+    summary_list = get_daily_summary(date_str)
+    if summary_list:
+        print_summary(date_str, summary_list)
     else:
         print(f"  暂无 {date_str} 的摘要数据")
 
@@ -292,7 +275,9 @@ def cmd_timeline(args):
 
     timeline = ["  "] * 24
     for rec in records:
-        _, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec
+        ts = rec['time_start']
+        te = rec['time_end']
+        cat = rec['category']
         try:
             h_start = int(ts.split(":")[0])
             h_end = int(te.split(":")[0]) if te else h_start + 1
@@ -311,10 +296,10 @@ def cmd_timeline(args):
 def cmd_report(args):
     date_str = args[0] if args else date.today().strftime("%Y-%m-%d")
     records = get_records_by_date(date_str)
-    summary = get_daily_summary(date_str)
+    summary_list = get_daily_summary(date_str)
     print_records(date_str, records)
-    if summary:
-        print_summary(date_str, summary)
+    if summary_list:
+        print_summary(date_str, summary_list)
 
 def cmd_status():
     conn = get_connection()
@@ -425,26 +410,6 @@ def cmd_upsert_plan(args):
     except Exception as e:
         print(f"错误: {e}")
 
-def cmd_plan_help():
-    print("""作息管家 计划作息 CLI 用法:
-    python schedule_cli.py query-plans <日期1,日期2,...>  # 查询计划作息（支持逗号分隔多日期）
-    python schedule_cli.py upsert-plan <日期> [hours...]   # 新增或更新计划作息（存在则更新）
-    python schedule_cli.py upsert-plan <日期> --json '{"hour_0": "..."}'  # JSON方式
-
-示例:
-  # 查询单天
-  python schedule_cli.py query-plans 2026-05-22
-  
-  # 查询多天
-  python schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22
-  
-  # 新增/更新计划（简单方式，只填非空小时）
-  python schedule_cli.py upsert-plan 2026-05-22 "睡觉" "" "" "" "" "" "通勤+工作" "工作"
-  
-  # 新增/更新计划（JSON方式）
-  python schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_0": "睡觉", "hour_8": "30min通勤+30min工作"}'
-""")
-
 # ============ 主入口 ============
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -460,18 +425,6 @@ if __name__ == "__main__":
 
     elif cmd == "prepare-messages":
         cmd_prepare_messages(args)
-
-    elif cmd == "sync":
-        print("sync 命令已废弃，请使用 prepare-messages + AI分析")
-        if args:
-            target = datetime.strptime(args[0], "%Y-%m-%d").date()
-            sync_date(target)
-        else:
-            sync_incremental()
-
-    elif cmd == "sync-days":
-        days = int(args[0]) if args else 3
-        auto_sync_days(days)
 
     elif cmd == "list":
         cmd_list(args)
@@ -491,12 +444,25 @@ if __name__ == "__main__":
     elif cmd == "range":
         if len(args) >= 2:
             start, end = args[0], args[1]
-            rows = get_summaries_range(start, end)
+            summaries = get_summaries_range(start, end)
             print(f"\n📅 {start} ~ {end} 作息汇总\n{'='*60}")
-            for row in rows:
-                d, sl, wk, ex, cm, ea, ln, en, unk = row
-                total = sl + wk + ex + cm + ea + ln + en + unk
-                print(f"  {d}: 睡{sl//60}h 工{wk//60}h 学{ln//60}h 运{ex//60}h 娱{en//60}h 总{total//60}h")
+            if not summaries:
+                print("  (无摘要数据)")
+            else:
+                # 按日期分组
+                from collections import defaultdict
+                grouped = defaultdict(list)
+                for item in summaries:
+                    grouped[item['date']].append(item)
+                for d in sorted(grouped.keys()):
+                    parts = []
+                    total = 0
+                    for item in grouped[d]:
+                        cat = item['category']
+                        mins = item['total_minutes']
+                        total += mins
+                        parts.append(f"{cat}{mins//60}h")
+                    print(f"  {d}: {' '.join(parts)} 总{total//60}h")
         else:
             print("用法: schedule_cli.py range <开始> <结束>")
 

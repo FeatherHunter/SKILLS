@@ -207,6 +207,24 @@
 
 ---
 
+## JSON文件导入（低能力AI推荐）
+
+> 将10步CLI操作简化为1步JSON导入。
+
+```bash
+# 1. 查看模板
+python scripts/recipe_import.py template
+
+# 2. AI生成JSON文件
+
+# 3. 导入
+python scripts/recipe_import.py import recipe.json
+```
+
+详细说明见 `references/commands.md` 和 `features/add.md`。
+
+---
+
 ## 核心原则
 
 ### 只增不删
@@ -227,6 +245,15 @@
 ## 表结构
 
 共17张表，详见 `references/database_schema.md`
+
+---
+
+## 数据库并发支持
+
+- **WAL 模式**：允许并发读和单个写
+- **连接重试**：数据库锁定时自动重试（最多5次）
+- **上下文管理器**：自动关闭连接，异常时回滚
+- 详见 `scripts/db_config.py`
 
 ---
 

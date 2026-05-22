@@ -122,6 +122,56 @@ AI：抱歉，我无法从这张图片中解析出食谱内容。
 
 ---
 
+## 同名食谱冲突处理
+
+当录入的菜名已存在时，脚本会返回JSON格式的冲突信息：
+
+```json
+{
+  "conflict": true,
+  "message": "发现同名食谱「宫保虾球」",
+  "existing_recipe": {
+    "id": "8f3b435b-...",
+    "name": "宫保虾球",
+    "status": "已做",
+    "cook_count": 3,
+    "avg_rating": 4.5
+  },
+  "choices": [
+    {"action": "view", "description": "查看现有食谱详情"},
+    {"action": "derive", "description": "基于现有食谱创建新变体（需提供 --new_name）"},
+    {"action": "update", "description": "更新现有食谱内容"},
+    {"action": "cancel", "description": "放弃本次录入"}
+  ],
+  "usage": "再次调用时添加 --choice <action> 参数"
+}
+```
+
+**AI处理流程**：
+
+```
+第一次调用（检测冲突）：
+python scripts/recipe_manager.py add "宫保虾球"
+
+→ 返回冲突JSON
+
+AI根据用户意图选择：
+
+1. 查看现有食谱：
+   python scripts/recipe_manager.py add "宫保虾球" --choice view
+
+2. 派生新变体：
+   python scripts/recipe_manager.py add "宫保虾球" --choice derive --new_name "宫保虾球（改良版）"
+
+3. 更新现有食谱：
+   python scripts/recipe_manager.py add "宫保虾球" --choice update
+
+4. 取消录入：
+   python scripts/recipe_manager.py add "宫保虾球" --choice cancel
+```
+
+---
+
 ## 录入成功后引导
 
 ```
@@ -132,6 +182,33 @@ AI：抱歉，我无法从这张图片中解析出食谱内容。
 - "生成宫保虾球的采购清单" ← 采购食材
 - "再录入一道" ← 继续录入
 ```
+
+---
+
+---
+
+## JSON文件导入（推荐）
+
+> 低能力AI推荐使用此方式，避免多步CLI操作的错误。
+
+### 流程
+
+1. AI收集食谱信息
+2. AI生成JSON文件
+3. 调用导入命令：`python scripts/recipe_import.py import recipe.json`
+4. 脚本自动完成所有数据库操作
+
+### 优势
+
+- 只需1个命令（vs 传统方式10个命令）
+- JSON格式自验证
+- 事务保护（失败自动回滚）
+- 错误信息明确
+
+### 参考
+
+- JSON模板：`templates/recipe_template.json`
+- 导入命令：`references/commands.md`（JSON导入命令部分）
 
 ---
 

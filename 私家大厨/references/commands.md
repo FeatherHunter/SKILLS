@@ -40,6 +40,8 @@ python scripts/recipe_manager.py add <菜名> \
 #   --photo_url               可选：成品照片URL或本地路径
 #   --source                  可选：来源，如"中餐厅节目"
 #   --source_url              可选：原始食谱链接
+#   --choice                  可选：冲突时的选择（view/derive/update/cancel）
+#   --new_name                可选：派生时的新菜名
 
 # 示例（完整）：
 python scripts/recipe_manager.py add "宫保虾球" \
@@ -51,6 +53,17 @@ python scripts/recipe_manager.py add "宫保虾球" \
   --photo_url "/path/to/photo.jpg" \
   --source "中餐厅节目" \
   --source_url "https://example.com/recipe"
+
+# 同名食谱冲突处理：
+# 第一次调用检测冲突（返回JSON）：
+python scripts/recipe_manager.py add "宫保虾球"
+# → 返回冲突信息JSON
+
+# 根据冲突信息选择操作：
+python scripts/recipe_manager.py add "宫保虾球" --choice view      # 查看现有
+python scripts/recipe_manager.py add "宫保虾球" --choice derive --new_name "宫保虾球（改良版）"  # 派生
+python scripts/recipe_manager.py add "宫保虾球" --choice update    # 更新现有
+python scripts/recipe_manager.py add "宫保虾球" --choice cancel    # 取消
 
 # 查看食谱详情
 python scripts/recipe_manager.py show <菜名或ID>
@@ -819,3 +832,104 @@ AI在调用CLI时，对于用户未提供的字段，按以下规则推测：
 | step_ingredients.introduced_at | 根据步骤序号推测：开局/第X步加入 |
 
 **无法推测时，必须询问用户。**
+
+---
+
+## 数据库并发读写支持
+
+### 特性
+
+| 特性 | 说明 |
+|------|------|
+| WAL 模式 | Write-Ahead Logging，允许并发读和单个写 |
+| 连接重试 | 数据库锁定时自动重试（最多5次） |
+| 忙等待超时 | 5秒超时，避免无限等待 |
+| 上下文管理器 | 自动关闭连接，异常时回滚 |
+
+### 配置参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| MAX_RETRY_ATTEMPTS | 5 | 最大重试次数 |
+| RETRY_DELAY | 0.1秒 | 重试间隔（指数退避） |
+| BUSY_TIMEOUT | 5000毫秒 | 忙等待超时 |
+
+### 使用方式
+
+```python
+# 方式1：普通连接（推荐）
+from db_config import get_connection
+conn = get_connection()
+# ... 使用连接
+conn.close()
+
+# 方式2：上下文管理器（自动关闭）
+from db_config import get_db_connection
+with get_db_connection() as conn:
+    cursor = conn.cursor()
+    cursor.execute(...)
+    conn.commit()
+# 自动关闭，异常时自动回滚
+
+# 方式3：只读连接（并发性能更好）
+from db_config import get_read_only_connection
+with get_read_only_connection() as conn:
+    cursor = conn.cursor()
+    cursor.execute("SELECT ...")
+```
+
+### 注意事项
+
+1. **所有脚本已自动启用 WAL 模式**，无需额外配置
+2. **高并发场景**：使用 `get_db_connection()` 上下文管理器
+3. **只读查询**：使用 `get_read_only_connection()` 提升性能
+4. **连接会自动重试**：当数据库锁定时，最多重试5次
+
+---
+
+## JSON导入命令（推荐）
+
+> 低能力AI推荐使用此方式，一步完成食谱导入。
+
+### 基本用法
+
+```bash
+# 导入食谱
+python scripts/recipe_import.py import <json_file>
+
+# 仅验证（不导入）
+python scripts/recipe_import.py validate <json_file>
+
+# 查看模板
+python scripts/recipe_import.py template
+```
+
+### 冲突处理
+
+```bash
+# 查看现有食谱
+python scripts/recipe_import.py import recipe.json --choice view
+
+# 派生新变体
+python scripts/recipe_import.py import recipe.json --choice derive --new_name "新菜名"
+
+# 更新现有食谱
+python scripts/recipe_import.py import recipe.json --choice update
+
+# 取消导入
+python scripts/recipe_import.py import recipe.json --choice cancel
+```
+
+### JSON格式
+
+参考模板文件：`templates/recipe_template.json`
+
+必填字段：
+- `name` (string) - 菜名
+- `ingredients` (array) - 食材列表，每项需有 `name`
+- `steps` (array) - 步骤列表，每项需有 `action`
+
+可选字段：
+- `description`, `difficulty`, `servings`, `total_time`, `status`
+- `category`, `seasons`, `cooking_methods`, `flavors`, `diet_tags`, `meal_types`
+- `tips`, `techniques`, `cookware`, `nutrition`, `background`

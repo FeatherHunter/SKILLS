@@ -1,0 +1,103 @@
+{
+  "name": "宫保虾球",
+  "description": "川菜经典，虾球Q弹，酸甜微辣",
+  "difficulty": "中等",
+  "servings": 2,
+  "total_time": 25,
+  "status": "未做",
+
+  "category": {
+    "cuisine": "川菜",
+    "region": "中国-四川",
+    "country": "中国"
+  },
+
+  "seasons": ["春", "夏"],
+  "cooking_methods": ["炒", "炸"],
+  "flavors": ["辣", "麻"],
+  "diet_tags": ["高蛋白"],
+  "meal_types": ["晚餐"],
+
+  "ingredients": [
+    {
+      "name": "虾",
+      "quantity": 300,
+      "unit": "g",
+      "category": "海鲜",
+      "sequence": 1,
+      "is_optional": false,
+      "substitute": null
+    },
+    {
+      "name": "花生",
+      "quantity": 50,
+      "unit": "g",
+      "category": "干货",
+      "sequence": 2,
+      "is_optional": true,
+      "substitute": "腰果"
+    }
+  ],
+
+  "steps": [
+    {
+      "sequence": 1,
+      "action": "虾去壳开背，用料酒和盐腌制10分钟",
+      "duration": 10,
+      "heat_level": "小火",
+      "temperature": "常温",
+      "expected_result": "虾肉变红，去腥",
+      "ingredients_used": [
+        {"name": "虾", "quantity_used": 300}
+      ]
+    },
+    {
+      "sequence": 2,
+      "action": "大火热油，虾下锅炸至变色捞出",
+      "duration": 3,
+      "heat_level": "大火",
+      "temperature": "180度",
+      "expected_result": "虾球金黄，外酥内嫩",
+      "ingredients_used": []
+    }
+  ],
+
+  "tips": [
+    {
+      "step_sequence": 1,
+      "content": "开背时去虾线更入味",
+      "category": "刀工",
+      "priority": 1
+    }
+  ],
+
+  "techniques": [
+    {
+      "step_sequence": 1,
+      "technique_name": "腌制",
+      "description": "用料酒去腥",
+      "key_points": "时间要够/料酒要适量"
+    }
+  ],
+
+  "cookware": [
+    {"name": "炒锅", "category": "锅"}
+  ],
+
+  "nutrition": {
+    "serving_size": 200,
+    "serving_unit": "g",
+    "calories": 320,
+    "protein": 28,
+    "fat": 18,
+    "carbs": 20,
+    "fiber": 2,
+    "sodium": 800
+  },
+
+  "background": {
+    "origin_story": "宫保虾球源自川菜宫保鸡丁的变体",
+    "historical_background": "清代丁宝桢任四川总督时改良此菜",
+    "cultural_significance": "代表川菜小荔枝口的经典味型"
+  }
+}

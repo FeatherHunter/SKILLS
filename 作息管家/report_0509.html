@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息管家 - 2026-05-09 作息报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 24px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+  .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+  .stat-label { color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: #f8fafc; }
+  .stat-sub { color: #64748b; font-size: 12px; margin-top: 4px; }
+  .section-title { font-size: 18px; font-weight: 600; color: #f1f5f9; margin: 32px 0 16px; }
+  .timeline { position: relative; }
+  .timeline-item { display: flex; gap: 16px; margin-bottom: 2px; padding: 12px 16px; background: #1e293b; border-radius: 8px; border-left: 3px solid #3b82f6; transition: background 0.2s; }
+  .timeline-item:hover { background: #253348; }
+  .time-col { min-width: 100px; color: #94a3b8; font-size: 13px; font-family: monospace; padding-top: 2px; }
+  .content-col { flex: 1; }
+  .category-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .cat-睡眠 { background: #1e3a5f; color: #60a5fa; }
+  .cat-工作 { background: #1e3a2f; color: #4ade80; }
+  .cat-技能开发 { background: #3b1e5f; color: #c084fc; }
+  .cat-技能设计 { background: #3b2e1e; color: #fbbf24; }
+  .cat-技能调试 { background: #3b1e1e; color: #f87171; }
+  .cat-技能配置 { background: #1e3a3a; color: #2dd4bf; }
+  .cat-通勤 { background: #2d2b1e; color: #facc15; }
+  .cat-摸鱼 { background: #1e2d3b; color: #38bdf8; }
+  .cat-午睡 { background: #1e2d4b; color: #818cf8; }
+  .cat-洗漱 { background: #1e3b3b; color: #5eead4; }
+  .cat-饮食记录 { background: #3b2d1e; color: #fb923c; }
+  .cat-娱乐 { background: #2d1e3b; color: #e879f9; }
+  .cat-休息 { background: #1e2d2d; color: #a5b4fc; }
+  .cat-调试 { background: #3b3b1e; color: #d4d4d8; }
+  .activity-text { color: #cbd5e1; font-size: 14px; line-height: 1.5; }
+  .duration-text { color: #64748b; font-size: 12px; margin-top: 4px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .summary-item { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+  .summary-cat { display: flex; align-items: center; gap: 8px; }
+  .summary-bar { height: 4px; background: #334155; border-radius: 2px; flex: 1; margin: 0 12px; position: relative; overflow: hidden; }
+  .summary-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .summary-time { color: #94a3b8; font-size: 13px; font-family: monospace; white-space: nowrap; }
+  .chart-container { background: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155; margin-bottom: 32px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 20px; }
+  .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 0.5s ease; position: relative; min-height: 2px; }
+  .bar:hover { opacity: 0.8; }
+  .bar-label { color: #64748b; font-size: 10px; margin-top: 8px; text-align: center; writing-mode: vertical-rl; transform: rotate(180deg); height: 50px; overflow: hidden; }
+  .bar-value { color: #94a3b8; font-size: 11px; margin-bottom: 4px; text-align: center; }
+  .footer { text-align: center; color: #475569; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1e293b; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>作息管家 - 2026-05-09</h1>
+  <p class="subtitle">同步完成 | 22 条记录 | 276 条消息分析 | 覆盖 00:00 ~ 23:59</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">总记录时长</div>
+      <div class="stat-value">23h59m</div>
+      <div class="stat-sub">1439 分钟</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">睡眠时长</div>
+      <div class="stat-value">6h30m</div>
+      <div class="stat-sub">含午睡 1h40m</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">工作时长</div>
+      <div class="stat-value">3h20m</div>
+      <div class="stat-sub">上班期间</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">技能相关</div>
+      <div class="stat-value">9h55m</div>
+      <div class="stat-sub">开发+设计+调试+配置</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">时间分布</h2>
+  <div class="chart-container">
+    <div class="bar-chart">
+      <div class="bar-wrapper"><div class="bar-value">6.5h</div><div class="bar" style="height:78%;background:#3b82f6;"></div><div class="bar-label">睡眠</div></div>
+      <div class="bar-wrapper"><div class="bar-value">5.9h</div><div class="bar" style="height:71%;background:#c084fc;"></div><div class="bar-label">技能开发</div></div>
+      <div class="bar-wrapper"><div class="bar-value">3.3h</div><div class="bar" style="height:40%;background:#4ade80;"></div><div class="bar-label">工作</div></div>
+      <div class="bar-wrapper"><div class="bar-value">3.1h</div><div class="bar" style="height:37%;background:#fbbf24;"></div><div class="bar-label">技能设计</div></div>
+      <div class="bar-wrapper"><div class="bar-value">1.7h</div><div class="bar" style="height:20%;background:#818cf8;"></div><div class="bar-label">午睡</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.9h</div><div class="bar" style="height:10%;background:#f87171;"></div><div class="bar-label">技能调试</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.6h</div><div class="bar" style="height:7%;background:#38bdf8;"></div><div class="bar-label">摸鱼</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.4h</div><div class="bar" style="height:5%;background:#fb923c;"></div><div class="bar-label">饮食记录</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.4h</div><div class="bar" style="height:5%;background:#a5b4fc;"></div><div class="bar-label">休息</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.4h</div><div class="bar" style="height:4%;background:#e879f9;"></div><div class="bar-label">娱乐</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.3h</div><div class="bar" style="height:4%;background:#facc15;"></div><div class="bar-label">通勤</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.4h</div><div class="bar" style="height:4%;background:#d4d4d8;"></div><div class="bar-label">调试</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.2h</div><div class="bar" style="height:3%;background:#5eead4;"></div><div class="bar-label">洗漱</div></div>
+      <div class="bar-wrapper"><div class="bar-value">0.1h</div><div class="bar" style="height:1%;background:#2dd4bf;"></div><div class="bar-label">技能配置</div></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">分类摘要</h2>
+  <div class="summary-grid">
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-睡眠">睡眠</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:27%;background:#3b82f6;"></div></div><div class="summary-time">6h30m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-技能开发">技能开发</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:24%;background:#c084fc;"></div></div><div class="summary-time">5h51m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-工作">工作</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:14%;background:#4ade80;"></div></div><div class="summary-time">3h20m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-技能设计">技能设计</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:13%;background:#fbbf24;"></div></div><div class="summary-time">3h07m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-午睡">午睡</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:7%;background:#818cf8;"></div></div><div class="summary-time">1h40m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-技能调试">技能调试</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:4%;background:#f87171;"></div></div><div class="summary-time">0h51m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-摸鱼">摸鱼</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:2%;background:#38bdf8;"></div></div><div class="summary-time">0h35m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-饮食记录">饮食记录</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:2%;background:#fb923c;"></div></div><div class="summary-time">0h25m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-休息">休息</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:2%;background:#a5b4fc;"></div></div><div class="summary-time">0h22m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-娱乐">娱乐</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:1%;background:#e879f9;"></div></div><div class="summary-time">0h21m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-调试">调试</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:1%;background:#d4d4d8;"></div></div><div class="summary-time">0h20m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-通勤">通勤</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:1%;background:#facc15;"></div></div><div class="summary-time">0h18m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-洗漱">洗漱</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:1%;background:#5eead4;"></div></div><div class="summary-time">0h13m</div></div>
+    <div class="summary-item"><div class="summary-cat"><span class="category-badge cat-技能配置">技能配置</span></div><div class="summary-bar"><div class="summary-bar-fill" style="width:0.5%;background:#2dd4bf;"></div></div><div class="summary-time">0h06m</div></div>
+  </div>
+
+  <h2 class="section-title">时间轴</h2>
+  <div class="timeline">
+    <div class="timeline-item" style="border-left-color:#d4d4d8;">
+      <div class="time-col">00:00 ~ 00:20</div>
+      <div class="content-col">
+        <span class="category-badge cat-调试">调试</span>
+        <div class="activity-text">测试AI连接、捣鼓配置</div>
+        <div class="duration-text">20 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#5eead4;">
+      <div class="time-col">00:20 ~ 00:33</div>
+      <div class="content-col">
+        <span class="category-badge cat-洗漱">洗漱</span>
+        <div class="activity-text">准备睡觉、洗漱</div>
+        <div class="duration-text">13 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#c084fc;">
+      <div class="time-col">00:33 ~ 02:03</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能开发">技能开发</span>
+        <div class="activity-text">深夜讨论技能：居家管家状态设计、饼干记账环境变量、卡路里Lint、技能联动方案</div>
+        <div class="duration-text">90 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#3b82f6;">
+      <div class="time-col">02:03 ~ 08:33</div>
+      <div class="content-col">
+        <span class="category-badge cat-睡眠">睡眠</span>
+        <div class="activity-text">睡觉</div>
+        <div class="duration-text">390 分钟 (6h30m)</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#2dd4bf;">
+      <div class="time-col">08:33 ~ 08:39</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能配置">技能配置</span>
+        <div class="activity-text">安装技能桥接文件、创建cron定时任务（study-planner、百科采集、深夜书单、PDF转md）</div>
+        <div class="duration-text">6 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#4ade80;">
+      <div class="time-col">08:39 ~ 11:59</div>
+      <div class="content-col">
+        <span class="category-badge cat-工作">工作</span>
+        <div class="activity-text">上班工作</div>
+        <div class="duration-text">200 分钟 (3h20m)</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#38bdf8;">
+      <div class="time-col">11:59 ~ 12:19</div>
+      <div class="content-col">
+        <span class="category-badge cat-摸鱼">摸鱼</span>
+        <div class="activity-text">午休前检查每日任务、玩手机、等待午睡</div>
+        <div class="duration-text">20 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#818cf8;">
+      <div class="time-col">12:19 ~ 13:59</div>
+      <div class="content-col">
+        <span class="category-badge cat-午睡">午睡</span>
+        <div class="activity-text">在公司午睡</div>
+        <div class="duration-text">100 分钟 (1h40m)</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#38bdf8;">
+      <div class="time-col">13:59 ~ 14:14</div>
+      <div class="content-col">
+        <span class="category-badge cat-摸鱼">摸鱼</span>
+        <div class="activity-text">午睡醒来、查看账单收支、查询数码消费</div>
+        <div class="duration-text">15 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#c084fc;">
+      <div class="time-col">14:14 ~ 17:42</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能开发">技能开发</span>
+        <div class="activity-text">深度开发daily-recorder-openclaw技能：脚本设计、增量扫描、数据库重构、全量扫描修复</div>
+        <div class="duration-text">208 分钟 (3h28m)</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#facc15;">
+      <div class="time-col">17:42 ~ 18:00</div>
+      <div class="content-col">
+        <span class="category-badge cat-通勤">通勤</span>
+        <div class="activity-text">下班骑车回家、讨论卡路里技能和QQ markdown显示</div>
+        <div class="duration-text">18 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#fbbf24;">
+      <div class="time-col">18:00 ~ 18:51</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能设计">技能设计</span>
+        <div class="activity-text">讨论卡路里技能体重分析、运动分析、目标功能设计方案</div>
+        <div class="duration-text">51 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#a5b4fc;">
+      <div class="time-col">18:51 ~ 19:13</div>
+      <div class="content-col">
+        <span class="category-badge cat-休息">休息</span>
+        <div class="activity-text">到家后休息</div>
+        <div class="duration-text">22 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#fbbf24;">
+      <div class="time-col">19:13 ~ 19:55</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能设计">技能设计</span>
+        <div class="activity-text">讨论卡路里技能11个分析维度、接口设计、Lint方案</div>
+        <div class="duration-text">42 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#c084fc;">
+      <div class="time-col">19:55 ~ 20:48</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能开发">技能开发</span>
+        <div class="activity-text">设计real-assistant技能、配置微信渠道、测试QQ/微信消息投递</div>
+        <div class="duration-text">53 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#f87171;">
+      <div class="time-col">20:48 ~ 21:39</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能调试">技能调试</span>
+        <div class="activity-text">调试QQ/微信渠道session隔离、录入薯片营养成分、卡路里技能功能讨论</div>
+        <div class="duration-text">51 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#fb923c;">
+      <div class="time-col">21:39 ~ 22:04</div>
+      <div class="content-col">
+        <span class="category-badge cat-饮食记录">饮食记录</span>
+        <div class="activity-text">删除错误数据、录入呀土豆、查账单、录入体重95.3kg、吃西瓜记录热量</div>
+        <div class="duration-text">25 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#e879f9;">
+      <div class="time-col">22:04 ~ 22:25</div>
+      <div class="content-col">
+        <span class="category-badge cat-娱乐">娱乐</span>
+        <div class="activity-text">躺在床上看直播（凡人修仙传）、查看今日饮食记录</div>
+        <div class="duration-text">21 分钟</div>
+      </div>
+    </div>
+    <div class="timeline-item" style="border-left-color:#fbbf24;">
+      <div class="time-col">22:25 ~ 23:59</div>
+      <div class="content-col">
+        <span class="category-badge cat-技能设计">技能设计</span>
+        <div class="activity-text">讨论每日检查功能、显示器位置、卡路里dashboard、help功能设计、完善例句、测试help、居家管家help</div>
+        <div class="duration-text">94 分钟 (1h34m)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    作息管家 v2.0 | 数据来源: daily-recorder-openclaw | 同步时间: 2026-05-22
+  </div>
+</div>
+</body>
+</html>

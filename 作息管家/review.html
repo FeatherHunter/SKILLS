@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>审查报告 - 作息管家 SKILL</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --color-bg: #0B0F1A;
+  --color-surface: #111827;
+  --color-surface-2: #1A2332;
+  --color-surface-3: #1F2B3D;
+  --color-border: #2A3A50;
+  --color-text: #E8EDF5;
+  --color-text-dim: #8B9AB8;
+  --color-text-muted: #5A6A82;
+  --color-secondary: #3B82F6;
+  --color-accent: #D97706;
+  --color-success: #22C55E;
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --font-mono: 'Fira Code', monospace;
+  --font-sans: 'Noto Sans SC', sans-serif;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-sans); background: var(--color-bg); color: var(--color-text); line-height: 1.7; padding: 40px 20px; }
+.container { max-width: 960px; margin: 0 auto; }
+.header { text-align: center; padding: 40px 0 30px; border-bottom: 1px solid var(--color-border); margin-bottom: 32px; }
+.header h1 { font-size: 28px; font-weight: 700; color: #fff; }
+.header .sub { color: var(--color-text-dim); font-size: 14px; margin-top: 6px; }
+.stats { display: flex; gap: 16px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.stat { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.stat-bug { background: rgba(239,68,68,0.15); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
+.stat-conflict { background: rgba(245,158,11,0.15); color: #FCD34D; border: 1px solid rgba(245,158,11,0.3); }
+.stat-redundant { background: rgba(59,130,246,0.15); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+.section { background: var(--color-surface); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; border: 1px solid var(--color-border); }
+.section h2 { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.issue { background: var(--color-surface-2); border-radius: 10px; padding: 18px; margin: 12px 0; border-left: 4px solid var(--color-danger); }
+.issue.warn { border-left-color: var(--color-warning); }
+.issue.info { border-left-color: var(--color-secondary); }
+.issue.redundant { border-left-color: var(--color-text-muted); }
+.issue-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.issue-title { font-weight: 600; font-size: 15px; color: #fff; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.tag-bug { background: rgba(239,68,68,0.15); color: #FCA5A5; }
+.tag-conflict { background: rgba(245,158,11,0.15); color: #FCD34D; }
+.tag-redundant { background: rgba(59,130,246,0.15); color: #93C5FD; }
+.tag-dead { background: rgba(107,114,128,0.2); color: #9CA3AF; }
+.loc { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-muted); }
+.issue-desc { color: var(--color-text-dim); font-size: 14px; margin: 8px 0; }
+.code-block { font-family: var(--font-mono); font-size: 12px; padding: 12px; border-radius: 6px; margin: 8px 0; line-height: 1.5; background: var(--color-surface-3); border: 1px solid var(--color-border); color: var(--color-text-dim); }
+.code-block .hl { color: #FCA5A5; }
+.code-block .fix { color: #86EFAC; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid rgba(42,58,80,0.5); }
+th { color: var(--color-text-dim); font-weight: 500; font-size: 11px; text-transform: uppercase; }
+.divider { height: 1px; background: var(--color-border); margin: 20px 0; }
+ul { margin-left: 20px; }
+li { color: var(--color-text-dim); font-size: 14px; margin: 4px 0; }
+li strong { color: var(--color-text); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>审查报告</h1>
+  <div class="sub">作息管家 SKILL 全文件审查</div>
+  <div class="stats">
+    <span class="stat stat-bug">3 BUG</span>
+    <span class="stat stat-conflict">3 冲突</span>
+    <span class="stat stat-redundant">4 冗余</span>
+  </div>
+</div>
+
+<!-- BUGs -->
+<div class="section">
+  <h2>BUG（必须修复）</h2>
+
+  <div class="issue">
+    <div class="issue-head">
+      <span class="tag tag-bug">BUG-1</span>
+      <span class="issue-title">print_records 解包 dict 为 tuple</span>
+      <span class="loc">schedule_cli.py:176</span>
+    </div>
+    <div class="issue-desc">
+      <code>get_records_by_date()</code> 返回 <strong>dict 列表</strong>，但 <code>print_records</code> 和 <code>print_detail</code> 用 tuple 解包语法：
+    </div>
+    <div class="code-block">
+      <span class="hl">_, ts, te, dur, act, cat, src_cnt, src_ts, reasoning = rec</span><br>
+      <span class="fix"># 应改为：</span><br>
+      ts, te, dur, act, cat = rec['time_start'], rec['time_end'], rec['duration_minutes'], rec['activity'], rec['category']<br>
+      src_cnt, src_ts, reasoning = rec['source_contents'], rec['source_timestamps'], rec['analysis_reasoning']
+    </div>
+    <div class="issue-desc">
+      Python 对 dict 解包时遍历的是 keys（字符串），所以 <code>_</code> = <code>'id'</code>, <code>ts</code> = <code>'time_start'</code>... 碰巧变量名能对应上实际使用，<strong>输出结果正确但逻辑是错的</strong>。任何字段顺序变化都会导致数据错乱。
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head">
+      <span class="tag tag-bug">BUG-2</span>
+      <span class="issue-title">conf_mark 判断逻辑错误</span>
+      <span class="loc">schedule_cli.py:179</span>
+    </div>
+    <div class="code-block">
+      conf_mark = "✓" if <span class="hl">len(src_cnt.split("||")) == 1</span> else "○"
+    </div>
+    <div class="issue-desc">
+      <code>source_contents</code> 用 <code>\n</code> 分隔消息（见同步流程.md 示例），不是 <code>||</code>。<br>
+      这行代码永远返回 <code>"✓"</code>（因为没有 <code>||</code> 分隔符），conf_mark 失去意义。
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-head">
+      <span class="tag tag-bug">BUG-3</span>
+      <span class="issue-title">CLI命令.md init 描述与代码不符</span>
+      <span class="loc">CLI命令.md:15</span>
+    </div>
+    <div class="code-block">
+      <span class="hl">作用：创建/重建 schedule_records、daily_summary、schedule_plans 表</span><br>
+      <span class="hl">⚠️ 注意：会清空所有数据，谨慎使用</span>
+    </div>
+    <div class="issue-desc">
+      代码已改为 <code>CREATE TABLE IF NOT EXISTS</code>，不会清空数据。文档描述过时。
+    </div>
+  </div>
+</div>
+
+<!-- 冲突 -->
+<div class="section">
+  <h2>冲突（文档与代码不一致）</h2>
+
+  <div class="issue warn">
+    <div class="issue-head">
+      <span class="tag tag-conflict">冲突-1</span>
+      <span class="issue-title">SKILL.md 仍写"13个分类"</span>
+      <span class="loc">SKILL.md:25</span>
+    </div>
+    <div class="code-block">
+      | `references/分类清单.md` | <span class="hl">13个分类的定义和判断原则</span> |
+    </div>
+    <div class="issue-desc">
+      分类清单已改为"AI自由判定，建议分类"，但强制要求表中仍写"13个分类"。
+    </div>
+  </div>
+
+  <div class="issue warn">
+    <div class="issue-head">
+      <span class="tag tag-conflict">冲突-2</span>
+      <span class="issue-title">接口清单.md 示例命令不存在</span>
+      <span class="loc">接口清单.md:95</span>
+    </div>
+    <div class="code-block">
+      python scripts/schedule_cli.py <span class="hl">add-record</span> --date 2026-05-22 --start 08:00 ...
+    </div>
+    <div class="issue-desc">
+      <code>add-record</code> 命令不存在于 schedule_cli.py 中。写入记录只能通过 Python 调用 <code>add_record_full()</code>，但这又违反了"禁止直连数据库"的规范。存在逻辑矛盾。
+    </div>
+  </div>
+
+  <div class="issue warn">
+    <div class="issue-head">
+      <span class="tag tag-conflict">冲突-3</span>
+      <span class="issue-title">get_messages_for_sync 参数文档不一致</span>
+      <span class="loc">接口清单.md:73 vs schedule_db.py:216</span>
+    </div>
+    <div class="code-block">
+      文档：<span class="hl">get_messages_for_sync(cursor_datetime_str)</span>  // 1个参数<br>
+      代码：<span class="fix">get_messages_for_sync(cursor_datetime_str, end_time_str=None)</span>  // 2个参数
+    </div>
+  </div>
+</div>
+
+<!-- 冗余 -->
+<div class="section">
+  <h2>冗余（可删除的死代码/重复内容）</h2>
+
+  <div class="issue redundant">
+    <div class="issue-head">
+      <span class="tag tag-dead">冗余-1</span>
+      <span class="issue-title">get_record_by_cursor() 死函数</span>
+      <span class="loc">schedule_db.py:212-214</span>
+    </div>
+    <div class="code-block">
+      def get_record_by_cursor():<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;"""获取游标位置的最后一条记录（完整信息）"""<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;return get_last_record_full()
+    </div>
+    <div class="issue-desc">整个项目无任何调用，仅包装 <code>get_last_record_full()</code>。</div>
+  </div>
+
+  <div class="issue redundant">
+    <div class="issue-head">
+      <span class="tag tag-dead">冗余-2</span>
+      <span class="issue-title">cmd_plan_help() 死函数</span>
+      <span class="loc">schedule_cli.py:399-417</span>
+    </div>
+    <div class="issue-desc">定义了但从未被调用，帮助信息已合并到 <code>cmd_help()</code>。</div>
+  </div>
+
+  <div class="issue redundant">
+    <div class="issue-head">
+      <span class="tag tag-dead">冗余-3</span>
+      <span class="issue-title">未使用的 import</span>
+      <span class="loc">schedule_cli.py:16,23</span>
+    </div>
+    <div class="code-block">
+      import <span class="hl">os</span>  // 未使用<br>
+      get_messages_for_sync, get_messages_before, <span class="hl">get_messages_from</span>,  // 未使用
+    </div>
+  </div>
+
+  <div class="issue redundant">
+    <div class="issue-head">
+      <span class="tag tag-dead">冗余-4</span>
+      <span class="issue-title">接口清单.md 调用方式示例不完整</span>
+      <span class="loc">接口清单.md:89-102</span>
+    </div>
+    <div class="issue-desc">
+      "调用方式"部分写了 <code>add-record</code> 命令但该命令不存在。此节要么删除，要么补充实际的 CLI 写入方式（当前只有 Python 直接调用）。
+    </div>
+  </div>
+</div>
+
+<!-- 汇总 -->
+<div class="section">
+  <h2>汇总</h2>
+  <table>
+    <tr><th>#</th><th>类型</th><th>位置</th><th>描述</th></tr>
+    <tr><td>BUG-1</td><td style="color:#FCA5A5;">BUG</td><td>schedule_cli.py:176</td><td>dict 解包为 tuple，逻辑错误</td></tr>
+    <tr><td>BUG-2</td><td style="color:#FCA5A5;">BUG</td><td>schedule_cli.py:179</td><td>conf_mark 用 "||" 判断但数据用 "\n" 分隔</td></tr>
+    <tr><td>BUG-3</td><td style="color:#FCA5A5;">BUG</td><td>CLI命令.md:15</td><td>init 描述仍说"清空数据"</td></tr>
+    <tr><td>冲突-1</td><td style="color:#FCD34D;">冲突</td><td>SKILL.md:25</td><td>仍写"13个分类"</td></tr>
+    <tr><td>冲突-2</td><td style="color:#FCD34D;">冲突</td><td>接口清单.md:95</td><td>add-record 命令不存在</td></tr>
+    <tr><td>冲突-3</td><td style="color:#FCD34D;">冲突</td><td>接口清单.md:73</td><td>get_messages_for_sync 参数不一致</td></tr>
+    <tr><td>冗余-1</td><td style="color:#93C5FD;">冗余</td><td>schedule_db.py:212</td><td>get_record_by_cursor() 死函数</td></tr>
+    <tr><td>冗余-2</td><td style="color:#93C5FD;">冗余</td><td>schedule_cli.py:399</td><td>cmd_plan_help() 死函数</td></tr>
+    <tr><td>冗余-3</td><td style="color:#93C5FD;">冗余</td><td>schedule_cli.py:16,23</td><td>未使用的 import</td></tr>
+    <tr><td>冗余-4</td><td style="color:#93C5FD;">冗余</td><td>接口清单.md:89</td><td>调用方式示例不完整</td></tr>
+  </table>
+</div>
+
+</div>
+</body>
+</html>

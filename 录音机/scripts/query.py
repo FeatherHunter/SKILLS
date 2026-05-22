@@ -41,11 +41,6 @@ def main():
     parser.add_argument("--start", type=str, help="开始时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
     parser.add_argument("--end", type=str, help="结束时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
     parser.add_argument("--date", type=str, help="单日 YYYYMMDD（优先于 start/end）")
-def main():
-    parser = argparse.ArgumentParser(description="查询用户消息和附件")
-    parser.add_argument("--start", type=str, help="开始时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
-    parser.add_argument("--end", type=str, help="结束时间 YYYYMMDDHHMMSS 或 YYYYMMDD")
-    parser.add_argument("--date", type=str, help="单日 YYYYMMDD（优先于 start/end）")
     parser.add_argument("--recent", type=int, help="最近 N 条消息（忽略日期过滤，按最新排序）")
     parser.add_argument("--limit", type=int, default=1000, help="最大返回条数")
     parser.add_argument("--attachments", action="store_true", help="同时查询附件")

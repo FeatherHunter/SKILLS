@@ -6,7 +6,7 @@ Daily Recorder - 主扫描脚本
 优化版 v2:
 1. 优先扫描白纸文件（无 checkpoint 的文件优先处理）
 2. 每处理一条消息实时更新 checkpoint，不怕中断
-3. 批次从 10 增大到 50，全局 WAL 事务复用连接加速
+3. 全局 WAL 事务复用连接加速
 4. 排除 .trajectory.jsonl（compaction 快照，历史归档，只需扫一次）
 5. 有 checkpoint 的活跃文件优先于白纸文件（活跃文件的消息有时效性）
 """
@@ -135,7 +135,7 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             file_path = line_stripped.split(',')[0].replace('- Voice: ', '').strip()
             attachments.append({
                 'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
-                'channel': 'qq', 'sender_id': None, 'file_path': file_path,
+                'channel': '', 'sender_id': None, 'file_path': file_path,  # 由 meta 覆盖
                 'file_type': infer_file_type(file_path),
             })
             has_attachment = 1
@@ -146,7 +146,7 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             file_path = line_stripped.replace('- Images: ', '').strip()
             attachments.append({
                 'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
-                'channel': 'qq', 'sender_id': None, 'file_path': file_path,
+                'channel': '', 'sender_id': None, 'file_path': file_path,  # 由 meta 覆盖
                 'file_type': infer_file_type(file_path),
             })
             has_attachment = 1
@@ -156,7 +156,7 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
         if line_stripped.startswith('[media reference removed - already processed by model]'):
             attachments.append({
                 'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
-                'channel': 'qq', 'sender_id': None, 'file_path': '', 'file_type': 'image/gif',
+                'channel': '', 'sender_id': None, 'file_path': '', 'file_type': 'image/gif',  # 由 meta 覆盖
             })
             has_attachment = 1
             metadata_lines.add(i)
@@ -172,7 +172,7 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             if match:
                 attachments.append({
                     'message_id': '', 'session_file': str(session_file), 'timestamp': timestamp,
-                    'channel': 'qq', 'sender_id': None, 'file_path': match.group(1).strip(),
+                    'channel': '', 'sender_id': None, 'file_path': match.group(1).strip(),  # 由 meta 覆盖
                     'file_type': infer_file_type(match.group(1).strip()),
                 })
                 has_attachment = 1
@@ -288,7 +288,7 @@ def process_session(session_file: Path, db: Database, touch_fn=None) -> tuple:
                 touch_fn(str(session_file), latest_ts, latest_msg_id)
 
     # 扫完后统一更新 checkpoint（无论有没有新消息）
-    db.upsert_checkpoint(str(session_file), latest_ts, latest_msg_id)
+    db.checkpoint_finalize(str(session_file), latest_ts, latest_msg_id)
 
     return file_new, file_attachments, latest_ts, latest_msg_id
 
@@ -326,18 +326,9 @@ def main():
         sorted(checkpoint_files, key=lambda f: f.stat().st_mtime)
     )
 
-    print(f"[优化版 v2] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
-    print(f"[优化版 v2] 总扫描文件: {len(session_files)}（不含 .trajectory）")
-
-    total_new = 0
-    total_attachments = 0
-    scanned = 0
-
-    # 【优化3】不限批次，一次扫完所有文件（已有 checkpoint 增量，不怕重复扫）
     total_files = len(session_files)
-    print(f"[优化版 v2] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
-    print(f"[优化版 v2] 总扫描文件: {total_files}（不含 .trajectory）")
-    print(f"[优化版 v2] 预计时间: ~{(total_files * 20 / 1000 / 60):.1f} 分钟（快速模式）")
+    print(f"[扫描] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
+    print(f"[扫描] 总文件: {total_files}（不含 .trajectory）")
     print()
 
     total_new = 0
@@ -349,7 +340,7 @@ def main():
 
     for idx, session_file in enumerate(session_files, 1):
         file_new, file_attachments, latest_ts, latest_msg_id = process_session(
-            session_file, db, touch_fn=db.touch_checkpoint
+            session_file, db, touch_fn=db.checkpoint_progress
         )
         if file_new > 0 or file_attachments > 0:
             scanned += 1
@@ -366,10 +357,7 @@ def main():
 
     db.end_checkpoint_transaction()
 
-    print(f"\n扫描完成")
-    print(f"扫描文件: {scanned}/{total_files} 个")
-    print(f"新增消息: {total_new} 条")
-    print(f"新增附件: {total_attachments} 条")
+    print(f"\n扫描完成: {scanned}/{total_files} 个文件, {total_new} 条消息, {total_attachments} 条附件")
 
 
 if __name__ == "__main__":

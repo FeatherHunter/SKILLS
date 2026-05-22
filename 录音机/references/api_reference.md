@@ -57,6 +57,4 @@ for msg_id, ts, channel, content, date in rows:
 python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/record.py
 ```
 
-支持两种调用方式：
-- **不带参数**：扫描自上次运行以来的新消息（增量）
-- **带参数**（TODO）：强制全量扫描 `python3 record.py --full`
+不带参数运行，自动从上次 checkpoint 增量扫描新消息。

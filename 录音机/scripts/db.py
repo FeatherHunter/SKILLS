@@ -129,7 +129,8 @@ class Database:
             return {"last_timestamp": row[0], "last_message_id": row[1]}
         return None
 
-    def upsert_checkpoint(self, session_file: str, last_timestamp: int, last_message_id: str):
+    def checkpoint_finalize(self, session_file: str, last_timestamp: int, last_message_id: str):
+        """扫描完一个文件后调用，兜底更新 checkpoint（独立连接，可脱离事务使用）"""
         _conn = getattr(self, '_conn', None)
         conn = _conn if _conn is not None else sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
@@ -144,8 +145,8 @@ class Database:
             if conn is not _conn:
                 conn.close()
 
-    def touch_checkpoint(self, session_file: str, last_timestamp: int, last_message_id: str):
-        """轻量更新 checkpoint（不关闭连接，用于扫描中途中实时更新）"""
+    def checkpoint_progress(self, session_file: str, last_timestamp: int, last_message_id: str):
+        """扫描循环中逐条调用，实时更新 checkpoint（必须在 begin_checkpoint_transaction 之后）"""
         self._cur.execute("""
             INSERT OR REPLACE INTO scan_checkpoint
             (session_file, last_timestamp, last_message_id, updated_at)
@@ -153,7 +154,7 @@ class Database:
         """, (session_file, last_timestamp, last_message_id, int(time.time())))
 
     def begin_checkpoint_transaction(self):
-        """开启 checkpoint 事务（搭配 touch_checkpoint 和 end_checkpoint_transaction 使用）"""
+        """开启 checkpoint 事务（搭配 checkpoint_progress 和 end_checkpoint_transaction 使用）"""
         self._conn = sqlite3.connect(str(self.db_path), timeout=30)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._cur = self._conn.cursor()

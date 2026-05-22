@@ -25,12 +25,12 @@ DR_FILENAME = "daily_recorder.db"
 
 def _find_db_path(skill_dir, db_filename):
     """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
-    # 1. 环境变量（最高优先级）
+    # 1. 环境变量（最高优先级，设了就直接用）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
-        p = Path(env_path) / db_filename
-        if p.exists():
-            return p
+        p = Path(env_path)
+        p.mkdir(parents=True, exist_ok=True)
+        return p / db_filename
     # 2. 技能目录
     p = skill_dir / db_filename
     if p.exists():
@@ -52,20 +52,30 @@ DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 DR_DB_PATH = _find_db_path(SKILL_DIR, DR_FILENAME)
 
 # ============ 基础读写接口 ============
+def _configure_connection(conn):
+    """配置连接：WAL模式 + 并发安全"""
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+
 def get_connection():
     """获取作息管家数据库连接"""
     DB_DIR.mkdir(parents=True, exist_ok=True)
-    return sqlite3.connect(str(DB_PATH))
+    conn = sqlite3.connect(str(DB_PATH))
+    _configure_connection(conn)
+    return conn
 
 def get_dr_connection():
     """获取语录数据库连接"""
-    return sqlite3.connect(str(DR_DB_PATH))
+    conn = sqlite3.connect(str(DR_DB_PATH))
+    _configure_connection(conn)
+    return conn
 
 # ============ 数据库初始化 ============
 def init_db():
     """初始化作息管家数据库"""
     DB_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
+    _configure_connection(conn)
     c = conn.cursor()
 
     # 作息记录主表

@@ -16,7 +16,7 @@
   "cooking_methods": ["炒", "炸"],
   "flavors": ["辣", "麻"],
   "diet_tags": ["高蛋白"],
-  "meal_types": ["晚餐"],
+  "meal_types": ["晚"],
 
   "ingredients": [
     {

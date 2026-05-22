@@ -213,13 +213,13 @@ python scripts/season_manager.py add <recipe_id> --season 春,夏
 python scripts/cooking_method_manager.py add <recipe_id> --method 炒,蒸
 
 # recipe_flavors（口味）
-python scripts/flavor_manager.py add <recipe_id> --flavor 辣,酱香
+python scripts/flavor_manager.py add <recipe_id> --flavor 辣,鲜
 
 # recipe_diet_tags（饮食标签）
-python scripts/diet_tag_manager.py add <recipe_id> --tag 荤菜,高蛋白
+python scripts/diet_tag_manager.py add <recipe_id> --tag 高蛋白,低脂
 
 # recipe_meal_types（用餐类型）
-python scripts/meal_type_manager.py add <recipe_id> --meal_type 午,晚
+python scripts/meal_type_manager.py add <recipe_id> --meal_type 中,晚
 
 
 # ========== 3. 食材（ingredients）==========

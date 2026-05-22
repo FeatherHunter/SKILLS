@@ -94,7 +94,7 @@ python scripts/shopping_manager.py generate "id1,id2"
 | ingredients[] | quantity | 用量数值 |
 | ingredients[] | unit | 单位 |
 | ingredients[] | quantity_text | 文字描述 |
-| ingredients[] | category | 分类（肉类/蔬菜/调料/海鲜/蛋类/其他） |
+| ingredients[] | category | 分类（肉类/海鲜/蔬菜/调料/豆制品/蛋类/主食/干货/其他） |
 | ingredients[] | is_optional | 是否可选（false=必需，true=可选） |
 | ingredients[] | substitute | 替代食材（无可替代则为null） |
 

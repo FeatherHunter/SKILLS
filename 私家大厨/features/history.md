@@ -33,7 +33,7 @@
 ```
 用户：今天做了宫保虾球，评分4.5，反馈是虾很Q弹
 AI：执行命令：
-    python scripts/history_manager.py add <recipe_id> \
+    python scripts/history_manager.py add 宫保虾球 \
       --cook_date 2026-05-15 \
       --rating 4.5 \
       --feedback "虾很Q弹，下次可以少放点盐"
@@ -44,6 +44,8 @@ AI：执行命令：
        第3次做
        评分：4.5
 ```
+
+> 支持菜名或 recipe_id，脚本自动识别。
 
 ### 查看历史
 
@@ -142,8 +144,8 @@ python scripts/history_manager.py update <history_id> --rating 4.0
 | 字段 | 说明 | 推测规则 |
 |------|------|---------|
 | cook_date | 烹饪日期 | 用户有提供→用用户的；用户未提供→默认为当天 |
-| rating | 评分（1-5） | 用户有提供→用用户的；用户未提供→询问用户 |
-| feedback | 用户反馈 | 用户有提供→用用户的；用户未提供→询问用户 |
+| rating | 评分（1-5） | 用户有提供→用用户的；用户未提供→留空 |
+| feedback | 用户反馈 | 用户有提供→用用户的；用户未提供→留空 |
 
 ---
 

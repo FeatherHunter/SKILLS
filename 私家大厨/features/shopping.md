@@ -14,6 +14,15 @@
 
 根据食谱生成**可交互的手机端采购清单 HTML**，供用户在菜市场/超市/网购使用。
 
+### 多菜名解析
+
+用户可能的表达方式：
+- "宫保虾球和辣炒虾球的采购清单" → 提取"宫保虾球"、"辣炒虾球"
+- "宫保虾球、辣炒虾球清单" → 提取"宫保虾球"、"辣炒虾球"
+- "做宫保虾球和辣炒虾球要买什么" → 提取"宫保虾球"、"辣炒虾球"
+
+分隔符：和、与、及、顿号（、）、逗号（，/ ,）
+
 ---
 
 ## 工作流
@@ -105,6 +114,25 @@ python scripts/shopping_manager.py generate "id1,id2"
 | ingredients[] | category | 分类（肉类/海鲜/蔬菜/调料/豆制品/蛋类/主食/干货/其他） |
 | ingredients[] | is_optional | 是否可选（false=必需，true=可选） |
 | ingredients[] | substitute | 替代食材（无可替代则为null） |
+
+---
+
+## 设计辅助技能（必须调用）
+
+⚠️ **生成 HTML 时必须调用以下两个技能，违反视为不合格输出。**
+
+### 1. Taste Skill
+- 目录：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
+- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+- 厨房场景适配：大触摸目标
+
+### 2. UI/UX Pro Max
+- 目录：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`
+- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+- 必须使用：移动端UX最佳实践（44px触摸目标、8px间隔、对比度4.5:1）
+- 生成后自检3个UX问题
+
+⚠️ **违反上述强制要求，输出视为不合格。**
 
 ---
 

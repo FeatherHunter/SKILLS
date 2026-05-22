@@ -129,7 +129,7 @@ AI：确认添加：
 
 2. python scripts/step_ingredient_manager.py add \
      --step_id <第4步ID> --ingredient_id xxx \
-     --quantity_used 10 --introduced_at "开局加入"
+     --quantity_used 10 --introduced_at "第4步加入"
 ```
 
 ### 调整步骤顺序
@@ -183,6 +183,45 @@ python scripts/recipe_manager.py discard <recipe_id>
 ```
 python scripts/recipe_manager.py show 宫保虾球
 # 输出：⚠️ 「宫保虾球」已废弃
+```
+
+---
+
+## 写操作确认格式
+
+所有修改前展示：
+```
+AI：确认修改：
+
+【修改前】
+- 难度：中等
+- 总时间：25分钟
+
+【修改后】
+- 难度：困难
+- 总时间：30分钟
+
+确认吗？说"对"执行。
+```
+
+**确认词**：用户说"对"、"好"、"确认"、"行"、"是的"等均视为确认。
+
+### 多步操作确认格式
+
+添加食材+关联步骤时：
+```
+AI：确认添加：
+
+【新食材】
+- 名称：姜丝
+- 用量：10g
+- 分类：蔬菜
+
+【关联步骤】
+- 步骤：第4步（xxx）
+- 引入时机：第4步加入
+
+确认吗？说"对"执行。
 ```
 
 ---

@@ -13,7 +13,7 @@ from db_config import get_connection
 def generate(args):
     """生成采购清单 JSON"""
     # 解析 recipe_ids（支持逗号分隔的多个ID）
-    recipe_ids_str = args.get("<recipe_id>") or args.get("<recipe_ids>")
+    recipe_ids_str = args.get("<recipe_id>")
     if not recipe_ids_str:
         print(json.dumps({"error": "请提供食谱ID"}, ensure_ascii=False))
         return False
@@ -38,7 +38,7 @@ def generate(args):
     conditions = [f"recipe_id IN ({placeholders})"]
     params = list(recipe_ids)
     
-    if exclude_optional:
+    if exclude_optional and exclude_optional != "false":
         conditions.append("is_optional = 0")
     
     cursor.execute(f"""

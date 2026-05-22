@@ -275,6 +275,12 @@ python scripts/nutrition_manager.py add "<ID>" \
   --serving_size 200 --serving_unit g \
   --calories 320 --protein 28 --fat 18 \
   --carbs 20 --fiber 2 --sodium 800
+
+# 11. 添加烹饪历史（可选，首次做菜时记录）
+python scripts/history_manager.py add "<ID>" \
+  --cook_date 2026-05-15 \
+  --rating 4.5 \
+  --feedback "虾很Q弹，下次可以少放点盐"
 ```
 
 ---

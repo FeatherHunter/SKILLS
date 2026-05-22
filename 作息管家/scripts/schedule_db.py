@@ -63,7 +63,7 @@ def get_dr_connection():
 
 # ============ 数据库初始化 ============
 def init_db():
-    """初始化作息管家数据库（去掉checkpoint表）"""
+    """初始化作息管家数据库"""
     DB_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     c = conn.cursor()
@@ -269,7 +269,6 @@ def _time_str_to_ts(time_str):
     except:
         return 0
 
-# ============ 作息记录操作 ============
 # ============ 作息记录操作（完整字段）===========
 def add_record_full(date, time_start, time_end, duration_minutes, activity, category,
                   source_contents, source_timestamps, analysis_reasoning):
@@ -454,7 +453,8 @@ def get_summaries_range(start_date, end_date):
     c.execute('''
         SELECT date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
                total_commute_minutes, total_eating_minutes, total_learning_minutes,
-               total_entertainment_minutes, total_unknown_minutes        FROM daily_summary
+               total_entertainment_minutes, total_unknown_minutes
+        FROM daily_summary
         WHERE date >= ? AND date <= ?
         ORDER BY date
     ''', (start_date, end_date))
@@ -463,7 +463,6 @@ def get_summaries_range(start_date, end_date):
     return rows
 
 # ============ 计划作息操作 ============
-
 def upsert_plan(date, hour_plans):
     """
     新增或更新计划作息（upsert）
@@ -485,26 +484,38 @@ def upsert_plan(date, hour_plans):
     conn = get_connection()
     c = conn.cursor()
 
-    # 构建 INSERT 或 UPDATE 语句
-    hour_cols = [f'hour_{i}_planned' for i in range(24)]
-    placeholders = ', '.join(['?'] * (1 + 24))
-    set_clause = ', '.join([f"hour_{i}_planned = COALESCE(?, hour_{i}_planned)" for i in range(24)])
-    
-    values = [hour_plans.get(f'hour_{i}', None) for i in range(24)]
-    
-    # 使用 INSERT ON CONFLICT 实现 upsert
-    c.execute(f'''
-        INSERT INTO schedule_plans (date, {', '.join(hour_cols)}, updated_at)
-        VALUES ({placeholders}, CURRENT_TIMESTAMP)
-        ON CONFLICT(date) DO UPDATE SET
-            {set_clause},
-            updated_at = CURRENT_TIMESTAMP
-    ''', [date] + values)
+    try:
+        # 尝试 INSERT
+        hour_cols = ', '.join([f'hour_{i}_planned' for i in range(24)])
+        c.execute(f'''
+            INSERT INTO schedule_plans (date, {hour_cols})
+            VALUES ({', '.join(['?' for _ in range(25)])})
+        ''', [date] + [hour_plans.get(f'hour_{i}') for i in range(24)])
+        conn.commit()
+        action = 'insert'
+    except sqlite3.IntegrityError:
+        # 日期已存在，执行 UPDATE（只更新提供的字段，保留其他）
+        conn.rollback()
+        set_parts = []
+        values = []
+        for i in range(24):
+            key = f'hour_{i}'
+            if key in hour_plans:
+                set_parts.append(f'hour_{i}_planned = ?')
+                values.append(hour_plans[key])
+        
+        if set_parts:
+            values.append(date)
+            c.execute(f'''
+                UPDATE schedule_plans 
+                SET {', '.join(set_parts)}, updated_at = CURRENT_TIMESTAMP
+                WHERE date = ?
+            ''', values)
+            conn.commit()
+        action = 'update'
 
-    conn.commit()
-    affected = c.rowcount
     conn.close()
-    return {'date': date, 'action': 'insert' if affected == 1 else 'update'}
+    return {'date': date, 'action': action}
 
 def get_plan(date):
     """

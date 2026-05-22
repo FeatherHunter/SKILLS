@@ -189,21 +189,23 @@ def get_messages_before(before_time_str, limit=10):
         result.append((str(msg_id), _ts_to_time(ts), channel, content))
     return result  # 已按时间倒序，调用方需要反转
 
-def get_messages_from(from_time_str):
+def get_messages_from(from_time_str, to_time_str=None):
     """
-    获取 from_time 到现在为止的所有消息
-    from_time 格式: "2026-05-20 22:41:00"
+    获取 from_time 到 to_time 为止的所有消息
+    from_time / to_time 格式: "2026-05-20 22:41:00"
+    to_time 为空时获取到当前时间
     返回: list of (msg_id, time_str_HHMM, channel, content)
     """
     from_ts = _time_str_to_ts(from_time_str)
+    to_ts = _time_str_to_ts(to_time_str) if to_time_str else _time_str_to_ts(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     conn = get_dr_connection()
     c = conn.cursor()
     c.execute('''
         SELECT id, message_id, timestamp, channel, sender_id, content
         FROM user_messages
-        WHERE timestamp >= ?
+        WHERE timestamp >= ? AND timestamp <= ?
         ORDER BY timestamp
-    ''', (from_ts,))
+    ''', (from_ts, to_ts))
     rows = c.fetchall()
     conn.close()
     result = []
@@ -213,15 +215,17 @@ def get_messages_from(from_time_str):
         result.append((str(msg_id), time_str.split(" ")[1][:5], channel, content))
     return result
 
+
 def get_record_by_cursor():
     """获取游标位置的最后一条记录（完整信息）"""
     return get_last_record_full()
 
-def get_messages_for_sync(cursor_datetime_str):
+def get_messages_for_sync(cursor_datetime_str, end_time_str=None):
     """
     获取同步所需的全部消息
     1. 获取游标前10条消息（AI上下文参考，不处理）
-    2. 获取游标时间之后的所有新消息（实际处理）
+    2. 获取游标时间之后到结束时间的所有新消息（实际处理）
+    end_time_str: 结束时间，格式 "2026-05-20 22:41:00"，为空则到当前时间
     返回: (cursor_datetime, prev_messages, new_messages)
     """
     # 获取游标前10条消息（用于AI理解上下文，不写入）
@@ -229,8 +233,8 @@ def get_messages_for_sync(cursor_datetime_str):
     # 反转，按时间正序（最早在前）
     prev_messages = list(reversed(prev_messages))
     
-    # 获取游标时间之后的所有新消息
-    new_messages = get_messages_from(cursor_datetime_str)
+    # 获取游标时间之后到结束时间的所有新消息
+    new_messages = get_messages_from(cursor_datetime_str, end_time_str)
     
     return cursor_datetime_str, prev_messages, new_messages
 

@@ -189,28 +189,63 @@ def calculate_daily_summary(records):
 def cmd_prepare_messages(args):
     """
     准备同步消息:查询游标前10条(上下文) + 游标后新消息,输出JSON供AI分析
-    用法: python schedule_cli.py prepare-messages
+    用法:
+      python schedule_cli.py prepare-messages                              # 默认: 从数据库游标到当前时间
+      python schedule_cli.py prepare-messages <开始时间>                       # 指定开始时间到当前时间
+      python schedule_cli.py prepare-messages <开始时间> <结束时间>            # 指定时间范围
+    时间格式: YYYY-MM-DD HH:MM:SS  或  YYYY-MM-DD
+    示例: python schedule_cli.py prepare-messages 2026-05-09 2026-05-22
     """
     import json
+    from datetime import datetime, timedelta
 
-    # 获取游标位置的最后一条记录
-    cursor_record = get_last_record_full()
+    # 解析参数
+    start_time_str = None
+    end_time_str = None
+    use_db_cursor = True
 
-    if not cursor_record:
-        print("错误: 作息表为空,请先初始化或手动添加一条记录")
-        return
+    if len(args) >= 1:
+        use_db_cursor = False
+        start_time_str = args[0]
+        if len(args) >= 2:
+            end_time_str = args[1]
+        else:
+            end_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # 格式化时间
+    if start_time_str:
+        if len(start_time_str) == 10:
+            start_time_str += ' 00:00:00'
+        elif len(start_time_str) == 16:
+            start_time_str += ':00'
+    if end_time_str:
+        if len(end_time_str) == 10:
+            end_time_str += ' 23:59:59'
+        elif len(end_time_str) == 16:
+            end_time_str += ':00'
+    # 获取游标位置
+    if use_db_cursor:
+        cursor_record = get_last_record_full()
+        if not cursor_record:
+            print("错误: 作息表为空,请先初始化或手动添加一条记录")
+            return
+        cursor_datetime = f"{cursor_record['date']} {cursor_record['time_end']}:00"
+        cursor_activity = cursor_record['activity']
+        cursor_category = cursor_record['category']
+    else:
+        cursor_datetime = start_time_str
+        cursor_activity = None
+        cursor_category = None
 
-    cursor_datetime = f"{cursor_record['date']} {cursor_record['time_end']}:00"
+    # 获取同步所需的消息
+    cursor_dt, prev_messages, new_messages = get_messages_for_sync(cursor_datetime, end_time_str)
 
-    print(f"游标位置: {cursor_datetime}")
-    print(f"最后活动: {cursor_record['activity']} [{cursor_record['category']}]")
+    print(f"开始时间: {cursor_datetime}")
+    print(f"结束时间: {end_time_str}")
+    if use_db_cursor:
+        print(f"最后活动: {cursor_activity} [{cursor_category}]")
     print()
-
-    # 获取同步所需的消息（游标前10条上下文 + 游标后新消息）
-    cursor_datetime, prev_messages, new_messages = get_messages_for_sync(cursor_datetime)
-
     print(f"上下文消息: {len(prev_messages)} 条（仅供参考，不处理）")
-    print(f"待处理消息: {len(new_messages)} 条（从游标时间开始）")
+    print(f"待处理消息: {len(new_messages)} 条（从开始时间到结束时间）")
     print()
 
     if not new_messages:
@@ -220,8 +255,8 @@ def cmd_prepare_messages(args):
     # 输出 JSON 格式供 AI 分析
     output = {
         'cursor_datetime': cursor_datetime,
-        'cursor_activity': cursor_record['activity'],
-        'cursor_category': cursor_record['category'],
+        'cursor_activity': cursor_activity if use_db_cursor else None,
+        'cursor_category': cursor_category if use_db_cursor else None,
         'current_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'prev_message_count': len(prev_messages),
         'new_message_count': len(new_messages),

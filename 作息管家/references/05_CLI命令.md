@@ -21,21 +21,31 @@ python3 scripts/schedule_cli.py init
 ### 2. 准备同步消息（供 AI 分析）
 
 ```bash
+# 默认: 从数据库游标到当前时间
 python3 scripts/schedule_cli.py prepare-messages
+
+# 指定开始时间到当前时间
+python3 scripts/schedule_cli.py prepare-messages <开始时间>
+
+# 指定时间范围
+python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间>
+
+# 时间格式: YYYY-MM-DD HH:MM:SS  或  YYYY-MM-DD
+# 示例: python3 scripts/schedule_cli.py prepare-messages 2026-05-09 2026-05-22
 ```
 
 **作用**：
-- 查询游标位置的最后一条记录
-- 获取游标前10条消息到现在的所有发言
+- 查询游标位置的最后一条记录（或指定开始时间）
+- 获取开始时间前10条消息（上下文）+ 开始时间到结束时间的所有消息
 - 输出 JSON 格式供 AI 分析
 
 **输出**：
 ```
-游标位置: 2026-05-22 07:38:00
-最后活动: 睡觉 [睡眠]
+开始时间: 2026-05-09 00:00:00
+结束时间: 2026-05-22 15:59:30
 
-分析起始时间: 2026-05-22 07:38:00
-消息数量: 49 条
+上下文消息: 10 条（仅供参考，不处理）
+待处理消息: 3873 条（从开始时间到结束时间）
 
 【JSON输出开始】
 { ... }

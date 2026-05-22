@@ -220,36 +220,19 @@ def get_record_by_cursor():
 def get_messages_for_sync(cursor_datetime_str):
     """
     获取同步所需的全部消息
-    1. 获取游标前10条消息的开始时间作为起点
-    2. 获取该起点到现在的所有消息
-    返回: (start_datetime, messages)
+    1. 获取游标前10条消息（AI上下文参考，不处理）
+    2. 获取游标时间之后的所有新消息（实际处理）
+    返回: (cursor_datetime, prev_messages, new_messages)
     """
-    # 获取游标前10条消息（用于确定AI分析起始时间）
+    # 获取游标前10条消息（用于AI理解上下文，不写入）
     prev_messages = get_messages_before(cursor_datetime_str, limit=10)
+    # 反转，按时间正序（最早在前）
+    prev_messages = list(reversed(prev_messages))
     
-    if not prev_messages:
-        # 没有历史消息，从游标时间开始
-        start_time = cursor_datetime_str
-    else:
-        # 取第10条消息的时间作为起始点（最早的）
-        # prev_messages 是倒序的（最新的在前）
-        candidate_time = prev_messages[-1][1]  # 最后一条是最早的
-        
-        # 检查是否是有效时间（年份 >= 2020），否则用游标时间
-        try:
-            year = int(candidate_time.split('-')[0])
-            if year < 2020:
-                # 时间无效（测试数据），从游标时间开始
-                start_time = cursor_datetime_str
-            else:
-                start_time = candidate_time
-        except:
-            start_time = cursor_datetime_str
+    # 获取游标时间之后的所有新消息
+    new_messages = get_messages_from(cursor_datetime_str)
     
-    # 获取从起始点到现在的所有消息
-    messages = get_messages_from(start_time)
-    
-    return start_time, messages
+    return cursor_datetime_str, prev_messages, new_messages
 
 # ============ 时间转换工具 ============
 def _ts_to_time(ts):

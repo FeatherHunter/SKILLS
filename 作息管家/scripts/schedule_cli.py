@@ -188,7 +188,7 @@ def calculate_daily_summary(records):
 # ============ CLI 命令 ============
 def cmd_prepare_messages(args):
     """
-    准备同步消息:查询游标前10条到现在的所有消息,输出JSON供AI分析
+    准备同步消息:查询游标前10条(上下文) + 游标后新消息,输出JSON供AI分析
     用法: python schedule_cli.py prepare-messages
     """
     import json
@@ -206,14 +206,14 @@ def cmd_prepare_messages(args):
     print(f"最后活动: {cursor_record['activity']} [{cursor_record['category']}]")
     print()
 
-    # 获取同步所需的消息
-    start_time, messages = get_messages_for_sync(cursor_datetime)
+    # 获取同步所需的消息（游标前10条上下文 + 游标后新消息）
+    cursor_datetime, prev_messages, new_messages = get_messages_for_sync(cursor_datetime)
 
-    print(f"分析起始时间: {start_time}")
-    print(f"消息数量: {len(messages)} 条")
+    print(f"上下文消息: {len(prev_messages)} 条（仅供参考，不处理）")
+    print(f"待处理消息: {len(new_messages)} 条（从游标时间开始）")
     print()
 
-    if not messages:
+    if not new_messages:
         print("没有新消息需要同步")
         return
 
@@ -222,14 +222,25 @@ def cmd_prepare_messages(args):
         'cursor_datetime': cursor_datetime,
         'cursor_activity': cursor_record['activity'],
         'cursor_category': cursor_record['category'],
-        'analysis_start_time': start_time,
         'current_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'message_count': len(messages),
-        'messages': []
+        'prev_message_count': len(prev_messages),
+        'new_message_count': len(new_messages),
+        'prev_messages': [],
+        'new_messages': []
     }
 
-    for msg_id, time_hhmm, channel, content in messages:
-        output['messages'].append({
+    # 上下文消息（按时间正序）
+    for msg_id, time_str, channel, content in prev_messages:
+        output['prev_messages'].append({
+            'msg_id': msg_id,
+            'time': time_str,
+            'channel': channel,
+            'content': content
+        })
+
+    # 新消息（从游标时间开始）
+    for msg_id, time_hhmm, channel, content in new_messages:
+        output['new_messages'].append({
             'msg_id': msg_id,
             'time': time_hhmm,
             'channel': channel,
@@ -242,23 +253,24 @@ def cmd_prepare_messages(args):
     print("【JSON输出结束】")
     print()
     print("AI分析说明:")
-    print("- 请根据以上消息,智能分析用户活动")
+    print("- prev_messages: 游标前10条消息,帮助你理解上下文,不写入数据库")
+    print("- new_messages: 游标之后的新消息,需要分析并写入数据库")
     print("- 需要保证记录首尾相接(time_start = 上一条 time_end)")
     print("- 空白时间段请生成 category='未知' 的记录填充")
     print("- 按活动切换点生成细粒度记录,不要合并")
-    print(f"- 调用 add_record_full() 逐条写入,记录数应 >= {len(messages)}")
-    print("""
-作息管家 CLI 用法：
-    python schedule_cli.py init              # 初始化数据库
-    python schedule_cli.py prepare-messages # 查询游标到现在的所有消息（供AI分析）
-    python schedule_cli.py list [日期]        # 查看指定日期作息（默认今天）
-    python schedule_cli.py detail [日期]     # 详细展示（含分析推理）
-    python schedule_cli.py summary [日期]     # 查看指定日期摘要
-    python schedule_cli.py timeline [日期]    # 时间轴展示
-    python schedule_cli.py report [日期]      # 完整报告
-    python schedule_cli.py range <开始> <结束>  # 日期范围统计
-    python schedule_cli.py status            # 数据库状态
-""")
+    print(f"- 调用 add_record_full() 逐条写入,记录数应 >= {len(new_messages)}")
+    print("\"\"\"")
+    print("作息管家 CLI 用法：")
+    print("    python schedule_cli.py init              # 初始化数据库")
+    print("    python schedule_cli.py prepare-messages # 查询游标到现在的所有消息（供AI分析）")
+    print("    python schedule_cli.py list [日期]        # 查看指定日期作息（默认今天）")
+    print("    python schedule_cli.py detail [日期]     # 详细展示（含分析推理）")
+    print("    python schedule_cli.py summary [日期]     # 查看每日摘要")
+    print("    python schedule_cli.py timeline [日期]    # 时间轴展示")
+    print("    python schedule_cli.py report [日期]      # 完整报告")
+    print("    python schedule_cli.py range <开始> <结束>  # 日期范围统计")
+    print("    python schedule_cli.py status            # 数据库状态")
+    print("\"\"\"")
 
 def cmd_help():
     print("""

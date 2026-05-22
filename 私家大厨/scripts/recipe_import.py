@@ -51,7 +51,12 @@ def validate_recipe(data):
             errors.append(f"difficulty 必须是以下之一: {', '.join(valid_difficulty)}")
 
     # 3. 食材验证
+    if "ingredients" in data and not isinstance(data["ingredients"], list):
+        errors.append("ingredients 必须是数组")
     for i, ing in enumerate(data.get("ingredients", [])):
+        if not isinstance(ing, dict):
+            errors.append(f"ingredients[{i}] 必须是对象")
+            continue
         if not ing.get("name"):
             errors.append(f"ingredients[{i}] 缺少 name（食材名）")
         if "quantity" in ing and ing["quantity"] is not None:
@@ -59,7 +64,12 @@ def validate_recipe(data):
                 errors.append(f"ingredients[{i}].quantity 必须是数字")
 
     # 4. 步骤验证
+    if "steps" in data and not isinstance(data["steps"], list):
+        errors.append("steps 必须是数组")
     for i, step in enumerate(data.get("steps", [])):
+        if not isinstance(step, dict):
+            errors.append(f"steps[{i}] 必须是对象")
+            continue
         if not step.get("action"):
             errors.append(f"steps[{i}] 缺少 action（步骤描述）")
         if "sequence" in step and step["sequence"] is not None:
@@ -80,7 +90,7 @@ def validate_recipe(data):
     return errors
 
 
-def check_conflict(conn, name, choice=None):
+def check_conflict(conn, name, choice=None, new_name=None):
     """检查同名食谱冲突，返回 (has_conflict, result)"""
     cursor = conn.cursor()
     cursor.execute("""
@@ -127,6 +137,9 @@ def check_conflict(conn, name, choice=None):
     elif choice == "view":
         return True, {"status": "view", "recipe_id": existing['id']}
     elif choice == "derive":
+        if new_name:
+            # 有new_name，允许继续导入（返回无冲突）
+            return False, None
         return True, {"status": "derive", "message": "请提供 --new_name 参数"}
     elif choice == "update":
         return True, {"status": "update", "recipe_id": existing['id']}
@@ -414,7 +427,7 @@ def import_recipe(json_file, choice=None, new_name=None):
     # 3. 检查同名冲突
     conn = get_connection()
     try:
-        has_conflict, conflict_result = check_conflict(conn, data["name"], choice)
+        has_conflict, conflict_result = check_conflict(conn, data["name"], choice, new_name)
         if has_conflict:
             conn.close()
             return conflict_result

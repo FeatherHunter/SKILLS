@@ -210,7 +210,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 
 共 13 个分类：**睡眠、工作、学习、运动、通勤、餐饮、娱乐、社交、休闲、健康、洗漱、兴趣爱好、未知**
 
-> 详细分类及关键词见: `references/04_分类清单.md`
+> 详细分类见: `references/04_分类清单.md`
 
 ---
 
@@ -289,7 +289,7 @@ python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉"
 | `01_数据库结构.md` | 表结构、字段说明（含 schedule_plans） |
 | `02_同步流程.md` | AI同步流程、连续性、粒度规则 |
 | `03_接口清单.md` | 完整接口及调用示例 |
-| `04_分类清单.md` | 13个分类及关键词 |
+| `04_分类清单.md` | 13个分类
 | `05_CLI命令.md` | CLI命令详解（含计划作息命令） |
 | `06_睡眠规则.md` | 睡眠归属逻辑 |
 | `07_Cron任务.md` | 推荐 cron 任务设计（定时同步 + 每日摘要） |

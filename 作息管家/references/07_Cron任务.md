@@ -1,51 +1,105 @@
 # Cron 任务 - 作息管家配套
 
 > 本文件列出与作息管家技能配合使用的最佳 cron 任务设计。
+> **已配置的 cron 示例**见下方，实际使用时可直接参考创建。
 
 ---
 
-## Cron 1：定时同步作息表
+## 已配置 Cron（实际运行）
+
+### Cron 1：定时同步作息表
 
 | 项目 | 内容 |
 |------|------|
+| **ID** | `6f0a8b0e-5364-47f9-9a3b-195c0700fcd6` |
+| **名称** | 作息管家-定时同步 |
 | **调度** | `0 */3 * * *`（每3小时整点） |
 | **时区** | Asia/Shanghai |
-| **执行内容** | 1. 调用 `prepare-messages` 获取游标到现在的消息<br>2. AI 分析消息 → 生成细粒度记录<br>3. 空白时间段补 `category=未知`<br>4. 调用 `add_record_full()` 逐条写入<br>5. 保证首尾相接（time_start = 上一条 time_end） |
-| **目的** | 保持作息记录实时同步，不遗漏任何活动 |
-| **会话目标** | isolated（独立会话） |
+| **会话** | isolated |
+| **推送** | 静默（not requested） |
+| **超时** | 300 秒 |
 
-**触发逻辑：**
+**执行内容：**
 ```
-如果 schedule_records 为空 → 报错提示需初始化
-如果 游标到最后一条记录距现在 < 30分钟 → 跳过本次同步
-否则 → 执行完整同步流程
+请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行「定时同步作息表」：
+
+1. 调用 prepare-messages 获取游标到现在的消息
+2. AI 分析消息 → 生成细粒度记录
+3. 空白时间段补 category='未知'
+4. 调用 add_record_full() 逐条写入数据库
+5. 保证记录首尾相接（time_start = 上一条 time_end）
+
+完成后静默执行，不需要推送任何消息。
+```
+
+**创建命令：**
+```bash
+openclaw cron add \
+  --name "作息管家-定时同步" \
+  --cron "0 */3 * * *" \
+  --tz "Asia/Shanghai" \
+  --session isolated \
+  --message "请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行「定时同步作息表」：..." \
+  --timeout-seconds 300 \
+  --no-deliver
 ```
 
 ---
 
-## Cron 2：每日作息摘要（07:30）
+### Cron 2：每日作息报告（07:30）
 
 | 项目 | 内容 |
 |------|------|
+| **ID** | `62cd3444-6364-4a8a-8b8f-749ff41d9762` |
+| **名称** | 作息管家-每日报告 |
 | **调度** | `30 7 * * *`（每天 07:30） |
 | **时区** | Asia/Shanghai |
-| **执行内容** | 1. 读取昨日（date - 1）的 schedule_records<br>2. 验证是否覆盖 00:00-23:59（满24小时）<br>3. 如果不满24小时 → 跳过并提示<br>4. 如果满24小时 → 按 category 分组合并 duration_minutes<br>5. 调用 `add_summary_full()` 写入 daily_summary<br>6. 推送 QQ 简单汇报 |
-| **目的** | 昨日作息生成摘要报告 |
-| **会话目标** | isolated（独立会话） |
-| **推送方式** | QQ 私聊 announce |
+| **会话** | isolated |
+| **推送** | WeChat（openclaw-weixin） |
+| **超时** | 600 秒 |
 
-**触发逻辑：**
+**执行内容：**
 ```
-昨日日期 = date.today() - 1
-如果 schedule_records 中昨日记录不满24小时 → 跳过，汇报"数据不足"
-如果 满24小时 → 执行 summary 生成，推送"昨日作息摘要：睡眠7h 工作4h..."
+请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md 并严格按照其中「推荐 Cron 任务」的设计执行：
+
+1. 读取昨日（date - 1）的 schedule_records
+2. 验证是否覆盖 00:00-23:59（满24小时）
+3. 如果不满24小时 → 通过 WeChat 推送警告，告知哪里不完整
+4. 如果满24小时 → 
+   a. 调用 add_summary_full() 写入 daily_summary
+   b. 生成 HTML 作息报告（禁止emoji，可用SVG，活泼生动）
+   c. 通过 WeChat 发送报告给用户
+
+报告要求：
+- 无 emoji 表情
+- 使用 SVG 绘制图表（如时间轴、分类饼图）
+- 页面生动形象
+- 包含昨日各时段活动详情 + 分类汇总
+```
+
+**创建命令：**
+```bash
+openclaw cron add \
+  --name "作息管家-每日报告" \
+  --cron "30 7 * * *" \
+  --tz "Asia/Shanghai" \
+  --session isolated \
+  --message "请读取 D:\2Study\StudyNotes\SKILLS\作息管家\SKILL.md..." \
+  --timeout-seconds 600 \
+  --announce \
+  --channel openclaw-weixin \
+  --to o9cq800qY4J0M3CqJY7hI40PXKt0@im.wechat
 ```
 
 ---
 
-## 注意事项
+## 设计原则
 
-1. **时间连续性**：Cron 1 写入时必须保证记录首尾相接
-2. **粒度控制**：按活动切换点细分，不合并记录
-3. **睡眠归属**：睡眠记录归属于就寝日，不归属于起床日
-4. **禁止删除**：两个 cron 都不执行任何 DELETE 操作
+| 项目 | 说明 |
+|------|------|
+| **时间连续性** | Cron 1 写入时必须保证记录首尾相接 |
+| **粒度控制** | 按活动切换点细分，不合并记录 |
+| **睡眠归属** | 睡眠记录归属于就寝日，不归属于起床日 |
+| **禁止删除** | 两个 cron 都不执行任何 DELETE 操作 |
+| **静默同步** | Cron 1 只写数据库，不推送 |
+| **警告机制** | Cron 2 发现不满24小时先警告再决定是否生成报告 |

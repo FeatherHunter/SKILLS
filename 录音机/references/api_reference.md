@@ -12,19 +12,19 @@
 
 ```bash
 # 查单日
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --date 20260509
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --date 20260509
 
 # 查时间范围
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --start 20260509000000 --end 20260509235959
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --start 20260509000000 --end 20260509235959
 
 # 只传开始时间（查某时刻之后所有）
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --start 20260509000000
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --start 20260509000000
 
 # 只传结束时间（查某时刻之前所有）
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --end 20260509235959
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --end 20260509235959
 
 # 指定最大条数（默认 1000）
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py --date 20260509 --limit 500
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --date 20260509 --limit 500
 ```
 
 **输出格式**：
@@ -39,7 +39,7 @@ python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/query.py
 
 ```python
 import sys
-sys.path.insert(0, '/mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts')
+sys.path.insert(0, '/mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts')
 from db import Database
 from query import parse_ts
 
@@ -54,7 +54,7 @@ for msg_id, ts, channel, content, date in rows:
 ## 触发扫描（cron / 手动）
 
 ```bash
-python3 /mnt/d/2Study/StudyNotes/SKILLS/daily-recorder-openclaw/scripts/record.py
+python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/record.py
 ```
 
 支持两种调用方式：

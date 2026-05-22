@@ -22,7 +22,7 @@ from schedule_db import (
     init_db, get_last_record, get_prev_message,
     get_messages_after, get_messages_between,
     add_record, get_records_by_date, get_records_range,
-    clear_date_records, save_daily_summary, get_daily_summary,
+    has_records_for_date, save_daily_summary, get_daily_summary,
     get_summaries_range, get_connection, DB_PATH
 )
 
@@ -230,7 +230,9 @@ def sync_incremental():
     for msg_date, msgs in sorted(date_groups.items()):
         print(f"\n  处理日期: {msg_date}, 消息数: {len(msgs)}")
         
-        clear_date_records(msg_date)
+        if has_records_for_date(msg_date):
+            print(f"    跳过：已有记录")
+            continue
         
         blocks = analyze_messages_to_blocks(msgs)
         print(f"    生成 {len(blocks)} 个作息块")
@@ -269,7 +271,9 @@ def sync_date(target_date):
         print("  无消息，跳过")
         return
     
-    clear_date_records(date_str)
+    if has_records_for_date(date_str):
+        print(f"  跳过：已有记录")
+        return
     
     blocks = analyze_messages_to_blocks(messages)
     print(f"  生成 {len(blocks)} 个作息块")

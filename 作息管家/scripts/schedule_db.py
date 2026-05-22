@@ -227,10 +227,69 @@ def _time_str_to_ts(time_str):
         return 0
 
 # ============ 作息记录操作 ============
+# ============ 作息记录操作（完整字段）===========
+def add_record_full(date, time_start, time_end, duration_minutes, activity, category,
+                  source_contents, source_timestamps, analysis_reasoning):
+    """
+    增加一条作息记录（全部字段校验）
+    必须传入全部9个字段，缺一不可
+    """
+    # 字段完整性校验
+    required_fields = {
+        'date': date, 'time_start': time_start, 'time_end': time_end,
+        'duration_minutes': duration_minutes, 'activity': activity,
+        'category': category, 'source_contents': source_contents,
+        'source_timestamps': source_timestamps, 'analysis_reasoning': analysis_reasoning
+    }
+    missing = [k for k, v in required_fields.items() if v is None or v == '']
+    if missing:
+        raise ValueError(f"缺少必填字段: {', '.join(missing)}")
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO schedule_records
+        (date, time_start, time_end, duration_minutes, activity, category,
+         source_contents, source_timestamps, analysis_reasoning)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (date, time_start, time_end, duration_minutes, activity, category,
+          source_contents, source_timestamps, analysis_reasoning))
+    conn.commit()
+    record_id = c.lastrowid
+    conn.close()
+    return record_id
+
+def update_record(record_id, **kwargs):
+    """
+    更新一条作息记录（按id定位）
+    kwargs: date/time_start/time_end/duration_minutes/activity/category/source_contents/source_timestamps/analysis_reasoning
+    """
+    if not record_id:
+        raise ValueError("record_id 不能为空")
+
+    allowed_fields = {'date', 'time_start', 'time_end', 'duration_minutes',
+                     'activity', 'category', 'source_contents',
+                     'source_timestamps', 'analysis_reasoning'}
+
+    updates = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
+    if not updates:
+        raise ValueError("没有有效的更新字段")
+
+    set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
+    values = list(updates.values()) + [record_id]
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(f'UPDATE schedule_records SET {set_clause} WHERE id = ?', values)
+    conn.commit()
+    affected = c.rowcount
+    conn.close()
+    return affected
+
 def add_record(date, time_start, time_end, activity, category,
                source_contents="", source_timestamps="", analysis_reasoning="",
                duration_minutes=None):
-    """添加一条作息记录"""
+    """兼容旧接口，内部调用 add_record_full"""
     if duration_minutes is None:
         try:
             h1, m1 = map(int, time_start.split(":"))
@@ -240,18 +299,8 @@ def add_record(date, time_start, time_end, activity, category,
                 duration_minutes += 1440
         except:
             duration_minutes = 0
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO schedule_records
-        (date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning))
-    conn.commit()
-    record_id = c.lastrowid
-    conn.close()
-    return record_id
+    return add_record_full(date, time_start, time_end, duration_minutes, activity, category,
+                          source_contents, source_timestamps, analysis_reasoning)
 
 def get_records_by_date(date_str):
     """获取指定日期的所有作息记录（按时间排序）"""
@@ -281,34 +330,90 @@ def get_records_range(start_date, end_date):
     conn.close()
     return rows
 
-def clear_date_records(date_str):
-    """清空指定日期的所有记录（重新生成时用）"""
+def has_records_for_date(date_str):
+    """检查指定日期是否已有记录"""
     conn = get_connection()
     c = conn.cursor()
-    c.execute('DELETE FROM schedule_records WHERE date = ?', (date_str,))
-    conn.commit()
+    c.execute('SELECT COUNT(*) FROM schedule_records WHERE date = ?', (date_str,))
+    count = c.fetchone()[0]
     conn.close()
+    return count > 0
 
 # ============ 摘要操作 ============
-def save_daily_summary(date_str, summary_dict):
-    """保存每日作息摘要"""
+def add_summary_full(date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
+                   total_commute_minutes, total_eating_minutes, total_learning_minutes,
+                   total_entertainment_minutes, total_unknown_minutes):
+    """
+    增加一条每日摘要（全部字段校验）
+    必须传入全部9个字段，缺一不可
+    """
+    # 字段完整性校验
+    required = {
+        'date': date,
+        'total_sleep_minutes': total_sleep_minutes,
+        'total_work_minutes': total_work_minutes,
+        'total_exercise_minutes': total_exercise_minutes,
+        'total_commute_minutes': total_commute_minutes,
+        'total_eating_minutes': total_eating_minutes,
+        'total_learning_minutes': total_learning_minutes,
+        'total_entertainment_minutes': total_entertainment_minutes,
+        'total_unknown_minutes': total_unknown_minutes
+    }
+    missing = [k for k, v in required.items() if v is None]
+    if missing:
+        raise ValueError(f"缺少必填字段: {', '.join(missing)}")
+
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        INSERT OR REPLACE INTO daily_summary
+        INSERT INTO daily_summary
         (date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
          total_commute_minutes, total_eating_minutes, total_learning_minutes,
          total_entertainment_minutes, total_unknown_minutes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
+    ''', (date, total_sleep_minutes, total_work_minutes, total_exercise_minutes,
+          total_commute_minutes, total_eating_minutes, total_learning_minutes,
+          total_entertainment_minutes, total_unknown_minutes))
+    conn.commit()
+    conn.close()
+    return date
+
+def update_summary(date, **kwargs):
+    """
+    更新每日摘要（按date定位）
+    kwargs: 任意8个minute字段
+    """
+    if not date:
+        raise ValueError("date 不能为空")
+
+    allowed = {'total_sleep_minutes', 'total_work_minutes', 'total_exercise_minutes',
+               'total_commute_minutes', 'total_eating_minutes', 'total_learning_minutes',
+               'total_entertainment_minutes', 'total_unknown_minutes'}
+
+    updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+    if not updates:
+        raise ValueError("没有有效的更新字段")
+
+    set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
+    values = list(updates.values()) + [date]
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(f'UPDATE daily_summary SET {set_clause} WHERE date = ?', values)
+    conn.commit()
+    affected = c.rowcount
+    conn.close()
+    return affected
+
+def save_daily_summary(date_str, summary_dict):
+    """兼容旧接口，内部调用 add_summary_full"""
+    return add_summary_full(
         date_str,
         summary_dict.get("sleep", 0), summary_dict.get("work", 0),
         summary_dict.get("exercise", 0), summary_dict.get("commute", 0),
         summary_dict.get("eating", 0), summary_dict.get("learning", 0),
         summary_dict.get("entertainment", 0), summary_dict.get("unknown", 0)
-    ))
-    conn.commit()
-    conn.close()
+    )
 
 def get_daily_summary(date_str):
     """获取每日摘要"""

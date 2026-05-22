@@ -132,7 +132,7 @@ python scripts/shopping_manager.py generate "id1,id2"
 
 ### 存储路径
 ```
-/home/feather/.openclaw/media/qqbot/shopping/
+D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/shopping/
 ```
 
 ### 文件名格式

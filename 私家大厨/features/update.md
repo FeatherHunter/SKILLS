@@ -33,6 +33,30 @@
 
 ---
 
+## 通用前置步骤
+
+所有修改操作需要先获取实体 ID：
+
+1. **获取 recipe_id**：
+   ```bash
+   python scripts/recipe_manager.py show <菜名>
+   ```
+   → 从输出中获取食谱 ID
+
+2. **获取 step_id**（修改步骤时需要）：
+   ```bash
+   python scripts/step_manager.py list <recipe_id>
+   ```
+   → 从输出中找到对应序号的步骤 ID
+
+3. **获取 ingredient_id**（修改食材时需要）：
+   ```bash
+   python scripts/ingredient_manager.py list <recipe_id>
+   ```
+   → 从输出中找到对应食材的 ID
+
+---
+
 ## 修改类型
 
 ### 修改主信息（单字段）

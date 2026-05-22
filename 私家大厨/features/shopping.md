@@ -19,8 +19,16 @@
 ## 工作流
 
 ```
-用户请求 → AI调用脚本获取JSON → AI生成HTML → 发送HTML给用户
+用户请求 → AI用菜名查recipe_id → AI调用脚本获取JSON → AI生成HTML → 发送HTML给用户
 ```
+
+具体步骤：
+
+1. `python scripts/recipe_manager.py show <菜名>` → 获取 recipe_id
+2. `python scripts/shopping_manager.py generate <recipe_id>` → 获取 JSON
+3. AI 生成 HTML
+4. 保存到 `D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/shopping/`
+5. 通过 QQBot 发送
 
 ---
 

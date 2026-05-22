@@ -76,7 +76,9 @@
 ```
 用户说"做菜模式"或"开始做XX"
     ↓
-【复用】复用查看食谱已查询的数据
+【判断】是否有已查数据？
+    有 → 复用已查数据
+    无 → 按命令参考执行查询获取全部数据
     ↓
 【设计】调用 Taste Skill + UI/UX Pro Max
     ↓
@@ -277,8 +279,12 @@ remaining = duration - (currentTimestamp - startTimestamp)
 
 ## 命令参考
 
+### 查询命令（按依赖顺序）
+
+**Batch 1：无依赖（直接用 recipe_id）**
+
 ```bash
-# 查看食谱详情
+# 获取 recipe_id（必须第一步执行）
 python scripts/recipe_manager.py show <菜名或ID>
 
 # 分类
@@ -294,12 +300,9 @@ python scripts/cookware_manager.py list <recipe_id>
 
 # 食材
 python scripts/ingredient_manager.py list <recipe_id>
-python scripts/step_ingredient_manager.py list-by-ingredient <ingredient_id>
 
 # 步骤
 python scripts/step_manager.py list <recipe_id>
-python scripts/technique_manager.py list-by-step <step_id>
-python scripts/step_ingredient_manager.py list-by-step <step_id>
 
 # 小贴士
 python scripts/tip_manager.py list <recipe_id>
@@ -318,6 +321,45 @@ python scripts/relation_manager.py list-child <recipe_id>
 python scripts/nutrition_manager.py get <recipe_id>
 ```
 
+**Batch 2：依赖 ingredient_id（从 Batch 1 的 ingredient 结果获取）**
+
+```python
+python scripts/step_ingredient_manager.py list-by-ingredient <ingredient_id>
+```
+
+**Batch 3：依赖 step_id（从 Batch 1 的 step 结果获取）**
+
+```python
+python scripts/technique_manager.py list-by-step <step_id>
+python scripts/step_ingredient_manager.py list-by-step <step_id>
+```
+
+### 做菜模式最小数据集
+
+以下命令是做菜模式**必须执行**的（按顺序）：
+
+```bash
+# 1. 获取 recipe_id + 基本信息
+python scripts/recipe_manager.py show <菜名>
+
+# 2. 食材清单
+python scripts/ingredient_manager.py list <recipe_id>
+
+# 3. 步骤列表
+python scripts/step_manager.py list <recipe_id>
+
+# 4. 步骤×食材关联（需 step_id，从步骤列表获取）
+python scripts/step_ingredient_manager.py list-by-step <step_id>
+
+# 5. 技法（需 step_id，从步骤列表获取）
+python scripts/technique_manager.py list-by-step <step_id>
+
+# 6. 小贴士
+python scripts/tip_manager.py list <recipe_id>
+```
+
+> 做菜模式优先保证上述 6 类数据完整，其余数据（分类/历史/背景等）有则展示、无则省略。
+
 ---
 
 ## 参考
@@ -325,5 +367,5 @@ python scripts/nutrition_manager.py get <recipe_id>
 - 分类参考：`references/categories.md`
 - 命令行参考：`references/commands.md`
 - 表结构：`references/database_schema.md`
-- Taste Skill：`/mnt/d/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
-- UI/UX Pro Max：`/mnt/d/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`
+- Taste Skill：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
+- UI/UX Pro Max：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`

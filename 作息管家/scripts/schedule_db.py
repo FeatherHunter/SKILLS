@@ -51,6 +51,16 @@ DB_DIR = SKILL_DIR  # 兼容旧代码，指向技能目录
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 DR_DB_PATH = _find_db_path(SKILL_DIR, DR_FILENAME)
 
+# ============ 基础读写接口 ============
+def get_connection():
+    """获取作息管家数据库连接"""
+    DB_DIR.mkdir(parents=True, exist_ok=True)
+    return sqlite3.connect(str(DB_PATH))
+
+def get_dr_connection():
+    """获取语录数据库连接"""
+    return sqlite3.connect(str(DR_DB_PATH))
+
 # ============ 数据库初始化 ============
 def init_db():
     """初始化作息管家数据库（去掉checkpoint表）"""
@@ -93,40 +103,73 @@ def init_db():
         )
     ''')
 
+    # 计划作息表（每天24小时，每小时一个计划描述）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS schedule_plans (
+            date TEXT PRIMARY KEY,
+            hour_0_planned TEXT,
+            hour_1_planned TEXT,
+            hour_2_planned TEXT,
+            hour_3_planned TEXT,
+            hour_4_planned TEXT,
+            hour_5_planned TEXT,
+            hour_6_planned TEXT,
+            hour_7_planned TEXT,
+            hour_8_planned TEXT,
+            hour_9_planned TEXT,
+            hour_10_planned TEXT,
+            hour_11_planned TEXT,
+            hour_12_planned TEXT,
+            hour_13_planned TEXT,
+            hour_14_planned TEXT,
+            hour_15_planned TEXT,
+            hour_16_planned TEXT,
+            hour_17_planned TEXT,
+            hour_18_planned TEXT,
+            hour_19_planned TEXT,
+            hour_20_planned TEXT,
+            hour_21_planned TEXT,
+            hour_22_planned TEXT,
+            hour_23_planned TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
-# ============ 基础读写接口 ============
-def get_connection():
-    DB_DIR.mkdir(parents=True, exist_ok=True)
-    return sqlite3.connect(str(DB_PATH))
-
-def get_dr_connection():
-    """获取语录数据库连接"""
-    return sqlite3.connect(str(DR_DB_PATH))
-
-# ============ 增量同步核心函数 ============
-def get_last_record():
+# ============ 查询接口（AI同步用）===========
+def get_last_record_full():
     """
-    获取 schedule_records 中最后一条记录
-    返回: (date, time_start, time_end) 或 None
+    获取 schedule_records 中最后一条完整记录
+    返回: dict 或 None
+    用于AI同步时确定游标位置
     """
     conn = get_connection()
     c = conn.cursor()
     c.execute('''
-        SELECT date, time_start, time_end FROM schedule_records
+        SELECT id, date, time_start, time_end, duration_minutes, 
+               activity, category, source_contents, source_timestamps, analysis_reasoning
+        FROM schedule_records
         ORDER BY date DESC, time_end DESC
         LIMIT 1
     ''')
     row = c.fetchone()
     conn.close()
-    return row  # e.g. ('2026-05-20', '22:41', '23:59')
+    if row:
+        return {
+            'id': row[0], 'date': row[1], 'time_start': row[2], 'time_end': row[3],
+            'duration_minutes': row[4], 'activity': row[5], 'category': row[6],
+            'source_contents': row[7], 'source_timestamps': row[8], 'analysis_reasoning': row[9]
+        }
+    return None
 
-def get_prev_message(before_time_str):
+def get_messages_before(before_time_str, limit=10):
     """
-    获取 before_time 之前的最后一条消息（理解上下文用）
+    获取 before_time 之前的N条消息（用于确定AI分析起始点）
     before_time 格式: "2026-05-20 22:41:00"
-    返回: (msg_id, time_str, channel, content) 或 None
+    返回: list of (msg_id, time_str, channel, content)
     """
     from_ts = _time_str_to_ts(before_time_str) - 1
     conn = get_dr_connection()
@@ -136,28 +179,29 @@ def get_prev_message(before_time_str):
         FROM user_messages
         WHERE timestamp < ?
         ORDER BY timestamp DESC
-        LIMIT 1
-    ''', (from_ts,))
-    row = c.fetchone()
+        LIMIT ?
+    ''', (from_ts, limit))
+    rows = c.fetchall()
     conn.close()
-    if row:
+    result = []
+    for row in rows:
         msg_id, msg_id2, ts, channel, sender_id, content = row
-        return (str(msg_id), _ts_to_time(ts), channel, content)
-    return None
+        result.append((str(msg_id), _ts_to_time(ts), channel, content))
+    return result  # 已按时间倒序，调用方需要反转
 
-def get_messages_after(after_time_str):
+def get_messages_from(from_time_str):
     """
-    获取 after_time 之后的所有消息
-    after_time 格式: "2026-05-20 22:41:00"
+    获取 from_time 到现在为止的所有消息
+    from_time 格式: "2026-05-20 22:41:00"
     返回: list of (msg_id, time_str_HHMM, channel, content)
     """
-    from_ts = _time_str_to_ts(after_time_str)
+    from_ts = _time_str_to_ts(from_time_str)
     conn = get_dr_connection()
     c = conn.cursor()
     c.execute('''
         SELECT id, message_id, timestamp, channel, sender_id, content
         FROM user_messages
-        WHERE timestamp > ?
+        WHERE timestamp >= ?
         ORDER BY timestamp
     ''', (from_ts,))
     rows = c.fetchall()
@@ -169,44 +213,43 @@ def get_messages_after(after_time_str):
         result.append((str(msg_id), time_str.split(" ")[1][:5], channel, content))
     return result
 
-def get_messages_between(start_time_str, end_time_str):
+def get_record_by_cursor():
+    """获取游标位置的最后一条记录（完整信息）"""
+    return get_last_record_full()
+
+def get_messages_for_sync(cursor_datetime_str):
     """
-    获取两个时间点之间的所有消息
-    格式: "2026-05-20 00:00:00" ~ "2026-05-20 23:59:59"
-    返回: list of (msg_id, time_str_HHMM, channel, content)
+    获取同步所需的全部消息
+    1. 获取游标前10条消息的开始时间作为起点
+    2. 获取该起点到现在的所有消息
+    返回: (start_datetime, messages)
     """
-    from_ts = _time_str_to_ts(start_time_str)
-    to_ts = _time_str_to_ts(end_time_str)
+    # 获取游标前10条消息（用于确定AI分析起始时间）
+    prev_messages = get_messages_before(cursor_datetime_str, limit=10)
     
-    # 用 date 字段过滤，格式是 YYYYMMDD
-    start_date = start_time_str.split(" ")[0].replace("-", "")
-    end_date = end_time_str.split(" ")[0].replace("-", "")
-    
-    conn = get_dr_connection()
-    c = conn.cursor()
-    if start_date == end_date:
-        c.execute('''
-            SELECT id, message_id, timestamp, channel, sender_id, content
-            FROM user_messages
-            WHERE date = ?
-            ORDER BY timestamp
-        ''', (start_date,))
+    if not prev_messages:
+        # 没有历史消息，从游标时间开始
+        start_time = cursor_datetime_str
     else:
-        c.execute('''
-            SELECT id, message_id, timestamp, channel, sender_id, content
-            FROM user_messages
-            WHERE date >= ? AND date <= ?
-            ORDER BY timestamp
-        ''', (start_date, end_date))
-    rows = c.fetchall()
-    conn.close()
+        # 取第10条消息的时间作为起始点（最早的）
+        # prev_messages 是倒序的（最新的在前）
+        candidate_time = prev_messages[-1][1]  # 最后一条是最早的
+        
+        # 检查是否是有效时间（年份 >= 2020），否则用游标时间
+        try:
+            year = int(candidate_time.split('-')[0])
+            if year < 2020:
+                # 时间无效（测试数据），从游标时间开始
+                start_time = cursor_datetime_str
+            else:
+                start_time = candidate_time
+        except:
+            start_time = cursor_datetime_str
     
-    result = []
-    for row in rows:
-        msg_id, msg_id2, ts, channel, sender_id, content = row
-        time_str = _ts_to_time(ts)
-        result.append((str(msg_id), time_str.split(" ")[1][:5], channel, content))
-    return result
+    # 获取从起始点到现在的所有消息
+    messages = get_messages_from(start_time)
+    
+    return start_time, messages
 
 # ============ 时间转换工具 ============
 def _ts_to_time(ts):
@@ -219,10 +262,10 @@ def _ts_to_time(ts):
         return "2000-01-01 00:00:00"
 
 def _time_str_to_ts(time_str):
-    """'2026-05-20 22:41:00' → 毫秒时间戳"""
+    """'2026-05-20 22:41:00' → 微秒时间戳（与数据库16位时间戳一致）"""
     try:
         dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-        return int(dt.timestamp() * 1000)
+        return int(dt.timestamp() * 1000000)
     except:
         return 0
 
@@ -285,22 +328,6 @@ def update_record(record_id, **kwargs):
     affected = c.rowcount
     conn.close()
     return affected
-
-def add_record(date, time_start, time_end, activity, category,
-               source_contents="", source_timestamps="", analysis_reasoning="",
-               duration_minutes=None):
-    """兼容旧接口，内部调用 add_record_full"""
-    if duration_minutes is None:
-        try:
-            h1, m1 = map(int, time_start.split(":"))
-            h2, m2 = map(int, time_end.split(":"))
-            duration_minutes = (h2 * 60 + m2) - (h1 * 60 + m1)
-            if duration_minutes < 0:
-                duration_minutes += 1440
-        except:
-            duration_minutes = 0
-    return add_record_full(date, time_start, time_end, duration_minutes, activity, category,
-                          source_contents, source_timestamps, analysis_reasoning)
 
 def get_records_by_date(date_str):
     """获取指定日期的所有作息记录（按时间排序）"""
@@ -405,16 +432,6 @@ def update_summary(date, **kwargs):
     conn.close()
     return affected
 
-def save_daily_summary(date_str, summary_dict):
-    """兼容旧接口，内部调用 add_summary_full"""
-    return add_summary_full(
-        date_str,
-        summary_dict.get("sleep", 0), summary_dict.get("work", 0),
-        summary_dict.get("exercise", 0), summary_dict.get("commute", 0),
-        summary_dict.get("eating", 0), summary_dict.get("learning", 0),
-        summary_dict.get("entertainment", 0), summary_dict.get("unknown", 0)
-    )
-
 def get_daily_summary(date_str):
     """获取每日摘要"""
     conn = get_connection()
@@ -445,11 +462,114 @@ def get_summaries_range(start_date, end_date):
     conn.close()
     return rows
 
+# ============ 计划作息操作 ============
+
+def upsert_plan(date, hour_plans):
+    """
+    新增或更新计划作息（upsert）
+    date: 日期（YYYY-MM-DD）
+    hour_plans: dict，key 为 hour_0 ~ hour_23，value 为计划描述
+    例如: {'hour_0': '睡觉', 'hour_8': '30min通勤+30min工作'}
+    """
+    if not date:
+        raise ValueError("date 不能为空")
+    if not hour_plans:
+        raise ValueError("hour_plans 不能为空")
+
+    # 校验 hour_plans 的 key
+    valid_keys = {f'hour_{i}' for i in range(24)}
+    invalid = [k for k in hour_plans.keys() if k not in valid_keys]
+    if invalid:
+        raise ValueError(f"无效的小时字段: {', '.join(invalid)}")
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    # 构建 INSERT 或 UPDATE 语句
+    hour_cols = [f'hour_{i}_planned' for i in range(24)]
+    placeholders = ', '.join(['?'] * (1 + 24))
+    set_clause = ', '.join([f"hour_{i}_planned = COALESCE(?, hour_{i}_planned)" for i in range(24)])
+    
+    values = [hour_plans.get(f'hour_{i}', None) for i in range(24)]
+    
+    # 使用 INSERT ON CONFLICT 实现 upsert
+    c.execute(f'''
+        INSERT INTO schedule_plans (date, {', '.join(hour_cols)}, updated_at)
+        VALUES ({placeholders}, CURRENT_TIMESTAMP)
+        ON CONFLICT(date) DO UPDATE SET
+            {set_clause},
+            updated_at = CURRENT_TIMESTAMP
+    ''', [date] + values)
+
+    conn.commit()
+    affected = c.rowcount
+    conn.close()
+    return {'date': date, 'action': 'insert' if affected == 1 else 'update'}
+
+def get_plan(date):
+    """
+    获取指定日期的计划作息
+    date: 日期（YYYY-MM-DD）
+    返回: dict 或 None
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    hour_cols = ', '.join([f'hour_{i}_planned' for i in range(24)])
+    c.execute(f'''
+        SELECT date, {hour_cols}, created_at, updated_at
+        FROM schedule_plans WHERE date = ?
+    ''', (date,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        result = {'date': row[0]}
+        for i in range(24):
+            result[f'hour_{i}'] = row[i + 1]
+        result['created_at'] = row[25]
+        result['updated_at'] = row[26]
+        return result
+    return None
+
+def get_plans(dates):
+    """
+    获取多个日期的计划作息
+    dates: list of date strings 或 逗号分隔的字符串
+    返回: list of dict
+    """
+    if isinstance(dates, str):
+        # 支持逗号分隔的字符串
+        dates = [d.strip() for d in dates.split(',')]
+    
+    if not dates:
+        return []
+
+    placeholders = ', '.join(['?' for _ in dates])
+    conn = get_connection()
+    c = conn.cursor()
+    hour_cols = ', '.join([f'hour_{i}_planned' for i in range(24)])
+    c.execute(f'''
+        SELECT date, {hour_cols}, created_at, updated_at
+        FROM schedule_plans WHERE date IN ({placeholders})
+        ORDER BY date
+    ''', dates)
+    rows = c.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        result = {'date': row[0]}
+        for i in range(24):
+            result[f'hour_{i}'] = row[i + 1]
+        result['created_at'] = row[25]
+        result['updated_at'] = row[26]
+        results.append(result)
+    return results
+
 # ============ 初始化 ============
 if __name__ == "__main__":
     init_db()
     print("✓ 作息管家数据库初始化完成")
     print(f"  数据路径: {DB_PATH}")
     print(f"  语录路径: {DR_DB_PATH}")
-    last = get_last_record()
+    last = get_last_record_full()
     print(f"  最后记录: {last if last else '（无）'}")

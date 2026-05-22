@@ -12,7 +12,7 @@
 python3 scripts/schedule_cli.py init
 ```
 
-**作用**：创建/重建 schedule_records 和 daily_summary 表
+**作用**：创建/重建 schedule_records、daily_summary、schedule_plans 表
 
 ⚠️ **注意**：会清空所有数据，谨慎使用
 
@@ -165,4 +165,55 @@ python3 scripts/schedule_cli.py status
   已记录天数: 3
   日期范围: 2026-05-20 ~ 2026-05-22
   最后记录: 2026-05-22 10:49 工作、看工作消息、优化skill
+```
+
+---
+
+### 10. 查询计划作息（新增）
+
+```bash
+python3 scripts/schedule_cli.py query-plans <日期1,日期2,...>
+# 示例：查询单天
+python3 scripts/schedule_cli.py query-plans 2026-05-22
+# 示例：查询多天
+python3 scripts/schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22
+```
+
+**输出示例**：
+```
+============================================================
+📅 2026-05-22 计划作息
+============================================================
+  00:00 - 01:00  睡觉
+  01:00 - 02:00  (未规划)
+  ...
+  08:00 - 09:00  30min通勤(骑车)+30min工作
+  09:00 - 10:00  40min改bug+20min摸鱼
+  ...
+```
+
+---
+
+### 11. 新增/更新计划作息（新增）
+
+```bash
+# 简单方式（只填非空小时，其他留空）
+python3 scripts/schedule_cli.py upsert-plan <日期> "睡觉" "" "" "" "" "" "" "通勤+工作" "工作"
+
+# JSON方式（推荐）
+python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉", "hour_8": "30min通勤+30min工作", "hour_9": "40min工作+20min摸鱼"}'
+```
+
+**效果**：
+- 日期不存在 → **插入**新计划
+- 日期已存在 → **更新**计划（只更新提供的字段，保留其他）
+- ⚠️ **不提供删除接口**
+
+**示例**：
+```bash
+# 新增今日计划
+python3 scripts/schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_0": "睡觉", "hour_8": "通勤", "hour_9": "工作"}'
+
+# 更新某天计划（只改hour_9，其他保留）
+python3 scripts/schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_9": "开会+改bug"}'
 ```

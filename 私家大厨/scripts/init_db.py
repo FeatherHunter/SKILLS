@@ -13,6 +13,7 @@ def init_db():
 
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("BEGIN")
 
     print(f"初始化数据库: {get_db_path()}")
     

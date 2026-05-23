@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>备忘录技能重构计划</title>
+    <style>
+        :root {
+            --bg: #fafafa;
+            --card: #fff;
+            --text: #1a1a1a;
+            --muted: #666;
+            --accent: #2563eb;
+            --accent-light: #dbeafe;
+            --border: #e5e7eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --code-bg: #f3f4f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+        h3 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+
+        .goal {
+            background: var(--accent-light);
+            border-left: 4px solid var(--accent);
+            padding: 1rem 1.2rem;
+            margin: 1.5rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .goal strong { color: var(--accent); }
+
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .meta-item {
+            background: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .meta-item label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+        .meta-item p { font-weight: 600; margin-top: 0.25rem; }
+
+        .tree {
+            background: var(--code-bg);
+            padding: 1rem 1.2rem;
+            border-radius: 8px;
+            font-family: "SF Mono", "Fira Code", monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            overflow-x: auto;
+        }
+        .tree .comment { color: #6b7280; }
+
+        .task {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        .task-header {
+            padding: 1rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .task-header:hover { background: var(--bg); }
+        .task-num {
+            background: var(--accent);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .task-num.warning { background: var(--warning); }
+        .task-title { font-weight: 600; }
+        .task-files {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-left: auto;
+        }
+        .task-body { padding: 0 1.2rem 1rem; display: none; }
+        .task.open .task-body { display: block; }
+
+        .step {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .step:last-child { border-bottom: none; }
+        .step input[type="checkbox"] { margin-top: 0.3rem; accent-color: var(--accent); }
+        .step-content { flex: 1; }
+        .step-title { font-weight: 500; }
+        .step-note {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 0.25rem;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: "SF Mono", "Fira Code", monospace;
+            font-size: 0.85em;
+        }
+        pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-create { background: #dcfce7; color: #166534; }
+        .badge-modify { background: #fef3c7; color: #92400e; }
+        .badge-delete { background: #fecaca; color: #991b1b; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+        }
+        th, td {
+            padding: 0.6rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background: var(--bg); font-weight: 600; font-size: 0.85rem; }
+        td code { font-size: 0.8rem; }
+
+        .section-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1rem 0;
+        }
+        .section-card h3 { color: var(--accent); margin-top: 0; }
+
+        .db-diagram {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            align-items: start;
+            margin: 1rem 0;
+        }
+        .db-table {
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .db-table-header {
+            background: var(--accent);
+            color: white;
+            padding: 0.5rem 1rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        .db-table-body { padding: 0.5rem; }
+        .db-field {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.85rem;
+        }
+        .db-field:not(:last-child) { border-bottom: 1px solid var(--border); }
+        .db-field .type { color: var(--muted); font-size: 0.75rem; }
+        .db-field.pk { color: var(--accent); font-weight: 600; }
+        .db-field.fk { color: #9333ea; }
+        .db-relation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 1.5rem;
+        }
+
+        .script-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .script-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .script-card h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        .script-card p {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        .script-card ul {
+            font-size: 0.85rem;
+            padding-left: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .env-table { margin: 1rem 0; }
+
+        .progress {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .actions { display: flex; gap: 1rem; margin: 2rem 0; }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg); }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 1rem; }
+            .meta { grid-template-columns: 1fr; }
+            .script-grid { grid-template-columns: 1fr; }
+            .db-diagram { grid-template-columns: 1fr; }
+            .db-relation { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>备忘录技能重构计划</h1>
+
+        <div class="goal">
+            <strong>目标：</strong>重构备忘录技能，使其符合 openclaw SKILL 开发规范，支持环境变量配置、自动安装、cron 定时提醒和消息推送。
+        </div>
+
+        <div class="meta">
+            <div class="meta-item">
+                <label>架构</label>
+                <p>SKILL.md 作为 AI 入口，直接指导 AI 调用 CLI</p>
+            </div>
+            <div class="meta-item">
+                <label>技术栈</label>
+                <p>Python 3.x, SQLite WAL, FTS5</p>
+            </div>
+            <div class="meta-item">
+                <label>任务数</label>
+                <p>9 个任务</p>
+            </div>
+        </div>
+
+        <!-- 项目结构 -->
+        <h2>项目结构</h2>
+        <div class="tree">
+备忘录/
+├── SKILL.md                    <span class="comment"># 主文档（AI 入口，定义意图解析和操作规范）</span>
+├── _meta.json                  <span class="comment"># 技能元数据</span>
+├── script/
+│   ├── init.sql               <span class="comment"># 数据库初始化脚本</span>
+│   ├── memo_cli.py            <span class="comment"># CLI 工具（核心）</span>
+│   └── reminder_scheduler.py  <span class="comment"># 提醒调度器</span>
+└── reference/
+    ├── schema.md              <span class="comment"># 数据库 schema</span>
+    ├── examples.md            <span class="comment"># 对话示例</span>
+    └── cron.md                <span class="comment"># cron 配置指南</span>
+        </div>
+
+        <div class="highlight">
+            <strong>变更说明：</strong>删除 <code>intent_handler.py</code>，意图识别由 SKILL.md 直接指导 AI 完成，无需额外 Python 模块。
+        </div>
+
+        <!-- 数据库设计 -->
+        <h2>数据库设计</h2>
+        <div class="db-diagram">
+            <div class="db-table">
+                <div class="db-table-header">notes</div>
+                <div class="db-table-body">
+                    <div class="db-field pk">id <span class="type">INTEGER PK</span></div>
+                    <div class="db-field">content <span class="type">TEXT</span></div>
+                    <div class="db-field">summary <span class="type">TEXT</span></div>
+                    <div class="db-field">category <span class="type">TEXT</span></div>
+                    <div class="db-field">media_path <span class="type">TEXT</span></div>
+                    <div class="db-field">created_at <span class="type">TEXT</span></div>
+                    <div class="db-field">updated_at <span class="type">TEXT</span></div>
+                </div>
+            </div>
+            <div class="db-relation">&mdash;&mdash;&gt;</div>
+            <div class="db-table">
+                <div class="db-table-header">reminders</div>
+                <div class="db-table-body">
+                    <div class="db-field pk">id <span class="type">INTEGER PK</span></div>
+                    <div class="db-field fk">note_id <span class="type">INTEGER FK</span></div>
+                    <div class="db-field">remind_at <span class="type">TEXT</span></div>
+                    <div class="db-field">repeat_type <span class="type">TEXT</span></div>
+                    <div class="db-field">repeat_rule <span class="type">TEXT</span></div>
+                    <div class="db-field">status <span class="type">TEXT</span></div>
+                    <div class="db-field">created_at <span class="type">TEXT</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3>并发安全</h3>
+            <table>
+                <thead>
+                    <tr><th>配置</th><th>说明</th><th>代码</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>WAL 模式</td>
+                        <td>允许并发读写，提升多进程安全性</td>
+                        <td><code>PRAGMA journal_mode=WAL</code></td>
+                    </tr>
+                    <tr>
+                        <td>Timeout</td>
+                        <td>写锁等待超时，避免死锁</td>
+                        <td><code>sqlite3.connect(timeout=10)</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-card">
+            <h3>重复规则格式</h3>
+            <table>
+                <thead>
+                    <tr><th>类型</th><th>格式</th><th>示例</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>daily</td><td><code>"HH:MM"</code></td><td><code>"09:00"</code></td></tr>
+                    <tr><td>weekly</td><td><code>"W HH:MM"</code></td><td><code>"5 17:00"</code> 周五下午5点</td></tr>
+                    <tr><td>monthly</td><td><code>"D HH:MM"</code></td><td><code>"1 09:00"</code> 每月1号9点</td></tr>
+                    <tr><td>yearly</td><td><code>"MM-DD HH:MM"</code></td><td><code>"12-25 10:00"</code></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 脚本功能 -->
+        <h2>脚本功能</h2>
+        <div class="script-grid">
+            <div class="script-card">
+                <h4>memo_cli.py</h4>
+                <p>核心 CLI 工具，所有数据操作入口</p>
+                <ul>
+                    <li><code>add</code> - 添加笔记</li>
+                    <li><code>search</code> - 搜索笔记</li>
+                    <li><code>update</code> - 更新笔记</li>
+                    <li><code>delete</code> - 删除笔记</li>
+                    <li><code>remind</code> - 添加提醒</li>
+                    <li><code>due</code> - 查询待触发提醒</li>
+                    <li><code>dismiss</code> - 废弃提醒</li>
+                    <li><code>reminders</code> - 查看提醒列表</li>
+                </ul>
+            </div>
+            <div class="script-card">
+                <h4>reminder_scheduler.py</h4>
+                <p>定时提醒调度器（cron 调用）</p>
+                <ul>
+                    <li>每分钟由 cron 触发</li>
+                    <li>调用 <code>memo_cli.py due</code></li>
+                    <li>通过 openclaw 推送消息</li>
+                </ul>
+            </div>
+            <div class="script-card">
+                <h4>init.sql</h4>
+                <p>数据库初始化脚本</p>
+                <ul>
+                    <li>创建 notes 表</li>
+                    <li>创建 reminders 表</li>
+                    <li>创建 FTS5 全文索引</li>
+                    <li>创建触发器同步索引</li>
+                    <li>启用 WAL 模式</li>
+                </ul>
+            </div>
+            <div class="script-card">
+                <h4>SKILL.md</h4>
+                <p>AI 意图识别与操作指导</p>
+                <ul>
+                    <li>定义触发词映射</li>
+                    <li>解析用户意图</li>
+                    <li>构造 CLI 命令</li>
+                    <li>处理返回结果</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 任务进度 -->
+        <h2>任务进度</h2>
+        <div class="progress">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p id="progress-text" style="font-size:0.9rem;color:var(--muted)">0 / 9 完成</p>
+
+        <!-- Task 1 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">1</div>
+                <div class="task-title">创建 _meta.json 元数据文件</div>
+                <div class="task-files"><span class="badge badge-create">Create</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">创建 _meta.json</div>
+<pre>{
+  "name": "备忘录",
+  "version": "1.0.0",
+  "description": "私人多功能备忘录",
+  "author": "Feather",
+  "tags": ["productivity", "notes", "reminder"],
+  "env_vars": [
+    {"name": "MEMO_DB_PATH", "default": "memo.db"},
+    {"name": "MEMO_MEDIA_DIR", "default": "media"}
+  ]
+}</pre>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">验证 JSON 格式</div>
+                        <code>python -m json.tool _meta.json</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 2 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">2</div>
+                <div class="task-title">修改 memo_cli.py 支持环境变量和并发安全</div>
+                <div class="task-files"><span class="badge badge-modify">Modify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">修改 DB_PATH 支持环境变量</div>
+<pre>DB_PATH = os.environ.get(
+    "MEMO_DB_PATH",
+    os.path.join(os.path.dirname(__file__), "../memo.db")
+)</pre>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">修改 get_conn() 添加 WAL 和 timeout</div>
+<pre>def get_conn():
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn</pre>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">将 edit 命令重命名为 update</div>
+                        <p class="step-note">修改 argparse 和函数映射</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 3 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">3</div>
+                <div class="task-title">修改 init.sql 启用 WAL 模式</div>
+                <div class="task-files"><span class="badge badge-modify">Modify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">在 init.sql 开头添加</div>
+<pre>PRAGMA journal_mode=WAL;</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 4 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num warning">4</div>
+                <div class="task-title">删除 intent_handler.py</div>
+                <div class="task-files"><span class="badge badge-delete">Delete</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">删除文件</div>
+                        <p class="step-note">意图识别由 SKILL.md 直接指导 AI 完成</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">更新 examples.md</div>
+                        <p class="step-note">移除对 intent_handler.py 的引用</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 5 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">5</div>
+                <div class="task-title">创建 reference/cron.md</div>
+                <div class="task-files"><span class="badge badge-create">Create</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">创建 cron 配置指南</div>
+                        <p>包含 cron 任务配置、消息推送说明</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 6 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">6</div>
+                <div class="task-title">重构 SKILL.md</div>
+                <div class="task-files"><span class="badge badge-modify">Modify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">重写 SKILL.md</div>
+                        <ul>
+                            <li>快速开始 prompt</li>
+                            <li>操作规范</li>
+                            <li>功能模块（edit → update）</li>
+                            <li>意图识别指导（替代 intent_handler.py）</li>
+                            <li>环境变量配置</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 7 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">7</div>
+                <div class="task-title">更新 reference/schema.md</div>
+                <div class="task-files"><span class="badge badge-modify">Modify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">更新内容</div>
+                        <ul>
+                            <li>edit → update</li>
+                            <li>添加环境变量说明</li>
+                            <li>添加并发安全说明</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 8 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">8</div>
+                <div class="task-title">更新 reference/examples.md</div>
+                <div class="task-files"><span class="badge badge-modify">Modify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">更新内容</div>
+                        <ul>
+                            <li>edit → update</li>
+                            <li>移除 intent_handler.py 引用</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task 9 -->
+        <div class="task" onclick="this.classList.toggle('open')">
+            <div class="task-header">
+                <div class="task-num">9</div>
+                <div class="task-title">验证整体结构</div>
+                <div class="task-files"><span class="badge badge-create">Verify</span></div>
+            </div>
+            <div class="task-body">
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">检查目录结构</div>
+                        <code>find 备忘录 -type f | sort</code>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">验证代码语法</div>
+                        <code>python -m py_compile script/*.py</code>
+                    </div>
+                </div>
+                <div class="step">
+                    <input type="checkbox" onchange="updateProgress()">
+                    <div class="step-content">
+                        <div class="step-title">测试数据库初始化</div>
+                        <code>sqlite3 test.db < script/init.sql</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 环境变量 -->
+        <h2>环境变量</h2>
+        <div class="env-table">
+            <table>
+                <thead>
+                    <tr><th>变量名</th><th>说明</th><th>默认值</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>MEMO_DB_PATH</code></td>
+                        <td>数据库文件路径</td>
+                        <td><code>memo.db</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>MEMO_MEDIA_DIR</code></td>
+                        <td>媒体文件存储目录</td>
+                        <td><code>media</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 执行方式 -->
+        <h2>执行方式</h2>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="alert('Subagent-Driven: 每个任务分发子代理执行')">
+                Subagent-Driven (推荐)
+            </button>
+            <button class="btn btn-secondary" onclick="alert('Inline Execution: 当前会话批量执行')">
+                Inline Execution
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+            const total = checkboxes.length;
+            const done = checked.length;
+            const pct = total > 0 ? (done / total * 100) : 0;
+
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('progress-text').textContent = done + ' / ' + total + ' 完成';
+        }
+
+        document.querySelector('.task').classList.add('open');
+    </script>
+</body>
+</html>

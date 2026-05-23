@@ -36,7 +36,7 @@
 |------|------|------|
 | `add <content> [-c <category>] [-m <media_path>]` | 添加笔记 | `memo_cli.py add "明天开会" -c work` |
 | `search [keyword] [-c <category>] [-l <limit>]` | 搜索笔记 | `memo_cli.py search "旅行" -c wish` |
-| `edit <id> [--content] [--category] [--media]` | 修改笔记 | `memo_cli.py edit 12 --content "新内容"` |
+| `update <id> [--content] [-c category] [-m media_path]` | 修改笔记 | `memo_cli.py update 12 --content "新内容"` |
 | `delete <id>` | 删除笔记及关联提醒 | `memo_cli.py delete 12` |
 | `remind <note_id> [--at <time>] [--repeat-type <type>] [--rule <rule>]` | 添加提醒 | `memo_cli.py remind 5 --at "2026-05-25 09:00"` |
 | `due` | 列出未来10分钟待触发的提醒 | `memo_cli.py due` |
@@ -44,3 +44,18 @@
 | `reminders [--status active/dismissed]` | 查看提醒列表 | `memo_cli.py reminders` |
 
 所有命令输出JSON：`{"status": "ok/error", "data": ..., "message": "..."}`
+
+## 环境变量
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `MEMO_DB_PATH` | 数据库文件路径 | `memo.db` |
+
+数据库路径通过 `MEMO_DB_PATH` 环境变量配置，默认为 `memo.db`（相对于技能目录）。
+
+## 并发安全
+
+数据库使用 WAL 模式和 timeout 机制确保并发安全：
+
+- **WAL 模式**：允许并发读写，通过 `PRAGMA journal_mode=WAL` 启用
+- **Timeout**：写锁等待超时 10 秒，通过 `sqlite3.connect(timeout=10)` 设置

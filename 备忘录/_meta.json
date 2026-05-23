@@ -1,0 +1,11 @@
+{
+  "name": "备忘录",
+  "version": "1.0.0",
+  "description": "私人多功能备忘录，支持文字记录、分类、媒体附件、全文搜索和定时提醒",
+  "author": "Feather",
+  "tags": ["productivity", "notes", "reminder"],
+  "env_vars": [
+    {"name": "MEMO_DB_PATH", "default": "memo.db"},
+    {"name": "MEMO_MEDIA_DIR", "default": "media"}
+  ]
+}

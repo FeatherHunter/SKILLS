@@ -78,7 +78,7 @@ def add(args):
         print(f"   评分：{rating}")
     return True
 
-def list(args):
+def list_items(args):
     """查看烹饪历史"""
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
@@ -260,7 +260,7 @@ def main():
     if action == "add":
         add(args)
     elif action == "list":
-        list(args)
+        list_items(args)
     elif action == "stats":
         stats(args)
     elif action == "update":

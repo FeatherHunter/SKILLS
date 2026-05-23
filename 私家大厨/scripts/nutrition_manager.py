@@ -107,7 +107,7 @@ def get(args):
     
     return True
 
-def list(args):
+def list_items(args):
     """列出有营养信息的食谱"""
     conn = get_connection()
     cursor = conn.cursor()
@@ -310,7 +310,7 @@ def main():
     elif action == "get":
         get(args)
     elif action == "list":
-        list(args)
+        list_items(args)
     elif action == "search-high-protein":
         search_high_protein(args)
     elif action == "update":

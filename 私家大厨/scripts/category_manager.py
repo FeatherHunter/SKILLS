@@ -53,7 +53,7 @@ def add(args):
         print(f"   国家：{args['--country']}")
     return True
 
-def list(args):
+def list_items(args):
     """查看某食谱的分类"""
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
@@ -207,7 +207,7 @@ def main():
     if action == "add":
         add(args)
     elif action == "list":
-        list(args)
+        list_items(args)
     elif action == "search":
         search(args)
     elif action == "update":

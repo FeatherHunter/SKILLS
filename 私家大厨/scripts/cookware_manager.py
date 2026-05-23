@@ -53,7 +53,7 @@ def add(args):
         print(f"   分类：{args['--category']}")
     return True
 
-def list(args):
+def list_items(args):
     """查看某食谱的炊具"""
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
@@ -203,7 +203,7 @@ def main():
     if action == "add":
         add(args)
     elif action == "list":
-        list(args)
+        list_items(args)
     elif action == "search":
         search(args)
     elif action == "update":

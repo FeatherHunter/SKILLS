@@ -2,7 +2,6 @@
 import sqlite3
 import os
 from pathlib import Path
-from .models import Item, ItemLocation, Tag
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
 

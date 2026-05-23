@@ -1,6 +1,5 @@
 # item_ops.py - 物品 CRUD 操作
 from datetime import datetime
-from pathlib import Path
 from .db import get_conn, PHOTOS_DIR
 from .location_ops import (
     get_locations, add_location, remove_location,
@@ -125,8 +124,7 @@ def search_items(name=None, category=None, location=None, tag=None, status=None,
         params.append(f"%{location}%")
     if status:
         # 搜索位置状态：任意一个位置的 location_status 匹配即命中
-        conditions.append("(il.location_status = ? OR il.location_status = ?)")
-        params.append(status)
+        conditions.append("il.location_status = ?")
         params.append(status)
     if tag:
         conditions.append("t.tag = ?")

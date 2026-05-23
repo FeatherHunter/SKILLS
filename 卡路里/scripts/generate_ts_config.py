@@ -47,8 +47,8 @@ def get_columns(cursor, table):
 
 def to_ts_type(sqlite_type):
     """SQLite 类型 → TypeScript 类型"""
-    type_map = {"INTEGER": "INTEGER", "REAL": "REAL", "TEXT": "TEXT"}
-    return type_map.get(sqlite_type.upper(), "TEXT")
+    type_map = {"INTEGER": "number", "REAL": "number", "TEXT": "string"}
+    return type_map.get(sqlite_type.upper(), "string")
 
 def generate_table_fields(columns):
     """生成单个表的 fields 数组"""
@@ -66,14 +66,20 @@ def generate_table_fields(columns):
             field["default"] = default
         if "date" in name.lower() and "time" not in name.lower():
             field["format"] = "date"
-        elif "time" in name.lower() or ("created" in name or "updated" in name):
+        elif name in ("created_at", "updated_at"):
+            field["format"] = "datetime"
+            field["visible"] = False
+        elif name in ("bedtime", "wake_time"):
+            field["format"] = "time"
+            field["visible"] = True
+        elif "time" in name.lower():
             field["format"] = "datetime"
             field["visible"] = False
         if "calories" in name or "cal" in name:
             field["unit"] = "千卡"
         elif "protein" in name:
             field["unit"] = "克"
-        elif "carbs" in name or "fat" in name:
+        elif "carbs" in name or "carbohydrates" in name or "fat" in name:
             field["unit"] = "克"
         elif "weight" in name:
             field["unit"] = "公斤"
@@ -89,8 +95,8 @@ def generate_table_fields(columns):
         fields.append(field)
     return fields
 
-def generate_queries_for_table(table):
-    """根据表名生成默认查询"""
+def generate_queries_for_table(table, columns):
+    """根据表名和列生成查询"""
     table_labels = {
         "entries": "饮食记录",
         "weight_log": "体重记录",
@@ -101,23 +107,47 @@ def generate_queries_for_table(table):
         "daily_goal": "每日目标",
     }
     label = table_labels.get(table, table)
-    return [
-        {
-            "id": f"{table}-daily",
-            "label": f"今日{label}",
-            "sql": f"SELECT * FROM {table} WHERE date = '{{date}}' ORDER BY time",
-            "params": [{"name": "date", "type": "date", "label": "日期", "default": "TODAY"}]
-        },
-        {
-            "id": f"{table}-history",
-            "label": f"{label}历史",
-            "sql": f"SELECT * FROM {table} ORDER BY date DESC, time DESC LIMIT 100",
-            "params": []
-        }
-    ]
+
+    col_names = [c[1] for c in columns]
+    has_date = "date" in col_names
+
+    if has_date:
+        return [
+            {
+                "id": f"{table}-daily",
+                "label": f"今日{label}",
+                "sql": f"SELECT * FROM {table} WHERE date = '{{date}}' ORDER BY time",
+                "params": [{"name": "date", "type": "date", "label": "日期", "default": "TODAY"}]
+            },
+            {
+                "id": f"{table}-history",
+                "label": f"{label}历史",
+                "sql": f"SELECT * FROM {table} ORDER BY date DESC, time DESC LIMIT 100",
+                "params": []
+            }
+        ]
+    else:
+        return [
+            {
+                "id": f"{table}-all",
+                "label": f"全部{label}",
+                "sql": f"SELECT * FROM {table} ORDER BY id DESC",
+                "params": []
+            }
+        ]
 
 def generate_action(table, fields):
     """根据表结构生成默认 Action"""
+    table_labels = {
+        "entries": "饮食记录",
+        "weight_log": "体重记录",
+        "exercise_log": "运动记录",
+        "sleep_records": "睡眠记录",
+        "nutrition_products": "食品库",
+        "fitness_goals": "健身目标",
+        "daily_goal": "每日目标",
+    }
+    label = table_labels.get(table, table)
     action_fields = []
     for f in fields:
         if f["name"] in ["id", "created_at", "updated_at"]:
@@ -130,7 +160,7 @@ def generate_action(table, fields):
         })
     return {
         "id": f"add-{table}",
-        "label": f"添加{table}",
+        "label": f"添加{label}",
         "type": "insert",
         "targetTable": table,
         "fields": action_fields
@@ -138,9 +168,19 @@ def generate_action(table, fields):
 
 def generate_view(table, query_ids):
     """根据表生成默认 View"""
+    table_labels = {
+        "entries": "饮食记录",
+        "weight_log": "体重记录",
+        "exercise_log": "运动记录",
+        "sleep_records": "睡眠记录",
+        "nutrition_products": "食品库",
+        "fitness_goals": "健身目标",
+        "daily_goal": "每日目标",
+    }
+    label = table_labels.get(table, table)
     return {
         "id": table,
-        "label": table.replace("_", " ").capitalize(),
+        "label": label,
         "components": {
             "table": {"queryId": query_ids[0], "sortable": True, "pageSize": 20},
             "form": {"actionId": f"add-{table}"}
@@ -190,9 +230,10 @@ def main():
         fields = generate_table_fields(columns)
 
         all_schema_tables.append({"name": table, "fields": fields})
-        all_queries.extend(generate_queries_for_table(table))
+        queries = generate_queries_for_table(table, columns)
+        all_queries.extend(queries)
         all_actions.append(generate_action(table, fields))
-        all_views.append(generate_view(table, [f"{table}-daily"]))
+        all_views.append(generate_view(table, [queries[0]["id"]]))
 
     conn.close()
 

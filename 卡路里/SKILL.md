@@ -8,14 +8,42 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 
 本技能所有数据操作必须通过 CLI，禁止直连数据库。
 
+## 核心原则
+
+- **数据操作只走 CLI**：所有增删改查通过 `scripts/` 下的 Python 脚本执行，禁止直接操作 SQLite
+- **睡眠归属就寝日**：睡眠记录归属于就寝那天，不是起床日
+- **Path C 参考数据不存库**：外部搜索到的营养数据仅用于本次记录，不写入 nutrition_products
+- **起床确认不提卡路里**：唤醒词场景的确认语中不出现"卡路里"三字，直接问"要不要记录"
+- **只建议不自动修改**：Lint 检查发现问题后列出清单，让用户决定
+
 ---
 
-## 📦 一键安装
+## 📦 安装与配置
+
+### 依赖
+
+- Python >= 3.7
+- 无第三方依赖（仅用标准库 sqlite3、argparse、datetime）
+
+### 配置项
+
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `SKILLS_DB_PATH` | 数据库文件所在目录 | 技能目录下 `.db/` |
+
+DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.db/` 文件夹 → 自动创建 `.db/` 目录。
+
+### 一键安装 prompt
 
 将以下内容发送给 AI 即可安装本技能：
 
 ```
-请帮我安装卡路里技能：读取 workspace/skills/卡路里/SKILL.md，初始化数据库，运行 python scripts/calorie_tracker.py summary 确认正常。
+请帮我安装卡路里技能：
+1. 读取 workspace/skills/卡路里/SKILL.md
+2. 运行 python scripts/calorie_tracker.py 初始化数据库
+3. 运行 python scripts/calorie_tracker.py summary 确认正常
+4. 运行 python scripts/fitness_goals.py --help 确认健身目标模块正常
+5. 运行 python scripts/sleep_tracker.py --help 确认睡眠模块正常
 ```
 
 ---

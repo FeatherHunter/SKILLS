@@ -1,3 +1,5 @@
+PRAGMA journal_mode=WAL;
+
 -- 备忘录核心表
 CREATE TABLE IF NOT EXISTS notes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS reminders (
                                                 --   monthly : "15 08:30"
                                                 --   yearly  : "12-25 10:00"
     status      TEXT DEFAULT 'active',           -- active / dismissed
+    notified_at TEXT,                            -- 上次通知时间
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
 );

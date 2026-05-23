@@ -47,10 +47,12 @@ def test_find_db_path_fallback():
     from db import _find_db_path
     skill_dir = Path(tempfile.mkdtemp())
     old_env = os.environ.pop('SKILLS_DB_PATH', None)
-    result = _find_db_path(skill_dir, "test.db")
-    assert result == skill_dir / ".db" / "test.db"
-    if old_env:
-        os.environ['SKILLS_DB_PATH'] = old_env
+    try:
+        result = _find_db_path(skill_dir, "test.db")
+        assert result == skill_dir / ".db" / "test.db"
+    finally:
+        if old_env is not None:
+            os.environ['SKILLS_DB_PATH'] = old_env
 
 
 def test_init_db_creates_table():

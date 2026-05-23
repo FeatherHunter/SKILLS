@@ -205,7 +205,6 @@ def main():
     python ingredient_manager.py list <recipe_id>
     python ingredient_manager.py search <食材名>
     python ingredient_manager.py update <ingredient_id> [选项]
-    python ingredient_manager.py 
 
 选项：
     --name 食材名称

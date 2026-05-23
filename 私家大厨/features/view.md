@@ -41,12 +41,12 @@
 ⚠️ **生成 HTML 时必须调用以下两个技能，违反视为不合格输出。**
 
 ### 1. Taste Skill
-- 目录：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
+- 目录：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`<!-- 请根据实际环境调整路径 -->
 - **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 厨房场景适配：大触摸目标
 
 ### 2. UI/UX Pro Max
-- 目录：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`
+- 目录：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`<!-- 请根据实际环境调整路径 -->
 - **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 必须使用：移动端UX最佳实践（44px触摸目标、8px间隔、对比度4.5:1）
 - 生成后自检3个UX问题
@@ -138,7 +138,7 @@
 ### 文件规范
 
 - **文件命名**：`私房菜谱_{菜名}_{时间戳}.html`
-- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`
+- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`<!-- 请根据实际环境调整路径 -->
 
 ---
 
@@ -310,7 +310,7 @@ remaining = savedRemaining（从 localStorage 读取暂停时保存的 remaining
 ### 文件规范
 
 - **文件命名**：`烹饪之途_{菜名}_{时间戳}.html`
-- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`
+- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`<!-- 请根据实际环境调整路径 -->
 
 ---
 

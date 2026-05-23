@@ -171,7 +171,6 @@ def main():
     python cookware_manager.py list <recipe_id>
     python cookware_manager.py search <炊具名>
     python cookware_manager.py update <cookware_id> [选项]
-    python cookware_manager.py 
 
 炊具分类：锅/炉/刀/其他
 炊具示例：炒锅/砂锅/烤箱/蒸笼/电饭锅/高压锅/空气炸锅

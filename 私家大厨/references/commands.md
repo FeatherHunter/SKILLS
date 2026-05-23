@@ -453,7 +453,7 @@ python scripts/tip_manager.py add <recipe_id> \
 # 参数说明：
 #   <recipe_id>               必需：食谱ID
 #   --content                  必需：技巧内容
-#   --category                 可选：火候/刀工/调味/采购/设备/保存
+#   --category                 可选：火候/刀工/调味/采购/设备/保存/文化
 #   --priority                 可选：优先级（数字越小越重要），默认3
 #   --step_id                  可选：关联的步骤ID
 #   --ingredient_id            可选：关联的食材ID
@@ -717,7 +717,7 @@ python scripts/nutrition_manager.py update <recipe_id> \
 春 / 夏 / 秋 / 冬
 
 ### 烹饪方式
-炒 / 蒸 / 煮 / 烤 / 炸 / 煎 / 焖 / 炖 / 拌 / 卤 / 熏
+炒 / 蒸 / 煮 / 烤 / 炸 / 煎 / 焖 / 炖 / 拌 / 卤 / 熏 / 生食
 
 ### 口味
 酸 / 甜 / 辣 / 咸 / 鲜 / 苦 / 麻

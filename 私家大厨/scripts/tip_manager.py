@@ -318,8 +318,6 @@ def main():
                 args["<step_id>"] = arg
             elif action in ("list-by-ingredient",) and "<ingredient_id>" not in args:
                 args["<ingredient_id>"] = arg
-            elif action == "search" and "<关键词>" not in args:
-                args["<关键词>"] = arg
             elif action in ("update", "disable") and "<tip_id>" not in args:
                 args["<tip_id>"] = arg
             i += 1

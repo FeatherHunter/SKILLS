@@ -255,7 +255,7 @@ def main():
     python step_manager.py search <关键词>
     python step_manager.py update <step_id> [选项]
     python step_manager.py reorder <recipe_id> --from <序号> --to <序号>
-    python step_manager.py disable <step_id>
+    python step_manager.py discard <step_id>
 
 选项：
     --action 动作描述

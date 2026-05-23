@@ -254,7 +254,21 @@ def show(args):
     # 查派生关系
     cursor.execute("SELECT * FROM recipe_relations WHERE parent_id = ? OR child_id = ?", (recipe_id, recipe_id))
     relations = list(cursor.fetchall())
-    
+
+    # 食材在哪些步骤使用
+    ing_steps_map = {}
+    cursor.execute("""
+        SELECT si.ingredient_id, cs.sequence
+        FROM step_ingredients si
+        JOIN cooking_steps cs ON si.step_id = cs.id
+        WHERE cs.recipe_id = ?
+    """, (recipe_id,))
+    for row in cursor.fetchall():
+        ing_id, seq = row
+        if ing_id not in ing_steps_map:
+            ing_steps_map[ing_id] = []
+        ing_steps_map[ing_id].append(f"{seq}")
+
     conn.close()
     
     # ==================== 格式设计开始 ====================
@@ -312,23 +326,6 @@ def show(args):
         print(f"\n{'═' * 54}")
         print(f"  🥬 食材清单（共{len(ingredients)}种）")
         print(f"{'═' * 54}")
-        
-        # 食材在哪些步骤使用
-        ing_steps_map = {}
-        conn2 = get_connection()
-        cursor2 = conn2.cursor()
-        cursor2.execute("""
-            SELECT si.ingredient_id, cs.sequence
-            FROM step_ingredients si
-            JOIN cooking_steps cs ON si.step_id = cs.id
-            WHERE cs.recipe_id = ?
-        """, (recipe_id,))
-        for row in cursor2.fetchall():
-            ing_id, seq = row
-            if ing_id not in ing_steps_map:
-                ing_steps_map[ing_id] = []
-            ing_steps_map[ing_id].append(f"{seq}")
-        conn2.close()
         
         for ing in ingredients:
             seq = ing['sequence']
@@ -582,10 +579,10 @@ def update(args):
         params.append(args["--difficulty"])
     if args.get("--servings"):
         updates.append("servings = ?")
-        params.append(args["--servings"])
+        params.append(int(args["--servings"]))
     if args.get("--total_time"):
         updates.append("total_time_minutes = ?")
-        params.append(args["--total_time"])
+        params.append(int(args["--total_time"]))
     if args.get("--status"):
         updates.append("status = ?")
         params.append(args["--status"])

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-饼干记账 CLI v2.0（模块化重构版）
+饼干记账 CLI v2.1（优化版）
 
 使用方法：
     python3 record_bill.py add --category 餐饮 --amount -35
@@ -13,6 +13,7 @@
     python3 record_bill.py monthly --month 2026-05
     python3 record_bill.py compare
     python3 record_bill.py recent --limit 10
+    python3 record_bill.py breakdown --from 2026-05-01 --to 2026-05-31
 """
 
 import sys
@@ -24,7 +25,8 @@ if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
 from db import (
-    add_bill, list_today, list_date, list_date_range,
+    add_bill,
+    list_today, list_date, list_date_range,
     list_by_category, search_keyword, list_recent
 )
 from analyze import (
@@ -35,7 +37,11 @@ from analyze import (
 
 def _format_record(r: dict) -> str:
     """格式化单条记录"""
-    return f"{r['time']} | {r['category']} | {r['amount']:.2f} | {r.get('note', '')}"
+    time = r.get('time', 'N/A')
+    category = r.get('category', 'N/A')
+    amount = r.get('amount', 0)
+    note = r.get('note', '')
+    return f"{time} | {category} | {amount:.2f} | {note}"
 
 
 def cmd_add(args):
@@ -92,24 +98,25 @@ def cmd_search(args):
 def cmd_summary(args):
     """今日摘要"""
     result = get_today_summary()
-    print(f"今日 {result['date']}")
-    print(f"记录数: {result['count']}")
-    print(f"支出: {result['expense']:.2f}")
-    print(f"收入: {result['income']:.2f}")
-    print(f"净额: {result['net']:.2f}")
+    print(f"今日 {result.get('date', 'N/A')}")
+    print(f"记录数: {result.get('count', 0)}")
+    print(f"支出: {result.get('expense', 0):.2f}")
+    print(f"收入: {result.get('income', 0):.2f}")
+    print(f"净额: {result.get('net', 0):.2f}")
 
 
 def cmd_monthly(args):
     """月度汇总"""
     result = monthly_summary(args.month)
     print(f"=== {args.month} 月度汇总 ===")
-    print(f"支出: {result['expense']:.2f}")
-    print(f"收入: {result['income']:.2f}")
-    print(f"净额: {result['net']:.2f}")
-    if result['categories']:
+    print(f"支出: {result.get('expense', 0):.2f}")
+    print(f"收入: {result.get('income', 0):.2f}")
+    print(f"净额: {result.get('net', 0):.2f}")
+    categories = result.get('categories', [])
+    if categories:
         print("\n分类明细:")
-        for c in result['categories']:
-            print(f"  {c['category']}: {c['total']:.2f} ({c['count']}笔)")
+        for c in categories:
+            print(f"  {c.get('category', 'N/A')}: {c.get('total', 0):.2f} ({c.get('count', 0)}笔)")
 
 
 def cmd_compare(args):
@@ -123,18 +130,20 @@ def cmd_compare(args):
 
     label = "周" if period == "week" else "月"
     print(f"=== {label}度对比 ===\n")
-    print(f"{result['this']['label']}")
-    print(f"  支出: {result['this']['expense']:.2f}")
-    print(f"  收入: {result['this']['income']:.2f}")
-    print(f"  净额: {result['this']['net']:.2f}")
-    print(f"\n{result['last']['label']}")
-    print(f"  支出: {result['last']['expense']:.2f}")
-    print(f"  收入: {result['last']['income']:.2f}")
-    print(f"  净额: {result['last']['net']:.2f}")
+    this = result.get('this', {})
+    last = result.get('last', {})
+    print(f"{this.get('label', 'N/A')}")
+    print(f"  支出: {this.get('expense', 0):.2f}")
+    print(f"  收入: {this.get('income', 0):.2f}")
+    print(f"  净额: {this.get('net', 0):.2f}")
+    print(f"\n{last.get('label', 'N/A')}")
+    print(f"  支出: {last.get('expense', 0):.2f}")
+    print(f"  收入: {last.get('income', 0):.2f}")
+    print(f"  净额: {last.get('net', 0):.2f}")
     print(f"\n变化:")
-    change = result['change']
-    diff = change['expense_diff']
-    pct = change['expense_pct']
+    change = result.get('change', {})
+    diff = change.get('expense_diff', 0)
+    pct = change.get('expense_pct', 0)
     direction = "↑" if diff > 0 else "↓" if diff < 0 else "→"
     print(f"  支出 {direction} {abs(diff):.2f} ({abs(pct):.1f}%)")
 
@@ -159,16 +168,16 @@ def cmd_breakdown(args):
 
     print(f"=== 分类支出明细 ===")
     if from_date or to_date:
-        print(f"期间: {result['from']} ~ {result['to']}")
-    print(f"总支出: {result['grand_total']:.2f}\n")
+        print(f"期间: {result.get('from', 'N/A')} ~ {result.get('to', 'N/A')}")
+    print(f"总支出: {result.get('grand_total', 0):.2f}\n")
 
-    for c in result['category_pct']:
-        print(f"  {c['category']}: {c['total']:.2f} ({c['pct']:.1f}%) [{c['count']}笔, 均{c['avg']:.1f}]")
+    for c in result.get('category_pct', []):
+        print(f"  {c.get('category', 'N/A')}: {c.get('total', 0):.2f} ({c.get('pct', 0):.1f}%) [{c.get('count', 0)}笔, 均{c.get('avg', 0):.1f}]")
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="饼干记账 v2.0")
+    parser = argparse.ArgumentParser(description="饼干记账 v2.1")
 
     subparsers = parser.add_subparsers(dest='command', help='子命令')
 

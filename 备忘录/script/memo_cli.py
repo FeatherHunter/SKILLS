@@ -13,6 +13,12 @@ from datetime import datetime, timedelta
 
 DB_PATH = os.environ.get("MEMO_DB_PATH", os.path.join(os.path.dirname(__file__), "../memo.db"))
 
+def convert_weekday(user_weekday):
+    """将用户输入的 weekday (0=周日) 转换为 Python weekday (0=周一)"""
+    # 用户: 0=周日, 1=周一, 2=周二, 3=周三, 4=周四, 5=周五, 6=周六
+    # Python: 0=周一, 1=周二, 2=周三, 3=周四, 4=周五, 5=周六, 6=周日
+    return (user_weekday + 6) % 7
+
 def get_conn():
     conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
@@ -207,7 +213,8 @@ def list_due_reminders():
                     weekday = int(parts[0])
                     t = datetime.strptime(parts[1], "%H:%M").time()
                     # 计算本周的这一天
-                    days_until = (weekday - now.weekday()) % 7
+                    python_weekday = convert_weekday(weekday)
+                    days_until = (python_weekday - now.weekday()) % 7
                     target_date = now.date() + timedelta(days=days_until)
                     virt_time = datetime.combine(target_date, t)
                 elif rtype == "monthly":
@@ -215,13 +222,24 @@ def list_due_reminders():
                     parts = rule.split()
                     day = int(parts[0])
                     t = datetime.strptime(parts[1], "%H:%M").time()
-                    target_date = now.date().replace(day=day)
+                    # 安全处理日期边界
+                    try:
+                        target_date = now.date().replace(day=day)
+                    except ValueError:
+                        # 本月没有这一天（如 2 月 31 日），跳到下个月
+                        if now.date().month == 12:
+                            target_date = now.date().replace(year=now.date().year+1, month=1, day=day)
+                        else:
+                            target_date = now.date().replace(month=now.date().month+1, day=day)
                     if target_date < now.date():
                         # 本月已过，计算下个月
-                        if target_date.month == 12:
-                            target_date = target_date.replace(year=target_date.year+1, month=1)
-                        else:
-                            target_date = target_date.replace(month=target_date.month+1)
+                        try:
+                            if target_date.month == 12:
+                                target_date = target_date.replace(year=target_date.year+1, month=1)
+                            else:
+                                target_date = target_date.replace(month=target_date.month+1)
+                        except ValueError:
+                            continue
                     virt_time = datetime.combine(target_date, t)
                 elif rtype == "yearly":
                     # "12-25 10:00"
@@ -229,9 +247,16 @@ def list_due_reminders():
                     md = parts[0]
                     t = datetime.strptime(parts[1], "%H:%M").time()
                     month, day = map(int, md.split("-"))
-                    target_date = now.date().replace(month=month, day=day)
+                    try:
+                        target_date = now.date().replace(month=month, day=day)
+                    except ValueError:
+                        # 2 月 29 日在非闰年，跳过
+                        continue
                     if target_date < now.date():
-                        target_date = target_date.replace(year=target_date.year+1)
+                        try:
+                            target_date = target_date.replace(year=target_date.year+1)
+                        except ValueError:
+                            continue
                     virt_time = datetime.combine(target_date, t)
             except:
                 continue

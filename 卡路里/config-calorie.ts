@@ -1,5 +1,5 @@
 // 自动生成 by generate_ts_config.py
-// 生成时间: 2026-05-21 10:27:13
+// 生成时间: 2026-05-23 12:51:17
 // 表结构从数据库动态读取（方案三）
 // queries/actions/views 由 AI 根据表能力设计
 
@@ -20,21 +20,21 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "date",
-            "type": "TEXT",
+            "type": "string",
             "label": "Date",
             "format": "date",
             "editable": true
           },
           {
             "name": "time",
-            "type": "TEXT",
+            "type": "string",
             "label": "Time",
             "format": "datetime",
             "visible": false,
@@ -42,27 +42,27 @@
           },
           {
             "name": "food_name",
-            "type": "TEXT",
+            "type": "string",
             "label": "Food name",
             "editable": true
           },
           {
             "name": "grams",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Grams",
             "unit": "克",
             "editable": true
           },
           {
             "name": "calories",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Calories",
             "unit": "千卡",
             "editable": true
           },
           {
             "name": "protein",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Protein",
             "default": "0",
             "unit": "克",
@@ -70,7 +70,7 @@
           },
           {
             "name": "carbs",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Carbs",
             "default": "0",
             "unit": "克",
@@ -78,7 +78,7 @@
           },
           {
             "name": "fat",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Fat",
             "default": "0",
             "unit": "克",
@@ -86,14 +86,14 @@
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "default": "''",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Created at",
             "default": "CURRENT_TIMESTAMP",
             "format": "datetime",
@@ -107,14 +107,14 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "calorie_goal",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Calorie goal",
             "default": "1800",
             "unit": "千卡",
@@ -122,7 +122,7 @@
           },
           {
             "name": "protein_goal",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Protein goal",
             "default": "150",
             "unit": "克",
@@ -130,7 +130,7 @@
           },
           {
             "name": "carbs_goal",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Carbs goal",
             "default": "200",
             "unit": "克",
@@ -138,7 +138,7 @@
           },
           {
             "name": "fat_goal",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Fat goal",
             "default": "60",
             "unit": "克",
@@ -146,7 +146,7 @@
           },
           {
             "name": "updated_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Updated at",
             "default": "CURRENT_TIMESTAMP",
             "format": "date",
@@ -154,14 +154,14 @@
           },
           {
             "name": "weight_goal",
-            "type": "REAL",
+            "type": "number",
             "label": "Weight goal",
             "unit": "公斤",
             "editable": true
           },
           {
             "name": "goal_deadline",
-            "type": "TEXT",
+            "type": "string",
             "label": "Goal deadline",
             "editable": true
           }
@@ -172,21 +172,21 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "date",
-            "type": "TEXT",
+            "type": "string",
             "label": "Date",
             "format": "date",
             "editable": true
           },
           {
             "name": "time",
-            "type": "TEXT",
+            "type": "string",
             "label": "Time",
             "format": "datetime",
             "visible": false,
@@ -194,34 +194,34 @@
           },
           {
             "name": "weight_kg",
-            "type": "REAL",
+            "type": "number",
             "label": "Weight kg",
             "unit": "公斤",
             "editable": true
           },
           {
             "name": "height_cm",
-            "type": "REAL",
+            "type": "number",
             "label": "Height cm",
             "unit": "厘米",
             "editable": true
           },
           {
             "name": "bmi",
-            "type": "REAL",
+            "type": "number",
             "label": "Bmi",
             "editable": true
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "default": "''",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Created at",
             "default": "CURRENT_TIMESTAMP",
             "format": "datetime",
@@ -235,85 +235,86 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "product_name",
-            "type": "TEXT",
+            "type": "string",
             "label": "Product name",
             "editable": true
           },
           {
             "name": "brand",
-            "type": "TEXT",
+            "type": "string",
             "label": "Brand",
             "editable": true
           },
           {
             "name": "calories",
-            "type": "REAL",
+            "type": "number",
             "label": "Calories",
             "unit": "千卡",
             "editable": true
           },
           {
             "name": "protein",
-            "type": "REAL",
+            "type": "number",
             "label": "Protein",
             "unit": "克",
             "editable": true
           },
           {
             "name": "fat",
-            "type": "REAL",
+            "type": "number",
             "label": "Fat",
             "unit": "克",
             "editable": true
           },
           {
             "name": "saturated_fat",
-            "type": "REAL",
+            "type": "number",
             "label": "Saturated fat",
             "unit": "克",
             "editable": true
           },
           {
             "name": "carbohydrates",
-            "type": "REAL",
+            "type": "number",
             "label": "Carbohydrates",
+            "unit": "克",
             "editable": true
           },
           {
             "name": "sugar",
-            "type": "REAL",
+            "type": "number",
             "label": "Sugar",
             "editable": true
           },
           {
             "name": "dietary_fiber",
-            "type": "REAL",
+            "type": "number",
             "label": "Dietary fiber",
             "editable": true
           },
           {
             "name": "sodium",
-            "type": "REAL",
+            "type": "number",
             "label": "Sodium",
             "editable": true
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "default": "''",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Created at",
             "default": "CURRENT_TIMESTAMP",
             "format": "datetime",
@@ -322,7 +323,7 @@
           },
           {
             "name": "updated_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Updated at",
             "default": "CURRENT_TIMESTAMP",
             "format": "date",
@@ -335,21 +336,21 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "date",
-            "type": "TEXT",
+            "type": "string",
             "label": "Date",
             "format": "date",
             "editable": true
           },
           {
             "name": "time",
-            "type": "TEXT",
+            "type": "string",
             "label": "Time",
             "format": "datetime",
             "visible": false,
@@ -357,34 +358,34 @@
           },
           {
             "name": "exercise_type",
-            "type": "TEXT",
+            "type": "string",
             "label": "Exercise type",
             "editable": true
           },
           {
             "name": "duration_minutes",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Duration minutes",
             "unit": "分钟",
             "editable": true
           },
           {
             "name": "calories_burned",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Calories burned",
             "unit": "千卡",
             "editable": true
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "default": "''",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "TEXT",
+            "type": "string",
             "label": "Created at",
             "default": "CURRENT_TIMESTAMP",
             "format": "datetime",
@@ -393,7 +394,7 @@
           },
           {
             "name": "reps",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Reps",
             "unit": "个",
             "editable": true
@@ -405,71 +406,71 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "name",
-            "type": "TEXT",
+            "type": "string",
             "label": "Name",
             "editable": true
           },
           {
             "name": "goal_type",
-            "type": "TEXT",
+            "type": "string",
             "label": "Goal type",
             "editable": true
           },
           {
             "name": "exercise_type",
-            "type": "TEXT",
+            "type": "string",
             "label": "Exercise type",
             "editable": true
           },
           {
             "name": "target_unit",
-            "type": "TEXT",
+            "type": "string",
             "label": "Target unit",
             "editable": true
           },
           {
             "name": "target_value",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Target value",
             "editable": true
           },
           {
             "name": "start_date",
-            "type": "TEXT",
+            "type": "string",
             "label": "Start date",
             "format": "date",
             "editable": true
           },
           {
             "name": "end_date",
-            "type": "TEXT",
+            "type": "string",
             "label": "End date",
             "format": "date",
             "editable": true
           },
           {
             "name": "status",
-            "type": "TEXT",
+            "type": "string",
             "label": "Status",
             "default": "'active'",
             "editable": true
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Created at",
             "format": "datetime",
             "visible": false,
@@ -477,7 +478,7 @@
           },
           {
             "name": "updated_at",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Updated at",
             "format": "date",
             "editable": false
@@ -489,49 +490,49 @@
         "fields": [
           {
             "name": "id",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Id",
             "primaryKey": true,
             "editable": false
           },
           {
             "name": "date",
-            "type": "TEXT",
+            "type": "string",
             "label": "Date",
             "format": "date",
             "editable": true
           },
           {
             "name": "sleep_hours",
-            "type": "REAL",
+            "type": "number",
             "label": "Sleep hours",
             "editable": true
           },
           {
             "name": "bedtime",
-            "type": "TEXT",
+            "type": "string",
             "label": "Bedtime",
-            "format": "datetime",
-            "visible": false,
+            "format": "time",
+            "visible": true,
             "editable": true
           },
           {
             "name": "wake_time",
-            "type": "TEXT",
+            "type": "string",
             "label": "Wake time",
-            "format": "datetime",
-            "visible": false,
+            "format": "time",
+            "visible": true,
             "editable": true
           },
           {
             "name": "note",
-            "type": "TEXT",
+            "type": "string",
             "label": "Note",
             "editable": true
           },
           {
             "name": "created_at",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Created at",
             "format": "datetime",
             "visible": false,
@@ -539,7 +540,7 @@
           },
           {
             "name": "updated_at",
-            "type": "INTEGER",
+            "type": "number",
             "label": "Updated at",
             "format": "date",
             "editable": false
@@ -569,22 +570,9 @@
       "params": []
     },
     {
-      "id": "daily_goal-daily",
-      "label": "今日每日目标",
-      "sql": "SELECT * FROM daily_goal WHERE date = '{date}' ORDER BY time",
-      "params": [
-        {
-          "name": "date",
-          "type": "date",
-          "label": "日期",
-          "default": "TODAY"
-        }
-      ]
-    },
-    {
-      "id": "daily_goal-history",
-      "label": "每日目标历史",
-      "sql": "SELECT * FROM daily_goal ORDER BY date DESC, time DESC LIMIT 100",
+      "id": "daily_goal-all",
+      "label": "全部每日目标",
+      "sql": "SELECT * FROM daily_goal ORDER BY id DESC",
       "params": []
     },
     {
@@ -607,22 +595,9 @@
       "params": []
     },
     {
-      "id": "nutrition_products-daily",
-      "label": "今日食品库",
-      "sql": "SELECT * FROM nutrition_products WHERE date = '{date}' ORDER BY time",
-      "params": [
-        {
-          "name": "date",
-          "type": "date",
-          "label": "日期",
-          "default": "TODAY"
-        }
-      ]
-    },
-    {
-      "id": "nutrition_products-history",
-      "label": "食品库历史",
-      "sql": "SELECT * FROM nutrition_products ORDER BY date DESC, time DESC LIMIT 100",
+      "id": "nutrition_products-all",
+      "label": "全部食品库",
+      "sql": "SELECT * FROM nutrition_products ORDER BY id DESC",
       "params": []
     },
     {
@@ -645,22 +620,9 @@
       "params": []
     },
     {
-      "id": "fitness_goals-daily",
-      "label": "今日健身目标",
-      "sql": "SELECT * FROM fitness_goals WHERE date = '{date}' ORDER BY time",
-      "params": [
-        {
-          "name": "date",
-          "type": "date",
-          "label": "日期",
-          "default": "TODAY"
-        }
-      ]
-    },
-    {
-      "id": "fitness_goals-history",
-      "label": "健身目标历史",
-      "sql": "SELECT * FROM fitness_goals ORDER BY date DESC, time DESC LIMIT 100",
+      "id": "fitness_goals-all",
+      "label": "全部健身目标",
+      "sql": "SELECT * FROM fitness_goals ORDER BY id DESC",
       "params": []
     },
     {
@@ -686,7 +648,7 @@
   "actions": [
     {
       "id": "add-entries",
-      "label": "添加entries",
+      "label": "添加饮食记录",
       "type": "insert",
       "targetTable": "entries",
       "fields": [
@@ -748,7 +710,7 @@
     },
     {
       "id": "add-daily_goal",
-      "label": "添加daily_goal",
+      "label": "添加每日目标",
       "type": "insert",
       "targetTable": "daily_goal",
       "fields": [
@@ -792,7 +754,7 @@
     },
     {
       "id": "add-weight_log",
-      "label": "添加weight_log",
+      "label": "添加体重记录",
       "type": "insert",
       "targetTable": "weight_log",
       "fields": [
@@ -836,7 +798,7 @@
     },
     {
       "id": "add-nutrition_products",
-      "label": "添加nutrition_products",
+      "label": "添加食品库",
       "type": "insert",
       "targetTable": "nutrition_products",
       "fields": [
@@ -910,7 +872,7 @@
     },
     {
       "id": "add-exercise_log",
-      "label": "添加exercise_log",
+      "label": "添加运动记录",
       "type": "insert",
       "targetTable": "exercise_log",
       "fields": [
@@ -960,7 +922,7 @@
     },
     {
       "id": "add-fitness_goals",
-      "label": "添加fitness_goals",
+      "label": "添加健身目标",
       "type": "insert",
       "targetTable": "fitness_goals",
       "fields": [
@@ -1022,7 +984,7 @@
     },
     {
       "id": "add-sleep_records",
-      "label": "添加sleep_records",
+      "label": "添加睡眠记录",
       "type": "insert",
       "targetTable": "sleep_records",
       "fields": [
@@ -1062,7 +1024,7 @@
   "views": [
     {
       "id": "entries",
-      "label": "Entries",
+      "label": "饮食记录",
       "components": {
         "table": {
           "queryId": "entries-daily",
@@ -1076,10 +1038,10 @@
     },
     {
       "id": "daily_goal",
-      "label": "Daily goal",
+      "label": "每日目标",
       "components": {
         "table": {
-          "queryId": "daily_goal-daily",
+          "queryId": "daily_goal-all",
           "sortable": true,
           "pageSize": 20
         },
@@ -1090,7 +1052,7 @@
     },
     {
       "id": "weight_log",
-      "label": "Weight log",
+      "label": "体重记录",
       "components": {
         "table": {
           "queryId": "weight_log-daily",
@@ -1104,10 +1066,10 @@
     },
     {
       "id": "nutrition_products",
-      "label": "Nutrition products",
+      "label": "食品库",
       "components": {
         "table": {
-          "queryId": "nutrition_products-daily",
+          "queryId": "nutrition_products-all",
           "sortable": true,
           "pageSize": 20
         },
@@ -1118,7 +1080,7 @@
     },
     {
       "id": "exercise_log",
-      "label": "Exercise log",
+      "label": "运动记录",
       "components": {
         "table": {
           "queryId": "exercise_log-daily",
@@ -1132,10 +1094,10 @@
     },
     {
       "id": "fitness_goals",
-      "label": "Fitness goals",
+      "label": "健身目标",
       "components": {
         "table": {
-          "queryId": "fitness_goals-daily",
+          "queryId": "fitness_goals-all",
           "sortable": true,
           "pageSize": 20
         },
@@ -1146,7 +1108,7 @@
     },
     {
       "id": "sleep_records",
-      "label": "Sleep records",
+      "label": "睡眠记录",
       "components": {
         "table": {
           "queryId": "sleep_records-daily",

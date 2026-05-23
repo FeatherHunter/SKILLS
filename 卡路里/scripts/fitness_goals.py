@@ -5,48 +5,20 @@
 """
 
 import argparse
-import os
-import sqlite3
 import sys
 import time
 from pathlib import Path
 
+from db_utils import find_db_path, get_db as _get_db_conn
+
+SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "calorie_data.db"
-
-
-def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
-    # 1. 环境变量（最高优先级）
-    env_path = os.environ.get('SKILLS_DB_PATH')
-    if env_path:
-        p = Path(env_path) / db_filename
-        if p.exists():
-            return p
-    # 2. 技能目录（默认）
-    p = skill_dir / db_filename
-    if p.exists():
-        return p
-    # 3. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-    # 4. 都找不到则创建在 .db 目录
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
-
-SKILL_DIR = Path(__file__).parent
-DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
+DB_PATH = find_db_path(SKILL_DIR, DB_FILENAME)
 
 
 def get_db():
     """获取数据库连接"""
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    return conn
+    return _get_db_conn(DB_PATH)
 
 
 def init_table():
@@ -189,11 +161,6 @@ def delete_goal(goal_id):
         print(f"✓ 已删除目标 #{goal_id}")
     else:
         print(f"目标 #{goal_id} 不存在")
-
-
-def complete_goal(goal_id):
-    """标记目标完成"""
-    update_goal(goal_id, status='completed')
 
 
 def main():

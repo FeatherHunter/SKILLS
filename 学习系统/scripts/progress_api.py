@@ -50,7 +50,7 @@ def _find_db_path(skill_dir, db_filename):
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
 # 允许的字段（严格对照 progress.json）
-PROGRESS_ALLOWED_FIELDS = {"current_level", "target_level", "last_activity", "total_learning_minutes"}
+PROGRESS_ALLOWED_FIELDS = {"target_level", "last_activity", "total_learning_minutes"}
 FOUNDATION_ALLOWED_FIELDS = {"status", "current_stage", "completed_at", "total_learning_minutes"}
 MASTERY_ALLOWED_FIELDS = {"status", "current_stage", "started_at", "completed_at", "total_learning_minutes", "mastery_level"}
 STAGE_ALLOWED_FIELDS = {"status", "completed_at", "essence_keywords"}
@@ -366,20 +366,11 @@ def update_mastery_path(knowledge_id: str, data: dict) -> dict:
     
     values.append(knowledge_id)
     cursor.execute(f"UPDATE mastery_path SET {', '.join(set_clauses)} WHERE knowledge_id = ?", values)
-    
-    # 如果 mastery 完成，同步更新 knowledge_progress.current_level
+
+    # 如果 mastery 完成，启用精通复习
     if data.get("status") == "completed":
-        cursor.execute("UPDATE knowledge_progress SET current_level = 7, updated_at = CURRENT_TIMESTAMP WHERE knowledge_id = ?", (knowledge_id,))
-        
-        # 加入 completed_knowledge
         cursor.execute("""
-            INSERT OR REPLACE INTO completed_knowledge (knowledge_id, completed_at, final_level)
-            VALUES (?, CURRENT_TIMESTAMP, 7)
-        """, (knowledge_id,))
-        
-        # 启用精通复习
-        cursor.execute("""
-            UPDATE mastery_review 
+            UPDATE mastery_review
             SET enabled = 1, next_review = datetime('now', '+30 days'), updated_at = CURRENT_TIMESTAMP
             WHERE schedule_id = (SELECT id FROM review_schedule WHERE knowledge_id = ?)
         """, (knowledge_id,))
@@ -607,27 +598,19 @@ def update_knowledge_progress(knowledge_id: str, data: dict) -> dict:
     if extra_fields:
         return {"success": False, "errors": [f"[校验失败] knowledge_progress 不允许的字段: {extra_fields}"]}
     
-    if "current_level" in data:
-        level = data["current_level"]
-        if not isinstance(level, int) or not (0 <= level <= 7):
-            return {"success": False, "errors": [f"[校验失败] current_level 必须是 0-7 整数，当前: {level}"]}
-    
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT knowledge_id FROM knowledge_progress WHERE knowledge_id = ?", (knowledge_id,))
     if not cursor.fetchone():
         conn.close()
         return {"success": False, "errors": [f"[更新失败] knowledge_progress 不存在: {knowledge_id}"]}
-    
+
     set_clauses = ["updated_at = CURRENT_TIMESTAMP"]
     values = []
-    
+
     for field in data:
-        if field == "current_level":
-            set_clauses.append("current_level = ?")
-            values.append(data[field])
-        elif field == "target_level":
+        if field == "target_level":
             set_clauses.append("target_level = ?")
             values.append(data[field])
         elif field == "last_activity":
@@ -636,12 +619,12 @@ def update_knowledge_progress(knowledge_id: str, data: dict) -> dict:
         elif field == "total_learning_minutes":
             set_clauses.append("total_learning_minutes = ?")
             values.append(data[field])
-    
+
     values.append(knowledge_id)
     cursor.execute(f"UPDATE knowledge_progress SET {', '.join(set_clauses)} WHERE knowledge_id = ?", values)
     conn.commit()
     conn.close()
-    
+
     return {"success": True, "knowledge_id": knowledge_id}
 
 
@@ -660,8 +643,8 @@ def init_knowledge_progress(knowledge_id: str) -> dict:
     
     # 插入 knowledge_progress
     cursor.execute("""
-        INSERT INTO knowledge_progress (knowledge_id, current_level, target_level, last_activity)
-        VALUES (?, 0, 7, ?)
+        INSERT INTO knowledge_progress (knowledge_id, target_level, last_activity)
+        VALUES (?, 7, ?)
     """, (knowledge_id, now))
     
     # 插入 foundation_path

@@ -59,7 +59,7 @@ python3 learning.py knowledge list
 ```
 1. 执行 CLI：python3 learning.py knowledge list 获取所有知识点元数据
 2. 对每个知识点，执行 CLI：python3 learning.py progress get <id>
-3. 筛选 current_level >= 4 的知识点 → 可面试列表
+3. 筛选 current_level >= 4 的知识点（current_level 由 progress get 计算返回） → 可面试列表
 4. 对每个知识点，读 interview_assets：
    - star_case_path 非 null → 有一面/二面素材
    - failure_case_path 非 null → 有二面追问素材

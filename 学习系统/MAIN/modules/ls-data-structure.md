@@ -64,8 +64,6 @@ knowledge_list (知识点元数据)
     │               │
     │               └── 1:1 ──→ active_session (当前会话)
     │
-    ├── 1:1 ──→ completed_knowledge (已完成知识点索引)
-    │
     └── 1:1 ──→ review_schedule (复习计划)
                     │
                     └── 1:5 ──→ review_round (复习轮次)
@@ -82,7 +80,7 @@ knowledge_list (知识点元数据)
 | **精通流程 (Stage 5-7)** | mastery_path + mastery_stage_progress |
 | **面试素材** | interview_assets |
 | **复习** | review_schedule + review_round + mastery_review |
-| **系统** | knowledge_progress + active_session + completed_knowledge |
+| **系统** | knowledge_progress + active_session |
 
 **外键约束**：表之间通过外键 `knowledge_id` 关联，保证数据一致性。查询时可分开查（效率高），也可 JOIN（功能全）。
 
@@ -121,7 +119,6 @@ python3 learning.py knowledge delete kotlin-coroutine
 ```sql
 CREATE TABLE knowledge_progress (
     knowledge_id TEXT PRIMARY KEY,
-    current_level INTEGER NOT NULL DEFAULT 0 CHECK(0-7),  -- 0=待学, 1-4=基础, 5-7=精通
     target_level INTEGER DEFAULT 7,
     last_activity TIMESTAMP,
     total_learning_minutes INTEGER DEFAULT 0,
@@ -256,22 +253,7 @@ CREATE TABLE interview_assets (
 
 ---
 
-### 表8：completed_knowledge（已完成知识点索引）
-
-```sql
-CREATE TABLE completed_knowledge (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    knowledge_id TEXT UNIQUE NOT NULL,
-    completed_at TIMESTAMP NOT NULL,
-    final_level INTEGER NOT NULL CHECK(4-7),
-    created_at TIMESTAMP,
-    FOREIGN KEY (knowledge_id) REFERENCES knowledge_list(id)
-);
-```
-
----
-
-### 表9：active_session（当前学习会话）
+### 表8：active_session（当前学习会话）
 
 ```sql
 CREATE TABLE active_session (
@@ -480,7 +462,7 @@ foundation_path.status == "completed"（自动创建复习计划）
     ↓
 阶段5-7 精通（mastery_path 状态变化）
     ↓
-mastery_path.status == "completed"（level=7，加入 completed_knowledge）
+mastery_path.status == "completed"（level=7）
 ```
 
 ### 复习计划触发
@@ -530,7 +512,6 @@ python3 learning.py integration list
 | path_type | foundation, mastery, unknown |
 | round | 1, 2, 3, 4, 5 |
 | current_stage | 1-4 (foundation), 5-7 (mastery) |
-| current_level | 0, 1, 2, 3, 4, 5, 6, 7 |
 | score | 0-100 |
 
 ---

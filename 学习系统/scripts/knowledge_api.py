@@ -291,7 +291,6 @@ def delete_knowledge(knowledge_id: str) -> dict:
     cursor.execute("DELETE FROM foundation_path WHERE knowledge_id = ?", (knowledge_id,))
     cursor.execute("DELETE FROM interview_assets WHERE knowledge_id = ?", (knowledge_id,))
     cursor.execute("DELETE FROM knowledge_progress WHERE knowledge_id = ?", (knowledge_id,))
-    cursor.execute("DELETE FROM completed_knowledge WHERE knowledge_id = ?", (knowledge_id,))
     cursor.execute("DELETE FROM knowledge_list WHERE id = ?", (knowledge_id,))
     
     conn.commit()

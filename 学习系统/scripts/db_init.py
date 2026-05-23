@@ -89,7 +89,6 @@ def init_database():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS knowledge_progress (
             knowledge_id TEXT PRIMARY KEY,
-            current_level INTEGER NOT NULL DEFAULT 0 CHECK(current_level BETWEEN 0 AND 7),
             target_level INTEGER DEFAULT 7,
             last_activity TIMESTAMP,
             total_learning_minutes INTEGER DEFAULT 0,
@@ -189,20 +188,6 @@ def init_database():
         )
     """)
     
-    # ============================================
-    # 表8: completed_knowledge（已完成知识点索引）
-    # 对应 progress.json → completed_knowledge
-    # ============================================
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS completed_knowledge (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            knowledge_id TEXT UNIQUE NOT NULL,
-            completed_at TIMESTAMP NOT NULL,
-            final_level INTEGER NOT NULL CHECK(final_level BETWEEN 4 AND 7),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (knowledge_id) REFERENCES knowledge_list(id)
-        )
-    """)
     
     # ============================================
     # 表9: active_session（当前学习会话）

@@ -127,14 +127,14 @@ def get_db_connection():
         if conn:
             try:
                 conn.rollback()
-            except:
+            except Exception:
                 pass
         raise
     finally:
         if conn:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
 
 @contextmanager
@@ -161,7 +161,7 @@ def get_read_only_connection():
         if conn:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
 
 def ensure_wal_mode():
@@ -175,7 +175,7 @@ def ensure_wal_mode():
         result = conn.execute("PRAGMA journal_mode").fetchone()
         conn.close()
         return result[0] == "wal"
-    except:
+    except Exception:
         return False
 
 def get_db_stats():

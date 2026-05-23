@@ -151,7 +151,7 @@ def list(args):
 
 def search_high_protein(args):
     """搜索高蛋白食谱"""
-    threshold = args.get("--threshold") or 20
+    threshold = int(args.get("--threshold") or 20)
     
     conn = get_connection()
     cursor = conn.cursor()

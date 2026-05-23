@@ -299,8 +299,6 @@ def main():
         update(args)
     elif action == "reorder":
         reorder(args)
-    elif action == "discard":
-        print("错误：废弃操作在食谱级别进行，使用 recipe_manager.py discard <recipe_id>")
     else:
         print(f"未知操作：{action}")
 

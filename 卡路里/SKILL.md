@@ -137,120 +137,11 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 
 ## 数据库结构
 
-```
-calorie_data.db
-├── entries              # 食物记录
-├── daily_goal           # 每日目标（含体重目标）
-├── weight_log           # 体重记录
-├── exercise_log         # 运动记录
-├── nutrition_products  # 食品营养成分库
-├── fitness_goals        # 健身目标（每日/每周/每月/长期）
-└── sleep_records        # 睡眠记录（归属于就寝日）
-```
+详见 [`references/database_schema.md`](references/database_schema.md)
 
-### entries 表（食物记录）
+共 7 张表：`entries`、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`fitness_goals`、`sleep_records`
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| date | TEXT | 日期（YYYY-MM-DD） |
-| time | TEXT | 时间（HH:MM:SS） |
-| food_name | TEXT | 食物名称 |
-| grams | INTEGER | 重量（克） |
-| calories | INTEGER | 热量（卡） |
-| protein | INTEGER | 蛋白质（克） |
-| carbs | INTEGER | 碳水化合物（克） |
-| fat | INTEGER | 脂肪（克） |
-| note | TEXT | 备注 |
-
-### daily_goal 表（每日目标）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 固定为1 |
-| calorie_goal | INTEGER | 热量目标（默认1800卡） |
-| protein_goal | INTEGER | 蛋白质目标（默认156克） |
-| carbs_goal | INTEGER | 碳水目标（默认200克） |
-| fat_goal | INTEGER | 脂肪目标（默认60克） |
-| weight_goal | REAL | 体重目标（如69.5kg） |
-| goal_deadline | TEXT | 目标截止日期（YYYY-MM-DD） |
-
-### weight_log 表（体重记录）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| date | TEXT | 日期（YYYY-MM-DD） |
-| time | TEXT | 时间（HH:MM:SS） |
-| weight_kg | REAL | 体重（公斤） |
-| height_cm | REAL | 身高（厘米） |
-| bmi | REAL | BMI（自动计算） |
-| note | TEXT | 备注 |
-
-### exercise_log 表（运动记录）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| date | TEXT | 日期（YYYY-MM-DD） |
-| time | TEXT | 时间（HH:MM:SS） |
-| exercise_type | TEXT | 运动类型（如骑行、跑步） |
-| duration_minutes | INTEGER | 运动时长（分钟） |
-| calories_burned | INTEGER | 消耗卡路里 |
-| note | TEXT | 备注 |
-| reps | INTEGER | 动作次数/组数 |
-| created_at | TEXT | 创建时间 |
-
-### fitness_goals 表（健身目标）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| name | TEXT | 目标名称，如"每日俯卧撑" |
-| goal_type | TEXT | 类型：daily/weekly/monthly/longterm |
-| exercise_type | TEXT | 运动类型：俯卧撑/骑行/跑步等 |
-| target_unit | TEXT | 单位：个/分钟/公里 |
-| target_value | INTEGER | 目标值，如50 |
-| start_date | TEXT | 开始日期 |
-| end_date | TEXT | 截止日期（NULL表示永久） |
-| status | TEXT | 状态：active/paused |
-| note | TEXT | 备注 |
-| created_at | INTEGER | 创建时间戳 |
-| updated_at | INTEGER | 更新时间戳 |
-
-### sleep_records 表（睡眠记录）
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| date | TEXT | 日期（YYYY-MM-DD，**归属就寝日**） |
-| sleep_hours | REAL | 睡眠时长（小时） |
-| bedtime | TEXT | 就寝时间（HH:MM） |
-| wake_time | TEXT | 起床时间（HH:MM） |
-| note | TEXT | 备注 |
-| created_at | INTEGER | 创建时间戳 |
-| updated_at | INTEGER | 更新时间戳 |
-
-> **睡眠归属规则**：睡眠记录归属于**就寝那天**，而非起床日。例如5月11日23:30入睡，5月12日07:00醒来，记录在5月11日。
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 主键 |
-| product_name | TEXT | 产品名称 |
-| brand | TEXT | 品牌（可选） |
-| calories | REAL | 热量（千卡/100g） |
-| protein | REAL | 蛋白质（克/100g） |
-| fat | REAL | 脂肪（克/100g） |
-| saturated_fat | REAL | 饱和脂肪（克/100g，可NULL） |
-| carbohydrates | REAL | 碳水化合物（克/100g） |
-| sugar | REAL | 糖（克/100g，可NULL） |
-| dietary_fiber | REAL | 膳食纤维（克/100g，可NULL） |
-| sodium | REAL | 钠（毫克/100g） |
-| note | TEXT | 备注 |
-| created_at | TEXT | 创建时间 |
-| updated_at | TEXT | 更新时间 |
-
-> **营养学知识**：糖是碳水化合物的子部分，饱和脂肪是脂肪的子部分。数据库存储独立数值，业务逻辑在应用层处理。
+> **初始化说明**：`entries`、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products` 由 `calorie_tracker.py` 的 `init_db()` 创建；`fitness_goals` 由 `fitness_goals.py` 的 `init_table()` 创建；`sleep_records` 由 `sleep_tracker.py` 的 `init_table()` 创建。
 
 ## 命令行用法
 
@@ -267,7 +158,7 @@ python scripts/calorie_tracker.py summary
 
 ### 设置每日目标
 ```bash
-python scripts/calorie_tracker.py goal 1800 156 200 60
+python scripts/calorie_tracker.py goal 1800 150 200 60
 # 参数：热量 蛋白质 碳水 脂肪
 ```
 
@@ -371,15 +262,9 @@ python scripts/sleep_tracker.py list --days 7
 
 ## AI 触发指引
 
-**重要提示**：技能目录在 `workspace/skills/卡路里/`。所有命令使用此路径前缀。
+**重要提示**：所有命令使用技能目录下的 `scripts/` 路径前缀。
 
 ### 触发场景：用户提到"卡路里"或记录饮食
-
-触发词：
-- "卡路里"、"热量"
-- "吃了什么"、"记录饮食"
-- "我吃了..."
-- "记录吃了..."
 
 **完整流程（重要）**：
 
@@ -387,7 +272,7 @@ python scripts/sleep_tracker.py list --days 7
 提取：食物名、克数（如有）
 
 #### Step 2：模糊查询 nutrition_products 表
-执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py search-product <食物名>`
+执行：`python scripts/calorie_tracker.py search-product <食物名>`
 
 #### Step 3：根据查询结果分流
 
@@ -460,90 +345,59 @@ AI：未找到该食品，请问有营养成分表图片吗？
 
 ### 触发场景：用户要添加食品营养成分表
 
-触发词：
-- "添加营养成分"、"录入营养成分"
-- "这个食品的营养成分是..."
-- 发营养成分表图片
-
 操作步骤：
 1. 解析用户输入或图片，提取：产品名称、品牌、热量、蛋白质、脂肪、饱和脂肪、碳水、糖、膳食纤维、钠、备注
-2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py add-product <产品名> <品牌> <热量> <蛋白质> <脂肪> <饱和脂肪> <碳水> <糖> <膳食纤维> <钠> [备注]`
+2. 执行：`python scripts/calorie_tracker.py add-product <产品名> <品牌> <热量> <蛋白质> <脂肪> <饱和脂肪> <碳水> <糖> <膳食纤维> <钠> [备注]`
 3. 返回确认信息
 
 ### 触发场景：用户要查询/搜索营养成分
 
-触发词：
-- "查询营养成分"、"搜索营养成分"
-- "这个食品有多少卡"
-- "XXX的营养成分是什么"
-
 操作步骤：
 1. 解析用户输入，提取搜索关键词
-2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py search-product <关键词>`
+2. 执行：`python scripts/calorie_tracker.py search-product <关键词>`
 3. 返回匹配的食品列表
 
 ### 触发场景：用户要查看今日摄入
 
-触发词：
-- "今天吃了多少卡"、"今日热量"
-- "今日摘要"
-
 操作步骤：
-1. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py summary`
+1. 执行：`python scripts/calorie_tracker.py summary`
 
 ### 触发场景：用户要设置目标
 
-触发词：
-- "设置目标"、"每天吃多少"
-- "热量目标"、"蛋白质目标"
-
 操作步骤：
 1. 从对话中提取目标数值
-2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py goal <热量> [蛋白质] [碳水] [脂肪]`
+2. 执行：`python scripts/calorie_tracker.py goal <热量> [蛋白质] [碳水] [脂肪]`
 
 ### 触发场景：用户要记录体重
 
-触发词：
-- "体重"、"多少公斤"
-- "称了下"、"今天体重"
-
 操作步骤：
 1. 从输入中提取体重（公斤）和身高（如果知道）
-2. 执行：`python3 workspace/skills/卡路里/scripts/calorie_tracker.py weight <体重> [身高]`
+2. 执行：`python scripts/calorie_tracker.py weight <体重> [身高]`
 3. 自动计算BMI
 
 ### 触发场景：用户要管理健身目标
 
-触发词：
-- "健身目标"、"设置俯卧撑目标"、"添加运动目标"
-- "每天做50个俯卧撑"
-
 操作步骤：
 1. 解析用户输入，提取：目标名称、类型、目标值、运动类型
-2. 执行：`python3 workspace/skills/卡路里/scripts/fitness_goals.py add <名称> --type <类型> --exercise <运动> --unit <单位> --target <值> --start <日期>`
+2. 执行：`python scripts/fitness_goals.py add <名称> --type <类型> --exercise <运动> --unit <单位> --target <值> --start <日期>`
 3. 目标类型：daily/weekly/monthly/longterm
 4. 状态只有 active 和 paused（没有completed）
 
 ### 触发场景：用户要记录睡眠
-
-触发词：
-- "昨晚睡了多久"、"记录睡眠"
-- "昨晚11点睡的"、"睡眠7小时"
-- **起床唤醒词（自动查询睡眠时长）**："醒了"、"睡醒了"、"起床啦"、"起来了"、"我醒了"
 
 **起床唤醒词处理流程（被动确认式A方案）：**
 1. 检测到上述唤醒词时，立即查询 录音机 数据库
 2. 找到"最后一次人类消息"的时间（入睡信号）和当前唤醒消息的时间（起床信号）
 3. 计算睡眠时长 = 起床时间 - 入睡前最后一条消息时间
 4. 向用户确认：「检测到你刚才睡了X小时，要不要记录？」
-5. 用户确认后，执行：`python3 workspace/skills/卡路里/scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
+5. 用户确认后，执行：`python scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
 6. 睡眠归属于就寝那天
 7. 确认语中**不提及"卡路里"**三个字，直接问"要不要记录"
 
 **普通触发词处理流程：**
 1. 解析用户输入，提取：就寝日期、睡眠时长、就寝时间、起床时间
 2. **关键**：睡眠归属于**就寝那天**，不是起床日
-3. 执行：`python3 workspace/skills/卡路里/scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
+3. 执行：`python scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
 4. 返回确认信息
 
 ## 示例对话
@@ -552,7 +406,7 @@ AI：未找到该食品，请问有营养成分表图片吗？
 **AI**：好的！米饭大概 200克，232卡，4g蛋白，50g碳水，0.5g脂肪
 （执行添加命令）
 ✓ 已记录：米饭 (232卡, 4蛋白, 50碳, 0.5脂, 200克)
-今日：232/1800卡 | 蛋白4/156克 | 碳50/200克 | 脂0.5/60克
+今日：232/1800卡 | 蛋白4/150克 | 碳50/200克 | 脂0.5/60克
 
 **用户**：体重70公斤
 **AI**：（执行：weight 70 178）

@@ -299,6 +299,8 @@ def add_steps(conn, recipe_id, steps, name_id_map):
                     si.get("quantity_used"),
                     si.get("introduced_at", f"第{seq}步加入")
                 ))
+            elif ing_name:
+                print(f"警告：步骤引用的食材 '{ing_name}' 未在食材列表中找到，跳过关联")
 
     return seq_id_map
 

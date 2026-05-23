@@ -5,7 +5,6 @@
 """
 
 import argparse
-import sys
 import time
 from pathlib import Path
 

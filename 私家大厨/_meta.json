@@ -2,5 +2,9 @@
   "ownerId": "kn7dm9chfy9vn80xdcr9xq8w1s80k7bv",
   "slug": "私家大厨",
   "version": "1.0.0",
-  "publishedAt": 1747104420000
+  "publishedAt": 1747104420000,
+  "description": "基于17张表的食谱管理技能，支持录入/查看/做菜/采购/统计等6大核心用例",
+  "dependencies": {
+    "python": ">=3.9"
+  }
 }

@@ -235,6 +235,7 @@
 | 数据库结构 | `references/database_schema.md` | - |
 | 分类参考 | `references/categories.md` | - |
 | CLI命令 | `references/commands.md` | - |
+| SkillBoard配置 | config-chef-cookbook.ts | 前端面板配置 |
 
 ---
 

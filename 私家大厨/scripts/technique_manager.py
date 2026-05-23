@@ -144,7 +144,7 @@ def search(args):
         JOIN recipes r ON st.recipe_id = r.id
         LEFT JOIN cooking_steps cs ON st.step_id = cs.id
         WHERE (st.technique_name LIKE ? OR st.description LIKE ?)
-       
+          AND r.status != '已废弃'
         ORDER BY st.technique_name
     """, (f"%{keyword}%", f"%{keyword}%"))
     

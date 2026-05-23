@@ -236,9 +236,10 @@ def reorder(args):
         conn.close()
         return False
 
-    # 交换顺序
-    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (to_seq, from_step["id"]))
+    # 三步交换，避免临时重复 sequence
+    cursor.execute("UPDATE cooking_steps SET sequence = -1 WHERE id = ?", (from_step["id"],))
     cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (from_seq, to_step["id"]))
+    cursor.execute("UPDATE cooking_steps SET sequence = ? WHERE id = ?", (to_seq, from_step["id"]))
 
     conn.commit()
     conn.close()

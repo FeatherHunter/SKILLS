@@ -1,19 +1,78 @@
 // config-cookie-accounting.ts
 // SkillBoard 数据层配置文件 - 饼干记账
 // 数据库文件：biscuit_accountant.db
-// 生成依据：scripts/db.py（表结构/写入逻辑）+ scripts/query.py（查询逻辑）+ scripts/analyze.py（分析逻辑）
-//
-// 字段来源对应：
-//   meta.dbFiles           ← db.py DB_FILENAME = "biscuit_accountant.db"
-//   schema                 ← db.py init_db() 建表语句（9字段）
-//   queries.daily-records  ← query.py list_today() → fetch_all(from_time, to_time)
-//   queries.monthly-summary ← analyze.py monthly_summary()（amount < 0，按 category GROUP BY）
-//   queries.category-breakdown ← analyze.py get_category_breakdown()（含 avg）
-//   queries.monthly-overview  ← analyze.py _get_totals()（count/expense/income/net）
-//   queries.period-compare    ← analyze.py compare_periods()
-//   queries.recent-records    ← query.py list_recent(limit) → fetch_all(limit)
-//   queries.keyword-search   ← query.py search_keyword() → fetch_all(keyword)
-//   actions.add-record       ← db.py insert_record() 入参（7字段，无 id/created_at）
+
+interface SkillField {
+  name: string;
+  type: string;
+  label: string;
+  primaryKey?: boolean;
+  visible?: boolean;
+  nullable?: boolean;
+  format?: string;
+  unit?: string;
+  default?: string;
+  options?: string[];
+}
+
+interface SkillTable {
+  name: string;
+  fields: SkillField[];
+}
+
+interface SkillQuery {
+  id: string;
+  label: string;
+  sql: string;
+  params?: Array<{
+    name: string;
+    type: string;
+    label: string;
+    options?: Array<{ label: string; value: string }>;
+  }>;
+  chartType?: string;
+  chartConfig?: {
+    colorScheme?: string[];
+  };
+}
+
+interface SkillAction {
+  id: string;
+  label: string;
+  type: string;
+  targetTable: string;
+  fields: Array<{
+    field: string;
+    required?: boolean;
+    source: string;
+    prompt?: string;
+    value?: string;
+    format?: string;
+    unit?: string;
+    options?: string[];
+  }>;
+}
+
+interface SkillView {
+  id: string;
+  label: string;
+  icon: string;
+  components: Record<string, any>;
+}
+
+interface SkillConfig {
+  meta: {
+    name: string;
+    label: string;
+    icon: string;
+    description: string;
+    dbFiles: string[];
+  };
+  schema: { tables: SkillTable[] };
+  queries: SkillQuery[];
+  actions: SkillAction[];
+  views: SkillView[];
+}
 
 export const CookieAccountingConfig: SkillConfig = {
   // ── 1. meta（元数据）─────────────────────────────────────────
@@ -31,25 +90,16 @@ export const CookieAccountingConfig: SkillConfig = {
       {
         name: "bills",
         fields: [
-          // id：自增主键，DB 自动生成，UI 不展示
           { name: "id",       type: "INTEGER", label: "ID",         primaryKey: true, visible: false },
-          // category：非空，选项覆盖支出9类 + 收入5类
           { name: "category", type: "TEXT",    label: "分类",        nullable: false,
             options: ["餐饮", "购物", "交通", "娱乐", "医疗", "住房", "教育", "通讯", "其他",
-                      "工资", "奖金", "兼职", "投资"] },
-          // time：非空，完整时间戳格式
+                      "工资", "奖金", "兼职", "投资", "其他"] },
           { name: "time",     type: "TEXT",    label: "时间",        nullable: false, format: "datetime" },
-          // amount：非空，负数为支出，正数为收入
           { name: "amount",   type: "REAL",    label: "金额",        nullable: false, format: "currency", unit: "元" },
-          // account：默认空字符串
           { name: "account",  type: "TEXT",    label: "账户",        default: "" },
-          // ledger：默认"生活"
           { name: "ledger",   type: "TEXT",    label: "账本",        default: "生活" },
-          // currency：默认"人民币"
           { name: "currency", type: "TEXT",    label: "货币",        default: "人民币" },
-          // note：默认空字符串
           { name: "note",     type: "TEXT",    label: "备注",        default: "" },
-          // created_at：DB 自动填充 CURRENT_TIMESTAMP，UI 不展示
           { name: "created_at", type: "TEXT", label: "创建时间",    visible: false },
         ],
       },
@@ -58,8 +108,7 @@ export const CookieAccountingConfig: SkillConfig = {
 
   // ── 3. queries（预设查询）───────────────────────────────────
   queries: [
-    // ── 3.1 今日记录 ──────────────────────────────────────────
-    // 来自 query.py list_today()：WHERE time >= '{date} 00:00:00' AND time <= '{date} 23:59:59'
+    // 今日记录
     {
       id: "daily-records",
       label: "今日记录",
@@ -69,10 +118,7 @@ export const CookieAccountingConfig: SkillConfig = {
       ],
     },
 
-    // ── 3.2 月度支出汇总（柱状图）─────────────────────────────
-    // 来自 analyze.py monthly_summary()：
-    //   WHERE time >= '{month}-01 00:00:00' AND time <= '{month_end} 23:59:59' AND amount < 0
-    //   GROUP BY category ORDER BY total DESC
+    // 月度支出汇总（柱状图）
     {
       id: "monthly-summary",
       label: "月度支出汇总",
@@ -82,14 +128,12 @@ export const CookieAccountingConfig: SkillConfig = {
               COUNT(*) as count
             FROM bills
             WHERE time >= '{{month}}-01 00:00:00'
-              AND time <= '{{month_end}} 23:59:59'
+              AND time < '{{month_end}} 00:00:00'
               AND amount < 0
             GROUP BY category
             ORDER BY total DESC`,
       params: [
         { name: "month",     type: "month", label: "月份" },
-        // month_end：由前端根据 month 计算当月最后一天（如 2026-05 → 2026-05-31）
-        // ⚠️ type 必须是 date，不能是 text（协作指南明确要求）
         { name: "month_end", type: "date",  label: "月末日期" },
       ],
       chartType: "bar",
@@ -98,10 +142,7 @@ export const CookieAccountingConfig: SkillConfig = {
       },
     },
 
-    // ── 3.3 分类支出明细（环形图）─────────────────────────────
-    // 来自 analyze.py get_category_breakdown()：
-    //   WHERE time >= '{from} 00:00:00' AND time <= '{to} 23:59:59' AND amount < 0
-    //   含 AVG(ABS(amount)) as avg
+    // 分类支出明细（环形图）
     {
       id: "category-breakdown",
       label: "分类分析",
@@ -126,11 +167,8 @@ export const CookieAccountingConfig: SkillConfig = {
       },
     },
 
-    // ── 3.4 收支总览（月度计数/支出/收入/净额）───────────────
-    // 来自 analyze.py _get_totals()：
-    //   expense = SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END)
-    //   income  = SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END)
-    //   net     = income - expense
+    // 收支总览（月度计数/支出/收入/净额）
+    // 返回标量值，适合用 card 组件展示
     {
       id: "monthly-overview",
       label: "收支总览",
@@ -142,15 +180,15 @@ export const CookieAccountingConfig: SkillConfig = {
               - SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as net
             FROM bills
             WHERE time >= '{{month}}-01 00:00:00'
-              AND time <= '{{month_end}} 23:59:59'`,
+              AND time < '{{month_end}} 00:00:00'`,
       params: [
         { name: "month",     type: "month", label: "月份" },
         { name: "month_end", type: "date",  label: "月末日期" },
       ],
     },
 
-    // ── 3.5 周期对比（本周 vs 上周 / 本月 vs 上月）────────────
-    // 来自 analyze.py compare_periods()：前端调用两次本查询（本期+上期），前端自行计算 change
+    // 周期对比（本周 vs 上周 / 本月 vs 上月）
+    // period 参数由前端用于决定调用两次本查询的日期范围，SQL 中不直接使用
     {
       id: "period-compare",
       label: "周期对比",
@@ -175,8 +213,7 @@ export const CookieAccountingConfig: SkillConfig = {
       chartType: "bar",
     },
 
-    // ── 3.6 最近记录 ──────────────────────────────────────────
-    // 来自 query.py list_recent(limit)：fetch_all(limit=N) → SELECT ... LIMIT N
+    // 最近记录
     {
       id: "recent-records",
       label: "最近记录",
@@ -192,9 +229,7 @@ export const CookieAccountingConfig: SkillConfig = {
       ],
     },
 
-    // ── 3.7 关键词搜索 ────────────────────────────────────────
-    // 来自 query.py search_keyword()：WHERE note LIKE '%{keyword}%'
-    // SQLite 拼接字符串用 ||，不能写成 Python 格式化
+    // 关键词搜索
     {
       id: "keyword-search",
       label: "关键词搜索",
@@ -213,16 +248,14 @@ export const CookieAccountingConfig: SkillConfig = {
       type: "insert",
       targetTable: "bills",
       fields: [
-        // category：必填，用户从下拉框选择
         {
           field: "category",
           required: true,
           source: "user-input",
           prompt: "选择分类",
           options: ["餐饮", "购物", "交通", "娱乐", "医疗", "住房", "教育", "通讯", "其他",
-                    "工资", "奖金", "兼职", "投资"],
+                    "工资", "奖金", "兼职", "投资", "其他"],
         },
-        // time：必填，用户输入（留空则由前端填当前时间）
         {
           field: "time",
           required: true,
@@ -230,7 +263,6 @@ export const CookieAccountingConfig: SkillConfig = {
           prompt: "时间（格式：YYYY-MM-DD HH:MM:SS，留空填当前时间）",
           format: "datetime",
         },
-        // amount：必填，用户输入（负数为支出，正数为收入）
         {
           field: "amount",
           required: true,
@@ -239,25 +271,21 @@ export const CookieAccountingConfig: SkillConfig = {
           format: "currency",
           unit: "元",
         },
-        // account：可选，默认空字符串
         {
           field: "account",
           source: "user-input",
           prompt: "账户（可选）",
         },
-        // ledger：固定值"生活"
         {
           field: "ledger",
           source: "fixed",
           value: "生活",
         },
-        // currency：固定值"人民币"
         {
           field: "currency",
           source: "fixed",
           value: "人民币",
         },
-        // note：可选，用户输入
         {
           field: "note",
           source: "user-input",

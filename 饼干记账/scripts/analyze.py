@@ -46,9 +46,11 @@ def _get_totals(from_time: str, to_time: str) -> dict:
 
 def get_today_summary() -> dict:
     """获取今日摘要"""
-    today_str = date.today().strftime("%Y-%m-%d")
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    tomorrow_str = (today + timedelta(days=1)).strftime("%Y-%m-%d")
     start = f"{today_str} 00:00:00"
-    end = f"{today_str} 23:59:59"
+    end = f"{tomorrow_str} 00:00:00"
     totals = _get_totals(start, end)
     totals["date"] = today_str
     return totals
@@ -56,8 +58,10 @@ def get_today_summary() -> dict:
 
 def get_date_summary(date_str: str) -> dict:
     """获取指定日期的摘要"""
+    next_day = date.fromisoformat(date_str) + timedelta(days=1)
+    next_day_str = next_day.strftime("%Y-%m-%d")
     start = f"{date_str} 00:00:00"
-    end = f"{date_str} 23:59:59"
+    end = f"{next_day_str} 00:00:00"
     totals = _get_totals(start, end)
     totals["date"] = date_str
     return totals
@@ -116,19 +120,20 @@ def compare_periods(period: str = "week") -> dict:
     if period == "week":
         this_week_start = today - timedelta(days=today.weekday())
         last_week_start = this_week_start - timedelta(days=7)
-        last_week_end = this_week_start - timedelta(seconds=1)
+        tomorrow = today + timedelta(days=1)
 
         this_start_str = this_week_start.strftime("%Y-%m-%d 00:00:00")
+        this_end_str = tomorrow.strftime("%Y-%m-%d 00:00:00")
         last_start_str = last_week_start.strftime("%Y-%m-%d 00:00:00")
-        last_end_str = last_week_end.strftime("%Y-%m-%d 23:59:59")
+        last_end_str = this_week_start.strftime("%Y-%m-%d 00:00:00")
 
-        this_totals = _get_totals(this_start_str, f"{today.strftime('%Y-%m-%d')} 23:59:59")
+        this_totals = _get_totals(this_start_str, this_end_str)
         last_totals = _get_totals(last_start_str, last_end_str)
 
         return {
             "period": "week",
             "this": {**this_totals, "label": f"本周 ({this_week_start.strftime('%m/%d')} ~ 今天)"},
-            "last": {**last_totals, "label": f"上周 ({last_week_start.strftime('%m/%d')} ~ {last_week_end.strftime('%m/%d')})"},
+            "last": {**last_totals, "label": f"上周 ({last_week_start.strftime('%m/%d')} ~ {(this_week_start - timedelta(days=1)).strftime('%m/%d')})"},
             "change": {
                 "expense_diff": this_totals["expense"] - last_totals["expense"],
                 "expense_pct": ((this_totals["expense"] - last_totals["expense"]) / last_totals["expense"] * 100) if last_totals["expense"] else 0

@@ -14,6 +14,10 @@ from pathlib import Path
 from db_utils import find_db_path as _find_db_path
 from db_utils import get_db as _get_db_conn
 
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "calorie_data.db"
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
@@ -350,10 +354,10 @@ def summary(target_date=None):
         carb_remaining = carb_goal - total_carbs
         fat_remaining = fat_goal - total_fat
 
-        print(f"\n热量：{total_cal}/{cal_goal}卡 | 剩余：{cal_remaining:+d}")
-        print(f"蛋白：{total_pro}/{pro_goal}克 | 剩余：{pro_remaining:+d}")
-        print(f"碳水：{total_carbs}/{carb_goal}克 | 剩余：{carb_remaining:+d}")
-        print(f"脂肪：{total_fat}/{fat_goal}克 | 剩余：{fat_remaining:+d}")
+        print(f"\n热量：{total_cal}/{cal_goal}卡 | 剩余：{cal_remaining:+.0f}")
+        print(f"蛋白：{total_pro}/{pro_goal}克 | 剩余：{pro_remaining:+.0f}")
+        print(f"碳水：{total_carbs}/{carb_goal}克 | 剩余：{carb_remaining:+.0f}")
+        print(f"脂肪：{total_fat}/{fat_goal}克 | 剩余：{fat_remaining:+.0f}")
 
         if cal_remaining < 0:
             print(f"\n⚠️ 热量超标：{abs(cal_remaining)}卡")
@@ -874,7 +878,7 @@ def history(days=7):
     for date_str, total_cal, total_pro, total_carbs, total_fat in rows:
         if cal_goal:
             remaining = cal_goal - total_cal
-            status = f"{remaining:+d}卡" if remaining != 0 else "达标"
+            status = f"{remaining:+.0f}卡" if remaining != 0 else "达标"
         else:
             status = "未设目标"
         

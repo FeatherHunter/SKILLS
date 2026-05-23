@@ -12,6 +12,10 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from pathlib import Path
 
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # 确保 scripts/ 目录在 sys.path 中（支持从父目录导入）
 _scripts_dir = str(Path(__file__).resolve().parent)
 if _scripts_dir not in sys.path:

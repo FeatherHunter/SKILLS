@@ -41,6 +41,10 @@ from pathlib import Path
 
 from db_utils import find_db_path, get_db as _get_db_conn
 
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 SCRIPT_DIR = Path(__file__).parent
 SKILL_DIR = SCRIPT_DIR.parent
 DB_FILENAME = "calorie_data.db"

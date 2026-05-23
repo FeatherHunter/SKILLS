@@ -57,7 +57,7 @@ def add(args):
                     print(json.dumps({"error": "派生需要 --new_name 参数"}, ensure_ascii=False))
                     return False
                 conn.close()
-                return add({"name": new_name})
+                return add({**args, "name": new_name})
             else:
                 conn.close()
                 print(json.dumps({"error": f"无效选择: {choice}", "valid_choices": ["view", "derive", "update", "cancel"]}, ensure_ascii=False))

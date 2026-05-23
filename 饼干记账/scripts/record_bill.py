@@ -23,9 +23,8 @@ _SCRIPT_DIR = Path(__file__).parent.resolve()
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
-from db import add_bill
-from query import (
-    list_today, list_date, list_date_range,
+from db import (
+    add_bill, list_today, list_date, list_date_range,
     list_by_category, search_keyword, list_recent
 )
 from analyze import (

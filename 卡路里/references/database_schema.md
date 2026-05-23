@@ -8,6 +8,8 @@
 | `daily_goal` | 每日目标（含体重目标）| id (固定=1) |
 | `weight_log` | 体重记录 | id |
 | `exercise_log` | 运动记录 | id |
+| `fitness_goals` | 健身目标（每日/每周/每月/长期）| id |
+| `sleep_records` | 睡眠记录（归属就寝日）| id |
 | `nutrition_products` | 食品营养成分库 | id |
 
 ---
@@ -87,6 +89,50 @@ CREATE INDEX idx_exercise_date ON exercise_log(date);
 
 ---
 
+## fitness_goals — 健身目标
+
+```sql
+CREATE TABLE fitness_goals (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,         -- 目标名称，如"每日俯卧撑"
+    goal_type       TEXT NOT NULL,         -- daily/weekly/monthly/longterm
+    exercise_type   TEXT NOT NULL,         -- 运动类型
+    target_unit     TEXT NOT NULL,         -- 个/分钟/公里
+    target_value    INTEGER NOT NULL,      -- 目标值
+    start_date      TEXT NOT NULL,         -- 开始日期
+    end_date        TEXT,                  -- NULL 表示永久
+    status          TEXT DEFAULT 'active', -- active/paused
+    note            TEXT,
+    created_at      INTEGER NOT NULL,      -- Unix 时间戳
+    updated_at      INTEGER
+);
+CREATE INDEX idx_fg_date ON fitness_goals(start_date);
+CREATE INDEX idx_fg_type ON fitness_goals(exercise_type);
+CREATE INDEX idx_fg_status ON fitness_goals(status);
+```
+
+---
+
+## sleep_records — 睡眠记录
+
+```sql
+CREATE TABLE sleep_records (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    date            TEXT NOT NULL UNIQUE,  -- 归属就寝日 YYYY-MM-DD
+    sleep_hours     REAL NOT NULL,         -- 睡眠时长（小时）
+    bedtime         TEXT,                  -- 就寝时间 HH:MM
+    wake_time       TEXT,                  -- 起床时间 HH:MM
+    note            TEXT,
+    created_at      TEXT NOT NULL,         -- ISO 格式
+    updated_at      TEXT
+);
+CREATE INDEX idx_sleep_date ON sleep_records(date);
+```
+
+> **睡眠归属规则**：记录归属于**就寝那天**，而非起床日。
+
+---
+
 ## nutrition_products — 食品营养成分库
 
 ```sql
@@ -115,16 +161,26 @@ CREATE INDEX idx_product_name ON nutrition_products(product_name);
 
 ```
 daily_goal (1条记录)
+  ├── calorie_goal, protein_goal, carbs_goal, fat_goal → 每日营养目标
   └── weight_goal, goal_deadline → 体重目标
+
+entries (多条)
+  └── date → 每日饮食记录
 
 weight_log (多条)
   └── date → 每日体重
 
-entries (多条)
-  └── date → 每日饮食
-
 exercise_log (多条)
   └── date → 每日运动
+
+fitness_goals (多条)
+  └── goal_type + status → 健身目标管理
+
+sleep_records (多条)
+  └── date → 每日睡眠（归属就寝日）
+
+nutrition_products (多条)
+  └── product_name → 食品营养成分库
 ```
 
 ---
@@ -136,4 +192,8 @@ exercise_log (多条)
 | `idx_entries_date` | entries | 按日期查询食物记录 |
 | `idx_weight_date` | weight_log | 按日期查询体重 |
 | `idx_exercise_date` | exercise_log | 按日期查询运动 |
+| `idx_fg_date` | fitness_goals | 按开始日期查询 |
+| `idx_fg_type` | fitness_goals | 按运动类型查询 |
+| `idx_fg_status` | fitness_goals | 按状态筛选 |
+| `idx_sleep_date` | sleep_records | 按日期查询 |
 | `idx_product_name` | nutrition_products | 搜索食品名称 |

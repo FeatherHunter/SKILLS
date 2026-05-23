@@ -241,7 +241,16 @@ def main():
 
     cmd = commands.get(args.command)
     if cmd:
-        cmd(args)
+        try:
+            cmd(args)
+        except ValueError as e:
+            print(f"参数错误：{e}")
+        except FileNotFoundError as e:
+            print(f"文件未找到：{e}")
+        except PermissionError as e:
+            print(f"权限不足：{e}")
+        except Exception as e:
+            print(f"执行出错：{e}")
     else:
         parser.print_help()
 

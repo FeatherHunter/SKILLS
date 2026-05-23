@@ -103,7 +103,7 @@
 **问题**：servings 和 total_time 作为字符串存入 INTEGER 列
 **修复**：加 `int()` 转换
 
-### 12. 9 个 manager — list() 遮蔽内置函数
+### 12. 10 个 manager — list() 遮蔽内置函数
 
 **文件**：category_manager.py、ingredient_manager.py、step_manager.py、flavor_manager.py、season_manager.py、cooking_method_manager.py、diet_tag_manager.py、meal_type_manager.py、tip_manager.py、history_manager.py
 **问题**：`def list(args)` 遮蔽 Python 内置 `list()`

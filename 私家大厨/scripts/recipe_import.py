@@ -496,7 +496,7 @@ def import_recipe(json_file, choice=None, new_name=None):
     except Exception as e:
         try:
             conn.execute("ROLLBACK")
-        except:
+        except Exception:
             pass
         return {"success": False, "error": str(e)}
     finally:

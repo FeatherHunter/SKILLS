@@ -6,7 +6,8 @@ from .models import Item, ItemLocation, Tag
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
 
-SKILL_DIR = Path(__file__).parent.parent
+# 技能根目录：scripts/home_manager 的上两级目录
+SKILL_DIR = Path(__file__).parent.parent.parent
 DB_FILENAME = "home.db"
 
 
@@ -32,7 +33,10 @@ def _find_db_path(skill_dir, db_filename):
 
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
-PHOTOS_DIR = SKILL_DIR / "photos"
+
+# 照片目录：优先使用环境变量，否则默认为技能目录下的 photos 文件夹
+_photos_env = os.environ.get("HOME_PHOTOS_DIR")
+PHOTOS_DIR = Path(_photos_env) if _photos_env else SKILL_DIR / "photos"
 
 # ── 连接 ──────────────────────────────────────────────────────────────────
 

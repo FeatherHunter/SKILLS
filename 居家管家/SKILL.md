@@ -19,8 +19,9 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 - **物品盘点**：按需盘点指定位置的所有物品
 - **穿搭推荐**：根据天气+标签推荐今日穿搭
 - **旅游归位**：出门带物+回家归位的完整流程
-- **频率统计**：区分高频/低频物品，识别��期未用物品
+- **频率统计**：区分高频/低频物品，识别长期未用物品
 - **标签管理**：合并相似标签
+- **照片管理**：支持配置照片存储路径（环境变量 `HOME_PHOTOS_DIR`）
 
 ## 快速导航
 
@@ -30,6 +31,7 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 | 命令行参考 | `references/commands.md` |
 | 物品分类 | `references/categories.md` |
 | 物品状态 | `references/statuses.md` |
+| 照片存储配置 | `references/photo-storage.md` |
 | 物品录入 | `features/add.md` |
 | 物品查找 | `features/search.md` |
 | 物品更新 | `features/update.md` |

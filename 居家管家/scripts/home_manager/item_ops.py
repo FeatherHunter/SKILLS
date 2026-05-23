@@ -1,6 +1,7 @@
 # item_ops.py - 物品 CRUD 操作
 from datetime import datetime
-from .db import get_conn
+from pathlib import Path
+from .db import get_conn, PHOTOS_DIR
 from .location_ops import (
     get_locations, add_location, remove_location,
     update_location_quantity, update_location_status,
@@ -14,6 +15,13 @@ VALID_STATUSES = ("在家", "备用", "穿着中", "旅游中", "洗护中", "�
 
 
 # ── 辅助 ──────────────────────────────────────────────────────────────────
+
+
+def get_photo_full_path(photo_relative_path):
+    """根据相对路径获取照片的完整路径"""
+    if not photo_relative_path:
+        return None
+    return PHOTOS_DIR / photo_relative_path
 
 
 def _touch_item(conn, item_id):
@@ -30,7 +38,11 @@ def _format_item(row, tags_str=None, locations_str=None):
     """格式化单个物品为文本"""
     tags = tags_str if tags_str is not None else ""
     price = f"¥{row['purchase_price']:.2f}" if row["purchase_price"] else ""
-    photo = "[图]" if row["photo"] else ""
+    if row["photo"]:
+        photo_path = get_photo_full_path(row["photo"])
+        photo = f"[图:{photo_path}]" if photo_path else "[图]"
+    else:
+        photo = ""
     locs = locations_str if locations_str is not None else "(未设置位置)"
     return (
         f"ID:{row['id']} | {row['name']} | {row['category']} | "
@@ -457,7 +469,12 @@ def item_detail(item_id):
         print(f"购买价:   ¥{item['purchase_price']:.2f}")
     print(f"标签:     {tags_str or '(无)'}")
     print(f"备注:     {item['remark'] or '(无)'}")
-    print(f"图片:     {item['photo'] or '(无)'}")
+    if item["photo"]:
+        photo_path = get_photo_full_path(item["photo"])
+        print(f"图片:     {item['photo']}")
+        print(f"完整路径: {photo_path}")
+    else:
+        print(f"图片:     (无)")
     print(f"访问次数: {item['access_count']}")
     print(f"最后访问: {item['last_accessed_at'] or '从未'}")
     print(f"创建时间: {item['created_at']}")

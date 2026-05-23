@@ -35,8 +35,6 @@
 """
 
 import sys
-import os
-import sqlite3
 import argparse
 from datetime import datetime, timedelta
 from pathlib import Path

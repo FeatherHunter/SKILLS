@@ -12,6 +12,7 @@ Daily Recorder - 主扫描脚本
 """
 
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone, timedelta
@@ -21,8 +22,7 @@ SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from db import Database
 
-SESSION_DIR = Path("/home/feather/.openclaw/agents/main/sessions/")
-DB_PATH = Path("/mnt/d/2Study/StudyNotes/.db/daily_recorder.db")
+SESSION_DIR = Path(os.environ.get("OPENCLAW_SESSIONS", Path.home() / ".openclaw/agents/main/sessions"))
 ROLE_FILTER = "user"
 
 # 系统前缀列表（过滤用）
@@ -298,7 +298,7 @@ def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=No
 
 
 def main():
-    db = Database(DB_PATH)
+    db = Database()
 
     # 【优化：预加载所有 checkpoint，一次查询替代逐文件查询】
     cp_cache = db.preload_checkpoints()

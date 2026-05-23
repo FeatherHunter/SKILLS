@@ -4,13 +4,41 @@ Database module for Daily Recorder
 """
 
 import sqlite3
+import os
 import time
 from pathlib import Path
 
+# ── 路径配置 ─────────────────────────────────────────────────────────────────
+
+SKILL_DIR = Path(__file__).parent.parent
+DB_FILENAME = "daily_recorder.db"
+
+
+def _find_db_path(skill_dir, db_filename):
+    """三层查找DB路径：环境变量 > 父目录 > 技能目录"""
+    # 1. 环境变量（最高优先级）
+    env_path = os.environ.get('SKILLS_DB_PATH')
+    if env_path:
+        return Path(env_path) / db_filename
+    # 2. 父目录层层找 .db 文件夹
+    for parent in skill_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            return db_dir / db_filename
+    # 3. 技能目录下 .db 子目录（默认 fallback）
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / db_filename
+
+
+DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
+
 
 class Database:
-    def __init__(self, db_path):
-        if isinstance(db_path, str):
+    def __init__(self, db_path=None):
+        if db_path is None:
+            db_path = DB_PATH
+        elif isinstance(db_path, str):
             db_path = Path(db_path)
         self.db_path = db_path
         self._init_db()

@@ -13,8 +13,6 @@ SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from db import Database
 
-DB_PATH = Path("/mnt/d/2Study/StudyNotes/.db/daily_recorder.db")
-
 
 def ts_to_str(ts: int) -> str:
     """微秒时间戳 -> 可读字符串"""
@@ -46,7 +44,7 @@ def main():
     parser.add_argument("--attachments", action="store_true", help="同时查询附件")
     args = parser.parse_args()
 
-    db = Database(DB_PATH)
+    db = Database()
 
     # 解析时间参数
     start_ts = None

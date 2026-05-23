@@ -81,7 +81,7 @@ openclaw cron add \
   --name "录音机-每10分记录语录" \
   --every 10m \
   --session isolated \
-  --message "静默执行记录今日语录：python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/record.py"
+  --message "静默执行记录今日语录：python3 scripts/record.py"
 ```
 
 ---
@@ -97,7 +97,7 @@ openclaw cron list | grep 录音机
 openclaw cron run fe83452a-b025-4081-b1e8-8e44f2cf9229
 
 # 检查数据库是否有新记录
-python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --date 20260522
+python3 scripts/query.py --date 20260522
 ```
 
 ---

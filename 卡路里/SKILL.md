@@ -39,11 +39,10 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ```
 请帮我安装卡路里技能：
-1. 读取 workspace/skills/卡路里/SKILL.md
-2. 运行 python scripts/calorie_tracker.py 初始化数据库
-3. 运行 python scripts/calorie_tracker.py summary 确认正常
-4. 运行 python scripts/fitness_goals.py --help 确认健身目标模块正常
-5. 运行 python scripts/sleep_tracker.py --help 确认睡眠模块正常
+1. 检查 Python 环境
+2. 引导我配置环境变量
+3. 显示当前环境变量配置
+4. 告诉我如何更改数据目录
 ```
 
 ---

@@ -122,6 +122,9 @@ def update_note(args):
 def delete_note(args):
     note_id = args.id
     conn = get_conn()
+    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if not note:
+        error_json("笔记不存在")
     try:
         conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
         conn.commit()

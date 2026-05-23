@@ -214,8 +214,12 @@ def timestamp_to_date(ts: int) -> str:
     return beijing.strftime("%Y%m%d")
 
 
-def process_session(session_file: Path, db: Database, touch_fn=None) -> tuple:
-    checkpoint = db.get_checkpoint(str(session_file))
+def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=None) -> tuple:
+    cache_key = str(session_file)
+    if cp_cache and cache_key in cp_cache:
+        checkpoint = cp_cache[cache_key]
+    else:
+        checkpoint = db.get_checkpoint(cache_key)
     last_ts = checkpoint["last_timestamp"] if checkpoint else 0
 
     file_new = 0
@@ -296,7 +300,10 @@ def process_session(session_file: Path, db: Database, touch_fn=None) -> tuple:
 def main():
     db = Database(DB_PATH)
 
-    # 【优化1+4】排除 trajectory，只扫活跃的 .jsonl 文件
+    # 【优化：预加载所有 checkpoint，一次查询替代逐文件查询】
+    cp_cache = db.preload_checkpoints()
+
+    # 【优化+4】排除 trajectory，只扫活跃的 .jsonl 文件
     all_files = sorted(SESSION_DIR.glob("*.jsonl"))
     all_files = [f for f in all_files
                  if ".deleted." not in f.name and ".trajectory." not in f.name]
@@ -311,7 +318,7 @@ def main():
         is_cp_file = sf_name.startswith("checkpoint.") or ".checkpoint." in sf_name
         if is_cp_file:
             checkpoint_files.append(f)
-        elif db.get_checkpoint(str(f)):
+        elif str(f) in cp_cache:
             files_has_cp.append(f)
         else:
             files_no_cp.append(f)
@@ -340,7 +347,7 @@ def main():
 
     for idx, session_file in enumerate(session_files, 1):
         file_new, file_attachments, latest_ts, latest_msg_id = process_session(
-            session_file, db, touch_fn=db.checkpoint_progress
+            session_file, db, touch_fn=db.checkpoint_progress, cp_cache=cp_cache
         )
         if file_new > 0 or file_attachments > 0:
             scanned += 1

@@ -152,12 +152,28 @@ class Database:
             (session_file, last_timestamp, last_message_id, updated_at)
             VALUES (?, ?, ?, ?)
         """, (session_file, last_timestamp, last_message_id, int(time.time())))
+        # 【优化】只每 50 条消息 commit 一次，避免 9P 往返开销
+        if self._commit_counter >= 50:
+            self._conn.commit()
+            self._commit_counter = 0
+        else:
+            self._commit_counter += 1
 
     def begin_checkpoint_transaction(self):
         """开启 checkpoint 事务（搭配 checkpoint_progress 和 end_checkpoint_transaction 使用）"""
         self._conn = sqlite3.connect(str(self.db_path), timeout=30)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._cur = self._conn.cursor()
+        self._commit_counter = 0
+
+    def preload_checkpoints(self) -> dict:
+        """一次性预加载所有 checkpoint，避免逐文件查询（每次查询都走 9P 协议到 /mnt/d）"""
+        conn = sqlite3.connect(str(self.db_path))
+        cur = conn.cursor()
+        cur.execute("SELECT session_file, last_timestamp, last_message_id FROM scan_checkpoint")
+        result = {row[0]: {'last_timestamp': row[1], 'last_message_id': row[2]} for row in cur.fetchall()}
+        conn.close()
+        return result
 
     def end_checkpoint_transaction(self):
         """提交并关闭 checkpoint 事务"""
@@ -167,7 +183,7 @@ class Database:
             self._conn = None
             self._cur = None
 
-    def query(self, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
+    def query(selfself, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
 

@@ -23,6 +23,7 @@
 | repeat_type | TEXT | 重复类型：none/daily/weekly/monthly/yearly |
 | repeat_rule | TEXT | 重复规则，格式见下 |
 | status | TEXT | 状态：active / dismissed |
+| notified_at | TEXT | 上次通知时间 |
 | created_at | TEXT | 创建时间 |
 
 ### 重复规则格式
@@ -41,6 +42,9 @@
 | `remind <note_id> [--at <time>] [--repeat-type <type>] [--rule <rule>]` | 添加提醒 | `script/memo_cli.py remind 5 --at "2026-05-25 09:00"` |
 | `due` | 列出未来10分钟待触发的提醒 | `script/memo_cli.py due` |
 | `dismiss <id>` | 废弃提醒 | `script/memo_cli.py dismiss 3` |
+| `get <id>` | 获取笔记详情 | `script/memo_cli.py get 1` |
+| `search-date <start> <end> [-c category]` | 按时间搜索 | `script/memo_cli.py search-date 2026-05-01 2026-05-31` |
+| `update-category <id> <category>` | 更新分类 | `script/memo_cli.py update-category 1 work` |
 | `reminders [--status active/dismissed]` | 查看提醒列表 | `script/memo_cli.py reminders` |
 
 所有命令输出JSON：`{"status": "ok/error", "data": ..., "message": "..."}`

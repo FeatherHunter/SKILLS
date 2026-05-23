@@ -36,7 +36,7 @@
 1. `python scripts/recipe_manager.py show <菜名>` → 获取 recipe_id
 2. `python scripts/shopping_manager.py generate <recipe_id>` → 获取 JSON
 3. AI 生成 HTML
-4. 保存到 `D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/shopping/`<!-- 请根据实际环境调整路径 -->
+4. 保存到 `$CHEF_OUTPUT_DIR/shopping/`（默认 `output/shopping/`）
 5. 通过 QQBot 发送
 
 ---
@@ -168,7 +168,7 @@ python scripts/shopping_manager.py generate "id1,id2"
 
 ### 存储路径
 ```
-D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/shopping/
+$CHEF_OUTPUT_DIR/shopping/（默认 output/shopping/）
 ```
 
 ### 文件名格式

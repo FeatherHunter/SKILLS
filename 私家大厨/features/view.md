@@ -138,7 +138,7 @@
 ### 文件规范
 
 - **文件命名**：`私房菜谱_{菜名}_{时间戳}.html`
-- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`<!-- 请根据实际环境调整路径 -->
+- **存储路径**：`$CHEF_OUTPUT_DIR`（默认 `output/`）
 
 ---
 
@@ -310,7 +310,7 @@ remaining = savedRemaining（从 localStorage 读取暂停时保存的 remaining
 ### 文件规范
 
 - **文件命名**：`烹饪之途_{菜名}_{时间戳}.html`
-- **存储路径**：`D:/2Study/StudyNotes/SKILLS/私家大厨/output/qqbot/`<!-- 请根据实际环境调整路径 -->
+- **存储路径**：`$CHEF_OUTPUT_DIR`（默认 `output/`）
 
 ---
 

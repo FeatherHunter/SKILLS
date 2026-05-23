@@ -40,7 +40,7 @@
 | location | TEXT | 存放位置（路径格式，如 `客厅/冰箱/上层`） |
 | quantity | INTEGER | 该位置的数量 |
 | reason | TEXT | 原因（可选，如"已开封需冷藏"） |
-| location_status | TEXT | 位��状态（在家/备用/借用中等） |
+| location_status | TEXT | 位置状态（在家/备用/借用中等） |
 | purchase_date | TEXT | 购买日期（YYYY-MM-DD，可空） |
 | expiration_date | TEXT | 过期日期（YYYY-MM-DD，可空） |
 | created_at | TEXT | 创建时间 |

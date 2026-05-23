@@ -39,7 +39,7 @@ python home_manager.py search --name "T恤" --tag "白色"
 - `--name` 物品名称（支持模糊匹配）
 - `--location` 位置（支持模糊匹配）
 - `--tag` 标签（精确匹配）
-- `--category` ���类
+- `--category` 分类
 - `--status` 位置状态
 - `--exact` 名称精确匹配（不加则模糊匹配）
 - `--limit` 返回数量上限（默认20）

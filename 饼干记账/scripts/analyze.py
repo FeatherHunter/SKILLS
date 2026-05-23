@@ -16,41 +16,41 @@ import db as db_module
 init_db = db_module.init_db
 TABLE_NAME = db_module.TABLE_NAME
 
-TODAY = date.today()
-DATE_FILE_STR = TODAY.strftime("%Y-%m-%d")
-
 
 def _get_totals(from_time: str, to_time: str) -> dict:
     """获取指定时间范围的支出/收入汇总"""
     conn = init_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-    cursor.execute(f"""
-        SELECT
-            COUNT(*) as count,
-            SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expense,
-            SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income
-        FROM {TABLE_NAME}
-        WHERE time >= ? AND time <= ?
-    """, (from_time, to_time))
+        cursor.execute(f"""
+            SELECT
+                COUNT(*) as count,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expense,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income
+            FROM {TABLE_NAME}
+            WHERE time >= ? AND time <= ?
+        """, (from_time, to_time))
 
-    row = cursor.fetchone()
-    conn.close()
-    return {
-        "count": row['count'] or 0,
-        "expense": row['expense'] or 0,
-        "income": row['income'] or 0,
-        "net": (row['income'] or 0) - (row['expense'] or 0)
-    }
+        row = cursor.fetchone()
+        return {
+            "count": row['count'] or 0,
+            "expense": row['expense'] or 0,
+            "income": row['income'] or 0,
+            "net": (row['income'] or 0) - (row['expense'] or 0)
+        }
+    finally:
+        conn.close()
 
 
 def get_today_summary() -> dict:
     """获取今日摘要"""
-    start = f"{DATE_FILE_STR} 00:00:00"
-    end = f"{DATE_FILE_STR} 23:59:59"
+    today_str = date.today().strftime("%Y-%m-%d")
+    start = f"{today_str} 00:00:00"
+    end = f"{today_str} 23:59:59"
     totals = _get_totals(start, end)
-    totals["date"] = DATE_FILE_STR
+    totals["date"] = today_str
     return totals
 
 
@@ -65,43 +65,45 @@ def get_date_summary(date_str: str) -> dict:
 
 def monthly_summary(month: str) -> dict:
     """月度汇总（YYYY-MM格式）"""
-    conn = init_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    # 计算月末最后一秒（正确覆盖整个月，不漏任何时间点）
-    month_int = int(month.split("-")[1])
     year_int = int(month.split("-")[0])
+    month_int = int(month.split("-")[1])
+
+    # 计算下月初
     if month_int == 12:
-        end_date = date(year_int + 1, 1, 1)
+        next_month_str = f"{year_int + 1}-01-01"
     else:
-        end_date = date(year_int, month_int + 1, 1)
-    # 向前一天的 23:59:59
-    end_date = end_date - timedelta(seconds=1)
-    end_str = end_date.strftime("%Y-%m-%d 23:59:59")
+        next_month_str = f"{year_int}-{month_int + 1:02d}-01"
+
     start_str = f"{month}-01 00:00:00"
+    next_month_start = f"{next_month_str} 00:00:00"
 
-    cursor.execute(f"""
-        SELECT category,
-               SUM(ABS(amount)) as total,
-               COUNT(*) as count
-        FROM {TABLE_NAME}
-        WHERE time >= ? AND time <= ? AND amount < 0
-        GROUP BY category
-        ORDER BY total DESC
-    """, (start_str, end_str))
+    conn = init_db()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-    rows = cursor.fetchall()
-    totals = _get_totals(start_str, end_str)
+        cursor.execute(f"""
+            SELECT category,
+                   SUM(ABS(amount)) as total,
+                   COUNT(*) as count
+            FROM {TABLE_NAME}
+            WHERE time >= ? AND time < ? AND amount < 0
+            GROUP BY category
+            ORDER BY total DESC
+        """, (start_str, next_month_start))
 
-    conn.close()
-    return {
-        "month": month,
-        "categories": [dict(row) for row in rows],
-        "expense": totals["expense"],
-        "income": totals["income"],
-        "net": totals["net"]
-    }
+        rows = cursor.fetchall()
+        totals = _get_totals(start_str, next_month_start)
+
+        return {
+            "month": month,
+            "categories": [dict(row) for row in rows],
+            "expense": totals["expense"],
+            "income": totals["income"],
+            "net": totals["net"]
+        }
+    finally:
+        conn.close()
 
 
 def compare_periods(period: str = "week") -> dict:
@@ -109,7 +111,7 @@ def compare_periods(period: str = "week") -> dict:
     周期对比
     - period: "week" (本周 vs 上周) 或 "month" (本月 vs 上月)
     """
-    today = TODAY
+    today = date.today()
 
     if period == "week":
         this_week_start = today - timedelta(days=today.weekday())
@@ -166,38 +168,45 @@ def compare_periods(period: str = "week") -> dict:
 
 def get_category_breakdown(from_date: str = None, to_date: str = None) -> dict:
     """获取分类支出明细（不指定日期范围时默认本月）"""
+    today = date.today()
     if not from_date:
-        from_date = f"{TODAY.year}-{TODAY.month:02d}-01"
+        from_date = f"{today.year}-{today.month:02d}-01"
     if not to_date:
-        to_date = TODAY.strftime("%Y-%m-%d")
+        to_date = today.strftime("%Y-%m-%d")
+
+    # 计算 to_date 的下一天（用 < 而非 <=）
+    to_date_obj = date.fromisoformat(to_date) + timedelta(days=1)
+    next_day_str = to_date_obj.strftime("%Y-%m-%d")
 
     conn = init_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-    cursor.execute(f"""
-        SELECT category,
-               SUM(ABS(amount)) as total,
-               COUNT(*) as count,
-               AVG(ABS(amount)) as avg
-        FROM {TABLE_NAME}
-        WHERE time >= ? AND time <= ? AND amount < 0
-        GROUP BY category
-        ORDER BY total DESC
-    """, (f"{from_date} 00:00:00", f"{to_date} 23:59:59"))
+        cursor.execute(f"""
+            SELECT category,
+                   SUM(ABS(amount)) as total,
+                   COUNT(*) as count,
+                   AVG(ABS(amount)) as avg
+            FROM {TABLE_NAME}
+            WHERE time >= ? AND time < ? AND amount < 0
+            GROUP BY category
+            ORDER BY total DESC
+        """, (f"{from_date} 00:00:00", f"{next_day_str} 00:00:00"))
 
-    rows = cursor.fetchall()
-    conn.close()
+        rows = cursor.fetchall()
 
-    grand_total = sum(row['total'] for row in rows)
+        grand_total = sum(row['total'] for row in rows)
 
-    return {
-        "from": from_date,
-        "to": to_date,
-        "categories": [dict(row) for row in rows],
-        "grand_total": grand_total,
-        "category_pct": [
-            {**dict(row), "pct": (row['total'] / grand_total * 100) if grand_total else 0}
-            for row in rows
-        ]
-    }
+        return {
+            "from": from_date,
+            "to": to_date,
+            "categories": [dict(row) for row in rows],
+            "grand_total": grand_total,
+            "category_pct": [
+                {**dict(row), "pct": (row['total'] / grand_total * 100) if grand_total else 0}
+                for row in rows
+            ]
+        }
+    finally:
+        conn.close()

@@ -1,5 +1,5 @@
 """
-Simple test runner for db.py (no pytest dependency)
+Simple test runner for db.py and analyze.py (no pytest dependency)
 """
 import sys
 import os
@@ -153,6 +153,61 @@ def test_get_by_id_not_found():
     assert record is None
 
 
+def test_get_today_summary():
+    """测试今日摘要"""
+    from analyze import get_today_summary
+    result = get_today_summary()
+    assert 'date' in result
+    assert 'count' in result
+    assert 'expense' in result
+    assert 'income' in result
+    assert 'net' in result
+
+
+def test_monthly_summary():
+    """测试月度汇总"""
+    from analyze import monthly_summary
+    result = monthly_summary("2026-05")
+    assert 'month' in result
+    assert 'categories' in result
+    assert 'expense' in result
+    assert 'income' in result
+    assert 'net' in result
+
+
+def test_compare_periods_week():
+    """测试周对比"""
+    from analyze import compare_periods
+    result = compare_periods("week")
+    assert result['period'] == 'week'
+    assert 'this' in result
+    assert 'last' in result
+    assert 'change' in result
+
+
+def test_compare_periods_month():
+    """测试月对比"""
+    from analyze import compare_periods
+    result = compare_periods("month")
+    assert result['period'] == 'month'
+
+
+def test_compare_periods_invalid():
+    """测试无效周期"""
+    from analyze import compare_periods
+    result = compare_periods("year")
+    assert 'error' in result
+
+
+def test_get_category_breakdown():
+    """测试分类明细"""
+    from analyze import get_category_breakdown
+    result = get_category_breakdown()
+    assert 'categories' in result
+    assert 'grand_total' in result
+    assert 'category_pct' in result
+
+
 if __name__ == "__main__":
     tests = [
         test_find_db_path_env,
@@ -170,6 +225,12 @@ if __name__ == "__main__":
         test_list_recent,
         test_get_by_id,
         test_get_by_id_not_found,
+        test_get_today_summary,
+        test_monthly_summary,
+        test_compare_periods_week,
+        test_compare_periods_month,
+        test_compare_periods_invalid,
+        test_get_category_breakdown,
     ]
 
     passed = 0

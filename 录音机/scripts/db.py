@@ -211,7 +211,7 @@ class Database:
             self._conn = None
             self._cur = None
 
-    def query(selfself, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
+    def query(self, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
 

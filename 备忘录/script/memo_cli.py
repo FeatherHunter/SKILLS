@@ -219,129 +219,88 @@ def add_reminder(args):
         conn.close()
 
 def list_due_reminders():
-    """获取未来10分钟内需要触发的提醒"""
+    """获取需要触发的提醒
+    
+    两个独立条件，满足其一即触发：
+    1. 提前10分钟：当前时间 HH:MM == remind_at - 10分钟，且未提前通知过
+    2. 准点：当前时间分钟 == remind_at分钟（秒数忽略），且未准时通知过
+    """
     conn = get_conn()
     now = datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-    window_end = (now + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
-
+    
+    # 计算提前10分钟的时间点
+    advance_10 = now - timedelta(minutes=10)
+    advance_10_str = advance_10.strftime("%Y-%m-%d %H:%M")  # 用于精确匹配 HH:MM
+    now_minute = now.minute
+    
     due_items = []
 
     try:
-        # 一次性提醒：只查询 notified_at 为空的
+        # 查询所有 active 的一次性提醒
         cur = conn.execute("""
-            SELECT r.id, r.note_id, r.remind_at, n.content
+            SELECT r.id, r.note_id, r.remind_at, r.notified_at, n.content
             FROM reminders r JOIN notes n ON r.note_id = n.id
             WHERE r.status = 'active' AND r.repeat_type = 'none'
-              AND r.notified_at IS NULL
-              AND r.remind_at BETWEEN ? AND ?
-        """, (now_str, window_end))
+        """)
+        
         for row in cur.fetchall():
-            due_items.append({
-                "id": row["id"],
-                "type": "once",
-                "note_id": row["note_id"],
-                "time": row["remind_at"],
-                "content": row["content"]
-            })
-
-        # 重复提醒：只查询 notified_at 为空或距离现在超过 10 分钟的
-        cur = conn.execute("""
-            SELECT r.id, r.note_id, r.repeat_type, r.repeat_rule, n.content, r.notified_at
-            FROM reminders r JOIN notes n ON r.note_id = n.id
-            WHERE r.status = 'active' AND r.repeat_type != 'none'
-              AND (r.notified_at IS NULL OR r.notified_at <= ?)
-        """, (now_str,))
-        for row in cur.fetchall():
-            rule = row["repeat_rule"]
-            rtype = row["repeat_type"]
-            if not rule:
-                continue
-            virt_time = None
-            try:
-                if rtype == "daily":
-                    # 规则 "09:00"
-                    t = datetime.strptime(rule, "%H:%M").time()
-                    virt_time = datetime.combine(now.date(), t)
-                elif rtype == "weekly":
-                    # "3 09:00"
-                    parts = rule.split()
-                    weekday = int(parts[0])
-                    t = datetime.strptime(parts[1], "%H:%M").time()
-                    # 计算本周的这一天
-                    python_weekday = convert_weekday(weekday)
-                    days_until = (python_weekday - now.weekday()) % 7
-                    target_date = now.date() + timedelta(days=days_until)
-                    virt_time = datetime.combine(target_date, t)
-                elif rtype == "monthly":
-                    # "15 08:30"
-                    parts = rule.split()
-                    day = int(parts[0])
-                    t = datetime.strptime(parts[1], "%H:%M").time()
-                    # 安全处理日期边界
-                    try:
-                        target_date = now.date().replace(day=day)
-                    except ValueError:
-                        # 本月没有这一天（如 2 月 31 日），跳到下个月
-                        if now.date().month == 12:
-                            target_date = now.date().replace(year=now.date().year+1, month=1, day=day)
-                        else:
-                            target_date = now.date().replace(month=now.date().month+1, day=day)
-                    if target_date < now.date():
-                        # 本月已过，计算下个月
-                        try:
-                            if target_date.month == 12:
-                                target_date = target_date.replace(year=target_date.year+1, month=1)
-                            else:
-                                target_date = target_date.replace(month=target_date.month+1)
-                        except ValueError:
-                            continue
-                    virt_time = datetime.combine(target_date, t)
-                elif rtype == "yearly":
-                    # "12-25 10:00"
-                    parts = rule.split()
-                    md = parts[0]
-                    t = datetime.strptime(parts[1], "%H:%M").time()
-                    month, day = map(int, md.split("-"))
-                    try:
-                        target_date = now.date().replace(month=month, day=day)
-                    except ValueError:
-                        # 2 月 29 日在非闰年，跳过
-                        continue
-                    if target_date < now.date():
-                        try:
-                            target_date = target_date.replace(year=target_date.year+1)
-                        except ValueError:
-                            continue
-                    virt_time = datetime.combine(target_date, t)
-            except:
-                continue
-
-            if virt_time:
-                if now <= virt_time <= window_end:
-                    due_items.append({
-                        "id": row["id"],
-                        "type": rtype,
-                        "note_id": row["note_id"],
-                        "time": virt_time.strftime("%Y-%m-%d %H:%M"),
-                        "content": row["content"]
-                    })
-
-        # 更新通知时间
-        for item in due_items:
-            conn.execute(
-                "UPDATE reminders SET notified_at = ? WHERE id = ?",
-                (now_str, item["id"])
-            )
-
-        # 将过期的 active 一次性提醒标记为 dismissed
-        conn.execute("""
-            UPDATE reminders SET status = 'dismissed'
-            WHERE status = 'active' AND repeat_type = 'none'
-              AND remind_at < ?
-        """, (now_str,))
+            reminder_id = row["id"]
+            note_id = row["note_id"]
+            remind_at = row["remind_at"]
+            notified_at = row["notified_at"]
+            content = row["content"]
+            
+            # 解析 remind_at 的小时和分钟
+            remind_dt = datetime.strptime(remind_at, "%Y-%m-%d %H:%M")
+            remind_hour = remind_dt.hour
+            remind_minute = remind_dt.minute
+            
+            # 计算提前10分钟的时间点（HH:MM）
+            advance_dt = remind_dt - timedelta(minutes=10)
+            advance_hhmm = advance_dt.strftime("%H:%M")
+            
+            # 当前时间 HH:MM
+            now_hhmm = now.strftime("%H:%M")
+            
+            triggered = False
+            trigger_reason = ""
+            
+            # 条件1：提前10分钟（精确匹配 HH:MM）
+            if now_hhmm == advance_hhmm and notified_at is None:
+                triggered = True
+                trigger_reason = "advance"
+            
+            # 条件2：准点（分钟匹配，秒数忽略）
+            # 注意：这里需要排除条件1已经触发的情况，避免重复记录
+            elif now_minute == remind_minute:
+                triggered = True
+                trigger_reason = "exact"
+            
+            if triggered:
+                due_items.append({
+                    "id": reminder_id,
+                    "type": "once",
+                    "note_id": note_id,
+                    "time": remind_at,
+                    "content": content,
+                    "trigger_reason": trigger_reason
+                })
+                if trigger_reason == "advance":
+                    # 条件1：提前10分钟，只设置 notified_at，不标记 dismissed
+                    conn.execute(
+                        "UPDATE reminders SET notified_at = ? WHERE id = ?",
+                        (now_str, reminder_id)
+                    )
+                elif trigger_reason == "exact":
+                    # 条件2：准点，设置 notified_at 并标记为 dismissed
+                    conn.execute(
+                        "UPDATE reminders SET notified_at = ?, status = 'dismissed' WHERE id = ?",
+                        (now_str, reminder_id)
+                    )
+        
         conn.commit()
-
+        
         output_json(due_items, message=f"当前有 {len(due_items)} 个待提醒")
     except Exception as e:
         error_json(str(e))
@@ -431,6 +390,7 @@ def main():
 
     # due
     p_due = sub.add_parser("due")
+    p_due.add_argument("--db", help="数据库路径覆盖")
 
     # dismiss reminder
     p_dismiss = sub.add_parser("dismiss")
@@ -459,6 +419,10 @@ def main():
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":
+        # 支持 --db 参数覆盖 DB_PATH
+        if args.db:
+            import memo_cli
+            memo_cli.DB_PATH = args.db
         list_due_reminders()
     elif args.command == "dismiss":
         dismiss_reminder(args)

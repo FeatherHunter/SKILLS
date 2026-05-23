@@ -92,6 +92,9 @@ def update_note(args):
     category = args.category
     media_path = args.media
     conn = get_conn()
+    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if not note:
+        error_json("笔记不存在")
     try:
         updates = []
         params = []
@@ -305,8 +308,8 @@ def main():
     p_update = sub.add_parser("update")
     p_update.add_argument("id", type=int)
     p_update.add_argument("--content")
-    p_update.add_argument("--category")
-    p_update.add_argument("--media")
+    p_update.add_argument("--category", "-c")
+    p_update.add_argument("--media", "-m")
 
     # delete
     p_del = sub.add_parser("delete")

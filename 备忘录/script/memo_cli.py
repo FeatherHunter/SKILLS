@@ -140,6 +140,60 @@ def delete_note(args):
     finally:
         conn.close()
 
+def get_note(args):
+    note_id = args.id
+    conn = get_conn()
+    try:
+        note = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
+        if not note:
+            error_json("笔记不存在")
+        output_json(dict(note))
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+def search_by_date(args):
+    start = args.start
+    end = args.end
+    category = args.category
+    limit = args.limit or 20
+    conn = get_conn()
+    try:
+        sql = "SELECT * FROM notes WHERE created_at BETWEEN ? AND ?"
+        params = [start, end]
+        if category:
+            sql += " AND category = ?"
+            params.append(category)
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        cur = conn.execute(sql, params)
+        rows = [dict(row) for row in cur.fetchall()]
+        output_json(rows, message=f"找到 {len(rows)} 条笔记")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+def update_category(args):
+    note_id = args.id
+    category = args.category
+    conn = get_conn()
+    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if not note:
+        error_json("笔记不存在")
+    try:
+        conn.execute(
+            "UPDATE notes SET category = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+            (category, note_id)
+        )
+        conn.commit()
+        output_json({"id": note_id, "category": category}, message="分类已更新")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
 # ---- 提醒操作 ----
 
 def add_reminder(args):
@@ -352,6 +406,22 @@ def main():
     p_del = sub.add_parser("delete")
     p_del.add_argument("id", type=int)
 
+    # get note
+    p_get = sub.add_parser("get")
+    p_get.add_argument("id", type=int)
+
+    # search by date
+    p_date = sub.add_parser("search-date")
+    p_date.add_argument("start", help="开始时间 YYYY-MM-DD")
+    p_date.add_argument("end", help="结束时间 YYYY-MM-DD")
+    p_date.add_argument("--category", "-c")
+    p_date.add_argument("--limit", "-l", type=int)
+
+    # update category
+    p_cat = sub.add_parser("update-category")
+    p_cat.add_argument("id", type=int)
+    p_cat.add_argument("category")
+
     # reminder add
     p_remind = sub.add_parser("remind")
     p_remind.add_argument("note_id", type=int)
@@ -380,6 +450,12 @@ def main():
         update_note(args)
     elif args.command == "delete":
         delete_note(args)
+    elif args.command == "get":
+        get_note(args)
+    elif args.command == "search-date":
+        search_by_date(args)
+    elif args.command == "update-category":
+        update_category(args)
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

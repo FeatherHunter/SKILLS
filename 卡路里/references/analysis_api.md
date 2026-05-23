@@ -5,15 +5,16 @@
 ### 1. weight_analysis — 体重变化分析
 
 ```python
-weight_analysis(start_date, end_date=None, analysis_type='trend')
+weight_analysis(start_date, end_date=None, analysis_type='trend',
+                compare_start=None, compare_end=None)
 ```
 
-| analysis_type | 说明 | 输出示例 |
+| analysis_type | 说明 | 额外参数 |
 |---|---|---|
-| `'trend'` | 趋势分析 | 均重96.2kg，日均变化0g/天，趋势平稳 |
-| `'compare'` | 同期对比 | 本期vs上期均重对比，变化量 |
-| `'milestone'` | 目标进度 | 距目标26.8kg，预计达成2026-11-25 |
-| `'volatility'` | 波动分析 | 日间±0.15kg，异常记录标记 |
+| `'trend'` | 趋势分析 | — |
+| `'compare'` | 同期对比 | `compare_start`/`compare_end` 可选，默认与上一个等长周期对比 |
+| `'milestone'` | 目标进度 | — |
+| `'volatility'` | 波动分析 | — |
 
 ### 2. diet_analysis — 饮食分析
 
@@ -53,7 +54,13 @@ exercise_analysis(start_date, end_date=None, analysis_type='exercise_trend')
 dashboard(start_date, end_date=None)
 ```
 
-整合：体重趋势 + 热量趋势 + 运动趋势 + 热量缺口，输出四维度仪表盘。
+整合四维度分析并输出：
+1. 体重趋势（调用 `weight_trend`）
+2. 热量趋势（调用 `diet_calorie_trend`）
+3. 运动趋势（调用 `exercise_trend`）
+4. 热量缺口（调用 `diet_deficit_analysis`）
+
+每个维度独立 try/except，单个维度失败不影响其他维度输出。
 
 ---
 

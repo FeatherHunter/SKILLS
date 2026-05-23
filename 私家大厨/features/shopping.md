@@ -121,14 +121,14 @@ python scripts/shopping_manager.py generate "id1,id2"
 
 ⚠️ **生成 HTML 时必须调用以下两个技能，违反视为不合格输出。**
 
-### 1. Taste Skill
-- 目录：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
-- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+### 1. taste-skill
+- 调用 `taste-skill` 技能
+- **AI加载后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 厨房场景适配：大触摸目标
 
-### 2. UI/UX Pro Max
-- 目录：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`
-- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+### 2. ui-ux-pro-max-skill
+- 调用 `ui-ux-pro-max-skill` 技能
+- **AI加载后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 必须使用：移动端UX最佳实践（44px触摸目标、8px间隔、对比度4.5:1）
 - 生成后自检3个UX问题
 

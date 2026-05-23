@@ -40,14 +40,14 @@
 
 ⚠️ **生成 HTML 时必须调用以下两个技能，违反视为不合格输出。**
 
-### 1. Taste Skill
-- 目录：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`<!-- 请根据实际环境调整路径 -->
-- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+### 1. taste-skill
+- 调用 `taste-skill` 技能
+- **AI加载后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 厨房场景适配：大触摸目标
 
-### 2. UI/UX Pro Max
-- 目录：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`<!-- 请根据实际环境调整路径 -->
-- **AI加载此文件后，必须先用 read 工具读取完整内容，再开始生成HTML**
+### 2. ui-ux-pro-max-skill
+- 调用 `ui-ux-pro-max-skill` 技能
+- **AI加载后，必须先用 read 工具读取完整内容，再开始生成HTML**
 - 必须使用：移动端UX最佳实践（44px触摸目标、8px间隔、对比度4.5:1）
 - 生成后自检3个UX问题
 
@@ -420,5 +420,5 @@ python scripts/tip_manager.py list <recipe_id>
 - 分类参考：`references/categories.md`
 - 命令行参考：`references/commands.md`
 - 表结构：`references/database_schema.md`
-- Taste Skill：`D:/2Study/StudyNotes/SKILLS/taste-skill/skills/taste-skill/SKILL.md`
-- UI/UX Pro Max：`D:/2Study/StudyNotes/SKILLS/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md`
+- Taste Skill：调用 `taste-skill` 技能
+- UI/UX Pro Max：调用 `ui-ux-pro-max-skill` 技能

@@ -11,6 +11,27 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 
 # 居家管家
 
+## 安装与配置
+
+**依赖**：Python 3.x
+
+**环境变量**（可选）：
+- `SKILLS_DB_PATH`：数据库目录（默认：技能目录/.db/）
+- `HOME_PHOTOS_DIR`：照片目录（默认：技能目录/photos/）
+
+**网页版**：[SkillBoard](https://featherhunter.github.io/StudyNotes/skillboard/) - 通过浏览器使用本系统，支持电脑和手机。使用时选择 `home.db` 文件即可。
+
+**一键安装**：复制以下 prompt 给 AI：
+```
+帮我安装"居家管家"技能：
+1. 检查 Python 环境
+2. 引导我配置环境变量
+3. 显示当前环境变量配置
+4. 告诉我如何更改数据目录
+```
+
+---
+
 ## 功能概述
 
 - **物品录入**：自然语言描述物品，AI 解析后写入数据库
@@ -21,7 +42,7 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 - **旅游归位**：出门带物+回家归位的完整流程
 - **频率统计**：区分高频/低频物品，识别长期未用物品
 - **标签管理**：合并相似标签
-- **照片管理**：支持配置照片存储路径（环境变量 `HOME_PHOTOS_DIR`）
+- **照片管理**：支持配置照片存储路径（环境变量 `HOME_PHOTOS_DIR`，默认为技能目录/photos）
 
 ## 快速导航
 
@@ -31,7 +52,6 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 | 命令行参考 | `references/commands.md` |
 | 物品分类 | `references/categories.md` |
 | 物品状态 | `references/statuses.md` |
-| 照片存储配置 | `references/photo-storage.md` |
 | 物品录入 | `features/add.md` |
 | 物品查找 | `features/search.md` |
 | 物品更新 | `features/update.md` |

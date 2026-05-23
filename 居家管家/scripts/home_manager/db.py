@@ -12,15 +12,12 @@ DB_FILENAME = "home.db"
 
 
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
+    """三层查找DB路径：环境变量 > 父目录.db > 技能目录"""
     env_path = os.environ.get("SKILLS_DB_PATH")
     if env_path:
         p = Path(env_path) / db_filename
         if p.exists():
             return p
-    p = skill_dir / db_filename
-    if p.exists():
-        return p
     for parent in skill_dir.parents:
         db_dir = parent / ".db"
         if db_dir.is_dir():
@@ -34,9 +31,22 @@ def _find_db_path(skill_dir, db_filename):
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
-# 照片目录：优先使用环境变量，否则默认为技能目录下的 photos 文件夹
-_photos_env = os.environ.get("HOME_PHOTOS_DIR")
-PHOTOS_DIR = Path(_photos_env) if _photos_env else SKILL_DIR / "photos"
+
+def _find_photos_dir(skill_dir):
+    """三层查找照片目录：环境变量 > 父目录photos > 技能目录photos"""
+    env_path = os.environ.get("HOME_PHOTOS_DIR")
+    if env_path:
+        p = Path(env_path)
+        if p.is_dir():
+            return p
+    for parent in skill_dir.parents:
+        photos_dir = parent / "photos"
+        if photos_dir.is_dir():
+            return photos_dir
+    return skill_dir / "photos"
+
+
+PHOTOS_DIR = _find_photos_dir(SKILL_DIR)
 
 # ── 连接 ──────────────────────────────────────────────────────────────────
 

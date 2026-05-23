@@ -4,24 +4,10 @@
 
 | 环境变量 | 说明 | 默认值 |
 |----------|------|--------|
-| `HOME_PHOTOS_DIR` | 照片存储目录的绝对路径 | `{技能目录}/photos/` |
-| `SKILLS_DB_PATH` | 数据库文件所在目录 | `{技能目录}/.db/` |
+| `SKILLS_DB_PATH` | 数据库文件所在目录 | 技能目录/.db/ |
+| `HOME_PHOTOS_DIR` | 照片存储目录 | 技能目录/photos/ |
 
-**使用示例：**
-```bash
-# Windows
-set HOME_PHOTOS_DIR=D:\MyPhotos\居家管家
-
-# Linux/Mac
-export HOME_PHOTOS_DIR=/home/user/photos/home-manager
-
-# 或在 Claude Code settings.json 中配置
-```
-
-**路径存储规则：**
-- 数据库 `photo` 字段存储**相对路径**（如 `14_优瞳隐形眼镜盒.jpg`）
-- 完整路径 = `HOME_PHOTOS_DIR` + 相对路径
-- 照片文件命名建议：`{物品ID}_{物品名称}.jpg`
+**路径存储规则**：数据库 `photo` 字段存储相对路径，完整路径 = 照片目录 + 相对路径
 
 ---
 

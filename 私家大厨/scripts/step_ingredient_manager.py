@@ -93,7 +93,7 @@ def list_by_step(args):
     if rows:
         print(f"   使用的食材：")
         for row in rows:
-            qty_used = f"{row['quantity_used']}" if row['quantity_used'] else ""
+            qty_used = f"{row['quantity_used']}" if row['quantity_used'] is not None else ""
             introduced = f"（{row['introduced_at']}）" if row['introduced_at'] else ""
             print(f"   - {row['name']} {qty_used}{row['unit'] or ''} {introduced}")
     else:

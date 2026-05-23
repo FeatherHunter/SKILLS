@@ -36,8 +36,8 @@ def init_table():
             bedtime         TEXT,
             wake_time       TEXT,
             note            TEXT,
-            created_at      INTEGER NOT NULL,
-            updated_at      INTEGER
+            created_at      TEXT NOT NULL,
+            updated_at      TEXT
         )
     """)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_sleep_date ON sleep_records(date)")

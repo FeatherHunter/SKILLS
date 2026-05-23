@@ -174,11 +174,12 @@ def list_due_reminders():
     due_items = []
 
     try:
-        # 一次性提醒
+        # 一次性提醒：只查询 notified_at 为空的
         cur = conn.execute("""
             SELECT r.id, r.note_id, r.remind_at, n.content
             FROM reminders r JOIN notes n ON r.note_id = n.id
             WHERE r.status = 'active' AND r.repeat_type = 'none'
+              AND r.notified_at IS NULL
               AND r.remind_at BETWEEN ? AND ?
         """, (now_str, window_end))
         for row in cur.fetchall():
@@ -190,12 +191,13 @@ def list_due_reminders():
                 "content": row["content"]
             })
 
-        # 重复提醒：逐条解析规则计算虚拟时间
+        # 重复提醒：只查询 notified_at 为空或距离现在超过 10 分钟的
         cur = conn.execute("""
-            SELECT r.id, r.note_id, r.repeat_type, r.repeat_rule, n.content
+            SELECT r.id, r.note_id, r.repeat_type, r.repeat_rule, n.content, r.notified_at
             FROM reminders r JOIN notes n ON r.note_id = n.id
             WHERE r.status = 'active' AND r.repeat_type != 'none'
-        """)
+              AND (r.notified_at IS NULL OR r.notified_at <= ?)
+        """, (now_str,))
         for row in cur.fetchall():
             rule = row["repeat_rule"]
             rtype = row["repeat_type"]
@@ -270,6 +272,13 @@ def list_due_reminders():
                         "time": virt_time.strftime("%Y-%m-%d %H:%M"),
                         "content": row["content"]
                     })
+
+        # 更新通知时间
+        for item in due_items:
+            conn.execute(
+                "UPDATE reminders SET notified_at = ? WHERE id = ?",
+                (now_str, item["id"])
+            )
 
         # 将过期的 active 一次性提醒标记为 dismissed
         conn.execute("""

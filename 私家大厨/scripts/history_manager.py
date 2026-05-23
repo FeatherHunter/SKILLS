@@ -25,6 +25,7 @@ def add(args):
             if rating_val < 1 or rating_val > 5:
                 print("错误：评分必须在1-5之间")
                 return False
+            rating = rating_val
         except ValueError:
             print("错误：评分必须是数字")
             return False

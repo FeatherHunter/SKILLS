@@ -75,7 +75,7 @@ def add_medal(medal_type: str, medal_name: str, file_path: str, remark: str = No
     conn = sqlite3.connect(MEDAL_DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO medals (medal_type, medal_name, gif_path, remark, awarded_at)
+        INSERT INTO medals (medal_type, medal_name, file_path, remark, awarded_at)
         VALUES (?, ?, ?, ?, ?)
     ''', (medal_type, medal_name, file_path, remark, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()

@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>居家管家 · 化妆品护肤品场景指南</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #fff;
+    --text: #1a1a1a;
+    --sub: #666;
+    --border: #e8e8e8;
+    --accent: #c27c7c;
+    --accent-light: #fdf2f2;
+    --tag-bg: #f5f0f0;
+    --code-bg: #f7f3f3;
+    --green: #6a9f6a;
+    --blue: #6a8aaf;
+    --orange: #c49a4a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", "PingFang SC", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── header ── */
+  header {
+    text-align: center;
+    padding: 64px 24px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+  }
+  header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  header p {
+    color: var(--sub);
+    font-size: 15px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  /* ── nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(8px);
+  }
+  nav a {
+    font-size: 13px;
+    color: var(--sub);
+    text-decoration: none;
+    padding: 4px 14px;
+    border-radius: 20px;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  nav a:hover, nav a.active {
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ── main ── */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* ── section ── */
+  .section {
+    margin-bottom: 56px;
+  }
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .section-head h2 {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  /* ── card ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: box-shadow .2s;
+  }
+  .card:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .card .desc {
+    color: var(--sub);
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+
+  /* ── dialogue ── */
+  .dialogue {
+    background: var(--code-bg);
+    border-radius: 8px;
+    padding: 16px 18px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .dialogue .u { color: var(--accent); font-weight: 600; }
+  .dialogue .ai { color: var(--blue); font-weight: 600; }
+  .dialogue .cmd {
+    display: block;
+    background: #f0e8e8;
+    padding: 6px 12px;
+    border-radius: 5px;
+    margin: 6px 0;
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 12.5px;
+    color: #8a5a5a;
+    white-space: pre;
+  }
+  .dialogue .note {
+    color: var(--sub);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  /* ── tags ── */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .tag {
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: var(--tag-bg);
+    color: var(--accent);
+  }
+  .tag.green { color: var(--green); background: #f0f7f0; }
+  .tag.blue { color: var(--blue); background: #f0f4f8; }
+  .tag.orange { color: var(--orange); background: #faf5eb; }
+
+  /* ── tip ── */
+  .tip {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: #fefcf0;
+    border-left: 3px solid var(--orange);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #7a6a3a;
+  }
+  .tip::before {
+    content: "!";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--orange);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 10px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--sub);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  /* ── footer ── */
+  footer {
+    text-align: center;
+    padding: 32px;
+    font-size: 13px;
+    color: #bbb;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── responsive ── */
+  @media (max-width: 600px) {
+    header { padding: 40px 16px 28px; }
+    header h1 { font-size: 22px; }
+    main { padding: 24px 14px 60px; }
+    .card { padding: 18px; }
+    .dialogue { padding: 12px 14px; font-size: 13px; }
+    nav { gap: 2px; }
+    nav a { font-size: 12px; padding: 3px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>居家管家 · 化妆品 & 护肤品场景</h1>
+  <p>围绕化妆品、护肤品、彩妆、洗护用品的完整管理流程，涵盖录入、查找、更新、盘点、过期管理等 10 大场景</p>
+</header>
+
+<nav>
+  <a href="#s1">录入新品</a>
+  <a href="#s2">拍照入库</a>
+  <a href="#s3">查找产品</a>
+  <a href="#s4">库存管理</a>
+  <a href="#s5">过期管理</a>
+  <a href="#s6">位置变动</a>
+  <a href="#s7">旅行携带</a>
+  <a href="#s8">盘点整理</a>
+  <a href="#s9">统计分析</a>
+  <a href="#s10">标签管理</a>
+  <a href="#s11">账号密码</a>
+  <a href="#s12">数据健康</a>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 1：录入新品 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-head">
+    <span class="num">1</span>
+    <h2>录入新的化妆品 / 护肤品</h2>
+  </div>
+
+  <div class="card">
+    <h3>1.1 刚买了一套护肤品，录入系统</h3>
+    <p class="desc">用自然语言告诉 AI 新买了什么，AI 自动解析并写入数据库</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 我刚买了一套兰蔻小黑瓶精华，50ml 的，放在卧室梳妆台上<br>
+      <span class="ai">AI：</span>收到，先记个草稿<br><br>
+      兰蔻小黑瓶精华 ｜ 化妆品<br><br>
+      再补充几点就好：<br>
+      &middot; 数量？（默认 1）<br>
+      &middot; 花了多少钱？<br>
+      &middot; 什么时候买的？<br>
+      &middot; 会过期吗？<br>
+      &middot; 贴几个标签？（颜色+品牌必填）<br>
+      <span class="u">用户：</span>1瓶，780块，今天买的，2027年5月过期，标签：兰蔻、精华液、抗老、50ml<br>
+      <span class="ai">AI：</span>确认录入？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py add --name "兰蔻小黑瓶精华" --category "化妆品" --location "卧室/梳妆台" --quantity 1 --price 780 --purchase-date "2026-05-24" --expiration-date "2027-05-01" --tags "兰蔻,精华液,抗老,50ml"</span>
+      <span class="ai">AI：</span>物品已添加 (ID:42)
+    </div>
+    <div class="tags">
+      <span class="tag">自动推断分类</span>
+      <span class="tag">位置推荐</span>
+      <span class="tag">过期日期</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1.2 录入彩妆单品</h3>
+    <p class="desc">口红、粉底、眼影等彩妆产品</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 新买了一支 YSL 小金条口红，色号 21，放在化妆包里<br>
+      <span class="ai">AI：</span>分类自动识别为「化妆品」。<br>
+      <span class="u">用户：</span>1支，320块，标签：YSL、口红、正红色、小金条<br>
+      <span class="cmd">python home_manager.py add --name "YSL小金条口红#21" --category "化妆品" --location "卧室/梳妆台/化妆包" --quantity 1 --price 320 --tags "YSL,口红,正红色,小金条"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1.3 批量录入囤货</h3>
+    <p class="desc">大促囤了多件同款，设置为备用状态</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 618 囤了 5 片敷尔佳面膜，放在卧室柜子备用层<br>
+      <span class="ai">AI：</span>状态设为「备用」对吗？（因为是囤货未拆封）<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py add --name "敷尔佳面膜" --category "化妆品" --location "卧室/衣柜/备用层" --quantity 5 --tags "敷尔佳,面膜,修复,医用" --location-status "备用"</span>
+    </div>
+    <div class="tags">
+      <span class="tag green">备用状态</span>
+      <span class="tag">批量入库</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1.4 网购下单后立即录入</h3>
+    <p class="desc">快递还没到，先标记为「快递中」</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 我在天猫买了一瓶 SK-II 神仙水，还没到<br>
+      <span class="ai">AI：</span>位置自动设为「快递柜/待取件」，状态标记为「快递中」<br>
+      <span class="cmd">python home_manager.py add --name "SK-II神仙水" --category "化妆品" --location "快递柜/待取件" --quantity 1 --tags "SK-II,神仙水,精华水,保湿" --location-status "快递中"</span>
+    </div>
+    <div class="tags">
+      <span class="tag blue">快递追踪</span>
+      <span class="tag">自动状态推断</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 2：拍照入库 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-head">
+    <span class="num">2</span>
+    <h2>拍照识别入库</h2>
+  </div>
+
+  <div class="card">
+    <h3>2.1 拍一张梳妆台照片，自动提取产品信息</h3>
+    <p class="desc">AI 视觉识别图片中的品牌、颜色、规格、材质等信息，自动提取为标签</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 [发送一张梳妆台照片]<br>
+      <span class="ai">AI：</span>识别到以下产品：<br>
+      1. 资生堂红腰子精华 - 75ml - 红色瓶身<br>
+      2. 雅诗兰黛小棕瓶 - 50ml - 棕色瓶身<br>
+      3. 兰蔻粉水 - 400ml - 粉色瓶身<br><br>
+      请逐个确认录入，还是全部录入？<br>
+      <span class="u">用户：</span>先录第一个<br>
+      <span class="cmd">python home_manager.py add --name "资生堂红腰子精华" --category "化妆品" --location "卧室/梳妆台" --tags "资生堂,精华液,修护,75ml,红色瓶身"</span>
+      <span class="ai">AI：</span>物品已添加 (ID:43)。需要为此物品添加图片吗？<br>
+      <span class="u">用户：</span>把刚才那张照片存上<br>
+      <span class="ai">AI：</span>图片已保存至 photos/43_资生堂红腰子精华.jpg
+    </div>
+    <div class="tags">
+      <span class="tag green">视觉识别</span>
+      <span class="tag">自动提取标签</span>
+      <span class="tag blue">图片归档</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 3：查找产品 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-head">
+    <span class="num">3</span>
+    <h2>查找化妆品 / 护肤品</h2>
+  </div>
+
+  <div class="card">
+    <h3>3.1 按名称搜索</h3>
+    <p class="desc">模糊匹配，不确定全名也能找到</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>找一下我的神仙水<br>
+      <span class="cmd">python home_manager.py search --name "神仙水"</span>
+      <span class="ai">AI：</span>找到 1 件物品：<br>
+      ID:12 | SK-II神仙水 | 化妆品 | 快递柜/待取件 ×1[快递中] | SK-II,神仙水,精华水,保湿
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3.2 按位置搜索</h3>
+    <p class="desc">看看某个位置放了哪些化妆品</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>梳妆台上有哪些化妆品<br>
+      <span class="cmd">python home_manager.py search --location "梳妆台" --category "化妆品"</span>
+      <span class="ai">AI：</span>找到 5 件物品：<br>
+      ID:1 | 兰蔻小黑瓶精华 | ...<br>
+      ID:2 | YSL小金条口红#21 | ...<br>
+      ID:3 | 雅诗兰黛小棕瓶 | ...<br>
+      ...
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3.3 按标签精准筛选</h3>
+    <p class="desc">找特定品牌、功效、肤质的产品</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>我有哪些补水的面膜<br>
+      <span class="cmd">python home_manager.py search --tag "补水" --name "面膜"</span>
+      <span class="ai">AI：</span>找到 3 件物品：<br>
+      ID:8 | 敷尔佳面膜 | 化妆品 | 卧室/衣柜/备用层 ×5[备用]<br>
+      ID:15 | 春雨蜂蜜面膜 | 化妆品 | 卫生间/洗手台下 ×3[在家]<br>
+      ...
+    </div>
+    <div class="tags">
+      <span class="tag">组合搜索</span>
+      <span class="tag">模糊+精确</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3.4 查看某件产品的完整信息</h3>
+    <p class="desc">包括所有位置、数量、购买日期、过期日期</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>看看兰蔻小黑瓶的详细信息<br>
+      <span class="ai">AI：</span>[搜索后展示详情]<br>
+      <span class="cmd">python home_manager.py detail --id 1</span>
+      ===== 物品详情 =====<br>
+      ID: 1<br>
+      名称: 兰蔻小黑瓶精华<br>
+      分类: 化妆品<br>
+      位置分布：<br>
+      &nbsp;&nbsp;卧室/梳妆台 × 1 [在家] | 购买:2026-05-24 过期:2027-05-01<br>
+      标签: 兰蔻,精华液,抗老,50ml<br>
+      购买价: 780.00<br>
+      访问次数: 3
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3.5 "还有没有" — 库存确认</h3>
+    <p class="desc">出门前或购物前快速确认库存</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>卸妆水还有多少<br>
+      <span class="cmd">python home_manager.py search --name "卸妆水"</span>
+      <span class="ai">AI：</span>找到 1 件物品：<br>
+      ID:5 | 贝德玛卸妆水 | 化妆品 | 卫生间/洗手台 ×2[在家] | 贝德玛,卸妆水,粉水,500ml<br><br>
+      还剩 2 瓶，在卫生间洗手台。
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 4：库存管理（数量变化） -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-head">
+    <span class="num">4</span>
+    <h2>库存管理 — 用量追踪</h2>
+  </div>
+
+  <div class="card">
+    <h3>4.1 用完一瓶 / 用掉一些</h3>
+    <p class="desc">消耗品的日常用量记录</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>卸妆水用完了一瓶<br>
+      <span class="cmd">python home_manager.py update --id 5 --minus 1 --location "卫生间/洗手台"</span>
+      <span class="ai">AI：</span>减少 1 个，剩余 1 瓶（位置：卫生间/洗手台）<br><br>
+      <span class="u">用户：</span>面膜昨晚敷了一片<br>
+      <span class="cmd">python home_manager.py update --id 8 --minus 1 --location "卧室/衣柜/备用层"</span>
+      <span class="ai">AI：</span>减少 1 片，剩余 4 片（位置：卧室/衣柜/备用层）
+    </div>
+    <div class="tip">数量减到 0 时，该位置记录自动删除，不会保留空位置</div>
+  </div>
+
+  <div class="card">
+    <h3>4.2 补货 / 囤货入库</h3>
+    <p class="desc">新买了同款产品补充到现有库存</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>又买了 3 瓶贝德玛卸妆水，放到卫生间<br>
+      <span class="ai">AI：</span>找到已有记录 ID:5「贝德玛卸妆水」，当前 1 瓶。补充还是新建？<br>
+      <span class="u">用户：</span>补充<br>
+      <span class="cmd">python home_manager.py update --id 5 --plus 3 --location "卫生间/洗手台"</span>
+      <span class="ai">AI：</span>补充 3 个，现有 4 瓶（位置：卫生间/洗手台）
+    </div>
+    <div class="tags">
+      <span class="tag green">补充库存</span>
+      <span class="tag">智能去重</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>4.3 状态自动转换</h3>
+    <p class="desc">用完后系统自动标记为「已用完」</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>那瓶兰蔻粉水用完了<br>
+      <span class="ai">AI：</span>确认将 ID:3「兰蔻粉水」状态设为「已用完」？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py update --id 3 --location-status "已用完" --location "卫生间/洗手台"</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 5：过期管理 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-head">
+    <span class="num">5</span>
+    <h2>过期管理 — 保质期追踪</h2>
+  </div>
+
+  <div class="card">
+    <h3>5.1 录入时设置过期日期</h3>
+    <p class="desc">化妆品和护肤品的开封保质期管理</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 新买的安耐晒防晒霜，2027年8月过期<br>
+      <span class="cmd">python home_manager.py add --name "安耐晒金瓶防晒霜" --category "化妆品" --location "卧室/梳妆台" --tags "安耐晒,防晒霜,SPF50,60ml" --expiration-date "2027-08-01"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>5.2 更新过期日期</h3>
+    <p class="desc">开封后实际保质期缩短，更新记录</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>那瓶防晒霜今天开封了，开封后12个月过期<br>
+      <span class="cmd">python home_manager.py update --id 10 --expiration-date "2027-05-24" --location "卧室/梳妆台"</span>
+      <span class="ai">AI：</span>位置「卧室/梳妆台」过期日期已更新为「2027-05-24」
+    </div>
+    <div class="tags">
+      <span class="tag orange">开封保质期</span>
+      <span class="tag">日期追踪</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>5.3 过期产品处理</h3>
+    <p class="desc">发现过期产品，标记为废弃</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>那瓶面霜过期了，扔了<br>
+      <span class="ai">AI：</span>确认将 ID:6「XX面霜」状态设为「已废弃」？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py update --id 6 --location-status "已废弃" --location "卫生间/洗手台"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>5.4 数据健康检查 — 过期预警</h3>
+    <p class="desc">定期检查哪些产品即将过期或已过期</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>健康检查<br>
+      <span class="ai">AI：</span>检查完毕，发现以下问题：<br>
+      &middot; ID:6「XX面霜」已过期（2026-04-01），状态仍为「在家」<br>
+      &middot; ID:15「春雨蜂蜜面膜」将于 7 天后过期<br>
+      &middot; 3 件物品缺少过期日期<br><br>
+      需要处理吗？
+    </div>
+    <div class="tags">
+      <span class="tag orange">过期预警</span>
+      <span class="tag">数据审计</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 6：位置变动 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-head">
+    <span class="num">6</span>
+    <h2>位置变动 — 化妆品搬家</h2>
+  </div>
+
+  <div class="card">
+    <h3>6.1 换位置存放</h3>
+    <p class="desc">从梳妆台移到卫生间，或从一个抽屉换到另一个</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>那瓶精华液我放到卫生间洗手台了<br>
+      <span class="ai">AI：</span>确认将 ID:1「兰蔻小黑瓶精华」从「卧室/梳妆台」移到「卫生间/洗手台」？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py update --id 1 --new-location "卫生间/洗手台" --location "卧室/梳妆台"</span>
+      <span class="ai">AI：</span>物品已从「卧室/梳妆台」搬到「卫生间/洗手台」
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>6.2 借给朋友</h3>
+    <p class="desc">借出后标记为「借用中」</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>那支口红借给小红了<br>
+      <span class="ai">AI：</span>确认将 ID:2「YSL小金条口红#21」状态设为「借用中」？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py update --id 2 --location-status "借用中" --location "卧室/梳妆台/化妆包"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>6.3 送修 / 维修中</h3>
+    <p class="desc">美容仪器坏了送去维修</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>我的美容仪坏了，送去修了<br>
+      <span class="ai">AI：</span>确认将 ID:20「XX美容仪」状态设为「维修中」？<br>
+      <span class="cmd">python home_manager.py update --id 20 --location-status "维修中"</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 7：旅行携带 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-head">
+    <span class="num">7</span>
+    <h2>旅行携带 — 出门 & 归位</h2>
+  </div>
+
+  <div class="card">
+    <h3>7.1 出门前：打包护肤品</h3>
+    <p class="desc">出发前把要带的化妆品标记为「旅游中」</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 我要带防晒霜和卸妆水出去旅游<br>
+      <span class="ai">AI：</span>找到以下物品：<br>
+      1. ID:10 安耐晒金瓶防晒霜 [在家]<br>
+      2. ID:5 贝德玛卸妆水 [在家]<br><br>
+      确认带这些出门？<br>
+      <span class="u">用户：</span>对<br>
+      <span class="cmd">python home_manager.py update --id 10 --location-status "旅游中"
+python home_manager.py update --id 5 --location-status "旅游中" --location "卫生间/洗手台"</span>
+      <span class="ai">AI：</span>已标记为「旅游中」，旅途愉快！
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>7.2 回家后：归位</h3>
+    <p class="desc">旅游回来，把东西放回原位或换个位置</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>居家管家 旅游回来了<br>
+      <span class="ai">AI：</span>找到 2 件「旅游中」物品：<br>
+      1. ID:10 安耐晒金瓶防晒霜<br>
+      2. ID:5 贝德玛卸妆水<br><br>
+      逐个确认：防晒霜放回原位还是换位置？<br>
+      <span class="u">用户：</span>放回原位<br>
+      <span class="cmd">python home_manager.py update --id 10 --location-status "在家"</span>
+      <span class="ai">AI：</span>卸妆水呢？<br>
+      <span class="u">用户：</span>放卧室梳妆台吧<br>
+      <span class="cmd">python home_manager.py update --id 5 --new-location "卧室/梳妆台" --location "卫生间/洗手台" --location-status "在家"</span>
+    </div>
+    <div class="tags">
+      <span class="tag green">出门/归位流程</span>
+      <span class="tag">逐个确认</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 8：盘点整理 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-head">
+    <span class="num">8</span>
+    <h2>盘点整理 — 化妆品大扫除</h2>
+  </div>
+
+  <div class="card">
+    <h3>8.1 盘点某个位置</h3>
+    <p class="desc">梳妆台乱了，盘一下有哪些东西</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>盘点一下梳妆台<br>
+      <span class="cmd">python home_manager.py inventory --location "梳妆台"</span>
+      <span class="ai">AI：</span>盘点「梳妆台」：共 6 件<br>
+      &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;<br>
+      ID:1 | 兰蔻小黑瓶精华 | 化妆品 | 卧室/梳妆台 ×1[在家] | 兰蔻,精华液<br>
+      ID:2 | YSL小金条口红#21 | 化妆品 | 卧室/梳妆台/化妆包 ×1[借用中] | YSL,口红<br>
+      ID:3 | 雅诗兰黛小棕瓶 | 化妆品 | 卧室/梳妆台 ×1[在家] | 雅诗兰黛,精华<br>
+      ...<br><br>
+      逐个确认状态是否正确？<br>
+      <span class="u">用户：</span>小棕瓶其实用完了<br>
+      <span class="cmd">python home_manager.py update --id 3 --location-status "已用完"</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>8.2 盘点整个卫生间</h3>
+    <p class="desc">一次盘点多个位置的化妆品</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>整理一下卫生间的化妆品<br>
+      <span class="cmd">python home_manager.py inventory --location "卫生间"</span>
+      <span class="ai">AI：</span>盘点「卫生间」：共 8 件<br>
+      （列出所有卫生间的化妆品，逐个确认）
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>8.3 盘点中途退出</h3>
+    <p class="desc">已确认的修改会保留，未确认的保持原样</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>不盘了，剩下的先这样<br>
+      <span class="ai">AI：</span>好的，已确认的 3 项修改已保存，剩余物品保持原样。
+    </div>
+    <div class="tags">
+      <span class="tag blue">增量保存</span>
+      <span class="tag">安全退出</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 9：统计分析 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-head">
+    <span class="num">9</span>
+    <h2>统计分析 — 用量洞察</h2>
+  </div>
+
+  <div class="card">
+    <h3>9.1 查看高频使用的护肤品</h3>
+    <p class="desc">哪些产品你最常用</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>我最常用的化妆品是哪些<br>
+      <span class="cmd">python home_manager.py stats --type frequent --limit 10</span>
+      <span class="ai">AI：</span>高频物品 TOP10<br>
+      &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;<br>
+      访问12次 | 最后:2026-05-23 | ID:1 | 兰蔻小黑瓶精华 | 化妆品<br>
+      访问8次 | 最后:2026-05-22 | ID:5 | 贝德玛卸妆水 | 化妆品<br>
+      访问6次 | 最后:2026-05-20 | ID:10 | 安耐晒金瓶防晒霜 | 化妆品<br>
+      ...
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>9.2 发现长期未用的产品</h3>
+    <p class="desc">买了很久但一直没碰的东西，考虑是否需要处理</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>有没有很久没碰的化妆品<br>
+      <span class="cmd">python home_manager.py stats --type dormant --limit 10</span>
+      <span class="ai">AI：</span>长期未访问 TOP10<br>
+      访问0次 | 最后:2025-12-01 | ID:25 | XX眼影盘 | 化妆品<br>
+      访问1次 | 最后:2026-01-15 | ID:30 | XX腮红 | 化妆品<br><br>
+      这些产品已经很久没用了，要不要标记为「待处理」或检查是否过期？
+    </div>
+    <div class="tags">
+      <span class="tag orange">闲置发现</span>
+      <span class="tag">断舍离</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>9.3 化妆品总览统计</h3>
+    <p class="desc">一目了然的库存概览</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>化妆品统计<br>
+      <span class="cmd">python home_manager.py stats --type summary</span>
+      <span class="ai">AI：</span>总物品数：45<br>
+      位置记录总数：52<br>
+      &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;<br>
+      各状态分布：<br>
+      &nbsp;&nbsp;在家　 28 ████████████████████████████<br>
+      &nbsp;&nbsp;备用　 &nbsp;8 ████████<br>
+      &nbsp;&nbsp;快递中 &nbsp;3 ███<br>
+      &nbsp;&nbsp;已用完 &nbsp;5 █████<br>
+      &nbsp;&nbsp;借用中 &nbsp;1 █<br>
+      &nbsp;&nbsp;旅游中 &nbsp;2 ██<br>
+      &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;<br>
+      分类分布：<br>
+      &nbsp;&nbsp;化妆品 &nbsp;32 ████████████████████████████████<br>
+      &nbsp;&nbsp;日用品 &nbsp;10 ██████████<br>
+      &nbsp;&nbsp;清洁用品 &nbsp;3 ███
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 10：标签管理 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-head">
+    <span class="num">10</span>
+    <h2>标签管理 — 整理化妆品标签</h2>
+  </div>
+
+  <div class="card">
+    <h3>10.1 查看所有标签</h3>
+    <p class="desc">了解标签使用情况，发现重复或不规范的标签</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>看看所有标签<br>
+      <span class="cmd">python home_manager.py tag-list</span>
+      <span class="ai">AI：</span>共 28 个标签：<br>
+      &nbsp;&nbsp;化妆品 (15)<br>
+      &nbsp;&nbsp;保湿 (8)<br>
+      &nbsp;&nbsp;护肤 (7)<br>
+      &nbsp;&nbsp;白色 (5)<br>
+      &nbsp;&nbsp;白 (3) ← 与「白色」重复<br>
+      ...
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>10.2 合并重复标签</h3>
+    <p class="desc">把「白」和「白色」、「补水」和「保湿」等相似标签统一</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>把「白」合并到「白色」<br>
+      <span class="cmd">python home_manager.py tag-merge --from "白" --to "白色"</span>
+      <span class="ai">AI：</span>已将 3 个「白」合并为「白色」<br><br>
+      <span class="u">用户：</span>「补水」也合并到「保湿」<br>
+      <span class="cmd">python home_manager.py tag-merge --from "补水" --to "保湿"</span>
+    </div>
+    <div class="tags">
+      <span class="tag">去重</span>
+      <span class="tag">规范化</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>10.3 推荐标签方案</h3>
+    <p class="desc">化妆品常用标签维度参考</p>
+    <table>
+      <tr><th>维度</th><th>示例标签</th></tr>
+      <tr><td>品牌</td><td>兰蔻、雅诗兰黛、SK-II、资生堂、YSL</td></tr>
+      <tr><td>品类</td><td>精华液、面霜、面膜、口红、粉底、防晒霜</td></tr>
+      <tr><td>功效</td><td>保湿、抗老、美白、修护、控油、祛痘</td></tr>
+      <tr><td>肤质</td><td>干皮、油皮、敏感肌、混合皮</td></tr>
+      <tr><td>规格</td><td>30ml、50ml、100ml、小样、中样、正装</td></tr>
+      <tr><td>季节</td><td>春夏、秋冬、四季</td></tr>
+      <tr><td>质地</td><td>水润、清爽、滋润、哑光、丝绒</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 11：账号密码管理 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s11">
+  <div class="section-head">
+    <span class="num">11</span>
+    <h2>账号密码 — 购物平台管理</h2>
+  </div>
+
+  <div class="card">
+    <h3>11.1 保存美妆购物平台账号</h3>
+    <p class="desc">淘宝、天猫、小红书、丝芙兰等平台的账号密码加密存储</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>帮我保存一下淘宝的账号<br>
+      <span class="cmd">python home_manager.py account add --platform "淘宝" --user "my_account" --pass "my_password" --master-key "我的密钥" --tags "购物,美妆" --note "常买护肤品"</span>
+      <span class="ai">AI：</span>账号已添加 (ID:1)
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>11.2 查看某个平台的密码</h3>
+    <p class="desc">需要输入 master key 才能解密查看</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>看看淘宝的密码<br>
+      <span class="cmd">python home_manager.py account show --platform "淘宝" --master-key "我的密钥"</span>
+      <span class="ai">AI：</span>平台: 淘宝<br>
+      账号: my_account<br>
+      密码: my_password<br>
+      标签: 购物,美妆<br>
+      备注: 常买护肤品
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>11.3 列出所有平台账号</h3>
+    <div class="dialogue">
+      <span class="u">用户：</span>有哪些平台账号<br>
+      <span class="cmd">python home_manager.py account list</span>
+      <span class="ai">AI：</span>共 4 个账号：<br>
+      丝芙兰 | sephora_user | **** | 购物,美妆 | 会员积分<br>
+      小红书 | xhs_user | **** | 社交,种草 | -<br>
+      天猫 | tmall_user | **** | 购物,美妆 | 88VIP<br>
+      淘宝 | my_account | **** | 购物,美妆 | 常买护肤品
+    </div>
+    <div class="tags">
+      <span class="tag blue">加密存储</span>
+      <span class="tag">Master Key</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 场景 12：数据健康检查 -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="section" id="s12">
+  <div class="section-head">
+    <span class="num">12</span>
+    <h2>数据健康检查</h2>
+  </div>
+
+  <div class="card">
+    <h3>12.1 定期数据审计</h3>
+    <p class="desc">检查数据完整性、标签规范性、状态时效性</p>
+    <div class="dialogue">
+      <span class="u">用户：</span>检查一下数据<br>
+      <span class="ai">AI：</span>数据健康检查报告：<br><br>
+      <strong>标签完整性</strong><br>
+      &middot; 3 件化妆品缺少标签<br>
+      &middot; 2 件只有 1 个标签（建议至少 2 个：品牌+品类）<br><br>
+      <strong>状态时效性</strong><br>
+      &middot; ID:12「SK-II神仙水」快递中超过 7 天，是否已收到？<br>
+      &middot; ID:20「XX美容仪」维修中超过 30 天<br><br>
+      <strong>位置规范性</strong><br>
+      &middot; ID:25 的位置「梳妆台」只有单级，建议改为「卧室/梳妆台」<br><br>
+      需要逐项处理吗？
+    </div>
+    <div class="tags">
+      <span class="tag orange">标签检查</span>
+      <span class="tag orange">状态超时</span>
+      <span class="tag orange">位置规范</span>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  居家管家 v1.0 · 化妆品 & 护肤品管理场景
+</footer>
+
+</body>
+</html>

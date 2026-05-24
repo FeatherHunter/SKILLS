@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-勋章GIF生成器 - 高质量版
+勋章GIF生成器
 
 AI根据视觉描述生成HTML，脚本负责：
 1. 启动Playwright渲染HTML
 2. 截图PNG帧序列
-3. ffmpeg合成高质量GIF
+3. ffmpeg合成GIF
 
 用法：
     python3 generate_medal_gif.py --html "<html代码>" --output <输出文件名> [--fps 20] [--duration 3]
@@ -29,15 +29,13 @@ except ImportError:
     sys.exit(1)
 
 # 配置
-WIDTH = 400
-HEIGHT = 450
 DEFAULT_FPS = 20
 DEFAULT_DURATION = 3  # 秒
 
 
 def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, duration: int = DEFAULT_DURATION):
     """
-    将HTML内容转换为高质量GIF
+    将HTML内容转换为GIF
     
     Args:
         html_content: HTML代码（可以包含内联CSS和动画）
@@ -62,7 +60,7 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
         print(f'启动浏览器渲染...')
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            context = browser.new_context(viewport={'width': WIDTH, 'height': HEIGHT})
+            context = browser.new_context(viewport={'width': 400, 'height': 450})
             page = context.new_page()
             
             # 设置内容
@@ -81,27 +79,27 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
                     
             browser.close()
         
-        # 用ffmpeg合成高质量GIF
-        print('合成高质量GIF...')
+        # 用ffmpeg合成GIF
+        print('合成GIF...')
         output_full = os.path.join(MEDAL_RESOURCE_PATH, output_path)
         
-        # 使用palettegen优化颜色，使用更高质量的编码
+        # 使用palettegen优化颜色
         palette_file = os.path.join(tmpdir, 'palette.png')
         subprocess.run([
             'ffmpeg', '-y',
             '-framerate', str(fps),
             '-i', frame_pattern,
-            '-vf', f'fps={fps},scale={WIDTH}:{HEIGHT}:flags=lanczos,palettegen=max_colors=256:stats_mode=full',
+            '-vf', f'fps={fps},palettegen=max_colors=256:stats_mode=full',
             palette_file
         ], capture_output=True)
         
-        # 合成最终GIF - 使用更高质量设置
+        # 合成最终GIF
         subprocess.run([
             'ffmpeg', '-y',
             '-framerate', str(fps),
             '-i', frame_pattern,
             '-i', palette_file,
-            '-lavfi', f'fps={fps},scale={WIDTH}:{HEIGHT}:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
+            '-lavfi', f'fps={fps}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=5',
             '-loop', '0',
             output_full
         ], capture_output=True)
@@ -111,7 +109,7 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
 
 
 def main():
-    parser = argparse.ArgumentParser(description='勋章GIF生成器 - 高质量版')
+    parser = argparse.ArgumentParser(description='勋章GIF生成器')
     parser.add_argument('--html', help='HTML代码（直接传入）')
     parser.add_argument('--html-file', help='HTML文件路径（二选一）')
     parser.add_argument('--output', required=True, help='输出文件名')

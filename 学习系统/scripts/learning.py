@@ -30,8 +30,13 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import db_init
 import knowledge_api
-import progress_api
-import review_api
+import progress_core
+import progress_foundation
+import progress_mastery
+import progress_session
+import review_schedule
+import review_history
+import review_mastery
 import integration_api
 
 
@@ -94,50 +99,50 @@ def cmd_progress(args):
 
     try:
         if action == "init":
-            result = progress_api.init_knowledge_progress(args[1])
+            result = progress_core.init_knowledge_progress(args[1])
 
         elif action == "get":
-            result = progress_api.get_full_progress(args[1])
+            result = progress_core.get_full_progress(args[1])
 
         elif action == "update":
             knowledge_id = args[1]
             data = json.loads(args[2])
-            result = progress_api.update_knowledge_progress(knowledge_id, data)
+            result = progress_session.update_knowledge_progress(knowledge_id, data)
 
         elif action == "update_foundation":
             knowledge_id = args[1]
             data = json.loads(args[2])
-            result = progress_api.update_foundation_path(knowledge_id, data)
+            result = progress_foundation.update_foundation_path(knowledge_id, data)
 
         elif action == "update_mastery":
             knowledge_id = args[1]
             data = json.loads(args[2])
-            result = progress_api.update_mastery_path(knowledge_id, data)
+            result = progress_mastery.update_mastery_path(knowledge_id, data)
 
         elif action == "update_stage":
             knowledge_id = args[1]
             stage_name = args[2]
             data = json.loads(args[3])
-            result = progress_api.update_stage_progress(knowledge_id, stage_name, data)
+            result = progress_foundation.update_stage_progress(knowledge_id, stage_name, data)
 
         elif action == "update_session":
             data = json.loads(args[1])
-            result = progress_api.update_active_session(data)
+            result = progress_session.update_active_session(data)
 
         elif action == "get_session":
-            result = progress_api.get_active_session()
+            result = progress_session.get_active_session()
 
         elif action == "update_mastery_stage":
             knowledge_id = args[1]
             stage_name = args[2]
             data = json.loads(args[3])
-            result = progress_api.update_mastery_stage_progress(knowledge_id, stage_name, data)
+            result = progress_mastery.update_mastery_stage_progress(knowledge_id, stage_name, data)
 
         elif action == "update_interview_assets":
             knowledge_id = args[1]
             field = args[2]
             value = args[3]
-            result = progress_api.update_interview_assets(knowledge_id, field, value)
+            result = progress_session.update_interview_assets(knowledge_id, field, value)
 
         else:
             print(f"[错误] 未知 action: {action}")
@@ -165,14 +170,14 @@ def cmd_review(args):
     try:
         if action == "create_schedule":
             completed_at = args[2] if len(args) > 2 else None
-            result = review_api.create_review_schedule(args[1], completed_at)
+            result = review_schedule.create_review_schedule(args[1], completed_at)
 
         elif action == "get_schedule":
-            result = review_api.get_review_schedule(args[1])
+            result = review_schedule.get_review_schedule(args[1])
 
         elif action == "get_due":
             date = args[1] if len(args) > 1 else None
-            result = review_api.get_due_reviews(date)
+            result = review_schedule.get_due_reviews(date)
 
         elif action == "complete_round":
             knowledge_id = args[1]
@@ -183,7 +188,7 @@ def cmd_review(args):
             duration = int(args[6]) if len(args) > 6 else None
             feedback = args[7] if len(args) > 7 else None
             wrong = json.loads(args[8]) if len(args) > 8 else None
-            result = review_api.complete_round(knowledge_id, round_num, score, questions_count, correct_count, duration, feedback, wrong)
+            result = review_schedule.complete_round(knowledge_id, round_num, score, questions_count, correct_count, duration, feedback, wrong)
 
         elif action == "add_verification":
             knowledge_id = args[1]
@@ -192,7 +197,7 @@ def cmd_review(args):
             results = json.loads(args[4])
             passed = int(args[5])
             failed = int(args[6])
-            result = review_api.add_verification(knowledge_id, round_num, user_choice, results, passed, failed)
+            result = review_history.add_verification(knowledge_id, round_num, user_choice, results, passed, failed)
 
         elif action == "add_history":
             knowledge_id = args[1]
@@ -205,25 +210,25 @@ def cmd_review(args):
             feedback = args[8] if len(args) > 8 else None
             wrong_json = args[9] if len(args) > 9 else None
             wrong_list = json.loads(wrong_json) if wrong_json else None
-            result = review_api.add_review_history(knowledge_id, round_num, review_date, duration, questions, correct, score, feedback, wrong_list)
+            result = review_history.add_review_history(knowledge_id, round_num, review_date, duration, questions, correct, score, feedback, wrong_list)
 
         elif action == "get_history":
             knowledge_id = args[1] if len(args) > 1 else None
             limit = int(args[2]) if len(args) > 2 else 20
-            result = review_api.get_review_history(knowledge_id, limit)
+            result = review_history.get_review_history(knowledge_id, limit)
 
         elif action == "get_weak":
-            result = review_api.get_weak_topics(args[1])
+            result = review_history.get_weak_topics(args[1])
 
         elif action == "enable_mastery":
-            result = review_api.enable_mastery_review(args[1])
+            result = review_mastery.enable_mastery_review(args[1])
 
         elif action == "record_mastery":
             score = int(args[2]) if len(args) > 2 else None
-            result = review_api.record_mastery_review(args[1], score)
+            result = review_mastery.record_mastery_review(args[1], score)
 
         elif action == "get_mastery_status":
-            result = review_api.get_mastery_review_status(args[1])
+            result = review_mastery.get_mastery_review_status(args[1])
 
         else:
             print(f"[错误] 未知 action: {action}")

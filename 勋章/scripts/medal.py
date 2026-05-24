@@ -35,12 +35,19 @@ def init_db():
     """初始化数据库表"""
     conn = sqlite3.connect(MEDAL_DB_PATH)
     cursor = conn.cursor()
+
+    # 检查旧表是否存在 gif_path 列，需要迁移到 file_path
+    cursor.execute("PRAGMA table_info(medals)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if columns and 'gif_path' in columns and 'file_path' not in columns:
+        cursor.execute('ALTER TABLE medals RENAME COLUMN gif_path TO file_path')
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS medals (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             medal_type  TEXT NOT NULL,
             medal_name  TEXT NOT NULL,
-            gif_path    TEXT NOT NULL,
+            file_path   TEXT NOT NULL,
             awarded_at  TEXT DEFAULT (datetime('now')),
             remark      TEXT
         )
@@ -52,16 +59,16 @@ def init_db():
 # ============================================================
 # 数据库操作
 # ============================================================
-def add_medal(medal_type: str, medal_name: str, gif_path: str, remark: str = None) -> int:
+def add_medal(medal_type: str, medal_name: str, file_path: str, remark: str = None) -> int:
     """
     颁发勋章（新增记录）
-    
+
     Args:
-        medal_type: 勋章类型，如 "clean" "study"
+        medal_type: 勋章类型，如 "badge" "certificate" "trophy"
         medal_name: 勋章名称，如 "清洁达人"
-        gif_path: 生成的GIF路径
+        file_path: 奖励文件路径（PNG/JPG/GIF）
         remark: 获得原因/备注
-    
+
     Returns:
         新记录的id
     """
@@ -70,7 +77,7 @@ def add_medal(medal_type: str, medal_name: str, gif_path: str, remark: str = Non
     cursor.execute('''
         INSERT INTO medals (medal_type, medal_name, gif_path, remark, awarded_at)
         VALUES (?, ?, ?, ?, ?)
-    ''', (medal_type, medal_name, gif_path, remark, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    ''', (medal_type, medal_name, file_path, remark, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()
     medal_id = cursor.lastrowid
     conn.close()
@@ -152,7 +159,7 @@ def main():
     add_parser = subparsers.add_parser('add', help='颁发勋章')
     add_parser.add_argument('--type', required=True, help='勋章类型')
     add_parser.add_argument('--name', required=True, help='勋章名称')
-    add_parser.add_argument('--gif', required=True, help='GIF路径')
+    add_parser.add_argument('--file', required=True, help='奖励文件路径（PNG/JPG/GIF）')
     add_parser.add_argument('--remark', default='', help='备注/原因')
     
     # list 子命令
@@ -169,7 +176,7 @@ def main():
     args = parser.parse_args()
     
     if args.command == 'add':
-        medal_id = add_medal(args.type, args.name, args.gif, args.remark)
+        medal_id = add_medal(args.type, args.name, args.file, args.remark)
         print(f'勋章颁发成功，ID: {medal_id}')
         
     elif args.command == 'list':

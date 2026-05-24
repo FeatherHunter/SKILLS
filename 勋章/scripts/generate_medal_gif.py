@@ -28,12 +28,18 @@ except ImportError:
     print('错误：缺少 playwright，请运行: pip install playwright && playwright install chromium')
     sys.exit(1)
 
+try:
+    import imageio_ffmpeg
+    FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
+except ImportError:
+    FFMPEG_PATH = 'ffmpeg'
+
 # 配置
 DEFAULT_FPS = 20
 DEFAULT_DURATION = 3  # 秒
 
 
-def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, duration: int = DEFAULT_DURATION):
+def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, duration: int = DEFAULT_DURATION, width: int = 400, height: int = 450):
     """
     将HTML内容转换为GIF
     
@@ -51,7 +57,7 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
     
     # 计算总帧数
     total_frames = fps * duration
-    print(f'帧率: {fps}fps, 时长: {duration}秒, 总帧数: {total_frames}')
+    print(f'帧率: {fps}fps, 时长: {duration}秒, 总帧数: {total_frames}, 分辨率: {width}x{height}')
     
     # 创建临时目录存放帧
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -60,11 +66,28 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
         print(f'启动浏览器渲染...')
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
-            context = browser.new_context(viewport={'width': 400, 'height': 450})
+            context = browser.new_context(viewport={'width': width, 'height': height})
             page = context.new_page()
             
             # 设置内容
             page.set_content(html_content, wait_until='networkidle')
+
+            # 从HTML body读取设计基准尺寸，按视口比例缩放
+            base_size = page.evaluate('''() => {
+                const body = document.body;
+                const style = getComputedStyle(body);
+                return {
+                    w: parseInt(style.width) || 400,
+                    h: parseInt(style.height) || 450
+                };
+            }''')
+            base_w, base_h = base_size['w'], base_size['h']
+            if width != base_w or height != base_h:
+                scale_x = width / base_w
+                scale_y = height / base_h
+                scale = min(scale_x, scale_y)
+                page.evaluate(f'document.body.style.zoom = {scale}')
+                print(f'缩放: {base_w}x{base_h} → {width}x{height} (scale={scale:.2f})')
             
             # 等待动画开始
             page.wait_for_timeout(500)
@@ -86,7 +109,7 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
         # 使用palettegen优化颜色
         palette_file = os.path.join(tmpdir, 'palette.png')
         subprocess.run([
-            'ffmpeg', '-y',
+            FFMPEG_PATH, '-y',
             '-framerate', str(fps),
             '-i', frame_pattern,
             '-vf', f'fps={fps},palettegen=max_colors=256:stats_mode=full',
@@ -95,7 +118,7 @@ def html_to_gif(html_content: str, output_path: str, fps: int = DEFAULT_FPS, dur
         
         # 合成最终GIF
         subprocess.run([
-            'ffmpeg', '-y',
+            FFMPEG_PATH, '-y',
             '-framerate', str(fps),
             '-i', frame_pattern,
             '-i', palette_file,
@@ -115,6 +138,8 @@ def main():
     parser.add_argument('--output', required=True, help='输出文件名')
     parser.add_argument('--fps', type=int, default=DEFAULT_FPS, help=f'帧率（默认{DEFAULT_FPS}）')
     parser.add_argument('--duration', type=int, default=DEFAULT_DURATION, help=f'时长秒数（默认{DEFAULT_DURATION}）')
+    parser.add_argument('--width', type=int, default=400, help='视口宽度（默认400）')
+    parser.add_argument('--height', type=int, default=450, help='视口高度（默认450）')
     
     args = parser.parse_args()
     
@@ -127,7 +152,7 @@ def main():
         print('错误：必须提供 --html 或 --html-file')
         sys.exit(1)
     
-    html_to_gif(html_content, args.output, args.fps, args.duration)
+    html_to_gif(html_content, args.output, args.fps, args.duration, args.width, args.height)
 
 
 if __name__ == '__main__':

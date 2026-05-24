@@ -24,6 +24,8 @@
 3. **充满创意**：每次都要有新鲜感和独特性，不能重复
 4. **少即是多**：优秀的GIF是尽可能少的设计——去除一切不必要元素，只保留核心视觉冲击力
 5. **使用SVG图形**：禁止使用emoji图标，使用SVG矢量图形绘制勋章元素
+6. **勋章/奖杯/证书各有灵魂**：勋章如独特印章让人眼前一亮；奖杯光芒四射有胜利重量感；证书优雅庄重值得珍藏
+7. **设计前先想象**：闭眼想象这个GIF完成后的样子——它应该让人想保存、想分享、想炫耀
 
 ## 奖励分类
 
@@ -67,24 +69,26 @@
 ```
 AI根据具体事件自由设计 → 生成全新HTML（含CSS动画）
     ↓
-scripts/generate_medal_gif.py --html "<HTML>" --output <文件名>
+保存HTML到 MEDAL_RESOURCE_PATH/<名称>.html（保留中间文件）
+    ↓
+scripts/generate_medal_gif.py --html-file <HTML文件路径> --output <文件名>
     ↓
 Playwright渲染HTML → 逐帧截图（full_page=True，内容自适应）
     ↓
-ffmpeg合成GIF
-    ↓
-保存到 MEDAL_RESOURCE_PATH
+ffmpeg合成GIF → 保存到 MEDAL_RESOURCE_PATH/<名称>.gif
 ```
+
+**中间文件要求**：HTML源文件必须与GIF保存在同一目录（MEDAL_RESOURCE_PATH），文件名一致仅后缀不同，便于回溯和调试。
 
 **脚本位置**：`scripts/generate_medal_gif.py`
 
 **使用方法**：
 ```bash
-# 方式1：直接传入HTML代码
-python3 scripts/generate_medal_gif.py --html "<html>...</html>" --output badge.gif
+# 先保存HTML到资源目录，再用 --html-file 生成GIF（推荐）
+python3 scripts/generate_medal_gif.py --html-file $MEDAL_RESOURCE_PATH/badge.html --output badge.gif
 
-# 方式2：读取HTML文件
-python3 scripts/generate_medal_gif.py --html-file template.html --output badge.gif
+# 直接传入HTML代码（不留中间文件，仅应急使用）
+python3 scripts/generate_medal_gif.py --html "<html>...</html>" --output badge.gif
 ```
 
 **AI自行决定的参数**（不限制）：
@@ -131,3 +135,4 @@ python3 scripts/medal.py init
 4. **GIF必须发送**：生成后必须通过 qqbot 发送给用户
 5. **每次全新设计**：不允许复用任何之前的HTML，必须完全重新设计
 6. **结合具体事件**：设计必须与用户完成的具体事情紧密相关
+7. **保留中间文件**：HTML源文件必须先保存到 `MEDAL_RESOURCE_PATH`，再用 `--html-file` 调用脚本，禁止用 `--html` 直接传入（不留痕迹）

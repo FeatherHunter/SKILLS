@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <title>每日检查</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+      background: #FAFAFA;
+      color: #1C1C1E;
+      width: 800px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 80px 48px;
+    }
+
+    .header { text-align: center; margin-bottom: 64px; }
+    .date { font-size: 28px; font-weight: 500; color: #8E8E93; letter-spacing: 1px; margin-bottom: 16px; }
+    .title { font-size: 64px; font-weight: 700; color: #1C1C1E; letter-spacing: -1px; }
+
+    .divider { width: 96px; height: 8px; background: #007AFF; border-radius: 4px; margin: 0 auto 56px; }
+
+    .section { margin-bottom: 56px; }
+    .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-left: 8px; }
+    .section-icon { font-size: 30px; }
+    .section-title { font-size: 24px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; }
+
+    .card { background: #FFFFFF; border-radius: 28px; padding: 36px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); }
+
+    .item { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; border-bottom: 1px solid #F2F2F7; }
+    .item:last-child { border-bottom: none; padding-bottom: 0; }
+    .item:first-child { padding-top: 0; }
+
+    .item-left { display: flex; align-items: center; gap: 20px; }
+    .item-icon { width: 72px; height: 72px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .icon-green { background: #E8F5E9; }
+    .icon-orange { background: #FFF3E0; }
+
+    .item-label { font-size: 32px; font-weight: 500; color: #1C1C1E; }
+
+    .item-right { text-align: right; }
+    .item-value { font-size: 32px; font-weight: 600; color: #1C1C1E; }
+    .item-sub { font-size: 26px; color: #8E8E93; font-weight: 400; margin-top: 4px; }
+
+    .todo-item { padding: 32px 0; border-bottom: 2px dashed #E5E5EA; }
+    .todo-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .todo-item:first-child { padding-top: 0; }
+    .todo-label { font-size: 32px; font-weight: 500; color: #1C1C1E; margin-bottom: 10px; }
+    .todo-hint { font-size: 28px; color: #8E8E93; font-weight: 400; }
+
+    .footer { text-align: center; padding: 56px 0 24px; }
+    .stat-badge { display: inline-flex; align-items: center; gap: 16px; background: #F2F2F7; padding: 28px 56px; border-radius: 56px; }
+    .stat-num { font-size: 40px; font-weight: 700; color: #1C1C1E; }
+    .stat-text { font-size: 30px; color: #8E8E93; }
+    .stat-sep { color: #C7C7CC; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="date">{{date}}</div>
+    <div class="title">每日检查</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">✓</span>
+      <span class="section-title">已完成</span>
+    </div>
+    <div class="card">
+      {{done_cards}}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">?</span>
+      <span class="section-title">待确认</span>
+    </div>
+    <div class="card">
+      {{todo_cards}}
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="stat-badge">
+      <span class="stat-num">{{done_count}}</span>
+      <span class="stat-sep">/</span>
+      <span class="stat-num">{{total_count}}</span>
+      <span class="stat-text">项已完成</span>
+    </div>
+  </div>
+</body>
+</html>

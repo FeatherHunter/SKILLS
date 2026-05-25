@@ -41,7 +41,11 @@
 ### 添加笔记
 - 触发词：记一下、帮我记、备忘、添加、存一下
 - 命令：`script/memo_cli.py add "内容" -c 分类`
-- 分类映射：社交→social，心愿→wish，灵感→inspiration，成就→achievement，工作→work，学习→study，记账→finance
+- 分类映射：社交→social，心愿→wish，灵感→inspiration，成就→achievement，工作→work，学习→study，记账→finance，打卡→checkin
+- **AI交互规范**：添加前必须先问用户一个问题确认分类（如下示例），不得直接使用默认分类写入
+  - 示例1：用户说「记一下：去医院」→ AI问「这个是工作相关还是心愿？」→ 用户选wish → 写入 `-c wish`
+  - 示例2：用户说「记一下：今天运动」→ AI问「这是打卡还是心愿？」→ 用户选checkin → 写入 `-c checkin`
+  - 示例3：用户已明确指定分类 → 直接写入
 
 ### 搜索笔记
 - 触发词：搜一下、搜索、查找、找一下、看看

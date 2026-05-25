@@ -222,17 +222,12 @@ def list_due_reminders():
     """获取需要触发的提醒
     
     两个独立条件，满足其一即触发：
-    1. 提前10分钟：当前时间 HH:MM == remind_at - 10分钟，且未提前通知过
-    2. 准点：当前时间分钟 == remind_at分钟（秒数忽略），且未准时通知过
+    1. 提前10分钟：当前日期 == remind_at 日期 AND 当前 HH:MM == remind_at HH:MM - 10分钟，且未提前通知过
+    2. 准点：当前日期 == remind_at 日期 AND 当前 HH:MM == remind_at HH:MM（秒数忽略），且未通知过
     """
     conn = get_conn()
     now = datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-    
-    # 计算提前10分钟的时间点
-    advance_10 = now - timedelta(minutes=10)
-    advance_10_str = advance_10.strftime("%Y-%m-%d %H:%M")  # 用于精确匹配 HH:MM
-    now_minute = now.minute
     
     due_items = []
 
@@ -251,29 +246,33 @@ def list_due_reminders():
             notified_at = row["notified_at"]
             content = row["content"]
             
-            # 解析 remind_at 的小时和分钟
+            # 解析 remind_at 的完整日期和时间
             remind_dt = datetime.strptime(remind_at, "%Y-%m-%d %H:%M")
-            remind_hour = remind_dt.hour
-            remind_minute = remind_dt.minute
+            remind_date = remind_dt.strftime("%Y-%m-%d")
+            remind_hhmm = remind_dt.strftime("%H:%M")
             
             # 计算提前10分钟的时间点（HH:MM）
             advance_dt = remind_dt - timedelta(minutes=10)
             advance_hhmm = advance_dt.strftime("%H:%M")
             
-            # 当前时间 HH:MM
+            # 当前日期和时间
+            now_date = now.strftime("%Y-%m-%d")
             now_hhmm = now.strftime("%H:%M")
             
             triggered = False
             trigger_reason = ""
             
-            # 条件1：提前10分钟（精确匹配 HH:MM）
-            if now_hhmm == advance_hhmm and notified_at is None:
+            # 条件1：提前10分钟（日期相同 + HH:MM精确匹配 + 未通知过）
+            if (now_date == remind_date 
+                and now_hhmm == advance_hhmm 
+                and notified_at is None):
                 triggered = True
                 trigger_reason = "advance"
             
-            # 条件2：准点（分钟匹配，秒数忽略）
-            # 注意：这里需要排除条件1已经触发的情况，避免重复记录
-            elif now_minute == remind_minute:
+            # 条件2：准点（日期相同 + HH:MM精确匹配 + 未通知过）
+            # 排除条件1已触发的情况
+            elif (now_date == remind_date 
+                  and now_hhmm == remind_hhmm):
                 triggered = True
                 trigger_reason = "exact"
             

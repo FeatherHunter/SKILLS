@@ -11,10 +11,15 @@ def get_db_path():
     """获取 memo.db 的正确路径（与 memo_cli.py 逻辑一致）"""
     # 使用绝对路径，避免 __file__ 相对路径问题
     skill_dir = Path(__file__).resolve().parent.parent
-    # 环境变量优先，否则用 skill_dir 的父目录的 .db/memo.db
+    # 环境变量优先
     db_path = os.environ.get("MEMO_DB_PATH")
-    if not db_path:
-        db_path = os.path.join(skill_dir.parent.parent, ".db", "memo.db")
+    if db_path:
+        # 如果是目录，追加 memo.db
+        if os.path.isdir(db_path):
+            db_path = os.path.join(db_path, "memo.db")
+    else:
+        # 回退到 skill_dir 的 .db/MemoHub/memo.db
+        db_path = os.path.join(skill_dir, ".db", "MemoHub", "memo.db")
     return db_path
 
 def check_reminders():

@@ -9,7 +9,8 @@
 | id | INTEGER | 主键 |
 | content | TEXT | 笔记内容 |
 | summary | TEXT | AI摘要，可为空 |
-| category | TEXT | 分类标签，默认 `general` |
+| category | TEXT | 分类标签 |
+| reminder_id | INTEGER | 关联的提醒ID（提醒完成后可追溯来源） |
 | media_path | TEXT | 附件相对路径 |
 | created_at | TEXT | 创建时间 |
 | updated_at | TEXT | 最后更新时间 |

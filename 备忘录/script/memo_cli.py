@@ -42,6 +42,11 @@ def error_json(message):
 def add_note(args):
     content = args.content
     category = args.category or "general"
+    # ---- 分类白名单校验 ----
+    ALLOWED_CATEGORIES = {"社交", "心愿", "灵感", "成就", "工作", "学习", "记账", "打卡", "情绪", "general"}
+    if category not in ALLOWED_CATEGORIES:
+        # 自动扩展新分类（不拒绝，保持扩展性）
+        pass
     media_path = args.media
     conn = get_conn()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -100,6 +105,7 @@ def update_note(args):
     content = args.content
     category = args.category
     media_path = args.media
+    reminder_id = args.reminder_id
     conn = get_conn()
     note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
@@ -116,6 +122,9 @@ def update_note(args):
         if media_path is not None:
             updates.append("media_path = ?")
             params.append(media_path)
+        if reminder_id is not None:
+            updates.append("reminder_id = ?")
+            params.append(reminder_id)
         if not updates:
             error_json("没有提供要更新的字段")
         updates.append("updated_at = datetime('now','localtime')")
@@ -356,6 +365,26 @@ def list_due_reminders():
                     else:
                         in_cycle = False
             
+            # ---- 循环提醒的 cycle 判断（重置 notified_at）----
+            # 在新周期开始时清除 notified_at，使提前触发和准点触发能再次工作
+            if repeat_type != "一次性" and notified_at is not None:
+                last_notified = datetime.strptime(notified_at, "%Y-%m-%d %H:%M:%S")
+                if repeat_type == "每天":
+                    if last_notified.date() < now.date():
+                        notified_at = None  # 新的一天，重置
+                elif repeat_type == "每周":
+                    # 判断是否进入新的一周（按 ISO week）
+                    last_year, last_week, _ = last_notified.isocalendar()
+                    this_year, this_week, _ = now.isocalendar()
+                    if (last_year, last_week) < (this_year, this_week):
+                        notified_at = None  # 新的一周，重置
+                elif repeat_type == "每月":
+                    if last_notified.year < now.year or (last_notified.year == now.year and last_notified.month < now.month):
+                        notified_at = None  # 新的一月，重置
+                elif repeat_type == "每年":
+                    if last_notified.year < now.year:
+                        notified_at = None  # 新的一年，重置
+            
             if not in_cycle or trigger_time_minute is None:
                 continue
             
@@ -372,9 +401,9 @@ def list_due_reminders():
                 triggered = True
                 trigger_reason = "advance"
             
-            # 条件2：准点（含延迟容错 T~T+2）
+            # 条件2：准点（含延迟容错 T~T+4）
             if not triggered and notified_at is None:
-                if trigger_time_minute <= now_minute <= trigger_time_minute + 2:
+                if trigger_time_minute <= now_minute <= trigger_time_minute + 4:
                     triggered = True
                     trigger_reason = "exact"
             
@@ -473,6 +502,7 @@ def main():
     p_update.add_argument("--content")
     p_update.add_argument("--category", "-c")
     p_update.add_argument("--media", "-m")
+    p_update.add_argument("--reminder-id", type=int)
 
     # delete
     p_del = sub.add_parser("delete")

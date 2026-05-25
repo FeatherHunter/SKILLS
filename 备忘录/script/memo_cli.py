@@ -199,7 +199,7 @@ def update_category(args):
 def add_reminder(args):
     note_id = args.note_id
     remind_at = args.at      # 一次性时间 "YYYY-MM-DD HH:MM"
-    repeat_type = args.repeat_type or "none"
+    repeat_type = args.repeat_type or "一次性"
     repeat_rule = args.rule
     conn = get_conn()
     # 校验笔记存在
@@ -236,7 +236,7 @@ def list_due_reminders():
         cur = conn.execute("""
             SELECT r.id, r.note_id, r.remind_at, r.notified_at, n.content
             FROM reminders r JOIN notes n ON r.note_id = n.id
-            WHERE r.status = 'active' AND r.repeat_type = 'none'
+            WHERE r.status = 'active' AND r.repeat_type = '一次性'
         """)
         
         for row in cur.fetchall():
@@ -384,7 +384,7 @@ def main():
     p_remind = sub.add_parser("remind")
     p_remind.add_argument("note_id", type=int)
     p_remind.add_argument("--at")
-    p_remind.add_argument("--repeat-type", choices=["none","daily","weekly","monthly","yearly"], default="none")
+    p_remind.add_argument("--repeat-type", choices=["一次性","每天","每周","每月","每年"], default="一次性")
     p_remind.add_argument("--rule")
 
     # due

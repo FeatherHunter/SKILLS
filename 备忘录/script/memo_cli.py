@@ -11,7 +11,10 @@ import os
 import argparse
 from datetime import datetime, timedelta
 
-DB_PATH = os.environ.get("MEMO_DB_PATH", os.path.join(os.path.dirname(__file__), "../memo.db"))
+DB_PATH = os.environ.get("MEMO_DB_PATH")
+if not DB_PATH:
+    print(json.dumps({"status": "error", "message": "MEMO_DB_PATH 环境变量未设置"}, ensure_ascii=False))
+    sys.exit(1)
 
 def convert_weekday(user_weekday):
     """将用户输入的 weekday (0=周日) 转换为 Python weekday (0=周一)"""
@@ -221,85 +224,196 @@ def add_reminder(args):
 def list_due_reminders():
     """获取需要触发的提醒
     
-    两个独立条件，满足其一即触发：
-    1. 提前10分钟：当前日期 == remind_at 日期 AND 当前 HH:MM == remind_at HH:MM - 10分钟，且未提前通知过
-    2. 准点：当前日期 == remind_at 日期 AND 当前 HH:MM == remind_at HH:MM（秒数忽略），且未通知过
+    一次性：remind_at 日期 == 今天，且在触发窗口内
+      提前10分钟：notified_at==None → 设置 notified_at
+      准点（含容错T~T+2）：notified_at==None → 设置 notified_at + dismissed
+    
+    每天/每周/每月/每年：严格按 repeat_rule 解析判断
+      repeat_rule 格式（Schema）：
+        每天  : "HH:MM"            例 "09:00"
+        每周  : "W HH:MM"          例 "5 17:00" (周五17:00)
+        每月  : "D HH:MM"          例 "15 08:30" (每月15号08:30)
+        每年  : "MM-DD HH:MM"      例 "12-25 10:00" (12月25日10:00)
+      循环提醒触发后不标记 dismissed，只设置 notified_at
     """
     conn = get_conn()
     now = datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    today_date = now.strftime("%Y-%m-%d")
+    now_minute = now.hour * 60 + now.minute
     
     due_items = []
 
     try:
-        # 查询所有 active 的一次性提醒
         cur = conn.execute("""
-            SELECT r.id, r.note_id, r.remind_at, r.notified_at, n.content
+            SELECT r.id, r.note_id, r.remind_at, r.repeat_type, r.repeat_rule,
+                   r.notified_at, n.content
             FROM reminders r JOIN notes n ON r.note_id = n.id
-            WHERE r.status = 'active' AND r.repeat_type = '一次性'
+            WHERE r.status = 'active'
         """)
         
         for row in cur.fetchall():
             reminder_id = row["id"]
             note_id = row["note_id"]
             remind_at = row["remind_at"]
+            repeat_type = row["repeat_type"]
+            repeat_rule = row["repeat_rule"]
             notified_at = row["notified_at"]
             content = row["content"]
             
-            # 解析 remind_at 的完整日期和时间
-            remind_dt = datetime.strptime(remind_at, "%Y-%m-%d %H:%M")
-            remind_date = remind_dt.strftime("%Y-%m-%d")
-            remind_hhmm = remind_dt.strftime("%H:%M")
+            # ---- 解析 remind_at（带异常保护，畸形数据跳过）----
+            remind_dt = None
+            if remind_at:
+                try:
+                    remind_dt = datetime.strptime(remind_at, "%Y-%m-%d %H:%M")
+                except (ValueError, TypeError):
+                    print(f"[警告] 提醒 {reminder_id} 的 remind_at 格式错误，已跳过: {remind_at}", file=sys.stderr)
+                    continue
             
-            # 计算提前10分钟的时间点（HH:MM）
-            advance_dt = remind_dt - timedelta(minutes=10)
-            advance_hhmm = advance_dt.strftime("%H:%M")
+            # ---- 解析 repeat_rule（严格按 Schema 格式）----
+            # 默认值：时间部分 fallback
+            default_time = "09:00"
+            if remind_dt:
+                default_time = f"{remind_dt.hour:02d}:{remind_dt.minute:02d}"
             
-            # 当前日期和时间
-            now_date = now.strftime("%Y-%m-%d")
-            now_hhmm = now.strftime("%H:%M")
+            trigger_time_minute = None  # 触发时间（分钟整数，0-1440）
+            in_cycle = False  # 是否在周期内
+            
+            if repeat_rule is None:
+                # 无 repeat_rule → 退回一次性逻辑
+                if repeat_type == "一次性" and remind_dt:
+                    in_cycle = (today_date == remind_dt.strftime("%Y-%m-%d"))
+                    trigger_time_minute = remind_dt.hour * 60 + remind_dt.minute
+                else:
+                    continue
+            else:
+                parts = repeat_rule.strip().split(" ")
+                
+                if repeat_type == "每天":
+                    # repeat_rule = "HH:MM"
+                    if len(parts) == 1:
+                        hm = parts[0]
+                        h = int(hm.split(":")[0])
+                        m = int(hm.split(":")[1])
+                        trigger_time_minute = h * 60 + m
+                        in_cycle = True
+                
+                elif repeat_type == "每周":
+                    # repeat_rule = "W HH:MM" (W=0=周日)
+                    if len(parts) == 2:
+                        try:
+                            target_weekday = int(parts[0])  # 0=周日，6=周六
+                            hm = parts[1]
+                            h = int(hm.split(":")[0])
+                            m = int(hm.split(":")[1])
+                            trigger_time_minute = h * 60 + m
+                            in_cycle = (now.weekday() == target_weekday)
+                        except (ValueError, IndexError):
+                            in_cycle = False
+                
+                elif repeat_type == "每月":
+                    # repeat_rule = "D HH:MM" (D=1~31)
+                    if len(parts) == 2:
+                        try:
+                            target_day = int(parts[0])
+                            hm = parts[1]
+                            h = int(hm.split(":")[0])
+                            m = int(hm.split(":")[1])
+                            trigger_time_minute = h * 60 + m
+                            in_cycle = (now.day == target_day)
+                        except (ValueError, IndexError):
+                            in_cycle = False
+                
+                elif repeat_type == "每年":
+                    # repeat_rule = "MM-DD HH:MM"
+                    if len(parts) == 2:
+                        try:
+                            month_day = parts[0]  # "12-25"
+                            month = int(month_day.split("-")[0])
+                            day = int(month_day.split("-")[1])
+                            hm = parts[1]
+                            h = int(hm.split(":")[0])
+                            m = int(hm.split(":")[1])
+                            trigger_time_minute = h * 60 + m
+                            in_cycle = (now.month == month and now.day == day)
+                        except (ValueError, IndexError):
+                            in_cycle = False
+                
+                elif repeat_type == "一次性":
+                    # 一次性：有 repeat_rule 时视为时间，仅判断日期
+                    if len(parts) == 1:
+                        # 可能是 "HH:MM" 时间格式
+                        if ":" in parts[0]:
+                            hm = parts[0]
+                            h = int(hm.split(":")[0])
+                            m = int(hm.split(":")[1])
+                            trigger_time_minute = h * 60 + m
+                        else:
+                            trigger_time_minute = 9 * 60  # 默认 9:00
+                    if remind_dt:
+                        in_cycle = (today_date == remind_dt.strftime("%Y-%m-%d"))
+                        trigger_time_minute = remind_dt.hour * 60 + remind_dt.minute
+                    else:
+                        in_cycle = False
+            
+            if not in_cycle or trigger_time_minute is None:
+                continue
+            
+            # ---- 触发判断 ----
+            advance_minute = trigger_time_minute - 10
+            if advance_minute < 0:
+                advance_minute = 0
             
             triggered = False
             trigger_reason = ""
             
-            # 条件1：提前10分钟（日期相同 + HH:MM精确匹配 + 未通知过）
-            if (now_date == remind_date 
-                and now_hhmm == advance_hhmm 
-                and notified_at is None):
+            # 条件1：提前10分钟（精确分钟匹配 + 未通知过）
+            if notified_at is None and now_minute == advance_minute:
                 triggered = True
                 trigger_reason = "advance"
             
-            # 条件2：准点（日期相同 + HH:MM精确匹配 + 未通知过）
-            # 排除条件1已触发的情况
-            elif (now_date == remind_date 
-                  and now_hhmm == remind_hhmm):
-                triggered = True
-                trigger_reason = "exact"
+            # 条件2：准点（含延迟容错 T~T+2）
+            if not triggered and notified_at is None:
+                if trigger_time_minute <= now_minute <= trigger_time_minute + 2:
+                    triggered = True
+                    trigger_reason = "exact"
             
             if triggered:
+                # display_time：循环提醒显示今天 HH:MM，一次性显示原始 remind_at
+                if repeat_type == "一次性":
+                    display_time = remind_at or f"{today_date} {default_time}"
+                else:
+                    h = trigger_time_minute // 60
+                    m = trigger_time_minute % 60
+                    display_time = f"{today_date} {h:02d}:{m:02d}"
+                
                 due_items.append({
                     "id": reminder_id,
-                    "type": "once",
+                    "repeat_type": repeat_type,
                     "note_id": note_id,
-                    "time": remind_at,
+                    "time": display_time,
                     "content": content,
                     "trigger_reason": trigger_reason
                 })
+                
                 if trigger_reason == "advance":
-                    # 条件1：提前10分钟，只设置 notified_at，不标记 dismissed
                     conn.execute(
                         "UPDATE reminders SET notified_at = ? WHERE id = ?",
                         (now_str, reminder_id)
                     )
                 elif trigger_reason == "exact":
-                    # 条件2：准点，设置 notified_at 并标记为 dismissed
-                    conn.execute(
-                        "UPDATE reminders SET notified_at = ?, status = 'dismissed' WHERE id = ?",
-                        (now_str, reminder_id)
-                    )
+                    if repeat_type == "一次性":
+                        conn.execute(
+                            "UPDATE reminders SET notified_at = ?, status = 'dismissed' WHERE id = ?",
+                            (now_str, reminder_id)
+                        )
+                    else:
+                        conn.execute(
+                            "UPDATE reminders SET notified_at = ? WHERE id = ?",
+                            (now_str, reminder_id)
+                        )
         
         conn.commit()
-        
         output_json(due_items, message=f"当前有 {len(due_items)} 个待提醒")
     except Exception as e:
         error_json(str(e))

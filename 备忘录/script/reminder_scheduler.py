@@ -8,18 +8,12 @@ import os
 from pathlib import Path
 
 def get_db_path():
-    """获取 memo.db 的正确路径（与 memo_cli.py 逻辑一致）"""
-    # 使用绝对路径，避免 __file__ 相对路径问题
-    skill_dir = Path(__file__).resolve().parent.parent
-    # 环境变量优先
+    """获取 memo.db 的路径，必须为文件路径，环境变量必须设置"""
     db_path = os.environ.get("MEMO_DB_PATH")
-    if db_path:
-        # 如果是目录，追加 memo.db
-        if os.path.isdir(db_path):
-            db_path = os.path.join(db_path, "memo.db")
-    else:
-        # 回退到 skill_dir 的 .db/MemoHub/memo.db
-        db_path = os.path.join(skill_dir, ".db", "MemoHub", "memo.db")
+    if not db_path:
+        raise ValueError("MEMO_DB_PATH 环境变量未设置")
+    if os.path.isdir(db_path):
+        raise ValueError(f"MEMO_DB_PATH 必须是文件路径，不能是目录: {db_path}")
     return db_path
 
 def check_reminders():

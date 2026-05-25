@@ -34,7 +34,9 @@ def check_reminders():
         data = json.loads(result.stdout)
         if data["status"] == "ok" and data["data"]:
             for item in data["data"]:
-                print(f"【提醒】{item.get('time', '现在')} - {item.get('content', '提醒事项')}")
+                print(f"🔔 {item.get('content', '提醒事项')}\n⏰ {item.get('time', '现在')} · {item.get('repeat_type', '一次性')}")
+        else:
+            print("NO_REPLY")
     except Exception as e:
         print(f"提醒检查失败: {e}")
 

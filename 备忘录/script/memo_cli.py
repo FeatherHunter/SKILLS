@@ -471,6 +471,124 @@ def dismiss_reminder(args):
     finally:
         conn.close()
 
+def completed_reminders(args):
+    """查询已完成提醒：一次性提醒（已通知+打卡）或有打卡关联的重复提醒"""
+    conn = get_conn()
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        now = datetime.now()
+        current_weekday = now.strftime("%w")  # 0=周日
+        current_day = now.day
+        current_month = now.month
+
+        cur = conn.execute("""
+            SELECT
+                n.id as checkin_note_id,
+                n.content as checkin_content,
+                n.created_at as checkin_at,
+                r.id as reminder_id,
+                r.repeat_type,
+                r.repeat_rule,
+                r.notified_at,
+                orig_n.content as reminder_content,
+                orig_n.id as orig_note_id
+            FROM notes n
+            JOIN reminders r ON n.reminder_id = r.id
+            JOIN notes orig_n ON r.note_id = orig_n.id
+            WHERE n.category = '打卡' AND r.status = 'active'
+            ORDER BY n.created_at DESC
+        """)
+
+        completed = []
+        for row in cur.fetchall():
+            d = dict(row)
+            repeat_type = d["repeat_type"]
+            repeat_rule = d["repeat_rule"] or ""
+            checkin_time = datetime.strptime(d["checkin_at"], "%Y-%m-%d %H:%M:%S")
+            checkin_date = checkin_time.strftime("%Y-%m-%d")
+
+            # 一次性提醒：已通知即为完成
+            if repeat_type == "一次性":
+                if d["notified_at"]:
+                    period = f"一次性 · {d['notified_at'][:16]}"
+                    completed.append({
+                        "reminder_id": d["reminder_id"],
+                        "reminder_content": d["reminder_content"],
+                        "checkin_note_id": d["checkin_note_id"],
+                        "checkin_content": d["checkin_content"],
+                        "checkin_at": d["checkin_at"][:16],
+                        "period": period,
+                        "repeat_type": "一次性"
+                    })
+                continue
+
+            # 重复提醒：检查打卡时间是否在其当前周期内
+            matched = False
+            period = ""
+
+            if repeat_type == "每天":
+                # 每天：打卡日期 == 今天 → 今天完成
+                if checkin_date == today:
+                    matched = True
+                    period = f"每天 {repeat_rule}"
+
+            elif repeat_type == "每周":
+                # 每周：打卡在当前自然周（本周一至今）内 且 星期对得上
+                weekday_names = ["周日","周一","周二","周三","周四","周五","周六"]
+                parts = repeat_rule.split()
+                if len(parts) == 2:
+                    rule_weekday = int(parts[0])   # 0=周日
+                    rule_time = parts[1]
+                    # 当前自然周的周一
+                    week_start = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+                    if checkin_date >= week_start and checkin_date <= today:
+                        if checkin_time.weekday() == rule_weekday:
+                            matched = True
+                            period = f"每周{weekday_names[rule_weekday]} {rule_time}"
+
+            elif repeat_type == "每月":
+                # 每月：打卡在当月内 且 日期对得上
+                parts = repeat_rule.split()
+                if len(parts) == 2:
+                    rule_day = int(parts[0])
+                    rule_time = parts[1]
+                    # 当月1号至今
+                    month_start = now.strftime("%Y-%m") + "-01"
+                    if checkin_date >= month_start and checkin_date <= today:
+                        if checkin_time.day == rule_day:
+                            matched = True
+                            period = f"每月{rule_day}号 {rule_time}"
+
+            elif repeat_type == "每年":
+                # 每年：打卡在年内 且 月-日对得上
+                parts = repeat_rule.split()
+                if len(parts) == 2:
+                    rule_md = parts[0]   # MM-DD
+                    rule_time = parts[1]
+                    # 当年1月1日至今
+                    year_start = now.strftime("%Y") + "-01-01"
+                    if checkin_date >= year_start and checkin_date <= today:
+                        if checkin_time.strftime("%m-%d") == rule_md:
+                            matched = True
+                            period = f"每年{rule_md} {rule_time}"
+
+            if matched:
+                completed.append({
+                    "reminder_id": d["reminder_id"],
+                    "reminder_content": d["reminder_content"],
+                    "checkin_note_id": d["checkin_note_id"],
+                    "checkin_content": d["checkin_content"],
+                    "checkin_at": d["checkin_at"][:16],
+                    "period": period,
+                    "repeat_type": repeat_type
+                })
+
+        output_json(completed, message=f"共 {len(completed)} 条已完成提醒")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
 def list_reminders(args):
     status_filter = args.status or "active"
     conn = get_conn()
@@ -553,6 +671,9 @@ def main():
     p_lr = sub.add_parser("reminders")
     p_lr.add_argument("--status", "-s", default="active")
 
+    # completed reminders
+    p_completed = sub.add_parser("completed")
+
     args = parser.parse_args()
 
     if args.command == "add":
@@ -581,6 +702,8 @@ def main():
         dismiss_reminder(args)
     elif args.command == "reminders":
         list_reminders(args)
+    elif args.command == "completed":
+        completed_reminders(args)
     else:
         parser.print_help()
         error_json("未知命令")

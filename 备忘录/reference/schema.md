@@ -47,6 +47,7 @@
 | `search-date <start> <end> [-c category]` | 按时间搜索 | `script/memo_cli.py search-date 2026-05-01 2026-05-31` |
 | `update-category <id> <category>` | 更新分类 | `script/memo_cli.py update-category 1 work` |
 | `reminders [--status active/dismissed]` | 查看提醒列表 | `script/memo_cli.py reminders` |
+| `completed` | 查询已完成提醒（一次性已通知+打卡 / 重复提醒有打卡关联） | `script/memo_cli.py completed` |
 
 所有命令输出JSON：`{"status": "ok/error", "data": ..., "message": "..."}`
 

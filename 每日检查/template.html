@@ -57,6 +57,12 @@
     .stat-sep { color: #C7C7CC; }
 
     .motto { text-align: center; font-size: 24px; color: #8E8E93; margin-top: 32px; font-style: italic; }
+
+    .explore-section { background: #FFFFFF; border-radius: 28px; padding: 36px; margin-top: 40px; box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); }
+    .explore-title { font-size: 24px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+    .explore-hint { font-size: 26px; color: #007AFF; margin-bottom: 24px; }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 12px; }
+    .skill-tag { background: #F2F2F7; padding: 12px 24px; border-radius: 20px; font-size: 24px; color: #1C1C1E; }
   </style>
 </head>
 <body>
@@ -94,6 +100,12 @@
       <span class="stat-num">{{total_count}}</span>
       <span class="stat-text">项已完成</span>
     </div>
+  </div>
+
+  <div class="explore-section">
+    <div class="explore-title">探索更多技能</div>
+    <div class="explore-hint">试试这样问：卡路里 支持哪些使用场景</div>
+    <div class="skill-tags">{{skill_tags}}</div>
   </div>
 
   <div class="motto">千里之行，始于足下</div>

@@ -12,7 +12,7 @@ import argparse
 from datetime import datetime, timedelta
 
 # ==================== 可配置常量 ====================
-CRON_INTERVAL_MINUTES = 2          # cron执行间隔（分钟）
+CRON_INTERVAL_MINUTES = 5          # cron执行间隔（分钟）
 ADVANCE_TRIGGER_MINUTES = 10        # 提前a分钟触发（一次性提醒预通知）
 GRACE_PERIOD_MULTIPLIER = 2         # 延后窗口 = cron间隔 × n
 GRACE_PERIOD = CRON_INTERVAL_MINUTES * GRACE_PERIOD_MULTIPLIER  # 延后触发窗口（分钟）

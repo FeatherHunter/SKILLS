@@ -2,67 +2,100 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <meta name="viewport" content="width=1200, initial-scale=1.0">
   <title>每日检查</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-      background: #FAFAFA;
-      color: #1C1C1E;
-      width: 800px;
-      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      width: 1200px;
+      height: 1600px;
       margin: 0 auto;
-      padding: 80px 48px;
+      padding: 64px;
+      display: flex;
+      flex-direction: column;
     }
 
-    .header { text-align: center; margin-bottom: 64px; }
-    .date { font-size: 28px; font-weight: 500; color: #8E8E93; letter-spacing: 1px; margin-bottom: 16px; }
-    .title { font-size: 64px; font-weight: 700; color: #1C1C1E; letter-spacing: -1px; }
+    .header { text-align: center; margin-bottom: 48px; }
+    .date { font-size: 38px; font-weight: 500; color: rgba(255,255,255,0.8); margin-bottom: 12px; }
+    .title { font-size: 72px; font-weight: 700; color: #FFFFFF; letter-spacing: -2px; }
 
-    .divider { width: 96px; height: 8px; background: #007AFF; border-radius: 4px; margin: 0 auto 56px; }
+    .main-card {
+      background: #FFFFFF;
+      border-radius: 40px;
+      padding: 48px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+    }
 
-    .section { margin-bottom: 56px; }
-    .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-left: 8px; }
-    .section-icon { font-size: 30px; }
-    .section-title { font-size: 24px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; }
+    .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+    .section-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .section-icon.green { background: linear-gradient(135deg, #34C759, #2ECC71); }
+    .section-icon.orange { background: linear-gradient(135deg, #FF9500, #FF6B00); }
+    .section-icon svg { width: 28px; height: 28px; }
+    .section-title { font-size: 31px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; }
 
-    .card { background: #FFFFFF; border-radius: 28px; padding: 36px; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); }
+    .done-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .done-item {
+      background: #F8F9FA;
+      border-radius: 28px;
+      padding: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .done-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .done-icon.green { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); }
+    .done-icon.blue { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+    .done-icon.orange { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+    .done-icon.purple { background: linear-gradient(135deg, #F3E5F5, #E1BEE7); }
+    .done-icon.teal { background: linear-gradient(135deg, #E0F2F1, #B2DFDB); }
+    .done-icon svg { width: 36px; height: 36px; }
 
-    .item { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; border-bottom: 1px solid #F2F2F7; }
-    .item:last-child { border-bottom: none; padding-bottom: 0; }
-    .item:first-child { padding-top: 0; }
+    .done-label { font-size: 34px; font-weight: 700; color: #1C1C1E; }
+    .done-value { font-size: 29px; color: #8E8E93; margin-top: 6px; }
 
-    .item-left { display: flex; align-items: center; gap: 20px; }
-    .item-icon { width: 72px; height: 72px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
-    .icon-green { background: #E8F5E9; }
-    .icon-orange { background: #FFF3E0; }
+    .todo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .todo-item {
+      background: linear-gradient(135deg, #FFF8E1, #FFECB3);
+      border-radius: 24px;
+      padding: 24px;
+    }
+    .todo-label { font-size: 34px; font-weight: 700; color: #1C1C1E; }
+    .todo-hint { font-size: 26px; color: #8E8E93; margin-top: 8px; }
 
-    .item-label { font-size: 32px; font-weight: 500; color: #1C1C1E; }
+    .footer { text-align: center; margin-top: auto; }
+    .stat-badge { display: inline-flex; align-items: center; gap: 20px; background: linear-gradient(135deg, #667eea, #764ba2); padding: 24px 48px; border-radius: 60px; }
+    .stat-num { font-size: 58px; font-weight: 700; color: #FFFFFF; }
+    .stat-sep { color: rgba(255,255,255,0.6); font-size: 48px; }
+    .stat-text { font-size: 38px; color: rgba(255,255,255,0.9); }
 
-    .item-right { text-align: right; }
-    .item-value { font-size: 32px; font-weight: 600; color: #1C1C1E; }
-    .item-sub { font-size: 26px; color: #8E8E93; font-weight: 400; margin-top: 4px; }
+    .explore-section { background: #F8F9FA; border-radius: 32px; padding: 32px; margin-top: 32px; }
+    .explore-title { font-size: 26px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
+    .explore-hint { font-size: 31px; color: #007AFF; margin-bottom: 20px; }
+    .skill-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .skill-tag { background: #FFFFFF; padding: 14px 28px; border-radius: 24px; font-size: 29px; font-weight: 600; color: #1C1C1E; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 
-    .todo-item { padding: 32px 0; border-bottom: 2px dashed #E5E5EA; }
-    .todo-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .todo-item:first-child { padding-top: 0; }
-    .todo-label { font-size: 32px; font-weight: 500; color: #1C1C1E; margin-bottom: 10px; }
-    .todo-hint { font-size: 28px; color: #8E8E93; font-weight: 400; }
-
-    .footer { text-align: center; padding: 56px 0 24px; }
-    .stat-badge { display: inline-flex; align-items: center; gap: 16px; background: #F2F2F7; padding: 28px 56px; border-radius: 56px; }
-    .stat-num { font-size: 40px; font-weight: 700; color: #1C1C1E; }
-    .stat-text { font-size: 30px; color: #8E8E93; }
-    .stat-sep { color: #C7C7CC; }
-
-    .motto { text-align: center; font-size: 24px; color: #8E8E93; margin-top: 32px; font-style: italic; }
-
-    .explore-section { background: #FFFFFF; border-radius: 28px; padding: 36px; margin-top: 40px; box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); }
-    .explore-title { font-size: 24px; font-weight: 600; color: #8E8E93; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; }
-    .explore-hint { font-size: 26px; color: #007AFF; margin-bottom: 24px; }
-    .skill-tags { display: flex; flex-wrap: wrap; gap: 12px; }
-    .skill-tag { background: #F2F2F7; padding: 12px 24px; border-radius: 20px; font-size: 24px; color: #1C1C1E; }
+    .motto { text-align: center; font-size: 29px; color: rgba(255,255,255,0.7); margin-top: 32px; }
   </style>
 </head>
 <body>
@@ -71,41 +104,63 @@
     <div class="title">每日检查</div>
   </div>
 
-  <div class="divider"></div>
+  <div class="main-card">
+    <div>
+      <div class="section-header">
+        <div class="section-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <span class="section-title">已完成</span>
+      </div>
+      <div class="done-grid">
+        {{done_cards}}
+      </div>
+    </div>
 
-  <div class="section">
-    <div class="section-header">
-      <span class="section-icon">✓</span>
-      <span class="section-title">已完成</span>
+    <div>
+      <div class="section-header">
+        <div class="section-icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <span class="section-title">待确认</span>
+      </div>
+      <div class="todo-grid">
+        {{todo_cards}}
+      </div>
     </div>
-    <div class="card">
-      {{done_cards}}
-    </div>
-  </div>
 
-  <div class="section">
-    <div class="section-header">
-      <span class="section-icon">?</span>
-      <span class="section-title">待确认</span>
+    <div class="footer">
+      <div class="stat-badge">
+        <span class="stat-num">{{done_count}}</span>
+        <span class="stat-sep">/</span>
+        <span class="stat-num">{{total_count}}</span>
+        <span class="stat-text">项已完成</span>
+      </div>
     </div>
-    <div class="card">
-      {{todo_cards}}
-    </div>
-  </div>
 
-  <div class="footer">
-    <div class="stat-badge">
-      <span class="stat-num">{{done_count}}</span>
-      <span class="stat-sep">/</span>
-      <span class="stat-num">{{total_count}}</span>
-      <span class="stat-text">项已完成</span>
+    <div class="explore-section">
+      <div class="explore-title">探索更多技能</div>
+      <div class="explore-hint">试试这样问：卡路里 支持哪些使用场景</div>
+      <div class="skill-row">
+        <span class="skill-tag">卡路里</span>
+        <span class="skill-tag">作息管家</span>
+        <span class="skill-tag">居家管家</span>
+        <span class="skill-tag">饼干记账</span>
+        <span class="skill-tag">私家大厨</span>
+        <span class="skill-tag">备忘录</span>
+        <span class="skill-tag">勋章</span>
+        <span class="skill-tag">学习系统</span>
+        <span class="skill-tag">学习规划师</span>
+        <span class="skill-tag">面试管家</span>
+        <span class="skill-tag">录音机</span>
+      </div>
     </div>
-  </div>
-
-  <div class="explore-section">
-    <div class="explore-title">探索更多技能</div>
-    <div class="explore-hint">试试这样问：卡路里 支持哪些使用场景</div>
-    <div class="skill-tags">{{skill_tags}}</div>
   </div>
 
   <div class="motto">千里之行，始于足下</div>

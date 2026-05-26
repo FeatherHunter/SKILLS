@@ -5,7 +5,7 @@
   "author": "Feather",
   "tags": ["productivity", "notes", "reminder"],
   "env_vars": [
-    {"name": "MEMO_DB_PATH", "default": "memo.db"},
+    {"name": "SKILLS_DB_PATH", "default": ".db/"},
     {"name": "MEMO_MEDIA_DIR", "default": "media"}
   ]
 }

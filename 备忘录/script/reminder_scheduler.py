@@ -8,26 +8,29 @@ import os
 from pathlib import Path
 
 def get_db_path():
-    """获取 memo.db 的路径，支持文件或目录（目录时自动找 memo.db）"""
-    db_path = os.environ.get("MEMO_DB_PATH")
-    if not db_path:
-        raise ValueError("MEMO_DB_PATH 环境变量未设置")
-    if os.path.isdir(db_path):
-        # 目录 → 自动找里面的 memo.db
-        db_path = os.path.join(db_path, "memo.db")
-    if not os.path.isfile(db_path):
-        raise ValueError(f"数据库文件不存在: {db_path}")
-    return db_path
+    """三层查找DB路径：环境变量 SKILLS_DB_PATH > 父目录.db > 技能目录.db"""
+    env_path = os.environ.get('SKILLS_DB_PATH')
+    if env_path:
+        return Path(env_path) / "memo.db"
+    # 2. 父目录层层找 .db 文件夹
+    skill_dir = Path(__file__).parent.parent
+    for parent in skill_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            return db_dir / "memo.db"
+    # 3. 技能目录下 .db 子目录（默认 fallback）
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / "memo.db"
 
 def check_reminders():
     cli_path = os.path.join(os.path.dirname(__file__), "memo_cli.py")
     db_path = get_db_path()
     try:
-        # 传递正确的 DB 路径给 memo_cli.py
         env = os.environ.copy()
-        env["MEMO_DB_PATH"] = db_path
+        env["SKILLS_DB_PATH"] = str(db_path.parent)
         result = subprocess.run(
-            ["python3", cli_path, "due", "--db", db_path],
+            ["python3", cli_path, "due"],
             capture_output=True,
             text=True,
             timeout=5,

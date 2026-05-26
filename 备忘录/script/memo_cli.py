@@ -11,16 +11,35 @@ import os
 import argparse
 from datetime import datetime, timedelta
 
+from pathlib import Path
+
 # ==================== 可配置常量 ====================
 CRON_INTERVAL_MINUTES = 5          # cron执行间隔（分钟）
 ADVANCE_TRIGGER_MINUTES = 10        # 提前a分钟触发（一次性提醒预通知）
 GRACE_PERIOD_MULTIPLIER = 2         # 延后窗口 = cron间隔 × n
 GRACE_PERIOD = CRON_INTERVAL_MINUTES * GRACE_PERIOD_MULTIPLIER  # 延后触发窗口（分钟）
 
-DB_PATH = os.environ.get("MEMO_DB_PATH")
-if not DB_PATH:
-    print(json.dumps({"status": "error", "message": "MEMO_DB_PATH 环境变量未设置"}, ensure_ascii=False))
-    sys.exit(1)
+DB_FILENAME = "memo.db"
+
+
+# 三层查找DB路径：环境变量 SKILLS_DB_PATH > 父目录.db > 技能目录.db
+def _find_db_path(skill_dir, db_filename):
+    # 1. 环境变量（最高优先级）
+    env_path = os.environ.get('SKILLS_DB_PATH')
+    if env_path:
+        return Path(env_path) / db_filename
+    # 2. 父目录层层找 .db 文件夹
+    for parent in skill_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            return db_dir / db_filename
+    # 3. 技能目录下 .db 子目录（默认 fallback）
+    default_db_dir = skill_dir / ".db"
+    default_db_dir.mkdir(exist_ok=True)
+    return default_db_dir / db_filename
+
+SKILL_DIR = Path(__file__).parent.parent
+DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 
 def convert_weekday(user_weekday):
     """将用户输入的 weekday (0=周日) 转换为 Python weekday (0=周一)"""

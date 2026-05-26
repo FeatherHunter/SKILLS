@@ -1,5 +1,5 @@
 """
-提醒调度器：由 cron 每分钟调用
+提醒调度器：由 cron 每 {MEMO_CRON_INTERVAL} 分钟调用
 检查到期提醒并输出 JSON，由 openclaw 平台处理推送
 """
 import subprocess
@@ -8,12 +8,15 @@ import os
 from pathlib import Path
 
 def get_db_path():
-    """获取 memo.db 的路径，必须为文件路径，环境变量必须设置"""
+    """获取 memo.db 的路径，支持文件或目录（目录时自动找 memo.db）"""
     db_path = os.environ.get("MEMO_DB_PATH")
     if not db_path:
         raise ValueError("MEMO_DB_PATH 环境变量未设置")
     if os.path.isdir(db_path):
-        raise ValueError(f"MEMO_DB_PATH 必须是文件路径，不能是目录: {db_path}")
+        # 目录 → 自动找里面的 memo.db
+        db_path = os.path.join(db_path, "memo.db")
+    if not os.path.isfile(db_path):
+        raise ValueError(f"数据库文件不存在: {db_path}")
     return db_path
 
 def check_reminders():

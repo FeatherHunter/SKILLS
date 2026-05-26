@@ -55,6 +55,9 @@
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
 | `MEMO_DB_PATH` | 数据库文件路径 | `memo.db` |
+| `MEMO_CRON_INTERVAL` | cron执行间隔（分钟） | `2` |
+| `MEMO_ADVANCE_MINUTES` | 提前触发分钟数 | `10` |
+| `MEMO_GRACE_MULTIPLIER` | 延后窗口倍数（窗口=间隔×倍数） | `2` |
 
 数据库路径通过 `MEMO_DB_PATH` 环境变量配置，默认为 `memo.db`（相对于技能目录）。
 

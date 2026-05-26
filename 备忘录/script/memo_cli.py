@@ -11,6 +11,12 @@ import os
 import argparse
 from datetime import datetime, timedelta
 
+# ==================== 可配置常量 ====================
+CRON_INTERVAL_MINUTES = 2          # cron执行间隔（分钟）
+ADVANCE_TRIGGER_MINUTES = 10        # 提前a分钟触发（一次性提醒预通知）
+GRACE_PERIOD_MULTIPLIER = 2         # 延后窗口 = cron间隔 × n
+GRACE_PERIOD = CRON_INTERVAL_MINUTES * GRACE_PERIOD_MULTIPLIER  # 延后触发窗口（分钟）
+
 DB_PATH = os.environ.get("MEMO_DB_PATH")
 if not DB_PATH:
     print(json.dumps({"status": "error", "message": "MEMO_DB_PATH 环境变量未设置"}, ensure_ascii=False))
@@ -234,8 +240,8 @@ def list_due_reminders():
     """获取需要触发的提醒
     
     一次性：remind_at 日期 == 今天，且在触发窗口内
-      提前10分钟：notified_at==None → 设置 notified_at
-      准点（含容错T~T+2）：notified_at==None → 设置 notified_at + dismissed
+      提前a分钟：notified_at==None → 设置 notified_at
+      准点（含容错T~T+窗口）：notified_at==None → 设置 notified_at + dismissed
     
     每天/每周/每月/每年：严格按 repeat_rule 解析判断
       repeat_rule 格式（Schema）：
@@ -244,6 +250,10 @@ def list_due_reminders():
         每月  : "D HH:MM"          例 "15 08:30" (每月15号08:30)
         每年  : "MM-DD HH:MM"      例 "12-25 10:00" (12月25日10:00)
       循环提醒触发后不标记 dismissed，只设置 notified_at
+    
+    配置常量：
+      ADVANCE_TRIGGER_MINUTES = 提前触发分钟数（默认10）
+      GRACE_PERIOD = 延后触发窗口（默认cron间隔×2）
     """
     conn = get_conn()
     now = datetime.now()
@@ -389,21 +399,21 @@ def list_due_reminders():
                 continue
             
             # ---- 触发判断 ----
-            advance_minute = trigger_time_minute - 10
+            advance_minute = trigger_time_minute - ADVANCE_TRIGGER_MINUTES
             if advance_minute < 0:
                 advance_minute = 0
             
             triggered = False
             trigger_reason = ""
             
-            # 条件1：提前10分钟（精确分钟匹配 + 未通知过）
+            # 条件1：提前a分钟（精确分钟匹配 + 未通知过）
             if notified_at is None and now_minute == advance_minute:
                 triggered = True
                 trigger_reason = "advance"
             
-            # 条件2：准点（含延迟容错 T~T+4）
+            # 条件2：准点（含延迟容错 T~T+窗口）
             if not triggered and notified_at is None:
-                if trigger_time_minute <= now_minute <= trigger_time_minute + 4:
+                if trigger_time_minute <= now_minute <= trigger_time_minute + GRACE_PERIOD:
                     triggered = True
                     trigger_reason = "exact"
             

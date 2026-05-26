@@ -416,6 +416,7 @@ def upsert_plan(date, hour_plans):
     date: 日期（YYYY-MM-DD）
     hour_plans: dict，key 为 hour_0 ~ hour_23，value 为计划描述
     例如: {'hour_0': '睡觉', 'hour_8': '30min通勤+30min工作'}
+    注意: 必须提供全部24个小时段，不能遗漏
     """
     if not date:
         raise ValueError("date 不能为空")
@@ -427,6 +428,18 @@ def upsert_plan(date, hour_plans):
     invalid = [k for k in hour_plans.keys() if k not in valid_keys]
     if invalid:
         raise ValueError(f"无效的小时字段: {', '.join(invalid)}")
+
+    # 校验是否填满了全部24小时
+    missing = valid_keys - set(hour_plans.keys())
+    if missing:
+        missing_hours = sorted([int(k.split('_')[1]) for k in missing])
+        raise ValueError(f"以下时间段未填写: {missing_hours}，要求填满全部24个小时（hour_0 到 hour_23）")
+
+    # 校验是否有空值
+    empty_fields = [k for k, v in hour_plans.items() if not v or not str(v).strip()]
+    if empty_fields:
+        empty_hours = sorted([int(k.split('_')[1]) for k in empty_fields])
+        raise ValueError(f"以下时间段内容为空: {empty_hours}，所有时间段必须有内容")
 
     conn = get_connection()
     c = conn.cursor()

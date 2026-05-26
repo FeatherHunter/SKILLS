@@ -371,11 +371,11 @@ def cmd_upsert_plan(args):
   python schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉", "hour_8": "30min工作"}'
 
 示例:
-  # 简单方式(只填部分小时)
-  python schedule_cli.py upsert-plan 2026-05-22 "睡觉" "" "" "" "" "" "通勤+工作" "工作"
+  # 简单方式(必须填满24小时)
+  python schedule_cli.py upsert-plan 2026-05-22 "睡觉" "睡觉" "睡觉" "睡觉" "睡觉" "睡觉" "睡觉" "睡觉" "通勤+工作" "工作" "工作" "工作" "午餐" "午休" "工作" "工作" "通勤回家" "晚餐" "休息" "娱乐" "休息" "睡觉" "睡觉" "睡觉"
 
-  # JSON方式
-  python schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_0": "睡觉", "hour_8": "30min通勤+30min工作"}'
+  # JSON方式(必须填满24小时)
+  python schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_0": "睡觉", "hour_1": "睡觉", ..., "hour_23": "睡觉"}'
 """)
         return
 
@@ -395,18 +395,29 @@ def cmd_upsert_plan(args):
             print("错误: --json 后需要跟JSON字符串")
             return
     else:
-        # 简单方式: 从第2个参数开始，每两个一组 (hour_N, content)
-        # 但更简单: 允许只传部分小时，其他留空
+        # 简单方式: 从第2个参数开始，必须提供24个小时的安排
+        if len(args[1:]) != 24:
+            print(f"错误: 必须提供24个小时的时间段安排，当前只提供了 {len(args[1:])} 个")
+            print("示例: python schedule_cli.py upsert-plan 2026-05-22 睡觉 睡觉 睡觉 睡觉 睡觉 睡觉 睡觉 睡觉 通勤+工作 工作 工作 工作 午餐 午休 工作 工作 通勤回家 晚餐 休息 娱乐 休息 睡觉 睡觉 睡觉")
+            return
         hour_plans = {}
         for i, arg in enumerate(args[1:]):
-            if arg.strip():  # 非空才记录
-                hour_plans[f'hour_{i}'] = arg
+            hour_plans[f'hour_{i}'] = arg
+
+    # 校验是否填满了全部24小时
+    valid_keys = {f'hour_{i}' for i in range(24)}
+    missing = valid_keys - set(hour_plans.keys())
+    if missing:
+        missing_hours = sorted([int(k.split('_')[1]) for k in missing])
+        print(f"错误: 以下时间段未填写: {missing_hours}")
+        print("要求: 必须填满全部24个小时（hour_0 到 hour_23）")
+        return
 
     try:
         result = upsert_plan(date, hour_plans)
         action = '新增' if result['action'] == 'insert' else '更新'
         print(f"✓ {date} 计划作息{action}成功")
-        print(f"  已记录 {len(hour_plans)} 个小时")
+        print(f"  已记录 24 个小时")
     except Exception as e:
         print(f"错误: {e}")
 

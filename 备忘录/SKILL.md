@@ -36,6 +36,15 @@
 - 媒体文件路径使用相对路径存储
 - CLI 返回 JSON：`{"status": "ok/error", "data": ..., "message": "..."}`
 
+## ⚠️ 重要约定：提醒路由
+
+所有「提醒」类请求（无论是否以「备忘录」开头）：
+- **必须**走备忘录 CLI（先 add → 再 remind）
+- **禁止**使用 qqbot_remind 或其他提醒工具
+- 这是技能内置的强制路由规则
+
+---
+
 ## 功能与触发词
 
 ### 添加笔记
@@ -120,7 +129,7 @@
 ### Cron 配置
 - **触发频率**：每 {CRON_INTERVAL_MINUTES} 分钟检查一次（可配置 `MEMO_CRON_INTERVAL` 环境变量）
 - **无提醒时**：静默处理，输出「NO_REPLY」，不发送任何消息
-- **有待提醒时**：通过 message 工具发送到 QQ（target: `qqbot:c2c:16075476ABD4DF813065D3099B40793B`）
+- **有待提醒时**：通过 message 工具发送到 QQ，target 由 cron job 的 delivery 配置决定（禁止在 SKILL 中硬编码）
 
 ### 提醒逻辑
 - **提前a分钟**：提前a分钟的时间点精确触发（可配置 `MEMO_ADVANCE_MINUTES`，默认10；如 8:50 触发 9:00 的提醒）

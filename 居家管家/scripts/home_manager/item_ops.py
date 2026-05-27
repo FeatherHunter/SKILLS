@@ -1,4 +1,5 @@
 # item_ops.py - 物品 CRUD 操作
+import os
 from datetime import datetime
 from .db import get_conn, PHOTOS_DIR
 from .location_ops import (
@@ -56,6 +57,19 @@ def add_item(name, category, location, owner="使用者", quantity=1,
              purchase_price=None, purchase_date=None, expiration_date=None,
              remark="", tags="", photo="", location_status=None):
     """添加新物品"""
+    # ── 照片路径校验 & 裁剪 ─────────────────────────────────────
+    if photo:
+        photos_dir = str(PHOTOS_DIR)
+        if not photo.startswith(photos_dir):
+            print(f"✗ 照片路径必须放在环境变量目录下")
+            print(f"  要求路径以: {photos_dir}")
+            print(f"  当前路径:   {photo}")
+            print(f"  请先将图片复制到 {photos_dir} 后再传入")
+            return 1
+        # 裁剪掉环境变量前缀，只存相对路径
+        photo = photo[len(photos_dir):].lstrip(os.sep)
+    # ── 校验 & 裁剪结束 ──────────────────────────────────────────
+
     # 最小实现：如果位置路径包含"快递"，则自动设置状态为"快递中"
     if location_status is None:
         if "快递" in location:
@@ -195,6 +209,19 @@ def update_item(item_id, name=None, category=None, owner=None,
     if purchase_price is not None:
         updates.append("purchase_price = ?")
         params_list.append(purchase_price)
+    # ── 照片路径校验 & 裁剪（仅当 photo 有值时） ─────────────────
+    if photo is not None and photo != "":
+        photos_dir = str(PHOTOS_DIR)
+        if not photo.startswith(photos_dir):
+            print(f"✗ 照片路径必须放在环境变量目录下")
+            print(f"  要求路径以: {photos_dir}")
+            print(f"  当前路径:   {photo}")
+            print(f"  请先将图片复制到 {photos_dir} 后再传入")
+            return 1
+        # 裁剪掉环境变量前缀，只存相对路径
+        photo = photo[len(photos_dir):].lstrip(os.sep)
+    # ── 校验 & 裁剪结束 ──────────────────────────────────────────
+
     if photo is not None:
         updates.append("photo = ?")
         params_list.append(photo)

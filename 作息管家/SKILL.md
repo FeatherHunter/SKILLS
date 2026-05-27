@@ -26,7 +26,6 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7" } } }
 2. **禁止 DELETE** — 只允许 INSERT / UPDATE
 3. **source_contents 必须是消息原文** — 一字不差，不得总结或臆造
 4. **时间必须连续** — 记录覆盖 00:00-23:59，每条 time_start = 上一条 time_end
-5. **睡眠归属就寝日** — 凌晨2点睡、8点起，归属前一天
 
 > 详细规范见: `references/操作规范.md`
 

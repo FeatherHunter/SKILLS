@@ -252,11 +252,11 @@
                     <div class="flow-step">调用 CLI</div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"张三生日10月3号"</span> <span class="flag">-c</span> social
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"张三生日10月3号"</span> <span class="flag">-c</span> <span class="value">"社交"</span>
                 </div>
                 <div class="result">
                     <div class="result-title">返回结果</div>
-                    {"status": "ok", "data": {"id": 1, "content": "张三生日10月3号", "category": "social"}, "message": "笔记已添加"}
+                    {"status": "ok", "data": {"id": 1, "content": "张三生日10月3号", "category": "社交"}, "message": "笔记已添加"}
                 </div>
             </div>
         </div>
@@ -280,11 +280,11 @@
                     <div class="flow-step">调用 CLI</div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"购物小票 2026-05-23"</span> <span class="flag">-c</span> finance <span class="flag">-m</span> slip_20260523.jpg
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"购物小票 2026-05-23"</span> <span class="flag">-c</span> <span class="value">"记账"</span> <span class="flag">-m</span> <span class="value">"media/slip_20260523.jpg"</span>
                 </div>
                 <div class="result">
                     <div class="result-title">返回结果</div>
-                    {"status": "ok", "data": {"id": 2, "content": "购物小票 2026-05-23", "category": "finance"}, "message": "笔记已添加"}
+                    {"status": "ok", "data": {"id": 2, "content": "购物小票 2026-05-23", "category": "记账"}, "message": "笔记已添加"}
                 </div>
             </div>
         </div>
@@ -303,7 +303,7 @@
                     </div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"搞定了备忘录数据库设计"</span> <span class="flag">-c</span> achievement
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"搞定了备忘录数据库设计"</span> <span class="flag">-c</span> <span class="value">"成就"</span>
                 </div>
             </div>
         </div>
@@ -386,7 +386,7 @@
                     <div class="msg msg-ai">
                         <div class="msg-avatar">AI</div>
                         <div class="msg-bubble">找到 2 条笔记：
-                            1. [旅行] 想去日本看樱花 (wish)
+                            1. [旅行] 想去日本看樱花 (心愿)
                             2. [旅行] 三亚机票已买 (general)</div>
                     </div>
                 </div>
@@ -395,7 +395,7 @@
                 </div>
                 <div class="result">
                     <div class="result-title">返回结果</div>
-                    {"status": "ok", "data": [{"id": 5, "content": "想去日本看樱花", "category": "wish"}, {"id": 8, "content": "三亚机票已买", "category": "general"}], "message": "找到 2 条笔记"}
+                    {"status": "ok", "data": [{"id": 5, "content": "想去日本看樱花", "category": "心愿"}, {"id": 8, "content": "三亚机票已买", "category": "general"}], "message": "找到 2 条笔记"}
                 </div>
             </div>
         </div>
@@ -417,7 +417,7 @@
                     </div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> search <span class="flag">-c</span> social
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> search <span class="flag">-c</span> <span class="value">"社交"</span>
                 </div>
             </div>
         </div>
@@ -438,7 +438,7 @@
                     </div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> search <span class="flag">-c</span> wish
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> search <span class="flag">-c</span> <span class="value">"心愿"</span>
                 </div>
             </div>
         </div>
@@ -491,12 +491,12 @@
                     </div>
                 </div>
                 <div class="cmd">
-                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"还信用卡"</span> <span class="flag">-c</span> finance
-                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">12</span> <span class="flag">--repeat-type</span> weekly <span class="flag">--rule</span> <span class="value">"5 09:00"</span>
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"还信用卡"</span> <span class="flag">-c</span> <span class="value">"记账"</span>
+                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">12</span> <span class="flag">--repeat-type</span> <span class="value">"每周"</span> <span class="flag">--rule</span> <span class="value">"5 09:00"</span>
                 </div>
                 <div class="result">
                     <div class="result-title">重复规则</div>
-                    <span class="tag tag-weekly">weekly</span> "5 09:00" = 每周五(5) 早上 9:00
+                    <span class="tag tag-weekly">每周</span> "5 09:00" = 每周五(5) 早上 9:00
                 </div>
             </div>
         </div>
@@ -516,11 +516,11 @@
                 </div>
                 <div class="cmd">
                     <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"喝水"</span>
-                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">13</span> <span class="flag">--repeat-type</span> daily <span class="flag">--rule</span> <span class="value">"08:00"</span>
+                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">13</span> <span class="flag">--repeat-type</span> <span class="value">"每天"</span> <span class="flag">--rule</span> <span class="value">"08:00"</span>
                 </div>
                 <div class="result">
                     <div class="result-title">重复规则</div>
-                    <span class="tag tag-daily">daily</span> "08:00" = 每天早上 8:00
+                    <span class="tag tag-daily">每天</span> "08:00" = 每天早上 8:00
                 </div>
             </div>
         </div>
@@ -540,20 +540,44 @@
                 </div>
                 <div class="cmd">
                     <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"圣诞节"</span>
-                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">14</span> <span class="flag">--repeat-type</span> yearly <span class="flag">--rule</span> <span class="value">"12-25 10:00"</span>
+                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">14</span> <span class="flag">--repeat-type</span> <span class="value">"每年"</span> <span class="flag">--rule</span> <span class="value">"12-25 10:00"</span>
                 </div>
                 <div class="result">
                     <div class="result-title">重复规则</div>
-                    <span class="tag tag-yearly">yearly</span> "12-25 10:00" = 每年 12 月 25 日 10:00
+                    <span class="tag tag-yearly">每年</span> "12-25 10:00" = 每年 12 月 25 日 10:00
                 </div>
             </div>
         </div>
 
-        <!-- 场景 13-14：提醒管理 -->
+        <div class="scenario">
+            <div class="scenario-header">场景 13：每月重复提醒</div>
+            <div class="scenario-body">
+                <div class="chat">
+                    <div class="msg msg-user">
+                        <div class="msg-avatar">你</div>
+                        <div class="msg-bubble">每月15号早上8点半提醒我交房租。</div>
+                    </div>
+                    <div class="msg msg-ai">
+                        <div class="msg-avatar">AI</div>
+                        <div class="msg-bubble">已设置每月15日8:30提醒交房租。</div>
+                    </div>
+                </div>
+                <div class="cmd">
+                    <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> add <span class="value">"交房租"</span> <span class="flag">-c</span> <span class="value">"记账"</span>
+                    <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> remind <span class="value">15</span> <span class="flag">--repeat-type</span> <span class="value">"每月"</span> <span class="flag">--rule</span> <span class="value">"15 08:30"</span>
+                </div>
+                <div class="result">
+                    <div class="result-title">重复规则</div>
+                    <span class="tag tag-monthly">每月</span> "15 08:30" = 每月 15 号 8:30
+                </div>
+            </div>
+        </div>
+
+        <!-- 场景 14-15：提醒管理 -->
         <h2><span class="icon icon-purple">📋</span> 提醒管理</h2>
 
         <div class="scenario">
-            <div class="scenario-header">场景 13：查看所有提醒</div>
+            <div class="scenario-header">场景 14：查看所有提醒</div>
             <div class="scenario-body">
                 <div class="chat">
                     <div class="msg msg-user">
@@ -573,13 +597,13 @@
                 </div>
                 <div class="result">
                     <div class="result-title">返回结果</div>
-                    {"status": "ok", "data": [{"id": 1, "content": "打疫苗", "remind_at": "2026-05-24 15:00"}, ...]}
+                    {"status": "ok", "data": [{"id": 1, "note_id": 11, "remind_at": "2026-05-24 15:00", "repeat_type": "一次性", "status": "active"}, ...]}
                 </div>
             </div>
         </div>
 
         <div class="scenario">
-            <div class="scenario-header">场景 14：废弃提醒</div>
+            <div class="scenario-header">场景 15：废弃提醒</div>
             <div class="scenario-body">
                 <div class="chat">
                     <div class="msg msg-user">
@@ -602,6 +626,10 @@
                     <span class="prompt">$</span> <span class="path">script/memo_cli.py</span> reminders
                     <br><span class="prompt">$</span> <span class="path">script/memo_cli.py</span> dismiss <span class="value">1</span>
                 </div>
+                <div class="result">
+                    <div class="result-title">返回结果</div>
+                    {"status": "ok", "data": {"id": 1}, "message": "提醒已废弃"}
+                </div>
             </div>
         </div>
 
@@ -610,36 +638,44 @@
 
         <div class="grid">
             <div class="grid-item">
-                <h4>社交 → social</h4>
+                <h4>社交</h4>
                 <p>朋友信息、人脉关系、社交活动</p>
             </div>
             <div class="grid-item">
-                <h4>心愿 → wish</h4>
+                <h4>心愿</h4>
                 <p>想买的东西、想做的事、愿望清单</p>
             </div>
             <div class="grid-item">
-                <h4>灵感 → inspiration</h4>
+                <h4>灵感</h4>
                 <p>创意想法、灵感闪现、脑洞</p>
             </div>
             <div class="grid-item">
-                <h4>成就 → achievement</h4>
+                <h4>成就</h4>
                 <p>每日收获、完成的目标、里程碑</p>
             </div>
             <div class="grid-item">
-                <h4>工作 → work</h4>
+                <h4>工作</h4>
                 <p>工作任务、会议记录、项目进度</p>
             </div>
             <div class="grid-item">
-                <h4>学习 → study</h4>
+                <h4>学习</h4>
                 <p>学习笔记、知识要点、课程记录</p>
             </div>
             <div class="grid-item">
-                <h4>记账 → finance</h4>
+                <h4>记账</h4>
                 <p>消费记录、账单、财务信息</p>
             </div>
             <div class="grid-item">
-                <h4>自定义分类</h4>
-                <p>用户可自由创建其他分类</p>
+                <h4>打卡</h4>
+                <p>习惯打卡、运动记录、每日签到</p>
+            </div>
+            <div class="grid-item">
+                <h4>情绪</h4>
+                <p>心情记录、情绪变化、感受</p>
+            </div>
+            <div class="grid-item">
+                <h4>general</h4>
+                <p>默认分类、未分类内容</p>
             </div>
         </div>
 
@@ -648,15 +684,15 @@
             <h3>技能总结</h3>
             <div class="summary-grid">
                 <div class="summary-item">
-                    <div class="num">7</div>
-                    <div class="label">核心操作</div>
+                    <div class="num">12</div>
+                    <div class="label">CLI 命令</div>
                 </div>
                 <div class="summary-item">
-                    <div class="num">4</div>
+                    <div class="num">5</div>
                     <div class="label">提醒类型</div>
                 </div>
                 <div class="summary-item">
-                    <div class="num">8+</div>
+                    <div class="num">10</div>
                     <div class="label">内置分类</div>
                 </div>
             </div>

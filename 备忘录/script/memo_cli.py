@@ -64,25 +64,39 @@ def error_json(message):
 
 # ---- 笔记操作 ----
 
+ALLOWED_CATEGORIES = {"社交", "心愿", "灵感", "成就", "工作", "学习", "记账", "打卡", "情绪", "general"}
+
+def _resolve_media_path(media_arg):
+    """处理媒体路径：必须以 MEMO_MEDIA_DIR 开头，存储时去掉前缀"""
+    if not media_arg:
+        return None
+    media_dir = os.environ.get("MEMO_MEDIA_DIR", "media")
+    # 确保 media_dir 以 / 结尾用于前缀匹配
+    prefix = media_dir if media_dir.endswith("/") else media_dir + "/"
+    if not media_arg.startswith(prefix) and media_arg != media_dir:
+        error_json(f"媒体路径必须以 {media_dir} 开头，当前值: {media_arg}")
+    # 去掉前缀，存储相对路径
+    return media_arg[len(prefix):] if media_arg.startswith(prefix) else ""
+
 def add_note(args):
     content = args.content
+    if not content or not content.strip():
+        error_json("笔记内容不能为空")
     category = args.category or "general"
     # ---- 分类白名单校验 ----
-    ALLOWED_CATEGORIES = {"社交", "心愿", "灵感", "成就", "工作", "学习", "记账", "打卡", "情绪", "general"}
     if category not in ALLOWED_CATEGORIES:
-        # 自动扩展新分类（不拒绝，保持扩展性）
-        pass
-    media_path = args.media
+        error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    media_path = _resolve_media_path(args.media)
     conn = get_conn()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         cur = conn.execute(
             "INSERT INTO notes (content, category, media_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (content, category, media_path, now, now)
+            (content.strip(), category, media_path, now, now)
         )
         note_id = cur.lastrowid
         conn.commit()
-        output_json({"id": note_id, "content": content, "category": category}, message="笔记已添加")
+        output_json({"id": note_id, "content": content.strip(), "category": category}, message="笔记已添加")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -91,7 +105,9 @@ def add_note(args):
 def search_notes(args):
     keyword = args.keyword
     category = args.category
-    limit = args.limit or 20
+    limit = args.limit if args.limit is not None else 20
+    if limit <= 0:
+        error_json("limit 必须是正整数")
     conn = get_conn()
     try:
         if keyword:
@@ -127,20 +143,24 @@ def search_notes(args):
 
 def update_note(args):
     note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
     content = args.content
     category = args.category
-    media_path = args.media
+    if category is not None and category not in ALLOWED_CATEGORIES:
+        error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    media_path = _resolve_media_path(args.media) if args.media is not None else None
     reminder_id = args.reminder_id
     conn = get_conn()
     note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
-        error_json("笔记不存在")
+        error_json(f"笔记不存在: id={note_id}")
     try:
         updates = []
         params = []
         if content is not None:
             updates.append("content = ?")
-            params.append(content)
+            params.append(content.strip())
         if category is not None:
             updates.append("category = ?")
             params.append(category)
@@ -151,7 +171,7 @@ def update_note(args):
             updates.append("reminder_id = ?")
             params.append(reminder_id)
         if not updates:
-            error_json("没有提供要更新的字段")
+            error_json("至少需要提供一个更新字段: --content / --category / --media / --reminder-id")
         updates.append("updated_at = datetime('now','localtime')")
         params.append(note_id)
         conn.execute(f"UPDATE notes SET {', '.join(updates)} WHERE id = ?", params)
@@ -164,10 +184,12 @@ def update_note(args):
 
 def delete_note(args):
     note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
     conn = get_conn()
     note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
-        error_json("笔记不存在")
+        error_json(f"笔记不存在: id={note_id}")
     try:
         conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
         conn.commit()
@@ -179,22 +201,38 @@ def delete_note(args):
 
 def get_note(args):
     note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
     conn = get_conn()
     try:
         note = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
         if not note:
-            error_json("笔记不存在")
+            error_json(f"笔记不存在: id={note_id}")
         output_json(dict(note))
     except Exception as e:
         error_json(str(e))
     finally:
         conn.close()
 
+def _validate_date(date_str, field_name):
+    """校验日期格式 YYYY-MM-DD"""
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return dt
+    except ValueError:
+        error_json(f"{field_name} 格式错误，要求 YYYY-MM-DD，当前值: {date_str}")
+
 def search_by_date(args):
     start = args.start
     end = args.end
+    start_dt = _validate_date(start, "start")
+    end_dt = _validate_date(end, "end")
+    if start_dt > end_dt:
+        error_json(f"开始日期不能晚于结束日期: {start} > {end}")
     category = args.category
-    limit = args.limit or 20
+    limit = args.limit if args.limit is not None else 20
+    if limit <= 0:
+        error_json("limit 必须是正整数")
     conn = get_conn()
     try:
         sql = "SELECT * FROM notes WHERE created_at BETWEEN ? AND ?"
@@ -214,11 +252,15 @@ def search_by_date(args):
 
 def update_category(args):
     note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
     category = args.category
+    if category not in ALLOWED_CATEGORIES:
+        error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
     conn = get_conn()
     note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
-        error_json("笔记不存在")
+        error_json(f"笔记不存在: id={note_id}")
     try:
         conn.execute(
             "UPDATE notes SET category = ?, updated_at = datetime('now','localtime') WHERE id = ?",
@@ -233,16 +275,89 @@ def update_category(args):
 
 # ---- 提醒操作 ----
 
+def _validate_remind_at(at_str):
+    """校验 --at 时间格式 YYYY-MM-DD HH:MM"""
+    if not at_str:
+        return
+    try:
+        datetime.strptime(at_str, "%Y-%m-%d %H:%M")
+    except ValueError:
+        error_json(f"--at 格式错误，要求 YYYY-MM-DD HH:MM，当前值: {at_str}")
+
+def _validate_repeat_rule(repeat_type, rule):
+    """校验 --rule 格式是否匹配 --repeat-type"""
+    if repeat_type == "一次性":
+        return  # 一次性不需要 rule
+    if not rule:
+        error_json(f"--repeat-type={repeat_type} 时必须提供 --rule")
+    parts = rule.strip().split(" ")
+    try:
+        if repeat_type == "每天":
+            # 格式: "HH:MM"
+            if len(parts) != 1:
+                error_json(f"每天规则格式错误，要求 HH:MM，当前值: {rule}")
+            h, m = parts[0].split(":")
+            h, m = int(h), int(m)
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                error_json(f"时间超出范围: {parts[0]}")
+        elif repeat_type == "每周":
+            # 格式: "W HH:MM" (W=0-6, 0=周日)
+            if len(parts) != 2:
+                error_json(f"每周规则格式错误，要求 W HH:MM，当前值: {rule}")
+            w = int(parts[0])
+            if not (0 <= w <= 6):
+                error_json(f"星期超出范围 (0-6): {parts[0]}")
+            h, m = parts[1].split(":")
+            h, m = int(h), int(m)
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                error_json(f"时间超出范围: {parts[1]}")
+        elif repeat_type == "每月":
+            # 格式: "D HH:MM" (D=1-31)
+            if len(parts) != 2:
+                error_json(f"每月规则格式错误，要求 D HH:MM，当前值: {rule}")
+            d = int(parts[0])
+            if not (1 <= d <= 31):
+                error_json(f"日期超出范围 (1-31): {parts[0]}")
+            h, m = parts[1].split(":")
+            h, m = int(h), int(m)
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                error_json(f"时间超出范围: {parts[1]}")
+        elif repeat_type == "每年":
+            # 格式: "MM-DD HH:MM"
+            if len(parts) != 2:
+                error_json(f"每年规则格式错误，要求 MM-DD HH:MM，当前值: {rule}")
+            month, day = parts[0].split("-")
+            month, day = int(month), int(day)
+            if not (1 <= month <= 12):
+                error_json(f"月份超出范围 (1-12): {month}")
+            if not (1 <= day <= 31):
+                error_json(f"日期超出范围 (1-31): {day}")
+            h, m = parts[1].split(":")
+            h, m = int(h), int(m)
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                error_json(f"时间超出范围: {parts[1]}")
+    except (ValueError, IndexError):
+        error_json(f"--rule 格式错误，无法解析: {rule}")
+
 def add_reminder(args):
     note_id = args.note_id
-    remind_at = args.at      # 一次性时间 "YYYY-MM-DD HH:MM"
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
+    remind_at = args.at
     repeat_type = args.repeat_type or "一次性"
     repeat_rule = args.rule
+    # 校验 --at 格式
+    _validate_remind_at(remind_at)
+    # 校验 --rule 格式
+    _validate_repeat_rule(repeat_type, repeat_rule)
+    # 一次性必须有 --at
+    if repeat_type == "一次性" and not remind_at:
+        error_json("--repeat-type=一次性 时必须提供 --at")
     conn = get_conn()
     # 校验笔记存在
     note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
-        error_json("关联笔记不存在")
+        error_json(f"关联笔记不存在: id={note_id}")
     try:
         conn.execute(
             "INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, created_at) VALUES (?, ?, ?, ?, datetime('now','localtime'))",
@@ -480,8 +595,15 @@ def list_due_reminders():
 
 def dismiss_reminder(args):
     rid = args.id
+    if rid <= 0:
+        error_json("提醒 ID 必须是正整数")
     conn = get_conn()
     try:
+        reminder = conn.execute("SELECT id, status FROM reminders WHERE id = ?", (rid,)).fetchone()
+        if not reminder:
+            error_json(f"提醒不存在: id={rid}")
+        if reminder["status"] == "dismissed":
+            error_json(f"提醒已经是废弃状态: id={rid}")
         conn.execute("UPDATE reminders SET status = 'dismissed' WHERE id = ?", (rid,))
         conn.commit()
         output_json({"id": rid}, message="提醒已废弃")
@@ -610,6 +732,8 @@ def completed_reminders(args):
 
 def list_reminders(args):
     status_filter = args.status or "active"
+    if status_filter not in ("active", "dismissed"):
+        error_json(f"无效状态: {status_filter}，允许的值: active, dismissed")
     conn = get_conn()
     try:
         cur = conn.execute("""

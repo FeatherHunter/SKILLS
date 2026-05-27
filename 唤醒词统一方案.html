@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL 唤醒词统一方案</title>
+<style>
+  :root {
+    --bg: #fafaf8;
+    --card: #ffffff;
+    --border: #e5e5e0;
+    --text: #1a1a1a;
+    --text-secondary: #666;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --warning: #d97706;
+    --warning-light: #fffbeb;
+    --tag-bg: #f3f4f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .header {
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .header p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.85rem;
+  }
+  .stat strong {
+    font-size: 1.25rem;
+    color: var(--accent);
+    display: block;
+  }
+  .toc {
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+  }
+  .toc h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.4rem;
+  }
+  .toc a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 0.2rem 0;
+    display: block;
+  }
+  .toc a:hover { text-decoration: underline; }
+  .skill-section {
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .skill-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .skill-num {
+    background: var(--accent);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .skill-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .skill-desc {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-left: auto;
+  }
+  .skill-body { padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  thead th {
+    background: #f9f9f7;
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #f0f0ec;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafaf8; }
+  .trigger-new {
+    display: inline-block;
+    background: var(--success-light);
+    color: var(--success);
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: "SF Mono", "Fira Code", monospace;
+  }
+  .trigger-old {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--text-secondary);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-family: "SF Mono", "Fira Code", monospace;
+    text-decoration: line-through;
+  }
+  .conflict-badge {
+    display: inline-block;
+    background: var(--danger-light);
+    color: var(--danger);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-weight: 600;
+    margin-left: 0.4rem;
+  }
+  .note {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-style: italic;
+  }
+  .func-name {
+    font-weight: 500;
+  }
+  .rule-box {
+    max-width: 1400px;
+    margin: 0 auto 2rem;
+    background: var(--warning-light);
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+  }
+  .rule-box h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--warning);
+  }
+  .rule-box ul {
+    list-style: none;
+    padding: 0;
+  }
+  .rule-box li {
+    font-size: 0.85rem;
+    padding: 0.3rem 0;
+    padding-left: 1.2rem;
+    position: relative;
+  }
+  .rule-box li::before {
+    content: "!";
+    position: absolute;
+    left: 0;
+    color: var(--warning);
+    font-weight: 700;
+  }
+  .section-divider {
+    max-width: 1400px;
+    margin: 2rem auto 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 0.25rem;
+  }
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .skill-desc { display: none; }
+    table { font-size: 0.78rem; }
+    thead th, tbody td { padding: 0.4rem 0.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SKILL 唤醒词统一方案</h1>
+  <p>为每个技能的每个功能模块设计独一无二、无歧义的唤醒词。解决原有触发词冲突、过于通用、缺乏消歧等问题。</p>
+  <div class="stats-bar">
+    <div class="stat"><strong>24</strong>技能</div>
+    <div class="stat"><strong>136</strong>功能模块</div>
+    <div class="stat"><strong>136</strong>唯一唤醒词</div>
+    <div class="stat"><strong>17</strong>原有冲突已消除</div>
+  </div>
+</div>
+
+<div class="rule-box">
+  <h3>设计原则</h3>
+  <ul>
+    <li>每个唤醒词全局唯一，不会与其他技能的任何功能冲突</li>
+    <li>优先使用「技能前缀 + 动作」结构（如「记备忘」「查记账」），降低歧义</li>
+    <li>高频通用词（看看、添加、删除、搜索）一律加技能限定语</li>
+    <li>勋章系统改为被动触发，不再主动抢占其他技能的核心词</li>
+    <li>备忘录「提醒」强制路由保留，但睡眠/运动/体重等场景开白名单</li>
+  </ul>
+</div>
+
+<!-- 目录 -->
+<div class="toc">
+  <h2>目录</h2>
+  <div class="toc-grid">
+    <a href="#skill-1">1. 备忘录</a>
+    <a href="#skill-2">2. 饼干记账</a>
+    <a href="#skill-3">3. 共享单车提醒</a>
+    <a href="#skill-4">4. 居家管家</a>
+    <a href="#skill-5">5. 卡路里</a>
+    <a href="#skill-6">6. 录音机</a>
+    <a href="#skill-7">7. 每日检查</a>
+    <a href="#skill-8">8. 面试管家</a>
+    <a href="#skill-9">9. 目录树</a>
+    <a href="#skill-10">10. 深夜书单</a>
+    <a href="#skill-11">11. 私家大厨</a>
+    <a href="#skill-12">12. 思维导师</a>
+    <a href="#skill-13">13. 贴心助理</a>
+    <a href="#skill-14">14. 图片路由</a>
+    <a href="#skill-15">15. 小龙虾CC交互</a>
+    <a href="#skill-16">16. 学习规划师</a>
+    <a href="#skill-17">17. 学习系统</a>
+    <a href="#skill-18">18. 作息管家</a>
+    <a href="#skill-19">19. Github导航台</a>
+    <a href="#skill-20">20. 勋章</a>
+    <a href="#skill-21">21. 医药国际注册</a>
+    <a href="#skill-22">22. 深夜书单-PDF转md</a>
+    <a href="#skill-23">23. 百科采集</a>
+    <a href="#skill-24">24. 洋洋定制</a>
+  </div>
+</div>
+
+<!-- ==================== 1. 备忘录 ==================== -->
+<div class="section-divider">生活管理类</div>
+
+<div class="skill-section" id="skill-1">
+  <div class="skill-header">
+    <span class="skill-num">1</span>
+    <span class="skill-name">备忘录</span>
+    <span class="skill-desc">文字记录、分类、媒体附件、全文搜索和定时提醒</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">添加笔记</td><td><span class="trigger-new">记备忘</span></td><td><span class="trigger-old">记一下、帮我记、添加、存一下</span> <span class="conflict-badge">冲突</span></td><td class="note">「添加」与私家大厨/居家管家冲突</td></tr>
+        <tr><td>2</td><td class="func-name">搜索笔记</td><td><span class="trigger-new">搜备忘</span></td><td><span class="trigger-old">搜一下、搜索、查找</span> <span class="conflict-badge">冲突</span></td><td class="note">「搜索」与饼干记账/居家管家冲突</td></tr>
+        <tr><td>3</td><td class="func-name">更新笔记</td><td><span class="trigger-new">改备忘</span></td><td><span class="trigger-old">更新、修改、改一下</span> <span class="conflict-badge">冲突</span></td><td class="note">「修改」与私家大厨/居家管家冲突</td></tr>
+        <tr><td>4</td><td class="func-name">删除笔记</td><td><span class="trigger-new">删备忘</span></td><td><span class="trigger-old">删除、删掉</span> <span class="conflict-badge">冲突</span></td><td class="note">「删除」与卡路里冲突</td></tr>
+        <tr><td>5</td><td class="func-name">查看详情</td><td><span class="trigger-new">看备忘</span></td><td><span class="trigger-old">看看、查看、详情</span> <span class="conflict-badge">冲突</span></td><td class="note">「看看」与私家大厨冲突</td></tr>
+        <tr><td>6</td><td class="func-name">按时间搜索</td><td><span class="trigger-new">备忘时间</span></td><td><span class="trigger-old">这个月、最近、上周</span> <span class="conflict-badge">冲突</span></td><td class="note">「最近」与饼干记账/卡路里冲突</td></tr>
+        <tr><td>7</td><td class="func-name">编辑分类</td><td><span class="trigger-new">备忘分类</span></td><td><span class="trigger-old">改分类、换个分类</span></td><td></td></tr>
+        <tr><td>8</td><td class="func-name">设置提醒</td><td><span class="trigger-new">设提醒</span></td><td><span class="trigger-old">提醒、定时</span></td><td class="note">备忘录独占「提醒」路由，保留</td></tr>
+        <tr><td>9</td><td class="func-name">查看提醒</td><td><span class="trigger-new">看提醒</span></td><td><span class="trigger-old">我有哪些提醒、提醒列表</span></td><td></td></tr>
+        <tr><td>10</td><td class="func-name">查询已完成提醒</td><td><span class="trigger-new">完成提醒</span></td><td><span class="trigger-old">已完成、哪些完成了</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 2. 饼干记账 ==================== -->
+<div class="skill-section" id="skill-2">
+  <div class="skill-header">
+    <span class="skill-num">2</span>
+    <span class="skill-name">饼干记账</span>
+    <span class="skill-desc">文字/图片记账、查询统计、分类分析</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">记账（支出）</td><td><span class="trigger-new">记账</span></td><td>记账、花了X元、付了、消费、买了</td><td class="note">「记账」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">收入记录</td><td><span class="trigger-new">记收入</span></td><td>收到X元、收入、进账、工资</td><td class="note">加「记」前缀更明确</td></tr>
+        <tr><td>3</td><td class="func-name">图片记账</td><td><span class="trigger-new">拍账单</span></td><td>发截图/账单图片</td><td class="note">区分于图片路由的通用图片识别</td></tr>
+        <tr><td>4</td><td class="func-name">今日摘要</td><td><span class="trigger-new">查记账</span></td><td><span class="trigger-old">今天花了多少、今日支出</span></td><td class="note">统一查询入口</td></tr>
+        <tr><td>5</td><td class="func-name">月度汇总</td><td><span class="trigger-new">记账月报</span></td><td><span class="trigger-old">这个月消费、本月支出</span> <span class="conflict-badge">冲突</span></td><td class="note">「这个月」与备忘录冲突</td></tr>
+        <tr><td>6</td><td class="func-name">周期对比</td><td><span class="trigger-new">记账对比</span></td><td>上周花了多少、上月账单</td><td></td></tr>
+        <tr><td>7</td><td class="func-name">最近记录</td><td><span class="trigger-new">记账最近</span></td><td><span class="trigger-old">最近的记录</span> <span class="conflict-badge">冲突</span></td><td class="note">「最近」与备忘录/卡路里冲突</td></tr>
+        <tr><td>8</td><td class="func-name">分类明细</td><td><span class="trigger-new">记账分类</span></td><td>各类支出占比、分类明细</td><td></td></tr>
+        <tr><td>9</td><td class="func-name">搜索记录</td><td><span class="trigger-new">搜记账</span></td><td><span class="trigger-old">找一下XX的记录</span> <span class="conflict-badge">冲突</span></td><td class="note">「找一下」与居家管家冲突</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 3. 共享单车提醒 ==================== -->
+<div class="skill-section" id="skill-3">
+  <div class="skill-header">
+    <span class="skill-num">3</span>
+    <span class="skill-name">共享单车提醒</span>
+    <span class="skill-desc">骑车锁车循环提醒</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">开始骑车</td><td><span class="trigger-new">骑车了</span></td><td>骑车了、正在骑车、开始骑车</td><td class="note">「骑车了」语义明确，无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">扫码骑车</td><td><span class="trigger-new">扫车了</span></td><td>扫了小黄车、扫了美团、扫码骑车</td><td class="note">统一为「扫车了」</td></tr>
+        <tr><td>3</td><td class="func-name">锁车/关车</td><td><span class="trigger-new">车关了</span></td><td>关了、锁了、已关、关车了、锁车了</td><td class="note">「车关了」语义完整，无歧义</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 4. 居家管家 ==================== -->
+<div class="skill-section" id="skill-4">
+  <div class="skill-header">
+    <span class="skill-num">4</span>
+    <span class="skill-name">居家管家</span>
+    <span class="skill-desc">家庭物品 + 账号密码 + 快递管理</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">物品查找</td><td><span class="trigger-new">找物品</span></td><td><span class="trigger-old">找XX、XX在哪、有没有XX</span> <span class="conflict-badge">冲突</span></td><td class="note">「找XX」与深夜书单冲突</td></tr>
+        <tr><td>2</td><td class="func-name">物品录入</td><td><span class="trigger-new">录物品</span></td><td><span class="trigger-old">添加物品</span> <span class="conflict-badge">冲突</span></td><td class="note">「添加」与备忘录/私家大厨冲突</td></tr>
+        <tr><td>3</td><td class="func-name">物品更新</td><td><span class="trigger-new">改物品</span></td><td><span class="trigger-old">XX换位置了、XX借给、XX坏了</span> <span class="conflict-badge">冲突</span></td><td class="note">「改」与备忘录/私家大厨冲突</td></tr>
+        <tr><td>4</td><td class="func-name">物品盘点</td><td><span class="trigger-new">盘点物品</span></td><td>盘点XX、整理一下XX</td><td></td></tr>
+        <tr><td>5</td><td class="func-name">穿搭推荐</td><td><span class="trigger-new">推荐穿搭</span></td><td>今天穿什么、推荐穿搭</td><td></td></tr>
+        <tr><td>6</td><td class="func-name">旅游归位</td><td><span class="trigger-new">物品旅游</span></td><td>带XX出去旅游、旅游回来了</td><td></td></tr>
+        <tr><td>7</td><td class="func-name">频率统计</td><td><span class="trigger-new">物品统计</span></td><td>高频物品、长期没碰的</td><td></td></tr>
+        <tr><td>8</td><td class="func-name">标签管理</td><td><span class="trigger-new">物品标签</span></td><td>标签合并、整理标签</td><td></td></tr>
+        <tr><td>9</td><td class="func-name">查看快递</td><td><span class="trigger-new">查快递</span></td><td>快递、有哪些快递、快递到了吗</td><td class="note">「查快递」语义明确，无冲突</td></tr>
+        <tr><td>10</td><td class="func-name">账号密码管理</td><td><span class="trigger-new">管家账号</span></td><td>平台账号、数字凭证、激活码</td><td></td></tr>
+        <tr><td>11</td><td class="func-name">数据健康检查</td><td><span class="trigger-new">管家体检</span></td><td><span class="trigger-old">健康检查、lint</span> <span class="conflict-badge">冲突</span></td><td class="note">「健康检查」与卡路里冲突</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 5. 卡路里 ==================== -->
+<div class="skill-section" id="skill-5">
+  <div class="skill-header">
+    <span class="skill-num">5</span>
+    <span class="skill-name">卡路里</span>
+    <span class="skill-desc">饮食热量、体重、运动、睡眠、营养追踪</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">记录饮食</td><td><span class="trigger-new">记吃了</span></td><td>吃了碗米饭、中午吃了biangbiang面</td><td class="note">「记吃了」简洁明确</td></tr>
+        <tr><td>2</td><td class="func-name">图片识别记录</td><td><span class="trigger-new">拍营养表</span></td><td>发营养成分表图片</td><td class="note">区分于「拍账单」</td></tr>
+        <tr><td>3</td><td class="func-name">删除记录</td><td><span class="trigger-new">删吃了</span></td><td><span class="trigger-old">删掉那条记录、删除ID 3</span> <span class="conflict-badge">冲突</span></td><td class="note">「删除」与备忘录冲突</td></tr>
+        <tr><td>4</td><td class="func-name">查看今日</td><td><span class="trigger-new">今天吃了啥</span></td><td>今天吃了什么、今天吃了多少卡</td><td class="note">口语化，无冲突</td></tr>
+        <tr><td>5</td><td class="func-name">查询历史</td><td><span class="trigger-new">吃了历史</span></td><td>最近7天吃了什么</td><td></td></tr>
+        <tr><td>6</td><td class="func-name">搜索食品</td><td><span class="trigger-new">查热量</span></td><td>查一下鸡胸肉的热量</td><td></td></tr>
+        <tr><td>7</td><td class="func-name">添加食品到库</td><td><span class="trigger-new">存食品</span></td><td><span class="trigger-old">把这个存到食品库</span></td><td></td></tr>
+        <tr><td>8</td><td class="func-name">更新食品库</td><td><span class="trigger-new">改食品</span></td><td><span class="trigger-old">更新ID 1的热量</span></td><td></td></tr>
+        <tr><td>9</td><td class="func-name">查看食品库</td><td><span class="trigger-new">食品库</span></td><td>看看食品库里有什么</td><td></td></tr>
+        <tr><td>10</td><td class="func-name">记录体重</td><td><span class="trigger-new">记体重</span></td><td>体重70公斤、今天69.5kg</td><td class="note">「记体重」无冲突</td></tr>
+        <tr><td>11</td><td class="func-name">体重历史</td><td><span class="trigger-new">体重历史</span></td><td>体重历史、最近30天体重</td><td></td></tr>
+        <tr><td>12</td><td class="func-name">体重趋势</td><td><span class="trigger-new">体重趋势</span></td><td>体重趋势、这周和上周比</td><td></td></tr>
+        <tr><td>13</td><td class="func-name">目标进度</td><td><span class="trigger-new">体重目标</span></td><td>离目标还差多久</td><td></td></tr>
+        <tr><td>14</td><td class="func-name">记录运动</td><td><span class="trigger-new">记运动</span></td><td>今天骑行了40分钟</td><td class="note">「记运动」无冲突</td></tr>
+        <tr><td>15</td><td class="func-name">运动报表</td><td><span class="trigger-new">运动报表</span></td><td>运动摘要、运动趋势</td><td></td></tr>
+        <tr><td>16</td><td class="func-name">热量分析</td><td><span class="trigger-new">热量分析</span></td><td>热量趋势、热量缺口</td><td></td></tr>
+        <tr><td>17</td><td class="func-name">营养配比</td><td><span class="trigger-new">营养配比</span></td><td>营养配比、蛋白质够吗</td><td></td></tr>
+        <tr><td>18</td><td class="func-name">食物排行榜</td><td><span class="trigger-new">食物排行</span></td><td>食物排行榜、低热量榜</td><td></td></tr>
+        <tr><td>19</td><td class="func-name">设置营养目标</td><td><span class="trigger-new">设营养目标</span></td><td>每天吃1800卡、goal 2000</td><td></td></tr>
+        <tr><td>20</td><td class="func-name">健身目标</td><td><span class="trigger-new">设健身目标</span></td><td>设置俯卧撑目标</td><td></td></tr>
+        <tr><td>21</td><td class="func-name">睡眠记录</td><td><span class="trigger-new">记睡眠</span></td><td><span class="trigger-old">昨晚睡了多久、睡眠7小时</span></td><td class="note">「记睡眠」无冲突</td></tr>
+        <tr><td>22</td><td class="func-name">综合报告</td><td><span class="trigger-new">健康仪表盘</span></td><td>dashboard、给我看看整体情况</td><td></td></tr>
+        <tr><td>23</td><td class="func-name">数据健康检查</td><td><span class="trigger-new">卡路里体检</span></td><td><span class="trigger-old">健康检查、lint</span> <span class="conflict-badge">冲突</span></td><td class="note">「健康检查」与居家管家冲突</td></tr>
+        <tr><td>24</td><td class="func-name">起床唤醒</td><td><span class="trigger-new">起床了</span></td><td><span class="trigger-old">醒了、睡醒了、起床啦</span></td><td class="note">卡路里独占，与勋章/作息管家联动</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 6. 录音机 ==================== -->
+<div class="skill-section" id="skill-6">
+  <div class="skill-header">
+    <span class="skill-num">6</span>
+    <span class="skill-name">录音机</span>
+    <span class="skill-desc">OpenClaw 语录记录与查询</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">手动扫描入库</td><td><span class="trigger-new">扫描语录</span></td><td><span class="trigger-old">记录语录、扫描消息</span> <span class="conflict-badge">冲突</span></td><td class="note">「记录」与私家大厨冲突</td></tr>
+        <tr><td>2</td><td class="func-name">查询当日消息</td><td><span class="trigger-new">今日语录</span></td><td>每日语录</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">cron 自动触发</td><td><span class="trigger-new">（自动）</span></td><td>cron 每10分钟</td><td class="note">自动触发，无需唤醒词</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 7. 每日检查 ==================== -->
+<div class="skill-section" id="skill-7">
+  <div class="skill-header">
+    <span class="skill-num">7</span>
+    <span class="skill-name">每日检查</span>
+    <span class="skill-desc">定时/手动触发，生成精美 HTML 报告</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">手动触发检查</td><td><span class="trigger-new">每日检查</span></td><td>每日检查、每日报告</td><td class="note">「每日检查」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">cron 定时触发</td><td><span class="trigger-new">（自动）</span></td><td>cron 定时</td><td class="note">自动触发，无需唤醒词</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 8. 面试管家 ==================== -->
+<div class="section-divider">学习成长类</div>
+
+<div class="skill-section" id="skill-8">
+  <div class="skill-header">
+    <span class="skill-num">8</span>
+    <span class="skill-name">面试管家</span>
+    <span class="skill-desc">面试精通系统 - 多轮模拟面试</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">进入面试系统</td><td><span class="trigger-new">我要面试</span></td><td>我要面试、准备面试、开始面试训练</td><td class="note">「我要面试」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">指定知识点面试</td><td><span class="trigger-new">准备XX面试</span></td><td>准备XXX面试</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">模拟面试</td><td><span class="trigger-new">模拟面试XX</span></td><td>模拟面试XXX、来一次模拟面试</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 9. 目录树 ==================== -->
+<div class="skill-section" id="skill-9">
+  <div class="skill-header">
+    <span class="skill-num">9</span>
+    <span class="skill-name">目录树</span>
+    <span class="skill-desc">递归扫描目录，生成树状 HTML</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">生成目录树</td><td><span class="trigger-new">目录树</span></td><td>目录树</td><td class="note">「目录树」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">目录导航</td><td><span class="trigger-new">目录导航</span></td><td>目录导航</td><td class="note">「目录导航」无冲突，保留</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 10. 深夜书单 ==================== -->
+<div class="skill-section" id="skill-10">
+  <div class="skill-header">
+    <span class="skill-num">10</span>
+    <span class="skill-name">深夜书单</span>
+    <span class="skill-desc">电子书猎手 - 多源下载</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">下载电子书</td><td><span class="trigger-new">找电子书</span></td><td>找本书、下载电子书</td><td class="note">「找电子书」明确指向此技能</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 11. 私家大厨 ==================== -->
+<div class="skill-section" id="skill-11">
+  <div class="skill-header">
+    <span class="skill-num">11</span>
+    <span class="skill-name">私家大厨</span>
+    <span class="skill-desc">食谱管理、做菜模式、采购清单</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">做菜模式</td><td><span class="trigger-new">做菜模式</span></td><td>做菜模式、开始做、进入烹饪</td><td class="note">「做菜模式」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">查看食谱</td><td><span class="trigger-new">看菜谱</span></td><td><span class="trigger-old">看看XX怎么做、XX菜谱、XX做法</span> <span class="conflict-badge">冲突</span></td><td class="note">「看看」与备忘录冲突</td></tr>
+        <tr><td>3</td><td class="func-name">搜索筛选</td><td><span class="trigger-new">搜菜谱</span></td><td><span class="trigger-old">找XX、搜一下XX、有哪些XX</span> <span class="conflict-badge">冲突</span></td><td class="note">「找」「搜」与多个技能冲突</td></tr>
+        <tr><td>4</td><td class="func-name">修改食谱</td><td><span class="trigger-new">改菜谱</span></td><td><span class="trigger-old">改成、换成、修改</span> <span class="conflict-badge">冲突</span></td><td class="note">「修改」与备忘录/居家管家冲突</td></tr>
+        <tr><td>5</td><td class="func-name">烹饪历史</td><td><span class="trigger-new">做过啥菜</span></td><td><span class="trigger-old">做过、评分、历史、复盘、记录</span> <span class="conflict-badge">冲突</span></td><td class="note">「记录」与录音机冲突</td></tr>
+        <tr><td>6</td><td class="func-name">采购清单</td><td><span class="trigger-new">买食材</span></td><td><span class="trigger-old">采购、清单、买、要买</span></td><td class="note">「买」加「食材」限定</td></tr>
+        <tr><td>7</td><td class="func-name">录入食谱</td><td><span class="trigger-new">录菜谱</span></td><td><span class="trigger-old">录入、新建、添加、收藏</span> <span class="conflict-badge">冲突</span></td><td class="note">「添加」与备忘录/居家管家冲突</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 12. 思维导师 ==================== -->
+<div class="skill-section" id="skill-12">
+  <div class="skill-header">
+    <span class="skill-num">12</span>
+    <span class="skill-name">思维导师</span>
+    <span class="skill-desc">模糊问题 → 精准提问</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">元提示模板</td><td><span class="trigger-new">元提示</span></td><td>元提示</td><td class="note">「元提示」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">追问澄清模式</td><td><span class="trigger-new">思维导师</span></td><td>思维导师</td><td class="note">「思维导师」无冲突，保留</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 13. 贴心助理 ==================== -->
+<div class="skill-section" id="skill-13">
+  <div class="skill-header">
+    <span class="skill-num">13</span>
+    <span class="skill-name">贴心助理</span>
+    <span class="skill-desc">主动分析用户状态，关心用户</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">手动触发关心</td><td><span class="trigger-new">关心一下我</span></td><td>你看看我、最近怎么样、关心一下我</td><td class="note">「关心一下我」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">cron 自动触发</td><td><span class="trigger-new">（自动）</span></td><td>cron 每1小时</td><td class="note">自动触发，无需唤醒词</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 14. 图片路由 ==================== -->
+<div class="skill-section" id="skill-14">
+  <div class="skill-header">
+    <span class="skill-num">14</span>
+    <span class="skill-name">图片路由</span>
+    <span class="skill-desc">图片内容智能识别与技能路由</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">图片识别路由</td><td><span class="trigger-new">（发送图片自动触发）</span></td><td>用户发送图片时自动触发</td><td class="note">图片事件触发，无需文字唤醒词</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 15. 小龙虾CC交互 ==================== -->
+<div class="skill-section" id="skill-15">
+  <div class="skill-header">
+    <span class="skill-num">15</span>
+    <span class="skill-name">小龙虾CC交互</span>
+    <span class="skill-desc">OpenClaw 桥接 Claude Code CLI 多轮交互</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">启动CLI多轮交互</td><td><span class="trigger-new">CC写代码</span></td><td>让 Claude Code 写代码、和 claude code 交互</td><td class="note">「CC写代码」简洁无冲突</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 16. 学习规划师 ==================== -->
+<div class="skill-section" id="skill-16">
+  <div class="skill-header">
+    <span class="skill-num">16</span>
+    <span class="skill-name">学习规划师</span>
+    <span class="skill-desc">学习计划制定 - 长期/月/周/日</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">制定计划</td><td><span class="trigger-new">制定学习计划</span></td><td>制定计划、生成百日计划</td><td class="note">加「学习」限定，区分其他计划</td></tr>
+        <tr><td>2</td><td class="func-name">查看计划</td><td><span class="trigger-new">看学习计划</span></td><td>（原缺失）</td><td class="note">原设计缺少查看入口</td></tr>
+        <tr><td>3</td><td class="func-name">优化计划</td><td><span class="trigger-new">优化学习计划</span></td><td>优化计划</td><td></td></tr>
+        <tr><td>4</td><td class="func-name">cron 每日触发</td><td><span class="trigger-new">（自动）</span></td><td>cron 每日 08:00</td><td class="note">自动触发，无需唤醒词</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 17. 学习系统 ==================== -->
+<div class="skill-section" id="skill-17">
+  <div class="skill-header">
+    <span class="skill-num">17</span>
+    <span class="skill-name">学习系统</span>
+    <span class="skill-desc">七阶段学习法 - 采集到教授</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">学习新知识</td><td><span class="trigger-new">学XX</span></td><td>我要学XXX、开始学习XXX、学习XXX</td><td class="note">「学XX」简洁，「学」字前缀无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">复习列表</td><td><span class="trigger-new">复习列表</span></td><td>我要复习、今天要复习什么</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">复习指定知识</td><td><span class="trigger-new">复习XX</span></td><td>复习XXX</td><td class="note">「复习XX」无冲突</td></tr>
+        <tr><td>4</td><td class="func-name">精通列表</td><td><span class="trigger-new">可精通列表</span></td><td>我要精通（无XXX）、我可以精通什么</td><td></td></tr>
+        <tr><td>5</td><td class="func-name">精通流程</td><td><span class="trigger-new">精通XX</span></td><td>我要精通XXX、继续精通XXX</td><td></td></tr>
+        <tr><td>6</td><td class="func-name">进度查询</td><td><span class="trigger-new">学习进度</span></td><td>我的学习进度、XXX学到哪了</td><td></td></tr>
+        <tr><td>7</td><td class="func-name">知识探索</td><td><span class="trigger-new">探索XX</span></td><td><span class="trigger-old">有哪些XXX、想学XXX相关的</span> <span class="conflict-badge">冲突</span></td><td class="note">「有哪些」与私家大厨冲突</td></tr>
+        <tr><td>8</td><td class="func-name">综合练习（已知域）</td><td><span class="trigger-new">综合练习</span></td><td>综合练习、系统设计题</td><td></td></tr>
+        <tr><td>9</td><td class="func-name">综合练习（探索域）</td><td><span class="trigger-new">随机挑战</span></td><td>随机挑战、随机出题</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 18. 作息管家 ==================== -->
+<div class="section-divider">生活辅助类</div>
+
+<div class="skill-section" id="skill-18">
+  <div class="skill-header">
+    <span class="skill-num">18</span>
+    <span class="skill-name">作息管家</span>
+    <span class="skill-desc">作息时间表生成与计划管理</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">同步作息</td><td><span class="trigger-new">同步作息</span></td><td>同步作息、更新作息表</td><td class="note">「同步作息」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">生成摘要</td><td><span class="trigger-new">作息摘要</span></td><td>总结作息、生成摘要</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">查询作息</td><td><span class="trigger-new">查作息</span></td><td>作息记录、今天干了什么</td><td></td></tr>
+        <tr><td>4</td><td class="func-name">查询计划</td><td><span class="trigger-new">查作息计划</span></td><td><span class="trigger-old">查计划、今天计划</span></td><td class="note">加「作息」限定，区分学习计划</td></tr>
+        <tr><td>5</td><td class="func-name">设置计划</td><td><span class="trigger-new">设作息计划</span></td><td>新建计划、更新计划</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 19. Github导航台 ==================== -->
+<div class="skill-section" id="skill-19">
+  <div class="skill-header">
+    <span class="skill-num">19</span>
+    <span class="skill-name">Github导航台</span>
+    <span class="skill-desc">扫描目录生成导航数据，部署到 GitHub Pages</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">更新导航</td><td><span class="trigger-new">更新导航台</span></td><td>更新文档导航、导航台</td><td class="note">「更新导航台」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">查看导航</td><td><span class="trigger-new">看导航台</span></td><td>docs 导航</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 20. 勋章 ==================== -->
+<div class="skill-section" id="skill-20">
+  <div class="skill-header">
+    <span class="skill-num">20</span>
+    <span class="skill-name">勋章</span>
+    <span class="skill-desc">被动触发 - 其他技能完成后自动颁发</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词（冲突）</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">手动颁发勋章</td><td><span class="trigger-new">颁勋章</span></td><td><span class="trigger-old">勋章、颁发勋章</span></td><td class="note">仅手动触发时使用</td></tr>
+        <tr><td>2</td><td class="func-name">手动颁发证书</td><td><span class="trigger-new">颁证书</span></td><td>证书</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">手动颁发奖杯</td><td><span class="trigger-new">颁奖杯</span></td><td>奖杯</td><td></td></tr>
+        <tr><td>4</td><td class="func-name">早睡链（被动）</td><td><span class="trigger-new">（监听：卡路里「记睡眠」完成后触发）</span></td><td><span class="trigger-old">刚睡、22:30睡的</span> <span class="conflict-badge">冲突</span></td><td class="note">原词与卡路里/作息管家冲突，改为被动</td></tr>
+        <tr><td>5</td><td class="func-name">学习链（被动）</td><td><span class="trigger-new">（监听：学习系统「学XX」完成后触发）</span></td><td><span class="trigger-old">学了什么</span> <span class="conflict-badge">冲突</span></td><td class="note">原词与学习系统冲突，改为被动</td></tr>
+        <tr><td>6</td><td class="func-name">休息链（被动）</td><td><span class="trigger-new">（监听：作息管家记录休息时触发）</span></td><td><span class="trigger-old">休息、躺了一天</span> <span class="conflict-badge">冲突</span></td><td class="note">原词与作息管家冲突，改为被动</td></tr>
+        <tr><td>7</td><td class="func-name">体重链（被动）</td><td><span class="trigger-new">（监听：卡路里「记体重」完成后触发）</span></td><td><span class="trigger-old">称了体重</span> <span class="conflict-badge">冲突</span></td><td class="note">原词与卡路里冲突，改为被动</td></tr>
+        <tr><td>8</td><td class="func-name">运动链（被动）</td><td><span class="trigger-new">（监听：卡路里「记运动」完成后触发）</span></td><td><span class="trigger-old">跑了步、骑了车</span> <span class="conflict-badge">冲突</span></td><td class="note">原词与卡路里冲突，改为被动</td></tr>
+        <tr><td>9</td><td class="func-name">通用触发（被动）</td><td><span class="trigger-new">（监听：任意技能完成有价值操作时触发）</span></td><td><span class="trigger-old">今天做了XX</span> <span class="conflict-badge">冲突</span></td><td class="note">原词过于泛化，改为被动</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 21. 医药国际注册 ==================== -->
+<div class="skill-section" id="skill-21">
+  <div class="skill-header">
+    <span class="skill-num">21</span>
+    <span class="skill-name">医药国际注册</span>
+    <span class="skill-desc">6套方法论 - 多国药品注册</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">通用入口</td><td><span class="trigger-new">药品注册</span></td><td>医药国际注册、药品注册、国际注册</td><td class="note">「药品注册」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">美国注册</td><td><span class="trigger-new">FDA注册</span></td><td>FDA注册</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">欧盟注册</td><td><span class="trigger-new">EMA注册</span></td><td>EMA注册</td><td></td></tr>
+        <tr><td>4</td><td class="func-name">尼日利亚注册</td><td><span class="trigger-new">NAFDAC注册</span></td><td>NAFDAC注册</td><td></td></tr>
+        <tr><td>5</td><td class="func-name">中非注册</td><td><span class="trigger-new">CEMAC注册</span></td><td>CEMAC注册</td><td></td></tr>
+        <tr><td>6</td><td class="func-name">CTD文档编制</td><td><span class="trigger-new">CTD文档</span></td><td>CTD文档、注册申报</td><td></td></tr>
+        <tr><td>7</td><td class="func-name">仿制药注册</td><td><span class="trigger-new">仿制药注册</span></td><td>仿制药注册</td><td></td></tr>
+        <tr><td>8</td><td class="func-name">注册策略</td><td><span class="trigger-new">注册策略</span></td><td>注册策略</td><td></td></tr>
+        <tr><td>9</td><td class="func-name">法规查询</td><td><span class="trigger-new">药法规查询</span></td><td>法规查询</td><td class="note">加「药」前缀，区分通用法规查询</td></tr>
+        <tr><td>10</td><td class="func-name">缺陷信回复</td><td><span class="trigger-new">缺陷信回复</span></td><td>缺陷信回复</td><td></td></tr>
+        <tr><td>11</td><td class="func-name">注册项目管理</td><td><span class="trigger-new">注册项目管理</span></td><td>注册项目管理</td><td></td></tr>
+        <tr><td>12</td><td class="func-name">多国注册管理</td><td><span class="trigger-new">多国注册</span></td><td>多国注册、注册进度跟踪</td><td></td></tr>
+        <tr><td>13</td><td class="func-name">注册计划</td><td><span class="trigger-new">注册计划</span></td><td>注册计划</td><td></td></tr>
+        <tr><td>14</td><td class="func-name">注册文档</td><td><span class="trigger-new">注册文档</span></td><td>注册文档</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 22. 深夜书单-PDF转md ==================== -->
+<div class="skill-section" id="skill-22">
+  <div class="skill-header">
+    <span class="skill-num">22</span>
+    <span class="skill-name">深夜书单-PDF书籍转为md</span>
+    <span class="skill-desc">OCR 处理 PDF → Markdown</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">PDF转Markdown</td><td><span class="trigger-new">PDF转md</span></td><td>PDF转md、OCR处理</td><td class="note">「PDF转md」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">扫描图书馆</td><td><span class="trigger-new">扫描图书馆</span></td><td>扫描图书馆</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 23. 百科采集 ==================== -->
+<div class="skill-section" id="skill-23">
+  <div class="skill-header">
+    <span class="skill-num">23</span>
+    <span class="skill-name">百科采集</span>
+    <span class="skill-desc">全网百科知识采集</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">百科采集</td><td><span class="trigger-new">采集百科</span></td><td>百科采集、采集百科</td><td class="note">「采集百科」无冲突</td></tr>
+        <tr><td>2</td><td class="func-name">随机百科</td><td><span class="trigger-new">今天学百科</span></td><td>今天学什么、随机百科</td><td class="note">「今天学百科」明确指向此技能</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 24. 洋洋定制 ==================== -->
+<div class="skill-section" id="skill-24">
+  <div class="skill-header">
+    <span class="skill-num">24</span>
+    <span class="skill-name">洋洋定制</span>
+    <span class="skill-desc">LLM Wiki 知识库构建</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>#</th><th>功能</th><th>唯一唤醒词</th><th>原触发词</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="func-name">进入定制模式</td><td><span class="trigger-new">洋洋定制</span></td><td>洋洋定制</td><td class="note">「洋洋定制」无冲突，保留</td></tr>
+        <tr><td>2</td><td class="func-name">创建Wiki</td><td><span class="trigger-new">创建wiki</span></td><td>创建wiki、知识库</td><td></td></tr>
+        <tr><td>3</td><td class="func-name">添加知识源</td><td><span class="trigger-new">wiki加源</span></td><td>添加源、处理源</td><td></td></tr>
+        <tr><td>4</td><td class="func-name">审计Wiki</td><td><span class="trigger-new">审计wiki</span></td><td>审计wiki、健康检查</td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 冲突消除对照表 ==================== -->
+<div class="section-divider">附录</div>
+
+<div class="skill-section">
+  <div class="skill-header">
+    <span class="skill-num" style="background:#d97706;">!</span>
+    <span class="skill-name">原有冲突消除对照表</span>
+    <span class="skill-desc">17 个冲突触发词的解决方案</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>原冲突词</th><th>涉及技能</th><th>新唤醒词方案</th></tr></thead>
+      <tbody>
+        <tr><td><span class="trigger-old">看看、查看</span></td><td>备忘录 / 私家大厨</td><td><span class="trigger-new">看备忘</span> / <span class="trigger-new">看菜谱</span></td></tr>
+        <tr><td><span class="trigger-old">删除、删掉</span></td><td>备忘录 / 卡路里</td><td><span class="trigger-new">删备忘</span> / <span class="trigger-new">删吃了</span></td></tr>
+        <tr><td><span class="trigger-old">添加</span></td><td>备忘录 / 私家大厨 / 居家管家</td><td><span class="trigger-new">记备忘</span> / <span class="trigger-new">录菜谱</span> / <span class="trigger-new">录物品</span></td></tr>
+        <tr><td><span class="trigger-old">搜索、查找</span></td><td>备忘录 / 饼干记账 / 居家管家</td><td><span class="trigger-new">搜备忘</span> / <span class="trigger-new">搜记账</span> / <span class="trigger-new">找物品</span></td></tr>
+        <tr><td><span class="trigger-old">修改、改</span></td><td>备忘录 / 私家大厨 / 居家管家</td><td><span class="trigger-new">改备忘</span> / <span class="trigger-new">改菜谱</span> / <span class="trigger-new">改物品</span></td></tr>
+        <tr><td><span class="trigger-old">最近</span></td><td>备忘录 / 饼干记账 / 卡路里</td><td><span class="trigger-new">备忘时间</span> / <span class="trigger-new">记账最近</span> / <span class="trigger-new">吃了历史</span></td></tr>
+        <tr><td><span class="trigger-old">记录</span></td><td>私家大厨 / 录音机</td><td><span class="trigger-new">做过啥菜</span> / <span class="trigger-new">扫描语录</span></td></tr>
+        <tr><td><span class="trigger-old">健康检查</span></td><td>居家管家 / 卡路里</td><td><span class="trigger-new">管家体检</span> / <span class="trigger-new">卡路里体检</span></td></tr>
+        <tr><td><span class="trigger-old">提醒</span></td><td>备忘录 / 共享单车</td><td>备忘录独占「设提醒」；单车用「骑车了」</td></tr>
+        <tr><td><span class="trigger-old">有哪些XXX</span></td><td>学习系统 / 私家大厨</td><td><span class="trigger-new">探索XX</span> / <span class="trigger-new">搜菜谱</span></td></tr>
+        <tr><td><span class="trigger-old">刚睡</span></td><td>勋章 / 卡路里 / 作息管家</td><td>卡路里用<span class="trigger-new">记睡眠</span>；勋章改为被动监听</td></tr>
+        <tr><td><span class="trigger-old">称了体重</span></td><td>勋章 / 卡路里</td><td>卡路里用<span class="trigger-new">记体重</span>；勋章改为被动监听</td></tr>
+        <tr><td><span class="trigger-old">跑了步</span></td><td>勋章 / 卡路里</td><td>卡路里用<span class="trigger-new">记运动</span>；勋章改为被动监听</td></tr>
+        <tr><td><span class="trigger-old">学了什么</span></td><td>勋章 / 学习系统</td><td>学习系统用<span class="trigger-new">学XX</span>；勋章改为被动监听</td></tr>
+        <tr><td><span class="trigger-old">休息</span></td><td>勋章 / 作息管家</td><td>作息管家用<span class="trigger-new">查作息</span>；勋章改为被动监听</td></tr>
+        <tr><td><span class="trigger-old">买</span></td><td>私家大厨</td><td><span class="trigger-new">买食材</span>（加限定语）</td></tr>
+        <tr><td><span class="trigger-old">今天做了XX</span></td><td>勋章</td><td>勋章改为被动监听，不再主动触发</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== 命名规则 ==================== -->
+<div class="skill-section">
+  <div class="skill-header">
+    <span class="skill-num" style="background:#16a34a;">R</span>
+    <span class="skill-name">唤醒词命名规则</span>
+    <span class="skill-desc">统一规范，防止未来新增冲突</span>
+  </div>
+  <div class="skill-body">
+    <table>
+      <thead><tr><th>规则</th><th>说明</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td><strong>动词 + 技能前缀</strong></td><td>CRUD 操作一律用「动词 + 技能名缩写」</td><td>记备忘、搜备忘、改备忘、删备忘</td></tr>
+        <tr><td><strong>名词独占</strong></td><td>领域专有名词直接使用，天然无冲突</td><td>记账、骑车了、做菜模式、目录树</td></tr>
+        <tr><td><strong>被动触发标注</strong></td><td>不主动抢占触发词的功能标注为「监听」</td><td>勋章全部链改为被动监听</td></tr>
+        <tr><td><strong>自动触发标注</strong></td><td>cron 定时任务标注为「自动」</td><td>录音机、每日检查、贴心助理</td></tr>
+        <tr><td><strong>事件触发标注</strong></td><td>非文字触发标注为事件</td><td>图片路由：发送图片自动触发</td></tr>
+        <tr><td><strong>禁止通用词</strong></td><td>「看看」「添加」「删除」「搜索」「记录」「最近」不得单独使用</td><td>必须加技能限定语</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="max-width:1400px;margin:2rem auto;text-align:center;color:#999;font-size:0.78rem;padding-bottom:2rem;">
+  SKILL 唤醒词统一方案 · 生成日期：2026-05-27 · 24 技能 · 136 功能模块 · 136 唯一唤醒词
+</div>
+
+</body>
+</html>

@@ -27,6 +27,56 @@
           "label": "skillboard"
         }
       ]
+    },
+    {
+      "name": "SKILLS",
+      "path": "SKILLS/",
+      "files": [
+        {
+          "name": "作息管家.html",
+          "label": "作息管家"
+        },
+        {
+          "name": "勋章.html",
+          "label": "勋章"
+        },
+        {
+          "name": "医药国际注册.html",
+          "label": "医药国际注册"
+        },
+        {
+          "name": "卡路里.html",
+          "label": "卡路里"
+        },
+        {
+          "name": "图片路由.html",
+          "label": "图片路由"
+        },
+        {
+          "name": "备忘录.html",
+          "label": "备忘录"
+        },
+        {
+          "name": "居家管家.html",
+          "label": "居家管家"
+        },
+        {
+          "name": "录音机.html",
+          "label": "录音机"
+        },
+        {
+          "name": "思维导师.html",
+          "label": "思维导师"
+        },
+        {
+          "name": "百科采集.html",
+          "label": "百科采集"
+        },
+        {
+          "name": "饼干记账.html",
+          "label": "饼干记账"
+        }
+      ]
     }
   ],
   "rootFiles": [

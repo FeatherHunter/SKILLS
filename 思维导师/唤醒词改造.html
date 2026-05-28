@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12. 思维导师 唤醒词改造</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+<style>
+:root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #6c757d;
+    --border: #dee2e6;
+    --accent: #4a90d9;
+    --accent-dark: #2c6cb0;
+    --new-color: #28a745;
+    --old-color: #dc3545;
+    --conflict: #fd7e14;
+    --note: #6f42c1;
+    --type-retrieve: #3498db;
+    --type-optimize: #2ecc71;
+    --type-apply: #9b59b6;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.skill-header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 2rem 2.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(74,144,217,0.3); }
+.skill-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.skill-header .meta { font-size: 0.9rem; opacity: 0.85; }
+.skill-header .desc { margin-top: 0.75rem; font-size: 1rem; opacity: 0.9; }
+.section-title { font-size: 1.15rem; color: var(--accent-dark); margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+thead th { background: var(--accent); color: #fff; padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; }
+tbody tr:hover { background: #f0f7ff; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 0.7rem 1rem; font-size: 0.92rem; }
+.td-idx { color: var(--text-muted); width: 3rem; }
+.td-type { font-weight: 600; font-size: 0.8rem; padding: 0.15rem 0.5rem; border-radius: 20px; display: inline-block; }
+.type-retrieve { background: #e8f4fd; color: var(--type-retrieve); }
+.type-optimize { background: #e8fde8; color: var(--type-optimize); }
+.type-apply { background: #f3e8fd; color: var(--type-apply); }
+.td-func { font-weight: 600; color: var(--text); }
+.td-new { color: var(--new-color); font-weight: 700; font-size: 1rem; }
+.td-old { color: var(--old-color); text-decoration: line-through; opacity: 0.7; }
+.td-note { color: var(--text-muted); font-size: 0.85rem; }
+.badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.badge-new { background: #e8fde8; color: var(--new-color); border: 1px solid var(--new-color); }
+.badge-upgraded { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--card); border-radius: 8px; padding: 1.2rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.stat-card .num { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.stat-card .label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem; }
+.rule-box { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+.rule-box code { background: #f0f0f0; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9rem; }
+.files-section { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-top: 2rem; }
+.files-section h3 { font-size: 1rem; color: var(--accent-dark); margin-bottom: 1rem; }
+.back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<a class="back-link" href="../../唤醒词改造/00_总览.html">&larr; 返回总览</a>
+
+<div class="skill-header">
+    <h1>12. 思维导师 唤醒词改造</h1>
+    <div class="meta">9 个唤醒词 &middot; 2 种模式 &middot; 统一动词+名词</div>
+    <div class="desc">模糊问题 &rarr; 精准提问，生成威力强大的元提示模板</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="num">9</div><div class="label">唤醒词总数</div></div>
+    <div class="stat-card"><div class="num">3</div><div class="label">功能分类</div></div>
+    <div class="stat-card"><div class="num">7</div><div class="label">新增唤醒词</div></div>
+    <div class="stat-card"><div class="num">0</div><div class="label">冲突</div></div>
+</div>
+
+<h2 class="section-title">命名规则</h2>
+<div class="rule-box">
+    <code>获取XX</code> = 检索 &nbsp;&nbsp;
+    <code>分析XX</code> = 推荐/研判 &nbsp;&nbsp;
+    <code>追问XX</code> = 澄清 &nbsp;&nbsp;
+    <code>优化XX</code> = 改进 &nbsp;&nbsp;
+    <code>生成XX</code> = 创建 &nbsp;&nbsp;
+    <code>拆解XX</code> = 分解
+</div>
+
+<h2 class="section-title">改造对照表</h2>
+<table>
+<thead><tr>
+<th>#</th>
+<th>类型</th>
+<th>功能</th>
+<th>新唤醒词</th>
+<th>原触发词</th>
+<th>说明</th>
+</tr></thead>
+<tbody>
+<tr>
+<td class="td-idx">1</td>
+<td><span class="td-type type-retrieve">检索</span></td>
+<td class="td-func">列出全部预置元提示</td>
+<td class="td-new">获取模板</td>
+<td class="td-old">~~元提示（名词）~~</td>
+<td><span class="badge badge-upgraded">升级</span> 名词&rarr;动词+名词</td>
+</tr>
+<tr>
+<td class="td-idx">2</td>
+<td><span class="td-type type-retrieve">检索</span></td>
+<td class="td-func">根据场景推荐元提示</td>
+<td class="td-new">分析场景</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 推荐最合适的元提示</td>
+</tr>
+<tr>
+<td class="td-idx">3</td>
+<td><span class="td-type type-optimize">优化</span></td>
+<td class="td-func">追问+优化+专属提示</td>
+<td class="td-new">追问澄清</td>
+<td class="td-old">~~思维导师（技能名）~~</td>
+<td><span class="badge badge-upgraded">升级</span> 技能名&rarr;动词+名词</td>
+</tr>
+<tr>
+<td class="td-idx">4</td>
+<td><span class="td-type type-optimize">优化</span></td>
+<td class="td-func">单独优化提问质量</td>
+<td class="td-new">优化提问</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 输出精准问法</td>
+</tr>
+<tr>
+<td class="td-idx">5</td>
+<td><span class="td-type type-optimize">优化</span></td>
+<td class="td-func">生成专属元提示</td>
+<td class="td-new">生成提示</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 为具体问题定制模板</td>
+</tr>
+<tr>
+<td class="td-idx">6</td>
+<td><span class="td-type type-apply">套用</span></td>
+<td class="td-func">多维度深度分析</td>
+<td class="td-new">深度分析</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 直接套用元提示一</td>
+</tr>
+<tr>
+<td class="td-idx">7</td>
+<td><span class="td-type type-apply">套用</span></td>
+<td class="td-func">苏格拉底式追问</td>
+<td class="td-new">追问思路</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 直接套用元提示二</td>
+</tr>
+<tr>
+<td class="td-idx">8</td>
+<td><span class="td-type type-apply">套用</span></td>
+<td class="td-func">第一性原理拆解</td>
+<td class="td-new">拆解问题</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 直接套用元提示三</td>
+</tr>
+<tr>
+<td class="td-idx">9</td>
+<td><span class="td-type type-apply">套用</span></td>
+<td class="td-func">决策博弈分析</td>
+<td class="td-new">分析决策</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 直接套用元提示四</td>
+</tr>
+</tbody>
+</table>
+
+<h2 class="section-title">路由规则</h2>
+<table>
+<thead><tr>
+<th>唤醒词</th>
+<th>模式</th>
+<th>行为</th>
+</tr></thead>
+<tbody>
+<tr><td class="td-new">获取模板</td><td>模式一</td><td>列出全部预置元提示及适用场景</td></tr>
+<tr><td class="td-new">分析场景</td><td>模式一</td><td>分析场景 &rarr; 推荐1-3个元提示 &rarr; 说明理由</td></tr>
+<tr><td class="td-new">深度分析</td><td>模式一</td><td>直接调用元提示一，要求用户填入[主题]</td></tr>
+<tr><td class="td-new">追问思路</td><td>模式一</td><td>直接调用元提示二，要求用户填入[主题]</td></tr>
+<tr><td class="td-new">拆解问题</td><td>模式一</td><td>直接调用元提示三，要求用户填入[主题]</td></tr>
+<tr><td class="td-new">分析决策</td><td>模式一</td><td>直接调用元提示四，要求用户填入[主题]</td></tr>
+<tr><td class="td-new">追问澄清</td><td>模式二</td><td>追问2-3个问题 &rarr; 优化提问 &rarr; 生成专属元提示</td></tr>
+<tr><td class="td-new">优化提问</td><td>模式二</td><td>直接优化用户提问，输出精准问法</td></tr>
+<tr><td class="td-new">生成提示</td><td>模式二</td><td>直接为具体问题生成专属元提示模板</td></tr>
+</tbody>
+</table>
+
+<div class="files-section">
+<h3>需要修改的文件</h3>
+<p>路径: <code>SKILLS/思维导师/SKILL.md</code></p>
+<table>
+<thead><tr><th>改动</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>新增 YAML frontmatter</td><td><code>name</code> + <code>description</code> 含全部9个唤醒词</td></tr>
+<tr><td>新增唤醒词清单</td><td>9个，按A（检索）/B（优化）/C（套用）分类</td></tr>
+<tr><td>新增路由表</td><td>9行，含模式和行为映射</td></tr>
+<tr><td>两种模式</td><td>改为引用具体唤醒词</td></tr>
+<tr><td>预置元提示库</td><td>每个元提示新增"唤醒词"字段</td></tr>
+<tr><td>使用示例</td><td>从2个扩展为6个，覆盖全部9个唤醒词</td></tr>
+</tbody>
+</table>
+</div>
+
+</body>
+</html>

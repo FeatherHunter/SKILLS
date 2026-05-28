@@ -211,7 +211,16 @@ class Database:
             self._conn = None
             self._cur = None
 
-    def query(self, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
+    def clear_all_checkpoints(self):
+        """清空所有 checkpoint，用于全量重扫"""
+        conn = sqlite3.connect(str(self.db_path))
+        cur = conn.cursor()
+        cur.execute("DELETE FROM scan_checkpoint")
+        conn.commit()
+        conn.close()
+
+    def query(self, start_ts: int = None, end_ts: int = None, date: str = None,
+              channel: str = None, sender_id: str = None, limit: int = 1000):
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
 
@@ -227,6 +236,12 @@ class Database:
         if date:
             conditions.append("date = ?")
             params.append(date)
+        if channel:
+            conditions.append("channel = ?")
+            params.append(channel)
+        if sender_id:
+            conditions.append("sender_id = ?")
+            params.append(sender_id)
 
         where = " AND ".join(conditions) if conditions else "1=1"
 
@@ -242,7 +257,8 @@ class Database:
         conn.close()
         return rows
 
-    def query_attachments(self, start_ts: int = None, end_ts: int = None, date: str = None, limit: int = 1000):
+    def query_attachments(self, start_ts: int = None, end_ts: int = None, date: str = None,
+                          channel: str = None, file_type: str = None, limit: int = 1000):
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
 
@@ -258,6 +274,12 @@ class Database:
         if date:
             conditions.append("date = ?")
             params.append(date)
+        if channel:
+            conditions.append("channel = ?")
+            params.append(channel)
+        if file_type:
+            conditions.append("file_type LIKE ?")
+            params.append(f"{file_type}%")
 
         where = " AND ".join(conditions) if conditions else "1=1"
 
@@ -273,16 +295,30 @@ class Database:
         conn.close()
         return rows
 
-    def query_recent(self, limit: int = 50):
+    def query_recent(self, limit: int = 50, channel: str = None, sender_id: str = None):
         """查询最近 N 条消息（按最新时间倒序）"""
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
-        cur.execute("""
+
+        conditions = []
+        params = []
+
+        if channel:
+            conditions.append("channel = ?")
+            params.append(channel)
+        if sender_id:
+            conditions.append("sender_id = ?")
+            params.append(sender_id)
+
+        where = " AND ".join(conditions) if conditions else "1=1"
+
+        cur.execute(f"""
             SELECT message_id, timestamp, channel, sender_id, content, has_attachment, date
             FROM user_messages
+            WHERE {where}
             ORDER BY timestamp DESC
             LIMIT ?
-        """, (limit,))
+        """, (*params, limit))
         rows = cur.fetchall()
         conn.close()
         return rows

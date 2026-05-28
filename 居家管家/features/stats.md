@@ -1,4 +1,4 @@
-# 频率统计
+# 统物品 / 查高频 / 查低频
 
 ## 流程概述
 
@@ -21,10 +21,10 @@
 ## Step 2: 执行统计
 
 ```bash
-# 高频物品（访问次数最多）
+# 查高频（访问次数最多）
 python home_manager.py stats --type frequent --limit 20
 
-# 长期未访问
+# 查低频
 python home_manager.py stats --type dormant --limit 20
 
 # 总体统计

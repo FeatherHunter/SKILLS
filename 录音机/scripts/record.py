@@ -11,6 +11,7 @@ Daily Recorder - 主扫描脚本
 5. 有 checkpoint 的活跃文件优先于白纸文件（活跃文件的消息有时效性）
 """
 
+import argparse
 import json
 import os
 import re
@@ -298,7 +299,15 @@ def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=No
 
 
 def main():
+    parser = argparse.ArgumentParser(description="从 OpenClaw session 文件扫描用户消息和附件入库")
+    parser.add_argument("--full", action="store_true", help="全量重扫：清空所有 checkpoint 后重新扫描")
+    args = parser.parse_args()
+
     db = Database()
+
+    if args.full:
+        db.clear_all_checkpoints()
+        print("[全量模式] 已清空所有 checkpoint，将重新扫描全部文件")
 
     # 【优化：预加载所有 checkpoint，一次查询替代逐文件查询】
     cp_cache = db.preload_checkpoints()

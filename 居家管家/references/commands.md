@@ -6,7 +6,7 @@
 python home_manager.py init
 ```
 
-## 添加物品
+## 录物品
 
 ```bash
 # 基本用法
@@ -47,7 +47,7 @@ python home_manager.py add \
 
 ---
 
-## 搜索物品
+## 查物品
 
 ```bash
 # 基本搜索
@@ -140,13 +140,13 @@ python home_manager.py list --category "饮品"
 # 排序
 python home_manager.py list --sort recent    # 按最后访问排序
 python home_manager.py list --sort frequent  # 按访问次数排序
-python home_manager.py list --sort dormant   # 按长期未访问排序
+python home_manager.py list --sort dormant   # 按查低频排序
 python home_manager.py list --sort name      # 按名称排序（默认）
 ```
 
 ---
 
-## 物品详情
+## 看物品
 
 ```bash
 python home_manager.py detail --id 1
@@ -154,7 +154,7 @@ python home_manager.py detail --id 1
 
 ---
 
-## 物品盘点
+## 盘物品
 
 ```bash
 python home_manager.py inventory --location "卧室/衣柜"
@@ -165,10 +165,10 @@ python home_manager.py inventory --location "卧室/衣柜"
 ## 频率统计
 
 ```bash
-# 高频物品
+# 查高频
 python home_manager.py stats --type frequent --limit 20
 
-# 长期未访问
+# 查低频
 python home_manager.py stats --type dormant --limit 20
 
 # 总体统计
@@ -177,31 +177,31 @@ python home_manager.py stats --type summary
 
 ---
 
-## 标签管理
+## 看标签 / 合标签
 
 ```bash
-# 列出所有标签
+# 看标签
 python home_manager.py tag-list
 
-# 合并标签
+# 合标签
 python home_manager.py tag-merge --from "白" --to "白色"
 ```
 
 ---
 
-## 账号管理
+## 查账号 / 存账号 / 改账号
 
 ```bash
 # 初始化 master key（首次使用）
 python home_manager.py account init --master-key "你的密钥"
 
-# 添加账号
+# 存账号
 python home_manager.py account add --platform "淘宝" --user "xxx" --pass "xxx" --master-key "你的密钥"
 
-# 列出账号
+# 查账号（列出全部）
 python home_manager.py account list
 
-# 查看密码（需要 master key）
+# 查账号（查看指定平台密码）
 python home_manager.py account show --platform "淘宝" --master-key "你的密钥"
 
 # 删除账号

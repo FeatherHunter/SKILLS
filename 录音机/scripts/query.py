@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Daily Recorder - 查询脚本
-支持灵活的时间范围查询
+支持灵活的时间范围查询、渠道筛选、发送者筛选、附件类型筛选
 """
 
 import argparse
@@ -42,9 +42,15 @@ def main():
     parser.add_argument("--recent", type=int, help="最近 N 条消息（忽略日期过滤，按最新排序）")
     parser.add_argument("--limit", type=int, default=1000, help="最大返回条数")
     parser.add_argument("--attachments", action="store_true", help="同时查询附件")
+    parser.add_argument("--channel", type=str, help="按渠道筛选：qq/wechat/pc")
+    parser.add_argument("--sender", type=str, help="按发送者 ID 筛选")
+    parser.add_argument("--type", type=str, help="按附件类型筛选：image/audio/video/file（隐含 --attachments）")
     args = parser.parse_args()
 
     db = Database()
+
+    # 指定 --type 时隐含开启 --attachments
+    show_attachments = args.attachments or args.type is not None
 
     # 解析时间参数
     start_ts = None
@@ -68,7 +74,11 @@ def main():
                 end_ts = parse_ts(args.end)
 
     # 查询消息（recent 模式按最新排序）
-    rows = db.query_recent(args.recent) if recent_mode else db.query(start_ts=start_ts, end_ts=end_ts, limit=args.limit)
+    if recent_mode:
+        rows = db.query_recent(args.recent, channel=args.channel, sender_id=args.sender)
+    else:
+        rows = db.query(start_ts=start_ts, end_ts=end_ts,
+                        channel=args.channel, sender_id=args.sender, limit=args.limit)
 
     if not rows:
         print("没有找到消息")
@@ -81,14 +91,17 @@ def main():
             print()
 
     # 查询附件
-    if args.attachments:
-        att_rows = db.query_attachments(start_ts=start_ts, end_ts=end_ts, limit=args.limit)
+    if show_attachments:
+        att_rows = db.query_attachments(start_ts=start_ts, end_ts=end_ts,
+                                        channel=args.channel, file_type=args.type, limit=args.limit)
         if att_rows:
             print(f"\n附件 {len(att_rows)} 条\n")
             for msg_id, ts, channel, sender_id, file_path, file_type, date in att_rows:
                 print(f"[{ts_to_str(ts)}] [{channel}] [{file_type}]")
                 print(f"  {file_path}")
                 print()
+        else:
+            print("\n没有找到附件")
 
 
 if __name__ == "__main__":

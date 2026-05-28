@@ -21,12 +21,13 @@
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1200px; margin: 0 auto; }
 .skill-header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 2rem 2.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(74,144,217,0.3); }
 .skill-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
 .skill-header .meta { font-size: 0.9rem; opacity: 0.85; }
 .skill-header .desc { margin-top: 0.75rem; font-size: 1rem; opacity: 0.9; }
 .section-title { font-size: 1.15rem; color: var(--accent-dark); margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+.category-title { font-size: 1rem; color: var(--accent); margin: 1.5rem 0 0.5rem; }
 table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
 thead th { background: var(--accent); color: #fff; padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; }
 tbody tr:hover { background: #f0f7ff; }
@@ -39,114 +40,279 @@ td { padding: 0.7rem 1rem; font-size: 0.92rem; }
 .td-old { color: var(--old-color); text-decoration: line-through; opacity: 0.7; }
 .td-note { color: var(--text-muted); font-size: 0.85rem; }
 .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-.badge-conflict { background: #fff3e0; color: var(--conflict); border: 1px solid var(--conflict); }
-.badge-note { background: #f3e8ff; color: var(--note); border: 1px solid var(--note); }
-.files-section { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.files-section h3 { font-size: 1rem; color: var(--accent-dark); margin-bottom: 1rem; }
-.files-section table { box-shadow: none; }
+.badge-new { background: #e6f4ea; color: var(--new-color); border: 1px solid var(--new-color); }
+.badge-merged { background: #fff3e0; color: var(--conflict); border: 1px solid var(--conflict); }
+.badge-kept { background: #e8eaf6; color: #3f51b5; border: 1px solid #3f51b5; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-card { background: var(--card); border-radius: 8px; padding: 1.2rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.stat-card .num { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.stat-card .label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem; }
 .back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
 .back-link:hover { text-decoration: underline; }
+.files-section { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-top: 2rem; }
+.files-section h3 { font-size: 1rem; color: var(--accent-dark); margin-bottom: 1rem; }
+ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+li { margin-bottom: 0.3rem; font-size: 0.92rem; }
 </style>
 </head>
 <body>
 <a class="back-link" href="00_总览.html">← 返回总览</a>
-<h2 class="section-title">技能信息</h2>
-<ul>
-<li>**描述**: 食谱管理、做菜模式、采购清单</li>
-<li>**Skill 路径**: `/mnt/d/2Study/StudyNotes/SKILLS/私家大厨`</li>
-</ul>
-<h2 class="section-title">改造对照表</h2>
+
+<div class="skill-header">
+    <h1>11. 私家大厨 唤醒词改造</h1>
+    <div class="meta">版本：v4.0 | 唤醒词：30个 | 格式：动词+名词</div>
+    <div class="desc">食谱管理、做菜模式、采购清单、烹饪历史 — 从指令角度全覆盖</div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="num">30</div><div class="label">唤醒词总数</div></div>
+    <div class="stat-card"><div class="num">7</div><div class="label">功能分类</div></div>
+    <div class="stat-card"><div class="num">23</div><div class="label">新增细分词</div></div>
+    <div class="stat-card"><div class="num">0</div><div class="label">冲突</div></div>
+</div>
+
+<h2 class="section-title">A. 做菜模式（2个）→ view.md（功能二）</h2>
 <table><thead><tr>
-<th>#</th>
-<th>功能</th>
-<th>新唤醒词</th>
-<th>原触发词</th>
-<th>说明</th>
-</tr></thead><tbody>
-</tbody></table>
-<table><thead><tr>
-<th>1</th>
-<th>做菜模式</th>
-<th>**做菜模式**</th>
-<th>（无）</th>
-<th>📌 「做菜模式」无冲突，保留</th>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
 </tr></thead><tbody>
 <tr>
-<td class="td-idx">2</td>
-<td class="td-func">查看食谱</td>
-<td class="td-new">**看菜谱**</td>
-<td class="td-old">~~看看XX怎么做、XX菜谱、XX做法~~</td>
-<td class="td-note">📌 「看看」与备忘录冲突 ⚠️ 冲突</td>
+<td class="td-idx">1</td>
+<td class="td-new">做菜模式</td>
+<td><span class="badge badge-kept">保留</span> 做菜模式</td>
+<td class="td-note">无冲突，保留</td>
 </tr>
 <tr>
+<td class="td-idx">2</td>
+<td class="td-new">开始做菜</td>
+<td class="td-old">~~开始做、进入烹饪、开始烹饪、做这道菜~~</td>
+<td><span class="badge badge-merged">合并</span> 4个词→1个</td>
+</tr>
+</tbody></table>
+
+<h2 class="section-title">B. 查看食谱（5个）→ view.md（功能一）</h2>
+<table><thead><tr>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
+</tr></thead><tbody>
+<tr>
 <td class="td-idx">3</td>
-<td class="td-func">搜索筛选</td>
-<td class="td-new">**搜菜谱**</td>
-<td class="td-old">~~找XX、搜一下XX、有哪些XX~~</td>
-<td class="td-note">📌 「找」「搜」与多个技能冲突 ⚠️ 冲突</td>
+<td class="td-new">查看食谱</td>
+<td class="td-old">~~看看、菜谱、做法、详情、查看、给我看~~</td>
+<td><span class="badge badge-merged">合并</span> 总览词，展示完整食谱</td>
 </tr>
 <tr>
 <td class="td-idx">4</td>
-<td class="td-func">修改食谱</td>
-<td class="td-new">**改菜谱**</td>
-<td class="td-old">~~改成、换成、修改~~</td>
-<td class="td-note">📌 「修改」与备忘录/居家管家冲突 ⚠️ 冲突</td>
+<td class="td-new">查看食材</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 仅展示食材清单</td>
 </tr>
 <tr>
 <td class="td-idx">5</td>
-<td class="td-func">烹饪历史</td>
-<td class="td-new">**做过啥菜**</td>
-<td class="td-old">~~做过、评分、历史、复盘、记录~~</td>
-<td class="td-note">📌 「记录」与录音机冲突 ⚠️ 冲突</td>
+<td class="td-new">查看步骤</td>
+<td class="td-old">~~步骤~~</td>
+<td><span class="badge badge-new">升级</span> 动词+名词格式</td>
 </tr>
 <tr>
 <td class="td-idx">6</td>
-<td class="td-func">采购清单</td>
-<td class="td-new">**买食材**</td>
-<td class="td-old">~~采购、清单、买、要买~~</td>
-<td class="td-note">📌 「买」加「食材」限定</td>
+<td class="td-new">查看营养</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 仅展示营养信息</td>
 </tr>
 <tr>
 <td class="td-idx">7</td>
-<td class="td-func">录入食谱</td>
-<td class="td-new">**录菜谱**</td>
-<td class="td-old">~~录入、新建、添加、收藏~~</td>
-<td class="td-note">📌 「添加」与备忘录/居家管家冲突 ⚠️ 冲突</td>
+<td class="td-new">查看背景</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 仅展示背景知识</td>
 </tr>
 </tbody></table>
-<h2 class="section-title">需要修改的文件</h2>
-<h3 style="font-size:1rem;color:var(--accent-dark);margin:1.5rem 0 0.5rem">SKILL.md</h3>
-<p>路径: `SKILLS/私家大厨/SKILL.md`</p>
+
+<h2 class="section-title">C. 搜索筛选（10个）→ search.md</h2>
 <table><thead><tr>
-<th>查看食谱</th>
-<th>看看XX怎么做、XX菜谱、XX做法</th>
-<th>看菜谱</th>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
 </tr></thead><tbody>
 <tr>
-<td class="td-idx">搜索筛选</td>
-<td class="td-func">找XX、搜一下XX、有哪些XX</td>
-<td class="">搜菜谱</td>
+<td class="td-idx">8</td>
+<td class="td-new">搜索食谱</td>
+<td class="td-old">~~找、搜~~</td>
+<td><span class="badge badge-merged">合并</span> 总览词，按菜名搜索</td>
 </tr>
 <tr>
-<td class="td-idx">修改食谱</td>
-<td class="td-func">改成、换成、修改</td>
-<td class="">改菜谱</td>
+<td class="td-idx">9</td>
+<td class="td-new">筛选菜系</td>
+<td class="td-old">~~有哪些（菜系场景）~~</td>
+<td><span class="badge badge-new">新增</span> "筛选川菜"</td>
 </tr>
 <tr>
-<td class="td-idx">烹饪历史</td>
-<td class="td-func">做过、评分、历史、复盘、记录</td>
-<td class="">做过啥菜</td>
+<td class="td-idx">10</td>
+<td class="td-new">筛选食材</td>
+<td class="td-old">~~哪些菜、什么菜~~</td>
+<td><span class="badge badge-new">升级</span> "筛选含虾的菜"</td>
 </tr>
 <tr>
-<td class="td-idx">采购清单</td>
-<td class="td-func">采购、清单、买、要买</td>
-<td class="">买食材</td>
+<td class="td-idx">11</td>
+<td class="td-new">筛选难度</td>
+<td class="td-old">~~哪个（难度场景）~~</td>
+<td><span class="badge badge-new">新增</span> "筛选简单菜"</td>
 </tr>
 <tr>
-<td class="td-idx">录入食谱</td>
-<td class="td-func">录入、新建、添加、收藏</td>
-<td class="">录菜谱</td>
+<td class="td-idx">12</td>
+<td class="td-new">筛选时间</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> "筛选30分钟内的菜"</td>
+</tr>
+<tr>
+<td class="td-idx">13</td>
+<td class="td-new">筛选炊具</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> "筛选用砂锅的菜"</td>
+</tr>
+<tr>
+<td class="td-idx">14</td>
+<td class="td-new">筛选口味</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> "筛选辣的菜"</td>
+</tr>
+<tr>
+<td class="td-idx">15</td>
+<td class="td-new">筛选季节</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> "筛选适合夏天的菜"</td>
+</tr>
+<tr>
+<td class="td-idx">16</td>
+<td class="td-new">筛选状态</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> "筛选已做的菜"</td>
+</tr>
+<tr>
+<td class="td-idx">17</td>
+<td class="td-new">查看全部</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 列出所有食谱</td>
 </tr>
 </tbody></table>
+
+<h2 class="section-title">D. 修改食谱（6个）→ update.md</h2>
+<table><thead><tr>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">18</td>
+<td class="td-new">修改食谱</td>
+<td class="td-old">~~改成、换成、修改~~</td>
+<td><span class="badge badge-merged">合并</span> 总览词，通用修改入口</td>
+</tr>
+<tr>
+<td class="td-idx">19</td>
+<td class="td-new">修改步骤</td>
+<td class="td-old">~~改成（步骤场景）~~</td>
+<td><span class="badge badge-new">新增</span> 改步骤内容/顺序</td>
+</tr>
+<tr>
+<td class="td-idx">20</td>
+<td class="td-new">修改食材</td>
+<td class="td-old">~~加食材、加个食材~~</td>
+<td><span class="badge badge-new">升级</span> 改食材用量/添加食材</td>
+</tr>
+<tr>
+<td class="td-idx">21</td>
+<td class="td-new">修改难度</td>
+<td class="td-old">~~难度~~</td>
+<td><span class="badge badge-new">升级</span> 动词+名词格式</td>
+</tr>
+<tr>
+<td class="td-idx">22</td>
+<td class="td-new">修改份量</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 改份数</td>
+</tr>
+<tr>
+<td class="td-idx">23</td>
+<td class="td-new">废弃食谱</td>
+<td class="td-old">~~不想要、废弃、不要了~~</td>
+<td><span class="badge badge-merged">合并</span> 3个词→1个</td>
+</tr>
+</tbody></table>
+
+<h2 class="section-title">E. 烹饪历史（3个）→ history.md</h2>
+<table><thead><tr>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">24</td>
+<td class="td-new">记录做菜</td>
+<td class="td-old">~~记录、烹饪记录~~</td>
+<td><span class="badge badge-new">升级</span> 动词+名词格式</td>
+</tr>
+<tr>
+<td class="td-idx">25</td>
+<td class="td-new">查看历史</td>
+<td class="td-old">~~做过、历史、复盘~~</td>
+<td><span class="badge badge-merged">合并</span> 3个词→1个</td>
+</tr>
+<tr>
+<td class="td-idx">26</td>
+<td class="td-new">查看统计</td>
+<td class="td-old">~~评分~~</td>
+<td><span class="badge badge-new">升级</span> 动词+名词格式</td>
+</tr>
+</tbody></table>
+
+<h2 class="section-title">F. 采购清单（2个）→ shopping.md</h2>
+<table><thead><tr>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">27</td>
+<td class="td-new">生成清单</td>
+<td class="td-old">~~采购、清单、买、要买、准备食材~~</td>
+<td><span class="badge badge-merged">合并</span> 5个词→1个</td>
+</tr>
+<tr>
+<td class="td-idx">28</td>
+<td class="td-new">排除可选</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> 排除可选食材</td>
+</tr>
+</tbody></table>
+
+<h2 class="section-title">G. 录入食谱（2个）→ add.md</h2>
+<table><thead><tr>
+<th>#</th><th>唤醒词</th><th>原触发词</th><th>说明</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">29</td>
+<td class="td-new">录入食谱</td>
+<td class="td-old">~~录入、新建、添加、收藏~~</td>
+<td><span class="badge badge-merged">合并</span> 4个词→1个</td>
+</tr>
+<tr>
+<td class="td-idx">30</td>
+<td class="td-new">导入食谱</td>
+<td>（无）</td>
+<td><span class="badge badge-new">新增</span> JSON文件导入</td>
+</tr>
+</tbody></table>
+
+<h2 class="section-title">改造统计</h2>
+<table><thead><tr>
+<th>功能</th><th>改造前</th><th>改造后</th><th>变化</th>
+</tr></thead><tbody>
+<tr><td>做菜模式</td><td>1</td><td>2</td><td>+1</td></tr>
+<tr><td>查看食谱</td><td>1</td><td>5</td><td>+4</td></tr>
+<tr><td>搜索筛选</td><td>1</td><td>10</td><td>+9</td></tr>
+<tr><td>修改食谱</td><td>1</td><td>6</td><td>+5</td></tr>
+<tr><td>烹饪历史</td><td>1</td><td>3</td><td>+2</td></tr>
+<tr><td>采购清单</td><td>1</td><td>2</td><td>+1</td></tr>
+<tr><td>录入食谱</td><td>1</td><td>2</td><td>+1</td></tr>
+<tr style="font-weight:700"><td>总计</td><td>7</td><td>30</td><td>+23</td></tr>
+</tbody></table>
+
+<div class="files-section">
+<h3>需要修改的文件</h3>
+<ul>
+<li><strong>SKILLS/私家大厨/SKILL.md</strong> — 版本v3.0→v4.0，元数据区新增唤醒词清单，路由表7→30行，新增R8匹配规则</li>
+</ul>
+</div>
+
 </body>
 </html>

@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>录音机 - 功能手册</title>
+<style>
+:root {
+  --blue: #007AFF;
+  --blue-light: rgba(0,122,255,0.08);
+  --bg: #FFFFFF;
+  --bg-secondary: #F5F5F7;
+  --text: #1D1D1F;
+  --text-secondary: #86868B;
+  --border: #E5E5EA;
+  --radius: 10px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "PingFang SC", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-bottom: 3rem;
+}
+
+/* ── Header ── */
+.header {
+  padding: 2.5rem 1.5rem 1.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+.header .desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Search ── */
+.search-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+}
+.search-box {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9375rem;
+  font-family: var(--font);
+  outline: none;
+  background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2386868B' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85zm-5.242.656a5 5 0 110-10 5 5 0 010 10z'/%3E%3C/svg%3E") no-repeat 0.75rem center;
+  transition: border-color 0.2s;
+}
+.search-box:focus { border-color: var(--blue); }
+.search-box::placeholder { color: var(--text-secondary); }
+
+/* ── Tabs ── */
+.tabs {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 1.25rem;
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0;
+  padding: 0.4rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: var(--font);
+}
+.tab:hover { color: var(--text); border-color: var(--text-secondary); }
+.tab.active {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: var(--blue-light);
+}
+
+/* ── Stats bar ── */
+.stats {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem 1rem;
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.stats .count { font-weight: 600; color: var(--text); }
+
+/* ── Module section ── */
+.section {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0.5rem;
+}
+.section-badge {
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.section-name {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.section-desc {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+/* ── Module card ── */
+.module {
+  border-bottom: 1px solid var(--border);
+  padding: 0.875rem 0;
+}
+.module:last-child { border-bottom: none; }
+.module-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  gap: 0.75rem;
+}
+.module-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.module-arrow {
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-secondary);
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+.module.open .module-arrow { transform: rotate(90deg); }
+.module-wakes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+.wake-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-light);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wake-tag:hover { background: rgba(0,122,255,0.14); }
+
+/* ── Detail panel (wake word → CLI) ── */
+.wake-detail {
+  display: none;
+  margin-top: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+}
+.wake-detail.show { display: block; }
+.wake-detail-title {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cli-line {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--text);
+  word-break: break-all;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border-radius: 8px;
+  margin: 0.375rem 0;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid var(--border);
+}
+.cli-line:hover { border-color: var(--blue); }
+.cli-line .click-hint {
+  font-family: var(--font);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+}
+
+/* ── Execution flow panel (CLI → DB details) ── */
+.flow-panel {
+  display: none;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.flow-panel.show { display: block; }
+.flow-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.375rem;
+  margin-top: 0.625rem;
+}
+.flow-label:first-child { margin-top: 0; }
+.flow-item {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--text);
+  padding-left: 0.75rem;
+  position: relative;
+}
+.flow-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.flow-table {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--bg-secondary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  color: var(--blue);
+}
+.flow-field {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--bg-secondary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+.flow-sql {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.flow-note {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding-left: 0.75rem;
+  position: relative;
+}
+.flow-note::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+/* ── Hidden ── */
+.hidden { display: none !important; }
+
+/* ── No results ── */
+.no-results {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* ── Footer ── */
+.footer {
+  max-width: 720px;
+  margin: 2rem auto 0;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .header { padding: 1.75rem 1rem 1rem; }
+  .header h1 { font-size: 1.5rem; }
+  .search-wrap { padding: 0 1rem 0.75rem; }
+  .tabs { padding: 0 1rem 1rem; }
+  .stats { padding: 0 1rem 0.75rem; gap: 1rem; }
+  .section { padding: 0 1rem; }
+  .section-desc { display: none; }
+  .wake-detail { padding: 0.625rem 0.75rem; }
+  .cli-line { font-size: 0.75rem; padding: 0.4rem 0.625rem; }
+  .flow-panel { padding: 0.625rem 0.75rem; }
+  .flow-sql { font-size: 0.6875rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>录音机</h1>
+  <p class="desc">从 OpenClaw session 文件提取用户消息和附件入库，支持灵活查询。21 个唤醒词，5 大功能模块。</p>
+</div>
+
+<div class="search-wrap">
+  <input type="text" class="search-box" id="search" placeholder="搜索唤醒词..." autocomplete="off">
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-cat="all">全部</button>
+  <button class="tab" data-cat="scan">扫描入库</button>
+  <button class="tab" data-cat="query-msg">查询消息</button>
+  <button class="tab" data-cat="query-att">查询附件</button>
+  <button class="tab" data-cat="db">数据库管理</button>
+  <button class="tab" data-cat="cron">定时任务</button>
+</div>
+
+<div class="stats" id="stats">
+  <span>显示 <span class="count" id="visible-count">21</span> 个唤醒词</span>
+  <span>共 <span class="count">21</span> 个</span>
+</div>
+
+<div id="sections">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- A. 扫描入库 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="scan">
+  <div class="section-title">
+    <span class="section-badge">A</span>
+    <span class="section-name">扫描入库</span>
+    <span class="section-desc">从 session 文件提取消息和附件写入数据库</span>
+  </div>
+
+  <div class="module" data-wakes="扫描消息,增量扫描">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">增量扫描</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="scan-incremental">扫描消息</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="scan-incremental">增量扫描</span>
+    </div>
+    <div class="wake-detail" data-cmd="scan-incremental">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/record.py <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取</div>
+        <div class="flow-item">预加载 <span class="flow-table">scan_checkpoint</span> 全表到内存缓存</div>
+        <div class="flow-item">遍历 <code>~/.openclaw/agents/main/sessions/*.jsonl</code>（排除 .trajectory 和 .deleted）</div>
+        <div class="flow-item">优先级：有 checkpoint 的活跃文件 > 白纸文件 > checkpoint 历史文件</div>
+
+        <div class="flow-label">写入 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-item">逐条 INSERT OR IGNORE，字段：<span class="flow-field">message_id</span> <span class="flow-field">session_file</span> <span class="flow-field">timestamp</span> <span class="flow-field">channel</span> <span class="flow-field">sender_id</span> <span class="flow-field">content</span> <span class="flow-field">date</span> <span class="flow-field">has_attachment</span> <span class="flow-field">created_at</span></div>
+        <div class="flow-sql">INSERT OR IGNORE INTO user_messages
+  (message_id, session_file, timestamp, channel,
+   sender_id, content, date, has_attachment, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch())</div>
+
+        <div class="flow-label">写入 - <span class="flow-table">user_attachments</span></div>
+        <div class="flow-item">随消息一起提取附件，INSERT OR IGNORE，字段：<span class="flow-field">file_path</span> <span class="flow-field">file_type</span> 等</div>
+        <div class="flow-sql">INSERT OR IGNORE INTO user_attachments
+  (message_id, session_file, timestamp, channel,
+   sender_id, file_path, file_type, date, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch())</div>
+
+        <div class="flow-label">写入 - <span class="flow-table">scan_checkpoint</span></div>
+        <div class="flow-item">每条消息处理完实时更新，每 50 条 commit 一次</div>
+        <div class="flow-sql">INSERT OR REPLACE INTO scan_checkpoint
+  (session_file, last_timestamp, last_message_id, updated_at)
+VALUES (?, ?, ?, unixepoch())</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">无数据删除，纯增量追加</div>
+        <div class="flow-item">message_id 相同的消息会被 IGNORE（去重）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="全量扫描,全量重扫">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">全量重扫</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="scan-full">全量扫描</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="scan-full">全量重扫</span>
+    </div>
+    <div class="wake-detail" data-cmd="scan-full">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/record.py --full <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">预处理</div>
+        <div class="flow-item"><span class="flow-table">scan_checkpoint</span> 全表 DELETE，清空所有扫描进度</div>
+        <div class="flow-sql">DELETE FROM scan_checkpoint</div>
+
+        <div class="flow-label">后续行为</div>
+        <div class="flow-item">等同于增量扫描，但从 timestamp=0 开始，扫描全部 session 文件</div>
+        <div class="flow-item">写入 <span class="flow-table">user_messages</span> 和 <span class="flow-table">user_attachments</span>（同增量扫描）</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item"><strong>破坏性操作</strong>：清空 checkpoint 后无法恢复之前的增量进度</div>
+        <div class="flow-item">已有消息因 message_id 唯一约束不会重复插入</div>
+        <div class="flow-item">耗时较长，需扫描全部历史 session 文件</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="扫描附件">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">附件扫描</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="scan-att">扫描附件</span>
+    </div>
+    <div class="wake-detail" data-cmd="scan-att">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/record.py <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">说明</div>
+        <div class="flow-item">与「扫描消息」完全相同，附件在扫描消息时自动提取入库</div>
+        <div class="flow-item">提取规则：<code>- Voice:</code>、<code>- Images:</code>、<code>[Attachment:]</code>、<code>[media reference removed]</code></div>
+        <div class="flow-item">写入 <span class="flow-table">user_attachments</span>，字段同上</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">无额外副作用，复用增量扫描逻辑</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- B. 查询消息 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="query-msg">
+  <div class="section-title">
+    <span class="section-badge">B</span>
+    <span class="section-name">查询消息</span>
+    <span class="section-desc">按时间、渠道、发送者等条件查询用户消息</span>
+  </div>
+
+  <div class="module" data-wakes="查询消息,通用查询">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">通用查询入口</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-general">查询消息</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-general">通用查询</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-general">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-item">按 <span class="flow-field">date</span> 字段精确匹配</div>
+        <div class="flow-sql">SELECT message_id, timestamp, channel, sender_id,
+       content, has_attachment, date
+FROM user_messages
+WHERE date = ?
+ORDER BY timestamp ASC
+LIMIT 1000</div>
+
+        <div class="flow-label">索引</div>
+        <div class="flow-item">命中 <span class="flow-field">idx_um_date</span> 索引</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询日期,按日期查询">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">按日期查询</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-date">查询日期</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-date">按日期查询</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-date">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">参数解析</div>
+        <div class="flow-item">将 YYYYMMDD 转为当天 00:00:00 ~ 23:59:59 的微秒时间戳范围</div>
+        <div class="flow-sql">start_ts = datetime(Y,M,D, 0,0,0, tz=+8) * 1_000_000
+end_ts   = datetime(Y,M,D,23,59,59, tz=+8) * 1_000_000</div>
+
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-sql">SELECT ... FROM user_messages
+WHERE timestamp >= ? AND timestamp <= ?
+ORDER BY timestamp ASC LIMIT 1000</div>
+        <div class="flow-item">命中 <span class="flow-field">idx_um_timestamp</span> 索引</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询范围,时间范围">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">时间范围查询</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-range">查询范围</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-range">时间范围</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-range">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --start YYYYMMDDHHMMSS --end YYYYMMDDHHMMSS <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">参数解析</div>
+        <div class="flow-item">14 位时间字符串解析为微秒时间戳</div>
+        <div class="flow-item">可只传 --start 或 --end，另一端不设限</div>
+
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-sql">SELECT ... FROM user_messages
+WHERE timestamp >= ? [AND timestamp <= ?]
+ORDER BY timestamp ASC LIMIT 1000</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询最近,最近N条">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">最近消息</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-recent">查询最近</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-recent">最近N条</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-recent">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --recent N <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-item">按时间倒序取最近 N 条</div>
+        <div class="flow-sql">SELECT ... FROM user_messages
+ORDER BY timestamp DESC
+LIMIT ?</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询今日,今日消息">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">今日消息</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-today">查询今日</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-today">今日消息</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-today">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date $(date +%Y%m%d) <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">行为</div>
+        <div class="flow-item">Shell 展开 <code>$(date +%Y%m%d)</code> 为当天日期，等同于「查询日期」</div>
+        <div class="flow-item">读取 <span class="flow-table">user_messages</span>，按 timestamp 范围查询</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询渠道,按渠道">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">渠道筛选</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-channel">查询渠道</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-channel">按渠道</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-channel">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD --channel qq/wechat/pc <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-sql">SELECT ... FROM user_messages
+WHERE date = ? AND channel = ?
+ORDER BY timestamp ASC LIMIT 1000</div>
+        <div class="flow-item">可选渠道值：<code>qq</code>、<code>wechat</code>、<code>pc</code></div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询发送者,按发送者">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">发送者筛选</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-sender">查询发送者</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="query-sender">按发送者</span>
+    </div>
+    <div class="wake-detail" data-cmd="query-sender">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD --sender &lt;sender_id&gt; <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-sql">SELECT ... FROM user_messages
+WHERE date = ? AND sender_id = ?
+ORDER BY timestamp ASC LIMIT 1000</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- C. 查询附件 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="query-att">
+  <div class="section-title">
+    <span class="section-badge">C</span>
+    <span class="section-name">查询附件</span>
+    <span class="section-desc">查询用户发送的图片、语音、文件等附件</span>
+  </div>
+
+  <div class="module" data-wakes="查询附件,附件列表">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">全部附件</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-all">查询附件</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-all">附件列表</span>
+    </div>
+    <div class="wake-detail" data-cmd="att-all">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD --attachments <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_attachments</span></div>
+        <div class="flow-sql">SELECT message_id, timestamp, channel, sender_id,
+       file_path, file_type, date
+FROM user_attachments
+WHERE date = ?
+ORDER BY timestamp ASC LIMIT 1000</div>
+        <div class="flow-item">命中 <span class="flow-field">idx_ua_date</span> 索引</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询图片,图片附件">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">图片附件</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-image">查询图片</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-image">图片附件</span>
+    </div>
+    <div class="wake-detail" data-cmd="att-image">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD --type image <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_attachments</span></div>
+        <div class="flow-sql">SELECT ... FROM user_attachments
+WHERE date = ? AND file_type LIKE 'image%'
+ORDER BY timestamp ASC LIMIT 1000</div>
+        <div class="flow-item">匹配 <code>image/jpeg</code>、<code>image/png</code>、<code>image/gif</code>、<code>image/webp</code></div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查询语音,语音附件">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">语音附件</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-audio">查询语音</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="att-audio">语音附件</span>
+    </div>
+    <div class="wake-detail" data-cmd="att-audio">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/query.py --date YYYYMMDD --type audio <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_attachments</span></div>
+        <div class="flow-sql">SELECT ... FROM user_attachments
+WHERE date = ? AND file_type LIKE 'audio%'
+ORDER BY timestamp ASC LIMIT 1000</div>
+        <div class="flow-item">匹配 <code>audio/wav</code>、<code>audio/mpeg</code></div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- D. 数据库管理 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="db">
+  <div class="section-title">
+    <span class="section-badge">D</span>
+    <span class="section-name">数据库管理</span>
+    <span class="section-desc">初始化、状态查看、统计分析、索引维护</span>
+  </div>
+
+  <div class="module" data-wakes="初始化数据库,建表建索引">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">初始化数据库</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-init">初始化数据库</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-init">建表建索引</span>
+    </div>
+    <div class="wake-detail" data-cmd="db-init">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py --init <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">写入 - 建表</div>
+        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">user_messages</span>（10 个字段，message_id UNIQUE）</div>
+        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">user_attachments</span>（9 个字段）</div>
+        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">scan_checkpoint</span>（session_file 主键）</div>
+
+        <div class="flow-label">写入 - 建索引</div>
+        <div class="flow-item"><span class="flow-field">idx_um_date</span> on user_messages(date)</div>
+        <div class="flow-item"><span class="flow-field">idx_um_timestamp</span> on user_messages(timestamp)</div>
+        <div class="flow-item"><span class="flow-field">idx_ua_date</span> on user_attachments(date)</div>
+        <div class="flow-item"><span class="flow-field">idx_ua_timestamp</span> on user_attachments(timestamp)</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">全部 IF NOT EXISTS，重复执行不会破坏已有数据</div>
+        <div class="flow-item">自动创建 <code>.db/</code> 目录（如不存在）</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="查看状态,数据库状态">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">查看状态</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-status">查看状态</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-status">数据库状态</span>
+    </div>
+    <div class="wake-detail" data-cmd="db-status">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取</div>
+        <div class="flow-item">DB 文件路径和大小</div>
+        <div class="flow-sql">SELECT COUNT(*) FROM user_messages
+SELECT COUNT(*) FROM user_attachments
+SELECT COUNT(*) FROM scan_checkpoint
+SELECT MIN(updated_at), MAX(updated_at) FROM scan_checkpoint
+SELECT MIN(date), MAX(date) FROM user_messages</div>
+
+        <div class="flow-label">输出内容</div>
+        <div class="flow-item">数据库路径、文件大小（MB）</div>
+        <div class="flow-item">三张表的记录数</div>
+        <div class="flow-item">checkpoint 时间范围</div>
+        <div class="flow-item">消息日期覆盖范围</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="统计消息,消息统计">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">消息统计</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-stats">统计消息</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-stats">消息统计</span>
+    </div>
+    <div class="wake-detail" data-cmd="db-stats">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py --stats <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-sql">SELECT COUNT(*) FROM user_messages
+SELECT COUNT(*) FROM user_messages WHERE date = :today
+SELECT channel, COUNT(*) FROM user_messages GROUP BY channel
+SELECT date, COUNT(*) FROM user_messages WHERE date >= :7days_ago GROUP BY date</div>
+
+        <div class="flow-label">读取 - <span class="flow-table">user_attachments</span></div>
+        <div class="flow-sql">SELECT COUNT(*) FROM user_attachments
+SELECT COUNT(*) FROM user_attachments WHERE date = :today</div>
+
+        <div class="flow-label">输出内容</div>
+        <div class="flow-item">消息总数、今日消息数</div>
+        <div class="flow-item">附件总数、今日附件数</div>
+        <div class="flow-item">按渠道分布（qq/wechat/pc）</div>
+        <div class="flow-item">最近 7 天每日消息量趋势</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读查询，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="重建索引,索引维护">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">重建索引</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-reindex">重建索引</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="db-reindex">索引维护</span>
+    </div>
+    <div class="wake-detail" data-cmd="db-reindex">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py --reindex <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">执行</div>
+        <div class="flow-sql">REINDEX</div>
+        <div class="flow-item">重建数据库中所有索引</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">不修改数据，只重建索引结构</div>
+        <div class="flow-item">大数据库时可能耗时较长（阻塞写入）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- E. 定时任务 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="cron">
+  <div class="section-title">
+    <span class="section-badge">E</span>
+    <span class="section-name">定时任务</span>
+    <span class="section-desc">管理录音机的 cron 定时扫描任务</span>
+  </div>
+
+  <div class="module" data-wakes="查看定时,查看cron">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">查看定时任务</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-list">查看定时</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-list">查看cron</span>
+    </div>
+    <div class="wake-detail" data-cmd="cron-list">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">openclaw cron list | grep 录音机 <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取</div>
+        <div class="flow-item">列出所有 openclaw cron 任务，过滤含「录音机」的任务</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">纯只读操作，无副作用</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="创建定时,新建定时">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">创建定时任务</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-create">创建定时</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-create">新建定时</span>
+    </div>
+    <div class="wake-detail" data-cmd="cron-create">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">openclaw cron add --name "录音机-每10分记录语录" --every 10m --session isolated --message "静默执行：python3 scripts/record.py" <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">写入</div>
+        <div class="flow-item">在 openclaw cron 系统中注册一个新定时任务</div>
+        <div class="flow-item">任务名：<code>录音机-每10分记录语录</code></div>
+        <div class="flow-item">频率：<code>every 10m</code>（每 10 分钟）</div>
+        <div class="flow-item">session：<code>isolated</code>（静默执行，不回复用户）</div>
+        <div class="flow-item">执行内容：<code>python3 scripts/record.py</code>（增量扫描）</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">注册后每 10 分钟自动触发一次增量扫描</div>
+        <div class="flow-item">扫描结果写入数据库（user_messages, user_attachments, scan_checkpoint）</div>
+        <div class="flow-item">推荐配置，覆盖日常使用场景</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="删除定时,移除定时">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">删除定时任务</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-delete">删除定时</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-delete">移除定时</span>
+    </div>
+    <div class="wake-detail" data-cmd="cron-delete">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">openclaw cron delete &lt;task-id&gt; <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">执行</div>
+        <div class="flow-item">停止并删除指定 task-id 的定时任务</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item"><strong>破坏性操作</strong>：任务删除后不可恢复，需重新创建</div>
+        <div class="flow-item">不影响已入库的数据，只停止后续自动扫描</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="手动触发,立即执行">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">手动触发</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-run">手动触发</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="cron-run">立即执行</span>
+    </div>
+    <div class="wake-detail" data-cmd="cron-run">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">openclaw cron run &lt;task-id&gt; <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">执行</div>
+        <div class="flow-item">立即触发指定 task-id 的定时任务一次</div>
+        <div class="flow-item">不等下次定时，马上执行 <code>python3 scripts/record.py</code></div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">触发增量扫描，写入数据库（同增量扫描的副作用）</div>
+        <div class="flow-item">不影响定时任务的后续调度</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /sections -->
+
+<div class="no-results hidden" id="no-results">没有匹配的唤醒词</div>
+
+<div class="footer">
+  录音机 v2 &middot; 21 个唤醒词 &middot; 5 大模块 &middot; 单文件 HTML 手册
+</div>
+
+<script>
+// ── Data: wake word → cmd mapping ──
+const wakeCmdMap = {
+  '扫描消息': 'scan-incremental', '增量扫描': 'scan-incremental',
+  '全量扫描': 'scan-full', '全量重扫': 'scan-full',
+  '扫描附件': 'scan-att',
+  '查询消息': 'query-general', '通用查询': 'query-general',
+  '查询日期': 'query-date', '按日期查询': 'query-date',
+  '查询范围': 'query-range', '时间范围': 'query-range',
+  '查询最近': 'query-recent', '最近N条': 'query-recent',
+  '查询今日': 'query-today', '今日消息': 'query-today',
+  '查询渠道': 'query-channel', '按渠道': 'query-channel',
+  '查询发送者': 'query-sender', '按发送者': 'query-sender',
+  '查询附件': 'att-all', '附件列表': 'att-all',
+  '查询图片': 'att-image', '图片附件': 'att-image',
+  '查询语音': 'att-audio', '语音附件': 'att-audio',
+  '初始化数据库': 'db-init', '建表建索引': 'db-init',
+  '查看状态': 'db-status', '数据库状态': 'db-status',
+  '统计消息': 'db-stats', '消息统计': 'db-stats',
+  '重建索引': 'db-reindex', '索引维护': 'db-reindex',
+  '查看定时': 'cron-list', '查看cron': 'cron-list',
+  '创建定时': 'cron-create', '新建定时': 'cron-create',
+  '删除定时': 'cron-delete', '移除定时': 'cron-delete',
+  '手动触发': 'cron-run', '立即执行': 'cron-run',
+};
+
+// ── Tab switching ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const cat = tab.dataset.cat;
+    document.querySelectorAll('.section').forEach(s => {
+      s.classList.toggle('hidden', cat !== 'all' && s.dataset.cat !== cat);
+    });
+    applySearch();
+  });
+});
+
+// ── Toggle module expand ──
+function toggleModule(head) {
+  const module = head.closest('.module');
+  module.classList.toggle('open');
+  const detail = module.querySelector('.wake-detail');
+  if (detail) detail.classList.toggle('show', module.classList.contains('open'));
+}
+
+// ── Toggle wake word detail ──
+function toggleWake(tag) {
+  const cmd = tag.dataset.cmd;
+  const module = tag.closest('.module');
+  const detail = module.querySelector(`.wake-detail[data-cmd="${cmd}"]`);
+  if (!detail) return;
+  // Open parent module if closed
+  if (!module.classList.contains('open')) {
+    module.classList.add('open');
+  }
+  // Toggle detail
+  const isShowing = detail.classList.contains('show');
+  // Close all details in this module
+  module.querySelectorAll('.wake-detail').forEach(d => d.classList.remove('show'));
+  if (!isShowing) detail.classList.add('show');
+}
+
+// ── Toggle flow panel ──
+function toggleFlow(cliLine) {
+  const panel = cliLine.nextElementSibling;
+  if (panel && panel.classList.contains('flow-panel')) {
+    panel.classList.toggle('show');
+  }
+}
+
+// ── Search ──
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', applySearch);
+
+function applySearch() {
+  const q = searchInput.value.trim().toLowerCase();
+  const activeTab = document.querySelector('.tab.active').dataset.cat;
+  let visibleCount = 0;
+
+  document.querySelectorAll('.section').forEach(section => {
+    if (activeTab !== 'all' && section.dataset.cat !== activeTab) return;
+
+    section.querySelectorAll('.module').forEach(module => {
+      const wakes = (module.dataset.wakes || '').toLowerCase();
+      const moduleName = module.querySelector('.module-name').textContent.toLowerCase();
+      const match = !q || wakes.includes(q) || moduleName.includes(q);
+      module.classList.toggle('hidden', !match);
+      if (match) visibleCount++;
+    });
+  });
+
+  document.getElementById('visible-count').textContent = visibleCount;
+  document.getElementById('no-results').classList.toggle('hidden', visibleCount > 0);
+}
+</script>
+
+</body>
+</html>

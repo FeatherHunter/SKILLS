@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医药国际注册</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#007AFF;
+  --blue-light:rgba(0,122,255,0.08);
+  --text:#1d1d1f;
+  --text-secondary:#86868b;
+  --bg:#ffffff;
+  --bg-alt:#f5f5f7;
+  --border:#e5e5ea;
+  --radius:10px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--text);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* Header */
+.header{padding:48px 24px 32px;max-width:960px;margin:0 auto}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.header p{font-size:15px;color:var(--text-secondary);line-height:1.5}
+
+/* Search */
+.search-wrap{padding:0 24px 8px;max-width:960px;margin:0 auto;position:sticky;top:0;z-index:10;background:var(--bg)}
+.search-box{position:relative}
+.search-box input{width:100%;padding:12px 16px 12px 40px;border:1px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:var(--font);background:var(--bg-alt);outline:none;transition:border-color .2s}
+.search-box input:focus{border-color:var(--blue)}
+.search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-secondary)}
+.search-count{font-size:13px;color:var(--text-secondary);padding:6px 0 0;display:none}
+.search-count.visible{display:block}
+
+/* Tabs */
+.tabs{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:12px 24px 0;max-width:960px;margin:0 auto;border-bottom:1px solid var(--border);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:color .2s,border-color .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* Content */
+.content{max-width:960px;margin:0 auto;padding:0 24px 80px}
+.group{display:none}
+.group.active{display:block}
+.group-title{font-size:20px;font-weight:600;padding:28px 0 16px;letter-spacing:-0.3px}
+
+/* Card */
+.card{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.card:hover{border-color:#c7c7cc}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+.card-head:hover{background:var(--bg-alt)}
+.card-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.card-name{font-size:15px;font-weight:600;white-space:nowrap}
+.card-desc{font-size:13px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.card-arrow{font-size:12px;color:var(--text-secondary);transition:transform .25s;flex-shrink:0}
+.card.open .card-arrow{transform:rotate(90deg)}
+
+/* Detail */
+.card-detail{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.card.open .card-detail{display:block}
+
+/* Tags */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tag{display:inline-block;padding:4px 10px;font-size:12px;font-weight:500;color:var(--blue);background:var(--blue-light);border-radius:6px;cursor:pointer;transition:background .15s}
+.tag:hover{background:rgba(0,122,255,0.14)}
+
+/* Capability */
+.cap{margin-bottom:14px}
+.cap-label{font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.cap-name{font-size:14px;font-weight:500;padding:8px 12px;background:var(--bg-alt);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .15s}
+.cap-name:hover{background:#e8e8ed}
+.cap-name .cap-icon{font-size:11px;color:var(--text-secondary)}
+
+/* Flow */
+.flow{display:none;margin-top:8px;padding:12px;background:var(--bg-alt);border-radius:8px;font-size:13px;line-height:1.7}
+.flow.open{display:block}
+.flow-title{font-weight:600;font-size:13px;margin-bottom:8px;color:var(--text)}
+.flow-step{padding:4px 0;display:flex;gap:8px}
+.flow-step::before{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--blue);margin-top:8px;flex-shrink:0}
+.flow-ops{margin-top:8px;border-top:1px solid var(--border);padding-top:8px}
+.flow-op{padding:3px 0;font-size:12px;color:var(--text-secondary)}
+.flow-op code{font-family:"SF Mono",Menlo,monospace;font-size:11px;background:rgba(0,0,0,0.05);padding:2px 5px;border-radius:4px}
+
+/* Highlight */
+.highlight{background:rgba(0,122,255,0.12);border-radius:2px}
+
+/* Empty */
+.empty{text-align:center;padding:60px 24px;color:var(--text-secondary);font-size:15px}
+
+/* Responsive */
+@media(max-width:640px){
+  .header{padding:36px 20px 24px}
+  .header h1{font-size:24px}
+  .tabs{padding:12px 20px 0}
+  .content{padding:0 20px 80px}
+  .search-wrap{padding:0 20px 8px}
+  .card-desc{display:none}
+  .tag{font-size:11px;padding:3px 8px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>医药国际注册</h1>
+  <p>6 套方法论 · 58 个唤醒词 · 覆盖法规查询、注册管理、CTD 编制、缺陷信回复、策略决策、多国管控全场景</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="search" placeholder="搜索唤醒词…" autocomplete="off">
+  </div>
+  <div class="search-count" id="searchCount"></div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-group="all">全部</button>
+  <button class="tab" data-group="A">法规调研</button>
+  <button class="tab" data-group="B">项目管理</button>
+  <button class="tab" data-group="C">策略决策</button>
+  <button class="tab" data-group="D">CTD编制</button>
+  <button class="tab" data-group="E">合规校验</button>
+  <button class="tab" data-group="F">缺陷信</button>
+  <button class="tab" data-group="G">方法论入口</button>
+  <button class="tab" data-group="H">通用入口</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<script>
+// ==================== DATA ====================
+const CAPS = {
+  search_law: {
+    name: '📚 查法规找资料',
+    desc: '查询目标国药品注册法规、指导文件、ICH差异',
+    flow: [
+      '确定查询目标（国家/主题/深度）',
+      '检索目标国药监局官方信息',
+      '整理法规框架、注册流程、资料要求',
+      '标注不确定信息为「⚠️ 待确认」',
+      '输出调研结果'
+    ],
+    writes: [
+      '生成调研报告 → output/ 目录',
+      '填充「法规调研报告模板」各字段'
+    ]
+  },
+  plan_project: {
+    name: '📋 排计划管项目',
+    desc: '制定项目计划、任务拆解、节点排布、资源分配',
+    flow: [
+      '收集项目信息（产品/国家/代理商/时间）',
+      '按框架生成项目计划（各国任务拆解表）',
+      '排布关键时间节点（编完→提交→审评→批准）',
+      '识别风险并列出',
+      '输出项目计划 → projects/{产品}/ 项目计划.md'
+    ],
+    writes: [
+      '创建 projects/{产品名称}/ 目录结构',
+      '写入 项目计划.md（含任务拆解+时间节点）',
+      '写入 进度跟踪.md（进度看板）'
+    ]
+  },
+  multi_eval: {
+    name: '👥 多方评估决策支持',
+    desc: '模拟多角色分析、风险评估、策略决策',
+    flow: [
+      '确认分析主题和参与角色',
+      '每个角色按框架独立分析（核心观点/风险/机会/建议）',
+      '找出角色间观点冲突，进行辩论',
+      '综合各角色观点，输出推荐方案+备选方案',
+      '列出需要用户拍板的事项'
+    ],
+    writes: [
+      '生成策略分析报告 → output/ 目录',
+      '包含风险矩阵、辩论焦点、最终建议'
+    ]
+  },
+  write_template: {
+    name: '📄 按模板写标准化',
+    desc: '按 SOP 和模板生成 CTD 文档、申请信、缺陷回复',
+    flow: [
+      '确认要生成什么文档（CTD模块/申请信/缺陷回复）',
+      '调用对应模板（CTD模块撰写.md / 注册申请信模板.md / 缺陷信回复模板.md）',
+      'Agent1 按模板生成文档',
+      'Agent2 审核合规性',
+      'Agent3 逐项核对完整性',
+      '输出文档到 output/ 目录'
+    ],
+    writes: [
+      '生成文档 → output/ 目录',
+      '⚠️ 申请人字段必须填写代理商公司名称',
+      '所有数据需有来源，不得编造'
+    ]
+  },
+  check_compliance: {
+    name: '🔍 审文件查合规',
+    desc: '文件审核、合规检查、缺陷分析',
+    flow: [
+      '接收待审核文件或缺陷信',
+      '检查申请人字段是否为代理商名称',
+      '检查格式是否符合目标国要求',
+      '检查数据引用是否有来源',
+      '输出审核结果或缺陷分析表'
+    ],
+    writes: [
+      '生成缺陷项分析表（缺陷信场景）',
+      '标记不合规项并给出修改建议',
+      '校验项：申请人、格式、必填字段、数据来源'
+    ]
+  },
+  check_completeness: {
+    name: '✅ 逐项核对反复检查',
+    desc: '对照清单逐项核对完整性',
+    flow: [
+      '获取对应检查清单（CTD完整性检查清单）',
+      '逐项检查每个模块/文件是否齐全',
+      '标记缺失项和待补充项',
+      '输出核对结果'
+    ],
+    writes: [
+      '更新完整性检查状态（☐ → ✅）',
+      '列出缺失项清单',
+      '确保所有必填项不缺'
+    ]
+  }
+};
+
+const GROUPS = [
+  {
+    id: 'A', title: 'A. 法规调研',
+    desc: '快速探索法 → 查法规找资料',
+    items: [
+      { name: '调研法规', desc: '调研单国仿制药注册法规要求', caps: ['search_law'] },
+      { name: '对比国家', desc: '对比多国注册要求差异', caps: ['search_law'] },
+      { name: '追踪政策', desc: '追踪目标国法规政策变化', caps: ['search_law'] },
+      { name: '查询CTD要求', desc: '查询目标国CTD各模块具体要求', caps: ['search_law'] },
+      { name: '查询语言要求', desc: '查询审评语言、可接受语言、翻译要求', caps: ['search_law'] },
+      { name: '查询公证要求', desc: '查询公证认证、产地证明、自由销售证明', caps: ['search_law'] },
+      { name: '查询代理商要求', desc: '查询代理商资质、授权委托书、申请人字段规范', caps: ['search_law'] },
+      { name: '查询审评周期', desc: '查询官方费用、审评周期、证书有效期', caps: ['search_law'] },
+      { name: '生成调研报告', desc: '按「法规调研报告模板」输出完整调研报告', caps: ['search_law', 'write_template'] }
+    ]
+  },
+  {
+    id: 'B', title: 'B. 项目管理',
+    desc: '规范注册法/项目管控法 → 排计划管项目',
+    items: [
+      { name: '生成项目计划', desc: '生成含任务拆解+时间节点的完整项目计划', caps: ['plan_project'] },
+      { name: '拆解任务', desc: '将项目拆解为各国各阶段具体任务', caps: ['plan_project'] },
+      { name: '排布节点', desc: '排布关键里程碑：资料编完→提交→审评→批准', caps: ['plan_project'] },
+      { name: '评估项目风险', desc: '识别代理商/法规/资源等项目风险', caps: ['multi_eval'] },
+      { name: '分配资源', desc: '分配人力、预算、代理商资源', caps: ['plan_project'] },
+      { name: '跟踪进度', desc: '跟踪多国项目进度，更新进度表', caps: ['plan_project'] },
+      { name: '查看各国状态', desc: '查看各国进度看板：状态/进度/风险等级', caps: ['plan_project'] },
+      { name: '预警风险', desc: '主动提示卡点、超期、资源不足', caps: ['multi_eval', 'plan_project'] },
+      { name: '管理长期项目', desc: '长期项目全生命周期管理', caps: ['plan_project'] }
+    ]
+  },
+  {
+    id: 'C', title: 'C. 策略决策',
+    desc: '多角色决策法 → 多方评估决策支持',
+    items: [
+      { name: '评估市场', desc: '评估目标市场可行性、市场大小', caps: ['multi_eval', 'search_law'] },
+      { name: '评估注册难度', desc: '评估各国注册流程复杂度、资料要求难度', caps: ['multi_eval', 'search_law'] },
+      { name: '评估回报', desc: '评估市场大小 vs 投入成本 vs 周期', caps: ['multi_eval'] },
+      { name: '评估注册风险', desc: '评估法规风险、知识产权风险、合规漏洞', caps: ['multi_eval'] },
+      { name: '模拟角色分析', desc: '模拟6角色各自分析+辩论', caps: ['multi_eval'] },
+      { name: '规划注册策略', desc: '综合各角色观点，输出推荐方案+备选方案', caps: ['multi_eval'] },
+      { name: '选择优先国家', desc: '分析并推荐优先注册的目标国家', caps: ['multi_eval', 'search_law'] },
+      { name: '评估GMP合规', desc: '评估GMP证书、数据完整性、质量风险', caps: ['multi_eval'] }
+    ]
+  },
+  {
+    id: 'D', title: 'D. CTD编制',
+    desc: '流水线作业法 → 按模板写标准化',
+    items: [
+      { name: '编制Module1', desc: '行政信息：申请表、封面信、申请人信息、授权委托书', caps: ['write_template', 'check_compliance'] },
+      { name: '编制Module2', desc: '质量综述：QOS、非临床综述、临床综述', caps: ['write_template', 'check_compliance'] },
+      { name: '编制Module3', desc: '质量数据：原料药+成品全部子模块', caps: ['write_template', 'check_compliance'] },
+      { name: '编制Module4', desc: '非临床数据：仿制药简化，参比制剂文献', caps: ['write_template', 'check_compliance'] },
+      { name: '编制Module5', desc: '临床数据：BE报告、BE数据', caps: ['write_template', 'check_compliance'] },
+      { name: '编制原料药数据', desc: '3.2.S 全部子模块（一般信息→稳定性）', caps: ['write_template'] },
+      { name: '编制成品数据', desc: '3.2.P 全部子模块（产品描述→稳定性）', caps: ['write_template'] },
+      { name: '批量编制资料', desc: '按SOP批量生成CTD资料，多Agent协作+品质关卡', caps: ['write_template', 'check_compliance', 'check_completeness'] },
+      { name: '编制申请信', desc: '按「注册申请信模板」生成注册申请信', caps: ['write_template'] },
+      { name: '生成注册文档', desc: '泛指生成各类注册文件', caps: ['write_template'] }
+    ]
+  },
+  {
+    id: 'E', title: 'E. 合规校验',
+    desc: '审文件查合规 + 逐项核对反复检查',
+    items: [
+      { name: '检查申请人字段', desc: '校验申请人是否为代理商公司名称（强制）', caps: ['check_compliance'] },
+      { name: '检查文件格式', desc: '校验CTD格式、页码连续、语言要求', caps: ['check_compliance'] },
+      { name: '检查必填字段', desc: '校验所有必填项是否完整', caps: ['check_completeness'] },
+      { name: '核对完整性', desc: '对照CTD清单逐项核对，确保不缺项', caps: ['check_completeness'] },
+      { name: '审核合规性', desc: '审核格式合规、数据来源、引用规范', caps: ['check_compliance'] }
+    ]
+  },
+  {
+    id: 'F', title: 'F. 缺陷信处理',
+    desc: '持续迭代法 → 审文件查合规 + 按模板写标准化',
+    items: [
+      { name: '分析缺陷信', desc: '逐条列出缺陷项，分类，评估严重程度', caps: ['check_compliance'] },
+      { name: '编制缺陷回复', desc: '逐条编制回复+支持文件+附件', caps: ['write_template'] },
+      { name: '审核缺陷回复', desc: '注册经理审核技术内容+合规检查', caps: ['check_compliance'] },
+      { name: '翻译缺陷信', desc: '将非英语缺陷信翻译为中文', caps: ['check_compliance'] },
+      { name: '评估缺陷严重度', desc: '评估高/中/低，决定回复时限（15天/30天）', caps: ['check_compliance'] },
+      { name: '补充稳定性数据', desc: '补充加速试验/长期稳定性数据', caps: ['write_template'] },
+      { name: '修正申请人信息', desc: '将申请人从生产企业修正为代理商', caps: ['write_template', 'check_compliance'] },
+      { name: '修正文件格式', desc: '修正BE报告/资料格式以符合目标国要求', caps: ['write_template', 'check_compliance'] }
+    ]
+  },
+  {
+    id: 'G', title: 'G. 方法论入口',
+    desc: '6套方法论直接调用',
+    items: [
+      { name: '探索市场', desc: '快速探索法总入口', caps: ['search_law', 'multi_eval'] },
+      { name: '启动注册项目', desc: '规范注册法总入口', caps: ['plan_project', 'search_law', 'write_template', 'check_compliance', 'check_completeness'] },
+      { name: '启动流水线', desc: '流水线作业法总入口', caps: ['write_template', 'check_compliance', 'check_completeness'] },
+      { name: '启动迭代回复', desc: '持续迭代法总入口', caps: ['check_compliance', 'write_template', 'check_completeness'] }
+    ]
+  },
+  {
+    id: 'H', title: 'H. 通用入口',
+    desc: '自动路由到最匹配的方法论',
+    items: [
+      { name: '药品注册', desc: '通用入口，根据意图自动选择方法论', caps: [] },
+      { name: 'FDA注册', desc: '美国FDA注册专用入口', caps: ['search_law'] },
+      { name: 'EMA注册', desc: '欧盟EMA注册专用入口', caps: ['search_law'] },
+      { name: 'NAFDAC注册', desc: '尼日利亚NAFDAC注册专用入口', caps: ['search_law'] },
+      { name: 'CEMAC注册', desc: '中非经济货币共同体注册专用入口', caps: ['search_law'] }
+    ]
+  }
+];
+
+// ==================== RENDER ====================
+function renderAll() {
+  const container = document.getElementById('content');
+  container.innerHTML = GROUPS.map(g => `
+    <div class="group" data-group="${g.id}">
+      <div class="group-title">${g.title}</div>
+      <p style="font-size:13px;color:var(--text-secondary);margin:-8px 0 16px">${g.desc}</p>
+      ${g.items.map((item, i) => renderCard(item, g.id, i)).join('')}
+    </div>
+  `).join('');
+}
+
+function renderCard(item, gid, idx) {
+  const id = `card-${gid}-${idx}`;
+  const capTags = item.caps.map(c => {
+    const cap = CAPS[c];
+    return `<span class="tag" data-cap="${c}">${cap.name.replace(/^[^\s]+\s/, '')}</span>`;
+  }).join('');
+
+  const capDetails = item.caps.map(c => {
+    const cap = CAPS[c];
+    const flowId = `flow-${gid}-${idx}-${c}`;
+    return `
+      <div class="cap">
+        <div class="cap-name" onclick="toggleFlow('${flowId}',this)">
+          <span>${cap.name}</span>
+          <span class="cap-icon">▸ 流程</span>
+        </div>
+        <div class="flow" id="${flowId}">
+          <div class="flow-title">执行流程</div>
+          ${cap.flow.map(s => `<div class="flow-step">${s}</div>`).join('')}
+          <div class="flow-ops">
+            <div class="flow-title" style="margin-top:8px">副作用 / 写入</div>
+            ${cap.writes.map(w => `<div class="flow-op">${w}</div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="card" id="${id}" data-name="${item.name}" data-desc="${item.desc}">
+      <div class="card-head" onclick="toggleCard('${id}')">
+        <div class="card-left">
+          <span class="card-name">${item.name}</span>
+          <span class="card-desc">${item.desc}</span>
+        </div>
+        <span class="card-arrow">▸</span>
+      </div>
+      <div class="card-detail">
+        <div class="tags">${capTags || '<span style="font-size:12px;color:var(--text-secondary)">自动路由</span>'}</div>
+        ${capDetails || '<p style="font-size:13px;color:var(--text-secondary)">根据用户意图自动选择最合适的方法论</p>'}
+      </div>
+    </div>`;
+}
+
+// ==================== INTERACTION ====================
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+function toggleFlow(flowId, el) {
+  const flow = document.getElementById(flowId);
+  const isOpen = flow.classList.toggle('open');
+  el.querySelector('.cap-icon').textContent = isOpen ? '▾ 收起' : '▸ 流程';
+}
+
+// Tabs
+document.getElementById('tabs').addEventListener('click', e => {
+  if (!e.target.classList.contains('tab')) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  const group = e.target.dataset.group;
+  document.querySelectorAll('.group').forEach(g => {
+    g.classList.toggle('active', group === 'all' || g.dataset.group === group);
+  });
+  filterBySearch();
+});
+
+// Search
+const searchInput = document.getElementById('search');
+const searchCount = document.getElementById('searchCount');
+
+searchInput.addEventListener('input', filterBySearch);
+
+function filterBySearch() {
+  const q = searchInput.value.trim().toLowerCase();
+  const activeTab = document.querySelector('.tab.active').dataset.group;
+  let visible = 0;
+
+  document.querySelectorAll('.card').forEach(card => {
+    const name = card.dataset.name.toLowerCase();
+    const desc = card.dataset.desc.toLowerCase();
+    const match = !q || name.includes(q) || desc.includes(q);
+    const groupVisible = activeTab === 'all' || card.closest('.group').dataset.group === activeTab;
+    card.style.display = (match && groupVisible) ? '' : 'none';
+    if (match && groupVisible) visible++;
+
+    // Highlight
+    const nameEl = card.querySelector('.card-name');
+    const descEl = card.querySelector('.card-desc');
+    if (q) {
+      nameEl.innerHTML = highlightText(card.dataset.name, q);
+      descEl.innerHTML = highlightText(card.dataset.desc, q);
+    } else {
+      nameEl.textContent = card.dataset.name;
+      descEl.textContent = card.dataset.desc;
+    }
+  });
+
+  searchCount.textContent = q ? `找到 ${visible} 个` : '';
+  searchCount.classList.toggle('visible', !!q);
+}
+
+function highlightText(text, q) {
+  const i = text.toLowerCase().indexOf(q);
+  if (i === -1) return text;
+  return text.slice(0, i) + '<span class="highlight">' + text.slice(i, i + q.length) + '</span>' + text.slice(i + q.length);
+}
+
+// Init
+renderAll();
+document.querySelectorAll('.group').forEach(g => g.classList.add('active'));
+</script>
+</body>
+</html>

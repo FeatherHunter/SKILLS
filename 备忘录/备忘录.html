@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>备忘录 - 功能手册</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f7;
+    --text: #1d1d1f;
+    --text-secondary: #86868b;
+    --blue: #007AFF;
+    --blue-light: rgba(0,122,255,0.08);
+    --border: #d2d2d7;
+    --border-light: #e8e8ed;
+    --code-bg: #f5f5f7;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  .header {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 4rem 2rem 2rem;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .header p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    font-size: 1.05rem;
+    font-weight: 400;
+  }
+
+  /* Container */
+  .container { max-width: 820px; margin: 0 auto; padding: 0 2rem 4rem; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+  }
+
+  /* Search */
+  .search-box {
+    margin-bottom: 2rem;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    background: var(--bg-secondary);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  .search-box input:focus { border-color: var(--blue); }
+  .search-box input::placeholder { color: var(--text-secondary); }
+
+  /* Module Section */
+  .module { margin-bottom: 2.5rem; }
+  .module-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* Feature Card */
+  .feature {
+    border-bottom: 1px solid var(--border-light);
+    padding: 1.25rem 0;
+  }
+  .feature:last-child { border-bottom: none; }
+  .feature-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.35rem;
+  }
+  .feature-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+  }
+
+  /* Trigger Tags */
+  .triggers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+  .trigger-tag {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--blue);
+    background: var(--blue-light);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    font-family: inherit;
+  }
+  .trigger-tag:hover { background: rgba(0,122,255,0.15); }
+
+  /* CLI Command */
+  .cli-cmd {
+    display: inline-block;
+    font-family: "SF Mono", "Fira Code", "Consolas", "Menlo", monospace;
+    font-size: 0.82rem;
+    color: var(--blue);
+    background: var(--blue-light);
+    padding: 0.15rem 0.55rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: none;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  .cli-cmd:hover { background: rgba(0,122,255,0.15); }
+
+  /* Expandable Detail Panel */
+  .detail-panel {
+    display: none;
+    margin-top: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    line-height: 1.7;
+    animation: fadeIn 0.2s ease;
+  }
+  .detail-panel.open { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  .detail-panel h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .detail-panel h4:first-child { margin-top: 0; }
+
+  .detail-panel code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.8rem;
+    background: rgba(0,0,0,0.05);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+  }
+
+  .detail-panel pre {
+    background: #1d1d1f;
+    color: #e8e8ed;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    margin: 0.5rem 0;
+  }
+  .detail-panel pre .hl-cmd { color: #7dd3fc; }
+  .detail-panel pre .hl-flag { color: #c4b5fd; }
+  .detail-panel pre .hl-val { color: #86efac; }
+  .detail-panel pre .hl-cmt { color: #64748b; }
+
+  /* Flow steps */
+  .flow-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+  }
+  .flow-steps li {
+    padding: 0.35rem 0 0.35rem 1.5rem;
+    position: relative;
+    font-size: 0.84rem;
+    color: var(--text);
+  }
+  .flow-steps li::before {
+    content: attr(data-step);
+    position: absolute;
+    left: 0;
+    top: 0.35rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    background: var(--blue-light);
+    color: var(--blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+
+  /* Table (for DB fields) */
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+  }
+  .detail-table th {
+    text-align: left;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .detail-table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 0.8rem;
+  }
+  .detail-table td code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.78rem;
+  }
+
+  /* Side effect badge */
+  .side-effect {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+    border-radius: 4px;
+    margin-left: 0.3rem;
+  }
+  .se-write { background: #fef2f2; color: #ef4444; }
+  .se-cascade { background: #fefce8; color: #ca8a04; }
+  .se-trigger { background: #f0fdf4; color: #16a34a; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border-light);
+  }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Hidden by search */
+  .feature.hidden { display: none; }
+
+  /* ===== Mobile: ≤640px ===== */
+  @media (max-width: 640px) {
+    .header {
+      padding: 2.5rem 1rem 1.25rem;
+    }
+    .header h1 {
+      font-size: 1.75rem;
+    }
+    .header p {
+      font-size: 0.92rem;
+    }
+    .container {
+      padding: 0 1rem 2.5rem;
+    }
+
+    /* Tabs: scrollable, tighter */
+    .tabs {
+      margin-bottom: 1.25rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      padding: 0.6rem 1rem;
+      font-size: 0.84rem;
+    }
+
+    /* Search: larger touch target */
+    .search-box { margin-bottom: 1.25rem; }
+    .search-box input {
+      padding: 0.8rem 1rem;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+
+    /* Features: tighter */
+    .feature { padding: 1rem 0; }
+    .feature-name { font-size: 0.98rem; }
+    .feature-desc { font-size: 0.84rem; }
+
+    /* Triggers & CLI: bigger tap targets */
+    .trigger-tag {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .cli-cmd {
+      display: block;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.78rem;
+      word-break: break-all;
+      min-height: 36px;
+      line-height: 1.5;
+    }
+
+    /* Detail panel: compact */
+    .detail-panel {
+      padding: 0.85rem 1rem;
+      font-size: 0.82rem;
+    }
+    .detail-panel pre {
+      font-size: 0.72rem;
+      padding: 0.7rem 0.85rem;
+      border-radius: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .detail-panel h4 {
+      font-size: 0.78rem;
+      margin-top: 0.6rem;
+      margin-bottom: 0.4rem;
+    }
+    .detail-panel code {
+      font-size: 0.76rem;
+      word-break: break-all;
+    }
+
+    /* Tables: horizontal scroll wrapper */
+    .detail-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0.4rem -0.5rem;
+      padding: 0 0.5rem;
+    }
+    .detail-table {
+      font-size: 0.76rem;
+      min-width: 360px;
+    }
+    .detail-table th, .detail-table td {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.76rem;
+    }
+
+    /* Flow steps */
+    .flow-steps li {
+      font-size: 0.8rem;
+      padding: 0.3rem 0 0.3rem 1.4rem;
+    }
+    .flow-steps li::before {
+      width: 1rem;
+      height: 1rem;
+      font-size: 0.6rem;
+    }
+
+    /* Side effect badge */
+    .side-effect {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.4rem;
+      margin-left: 0.2rem;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 1.5rem 0;
+      font-size: 0.75rem;
+    }
+  }
+
+  /* ===== Mobile: ≤375px (SE/mini) ===== */
+  @media (max-width: 375px) {
+    .header { padding: 2rem 0.75rem 1rem; }
+    .header h1 { font-size: 1.5rem; }
+    .container { padding: 0 0.75rem 2rem; }
+    .tab { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+    .feature-name { font-size: 0.92rem; }
+    .trigger-tag { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
+    .cli-cmd { font-size: 0.74rem; padding: 0.45rem 0.65rem; }
+  }
+
+  /* ===== Touch: kill hover on touch devices ===== */
+  @media (hover: none) {
+    .tab:hover { color: var(--text-secondary); }
+    .trigger-tag:hover { background: var(--blue-light); }
+    .cli-cmd:hover { background: var(--blue-light); }
+    /* Use :active instead */
+    .trigger-tag:active { background: rgba(0,122,255,0.2); }
+    .cli-cmd:active { background: rgba(0,122,255,0.2); }
+    .tab:active { color: var(--blue); }
+  }
+
+  /* ===== Safe area (notch phones) ===== */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    body {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    .footer {
+      padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* ===== Table wrapper (JS adds this on mobile) ===== */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0.4rem -0.5rem;
+    padding: 0 0.5rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>备忘录</h1>
+  <p>私人备忘工具 &middot; 记录 &middot; 分类 &middot; 提醒 &middot; 打卡</p>
+</div>
+
+<div class="container">
+
+<div class="tabs">
+  <button class="tab active" data-tab="notes">笔记管理</button>
+  <button class="tab" data-tab="reminders">提醒管理</button>
+  <button class="tab" data-tab="system">系统</button>
+  <button class="tab" data-tab="all">全部</button>
+</div>
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="搜索唤醒词或命令...">
+</div>
+
+<!-- ============ 笔记管理 ============ -->
+<div class="tab-content active" data-tab="notes">
+
+<div class="module">
+  <div class="module-title">笔记管理</div>
+
+  <!-- 添加笔记 -->
+  <div class="feature" data-keywords="记备忘 add 添加 笔记 创建">
+    <div class="feature-name">添加笔记</div>
+    <div class="feature-desc">记录一条新备忘，支持分类和媒体附件</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">记备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" -c 分类</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 content 非空</li>
+        <li data-step="2">校验 category 在白名单内（社交/心愿/灵感/成就/工作/学习/记账/打卡/情绪/general）</li>
+        <li data-step="3">校验 media_path 以 MEMO_MEDIA_DIR 开头，去掉前缀存储相对路径</li>
+        <li data-step="4">INSERT INTO <code>notes</code>（content, category, media_path, created_at, updated_at）</li>
+        <li data-step="5">触发器 <code>notes_ai</code> 自动同步到 <code>notes_fts</code> 虚拟表</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>content, category, media_path, created_at, updated_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器同步</span></td></tr>
+      </table>
+      <h4>AI 交互规范</h4>
+      <p>添加前必须先问用户确认分类，不得直接使用默认分类。示例：用户说「去医院」→ AI 问「工作还是心愿？」→ 用户选 → 写入。</p>
+    </div>
+  </div>
+
+  <!-- 搜索笔记 -->
+  <div class="feature" data-keywords="搜备忘 search 搜索 查找 关键词 全文">
+    <div class="feature-name">搜索笔记</div>
+    <div class="feature-desc">按关键词全文搜索，支持分类过滤</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">搜备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py search "关键词" -c 分类</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py search</span> <span class="hl-val">"关键词"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-l</span> <span class="hl-val">数量</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">有关键词 → 使用 FTS5 全文搜索 <code>notes_fts MATCH ?</code>，JOIN notes 表</li>
+        <li data-step="2">无关键词 → 直接查 <code>notes</code> 表，按分类过滤</li>
+        <li data-step="3">按 updated_at DESC 排序，limit 截断（默认 20）</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>全字段</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">MATCH</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>无。只读操作。</p>
+    </div>
+  </div>
+
+  <!-- 更新笔记 -->
+  <div class="feature" data-keywords="改备忘 update 更新 修改 编辑 内容">
+    <div class="feature-name">更新笔记</div>
+    <div class="feature-desc">修改已有笔记的内容、分类或媒体</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">改备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update &lt;id&gt; --content "新内容"</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py update</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-flag">--content</span> <span class="hl-val">"新内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体</span> <span class="hl-flag">--reminder-id</span> <span class="hl-val">提醒ID</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
+        <li data-step="2">校验 category 白名单（如提供）</li>
+        <li data-step="3">拼接动态 SET 子句（只更新提供的字段）</li>
+        <li data-step="4">UPDATE <code>notes</code> SET ... WHERE id = ?，同时更新 updated_at</li>
+        <li data-step="5">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code>（先删旧、再插新）</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>content / category / media_path / reminder_id / updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器 DELETE+INSERT</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>至少提供一个更新字段，否则报错。updated_at 始终自动更新。</p>
+    </div>
+  </div>
+
+  <!-- 删除笔记 -->
+  <div class="feature" data-keywords="删备忘 delete 删除 移除">
+    <div class="feature-name">删除笔记</div>
+    <div class="feature-desc">删除笔记及其关联提醒（级联删除）</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">删备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py delete &lt;id&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py delete</span> <span class="hl-val">&lt;id&gt;</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
+        <li data-step="2">DELETE FROM <code>notes</code> WHERE id = ?</li>
+        <li data-step="3">外键 ON DELETE CASCADE 自动删除 <code>reminders</code> 中 note_id = 该 id 的所有记录</li>
+        <li data-step="4">触发器 <code>notes_ad</code> 自动删除 <code>notes_fts</code> 对应行</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>整行</td><td><span class="side-effect se-write">DELETE</span></td></tr>
+        <tr><td><code>reminders</code></td><td>note_id 匹配的整行</td><td><span class="side-effect se-cascade">CASCADE DELETE</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid</td><td><span class="side-effect se-trigger">触发器同步</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>级联删除：关联的提醒会被一并删除，不可恢复。</p>
+    </div>
+  </div>
+
+  <!-- 查看笔记详情 -->
+  <div class="feature" data-keywords="看备忘 get 查看 详情 单条">
+    <div class="feature-name">查看笔记详情</div>
+    <div class="feature-desc">按 ID 获取单条笔记完整信息</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">看备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py get &lt;id&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py get</span> <span class="hl-val">&lt;id&gt;</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">SELECT * FROM <code>notes</code> WHERE id = ?</li>
+        <li data-step="2">不存在则返回 error</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>全字段</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>无。只读操作。</p>
+    </div>
+  </div>
+
+  <!-- 按时间搜索 -->
+  <div class="feature" data-keywords="按时间搜备忘 search-date 日期 时间范围 时间段">
+    <div class="feature-name">按时间搜索</div>
+    <div class="feature-desc">按日期范围筛选笔记</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">按时间搜备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py search-date &lt;start&gt; &lt;end&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py search-date</span> <span class="hl-val">&lt;YYYY-MM-DD&gt;</span> <span class="hl-val">&lt;YYYY-MM-DD&gt;</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-l</span> <span class="hl-val">数量</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 start 和 end 格式为 YYYY-MM-DD</li>
+        <li data-step="2">校验 start 不能晚于 end</li>
+        <li data-step="3">SELECT * FROM <code>notes</code> WHERE created_at BETWEEN ? AND ?</li>
+        <li data-step="4">可选按 category 过滤，按 created_at DESC 排序</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>全字段（WHERE created_at）</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>无。只读操作。</p>
+    </div>
+  </div>
+
+  <!-- 编辑笔记分类 -->
+  <div class="feature" data-keywords="备忘改分类 update-category 分类 修改 改分类">
+    <div class="feature-name">编辑笔记分类</div>
+    <div class="feature-desc">单独修改笔记的分类标签</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">备忘改分类</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update-category &lt;id&gt; &lt;category&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py update-category</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-val">&lt;category&gt;</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
+        <li data-step="2">校验 category 在白名单内</li>
+        <li data-step="3">UPDATE <code>notes</code> SET category = ?, updated_at = now WHERE id = ?</li>
+        <li data-step="4">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code></li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器 DELETE+INSERT</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ 提醒管理 ============ -->
+<div class="tab-content" data-tab="reminders">
+
+<div class="module">
+  <div class="module-title">提醒管理</div>
+
+  <!-- 设置提醒 -->
+  <div class="feature" data-keywords="设提醒 remind 提醒 设置 定时 一次性 重复 每天 每周 每月 每年">
+    <div class="feature-name">设置提醒</div>
+    <div class="feature-desc">为笔记添加定时提醒，支持一次性或周期重复</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">设提醒</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py remind &lt;note_id&gt; --at "时间" --content "内容"</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py remind</span> <span class="hl-val">&lt;note_id&gt;</span> <span class="hl-flag">--at</span> <span class="hl-val">"YYYY-MM-DD HH:MM"</span> <span class="hl-flag">--content</span> <span class="hl-val">"提醒内容"</span> <span class="hl-flag">--repeat-type</span> <span class="hl-val">类型</span> <span class="hl-flag">--rule</span> <span class="hl-val">"规则"</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 content 非空</li>
+        <li data-step="2">校验 note_id 存在于 notes（如提供）</li>
+        <li data-step="3">校验 --at 格式（一次性必须有 --at）</li>
+        <li data-step="4">校验 --rule 格式匹配 repeat_type</li>
+        <li data-step="5">INSERT INTO <code>reminders</code>（note_id, remind_at, repeat_type, repeat_rule, content, created_at）</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>reminders</code></td><td>note_id, remind_at, repeat_type, repeat_rule, content, created_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+      </table>
+      <h4>重复规则格式</h4>
+      <table class="detail-table">
+        <tr><th>类型</th><th>格式</th><th>示例</th></tr>
+        <tr><td>一次性</td><td>不需要 --rule</td><td>--at "2026-05-28 09:00"</td></tr>
+        <tr><td>每天</td><td><code>HH:MM</code></td><td>"09:00"</td></tr>
+        <tr><td>每周</td><td><code>W HH:MM</code></td><td>"5 17:00" 周五</td></tr>
+        <tr><td>每月</td><td><code>D HH:MM</code></td><td>"15 08:30" 每月15号</td></tr>
+        <tr><td>每年</td><td><code>MM-DD HH:MM</code></td><td>"12-25 10:00"</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 记提醒 -->
+  <div class="feature" data-keywords="记提醒 remind add 添加笔记 设提醒 组合 流程">
+    <div class="feature-name">记提醒（添笔记 + 设提醒）</div>
+    <div class="feature-desc">一步完成：先创建笔记，再设置提醒</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">记提醒</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" -c 分类 && script/memo_cli.py remind &lt;id&gt; --at "时间"</button>
+    <div class="detail-panel">
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">调用 <code>add</code> 创建笔记 → 获得 note_id</li>
+        <li data-step="2">调用 <code>remind</code> 设置提醒，关联 note_id</li>
+        <li data-step="3">笔记内容和提醒内容分别存储（reminders.content 可不同于 notes.content）</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>content, category, created_at, updated_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器同步</span></td></tr>
+        <tr><td><code>reminders</code></td><td>note_id, remind_at, repeat_type, repeat_rule, content, created_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+      </table>
+      <h4>与「设提醒」的区别</h4>
+      <p>「设提醒」直接创建提醒（可不关联笔记），「记提醒」强制先创建笔记再设提醒。</p>
+    </div>
+  </div>
+
+  <!-- 查看提醒 -->
+  <div class="feature" data-keywords="看提醒 reminders 查看 列表 提醒列表">
+    <div class="feature-name">查看提醒</div>
+    <div class="feature-desc">列出当前活跃或已废弃的提醒</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">看提醒</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py reminders</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py reminders</span> <span class="hl-flag">-s</span> <span class="hl-val">active|dismissed</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">SELECT r.*, n.content as note_content FROM <code>reminders</code> r LEFT JOIN <code>notes</code> n</li>
+        <li data-step="2">WHERE r.status = ?（默认 active）</li>
+        <li data-step="3">按 remind_at, repeat_type 排序</li>
+        <li data-step="4">content 字段优先取 reminders.content，fallback 到 notes.content</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>reminders</code></td><td>全字段</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+        <tr><td><code>notes</code></td><td>content</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">LEFT JOIN</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 废弃提醒 -->
+  <div class="feature" data-keywords="废弃提醒 dismiss 取消 删除提醒">
+    <div class="feature-name">废弃提醒</div>
+    <div class="feature-desc">将提醒标记为 dismissed，停止触发</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">废弃提醒</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py dismiss &lt;id&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py dismiss</span> <span class="hl-val">&lt;id&gt;</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在于 <code>reminders</code></li>
+        <li data-step="2">校验 status 必须是 active（不能重复废弃）</li>
+        <li data-step="3">UPDATE <code>reminders</code> SET status = 'dismissed' WHERE id = ?</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>reminders</code></td><td>status</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>废弃后提醒不再触发。关联笔记不受影响。</p>
+    </div>
+  </div>
+
+  <!-- 查询已完成提醒 -->
+  <div class="feature" data-keywords="查已提醒备忘 completed 已完成 打卡 完成记录">
+    <div class="feature-name">查询已完成提醒</div>
+    <div class="feature-desc">查看已完成的打卡记录，按提醒类型匹配周期</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">查已提醒备忘</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py completed</button>
+    <div class="detail-panel">
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">SELECT FROM <code>notes</code> JOIN <code>reminders</code> WHERE notes.category = '打卡' AND reminders.status = 'active'</li>
+        <li data-step="2">LEFT JOIN <code>notes</code>（原笔记）获取原始内容</li>
+        <li data-step="3">按 repeat_type 匹配周期：一次性需 notified_at 存在；每天/每周/每月/每年检查打卡时间是否在当前周期内</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>id, content, category, created_at, reminder_id</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+        <tr><td><code>reminders</code></td><td>id, repeat_type, repeat_rule, notified_at, content, note_id</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+      </table>
+      <h4>完成匹配逻辑</h4>
+      <table class="detail-table">
+        <tr><th>类型</th><th>完成条件</th></tr>
+        <tr><td>一次性</td><td>notified_at 存在 + 有打卡笔记</td></tr>
+        <tr><td>每天</td><td>打卡日期 == 今天</td></tr>
+        <tr><td>每周</td><td>打卡在当前自然周 + 星期匹配</td></tr>
+        <tr><td>每月</td><td>打卡在当月 + 日期匹配</td></tr>
+        <tr><td>每年</td><td>打卡在年内 + 月日匹配</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ 系统 ============ -->
+<div class="tab-content" data-tab="system">
+
+<div class="module">
+  <div class="module-title">系统机制</div>
+
+  <!-- 定时提醒调度 -->
+  <div class="feature" data-keywords="cron 提醒调度 reminder_scheduler 定时 调度 到期 检查">
+    <div class="feature-name">定时提醒调度</div>
+    <div class="feature-desc">cron 每隔 N 分钟调用，检查到期提醒并推送</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">cron 自动触发</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">python3 script/reminder_scheduler.py</button>
+    <div class="detail-panel">
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">三层查找 DB 路径：环境变量 SKILLS_DB_PATH → 父目录 .db → 技能目录 .db</li>
+        <li data-step="2">调用 <code>memo_cli.py due</code> 获取到期提醒</li>
+        <li data-step="3">有提醒 → 输出格式化消息 <code>🔔 内容 ⏰ 时间 · 类型</code></li>
+        <li data-step="4">无提醒 → 输出 <code>NO_REPLY</code>（静默，不推送）</li>
+      </ul>
+      <h4>触发时机</h4>
+      <p>由 cron job 每 {MEMO_CRON_INTERVAL} 分钟触发。提前 {MEMO_ADVANCE_MINUTES} 分钟预通知，准点触发 + {GRACE_PERIOD} 分钟容错窗口。</p>
+      <h4>due 命令内部逻辑</h4>
+      <ul class="flow-steps">
+        <li data-step="1">查询所有 active 提醒，LEFT JOIN notes</li>
+        <li data-step="2">一次性：判断 remind_at 日期 == 今天，检查触发窗口</li>
+        <li data-step="3">循环提醒：按 repeat_rule 解析，判断是否在当天/当周/当月/当年周期内</li>
+        <li data-step="4">新周期开始时重置 notified_at</li>
+        <li data-step="5">触发后：提前触发 → 设置 notified_at；准点触发 → 一次性标记 dismissed，循环只设 notified_at</li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>reminders</code></td><td>notified_at, status</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>reminders</code></td><td>全字段 + notes.content</td><td><span class="side-effect" style="background:#f0fdf4;color:#16a34a;">SELECT</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 数据库结构 -->
+  <div class="feature" data-keywords="数据库 schema init.sql 表结构 notes reminders FTS">
+    <div class="feature-name">数据库结构</div>
+    <div class="feature-desc">SQLite + WAL 模式，两张核心表 + FTS5 全文索引</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">init.sql</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/init.sql</button>
+    <div class="detail-panel">
+      <h4>notes 表</h4>
+      <table class="detail-table">
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>INTEGER PK</td><td>自增主键</td></tr>
+        <tr><td><code>content</code></td><td>TEXT NOT NULL</td><td>笔记内容</td></tr>
+        <tr><td><code>summary</code></td><td>TEXT</td><td>AI 摘要，可空</td></tr>
+        <tr><td><code>category</code></td><td>TEXT</td><td>分类标签，默认 general</td></tr>
+        <tr><td><code>reminder_id</code></td><td>INTEGER</td><td>关联提醒 ID（打卡追溯）</td></tr>
+        <tr><td><code>media_path</code></td><td>TEXT</td><td>附件相对路径</td></tr>
+        <tr><td><code>created_at</code></td><td>TEXT</td><td>创建时间</td></tr>
+        <tr><td><code>updated_at</code></td><td>TEXT</td><td>最后更新时间</td></tr>
+      </table>
+      <h4>reminders 表</h4>
+      <table class="detail-table">
+        <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+        <tr><td><code>id</code></td><td>INTEGER PK</td><td>自增主键</td></tr>
+        <tr><td><code>note_id</code></td><td>INTEGER FK</td><td>关联笔记 ID，ON DELETE CASCADE</td></tr>
+        <tr><td><code>remind_at</code></td><td>TEXT</td><td>一次性提醒时间</td></tr>
+        <tr><td><code>repeat_type</code></td><td>TEXT</td><td>none/daily/weekly/monthly/yearly</td></tr>
+        <tr><td><code>repeat_rule</code></td><td>TEXT</td><td>重复规则</td></tr>
+        <tr><td><code>status</code></td><td>TEXT</td><td>active / dismissed</td></tr>
+        <tr><td><code>notified_at</code></td><td>TEXT</td><td>上次通知时间</td></tr>
+        <tr><td><code>created_at</code></td><td>TEXT</td><td>创建时间</td></tr>
+      </table>
+      <h4>FTS5 虚拟表 &amp; 触发器</h4>
+      <p><code>notes_fts</code> 使用 FTS5 全文索引 content 和 category 字段，通过三个触发器（INSERT/UPDATE/DELETE）自动同步。</p>
+      <h4>索引</h4>
+      <p><code>idx_notes_category</code>（category）、<code>idx_reminders_status_remind</code>（status, remind_at）</p>
+    </div>
+  </div>
+
+  <!-- 环境变量 -->
+  <div class="feature" data-keywords="环境变量 配置 SKILLS_DB_PATH MEMO_MEDIA_DIR MEMO_CRON_INTERVAL MEMO_ADVANCE_MINUTES MEMO_GRACE_MULTIPLIER">
+    <div class="feature-name">环境变量配置</div>
+    <div class="feature-desc">数据库路径、媒体目录、定时参数均可通过环境变量自定义</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">环境变量</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">env | grep MEMO</button>
+    <div class="detail-panel">
+      <table class="detail-table">
+        <tr><th>变量</th><th>说明</th><th>默认值</th></tr>
+        <tr><td><code>SKILLS_DB_PATH</code></td><td>数据库根目录</td><td>向上查找 .db/</td></tr>
+        <tr><td><code>MEMO_MEDIA_DIR</code></td><td>媒体文件目录</td><td>media</td></tr>
+        <tr><td><code>MEMO_CRON_INTERVAL</code></td><td>cron 执行间隔（分钟）</td><td>2</td></tr>
+        <tr><td><code>MEMO_ADVANCE_MINUTES</code></td><td>提前触发分钟数</td><td>10</td></tr>
+        <tr><td><code>MEMO_GRACE_MULTIPLIER</code></td><td>延后窗口倍数</td><td>2</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ============ 全部 ============ -->
+<div class="tab-content" data-tab="all">
+  <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">上方选择分类查看，或直接搜索。</p>
+</div>
+
+<div class="footer">
+  备忘录技能 v1.0 &middot; 所有 CLI 命令返回 JSON
+</div>
+
+</div>
+
+<script>
+// Mobile: wrap tables in scrollable container
+(function() {
+  if (window.innerWidth <= 640) {
+    document.querySelectorAll('.detail-table').forEach(table => {
+      if (!table.parentElement.classList.contains('table-scroll')) {
+        const wrap = document.createElement('div');
+        wrap.className = 'table-scroll';
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+      }
+    });
+  }
+})();
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+    if (target === 'all') {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('active'));
+    } else {
+      document.querySelector(`.tab-content[data-tab="${target}"]`).classList.add('active');
+    }
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.feature').forEach(f => f.classList.remove('hidden'));
+    // close all panels
+    document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('open'));
+  });
+});
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.trim().toLowerCase();
+  // show all tabs when searching
+  if (q) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.tab[data-tab="all"]').classList.add('active');
+  }
+  document.querySelectorAll('.feature').forEach(f => {
+    if (!q) { f.classList.remove('hidden'); return; }
+    const kw = f.dataset.keywords || '';
+    const name = f.querySelector('.feature-name')?.textContent || '';
+    const tags = Array.from(f.querySelectorAll('.trigger-tag')).map(t => t.textContent).join(' ');
+    const cmds = Array.from(f.querySelectorAll('.cli-cmd')).map(c => c.textContent).join(' ');
+    const text = (kw + ' ' + name + ' ' + tags + ' ' + cmds).toLowerCase();
+    f.classList.toggle('hidden', !text.includes(q));
+  });
+});
+
+// Toggle detail panel (trigger tag click)
+function toggleDetail(btn) {
+  const feature = btn.closest('.feature');
+  const panel = feature.querySelector('.detail-panel');
+  panel.classList.toggle('open');
+}
+
+// Toggle flow panel (CLI command click)
+function toggleFlow(btn) {
+  const feature = btn.closest('.feature');
+  const panel = feature.querySelector('.detail-panel');
+  panel.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>勋章技能手册</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#007AFF;
+  --bg:#F5F5F7;
+  --card:#FFFFFF;
+  --text:#1D1D1F;
+  --text2:#86868B;
+  --border:#E5E5EA;
+  --radius:10px;
+}
+html{font-size:16px}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","Segoe UI",sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;padding:0;margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+/* Header */
+.header{
+  background:var(--card);
+  padding:48px 20px 24px;
+  border-bottom:1px solid var(--border);
+  text-align:center;
+  position:sticky;top:0;z-index:100;
+}
+.header h1{font-size:1.5rem;font-weight:600;letter-spacing:-0.02em}
+.header p{font-size:0.85rem;color:var(--text2);margin-top:4px}
+/* Search */
+.search-wrap{
+  padding:12px 16px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:88px;z-index:99;
+}
+.search-box{
+  width:100%;padding:10px 14px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  font-size:0.9rem;outline:none;
+  background:var(--bg);
+  transition:border-color 0.2s;
+}
+.search-box:focus{border-color:var(--blue)}
+.search-box::placeholder{color:#AEAEB2}
+/* Tabs */
+.tabs{
+  display:flex;overflow-x:auto;
+  padding:12px 16px 0;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  gap:4px;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;
+  padding:8px 14px;
+  font-size:0.8rem;
+  font-weight:500;
+  color:var(--text2);
+  background:none;border:none;
+  border-bottom:2px solid transparent;
+  cursor:pointer;
+  transition:all 0.2s;
+  white-space:nowrap;
+}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab:hover{color:var(--text)}
+/* Content */
+.content{padding:16px;max-width:680px;margin:0 auto}
+.section{margin-bottom:32px}
+.section-title{
+  font-size:0.75rem;font-weight:600;
+  color:var(--text2);text-transform:uppercase;
+  letter-spacing:0.05em;
+  padding:0 4px 8px;
+}
+/* Card */
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  overflow:hidden;
+  margin-bottom:8px;
+}
+.card-head{
+  padding:14px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.card-head:active{background:#F5F5F7}
+.card-title{font-size:0.95rem;font-weight:600}
+.card-arrow{
+  font-size:0.7rem;color:var(--text2);
+  transition:transform 0.2s;
+}
+.card.open .card-arrow{transform:rotate(90deg)}
+.card-body{
+  display:none;
+  padding:0 16px 16px;
+  border-top:1px solid var(--border);
+}
+.card.open .card-body{display:block}
+/* Trigger list */
+.trigger-list{list-style:none;padding:0}
+.trigger-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
+.trigger-item:last-child{border-bottom:none}
+.trigger-word{
+  font-size:0.9rem;font-weight:500;
+  color:var(--text);
+  padding:4px 10px;
+  background:#F2F2F7;
+  border-radius:6px;
+  transition:background 0.15s;
+}
+.trigger-item:hover .trigger-word{background:#E5E5EA}
+.trigger-arrow{font-size:0.7rem;color:var(--text2)}
+/* CLI detail */
+.cli-detail{
+  display:none;
+  margin:8px 0 16px;
+  padding:12px 14px;
+  background:#F2F2F7;
+  border-radius:8px;
+  font-size:0.8rem;
+}
+.cli-detail.show{display:block}
+.cli-detail .cli-label{
+  font-size:0.7rem;font-weight:600;
+  color:var(--text2);text-transform:uppercase;
+  letter-spacing:0.04em;margin-bottom:6px;
+}
+.cli-cmd{
+  font-family:"SF Mono","Fira Code","Cascadia Code",monospace;
+  font-size:0.78rem;
+  background:#1D1D1F;color:#F5F5F7;
+  padding:8px 12px;border-radius:6px;
+  margin:6px 0;
+  word-break:break-all;
+  cursor:pointer;
+  transition:opacity 0.15s;
+}
+.cli-cmd:hover{opacity:0.85}
+.cli-cmd:active{opacity:0.7}
+/* Flow */
+.flow-block{
+  display:none;
+  margin:8px 0 0;
+  padding:12px 14px;
+  background:#FAFAFA;
+  border-radius:8px;
+  border:1px solid var(--border);
+}
+.flow-block.show{display:block}
+.flow-step{
+  display:flex;align-items:flex-start;
+  margin-bottom:10px;font-size:0.8rem;
+}
+.flow-step:last-child{margin-bottom:0}
+.flow-num{
+  flex-shrink:0;
+  width:20px;height:20px;
+  background:var(--blue);color:#fff;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:600;
+  margin-right:10px;margin-top:1px;
+}
+.flow-text{flex:1}
+.flow-table{
+  font-size:0.7rem;
+  border-collapse:collapse;
+  width:100%;margin:6px 0;
+}
+.flow-table th{
+  text-align:left;font-weight:600;
+  padding:4px 8px;
+  background:#F2F2F7;
+  border:1px solid var(--border);
+}
+.flow-table td{
+  padding:4px 8px;
+  border:1px solid var(--border);
+}
+/* Description */
+.desc{
+  font-size:0.8rem;color:var(--text2);
+  margin-top:8px;line-height:1.5;
+}
+/* Badge */
+.badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:4px;
+  font-size:0.65rem;font-weight:600;
+}
+.badge-blue{background:#E3F2FD;color:#1565C0}
+.badge-green{background:#E8F5E9;color:#2E7D32}
+.badge-orange{background:#FFF3E0;color:#E65100}
+.badge-purple{background:#F3E5F5;color:#6A1B9A}
+.badge-red{background:#FFEBEE;color:#C62828}
+/* Empty state */
+.empty{
+  text-align:center;
+  padding:48px 20px;
+  color:var(--text2);
+  font-size:0.9rem;
+}
+/* Footer */
+.footer{
+  text-align:center;
+  padding:32px 16px 48px;
+  font-size:0.75rem;color:#AEAEB2;
+}
+/* Mobile */
+@media(max-width:480px){
+  .header{padding:36px 16px 20px}
+  .header h1{font-size:1.3rem}
+  .content{padding:12px}
+  .card-head{padding:12px 14px}
+  .cli-cmd{font-size:0.72rem;padding:6px 10px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>勋章技能手册</h1>
+  <p>29 个唤醒词 · 7 大模块 · 完整 CLI 参考</p>
+</div>
+
+<div class="search-wrap">
+  <input type="text" class="search-box" id="searchInput" placeholder="搜索唤醒词或功能...">
+</div>
+
+<div class="tabs" id="tabBar">
+  <button class="tab active" data-cat="all">全部</button>
+  <button class="tab" data-cat="award">颁发类</button>
+  <button class="tab" data-cat="chain-award">成就链颁发</button>
+  <button class="tab" data-cat="query">查询类</button>
+  <button class="tab" data-cat="chain-check">成就链检查</button>
+  <button class="tab" data-cat="generate">设计生成</button>
+  <button class="tab" data-cat="review">视觉审查</button>
+  <button class="tab" data-cat="manage">管理类</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="footer">
+  勋章技能 v2.0 · 最后更新 2026-05-28
+</div>
+
+<script>
+// ── 数据 ──
+const modules = [
+  {
+    cat: "award",
+    title: "颁发类",
+    desc: "手动触发，颁发勋章/证书/奖杯奖励。生成设计图 → 视觉审查 → 写入数据库 → 发送文件。",
+    triggers: [
+      {
+        word: "颁勋章",
+        desc: "颁发 badge 类型奖励，轻量级鼓励。",
+        cli: "python3 scripts/medal.py add --type badge --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
+        flow: [
+          { text: "选择渲染路径（A/B/C），事件解构生成设计图" },
+          { text: "视觉审查，最多 3 轮迭代" },
+          { text: "medal.py add 写入数据库" },
+          {
+            table: {
+              headers: ["操作", "表", "字段", "说明"],
+              rows: [
+                ["INSERT", "medals", "id, medal_type, medal_name, file_path, awarded_at, remark", "medal_type 固定为 badge"]
+              ]
+            }
+          },
+          { text: "通过 qqbot 发送奖励文件" }
+        ]
+      },
+      {
+        word: "颁证书",
+        desc: "颁发 certificate 类型奖励，中量级认可。",
+        cli: "python3 scripts/medal.py add --type certificate --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
+        flow: [
+          { text: "同颁勋章流程，medal_type 为 certificate" },
+          {
+            table: {
+              headers: ["操作", "表", "字段", "说明"],
+              rows: [
+                ["INSERT", "medals", "同上", "medal_type 固定为 certificate"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "颁奖杯",
+        desc: "颁发 trophy 类型奖励，重量级荣誉。",
+        cli: "python3 scripts/medal.py add --type trophy --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
+        flow: [
+          { text: "同颁勋章流程，medal_type 为 trophy" },
+          {
+            table: {
+              headers: ["操作", "表", "字段", "说明"],
+              rows: [
+                ["INSERT", "medals", "同上", "medal_type 固定为 trophy"]
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "chain-award",
+    title: "成就链颁发类",
+    desc: "手动触发，颁发对应成就链勋章后自动检查进阶/里程碑是否解锁。",
+    triggers: [
+      {
+        word: "颁早睡勋章",
+        desc: "颁发早睡链勋章，自动检查进阶（累计7次）和里程碑（连续14天）。",
+        cli: "python3 scripts/medal.py add --type badge --name \"早睡党\" --file \"<路径>\" --remark \"早睡链：MM-DD HH:MM入睡\"",
+        flow: [
+          { text: "颁发「早睡党」badge" },
+          { text: "查询 medals 表中 medal_name 含「早睡」的 badge 记录" },
+          { text: "累计 ≥7 次 → 追加颁发「早睡达人」certificate" },
+          { text: "按 awarded_at 排序，检查连续天数 ≥14 → 追加颁发「早睡里程碑」trophy" },
+          { text: "remark 写明入睡时间和睡眠时长" },
+          {
+            table: {
+              headers: ["操作", "表", "说明"],
+              rows: [
+                ["INSERT", "medals", "1~3 条记录，取决于解锁条件"],
+                ["SELECT", "medals", "查询历史判断进度"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "颁学习勋章",
+        desc: "颁发学习链勋章，自动检查进阶（累计10h）和里程碑（连续7天）。",
+        cli: "python3 scripts/medal.py add --type badge --name \"开始学习\" --file \"<路径>\" --remark \"学习链：MM-DD 学XX N小时\"",
+        flow: [
+          { text: "颁发「开始学习」badge" },
+          { text: "查询学习类 badge 累计时长，≥10h → 颁发「学习达人」certificate" },
+          { text: "连续学习 ≥7 天 → 颁发「学习里程碑」trophy" },
+          { text: "单日 ≥3h → 颁发「深度学习」certificate" }
+        ]
+      },
+      {
+        word: "颁运动勋章",
+        desc: "颁发运动链勋章，自动检查进阶（累计5次）和里程碑（连续7天）。",
+        cli: "python3 scripts/medal.py add --type badge --name \"开始运动\" --file \"<路径>\" --remark \"运动链：MM-DD XX运动 N分钟\"",
+        flow: [
+          { text: "颁发「开始运动」badge" },
+          { text: "运动类 badge ≥5 次 → 颁发「运动达人」certificate" },
+          { text: "连续运动 ≥7 天 → 颁发「运动里程碑」trophy" },
+          { text: "单日 ≥1h → 颁发「运动增量」certificate" }
+        ]
+      },
+      {
+        word: "颁休息勋章",
+        desc: "颁发休息链勋章，自动检查连续休息和摆烂警告。",
+        cli: "python3 scripts/medal.py add --type badge --name \"休闲党\" --file \"<路径>\" --remark \"休息链：MM-DD 休息原因\"",
+        flow: [
+          { text: "颁发「休闲党」badge" },
+          { text: "连续 2 天休息 → 颁发「躺平达人」badge" },
+          { text: "连续 2 个周末休息 → 颁发「周末休息达人」certificate" },
+          { text: "连续 5 天只有休息无学习无运动 → 颁发「摆烂警告」trophy（提醒该动动了）" }
+        ]
+      },
+      {
+        word: "颁体重勋章",
+        desc: "颁发体重链勋章，自动检查下降/达标/回升。",
+        cli: "python3 scripts/medal.py add --type badge --name \"体重记录\" --file \"<路径>\" --remark \"体重链：MM-DD 称重XXkg\"",
+        flow: [
+          { text: "颁发「体重记录」badge" },
+          { text: "较上次下降 ≥0.5kg → 颁发「体重下降」certificate" },
+          { text: "达到目标体重 → 颁发「体重达标」trophy" },
+          { text: "较目标回升 ≥1kg → 颁发「体重回升」badge（温和提醒）" }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "query",
+    title: "查询类",
+    desc: "查询勋章记录和统计信息，只读操作，不修改数据。",
+    triggers: [
+      {
+        word: "查勋章记录",
+        desc: "查询所有勋章历史记录，默认返回最近 50 条。",
+        cli: "python3 scripts/medal.py list [--type <类型>] [--limit <数量>]",
+        flow: [
+          { text: "执行 SELECT 查询 medals 表" },
+          {
+            table: {
+              headers: ["操作", "表", "说明"],
+              rows: [
+                ["SELECT", "medals", "按 awarded_at DESC 排序，支持 --type 和 --limit 过滤"]
+              ]
+            }
+          },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查勋章统计",
+        desc: "查看勋章数量统计，按类型汇总。",
+        cli: "python3 scripts/medal.py stats",
+        flow: [
+          { text: "执行 COUNT 查询，按 medal_type 分组" },
+          {
+            table: {
+              headers: ["操作", "表", "说明"],
+              rows: [
+                ["SELECT COUNT(*)", "medals", "总数"],
+                ["SELECT ... GROUP BY medal_type", "medals", "按 badge/certificate/trophy 分组统计"]
+              ]
+            }
+          },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查某类勋章",
+        desc: "按类型筛选查询（badge/certificate/trophy）。",
+        cli: "python3 scripts/medal.py list --type badge",
+        flow: [
+          { text: "执行 SELECT ... WHERE medal_type = ? 查询" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查最近勋章",
+        desc: "查看最近 N 条勋章记录。",
+        cli: "python3 scripts/medal.py list --limit 10",
+        flow: [
+          { text: "执行 SELECT ... LIMIT N 查询" },
+          { text: "副作用：无，只读操作" }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "chain-check",
+    title: "成就链检查类",
+    desc: "查询成就链进度，分析历史记录判断当前等级和解锁条件。只读操作。",
+    triggers: [
+      {
+        word: "查早睡链",
+        desc: "检查早睡成就链进度：基础(单次)、进阶(累计7次)、里程碑(连续14天)。",
+        cli: "python3 scripts/medal.py list --type badge --limit 100",
+        flow: [
+          { text: "查询所有早睡类 badge 记录" },
+          { text: "按 awarded_at 排序，分析连续性" },
+          { text: "输出：当前等级、累计次数、连续天数、下一解锁条件" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查学习链",
+        desc: "检查学习成就链进度：基础(30min)、进阶(累计10h)、里程碑(连续7天)、深度(单日3h)。",
+        cli: "python3 scripts/medal.py list --type badge --limit 100",
+        flow: [
+          { text: "查询所有学习类记录" },
+          { text: "统计累计时长和连续天数" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查运动链",
+        desc: "检查运动成就链进度：基础(20min)、进阶(累计5次)、里程碑(连续7天)、增量(单日1h)。",
+        cli: "python3 scripts/medal.py list --type badge --limit 100",
+        flow: [
+          { text: "查询所有运动类记录" },
+          { text: "统计累计次数和连续天数" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查休息链",
+        desc: "检查休息成就链进度：休闲党、躺平达人(2天)、周末休息(2个周末)、摆烂警告(5天)。",
+        cli: "python3 scripts/medal.py list --type badge --limit 100",
+        flow: [
+          { text: "查询所有休息类记录" },
+          { text: "同时检查是否有学习/运动记录，判断摆烂警告" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查体重链",
+        desc: "检查体重成就链进度：记录、下降(0.5kg)、达标(目标)、回升(1kg)。",
+        cli: "python3 scripts/medal.py list --type badge --limit 100",
+        flow: [
+          { text: "查询所有体重类记录" },
+          { text: "对比最近两次记录和目标体重" },
+          { text: "副作用：无，只读操作" }
+        ]
+      },
+      {
+        word: "查成就进度",
+        desc: "汇总查看所有成就链进度，全景概览。",
+        cli: "python3 scripts/medal.py list --limit 100 && python3 scripts/medal.py stats",
+        flow: [
+          { text: "遍历所有成就链，逐一分析进度" },
+          { text: "输出每条链的当前等级和下一解锁条件" },
+          { text: "副作用：无，只读操作" }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "generate",
+    title: "设计生成类",
+    desc: "生成勋章/证书/奖杯设计图。三条渲染路径可选：A(SVG动画→GIF)、B(生图+SVG→GIF)、C(直接生图→PNG)。",
+    triggers: [
+      {
+        word: "生勋章图",
+        desc: "生成勋章设计图，AI 自动选择最佳渲染路径。",
+        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>.png",
+        flow: [
+          { text: "事件解构：核心符号、情感色调、发生场景、动效语言" },
+          { text: "AI 根据事件特征选择路径 A/B/C" },
+          { text: "路径 A：AI 写 HTML+SVG → Playwright 截图 → 迭代审查 → ffmpeg 合成 GIF" },
+          { text: "路径 B：mmx 生成主体图 → AI 写 HTML+SVG 边框 → Playwright 截图 → 迭代审查 → ffmpeg 合成 GIF" },
+          { text: "路径 C：mmx 生成完整图 → 迭代审查 → 保存 PNG" },
+          { text: "调用 medal.py add 写入数据库" },
+          {
+            table: {
+              headers: ["路径", "输出", "工具链"],
+              rows: [
+                ["A", "GIF", "Playwright + ffmpeg"],
+                ["B", "GIF", "mmx + Playwright + ffmpeg"],
+                ["C", "PNG", "mmx"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "生证书图",
+        desc: "生成证书设计图，自动选择路径。",
+        cli: "同生勋章图，body 尺寸 600x400",
+        flow: [
+          { text: "同生勋章图流程，证书尺寸 600x400（横向）" },
+          { text: "证书必须有文书边框（矩形装饰框）" }
+        ]
+      },
+      {
+        word: "生奖杯图",
+        desc: "生成奖杯设计图，自动选择路径。",
+        cli: "同生勋章图，body 尺寸 350x500",
+        flow: [
+          { text: "同生勋章图流程，奖杯尺寸 350x500（竖长）" },
+          { text: "奖杯必须有底座或台面" }
+        ]
+      },
+      {
+        word: "生SVG勋章",
+        desc: "路径 A：AI 手写 HTML+SVG 动画 → Playwright 截图 → ffmpeg 合成 GIF。适合几何/机械/像素风格。",
+        cli: "python3 scripts/generate_medal_gif.py --html-file $MEDAL_RESOURCE_PATH/<名称>.html --output <名称>.gif",
+        flow: [
+          { text: "AI 生成全新 HTML（含 CSS 动画 + SVG 图形）" },
+          { text: "保存 HTML 到 MEDAL_RESOURCE_PATH/<名称>.html" },
+          { text: "Playwright 渲染截图 → MiniMax 视觉审查" },
+          { text: "迭代修改，最多 3 轮" },
+          { text: "ffmpeg 合成 GIF" },
+          { text: "medal.py add 写入数据库" },
+          {
+            table: {
+              headers: ["文件", "说明"],
+              rows: [
+                ["<名称>.html", "源文件，保留用于回溯"],
+                ["<名称>.gif", "最终输出"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "生混合勋章",
+        desc: "路径 B：mmx 生成主体图 + SVG 边框/动效 → 包装 HTML → Playwright → ffmpeg → GIF。适合有机/写实场景。",
+        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>_subject.png --width 512 --height 512",
+        flow: [
+          { text: "mmx 生成主体图 PNG（512x512）" },
+          { text: "AI 生成 HTML，主体图作为 <img> 嵌入，外围 SVG 边框" },
+          { text: "Playwright 渲染截图 → 视觉审查" },
+          { text: "ffmpeg 合成 GIF" },
+          { text: "medal.py add 写入数据库" },
+          {
+            table: {
+              headers: ["文件", "说明"],
+              rows: [
+                ["<名称>_subject.png", "主体图，保留"],
+                ["<名称>.html", "HTML 源文件，保留"],
+                ["<名称>.gif", "最终输出"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "生纯图勋章",
+        desc: "路径 C：mmx 直接生成完整勋章图 → 视觉审查 → 保存 PNG。快速颁发，无需动画。",
+        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>.png --width 1024 --height 1024",
+        flow: [
+          { text: "构建 prompt（路径 C 约束：禁止文字、必须有身份标识）" },
+          { text: "mmx 生成完整图（1024x1024）" },
+          { text: "视觉审查，不满意则调整 prompt 重新生成（最多 3 轮）" },
+          { text: "medal.py add 写入数据库" },
+          {
+            table: {
+              headers: ["文件", "说明"],
+              rows: [
+                ["<名称>.png", "最终输出"]
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "review",
+    title: "视觉审查类",
+    desc: "审查生成的设计图质量，7 维度检查。三条路径共享同一套审查标准。",
+    triggers: [
+      {
+        word: "审勋章设计",
+        desc: "审查勋章设计图质量，输出 7 维度评审报告。",
+        cli: "MiniMax_understand_image（ui-review 模式）",
+        flow: [
+          { text: "读取设计文件（HTML 截图或 PNG）" },
+          { text: "调用 MiniMax_understand_image 审查" },
+          { text: "7 维度检查：视觉焦点、材质质感、配色、构图、身份标识、文字、改进建议" },
+          { text: "不合格 → 提供修改建议，最多迭代 3 轮" },
+          {
+            table: {
+              headers: ["维度", "检查内容"],
+              rows: [
+                ["视觉焦点", "第一眼看到什么？"],
+                ["材质质感", "是否有金属/玻璃/纸张感觉？"],
+                ["配色", "是否与事件氛围匹配？"],
+                ["构图", "是否元素过载？"],
+                ["身份标识", "边框、挂环/绶带、底座是否清晰？"],
+                ["文字", "是否出现模糊变形文字？"],
+                ["改进建议", "具体改什么？"]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        word: "审证书设计",
+        desc: "审查证书设计图质量。",
+        cli: "同审勋章设计",
+        flow: [
+          { text: "同审勋章设计流程" },
+          { text: "证书额外检查：文书边框是否完整" }
+        ]
+      },
+      {
+        word: "审奖杯设计",
+        desc: "审查奖杯设计图质量。",
+        cli: "同审勋章设计",
+        flow: [
+          { text: "同审勋章设计流程" },
+          { text: "奖杯额外检查：底座或台面是否存在" }
+        ]
+      }
+    ]
+  },
+  {
+    cat: "manage",
+    title: "管理类",
+    desc: "数据库初始化和迁移操作。",
+    triggers: [
+      {
+        word: "初始化勋章库",
+        desc: "初始化勋章数据库表结构，首次使用时执行。",
+        cli: "python3 scripts/medal.py init",
+        flow: [
+          { text: "连接 SQLite 数据库 medals.db" },
+          { text: "检查旧表是否有 gif_path 列，有则迁移到 file_path" },
+          { text: "创建 medals 表（如不存在）" },
+          { text: "创建索引 idx_medals_type" },
+          {
+            table: {
+              headers: ["操作", "表", "字段"],
+              rows: [
+                ["CREATE TABLE IF NOT EXISTS", "medals", "id, medal_type, medal_name, file_path, awarded_at, remark"],
+                ["CREATE INDEX IF NOT EXISTS", "idx_medals_type", "medal_type"],
+                ["ALTER TABLE (如需)", "medals", "gif_path → file_path"]
+              ]
+            }
+          },
+          { text: "副作用：创建表/索引，可能重命名列" }
+        ]
+      },
+      {
+        word: "迁移勋章库",
+        desc: "数据库结构升级迁移。",
+        cli: "python3 scripts/medal.py init",
+        flow: [
+          { text: "同初始化流程，包含列迁移逻辑" },
+          { text: "当前迁移：gif_path → file_path（如需要）" },
+          { text: "副作用：可能修改表结构" }
+        ]
+      }
+    ]
+  }
+];
+
+// ── 渲染 ──
+const contentEl = document.getElementById("content");
+let currentCat = "all";
+let searchQuery = "";
+
+function render() {
+  const q = searchQuery.toLowerCase().trim();
+  let html = "";
+
+  modules.forEach(mod => {
+    if (currentCat !== "all" && mod.cat !== currentCat) return;
+
+    const filtered = mod.triggers.filter(t => {
+      if (!q) return true;
+      return t.word.toLowerCase().includes(q) ||
+             t.desc.toLowerCase().includes(q) ||
+             t.cli.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) return;
+
+    html += `<div class="section" data-cat="${mod.cat}">
+      <div class="section-title">${mod.title}</div>
+      <div class="desc">${mod.desc}</div>`;
+
+    filtered.forEach((t, i) => {
+      const id = `${mod.cat}-${i}`;
+      html += `<div class="card" id="card-${id}">
+        <div class="card-head" onclick="toggleCard('${id}')">
+          <span class="card-title">${t.word}</span>
+          <span class="card-arrow">›</span>
+        </div>
+        <div class="card-body">
+          <div class="desc">${t.desc}</div>
+          <div style="margin-top:12px">
+            <div class="cli-label">CLI 命令</div>
+            <div class="cli-cmd" onclick="toggleFlow('${id}')">${escapeHtml(t.cli)}</div>
+            <div class="flow-block" id="flow-${id}">${renderFlow(t.flow)}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  });
+
+  if (!html) {
+    html = `<div class="empty">没有匹配的唤醒词</div>`;
+  }
+
+  contentEl.innerHTML = html;
+}
+
+function renderFlow(flow) {
+  if (!flow || flow.length === 0) return "";
+  let html = '<div class="cli-label" style="margin-top:8px">执行流程</div>';
+  flow.forEach((step, i) => {
+    html += `<div class="flow-step">
+      <div class="flow-num">${i + 1}</div>
+      <div class="flow-text">`;
+    if (step.text) {
+      html += step.text;
+    }
+    if (step.table) {
+      html += `<table class="flow-table">
+        <tr>${step.table.headers.map(h => `<th>${h}</th>`).join("")}</tr>
+        ${step.table.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}
+      </table>`;
+    }
+    html += `</div></div>`;
+  });
+  return html;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function toggleCard(id) {
+  const card = document.getElementById("card-" + id);
+  card.classList.toggle("open");
+}
+
+function toggleFlow(id) {
+  const flow = document.getElementById("flow-" + id);
+  flow.classList.toggle("show");
+}
+
+// ── Tab 切换 ──
+document.getElementById("tabBar").addEventListener("click", e => {
+  if (!e.target.classList.contains("tab")) return;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  e.target.classList.add("active");
+  currentCat = e.target.dataset.cat;
+  render();
+});
+
+// ── 搜索 ──
+document.getElementById("searchInput").addEventListener("input", e => {
+  searchQuery = e.target.value;
+  render();
+});
+
+// ── 初始化 ──
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>居家管家 — 功能手册</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#007AFF;
+  --bg:#FAFAFA;
+  --card:#FFFFFF;
+  --border:#E5E5EA;
+  --text:#1C1C1E;
+  --text2:#8E8E93;
+  --text3:#AEAEB2;
+  --radius:10px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.5;
+  min-height:100vh;
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+
+/* ── Header ── */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(250,250,250,0.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:0.5px solid var(--border);
+  padding:12px 16px 0;
+}
+.header h1{
+  font-size:22px;font-weight:700;letter-spacing:-0.3px;
+  margin-bottom:12px;
+}
+
+/* ── Search ── */
+.search-wrap{
+  position:relative;margin-bottom:12px;
+}
+.search-wrap svg{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;color:var(--text3);pointer-events:none;
+}
+#search{
+  width:100%;padding:8px 12px 8px 32px;
+  font-size:15px;font-family:var(--font);
+  background:#F2F2F7;border:none;border-radius:8px;
+  outline:none;color:var(--text);
+  transition:background .2s;
+}
+#search:focus{background:#E8E8ED}
+#search::placeholder{color:var(--text3)}
+
+/* ── Tabs ── */
+.tabs{
+  display:flex;gap:0;overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  margin:0 -16px;padding:0 16px;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex-shrink:0;
+  padding:8px 14px 10px;
+  font-size:13px;font-weight:500;
+  color:var(--text2);
+  border:none;background:none;
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:color .2s,border-color .2s;
+  white-space:nowrap;
+  font-family:var(--font);
+}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab:hover{color:var(--text)}
+
+/* ── Main ── */
+.main{padding:16px;max-width:680px;margin:0 auto}
+
+/* ── Category section ── */
+.cat-section{margin-bottom:24px}
+.cat-title{
+  font-size:13px;font-weight:600;
+  color:var(--text2);text-transform:uppercase;
+  letter-spacing:0.5px;margin-bottom:10px;
+  padding-left:2px;
+}
+
+/* ── Module card ── */
+.mod{
+  background:var(--card);
+  border-radius:var(--radius);
+  border:0.5px solid var(--border);
+  margin-bottom:8px;
+  overflow:hidden;
+  transition:box-shadow .2s;
+}
+.mod:hover{box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+
+.mod-header{
+  padding:14px 16px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.mod-header:active{background:#F8F8FA}
+
+.mod-name{
+  font-size:16px;font-weight:600;
+  color:var(--text);
+}
+.mod-desc{
+  font-size:13px;color:var(--text2);
+  margin-top:2px;
+}
+.mod-left{flex:1;min-width:0}
+.mod-arrow{
+  width:20px;height:20px;flex-shrink:0;
+  color:var(--text3);
+  transition:transform .25s ease;
+  margin-left:8px;
+}
+.mod.open .mod-arrow{transform:rotate(90deg)}
+
+/* ── Expanded content ── */
+.mod-body{
+  max-height:0;overflow:hidden;
+  transition:max-height .3s ease;
+}
+.mod.open .mod-body{
+  max-height:2000px;
+}
+.mod-inner{
+  padding:0 16px 16px;
+  border-top:0.5px solid var(--border);
+}
+
+/* ── Wake words ── */
+.ww-list{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin:12px 0;
+}
+.ww{
+  display:inline-flex;align-items:center;
+  padding:5px 12px;
+  font-size:14px;font-weight:500;
+  color:var(--blue);
+  background:rgba(0,122,255,0.08);
+  border-radius:16px;
+  cursor:pointer;
+  transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.ww:hover{background:rgba(0,122,255,0.14)}
+.ww:active{background:rgba(0,122,255,0.2)}
+.ww.expanded{
+  background:var(--blue);color:#fff;
+}
+
+/* ── CLI block ── */
+.cli-block{
+  display:none;
+  margin:8px 0;
+  padding:12px 14px;
+  background:#F2F2F7;
+  border-radius:8px;
+  font-size:13px;
+  line-height:1.6;
+  font-family:"SF Mono","Fira Code","Menlo",monospace;
+  color:var(--text);
+  word-break:break-all;
+  white-space:pre-wrap;
+}
+.cli-block.show{display:block}
+.cli-label{
+  font-size:11px;font-weight:600;
+  color:var(--text3);text-transform:uppercase;
+  letter-spacing:0.5px;margin-bottom:4px;
+  font-family:var(--font);
+}
+.cli-cmd{
+  cursor:pointer;
+  padding:2px 0;
+  transition:color .15s;
+}
+.cli-cmd:hover{color:var(--blue)}
+
+/* ── Execution flow ── */
+.exec-block{
+  display:none;
+  margin:8px 0 4px;
+  padding:12px 14px;
+  background:#F9F9FB;
+  border-radius:8px;
+  font-size:13px;
+  line-height:1.7;
+  border:0.5px solid var(--border);
+}
+.exec-block.show{display:block}
+.exec-title{
+  font-size:12px;font-weight:600;
+  color:var(--text2);margin-bottom:8px;
+}
+.exec-table{
+  font-size:13px;margin:4px 0;
+}
+.exec-table code{
+  background:#E8E8ED;padding:1px 5px;
+  border-radius:4px;font-family:"SF Mono","Menlo",monospace;
+  font-size:12px;
+}
+.exec-side{
+  margin-top:8px;padding-top:8px;
+  border-top:0.5px solid var(--border);
+  font-size:12px;color:var(--text2);
+}
+.exec-side strong{color:var(--text);font-weight:600}
+
+/* ── Empty state ── */
+.empty{
+  text-align:center;
+  padding:48px 16px;
+  color:var(--text3);
+  font-size:15px;
+}
+
+/* ── Responsive ── */
+@media(max-width:375px){
+  .header h1{font-size:20px}
+  .tab{font-size:12px;padding:6px 10px 8px}
+  .mod-name{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>居家管家</h1>
+  <div class="search-wrap">
+    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+    <input type="text" id="search" placeholder="搜索唤醒词或功能…" autocomplete="off" />
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+// ── Data ──
+const DATA = [
+  {
+    cat: "物品录入",
+    modules: [
+      {
+        name: "文字录入",
+        wakeWords: ["录物品"],
+        cli: 'add --name "XX" --category "XX" --location "XX" --tags "标签1,标签2"',
+        desc: "自然语言描述物品，AI 解析后写入数据库",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
+          side: "自动生成 items.id；location 含\"快递\"时自动设 location_status=\"快递中\"；access_count 不变"
+        }
+      },
+      {
+        name: "拍照录入",
+        wakeWords: ["拍物品"],
+        cli: 'add --name "XX" --category "XX" --location "XX"\n→ 得到 ID\n→ update --id {ID} --photo "photos/{ID}_XX.jpg" --tags "颜色,品牌,规格…"',
+        desc: "从图片提取信息，AI 识别颜色/品牌/规格等作为标签",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "items: name, category, owner, photo, updated_at\nitem_locations: item_id, location, quantity, location_status\nitem_tags: item_id, tag",
+          side: "分两步：先 add 得到 ID，再 update 写入 photo 和 tags；图片存储在 photos/ 目录"
+        }
+      }
+    ]
+  },
+  {
+    cat: "物品查找",
+    modules: [
+      {
+        name: "物品搜索",
+        wakeWords: ["查物品"],
+        cli: 'search --name "XX"\nsearch --location "XX"\nsearch --tag "XX"\nsearch --name "XX" --tag "白色" --location "卧室"',
+        desc: "按名称/位置/标签/分类/状态组合搜索，支持模糊匹配",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.*（DISTINCT）\nJOIN item_locations（当有 location/status 条件时）\nJOIN item_tags（当有 tag 条件时）",
+          side: "只读操作，不修改任何数据；access_count 不变"
+        }
+      },
+      {
+        name: "物品详情",
+        wakeWords: ["看物品"],
+        cli: "detail --id {ID}",
+        desc: "查看物品完整信息，含所有位置、标签、图片路径",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "读取 items 全部字段\n读取 item_locations: location, quantity, reason, location_status, purchase_date, expiration_date\n读取 item_tags: tag",
+          side: "access_count +1，last_accessed_at 更新为当前时间"
+        }
+      },
+      {
+        name: "快递查询",
+        wakeWords: ["查快递"],
+        cli: 'search --status "快递中"',
+        desc: "查找所有状态为\"快递中\"的物品",
+        exec: {
+          tables: ["items", "item_locations"],
+          fields: "查询 items.*\nJOIN item_locations WHERE location_status = '快递中'",
+          side: "只读操作；access_count 不变"
+        }
+      }
+    ]
+  },
+  {
+    cat: "物品更新",
+    modules: [
+      {
+        name: "通用更新",
+        wakeWords: ["改物品"],
+        cli: "update --id {ID} --name \"新名称\" --remark \"新备注\"\nupdate --id {ID} --category \"新分类\"",
+        desc: "修改物品名称、分类、所有者、备注、单价等基本信息",
+        exec: {
+          tables: ["items"],
+          fields: "items: name / category / owner / remark / purchase_price / photo（按需更新）+ updated_at",
+          side: "access_count +1，last_accessed_at 更新"
+        }
+      },
+      {
+        name: "位置移动",
+        wakeWords: ["移物品"],
+        cli: 'update --id {ID} --new-location "厨房/冰箱" --location "客厅/茶几"',
+        desc: "将物品从一个位置搬到另一个位置",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: location → 新位置 + updated_at\nitems: updated_at",
+          side: "access_count +1；如同时传 --location-status 则作用于新位置"
+        }
+      },
+      {
+        name: "数量增加",
+        wakeWords: ["补物品"],
+        cli: 'update --id {ID} --plus 3\nupdate --id {ID} --plus 2 --location "客厅/冰箱"',
+        desc: "补充库存，增加指定位置的数量",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: quantity += N + updated_at\nitems: updated_at",
+          side: "access_count +1；如原状态为\"已用完/已废弃\"，AI 必须询问新状态"
+        }
+      },
+      {
+        name: "数量减少",
+        wakeWords: ["减物品"],
+        cli: 'update --id {ID} --minus 1\nupdate --id {ID} --minus 1 --location "客厅/冰箱"',
+        desc: "消耗物品，减少指定位置的数量",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: quantity -= N + updated_at\nitems: updated_at",
+          side: "access_count +1；quantity 减到 0 时，该位置记录自动删除"
+        }
+      },
+      {
+        name: "标签更新",
+        wakeWords: ["标物品"],
+        cli: 'update --id {ID} --tags "新标签1,新标签2"',
+        desc: "覆盖式更新物品标签（先删后插）",
+        exec: {
+          tables: ["item_tags", "items"],
+          fields: "item_tags: DELETE 全部旧标签 → INSERT 新标签\nitems: updated_at",
+          side: "access_count +1；是覆盖操作，不是追加"
+        }
+      },
+      {
+        name: "标记废弃",
+        wakeWords: ["废物品"],
+        cli: 'update --id {ID} --location-status "已废弃"',
+        desc: "标记物品为废弃状态",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: location_status = '已废弃' + updated_at\nitems: updated_at",
+          side: "access_count +1；quantity 保持原值不变"
+        }
+      },
+      {
+        name: "标记借出",
+        wakeWords: ["借物品"],
+        cli: 'update --id {ID} --location-status "借用中"',
+        desc: "标记物品为借出状态",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: location_status = '借用中' + updated_at\nitems: updated_at",
+          side: "access_count +1"
+        }
+      },
+      {
+        name: "标记维修",
+        wakeWords: ["修物品"],
+        cli: 'update --id {ID} --location-status "维修中"',
+        desc: "标记物品为维修状态",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: location_status = '维修中' + updated_at\nitems: updated_at",
+          side: "access_count +1"
+        }
+      }
+    ]
+  },
+  {
+    cat: "盘点管理",
+    modules: [
+      {
+        name: "按位置盘点",
+        wakeWords: ["盘物品"],
+        cli: 'inventory --location "卧室/衣柜"',
+        desc: "盘点指定位置下的所有物品，逐个确认状态",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.* + item_locations.location/quantity/location_status\nJOIN item_locations WHERE location LIKE '%位置%'\n读取 item_tags",
+          side: "只读操作，access_count 不变；盘点中用户可触发 update 修改"
+        }
+      },
+      {
+        name: "全屋盘点",
+        wakeWords: ["盘全部"],
+        cli: "list",
+        desc: "列出全部物品，无筛选条件",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.* 全部\n读取每个物品的 item_locations 和 item_tags",
+          side: "只读操作，access_count 不变"
+        }
+      }
+    ]
+  },
+  {
+    cat: "穿搭推荐",
+    modules: [
+      {
+        name: "穿搭推荐",
+        wakeWords: ["穿什么"],
+        cli: 'list --category "衣物" --status "在家"\nlist --category "鞋帽" --status "在家"',
+        desc: "根据天气+标签推荐今日穿搭，不自动改状态",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items WHERE category IN ('衣物','鞋帽')\nJOIN item_locations WHERE location_status = '在家'\n读取 item_tags 用于季节/材质匹配",
+          side: "只读操作；AI 根据温度+天气通过 tags 匹配推荐，不改任何状态"
+        }
+      }
+    ]
+  },
+  {
+    cat: "旅游管理",
+    modules: [
+      {
+        name: "出门标记",
+        wakeWords: ["带物品"],
+        cli: 'update --id {ID} --location-status "旅游中"',
+        desc: "出门前标记要带的物品为\"旅游中\"状态",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations: location_status = '旅游中' + updated_at\nitems: updated_at",
+          side: "access_count +1"
+        }
+      },
+      {
+        name: "回家归位",
+        wakeWords: ["归物品"],
+        cli: 'search --status "旅游中"\n→ 逐个 update --id {ID} --location-status "在家"\n→ 可选 update --id {ID} --new-location "新位置" --location-status "在家"',
+        desc: "查询所有\"旅游中\"物品，逐个确认归位或换位置",
+        exec: {
+          tables: ["items", "item_locations"],
+          fields: "item_locations: location_status = '在家' + updated_at\n（可选）item_locations: location = 新位置\nitems: updated_at",
+          side: "access_count +1（每次 update 都 +1）；逐个确认，不批量修改"
+        }
+      }
+    ]
+  },
+  {
+    cat: "频率统计",
+    modules: [
+      {
+        name: "总体统计",
+        wakeWords: ["统物品"],
+        cli: "stats --type summary",
+        desc: "查看物品总数、各状态分布、分类分布",
+        exec: {
+          tables: ["items", "item_locations"],
+          fields: "items: COUNT(*)\nitem_locations: GROUP BY location_status → 各状态数量\nitems: GROUP BY category → 各分类数量",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "高频物品",
+        wakeWords: ["查高频"],
+        cli: "stats --type frequent --limit 20",
+        desc: "访问次数最多的物品 TOP N",
+        exec: {
+          tables: ["items", "item_tags"],
+          fields: "items: ORDER BY access_count DESC LIMIT N\n读取 item_tags",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "低频物品",
+        wakeWords: ["查低频"],
+        cli: "stats --type dormant --limit 20",
+        desc: "最久未访问的物品 TOP N",
+        exec: {
+          tables: ["items", "item_tags"],
+          fields: "items: WHERE last_accessed_at IS NOT NULL ORDER BY last_accessed_at ASC LIMIT N\n读取 item_tags",
+          side: "只读操作"
+        }
+      }
+    ]
+  },
+  {
+    cat: "标签管理",
+    modules: [
+      {
+        name: "列出标签",
+        wakeWords: ["看标签"],
+        cli: "tag-list",
+        desc: "列出所有标签及使用次数",
+        exec: {
+          tables: ["item_tags"],
+          fields: "SELECT tag, COUNT(*) FROM item_tags GROUP BY tag ORDER BY cnt DESC",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "合并标签",
+        wakeWords: ["合标签"],
+        cli: 'tag-merge --from "白" --to "白色"',
+        desc: "将旧标签的所有引用替换为新标签",
+        exec: {
+          tables: ["item_tags"],
+          fields: "对每个含旧标签的 item_id：\n  INSERT OR IGNORE (item_id, 新标签)\n  DELETE (item_id, 旧标签)",
+          side: "旧标签完全消失；如果新标签已存在于某物品则跳过（UNIQUE 约束）"
+        }
+      }
+    ]
+  },
+  {
+    cat: "账号管理",
+    modules: [
+      {
+        name: "查看账号",
+        wakeWords: ["查账号"],
+        cli: 'account --action list\naccount --action show --platform "XX" --master-key "XX"',
+        desc: "列出全部账号（隐藏密码）或查看指定平台的账号密码",
+        exec: {
+          tables: ["accounts"],
+          fields: "list: SELECT id, platform, username, tags, note, created_at\nshow: SELECT * WHERE platform = ? → 解密 encrypted_password",
+          side: "list 不需密钥；show 需要 master-key 验证后解密密码"
+        }
+      },
+      {
+        name: "新增账号",
+        wakeWords: ["存账号"],
+        cli: 'account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"',
+        desc: "新增账号，密码用 master-key 加密存储",
+        exec: {
+          tables: ["accounts"],
+          fields: "INSERT: platform, username, encrypted_password, tags, note, created_at, updated_at",
+          side: "platform 有 UNIQUE 约束，重复会报错；密码用 Fernet 对称加密"
+        }
+      },
+      {
+        name: "更新账号",
+        wakeWords: ["改账号"],
+        cli: 'account --action show --platform "XX" --master-key "XX"\n→ 确认后重新 account --action add（覆盖）',
+        desc: "查看当前账号后重新录入以覆盖",
+        exec: {
+          tables: ["accounts"],
+          fields: "show: 读取并解密密码\nadd: INSERT OR REPLACE platform, encrypted_password 等",
+          side: "本质是删除旧记录+插入新记录（通过 UNIQUE 约束实现覆盖）"
+        }
+      }
+    ]
+  },
+  {
+    cat: "数据健康",
+    modules: [
+      {
+        name: "数据健康检查",
+        wakeWords: ["查异常"],
+        cli: "（无 CLI，AI 执行 Lint 检查逻辑）",
+        desc: "检查标签完整性、表利用率、状态时效性、位置规范性",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "AI 执行多条只读查询：\n- items: 检查分类/位置/状态合理性\n- item_tags: 检查是否有物品无标签\n- item_locations: 检查相似位置路径、位置路径级数\n- item_locations: 检查快递中/旅游中/洗护中/维修中 是否超时",
+          side: "只读检查，不修改任何数据；发现问题后列出清单让用户确认处理"
+        }
+      }
+    ]
+  }
+];
+
+// ── Database schema (for reference) ──
+const DB_SCHEMA = [
+  { name: "items", desc: "物品主表", fields: [
+    {f:"id",t:"INTEGER",d:"主键自增"},
+    {f:"name",t:"TEXT",d:"物品名称"},
+    {f:"category",t:"TEXT",d:"大类（28类）"},
+    {f:"owner",t:"TEXT",d:"所有者（默认\"使用者\"）"},
+    {f:"purchase_price",t:"REAL",d:"单价（元/件）"},
+    {f:"remark",t:"TEXT",d:"备注"},
+    {f:"photo",t:"TEXT",d:"图片相对路径"},
+    {f:"access_count",t:"INTEGER",d:"被访问次数"},
+    {f:"last_accessed_at",t:"TIMESTAMP",d:"最后访问时间"},
+    {f:"created_at",t:"TIMESTAMP",d:"创建时间"},
+    {f:"updated_at",t:"TIMESTAMP",d:"更新时间"}
+  ]},
+  { name: "item_locations", desc: "物品位置表（支持一物多位置）", fields: [
+    {f:"id",t:"INTEGER",d:"主键自增"},
+    {f:"item_id",t:"INTEGER",d:"关联 items.id"},
+    {f:"location",t:"TEXT",d:"位置路径（如 客厅/冰箱/上层）"},
+    {f:"quantity",t:"INTEGER",d:"该位置数量（=0 时自动删除）"},
+    {f:"reason",t:"TEXT",d:"原因（可选）"},
+    {f:"location_status",t:"TEXT",d:"位置状态（在家/备用/借用中等）"},
+    {f:"purchase_date",t:"TEXT",d:"购买日期 YYYY-MM-DD"},
+    {f:"expiration_date",t:"TEXT",d:"过期日期 YYYY-MM-DD"},
+    {f:"created_at",t:"TEXT",d:"创建时间"},
+    {f:"updated_at",t:"TEXT",d:"更新时间"}
+  ]},
+  { name: "item_tags", desc: "标签表（同一物品同标签不重复）", fields: [
+    {f:"id",t:"INTEGER",d:"主键自增"},
+    {f:"item_id",t:"INTEGER",d:"关联 items.id"},
+    {f:"tag",t:"TEXT",d:"标签名"}
+  ]},
+  { name: "accounts", desc: "账号密码表（加密存储）", fields: [
+    {f:"id",t:"INTEGER",d:"主键自增"},
+    {f:"platform",t:"TEXT",d:"平台名（UNIQUE）"},
+    {f:"username",t:"TEXT",d:"用户名"},
+    {f:"encrypted_password",t:"TEXT",d:"加密后的密码"},
+    {f:"tags",t:"TEXT",d:"标签"},
+    {f:"note",t:"TEXT",d:"备注"},
+    {f:"created_at",t:"TEXT",d:"创建时间"},
+    {f:"updated_at",t:"TEXT",d:"更新时间"}
+  ]}
+];
+
+// ── Statuses ──
+const STATUSES = [
+  {s:"在家",d:"在固定位置",e:"默认状态、归位后"},
+  {s:"备用",d:"备用库存",e:"囤货、未拆封替换品"},
+  {s:"穿着中",d:"正在身上使用",e:"衣服穿在身上"},
+  {s:"旅游中",d:"带出去旅游",e:"出行前确认"},
+  {s:"洗护中",d:"在洗衣机/晾衣架",e:"脏衣服送洗"},
+  {s:"借用中",d:"借给朋友",e:"外借确认"},
+  {s:"维修中",d:"坏了在修",e:"送修确认"},
+  {s:"已用完",d:"消耗品用完",e:"quantity 归 0"},
+  {s:"快递中",d:"已下单/在配送",e:"网购等待收货"},
+  {s:"待处理",d:"需要清理或处理",e:"待整理物品"},
+  {s:"已废弃",d:"废弃了",e:"用户明确表态"}
+];
+
+// ── Render ──
+const $tabs = document.getElementById('tabs');
+const $main = document.getElementById('main');
+const $search = document.getElementById('search');
+
+// Build tabs
+let activeCat = 0;
+const allTab = document.createElement('button');
+allTab.className = 'tab active';
+allTab.textContent = '全部';
+allTab.dataset.idx = '-1';
+$tabs.appendChild(allTab);
+
+DATA.forEach((cat, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.textContent = cat.cat;
+  btn.dataset.idx = String(i);
+  $tabs.appendChild(btn);
+});
+
+// Build all content
+function render(filter = '', catIdx = -1) {
+  $main.innerHTML = '';
+  let found = false;
+  const q = filter.toLowerCase();
+
+  DATA.forEach((cat, ci) => {
+    if (catIdx !== -1 && ci !== catIdx) return;
+
+    const filtered = cat.modules.filter(m => {
+      if (!q) return true;
+      if (m.name.toLowerCase().includes(q)) return true;
+      if (m.desc.toLowerCase().includes(q)) return true;
+      return m.wakeWords.some(w => w.includes(q));
+    });
+
+    if (!filtered.length) return;
+    found = true;
+
+    const sec = document.createElement('div');
+    sec.className = 'cat-section';
+    sec.innerHTML = `<div class="cat-title">${cat.cat}</div>`;
+
+    filtered.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'mod';
+
+      // Build wake word buttons
+      const wwHtml = m.wakeWords.map(w =>
+        `<span class="ww" data-cmd="${esc(m.cli)}">${esc(w)}</span>`
+      ).join('');
+
+      // Build execution detail
+      const exec = m.exec;
+      const execHtml = `
+        <div class="exec-block">
+          <div class="exec-title">执行流程</div>
+          <div class="exec-table">
+            <strong>涉及表：</strong>${exec.tables.map(t=>'<code>'+t+'</code>').join(' ')}
+          </div>
+          <div class="exec-table" style="white-space:pre-wrap;margin-top:6px">
+            <strong>操作字段：</strong>\n${esc(exec.fields)}
+          </div>
+          <div class="exec-side">
+            <strong>副作用：</strong>${esc(exec.side)}
+          </div>
+        </div>`;
+
+      card.innerHTML = `
+        <div class="mod-header">
+          <div class="mod-left">
+            <div class="mod-name">${esc(m.name)}</div>
+            <div class="mod-desc">${esc(m.desc)}</div>
+          </div>
+          <svg class="mod-arrow" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div class="mod-body">
+          <div class="mod-inner">
+            <div style="font-size:12px;color:var(--text3);margin:12px 0 6px;font-weight:600;letter-spacing:0.3px">唤醒词</div>
+            <div class="ww-list">${wwHtml}</div>
+            <div class="cli-block">
+              <div class="cli-label">CLI 命令 <span style="font-weight:400;text-transform:none">（点击展开执行流程）</span></div>
+              <div class="cli-cmd">${esc(m.cli)}</div>
+            </div>
+            ${execHtml}
+          </div>
+        </div>
+      `;
+      sec.appendChild(card);
+    });
+
+    $main.appendChild(sec);
+  });
+
+  if (!found) {
+    $main.innerHTML = '<div class="empty">没有匹配的结果</div>';
+  }
+
+  // Bind events
+  bindEvents();
+}
+
+function bindEvents() {
+  // Module expand/collapse
+  document.querySelectorAll('.mod-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const mod = h.parentElement;
+      mod.classList.toggle('open');
+    });
+  });
+
+  // Wake word click → show CLI
+  document.querySelectorAll('.ww').forEach(ww => {
+    ww.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const mod = ww.closest('.mod');
+      const cliBlock = mod.querySelector('.cli-block');
+      const execBlock = mod.querySelector('.exec-block');
+
+      // Toggle this wake word
+      const wasExpanded = ww.classList.contains('expanded');
+
+      // Reset all wake words in this module
+      mod.querySelectorAll('.ww').forEach(w => w.classList.remove('expanded'));
+
+      if (!wasExpanded) {
+        ww.classList.add('expanded');
+        cliBlock.classList.add('show');
+        // Don't auto-show exec, let user click CLI
+      } else {
+        cliBlock.classList.remove('show');
+        execBlock.classList.remove('show');
+      }
+    });
+  });
+
+  // CLI command click → show execution flow
+  document.querySelectorAll('.cli-cmd').forEach(cmd => {
+    cmd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const mod = cmd.closest('.mod');
+      const execBlock = mod.querySelector('.exec-block');
+      execBlock.classList.toggle('show');
+    });
+  });
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Tab switching ──
+$tabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  $tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  activeCat = parseInt(btn.dataset.idx);
+  render($search.value.trim(), activeCat);
+});
+
+// ── Search ──
+let searchTimer;
+$search.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    render($search.value.trim(), activeCat);
+  }, 150);
+});
+
+// ── Initial render ──
+render();
+</script>
+</body>
+</html>

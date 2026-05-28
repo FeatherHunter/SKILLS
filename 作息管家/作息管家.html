@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息管家 - 功能与唤醒词</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:#fff;color:#1d1d1f;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+/* layout */
+.container{max-width:980px;margin:0 auto;padding:0 24px}
+.hero{padding:64px 0 40px;border-bottom:1px solid #e5e5e5}
+.hero h1{font-size:32px;font-weight:700;letter-spacing:-.5px;color:#1d1d1f}
+.hero p{font-size:15px;color:#86868b;margin-top:8px;max-width:560px}
+.stats{display:flex;gap:40px;margin-top:24px}
+.stat-item span:first-child{font-size:24px;font-weight:600;color:#1d1d1f;display:block}
+.stat-item span:last-child{font-size:12px;color:#86868b}
+
+/* search */
+.search-bar{margin:32px 0 0;position:relative}
+.search-bar input{width:100%;max-width:420px;height:40px;border:1px solid #d2d2d7;border-radius:10px;padding:0 16px 0 38px;font-size:14px;color:#1d1d1f;background:#f5f5f7;outline:none;transition:border-color .2s}
+.search-bar input:focus{border-color:#007AFF;background:#fff}
+.search-bar svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none}
+
+/* tabs */
+.tabs{display:flex;gap:0;margin:32px 0 0;border-bottom:1px solid #e5e5e5;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;color:#86868b;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;user-select:none}
+.tab:hover{color:#1d1d1f}
+.tab.active{color:#007AFF;border-bottom-color:#007AFF}
+.tab .tab-count{display:inline-block;margin-left:4px;font-size:11px;color:#86868b;background:#f5f5f7;border-radius:8px;padding:1px 6px}
+.tab.active .tab-count{color:#007AFF;background:rgba(0,122,255,.08)}
+
+/* module section */
+.module-section{padding:32px 0 0;display:none}
+.module-section.visible{display:block}
+.module-desc{font-size:13px;color:#86868b;margin-bottom:20px}
+
+/* word list */
+.word-list{border:1px solid #e5e5e5;border-radius:10px;overflow:hidden}
+.word-item{border-bottom:1px solid #e5e5e5}
+.word-item:last-child{border-bottom:none}
+.word-head{display:flex;align-items:center;padding:14px 20px;cursor:pointer;transition:background .15s;user-select:none}
+.word-head:hover{background:#f5f5f7}
+.word-name{font-size:15px;font-weight:600;color:#1d1d1f;min-width:120px;flex-shrink:0}
+.word-desc{font-size:13px;color:#86868b;flex:1;padding:0 16px}
+.word-arrow{width:16px;height:16px;color:#c7c7cc;transition:transform .2s;flex-shrink:0}
+.word-item.open .word-arrow{transform:rotate(90deg)}
+
+/* detail panel */
+.word-detail{display:none;padding:0 20px 16px;background:#fafafa;border-top:1px solid #e5e5e5}
+.word-item.open .word-detail{display:block}
+.cli-row{display:flex;align-items:flex-start;padding:10px 0;border-bottom:1px solid #e5e5e5}
+.cli-row:last-of-type{border-bottom:none}
+.cli-label{font-size:12px;color:#86868b;min-width:80px;flex-shrink:0;padding-top:1px}
+.cli-cmd{font-family:"SF Mono","Cascadia Code","Fira Code","Menlo",monospace;font-size:13px;color:#1d1d1f;background:#fff;border:1px solid #e5e5e5;border-radius:6px;padding:4px 10px;cursor:pointer;transition:border-color .15s,background .15s;display:inline-block}
+.cli-cmd:hover{border-color:#007AFF;background:rgba(0,122,255,.04)}
+.cli-cmd.active{border-color:#007AFF;background:rgba(0,122,255,.06)}
+
+/* flow panel */
+.flow-panel{display:none;margin-top:12px;padding:16px;background:#fff;border:1px solid #e5e5e5;border-radius:8px}
+.flow-panel.visible{display:block}
+.flow-title{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:10px}
+.flow-step{display:flex;align-items:flex-start;padding:6px 0;font-size:13px;color:#1d1d1f}
+.flow-step::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#007AFF;margin-top:7px;margin-right:10px;flex-shrink:0}
+.flow-table{font-size:12px;margin-top:10px;width:100%;border-collapse:collapse}
+.flow-table th{text-align:left;font-weight:500;color:#86868b;padding:6px 12px;border-bottom:1px solid #e5e5e5;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.flow-table td{padding:6px 12px;color:#1d1d1f;font-size:12px;border-bottom:1px solid #f0f0f0}
+.flow-table tr:last-child td{border-bottom:none}
+.flow-table .field-name{font-family:"SF Mono","Menlo",monospace;font-size:11px}
+.flow-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:500}
+.badge-read{color:#34c759;background:rgba(52,199,89,.08)}
+.badge-write{color:#ff9500;background:rgba(255,149,0,.08)}
+.badge-create{color:#007AFF;background:rgba(0,122,255,.08)}
+.badge-none{color:#86868b;background:rgba(134,134,139,.08)}
+.flow-note{font-size:12px;color:#86868b;margin-top:8px;padding:8px 12px;background:#f5f5f7;border-radius:6px}
+.flow-note strong{color:#1d1d1f}
+
+/* empty state */
+.empty-state{text-align:center;padding:60px 0;color:#86868b;font-size:14px}
+
+/* footer */
+.footer{margin:64px 0 32px;padding-top:24px;border-top:1px solid #e5e5e5;text-align:center;font-size:12px;color:#86868b}
+
+/* mobile */
+@media(max-width:640px){
+    .container{padding:0 16px}
+    .hero{padding:40px 0 28px}
+    .hero h1{font-size:24px}
+    .hero p{font-size:14px}
+    .stats{gap:20px;flex-wrap:wrap}
+    .stat-item span:first-child{font-size:20px}
+    .search-bar input{max-width:100%;font-size:16px}
+    .tabs{margin:24px 0 0;gap:0}
+    .tab{padding:10px 14px;font-size:12px}
+    .module-section{padding:24px 0 0}
+    .word-head{padding:12px 14px;flex-wrap:wrap;gap:4px}
+    .word-name{min-width:auto;font-size:14px}
+    .word-desc{padding:0;font-size:12px;flex-basis:100%;order:2}
+    .word-arrow{order:1;margin-left:auto}
+    .word-detail{padding:0 14px 14px}
+    .cli-row{flex-direction:column;gap:6px}
+    .cli-label{min-width:auto;font-size:11px}
+    .cli-cmd{font-size:11px;word-break:break-all;white-space:normal;display:block;width:100%;padding:8px 10px}
+    .flow-panel{padding:12px}
+    .flow-step{font-size:12px}
+    .flow-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .flow-table th,.flow-table td{white-space:nowrap;padding:5px 8px;font-size:11px}
+    .flow-note{font-size:11px;padding:6px 10px}
+    .footer{margin:40px 0 24px;font-size:11px}
+}</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="hero">
+    <h1>作息管家</h1>
+    <p>根据用户每日语录生成 0-24 点作息时间表，支持同步、摘要、查询、计划管理。所有操作通过 Python CLI 执行。</p>
+    <div class="stats">
+        <div class="stat-item"><span>19</span><span>唤醒词</span></div>
+        <div class="stat-item"><span>8</span><span>功能模块</span></div>
+        <div class="stat-item"><span>11</span><span>CLI 命令</span></div>
+        <div class="stat-item"><span>3</span><span>数据表</span></div>
+    </div>
+</div>
+
+<div class="search-bar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="搜索唤醒词或功能...">
+</div>
+
+<div class="tabs" id="tabs">
+    <div class="tab active" data-mod="all">全部 <span class="tab-count">19</span></div>
+    <div class="tab" data-mod="sync">同步 <span class="tab-count">3</span></div>
+    <div class="tab" data-mod="summary">摘要 <span class="tab-count">2</span></div>
+    <div class="tab" data-mod="query">查询 <span class="tab-count">7</span></div>
+    <div class="tab" data-mod="plan">计划 <span class="tab-count">4</span></div>
+    <div class="tab" data-mod="admin">管理 <span class="tab-count">1</span></div>
+    <div class="tab" data-mod="cron">Cron <span class="tab-count">2</span></div>
+</div>
+
+<!-- ==================== 同步模块 ==================== -->
+<div class="module-section visible" data-mod="sync">
+    <p class="module-desc">将语录消息分析为细粒度作息记录，写入 schedule_records 表。通过滑动窗口（前5后5）判断活动边界，保证时间连续。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="准备消息 prepare-messages 同步 获取消息">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">准备消息</span>
+                <span class="word-desc">获取待同步消息供 AI 分析</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-sync-prepare')">python3 scripts/schedule_cli.py prepare-messages</span>
+                </div>
+                <div class="flow-panel" id="flow-sync-prepare">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">查询 schedule_records 最后一条记录，确定游标位置（date + time_end）</div>
+                    <div class="flow-step">从 daily_recorder.db 的 user_messages 表获取游标前 10 条消息（上下文参考）</div>
+                    <div class="flow-step">获取游标时间到当前时间的所有新消息</div>
+                    <div class="flow-step">输出 JSON 格式供 AI 分析，不写入任何表</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>无写入操作。仅输出 JSON 供后续 AI 分析使用。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="同步作息 更新作息 同步 写入 记录">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">同步作息</span>
+                <span class="word-desc">完整同步流程：获取消息 → AI 分析 → 写入记录</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-sync-full')">prepare-messages → AI 分析 → add_record_full()</span>
+                </div>
+                <div class="flow-panel" id="flow-sync-full">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">调用 prepare-messages 获取游标后的所有新消息</div>
+                    <div class="flow-step">AI 用滑动窗口（前5后5条消息）判断活动边界</div>
+                    <div class="flow-step">逐条调用 add_record_full() 写入（9 字段全部必填）</div>
+                    <div class="flow-step">空白时段填充 category="未知" 的记录</div>
+                    <div class="flow-step">保证首尾相接：每条 time_start = 上一条 time_end</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息</td></tr>
+                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning</td><td>写入记录</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>向 schedule_records 表插入 N 条记录。source_contents 为消息原文（一字不差）。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="增量同步 增量 游标 继续同步">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">增量同步</span>
+                <span class="word-desc">从游标位置继续同步，不重复处理已有记录</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-sync-inc')">prepare-messages（自动取游标）→ AI → add_record_full()</span>
+                </div>
+                <div class="flow-panel" id="flow-sync-inc">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">自动查询 schedule_records 最后一条记录作为游标</div>
+                    <div class="flow-step">从游标 time_end 之后获取新消息</div>
+                    <div class="flow-step">AI 分析 + 逐条写入，与「同步作息」流程一致</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息</td></tr>
+                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">（同上 9 字段）</td><td>写入记录</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>与「同步作息」的区别：</strong>无需手动指定时间范围，自动从数据库游标继续。适用于日常定时任务。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ==================== 摘要模块 ==================== -->
+<div class="module-section" data-mod="summary">
+    <p class="module-desc">按分类汇总每日作息时间。前提条件：该日期的 schedule_records 必须已覆盖 24 小时。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="生成摘要 总结作息 摘要 汇总 分类">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">生成摘要</span>
+                <span class="word-desc">按分类汇总当日各活动时长</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-summary-gen')">python3 scripts/schedule_cli.py summary &lt;日期&gt;</span>
+                </div>
+                <div class="flow-panel" id="flow-summary-gen">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">读取 schedule_records 中该日期的所有记录</div>
+                    <div class="flow-step">按 category 分组，计算 duration_minutes 之和</div>
+                    <div class="flow-step">调用 add_summary() 写入 daily_summary 表（KV 结构）</div>
+                    <div class="flow-step">输出分类汇总（睡眠 7h、工作 4h 等）</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, category, duration_minutes</td><td>按分类汇总</td></tr>
+                        <tr><td><span class="flow-badge badge-write">UPSERT</span></td><td>schedule_data.db</td><td>daily_summary</td><td class="field-name">date, category, total_minutes</td><td>写入摘要</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>前提条件：</strong>schedule_records 必须已覆盖该日期 00:00-23:59（满 24 小时）。<br><strong>副作用：</strong>向 daily_summary 表写入 N 条记录（每个分类一条，upsert 语义）。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="汇总作息 范围汇总 日期范围 多日汇总 range">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">汇总作息</span>
+                <span class="word-desc">日期范围内的分类汇总统计</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-summary-range')">python3 scripts/schedule_cli.py range &lt;开始&gt; &lt;结束&gt;</span>
+                </div>
+                <div class="flow-panel" id="flow-summary-range">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 daily_summary 表查询指定日期范围内的所有摘要</div>
+                    <div class="flow-step">按日期分组，输出每天的分类时长和总计</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>daily_summary</td><td class="field-name">date, category, total_minutes</td><td>范围查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ==================== 查询模块 ==================== -->
+<div class="module-section" data-mod="query">
+    <p class="module-desc">多维度查询作息记录。从列表、详情、时间轴、报告等角度展示数据，支持单日和范围查询。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="查作息 作息记录 列表 今天干了什么 查看">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查作息</span>
+                <span class="word-desc">查看指定日期的作息列表（默认今天）</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-list')">python3 scripts/schedule_cli.py list [日期]</span>
+                </div>
+                <div class="flow-panel" id="flow-query-list">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 schedule_records 查询指定日期所有记录（按 time_start 排序）</div>
+                    <div class="flow-step">展示每条记录的时间段、分类、活动描述</div>
+                    <div class="flow-step">底部汇总：记录块数 + 总时长</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_start, time_end, duration_minutes, activity, category</td><td>按日期查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查作息详情 详情 推理 分析过程 detail">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查作息详情</span>
+                <span class="word-desc">含 AI 推理过程的详细展示</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-detail')">python3 scripts/schedule_cli.py detail [日期]</span>
+                </div>
+                <div class="flow-panel" id="flow-query-detail">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 schedule_records 查询指定日期所有记录</div>
+                    <div class="flow-step">展示每条记录的完整信息：活动、消息来源、消息时间、AI 推理过程</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">全部字段（含 source_contents, analysis_reasoning）</td><td>按日期查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查作息时间轴 时间轴 timeline 24小时">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查作息时间轴</span>
+                <span class="word-desc">24 小时时间轴可视化展示</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-timeline')">python3 scripts/schedule_cli.py timeline [日期]</span>
+                </div>
+                <div class="flow-panel" id="flow-query-timeline">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 schedule_records 查询指定日期所有记录</div>
+                    <div class="flow-step">按小时映射分类到 24 小时时间轴</div>
+                    <div class="flow-step">以可视化条形图展示每个时间段的活动分类</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">time_start, time_end, category</td><td>按日期查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查作息报告 报告 report 综合">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查作息报告</span>
+                <span class="word-desc">list + summary + timeline 综合报告</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-report')">python3 scripts/schedule_cli.py report [日期]</span>
+                </div>
+                <div class="flow-panel" id="flow-query-report">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">调用 list 逻辑：查询并展示作息记录列表</div>
+                    <div class="flow-step">调用 summary 逻辑：查询并展示分类汇总</div>
+                    <div class="flow-step">合并输出为完整报告</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_start, time_end, duration_minutes, activity, category</td><td>记录列表</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>daily_summary</td><td class="field-name">category, total_minutes</td><td>分类汇总</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查日期范围 日期范围 range 统计 多日">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查日期范围</span>
+                <span class="word-desc">指定日期范围内的统计</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-range')">python3 scripts/schedule_cli.py range &lt;开始&gt; &lt;结束&gt;</span>
+                </div>
+                <div class="flow-panel" id="flow-query-range">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 daily_summary 查询指定日期范围内的所有摘要</div>
+                    <div class="flow-step">按日期分组展示每天的分类时长和总计</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>daily_summary</td><td class="field-name">date, category, total_minutes</td><td>范围查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查游标 游标 同步位置 cursor">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查游标</span>
+                <span class="word-desc">查看当前同步游标位置</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-cursor')">get_last_record_full()（内部调用）</span>
+                </div>
+                <div class="flow-panel" id="flow-query-cursor">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">查询 schedule_records 中最后一条记录（ORDER BY date DESC, time_end DESC LIMIT 1）</div>
+                    <div class="flow-step">返回该记录的完整字段：日期、时间、活动、分类等</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">id, date, time_start, time_end, duration_minutes, activity, category</td><td>游标定位</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。用于确定下次增量同步的起点。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查数据库状态 状态 status 数据库 统计">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查数据库状态</span>
+                <span class="word-desc">总记录数、已记录天数、日期范围</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-query-status')">python3 scripts/schedule_cli.py status</span>
+                </div>
+                <div class="flow-panel" id="flow-query-status">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">查询 schedule_records 的总记录数（COUNT）</div>
+                    <div class="flow-step">查询已记录天数（COUNT DISTINCT date）</div>
+                    <div class="flow-step">查询日期范围（MIN/MAX date）</div>
+                    <div class="flow-step">获取最后一条记录的摘要信息</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">id, date, time_end, activity</td><td>聚合统计</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ==================== 计划模块 ==================== -->
+<div class="module-section" data-mod="plan">
+    <p class="module-desc">管理每日 24 小时计划作息。本技能只负责存储和查询，计划内容由其他技能设计。不提供删除接口。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="查作息计划 查计划 今天计划 查询计划 单日">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查作息计划</span>
+                <span class="word-desc">查询单日计划作息</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-query')">python3 scripts/schedule_cli.py query-plans &lt;日期&gt;</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-query">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">从 schedule_plans 查询指定日期的计划（hour_0 ~ hour_23）</div>
+                    <div class="flow-step">逐小时展示计划内容，未规划的时段标记为「(未规划)」</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>按日期查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="查多日计划 多日计划 多天 批量查询">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">查多日计划</span>
+                <span class="word-desc">批量查询多日计划作息</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-multi')">python3 scripts/schedule_cli.py query-plans &lt;日期1,日期2,...&gt;</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-multi">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">解析逗号分隔的日期列表</div>
+                    <div class="flow-step">从 schedule_plans 批量查询（IN 语句）</div>
+                    <div class="flow-step">逐日展示计划内容</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>批量查询</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="设作息计划 新建计划 创建计划 upsert">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">设作息计划</span>
+                <span class="word-desc">新建每日计划作息</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-create')">python3 scripts/schedule_cli.py upsert-plan &lt;日期&gt; --json '{...}'</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-create">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">解析 JSON 参数，校验必须填满 hour_0 ~ hour_23 全部 24 个小时</div>
+                    <div class="flow-step">尝试 INSERT INTO schedule_plans</div>
+                    <div class="flow-step">若日期已存在则抛出 IntegrityError，转为 UPDATE</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>新增计划</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>向 schedule_plans 表插入一条新记录（24 个小时段全部必填）。<br><strong>约束：</strong>不提供删除接口。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="更新作息计划 更新计划 修改计划 upsert">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">更新作息计划</span>
+                <span class="word-desc">更新已有的计划作息</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-update')">python3 scripts/schedule_cli.py upsert-plan &lt;日期&gt; --json '{...}'</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-update">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">解析 JSON 参数，校验必须填满 hour_0 ~ hour_23 全部 24 个小时</div>
+                    <div class="flow-step">尝试 INSERT，若日期已存在则 IntegrityError</div>
+                    <div class="flow-step">回滚后执行 UPDATE，只更新提供的字段，保留其他</div>
+                    <div class="flow-step">更新 updated_at 时间戳</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">hour_N_planned（提供的字段）, updated_at</td><td>更新计划</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>更新 schedule_plans 表中指定日期的记录。upsert 语义：不存在则插入，已存在则更新。<br><strong>约束：</strong>不提供删除接口。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ==================== 管理模块 ==================== -->
+<div class="module-section" data-mod="admin">
+    <p class="module-desc">数据库管理操作。创建数据表结构，查看数据库整体状态。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="初始化数据库 init 建表 创建表">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">初始化数据库</span>
+                <span class="word-desc">创建三张核心数据表</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-admin-init')">python3 scripts/schedule_cli.py init</span>
+                </div>
+                <div class="flow-panel" id="flow-admin-init">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">CREATE TABLE IF NOT EXISTS schedule_records（作息记录主表，11 字段）</div>
+                    <div class="flow-step">CREATE TABLE IF NOT EXISTS daily_summary（每日摘要，KV 结构，联合主键）</div>
+                    <div class="flow-step">CREATE TABLE IF NOT EXISTS schedule_plans（计划作息，24 小时字段）</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>说明</th></tr>
+                        <tr><td><span class="flow-badge badge-create">CREATE</span></td><td>schedule_data.db</td><td>schedule_records</td><td>id, date, time_start, time_end, duration_minutes, activity, category, source_contents, source_timestamps, analysis_reasoning, created_at</td></tr>
+                        <tr><td><span class="flow-badge badge-create">CREATE</span></td><td>schedule_data.db</td><td>daily_summary</td><td>date, category, total_minutes, generated_at（主键: date+category）</td></tr>
+                        <tr><td><span class="flow-badge badge-create">CREATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td>date, hour_0_planned ~ hour_23_planned, created_at, updated_at（主键: date）</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>CREATE TABLE IF NOT EXISTS，已存在则跳过，不会覆盖已有数据。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ==================== Cron 模块 ==================== -->
+<div class="module-section" data-mod="cron">
+    <p class="module-desc">定时任务配置。定时同步静默写入不推送，每日报告验证满 24 小时后生成摘要并推送。</p>
+    <div class="word-list">
+
+        <div class="word-item" data-keywords="配置定时同步 定时同步 cron 自动同步">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">配置定时同步</span>
+                <span class="word-desc">每 3 小时自动同步作息记录</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">Cron 调度</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-cron-sync')">0 */3 * * *（每 3 小时整点）</span>
+                </div>
+                <div class="flow-panel" id="flow-cron-sync">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">isolated 会话，Asia/Shanghai 时区</div>
+                    <div class="flow-step">调用 prepare-messages 获取游标到当前时间的消息</div>
+                    <div class="flow-step">AI 分析消息 → 生成细粒度作息记录</div>
+                    <div class="flow-step">空白时间段补 category='未知'</div>
+                    <div class="flow-step">调用 add_record_full() 逐条写入</div>
+                    <div class="flow-step">保证记录首尾相接（time_start = 上一条 time_end）</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息</td></tr>
+                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">（同上 9 字段）</td><td>写入记录</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>静默写入 schedule_records，不推送任何消息。<br><strong>超时：</strong>300 秒。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="配置每日报告 每日报告 cron 报告 推送">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">配置每日报告</span>
+                <span class="word-desc">每日 07:30 验证并推送作息报告</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">Cron 调度</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-cron-report')">30 7 * * *（每日 07:30）</span>
+                </div>
+                <div class="flow-panel" id="flow-cron-report">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">读取昨日（date - 1）的 schedule_records</div>
+                    <div class="flow-step">验证是否覆盖 00:00-23:59（满 24 小时）</div>
+                    <div class="flow-step">不满 24 小时 → 推送警告，告知哪里不完整</div>
+                    <div class="flow-step">满 24 小时 → 调用 add_summary() 按分类写入 daily_summary</div>
+                    <div class="flow-step">生成 HTML 作息报告（无 emoji，可用 SVG）</div>
+                    <div class="flow-step">通过 WeChat 发送报告给用户</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_start, time_end, duration_minutes, activity, category</td><td>验证完整性</td></tr>
+                        <tr><td><span class="flow-badge badge-write">UPSERT</span></td><td>schedule_data.db</td><td>daily_summary</td><td class="field-name">date, category, total_minutes</td><td>写入摘要</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用：</strong>向 daily_summary 写入摘要 + 通过 WeChat 推送报告。<br><strong>超时：</strong>600 秒。<br><strong>推送渠道：</strong>WeChat（openclaw-weixin）。</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="empty-state" id="emptyState" style="display:none">
+    没有匹配的唤醒词
+</div>
+
+<div class="footer">
+    作息管家 v2026-05-22 &middot; 所有操作通过 Python CLI 执行 &middot; 禁止直连数据库 &middot; 禁止 DELETE
+</div>
+
+</div>
+
+<script>
+// tab switching
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.module-section');
+tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const mod = tab.dataset.mod;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        sections.forEach(s => {
+            if (mod === 'all') {
+                s.classList.add('visible');
+            } else {
+                s.classList.toggle('visible', s.dataset.mod === mod);
+            }
+        });
+        applyFilter();
+    });
+});
+
+// search
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', applyFilter);
+
+function applyFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    const activeMod = document.querySelector('.tab.active').dataset.mod;
+    let anyVisible = false;
+
+    sections.forEach(s => {
+        const modMatch = activeMod === 'all' || s.dataset.mod === activeMod;
+        if (!modMatch) {
+            s.classList.remove('visible');
+            return;
+        }
+        s.classList.add('visible');
+        let sectionHasVisible = false;
+        const items = s.querySelectorAll('.word-item');
+        items.forEach(item => {
+            const keywords = (item.dataset.keywords || '').toLowerCase();
+            const name = item.querySelector('.word-name').textContent.toLowerCase();
+            const desc = item.querySelector('.word-desc').textContent.toLowerCase();
+            const match = !q || keywords.includes(q) || name.includes(q) || desc.includes(q);
+            item.style.display = match ? '' : 'none';
+            if (match) sectionHasVisible = true;
+        });
+        if (!sectionHasVisible) s.classList.remove('visible');
+        else anyVisible = true;
+    });
+
+    document.getElementById('emptyState').style.display = anyVisible ? 'none' : '';
+}
+
+// toggle word detail
+function toggleWord(head) {
+    const item = head.parentElement;
+    const wasOpen = item.classList.contains('open');
+    // close all others
+    document.querySelectorAll('.word-item.open').forEach(i => {
+        if (i !== item) i.classList.remove('open');
+    });
+    item.classList.toggle('open', !wasOpen);
+}
+
+// toggle flow panel
+function toggleFlow(cmd, flowId) {
+    const panel = document.getElementById(flowId);
+    if (!panel) return;
+    const wasVisible = panel.classList.contains('visible');
+    // close all others in same detail
+    const detail = cmd.closest('.word-detail');
+    detail.querySelectorAll('.flow-panel.visible').forEach(p => {
+        if (p !== panel) p.classList.remove('visible');
+    });
+    detail.querySelectorAll('.cli-cmd.active').forEach(c => {
+        if (c !== cmd) c.classList.remove('active');
+    });
+    panel.classList.toggle('visible', !wasVisible);
+    cmd.classList.toggle('active', !wasVisible);
+}
+</script>
+
+</body>
+</html>

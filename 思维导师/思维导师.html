@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思维导师</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;
+    --bg:#FAFAFA;
+    --white:#FFF;
+    --text:#1D1D1F;
+    --text2:#6E6E73;
+    --line:#E5E5EA;
+    --radius:10px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
+  }
+  body{
+    font-family:var(--font);
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Header */
+  .header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(250,250,250,0.85);
+    backdrop-filter:saturate(180%) blur(20px);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:0.5px solid var(--line);
+  }
+  .header-inner{
+    max-width:720px;margin:0 auto;padding:16px 20px 0;
+  }
+  .header h1{
+    font-size:28px;font-weight:700;letter-spacing:-0.5px;
+    margin-bottom:4px;
+  }
+  .header .sub{
+    font-size:13px;color:var(--text2);margin-bottom:14px;
+  }
+
+  /* Search */
+  .search-wrap{
+    position:relative;margin-bottom:14px;
+  }
+  .search-wrap svg{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:16px;height:16px;color:var(--text2);pointer-events:none;
+  }
+  .search{
+    width:100%;padding:10px 14px 10px 36px;
+    font-size:15px;font-family:var(--font);
+    background:var(--white);color:var(--text);
+    border:0.5px solid var(--line);border-radius:var(--radius);
+    outline:none;transition:border-color .2s;
+  }
+  .search:focus{border-color:var(--blue)}
+  .search::placeholder{color:#AEAEB2}
+
+  /* Tabs */
+  .tabs{
+    display:flex;gap:0;border-bottom:0.5px solid var(--line);
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{
+    flex:none;
+    padding:8px 16px 10px;
+    font-size:13px;font-weight:500;
+    color:var(--text2);
+    background:none;border:none;
+    cursor:pointer;position:relative;
+    white-space:nowrap;
+    transition:color .2s;
+    font-family:var(--font);
+  }
+  .tab.active{color:var(--blue)}
+  .tab.active::after{
+    content:"";position:absolute;bottom:0;left:8px;right:8px;
+    height:2px;background:var(--blue);border-radius:1px;
+  }
+  .tab:hover{color:var(--text)}
+
+  /* Content */
+  .content{
+    max-width:720px;margin:0 auto;padding:8px 20px 60px;
+  }
+
+  /* Section */
+  .section{display:none}
+  .section.active{display:block}
+
+  /* Category label */
+  .cat-label{
+    font-size:11px;font-weight:600;letter-spacing:0.5px;
+    text-transform:uppercase;color:var(--text2);
+    margin:24px 0 8px;padding:0 2px;
+  }
+  .cat-label:first-child{margin-top:16px}
+
+  /* Card */
+  .card{
+    background:var(--white);
+    border:0.5px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:8px;
+    overflow:hidden;
+    transition:border-color .2s;
+  }
+  .card:hover{border-color:#C7C7CC}
+  .card.hidden{display:none}
+
+  .card-head{
+    padding:14px 16px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .card-head:active{background:#F2F2F7}
+
+  .card-title{
+    font-size:16px;font-weight:600;color:var(--text);
+  }
+  .card-trigger{
+    font-size:13px;color:var(--text2);margin-top:2px;
+  }
+  .card-trigger span{
+    color:var(--blue);cursor:pointer;
+  }
+  .card-trigger span:hover{text-decoration:underline}
+
+  .card-arrow{
+    width:20px;height:20px;color:#C7C7CC;
+    flex-shrink:0;transition:transform .25s;
+  }
+  .card.open .card-arrow{transform:rotate(90deg)}
+
+  /* Detail panel */
+  .card-detail{
+    max-height:0;overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  .card.open .card-detail{
+    max-height:800px;
+  }
+  .card-detail-inner{
+    padding:0 16px 16px;
+    border-top:0.5px solid var(--line);
+  }
+
+  .detail-section{
+    margin-top:14px;
+  }
+  .detail-label{
+    font-size:11px;font-weight:600;letter-spacing:0.5px;
+    text-transform:uppercase;color:var(--text2);
+    margin-bottom:6px;
+  }
+  .detail-text{
+    font-size:14px;color:var(--text);line-height:1.65;
+  }
+
+  /* Trigger pills */
+  .triggers{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;
+  }
+  .trigger-pill{
+    display:inline-block;
+    padding:4px 12px;
+    font-size:13px;font-weight:500;
+    color:var(--blue);
+    background:rgba(0,122,255,0.08);
+    border-radius:14px;
+    cursor:pointer;
+    transition:background .15s;
+    font-family:var(--font);
+    border:none;
+  }
+  .trigger-pill:hover{background:rgba(0,122,255,0.15)}
+
+  /* CLI block */
+  .cli-block{
+    margin-top:8px;
+    background:#F5F5F7;
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:13px;
+    font-family:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    color:var(--text);
+    line-height:1.6;
+    word-break:break-all;
+    cursor:pointer;
+    position:relative;
+    transition:background .15s;
+  }
+  .cli-block:hover{background:#ECECF0}
+  .cli-block .cli-hint{
+    position:absolute;top:8px;right:10px;
+    font-size:10px;color:var(--text2);
+    font-family:var(--font);
+  }
+
+  /* Execution flow */
+  .flow{
+    margin-top:8px;
+    padding:12px 14px;
+    background:#F5F5F7;
+    border-radius:8px;
+    font-size:13px;
+    color:var(--text);
+    line-height:1.7;
+    display:none;
+  }
+  .flow.show{display:block}
+  .flow ol{
+    padding-left:18px;margin:0;
+  }
+  .flow li{
+    margin-bottom:4px;
+  }
+  .flow li:last-child{margin-bottom:0}
+  .flow .side-effect{
+    margin-top:8px;padding-top:8px;
+    border-top:0.5px solid var(--line);
+    font-size:12px;color:var(--text2);
+  }
+
+  /* Description */
+  .desc{
+    font-size:14px;color:var(--text2);line-height:1.6;
+    margin-top:4px;
+  }
+
+  /* Mode badge */
+  .mode-badge{
+    display:inline-block;
+    padding:2px 8px;
+    font-size:11px;font-weight:600;
+    color:var(--text2);
+    background:#F2F2F7;
+    border-radius:6px;
+    margin-left:8px;
+    vertical-align:middle;
+  }
+
+  /* Empty state */
+  .empty{
+    text-align:center;padding:60px 20px;
+    color:var(--text2);font-size:15px;
+  }
+
+  /* Mobile */
+  @media(max-width:480px){
+    .header h1{font-size:24px}
+    .content{padding:8px 16px 40px}
+    .card-head{padding:12px 14px}
+    .card-title{font-size:15px}
+    .card-detail-inner{padding:0 14px 14px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>思维导师</h1>
+    <div class="sub">模糊问题 → 精准提问，生成威力强大的元提示模板</div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="17" y2="17"/>
+      </svg>
+      <input class="search" id="search" type="text" placeholder="搜索唤醒词…" autocomplete="off">
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-cat="all">全部</button>
+      <button class="tab" data-cat="A">元提示检索</button>
+      <button class="tab" data-cat="B">问题优化</button>
+      <button class="tab" data-cat="C">直接套用</button>
+    </div>
+  </div>
+</div>
+
+<div class="content" id="content"></div>
+
+<script>
+const DATA = [
+  {
+    cat:"A", catLabel:"A. 元提示检索",
+    name:"获取模板",
+    triggers:["获取模板"],
+    mode:"模式一",
+    desc:"列出全部预置元提示，含适用场景说明",
+    cli:"获取模板",
+    cliDetail:"列出全部4个预置元提示，说明每个的适用场景和效果。",
+    flow:[
+      "读取预置元提示库（4个模板）",
+      "逐个展示：名称、适用场景、提示模板全文",
+      "输出为结构化列表"
+    ],
+    sideEffect:"无副作用，只读操作"
+  },
+  {
+    cat:"A", catLabel:"A. 元提示检索",
+    name:"分析场景",
+    triggers:["分析场景"],
+    mode:"模式一",
+    desc:"根据用户描述的场景，推荐最合适的元提示",
+    cli:"分析场景 [场景描述]",
+    cliDetail:"分析场景 → 推荐1-3个元提示 → 说明理由",
+    flow:[
+      "解析用户输入的场景描述",
+      "匹配预置元提示库中的适用场景",
+      "输出推荐的1-3个元提示及适用理由"
+    ],
+    sideEffect:"无副作用，只读操作"
+  },
+  {
+    cat:"B", catLabel:"B. 问题优化",
+    name:"追问澄清",
+    triggers:["追问澄清"],
+    mode:"模式二",
+    desc:"模式二总入口：追问→优化提问→生成专属提示",
+    cli:"追问澄清 [问题描述]",
+    cliDetail:"追问2-3个问题 → 优化提问 → 生成专属元提示",
+    flow:[
+      "解析用户原始问题",
+      "生成2-3个澄清性追问（目标、背景、约束）",
+      "基于追问结果优化提问，输出精准问法",
+      "可选：生成针对此场景的专属元提示模板"
+    ],
+    sideEffect:"无副作用，纯文本生成"
+  },
+  {
+    cat:"B", catLabel:"B. 问题优化",
+    name:"优化提问",
+    triggers:["优化提问"],
+    mode:"模式二",
+    desc:"单独优化提问质量，输出精准问法",
+    cli:"优化提问 [原始问题]",
+    cliDetail:"直接优化用户提问，输出清晰精准的问法示例",
+    flow:[
+      "解析用户原始问题",
+      "识别模糊、遗漏、歧义之处",
+      "输出优化后的精准问法"
+    ],
+    sideEffect:"无副作用，纯文本生成"
+  },
+  {
+    cat:"B", catLabel:"B. 问题优化",
+    name:"生成提示",
+    triggers:["生成提示"],
+    mode:"模式二",
+    desc:"为具体问题生成专属元提示模板",
+    cli:"生成提示 [具体问题]",
+    cliDetail:"跳过追问，直接为具体问题生成专属元提示模板",
+    flow:[
+      "解析用户提供的具体问题/场景",
+      "分析问题类型和所需思维模式",
+      "生成针对性的元提示模板"
+    ],
+    sideEffect:"无副作用，纯文本生成"
+  },
+  {
+    cat:"C", catLabel:"C. 直接套用",
+    name:"深度分析",
+    triggers:["深度分析"],
+    mode:"模式一",
+    desc:"套用元提示一：多维度深度分析",
+    cli:"深度分析 [主题]",
+    cliDetail:"直接调用元提示一，要求用户填入[主题]",
+    flow:[
+      "展示元提示一模板（深度分析型）",
+      "要求用户填入[主题]",
+      "按模板6个维度逐一分析：本质、误解、证据、边界、判断、弱点"
+    ],
+    sideEffect:"无副作用，纯文本生成",
+    template:`你是一个深度思考者。请从多个维度分析[主题]：
+1. 本质是什么？
+2. 有哪些常见的误解？
+3. 支持和反对的证据分别是什么？
+4. 这个问题的边界在哪里？
+5. 如果你必须做一个判断，会是什么？
+6. 你最强的那个结论，弱点在哪里？`
+  },
+  {
+    cat:"C", catLabel:"C. 直接套用",
+    name:"追问思路",
+    triggers:["追问思路"],
+    mode:"模式一",
+    desc:"套用元提示二：苏格拉底式追问",
+    cli:"追问思路 [主题]",
+    cliDetail:"直接调用元提示二，要求用户填入[主题]",
+    flow:[
+      "展示元提示二模板（苏格拉底追问型）",
+      "要求用户填入[主题]",
+      "按模板执行：列出观点→质疑→新视角→反问"
+    ],
+    sideEffect:"无副作用，纯文本生成",
+    template:`请用苏格拉底式追问帮助我思考[主题]：
+1. 先列出我当前的观点或核心假设
+2. 提出3个最有力的质疑
+3. 找到一个我没有考虑到的视角
+4. 如果你是我，会问什么我没想到的问题？`
+  },
+  {
+    cat:"C", catLabel:"C. 直接套用",
+    name:"拆解问题",
+    triggers:["拆解问题"],
+    mode:"模式一",
+    desc:"套用元提示三：第一性原理拆解",
+    cli:"拆解问题 [主题]",
+    cliDetail:"直接调用元提示三，要求用户填入[主题]",
+    flow:[
+      "展示元提示三模板（第一性原理拆解型）",
+      "要求用户填入[主题]",
+      "按模板执行：基本单元→不可变真理→去假设→颠覆常识→原创见解"
+    ],
+    sideEffect:"无副作用，纯文本生成",
+    template:`请用第一性原理分析[主题]：
+1. 这个问题的基本组成单元是什么？
+2. 哪些是真正不可改变的真理？
+3. 如果去掉所有假设，会是什么？
+4. 有什么被大多数人默认为常识，但其实可以颠覆的？
+5. 基于以上，你的原创见解是什么？`
+  },
+  {
+    cat:"C", catLabel:"C. 直接套用",
+    name:"分析决策",
+    triggers:["分析决策"],
+    mode:"模式一",
+    desc:"套用元提示四：决策博弈分析",
+    cli:"分析决策 [我的处境]",
+    cliDetail:"直接调用元提示四，要求用户填入[我的处境]",
+    flow:[
+      "展示元提示四模板（决策博弈型）",
+      "要求用户填入[我的处境]",
+      "按模板执行：最坏→最好→最可能→10年回头看→不可逆→推荐"
+    ],
+    sideEffect:"无副作用，纯文本生成",
+    template:`你是一个残酷的决策分析师。请分析[我的处境]：
+1. 每个选项最坏的结果是什么？
+2. 每个选项最好的结果是什么？
+3. 最可能的结果是什么？
+4. 如果我10年后回头看，会后悔什么？
+5. 有没有什么选择是"没有回头路"的？
+6. 给我一个你会怎么选的答案，然后告诉我为什么。`
+  }
+];
+
+const content = document.getElementById('content');
+const searchInput = document.getElementById('search');
+const tabsEl = document.getElementById('tabs');
+let activeCat = 'all';
+let searchQuery = '';
+
+function render() {
+  const filtered = DATA.filter(d => {
+    const catMatch = activeCat === 'all' || d.cat === activeCat;
+    const q = searchQuery.trim().toLowerCase();
+    const searchMatch = !q ||
+      d.name.toLowerCase().includes(q) ||
+      d.triggers.some(t => t.toLowerCase().includes(q)) ||
+      d.desc.toLowerCase().includes(q);
+    return catMatch && searchMatch;
+  });
+
+  if (!filtered.length) {
+    content.innerHTML = '<div class="empty">没有匹配的唤醒词</div>';
+    return;
+  }
+
+  let html = '';
+  let lastCat = '';
+
+  filtered.forEach((d, i) => {
+    if (d.catLabel !== lastCat) {
+      lastCat = d.catLabel;
+      html += `<div class="cat-label">${d.catLabel}</div>`;
+    }
+    html += cardHTML(d, i);
+  });
+
+  content.innerHTML = html;
+  bindCards();
+}
+
+function cardHTML(d, i) {
+  const triggersHTML = d.triggers.map(t =>
+    `<span class="trigger-pill" data-trigger="${t}">${t}</span>`
+  ).join('');
+
+  const flowHTML = d.flow.map(s => `<li>${s}</li>`).join('');
+  const templateHTML = d.template
+    ? `<div class="detail-section">
+         <div class="detail-label">提示模板</div>
+         <div class="cli-block" style="cursor:default">${escHtml(d.template)}</div>
+       </div>`
+    : '';
+
+  return `<div class="card" data-idx="${i}">
+    <div class="card-head">
+      <div>
+        <div class="card-title">${escHtml(d.name)}<span class="mode-badge">${d.mode}</span></div>
+        <div class="card-trigger">${triggersHTML}</div>
+      </div>
+      <svg class="card-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 4 13 10 7 16"/></svg>
+    </div>
+    <div class="card-detail">
+      <div class="card-detail-inner">
+        <div class="detail-section">
+          <div class="detail-label">说明</div>
+          <div class="desc">${escHtml(d.desc)}</div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-label">CLI 命令</div>
+          <div class="cli-block" data-flow-target="${i}">
+            ${escHtml(d.cli)}
+            <span class="cli-hint">点击展开流程 ▾</span>
+          </div>
+          <div class="flow" id="flow-${i}">
+            <ol>${flowHTML}</ol>
+            <div class="side-effect">副作用：${escHtml(d.sideEffect)}</div>
+          </div>
+        </div>
+        ${templateHTML}
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function bindCards() {
+  // Card toggle
+  document.querySelectorAll('.card-head').forEach(el => {
+    el.addEventListener('click', () => {
+      el.closest('.card').classList.toggle('open');
+    });
+  });
+
+  // CLI flow toggle
+  document.querySelectorAll('.cli-block[data-flow-target]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = el.getAttribute('data-flow-target');
+      const flow = document.getElementById('flow-' + idx);
+      flow.classList.toggle('show');
+    });
+  });
+
+  // Trigger pill → filter
+  document.querySelectorAll('.trigger-pill').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      searchInput.value = el.getAttribute('data-trigger');
+      searchQuery = searchInput.value;
+      render();
+    });
+  });
+}
+
+// Tabs
+tabsEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  tabsEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  activeCat = btn.getAttribute('data-cat');
+  render();
+});
+
+// Search
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  render();
+});
+
+// Init
+render();
+</script>
+</body>
+</html>

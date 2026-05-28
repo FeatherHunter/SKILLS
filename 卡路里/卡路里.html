@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>卡路里 - 技能手册</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--blue:#007AFF;--bg:#FAFAFA;--card:#FFF;--line:#E5E5EA;--text:#1C1C1E;--sub:#8E8E93;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+/* Header */
+.header{padding:48px 20px 20px;text-align:center;background:var(--card);border-bottom:0.5px solid var(--line)}
+.header h1{font-size:28px;font-weight:600;letter-spacing:-0.5px}
+.header p{font-size:13px;color:var(--sub);margin-top:4px}
+/* Search */
+.search-wrap{padding:16px 20px 12px;background:var(--card);position:sticky;top:0;z-index:100;border-bottom:0.5px solid var(--line)}
+.search-box{position:relative;max-width:600px;margin:0 auto}
+.search-box input{width:100%;height:36px;border:none;border-radius:10px;background:#F2F2F7;font-size:15px;padding:0 12px 0 32px;font-family:var(--font);outline:none;color:var(--text)}
+.search-box input:focus{box-shadow:0 0 0 2px rgba(0,122,255,0.3)}
+.search-box::before{content:"";position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238E8E93'%3E%3Cpath d='M8.5 3a5.5 5.5 0 014.383 8.823l3.647 3.647a.75.75 0 01-1.06 1.06l-3.647-3.647A5.5 5.5 0 118.5 3zm0 1.5a4 4 0 100 8 4 4 0 000-8z'/%3E%3C/svg%3E") no-repeat center/contain}
+.search-hint{font-size:12px;color:var(--sub);text-align:center;margin-top:6px;max-width:600px;margin-left:auto;margin-right:auto}
+/* Tabs */
+.tabs{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:0 16px;background:var(--card);border-bottom:0.5px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:10px 14px;font-size:13px;font-weight:500;color:var(--sub);border:none;background:none;cursor:pointer;position:relative;white-space:nowrap;font-family:var(--font);transition:color 0.2s}
+.tab.active{color:var(--blue);font-weight:600}
+.tab.active::after{content:"";position:absolute;bottom:0;left:14px;right:14px;height:2px;background:var(--blue);border-radius:1px}
+/* Content */
+.content{max-width:720px;margin:0 auto;padding:0 16px 80px}
+.section{display:none}
+.section.active{display:block}
+.section-title{font-size:20px;font-weight:600;padding:24px 0 12px;letter-spacing:-0.3px}
+/* Module card */
+.module{background:var(--card);border-radius:12px;margin-bottom:12px;overflow:hidden;border:0.5px solid var(--line)}
+.module-head{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;-webkit-tap-highlight-color:transparent}
+.module-name{font-size:15px;font-weight:600}
+.module-desc{font-size:12px;color:var(--sub);margin-top:2px}
+.module-arrow{font-size:11px;color:var(--sub);transition:transform 0.25s;flex-shrink:0;margin-left:12px}
+.module.open .module-arrow{transform:rotate(90deg)}
+.module-body{display:none;padding:0 16px 14px}
+.module.open .module-body{display:block}
+/* Trigger word */
+.trigger{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;margin:3px 4px 3px 0;border-radius:8px;background:#F2F2F7;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;-webkit-tap-highlight-color:transparent;border:1px solid transparent}
+.trigger:hover{background:#E8E8ED}
+.trigger.active{background:rgba(0,122,255,0.1);color:var(--blue);border-color:rgba(0,122,255,0.2)}
+/* CLI detail panel */
+.cli-detail{margin-top:10px;padding:12px 14px;background:#F9F9FB;border-radius:10px;display:none;font-size:13px;border:0.5px solid var(--line)}
+.cli-detail.show{display:block}
+.cli-cmd{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px;color:var(--blue);background:rgba(0,122,255,0.06);padding:6px 10px;border-radius:6px;margin:8px 0;word-break:break-all;cursor:pointer;transition:background 0.15s;position:relative}
+.cli-cmd:hover{background:rgba(0,122,255,0.12)}
+.cli-cmd::after{content:"点击查看详情";font-size:10px;color:var(--sub);font-family:var(--font);margin-left:8px;font-weight:400}
+/* Flow panel */
+.flow-panel{margin-top:8px;padding:12px 14px;background:#FFF;border-radius:8px;border:0.5px solid var(--line);display:none;font-size:12px}
+.flow-panel.show{display:block}
+.flow-panel h4{font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.flow-table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12px}
+.flow-table th{text-align:left;font-weight:500;color:var(--sub);padding:4px 8px;border-bottom:0.5px solid var(--line);font-size:11px}
+.flow-table td{padding:4px 8px;border-bottom:0.5px solid #F2F2F7;font-size:12px}
+.flow-table code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px;color:var(--blue);background:rgba(0,122,255,0.06);padding:1px 4px;border-radius:3px}
+.flow-tag{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;margin-right:4px;font-weight:500}
+.flow-tag.read{background:#E8F5E9;color:#2E7D32}
+.flow-tag.write{background:#FFF3E0;color:#E65100}
+.flow-tag.side{background:#F3E5F5;color:#7B1FA2}
+/* Section divider */
+.divider{height:0.5px;background:var(--line);margin:16px 0}
+/* Responsive */
+@media(max-width:374px){
+  .tab{padding:10px 10px;font-size:12px}
+  .trigger{font-size:12px;padding:5px 10px}
+}
+/* Skeleton */
+.no-result{text-align:center;padding:60px 20px;color:var(--sub);font-size:14px}
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.cli-detail.show,.flow-panel.show{animation:fadeIn 0.2s ease}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>卡路里</h1>
+  <p>饮食热量 · 体重 · 运动 · 睡眠 · 营养追踪与分析</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="搜索唤醒词..." autocomplete="off" />
+  </div>
+  <div class="search-hint" id="searchHint">共 48 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-cat="diet">饮食记录</button>
+  <button class="tab" data-cat="product">食品库</button>
+  <button class="tab" data-cat="weight">体重</button>
+  <button class="tab" data-cat="exercise">运动</button>
+  <button class="tab" data-cat="fitness">健身目标</button>
+  <button class="tab" data-cat="sleep">睡眠</button>
+  <button class="tab" data-cat="analysis">分析</button>
+  <button class="tab" data-cat="general">综合</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<script>
+// ========== DATA ==========
+const DATA = {
+  diet: {
+    title: "饮食记录",
+    modules: [
+      {
+        name: "记吃了",
+        desc: "记录饮食（库匹配/图片识别/外部搜索统一入口）",
+        triggers: [
+          {
+            word: "记吃了",
+            cli: "python scripts/calorie_tracker.py add <食物名> <热量> <蛋白> [碳水] [脂肪] [克数] [备注]",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "entries", fields: "date, time, food_name, grams, calories, protein, carbs, fat, note", op: "写入" },
+                { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal", op: "读取" }
+              ],
+              sideEffects: "自动推断餐次（按时间）、计算今日汇总、对比目标显示剩余/超标"
+            }
+          }
+        ]
+      },
+      {
+        name: "拍营养表",
+        desc: "图片识别营养成分表并记录",
+        triggers: [
+          {
+            word: "拍营养表",
+            cli: "mmx vision describe → calorie_tracker.py add-product → add",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "nutrition_products", fields: "product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium", op: "写入" },
+                { name: "entries", fields: "date, time, food_name, grams, calories, protein, carbs, fat", op: "写入" }
+              ],
+              sideEffects: "先调用 mmx vision 识别图片 → 展示结果 → 用户确认后存库并记录"
+            }
+          }
+        ]
+      },
+      {
+        name: "删吃的",
+        desc: "删除饮食记录",
+        triggers: [
+          {
+            word: "删吃的",
+            cli: "python scripts/calorie_tracker.py delete <id>",
+            flow: {
+              operation: "DELETE",
+              tables: [
+                { name: "entries", fields: "id（指定记录）", op: "删除" }
+              ],
+              sideEffects: "无副作用，仅删除指定条目"
+            }
+          }
+        ]
+      },
+      {
+        name: "查今天吃",
+        desc: "今日饮食摘要（vs 目标）",
+        triggers: [
+          {
+            word: "查今天吃",
+            cli: "python scripts/calorie_tracker.py summary",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "SUM(calories), SUM(protein), SUM(carbs), SUM(fat), COUNT(*)", op: "读取" },
+                { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal", op: "读取" }
+              ],
+              sideEffects: "无副作用，只读查询"
+            }
+          }
+        ]
+      },
+      {
+        name: "查吃的记录",
+        desc: "今日逐条饮食记录",
+        triggers: [
+          {
+            word: "查吃的记录",
+            cli: "python scripts/calorie_tracker.py list",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "id, food_name, grams, calories, protein, carbs, fat, time, note", op: "读取" }
+              ],
+              sideEffects: "无副作用，按时间排序显示当日全部记录"
+            }
+          }
+        ]
+      },
+      {
+        name: "查热量历史",
+        desc: "最近 N 天热量摄入历史",
+        triggers: [
+          {
+            word: "查热量历史",
+            cli: "python scripts/calorie_tracker.py history [天数]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "date, SUM(calories), SUM(protein), SUM(carbs), SUM(fat)", op: "读取" },
+                { name: "daily_goal", fields: "calorie_goal", op: "读取" }
+              ],
+              sideEffects: "无副作用，按日期分组聚合显示每日汇总与目标对比"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  product: {
+    title: "食品库",
+    modules: [
+      {
+        name: "查热量",
+        desc: "搜索食品营养成分",
+        triggers: [
+          {
+            word: "查热量",
+            cli: 'python scripts/calorie_tracker.py search-product "<关键词>"',
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "nutrition_products", fields: "id, product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note, updated_at", op: "读取" }
+              ],
+              sideEffects: "无副作用，模糊匹配 product_name 和 brand"
+            }
+          }
+        ]
+      },
+      {
+        name: "存食品",
+        desc: "添加食品营养成分表到库",
+        triggers: [
+          {
+            word: "存食品",
+            cli: 'python scripts/calorie_tracker.py add-product "<产品名>" "<品牌>" <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注]',
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "nutrition_products", fields: "product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note", op: "写入" }
+              ],
+              sideEffects: "新增一条食品营养成分记录，返回自增 ID"
+            }
+          }
+        ]
+      },
+      {
+        name: "改食品",
+        desc: "更新食品营养成分",
+        triggers: [
+          {
+            word: "改食品",
+            cli: "python scripts/calorie_tracker.py update-product <id> [--字段 值]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "nutrition_products", fields: "可选字段: product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note + updated_at", op: "更新" }
+              ],
+              sideEffects: "自动更新 updated_at 时间戳"
+            }
+          }
+        ]
+      },
+      {
+        name: "查食品库",
+        desc: "列出全部食品营养成分",
+        triggers: [
+          {
+            word: "查食品库",
+            cli: "python scripts/calorie_tracker.py list-products [数量]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "nutrition_products", fields: "id, product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, note, created_at", op: "读取" }
+              ],
+              sideEffects: "无副作用，按 updated_at 倒序，默认最多 50 条"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  weight: {
+    title: "体重",
+    modules: [
+      {
+        name: "记体重",
+        desc: "记录体重（自动算 BMI）",
+        triggers: [
+          {
+            word: "记体重",
+            cli: "python scripts/calorie_tracker.py weight <体重kg> [身高cm] [备注]",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "weight_log", fields: "date, time, weight_kg, height_cm, bmi, note", op: "写入" }
+              ],
+              sideEffects: "若提供身高，自动计算 BMI = weight / (height/100)^2"
+            }
+          }
+        ]
+      },
+      {
+        name: "查体重历史",
+        desc: "体重历史记录",
+        triggers: [
+          {
+            word: "查体重历史",
+            cli: "python scripts/calorie_tracker.py weight-history [天数]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "weight_log", fields: "date, time, weight_kg, bmi, note", op: "读取" }
+              ],
+              sideEffects: "无副作用，显示记录并计算首末变化量和日均变化"
+            }
+          }
+        ]
+      },
+      {
+        name: "查体重趋势",
+        desc: "体重趋势分析（均重/日均变化/趋势判断）",
+        triggers: [
+          {
+            word: "查体重趋势",
+            cli: "weight_analysis(start, end, 'trend')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "weight_log", fields: "date, weight_kg, note", op: "读取" }
+              ],
+              sideEffects: "无副作用，计算均重/最高/最低/首末变化/日均变化率/趋势判断"
+            }
+          }
+        ]
+      },
+      {
+        name: "对比体重",
+        desc: "两时间段体重对比",
+        triggers: [
+          {
+            word: "对比体重",
+            cli: "weight_analysis(start, end, 'compare', compare_start, compare_end)",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "weight_log", fields: "AVG(weight_kg), weight_kg, date", op: "读取" }
+              ],
+              sideEffects: "无副作用，对比两时段均重、首末变化、加速/减速判断"
+            }
+          }
+        ]
+      },
+      {
+        name: "查体重波动",
+        desc: "体重波动分析（标准差/异常记录）",
+        triggers: [
+          {
+            word: "查体重波动",
+            cli: "weight_analysis(start, end, 'volatility')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "weight_log", fields: "date, weight_kg, note", op: "读取" }
+              ],
+              sideEffects: "无副作用，需至少 3 条记录。计算日间标准差、周间波动、标记单日涨跌 >0.5kg 的异常"
+            }
+          }
+        ]
+      },
+      {
+        name: "设体重目标",
+        desc: "设定体重目标和截止日期",
+        triggers: [
+          {
+            word: "设体重目标",
+            cli: "set_weight_goal(weight_goal, deadline)",
+            flow: {
+              operation: "UPDATE / INSERT",
+              tables: [
+                { name: "daily_goal", fields: "weight_goal, goal_deadline, updated_at", op: "更新" }
+              ],
+              sideEffects: "若 daily_goal 无记录则 INSERT，否则 UPDATE。weight_goal 和 goal_deadline 存在 daily_goal 表中"
+            }
+          }
+        ]
+      },
+      {
+        name: "查体重目标",
+        desc: "体重目标达成进度",
+        triggers: [
+          {
+            word: "查体重目标",
+            cli: "weight_analysis(start, end, 'milestone')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "daily_goal", fields: "weight_goal, goal_deadline", op: "读取" },
+                { name: "weight_log", fields: "weight_kg, date", op: "读取" }
+              ],
+              sideEffects: "无副作用，计算差距、实际日均变化（近30天）、预计达成日期、进度状态"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  exercise: {
+    title: "运动",
+    modules: [
+      {
+        name: "记运动",
+        desc: "记录运动消耗",
+        triggers: [
+          {
+            word: "记运动",
+            cli: "python scripts/exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>]",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "date, time, exercise_type, duration_minutes, calories_burned, note, reps", op: "写入" }
+              ],
+              sideEffects: "自动初始化 exercise_log 表（如不存在）"
+            }
+          }
+        ]
+      },
+      {
+        name: "改运动记录",
+        desc: "更新运动记录",
+        triggers: [
+          {
+            word: "改运动记录",
+            cli: "python scripts/exercise_tracker.py update --id <ID> [--字段 值]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "exercise_log", fields: "可选: calories_burned, duration_minutes, exercise_type, note, reps, date", op: "更新" }
+              ],
+              sideEffects: "无副作用，仅更新指定字段"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动记录",
+        desc: "查询运动记录（按日期/天数/类型）",
+        triggers: [
+          {
+            word: "查运动记录",
+            cli: "python scripts/exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "*", op: "读取" }
+              ],
+              sideEffects: "无副作用，支持按日期、天数范围、运动类型筛选"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动汇总",
+        desc: "运动汇总统计",
+        triggers: [
+          {
+            word: "查运动汇总",
+            cli: "python scripts/exercise_tracker.py summary [--days N]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "COUNT(*), SUM(calories_burned), SUM(duration_minutes), AVG(calories_burned)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按类型分组统计"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动类型",
+        desc: "运动类型统计（分布/总消耗排名）",
+        triggers: [
+          {
+            word: "查运动类型",
+            cli: "python scripts/exercise_tracker.py stats --type <breakdown|total>",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "exercise_type, COUNT(*), SUM(calories_burned), SUM(duration_minutes)", op: "读取" }
+              ],
+              sideEffects: "无副作用，breakdown=分布百分比，total=总消耗排名"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动趋势",
+        desc: "运动热量趋势",
+        triggers: [
+          {
+            word: "查运动趋势",
+            cli: "python scripts/exercise_tracker.py trend [--days N]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "date, SUM(calories_burned)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按日期分组显示每日消耗柱状图"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  fitness: {
+    title: "健身目标",
+    modules: [
+      {
+        name: "设健身目标",
+        desc: "添加健身目标（daily/weekly/monthly/longterm）",
+        triggers: [
+          {
+            word: "设健身目标",
+            cli: 'python scripts/fitness_goals.py add "<名称>" --type <daily|weekly|monthly|longterm> --exercise <运动> --unit <单位> --target <值> --start <日期>',
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "fitness_goals", fields: "name, goal_type, exercise_type, target_unit, target_value, start_date, end_date, note, created_at", op: "写入" }
+              ],
+              sideEffects: "自动初始化 fitness_goals 表（如不存在），返回自增 ID"
+            }
+          }
+        ]
+      },
+      {
+        name: "查健身目标",
+        desc: "查询健身目标（按类型/状态）",
+        triggers: [
+          {
+            word: "查健身目标",
+            cli: "python scripts/fitness_goals.py list [--type <类型>] [--status <状态>]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "fitness_goals", fields: "id, name, goal_type, exercise_type, target_unit, target_value, start_date, end_date, status, note, created_at", op: "读取" }
+              ],
+              sideEffects: "无副作用，支持按 goal_type、status、exercise_type 筛选"
+            }
+          }
+        ]
+      },
+      {
+        name: "改健身目标",
+        desc: "更新健身目标",
+        triggers: [
+          {
+            word: "改健身目标",
+            cli: "python scripts/fitness_goals.py update <ID> [--字段 值]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "fitness_goals", fields: "可选: name, goal_type, exercise_type, target_unit, target_value, start_date, end_date, status, note + updated_at", op: "更新" }
+              ],
+              sideEffects: "自动更新 updated_at 为当前 Unix 时间戳"
+            }
+          }
+        ]
+      },
+      {
+        name: "删健身目标",
+        desc: "删除健身目标",
+        triggers: [
+          {
+            word: "删健身目标",
+            cli: "python scripts/fitness_goals.py delete <ID>",
+            flow: {
+              operation: "DELETE",
+              tables: [
+                { name: "fitness_goals", fields: "id（指定记录）", op: "删除" }
+              ],
+              sideEffects: "无副作用，硬删除"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  sleep: {
+    title: "睡眠",
+    modules: [
+      {
+        name: "记睡眠",
+        desc: "记录睡眠时长和就寝/起床时间",
+        triggers: [
+          {
+            word: "记睡眠",
+            cli: "python scripts/sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "sleep_records", fields: "date, sleep_hours, bedtime, wake_time, note, created_at", op: "写入" }
+              ],
+              sideEffects: "若当日已有记录则拒绝（UNIQUE 约束），提示用 update。睡眠归属就寝日"
+            }
+          }
+        ]
+      },
+      {
+        name: "改睡眠记录",
+        desc: "更新睡眠记录",
+        triggers: [
+          {
+            word: "改睡眠记录",
+            cli: "python scripts/sleep_tracker.py update <日期> [--hours <时长>] [--note <备注>]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "sleep_records", fields: "可选: sleep_hours, bedtime, wake_time, note + updated_at", op: "更新" }
+              ],
+              sideEffects: "自动更新 updated_at"
+            }
+          }
+        ]
+      },
+      {
+        name: "查睡眠记录",
+        desc: "查询最近 N 天睡眠记录",
+        triggers: [
+          {
+            word: "查睡眠记录",
+            cli: "python scripts/sleep_tracker.py list [--days N]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "sleep_records", fields: "date, sleep_hours, bedtime, wake_time, note", op: "读取" }
+              ],
+              sideEffects: "无副作用，按日期倒序"
+            }
+          }
+        ]
+      },
+      {
+        name: "记录起床",
+        desc: "起床唤醒：查录音机数据库 → 自动算时长 → 确认记录",
+        triggers: [
+          {
+            word: "记录起床",
+            cli: "录音机数据库 → sleep_tracker.py add <就寝日期> --hours <时长> --bed <时间> --wake <时间>",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "sleep_records", fields: "date, sleep_hours, bedtime, wake_time, created_at", op: "写入" }
+              ],
+              sideEffects: "自动查询录音机数据库获取入睡/起床时间 → 计算时长 → 确认语不提及'卡路里'三字 → 睡眠归属就寝日"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  analysis: {
+    title: "分析",
+    modules: [
+      {
+        name: "查热量趋势",
+        desc: "热量摄入趋势（工作日 vs 周末/合规率）",
+        triggers: [
+          {
+            word: "查热量趋势",
+            cli: "diet_analysis(start, end, 'calorie_trend')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "date, SUM(calories), SUM(protein), SUM(carbs), SUM(fat)", op: "读取" },
+                { name: "daily_goal", fields: "calorie_goal", op: "读取" }
+              ],
+              sideEffects: "无副作用，按工作日/周末分组计算日均热量和合规率"
+            }
+          }
+        ]
+      },
+      {
+        name: "查营养配比",
+        desc: "营养素占比分析（蛋白/碳水/脂肪）",
+        triggers: [
+          {
+            word: "查营养配比",
+            cli: "diet_analysis(start, end, 'macro_ratio')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "SUM(protein)*4, SUM(carbs)*4, SUM(fat)*9", op: "读取" },
+                { name: "daily_goal", fields: "protein_goal, carbs_goal, fat_goal", op: "读取" }
+              ],
+              sideEffects: "无副作用，将三大营养素换算为热量占比并与目标对比"
+            }
+          }
+        ]
+      },
+      {
+        name: "查热量缺口",
+        desc: "热量缺口分析（饮食 vs 运动贡献）",
+        triggers: [
+          {
+            word: "查热量缺口",
+            cli: "diet_analysis(start, end, 'deficit_analysis')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "date, SUM(calories)", op: "读取" },
+                { name: "exercise_log", fields: "date, SUM(calories_burned)", op: "读取" },
+                { name: "weight_log", fields: "weight_kg（最新一条）", op: "读取" }
+              ],
+              sideEffects: "无副作用，计算基础代谢(BMR)、日均缺口、累计缺口(kg换算)、饮食/运动贡献比例"
+            }
+          }
+        ]
+      },
+      {
+        name: "查食物排行",
+        desc: "食物排行榜（默认高热量榜）",
+        triggers: [
+          {
+            word: "查食物排行",
+            cli: "diet_food_ranking(start, end, 'high_calorie')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, SUM(calories), SUM(grams), SUM(protein), SUM(carbs), SUM(fat), COUNT(*)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按食物名分组聚合后排序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查高热量榜",
+        desc: "热量炸弹 TOP5",
+        triggers: [
+          {
+            word: "查高热量榜",
+            cli: "diet_food_ranking(start, end, 'high_calorie')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, SUM(calories), COUNT(*)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按总热量降序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查低热量榜",
+        desc: "低热量健康 TOP5",
+        triggers: [
+          {
+            word: "查低热量榜",
+            cli: "diet_food_ranking(start, end, 'low_calorie')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, SUM(calories), COUNT(*)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按单次均热量升序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查频繁吃榜",
+        desc: "最常吃的食物 TOP5",
+        triggers: [
+          {
+            word: "查频繁吃榜",
+            cli: "diet_food_ranking(start, end, 'frequent')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, COUNT(*), SUM(calories)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按出现次数降序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查高碳水榜",
+        desc: "高碳水食物 TOP5",
+        triggers: [
+          {
+            word: "查高碳水榜",
+            cli: "diet_food_ranking(start, end, 'high_carb')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, SUM(carbs), COUNT(*)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按总碳水降序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查高蛋白榜",
+        desc: "高蛋白食物 TOP5",
+        triggers: [
+          {
+            word: "查高蛋白榜",
+            cli: "diet_food_ranking(start, end, 'high_protein')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "entries", fields: "food_name, SUM(protein), COUNT(*)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按总蛋白质降序取 TOP5"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动分布",
+        desc: "运动类型分布（消耗/频次/时长占比）",
+        triggers: [
+          {
+            word: "查运动分布",
+            cli: "exercise_analysis(start, end, 'type_breakdown')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "exercise_type, SUM(calories_burned), COUNT(*), SUM(duration_minutes)", op: "读取" }
+              ],
+              sideEffects: "无副作用，按运动类型分组计算消耗/频次/时长的百分比"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动贡献",
+        desc: "运动对热量缺口的贡献占比",
+        triggers: [
+          {
+            word: "查运动贡献",
+            cli: "exercise_analysis(start, end, 'deficit_contribution')",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "SUM(calories_burned)", op: "读取" },
+                { name: "entries", fields: "SUM(calories)", op: "读取" },
+                { name: "weight_log", fields: "weight_kg（最新一条）", op: "读取" }
+              ],
+              sideEffects: "无副作用，计算运动消耗占总缺口的比例并评估"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  general: {
+    title: "综合",
+    modules: [
+      {
+        name: "设营养目标",
+        desc: "设置每日营养目标（热量/蛋白/碳水/脂肪）",
+        triggers: [
+          {
+            word: "设营养目标",
+            cli: "python scripts/calorie_tracker.py goal <热量> [蛋白] [碳水] [脂肪]",
+            flow: {
+              operation: "INSERT OR REPLACE",
+              tables: [
+                { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal, updated_at", op: "写入" }
+              ],
+              sideEffects: "固定 id=1，INSERT OR REPLACE 覆盖已有目标"
+            }
+          }
+        ]
+      },
+      {
+        name: "查营养目标",
+        desc: "查看当前每日营养目标",
+        triggers: [
+          {
+            word: "查营养目标",
+            cli: "python scripts/calorie_tracker.py get_goal",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal, weight_goal, goal_deadline", op: "读取" }
+              ],
+              sideEffects: "无副作用，读取 id=1 的目标记录"
+            }
+          }
+        ]
+      },
+      {
+        name: "查健康报告",
+        desc: "四维度综合健康仪表盘",
+        triggers: [
+          {
+            word: "查健康报告",
+            cli: "dashboard(start, end)",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "weight_log", fields: "date, weight_kg, note", op: "读取" },
+                { name: "entries", fields: "date, SUM(calories), SUM(protein), SUM(carbs), SUM(fat)", op: "读取" },
+                { name: "exercise_log", fields: "date, exercise_type, duration_minutes, calories_burned", op: "读取" },
+                { name: "daily_goal", fields: "calorie_goal", op: "读取" }
+              ],
+              sideEffects: "无副作用，依次调用 weight_trend → diet_calorie_trend → exercise_trend → diet_deficit_analysis"
+            }
+          }
+        ]
+      },
+      {
+        name: "查卡路里数据",
+        desc: "数据健康检查（Lint 5 项）",
+        triggers: [
+          {
+            word: "查卡路里数据",
+            cli: "Lint 检查流程（5 项只读分析）",
+            flow: {
+              operation: "SELECT（5 项）",
+              tables: [
+                { name: "weight_log", fields: "最新记录", op: "读取" },
+                { name: "entries", fields: "今日记录", op: "读取" },
+                { name: "exercise_log", fields: "今日记录 / 近7天趋势", op: "读取" },
+                { name: "daily_goal", fields: "weight_goal, goal_deadline", op: "读取" }
+              ],
+              sideEffects: "只读检查，不修改任何数据。5项：①数据新鲜度 ②体重目标进度 ③热量趋势预警 ④热量缺口 ⑤运动连续性。发现问题只建议不自动修改"
+            }
+          }
+        ]
+      }
+    ]
+  }
+};
+
+// ========== RENDER ==========
+function renderAll() {
+  const content = document.getElementById('content');
+  let html = '';
+  for (const [cat, data] of Object.entries(DATA)) {
+    html += `<div class="section" data-cat="${cat}">`;
+    html += `<div class="section-title">${data.title}</div>`;
+    for (const mod of data.modules) {
+      const triggersHTML = mod.triggers.map((t, i) =>
+        `<span class="trigger" data-cat="${cat}" data-mod="${mod.name}" data-idx="${i}">${t.word}</span>`
+      ).join('');
+      html += `
+        <div class="module" data-keywords="${mod.triggers.map(t=>t.word).join(' ')} ${mod.name} ${mod.desc}">
+          <div class="module-head" onclick="toggleModule(this)">
+            <div>
+              <div class="module-name">${mod.name}</div>
+              <div class="module-desc">${mod.desc}</div>
+            </div>
+            <span class="module-arrow">&#9654;</span>
+          </div>
+          <div class="module-body">
+            <div class="triggers">${triggersHTML}</div>
+            <div class="cli-detail"></div>
+          </div>
+        </div>`;
+    }
+    html += '</div>';
+  }
+  content.innerHTML = html;
+}
+
+function toggleModule(head) {
+  const mod = head.closest('.module');
+  mod.classList.toggle('open');
+}
+
+// ========== TRIGGER CLICK ==========
+document.addEventListener('click', function(e) {
+  const trigger = e.target.closest('.trigger');
+  if (!trigger) return;
+
+  const cat = trigger.dataset.cat;
+  const modName = trigger.dataset.mod;
+  const idx = parseInt(trigger.dataset.idx);
+
+  // Toggle active state
+  const wasActive = trigger.classList.contains('active');
+  // Close all details in this module
+  const moduleBody = trigger.closest('.module-body');
+  moduleBody.querySelectorAll('.trigger').forEach(t => t.classList.remove('active'));
+  moduleBody.querySelectorAll('.cli-detail').forEach(d => { d.classList.remove('show'); d.innerHTML = ''; });
+
+  if (wasActive) return;
+
+  trigger.classList.add('active');
+
+  const mod = DATA[cat].modules.find(m => m.name === modName);
+  const t = mod.triggers[idx];
+  const detail = moduleBody.querySelector('.cli-detail');
+
+  detail.innerHTML = `
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px">CLI 命令</div>
+    <div class="cli-cmd" onclick="showFlow(this, '${cat}', '${modName}', ${idx})">${escapeHtml(t.cli)}</div>
+    <div class="flow-panel" id="flow-${cat}-${modName}-${idx}"></div>
+  `;
+  detail.classList.add('show');
+});
+
+function showFlow(el, cat, modName, idx) {
+  const mod = DATA[cat].modules.find(m => m.name === modName);
+  const t = mod.triggers[idx];
+  const flow = t.flow;
+  const panelId = `flow-${cat}-${modName}-${idx}`;
+  const panel = document.getElementById(panelId);
+
+  if (panel.classList.contains('show')) {
+    panel.classList.remove('show');
+    return;
+  }
+
+  const rows = flow.tables.map(tb =>
+    `<tr><td><code>${tb.name}</code></td><td style="font-size:11px">${tb.fields}</td><td><span class="flow-tag ${tb.op==='读取'?'read':'write'}">${tb.op}</span></td></tr>`
+  ).join('');
+
+  panel.innerHTML = `
+    <h4>执行流程</h4>
+    <div style="margin-bottom:8px"><span class="flow-tag ${flow.operation.includes('SELECT')?'read':'write'}">${flow.operation}</span></div>
+    <table class="flow-table">
+      <thead><tr><th>表名</th><th>涉及字段</th><th>操作</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:6px"><span class="flow-tag side">副作用</span> <span style="font-size:12px;color:#3C3C43">${flow.sideEffects}</span></div>
+  `;
+  panel.classList.add('show');
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ========== TABS ==========
+document.getElementById('tabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  const cat = tab.dataset.cat;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.section[data-cat="${cat}"]`).classList.add('active');
+  document.getElementById('searchInput').value = '';
+  updateHint();
+});
+
+// ========== SEARCH ==========
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.trim().toLowerCase();
+  if (!q) {
+    // Restore normal view
+    document.querySelectorAll('.section').forEach(s => {
+      s.querySelectorAll('.module').forEach(m => m.style.display = '');
+    });
+    updateHint();
+    return;
+  }
+
+  // Show all sections for search
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.add('active'));
+
+  let count = 0;
+  document.querySelectorAll('.module').forEach(m => {
+    const kw = m.dataset.keywords.toLowerCase();
+    if (kw.includes(q)) {
+      m.style.display = '';
+      count++;
+    } else {
+      m.style.display = 'none';
+    }
+  });
+
+  document.getElementById('searchHint').textContent = `找到 ${count} 个匹配模块`;
+});
+
+function updateHint() {
+  const activeSection = document.querySelector('.section.active');
+  if (!activeSection) return;
+  const total = activeSection.querySelectorAll('.module').length;
+  let triggerCount = 0;
+  activeSection.querySelectorAll('.trigger').forEach(t => triggerCount++);
+  document.getElementById('searchHint').textContent = `${total} 个模块 · ${triggerCount} 个唤醒词 · 点击唤醒词查看 CLI 命令`;
+}
+
+// ========== INIT ==========
+renderAll();
+updateHint();
+</script>
+</body>
+</html>

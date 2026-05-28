@@ -1,6 +1,281 @@
+---
+name: medal
+description: 颁发勋章/证书/奖杯奖励，查询勋章记录与统计，检查成就链进度，生成与审查勋章设计图
+version: 2.0
+author: Claude
+
+# 唤醒词映射表（动词+名词格式）
+triggers:
+  # 颁发类（手动触发）
+  - keyword: 颁勋章
+    action: award_badge
+    description: 颁发badge类型奖励
+    mode: manual
+
+  - keyword: 颁证书
+    action: award_certificate
+    description: 颁发certificate类型奖励
+    mode: manual
+
+  - keyword: 颁奖杯
+    action: award_trophy
+    description: 颁发trophy类型奖励
+    mode: manual
+
+  # 成就链颁发类（手动触发+自动检查进阶）
+  - keyword: 颁早睡勋章
+    action: award_sleep_medal
+    description: 颁发早睡链相关勋章，自动检查进阶/里程碑
+    mode: manual
+    chain: sleep
+
+  - keyword: 颁学习勋章
+    action: award_study_medal
+    description: 颁发学习链相关勋章，自动检查进阶/里程碑
+    mode: manual
+    chain: study
+
+  - keyword: 颁运动勋章
+    action: award_exercise_medal
+    description: 颁发运动链相关勋章，自动检查进阶/里程碑
+    mode: manual
+    chain: exercise
+
+  - keyword: 颁休息勋章
+    action: award_rest_medal
+    description: 颁发休息链相关勋章，自动检查进阶/里程碑
+    mode: manual
+    chain: rest
+
+  - keyword: 颁体重勋章
+    action: award_weight_medal
+    description: 颁发体重链相关勋章，自动检查进阶/里程碑
+    mode: manual
+    chain: weight
+
+  # 查询类
+  - keyword: 查勋章记录
+    action: query_records
+    description: 查询所有勋章历史记录
+    mode: manual
+
+  - keyword: 查勋章统计
+    action: query_stats
+    description: 查看勋章数量统计（按类型汇总）
+    mode: manual
+
+  - keyword: 查某类勋章
+    action: query_by_type
+    description: 按类型筛选查询（badge/certificate/trophy）
+    mode: manual
+
+  - keyword: 查最近勋章
+    action: query_recent
+    description: 查看最近N条勋章记录
+    mode: manual
+
+  # 成就链进度检查类
+  - keyword: 查早睡链
+    action: check_sleep_chain
+    description: 检查早睡成就链进度（基础/进阶/里程碑）
+    mode: manual
+    chain: sleep
+
+  - keyword: 查学习链
+    action: check_study_chain
+    description: 检查学习成就链进度
+    mode: manual
+    chain: study
+
+  - keyword: 查运动链
+    action: check_exercise_chain
+    description: 检查运动成就链进度
+    mode: manual
+    chain: exercise
+
+  - keyword: 查休息链
+    action: check_rest_chain
+    description: 检查休息成就链进度
+    mode: manual
+    chain: rest
+
+  - keyword: 查体重链
+    action: check_weight_chain
+    description: 检查体重成就链进度
+    mode: manual
+    chain: weight
+
+  - keyword: 查成就进度
+    action: check_all_chains
+    description: 汇总查看所有成就链进度
+    mode: manual
+
+  # 设计生成类
+  - keyword: 生勋章图
+    action: generate_medal_design
+    description: 生成勋章设计图（自动选择最佳路径）
+    mode: manual
+
+  - keyword: 生证书图
+    action: generate_certificate_design
+    description: 生成证书设计图
+    mode: manual
+
+  - keyword: 生奖杯图
+    action: generate_trophy_design
+    description: 生成奖杯设计图
+    mode: manual
+
+  - keyword: 生SVG勋章
+    action: generate_svg_medal
+    description: 路径A：HTML+SVG动画→GIF
+    mode: manual
+    path: A
+
+  - keyword: 生混合勋章
+    action: generate_hybrid_medal
+    description: 路径B：生图+SVG边框→GIF
+    mode: manual
+    path: B
+
+  - keyword: 生纯图勋章
+    action: generate_pure_medal
+    description: 路径C：直接生图→PNG
+    mode: manual
+    path: C
+
+  # 视觉审查类
+  - keyword: 审勋章设计
+    action: review_medal_design
+    description: 审查生成的勋章设计质量（7维度检查）
+    mode: manual
+
+  - keyword: 审证书设计
+    action: review_certificate_design
+    description: 审查生成的证书设计质量
+    mode: manual
+
+  - keyword: 审奖杯设计
+    action: review_trophy_design
+    description: 审查生成的奖杯设计质量
+    mode: manual
+
+  # 管理类
+  - keyword: 初始化勋章库
+    action: init_database
+    description: 初始化勋章数据库表结构
+    mode: manual
+
+  - keyword: 迁移勋章库
+    action: migrate_database
+    description: 数据库结构升级迁移
+    mode: manual
+
+# 被动触发规则（监听其他技能）
+passive_triggers:
+  - source: 卡路里
+    source_action: 记睡眠
+    target_action: award_sleep_medal
+    description: 记睡眠完成后自动检查早睡链
+
+  - source: 学习系统
+    source_action: 学XX
+    target_action: award_study_medal
+    description: 学习完成后自动检查学习链
+
+  - source: 作息管家
+    source_action: 记录休息
+    target_action: award_rest_medal
+    description: 记录休息时自动检查休息链
+
+  - source: 卡路里
+    source_action: 记体重
+    target_action: award_weight_medal
+    description: 记体重完成后自动检查体重链
+
+  - source: 卡路里
+    source_action: 记运动
+    target_action: award_exercise_medal
+    description: 记运动完成后自动检查运动链
+
+# 环境变量
+env_required:
+  - SKILLS_DB_PATH
+  - MEDAL_RESOURCE_PATH
+
+# 依赖脚本
+scripts:
+  - scripts/medal.py
+  - scripts/generate_medal_gif.py
+
+# 渲染路径配置
+render_paths:
+  A:
+    name: SVG路径
+    output: GIF
+    tech: Playwright + ffmpeg
+    suitable: 几何/机械/像素/扁平风格
+  B:
+    name: 混合路径
+    output: GIF
+    tech: mmx image generate + Playwright + ffmpeg
+    suitable: 有机/写实/复杂场景
+  C:
+    name: 纯生图路径
+    output: PNG
+    tech: mmx image generate
+    suitable: 快速颁发/无需动画
+---
+
+# 强制性规定（优先级最高）
+
+> 以下规定优先级高于本文件中的任何其他规则。
+
+1. **同步更新 HTML**：该技能的所有优化和变动、脚本的所有变动都必须体现在 `勋章.html` 上。HTML 是技能的唯一可视化参考文档，任何功能变更如果未同步到 HTML，视为未完成。
+
+2. **逐行确认**：对该技能的所有文件（SKILL.md、scripts/*.py、勋章.html）的任何一行修改，都需要明确得到用户的 1 次确认。未经确认不得执行写入操作。
+
+---
+
 # 勋章技能
 
-> 用户完成指定任务后，颁发精美GIF奖励（勋章/证书/奖杯）
+> 颁发勋章/证书/奖杯奖励，查询勋章记录与统计，检查成就链进度，生成与审查勋章设计图
+
+---
+
+## 快速指令表
+
+| 唤醒词 | 功能 | 执行方式 |
+|--------|------|---------|
+| 颁勋章 | 颁发badge类型奖励 | `medal.py add --type badge` |
+| 颁证书 | 颁发certificate类型奖励 | `medal.py add --type certificate` |
+| 颁奖杯 | 颁发trophy类型奖励 | `medal.py add --type trophy` |
+| 颁早睡勋章 | 颁发早睡链勋章+检查进阶 | `medal.py add` + 查历史 |
+| 颁学习勋章 | 颁发学习链勋章+检查进阶 | `medal.py add` + 查历史 |
+| 颁运动勋章 | 颁发运动链勋章+检查进阶 | `medal.py add` + 查历史 |
+| 颁休息勋章 | 颁发休息链勋章+检查进阶 | `medal.py add` + 查历史 |
+| 颁体重勋章 | 颁发体重链勋章+检查进阶 | `medal.py add` + 查历史 |
+| 查勋章记录 | 查询所有勋章历史 | `medal.py list` |
+| 查勋章统计 | 查看数量统计 | `medal.py stats` |
+| 查某类勋章 | 按类型筛选 | `medal.py list --type X` |
+| 查最近勋章 | 查最近N条 | `medal.py list --limit N` |
+| 查早睡链 | 检查早睡成就进度 | 读历史+分析连续性 |
+| 查学习链 | 检查学习成就进度 | 读历史+分析累计 |
+| 查运动链 | 检查运动成就进度 | 读历史+分析连续性 |
+| 查休息链 | 检查休息成就进度 | 读历史+分析连续性 |
+| 查体重链 | 检查体重成就进度 | 读历史+对比目标 |
+| 查成就进度 | 汇总所有成就链 | 读历史+全面分析 |
+| 生勋章图 | 生成勋章设计 | 自动选择路径A/B/C |
+| 生证书图 | 生成证书设计 | 自动选择路径A/B/C |
+| 生奖杯图 | 生成奖杯设计 | 自动选择路径A/B/C |
+| 生SVG勋章 | 路径A生成 | HTML+SVG→GIF |
+| 生混合勋章 | 路径B生成 | 生图+SVG→GIF |
+| 生纯图勋章 | 路径C生成 | 直接生图→PNG |
+| 审勋章设计 | 审查勋章质量 | MiniMax视觉审查 |
+| 审证书设计 | 审查证书质量 | MiniMax视觉审查 |
+| 审奖杯设计 | 审查奖杯质量 | MiniMax视觉审查 |
+| 初始化勋章库 | 初始化数据库 | `medal.py init` |
+| 迁移勋章库 | 数据库迁移 | ALTER TABLE |
 
 ---
 
@@ -16,6 +291,132 @@
 当你提笔时，你不是在描述一张图，你是在**召唤一个世界**。
 
 **每一次生成都是唯一的仪式，不可敷衍。**
+
+---
+
+## 执行流程
+
+### 颁发类唤醒词执行流程
+
+```
+用户说「颁勋章/证书/奖杯」
+    ↓
+确认奖励类型和名称
+    ↓
+选择渲染路径（A/B/C）
+    ↓
+执行设计生成流程
+    ↓
+视觉审查（最多3轮迭代）
+    ↓
+medal.py add 写入数据库
+    ↓
+发送奖励文件给用户
+```
+
+### 成就链颁发类执行流程
+
+```
+用户说「颁早睡/学习/运动/休息/体重勋章」
+    ↓
+确认具体事件和数据
+    ↓
+颁发基础勋章（badge）
+    ↓
+查询历史记录
+    ↓
+检查是否解锁进阶（certificate）
+    ↓
+检查是否解锁里程碑（trophy）
+    ↓
+颁发所有达成的勋章
+    ↓
+写remark记录进度
+```
+
+### 查询类执行流程
+
+```
+用户说「查勋章记录/统计/某类/最近」
+    ↓
+执行medal.py list/stats
+    ↓
+格式化输出结果
+    ↓
+如有需要，分析趋势
+```
+
+### 成就链检查类执行流程
+
+```
+用户说「查早睡/学习/运动/休息/体重链」或「查成就进度」
+    ↓
+查询该类型所有历史记录
+    ↓
+按日期排序分析连续性
+    ↓
+计算当前进度：
+  - 基础：是否达成单次
+  - 进阶：累计次数是否达标
+  - 里程碑：连续天数是否达标
+    ↓
+输出进度报告
+    ↓
+如有中断，说明原因
+```
+
+### 设计生成类执行流程
+
+```
+用户说「生勋章图/证书图/奖杯图」或指定路径
+    ↓
+事件解构（核心符号、情感色调、发生场景、动效语言）
+    ↓
+选择渲染路径（自动或指定）
+    ↓
+路径A：AI生成HTML+SVG → Playwright截图 → 迭代审查 → ffmpeg合成GIF
+路径B：mmx生成主体图 → AI生成HTML+SVG边框 → Playwright截图 → 迭代审查 → ffmpeg合成GIF
+路径C：mmx生成完整图 → 迭代审查 → 保存PNG
+    ↓
+medal.py add 写入数据库
+    ↓
+发送奖励文件给用户
+```
+
+### 视觉审查类执行流程
+
+```
+用户说「审勋章/证书/奖杯设计」
+    ↓
+读取设计文件
+    ↓
+调用MiniMax_understand_image审查
+    ↓
+7维度检查：
+  1. 视觉焦点是否明确
+  2. 材质质感如何
+  3. 配色是否和谐
+  4. 构图是否克制
+  5. 身份标识是否清晰
+  6. 图中是否出现文字
+  7. 改进建议
+    ↓
+输出审查报告
+    ↓
+如不合格，提供修改建议
+```
+
+### 管理类执行流程
+
+```
+用户说「初始化勋章库」或「迁移勋章库」
+    ↓
+执行medal.py init
+    ↓
+确认数据库表结构创建成功
+    ↓
+输出完成提示
+```
 
 ---
 
@@ -732,8 +1133,9 @@ python3 scripts/medal.py init
 9. **路径B保留主体图**：生成的主体PNG必须保存到 `MEDAL_RESOURCE_PATH`，便于回溯
 10. **视觉审查必做**：三条路径都必须进行视觉审查，不可跳过。迭代直到审查通过，最多3轮
 11. **路径选择需说明理由**：AI选择渲染路径时，应简要说明为什么选这条路径
-
 12. **成就链主动检查**：颁发勋章时，应主动检查用户是否解锁了对应的进阶/里程碑成就
+13. **查询结果格式化**：查询类唤醒词输出结果时，使用清晰的表格或列表格式
+14. **成就链进度报告**：检查成就链时，输出当前等级、进度百分比、下一解锁条件
 
 ---
 

@@ -4,7 +4,7 @@
 
 ### Step 1
 
-用户说"居家管家 我要带XX出去旅游"
+用户说"带物品 XX"
 
 ### Step 2
 
@@ -24,7 +24,7 @@ python home_manager.py update --id 5 --location-status "旅游中"
 
 ### Step 1
 
-用户说"居家管家 旅游回来了"
+用户说"归物品"
 
 ### Step 2
 

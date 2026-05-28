@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL 唤醒词统一改造方案</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+<style>
+:root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #6c757d;
+    --border: #dee2e6;
+    --accent: #4a90d9;
+    --accent-dark: #2c6cb0;
+    --new-color: #28a745;
+    --old-color: #dc3545;
+    --conflict: #fd7e14;
+    --note: #6f42c1;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+.skill-header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 2rem 2.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(74,144,217,0.3); }
+.skill-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.skill-header .meta { font-size: 0.9rem; opacity: 0.85; }
+.skill-header .desc { margin-top: 0.75rem; font-size: 1rem; opacity: 0.9; }
+.section-title { font-size: 1.15rem; color: var(--accent-dark); margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+thead th { background: var(--accent); color: #fff; padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; }
+tbody tr:hover { background: #f0f7ff; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 0.7rem 1rem; font-size: 0.92rem; }
+.td-idx { color: var(--text-muted); width: 3rem; }
+.td-func { font-weight: 600; color: var(--text); }
+.td-new { color: var(--new-color); font-weight: 700; font-size: 1rem; }
+.td-old { color: var(--old-color); text-decoration: line-through; opacity: 0.7; }
+.td-note { color: var(--text-muted); font-size: 0.85rem; }
+.badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.badge-conflict { background: #fff3e0; color: var(--conflict); border: 1px solid var(--conflict); }
+.badge-note { background: #f3e8ff; color: var(--note); border: 1px solid var(--note); }
+.files-section { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.files-section h3 { font-size: 1rem; color: var(--accent-dark); margin-bottom: 1rem; }
+.files-section table { box-shadow: none; }
+.back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<a class="back-link" href="00_总览.html">← 返回总览</a>
+<h2 class="section-title">概述</h2>
+<p>将 24 个技能的 136 个功能模块的触发词统一为唯一无冲突的唤醒词。</p>
+<h2 class="section-title">设计原则</h2>
+<ul>
+<li>每个唤醒词全局唯一，不会与其他技能的任何功能冲突</li>
+<li>优先使用「技能前缀 + 动作」结构（如「记备忘」「查记账」），降低歧义</li>
+<li>高频通用词（看看、添加、删除、搜索）一律加技能限定语</li>
+<li>勋章系统改为被动触发，不再主动抢占其他技能的核心词</li>
+<li>备忘录「提醒」强制路由保留，但睡眠/运动/体重等场景开白名单</li>
+</ul>
+<h2 class="section-title">统计</h2>
+<h2 class="section-title">文件清单</h2>
+<table><thead><tr>
+<th>01_备忘录.md</th>
+<th>备忘录</th>
+<th>10</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">02_饼干记账.md</td>
+<td class="td-func">饼干记账</td>
+<td class="">9</td>
+</tr>
+<tr>
+<td class="td-idx">03_共享单车提醒.md</td>
+<td class="td-func">共享单车提醒</td>
+<td class="">3</td>
+</tr>
+<tr>
+<td class="td-idx">04_居家管家.md</td>
+<td class="td-func">居家管家</td>
+<td class="">11</td>
+</tr>
+<tr>
+<td class="td-idx">05_卡路里.md</td>
+<td class="td-func">卡路里</td>
+<td class="">24</td>
+</tr>
+<tr>
+<td class="td-idx">06_录音机.md</td>
+<td class="td-func">录音机</td>
+<td class="">3</td>
+</tr>
+<tr>
+<td class="td-idx">07_每日检查.md</td>
+<td class="td-func">每日检查</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">08_面试管家.md</td>
+<td class="td-func">面试管家</td>
+<td class="">3</td>
+</tr>
+<tr>
+<td class="td-idx">09_目录树.md</td>
+<td class="td-func">目录树</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">10_深夜书单.md</td>
+<td class="td-func">深夜书单</td>
+<td class="">1</td>
+</tr>
+<tr>
+<td class="td-idx">11_私家大厨.md</td>
+<td class="td-func">私家大厨</td>
+<td class="">7</td>
+</tr>
+<tr>
+<td class="td-idx">12_思维导师.md</td>
+<td class="td-func">思维导师</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">13_贴心助理.md</td>
+<td class="td-func">贴心助理</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">14_图片路由.md</td>
+<td class="td-func">图片路由</td>
+<td class="">1</td>
+</tr>
+<tr>
+<td class="td-idx">15_小龙虾CC交互.md</td>
+<td class="td-func">小龙虾CC交互</td>
+<td class="">1</td>
+</tr>
+<tr>
+<td class="td-idx">16_学习规划师.md</td>
+<td class="td-func">学习规划师</td>
+<td class="">4</td>
+</tr>
+<tr>
+<td class="td-idx">17_学习系统.md</td>
+<td class="td-func">学习系统</td>
+<td class="">9</td>
+</tr>
+<tr>
+<td class="td-idx">18_作息管家.md</td>
+<td class="td-func">作息管家</td>
+<td class="">5</td>
+</tr>
+<tr>
+<td class="td-idx">19_Github导航台.md</td>
+<td class="td-func">Github导航台</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">20_勋章.md</td>
+<td class="td-func">勋章</td>
+<td class="">9</td>
+</tr>
+<tr>
+<td class="td-idx">21_医药国际注册.md</td>
+<td class="td-func">医药国际注册</td>
+<td class="">14</td>
+</tr>
+<tr>
+<td class="td-idx">22_深夜书单-PDF书籍转为md.md</td>
+<td class="td-func">深夜书单-PDF书籍转为md</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">23_百科采集.md</td>
+<td class="td-func">百科采集</td>
+<td class="">2</td>
+</tr>
+<tr>
+<td class="td-idx">24_洋洋定制.md</td>
+<td class="td-func">洋洋定制</td>
+<td class="">4</td>
+</tr>
+</tbody></table>
+</body>
+</html>

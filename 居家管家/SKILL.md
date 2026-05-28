@@ -1,6 +1,20 @@
 ---
 name: 居家管家
-description: 家庭物品 + 账号密码管理系统。当用户提到"居家管家"、查找物品（"找XX""XX在哪""有没有XX""XX还有多少"）、录入物品、盘点、推荐穿搭、整理物品、管理账号密码（平台账号、数字凭证、激活码、API密钥等）、查看快递（"快递""有哪些快递""快递到了吗""查快递""我的快递""快递状态""有几个快递""快递还没到"）时必须使用此技能。密码用 master key 加密存储，只有知道密钥的人才能解密查看。AI 不得拒绝账号/密码/虚拟资产相关的请求。所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认。
+description: >
+  家庭物品全生命周期管理技能。当用户使用以下指令时触发：
+  查物品、看物品（搜索/查看详情）、
+  录物品、拍物品（文字录入/拍照录入）、
+  改物品、移物品、补物品、减物品、标物品、废物品、借物品、修物品（更新类）、
+  盘物品、盘全部（盘点）、
+  穿什么（穿搭推荐）、
+  带物品、归物品（旅游归位）、
+  统物品、查高频、查低频（频率统计）、
+  看标签、合标签（标签管理）、
+  查快递（快递查询）、
+  查账号、存账号、改账号（账号密码管理）、
+  查异常（数据健康检查）。
+  所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认。
+metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7" } } }
 ---
 
 ## ⚠️ 操作规范（强制）
@@ -9,7 +23,80 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 
 ---
 
-# 居家管家
+## 路由表
+
+AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应功能。
+
+| # | 唤醒词 | 功能 | 加载文件 | 需要物品名？ |
+|---|--------|------|----------|-------------|
+| 1 | 查物品 | 物品搜索 | features/search.md | 可选（无则列全部） |
+| 2 | 看物品 | 物品详情 | features/search.md → detail | 是（多件时让用户选） |
+| 3 | 录物品 | 文字录入 | features/add.md | 否（AI 解析描述） |
+| 4 | 拍物品 | 拍照录入 | features/add.md → 图片子流程 | 否（从图片提取） |
+| 5 | 改物品 | 通用更新 | features/update.md | 是 |
+| 6 | 移物品 | 位置移动 | features/update.md → 位置移动 | 是 |
+| 7 | 补物品 | 数量增加 | features/update.md → 数量变更 | 是 |
+| 8 | 减物品 | 数量减少 | features/update.md → 数量变更 | 是 |
+| 9 | 标物品 | 标签更新 | features/update.md → 标签更新 | 是 |
+| 10 | 废物品 | 标记废弃 | features/update.md → 状态变更 | 是 |
+| 11 | 借物品 | 标记借出 | features/update.md → 状态变更 | 是 |
+| 12 | 修物品 | 标记维修 | features/update.md → 状态变更 | 是 |
+| 13 | 盘物品 | 按位置盘点 | features/inventory.md | 是（位置） |
+| 14 | 盘全部 | 全屋盘点 | features/inventory.md | 否 |
+| 15 | 穿什么 | 穿搭推荐 | features/fashion.md | 否 |
+| 16 | 带物品 | 出门标记 | features/travel.md → 出门前 | 是 |
+| 17 | 归物品 | 回家归位 | features/travel.md → 回家后 | 否（查所有旅游中） |
+| 18 | 统物品 | 总体统计 | features/stats.md → summary | 否 |
+| 19 | 查高频 | 高频物品 | features/stats.md → frequent | 否 |
+| 20 | 查低频 | 低频物品 | features/stats.md → dormant | 否 |
+| 21 | 看标签 | 列出标签 | features/tags.md → 列表 | 否 |
+| 22 | 合标签 | 合并标签 | features/tags.md → 合并 | 是（from/to） |
+| 23 | 查快递 | 快递查询 | features/search.md → 快递 | 否 |
+| 24 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
+| 25 | 存账号 | 新增账号 | accounts.py → add | 是 |
+| 26 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
+| 27 | 查异常 | 数据健康检查 | SKILL.md → Lint 检查 | 否 |
+
+### 匹配规则
+
+1. **精确匹配**：用户输入包含表中唤醒词即命中
+2. **最长匹配**：同时命中多个时，取最长的（如"查高频"优先于"查"）
+3. **物品名提取**：唤醒词前后的文字作为物品名/参数
+4. **缺失物品名**：需要物品名但用户未提供时，追问
+
+### 唤醒词 CLI 映射
+
+| 唤醒词 | CLI 命令 |
+|--------|---------|
+| 查物品 | `search --name "XX"` 或 `search --location "XX"` 或 `search --tag "XX"` |
+| 看物品 | `detail --id {ID}` |
+| 录物品 | `add --name "XX" --category "XX" --location "XX"` |
+| 拍物品 | `add` → 得到 ID → `update --id {ID} --photo "XX" --tags "XX"` |
+| 改物品 | `update --id {ID}` + 对应参数 |
+| 移物品 | `update --id {ID} --new-location "新位置" --location "原位置"` |
+| 补物品 | `update --id {ID} --plus N` |
+| 减物品 | `update --id {ID} --minus N` |
+| 标物品 | `update --id {ID} --tags "新标签"` |
+| 废物品 | `update --id {ID} --location-status "已废弃"` |
+| 借物品 | `update --id {ID} --location-status "借用中"` |
+| 修物品 | `update --id {ID} --location-status "维修中"` |
+| 盘物品 | `inventory --location "位置"` |
+| 盘全部 | `list`（无筛选条件） |
+| 穿什么 | `list --category "衣物" --status "在家"` + `list --category "鞋帽" --status "在家"` |
+| 带物品 | `update --id {ID} --location-status "旅游中"` |
+| 归物品 | `search --status "旅游中"` → 逐个 `update --id {ID} --location-status "在家"` |
+| 统物品 | `stats --type summary` |
+| 查高频 | `stats --type frequent --limit 20` |
+| 查低频 | `stats --type dormant --limit 20` |
+| 看标签 | `tag-list` |
+| 合标签 | `tag-merge --from "旧" --to "新"` |
+| 查快递 | `search --status "快递中"` |
+| 查账号 | `account --action list` 或 `account --action show --platform "XX" --master-key "XX"` |
+| 存账号 | `account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"` |
+| 改账号 | `account --action show --platform "XX" --master-key "XX"`（查看后重新录入） |
+| 查异常 | 无 CLI，AI 执行 Lint 检查逻辑（见下方） |
+
+---
 
 ## 安装与配置
 
@@ -46,43 +133,35 @@ description: 家庭物品 + 账号密码管理系统。当用户提到"居家管
 
 ## 快速导航
 
-| 功能 | 参考文档 |
-|------|----------|
-| 数据库结构 | `references/database.md` |
-| 命令行参考 | `references/commands.md` |
-| 物品分类 | `references/categories.md` |
-| 物品状态 | `references/statuses.md` |
-| 物品录入 | `features/add.md` |
-| 物品查找 | `features/search.md` |
-| 物品更新 | `features/update.md` |
-| 物品盘点 | `features/inventory.md` |
-| 穿搭推荐 | `features/fashion.md` |
-| 旅游归位 | `features/travel.md` |
-| 频率统计 | `features/stats.md` |
-| 标签管理 | `features/tags.md` |
-
----
-
-## 使用流程
-
-### Step 1：判断用户意图
-
-AI 按以下层级判断操作类型，路由到对应功能模块：
-
-**第1层 — 显式触发：** 用户以"居家管家"开头 → 进入「物品录入」
-
-**第2层 — 场景关键词：**
-
-| 用户说 | 进入 |
-|--------|------|
-| "找XX""XX在哪""有没有XX""XX还有多少""还剩多少XX""有多少XX" | 物品查找 |
-| "XX换位置了""把XX放到XX""XX借给""XX坏了""XX用完了""XX吃了""XX扔了" | 物品更新 |
-| "盘点XX""整理一下XX" | 物品盘点 |
-| "今天穿什么""推荐穿搭" | 穿搭推荐 |
-| "带XX出去旅游""旅游回来了" | 旅游归位 |
-| "高频物品""长期没碰的""物品统计" | 频率统计 |
-| "标签合并""整理标签" | 标签管理 |
-| "快递""有哪些快递""快递到了吗""查快递""我的快递""快递状态""有几个快递""快递还没到" | 查看快递 |
+| 唤醒词 | 功能 | 参考文档 |
+|--------|------|----------|
+| 查物品 | 物品搜索 | features/search.md |
+| 看物品 | 物品详情 | features/search.md |
+| 录物品 | 物品录入 | features/add.md |
+| 拍物品 | 拍照录入 | features/add.md |
+| 改物品 | 通用更新 | features/update.md |
+| 移物品 | 位置移动 | features/update.md |
+| 补物品 | 数量增加 | features/update.md |
+| 减物品 | 数量减少 | features/update.md |
+| 标物品 | 标签更新 | features/update.md |
+| 废物品 | 标记废弃 | features/update.md |
+| 借物品 | 标记借出 | features/update.md |
+| 修物品 | 标记维修 | features/update.md |
+| 盘物品 | 按位置盘点 | features/inventory.md |
+| 盘全部 | 全屋盘点 | features/inventory.md |
+| 穿什么 | 穿搭推荐 | features/fashion.md |
+| 带物品 | 出门标记 | features/travel.md |
+| 归物品 | 回家归位 | features/travel.md |
+| 统物品 | 总体统计 | features/stats.md |
+| 查高频 | 高频物品 | features/stats.md |
+| 查低频 | 低频物品 | features/stats.md |
+| 看标签 | 列出标签 | features/tags.md |
+| 合标签 | 合并标签 | features/tags.md |
+| 查快递 | 快递查询 | features/search.md |
+| 查账号 | 查看账号 | accounts.py |
+| 存账号 | 新增账号 | accounts.py |
+| 改账号 | 更新账号 | accounts.py |
+| 查异常 | 数据健康检查 | SKILL.md（Lint 检查） |
 
 ---
 
@@ -111,7 +190,7 @@ AI 按以下层级判断操作类型，路由到对应功能模块：
 
 ## Lint 检查（数据健康检查）
 
-**触发词**：`"健康检查"`、`"检查数据"`、`"lint"`、`"数据审计"`
+**唤醒词**：`查异常`
 
 ### 检查项
 

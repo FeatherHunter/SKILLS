@@ -9,10 +9,18 @@
 
 ---
 
-## Step 1: 查询位置
+## Step 1: 查询
+
+### 按位置盘点
 
 ```bash
 python home_manager.py inventory --location "卧室/衣柜"
+```
+
+### 全屋盘点
+
+```bash
+python home_manager.py list
 ```
 
 ---

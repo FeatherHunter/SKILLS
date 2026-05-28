@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21. 医药国际注册 唤醒词改造</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+<style>
+:root {
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-muted: #6c757d;
+    --border: #dee2e6;
+    --accent: #4a90d9;
+    --accent-dark: #2c6cb0;
+    --new-color: #28a745;
+    --old-color: #dc3545;
+    --conflict: #fd7e14;
+    --note: #6f42c1;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+.skill-header { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; padding: 2rem 2.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(74,144,217,0.3); }
+.skill-header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.skill-header .meta { font-size: 0.9rem; opacity: 0.85; }
+.skill-header .desc { margin-top: 0.75rem; font-size: 1rem; opacity: 0.9; }
+.section-title { font-size: 1.15rem; color: var(--accent-dark); margin: 2rem 0 0.75rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--border); }
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; }
+thead th { background: var(--accent); color: #fff; padding: 0.75rem 1rem; text-align: left; font-size: 0.9rem; }
+tbody tr:hover { background: #f0f7ff; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 0.7rem 1rem; font-size: 0.92rem; }
+.td-idx { color: var(--text-muted); width: 3rem; }
+.td-func { font-weight: 600; color: var(--text); }
+.td-new { color: var(--new-color); font-weight: 700; font-size: 1rem; }
+.td-old { color: var(--old-color); text-decoration: line-through; opacity: 0.7; }
+.td-note { color: var(--text-muted); font-size: 0.85rem; }
+.badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.badge-conflict { background: #fff3e0; color: var(--conflict); border: 1px solid var(--conflict); }
+.badge-note { background: #f3e8ff; color: var(--note); border: 1px solid var(--note); }
+.files-section { background: var(--card); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.files-section h3 { font-size: 1rem; color: var(--accent-dark); margin-bottom: 1rem; }
+.files-section table { box-shadow: none; }
+.back-link { display: inline-block; margin-bottom: 1.5rem; color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<a class="back-link" href="00_总览.html">← 返回总览</a>
+<h2 class="section-title">技能信息</h2>
+<ul>
+<li>**描述**: 6套方法论 - 多国药品注册</li>
+<li>**Skill 路径**: `/mnt/d/2Study/StudyNotes/SKILLS/医药国际注册`</li>
+</ul>
+<h2 class="section-title">改造对照表</h2>
+<table><thead><tr>
+<th>#</th>
+<th>功能</th>
+<th>新唤醒词</th>
+<th>原触发词</th>
+<th>说明</th>
+</tr></thead><tbody>
+</tbody></table>
+<table><thead><tr>
+<th>1</th>
+<th>通用入口</th>
+<th>**药品注册**</th>
+<th>（无）</th>
+<th>📌 「药品注册」无冲突</th>
+</tr></thead><tbody>
+<tr>
+<td class="td-idx">2</td>
+<td class="td-func">美国注册</td>
+<td class="td-new">**FDA注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">3</td>
+<td class="td-func">欧盟注册</td>
+<td class="td-new">**EMA注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">4</td>
+<td class="td-func">尼日利亚注册</td>
+<td class="td-new">**NAFDAC注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">5</td>
+<td class="td-func">中非注册</td>
+<td class="td-new">**CEMAC注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">6</td>
+<td class="td-func">CTD文档编制</td>
+<td class="td-new">**CTD文档**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">7</td>
+<td class="td-func">仿制药注册</td>
+<td class="td-new">**仿制药注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">8</td>
+<td class="td-func">注册策略</td>
+<td class="td-new">**注册策略**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">9</td>
+<td class="td-func">法规查询</td>
+<td class="td-new">**药法规查询**</td>
+<td class="">（无）</td>
+<td class="td-note">📌 加「药」前缀，区分通用法规查询</td>
+</tr>
+<tr>
+<td class="td-idx">10</td>
+<td class="td-func">缺陷信回复</td>
+<td class="td-new">**缺陷信回复**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">11</td>
+<td class="td-func">注册项目管理</td>
+<td class="td-new">**注册项目管理**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">12</td>
+<td class="td-func">多国注册管理</td>
+<td class="td-new">**多国注册**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">13</td>
+<td class="td-func">注册计划</td>
+<td class="td-new">**注册计划**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+<tr>
+<td class="td-idx">14</td>
+<td class="td-func">注册文档</td>
+<td class="td-new">**注册文档**</td>
+<td class="">（无）</td>
+<td class=""></td>
+</tr>
+</tbody></table>
+<h2 class="section-title">需要修改的文件</h2>
+<h3 style="font-size:1rem;color:var(--accent-dark);margin:1.5rem 0 0.5rem">SKILL.md</h3>
+<p>路径: `SKILLS/医药国际注册/SKILL.md`</p>
+</body>
+</html>

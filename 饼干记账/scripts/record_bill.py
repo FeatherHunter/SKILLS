@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-饼干记账 CLI v2.1（优化版）
+饼干记账 CLI v2.2
 
 使用方法：
     python3 record_bill.py add --category 餐饮 --amount -35
@@ -14,6 +14,8 @@
     python3 record_bill.py compare
     python3 record_bill.py recent --limit 10
     python3 record_bill.py breakdown --from 2026-05-01 --to 2026-05-31
+    python3 record_bill.py overview --month 2026-05
+    python3 record_bill.py stats
 """
 
 import sys
@@ -175,9 +177,71 @@ def cmd_breakdown(args):
         print(f"  {c.get('category', 'N/A')}: {c.get('total', 0):.2f} ({c.get('pct', 0):.1f}%) [{c.get('count', 0)}笔, 均{c.get('avg', 0):.1f}]")
 
 
+def cmd_overview(args):
+    """收支总览"""
+    import sqlite3
+    from db import init_db, TABLE_NAME
+    month = args.month or datetime.now().strftime("%Y-%m")
+    year_int = int(month.split("-")[0])
+    month_int = int(month.split("-")[1])
+    if month_int == 12:
+        next_month_str = f"{year_int + 1}-01-01"
+    else:
+        next_month_str = f"{year_int}-{month_int + 1:02d}-01"
+    start_str = f"{month}-01 00:00:00"
+    next_month_start = f"{next_month_str} 00:00:00"
+    conn = init_db()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            SELECT
+                COUNT(*) as count,
+                SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as expense,
+                SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as income,
+                SUM(amount) as net
+            FROM {TABLE_NAME}
+            WHERE time >= ? AND time < ?
+        """, (start_str, next_month_start))
+        row = cursor.fetchone()
+        print(f"=== {month} 收支总览 ===")
+        print(f"笔数: {row['count'] or 0}")
+        print(f"支出: {row['expense'] or 0:.2f}")
+        print(f"收入: {row['income'] or 0:.2f}")
+        print(f"净额: {row['net'] or 0:.2f}")
+    finally:
+        conn.close()
+
+
+def cmd_stats(args):
+    """记账统计"""
+    import sqlite3
+    from db import init_db, TABLE_NAME
+    conn = init_db()
+    try:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            SELECT
+                COUNT(*) as total_records,
+                COUNT(DISTINCT SUBSTR(time, 1, 10)) as total_days,
+                MIN(time) as first_record,
+                MAX(time) as last_record
+            FROM {TABLE_NAME}
+        """)
+        row = cursor.fetchone()
+        print("=== 记账统计 ===")
+        print(f"总笔数: {row['total_records']}")
+        print(f"记账天数: {row['total_days']}")
+        print(f"首笔时间: {row['first_record'] or 'N/A'}")
+        print(f"最近记录: {row['last_record'] or 'N/A'}")
+    finally:
+        conn.close()
+
+
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="饼干记账 v2.1")
+    parser = argparse.ArgumentParser(description="饼干记账 v2.2")
 
     subparsers = parser.add_subparsers(dest='command', help='子命令')
 
@@ -222,6 +286,13 @@ def main():
     p.add_argument('--from', dest='from_date', default=None, help='开始日期 YYYY-MM-DD')
     p.add_argument('--to', dest='to_date', default=None, help='结束日期 YYYY-MM-DD')
 
+    # overview
+    p = subparsers.add_parser('overview', help='收支总览')
+    p.add_argument('--month', default=None, help='月份 YYYY-MM（默认当月）')
+
+    # stats
+    subparsers.add_parser('stats', help='记账统计')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -237,6 +308,8 @@ def main():
         'compare': cmd_compare,
         'recent': cmd_recent,
         'breakdown': cmd_breakdown,
+        'overview': cmd_overview,
+        'stats': cmd_stats,
     }
 
     cmd = commands.get(args.command)

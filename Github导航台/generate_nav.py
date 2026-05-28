@@ -5,6 +5,7 @@ generate_nav.py — 扫描 $STUDYNOTES_DOCS 目录，在 SKILL 目录下生成 s
 """
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -103,6 +104,24 @@ def _save_env_config(docs_path: Path, github_pages_base: str):
         print(f"[WARN] 无法保存配置到 .env: {e}")
 
 
+def _is_wsl() -> bool:
+    """检测是否在 WSL 环境中运行"""
+    try:
+        return "microsoft" in Path("/proc/version").read_text().lower()
+    except Exception:
+        return False
+
+
+def _win_to_wsl_path(path: str) -> str:
+    """将 Windows 路径 (D:\\xxx) 转换为 WSL 路径 (/mnt/d/xxx)"""
+    m = re.match(r"^([A-Za-z]):\\(.*)$", path)
+    if m:
+        drive = m.group(1).lower()
+        rest = m.group(2).replace("\\", "/")
+        return f"/mnt/{drive}/{rest}"
+    return path
+
+
 def load_env_config():
     """尝试从 .env 文件加载环境变量"""
     env_file = Path(__file__).parent / ".env"
@@ -112,6 +131,15 @@ def load_env_config():
             if line and not line.startswith("#") and "=" in line:
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
+
+    # WSL 兼容：将 Windows 路径自动转为 /mnt/ 格式
+    if _is_wsl():
+        for key in ("STUDYNOTES_DOCS",):
+            val = os.environ.get(key)
+            if val and re.match(r"^[A-Za-z]:\\", val):
+                converted = _win_to_wsl_path(val)
+                os.environ[key] = converted
+                print(f"[INFO] WSL 路径转换: {key} {val} -> {converted}")
 
 
 def scan_docs_structure(docs_path: Path) -> dict:

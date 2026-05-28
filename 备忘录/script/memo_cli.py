@@ -341,7 +341,10 @@ def _validate_repeat_rule(repeat_type, rule):
 
 def add_reminder(args):
     note_id = args.note_id
-    if note_id <= 0:
+    content = args.content
+    if not content or not content.strip():
+        error_json("请填入提醒内容")
+    if note_id is not None and note_id <= 0:
         error_json("笔记 ID 必须是正整数")
     remind_at = args.at
     repeat_type = args.repeat_type or "一次性"
@@ -354,17 +357,18 @@ def add_reminder(args):
     if repeat_type == "一次性" and not remind_at:
         error_json("--repeat-type=一次性 时必须提供 --at")
     conn = get_conn()
-    # 校验笔记存在
-    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
-    if not note:
-        error_json(f"关联笔记不存在: id={note_id}")
+    # 仅当提供了 note_id 时才校验笔记存在性
+    if note_id is not None:
+        note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
+        if not note:
+            error_json(f"关联笔记不存在: id={note_id}")
     try:
         conn.execute(
-            "INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, created_at) VALUES (?, ?, ?, ?, datetime('now','localtime'))",
-            (note_id, remind_at, repeat_type, repeat_rule)
+            "INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, content, created_at) VALUES (?, ?, ?, ?, ?, datetime('now','localtime'))",
+            (note_id, remind_at, repeat_type, repeat_rule, content)
         )
         conn.commit()
-        output_json({"note_id": note_id}, message="提醒已设置")
+        output_json({"note_id": note_id, "content": content}, message="提醒已设置")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -400,8 +404,8 @@ def list_due_reminders():
     try:
         cur = conn.execute("""
             SELECT r.id, r.note_id, r.remind_at, r.repeat_type, r.repeat_rule,
-                   r.notified_at, n.content
-            FROM reminders r JOIN notes n ON r.note_id = n.id
+                   r.notified_at, r.content, n.content as note_content
+            FROM reminders r LEFT JOIN notes n ON r.note_id = n.id
             WHERE r.status = 'active'
         """)
         
@@ -540,8 +544,8 @@ def list_due_reminders():
             triggered = False
             trigger_reason = ""
             
-            # 条件1：提前a分钟（精确分钟匹配 + 未通知过）
-            if notified_at is None and now_minute == advance_minute:
+            # 条件1：提前a分钟（范围匹配，cron 在 T-提前量 ~ T-1 任一时刻触发均生效）
+            if notified_at is None and advance_minute <= now_minute < trigger_time_minute:
                 triggered = True
                 trigger_reason = "advance"
             
@@ -565,7 +569,7 @@ def list_due_reminders():
                     "repeat_type": repeat_type,
                     "note_id": note_id,
                     "time": display_time,
-                    "content": content,
+                    "content": content or row["note_content"] or "",
                     "trigger_reason": trigger_reason
                 })
                 
@@ -631,11 +635,12 @@ def completed_reminders(args):
                 r.repeat_type,
                 r.repeat_rule,
                 r.notified_at,
-                orig_n.content as reminder_content,
+                r.content as reminder_content,
+                orig_n.content as orig_note_content,
                 orig_n.id as orig_note_id
             FROM notes n
             JOIN reminders r ON n.reminder_id = r.id
-            JOIN notes orig_n ON r.note_id = orig_n.id
+            LEFT JOIN notes orig_n ON r.note_id = orig_n.id
             WHERE n.category = '打卡' AND r.status = 'active'
             ORDER BY n.created_at DESC
         """)
@@ -654,7 +659,7 @@ def completed_reminders(args):
                     period = f"一次性 · {d['notified_at'][:16]}"
                     completed.append({
                         "reminder_id": d["reminder_id"],
-                        "reminder_content": d["reminder_content"],
+                        "reminder_content": d["reminder_content"] or d["orig_note_content"] or "",
                         "checkin_note_id": d["checkin_note_id"],
                         "checkin_content": d["checkin_content"],
                         "checkin_at": d["checkin_at"][:16],
@@ -716,7 +721,7 @@ def completed_reminders(args):
             if matched:
                 completed.append({
                     "reminder_id": d["reminder_id"],
-                    "reminder_content": d["reminder_content"],
+                    "reminder_content": d["reminder_content"] or d["orig_note_content"] or "",
                     "checkin_note_id": d["checkin_note_id"],
                     "checkin_content": d["checkin_content"],
                     "checkin_at": d["checkin_at"][:16],
@@ -737,12 +742,16 @@ def list_reminders(args):
     conn = get_conn()
     try:
         cur = conn.execute("""
-            SELECT r.*, n.content FROM reminders r
-            JOIN notes n ON r.note_id = n.id
+            SELECT r.*, r.content, n.content as note_content FROM reminders r
+            LEFT JOIN notes n ON r.note_id = n.id
             WHERE r.status = ?
             ORDER BY r.remind_at, r.repeat_type
         """, (status_filter,))
-        rows = [dict(row) for row in cur.fetchall()]
+        rows = []
+        for row in cur.fetchall():
+            d = dict(row)
+            d["content"] = d.get("content") or d.get("note_content") or ""
+            rows.append(d)
         output_json(rows)
     except Exception as e:
         error_json(str(e))
@@ -797,8 +806,9 @@ def main():
 
     # reminder add
     p_remind = sub.add_parser("remind")
-    p_remind.add_argument("note_id", type=int)
+    p_remind.add_argument("note_id", nargs="?", type=int, default=None)
     p_remind.add_argument("--at")
+    p_remind.add_argument("--content", default=None)
     p_remind.add_argument("--repeat-type", choices=["一次性","每天","每周","每月","每年"], default="一次性")
     p_remind.add_argument("--rule")
 

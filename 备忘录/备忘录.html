@@ -486,11 +486,14 @@
   <div class="module-title">笔记管理</div>
 
   <!-- 添加笔记 -->
-  <div class="feature" data-keywords="记备忘 add 添加 笔记 创建">
+  <div class="feature" data-keywords="记备忘 记心愿 记打卡 记情绪 add 添加 笔记 创建">
     <div class="feature-name">添加笔记</div>
     <div class="feature-desc">记录一条新备忘，支持分类和媒体附件</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">记备忘</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">记心愿</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">记打卡</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">记情绪</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" -c 分类</button>
     <div class="detail-panel">
@@ -512,15 +515,26 @@
       </table>
       <h4>AI 交互规范</h4>
       <p>添加前必须先问用户确认分类，不得直接使用默认分类。示例：用户说「去医院」→ AI 问「工作还是心愿？」→ 用户选 → 写入。</p>
+      <h4>媒体附件</h4>
+      <p>使用 <code>--media &lt;文件名&gt;</code> 附加图片/音频/视频，文件存储在 <code>MEMO_MEDIA_DIR/</code> 目录下。</p>
+      <h4>子唤醒词流程（记心愿/记打卡/记情绪）</h4>
+      <ul class="flow-steps">
+        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
+        <li data-step="2">跳过分类确认，直接执行 <code>add -c 分类</code></li>
+      </ul>
     </div>
   </div>
 
   <!-- 搜索笔记 -->
-  <div class="feature" data-keywords="搜备忘 search 搜索 查找 关键词 全文">
+  <div class="feature" data-keywords="搜备忘 查备忘 查心愿 查打卡 查情绪 search 搜索 查找 关键词 全文">
     <div class="feature-name">搜索笔记</div>
     <div class="feature-desc">按关键词全文搜索，支持分类过滤</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">搜备忘</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查备忘</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查心愿</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查打卡</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查情绪</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py search "关键词" -c 分类</button>
     <div class="detail-panel">
@@ -540,15 +554,23 @@
       </table>
       <h4>副作用</h4>
       <p>无。只读操作。</p>
+      <h4>子唤醒词流程（查心愿/查打卡/查情绪）</h4>
+      <ul class="flow-steps">
+        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
+        <li data-step="2">自动带 <code>-c 分类</code> 参数过滤，直接列出该分类所有笔记</li>
+      </ul>
     </div>
   </div>
 
   <!-- 更新笔记 -->
-  <div class="feature" data-keywords="改备忘 update 更新 修改 编辑 内容">
+  <div class="feature" data-keywords="改备忘 改心愿 改打卡 改情绪 update 更新 修改 编辑 内容">
     <div class="feature-name">更新笔记</div>
     <div class="feature-desc">修改已有笔记的内容、分类或媒体</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">改备忘</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">改心愿</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">改打卡</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">改情绪</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update &lt;id&gt; --content "新内容"</button>
     <div class="detail-panel">
@@ -570,15 +592,24 @@
       </table>
       <h4>副作用</h4>
       <p>至少提供一个更新字段，否则报错。updated_at 始终自动更新。</p>
+      <h4>子唤醒词流程（改心愿/改打卡/改情绪）</h4>
+      <ul class="flow-steps">
+        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
+        <li data-step="2">先按分类搜索 <code>search -c 分类</code>，缩小范围</li>
+        <li data-step="3">用户确认目标笔记后，执行 <code>update &lt;id&gt;</code></li>
+      </ul>
     </div>
   </div>
 
   <!-- 删除笔记 -->
-  <div class="feature" data-keywords="删备忘 delete 删除 移除">
+  <div class="feature" data-keywords="删备忘 删心愿 删打卡 删情绪 delete 删除 移除">
     <div class="feature-name">删除笔记</div>
     <div class="feature-desc">删除笔记及其关联提醒（级联删除）</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">删备忘</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">删心愿</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">删打卡</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">删情绪</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py delete &lt;id&gt;</button>
     <div class="detail-panel">
@@ -600,6 +631,12 @@
       </table>
       <h4>副作用</h4>
       <p>级联删除：关联的提醒会被一并删除，不可恢复。</p>
+      <h4>子唤醒词流程（删心愿/删打卡/删情绪）</h4>
+      <ul class="flow-steps">
+        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
+        <li data-step="2">先按分类搜索 <code>search -c 分类</code>，缩小范围</li>
+        <li data-step="3">用户确认目标笔记后，执行 <code>delete &lt;id&gt;</code></li>
+      </ul>
     </div>
   </div>
 

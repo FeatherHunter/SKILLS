@@ -546,6 +546,59 @@
             "editable": false
           }
         ]
+      },
+      {
+        "name": "body_photos",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "date",
+            "type": "string",
+            "label": "Date",
+            "format": "date",
+            "editable": true
+          },
+          {
+            "name": "time",
+            "type": "string",
+            "label": "Time",
+            "format": "time",
+            "editable": true
+          },
+          {
+            "name": "photo_path",
+            "type": "string",
+            "label": "Photo path",
+            "editable": true
+          },
+          {
+            "name": "tag",
+            "type": "string",
+            "label": "Tag",
+            "editable": true
+          },
+          {
+            "name": "note",
+            "type": "string",
+            "label": "Note",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          }
+        ]
       }
     ]
   },
@@ -642,6 +695,25 @@
       "id": "sleep_records-history",
       "label": "睡眠记录历史",
       "sql": "SELECT * FROM sleep_records ORDER BY date DESC, time DESC LIMIT 100",
+      "params": []
+    },
+    {
+      "id": "body_photos-daily",
+      "label": "今日身材照片",
+      "sql": "SELECT * FROM body_photos WHERE date = '{date}' ORDER BY time",
+      "params": [
+        {
+          "name": "date",
+          "type": "date",
+          "label": "日期",
+          "default": "TODAY"
+        }
+      ]
+    },
+    {
+      "id": "body_photos-history",
+      "label": "身材照片历史",
+      "sql": "SELECT * FROM body_photos ORDER BY date DESC, time DESC LIMIT 100",
       "params": []
     }
   ],
@@ -1019,6 +1091,44 @@
           "prompt": "Note"
         }
       ]
+    },
+    {
+      "id": "add-body_photos",
+      "label": "添加身材照片",
+      "type": "insert",
+      "targetTable": "body_photos",
+      "fields": [
+        {
+          "field": "date",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Date"
+        },
+        {
+          "field": "time",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Time"
+        },
+        {
+          "field": "photo_path",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Photo path"
+        },
+        {
+          "field": "tag",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Tag"
+        },
+        {
+          "field": "note",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Note"
+        }
+      ]
     }
   ],
   "views": [
@@ -1117,6 +1227,20 @@
         },
         "form": {
           "actionId": "add-sleep_records"
+        }
+      }
+    },
+    {
+      "id": "body_photos",
+      "label": "身材照片",
+      "components": {
+        "table": {
+          "queryId": "body_photos-daily",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-body_photos"
         }
       }
     }

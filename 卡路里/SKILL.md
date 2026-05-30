@@ -149,6 +149,15 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 查健康报告 | 四维度综合健康仪表盘 | `dashboard()` |
 | 查卡路里数据 | 数据健康检查（Lint 5 项） | Lint 检查流程 |
 
+### 📸 身材照片
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 记身材照 | 记录身材照片（支持批量） | `body_photo_tracker.py add` |
+| 查身材照 | 查看照片历史 | `body_photo_tracker.py list` |
+| 删身材照 | 删除照片 | `body_photo_tracker.py delete` |
+| 改照片标签 | 修改照片标签 | `body_photo_tracker.py tag` |
+
 ---
 
 # 卡路里 - 热量追踪技能 v2.0
@@ -161,6 +170,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 - **健身目标**：设置每日/每周/每月/长期健身目标，支持暂停/进行中状态
 - **睡眠记录**：记录每日睡眠时长和就寝/起床时间，**睡眠归属于就寝那天**
 - **数据分析**：3大类11种分析维度 + dashboard综合报告
+- **身材照片**：记录身材照片，支持自定义标签（正面/背面/侧面/手臂等），可生成 GIF 变化动画
 
 ## 数据库结构
 
@@ -218,6 +228,15 @@ python scripts/sleep_tracker.py list --days 7
 
 > **睡眠归属规则**：睡眠归属于**就寝那天**。例如"昨晚11:30睡的，今天7:00醒"，记录在就寝日。
 
+### 身材照片
+```bash
+python scripts/body_photo_tracker.py add photo1.jpg photo2.jpg --tag 正面 --note "早起"
+python scripts/body_photo_tracker.py list --days 30 --tag 正面
+python scripts/body_photo_tracker.py delete 1
+python scripts/body_photo_tracker.py tag 1 侧面
+python scripts/body_photo_tracker.py gif --tag 正面 --start 2026-01-01 --end 2026-05-30
+```
+
 ### 分析接口（11种维度）
 ```python
 weight_analysis(start, end, 'trend')       # 趋势|compare|milestone|volatility
@@ -246,6 +265,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | 睡/觉/起床 | 😴 睡眠 |
 | 趋势/排行/缺口/配比/分布/贡献 | 📊 分析 |
 | 仪表盘/整体情况/报告/目标（营养） | 📋 综合 |
+| 身材照/体型照/身体照片 | 📸 身材照片 |
 
 ### Step 2：域内精确匹配
 
@@ -262,6 +282,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |
 | "设营养目标" vs "设体重目标" | 营养=每日摄入目标，体重=体重kg目标 |
 | "设健身目标" vs "设营养目标" | 健身=运动类目标，营养=饮食类目标 |
+| "记身材照" vs "查身材照" | "记"=新增，"查"=查询 |
 
 ---
 

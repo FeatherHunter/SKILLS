@@ -80,14 +80,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 
 <div class="header">
   <h1>卡路里</h1>
-  <p>饮食热量 · 体重 · 运动 · 睡眠 · 营养追踪与分析</p>
+  <p>饮食热量 · 体重 · 运动 · 睡眠 · 身材照片 · 营养追踪与分析</p>
 </div>
 
 <div class="search-wrap">
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="搜索唤醒词..." autocomplete="off" />
   </div>
-  <div class="search-hint" id="searchHint">共 48 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
+  <div class="search-hint" id="searchHint">共 53 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
 </div>
 
 <div class="tabs" id="tabs">
@@ -97,6 +97,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
   <button class="tab" data-cat="exercise">运动</button>
   <button class="tab" data-cat="fitness">健身目标</button>
   <button class="tab" data-cat="sleep">睡眠</button>
+  <button class="tab" data-cat="bodyphoto">身材照片</button>
   <button class="tab" data-cat="analysis">分析</button>
   <button class="tab" data-cat="general">综合</button>
 </div>
@@ -662,6 +663,96 @@ const DATA = {
                 { name: "sleep_records", fields: "date, sleep_hours, bedtime, wake_time, created_at", op: "写入" }
               ],
               sideEffects: "自动查询录音机数据库获取入睡/起床时间 → 计算时长 → 确认语不提及'卡路里'三字 → 睡眠归属就寝日"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  bodyphoto: {
+    title: "身材照片",
+    modules: [
+      {
+        name: "存照片",
+        desc: "添加身材照片记录（自动复制到照片目录）",
+        triggers: [
+          {
+            word: "存照片",
+            cli: "python scripts/body_photo_tracker.py add <照片路径> [--tag <标签>] [--note <备注>]",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "body_photos", fields: "date, time, photo_path, tag, note", op: "写入" }
+              ],
+              sideEffects: "自动复制照片到 CALORIE_PHOTOS_DIR，按 {date}_{序号}.{ext} 命名"
+            }
+          }
+        ]
+      },
+      {
+        name: "查照片",
+        desc: "查询身材照片列表（支持按天数/标签筛选）",
+        triggers: [
+          {
+            word: "查照片",
+            cli: "python scripts/body_photo_tracker.py list [--days N] [--tag <标签>]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "body_photos", fields: "id, date, time, photo_path, tag, note, created_at", op: "读取" }
+              ],
+              sideEffects: "无副作用，按日期倒序，默认最近7天"
+            }
+          }
+        ]
+      },
+      {
+        name: "删照片",
+        desc: "删除身材照片（同时删除文件和数据库记录）",
+        triggers: [
+          {
+            word: "删照片",
+            cli: "python scripts/body_photo_tracker.py delete <ID>",
+            flow: {
+              operation: "DELETE",
+              tables: [
+                { name: "body_photos", fields: "id（指定记录）", op: "删除" }
+              ],
+              sideEffects: "同时删除 CALORIE_PHOTOS_DIR 中的物理文件"
+            }
+          }
+        ]
+      },
+      {
+        name: "改照片标签",
+        desc: "修改照片标签",
+        triggers: [
+          {
+            word: "改照片标签",
+            cli: "python scripts/body_photo_tracker.py tag <ID> <新标签>",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "body_photos", fields: "tag", op: "更新" }
+              ],
+              sideEffects: "无副作用，仅更新标签字段"
+            }
+          }
+        ]
+      },
+      {
+        name: "生成变化GIF",
+        desc: "将同标签照片按时间排序生成 GIF 动画",
+        triggers: [
+          {
+            word: "生成变化GIF",
+            cli: "python scripts/body_photo_tracker.py gif --tag <标签> [--start <起始日期>] [--end <结束日期>] [--days N]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "body_photos", fields: "photo_path, date", op: "读取" }
+              ],
+              sideEffects: "需安装 Pillow。照片统一缩放至 400x600，输出到 CALORIE_PHOTOS_DIR/gifs/"
             }
           }
         ]

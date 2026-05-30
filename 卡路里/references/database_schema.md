@@ -11,6 +11,7 @@
 | `fitness_goals` | 健身目标（每日/每周/每月/长期）| id |
 | `sleep_records` | 睡眠记录（归属就寝日）| id |
 | `nutrition_products` | 食品营养成分库 | id |
+| `body_photos` | 身材照片记录 | id |
 
 ---
 
@@ -197,3 +198,23 @@ nutrition_products (多条)
 | `idx_fg_status` | fitness_goals | 按状态筛选 |
 | `idx_sleep_date` | sleep_records | 按日期查询 |
 | `idx_product_name` | nutrition_products | 搜索食品名称 |
+
+---
+
+## body_photos — 身材照片记录
+
+```sql
+CREATE TABLE body_photos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    time TEXT NOT NULL,
+    photo_path TEXT NOT NULL,
+    tag TEXT NOT NULL,
+    note TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_body_photos_date ON body_photos(date);
+CREATE INDEX idx_body_photos_tag ON body_photos(tag);
+```
+
+> **存储说明**：照片文件存储在 `CALORIE_PHOTOS_DIR` 环境变量指定的目录，数据库存储相对路径。

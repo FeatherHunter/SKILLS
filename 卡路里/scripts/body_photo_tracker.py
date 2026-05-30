@@ -301,21 +301,56 @@ def generate_gif(tag, start_date=None, end_date=None, days=None, output=None):
     return output_path
 
 
-if __name__ == '__main__':
-    photos_dir = get_photos_dir()
-    print(f"照片目录: {photos_dir}")
+def main():
+    parser = argparse.ArgumentParser(description="身材照片记录管理")
+    subparsers = parser.add_subparsers(dest='cmd', help='子命令')
 
-    # 初始化数据库表
+    # add
+    p_add = subparsers.add_parser('add', help='添加照片')
+    p_add.add_argument('photos', nargs='+', help='照片文件路径')
+    p_add.add_argument('--tag', required=True, help='照片标签')
+    p_add.add_argument('--note', default='', help='备注')
+
+    # list
+    p_list = subparsers.add_parser('list', help='查询照片')
+    p_list.add_argument('--days', type=int, default=7, help='查询天数')
+    p_list.add_argument('--tag', help='按标签筛选')
+
+    # delete
+    p_delete = subparsers.add_parser('delete', help='删除照片')
+    p_delete.add_argument('id', type=int, help='照片ID')
+
+    # tag
+    p_tag = subparsers.add_parser('tag', help='修改标签')
+    p_tag.add_argument('id', type=int, help='照片ID')
+    p_tag.add_argument('new_tag', help='新标签')
+
+    # gif
+    p_gif = subparsers.add_parser('gif', help='生成GIF')
+    p_gif.add_argument('--tag', required=True, help='照片标签')
+    p_gif.add_argument('--start', help='开始日期 YYYY-MM-DD')
+    p_gif.add_argument('--end', help='结束日期 YYYY-MM-DD')
+    p_gif.add_argument('--days', type=int, help='最近N天')
+    p_gif.add_argument('--output', help='输出文件名')
+
+    args = parser.parse_args()
+
+    # 初始化表
     init_table()
 
-    # 验证表是否存在
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='body_photos'")
-    result = cur.fetchone()
-    conn.close()
-
-    if result:
-        print("✓ body_photos 表已创建")
+    if args.cmd == 'add':
+        add_photos(args.photos, args.tag, args.note)
+    elif args.cmd == 'list':
+        list_photos(days=args.days, tag=args.tag)
+    elif args.cmd == 'delete':
+        delete_photo(args.id)
+    elif args.cmd == 'tag':
+        update_tag(args.id, args.new_tag)
+    elif args.cmd == 'gif':
+        generate_gif(args.tag, args.start, args.end, args.days, args.output)
     else:
-        print("✗ body_photos 表创建失败")
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

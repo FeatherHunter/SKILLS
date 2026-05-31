@@ -57,6 +57,10 @@
           "label": "备忘录"
         },
         {
+          "name": "学习规划师.html",
+          "label": "学习规划师"
+        },
+        {
           "name": "居家管家.html",
           "label": "居家管家"
         },
@@ -73,6 +77,10 @@
           "label": "百科采集"
         },
         {
+          "name": "私家大厨.html",
+          "label": "私家大厨"
+        },
+        {
           "name": "饼干记账.html",
           "label": "饼干记账"
         }
@@ -86,5 +94,5 @@
       "isEntry": true
     }
   ],
-  "githubPagesBase": "https://featherhunter.github.io/StudyNotes/"
+  "githubPagesBase": "https://featherhunter.github.io/FeatherPage/"
 }

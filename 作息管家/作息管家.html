@@ -157,17 +157,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-sync-prepare')">python3 scripts/schedule_cli.py prepare-messages</span>
                 </div>
                 <div class="flow-panel" id="flow-sync-prepare">
-                    <div class="flow-title">执行流程</div>
+                    <div class="flow-title">执行流程（始终分页，默认每页 200 条）</div>
                     <div class="flow-step">查询 schedule_records 最后一条记录，确定游标位置（date + time_end）</div>
                     <div class="flow-step">从 daily_recorder.db 的 user_messages 表获取游标前 10 条消息（上下文参考）</div>
-                    <div class="flow-step">获取游标时间到当前时间的所有新消息</div>
-                    <div class="flow-step">输出 JSON 格式供 AI 分析，不写入任何表</div>
+                    <div class="flow-step">获取游标时间到当前时间的消息（分页：--page 默认 1，--page-size 默认 200）</div>
+                    <div class="flow-step">输出 JSON（含 pagination 元数据：page, total_pages, has_next），不写入任何表</div>
+                    <div class="flow-step">若 has_next=true，AI 处理完当前页后用 --page N 获取下一页</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>daily_recorder.db</td><td>user_messages</td><td class="field-name">id, timestamp, channel, content</td><td>获取消息（分页）</td></tr>
                     </table>
-                    <div class="flow-note"><strong>副作用：</strong>无写入操作。仅输出 JSON 供后续 AI 分析使用。</div>
+                    <div class="flow-note"><strong>副作用：</strong>无写入操作。仅输出 JSON 供后续 AI 分析使用。<br><strong>分页：</strong>始终分页，默认每页 200 条。JSON 中 pagination.has_next=true 时需继续获取下一页。</div>
                 </div>
             </div>
         </div>
@@ -185,11 +186,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 </div>
                 <div class="flow-panel" id="flow-sync-full">
                     <div class="flow-title">执行流程</div>
-                    <div class="flow-step">调用 prepare-messages 获取游标后的所有新消息</div>
+                    <div class="flow-step">调用 prepare-messages（始终分页，默认每页 200 条）获取消息</div>
+                    <div class="flow-step">前置：调用 get_required_block_count() 获取最少 block 数量</div>
                     <div class="flow-step">AI 用滑动窗口（前5后5条消息）判断活动边界</div>
                     <div class="flow-step">逐条调用 add_record_full() 写入（9 字段全部必填）</div>
+                    <div class="flow-step">后置：调用 validate_record_count() 验证 block 数量是否达标</div>
                     <div class="flow-step">空白时段填充 category="未知" 的记录</div>
                     <div class="flow-step">保证首尾相接：每条 time_start = 上一条 time_end</div>
+                    <div class="flow-step">若 has_next=true，处理完当前页后用 --page N 获取下一页继续</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_records</td><td class="field-name">date, time_end</td><td>查询游标</td></tr>
@@ -215,7 +219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 <div class="flow-panel" id="flow-sync-inc">
                     <div class="flow-title">执行流程</div>
                     <div class="flow-step">自动查询 schedule_records 最后一条记录作为游标</div>
-                    <div class="flow-step">从游标 time_end 之后获取新消息</div>
+                    <div class="flow-step">从游标 time_end 之后获取新消息（始终分页，默认每页 200 条）</div>
                     <div class="flow-step">AI 分析 + 逐条写入，与「同步作息」流程一致</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
@@ -634,7 +638,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 <div class="flow-panel" id="flow-cron-sync">
                     <div class="flow-title">执行流程</div>
                     <div class="flow-step">isolated 会话，Asia/Shanghai 时区</div>
-                    <div class="flow-step">调用 prepare-messages 获取游标到当前时间的消息</div>
+                    <div class="flow-step">调用 prepare-messages 获取消息（始终分页，默认每页 200 条），逐页处理</div>
                     <div class="flow-step">AI 分析消息 → 生成细粒度作息记录</div>
                     <div class="flow-step">空白时间段补 category='未知'</div>
                     <div class="flow-step">调用 add_record_full() 逐条写入</div>

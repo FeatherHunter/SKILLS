@@ -110,7 +110,9 @@ class Database:
                 msg.get("has_attachment", 0),
                 int(time.time()),
             ))
-            conn.commit()
+            # checkpoint 事务中不自行 commit，由 checkpoint_progress 批量管理
+            if conn is not _conn:
+                conn.commit()
         finally:
             if conn is not _conn:
                 conn.close()
@@ -135,7 +137,9 @@ class Database:
                 att.get("date", ""),
                 int(time.time()),
             ))
-            conn.commit()
+            # checkpoint 事务中不自行 commit，由 checkpoint_progress 批量管理
+            if conn is not _conn:
+                conn.commit()
         finally:
             if conn is not _conn:
                 conn.close()
@@ -168,7 +172,9 @@ class Database:
                 (session_file, last_timestamp, last_message_id, updated_at)
                 VALUES (?, ?, ?, ?)
             """, (session_file, last_timestamp, last_message_id, int(time.time())))
-            conn.commit()
+            # checkpoint 事务中不自行 commit，由 checkpoint_progress 批量管理
+            if conn is not _conn:
+                conn.commit()
         finally:
             if conn is not _conn:
                 conn.close()
@@ -181,7 +187,7 @@ class Database:
             VALUES (?, ?, ?, ?)
         """, (session_file, last_timestamp, last_message_id, int(time.time())))
         # 【优化】只每 50 条消息 commit 一次，避免 9P 往返开销
-        if self._commit_counter >= 50:
+        if self._commit_counter >= 49:
             self._conn.commit()
             self._commit_counter = 0
         else:

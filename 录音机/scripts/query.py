@@ -64,7 +64,7 @@ def main():
             day = int(args.date[6:8])
             beijing = timezone(timedelta(hours=8))
             start_dt = datetime(year, month, day, 0, 0, 0, tzinfo=beijing)
-            end_dt = datetime(year, month, day, 23, 59, 59, tzinfo=beijing)
+            end_dt = datetime(year, month, day, 23, 59, 59, 999999, tzinfo=beijing)
             start_ts = int(start_dt.timestamp() * 1_000_000)
             end_ts = int(end_dt.timestamp() * 1_000_000)
         else:

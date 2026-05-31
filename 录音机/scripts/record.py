@@ -23,7 +23,7 @@ SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from db import Database
 
-SESSION_DIR = Path(os.environ.get("OPENCLAW_SESSIONS", Path.home() / ".openclaw/agents/main/sessions"))
+SESSION_DIR = Path(os.environ.get("OPENCLAW_SESSIONS", Path.home() / ".openclaw/agents"))
 ROLE_FILTER = "user"
 
 # 系统前缀列表（过滤用）
@@ -92,14 +92,14 @@ def extract_metadata(text: str) -> dict:
             result['sender_id'] = meta.get('sender_id') or meta.get('sender', '')
             result['message_id'] = meta.get('message_id', '')
             result['timestamp'] = meta.get('timestamp', '')
-        except:
+        except (json.JSONDecodeError, IndexError, KeyError):
             pass
     elif text.startswith('Sender (untrusted'):
         try:
             json_str = text.split('```json')[1].split('```')[0]
             meta = json.loads(json_str)
             result['sender_id'] = meta.get('id', '') or meta.get('label', '')
-        except:
+        except (json.JSONDecodeError, IndexError, KeyError):
             pass
     return result
 
@@ -111,12 +111,13 @@ def strip_timestamp_prefix(text: str) -> str:
     return text
 
 
-def extract_content_and_attachments(text: str, timestamp: int, session_file: Path) -> tuple:
+def extract_content_and_attachments(text: str, timestamp: int, session_file: Path, clean_text: str = None) -> tuple:
     content = None
     has_attachment = 0
     attachments = []
 
-    clean_text = strip_timestamp_prefix(text)
+    if clean_text is None:
+        clean_text = strip_timestamp_prefix(text)
     lines = clean_text.split('\n')
     asr_content = None
     metadata_lines = set()
@@ -124,7 +125,6 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
     for i, line in enumerate(lines):
         line_stripped = line.strip()
         if not line_stripped:
-            metadata_lines.add(i)
             continue
 
         if line_stripped.startswith('- ASR: '):
@@ -185,12 +185,11 @@ def extract_content_and_attachments(text: str, timestamp: int, session_file: Pat
             continue
 
     non_meta_lines = [l for j, l in enumerate(lines) if j not in metadata_lines and l.strip()]
-    # 提取真实内容：如果有 ASR 用 ASR；否则用最后一行（非 JSON 垃圾）
+    # 提取真实内容：如果有 ASR 用 ASR；否则拼接所有非 metadata 行
     if asr_content:
         content = asr_content.strip()
     elif non_meta_lines:
-        # 取最后一行作为真实用户发言（避免 JSON 内容干扰）
-        content = non_meta_lines[-1].strip()
+        content = '\n'.join(non_meta_lines).strip()
     else:
         content = None
 
@@ -245,11 +244,16 @@ def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=No
             if msg.get("role") != ROLE_FILTER:
                 continue
 
+            # 处理 content 可能是 list 或 string 的情况
+            content = msg.get("content", "")
             text = ''
-            for c in msg.get("content", []):
-                if isinstance(c, dict) and c.get("type") == "text":
-                    text = c.get("text", "")
-                    break
+            if isinstance(content, list):
+                for c in content:
+                    if isinstance(c, dict) and c.get("type") == "text":
+                        text = c.get("text", "")
+                        break
+            elif isinstance(content, str):
+                text = content
 
             if not text or not text.strip():
                 continue
@@ -262,12 +266,15 @@ def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=No
             if ts is None:
                 continue
 
-            if last_ts > 0 and ts <= last_ts:
+            msg_id = obj.get("id", "") or f"{session_file.name}:{ts}"
+
+            if last_ts > 0 and ts < last_ts:
+                continue
+            if last_ts > 0 and ts == last_ts and msg_id == latest_msg_id:
                 continue
 
-            content, has_attachment, attachments = extract_content_and_attachments(text, ts, session_file)
-            msg_id = obj.get("id", "") or f"{session_file.name}:{ts}"
-            meta = extract_metadata(text)
+            content, has_attachment, attachments = extract_content_and_attachments(text, ts, session_file, clean_text=stripped_text)
+            meta = extract_metadata(stripped_text)
 
             if content:
                 db.insert_message({
@@ -312,8 +319,17 @@ def main():
     # 【优化：预加载所有 checkpoint，一次查询替代逐文件查询】
     cp_cache = db.preload_checkpoints()
 
-    # 【优化+4】排除 trajectory，只扫活跃的 .jsonl 文件
-    all_files = sorted(SESSION_DIR.glob("*.jsonl"))
+    # 自动发现所有 sessions 目录（多 agent 支持）
+    sub_sessions = [d / "sessions" for d in SESSION_DIR.iterdir()
+                    if d.is_dir() and (d / "sessions").is_dir()]
+    session_dirs = sub_sessions if sub_sessions else [SESSION_DIR]
+    if len(session_dirs) > 1:
+        print(f"[多Agent] 发现 {len(session_dirs)} 个 sessions 目录")
+
+    # 【优化+4】排除 trajectory 和 deleted，扫描 .jsonl、.reset.* 和 .bak-* 文件
+    all_files = []
+    for sd in session_dirs:
+        all_files += sorted(sd.glob("*.jsonl")) + sorted(sd.glob("*.reset.*")) + sorted(sd.glob("*.bak-*"))
     all_files = [f for f in all_files
                  if ".deleted." not in f.name and ".trajectory." not in f.name]
 

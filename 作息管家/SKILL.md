@@ -107,19 +107,38 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 **执行流程**：
 1. 调用 `prepare-messages` 获取消息
-2. AI 用滑动窗口（前5后5）判断活动边界
-3. 逐条调用 `add_record_full()` 写入（9字段全填）
-4. 前5后5窗口推断：
+2. **前置：获取最少 block 数量**
+   ```python
+   from block_count import get_required_block_count
+
+   # 获取该时间区间最少需要的 block 数量
+   # messages_per_block: 每个 block 最多承载的消息数（默认5）
+   required_min = get_required_block_count(start_ts, end_ts, messages_per_block=5)
+   ```
+3. AI 用滑动窗口（前5后5）判断活动边界
+4. 逐条调用 `add_record_full()` 写入（9字段全填）
+5. 前5后5窗口推断：
    - 以block「开始时间点」为中心，取前5条消息推断该时间段起点前的活动
    - 以block「结束时间点」为中心，取后5条消息推断该时间段终点后的活动
    - 日期边界：首条消息无法说明00:00~首条时间点；末条消息无法说明末条时间点~23:59
      → 用「前一天末尾5条+当天开头5条」推断开头时段
      → 用「当天末尾5条+下一天开头5条」推断结尾时段
-5. 保证首尾相接
+6. **后置：验证 block 数量是否达标**
+   ```python
+   from block_count import validate_record_count
+
+   result = validate_record_count(start_ts, end_ts, messages_per_block=5)
+   # result == True: 验证通过
+   # result is str: 验证失败，提示词会告诉 AI 哪里不足、如何修正
+   if result is not True:
+       # AI 必须根据提示词重新拆分，直到验证通过
+       ...
+   ```
+7. 保证首尾相接
 
 **粒度原则**：按活动切换点细分，宁可多条不要合并。
 
-> 详细流程见: `references/同步流程.md`
+> 执行同步操作必须读取: `references/同步流程.md`
 
 ---
 

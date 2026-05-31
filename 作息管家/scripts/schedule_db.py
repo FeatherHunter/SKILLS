@@ -237,6 +237,10 @@ def get_messages_for_sync(cursor_datetime_str, end_time_str=None):
     
     return cursor_datetime_str, prev_messages, new_messages
 
+# ============ 同步粒度校验（委托给 block_count.py）============
+from block_count import get_required_block_count, validate_record_count
+
+
 # ============ 时间转换工具 ============
 def _ts_to_time(ts):
     """13位毫秒时间戳 → '2026-05-20 22:41:00'"""

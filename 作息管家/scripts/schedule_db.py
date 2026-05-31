@@ -192,23 +192,34 @@ def get_messages_before(before_time_str, limit=10):
         result.append((str(msg_id), _ts_to_time(ts), channel, content))
     return result  # 已按时间倒序，调用方需要反转
 
-def get_messages_from(from_time_str, to_time_str=None):
+def get_messages_from(from_time_str, to_time_str=None, limit=None, offset=0):
     """
-    获取 from_time 到 to_time 为止的所有消息
+    获取 from_time 到 to_time 为止的消息（支持分页）
     from_time / to_time 格式: "2026-05-20 22:41:00"
     to_time 为空时获取到当前时间
+    limit: 每页条数，None 表示不限制
+    offset: 跳过前 N 条
     返回: list of (msg_id, time_str_HHMM, channel, content)
     """
     from_ts = _time_str_to_ts(from_time_str)
     to_ts = _time_str_to_ts(to_time_str) if to_time_str else _time_str_to_ts(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     conn = get_dr_connection()
     c = conn.cursor()
-    c.execute('''
-        SELECT id, message_id, timestamp, channel, sender_id, content
-        FROM user_messages
-        WHERE timestamp >= ? AND timestamp <= ?
-        ORDER BY timestamp
-    ''', (from_ts, to_ts))
+    if limit is not None:
+        c.execute('''
+            SELECT id, message_id, timestamp, channel, sender_id, content
+            FROM user_messages
+            WHERE timestamp >= ? AND timestamp <= ?
+            ORDER BY timestamp
+            LIMIT ? OFFSET ?
+        ''', (from_ts, to_ts, limit, offset))
+    else:
+        c.execute('''
+            SELECT id, message_id, timestamp, channel, sender_id, content
+            FROM user_messages
+            WHERE timestamp >= ? AND timestamp <= ?
+            ORDER BY timestamp
+        ''', (from_ts, to_ts))
     rows = c.fetchall()
     conn.close()
     result = []
@@ -219,22 +230,42 @@ def get_messages_from(from_time_str, to_time_str=None):
     return result
 
 
-def get_messages_for_sync(cursor_datetime_str, end_time_str=None):
+def count_messages_from(from_time_str, to_time_str=None):
     """
-    获取同步所需的全部消息
+    统计 from_time 到 to_time 之间的消息总数
+    from_time / to_time 格式: "2026-05-20 22:41:00"
+    """
+    from_ts = _time_str_to_ts(from_time_str)
+    to_ts = _time_str_to_ts(to_time_str) if to_time_str else _time_str_to_ts(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    conn = get_dr_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT COUNT(*) FROM user_messages
+        WHERE timestamp >= ? AND timestamp <= ?
+    ''', (from_ts, to_ts))
+    count = c.fetchone()[0]
+    conn.close()
+    return count
+
+
+def get_messages_for_sync(cursor_datetime_str, end_time_str=None, limit=None, offset=0):
+    """
+    获取同步所需的消息（支持分页）
     1. 获取游标前10条消息（AI上下文参考，不处理）
-    2. 获取游标时间之后到结束时间的所有新消息（实际处理）
+    2. 获取游标时间之后到结束时间的消息（实际处理，支持分页）
     end_time_str: 结束时间，格式 "2026-05-20 22:41:00"，为空则到当前时间
+    limit: 每页条数，None 表示不限制
+    offset: 跳过前 N 条
     返回: (cursor_datetime, prev_messages, new_messages)
     """
     # 获取游标前10条消息（用于AI理解上下文，不写入）
     prev_messages = get_messages_before(cursor_datetime_str, limit=10)
     # 反转，按时间正序（最早在前）
     prev_messages = list(reversed(prev_messages))
-    
-    # 获取游标时间之后到结束时间的所有新消息
-    new_messages = get_messages_from(cursor_datetime_str, end_time_str)
-    
+
+    # 获取游标时间之后到结束时间的消息（支持分页）
+    new_messages = get_messages_from(cursor_datetime_str, end_time_str, limit=limit, offset=offset)
+
     return cursor_datetime_str, prev_messages, new_messages
 
 # ============ 同步粒度校验（委托给 block_count.py）============

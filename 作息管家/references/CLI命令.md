@@ -16,10 +16,10 @@ python3 scripts/schedule_cli.py init
 
 ---
 
-### 2. 准备同步消息（供 AI 分析）
+### 2. 准备同步消息（供 AI 分析，始终分页）
 
 ```bash
-# 默认: 从数据库游标到当前时间
+# 默认: 从数据库游标到当前时间, 第1页, 每页200条
 python3 scripts/schedule_cli.py prepare-messages
 
 # 指定开始时间到当前时间
@@ -28,14 +28,19 @@ python3 scripts/schedule_cli.py prepare-messages <开始时间>
 # 指定时间范围
 python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间>
 
+# 分页参数
+python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间> --page 2
+python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间> --page 1 --page-size 100
+
 # 时间格式: YYYY-MM-DD HH:MM:SS  或  YYYY-MM-DD
 # 示例: python3 scripts/schedule_cli.py prepare-messages 2026-05-09 2026-05-22
 ```
 
 **作用**：
 - 查询游标位置的最后一条记录（或指定开始时间）
-- 获取开始时间前10条消息（上下文）+ 开始时间到结束时间的所有消息
+- 获取开始时间前10条消息（上下文）+ 开始时间到结束时间的消息（分页）
 - 输出 JSON 格式供 AI 分析
+- JSON 中含 `pagination` 元数据，`has_next=true` 时需用 `--page N` 获取下一页
 
 **输出**：
 ```
@@ -43,11 +48,14 @@ python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间>
 结束时间: 2026-05-22 15:59:30
 
 上下文消息: 10 条（仅供参考，不处理）
-待处理消息: 3873 条（从开始时间到结束时间）
+待处理消息: 200 条（第1页/20页，每页200条，共3873条）
 
 【JSON输出开始】
-{ ... }
+{ "pagination": { "page": 1, "total_pages": 20, "has_next": true, ... }, ... }
 【JSON输出结束】
+
+AI分析说明:
+- ⚠️ 还有下一页! 处理完本页后，请用 --page 2 获取下一页
 ```
 
 ---

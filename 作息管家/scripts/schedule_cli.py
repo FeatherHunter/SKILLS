@@ -23,33 +23,54 @@ from schedule_db import (
     get_records_by_date, get_records_range,
     has_records_for_date, get_daily_summary,
     get_summaries_range, get_connection, DB_PATH,
-    upsert_plan, get_plan, get_plans, add_summary
+    upsert_plan, get_plan, get_plans, add_summary,
+    count_messages_from
 )
 
 # ============ CLI 命令 ============
 def cmd_prepare_messages(args):
     """
-    准备同步消息:查询游标前10条(上下文) + 游标后新消息,输出JSON供AI分析
+    准备同步消息（始终分页）:查询游标前10条(上下文) + 游标后新消息(分页),输出JSON供AI分析
     用法:
-      python schedule_cli.py prepare-messages                              # 默认: 从数据库游标到当前时间
+      python schedule_cli.py prepare-messages                              # 默认: 从数据库游标到当前时间, 第1页, 每页200条
       python schedule_cli.py prepare-messages <开始时间>                       # 指定开始时间到当前时间
       python schedule_cli.py prepare-messages <开始时间> <结束时间>            # 指定时间范围
+      python schedule_cli.py prepare-messages <开始时间> <结束时间> --page 2      # 第2页
+      python schedule_cli.py prepare-messages <开始时间> <结束时间> --page-size 200  # 每页200条
     时间格式: YYYY-MM-DD HH:MM:SS  或  YYYY-MM-DD
     示例: python schedule_cli.py prepare-messages 2026-05-09 2026-05-22
+          python schedule_cli.py prepare-messages 2026-05-09 2026-05-22 --page 2 --page-size 200
     """
     import json
+    import math
     from datetime import datetime, timedelta
 
-    # 解析参数
+    # 解析分页参数
+    page = 1
+    page_size = 200
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] == '--page' and i + 1 < len(args):
+            page = int(args[i + 1])
+            i += 2
+        elif args[i] == '--page-size' and i + 1 < len(args):
+            page_size = int(args[i + 1])
+            i += 2
+        else:
+            clean_args.append(args[i])
+            i += 1
+
+    # 解析时间参数
     start_time_str = None
     end_time_str = None
     use_db_cursor = True
 
-    if len(args) >= 1:
+    if len(clean_args) >= 1:
         use_db_cursor = False
-        start_time_str = args[0]
-        if len(args) >= 2:
-            end_time_str = args[1]
+        start_time_str = clean_args[0]
+        if len(clean_args) >= 2:
+            end_time_str = clean_args[1]
         else:
             end_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     # 格式化时间
@@ -77,8 +98,16 @@ def cmd_prepare_messages(args):
         cursor_activity = None
         cursor_category = None
 
-    # 获取同步所需的消息
-    cursor_dt, prev_messages, new_messages = get_messages_for_sync(cursor_datetime, end_time_str)
+    # 计算分页
+    offset = (page - 1) * page_size
+    total_messages = count_messages_from(cursor_datetime, end_time_str)
+    total_pages = math.ceil(total_messages / page_size) if total_messages > 0 else 1
+    has_next = page < total_pages
+
+    # 获取同步所需的消息（分页）
+    cursor_dt, prev_messages, new_messages = get_messages_for_sync(
+        cursor_datetime, end_time_str, limit=page_size, offset=offset
+    )
 
     print(f"开始时间: {cursor_datetime}")
     print(f"结束时间: {end_time_str}")
@@ -86,7 +115,7 @@ def cmd_prepare_messages(args):
         print(f"最后活动: {cursor_activity} [{cursor_category}]")
     print()
     print(f"上下文消息: {len(prev_messages)} 条（仅供参考，不处理）")
-    print(f"待处理消息: {len(new_messages)} 条（从开始时间到结束时间）")
+    print(f"待处理消息: {len(new_messages)} 条（第{page}页/{total_pages}页，每页{page_size}条，共{total_messages}条）")
     print()
 
     if not new_messages:
@@ -101,6 +130,13 @@ def cmd_prepare_messages(args):
         'current_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'prev_message_count': len(prev_messages),
         'new_message_count': len(new_messages),
+        'pagination': {
+            'page': page,
+            'page_size': page_size,
+            'total_messages': total_messages,
+            'total_pages': total_pages,
+            'has_next': has_next
+        },
         'prev_messages': [],
         'new_messages': []
     }
@@ -130,11 +166,13 @@ def cmd_prepare_messages(args):
     print()
     print("AI分析说明:")
     print("- prev_messages: 游标前10条消息,帮助你理解上下文,不写入数据库")
-    print("- new_messages: 游标之后的新消息,需要分析并写入数据库")
+    print("- new_messages: 当前页的新消息,需要分析并写入数据库")
     print("- 需要保证记录首尾相接(time_start = 上一条 time_end)")
     print("- 空白时间段请生成 category='未知' 的记录填充")
     print("- 按活动切换点生成细粒度记录,不要合并")
     print(f"- 调用 add_record_full() 逐条写入,记录数应 >= {len(new_messages)}")
+    if has_next:
+        print(f"- ⚠️ 还有下一页! 处理完本页后，请用 --page {page + 1} 获取下一页")
 
 def cmd_help():
     print("""

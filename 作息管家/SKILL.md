@@ -106,7 +106,9 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 将语录消息分析为细粒度作息记录。
 
 **执行流程**：
-1. 调用 `prepare-messages` 获取消息
+1. 调用 `prepare-messages` 获取消息（始终分页，默认每页200条）
+   - 检查返回 JSON 中的 `pagination.has_next`：若为 `true`，处理完当前页后用 `--page N` 获取下一页
+   - 消息量少时只有1页，无需额外操作
 2. **前置：获取最少 block 数量**
    ```python
    from block_count import get_required_block_count

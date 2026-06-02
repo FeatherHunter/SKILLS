@@ -386,13 +386,16 @@ const modules = [
       },
       {
         word: "颁体重勋章",
-        desc: "颁发体重链勋章，自动检查下降/达标/回升。",
-        cli: "python3 scripts/medal.py add --type badge --name \"体重记录\" --file \"<路径>\" --remark \"体重链：MM-DD 称重XXkg\"",
+        desc: "检查体重变化：下降颁发奖励，上升仅警告。目标体重从卡路里技能读取。",
+        cli: "python3 scripts/medal.py add --type certificate --name \"体重下降\" --file \"<路径>\" --remark \"体重链：MM-DD 称重XXkg\"",
         flow: [
-          { text: "颁发「体重记录」badge" },
-          { text: "较上次下降 ≥0.5kg → 颁发「体重下降」certificate" },
-          { text: "达到目标体重 → 颁发「体重达标」trophy" },
-          { text: "较目标回升 ≥1kg → 颁发「体重回升」badge（温和提醒）" }
+          { text: "用户说「称了体重」 → 不颁发奖励，仅记录" },
+          { text: "读取卡路里技能文件获取目标体重" },
+          { text: "查本次与上次体重差值" },
+          { text: "本次下降 ≥0.5kg → 颁发「体重下降」certificate" },
+          { text: "下降到目标体重 → 颁发「体重达标」trophy" },
+          { text: "体重较上次回升 → 仅文字警告，不颁发奖励" },
+          { text: "体重较目标回升 → 仅文字警告，不颁发奖励" }
         ]
       }
     ]
@@ -400,11 +403,11 @@ const modules = [
   {
     cat: "query",
     title: "查询类",
-    desc: "查询勋章记录和统计信息，只读操作，不修改数据。",
+    desc: "查询勋章记录和统计信息，只读操作，不修改数据。⚠️ 严禁颁发新勋章或生成新图。",
     triggers: [
       {
         word: "查勋章记录",
-        desc: "查询所有勋章历史记录，默认返回最近 50 条。",
+        desc: "📖 [只读] 查询所有勋章历史记录，默认返回最近 50 条。",
         cli: "python3 scripts/medal.py list [--type <类型>] [--limit <数量>]",
         flow: [
           { text: "执行 SELECT 查询 medals 表" },
@@ -416,12 +419,14 @@ const modules = [
               ]
             }
           },
-          { text: "副作用：无，只读操作" }
+          { text: "副作用：无，只读操作" },
+          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
+          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
         ]
       },
       {
         word: "查勋章统计",
-        desc: "查看勋章数量统计，按类型汇总。",
+        desc: "📖 [只读] 查看勋章数量统计，按类型汇总。",
         cli: "python3 scripts/medal.py stats",
         flow: [
           { text: "执行 COUNT 查询，按 medal_type 分组" },
@@ -434,25 +439,31 @@ const modules = [
               ]
             }
           },
-          { text: "副作用：无，只读操作" }
+          { text: "副作用：无，只读操作" },
+          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
+          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
         ]
       },
       {
         word: "查某类勋章",
-        desc: "按类型筛选查询（badge/certificate/trophy）。",
+        desc: "📖 [只读] 按类型筛选查询（badge/certificate/trophy）。",
         cli: "python3 scripts/medal.py list --type badge",
         flow: [
           { text: "执行 SELECT ... WHERE medal_type = ? 查询" },
-          { text: "副作用：无，只读操作" }
+          { text: "副作用：无，只读操作" },
+          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
+          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
         ]
       },
       {
         word: "查最近勋章",
-        desc: "查看最近 N 条勋章记录。",
+        desc: "📖 [只读] 查看最近 N 条勋章记录。",
         cli: "python3 scripts/medal.py list --limit 10",
         flow: [
           { text: "执行 SELECT ... LIMIT N 查询" },
-          { text: "副作用：无，只读操作" }
+          { text: "副作用：无，只读操作" },
+          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
+          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
         ]
       }
     ]

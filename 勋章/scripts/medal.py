@@ -59,6 +59,38 @@ def init_db():
 # ============================================================
 # 数据库操作
 # ============================================================
+def _normalize_file_path(file_path: str) -> str:
+    """
+    校验 file_path 必须以 MEDAL_RESOURCE_PATH 开头，
+    通过则切掉前缀返回相对路径，否则抛出 ValueError。
+    """
+    if not file_path or not isinstance(file_path, str):
+        raise ValueError(f'file_path 无效：{file_path!r}')
+
+    # 规范化前缀（去掉尾部斜杠以避免漏匹配）
+    prefix = MEDAL_RESOURCE_PATH.rstrip('/\\')
+    abs_path = file_path.replace('\\', '/')
+
+    # 允许调用方传相对路径（直接以文件名或子路径形式），
+    # 此时按"在 MEDAL_RESOURCE_PATH 内"处理。
+    if os.path.isabs(abs_path):
+        if not abs_path.startswith(prefix + '/') and abs_path != prefix:
+            raise ValueError(
+                f'file_path 必须位于 MEDAL_RESOURCE_PATH 目录下：\n'
+                f'  传入: {file_path}\n'
+                f'  要求前缀: {prefix}/'
+            )
+        rel_path = abs_path[len(prefix) + 1:]
+    else:
+        # 相对路径直接接受
+        rel_path = abs_path
+
+    if not rel_path:
+        raise ValueError(f'file_path 不能指向资源根目录本身：{file_path!r}')
+
+    return rel_path
+
+
 def add_medal(medal_type: str, medal_name: str, file_path: str, remark: str = None) -> int:
     """
     颁发勋章（新增记录）
@@ -66,18 +98,23 @@ def add_medal(medal_type: str, medal_name: str, file_path: str, remark: str = No
     Args:
         medal_type: 勋章类型，如 "badge" "certificate" "trophy"
         medal_name: 勋章名称，如 "清洁达人"
-        file_path: 奖励文件路径（PNG/JPG/GIF）
+        file_path: 奖励文件绝对路径（必须以 MEDAL_RESOURCE_PATH 开头）
         remark: 获得原因/备注
 
     Returns:
         新记录的id
+
+    Raises:
+        ValueError: file_path 不在 MEDAL_RESOURCE_PATH 范围内
     """
+    rel_path = _normalize_file_path(file_path)
+
     conn = sqlite3.connect(MEDAL_DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
         INSERT INTO medals (medal_type, medal_name, file_path, remark, awarded_at)
         VALUES (?, ?, ?, ?, ?)
-    ''', (medal_type, medal_name, file_path, remark, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    ''', (medal_type, medal_name, rel_path, remark, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     conn.commit()
     medal_id = cursor.lastrowid
     conn.close()
@@ -115,7 +152,19 @@ def get_medals(medal_type: str = None, limit: int = 50) -> list:
     
     rows = cursor.fetchall()
     conn.close()
-    return [dict(row) for row in rows]
+    results = []
+    prefix = MEDAL_RESOURCE_PATH.rstrip('/\\')
+    for row in rows:
+        item = dict(row)
+        rp = item.get('file_path', '') or ''
+        # 兼容历史绝对路径：尝试切前缀；如果切不动就原样保留在 abs_file_path
+        if rp and not os.path.isabs(rp):
+            item['abs_file_path'] = os.path.join(prefix, rp)
+        else:
+            item['abs_file_path'] = rp  # 原始值，方便诊断
+        item['file_exists'] = bool(item['abs_file_path']) and os.path.isfile(item['abs_file_path'])
+        results.append(item)
+    return results
 
 
 def get_medal_stats() -> dict:

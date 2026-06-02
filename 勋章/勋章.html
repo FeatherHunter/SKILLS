@@ -655,10 +655,10 @@ const modules = [
       {
         word: "审勋章设计",
         desc: "审查勋章设计图质量，输出 7 维度评审报告。",
-        cli: "MiniMax_understand_image（ui-review 模式）",
+        cli: "mmx vision describe（ui-review 模式，通过 subagent）",
         flow: [
           { text: "读取设计文件（HTML 截图或 PNG）" },
-          { text: "调用 MiniMax_understand_image 审查" },
+          { text: "通过 subagent 调 mmx vision describe 审查" },
           { text: "7 维度检查：视觉焦点、材质质感、配色、构图、身份标识、文字、改进建议" },
           { text: "不合格 → 提供修改建议，最多迭代 3 轮" },
           {

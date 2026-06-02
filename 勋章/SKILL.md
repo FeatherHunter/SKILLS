@@ -396,7 +396,7 @@ medal.py add 写入数据库
     ↓
 读取设计文件
     ↓
-调用MiniMax_understand_image审查
+通过 subagent 调 mmx vision describe 审查
     ↓
 7维度检查：
   1. 视觉焦点是否明确
@@ -990,7 +990,7 @@ Prompt不是填表，是**描述你脑海中看到的那幅画**。
     使用 Playwright 渲染HTML并截图单帧（非GIF）
     注意：截图等待时间必须覆盖所有动画延迟。如果入场动画延迟2秒+持续1秒，截图至少等3.5秒，否则会漏掉晚入场的元素
     ↓
-    调用 MiniMax_understand_image（ui-review模式）分析截图
+    通过 subagent 调 mmx vision describe（ui-review 模式）分析截图
     ↓
     AI根据审查结果修改HTML → 重新渲染截图 → 再次审查
     ↓
@@ -1026,7 +1026,7 @@ Prompt不是填表，是**描述你脑海中看到的那幅画**。
 第六步：保存HTML到 MEDAL_RESOURCE_PATH/<名称>.html
     ↓
 第七步：视觉审查（同路径A）
-    Playwright渲染截图 → MiniMax_understand_image审查 → 迭代修改
+    Playwright渲染截图 → 通过 subagent 调 mmx vision describe 审查 → 迭代修改
     ↓
 第八步：生成GIF（同路径A）
     python3 scripts/generate_medal_gif.py --html-file <HTML文件路径> --output <文件名>
@@ -1048,7 +1048,7 @@ Prompt不是填表，是**描述你脑海中看到的那幅画**。
     mmx image generate --prompt "<prompt>" --out $MEDAL_RESOURCE_PATH/<名称>.png --width 1024 --height 1024
     ↓
 第五步：视觉审查
-    调用 MiniMax_understand_image 直接审查生成的图片：
+    通过 subagent 调 mmx vision describe 直接审查生成的图片：
     - 是否符合勋章/证书/奖杯的形态？
     - 材质质感如何？是否有金属/玻璃/纸张的感觉？
     - 配色是否与事件匹配？
@@ -1066,7 +1066,7 @@ Prompt不是填表，是**描述你脑海中看到的那幅画**。
 
 ### 视觉审查通用提示词
 
-三条路径共用同一套审查标准，调用 `MiniMax_understand_image`（ui-review模式）：
+三条路径共用同一套审查标准，通过 subagent 调 `mmx vision describe`（ui-review 模式）：
 
 ```
 这是一个勋章/证书/奖杯的设计稿。请从以下角度评审：
@@ -1142,6 +1142,7 @@ python3 scripts/medal.py init
 12. **成就链主动检查**：颁发勋章时，应主动检查用户是否解锁了对应的进阶/里程碑成就
 13. **查询结果格式化**：查询类唤醒词输出结果时，使用清晰的表格或列表格式
 14. **成就链进度报告**：检查成就链时，输出当前等级、进度百分比、下一解锁条件
+15. **视觉审查必须 subagent**：审查设计稿/截图时，必须通过 subagent 子代理调用 `mmx vision describe`。主 agent 不得直接使用 `image` 工具或任何视觉模型 API；任何视觉识别都需经 subagent 中转。违者视为严重违规，需向用户说明原因并立即纠正。
 
 ---
 

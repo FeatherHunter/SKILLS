@@ -183,18 +183,102 @@ def update_note(args):
         conn.close()
 
 def delete_note(args):
-    note_id = args.id
-    if note_id <= 0:
-        error_json("笔记 ID 必须是正整数")
+    """删除笔记（可选级联删提醒）
+
+    用法：
+      memo_cli.py delete <id>                         # 有关联提醒则报错
+      memo_cli.py delete <id1> <id2> ...              # 批量
+      memo_cli.py delete <id> --with-reminders        # 关联提醒一并删，active 提醒交互确认
+      memo_cli.py delete <id> --with-reminders -y     # 跳过确认（自动化用）
+    """
+    note_ids = args.id
+    with_reminders = getattr(args, 'with_reminders', False)
+    auto_yes = getattr(args, 'yes', False)
+
+    # 校验：所有 id 必须是正整数
+    for nid in note_ids:
+        if nid <= 0:
+            error_json("笔记 ID 必须是正整数")
+
     conn = get_conn()
-    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
-    if not note:
-        error_json(f"笔记不存在: id={note_id}")
     try:
-        conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+        # 1. 校验所有笔记存在
+        existing = []
+        for nid in note_ids:
+            row = conn.execute("SELECT id, content FROM notes WHERE id = ?", (nid,)).fetchone()
+            if not row:
+                error_json(f"笔记不存在: id={nid}")
+            existing.append(row)
+
+        # 2. 收集所有关联的提醒
+        related_reminders = []
+        for nid in note_ids:
+            rems = conn.execute(
+                "SELECT id, note_id, remind_at, repeat_type, status, content FROM reminders WHERE note_id = ?",
+                (nid,)
+            ).fetchall()
+            related_reminders.extend(rems)
+
+        # 3. 如果有关联提醒但没传 --with-reminders → 报错提示
+        if related_reminders and not with_reminders:
+            error_json(
+                f"笔记 {note_ids} 关联 {len(related_reminders)} 个提醒，"
+                f"请加 --with-reminders 参数级联删除（提醒不会被自动删除）"
+            )
+
+        # 4. 如果有 active 提醒且无 -y → 交互式二次确认
+        active_reminders = [r for r in related_reminders if r['status'] == 'active']
+        if with_reminders and active_reminders and not auto_yes:
+            print("⚠️ 以下提醒状态为 active（未触发），确认删除？", flush=True)
+            for r in active_reminders:
+                print(
+                    f"  - ID {r['id']} [active] {r['remind_at']} {r['repeat_type']} "
+                    f"笔记 {r['note_id']} | {r['content']}",
+                    flush=True
+                )
+            print("  以及其他 dismissed 提醒一并删除。", flush=True)
+            try:
+                ans = input("确认删除？(y/N): ").strip().lower()
+            except EOFError:
+                ans = 'n'
+            if ans != 'y':
+                output_json({"cancelled": True}, message="已取消删除")
+
+        # 5. 执行删除：先删 reminders，再删 notes（避开外键约束）
+        deleted_reminder_ids = []
+        if with_reminders and related_reminders:
+            for r in related_reminders:
+                conn.execute("DELETE FROM reminders WHERE id = ?", (r['id'],))
+                deleted_reminder_ids.append(r['id'])
+
+        deleted_note_ids = []
+        for nid in note_ids:
+            conn.execute("DELETE FROM notes WHERE id = ?", (nid,))
+            deleted_note_ids.append(nid)
+
         conn.commit()
-        output_json({"id": note_id}, message="笔记已删除")
+
+        # 6. 输出结果
+        result = {
+            "deleted_notes": deleted_note_ids,
+            "deleted_reminders": deleted_reminder_ids,
+        }
+        if active_reminders:
+            result["active_reminders_deleted"] = len(active_reminders)
+
+        if deleted_reminder_ids:
+            msg = f"已删除 {len(deleted_note_ids)} 个笔记 + {len(deleted_reminder_ids)} 个提醒"
+            if active_reminders:
+                msg += f"（含 {len(active_reminders)} 个未触发）"
+        else:
+            msg = f"已删除 {len(deleted_note_ids)} 个笔记"
+
+        output_json(result, message=msg)
     except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         error_json(str(e))
     finally:
         conn.close()
@@ -786,7 +870,11 @@ def main():
 
     # delete
     p_del = sub.add_parser("delete")
-    p_del.add_argument("id", type=int)
+    p_del.add_argument("id", type=int, nargs="+", help="要删除的笔记 ID（可多个，空格分隔）")
+    p_del.add_argument("--with-reminders", action="store_true",
+                       help="级联删除关联的提醒（不加则有关联提醒会报错）")
+    p_del.add_argument("-y", "--yes", action="store_true",
+                       help="跳过二次确认（QQbot 自动化用）")
 
     # get note
     p_get = sub.add_parser("get")

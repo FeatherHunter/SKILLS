@@ -265,11 +265,11 @@ const DATA = [
         name: "文字录入",
         wakeWords: ["录物品"],
         cli: 'add --name "XX" --category "XX" --location "XX" --tags "标签1,标签2"',
-        desc: "自然语言描述物品，AI 解析后写入数据库",
+        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似物品，避免重复录入）",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
-          side: "自动生成 items.id；location 含\"快递\"时自动设 location_status=\"快递中\"；access_count 不变"
+          side: "⚠️ 写库前必须先调 search --name \"XX\" --category \"XX\" 查相似；找到相似时必须让用户选（补充/新建）；location 含\"快递\"时自动设 location_status=\"快递中\"；access_count 不变"
         }
       },
       {

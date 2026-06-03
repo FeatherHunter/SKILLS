@@ -265,22 +265,22 @@ const DATA = [
         name: "文字录入",
         wakeWords: ["录物品"],
         cli: 'add --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX"',
-        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似 + 硬约束 tags≥10 且 remark 非空）",
+        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似 + 硬约束 tags≥10 且 remark 非空，⚠️ 无跳过通道）",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
-          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。拍物品流程必须先看图再 add 一次到位（不能再用先 add 再 update 旧流程）。"
+          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。⚠️ 无任何跳过通道：tag 不足或备注为空直接失败，无 --skip-strict-check 应急参数"
         }
       },
       {
         name: "拍照录入",
         wakeWords: ["拍物品"],
         cli: '# 1. AI 先看图提取最全面详细而严谨的 tag (≥10 个) + 名称 + 分类 + 备注\n# 2. 一次性 add（带完整 tags + photo + remark）\nadd --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX" --photo "photos/{ID}_XX.jpg"',
-        desc: "从图片提取最全面详细而严谨的 tag（≥10 个）+ 备注，AI 视觉分析后一次性 add 到位。应急通道：--skip-strict-check",
+        desc: "从图片提取最全面详细而严谨的 tag（≥10 个）+ 备注，AI 视觉分析后一次性 add 到位。⚠️ 无任何应急通道：图片信息不够时只能重拍或改文字录入",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, photo, remark, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag (≥10 个)",
-          side: "⚠️ 必须先看图再 add（不再分两步）。AI 从图片提取：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地 十大维度。应急情况（图片模糊）才能用 --skip-strict-check 跳过检查"
+          side: "⚠️ 必须先看图再 add（不再分两步）。AI 从图片提取：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地 十大维度。⚠️ 无应急通道：tag < 10 或 remark 空一律报错，无 --skip-strict-check 应急参数"
         }
       }
     ]

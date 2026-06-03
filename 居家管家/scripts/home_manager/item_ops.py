@@ -56,30 +56,25 @@ def _format_item(row, tags_str=None, locations_str=None):
 
 def add_item(name, category, location, owner="使用者", quantity=1,
              purchase_price=None, purchase_date=None, expiration_date=None,
-             remark="", tags="", photo="", location_status=None,
-             skip_strict_check=False):
+             remark="", tags="", photo="", location_status=None):
     """添加新物品
 
-    心愿 ID: 标签+备注硬约束
+    心愿 ID: 标签+备注硬约束（无可绕过通道）
         - tags 数量 < 10 → 报错
         - remark 为空 → 报错
-        - skip_strict_check=True 时跳过检查（拍物品流程用）
     """
-    # ── 硬约束：标签和备注必填检查 ────────────────────────────
-    if not skip_strict_check:
-        tag_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
-        if len(tag_list) < 10:
-            print(f"✗ 录入失败：需要 tag 最少十个，备注不能为空且要全面（AI 提示：拍物品流程必须先看图拿到 ≥10 个 tag 后再调用本命令）")
-            print(f"  当前 tag 数量: {len(tag_list)}（要求 ≥ 10）")
-            if tag_list:
-                print(f"  当前 tag: {', '.join(tag_list)}")
-            print(f"  提示：可用 --skip-strict-check 跳过本检查（仅供拍物品流程使用）")
-            return 1
-        if not remark or not remark.strip():
-            print(f"✗ 录入失败：需要 tag 最少十个，备注不能为空且要全面（AI 提示：拍物品流程必须先看图拿到 ≥10 个 tag 后再调用本命令）")
-            print(f"  当前备注: 空（要求非空）")
-            print(f"  提示：可用 --skip-strict-check 跳过本检查（仅供拍物品流程使用）")
-            return 1
+    # ── 硬约束：标签和备注必填检查（无跳过通道，AI 偷懒无退路）──
+    tag_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
+    if len(tag_list) < 10:
+        print(f"✗ 录入失败：需要 tag 最少十个，备注不能为空且要全面")
+        print(f"  当前 tag 数量: {len(tag_list)}（要求 ≥ 10）")
+        if tag_list:
+            print(f"  当前 tag: {', '.join(tag_list)}")
+        return 1
+    if not remark or not remark.strip():
+        print(f"✗ 录入失败：需要 tag 最少十个，备注不能为空且要全面")
+        print(f"  当前备注: 空（要求非空）")
+        return 1
 
     # ── 照片路径校验 & 裁剪 ─────────────────────────────────────
     if photo:

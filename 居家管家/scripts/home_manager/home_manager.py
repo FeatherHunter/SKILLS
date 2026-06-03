@@ -74,6 +74,7 @@ def main():
     p_add.add_argument("--tags", default="", help="标签（逗号分隔）")
     p_add.add_argument("--photo", default="", help="图片路径")
     p_add.add_argument("--location-status", default=None, help="存放状态（默认根据位置推断：位置含\"快递\"则为\"快递中\"，否则为\"在家\"")
+    p_add.add_argument("--skip-strict-check", action="store_true", help="跳过 tag≥10 + 备注非空 检查（仅供拍物品流程使用）")
 
     # ── search ──
     p_search = subparsers.add_parser("search", help="搜索物品")
@@ -187,7 +188,8 @@ def main():
             purchase_price=args.price, purchase_date=args.purchase_date,
             expiration_date=args.expiration_date, remark=args.remark, tags=args.tags,
             photo=args.photo,
-            location_status=args.location_status
+            location_status=args.location_status,
+            skip_strict_check=args.skip_strict_check
         )
 
     elif args.command == "search":

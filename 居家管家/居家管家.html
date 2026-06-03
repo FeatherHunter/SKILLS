@@ -264,23 +264,23 @@ const DATA = [
       {
         name: "文字录入",
         wakeWords: ["录物品"],
-        cli: 'add --name "XX" --category "XX" --location "XX" --tags "标签1,标签2"',
-        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似物品，避免重复录入）",
+        cli: 'add --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX"',
+        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似 + 硬约束 tags≥10 且 remark 非空）",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
-          side: "⚠️ 写库前必须先调 search --name \"XX\" --category \"XX\" 查相似；找到相似时必须让用户选（补充/新建）；location 含\"快递\"时自动设 location_status=\"快递中\"；access_count 不变"
+          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。拍物品流程必须先看图再 add 一次到位（不能再用先 add 再 update 旧流程）。"
         }
       },
       {
         name: "拍照录入",
         wakeWords: ["拍物品"],
-        cli: 'add --name "XX" --category "XX" --location "XX"\n→ 得到 ID\n→ update --id {ID} --photo "photos/{ID}_XX.jpg" --tags "颜色,品牌,规格…"',
-        desc: "从图片提取信息，AI 识别颜色/品牌/规格等作为标签",
+        cli: '# 1. AI 先看图提取最全面详细而严谨的 tag (≥10 个) + 名称 + 分类 + 备注\n# 2. 一次性 add（带完整 tags + photo + remark）\nadd --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX" --photo "photos/{ID}_XX.jpg"',
+        desc: "从图片提取最全面详细而严谨的 tag（≥10 个）+ 备注，AI 视觉分析后一次性 add 到位。应急通道：--skip-strict-check",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
-          fields: "items: name, category, owner, photo, updated_at\nitem_locations: item_id, location, quantity, location_status\nitem_tags: item_id, tag",
-          side: "分两步：先 add 得到 ID，再 update 写入 photo 和 tags；图片存储在 photos/ 目录"
+          fields: "items: name, category, owner, photo, remark, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag (≥10 个)",
+          side: "⚠️ 必须先看图再 add（不再分两步）。AI 从图片提取：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地 十大维度。应急情况（图片模糊）才能用 --skip-strict-check 跳过检查"
         }
       }
     ]

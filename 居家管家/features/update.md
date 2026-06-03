@@ -94,6 +94,51 @@ python home_manager.py update --id 1 --owner "其他人"
 python home_manager.py update --id 1 --tags "新标签1,新标签2"
 ```
 
+### 追加新位置（心愿 ID: 84）
+
+**与"位置移动"的区别**：
+- 位置移动（`--new-location`）：**替换**现有位置，原位置记录被改写
+- 追加位置（`--add-location`）：**新增**一条位置记录，原位置保留 → 一物多位置
+
+**适用场景**：
+- 同款 2 罐可乐：1 罐在客厅/桌上、1 罐在厨房/冰箱
+- 应季衣物：夏季在阳台/壁柜，冬季回主卧/衣柜（两个位置都在）
+- 重要文件：本地 + U 盘双备份
+- 食品库存：冰箱 1 袋 + 储物柜 1 袋备用
+
+**基本用法**：
+
+```bash
+# 最简：追加一个位置，数量 1，状态"在家"
+python home_manager.py update --id 1 --add-location "办公室/抽屉"
+
+# 追加 2 件，状态"备用"
+python home_manager.py update --id 1 --add-location "储物柜" --add-quantity 2 --add-location-status "备用"
+
+# 追加位置时同时设购买/过期日期
+python home_manager.py update --id 1 --add-location "零食柜" \
+  --add-purchase-date "2026-06-01" \
+  --add-expiration-date "2027-06-01"
+
+# 追加时附带原因备注
+python home_manager.py update --id 1 --add-location "健身房" --add-reason "健身带去的"
+```
+
+**完整参数**：
+
+| 参数 | 说明 |
+|------|------|
+| --add-location | 必填，要追加的位置路径 |
+| --add-quantity | 该位置数量（默认1） |
+| --add-location-status | 该位置状态（默认"在家"） |
+| --add-purchase-date | 该位置购买日期 |
+| --add-expiration-date | 该位置过期日期 |
+| --add-reason | 备注原因 |
+
+**限制**：
+- 同一物品同一路径不能重复追加（会报错）。如需增加该位置数量，请用 `--plus --location "位置"`。
+
+
 ---
 
 ## Step 3: 展示变更内容

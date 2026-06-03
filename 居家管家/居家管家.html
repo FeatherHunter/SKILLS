@@ -371,6 +371,17 @@ const DATA = [
         }
       },
       {
+        name: "追加新位置",
+        wakeWords: ["改物品"],
+        cli: 'update --id {ID} --add-location "办公室/抽屉"\nupdate --id {ID} --add-location "厨房/冰箱" --add-quantity 2',
+        desc: "为已有物品追加一条新的位置记录（不替换现有位置，一物多位置用）。心愿 ID: 84",
+        exec: {
+          tables: ["item_locations"],
+          fields: "INSERT 一条新记录：item_id, location, quantity, location_status, purchase_date, expiration_date",
+          side: "access_count +1；原位置全部保留；如追加位置与现有位置重名会报错"
+        }
+      },
+      {
         name: "数量增加",
         wakeWords: ["补物品"],
         cli: 'update --id {ID} --plus 3\nupdate --id {ID} --plus 2 --location "客厅/冰箱"',
@@ -542,6 +553,17 @@ const DATA = [
           tables: ["items", "item_tags"],
           fields: "items: WHERE last_accessed_at IS NOT NULL ORDER BY last_accessed_at ASC LIMIT N\n读取 item_tags",
           side: "只读操作"
+        }
+      },
+      {
+        name: "过期检查",
+        wakeWords: ["查过期"],
+        cli: 'stats --type expiring --days 30\nstats --type expiring --expired-only\nstats --type expiring --category "食品" --days 7',
+        desc: "查询 N 天内（含已过期）快过期的物品，按到期日升序。心愿 ID: 1",
+        exec: {
+          tables: ["item_locations", "items"],
+          fields: "item_locations.expiration_date, julianday 计算 days_left\nJOIN items（分类/名称）\nORDER BY days_left ASC\n可选参数：--days / --expired-only / --category",
+          side: "只读操作，access_count 不变"
         }
       }
     ]

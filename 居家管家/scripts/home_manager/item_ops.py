@@ -2,6 +2,7 @@
 import os
 from datetime import datetime
 from .db import get_conn, PHOTOS_DIR
+from . import location_ops
 from .location_ops import (
     get_locations, add_location, remove_location,
     update_location_quantity, update_location_status,
@@ -175,8 +176,21 @@ def update_item(item_id, name=None, category=None, owner=None,
                expiration_date=None, photo=None,
                new_location=None, quantity=None,
                minus=None, plus=None,
-               location=None, location_status=None):
-    """更新物品字段"""
+               location=None, location_status=None,
+               add_location=None, add_quantity=1, add_reason=None,
+               add_location_status="在家",
+               add_purchase_date=None, add_expiration_date=None):
+    """更新物品字段
+
+    add_location 系列参数（心愿 ID: 84）：
+        - add_location: 指定要追加的新位置路径
+        - add_quantity: 新位置数量（默认1）
+        - add_reason: 新位置原因（可选备注）
+        - add_location_status: 新位置状态（默认"在家"）
+        - add_purchase_date / add_expiration_date: 新位置的购买/过期日期
+    与 new_location（替换现有位置）的区别：add_location 不动现有位置记录，
+    仅插入一条新记录，实现"一物多位置"。
+    """
     conn = get_conn()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -347,6 +361,37 @@ def update_item(item_id, name=None, category=None, owner=None,
             print(f"✓ 位置「{loc[1]}」购买日期已更新为「{purchase_date}」")
         elif expiration_date is not None:
             print(f"✓ 位置「{loc[1]}」过期日期已更新为「{expiration_date}」")
+
+    # 5. 追加新位置（--add-location 系列，心愿 ID: 84）
+    if add_location is not None:
+        if add_location_status not in VALID_STATUSES:
+            print(f"✗ 无效状态: {add_location_status}，有效值: {', '.join(VALID_STATUSES)}")
+            conn.close()
+            return 1
+        # 检查同位置是否已存在（同一 item_id 不允许重复路径）
+        cursor.execute(
+            "SELECT id FROM item_locations WHERE item_id = ? AND location = ?",
+            (item_id, add_location)
+        )
+        existing = cursor.fetchone()
+        if existing:
+            print(f"✗ 该物品在「{add_location}」已有位置记录（id={existing[0]}）")
+            print(f"  如需修改该位置，请用 --location 指定；如需增加数量，请用 --plus")
+            conn.close()
+            return 1
+        # 用 location_ops.add_location() 全名调用，避免与形参 add_location 命名冲突
+        location_ops.add_location(
+            conn, item_id, add_location,
+            quantity=add_quantity, reason=add_reason,
+            location_status=add_location_status,
+            purchase_date=add_purchase_date,
+            expiration_date=add_expiration_date
+        )
+        print(f"✓ 已追加新位置：{add_location} ×{add_quantity}[{add_location_status}]")
+        if add_purchase_date or add_expiration_date:
+            pd = add_purchase_date or "-"
+            ed = add_expiration_date or "-"
+            print(f"  日期: 购买{pd}，过期{ed}")
 
     # 6. 标签变更
     old_tags = get_tags(conn, item_id)

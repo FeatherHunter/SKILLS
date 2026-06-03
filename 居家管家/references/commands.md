@@ -168,6 +168,11 @@ python home_manager.py update --id 1 --new-location "厨房/冰箱" --location "
 # 更新位置日期
 python home_manager.py update --id 1 --purchase-date "2025-05-10" --location "客厅/冰箱"
 python home_manager.py update --id 1 --expiration-date "2025-06-01" --location "客厅/冰箱"
+
+# 追加新位置（一物多位置，心愿 ID: 84）
+python home_manager.py update --id 1 --add-location "办公室/抽屉"
+python home_manager.py update --id 1 --add-location "客厅/桌上" --add-quantity 2 --add-location-status "在家"
+python home_manager.py update --id 1 --add-location "零食柜" --add-purchase-date "2026-06-01" --add-expiration-date "2027-06-01"
 ```
 
 ### 参数说明
@@ -190,6 +195,12 @@ python home_manager.py update --id 1 --expiration-date "2025-06-01" --location "
 | --plus | 增加数量 |
 | --purchase-date | 购买日期（YYYY-MM-DD，更新到位置级别） |
 | --expiration-date | 过期日期（YYYY-MM-DD，更新到位置级别） |
+| --add-location | 追加新位置（不替换现有位置，一物多位置） |
+| --add-quantity | 追加位置的数量（默认1） |
+| --add-reason | 追加位置的原因/备注 |
+| --add-location-status | 追加位置的状态（默认在家） |
+| --add-purchase-date | 追加位置的购买日期 |
+| --add-expiration-date | 追加位置的过期日期 |
 
 ---
 
@@ -242,9 +253,22 @@ python home_manager.py stats --type frequent --limit 20
 # 查低频
 python home_manager.py stats --type dormant --limit 20
 
+# 查过期（心愿 ID: 1）
+python home_manager.py stats --type expiring --days 30
+python home_manager.py stats --type expiring --expired-only
+python home_manager.py stats --type expiring --category "食品" --days 7
+
 # 总体统计
 python home_manager.py stats --type summary
 ```
+
+### expiring 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| --days | 预警天数窗口（含已过期），默认 30 |
+| --expired-only | 开关，只显示已过期物品 |
+| --category | 按分类筛选（如 食品/医药用品/化妆品） |
 
 ---
 

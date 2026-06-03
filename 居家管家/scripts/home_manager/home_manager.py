@@ -102,6 +102,12 @@ def main():
     p_update.add_argument("--quantity", type=int, default=None, help="直接设置数量")
     p_update.add_argument("--minus", type=int, default=None, help="减少数量（如喝掉1瓶）")
     p_update.add_argument("--plus", type=int, default=None, help="增加数量（如买了3瓶）")
+    p_update.add_argument("--add-location", default=None, help="追加新位置记录（不替换现有位置，一物多位置用）")
+    p_update.add_argument("--add-quantity", type=int, default=1, help="追加位置的数量（默认1）")
+    p_update.add_argument("--add-reason", default=None, help="追加位置的原因/备注")
+    p_update.add_argument("--add-location-status", default="在家", help="追加位置的状态（默认在家）")
+    p_update.add_argument("--add-purchase-date", default=None, help="追加位置的购买日期（YYYY-MM-DD）")
+    p_update.add_argument("--add-expiration-date", default=None, help="追加位置的过期日期（YYYY-MM-DD）")
     p_update.add_argument("--location-status", default=None, help="存放状态（如借用中、备用、快递中）")
 
     # ── list ──
@@ -133,9 +139,12 @@ def main():
     # ── stats ──
     p_stats = subparsers.add_parser("stats", help="频率统计")
     p_stats.add_argument("--type", default="summary",
-                         choices=["frequent", "dormant", "summary"],
-                         help="统计类型：frequent=高频, dormant=长期未碰, summary=总览")
+                         choices=["frequent", "dormant", "summary", "expiring"],
+                         help="统计类型：frequent=高频, dormant=长期未碰, summary=总览, expiring=快过期")
     p_stats.add_argument("--limit", type=int, default=20, help="返回数量上限")
+    p_stats.add_argument("--days", type=int, default=30, help="（expiring用）天数窗口，默认30")
+    p_stats.add_argument("--expired-only", action="store_true", help="（expiring用）只看已过期")
+    p_stats.add_argument("--category", default=None, help="（expiring用）按分类筛选")
 
     # ── tag-merge ──
     p_merge = subparsers.add_parser("tag-merge", help="合并标签")
@@ -195,7 +204,11 @@ def main():
             expiration_date=args.expiration_date, photo=args.photo,
             new_location=args.new_location, quantity=args.quantity,
             minus=args.minus, plus=args.plus,
-            location=args.location, location_status=args.location_status
+            location=args.location, location_status=args.location_status,
+            add_location=args.add_location, add_quantity=args.add_quantity,
+            add_reason=args.add_reason, add_location_status=args.add_location_status,
+            add_purchase_date=args.add_purchase_date,
+            add_expiration_date=args.add_expiration_date
         )
 
     elif args.command == "list":
@@ -257,7 +270,8 @@ def main():
         return 0
 
     elif args.command == "stats":
-        return stats(stat_type=args.type, limit=args.limit)
+        return stats(stat_type=args.type, limit=args.limit, days=args.days,
+                     expired_only=args.expired_only, category=args.category)
 
     elif args.command == "tag-merge":
         return tag_merge(from_tag=args.from_tag, to_tag=args.to_tag)

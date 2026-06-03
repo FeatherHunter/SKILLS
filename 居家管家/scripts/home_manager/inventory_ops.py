@@ -53,8 +53,16 @@ def inventory(location):
     return 0
 
 
-def stats(stat_type="frequent", limit=20):
-    """频率统计"""
+def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category=None):
+    """频率统计 + 过期检查
+
+    参数:
+        stat_type: frequent / dormant / summary / expiring
+        limit: 返回数量上限
+        days: (expiring 用) 提前预警天数窗口，默认 30
+        expired_only: (expiring 用) 只看已过期
+        category: (expiring 用) 按分类筛选
+    """
     conn = get_conn()
     cursor = conn.cursor()
 
@@ -70,6 +78,8 @@ def stats(stat_type="frequent", limit=20):
             ORDER BY last_accessed_at ASC LIMIT ?
         """, (limit,))
         title = f"长期未访问 TOP{limit}"
+    elif stat_type == "expiring":
+        return _stats_expiring(conn, limit, days, expired_only, category)
     elif stat_type == "summary":
         cursor.execute("SELECT COUNT(*) as total FROM items")
         total = cursor.fetchone()["total"]
@@ -127,6 +137,102 @@ def stats(stat_type="frequent", limit=20):
             print(f"访问{row['access_count']}次 | 最后:{accessed_fmt} | "
                   f"ID:{row['id']} | {row['name']} | {row['category']} | "
                   f"{tags_str}")
+
+    conn.close()
+    return 0
+
+
+def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
+    """过期预警统计（心愿 ID: 1）
+
+    按 expiration_date 升序排列，列出：
+      - 红色标记已过期（剩余天数 < 0）
+      - 黄色标记快过期（剩余天数 0~days）
+    """
+    cursor = conn.cursor()
+
+    # 构造查询（参数化，防注入）
+    conditions = [
+        "il.expiration_date IS NOT NULL",
+        "il.expiration_date != ''",
+        "julianday(il.expiration_date) - julianday('now') <= ?"
+    ]
+    params = [days]
+
+    if category:
+        conditions.append("i.category = ?")
+        params.append(category)
+
+    if expired_only:
+        # 只看已过期
+        conditions.append("julianday(il.expiration_date) - julianday('now') < 0")
+    else:
+        # 包括已过期 + N 天内快过期
+        # （条件已在上面加了 <= days）
+        pass
+
+    where_clause = " AND ".join(conditions)
+    query = f"""
+        SELECT i.id, i.name, i.category, il.location, il.quantity,
+               il.location_status, il.expiration_date,
+               CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) as days_left
+        FROM item_locations il
+        JOIN items i ON i.id = il.item_id
+        WHERE {where_clause}
+        ORDER BY days_left ASC
+        LIMIT ?
+    """
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+
+    # 标题
+    if expired_only:
+        title = f"⛔ 已过期物品 TOP{limit}"
+    else:
+        title = f"⏰ 快过期物品（{days}天内） TOP{limit}"
+
+    # 概要统计（先取全部，不受 limit 影响）
+    summary_query = f"""
+        SELECT
+            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt,
+            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 0 AND 3 THEN 1 ELSE 0 END), 0) as days_3,
+            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 4 AND 7 THEN 1 ELSE 0 END), 0) as days_7,
+            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 8 AND 30 THEN 1 ELSE 0 END), 0) as days_30
+        FROM item_locations il
+        JOIN items i ON i.id = il.item_id
+        WHERE il.expiration_date IS NOT NULL AND il.expiration_date != ''
+        {('AND i.category = ?' if category else '')}
+    """
+    summary_params = [category] if category else []
+    cursor.execute(summary_query, summary_params)
+    s = cursor.fetchone()
+
+    print(title)
+    print("-" * 70)
+    print(f"  已过期：{s['expired_cnt']}  |  3天内：{s['days_3']}  |  7天内：{s['days_7']}  |  30天内：{s['days_30']}")
+    print("-" * 70)
+
+    if not rows:
+        print("  (无数据)")
+        conn.close()
+        return 0
+
+    for row in rows:
+        days_left = row["days_left"]
+        if days_left < 0:
+            flag = f"❌已过期 {-days_left}天"
+        elif days_left == 0:
+            flag = "⏰今天到期"
+        elif days_left <= 3:
+            flag = f"⏰{days_left}天"
+        elif days_left <= 7:
+            flag = f"⏰{days_left}天"
+        else:
+            flag = f"📅{days_left}天"
+
+        print(f"  {flag:<14} ID:{row['id']:<4} {row['name'][:30]:<30} ({row['category']})")
+        print(f"     └ 📍 {row['location']} ×{row['quantity']}[{row['location_status']}]  到期:{row['expiration_date']}")
 
     conn.close()
     return 0

@@ -178,7 +178,7 @@ def update_item(item_id, name=None, category=None, owner=None,
                minus=None, plus=None,
                location=None, location_status=None,
                add_location=None, add_quantity=1, add_reason=None,
-               add_location_status="在家",
+               add_location_status=VALID_STATUSES[0],
                add_purchase_date=None, add_expiration_date=None):
     """更新物品字段
 

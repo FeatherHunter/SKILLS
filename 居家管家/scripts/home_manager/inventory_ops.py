@@ -193,12 +193,34 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
         title = f"⏰ 快过期物品（{days}天内） TOP{limit}"
 
     # 概要统计（先取全部，不受 limit 影响）
+    # 动态分档：始终包含 3/7 近期预警档（不超出总窗口 days）；days > 7 时附加 days 档
+    # 这样 --days 参数变化时分档会跟随，不会误导用户
+    thresholds = [min(3, days)]  # 总窗口 < 3 时 clamp
+    if days >= 7:
+        thresholds.append(7)
+    if days > 7:
+        thresholds.append(days)
+    # 去重（days=3 时避免 3 重复）
+    thresholds = sorted(set(thresholds))
+
+    case_clauses = [
+        "COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt"
+    ]
+    prev = 0
+    for t in thresholds:
+        if t == 3:
+            case_clauses.append(
+                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 0 AND 3 THEN 1 ELSE 0 END), 0) as days_3"
+            )
+        else:
+            case_clauses.append(
+                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN {prev+1} AND {t} THEN 1 ELSE 0 END), 0) as days_{t}"
+            )
+        prev = t
+
     summary_query = f"""
         SELECT
-            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt,
-            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 0 AND 3 THEN 1 ELSE 0 END), 0) as days_3,
-            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 4 AND 7 THEN 1 ELSE 0 END), 0) as days_7,
-            COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 8 AND 30 THEN 1 ELSE 0 END), 0) as days_30
+            {', '.join(case_clauses)}
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
         WHERE il.expiration_date IS NOT NULL AND il.expiration_date != ''
@@ -208,9 +230,19 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
     cursor.execute(summary_query, summary_params)
     s = cursor.fetchone()
 
+    # 动态拼接概要行
+    summary_parts = [f"已过期：{s['expired_cnt']}"]
+    for t in thresholds:
+        if t == 3:
+            summary_parts.append(f"3天内：{s['days_3']}")
+        elif t == 7:
+            summary_parts.append(f"7天内：{s['days_7']}")
+        else:
+            summary_parts.append(f"{t}天内：{s[f'days_{t}']}")
+
     print(title)
     print("-" * 70)
-    print(f"  已过期：{s['expired_cnt']}  |  3天内：{s['days_3']}  |  7天内：{s['days_7']}  |  30天内：{s['days_30']}")
+    print("  " + "  |  ".join(summary_parts))
     print("-" * 70)
 
     if not rows:

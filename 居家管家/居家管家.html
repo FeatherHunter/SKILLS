@@ -311,6 +311,28 @@ const DATA = [
         }
       },
       {
+        name: "位置推荐",
+        wakeWords: ["推位置"],
+        cli: 'suggest-locations --category "衣物"\nsuggest-locations --category "衣物" --with-examples',
+        desc: "录入物品时推荐同类物品常用的位置，按使用次数排序；--with-examples 模式附带代表物品名（解决记忆模糊痛点）",
+        exec: {
+          tables: ["items", "item_locations"],
+          fields: "item_locations.location, COUNT(DISTINCT item_id) as cnt\nGROUP BY location ORDER BY cnt DESC\n[--with-examples] 额外 JOIN items 取每个位置最近 2 件代表",
+          side: "只读操作，不修改任何数据；access_count 不变"
+        }
+      },
+      {
+        name: "参考锚定",
+        wakeWords: ["找位置"],
+        cli: 'find-location --reference "黑卫衣"',
+        desc: "根据参考物品名找它的所有位置（'和XX放一起'/'参考XX'用），支持模糊匹配，按名称相似度+最近访问排序",
+        exec: {
+          tables: ["items", "item_locations"],
+          fields: "items: 模糊搜索 name LIKE '%XX%'，按精确度+last_accessed_at 排序\nitem_locations: 查每个候选物品的所有位置",
+          side: "只读操作，不修改任何数据；access_count 不变"
+        }
+      },
+      {
         name: "快递查询",
         wakeWords: ["查快递"],
         cli: 'search --status "快递中"',

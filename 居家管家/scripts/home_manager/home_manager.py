@@ -17,13 +17,17 @@ def main():
     if _pkg_dir not in sys.path:
         sys.path.insert(0, _pkg_dir)
 
-    from home_manager.db import DB_PATH, PHOTOS_DIR, init_db
+    from home_manager.db import DB_PATH, PHOTOS_DIR, init_db, get_conn
     from home_manager.item_ops import (
         add_item, search_items, update_item,
         list_items, item_detail
     )
     from home_manager.inventory_ops import inventory, stats
     from home_manager.tag_ops import tag_merge, list_tags
+    from home_manager.location_ops import (
+        suggest_locations, suggest_locations_with_examples,
+        find_location_by_reference
+    )
 
     # 导入账号模块（路径：../accounts.py）
     _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -115,6 +119,17 @@ def main():
     p_inventory = subparsers.add_parser("inventory", help="盘点指定位置")
     p_inventory.add_argument("--location", required=True, help="要盘点的位置")
 
+    # ── suggest-locations（位置推荐，录物品时辅助）──
+    p_suggest = subparsers.add_parser("suggest-locations", help="推荐同类物品常用位置（录物品时辅助定位）")
+    p_suggest.add_argument("--category", required=True, help="物品分类（如 衣物/饮品/电子）")
+    p_suggest.add_argument("--with-examples", action="store_true", help="附带显示每个位置的代表物品名")
+    p_suggest.add_argument("--limit", type=int, default=10, help="返回位置数量上限")
+
+    # ── find-location（参考物品锚定）──
+    p_find = subparsers.add_parser("find-location", help="根据参考物品名找它的位置（'和XX放一起'用）")
+    p_find.add_argument("--reference", required=True, help="参考物品名（支持模糊）")
+    p_find.add_argument("--limit", type=int, default=5, help="返回候选物品数量上限")
+
     # ── stats ──
     p_stats = subparsers.add_parser("stats", help="频率统计")
     p_stats.add_argument("--type", default="summary",
@@ -191,6 +206,55 @@ def main():
 
     elif args.command == "inventory":
         return inventory(location=args.location)
+
+    elif args.command == "suggest-locations":
+        conn = get_conn()
+        try:
+            if args.with_examples:
+                results = suggest_locations_with_examples(
+                    conn, args.category, limit=args.limit
+                )
+                print(f"📍 位置推荐（{args.category}）：共 {len(results)} 个位置")
+                print("-" * 70)
+                for i, (loc, cnt, examples) in enumerate(results, 1):
+                    ex_str = "、".join(examples) if examples else "(无)"
+                    print(f"  {i}. {loc}  [{cnt}件同类]")
+                    print(f"     └ 代表：{ex_str}")
+                print(f"  {len(results)+1}. 其他位置（用户输入新位置）")
+            else:
+                results = suggest_locations(
+                    conn, args.category, limit=args.limit
+                )
+                print(f"📍 位置推荐（{args.category}）：共 {len(results)} 个位置")
+                print("-" * 70)
+                for i, (loc, cnt) in enumerate(results, 1):
+                    print(f"  {i}. {loc}  [{cnt}件同类]")
+                print(f"  {len(results)+1}. 其他位置（用户输入新位置）")
+        finally:
+            conn.close()
+        return 0
+
+    elif args.command == "find-location":
+        conn = get_conn()
+        try:
+            results = find_location_by_reference(
+                conn, args.reference, limit=args.limit
+            )
+        finally:
+            conn.close()
+        if not results:
+            print(f"✗ 没找到参考物品 '{args.reference}'，换个名字试试")
+            return 1
+        print(f"🔍 参考「{args.reference}」找到 {len(results)} 件候选：")
+        print("-" * 70)
+        for i, it in enumerate(results, 1):
+            print(f"  {i}. {it['item_name']}  [ID:{it['item_id']}]  分类:{it['category']}")
+            if it['locations']:
+                for loc in it['locations']:
+                    print(f"     └ 📍 {loc['location']} ×{loc['quantity']}[{loc['location_status']}]")
+            else:
+                print(f"     └ (暂无位置记录)")
+        return 0
 
     elif args.command == "stats":
         return stats(stat_type=args.type, limit=args.limit)

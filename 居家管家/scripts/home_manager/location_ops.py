@@ -4,10 +4,16 @@ from .db import get_conn
 
 
 def suggest_locations(conn, category, limit=10):
-    """根据物品分类推荐位置（同类物品用过的位置）"""
+    """根据物品分类推荐位置（同类物品用过的位置，按使用次数排序）
+
+    返回: [(location, count), ...]  按 count 降序
+
+    用途：录物品时 AI 推荐"同类物品都放哪"
+    注意：只推荐仍有物品存在的位置（JOIN 自然过滤已用完的位置）
+    """
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT il.location, COUNT(*) as cnt
+        SELECT il.location, COUNT(DISTINCT il.item_id) as cnt
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
         WHERE i.category = ?
@@ -17,6 +23,104 @@ def suggest_locations(conn, category, limit=10):
     """, (category, limit))
     rows = cursor.fetchall()
     return [(row['location'], row['cnt']) for row in rows]
+
+
+def suggest_locations_with_examples(conn, category, limit=10, examples_per_loc=2):
+    """位置推荐 + 每个位置附带代表物品名（解决"记忆模糊"痛点）
+
+    返回: [(location, count, [示例物品1, 示例物品2]), ...]  按 count 降序
+
+    用途：用户看到位置时能立即看到具体物品，帮助记忆模糊时指认。
+    示例物品按最近添加时间倒序（同一位置最新加入的优先）。
+    """
+    cursor = conn.cursor()
+    # 先拿位置聚合（用 DISTINCT 避免一个物品同位置多条记录被重复计数）
+    cursor.execute("""
+        SELECT il.location, COUNT(DISTINCT il.item_id) as cnt
+        FROM item_locations il
+        JOIN items i ON i.id = il.item_id
+        WHERE i.category = ?
+        GROUP BY il.location
+        ORDER BY cnt DESC
+        LIMIT ?
+    """, (category, limit))
+    location_rows = cursor.fetchall()
+
+    results = []
+    for row in location_rows:
+        loc = row['location']
+        cnt = row['cnt']
+        # 对每个位置，取最近添加的 N 件物品作为代表
+        cursor.execute("""
+            SELECT DISTINCT i.name
+            FROM item_locations il
+            JOIN items i ON i.id = il.item_id
+            WHERE i.category = ? AND il.location = ?
+            ORDER BY il.created_at DESC, il.id DESC
+            LIMIT ?
+        """, (category, loc, examples_per_loc))
+        examples = [r['name'] for r in cursor.fetchall()]
+        results.append((loc, cnt, examples))
+    return results
+
+
+def find_location_by_reference(conn, reference_name, limit=5):
+    """根据参考物品名找它的所有位置（解决"和XX放一起"痛点）
+
+    参数:
+        reference_name: 模糊匹配的物品名
+        limit: 候选物品数量上限
+
+    返回: [
+        {
+            'item_id': ID,
+            'item_name': 名称,
+            'category': 分类,
+            'locations': [
+                {'location': 路径, 'quantity': N, 'location_status': 状态}
+            ]
+        },
+        ...
+    ]
+
+    用途：用户说"和那件黑卫衣放一起"时，AI 一键调用此函数定位。
+    排序：名称精确匹配 > 名称前缀匹配 > 模糊匹配；
+          同档内按 last_accessed_at 降序（最近访问的优先），从未访问的排最后。
+    """
+    cursor = conn.cursor()
+    # 模糊搜索参考物品（用 CASE 排序，NULL last 用额外 CASE 兜底）
+    cursor.execute("""
+        SELECT i.id, i.name, i.category
+        FROM items i
+        WHERE i.name LIKE ?
+        ORDER BY
+            CASE WHEN i.name = ? THEN 0
+                 WHEN i.name LIKE ? THEN 1
+                 ELSE 2 END,
+            CASE WHEN i.last_accessed_at IS NULL THEN 1 ELSE 0 END,
+            i.last_accessed_at DESC,
+            i.id DESC
+        LIMIT ?
+    """, (f"%{reference_name}%", reference_name, f"{reference_name}%", limit))
+    items = cursor.fetchall()
+
+    results = []
+    for it in items:
+        # 查该物品所有位置
+        cursor.execute("""
+            SELECT location, quantity, location_status
+            FROM item_locations
+            WHERE item_id = ?
+            ORDER BY id
+        """, (it['id'],))
+        locs = [dict(r) for r in cursor.fetchall()]
+        results.append({
+            'item_id': it['id'],
+            'item_name': it['name'],
+            'category': it['category'],
+            'locations': locs
+        })
+    return results
 
 
 def get_locations(conn, item_id):

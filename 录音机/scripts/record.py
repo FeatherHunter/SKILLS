@@ -215,6 +215,10 @@ def timestamp_to_date(ts: int) -> str:
 
 
 def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=None) -> tuple:
+    # 文件可能在扫描期间被重命名/删除（race condition），跳过不存在的文件
+    if not session_file.exists():
+        return 0, 0, 0, ""
+
     cache_key = str(session_file)
     if cp_cache and cache_key in cp_cache:
         checkpoint = cp_cache[cache_key]

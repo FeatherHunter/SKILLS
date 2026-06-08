@@ -313,7 +313,7 @@ a:hover{text-decoration:underline}
   <h1>图片路由</h1>
   <p>图片内容智能识别与技能路由。用户发送图片时自动触发，或通过文字指令唤醒。识别图片内容后判断归属领域，路由到对应技能执行。</p>
   <div class="meta">
-    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> v1.0</span>
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> v3.0 · 终极版</span>
     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg> 13 唤醒词</span>
     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> mmx vision describe</span>
   </div>
@@ -450,7 +450,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片内容</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片内容</li>
         <li class="flow-step">AI 基于识别结果判断归属领域：
           <br>· 涉及金额/交易 → 饼干记账
           <br>· 涉及物品存放 → 居家管家
@@ -479,7 +479,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
         <li class="flow-step">AI 提取金额信息（优先「实付/实收」，其次「合计/总计」）</li>
         <li class="flow-step">调用饼干记账 CLI：<code>python scripts/cookie_cli.py add -a &lt;金额&gt; -t "图片记账"</code></li>
         <li class="flow-step">写入 <code>cookie.db</code> → <code>transactions</code> 表 → <code>amount</code>、<code>description</code>、<code>category</code> 字段</li>
@@ -503,7 +503,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
         <li class="flow-step">AI 提取物品名称、位置、数量等信息</li>
         <li class="flow-step">调用居家管家 CLI：<code>python scripts/home_cli.py add --name "XX" --location "XX"</code></li>
         <li class="flow-step">写入 <code>home.db</code> → <code>items</code> 表 → <code>name</code>、<code>location</code>、<code>category</code>、<code>status</code> 字段</li>
@@ -527,7 +527,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
         <li class="flow-step">AI 提取食物名称、热量、营养成分</li>
         <li class="flow-step">调用卡路里 CLI：<code>python scripts/calorie_tracker.py add "食物名" &lt;热量&gt; &lt;蛋白&gt; &lt;碳水&gt; &lt;脂肪&gt; &lt;克数&gt;</code></li>
         <li class="flow-step">写入 <code>calorie.db</code> → <code>entries</code> 表 → <code>name</code>、<code>calories</code>、<code>protein</code>、<code>carbs</code>、<code>fat</code>、<code>grams</code> 字段</li>
@@ -551,7 +551,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
         <li class="flow-step">AI 判断归属领域（记账/管家/卡路里/不相关）</li>
         <li class="flow-step">向用户展示识别结果 + 推荐操作</li>
         <li class="flow-step">用户确认后，调用对应技能 CLI 执行</li>
@@ -602,7 +602,7 @@ a:hover{text-decoration:underline}
     <div class="flow">
       <div class="flow-title">执行流程</div>
       <ol class="flow-steps">
-        <li class="flow-step">subagent 调用 <code>mmx vision describe</code> 识别图片</li>
+        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
         <li class="flow-step">AI 检测到多信号叠加（如食物+金额）</li>
         <li class="flow-step">推荐多个技能组合，展示给用户</li>
         <li class="flow-step">用户逐一确认，依次调用各技能 CLI 执行</li>
@@ -669,7 +669,7 @@ a:hover{text-decoration:underline}
 
 <!-- Footer -->
 <footer class="footer">
-  <p>图片路由技能文档 · 13 唤醒词 · 5 分类 · mmx vision describe</p>
+  <p>图片路由技能文档 v3.0 终极版 · 13 唤醒词 · 5 分类 · 核心原则：事无巨细，全面解析</p>
 </footer>
 
 </div>

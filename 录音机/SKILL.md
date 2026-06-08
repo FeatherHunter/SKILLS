@@ -93,7 +93,7 @@ triggers:
 
 | 环境变量 | 说明 | 默认值 |
 |----------|------|--------|
-| `SKILLS_DB_PATH` | 数据库目录 | 父目录树中首个 `.db/` 目录，否则技能目录下 `.db/` |
+| `SKILLS_DB_PATH` | 数据库目录 |  |
 | `OPENCLAW_SESSIONS` | OpenClaw agent 或 sessions 目录 | `~/.openclaw/agents`（自动扫描所有 agent） |
 
 ## 一键安装

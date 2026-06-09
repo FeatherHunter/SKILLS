@@ -962,17 +962,17 @@ const DATA = {
     modules: [
       {
         name: "设营养目标",
-        desc: "设置每日营养目标（热量/蛋白/碳水/脂肪）",
+        desc: "设置每日营养目标（v2.1 强制 4 参，避免静默改值）",
         triggers: [
           {
             word: "设营养目标",
-            cli: "python scripts/calorie_tracker.py goal <热量> [蛋白] [碳水] [脂肪]",
+            cli: "python scripts/calorie_tracker.py goal <热量> <蛋白> <碳水> <脂肪>   (必须 4 参)",
             flow: {
               operation: "INSERT OR REPLACE",
               tables: [
                 { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal, updated_at", op: "写入" }
               ],
-              sideEffects: "固定 id=1，INSERT OR REPLACE 覆盖已有目标"
+              sideEffects: "固定 id=1，INSERT OR REPLACE 覆盖已有目标。v2.1 起不传 4 参会报错（避免脂肪等参数被默认值 60g 静默覆盖）"
             }
           }
         ]

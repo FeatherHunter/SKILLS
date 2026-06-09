@@ -239,24 +239,39 @@ def delete_entry(entry_id):
     return True
 
 
-def set_goal(calorie_goal, protein_goal=None, carbs_goal=None, fat_goal=None):
-    """设置每日目标"""
+def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal):
+    """设置每日目标（v2.1 强制 4 参，避免静默改值）"""
+    # 强制 4 参检查（2026-06-09 修改）
+    if None in (protein_goal, carbs_goal, fat_goal):
+        print("Error: goal 必须 4 个参数全传")
+        print("  用法: goal <热量> <蛋白> <碳水> <脂肪>")
+        print("  示例: goal 1850 150 200 50")
+        return False
+
+    # 类型转换
     try:
         calorie_goal = int(calorie_goal)
+        protein_goal = int(protein_goal)
+        carbs_goal = int(carbs_goal)
+        fat_goal = int(fat_goal)
         if calorie_goal <= 0:
-            print("Error: Calorie goal must be positive")
+            print("Error: 热量目标必须为正数")
+            return False
+        if protein_goal < 0 or carbs_goal < 0 or fat_goal < 0:
+            print("Error: 营养目标不能为负数")
             return False
     except ValueError:
-        print("Error: Calories must be a number")
+        print("Error: 参数必须是数字")
         return False
+
+    # 自洽性提示（不阻断，只警告）
+    calculated = protein_goal * 4 + carbs_goal * 4 + fat_goal * 9
+    diff = calculated - calorie_goal
+    if abs(diff) > 50:
+        print(f"⚠️ 提示：营养目标换算约 {calculated} 卡，与热量目标 {calorie_goal} 卡相差 {diff:+d} 卡（>50）")
 
     conn = get_db()
     c = conn.cursor()
-
-    # 如果没指定宏量营养目标，使用默认值
-    protein_goal = protein_goal or 150
-    carbs_goal = carbs_goal or 200
-    fat_goal = fat_goal or 60
 
     c.execute('''
         INSERT OR REPLACE INTO daily_goal (id, calorie_goal, protein_goal, carbs_goal, fat_goal, updated_at)
@@ -271,6 +286,8 @@ def set_goal(calorie_goal, protein_goal=None, carbs_goal=None, fat_goal=None):
     print(f"  蛋白质：{protein_goal}克")
     print(f"  碳水：{carbs_goal}克")
     print(f"  脂肪：{fat_goal}克")
+    if abs(diff) <= 50:
+        print(f"  自洽性：换算 {calculated} 卡（差异 {diff:+d}）✅")
     return True
 
 
@@ -954,13 +971,15 @@ def main():
             summary()
 
         elif command == "goal":
-            if len(sys.argv) < 3:
-                print("Error: goal requires <calories> [protein] [carbs] [fat]")
+            if len(sys.argv) < 6:
+                print("Error: goal 必须 4 个参数全传（v2.1 修改）")
+                print("  用法: goal <热量> <蛋白> <碳水> <脂肪>")
+                print("  示例: goal 1850 150 200 50")
                 sys.exit(1)
             calorie_goal = sys.argv[2]
-            protein_goal = sys.argv[3] if len(sys.argv) > 3 else None
-            carbs_goal = sys.argv[4] if len(sys.argv) > 4 else None
-            fat_goal = sys.argv[5] if len(sys.argv) > 5 else None
+            protein_goal = sys.argv[3]
+            carbs_goal = sys.argv[4]
+            fat_goal = sys.argv[5]
             set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal)
 
         elif command == "weight":

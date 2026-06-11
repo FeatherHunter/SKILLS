@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息报告 - 2026年6月10日（周三）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.6;-webkit-font-smoothing:antialiased}
+.container{max-width:720px;margin:0 auto;padding:24px 16px}
+.header{text-align:center;padding:32px 0 24px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header .date{font-size:15px;color:#86868b;margin-top:4px}
+.header .weekday{display:inline-block;font-size:12px;font-weight:500;color:#fff;background:#007AFF;border-radius:12px;padding:2px 10px;margin-top:8px}
+.card{background:#fff;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:17px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card h2 .icon{font-size:20px}
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.summary-item{display:flex;align-items:center;padding:12px 14px;background:#f5f5f7;border-radius:10px;gap:10px}
+.summary-item .emoji{font-size:22px;width:32px;text-align:center;flex-shrink:0}
+.summary-item .info{flex:1;min-width:0}
+.summary-item .cat{font-size:13px;font-weight:500;color:#1d1d1f}
+.summary-item .dur{font-size:12px;color:#86868b;margin-top:1px}
+.summary-item .bar{height:4px;background:#e5e5e5;border-radius:2px;margin-top:6px;overflow:hidden}
+.summary-item .bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f5f5f7;border-radius:10px;margin-top:12px}
+.total-row .label{font-size:14px;font-weight:500;color:#1d1d1f}
+.total-row .value{font-size:20px;font-weight:700;color:#007AFF}
+.total-row .check{font-size:14px;color:#34c759;margin-left:6px}
+.timeline{display:flex;gap:2px;height:40px;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.timeline-block{flex:1;position:relative;cursor:pointer;transition:opacity .15s}
+.timeline-block:hover{opacity:.8}
+.timeline-block .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:10;pointer-events:none}
+.timeline-block:hover .tip{display:block}
+.timeline-labels{display:flex;justify-content:space-between;font-size:10px;color:#86868b;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#86868b}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.highlights{display:flex;flex-direction:column;gap:10px}
+.highlight-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#f5f5f7;border-radius:10px}
+.highlight-row .h-emoji{font-size:18px;flex-shrink:0;margin-top:1px}
+.highlight-row .h-text{font-size:13px;color:#1d1d1f;line-height:1.5}
+.highlight-row .h-time{font-size:12px;color:#86868b;margin-top:2px}
+.footer{text-align:center;padding:20px 0;font-size:11px;color:#86868b}
+@media(max-width:480px){.summary-grid{grid-template-columns:1fr}.container{padding:16px 12px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>每日作息报告</h1>
+  <div class="date">2026年6月10日</div>
+  <span class="weekday">周三</span>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4CA;</span> 时间分配</h2>
+  <div class="summary-grid">
+    <div class="summary-item">
+      <span class="emoji">🛋️</span>
+      <div class="info">
+        <div class="cat">休闲</div>
+        <div class="dur">12小时4分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:50.3%;background:#30D158"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">😴</span>
+      <div class="info">
+        <div class="cat">睡眠</div>
+        <div class="dur">6小时25分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:26.7%;background:#5E5CE6"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🚴</span>
+      <div class="info">
+        <div class="cat">通勤</div>
+        <div class="dur">1小时42分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:7.1%;background:#64D2FF"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🍽️</span>
+      <div class="info">
+        <div class="cat">餐饮</div>
+        <div class="dur">1小时21分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:5.6%;background:#FF9F0A"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🏋️</span>
+      <div class="info">
+        <div class="cat">运动</div>
+        <div class="dur">55分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:3.8%;background:#FF2D55"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">📌</span>
+      <div class="info">
+        <div class="cat">家务</div>
+        <div class="dur">51分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:3.5%;background:#BF8F5F"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">📚</span>
+      <div class="info">
+        <div class="cat">学习</div>
+        <div class="dur">27分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:1.9%;background:#007AFF"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🚿</span>
+      <div class="info">
+        <div class="cat">洗漱</div>
+        <div class="dur">14分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:1.0%;background:#64D2FF"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="total-row">
+    <span class="label">总计</span>
+    <span><span class="value">23小时59分钟</span><span class="check">&#x2713;</span></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F550;</span> 24小时时间轴</h2>
+  <div class="timeline">
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">00:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">01:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">02:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">03:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">04:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">05:00 休闲</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">06:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">07:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">08:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">09:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">10:00 休闲</div></div>
+    <div class="timeline-block" style="background:#FF9F0A"><div class="tip">11:00 餐饮</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">12:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">13:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">14:00 休闲</div></div>
+    <div class="timeline-block" style="background:#FF2D55"><div class="tip">15:00 运动</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">16:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">17:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">18:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">19:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">20:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">21:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">22:00 休闲</div></div>
+    <div class="timeline-block" style="background:#30D158"><div class="tip">23:00 休闲</div></div>
+  </div>
+  <div class="timeline-labels">
+    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#30D158"></div>休闲</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#5E5CE6"></div>睡眠</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64D2FF"></div>通勤</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FF9F0A"></div>餐饮</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FF2D55"></div>运动</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#BF8F5F"></div>家务</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#007AFF"></div>学习</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64D2FF"></div>洗漱</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x2B50;</span> 当日亮点</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">😴</span>
+      <div>
+        <div class="h-text">睡眠仅 6小时25分钟：主睡眠 00:00~05:21（5h21m）+ 回笼觉 06:44~07:48（1h4m）。凌晨5:21醒来查劳动仲裁资料，之后又睡了回笼觉，整体睡眠质量一般</div>
+        <div class="h-time">00:00~05:21 / 06:44~07:48</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🛋️</span>
+      <div>
+        <div class="h-text">休闲高达 12小时4分钟，占全天 50.3%——超过一半时间在刷手机、聊天、讨论各种话题。凌晨醒来查劳动仲裁（1h23m）、上午刷手机（1h28m）、下午讨论健身饮食+处理杂事（3h52m）、晚间刷视频（3h31m）</div>
+        <div class="h-time">全天分散</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🏋️</span>
+      <div>
+        <div class="h-text">运动 55分钟：哑铃弯举（9kg→降重量，两轮）+ 侧平举（3组），集中在 15:12~16:07。健身中穿插讨论，实际训练效率有待提升</div>
+        <div class="h-time">15:12~16:07</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🚴</span>
+      <div>
+        <div class="h-text">三次骑行共 1小时42分钟：早上骑车去公司再骑回家（44min）、晚上骑车去公司打卡（30min）再骑回家（28min），全天通勤量较大</div>
+        <div class="h-time">08:15~08:59 / 20:06~20:36 / 21:00~21:28</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🍽️</span>
+      <div>
+        <div class="h-text">餐饮 1小时21分钟：午饭自己做西红柿炒鸡蛋（11:27~12:50，含做饭+吃饭+讨论营养），晚饭看直播（20:36~21:00）</div>
+        <div class="h-time">11:27~12:50 / 20:36~21:00</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">📌</span>
+      <div>
+        <div class="h-text">家务 51分钟：打扫厨房洗锅碗（12:01~12:27）+ 收拾厨房处理心愿（18:54~19:19），两次厨房打扫</div>
+        <div class="h-time">12:01~12:27 / 18:54~19:19</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">📚</span>
+      <div>
+        <div class="h-text">学习 27分钟：修行元母意程（10:28~10:55），时间较短</div>
+        <div class="h-time">10:28~10:55</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F634;</span> 睡眠分析</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F319;</span>
+      <div>
+        <div class="h-text">夜间主睡眠：5小时21分钟（00:00 ~ 05:21），凌晨5:21醒来查劳动仲裁资料，睡眠被打断</div>
+        <div class="h-time">入睡正常，但凌晨醒来时间偏早</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">回笼觉：1小时4分钟（06:44 ~ 07:48），醒来讨论劳动仲裁和公积金后继续补眠</div>
+        <div class="h-time">凌晨清醒1h23m后补觉</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4CA;</span>
+      <div>
+        <div class="h-text">总睡眠 6小时25分钟，占全天 26.7%，低于 7 小时健康线。建议：① 减少凌晨醒来查手机的冲动 ② 保证连续睡眠时长</div>
+        <div class="h-time">⚠️ 睡眠不足，需改善作息习惯</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4A1;</span> 改善建议</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">⚠️</span>
+      <div>
+        <div class="h-text">休闲时间占比过高（50.3%）：全天 12 小时休闲中，大量时间花在刷手机和聊天上。建议设定「手机使用时段」，将部分休闲时间用于运动或学习</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">😴</span>
+      <div>
+        <div class="h-text">睡眠不足（6h25m）：低于 7 小时健康线。凌晨醒来查资料是主要原因，建议睡前不看工作/法律相关消息，减少焦虑性早醒</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🚴</span>
+      <div>
+        <div class="h-text">通勤效率：全天三次骑行共 1h42m，早上骑去公司又骑回来（可能忘带东西？），建议出门前检查物品，减少不必要的往返</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">💪</span>
+      <div>
+        <div class="h-text">运动保持：哑铃训练 55 分钟，继续保持！建议增加训练频率，从一周 1~2 次提升到 3 次</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  作息管家 · 自动生成于 2026-06-11 07:30 · 共 50 个记录块
+</div>
+
+</div>
+</body>
+</html>

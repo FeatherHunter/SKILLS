@@ -121,6 +121,11 @@ def init_db():
         c.execute('ALTER TABLE daily_goal ADD COLUMN goal_deadline TEXT')
     except Exception:
         pass
+    # Migration: add water_goal if not exist (v2.2)
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN water_goal INTEGER DEFAULT 2000')
+    except Exception:
+        pass
     c.execute('CREATE INDEX IF NOT EXISTS idx_product_name ON nutrition_products(product_name)')
 
     conn.commit()
@@ -239,13 +244,13 @@ def delete_entry(entry_id):
     return True
 
 
-def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal):
-    """设置每日目标（v2.1 强制 4 参，避免静默改值）"""
+def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal=None):
+    """设置每日目标（v2.2 支持饮水目标）"""
     # 强制 4 参检查（2026-06-09 修改）
     if None in (protein_goal, carbs_goal, fat_goal):
         print("Error: goal 必须 4 个参数全传")
-        print("  用法: goal <热量> <蛋白> <碳水> <脂肪>")
-        print("  示例: goal 1850 150 200 50")
+        print("  用法: goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]")
+        print("  示例: goal 1850 150 200 50 2000")
         return False
 
     # 类型转换
@@ -264,6 +269,17 @@ def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal):
         print("Error: 参数必须是数字")
         return False
 
+    # 饮水目标（可选）
+    if water_goal is not None:
+        try:
+            water_goal = int(water_goal)
+            if water_goal < 0:
+                print("Error: 饮水目标不能为负数")
+                return False
+        except ValueError:
+            print("Error: 饮水目标必须是数字")
+            return False
+
     # 自洽性提示（不阻断，只警告）
     calculated = protein_goal * 4 + carbs_goal * 4 + fat_goal * 9
     diff = calculated - calorie_goal
@@ -273,10 +289,16 @@ def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal):
     conn = get_db()
     c = conn.cursor()
 
-    c.execute('''
-        INSERT OR REPLACE INTO daily_goal (id, calorie_goal, protein_goal, carbs_goal, fat_goal, updated_at)
-        VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ''', (calorie_goal, protein_goal, carbs_goal, fat_goal))
+    if water_goal is not None:
+        c.execute('''
+            INSERT OR REPLACE INTO daily_goal (id, calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal, updated_at)
+            VALUES (1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ''', (calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal))
+    else:
+        c.execute('''
+            INSERT OR REPLACE INTO daily_goal (id, calorie_goal, protein_goal, carbs_goal, fat_goal, updated_at)
+            VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ''', (calorie_goal, protein_goal, carbs_goal, fat_goal))
 
     conn.commit()
     conn.close()
@@ -286,6 +308,8 @@ def set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal):
     print(f"  蛋白质：{protein_goal}克")
     print(f"  碳水：{carbs_goal}克")
     print(f"  脂肪：{fat_goal}克")
+    if water_goal is not None:
+        print(f"  饮水：{water_goal}ml")
     if abs(diff) <= 50:
         print(f"  自洽性：换算 {calculated} 卡（差异 {diff:+d}）✅")
     return True
@@ -343,10 +367,11 @@ def summary(target_date=None):
     conn = get_db()
     c = conn.cursor()
 
+    # 食物统计（排除饮水）
     c.execute('''
         SELECT SUM(calories), SUM(protein), SUM(carbs), SUM(fat), COUNT(*)
         FROM entries
-        WHERE date = ?
+        WHERE date = ? AND food_name != '💧水'
     ''', (target_date,))
 
     total_cal, total_pro, total_carbs, total_fat, entry_count = c.fetchone()
@@ -355,6 +380,14 @@ def summary(target_date=None):
     total_carbs = total_carbs or 0
     total_fat = total_fat or 0
     entry_count = entry_count or 0
+
+    # 饮水统计
+    c.execute('''
+        SELECT COALESCE(SUM(grams), 0)
+        FROM entries
+        WHERE date = ? AND food_name = '💧水'
+    ''', (target_date,))
+    total_water = c.fetchone()[0]
 
     goal = get_goal()
     conn.close()
@@ -366,24 +399,28 @@ def summary(target_date=None):
 
     if goal:
         cal_goal, pro_goal, carb_goal, fat_goal = goal[1], goal[2], goal[3], goal[4]
+        water_goal = goal[6] if len(goal) > 6 and goal[6] else 2000
         cal_remaining = cal_goal - total_cal
         pro_remaining = pro_goal - total_pro
         carb_remaining = carb_goal - total_carbs
         fat_remaining = fat_goal - total_fat
+        water_remaining = water_goal - total_water
 
         print(f"\n热量：{total_cal}/{cal_goal}卡 | 剩余：{cal_remaining:+.0f}")
         print(f"蛋白：{total_pro}/{pro_goal}克 | 剩余：{pro_remaining:+.0f}")
         print(f"碳水：{total_carbs}/{carb_goal}克 | 剩余：{carb_remaining:+.0f}")
         print(f"脂肪：{total_fat}/{fat_goal}克 | 剩余：{fat_remaining:+.0f}")
+        print(f"饮水：{total_water}/{water_goal}ml | 剩余：{water_remaining:+.0f}")
 
         if cal_remaining < 0:
             print(f"\n⚠️ 热量超标：{abs(cal_remaining)}卡")
     else:
         print(f"\n总热量：{total_cal}卡（未设置目标）")
+        print(f"饮水：{total_water}ml")
 
     print(f"{'='*60}\n")
 
-    if entry_count > 0:
+    if entry_count > 0 or total_water > 0:
         list_entries(target_date)
 
 
@@ -904,6 +941,56 @@ def history(days=7):
     print()
 
 
+def add_water(ml, target_date=None, target_time=None):
+    """记录饮水"""
+    try:
+        ml = int(ml)
+        if ml <= 0:
+            print("Error: 饮水量必须为正数")
+            return False
+    except ValueError:
+        print("Error: 饮水量必须是数字（ml）")
+        return False
+
+    conn = get_db()
+    c = conn.cursor()
+
+    today = target_date or date.today().isoformat()
+    now = target_time or datetime.now().strftime("%H:%M:%S")
+
+    c.execute('''
+        INSERT INTO entries (date, time, food_name, grams, calories, protein, carbs, fat, note)
+        VALUES (?, ?, '💧水', ?, 0, 0, 0, 0, '')
+    ''', (today, now, ml))
+
+    entry_id = c.lastrowid
+    conn.commit()
+
+    # 今日饮水汇总
+    c.execute('''
+        SELECT COALESCE(SUM(grams), 0)
+        FROM entries
+        WHERE date = ? AND food_name = '💧水'
+    ''', (today,))
+    total_water = c.fetchone()[0]
+
+    # 获取目标
+    c.execute('SELECT * FROM daily_goal WHERE id = 1')
+    goal_row = c.fetchone()
+    conn.close()
+
+    print(f"✓ 已记录饮水：{ml}ml（条目ID：{entry_id}）")
+
+    if goal_row:
+        water_goal = goal_row[6] if len(goal_row) > 6 and goal_row[6] else 2000
+        remaining = water_goal - total_water
+        print(f"  今日饮水：{total_water}/{water_goal}ml | 剩余：{remaining:+.0f}ml")
+    else:
+        print(f"  今日饮水：{total_water}ml（未设置目标）")
+
+    return True
+
+
 def usage():
     """Print usage information"""
     print("""
@@ -915,7 +1002,9 @@ def usage():
   delete <id>                       删除记录
   list                               列出今日记录
   summary                            今日摘要
-  goal <热量> [蛋白质] [碳水] [脂肪]  设置每日目标
+  goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]
+                                   设置每日目标
+  water <ml>                        记录饮水
   weight <公斤> [身高cm] [备注]       记录体重
   weight-history [天数]              体重历史（默认30天）
   history [天数]                    热量历史（默认7天）
@@ -929,7 +1018,8 @@ def usage():
 示例：
   add "鸡胸肉" 165 31 0 3 150
   add "米饭" 116 2 25 0 200
-  goal 1800 156 200 60
+  goal 1800 150 200 50 2000
+  water 500
   weight 70 178
   add-product "可口可乐" "可口可乐" 42 0 0 0 10.6 10.6 0 20 "经典款330ml"
   search-product "可乐"
@@ -970,17 +1060,26 @@ def main():
         elif command == "summary":
             summary()
 
+        elif command == "water":
+            if len(sys.argv) < 3:
+                print("Error: water requires <ml>")
+                print("  用法: water <ml>")
+                print("  示例: water 500")
+                sys.exit(1)
+            add_water(sys.argv[2])
+
         elif command == "goal":
             if len(sys.argv) < 6:
-                print("Error: goal 必须 4 个参数全传（v2.1 修改）")
-                print("  用法: goal <热量> <蛋白> <碳水> <脂肪>")
-                print("  示例: goal 1850 150 200 50")
+                print("Error: goal 必须 4 个参数全传（v2.2 修改）")
+                print("  用法: goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]")
+                print("  示例: goal 1850 150 200 50 2000")
                 sys.exit(1)
             calorie_goal = sys.argv[2]
             protein_goal = sys.argv[3]
             carbs_goal = sys.argv[4]
             fat_goal = sys.argv[5]
-            set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal)
+            water_goal = sys.argv[6] if len(sys.argv) > 6 else None
+            set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal)
 
         elif command == "weight":
             if len(sys.argv) < 3:

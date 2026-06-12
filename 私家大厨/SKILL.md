@@ -83,7 +83,7 @@
 
 | 唤醒词 | 说明 |
 |--------|------|
-| 录入食谱 | 录入新食谱（图片/文本） |
+| 录入食谱 | 录入新食谱（图片/文本/JSON） |
 | 导入食谱 | JSON文件导入 |
 
 ---
@@ -264,8 +264,8 @@
 
 | # | 唤醒词 | 说明 |
 |---|--------|------|
-| 29 | 录入食谱 | 录入新食谱（图片/文本解析） |
-| 30 | 导入食谱 | JSON文件导入（低能力AI推荐） |
+| 29 | 录入食谱 | 录入新食谱（图片/文本解析，信息完整时走JSON导入） |
+| 30 | 导入食谱 | JSON文件导入 |
 
 ---
 
@@ -316,9 +316,9 @@
 
 ---
 
-## JSON文件导入（低能力AI推荐）
+## JSON文件导入
 
-> 将10步CLI操作简化为1步JSON导入。
+> 将10步CLI操作简化为1步JSON导入。适合信息完整的场景。
 
 ```bash
 # 1. 查看模板
@@ -326,7 +326,10 @@ python scripts/recipe_import.py template
 
 # 2. AI生成JSON文件
 
-# 3. 导入
+# 3. 校验JSON
+python scripts/recipe_json_validate.py recipe.json
+
+# 4. 校验通过后导入
 python scripts/recipe_import.py import recipe.json
 ```
 

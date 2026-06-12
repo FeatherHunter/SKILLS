@@ -889,9 +889,32 @@ with get_read_only_connection() as conn:
 
 ---
 
-## JSON导入命令（推荐）
+## JSON校验命令
 
-> 低能力AI推荐使用此方式，一步完成食谱导入。
+> 导入前校验JSON文件的完整性和格式。
+
+```bash
+# 校验JSON文件
+python scripts/recipe_json_validate.py <json_file>
+```
+
+校验内容：
+- 字段完整性（所有字段是否都存在）
+- 必填字段（name/ingredients[].name/steps[].action）
+- 数据类型（数值/数组/字符串）
+- 外键引用（步骤引用的食材是否存在）
+- 枚举警告（非标准值提示）
+
+输出：
+- ❌ 错误：必须修正
+- ⚠️ 警告：建议修正
+- 📎 缺失字段：建议补充
+
+---
+
+## JSON导入命令
+
+> 一步完成食谱导入，适合信息完整的场景。
 
 ### 基本用法
 

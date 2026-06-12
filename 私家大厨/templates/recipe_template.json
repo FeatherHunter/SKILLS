@@ -5,6 +5,9 @@
   "servings": 2,
   "total_time": 25,
   "status": "未做",
+  "photo_url": null,
+  "source": null,
+  "source_url": null,
 
   "category": {
     "cuisine": "川菜",
@@ -26,7 +29,8 @@
       "category": "海鲜",
       "sequence": 1,
       "is_optional": false,
-      "substitute": null
+      "substitute": null,
+      "quantity_text": null
     },
     {
       "name": "花生",
@@ -35,7 +39,8 @@
       "category": "干货",
       "sequence": 2,
       "is_optional": true,
-      "substitute": "腰果"
+      "substitute": "腰果",
+      "quantity_text": null
     }
   ],
 
@@ -48,7 +53,7 @@
       "temperature": "常温",
       "expected_result": "虾肉变红，去腥",
       "ingredients_used": [
-        {"name": "虾", "quantity_used": 300}
+        {"name": "虾", "quantity_used": 300, "introduced_at": "开局加入"}
       ]
     },
     {
@@ -67,7 +72,8 @@
       "step_sequence": 1,
       "content": "开背时去虾线更入味",
       "category": "刀工",
-      "priority": 1
+      "priority": 1,
+      "ingredient_id": null
     }
   ],
 
@@ -99,5 +105,8 @@
     "origin_story": "宫保虾球源自川菜宫保鸡丁的变体",
     "historical_background": "清代丁宝桢任四川总督时改良此菜",
     "cultural_significance": "代表川菜小荔枝口的经典味型"
-  }
+  },
+
+  "history": [],
+  "relations": []
 }

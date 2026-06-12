@@ -187,28 +187,64 @@ AI根据用户意图选择：
 
 ---
 
-## JSON文件导入（推荐）
+## 录入方式选择
 
-> 低能力AI推荐使用此方式，避免多步CLI操作的错误。
+AI收到录入请求时，按以下规则选择方式：
 
-### 流程
+| 场景 | 方式 | 原因 |
+|------|------|------|
+| 用户说"导入食谱" | JSON导入 | 用户明确指定 |
+| 用户发图片/MD文件 | 传统CLI | AI逐步解析，不确定的字段边问边填 |
+| 用户提供了完整信息（食材+步骤都有） | JSON导入 | 信息完整，一步到位更高效 |
+| 用户只说了菜名或信息不全 | 传统CLI | 需要逐步追问，CLI支持单步操作 |
 
-1. AI收集食谱信息
-2. AI生成JSON文件
-3. 调用导入命令：`python scripts/recipe_import.py import recipe.json`
-4. 脚本自动完成所有数据库操作
+**判断标准**：用户提供的信息是否足够生成一个完整的JSON。如果够 → JSON导入；不够 → 传统CLI。
 
-### 优势
+---
 
-- 只需1个命令（vs 传统方式10个命令）
-- JSON格式自验证
-- 事务保护（失败自动回滚）
-- 错误信息明确
+## JSON文件导入
+
+> 一步完成食谱导入，避免多步CLI操作的错误。
+
+### 完整流程
+
+```
+用户：[发送图片/MD文件/文字描述]
+    ↓
+AI解析信息，构造完整JSON
+    ↓
+保存为临时文件（如 recipe.json）
+    ↓
+调用校验脚本：python scripts/recipe_json_validate.py recipe.json
+    ↓
+├─ 有错误 → AI根据报错修正JSON → 重新校验
+├─ 有警告 → AI判断是否需要修正
+└─ 全通过 → 进入导入
+    ↓
+调用导入脚本：python scripts/recipe_import.py import recipe.json
+    ↓
+返回导入结果
+```
+
+### 校验脚本
+
+```bash
+python scripts/recipe_json_validate.py <json_file>
+```
+
+校验内容：
+- **字段完整性**：所有字段是否都存在（值可以为null/空数组）
+- **必填字段**：name、ingredients[].name、steps[].action 不能为空
+- **数据类型**：数值字段是否为数字、数组字段是否为数组
+- **外键引用**：步骤引用的食材是否在ingredients中存在
+- **枚举警告**：非标准值给出警告（不阻断）
 
 ### 参考
 
 - JSON模板：`templates/recipe_template.json`
-- 导入命令：`references/commands.md`（JSON导入命令部分）
+- 校验脚本：`scripts/recipe_json_validate.py`
+- 导入脚本：`scripts/recipe_import.py`
+- 命令文档：`references/commands.md`（JSON导入命令部分）
 
 ---
 

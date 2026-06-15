@@ -20,7 +20,8 @@ def main():
     from home_manager.db import DB_PATH, PHOTOS_DIR, init_db, get_conn
     from home_manager.item_ops import (
         add_item, search_items, update_item,
-        list_items, item_detail
+        list_items, item_detail,
+        search_items_json, item_detail_json, list_items_json
     )
     from home_manager.inventory_ops import inventory, stats
     from home_manager.tag_ops import tag_merge, list_tags
@@ -84,6 +85,7 @@ def main():
     p_search.add_argument("--status", default=None, help="状态")
     p_search.add_argument("--exact", action="store_true", help="名称精确匹配")
     p_search.add_argument("--limit", type=int, default=20, help="返回数量上限")
+    p_search.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
 
     # ── update ──
     p_update = subparsers.add_parser("update", help="更新物品")
@@ -120,6 +122,7 @@ def main():
                         choices=["name", "recent", "frequent", "updated", "dormant"],
                         help="排序方式")
     p_list.add_argument("--limit", type=int, default=100, help="返回数量上限")
+    p_list.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
 
     # ── inventory ──
     p_inventory = subparsers.add_parser("inventory", help="盘点指定位置")
@@ -157,6 +160,7 @@ def main():
     # ── detail ──
     p_detail = subparsers.add_parser("detail", help="查看物品详情")
     p_detail.add_argument("--id", type=int, required=True, help="物品ID")
+    p_detail.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
 
     # ── account ──
     p_account = subparsers.add_parser("account", help="账号管理（密码加密存储）")
@@ -191,6 +195,11 @@ def main():
         )
 
     elif args.command == "search":
+        if args.json:
+            return search_items_json(
+                name=args.name, category=args.category, location=args.location,
+                tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
+            )
         return search_items(
             name=args.name, category=args.category, location=args.location,
             tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
@@ -212,6 +221,11 @@ def main():
         )
 
     elif args.command == "list":
+        if args.json:
+            return list_items_json(
+                location=args.location, status=args.status, category=args.category,
+                owner=args.owner, sort_by=args.sort, limit=args.limit
+            )
         return list_items(
             location=args.location, status=args.status, category=args.category,
             owner=args.owner, sort_by=args.sort, limit=args.limit
@@ -280,6 +294,8 @@ def main():
         return list_tags()
 
     elif args.command == "detail":
+        if args.json:
+            return item_detail_json(item_id=args.id)
         return item_detail(item_id=args.id)
 
     elif args.command == "account":

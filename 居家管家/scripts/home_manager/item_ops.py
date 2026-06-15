@@ -572,3 +572,151 @@ def item_detail(item_id):
     conn.commit()
     conn.close()
     return 0
+
+
+# ── JSON 输出函数（供 Skill 层 HTML 生成用，不打印，只返回结构化数据）──
+
+
+
+def _get_photo_base64(photo_relative_path):
+    """读取照片文件并返回 base64 编码字符串，失败返回 None"""
+    if not photo_relative_path:
+        return None
+    full_path = get_photo_full_path(photo_relative_path)
+    if not full_path or not full_path.exists():
+        return None
+    try:
+        with open(full_path, "rb") as f:
+            data = f.read()
+        import base64
+        return base64.b64encode(data).decode("ascii")
+    except Exception:
+        return None
+
+
+def _item_to_dict(row, conn):
+    """将 items 行转 dict，并附加 tags 列表和 locations 列表"""
+    item_id = row["id"]
+    cursor = conn.cursor()
+    cursor.execute("SELECT tag FROM item_tags WHERE item_id = ?", (item_id,))
+    tags = [r["tag"] for r in cursor.fetchall()]
+    cursor.execute("""
+        SELECT location, quantity, reason, location_status,
+               purchase_date, expiration_date, created_at, updated_at
+        FROM item_locations WHERE item_id = ? ORDER BY id
+    """, (item_id,))
+    locations = [dict(r) for r in cursor.fetchall()]
+    photo_b64 = _get_photo_base64(row["photo"]) if row["photo"] else None
+    result = dict(row)
+    result["tags"] = tags
+    result["locations"] = locations
+    result["photo_base64"] = photo_b64
+    return result
+
+
+def search_items_json(name=None, category=None, location=None, tag=None, status=None,
+                     limit=20, exact=False):
+    """搜索物品，返回 JSON 列表（完整字段），供 HTML 生成用"""
+    conn = get_conn()
+    cursor = conn.cursor()
+    query = "SELECT DISTINCT i.* FROM items i"
+    params = []
+    join_il = tag or location or status
+    if join_il:
+        query += " LEFT JOIN item_locations il ON i.id = il.item_id"
+    if tag:
+        query += " LEFT JOIN item_tags t ON i.id = t.item_id"
+    conditions = []
+    if name:
+        conditions.append("i.name = ?" if exact else "i.name LIKE ?")
+        params.append(name if exact else f"%{name}%")
+    if category:
+        conditions.append("i.category = ?")
+        params.append(category)
+    if location:
+        conditions.append("(il.location LIKE ? OR il.location IS NULL)")
+        params.append(f"%{location}%")
+    if status:
+        conditions.append("il.location_status = ?")
+        params.append(status)
+    if tag:
+        conditions.append("t.tag = ?")
+        params.append(tag)
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY i.access_count DESC LIMIT ?"
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    items = [_item_to_dict(dict(r), conn) for r in rows]
+    conn.close()
+    import json
+    print(json.dumps(items, ensure_ascii=False))
+    return 0
+
+
+def item_detail_json(item_id):
+    """查看物品详情，返回 JSON（完整字段），供 HTML 生成用"""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        import json
+        print(json.dumps({"error": f"未找到 ID={item_id} 的物品"}, ensure_ascii=False))
+        return 1
+    item = _item_to_dict(dict(row), conn)
+    _touch_item(conn, item_id)
+    conn.commit()
+    conn.close()
+    import json
+    print(json.dumps(item, ensure_ascii=False))
+    return 0
+
+
+def list_items_json(location=None, status=None, category=None, owner=None,
+                   sort_by="name", limit=100):
+    """列出物品，返回 JSON 列表（完整字段），供 HTML 生成用"""
+    conn = get_conn()
+    cursor = conn.cursor()
+    conditions = []
+    params = []
+    if location:
+        conditions.append("""
+            EXISTS (SELECT 1 FROM item_locations il
+                   WHERE il.item_id = items.id AND il.location LIKE ?)
+        """)
+        params.append(f"%{location}%")
+    if status:
+        conditions.append("""
+            EXISTS (SELECT 1 FROM item_locations il
+                   WHERE il.item_id = items.id AND il.location_status = ?)
+        """)
+        params.append(status)
+    if category:
+        conditions.append("category = ?")
+        params.append(category)
+    if owner:
+        conditions.append("owner = ?")
+        params.append(owner)
+    sort_map = {
+        "name": "name ASC",
+        "recent": "last_accessed_at DESC",
+        "frequent": "access_count DESC",
+        "updated": "updated_at DESC",
+        "dormant": "last_accessed_at ASC",
+    }
+    order = sort_map.get(sort_by, "name ASC")
+    query = "SELECT * FROM items"
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += f" ORDER BY {order} LIMIT ?"
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    items = [_item_to_dict(dict(r), conn) for r in rows]
+    conn.close()
+    import json
+    print(json.dumps(items, ensure_ascii=False))
+    return 0

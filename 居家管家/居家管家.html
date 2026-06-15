@@ -311,6 +311,28 @@ const DATA = [
         }
       },
       {
+        name: "物品搜索HTML",
+        wakeWords: ["查物品-html"],
+        cli: 'search --name "XX" --json\nsearch --location "XX" --json',
+        desc: "搜索物品并生成带图片的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
+          side: "只读操作；HTML 生成在 Skill 层完成，脚本仅提供 --json 结构化输出"
+        }
+      },
+      {
+        name: "物品详情HTML",
+        wakeWords: ["看物品-html"],
+        cli: "detail --id {ID} --json",
+        desc: "查看物品详情并生成带图片的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
+          side: "只读操作；access_count +1；HTML 生成在 Skill 层完成"
+        }
+      },
+      {
         name: "位置推荐",
         wakeWords: ["推位置"],
         cli: 'suggest-locations --category "衣物"\nsuggest-locations --category "衣物" --with-examples',
@@ -531,6 +553,17 @@ const DATA = [
           tables: ["items", "item_locations"],
           fields: "items: COUNT(*)\nitem_locations: GROUP BY location_status → 各状态数量\nitems: GROUP BY category → 各分类数量",
           side: "只读操作"
+        }
+      },
+      {
+        name: "总体统计HTML",
+        wakeWords: ["统物品-html"],
+        cli: "list --json",
+        desc: "生成全部物品的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
+        exec: {
+          tables: ["items", "item_locations", "item_tags"],
+          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
+          side: "只读操作；HTML 生成在 Skill 层完成，脚本仅提供 --json 结构化输出"
         }
       },
       {

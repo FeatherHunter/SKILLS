@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息报告 - 2026年6月15日（周一）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.6;-webkit-font-smoothing:antialiased}
+.container{max-width:720px;margin:0 auto;padding:24px 16px}
+.header{text-align:center;padding:32px 0 24px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header .date{font-size:15px;color:#86868b;margin-top:4px}
+.header .weekday{display:inline-block;font-size:12px;font-weight:500;color:#fff;background:#007AFF;border-radius:12px;padding:2px 10px;margin-top:8px}
+.card{background:#fff;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:17px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card h2 .icon{font-size:20px}
+.summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.summary-item{display:flex;align-items:center;padding:12px 14px;background:#f5f5f7;border-radius:10px;gap:10px}
+.summary-item .emoji{font-size:22px;width:32px;text-align:center;flex-shrink:0}
+.summary-item .info{flex:1;min-width:0}
+.summary-item .cat{font-size:13px;font-weight:500;color:#1d1d1f}
+.summary-item .dur{font-size:12px;color:#86868b;margin-top:1px}
+.summary-item .bar{height:4px;background:#e5e5e5;border-radius:2px;margin-top:6px;overflow:hidden}
+.summary-item .bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f5f5f7;border-radius:10px;margin-top:12px}
+.total-row .label{font-size:14px;font-weight:500;color:#1d1d1f}
+.total-row .value{font-size:20px;font-weight:700;color:#007AFF}
+.total-row .check{font-size:14px;color:#34c759;margin-left:6px}
+.timeline{display:flex;gap:2px;height:40px;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.timeline-block{flex:1;position:relative;cursor:pointer;transition:opacity .15s}
+.timeline-block:hover{opacity:.8}
+.timeline-block .tip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:10;pointer-events:none}
+.timeline-block:hover .tip{display:block}
+.timeline-labels{display:flex;justify-content:space-between;font-size:10px;color:#86868b;padding:0 2px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#86868b}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.highlights{display:flex;flex-direction:column;gap:10px}
+.highlight-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#f5f5f7;border-radius:10px}
+.highlight-row .h-emoji{font-size:18px;flex-shrink:0;margin-top:1px}
+.highlight-row .h-text{font-size:13px;color:#1d1d1f;line-height:1.5}
+.highlight-row .h-time{font-size:12px;color:#86868b;margin-top:2px}
+.plan-compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.plan-col{padding:10px 12px;border-radius:8px}
+.plan-col.plan-side{background:rgba(0,122,255,.08)}
+.plan-col .label{font-size:11px;color:#86868b;margin-bottom:4px}
+.plan-col.actual-side{background:rgba(255,149,0,.1)}
+.plan-row{padding:10px 12px;border-radius:8px;background:#f5f5f7;margin-bottom:6px}
+.plan-row .label{font-size:11px;color:#86868b;margin-bottom:2px}
+.plan-row .plan{font-size:12px;color:#1d1d1f}
+.plan-row .actual{font-size:12px;color:#1d1d1f;margin-top:2px}
+.plan-row .gap{font-size:11px;color:#FF3B30;margin-top:2px;font-weight:500}
+.footer{text-align:center;padding:20px 0;font-size:11px;color:#86868b}
+@media(max-width:480px){.summary-grid{grid-template-columns:1fr}.container{padding:16px 12px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>每日作息报告</h1>
+  <div class="date">2026年6月15日</div>
+  <span class="weekday">周一</span>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4CA;</span> 时间分配</h2>
+  <div class="summary-grid">
+    <div class="summary-item">
+      <span class="emoji">😴</span>
+      <div class="info">
+        <div class="cat">睡眠</div>
+        <div class="dur">8小时54分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:37.1%;background:#5E5CE6"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🏠</span>
+      <div class="info">
+        <div class="cat">居家</div>
+        <div class="dur">4小时29分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:18.7%;background:#BF8F5F"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🚴</span>
+      <div class="info">
+        <div class="cat">通勤</div>
+        <div class="dur">3小时34分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:14.9%;background:#64D2FF"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">💼</span>
+      <div class="info">
+        <div class="cat">工作</div>
+        <div class="dur">1小时50分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:7.6%;background:#007AFF"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🍽️</span>
+      <div class="info">
+        <div class="cat">餐饮</div>
+        <div class="dur">1小时47分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:7.4%;background:#FF9F0A"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🏥</span>
+      <div class="info">
+        <div class="cat">健康</div>
+        <div class="dur">1小时45分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:7.3%;background:#FF3B30"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🧹</span>
+      <div class="info">
+        <div class="cat">家务</div>
+        <div class="dur">1小时6分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:4.6%;background:#A2845E"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🎮</span>
+      <div class="info">
+        <div class="cat">娱乐</div>
+        <div class="dur">29分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:2.0%;background:#AF52DE"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🛋️</span>
+      <div class="info">
+        <div class="cat">休闲</div>
+        <div class="dur">16分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:1.1%;background:#30D158"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🏋️</span>
+      <div class="info">
+        <div class="cat">运动</div>
+        <div class="dur">8分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:0.6%;background:#FF9500"></div></div>
+      </div>
+    </div>
+    <div class="summary-item">
+      <span class="emoji">🌱</span>
+      <div class="info">
+        <div class="cat">生活</div>
+        <div class="dur">5分钟</div>
+        <div class="bar"><div class="bar-fill" style="width:0.3%;background:#8E8E93"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="total-row">
+    <span class="label">总计</span>
+    <span><span class="value">24小时23分钟</span><span class="check">&#x2713;</span></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F550;</span> 24小时时间轴</h2>
+  <div class="timeline">
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">00:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">01:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">02:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">03:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">04:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">05:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">06:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#5E5CE6"><div class="tip">07:00 睡眠</div></div>
+    <div class="timeline-block" style="background:#64D2FF"><div class="tip">08:00 通勤</div></div>
+    <div class="timeline-block" style="background:#64D2FF"><div class="tip">09:00 通勤</div></div>
+    <div class="timeline-block" style="background:#BF8F5F"><div class="tip">10:00 居家</div></div>
+    <div class="timeline-block" style="background:#BF8F5F"><div class="tip">11:00 居家</div></div>
+    <div class="timeline-block" style="background:#A2845E"><div class="tip">12:00 家务</div></div>
+    <div class="timeline-block" style="background:#BF8F5F"><div class="tip">13:00 居家</div></div>
+    <div class="timeline-block" style="background:#FF9F0A"><div class="tip">14:00 餐饮</div></div>
+    <div class="timeline-block" style="background:#FF9F0A"><div class="tip">15:00 餐饮</div></div>
+    <div class="timeline-block" style="background:#007AFF"><div class="tip">16:00 工作</div></div>
+    <div class="timeline-block" style="background:#64D2FF"><div class="tip">17:00 通勤</div></div>
+    <div class="timeline-block" style="background:#64D2FF"><div class="tip">18:00 通勤</div></div>
+    <div class="timeline-block" style="background:#64D2FF"><div class="tip">19:00 通勤</div></div>
+    <div class="timeline-block" style="background:#007AFF"><div class="tip">20:00 工作</div></div>
+    <div class="timeline-block" style="background:#FF3B30"><div class="tip">21:00 健康</div></div>
+    <div class="timeline-block" style="background:#BF8F5F"><div class="tip">22:00 居家</div></div>
+    <div class="timeline-block" style="background:#BF8F5F"><div class="tip">23:00 居家</div></div>
+  </div>
+  <div class="timeline-labels">
+    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#5E5CE6"></div>睡眠</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#64D2FF"></div>通勤</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#BF8F5F"></div>居家</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#A2845E"></div>家务</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FF9F0A"></div>餐饮</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#007AFF"></div>工作</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#FF3B30"></div>健康</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x2B50;</span> 当日亮点</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">🏠</span>
+      <div>
+        <div class="h-text">居家管家录入任务重：居家 4h29m + 家务 1h6m = 5h35m。主要录入居家管家物品（山姆购物订单、杯具/吸管分类、健身裤收纳箱7个、705/706 更名讨论）。集中突击录入是好事，但挤占了原计划工作时段</div>
+        <div class="h-time">10:23~12:58 / 13:18~13:49 / 16:41~17:29 / 22:09~23:36</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🚴</span>
+      <div>
+        <div class="h-text">通勤+健康 5h19m 偏长：早上通勤22min+去医院27min+中午短途4min+晚上聚餐往返 30+89+42min = 通勤3h34m（214min），加医院就医45min+洗澡伤口护理60min = 健康1h45m。下午 17:29~20:10 通勤 2h41m 含骑行 12.2km（去天隆寺6.2km+回家6km）</div>
+        <div class="h-time">08:34~09:38 / 17:29~20:10</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">💼</span>
+      <div>
+        <div class="h-text">工作严重不足 1h50m：早 5min 打卡 + 公司 15min 讨论取证拆线 + 15:03~16:36 共 60min 修改 EMS 告知函 + 20:10~20:40 绕路打卡 30min。计划 7h 工作实际 1h50m，差距 5h10m。AQS 学习计划 22-23 点也未执行</div>
+        <div class="h-time">08:10 / 08:56~09:11 / 15:03~16:36 / 20:10~20:40</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🍽️</span>
+      <div>
+        <div class="h-text">餐饮 1h47m 健康导向：13:49~15:48 做饭（切鸡胸肉+腌制+加鸡枞油）+ 16:17~16:19 吃饭讨论热量。做鸡胸肉是健康选择，但 74min 备餐时间偏长，可以进一步优化流程</div>
+        <div class="h-time">13:49~15:48 做饭 / 16:17~16:19 吃饭</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🏥</span>
+      <div>
+        <div class="h-text">健康 1h45m：09:38~10:23 医院拆线+买药（45min）+ 21:09~22:09 洗澡吹头+伤口抹药+录入复方多黏菌素B软膏（60min）。拆线是就医刚需，伤口护理是恢复期必要流程</div>
+        <div class="h-time">09:38~10:23 / 21:09~22:09</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🧘</span>
+      <div>
+        <div class="h-text">修行 0h：未单独记录元母意程修炼（隐含在 23:25~23:36 居家执行 + 23:36 后入睡前）。计划 21-22 修行未执行</div>
+        <div class="h-time">（无独立修行记录）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F634;</span> 睡眠分析</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F319;</span>
+      <div>
+        <div class="h-text">夜间主睡眠：8小时10分钟（00:00 ~ 08:10），质量良好。工作日起床时间 08:10 属正常范围</div>
+        <div class="h-time">入睡正常，一觉到天亮</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">午睡：20分钟（11:13 ~ 11:33），时长适宜。中午短暂休息有助下午精力恢复</div>
+        <div class="h-time">✓ 午睡时长合理</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4A4;</span>
+      <div>
+        <div class="h-text">夜间入睡：23:36 后才入睡（23min），且需要吃睡眠药。计划 22-23 锻炼 + 23-24 准备睡觉 全部压缩在 23:17~23:36 19min 完成，时间仓促</div>
+        <div class="h-time">⚠️ 入睡偏晚且依赖药物</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4CA;</span>
+      <div>
+        <div class="h-text">总睡眠 8小时54分钟（夜间主睡眠 8h10m + 上午小睡 20min + 13:07 短暂躺床 1min + 23:36 后入睡 23min），占全天 37.1%，处于健康范围（7~9h）</div>
+        <div class="h-time">✓ 睡眠总量达标</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4CB;</span> 计划 vs 实际</h2>
+  <div class="highlights">
+
+    <div class="plan-row">
+      <div class="label">00:00 ~ 08:00 计划：睡眠</div>
+      <div class="actual">实际：00:00~08:10 睡眠（+10min 赖床）</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">08:00 ~ 09:00 计划：起床洗漱</div>
+      <div class="actual">实际：08:10~08:56 公司打卡+喂猫+倒垃圾+通勤（混杂）</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">09:00 ~ 10:00 计划：上班通勤</div>
+      <div class="actual">实际：09:11~09:38 通勤去医院拆线 + 09:38~10:23 在医院</div>
+      <div class="gap">⚠️ 未到公司，改为去医院</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">10:00 ~ 12:00 计划：工作</div>
+      <div class="actual">实际：10:23~12:58 在家讨论药品录入+居家管家录入物品+家务清洗</div>
+      <div class="gap">⚠️ 未工作，居家管家录入占用</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">12:00 ~ 13:00 计划：午餐休息</div>
+      <div class="actual">实际：12:58~13:49 居家管家继续录入+休息</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">13:00 ~ 18:00 计划：工作</div>
+      <div class="actual">实际：13:49~15:48 做饭（74min）+ 15:03~16:36 EMS告知函修改 60min + 16:41~17:29 居家查看心愿+计划录衣服</div>
+      <div class="gap">⚠️ 计划 5h，实际有效工作 1h</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">18:00 ~ 19:00 计划：晚餐通勤</div>
+      <div class="actual">实际：17:29~19:28 出门+骑行6.2km+与宋良聚餐</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">19:00 ~ 20:00 计划：自由休息</div>
+      <div class="actual">实际：19:28~20:10 骑回家+瑞幸+到家</div>
+      <div class="gap">通勤占用休息时段</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">20:00 ~ 21:00 计划：通勤到家</div>
+      <div class="actual">实际：20:10~20:40 绕路去公司打卡+20:40~21:09 看凡人修仙传短视频</div>
+      <div class="gap">⚠️ 绕路打卡（保留劳动关系证据）</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">21:00 ~ 22:00 计划：修行+晚餐补食</div>
+      <div class="actual">实际：21:09~22:09 洗澡吹头+伤口抹药+录入药品</div>
+      <div class="gap">⚠️ 健康流程占用修行时段</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">22:00 ~ 23:00 计划：AQS核心概念学习(破冰)</div>
+      <div class="actual">实际：22:09~23:25 居家管家继续录入（健身裤收纳+706更名+html修改）</div>
+      <div class="gap">⚠️ AQS 学习计划未执行</div>
+    </div>
+
+    <div class="plan-row">
+      <div class="label">23:00 ~ 24:00 计划：锻炼+准备睡觉</div>
+      <div class="actual">实际：23:17~23:25 做10个跪姿俯卧撑+23:25~23:36 执行居家管家html+吃睡眠药+元母意程+23:36~23:59 入睡</div>
+      <div class="gap">⚠️ 锻炼仅 8min，时间仓促</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4A1;</span> 改善建议</h2>
+  <div class="highlights">
+    <div class="highlight-row">
+      <span class="h-emoji">💼</span>
+      <div>
+        <div class="h-text">AQS 学习破冰：22-23 点是今日的关键 AQS 学习破冰时段，但被居家管家任务挤占。建议：要么把居家管家录入限定在白天（10-12 / 13-18 计划工作时段内），要么明确放弃 AQS 学习当天，改为明天重点突破</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🏠</span>
+      <div>
+        <div class="h-text">居家管家录入要设边界：5h35m 录入看着充实，但挤占工作时段。建议给"录入日"留一整天专门突击，其他日不再开新任务；或者用 30min 番茄钟分批录入</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🍽️</span>
+      <div>
+        <div class="h-text">做饭流程优化：74min 备餐时间偏长（含 AI 讨论）。可以先备料再讨论，或把讨论集中在吃饭时而非备餐时</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🏋️</span>
+      <div>
+        <div class="h-text">运动 8min 严重不足：今天只有 10 个跪姿俯卧撑，骑行通勤算运动勉强 1h+。建议早起或午间加 15~20min 专项运动</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">🧘</span>
+      <div>
+        <div class="h-text">修行流程化：23:25~23:36 含元母意程修炼，但和吃睡眠药混在一起。建议把元母意程作为 23:30 固定仪式，与睡眠药服用时间分离，便于追踪</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">💊</span>
+      <div>
+        <div class="h-text">睡眠药依赖注意：今天需吃睡眠药才入睡。23:36 才入睡偏晚，建议 23:00 前结束所有屏幕活动，并完成修行流程</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">✅</span>
+      <div>
+        <div class="h-text">保留的好习惯：①医院拆线及时处理；②EMS 告知函撰写+打印准备（劳动仲裁准备充分）；③早晚 2 次打卡保留劳动关系证据；④居家管家物品系统化录入</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  作息管家 · 自动生成于 2026-06-16 07:30 · 共 55 个记录块
+</div>
+
+</div>
+</body>
+</html>

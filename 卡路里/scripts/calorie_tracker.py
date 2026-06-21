@@ -424,8 +424,8 @@ def summary(target_date=None):
         list_entries(target_date)
 
 
-def log_weight(weight_kg, height_cm=None, note='', target_date=None, target_time=None):
-    """记录体重"""
+def log_weight(weight_kg, height_cm, note='', target_date=None, target_time=None):
+    """记录体重（身高必传，BMI 必须计算）"""
     try:
         weight_kg = float(weight_kg)
         if weight_kg <= 0:
@@ -435,14 +435,19 @@ def log_weight(weight_kg, height_cm=None, note='', target_date=None, target_time
         print("Error: Weight must be a number")
         return False
 
-    height_cm = float(height_cm) if height_cm else None
-    
-    # 计算BMI
-    bmi = None
-    if height_cm and height_cm > 0:
-        height_m = height_cm / 100
-        bmi = weight_kg / (height_m ** 2)
-        bmi = round(bmi, 1)
+    try:
+        height_cm = float(height_cm)
+        if height_cm <= 0:
+            print("Error: Height must be a positive number (cm)")
+            return False
+    except (ValueError, TypeError):
+        print("Error: Height must be a number (cm)")
+        return False
+
+    # 计算BMI（身高必传，BMI 必须计算）
+    height_m = height_cm / 100
+    bmi = weight_kg / (height_m ** 2)
+    bmi = round(bmi, 1)
 
     conn = get_db()
     c = conn.cursor()
@@ -1082,11 +1087,13 @@ def main():
             set_goal(calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal)
 
         elif command == "weight":
-            if len(sys.argv) < 3:
-                print("Error: weight requires <kg> [height_cm] [note]")
+            if len(sys.argv) < 4:
+                print("Error: weight requires <kg> <height_cm> [note]")
+                print("  用法: weight <公斤> <身高cm> [备注]")
+                print("  示例: weight 70 178")
                 sys.exit(1)
             weight = sys.argv[2]
-            height = sys.argv[3] if len(sys.argv) > 3 else None
+            height = sys.argv[3]
             note = sys.argv[4] if len(sys.argv) > 4 else ''
             log_weight(weight, height, note)
 

@@ -341,7 +341,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 
 ### ⚖️ 体重：记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标
 
-- **记体重**：`calorie_tracker.py weight <体重> [身高]`
+- **记体重**：`calorie_tracker.py weight <体重> <身高>`（身高必传，BMI 必须计算）
 - **查体重历史**：`calorie_tracker.py weight-history [天数]`
 - **查体重趋势**：`weight_analysis(start, end, 'trend')`
 - **对比体重**：`weight_analysis(start, end, 'compare', compare_start, compare_end)`
@@ -406,7 +406,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 **用户**：记吃了 米饭 200克
 **AI**：米饭大概 200克，232卡，4g蛋白，50g碳水，0.5g脂肪 → ✓ 已记录，今日 232/1800卡
 
-**用户**：记体重 70公斤
+**用户**：记体重 70公斤 178
 **AI**：✓ 体重已记录 70.0公斤，BMI 22.1（正常范围）
 
 **用户**：查热量 鸡胸肉

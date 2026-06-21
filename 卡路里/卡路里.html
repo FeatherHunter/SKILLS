@@ -116,14 +116,14 @@ const DATA = {
         triggers: [
           {
             word: "记吃了",
-            cli: "python scripts/calorie_tracker.py add <食物名> <热量> <蛋白> [碳水] [脂肪] [克数] [备注]",
+            cli: "python scripts/calorie_tracker.py add <食物名> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] [--date YYYY-MM-DD] [--time HH:MM] [--meal 餐次]",
             flow: {
               operation: "INSERT",
               tables: [
                 { name: "entries", fields: "date, time, food_name, grams, calories, protein, carbs, fat, note", op: "写入" },
                 { name: "daily_goal", fields: "calorie_goal, protein_goal, carbs_goal, fat_goal", op: "读取" }
               ],
-              sideEffects: "自动推断餐次（按时间）、计算今日汇总、对比目标显示剩余/超标"
+              sideEffects: "自动推断餐次（按时间，可用 --meal 手动指定），计算今日汇总、对比目标显示剩余/超标。补录历史时使用 --date/--time/--meal"
             }
           }
         ]
@@ -222,7 +222,7 @@ const DATA = {
         triggers: [
           {
             word: "记喝水",
-            cli: "python scripts/calorie_tracker.py water <ml>",
+            cli: "python scripts/calorie_tracker.py water <ml> [--date YYYY-MM-DD]",
             flow: {
               operation: "INSERT",
               tables: [
@@ -336,13 +336,30 @@ const DATA = {
         triggers: [
           {
             word: "记体重",
-            cli: "python scripts/calorie_tracker.py weight <体重kg> [身高cm] [备注]",
+            cli: "python scripts/calorie_tracker.py weight <体重kg> <身高cm> [备注]",
             flow: {
               operation: "INSERT",
               tables: [
                 { name: "weight_log", fields: "date, time, weight_kg, height_cm, bmi, note", op: "写入" }
               ],
-              sideEffects: "若提供身高，自动计算 BMI = weight / (height/100)^2"
+              sideEffects: "身高必传，BMI 必须计算 = weight / (height/100)^2"
+            }
+          }
+        ]
+      },
+      {
+        name: "改体重记录",
+        desc: "修改历史体重记录（按 ID），可修改体重/身高/备注，身高变更自动重算 BMI",
+        triggers: [
+          {
+            word: "改体重记录",
+            cli: "python scripts/calorie_tracker.py weight-update <ID> [--weight <公斤>] [--height <身高cm>] [--note <备注>]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "weight_log", fields: "weight_kg, height_cm, bmi, note", op: "更新" }
+              ],
+              sideEffects: "若传了体重或身高，自动重算 BMI。若旧记录无身高则必须同时传 --weight 和 --height"
             }
           }
         ]

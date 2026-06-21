@@ -158,7 +158,8 @@ def infer_meal_type(time_str):
         return "夜宵"
 
 
-def add_entry(food_name, calories, protein, carbs=0, fat=0, grams=100, note='', target_date=None, target_time=None):
+def add_entry(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
+              target_date=None, target_time=None, meal_override=None):
     """添加食物记录"""
     try:
         calories = float(calories)
@@ -172,6 +173,12 @@ def add_entry(food_name, calories, protein, carbs=0, fat=0, grams=100, note='', 
 
     if calories < 0 or protein < 0 or carbs < 0 or fat < 0 or grams <= 0:
         print("Error: Values cannot be negative")
+        return False
+
+    # 餐次验证（若用户指定了 --meal）
+    valid_meals = ('早餐', '午餐', '下午茶', '晚餐', '夜宵')
+    if meal_override is not None and meal_override not in valid_meals:
+        print(f"Error: --meal 必须是以下值之一：{', '.join(valid_meals)}")
         return False
 
     conn = get_db()
@@ -201,14 +208,16 @@ def add_entry(food_name, calories, protein, carbs=0, fat=0, grams=100, note='', 
     goal_row = c.fetchone()
     conn.close()
 
-    meal = infer_meal_type(now)
+    # 餐次：用户指定优先，否则按时间推断
+    meal = meal_override if meal_override else infer_meal_type(now)
+    date_label = today if target_date else '今日'
     print(f"✓ 已记录：{food_name} ({calories}卡, {protein}蛋白, {carbs}碳, {fat}脂, {grams}克)")
     print(f"  餐次：{meal} | 条目ID：{entry_id}")
 
     if goal_row:
         cal_goal, pro_goal, carb_goal, fat_goal = goal_row[1], goal_row[2], goal_row[3], goal_row[4]
         remaining = cal_goal - total_cal
-        print(f"  今日：{total_cal}/{cal_goal}卡 | 蛋白{total_pro}/{pro_goal}克 | 碳{total_carbs}/{carb_goal}克 | 脂{total_fat}/{fat_goal}克")
+        print(f"  {date_label}：{total_cal}/{cal_goal}卡 | 蛋白{total_pro}/{pro_goal}克 | 碳{total_carbs}/{carb_goal}克 | 脂{total_fat}/{fat_goal}克")
         if remaining > 0:
             print(f"  剩余：{remaining}卡")
         else:
@@ -467,6 +476,68 @@ def log_weight(weight_kg, height_cm, note='', target_date=None, target_time=None
     if bmi:
         print(f"  BMI：{bmi}")
     if note:
+        print(f"  备注：{note}")
+    return True
+
+
+def update_weight(weight_id, weight_kg=None, height_cm=None, note=None):
+    """按 ID 更新体重记录，若传身高则重算 BMI"""
+    try:
+        weight_id = int(weight_id)
+    except ValueError:
+        print("Error: 体重记录 ID 必须是数字")
+        return False
+
+    if weight_kg is None and height_cm is None and note is None:
+        print("Error: 至少需要传入 --weight 或 --height 或 --note 中的一个")
+        return False
+
+    conn = get_db()
+    c = conn.cursor()
+
+    # 检查记录是否存在
+    c.execute('SELECT id, weight_kg, height_cm FROM weight_log WHERE id = ?', (weight_id,))
+    row = c.fetchone()
+    if not row:
+        print(f"Error: 体重记录 ID {weight_id} 不存在")
+        conn.close()
+        return False
+
+    old_weight, old_height = row[1], row[2]
+
+    # 计算新 BMI（若传了体重或身高）
+    # 类型转换（CLI 参数为字符串）
+    new_weight = float(weight_kg) if weight_kg is not None else old_weight
+    new_height = float(height_cm) if height_cm is not None else old_height
+
+    if new_height is None or new_height <= 0:
+        print("Error: 该记录缺少身高数据，无法单独修改体重（BMI 重算需要身高）")
+        print("  提示：请同时传入 --height <身高cm>")
+        print(f"  示例: weight-update {weight_id} --weight {weight_kg} --height <身高cm>")
+        conn.close()
+        return False
+
+    height_m = new_height / 100
+    bmi = round(new_weight / (height_m ** 2), 1)
+
+    # 构造更新字段
+    set_parts = ["weight_kg = ?", "height_cm = ?", "bmi = ?"]
+    values = [new_weight, new_height, bmi]
+
+    if note is not None:
+        set_parts.append("note = ?")
+        values.append(note)
+
+    values.append(weight_id)
+    set_clause = ", ".join(set_parts)
+
+    c.execute(f'UPDATE weight_log SET {set_clause} WHERE id = ?', values)
+    conn.commit()
+    conn.close()
+
+    print(f"✓ 已更新体重记录 ID {weight_id}")
+    print(f"  体重：{old_weight} → {new_weight} kg | BMI：{bmi}")
+    if note is not None:
         print(f"  备注：{note}")
     return True
 
@@ -986,12 +1057,13 @@ def add_water(ml, target_date=None, target_time=None):
 
     print(f"✓ 已记录饮水：{ml}ml（条目ID：{entry_id}）")
 
+    date_label = today if target_date else '今日'
     if goal_row:
         water_goal = goal_row[6] if len(goal_row) > 6 and goal_row[6] else 2000
         remaining = water_goal - total_water
-        print(f"  今日饮水：{total_water}/{water_goal}ml | 剩余：{remaining:+.0f}ml")
+        print(f"  {date_label}饮水：{total_water}/{water_goal}ml | 剩余：{remaining:+.0f}ml")
     else:
-        print(f"  今日饮水：{total_water}ml（未设置目标）")
+        print(f"  {date_label}饮水：{total_water}ml（未设置目标）")
 
     return True
 
@@ -1043,15 +1115,46 @@ def main():
         if command == "add":
             if len(sys.argv) < 5:
                 print("Error: add requires <food> <calories> <protein> [carbs] [fat] [grams] [note]")
+                print("  用法: add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] [--date YYYY-MM-DD] [--time HH:MM] [--meal 餐次]")
+                print("  示例: add \"鸡胸肉\" 165 31 0 3 150")
+                print("  示例: add \"面包\" 150 3 20 5 80 --date 2026-06-20 --time 15:00 --meal 午餐")
                 sys.exit(1)
-            food = sys.argv[2]
-            calories = sys.argv[3]
-            protein = sys.argv[4]
-            carbs = sys.argv[5] if len(sys.argv) > 5 else 0
-            fat = sys.argv[6] if len(sys.argv) > 6 else 0
-            grams = sys.argv[7] if len(sys.argv) > 7 else 100
-            note = sys.argv[8] if len(sys.argv) > 8 else ''
-            add_entry(food, calories, protein, carbs, fat, grams, note)
+            # 解析 --key value 风格参数
+            positional = []
+            kwargs = {}
+            args = sys.argv[2:]
+            i = 0
+            while i < len(args):
+                if args[i].startswith('--'):
+                    key = args[i][2:]
+                    if i + 1 < len(args) and not args[i+1].startswith('--'):
+                        kwargs[key] = args[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    positional.append(args[i])
+                    i += 1
+
+            food = positional[0] if len(positional) > 0 else None
+            calories = positional[1] if len(positional) > 1 else None
+            protein = positional[2] if len(positional) > 2 else None
+            carbs = positional[3] if len(positional) > 3 else '0'
+            fat = positional[4] if len(positional) > 4 else '0'
+            grams = positional[5] if len(positional) > 5 else '100'
+            note = positional[6] if len(positional) > 6 else ''
+
+            if not food or not calories or not protein:
+                print("Error: 食物、热量、蛋白质为必填参数")
+                sys.exit(1)
+
+            target_date = kwargs.get('date')
+            target_time = kwargs.get('time')
+            meal_override = kwargs.get('meal')
+
+            add_entry(food, calories, protein, carbs, fat, grams, note,
+                      target_date=target_date, target_time=target_time,
+                      meal_override=meal_override)
 
         elif command == "delete":
             if len(sys.argv) < 3:
@@ -1068,10 +1171,22 @@ def main():
         elif command == "water":
             if len(sys.argv) < 3:
                 print("Error: water requires <ml>")
-                print("  用法: water <ml>")
+                print("  用法: water <ml> [--date YYYY-MM-DD]")
                 print("  示例: water 500")
+                print("  示例: water 500 --date 2026-06-20")
                 sys.exit(1)
-            add_water(sys.argv[2])
+            # 解析 --date 参数
+            water_ml = sys.argv[2]
+            target_date = None
+            args = sys.argv[3:]
+            i = 0
+            while i < len(args):
+                if args[i].startswith('--date') and i + 1 < len(args):
+                    target_date = args[i + 1]
+                    i += 2
+                else:
+                    i += 1
+            add_water(water_ml, target_date=target_date)
 
         elif command == "goal":
             if len(sys.argv) < 6:
@@ -1096,6 +1211,36 @@ def main():
             height = sys.argv[3]
             note = sys.argv[4] if len(sys.argv) > 4 else ''
             log_weight(weight, height, note)
+
+        elif command == "weight-update":
+            if len(sys.argv) < 3:
+                print("Error: weight-update requires <id> [--weight <公斤>] [--height <身高cm>] [--note <备注>]")
+                print("  用法: weight-update <记录ID> [--weight <公斤>] [--height <身高cm>] [--note <备注>]")
+                print("  示例: weight-update 5 --weight 69.5")
+                print("  示例: weight-update 5 --height 179")
+                sys.exit(1)
+            weight_id = sys.argv[2]
+            # 解析 --weight, --height, --note
+            kwargs = {}
+            args = sys.argv[3:]
+            i = 0
+            while i < len(args):
+                if args[i].startswith('--'):
+                    key = args[i][2:]
+                    if key in ('weight', 'height', 'note'):
+                        if i + 1 < len(args) and not args[i+1].startswith('--'):
+                            kwargs[key] = args[i+1]
+                            i += 2
+                        else:
+                            i += 1
+                    else:
+                        i += 1
+                else:
+                    i += 1
+            update_weight(weight_id,
+                          weight_kg=kwargs.get('weight'),
+                          height_cm=kwargs.get('height'),
+                          note=kwargs.get('note'))
 
         elif command == "weight-history":
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 30

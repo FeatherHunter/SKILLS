@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、睡眠、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、设健身目标、查健身目标、改健身目标、删健身目标、记睡眠、改睡眠记录、查睡眠记录、记录起床、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、设健身目标、查健身目标、改健身目标、删健身目标、记睡眠、改睡眠记录、查睡眠记录、记录起床、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -90,6 +90,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
 | 记体重 | 记录体重（自动算 BMI） | `calorie_tracker.py weight` |
+| 改体重记录 | 修改历史体重记录 | `calorie_tracker.py weight-update` |
 | 查体重历史 | 体重历史记录 | `calorie_tracker.py weight-history` |
 | 查体重趋势 | 体重趋势分析（均重/日均变化/趋势判断） | `weight_analysis(trend)` |
 | 对比体重 | 两时间段体重对比 | `weight_analysis(compare)` |
@@ -202,7 +203,8 @@ python scripts/calorie_tracker.py update-product 1 --calories 45 # 更新
 
 ### 体重
 ```bash
-python scripts/calorie_tracker.py weight 70 178                  # 记录体重(kg) 身高(cm)
+python scripts/calorie_tracker.py weight 70 178                  # 记录体重(kg) 身高(cm)（身高必传）
+python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录（按ID）
 python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
 ```
 
@@ -342,6 +344,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 ### ⚖️ 体重：记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标
 
 - **记体重**：`calorie_tracker.py weight <体重> <身高>`（身高必传，BMI 必须计算）
+- **改体重记录**：`calorie_tracker.py weight-update <ID> [--weight <公斤>] [--height <身高cm>] [--note <备注>]`
 - **查体重历史**：`calorie_tracker.py weight-history [天数]`
 - **查体重趋势**：`weight_analysis(start, end, 'trend')`
 - **对比体重**：`weight_analysis(start, end, 'compare', compare_start, compare_end)`

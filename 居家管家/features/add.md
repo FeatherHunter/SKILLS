@@ -272,7 +272,7 @@ AI 展示脚本输出的录入结果。
    - 数量：1
    对吗？回复"对"或修改
    ```
-5. **保存图片**到 `photos/YYYYMMDD_{ID}_{名称}.jpg`（用户确认后）
+5. **保存图片**到 `YYYYMMDD_{ID}_{名称}.jpg`（用户确认后，存放在 $HOME_PHOTOS_DIR 目录下）
 6. **一次性调用 add 命令**（满足所有硬约束）：
    ```bash
    python home_manager.py add \
@@ -281,7 +281,7 @@ AI 展示脚本输出的录入结果。
      --location "XXX" \
      --tags "tag1,tag2,tag3,...,tag10" \
      --remark "从图片观察到的关键信息..." \
-     --photo "photos/YYYYMMDD_{ID}_{名称}.jpg"
+     --photo "$HOME_PHOTOS_DIR/YYYYMMDD_{ID}_{名称}.jpg"
    ```
 
 **无应急通道**：如果图片信息实在无法凑出 10 tag（如严重模糊/黑屏），只能：

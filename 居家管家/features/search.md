@@ -81,11 +81,11 @@ python home_manager.py detail --id {选中ID}
    - `查物品-html`：`python home_manager.py search --name "XX" --json`（或其他搜索参数组合）
    - `看物品-html`：`python home_manager.py detail --id {ID} --json`
    - `盘全部-html`：`python home_manager.py list --json`
-3. `--json` 命令返回 JSON 格式结构化数据（完整字段，含 photo 相对路径）
+3. `--json` 命令返回 JSON 格式结构化数据（完整字段，含 photo 纯文件名）
 
 ### 照片处理
 
-1. 解析 JSON 中每个物品的 `photo` 字段（相对路径）
+1. 解析 JSON 中每个物品的 `photo` 字段（纯文件名）
 2. 用环境变量 `HOME_PHOTOS_DIR` 拼接完整路径：`PHOTOS_DIR / photo`
 3. 读取图片文件，二进制 → Base64 编码
 4. 嵌入 HTML：`<img src="data:image/jpeg;base64,{base64字符串}">`

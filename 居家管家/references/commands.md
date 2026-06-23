@@ -24,7 +24,7 @@ python home_manager.py add \
   --expiration-date "2025-06-01" \
   --remark "备注内容" \
   --tags "牛奶,蒙牛" \
-  --photo "photos/1.jpg" \
+  --photo "<HOME_PHOTOS_DIR>/1.jpg" \
   --location-status "在家"
 ```
 
@@ -42,7 +42,7 @@ python home_manager.py add \
 | --expiration-date | 否 | - | 过期日期（YYYY-MM-DD） |
 | --remark | 否 | "" | 备注 |
 | --tags | 否 | "" | 标签（逗号分隔） |
-| --photo | 否 | "" | 图片路径 |
+| --photo | 否 | "" | 图片绝对路径（必须以 $HOME_PHOTOS_DIR 指定目录开头，脚本会校验前缀并自动裁剪存纯文件名） |
 | --location-status | 否 | "在家" | 位置状态（在家/备用/借用中等） |
 
 ---
@@ -186,7 +186,7 @@ python home_manager.py update --id 1 --add-location "零食柜" --add-purchase-d
 | --price | 单价 |
 | --remark | 备注 |
 | --tags | 标签（覆盖） |
-| --photo | 图片路径 |
+| --photo | 图片绝对路径（必须以 $HOME_PHOTOS_DIR 指定目录开头） |
 | --location | 指定要操作的位置（配合 --location-status/--purchase-date 等使用） |
 | --location-status | 位置状态 |
 | --new-location | 新存放位置（移动物品） |

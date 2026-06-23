@@ -275,7 +275,7 @@ const DATA = [
       {
         name: "拍照录入",
         wakeWords: ["拍物品"],
-        cli: '# 1. AI 先看图提取最全面详细而严谨的 tag (≥10 个) + 名称 + 分类 + 备注\n# 2. 一次性 add（带完整 tags + photo + remark）\nadd --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX" --photo "photos/{ID}_XX.jpg"',
+        cli: '# 1. AI 先看图提取最全面详细而严谨的 tag (≥10 个) + 名称 + 分类 + 备注\n# 2. 一次性 add（带完整 tags + photo + remark）\nadd --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX" --photo "photos/YYYYMMDD_{ID}_XX.jpg"',
         desc: "从图片提取最全面详细而严谨的 tag（≥10 个）+ 备注，AI 视觉分析后一次性 add 到位。⚠️ 无任何应急通道：图片信息不够时只能重拍或改文字录入",
         exec: {
           tables: ["items", "item_locations", "item_tags"],

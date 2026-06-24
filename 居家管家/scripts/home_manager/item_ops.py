@@ -317,6 +317,26 @@ def update_item(item_id, name=None, category=None, owner=None,
             action = "喝掉" if minus else "补充"
             print(f"✓ {action} {abs(delta)}个，剩余 {new_qty} 个（位置：{loc[1]}）")
 
+    # ── 1.5. 直接设置位置数量（--quantity）──────────────────────────────────
+    if quantity is not None:
+        loc, err = _resolve_location(item_id, location, conn, cursor)
+        if err:
+            print(f"✗ {err}")
+            for loc in cursor.execute(
+                "SELECT id, location, quantity, location_status FROM item_locations WHERE item_id = ?",
+                (item_id,)
+            ).fetchall():
+                print(f"  {loc[1]} × {loc[2]} [{loc[3]}]")
+            conn.close()
+            return 1
+
+        old_qty = loc[2]
+        cursor.execute(
+            "UPDATE item_locations SET quantity = ?, updated_at = ? WHERE id = ?",
+            (quantity, now, loc[0])
+        )
+        print(f"✓ 位置「{loc[1]}」数量已从 {old_qty} 设置为 {quantity}")
+
     # ── 2. 位置移动（--new-location）───────────────────────────────────────
     if new_location is not None:
         loc, err = _resolve_location(item_id, location, conn, cursor)

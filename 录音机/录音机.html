@@ -415,11 +415,12 @@ body {
         <div class="flow-item">优先级：有 checkpoint 的活跃文件 > 白纸文件 > checkpoint 历史文件</div>
 
         <div class="flow-label">写入 - <span class="flow-table">user_messages</span></div>
-        <div class="flow-item">逐条 INSERT OR IGNORE，字段：<span class="flow-field">message_id</span> <span class="flow-field">session_file</span> <span class="flow-field">timestamp</span> <span class="flow-field">channel</span> <span class="flow-field">sender_id</span> <span class="flow-field">content</span> <span class="flow-field">date</span> <span class="flow-field">has_attachment</span> <span class="flow-field">created_at</span></div>
+        <div class="flow-item">逐条 INSERT OR IGNORE，去重键：<span class="flow-field">content + timestamp</span> 复合唯一索引（跨所有分库全局生效）</div>
+        <div class="flow-item">字段：<span class="flow-field">message_id</span> <span class="flow-field">session_file</span> <span class="flow-field">timestamp</span> <span class="flow-field">channel</span> <span class="flow-field">sender_id</span> <span class="flow-field">content</span> <span class="flow-field">date</span> <span class="flow-field">has_attachment</span> <span class="flow-field">created_at</span></div>
         <div class="flow-sql">INSERT OR IGNORE INTO user_messages
   (message_id, session_file, timestamp, channel,
    sender_id, content, date, has_attachment, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch())</div>
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)</div>
 
         <div class="flow-label">写入 - <span class="flow-table">user_attachments</span></div>
         <div class="flow-item">随消息一起提取附件，INSERT OR IGNORE，字段：<span class="flow-field">file_path</span> <span class="flow-field">file_type</span> 等</div>
@@ -436,7 +437,8 @@ VALUES (?, ?, ?, unixepoch())</div>
 
         <div class="flow-label">副作用</div>
         <div class="flow-item">无数据删除，纯增量追加</div>
-        <div class="flow-item">message_id 相同的消息会被 IGNORE（去重）</div>
+        <div class="flow-item"><code>content + timestamp</code> 相同的消息会被 IGNORE（跨文件、跨分库全局去重）</div>
+        <div class="flow-item">写入达到 50MB 时自动滚动创建新分库（由 db.py 封装，record.py 无感）</div>
       </div>
     </div>
   </div>
@@ -464,7 +466,7 @@ VALUES (?, ?, ?, unixepoch())</div>
 
         <div class="flow-label">副作用</div>
         <div class="flow-item"><strong>破坏性操作</strong>：清空 checkpoint 后无法恢复之前的增量进度</div>
-        <div class="flow-item">已有消息因 message_id 唯一约束不会重复插入</div>
+        <div class="flow-item">已有消息因 content+timestamp 唯一约束不会重复插入（跨文件全局生效）</div>
         <div class="flow-item">耗时较长，需扫描全部历史 session 文件</div>
       </div>
     </div>
@@ -802,16 +804,21 @@ ORDER BY timestamp ASC LIMIT 1000</div>
       <div class="wake-detail-title">CLI 命令</div>
       <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py --init <span class="click-hint">点击查看执行流程</span></div>
       <div class="flow-panel">
-        <div class="flow-label">写入 - 建表</div>
-        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">user_messages</span>（10 个字段，message_id UNIQUE）</div>
-        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">user_attachments</span>（9 个字段）</div>
-        <div class="flow-item">CREATE TABLE IF NOT EXISTS <span class="flow-table">scan_checkpoint</span>（session_file 主键）</div>
+        <div class="flow-label">写入 - 建表（数据文件 <code>daily_recorder.db</code>）</div>
+        <div class="flow-item"><span class="flow-table">user_messages</span>（10 个字段，去重键：content+timestamp 复合唯一索引）</div>
+        <div class="flow-item"><span class="flow-table">user_attachments</span>（9 个字段）</div>
+        <div class="flow-item"><span class="flow-table">scan_checkpoint</span>（session_file 主键）</div>
 
         <div class="flow-label">写入 - 建索引</div>
+        <div class="flow-item"><span class="flow-field">idx_um_content_ts</span> on user_messages(content, timestamp) — 全局去重索引</div>
         <div class="flow-item"><span class="flow-field">idx_um_date</span> on user_messages(date)</div>
         <div class="flow-item"><span class="flow-field">idx_um_timestamp</span> on user_messages(timestamp)</div>
         <div class="flow-item"><span class="flow-field">idx_ua_date</span> on user_attachments(date)</div>
         <div class="flow-item"><span class="flow-field">idx_ua_timestamp</span> on user_attachments(timestamp)</div>
+
+        <div class="flow-label">写入 - 建表（meta 文件 <code>daily_recorder_meta.db</code>）</div>
+        <div class="flow-item"><span class="flow-table">db_registry</span>（seq, filename, size_mb, is_active — 分库文件注册表）</div>
+        <div class="flow-item"><span class="flow-table">db_sequence</span>（current_seq 元数据）</div>
 
         <div class="flow-label">副作用</div>
         <div class="flow-item">全部 IF NOT EXISTS，重复执行不会破坏已有数据</div>

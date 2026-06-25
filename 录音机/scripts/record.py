@@ -330,7 +330,9 @@ def main():
     if len(session_dirs) > 1:
         print(f"[多Agent] 发现 {len(session_dirs)} 个 sessions 目录")
 
-    # 【优化+4】排除 trajectory 和 deleted，扫描 .jsonl、.reset.* 和 .bak-* 文件
+    # 【优化+4】扫描 .jsonl、.reset.* 和 .bak-* 文件
+    # .reset.* 文件会被扫描，但依赖 (content, timestamp) 全局去重防止重复录入
+    # .trajectory.jsonl 在排除列表（历史归档，只需扫一次）
     all_files = []
     for sd in session_dirs:
         all_files += sorted(sd.glob("*.jsonl")) + sorted(sd.glob("*.reset.*")) + sorted(sd.glob("*.bak-*"))
@@ -385,10 +387,10 @@ def main():
 
         # 每 100 个文件提交一次，打印进度
         if idx % 100 == 0:
-            db._conn.commit()
+            db._meta_conn.commit()
             print(f"  进度: {idx}/{total_files} 个文件, {total_new} 条消息, {total_attachments} 条附件")
 
-    db._conn.commit()
+    db._meta_conn.commit()
     print(f"  最终: {scanned}/{total_files} 个文件, {total_new} 条消息, {total_attachments} 条附件")
 
     db.end_checkpoint_transaction()

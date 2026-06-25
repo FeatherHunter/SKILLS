@@ -140,8 +140,22 @@ openclaw cron add \
 
 路径通过三级路由自动查找：环境变量 `SKILLS_DB_PATH` > 父目录 `.db/` > 技能目录 `.db/`
 
-**三个表：**
-- **user_messages**：用户消息（只存有文字内容的）
+**多数据库架构：**
+
+```
+SKILLS_DB_PATH/
+  daily_recorder_meta.db    ← 元数据库（极小，永不滚动）
+  daily_recorder.db         ← 数据文件 seq=0（超 50MB 后创建新分库）
+  daily_recorder_001.db     ← 第一个分库（超 50MB 后创建）
+  daily_recorder_002.db     ← 第二个分库（以此类推）
+```
+
+**元数据库（meta.db）两表：**
+- **db_registry**：分库文件注册表（seq、filename、size_mb、is_active）
+- **db_sequence**：当前活跃序号（current_seq）
+
+**数据文件（每个分库）三表：**
+- **user_messages**：用户消息，去重键为 `(content, timestamp)` 全局唯一索引
 - **user_attachments**：用户附件（图片/文件/语音）
 - **scan_checkpoint**：增量扫描进度记录
 

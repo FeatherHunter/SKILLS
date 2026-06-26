@@ -179,9 +179,87 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 详见 [`references/database_schema.md`](references/database_schema.md)
 
-共 7 张表：`entries`、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`fitness_goals`、`sleep_records`
+共 8 张表：`entries`、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`fitness_goals`、`sleep_records`、`body_photos`
 
-> **初始化说明**：`entries`/`daily_goal`/`weight_log`/`exercise_log`/`nutrition_products` 由 `calorie_tracker.py init_db()` 创建；`fitness_goals` 由 `fitness_goals.py init_table()` 创建；`sleep_records` 由 `sleep_tracker.py init_table()` 创建。
+> **初始化说明**：`entries`/`daily_goal`/`weight_log`/`exercise_log`/`nutrition_products` 由 `db.py init_db()` 创建；`fitness_goals` 由 `fitness_goals.py init_table()` 创建；`sleep_records` 由 `sleep_tracker.py init_table()` 创建；`body_photos` 由 `body_photo_tracker.py init_table()` 创建。
+
+## 📂 脚本模块结构（v2.3 拆分后）
+
+业务逻辑按"领域对象"拆分到独立文件，每个文件 ≤ 350 行，单屏可读。
+
+### 核心模块（calorie_tracker.py 拆分）
+
+| 文件 | 行数 | 职责 | 公共 API |
+|---|---|---|---|
+| `db.py` | ~145 | 数据库基础：路径解析、连接、初始化、迁移 | `find_db_path` / `connection` / `get_db` / `init_db` |
+| `db_utils.py` | ~15 | 兼容层：re-export db.py（旧脚本继续可用） | — |
+| `diet.py` | ~215 | 饮食记录 | `add_meal` / `delete_meal` / `list_meals` / `get_daily_summary` / `infer_meal_type` |
+| `water.py` | ~65 | 饮水记录（复用 entries 表，food_name='💧水'） | `add_water` |
+| `nutrition_goal.py` | ~95 | 每日营养目标 | `set_nutrition_goal` / `get_nutrition_goal` |
+| `weight.py` | ~190 | 体重记录 | `log_weight` / `update_weight` / `get_weight_history` |
+| `weight_goal.py` | ~110 | 体重目标 + 进度 | `set_weight_goal` / `get_weight_goal` / `print_goal_progress` |
+| `exercise.py` | ~110 | 运动记录 | `add_exercise` / `get_exercise_log` / `print_exercise_summary` |
+| `product_library.py` | ~160 | 食品库 CRUD | `add_product` / `search_products` / `update_product` / `list_products` |
+| `calorie_history.py` | ~55 | 热量历史 | `get_calorie_history` |
+| `calorie_tracker.py` | ~250 | **CLI 入口**：main + argparse + usage | — |
+
+### 分析包（analysis/）
+
+11 个分析函数按维度拆分到子模块，4 个统一入口在 `__init__.py`。
+
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| `analysis/__init__.py` | ~125 | 4 统一入口 + 11 原子函数 re-export |
+| `analysis/_utils.py` | ~55 | 共享工具：`_get_db` / `_parse_date` / `_days_between` / `BMR_ACTIVITY_FACTOR` |
+| `analysis/weight.py` | ~210 | 4 个体重分析：`weight_trend` / `weight_compare` / `weight_milestone` / `weight_volatility` |
+| `analysis/diet.py` | ~225 | 4 个饮食分析：`diet_calorie_trend` / `diet_macro_ratio` / `diet_food_ranking` / `diet_deficit_analysis` |
+| `analysis/exercise.py` | ~135 | 3 个运动分析：`exercise_trend` / `exercise_type_breakdown` / `exercise_deficit_contribution` |
+| `analysis/dashboard.py` | ~45 | 综合报告 `dashboard(start, end)` |
+
+### 独立 CLI 脚本（已有，未拆分）
+
+| 文件 | 行数 | 职责 |
+|---|---|---|
+| `exercise_tracker.py` | 442 | 运动更完整的 CLI（add/update/list/summary/stats/trend）|
+| `fitness_goals.py` | 230 | 健身目标 CLI（add/list/update/delete）|
+| `sleep_tracker.py` | 169 | 睡眠记录 CLI（add/update/list）|
+| `body_photo_tracker.py` | 356 | 身材照片 CLI（add/list/delete/tag/gif）|
+| `generate_ts_config.py` | 269 | 从数据库生成 `config-calorie.ts` |
+
+### 模块依赖图
+
+```
+calorie_tracker.py（CLI 入口）
+   ├─ diet.py
+   │    └─ nutrition_goal.py
+   ├─ water.py
+   │    └─ nutrition_goal.py
+   ├─ nutrition_goal.py
+   ├─ weight.py
+   ├─ weight_goal.py
+   ├─ exercise.py
+   ├─ product_library.py
+   └─ calorie_history.py
+        └─ nutrition_goal.py
+
+analysis/__init__.py
+   ├─ analysis/weight.py
+   │    └─ weight_goal.py（get_weight_goal）
+   ├─ analysis/diet.py
+   │    └─ nutrition_goal.py（get_nutrition_goal）
+   ├─ analysis/exercise.py
+   └─ analysis/dashboard.py
+        └─ weight.py / diet.py / exercise.py
+
+所有模块 → db.py（数据库基础）
+```
+
+### 拆分原则
+
+1. **业务领域优先**：文件名 = 管什么（diet/weight/exercise），不叫 `entries.py`/`ops/` 等抽象名
+2. **避免歧义命名**：`weight_goal` 比 `goal.py` 清晰（还有 `nutrition_goal.py`）
+3. **CLI 入口稳定**：calorie_tracker.py / exercise_tracker.py 等保留同名入口，内部委托给各模块
+4. **兼容层保留**：`db_utils.py` 转发到 `db.py`，旧脚本 import 路径不变
 
 ## 命令行用法
 
@@ -206,10 +284,14 @@ python scripts/calorie_tracker.py update-product 1 --calories 45 # 更新
 python scripts/calorie_tracker.py weight 70 178                  # 记录体重(kg) 身高(cm)（身高必传）
 python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录（按ID）
 python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
+python scripts/calorie_tracker.py weight-goal 73 2026-12-31      # 设置体重目标 + 截止日期
+python scripts/calorie_tracker.py weight-goal-progress           # 查看体重目标进度
 ```
 
 ### 运动
 ```bash
+python scripts/calorie_tracker.py exercise-add 骑行 300 --minutes 40   # 快速记录运动
+python scripts/calorie_tracker.py exercise-summary 7                   # 近7天运动汇总
 python scripts/exercise_tracker.py add --date 2026-05-23 --type 骑行 --calories 300 --minutes 40
 python scripts/exercise_tracker.py list --days 7
 python scripts/exercise_tracker.py summary --days 7

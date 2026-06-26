@@ -87,7 +87,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="搜索唤醒词..." autocomplete="off" />
   </div>
-  <div class="search-hint" id="searchHint">共 55 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
+  <div class="search-hint" id="searchHint">共 56 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
 </div>
 
 <div class="tabs" id="tabs">
@@ -438,7 +438,7 @@ const DATA = {
         triggers: [
           {
             word: "设体重目标",
-            cli: "set_weight_goal(weight_goal, deadline)",
+            cli: "python scripts/calorie_tracker.py weight-goal <kg> [截止日期 YYYY-MM-DD]",
             flow: {
               operation: "UPDATE / INSERT",
               tables: [
@@ -455,7 +455,7 @@ const DATA = {
         triggers: [
           {
             word: "查体重目标",
-            cli: "weight_analysis(start, end, 'milestone')",
+            cli: "python scripts/calorie_tracker.py weight-goal-progress",
             flow: {
               operation: "SELECT",
               tables: [
@@ -570,6 +570,40 @@ const DATA = {
                 { name: "exercise_log", fields: "date, SUM(calories_burned)", op: "读取" }
               ],
               sideEffects: "无副作用，按日期分组显示每日消耗柱状图"
+            }
+          }
+        ]
+      },
+      {
+        name: "记运动（快速）",
+        desc: "通过 calorie_tracker.py 快速记录运动（无需 --date 参数，自动今日）",
+        triggers: [
+          {
+            word: "记运动（快速）",
+            cli: "python scripts/calorie_tracker.py exercise-add <类型> <卡> [--minutes N] [--reps N] [--note ...]",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "date, time, exercise_type, duration_minutes, calories_burned, note, reps", op: "写入" }
+              ],
+              sideEffects: "默认日期为今日，是 exercise_tracker.py add 的便捷入口"
+            }
+          }
+        ]
+      },
+      {
+        name: "查运动汇总（快速）",
+        desc: "通过 calorie_tracker.py 快速查看近 N 天运动汇总（默认 7 天）",
+        triggers: [
+          {
+            word: "查运动汇总（快速）",
+            cli: "python scripts/calorie_tracker.py exercise-summary [N]",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "exercise_log", fields: "date, exercise_type, duration_minutes, calories_burned, reps", op: "读取" }
+              ],
+              sideEffects: "无副作用，按日聚合显示每日明细 + 日均消耗"
             }
           }
         ]

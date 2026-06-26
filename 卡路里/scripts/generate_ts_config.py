@@ -7,33 +7,20 @@
 """
 
 import sqlite3
-import os
 from pathlib import Path
 from datetime import datetime
+
+from db import find_db_path
 
 # ============ 配置 ============
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "calorie_data.db"
 OUTPUT_FILE = SKILL_DIR / "config-calorie.ts"
 
+
 def find_db(skill_dir):
-    """找数据库路径"""
-    # 1. 环境变量
-    env_path = os.environ.get('SKILLS_DB_PATH')
-    if env_path:
-        p = Path(env_path) / DB_FILENAME
-        if p.exists():
-            return p
-    # 2. 技能目录
-    p = skill_dir / DB_FILENAME
-    if p.exists():
-        return p
-    # 3. 父目录 .db 文件夹
-    for parent in skill_dir.parents:
-        p = parent / ".db" / DB_FILENAME
-        if p.exists():
-            return p
-    raise FileNotFoundError(f"找不到数据库: {DB_FILENAME}")
+    """找数据库路径（委托给 db.find_db_path）"""
+    return find_db_path(skill_dir, DB_FILENAME)
 
 def get_tables(cursor):
     """获取所有表名"""

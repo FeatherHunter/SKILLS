@@ -98,6 +98,10 @@ def main():
     p_update.add_argument("--expiration-date", default=None, help="过期日期（YYYY-MM-DD）")
     p_update.add_argument("--remark", default=None, help="备注")
     p_update.add_argument("--tags", default=None, help="标签（逗号分隔，覆盖）")
+    p_update.add_argument("--add-tag", default=None,
+                         help="追加 tag（逗号分隔，如 --add-tag 红色,短袖）")
+    p_update.add_argument("--remove-tag", default=None,
+                         help="删除 tag（逗号分隔，如 --remove-tag 白色,旧）")
     p_update.add_argument("--photo", default=None, help="图片路径")
     p_update.add_argument("--new-location", default=None, help="新存放位置路径（改变位置）")
     p_update.add_argument("--location", default=None, help="指定位置（配合--location-status使用）")
@@ -217,7 +221,9 @@ def main():
             add_location=args.add_location, add_quantity=args.add_quantity,
             add_reason=args.add_reason, add_location_status=args.add_location_status,
             add_purchase_date=args.add_purchase_date,
-            add_expiration_date=args.add_expiration_date
+            add_expiration_date=args.add_expiration_date,
+            add_tags=args.add_tag,
+            remove_tags=args.remove_tag
         )
 
     elif args.command == "list":

@@ -89,10 +89,45 @@ python home_manager.py update --id 1 --owner "其他人"
 
 ### 标签更新
 
+#### 覆盖式（删除原 tag + 写入新 tag）
+
 ```bash
 # 覆盖式更新标签
 python home_manager.py update --id 1 --tags "新标签1,新标签2"
 ```
+
+#### 追加 tag（保留现有 tag + 新增）
+
+```bash
+# 追加单个 tag
+python home_manager.py update --id 1 --add-tag "红色"
+
+# 追加多个 tag（逗号分隔）
+python home_manager.py update --id 1 --add-tag "红色,短袖,优衣库"
+```
+
+#### 删除 tag（按值删除，不覆盖）
+
+```bash
+# 删除单个 tag
+python home_manager.py update --id 1 --remove-tag "白色"
+
+# 删除多个 tag（逗号分隔）
+python home_manager.py update --id 1 --remove-tag "白色,旧款"
+```
+
+#### 追加 + 删除组合（推荐用于纠错：白 → 白色 + 去重复）
+
+```bash
+# 同时追加和删除（执行顺序：先追加，后删除）
+python home_manager.py update --id 1 --remove-tag "白" --add-tag "白色"
+```
+
+**注意**：
+- `--tags` 是覆盖式（删除原 tag），与 `--add-tag` / `--remove-tag` 不能同时用同一类目
+- tag 字符串自动 `strip()`，空字符串 / 纯空格跳过
+- 删除不存在的 tag 不会报错（静默成功）
+- update 不强制 tag 数量 ≥ 10（与 add 不同，允许纠错/合并）
 
 ### 追加新位置（心愿 ID: 84）
 

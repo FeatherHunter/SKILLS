@@ -8,7 +8,7 @@ from .location_ops import (
     update_location_quantity, update_location_status,
     update_location_dates, find_location_by_path, _locations_str
 )
-from .tag_ops import get_tags, set_tags
+from .tag_ops import get_tags, set_tags, add_tag, remove_tag
 
 
 VALID_STATUSES = ("在家", "备用", "穿着中", "旅游中", "洗护中", "借用中",
@@ -197,7 +197,8 @@ def update_item(item_id, name=None, category=None, owner=None,
                location=None, location_status=None,
                add_location=None, add_quantity=1, add_reason=None,
                add_location_status=VALID_STATUSES[0],
-               add_purchase_date=None, add_expiration_date=None):
+               add_purchase_date=None, add_expiration_date=None,
+               add_tags=None, remove_tags=None):
     """更新物品字段
 
     add_location 系列参数（心愿 ID: 84）：
@@ -435,6 +436,17 @@ def update_item(item_id, name=None, category=None, owner=None,
     old_tags = get_tags(conn, item_id)
     if tags is not None:
         set_tags(conn, item_id, tags)
+
+    # 6.5. 标签追加/删除（新增）★ ─────────────
+    if add_tags:
+        for tag in [t.strip() for t in add_tags.split(",") if t.strip()]:
+            add_tag(conn, item_id, tag)
+            print(f"  + tag: {tag}")
+
+    if remove_tags:
+        for tag in [t.strip() for t in remove_tags.split(",") if t.strip()]:
+            remove_tag(conn, item_id, tag)
+            print(f"  - tag: {tag}")
 
     # 7. 访问计数+1
     _touch_item(conn, item_id)

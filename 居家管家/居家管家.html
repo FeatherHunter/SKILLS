@@ -265,11 +265,11 @@ const DATA = [
         name: "文字录入",
         wakeWords: ["录物品"],
         cli: 'add --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX"',
-        desc: "自然语言描述物品，AI 解析后写入数据库（写库前强制 Step 4 检查相似 + 硬约束 tags≥10 且 remark 非空，⚠️ 无跳过通道）",
+        desc: "自然语言描述物品，AI 解析后写入数据库。tag 录入走 Step 3.5 三阶段（必填 → 推荐含条件性判定 → 凑数）+ Step 3.6 验收，写库前强制 Step 4 检查相似（含 tag Jaccard 相似度）+ 硬约束 tags≥10 且 remark 非空，⚠️ 无跳过通道",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
-          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。⚠️ 无任何跳过通道：tag 不足或备注为空直接失败，无 --skip-strict-check 应急参数"
+          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。⚠️ 无任何跳过通道。\n\ntag 维度：AI 按 categories.md §'各类 tag 必填/推荐维度'加载模板；必填维度必问；推荐维度中标记 * 的条件性维度按双重判定（能否回答 + 有无意义），适用才问；跳过维度记录到清单展示。\n\ntag 验收（Step 3.6）：必填齐全、总数≥10（不计入跳过）、无重复/相似 tag。\n\ntag 凑数：不足 10 个时 AI 推荐 2-3 个高频补充维度（状态/场景/使用者）。"
         }
       },
       {
@@ -280,7 +280,7 @@ const DATA = [
         exec: {
           tables: ["items", "item_locations", "item_tags"],
           fields: "items: name, category, owner, photo, remark, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag (≥10 个)",
-          side: "⚠️ 必须先看图再 add（不再分两步）。AI 从图片提取：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地 十大维度。⚠️ 无应急通道：tag < 10 或 remark 空一律报错，无 --skip-strict-check 应急参数"
+          side: "⚠️ 必须先看图再 add（不再分两步）。流程：AI 提取图片 tag → 展示给用户确认 → 按 {category} 模板补全缺失维度 → Step 3.5 三阶段 + Step 3.6 验收。⚠️ 无应急通道：tag < 10 或 remark 空一律报错。\n\n图片识别 10 维度：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地，与模板必填/推荐维度映射。"
         }
       }
     ]
@@ -428,12 +428,12 @@ const DATA = [
       {
         name: "标签更新",
         wakeWords: ["标物品"],
-        cli: 'update --id {ID} --tags "新标签1,新标签2"',
-        desc: "覆盖式更新物品标签（先删后插）",
+        cli: '# 覆盖式\nupdate --id {ID} --tags "新标签1,新标签2"\n# 追加（逗号分隔）\nupdate --id {ID} --add-tag "红色,短袖"\n# 删除\nupdate --id {ID} --remove-tag "白色,旧款"\n# 追加+删除组合（纠错用）\nupdate --id {ID} --remove-tag "白" --add-tag "白色"',
+        desc: "管理物品标签：覆盖式（--tags）/ 追加（--add-tag）/ 删除（--remove-tag）/ 组合（纠错用）。update 不强制 tag≥10，允许纠错和合并",
         exec: {
           tables: ["item_tags", "items"],
-          fields: "item_tags: DELETE 全部旧标签 → INSERT 新标签\nitems: updated_at",
-          side: "access_count +1；是覆盖操作，不是追加"
+          fields: "item_tags:\n  --tags: DELETE 全部旧标签 → INSERT 新标签（覆盖）\n  --add-tag: INSERT 单/多个 tag（追加，UNIQUE 跳过重复）\n  --remove-tag: DELETE 单/多个 tag（按值删除）\nitems: updated_at",
+          side: "access_count +1；tag 字符串自动 strip()，空字符串/纯空格跳过；删除不存在的 tag 静默成功；update 不强制 tag≥10，允许纠错和合并"
         }
       },
       {
@@ -676,7 +676,7 @@ const DATA = [
         desc: "检查标签完整性、表利用率、状态时效性、位置规范性",
         exec: {
           tables: ["items", "item_locations", "item_tags"],
-          fields: "AI 执行多条只读查询：\n- items: 检查分类/位置/状态合理性\n- item_tags: 检查是否有物品无标签\n- item_locations: 检查相似位置路径、位置路径级数\n- item_locations: 检查快递中/旅游中/洗护中/维修中 是否超时",
+          fields: "AI 执行多条只读查询：\n- items: 检查分类/位置/状态合理性\n- item_tags: 检查是否有物品无标签 / tag 数量 < 10 / 重复或相似 tag（白 vs 白色）\n- item_locations: 检查相似位置路径、位置路径级数\n- item_locations: 检查快递中/旅游中/洗护中/维修中 是否超时\n- 录入合规性（按 categories.md 模板）：每件物品的 tag 是否覆盖必填维度、推荐维度中条件性的是否合理跳过",
           side: "只读检查，不修改任何数据；发现问题后列出清单让用户确认处理"
         }
       }

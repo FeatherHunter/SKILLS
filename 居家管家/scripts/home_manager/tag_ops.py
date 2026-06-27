@@ -22,28 +22,22 @@ def set_tags(conn, item_id, tags_str):
             )
 
 
-def add_tag(item_id, tag):
-    """给物品加一个标签"""
-    conn = get_conn()
+def add_tag(conn, item_id, tag):
+    """给物品加一个标签（接受 conn，与 update_item 同一事务）"""
     cursor = conn.cursor()
     cursor.execute(
         "INSERT OR IGNORE INTO item_tags (item_id, tag) VALUES (?, ?)",
         (item_id, tag)
     )
-    conn.commit()
-    conn.close()
 
 
-def remove_tag(item_id, tag):
-    """给物品删一个标签"""
-    conn = get_conn()
+def remove_tag(conn, item_id, tag):
+    """给物品删一个标签（接受 conn，与 update_item 同一事务）"""
     cursor = conn.cursor()
     cursor.execute(
         "DELETE FROM item_tags WHERE item_id = ? AND tag = ?",
         (item_id, tag)
     )
-    conn.commit()
-    conn.close()
 
 
 def tag_merge(from_tag, to_tag):

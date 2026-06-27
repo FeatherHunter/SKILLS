@@ -303,6 +303,11 @@ class DBManager:
         """)
         # (content, timestamp) 全局唯一约束：同一消息不会跨 DB 重复录入
         cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_um_content_ts ON user_messages(content, timestamp)")
+        # (message_id) 部分唯一索引（2026-06-27 新增）：
+        #   - 配合 record.py fallback 简化（不再带 session_file 名），跨文件去重稳
+        #   - 部分索引 WHERE：空 message_id 不参与唯一约束（允许多条 fallback 消息共存）
+        #   - 配合 INSERT OR IGNORE，同消息跨文件重复扫描时直接跳过
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_um_msg_id_unique ON user_messages(message_id) WHERE message_id IS NOT NULL AND message_id != ''")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_attachments (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -447,6 +452,10 @@ class DBManager:
                 int(time.time()),
             ))
             conn.commit()
+        except sqlite3.IntegrityError:
+            # 极端 race condition 兜底（2026-06-27 新增）：
+            #   理论上 INSERT OR IGNORE 已处理唯一约束冲突，但为了双重保险捕获
+            pass
         finally:
             conn.close()
 

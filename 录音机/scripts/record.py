@@ -270,7 +270,11 @@ def process_session(session_file: Path, db: Database, touch_fn=None, cp_cache=No
             if ts is None:
                 continue
 
-            msg_id = obj.get("id", "") or f"{session_file.name}:{ts}"
+            # message_id 取值顺序：OpenClaw 分配的 id > 兜底（不带 session_file）
+            # 2026-06-27 优化：兜底不再带 session_file 名，避免跨文件去重失效
+            #   （旧版 fallback="{session_file.name}:{ts}" 会在 .jsonl / .reset / .checkpoint
+            #    三个文件里产生三个不同的 message_id，导致 UNIQUE 索引失效）
+            msg_id = obj.get("id", "") or f"__fb__{ts}"
 
             if last_ts > 0 and ts < last_ts:
                 continue
@@ -330,43 +334,42 @@ def main():
     if len(session_dirs) > 1:
         print(f"[多Agent] 发现 {len(session_dirs)} 个 sessions 目录")
 
-    # 【优化+4】扫描 .jsonl、.reset.* 和 .bak-* 文件
-    # .reset.* 文件会被扫描，但依赖 (content, timestamp) 全局去重防止重复录入
-    # .trajectory.jsonl 在排除列表（历史归档，只需扫一次）
+    # 扫描白名单（2026-06-27 优化）：
+    #   ✅ 主 .jsonl          —— 完整消息流（权威源）
+    #   ✅ .reset.*           —— 最新重置（替代已删的主文件）
+    #   ❌ .deleted.*         —— 已删除文件
+    #   ❌ .trajectory.*      —— OpenClaw 历史归档快照（一次性）
+    #   ❌ .checkpoint.*      —— OpenClaw 内部快照（与主文件内容重复）
+    #   ❌ .bak-*             —— compaction 备份（已通过 (content, timestamp) 兜底）
+    #
+    # 历史背景：之前 .checkpoint.*.jsonl 被误扫，导致 70%+ 入库数据是冗余副本
+    # （铁证：52028/73979 = 70.3% 入库行来自 checkpoint 文件）。
+    EXCLUDED_SUBSTRINGS = (".deleted.", ".trajectory.", ".checkpoint.", ".bak-")
     all_files = []
     for sd in session_dirs:
-        all_files += sorted(sd.glob("*.jsonl")) + sorted(sd.glob("*.reset.*")) + sorted(sd.glob("*.bak-*"))
-    all_files = [f for f in all_files
-                 if ".deleted." not in f.name and ".trajectory." not in f.name]
+        for f in sorted(sd.glob("*.jsonl")) + sorted(sd.glob("*.reset.*")):
+            if not any(sub in f.name for sub in EXCLUDED_SUBSTRINGS):
+                all_files.append(f)
 
     files_no_cp = []       # 白纸：从未处理过
     files_has_cp = []      # 有 checkpoint 的活跃文件
-    checkpoint_files = []  # checkpoint.*.jsonl 文件（不需要实时扫）
+    # checkpoint_files 列表已废弃（2026-06-27）：checkpoint 文件不再扫描
 
     for f in all_files:
-        sf_name = f.name
-        # checkpoint.*.jsonl 或 uuid.checkpoint.uuid.jsonl 都是 checkpoint 文件
-        is_cp_file = sf_name.startswith("checkpoint.") or ".checkpoint." in sf_name
-        if is_cp_file:
-            checkpoint_files.append(f)
-        elif str(f) in cp_cache:
+        if str(f) in cp_cache:
             files_has_cp.append(f)
         else:
             files_no_cp.append(f)
 
-    # 扫描顺序：
-    # 1. 有 checkpoint 的活跃文件（有时效性，优先）
-    # 2. 白纸文件（新创建的，尚未有任何数据）
-    # 3. checkpoint 文件（历史元数据，低优先级）
+    # 扫描顺序：有 checkpoint 的活跃文件优先（有时效性），然后白纸文件
     session_files = (
         sorted(files_has_cp, key=lambda f: f.stat().st_mtime) +
-        files_no_cp +
-        sorted(checkpoint_files, key=lambda f: f.stat().st_mtime)
+        files_no_cp
     )
 
     total_files = len(session_files)
-    print(f"[扫描] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)} | checkpoint文件: {len(checkpoint_files)}")
-    print(f"[扫描] 总文件: {total_files}（不含 .trajectory）")
+    print(f"[扫描] 有CP活跃: {len(files_has_cp)} | 白纸: {len(files_no_cp)}")
+    print(f"[扫描] 总文件: {total_files}（已排除 .deleted/.trajectory/.checkpoint/.bak-）")
     print()
 
     total_new = 0

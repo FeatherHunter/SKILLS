@@ -364,6 +364,7 @@ body {
 <div class="header">
   <h1>录音机</h1>
   <p class="desc">从 OpenClaw session 文件提取用户消息和附件入库，支持灵活查询。21 个唤醒词，5 大功能模块。</p>
+  <p class="desc" style="margin-top: 0.5rem; color: var(--blue); font-size: 0.8125rem;">🆕 2026-06-27：scanner 入口白名单 + message_id 部分唯一索引 + fallback 简化，修复 70%+ 历史重复入库问题</p>
 </div>
 
 <div class="search-wrap">
@@ -411,11 +412,15 @@ body {
       <div class="flow-panel">
         <div class="flow-label">读取</div>
         <div class="flow-item">预加载 <span class="flow-table">scan_checkpoint</span> 全表到内存缓存</div>
-        <div class="flow-item">遍历 <code>~/.openclaw/agents/main/sessions/*.jsonl</code>（排除 .trajectory 和 .deleted）</div>
-        <div class="flow-item">优先级：有 checkpoint 的活跃文件 > 白纸文件 > checkpoint 历史文件</div>
+        <div class="flow-item">遍历 <code>~/.openclaw/agents/*/sessions/*.jsonl</code> + <code>*.reset.*</code></div>
+        <div class="flow-item">白名单（2026-06-27 优化）：排除 <code>.deleted.</code> <code>.trajectory.</code> <code>.checkpoint.</code> <code>.bak-</code> 4 类文件</div>
+        <div class="flow-item">优先级：有 checkpoint 的活跃文件 > 白纸文件</div>
 
         <div class="flow-label">写入 - <span class="flow-table">user_messages</span></div>
-        <div class="flow-item">逐条 INSERT OR IGNORE，去重键：<span class="flow-field">content + timestamp</span> 复合唯一索引（跨所有分库全局生效）</div>
+        <div class="flow-item">逐条 INSERT OR IGNORE，<strong>双重去重键</strong>（2026-06-27 优化）：</div>
+        <div class="flow-item">① <span class="flow-field">message_id</span> 部分唯一索引（WHERE 非空）—— 跨文件去重，配合 fallback 简化（<code>__fb__{ts}</code>，不带 session_file 名）</div>
+        <div class="flow-item">② <span class="flow-field">content + timestamp</span> 复合唯一索引 —— 兜底（空 message_id 时仍能去重）</div>
+        <div class="flow-item">IntegrityError 异常兜底：极端 race condition 时静默跳过（2026-06-27 新增）</div>
         <div class="flow-item">字段：<span class="flow-field">message_id</span> <span class="flow-field">session_file</span> <span class="flow-field">timestamp</span> <span class="flow-field">channel</span> <span class="flow-field">sender_id</span> <span class="flow-field">content</span> <span class="flow-field">date</span> <span class="flow-field">has_attachment</span> <span class="flow-field">created_at</span></div>
         <div class="flow-sql">INSERT OR IGNORE INTO user_messages
   (message_id, session_file, timestamp, channel,
@@ -437,7 +442,7 @@ VALUES (?, ?, ?, unixepoch())</div>
 
         <div class="flow-label">副作用</div>
         <div class="flow-item">无数据删除，纯增量追加</div>
-        <div class="flow-item"><code>content + timestamp</code> 相同的消息会被 IGNORE（跨文件、跨分库全局去重）</div>
+        <div class="flow-item"><code>message_id</code> 相同的消息会被 IGNORE（跨文件去重）；空 message_id 时由 <code>content + timestamp</code> 兜底</div>
         <div class="flow-item">写入达到 50MB 时自动滚动创建新分库（由 db.py 封装，record.py 无感）</div>
       </div>
     </div>
@@ -805,12 +810,13 @@ ORDER BY timestamp ASC LIMIT 1000</div>
       <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/status.py --init <span class="click-hint">点击查看执行流程</span></div>
       <div class="flow-panel">
         <div class="flow-label">写入 - 建表（数据文件 <code>daily_recorder.db</code>）</div>
-        <div class="flow-item"><span class="flow-table">user_messages</span>（10 个字段，去重键：content+timestamp 复合唯一索引）</div>
+        <div class="flow-item"><span class="flow-table">user_messages</span>（10 个字段，双重去重键：message_id 部分唯一索引 + content+timestamp 复合唯一索引）</div>
         <div class="flow-item"><span class="flow-table">user_attachments</span>（9 个字段）</div>
         <div class="flow-item"><span class="flow-table">scan_checkpoint</span>（session_file 主键）</div>
 
         <div class="flow-label">写入 - 建索引</div>
-        <div class="flow-item"><span class="flow-field">idx_um_content_ts</span> on user_messages(content, timestamp) — 全局去重索引</div>
+        <div class="flow-item"><span class="flow-field">idx_um_content_ts</span> on user_messages(content, timestamp) — 全局去重索引（兜底）</div>
+        <div class="flow-item"><span class="flow-field">idx_um_msg_id_unique</span> on user_messages(message_id) WHERE 非空 — 跨文件去重索引（2026-06-27 新增）</div>
         <div class="flow-item"><span class="flow-field">idx_um_date</span> on user_messages(date)</div>
         <div class="flow-item"><span class="flow-field">idx_um_timestamp</span> on user_messages(timestamp)</div>
         <div class="flow-item"><span class="flow-field">idx_ua_date</span> on user_attachments(date)</div>

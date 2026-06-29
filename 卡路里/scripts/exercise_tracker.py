@@ -97,13 +97,17 @@ def cmd_add(args):
     init_db()
     conn = get_db()
     cursor = conn.cursor()
-    
+
     time_str = parse_time(args.time)
-    
+
     try:
         cursor.execute("""
-            INSERT INTO exercise_log (date, time, exercise_type, duration_minutes, calories_burned, note, reps)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO exercise_log (
+                date, time, exercise_type, duration_minutes, calories_burned,
+                note, reps,
+                category, intensity, distance_km, avg_heart_rate, set_index, load_kg
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             args.date,
             time_str,
@@ -111,19 +115,37 @@ def cmd_add(args):
             args.minutes if args.minutes else None,
             args.calories,
             args.note or '',
-            args.reps if args.reps else None
+            args.reps if args.reps else None,
+            args.category if hasattr(args, 'category') and args.category else None,
+            args.intensity if hasattr(args, 'intensity') and args.intensity else None,
+            args.distance if hasattr(args, 'distance') and args.distance else None,
+            args.heart_rate if hasattr(args, 'heart_rate') and args.heart_rate else None,
+            args.set_index if hasattr(args, 'set_index') and args.set_index else None,
+            args.load if hasattr(args, 'load') and args.load else None,
         ))
         conn.commit()
         record_id = cursor.lastrowid
         conn.close()
-        
+
         print(f"✓ 运动记录已添加 (ID: {record_id})")
         print(f"  日期: {args.date} {time_str}")
         print(f"  类型: {args.type}")
+        if args.category:
+            print(f"  分类: {args.category}")
+        if args.intensity:
+            print(f"  强度: {args.intensity}")
         print(f"  时长: {args.minutes if args.minutes else '未知'} 分钟")
+        if args.distance:
+            print(f"  距离: {args.distance} km")
+        if args.heart_rate:
+            print(f"  心率: {args.heart_rate} bpm")
         print(f"  消耗: {args.calories} 卡")
+        if args.set_index:
+            print(f"  组号: 第 {args.set_index} 组")
         if args.reps:
             print(f"  次数: {args.reps}")
+        if args.load:
+            print(f"  单侧重量: {args.load} kg")
         if args.note:
             print(f"  备注: {args.note}")
     except Exception as e:
@@ -135,17 +157,17 @@ def cmd_update(args):
     """更新运动记录"""
     conn = get_db()
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT * FROM exercise_log WHERE id = ?", (args.id,))
     row = cursor.fetchone()
     if not row:
         print(f"✗ 记录 ID {args.id} 不存在")
         conn.close()
         sys.exit(1)
-    
+
     updates = []
     values = []
-    
+
     if args.calories is not None:
         updates.append("calories_burned = ?")
         values.append(args.calories)
@@ -164,22 +186,41 @@ def cmd_update(args):
     if args.date is not None:
         updates.append("date = ?")
         values.append(args.date)
-    
+    # 扩展字段（运动功能 · 2026-06-29）
+    if args.category is not None:
+        updates.append("category = ?")
+        values.append(args.category)
+    if args.intensity is not None:
+        updates.append("intensity = ?")
+        values.append(args.intensity)
+    if args.distance is not None:
+        updates.append("distance_km = ?")
+        values.append(args.distance)
+    if args.heart_rate is not None:
+        updates.append("avg_heart_rate = ?")
+        values.append(args.heart_rate)
+    if args.set_index is not None:
+        updates.append("set_index = ?")
+        values.append(args.set_index)
+    if args.load is not None:
+        updates.append("load_kg = ?")
+        values.append(args.load)
+
     if not updates:
         print("✗ 没有提供要更新的字段")
         sys.exit(1)
-    
+
     values.append(args.id)
-    
+
     try:
         cursor.execute(f"""
-            UPDATE exercise_log 
+            UPDATE exercise_log
             SET {', '.join(updates)}
             WHERE id = ?
         """, values)
         conn.commit()
         conn.close()
-        
+
         print(f"✓ 记录 ID {args.id} 已更新")
     except Exception as e:
         print(f"✗ 更新失败: {e}")
@@ -190,10 +231,10 @@ def cmd_list(args):
     """查询运动记录"""
     conn = get_db()
     cursor = conn.cursor()
-    
+
     conditions = []
     params = []
-    
+
     if args.date:
         conditions.append("date = ?")
         params.append(args.date)
@@ -208,38 +249,59 @@ def cmd_list(args):
         if args.to_date:
             conditions.append("date <= ?")
             params.append(args.to_date)
-    
+
     if args.type:
         conditions.append("exercise_type LIKE ?")
         params.append(f"%{args.type}%")
-    
+    if args.category:
+        conditions.append("category = ?")
+        params.append(args.category)
+
     where_clause = ""
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
-    
+
     query = f"""
-        SELECT * FROM exercise_log 
+        SELECT * FROM exercise_log
         {where_clause}
         ORDER BY date DESC, time DESC
     """
-    
+
     if args.limit:
         query += f" LIMIT {args.limit}"
-    
+
     cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
-    
+
     if not rows:
         print("没有找到运动记录")
         return
-    
+
     print(f"=== 运动记录 ({len(rows)} 条) ===")
     for row in rows:
-        reps_str = f" | {row['reps']}次" if row['reps'] else ''
-        note_str = f" | {row['note']}" if row['note'] else ''
-        print(f"[{row['id']}] {row['date']} {row['time'] or ''} | {row['exercise_type']} | "
-              f"{row['duration_minutes'] or '-'}分钟 | {row['calories_burned']}卡{reps_str}{note_str}")
+        parts = [f"[{row['id']}]", f"{row['date']} {row['time'] or ''}",
+                 f"{row['exercise_type']}"]
+        if row['category']:
+            parts.append(f"[{row['category']}]")
+        if row['intensity']:
+            parts.append(f"强度={row['intensity']}")
+        if row['set_index']:
+            parts.append(f"第{row['set_index']}组")
+        if row['duration_minutes']:
+            parts.append(f"{row['duration_minutes']}分钟")
+        if row['distance_km']:
+            parts.append(f"{row['distance_km']}km")
+        if row['avg_heart_rate']:
+            parts.append(f"HR={row['avg_heart_rate']}")
+        parts.append(f"{row['calories_burned']}卡")
+        if row['reps']:
+            parts.append(f"{row['reps']}次")
+        if row['load_kg']:
+            parts.append(f"单侧{row['load_kg']}kg")
+        if row['note']:
+            parts.append(f"| {row['note']}")
+        print(' | '.join(parts))
 
 
 def cmd_summary(args):
@@ -383,7 +445,18 @@ def main():
     add_parser.add_argument('--time', help='时间 (HH:MM:SS)')
     add_parser.add_argument('--note', help='备注')
     add_parser.add_argument('--reps', type=int, help='动作次数(如俯卧撑个数)')
-    
+    # 扩展字段（运动功能 · 2026-06-29）
+    add_parser.add_argument('--category', choices=['有氧', '力量', '柔韧', '日常'],
+                            help='运动分类（AI 推断时必填）')
+    add_parser.add_argument('--intensity', choices=['低', '中', '高', '极限'],
+                            help='强度等级')
+    add_parser.add_argument('--distance', type=float, help='距离 km（跑步/骑行）')
+    add_parser.add_argument('--heart-rate', type=int, dest='heart_rate',
+                            help='平均心率 bpm')
+    add_parser.add_argument('--set', type=int, dest='set_index',
+                            help='力量场景：第几组')
+    add_parser.add_argument('--load', type=float, help='力量场景：单侧重量 kg')
+
     # update 子命令
     update_parser = subparsers.add_parser('update', help='更新运动记录')
     update_parser.add_argument('--id', type=int, required=True, help='记录ID')
@@ -393,7 +466,14 @@ def main():
     update_parser.add_argument('--date', help='日期 (YYYY-MM-DD)')
     update_parser.add_argument('--note', help='备注')
     update_parser.add_argument('--reps', type=int, help='动作次数')
-    
+    # 扩展字段
+    update_parser.add_argument('--category', choices=['有氧', '力量', '柔韧', '日常'])
+    update_parser.add_argument('--intensity', choices=['低', '中', '高', '极限'])
+    update_parser.add_argument('--distance', type=float, help='距离 km')
+    update_parser.add_argument('--heart-rate', type=int, dest='heart_rate', help='平均心率 bpm')
+    update_parser.add_argument('--set', type=int, dest='set_index', help='第几组')
+    update_parser.add_argument('--load', type=float, help='单侧重量 kg')
+
     # list 子命令
     list_parser = subparsers.add_parser('list', help='查询运动记录')
     list_parser.add_argument('--date', help='指定日期 (YYYY-MM-DD)')
@@ -401,6 +481,8 @@ def main():
     list_parser.add_argument('--from', dest='from_date', help='开始日期 (YYYY-MM-DD)')
     list_parser.add_argument('--to', dest='to_date', help='结束日期 (YYYY-MM-DD)')
     list_parser.add_argument('--type', help='运动类型(模糊匹配)')
+    list_parser.add_argument('--category', choices=['有氧', '力量', '柔韧', '日常'],
+                             help='按分类筛选')
     list_parser.add_argument('--limit', type=int, help='限制返回条数')
     
     # summary 子命令

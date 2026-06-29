@@ -474,32 +474,76 @@ const DATA = {
     modules: [
       {
         name: "记运动",
-        desc: "记录运动消耗",
+        desc: "记录运动消耗（2026-06-29 扩展：6 个新参数）",
         triggers: [
           {
             word: "记运动",
-            cli: "python scripts/exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>]",
+            cli: "python scripts/exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>] [--category {有氧,力量,柔韧,日常}] [--intensity {低,中,高,极限}] [--distance <km>] [--heart-rate <bpm>] [--set <N>] [--load <kg>]",
             flow: {
               operation: "INSERT",
               tables: [
-                { name: "exercise_log", fields: "date, time, exercise_type, duration_minutes, calories_burned, note, reps", op: "写入" }
+                { name: "exercise_log", fields: "date, time, exercise_type, duration_minutes, calories_burned, note, reps, category, intensity, distance_km, avg_heart_rate, set_index, load_kg", op: "写入" }
               ],
-              sideEffects: "自动初始化 exercise_log 表（如不存在）"
+              sideEffects: "自动初始化 exercise_log 表（如不存在）。AI 必读路由规则见下"
+            }
+          },
+          {
+            word: "记八段锦",
+            cli: "python scripts/exercise_tracker.py add --type 八段锦 --category 柔韧 --duration 12 --calories <AI推算> （MET 2.5 × 体重 × 0.2h）",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "柔韧类必填 category", op: "写入" }
+              ],
+              sideEffects: "无副作用。AI 自动推算卡路里，体重取 weight_log 最新"
+            }
+          },
+          {
+            word: "记力量",
+            cli: "python scripts/exercise_tracker.py add --type <动作名,如哑铃弯举> --category 力量 --set <N> --reps <次> --load <kg> --calories <AI推算> （MET 5 × 体重 × 组数 × 0.05h）",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "set_index + load_kg 表征本组数据", op: "写入" }
+              ],
+              sideEffects: "每组 1 行，AI 流式逐组记录。绝对不要等做完 N 组再汇总"
+            }
+          },
+          {
+            word: "记跑步",
+            cli: "python scripts/exercise_tracker.py add --type <户外跑/跑步机> --category 有氧 --duration <min> [--distance <km>] [--heart-rate <bpm>] --calories <AI推算> （MET 8/7.5 × 体重 × 时长h）",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "distance_km + avg_heart_rate 可选", op: "写入" }
+              ],
+              sideEffects: "有氧场景 AI 可主动问 1 次心率，用户答'没记'则跳过"
+            }
+          },
+          {
+            word: "记骑行",
+            cli: "python scripts/exercise_tracker.py add --type 骑行 --category 有氧 --duration <min> [--distance <km>] [--heart-rate <bpm>] --calories <AI推算> （MET 6 × 体重 × 时长h）",
+            flow: {
+              operation: "INSERT",
+              tables: [
+                { name: "exercise_log", fields: "distance_km 可选", op: "写入" }
+              ],
+              sideEffects: "同记跑步，有氧场景可主动问心率"
             }
           }
         ]
       },
       {
         name: "改运动记录",
-        desc: "更新运动记录",
+        desc: "更新运动记录（2026-06-29 扩展：支持 6 个新字段）",
         triggers: [
           {
             word: "改运动记录",
-            cli: "python scripts/exercise_tracker.py update --id <ID> [--字段 值]",
+            cli: "python scripts/exercise_tracker.py update --id <ID> [--type] [--calories] [--minutes] [--note] [--reps] [--date] [--category] [--intensity] [--distance] [--heart-rate] [--set] [--load]",
             flow: {
               operation: "UPDATE",
               tables: [
-                { name: "exercise_log", fields: "可选: calories_burned, duration_minutes, exercise_type, note, reps, date", op: "更新" }
+                { name: "exercise_log", fields: "可选: calories_burned, duration_minutes, exercise_type, note, reps, date, category, intensity, distance_km, avg_heart_rate, set_index, load_kg", op: "更新" }
               ],
               sideEffects: "无副作用，仅更新指定字段"
             }
@@ -508,17 +552,68 @@ const DATA = {
       },
       {
         name: "查运动记录",
-        desc: "查询运动记录（按日期/天数/类型）",
+        desc: "查询运动记录（按日期/天数/类型/分类）",
         triggers: [
           {
             word: "查运动记录",
-            cli: "python scripts/exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>]",
+            cli: "python scripts/exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>] [--category {有氧,力量,柔韧,日常}]",
             flow: {
               operation: "SELECT",
               tables: [
-                { name: "exercise_log", fields: "*", op: "读取" }
+                { name: "exercise_log", fields: "*（含 6 个新字段）", op: "读取" }
               ],
-              sideEffects: "无副作用，支持按日期、天数范围、运动类型筛选"
+              sideEffects: "无副作用，支持按日期、天数范围、运动类型、分类筛选"
+            }
+          }
+        ]
+      },
+      {
+        name: "运动 AI 路由规则",
+        desc: "AI 必读 · 4 段规则（2026-06-29 新增）",
+        triggers: [
+          {
+            word: "卡路里综合考虑",
+            cli: "【规则 A】用户值 + AI 推算 + 偏差处理。偏差<20%取推算/20-50%取中位/>50%反问。公式:cal=MET×体重×时长h (有氧) 或 MET×体重×组数×0.05h (力量)",
+            flow: {
+              operation: "AI 路由",
+              tables: [],
+              sideEffects: "无副作用。实现:exercise.combined_calories(user_reported, estimated)"
+            }
+          },
+          {
+            word: "强度口语映射",
+            cli: "【规则 B】口语优先:METs 兜底。'挺累/暴汗'=高 '累死'=极限 '轻松/散步'=低 '一般/还行'=中。MET<3=低/3-6=中/6-9=高/>9=极限",
+            flow: {
+              operation: "AI 路由",
+              tables: [],
+              sideEffects: "无副作用。实现:exercise.parse_user_intensity + estimate_intensity_met"
+            }
+          },
+          {
+            word: "心率询问规则",
+            cli: "【规则 C】仅在有氧场景(跑步/骑行/跳绳/八段锦)主动问1次。力量/日常场景不问。用户答'没记'则字段 NULL 不卡流程",
+            flow: {
+              operation: "AI 路由",
+              tables: [],
+              sideEffects: "无副作用。问法:'顺便问下，平均心率有记到吗？没记就跳过'"
+            }
+          },
+          {
+            word: "运动分类路由",
+            cli: "【规则 D】category 4 值:有氧/力量/柔韧/日常。AI 根据动作名推断。哑铃/深蹲/俯卧撑=力量, 八段锦/瑜伽=柔韧, 家务/做饭/通勤=日常, 跑步/骑行/跳绳=有氧",
+            flow: {
+              operation: "AI 路由",
+              tables: [],
+              sideEffects: "无副作用。实现:exercise._infer_category(exercise_type)"
+            }
+          },
+          {
+            word: "力量训练流式录入",
+            cli: "【规则 E】每组 1 行 exercise_log,1 组=1 行,不做 N 组汇总。用户在每组做完后实时告诉 AI,AI 逐条 add。力量场景参数:--set --reps --load",
+            flow: {
+              operation: "AI 路由",
+              tables: [],
+              sideEffects: "无副作用。例:记哑铃弯举第1组 = --set 1 --reps 10 --load 10"
             }
           }
         ]

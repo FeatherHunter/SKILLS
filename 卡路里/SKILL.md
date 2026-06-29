@@ -436,12 +436,98 @@ dashboard(start, end)                      # 综合四维度仪表盘
 
 ### 🏃 运动：记运动 / 改运动记录 / 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势
 
-- **记运动**：`exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>]`
+- **记运动**：`exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>] [--category <类>] [--intensity <级>] [--distance <km>] [--heart-rate <bpm>] [--set <N>] [--load <kg>]`
 - **改运动记录**：`exercise_tracker.py update --id <ID> [--字段 值]`
-- **查运动记录**：`exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>]`
+- **查运动记录**：`exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>] [--category <类>]`
 - **查运动汇总**：`exercise_tracker.py summary [--days N]`
 - **查运动类型**：`exercise_tracker.py stats --type <breakdown|total>`
 - **查运动趋势**：`exercise_tracker.py trend [--days N]`
+
+#### 🎯 运动 AI 路由规则（必读 · 2026-06-29 扩展）
+
+##### A · 卡路里综合考虑规则
+
+用户可能给卡路里值、可能不给。AI 必须按以下流程处理：
+
+```
+Step 1  识别用户报的卡路里值（若有）
+Step 2  AI 用 METs 公式独立推算（不依赖心率）
+        - 有氧/柔韧/日常：cal = MET × 体重 × 时长(h)
+        - 力量训练    ：cal = MET × 体重 × 组数 × 0.05h
+        - 体重从 weight_log 最新一条取，不向用户追问
+Step 3  对比两个值，按偏差处理：
+        - 偏差 < 20%       → 取 AI 推算值入档
+        - 偏差 20-50%      → 取两者中位 + note 标记
+        - 偏差 > 50%       → 反问用户确认哪个对（不入档）
+```
+
+实现：`exercise.combined_calories(user_reported, estimated)` 返回 `(final, note_suffix, deviation)`。
+
+##### B · 强度字段优先级
+
+```
+1. 用户口语明确说（如"很累"、"轻松"、"累死"） → AI 翻译成 4 档（最高优先）
+2. AI 基于 METs 兜底（无口率）                 → 按 MET 范围估
+3. 都没有                                       → NULL（不强制）
+```
+
+口语映射表（节选）：
+| 用户说 | 4 档 |
+|---|---|
+| "挺轻松"、"没什么感觉"、"散步" | 低 |
+| "一般"、"还行"、"中等" | 中 |
+| "挺累"、"暴汗"、"喘" | 高 |
+| "累死"、"力竭"、"撑不住" | 极限 |
+
+METs 兜底映射：
+| MET 范围 | 4 档 |
+|---|---|
+| < 3 | 低 |
+| 3-6 | 中 |
+| 6-9 | 高 |
+| > 9 | 极限 |
+
+实现：`exercise.parse_user_intensity(text)` + `exercise.estimate_intensity_met(met)`。
+
+##### C · 心率询问规则（场景化）
+
+| 场景 | AI 是否问心率 |
+|---|---|
+| 有氧（跑步/骑行/跳绳/八段锦） | ✅ 主动问 1 次 |
+| 力量训练（哑铃/深蹲/俯卧撑） | ❌ 不问 |
+| 日常活动（家务/做饭） | ❌ 不问 |
+
+问法示例：`"顺便问下，平均心率有记到吗？没记就跳过"`
+用户答"没记"或忽略 → 心率字段 NULL，不卡流程。
+
+##### D · 运动分类路由
+
+`category` 字段 4 个值，AI 根据动作名自动推断：
+
+| 关键词 | category |
+|---|---|
+| 哑铃/杠铃/史密斯/弯举/推举/深蹲/卧推/划船/俯卧撑/引体/平板支撑 | 力量 |
+| 八段锦/太极/瑜伽/拉伸 | 柔韧 |
+| 家务/做饭/洗衣/打扫/通勤/走路/散步 | 日常 |
+| 跑步/骑行/跳绳/椭圆机/游泳/其他 | 有氧（兜底） |
+
+实现：`exercise._infer_category(exercise_type)`。
+
+##### E · 力量训练流式录入
+
+每组 = 1 行 exercise_log：
+
+```bash
+# 第 1 组
+exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
+  --set 1 --reps 10 --load 10 --category 力量 --calories 22
+
+# 第 2 组
+exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
+  --set 2 --reps 10 --load 10 --category 力量 --calories 22
+```
+
+用户做完一组就告诉 AI 一组数据，AI 逐条 add。**绝对不要**等做完 N 组再汇总成一条记录。
 
 ### 💪 健身目标：设健身目标 / 查健身目标 / 改健身目标 / 删健身目标
 

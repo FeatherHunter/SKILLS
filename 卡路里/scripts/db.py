@@ -188,5 +188,32 @@ def init_db(db_path):
     except Exception:
         pass
 
+    # 迁移：exercise_log 表新增 6 列（运动功能扩展 · 2026-06-29）
+    #   - category        有氧/力量/柔韧/日常
+    #   - intensity       低/中/高/极限
+    #   - distance_km     跑步/骑行距离
+    #   - avg_heart_rate  平均心率
+    #   - set_index       力量场景：第几组
+    #   - load_kg         力量场景：单侧重量
+    # 幂等：检查列是否存在再 ALTER，重复运行不报错
+    _existing_cols = {
+        row[1] for row in c.execute('PRAGMA table_info(exercise_log)').fetchall()
+    }
+    _exercise_log_new_cols = [
+        ('category', 'TEXT'),
+        ('intensity', 'TEXT'),
+        ('distance_km', 'REAL'),
+        ('avg_heart_rate', 'INTEGER'),
+        ('set_index', 'INTEGER'),
+        ('load_kg', 'REAL'),
+    ]
+    for _col, _type in _exercise_log_new_cols:
+        if _col not in _existing_cols:
+            c.execute(f'ALTER TABLE exercise_log ADD COLUMN {_col} {_type}')
+
+    # 索引：exercise_log 新列（category / set_index 加速按类/按组查询）
+    c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_category ON exercise_log(category)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_type ON exercise_log(exercise_type)')
+
     conn.commit()
     conn.close()

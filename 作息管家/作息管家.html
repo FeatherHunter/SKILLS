@@ -118,9 +118,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
     <h1>作息管家</h1>
     <p>根据用户每日语录生成 0-24 点作息时间表，支持同步、摘要、查询、计划管理。所有操作通过 Python CLI 执行。</p>
     <div class="stats">
-        <div class="stat-item"><span>24</span><span>唤醒词</span></div>
+        <div class="stat-item"><span>23</span><span>唤醒词</span></div>
         <div class="stat-item"><span>8</span><span>功能模块</span></div>
-        <div class="stat-item"><span>16</span><span>CLI 命令</span></div>
+        <div class="stat-item"><span>15</span><span>CLI 命令</span></div>
         <div class="stat-item"><span>3</span><span>数据表</span></div>
     </div>
 </div>
@@ -131,11 +131,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 </div>
 
 <div class="tabs" id="tabs">
-    <div class="tab active" data-mod="all">全部 <span class="tab-count">24</span></div>
+    <div class="tab active" data-mod="all">全部 <span class="tab-count">23</span></div>
     <div class="tab" data-mod="sync">同步 <span class="tab-count">3</span></div>
     <div class="tab" data-mod="summary">摘要 <span class="tab-count">2</span></div>
     <div class="tab" data-mod="query">查询 <span class="tab-count">7</span></div>
-    <div class="tab" data-mod="plan">计划 <span class="tab-count">9</span></div>
+    <div class="tab" data-mod="plan">计划 <span class="tab-count">8</span></div>
     <div class="tab" data-mod="admin">管理 <span class="tab-count">1</span></div>
     <div class="tab" data-mod="cron">Cron <span class="tab-count">2</span></div>
 </div>
@@ -399,10 +399,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
-        <div class="word-item" data-keywords="查日期范围 日期范围 range 统计 多日">
+        <div class="word-item" data-keywords="查作息范围 日期范围 range 统计 多日">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查日期范围</span>
-                <span class="word-desc">指定日期范围内的统计</span>
+                <span class="word-name">查作息范围</span>
+                <span class="word-desc">查实测作息的日期范围统计</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -423,9 +423,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
-        <div class="word-item" data-keywords="查游标 游标 同步位置 cursor">
+        <div class="word-item" data-keywords="查作息游标 游标 同步位置 cursor">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查游标</span>
+                <span class="word-name">查作息游标</span>
                 <span class="word-desc">查看当前同步游标位置</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
@@ -447,10 +447,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
-        <div class="word-item" data-keywords="查数据库状态 状态 status 数据库 统计">
+        <div class="word-item" data-keywords="查作息状态 状态 status 数据库 统计">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查数据库状态</span>
-                <span class="word-desc">总记录数、已记录天数、日期范围</span>
+                <span class="word-name">查作息状态</span>
+                <span class="word-desc">实测作息的总记录数/天数/日期范围</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -478,13 +478,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 
 <!-- ==================== 计划模块 ==================== -->
 <div class="module-section" data-mod="plan">
-    <p class="module-desc"><strong>2026-06-29 重构</strong>：schedule_plans 表从「24 小时格子」升级为「事件型」，每条记录 = 一个具体时间事件（精确到分钟），与飞书日历事件模型对齐。<strong>飞书日历联动</strong>：当本机装了 lark-cli 且已授权，CLI 会询问是否把计划同步到飞书日历（diff_and_sync 算法，自动 create/update/delete + 回写 feishu_event_id）。一天 24h 录满是硬约束。新增 5 个事件型命令 + 1 个迁移命令。</p>
+    <p class="module-desc">2026-06-29 重构：schedule_plans 表从「24 小时格子」升级为「事件型」，每条记录 = 一个具体时间事件（精确到分钟），与飞书日历事件模型对齐。飞书日历联动：当本机装了 lark-cli 且已授权，CLI 会询问是否把计划同步到飞书日历（diff_and_sync 算法，自动 create/update/delete + 回写 feishu_event_id）。一天 24h 录满是硬约束。</p>
     <div class="word-list">
 
-        <div class="word-item" data-keywords="查作息计划 查计划 今天计划 查询计划 单日">
+        <div class="word-item" data-keywords="查计划">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查作息计划</span>
-                <span class="word-desc">查询单日计划作息</span>
+                <span class="word-name">查计划</span>
+                <span class="word-desc">查询单日计划作息（区别于"查作息"的实测数据）</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -494,98 +494,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 </div>
                 <div class="flow-panel" id="flow-plan-query">
                     <div class="flow-title">执行流程</div>
-                    <div class="flow-step">从 schedule_plans 查询指定日期的计划（hour_0 ~ hour_23）</div>
-                    <div class="flow-step">逐小时展示计划内容，未规划的时段标记为「(未规划)」</div>
+                    <div class="flow-step">调用 query-plans 命令</div>
+                    <div class="flow-step">从 schedule_plans 表读取该日所有 hour 段（24 个 hour_N_planned 兼容字段，2026-06-29 后从事件表聚合）</div>
+                    <div class="flow-step">按小时顺序展示 00:00~24:00 计划内容</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>按日期查询</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0..hour_23</td><td>查某日计划</td></tr>
                     </table>
-                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                    <div class="flow-note"><strong>副作用：</strong>无写入操作。显示该日 24 小时计划。空小时标记为「未规划」。</div>
                 </div>
             </div>
         </div>
 
-        <div class="word-item" data-keywords="查多日计划 多日计划 多天 批量查询">
+        <div class="word-item" data-keywords="查多日计划">
             <div class="word-head" onclick="toggleWord(this)">
                 <span class="word-name">查多日计划</span>
-                <span class="word-desc">批量查询多日计划作息</span>
+                <span class="word-desc">查询多日计划（逗号分隔）</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
                 <div class="cli-row">
                     <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-multi')">python3 scripts/schedule_cli.py query-plans &lt;日期1,日期2,...&gt;</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-querymulti')">python3 scripts/schedule_cli.py query-plans &lt;日期1,日期2,...&gt;</span>
                 </div>
-                <div class="flow-panel" id="flow-plan-multi">
+                <div class="flow-panel" id="flow-plan-querymulti">
                     <div class="flow-title">执行流程</div>
                     <div class="flow-step">解析逗号分隔的日期列表</div>
-                    <div class="flow-step">从 schedule_plans 批量查询（IN 语句）</div>
-                    <div class="flow-step">逐日展示计划内容</div>
+                    <div class="flow-step">逐日查 schedule_plans，聚合输出</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>批量查询</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0..hour_23</td><td>查多日计划</td></tr>
                     </table>
-                    <div class="flow-note"><strong>副作用：</strong>纯读取，无写入操作。</div>
+                    <div class="flow-note"><strong>用法：</strong>python3 scripts/schedule_cli.py query-plans 2026-06-29,2026-06-30,2026-07-01</div>
                 </div>
             </div>
         </div>
 
-        <div class="word-item" data-keywords="设作息计划 新建计划 创建计划 upsert">
+        <div class="word-item" data-keywords="商量计划 一起规划 规划明天 规划一天 讨论计划 upsert-plan-events">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">设作息计划</span>
-                <span class="word-desc">新建每日计划作息</span>
-                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="word-detail">
-                <div class="cli-row">
-                    <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-create')">python3 scripts/schedule_cli.py upsert-plan &lt;日期&gt; --json '{...}'</span>
-                </div>
-                <div class="flow-panel" id="flow-plan-create">
-                    <div class="flow-title">执行流程</div>
-                    <div class="flow-step">解析 JSON 参数，校验必须填满 hour_0 ~ hour_23 全部 24 个小时</div>
-                    <div class="flow-step">尝试 INSERT INTO schedule_plans</div>
-                    <div class="flow-step">若日期已存在则抛出 IntegrityError，转为 UPDATE</div>
-                    <table class="flow-table">
-                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0_planned ~ hour_23_planned</td><td>新增计划</td></tr>
-                    </table>
-                    <div class="flow-note"><strong>副作用：</strong>向 schedule_plans 表插入一条新记录（24 个小时段全部必填）。<br><strong>约束：</strong>不提供删除接口。</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="word-item" data-keywords="更新作息计划 更新计划 修改计划 upsert">
-            <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">更新作息计划</span>
-                <span class="word-desc">更新已有的计划作息</span>
-                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="word-detail">
-                <div class="cli-row">
-                    <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-update')">python3 scripts/schedule_cli.py upsert-plan &lt;日期&gt; --json '{...}'</span>
-                </div>
-                <div class="flow-panel" id="flow-plan-update">
-                    <div class="flow-title">执行流程</div>
-                    <div class="flow-step">解析 JSON 参数，校验必须填满 hour_0 ~ hour_23 全部 24 个小时</div>
-                    <div class="flow-step">尝试 INSERT，若日期已存在则 IntegrityError</div>
-                    <div class="flow-step">回滚后执行 UPDATE，只更新提供的字段，保留其他</div>
-                    <div class="flow-step">更新 updated_at 时间戳</div>
-                    <table class="flow-table">
-                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">hour_N_planned（提供的字段）, updated_at</td><td>更新计划</td></tr>
-                    </table>
-                    <div class="flow-note"><strong>副作用：</strong>更新 schedule_plans 表中指定日期的记录。upsert 语义：不存在则插入，已存在则更新。<br><strong>约束：</strong>不提供删除接口。</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ====== 2026-06-29 新增：事件型计划（推荐）====== -->
-        <div class="word-item" data-keywords="商量计划 一起规划 规划明天 讨论计划 upsert-plan-events">
-            <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">⭐ 整日 upsert（新版事件型）</span>
-                <span class="word-desc">upsert-plan-events 一天 24 小时录满硬约束，按事件粒度</span>
+                <span class="word-name">商量计划</span>
+                <span class="word-desc">AI + 用户多轮讨论细节 → 24h 录满 + 询问飞书同步</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -594,24 +542,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-upsevt')">python3 scripts/schedule_cli.py upsert-plan-events &lt;日期&gt; --json @plan.json</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-upsevt">
-                    <div class="flow-title">2026-06-29 新版流程 — AI + 用户讨论 → 结构化 JSON → 24h 录满 upsert</div>
-                    <div class="flow-step"><strong>1. AI + 用户多轮讨论</strong>：把"明天干什么"聊到分钟级细节</div>
-                    <div class="flow-step"><strong>2. AI 生成结构化 JSON</strong>：events 数组，每条含 time_start / time_end / title（可选 notes / category）</div>
-                    <div class="flow-step"><strong>3. 写文件或 stdin</strong>：cat plan.json | schedule_cli.py upsert-plan-events 2026-06-30 --json -</div>
-                    <div class="flow-step"><strong>4. CLI 校验 24h 联合覆盖</strong>：首段 time_start=00:00 + 末段 time_end=24:00 + 衔接连续不漏不重</div>
-                    <div class="flow-step"><strong>5. DB upsert</strong>：命中 (date,time_start,time_end) 更新；缺失自动 is_active=0 软删</div>
-                    <div class="flow-step"><strong>6. 飞书询问</strong>：CLI 检测 lark-cli，可用则询问「同步飞书？ [Y/n]」，yes 触发 diff_and_sync</div>
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">AI 与用户多轮讨论，把"明天干什么"聊到分钟级细节</div>
+                    <div class="flow-step">AI 生成结构化 JSON 数组（每条含 time_start / time_end / title，可选 notes / category）</div>
+                    <div class="flow-step">写文件或 stdin：cat plan.json | schedule_cli.py upsert-plan-events 2026-06-30 --json -</div>
+                    <div class="flow-step">CLI 校验 24h 联合覆盖：首段 time_start=00:00 + 末段 time_end=24:00 + 衔接连续不漏不重</div>
+                    <div class="flow-step">DB upsert：命中 (date,time_start,time_end) 更新；缺失自动 is_active=0 软删</div>
+                    <div class="flow-step">飞书询问：CLI 检测 lark-cli，可用则询问「同步飞书？ [Y/n]」，yes 触发 diff_and_sync</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-write">WRITE</span></td><td>schedule_data.db</td><td>schedule_plans（新版）</td><td class="field-name">date / time_start / time_end / title / notes / category</td><td>upsert 24h 事件列表</td></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">event_id / start / end / summary / description</td><td>调用 +search-event 拉取当日事件</td></tr>
-                        <tr><td><span class="flow-badge badge-write">WRITE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">calendar +create / +update / events delete</td><td>按 diff 结果批量同步</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">event_id / start / end / summary / description</td><td>拉取当日事件</td></tr>
+                        <tr><td><span class="flow-badge badge-write">WRITE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">calendar +create / +update / events delete</td><td>按 diff 批量同步</td></tr>
                     </table>
                     <div class="flow-note"><strong>JSON 格式示例：</strong><br><pre style="background:#f5f5f7;padding:8px;border-radius:6px;font-size:12px;line-height:1.4">[
   {"time_start":"00:00","time_end":"07:00","title":"睡觉","notes":"深度","category":"休息"},
   {"time_start":"07:00","time_end":"08:00","title":"起床","notes":"洗漱+早餐","category":"起居"},
   {"time_start":"08:00","time_end":"12:00","title":"上班","notes":"优化作息管家技能","category":"工作"},
-  ...
   {"time_start":"22:00","time_end":"24:00","title":"休息"}
 ]</pre><strong>副作用：</strong>schedule_plans 整体覆盖 + 可选飞书同步。<strong>硬约束：</strong>联合区间 ⊇ [00:00, 24:00]。</div>
                 </div>
@@ -620,8 +567,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 
         <div class="word-item" data-keywords="改计划 update-event 修改一个日程 单条修改">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">单条修改</span>
-                <span class="word-desc">update-event 单条精细修改，已同步飞书的会询问同步修改</span>
+                <span class="word-name">改计划</span>
+                <span class="word-desc">单条精细修改，已同步飞书的会询问同步修改</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -630,7 +577,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-upd')">python3 scripts/schedule_cli.py update-event &lt;id&gt; [--title X] [--notes Y] [--category Z] [--time-start HH:MM] [--time-end HH:MM]</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-upd">
-                    <div class="flow-title">单条精细修改流程</div>
+                    <div class="flow-title">执行流程</div>
                     <div class="flow-step">读 DB 取该事件详情（含 feishu_event_id 和飞书同步状态）</div>
                     <div class="flow-step">UPDATE schedule_plans SET ... WHERE id=?</div>
                     <div class="flow-step">若该事件已绑飞书 event_id → 询问「也同步飞书？」</div>
@@ -649,8 +596,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 
         <div class="word-item" data-keywords="删计划 deactivate-event 不要这条了 软删">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">单条软删</span>
-                <span class="word-desc">deactivate-event 软删（is_active=0），飞书侧同步删除另行询问</span>
+                <span class="word-name">删计划</span>
+                <span class="word-desc">单条软删（is_active=0），飞书侧同步删除另行询问</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -659,7 +606,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-deact')">python3 scripts/schedule_cli.py deactivate-event &lt;id&gt;</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-deact">
-                    <div class="flow-title">软删流程</div>
+                    <div class="flow-title">执行流程</div>
                     <div class="flow-step">读 DB 取该事件（确认未停用）</div>
                     <div class="flow-step">UPDATE schedule_plans SET is_active=0 WHERE id=?</div>
                     <div class="flow-step">若该事件已绑飞书 event_id → 询问「也删除飞书？」，yes 调 lark-cli calendar events delete 并清空本地 feishu_event_id</div>
@@ -676,8 +623,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 
         <div class="word-item" data-keywords="看计划 list-events 列出今日计划 看一天的计划">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查询当日 + 飞书状态</span>
-                <span class="word-desc">list-events id / time / title / 飞书ID / last_synced_at</span>
+                <span class="word-name">看计划</span>
+                <span class="word-desc">列出当日事件 + 飞书同步状态</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -686,7 +633,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-listevt')">python3 scripts/schedule_cli.py list-events &lt;日期&gt;</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-listevt">
-                    <div class="flow-title">查询流程</div>
+                    <div class="flow-title">执行流程</div>
                     <div class="flow-step">探测飞书能力（is_feishu_available，缓存 5 分钟）</div>
                     <div class="flow-step">DB 查询当日 schedule_plans，按 time_start 排序，含 is_active=0 的软删项</div>
                     <div class="flow-step">格式化输出：id / 时段 / title / notes / feishu_event_id / last_synced_at</div>
@@ -699,8 +646,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 
         <div class="word-item" data-keywords="同步飞书 feishu-resync 重同步 同步飞书日历">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">重同步到飞书</span>
-                <span class="word-desc">feishu-resync 重新对齐某天 DB 与飞书，diff 按事件询问</span>
+                <span class="word-name">同步飞书</span>
+                <span class="word-desc">重新对齐某天 DB 与飞书，diff 按事件询问</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -709,17 +656,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-resync')">python3 scripts/schedule_cli.py feishu-resync &lt;日期&gt;</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-resync">
-                    <div class="flow-title">重同步流程</div>
+                    <div class="flow-title">执行流程</div>
                     <div class="flow-step">探测飞书能力（要求 fully_available，否则报错退出）</div>
                     <div class="flow-step">DB 拉当日活跃 events（含 is_active=1 的所有记录）</div>
-                    <div class="flow-step">飞书侧 +search-event 拉当日事件（query=&quot;作息管家自动同步&quot; 过滤）</div>
+                    <div class="flow-step">飞书侧 +search-event 拉当日事件（query="作息管家自动同步" 过滤）</div>
                     <div class="flow-step">diff：按 (time_start, time_end) 配对，找出 create / update / delete 三类动作</div>
                     <div class="flow-step">逐个询问（决策 C）：每条 create/update/delete 单独 [Y/n]</div>
                     <div class="flow-step">yes 同步执行 + 回写 feishu_event_id</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">*（当日活跃）</td><td>本地状态</td></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+search-event query=&quot;作息管家自动同步&quot;</td><td>飞书状态</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+search-event query="作息管家自动同步"</td><td>飞书状态</td></tr>
                         <tr><td><span class="flow-badge badge-write">WRITE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+create / +update / events delete</td><td>按 diff 执行</td></tr>
                         <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">feishu_event_id / last_synced_at</td><td>回写新 event_id</td></tr>
                     </table>
@@ -728,56 +675,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
-        <div class="word-item" data-keywords="迁计划 migrate 迁移 老数据 重构">
-            <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">迁移旧表</span>
-                <span class="word-desc">migrate-plan-to-events 一次性把 24-hour 老表迁到事件型新表</span>
-                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="word-detail">
-                <div class="cli-row">
-                    <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-mig')">python3 scripts/migrate_plan_to_events.py</span>
-                </div>
-                <div class="flow-panel" id="flow-plan-mig">
-                    <div class="flow-title">迁移流程（仅 2026-06-29 重构时需要跑一次）</div>
-                    <div class="flow-step">检测 schedule_plans_legacy_2026_06_29 是否已存在（已存在则跳过，幂等）</div>
-                    <div class="flow-step">检测新 schedule_plans 是否已建好（已建则只 RENAME 旧表）</div>
-                    <div class="flow-step">常规路径：旧表存在 + 无新表 → RENAME 旧表 + CREATE 新表 + 数据搬迁</div>
-                    <div class="flow-step">全新安装：无旧表 → 直接 CREATE 新表</div>
-                    <div class="flow-step">迁移映射：旧表 hour_N_planned → 新表 1 条记录（time_start={N}:00，time_end={N+1}:00，title=原文，notes/category/feishu_event_id=null，is_active=1）</div>
-                    <table class="flow-table">
-                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-write">RENAME</span></td><td>schedule_data.db</td><td>schedule_plans → schedule_plans_legacy_2026_06_29</td><td class="field-name">—</td><td>旧表重命名保留</td></tr>
-                        <tr><td><span class="flow-badge badge-write">CREATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">11 字段含 time_start/end/title/notes/category/feishu_event_id/last_synced_at/is_active</td><td>建新 schema</td></tr>
-                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">从 legacy 表读取，每小时 1 条</td><td>数据搬运</td></tr>
-                    </table>
-                    <div class="flow-note"><strong>幂等：</strong>已存在 legacy 表则直接退出，可重跑。<strong>回退：</strong>需手动反向迁移（脚本不提供）。<strong>备份建议：</strong>跑前手动 cp schedule_data.db schedule_data_2026-06-29.bak.db。</div>
-                </div>
-            </div>
-        </div>
-
         <div class="word-item" data-keywords="飞书能力 探测 lark-cli 安装 检查">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">飞书能力探测</span>
+                <span class="word-name">飞书探测</span>
                 <span class="word-desc">三档探测 cli 安装 / auth 授权 / 日历写入权限</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
                 <div class="cli-row">
                     <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-feishu-probe')">python3 scripts/feishu_sync.py  # 单跑探测</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-feishu-probe')">python3 scripts/feishu_sync.py</span>
                 </div>
                 <div class="flow-panel" id="flow-plan-feishu-probe">
-                    <div class="flow-title">探测规则 — 决定是否询问飞书同步</div>
-                    <div class="flow-step"><strong>1. lark-cli 安装</strong>：PATH 查找 + 候选路径回退（含 npm global %APPDATA%\npm\lark-cli.cmd）</div>
-                    <div class="flow-step"><strong>2. 已认证</strong>：lark-cli auth status 看 user/bot 至少一个 status=ready</div>
-                    <div class="flow-step"><strong>3. 日历可写</strong>：+agenda 能拉到今日议程视为至少有读权限，user 身份默认可写</div>
-                    <div class="flow-step"><strong>缓存：</strong>进程内缓存 5 分钟（不重复打扰）</div>
-                    <div class="flow-title">三档体验</div>
-                    <div class="flow-step">✅ <strong>full</strong>（全可用）→ 询问「是否同步飞书？」[Y/n]</div>
-                    <div class="flow-step">⚠️ <strong>partial</strong>（已装但未授权 / 无权限）→ 跳过，提示「lark-cli auth login」</div>
-                    <div class="flow-step">ℹ️ <strong>missing</strong>（未装）→ 跳过，提示安装价值：① 计划同步 ② 分钟级拆分 ③ 双向 CRUD</div>
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">lark-cli 安装：PATH 查找 + 候选路径回退（含 npm global %APPDATA%\npm\lark-cli.cmd）</div>
+                    <div class="flow-step">已认证：lark-cli auth status 看 user/bot 至少一个 status=ready</div>
+                    <div class="flow-step">日历可写：+agenda 能拉到今日议程视为至少有读权限，user 身份默认可写</div>
+                    <div class="flow-step">缓存：进程内缓存 5 分钟（不重复打扰）</div>
+                    <div class="flow-step">全可用 → 询问「是否同步飞书？」[Y/n]</div>
+                    <div class="flow-step">已装但未授权 / 无权限 → 跳过，提示「lark-cli auth login」</div>
+                    <div class="flow-step">未装 → 跳过，提示安装价值：① 计划同步 ② 分钟级拆分 ③ 双向 CRUD</div>
                     <div class="flow-note"><strong>可移植性：</strong>本技能装在别人电脑上也能工作，缺飞书不报错。<strong>提示不是引导：</strong>不主动帮装，给一行 <code>npm i -g lark-cli</code> 用户自决。</div>
                 </div>
             </div>

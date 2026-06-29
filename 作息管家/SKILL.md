@@ -45,19 +45,16 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | 12 | 查数据库状态 | 记录数/天数/日期范围 | `status` |
 | 13 | 查作息计划 | 查询单日计划 | `query-plans <日期>` |
 | 14 | 查多日计划 | 查询多日计划 | `query-plans <日期1,日期2,...>` |
-| 15 | 设作息计划 | 新建计划作息（旧版 24-hour） | `upsert-plan <日期> --json '{...}'` |
-| 16 | 更新作息计划 | 更新已有计划（旧版 24-hour） | `upsert-plan <日期> --json '{...}'` |
-| **17** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` |
-| **18** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` |
-| **19** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` |
-| **20** | **看计划** | 当天事件 + 飞书 event_id + last_synced_at | `list-events <日期>` |
-| **21** | **同步飞书** | diff 后逐个询问 create/update/delete | `feishu-resync <日期>` |
-| **22** | **迁计划** | 一次性把 24-hour 老表迁到事件型（幂等可重跑） | `migrate_plan_to_events.py` |
-| 23 | 初始化数据库 | 创建三张数据表 | `init` |
-| 24 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` |
-| 25 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` |
+| **15** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` |
+| **16** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` |
+| **17** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` |
+| **18** | **看计划** | 当天事件 + 飞书 event_id + last_synced_at | `list-events <日期>` |
+| **19** | **同步飞书** | diff 后逐个询问 create/update/delete | `feishu-resync <日期>` |
+| 20 | 初始化数据库 | 创建三张数据表 | `init` |
+| 21 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` |
+| 22 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` |
 
-> **核心入口 #17「商量计划」**：用户说"商量计划/一起规划/规划明天/讨论下明天做啥" → AI 进入多轮对话 → 生成结构化 JSON → 写库 → 询问飞书同步。
+> **核心入口 #15「商量计划」**：用户说"商量计划/一起规划/规划明天/讨论下明天做啥" → AI 进入多轮对话 → 生成结构化 JSON → 写库 → 询问飞书同步。
 
 ---
 

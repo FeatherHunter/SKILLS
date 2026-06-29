@@ -24,7 +24,19 @@ from schedule_db import (
     has_records_for_date, get_daily_summary,
     get_summaries_range, get_connection, DB_PATH,
     upsert_plan, get_plan, get_plans, add_summary,
-    count_messages_from
+    count_messages_from,
+    # 2026-06-29 新增：事件型 plan
+    list_plan_events, upsert_plan_events, update_plan_event,
+    deactivate_plan_event, set_feishu_event_id, get_plan_event,
+    validate_24h_coverage,
+)
+from feishu_sync import (
+    is_feishu_available, LarkAPIError,
+    create_event as feishu_create_event,
+    update_event as feishu_update_event,
+    delete_event as feishu_delete_event,
+    diff_and_sync as feishu_diff_and_sync,
+    PlanEvent as FeishuPlanEvent,
 )
 
 # ============ CLI 命令 ============
@@ -460,13 +472,16 @@ def cmd_upsert_plan(args):
         print(f"错误: {e}")
 
 # ============ 主入口 ============
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
+def main(argv=None):
+    """CLI 主入口：分发命令。2026-06-29 重构为函数，让所有 cmd_X 在调用前完成定义。"""
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
         cmd_help()
         sys.exit(1)
 
-    cmd = sys.argv[1]
-    args = sys.argv[2:]
+    cmd = argv[0]
+    args = argv[1:]
 
     if cmd == "init":
         init_db()
@@ -524,9 +539,536 @@ if __name__ == "__main__":
     elif cmd == "upsert-plan":
         cmd_upsert_plan(args)
 
+    elif cmd == "upsert-plan-events":
+        cmd_upsert_plan_events(args)
+
+    elif cmd == "update-event":
+        cmd_update_event(args)
+
+    elif cmd == "deactivate-event":
+        cmd_deactivate_event(args)
+
+    elif cmd == "list-events":
+        cmd_list_events(args)
+
+    elif cmd == "feishu-resync":
+        cmd_feishu_resync(args)
+
     elif cmd == "help":
         cmd_help()
 
     else:
         print(f"未知命令: {cmd}")
         cmd_help()
+# ============================================================
+# 2026-06-29 新增：事件型计划（schedule_plans 新版）+ 飞书日历同步
+# ============================================================
+#
+# 五个新命令：
+#   upsert-plan-events <date> --json '...'   # 整日覆盖式 upsert（必填满 24h）
+#   update-event <id> --title ... --notes ...   # 单条精细修改
+#   deactivate-event <id>                       # 单条软删（is_active=0）
+#   list-events <date>                          # 当天事件 + 飞书同步状态
+#   feishu-resync <date>                        # 重同步某天到飞书
+#
+# 决策 C：每次 CRUD 后 AI 通过本 CLI 询问飞书同步（CLI 不静默同步）
+# ============================================================
+
+
+def _ask_yes_no(question: str, default: bool = True) -> bool:
+    """通用 Y/n 询问（CLI 直接执行模式）"""
+    suffix = " [Y/n]: " if default else " [y/N]: "
+    sys.stdout.write(question + suffix)
+    sys.stdout.flush()
+    try:
+        ans = input().strip().lower()
+    except EOFError:
+        return default
+    if not ans:
+        return default
+    return ans in ("y", "yes", "是")
+
+
+def _print_feishu_intro() -> None:
+    """首次飞书询问时打出能力探测结果（统一告知）"""
+    status = is_feishu_available()
+    tier_label = {
+        "full":    "✅ 全可用",
+        "partial": "⚠️ 部分可用（cli 已装但 auth/权限不全）",
+        "missing": "ℹ️ 未安装 lark-cli",
+        "unknown": "⚠️ 探测失败",
+    }
+    print(f"  飞书探测：{tier_label.get(status.tier, status.tier)}")
+    if status.cli_path:
+        print(f"    路径：{status.cli_path}")
+    if status.cli_version:
+        print(f"    版本：{status.cli_version}")
+    if status.last_error:
+        print(f"    错误：{status.last_error}")
+
+
+def _maybe_sync_after_write(db_event_ids: list, date: str) -> None:
+    """
+    写库完成后调用：询问用户是否同步飞书。
+    - 若飞书能力不可用 → 告知后跳过（不阻塞主流程）
+    - 用户同意 → 走 diff_and_sync
+    """
+    status = is_feishu_available()
+    if not status.fully_available:
+        print()
+        print("  ℹ️ 飞书能力不可用或未授权——本批事件仅写入本地数据库。")
+        print("    装了飞书后会解锁：① 同步计划到飞书日历 ② 自动拆分分钟级事件 ③ 双向 CRUD 同步")
+        print()
+        return
+
+    print()
+    _print_feishu_intro()
+    if not _ask_yes_no(f"  ? 是否把这 {len(db_event_ids)} 个新事件同步到飞书日历？", default=True):
+        print("  → 已跳过飞书同步。后续可用 feishu-resync 重新同步。")
+        return
+
+    # 拉当天活跃事件 → 同步
+    active_events = list_plan_events(date, include_inactive=False)
+    plan_events = [
+        FeishuPlanEvent(
+            time_start=e["time_start"], time_end=e["time_end"],
+            title=e["title"], notes=e.get("notes") or "",
+            category=e.get("category") or "",
+            feishu_event_id=e.get("feishu_event_id"),
+        )
+        for e in active_events
+    ]
+    try:
+        result = feishu_diff_and_sync(date, plan_events, dry_run=False, ask_callback=lambda q: _ask_yes_no("  " + q, default=True))
+    except LarkAPIError as e:
+        print(f"  ❌ 飞书同步失败：{e}")
+        return
+    except Exception as e:
+        print(f"  ❌ 飞书同步异常：{type(e).__name__}：{e}")
+        return
+
+    print(f"  ✅ 飞书同步完成：created={len(result['created'])} updated={len(result['updated'])} deleted={len(result['deleted'])} skipped={len(result['skipped'])} errors={len(result['errors'])}")
+    # 回写 feishu_event_id 到 schedule_plans
+    # diff_and_sync 内部已经按 (date,start,end) 匹配；我们用 list_plan_events 重新 match
+    if result["created"] or result["updated"] or result["deleted"]:
+        try:
+            refreshed = list_plan_events(date, include_inactive=True)
+            # 反查飞书 events（按 description 含"作息管家自动同步"过滤）
+            from feishu_sync import search_events
+            feishu_list = search_events(start=date, end=date, query="作息管家自动同步")
+            feishu_by_hh = {(_iso_to_hhmm(e.start, date), _iso_to_hhmm(e.end, date)): e.event_id for e in feishu_list}
+            for e in refreshed:
+                key = (e["time_start"], e["time_end"])
+                fid = feishu_by_hh.get(key)
+                if fid and fid != e.get("feishu_event_id"):
+                    set_feishu_event_id(e["id"], fid)
+        except Exception:
+            # 回写失败不影响主结果
+            pass
+
+
+def _iso_to_hhmm(iso: str, date_fallback: str) -> str:
+    """ISO 8601 → HH:MM 工具（与 feishu_sync 同名函数的本地副本）"""
+    import re
+    m = re.search(r"T(\d{2}:\d{2})", iso)
+    if m:
+        return m.group(1)
+    return "00:00"
+
+
+# ============================================================
+# 新命令：upsert-plan-events
+# ============================================================
+
+def cmd_upsert_plan_events(args):
+    """
+    新增/更新一日全部事件（24h 录满硬约束）
+    用法:
+      python schedule_cli.py upsert-plan-events <日期> --json '[{...},{...}]'
+
+    events JSON 示例:
+    [
+      {"time_start":"00:00","time_end":"07:00","title":"睡觉","notes":"深度","category":"休息"},
+      {"time_start":"07:00","time_end":"08:00","title":"起床","notes":"洗漱+早餐","category":"起居"},
+      {"time_start":"08:00","time_end":"12:00","title":"上班","notes":"码代码","category":"工作"},
+      ...
+      {"time_start":"22:00","time_end":"24:00","title":"休息","notes":null,"category":"休息"}
+    ]
+    """
+    if not args or "--json" not in args:
+        print("""用法:
+  python schedule_cli.py upsert-plan-events <日期> --json '[{...},{...}]'
+
+要求:
+  - events 联合区间必须覆盖 [00:00, 24:00]
+  - 每条 event 必含: time_start / time_end / title
+  - 可选: notes / category
+
+示例:
+  python schedule_cli.py upsert-plan-events 2026-06-30 --json '[
+    {"time_start":"00:00","time_end":"07:00","title":"睡觉"},
+    {"time_start":"07:00","time_end":"08:00","title":"起床","notes":"洗漱"},
+    {"time_start":"08:00","time_end":"12:00","title":"上班"},
+    {"time_start":"12:00","time_end":"13:00","title":"午餐"},
+    ...
+    {"time_start":"22:00","time_end":"24:00","title":"休息"}
+  ]'
+""")
+        return
+
+    date = args[0]
+    json_idx = args.index("--json")
+    if json_idx + 1 >= len(args):
+        print("错误: --json 后需要跟 JSON 字符串")
+        return
+
+    import json
+    json_src = args[json_idx + 1]
+    # 支持 @file.json 语法（AI 推荐用法，绕开 shell quoting 难题）
+    if json_src.startswith("@"):
+        file_path = json_src[1:]
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                json_text = f.read()
+        except OSError as e:
+            print(f"错误: 读取 JSON 文件 {file_path} 失败：{e}")
+            return
+    elif json_src == "-":
+        # 从 stdin 读取
+        json_text = sys.stdin.read()
+    else:
+        json_text = json_src
+    try:
+        events = json.loads(json_text)
+    except json.JSONDecodeError as e:
+        print(f"JSON 解析错误: {e}")
+        return
+
+    if not isinstance(events, list):
+        print("错误: 顶层必须是数组")
+        return
+
+    # 预校验（24h 覆盖 + 字段合法）
+    err = validate_24h_coverage(events)
+    if err:
+        print(f"错误: {err}")
+        return
+
+    # 写入
+    try:
+        result = upsert_plan_events(date, events, validate_24h=False)
+    except Exception as e:
+        print(f"错误: {e}")
+        return
+
+    print(f"✅ {date} 写入成功")
+    print(f"   新增: {result['added']}  更新: {result['updated']}  软删旧: {result['deactivated']}  活跃总数: {result['total_active']}")
+
+    # 询问飞书同步
+    if result["added"] > 0 or result["updated"] > 0:
+        _maybe_sync_after_write([], date)
+
+
+# ============================================================
+# 新命令：update-event
+# ============================================================
+
+def cmd_update_event(args):
+    """
+    单条精细修改
+    用法:
+      python schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z]
+                                       [--time-start HH:MM] [--time-end HH:MM]
+
+    修改后如果该事件已同步飞书，会询问是否同步修改到飞书。
+    """
+    if not args:
+        print("""用法:
+  python schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z]
+                                       [--time-start HH:MM] [--time-end HH:MM]
+
+示例:
+  python schedule_cli.py update-event 123 --title "通勤+早餐" --notes "骑车+豆浆"
+""")
+        return
+
+    try:
+        event_id = int(args[0])
+    except ValueError:
+        print(f"错误: id 必须是整数，得到 {args[0]!r}")
+        return
+
+    updates = {}
+    if "--title" in args:
+        updates["title"] = args[args.index("--title") + 1]
+    if "--notes" in args:
+        updates["notes"] = args[args.index("--notes") + 1]
+    if "--category" in args:
+        updates["category"] = args[args.index("--category") + 1]
+    if "--time-start" in args:
+        updates["time_start"] = args[args.index("--time-start") + 1]
+    if "--time-end" in args:
+        updates["time_end"] = args[args.index("--time-end") + 1]
+
+    if not updates:
+        print("错误: 未指定任何修改字段")
+        return
+
+    # 检查记录存在 + 是否有飞书 event_id
+    event = get_plan_event(event_id)
+    if not event:
+        print(f"错误: 找不到 id={event_id} 的事件")
+        return
+    feishu_event_id = event.get("feishu_event_id")
+
+    if not update_plan_event(event_id, updates):
+        print("错误: 更新失败（可能值未变）")
+        return
+
+    print(f"✅ 已更新 id={event_id}")
+    print(f"   字段: {', '.join(f'{k}={v!r}' for k, v in updates.items())}")
+
+    # 询问飞书同步
+    if feishu_event_id:
+        status = is_feishu_available()
+        if status.fully_available:
+            print()
+            print(f"  该事件已同步到飞书 (event_id={feishu_event_id})")
+            if _ask_yes_no("  ? 是否把这次改动也同步到飞书？", default=True):
+                try:
+                    feishu_args = {}
+                    if "summary" in updates or "title" in updates:
+                        feishu_args["summary"] = updates.get("title", event["title"])
+                    if "notes" in updates:
+                        feishu_args["description"] = updates.get("notes", "")
+                    # 时段变化 = 删旧 + 建新（飞书日历没有"改时间"按钮）
+                    if "time_start" in updates or "time_end" in updates:
+                        new_start = updates.get("time_start", event["time_start"])
+                        new_end = updates.get("time_end", event["time_end"])
+                        if (new_start, new_end) != (event["time_start"], event["time_end"]):
+                            # 改时段：先删旧飞书事件
+                            try:
+                                feishu_delete_event(feishu_event_id)
+                            except LarkAPIError as e:
+                                print(f"  ⚠️ 删除旧飞书事件失败（可能已过期）：{e}")
+                            # 再建一个新的
+                            new_feishu_id = feishu_create_event(
+                                start=f"{event['date']}T{new_start}:00+08:00",
+                                end=f"{event['date']}T{new_end}:00+08:00",
+                                summary=feishu_args.get("summary", event["title"]),
+                                description=feishu_args.get("description", event.get("notes") or ""),
+                            ).event_id
+                            set_feishu_event_id(event_id, new_feishu_id)
+                            print(f"  ✅ 飞书事件已重建：{new_feishu_id}")
+                            return
+                        else:
+                            # 仅 start/end 存在 args 但值未变，忽略
+                            pass
+                    if feishu_args:
+                        feishu_update_event(feishu_event_id, **feishu_args)
+                        print(f"  ✅ 飞书事件已更新")
+                    else:
+                        print("  （无飞书侧字段需要更新）")
+                except LarkAPIError as e:
+                    print(f"  ❌ 飞书同步失败：{e}")
+        else:
+            print(f"  ℹ️ 该事件已绑定飞书 event_id={feishu_event_id}，但飞书当前不可用，未同步。")
+
+
+# ============================================================
+# 新命令：deactivate-event
+# ============================================================
+
+def cmd_deactivate_event(args):
+    """
+    单条软删（is_active=0）
+    用法:
+      python schedule_cli.py deactivate-event <id>
+
+    如果该事件已同步飞书，会询问是否同步删除飞书事件。
+    """
+    if not args:
+        print("用法: python schedule_cli.py deactivate-event <id>")
+        return
+
+    try:
+        event_id = int(args[0])
+    except ValueError:
+        print(f"错误: id 必须是整数，得到 {args[0]!r}")
+        return
+
+    event = get_plan_event(event_id)
+    if not event:
+        print(f"错误: 找不到 id={event_id}")
+        return
+    if event["is_active"] == 0:
+        print(f"ℹ️ id={event_id} 已经是停用状态")
+        return
+
+    if not deactivate_plan_event(event_id):
+        print("错误: 停用失败")
+        return
+
+    print(f"✅ id={event_id}（{event['time_start']}-{event['time_end']} {event['title'][:20]}）已软删")
+
+    # 询问飞书同步
+    feishu_event_id = event.get("feishu_event_id")
+    if feishu_event_id:
+        status = is_feishu_available()
+        if status.fully_available:
+            print()
+            print(f"  该事件已同步到飞书 (event_id={feishu_event_id})")
+            if _ask_yes_no("  ? 是否也删除飞书那边的日程？", default=True):
+                try:
+                    feishu_delete_event(feishu_event_id)
+                    set_feishu_event_id(event_id, "")  # 清空关联
+                    print(f"  ✅ 飞书事件已删除")
+                except LarkAPIError as e:
+                    print(f"  ❌ 删除飞书事件失败：{e}")
+        else:
+            print(f"  ℹ️ 已绑定飞书 event_id={feishu_event_id}，但飞书不可用，未同步。")
+
+
+# ============================================================
+# 新命令：list-events
+# ============================================================
+
+def cmd_list_events(args):
+    """
+    查询某日所有事件 + 飞书同步状态
+    用法:
+      python schedule_cli.py list-events <日期>
+
+    输出: id | 时段 | title | notes | feishu_event_id | last_synced_at
+    """
+    if not args:
+        print("用法: python schedule_cli.py list-events <日期>")
+        return
+
+    date = args[0]
+    active = list_plan_events(date, include_inactive=False)
+    inactive = list_plan_events(date, include_inactive=True)
+    inactive_ids = {e["id"] for e in inactive if e["is_active"] == 0}
+
+    if not inactive and not active:
+        print(f"  {date} 无任何计划事件")
+        return
+
+    # 飞书能力
+    status = is_feishu_available()
+    feishu_tier = status.tier
+    print(f"\n📅 {date} 计划事件列表")
+    print(f"  飞书能力: {feishu_tier} （{'CLI 可用' if status.cli_installed else '未安装'} / {'已授权' if status.authenticated else '未授权'} / {'可写' if status.calendar_writable else '无写权限'}）")
+    print("=" * 90)
+    print(f"  {'ID':>5} {'时段':<11} {'title':<20} {'notes':<25} 飞书ID / 同步状态")
+    print("-" * 90)
+
+    all_events = sorted(active + [e for e in inactive if e["id"] not in {x['id'] for x in active}], key=lambda e: e["time_start"])
+    for e in all_events:
+        marker = "✗ " if e["is_active"] == 0 else "  "
+        notes_short = (e.get("notes") or "")[:25]
+        title_short = (e["title"] or "")[:20]
+        feishu_id = e.get("feishu_event_id") or "-"
+        synced = e.get("last_synced_at") or "-"
+        print(f"{marker}{e['id']:>4} {e['time_start']}-{e['time_end']:<5} {title_short:<20} {notes_short:<25} {feishu_id[:30]} / {synced}")
+    print()
+    print(f"  共活跃 {len(active)} 条 / 停用 {len(inactive_ids)} 条")
+
+
+# ============================================================
+# 新命令：feishu-resync
+# ============================================================
+
+def cmd_feishu_resync(args):
+    """
+    重同步某天事件到飞书（强制 diff + apply）
+    用法:
+      python schedule_cli.py feishu-resync <日期>
+
+    行为:
+      - 拉飞书当日事件
+      - 对比 DB 活跃事件
+      - 询问每个 create/update/delete 动作
+    """
+    if not args:
+        print("用法: python schedule_cli.py feishu-resync <日期>")
+        return
+
+    date = args[0]
+    status = is_feishu_available()
+    if not status.fully_available:
+        print(f"❌ 飞书不可用：{status.tier}")
+        print(f"   {status.last_error or ''}")
+        return
+
+    print(f"\n🔄 重同步 {date} 到飞书日历 ...")
+    _print_feishu_intro()
+
+    active = list_plan_events(date, include_inactive=False)
+    if not active:
+        print(f"  {date} 无活跃事件，无需同步")
+        return
+
+    plan_events = [
+        FeishuPlanEvent(
+            time_start=e["time_start"], time_end=e["time_end"],
+            title=e["title"], notes=e.get("notes") or "",
+            category=e.get("category") or "",
+            feishu_event_id=e.get("feishu_event_id"),
+        )
+        for e in active
+    ]
+    try:
+        result = feishu_diff_and_sync(date, plan_events, dry_run=False, ask_callback=lambda q: _ask_yes_no("  " + q, default=True))
+    except LarkAPIError as e:
+        print(f"  ❌ 飞书 diff 失败：{e}")
+        return
+
+    print(f"\n  ✅ 完成")
+    print(f"     created={len(result['created'])}  updated={len(result['updated'])}  deleted={len(result['deleted'])}  skipped={len(result['skipped'])}  errors={len(result['errors'])}")
+    if result["errors"]:
+        print(f"     错误明细:")
+        for eid, err in result["errors"][:5]:
+            print(f"       {eid}: {err}")
+
+
+# ============================================================
+# help 更新
+# ============================================================
+
+def cmd_help():
+    print("""
+作息管家 CLI 帮助
+
+基础:
+  init                                    初始化数据库
+  prepare-messages [start] [end] [--page N] [--page-size N]   取待同步消息
+  list [date]                             查看某日作息
+  detail [date]                           含 AI 推理的详情
+  summary [date]                          每日摘要
+  timeline [date]                         时间轴
+  report [date]                           综合报告
+  range <start> <end>                     日期范围统计
+  status                                  数据库状态
+
+计划（新版事件型，2026-06-29）:
+  upsert-plan-events <date> --json '[]'   整日 upsert（24h 录满硬约束）
+  update-event <id> [--title X ...]       单条精细修改
+  deactivate-event <id>                   单条软删
+  list-events <date>                      当天事件 + 飞书同步状态
+  feishu-resync <date>                    重同步某天到飞书
+
+计划（旧版 24-hour，保留兼容）:
+  query-plans <date1,date2,...>            查询计划
+  upsert-plan <date> ...                  旧版 upsert
+
+说明:
+  1. 第一次使用新版计划前，请先执行：
+       python scripts/migrate_plan_to_events.py
+  2. 每次 CRUD 后，本 CLI 会询问是否同步飞书日历（决策 C：每次询问）
+  3. 飞书能力探测（lark-cli 安装/auth/权限）— 自动检测
+  4. 删一条事件 = 软删（is_active=0），同步飞书时也会询问是否删飞书那边
+""")
+
+if __name__ == "__main__":
+    main()

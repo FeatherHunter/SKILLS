@@ -512,63 +512,82 @@ def upsert_plan(date, hour_plans):
     conn.close()
     return {'date': date, 'action': action}
 
-def get_plan(date):
+def _read_plan_dict(date: str) -> dict | None:
     """
-    获取指定日期的计划作息
-    date: 日期（YYYY-MM-DD）
-    返回: dict 或 None
+    内部：从新 schedule_plans（事件型）按 hour 聚合，返回 {date, hour_0..hour_23, created_at, updated_at} dict。
+    - 每条事件映射到 time_start 的整点小时（hour_N）
+    - 该小时内若有多条事件，title 用 "+" 拼接
+    - 仅取 is_active=1 的事件
+    - 旧 gen_report 脚本 + 其他下游消费者均依赖此 dict 形状
     """
     conn = get_connection()
-    c = conn.cursor()
-    hour_cols = ', '.join([f'hour_{i}_planned' for i in range(24)])
-    c.execute(f'''
-        SELECT date, {hour_cols}, created_at, updated_at
-        FROM schedule_plans WHERE date = ?
-    ''', (date,))
-    row = c.fetchone()
-    conn.close()
-    if row:
-        result = {'date': row[0]}
+    try:
+        _ensure_new_plans_schema(conn)  # 幂等建表
+        c = conn.cursor()
+        # 拉该日所有活跃事件，按 time_start ASC
+        c.execute('''
+            SELECT time_start, time_end, title
+            FROM schedule_plans
+            WHERE date = ? AND is_active = 1
+            ORDER BY time_start
+        ''', (date,))
+        rows = c.fetchall()
+        # 拉 created_at / updated_at（取最新）
+        c.execute('''
+            SELECT MIN(created_at) AS first_created, MAX(updated_at) AS last_updated
+            FROM schedule_plans
+            WHERE date = ?
+        ''', (date,))
+        ts_row = c.fetchone()
+        first_created, last_updated = ts_row[0], ts_row[1]
+
+        result = {'date': date}
         for i in range(24):
-            result[f'hour_{i}'] = row[i + 1]
-        result['created_at'] = row[25]
-        result['updated_at'] = row[26]
+            result[f'hour_{i}'] = ''  # 默认空（迁移前旧空小时也是 None）
+        # 按整点小时分桶拼接
+        bucket = {i: [] for i in range(24)}
+        for ts, te, title in rows:
+            try:
+                start_hour = int(ts.split(":")[0])
+                if 0 <= start_hour <= 23:
+                    bucket[start_hour].append(str(title).strip())
+            except Exception:
+                continue
+        for i in range(24):
+            if bucket[i]:
+                result[f'hour_{i}'] = "+".join(bucket[i])
+        result['created_at'] = first_created
+        result['updated_at'] = last_updated
         return result
-    return None
+    finally:
+        conn.close()
+
+
+def get_plan(date):
+    """
+    获取指定日期的计划作息（向旧接口兼容：从新事件表聚合，按 hour 0..23 组织）
+    date: 日期（YYYY-MM-DD）
+    返回: dict 或 None — 含 date / hour_0..hour_23 / created_at / updated_at
+    """
+    result = _read_plan_dict(date)
+    return result
+
 
 def get_plans(dates):
     """
-    获取多个日期的计划作息
+    获取多个日期的计划作息（向旧接口兼容）
     dates: list of date strings 或 逗号分隔的字符串
     返回: list of dict
     """
     if isinstance(dates, str):
-        # 支持逗号分隔的字符串
         dates = [d.strip() for d in dates.split(',')]
-    
     if not dates:
         return []
-
-    placeholders = ', '.join(['?' for _ in dates])
-    conn = get_connection()
-    c = conn.cursor()
-    hour_cols = ', '.join([f'hour_{i}_planned' for i in range(24)])
-    c.execute(f'''
-        SELECT date, {hour_cols}, created_at, updated_at
-        FROM schedule_plans WHERE date IN ({placeholders})
-        ORDER BY date
-    ''', dates)
-    rows = c.fetchall()
-    conn.close()
-
     results = []
-    for row in rows:
-        result = {'date': row[0]}
-        for i in range(24):
-            result[f'hour_{i}'] = row[i + 1]
-        result['created_at'] = row[25]
-        result['updated_at'] = row[26]
-        results.append(result)
+    for d in dates:
+        r = _read_plan_dict(d)
+        if r is not None:
+            results.append(r)
     return results
 
 # ============ 初始化 ============
@@ -579,3 +598,292 @@ if __name__ == "__main__":
     print(f"  语录路径: {DR_DB_PATH}")
     last = get_last_record_full()
     print(f"  最后记录: {last if last else '（无）'}")
+# ============================================================
+# 新版 schedule_plans（事件型 schema，2026-06-29 重构）
+# ============================================================
+# 与旧 hour_N_planned 模型共存：迁移前旧表继续工作；迁移脚本会把
+# schedule_plans 重命名为 schedule_plans_legacy_2026_06_29 后，
+# 这里建同名新表。新版函数与旧版 upsert_plan / get_plan / get_plans
+# 完全独立，CLI 层只暴露新版命令。
+#
+# 新表字段：
+#   id, date, time_start, time_end, title, notes, category,
+#   feishu_event_id, last_synced_at, is_active, created_at, updated_at
+# ============================================================
+
+def _ensure_new_plans_schema(conn) -> None:
+    """幂等创建新版 schedule_plans 表。供新 CRUD 函数首次调用时自动建表。"""
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS schedule_plans (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            date            TEXT    NOT NULL,
+            time_start      TEXT    NOT NULL,
+            time_end        TEXT    NOT NULL,
+            title           TEXT    NOT NULL,
+            notes           TEXT,
+            category        TEXT,
+            feishu_event_id TEXT,
+            last_synced_at  TEXT,
+            is_active       INTEGER NOT NULL DEFAULT 1,
+            created_at      TEXT    DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT    DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_plans_date ON schedule_plans(date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_plans_date_time ON schedule_plans(date, time_start)')
+
+
+def _to_minutes(hhmm: str) -> int:
+    """HH:MM 字符串 → 从 00:00 起算的分钟数。无效时抛 ValueError。"""
+    if not isinstance(hhmm, str) or len(hhmm) < 4 or hhmm[2] != ":":
+        raise ValueError(f"非法时间格式：{hhmm!r}（应为 HH:MM）")
+    try:
+        h, m = hhmm.split(":", 1)
+        h, m = int(h), int(m)
+        if h < 0 or h > 24 or m < 0 or m >= 60:
+            raise ValueError
+        return h * 60 + m
+    except Exception as e:
+        raise ValueError(f"非法时间格式：{hhmm!r}") from e
+
+
+def _validate_event(e: dict, idx: int) -> tuple[int, int]:
+    """校验一条 event 字段合法，返回 (start_min, end_min)。"""
+    required = ("time_start", "time_end", "title")
+    missing = [k for k in required if not e.get(k)]
+    if missing:
+        raise ValueError(f"events[{idx}] 缺字段：{missing}")
+    start_min = _to_minutes(e["time_start"])
+    end_min = _to_minutes(e["time_end"])
+    if end_min <= start_min:
+        raise ValueError(f"events[{idx}] time_end 必须 > time_start（{e['time_start']}~{e['time_end']}）")
+    if start_min < 0 or end_min > 24 * 60:
+        raise ValueError(f"events[{idx}] 时间超界（{e['time_start']}~{e['time_end']}，合法范围 00:00~24:00）")
+    if not str(e.get("title", "")).strip():
+        raise ValueError(f"events[{idx}] title 为空")
+    if not isinstance(e.get("notes", None), (str, type(None))):
+        raise ValueError(f"events[{idx}] notes 必须为字符串或 null")
+    return start_min, end_min
+
+
+def validate_24h_coverage(events: list[dict]) -> str | None:
+    """
+    校验 events 联合区间是否覆盖 [00:00, 24:00]（24*60 = 1440 分钟）。
+    返回 None = 通过；非 None = 错误描述。
+    """
+    if not events:
+        return "events 为空，至少需要 1 条"
+    # 起点必须 00:00
+    if events[0].get("time_start") != "00:00":
+        return f"首事件 time_start 必须为 00:00，当前为 {events[0].get('time_start')}"
+    # 终点必须 24:00
+    if events[-1].get("time_end") != "24:00":
+        return f"末事件 time_end 必须为 24:00，当前为 {events[-1].get('time_end')}"
+
+    last_end = 0
+    for idx, e in enumerate(events):
+        start_min, end_min = _validate_event(e, idx)
+        if start_min != last_end:
+            return (
+                f"events[{idx}] time_start={e['time_start']} 与上一条 time_end 不连续"
+                f"（应有 {last_end // 60:02d}:{last_end % 60:02d}）"
+            )
+        last_end = end_min
+    if last_end != 24 * 60:
+        return f"事件区间总和不等于 24 小时（当前到 {last_end} 分钟，应到 1440 分钟）"
+    return None
+
+
+def last_minute(minutes: int) -> str:
+    """辅助：分钟数→"MM" 格式（00-59）"""
+    return f"{minutes % 60:02d}"
+
+
+def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
+    """查询某日计划事件，按 time_start ASC。
+    include_inactive=True 时同时返回 is_active=0 的记录（用于 diff_and_sync）。"""
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+        if include_inactive:
+            c.execute('''
+                SELECT id, date, time_start, time_end, title, notes, category,
+                       feishu_event_id, last_synced_at, is_active
+                FROM schedule_plans
+                WHERE date = ?
+                ORDER BY time_start
+            ''', (date,))
+        else:
+            c.execute('''
+                SELECT id, date, time_start, time_end, title, notes, category,
+                       feishu_event_id, last_synced_at, is_active
+                FROM schedule_plans
+                WHERE date = ? AND is_active = 1
+                ORDER BY time_start
+            ''', (date,))
+        rows = c.fetchall()
+        return [
+            {
+                "id": r[0], "date": r[1], "time_start": r[2], "time_end": r[3],
+                "title": r[4], "notes": r[5], "category": r[6],
+                "feishu_event_id": r[7], "last_synced_at": r[8], "is_active": r[9],
+            }
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
+def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True) -> dict:
+    """
+    整日覆盖式 upsert。
+    events: [{"time_start":"00:00","time_end":"01:00","title":"睡觉","notes":"深度","category":"休息"}, ...]
+    - 联合区间必须 ⊇ [00:00, 24:00]（validate_24h=True 时校验）
+    - 与 (date, time_start) 命中已有记录 → UPDATE
+    - 不命中 → INSERT（feishu_event_id 为 NULL，需后续手动同步）
+    - 旧 is_active=1 但新批次中无 → 软删除（is_active=0），不破坏飞书事件（由 diff_and_sync 清理）
+    返回: {"added":N, "updated":M, "deactivated":K, "total_active":X}
+    """
+    if validate_24h:
+        err = validate_24h_coverage(events)
+        if err:
+            raise ValueError(f"24 小时覆盖校验失败：{err}")
+
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+
+        # 取出当前所有 is_active=1 的事件
+        c.execute('SELECT id, time_start, time_end FROM schedule_plans WHERE date = ? AND is_active = 1', (date,))
+        existing = {f"{r[1]}_{r[2]}": r[0] for r in c.fetchall()}
+
+        added = updated = deactivated = 0
+        now_keys = set()
+
+        for e in events:
+            key = f"{e['time_start']}_{e['time_end']}"
+            now_keys.add(key)
+            title = str(e["title"]).strip()
+            notes = e.get("notes")
+            category = e.get("category")
+            if key in existing:
+                c.execute('''
+                    UPDATE schedule_plans
+                    SET title=?, notes=?, category=?, updated_at=CURRENT_TIMESTAMP
+                    WHERE id=?
+                ''', (title, notes, category, existing[key]))
+                if c.rowcount > 0:
+                    updated += 1
+            else:
+                # 冲突场景：同一 (date, time_start) 多条 — 暂按 (date,start,end) 自然覆盖；
+                # 实际不会出现，因 24h 严格衔接
+                c.execute('''
+                    INSERT INTO schedule_plans
+                        (date, time_start, time_end, title, notes, category, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                ''', (date, e["time_start"], e["time_end"], title, notes, category))
+                added += 1
+
+        # 软删除：旧活跃 + 新批次中没有的
+        for key, eid in existing.items():
+            if key not in now_keys:
+                c.execute('UPDATE schedule_plans SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?', (eid,))
+                if c.rowcount > 0:
+                    deactivated += 1
+
+        conn.commit()
+
+        # 计算剩余活跃事件数
+        c.execute('SELECT COUNT(*) FROM schedule_plans WHERE date = ? AND is_active = 1', (date,))
+        total_active = c.fetchone()[0]
+
+        return {"added": added, "updated": updated, "deactivated": deactivated, "total_active": total_active}
+    finally:
+        conn.close()
+
+
+def update_plan_event(event_id: int, fields: dict) -> bool:
+    """单条 UPDATE。fields 可含: title/notes/category/time_start/time_end。
+    注：不在此处同步飞书（飞书同步由 CLI 询问流程触发，避免隐式副作用）。"""
+    allowed = {"title", "notes", "category", "time_start", "time_end"}
+    sets = []
+    values = []
+    for k, v in fields.items():
+        if k in allowed:
+            sets.append(f"{k}=?")
+            values.append(v)
+    if not sets:
+        return False
+    sets.append("updated_at=CURRENT_TIMESTAMP")
+    values.append(event_id)
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute(f'UPDATE schedule_plans SET {", ".join(sets)} WHERE id=?', values)
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
+
+def deactivate_plan_event(event_id: int) -> bool:
+    """单条软删（is_active=0）。不动飞书——由 CLI 层询问是否同步删除飞书事件。"""
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute('UPDATE schedule_plans SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?', (event_id,))
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
+
+def set_feishu_event_id(event_id: int, feishu_event_id: str) -> bool:
+    """飞书同步成功后回写 event_id 与 last_synced_at。
+    如果传入 None/空串 → 清除关联（用于同步删除后清状态）。"""
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        if feishu_event_id:
+            c.execute('''
+                UPDATE schedule_plans
+                SET feishu_event_id=?, last_synced_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            ''', (feishu_event_id, event_id))
+        else:
+            c.execute('''
+                UPDATE schedule_plans
+                SET feishu_event_id=NULL, last_synced_at=NULL
+                WHERE id=?
+            ''', (event_id,))
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_plan_event(event_id: int) -> dict | None:
+    """单条读。"""
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, date, time_start, time_end, title, notes, category,
+                   feishu_event_id, last_synced_at, is_active
+            FROM schedule_plans
+            WHERE id=?
+        ''', (event_id,))
+        r = c.fetchone()
+        if not r:
+            return None
+        return {
+            "id": r[0], "date": r[1], "time_start": r[2], "time_end": r[3],
+            "title": r[4], "notes": r[5], "category": r[6],
+            "feishu_event_id": r[7], "last_synced_at": r[8], "is_active": r[9],
+        }
+    finally:
+        conn.close()

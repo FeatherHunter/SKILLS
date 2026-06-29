@@ -1,233 +1,184 @@
-# CLI 命令
+# CLI 命令（2026-06-29 重构版）
 
-> 本文件列出所有可用的命令行接口。**所有命令通过 `python3 scripts/schedule_cli.py` 调用。**
+> 所有命令通过 `python scripts/schedule_cli.py` 调用。
+> 2026-06-29 大改动：5 个新计划事件命令 + 飞书日历联动。
 
 ---
 
-## 命令列表
+## 一、基础数据命令（未变）
 
 ### 1. 初始化数据库
-
 ```bash
 python3 scripts/schedule_cli.py init
 ```
+创建 schedule_records、daily_summary、schedule_plans（新版）三表。
 
-**作用**：创建 schedule_records、daily_summary、schedule_plans 表（已存在则跳过）
+### 2. 准备同步消息
+```bash
+python3 scripts/schedule_cli.py prepare-messages [<开始> [<结束>]] [--page N] [--page-size N]
+```
+分页获取游标到当前时间的消息（供 AI 分析）。
+
+### 3~9. 查询 / 报告 / 状态
+（保持不变：list / detail / summary / timeline / report / range / status）
 
 ---
 
-### 2. 准备同步消息（供 AI 分析，始终分页）
+## 二、计划（旧版 24-hour，**保留兼容**）
+
+### 10. 查询（旧版）
+```bash
+python3 scripts/schedule_cli.py query-plans <日期1,日期2,...>
+```
+
+### 11. 旧版 upsert（保留）
+```bash
+python3 scripts/schedule_cli.py upsert-plan <日期> --json '{...}'  # 24-hour 模型
+```
+
+> 注：如果老 schedule_plans 表已迁移到 `schedule_plans_legacy_2026_06_29`，此命令仍可查询（兼容路径）。
+
+---
+
+## 三、计划（**新版事件型 — 推荐使用**）
+
+### 12. 整日 upsert（**主入口**，必填满 24h）
+```bash
+python3 scripts/schedule_cli.py upsert-plan-events <日期> --json '...'
+# 或从文件：
+python3 scripts/schedule_cli.py upsert-plan-events <日期> --json @plan.json
+# 或从 stdin：
+cat plan.json | python3 scripts/schedule_cli.py upsert-plan-events <日期> --json -
+```
+
+**JSON 格式**：
+```json
+[
+  {"time_start":"00:00","time_end":"07:00","title":"睡觉","notes":"深度睡眠","category":"休息"},
+  {"time_start":"07:00","time_end":"08:00","title":"起床","notes":"洗漱","category":"起居"},
+  {"time_start":"08:00","time_end":"12:00","title":"上班","notes":"干活","category":"工作"},
+  ...
+  {"time_start":"22:00","time_end":"24:00","title":"休息","notes":null,"category":"休息"}
+]
+```
+
+**字段说明**：
+- 必填：`time_start` / `time_end` / `title`
+- 可选：`notes` / `category`
+- 联合区间必须 ⊇ [00:00, 24:00]（CLI 层硬校验）
+
+**行为**：
+- 与 (date, time_start, time_end) 命中 → UPDATE
+- 不命中 → INSERT（feishu_event_id 暂为 NULL）
+- 旧活跃但新批次无 → 软删（is_active=0）
+- 写完后若飞书可用 → CLI 询问"是否同步飞书日历？"
+
+### 13. 单条修改
+```bash
+python3 scripts/schedule_cli.py update-event <id> \
+    [--title "新标题"] [--notes "新备注"] [--category "新分类"] \
+    [--time-start "08:30"] [--time-end "09:30"]
+```
+
+- 若该事件已绑定飞书 event_id → CLI 询问"是否同步修改到飞书？"
+- 改时段（time_start/time_end）= 飞书"删旧 + 建新"（飞书日历无"改时间"按钮）
+
+### 14. 单条软删
+```bash
+python3 scripts/schedule_cli.py deactivate-event <id>
+```
+- 软删（is_active=0），不真删
+- 若已绑飞书 event_id → CLI 询问"是否同步删除飞书事件？"
+
+### 15. 查询某日事件 + 飞书状态
+```bash
+python3 scripts/schedule_cli.py list-events <日期>
+```
+输出 24 行：
+- id / time / title / notes / feishu_event_id / last_synced_at
+- ✗ 前缀 = 已软删
+
+### 16. 重同步某天到飞书
+```bash
+python3 scripts/schedule_cli.py feishu-resync <日期>
+```
+- 飞书侧 diff（按 description 含"作息管家自动同步"过滤）
+- 询问每个 create/update/delete 动作
+- 回写 feishu_event_id
+
+---
+
+## 四、飞书能力自动探测
+
+每次涉飞书 CLI 都会自动调用 `is_feishu_available()` 检测本机能力：
+
+| 探测项 | 失败时体验 |
+|---|---|
+| lark-cli 安装 | 跳过飞书同步，提示"装了飞书后会解锁：① 同步计划 ② 拆分钟级事件 ③ 双向 CRUD" |
+| 已装未授权 | 跳过同步，提示"lark-cli auth login" |
+| 用户身份 ready | 跳过同步 |
+| 日历可写 | 跳过同步 |
+
+**进程内缓存 5 分钟**避免重复探测拖累性能。
+
+---
+
+## 五、迁移命令（仅 2026-06-29 重构时需要跑一次）
 
 ```bash
-# 默认: 从数据库游标到当前时间, 第1页, 每页200条
-python3 scripts/schedule_cli.py prepare-messages
-
-# 指定开始时间到当前时间
-python3 scripts/schedule_cli.py prepare-messages <开始时间>
-
-# 指定时间范围
-python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间>
-
-# 分页参数
-python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间> --page 2
-python3 scripts/schedule_cli.py prepare-messages <开始时间> <结束时间> --page 1 --page-size 100
-
-# 时间格式: YYYY-MM-DD HH:MM:SS  或  YYYY-MM-DD
-# 示例: python3 scripts/schedule_cli.py prepare-messages 2026-05-09 2026-05-22
+python3 scripts/migrate_plan_to_events.py
 ```
 
 **作用**：
-- 查询游标位置的最后一条记录（或指定开始时间）
-- 获取开始时间前10条消息（上下文）+ 开始时间到结束时间的消息（分页）
-- 输出 JSON 格式供 AI 分析
-- JSON 中含 `pagination` 元数据，`has_next=true` 时需用 `--page N` 获取下一页
+- 把 `schedule_plans`（24 个 hour 字段）重命名为 `schedule_plans_legacy_2026_06_29`
+- CREATE 新 `schedule_plans`（事件型 schema）
+- 把所有旧记录按"1 小时 = 1 条事件"形式迁过来
+- 幂等可重跑
 
-**输出**：
-```
-开始时间: 2026-05-09 00:00:00
-结束时间: 2026-05-22 15:59:30
-
-上下文消息: 10 条（仅供参考，不处理）
-待处理消息: 200 条（第1页/20页，每页200条，共3873条）
-
-【JSON输出开始】
-{ "pagination": { "page": 1, "total_pages": 20, "has_next": true, ... }, ... }
-【JSON输出结束】
-
-AI分析说明:
-- ⚠️ 还有下一页! 处理完本页后，请用 --page 2 获取下一页
-```
+**全新安装**：检测到无 schedule_plans 表 → 直接建新表，不做迁移。
 
 ---
 
-### 3. 查看指定日期作息
+## 六、决策记录（参考）
 
-```bash
-python3 scripts/schedule_cli.py list [YYYY-MM-DD]
-# 默认今天
-```
-
-**输出示例**：
-```
-============================================================
-📅 2026-05-22 作息记录
-============================================================
-  😴 01:00~07:38 [睡眠] ✓
-     睡觉
-  💕 07:38~08:47 [社交] ✓
-     确认睡眠信息、回复消息
-  🚴 08:47~09:05 [通勤] ✓
-     骑车去公司
-
-  共 3 块, 约 9h49m
-```
+| 决策 | 选项 | 落地 |
+|---|---|---|
+| 删除方案 | 软删（is_active=0） | ✅ 不破例硬规范 |
+| 改时段飞书处理 | 删旧+建新 | ✅ 飞书日历必须这样 |
+| 飞书同步询问时机 | 每次 CRUD 后 AI 询问 | ✅ Y/n，用户主动 |
+| 关联主键 | feishu_event_id 内联主表 | ✅ 不需单独映射表 |
+| 子段解析 | 不解析，用结构化 JSON | ✅ 零歧义、直接喂飞书 |
 
 ---
 
-### 4. 详细展示（含分析推理）
+## 七、典型 AI 工作流示例
 
-```bash
-python3 scripts/schedule_cli.py detail [YYYY-MM-DD]
 ```
+用户: 帮我规划明天 2026-06-30
+AI:  [讨论要点：上午写代码，中午吃饭，下午继续，晚上健身...]
+    [生成结构化 JSON]
 
-**作用**：显示每条记录的 AI 分析推理过程
+$ schedule_cli.py upsert-plan-events 2026-06-30 --json @plan.json
+✅ 2026-06-30 写入成功
+   新增: 9  更新: 0  软删旧: 0  活跃总数: 9
 
----
-
-### 5. 查看每日摘要
-
-```bash
-python3 scripts/schedule_cli.py summary [YYYY-MM-DD]
-```
-
-**输出示例**：
-```
-📊 2026-05-22 作息摘要
-==================================================
-  😴 睡眠: 7h0m
-  💼 工作: 4h0m
-  🚴 通勤: 0h36m
-  🍽️ 餐饮: 1h0m
-  🎮 娱乐: 1h0m
-  ❓ 未知: 1h0m
-
-  总计: 15h36m
-```
-
----
-
-### 6. 时间轴展示
-
-```bash
-python3 scripts/schedule_cli.py timeline [YYYY-MM-DD]
-```
-
-**输出示例**：
-```
-⏰ 2026-05-22 时间轴
-============================================================
-  00:00 ▓▓▓ 😴睡眠
-  01:00 ▓▓▓ 😴睡眠
-  02:00 ▓▓▓ 😴睡眠
+  飞书探测：✅ 全可用
+  ? 是否把这 9 个新事件同步到飞书日历？ [Y/n]: y
+  ? 是否创建飞书事件「睡觉」？ [Y/n]: y
   ...
-  08:00 ▓▓▓ 💕社交
-  09:00 ▓▓▓ 🚴通勤
-  10:00 ▓▓▓ 💼工作
+  ✅ 飞书同步完成：created=9
+
+$ schedule_cli.py update-event 504 --notes "上午专攻 AQS"
+✅ 已更新 id=504
+   该事件已同步到飞书
+  ? 是否把这次改动也同步到飞书？ [Y/n]: y
+  ✅ 飞书事件已更新
 ```
 
 ---
 
-### 7. 完整报告
+## 八、help
 
 ```bash
-python3 scripts/schedule_cli.py report [YYYY-MM-DD]
-```
-
-**作用**：综合 list + summary + timeline
-
----
-
-### 8. 日期范围统计
-
-```bash
-python3 scripts/schedule_cli.py range <开始日期> <结束日期>
-```
-
-**输出示例**：
-```
-📅 2026-05-20 ~ 2026-05-22 作息汇总
-============================================================
-  2026-05-20: 睡眠7h 工作8h 娱乐2h 总17h
-  2026-05-21: 睡眠6h 工作6h 学习1h 娱乐3h 总16h
-  2026-05-22: 睡眠7h 工作4h 撸猫0h 娱乐1h 总12h
-```
-
----
-
-### 9. 数据库状态
-
-```bash
-python3 scripts/schedule_cli.py status
-```
-
-**输出示例**：
-```
-作息管家 数据库状态
-==================================================
-  数据库: /path/to/schedule_data.db
-  总记录数: 45
-  已记录天数: 3
-  日期范围: 2026-05-20 ~ 2026-05-22
-  最后记录: 2026-05-22 10:49 工作、看工作消息、优化skill
-```
-
----
-
-### 10. 查询计划作息（新增）
-
-```bash
-python3 scripts/schedule_cli.py query-plans <日期1,日期2,...>
-# 示例：查询单天
-python3 scripts/schedule_cli.py query-plans 2026-05-22
-# 示例：查询多天
-python3 scripts/schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22
-```
-
-**输出示例**：
-```
-============================================================
-📅 2026-05-22 计划作息
-============================================================
-  00:00 - 01:00  睡觉
-  01:00 - 02:00  (未规划)
-  ...
-  08:00 - 09:00  30min通勤(骑车)+30min工作
-  09:00 - 10:00  40min改bug+20min摸鱼
-  ...
-```
-
----
-
-### 11. 新增/更新计划作息（新增）
-
-```bash
-# 简单方式（只填非空小时，其他留空）
-python3 scripts/schedule_cli.py upsert-plan <日期> "睡觉" "" "" "" "" "" "" "通勤+工作" "工作"
-
-# JSON方式（推荐）
-python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉", "hour_8": "30min通勤+30min工作", "hour_9": "40min工作+20min摸鱼"}'
-```
-
-**效果**：
-- 日期不存在 → **插入**新计划
-- 日期已存在 → **更新**计划（只更新提供的字段，保留其他）
-- ⚠️ **不提供删除接口**
-
-**示例**：
-```bash
-# 新增今日计划
-python3 scripts/schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_0": "睡觉", "hour_8": "通勤", "hour_9": "工作"}'
-
-# 更新某天计划（只改hour_9，其他保留）
-python3 scripts/schedule_cli.py upsert-plan 2026-05-22 --json '{"hour_9": "开会+改bug"}'
+python3 scripts/schedule_cli.py help
 ```

@@ -29,33 +29,33 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 
 ## 功能速查
 
-| # | 唤醒词 | 功能 | CLI 命令 |
-|---|--------|------|----------|
-| 1 | 准备消息 | 获取待同步消息供AI分析 | `prepare-messages` |
-| 2 | 同步作息 | 完整同步流程（获取→分析→写入） | `prepare-messages` → AI → `add_record_full` |
-| 3 | 增量同步 | 从游标位置继续同步 | `prepare-messages`（自动取游标） |
-| 4 | 生成摘要 | 按分类汇总当日时间 | `summary <日期>` |
-| 5 | 汇总作息 | 日期范围汇总统计 | `range <开始> <结束>` |
-| 6 | 查作息 | 查看指定日期作息列表 | `list [日期]` |
-| 7 | 查作息详情 | 含AI推理过程的详细展示 | `detail [日期]` |
-| 8 | 查作息时间轴 | 24小时时间轴展示 | `timeline [日期]` |
-| 9 | 查作息报告 | list+summary+timeline综合报告 | `report [日期]` |
-| 10 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` |
-| 11 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` |
-| 12 | 查作息状态 | 记录数/天数/日期范围 | `status` |
-| 13 | 查计划 | 查询单日计划 | `query-plans <日期>` |
-| 14 | 查多日计划 | 查询多日计划 | `query-plans <日期1,日期2,...>` |
-| **15** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` |
-| **16** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` |
-| **17** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` |
-| **18** | **看计划** | 当天事件 + 飞书 event_id + last_synced_at | `list-events <日期>` |
-| **19** | **同步飞书** | diff 后逐个询问 create/update/delete | `feishu-resync <日期>` |
-| 20 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` |
-| 21 | 初始化数据库 | 创建三张数据表 | `init` |
-| 22 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` |
-| 23 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` |
+> **AI 使用约定**：用户说任何唤醒词后，先读"详见"列跳到"功能详细说明"对应章节，不要只看本表。本表只列功能 + CLI，详细执行流程、约束、飞书同步策略都在对应章节里。
 
-> **核心入口 #15「商量计划」**：用户说"商量计划/一起规划/规划明天/讨论下明天做啥" → AI 进入多轮对话 → 生成结构化 JSON → 写库 → 询问飞书同步。
+| # | 唤醒词 | 功能 | CLI 命令 | 详见 |
+|---|--------|------|----------|------|
+| 1 | 准备消息 | 获取待同步消息供AI分析 | `prepare-messages` | 详见 1. 同步作息 |
+| 2 | 同步作息 | 完整同步流程（获取→分析→写入） | `prepare-messages` → AI → `add_record_full` | 详见 1. 同步作息 |
+| 3 | 增量同步 | 从游标位置继续同步 | `prepare-messages`（自动取游标） | 详见 1. 同步作息 |
+| 4 | 生成摘要 | 按分类汇总当日时间 | `summary <日期>` | 详见 2. 生成摘要 |
+| 5 | 汇总作息 | 日期范围汇总统计 | `range <开始> <结束>` | 详见 2. 生成摘要 |
+| 6 | 查作息 | 查看指定日期作息列表 | `list [日期]` | 详见 3. 查询作息 |
+| 7 | 查作息详情 | 含AI推理过程的详细展示 | `detail [日期]` | 详见 3. 查询作息 |
+| 8 | 查作息时间轴 | 24小时时间轴展示 | `timeline [日期]` | 详见 3. 查询作息 |
+| 9 | 查作息报告 | list+summary+timeline综合报告 | `report [日期]` | 详见 3. 查询作息 |
+| 10 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
+| 11 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
+| 12 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
+| 13 | 查计划 | 查询单日计划 | `query-plans <日期>` | 详见 3. 查询作息 |
+| 14 | 查多日计划 | 查询多日计划 | `query-plans <日期1,日期2,...>` | 详见 3. 查询作息 |
+| **15** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` | **详见 4. 商量计划（核心入口）** |
+| **16** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` | **详见 5. 改计划** |
+| **17** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` | **详见 6. 删计划** |
+| **18** | **看计划** | 当天事件 + 飞书 event_id + last_synced_at | `list-events <日期>` | **详见 7. 看计划** |
+| **19** | **同步飞书** | diff 后逐个询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
+| 20 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
+| 21 | 初始化数据库 | 创建三张数据表 | `init` | — |
+| 22 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
+| 23 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | — |
 
 ---
 
@@ -187,25 +187,168 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ---
 
-### 4. 查询计划
+### 4. 商量计划（核心入口）
+
+**触发词**：商量计划 / 一起规划 / 规划明天 / 规划一天 / 规划后天 / 讨论计划
+
+**核心语义**：AI **必须先跟用户多轮对话**细化分钟级细节，**不能直接调 CLI 写库**。
+
+**执行流程**：
+1. **确认日期**：问用户"哪一天？"（明天 / 后天 / 具体日期）
+2. **拉取心愿清单**（仅当「备忘录」技能已加载时执行）
+   - 调用备忘录技能的"查心愿"唤醒词 → 拉到心愿列表
+   - 呈现给用户：
+     ```
+     📌 你心愿里有：
+      1. 减肥（#234，2026-06-01 建）
+      2. 读完《X》（#189，2026-05-15 建）
+      3. 学 Python（#201，2026-05-22 建）
+     ```
+   - **询问已完成的**：用户可能某些心愿已经做完了（不是"明天的计划"，是"已经完成"）
+     - 例：「以上有已经完成的吗？完成的帮我删掉 + 触发一次打卡」
+     - 用户标 1 条已完成 → AI 调用备忘录的"删心愿"+"记打卡"两个唤醒词
+   - **询问本次要推进的**：「本次计划要推进哪几条？」[编号 / 全选 / 跳过]
+   - 用户选 0-N 条 → 带入 Step 3
+3. **大块节奏**：问"上午/中午/下午/晚上大概做啥？"（4-5 段即可）
+   - 若用户从心愿里挑了 N 条 → AI 主动建议："心愿 X 安排在哪个时段？"
+4. **追问细节**：对每段追问具体时间 + 活动名
+   - 例：用户说"上午工作"→ AI 问"几点开始？几点结束？做什么？中途休息吗？"
+   - 例：用户说"中午吃饭"→ AI 问"几点？在家做饭还是外面吃？"
+5. **覆盖校验**：合并所有事件，确认覆盖 00:00~24:00（首段 00:00 起，末段 24:00 止，相邻事件 time_end = 下一条 time_start）
+6. **AI 整理为结构化 JSON 数组**，每条含：
+   ```json
+   {"time_start":"HH:MM","time_end":"HH:MM","title":"事件名","notes":"细节","category":"分类"}
+   ```
+   分类参考：分类清单.md
+7. **展示给用户确认**："我整理了 N 条事件，请确认/调整"
+8. **写入 DB**：
+   ```bash
+   # 推荐：从文件读（AI 写 plan.json 后调）
+   python3 scripts/schedule_cli.py upsert-plan-events <日期> --json @plan.json
+   # 或 stdin
+   cat plan.json | python3 scripts/schedule_cli.py upsert-plan-events <日期> --json -
+   ```
+9. **飞书询问**：CLI 自动检测本机 lark-cli：
+   - **已安装 + 已授权** → 询问"是否同步飞书日历？[Y/n]"
+   - **未安装 / 未授权** → 跳过，告知用户"装了飞书后能解锁：① 计划同步 ② 拆分钟级事件 ③ 双向 CRUD"
+10. 用户同意飞书同步 → 飞书侧 create/update/delete 自动跑（diff_and_sync 算法），feishu_event_id 回写 schedule_plans
+
+**硬约束**：
+- 联合区间必须 ⊇ [00:00, 24:00]（首段 time_start == "00:00"，末段 time_end == "24:00"，相邻衔接无重叠无空隙）
+- 24:00 在写飞书时自动转换为次日 00:00（飞书 ISO 8601 不接受 24:00）
+
+**失败处理**：
+- 24h 覆盖校验失败 → 提示具体哪条不连续/越界 → 重新生成
+- 飞书同步失败 → DB 写入不回滚 → 飞书侧 list-events 可看到没同步的项
+
+---
+
+### 5. 改计划
+
+**触发词**：改计划 / 修改一个日程 / 改这个
+
+**执行流程**：
+1. **定位事件**：先调 `list-events <日期>` 或 `query-plans <日期>` 列出当日事件 + ID
+2. **问用户改哪条** + 改什么字段（title / notes / category / time_start / time_end）
+3. **DB 写入**：
+   ```bash
+   python3 scripts/schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z] [--time-start HH:MM] [--time-end HH:MM]
+   ```
+4. **飞书同步判断**（关键）：
+   - 若该事件**未绑飞书**（`feishu_event_id` 为 NULL）→ 询问"要同步创建飞书事件吗？"
+   - 若该事件**已绑飞书** → 询问"飞书那边也要改吗？"
+5. **改时段的特殊处理**：time_start / time_end 改了 → 飞书日历"无改时间按钮" → 拆为**删旧 event_id + 建新 event_id**，**回写新 feishu_event_id** 到 schedule_plans
+
+**约束**：
+- 单次只能改一个事件（要改多个 → 多次 update-event）
+- 改时段 = 飞书必删旧建新（不是 update），CLI 自动处理
+
+---
+
+### 6. 删计划
+
+**触发词**：删计划 / 不要这条了 / 这条不要
+
+**执行流程**：
+1. **定位事件**：先 `list-events <日期>` 让用户确认要删哪条
+2. **DB 软删**（is_active=0，不物理删除）：
+   ```bash
+   python3 scripts/schedule_cli.py deactivate-event <id>
+   ```
+3. **飞书询问**：若该事件已绑飞书 event_id → 询问"飞书那边也删吗？"，yes → 调 `feishu_delete_event` 并清空本地 feishu_event_id
+4. **恢复**：操作规范禁止 DELETE。如需恢复，手动 `UPDATE schedule_plans SET is_active=1`
+
+**约束**：
+- 软删不在 list-events 默认查询结果里（要查 include_inactive=True）
+- list-events 显示 ✗ 前缀的项
+
+---
+
+### 7. 看计划
+
+**触发词**：看计划 / 列出今日计划 / 看一天的计划
+
+**执行流程**：
+```bash
+python3 scripts/schedule_cli.py list-events <日期>
+```
+
+**输出**：每个事件的 id / time_start-end / title / notes / feishu_event_id / last_synced_at
+- ✗ 前缀 = 已软删
+- 末尾汇总：活跃 N 条 / 停用 N 条
+
+**特点**：一次看全 DB 状态 + 飞书同步状态，AI 看到 feishu_event_id 为空 → 该事件未同步过飞书；为非空 → 已同步。
+
+---
+
+### 8. 同步飞书
+
+**触发词**：同步飞书 / 重同步到飞书 / 飞书同步
+
+**执行流程**：
+1. **能力探测**：调 `is_feishu_available()`（缓存 5 分钟）
+   - 不全可用 → 报错退出，告诉用户安装/授权方法
+2. **拉两侧数据**：
+   - DB 端：当日活跃 events
+   - 飞书端：`+search-event --start <日期> --end <日期> --query "作息管家自动同步"`
+3. **diff**：按 (time_start, time_end) 配对
+   - DB 有 + 飞书无 → create
+   - DB 有 + 飞书有 + title/description 变了 → update
+   - DB 无 + 飞书有 → delete
+4. **逐个询问**（决策 C）：每条 create/update/delete 单独 [Y/n]
+5. **执行 + 回写**：yes → 调对应飞书 API，feishu_event_id + last_synced_at 回写
+
+**触发场景**：
+- 之前跳过同步想补
+- 飞书手改了想重新对齐
+- 同步失败后重试
 
 ```bash
-python3 scripts/schedule_cli.py query-plans <日期1,日期2,...>
-# 示例：python3 scripts/schedule_cli.py query-plans 2026-05-22
+python3 scripts/schedule_cli.py feishu-resync <日期>
 ```
 
 ---
 
-### 5. 设置计划
+### 9. 飞书探测
 
+**触发词**：飞书探测 / 飞书能力探测 / 检查飞书
+
+**执行流程**：
 ```bash
-# JSON方式
-python3 scripts/schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉", "hour_8": "30min通勤+30min工作"}'
+python3 scripts/feishu_sync.py  # self-check 模式
 ```
 
-- 日期不存在 → 插入
-- 日期已存在 → 更新（保留未填的小时）
-- 不提供删除接口
+**三档探测**：
+1. **lark-cli 安装**：PATH 查找 + 候选路径回退
+2. **已认证**：`lark-cli auth status` 看 user/bot 至少一个 status=ready
+3. **日历可写**：`+agenda` 拉到今日议程视为至少有读权限
+
+**返回**：`FeishuStatus` 对象，含 `cli_installed / authenticated / calendar_writable / tier`（full/partial/missing）
+
+**体验**：
+- `full` → 询问"是否同步飞书？"
+- `partial` → 跳过，提示"lark-cli auth login"
+- `missing` → 跳过，提示安装价值（**不主动帮装**，给一行 `npm i -g lark-cli` 用户自决）
 
 ---
 

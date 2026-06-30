@@ -65,7 +65,8 @@ def error_json(message):
 # ---- 笔记操作 ----
 
 ALLOWED_CATEGORIES = {"备忘", "心愿", "打卡", "情绪日记"}
-ALLOWED_SUB_CATEGORIES = {"社交", "工作", "学习", "灵感", "记账", "成就"}
+# sub_category 是自由文本字段，不设白名单
+# AI 智能从用户原话推断 1 个 2 字，推断不出则 NULL
 
 def _resolve_media_path(media_arg):
     """处理媒体路径：必须以 MEMO_MEDIA_DIR 开头，存储时去掉前缀"""
@@ -84,15 +85,11 @@ def add_note(args):
     if not content or not content.strip():
         error_json("笔记内容不能为空")
     category = args.category or "备忘"
-    # ---- 分类白名单校验 ----
+    # ---- 顶层分类白名单校验 ----
     if category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
-    # ---- 子分类校验 ----
+    # ---- sub_category：自由文本，不做白名单校验，AI 智能推断 1 个 2 字 ----
     sub_category = args.sub_category
-    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
-        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
-    if sub_category is not None and category != "备忘":
-        error_json(f"只有 category=备忘 时才能设 sub_category，当前 category={category}")
     media_path = _resolve_media_path(args.media)
     conn = get_conn()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -195,8 +192,7 @@ def update_note(args):
     sub_category = getattr(args, 'sub_category', None)
     if category is not None and category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
-    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
-        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
+    # sub_category：自由文本，不做白名单校验
     media_path = _resolve_media_path(args.media) if args.media is not None else None
     reminder_id = args.reminder_id
     conn = get_conn()
@@ -213,11 +209,7 @@ def update_note(args):
             updates.append("category = ?")
             params.append(category)
         if sub_category is not None:
-            # 检查 category 兼容
-            current = conn.execute("SELECT category FROM notes WHERE id = ?", (note_id,)).fetchone()
-            effective_cat = category if category else current["category"]
-            if effective_cat != "备忘":
-                error_json(f"只有 category=备忘 时才能设 sub_category，当前 effective_category={effective_cat}")
+            # sub_category 自由文本,适用于所有 category,不再校验 effective_cat == "备忘"
             updates.append("sub_category = ?")
             params.append(sub_category)
         if media_path is not None:
@@ -544,16 +536,17 @@ def update_category(args):
     if category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
     conn = get_conn()
-    note = conn.execute("SELECT id, category FROM notes WHERE id = ?", (note_id,)).fetchone()
+    note = conn.execute("SELECT id, category, sub_category FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
         error_json(f"笔记不存在: id={note_id}")
     try:
+        # sub_category 是内容维度的二阶属性,改顶层分类不联动清空
         conn.execute(
-            "UPDATE notes SET category = ?, sub_category = NULL, updated_at = datetime('now','localtime') WHERE id = ?",
+            "UPDATE notes SET category = ?, updated_at = datetime('now','localtime') WHERE id = ?",
             (category, note_id)
         )
         conn.commit()
-        output_json({"id": note_id, "category": category, "sub_category": None}, message="分类已更新")
+        output_json({"id": note_id, "category": category, "sub_category": note["sub_category"]}, message="分类已更新")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -561,7 +554,7 @@ def update_category(args):
 
 
 def update_sub_category(args):
-    """单独修改 sub_category（不动 category）。要求 category 必须是 '备忘'。"""
+    """单独修改 sub_category（不动 category）。适用于所有 category（sub_category 是自由文本）。"""
     note_id = args.id
     if note_id <= 0:
         error_json("笔记 ID 必须是正整数")
@@ -569,14 +562,11 @@ def update_sub_category(args):
     # 允许清除（传空字符串或 "null" 或 NULL）
     if sub_category in ("", "null", "NULL", "None"):
         sub_category = None
-    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
-        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
+    # sub_category：自由文本，不做白名单校验（适用于所有 category）
     conn = get_conn()
-    note = conn.execute("SELECT id, category FROM notes WHERE id = ?", (note_id,)).fetchone()
+    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
         error_json(f"笔记不存在: id={note_id}")
-    if note["category"] != "备忘":
-        error_json(f"只有 category=备忘 时才能设 sub_category，当前 category={note['category']}")
     try:
         conn.execute(
             "UPDATE notes SET sub_category = ?, updated_at = datetime('now','localtime') WHERE id = ?",

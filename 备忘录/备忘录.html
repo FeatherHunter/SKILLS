@@ -509,25 +509,16 @@
         <tr><td><code>打卡</code></td><td>行为记录（已完成的事情）</td></tr>
         <tr><td><code>情绪日记</code></td><td>情绪状态记录</td></tr>
       </table>
-      <h4>子分类（仅备忘类，6 种）</h4>
-      <table class="detail-table">
-        <tr><th>子分类</th><th>语义</th></tr>
-        <tr><td><code>社交</code></td><td>人际关系相关</td></tr>
-        <tr><td><code>工作</code></td><td>工作任务/资料</td></tr>
-        <tr><td><code>学习</code></td><td>学习笔记/课程</td></tr>
-        <tr><td><code>灵感</code></td><td>灵感/想法</td></tr>
-        <tr><td><code>记账</code></td><td>财务/购物相关</td></tr>
-        <tr><td><code>成就</code></td><td>成就/里程碑</td></tr>
-      </table>
+      <h4>子分类（自由文本字段）</h4>
+      <p><b>1 个，2 字</b>。AI 智能从用户原话推断内容维度（如"工作"/"学习"/"跑步"/"社交"等），<b>推断不出 → NULL</b>。适用于所有顶层分类，不预设任何白名单。</p>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">校验 content 非空</li>
         <li data-step="2">校验顶层分类在白名单内（备忘/心愿/打卡/情绪日记，默认 备忘）</li>
-        <li data-step="3">校验子分类在白名单内（社交/工作/学习/灵感/记账/成就）</li>
-        <li data-step="4">校验子分类规则：只有 category=备忘 时才能设 sub_category</li>
-        <li data-step="5">校验 media_path 以 MEMO_MEDIA_DIR 开头，去掉前缀存储相对路径</li>
-        <li data-step="6">INSERT INTO <code>notes</code>（content, category, sub_category, media_path, created_at, updated_at）</li>
-        <li data-step="7">触发器 <code>notes_ai</code> 自动同步到 <code>notes_fts</code> 虚拟表</li>
+        <li data-step="3">如 AI 推断出 sub_category（≤2 字），写入；否则 NULL（不做白名单校验）</li>
+        <li data-step="4">校验 media_path 以 MEMO_MEDIA_DIR 开头，去掉前缀存储相对路径</li>
+        <li data-step="5">INSERT INTO <code>notes</code>（content, category, sub_category, media_path, created_at, updated_at）</li>
+        <li data-step="6">触发器 <code>notes_ai</code> 自动同步到 <code>notes_fts</code> 虚拟表</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
@@ -543,7 +534,7 @@
       <ul class="flow-steps">
         <li data-step="1">从唤醒词提取顶层分类（心愿/打卡/情绪日记）</li>
         <li data-step="2">跳过分类确认，直接执行 <code>add -c 顶层分类</code></li>
-        <li data-step="3">不写 sub_category（心愿/打卡/情绪日记 不支持子分类）</li>
+        <li data-step="3">sub_category 仍然可写（自由文本，AI 推断 1 个 2 字）</li>
       </ul>
     </div>
   </div>
@@ -568,7 +559,7 @@
         <tr><th>过滤</th><th>说明</th><th>示例</th></tr>
         <tr><td>关键词</td><td>FTS5 全文搜索</td><td>"跑步"</td></tr>
         <tr><td>-c 顶层分类</td><td>4 大类之一</td><td>-c 备忘</td></tr>
-        <tr><td>-s 子分类</td><td>6 子类之一（仅备忘类有效）</td><td>-s 学习</td></tr>
+        <tr><td>-s 子分类</td><td>自由文本子分类（AI 推断 1 个 2 字，适用于所有 category）</td><td>-s 学习</td></tr>
         <tr><td>-l 数量</td><td>返回数量限制</td><td>-l 10</td></tr>
       </table>
       <h4>执行流程</h4>
@@ -613,11 +604,10 @@
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
         <li data-step="2">校验顶层分类白名单（如提供）</li>
-        <li data-step="3">校验子分类白名单（如提供）</li>
-        <li data-step="4">校验子分类规则：effective category 必须是"备忘"</li>
-        <li data-step="5">拼接动态 SET 子句（只更新提供的字段）</li>
-        <li data-step="6">UPDATE <code>notes</code> SET ... WHERE id = ?，同时更新 updated_at</li>
-        <li data-step="7">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code>（先删旧、再插新）</li>
+        <li data-step="3">校验子分类为自由文本（如提供，AI 推断 ≤2 字即可）</li>
+        <li data-step="4">拼接动态 SET 子句（只更新提供的字段）</li>
+        <li data-step="5">UPDATE <code>notes</code> SET ... WHERE id = ?，同时更新 updated_at</li>
+        <li data-step="6">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code>（先删旧、再插新）</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
@@ -784,7 +774,7 @@
   <!-- 编辑笔记顶层分类 -->
   <div class="feature" data-keywords="备忘改分类 update-category 顶层分类 修改 改分类">
     <div class="feature-name">编辑笔记顶层分类</div>
-    <div class="feature-desc">单独修改笔记的顶层分类（备忘/心愿/打卡/情绪日记）<span class="side-effect se-cascade">自动清空 sub_category</span></div>
+    <div class="feature-desc">单独修改笔记的顶层分类（备忘/心愿/打卡/情绪日记）<span class="side-effect">sub_category 保留</span></div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">备忘改分类</button>
     </div>
@@ -796,15 +786,15 @@
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
         <li data-step="2">校验顶层分类在白名单内（备忘/心愿/打卡/情绪日记）</li>
-        <li data-step="3">UPDATE <code>notes</code> SET category = ?, <b>sub_category = NULL</b>, updated_at = now WHERE id = ?</li>
+        <li data-step="3">UPDATE <code>notes</code> SET category = ?, updated_at = now WHERE id = ?（sub_category <b>保留</b>）</li>
         <li data-step="4">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code></li>
       </ul>
       <h4>副作用</h4>
-      <p><b>自动清空 sub_category</b>：因为 sub_category 只对 category=备忘 有意义，改变顶层分类时自动清空。</p>
+      <p><b>sub_category 保留</b>：sub_category 是内容维度的二阶属性（AI 推断），与顶层分类独立。改 category 不会清空 sub_category（与旧版本不同）。</p>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
-        <tr><td><code>notes</code></td><td>category, sub_category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>notes</code></td><td>category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
         <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器 DELETE+INSERT</span></td></tr>
       </table>
     </div>
@@ -813,7 +803,7 @@
   <!-- 编辑笔记子分类 -->
   <div class="feature" data-keywords="备忘改子分类 update-sub-category 子分类 修改 改子分类">
     <div class="feature-name">编辑笔记子分类</div>
-    <div class="feature-desc">单独修改备忘类笔记的子分类（社交/工作/学习/灵感/记账/成就）</div>
+    <div class="feature-desc">单独修改笔记的子分类（自由文本，AI 推断 1 个 2 字，适用于所有 category）</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">备忘改子分类</button>
     </div>
@@ -824,18 +814,17 @@
       <h4>参数</h4>
       <table class="detail-table">
         <tr><th>参数</th><th>说明</th></tr>
-        <tr><td><code>社交 / 工作 / 学习 / 灵感 / 记账 / 成就</code></td><td>6 个有效子分类之一</td></tr>
+        <tr><td><code>自由文本（1 个 2 字）</code></td><td>AI 智能推断的内容维度（如"工作"/"学习"/"跑步"等任意 2 字）</td></tr>
         <tr><td><code>null / ""</code></td><td>清除子分类（恢复 NULL）</td></tr>
       </table>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
-        <li data-step="2">校验子分类白名单（如提供）</li>
-        <li data-step="3">校验 <b>note.category 必须 == "备忘"</b>，否则报错</li>
-        <li data-step="4">UPDATE <code>notes</code> SET sub_category = ?, updated_at = now WHERE id = ?</li>
+        <li data-step="2">不校验 category（适用于所有 category）</li>
+        <li data-step="3">UPDATE <code>notes</code> SET sub_category = ?, updated_at = now WHERE id = ?</li>
       </ul>
-      <h4>限制</h4>
-      <p>只对 <b>category=备忘</b> 的 note 生效。其他类别调用会报错。</p>
+      <h4>适用性</h4>
+      <p>适用于 <b>所有 category</b>（备忘/心愿/打卡/情绪日记），因为 sub_category 是内容维度的二阶属性（AI 自由文本推断）。</p>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
@@ -1230,7 +1219,7 @@ echo 'export MEMO_FEISHU_USER_OPEN_ID=ou_xxx' >> ~/.bashrc</pre>
         <tr><td><code>content</code></td><td>TEXT NOT NULL</td><td>笔记内容</td></tr>
         <tr><td><code>summary</code></td><td>TEXT</td><td>AI 摘要，可空</td></tr>
         <tr><td><code>category</code></td><td>TEXT</td><td><b>顶层分类</b>：备忘/心愿/打卡/情绪日记（默认 备忘）</td></tr>
-        <tr><td><code>sub_category</code></td><td>TEXT</td><td><b>子分类</b>（仅备忘类）：社交/工作/学习/灵感/记账/成就（可空）</td></tr>
+        <tr><td><code>sub_category</code></td><td>TEXT</td><td><b>子分类</b>（自由文本字段）：AI 智能从用户原话推断 1 个 2 字（如"工作"/"学习"/"跑步"等任意值），适用于所有 category；推断不出 → NULL，不预设白名单</td></tr>
         <tr><td><code>media_path</code></td><td>TEXT</td><td>附件相对路径</td></tr>
         <tr><td><code>reminder_id</code></td><td>INTEGER</td><td>关联提醒 ID（提醒完成后可追溯来源）</td></tr>
         <tr><td><code>feishu_task_guid</code></td><td>TEXT</td><td>飞书 task GUID（心愿同步飞书时记录，用于反向查找）</td></tr>

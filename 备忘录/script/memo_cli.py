@@ -64,7 +64,8 @@ def error_json(message):
 
 # ---- 笔记操作 ----
 
-ALLOWED_CATEGORIES = {"社交", "心愿", "灵感", "成就", "工作", "学习", "记账", "打卡", "情绪", "general"}
+ALLOWED_CATEGORIES = {"备忘", "心愿", "打卡", "情绪日记"}
+ALLOWED_SUB_CATEGORIES = {"社交", "工作", "学习", "灵感", "记账", "成就"}
 
 def _resolve_media_path(media_arg):
     """处理媒体路径：必须以 MEMO_MEDIA_DIR 开头，存储时去掉前缀"""
@@ -82,21 +83,27 @@ def add_note(args):
     content = args.content
     if not content or not content.strip():
         error_json("笔记内容不能为空")
-    category = args.category or "general"
+    category = args.category or "备忘"
     # ---- 分类白名单校验 ----
     if category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    # ---- 子分类校验 ----
+    sub_category = args.sub_category
+    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
+        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
+    if sub_category is not None and category != "备忘":
+        error_json(f"只有 category=备忘 时才能设 sub_category，当前 category={category}")
     media_path = _resolve_media_path(args.media)
     conn = get_conn()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         cur = conn.execute(
-            "INSERT INTO notes (content, category, media_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (content.strip(), category, media_path, now, now)
+            "INSERT INTO notes (content, category, sub_category, media_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (content.strip(), category, sub_category, media_path, now, now)
         )
         note_id = cur.lastrowid
         conn.commit()
-        output_json({"id": note_id, "content": content.strip(), "category": category}, message="笔记已添加")
+        output_json({"id": note_id, "content": content.strip(), "category": category, "sub_category": sub_category}, message="笔记已添加")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -105,6 +112,7 @@ def add_note(args):
 def search_notes(args):
     keyword = args.keyword
     category = args.category
+    sub_category = getattr(args, 'sub_category', None)
     limit = args.limit if args.limit is not None else 20
     if limit <= 0:
         error_json("limit 必须是正整数")
@@ -121,6 +129,9 @@ def search_notes(args):
             if category:
                 sql += " AND n.category = ?"
                 params.append(category)
+            if sub_category:
+                sql += " AND n.sub_category = ?"
+                params.append(sub_category)
             sql += " ORDER BY n.updated_at DESC LIMIT ?"
             params.append(limit)
             cur = conn.execute(sql, params)
@@ -131,6 +142,9 @@ def search_notes(args):
             if category:
                 sql += " AND category = ?"
                 params.append(category)
+            if sub_category:
+                sql += " AND sub_category = ?"
+                params.append(sub_category)
             sql += " ORDER BY updated_at DESC LIMIT ?"
             params.append(limit)
             cur = conn.execute(sql, params)
@@ -147,8 +161,11 @@ def update_note(args):
         error_json("笔记 ID 必须是正整数")
     content = args.content
     category = args.category
+    sub_category = getattr(args, 'sub_category', None)
     if category is not None and category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
+        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
     media_path = _resolve_media_path(args.media) if args.media is not None else None
     reminder_id = args.reminder_id
     conn = get_conn()
@@ -164,6 +181,14 @@ def update_note(args):
         if category is not None:
             updates.append("category = ?")
             params.append(category)
+        if sub_category is not None:
+            # 检查 category 兼容
+            current = conn.execute("SELECT category FROM notes WHERE id = ?", (note_id,)).fetchone()
+            effective_cat = category if category else current["category"]
+            if effective_cat != "备忘":
+                error_json(f"只有 category=备忘 时才能设 sub_category，当前 effective_category={effective_cat}")
+            updates.append("sub_category = ?")
+            params.append(sub_category)
         if media_path is not None:
             updates.append("media_path = ?")
             params.append(media_path)
@@ -171,7 +196,7 @@ def update_note(args):
             updates.append("reminder_id = ?")
             params.append(reminder_id)
         if not updates:
-            error_json("至少需要提供一个更新字段: --content / --category / --media / --reminder-id")
+            error_json("至少需要提供一个更新字段: --content / --category / --sub-category / --media / --reminder-id")
         updates.append("updated_at = datetime('now','localtime')")
         params.append(note_id)
         conn.execute(f"UPDATE notes SET {', '.join(updates)} WHERE id = ?", params)
@@ -288,7 +313,7 @@ def complete_wish(args):
 
     行为：
       1. 找到 category='心愿' 的 note（闸门：只处理心愿）
-      2. DELETE 该心愿 note（关联 reminders 通过 ON DELETE CASCADE 自动删除）
+      2. DELETE 该心愿 note（关联 reminders 已手动先删，外键 ON DELETE NO ACTION 不阻塞）
       3. INSERT 一条 category='打卡' 的新 note，content 默认拷贝原心愿
       4. 整个过程在单个事务里，失败回滚
 
@@ -336,6 +361,22 @@ def complete_wish(args):
             "created_checkin_id": checkin_id,
             "checkin_content": checkin_content,
         }, message=f"✓ 心愿 #{note_id} 已完成，打卡 #{checkin_id} 已记录")
+
+        # 飞书同步 hook（第一性：本地优先，飞书失败不影响本地）
+        # 仅当 MEMO_FEISHU_SYNC=enabled 时启用（默认 disabled 防误操作）
+        try:
+            import os
+            if os.environ.get("MEMO_FEISHU_SYNC", "disabled") == "enabled":
+                # 延迟 import 避免循环依赖
+                from feishu_sync import complete_wish_sync
+                sync_result = complete_wish_sync(note_id)
+                # 把同步结果附加到 output（不在 message 里，由调用方读 data）
+                # 但 output_json 已经退出进程，重新输出
+                # 改用 print 单独一行
+                print(json.dumps({"feishu_sync": sync_result}, ensure_ascii=False), file=sys.stderr)
+        except Exception as e:
+            # 飞书同步失败不抛错（降级）
+            print(json.dumps({"feishu_sync": {"synced": False, "reason": "exception", "error": str(e)}}, ensure_ascii=False), file=sys.stderr)
     except Exception as e:
         try:
             conn.rollback()
@@ -405,16 +446,46 @@ def update_category(args):
     if category not in ALLOWED_CATEGORIES:
         error_json(f"无效分类: {category}，允许的分类: {', '.join(sorted(ALLOWED_CATEGORIES))}")
     conn = get_conn()
-    note = conn.execute("SELECT id FROM notes WHERE id = ?", (note_id,)).fetchone()
+    note = conn.execute("SELECT id, category FROM notes WHERE id = ?", (note_id,)).fetchone()
     if not note:
         error_json(f"笔记不存在: id={note_id}")
     try:
         conn.execute(
-            "UPDATE notes SET category = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+            "UPDATE notes SET category = ?, sub_category = NULL, updated_at = datetime('now','localtime') WHERE id = ?",
             (category, note_id)
         )
         conn.commit()
-        output_json({"id": note_id, "category": category}, message="分类已更新")
+        output_json({"id": note_id, "category": category, "sub_category": None}, message="分类已更新")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+
+def update_sub_category(args):
+    """单独修改 sub_category（不动 category）。要求 category 必须是 '备忘'。"""
+    note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
+    sub_category = args.sub_category
+    # 允许清除（传空字符串或 "null" 或 NULL）
+    if sub_category in ("", "null", "NULL", "None"):
+        sub_category = None
+    if sub_category is not None and sub_category not in ALLOWED_SUB_CATEGORIES:
+        error_json(f"无效子分类: {sub_category}，允许的子分类: {', '.join(sorted(ALLOWED_SUB_CATEGORIES))}")
+    conn = get_conn()
+    note = conn.execute("SELECT id, category FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if not note:
+        error_json(f"笔记不存在: id={note_id}")
+    if note["category"] != "备忘":
+        error_json(f"只有 category=备忘 时才能设 sub_category，当前 category={note['category']}")
+    try:
+        conn.execute(
+            "UPDATE notes SET sub_category = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+            (sub_category, note_id)
+        )
+        conn.commit()
+        output_json({"id": note_id, "sub_category": sub_category}, message="子分类已更新")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -914,13 +985,15 @@ def main():
     # add
     p_add = sub.add_parser("add")
     p_add.add_argument("content")
-    p_add.add_argument("--category", "-c")
+    p_add.add_argument("--category", "-c", help="顶层分类：备忘/心愿/打卡/情绪日记（默认 备忘）")
+    p_add.add_argument("--sub-category", "-s", help="备忘内部分类：社交/工作/学习/灵感/记账/成就")
     p_add.add_argument("--media", "-m")
 
     # search
     p_search = sub.add_parser("search")
     p_search.add_argument("keyword", nargs="?", default="")
-    p_search.add_argument("--category", "-c")
+    p_search.add_argument("--category", "-c", help="顶层分类过滤")
+    p_search.add_argument("--sub-category", "-s", help="子分类过滤")
     p_search.add_argument("--limit", "-l", type=int)
 
     # update
@@ -928,6 +1001,7 @@ def main():
     p_update.add_argument("id", type=int)
     p_update.add_argument("--content")
     p_update.add_argument("--category", "-c")
+    p_update.add_argument("--sub-category", "-s")
     p_update.add_argument("--media", "-m")
     p_update.add_argument("--reminder-id", type=int)
 
@@ -962,6 +1036,11 @@ def main():
     p_cat = sub.add_parser("update-category")
     p_cat.add_argument("id", type=int)
     p_cat.add_argument("category")
+
+    # update sub-category
+    p_subcat = sub.add_parser("update-sub-category")
+    p_subcat.add_argument("id", type=int)
+    p_subcat.add_argument("sub_category")
 
     # reminder add
     p_remind = sub.add_parser("remind")
@@ -1004,6 +1083,8 @@ def main():
         search_by_date(args)
     elif args.command == "update-category":
         update_category(args)
+    elif args.command == "update-sub-category":
+        update_sub_category(args)
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

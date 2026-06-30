@@ -19,7 +19,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER | 主键 |
-| note_id | INTEGER | 关联笔记ID，外键（ON DELETE CASCADE） |
+| note_id | INTEGER | 关联笔记ID，外键（ON DELETE NO ACTION，删除时手动级联） |
 | remind_at | TEXT | 一次性提醒时间 |
 | repeat_type | TEXT | 重复类型：none/daily/weekly/monthly/yearly |
 | repeat_rule | TEXT | 重复规则，格式见下 |

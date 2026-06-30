@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS notes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     content     TEXT NOT NULL,
     summary     TEXT,                     -- AI生成的短摘要，用于列表预览
-    category    TEXT DEFAULT 'general',   -- 用户自定义分类：social, wish, inspiration 等
+    category    TEXT DEFAULT '备忘',       -- 顶层功能分类：备忘/心愿/打卡/情绪日记
+    sub_category TEXT,                    -- 备忘内部分类：社交/工作/学习/灵感/记账/成就（仅 category=备忘 时用）
     media_path  TEXT,                     -- 附件相对路径，如 media/20260522_abc.jpg
     reminder_id INTEGER,                  -- 关联提醒ID（打卡可追溯来源）
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
@@ -52,7 +53,9 @@ CREATE TABLE IF NOT EXISTS reminders (
     notified_at TEXT,                            -- 上次通知时间
     content     TEXT,                            -- 提醒内容（可不同于 notes.content，提醒独有）
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
-    FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+    -- NO ACTION（不是 CASCADE）：删除 note 前必须先手动删 reminders
+    -- 代码负责手动级联（见 memo_cli.py delete_note --with-reminders 和 complete_wish）
+    FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE NO ACTION
 );
 
 -- 索引

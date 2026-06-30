@@ -486,65 +486,96 @@
   <div class="module-title">笔记管理</div>
 
   <!-- 添加笔记 -->
-  <div class="feature" data-keywords="记备忘 记心愿 记打卡 记情绪 add 添加 笔记 创建">
+  <div class="feature" data-keywords="记备忘 记心愿 记打卡 记情绪日记 add 添加 笔记 创建">
     <div class="feature-name">添加笔记</div>
-    <div class="feature-desc">记录一条新备忘，支持分类和媒体附件</div>
+    <div class="feature-desc">记录一条新备忘，支持顶层分类 + 子分类 + 媒体附件</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">记备忘</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">记心愿</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">记打卡</button>
-      <button class="trigger-tag" onclick="toggleDetail(this)">记情绪</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">记情绪日记</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" -c 分类</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [-m 媒体]</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span></pre>
+      <h4>顶层分类（4 种）</h4>
+      <table class="detail-table">
+        <tr><th>分类</th><th>语义</th></tr>
+        <tr><td><code>备忘</code></td><td>想到什么记什么（默认）</td></tr>
+        <tr><td><code>心愿</code></td><td>任务/待办（可被 complete-wish）</td></tr>
+        <tr><td><code>打卡</code></td><td>行为记录（已完成的事情）</td></tr>
+        <tr><td><code>情绪日记</code></td><td>情绪状态记录</td></tr>
+      </table>
+      <h4>子分类（仅备忘类，6 种）</h4>
+      <table class="detail-table">
+        <tr><th>子分类</th><th>语义</th></tr>
+        <tr><td><code>社交</code></td><td>人际关系相关</td></tr>
+        <tr><td><code>工作</code></td><td>工作任务/资料</td></tr>
+        <tr><td><code>学习</code></td><td>学习笔记/课程</td></tr>
+        <tr><td><code>灵感</code></td><td>灵感/想法</td></tr>
+        <tr><td><code>记账</code></td><td>财务/购物相关</td></tr>
+        <tr><td><code>成就</code></td><td>成就/里程碑</td></tr>
+      </table>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">校验 content 非空</li>
-        <li data-step="2">校验 category 在白名单内（社交/心愿/灵感/成就/工作/学习/记账/打卡/情绪/general）</li>
-        <li data-step="3">校验 media_path 以 MEMO_MEDIA_DIR 开头，去掉前缀存储相对路径</li>
-        <li data-step="4">INSERT INTO <code>notes</code>（content, category, media_path, created_at, updated_at）</li>
-        <li data-step="5">触发器 <code>notes_ai</code> 自动同步到 <code>notes_fts</code> 虚拟表</li>
+        <li data-step="2">校验顶层分类在白名单内（备忘/心愿/打卡/情绪日记，默认 备忘）</li>
+        <li data-step="3">校验子分类在白名单内（社交/工作/学习/灵感/记账/成就）</li>
+        <li data-step="4">校验子分类规则：只有 category=备忘 时才能设 sub_category</li>
+        <li data-step="5">校验 media_path 以 MEMO_MEDIA_DIR 开头，去掉前缀存储相对路径</li>
+        <li data-step="6">INSERT INTO <code>notes</code>（content, category, sub_category, media_path, created_at, updated_at）</li>
+        <li data-step="7">触发器 <code>notes_ai</code> 自动同步到 <code>notes_fts</code> 虚拟表</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
-        <tr><td><code>notes</code></td><td>content, category, media_path, created_at, updated_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+        <tr><td><code>notes</code></td><td>content, category, sub_category, media_path, created_at, updated_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
         <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器同步</span></td></tr>
       </table>
       <h4>AI 交互规范</h4>
       <p>添加前必须先问用户确认分类，不得直接使用默认分类。示例：用户说「去医院」→ AI 问「工作还是心愿？」→ 用户选 → 写入。</p>
       <h4>媒体附件</h4>
       <p>使用 <code>--media &lt;文件名&gt;</code> 附加图片/音频/视频，文件存储在 <code>MEMO_MEDIA_DIR/</code> 目录下。</p>
-      <h4>子唤醒词流程（记心愿/记打卡/记情绪）</h4>
+      <h4>子唤醒词流程（记心愿/记打卡/记情绪日记）</h4>
       <ul class="flow-steps">
-        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
-        <li data-step="2">跳过分类确认，直接执行 <code>add -c 分类</code></li>
+        <li data-step="1">从唤醒词提取顶层分类（心愿/打卡/情绪日记）</li>
+        <li data-step="2">跳过分类确认，直接执行 <code>add -c 顶层分类</code></li>
+        <li data-step="3">不写 sub_category（心愿/打卡/情绪日记 不支持子分类）</li>
       </ul>
     </div>
   </div>
 
   <!-- 搜索笔记 -->
-  <div class="feature" data-keywords="搜备忘 查备忘 查心愿 查打卡 查情绪 search 搜索 查找 关键词 全文">
+  <div class="feature" data-keywords="搜备忘 查备忘 查心愿 查打卡 查情绪日记 search 搜索 查找 关键词 全文 子分类">
     <div class="feature-name">搜索笔记</div>
-    <div class="feature-desc">按关键词全文搜索，支持分类过滤</div>
+    <div class="feature-desc">按关键词全文搜索，支持顶层分类 + 子分类过滤</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">搜备忘</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">查备忘</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">查心愿</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">查打卡</button>
-      <button class="trigger-tag" onclick="toggleDetail(this)">查情绪</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查情绪日记</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py search "关键词" -c 分类</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [-l 数量]</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py search</span> <span class="hl-val">"关键词"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-l</span> <span class="hl-val">数量</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py search</span> <span class="hl-val">"关键词"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-l</span> <span class="hl-val">数量</span></pre>
+      <h4>过滤维度</h4>
+      <table class="detail-table">
+        <tr><th>过滤</th><th>说明</th><th>示例</th></tr>
+        <tr><td>关键词</td><td>FTS5 全文搜索</td><td>"跑步"</td></tr>
+        <tr><td>-c 顶层分类</td><td>4 大类之一</td><td>-c 备忘</td></tr>
+        <tr><td>-s 子分类</td><td>6 子类之一（仅备忘类有效）</td><td>-s 学习</td></tr>
+        <tr><td>-l 数量</td><td>返回数量限制</td><td>-l 10</td></tr>
+      </table>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">有关键词 → 使用 FTS5 全文搜索 <code>notes_fts MATCH ?</code>，JOIN notes 表</li>
-        <li data-step="2">无关键词 → 直接查 <code>notes</code> 表，按分类过滤</li>
-        <li data-step="3">按 updated_at DESC 排序，limit 截断（默认 20）</li>
+        <li data-step="2">无关键词 → 直接查 <code>notes</code> 表</li>
+        <li data-step="3">按顶层分类过滤（如果 -c 提供）</li>
+        <li data-step="4">按子分类过滤（如果 -s 提供）</li>
+        <li data-step="5">按 updated_at DESC 排序，limit 截断（默认 20）</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
@@ -554,62 +585,64 @@
       </table>
       <h4>副作用</h4>
       <p>无。只读操作。</p>
-      <h4>子唤醒词流程（查心愿/查打卡/查情绪）</h4>
+      <h4>子唤醒词流程（查心愿/查打卡/查情绪日记）</h4>
       <ul class="flow-steps">
-        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
-        <li data-step="2">自动带 <code>-c 分类</code> 参数过滤，直接列出该分类所有笔记</li>
+        <li data-step="1">从唤醒词提取顶层分类（心愿/打卡/情绪日记）</li>
+        <li data-step="2">自动带 <code>-c 顶层分类</code> 参数过滤，直接列出该分类所有笔记</li>
       </ul>
     </div>
   </div>
 
   <!-- 更新笔记 -->
-  <div class="feature" data-keywords="改备忘 改心愿 改打卡 改情绪 update 更新 修改 编辑 内容">
+  <div class="feature" data-keywords="改备忘 改心愿 改打卡 改情绪日记 update 更新 修改 编辑 内容 子分类">
     <div class="feature-name">更新笔记</div>
-    <div class="feature-desc">修改已有笔记的内容、分类或媒体</div>
+    <div class="feature-desc">修改已有笔记的内容、顶层分类、子分类或媒体</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">改备忘</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">改心愿</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">改打卡</button>
-      <button class="trigger-tag" onclick="toggleDetail(this)">改情绪</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">改情绪日记</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update &lt;id&gt; --content "新内容"</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update &lt;id&gt; [--content "新内容"] [-c 顶层分类] [-s 子分类] [-m 媒体]</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py update</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-flag">--content</span> <span class="hl-val">"新内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体</span> <span class="hl-flag">--reminder-id</span> <span class="hl-val">提醒ID</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py update</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-flag">--content</span> <span class="hl-val">"新内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体</span> <span class="hl-flag">--reminder-id</span> <span class="hl-val">提醒ID</span></pre>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
-        <li data-step="2">校验 category 白名单（如提供）</li>
-        <li data-step="3">拼接动态 SET 子句（只更新提供的字段）</li>
-        <li data-step="4">UPDATE <code>notes</code> SET ... WHERE id = ?，同时更新 updated_at</li>
-        <li data-step="5">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code>（先删旧、再插新）</li>
+        <li data-step="2">校验顶层分类白名单（如提供）</li>
+        <li data-step="3">校验子分类白名单（如提供）</li>
+        <li data-step="4">校验子分类规则：effective category 必须是"备忘"</li>
+        <li data-step="5">拼接动态 SET 子句（只更新提供的字段）</li>
+        <li data-step="6">UPDATE <code>notes</code> SET ... WHERE id = ?，同时更新 updated_at</li>
+        <li data-step="7">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code>（先删旧、再插新）</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
-        <tr><td><code>notes</code></td><td>content / category / media_path / reminder_id / updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>notes</code></td><td>content / category / sub_category / media_path / reminder_id / updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
         <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器 DELETE+INSERT</span></td></tr>
       </table>
       <h4>副作用</h4>
       <p>至少提供一个更新字段，否则报错。updated_at 始终自动更新。</p>
-      <h4>子唤醒词流程（改心愿/改打卡/改情绪）</h4>
+      <h4>子唤醒词流程（改心愿/改打卡/改情绪日记）</h4>
       <ul class="flow-steps">
-        <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
-        <li data-step="2">先按分类搜索 <code>search -c 分类</code>，缩小范围</li>
+        <li data-step="1">从唤醒词提取顶层分类（心愿/打卡/情绪日记）</li>
+        <li data-step="2">先按顶层分类搜索 <code>search -c 分类</code>，缩小范围</li>
         <li data-step="3">用户确认目标笔记后，执行 <code>update &lt;id&gt;</code></li>
       </ul>
     </div>
   </div>
 
   <!-- 删除笔记 -->
-  <div class="feature" data-keywords="删备忘 删心愿 删打卡 删情绪 delete 删除 移除">
+  <div class="feature" data-keywords="删备忘 删心愿 删打卡 删情绪日记 delete 删除 移除">
     <div class="feature-name">删除笔记</div>
     <div class="feature-desc">删除笔记及其关联提醒（级联删除）</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">删备忘</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">删心愿</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">删打卡</button>
-      <button class="trigger-tag" onclick="toggleDetail(this)">删情绪</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">删情绪日记</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py delete &lt;id&gt;</button>
     <div class="detail-panel">
@@ -619,7 +652,7 @@
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
         <li data-step="2">DELETE FROM <code>notes</code> WHERE id = ?</li>
-        <li data-step="3">外键 ON DELETE CASCADE 自动删除 <code>reminders</code> 中 note_id = 该 id 的所有记录</li>
+        <li data-step="3">外键 ON DELETE NO ACTION，需手动先删 <code>reminders</code> 中 note_id = 该 id 的所有记录</li>
         <li data-step="4">触发器 <code>notes_ad</code> 自动删除 <code>notes_fts</code> 对应行</li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
@@ -631,12 +664,64 @@
       </table>
       <h4>副作用</h4>
       <p>级联删除：关联的提醒会被一并删除，不可恢复。</p>
-      <h4>子唤醒词流程（删心愿/删打卡/删情绪）</h4>
+      <h4>子唤醒词流程（删心愿/删打卡/删情绪日记）</h4>
       <ul class="flow-steps">
         <li data-step="1">从唤醒词提取分类（心愿/打卡/情绪）</li>
         <li data-step="2">先按分类搜索 <code>search -c 分类</code>，缩小范围</li>
         <li data-step="3">用户确认目标笔记后，执行 <code>delete &lt;id&gt;</code></li>
       </ul>
+    </div>
+  </div>
+
+  <!-- 完成心愿 -->
+  <div class="feature" data-keywords="完成心愿 complete-wish 原子 流式 工作流 删除心愿 打卡 心愿完成">
+    <div class="feature-name">完成心愿<span class="side-effect se-trigger">流式工作流</span></div>
+    <div class="feature-desc">原子删除心愿 + 新建打卡，两步必须同时成功</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">完成心愿</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py complete-wish &lt;心愿id&gt; --content "打卡内容"</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py complete-wish</span> <span class="hl-val">&lt;心愿id&gt;</span> <span class="hl-flag">--content</span> <span class="hl-val">"打卡内容"</span></pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在且 category='心愿'（不是心愿分类则报错）</li>
+        <li data-step="2">决定打卡 content：用户提供 → 用用户的；没提供 → 拷贝原心愿 content</li>
+        <li data-step="3">事务原子执行（兼容 NO ACTION / CASCADE 两种 FK 行为）：
+          <ul>
+            <li><code>DELETE FROM reminders WHERE note_id = ?</code>（先删提醒，避开 FK 约束）</li>
+            <li><code>DELETE FROM notes WHERE id = ?</code></li>
+            <li><code>INSERT INTO notes (content, category='打卡', created_at, updated_at)</code></li>
+          </ul>
+        </li>
+        <li data-step="4">返回结果：<code>{deleted_wish_id, created_checkin_id, checkin_content}</code></li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>reminders</code></td><td>note_id 匹配的整行</td><td><span class="side-effect se-write">DELETE</span></td></tr>
+        <tr><td><code>notes</code></td><td>原心愿整行</td><td><span class="side-effect se-write">DELETE</span></td></tr>
+        <tr><td><code>notes</code></td><td>content, category='打卡', created_at, updated_at</td><td><span class="side-effect se-write">INSERT</span></td></tr>
+        <tr><td><code>notes_fts</code></td><td>对应行</td><td><span class="side-effect se-trigger">触发器同步</span></td></tr>
+      </table>
+      <h4>副作用</h4>
+      <p>原子事务：失败回滚，心愿和打卡要么都成功要么都没变。不联动飞书（飞书联动是后续 Phase 2 工作）。</p>
+      <h4>设计取舍</h4>
+      <ul class="flow-steps">
+        <li data-step="·"><b>不写 reminder_id</b>：CASCADE 删 reminders 后该字段会悬空，留 NULL 更干净</li>
+        <li data-step="·"><b>硬删除</b>：流式工作流意味着心愿生命终结于"完成"那一刻</li>
+        <li data-step="·"><b>兼容 NO ACTION FK</b>：手动先删 reminders，不论 FK 是 NO ACTION 还是 CASCADE 都安全</li>
+      </ul>
+      <h4>与旧「完成提醒：提醒与打卡的完整流程」的关系</h4>
+      <table class="detail-table">
+        <tr><th>维度</th><th>旧流程（4 步手动）</th><th>新流程（1 步原子）</th></tr>
+        <tr><td>操作</td><td>add → remind → 关联 → 打卡追加</td><td>complete-wish</td></tr>
+        <tr><td>原心愿</td><td>保留</td><td>删除</td></tr>
+        <tr><td>打卡</td><td>新建（关联 reminder_id）</td><td>新建（不关联 reminder_id）</td></tr>
+        <tr><td>追溯</td><td>通过 reminder_id</td><td>通过 content 关键词 + 时间窗</td></tr>
+      </table>
+      <p><b>推荐用新流程。</b></p>
     </div>
   </div>
 
@@ -694,29 +779,65 @@
     </div>
   </div>
 
-  <!-- 编辑笔记分类 -->
-  <div class="feature" data-keywords="备忘改分类 update-category 分类 修改 改分类">
-    <div class="feature-name">编辑笔记分类</div>
-    <div class="feature-desc">单独修改笔记的分类标签</div>
+  <!-- 编辑笔记顶层分类 -->
+  <div class="feature" data-keywords="备忘改分类 update-category 顶层分类 修改 改分类">
+    <div class="feature-name">编辑笔记顶层分类</div>
+    <div class="feature-desc">单独修改笔记的顶层分类（备忘/心愿/打卡/情绪日记）<span class="side-effect se-cascade">自动清空 sub_category</span></div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">备忘改分类</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update-category &lt;id&gt; &lt;category&gt;</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update-category &lt;id&gt; &lt;顶层分类&gt;</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py update-category</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-val">&lt;category&gt;</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py update-category</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-val">&lt;顶层分类&gt;</span></pre>
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
-        <li data-step="2">校验 category 在白名单内</li>
-        <li data-step="3">UPDATE <code>notes</code> SET category = ?, updated_at = now WHERE id = ?</li>
+        <li data-step="2">校验顶层分类在白名单内（备忘/心愿/打卡/情绪日记）</li>
+        <li data-step="3">UPDATE <code>notes</code> SET category = ?, <b>sub_category = NULL</b>, updated_at = now WHERE id = ?</li>
         <li data-step="4">触发器 <code>notes_au</code> 同步更新 <code>notes_fts</code></li>
       </ul>
+      <h4>副作用</h4>
+      <p><b>自动清空 sub_category</b>：因为 sub_category 只对 category=备忘 有意义，改变顶层分类时自动清空。</p>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
-        <tr><td><code>notes</code></td><td>category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td><code>notes</code></td><td>category, sub_category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
         <tr><td><code>notes_fts</code></td><td>rowid, content, category</td><td><span class="side-effect se-trigger">触发器 DELETE+INSERT</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 编辑笔记子分类 -->
+  <div class="feature" data-keywords="备忘改子分类 update-sub-category 子分类 修改 改子分类">
+    <div class="feature-name">编辑笔记子分类</div>
+    <div class="feature-desc">单独修改备忘类笔记的子分类（社交/工作/学习/灵感/记账/成就）</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">备忘改子分类</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</button>
+    <div class="detail-panel">
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py update-sub-category</span> <span class="hl-val">&lt;id&gt;</span> <span class="hl-val">&lt;子分类&gt;</span></pre>
+      <h4>参数</h4>
+      <table class="detail-table">
+        <tr><th>参数</th><th>说明</th></tr>
+        <tr><td><code>社交 / 工作 / 学习 / 灵感 / 记账 / 成就</code></td><td>6 个有效子分类之一</td></tr>
+        <tr><td><code>null / ""</code></td><td>清除子分类（恢复 NULL）</td></tr>
+      </table>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验 id 存在于 <code>notes</code> 表</li>
+        <li data-step="2">校验子分类白名单（如提供）</li>
+        <li data-step="3">校验 <b>note.category 必须 == "备忘"</b>，否则报错</li>
+        <li data-step="4">UPDATE <code>notes</code> SET sub_category = ?, updated_at = now WHERE id = ?</li>
+      </ul>
+      <h4>限制</h4>
+      <p>只对 <b>category=备忘</b> 的 note 生效。其他类别调用会报错。</p>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>sub_category, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
       </table>
     </div>
   </div>
@@ -850,7 +971,7 @@
   <!-- 查询已完成提醒 -->
   <div class="feature" data-keywords="查已提醒备忘 completed 已完成 打卡 完成记录">
     <div class="feature-name">查询已完成提醒</div>
-    <div class="feature-desc">查看已完成的打卡记录，按提醒类型匹配周期</div>
+    <div class="feature-desc">查看已完成的打卡记录，按提醒类型匹配周期<span class="side-effect se-trigger">推荐改用「完成心愿」</span></div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">查已提醒备忘</button>
     </div>
@@ -939,9 +1060,10 @@
         <tr><td><code>id</code></td><td>INTEGER PK</td><td>自增主键</td></tr>
         <tr><td><code>content</code></td><td>TEXT NOT NULL</td><td>笔记内容</td></tr>
         <tr><td><code>summary</code></td><td>TEXT</td><td>AI 摘要，可空</td></tr>
-        <tr><td><code>category</code></td><td>TEXT</td><td>分类标签，默认 general</td></tr>
-        <tr><td><code>reminder_id</code></td><td>INTEGER</td><td>关联提醒 ID（打卡追溯）</td></tr>
+        <tr><td><code>category</code></td><td>TEXT</td><td><b>顶层分类</b>：备忘/心愿/打卡/情绪日记（默认 备忘）</td></tr>
+        <tr><td><code>sub_category</code></td><td>TEXT</td><td><b>子分类</b>（仅备忘类）：社交/工作/学习/灵感/记账/成就（可空）</td></tr>
         <tr><td><code>media_path</code></td><td>TEXT</td><td>附件相对路径</td></tr>
+        <tr><td><code>reminder_id</code></td><td>INTEGER</td><td>关联提醒 ID（提醒完成后可追溯来源）</td></tr>
         <tr><td><code>created_at</code></td><td>TEXT</td><td>创建时间</td></tr>
         <tr><td><code>updated_at</code></td><td>TEXT</td><td>最后更新时间</td></tr>
       </table>
@@ -949,12 +1071,13 @@
       <table class="detail-table">
         <tr><th>字段</th><th>类型</th><th>说明</th></tr>
         <tr><td><code>id</code></td><td>INTEGER PK</td><td>自增主键</td></tr>
-        <tr><td><code>note_id</code></td><td>INTEGER FK</td><td>关联笔记 ID，ON DELETE CASCADE</td></tr>
+        <tr><td><code>note_id</code></td><td>INTEGER FK</td><td>关联笔记 ID，<b>真实 DB 是 NO ACTION</b>（init.sql 描述为 CASCADE）</td></tr>
         <tr><td><code>remind_at</code></td><td>TEXT</td><td>一次性提醒时间</td></tr>
         <tr><td><code>repeat_type</code></td><td>TEXT</td><td>none/daily/weekly/monthly/yearly</td></tr>
         <tr><td><code>repeat_rule</code></td><td>TEXT</td><td>重复规则</td></tr>
         <tr><td><code>status</code></td><td>TEXT</td><td>active / dismissed</td></tr>
         <tr><td><code>notified_at</code></td><td>TEXT</td><td>上次通知时间</td></tr>
+        <tr><td><code>content</code></td><td>TEXT</td><td>提醒内容（可不同于 notes.content，提醒独有）</td></tr>
         <tr><td><code>created_at</code></td><td>TEXT</td><td>创建时间</td></tr>
       </table>
       <h4>FTS5 虚拟表 &amp; 触发器</h4>

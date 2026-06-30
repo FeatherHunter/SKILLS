@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 feishu_sync.py — 飞书日历同步模块（独立可移植）
 
@@ -41,16 +41,23 @@ from typing import Any, Optional
 # ============================================================
 
 LARK_CLI_CANDIDATES = [
-    # Windows: npm global
-    r"C:\Users\辰辰洋洋\AppData\Roaming\npm\lark-cli.cmd",
-    r"C:\Users\辰辰洋洋\AppData\Roaming\npm\lark-cli",
-    # 通用 npm global（其他机器）
+    # Windows: npm global（%APPDATA% 自动展开当前用户路径，跨用户通用）
     r"%APPDATA%\npm\lark-cli.cmd",
     r"%APPDATA%\npm\lark-cli",
-    # macOS / Linux npm global
-    "/usr/local/bin/lark-cli",
+    # Windows: scoop 全局安装
+    r"%LOCALAPPDATA%\Programs\lark-cli\lark-cli.exe",
+    r"%LOCALAPPDATA%\Programs\lark-cli\lark-cli.cmd",
+    # macOS: Homebrew（Apple Silicon + Intel）
     "/opt/homebrew/bin/lark-cli",
+    # Linux: 系统包管理器
+    "/usr/local/bin/lark-cli",
+    # Linux/macOS: 用户级 npm（避免 sudo 装全局；
+    #              Windows 上 $HOME 也会展开为 C:\Users\<user>，但 Windows 用户通常用 %APPDATA%\npm，
+    #              所以这两条在 Windows 上一般找不到，skip 后 fallthrough 即可）
     "$HOME/.npm-global/bin/lark-cli",
+    "$HOME/.local/bin/lark-cli",
+    # WSL: 走 WSL 自身 PATH 中的 lark-cli（建议 WSL 自行 npm i -g lark-cli，
+    #      不跨 Windows 用户拉，避免多用户路径冲突）
 ]
 
 LARK_CLI_TIMEOUT_SHORT = 15   # --version / auth status

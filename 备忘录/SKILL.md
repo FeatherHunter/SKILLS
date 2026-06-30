@@ -10,7 +10,7 @@
 
 私人备忘工具，支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。
 
-**触发词**：记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿、备忘录同步飞书
+**触发词**：记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿、心愿排期、备忘录同步飞书
 
 **分类子唤醒词**（心愿/打卡/情绪日记，自带顶层分类，操作同上）：
 - 记心愿、删心愿、改心愿、查心愿
@@ -41,9 +41,10 @@
 |--------|------|------|------|
 | `SKILLS_DB_PATH` | 否 | 数据库根目录（统一配置） | 父目录 .db/ 层层找 |
 | `MEMO_MEDIA_DIR` | 否 | 媒体文件目录 | `media` |
-| `MEMO_FEISHU_USER_OPEN_ID` | 飞书联动时必填 | 用户的飞书 open_id（assignee 用） | 无 |
 
-**注**：没有 tasklist 环境变量。tasklist 由 `add --tasklist-guid <guid>` 每次显式传入（少用场景）。
+**注**：
+- 没有 `MEMO_FEISHU_USER_OPEN_ID` —— 飞书 task assignee 自动从 `lark-cli auth status` 读取（lark-cli 已登录的用户就是 assignee）
+- 没有 tasklist 环境变量 —— tasklist 由 `add --tasklist-guid <guid>` 每次显式传入（少用场景）
 
 ## 操作规范
 
@@ -140,6 +141,21 @@ sub_category 是**自由文本字段**，AI 智能从用户原话推断：
 - 命令：`script/memo_cli.py update-sub-category <id> <子分类 | null>`
 - **规则**：适用于所有 category（sub_category 是自由文本字段）；传 `null` 表示清除子分类
 
+### 心愿排期
+- 触发词：心愿排期
+- 给心愿设置期望完成日期（due），**自动同步到飞书 task due**
+- 第一性：备忘录 `notes.due` 是 source of truth，飞书 `task.due` 是镜像
+- **单条**：`script/memo_cli.py set-due <id> --due <YYYY-MM-DD>`
+- **批量**：`script/memo_cli.py set-due <id1> <id2> <id3> ... --due <YYYY-MM-DD>`
+- **清除**：`script/memo_cli.py set-due <id> --due null`
+- 飞书侧：飞书 task 自动出现 `is_all_day=true` 的 due，飞书日历"待办"区可见
+- **使用场景**：
+  - 单独使用：用户说"心愿 #36 #48 安排在 6/30" → AI 调批量 set-due
+  - cross-skill 联动：作息"商量计划"流程最后一步（待 B 阶段实现），统一调"心愿排期"批量设 due = 那天
+- **失败降级**：
+  - 飞书同步失败 → 本地 due 仍生效，errors 累积
+  - 心愿无 feishu_task_guid → 提示用户跑 `备忘录同步飞书` 补建后重试
+
 ### 设置提醒
 - 触发词：设提醒
 - 时间识别：明天、后天、今天 + 时间
@@ -181,8 +197,15 @@ sub_category 是**自由文本字段**，AI 智能从用户原话推断：
   - `update 心愿`：自动同步更新飞书 task 标题
   - `delete 心愿`：自动标飞书 task 完成（飞书无 delete 概念）
   - `complete-wish 心愿`：自动标飞书 task 完成
-- **反向同步**（触发词触发）：
-  - `备忘录同步飞书`：拉飞书所有已完成 task，反查 `notes.feishu_task_guid`，对本地还在的心愿触发 `complete-wish`
+- **双向对账**（触发词触发）：`备忘录同步飞书`
+  - **第一步：本地补建**（本地 → 飞书）
+    - 查 `notes WHERE category='心愿' AND feishu_task_guid IS NULL`
+    - 对每个 note 调 `add_wish_sync` 建飞书 task，写回 `feishu_task_guid`
+    - 处理历史心愿 / 旧 demo 残留 / 之前同步失败的心愿
+  - **第二步：反向同步**（飞书 → 本地）
+    - 拉飞书所有已完成 task，反查 `notes.feishu_task_guid`
+    - 对本地还在的心愿触发 `complete-wish`
+  - **报告字段**：`backfilled`（补建数）+ `synced`（反向同步数）+ `errors[]`
 - **自动检测**：`is_feishu_available()` 检查 lark-cli 是否在 `%APPDATA%\npm\`（Windows）或 `which lark-cli`（WSL/Linux/Mac）
 - **失败降级**：飞书 API 失败不阻塞本地操作（仅 stderr 记录）
 - 命令：`script/memo_cli.py sync-from-feishu` 或 `script/feishu_sync.py sync-from-feishu`
@@ -197,10 +220,11 @@ sub_category 是**自由文本字段**，AI 智能从用户原话推断：
 
 | 环境变量 | 必填 | 说明 | 示例 |
 |---|---|---|---|
-| `MEMO_FEISHU_USER_OPEN_ID` | 飞书联动时是 | 用户的飞书 open_id（用于 task members assignee + follower） | `ou_cd84288d35925aa490f67332327972dd` |
+| ~~`MEMO_FEISHU_USER_OPEN_ID`~~ | **已删除** | 不再需要 —— assignee 自动从 `lark-cli auth status` 读取 | -- |
 
 **未设置时行为**：
-- `MEMO_FEISHU_USER_OPEN_ID` 未设 → 飞书同步返回 `{"synced": false, "error": "环境变量 MEMO_FEISHU_USER_OPEN_ID 未设置"}`，本地操作不受影响
+- 不存在 —— **lark-cli auth login 之后自动可用**（`lark-cli auth status` 返回 identities.user.openId 作为 assignee）
+- 飞书同步失败原因只会是：lark-cli 未安装 / 未登录 / 提取失败
 
 #### tasklist 显式传入流程（少用场景）
 
@@ -224,12 +248,12 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 
 当用户第一次说"我想让心愿同步到飞书"或类似意图时：
 
-1. **检测环境变量**（运行 `python script/feishu_sync.py check` 看可用性）
-2. **如果 `MEMO_FEISHU_USER_OPEN_ID` 未设**：
-   - 提示用户："飞书联动需要你的 open_id，请告诉我或运行 `lark-cli` 配置获取"
-   - 引导用户用 `lark-cli +me` 获取 open_id
-   - 帮用户设置环境变量：`setx MEMO_FEISHU_USER_OPEN_ID ou_xxx`（Windows）或 `export`（POSIX）
-3. **完成配置后**：技能立即生效，无需重启
+1. **检测 lark-cli**（运行 `python script/feishu_sync.py check` 看可用性）
+2. **如果 lark-cli 不可用**：
+   - 提示用户先 `lark-cli auth login`（标准飞书开发者授权）
+3. **否则零配置直接生效**：
+   - 自动从 `lark-cli auth status` 读 user open_id
+   - 创建的飞书 task 自动指派给当前 lark-cli 登录的用户
 4. **如果用户想要分到 tasklist**：
    - 引导用户在飞书 App 手动建 tasklist
    - AI 跑 `list-tasklists` 列出飞书侧 tasklist

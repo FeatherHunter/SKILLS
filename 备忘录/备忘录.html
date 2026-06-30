@@ -833,6 +833,56 @@
     </div>
   </div>
 
+  <!-- 心愿排期 -->
+  <div class="feature" data-keywords="心愿排期 set-due due 日期 飞书同步 批量">
+    <div class="feature-name">心愿排期</div>
+    <div class="feature-desc">给心愿设置期望完成日期 due,自动同步飞书 task due (飞书日历"待办"区可见)</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">心愿排期</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py set-due &lt;id1&gt; &lt;id2&gt; ... --due &lt;YYYY-MM-DD&gt;</button>
+    <div class="detail-panel">
+      <h4>第一性</h4>
+      <p>备忘录 <code>notes.due</code> 是 source of truth,飞书 <code>task.due</code> 是镜像。飞书 task due 在日历"待办"区可见。</p>
+      <h4>CLI 完整语法</h4>
+      <pre><span class="hl-cmd">script/memo_cli.py set-due</span> <span class="hl-val">&lt;id1&gt; &lt;id2&gt; ...</span> <span class="hl-flag">--due</span> <span class="hl-val">&lt;YYYY-MM-DD | null&gt;</span></pre>
+      <h4>用法示例</h4>
+      <pre># 单条
+script/memo_cli.py set-due 36 --due 2026-06-30
+
+# 批量
+script/memo_cli.py set-due 36 48 81 --due 2026-06-30
+
+# 清除
+script/memo_cli.py set-due 36 --due null</pre>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">校验每个 id 存在 + <code>category='心愿'</code>（非心愿跳过）</li>
+        <li data-step="2">校验 due 格式:YYYY-MM-DD 或 null</li>
+        <li data-step="3">本地写入: <code>UPDATE notes SET due = ? WHERE id = ?</code>（SoT）</li>
+        <li data-step="4">飞书同步: 调 <code>task +update --task-id &lt;guid&gt; --due &lt;date&gt;</code>（镜像,失败不阻塞）</li>
+        <li data-step="5">输出报告: <code>requested / updated / feishu_synced / errors</code></li>
+      </ul>
+      <h4>涉及表 &amp; 字段</h4>
+      <table class="detail-table">
+        <tr><th>表</th><th>字段</th><th>操作</th></tr>
+        <tr><td><code>notes</code></td><td>due, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
+        <tr><td>飞书 task</td><td>due (is_all_day=true, timestamp=date)</td><td><span class="side-effect">task +update</span></td></tr>
+      </table>
+      <h4>使用场景</h4>
+      <ul>
+        <li>单独使用: "心愿 #36 #48 安排在 6/30" → AI 调批量 set-due</li>
+        <li>cross-skill 联动 (待 B 阶段): 作息"商量计划"流程最后一步统一调心愿排期,所有挑中的心愿 due = 那天</li>
+      </ul>
+      <h4>失败降级</h4>
+      <ul>
+        <li>飞书 update 失败 → 本地 due 仍生效,errors 累积</li>
+        <li>心愿无 <code>feishu_task_guid</code> → 提示跑 <code>备忘录同步飞书</code> 补建后重试</li>
+        <li>lark-cli 不可用 → 仅本地生效,飞书侧无效</li>
+      </ul>
+    </div>
+  </div>
+
 </div>
 </div>
 
@@ -1057,33 +1107,46 @@
     </div>
   </div>
 
-  <!-- 反向同步 -->
-  <div class="feature" data-keywords="备忘录同步飞书 反向同步 sync-from-feishu polling done list-tasklists">
-    <div class="feature-name">反向同步（飞书 → 本地）</div>
-    <div class="feature-desc">主动拉飞书已完成 task，反查 memo_id → 触发本地 complete-wish</div>
+  <!-- 备忘录同步飞书（双向对账） -->
+  <div class="feature" data-keywords="备忘录同步飞书 反向同步 补建 sync-from-feishu polling done list-tasklists backfill">
+    <div class="feature-name">备忘录同步飞书（双向对账）</div>
+    <div class="feature-desc">本地补建（本地心愿缺飞书 task）+ 反向同步（飞书 done → 本地 complete-wish）</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">备忘录同步飞书</button>
     </div>
     <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py sync-from-feishu</button>
     <div class="detail-panel">
+      <h4>第一性：同步 = 双向对账</h4>
+      <p>本地是 source of truth，飞书是镜像。"同步"包含两个方向的不一致修复：</p>
+      <ul>
+        <li>本地心愿有，飞书没 task → <b>补建</b>（本地 → 飞书）</li>
+        <li>飞书有 done task，本地心愿还在 → <b>反向同步</b>（飞书 → 本地）</li>
+      </ul>
       <h4>执行流程</h4>
       <ul class="flow-steps">
-        <li data-step="1">拉飞书所有 status=done 的 task（<code>task +get-related-tasks</code>）</li>
-        <li data-step="2">对每个 done task 从 <code>description</code> 反查 <code>原备忘 #N</code> 提取 memo_id（<code>task tasks get --task-guid</code>）</li>
-        <li data-step="3">反查本地：<code>SELECT id, category FROM notes WHERE id = ? AND feishu_task_guid = ?</code></li>
-        <li data-step="4">如果 category=心愿 且本地还在 → 触发 <code>complete-wish memo_id</code></li>
-        <li data-step="5">输出报告：scanned / synced / skipped</li>
+        <li data-step="1"><b>本地补建</b>：查 <code>notes WHERE category='心愿' AND feishu_task_guid IS NULL</code></li>
+        <li data-step="2">对每个 note 调 <code>add_wish_sync</code> 建飞书 task（assignee = lark-cli 登录用户）</li>
+        <li data-step="3">成功 → <code>UPDATE notes.feishu_task_guid = task_guid</code></li>
+        <li data-step="4"><b>反向同步</b>：拉飞书所有 status=done 的 task（<code>task +get-related-tasks</code>）</li>
+        <li data-step="5">对每个 done task 从 <code>description</code> 反查 <code>原备忘 #N</code> 提取 memo_id</li>
+        <li data-step="6">反查本地：<code>SELECT id, category FROM notes WHERE id = ? AND feishu_task_guid = ?</code></li>
+        <li data-step="7">如果 category=心愿 且本地还在 → 触发 <code>complete-wish memo_id</code></li>
+        <li data-step="8">输出报告：<code>backfilled</code> / <code>scanned</code> / <code>synced</code> / <code>skipped</code></li>
       </ul>
-      <h4>为什么需要这个</h4>
-      <p>V2 联动只能处理"本地改 → 飞书改"。如果用户在飞书 App 手动 complete task，本地心愿 note 不会被删除（状态不一致）。</p>
-      <p>用户说"备忘录同步飞书"主动触发反向同步，保持两边一致。</p>
-      <h4>不起定时任务</h4>
-      <p>设计上选择"用户主动触发"而非"cron 定时 polling"——避免无人值守时的意外操作。</p>
+      <h4>触发场景（什么时候需要）</h4>
+      <ul>
+        <li>add 心愿时 lark-cli 不可用 → sync 失败但 note 保留 → 用"备忘录同步飞书"补建</li>
+        <li>历史 demo 残留心愿没有飞书 task → 同上</li>
+        <li>用户在飞书 App 手动 complete task → 本地心愿不会被自动 complete → 用"备忘录同步飞书"反向同步</li>
+      </ul>
+      <h4>为什么是用户主动触发而不是 cron 定时</h4>
+      <p>设计上选择"用户主动触发"而非"cron 定时 polling"——避免无人值守时的意外操作（飞书 task 误 complete 会导致本地心愿被自动完成）。</p>
       <h4>报告字段</h4>
       <table class="detail-table">
         <tr><th>字段</th><th>含义</th></tr>
-        <tr><td><code>scanned</code></td><td>扫到的 done task 数</td></tr>
-        <tr><td><code>synced</code></td><td>触发本地 complete-wish 成功的数</td></tr>
+        <tr><td><code>backfilled</code></td><td>本地补建成功的 note 数（步骤 1-3）</td></tr>
+        <tr><td><code>scanned</code></td><td>扫到的飞书 done task 数（步骤 4）</td></tr>
+        <tr><td><code>synced</code></td><td>触发本地 complete-wish 成功的数（步骤 7）</td></tr>
         <tr><td><code>skipped_no_memo_id</code></td><td>飞书 task description 没"原备忘 #N"（不是 memo 联动）</td></tr>
         <tr><td><code>skipped_already_done</code></td><td>本地 category 不是心愿（已处理过）</td></tr>
         <tr><td><code>skipped_no_local_note</code></td><td>本地 note 不存在或 feishu_task_guid 不匹配</td></tr>
@@ -1123,39 +1186,32 @@
     </div>
   </div>
 
-  <!-- 环境变量配置 -->
-  <div class="feature" data-keywords="环境变量 MEMO_FEISHU 配置 open_id tasklist">
-    <div class="feature-name">环境变量配置</div>
-    <div class="feature-desc">用户特定信息通过环境变量传入，无硬编码</div>
+  <!-- 自动检测 lark-cli 身份 -->
+  <div class="feature" data-keywords="自动检测 lark-cli auth status zero-config 零配置 open_id">
+    <div class="feature-name">自动检测 lark-cli 身份（零配置）</div>
+    <div class="feature-desc">飞书 task assignee 自动从 lark-cli auth status 读取，不要求用户设置环境变量</div>
     <div class="triggers">
-      <button class="trigger-tag" onclick="toggleDetail(this)">配置飞书环境变量</button>
+      <button class="trigger-tag" onclick="toggleDetail(this)">查看零配置原理</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">set MEMO_FEISHU_USER_OPEN_ID ou_xxx</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">lark-cli auth status</button>
     <div class="detail-panel">
-      <h4>必填环境变量</h4>
-      <table class="detail-table">
-        <tr><th>变量名</th><th>必填</th><th>说明</th></tr>
-        <tr><td><code>MEMO_FEISHU_USER_OPEN_ID</code></td><td>飞书联动时是</td><td>用户的飞书 open_id（如 <code>ou_cd84288d35925aa490f67332327972dd</code>）</td></tr>
-      </table>
+      <h4>设计原则</h4>
+      <p>第一性：备忘录<b>不复制</b>用户的飞书身份。lark-cli 已经 auth login 的那个 user 就是飞书 task 的 assignee。</p>
+      <ul>
+        <li>✅ <b>lark-cli auth status</b> 已登录 → 自动读 <code>identities.user.openId</code> 作为 assignee</li>
+        <li>✅ 模块级缓存,避免每次 add 心愿都 sub-process</li>
+        <li>❌ 不需要 <code>MEMO_FEISHU_USER_OPEN_ID</code> 环境变量（已删除）</li>
+        <li>❌ 不需要手动 <code>setx</code> 或 <code>export</code></li>
+      </ul>
       <h4>注意：没有 tasklist 环境变量</h4>
       <p><b>tasklist 不预配置</b>，每次 add 心愿时由调用方显式传 <code>--tasklist-guid</code> 参数。少用场景。</p>
       <h4>默认行为（零配置）</h4>
-      <p>飞书 task <b>不指定 tasklist</b>，建在飞书"我的任务"主页。assignee 是用户自己。</p>
-      <h4>获取 open_id 的方法</h4>
-      <pre>lark-cli +me       # 直接查询当前用户的 open_id</pre>
-      <h4>设置环境变量</h4>
-      <pre># Windows 临时（仅当前命令）
-set MEMO_FEISHU_USER_OPEN_ID=ou_xxx
-python script/memo_cli.py add "心愿" -c 心愿
-
-# Windows 永久
-setx MEMO_FEISHU_USER_OPEN_ID ou_xxx
-
-# POSIX 临时
-export MEMO_FEISHU_USER_OPEN_ID=ou_xxx
-
-# POSIX 永久（写到 ~/.bashrc）
-echo 'export MEMO_FEISHU_USER_OPEN_ID=ou_xxx' >> ~/.bashrc</pre>
+      <p>飞书 task <b>不指定 tasklist</b>，建在飞书"我的任务"主页。assignee 是 lark-cli 登录的用户（自动检测）。</p>
+      <h4>飞书失败降级</h4>
+      <p>lark-cli 不可用 / 未登录 / 读取失败 → add 心愿仍成功（本地 DB 不受影响），<code>feishu_sync.synced=false</code> + error 字段说明原因。</p>
+      <h4>手动验证身份</h4>
+      <pre>lark-cli auth status                # 看当前 user identity
+lark-cli task +get-my-tasks         # 看"我的任务"列表</pre>
     </div>
   </div>
 

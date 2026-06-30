@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS notes (
     media_path  TEXT,                     -- 附件相对路径，如 media/20260522_abc.jpg
     reminder_id INTEGER,                  -- 关联提醒ID（打卡可追溯来源）
     feishu_task_guid TEXT,                -- 飞书 task GUID（心愿同步飞书时记录，用于反向查找）
+    due TEXT,                             -- 心愿期望完成日期 (YYYY-MM-DD, 第一性: 备忘录是 SoT, 飞书是镜像)
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );

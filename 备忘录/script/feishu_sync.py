@@ -30,19 +30,62 @@ from typing import Optional
 
 # ==================== 配置 ====================
 # ⚠️ 第一性原则：技能不能硬编码用户特定信息
-# 所有用户/本机特定配置必须通过环境变量传入
-
-# 用户飞书 open_id 环境变量
-# 设置方法: set MEMO_FEISHU_USER_OPEN_ID=ou_xxx
-ENV_USER_OPEN_ID = "MEMO_FEISHU_USER_OPEN_ID"
+#   1. 备忘录不复制用户身份（lark-cli auth status 是真值源）
+#   2. 不要求用户设置环境变量（open_id 自动检测）
+#   3. DB 路径仍走环境变量（SKILLS_DB_PATH），因为是路径而非身份
 
 # memo DB 路径环境变量（与 memo_cli.py 共享）
 ENV_SKILLS_DB_PATH = "SKILLS_DB_PATH"
 
 
+# open_id 缓存
+_USER_OPEN_ID_CACHE: Optional[str] = None
+_USER_OPEN_ID_FAILED = False
+
+
 def _get_user_open_id() -> Optional[str]:
-    """取用户飞书 open_id（环境变量）"""
-    return os.environ.get(ENV_USER_OPEN_ID)
+    """从 lark-cli auth 读取当前 user open_id（带缓存）
+
+    第一性原则：
+      - lark-cli auth login 后的 identity 是真值源
+      - 备忘录不再要求设置 MEMO_FEISHU_USER_OPEN_ID 环境变量
+      - 模块级缓存避免每次 add 心愿都 sub-process
+      - 失败一次后标记失败,不再重复探测
+
+    返回：open_id 字符串或 None（None 表示 lark-cli 不可用/未登录）
+    """
+    global _USER_OPEN_ID_CACHE, _USER_OPEN_ID_FAILED
+    if _USER_OPEN_ID_CACHE is not None:
+        return _USER_OPEN_ID_CACHE
+    if _USER_OPEN_ID_FAILED:
+        return None
+    if not is_feishu_available():
+        _USER_OPEN_ID_FAILED = True
+        return None
+
+    cli = get_lark_cli_path()
+    try:
+        # lark-cli auth status 默认就输出 JSON 到 stdout
+        proc = subprocess.run(
+            [cli, "auth", "status"],
+            capture_output=True, timeout=5,
+        )
+        raw = proc.stdout
+        if raw.startswith(b"\xef\xbb\xbf"):
+            raw = raw[3:]
+        if not raw.strip():
+            _USER_OPEN_ID_FAILED = True
+            return None
+        d = json.loads(raw.decode("utf-8"))
+        open_id = d.get("identities", {}).get("user", {}).get("openId")
+        if open_id:
+            _USER_OPEN_ID_CACHE = open_id
+            return open_id
+        _USER_OPEN_ID_FAILED = True
+        return None
+    except Exception:
+        _USER_OPEN_ID_FAILED = True
+        return None
 
 
 def _get_memo_db_path() -> str:
@@ -139,17 +182,18 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
 
 def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
                   tasklist_guid: Optional[str] = None) -> dict:
-    """新建飞书 task，返回 {ok, task_guid, error}
+    """新建飞书 task,返回 {ok, task_guid, error}
 
     第一性原则：
+    - lark-cli auth 身份 = assignee 真值源,自动检测（不读 env）
     - 飞书 task 可不指定 tasklist（tasklists 是可选字段），会进飞书"我的任务"主页
     - tasklist_guid 由调用方显式传入（CLI 参数），不读环境变量"预配置"
     - 零配置即可使用飞书联动（不传 tasklist_guid → 进飞书主页）
 
     行为：
-      1. 查用户 open_id（环境变量，必须）
+      1. 自动从 lark-cli auth 读 user open_id（缓存）
       2. 接受 tasklist_guid 参数（可选，默认 None）
-      3. 调 lark-cli `tasks create --data {summary, description, [tasklists], members}`
+      3. 调 lark-cli `task +create --summary <title> --description <desc> --assignee <open_id> [--tasklist-id <guid>]`
       4. 返回 task_guid（用于写入 notes.feishu_task_guid）
 
     参数：
@@ -161,26 +205,24 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
     返回：
       {"ok": bool, "task_guid": str | None, "error": str | None}
     """
-    # 配置检查：user_open_id 必须有
+    # 配置检查：从 lark-cli auth 自动读取 open_id（缓存）
     user_open_id = _get_user_open_id()
     if not user_open_id:
-        return {"ok": False, "task_guid": None, "error": f"环境变量 {ENV_USER_OPEN_ID} 未设置"}
+        return {"ok": False, "task_guid": None, "error": "无法从 lark-cli auth 读取 user open_id（请先 lark-cli auth login）"}
 
-    # 构造 task payload
-    # 注：飞书 task create 不支持 extra 字段（API 拒绝）。
-    #     memo_id 编码进 description（"原备忘 #N"），靠正则反查。
-    payload = {
-        "summary": content[:200],  # 飞书 title 最长 3000 字符
-        "description": f"原备忘 #{memo_id}",
-        "members": [
-            {"id": user_open_id, "type": "user", "role": "assignee"},
-            {"id": user_open_id, "type": "user", "role": "follower"},
-        ],
-    }
+    # 用 lark-cli 的 flag 模式（避免 --data positional 解析问题）
+    # 注：飞书 task create 不支持 extra 字段（API 拒绝）
+    #     memo_id 编码进 description（"原备忘 #N"），靠正则反查
+    args = [
+        "task", "+create",
+        "--summary", content[:200],  # 飞书 title 最长 3000 字符
+        "--description", f"原备忘 #{memo_id}",
+        "--assignee", user_open_id,
+    ]
     # 只有传了 tasklist_guid 才加（飞书会建无 tasklist 的 task 在"我的任务"主页）
     if tasklist_guid:
-        payload["tasklists"] = [{"tasklist_guid": tasklist_guid}]
-    r = _run_lark(["task", "tasks", "create", "--data", json.dumps(payload, ensure_ascii=False)])
+        args += ["--tasklist-id", tasklist_guid]
+    r = _run_lark(args)
 
     if r.get("ok"):
         task_data = r.get("data") or {}
@@ -209,6 +251,30 @@ def complete_wish_sync(task_guid: str) -> dict:
     返回：{"ok": bool, "error": str | None}
     """
     r = _run_lark(["task", "+complete", "--task-id", task_guid])
+    return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
+
+
+def update_due_sync(task_guid: str, due_iso: str) -> dict:
+    """更新飞书 task due 日期
+
+    第一性：备忘录 notes.due 是 SoT, 飞书 task.due 是镜像。
+    飞书 tasklist +update --due 接受 ISO 8601 / YYYY-MM-DD / 相对时间 / ms timestamp。
+
+    参数：
+      task_guid: 飞书 task GUID
+      due_iso: ISO 日期 "YYYY-MM-DD"（如 "2026-06-30"）
+
+    返回：{"ok": bool, "error": str | None}
+    """
+    if not task_guid:
+        return {"ok": False, "error": "task_guid is required"}
+    if not due_iso:
+        return {"ok": False, "error": "due_iso is required"}
+    r = _run_lark([
+        "task", "+update",
+        "--task-id", task_guid,
+        "--due", due_iso,
+    ])
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
@@ -246,35 +312,86 @@ def _get_task_memo_id(task_guid: str) -> Optional[int]:
     return None
 
 
+def _backfill_local_wishes(conn) -> int:
+    """本地补建：notes 中 category=心愿 AND feishu_task_guid IS NULL → 调 add_wish_sync 建飞书 task
+
+    第一性：
+    - 补建 = "本地有,飞书没"的对账,让飞书镜像符合本地 source of truth
+    - 单条失败不阻塞其他,累积到 caller 的 errors
+    - 写回 feishu_task_guid 是关键,否则下一轮 sync 会重复尝试
+
+    返回: 成功补建的 note 数
+    """
+    rows = conn.execute(
+        "SELECT id, content FROM notes WHERE category = '心愿' AND feishu_task_guid IS NULL ORDER BY id"
+    ).fetchall()
+    if not rows:
+        return 0
+
+    n_synced = 0
+    for r in rows:
+        memo_id, content = r["id"], r["content"]
+        rr = add_wish_sync(memo_id, content, "心愿")
+        if rr.get("ok") and rr.get("task_guid"):
+            conn.execute(
+                "UPDATE notes SET feishu_task_guid = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+                (rr["task_guid"], memo_id),
+            )
+            conn.commit()
+            n_synced += 1
+        # 失败不阻塞,下一轮 sync 会重试
+    return n_synced
+
+
 def sync_from_feishu(db_path: str = None) -> dict:
-    """反向同步：飞书已 done → 触发本地 complete-wish
+    """完整同步:本地心愿补建飞书 task + 飞书 done → 本地 complete-wish
 
-    流程：
-      1. 拉飞书所有 done task
-      2. 对每个 task 取 extra.memo_id
-      3. 反查本地 notes.feishu_task_guid
-      4. 如果本地心愿还在 → 调用 memo_cli.py complete-wish memo_id
-      5. 报告处理结果
+    第一性原则:
+      - "同步" = 双向对账(本地补建 + 反向同步)
+      - 本地是 source of truth,飞书是镜像
+      - 不破坏现有报告结构(向后兼容),新加 backfilled 字段
 
-    返回：
+    流程:
+      步骤 1: 本地补建 (本地 → 飞书)
+        - 查 notes WHERE category='心愿' AND feishu_task_guid IS NULL
+        - 对每个 note 调 add_wish_sync 建飞书 task
+        - 成功 → UPDATE notes.feishu_task_guid
+        - 失败 → 不阻塞,下一轮会重试
+
+      步骤 2: 反向同步 (飞书 → 本地)
+        - 拉飞书所有 done task
+        - 用 description 反查 memo_id
+        - 本地心愿还在 → 触发 complete-wish
+
+    返回:
       {
-        "scanned": int,        # 扫到的 done task 数
-        "synced": int,         # 触发的本地同步数
+        "backfilled": int,        # 本地补建数(步骤 1)
+        "scanned": int,           # 飞书 done task 数(步骤 2)
+        "synced": int,            # 触发的本地 complete-wish 数(步骤 2)
         "skipped_no_memo_id": int,
         "skipped_already_done": int,
+        "skipped_no_local_note": int,
         "errors": [str],
       }
     """
     if not is_feishu_available():
-        return {"scanned": 0, "synced": 0, "errors": ["feishu CLI not available"]}
-
-    done_tasks = _list_all_done_tasks()
+        return {"backfilled": 0, "scanned": 0, "synced": 0, "errors": ["feishu CLI not available"]}
 
     if db_path is None:
-        # 默认 DB 路径（通过 _get_memo_db_path 自动探测，不写死任何用户路径）
+        # 默认 DB 路径(通过 _get_memo_db_path 自动探测,不写死任何用户路径)
         db_path = _get_memo_db_path()
 
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+
+    # 步骤 1: 本地补建 (本地 → 飞书)
+    n_backfilled = _backfill_local_wishes(conn)
+
+    # 步骤 2: 反向同步 (飞书 → 本地)
+    done_tasks = _list_all_done_tasks()
+
     result = {
+        "backfilled": n_backfilled,
         "scanned": len(done_tasks),
         "synced": 0,
         "skipped_no_memo_id": 0,
@@ -282,10 +399,6 @@ def sync_from_feishu(db_path: str = None) -> dict:
         "skipped_no_local_note": 0,
         "errors": [],
     }
-
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-
     memo_cli = os.path.join(os.path.dirname(__file__), "memo_cli.py")
     memo_python = sys.executable
 
@@ -312,7 +425,7 @@ def sync_from_feishu(db_path: str = None) -> dict:
             continue
 
         if local["category"] != "心愿":
-            # 不是心愿分类（如已变成打卡）→ 已处理过
+            # 不是心愿分类(如已变成打卡)→ 已处理过
             result["skipped_already_done"] += 1
             continue
 

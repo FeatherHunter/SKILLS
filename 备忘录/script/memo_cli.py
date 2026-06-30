@@ -579,6 +579,98 @@ def update_sub_category(args):
     finally:
         conn.close()
 
+
+def set_due(args):
+    """心愿排期:批量设置心愿 due 日期,同步飞书 task due
+
+    第一性:
+      - 备忘录 notes.due 是 SoT,飞书 task.due 是镜像
+      - 飞书 update 失败不阻塞本地:本地写入始终成功,errors 累积
+
+    用法:
+      memo_cli.py set-due 123 124 125 --due 2026-06-30
+      memo_cli.py set-due 123 --due 2026-06-30           # 单条
+      memo_cli.py set-due 123 --due null                 # 清除 due
+    """
+    note_ids = args.ids
+    if not note_ids:
+        error_json("至少提供一个笔记 ID")
+
+    due_raw = args.due
+    # 允许清除 (传 null/空/NULL/None)
+    if due_raw in ("", "null", "NULL", "None"):
+        due_iso = None
+    else:
+        # 校验 YYYY-MM-DD 格式
+        try:
+            datetime.strptime(due_raw, "%Y-%m-%d")
+            due_iso = due_raw
+        except ValueError:
+            error_json(f"due 必须是 YYYY-MM-DD 格式或 null,当前: {due_raw}")
+
+    conn = get_conn()
+    conn.row_factory = sqlite3.Row
+    try:
+        # 飞书同步 lazy import(避免 add/等命令不依赖 lark-cli)
+        try:
+            from feishu_sync import is_feishu_available, update_due_sync
+            feishu_ready = is_feishu_available()
+        except Exception:
+            feishu_ready = False
+            update_due_sync = None
+
+        result = {
+            "requested": len(note_ids),
+            "updated": 0,
+            "skipped_not_wish": 0,
+            "skipped_not_found": 0,
+            "feishu_synced": 0,
+            "errors": [],
+        }
+        for nid in note_ids:
+            note = conn.execute(
+                "SELECT id, category, feishu_task_guid FROM notes WHERE id = ?", (nid,)
+            ).fetchone()
+            if not note:
+                result["skipped_not_found"] += 1
+                result["errors"].append(f"id={nid}: not found")
+                continue
+            if note["category"] != "心愿":
+                result["skipped_not_wish"] += 1
+                result["errors"].append(f"id={nid}: category={note['category']} 不是心愿")
+                continue
+
+            # 本地写入 (SoT)
+            conn.execute(
+                "UPDATE notes SET due = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+                (due_iso, nid),
+            )
+            result["updated"] += 1
+
+            # 飞书同步 (镜像) - 仅当 due_iso 非空且有 task_guid 时同步
+            if due_iso and note["feishu_task_guid"] and feishu_ready and update_due_sync:
+                sync_r = update_due_sync(note["feishu_task_guid"], due_iso)
+                if sync_r.get("ok"):
+                    result["feishu_synced"] += 1
+                else:
+                    result["errors"].append(f"id={nid} feishu: {sync_r.get('error')}")
+            elif due_iso and not note["feishu_task_guid"]:
+                # 心愿无飞书 task_guid → 飞书侧没任务可改,但本地 due 仍生效
+                result["errors"].append(f"id={nid}: 本地 due 已设,飞书 task 缺失(可跑 sync-from-feishu 补建)")
+            elif due_iso and not feishu_ready:
+                result["errors"].append(f"id={nid}: 本地 due 已设,lark-cli 不可用")
+
+        conn.commit()
+        output_json(
+            result,
+            message=f"排期完成: 本地更新={result['updated']}, 飞书同步={result['feishu_synced']}, 错误={len(result['errors'])}",
+        )
+    except Exception as e:
+        conn.rollback()
+        error_json(str(e))
+    finally:
+        conn.close()
+
 # ---- 提醒操作 ----
 
 def _validate_remind_at(at_str):
@@ -1131,6 +1223,11 @@ def main():
     p_subcat.add_argument("id", type=int)
     p_subcat.add_argument("sub_category")
 
+    # set-due (心愿排期)
+    p_setdue = sub.add_parser("set-due", help="心愿排期:批量设置心愿 due 日期,同步飞书 task due")
+    p_setdue.add_argument("ids", nargs="+", type=int, help="心愿 note id 列表(可多个)")
+    p_setdue.add_argument("--due", required=True, help="期望完成日期 (YYYY-MM-DD) 或 null 清除")
+
     # sync-from-feishu (反向同步)
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
 
@@ -1177,11 +1274,13 @@ def main():
         update_category(args)
     elif args.command == "update-sub-category":
         update_sub_category(args)
+    elif args.command == "set-due":
+        set_due(args)
     elif args.command == "sync-from-feishu":
         # 反向同步：飞书 done → 本地 complete-wish
         from feishu_sync import sync_from_feishu
         result = sync_from_feishu()
-        output_json(result, message=f"反向同步: scanned={result['scanned']}, synced={result['synced']}, errors={len(result.get('errors', []))}")
+        output_json(result, message=f"双向同步: 补建={result.get('backfilled', 0)}, 反向={result['synced']}, 扫到={result['scanned']}, 错误={len(result.get('errors', []))}")
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

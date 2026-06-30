@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS notes (
     sub_category TEXT,                    -- 备忘内部分类：社交/工作/学习/灵感/记账/成就（仅 category=备忘 时用）
     media_path  TEXT,                     -- 附件相对路径，如 media/20260522_abc.jpg
     reminder_id INTEGER,                  -- 关联提醒ID（打卡可追溯来源）
+    feishu_task_guid TEXT,                -- 飞书 task GUID（心愿同步飞书时记录，用于反向查找）
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );

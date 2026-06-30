@@ -103,7 +103,34 @@ def add_note(args):
         )
         note_id = cur.lastrowid
         conn.commit()
-        output_json({"id": note_id, "content": content.strip(), "category": category, "sub_category": sub_category}, message="笔记已添加")
+
+        # 飞书同步 hook（第一性：自动检测 CLI，无开关）
+        # 仅 category=心愿 时联动飞书（其他类别不联动）
+        feishu_sync_result = None
+        if category == "心愿":
+            try:
+                from feishu_sync import is_feishu_available, add_wish_sync
+                if is_feishu_available():
+                    sync_r = add_wish_sync(note_id, content.strip(), category)
+                    if sync_r.get("ok") and sync_r.get("task_guid"):
+                        # 把 task_guid 写回 notes.feishu_task_guid
+                        conn.execute(
+                            "UPDATE notes SET feishu_task_guid = ? WHERE id = ?",
+                            (sync_r["task_guid"], note_id),
+                        )
+                        conn.commit()
+                        feishu_sync_result = {"synced": True, "task_guid": sync_r["task_guid"]}
+                    else:
+                        feishu_sync_result = {"synced": False, "error": sync_r.get("error")}
+                else:
+                    feishu_sync_result = {"synced": False, "reason": "feishu CLI not available"}
+            except Exception as e:
+                feishu_sync_result = {"synced": False, "error": str(e)}
+
+        out_data = {"id": note_id, "content": content.strip(), "category": category, "sub_category": sub_category}
+        if feishu_sync_result is not None:
+            out_data["feishu_sync"] = feishu_sync_result
+        output_json(out_data, message="笔记已添加")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -201,7 +228,26 @@ def update_note(args):
         params.append(note_id)
         conn.execute(f"UPDATE notes SET {', '.join(updates)} WHERE id = ?", params)
         conn.commit()
-        output_json({"id": note_id}, message="笔记已更新")
+
+        # 飞书同步 hook（content 变化时同步更新飞书 task）
+        feishu_sync_result = None
+        new_content = content.strip() if content is not None else None
+        if new_content is not None:
+            try:
+                from feishu_sync import is_feishu_available, update_wish_sync
+                note_row = conn.execute("SELECT category, feishu_task_guid FROM notes WHERE id = ?", (note_id,)).fetchone()
+                if note_row and note_row["category"] == "心愿" and note_row["feishu_task_guid"] and is_feishu_available():
+                    sync_r = update_wish_sync(note_row["feishu_task_guid"], new_content)
+                    feishu_sync_result = {"synced": sync_r.get("ok", False), "error": sync_r.get("error")}
+                elif note_row and note_row["category"] == "心愿" and not is_feishu_available():
+                    feishu_sync_result = {"synced": False, "reason": "feishu CLI not available"}
+            except Exception as e:
+                feishu_sync_result = {"synced": False, "error": str(e)}
+
+        out_data = {"id": note_id}
+        if feishu_sync_result is not None:
+            out_data["feishu_sync"] = feishu_sync_result
+        output_json(out_data, message="笔记已更新")
     except Exception as e:
         error_json(str(e))
     finally:
@@ -244,6 +290,16 @@ def delete_note(args):
             ).fetchall()
             related_reminders.extend(rems)
 
+        # 2.5 收集所有心愿 note 的 feishu_task_guid（删除前快照，用于飞书同步）
+        wish_sync_targets = []  # [(memo_id, task_guid, category), ...]
+        for nid in note_ids:
+            row = conn.execute(
+                "SELECT id, category, feishu_task_guid FROM notes WHERE id = ?",
+                (nid,),
+            ).fetchone()
+            if row and row["category"] == "心愿" and row["feishu_task_guid"]:
+                wish_sync_targets.append((row["id"], row["feishu_task_guid"], row["category"]))
+
         # 3. 如果有关联提醒但没传 --with-reminders → 报错提示
         if related_reminders and not with_reminders:
             error_json(
@@ -283,13 +339,42 @@ def delete_note(args):
 
         conn.commit()
 
-        # 6. 输出结果
+        # 6.5 飞书同步 hook（删除心愿时标飞书 task 完成）
+        # 必须在 output_json 之前执行（output_json 会 sys.exit）
+        feishu_sync_results = []
+        if wish_sync_targets:
+            try:
+                from feishu_sync import is_feishu_available, complete_wish_sync
+                if is_feishu_available():
+                    for memo_id, task_guid, _cat in wish_sync_targets:
+                        sync_r = complete_wish_sync(task_guid)
+                        feishu_sync_results.append({
+                            "memo_id": memo_id,
+                            "task_guid": task_guid,
+                            "synced": sync_r.get("ok", False),
+                            "error": sync_r.get("error"),
+                        })
+                else:
+                    for memo_id, task_guid, _cat in wish_sync_targets:
+                        feishu_sync_results.append({
+                            "memo_id": memo_id,
+                            "task_guid": task_guid,
+                            "synced": False,
+                            "reason": "feishu CLI not available",
+                        })
+            except Exception as e:
+                for memo_id, task_guid, _cat in wish_sync_targets:
+                    feishu_sync_results.append({"memo_id": memo_id, "task_guid": task_guid, "error": str(e)})
+
+        # 7. 输出结果（合并 feishu_sync）
         result = {
             "deleted_notes": deleted_note_ids,
             "deleted_reminders": deleted_reminder_ids,
         }
         if active_reminders:
             result["active_reminders_deleted"] = len(active_reminders)
+        if feishu_sync_results:
+            result["feishu_sync"] = feishu_sync_results
 
         if deleted_reminder_ids:
             msg = f"已删除 {len(deleted_note_ids)} 个笔记 + {len(deleted_reminder_ids)} 个提醒"
@@ -327,13 +412,14 @@ def complete_wish(args):
         error_json("笔记 ID 必须是正整数")
     conn = get_conn()
     try:
-        # Step 1: 识别"是不是心愿"——第一道闸门
+        # Step 1: 识别"是不是心愿"——第一道闸门，同时取 feishu_task_guid 快照
         wish = conn.execute(
-            "SELECT id, content FROM notes WHERE id = ? AND category = '心愿'",
+            "SELECT id, content, feishu_task_guid FROM notes WHERE id = ? AND category = '心愿'",
             (note_id,)
         ).fetchone()
         if not wish:
             error_json(f"心愿不存在或非心愿分类: id={note_id}")
+        wish_feishu_task_guid = wish["feishu_task_guid"]  # 删除前快照
 
         # Step 2: 决定打卡 content
         # 第一性：content 是用户原话。用户提供 → 用用户的；没提供 → 拷贝心愿原文
@@ -356,27 +442,35 @@ def complete_wish(args):
         checkin_id = cur.lastrowid
         conn.commit()
 
-        output_json({
+        # 飞书同步 hook（第一性：自动检测 CLI，无开关；本地优先，飞书失败不影响本地）
+        # 用 wish_feishu_task_guid（删除前快照）调 complete_wish_sync
+        feishu_sync_result = None
+        try:
+            from feishu_sync import is_feishu_available, complete_wish_sync
+            if wish_feishu_task_guid and is_feishu_available():
+                sync_r = complete_wish_sync(wish_feishu_task_guid)
+                feishu_sync_result = {
+                    "synced": sync_r.get("ok", False),
+                    "task_guid": wish_feishu_task_guid,
+                    "error": sync_r.get("error"),
+                }
+            elif wish_feishu_task_guid:
+                feishu_sync_result = {
+                    "synced": False,
+                    "task_guid": wish_feishu_task_guid,
+                    "reason": "feishu CLI not available",
+                }
+        except Exception as e:
+            feishu_sync_result = {"synced": False, "reason": "exception", "error": str(e)}
+
+        out_data = {
             "deleted_wish_id": note_id,
             "created_checkin_id": checkin_id,
             "checkin_content": checkin_content,
-        }, message=f"✓ 心愿 #{note_id} 已完成，打卡 #{checkin_id} 已记录")
-
-        # 飞书同步 hook（第一性：本地优先，飞书失败不影响本地）
-        # 仅当 MEMO_FEISHU_SYNC=enabled 时启用（默认 disabled 防误操作）
-        try:
-            import os
-            if os.environ.get("MEMO_FEISHU_SYNC", "disabled") == "enabled":
-                # 延迟 import 避免循环依赖
-                from feishu_sync import complete_wish_sync
-                sync_result = complete_wish_sync(note_id)
-                # 把同步结果附加到 output（不在 message 里，由调用方读 data）
-                # 但 output_json 已经退出进程，重新输出
-                # 改用 print 单独一行
-                print(json.dumps({"feishu_sync": sync_result}, ensure_ascii=False), file=sys.stderr)
-        except Exception as e:
-            # 飞书同步失败不抛错（降级）
-            print(json.dumps({"feishu_sync": {"synced": False, "reason": "exception", "error": str(e)}}, ensure_ascii=False), file=sys.stderr)
+        }
+        if feishu_sync_result is not None:
+            out_data["feishu_sync"] = feishu_sync_result
+        output_json(out_data, message=f"✓ 心愿 #{note_id} 已完成，打卡 #{checkin_id} 已记录")
     except Exception as e:
         try:
             conn.rollback()
@@ -1042,6 +1136,9 @@ def main():
     p_subcat.add_argument("id", type=int)
     p_subcat.add_argument("sub_category")
 
+    # sync-from-feishu (反向同步)
+    p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
+
     # reminder add
     p_remind = sub.add_parser("remind")
     p_remind.add_argument("note_id", nargs="?", type=int, default=None)
@@ -1085,6 +1182,11 @@ def main():
         update_category(args)
     elif args.command == "update-sub-category":
         update_sub_category(args)
+    elif args.command == "sync-from-feishu":
+        # 反向同步：飞书 done → 本地 complete-wish
+        from feishu_sync import sync_from_feishu
+        result = sync_from_feishu()
+        output_json(result, message=f"反向同步: scanned={result['scanned']}, synced={result['synced']}, errors={len(result.get('errors', []))}")
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

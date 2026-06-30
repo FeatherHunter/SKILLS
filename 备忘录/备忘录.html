@@ -471,6 +471,7 @@
 <div class="tabs">
   <button class="tab active" data-tab="notes">笔记管理</button>
   <button class="tab" data-tab="reminders">提醒管理</button>
+  <button class="tab" data-tab="feishu">飞书同步</button>
   <button class="tab" data-tab="system">系统</button>
   <button class="tab" data-tab="all">全部</button>
 </div>
@@ -1004,6 +1005,103 @@
 </div>
 </div>
 
+<!-- ============ 飞书同步 ============ -->
+<div class="tab-content" data-tab="feishu">
+
+<div class="module">
+  <div class="module-title">飞书任务同步</div>
+
+  <!-- 自动检测 -->
+  <div class="feature" data-keywords="飞书检测 feishu check lark-cli 跨平台 windows wsl linux mac">
+    <div class="feature-name">飞书 CLI 自动检测</div>
+    <div class="feature-desc">跨平台检测 lark-cli 是否可用，决定是否联动飞书</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">飞书检测</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/feishu_sync.py check</button>
+    <div class="detail-panel">
+      <h4>检测路径</h4>
+      <table class="detail-table">
+        <tr><th>平台</th><th>查找路径</th></tr>
+        <tr><td>Windows</td><td><code>%APPDATA%\npm\lark-cli.cmd</code> → <code>where lark-cli</code></td></tr>
+        <tr><td>WSL / Linux / Mac</td><td><code>which lark-cli</code> → <code>/usr/local/bin/lark-cli</code></td></tr>
+      </table>
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">根据 sys.platform 选择检测路径</li>
+        <li data-step="2">缓存检测结果（避免每次重复探测）</li>
+        <li data-step="3">返回 True/False（不抛异常）</li>
+      </ul>
+      <h4>CLI 输出</h4>
+      <pre>{"available": true, "cli_path": "C:\\Users\\xxx\\AppData\\Roaming\\npm\\lark-cli.cmd"}</pre>
+    </div>
+  </div>
+
+  <!-- 自动联动：增删改查心愿 -->
+  <div class="feature" data-keywords="自动联动 飞书同步 心愿 增删改查 add update delete complete-wish">
+    <div class="feature-name">自动联动（无需触发词）</div>
+    <div class="feature-desc">is_feishu_available() 为 True 时，增删改查心愿自动联动飞书</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">增删改查心愿</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">memo_cli.py add/update/delete/complete-wish &lt;id&gt;</button>
+    <div class="detail-panel">
+      <h4>联动矩阵</h4>
+      <table class="detail-table">
+        <tr><th>本地操作</th><th>飞书动作</th><th>API</th></tr>
+        <tr><td><code>add 心愿</code></td><td>建飞书 task + 写回 feishu_task_guid</td><td><code>task tasks create --data {extra:{memo_id}}</code></td></tr>
+        <tr><td><code>update 心愿</code></td><td>改飞书 task 标题</td><td><code>task +update --task-id X --summary ...</code></td></tr>
+        <tr><td><code>delete 心愿</code></td><td>标飞书 task 完成（飞书无 delete）</td><td><code>task +complete --task-id X</code></td></tr>
+        <tr><td><code>complete-wish 心愿</code></td><td>标飞书 task 完成</td><td><code>task +complete --task-id X</code></td></tr>
+      </table>
+      <h4>设计原则</h4>
+      <ul class="flow-steps">
+        <li data-step="·"><b>无开关</b>：自动检测 CLI 是否安装，不靠环境变量</li>
+        <li data-step="·"><b>本地优先</b>：飞书 API 失败不阻塞本地操作（仅 stderr 记录 warning）</li>
+        <li data-step="·"><b>仅心愿联动</b>：备忘/打卡/情绪日记不联动飞书（不必要）</li>
+        <li data-step="·"><b>需要 task_guid</b>：add 触发时自动建 + 写回 notes.feishu_task_guid；update/delete/complete-wish 依赖这个字段</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 反向同步 -->
+  <div class="feature" data-keywords="备忘录同步飞书 反向同步 sync-from-feishu polling done">
+    <div class="feature-name">反向同步（飞书 → 本地）</div>
+    <div class="feature-desc">主动拉飞书已完成 task，反查 memo_id → 触发本地 complete-wish</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">备忘录同步飞书</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py sync-from-feishu</button>
+    <div class="detail-panel">
+      <h4>执行流程</h4>
+      <ul class="flow-steps">
+        <li data-step="1">拉飞书所有 status=done 的 task（<code>task +get-related-tasks</code>）</li>
+        <li data-step="2">对每个 done task 取 <code>extra.memo_id</code>（<code>task tasks get --task-guid</code>）</li>
+        <li data-step="3">反查本地：<code>SELECT id, category FROM notes WHERE id = ? AND feishu_task_guid = ?</code></li>
+        <li data-step="4">如果 category=心愿 且本地还在 → 触发 <code>complete-wish memo_id</code></li>
+        <li data-step="5">输出报告：scanned / synced / skipped</li>
+      </ul>
+      <h4>为什么需要这个</h4>
+      <p>V1/V2 联动只能处理"本地改 → 飞书改"。如果用户在飞书 App 手动 complete task，本地心愿 note 不会被删除（状态不一致）。</p>
+      <p>用户说"备忘录同步飞书"主动触发反向同步，保持两边一致。</p>
+      <h4>不起定时任务</h4>
+      <p>设计上选择"用户主动触发"而非"cron 定时 polling"——避免无人值守时的意外操作。</p>
+      <h4>报告字段</h4>
+      <table class="detail-table">
+        <tr><th>字段</th><th>含义</th></tr>
+        <tr><td><code>scanned</code></td><td>扫到的 done task 数</td></tr>
+        <tr><td><code>synced</code></td><td>触发本地 complete-wish 成功的数</td></tr>
+        <tr><td><code>skipped_no_memo_id</code></td><td>飞书 task 没 extra.memo_id（不是 memo 联动）</td></tr>
+        <tr><td><code>skipped_already_done</code></td><td>本地 category 不是心愿（已处理过）</td></tr>
+        <tr><td><code>skipped_no_local_note</code></td><td>本地 note 不存在或 feishu_task_guid 不匹配</td></tr>
+        <tr><td><code>errors</code></td><td>失败的 memo_id 列表</td></tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
 <!-- ============ 系统 ============ -->
 <div class="tab-content" data-tab="system">
 
@@ -1064,6 +1162,7 @@
         <tr><td><code>sub_category</code></td><td>TEXT</td><td><b>子分类</b>（仅备忘类）：社交/工作/学习/灵感/记账/成就（可空）</td></tr>
         <tr><td><code>media_path</code></td><td>TEXT</td><td>附件相对路径</td></tr>
         <tr><td><code>reminder_id</code></td><td>INTEGER</td><td>关联提醒 ID（提醒完成后可追溯来源）</td></tr>
+        <tr><td><code>feishu_task_guid</code></td><td>TEXT</td><td>飞书 task GUID（心愿同步飞书时记录，用于反向查找）</td></tr>
         <tr><td><code>created_at</code></td><td>TEXT</td><td>创建时间</td></tr>
         <tr><td><code>updated_at</code></td><td>TEXT</td><td>最后更新时间</td></tr>
       </table>

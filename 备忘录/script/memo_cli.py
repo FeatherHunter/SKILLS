@@ -283,6 +283,69 @@ def delete_note(args):
     finally:
         conn.close()
 
+def complete_wish(args):
+    """第一性：心愿完成的本质是原子转换——'待完成项'变成'已完成记录'。
+
+    行为：
+      1. 找到 category='心愿' 的 note（闸门：只处理心愿）
+      2. DELETE 该心愿 note（关联 reminders 通过 ON DELETE CASCADE 自动删除）
+      3. INSERT 一条 category='打卡' 的新 note，content 默认拷贝原心愿
+      4. 整个过程在单个事务里，失败回滚
+
+    设计取舍（第一性推导）：
+      - 不写 reminder_id：CASCADE 删 reminders 后 reminder_id 必然悬空，留 NULL 更干净
+      - 硬删除：不软删除，违背"流式工作流"的本质
+      - content 默认拷贝：content 是用户原话，没提供则用心愿原文
+    """
+    note_id = args.id
+    if note_id <= 0:
+        error_json("笔记 ID 必须是正整数")
+    conn = get_conn()
+    try:
+        # Step 1: 识别"是不是心愿"——第一道闸门
+        wish = conn.execute(
+            "SELECT id, content FROM notes WHERE id = ? AND category = '心愿'",
+            (note_id,)
+        ).fetchone()
+        if not wish:
+            error_json(f"心愿不存在或非心愿分类: id={note_id}")
+
+        # Step 2: 决定打卡 content
+        # 第一性：content 是用户原话。用户提供 → 用用户的；没提供 → 拷贝心愿原文
+        if args.content and args.content.strip():
+            checkin_content = args.content.strip()
+        else:
+            checkin_content = wish["content"]
+
+        # Step 3: 原子事务
+        # 第一性：真实 DB 的 reminders FK 是 NO ACTION（不是 CASCADE），
+        #         必须先删 reminders 再删 note，否则 FK 约束失败
+        #         不论 FK 是 CASCADE 还是 NO ACTION，手动先删都安全
+        conn.execute("DELETE FROM reminders WHERE note_id = ?", (note_id,))
+        conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+        cur = conn.execute(
+            """INSERT INTO notes (content, category, created_at, updated_at)
+               VALUES (?, '打卡', datetime('now','localtime'), datetime('now','localtime'))""",
+            (checkin_content,)
+        )
+        checkin_id = cur.lastrowid
+        conn.commit()
+
+        output_json({
+            "deleted_wish_id": note_id,
+            "created_checkin_id": checkin_id,
+            "checkin_content": checkin_content,
+        }, message=f"✓ 心愿 #{note_id} 已完成，打卡 #{checkin_id} 已记录")
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        error_json(str(e))
+    finally:
+        conn.close()
+
+
 def get_note(args):
     note_id = args.id
     if note_id <= 0:
@@ -876,6 +939,14 @@ def main():
     p_del.add_argument("-y", "--yes", action="store_true",
                        help="跳过二次确认（QQbot 自动化用）")
 
+    # complete-wish
+    p_complete = sub.add_parser(
+        "complete-wish",
+        help="完成心愿：原子删除心愿 + 新建打卡 note"
+    )
+    p_complete.add_argument("id", type=int, help="要完成的心愿 note ID")
+    p_complete.add_argument("--content", help="打卡内容（默认拷贝心愿原文）")
+
     # get note
     p_get = sub.add_parser("get")
     p_get.add_argument("id", type=int)
@@ -925,6 +996,8 @@ def main():
         update_note(args)
     elif args.command == "delete":
         delete_note(args)
+    elif args.command == "complete-wish":
+        complete_wish(args)
     elif args.command == "get":
         get_note(args)
     elif args.command == "search-date":

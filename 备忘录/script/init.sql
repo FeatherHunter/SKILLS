@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS notes (
     summary     TEXT,                     -- AI生成的短摘要，用于列表预览
     category    TEXT DEFAULT 'general',   -- 用户自定义分类：social, wish, inspiration 等
     media_path  TEXT,                     -- 附件相对路径，如 media/20260522_abc.jpg
+    reminder_id INTEGER,                  -- 关联提醒ID（打卡可追溯来源）
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     updated_at  TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS reminders (
                                                 --   yearly  : "12-25 10:00"
     status      TEXT DEFAULT 'active',           -- active / dismissed
     notified_at TEXT,                            -- 上次通知时间
+    content     TEXT,                            -- 提醒内容（可不同于 notes.content，提醒独有）
     created_at  TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
 );

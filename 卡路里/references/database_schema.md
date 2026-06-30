@@ -149,11 +149,14 @@ CREATE TABLE nutrition_products (
     sugar REAL,
     dietary_fiber REAL,
     sodium REAL NOT NULL,        -- 毫克/100g
+    source TEXT NOT NULL DEFAULT '未知',      -- 数据来源(自由文本,如实标注,见数据治理原则)
+    is_deprecated INTEGER NOT NULL DEFAULT 0, -- 废弃标记 0=有效 1=废弃
     note TEXT DEFAULT '',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_product_name ON nutrition_products(product_name);
+CREATE INDEX idx_product_source ON nutrition_products(source);
 ```
 
 ---
@@ -198,6 +201,7 @@ nutrition_products (多条)
 | `idx_fg_status` | fitness_goals | 按状态筛选 |
 | `idx_sleep_date` | sleep_records | 按日期查询 |
 | `idx_product_name` | nutrition_products | 搜索食品名称 |
+| `idx_product_source` | nutrition_products | 按数据来源过滤 |
 
 ---
 

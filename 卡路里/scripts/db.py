@@ -162,6 +162,8 @@ def init_db(db_path):
             sugar REAL,
             dietary_fiber REAL,
             sodium REAL NOT NULL,
+            source TEXT NOT NULL DEFAULT '未知',
+            is_deprecated INTEGER NOT NULL DEFAULT 0,
             note TEXT DEFAULT '',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -187,6 +189,32 @@ def init_db(db_path):
         c.execute('ALTER TABLE daily_goal ADD COLUMN water_goal INTEGER DEFAULT 2000')
     except Exception:
         pass
+
+    # 迁移：nutrition_products 表新增 source / is_deprecated（食品库扩展 · 2026-06-30）
+    _existing_cols_p = {
+        row[1] for row in c.execute('PRAGMA table_info(nutrition_products)').fetchall()
+    }
+    _products_new_cols = [
+        ('source', "TEXT DEFAULT '未知'"),
+        ('is_deprecated', 'INTEGER DEFAULT 0'),
+    ]
+    for _col, _type in _products_new_cols:
+        if _col not in _existing_cols_p:
+            c.execute(f'ALTER TABLE nutrition_products ADD COLUMN {_col} {_type}')
+
+    # 索引：source 字段（建在 ALTER 之后，避免列不存在时失败）
+    c.execute('CREATE INDEX IF NOT EXISTS idx_product_source ON nutrition_products(source)')
+
+    # 已有数据回填：note / product_name / brand 任一字段含 [已废弃] → is_deprecated=1
+    # （幂等：只更新还没标记的）
+    c.execute(
+        "UPDATE nutrition_products SET is_deprecated = 1 "
+        "WHERE is_deprecated = 0 AND ("
+        "note LIKE '%[已废弃]%' "
+        "OR product_name LIKE '%[已废弃]%' "
+        "OR brand LIKE '%[已废弃]%'"
+        ")"
+    )
 
     # 迁移：exercise_log 表新增 6 列（运动功能扩展 · 2026-06-29）
     #   - category        有氧/力量/柔韧/日常

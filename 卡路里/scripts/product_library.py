@@ -92,7 +92,7 @@ def search_products(keyword):
         SELECT id, product_name, brand, calories, protein, fat, saturated_fat,
                carbohydrates, sugar, dietary_fiber, sodium, note, updated_at
         FROM nutrition_products
-        WHERE product_name LIKE ? OR brand LIKE ?
+        WHERE is_deprecated = 0 AND (product_name LIKE ? OR brand LIKE ?)
         ORDER BY product_name
     ''', (f'%{keyword}%', f'%{keyword}%'))
 
@@ -184,6 +184,7 @@ def list_products(limit=50):
         SELECT id, product_name, brand, calories, protein, fat, saturated_fat,
                carbohydrates, sugar, dietary_fiber, sodium, note, created_at
         FROM nutrition_products
+        WHERE is_deprecated = 0
         ORDER BY updated_at DESC
         LIMIT ?
     ''', (limit,))

@@ -28,6 +28,20 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 - **起床确认不提卡路里**：唤醒词场景的确认语中不出现"卡路里"三字，直接问"要不要记录"
 - **只建议不自动修改**：Lint 检查发现问题后列出清单，让用户决定
 
+### 📚 nutrition_products 数据治理原则（2026-06-30 共识）
+
+`source` 字段记录**"这条数据是怎么来的"**，不是"理想来源"：
+- ❌ **不维护"推荐来源枚举"**——AI 想用什么字符串都行
+- ✅ **AI 不知道就写 "未知" / "AI估算,未查证"**,不要编造权威来源
+- ✅ **完全自由文本**,只要非空
+- 数据示例：`"中国食物成分表第6版"` / `"USDA FoodData Central"` / `"包装标签实测 2025-06"` / `"AI估算,未查证"` / `"未知"`
+
+`is_deprecated` 字段标记废弃条目：
+- `0` = 有效,默认查询可见
+- `1` = 废弃,默认查询不返回
+- 替代旧的 note 字符串标记(如 `[已废弃]`)
+- `dedupe` 命令会检查有效条目中的重复
+
 ---
 
 ## 📦 安装与配置
@@ -84,6 +98,9 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 存食品 | 添加食品营养成分表到库 | `calorie_tracker.py add-product` |
 | 改食品 | 更新食品营养成分 | `calorie_tracker.py update-product` |
 | 查食品库 | 列出全部食品营养成分 | `calorie_tracker.py list-products` |
+| 批量导入 | 批量录入/更新食品库（JSONL）| `batch_import.py import <file>` |
+| 校验批量 | 只校验 JSONL 不写入 | `batch_import.py validate <file>` |
+| 查食品库去重 | 全库去重检查（只报告）| `batch_import.py dedupe` |
 
 ### ⚖️ 体重
 
@@ -422,6 +439,39 @@ dashboard(start, end)                      # 综合四维度仪表盘
 - **查热量**：`calorie_tracker.py search-product <关键词>`
 - **改食品**：`calorie_tracker.py update-product <id> [--字段 值]`
 - **查食品库**：`calorie_tracker.py list-products`
+
+### 📦 批量导入食品库（2026-06-30 新增）
+
+适用场景:批量录入 / 批量更新 **10+ 条** 食品数据。
+
+工具:`scripts/batch_import.py`
+
+**子命令**:
+
+| 子命令 | 用途 |
+|--------|------|
+| `validate <file.jsonl>` | 只校验 JSONL,不读写数据库 |
+| `import <file.jsonl> [--dry-run]` | 批量导入(重复时逐条询问) |
+| `dedupe` | 全库去重检查(只报告,不修改) |
+| `export --source X --output F` | 按条件导出 JSONL |
+
+**JSONL 字段规范**:
+
+- **必填(7)**:`product_name`, `calories`, `protein`, `fat`, `carbohydrates`, `sodium`, `source`
+- **可选(6)**:`brand`, `saturated_fat`, `sugar`, `dietary_fiber`, `note`, `is_deprecated`
+
+**去重判定**:`product_name + brand` 完全相同视为同一条
+
+**重复处理**(逐条交互):
+
+| 快捷键 | 动作 |
+|--------|------|
+| `o` | 覆盖(更新数据) |
+| `s` | 跳过 |
+| `d` | 标废弃(is_deprecated=1) |
+| `a` | 全部应用此选择(再问一次具体动作) |
+
+**完整示例**:`python scripts/batch_import.py --help`
 
 ### ⚖️ 体重：记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标
 

@@ -324,6 +324,43 @@ const DATA = {
             }
           }
         ]
+      },
+      {
+        name: "批量导入食品库",
+        desc: "从 JSONL 批量录入/更新 10+ 条食品数据（2026-06-30 新增）",
+        triggers: [
+          {
+            word: "批量导入",
+            cli: "python scripts/batch_import.py import <file.jsonl> [--dry-run]",
+            flow: {
+              operation: "BATCH_INSERT_OR_UPDATE",
+              tables: [
+                { name: "nutrition_products", fields: "product_name, brand, calories, protein, fat, saturated_fat, carbohydrates, sugar, dietary_fiber, sodium, source, is_deprecated, note", op: "批量写入或更新" }
+              ],
+              sideEffects: "重复时逐条询问(o=覆盖/s=跳过/d=标废弃/a=全部应用),支持 --dry-run 预演"
+            }
+          },
+          {
+            word: "校验批量",
+            cli: "python scripts/batch_import.py validate <file.jsonl>",
+            flow: {
+              operation: "VALIDATE_ONLY",
+              tables: [],
+              sideEffects: "只校验 JSONL 字段完整性,不读写数据库"
+            }
+          },
+          {
+            word: "查食品库去重",
+            cli: "python scripts/batch_import.py dedupe",
+            flow: {
+              operation: "SELECT",
+              tables: [
+                { name: "nutrition_products", fields: "product_name, brand, COUNT(*), GROUP_CONCAT(id)", op: "读取(去重报告)" }
+              ],
+              sideEffects: "只报告不修改,查 is_deprecated=0 中的 (product_name+brand) 重复组"
+            }
+          }
+        ]
       }
     ]
   },

@@ -111,7 +111,11 @@ def add_note(args):
             try:
                 from feishu_sync import is_feishu_available, add_wish_sync
                 if is_feishu_available():
-                    sync_r = add_wish_sync(note_id, content.strip(), category)
+                    # tasklist_guid 由调用方通过 --tasklist-guid 显式传入（不读环境变量）
+                    sync_r = add_wish_sync(
+                        note_id, content.strip(), category,
+                        tasklist_guid=getattr(args, 'tasklist_guid', None),
+                    )
                     if sync_r.get("ok") and sync_r.get("task_guid"):
                         # 把 task_guid 写回 notes.feishu_task_guid
                         conn.execute(
@@ -1082,6 +1086,7 @@ def main():
     p_add.add_argument("--category", "-c", help="顶层分类：备忘/心愿/打卡/情绪日记（默认 备忘）")
     p_add.add_argument("--sub-category", "-s", help="备忘内部分类：社交/工作/学习/灵感/记账/成就")
     p_add.add_argument("--media", "-m")
+    p_add.add_argument("--tasklist-guid", help="飞书 tasklist GUID（仅 category=心愿 时生效；不传则飞书 task 进'我的任务'主页）")
 
     # search
     p_search = sub.add_parser("search")

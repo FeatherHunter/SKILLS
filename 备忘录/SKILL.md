@@ -37,10 +37,13 @@
 
 ## 环境变量
 
-| 变量名 | 说明 |
-|--------|------|--------|
-| `SKILLS_DB_PATH` | 数据库根目录（统一配置） |
-| `MEMO_MEDIA_DIR` | 媒体文件目录 |
+| 变量名 | 必填 | 说明 | 默认 |
+|--------|------|------|------|
+| `SKILLS_DB_PATH` | 否 | 数据库根目录（统一配置） | 父目录 .db/ 层层找 |
+| `MEMO_MEDIA_DIR` | 否 | 媒体文件目录 | `media` |
+| `MEMO_FEISHU_USER_OPEN_ID` | 飞书联动时必填 | 用户的飞书 open_id（assignee 用） | 无 |
+
+**注**：没有 tasklist 环境变量。tasklist 由 `add --tasklist-guid <guid>` 每次显式传入（少用场景）。
 
 ## 操作规范
 
@@ -167,6 +170,55 @@
 - **失败降级**：飞书 API 失败不阻塞本地操作（仅 stderr 记录）
 - 命令：`script/memo_cli.py sync-from-feishu` 或 `script/feishu_sync.py sync-from-feishu`
 
+#### 飞书联动环境变量（用户特定，必须自己配置）
+
+⚠️ **不要硬编码用户特定信息到代码里**。所有用户/本机特定配置通过环境变量传入。
+
+**默认行为**：飞书 task **不指定 tasklist**（建在飞书"我的任务"主页）。零配置即可使用飞书联动。
+
+**tasklist 怎么传**：每次 `add` 心愿时**显式传** `--tasklist-guid <guid>`。**没有环境变量预配置**——用户完全控制。
+
+| 环境变量 | 必填 | 说明 | 示例 |
+|---|---|---|---|
+| `MEMO_FEISHU_USER_OPEN_ID` | 飞书联动时是 | 用户的飞书 open_id（用于 task members assignee + follower） | `ou_cd84288d35925aa490f67332327972dd` |
+
+**未设置时行为**：
+- `MEMO_FEISHU_USER_OPEN_ID` 未设 → 飞书同步返回 `{"synced": false, "error": "环境变量 MEMO_FEISHU_USER_OPEN_ID 未设置"}`，本地操作不受影响
+
+#### tasklist 显式传入流程（少用场景）
+
+用户偶尔想把心愿放进特定 tasklist：
+
+1. **AI 跑 `feishu_sync.py list-tasklists`** → 列飞书侧所有 tasklist（含 name 和 guid）
+2. **AI 给用户看**：列出如 `📋 备忘录心愿 (guid=xxx)`, `🛒 购物 (guid=yyy)`
+3. **用户说"进 备忘录心愿"**
+4. **AI 传 `--tasklist-guid xxx`** → 飞书 task 进指定 tasklist
+
+**CLI 用法**：
+```bash
+# 默认（不指定 tasklist）→ 飞书主页
+memo_cli.py add "今天买咖啡" -c 心愿
+
+# 显式指定 tasklist → 飞书指定清单
+memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
+```
+
+#### AI 首次引导（用户首次使用飞书联动时）
+
+当用户第一次说"我想让心愿同步到飞书"或类似意图时：
+
+1. **检测环境变量**（运行 `python script/feishu_sync.py check` 看可用性）
+2. **如果 `MEMO_FEISHU_USER_OPEN_ID` 未设**：
+   - 提示用户："飞书联动需要你的 open_id，请告诉我或运行 `lark-cli` 配置获取"
+   - 引导用户用 `lark-cli +me` 获取 open_id
+   - 帮用户设置环境变量：`setx MEMO_FEISHU_USER_OPEN_ID ou_xxx`（Windows）或 `export`（POSIX）
+3. **完成配置后**：技能立即生效，无需重启
+4. **如果用户想要分到 tasklist**：
+   - 引导用户在飞书 App 手动建 tasklist
+   - AI 跑 `list-tasklists` 列出飞书侧 tasklist
+   - 用户说"这个心愿进 🧹" → AI 传 `--tasklist-guid <guid>`
+   - 不存环境变量，每次 add 显式传
+
 ### 完成心愿：流式工作流
 心愿完成是一个**原子操作**：删除原心愿 + 新建打卡 note，两步必须同时成功或同时回滚。
 - 触发词：完成心愿
@@ -239,10 +291,10 @@
 
 ### Cron Payload 示例
 ```
-请读取 /mnt/d/2Study/StudyNotes/SKILLS/备忘录/SKILL.md 并执行提醒检查流程
+请读取 ${SKILL_DIR}/SKILL.md 并执行提醒检查流程
 ```
 
-**说明**：Payload 只负责触发 skill 执行，不描述"有提醒/无提醒"的判断逻辑，该逻辑由 SKILL 内部决定。
+**说明**：`${SKILL_DIR}` 是占位符，部署时替换为技能实际目录的绝对路径（如 `/mnt/d/2Study/StudyNotes/SKILLS/备忘录` 或 `D:\2Study\StudyNotes\SKILLS\备忘录`）。Payload 只负责触发 skill 执行，不描述"有提醒/无提醒"的判断逻辑，该逻辑由 SKILL 内部决定。
 
 ## 参考文档
 

@@ -496,10 +496,11 @@
       <button class="trigger-tag" onclick="toggleDetail(this)">记打卡</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">记情绪日记</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [-m 媒体]</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [-m 媒体] [--tasklist-guid 飞书清单GUID]</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span> <span class="hl-flag">--tasklist-guid</span> <span class="hl-val">飞书清单GUID</span></pre>
+      <p><b>--tasklist-guid</b>：仅当 category=心愿 时生效。指定飞书 tasklist GUID，task 进指定清单；不传则飞书 task 进"我的任务"主页。</p>
       <h4>顶层分类（4 种）</h4>
       <table class="detail-table">
         <tr><th>分类</th><th>语义</th></tr>
@@ -1049,7 +1050,7 @@
       <h4>联动矩阵</h4>
       <table class="detail-table">
         <tr><th>本地操作</th><th>飞书动作</th><th>API</th></tr>
-        <tr><td><code>add 心愿</code></td><td>建飞书 task + 写回 feishu_task_guid</td><td><code>task tasks create --data {extra:{memo_id}}</code></td></tr>
+        <tr><td><code>add 心愿</code></td><td>建飞书 task + 写回 feishu_task_guid</td><td><code>task tasks create --data {summary, description, members, [tasklists]}</code></td></tr>
         <tr><td><code>update 心愿</code></td><td>改飞书 task 标题</td><td><code>task +update --task-id X --summary ...</code></td></tr>
         <tr><td><code>delete 心愿</code></td><td>标飞书 task 完成（飞书无 delete）</td><td><code>task +complete --task-id X</code></td></tr>
         <tr><td><code>complete-wish 心愿</code></td><td>标飞书 task 完成</td><td><code>task +complete --task-id X</code></td></tr>
@@ -1057,15 +1058,18 @@
       <h4>设计原则</h4>
       <ul class="flow-steps">
         <li data-step="·"><b>无开关</b>：自动检测 CLI 是否安装，不靠环境变量</li>
+        <li data-step="·"><b>零配置可用</b>：add 心愿不传 <code>--tasklist-guid</code> → 飞书 task 进"我的任务"主页</li>
+        <li data-step="·"><b>少用场景：显式传 tasklist</b>：用户偶尔想分到指定 tasklist 时，AI 跑 <code>list-tasklists</code> 列飞书清单 → 用户选 → AI 传 <code>--tasklist-guid</code></li>
         <li data-step="·"><b>本地优先</b>：飞书 API 失败不阻塞本地操作（仅 stderr 记录 warning）</li>
         <li data-step="·"><b>仅心愿联动</b>：备忘/打卡/情绪日记不联动飞书（不必要）</li>
         <li data-step="·"><b>需要 task_guid</b>：add 触发时自动建 + 写回 notes.feishu_task_guid；update/delete/complete-wish 依赖这个字段</li>
+        <li data-step="·"><b>memo_id 编码进 description</b>：飞书 task create 不支持 <code>extra</code> 字段，用 <code>description="原备忘 #N"</code> + 正则反查</li>
       </ul>
     </div>
   </div>
 
   <!-- 反向同步 -->
-  <div class="feature" data-keywords="备忘录同步飞书 反向同步 sync-from-feishu polling done">
+  <div class="feature" data-keywords="备忘录同步飞书 反向同步 sync-from-feishu polling done list-tasklists">
     <div class="feature-name">反向同步（飞书 → 本地）</div>
     <div class="feature-desc">主动拉飞书已完成 task，反查 memo_id → 触发本地 complete-wish</div>
     <div class="triggers">
@@ -1076,13 +1080,13 @@
       <h4>执行流程</h4>
       <ul class="flow-steps">
         <li data-step="1">拉飞书所有 status=done 的 task（<code>task +get-related-tasks</code>）</li>
-        <li data-step="2">对每个 done task 取 <code>extra.memo_id</code>（<code>task tasks get --task-guid</code>）</li>
+        <li data-step="2">对每个 done task 从 <code>description</code> 反查 <code>原备忘 #N</code> 提取 memo_id（<code>task tasks get --task-guid</code>）</li>
         <li data-step="3">反查本地：<code>SELECT id, category FROM notes WHERE id = ? AND feishu_task_guid = ?</code></li>
         <li data-step="4">如果 category=心愿 且本地还在 → 触发 <code>complete-wish memo_id</code></li>
         <li data-step="5">输出报告：scanned / synced / skipped</li>
       </ul>
       <h4>为什么需要这个</h4>
-      <p>V1/V2 联动只能处理"本地改 → 飞书改"。如果用户在飞书 App 手动 complete task，本地心愿 note 不会被删除（状态不一致）。</p>
+      <p>V2 联动只能处理"本地改 → 飞书改"。如果用户在飞书 App 手动 complete task，本地心愿 note 不会被删除（状态不一致）。</p>
       <p>用户说"备忘录同步飞书"主动触发反向同步，保持两边一致。</p>
       <h4>不起定时任务</h4>
       <p>设计上选择"用户主动触发"而非"cron 定时 polling"——避免无人值守时的意外操作。</p>
@@ -1091,11 +1095,78 @@
         <tr><th>字段</th><th>含义</th></tr>
         <tr><td><code>scanned</code></td><td>扫到的 done task 数</td></tr>
         <tr><td><code>synced</code></td><td>触发本地 complete-wish 成功的数</td></tr>
-        <tr><td><code>skipped_no_memo_id</code></td><td>飞书 task 没 extra.memo_id（不是 memo 联动）</td></tr>
+        <tr><td><code>skipped_no_memo_id</code></td><td>飞书 task description 没"原备忘 #N"（不是 memo 联动）</td></tr>
         <tr><td><code>skipped_already_done</code></td><td>本地 category 不是心愿（已处理过）</td></tr>
         <tr><td><code>skipped_no_local_note</code></td><td>本地 note 不存在或 feishu_task_guid 不匹配</td></tr>
         <tr><td><code>errors</code></td><td>失败的 memo_id 列表</td></tr>
       </table>
+    </div>
+  </div>
+
+  <!-- 列出飞书 tasklist（用户配置用） -->
+  <div class="feature" data-keywords="list-tasklists 列出 飞书 tasklist 配置">
+    <div class="feature-name">列出飞书 tasklist（配置用）</div>
+    <div class="feature-desc">让 AI 在引导用户偶尔指定 --tasklist-guid 时查询飞书侧 tasklist</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">列飞书清单</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/feishu_sync.py list-tasklists</button>
+    <div class="detail-panel">
+      <h4>用途</h4>
+      <p>AI 引导用户首次配置飞书联动时，查飞书侧所有 tasklist，让用户选择"心愿进哪个"。</p>
+      <h4>输出</h4>
+      <pre>[
+  {
+    "name": "📋 备忘录心愿",
+    "guid": "&lt;uuid&gt;"
+  },
+  ...
+]</pre>
+      <h4>典型使用流程（少用场景）</h4>
+      <ol class="flow-steps">
+        <li data-step="1">用户在飞书 App 手动建 tasklist（如"📋 备忘录心愿"）</li>
+        <li data-step="2">用户 add 心愿时，AI 主动问"你想进哪个飞书清单？"</li>
+        <li data-step="3">AI 跑 <code>list-tasklists</code> → 列飞书 tasklist（含 name + guid）</li>
+        <li data-step="4">用户说"进 备忘录心愿"</li>
+        <li data-step="5">AI 跑 <code>memo_cli.py add "心愿" -c 心愿 --tasklist-guid &lt;guid&gt;</code></li>
+        <li data-step="6"><b>不存环境变量，每次显式传</b></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 环境变量配置 -->
+  <div class="feature" data-keywords="环境变量 MEMO_FEISHU 配置 open_id tasklist">
+    <div class="feature-name">环境变量配置</div>
+    <div class="feature-desc">用户特定信息通过环境变量传入，无硬编码</div>
+    <div class="triggers">
+      <button class="trigger-tag" onclick="toggleDetail(this)">配置飞书环境变量</button>
+    </div>
+    <button class="cli-cmd" onclick="toggleFlow(this)">set MEMO_FEISHU_USER_OPEN_ID ou_xxx</button>
+    <div class="detail-panel">
+      <h4>必填环境变量</h4>
+      <table class="detail-table">
+        <tr><th>变量名</th><th>必填</th><th>说明</th></tr>
+        <tr><td><code>MEMO_FEISHU_USER_OPEN_ID</code></td><td>飞书联动时是</td><td>用户的飞书 open_id（如 <code>ou_cd84288d35925aa490f67332327972dd</code>）</td></tr>
+      </table>
+      <h4>注意：没有 tasklist 环境变量</h4>
+      <p><b>tasklist 不预配置</b>，每次 add 心愿时由调用方显式传 <code>--tasklist-guid</code> 参数。少用场景。</p>
+      <h4>默认行为（零配置）</h4>
+      <p>飞书 task <b>不指定 tasklist</b>，建在飞书"我的任务"主页。assignee 是用户自己。</p>
+      <h4>获取 open_id 的方法</h4>
+      <pre>lark-cli +me       # 直接查询当前用户的 open_id</pre>
+      <h4>设置环境变量</h4>
+      <pre># Windows 临时（仅当前命令）
+set MEMO_FEISHU_USER_OPEN_ID=ou_xxx
+python script/memo_cli.py add "心愿" -c 心愿
+
+# Windows 永久
+setx MEMO_FEISHU_USER_OPEN_ID ou_xxx
+
+# POSIX 临时
+export MEMO_FEISHU_USER_OPEN_ID=ou_xxx
+
+# POSIX 永久（写到 ~/.bashrc）
+echo 'export MEMO_FEISHU_USER_OPEN_ID=ou_xxx' >> ~/.bashrc</pre>
     </div>
   </div>
 

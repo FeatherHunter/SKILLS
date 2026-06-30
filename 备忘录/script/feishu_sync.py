@@ -29,15 +29,38 @@ from typing import Optional
 
 
 # ==================== 配置 ====================
+# ⚠️ 第一性原则：技能不能硬编码用户特定信息
+# 所有用户/本机特定配置必须通过环境变量传入
 
-# 飞书 tasklist 映射（category → tasklist_guid）
-# 可被环境变量 MEMO_FEISHU_TASKLISTS 覆盖（JSON 字符串）
-DEFAULT_TASKLISTS = {
-    "心愿": "9f05b59e-9c73-4669-9319-6e5981091f01",  # 💾 心愿-数据（临时通用 tasklist）
-}
-# 注：当前默认所有心愿进同一个 tasklist。后续可扩展按 sub_category 细分。
+# 用户飞书 open_id 环境变量
+# 设置方法: set MEMO_FEISHU_USER_OPEN_ID=ou_xxx
+ENV_USER_OPEN_ID = "MEMO_FEISHU_USER_OPEN_ID"
 
-USER_OPEN_ID = "ou_cd84288d35925aa490f67332327972dd"  # 用户 open_id
+# memo DB 路径环境变量（与 memo_cli.py 共享）
+ENV_SKILLS_DB_PATH = "SKILLS_DB_PATH"
+
+
+def _get_user_open_id() -> Optional[str]:
+    """取用户飞书 open_id（环境变量）"""
+    return os.environ.get(ENV_USER_OPEN_ID)
+
+
+def _get_memo_db_path() -> str:
+    """取 memo DB 路径（跟随 memo_cli.py 的查找逻辑）"""
+    # 1. 环境变量 SKILLS_DB_PATH（最高优先级）
+    env_path = os.environ.get(ENV_SKILLS_DB_PATH)
+    if env_path:
+        return os.path.join(env_path, "memo.db")
+    # 2. 父目录 .db/ 层层找（与 memo_cli._find_db_path 行为一致）
+    script_dir = Path(__file__).parent.parent  # 技能目录
+    for parent in script_dir.parents:
+        db_dir = parent / ".db"
+        if db_dir.is_dir():
+            return str(db_dir / "memo.db")
+    # 3. 技能目录下 .db/memo.db（最后 fallback）
+    default_dir = script_dir / ".db"
+    default_dir.mkdir(exist_ok=True)
+    return str(default_dir / "memo.db")
 
 
 # ==================== 跨平台 CLI 探测 ====================
@@ -112,34 +135,36 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
         return {"ok": False, "error": str(e)}
 
 
-def _get_tasklist_for_category(category: str) -> Optional[str]:
-    """根据 category 查 tasklist_guid"""
-    tasklists = DEFAULT_TASKLISTS
-    custom = os.environ.get("MEMO_FEISHU_TASKLISTS")
-    if custom:
-        try:
-            tasklists = json.loads(custom)
-        except json.JSONDecodeError:
-            pass
-    return tasklists.get(category)
-
-
 # ==================== 同步操作 ====================
 
-def add_wish_sync(memo_id: int, content: str, category: str = "心愿") -> dict:
+def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
+                  tasklist_guid: Optional[str] = None) -> dict:
     """新建飞书 task，返回 {ok, task_guid, error}
 
+    第一性原则：
+    - 飞书 task 可不指定 tasklist（tasklists 是可选字段），会进飞书"我的任务"主页
+    - tasklist_guid 由调用方显式传入（CLI 参数），不读环境变量"预配置"
+    - 零配置即可使用飞书联动（不传 tasklist_guid → 进飞书主页）
+
     行为：
-      1. 查 category 对应的 tasklist_guid
-      2. 调 lark-cli `tasks create --data {summary, description, tasklists, due, members, extra}`
-      3. 返回 task_guid（用于写入 notes.feishu_task_guid）
+      1. 查用户 open_id（环境变量，必须）
+      2. 接受 tasklist_guid 参数（可选，默认 None）
+      3. 调 lark-cli `tasks create --data {summary, description, [tasklists], members}`
+      4. 返回 task_guid（用于写入 notes.feishu_task_guid）
+
+    参数：
+      memo_id: memo note id（用于编码到 description 反查）
+      content: 飞书 task 标题
+      category: memo 分类（保留扩展性，目前不影响 tasklist 选择）
+      tasklist_guid: 飞书 tasklist GUID（可选）。None → task 进飞书"我的任务"主页
 
     返回：
       {"ok": bool, "task_guid": str | None, "error": str | None}
     """
-    tasklist_guid = _get_tasklist_for_category(category)
-    if not tasklist_guid:
-        return {"ok": False, "task_guid": None, "error": f"no tasklist mapping for category={category}"}
+    # 配置检查：user_open_id 必须有
+    user_open_id = _get_user_open_id()
+    if not user_open_id:
+        return {"ok": False, "task_guid": None, "error": f"环境变量 {ENV_USER_OPEN_ID} 未设置"}
 
     # 构造 task payload
     # 注：飞书 task create 不支持 extra 字段（API 拒绝）。
@@ -147,12 +172,14 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿") -> dict:
     payload = {
         "summary": content[:200],  # 飞书 title 最长 3000 字符
         "description": f"原备忘 #{memo_id}",
-        "tasklists": [{"tasklist_guid": tasklist_guid}],
         "members": [
-            {"id": USER_OPEN_ID, "type": "user", "role": "assignee"},
-            {"id": USER_OPEN_ID, "type": "user", "role": "follower"},
+            {"id": user_open_id, "type": "user", "role": "assignee"},
+            {"id": user_open_id, "type": "user", "role": "follower"},
         ],
     }
+    # 只有传了 tasklist_guid 才加（飞书会建无 tasklist 的 task 在"我的任务"主页）
+    if tasklist_guid:
+        payload["tasklists"] = [{"tasklist_guid": tasklist_guid}]
     r = _run_lark(["task", "tasks", "create", "--data", json.dumps(payload, ensure_ascii=False)])
 
     if r.get("ok"):
@@ -244,8 +271,8 @@ def sync_from_feishu(db_path: str = None) -> dict:
     done_tasks = _list_all_done_tasks()
 
     if db_path is None:
-        # 默认 DB 路径
-        db_path = os.path.join(os.environ.get("SKILLS_DB_PATH", r"D:\2Study\StudyNotes\.db"), "memo.db")
+        # 默认 DB 路径（通过 _get_memo_db_path 自动探测，不写死任何用户路径）
+        db_path = _get_memo_db_path()
 
     result = {
         "scanned": len(done_tasks),
@@ -319,6 +346,7 @@ def main():
     p_add.add_argument("--memo-id", type=int, required=True)
     p_add.add_argument("--content", required=True)
     p_add.add_argument("--category", default="心愿")
+    p_add.add_argument("--tasklist-guid", help="飞书 tasklist GUID（可选，不传则 task 进飞书'我的任务'主页）")
 
     p_complete = sub.add_parser("complete", help="标飞书 task 完成")
     p_complete.add_argument("--task-guid", required=True)
@@ -328,6 +356,7 @@ def main():
     p_update.add_argument("--content", required=True)
 
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步（飞书 done → 本地 complete-wish）")
+    p_list_tl = sub.add_parser("list-tasklists", help="列出飞书所有 tasklist（配置用）")
 
     args = parser.parse_args()
 
@@ -335,7 +364,7 @@ def main():
         ok = is_feishu_available()
         print(json.dumps({"available": ok, "cli_path": get_lark_cli_path()}, ensure_ascii=False, indent=2))
     elif args.command == "add":
-        result = add_wish_sync(args.memo_id, args.content, args.category)
+        result = add_wish_sync(args.memo_id, args.content, args.category, args.tasklist_guid)
         print(json.dumps(result, ensure_ascii=False, indent=2))
     elif args.command == "complete":
         result = complete_wish_sync(args.task_guid)
@@ -346,6 +375,12 @@ def main():
     elif args.command == "sync-from-feishu":
         result = sync_from_feishu()
         print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif args.command == "list-tasklists":
+        # 列出飞书所有 tasklist（用户偶尔指定 --tasklist-guid 时用）
+        r = _run_lark(["task", "tasklists", "list"])
+        items = (r.get("data") or {}).get("items") or []
+        output = [{"name": t["name"], "guid": t["guid"]} for t in items]
+        print(json.dumps(output, ensure_ascii=False, indent=2))
     else:
         parser.print_help()
 

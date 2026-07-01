@@ -22,6 +22,7 @@ Database module for Daily Recorder - 多 DB 滚动存储版本
 
 import sqlite3
 import os
+import re
 import time
 from pathlib import Path
 
@@ -182,6 +183,44 @@ class DBManager:
 
         self._current_seq = data_files[-1][0]
 
+    def _resolve_data_path(self, raw_path: str) -> Path:
+        """
+        路径自适应（2026-07-01 新增）：db_registry 里登记的路径在当前 OS 下不可访问时，
+        自动尝试 WSL↔Windows 互转，命中后返回新路径。
+
+        修复历史 bug：之前在 WSL 下跑过录音机，db_registry 记的是 /mnt/d/...
+        路径；回到 Windows 下 sqlite 打不开 → "unable to open database file"。
+
+        返回值一定是当前 OS 下可访问的 Path；不可访问则回退到 raw_path。
+        """
+        p = Path(raw_path)
+        if p.exists():
+            return p
+
+        # WSL → Windows：/mnt/<drive>/foo → <Drive>:\foo（任意盘符）
+        s = raw_path.replace('\\', '/')
+        m = re.match(r'^/mnt/([a-zA-Z])/(.*)$', s)
+        if m:
+            drive = m.group(1)
+            rest = m.group(2)
+            win_path = f"{drive.upper()}:\\{rest.replace('/', os.sep)}"
+            wp = Path(win_path)
+            if wp.exists():
+                return wp
+
+        # Windows → WSL：<Drive>:\foo → /mnt/<drive>/foo
+        m = re.match(r'^([a-zA-Z]):\\?(.*)$', raw_path)
+        if m:
+            drive = m.group(1).lower()
+            rest = m.group(2).replace('\\', '/')
+            wsl_path = f"/mnt/{drive}/{rest}"
+            wp = Path(wsl_path)
+            if wp.exists():
+                return wp
+
+        # 都找不到：原样返回，让上层报清晰的错
+        return p
+
     def _list_data_files(self) -> list[Path]:
         """返回所有数据文件路径，按序号排序（来自 db_registry）"""
         conn = sqlite3.connect(str(self._meta_path))
@@ -189,7 +228,13 @@ class DBManager:
         cur.execute("SELECT seq, file_path FROM db_registry ORDER BY seq ASC")
         rows = cur.fetchall()
         conn.close()
-        return [Path(row[1]) for row in rows]
+        result = []
+        for seq, raw_path in rows:
+            resolved = self._resolve_data_path(raw_path)
+            if str(resolved) != raw_path:
+                self._update_registry_path(seq, str(resolved))
+            result.append(resolved)
+        return result
 
     def _active_data_file(self) -> Path:
         """返回当前活跃数据文件路径（来自 db_registry）"""
@@ -201,7 +246,11 @@ class DBManager:
 
         if row:
             self._current_seq = row[0]
-            return Path(row[1])
+            raw_path = row[1]
+            resolved = self._resolve_data_path(raw_path)
+            if str(resolved) != raw_path:
+                self._update_registry_path(row[0], str(resolved))
+            return resolved
 
         # 完全没有注册过，初始化第一个
         seq = 0
@@ -210,6 +259,15 @@ class DBManager:
         self._register_data_file(data_path, seq, is_active=True)
         self._current_seq = seq
         return data_path
+
+    def _update_registry_path(self, seq: int, new_path: str):
+        """更新 db_registry 里指定序号的 file_path（路径自适应时调用）"""
+        conn = sqlite3.connect(str(self._meta_path))
+        cur = conn.cursor()
+        cur.execute("UPDATE db_registry SET file_path = ? WHERE seq = ?", (new_path, seq))
+        conn.commit()
+        conn.close()
+        print(f"[db.py 路径自适应] db_registry seq={seq} 路径已更新: {new_path}")
 
     def _file_size_mb(self, path: Path) -> float:
         """返回文件大小（MB）"""

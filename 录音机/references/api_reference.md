@@ -80,6 +80,8 @@ att_rows = db.query_attachments(date='20260509', file_type='image')
 
 ## 触发扫描（cron / 手动）
 
+### OpenClaw 数据源
+
 ```bash
 # 增量扫描（默认）
 python3 scripts/record.py
@@ -89,6 +91,27 @@ python3 scripts/record.py --full
 ```
 
 不带参数运行，自动从上次 checkpoint 增量扫描新消息。
+
+### Mavis (MiniMaxCode) 数据源（新增 2026-07-01）
+
+```bash
+# 增量同步（从 checkpoint 继续）
+python3 scripts/record_mavis.py
+
+# 全量重扫（清空 Mavis checkpoint）
+python3 scripts/record_mavis.py --full
+
+# 调试：限制本次最多同步 N 条
+python3 scripts/record_mavis.py --limit 100
+
+# 自定义 Mavis db 路径
+python3 scripts/record_mavis.py --mavis-db /path/to/sqlite.db
+```
+
+**关键差异**：
+- checkpoint key 是 `"__Mavis_global__"`（全局一个），跟 OpenClaw 的 session_file 路径天然隔离
+- checkpoint 存的是 `sm.id`（自增主键），不是时间戳
+- 环境变量 `MAVIS_DB` 可覆盖默认路径 `~/.mavis/sqlite.db`
 
 ## 状态与维护（CLI）
 

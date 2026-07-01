@@ -69,10 +69,18 @@
 
 ## 渠道判断
 
+### OpenClaw 数据源（小龙虾系统）
+
 从 Conversation info 的 chat_id 字段提取：
 - 包含 `qqbot` → `qq`
 - 包含 `weixin` 或 `wechat` → `wechat`
 - 其他 → `pc`
+
+### Mavis (MiniMaxCode) 数据源（新增 2026-07-01）
+
+渠道值固定为 `MiniMaxCode`。所有来自本机 Mavis daemon 的用户对话都用此渠道。
+
+详细字段映射见 `mavis_source.md`。
 
 ## 文件类型
 

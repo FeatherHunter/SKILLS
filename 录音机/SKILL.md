@@ -1,6 +1,6 @@
 ---
 name: 录音机
-description: 从 OpenClaw session 文件提取用户消息和附件入库。支持：扫描入库（增量/全量）、按日期/范围/渠道/发送者查询消息、查询附件（图片/语音/文件）、数据库管理（初始化/统计/重建索引）、定时任务管理（创建/查看/删除/触发）。触发词：扫描消息、全量扫描、扫描附件、查询消息、查询日期、查询范围、查询最近、查询今日、查询渠道、查询发送者、查询附件、查询图片、查询语音、初始化数据库、查看状态、统计消息、重建索引、查看定时、创建定时、删除定时、手动触发。
+description: 从 OpenClaw session 文件 + Mavis (MiniMaxCode) 本机 daemon 数据库提取用户消息和附件入库。支持：扫描入库（增量/全量，含 Mavis 数据源）、按日期/范围/渠道/发送者查询消息、查询附件（图片/语音/文件）、数据库管理（初始化/统计/重建索引）、定时任务管理（创建/查看/删除/触发）。触发词：扫描消息、全量扫描、扫描附件、查询消息、查询日期、查询范围、查询最近、查询今日、查询渠道、查询发送者、查询附件、查询图片、查询语音、初始化数据库、查看状态、统计消息、重建索引、查看定时、创建定时、删除定时、手动触发、同步mavis、全量同步mavis、扫描mavis、同步代码对话、同步minimax。
 triggers:
   - 扫描消息
   - 全量扫描
@@ -23,11 +23,16 @@ triggers:
   - 创建定时
   - 删除定时
   - 手动触发
+  - 同步mavis
+  - 全量同步mavis
+  - 扫描mavis
+  - 同步代码对话
+  - 同步minimax
 ---
 
 # 录音机
 
-> 从 OpenClaw session 文件提取用户消息和附件入库，支持灵活查询。本技能仅兼容小龙虾（OpenClaw）系统。
+> 从 OpenClaw session 文件 + Mavis (MiniMaxCode) 本机 daemon 数据库提取用户消息和附件入库，支持灵活查询。
 
 ## ⚠️ 强制性规定（最高优先级）
 
@@ -89,12 +94,35 @@ triggers:
 | 删除定时 | 删除定时任务 | `openclaw cron delete <task-id>` |
 | 手动触发 | 手动执行一次定时任务 | `openclaw cron run <task-id>` |
 
+### F. Mavis (MiniMaxCode) 数据源
+
+> 把本机 Mavis daemon 中的用户对话同步到录音机。新增于 2026-07-01。
+
+| 唤醒词 | 动作 | 命令 |
+|---|---|---|
+| 同步 mavis | 增量同步 Mavis 用户对话（按 sm.id） | `python3 scripts/record_mavis.py` |
+| 全量同步 mavis | 清空 Mavis checkpoint 全量重扫 | `python3 scripts/record_mavis.py --full` |
+| 扫描 mavis | 等同于"同步 mavis" | `python3 scripts/record_mavis.py` |
+| 同步代码对话 | 等同于"同步 mavis"（"MiniMaxCode" 别名） | `python3 scripts/record_mavis.py` |
+| 同步 minimax | 等同于"同步 mavis" | `python3 scripts/record_mavis.py` |
+
+**入库字段映射**：见 `references/mavis_source.md`
+- `channel = "MiniMaxCode"`
+- `sender_id` = `data.origin.rawMeta.senderId`（飞书）或 `data.source`（CLI/API/cron）
+- 全局 checkpoint key = `"__Mavis_global__"`（按 sm.id 单调递增）
+
+**与 OpenClaw 数据源区别**：
+- 数据源是 SQLite 表 `session_messages`，不是 JSONL 文件
+- 用 id（自增主键）而非时间戳做 checkpoint
+- 不存附件（MiniMaxCode schema 本身不存附件）
+
 ## 配置项
 
 | 环境变量 | 说明 | 默认值 |
 |----------|------|--------|
 | `SKILLS_DB_PATH` | 数据库目录 |  |
 | `OPENCLAW_SESSIONS` | OpenClaw agent 或 sessions 目录 | `~/.openclaw/agents`（自动扫描所有 agent） |
+| `MAVIS_DB` | Mavis (MiniMaxCode) 主数据库路径 | `~/.mavis/sqlite.db` |
 
 ## 一键安装
 
@@ -113,15 +141,17 @@ triggers:
 ├── SKILL.md                  # 本文件
 ├── 录音机.html               # 功能手册（单文件 HTML）
 ├── scripts/
-│   ├── record.py             # 主扫描脚本（增量/全量）
+│   ├── record.py             # OpenClaw 主扫描脚本（增量/全量）
+│   ├── record_mavis.py       # Mavis (MiniMaxCode) 同步脚本（增量/全量）
 │   ├── query.py              # 查询脚本（消息/附件/渠道/类型）
 │   ├── status.py             # 状态/统计/维护脚本
-│   └── db.py                 # 数据库模块
+│   └── db.py                 # 数据库模块（含路径自适应修复 2026-07-01）
 └── references/
     ├── database_schema.md    # 表结构说明
     ├── design_rationale.md   # 设计思路
     ├── api_reference.md      # 供其他技能调用的接口
-    └── recommended_cron.md   # 推荐定时任务配置
+    ├── recommended_cron.md   # 推荐定时任务配置
+    └── mavis_source.md       # Mavis 数据源文档（新增 2026-07-01）
 ```
 
 ## ⭐ 推荐定时任务
@@ -129,11 +159,19 @@ triggers:
 > 详细配置见 `references/recommended_cron.md`
 
 ```bash
+# OpenClaw 数据源（小龙虾系统）
 openclaw cron add \
   --name "录音机-每10分记录语录" \
   --every 10m \
   --session isolated \
   --message "静默执行记录今日语录：python3 scripts/record.py"
+
+# Mavis (MiniMaxCode) 数据源（本机 daemon,新增 2026-07-01）
+openclaw cron add \
+  --name "录音机-每10分同步Mavis" \
+  --every 10m \
+  --session isolated \
+  --message "静默执行：python3 scripts/record_mavis.py"
 ```
 
 ## 数据库

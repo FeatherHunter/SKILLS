@@ -363,8 +363,9 @@ body {
 
 <div class="header">
   <h1>录音机</h1>
-  <p class="desc">从 OpenClaw session 文件提取用户消息和附件入库，支持灵活查询。21 个唤醒词，5 大功能模块。</p>
-  <p class="desc" style="margin-top: 0.5rem; color: var(--blue); font-size: 0.8125rem;">🆕 2026-06-27：scanner 入口白名单 + message_id 部分唯一索引 + fallback 简化，修复 70%+ 历史重复入库问题</p>
+  <p class="desc">从 OpenClaw session 文件 + Mavis (MiniMaxCode) 本机 daemon 数据库提取用户消息和附件入库，支持灵活查询。26 个唤醒词，6 大功能模块。</p>
+  <p class="desc" style="margin-top: 0.5rem; color: var(--blue); font-size: 0.8125rem;">🆕 2026-07-01：新增 Mavis (MiniMaxCode) 数据源 + db.py 路径自适应（修复 WSL→Windows 路径打不开 bug）</p>
+  <p class="desc" style="margin-top: 0.25rem; color: var(--text-secondary); font-size: 0.75rem;">2026-06-27：scanner 入口白名单 + message_id 部分唯一索引 + fallback 简化，修复 70%+ 历史重复入库问题</p>
 </div>
 
 <div class="search-wrap">
@@ -378,11 +379,12 @@ body {
   <button class="tab" data-cat="query-att">查询附件</button>
   <button class="tab" data-cat="db">数据库管理</button>
   <button class="tab" data-cat="cron">定时任务</button>
+  <button class="tab" data-cat="mavis">Mavis 数据源</button>
 </div>
 
 <div class="stats" id="stats">
-  <span>显示 <span class="count" id="visible-count">21</span> 个唤醒词</span>
-  <span>共 <span class="count">21</span> 个</span>
+  <span>显示 <span class="count" id="visible-count">26</span> 个唤醒词</span>
+  <span>共 <span class="count">26</span> 个</span>
 </div>
 
 <div id="sections">
@@ -1036,10 +1038,97 @@ SELECT COUNT(*) FROM user_attachments WHERE date = :today</div>
 
 </div><!-- /sections -->
 
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- F. Mavis (MiniMaxCode) 数据源 -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" data-cat="mavis">
+  <div class="section-title">
+    <span class="section-badge">F</span>
+    <span class="section-name">Mavis 数据源</span>
+    <span class="section-desc">把本机 Mavis daemon 中的用户对话同步到录音机（新增 2026-07-01）</span>
+  </div>
+
+  <div class="module" data-wakes="同步mavis,扫描mavis,同步代码对话,同步minimax">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">增量同步</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="mavis-incremental">同步 mavis</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="mavis-incremental">扫描 mavis</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="mavis-incremental">同步代码对话</span>
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="mavis-incremental">同步 minimax</span>
+    </div>
+    <div class="wake-detail" data-cmd="mavis-incremental">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/record_mavis.py <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">读取</div>
+        <div class="flow-item">读 <code>~/.mavis/sqlite.db</code> 的 <span class="flow-table">session_messages</span> 表</div>
+        <div class="flow-item">checkpoint key = <code>"__Mavis_global__"</code>，按 <code>sm.id</code>（自增主键）做增量游标</div>
+        <div class="flow-item">过滤：<code>role = 'user' AND msg_content 非空</code>（跳过 assistant / 系统注入 / 空消息）</div>
+
+        <div class="flow-label">写入 - <span class="flow-table">user_messages</span></div>
+        <div class="flow-item">字段映射：</div>
+        <div class="flow-item"><span class="flow-field">message_id</span> ← <code>sm.msg_id</code>（如 <code>umsg_xxx</code>，全局唯一）</div>
+        <div class="flow-item"><span class="flow-field">session_file</span> ← <code>"Mavis:session:" + sm.session_id</code>（虚拟路径）</div>
+        <div class="flow-item"><span class="flow-field">timestamp</span> ← <code>sm.timestamp × 1000</code>（毫秒→微秒，统一 db schema）</div>
+        <div class="flow-item"><span class="flow-field">channel</span> ← <code>"MiniMaxCode"</code>（固定）</div>
+        <div class="flow-item"><span class="flow-field">sender_id</span> ← <code>data.origin.rawMeta.senderId</code>（飞书）或 <code>data.source</code>（CLI/API/cron）</div>
+        <div class="flow-item"><span class="flow-field">content</span> ← <code>data.msg_content</code>（用户原文）</div>
+        <div class="flow-item"><span class="flow-field">date</span> ← <code>YYYYMMDD</code>（北京时间）</div>
+        <div class="flow-item"><span class="flow-field">has_attachment</span> ← <code>0</code>（Mavis schema 不存附件）</div>
+        <div class="flow-item">去重：靠 (content, timestamp) + message_id 部分唯一索引（跟 OpenClaw 数据源天然隔离）</div>
+        <div class="flow-sql">INSERT OR IGNORE INTO user_messages
+  (message_id, session_file, timestamp, channel,
+   sender_id, content, date, has_attachment, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch())</div>
+
+        <div class="flow-label">写入 - <span class="flow-table">scan_checkpoint</span></div>
+        <div class="flow-item">checkpoint key = <code>"__Mavis_global__"</code>，value = <code>sm.id</code>（不是 timestamp）</div>
+        <div class="flow-item">与 OpenClaw 的 session_file 路径天然隔离，互不干扰</div>
+        <div class="flow-sql">INSERT OR REPLACE INTO scan_checkpoint
+  (session_file, last_timestamp, last_message_id, updated_at)
+VALUES ('__Mavis_global__', ?, ?, unixepoch())</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">无数据删除，纯增量追加</div>
+        <div class="flow-item">多次执行幂等：去重键 + checkpoint 保证不重不漏</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="module" data-wakes="全量同步mavis">
+    <div class="module-head" onclick="toggleModule(this)">
+      <span class="module-name">全量重扫</span>
+      <svg class="module-arrow" viewBox="0 0 16 16"><path fill="currentColor" d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="module-wakes">
+      <span class="wake-tag" onclick="toggleWake(this)" data-cmd="mavis-full">全量同步 mavis</span>
+    </div>
+    <div class="wake-detail" data-cmd="mavis-full">
+      <div class="wake-detail-title">CLI 命令</div>
+      <div class="cli-line" onclick="toggleFlow(this)">python3 scripts/record_mavis.py --full <span class="click-hint">点击查看执行流程</span></div>
+      <div class="flow-panel">
+        <div class="flow-label">预处理</div>
+        <div class="flow-item"><span class="flow-table">scan_checkpoint</span> 中 <code>__Mavis_global__</code> 一条记录重置为 id=0</div>
+        <div class="flow-item">注意：只清 Mavis checkpoint，OpenClaw 的 checkpoint 不受影响</div>
+
+        <div class="flow-label">后续行为</div>
+        <div class="flow-item">等同于增量同步，但从 id=0 开始扫描全部 user 消息</div>
+        <div class="flow-item">已有消息因 (content, timestamp) 唯一约束不会重复插入</div>
+
+        <div class="flow-label">副作用</div>
+        <div class="flow-item">耗时较长，需扫描全部历史 user 消息（~1100+ 条通常秒级完成）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="no-results hidden" id="no-results">没有匹配的唤醒词</div>
 
 <div class="footer">
-  录音机 v2 &middot; 21 个唤醒词 &middot; 5 大模块 &middot; 单文件 HTML 手册
+  录音机 v2 &middot; 26 个唤醒词 &middot; 6 大模块 &middot; 单文件 HTML 手册
 </div>
 
 <script>
@@ -1066,6 +1155,9 @@ const wakeCmdMap = {
   '创建定时': 'cron-create', '新建定时': 'cron-create',
   '删除定时': 'cron-delete', '移除定时': 'cron-delete',
   '手动触发': 'cron-run', '立即执行': 'cron-run',
+  '同步mavis': 'mavis-incremental', '扫描mavis': 'mavis-incremental',
+  '同步代码对话': 'mavis-incremental', '同步minimax': 'mavis-incremental',
+  '全量同步mavis': 'mavis-full',
 };
 
 // ── Tab switching ──

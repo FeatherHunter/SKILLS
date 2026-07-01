@@ -8,6 +8,10 @@
 __pycache__/
 *.pyc
 
+# 临时备份文件（带时间戳的 .bak,不入版本控制）
+*.bak.*
+*.bak[0-9]
+
 # OS
 .DS_Store
 Thumbs.db

@@ -481,27 +481,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
     <p class="module-desc">2026-06-29 重构：schedule_plans 表从「24 小时格子」升级为「事件型」，每条记录 = 一个具体时间事件（精确到分钟），与飞书日历事件模型对齐。飞书日历联动：当本机装了 lark-cli 且已授权，CLI 会询问是否把计划同步到飞书日历（diff_and_sync 算法，自动 create/update/delete + 回写 feishu_event_id）。一天 24h 录满是硬约束。</p>
     <div class="word-list">
 
-        <div class="word-item" data-keywords="查计划">
+        <div class="word-item" data-keywords="查计划 看计划 list-events 列出今日计划 看一天的计划">
             <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">查计划</span>
-                <span class="word-desc">查询单日计划作息（区别于"查作息"的实测数据）</span>
+                <span class="word-name">查计划 / 看计划</span>
+                <span class="word-desc">默认 list-events(完整事件+飞书同步状态),query-plans 仅 24h 概览</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
                 <div class="cli-row">
-                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-label">默认(推荐)</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-listevt')">python3 scripts/schedule_cli.py list-events &lt;日期&gt;</span>
+                </div>
+                <div class="cli-row">
+                    <span class="cli-label">24h 概览</span>
                     <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-query')">python3 scripts/schedule_cli.py query-plans &lt;日期&gt;</span>
                 </div>
-                <div class="flow-panel" id="flow-plan-query">
-                    <div class="flow-title">执行流程</div>
-                    <div class="flow-step">调用 query-plans 命令</div>
-                    <div class="flow-step">从 schedule_plans 表读取该日所有 hour 段（24 个 hour_N_planned 兼容字段，2026-06-29 后从事件表聚合）</div>
-                    <div class="flow-step">按小时顺序展示 00:00~24:00 计划内容</div>
+                <div class="flow-panel" id="flow-plan-listevt">
+                    <div class="flow-title">执行流程 (list-events,默认)</div>
+                    <div class="flow-step">探测飞书能力(is_feishu_available,缓存 5 分钟)</div>
+                    <div class="flow-step">DB 查询当日 schedule_plans,按 time_start 排序,含 is_active=0 的软删项</div>
+                    <div class="flow-step">格式化输出:id / 时段 / title / notes / feishu_event_id / last_synced_at</div>
+                    <div class="flow-step">✗ 前缀标记软删项,灰底显示</div>
+                    <div class="flow-step">末尾汇总:活跃 N 条 / 停用 N 条</div>
                     <table class="flow-table">
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
-                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0..hour_23</td><td>查某日计划</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">id, time_start/end, title, notes, category, feishu_event_id, last_synced_at</td><td>查单日完整事件</td></tr>
                     </table>
-                    <div class="flow-note"><strong>副作用：</strong>无写入操作。显示该日 24 小时计划。空小时标记为「未规划」。</div>
+                    <div class="flow-note"><strong>特点:</strong>list-events 是上位集合(全字段);query-plans 是下位聚合(同小时用 + 合并,丢 notes / 飞书 ID)。<strong>默认走 list-events</strong>。query-plans 仅在用户明确要 24h 时间表 / 检查空缺时用。改/删/诊断飞书同步也用 list-events。</div>
+                </div>
+                <div class="flow-panel" id="flow-plan-query">
+                    <div class="flow-title">执行流程 (query-plans,24h 概览)</div>
+                    <div class="flow-step">调用 query-plans 命令</div>
+                    <div class="flow-step">从 schedule_plans 表读取该日所有 hour 段(24 个 hour_N_planned 兼容字段,2026-06-29 后从事件表聚合)</div>
+                    <div class="flow-step">按小时顺序展示 00:00~24:00 计划内容</div>
+                    <div class="flow-step">末尾自动打印交叉提示:默认查询请用 list-events</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0..hour_23</td><td>查某日 24h 概览</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>副作用:</strong>无写入操作。显示该日 24 小时计划。空小时标记为「未规划」。<strong>适用场景:</strong>用户明确要 24h 时间表,或检查 (未规划) 空缺。多日查询也走这个(list-events 不支持多日)。</div>
                 </div>
             </div>
         </div>
@@ -525,7 +543,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date, hour_0..hour_23</td><td>查多日计划</td></tr>
                     </table>
-                    <div class="flow-note"><strong>用法：</strong>python3 scripts/schedule_cli.py query-plans 2026-06-29,2026-06-30,2026-07-01</div>
+                    <div class="flow-note"><strong>用法：</strong>python3 scripts/schedule_cli.py query-plans 2026-06-29,2026-06-30,2026-07-01<br><br><strong>为什么这里没有 list-events:</strong>list-events 只支持单日(date 参数唯一)。多日查询只能用 query-plans 的聚合视图(24h 小时段拼接)。</div>
                 </div>
             </div>
         </div>
@@ -617,29 +635,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                         <tr><td><span class="flow-badge badge-write">DELETE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">calendar events delete --event-id</td><td>询问后写飞书</td></tr>
                     </table>
                     <div class="flow-note"><strong>软删语义：</strong>不物理删除（操作规范禁止 DELETE），UPDATE is_active=0。list-events 会显示 ✗ 前缀。<strong>恢复：</strong>手动 SET is_active=1（CLI 当前不提供 reactivate 命令）。</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="word-item" data-keywords="看计划 list-events 列出今日计划 看一天的计划">
-            <div class="word-head" onclick="toggleWord(this)">
-                <span class="word-name">看计划</span>
-                <span class="word-desc">列出当日事件 + 飞书同步状态</span>
-                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-            </div>
-            <div class="word-detail">
-                <div class="cli-row">
-                    <span class="cli-label">CLI 命令</span>
-                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-listevt')">python3 scripts/schedule_cli.py list-events &lt;日期&gt;</span>
-                </div>
-                <div class="flow-panel" id="flow-plan-listevt">
-                    <div class="flow-title">执行流程</div>
-                    <div class="flow-step">探测飞书能力（is_feishu_available，缓存 5 分钟）</div>
-                    <div class="flow-step">DB 查询当日 schedule_plans，按 time_start 排序，含 is_active=0 的软删项</div>
-                    <div class="flow-step">格式化输出：id / 时段 / title / notes / feishu_event_id / last_synced_at</div>
-                    <div class="flow-step">✗ 前缀标记软删项，灰底显示</div>
-                    <div class="flow-step">末尾汇总：活跃 N 条 / 停用 N 条</div>
-                    <div class="flow-note"><strong>特点：</strong>一次看全 DB 状态 + 飞书同步状态，无需额外联合查询。<strong>触发同步：</strong>否，纯只读。</div>
                 </div>
             </div>
         </div>

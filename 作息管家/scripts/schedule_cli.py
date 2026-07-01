@@ -401,13 +401,17 @@ def cmd_query_plans(args):
         print(f"\n{'='*60}")
         print(f"📅 {plan['date']} 计划作息")
         print(f"{'='*60}")
-        
+
         for h in range(24):
             content = plan.get(f'hour_{h}', '')
             if content:
                 print(f"  {h:02d}:00 - {h+1:02d}:00  {content}")
             else:
                 print(f"  {h:02d}:00 - {h+1:02d}:00  (未规划)")
+
+        # 跨命令交叉提示（2026-07-01 新增：让 AI 和用户都知道 list-events 才是默认）
+        print(f"\n💡 这是 24h 聚合视图,同小时内的多条事件用 + 合并,丢失 notes/飞书同步状态/ID。")
+        print(f"   默认查询请用 list-events: schedule_cli.py list-events {plan['date']}")
 
 def cmd_upsert_plan(args):
     """

@@ -188,3 +188,44 @@ def search_keyword(keyword: str) -> list:
 def list_recent(limit: int = 10) -> list:
     """查询最近N条记录"""
     return fetch_all(limit=limit)
+
+
+# ── 更新记录 ──────────────────────────────────────────────────────────────────
+
+# 允许通过 update 子命令修改的字段(id/created_at 锁定)
+_UPDATE_ALLOWED = {'category', 'time', 'amount', 'account', 'ledger', 'currency', 'note'}
+
+
+def update_bill(record_id: int, **fields) -> dict:
+    """按ID修改记录(白名单字段)
+
+    Args:
+        record_id: 目标记录 ID
+        **fields: 待修改字段,如 category="餐饮", amount=-38.0
+
+    Returns:
+        {success: True/False, id, updated_fields} 或 {success: False, error}
+    """
+    updates = {k: v for k, v in fields.items() if k in _UPDATE_ALLOWED and v is not None}
+    if not updates:
+        raise ValueError("没有可更新的字段(至少传一个: category/time/amount/account/ledger/currency/note)")
+
+    conn = init_db()
+    try:
+        cursor = conn.cursor()
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        params = list(updates.values()) + [record_id]
+        cursor.execute(
+            f"UPDATE {TABLE_NAME} SET {set_clause} WHERE id = ?",
+            params
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return {"success": False, "error": f"ID={record_id} 不存在"}
+        return {
+            "success": True,
+            "id": record_id,
+            "updated_fields": list(updates.keys()),
+        }
+    finally:
+        conn.close()

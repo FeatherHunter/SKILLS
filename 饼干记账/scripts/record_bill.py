@@ -29,7 +29,8 @@ if str(_SCRIPT_DIR) not in sys.path:
 from db import (
     add_bill,
     list_today, list_date, list_date_range,
-    list_by_category, search_keyword, list_recent
+    list_by_category, search_keyword, list_recent,
+    get_by_id, update_bill
 )
 from analyze import (
     get_today_summary, monthly_summary,
@@ -59,6 +60,47 @@ def cmd_add(args):
         note=args.note or ""
     )
     print(f"✓ 已记录：{result['category']} {result['amount']:.2f}")
+    return result
+
+
+def cmd_update(args):
+    """修改账单(按 ID)"""
+    record_id = args.id
+
+    # 先查原记录,展示给用户
+    original = get_by_id(record_id)
+    if not original:
+        print(f"✗ ID={record_id} 不存在")
+        return
+
+    # 收集待更新字段(白名单已由 update_bill 过滤,这里只筛 None)
+    new_fields = {
+        k: v for k, v in vars(args).items()
+        if k not in ('id', 'command') and v is not None
+    }
+
+    if not new_fields:
+        print("✗ 没有传入任何修改字段(至少传一个: --category/--amount/--time/--account/--ledger/--currency/--note)")
+        return
+
+    # 展示 diff
+    print(f"📝 当前记录(ID={record_id}):")
+    print(f"   {original['time']} | {original['category']} | {original['amount']:.2f} | {original.get('note', '')}")
+    print(f"\n🔧 待修改:")
+    for k, v in new_fields.items():
+        old_val = original.get(k, '')
+        if isinstance(old_val, float):
+            print(f"   {k}: {old_val:.2f}  →  {v}")
+        else:
+            print(f"   {k}: {old_val}  →  {v}")
+
+    # 执行更新(diff + 确认由 AI 层负责,CLI 层按指令直接落库)
+    result = update_bill(record_id, **new_fields)
+
+    if result.get("success"):
+        print(f"\n✓ 已修改(ID={record_id}): {', '.join(result['updated_fields'])}")
+    else:
+        print(f"\n✗ 修改失败: {result.get('error', '未知错误')}")
     return result
 
 
@@ -255,6 +297,17 @@ def main():
     p.add_argument('--currency', default='人民币', help='货币')
     p.add_argument('--note', default='', help='备注')
 
+    # update
+    p = subparsers.add_parser('update', help='修改账单（按 ID,至少传一个字段）')
+    p.add_argument('--id', required=True, type=int, help='记录 ID')
+    p.add_argument('--category', default=None, help='分类')
+    p.add_argument('--amount', default=None, type=float, help='金额（负数为支出）')
+    p.add_argument('--time', default=None, help='时间 YYYY-MM-DD HH:MM:SS')
+    p.add_argument('--account', default=None, help='账户')
+    p.add_argument('--ledger', default=None, help='账本')
+    p.add_argument('--currency', default=None, help='货币')
+    p.add_argument('--note', default=None, help='备注')
+
     # list
     p = subparsers.add_parser('list', help='查询记录')
     p.add_argument('--date', default=None, help='日期 YYYY-MM-DD')
@@ -301,6 +354,7 @@ def main():
 
     commands = {
         'add': cmd_add,
+        'update': cmd_update,
         'list': cmd_list,
         'search': cmd_search,
         'summary': cmd_summary,

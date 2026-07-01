@@ -1,0 +1,13 @@
+# 本地 SQLite 数据文件（运行时数据，不进版本控制）
+作息管家/.db/schedule.db
+作息管家/.db/schedule.db-shm
+作息管家/.db/schedule.db-wal
+作息管家/.db/schedule.db-journal
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

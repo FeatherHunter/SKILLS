@@ -84,10 +84,74 @@ MiniMaxCode 渠道下的 sender_id 主要分两类:
 
 ## 不入库的内容
 
-1. `role = 'assistant'`(只要 user 说的,不要 AI 回的)
-2. `role IS NULL`(系统注入/元信息)
-3. `data.msg_content` 为空字符串或纯空白(空 user 消息)
-4. JSON 解析失败(脏数据)
+**过滤逻辑(2026-07-01 对抗式审查后收紧)**:
+
+### 1. SQL 过滤(写入层)
+
+```sql
+WHERE role = 'user'
+  AND json_extract(data, '$.msg_content') IS NOT NULL
+  AND trim(json_extract(data, '$.msg_content')) != ''
+  AND json_extract(data, '$.origin.rawMeta.senderId') IN (
+    'ou_cd84288d35925aa490f67332327972dd',  -- mavis
+    'ou_c1799e09e24951a31ce6dbf38156ea2f',  -- xiaoyan
+    'ou_e593dc144927a5dd3b103f51ec2273db',  -- coder
+    'ou_37683ad7bedafb3c10e15fbdbec58fe7',  -- xiaozhuo
+    'ou_41997d1d375bc9c45329398400c1a622'   -- xiaojiang
+  )
+```
+
+### 2. 排除项
+
+| 排除项 | 来源 | 数量(2026-07-01) | 为什么 |
+|---|---|---|---|
+| `role = 'assistant'` | AI 回复 | ~5000 | 只要 user 说的 |
+| `role IS NULL` | 系统注入 | ~340 | 元信息块 |
+| `source = 'api'` | mavis team plan spawn / CLI | 160 | 用户口径"API 调用不该录" |
+| `source = 'cron'` / `system` | 定时任务 | 10 | 不是真人 |
+| `source = 'communication'` | 跨 session 通信 | 1 | 不是用户自然对话 |
+| `senderId IS NULL` | 老数据 / permission-response | 20 | 是系统权限响应,不是用户说的 |
+| `msg_content` 空 | 异常 | ~50 | 无内容 |
+| 5 个 ou_xxx 之外的 sender | 其他飞书号 | 0(本机) | 白名单外不录 |
+
+### 3. 5 个 ou_xxx 白名单
+
+用户承认这 5 个飞书号都是自己(2026-07-01 确认):
+
+| sender_id | agent | 说明 |
+|---|---|---|
+| `ou_cd84288d35925aa490f67332327972dd` | mavis | 默认用户号 |
+| `ou_c1799e09e24951a31ce6dbf38156ea2f` | xiaoyan | 第二飞书号 |
+| `ou_e593dc144927a5dd3b103f51ec2273db` | coder | 第三飞书号 |
+| `ou_37683ad7bedafb3c10e15fbdbec58fe7` | xiaozhuo | 当前对话的飞书号 |
+| `ou_41997d1d375bc9c45329398400c1a622` | xiaojiang | 第五飞书号 |
+
+> ⚠️ **副作用**:之前 2026-07-01 调查时入库的 160 条 `api` 来源(其实是用户的真实对话)被识别后删除。这是按用户"API 调用不该录"的口径执行的,但意味着这些对话**永久丢失**。如果将来想保留,需要把白名单放宽到"任何真人 sender_id"。
+
+## 对抗式审查历史
+
+### 2026-07-01 第一轮
+
+**问题**:最初 SQL 只过滤 `role='user' AND msg_content 非空`,导致入库 1132 条,实际只有 941 条是用户的自然飞书对话。
+
+**错录明细**(共 191 条已 DELETE):
+- `sender='api'`:160 条 —— 用户说"API 调用的不该录"
+- `sender='system'`:10 条 —— cron 定时任务
+- `sender=''`(空):15 条 —— 异常数据
+- `sender='channel:feishu'`:5 条 —— 老数据无 senderId,内容是 `<permission-response>` XML
+- `sender='communication'`:1 条 —— 跨 session 通信
+
+**修复**:
+1. `record_mavis.py` 加 `USER_SENDER_IDS` 白名单(5 个 ou_xxx)
+2. SQL 加 `senderId IN (...)` 过滤
+3. DELETE 已入库的 191 条脏数据
+4. 净入库 941 条(全部白名单内)
+
+**口径冲突说明**:
+- 用户口径 1:"5 个 ou_xxx 都是我" → 这些都该录
+- 用户口径 2:"API 调用不该录" → `source=api` 不该录
+- 160 条 `api` 来源**其实是用户在 mavis team plan / CLI 模式下的真实对话**,但按口径 1(只录 5 个 ou_xxx)+ 口径 2(api 不录),它们都被排除
+- 用户拍板:按原口径删(2026-07-01 15:08)
 
 ## 调查方法参考
 

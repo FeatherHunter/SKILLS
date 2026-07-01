@@ -860,14 +860,19 @@ script/memo_cli.py set-due 36 --due null</pre>
         <li data-step="1">校验每个 id 存在 + <code>category='心愿'</code>（非心愿跳过）</li>
         <li data-step="2">校验 due 格式:YYYY-MM-DD 或 null</li>
         <li data-step="3">本地写入: <code>UPDATE notes SET due = ? WHERE id = ?</code>（SoT）</li>
-        <li data-step="4">飞书同步: 调 <code>task +update --task-id &lt;guid&gt; --due &lt;date&gt;</code>（镜像,失败不阻塞）</li>
+        <li data-step="4">飞书同步 (镜像,失败不阻塞),按 due 真值分流:
+          <ul>
+            <li><code>--due &lt;YYYY-MM-DD&gt;</code> → 调 <code>task +update --task-id &lt;guid&gt; --due &lt;date&gt;</code> (走 <code>update_due_sync</code>)</li>
+            <li><code>--due null</code> → 调 <code>task +update --task-id &lt;guid&gt; --data '{"due": null}'</code> (走 <code>clear_due_sync</code>,Python <code>subprocess.run(list)</code> 模式跳过 PowerShell 单引号字面量问题)</li>
+          </ul>
+        </li>
         <li data-step="5">输出报告: <code>requested / updated / feishu_synced / errors</code></li>
       </ul>
       <h4>涉及表 &amp; 字段</h4>
       <table class="detail-table">
         <tr><th>表</th><th>字段</th><th>操作</th></tr>
         <tr><td><code>notes</code></td><td>due, updated_at</td><td><span class="side-effect se-write">UPDATE</span></td></tr>
-        <tr><td>飞书 task</td><td>due (is_all_day=true, timestamp=date)</td><td><span class="side-effect">task +update</span></td></tr>
+        <tr><td>飞书 task</td><td>due (is_all_day=true, timestamp=date) / 清除时 <code>--data '{"due": null}'</code></td><td><span class="side-effect">task +update</span></td></tr>
       </table>
       <h4>使用场景</h4>
       <ul>

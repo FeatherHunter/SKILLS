@@ -294,6 +294,61 @@ def update_due_sync(task_guid: str, due_iso: str) -> dict:
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
+def clear_due_sync(task_guid: str) -> dict:
+    """清除飞书 task due（与本地 notes.due=null 镜像）
+
+    第一性：
+      - 飞书 task.update API 中 due=null 是合法值，服务端识别为"清空"
+      - lark-cli 不暴露 --due=null 之类的清空 flag（只有 --due <ISO 日期>）
+      - 只能走 --data JSON payload `{"due": null}` 显式传 null
+
+    注意：PowerShell 直接调 `lark-cli ... --data '{"due": null}'` 会失败,因为
+      PowerShell 把单引号字符串当字面量保留,argv[6] 实际是 `'{...}'`(首字符 `'`),
+      触发 lark-cli 校验 "invalid character 'd' looking for beginning of object key string"。
+    解决:用 Python 的 subprocess.run(list) 模式 → 跳过 PowerShell 字符串解析,
+      由 Windows CreateProcess + CommandLineToArgvW 正确拆 argv。
+
+    与 update_due_sync 的对称：
+      - update: 本地 due 非空 → 调 update_due_sync
+      - clear: 本地 due 为空 → 调 clear_due_sync（新增）
+
+    参数：
+      task_guid: 飞书 task GUID
+
+    返回：{"ok": bool, "error": str | None}
+    """
+    if not task_guid:
+        return {"ok": False, "error": "task_guid is required"}
+
+    cli = get_lark_cli_path()
+    if not cli:
+        return {"ok": False, "error": "lark-cli path not cached"}
+
+    data_payload = '{"due": null}'
+
+    try:
+        # 不分 Windows/POSIX,统一用 list 模式(Windows 上 Python 已正确处理引号)
+        proc = subprocess.run(
+            [cli, "task", "+update",
+             "--task-id", task_guid,
+             "--data", data_payload],
+            capture_output=True, encoding="utf-8", errors="replace",
+            timeout=30,
+        )
+
+        out = (proc.stdout or proc.stderr or "").strip()
+        try:
+            r = json.loads(out)
+        except json.JSONDecodeError:
+            return {"ok": False, "error": out[:200]}
+
+        return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "timeout"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 # ==================== V4: 反向同步（含 due）====================
 
 def _list_all_tasks() -> list:

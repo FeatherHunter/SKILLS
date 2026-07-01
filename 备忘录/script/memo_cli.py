@@ -613,11 +613,12 @@ def set_due(args):
     try:
         # 飞书同步 lazy import(避免 add/等命令不依赖 lark-cli)
         try:
-            from feishu_sync import is_feishu_available, update_due_sync
+            from feishu_sync import is_feishu_available, update_due_sync, clear_due_sync
             feishu_ready = is_feishu_available()
         except Exception:
             feishu_ready = False
             update_due_sync = None
+            clear_due_sync = None
 
         result = {
             "requested": len(note_ids),
@@ -647,18 +648,28 @@ def set_due(args):
             )
             result["updated"] += 1
 
-            # 飞书同步 (镜像) - 仅当 due_iso 非空且有 task_guid 时同步
-            if due_iso and note["feishu_task_guid"] and feishu_ready and update_due_sync:
-                sync_r = update_due_sync(note["feishu_task_guid"], due_iso)
-                if sync_r.get("ok"):
-                    result["feishu_synced"] += 1
-                else:
-                    result["errors"].append(f"id={nid} feishu: {sync_r.get('error')}")
-            elif due_iso and not note["feishu_task_guid"]:
+            # 飞书同步 (镜像) - 根据 due_iso 真值分流:
+            #   due_iso 非空 → update_due_sync (已有)
+            #   due_iso 为空 → clear_due_sync (新增,飞书 task due 字段清空)
+            if note["feishu_task_guid"]:
+                if not feishu_ready:
+                    result["errors"].append(f"id={nid}: 本地 due 已设,lark-cli 不可用")
+                elif due_iso and update_due_sync:
+                    sync_r = update_due_sync(note["feishu_task_guid"], due_iso)
+                    if sync_r.get("ok"):
+                        result["feishu_synced"] += 1
+                    else:
+                        result["errors"].append(f"id={nid} feishu: {sync_r.get('error')}")
+                elif due_iso is None and clear_due_sync:
+                    sync_r = clear_due_sync(note["feishu_task_guid"])
+                    if sync_r.get("ok"):
+                        result["feishu_synced"] += 1
+                    else:
+                        result["errors"].append(f"id={nid} feishu clear: {sync_r.get('error')}")
+            else:
                 # 心愿无飞书 task_guid → 飞书侧没任务可改,但本地 due 仍生效
+                # (可能本地心愿刚建还没补飞书 task,或 sync-from-feishu 未补建)
                 result["errors"].append(f"id={nid}: 本地 due 已设,飞书 task 缺失(可跑 sync-from-feishu 补建)")
-            elif due_iso and not feishu_ready:
-                result["errors"].append(f"id={nid}: 本地 due 已设,lark-cli 不可用")
 
         conn.commit()
         output_json(

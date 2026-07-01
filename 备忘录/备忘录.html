@@ -1110,7 +1110,7 @@ script/memo_cli.py set-due 36 --due null</pre>
   <!-- 备忘录同步飞书（双向对账） -->
   <div class="feature" data-keywords="备忘录同步飞书 反向同步 补建 sync-from-feishu polling done list-tasklists backfill">
     <div class="feature-name">备忘录同步飞书（双向对账）</div>
-    <div class="feature-desc">本地补建（本地心愿缺飞书 task）+ 反向同步（飞书 done → 本地 complete-wish）</div>
+    <div class="feature-desc">本地补建（本地心愿缺飞书 task）+ 反向同步 done（飞书 done → 本地 complete-wish）+ 反向同步 due（飞书未完成 task 的 due 覆盖本地，飞书优先到底）</div>
     <div class="triggers">
       <button class="trigger-tag" onclick="toggleDetail(this)">备忘录同步飞书</button>
     </div>
@@ -1132,12 +1132,16 @@ script/memo_cli.py set-due 36 --due null</pre>
         <li data-step="6">反查本地：<code>SELECT id, category FROM notes WHERE id = ? AND feishu_task_guid = ?</code></li>
         <li data-step="7">如果 category=心愿 且本地还在 → 触发 <code>complete-wish memo_id</code></li>
         <li data-step="8">输出报告：<code>backfilled</code> / <code>scanned</code> / <code>synced</code> / <code>skipped</code></li>
+        <li data-step="9"><b>due 反向同步</b>：从步骤 4 的 list 复用 status=todo 的 task，逐个调 <code>task tasks get --task-guid &lt;guid&gt;</code> 取 <code>due.timestamp</code>（list 接口不带 due）</li>
+        <li data-step="10">UTC ms → 北京日期 <code>YYYY-MM-DD</code>（UTC +8h），与本地 <code>notes.due</code> 比对</li>
+        <li data-step="11">飞书优先四象限处理：飞书新加 <code>due_added</code> / 飞书改 <code>due_overridden</code> / 飞书清 <code>due_removed</code>（本地也清） / 一致跳过</li>
       </ul>
       <h4>触发场景（什么时候需要）</h4>
       <ul>
         <li>add 心愿时 lark-cli 不可用 → sync 失败但 note 保留 → 用"备忘录同步飞书"补建</li>
         <li>历史 demo 残留心愿没有飞书 task → 同上</li>
         <li>用户在飞书 App 手动 complete task → 本地心愿不会被自动 complete → 用"备忘录同步飞书"反向同步</li>
+        <li>用户在飞书 App 改/清 task 的 due → 本地 <code>notes.due</code> 不变 → 用"备忘录同步飞书"反向同步 due（飞书优先，含飞书清 due → 本地也清的语义）</li>
       </ul>
       <h4>为什么是用户主动触发而不是 cron 定时</h4>
       <p>设计上选择"用户主动触发"而非"cron 定时 polling"——避免无人值守时的意外操作（飞书 task 误 complete 会导致本地心愿被自动完成）。</p>
@@ -1150,7 +1154,11 @@ script/memo_cli.py set-due 36 --due null</pre>
         <tr><td><code>skipped_no_memo_id</code></td><td>飞书 task description 没"原备忘 #N"（不是 memo 联动）</td></tr>
         <tr><td><code>skipped_already_done</code></td><td>本地 category 不是心愿（已处理过）</td></tr>
         <tr><td><code>skipped_no_local_note</code></td><td>本地 note 不存在或 feishu_task_guid 不匹配</td></tr>
-        <tr><td><code>errors</code></td><td>失败的 memo_id 列表</td></tr>
+        <tr><td><code>scanned_pending</code></td><td>扫到的飞书 todo (未完成) task 数（步骤 9-11）</td></tr>
+        <tr><td><code>due_added</code></td><td>飞书新加 due → 写入本地的数</td></tr>
+        <tr><td><code>due_overridden</code></td><td>飞书改 due → 覆盖本地的数</td></tr>
+        <tr><td><code>due_removed</code></td><td>飞书清 due → 本地也清的数</td></tr>
+        <tr><td><code>errors</code></td><td>失败的 memo_id / due 拉取列表</td></tr>
       </table>
     </div>
   </div>

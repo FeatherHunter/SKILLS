@@ -19,6 +19,7 @@
 - WSL/Linux/Mac: which lark-cli
 """
 import json
+import time
 import os
 import shutil
 import sqlite3
@@ -120,13 +121,18 @@ def _find_lark_cli() -> Optional[str]:
         try:
             r = subprocess.run(["where", "lark-cli"], capture_output=True, timeout=5)
             if r.returncode == 0:
-                return r.stdout.strip().split("\n")[0].strip()
+                encoding = sys.getdefaultencoding()
+                return r.stdout.decode(encoding, errors="replace").strip().split("\n")[0].strip()
         except Exception:
             pass
     else:
         # POSIX (Linux/WSL/Mac): which lark-cli
         try:
-            r = subprocess.run(["which", "lark-cli"], capture_output=True, timeout=5)
+            r = subprocess.run(
+                ["which", "lark-cli"],
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=5,
+            )
             if r.returncode == 0:
                 return r.stdout.strip().split("\n")[0].strip()
         except Exception:
@@ -138,20 +144,30 @@ def _find_lark_cli() -> Optional[str]:
     return None
 
 
-_LARK_CLI_CACHE: Optional[str] = None
+_LARK_CLI_CACHE: dict = {"path": None, "fetched_at": 0.0}
+_CACHE_TTL = 300  # 5 分钟（5min 后自动重探测，避免永久缓存失效路径）
 
 
-def is_feishu_available() -> bool:
-    """检测飞书 CLI 是否可用（带缓存，避免重复探测）"""
+def is_feishu_available(force_refresh: bool = False) -> bool:
+    """检测飞书 CLI 是否可用（带 TTL 缓存 + 强制刷新参数）
+
+    Args:
+        force_refresh: True 时忽略缓存，重新探测（用于路径变更后手动刷新）
+    """
     global _LARK_CLI_CACHE
-    if _LARK_CLI_CACHE is None:
-        _LARK_CLI_CACHE = _find_lark_cli()
-    return _LARK_CLI_CACHE is not None
+    if (
+        force_refresh
+        or _LARK_CLI_CACHE["path"] is None
+        or (time.time() - _LARK_CLI_CACHE["fetched_at"] > _CACHE_TTL)
+    ):
+        path = _find_lark_cli()
+        _LARK_CLI_CACHE = {"path": path, "fetched_at": time.time()}
+    return _LARK_CLI_CACHE["path"] is not None
 
 
 def get_lark_cli_path() -> Optional[str]:
     """获取 lark-cli 路径（必须在 is_feishu_available() 后调用）"""
-    return _LARK_CLI_CACHE
+    return _LARK_CLI_CACHE["path"]
 
 
 # ==================== lark-cli 包装 ====================
@@ -278,10 +294,15 @@ def update_due_sync(task_guid: str, due_iso: str) -> dict:
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
-# ==================== V3: 反向同步 ====================
+# ==================== V4: 反向同步（含 due）====================
 
-def _list_all_done_tasks() -> list:
-    """列出飞书所有 status=done 的 task"""
+def _list_all_tasks() -> list:
+    """列出飞书所有 task（不区分 status,caller 按 status 过滤）
+
+    第一性:list 接口不带 due 字段,所以一次拉全量交给 caller 处理:
+      - status=done → 步骤 2 (反向 complete-wish)
+      - status=todo → 步骤 3 (反向 due 同步)
+    """
     if not is_feishu_available():
         return []
 
@@ -289,27 +310,38 @@ def _list_all_done_tasks() -> list:
     if not r.get("ok"):
         return []
 
-    items = (r.get("data") or {}).get("items") or []
-    return [t for t in items if t.get("status") == "done"]
+    return (r.get("data") or {}).get("items") or []
 
 
-def _get_task_memo_id(task_guid: str) -> Optional[int]:
-    """从飞书 task description 反查 memo_id（正则提取 '原备忘 #N'）
+def _get_task_detail(task_guid: str) -> Optional[dict]:
+    """获取飞书 task 完整详情（含 due 字段）
 
-    返回：memo_id (int) 或 None
+    与 list 接口不同,单 task 接口才返回 due.timestamp。
     """
-    import re
     r = _run_lark(["task", "tasks", "get", "--task-guid", task_guid])
     if not r.get("ok"):
         return None
-    task = (r.get("data") or {}).get("task", {})
-    desc = task.get("description", "")
-    if not desc:
+    return (r.get("data") or {}).get("task") or {}
+
+
+def _parse_feishu_due(due_dict) -> Optional[str]:
+    """飞书 due dict → 本地 YYYY-MM-DD 字符串
+
+    飞书结构: {"is_all_day": True, "timestamp": "1782864000000"}  (ms UTC)
+    换算: UTC ms → 北京日期(BJ = UTC + 8h)
+    无 due / due 字段 absent → 返回 None
+
+    注:这里只解析,不构造,反向构造由 memo_cli.set_due → update_due_sync 处理
+    """
+    if not due_dict:
         return None
-    m = re.search(r"原备忘\s*#(\d+)", desc)
-    if m:
-        return int(m.group(1))
-    return None
+    ts = due_dict.get("timestamp")
+    if not ts:
+        return None
+    from datetime import datetime, timezone, timedelta
+    dt_utc = datetime.fromtimestamp(int(ts) / 1000, tz=timezone.utc)
+    dt_bj = dt_utc.astimezone(timezone(timedelta(hours=8)))
+    return dt_bj.strftime("%Y-%m-%d")
 
 
 def _backfill_local_wishes(conn) -> int:
@@ -344,12 +376,13 @@ def _backfill_local_wishes(conn) -> int:
 
 
 def sync_from_feishu(db_path: str = None) -> dict:
-    """完整同步:本地心愿补建飞书 task + 飞书 done → 本地 complete-wish
+    """完整同步:本地心愿补建飞书 task + 飞书 done → 本地 complete-wish + 飞书 todo due → 本地 notes.due
 
     第一性原则:
-      - "同步" = 双向对账(本地补建 + 反向同步)
-      - 本地是 source of truth,飞书是镜像
-      - 不破坏现有报告结构(向后兼容),新加 backfilled 字段
+      - "同步" = 双向对账(本地补建 + 反向同步 done + 反向同步 due)
+      - 本地是 source of truth(写入时 SoT);飞书是镜像;对账时飞书优先(用户主动触发 sync 即视同飞书说了算)
+      - due 反向同步仅处理 status=todo 的 task(已完成 task 的 due 已无价值)
+      - list 接口不带 due 字段,所以一次拉全量、按 status 分流,步骤 3 逐个 get 详情
 
     流程:
       步骤 1: 本地补建 (本地 → 飞书)
@@ -358,16 +391,28 @@ def sync_from_feishu(db_path: str = None) -> dict:
         - 成功 → UPDATE notes.feishu_task_guid
         - 失败 → 不阻塞,下一轮会重试
 
-      步骤 2: 反向同步 (飞书 → 本地)
-        - 拉飞书所有 done task
+      步骤 2: 反向同步 done (飞书 → 本地)
+        - 筛 status=done 的 task
         - 用 description 反查 memo_id
         - 本地心愿还在 → 触发 complete-wish
 
+      步骤 3: 反向同步 due (飞书 → 本地, 仅 status=todo)
+        - 逐个 task tasks get 拉 due.timestamp → YYYY-MM-DD (UTC ms → 北京日期)
+        - 飞书优先四象限(用户决策):
+          * 飞书有/本地无 → 写本地 (due_added)
+          * 飞书有/本地有且不同 → 覆盖本地 (due_overridden)
+          * 飞书无/本地有 → 清本地 (due_removed)
+          * 一致 → 跳过
+
     返回:
       {
-        "backfilled": int,        # 本地补建数(步骤 1)
-        "scanned": int,           # 飞书 done task 数(步骤 2)
-        "synced": int,            # 触发的本地 complete-wish 数(步骤 2)
+        "backfilled": int,           # 步骤1 本地补建数
+        "scanned_done": int,         # 步骤2 飞书 done task 数
+        "synced": int,               # 步骤2 触发的 complete-wish 数
+        "scanned_pending": int,      # 步骤3 飞书 todo task 数
+        "due_added": int,            # 步骤3 飞书新加 due → 写入本地
+        "due_overridden": int,       # 步骤3 飞书改 due → 覆盖本地
+        "due_removed": int,          # 步骤3 飞书清 due → 本地也清
         "skipped_no_memo_id": int,
         "skipped_already_done": int,
         "skipped_no_local_note": int,
@@ -375,7 +420,11 @@ def sync_from_feishu(db_path: str = None) -> dict:
       }
     """
     if not is_feishu_available():
-        return {"backfilled": 0, "scanned": 0, "synced": 0, "errors": ["feishu CLI not available"]}
+        return {
+            "backfilled": 0, "scanned_done": 0, "synced": 0,
+            "scanned_pending": 0, "due_added": 0, "due_overridden": 0, "due_removed": 0,
+            "errors": ["feishu CLI not available"],
+        }
 
     if db_path is None:
         # 默认 DB 路径(通过 _get_memo_db_path 自动探测,不写死任何用户路径)
@@ -387,13 +436,19 @@ def sync_from_feishu(db_path: str = None) -> dict:
     # 步骤 1: 本地补建 (本地 → 飞书)
     n_backfilled = _backfill_local_wishes(conn)
 
-    # 步骤 2: 反向同步 (飞书 → 本地)
-    done_tasks = _list_all_done_tasks()
+    # 一次 list 全量,按 status 分流到步骤 2/3
+    items = _list_all_tasks()
+    done_tasks = [t for t in items if t.get("status") == "done"]
+    todo_tasks = [t for t in items if t.get("status") == "todo"]
 
     result = {
         "backfilled": n_backfilled,
-        "scanned": len(done_tasks),
+        "scanned_done": len(done_tasks),
         "synced": 0,
+        "scanned_pending": len(todo_tasks),
+        "due_added": 0,
+        "due_overridden": 0,
+        "due_removed": 0,
         "skipped_no_memo_id": 0,
         "skipped_already_done": 0,
         "skipped_no_local_note": 0,
@@ -402,16 +457,21 @@ def sync_from_feishu(db_path: str = None) -> dict:
     memo_cli = os.path.join(os.path.dirname(__file__), "memo_cli.py")
     memo_python = sys.executable
 
+    import re
+    memo_id_re = re.compile(r"原备忘\s*#(\d+)")
+
+    # 步骤 2: 反向同步 done (飞书 → 本地 complete-wish)
     for t in done_tasks:
         task_guid = t.get("guid")
         if not task_guid:
             continue
 
-        # 从 description 反查 memo_id
-        memo_id = _get_task_memo_id(task_guid)
-        if not memo_id:
+        desc = t.get("description", "")
+        m = memo_id_re.search(desc)
+        if not m:
             result["skipped_no_memo_id"] += 1
             continue
+        memo_id = int(m.group(1))
 
         # 反查本地
         local = conn.execute(
@@ -438,9 +498,65 @@ def sync_from_feishu(db_path: str = None) -> dict:
             if proc.returncode == 0:
                 result["synced"] += 1
             else:
-                result["errors"].append(f"memo_id={memo_id}: {proc.stdout[:200]}")
+                result["errors"].append(f"complete memo_id={memo_id}: {proc.stdout[:200]}")
         except Exception as e:
-            result["errors"].append(f"memo_id={memo_id}: {e}")
+            result["errors"].append(f"complete memo_id={memo_id}: {e}")
+
+    # 步骤 3: 反向同步 due (飞书 → 本地 notes.due, 飞书优先)
+    for t in todo_tasks:
+        task_guid = t.get("guid")
+        if not task_guid:
+            continue
+
+        desc = t.get("description", "")
+        m = memo_id_re.search(desc)
+        if not m:
+            result["skipped_no_memo_id"] += 1
+            continue
+        memo_id = int(m.group(1))
+
+        local = conn.execute(
+            "SELECT id, due, category FROM notes WHERE id = ? AND feishu_task_guid = ?",
+            (memo_id, task_guid),
+        ).fetchone()
+
+        if not local:
+            result["skipped_no_local_note"] += 1
+            continue
+
+        if local["category"] != "心愿":
+            result["skipped_already_done"] += 1
+            continue
+
+        # 拉飞书 task 详情取 due
+        task = _get_task_detail(task_guid)
+        if not task:
+            result["errors"].append(f"due memo_id={memo_id}: failed to get task detail")
+            continue
+
+        feishu_due = _parse_feishu_due(task.get("due"))
+        local_due = local["due"]
+
+        if feishu_due == local_due:
+            # 一致 → 跳过
+            continue
+
+        # 飞书优先四象限处理
+        conn.execute(
+            "UPDATE notes SET due = ?, updated_at = datetime('now','localtime') WHERE id = ?",
+            (feishu_due, memo_id),  # feishu_due 为 None 时写 NULL
+        )
+        conn.commit()
+
+        if feishu_due is None:
+            # 飞书清 due → 本地也清(用户决策)
+            result["due_removed"] += 1
+        elif local_due is None:
+            # 飞书新加 due → 写本地
+            result["due_added"] += 1
+        else:
+            # 飞书改 due,本地不同 → 覆盖
+            result["due_overridden"] += 1
 
     conn.close()
     return result

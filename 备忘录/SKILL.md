@@ -202,10 +202,25 @@ sub_category 是**自由文本字段**，AI 智能从用户原话推断：
     - 查 `notes WHERE category='心愿' AND feishu_task_guid IS NULL`
     - 对每个 note 调 `add_wish_sync` 建飞书 task，写回 `feishu_task_guid`
     - 处理历史心愿 / 旧 demo 残留 / 之前同步失败的心愿
-  - **第二步：反向同步**（飞书 → 本地）
-    - 拉飞书所有已完成 task，反查 `notes.feishu_task_guid`
+  - **第二步：反向同步 done**（飞书 → 本地）
+    - 筛飞书 `status=done` 的 task，反查 `notes.feishu_task_guid`
     - 对本地还在的心愿触发 `complete-wish`
-  - **报告字段**：`backfilled`（补建数）+ `synced`（反向同步数）+ `errors[]`
+  - **第三步：反向同步 due**（飞书 → 本地 · 仅 `status=todo`）
+    - 用户在飞书 App 改/清 due 后，本地 `notes.due` 不会自动跟上 → 跑这里反向同步
+    - list 接口 `task +get-related-tasks` **不带 due 字段**，所以步骤 3 对每个 todo task 单独调 `task tasks get` 取 `due.timestamp`
+    - 时间戳换算：UTC ms → 北京日期（UTC +8h）→ `YYYY-MM-DD` 字符串
+    - **飞书优先**四象限处理（用户决策：飞书说了算）：
+      - 飞书有 due / 本地无 → 写本地（`due_added`）
+      - 飞书有 due / 本地有但不同 → 覆盖本地（`due_overridden`）
+      - 飞书无 due / 本地有 → 清本地（`due_removed`，飞书清 → 本地也清）
+      - 一致 → 跳过（不计入 `due_*` 字段）
+    - 性能：N 个 todo wish 需 N 次 `task tasks get` API call（串行，单次 <1s）。N≤50 时通常 <10s 完成
+  - **报告字段**：
+    - `backfilled`（步骤 1 本地补建数）
+    - `scanned_done` / `synced`（步骤 2 done 反向同步数）
+    - `scanned_pending` / `due_added` / `due_overridden` / `due_removed`（步骤 3 due 反向同步）
+    - `skipped_no_memo_id` / `skipped_already_done` / `skipped_no_local_note`
+    - `errors[]`
 - **自动检测**：`is_feishu_available()` 检查 lark-cli 是否在 `%APPDATA%\npm\`（Windows）或 `which lark-cli`（WSL/Linux/Mac）
 - **失败降级**：飞书 API 失败不阻塞本地操作（仅 stderr 记录）
 - 命令：`script/memo_cli.py sync-from-feishu` 或 `script/feishu_sync.py sync-from-feishu`

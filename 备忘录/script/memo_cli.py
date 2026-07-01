@@ -1277,10 +1277,21 @@ def main():
     elif args.command == "set-due":
         set_due(args)
     elif args.command == "sync-from-feishu":
-        # 反向同步：飞书 done → 本地 complete-wish
+        # 双向对账：本地补建 + 飞书 done 反向 + 飞书 due 反向
         from feishu_sync import sync_from_feishu
         result = sync_from_feishu()
-        output_json(result, message=f"双向同步: 补建={result.get('backfilled', 0)}, 反向={result['synced']}, 扫到={result['scanned']}, 错误={len(result.get('errors', []))}")
+        msg = (
+            f"双向同步完成: "
+            f"补建={result.get('backfilled', 0)} | "
+            f"done扫到={result.get('scanned_done', 0)}, 反向同步={result.get('synced', 0)}, "
+            f"跳过(无本地note)={result.get('skipped_no_local_note', 0)} | "
+            f"pending扫到={result.get('scanned_pending', 0)}, "
+            f"due新增={result.get('due_added', 0)}, "
+            f"due覆盖={result.get('due_overridden', 0)}, "
+            f"due清除={result.get('due_removed', 0)} | "
+            f"错误={len(result.get('errors', []))}"
+        )
+        output_json(result, message=msg)
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

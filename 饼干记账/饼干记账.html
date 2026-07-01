@@ -393,8 +393,8 @@
 </div>
 
 <div class="tabs" id="tabs">
-  <button class="tab active" data-category="all">全部<span class="count">14</span></button>
-  <button class="tab" data-category="write">写入<span class="count">3</span></button>
+  <button class="tab active" data-category="all">全部<span class="count">15</span></button>
+  <button class="tab" data-category="write">写入<span class="count">4</span></button>
   <button class="tab" data-category="query">查询<span class="count">6</span></button>
   <button class="tab" data-category="analyze">分析<span class="count">4</span></button>
   <button class="tab" data-category="stats">统计<span class="count">1</span></button>
@@ -510,6 +510,50 @@ const DATA = [
         "推断分类（餐饮/购物/交通…）",
         "展示识别结果，请用户确认",
         "用户确认 → 执行 add 命令写入",
+      ],
+    },
+  },
+  {
+    category: "write",
+    typeLabel: "写入",
+    typeClass: "type-write",
+    name: "改记录",
+    desc: "按 ID 修改已有记录。AI 层负责展示 diff 并等待用户确认,update CLI 一次性原子写入。删除功能未开放。",
+    triggers: [
+      { word: "改记录", example: "改记录 ID=123 备注加牛奶" },
+      { word: "改下", example: "改下那条午饭" },
+      { word: "改成", example: "改成38" },
+      { word: "修正", example: "修正 ID=123" },
+      { word: "编辑", example: "编辑 ID=123" },
+    ],
+    cli: "python3 scripts/record_bill.py update --id <ID> [--category X] [--amount Y] [--time T] [--account A] [--ledger L] [--currency C] [--note N]（至少传一个字段）",
+    flow: {
+      type: "write",
+      table: "bills",
+      operation: "UPDATE",
+      fields: [
+        { name: "id", type: "INTEGER", desc: "目标记录 ID（必需）", required: true },
+        { name: "category", type: "TEXT", desc: "新分类", required: false },
+        { name: "amount", type: "REAL", desc: "新金额（负数为支出）", required: false },
+        { name: "time", type: "TEXT", desc: "新时间 YYYY-MM-DD HH:MM:SS", required: false },
+        { name: "account", type: "TEXT", desc: "新账户", required: false },
+        { name: "ledger", type: "TEXT", desc: "新账本", required: false },
+        { name: "currency", type: "TEXT", desc: "新货币", required: false },
+        { name: "note", type: "TEXT", desc: "新备注", required: false },
+      ],
+      sideEffects: [
+        "id / created_at 字段锁定,不可修改",
+        "AI 层负责 diff + 确认（未确认前不调 update CLI）",
+        "至少传一个可修改字段,否则 CLI 报错",
+        "ID 不存在时返回失败,不抛异常",
+      ],
+      steps: [
+        "AI 用「查最近 / 查日期 / 搜备注」定位目标 ID",
+        "AI 计算 diff（原值 → 新值）",
+        "展示 diff 给用户,等待「确认」",
+        "用户确认 → 执行 update CLI",
+        "UPDATE bills SET <字段>=? WHERE id=?",
+        "返回修改结果",
       ],
     },
   },

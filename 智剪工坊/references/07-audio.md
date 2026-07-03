@@ -1,4 +1,17 @@
-# 07 - audio (音频处理 / BGM / 混音)
+# 07 - audio (音频处理 / BGM / 混音) — v0.5 已实现
+
+> **对应脚本:** `scripts/bgm_loop.py` + `scripts/beat_sync.py`(2 个)
+> **实测状态:** ✅ 验证通过
+
+```bash
+# BGM 循环混音
+python scripts/bgm_loop.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --out out.mp4
+
+# 节拍卡点
+python scripts/beat_sync.py --video v.mp4 --bgm bgm.mp3 --out out.mp4
+```
+
+---
 
 ## 触发词
 

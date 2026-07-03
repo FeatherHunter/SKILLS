@@ -1,4 +1,20 @@
-# 06 - text (文字动画 + 烧字幕)
+# 06 - text (文字动画 + 烧字幕) — v0.5 已实现
+
+> **对应脚本:** `scripts/auto_subtitle.py` + `scripts/voice_change.py` + `scripts/translate.py`(3 个)
+> **实测状态:** ✅ 验证通过
+
+```bash
+# 自动字幕(Whisper 转录 + 烧录)
+python scripts/auto_subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
+
+# 变声 12 种
+python scripts/voice_change.py --input v.mp4 --pitch +2 --output v_chipmunk.mp4
+
+# 翻译(占位,完整版用 rewrite_audio)
+python scripts/translate.py --input v.srt --target en --output v_en.srt
+```
+
+---
 
 ## 触发词
 

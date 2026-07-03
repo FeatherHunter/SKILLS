@@ -1,4 +1,17 @@
-# 01 - cutting (剪切 + 拼接)
+# 01 - cutting (剪切 + 拼接) — v0.5 已实现
+
+> **对应脚本:** `scripts/cut.py`(1 个,含 `trim` / `concat` 子命令)
+> **实测状态:** ✅ 验证通过
+
+```bash
+# 帧级剪切
+python scripts/cut.py trim --input v.mp4 --ss 30 --t 20 --output out.mp4
+
+# 拼接(concat demuxer)
+python scripts/cut.py concat --list clips.txt --output joined.mp4
+```
+
+---
 
 ## 触发词
 

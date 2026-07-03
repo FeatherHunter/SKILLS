@@ -1,4 +1,17 @@
-# 08 - cover-ai (AI 封面 / 生图 + 中文叠字)
+# 08 - cover-ai (AI 封面 / 生图 + 中文叠字) — v0.5 已实现
+
+> **对应脚本:** `scripts/cover_ai.py`(1 个,两步法:先生成视觉 + 后叠中文)
+> **实测状态:** ✅ 验证通过
+
+```bash
+python scripts/cover_ai.py \
+  --prompt "A man on a fitness journey, cinematic dramatic lighting, NO TEXT" \
+  --title-main "DAY 1" \
+  --subtitle "减脂日记" \
+  --out cover.jpg
+```
+
+---
 
 ## 触发词
 

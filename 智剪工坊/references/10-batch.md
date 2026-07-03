@@ -1,4 +1,20 @@
-# 10 - batch (批量处理)
+# 10 - batch (批量处理) — v0.5 已实现
+
+> **对应脚本:** `scripts/batch.py`(1 个,5 个 task:xfade / color / reencode / concat / cover)
+> **实测状态:** ✅ 验证通过(progress bar + 进度条 20%→100%)
+
+```bash
+# 批量加转场
+python scripts/batch.py --input videos/ --task xfade --type fade --duration 0.5 --out out/
+
+# 批量调色
+python scripts/batch.py --input videos/ --task color --preset cinematic --out out/
+
+# 批量转码
+python scripts/batch.py --input videos/ --task reencode --resolution 1920:1080 --out out/
+```
+
+---
 
 ## 触发词
 

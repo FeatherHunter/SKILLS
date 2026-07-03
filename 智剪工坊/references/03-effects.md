@@ -1,4 +1,17 @@
-# 03 - effects (视觉特效 / 慢动作 + 推镜头)
+# 03 - effects (视觉特效 / 慢动作 + 推镜头) — v0.5 已实现
+
+> **对应脚本:** `scripts/fx.py` + `scripts/keyframe.py`(2 个)
+> **实测状态:** ✅ 验证通过
+
+```bash
+# 慢动作 / 推镜头 / 模糊等
+python scripts/fx.py --input v.mp4 --effect zoom_in --output out.mp4
+
+# 关键帧动画
+python scripts/keyframe.py --input v.mp4 --keyframes "0,1.0;2,1.5" --output out.mp4
+```
+
+---
 
 ## 触发词
 

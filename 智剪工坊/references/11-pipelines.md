@@ -1,4 +1,19 @@
-# 11 - pipelines (大流程模板)
+# 11 - pipelines (大流程模板) — v0.5 已实现
+
+> **对应脚本:** `scripts/pipeline_vlog.py`(1 个,7 步 vlog 流水线)
+> **实测状态:** ✅ 验证通过
+
+```bash
+python scripts/pipeline_vlog.py run \
+  --input videos/ \
+  --output day1/ \
+  --theme "Day 1" \
+  --bgm bgm.mp3 \
+  --concat-list clips.txt \
+  --subtitle-srt day1_subtitle.srt
+```
+
+---
 
 ## 触发词
 

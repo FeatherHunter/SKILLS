@@ -1,4 +1,20 @@
-# 04 - cinematic (电影感剪辑手法)
+# 04 - cinematic (电影感剪辑手法) — v0.5 已实现
+
+> **对应脚本:** `scripts/speed.py` + `scripts/reverse.py` + `scripts/multicam.py`(3 个)
+> **实测状态:** ✅ 验证通过
+
+```bash
+# 曲线变速
+python scripts/speed.py --input v.mp4 --speed 0.5 --output out.mp4
+
+# 倒放
+python scripts/reverse.py --input v.mp4 --output out.mp4
+
+# 多机位
+python scripts/multicam.py --inputs a.mp4 b.mp4 c.mp4 --output synced.mp4
+```
+
+---
 
 ## 触发词
 

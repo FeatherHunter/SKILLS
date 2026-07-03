@@ -1,4 +1,33 @@
-# 09 - ai-features (AI 智能剪辑)
+# 09 - ai-features (AI 智能剪辑) — v0.5 已实现
+
+> **对应脚本:** 7 个 — `cutout.py` / `quotes.py` / `scene_detect.py` / `mask.py` / `overlay.py` / `reframe.py` / `remove_fillers.py`
+> **实测状态:** ✅ 验证通过
+
+```bash
+# AI 抠图(rembg)
+python scripts/cutout.py --input v.mp4 --output no_bg.mp4
+
+# 金句检测(NLP)
+python scripts/quotes.py --input v.mp4 --top 5
+
+# 场景检测(OpenCV 帧差)
+python scripts/scene_detect.py --input v.mp4 --threshold 0.3
+
+# 蒙版(face / box)
+python scripts/mask.py --input v.mp4 --type face --output masked.mp4
+
+# 画中画(overlay)
+python scripts/overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
+
+# 重新构图(9:16 / 1:1 / 16:9)
+python scripts/reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
+
+# 🆕 去水词(L2 word-level,需要 agent 标水词)
+python scripts/remove_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
+```
+
+---
 
 ## 触发词
 

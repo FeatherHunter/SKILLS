@@ -1,4 +1,21 @@
-# 05 - color (调色 / LUT)
+# 05 - color (调色 / LUT) — v0.5 已实现
+
+> **对应脚本:** `scripts/color_style.py` + `scripts/style_transfer.py` + `scripts/hdr_io.py`(3 个)
+> **实测状态:** ✅ 验证通过
+> **注意:** ffmpeg 7.1 不支持 `curves=preset=`,已改用 `colorbalance` + `eq` filter(v0.5 修 bug 9)
+
+```bash
+# 调色(18 预设)
+python scripts/color_style.py --input v.mp4 --preset cinematic --output out.mp4
+
+# 风格迁移
+python scripts/style_transfer.py --input v.mp4 --reference ref.jpg --output out.mp4
+
+# HDR 导入/导出
+python scripts/hdr_io.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
+```
+
+---
 
 ## 触发词
 

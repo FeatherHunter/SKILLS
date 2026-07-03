@@ -1,4 +1,13 @@
-# 02 - transitions (转场 / xfade)
+# 02 - transitions (转场 / xfade) — v0.5 已实现
+
+> **对应脚本:** `scripts/xfade.py`(1 个,60+ 转场)
+> **实测状态:** ✅ 验证通过
+
+```bash
+python scripts/xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --out joined.mp4
+```
+
+---
 
 ## 触发词
 

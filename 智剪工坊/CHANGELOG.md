@@ -42,6 +42,14 @@
 - ✅ batch.py 5 文件实测:进度条 20%→100% 正常,fail 继续不中断
 - ⚠️ C-1 / C-2 mmx 视频生成未实测(避免浪费 API 配额)
 
+### 🧹 文档清理(bug 教训迁出 SKILL.md)
+基于第一性原理:
+- **SKILL.md** 教训段 10 条 → 1 行指针(指向 FAQ / HANDOFF / 子技能 references)
+  - 理由:bug 教训对 AI 路由价值低(路由靠 description 触发词),对开发者价值高(在 HANDOFF)
+- **FAQ.md** bug 表 → 3 个 Q&A(Q31-33:8 小时视频 / AI 中文乱码 / NVENC 崩溃)+ 5 条已知限制
+- **HANDOFF.md** 完整保留(本来就是给下个 session 开发者的家)
+- **references/** 特定子技能 bug 提示保留(如 05-color.md 的 ffmpeg 7.1 `curves=preset=` 提示)
+
 ---
 
 ## v0.4 (2026-07-03) - 改词翻唱 L2

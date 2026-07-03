@@ -1,8 +1,8 @@
 # 智剪工坊 · 功能对比与 Gap 分析
 
-> 2026-07-03 首次对比 · 基于剪映/Pr/Resolve/FCP 2025 公开资料
+> 2026-07-03 v0.5 更新 · 30 脚本全实现 · 5 个 AI 增强(美颜/去水词/改词/文字成片/数字人)
 
-## 一、四大主流软件核心能力
+## 一、四大主流软件核心能力(2025 公开资料)
 
 | 类别 | 剪映 | Premiere Pro 2025 | DaVinci Resolve 20 | Final Cut Pro 11 |
 |---|---|---|---|---|
@@ -17,63 +17,96 @@
 | **协作** | 云协作 | Creative Cloud | Blackmagic Cloud | iCloud |
 | **价格** | 免费 | ¥235/月 | **免费(90%功能)** | ¥1998 买断 |
 
-## 二、智剪工坊现状
+## 二、智剪工坊现状(2026 v0.5)
 
-### ✅ 已实现(5 个脚本)
-- `cut.py` - 剪切 + 拼接
-- `xfade.py` - 60+ 转场
-- `bgm_loop.py` - BGM 循环混音
-- `cover_ai.py` - AI 生图 + 中文叠字
-- `pipeline_vlog.py` - 7 步流水线
+### ✅ 已实现 15 子技能 / 30 脚本
 
-### ⚠️ 占位待实现(6 个)
-- effects (慢动作/推镜头)
-- cinematic (J/L cut / speed ramp)
-- color (LUT / curves)
-- text (烧字幕 / 文字动画)
-- ai-features (抠图 / 金句 / 节拍)
-- batch (批量自动化)
-
-## 三、Gap 分析
-
-### P0 - 必补(高频 + 代码能做 + 1-2 小时搞定)
-
-| 缺口 | 实现路径 | 工作量 | 剪映对比 |
+| # | 子技能 | 脚本数 | 能力 |
 |---|---|---|---|
-| 倒放 | `setpts=-1*PTS` | 30 分钟 | 剪映有 |
-| 曲线变速 | setpts 表达式 + 模板 | 2 小时 | 剪映有 |
-| 画中画 | ffmpeg overlay | 1 小时 | 剪映有 |
-| 蒙版(基础) | ffmpeg mask filter | 2 小时 | 剪映有 |
-| 变声 | ffmpeg asetrate | 30 分钟 | 剪映有 |
-| 风格化滤镜 | 6-8 种 ffmpeg filter | 2 小时 | 剪映有 |
-| 节拍卡点(完成) | librosa 已有方案 | 2 小时 | 剪映有 |
+| 01 | cutting | 1 | 剪切(帧级)+ 拼接(concat demuxer) |
+| 02 | transitions | 1 | 60+ 转场(fade/wipe/slide/zoom/dissolve) |
+| 03 | effects | 2 | 慢动作 / 推镜头(zoompan)/ 关键帧动画 |
+| 04 | cinematic | 3 | J-cut / L-cut / 倒放 / speed ramp / 曲线变速 / 多机位 |
+| 05 | color | 3 | 18 预设 + LUT + 风格迁移(矩阵卷积)/ HDR 导入导出 |
+| 06 | text | 3 | 自动字幕(Whisper 烧字幕)/ 变声 12 种 / 翻译(占位) |
+| 07 | audio | 2 | BGM 循环混音 / 节拍卡点(librosa) |
+| 08 | cover | 1 | AI 生图 + 中文叠字(两步法) |
+| 09 | ai-features | 7 | 抠图(rembg)/ 金句检测 / 场景检测 / 蒙版 / 画中画 / 重新构图 / **去水词**(word-level) |
+| 10 | batch | 1 | 进度条 + 5 个 task(xfade/color/reencode/concat/cover) |
+| 11 | pipelines | 1 | 7 步 vlog 流水线(转录→分析→拼接→字幕→BGM→封面) |
+| 12 | **🆕 beauty** | 1 | **美颜**(磨皮/美白/瘦脸/大眼,5 预设) |
+| 13 | **🆕 rewrite-audio** | 1 | **改词翻唱**(Whisper + agent 改写 + matrix TTS 327 声音) |
+| 14 | **🆕 text-to-video** | 1 | **文字成片**(mmx matrix_gen_videos) |
+| 15 | **🆕 digital-human** | 1 | **数字人**(mmx subject + TTS) |
 
-### P1 - 应该补(剪映核心体验)
+### ⚠️ 已知限制
 
-| 缺口 | 实现路径 | 工作量 |
+- L3 声音克隆(用自己声音)— matrix MCP 只暴露 327 预置声音
+- 数字人嘴型精准对齐 — mmx subject 模式只"保持人脸动",不保证嘴型精准
+- 4K 大文件处理慢 — 建议降分辨率到 1080p
+- 跨平台 — Mac/Linux setup.sh 写好但只测 Windows
+
+## 三、差异化定位(智剪工坊 vs 剪映)
+
+| 维度 | 智剪工坊优势 | 剪映优势 |
 |---|---|---|
-| AI 字幕自动生成 | Whisper(已有) + 自动烧录 | 1-2 天 |
-| 多机位剪辑 | 4 路 sync + 切换 | 1-2 天 |
-| AI 场景检测 | OpenCV 帧差 | 半天 |
-| 自动重新构图 | OpenCV + face detection | 1 天 |
-| 风格迁移 | OpenCV + Stable Diffusion API | 2-3 天 |
-| 关键帧动画 | ffmpeg 复杂表达式 | 1-2 天 |
-| HDR 导入导出 | ffmpeg + HDR 元数据 | 半天 |
-| 动态模糊/光晕 | ffmpeg 现成 filter | 半天 |
+| **批量** | ✅ 100 视频一键 | ❌ |
+| **AI 定制** | ✅ 任意接 API | ⚠️ 闭源 |
+| **CLI 自动化** | ✅ 跑定时任务 | ❌ |
+| **精确控制** | ✅ 帧级 | ⚠️ 关键帧 |
+| **价格** | ✅ 免费 | ✅ 免费 |
+| **去水词** | ✅ **word-level 精准切**(剪映做不到) | ❌ 只能手动剪 |
+| **美颜 CLI** | ✅ 命令行 + 5 预设 | ✅ GUI 更强 |
+| **文字成片 + 数字人** | ✅ 程序员可定制 | ✅ 用户更友好 |
+| **改词翻唱** | ✅ 自然语言路由到 agent | ✅ GUI |
+| **特效/调色** | ⚠️ 中等 | ✅ 强 |
+| **上手难度** | ⚠️ 中(懂命令行) | ✅ 低 |
+| **模板生态** | ❌ | ✅ |
 
-### P2 - 战略差异(剪映没有的)
+## 四、Gap 分析(2026 v0.5 视角)
 
-| 缺口 | 实现路径 | 状态 |
+### P0 已补(2026-07-03 v0.5 前)
+
+| 缺口 | 实现 | 状态 |
 |---|---|---|
-| 批量自动化(100 视频) | 脚本 | ⚠️ 占位 |
-| 金句检测 | Whisper + NLP | ⚠️ 占位 |
-| 节拍卡点 | librosa | ⚠️ 占位 |
-| AI 抠图 | rembg | ⚠️ 占位 |
-| AI 文字成片 | 文生视频 API(可灵/Vidu) | 🆕 待规划 |
-| AI 数字人 | 数字人 API | 🆕 待规划 |
-| 视频翻译 | Whisper + 翻译 API + TTS | 🆕 待规划 |
+| 倒放 | `scripts/reverse.py` | ✅ |
+| 曲线变速 | `scripts/speed.py` | ✅ |
+| 画中画 | `scripts/overlay.py` | ✅ |
+| 蒙版(基础) | `scripts/mask.py` | ✅ |
+| 变声 | `scripts/voice_change.py` | ✅ |
+| 风格化滤镜 | `scripts/color_style.py` | ✅ |
+| 节拍卡点 | `scripts/beat_sync.py` | ✅ |
 
-### P3 - 不补(剪映特色/不切实际)
+### P1 已补(2026-07-03 v0.5 前)
+
+| 缺口 | 实现 | 状态 |
+|---|---|---|
+| AI 字幕自动生成 | `scripts/auto_subtitle.py` | ✅ |
+| 多机位剪辑 | `scripts/multicam.py` | ✅ |
+| AI 场景检测 | `scripts/scene_detect.py` | ✅ |
+| 自动重新构图 | `scripts/reframe.py` | ✅ |
+| 风格迁移 | `scripts/style_transfer.py` | ✅ |
+| 关键帧动画 | `scripts/keyframe.py` | ✅ |
+| HDR 导入导出 | `scripts/hdr_io.py` | ✅ |
+| AI 抠图 | `scripts/cutout.py` | ✅ |
+| 金句检测 | `scripts/quotes.py` | ✅ |
+| 批量处理 | `scripts/batch.py` | ✅ |
+
+### P2 战略差异(智剪工坊独有)已补
+
+| 缺口 | 实现 | 状态 |
+|---|---|---|
+| **批量自动化** | `scripts/batch.py` | ✅ |
+| **金句自动检测** | `scripts/quotes.py` | ✅ |
+| **AI 抠图** | `scripts/cutout.py` | ✅ |
+| **AI 文字成片** | `scripts/text_to_video.py` | ✅ |
+| **AI 数字人** | `scripts/digital_human.py` | ✅ |
+| **美颜 CLI** | `scripts/beauty.py` | ✅ |
+| **去水词** | `scripts/remove_fillers.py` | ✅ |
+| **改词翻唱** | `scripts/rewrite_audio.py` | ✅ |
+| 视频翻译 | `scripts/translate.py` | ⚠️ 占位(转 TTS 用 rewrite_audio) |
+
+### P3 不补(剪映特色 / 不切实际)
 
 | 缺口 | 不补的理由 |
 |---|---|
@@ -83,38 +116,37 @@
 | 立体视频 / 空间视频 | 极小众 |
 | Compressor 集成 | FCP 专属 |
 | 移动端 / iPad 端 | 代码不切实际 |
+| L3 声音克隆(用自己的声音) | 需自训模型,投入大 |
 
-## 四、差异化定位
+## 五、未来 Roadmap
 
-| 维度 | 智剪工坊优势 | 剪映优势 |
-|---|---|---|
-| **批量** | ✅ 100 视频一键 | ❌ |
-| **AI 定制** | ✅ 任意接 API | ⚠️ 闭源 |
-| **CLI 自动化** | ✅ 跑定时任务 | ❌ |
-| **精确控制** | ✅ 帧级 | ⚠️ 关键帧 |
-| **价格** | ✅ 免费 | ✅ 免费 |
-| **特效/调色** | ⚠️ 弱(待补) | ✅ 强 |
-| **上手难度** | ⚠️ 中(懂命令行) | ✅ 低 |
-| **模板生态** | ❌ | ✅ |
+### v0.6(下一步)— 真实 vlog 实测
 
-**结论:** 智剪工坊 = 程序员/批量用户首选,剪映 = 普通用户首选
+- [ ] 跑通真实 vlog 全流程(30 分钟)
+- [ ] 美颜 / 去水词 / 改词 / 文字成片 / 数字人 5 个 AI 功能真实 vlog 实测
+- [ ] 修实测中暴露的 bug
+- [ ] 加 mmx 视频生成的 batch 模式
 
-## 五、Roadmap 建议
+### v0.7 — SadTalkers / Wav2Lip(精准嘴型)
 
-### 短期(本周)—— P0 的 7 个
-补到 **12 个能跑 + 4 个占位**,能跟剪映 80% 匹敌:
-- 倒放、曲线变速、画中画、蒙版、变声、风格滤镜、节拍卡点
+- [ ] 接本地 SadTalkers,数字人嘴型精准对齐
+- [ ] Wav2Lip fallback
 
-### 中期(1-2 周)—— P1
-- AI 字幕自动生成(剪映最大卖点之一)
-- 多机位剪辑
-- AI 场景检测
+### v0.8 — 拼装 L3(组合 AI 能力)
 
-### 长期(战略)—— P2
-- AI 文字成片(对接可灵/Vidu API)
-- 数字人(对接 API)
-- 视频翻译
+- [ ] 视频翻译闭环(Whisper + 翻译 + TTS + 字幕烧录)
+- [ ] AI 数字人 + 自动字幕 + BGM 一条龙
+
+### v1.0 — 跨平台
+
+- [ ] Mac/Linux 完整测试
+- [ ] Docker 镜像
+- [ ] CI/CD(目前单元测试 0%)
 
 ## 六、版本记录
 
-- v0.1 (2026-07-03) - 首次对比
+- v0.1 (2026-07-03) - 首次对比(5 脚本,6 占位)
+- v0.2 (2026-07-03) - A 路线补全(setup/verify/README/requirements)
+- v0.3 (2026-07-03) - 美颜 L2 上线(beauty.py)
+- v0.4 (2026-07-03) - 去水词 L2 + 改词翻唱 L2(remove_fillers + rewrite_audio)
+- **v0.5 (2026-07-03) - 文字成片 + 数字人 + 错误处理 + 日志系统 + 全 30 脚本验证通过**

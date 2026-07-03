@@ -121,40 +121,7 @@ Step 3: scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output c
 | `--abitrate` | 128k | 音频码率 |
 | `--verbose` | False | 显示 debug 日志(写到 `~/.zhijian/logs/`) |
 
-## 关键技术教训(必看)
-
-**Bug 1: NVENC 随机崩溃(Access Violation 0xC0000005)**
-- 解:`libx264` CPU 编码稳,默认就是这个
-
-**Bug 2: 8 小时视频**
-- 现:不同原始视频 fps 不一致(60 vs 23.65),拼接后时长错算
-- 解:剪切时强制 `fps=30`
-
-**Bug 3: AI 生图中文乱码**
-- 解:先生成视觉(无文字),后用 PIL 叠中文
-
-**Bug 4: 全局 `safe_run(main)` 缺 `()`(v0.3 修)**
-- 现:`safe_run` 是装饰器工厂,只写 `safe_run(main)` 不调 main()
-- 解:必须 `safe_run(main)()`
-
-**Bug 5: mediapipe 0.10.35 Windows 中文路径**
-- 现:模型路径含中文 → `FileNotFoundError`
-- 解:自动 fallback 到 `C:\zhijian_models\`
-
-**Bug 6: mavis 不在 subprocess PATH**
-- 解:`shutil.which('mavis') or <full path>`
-
-**Bug 7: PowerShell Out-File 加 BOM**
-- 解:用 Python `write_bytes(json.dumps(...).encode('utf-8'))` 写 JSON
-
-**Bug 8: mavis daemon LLM apiKey invalid(401)**
-- 解:agent-driven 模式,LLM 判断放在 Mavis agent 里,不走 daemon subprocess
-
-**Bug 9: ffmpeg 7.1 不支持 `curves=preset=X`**
-- 解:color_style 改用 `colorbalance` + `eq` filter
-
-**Bug 10: fx.py intensity blend 语法错**
-- 解:简化为静态效果,intensity 改提示信息
+> 已知 bug 排查:见 [docs/FAQ.md](docs/FAQ.md)(高频 Q&A)和 [HANDOFF.md](HANDOFF.md)(完整开发历史)。子技能内部 bug 见 `references/05-color.md` / `09-ai-features.md` 等。
 
 ## 工作流建议
 

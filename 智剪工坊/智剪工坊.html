@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>智剪工坊 · 代码视频剪辑工作台</title>
+<style>
+  /* ===== CSS 变量(主题) ===== */
+  :root {
+    --bg: #fbfbfd;
+    --bg-elevated: #ffffff;
+    --bg-section: #f5f5f7;
+    --text: #1d1d1f;
+    --text-secondary: #6e6e73;
+    --text-tertiary: #86868b;
+    --accent: #0071e3;
+    --accent-hover: #0077ed;
+    --accent-soft: rgba(0, 113, 227, 0.08);
+    --border: rgba(0, 0, 0, 0.06);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --gradient-5: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ===== 暗色模式 ===== */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --bg-elevated: #1c1c1e;
+      --bg-section: #0a0a0a;
+      --text: #f5f5f7;
+      --text-secondary: #a1a1a6;
+      --text-tertiary: #6e6e73;
+      --accent: #2997ff;
+      --accent-hover: #4dacff;
+      --accent-soft: rgba(41, 151, 255, 0.15);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  /* ===== 基础 ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                 "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); text-decoration: none; transition: color 0.2s var(--ease); }
+  a:hover { color: var(--accent-hover); }
+  code, pre {
+    font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace;
+    font-size: 0.88em;
+  }
+  code {
+    background: var(--bg-section);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+  pre {
+    background: #1d1d1f;
+    color: #f5f5f7;
+    padding: 20px 24px;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; padding: 0; color: #f5f5f7; }
+
+  /* ===== 滚动进度条 ===== */
+  .scroll-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+    width: 0%;
+    z-index: 1000;
+    transition: width 0.1s linear;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(251, 251, 253, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s var(--ease);
+  }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--gradient-1);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    color: white;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .nav-links a { color: var(--text-secondary); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--accent);
+    color: white !important;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s var(--ease);
+  }
+  .nav-cta:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+  /* ===== Hero ===== */
+  .hero {
+    text-align: center;
+    padding: 100px 32px 80px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .hero-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 24px;
+    letter-spacing: 0.02em;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(180deg, var(--text) 0%, var(--text-secondary) 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
+  }
+  .hero p.lead {
+    font-size: clamp(18px, 2.2vw, 22px);
+    color: var(--text-secondary);
+    max-width: 720px;
+    margin: 0 auto 40px;
+    line-height: 1.5;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s var(--ease);
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 16px rgba(0, 113, 227, 0.3);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 113, 227, 0.4);
+  }
+  .btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover {
+    background: var(--bg-section);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ===== Stats ===== */
+  .stats {
+    max-width: 1100px;
+    margin: 0 auto 80px;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+  .stat {
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s var(--ease);
+  }
+  .stat:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent);
+  }
+  .stat-num {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+  }
+
+  /* ===== Section ===== */
+  section.block {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 32px;
+  }
+  .section-head {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .section-tag {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .section-head h2 {
+    font-size: clamp(32px, 4.5vw, 48px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .section-head p {
+    font-size: 19px;
+    color: var(--text-secondary);
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* ===== 快速开始 Steps ===== */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    counter-reset: step;
+  }
+  .step {
+    position: relative;
+    padding: 32px 24px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s var(--ease);
+  }
+  .step:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+  }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    top: -16px; left: 24px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--gradient-1);
+    color: white;
+    display: grid; place-items: center;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  .step h4 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 8px 0 6px;
+  }
+  .step p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+  .step code {
+    font-size: 12px;
+    display: block;
+    background: var(--bg-section);
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+
+  /* ===== Features grid ===== */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .feature {
+    padding: 32px 28px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 0.3s var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+  .feature::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gradient-1);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .feature:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .feature:hover::before { transform: scaleX(1); }
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: white;
+  }
+  .f-1 { background: var(--gradient-1); }
+  .f-2 { background: var(--gradient-2); }
+  .f-3 { background: var(--gradient-3); }
+  .f-4 { background: var(--gradient-4); }
+  .f-5 { background: var(--gradient-5); }
+  .feature h3 {
+    font-size: 19px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .feature p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ===== AI 增强 大卡 ===== */
+  .ai-section { background: var(--bg-section); }
+  .ai-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .ai-card {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.4s var(--ease-out);
+    border: 1px solid var(--border);
+  }
+  .ai-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+  .ai-banner {
+    height: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ai-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.4) 100%);
+  }
+  .ai-emoji {
+    position: absolute;
+    top: 50%; left: 24px;
+    transform: translateY(-50%);
+    font-size: 40px;
+    z-index: 2;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+  }
+  .ai-body { padding: 24px 28px 28px; }
+  .ai-body h3 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.015em;
+  }
+  .ai-body p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.55;
+  }
+  .ai-meta {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .ai-tag {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 12px;
+    font-weight: 500;
+  }
+  .ai-tag.warn { background: rgba(255, 159, 10, 0.12); color: #ff9f0a; }
+  details.ai-detail {
+    margin-top: 12px;
+  }
+  details.ai-detail > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 14px;
+    background: var(--bg-section);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    transition: background 0.2s var(--ease);
+    user-select: none;
+  }
+  details.ai-detail > summary:hover { background: var(--accent-soft); }
+  details.ai-detail > summary::-webkit-details-marker { display: none; }
+  details.ai-detail > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.2s var(--ease);
+  }
+  details.ai-detail[open] > summary::before { transform: rotate(90deg); }
+  details.ai-detail > div.inside {
+    padding: 16px 4px 4px;
+  }
+  details.ai-detail pre {
+    margin: 8px 0;
+    font-size: 13px;
+    padding: 14px 18px;
+  }
+
+  /* ===== Workflow stepper ===== */
+  .workflow {
+    background: var(--bg-section);
+  }
+  .stepper {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-xl);
+    padding: 40px 32px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stepper-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    align-items: stretch;
+  }
+  .stepper-item {
+    text-align: center;
+    padding: 20px 8px;
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    position: relative;
+    transition: all 0.3s var(--ease);
+    cursor: pointer;
+  }
+  .stepper-item:hover {
+    background: var(--accent-soft);
+    transform: translateY(-2px);
+  }
+  .stepper-num {
+    width: 32px; height: 32px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    background: var(--gradient-1);
+    color: white;
+    display: grid; place-items: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .stepper-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .stepper-desc {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* ===== Sub-skills accordion ===== */
+  .skills-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  details.skill {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s var(--ease);
+  }
+  details.skill:hover { border-color: var(--accent); }
+  details.skill[open] { box-shadow: var(--shadow-md); }
+  details.skill > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+  }
+  details.skill > summary::-webkit-details-marker { display: none; }
+  .skill-num {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--bg-section);
+    color: var(--text-secondary);
+    display: grid; place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.2s var(--ease);
+  }
+  details.skill[open] .skill-num {
+    background: var(--gradient-1);
+    color: white;
+  }
+  .skill-title {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .skill-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .skill-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--bg-section);
+    color: var(--text-tertiary);
+    border-radius: 6px;
+  }
+  .skill-tag.new { background: rgba(255, 45, 85, 0.12); color: #ff2d55; }
+  .skill-arrow {
+    color: var(--text-tertiary);
+    transition: transform 0.2s var(--ease);
+  }
+  details.skill[open] .skill-arrow { transform: rotate(90deg); }
+  .skill-body {
+    padding: 0 20px 20px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .skill-body p { margin-bottom: 8px; }
+  .skill-body pre {
+    margin: 8px 0;
+    font-size: 12px;
+    padding: 12px 14px;
+  }
+
+  /* ===== FAQ ===== */
+  .faq-section { background: var(--bg-section); }
+  .faq-list {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  details.faq {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.3s var(--ease);
+  }
+  details.faq[open] { box-shadow: var(--shadow-sm); border-color: var(--accent); }
+  details.faq > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 22px;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  details.faq > summary::-webkit-details-marker { display: none; }
+  details.faq > summary::after {
+    content: "+";
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--text-tertiary);
+    transition: transform 0.2s var(--ease);
+  }
+  details.faq[open] > summary::after { transform: rotate(45deg); }
+  .faq-body {
+    padding: 0 22px 18px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+  .faq-body code { font-size: 13px; }
+
+  /* ===== Output spec ===== */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .spec-item {
+    padding: 20px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .spec-key {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .spec-val {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: "SF Mono", monospace;
+  }
+
+  /* ===== Footer ===== */
+  footer {
+    text-align: center;
+    padding: 60px 32px 40px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .footer-version {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  footer p { color: var(--text-secondary); font-size: 14px; }
+  footer a { font-weight: 500; }
+
+  /* ===== 渐入动画 ===== */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .hero { padding: 60px 24px 40px; }
+    section.block { padding: 60px 20px; }
+    .stepper-row { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ===== Selection ===== */
+  ::selection { background: var(--accent); color: white; }
+
+  /* ===== 滚动条 ===== */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+</style>
+</head>
+<body>
+
+<!-- 滚动进度条 -->
+<div class="scroll-progress" id="progress"></div>
+
+<!-- 顶部导航 -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-icon">智</div>
+      <span>智剪工坊</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#quickstart">快速开始</a></li>
+      <li><a href="#features">核心能力</a></li>
+      <li><a href="#ai">AI 增强</a></li>
+      <li><a href="#skills">子技能</a></li>
+      <li><a href="#workflow">流水线</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="https://github.com/" class="nav-cta">在 Mavis 中调用</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero fade-in">
+  <span class="hero-tag">v0.5 · 30 脚本全验证 · 5 个 AI 增强</span>
+  <h1>代码视频剪辑工作台</h1>
+  <p class="lead">对标剪映(图形化)+ 扩展(AI 能力)+ 差异化(批量、自动化)。 自然语言触发,5 分钟跑通你的第一个视频。</p>
+  <div class="hero-actions">
+    <a href="#quickstart" class="btn btn-primary">5 分钟开始 →</a>
+    <a href="#ai" class="btn btn-secondary">看 AI 能力</a>
+  </div>
+</header>
+
+<!-- 统计 -->
+<div class="stats fade-in">
+  <div class="stat"><div class="stat-num">30</div><div class="stat-label">脚本就绪</div></div>
+  <div class="stat"><div class="stat-num">15</div><div class="stat-label">子技能</div></div>
+  <div class="stat"><div class="stat-num">5</div><div class="stat-label">AI 增强</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-label">API key 需求</div></div>
+</div>
+
+<!-- 快速开始 -->
+<section class="block" id="quickstart">
+  <div class="section-head fade-in">
+    <span class="section-tag">QUICKSTART</span>
+    <h2>5 分钟跑通</h2>
+    <p>任何人(懂 Python)都能装上用,不需要 API key,不需要 GPU。</p>
+  </div>
+  <div class="steps fade-in">
+    <div class="step">
+      <h4>装依赖</h4>
+      <p>Windows 一键安装</p>
+      <code>setup.bat</code>
+    </div>
+    <div class="step">
+      <h4>验证环境</h4>
+      <p>5 秒快检,29 脚本 OK</p>
+      <code>verify.py --fast</code>
+    </div>
+    <div class="step">
+      <h4>试一个剪切</h4>
+      <p>从 30 秒起,保留 20 秒</p>
+      <code>cut.py trim</code>
+    </div>
+    <div class="step">
+      <h4>试一个转场</h4>
+      <p>两段视频加 1 秒淡入淡出</p>
+      <code>xfade.py --type fade</code>
+    </div>
+    <div class="step">
+      <h4>试一个 AI 封面</h4>
+      <p>先生视觉,后叠中文</p>
+      <code>cover_ai.py</code>
+    </div>
+  </div>
+</section>
+
+<!-- 核心能力 -->
+<section class="block" id="features" style="background: var(--bg-section); max-width: none; margin: 0; border-radius: 0;">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="section-head fade-in">
+      <span class="section-tag">CORE FEATURES</span>
+      <h2>核心能力</h2>
+      <p>从基础剪辑到 AI 增强,30 脚本覆盖视频生产全链路。</p>
+    </div>
+    <div class="features-grid fade-in">
+      <div class="feature">
+        <div class="feature-icon f-1">剪</div>
+        <h3>精准剪辑</h3>
+        <p>帧级剪切、拼接、60+ 转场,统一 30fps 和 1080x1920 竖屏,无 8 小时视频 bug。</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon f-2">色</div>
+        <h3>调色 + 风格迁移</h3>
+        <p>18 预设调色、LUT、HDR 导入导出、矩阵卷积风格迁移 — 一行命令搞定电影感。</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon f-3">文</div>
+        <h3>自动字幕 + 变声</h3>
+        <p>Whisper 转录 → 烧字幕,12 种变声,中文叠字封面 — 字幕工作流全自动。</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon f-4">音</div>
+        <h3>BGM 智能混音</h3>
+        <p>循环背景音乐(librosa 节拍卡点),音量自动调节,5 分钟搞定 vlog 配乐。</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon f-5">批</div>
+        <h3>批量自动化</h3>
+        <p>100 个视频一次加转场 / 调色 / 转码,进度条 + 错误隔离,完爆剪映。</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon f-1">AI</div>
+        <h3>5 个 AI 增强(L2)</h3>
+        <p>美颜 / 去水词 / 改词翻唱 / 文字成片 / 数字人 — 走 mmx MCP,免 API key。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI 增强(L2) -->
+<section class="block ai-section" id="ai" style="background: var(--bg-section); max-width: none; margin: 0; border-radius: 0; padding-top: 80px;">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="section-head fade-in">
+      <span class="section-tag">L2 · AI FEATURES</span>
+      <h2>5 个 AI 增强</h2>
+      <p>剪映做不到的差异化能力。走 mmx MCP,免 API key,免 GPU。</p>
+    </div>
+    <div class="ai-grid fade-in">
+
+      <!-- AI 1: 美颜 -->
+      <div class="ai-card">
+        <div class="ai-banner f-2">
+          <span class="ai-emoji">✨</span>
+        </div>
+        <div class="ai-body">
+          <h3>美颜 CLI</h3>
+          <p>mediapipe face mesh 478 关键点,磨皮 + 美白 + 瘦脸 + 大眼,5 预设,真实人脸测试通过。</p>
+          <div class="ai-meta">
+            <span class="ai-tag">磨皮</span>
+            <span class="ai-tag">瘦脸</span>
+            <span class="ai-tag">大眼</span>
+            <span class="ai-tag">5 预设</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code>python scripts/beauty.py \
+  --input face.mp4 \
+  --output face_beauty.mp4 \
+  --preset natural</code></pre>
+              <p>预设:<code>slight</code> 轻微 / <code>natural</code> 默认 / <code>strong</code> 明显 / <code>max</code> 极限</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- AI 2: 去水词 -->
+      <div class="ai-card">
+        <div class="ai-banner f-3">
+          <span class="ai-emoji">🧹</span>
+        </div>
+        <div class="ai-body">
+          <h3>AI 去水词(L2 word-level)</h3>
+          <p>whisper 转录 + agent 标水词 + 帧级切掉。20s vlog 切 10 个"嗯啊" → 16.7s,精准到单字。</p>
+          <div class="ai-meta">
+            <span class="ai-tag">word-level</span>
+            <span class="ai-tag">agent-driven</span>
+            <span class="ai-tag">无音频损失</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code># 1. 转录
+python scripts/remove_fillers.py transcribe \
+  --input vlog.mp4 --srt vlog.srt
+
+# 2. (Mavis 读 words.json,标 10 个水词)
+# 3. 切掉
+python scripts/remove_fillers.py cut \
+  --input vlog.mp4 --srt vlog.srt \
+  --output clean.mp4 \
+  --remove-words "1,3,11,12,19,28,37,38,39,45"</code></pre>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- AI 3: 改词翻唱 -->
+      <div class="ai-card">
+        <div class="ai-banner f-4">
+          <span class="ai-emoji">🎤</span>
+        </div>
+        <div class="ai-body">
+          <h3>改词翻唱(Whisper + TTS)</h3>
+          <p>转录 → agent 改写文案 → matrix TTS 327 声音合成 → ffmpeg 替换音轨。剪映做不到 word-level 改写。</p>
+          <div class="ai-meta">
+            <span class="ai-tag">327 TTS 声音</span>
+            <span class="ai-tag">自由改写</span>
+            <span class="ai-tag">音轨替换</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code># 1. transcribe
+python scripts/rewrite_audio.py transcribe \
+  --input v.mp4 --srt v.srt
+
+# 2. (Mavis 改写文案,选 voice_id)
+# 3. synthesize
+python scripts/rewrite_audio.py synthesize \
+  --text "改写后的文案" \
+  --voice male-qn-jingying \
+  --out v_new.mp3
+
+# 4. replace
+python scripts/rewrite_audio.py replace \
+  --video v.mp4 --audio v_new.mp3 \
+  --out v_final.mp4</code></pre>
+              <p>实测:20s → 11.8s(省 41% 时长)</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- AI 4: 文字成片 -->
+      <div class="ai-card">
+        <div class="ai-banner f-5">
+          <span class="ai-emoji">🎬</span>
+        </div>
+        <div class="ai-body">
+          <h3>文字成片(Text-to-Video)</h3>
+          <p>从英文 prompt 生成 6s/10s 视频片段。走 mmx matrix_gen_videos,免 API key,免 GPU。</p>
+          <div class="ai-meta">
+            <span class="ai-tag warn">⚠ 未实测(配额限制)</span>
+            <span class="ai-tag">mmx 免 key</span>
+            <span class="ai-tag">6s / 10s</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code>python scripts/text_to_video.py \
+  --prompt "A man running on a treadmill, cinematic" \
+  --duration 6 \
+  --out out.mp4</code></pre>
+              <p>配额:mmx 视频生成每天 ~3 次,避免浪费。</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- AI 5: 数字人 -->
+      <div class="ai-card">
+        <div class="ai-banner f-1">
+          <span class="ai-emoji">👤</span>
+        </div>
+        <div class="ai-body">
+          <h3>数字人(Digital Human)</h3>
+          <p>头像 + 文案/音频 → "头像在说话"视频。mmx subject 模式保持人脸一致,适合课程讲解和企业宣传。</p>
+          <div class="ai-meta">
+            <span class="ai-tag warn">⚠ 嘴型有限制</span>
+            <span class="ai-tag">327 声音</span>
+            <span class="ai-tag">6s 片段</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code>python scripts/digital_human.py \
+  --avatar avatar.jpg \
+  --script "大家好我是帅猎羽" \
+  --out out.mp4</code></pre>
+              <p>局限:嘴型不会精准对齐(只是"在动")。要精准用 L3 SadTalkers/Wav2Lip。</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- 副:AI 抠图/金句/场景检测 -->
+      <div class="ai-card">
+        <div class="ai-banner" style="background: var(--gradient-1);">
+          <span class="ai-emoji">🧠</span>
+        </div>
+        <div class="ai-body">
+          <h3>其他 AI 能力(09 子技能)</h3>
+          <p>cutout(rembg 抠图) / quotes(金句检测 NLP) / scene_detect(场景帧差) / mask(蒙版) / overlay(画中画) / reframe(重新构图)。</p>
+          <div class="ai-meta">
+            <span class="ai-tag">6 脚本</span>
+            <span class="ai-tag">全部实测</span>
+          </div>
+          <details class="ai-detail">
+            <summary>查看命令</summary>
+            <div class="inside">
+<pre><code>python scripts/cutout.py --input v.mp4 --output no_bg.mp4
+python scripts/quotes.py --input v.mp4 --top 5
+python scripts/scene_detect.py --input v.mp4 --threshold 0.3
+python scripts/mask.py --input v.mp4 --type face --output m.mp4
+python scripts/overlay.py --base a.mp4 --overlay b.mp4 --out pip.mp4
+python scripts/reframe.py --input v.mp4 --target 9:16 --out r.mp4</code></pre>
+            </div>
+          </details>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 子技能速查 -->
+<section class="block" id="skills">
+  <div class="section-head fade-in">
+    <span class="section-tag">SUB-SKILLS</span>
+    <h2>15 个子技能</h2>
+    <p>每个子技能都有独立脚本和文档。点击展开看命令。</p>
+  </div>
+  <div class="skills-list fade-in">
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">01</div>
+        <div class="skill-title">cutting · 剪切 + 拼接</div>
+        <div class="skill-tags"><span class="skill-tag">cut.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>帧级剪切 + concat demuxer 拼接。强制 30fps 避免 8 小时视频 bug。</p>
+<pre><code>python scripts/cut.py trim --input v.mp4 --ss 30 --t 20 --output out.mp4
+python scripts/cut.py concat --list clips.txt --output joined.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">02</div>
+        <div class="skill-title">transitions · 转场</div>
+        <div class="skill-tags"><span class="skill-tag">xfade.py</span><span class="skill-tag">60+</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>60+ 种转场(fade / dissolve / wipe / slide / zoom)。</p>
+<pre><code>python scripts/xfade.py --a a.mp4 --b b.mp4 --type fade --duration 1 --out out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">03</div>
+        <div class="skill-title">effects · 视觉特效</div>
+        <div class="skill-tags"><span class="skill-tag">fx.py</span><span class="skill-tag">keyframe.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>慢动作 / 推镜头 / 关键帧动画 / 模糊 / 旋转 / 镜像。</p>
+<pre><code>python scripts/fx.py --input v.mp4 --effect zoom_in --output out.mp4
+python scripts/keyframe.py --input v.mp4 --keyframes "0,1.0;2,1.5" --output out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">04</div>
+        <div class="skill-title">cinematic · 电影感剪辑</div>
+        <div class="skill-tags"><span class="skill-tag">speed</span><span class="skill-tag">reverse</span><span class="skill-tag">multicam</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>J/L cut / 曲线变速 / 倒放 / 多机位 / 跳剪 / 上下黑边。</p>
+<pre><code>python scripts/speed.py --input v.mp4 --speed 0.5 --output out.mp4
+python scripts/reverse.py --input v.mp4 --output out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">05</div>
+        <div class="skill-title">color · 调色 + 风格迁移 + HDR</div>
+        <div class="skill-tags"><span class="skill-tag">color_style</span><span class="skill-tag">style</span><span class="skill-tag">hdr</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>18 预设调色 + LUT + 矩阵卷积风格迁移 + HDR 导入导出。</p>
+<pre><code>python scripts/color_style.py --input v.mp4 --preset cinematic --output out.mp4
+python scripts/style_transfer.py --input v.mp4 --reference ref.jpg --output out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">06</div>
+        <div class="skill-title">text · 烧字幕 + 变声 + 翻译</div>
+        <div class="skill-tags"><span class="skill-tag">auto_subtitle</span><span class="skill-tag">voice_change</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>Whisper 自动字幕 + 12 种变声 + 翻译占位。</p>
+<pre><code>python scripts/auto_subtitle.py --input v.mp4 --srt v.srt --burn --output v_sub.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">07</div>
+        <div class="skill-title">audio · BGM + 节拍卡点</div>
+        <div class="skill-tags"><span class="skill-tag">bgm_loop</span><span class="skill-tag">beat_sync</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>BGM 循环混音 + librosa 节拍卡点。</p>
+<pre><code>python scripts/bgm_loop.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --out out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">08</div>
+        <div class="skill-title">cover · AI 封面</div>
+        <div class="skill-tags"><span class="skill-tag">cover_ai.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>两步法:先生成视觉(无文字),后 PIL 叠中文(无乱码)。</p>
+<pre><code>python scripts/cover_ai.py --prompt "..." --title-main "DAY 1" --subtitle "减脂日记" --out cover.jpg</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">09</div>
+        <div class="skill-title">ai-features · 7 个 AI 脚本</div>
+        <div class="skill-tags"><span class="skill-tag">cutout</span><span class="skill-tag">quotes</span><span class="skill-tag">+5</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>cutout / quotes / scene_detect / mask / overlay / reframe / <strong>remove_fillers</strong>(word-level 去水词)。</p>
+<pre><code>python scripts/remove_fillers.py transcribe --input v.mp4 --srt v.srt
+python scripts/remove_fillers.py cut --input v.mp4 --srt v.srt --output clean.mp4 --remove-words "1,3,11"</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">10</div>
+        <div class="skill-title">batch · 批量处理</div>
+        <div class="skill-tags"><span class="skill-tag">batch.py</span><span class="skill-tag">5 task</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>5 个 task:xfade / color / reencode / concat / cover。进度条 + 错误隔离。</p>
+<pre><code>python scripts/batch.py --input videos/ --task xfade --type fade --duration 0.5 --out out/</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num">11</div>
+        <div class="skill-title">pipelines · 7 步 vlog 流水线</div>
+        <div class="skill-tags"><span class="skill-tag">pipeline_vlog.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>从零散素材到发布版成片,7 步全自动(转录→分析→拼接→字幕→BGM→封面)。</p>
+<pre><code>python scripts/pipeline_vlog.py run --input videos/ --output day1/ --theme "Day 1" --bgm bgm.mp3</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num" style="background: var(--gradient-2); color: white;">12</div>
+        <div class="skill-title">beauty · 美颜 CLI</div>
+        <div class="skill-tags"><span class="skill-tag new">NEW</span><span class="skill-tag">beauty.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>磨皮 + 美白 + 瘦脸 + 大眼,mediapipe 478 关键点,5 预设。</p>
+<pre><code>python scripts/beauty.py --input face.mp4 --output face_beauty.mp4 --preset natural</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num" style="background: var(--gradient-3); color: white;">13</div>
+        <div class="skill-title">rewrite-audio · 改词翻唱</div>
+        <div class="skill-tags"><span class="skill-tag new">NEW</span><span class="skill-tag">rewrite_audio.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>Whisper 转录 + agent 改写 + matrix TTS 327 声音 + ffmpeg 替换音轨。</p>
+<pre><code>python scripts/rewrite_audio.py transcribe --input v.mp4 --srt v.srt
+# (Mavis 改写)
+python scripts/rewrite_audio.py synthesize --text "..." --voice male-qn-jingying --out new.mp3</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num" style="background: var(--gradient-4); color: white;">14</div>
+        <div class="skill-title">text-to-video · 文字成片</div>
+        <div class="skill-tags"><span class="skill-tag new">NEW</span><span class="skill-tag">text_to_video.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>英文 prompt → 6s/10s 视频片段。走 mmx,免 key。</p>
+<pre><code>python scripts/text_to_video.py --prompt "A man running, cinematic" --out out.mp4</code></pre>
+      </div>
+    </details>
+
+    <details class="skill">
+      <summary>
+        <div class="skill-num" style="background: var(--gradient-5); color: white;">15</div>
+        <div class="skill-title">digital-human · 数字人</div>
+        <div class="skill-tags"><span class="skill-tag new">NEW</span><span class="skill-tag">digital_human.py</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p>头像 + 文案/音频 → 说话视频。mmx subject 模式保持人脸一致。</p>
+<pre><code>python scripts/digital_human.py --avatar avatar.jpg --script "大家好" --out out.mp4</code></pre>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- 流水线 -->
+<section class="block workflow" id="workflow" style="background: var(--bg-section); max-width: none; margin: 0; border-radius: 0;">
+  <div style="max-width: 1100px; margin: 0 auto;">
+    <div class="section-head fade-in">
+      <span class="section-tag">PIPELINE</span>
+      <h2>7 步 vlog 流水线</h2>
+      <p>从零散的拍摄素材,自动产出可发布的 vlog 视频(Day 1 实战验证)。</p>
+    </div>
+    <div class="stepper fade-in">
+      <div class="stepper-row">
+        <div class="stepper-item">
+          <div class="stepper-num">1</div>
+          <div class="stepper-title">降分辨率</div>
+          <div class="stepper-desc">4K → 1080p</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">2</div>
+          <div class="stepper-title">Whisper 转录</div>
+          <div class="stepper-desc">带时间戳</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">3</div>
+          <div class="stepper-title">抽关键帧</div>
+          <div class="stepper-desc">每 15s 一帧</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">4</div>
+          <div class="stepper-title">AI 分析</div>
+          <div class="stepper-desc">生成剪辑建议</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">5</div>
+          <div class="stepper-title">用户勾选</div>
+          <div class="stepper-desc">保留秒数</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">6</div>
+          <div class="stepper-title">ffmpeg 拼装</div>
+          <div class="stepper-desc">+ 烧字幕 + BGM</div>
+        </div>
+        <div class="stepper-item">
+          <div class="stepper-num">7</div>
+          <div class="stepper-title">AI 封面</div>
+          <div class="stepper-desc">+ 中文叠字</div>
+        </div>
+      </div>
+    </div>
+    <pre style="margin-top: 32px;"><code>python scripts/pipeline_vlog.py run \
+  --input videos/ \
+  --output day1/ \
+  --theme "Day 1" \
+  --bgm bgm.mp3 \
+  --concat-list clips.txt \
+  --subtitle-srt day1_subtitle.srt</code></pre>
+  </div>
+</section>
+
+<!-- 输出规格 -->
+<section class="block" id="output">
+  <div class="section-head fade-in">
+    <span class="section-tag">OUTPUT SPEC</span>
+    <h2>视频输出规格</h2>
+    <p>所有脚本统一输出,拼接无 bug。</p>
+  </div>
+  <div class="spec-grid fade-in">
+    <div class="spec-item"><div class="spec-key">分辨率</div><div class="spec-val">1080×1920</div></div>
+    <div class="spec-item"><div class="spec-key">帧率</div><div class="spec-val">30 fps</div></div>
+    <div class="spec-item"><div class="spec-key">视频编码</div><div class="spec-val">libx264</div></div>
+    <div class="spec-item"><div class="spec-key">质量</div><div class="spec-val">crf 20</div></div>
+    <div class="spec-item"><div class="spec-key">音频编码</div><div class="spec-val">aac 128k</div></div>
+    <div class="spec-item"><div class="spec-key">容器</div><div class="spec-val">MP4 + faststart</div></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="block faq-section" id="faq" style="background: var(--bg-section); max-width: none; margin: 0; border-radius: 0;">
+  <div style="max-width: 800px; margin: 0 auto;">
+    <div class="section-head fade-in">
+      <span class="section-tag">FAQ</span>
+      <h2>常见问题</h2>
+      <p>30 个高频 Q&A,看这里大概率能解决。</p>
+    </div>
+    <div class="faq-list fade-in">
+
+      <details class="faq">
+        <summary>智剪工坊 vs 剪映,我该用哪个?</summary>
+        <div class="faq-body">
+          <p><strong>用智剪工坊</strong>:批量处理 100+ 视频 / AI 能力定制(去水词 / 改词) / CLI 自动化(跑定时任务) / 帧级精度。</p>
+          <p><strong>用剪映</strong>:单条精修(关键帧调色) / 所见即所得 / 模板丰富 / 声音克隆 / 移动端。</p>
+          <p><strong>最佳组合</strong>:智剪工坊做粗活(批量 + 去水词 + 改词) → 剪映做精修(关键帧 + 声音克隆)。</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>需要 API key 或 GPU 吗?</summary>
+        <div class="faq-body">
+          <p><strong>不需要 API key</strong>。所有 AI 能力走 mmx matrix MCP,免 key,免 GPU。</p>
+          <p><strong>GPU 推荐但非必需</strong>:有 GPU 时 Whisper 转录快 5-10 倍。CPU 也能跑(small 模型)。</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>视频时长变 8 小时 / 没声音 / 进度条卡死 怎么办?</summary>
+        <div class="faq-body">
+          <p><strong>8 小时</strong>:不同原始视频 fps 不一致。已用 <code>fps=30</code> 统一 filter 修复。</p>
+          <p><strong>没声音</strong>:ffmpeg 没传 <code>-c:a aac</code>(本工具默认已加)。</p>
+          <p><strong>NVENC 崩溃</strong>(Access Violation):用 <code>libx264</code>(本工具默认)。</p>
+          <p><strong>AI 中文乱码</strong>:生图对中文差。已用"先生视觉 + 后叠中文"两步法。</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>5 个 AI 增强的真实效果如何?</summary>
+        <div class="faq-body">
+          <p><strong>美颜</strong>:5 预设(natural 推荐),真实人脸测试通过,效果稳定。</p>
+          <p><strong>去水词</strong>:20s vlog 切 10 个水词 → 16.7s,精准到单字。word-level 时间戳。</p>
+          <p><strong>改词翻唱</strong>:20s → 11.8s(省 41%),用 male-qn-jingying 精英男声。</p>
+          <p><strong>文字成片</strong>:代码完成,未实测(配额限制 3 次/天)。</p>
+          <p><strong>数字人</strong>:代码完成,未实测。已知嘴型不会精准对齐(只是"在动")。</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>怎么在 Mavis agent 中调用?</summary>
+        <div class="faq-body">
+          <p>直接说自然语言,小帅(本 skill)会自动路由到对应子技能:</p>
+          <pre><code>你: "把 vlog 切到 1 分钟,然后加 BGM,然后去水词"
+小帅:
+  → cut.py trim (切 60s)
+  → bgm_loop.py (加 BGM)
+  → remove_fillers.py (去水词)
+  → 输出成片</code></pre>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>跨平台支持吗?</summary>
+        <div class="faq-body">
+          <p><strong>代码</strong>:跨平台(Mac/Linux/Windows 都能跑)。</p>
+          <p><strong>实测</strong>:只测了 Windows(setup.bat 跑过)。Mac/Linux 用 <code>setup.sh</code>,需自行验证。</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-version">v0.5 · 2026-07-03</span>
+  <p>智剪工坊 · 代码视频剪辑工作台 · 30 脚本 / 15 子技能 / 5 AI 增强</p>
+  <p style="margin-top: 8px; font-size: 13px;">
+    文档位置:<a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/SKILL.md">SKILL.md</a> ·
+    <a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/HANDOFF.md">HANDOFF.md</a> ·
+    <a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/CHANGELOG.md">CHANGELOG.md</a> ·
+    <a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/README.md">README.md</a>
+  </p>
+  <p style="margin-top: 16px; font-size: 12px; color: var(--text-tertiary);">
+    MIT License · 帅猎羽 × 小帅(Mavis)
+  </p>
+</footer>
+
+<script>
+  // 滚动进度条
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    progress.style.width = pct + '%';
+  });
+
+  // IntersectionObserver 渐入
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => io.observe(el));
+
+  // 默认打开第一个 skill 作为 demo
+  document.querySelector('details.skill')?.setAttribute('open', '');
+</script>
+
+</body>
+</html>

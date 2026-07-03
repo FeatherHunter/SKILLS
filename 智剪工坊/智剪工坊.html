@@ -866,6 +866,11 @@
         <p>100 个视频一次加转场 / 调色 / 转码,进度条 + 错误隔离,完爆剪映。</p>
       </div>
       <div class="feature">
+        <div class="feature-icon f-1">⚙</div>
+        <h3>14 个原子操作(L1)</h3>
+        <p>删减(头/尾/中) / 音量 / 静音 / 黑边 / 缩放 / 裁剪 / 旋转 / 翻转 / 提音 / 淡入淡出 / 水印 / 多分辨率 / GIF / 缩略图 — 剪映基础全补。</p>
+      </div>
+      <div class="feature">
         <div class="feature-icon f-1">AI</div>
         <h3>5 个 AI 增强(L2)</h3>
         <p>美颜 / 去水词 / 改词翻唱 / 文字成片 / 数字人 — 走 mmx MCP,免 API key。</p>
@@ -1272,6 +1277,34 @@ python scripts/rewrite_audio.py synthesize --text "..." --voice male-qn-jingying
       </div>
     </details>
 
+    <details class="skill">
+      <summary>
+        <div class="skill-num" style="background: var(--gradient-1); color: white;">16</div>
+        <div class="skill-title">edit · 14 个原子操作</div>
+        <div class="skill-tags"><span class="skill-tag new">NEW</span><span class="skill-tag">edit.py</span><span class="skill-tag">14 cmd</span></div>
+        <div class="skill-arrow">›</div>
+      </summary>
+      <div class="skill-body">
+        <p><strong>删减类</strong>:remove (head/tail/regions)。<strong>画面类</strong>:letterbox / scale / crop / rotate / flip。<strong>音频类</strong>:volume / mute / fade-audio / extract-audio。<strong>扩展</strong>:watermark / multi-res / gif / thumbnail。</p>
+<pre><code># 去头 3 秒
+python scripts/edit.py remove --input v.mp4 --mode head --seconds 3 --output out.mp4
+
+# 去中间 2 段("10-5,20-3" = 去掉 10-15 和 20-23)
+python scripts/edit.py remove --input v.mp4 --mode regions --exclude "10-5,20-3" --output out.mp4
+
+# 音量 0.5x
+python scripts/edit.py volume --input v.mp4 --factor 0.5 --output out.mp4
+
+# 加黑边
+python scripts/edit.py letterbox --input v.mp4 --width 1080 --height 1920 --output out.mp4
+
+# 多分辨率 + GIF + 缩略图
+python scripts/edit.py multi-res --input v.mp4 --output-dir out/ --resolutions "320:240,640:480"
+python scripts/edit.py gif --input v.mp4 --output out.gif --width 320 --fps 10
+python scripts/edit.py thumbnail --input v.mp4 --output thumb.jpg --time 1</code></pre>
+      </div>
+    </details>
+
   </div>
 </section>
 
@@ -1423,8 +1456,8 @@ python scripts/rewrite_audio.py synthesize --text "..." --voice male-qn-jingying
 </section>
 
 <footer>
-  <span class="footer-version">v0.5 · 2026-07-03</span>
-  <p>智剪工坊 · 代码视频剪辑工作台 · 30 脚本 / 15 子技能 / 5 AI 增强</p>
+  <span class="footer-version">v0.6 · 2026-07-03</span>
+  <p>智剪工坊 · 代码视频剪辑工作台 · 30 脚本 / 16 子技能 / 5 AI 增强</p>
   <p style="margin-top: 8px; font-size: 13px;">
     文档位置:<a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/SKILL.md">SKILL.md</a> ·
     <a href="file:///D:/2Study/StudyNotes/SKILLS/智剪工坊/HANDOFF.md">HANDOFF.md</a> ·

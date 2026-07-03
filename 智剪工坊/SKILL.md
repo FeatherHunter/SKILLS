@@ -8,7 +8,7 @@ description: >
   改词、改写、翻唱、TTS、配音、换声、改写文案、
   文字成片、文生视频、text-to-video、
   数字人、虚拟人、digital human。
-  包含 14 个子技能 + 1 个大流程(pipeline-vlog 7 步自动化)。
+  包含 16 个子技能 + 1 个大流程(pipeline-vlog 7 步自动化)。
   底层:ffmpeg + MoviePy + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
 metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
 ---
@@ -62,8 +62,9 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 | 13 | **🆕 rewrite-audio** | 去水词后改写、TTS 配音、换声、agent 改文案、翻唱 | [references/13-rewrite-audio.md](references/13-rewrite-audio.md) | `scripts/rewrite_audio.py` |
 | 14 | **🆕 text-to-video** | 文生视频、文字成片、AI 生成视频片段 | [references/14-text-to-video.md](references/14-text-to-video.md) | `scripts/text_to_video.py` |
 | 15 | **🆕 digital-human** | 数字人、虚拟人、AI 讲解、头像说话 | [references/15-digital-human.md](references/15-digital-human.md) | `scripts/digital_human.py` |
+| 16 | **🆕 edit** | 去头去尾 / 调音量 / 静音 / 黑边 / 缩放 / 裁剪 / 旋转 / 翻转 / 提音 / 淡入淡出 / 水印 / 多分辨率 / GIF / 缩略图 | [references/16-edit.md](references/16-edit.md) | `scripts/edit.py`(14 子命令) |
 
-> 实际有 29 个 Python 脚本(部分子技能含多个脚本),详见 `scripts/` 目录。
+> 实际有 30 个 Python 脚本(部分子技能含多个脚本),详见 `scripts/` 目录。
 
 ## 调用范式
 
@@ -184,27 +185,28 @@ Step 3: scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output c
         └── zhijian-YYYYMMDD.log
 ```
 
-## 当前状态(2026-07-03 v0.5)
+## 当前状态(2026-07-03 v0.6)
 
 | 维度 | 进度 | 备注 |
 |---|---|---|
-| 架构设计 | ✅ 100% | 15 子技能 + 1 大流程 |
-| SKILL.md | ✅ 100% | YAML frontmatter, 14 子技能索引 |
-| References(子技能) | ✅ 100% | 15 个 .md,详细接口 + 命令 |
-| 代码框架 | ✅ 100% | 29 个 .py 脚本,无 TODO/占位 |
+| 架构设计 | ✅ 100% | 16 子技能 + 1 大流程 |
+| SKILL.md | ✅ 100% | YAML frontmatter, 16 子技能索引 |
+| References(子技能) | ✅ 100% | 16 个 .md,详细接口 + 命令 |
+| 代码框架 | ✅ 100% | 30 个 .py 脚本,无 TODO/占位 |
 | 公共库 | ✅ 100% | lib/common.py(读 config.json + 友好错误 + 进度条 + 文件日志) |
-| 产品 README | ✅ 100% | 3 分钟快速开始 + 27 脚本速查 |
+| 产品 README | ✅ 100% | 3 分钟快速开始 + 30 脚本速查 |
 | 安装脚本 | ✅ 100% | setup.bat(Windows)+ setup.sh(Mac/Linux) |
-| 验证脚本 | ✅ 100% | verify.py(5 秒快检 + 29 脚本 + 6 冒烟) |
+| 验证脚本 | ✅ 100% | verify.py(5 秒快检 + 30 脚本 + 6 冒烟) |
 | 依赖 | ✅ 100% | requirements.txt 9 个实依赖全开 |
-| 验证(实测) | ✅ 100% | 29/29 import + 6/6 冒烟测试通过 |
+| 验证(实测) | ✅ 100% | 30/30 import + 6/6 冒烟 + 17/17 edit 测过 |
 | 跨平台 | ⚠️ 50% | setup.sh 写好但只测 Windows |
 | 错误处理 | ✅ 100% | safe_run 增强 5 种错误类型(JSON/Timeout/OS/...) |
 | 日志系统 | ✅ 100% | log_progress + 文件日志 + safe_batch |
+| 原子操作覆盖 | ✅ 100% | 14 个 edit 子命令补全剪映 P0+P1 基础操作 |
 | 单元测试 | ❌ 0% | 推迟(用户确认) |
 | AI 视频实测 | ❌ 0% | mmx 配额 3/天,等真 vlog 时测 |
 
-**已实测 30/30 脚本可跑(29 import + 6 冒烟)。** mmx AI 能力(text_to_video / digital_human)未实测,避免浪费 API 配额。
+**已实测 30/30 脚本可跑(30 import + 6 冒烟 + 17/17 edit)。** mmx AI 能力(text_to_video / digital_human)未实测,避免浪费 API 配额。
 
 ## 相关工具链
 

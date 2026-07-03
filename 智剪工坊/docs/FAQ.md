@@ -291,4 +291,56 @@ A: NVENC 硬件编码随机崩溃。**解法:** 用 `libx264`(CPU 编码,稳)。
 | 跨平台 | setup.sh 写好但只测 Windows | Mac/Linux 需自行验证 |
 | 声音克隆 | matrix MCP 不支持自训 | 需自训模型,投入大,不补 |
 
-**其他已修 bug**(开发内部,无需用户关心):见 [HANDOFF.md §1.3](../HANDOFF.md) v0.3 → v0.5 修复记录。
+**其他已修 bug**(开发内部,无需用户关心):见 [HANDOFF.md §1.3](../HANDOFF.md) v0.3 → v0.6 修复记录。
+
+## edit.py 14 个原子操作(2026-07-03 v0.6 新增)
+
+### Q34: 怎么去头/去尾/去中间?
+
+A: 用 `edit.py remove`,三种 mode:
+
+```bash
+# 去头 3 秒
+python scripts/edit.py remove --input v.mp4 --mode head --seconds 3 --output out.mp4
+
+# 去尾 5 秒
+python scripts/edit.py remove --input v.mp4 --mode tail --seconds 5 --output out.mp4
+
+# 去多个区间(逗号分隔,格式 ss-t)
+python scripts/edit.py remove --input v.mp4 --mode regions --exclude "10-5,20-3" --output out.mp4
+# 去掉 10-15s 和 20-23s,其他保留
+```
+
+### Q35: 怎么调音量 / 加黑边 / 缩放?
+
+A: `edit.py` 有对应子命令:
+
+```bash
+# 音量 0.5x(自己声太响)
+python scripts/edit.py volume --input v.mp4 --factor 0.5 --output out.mp4
+
+# 静音(关原声,只留 BGM)
+python scripts/edit.py mute --input v.mp4 --output out.mp4
+
+# 加黑边(竖屏 1080x1920)
+python scripts/edit.py letterbox --input v.mp4 --width 1080 --height 1920 --output out.mp4
+
+# 缩放到 720p
+python scripts/edit.py scale --input v.mp4 --width 1280 --height 720 --output out.mp4
+```
+
+### Q36: 怎么转 GIF / 抽缩略图 / 一次性输出多分辨率?
+
+A: `edit.py` P1 子命令:
+
+```bash
+# GIF(质量调高用 --fps 24)
+python scripts/edit.py gif --input v.mp4 --output out.gif --width 480 --fps 15
+
+# 抽 5 秒处的帧作为缩略图
+python scripts/edit.py thumbnail --input v.mp4 --output thumb.jpg --time 5
+
+# 一次性输出 3 个分辨率
+python scripts/edit.py multi-res --input v.mp4 --output-dir out/ \
+  --resolutions "480:360,720:540,1080:1920"
+```

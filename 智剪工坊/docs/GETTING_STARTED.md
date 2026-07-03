@@ -137,6 +137,34 @@ python scripts/text_to_video.py --prompt "A man running on a treadmill, cinemati
 python scripts/digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --out out.mp4
 ```
 
+### H. 14 个原子操作(edit.py)
+
+```bash
+# 删减类(去头去尾去中间)
+python scripts/edit.py remove --input v.mp4 --mode head --seconds 3 --output out.mp4
+python scripts/edit.py remove --input v.mp4 --mode tail --seconds 5 --output out.mp4
+python scripts/edit.py remove --input v.mp4 --mode regions --exclude "10-5,20-3" --output out.mp4
+
+# 画面类(黑边/缩放/裁剪/旋转/翻转)
+python scripts/edit.py letterbox --input v.mp4 --width 1080 --height 1920 --output out.mp4
+python scripts/edit.py scale --input v.mp4 --width 320 --height 240 --output out.mp4
+python scripts/edit.py crop --input v.mp4 --x 100 --y 50 --width 200 --height 200 --output out.mp4
+python scripts/edit.py rotate --input v.mp4 --degrees 90 --output out.mp4
+python scripts/edit.py flip --input v.mp4 --mode h --output out.mp4
+
+# 音频类(音量/静音/淡入淡出/提音)
+python scripts/edit.py volume --input v.mp4 --factor 0.5 --output out.mp4
+python scripts/edit.py mute --input v.mp4 --output out.mp4
+python scripts/edit.py fade-audio --input v.mp4 --fade-in 2 --fade-out 3 --output out.mp4
+python scripts/edit.py extract-audio --input v.mp4 --output audio.mp3
+
+# 扩展(多分辨率/GIF/缩略图/水印)
+python scripts/edit.py multi-res --input v.mp4 --output-dir out/ --resolutions "320:240,640:480"
+python scripts/edit.py gif --input v.mp4 --output out.gif --width 320 --fps 10
+python scripts/edit.py thumbnail --input v.mp4 --output thumb.jpg --time 1
+python scripts/edit.py watermark --input v.mp4 --logo logo.png --position topright --output out.mp4
+```
+
 ---
 
 ## 子技能速查(30 脚本,2026 v0.5)
@@ -158,6 +186,7 @@ python scripts/digital_human.py --avatar avatar.jpg --script "大家好我是帅
 | **改词翻唱** | `scripts/rewrite_audio.py` | 🆕 13 rewrite-audio |
 | **文字成片** | `scripts/text_to_video.py` | 🆕 14 text-to-video |
 | **数字人** | `scripts/digital_human.py` | 🆕 15 digital-human |
+| **删减/调音/黑边/水印/多分辨率/GIF/缩略图** | `scripts/edit.py`(14 子命令) | 🆕 16 edit |
 | 批量处理 | `scripts/batch.py` | 10 batch |
 | 完整 vlog 流水线 | `scripts/pipeline_vlog.py` | 11 pipelines |
 

@@ -1,5 +1,29 @@
 # 智剪工坊 · 变更日志
 
+## v0.6 (2026-07-03) - 14 个原子操作补全
+
+### ✨ 新增
+- **`scripts/edit.py`** —— 14 个原子画面/音频编辑操作(1 个脚本 14 子命令)
+  - **P0 基础 8 个**:remove(去头/去尾/去中间)/ volume / mute / letterbox / scale / crop / rotate / flip
+  - **P1 扩展 6 个**:extract-audio / fade-audio / watermark / multi-res / gif / thumbnail
+  - **设计选择**:14 操作放 1 脚本(逻辑相似,集中维护)
+  - **remove 模式**:`--mode head/tail/regions`(`--exclude "10-5,20-3"` 逗号分隔多区间)
+  - 实测:17/17 子命令通过(含 watermark 17 号)
+
+### 🔧 升级
+- SKILL.md:子技能索引 15 → 16 + 当前状态表 v0.5 → v0.6
+- docs/GETTING_STARTED.md:加 H 工作流(14 个 edit 子命令示例)
+- docs/FAQ.md:加 Q34-36(edit.py 用法)
+
+### 🐛 修过的 Bug
+- `edit.py remove` temp 文件原来放工作目录,跨磁盘 `Path.replace` 失败 → 改放 output 同目录
+
+### 📦 验证状态
+- ✅ 30/30 脚本 import 通过
+- ✅ 17/17 edit 子命令冒烟测试通过(完整跑通 remove/volume/mute/letterbox/scale/crop/rotate/flip/extract-audio/fade-audio/thumbnail/multi-res/gif/watermark)
+
+---
+
 ## v0.5 (2026-07-03) - C/D 路线收尾
 
 ### ✨ 新增

@@ -663,6 +663,15 @@ def _maybe_sync_after_write(db_event_ids: list, date: str) -> None:
 
     print(f"  ✅ 飞书同步完成：created={len(result['created'])} updated={len(result['updated'])} deleted={len(result['deleted'])} skipped={len(result['skipped'])} errors={len(result['errors'])}")
 
+    # 提示:飞书时间变更已自动同步 DB
+    time_synced = result.get("time_synced") or []
+    if time_synced:
+        print(f"  ℹ️  飞书时间变更已自动同步 DB({len(time_synced)} 条):")
+        for db_id, old_s, old_e, new_s, new_e in time_synced[:5]:
+            print(f"     #{db_id}: {old_s}-{old_e} → {new_s}-{new_e}")
+        if len(time_synced) > 5:
+            print(f"     ... 还有 {len(time_synced) - 5} 条")
+
     # 保险丝:如果飞书侧某时间段存在多个 event(历史重复 create 留下),
     # 立即打印警告,提示用户清理。
     dupes = result.get("duplicate_groups") or []
@@ -1195,6 +1204,15 @@ def cmd_feishu_resync(args):
 
     print(f"\n  ✅ 完成")
     print(f"     created={len(result['created'])}  updated={len(result['updated'])}  deleted={len(result['deleted'])}  skipped={len(result['skipped'])}  errors={len(result['errors'])}")
+
+    # 提示:飞书时间变更已自动同步到 DB
+    time_synced = result.get("time_synced") or []
+    if time_synced:
+        print(f"  ℹ️  飞书时间变更已自动同步 DB({len(time_synced)} 条):")
+        for db_id, old_s, old_e, new_s, new_e in time_synced[:5]:
+            print(f"     #{db_id}: {old_s}-{old_e} → {new_s}-{new_e}")
+        if len(time_synced) > 5:
+            print(f"     ... 还有 {len(time_synced) - 5} 条")
 
     # 保险丝:飞书侧重复 event 警告
     dupes = result.get("duplicate_groups") or []

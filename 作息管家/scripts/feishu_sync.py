@@ -405,41 +405,206 @@ def search_events(
     按时间范围搜索飞书事件。返回列表。
     start/end 可接受 ISO 8601 或 YYYY-MM-DD（lark-cli 都支持）。
 
-    **实现说明**:走 +agenda 命令而非 +search-event。
-    原因:`+search-event` 返回的 event 不包含 `description` 字段,
-    导致 diff_and_sync 误判为"飞书 description 为空"→ 全量 update。
-    +agenda 返回完整 description(以及 event_id/start/end/summary)。
+    **三阶段并发实现**(2026-07-03 改造,解决 +agenda 索引延迟问题):
+    - Stage 1: 并发拉 `+agenda`(完整 description)+ `+search-event` 切片(索引最新)
+    - Stage 2: 合并去重(event_id 作 key)
+    - Stage 3: 按需补 description(`+agenda` 漏的,用 `events get` 单条补)
 
-    query 过滤:由于 +agenda 不支持 --query,在 Python 端用 substring
-    过滤 summary 或 description。
+    **为什么不用纯 `+search-event`**:
+    `+search-event` 不返回 description,且全天范围只返回 20 条(命中数限制)。
+    但 `+search-event` 索引最新,刚 create 的 event 也能查到。
+
+    **为什么不用纯 `+agenda`**:
+    `+agenda` 有索引延迟,刚 create 的 event 可能要等几分钟才能查到。
+
+    **组合方案的好处**:
+    - 日常零延迟:2 次 API 调用(并发),等同于纯 +agenda
+    - 有 N 个延迟:2 + N 次,N 通常 0-5
+    - 比"全量 events get"(30 次)高效 4-15 倍
+
+    query 过滤:在 Stage 1 + Stage 3 完成后统一过滤(对 summary 和 description substring)。
     """
-    args = [
-        "calendar", "+agenda",
-        "--calendar-id", calendar_id,
-        "--start", start,
-        "--end", end,
-    ]
+    # 计算精确 ISO 时间(用于 +search-event 切片和 +agenda)
+    # +agenda 接受 YYYY-MM-DD 或 ISO,+search-event 也一样
+    # 但如果跨日,需要确保 end 不漏
+    start_iso = _ensure_iso(start)
+    end_iso = _ensure_iso(end, is_end=True)
 
-    data = _run_lark_json(args, LARK_CLI_TIMEOUT_NORMAL)
-    payload = data.get("data") or []
-    if not isinstance(payload, list):
-        return []
+    # Stage 1: 并发拉数据
+    agenda_events, search_events_list = _stage1_fetch(
+        start_iso, end_iso, query, calendar_id
+    )
 
-    events = []
-    for it in payload:
-        summary = it.get("summary", "")
-        description = it.get("description", "")
-        # query 在 summary 或 description 里命中即保留(用 substring)
-        if query and query not in summary and query not in description:
-            continue
-        events.append(FeishuEvent(
-            event_id=it.get("event_id", ""),
-            start=(it.get("start_time") or {}).get("datetime", ""),
-            end=(it.get("end_time") or {}).get("datetime", ""),
-            summary=summary,
-            description=description,
-        ))
+    # Stage 2: 合并去重
+    by_id: dict[str, FeishuEvent] = {}
+    for ev in agenda_events:
+        by_id[ev.event_id] = ev  # 优先 +agenda(有 description)
+    for ev in search_events_list:
+        if ev.event_id not in by_id:
+            by_id[ev.event_id] = ev  # +agenda 没索引到(刚 create 的)
+
+    # Stage 3: 按需补 description
+    _stage3_fill_description(by_id, calendar_id)
+
+    # query 过滤
+    events = list(by_id.values())
+    if query:
+        events = [
+            e for e in events
+            if query in e.summary or query in (e.description or "")
+        ]
     return events
+
+
+def _ensure_iso(time_str: str, is_end: bool = False) -> str:
+    """确保时间字符串是 ISO 8601 格式。
+    - 输入 'YYYY-MM-DD' → 'YYYY-MM-DDT00:00:00+08:00'(start) 或 'T23:59:59+08:00'(end)
+    - 输入已经是 ISO → 原样返回
+    """
+    if "T" in time_str:
+        return time_str
+    if is_end:
+        return f"{time_str}T23:59:59+08:00"
+    return f"{time_str}T00:00:00+08:00"
+
+
+def _stage1_fetch(
+    start_iso: str,
+    end_iso: str,
+    query: Optional[str],
+    calendar_id: str,
+) -> tuple[list[FeishuEvent], list[FeishuEvent]]:
+    """Stage 1: 并发拉 +agenda 和 +search-event 切片"""
+    from concurrent.futures import ThreadPoolExecutor
+
+    agenda_events: list[FeishuEvent] = []
+    search_events_list: list[FeishuEvent] = []
+
+    def fetch_agenda():
+        args = [
+            "calendar", "+agenda",
+            "--calendar-id", calendar_id,
+            "--start", start_iso,
+            "--end", end_iso,
+        ]
+        try:
+            data = _run_lark_json(args, LARK_CLI_TIMEOUT_NORMAL)
+            payload = data.get("data") or []
+            if not isinstance(payload, list):
+                return []
+            return [
+                FeishuEvent(
+                    event_id=it.get("event_id", ""),
+                    start=(it.get("start_time") or {}).get("datetime", ""),
+                    end=(it.get("end_time") or {}).get("datetime", ""),
+                    summary=it.get("summary", ""),
+                    description=it.get("description", ""),
+                )
+                for it in payload
+            ]
+        except LarkAPIError:
+            return []  # +agenda 失败不致命,后面有 search 兜底
+        except Exception:
+            return []
+
+    def fetch_search_windowed():
+        """+search-event 按 6 小时窗口切片拉,避免 20 条限制"""
+        from datetime import datetime, timedelta
+
+        try:
+            start_dt = datetime.fromisoformat(start_iso.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(end_iso.replace("Z", "+00:00"))
+        except ValueError:
+            return []
+
+        all_events: list[FeishuEvent] = []
+        # 6 小时窗口切片
+        window = timedelta(hours=6)
+        cur = start_dt
+        while cur < end_dt:
+            cur_end = min(cur + window, end_dt)
+            args = [
+                "calendar", "+search-event",
+                "--calendar-id", calendar_id,
+                "--start", cur.isoformat(),
+                "--end", cur_end.isoformat(),
+            ]
+            if query:
+                args.extend(["--query", query])
+            try:
+                data = _run_lark_json(args, LARK_CLI_TIMEOUT_NORMAL)
+                payload = data.get("data") or {}
+                items = payload.get("items", []) if isinstance(payload, dict) else []
+                for it in items:
+                    all_events.append(FeishuEvent(
+                        event_id=it.get("event_id", ""),
+                        start=(it.get("start") or {}).get("date_time", ""),
+                        end=(it.get("end") or {}).get("date_time", ""),
+                        summary=it.get("summary", ""),
+                        description="",  # +search-event 不返回 description
+                    ))
+            except LarkAPIError:
+                continue
+            except Exception:
+                continue
+            cur = cur_end
+        return all_events
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        f_agenda = pool.submit(fetch_agenda)
+        f_search = pool.submit(fetch_search_windowed)
+        try:
+            agenda_events = f_agenda.result(timeout=LARK_CLI_TIMEOUT_NORMAL + 10)
+        except Exception:
+            agenda_events = []
+        try:
+            search_events_list = f_search.result(timeout=LARK_CLI_TIMEOUT_NORMAL * 3 + 30)
+        except Exception:
+            search_events_list = []
+
+    return agenda_events, search_events_list
+
+
+def _stage3_fill_description(by_id: dict, calendar_id: str) -> None:
+    """Stage 3: 对 description 为空的 event,逐个调 events get 补齐。
+    用 dict 直接修改,避免大列表重建。"""
+    need_fill = [ev for ev in by_id.values() if not ev.description]
+    for ev in need_fill:
+        try:
+            detail = _get_event_detail(ev.event_id, calendar_id)
+            if detail and detail.description:
+                ev.description = detail.description
+        except LarkAPIError:
+            continue
+        except Exception:
+            continue
+
+
+def _get_event_detail(event_id: str, calendar_id: str = "primary") -> Optional[FeishuEvent]:
+    """单条 events get,返回完整 FeishuEvent(含 description)"""
+    args = [
+        "calendar", "events", "get",
+        "--calendar-id", calendar_id,
+        "--event-id", event_id,
+    ]
+    try:
+        data = _run_lark_json(args, LARK_CLI_TIMEOUT_NORMAL)
+    except LarkAPIError:
+        return None
+    except Exception:
+        return None
+    event_data = (data.get("data") or {}).get("event", {})
+    if not event_data:
+        return None
+    return FeishuEvent(
+        event_id=event_data.get("event_id", event_id),
+        start=(event_data.get("start_time") or {}).get("datetime", "")
+              or (event_data.get("start_time") or {}).get("timestamp", ""),
+        end=(event_data.get("end_time") or {}).get("datetime", "")
+            or (event_data.get("end_time") or {}).get("timestamp", ""),
+        summary=event_data.get("summary", ""),
+        description=event_data.get("description", ""),
+    )
 
 
 # ============================================================
@@ -526,14 +691,25 @@ def _diff_and_sync_impl(
         query="作息管家自动同步",
     )
 
-    # 构造 diff map
-    # key = (time_start, time_end) —— 因为同一时段只对应一件事
-    db_map = {(e.time_start, e.time_end): e for e in db_events}
+    # 构造索引
+    # **配对优先级**:event_id > (start, end)
+    # 这样用户在飞书手动改时间,DB 端不会盲目 delete+create,而是跟着改。
+    db_by_id: dict[str, PlanEvent] = {}  # feishu_event_id -> db_e
+    db_no_id: list[PlanEvent] = []  # 没绑 ID 的 db event
+    for e in db_events:
+        if e.feishu_event_id:
+            db_by_id[e.feishu_event_id] = e
+        else:
+            db_no_id.append(e)
+
+    # DB 按 (start, end) 索引(给没绑 ID 的或飞书侧也没绑的兜底用)
+    db_by_key = {(e.time_start, e.time_end): e for e in db_events}
+
+    # 飞书按 event_id 和 (start, end) 索引
+    feishu_by_id = {e.event_id: e for e in feishu_events}
 
     # 保险丝:按 (start, end) 分组飞书事件,记录每个时间槽对应的事件列表。
     # 如果某个时间槽有 >1 个飞书事件(历史重复 create 留下),记录到 duplicate_groups。
-    # 正常 diff 仍用每组的"代表"(第一条),但返回结果里会附带冗余信息,
-    # 方便上层(比如 resync 函数)打印警告,避免下次重复 create 累积。
     from collections import OrderedDict
     feishu_groups: "OrderedDict[tuple, list]" = OrderedDict()
     for fe in feishu_events:
@@ -550,16 +726,23 @@ def _diff_and_sync_impl(
                 "summaries": list({e.summary for e in events}),  # 去重,通常都一致
             })
 
-    # diff 用的 feishu_map:每组取第一条作为代表(覆盖 dict 时不会重复报错)
+    # diff 用的 feishu_map:每组取第一条作为代表
     feishu_map = {key: events[0] for key, events in feishu_groups.items()}
+
+    # 飞书 event 已被匹配的标记(避免 Phase B/C 重复处理)
+    feishu_matched: set[str] = set()
+
+    # DB 端时间被飞书同步的记录(给 resync 函数打印提示)
+    time_synced: list[tuple[int, str, str, str, str]] = []  # (db_id, old_start, old_end, new_start, new_end)
 
     created, updated, deleted, skipped, errors = [], [], [], [], []
 
-    # create / update
-    for key, db_e in db_map.items():
-        feishu_e = feishu_map.get(key)
-        if feishu_e is None:
-            # 需要新建
+    # ===== Phase A: 按 event_id 配对(DB 端有 feishu_event_id 的优先) =====
+    for fid, db_e in list(db_by_id.items()):
+        fe = feishu_by_id.get(fid)
+        if fe is None:
+            # DB 端有 fid 但飞书侧找不到 → 飞书删了/外部清理,DB 端 stale
+            # 兜底:重建(创建新 event + 更新 DB 端 fid)
             if _should_ask(ask_callback, "create", db_e):
                 try:
                     new_e = create_event(
@@ -571,46 +754,155 @@ def _diff_and_sync_impl(
                     )
                     if new_e.event_id:
                         created.append(new_e.event_id)
+                        # 重建后必须更新 DB 端 fid(原 fid 已 stale)
+                        if not dry_run:
+                            try:
+                                from schedule_db import set_feishu_event_id
+                                set_feishu_event_id(db_e.id, new_e.event_id)
+                            except Exception:
+                                pass
                     elif dry_run:
                         created.append("(dry-run)")
+                except LarkAPIError as ex:
+                    errors.append((fid, str(ex)))
+                except Exception as ex:
+                    errors.append((fid, str(ex)))
+            else:
+                skipped.append(db_e.time_start)
+            continue
+
+        # event_id 配对成功 → 检查时间/title/desc
+        feishu_matched.add(fid)
+        fe_start = _iso_to_hhmm(fe.start, date)
+        fe_end = _iso_to_hhmm(fe.end, date)
+
+        # 时间变化 → 改 DB 端(用户的飞书手动改动被尊重)
+        # **默认提示**:仅 print 一行,不让用户回答
+        if (fe_start, fe_end) != (db_e.time_start, db_e.time_end):
+            time_synced.append((db_e.id, db_e.time_start, db_e.time_end, fe_start, fe_end))
+            if not dry_run:
+                try:
+                    from schedule_db import update_plan_event
+                    update_plan_event(db_e.id, {"time_start": fe_start, "time_end": fe_end})
+                except Exception as ex:
+                    errors.append((fid, f"同步 DB 时间失败:{ex}"))
+            # 更新内存对象,避免后续 title/desc 比较用旧值
+            db_e.time_start = fe_start
+            db_e.time_end = fe_end
+
+        # title/desc 变化 → update 飞书(DB 是 source)
+        title_changed = fe.summary != db_e.title
+        desc_changed = fe.description != _compose_description(db_e)
+        if title_changed or desc_changed:
+            if _should_ask(ask_callback, "update", db_e, fe):
+                try:
+                    update_event(
+                        event_id=fid,
+                        summary=db_e.title,
+                        description=_compose_description(db_e),
+                    )
+                    updated.append(fid)
+                except LarkAPIError as ex:
+                    errors.append((fid, str(ex)))
+                except Exception as ex:
+                    errors.append((fid, str(ex)))
+            else:
+                skipped.append(fid)
+
+    # ===== Phase B: DB 端没绑 fid 的 → 按 (start, end) 配对 =====
+    for db_e in db_no_id:
+        key = (db_e.time_start, db_e.time_end)
+        fe = feishu_map.get(key)
+        if fe is None:
+            # 飞书无 → create
+            if _should_ask(ask_callback, "create", db_e):
+                try:
+                    new_e = create_event(
+                        start=_to_iso(date, db_e.time_start),
+                        end=_to_iso(date, db_e.time_end),
+                        summary=db_e.title,
+                        description=_compose_description(db_e),
+                        dry_run=dry_run,
+                    )
+                    if new_e.event_id:
+                        created.append(new_e.event_id)
+                        if not dry_run:
+                            try:
+                                from schedule_db import set_feishu_event_id
+                                set_feishu_event_id(db_e.id, new_e.event_id)
+                            except Exception:
+                                pass
+                    elif dry_run:
+                        created.append("(dry-run)")
+                except LarkAPIError as ex:
+                    errors.append((key, str(ex)))
                 except Exception as ex:
                     errors.append((key, str(ex)))
             else:
                 skipped.append(db_e.time_start)
         else:
-            # 已有飞书事件，content-based diff（简单起见：title 或 description 变了就 update）
-            title_changed = feishu_e.summary != db_e.title
-            desc_changed = feishu_e.description != _compose_description(db_e)
+            # 飞书有,key 匹配上
+            feishu_matched.add(fe.event_id)
+            title_changed = fe.summary != db_e.title
+            desc_changed = fe.description != _compose_description(db_e)
             if title_changed or desc_changed:
-                if _should_ask(ask_callback, "update", db_e, feishu_e):
+                if _should_ask(ask_callback, "update", db_e, fe):
                     try:
                         update_event(
-                            event_id=feishu_e.event_id,
+                            event_id=fe.event_id,
                             summary=db_e.title,
                             description=_compose_description(db_e),
                         )
-                        updated.append(feishu_e.event_id)
+                        updated.append(fe.event_id)
+                        # 顺便绑 ID(避免下次还要走 fallback 路径)
+                        if not dry_run:
+                            try:
+                                from schedule_db import set_feishu_event_id
+                                set_feishu_event_id(db_e.id, fe.event_id)
+                            except Exception:
+                                pass
+                    except LarkAPIError as ex:
+                        errors.append((fe.event_id, str(ex)))
                     except Exception as ex:
-                        errors.append((feishu_e.event_id, str(ex)))
+                        errors.append((fe.event_id, str(ex)))
                 else:
-                    skipped.append(feishu_e.event_id)
+                    skipped.append(fe.event_id)
 
-    # delete：飞书有但 DB 没有的
-    for key, feishu_e in feishu_map.items():
-        if key not in db_map:
-            if _should_ask(ask_callback, "delete", feishu_e=feishu_e):
+    # ===== Phase C: 飞书有 DB 无 → 检查归属 =====
+    # **改进**:不只是"飞书有 DB 无就删",而是先看 description 是不是我们管的。
+    # 是我们管的(可能 DB 漏了)→ 警告 + 询问删除
+    # 不是我们管的(可能用户手动建)→ 不删,只警告
+    for key, fe in feishu_map.items():
+        if fe.event_id in feishu_matched:
+            continue
+        if key in db_by_key:
+            continue  # DB 端有别的 event 在这个 key(已处理)
+
+        desc = fe.description or ""
+        is_managed = "作息管家自动同步" in desc
+
+        if is_managed:
+            # 是我们管的,DB 缺 → 警告 + 询问删除
+            if _should_ask(ask_callback, "delete", feishu_e=fe):
                 try:
-                    delete_event(event_id=feishu_e.event_id)
-                    deleted.append(feishu_e.event_id)
+                    delete_event(event_id=fe.event_id)
+                    deleted.append(fe.event_id)
+                except LarkAPIError as ex:
+                    errors.append((fe.event_id, str(ex)))
                 except Exception as ex:
-                    errors.append((feishu_e.event_id, str(ex)))
+                    errors.append((fe.event_id, str(ex)))
             else:
-                skipped.append(feishu_e.event_id)
+                skipped.append(fe.event_id)
+        else:
+            # 用户手动建的事件 → 不删,只警告
+            # **不计入 skipped**(因为我们没跳过任何操作,只是不动它)
+            errors.append((fe.event_id, f"飞书侧存在 DB 端无的事件(可能用户手动建):{fe.summary} {key}"))
 
     return {
         "created": created,
         "updated": updated,
         "deleted": deleted,
+        "time_synced": time_synced,  # 新字段:飞书时间变了,DB 端被同步
         "skipped": skipped,
         "errors": errors,
         "duplicate_groups": duplicate_groups,  # 保险丝字段

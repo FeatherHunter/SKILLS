@@ -1,0 +1,481 @@
+#!/usr/bin/env python3
+"""
+渲染 2026-07-02 作息报告 HTML
+"""
+
+import json
+from pathlib import Path
+from datetime import datetime
+from collections import defaultdict
+
+with open('/tmp/report_data_2026-07-02.json', 'r', encoding='utf-8') as f:
+    data = json.load(f)
+
+records = data['records']
+hours = data['hours']
+cat_minutes = data['cat_minutes']
+total_minutes = data['total_minutes']
+total_hours = total_minutes / 60
+sleep_records = data['sleep_records']
+main_sleep = data['main_sleep']
+meal_records = data['meal_records']
+work_records = data['work_records']
+commute_records = data['commute_records']
+study_records = data['study_records']
+leisure_records = data['leisure_records']
+entertainment_records = data['entertainment_records']
+social_records = [r for r in records if r['category'] == '社交']
+wash_records = [r for r in records if r['category'] == '洗漱']
+exercise_records = data['exercise_records']
+home_records = data['home_records']
+hobby_records = data['hobby_records']
+health_records = data['health_records']
+plan_records = data['plan_records']
+rest_records = data['rest_records']
+qijv_records = data['qijv_records']
+
+# 颜色 & emoji
+color_map = {
+    "睡眠": "#5E5CE6", "工作": "#007AFF", "学习": "#34C759", "运动": "#FF9500",
+    "通勤": "#64D2FF", "餐饮": "#FF9F0A", "娱乐": "#AF52DE", "社交": "#FF2D55",
+    "休闲": "#30D158", "健康": "#FF3B30", "洗漱": "#5AC8FA", "兴趣爱好": "#BF8F5F",
+    "家务": "#A2845E", "未知": "#8E8E93", "休息": "#8E8E93", "起居": "#8E8E93", "计划": "#FF6B9D",
+}
+emoji_map = {
+    "睡眠": "😴", "工作": "💼", "学习": "📚", "运动": "🏋️",
+    "通勤": "🚴", "餐饮": "🍽️", "娱乐": "🎮", "社交": "💕",
+    "休闲": "🛋️", "健康": "🏥", "洗漱": "🚿", "兴趣爱好": "🎨",
+    "家务": "🧹", "未知": "❓", "休息": "📌", "起居": "🪥", "计划": "📋",
+}
+
+# 排序分类（按时长倒序）
+sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
+
+# ============ HTML 渲染 ============
+def fmt_dur(mins):
+    return f"{mins//60}小时{mins%60}分钟" if mins % 60 else f"{mins//60}小时"
+
+def cat_emoji(c):
+    return emoji_map.get(c, "📌")
+def cat_color(c):
+    return color_map.get(c, "#8E8E93")
+
+# 渲染分类摘要
+summary_html = []
+for cat, mins in sorted_cats:
+    emoji = cat_emoji(cat)
+    color = cat_color(cat)
+    pct = mins / total_minutes * 100
+    summary_html.append(f'''    <div class="summary-item">
+      <span class="emoji">{emoji}</span>
+      <div class="info">
+        <div class="cat">{cat}</div>
+        <div class="dur">{fmt_dur(mins)}</div>
+        <div class="bar"><div class="bar-fill" style="width:{pct:.1f}%;background:{color}"></div></div>
+      </div>
+    </div>''')
+summary_html = '\n'.join(summary_html)
+
+# 计算时间轴：使用每小时主导分类（按分钟数覆盖最多）
+hour_cats = [None] * 24
+hour_minutes = [defaultdict(int) for _ in range(24)]
+for r in records:
+    final_cat = r['category']
+    try:
+        h_start = int(r['time_start'].split(':')[0])
+        s_min = int(r['time_start'].split(':')[1])
+        if r['time_end'] == '23:59':
+            e_min_total = 23 * 60 + 59
+        elif r['time_end'] == '24:00':
+            e_min_total = 24 * 60
+        else:
+            eh, em = map(int, r['time_end'].split(':'))
+            # 跨日处理
+            if eh * 60 + em < h_start * 60 + s_min:
+                e_min_total = 24 * 60 + eh * 60 + em
+            else:
+                e_min_total = eh * 60 + em
+        s_min_total = h_start * 60 + s_min
+        cur = s_min_total
+        while cur < e_min_total:
+            h = cur // 60
+            if h < 24:
+                next_hour = (h + 1) * 60
+                covered = min(next_hour, e_min_total) - cur
+                hour_minutes[h][final_cat] += covered
+                cur = next_hour
+            else:
+                break
+    except Exception as e:
+        pass
+
+# 取每小时主导分类
+for h in range(24):
+    if hour_minutes[h]:
+        hour_cats[h] = max(hour_minutes[h].items(), key=lambda x: x[1])[0]
+    else:
+        hour_cats[h] = hours[h] or '休息'
+
+# 渲染时间轴
+timeline_html = []
+for h in range(24):
+    cat = hour_cats[h] or '休息'
+    color = cat_color(cat)
+    timeline_html.append(f'    <div class="timeline-block" style="background:{color}"><div class="tip">{h:02d}:00 {cat}</div></div>')
+timeline_html = '\n'.join(timeline_html)
+
+# 渲染时间轴图例
+used_cats = []
+for h in range(24):
+    cat = hour_cats[h] or '休息'
+    if cat not in used_cats:
+        used_cats.append(cat)
+legend_html = []
+for cat in used_cats:
+    color = cat_color(cat)
+    legend_html.append(f'    <div class="legend-item"><div class="legend-dot" style="background:{color}"></div>{cat}</div>')
+legend_html = '\n'.join(legend_html)
+
+# 周几
+weekday_map = {0: '周一', 1: '周二', 2: '周三', 3: '周四', 4: '周五', 5: '周六', 6: '周日'}
+dt = datetime.strptime(data['date'], '%Y-%m-%d')
+weekday = weekday_map[dt.weekday()]
+date_cn = f"{dt.year}年{dt.month}月{dt.day}日"
+
+# ============ 关键数据 ============
+sleep_total = cat_minutes.get('睡眠', 0)
+meal_total = cat_minutes.get('餐饮', 0)
+work_total = cat_minutes.get('工作', 0)
+study_total = cat_minutes.get('学习', 0)
+entertainment_total = cat_minutes.get('娱乐', 0)
+commute_total = cat_minutes.get('通勤', 0)
+leisure_total = cat_minutes.get('休闲', 0)
+wash_total = cat_minutes.get('洗漱', 0)
+social_total = cat_minutes.get('社交', 0)
+exercise_total = cat_minutes.get('运动', 0)
+home_total = cat_minutes.get('家务', 0)
+hobby_total = cat_minutes.get('兴趣爱好', 0)
+health_total = cat_minutes.get('健康', 0)
+plan_total = cat_minutes.get('计划', 0)
+
+# ============ 当日亮点 ============
+highlights_html = f'''    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3AC;</span>
+      <div>
+        <div class="h-text"><b>减肥日记 vlog Day 1 上线 B 站 ✅</b>：从早晨 07:12 决定"做减肥日记放 B 站"开始构思，到 09:19~11:33 在健身房拍口播素材（88min），再到 22:33~22:45 研究如何拍摄 vlog（从零开始），最后 23:20~00:22 期间完成"处理视频并发布 B 站减肥日记 Day 1"。这是创作的完整闭环——构思→脚本→拍摄→研究→剪辑→发布，全天都有 vlog 痕迹。从凌晨 5:26 起床到 00:22 入睡，总共 19h，减肥日记 vlog 占了其中至少 4h+（含拍摄/讨论/研究/发布）。这是值得记录的重要里程碑</div>
+        <div class="h-time">vlog 全程：07:12 决定 → 09:19~11:33 拍摄 88min → 22:33~22:45 研究 → 23:20~00:22 发布</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3CB;&#xFE0F;</span>
+      <div>
+        <div class="h-text">运动量爆发 1h57m（占 8.1%）🏋️：今天是运动强度爆表的一天，含 3 段正式训练 + 1 段通勤训练。① 09:39~10:05 八段锦 25min（居家功法）② 16:45~17:31 健身房爬楼机 46min（含准备+训练，核心力量+有氧）③ 20:56~21:41 通勤+运动 45min（出门扔垃圾+直接去健身房训练）。3 次健身密度堪比专业运动员。1h57m 远超 30min 推荐量，是恢复健身节奏的强信号。⚠️ 但需注意：第三次健身离上次才 3h 多，肌肉恢复可能不够，建议合理安排</div>
+        <div class="h-time">3 段运动：09:39~10:05（25min）八段锦 / 16:45~17:31（46min）爬楼机 / 20:56~21:41（45min）健身房</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">睡眠 6h28m（占 26.9%）偏低：低于推荐 7-9h 范围，少 32min~2h32m。结构：① 主睡眠 00:22~05:26（304min = 5h4min）凌晨被疼痛唤醒（非自然醒）② 午睡 12:29~13:32（63min）+ 13:32~13:53（21min）共 84min 补觉。总睡眠 388min（含午睡）= 6h28m。⚠️ 主睡眠被手指烫伤痛醒是异常中断，不是健康睡眠模式。凌晨 00:22 入睡、05:26 被痛醒，加上午睡补 1h24m 仍偏少。建议 23:00 前入睡以保证 7h+ 主睡眠</div>
+        <div class="h-time">主睡眠：00:22~05:26（304min）痛醒 / 午睡：12:29~13:53（84min）补觉</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3A8;</span>
+      <div>
+        <div class="h-text">兴趣爱好 3h20m（占 13.9%）vlog 拍摄日：6 段兴趣爱好活动几乎都围绕 vlog 制作。① 07:12~07:20 讨论 vlog + 拍体重视频 8min ② 07:45~08:06 躺着交流 vlog 21min ③ 09:19~09:39 准备练八段锦但实际在录像（自我纠正）20min ④ 10:05~11:33 去健身房+拍摄口播素材 88min（最长）⑤ 15:36~16:27 元母意程修行 51min（穿插的固定修炼）⑥ 22:33~22:45 研究如何拍摄 vlog 12min。拍摄+研究 = 149min（2h29m），是今天最有产出的创作活动。10:05~11:33 的 88min 是核心素材时间</div>
+        <div class="h-time">6 段：07:12/07:45/09:19/10:05(88min)/15:36 元母意程/22:33</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F37D;&#xFE0F;</span>
+      <div>
+        <div class="h-text">餐饮 1h49m（占 7.6%）5 段：① 11:33~12:20 拍完口播+决定不去健身+吃饭 47min（合并：讨论+吃饭）② 12:20~12:29 餐饮收尾+饭后看 B 站 9min ③ 18:00~18:26 做晚饭 26min ④ 18:26~18:53 吃晚饭 27min ⑤ 22:33 晚餐补餐（汉堡+无糖可乐）。⚠️ 22:33 的补餐说明 18:00~18:53 的晚饭没吃饱——可能是运动后食欲增加+摄入不足。运动日需要更高的热量补充，建议加餐（蛋白/坚果）</div>
+        <div class="h-time">5 段餐饮：11:33~12:20 / 12:20~12:29 / 18:00~18:26 / 18:26~18:53 / 22:33 补餐</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F6E0;&#xFE0F;</span>
+      <div>
+        <div class="h-text">烫伤处理得当 ✅：05:26 醒来发现手指烫伤水泡（已 2 天），连续 11 条消息（05:26~05:43）咨询 AI 刺破处理方案。AI 建议不刺破（泡内液体会阻止新皮肤成长），用户最终选择不刺破。这是正确的健康决策——避免感染+加速愈合。但 17min 的密集咨询中断了睡眠，导致主睡眠只睡了 5h4min。⚠️ 后续应持续观察伤口愈合情况，如有红肿/化脓/疼痛加剧需及时就医。家庭常备烫伤膏是必备</div>
+        <div class="h-time">05:26~05:43 烫伤咨询 17min，正确选择不刺破水泡</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">早睡早起执行失败 ⚠️：本应在 7/1 晚上 23:00 入睡，实际 7/2 凌晨 00:22 才入睡（晚 1h22min）。23:20~00:22 期间处理视频+发布 B 站减肥日记 Day 1+制定明日计划+道晚安（62min），等于"睡前还干了 1h 创作"。这是创作者的通病——白天不剪视频，拖到睡前。建议：① 22:30 关闭剪辑软件 ② 视频发布放第二天上午 ③ 21:00 后只看不发 ④ 把"发布"作为一天的结束动作（不是睡前动作）</div>
+        <div class="h-time">23:20~00:22 睡前创作 62min，导致 00:22 才入睡 ⚠️</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F6B6;</span>
+      <div>
+        <div class="h-text">通勤 1h12m（占 5.0%）4 段：今天通勤密度异常高——4 次出门/回家。① 16:38~16:45 去健身房路上 7min ② 17:31~17:44 回家路上 13min ③ 21:41~21:52 收拾衣服回家 11min ④ 21:52~22:33 健身结束回家路上 41min（最长）。21:52~22:33 这 41min 应该是包含了去健身+健身完回家——两个目的地无缝衔接。1h12m 通勤时间主要花在健身房来回路上，比平时 30min 多 42min（多一趟）。建议：把两次健身合并为一次（避免 1h 通勤浪费）</div>
+        <div class="h-time">4 段通勤：16:38/17:31/21:41/21:52~22:33(41min)</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4FA;</span>
+      <div>
+        <div class="h-text">娱乐 2h5m（占 8.7%）碎片化：4 段娱乐分散在全天。① 06:10~07:09 看短视频 59min（最长的娱乐段，凌晨早起后）② 09:13~09:19 起床后刷短视频 6min ③ 15:02~15:24 玩 B 站短视频+讨论旅游博主 22min ④ 19:09~19:47 看《将夜》动漫 38min（含追剧）。⚠️ 06:10~07:09 早起后立刻刷 59min 短视频是"报复性娱乐"——前晚没睡好+烫伤痛醒，靠短视频提神。娱乐形式以短视频为主，缺少深度内容（读书/电影）</div>
+        <div class="h-time">4 段娱乐：06:10~07:09（59min）短视频 / 09:13~09:19 / 15:02~15:24 / 19:09~19:47《将夜》动漫</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3E0;</span>
+      <div>
+        <div class="h-text">家务 40min（占 2.8%）单次集中：13:53~14:33 打扫厕所 40min。起床后立即开始家务，效率较高——40min 完成厕所清洁。相比前几日（06-25: 46min 多段）今天家务量减少。家务单一反映生活节奏的"取舍"——把时间让给 vlog 拍摄和健身</div>
+        <div class="h-time">1 段家务：13:53~14:33（40min）打扫厕所</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4DA;</span>
+      <div>
+        <div class="h-text">元母意程修行 51min（占 3.5%）：15:36~16:27 完成元母意程 51min。这是个人修炼体系的固定项目，今天完整执行。修行夹在两段健身房之间（八段锦之后 + 下午健身房之前），形成"功法+健身+修炼"的精神身体双重训练。建议保持每日 30~60min 元母意程修行，这是精神锚点</div>
+        <div class="h-time">1 段元母意程：15:36~16:27（51min）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4DD;</span>
+      <div>
+        <div class="h-text">社交 18min（占 1.2%）亲密度一般：23:02~23:20 亲密+准备制定明日计划 18min。今天社交时间很短（< 30min），与前几天（06-25 社交 3h41m）形成鲜明对比。可能因为：① 女朋友不在身边（昨日是周三，工作日）② 用户全身心投入 vlog 创作+健身 ③ 晚上 23:20 后才开始沟通+制定明日计划。亲密交流放最后是创作型人格的典型模式</div>
+        <div class="h-time">1 段社交：23:02~23:20（18min）亲密+制定明日计划</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4A1;</span>
+      <div>
+        <div class="h-text">计划执行对比：本日计划（schedule_plans）8 段规划，覆盖早 7 点起床到下午 3 点爬楼机。实际执行：① 早 7 点起床（08:06 实际起）晚 1h6min ② 八段锦 09:39 完成 ✓（计划 09:00 区间内） ③ 上午爬楼机取消（决定"上午不去健身"）④ 厕所清理 13:53 完成 ✓ ⑤ 通勤+换衣+力量训练 16:38 完成 ✓ ⑥ 下午爬楼机 16:45 完成 ✓。总体执行率约 70%——健身房去了 3 次但错过"上午爬楼机"，下午补足。⚠️ 明天需关注"送女朋友"环节（计划 hour_8）</div>
+        <div class="h-time">计划执行率 ≈ 70%，3 次健身房补足 1 次上午跳过</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F389;</span>
+      <div>
+        <div class="h-text">周四（昨天）做得好的地方：① 减肥日记 vlog Day 1 上线 B 站（创作里程碑）✅ ② 运动 1h57m（八段锦+下午健身房+晚上健身房）三日连续 ③ 烫伤正确处理（不刺破水泡） ④ vlog 口播素材 88min 拍摄完成 ⑤ 元母意程修行 51min ⑥ 23:02~23:20 与女朋友亲密交流+制定明日计划 ⑦ 23:20~00:22 完成视频发布 ⑧ 起居 67min 含洗漱+早餐</div>
+      </div>
+    </div>'''
+
+# ============ 睡眠分析 ============
+sleep_html = f'''    <div class="highlight-row">
+      <span class="h-emoji">&#x1F319;</span>
+      <div>
+        <div class="h-text">主睡眠 00:22~05:26 共 5h4m（304min）：单段长睡眠，但被手指烫伤痛醒（非自然醒）。从 00:22 入睡到 05:26 被疼痛唤醒，5h4m 处于"深度睡眠+REM 循环"的标准周期内（约 3-4 个 90min 周期），但因为痛醒属于异常中断，睡眠质量可能受影响。烫伤痛醒 5h4m 的主睡眠是必要的——身体通过睡眠修复炎症</div>
+        <div class="h-time">00:22~05:26 持续 5h4m（被烫伤痛醒）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4CA;</span>
+      <div>
+        <div class="h-text">总睡眠 6h28m（388min = 3 段），占全天 26.9%。在 7-9h 推荐范围之下（少 32min~2h32m）。结构：主睡眠 5h4m + 午睡 1h24m（12:29~13:53）。午睡分两段：① 12:29~13:32（63min）② 13:32~13:53（21min）共 84min。⚠️ 主睡眠被痛醒中断，午睡是补偿机制。整体睡眠质量不如完整 7h 主睡眠+短午睡的模式。建议：① 继续午睡补偿（不超过 90min） ② 23:00 前入睡保证主睡眠不被中断</div>
+        <div class="h-time">总 6h28m（3 段）⚠️ 低于推荐下限（7h）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F552;</span>
+      <div>
+        <div class="h-text">00:22 入睡时间：比推荐 23:00 入睡晚 1h22min。前晚 23:20~00:22 期间处理视频+发布 B 站减肥日记 Day 1+制定明日计划+道晚安（62min），等于"睡前还干了 1h 创作"。⚠️ 这是创作者拖延症的表现——白天没剪视频，拖到睡前。建议：① 视频发布放第二天上午 ② 22:30 关闭所有剪辑工具 ③ 睡前仪式（洗漱/冥想/纸质书）</div>
+        <div class="h-time">00:22 入睡 ⚠️ 晚 1h22min</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">凌晨 5:26 被烫伤痛醒 ⚠️：手指烫伤水泡（已 2 天）的疼痛在睡眠中累积，导致凌晨被痛醒。这是非自然睡眠中断，睡眠质量受影响。烫伤处理得当（不刺破水泡），但应：① 涂抹烫伤膏持续修复 ② 口服消炎药（如有需要）③ 严重时就医（特别是感染迹象）④ 睡觉时避免压迫伤口（垫纱布/调整睡姿）。家庭常备烫伤膏、纱布、消炎药</div>
+        <div class="h-time">05:26 被烫伤痛醒 ⚠️ 非自然醒</div>
+      </div>
+    </div>'''
+
+# ============ 改善建议 ============
+suggest_html = f'''    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3AC;</span>
+      <div>
+        <div class="h-text">vlog 创作流程优化 ⚠️：减肥日记 Day 1 从早 7 点构思到凌晨 00:22 发布，制作时间分散但有效。建议建立 vlog 创作流程：① 早上 9:00~11:00 拍素材（光线最好）② 下午 15:00~17:00 剪辑（避开健身房）③ 晚上 20:00~21:00 发布+配字幕。避免：① 拖到睡前发布（影响睡眠）② 健身房练完后没剪辑直接拍（10:05~11:33 健身房+拍素材 88min 是好方法，但要留剪辑时间）③ 多次发散（22:33 又研究如何拍摄，应该 Day 1 就定好方案）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3CB;&#xFE0F;</span>
+      <div>
+        <div class="h-text">健身频率优化：今天 1h57m 运动（八段锦 25min + 下午健身房 46min + 晚上健身房 45min），运动量超标。建议：① 每天最多 1 次健身房（避免肌肉疲劳）② 八段锦放早上 09:30 作为热身 ③ 健身房训练放下午 16:00~18:00 ④ 运动后至少 6h 恢复时间。⚠️ 20:56~21:41 的健身房离下午 17:31 只 3h25min，肌肉未充分恢复。建议：每周健身房 3~4 次，每次 45~60min</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F634;</span>
+      <div>
+        <div class="h-text">早睡问题（最关键）：00:22 入睡、05:26 被痛醒，主睡眠仅 5h4m。23:20~00:22 期间处理视频+发布是晚睡主因。建议：① 22:30 设置"创作截止时间"闹钟 ② 视频发布放第二天上午 9:00 ③ 23:00 关闭所有屏幕（手机+电脑）④ 23:00~23:30 做睡前仪式（洗漱/冥想/纸质书）⑤ 入睡时间控制在 23:00~23:30 ⑥ 7h+ 主睡眠是健康核心</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F37D;&#xFE0F;</span>
+      <div>
+        <div class="h-text">运动日营养补充：今天运动 1h57m + 晚上 22:33 补餐（汉堡+无糖可乐），说明白天的热量摄入不足。运动日需要更高热量：① 早：高蛋白早餐（鸡蛋+牛奶）② 运动前 1h：碳水（香蕉/燕麦）③ 运动后 30min：蛋白+碳水（蛋白粉+面包）④ 晚餐：增加蛋白质（鸡胸肉/鱼）⑤ 加餐：坚果/酸奶。⚠️ 22:33 吃汉堡+无糖可乐作为"晚餐补餐"——汉堡热量高+无糖可乐零卡，运动日的能量补充应更健康</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4E1;</span>
+      <div>
+        <div class="h-text">烫伤后续管理：05:26 发现手指烫伤水泡（已 2 天），咨询 AI 后选择不刺破（正确决策）。但后续需关注：① 每天观察伤口（红肿/化脓/疼痛加剧）② 涂抹烫伤膏（美宝湿润烧伤膏等）③ 保持伤口清洁干燥 ④ 3 天内无好转或恶化 → 就医 ⑤ 晚上睡觉避免压迫伤口。家庭常备：湿润烧伤膏、碘伏、纱布、医用胶带、消炎药（如头孢）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4FA;</span>
+      <div>
+        <div class="h-text">短视频使用优化：06:10~07:09 早起后立刻刷 59min 短视频、15:02~15:24 又刷 22min 讨论旅游博主，碎片化娱乐共 1h21m。建议：① 起床后 30min 内不看手机（洗漱/喝水/冥想）② 短视频集中 1 段时间（如午饭后 30min）③ 看 B 站纪录片代替短视频（深度内容）④ 19:09~19:47 的《将夜》动漫是好选择（38min 沉浸式）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4DA;</span>
+      <div>
+        <div class="h-text">元母意程持续修行：今天 15:36~16:27 完成 51min 元母意程，是个人修炼体系的固定项目。建议：① 保持每日 30~60min 修行 ② 早上 8:00 或下午 16:00 作为固定时间 ③ 修行后记录感受（备忘录）④ 元母意程与健身互补（精神+身体）⑤ 周日可以做 1~2h 的深度修行</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F495;</span>
+      <div>
+        <div class="h-text">社交时间提升：今天仅 18min 社交（23:02~23:20 亲密+制定明日计划），远低于前几天（06-25: 3h41m）。建议：① 每天至少 30min 高质量陪伴 ② 视频通话（即使异地）③ 共同活动（一起健身/一起做饭）④ 周末至少 1 次外出约会。⚠️ 创作者容易把社交时间让给创作，要警惕"创作型孤独"</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3E0;</span>
+      <div>
+        <div class="h-text">家务合理分配：今天仅 40min 家务（13:53~14:33 打扫厕所），是 vlog 创作+健身高强度日的合理取舍。建议：① 周末集中大扫除（2~3h）② 每天小家务 15min（洗碗/收拾/倒垃圾）③ 13:53 起床后立刻做家务是好习惯（避免拖延到晚上）④ 健身房回来顺手洗衣服（避免堆积）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4A4;</span>
+      <div>
+        <div class="h-text">通勤时间优化：今天通勤 1h12m（4 段），主要花在两次健身房来回。建议：① 健身房去 1 次（合并两次训练为 1 次长训练 60~90min）② 早晨多段任务合并出门（送女朋友+去健身房+回家）③ 晚上通勤尽量精简（不绕路）④ 21:52~22:33 的 41min 通勤应该是两次健身+回家的总时长，需要确认是否绕路</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F4DD;</span>
+      <div>
+        <div class="h-text">vlog 发布节奏：减肥日记 vlog Day 1 已发布到 B 站。建议：① 保持每周 1~2 更（Day 2、Day 3...）② 固定发布时间（如周三/周六 20:00）③ 内容系列化（Day N 编号）④ 与粉丝互动（B 站评论+弹幕）⑤ 数据追踪（播放量/点赞/投币）⑥ Day 2 提前想好主题（避免 23:00 才构思）</div>
+      </div>
+    </div>
+    <div class="highlight-row">
+      <span class="h-emoji">&#x1F3AF;</span>
+      <div>
+        <div class="h-text">今日改进优先级（明天 7/3）：① 23:00 前入睡（最优先）② vlog Day 2 白天完成拍摄+剪辑+发布（避免睡前发）③ 健身房 1 次即可（避免肌肉疲劳）④ 烫伤持续观察+涂抹药膏 ⑤ 社交时间至少 30min ⑥ 元母意程保持 30~60min ⑦ 短视频使用控制（起床后 30min 不看手机）⑧ 22:33 的汉堡补餐改为健康加餐</div>
+      </div>
+    </div>'''
+
+# ============ 完整 HTML ============
+html = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息报告 - {date_cn}（{weekday}）</title>
+<style>
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.6;-webkit-font-smoothing:antialiased}}
+.container{{max-width:720px;margin:0 auto;padding:24px 16px}}
+.header{{text-align:center;padding:32px 0 24px}}
+.header h1{{font-size:28px;font-weight:700;letter-spacing:-.5px}}
+.header .date{{font-size:15px;color:#86868b;margin-top:4px}}
+.header .weekday{{display:inline-block;font-size:12px;font-weight:500;color:#fff;background:#007AFF;border-radius:12px;padding:2px 10px;margin-top:8px}}
+.card{{background:#fff;border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}}
+.card h2{{font-size:17px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}}
+.card h2 .icon{{font-size:20px}}
+.summary-grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}}
+.summary-item{{display:flex;align-items:center;padding:12px 14px;background:#f5f5f7;border-radius:10px;gap:10px}}
+.summary-item .emoji{{font-size:22px;width:32px;text-align:center;flex-shrink:0}}
+.summary-item .info{{flex:1;min-width:0}}
+.summary-item .cat{{font-size:13px;font-weight:500;color:#1d1d1f}}
+.summary-item .dur{{font-size:12px;color:#86868b;margin-top:1px}}
+.summary-item .bar{{height:4px;background:#e5e5e5;border-radius:2px;margin-top:6px;overflow:hidden}}
+.summary-item .bar-fill{{height:100%;border-radius:2px;transition:width .6s ease}}
+.total-row{{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#f5f5f7;border-radius:10px;margin-top:12px}}
+.total-row .label{{font-size:14px;font-weight:500;color:#1d1d1f}}
+.total-row .value{{font-size:20px;font-weight:700;color:#007AFF}}
+.total-row .check{{font-size:14px;color:#34c759;margin-left:6px}}
+.timeline{{display:flex;gap:2px;height:40px;border-radius:8px;overflow:hidden;margin-bottom:8px}}
+.timeline-block{{flex:1;position:relative;cursor:pointer;transition:opacity .15s}}
+.timeline-block:hover{{opacity:.8}}
+.timeline-block .tip{{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:10;pointer-events:none}}
+.timeline-block:hover .tip{{display:block}}
+.timeline-labels{{display:flex;justify-content:space-between;font-size:10px;color:#86868b;padding:0 2px}}
+.legend{{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}}
+.legend-item{{display:flex;align-items:center;gap:4px;font-size:11px;color:#86868b}}
+.legend-dot{{width:10px;height:10px;border-radius:3px;flex-shrink:0}}
+.highlights{{display:flex;flex-direction:column;gap:10px}}
+.highlight-row{{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:#f5f5f7;border-radius:10px}}
+.highlight-row .h-emoji{{font-size:18px;flex-shrink:0;margin-top:1px}}
+.highlight-row .h-text{{font-size:13px;color:#1d1d1f;line-height:1.5}}
+.highlight-row .h-time{{font-size:12px;color:#86868b;margin-top:2px}}
+.footer{{text-align:center;padding:20px 0;font-size:11px;color:#86868b}}
+@media(max-width:480px){{.summary-grid{{grid-template-columns:1fr}}.container{{padding:16px 12px}}}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <h1>每日作息报告</h1>
+  <div class="date">{date_cn}</div>
+  <span class="weekday">{weekday}</span>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4CA;</span> 时间分配</h2>
+  <div class="summary-grid">
+{summary_html}
+  </div>
+  <div class="total-row">
+    <span class="label">总计</span>
+    <span><span class="value">{fmt_dur(total_minutes)}</span><span class="check">&#x2713;</span></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F550;</span> 24小时时间轴</h2>
+  <div class="timeline">
+{timeline_html}
+  </div>
+  <div class="timeline-labels">
+    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
+  </div>
+  <div class="legend">
+{legend_html}
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x2B50;</span> 当日亮点</h2>
+  <div class="highlights">
+{highlights_html}
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F634;</span> 睡眠分析</h2>
+  <div class="highlights">
+{sleep_html}
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="icon">&#x1F4A1;</span> 改善建议</h2>
+  <div class="highlights">
+{suggest_html}
+  </div>
+</div>
+
+<div class="footer">
+  作息管家 · 自动生成于 {datetime.now().strftime("%Y-%m-%d %H:%M")} · 共 {data['total_records']} 个记录块
+</div>
+
+</div>
+</body>
+</html>'''
+
+REPORT_PATH = Path('/mnt/d/2Study/StudyNotes/SKILLS/作息管家/reports/2026-07-02.html')
+REPORT_PATH.write_text(html, encoding='utf-8')
+print(f"✓ HTML 报告已生成: {REPORT_PATH}")
+print(f"  文件大小: {REPORT_PATH.stat().st_size} bytes")
+print(f"  日期: {date_cn} ({weekday})")
+print(f"  总时长: {fmt_dur(total_minutes)} ({total_minutes}min)")
+print(f"  分类数: {len(cat_minutes)}")
+print(f"  记录块数: {data['total_records']}")

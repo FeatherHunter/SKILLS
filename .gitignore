@@ -15,3 +15,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# 智剪工坊工作流临时产物（edit 子技能原子操作中间文件）
+智剪工坊/__edit_tmp_*.mp4

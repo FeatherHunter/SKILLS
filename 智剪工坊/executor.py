@@ -167,8 +167,9 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
 
     # 特殊情况：cut-middle 需要分割+拼接，结构不一样
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
+        transpose_needed = bool(input_w and input_h and input_w < input_h)
         return build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
-                                       source_matches=(input_w == target_w and input_h == target_h))
+                                       transpose_needed=transpose_needed)
 
     v_filters = []
     a_filters = []

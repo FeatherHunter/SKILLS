@@ -145,6 +145,24 @@
       max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .op-row .op-file-name.empty { color: var(--secondary); font-style: italic; }
+    .op-note {
+      margin-left: auto;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--gray-fill);
+      flex: 1;
+      min-width: 120px;
+      max-width: 240px;
+    }
+    .op-note:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: var(--card);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
+    }
     /* ============ Sequences ============ */
     .sequences-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
     .sequence {
@@ -230,8 +248,27 @@
     .actions {
       position: sticky; bottom: 0; padding: 14px 0; margin-top: 20px;
       background: linear-gradient(to top, var(--bg) 80%, transparent);
-      display: flex; justify-content: flex-end; gap: 10px;
+      display: flex; flex-direction: column; gap: 10px;
     }
+    .revision-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); padding: 10px 14px; border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .revision-badge {
+      background: var(--blue); color: #fff; font-size: 11px; font-weight: 600;
+      padding: 4px 8px; border-radius: 6px; font-family: ui-monospace, monospace;
+      white-space: nowrap;
+    }
+    .revision-note-input {
+      flex: 1; padding: 6px 10px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 13px; font-family: inherit;
+    }
+    .revision-note-input:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
+    }
+    .save-row { display: flex; justify-content: flex-end; gap: 10px; }
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       background: rgba(28,28,30,0.95); color: #fff; padding: 12px 20px;
@@ -316,7 +353,7 @@
       </section>
 
       <section>
-        <h2>序列 <span class="hint">(可选)</span></h2>
+        <h2>视频序列 <span class="hint">(可选)</span></h2>
         <p class="section-hint">每个序列是一组必须按此顺序连续播放的视频。可加多个。序列之间 + 剩余视频 = AI 自由安排。每个相邻对都能指定转场。</p>
         <div id="sequences-list" class="sequences-list"></div>
         <div class="sequence-actions">
@@ -342,8 +379,9 @@
         </div>
         <div class="field" id="cover-prompt-field" style="display:none">
           <label>描述 / 要求 <span class="hint">AI 提示词 / 选帧说明</span></label>
-          <textarea data-path="cover.prompt" rows="2"
-            placeholder="如：咖啡店门口特写、暖色调、背景略虚化"></textarea>
+          <textarea data-path="cover.prompt" rows="3"
+            placeholder="封面 prompt 建议（直接复制改）：
+16:9 横屏封面，扁平插画风。画面主体一罐易拉罐造型的『白色可乐』——罐身经典红白配色，但罐口倒出乳白色液体（暗示其实是水）。罐子旁边放一个汉堡，上方标注『184g / 450 大卡』。背景上半部分大字『184 → 139.9』，下方小字『Day 2 · 4个月挑战』。整体：扁平设计 + 渐变 + 干净米白底色。不要真实照片，全插画。"></textarea>
         </div>
       </section>
 
@@ -367,7 +405,14 @@
       </section>
 
       <div class="actions">
-        <button class="primary" id="save-btn">保存 intent.json</button>
+        <div class="revision-bar">
+          <span class="revision-badge" id="revision-badge">v1</span>
+          <input type="text" class="revision-note-input" id="revision-note"
+                 placeholder="本次修改说明（可选）— 例：v1 视频 #5 卡顿，加 trim-tail 3s">
+        </div>
+        <div class="save-row">
+          <button class="primary" id="save-btn">保存 (生成 <span id="save-rev-label">v1</span>)</button>
+        </div>
       </div>
     </div>
   </div>
@@ -578,6 +623,7 @@
 
         videoListEl.querySelectorAll('[data-bgm-pick]').forEach(btn => btn.addEventListener('click', () => pickAudioFile(btn, 'bgm')));
         videoListEl.querySelectorAll('[data-replace-pick]').forEach(btn => btn.addEventListener('click', () => pickAudioFile(btn, 'replace')));
+        videoListEl.querySelectorAll('[data-insert-img-pick]').forEach(btn => btn.addEventListener('click', () => pickImageFile(btn)));
 
         videoListEl.querySelectorAll('[data-exclude-btn]').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -606,7 +652,7 @@
             const idx = videoEntries.findIndex(e => e.name === v.file);
             if (idx === -1) return;
             const card = videoListEl.querySelector(`[data-video-index="${idx+1}"]`);
-            for (const key of ['summary', 'intent', 'voice', 'notes']) {
+            for (const key of ['summary', 'intent', 'voice', 'notes', 'voice_note']) {
               const el = document.querySelector(`[data-video="${idx}.${key}"]`);
               if (el && v[key] != null) el.value = v[key];
             }
@@ -653,6 +699,7 @@
       refreshAllSequenceDropdowns();
       updateAllOpsSummaries();
       updateLengthDashboard();
+      updateRevisionUI((existingIntent?._meta?.revision || 0) + 1);
     }
 
     function renderVideoCard(entry, i) {
@@ -697,6 +744,8 @@
               <option value="mute">静音</option>
               <option value="bgm-only">只留 BGM</option>
             </select>
+            <textarea data-video="${i}.voice_note" rows="1" placeholder="补充说明（可选）— 例：原声音量小，需放大 1.5x"
+                      style="margin-top:6px;font-size:12px;min-height:32px"></textarea>
           </div>
           <div class="field">
             <label>备注 <span class="hint">没归类的想法都写这</span></label>
@@ -717,7 +766,7 @@
             ${renderOpRowRange('cut-middle', '删中间', 'cut_middle', i, 'cut-from', 'cut-to', '从', '到')}
             ${renderOpRowRange('pin-range', '取时间段', 'pin_range', i, 'pin-start', 'pin-end', '从', '到', '只取这一段（vs 剪头尾=减头尾）')}
             ${renderOpRow('target-duration', '成片上限', 'target_duration', 'number', '秒', '最终成片这条最长 N 秒', 5, i)}
-            ${renderOpRow('speed-up', '加速', 'speed_up', 'number', 'x', '', 2, i)}
+            ${renderOpRow('speed-up', '加速', 'speed_up', 'number', 'x', '高倍速用于缩时（如 60x 冥想缩到秒级）', 2, i, '100x 已很快')}
             ${renderOpRow('slow-down', '减速', 'slow_down', 'number', 'x', '', 0.5, i)}
             ${renderOpRow('reverse', '倒放', 'reverse', null, '', '从尾到头播', '', i)}
             ${renderOpRow('mute', '静音', 'mute', null, '', '原声 + 加的音频全静', '', i)}
@@ -726,14 +775,20 @@
             ${renderOpRowColor('color', '调色', 'color', i)}
             ${renderOpRowBgm(i)}
             ${renderOpRowReplace(i)}
+            ${renderOpRowOpeningText(i)}
+            ${renderOpRowInsertImage(i)}
           </div>
         </div>
       `;
     }
 
-    function renderOpRow(op, label, key, valType, valUnit, sub, defaultVal, i) {
+    function renderOpNote(op, i) {
+      return `<input type="text" class="op-note" data-op-note="${op}" data-op-video="${i}" placeholder="补充说明">`;
+    }
+
+    function renderOpRow(op, label, key, valType, valUnit, sub, defaultVal, i, placeholder) {
       const valInput = valType === 'number'
-        ? `<input type="number" min="0" step="0.5" value="${defaultVal}" data-op-val="${op}" data-op-video="${i}" disabled style="width:60px">`
+        ? `<input type="number" min="0" step="0.5" value="${defaultVal}" data-op-val="${op}" data-op-video="${i}" disabled style="width:60px" placeholder="${placeholder || ''}">`
         : '';
       return `
         <div class="op-row">
@@ -742,6 +797,39 @@
           ${valInput}
           ${valUnit ? `<span class="op-sub">${valUnit}</span>` : ''}
           ${sub ? `<span class="op-sub">${sub}</span>` : ''}
+          ${renderOpNote(op, i)}
+        </div>
+      `;
+    }
+
+    function renderOpRowInsertImage(i) {
+      return `
+        <div class="op-row">
+          <input type="checkbox" data-op="insert-image" data-op-video="${i}">
+          <span class="op-label">插入图片</span><span class="op-key">insert_image</span>
+          <div class="op-file">
+            <button type="button" data-insert-img-pick data-op-video="${i}">选图片</button>
+            <span class="op-file-name empty" data-insert-img-display="${i}">未选</span>
+          </div>
+          <span class="op-sub">在</span>
+          <input type="text" placeholder="0:30" data-op-val="insert-at" data-op-video="${i}" disabled style="width:60px">
+          <span class="op-sub">时插入</span>
+          <input type="number" min="0.5" step="0.5" value="3" data-op-val="insert-duration" data-op-video="${i}" disabled style="width:50px">
+          <span class="op-sub">秒</span>
+          ${renderOpNote('insert-image', i)}
+        </div>
+      `;
+    }
+
+    function renderOpRowOpeningText(i) {
+      return `
+        <div class="op-row">
+          <input type="checkbox" data-op="opening-text" data-op-video="${i}">
+          <span class="op-label">片头文字</span><span class="op-key">opening_text</span>
+          <input type="text" placeholder="要显示的文字" data-op-val="opening-text-content" data-op-video="${i}" disabled style="width:160px">
+          <input type="number" min="0.5" step="0.5" value="2" data-op-val="opening-text-duration" data-op-video="${i}" disabled style="width:50px">
+          <span class="op-sub">秒</span>
+          ${renderOpNote('opening-text', i)}
         </div>
       `;
     }
@@ -755,6 +843,7 @@
           <span class="op-sub">${labelB}</span>
           <input type="text" placeholder="0:45" data-op-val="${valB}" data-op-video="${i}" disabled style="width:60px">
           ${sub ? `<span class="op-sub">${sub}</span>` : ''}
+          ${renderOpNote(op, i)}
         </div>
       `;
     }
@@ -771,6 +860,7 @@
             <option value="bw">黑白</option>
             <option value="high-contrast">高对比</option>
           </select>
+          ${renderOpNote(op, i)}
         </div>
       `;
     }
@@ -785,6 +875,7 @@
           </div>
           <span class="op-sub">音量</span>
           <input type="number" min="0" max="2" step="0.01" value="0.18" data-op-val="bgm-volume" data-op-video="${i}" disabled style="width:60px">
+          ${renderOpNote('add-bgm', i)}
         </div>
       `;
     }
@@ -797,6 +888,7 @@
             <button type="button" data-replace-pick data-op-video="${i}">选文件</button>
             <span class="op-file-name empty" data-replace-display="${i}">未选</span>
           </div>
+          ${renderOpNote('replace-audio', i)}
         </div>
       `;
     }
@@ -808,6 +900,8 @@
       if (op === 'cut-middle') card.querySelectorAll('[data-op-val="cut-from"], [data-op-val="cut-to"]').forEach(f => f.disabled = !cb.checked);
       else if (op === 'pin-range') card.querySelectorAll('[data-op-val="pin-start"], [data-op-val="pin-end"]').forEach(f => f.disabled = !cb.checked);
       else if (op === 'add-bgm') card.querySelectorAll('[data-op-val="bgm-volume"]').forEach(f => f.disabled = !cb.checked);
+      else if (op === 'opening-text') card.querySelectorAll('[data-op-val="opening-text-content"], [data-op-val="opening-text-duration"]').forEach(f => f.disabled = !cb.checked);
+      else if (op === 'insert-image') card.querySelectorAll('[data-op-val="insert-at"], [data-op-val="insert-duration"]').forEach(f => f.disabled = !cb.checked);
       else card.querySelectorAll(`[data-op-val="${op}"]`).forEach(f => f.disabled = !cb.checked);
     }
     function updateOpsSummary(group) {
@@ -852,6 +946,23 @@
             const disp = card.querySelector(`[data-replace-display]`);
             disp.textContent = cfg.file; disp.classList.remove('empty'); disp.dataset.filename = cfg.file;
           }
+        } else if (op === 'opening-text') {
+          if (cfg.text) card.querySelector('[data-op-val="opening-text-content"]').value = cfg.text;
+          if (cfg.duration != null) card.querySelector('[data-op-val="opening-text-duration"]').value = cfg.duration;
+          card.querySelectorAll('[data-op-val="opening-text-content"], [data-op-val="opening-text-duration"]').forEach(f => f.disabled = false);
+        } else if (op === 'insert-image') {
+          if (cfg.file) {
+            const disp = card.querySelector(`[data-insert-img-display]`);
+            disp.textContent = cfg.file; disp.classList.remove('empty'); disp.dataset.filename = cfg.file;
+          }
+          if (cfg.at) card.querySelector('[data-op-val="insert-at"]').value = cfg.at;
+          if (cfg.duration != null) card.querySelector('[data-op-val="insert-duration"]').value = cfg.duration;
+          card.querySelectorAll('[data-op-val="insert-at"], [data-op-val="insert-duration"]').forEach(f => f.disabled = false);
+        }
+        // 补充说明
+        if (cfg.note) {
+          const noteEl = card.querySelector(`[data-op-note="${op}"]`);
+          if (noteEl) noteEl.value = cfg.note;
         }
       }
     }
@@ -887,6 +998,39 @@
         if (cb && !cb.checked) { cb.checked = true; toggleOpSubFields(cb); updateOpsSummary(cb.closest('.ops-group')); }
       } catch (e) {
         if (e.name !== 'AbortError') showToast('选文件失败: ' + e.message);
+      }
+    }
+
+    async function pickImageFile(btn) {
+      const card = btn.closest('.video-card');
+      const displayEl = card.querySelector(`[data-insert-img-display]`);
+      try {
+        if (supportsFSFileAPI) {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{ description: '图片', accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp'] } }],
+          });
+          displayEl.textContent = handle.name;
+          displayEl.classList.remove('empty');
+          displayEl.dataset.filename = handle.name;
+        } else {
+          const input = document.createElement('input');
+          input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none';
+          document.body.appendChild(input);
+          input.addEventListener('change', () => {
+            if (input.files && input.files[0]) {
+              displayEl.textContent = input.files[0].name;
+              displayEl.classList.remove('empty');
+              displayEl.dataset.filename = input.files[0].name;
+            }
+            document.body.removeChild(input);
+          });
+          input.click();
+        }
+        const cb = card.querySelector('[data-op="insert-image"]');
+        if (cb && !cb.checked) { cb.checked = true; toggleOpSubFields(cb); updateOpsSummary(cb.closest('.ops-group')); }
+      } catch (e) {
+        if (e.name !== 'AbortError') showToast('选图片失败: ' + e.message);
       }
     }
 
@@ -992,6 +1136,7 @@
           <span class="arrow">↓</span>
           <select class="transition-type">
             <option value="">默认（AI 选）</option>
+            <option value="none">无</option>
             <option value="cut">直切</option>
             <option value="fade">淡入淡出</option>
             <option value="dissolve">溶解</option>
@@ -1090,30 +1235,70 @@
     saveBtn.addEventListener('click', async () => {
       const data = collectFormData();
       const json = JSON.stringify(data, null, 2);
+      const newRev = data._meta.revision;
       if (supportsFSAPI && dirHandle) {
         try {
-          const fileHandle = await dirHandle.getFileHandle('intent.json', { create: true });
-          const writable = await fileHandle.createWritable();
-          await writable.write(json);
-          await writable.close();
-          showToast('已保存到 intent.json');
+          // 1. 写 intent.json (latest)
+          const mainHandle = await dirHandle.getFileHandle('intent.json', { create: true });
+          const mainWritable = await mainHandle.createWritable();
+          await mainWritable.write(json);
+          await mainWritable.close();
+          // 2. 写 intent_v{rev}.json (历史版本)
+          try {
+            const verHandle = await dirHandle.getFileHandle(`intent_v${newRev}.json`, { create: true });
+            const verWritable = await verHandle.createWritable();
+            await verWritable.write(json);
+            await verWritable.close();
+          } catch (e) { console.warn('保存版本副本失败', e); }
+          // 3. 更新 UI
+          updateRevisionUI(newRev + 1);
+          document.getElementById('revision-note').value = '';
+          showToast(`已保存 v${newRev}`);
         } catch (e) { showToast('保存失败: ' + e.message); }
       } else {
-        const blob = new Blob([json], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'intent.json';
-        a.click();
-        showToast('已下载 intent.json，请放到工作区');
+        // Fallback: 下载两份
+        const blob1 = new Blob([json], { type: 'application/json' });
+        const a1 = document.createElement('a');
+        a1.href = URL.createObjectURL(blob1);
+        a1.download = 'intent.json';
+        a1.click();
+        setTimeout(() => {
+          const blob2 = new Blob([json], { type: 'application/json' });
+          const a2 = document.createElement('a');
+          a2.href = URL.createObjectURL(blob2);
+          a2.download = `intent_v${newRev}.json`;
+          a2.click();
+        }, 200);
+        updateRevisionUI(newRev + 1);
+        document.getElementById('revision-note').value = '';
+        showToast(`已下载 v${newRev} (intent.json + intent_v${newRev}.json)`);
       }
     });
 
+    function updateRevisionUI(nextRev) {
+      const badge = document.getElementById('revision-badge');
+      const saveLabel = document.getElementById('save-rev-label');
+      const currentRev = nextRev - 1;
+      if (badge) badge.textContent = currentRev === 0 ? '新' : `v${currentRev}`;
+      if (saveLabel) saveLabel.textContent = `v${nextRev}`;
+    }
+
     function collectFormData() {
+      const now = new Date().toISOString();
+      const oldRev = existingIntent?._meta?.revision || 0;
+      const newRev = oldRev + 1;
+      const noteText = (document.getElementById('revision-note')?.value || '').trim();
+      const oldHistory = Array.isArray(existingIntent?._meta?.history) ? existingIntent._meta.history : [];
+      const newHistory = [...oldHistory, { revision: newRev, timestamp: now, note: noteText }];
       const data = {
-        _meta: { tool: '智剪工坊', version: '0.5',
-          created: existingIntent?._meta?.created || new Date().toISOString(),
-          updated: new Date().toISOString(),
-          workspace: dirHandle?.name || '(unknown)' },
+        _meta: {
+          tool: '智剪工坊', version: '0.6',
+          revision: newRev,
+          created: existingIntent?._meta?.created || now,
+          updated: now,
+          workspace: dirHandle?.name || '(unknown)',
+          history: newHistory,
+        },
         project: {}, output: {}, sequences: [], videos: [], cover: {}, ending: {},
       };
       for (const el of document.querySelectorAll('[data-path]')) {
@@ -1174,7 +1359,7 @@
       if (!card) return ops;
       const opNames = ['trim-head', 'trim-tail', 'cut-middle', 'pin-range', 'target-duration',
                         'speed-up', 'slow-down', 'reverse', 'mute', 'fade-in', 'fade-out',
-                        'color', 'add-bgm', 'replace-audio'];
+                        'color', 'add-bgm', 'replace-audio', 'opening-text', 'insert-image'];
       opNames.forEach(op => {
         const cb = card.querySelector(`[data-op="${op}"]`);
         if (!cb || !cb.checked) return;
@@ -1201,7 +1386,24 @@
         } else if (op === 'replace-audio') {
           const disp = card.querySelector(`[data-replace-display="${i}"]`);
           cfg.file = disp?.dataset?.filename || disp?.textContent || '';
+        } else if (op === 'opening-text') {
+          const textEl = card.querySelector('[data-op-val="opening-text-content"]');
+          if (textEl && textEl.value) cfg.text = textEl.value;
+          const durEl = card.querySelector('[data-op-val="opening-text-duration"]');
+          const dur = parseFloat(durEl?.value);
+          if (!isNaN(dur)) cfg.duration = dur;
+        } else if (op === 'insert-image') {
+          const disp = card.querySelector(`[data-insert-img-display="${i}"]`);
+          cfg.file = disp?.dataset?.filename || disp?.textContent || '';
+          const atEl = card.querySelector('[data-op-val="insert-at"]');
+          if (atEl && atEl.value) cfg.at = atEl.value;
+          const durEl = card.querySelector('[data-op-val="insert-duration"]');
+          const dur = parseFloat(durEl?.value);
+          if (!isNaN(dur)) cfg.duration = dur;
         }
+        // 补充说明（每个 op 一个）
+        const noteEl = card.querySelector(`[data-op-note="${op}"]`);
+        if (noteEl && noteEl.value.trim()) cfg.note = noteEl.value.trim();
         ops[op] = cfg;
       });
       return ops;

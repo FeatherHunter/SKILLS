@@ -37,11 +37,11 @@ python home_manager.py stats --type expiring --days 7
 # 查过期（只看已过期）
 python home_manager.py stats --type expiring --expired-only
 
-# 查过期（按分类筛选：食品）
-python home_manager.py stats --type expiring --category "食品"
+# 查过期（按顶级分类筛选：食物与饮品）
+python home_manager.py stats --type expiring --category-id 137
 
-# 查过期（医药用品 60 天内）
-python home_manager.py stats --type expiring --category "医药用品" --days 60
+# 查过期（医药用品二级 60 天内）
+python home_manager.py stats --type expiring --category-id 233 --days 60
 
 # 总体统计
 python home_manager.py stats --type summary

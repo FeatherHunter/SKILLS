@@ -682,6 +682,128 @@ const DATA = [
       }
     ]
   },
+  {
+    cat: "分类管理",
+    desc: "AI 内部工具(非用户唤醒词) — categories 表的 CRUD,扩域/迁移时用",
+    modules: [
+      {
+        name: "建表",
+        wakeWords: [],
+        cli: "category_manager init",
+        desc: "创建 categories 表 + 2 索引(幂等:无表时建表,已有则 no-op)",
+        exec: {
+          tables: ["categories"],
+          fields: "id PK / parent_id / name / description / sort_order / is_active / created_at / updated_at + idx_parent_id + idx_name",
+          side: "DDL 幂等,重复执行无副作用"
+        }
+      },
+      {
+        name: "列出分类",
+        wakeWords: [],
+        cli: "category_manager list\ncategory_manager list --parent N",
+        desc: "列出所有分类(可按 parent_id 筛选二级/三级);只列 is_active=1",
+        exec: {
+          tables: ["categories"],
+          fields: "id, parent_id, name, description(只列 is_active=1)",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "树形展示",
+        wakeWords: [],
+        cli: "category_manager tree",
+        desc: "树形展示所有分类(顶级 → 二级 → 三级缩进)。当前 8 顶级 277 节点",
+        exec: {
+          tables: ["categories"],
+          fields: "按 parent_id 分组递归渲染",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "批量导入",
+        wakeWords: [],
+        cli: "category_manager import <file.json>\ncategory_manager import <file.json> --merge\ncategory_manager import <file.json> --force",
+        desc: "从 JSON 文件批量导入分类(L1→L2→L3 顺序)。--merge 合并模式(同名跳过,推荐);--force 清空重建(id 重排,危险)",
+        exec: {
+          tables: ["categories"],
+          fields: "INSERT INTO categories (parent_id, name, description, sort_order)",
+          side: "写入前 _validate_name 自检(禁空/过长/数字前缀/emoji/重名);违规不写"
+        }
+      },
+      {
+        name: "查看详情",
+        wakeWords: [],
+        cli: "category_manager show --id N",
+        desc: "查看指定 ID 的分类详情(含子分类列表)",
+        exec: {
+          tables: ["categories"],
+          fields: "id, parent_id, name, description, sort_order, is_active, created_at, updated_at + 子分类",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "统计",
+        wakeWords: [],
+        cli: "category_manager count",
+        desc: "统计分类总数 + 顶级分类数",
+        exec: {
+          tables: ["categories"],
+          fields: "COUNT(*) 总数,COUNT(WHERE parent_id IS NULL) 顶级数",
+          side: "只读操作"
+        }
+      },
+      {
+        name: "命名规范自检",
+        wakeWords: [],
+        cli: "内置 _validate_name(name, parent_name, conn) — 写入路径自动调",
+        desc: "校验 node name 是否合规:①非空 1-30 字 ②禁数字前缀(`3. xxx`/`[1]xxx`/`(2)xxx`) ③禁 emoji ④同 parent 下唯一。违规抛 ValueError,import/add 拒收不写入",
+        exec: {
+          tables: ["categories"],
+          fields: "规则:re.match(r'^\\d+[\\.\\s\\),\\:]', n) 等",
+          side: "SKILL 本身防御:不依赖 memory,代码层强制"
+        }
+      }
+    ]
+  },
+  {
+    cat: "自动展开机制",
+    desc: "list / search / stats / suggest-locations 传 category-id 自动展开下级",
+    modules: [
+      {
+        name: "顶级 ID",
+        wakeWords: [],
+        cli: "list --category-id 137  # 食物与饮品 顶级",
+        desc: "传顶级 ID(1 级)→ 自动列全部二级 + 三级物品",
+        exec: {
+          tables: ["items"],
+          fields: "递归 CTE 查所有下级 id,再 IN 查 items",
+          side: "例:--category-id 137 → 98 件(全部食物)"
+        }
+      },
+      {
+        name: "二级 ID",
+        wakeWords: [],
+        cli: "list --category-id 145  # 下装 二级",
+        desc: "传二级 ID(2 级)→ 自动列二级 + 下属三级物品",
+        exec: {
+          tables: ["items"],
+          fields: "递归 CTE 查所有下级 id(含自身)",
+          side: "例:--category-id 145 → 30 件(下装 9 个三级合计)"
+        }
+      },
+      {
+        name: "三级 ID",
+        wakeWords: [],
+        cli: "list --category-id 176  # 卫衣 三级",
+        desc: "传三级 ID(3 级)→ 精确匹配该三级物品(无下级,等价 = ?)",
+        exec: {
+          tables: ["items"],
+          fields: "category_id = ?",
+          side: "例:--category-id 176 → 15 件(卫衣精确)"
+        }
+      }
+    ]
+  }
 ];
 
 // ── Database schema (for reference) ──
@@ -726,6 +848,16 @@ const DB_SCHEMA = [
     {f:"note",t:"TEXT",d:"备注"},
     {f:"created_at",t:"TEXT",d:"创建时间"},
     {f:"updated_at",t:"TEXT",d:"更新时间"}
+  ]},
+  { name: "categories", desc: "分类表（权威源,8 顶级 277 节点）", fields: [
+    {f:"id",t:"INTEGER",d:"主键自增"},
+    {f:"parent_id",t:"INTEGER",d:"父级 ID,顶级 NULL"},
+    {f:"name",t:"TEXT",d:"分类名(_validate_name 自检:禁空/过长/数字前缀/emoji)"},
+    {f:"description",t:"TEXT",d:"描述"},
+    {f:"sort_order",t:"INTEGER",d:"列表显示顺序"},
+    {f:"is_active",t:"INTEGER",d:"软删除(1=启用,0=停用)"},
+    {f:"created_at",t:"TIMESTAMP",d:"创建时间"},
+    {f:"updated_at",t:"TIMESTAMP",d:"更新时间"}
   ]}
 ];
 

@@ -79,7 +79,7 @@ def main():
     # ── search ──
     p_search = subparsers.add_parser("search", help="搜索物品")
     p_search.add_argument("--name", default=None, help="物品名称（支持模糊）")
-    p_search.add_argument("--category", default=None, help="分类")
+    p_search.add_argument("--category-id", type=int, default=None, help="分类 ID(从 categories 表查)")
     p_search.add_argument("--location", default=None, help="位置（支持模糊）")
     p_search.add_argument("--tag", default=None, help="标签（精确匹配）")
     p_search.add_argument("--status", default=None, help="状态")
@@ -91,8 +91,7 @@ def main():
     p_update = subparsers.add_parser("update", help="更新物品")
     p_update.add_argument("--id", type=int, required=True, help="物品ID")
     p_update.add_argument("--name", default=None, help="物品名称")
-    p_update.add_argument("--category", default=None, help="分类字符串(老字段,新物品用 --category-id)")
-    p_update.add_argument("--category-id", type=int, default=None, help="分类 ID(新分类体系,推荐)")
+    p_update.add_argument("--category-id", type=int, default=None, help="分类 ID(从 categories 表查)")
     p_update.add_argument("--owner", default=None, help="所有者")
     p_update.add_argument("--price", type=float, default=None, help="单价（元/件）")
     p_update.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
@@ -121,7 +120,7 @@ def main():
     p_list = subparsers.add_parser("list", help="列出物品")
     p_list.add_argument("--location", default=None, help="位置")
     p_list.add_argument("--status", default=None, help="状态")
-    p_list.add_argument("--category", default=None, help="分类")
+    p_list.add_argument("--category-id", type=int, default=None, help="分类 ID(从 categories 表查)")
     p_list.add_argument("--owner", default=None, help="所有者")
     p_list.add_argument("--sort", default="name",
                         choices=["name", "recent", "frequent", "updated", "dormant"],
@@ -135,7 +134,7 @@ def main():
 
     # ── suggest-locations（位置推荐，录物品时辅助）──
     p_suggest = subparsers.add_parser("suggest-locations", help="推荐同类物品常用位置（录物品时辅助定位）")
-    p_suggest.add_argument("--category", required=True, help="物品分类（如 衣物/饮品/电子）")
+    p_suggest.add_argument("--category-id", type=int, required=True, help="分类 ID(从 categories 表查,必填)")
     p_suggest.add_argument("--with-examples", action="store_true", help="附带显示每个位置的代表物品名")
     p_suggest.add_argument("--limit", type=int, default=10, help="返回位置数量上限")
 
@@ -152,7 +151,7 @@ def main():
     p_stats.add_argument("--limit", type=int, default=20, help="返回数量上限")
     p_stats.add_argument("--days", type=int, default=30, help="（expiring用）天数窗口，默认30")
     p_stats.add_argument("--expired-only", action="store_true", help="（expiring用）只看已过期")
-    p_stats.add_argument("--category", default=None, help="（expiring用）按分类筛选")
+    p_stats.add_argument("--category-id", type=int, default=None, help="（expiring用）按分类 ID 筛选")
 
     # ── tag-merge ──
     p_merge = subparsers.add_parser("tag-merge", help="合并标签")
@@ -202,17 +201,17 @@ def main():
     elif args.command == "search":
         if args.json:
             return search_items_json(
-                name=args.name, category=args.category, location=args.location,
+                name=args.name, category_id=args.category_id, location=args.location,
                 tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
             )
         return search_items(
-            name=args.name, category=args.category, location=args.location,
+            name=args.name, category_id=args.category_id, location=args.location,
             tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
         )
 
     elif args.command == "update":
         return update_item(
-            item_id=args.id, name=args.name, category=args.category, category_id=args.category_id, owner=args.owner,
+            item_id=args.id, name=args.name, category_id=args.category_id, owner=args.owner,
             remark=args.remark, tags=args.tags,
             purchase_price=args.price, purchase_date=args.purchase_date,
             expiration_date=args.expiration_date, photo=args.photo,
@@ -230,11 +229,11 @@ def main():
     elif args.command == "list":
         if args.json:
             return list_items_json(
-                location=args.location, status=args.status, category=args.category,
+                location=args.location, status=args.status, category_id=args.category_id,
                 owner=args.owner, sort_by=args.sort, limit=args.limit
             )
         return list_items(
-            location=args.location, status=args.status, category=args.category,
+            location=args.location, status=args.status, category_id=args.category_id,
             owner=args.owner, sort_by=args.sort, limit=args.limit
         )
 
@@ -257,9 +256,9 @@ def main():
                 print(f"  {len(results)+1}. 其他位置（用户输入新位置）")
             else:
                 results = suggest_locations(
-                    conn, args.category, limit=args.limit
+                    conn, args.category_id, limit=args.limit
                 )
-                print(f"📍 位置推荐（{args.category}）：共 {len(results)} 个位置")
+                print(f"📍 位置推荐（category_id={args.category_id}）：共 {len(results)} 个位置")
                 print("-" * 70)
                 for i, (loc, cnt) in enumerate(results, 1):
                     print(f"  {i}. {loc}  [{cnt}件同类]")
@@ -292,7 +291,7 @@ def main():
 
     elif args.command == "stats":
         return stats(stat_type=args.type, limit=args.limit, days=args.days,
-                     expired_only=args.expired_only, category=args.category)
+                     expired_only=args.expired_only, category_id=args.category_id)
 
     elif args.command == "tag-merge":
         return tag_merge(from_tag=args.from_tag, to_tag=args.to_tag)

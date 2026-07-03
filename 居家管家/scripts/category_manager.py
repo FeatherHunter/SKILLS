@@ -18,11 +18,57 @@ import sys
 import os
 import json
 import argparse
+import re
 from pathlib import Path
 
 # 复用 home_manager.db 的 get_conn 和 DB_PATH
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from home_manager.db import get_conn, DB_PATH
+
+
+# ── 命名规范校验 ──────────────────────────────────────────────────────
+def _validate_name(name, parent_name=None, conn=None):
+    """节点 name 命名规范校验。违规抛 ValueError。
+
+    规则(第一性,简单可执行):
+      1. 非空:strip 后 1-30 字
+      2. 禁数字前缀:`3. xxx` / `2 xxx` / `[1]xxx` / `(2)xxx` 形式
+         (id 137/138/205-210 已是天然编号,name 加数字 = 双重编号 = 装饰)
+      3. 禁 emoji
+      4. 同 parent 下唯一(需要 conn,parent_name)
+    """
+    n = (name or "").strip()
+    if not n:
+        raise ValueError("name 不能为空")
+    if len(n) > 30:
+        raise ValueError(f"name 过长({len(n)}>30): {n}")
+
+    # 数字前缀:`3. ` / `2 ` / `[1]` / `(2)` / `1,` 等
+    if re.match(r"^\d+[\.\s\)\,\:]", n) or re.match(r"^\[\d+\]", n) or re.match(r"^（\d+）", n):
+        raise ValueError(f"name 禁数字前缀: '{n}'(id 是 DB 自带编号,name 不应再加)")
+
+    # emoji 检查(覆盖常见 unicode 范围)
+    for c in n:
+        cp = ord(c)
+        if (0x1F300 <= cp <= 0x1FAFF
+            or 0x2600 <= cp <= 0x27BF
+            or 0x1F000 <= cp <= 0x1F2FF):
+            raise ValueError(f"name 禁 emoji: '{n}'")
+
+    # 同 parent 唯一
+    if conn and parent_name is not None:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT c.id FROM categories c
+            WHERE c.name = ?
+              AND ((? IS NULL AND c.parent_id IS NULL)
+                   OR c.parent_id = (SELECT id FROM categories WHERE name = ?))
+        """, (n, parent_name, parent_name))
+        existing = cursor.fetchone()
+        if existing:
+            raise ValueError(f"name 已存在(同 parent='{parent_name}' 下 id={existing['id']}): '{n}'")
+
+    return n
 
 
 # ── Schema ──────────────────────────────────────────────────────────────
@@ -166,6 +212,17 @@ def cmd_import(args):
     level2_names = {d["name"] for d in data if d.get("parent") in level1_names}
 
     def insert(d):
+        # ── 命名规范校验(违规即报错,不入库)──
+        try:
+            _validate_name(
+                d["name"],
+                parent_name=d.get("parent"),
+                conn=conn,
+            )
+        except ValueError as e:
+            print(f"✗ 节点 name 不合规({d.get('parent', '顶级')}): {e}")
+            return None
+
         if d.get("parent") is None:
             parent_id = None
         elif d["parent"] in name_to_id:

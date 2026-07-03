@@ -24,7 +24,7 @@ AI 从用户输入提取：
 | "找卧室里白色的T恤" | `--name "T恤" --tag "白色" --location "卧室"` |
 | "黑色的杯子" | `--name "杯子" --tag "黑色"` |
 | "冰箱里的牛奶" | `--name "牛奶" --location "冰箱"` |
-| "看看有哪些食品" | `--category "食品"` |
+| "看看有哪些食品" | `--category-id 137` (顶级·食物与饮品) |
 | "找在家的东西" | `--status "在家"` |
 
 ---
@@ -39,7 +39,7 @@ python home_manager.py search --name "T恤" --tag "白色"
 - `--name` 物品名称（支持模糊匹配）
 - `--location` 位置（支持模糊匹配）
 - `--tag` 标签（精确匹配）
-- `--category` 分类
+- `--category-id` 分类 ID(顶级/二级自动展开下级,整数)
 - `--status` 位置状态
 - `--exact` 名称精确匹配（不加则模糊匹配）
 - `--limit` 返回数量上限（默认20）

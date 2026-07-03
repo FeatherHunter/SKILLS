@@ -61,10 +61,10 @@ AI 从图片中提取以下信息作为 tags：
 
 ```bash
 # 基础版：只显示位置+数量
-python home_manager.py suggest-locations --category "衣物"
+python home_manager.py suggest-locations --category-id 138  # 衣物顶级
 
 # 增强版：附带显示每个位置的代表物品（解决"记忆模糊"痛点）
-python home_manager.py suggest-locations --category "衣物" --with-examples
+python home_manager.py suggest-locations --category-id 138 --with-examples  # 衣物顶级
 ```
 
 **执行方式 B（备选）—— 直接 Python 调用**：
@@ -308,7 +308,7 @@ tag 验收未通过：
 AI **录物品前必须先调用 search 查相似物品**，复用 `search` 命令的模糊匹配能力，不允许跳过本步直接 add。
 
 **调用规范**：
-- `search --name "{name关键词}" --category "{category}"`（同分类+名称模糊，**默认走这条**）
+- `search --name "{name关键词}" --category-id {N}`（同分类+名称模糊，**默认走这条**）
 - `search --name "{name关键词}"`（无 category 时使用，覆盖更广）
 
 **判定规则**（找到相似时 AI 必须列出让用户选择）：
@@ -354,7 +354,7 @@ AI 展示完整记录，用户说"对"后执行：
 ```bash
 python home_manager.py add \
   --name "薯片" \
-  --category "食品" \
+  --category-id 156 \  # 零食(加工食品)
   --location "厨房/上柜/左侧" \
   --quantity 3 \
   --tags "零食,乐事,原味"
@@ -416,11 +416,11 @@ AI 展示脚本输出的录入结果。
 5. **保存图片**到 `YYYYMMDD_{ID}_{名称}.jpg`（用户确认后，存放在 $HOME_PHOTOS_DIR 目录下）
 6. **一次性调用 add 命令**（满足所有硬约束）：
    ```bash
-   python home_manager.py add \
-     --name "XXX" \
-     --category "XXX" \
-     --location "XXX" \
-     --tags "tag1,tag2,tag3,...,tag10" \
+python home_manager.py add \
+      --name "XXX" \
+      --category-id N \  # 从 categories 表查
+      --location "XXX" \
+      --tags "tag1,tag2,tag3,...,tag10" \
      --remark "从图片观察到的关键信息..." \
      --photo "$HOME_PHOTOS_DIR/YYYYMMDD_{ID}_{名称}.jpg"
    ```

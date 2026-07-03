@@ -3,6 +3,20 @@ from .db import get_conn
 from .tag_ops import get_tags
 
 
+def _expand_inv(conn, cat_id):
+    """递归查所有下级 id(顶级/二级自动展开)"""
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH RECURSIVE cat_tree AS (
+            SELECT id FROM categories WHERE id = ?
+            UNION ALL
+            SELECT c.id FROM categories c JOIN cat_tree t ON c.parent_id = t.id
+        )
+        SELECT id FROM cat_tree
+    """, (cat_id,))
+    return [r['id'] for r in cursor.fetchall()]
+
+
 def inventory(location):
     """盘点指定位置的所有物品"""
     conn = get_conn()
@@ -53,7 +67,7 @@ def inventory(location):
     return 0
 
 
-def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category=None):
+def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category_id=None):
     """频率统计 + 过期检查
 
     参数:
@@ -79,7 +93,7 @@ def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category=
         """, (limit,))
         title = f"长期未访问 TOP{limit}"
     elif stat_type == "expiring":
-        return _stats_expiring(conn, limit, days, expired_only, category)
+        return _stats_expiring(conn, limit, days, expired_only, category_id)
     elif stat_type == "summary":
         cursor.execute("SELECT COUNT(*) as total FROM items")
         total = cursor.fetchone()["total"]
@@ -142,7 +156,7 @@ def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category=
     return 0
 
 
-def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
+def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
     """过期预警统计（心愿 ID: 1）
 
     按 expiration_date 升序排列，列出：
@@ -159,9 +173,15 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
     ]
     params = [days]
 
-    if category:
-        conditions.append("i.category = ?")
-        params.append(category)
+    if category_id:
+        ids = _expand_inv(conn, category_id)
+        if len(ids) == 1:
+            conditions.append("i.category_id = ?")
+            params.append(ids[0])
+        else:
+            placeholders = ",".join("?" * len(ids))
+            conditions.append(f"i.category_id IN ({placeholders})")
+            params.extend(ids)
 
     if expired_only:
         # 只看已过期
@@ -173,11 +193,12 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
 
     where_clause = " AND ".join(conditions)
     query = f"""
-        SELECT i.id, i.name, i.category, il.location, il.quantity,
+        SELECT i.id, i.name, c.name as category, il.location, il.quantity,
                il.location_status, il.expiration_date,
                CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) as days_left
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
+        LEFT JOIN categories c ON i.category_id = c.id
         WHERE {where_clause}
         ORDER BY days_left ASC
         LIMIT ?
@@ -224,9 +245,9 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category=None):
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
         WHERE il.expiration_date IS NOT NULL AND il.expiration_date != ''
-        {('AND i.category = ?' if category else '')}
+        {('AND i.category_id IN (' + ','.join('?' * len(_expand_inv(conn, category_id))) + ')' if category_id else '')}
     """
-    summary_params = [category] if category else []
+    summary_params = _expand_inv(conn, category_id) if category_id else []
     cursor.execute(summary_query, summary_params)
     s = cursor.fetchone()
 

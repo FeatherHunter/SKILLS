@@ -20,8 +20,8 @@ AI 尝试获取今日天气预报。
 ## Step 2: 查询衣物
 
 ```bash
-python home_manager.py list --category "衣物" --status "在家"
-python home_manager.py list --category "鞋帽" --status "在家"
+python home_manager.py list --category-id 138 --status "在家"  # 衣物顶级
+python home_manager.py list --category-id 148 --status "在家"  # 鞋类二级
 ```
 
 ---

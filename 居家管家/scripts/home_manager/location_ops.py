@@ -3,6 +3,29 @@ from datetime import datetime
 from .db import get_conn
 
 
+def _expand_loc(conn, cat_id):
+    """递归查所有下级 id(顶级/二级自动展开)"""
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH RECURSIVE cat_tree AS (
+            SELECT id FROM categories WHERE id = ?
+            UNION ALL
+            SELECT c.id FROM categories c JOIN cat_tree t ON c.parent_id = t.id
+        )
+        SELECT id FROM cat_tree
+    """, (cat_id,))
+    return [r['id'] for r in cursor.fetchall()]
+
+
+def _category_in(conn, cat_id):
+    """生成 (sql_clause, params) — 顶级/二级自动展开"""
+    ids = _expand_loc(conn, cat_id)
+    if len(ids) == 1:
+        return "i.category_id = ?", [ids[0]]
+    placeholders = ",".join("?" * len(ids))
+    return f"i.category_id IN ({placeholders})", ids
+
+
 def suggest_locations(conn, category, limit=10):
     """根据物品分类推荐位置（同类物品用过的位置，按使用次数排序）
 
@@ -12,15 +35,16 @@ def suggest_locations(conn, category, limit=10):
     注意：只推荐仍有物品存在的位置（JOIN 自然过滤已用完的位置）
     """
     cursor = conn.cursor()
-    cursor.execute("""
+    clause, c_params = _category_in(conn, category)
+    cursor.execute(f"""
         SELECT il.location, COUNT(DISTINCT il.item_id) as cnt
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
-        WHERE i.category = ?
+        WHERE {clause}
         GROUP BY il.location
         ORDER BY cnt DESC
         LIMIT ?
-    """, (category, limit))
+    """, (*c_params, limit))
     rows = cursor.fetchall()
     return [(row['location'], row['cnt']) for row in rows]
 
@@ -35,15 +59,16 @@ def suggest_locations_with_examples(conn, category, limit=10, examples_per_loc=2
     """
     cursor = conn.cursor()
     # 先拿位置聚合（用 DISTINCT 避免一个物品同位置多条记录被重复计数）
-    cursor.execute("""
+    clause, c_params = _category_in(conn, category)
+    cursor.execute(f"""
         SELECT il.location, COUNT(DISTINCT il.item_id) as cnt
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
-        WHERE i.category = ?
+        WHERE {clause}
         GROUP BY il.location
         ORDER BY cnt DESC
         LIMIT ?
-    """, (category, limit))
+    """, (*c_params, limit))
     location_rows = cursor.fetchall()
 
     results = []
@@ -51,14 +76,14 @@ def suggest_locations_with_examples(conn, category, limit=10, examples_per_loc=2
         loc = row['location']
         cnt = row['cnt']
         # 对每个位置，取最近添加的 N 件物品作为代表
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT DISTINCT i.name
             FROM item_locations il
             JOIN items i ON i.id = il.item_id
-            WHERE i.category = ? AND il.location = ?
+            WHERE {clause} AND il.location = ?
             ORDER BY il.created_at DESC, il.id DESC
             LIMIT ?
-        """, (category, loc, examples_per_loc))
+        """, (*c_params, loc, examples_per_loc))
         examples = [r['name'] for r in cursor.fetchall()]
         results.append((loc, cnt, examples))
     return results

@@ -17,9 +17,9 @@
 |------|------|------|
 | id | INTEGER | 主键自增 |
 | name | TEXT | 物品名称 |
-| category | TEXT | 大类（参考 references/categories.md） |
-| owner | TEXT | 所有者（默认"使用者"） |
-| purchase_price | REAL | 单价（元/件），按单瓶/单袋/单盒记，方便计算当前库存价值 |
+| category_id | INTEGER | 分类 ID(→ categories.id,FK,必填) |
+| owner | TEXT | 所有者(默认"使用者") |
+| purchase_price | REAL | 单价(元/件)，按单瓶/单袋/单盒记，方便计算当前库存价值 |
 | remark | TEXT | 备注 |
 | photo | TEXT | 图片路径 |
 | access_count | INTEGER | 被访问次数 |

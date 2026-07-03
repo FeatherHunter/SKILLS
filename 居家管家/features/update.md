@@ -83,7 +83,7 @@ python home_manager.py update --id 1 --expiration-date "2025-06-01" --location "
 ```bash
 # 更新名称、分类、备注等
 python home_manager.py update --id 1 --name "新名称" --remark "新备注"
-python home_manager.py update --id 1 --category "新分类"
+python home_manager.py update --id 1 --category-id N  # 改分类(从 categories 表查 id)
 python home_manager.py update --id 1 --owner "其他人"
 ```
 

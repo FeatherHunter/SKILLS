@@ -11,6 +11,15 @@
   - 自动下载模型(3.7MB 一次性)
   - 视频逐帧处理 + 音频自动 mux
   - 图片 + 视频双模式
+- **`scripts/remove_fillers.py`** —— AI 去水词(两段式,无 LLM token 依赖)
+  - 架构:transcribe(Whisper → SRT + words.json)+ cut(句/词索引 → 切视频)
+  - **word-level 时间戳支持**:transcribe 多输出 `.words.json`(每词 start/end/word/sentence)
+  - **cut 双模式**:`--remove 1,3,5`(句,粗)或 `--remove-words 2,5,12`(词,精准,推荐)
+  - 词模式:相邻词 < 0.2s 自动合并,避免硬切
+  - LLM 判断在 Mavis agent(我)这边做,不走 daemon subprocess(避开 token 问题)
+  - 工作流:transcribe → agent 读 SRT+JSON 判 → cut --remove-words
+  - 端到端测试:20s TTS 测试音频 → 删 10 个水词 → 16.7s 输出(省 3.3s)
+- **`lib/llm_client.py`** —— LLM 客户端封装(subprocess 模式,备用)
 
 ### 🐛 修过的关键 Bug
 1. **全局 27 脚本 `safe_run(main)` 缺 `()`** —— 最严重!
@@ -36,10 +45,14 @@
 - ✅ 10/10 Python 依赖就位
 - ✅ beauty 4 个 preset 真实人脸图测试通过(biden + two_people)
 - ✅ 解决 mediapipe Windows 中文路径 bug
+- ✅ remove_fillers cut 端到端测过(mock SRT)
+- ⚠️ remove_fillers transcribe 模式未跑过真实音频(Whisper 首次跑要下 ~150MB 模型)
 
 ### ⚠️ 已知小问题
 - mediapipe 0.10.35 在 Windows 上对非 ASCII 路径有 bug,本系统通过自动 fallback 解决
 - beauty 视频处理 ~5-10x 实时(1080p CPU),生产用可考虑 GPU 版
+- mavis daemon 的 LLM apiKey 显示 invalid(`apiKeyStatus.valid: false`),subprocess 调 LLM 全部 401
+  - 解决:remove_fillers 改为两段式,LLM 判断在 Mavis agent 里做
 
 ---
 

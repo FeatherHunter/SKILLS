@@ -420,13 +420,13 @@ const DATA = [
       { word: "买了", example: "买了一本书58" },
       { word: "支出", example: "支出咖啡15" },
     ],
-    cli: "python3 scripts/record_bill.py add --category 餐饮 --amount -35.0 --note \"午饭\"",
+    cli: "python3 scripts/record_bill.py add --category 餐饮/外卖/午餐 --amount -35.0 --note \"午饭\"",
     flow: {
       type: "write",
       table: "bills",
       operation: "INSERT",
       fields: [
-        { name: "category", type: "TEXT", desc: "分类（餐饮/购物/交通…）", required: true },
+        { name: "category", type: "TEXT", desc: "分类(L1/L2/L3 三级,用 / 分隔,如 餐饮/外卖/午餐)", required: true },
         { name: "amount", type: "REAL", desc: "金额（负数为支出）", required: true },
         { name: "time", type: "TEXT", desc: "时间 YYYY-MM-DD HH:MM:SS", required: false },
         { name: "account", type: "TEXT", desc: "账户（支付宝/微信…）", required: false },
@@ -457,13 +457,13 @@ const DATA = [
       { word: "工资", example: "工资到账8000" },
       { word: "赚了", example: "兼职赚了2000" },
     ],
-    cli: "python3 scripts/record_bill.py add --category 工资 --amount 8000.0 --note \"5月工资\"",
+    cli: "python3 scripts/record_bill.py add --category 工资/基本工资 --amount 8000.0 --note \"5月工资\"",
     flow: {
       type: "write",
       table: "bills",
       operation: "INSERT",
       fields: [
-        { name: "category", type: "TEXT", desc: "分类（工资/奖金/兼职/投资/其他）", required: true },
+        { name: "category", type: "TEXT", desc: "分类(L1/L2 二级,用 / 分隔,如 工资/基本工资)", required: true },
         { name: "amount", type: "REAL", desc: "金额（正数为收入）", required: true },
         { name: "time", type: "TEXT", desc: "时间", required: false },
         { name: "note", type: "TEXT", desc: "备注", required: false },
@@ -507,7 +507,7 @@ const DATA = [
       steps: [
         "接收图片 → AI 识别账单内容",
         "提取金额（优先实付 > 合计 > 总额）",
-        "推断分类（餐饮/购物/交通…）",
+        "推断分类(参考 references/categories.md 分类心法 5 维度判断,关键词表兜底)",
         "展示识别结果，请用户确认",
         "用户确认 → 执行 add 命令写入",
       ],
@@ -663,12 +663,12 @@ const DATA = [
       table: "bills",
       operation: "SELECT",
       fields: [
-        { name: "*", type: "全部字段", desc: "筛选 category = 指定值" },
+        { name: "*", type: "全部字段", desc: "筛选 category = 指定值(支持多级,如 '餐饮' 或 '餐饮/外卖/午餐')" },
       ],
       sideEffects: ["纯只读，无副作用"],
       steps: [
         "SELECT * FROM bills WHERE category = '餐饮' ORDER BY time DESC",
-        "返回该分类下的逐条记录",
+        "返回该分类下的逐条记录(精确匹配,父级不自动带出子级)",
         "注意：此命令返回逐条记录，非汇总。汇总请用「看分类」",
       ],
     },

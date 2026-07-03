@@ -167,18 +167,23 @@ def run_full_pipeline(input_dir, output_dir, theme, bgm_path=None, subtitle_srt=
     ensure_dir(raw_dir)
 
     # Step 1: 4K → 1080p(若需要,这里简化跳过,假设素材已 1080p)
+    log_progress(1, 7, "Step 1 降分辨率")
     log_info("Step 1: 跳过(假设输入已是 1080p 或更低)")
 
     # Step 2: 转录
+    log_progress(2, 7, "Step 2 Whisper 转录")
     step2_transcribe(input_dir, sub_dir)
 
     # Step 3: 抽帧
+    log_progress(3, 7, "Step 3 抽帧")
     step3_extract_frames(input_dir, frames_dir)
 
     # Step 4-5: AI 分析 + 用户勾选(本脚本不实现,提示用户做)
+    log_progress(4, 7, "Step 4-5 AI 分析 + 勾选")
     log_info("Step 4-5: AI 分析 + 用户勾选 - 请人工完成")
 
     # Step 6: 拼接(需要用户给 concat_list)
+    log_progress(5, 7, "Step 6 拼接")
     if concat_list and Path(concat_list).exists() and subtitle_srt and Path(subtitle_srt).exists():
         final = output_dir / f"{theme}_vlog.mp4"
         step6_assemble(concat_list, subtitle_srt, final, bgm_path)
@@ -186,6 +191,7 @@ def run_full_pipeline(input_dir, output_dir, theme, bgm_path=None, subtitle_srt=
         log_warn("Step 6: 跳过(需要 --concat-list 和 --subtitle-srt)")
 
     # Step 7: 封面
+    log_progress(6, 7, "Step 7 封面")
     cover_jpg = output_dir / f"{theme}_cover.jpg"
     step7_cover(
         prompt=f"{theme} vlog cover, cinematic dramatic lighting, dark background, motivational atmosphere, NO TEXT",
@@ -193,6 +199,7 @@ def run_full_pipeline(input_dir, output_dir, theme, bgm_path=None, subtitle_srt=
         title=theme,
         subtitle="Day 1",
     )
+    log_progress(7, 7, "完成")
 
 
 # ============================================================

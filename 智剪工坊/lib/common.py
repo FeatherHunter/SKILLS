@@ -300,23 +300,120 @@ def list_sub_skills() -> List[Path]:
 
 
 # ============================================================
-# 日志
+# 日志(支持 debug / 进度条 / 文件日志)
 # ============================================================
 
+import logging
+from logging.handlers import RotatingFileHandler
+
+# 全局状态
+_LOG_VERBOSE = False
+_LOG_FILE_INITIALIZED = False
+
+
+def setup_logging(verbose: bool = False) -> None:
+    """设置日志:verbose 模式显示 debug,默认只看 info 及以上"""
+    global _LOG_VERBOSE, _LOG_FILE_INITIALIZED
+    _LOG_VERBOSE = verbose
+    if not _LOG_FILE_INITIALIZED:
+        log_dir = Path.home() / ".zhijian" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime
+        log_file = log_dir / f"zhijian-{datetime.now().strftime('%Y%m%d')}.log"
+        logger = logging.getLogger("zhijian")
+        logger.setLevel(logging.DEBUG)
+        if not logger.handlers:
+            fh = RotatingFileHandler(
+                log_file, maxBytes=10 * 1024 * 1024, backupCount=3, encoding="utf-8"
+            )
+            fh.setFormatter(logging.Formatter(
+                "%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"
+            ))
+            logger.addHandler(fh)
+        _LOG_FILE_INITIALIZED = True
+
+
+def _now() -> str:
+    from datetime import datetime
+    return datetime.now().strftime("%H:%M:%S")
+
+
 def log_info(msg: str) -> None:
-    print(f"  [INFO] {msg}")
+    print(f"  [{_now()}] [INFO]  {msg}")
+    logging.getLogger("zhijian").info(msg)
 
 
 def log_warn(msg: str) -> None:
-    print(f"  [WARN] {msg}")
+    print(f"  [{_now()}] [WARN]  {msg}", file=sys.stderr)
+    logging.getLogger("zhijian").warning(msg)
 
 
 def log_error(msg: str) -> None:
-    print(f"  [ERROR] {msg}", file=sys.stderr)
+    print(f"  [{_now()}] [ERROR] {msg}", file=sys.stderr)
+    logging.getLogger("zhijian").error(msg)
+
+
+def log_debug(msg: str) -> None:
+    """只在 --verbose 模式显示(总是写文件)"""
+    if _LOG_VERBOSE:
+        print(f"  [{_now()}] [DEBUG] {msg}")
+    logging.getLogger("zhijian").debug(msg)
 
 
 def log_section(title: str) -> None:
     print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
+    logging.getLogger("zhijian").info(f"=== {title} ===")
+
+
+def log_progress(current: int, total: int, msg: str = "", bar_width: int = 20) -> None:
+    """
+    显示进度条。例:log_progress(3, 10, "处理中")
+    输出:  [12:34:56] [███████░░░░░░░░░░░░] 30% (3/10) 处理中
+    """
+    if total <= 0:
+        return
+    pct = int(current * 100 / total)
+    filled = int(bar_width * current / total)
+    bar = "█" * filled + "░" * (bar_width - filled)
+    line = f"  [{_now()}] [{bar}] {pct:3d}% ({current}/{total}) {msg}"
+    # 进度条用 \r 覆盖(不换行),但只在终端
+    if current < total:
+        print(line, end="\r", flush=True)
+    else:
+        print(line, flush=True)  # 最后一行换行
+
+
+def is_verbose() -> bool:
+    return _LOG_VERBOSE
+
+
+def safe_batch(files: list, process_fn, desc: str = "处理") -> tuple:
+    """
+    批处理包装:对每个文件调用 process_fn(file),失败继续,不中断整批。
+    进度条自动更新。
+
+    Args:
+        files: 文件路径列表
+        process_fn: 处理函数,接收单个文件路径
+        desc: 进度描述
+
+    Returns:
+        (success_count, failed_count)
+    """
+    success = 0
+    failed = 0
+    for i, f in enumerate(files, 1):
+        log_progress(i, len(files), f"{desc} {Path(f).name}")
+        try:
+            process_fn(f)
+            success += 1
+        except SkillError as e:
+            log_warn(f"跳过 {Path(f).name}: {e}")
+            failed += 1
+        except Exception as e:
+            log_error(f"失败 {Path(f).name}: {e}")
+            failed += 1
+    return success, failed
 
 
 # ============================================================
@@ -355,6 +452,34 @@ def safe_run(func):
         except PermissionError as e:
             log_error(f"权限不足: {e}\n  提示: 换个输出目录,或以管理员身份运行")
             sys.exit(5)
+        except json.JSONDecodeError as e:
+            log_error(
+                f"JSON 解析失败: {e}\n"
+                f"  提示: API 返回格式异常,稍后重试或检查上游服务状态"
+            )
+            sys.exit(6)
+        except (subprocess.TimeoutExpired, TimeoutError) as e:
+            log_error(
+                f"操作超时: {e}\n"
+                f"  提示: 任务太大或网络慢,可加 --max-frames 限制处理量"
+            )
+            sys.exit(7)
+        except OSError as e:
+            # 网络 / 进程 / IO 错误
+            err_msg = str(e)
+            if "Errno 2" in err_msg or "WinError 2" in err_msg:
+                log_error(
+                    f"文件/命令找不到: {e}\n"
+                    f"  提示: 检查路径,Windows 上 mavis/npm 全局命令可能在 PATH 之外"
+                )
+            elif "Connection" in err_msg or "Errno 11001" in err_msg:
+                log_error(
+                    f"网络连接失败: {e}\n"
+                    f"  提示: 检查网络/代理/防火墙"
+                )
+            else:
+                log_error(f"系统错误: {e}")
+            sys.exit(8)
         except Exception as e:
             log_error(f"未预期错误: {e}")
             import traceback

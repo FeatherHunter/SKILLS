@@ -36,8 +36,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from common import (
     run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
-    ensure_dir, log_info, log_warn, log_error, log_section, safe_run,
-    get_ffmpeg_path, ASSETS_DIR,
+    ensure_dir, log_info, log_warn, log_error, log_section, log_progress, safe_run,
+    get_ffmpeg_path, ASSETS_DIR, setup_logging,
 )
 
 try:
@@ -343,6 +343,7 @@ def process_video(input_path, output_path, smooth, whiten, slim, enlarge, max_fr
     landmarker = create_landmarker(VisionRunningMode.VIDEO)
     frame_idx = 0
     faces_detected = 0
+    frame_errors = 0
     import time as _time
     start_time = _time.time()
 
@@ -354,15 +355,22 @@ def process_video(input_path, output_path, smooth, whiten, slim, enlarge, max_fr
             if max_frames and frame_idx >= max_frames:
                 break
             timestamp_ms = int(frame_idx * 1000 / fps)
-            new_frame = process_frame(frame, landmarker, smooth, whiten, slim, enlarge, timestamp_ms)
-            if new_frame is not frame:
-                faces_detected += 1
-            writer.write(new_frame)
+            try:
+                new_frame = process_frame(frame, landmarker, smooth, whiten, slim, enlarge, timestamp_ms)
+                if new_frame is not frame:
+                    faces_detected += 1
+                writer.write(new_frame)
+            except Exception as e:
+                # 单帧失败不中断整批,写原帧
+                frame_errors += 1
+                if frame_errors <= 3:
+                    log_warn(f"第 {frame_idx} 帧处理失败(用原帧): {e}")
+                writer.write(frame)
             frame_idx += 1
-            if frame_idx % 30 == 0:
+            if frame_idx % 10 == 0 or frame_idx == total:
                 elapsed = _time.time() - start_time
                 fps_proc = frame_idx / elapsed if elapsed > 0 else 0
-                log_info(f"进度: {frame_idx}/{total} 帧 ({fps_proc:.1f} fps)")
+                log_progress(frame_idx, total, f"处理中 ({fps_proc:.1f} fps)")
     except KeyboardInterrupt:
         log_warn("用户中断")
     finally:
@@ -371,7 +379,7 @@ def process_video(input_path, output_path, smooth, whiten, slim, enlarge, max_fr
         landmarker.close()
 
     elapsed_total = _time.time() - start_time
-    log_info(f"处理完成: {frame_idx} 帧, 检出脸 {faces_detected} 帧, 用时 {elapsed_total:.1f}s")
+    log_info(f"处理完成: {frame_idx} 帧, 检出脸 {faces_detected} 帧, 失败 {frame_errors} 帧, 用时 {elapsed_total:.1f}s")
 
     log_info("合并音频...")
     ffmpeg = get_ffmpeg_path()
@@ -455,7 +463,9 @@ def main():
     parser.add_argument("--enlarge", type=float, default=None, help="大眼强度 0-1")
     parser.add_argument("--max-frames", type=int, default=None,
                        help="最多处理多少帧(测试用,默认全跑)")
+    parser.add_argument("--verbose", action="store_true", help="显示 debug 日志")
     args = parser.parse_args()
+    setup_logging(verbose=args.verbose)
 
     if args.preset:
         p = PRESETS[args.preset]

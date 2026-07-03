@@ -405,51 +405,41 @@ def search_events(
     按时间范围搜索飞书事件。返回列表。
     start/end 可接受 ISO 8601 或 YYYY-MM-DD（lark-cli 都支持）。
 
-    返回结构兼容两种 lark-cli 子命令：
-      +search-event → data.items[] + start.date_time
-      +agenda       → data[] + start_time.datetime
+    **实现说明**:走 +agenda 命令而非 +search-event。
+    原因:`+search-event` 返回的 event 不包含 `description` 字段,
+    导致 diff_and_sync 误判为"飞书 description 为空"→ 全量 update。
+    +agenda 返回完整 description(以及 event_id/start/end/summary)。
+
+    query 过滤:由于 +agenda 不支持 --query,在 Python 端用 substring
+    过滤 summary 或 description。
     """
     args = [
-        "calendar", "+search-event",
+        "calendar", "+agenda",
         "--calendar-id", calendar_id,
         "--start", start,
         "--end", end,
     ]
-    if query:
-        args.extend(["--query", query])
 
     data = _run_lark_json(args, LARK_CLI_TIMEOUT_NORMAL)
-    payload = data.get("data") or {}
+    payload = data.get("data") or []
+    if not isinstance(payload, list):
+        return []
 
-    # 自动判别两种 schema
-    if isinstance(payload, dict) and "items" in payload:
-        # +search-event schema
-        items = payload["items"] or []
-        events = []
-        for it in items:
-            events.append(FeishuEvent(
-                event_id=it.get("event_id", ""),
-                start=(it.get("start") or {}).get("date_time", ""),
-                end=(it.get("end") or {}).get("date_time", ""),
-                summary=it.get("summary", ""),
-                description=it.get("description", ""),
-            ))
-        return events
-
-    if isinstance(payload, list):
-        # +agenda schema（data 本身是 list）
-        events = []
-        for it in payload:
-            events.append(FeishuEvent(
-                event_id=it.get("event_id", ""),
-                start=(it.get("start_time") or {}).get("datetime", ""),
-                end=(it.get("end_time") or {}).get("datetime", ""),
-                summary=it.get("summary", ""),
-                description=it.get("description", ""),
-            ))
-        return events
-
-    return []  # 空结果兜底
+    events = []
+    for it in payload:
+        summary = it.get("summary", "")
+        description = it.get("description", "")
+        # query 在 summary 或 description 里命中即保留(用 substring)
+        if query and query not in summary and query not in description:
+            continue
+        events.append(FeishuEvent(
+            event_id=it.get("event_id", ""),
+            start=(it.get("start_time") or {}).get("datetime", ""),
+            end=(it.get("end_time") or {}).get("datetime", ""),
+            summary=summary,
+            description=description,
+        ))
+    return events
 
 
 # ============================================================

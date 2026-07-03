@@ -7,7 +7,7 @@ description: >
   查作息、查作息详情、查作息时间轴、查作息报告、查作息范围、查作息游标、查作息状态（查询实测作息）、
   查计划、看计划、查多日计划（查询计划作息，默认 list-events 含飞书同步状态；query-plans 仅作 24h 概览）、
   商量计划、一起规划、规划明天、规划一天、讨论计划（新版事件型计划 + 飞书日历联动）、
-  改计划、删计划、看计划、同步飞书（新版 5 个命令）、
+  改计划、删计划、看计划、同步飞书（新版 5 个命令,含 Phase 0 反向对账）、
   初始化数据库（管理类）、
   配置定时同步、配置每日报告（Cron类）。
   当本机装了飞书 CLI（lark-cli）且已授权，作息计划可一键同步到飞书日历（拆分分钟级事件、增删改实时联动）。
@@ -51,7 +51,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | **16** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` | **详见 4. 商量计划（核心入口）** |
 | **17** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` | **详见 5. 改计划** |
 | **18** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` | **详见 6. 删计划** |
-| **19** | **同步飞书** | diff 后逐个询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
+| **19** | **同步飞书** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
 | 20 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
 | 21 | 初始化数据库 | 创建三张数据表 | `init` | — |
 | 22 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
@@ -287,8 +287,9 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
     - **跳过条件**：用户没挑任何心愿（"已选清单"为空）→ 跳过此步
 
 **硬约束**：
-- 联合区间必须 ⊇ [00:00, 24:00]（首段 time_start == "00:00"，末段 time_end == "24:00"，相邻衔接无重叠无空隙）
-- 24:00 在写飞书时自动转换为次日 00:00（飞书 ISO 8601 不接受 24:00）
+- 联合区间必须 ⊇ [00:00, 23:59]（首段 time_start == "00:00"，末段 time_end == "23:59"，相邻衔接无重叠无空隙）
+- **time_end 禁止使用 24:00**：飞书 ISO 8601 不接受 24:00（会转次日 00:00），写入时 DB 端自动规范化 `24:00 → 23:59`（见 `normalize_time()`）
+- 历史数据已批量回填 24:00 → 23:59（一次性脚本 `backfill_24h_to_23h59.py`）
 
 **失败处理**：
 - 24h 覆盖校验失败 → 提示具体哪条不连续/越界 → 重新生成
@@ -348,25 +349,32 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ### 8. 同步飞书
 
-**触发词**：同步飞书 / 重同步到飞书 / 飞书同步
+**触发词**：同步飞书
 
 **执行流程**：
 1. **能力探测**：调 `is_feishu_available()`（缓存 5 分钟）
    - 不全可用 → 报错退出，告诉用户安装/授权方法
-2. **拉两侧数据**：
-   - DB 端：当日活跃 events
+2. **Phase 0：反向对账**(2026-07-03 新增)
+   - 拉飞书当日 events（用 `+search-event --query "作息管家自动同步"`）
+   - 对 DB 端 `feishu_event_id` 为空的事件做严格匹配：`time_start + time_end + title` 三项精确匹配
+   - **跨日边界规则**：飞书 end_time "次日 00:00" 等价于 DB "23:59"
+   - 找到唯一匹配 → 询问是否回填 `feishu_event_id`（默认 Y）→ 写回
+   - 找不到 / 多候选 → 跳过（标 ⚠️）
+3. **拉两侧数据**：
+   - DB 端：当日活跃 events（对账后可能新增了 ID）
    - 飞书端：`+search-event --start <日期> --end <日期> --query "作息管家自动同步"`
-3. **diff**：按 (time_start, time_end) 配对
+4. **diff**：按 (time_start, time_end) 配对
    - DB 有 + 飞书无 → create
    - DB 有 + 飞书有 + title/description 变了 → update
    - DB 无 + 飞书有 → delete
-4. **逐个询问**（决策 C）：每条 create/update/delete 单独 [Y/n]
-5. **执行 + 回写**：yes → 调对应飞书 API，feishu_event_id + last_synced_at 回写
+5. **逐个询问**（决策 C）：每条 create/update/delete 单独 [Y/n]
+6. **执行 + 回写**：yes → 调对应飞书 API，feishu_event_id + last_synced_at 回写
 
 **触发场景**：
 - 之前跳过同步想补
 - 飞书手改了想重新对齐
 - 同步失败后重试
+- DB 端 feishu_event_id 缺失需要回填（Phase 0 自动处理）
 
 ```bash
 python3 scripts/schedule_cli.py feishu-resync <日期>

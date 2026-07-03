@@ -28,7 +28,8 @@ from schedule_db import (
     # 2026-06-29 新增：事件型 plan
     list_plan_events, upsert_plan_events, update_plan_event,
     deactivate_plan_event, set_feishu_event_id, get_plan_event,
-    validate_24h_coverage,
+    validate_24h_coverage, normalize_time,
+    _normalize_date,  # 日期容错：CLI 入口先归一，传给下游
 )
 from feishu_sync import (
     is_feishu_available, LarkAPIError,
@@ -383,6 +384,7 @@ def cmd_query_plans(args):
     用法: python schedule_cli.py query-plans <日期1,日期2,...>
     示例: python schedule_cli.py query-plans 2026-05-22
           python schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22
+    日期参数容错：20260703 / 2026-07-03 / 2026/07/03 都接受（2026-07-03 起）。
     """
     if not args:
         print("用法: python schedule_cli.py query-plans <日期1,日期2,...>")
@@ -390,7 +392,14 @@ def cmd_query_plans(args):
         print("      python schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22")
         return
 
-    dates_str = args[0]
+    raw = args[0]
+    # 逗号分隔多日期，逐段归一（任一段非法则报错）
+    try:
+        normalized_dates = [_normalize_date(d) for d in raw.split(',')]
+    except ValueError as e:
+        print(f"❌ {e}")
+        return
+    dates_str = ','.join(normalized_dates)
     plans = get_plans(dates_str)
 
     if not plans:
@@ -944,12 +953,17 @@ def cmd_list_events(args):
       python schedule_cli.py list-events <日期>
 
     输出: id | 时段 | title | notes | feishu_event_id | last_synced_at
+    日期参数容错：20260703 / 2026-07-03 / 2026/07/03 都接受（2026-07-03 起）。
     """
     if not args:
         print("用法: python schedule_cli.py list-events <日期>")
         return
 
-    date = args[0]
+    try:
+        date = _normalize_date(args[0])
+    except ValueError as e:
+        print(f"❌ {e}")
+        return
     active = list_plan_events(date, include_inactive=False)
     inactive = list_plan_events(date, include_inactive=True)
     inactive_ids = {e["id"] for e in inactive if e["is_active"] == 0}
@@ -983,13 +997,82 @@ def cmd_list_events(args):
 # 新命令：feishu-resync
 # ============================================================
 
+def _reconcile_feishu_ids(date: str) -> int:
+    """
+    Phase 0: 反向对账
+    拉飞书当日 events,对 DB 中 feishu_event_id 为空的事件做严格匹配
+    (time_start + time_end + title),找到唯一匹配则自动回填 ID。
+    返回: 实际回填的条数。
+    """
+    from feishu_sync import search_events
+
+    # 飞书侧:用 search_events 拉"作息管家自动同步"标记的 events
+    try:
+        feishu_list = search_events(start=date, end=date, query="作息管家自动同步")
+    except LarkAPIError as e:
+        print(f"  ⚠️ 拉飞书 events 失败,跳过对账：{e}")
+        return 0
+
+    # 索引飞书:(start, end, summary) -> [event_id]
+    import re
+    feishu_index = {}
+    for ev in feishu_list:
+        start_iso = ev.start if hasattr(ev, "start") else ev.get("start", "")
+        end_iso = ev.end if hasattr(ev, "end") else ev.get("end", "")
+        start_date = start_iso[:10] if start_iso else ""
+        end_date = end_iso[:10] if end_iso else ""
+        start = _iso_to_hhmm(start_iso, date)
+        end = _iso_to_hhmm(end_iso, date)
+        # 跨日边界规则:飞书 end_time="次日 00:00" 等价于 DB "23:59"
+        if end == "00:00" and start_date and end_date and start_date != end_date:
+            end = "23:59"
+        summary = (ev.summary if hasattr(ev, "summary") else ev.get("summary", "")).strip()
+        ev_id = ev.event_id if hasattr(ev, "event_id") else ev.get("event_id", "")
+        if not ev_id:
+            continue
+        feishu_index.setdefault((start, end, summary), []).append(ev_id)
+
+    # DB 侧:找缺 ID 的 event
+    db_events = list_plan_events(date, include_inactive=False)
+    matched = []
+    for e in db_events:
+        if e.get("feishu_event_id"):
+            continue
+        db_start = normalize_time(e["time_start"])
+        db_end = normalize_time(e["time_end"])
+        db_title = e["title"].strip()
+        candidates = feishu_index.get((db_start, db_end, db_title), [])
+        if len(candidates) == 1:
+            matched.append((e["id"], db_title, candidates[0]))
+        elif len(candidates) > 1:
+            print(f"  ⚠️ DB #{e['id']} \"{db_title}\" 飞书侧有 {len(candidates)} 个撞 key 候选,跳过(需手工处理)")
+
+    if not matched:
+        print("  → 对账:DB 端无缺 ID 的事件")
+        return 0
+
+    print(f"  → 对账:发现 {len(matched)} 条可回填")
+    for db_id, title, fid in matched:
+        print(f"       DB #{db_id:3d} \"{title}\"  ←  飞书 {fid[:13]}...")
+
+    if not _ask_yes_no("  ? 是否回填这些 feishu_event_id?", default=True):
+        print("  → 已跳过对账回填")
+        return 0
+
+    for db_id, title, fid in matched:
+        set_feishu_event_id(db_id, fid)
+        print(f"     ✓ DB #{db_id} → {fid}")
+    return len(matched)
+
+
 def cmd_feishu_resync(args):
     """
-    重同步某天事件到飞书（强制 diff + apply）
+    重同步某天事件到飞书(Phase 0 对账 + diff + apply)
     用法:
       python schedule_cli.py feishu-resync <日期>
 
     行为:
+      - Phase 0: 反向对账(自动回填 DB 缺 ID 的事件)
       - 拉飞书当日事件
       - 对比 DB 活跃事件
       - 询问每个 create/update/delete 动作
@@ -998,19 +1081,29 @@ def cmd_feishu_resync(args):
         print("用法: python schedule_cli.py feishu-resync <日期>")
         return
 
-    date = args[0]
+    try:
+        date = _normalize_date(args[0])
+    except ValueError as e:
+        print(f"❌ {e}")
+        return
+
     status = is_feishu_available()
     if not status.fully_available:
-        print(f"❌ 飞书不可用：{status.tier}")
+        print(f"❌ 飞书不可用:{status.tier}")
         print(f"   {status.last_error or ''}")
         return
 
     print(f"\n🔄 重同步 {date} 到飞书日历 ...")
     _print_feishu_intro()
 
+    # Phase 0: 反向对账(回填 DB 缺 ID 的事件)
+    print("\n  [Phase 0] 反向对账:把飞书侧存在但 DB 缺 ID 的事件关联起来")
+    _reconcile_feishu_ids(date)
+
+    # 拉 DB 活跃事件(对账后可能新增了 ID)
     active = list_plan_events(date, include_inactive=False)
     if not active:
-        print(f"  {date} 无活跃事件，无需同步")
+        print(f"  {date} 无活跃事件,无需同步")
         return
 
     plan_events = [
@@ -1025,7 +1118,7 @@ def cmd_feishu_resync(args):
     try:
         result = feishu_diff_and_sync(date, plan_events, dry_run=False, ask_callback=lambda q: _ask_yes_no("  " + q, default=True))
     except LarkAPIError as e:
-        print(f"  ❌ 飞书 diff 失败：{e}")
+        print(f"  ❌ 飞书 diff 失败:{e}")
         return
 
     print(f"\n  ✅ 完成")

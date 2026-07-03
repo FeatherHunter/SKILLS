@@ -18,6 +18,44 @@ import os
 from pathlib import Path
 from datetime import datetime, date, timedelta
 
+# ============ 时间归一化工具(飞书 ISO 8601 不接受 24:00,自动转次日 00:00)===========
+def normalize_time(t: str) -> str:
+    """
+    把 HH:MM 字符串归一化:
+    - '24:00' → '23:59'(飞书 ISO 8601 不接受 24:00,会转次日 00:00 导致对账失败;统一用 23:59)
+    - 其他原样返回
+    """
+    if t == "24:00":
+        return "23:59"
+    return t
+
+# ============ 日期归一化工具(与 schedule_plans.date 字段对齐:'YYYY-MM-DD')===========
+def _normalize_date(d) -> str:
+    """
+    把日期字符串归一为 'YYYY-MM-DD' 格式（与 schedule_plans.date 字段一致）。
+
+    支持的输入格式：
+      - '2026-07-03'         → '2026-07-03'（标准 ISO）
+      - '20260703'           → '2026-07-03'（紧凑 8 位）
+      - '2026/07/03'         → '2026-07-03'（斜杠）
+      - '2026.07.03'         → '2026-07-03'（点）
+
+    非法格式抛 ValueError。
+    修复日期：2026-07-03（query-plans 传 20260703 却查不到数据的 bug）。
+    """
+    if not d or not isinstance(d, str):
+        raise ValueError(f"date 参数无效：{d!r}")
+    s = d.strip().replace('/', '-').replace('.', '-')
+    if len(s) == 8 and s.isdigit():
+        s = f"{s[:4]}-{s[4:6]}-{s[6:]}"
+    try:
+        datetime.strptime(s, '%Y-%m-%d')
+    except ValueError as e:
+        raise ValueError(
+            f"日期格式非法：{d!r}（期望 YYYY-MM-DD 或 YYYYMMDD）"
+        ) from e
+    return s
+
 # ============ 路径配置（三层查找）===========
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "schedule_data.db"
@@ -520,6 +558,7 @@ def _read_plan_dict(date: str) -> dict | None:
     - 仅取 is_active=1 的事件
     - 旧 gen_report 脚本 + 其他下游消费者均依赖此 dict 形状
     """
+    date = _normalize_date(date)  # 容错：20260703 / 2026-07-03 / 2026/07/03 都归一为 2026-07-03
     conn = get_connection()
     try:
         _ensure_new_plans_schema(conn)  # 幂等建表
@@ -703,6 +742,7 @@ def last_minute(minutes: int) -> str:
 def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
     """查询某日计划事件，按 time_start ASC。
     include_inactive=True 时同时返回 is_active=0 的记录（用于 diff_and_sync）。"""
+    date = _normalize_date(date)  # 容错：同上
     conn = get_connection()
     try:
         _ensure_new_plans_schema(conn)
@@ -746,6 +786,7 @@ def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True)
     - 旧 is_active=1 但新批次中无 → 软删除（is_active=0），不破坏飞书事件（由 diff_and_sync 清理）
     返回: {"added":N, "updated":M, "deactivated":K, "total_active":X}
     """
+    date = _normalize_date(date)  # 容错：写库前归一，避免不同调用方写入不同格式
     if validate_24h:
         err = validate_24h_coverage(events)
         if err:
@@ -764,6 +805,8 @@ def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True)
         now_keys = set()
 
         for e in events:
+            # 数据规范化:24:00 → 23:59(飞书 ISO 8601 不接受 24:00)
+            e["time_end"] = normalize_time(e["time_end"])
             key = f"{e['time_start']}_{e['time_end']}"
             now_keys.add(key)
             title = str(e["title"]).strip()
@@ -807,12 +850,15 @@ def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True)
 
 def update_plan_event(event_id: int, fields: dict) -> bool:
     """单条 UPDATE。fields 可含: title/notes/category/time_start/time_end。
-    注：不在此处同步飞书（飞书同步由 CLI 询问流程触发，避免隐式副作用）。"""
+    注:不在此处同步飞书(飞书同步由 CLI 询问流程触发,避免隐式副作用)。"""
     allowed = {"title", "notes", "category", "time_start", "time_end"}
     sets = []
     values = []
     for k, v in fields.items():
         if k in allowed:
+            # 数据规范化:24:00 → 23:59
+            if k == "time_end":
+                v = normalize_time(v)
             sets.append(f"{k}=?")
             values.append(v)
     if not sets:

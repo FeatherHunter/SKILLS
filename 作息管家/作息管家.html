@@ -499,6 +499,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 <div class="flow-panel" id="flow-plan-listevt">
                     <div class="flow-title">执行流程 (list-events,默认)</div>
                     <div class="flow-step">探测飞书能力(is_feishu_available,缓存 5 分钟)</div>
+                    <div class="flow-step"><strong>CLI 入口归一化日期</strong>(2026-07-03 起):20260703 / 2026-07-03 / 2026/07/03 / 2026.07.03 都接受,自动转 `YYYY-MM-DD`</div>
                     <div class="flow-step">DB 查询当日 schedule_plans,按 time_start 排序,含 is_active=0 的软删项</div>
                     <div class="flow-step">格式化输出:id / 时段 / title / notes / feishu_event_id / last_synced_at</div>
                     <div class="flow-step">✗ 前缀标记软删项,灰底显示</div>
@@ -507,7 +508,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">id, time_start/end, title, notes, category, feishu_event_id, last_synced_at</td><td>查单日完整事件</td></tr>
                     </table>
-                    <div class="flow-note"><strong>特点:</strong>list-events 是上位集合(全字段);query-plans 是下位聚合(同小时用 + 合并,丢 notes / 飞书 ID)。<strong>默认走 list-events</strong>。query-plans 仅在用户明确要 24h 时间表 / 检查空缺时用。改/删/诊断飞书同步也用 list-events。</div>
+                    <div class="flow-note"><strong>特点:</strong>list-events 是上位集合(全字段);query-plans 是下位聚合(同小时用 + 合并,丢 notes / 飞书 ID)。<strong>默认走 list-events</strong>。query-plans 仅在用户明确要 24h 时间表 / 检查空缺时用。改/删/诊断飞书同步也用 list-events。<br><br><strong>日期参数容错(2026-07-03 加):</strong>以前传 <code>20260703</code> 会查不到空聚合；现在 CLI 入口(<code>cmd_query_plans</code> / <code>cmd_list_events</code>)会先调 <code>_normalize_date()</code> 归一化为 <code>'2026-07-03'</code>,DB 层 (<code>_read_plan_dict</code> / <code>list_plan_events</code> / <code>upsert_plan_events</code>) 作为二次防护。</div>
                 </div>
                 <div class="flow-panel" id="flow-plan-query">
                     <div class="flow-title">执行流程 (query-plans,24h 概览)</div>
@@ -564,7 +565,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <div class="flow-step">AI 与用户多轮讨论，把"明天干什么"聊到分钟级细节</div>
                     <div class="flow-step">AI 生成结构化 JSON 数组（每条含 time_start / time_end / title，可选 notes / category）</div>
                     <div class="flow-step">写文件或 stdin：cat plan.json | schedule_cli.py upsert-plan-events 2026-06-30 --json -</div>
-                    <div class="flow-step">CLI 校验 24h 联合覆盖：首段 time_start=00:00 + 末段 time_end=24:00 + 衔接连续不漏不重</div>
+                    <div class="flow-step">CLI 校验 24h 联合覆盖：首段 time_start=00:00 + 末段 time_end=23:59 + 衔接连续不漏不重（<strong>2026-07-03 起禁止 24:00</strong>，自动规范化 24:00 → 23:59）</div>
                     <div class="flow-step">DB upsert：命中 (date,time_start,time_end) 更新；缺失自动 is_active=0 软删</div>
                     <div class="flow-step">飞书询问：CLI 检测 lark-cli，可用则询问「同步飞书？ [Y/n]」，yes 触发 diff_and_sync</div>
                     <table class="flow-table">
@@ -577,7 +578,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
   {"time_start":"00:00","time_end":"07:00","title":"睡觉","notes":"深度","category":"休息"},
   {"time_start":"07:00","time_end":"08:00","title":"起床","notes":"洗漱+早餐","category":"起居"},
   {"time_start":"08:00","time_end":"12:00","title":"上班","notes":"优化作息管家技能","category":"工作"},
-  {"time_start":"22:00","time_end":"24:00","title":"休息"}
+  {"time_start":"22:00","time_end":"23:59","title":"休息"}
 ]</pre><strong>副作用：</strong>schedule_plans 整体覆盖 + 可选飞书同步。<strong>硬约束：</strong>联合区间 ⊇ [00:00, 24:00]。</div>
                 </div>
             </div>
@@ -639,10 +640,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
-        <div class="word-item" data-keywords="同步飞书 feishu-resync 重同步 同步飞书日历">
+        <div class="word-item" data-keywords="同步飞书 feishu-resync">
             <div class="word-head" onclick="toggleWord(this)">
                 <span class="word-name">同步飞书</span>
-                <span class="word-desc">重新对齐某天 DB 与飞书，diff 按事件询问</span>
+                <span class="word-desc">Phase 0 反向对账 + diff 按事件询问，修复 DB 端 feishu_event_id 缺失</span>
                 <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
             </div>
             <div class="word-detail">
@@ -653,7 +654,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                 <div class="flow-panel" id="flow-plan-resync">
                     <div class="flow-title">执行流程</div>
                     <div class="flow-step">探测飞书能力（要求 fully_available，否则报错退出）</div>
-                    <div class="flow-step">DB 拉当日活跃 events（含 is_active=1 的所有记录）</div>
+                    <div class="flow-step"><strong>[Phase 0] 反向对账（2026-07-03 新增）</strong>：飞书侧 +search-event 拉当日事件，DB 端对 feishu_event_id 为空的事件做严格匹配（time_start + time_end + title 三项精确匹配 + 跨日规则 end "次日 00:00" ≡ DB "23:59"），找到唯一匹配则询问回填</div>
+                    <div class="flow-step">DB 拉当日活跃 events（对账后可能新增 ID）</div>
                     <div class="flow-step">飞书侧 +search-event 拉当日事件（query="作息管家自动同步" 过滤）</div>
                     <div class="flow-step">diff：按 (time_start, time_end) 配对，找出 create / update / delete 三类动作</div>
                     <div class="flow-step">逐个询问（决策 C）：每条 create/update/delete 单独 [Y/n]</div>
@@ -662,10 +664,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                         <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">*（当日活跃）</td><td>本地状态</td></tr>
                         <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+search-event query="作息管家自动同步"</td><td>飞书状态</td></tr>
+                        <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">feishu_event_id（Phase 0 回填）</td><td>关联 ID</td></tr>
                         <tr><td><span class="flow-badge badge-write">WRITE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+create / +update / events delete</td><td>按 diff 执行</td></tr>
                         <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">feishu_event_id / last_synced_at</td><td>回写新 event_id</td></tr>
                     </table>
-                    <div class="flow-note"><strong>触发场景：</strong>① 之前跳过同步后想补 ② 飞书手改了想重新对齐 ③ 同步失败后重试。<strong>幂等：</strong>无 diff 时所有询问都是「skip」。</div>
+                    <div class="flow-note"><strong>触发场景：</strong>① 之前跳过同步后想补 ② 飞书手改了想重新对齐 ③ 同步失败后重试 ④ DB 端 feishu_event_id 缺失需要回填（Phase 0 自动处理）。<strong>幂等：</strong>无 diff 时所有询问都是「skip」。<br><br><strong>time_end 规范（2026-07-03 起）：</strong>DB 端禁止 24:00，飞书 ISO 8601 不接受；写入时自动 <code>24:00 → 23:59</code>（见 <code>schedule_db.normalize_time()</code>）。历史 24:00 已批量回填。</div>
                 </div>
             </div>
         </div>

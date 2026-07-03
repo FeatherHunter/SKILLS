@@ -529,7 +529,29 @@ def _diff_and_sync_impl(
     # 构造 diff map
     # key = (time_start, time_end) —— 因为同一时段只对应一件事
     db_map = {(e.time_start, e.time_end): e for e in db_events}
-    feishu_map = {(_iso_to_hhmm(e.start, date), _iso_to_hhmm(e.end, date)): e for e in feishu_events}
+
+    # 保险丝:按 (start, end) 分组飞书事件,记录每个时间槽对应的事件列表。
+    # 如果某个时间槽有 >1 个飞书事件(历史重复 create 留下),记录到 duplicate_groups。
+    # 正常 diff 仍用每组的"代表"(第一条),但返回结果里会附带冗余信息,
+    # 方便上层(比如 resync 函数)打印警告,避免下次重复 create 累积。
+    from collections import OrderedDict
+    feishu_groups: "OrderedDict[tuple, list]" = OrderedDict()
+    for fe in feishu_events:
+        key = (_iso_to_hhmm(fe.start, date), _iso_to_hhmm(fe.end, date))
+        feishu_groups.setdefault(key, []).append(fe)
+
+    duplicate_groups = []
+    for key, events in feishu_groups.items():
+        if len(events) > 1:
+            duplicate_groups.append({
+                "key": key,
+                "count": len(events),
+                "event_ids": [e.event_id for e in events],
+                "summaries": list({e.summary for e in events}),  # 去重,通常都一致
+            })
+
+    # diff 用的 feishu_map:每组取第一条作为代表(覆盖 dict 时不会重复报错)
+    feishu_map = {key: events[0] for key, events in feishu_groups.items()}
 
     created, updated, deleted, skipped, errors = [], [], [], [], []
 
@@ -591,6 +613,7 @@ def _diff_and_sync_impl(
         "deleted": deleted,
         "skipped": skipped,
         "errors": errors,
+        "duplicate_groups": duplicate_groups,  # 保险丝字段
     }
 
 

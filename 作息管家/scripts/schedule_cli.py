@@ -38,6 +38,7 @@ from feishu_sync import (
     delete_event as feishu_delete_event,
     diff_and_sync as feishu_diff_and_sync,
     PlanEvent as FeishuPlanEvent,
+    search_events as feishu_search_events,
 )
 
 # ============ CLI 命令 ============
@@ -661,6 +662,15 @@ def _maybe_sync_after_write(db_event_ids: list, date: str) -> None:
         return
 
     print(f"  ✅ 飞书同步完成：created={len(result['created'])} updated={len(result['updated'])} deleted={len(result['deleted'])} skipped={len(result['skipped'])} errors={len(result['errors'])}")
+
+    # 保险丝:如果飞书侧某时间段存在多个 event(历史重复 create 留下),
+    # 立即打印警告,提示用户清理。
+    dupes = result.get("duplicate_groups") or []
+    if dupes:
+        total_extra = sum(g["count"] - 1 for g in dupes)
+        print(f"  ⚠️  检测到飞书侧重复 event: {len(dupes)} 个时间段共有 {total_extra} 个冗余 event_id")
+        print(f"     建议运行清理脚本(联系小婉)或手动在飞书删除。")
+
     # 回写 feishu_event_id 到 schedule_plans
     # diff_and_sync 内部已经按 (date,start,end) 匹配；我们用 list_plan_events 重新 match
     if result["created"] or result["updated"] or result["deleted"]:
@@ -687,6 +697,47 @@ def _iso_to_hhmm(iso: str, date_fallback: str) -> str:
     if m:
         return m.group(1)
     return "00:00"
+
+
+def _cleanup_old_event_in_slot(date: str, hhmm_start: str, hhmm_end: str,
+                                keep_event_id: str) -> int:
+    """
+    兜底清理:在飞书日历上,把同 (date, start, end) 时间槽里,
+    除 keep_event_id 之外的所有 event 全部删除。
+
+    触发场景:update-event 改时段时,delete_event 失败(网络/权限等)
+    但新 event 已经 create 成功,如果不清理,飞书侧会同时存在旧 + 新。
+
+    返回:实际删除的 event 数。
+    """
+    try:
+        # 拉飞书当天所有 event(query="作息管家自动同步" 过滤我们管的)
+        events = feishu_search_events(start=date, end=date, query="作息管家自动同步")
+    except LarkAPIError as e:
+        print(f"  ⚠️ 兜底清理失败(拉飞书 events):{e}")
+        return 0
+
+    target = (hhmm_start, hhmm_end)
+    to_delete = []
+    for ev in events:
+        ev_start = _iso_to_hhmm(ev.start, date)
+        ev_end = _iso_to_hhmm(ev.end, date)
+        if (ev_start, ev_end) != target:
+            continue
+        if ev.event_id == keep_event_id:
+            continue
+        to_delete.append(ev.event_id)
+
+    deleted = 0
+    for eid in to_delete:
+        try:
+            feishu_delete_event(eid)
+            deleted += 1
+        except LarkAPIError as e:
+            print(f"  ⚠️ 兜底清理:删除 {eid} 失败:{e}")
+    if deleted:
+        print(f"  ✅ 兜底清理完成:删除 {deleted} 个同时间槽 event")
+    return deleted
 
 
 # ============================================================
@@ -855,22 +906,43 @@ def cmd_update_event(args):
                     if "notes" in updates:
                         feishu_args["description"] = updates.get("notes", "")
                     # 时段变化 = 删旧 + 建新（飞书日历没有"改时间"按钮）
+                    # **设计原则**:任何路径都不需要用户手动处理。
+                    # 即使 delete 失败(网络/权限等),也用 search_events 兜底清理,
+                    # 保证飞书侧只剩新 event,不留下重复。
                     if "time_start" in updates or "time_end" in updates:
                         new_start = updates.get("time_start", event["time_start"])
                         new_end = updates.get("time_end", event["time_end"])
                         if (new_start, new_end) != (event["time_start"], event["time_end"]):
-                            # 改时段：先删旧飞书事件
+                            # Step 1: 先建新的(如果这一步失败,旧的不动)
+                            try:
+                                new_feishu_id = feishu_create_event(
+                                    start=f"{event['date']}T{new_start}:00+08:00",
+                                    end=f"{event['date']}T{new_end}:00+08:00",
+                                    summary=feishu_args.get("summary", event["title"]),
+                                    description=feishu_args.get("description", event.get("notes") or ""),
+                                ).event_id
+                            except LarkAPIError as e:
+                                print(f"  ❌ 创建新飞书事件失败:{e}")
+                                return
+
+                            # Step 2: 删旧的(失败也无所谓,新 event 已建)
                             try:
                                 feishu_delete_event(feishu_event_id)
                             except LarkAPIError as e:
-                                print(f"  ⚠️ 删除旧飞书事件失败（可能已过期）：{e}")
-                            # 再建一个新的
-                            new_feishu_id = feishu_create_event(
-                                start=f"{event['date']}T{new_start}:00+08:00",
-                                end=f"{event['date']}T{new_end}:00+08:00",
-                                summary=feishu_args.get("summary", event["title"]),
-                                description=feishu_args.get("description", event.get("notes") or ""),
-                            ).event_id
+                                msg = str(e).lower()
+                                if "not found" in msg:
+                                    # 旧 event 本来就没了,无需清理
+                                    pass
+                                else:
+                                    # delete 真失败(网络/权限等)→ 兜底清理
+                                    print(f"  ⚠️ 删除旧飞书事件失败:{e}")
+                                    print(f"  ℹ️  自动清理同时间槽其他 event...")
+                                    _cleanup_old_event_in_slot(
+                                        event["date"], new_start, new_end,
+                                        keep_event_id=new_feishu_id,
+                                    )
+
+                            # Step 3: 更新 DB 端 ID
                             set_feishu_event_id(event_id, new_feishu_id)
                             print(f"  ✅ 飞书事件已重建：{new_feishu_id}")
                             return
@@ -1123,6 +1195,14 @@ def cmd_feishu_resync(args):
 
     print(f"\n  ✅ 完成")
     print(f"     created={len(result['created'])}  updated={len(result['updated'])}  deleted={len(result['deleted'])}  skipped={len(result['skipped'])}  errors={len(result['errors'])}")
+
+    # 保险丝:飞书侧重复 event 警告
+    dupes = result.get("duplicate_groups") or []
+    if dupes:
+        total_extra = sum(g["count"] - 1 for g in dupes)
+        print(f"  ⚠️  检测到飞书侧重复 event: {len(dupes)} 个时间段共有 {total_extra} 个冗余 event_id")
+        print(f"     建议运行清理脚本(联系小婉)或手动在飞书删除。")
+
     if result["errors"]:
         print(f"     错误明细:")
         for eid, err in result["errors"][:5]:

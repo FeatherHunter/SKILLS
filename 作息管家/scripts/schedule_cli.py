@@ -672,6 +672,16 @@ def _maybe_sync_after_write(db_event_ids: list, date: str) -> None:
         if len(time_synced) > 5:
             print(f"     ... 还有 {len(time_synced) - 5} 条")
 
+    # 提示:过去日期默认跳过的 create(避免死灰复燃)
+    past_skipped = result.get("past_skipped") or []
+    if past_skipped:
+        print(f"  ⚠️  过去日期 {date} 默认跳过 {len(past_skipped)} 条 create(避免死灰复燃):")
+        for db_id, title in past_skipped[:5]:
+            print(f"     #{db_id} {title!r}")
+        if len(past_skipped) > 5:
+            print(f"     ... 还有 {len(past_skipped) - 5} 条")
+        print(f"     如需强制 create,请手动在飞书日历添加对应事件后重跑 resync。")
+
     # 保险丝:如果飞书侧某时间段存在多个 event(历史重复 create 留下),
     # 立即打印警告,提示用户清理。
     dupes = result.get("duplicate_groups") or []
@@ -1213,6 +1223,16 @@ def cmd_feishu_resync(args):
             print(f"     #{db_id}: {old_s}-{old_e} → {new_s}-{new_e}")
         if len(time_synced) > 5:
             print(f"     ... 还有 {len(time_synced) - 5} 条")
+
+    # 提示:过去日期默认跳过的 create(避免死灰复燃)
+    past_skipped = result.get("past_skipped") or []
+    if past_skipped:
+        print(f"  ⚠️  过去日期 {date} 默认跳过 {len(past_skipped)} 条 create(避免死灰复燃):")
+        for db_id, title in past_skipped[:5]:
+            print(f"     #{db_id} {title!r}")
+        if len(past_skipped) > 5:
+            print(f"     ... 还有 {len(past_skipped) - 5} 条")
+        print(f"     如需强制 create,请手动在飞书日历添加对应事件后重跑 resync。")
 
     # 保险丝:飞书侧重复 event 警告
     dupes = result.get("duplicate_groups") or []

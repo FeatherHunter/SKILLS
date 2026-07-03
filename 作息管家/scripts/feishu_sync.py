@@ -685,6 +685,13 @@ def _diff_and_sync_impl(
     dry_run: bool,
     ask_callback,
 ) -> dict:
+    # **日期档判断**(用户偏好 2026-07-03):
+    # date >= today(今天+未来):主动 create,飞书侧必须与 DB 一致(用户要看日历/收提醒)
+    # date <= yesterday(过去):警告 + 默认不 create,避免死灰复燃
+    from datetime import date as date_cls
+    today_str = date_cls.today().isoformat()
+    is_past = date < today_str
+
     # 拉飞书当日事件
     feishu_events = search_events(
         start=date, end=date,
@@ -735,6 +742,9 @@ def _diff_and_sync_impl(
     # DB 端时间被飞书同步的记录(给 resync 函数打印提示)
     time_synced: list[tuple[int, str, str, str, str]] = []  # (db_id, old_start, old_end, new_start, new_end)
 
+    # 过去日期默认跳过的 create 数量(警告用)
+    past_skipped: list[tuple[int, str]] = []  # (db_id, title)
+
     created, updated, deleted, skipped, errors = [], [], [], [], []
 
     # ===== Phase A: 按 event_id 配对(DB 端有 feishu_event_id 的优先) =====
@@ -743,6 +753,10 @@ def _diff_and_sync_impl(
         if fe is None:
             # DB 端有 fid 但飞书侧找不到 → 飞书删了/外部清理,DB 端 stale
             # 兜底:重建(创建新 event + 更新 DB 端 fid)
+            if is_past:
+                # **过去日期**:默认不重建,避免死灰复燃
+                past_skipped.append((db_e.id, db_e.title))
+                continue
             if _should_ask(ask_callback, "create", db_e):
                 try:
                     new_e = create_event(
@@ -815,6 +829,10 @@ def _diff_and_sync_impl(
         fe = feishu_map.get(key)
         if fe is None:
             # 飞书无 → create
+            if is_past:
+                # **过去日期**:默认不重建,避免死灰复燃
+                past_skipped.append((db_e.id, db_e.title))
+                continue
             if _should_ask(ask_callback, "create", db_e):
                 try:
                     new_e = create_event(
@@ -903,6 +921,7 @@ def _diff_and_sync_impl(
         "updated": updated,
         "deleted": deleted,
         "time_synced": time_synced,  # 新字段:飞书时间变了,DB 端被同步
+        "past_skipped": past_skipped,  # 新字段:过去日期默认跳过的 create
         "skipped": skipped,
         "errors": errors,
         "duplicate_groups": duplicate_groups,  # 保险丝字段

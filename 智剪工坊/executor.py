@@ -95,8 +95,9 @@ def run(cmd, **kwargs):
         return 1, '', str(e)
 
 
-def get_duration(video_path):
-    """用 ffmpeg -i 取视频时长（秒）。从 stderr 解析 Duration 行。"""
+def get_video_info(video_path):
+    """用 ffmpeg -i 取视频时长 + 分辨率（width/height）。从 stderr 解析。"""
+    info = {'duration': None, 'width': None, 'height': None}
     try:
         result = subprocess.run(
             ['ffmpeg', '-i', str(video_path), '-f', 'null', '-'],
@@ -106,20 +107,47 @@ def get_duration(video_path):
         m = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)', result.stderr)
         if m:
             h, mn, s = int(m.group(1)), int(m.group(2)), float(m.group(3))
-            return h * 3600 + mn * 60 + s
+            info['duration'] = h * 3600 + mn * 60 + s
+        # 找第一个 Video 流（不是 attached pic）的分辨率
+        # ffmpeg 输出形如：Stream #0:0(und): Video: h264, yuv420p, 1920x1080 [SAR ...]
+        for stream_line in result.stderr.split('\n'):
+            if ' Video:' in stream_line:
+                m = re.search(r'(\d{2,4})x(\d{2,4})\s', stream_line)
+                if not m:
+                    m = re.search(r'(\d{2,4})x(\d{2,4})\[', stream_line)
+                if not m:
+                    m = re.search(r',\s*(\d{2,4})x(\d{2,4})', stream_line)
+                if m:
+                    info['width'] = int(m.group(1))
+                    info['height'] = int(m.group(2))
+                    break
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
-    return None
+    return info
+
+
+# 旧名兼容
+def get_duration(video_path):
+    return get_video_info(video_path).get('duration')
+
+
+def has_any_op(ops):
+    """检查 ops dict 是否有任意 op on=True。"""
+    if not ops or not isinstance(ops, dict):
+        return False
+    return any(isinstance(v, dict) and v.get('on') for v in ops.values())
 
 
 # ========== Per-video 处理 ==========
 
-def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9'):
+def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
+                       input_w=None, input_h=None):
     """为单个视频构建 ffmpeg filter_complex。
 
     Returns: (filter_complex_str, list_of_mappings) or (None, None) 表示无 op
 
     input_duration: 输入视频时长（秒）。trim-tail 需要这个来算绝对 end 时间。
+    input_w/input_h: 源分辨率。匹配目标时跳过 scale，节约 50% 编码时间。
     target_aspect: 目标比例。强制所有视频缩放到该比例 + 黑边补齐。
     """
     # 目标分辨率
@@ -134,7 +162,8 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9'):
 
     # 特殊情况：cut-middle 需要分割+拼接，结构不一样
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
+        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
+                                       source_matches=(input_w == target_w and input_h == target_h))
 
     v_filters = []
     a_filters = []
@@ -211,12 +240,13 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9'):
     if voice in ('mute', 'bgm-only'):
         a_filters.append("volume=0")
 
-    # 7. ★ 关键：缩放到目标比例（兼容 9:16 / 16:9 混合输入）
-    # scale 按比例缩放（保持原比例），pad 黑边补齐到目标分辨率
-    v_filters.append(
-        f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
-        f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-    )
+    # 7. ★ 缩放到目标比例（仅在源分辨率不匹配时）
+    # 当源 = 目标，scale+pad 是 no-op 但仍触发重新编码；这里直接跳过。
+    if input_w != target_w or input_h != target_h:
+        v_filters.append(
+            f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
+            f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+        )
 
     if not v_filters and not a_filters:
         return None, None
@@ -235,20 +265,24 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9'):
         return fc, ["[v]", "[a]"]
 
 
-def build_cut_middle_filter(cm, target_w=1920, target_h=1080):
+def build_cut_middle_filter(cm, target_w=1920, target_h=1080, source_matches=False):
     """cut-middle: 把视频切成 [0:cut_start] + [cut_end:end] 两段拼接。"""
     cut_start = parse_time(cm.get('from', '0')) or 0
     cut_end = parse_time(cm.get('to', '0')) or 0
     if cut_end <= cut_start:
         return None, None
 
+    # 当源分辨率 = 目标，跳过 scale+pad（concat filter 不强制分辨率相同，但加上没坏处）
+    if source_matches:
+        scale_pad_v1 = ""
+        scale_pad_v2 = ""
+    else:
+        scale_pad_v1 = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+        scale_pad_v2 = scale_pad_v1
+
     fc = (
-        f"[0:v]trim=0:{cut_start},setpts=PTS-STARTPTS,"
-        f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
-        f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v1];"
-        f"[0:v]trim={cut_end}:,setpts=PTS-STARTPTS,"
-        f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
-        f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v2];"
+        f"[0:v]trim=0:{cut_start},setpts=PTS-STARTPTS{scale_pad_v1}[v1];"
+        f"[0:v]trim={cut_end}:,setpts=PTS-STARTPTS{scale_pad_v2}[v2];"
         f"[v1][v2]concat=n=2:v=1:a=0[outv];"
         f"[0:a]atrim=0:{cut_start},asetpts=PTS-STARTPTS[a1];"
         f"[0:a]atrim={cut_end}:,asetpts=PTS-STARTPTS[a2];"
@@ -273,25 +307,53 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     ops = video.get('ops', {}) or {}
     voice = video.get('voice', 'keep')
 
-    input_duration = get_duration(input_path) if not dry_run else 30.0
+    # 一次 ffmpeg -i 同时拿时长和分辨率
+    if not dry_run:
+        info = get_video_info(input_path)
+        input_duration = info['duration']
+        input_w, input_h = info['width'], info['height']
+    else:
+        input_duration = 30.0
+        input_w, input_h = 1920, 1080
+
     if input_duration:
-        log(f"  时长: {input_duration:.1f}s")
+        log(f"  时长: {input_duration:.1f}s, 分辨率: {input_w}x{input_h}")
 
-    fc, mappings = build_video_filter(ops, voice, input_duration=input_duration, target_aspect=target_aspect)
+    # 目标分辨率
+    target_resolutions = {
+        '16:9': (1920, 1080),
+        '9:16': (1080, 1920),
+        '1:1': (1080, 1080),
+        '4:3': (1440, 1080),
+        '3:4': (1080, 1440),
+    }
+    target_w, target_h = target_resolutions.get(target_aspect, (1920, 1080))
+    source_matches = (input_w == target_w and input_h == target_h)
 
-    # 始终加 scale 滤镜（即使无 op）→ 保证所有输出同一分辨率
-    # 但 fc 可能为 None → 直接复制的话会不同分辨率
+    # ⚡ Fast Path 1: 无任何 op + 源分辨率匹配 + voice 保持 → 直接复制（毫秒级）
+    if not has_any_op(ops) and voice == 'keep' and source_matches:
+        if dry_run:
+            log(f"  ⚡ [DRY-RUN] fast-path: 无 op + 源匹配 + keep → 直接复制")
+            return output_path, True
+        try:
+            shutil.copy2(input_path, output_path)
+            sz = output_path.stat().st_size
+            log(f"  ⚡ fast-path → {output_path.name} ({sz // 1024} KB, 跳过转码)")
+            return output_path, True
+        except OSError as e:
+            log(f"  ⚠️ fast-path 失败 ({e}), 退回完整转码")
+
+    fc, mappings = build_video_filter(
+        ops, voice,
+        input_duration=input_duration,
+        target_aspect=target_aspect,
+        input_w=input_w, input_h=input_h,
+    )
+
+    # fc 可能为 None（无任何处理）但仍需统一分辨率→同上 force scale（按设计保留）
+    # 注：实际不会有 None 路径走到这里，因为 fast-path 已经拦下了所有无 op 情况
     if fc is None:
-        # 用 scale 重写一遍
-        target_resolutions = {
-            '16:9': (1920, 1080),
-            '9:16': (1080, 1920),
-            '1:1': (1080, 1080),
-            '4:3': (1440, 1080),
-            '3:4': (1080, 1440),
-        }
-        tw, th = target_resolutions.get(target_aspect, (1920, 1080))
-        fc = f"[0:v]scale={tw}:{th}:force_original_aspect_ratio=decrease,pad={tw}:{th}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v];anullsrc=r=44100:cl=stereo[a]"
+        fc = f"[0:v]copy[v];[0:a]anullsrc=r=44100:cl=stereo[a]"
         mappings = ["[v]", "[a]"]
 
     cmd = ['ffmpeg', '-y', '-i', str(input_path)]
@@ -301,6 +363,7 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     cmd.extend(['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'])
     cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
     cmd.extend(['-max_interleave_delta', '100M'])
+    cmd.extend(['-threads', '0'])  # 自动用全部 CPU 核心
     cmd.append(str(output_path))
 
     log(f"  $ ffmpeg ... -filter_complex ... -o {output_path.name}")
@@ -347,6 +410,7 @@ def xfade_concat(a_path, b_path, transition, output_path, dry_run, log):
         '-map', '[v]', '-map', '[a]',
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
         '-c:a', 'aac', '-b:a', '128k',
+        '-threads', '0',  # 用全部 CPU 核心
         str(output_path)
     ]
     log(f"  $ xfade ({ttype} {duration}s)")
@@ -362,7 +426,7 @@ def xfade_concat(a_path, b_path, transition, output_path, dry_run, log):
 
 
 def concatenate_simple(paths, output_path, dry_run, log):
-    """无转场，简单拼接。"""
+    """无转场，简单拼接。优先 stream-copy（毫秒级），失败 fallback 重编。"""
     if len(paths) == 1:
         if not dry_run:
             shutil.copy2(paths[0], output_path)
@@ -376,6 +440,27 @@ def concatenate_simple(paths, output_path, dry_run, log):
                 # ffmpeg concat demuxer 需要单引号包裹路径以处理空格
                 f.write(f"file '{p}'\n")
 
+    # ⚡ Fast Path: 所有片段都是 H264 1920x1080（来自 process_video 标准化输出）
+    # 直接 stream copy 拼接，不重新编码。concat demuxer + -c copy = 毫秒级
+    copy_cmd = [
+        'ffmpeg', '-y',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', str(list_file),
+        '-c', 'copy',
+        '-movflags', '+faststart',
+        str(output_path)
+    ]
+    log(f"  $ simple concat ({len(paths)} clips) — fast-path stream-copy")
+    if not dry_run:
+        rc, _, err = run(copy_cmd)
+        list_file.unlink(missing_ok=True)
+        if rc == 0 and output_path.exists() and output_path.stat().st_size > 1000:
+            log(f"  ⚡ → {output_path.name} ({output_path.stat().st_size // 1024} KB, 流复制)")
+            return output_path
+        log(f"  ⚠️ stream-copy 失败 (rc={rc}): {(err or '')[:200]}，退回重编")
+
+    # Fallback: 重编（极少触发，仅当片段 codec 不一致时）
     cmd = [
         'ffmpeg', '-y',
         '-f', 'concat',
@@ -383,9 +468,10 @@ def concatenate_simple(paths, output_path, dry_run, log):
         '-i', str(list_file),
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
         '-c:a', 'aac', '-b:a', '128k',
+        '-threads', '0',
         str(output_path)
     ]
-    log(f"  $ simple concat ({len(paths)} clips)")
+    log(f"  $ simple concat ({len(paths)} clips) — fallback 重编")
     if dry_run:
         return output_path
 

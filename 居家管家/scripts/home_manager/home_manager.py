@@ -64,7 +64,7 @@ def main():
     # ── add ──
     p_add = subparsers.add_parser("add", help="添加物品")
     p_add.add_argument("--name", required=True, help="物品名称")
-    p_add.add_argument("--category", required=True, help="分类")
+    p_add.add_argument("--category-id", type=int, required=True, help="分类 ID(从 categories 表查,必填)")
     p_add.add_argument("--location", required=True, help="存放位置（路径格式）")
     p_add.add_argument("--owner", default="使用者", help="所有者")
     p_add.add_argument("--quantity", type=int, default=1, help="数量（默认1）")
@@ -91,7 +91,8 @@ def main():
     p_update = subparsers.add_parser("update", help="更新物品")
     p_update.add_argument("--id", type=int, required=True, help="物品ID")
     p_update.add_argument("--name", default=None, help="物品名称")
-    p_update.add_argument("--category", default=None, help="分类")
+    p_update.add_argument("--category", default=None, help="分类字符串(老字段,新物品用 --category-id)")
+    p_update.add_argument("--category-id", type=int, default=None, help="分类 ID(新分类体系,推荐)")
     p_update.add_argument("--owner", default=None, help="所有者")
     p_update.add_argument("--price", type=float, default=None, help="单价（元/件）")
     p_update.add_argument("--purchase-date", default=None, help="购买日期（YYYY-MM-DD）")
@@ -189,7 +190,7 @@ def main():
 
     elif args.command == "add":
         return add_item(
-            name=args.name, category=args.category,
+            name=args.name, category_id=args.category_id,
             location=args.location,
             owner=args.owner, quantity=args.quantity,
             purchase_price=args.price, purchase_date=args.purchase_date,
@@ -211,7 +212,7 @@ def main():
 
     elif args.command == "update":
         return update_item(
-            item_id=args.id, name=args.name, category=args.category, owner=args.owner,
+            item_id=args.id, name=args.name, category=args.category, category_id=args.category_id, owner=args.owner,
             remark=args.remark, tags=args.tags,
             purchase_price=args.price, purchase_date=args.purchase_date,
             expiration_date=args.expiration_date, photo=args.photo,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """category_manager.py - 居家管家 categories 表管理 CLI
 
 最严格标准:
@@ -125,24 +125,42 @@ def cmd_import(args):
     conn = get_conn()
     cursor = conn.cursor()
 
-    # 检查是否已有数据
+    # 三种模式:默认(报错) / --force(清空) / --merge(合并)
     cursor.execute("SELECT COUNT(*) FROM categories")
     existing = cursor.fetchone()[0]
-    if existing > 0 and not args.force:
+    if existing > 0 and not args.force and not args.merge:
         print(f"✗ categories 表已有 {existing} 条记录")
-        print(f"  如要清空重新导入,加 --force")
+        print(f"  如要清空重新导入,加 --force (危险:id 重排)")
+        print(f"  如要合并导入(同名跳过),加 --merge (推荐)")
         conn.close()
         return 1
 
     if args.force and existing > 0:
+        # --force:临时关闭 FK,一次清空
+        cursor.execute("PRAGMA foreign_keys = OFF")
         cursor.execute("DELETE FROM categories")
+        cursor.execute("PRAGMA foreign_keys = ON")
         print(f"  (清空 {existing} 条旧记录)")
+    elif args.merge:
+        print(f"  (合并模式:已有 {existing} 条,同名节点将跳过)")
 
     # 按层级顺序导入
     # 第一档:parent is None
     # 第二档:parent 在第一档 name 列表
     # 第三档:parent 在第一/二档 name 列表
     name_to_id = {}
+
+    # merge 模式:预加载 db 已有的所有 name
+    existing_names = set()
+    if args.merge:
+        cursor.execute("SELECT name FROM categories")
+        existing_names = {r["name"] for r in cursor.fetchall()}
+
+    # merge 模式:预加载 db 已有的所有 name
+    existing_names = set()
+    if args.merge:
+        cursor.execute("SELECT name FROM categories")
+        existing_names = {r["name"] for r in cursor.fetchall()}
 
     level1_names = {d["name"] for d in data if d.get("parent") is None}
     level2_names = {d["name"] for d in data if d.get("parent") in level1_names}
@@ -152,9 +170,23 @@ def cmd_import(args):
             parent_id = None
         elif d["parent"] in name_to_id:
             parent_id = name_to_id[d["parent"]]
+        elif args.merge and d["parent"] in existing_names:
+            # merge 模式:父分类可能在老节点里,跳过这条
+            return None
         else:
             print(f"✗ 找不到父分类: {d['parent']}(被 {d['name']} 引用)")
             return None
+
+        # merge 模式:检查同名节点(同 parent 下)
+        if args.merge:
+            cursor.execute(
+                "SELECT id FROM categories WHERE name = ? AND (parent_id IS ? OR parent_id IS NULL) AND (parent_id = ? OR parent_id IS NULL)",
+                (d["name"], parent_id, parent_id),
+            )
+            existing = cursor.fetchone()
+            if existing:
+                return existing["id"]
+
         cursor.execute("""
             INSERT INTO categories (parent_id, name, description, sort_order)
             VALUES (?, ?, ?, ?)
@@ -172,7 +204,10 @@ def cmd_import(args):
             new_id = insert(d)
             if new_id:
                 name_to_id[d["name"]] = new_id
-                print(f"  + [L1] {d['name']} (id={new_id})")
+                if d["name"] in existing_names and args.merge:
+                    print(f"  · [L1] 跳过(同名): {d['name']}")
+                else:
+                    print(f"  + [L1] {d['name']} (id={new_id})")
 
     # 第二档
     for d in data:
@@ -180,7 +215,10 @@ def cmd_import(args):
             new_id = insert(d)
             if new_id:
                 name_to_id[d["name"]] = new_id
-                print(f"  + [L2] {d['parent']} > {d['name']} (id={new_id})")
+                if d["name"] in existing_names and args.merge:
+                    print(f"  · [L2] 跳过(同名): {d['parent']} > {d['name']}")
+                else:
+                    print(f"  + [L2] {d['parent']} > {d['name']} (id={new_id})")
 
     # 第三档(及更深)
     for d in data:
@@ -188,7 +226,10 @@ def cmd_import(args):
             new_id = insert(d)
             if new_id:
                 name_to_id[d["name"]] = new_id
-                print(f"  + [L3] {d['parent']} > {d['name']} (id={new_id})")
+                if d["name"] in existing_names and args.merge:
+                    print(f"  · [L3] 跳过(同名): {d['parent']} > {d['name']}")
+                else:
+                    print(f"  + [L3] {d['parent']} > {d['name']} (id={new_id})")
 
     conn.commit()
 
@@ -270,7 +311,8 @@ def main():
 
     p_import = subparsers.add_parser("import", help="从 JSON 文件批量导入")
     p_import.add_argument("file", help="JSON 文件路径")
-    p_import.add_argument("--force", action="store_true", help="覆盖已有数据")
+    p_import.add_argument("--force", action="store_true", help="覆盖已有数据(危险:清空全部分类,id 会重排)")
+    p_import.add_argument("--merge", action="store_true", help="合并模式:同名跳过,异名新增(扩域推荐)")
 
     p_count = subparsers.add_parser("count", help="统计数量")
 
@@ -298,3 +340,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+

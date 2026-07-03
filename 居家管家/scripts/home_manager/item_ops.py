@@ -54,7 +54,7 @@ def _format_item(row, tags_str=None, locations_str=None):
 # ── add ─────────────────────────────────────────────────────────────────────
 
 
-def add_item(name, category, location, owner="使用者", quantity=1,
+def add_item(name, category_id, location, owner="使用者", quantity=1,
              purchase_price=None, purchase_date=None, expiration_date=None,
              remark="", tags="", photo="", location_status=None):
     """添加新物品
@@ -62,6 +62,8 @@ def add_item(name, category, location, owner="使用者", quantity=1,
     心愿 ID: 标签+备注硬约束（无可绕过通道）
         - tags 数量 < 10 → 报错
         - remark 为空 → 报错
+
+    新分类体系(A.8):--category-id 必选,内部 derive category 字符串写入老字段(向后兼容)
     """
     # ── 硬约束：标签和备注必填检查（无跳过通道，AI 偷懒无退路）──
     tag_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
@@ -98,12 +100,20 @@ def add_item(name, category, location, owner="使用者", quantity=1,
 
     conn = get_conn()
     cursor = conn.cursor()
+    # ── 从 category_id 验证 + derive category 字符串(向后兼容老字段)──
+    cursor.execute("SELECT name FROM categories WHERE id = ? AND is_active = 1", (category_id,))
+    row = cursor.fetchone()
+    if not row:
+        print(f"✗ category_id={category_id} 不存在或未激活")
+        conn.close()
+        return 1
+    category = row["name"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
-        INSERT INTO items (name, category, owner, purchase_price, remark, photo, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, category, owner, purchase_price, remark, photo, now, now))
+        INSERT INTO items (name, category, category_id, owner, purchase_price, remark, photo, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, category, category_id, owner, purchase_price, remark, photo, now, now))
 
     item_id = cursor.lastrowid
 
@@ -189,7 +199,7 @@ def search_items(name=None, category=None, location=None, tag=None, status=None,
 # ── update ───────────────────────────────────────────────────────────────
 
 
-def update_item(item_id, name=None, category=None, owner=None,
+def update_item(item_id, name=None, category=None, category_id=None, owner=None,
                remark=None, tags=None, purchase_price=None, purchase_date=None,
                expiration_date=None, photo=None,
                new_location=None, quantity=None,
@@ -233,6 +243,19 @@ def update_item(item_id, name=None, category=None, owner=None,
     if category is not None:
         updates.append("category = ?")
         params_list.append(category)
+    if category_id is not None:
+        # 验证 category_id 存在 + 激活
+        cursor.execute("SELECT name FROM categories WHERE id = ? AND is_active = 1", (category_id,))
+        row_cat = cursor.fetchone()
+        if not row_cat:
+            print(f"✗ category_id={category_id} 不存在或未激活")
+            conn.close()
+            return 1
+        updates.append("category_id = ?")
+        params_list.append(category_id)
+        # 同步更新 category 字符串(向后兼容)
+        updates.append("category = ?")
+        params_list.append(row_cat["name"])
     if owner is not None:
         updates.append("owner = ?")
         params_list.append(owner)

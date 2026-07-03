@@ -681,7 +681,7 @@ const DATA = [
         }
       }
     ]
-  }
+  },
 ];
 
 // ── Database schema (for reference) ──
@@ -689,11 +689,12 @@ const DB_SCHEMA = [
   { name: "items", desc: "物品主表", fields: [
     {f:"id",t:"INTEGER",d:"主键自增"},
     {f:"name",t:"TEXT",d:"物品名称"},
-    {f:"category",t:"TEXT",d:"大类（28类）"},
-    {f:"owner",t:"TEXT",d:"所有者（默认\"使用者\"）"},
-    {f:"purchase_price",t:"REAL",d:"单价（元/件）"},
+    {f:"category_id",t:"INTEGER",d:"分类 ID(→ categories.id,FK,必填)"},
+    {f:"category",t:"TEXT",d:"分类名(从 categories 表 derive,只读)"},
+    {f:"owner",t:"TEXT",d:"所有者(默认\"使用者\")"},
+    {f:"purchase_price",t:"REAL",d:"单价(元/件)"},
     {f:"remark",t:"TEXT",d:"备注"},
-    {f:"photo",t:"TEXT",d:"图片纯文件名（完整路径 = $HOME_PHOTOS_DIR + 文件名）"},
+    {f:"photo",t:"TEXT",d:"图片纯文件名(完整路径 = $HOME_PHOTOS_DIR + 文件名)"},
     {f:"access_count",t:"INTEGER",d:"被访问次数"},
     {f:"last_accessed_at",t:"TIMESTAMP",d:"最后访问时间"},
     {f:"created_at",t:"TIMESTAMP",d:"创建时间"},

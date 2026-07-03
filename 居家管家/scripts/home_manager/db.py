@@ -117,6 +117,7 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_item_id ON item_locations(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_location ON item_locations(location)")
     migrate_add_date_columns(conn)
+    migrate_add_category_id_column(conn)
 
     conn.commit()
     conn.close()
@@ -163,5 +164,19 @@ def migrate_add_date_columns(conn):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_name ON items(name)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
+
+
+def migrate_add_category_id_column(conn):
+    """迁移：给 items 表加 category_id 列(指向 categories.id),为新分类体系用
+
+    老 category 字符串字段保留(向后兼容老 list/search 查询)
+    新 add 命令必须传 --category-id,内部 derive category 字符串(写入老字段)
+    """
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(items)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "category_id" not in columns:
+        cursor.execute("ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category_id ON items(category_id)")
 
 

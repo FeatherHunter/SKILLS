@@ -1,6 +1,17 @@
 // config-home-manager.ts
 // Home Manager Skill - SkillBoard Configuration
-// DB: home.db (tables: items / item_locations / item_tags / accounts)
+// DB: home.db (tables: items / item_locations / item_tags / accounts / categories)
+
+// ⚠️ 已过时警告(2026-07-03)
+// 此文件是 SkillBoard 的旧配置,跟当前 SKILL 状态并不完全相符:
+//   1. DB_SCHEMA 仍只列 4 张表(items/item_locations/item_tags/accounts),
+//      缺 categories 表(items.category_id FK 也没声明)
+//   2. queries 中 category 仍是"老 category 字符串"操作,
+//      实际 add/update 已改为必传 --category-id int
+//   3. views 缺 categories 相关视图
+//   8 域扩域(272 节点)完成后,本文件未同步。
+//   维护策略:暂不维护,等需要 SkillBoard 重新接入时整体重写。
+
 
 export const HomeManagerConfig = {
 
@@ -73,6 +84,20 @@ export const HomeManagerConfig = {
           { name: "encrypted_password", type: "TEXT", label: "Password (Encrypted)" },
           { name: "tags", type: "TEXT", label: "Tags" },
           { name: "note", type: "TEXT", label: "Note" },
+          { name: "created_at", type: "TEXT", label: "Created At", format: "datetime" },
+          { name: "updated_at", type: "TEXT", label: "Updated At", format: "datetime" },
+        ],
+      },
+      // ── categories (authoritative category source) ──────────────
+      {
+        name: "categories",
+        fields: [
+          { name: "id", type: "INTEGER", label: "ID", primaryKey: true },
+          { name: "parent_id", type: "INTEGER", label: "Parent ID (NULL = top-level)" },
+          { name: "name", type: "TEXT", label: "Category Name", nullable: false },
+          { name: "description", type: "TEXT", label: "Description (AI inference helper)" },
+          { name: "sort_order", type: "INTEGER", label: "Sort Order", default: "0", format: "number" },
+          { name: "is_active", type: "INTEGER", label: "Active (1=active, 0=inactive)", default: "1" },
           { name: "created_at", type: "TEXT", label: "Created At", format: "datetime" },
           { name: "updated_at", type: "TEXT", label: "Updated At", format: "datetime" },
         ],
@@ -301,6 +326,31 @@ export const HomeManagerConfig = {
             ORDER BY cnt DESC`,
       params: [],
       chartType: "bar",
+    },
+
+    // ── 3.13 Category list (filter by parent, top-level when empty) ────────
+    {
+      id: "category-list",
+      label: "Category List",
+      sql: `SELECT id, parent_id, name, description, sort_order, is_active
+            FROM categories
+            WHERE (? = '' OR parent_id IS ?)
+              AND is_active = 1
+            ORDER BY sort_order, id`,
+      params: [
+        { name: "parent_id", type: "text", label: "Parent ID (empty = top-level)", default: "" },
+      ],
+    },
+
+    // ── 3.14 Category tree (all categories for rendering) ──────────────────
+    {
+      id: "category-tree",
+      label: "Category Tree",
+      sql: `SELECT id, parent_id, name, description, sort_order
+            FROM categories
+            WHERE is_active = 1
+            ORDER BY parent_id, sort_order, id`,
+      params: [],
     },
   ],
 
@@ -553,6 +603,16 @@ export const HomeManagerConfig = {
       icon: "Package",
       components: {
         table: { queryId: "express-items", columns: ["name", "category", "location", "quantity", "location_status", "tags"], sortable: true },
+      },
+    },
+
+    // ── 5.12 Category management (tree view) ────────────────────────────────
+    {
+      id: "categories",
+      label: "Categories",
+      icon: "Tag",
+      components: {
+        table: { queryId: "category-tree", columns: ["id", "parent_id", "name", "description", "sort_order"], sortable: true },
       },
     },
   ],

@@ -10,12 +10,12 @@ python home_manager.py init
 
 ```bash
 # 基本用法
-python home_manager.py add --name "物品名称" --category "分类" --location "位置路径" --tags "标签1,标签2"
+python home_manager.py add --name "物品名称" --category-id 17 --location "位置路径" --tags "标签1,标签2"
 
 # 完整参数
 python home_manager.py add \
   --name "牛奶" \
-  --category "饮品" \
+  --category-id 23 \
   --location "客厅/冰箱/上层" \
   --quantity 3 \
   --owner "使用者" \
@@ -33,7 +33,7 @@ python home_manager.py add \
 | 参数 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
 | --name | 是 | - | 物品名称 |
-| --category | 是 | - | 分类（参考 categories.md） |
+| --category-id | **是** | - | 分类 ID(从 categories 表查,必填)。AI 不临时建,必须用现有 ID |
 | --location | 是 | - | 存放位置（必须至少两级路径，如 `客厅/冰箱`） |
 | --quantity | 否 | 1 | 数量 |
 | --owner | 否 | "使用者" | 所有者 |
@@ -181,7 +181,8 @@ python home_manager.py update --id 1 --add-location "零食柜" --add-purchase-d
 |------|------|
 | --id | 物品ID（必填） |
 | --name | 物品名称 |
-| --category | 分类 |
+| --category | 分类字符串(老字段,新物品用 --category-id) |
+| --category-id | 分类 ID(推荐;从 categories 表查;同时更新 category 字符串) |
 | --owner | 所有者 |
 | --price | 单价 |
 | --remark | 备注 |

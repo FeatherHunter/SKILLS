@@ -24,7 +24,8 @@ AI 从用户自然语言中提取：
 - 购买日期（可选）
 - 过期日期（可选）
 
-对照 `references/categories.md` 推断分类，不确定则询问用户。
+对照 `categories` 表(权威源)推断分类,不确定则询问用户。
+执行 `python category_manager.py tree` 获取最新分类树;不能从 md 文档硬编码分类。
 
 ### 状态确认
 
@@ -188,7 +189,7 @@ AI 一句话问完所有缺失信息：
 
 ## Step 3.5: tag 录入（按模板逐项问）
 
-AI 按 `references/categories.md` §"各类 tag 必填/推荐维度"加载该分类的 tag 模板，**按 3 阶段逐项询问**。
+AI 按**全局 tag 体系**录入(分类与 tag 正交,不再按分类查 tag 模板)。`references/categories.md` 仅作分类参考,不含 tag 模板。**按 3 阶段逐项询问**(必填 → 推荐含条件性判定 → 凑数)。
 
 ### 阶段 1：必填维度
 
@@ -213,7 +214,7 @@ AI 按 `references/categories.md` §"各类 tag 必填/推荐维度"加载该分
 
 AI 应主动告知"我会跳过 X 维度（理由）"——保持透明。
 
-**常见条件性维度判定参考**：见 `references/categories.md` §"常见判定示例"。
+**常见条件性维度判定参考**：见本文 Step 3.5 上下文(不再引用 categories.md,该章节已废止)。
 
 ### 阶段 3：凑数（不足 10 个时）
 
@@ -283,7 +284,7 @@ OK 吗？回复"对"或修改。
 
 AI 在 tag 录入完成、进入 Step 4 前自动跑一次验收：
 
-- [ ] 必填维度齐全（按 categories.md 模板核对）
+- [ ] 必填维度齐全(全局 tag 体系,见 Step 3.5 阶段 1)
 - [ ] 总数 ≥ 10（不计入跳过的条件性维度）
 - [ ] 无重复 / 高度相似 tag（白 vs 白色 / T恤 vs T桖）
 - [ ] 无空 tag（"" / None）

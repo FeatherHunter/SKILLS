@@ -96,31 +96,36 @@ def run(cmd, **kwargs):
 
 
 def get_video_info(video_path):
-    """用 ffmpeg -i 取视频时长 + 分辨率（width/height）。从 stderr 解析。"""
-    info = {'duration': None, 'width': None, 'height': None}
+    """用 ffmpeg -noautorotate -i 取视频时长 + 真实像素尺寸 + 旋转标志。
+
+    重要：源视频是手机竖屏拍摄时，文件带 -90 旋转 metadata。
+    不用 -noautorotate 会被错读为 1920x1080 显示尺寸，掩盖真实的 1080x1920 像素。
+    """
+    info = {'duration': None, 'width': None, 'height': None, 'has_rotation': False}
     try:
         result = subprocess.run(
-            ['ffmpeg', '-i', str(video_path), '-f', 'null', '-'],
+            ['ffmpeg', '-noautorotate', '-i', str(video_path), '-f', 'null', '-'],
             capture_output=True, text=True, timeout=30
         )
-        # stderr 里有 "Duration: HH:MM:SS.MS, ..."
+        # Duration
         m = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)', result.stderr)
         if m:
             h, mn, s = int(m.group(1)), int(m.group(2)), float(m.group(3))
             info['duration'] = h * 3600 + mn * 60 + s
-        # 找第一个 Video 流（不是 attached pic）的分辨率
-        # ffmpeg 输出形如：Stream #0:0(und): Video: h264, yuv420p, 1920x1080 [SAR ...]
+        # 找第一个 Video 流的真实像素尺寸
+        # ffmpeg 输出形如：Stream #0:0(und): Video: h264, yuv420p(progressive), 1080x1920 [SAR ...]
         for stream_line in result.stderr.split('\n'):
             if ' Video:' in stream_line:
-                m = re.search(r'(\d{2,4})x(\d{2,4})\s', stream_line)
+                m = re.search(r',\s*(\d{2,4})x(\d{2,4})\s*[,\[]', stream_line)
                 if not m:
-                    m = re.search(r'(\d{2,4})x(\d{2,4})\[', stream_line)
-                if not m:
-                    m = re.search(r',\s*(\d{2,4})x(\d{2,4})', stream_line)
+                    m = re.search(r'(\d{2,4})x(\d{2,4})\s', stream_line)
                 if m:
                     info['width'] = int(m.group(1))
                     info['height'] = int(m.group(2))
                     break
+        # 检测旋转 metadata
+        if 'displaymatrix: rotation of' in result.stderr:
+            info['has_rotation'] = True
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return info
@@ -240,13 +245,22 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
     if voice in ('mute', 'bgm-only'):
         a_filters.append("volume=0")
 
-    # 7. ★ 缩放到目标比例（仅在源分辨率不匹配时）
-    # 当源 = 目标，scale+pad 是 no-op 但仍触发重新编码；这里直接跳过。
-    if input_w != target_w or input_h != target_h:
-        v_filters.append(
-            f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
-            f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-        )
+    # 7. ★ 横竖屏适配
+    # 手机竖屏拍摄：源是 1080x1920 带 -90 旋转 metadata（has_rotation=True）
+    # 用 transpose 物理旋转 90° (CW)，再走 scale+pad
+    # 真实横屏源（has_rotation=False，input_w > input_h）：直接走 scale+pad
+    transpose_needed = False
+    if input_w and input_h and input_w < input_h:
+        transpose_needed = True
+        # transpose=1 = 顺时针 90°
+        v_filters.append("transpose=1")
+
+    # 8. ★ 始终 scale + pad（保证 16:9 + 1920x1080 标准化）
+    # 即使源就是 1920x1080，也加上以保证 SAR 归一。
+    v_filters.append(
+        f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
+        f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+    )
 
     if not v_filters and not a_filters:
         return None, None
@@ -265,24 +279,23 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
         return fc, ["[v]", "[a]"]
 
 
-def build_cut_middle_filter(cm, target_w=1920, target_h=1080, source_matches=False):
+def build_cut_middle_filter(cm, target_w=1920, target_h=1080, transpose_needed=False):
     """cut-middle: 把视频切成 [0:cut_start] + [cut_end:end] 两段拼接。"""
     cut_start = parse_time(cm.get('from', '0')) or 0
     cut_end = parse_time(cm.get('to', '0')) or 0
     if cut_end <= cut_start:
         return None, None
 
-    # 当源分辨率 = 目标，跳过 scale+pad（concat filter 不强制分辨率相同，但加上没坏处）
-    if source_matches:
-        scale_pad_v1 = ""
-        scale_pad_v2 = ""
+    # rotate+scale_pad：始终应用，保证两段尺寸一致 + 横屏
+    if transpose_needed:
+        rotoscale_v1 = f",transpose=1,scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
     else:
-        scale_pad_v1 = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-        scale_pad_v2 = scale_pad_v1
+        rotoscale_v1 = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+    rotoscale_v2 = rotoscale_v1
 
     fc = (
-        f"[0:v]trim=0:{cut_start},setpts=PTS-STARTPTS{scale_pad_v1}[v1];"
-        f"[0:v]trim={cut_end}:,setpts=PTS-STARTPTS{scale_pad_v2}[v2];"
+        f"[0:v]trim=0:{cut_start},setpts=PTS-STARTPTS{rotoscale_v1}[v1];"
+        f"[0:v]trim={cut_end}:,setpts=PTS-STARTPTS{rotoscale_v2}[v2];"
         f"[v1][v2]concat=n=2:v=1:a=0[outv];"
         f"[0:a]atrim=0:{cut_start},asetpts=PTS-STARTPTS[a1];"
         f"[0:a]atrim={cut_end}:,asetpts=PTS-STARTPTS[a2];"
@@ -307,17 +320,23 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     ops = video.get('ops', {}) or {}
     voice = video.get('voice', 'keep')
 
-    # 一次 ffmpeg -i 同时拿时长和分辨率
+    # 一次 ffmpeg -noautorotate -i 同时拿时长、真实像素、旋转标志
     if not dry_run:
         info = get_video_info(input_path)
         input_duration = info['duration']
         input_w, input_h = info['width'], info['height']
+        has_rotation = info['has_rotation']
     else:
         input_duration = 30.0
-        input_w, input_h = 1920, 1080
+        input_w, input_h = 1080, 1920
+        has_rotation = True
+
+    # 真实像素 = 竖屏(1080x1920) → 要物理旋转（不含旋转 meta 的源直接当横屏）
+    transpose_needed = bool(input_w and input_h and input_w < input_h)
 
     if input_duration:
-        log(f"  时长: {input_duration:.1f}s, 分辨率: {input_w}x{input_h}")
+        rot_str = "竖屏+旋转" if transpose_needed else "横屏" if (input_w and input_h) else "?"
+        log(f"  时长: {input_duration:.1f}s, 像素: {input_w}x{input_h}, {rot_str}")
 
     # 目标分辨率
     target_resolutions = {
@@ -328,12 +347,14 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
         '3:4': (1080, 1440),
     }
     target_w, target_h = target_resolutions.get(target_aspect, (1920, 1080))
-    source_matches = (input_w == target_w and input_h == target_h)
 
-    # ⚡ Fast Path 1: 无任何 op + 源分辨率匹配 + voice 保持 → 直接复制（毫秒级）
-    if not has_any_op(ops) and voice == 'keep' and source_matches:
+    # ⚡ Fast Path: 无 op + 横屏 + voice keep + 像素匹配 → 直接复制
+    # 竖屏源跳过 fast-path（必须经过 transpose + scale+pad 才符合 16:9）
+    if (not has_any_op(ops) and voice == 'keep'
+            and not transpose_needed
+            and input_w == target_w and input_h == target_h):
         if dry_run:
-            log(f"  ⚡ [DRY-RUN] fast-path: 无 op + 源匹配 + keep → 直接复制")
+            log(f"  ⚡ [DRY-RUN] fast-path: 无 op + 横屏+匹配 → 直接复制")
             return output_path, True
         try:
             shutil.copy2(input_path, output_path)
@@ -343,16 +364,22 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
         except OSError as e:
             log(f"  ⚠️ fast-path 失败 ({e}), 退回完整转码")
 
-    fc, mappings = build_video_filter(
-        ops, voice,
-        input_duration=input_duration,
-        target_aspect=target_aspect,
-        input_w=input_w, input_h=input_h,
-    )
+    # 处理 cut-middle 特殊情况（要用 transpose_needed 而非 source_matches）
+    if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
+        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
+                                               transpose_needed=transpose_needed)
+    else:
+        fc, mappings = build_video_filter(
+            ops, voice,
+            input_duration=input_duration,
+            target_aspect=target_aspect,
+            input_w=input_w, input_h=input_h,
+        )
+        # 给 build_video_filter 的 transpose 信号需要重新构造，或者改用 fc+mappings
+        # 上面 build_video_filter 已经看 input_w/h 自动加 transpose
 
-    # fc 可能为 None（无任何处理）但仍需统一分辨率→同上 force scale（按设计保留）
-    # 注：实际不会有 None 路径走到这里，因为 fast-path 已经拦下了所有无 op 情况
     if fc is None:
+        # 无 op 且已过 fast-path 检测；当前路径不应到这里
         fc = f"[0:v]copy[v];[0:a]anullsrc=r=44100:cl=stereo[a]"
         mappings = ["[v]", "[a]"]
 
@@ -363,7 +390,7 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     cmd.extend(['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'])
     cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
     cmd.extend(['-max_interleave_delta', '100M'])
-    cmd.extend(['-threads', '0'])  # 自动用全部 CPU 核心
+    cmd.extend(['-threads', '0'])
     cmd.append(str(output_path))
 
     log(f"  $ ffmpeg ... -filter_complex ... -o {output_path.name}")

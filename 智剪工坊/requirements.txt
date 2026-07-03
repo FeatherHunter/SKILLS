@@ -1,0 +1,38 @@
+# -*- coding: utf-8 -*-
+# 智剪工坊 · Python 依赖清单
+# 装: pip install -r requirements.txt
+#
+# 版本策略:用 >= 锁定最低兼容版本,允许小版本升级(更快拿到 bug fix)
+# 装完跑 verify.py 确认所有依赖就位
+
+# === 必需(基础) ===
+Pillow>=10.0.0           # 封面叠字 / cutout 图像合成
+numpy>=1.24.0            # 数值计算(beat_sync / reframe / scene_detect)
+
+# === 视频处理 ===
+# 全部 ffmpeg 走 subprocess(无需 ffmpeg-python / moviepy)
+
+# === 视觉 AI(常用) ===
+opencv-python>=4.8.0     # 帧差 / 人脸检测 / 视觉特效(reframe / scene_detect / style_transfer)
+# opencv-contrib-python 也行,二选一
+
+# === 音频 AI ===
+librosa>=0.10.0          # 节拍检测(beat_sync)
+soundfile>=0.12.0        # librosa 写 wav 依赖
+
+# === 语音 AI ===
+faster-whisper>=1.0.0    # GPU 转录(auto_subtitle / quotes / translate)
+
+# === 翻译 + TTS ===
+edge-tts>=6.1.0          # 微软 TTS(digital_human / translate)
+deep-translator>=1.11.0  # Google Translate 包装(translate)
+
+# === 抠图 AI ===
+rembg>=2.0.0             # 智能抠图(cutout)
+# rembg 首次跑会下 onnx 模型,约 170MB(放 ~/.u2net/)
+
+# === 字体(系统自带) ===
+# Windows: 微软雅黑 msyh.ttc(默认)
+# Mac:     PingFang SC
+# Linux:   Noto Sans CJK(需装 fonts-noto-cjk)
+# 不写进 pip,改用 os.path 探测

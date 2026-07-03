@@ -1,0 +1,119 @@
+# 04 - cinematic (电影感剪辑手法)
+
+## 触发词
+
+"J-cut"、"L-cut"、"speed ramp"、"跳剪"、"变速"、"上下黑边"、"黑场"、"白闪"、"闪回"、"匹配剪辑"
+
+## 什么是 J-cut / L-cut
+
+```
+J-cut: 下一段的音频先于画面出现(声音先进,画面后进)
+       ┌─────────┐
+       │  画面 A  │────────────────┐
+       └─────────┘                │
+       ┌─────────┐    ┌─────────┐│
+       │ (静音)  │    │  画面 B  ││
+       └─────────┘    └─────────┘│
+       └────┘  ←音频提前进入
+
+L-cut: 当前段的音频延后于画面(声音延后,画面先切)
+       ┌─────────┐
+       │  画面 A  │────┐
+       └─────────┘    │
+       ┌─────────┐    │┌─────────┐
+       │  画面 B  │    ││ (静音)  │
+       └─────────┘    │└─────────┘
+              ←音频延后
+```
+
+## 实现
+
+```bash
+# J-cut: 把 B 的音频向前偏移 -1s(让它先于 B 画面)
+ffmpeg -i a.mp4 -i b.mp4 \
+  -filter_complex "[1:a]adelay=1000|1000[a1];\
+                   [0:a][a1]concat=n=2:v=0:a=1[a]" \
+  -map 0:v -map [a] \
+  [output.mp4]
+
+# L-cut: 把 A 的音频向后偏移 +1s(让它晚于 A 画面结束)
+ffmpeg -i a.mp4 -i b.mp4 \
+  -filter_complex "[0:a]adelay=0|0[a0];\
+                   [0:v][1:v]concat=n=2:v=1:a=0[v];\
+                   [a0][1:a]concat=n=2:v=0:a=1[a]" \
+  -map [v] -map [a] \
+  [output.mp4]
+```
+
+## Speed ramp(变速)
+
+```bash
+# 慢→快(开头 2 秒慢动作,后面加速)
+ffmpeg -i in.mp4 \
+  -vf "setpts='if(lt(T,2),2*PTS,0.5*PTS)'" \
+  -an out.mp4
+
+# 快→慢(开头加速,后面慢动作)
+ffmpeg -i in.mp4 \
+  -vf "setpts='if(lt(T,2),0.5*PTS,2*PTS)'" \
+  -an out.mp4
+```
+
+`setpts` 的值 = 1.0 表示原速,2.0 表示慢 2 倍,0.5 表示快 2 倍。
+
+## 跳剪
+
+跳剪就是同一段重复拼接(常见于 vlog 自我吐槽):
+
+```bash
+# 把同一段重复 3 次
+ffmpeg -i clip.mp4 -i clip.mp4 -i clip.mp4 \
+  -filter_complex "[0:v][0:v][0:v]concat=n=3:v=1:a=0[v]" \
+  -an out.mp4
+```
+
+## 上下黑边(cinematic bars)
+
+```bash
+# 加 200px 黑色上下边(2.35:1 电影比例)
+ffmpeg -i in.mp4 -vf "pad=iw:ih+200:0:100:black" out.mp4
+
+# 移除上下黑边
+ffmpeg -i in.mp4 -vf "crop=iw:ih-200:0:100" out.mp4
+```
+
+## 黑场 / 白闪
+
+```bash
+# 黑场 0.5s(转场用)
+ffmpeg -i in.mp4 \
+  -vf "fade=t=in:st=0:d=0.5,fade=t=out:st=END-0.5:d=0.5:color=black" \
+  out.mp4
+
+# 白闪 0.1s
+ffmpeg -i in.mp4 \
+  -vf "fade=t=in:st=0:d=0.1:color=white" \
+  out.mp4
+```
+
+## 匹配剪辑(match cut)
+
+匹配剪辑需要先分析两段的视觉相似点(场景、动作),然后用同角度剪辑连接。代码实现较复杂,推荐**剪映手动**。
+
+## 调用示例
+
+```
+用户: "做个 J-cut,声音先进画面"
+→ cinematic --type jcut --audio-offset -1
+```
+
+```
+用户: "开头 2 秒慢动作,后面快进"
+→ cinematic --type speedramp --slow-duration 2 --slow-speed 0.5 --fast-speed 2
+```
+
+## 限制 / 注意
+
+1. **setpts 表达式复杂**:多个区间变速需要用 `if` 嵌套
+2. **音频不同步**:变速后音频可能不同步,需要单独处理 `atempo`
+3. **匹配剪辑**:代码实现困难,推荐手动

@@ -1,0 +1,22 @@
+[
+  {"time_start":"00:00","time_end":"02:40","title":"剪辑视频 + 优化 skill + 制定计划","notes":"7.4 凌晨进行的活动","category":"工作"},
+  {"time_start":"02:40","time_end":"10:00","title":"睡眠","notes":"","category":"睡眠"},
+  {"time_start":"10:00","time_end":"10:30","title":"起床 / 洗漱","notes":"","category":"起居"},
+  {"time_start":"10:30","time_end":"11:30","title":"B 站视频事务","notes":"7.3 相关(视频研究、剪辑、发布准备)","category":"工作"},
+  {"time_start":"11:30","time_end":"11:45","title":"固定练习","notes":"#10109 心愿","category":"修行"},
+  {"time_start":"11:45","time_end":"12:05","title":"元母意程","notes":"#10108 心愿","category":"修行"},
+  {"time_start":"12:05","time_end":"13:00","title":"午饭","notes":"今日第一顿","category":"饮食"},
+  {"time_start":"13:00","time_end":"13:30","title":"午睡","notes":"打断昨天\"躺下刷手机\"的自动化","category":"休息"},
+  {"time_start":"13:30","time_end":"15:00","title":"自由 / 休息","notes":"","category":"自由"},
+  {"time_start":"15:00","time_end":"15:30","title":"八段锦","notes":"#10088 心愿","category":"修行"},
+  {"time_start":"15:30","time_end":"17:30","title":"家务","notes":"猫砂 #10044 / 厨房霉斑 #175 / 厨房窗户 #218 / 洗脏衣服 #10111 / 换主机桌 #10112","category":"家务"},
+  {"time_start":"17:30","time_end":"18:30","title":"晚饭","notes":"","category":"饮食"},
+  {"time_start":"18:30","time_end":"19:00","title":"准备 + 换衣服 + 出门","notes":"","category":"起居"},
+  {"time_start":"19:00","time_end":"20:30","title":"健身房","notes":"#10091 心愿,1.5 小时","category":"健身"},
+  {"time_start":"20:30","time_end":"20:45","title":"通勤(回程)","notes":"","category":"通勤"},
+  {"time_start":"20:45","time_end":"21:00","title":"洗澡","notes":"","category":"起居"},
+  {"time_start":"21:00","time_end":"22:00","title":"发布 day3 视频","notes":"#10110 心愿,B 站","category":"工作"},
+  {"time_start":"22:00","time_end":"22:30","title":"自由","notes":"","category":"自由"},
+  {"time_start":"22:30","time_end":"23:00","title":"睡前准备","notes":"","category":"起居"},
+  {"time_start":"23:00","time_end":"24:00","title":"睡眠","notes":"","category":"睡眠"}
+]

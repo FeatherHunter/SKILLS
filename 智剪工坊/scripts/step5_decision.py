@@ -12,6 +12,9 @@ import sys
 import time
 from pathlib import Path
 
+_SKILL_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(_SKILL_ROOT / "lib"))
+
 
 INTERMEDIATE_DIR = "中间产物"
 SINGLE_DIR = "单视频"

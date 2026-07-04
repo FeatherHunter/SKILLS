@@ -1,0 +1,22 @@
+{
+  "requests": [
+    {
+      "prompt": "Peaceful natural morning acoustic guitar fingerpicking with gentle bird songs and soft pad atmosphere, suitable for vlog morning scene transitions from waking up to commuting, warm organic sound, 95-110 BPM, instrumental, loop-friendly, no harsh tones",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Lo-fi chill hip-hop beat with vinyl crackle, mellow piano chords, soft drums and bass, urban commute vibe, modern youthful energy, 85-95 BPM, instrumental, suitable for vlog city scenes",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Cinematic ambient soundtrack with minimalist piano, building string pads, atmospheric tension, film score style, suitable for vlog narrative transitions, 80-100 BPM, instrumental, emotional and immersive, no lyrics",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    }
+  ]
+}

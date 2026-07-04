@@ -1,0 +1,28 @@
+{
+  "requests": [
+    {
+      "prompt": "Soft acoustic guitar fingerpicking with gentle bird chirping, peaceful morning warm pad, suitable for vlog waking up scene, dawn sunrise feel, 95 BPM, instrumental, loop-friendly, warm",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Gentle acoustic guitar arpeggio with soft pad and light ambient city feel, suitable for vlog commute scene, calm urban morning, 100 BPM, instrumental, no percussion, smooth flow",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Light acoustic guitar with subtle electronic synth pad and soft rhythmic pulse, suitable for vlog gym workout scene, motivating but not intense, 110 BPM, instrumental, energetic but peaceful",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Warm acoustic guitar with gentle string ensemble and soft reverb, suitable for vlog ending summary scene, emotional closing, 95 BPM, instrumental, reflective, intimate",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    }
+  ]
+}

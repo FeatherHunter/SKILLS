@@ -1,0 +1,22 @@
+{
+  "requests": [
+    {
+      "prompt": "Long extended lo-fi chill hip-hop beat with vinyl crackle, mellow piano chords, soft drums and bass, urban workout energy, modern youthful feel, 90 BPM, instrumental, sustained for fitness vlog scene over 60 seconds with natural progressions",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Extended length lo-fi hip-hop instrumental with vinyl noise, mellow piano loop, soft kick drum and bass line, urban youthful energy suitable for gym workout vlog, 95 BPM, sustained track for over 1 minute",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    },
+    {
+      "prompt": "Continuous lo-fi chill instrumental track, vinyl crackle, jazzy piano chords, soft hip-hop drums, urban commute and workout vibe, 90 BPM, no vocals, extended duration with gentle variations and loops",
+      "sample_rate": 44100,
+      "bitrate": 256000,
+      "format": "mp3"
+    }
+  ]
+}

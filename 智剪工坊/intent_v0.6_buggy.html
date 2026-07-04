@@ -83,9 +83,9 @@
       background: #000; border-radius: 8px; flex-shrink: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       color: var(--secondary); font-size: 11px; cursor: pointer; position: relative;
-      max-width: 160px; max-height: 90px;
+      width: 64px; height: 64px; flex-shrink: 0;
     }
-    .video-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .video-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
     .video-thumb .play-hint {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       background: rgba(0,0,0,0.4); color: #fff; font-size: 12px; opacity: 0; transition: opacity 0.15s;
@@ -99,7 +99,7 @@
     .video-grid .field { margin-bottom: 0; }
     @media (max-width: 640px) {
       .video-grid { grid-template-columns: 1fr; }
-      .video-thumb { max-width: 130px; max-height: 80px; }
+      .video-thumb { width: 56px; height: 56px; }
     }
     .ops-group {
       background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -163,57 +163,157 @@
       background: var(--card);
       box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
     }
-    /* ============ Sequences ============ */
-    .sequences-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
-    .sequence {
-      background: var(--gray-fill); border-radius: 10px; padding: 10px 12px;
+    /* ============ 折叠 video card ============ */
+    .video-card .video-head {
+      display: flex; gap: 12px; margin-bottom: 0; align-items: center; cursor: pointer;
+      user-select: none; -webkit-user-select: none;
     }
-    .sequence-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .sequence-num {
-      font-size: 12px; font-weight: 600; color: var(--blue);
-      font-family: ui-monospace, monospace;
+    .video-card .card-toggle {
+      flex-shrink: 0; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--secondary); font-size: 10px;
+      transition: transform 0.2s ease;
     }
-    .sequence-name {
-      flex: 1; padding: 5px 10px; border: 1px solid var(--border);
-      border-radius: 6px; font-size: 13px; font-family: inherit; background: var(--card);
+    .video-card .card-toggle.expanded { transform: rotate(90deg); color: var(--blue); }
+    .video-card .card-body { padding-top: 12px; }
+    .video-card.collapsed .card-body { display: none; }
+    .video-card.collapsed .video-head { margin-bottom: 0; }
+    .video-card.collapsed .video-filename { color: var(--secondary); }
+    .video-card.collapsed .video-head .exclude-btn { display: none; }
+
+    /* ============ 转场区（每个卡片底部）============ */
+    .seq-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
     }
-    .sequence-remove {
-      padding: 4px 10px; font-size: 12px; border: 1px solid var(--border);
-      background: var(--card); border-radius: 6px; cursor: pointer; color: var(--red);
+    .seq-next-row, .seq-trans-block { display: flex; align-items: center; gap: 10px; }
+    .seq-trans-block {
+      margin-top: 10px;
+      display: none;
+      animation: slideIn 0.2s ease;
+    }
+    .seq-trans-block.show { display: flex; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .seq-arrow {
+      flex-shrink: 0;
+      font-size: 13px; font-weight: 500; color: var(--label);
+      min-width: 76px;
+    }
+    .seq-next-select {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 7px 28px 7px 10px;
+      font-size: 13px;
       font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%238E8E93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 10px center / 10px 6px;
+      color: var(--label);
+      cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .sequence-remove:hover { background: #fff0f0; }
-    .sequence-rows { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
-    .sequence-row { display: flex; align-items: center; gap: 6px; }
-    .sequence-row .row-num {
-      font-size: 11px; color: var(--secondary); min-width: 36px; font-family: ui-monospace, monospace;
-    }
-    .sequence-row select.video-select { flex: 1; }
-    .sequence-row .row-remove {
-      padding: 4px 10px; font-size: 12px; border: 1px solid var(--border);
-      background: var(--card); border-radius: 6px; cursor: pointer; color: var(--secondary);
+    .seq-trans-select {
+      flex: 0 0 140px;
+      width: 140px;
+      min-width: 0;
+      padding: 7px 28px 7px 10px;
+      font-size: 13px;
       font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%238E8E93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 10px center / 10px 6px;
+      color: var(--label);
+      cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .sequence-row .row-remove:hover { background: #fff0f0; color: var(--red); border-color: #fcc; }
-    .sequence-transition {
-      display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 38px;
-      font-size: 12px; color: var(--secondary);
+    .seq-next-select:focus, .seq-trans-select:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
     }
-    .sequence-transition .arrow { color: var(--blue); font-size: 14px; }
-    .sequence-transition select { width: 110px; padding: 4px 8px; font-size: 12px; }
-    .sequence-transition input[type="number"] { width: 60px; padding: 4px 8px; font-size: 12px; }
-    .sequence-add-row {
-      font-size: 12px; color: var(--blue); background: transparent; border: none;
-      cursor: pointer; padding: 4px 0; font-family: inherit;
+    .seq-dur-input {
+      flex: 0 0 80px;
+      width: 80px;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      font-size: 13px; font-family: inherit;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--card); color: var(--label);
+      text-align: center;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .sequence-add-row:hover { text-decoration: underline; }
-    .sequence-actions { display: flex; gap: 8px; }
+    .seq-dur-input:focus {
+      outline: none; border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
+    }
+    .seq-unit { font-size: 12px; color: var(--secondary); }
+    .seq-chain-preview {
+      margin-top: 10px;
+      border-radius: 6px;
+      font-family: ui-monospace, SF Mono, monospace;
+      font-size: 11px;
+      color: var(--blue);
+      background: rgba(0,122,255,0.06);
+      overflow: hidden;
+    }
+    .seq-chain-preview summary {
+      padding: 6px 12px;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .seq-chain-preview summary::-webkit-details-marker { display: none; }
+    .seq-chain-preview summary::before {
+      content: '▶';
+      font-size: 9px;
+      transition: transform 0.15s;
+    }
+    .seq-chain-preview[open] summary::before { transform: rotate(90deg); }
+    .seq-chain-preview .chain-list {
+      padding: 6px 12px 10px;
+      border-top: 1px solid rgba(0,122,255,0.15);
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .seq-chain-preview .chain-list div {
+      padding: 2px 0;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+    .seq-chain-preview[hidden] { display: none; }
+    .seq-error {
+      margin-top: 8px;
+      padding: 6px 12px;
+      color: var(--red);
+      font-size: 12px;
+      background: rgba(255,59,48,0.08);
+      border-radius: 6px;
+      display: none;
+    }
+    .seq-error.show { display: block; }
+
+    /* ============ Deprecated (旧 sequences-list 样式，留着不报错) ============ */
+    .sequences-list { display: none; }
+
     .picker-screen {
       text-align: center; padding: 80px 20px; background: var(--card);
       border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    .picker-screen h1 { margin-bottom: 12px; }
+    .picker-screen h1 { margin-bottom: 16px; font-size: 24px; }
     .picker-screen p { color: var(--secondary); margin-bottom: 8px; font-size: 14px; }
+    .picker-screen .picker-lead {
+      max-width: 480px; margin-left: auto; margin-right: auto;
+      color: var(--label); font-size: 14px; line-height: 1.55;
+    }
+    .picker-screen .picker-lead code {
+      background: var(--gray-fill); padding: 2px 6px; border-radius: 4px;
+      font-family: ui-monospace, SF Mono, monospace; font-size: 12.5px;
+      color: var(--blue);
+    }
     .picker-screen .ws-hint {
       font-size: 12px; color: var(--secondary); margin-top: 16px; padding: 10px;
       background: var(--gray-fill); border-radius: 8px; font-family: ui-monospace, monospace;
@@ -286,9 +386,9 @@
 <body>
   <div class="container">
     <div id="picker-screen" class="picker-screen" style="display:none">
-      <h1>智剪工坊 · Vlog Intent</h1>
-      <p>选你的工作区文件夹（含今天视频素材的目录）</p>
-      <p style="font-size:12px">浏览器会请求权限，授权后才能读写</p>
+      <h1>开始剪辑准备 · 第 1 步：选视频文件夹</h1>
+      <p class="picker-lead">我会扫描文件夹里的 <strong>.mp4</strong> 文件，列出每个视频让你填描述，保存成 <code>intent.json</code> 发给 AI 当剪辑依据。</p>
+      <p style="font-size:12px">浏览器会请求权限，授权后才能读写文件夹</p>
       <button class="primary" id="pick-folder-btn" style="margin-top:20px">选择文件夹</button>
       <div id="ws-hint" class="ws-hint" style="display:none"></div>
     </div>
@@ -359,15 +459,6 @@
           </div>
           <div class="length-bar"><div class="length-bar-fill" id="length-bar-fill"></div></div>
           <div class="length-detail" id="length-detail">在项目里填目标时长后会显示进度</div>
-        </div>
-      </section>
-
-      <section>
-        <h2>视频序列 <span class="hint">(可选)</span></h2>
-        <p class="section-hint">每个序列是一组必须按此顺序连续播放的视频。可加多个。序列之间 + 剩余视频 = AI 自由安排。每个相邻对都能指定转场。</p>
-        <div id="sequences-list" class="sequences-list"></div>
-        <div class="sequence-actions">
-          <button class="secondary" id="add-sequence">+ 加一个序列</button>
         </div>
       </section>
 
@@ -472,7 +563,6 @@
     const lengthTargetEl = document.getElementById('length-target');
     const lengthBarFill = document.getElementById('length-bar-fill');
     const lengthDetail = document.getElementById('length-detail');
-    const sequencesListEl = document.getElementById('sequences-list');
 
     if (!supportsFSAPI) document.getElementById('browser-warning').style.display = 'block';
 
@@ -628,10 +718,38 @@
       } else {
         videoEntries.forEach((entry, i) => {
           const card = document.createElement('div');
-          card.className = 'video-card';
-          card.dataset.videoIndex = entry.index;
           card.innerHTML = renderVideoCard(entry, i);
           videoListEl.appendChild(card);
+        });
+        // 绑定折叠：点 ▶ 按钮，或点 video-head 非按钮/非缩略图区域
+        document.querySelectorAll('[data-card-toggle]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.cardToggle, 10);
+            toggleCard(idx);
+          });
+        });
+        // 点击 video-head 标题区域折叠（但排除 exclude-btn 和 video-thumb）
+        videoListEl.querySelectorAll('.video-card .video-head').forEach(head => {
+          head.addEventListener('click', (e) => {
+            // 缩略图（有 data-play）和按钮不触发折叠
+            if (e.target.closest('[data-play], button')) return;
+            const card = head.closest('.video-card');
+            if (!card) return;
+            const idx = parseInt(card.dataset.cardIdx, 10);
+            toggleCard(idx);
+          });
+        });
+        initSequencesUI();
+        // 默认第一个展开，其余折叠
+        videoEntries.forEach((_, i) => {
+          const card = videoListEl.querySelector(`.video-card[data-card-idx="${i}"]`);
+          if (!card) return;
+          if (i > 0) {
+            card.classList.add('collapsed');
+            const btn = card.querySelector('.card-toggle');
+            if (btn) btn.classList.remove('expanded');
+          }
         });
 
         videoListEl.querySelectorAll('[data-play]').forEach(el => {
@@ -702,36 +820,11 @@
           });
         }
 
-        // 序列加载（向后兼容旧 chains / forced_order + transitions）
+        // 从 existingIntent.sequences 加载 per-card next-video 字段（v0.7）
         if (Array.isArray(existingIntent.sequences) && existingIntent.sequences.length) {
-          existingIntent.sequences.forEach(s => {
-            addSequence(s.name || '', s.videos || [], existingIntent.videos || [], s.transitions || []);
-          });
-        } else if (Array.isArray(existingIntent.chains) && existingIntent.chains.length) {
-          // 旧 v0.3 格式：chains + 独立的 transitions
-          const oldTransitions = Array.isArray(existingIntent.transitions) ? existingIntent.transitions : [];
-          existingIntent.chains.forEach(c => {
-            const videos = Array.isArray(c.videos) ? c.videos : (Array.isArray(c) ? c : []);
-            // 把属于这个序列内部的旧 transitions 拎出来
-            const seqTransitions = [];
-            for (let i = 0; i < videos.length - 1; i++) {
-              const t = oldTransitions.find(t => t.from === videos[i] && t.to === videos[i+1]);
-              if (t) seqTransitions.push({ after: videos[i], type: t.type, duration: t.duration });
-            }
-            // 文件名格式 → addSequence 会检测 allStrings=true，走格式1路径
-            addSequence(c.name || '', videos, existingIntent.videos || [], seqTransitions);
-          });
-        } else if (Array.isArray(existingIntent.forced_order) && existingIntent.forced_order.length) {
-          // 文件名格式 → addSequence 会检测 allStrings=true，走格式1路径
-          addSequence('顺序', existingIntent.forced_order, existingIntent.videos || [], []);
-        } else {
-          addSequence('', null, null, []);
+          loadSequencesFromIntent(existingIntent.sequences);
         }
-      } else {
-        addSequence('', null, null, []);
       }
-
-      refreshAllSequenceDropdowns();
       updateAllOpsSummaries();
       updateLengthDashboard();
       updateRevisionUI((existingIntent?._meta?.revision || 0) + 1);
@@ -741,77 +834,121 @@
       const vw = entry.videoWidth || 1920;
       const vh = entry.videoHeight || 1080;
       const aspect = vw / vh;
-      const maxW = 160, maxH = 90;
+      // 缩略图：统一外框大小（64×64），里面 img 按原始比例 contain
+      // 横屏/竖屏占地大小一致，只有内容比例不同
+      const BOX = 64;
       let tw, th;
-      if (aspect >= 1) { tw = Math.min(maxW, Math.round(maxH * aspect)); th = Math.round(tw / aspect); }
-      else { th = Math.min(maxH, Math.round(maxW / aspect)); tw = Math.round(th * aspect); }
+      if (aspect >= 1) {
+        // 横屏：宽 64
+        tw = BOX;
+        th = Math.round(tw / aspect);
+      } else {
+        // 竖屏：高 64
+        th = BOX;
+        tw = Math.round(th * aspect);
+      }
       return `
-        <div class="video-number">#${entry.index}</div>
-        <div class="video-head">
-          <div class="video-thumb" data-play="${i}" style="width:${tw}px;height:${th}px;" title="点击预览">
-            ${entry.thumbDataUrl
-              ? `<img src="${entry.thumbDataUrl}"><div class="play-hint">▶ 预览</div>`
-              : '<span>无缩略图</span>'}
-          </div>
-          <div class="video-meta">
-            <div class="video-filename">${escapeHtml(entry.name)}</div>
-            <div class="video-auto">${formatDuration(entry.durationSec)} · ${(entry.file.size / 1024 / 1024).toFixed(1)} MB · ${vw}×${vh}</div>
-            <div class="video-actions">
-              <button class="exclude-btn" data-exclude-btn="${i}" type="button">🚫 <span class="exclude-text">不用</span></button>
+        <div class="video-card" data-card-idx="${i}" data-video-index="${entry.index}">
+          <div class="video-head">
+            <button class="card-toggle expanded" data-card-toggle="${i}" title="折叠/展开">▶</button>
+            <div class="video-thumb" data-play="${i}" style="width:${tw}px;height:${th}px;" title="点击预览">
+              ${entry.thumbDataUrl
+                ? `<img src="${entry.thumbDataUrl}"><div class="play-hint">▶ 预览</div>`
+                : '<span>无缩略图</span>'}
+            </div>
+            <div class="video-meta">
+              <div class="video-filename">#${entry.index} ${escapeHtml(entry.name)}</div>
+              <div class="video-auto">${formatDuration(entry.durationSec)} · ${(entry.file.size / 1024 / 1024).toFixed(1)} MB · ${vw}×${vh}</div>
+              <div class="video-actions">
+                <button class="exclude-btn" data-exclude-btn="${i}" type="button">🚫 <span class="exclude-text">不用</span></button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="video-grid">
-          <div class="field">
-            <label>内容简介 <span class="hint">这段视频拍的是啥</span></label>
-            <textarea data-video="${i}.summary" rows="2"></textarea>
-          </div>
-          <div class="field">
-            <label>使用意图 <span class="hint">为啥用这条</span></label>
-            <textarea data-video="${i}.intent" rows="2"></textarea>
-          </div>
-          <div class="field">
-            <label>声音 <span class="hint">原声音轨怎么处理</span></label>
-            <select data-video="${i}.voice">
-              <option value="">—</option>
-              <option value="keep">保留</option>
-              <option value="keep-with-filler-removed">保留+去水词</option>
-              <option value="mute">静音</option>
-              <option value="bgm-only">只留 BGM</option>
-            </select>
-            <textarea data-video="${i}.voice_note" rows="1" placeholder="补充说明（可选）— 例：原声音量小，需放大 1.5x"
-                      style="margin-top:6px;font-size:12px;min-height:32px"></textarea>
-          </div>
-          <div class="field">
-            <label>备注 <span class="hint">没归类的想法都写这</span></label>
-            <textarea data-video="${i}.notes" rows="2"></textarea>
-          </div>
-        </div>
-        <div class="ops-group">
-          <button class="ops-header" type="button" data-toggle-ops>
-            <div class="ops-header-left">
-              <span class="disclosure">▶</span>
-              <span>基础剪辑操作</span>
+          <div class="card-body">
+            <div class="video-grid">
+              <div class="field">
+                <label>内容简介 <span class="hint">这段视频拍的是啥</span></label>
+                <textarea data-video="${i}.summary" rows="2"></textarea>
+              </div>
+              <div class="field">
+                <label>使用意图 <span class="hint">为啥用这条</span></label>
+                <textarea data-video="${i}.intent" rows="2"></textarea>
+              </div>
+              <div class="field">
+                <label>声音 <span class="hint">原声音轨怎么处理</span></label>
+                <select data-video="${i}.voice">
+                  <option value="">—</option>
+                  <option value="keep">保留</option>
+                  <option value="keep-with-filler-removed">保留+去水词</option>
+                  <option value="mute">静音</option>
+                  <option value="bgm-only">只留 BGM</option>
+                </select>
+                <textarea data-video="${i}.voice_note" rows="1" placeholder="补充说明（可选）— 例：原声音量小，需放大 1.5x"
+                          style="margin-top:6px;font-size:12px;min-height:32px"></textarea>
+              </div>
+              <div class="field">
+                <label>备注 <span class="hint">没归类的想法都写这</span></label>
+                <textarea data-video="${i}.notes" rows="2"></textarea>
+              </div>
             </div>
-            <span class="ops-summary" data-ops-summary></span>
-          </button>
-          <div class="ops-body">
-            ${renderOpRow('trim-head', '剪头', 'trim_head', 'number', '秒', '去掉前 N 秒', '', i)}
-            ${renderOpRow('trim-tail', '剪尾', 'trim_tail', 'number', '秒', '去掉后 N 秒', '', i)}
-            ${renderOpRowRange('cut-middle', '删中间', 'cut_middle', i, 'cut-from', 'cut-to', '从', '到')}
-            ${renderOpRowRange('pin-range', '取时间段', 'pin_range', i, 'pin-start', 'pin-end', '从', '到', '只取这一段（vs 剪头尾=减头尾）')}
-            ${renderOpRow('target-duration', '成片上限', 'target_duration', 'number', '秒', '最终成片这条最长 N 秒', 5, i)}
-            ${renderOpRow('speed-up', '加速', 'speed_up', 'number', 'x', '高倍速用于缩时（如 60x 冥想缩到秒级）', 2, i, '100x 已很快')}
-            ${renderOpRow('slow-down', '减速', 'slow_down', 'number', 'x', '', 0.5, i)}
-            ${renderOpRow('reverse', '倒放', 'reverse', null, '', '从尾到头播', '', i)}
-            ${renderOpRow('mute', '静音', 'mute', null, '', '原声 + 加的音频全静', '', i)}
-            ${renderOpRow('fade-in', '淡入', 'fade_in', 'number', '秒', '', 1, i)}
-            ${renderOpRow('fade-out', '淡出', 'fade_out', 'number', '秒', '', 1, i)}
-            ${renderOpRowColor('color', '调色', 'color', i)}
-            ${renderOpRowBgm(i)}
-            ${renderOpRowReplace(i)}
-            ${renderOpRowOpeningText(i)}
-            ${renderOpRowInsertImage(i)}
+            <div class="seq-section">
+              <div class="seq-next-row">
+                <span class="seq-arrow">视频顺序:下一个视频</span>
+                <select class="seq-next-select" data-seq-next="${i}">
+                  <option value="">— 接哪段视频 —</option>
+                </select>
+              </div>
+              <div class="seq-trans-block" data-seq-trans-row="${i}">
+                <span class="seq-arrow">转场</span>
+                <select class="seq-trans-select" data-seq-trans="${i}">
+                  <option value="">默认</option>
+                  <option value="none">无</option>
+                  <option value="cut">直切</option>
+                  <option value="fade">淡入淡出</option>
+                  <option value="dissolve">溶解</option>
+                  <option value="wipe-left">左擦除</option>
+                  <option value="wipe-right">右擦除</option>
+                  <option value="slide-up">上滑</option>
+                  <option value="zoom-in">推进</option>
+                  <option value="blur">模糊过渡</option>
+                </select>
+                <input type="number" min="0" step="0.1" value="0.5" class="seq-dur-input"
+                       data-seq-dur="${i}" placeholder="0.5">
+                <span class="seq-unit">秒</span>
+              </div>
+              <details class="seq-chain-preview" id="seq-chain-${i}" hidden>
+                <summary><span class="chain-summary"></span></summary>
+                <div class="chain-list"></div>
+              </details>
+              <div class="seq-error" id="seq-error-${i}"></div>
+            </div>
+            <div class="ops-group">
+              <button class="ops-header" type="button" data-toggle-ops>
+                <div class="ops-header-left">
+                  <span class="disclosure">▶</span>
+                  <span>基础剪辑操作</span>
+                </div>
+                <span class="ops-summary" data-ops-summary></span>
+              </button>
+              <div class="ops-body">
+                ${renderOpRow('trim-head', '剪头', 'trim_head', 'number', '秒', '去掉前 N 秒', '', i)}
+                ${renderOpRow('trim-tail', '剪尾', 'trim_tail', 'number', '秒', '去掉后 N 秒', '', i)}
+                ${renderOpRowRange('cut-middle', '删中间', 'cut_middle', i, 'cut-from', 'cut-to', '从', '到')}
+                ${renderOpRowRange('pin-range', '取时间段', 'pin_range', i, 'pin-start', 'pin-end', '从', '到', '只取这一段（vs 剪头尾=减头尾）')}
+                ${renderOpRow('target-duration', '成片上限', 'target_duration', 'number', '秒', '最终成片这条最长 N 秒', 5, i)}
+                ${renderOpRow('speed-up', '加速', 'speed_up', 'number', 'x', '高倍速用于缩时（如 60x 冥想缩到秒级）', 2, i, '100x 已很快')}
+                ${renderOpRow('slow-down', '减速', 'slow_down', 'number', 'x', '', 0.5, i)}
+                ${renderOpRow('reverse', '倒放', 'reverse', null, '', '从尾到头播', '', i)}
+                ${renderOpRow('mute', '静音', 'mute', null, '', '原声 + 加的音频全静', '', i)}
+                ${renderOpRow('fade-in', '淡入', 'fade_in', 'number', '秒', '', 1, i)}
+                ${renderOpRow('fade-out', '淡出', 'fade_out', 'number', '秒', '', 1, i)}
+                ${renderOpRowColor('color', '调色', 'color', i)}
+                ${renderOpRowBgm(i)}
+                ${renderOpRowReplace(i)}
+                ${renderOpRowOpeningText(i)}
+                ${renderOpRowInsertImage(i)}
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -1095,204 +1232,203 @@
       }
     }
 
-    // ===== Sequences =====
-    document.getElementById('add-sequence').addEventListener('click', () => addSequence('', null, null, []));
-
-    function addSequence(name, prefillVideos, allIntentVideos, prefillTransitions) {
-      const videos = Array.isArray(prefillVideos) ? prefillVideos : [];
-      const transitions = Array.isArray(prefillTransitions) ? prefillTransitions : [];
-      const ivList = Array.isArray(allIntentVideos) ? allIntentVideos : [];
-
-      // entryIdxs 存 entry.index（1-based，字母排序位置），与 dropdown option value 一致
-      let entryIdxs = [];
-      if (videos.length > 0) {
-        const allStrings = videos.every(v => typeof v === 'string');
-        if (allStrings) {
-          // 格式1：文件名
-          entryIdxs = videos.map(v => {
-            const entry = videoEntries.find(e => e.name === v);
-            return entry ? entry.index : null;
-          }).filter(x => x !== null);
-        } else {
-          // 格式2：intent.videos index（数字）
-          // 找这个 intent index 对应的文件名，再找 entry.index（1-based）
-          entryIdxs = videos.map(intentIdx => {
-            const intentVideo = ivList.find(iv => iv.index === intentIdx);
-            if (!intentVideo) return null;
-            const entry = videoEntries.find(e => e.name === intentVideo.file);
-            return entry ? entry.index : null;
-          }).filter(x => x !== null);
-        }
-      }
-
-      const sequence = document.createElement('div');
-      sequence.className = 'sequence';
-      const idx = sequencesListEl.children.length;
-      sequence.innerHTML = `
-        <div class="sequence-head">
-          <span class="sequence-num">序列 #${idx + 1}</span>
-          <input type="text" class="sequence-name" placeholder="序列名（可选，如：开场）" value="${escapeHtml(name || '')}">
-          <button type="button" class="sequence-remove">删除序列</button>
-        </div>
-        <div class="sequence-rows"></div>
-        <button type="button" class="sequence-add-row">+ 加一个视频</button>
-      `;
-      sequencesListEl.appendChild(sequence);
-
-      sequence.querySelector('.sequence-remove').addEventListener('click', () => {
-        sequence.remove();
-        refreshSequenceNumbers();
-        refreshAllSequenceDropdowns();
-      });
-
-      const rowsEl = sequence.querySelector('.sequence-rows');
-      sequence.querySelector('.sequence-add-row').addEventListener('click', () => {
-        addSequenceRow(rowsEl, null);
-        refreshAllSequenceDropdowns();
-      });
-
-      if (entryIdxs.length === 0) {
-        addSequenceRow(rowsEl, null);
-      } else {
-        entryIdxs.forEach((entryIdx, i) => {
-          const t = transitions.find(tr => tr.after === videos[i]);
-          addSequenceRow(rowsEl, entryIdx, t || null);
-        });
-      }
-      refreshSequenceNumbers();
-      // 重要：先刷所有 options，再设 value——因为 set value 时 select 必须已有匹配 option
-      refreshAllSequenceDropdowns();
-    }
-
-    function addSequenceRow(rowsEl, prefillVideoIdx, prefillTransition) {
-      const row = document.createElement('div');
-      row.className = 'sequence-row';
-      const rowNum = rowsEl.children.length + 1;
-      const sel = document.createElement('select');
-      sel.className = 'video-select';
-      sel.appendChild(new Option('— 选视频 —', ''));
-      row.innerHTML = `
-        <span class="row-num">第 ${rowNum} 个</span>
-        <button type="button" class="row-remove">×</button>
-      `;
-      row.insertBefore(sel, row.querySelector('.row-remove'));
-      rowsEl.appendChild(row);
-      if (prefillVideoIdx != null) {
-        // 不在这里设 value——此时 options 只有 placeholder，value 无效
-        // value 在 addSequence 的 refreshAllSequenceDropdowns 之后再设
-        sel.dataset.prefIdx = String(prefillVideoIdx);
-      }
-      row.querySelector('.row-remove').addEventListener('click', () => {
-        row.remove();
-        refreshSequenceRowNumbers(rowsEl);
-        rebuildSequenceTransitions(rowsEl);
-        refreshAllSequenceDropdowns();
-      });
-      row.querySelector('select.video-select').addEventListener('change', () => {
-        rebuildSequenceTransitions(rowsEl);
-        refreshAllSequenceDropdowns();
-      });
-      // 如果有 prefill transition，单独加一个 transition 行
-      if (prefillTransition) {
-        const tRow = document.createElement('div');
-        tRow.className = 'sequence-transition';
-        tRow.dataset.transitionRow = '';
-        tRow.innerHTML = `
-          <span class="arrow">↓</span>
-          <select class="transition-type">
-            <option value="">默认（AI 选）</option>
-            <option value="none">无</option>
-            <option value="cut">直切</option>
-            <option value="fade">淡入淡出</option>
-            <option value="dissolve">溶解</option>
-            <option value="wipe-left">左擦除</option>
-            <option value="wipe-right">右擦除</option>
-            <option value="slide-up">上滑</option>
-            <option value="zoom-in">推进</option>
-            <option value="blur">模糊过渡</option>
-          </select>
-          <input type="number" min="0" step="0.1" value="0.5" class="transition-duration">
-          <span class="op-sub">秒</span>
-        `;
-        rowsEl.appendChild(tRow);
-        tRow.querySelector('.transition-type').value = prefillTransition.type || 'fade';
-        if (prefillTransition.duration != null) tRow.querySelector('.transition-duration').value = prefillTransition.duration;
-      }
-    }
-
-    function refreshSequenceRowNumbers(rowsEl) {
-      rowsEl.querySelectorAll('.sequence-row').forEach((row, i) => {
-        row.querySelector('.row-num').textContent = `第 ${i + 1} 个`;
+    // ===== Sequences UI v0.7: 每个视频卡片内嵌 next-video =====
+    function initSequencesUI() {
+      refreshAllSeqDropdowns();
+      videoEntries.forEach((_, i) => {
+        // 只在 seq-next 变化时触发 onSeqNextChange
+        const sel = document.querySelector(`[data-seq-next="${i}"]`);
+        if (sel) sel.addEventListener('change', () => onSeqNextChange(i));
+        // tSel / dEl 不需要触发 onSeqNextChange——它们不会影响 seq-next 的选项
       });
     }
 
-    function refreshSequenceNumbers() {
-      sequencesListEl.querySelectorAll('.sequence').forEach((seq, i) => {
-        seq.querySelector('.sequence-num').textContent = `序列 #${i + 1}`;
-      });
-    }
-
-    // 重新生成所有 transition 行（结构应匹配 videos 数量 - 1）
-    function rebuildSequenceTransitions(rowsEl) {
-      const rowEls = rowsEl.querySelectorAll('.sequence-row');
-      // 移除现有 transition 行
-      rowsEl.querySelectorAll('.sequence-transition').forEach(t => t.remove());
-      // 在每个 video row 之后插入一个 transition 行（除了最后一个）
-      rowEls.forEach((row, i) => {
-        if (i < rowEls.length - 1) {
-          const tRow = document.createElement('div');
-          tRow.className = 'sequence-transition';
-          tRow.dataset.transitionRow = '';
-          tRow.innerHTML = `
-            <span class="arrow">↓</span>
-            <select class="transition-type">
-              <option value="">默认（AI 选）</option>
-              <option value="cut">直切</option>
-              <option value="fade">淡入淡出</option>
-              <option value="dissolve">溶解</option>
-              <option value="wipe-left">左擦除</option>
-              <option value="wipe-right">右擦除</option>
-              <option value="slide-up">上滑</option>
-              <option value="zoom-in">推进</option>
-              <option value="blur">模糊过渡</option>
-            </select>
-            <input type="number" min="0" step="0.1" value="0.5" class="transition-duration">
-            <span class="op-sub">秒</span>
-          `;
-          row.after(tRow);
+    function refreshAllSeqDropdowns() {
+      const taken = new Set();
+      videoEntries.forEach((_, i) => {
+        const sel = document.querySelector(`[data-seq-next="${i}"]`);
+        if (sel && sel.value) taken.add(sel.value);
+        if (sel && sel.dataset.initialVal && sel.dataset.initialVal !== sel.value) {
+          taken.add(sel.dataset.initialVal);
         }
       });
-    }
-
-    function refreshAllSequenceDropdowns() {
-      // 第一遍：收集所有已选中的 value（包括 data-prefIdx 标记的）
-      const allPicked = [];
-      sequencesListEl.querySelectorAll('.sequence-row select.video-select').forEach(s => {
-        if (s.value) allPicked.push(s.value);
-        if (s.dataset.prefIdx && !allPicked.includes(s.dataset.prefIdx)) {
-          allPicked.push(s.dataset.prefIdx);
-        }
-      });
-      // 第二遍：生成 options + 设置 prefIdx 标记的值
-      sequencesListEl.querySelectorAll('.sequence-row select.video-select').forEach(sel => {
-        const prefIdx = sel.dataset.prefIdx;  // 预存的 entry.index
-        sel.innerHTML = '<option value="">— 选视频 —</option>';
-        videoEntries.forEach(entry => {
-          const isPickedElsewhere = allPicked.includes(String(entry.index)) && String(entry.index) !== prefIdx;
-          if (!isPickedElsewhere) {
-            const opt = document.createElement('option');
-            opt.value = entry.index;
-            opt.textContent = `#${entry.index} ${entry.name}`;
+      videoEntries.forEach((entry, i) => {
+        const sel = document.querySelector(`[data-seq-next="${i}"]`);
+        if (!sel) return;
+        // 先读 value，避免 innerHTML 重置时被 Chrome 静默清空
+        const currentVal = sel.value;
+        const expectedVal = currentVal || sel.dataset.initialVal || '';
+        // 重置并填充 options
+        sel.innerHTML = '<option value="">— 接哪段视频 —</option>';
+        videoEntries.forEach((e2, j) => {
+          if (j === i) return;
+          const opt = document.createElement('option');
+          opt.value = e2.index;
+          opt.textContent = `#${e2.index} ${e2.name}`;
+          if (!taken.has(String(e2.index)) || expectedVal === String(e2.index) || currentVal === String(e2.index)) {
             sel.appendChild(opt);
           }
         });
-        // options 生成后，设定 value（此时有匹配 option 才会生效）
-        if (prefIdx) {
-          sel.value = prefIdx;
-          delete sel.dataset.prefIdx;  // 清除标记
+        // 强制保证 expectedVal 对应的 option 存在（防 taken 把它踢了）
+        if (expectedVal && ![...sel.options].some(o => o.value === expectedVal)) {
+          // 找 entry 并手动 append
+          const target = videoEntries.find(e => String(e.index) === String(expectedVal));
+          if (target) {
+            const opt = document.createElement('option');
+            opt.value = target.index;
+            opt.textContent = `#${target.index} ${target.name}`;
+            sel.appendChild(opt);
+          }
+        }
+        // 最终设 value（用 selectedIndex 更可靠）
+        if (expectedVal && [...sel.options].some(o => o.value === expectedVal)) {
+          const opt = [...sel.options].find(o => o.value === expectedVal);
+          sel.selectedIndex = opt ? opt.index : 0;
+        } else {
+          sel.selectedIndex = 0;
         }
       });
     }
+
+    function onSeqNextChange(i) {
+      const sel = document.querySelector(`[data-seq-next="${i}"]`);
+      const transRow = document.querySelector(`[data-seq-trans-row="${i}"]`);
+      const chainEl = document.getElementById(`seq-chain-${i}`);
+      const errEl = document.getElementById(`seq-error-${i}`);
+      const val = sel ? sel.value : '';
+
+      // 用 class 切换显隐
+      if (transRow) transRow.classList.toggle('show', !!val);
+      if (errEl) { errEl.textContent = ''; errEl.classList.remove('show'); }
+
+      if (!val) {
+        // 空链：清空 details
+        if (chainEl) {
+          chainEl.hidden = true;
+          chainEl.querySelector('.chain-summary').textContent = '';
+          chainEl.querySelector('.chain-list').innerHTML = '';
+        }
+        refreshAllSeqDropdowns();
+        return;
+      }
+
+      const chain = buildSeqChain(i, val);
+      const hasCycle = chain.slice(1).includes(i);
+      if (hasCycle) {
+        if (errEl) { errEl.textContent = '⚠️ 形成循环，禁止！'; errEl.classList.add('show'); }
+        sel.value = '';
+        if (transRow) transRow.classList.remove('show');
+        if (chainEl) {
+          chainEl.hidden = true;
+          chainEl.querySelector('.chain-summary').textContent = '';
+          chainEl.querySelector('.chain-list').innerHTML = '';
+        }
+        refreshAllSeqDropdowns();
+        return;
+      }
+
+      // 填充链预览 details
+      if (chainEl) {
+        chainEl.hidden = false;
+        const first = videoEntries[chain[0]];
+        const last = videoEntries[chain[chain.length - 1]];
+        const total = chain.length;
+        // summary 摘要
+        const summaryEl = chainEl.querySelector('.chain-summary');
+        summaryEl.textContent = total <= 2
+          ? `链: #${first.index} ${shortName(first.name)} → #${last.index} ${shortName(last.name)}`
+          : `链: #${first.index} ${shortName(first.name)} → ... → #${last.index} ${shortName(last.name)} (${total} 个)`;
+        // chain-list 完整（每行一个）
+        const listEl = chainEl.querySelector('.chain-list');
+        listEl.innerHTML = chain.map(idx => {
+          const e = videoEntries[idx];
+          return `<div>#${e.index} ${escapeHtml(e.name)}</div>`;
+        }).join('');
+      }
+      refreshAllSeqDropdowns();
+    }
+
+    function shortName(name) {
+      if (name.length <= 18) return name;
+      // 截掉中间，显示开头 + ... + 结尾
+      return name.slice(0, 12) + '…' + name.slice(-4);
+    }
+
+    function buildSeqChain(currentIdx, initialNextVal) {
+      const visited = [];
+      let cur = currentIdx;
+      while (cur !== undefined && !visited.includes(cur)) {
+        visited.push(cur);
+        const sel = document.querySelector(`[data-seq-next="${cur}"]`);
+        if (!sel || !sel.value) break;
+        const nextEntry = videoEntries.find(e => String(e.index) === sel.value);
+        if (!nextEntry) break;
+        const nextI = videoEntries.findIndex(e => e.index === nextEntry.index);
+        cur = nextI >= 0 ? nextI : undefined;
+      }
+      return visited;
+    }
+
+    function toggleCard(i) {
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${i}"]`);
+      if (!card) return;
+      const collapsed = card.classList.toggle('collapsed');
+      const btn = card.querySelector('.card-toggle');
+      if (btn) btn.classList.toggle('expanded', !collapsed);
+    }
+
+    function loadSequencesFromIntent(sequences) {
+      // 第一步：把目标值塞进 dataset.initialVal，确保 refresh 后 options 包含它
+      sequences.forEach(seq => {
+        const videos = seq.videos || [];
+        for (let i = 0; i < videos.length - 1; i++) {
+          const fromIndex = videos[i];
+          const toIndex = videos[i + 1];
+          const fromI = videoEntries.findIndex(e => e.index === fromIndex);
+          if (fromI < 0) continue;
+          const sel = document.querySelector(`[data-seq-next="${fromI}"]`);
+          if (sel) sel.dataset.initialVal = String(toIndex);
+        }
+      });
+      // 第二步：第一次 refresh（会读 initialVal 强制把 option 加回去）
+      refreshAllSeqDropdowns();
+      // 第三步：清 dataset.initialVal 并把 sel.value 设上（用 selectedIndex 更可靠）
+      videoEntries.forEach((_, i) => {
+        const sel = document.querySelector(`[data-seq-next="${i}"]`);
+        if (sel && sel.dataset.initialVal) {
+          const target = sel.dataset.initialVal;
+          // 找对应 option 的 selectedIndex 而不是用 value 属性（更可靠）
+          const opt = [...sel.options].find(o => o.value === target);
+          if (opt) {
+            sel.selectedIndex = opt.index;
+          }
+          delete sel.dataset.initialVal;
+        }
+      });
+      // 第四步：再次 refresh（taken set 含 sel.value）
+      refreshAllSeqDropdowns();
+      // 第五步：填 transitions
+      sequences.forEach(seq => {
+        const videos = seq.videos || [];
+        const transitions = seq.transitions || [];
+        for (let i = 0; i < videos.length - 1; i++) {
+          const fromIndex = videos[i];
+          const fromI = videoEntries.findIndex(e => e.index === fromIndex);
+          if (fromI < 0) continue;
+          const t = transitions.find(tr => tr.after === fromIndex);
+          if (t) {
+            const tSel = document.querySelector(`[data-seq-trans="${fromI}"]`);
+            const dEl = document.querySelector(`[data-seq-dur="${fromI}"]`);
+            if (tSel && t.type) tSel.value = t.type;
+            if (dEl && t.duration != null) dEl.value = t.duration;
+          }
+        }
+      });
+      // 最后：触发 onSeqNextChange 显示转场行 + 链预览
+      videoEntries.forEach((_, i) => onSeqNextChange(i));
+    }
+
+
 
     function previewVideo(entry) {
       const url = URL.createObjectURL(entry.file);
@@ -1366,7 +1502,7 @@
       const newHistory = [...oldHistory, { revision: newRev, timestamp: now, note: noteText }];
       const data = {
         _meta: {
-          tool: '智剪工坊', version: '0.6',
+          tool: '智剪工坊', version: '0.7',
           revision: newRev,
           created: existingIntent?._meta?.created || now,
           updated: now,
@@ -1379,35 +1515,48 @@
         if (el.value) setByPath(data, el.dataset.path, el.value);
       }
 
-      // sequences
-      sequencesListEl.querySelectorAll('.sequence').forEach(seqEl => {
-        const name = seqEl.querySelector('.sequence-name').value.trim();
-        const videos = [];
-        const transitions = [];
-        const rowEls = seqEl.querySelectorAll('.sequence-rows .sequence-row');
-        rowEls.forEach((row, i) => {
-          const v = row.querySelector('select.video-select').value;
-          if (v) {
-            // dropdown value = entry.index（1-based），找对应 entry 并存 filename
-            const entry = videoEntries.find(e => String(e.index) === v);
-            if (entry) videos.push(entry.name);
-            // 找紧接着的 transition 行
-            const tRow = row.nextElementSibling;
-            if (tRow && tRow.classList.contains('sequence-transition') && i < rowEls.length - 1) {
-              const type = tRow.querySelector('.transition-type').value;
-              const dur = parseFloat(tRow.querySelector('.transition-duration').value);
-              const t = { after: entry ? entry.name : v };
-              if (type) t.type = type;
-              if (!isNaN(dur)) t.duration = dur;
-              transitions.push(t);
-            }
+      // sequences：从每个视频的"接视频"字段重建（v0.7）
+      const nextMap = {};  // videoEntries index → next entry.index
+      const transMap = {}; // videoEntries index → {type, duration}
+      videoEntries.forEach((_, i) => {
+        const sel = document.querySelector(`[data-seq-next="${i}"]`);
+        if (!sel || !sel.value) return;
+        const nextEntry = videoEntries.find(e => String(e.index) === sel.value);
+        if (nextEntry) {
+          nextMap[i] = nextEntry.index;
+          const tSel = document.querySelector(`[data-seq-trans="${i}"]`);
+          const dEl = document.querySelector(`[data-seq-dur="${i}"]`);
+          if (tSel && tSel.value) {
+            transMap[i] = {
+              type: tSel.value,
+              duration: dEl ? parseFloat(dEl.value) || 0.5 : 0.5
+            };
           }
-        });
-        if (videos.length > 0) {
-          const seq = { videos };
-          if (name) seq.name = name;
-          if (transitions.length > 0) seq.transitions = transitions;
-          data.sequences.push(seq);
+        }
+      });
+      // 找所有链起点（没有任何视频指向自己的）
+      const hasParent = new Set(Object.values(nextMap));
+      const roots = videoEntries.map((_, i) => i).filter(i => !hasParent.has(i));
+      // 从每个起点顺着链走，重建 sequences
+      roots.forEach(startIdx => {
+        const chain = [];
+        const transitions = [];
+        let cur = startIdx;
+        const visited = new Set();
+        while (cur !== undefined && !visited.has(cur)) {
+          visited.add(cur);
+          chain.push(videoEntries[cur].index);
+          const nextEntryIndex = nextMap[cur];
+          if (nextEntryIndex === undefined) break;
+          const nextI = videoEntries.findIndex(e => e.index === nextEntryIndex);
+          if (nextI < 0) break;
+          if (transMap[cur]) {
+            transitions.push({ after: videoEntries[cur].index, ...transMap[cur] });
+          }
+          cur = nextI;
+        }
+        if (chain.length > 1) {
+          data.sequences.push({ videos: chain, transitions });
         }
       });
       if (data.sequences.length === 0) delete data.sequences;

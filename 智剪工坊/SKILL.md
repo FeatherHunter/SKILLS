@@ -391,7 +391,8 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
     │   ├── 中间产物/          ← log / profile
     │   └── 决策.md            ← 整体要求 + 用户新增
     └── 成片/
-        └── vlog_final.mp4     ← 模板工作流深度加工后
+        ├── vlog_final.mp4     ← 模板工作流深度加工后
+        └── cover.jpg          ← AI 封面
 ```
 
 ### 完整流程（v1.0）
@@ -400,7 +401,7 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 ```
 0.1  AI 提示用户用 intent.html 填表
-     (路径由用户在首问时提供；AI 应协助打开或说明用法)
+     (路径由用户在首问时提供；AI 必须主动用 shell 命令帮用户打开文件(如 Start-Process 或 xdg-open)，不得仅告知路径让用户自己找)
 0.2  用户填表 → 生成 intent.json
 0.3  用户把 intent.json 给 AI
 0.4  [可选] 若 intent.json 缺失必填字段
@@ -589,8 +590,8 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 ```
 - 烧字幕（按 ASR 文字稿）
 - BGM 混合
-- 封面生成（按 cover.prompt，prompt 不明时 AI 必须问）
-- 输出: 00_智剪/成片/vlog_final.mp4
+- 封面生成 → 00_智剪/成片/cover.jpg（按 cover.prompt，prompt 不明时 AI 必须问）
+- 输出成片: 00_智剪/成片/vlog_final.mp4
 ```
 
 ### 操作清单 schema（v1.0 强制）

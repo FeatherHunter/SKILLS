@@ -350,11 +350,61 @@
       background: linear-gradient(to top, var(--bg) 80%, transparent);
       display: flex; flex-direction: column; gap: 10px;
     }
-    .revision-bar {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--card); padding: 10px 14px; border-radius: 10px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    /* ===== 流程条 ===== */
+    .flow-steps {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
     }
+    .flow-step {
+      flex: 1;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      transition: background 0.15s;
+    }
+    .flow-step .flow-num {
+      flex-shrink: 0; width: 18px; height: 18px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 11px; font-weight: 600;
+      font-family: ui-monospace, SF Mono, monospace;
+    }
+    .flow-step .flow-mark { margin-left: auto; opacity: 0.6; }
+    .flow-step .flow-arrow { margin-left: auto; color: var(--blue); font-weight: 600; }
+    .flow-step.done {
+      background: rgba(0, 122, 255, 0.06);
+      color: var(--secondary);
+    }
+    .flow-step.done .flow-num {
+      background: rgba(0, 122, 255, 0.15); color: var(--blue);
+    }
+    .flow-step.current {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 1px 4px rgba(0, 122, 255, 0.25);
+    }
+    .flow-step.current .flow-num {
+      background: rgba(255, 255, 255, 0.25); color: #fff;
+    }
+    .flow-step.todo {
+      background: var(--gray-fill);
+      color: var(--secondary);
+    }
+    .flow-step.todo .flow-num {
+      background: #fff; color: var(--secondary);
+      border: 1px solid var(--border);
+    }
+
+    /* revision-bar 已废弃：徽标移到 form-head 中 */
+    .form-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .form-head h1 { margin-bottom: 0; }
     .revision-badge {
       background: var(--blue); color: #fff; font-size: 11px; font-weight: 600;
       padding: 4px 8px; border-radius: 6px; font-family: ui-monospace, monospace;
@@ -369,6 +419,7 @@
       box-shadow: 0 0 0 3px rgba(0,122,255,0.12);
     }
     .save-row { display: flex; justify-content: flex-end; gap: 10px; }
+    /* 已废弃：revision-note-input 样式（v0.7 删除了修订说明输入框）*/
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
       background: rgba(28,28,30,0.95); color: #fff; padding: 12px 20px;
@@ -394,8 +445,27 @@
     </div>
 
     <div id="form-screen" style="display:none">
-      <h1>填写 vlog intent</h1>
-      <p class="subtitle">看视频填字段，保存后把 intent.json 发给 AI 继续讨论</p>
+      <div class="flow-steps">
+        <div class="flow-step done">
+          <span class="flow-num">1</span>
+          <span class="flow-label">选文件夹</span>
+          <span class="flow-mark">✓</span>
+        </div>
+        <div class="flow-step current">
+          <span class="flow-num">2</span>
+          <span class="flow-label">填每段视频的描述</span>
+          <span class="flow-arrow">←</span>
+        </div>
+        <div class="flow-step todo">
+          <span class="flow-num">3</span>
+          <span class="flow-label">把 intent.json 发给 AI</span>
+        </div>
+      </div>
+      <div class="form-head">
+        <h1>填每段视频的描述</h1>
+        <span class="revision-badge" id="revision-badge">v1</span>
+      </div>
+      <p class="subtitle">拍完后，AI 要懂每段视频才好剪。这里列每个视频让你写 简介 / 意图 / 原声处理 / 剪辑操作。填完点「保存」生成 intent.json，发给 AI 进入第 3 步。</p>
       <div class="ws-info">
         <span>📁</span>
         <span>工作区: <strong id="ws-path">—</strong></span>
@@ -506,11 +576,6 @@
       </section>
 
       <div class="actions">
-        <div class="revision-bar">
-          <span class="revision-badge" id="revision-badge">v1</span>
-          <input type="text" class="revision-note-input" id="revision-note"
-                 placeholder="本次修改说明（可选）— 例：v1 视频 #5 卡顿，加 trim-tail 3s">
-        </div>
         <div class="save-row">
           <button class="primary" id="save-btn">保存 (生成 <span id="save-rev-label">v1</span>)</button>
         </div>
@@ -741,15 +806,13 @@
           });
         });
         initSequencesUI();
-        // 默认第一个展开，其余折叠
+        // 全部默认折叠（用户按需展开）
         videoEntries.forEach((_, i) => {
           const card = videoListEl.querySelector(`.video-card[data-card-idx="${i}"]`);
           if (!card) return;
-          if (i > 0) {
-            card.classList.add('collapsed');
-            const btn = card.querySelector('.card-toggle');
-            if (btn) btn.classList.remove('expanded');
-          }
+          card.classList.add('collapsed');
+          const btn = card.querySelector('.card-toggle');
+          if (btn) btn.classList.remove('expanded');
         });
 
         videoListEl.querySelectorAll('[data-play]').forEach(el => {
@@ -1462,7 +1525,6 @@
           } catch (e) { console.warn('保存版本副本失败', e); }
           // 3. 更新 UI
           updateRevisionUI(newRev + 1);
-          document.getElementById('revision-note').value = '';
           showToast(`已保存 v${newRev}`);
         } catch (e) { showToast('保存失败: ' + e.message); }
       } else {
@@ -1480,7 +1542,6 @@
           a2.click();
         }, 200);
         updateRevisionUI(newRev + 1);
-        document.getElementById('revision-note').value = '';
         showToast(`已下载 v${newRev} (intent.json + intent_v${newRev}.json)`);
       }
     });
@@ -1497,9 +1558,8 @@
       const now = new Date().toISOString();
       const oldRev = existingIntent?._meta?.revision || 0;
       const newRev = oldRev + 1;
-      const noteText = (document.getElementById('revision-note')?.value || '').trim();
       const oldHistory = Array.isArray(existingIntent?._meta?.history) ? existingIntent._meta.history : [];
-      const newHistory = [...oldHistory, { revision: newRev, timestamp: now, note: noteText }];
+      const newHistory = [...oldHistory, { revision: newRev, timestamp: now }];
       const data = {
         _meta: {
           tool: '智剪工坊', version: '0.7',

@@ -57,7 +57,7 @@ def parse_time(t):
 
 def run(cmd, **kwargs):
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+        result = subprocess.run(cmd, capture_output=True, text=True, errors='replace', **kwargs)
         return result.returncode, result.stdout, result.stderr
     except FileNotFoundError as e:
         return 1, '', str(e)
@@ -69,7 +69,7 @@ def get_video_info(video_path):
     try:
         result = subprocess.run(
             ['ffmpeg', '-noautorotate', '-i', str(video_path), '-f', 'null', '-'],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, errors='replace', timeout=30
         )
         m = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)', result.stderr)
         if m:

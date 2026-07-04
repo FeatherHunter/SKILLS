@@ -1,4 +1,4 @@
----
+﻿---
 name: 智剪工坊
 description: >
   代码视频剪辑工作台,对标剪映(图形化)+ 扩展(AI 能力)。
@@ -8,12 +8,46 @@ description: >
   改词、改写、翻唱、TTS、配音、换声、改写文案、
   文字成片、文生视频、text-to-video、
   数字人、虚拟人、digital human。
-  包含 16 个子技能 + 1 个大流程(pipeline-vlog 7 步自动化)。
-  底层:ffmpeg + MoviePy + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
+  包含 30 个原子脚本 + 主体流程(粗加工 5 步 + 模板工作流)。
+  底层:ffmpeg + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
 metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
 ---
 
 # 智剪工坊 — 代码视频剪辑工作台
+
+## 文件地图（v0.7）
+
+**接手这个 skill 第一件事**：读这张表。每个文件**作用**和**何时读**：
+
+| 文件 | 作用 | 何时读 |
+|---|---|---|
+| **SKILL.md** | 工具契约（你正在读） | **必读第一份** |
+| 架构.md | 完整设计 + §8 决策落地位置 | 看完 SKILL 还想要上下文 |
+| HANDOFF.md | Session 交接（v0.7 增量上下文在最前） | 接手 session 时 |
+| CHANGELOG.md | 版本历史 | 查历史决策 |
+| README.md | 产品级介绍（**v0.5 旧版，待更新**） | 用户/产品视角 |
+| 模板/<name>.yaml | 类别化工作流 | 加载某个模板时 |
+| scripts/30 个 .py | 原子工具（cut/xfade/bgm_loop/...） | 单独调用某个功能 |
+| lib/common.py | ffmpeg 包装 + 错误 + 日志 | 共享逻辑 |
+| lib/asr.py | faster-whisper 包装 | 粗加工 Step 4 |
+| lib/modify.py | 改素材命令菜单 + 决策报告 | AI 改素材时 |
+| executor.py | 5 原子 + run_coarse 编排 | AI 写新执行逻辑时 |
+| intent.html | 唯一前端：填表 → intent.json | 用户新建项目时 |
+
+**v0.7 当前状态**：
+- ✅ 文档：SKILL.md / 架构.md / 模板/ / HANDOFF.md / CHANGELOG.md
+- ✅ 代码：executor.py 5 原子 + lib/asr.py + lib/modify.py
+- ⏸️ docs/*.md 4 个 + README.md 仍标 v0.5（**待下个 PR 同步**）
+- ⏸️ 模板库只有「健身vlog.yaml」一个
+- ⏸️ lib/modify.py 序列操作是 stub
+
+**v0.7 关键设计**（详见 §主体流程）：
+- 粗加工 5 步：解析自检 / 单视频处理 / sequence 拼接 / ASR 文字稿 / 决策报告
+- 模板 = 工作流脚本（AI 引导用户做决策），不是 config
+- 粗加工失败不退出主体，记入决策.md
+- 工作区约定：`00_智剪/粗加工/`（单视频/组合/文字稿/中间产物/决策.md）
+
+---
 
 ## 它是什么
 
@@ -25,7 +59,7 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 - AI 能力(美颜/去水词/改词/文字成片/数字人) — 全部走 mmx,免 API key
 - Word-level 时间戳(精准切单字水词)
 
-**当前版本:** v0.5(2026-07-03,30 脚本,29/29 验证通过)
+**当前版本:** v0.7(2026-07-04)
 
 ## 什么时候触发它
 
@@ -185,12 +219,12 @@ Step 3: scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output c
         └── zhijian-YYYYMMDD.log
 ```
 
-## 当前状态(2026-07-03 v0.6)
+## 当前状态
 
 | 维度 | 进度 | 备注 |
 |---|---|---|
-| 架构设计 | ✅ 100% | 16 子技能 + 1 大流程 |
-| SKILL.md | ✅ 100% | YAML frontmatter, 16 子技能索引 |
+| 架构设计 | ✅ 100% | 16 子技能 + 1 大流程 + vlog 端到端 |
+| SKILL.md | ✅ 100% | YAML frontmatter, 16 子技能索引 + vlog 流程 |
 | References(子技能) | ✅ 100% | 16 个 .md,详细接口 + 命令 |
 | 代码框架 | ✅ 100% | 30 个 .py 脚本,无 TODO/占位 |
 | 公共库 | ✅ 100% | lib/common.py(读 config.json + 友好错误 + 进度条 + 文件日志) |
@@ -205,8 +239,8 @@ Step 3: scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output c
 | 原子操作覆盖 | ✅ 100% | 14 个 edit 子命令补全剪映 P0+P1 基础操作 |
 | 单元测试 | ❌ 0% | 推迟(用户确认) |
 | AI 视频实测 | ❌ 0% | mmx 配额 3/天,等真 vlog 时测 |
-
-**已实测 30/30 脚本可跑(30 import + 6 冒烟 + 17/17 edit)。** mmx AI 能力(text_to_video / digital_human)未实测,避免浪费 API 配额。
+| 模板/<name>.yaml | ⚠️ 草稿 | 见[架构.md §8 D](架构.md) |
+| executor.py 粗加工 | ❌ 未动 | 见[架构.md §8 C](架构.md) |
 
 ## 相关工具链
 
@@ -289,3 +323,147 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 1. 读 op 的 note 字段看用户意图
 2. 尝试用最接近的智剪工坊脚本实现
 3. 在最终回复里告知"该 op 暂用 X 脚本模拟"
+
+
+---
+
+## 主体流程
+
+> 智剪工坊为单 vlog 项目提供端到端流程。详见 [架构.md](架构.md)。
+
+### 一句话目标
+
+用户写一个 intent.json，AI 按 `粗加工 → 模板加载 → 工作流 → 成片` 流程，把一堆原始视频拼成一段可用的 vlog。
+
+### 工具端（智剪工坊/）
+
+```
+智剪工坊/
+├── SKILL.md
+├── 架构.md
+├── 模板/                ← 类别化工作流
+│   ├── 健身vlog.yaml
+│   ├── 教程vlog.yaml
+│   └── ...
+├── 脚本/                ← 30 个原子
+├── lib/
+│   ├── common.py        ← 公共（ffmpeg + 错误 + 日志）
+│   ├── asr.py           ← ASR 包装（whisper）
+│   └── modify.py        ← 改素材操作菜单
+├── 文档/                ← references/
+├── intent.html
+└── executor.py          ← 粗加工执行器（5 个原子函数）
+```
+
+### 工作区（<workspace>/）
+
+```
+<workspace>/
+├── video_*.mp4                ← 源视频（AI 不动）
+├── intent.json                ← 唯一跟源混居的 AI 文件
+├── intent_v1.json             ← 版本快照
+└── 00_智剪/                   ← AI 自管区
+    ├── 粗加工/
+    │   ├── 单视频/            ← 每个视频处理后的标准片段
+    │   ├── 组合/              ← sequence + 转场拼好的组
+    │   ├── 文字稿/            ← ASR 结果
+    │   ├── 中间产物/          ← log / profile
+    │   └── 决策.md            ← 整体要求 + 用户新增
+    └── 成片/
+        └── vlog_final.mp4     ← 模板工作流深度加工后
+```
+
+### 完整流程
+
+```
+1. 用户：intent.html 填表 → intent.json
+2. 用户：把 intent.json 给 AI
+3. AI：素材粗加工（5 步）
+4. AI：扫描 决策.md + 视频 + 文字稿
+   "你这是 [项目] [类型]，看到匹配 [模板] 模板，加载吗？"
+5. AI：加载 模板/<name>.yaml
+6. AI：按工作流引导（每 stage 一来一回）
+7. AI：拼成 vlog_final.mp4
+8. 用户：直接播放看
+```
+
+### 粗加工 5 步（详细）
+
+**输入**：`intent.json`
+**输出**：`00_智剪/粗加工/` 下 5 类文件
+
+#### Step 1：解析 + 自检
+- 解析 JSON
+- 检查源文件存在、必填字段、exclude 列表
+- 写状态到 `中间产物/自检报告.json`
+- **失败**：列源缺失 / 字段缺失清单（不退出，让用户看到）
+
+#### Step 2：单视频处理（per-video）
+
+- 遍历 `intent.json.videos` 数组
+- 每个视频：源 mp4 + ops → `单视频/video_{idx}.mp4`
+- 同时写 `单视频/profile_{idx}.json`：
+  ```json
+  {
+    "index": 3,
+    "source_file": "video_xxx.mp4",
+    "source_resolution": "1080x1920",
+    "has_rotation_metadata": true,
+    "applied_ops": ["cut-middle"],
+    "output_resolution": "1920x1080",
+    "output_duration": 6.4,
+    "voice_mode": "keep"
+  }
+  ```
+- **A 汇总报告**（Step 2 完成后）：
+  - AI 输出 markdown 摘要到聊天 + 写入 `中间产物/单视频汇总.md`
+  - 包含：每个视频的 applied_ops 列表、时长变化、有/无异常
+  - 用户自看 `00_智剪/粗加工/单视频/`，不要求逐个交互
+
+#### Step 3：sequence 拼接
+
+- 输入：`单视频/` 里的成品 + `intent.json.sequences`
+- 处理：每个 sequence 按内部顺序 xfade 链拼 → `组合/seq_{name}.mp4`
+- 跨 sequence 最后再拼一次
+- 写 `中间产物/拼接日志.log`
+
+#### Step 4：ASR 文字稿
+
+- 用 `lib/asr.py`（whisper / faster-whisper）转录
+- 每个 `单视频/video_{idx}.mp4` → `文字稿/视频_{idx}.md`
+- 合并：`文字稿/全部.md`
+
+#### Step 5：决策报告
+
+写 `决策.md`：
+- intent.json 整体要求摘要
+- 异常情况报告（哪些源是竖屏、哪些有 rotation、哪些 op 可能出问题）
+- 用户在粗加工过程中提的额外要求
+
+### 模板工作流
+
+**模板 = 工作流脚本**。每个 stage = AI 一来一回对话。详细见 `模板/健身vlog.yaml`。
+
+### 模板命名规则
+
+按**类别**（不带人名）：
+- `健身vlog.yaml` — 健身/减肥/训练记录
+- `教程vlog.yaml` — 知识教学
+- `VLOG.yaml` — 通用日常
+
+### 约定
+
+| # | 约定 |
+|---|---|
+| 1 | 粗加工是实质工作，每步生成文件 |
+| 2 | 模板是工作流脚本，不是 config |
+| 3 | 工作区结构：源视频 + `00_智剪/粗加工/` + `00_智剪/成片/` |
+| 4 | 目录命名：粗加工中文，文件名/JSON 字段英文 |
+| 5 | `intent.json` 跟源混居 |
+| 6 | 不写 `decisions.json` / `state.json` / `review.html` |
+| 7 | 模板命名按类别，不带人名 |
+| 8 | HTML 文件名保持英文 |
+| 9 | 不写 `schemas/` |
+| 10 | 用户主导决策，每 stage 用户点头 |
+| 11 | 粗加工失败不退出主体，列在决策.md；子流程修复后重跑 |
+

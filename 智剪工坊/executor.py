@@ -1,28 +1,28 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
-智剪工坊 Executor v0.1
+智剪工坊 Executor v0.7
 ======================
 
-将 intent.json 翻译成 ffmpeg 命令，输出最终 vlog。
+将 intent.json 翻译成 ffmpeg 命令，按 5 步粗加工流水线生成 00_智剪/粗加工/ 下的素材。
 
-第一性原理：
-1. Per-video 独立处理（隔离错误）
-2. Sequences 部分约束 + 自由视频
-3. 每个 op 都有 SKILL.md 文档化的解析规则
-4. 可观察（log + dry-run）
+第一性原理（v0.7）：
+1. 粗加工是实质工作，每步生成文件
+2. 模板是工作流脚本（不是 config），由 AI 按 stage 引导用户
+3. 用户主导决策，每 stage 用户点头
+4. 单视频失败不退出主体，记入决策.md
 
-v0.1 范围：
-- pin-range / cut-middle / trim-head / trim-tail / speed-up / slow-down
-- mute / keep 声音
-- 视频序列 + xfade 转场
-- 输出 vlog_final.mp4
+5 步粗加工（详细见 SKILL.md §主体流程）：
+  Step 1: 解析 + 自检 → 中间产物/自检报告.json
+  Step 2: 单视频处理 → 单视频/video_{idx}.mp4 + profile + 单视频汇总.md
+  Step 3: sequence 拼接 → 组合/seq_{name}.mp4
+  Step 4: ASR 文字稿 → 文字稿/视频_{idx}.md + 全部.md
+  Step 5: 决策报告 → 决策.md
 
-v0.2 范围（TODO）：
-- cover AI 生图
-- opening-text 文字卡
-- insert-image 插图
-- BGM 全局混音
-- keep-with-filler-removed 去水词
+对外入口：run_coarse(intent_path, workspace, log)
+CLI 用法：python executor.py <intent.json> --workspace <path>
+
+依赖：lib/asr.py (whisper 包装), lib/modify.py (改素材菜单)
+对应设计：SKILL.md + 架构.md + 模板/<name>.yaml
 """
 
 import json
@@ -96,18 +96,16 @@ def run(cmd, **kwargs):
 
 
 def get_video_info(video_path):
-    """用 ffmpeg -noautorotate -i 取视频时长 + 真实像素尺寸 + 旋转标志。
+    """用 ffmpeg -noautorotate -i 取视频时长 + 真实像素尺寸。
 
-    重要：源视频是手机竖屏拍摄时，文件带 -90 旋转 metadata。
-    不用 -noautorotate 会被错读为 1920x1080 显示尺寸，掩盖真实的 1080x1920 像素。
+    重要：用 -noautorotate 拿真实像素（不应用 rotation metadata）。
     """
-    info = {'duration': None, 'width': None, 'height': None, 'has_rotation': False}
+    info = {'duration': None, 'width': None, 'height': None}
     try:
         result = subprocess.run(
             ['ffmpeg', '-noautorotate', '-i', str(video_path), '-f', 'null', '-'],
             capture_output=True, text=True, timeout=30
         )
-        # Duration
         m = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)', result.stderr)
         if m:
             h, mn, s = int(m.group(1)), int(m.group(2)), float(m.group(3))
@@ -123,9 +121,6 @@ def get_video_info(video_path):
                     info['width'] = int(m.group(1))
                     info['height'] = int(m.group(2))
                     break
-        # 检测旋转 metadata
-        if 'displaymatrix: rotation of' in result.stderr:
-            info['has_rotation'] = True
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return info
@@ -143,10 +138,25 @@ def has_any_op(ops):
     return any(isinstance(v, dict) and v.get('on') for v in ops.values())
 
 
+def _probe_duration(video_path):
+    """快速探测视频时长（秒），不依赖 ffprobe。"""
+    try:
+        result = subprocess.run(
+            ['ffmpeg', '-i', str(video_path), '-f', 'null', '-'],
+            capture_output=True, text=True, timeout=30
+        )
+        m = re.search(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)', result.stderr)
+        if m:
+            h, mn, s = int(m.group(1)), int(m.group(2)), float(m.group(3))
+            return h * 3600 + mn * 60 + s
+    except Exception:
+        pass
+    return None
+
+
 # ========== Per-video 处理 ==========
 
-def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
-                       input_w=None, input_h=None):
+def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9'):
     """为单个视频构建 ffmpeg filter_complex。
 
     Returns: (filter_complex_str, list_of_mappings) or (None, None) 表示无 op
@@ -167,9 +177,7 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
 
     # 特殊情况：cut-middle 需要分割+拼接，结构不一样
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        transpose_needed = bool(input_w and input_h and input_w < input_h)
-        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
-                                       transpose_needed=transpose_needed)
+        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
 
     v_filters = []
     a_filters = []
@@ -246,18 +254,11 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
     if voice in ('mute', 'bgm-only'):
         a_filters.append("volume=0")
 
-    # 7. ★ 横竖屏适配
-    # 手机竖屏拍摄：源是 1080x1920 带 -90 旋转 metadata（has_rotation=True）
-    # 用 transpose 物理旋转 90° (CW)，再走 scale+pad
-    # 真实横屏源（has_rotation=False，input_w > input_h）：直接走 scale+pad
-    transpose_needed = False
-    if input_w and input_h and input_w < input_h:
-        transpose_needed = True
-        # transpose=1 = 顺时针 90°
-        v_filters.append("transpose=1")
-
-    # 8. ★ 始终 scale + pad（保证 16:9 + 1920x1080 标准化）
-    # 即使源就是 1920x1080，也加上以保证 SAR 归一。
+    # 7. ★ 横竖屏适配（pillarbox 方案）
+    # 决策：竖屏源（1080x1920 或带 rotation metadata 的横屏像素）保持原 orientation，
+    #       通过 scale+pad 加入左右黑边变为 16:9 横屏帧。**不旋转像素**也不传 rotation metadata。
+    # 理由：transpose 会把 rotation metadata 也带过去，导致播放器再旋转回来变成竖屏。
+    #       pillarbox 简单、稳定、符合 YouTube/B站标准 16:9 输出要求。
     v_filters.append(
         f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
         f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
@@ -280,18 +281,17 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
         return fc, ["[v]", "[a]"]
 
 
-def build_cut_middle_filter(cm, target_w=1920, target_h=1080, transpose_needed=False):
-    """cut-middle: 把视频切成 [0:cut_start] + [cut_end:end] 两段拼接。"""
+def build_cut_middle_filter(cm, target_w=1920, target_h=1080):
+    """cut-middle: 把视频切成 [0:cut_start] + [cut_end:end] 两段拼接。
+
+    每段都过 scale+pad 标准化到 16:9（pillarbox 方案，竖屏源保持原 orientation）。
+    """
     cut_start = parse_time(cm.get('from', '0')) or 0
     cut_end = parse_time(cm.get('to', '0')) or 0
     if cut_end <= cut_start:
         return None, None
 
-    # rotate+scale_pad：始终应用，保证两段尺寸一致 + 横屏
-    if transpose_needed:
-        rotoscale_v1 = f",transpose=1,scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-    else:
-        rotoscale_v1 = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+    rotoscale_v1 = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
     rotoscale_v2 = rotoscale_v1
 
     fc = (
@@ -306,7 +306,11 @@ def build_cut_middle_filter(cm, target_w=1920, target_h=1080, transpose_needed=F
 
 
 def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'):
-    """处理单个视频。返回 (output_path, success)。"""
+    """处理单个视频。返回 (output_path, success)。
+
+    ★ Pillarbox 策略：竖屏源（1080x1920）保持原 orientation，通过 scale+pad 变成 16:9
+        上下不动，左右加黑边。**绝不旋转**，避免 rotation metadata 让播放器二次旋转。
+    """
     idx = video.get('index', '?')
     file = video.get('file', '')
     log(f"处理 #{idx}: {file}")
@@ -321,23 +325,21 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     ops = video.get('ops', {}) or {}
     voice = video.get('voice', 'keep')
 
-    # 一次 ffmpeg -noautorotate -i 同时拿时长、真实像素、旋转标志
+    # 真实像素（用 -noautorotate + 解析 stderr）
     if not dry_run:
         info = get_video_info(input_path)
         input_duration = info['duration']
         input_w, input_h = info['width'], info['height']
-        has_rotation = info['has_rotation']
     else:
         input_duration = 30.0
-        input_w, input_h = 1080, 1920
-        has_rotation = True
+        input_w, input_h = 1920, 1080
 
-    # 真实像素 = 竖屏(1080x1920) → 要物理旋转（不含旋转 meta 的源直接当横屏）
-    transpose_needed = bool(input_w and input_h and input_w < input_h)
+    # Source is portrait? → 需要 pillarbox；landscape → 直接 fill
+    is_portrait = bool(input_w and input_h and input_w < input_h)
+    orientation = "竖屏(pillarbox)" if is_portrait else "横屏(fill)" if (input_w and input_h) else "?"
 
     if input_duration:
-        rot_str = "竖屏+旋转" if transpose_needed else "横屏" if (input_w and input_h) else "?"
-        log(f"  时长: {input_duration:.1f}s, 像素: {input_w}x{input_h}, {rot_str}")
+        log(f"  时长: {input_duration:.1f}s, 像素: {input_w}x{input_h}, {orientation}")
 
     # 目标分辨率
     target_resolutions = {
@@ -349,10 +351,10 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
     }
     target_w, target_h = target_resolutions.get(target_aspect, (1920, 1080))
 
-    # ⚡ Fast Path: 无 op + 横屏 + voice keep + 像素匹配 → 直接复制
-    # 竖屏源跳过 fast-path（必须经过 transpose + scale+pad 才符合 16:9）
+    # ⚡ Fast Path: 无 op + voice keep + 像素匹配 → 直接复制
+    # 竖屏源也可用 fast-path（虽然 fast-path 跳过了 scale+pad，但同样是 1920x1080 + 黑边
+    # 会让 fast-path 失去意义。所以 fast-path 只在「无需任何处理」且像素已匹配时触发。）
     if (not has_any_op(ops) and voice == 'keep'
-            and not transpose_needed
             and input_w == target_w and input_h == target_h):
         if dry_run:
             log(f"  ⚡ [DRY-RUN] fast-path: 无 op + 横屏+匹配 → 直接复制")
@@ -365,36 +367,35 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
         except OSError as e:
             log(f"  ⚠️ fast-path 失败 ({e}), 退回完整转码")
 
-    # 处理 cut-middle 特殊情况（要用 transpose_needed 而非 source_matches）
+    # cut-middle 特殊情况
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
-                                               transpose_needed=transpose_needed)
+        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
     else:
         fc, mappings = build_video_filter(
             ops, voice,
             input_duration=input_duration,
             target_aspect=target_aspect,
-            input_w=input_w, input_h=input_h,
         )
-        # 给 build_video_filter 的 transpose 信号需要重新构造，或者改用 fc+mappings
-        # 上面 build_video_filter 已经看 input_w/h 自动加 transpose
 
     if fc is None:
-        # 无 op 且已过 fast-path 检测；当前路径不应到这里
         fc = f"[0:v]copy[v];[0:a]anullsrc=r=44100:cl=stereo[a]"
         mappings = ["[v]", "[a]"]
 
-    cmd = ['ffmpeg', '-y', '-i', str(input_path)]
+    # ★ 关键：-noautorotate 让输入不被自动旋转
+    #     + -bsf:v "h264_metadata=rotate=0" 强制清除 H264 流中可能附带的 display orientation SEI
+    # 这两个一起确保输出是「真·16:9 横屏」：像素无旋转 + 流标识无旋转
+    cmd = ['ffmpeg', '-y', '-noautorotate', '-i', str(input_path)]
     cmd.extend(['-filter_complex', fc])
     for m in mappings:
         cmd.extend(['-map', m])
     cmd.extend(['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'])
+    cmd.extend(['-bsf:v', 'h264_metadata=rotate=0'])  # 关键！清掉 rotation SEI
     cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
     cmd.extend(['-max_interleave_delta', '100M'])
     cmd.extend(['-threads', '0'])
     cmd.append(str(output_path))
 
-    log(f"  $ ffmpeg ... -filter_complex ... -o {output_path.name}")
+    log(f"  $ ffmpeg -noautorotate ... → {output_path.name}")
     if dry_run:
         log(f"    [DRY-RUN] 完整命令: {' '.join(str(c) for c in cmd)}")
         return output_path, True
@@ -420,7 +421,11 @@ def process_video(video, workspace, work_dir, dry_run, log, target_aspect='16:9'
 # ========== 拼接 + 转场 ==========
 
 def xfade_concat(a_path, b_path, transition, output_path, dry_run, log):
-    """两个视频用 xfade 转场拼接。"""
+    """两个视频用 xfade 转场拼接。
+
+    现在 per-video 输出已经是无 rotation metadata 的 1920x1080（pillarbox 后），
+    所以这里只用 -r 30 保证 CFR，xfade 不会再维度冲突。
+    """
     duration = transition.get('duration', 0.5) or 0.5
     ttype = transition.get('type', 'fade') or 'fade'
 
@@ -428,17 +433,24 @@ def xfade_concat(a_path, b_path, transition, output_path, dry_run, log):
     b_dur = get_duration(b_path) if not dry_run else 10.0
     offset = max(0, (a_dur or 10) - duration)
 
+    fc = (
+        f"[0:v][1:v]xfade=transition={ttype}:duration={duration}:offset={offset}[v];"
+        f"[0:a][1:a]acrossfade=d={duration}[a]"
+    )
+
     cmd = [
         'ffmpeg', '-y',
+        '-noautorotate',
+        '-r', '30',
         '-i', str(a_path),
+        '-noautorotate',
+        '-r', '30',
         '-i', str(b_path),
-        '-filter_complex',
-        f"[0:v][1:v]xfade=transition={ttype}:duration={duration}:offset={offset}[v];"
-        f"[0:a][1:a]acrossfade=d={duration}[a]",
+        '-filter_complex', fc,
         '-map', '[v]', '-map', '[a]',
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
         '-c:a', 'aac', '-b:a', '128k',
-        '-threads', '0',  # 用全部 CPU 核心
+        '-threads', '0',
         str(output_path)
     ]
     log(f"  $ xfade ({ttype} {duration}s)")
@@ -448,30 +460,30 @@ def xfade_concat(a_path, b_path, transition, output_path, dry_run, log):
 
     rc, _, err = run(cmd)
     if rc != 0:
-        log(f"  ❌ xfade 失败: {err[:300] if err else 'unknown'}")
+        log(f"  ❌ xfade 失败: {(err or '')[:300]}")
         return output_path
     return output_path
 
 
 def concatenate_simple(paths, output_path, dry_run, log):
-    """无转场，简单拼接。优先 stream-copy（毫秒级），失败 fallback 重编。"""
+    """无转场，简单拼接。所有 per-video 输出已是统一 1920x1080 无 rotation，
+    优先 stream copy（毫秒级）。
+    """
     if len(paths) == 1:
         if not dry_run:
             shutil.copy2(paths[0], output_path)
         return output_path
 
-    # 写 concat list
     list_file = output_path.parent / "_concat_list.txt"
     if not dry_run:
         with open(list_file, 'w') as f:
             for p in paths:
-                # ffmpeg concat demuxer 需要单引号包裹路径以处理空格
                 f.write(f"file '{p}'\n")
 
-    # ⚡ Fast Path: 所有片段都是 H264 1920x1080（来自 process_video 标准化输出）
-    # 直接 stream copy 拼接，不重新编码。concat demuxer + -c copy = 毫秒级
+    # ⚡ Fast Path: 流复制（同源同 codec，应该直接成功）
     copy_cmd = [
         'ffmpeg', '-y',
+        '-noautorotate',
         '-f', 'concat',
         '-safe', '0',
         '-i', str(list_file),
@@ -488,9 +500,11 @@ def concatenate_simple(paths, output_path, dry_run, log):
             return output_path
         log(f"  ⚠️ stream-copy 失败 (rc={rc}): {(err or '')[:200]}，退回重编")
 
-    # Fallback: 重编（极少触发，仅当片段 codec 不一致时）
+    # Fallback: 重编（理论上不会触发，因为 per-video 输出都一致）
     cmd = [
         'ffmpeg', '-y',
+        '-noautorotate',
+        '-r', '30',
         '-f', 'concat',
         '-safe', '0',
         '-i', str(list_file),
@@ -506,7 +520,7 @@ def concatenate_simple(paths, output_path, dry_run, log):
     rc, _, err = run(cmd)
     list_file.unlink(missing_ok=True)
     if rc != 0:
-        log(f"  ❌ concat 失败: {err[:300] if err else 'unknown'}")
+        log(f"  ❌ concat 失败: {(err or '')[:300]}")
         return output_path
     return output_path
 
@@ -707,14 +721,283 @@ class IntentExecutor:
         return concatenate_simple(group_outputs, final, self.dry_run, self.log)
 
 
+# ========== v0.7 粗加工 5 原子函数 + run_coarse 编排 ==========
+
+# 输出目录约定（v0.7）
+SINGLE_DIR = "单视频"        # 单视频处理结果
+CHUNKS_DIR = "组合"          # sequence 拼好的组
+TRANSCRIPTS_DIR = "文字稿"   # ASR 结果
+INTERMEDIATE_DIR = "中间产物"  # log / profile / 汇总
+DECISION_MD = "决策.md"
+
+
+def step1_check_intent(intent_path, work_dir, log=None):
+    """Step 1: 解析 intent.json + 自检。
+
+    Returns:
+        intent: dict
+        anomalies: list[str]  异常清单（不抛错）
+    """
+    import json
+    log = log or (lambda m: print(m))
+    intent = json.loads(Path(intent_path).read_text(encoding="utf-8"))
+
+    anomalies = []
+    workspace = intent.get("_workspace", ".")
+    videos = intent.get("videos", [])
+
+    # 检查源文件
+    missing = []
+    for v in videos:
+        if v.get("exclude"):
+            continue
+        f = v.get("file", "")
+        if not (Path(workspace) / f).exists():
+            missing.append(f)
+    if missing:
+        anomalies.append(f"源视频缺失 {len(missing)} 个: {missing[:3]}...")
+
+    # 写自检报告
+    report_path = Path(work_dir) / INTERMEDIATE_DIR / "自检报告.json"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(
+        json.dumps({
+            "videos_count": len(videos),
+            "excluded": sum(1 for v in videos if v.get("exclude")),
+            "sequences_count": len(intent.get("sequences", [])),
+            "missing_sources": missing,
+            "anomalies": anomalies,
+        }, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    log(f"  [Step 1] {len(videos)} videos, {len(anomalies)} anomalies")
+    return intent, anomalies
+
+
+def step2_process_videos(intent, work_dir, log=None):
+    """Step 2: 遍历每个视频 → 单视频处理。
+
+    Returns:
+        profiles: list[dict]  每个视频的 profile
+    """
+    import json
+    log = log or (lambda m: print(m))
+    workspace = intent.get("_workspace", ".")
+    videos = intent.get("videos", [])
+    out_dir = Path(work_dir) / SINGLE_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    profiles = []
+    for v in videos:
+        if v.get("exclude"):
+            continue
+        # 调用现有 process_video，但 output 路径改为约定位置
+        out_path = out_dir / f"video_{int(v.get('index', 0)):02d}.mp4"
+        # 复用 process_video 逻辑（用 monkey patch 改 output 路径不优雅，
+        # 这里直接调 process_video 然后移动）
+        original_log_sink = []
+        def capture_log(m): original_log_sink.append(m)
+        # 调用 process_video，输出到 .zhijian_work 默认位置
+        result_path, ok = process_video(
+            v, Path(workspace),
+            Path(work_dir) / "_tmp_process",
+            dry_run=False, log=capture_log,
+            target_aspect=intent.get("output", {}).get("aspect", "16:9")
+        )
+        if ok and result_path.exists():
+            shutil.copy2(result_path, out_path)
+            profile = {
+                "index": v.get("index"),
+                "source_file": v.get("file"),
+                "applied_ops": [k for k, op in (v.get("ops") or {}).items()
+                                if isinstance(op, dict) and op.get("on")],
+                "voice_mode": v.get("voice", "keep"),
+                "output_duration": _probe_duration(out_path),
+                "output_path": str(out_path),
+            }
+            # 探源信息
+            src_info = get_video_info(Path(workspace) / v.get("file", ""))
+            profile["source_resolution"] = (
+                f"{src_info['width']}x{src_info['height']}"
+                if src_info.get("width") else "?"
+            )
+            profile["has_rotation_metadata"] = False  # 简化
+            profiles.append(profile)
+            log(f"  [Step 2] #{v.get('index')} → {out_path.name}")
+        else:
+            log(f"  [Step 2] #{v.get('index')} ❌ 失败（已记录到主流程异常）")
+
+    # Step 2 汇总报告（A 决策）
+    summary_path = Path(work_dir) / INTERMEDIATE_DIR / "单视频汇总.md"
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    with summary_path.open("w", encoding="utf-8") as f:
+        f.write("# 单视频处理汇总\n\n")
+        f.write(f"共 {len(profiles)} 个视频处理完成\n\n")
+        f.write("| # | 源文件 | 应用的 op | 源分辨率 | 输出时长 |\n")
+        f.write("|---|--------|----------|---------|---------|\n")
+        for p in profiles:
+            f.write(f"| {p['index']} | {p['source_file']} | "
+                    f"{p['applied_ops']} | {p['source_resolution']} | "
+                    f"{p['output_duration']}s |\n")
+    log(f"  [Step 2] 汇总报告: {summary_path}")
+
+    return profiles
+
+
+def step3_assemble_sequences(intent, work_dir, profiles, log=None):
+    """Step 3: 遍历每个 sequence → 用 xfade 拼接 → 组合/seq_{name}.mp4。
+
+    Returns:
+        chunk_paths: dict[seq_name, output_path]
+    """
+    log = log or (lambda m: print(m))
+    sequences = intent.get("sequences", [])
+    out_dir = Path(work_dir) / CHUNKS_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    chunk_paths = {}
+    profile_by_idx = {p["index"]: p for p in profiles}
+
+    for seq in sequences:
+        name = seq.get("name", f"seq_{len(chunk_paths)}")
+        indices = seq.get("videos", [])
+        # 拼出每个视频的 单视频/ 路径
+        single_paths = []
+        for idx in indices:
+            p = profile_by_idx.get(idx)
+            if p:
+                single_paths.append(Path(p["output_path"]))
+            else:
+                log(f"  [Step 3] {name}: 缺 video #{idx} 跳过")
+        if not single_paths:
+            continue
+
+        # 用 concatenate_simple 简单拼（无转场）
+        # TODO: 后续支持 per-adjacent 转场（用 xfade_concat 链）
+        seq_out = out_dir / f"{name}.mp4"
+        concatenate_simple(single_paths, seq_out, dry_run=False, log=log)
+        if seq_out.exists():
+            chunk_paths[name] = seq_out
+            log(f"  [Step 3] {name} → {seq_out.name}")
+    return chunk_paths
+
+
+def step4_asr_transcripts(work_dir, profiles, log=None):
+    """Step 4: 用 lib.asr 给每个 单视频出文字稿。
+
+    Returns:
+        transcript_paths: dict[video_idx, md_path]
+    """
+    log = log or (lambda m: print(m))
+    from lib.asr import transcribe, merge_to_md
+
+    out_dir = Path(work_dir) / TRANSCRIPTS_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    transcript_paths = {}
+    for p in profiles:
+        video_path = Path(p["output_path"])
+        md_path = out_dir / f"视频_{p['index']:02d}.md"
+        srt_path = out_dir / f"视频_{p['index']:02d}.srt"
+        # ASR → SRT → 简单转 md
+        if transcribe(video_path, srt_path):
+            # 简化：直接 md（用文件本身标记位置）
+            md_path.write_text(
+                f"# 视频 {p['index']:02d} 文字稿\n\n"
+                f"（源：{p['source_file']}）\n\n"
+                f"SRT：{srt_path}\n",
+                encoding="utf-8"
+            )
+            transcript_paths[p["index"]] = md_path
+            log(f"  [Step 4] #{p['index']} → {md_path.name}")
+        else:
+            log(f"  [Step 4] #{p['index']} ❌ ASR 失败")
+    # 合并
+    merge_md = out_dir / "全部.md"
+    merge_to_md(out_dir, merge_md)
+    log(f"  [Step 4] 合并 → {merge_md.name}")
+    return transcript_paths
+
+
+def step5_decision_report(intent_path, work_dir, profiles,
+                          anomalies=None, user_extras=None):
+    """Step 5: 写决策.md（用 lib/modify.write_decision_report）。"""
+    from lib.modify import write_decision_report
+    output_md = Path(work_dir) / DECISION_MD
+    return write_decision_report(
+        intent_path, profiles, output_md,
+        anomalies=anomalies or [],
+        user_extras=user_extras or []
+    )
+
+
+def run_coarse(intent_path, workspace, log=None):
+    """v0.7 粗加工编排：5 步流水线。
+
+    Args:
+        intent_path: intent.json 路径
+        workspace: 工作区根目录
+        log: 日志函数
+    Returns:
+        dict: {
+            "single_videos": list[paths],
+            "chunks": dict[name, path],
+            "transcripts": dict[idx, path],
+            "decision_md": path,
+            "anomalies": list[str],
+        }
+    """
+    import json
+    log = log or (lambda m: print(m))
+    work_dir = Path(workspace) / "00_智剪" / "粗加工"
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    log(f"=== 粗加工 v0.7: {intent_path} ===")
+
+    # 把 workspace 注入 intent（让其他步骤能定位源文件）
+    intent = json.loads(Path(intent_path).read_text(encoding="utf-8"))
+    intent["_workspace"] = str(workspace)
+
+    # Step 1
+    intent, anomalies = step1_check_intent(intent_path, work_dir, log)
+
+    # Step 2（单视频处理 — 失败不中断，记入 anomalies）
+    profiles = step2_process_videos(intent, work_dir, log)
+    failed_videos = [v for v in intent.get("videos", [])
+                     if not v.get("exclude")
+                     and not any(p["index"] == v.get("index") for p in profiles)]
+    for fv in failed_videos:
+        anomalies.append(f"video #{fv.get('index')} 处理失败（{fv.get('file')}）")
+
+    # Step 3
+    chunks = step3_assemble_sequences(intent, work_dir, profiles, log)
+
+    # Step 4
+    transcripts = step4_asr_transcripts(work_dir, profiles, log)
+
+    # Step 5
+    decision_md = step5_decision_report(intent_path, work_dir, profiles, anomalies)
+
+    log(f"=== 粗加工完成: {work_dir} ===")
+    return {
+        "work_dir": str(work_dir),
+        "single_videos": [p["output_path"] for p in profiles],
+        "chunks": chunks,
+        "transcripts": transcripts,
+        "decision_md": str(decision_md),
+        "anomalies": anomalies,
+    }
+
+
 def main():
     if len(sys.argv) < 2:
-        print("用法: python executor.py <intent.json> [--workspace <path>] [--dry-run]")
+        print("用法: python executor.py <intent.json> [--workspace <path>] [--dry-run] [--step N]")
         sys.exit(1)
 
     intent_path = sys.argv[1]
     workspace = None
     dry_run = False
+    step = None  # None = 全部 5 步
 
     args = sys.argv[2:]
     i = 0
@@ -725,9 +1008,32 @@ def main():
         elif args[i] == '--dry-run':
             dry_run = True
             i += 1
+        elif args[i] == '--step' and i + 1 < len(args):
+            step = int(args[i + 1])
+            i += 2
         else:
             i += 1
 
+    # v0.7 默认走 run_coarse
+    if workspace and not dry_run:
+        # 注入 workspace 给 IntentExecutor
+        import json
+        intent = json.loads(Path(intent_path).read_text(encoding="utf-8"))
+        intent["_workspace"] = workspace
+        Path(intent_path).write_text(
+            json.dumps(intent, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        result = run_coarse(intent_path, workspace, log=print)
+        print(f"\n汇总:")
+        print(f"  work_dir: {result['work_dir']}")
+        print(f"  single_videos: {len(result['single_videos'])}")
+        print(f"  chunks: {len(result['chunks'])}")
+        print(f"  transcripts: {len(result['transcripts'])}")
+        print(f"  decision_md: {result['decision_md']}")
+        print(f"  anomalies: {len(result['anomalies'])}")
+        return
+
+    # 旧执行路径（保留兼容）
     executor = IntentExecutor(intent_path, workspace, dry_run=dry_run)
     try:
         executor.execute()

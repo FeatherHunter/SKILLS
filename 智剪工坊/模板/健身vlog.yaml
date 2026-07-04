@@ -1,0 +1,81 @@
+﻿# 健身vlog 工作流模板
+# 加载时机：AI 扫描 决策.md + 视频 + 文字稿后，看到素材匹配「健身/减肥/训练」类
+# 加载方式：AI 按 stages 顺序，一来一回对话引导
+
+# 工作流不是 config；它描述 AI 怎么跟用户决策
+stages:
+  - id: classify
+    name: 内容分类
+    ai_prompt: |
+      已扫 26 个视频，按文件名 + 时长自动分类：
+      - N 个训练动作（爬楼/打坐/...）
+      - N 个饮食（咖啡/可乐/...）
+      - N 个通勤（小区路/回家/...）
+      - N 个称重/测心率
+      请确认或调整分类。
+    user_input: 分类表确认/手动调整个别视频
+    ai_action: 写分类结果到 中间产物/分类.json
+    next: stage1_done
+
+  - id: rhythm
+    name: 节奏决策
+    ai_prompt: |
+      健身vlog 节奏建议：
+      - 训练动作：保留原速（强度感）
+      - 称重/心率：放大慢放 2x（看清数字）
+      - 饮食：快切 2-3 秒（信息密度高）
+      - 通勤：保留原速（氛围感）
+      按这个走吗？手动调整个别视频也行。
+    user_input: 节奏表确认/手动调整个别视频
+    ai_action: |
+      对每个改节奏的视频，调用 modify.py speed <video> <factor>
+      记录到 中间产物/节奏调整.json
+    next: stage2_done
+
+  - id: order
+    name: 顺序与转场
+    ai_prompt: |
+      健身vlog 通常时间线驱动（早→中→晚）。
+      你的视频是按时间拍的，建议：
+      开场（起床称重）→ 咖啡 → 冥想 → 通勤 →
+      健身 → 中场休息 → 回家 → 收尾
+      调整顺序或加转场说明。
+    user_input: 顺序确认/转场说明
+    ai_action: |
+      重写 组合/ 的拼接顺序。
+      转场默认 fade 0.5s，特殊段可加 duration 调整。
+    next: stage3_done
+
+  - id: ending
+    name: 收尾风格
+    options:
+      - id: A
+        name: 黑屏+文字
+        desc: '黑屏 + "DAY N END" 文字停留 2 秒'
+      - id: B
+        name: 动作定格+配文
+        desc: 最后一个动作定格 + AI 配文（一句话总结）
+      - id: C
+        name: 下 DAY 预告
+        desc: 留 1-2 秒空 + "DAY 3 即将开始" 引导
+    ai_prompt: |
+      收尾风格选一个：
+      A) 黑屏+文字"DAY 2 END"
+      B) 最后一个动作定格 + 配文
+      C) 接下一个 DAY 的预告
+    user_input: 选 A/B/C
+    ai_action: |
+      在 组合/ 最后一个 seq 后追加 ending 段。
+      A 用 ffmpeg drawtext；B 用 freeze frame + text；
+      C 用 ffmpeg text 段
+    next: stage4_done
+
+# 完成信号：所有 stage_done 触发 AI 拼 vlog_final.mp4
+completion:
+  trigger: all stages done
+  ai_action: 调用 executor.py concat_final 拼成 vlog_final.mp4 到 00_智剪/成片/
+
+# 失败处理：任一 stage 用户取消
+failure:
+  user_signal: "skip" 或 "later"
+  ai_action: 跳过该 stage，记录到 中间产物/已跳过.md

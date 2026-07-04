@@ -1,4 +1,38 @@
-# 智剪工坊 · 变更日志
+﻿# 智剪工坊 · 变更日志
+
+## v0.7 (2026-07-04) - 主体流程重构 + 模板工作流
+
+### ✨ 新增
+- **`SKILL.md §主体流程`** —— 端到端流程章节：粗加工 5 步 + 模板工作流 + 约定 11 条
+- **`架构.md`** —— 完整设计文档 + §8 决策落地位置表
+- **`模板/健身vlog.yaml`** —— 类别化工作流示例（4 stage：分类/节奏/顺序/收尾）
+- **`lib/asr.py`** —— faster-whisper 包装（DAY1 已用的 auto_subtitle.py 薄封装）
+- **`lib/modify.py`** —— AI 改素材的操作菜单（speed/trim/cut/mute/...）+ write_decision_report
+- **`executor.py` 5 原子函数** —— step1_check_intent / step2_process_videos / step3_assemble_sequences / step4_asr_transcripts / step5_decision_report + run_coarse 编排
+
+### 🔧 重构
+- **`executor.py`** —— 从「一坨过程代码」拆为 5 个原子函数 + 顶层 run_coarse()
+- 头部 docstring v0.1 → v0.7，反映新的 5 步流水线
+
+### 🗑️ 删除
+- **`scripts/pipeline_vlog.py`** —— 旧的「7 步一锤定音」流水线（4K降分辨率/烧字幕/BGM/封面），跟新设计「粗加工+模板工作流」重复
+- **`references/11-pipelines.md`** —— 上述 pipeline 的旧文档
+- **`scripts/__pycache__/pipeline_vlog.cpython-313.pyc`** —— 编译缓存
+
+### 📝 决策
+- 模板 = 工作流脚本（AI 引导用户做决策的步骤），不是 config
+- 工作区结构：源视频 + `00_智剪/粗加工/` + `00_智剪/成片/`
+- 目录命名：粗加工中文，文件名/JSON 字段英文
+- 不写 `decisions.json` / `state.json` / `review.html`（之前讨论过，确认不要）
+- 砍掉 `schemas/`（speculative schema = 提前固化错误）
+- 粗加工 Step 2 后输出「单视频汇总.md」，不要求逐个交互
+
+### 已知问题
+- 模板库只有「健身vlog.yaml」一个，更多类别（教程/通用）待增长
+- lib/modify.py 中序列操作（replace/insert/delete/swap/change_transition）是 stub，待 executor 序列处理重构后实现
+- 旧 docs/*.md（FAQ / GETTING_STARTED / FEATURE_COMPARISON / VS_JIANYING）和 README.md 仍标 v0.5，**待下一个 PR 同步**
+
+---
 
 ## v0.6 (2026-07-03) - 14 个原子操作补全
 

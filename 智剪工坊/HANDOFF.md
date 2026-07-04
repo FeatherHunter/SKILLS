@@ -1,9 +1,41 @@
-# 智剪工坊 · Session Handoff 文档
+﻿# 智剪工坊 · Session Handoff 文档
 
 > **目的:** 用户(帅猎羽)要清空当前 session,这是给下一个 session AI 的完整上下文。
 > **写于:** 2026-07-03 16:00 (Asia/Shanghai)
 > **当前版本:** v0.5(30 脚本,29/29 验证通过,5 个 AI 增强全实现)
 > **重要:** 必须读完整个文档再开始动手,尤其是"未完成需求"和"关键 bug"两节。
+
+---
+
+## 🔴 v0.7 增量上下文（2026-07-04 必读）
+
+**v0.7 是架构重做，不是普通升级**。接手 session 前必须先读：
+
+### 关键文件
+- `SKILL.md` §主体流程（v0.7 新增章节）—— 端到端流程 + 5 步粗加工 + 模板工作流
+- `架构.md` —— 完整设计 + §8 决策落地位置表
+- `模板/健身vlog.yaml` —— 类别化工作流示例
+- `CHANGELOG.md` v0.7 段 —— 这次到底改了什么
+
+### v0.7 核心变化（v0.6 → v0.7）
+1. **新设计**：粗加工 5 步 + 模板工作流 取代 旧 pipeline_vlog 7 步一锤定音
+2. **删了** `scripts/pipeline_vlog.py` 和 `references/11-pipelines.md`（如果接手 session 时看到这些，**是误恢复**，要删）
+3. **executor.py 重构**：5 个原子函数 + `run_coarse()` 编排
+4. **新增** `lib/asr.py` (whisper 包装) 和 `lib/modify.py` (改素材菜单)
+5. **AI 引导而非自动跑**：拿 intent.json 后 AI 按 模板/ 引导用户做决策，**不再一锤定音**
+
+### 接手时第一件事
+1. 读 SKILL.md 开头「文件地图」节（v0.7 新增）—— 知道哪个文件是什么
+2. 读 SKILL.md §主体流程 —— 知道端到端怎么跑
+3. 读 架构.md §8 —— 知道每个决策落地在哪个文件
+4. **不要**去翻旧 pipeline_vlog.py（已删）
+
+### v0.7 已知遗留
+- `docs/*.md` 4 个文件（FAQ/GETTING_STARTED/FEATURE_COMPARISON/VS_JIANYING）仍标 v0.5/2026 v0.5
+- `README.md` 仍标 v0.5 内容
+- `lib/modify.py` 序列操作（replace/insert/delete/swap/change_transition）是 stub
+- 模板库只有「健身vlog.yaml」一个
+- 旧 HANDOFF.md 第 1 节「当前状态」还是 v0.5 的内容（v0.7 概览在「文件地图」节，不在这里重复）
 
 ---
 

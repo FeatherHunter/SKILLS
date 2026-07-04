@@ -376,15 +376,17 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 ### 完整流程
 
 ```
-1. 用户：intent.html 填表 → intent.json
-2. 用户：把 intent.json 给 AI
-3. AI：素材粗加工（5 步）
-4. AI：扫描 决策.md + 视频 + 文字稿
+1. AI提示用户电脑端可以打开intent.html进行素材处理，并且尝试帮助用户打开intent.html
+2. 用户：intent.html 填表 → intent.json
+3. 用户：把 intent.json 给 AI
+4. AI：和用户一轮一轮交互 直至理解intent.json表达的含义和用户的想法一致
+5. AI：素材粗加工（5 步）
+6. AI：根据用户意图 或者 查看 视频关键帧和文字稿判断推荐用户加载的模板文件
    "你这是 [项目] [类型]，看到匹配 [模板] 模板，加载吗？"
-5. AI：加载 模板/<name>.yaml
-6. AI：按工作流引导（每 stage 一来一回）
-7. AI：拼成 vlog_final.mp4
-8. 用户：直接播放看
+7. AI：加载 模板/<name>.yaml
+8. AI：按工作流引导（每 stage 一来一回）
+9. AI：拼成 vlog_final.mp4
+10. 用户：直接播放看
 ```
 
 ### 粗加工 5 步（详细）

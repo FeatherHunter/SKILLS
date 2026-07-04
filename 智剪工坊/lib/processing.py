@@ -110,25 +110,53 @@ TARGET_RESOLUTIONS = {
 
 
 def build_rotation_filter(rotation):
+    """根据 displaymatrix rotation 值返回 counter-rotate 的 transpose filter。
+
+    ffmpeg displaymatrix 的 rotation 值定义（从原始像素到显示效果的旋转）：
+      -90° → 手机竖屏拍（sensor横，像素横向，metadata 告诉播放器逆时针转90°显示）
+      +90° → 手机竖屏拍（sensor横，像素横向，metadata 告诉播放器顺时针转90°显示）
+     180° → 上下颠倒
+
+    counter-rotate（抵消 metadata 旋转，让像素本身变正确方向）：
+      -90°（metadata 逆时针90°）→ transpose=1（顺时针90°）抵消
+      +90°（metadata 顺时针90°）→ transpose=2（逆时针90°）抵消
+      180° → transpose=1,transpose=1（180°）
+    """
     if rotation == 0:
         return ''
     if rotation == 90:
-        return 'transpose=1,'
-    if rotation in (-90, 270):
         return 'transpose=2,'
+    if rotation in (-90, 270):
+        return 'transpose=1,'
     if abs(rotation) == 180:
         return 'transpose=1,transpose=1,'
     return ''
 
 
-def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9', rotation=0):
-    """为单个视频构建 ffmpeg filter_complex。"""
+def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
+                       rotation=0, aspect_handling='aspect-fit'):
+    """为单个视频构建 ffmpeg filter_complex。
+
+    aspect_handling:
+      - 'aspect-fill': 旋转并填满，内容最大显示（可能裁切边缘）
+      - 'aspect-fit':  保持原始显示方向（不旋转），加黑边适配目标比例
+    """
     target_w, target_h = TARGET_RESOLUTIONS.get(target_aspect, (1920, 1080))
 
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
+        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
+                                        rotation=rotation, aspect_handling=aspect_handling)
 
-    # 不旋转像素（v0.7 设计），只用 pillarbox + 清 metadata
+    # 旋转处理（两模式差异在 scale/pad 策略，不在 counter-rotate）
+    # - rotation≠0 → 永远 counter-rotate（让像素变正确方向）
+    # - rotation=0  → 不旋转（横屏源像素方向已是正确的）
+    # 然后：
+    #   aspect-fill → scale 填满（force_original_aspect_ratio=increase，可能裁切）
+    #   aspect-fit  → scale 适配（force_original_aspect_ratio=decrease）+ pad 黑边
+    if rotation != 0:
+        rot_filter = build_rotation_filter(rotation)
+    else:
+        rot_filter = ''
     v_filters = []
     a_filters = []
 
@@ -174,13 +202,19 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9', ro
     if voice in ('mute', 'bgm-only'):
         a_filters.append("volume=0")
 
-    v_filters.append(
-        f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
-        f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-    )
+    if aspect_handling == 'aspect-fill':
+        # 填满：scale 强制填满目标，可能裁切，无黑边
+        v_filters.append(f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1")
+    else:
+        # 适配：scale 缩放适配，加黑边居中（aspect-fit 默认行为）
+        v_filters.append(
+            f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
+            f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+        )
 
-    # 拼装 v 链：用户 op → standard pillarbox（不旋转）
-    v_chain = ",".join(v_filters)
+    # 拼装 v 链: counter-rotate → 用户 op → scale/pad
+
+    v_chain = (rot_filter + ",".join(v_filters)) if v_filters else rot_filter
     # 注意: 用 [0:a]anull 而不是 anullsrc，因为 anullsrc + aac 编码在某些情况下会卡死
     a_chain = ",".join(a_filters) if a_filters else "[0:a]anull"
 
@@ -188,17 +222,39 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9', ro
     return fc, ["[v]", "[a]"]
 
 
-def build_cut_middle_filter(cm, target_w=1920, target_h=1080):
+def build_cut_middle_filter(cm, target_w=1920, target_h=1080, rotation=0, aspect_handling='aspect-fit'):
+    """cut-middle 的 pillarbox 专用 filter。
+
+    aspect_handling:
+      - 'aspect-fill': 旋转并填满（rotation != 0 → counter-rotate）
+      - 'aspect-fit':  保持原始显示方向（rotation == 0 → 不旋转）
+    """
     cut_start = parse_time(cm.get('from', '0')) or 0
     cut_end = parse_time(cm.get('to', '0')) or 0
     if cut_end <= cut_start:
         return None, None
 
-    rotoscale = f",scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+    # counter-rotate（rotation≠0 时永远需要，让像素变正确方向）
+    # transpose 后 PTS 会被改变（持续时间不变，但时间戳映射变了），
+    # 所以 transpose 后必须立即 setpts=PTS-STARTPTS 归零，再 trim/setpts/scale/pad
+    if rotation != 0:
+        rot_filter = build_rotation_filter(rotation)
+        rot_pre = f"{rot_filter}setpts=PTS-STARTPTS,"
+    else:
+        rot_filter = ''
+        rot_pre = ''
+
+    # scale/pad 策略（两模式差异）
+    # - aspect-fill: scale 填满目标（可能裁切），无黑边
+    # - aspect-fit:  scale 适配，加黑边居中
+    if aspect_handling == 'aspect-fill':
+        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1"
+    else:
+        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
 
     fc = (
-        f"[0:v]trim=0:{cut_start},setpts=PTS-STARTPTS{rotoscale}[v1];"
-        f"[0:v]trim={cut_end}:,setpts=PTS-STARTPTS{rotoscale}[v2];"
+        f"[0:v]{rot_pre}trim=0:{cut_start},setpts=PTS-STARTPTS,{rotoscale}[v1];"
+        f"[0:v]{rot_pre}trim={cut_end}:,setpts=PTS-STARTPTS,{rotoscale}[v2];"
         f"[v1][v2]concat=n=2:v=1:a=0[outv];"
         f"[0:a]atrim=0:{cut_start},asetpts=PTS-STARTPTS[a1];"
         f"[0:a]atrim={cut_end}:,asetpts=PTS-STARTPTS[a2];"
@@ -209,7 +265,7 @@ def build_cut_middle_filter(cm, target_w=1920, target_h=1080):
 
 # ========== 处理单个视频 ==========
 
-def process_video(video, workspace, output_path, target_aspect='16:9'):
+def process_video(video, workspace, output_path, target_aspect='16:9', aspect_handling='aspect-fit'):
     """处理单个视频。返回 (output_path, profile_dict, success)。
 
     Args:
@@ -262,23 +318,26 @@ def process_video(video, workspace, output_path, target_aspect='16:9'):
 
     # cut-middle 特殊
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
+        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
+                                               rotation=rotation, aspect_handling=aspect_handling)
     else:
         fc, mappings = build_video_filter(ops, voice,
                                           input_duration=duration,
                                           target_aspect=target_aspect,
-                                          rotation=rotation)
+                                          rotation=rotation,
+                                          aspect_handling=aspect_handling)
 
     if fc is None:
         fc = "[0:v]copy[v];anullsrc=r=44100:cl=stereo[a]"
         mappings = ["[v]", "[a]"]
 
-    cmd = ['ffmpeg', '-y', '-noautorotate', '-i', str(src)]
+    cmd = ['ffmpeg', '-y', '-noautorotate', '-i', str(src)]  # v1.1 修复：不自动应用 metadata，由 build_video_filter 的 transpose 精确控制；patch tkhd 在末尾清 metadata
     cmd.extend(['-filter_complex', fc])
     for m in mappings:
         cmd.extend(['-map', m])
     cmd.extend(['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'])
     cmd.extend(['-bsf:v', 'h264_metadata=rotate=0'])
+    cmd.extend(['-metadata:s:v:0', 'rotate=0'])  # 双重保险：清 container 级 metadata
     cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
     cmd.extend(['-max_interleave_delta', '100M'])
     cmd.extend(['-threads', '0'])
@@ -294,6 +353,15 @@ def process_video(video, workspace, output_path, target_aspect='16:9'):
         return output_path, {
             "index": idx, "error": "output too small"
         }, False
+
+    # v1.1: ffmpeg 编码后自动 patch tkhd matrix，清 displaymatrix metadata
+    # 解决: ffmpeg 编码时保留 source 的 displaymatrix，导致输出仍带旋转标签
+    try:
+        from patch_mp4_rotation import patch_mp4_rotation as _patch
+        _patch(output_path)
+    except Exception as e:
+        # patch 失败不影响主流程（ffmpeg 已成功），只记录警告
+        print(f'   ⚠️ patch tkhd 失败（不影响主产物）: {e}')
 
     out_info = get_video_info(output_path)
     profile = {

@@ -42,6 +42,10 @@ def main():
     intermediate_dir.mkdir(parents=True, exist_ok=True)
 
     aspect = intent.get('output', {}).get('aspect_ratio', '16:9') or '16:9'
+    # v1.2: aspect_handling（aspect-fill 填满；aspect-fit 适配，默认）
+    aspect_handling = intent.get('output', {}).get('aspect_handling', 'aspect-fit')
+    if aspect_handling not in ('aspect-fill', 'aspect-fit'):
+        aspect_handling = 'aspect-fit'
     transcripts_dir = workspace / "00_智剪" / "粗加工" / "文字稿"
 
     only_videos = set()
@@ -87,7 +91,7 @@ def main():
             transcript_status = f"✓ ASR ({size}B)"
 
         t0 = time.time()
-        _, profile, ok = process_video(v, workspace, out_path, target_aspect=aspect)
+        _, profile, ok = process_video(v, workspace, out_path, target_aspect=aspect, aspect_handling=aspect_handling)
         elapsed = time.time() - t0
 
         if not ok:

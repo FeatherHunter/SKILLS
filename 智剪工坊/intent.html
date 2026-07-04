@@ -334,6 +334,16 @@
           <input type="text" data-path="output.aspect_ratio_custom" id="aspect-ratio-custom"
                  placeholder="如 21:9 或 9:21" style="display:none;margin-top:6px">
         </div>
+        <div class="field" id="aspect-handling-field" style="display:none">
+          <label>构图处理方式 <span class="hint">选了比例后生效</span></label>
+          <select data-path="output.aspect_handling">
+            <option value="aspect-fit">适配（保持原始显示方向，不旋转，左右/上下加黑边）</option>
+            <option value="aspect-fill">填满（旋转并填满目标比例，内容最大显示）</option>
+          </select>
+          <div style="margin-top:6px;font-size:12px;color:#8E8E93">
+            <span id="aspect-handling-hint">示例：竖屏源放 16:9 → 旋转后内容填满；保留原构图则两侧留黑边</span>
+          </div>
+        </div>
       </section>
 
       <section>
@@ -440,6 +450,24 @@
     const endingPromptField = document.getElementById('ending-prompt-field');
     const aspectRatioSel = document.getElementById('aspect-ratio-select');
     const aspectRatioCustom = document.getElementById('aspect-ratio-custom');
+    const aspectHandlingField = document.getElementById('aspect-handling-field');
+    const aspectHandlingHint = document.getElementById('aspect-handling-hint');
+
+    function updateAspectHandlingHint() {
+      if (!aspectHandlingHint) return;
+      const val = aspectRatioSel.value;
+      if (val === '9:16') {
+        aspectHandlingHint.textContent = '旋转：横屏源旋转 90° 填满竖屏，无黑边；保留：横屏源上下留黑边，原始方向不变';
+      } else if (val === '16:9') {
+        aspectHandlingHint.textContent = '旋转：竖屏源旋转 90° 填满横屏，无黑边；保留：竖屏源左右留黑边，原始方向不变';
+      } else if (val === '1:1') {
+        aspectHandlingHint.textContent = '旋转：源旋转至正方形填充；保留：正方形外加黑边';
+      } else if (val === '3:4' || val === '4:3') {
+        aspectHandlingHint.textContent = '旋转：竖/横屏旋转适配；保留：竖/横屏加黑边适配';
+      } else {
+        aspectHandlingHint.textContent = '示例：竖屏源放 16:9 → 旋转后内容填满；保留原构图则两侧留黑边';
+      }
+    }
     const lengthSelectedEl = document.getElementById('length-selected');
     const lengthTargetEl = document.getElementById('length-target');
     const lengthBarFill = document.getElementById('length-bar-fill');
@@ -457,7 +485,11 @@
 
     coverTypeSel.addEventListener('change', () => { coverPromptField.style.display = coverTypeSel.value ? 'block' : 'none'; });
     endingTypeSel.addEventListener('change', () => { endingPromptField.style.display = endingTypeSel.value ? 'block' : 'none'; });
-    aspectRatioSel.addEventListener('change', () => { aspectRatioCustom.style.display = aspectRatioSel.value === 'custom' ? 'block' : 'none'; });
+    aspectRatioSel.addEventListener('change', () => {
+      aspectRatioCustom.style.display = aspectRatioSel.value === 'custom' ? 'block' : 'none';
+      aspectHandlingField.style.display = aspectRatioSel.value ? 'block' : 'none';
+      updateAspectHandlingHint();
+    });
     document.querySelector('[data-path="project.target_length"]').addEventListener('input', updateLengthDashboard);
 
     async function pickFolder() {
@@ -646,6 +678,7 @@
         if (coverTypeSel.value) coverPromptField.style.display = 'block';
         if (endingTypeSel.value) endingPromptField.style.display = 'block';
         if (aspectRatioSel.value === 'custom') aspectRatioCustom.style.display = 'block';
+        if (aspectRatioSel.value) { aspectHandlingField.style.display = 'block'; updateAspectHandlingHint(); }
 
         if (Array.isArray(existingIntent.videos)) {
           existingIntent.videos.forEach((v) => {

@@ -1,9 +1,89 @@
 ﻿# 智剪工坊 · Session Handoff 文档
 
 > **目的:** 用户(帅猎羽)要清空当前 session,这是给下一个 session AI 的完整上下文。
-> **写于:** 2026-07-03 16:00 (Asia/Shanghai)（v1.0 增量更新于 2026-07-04 15:20）
-> **当前版本:** v1.0(30 脚本,29/29 验证通过,5 个 AI 增强全实现,**端到端流程已重设计**)
+> **写于:** 2026-07-03 16:00 (Asia/Shanghai)（v1.2 增量更新于 2026-07-04 17:43）
+> **当前版本:** v1.2(阶段 2 双版整合 + Step 2.2 -noautorotate 修复 + aspect-fill/aspect-fit 设计)
 > **重要:** 必须读完整个文档再开始动手,尤其是"未完成需求"和"关键 bug"两节。
+
+---
+
+## 🔴 v1.2 增量上下文（2026-07-04 必读）
+
+**v1.2 是阶段 2 文档整合 + Step 2.2 bug 修复**，**不是 major 升级**。
+
+### v1.1 → v1.2 核心变化
+1. **阶段 2 双版 → 单版**：删 v1.0 "#### 阶段 2 ▸ 粗加工（5 步）" 伪代码版；v1.1 子步骤拆解（Step 2.1/2.2）合并进 v1.0 "### 粗加工 5 步（详细，v1.0）"，升级为 v1.2 整合版
+   - 每 Step 用结构化字段：输入/输出/跳过/行为/异常处理/强制约定
+   - 一处看完，避免双版漂移
+2. **Step 2.2 -noautorotate 修复**（`processing.py:278`）
+   - 症状：源 rotation=-180° 的视频处理后仍颠倒
+   - 根因：ffmpeg 默认自动应用 metadata rotation（让画面"人眼正"），又叠加 `transpose=1,transpose=1`（基于 metadata 推断）→ 反向旋转 → 颠倒
+   - 修复：加 `-noautorotate`，由 `transpose` 精确控制；patch tkhd 清 metadata
+   - 验证：DAY2 #1 (-90°) / #2 (-180°) 均正确
+
+### 接手时第一件事
+1. 读 SKILL.md §粗加工 5 步（v1.2 整合版）——一个章节看完全部细节
+2. 若遇 "颠倒 / 旋转异常" 问题：先看 `processing.py:278` 是否有 `-noautorotate`
+3. **新增契约集中原则**：一个 Step 一处看完，避免双版漂移
+
+### 新增设计：aspect-fill / aspect-fit（v1.2，2026-07-04）
+
+手机竖屏拍的视频，sensor 像素是横向的，播放效果靠 rotation metadata 旋转。
+不存在"竖屏像素"，所以没有"preserve 原始竖屏像素"的概念。
+
+两模式定义（定义在 `output.aspect_handling`）：
+- **aspect-fill**：旋转并填满，内容最大显示
+- **aspect-fit**：保持原始显示方向，不旋转，加黑边适配
+
+四场景矩阵：
+| 源显示 | 目标像素 | aspect-fill | aspect-fit |
+|---|---|---|---|
+| 竖屏（≠0） | 竖屏 | counter-rotate，填满 | counter-rotate，填满 |
+| 竖屏（≠0） | 横屏 | counter-rotate，填满 | counter-rotate，横屏构图，左右黑边 |
+| 横屏（=0） | 竖屏 | 不旋转，上下黑边 | 不旋转，横屏构图，左右黑边 |
+| 横屏（=0） | 横屏 | 不旋转，填满 | 不旋转，填满 |
+
+### v1.2 新增 Bug 修复（2026-07-04 18:40，实战发现）
+
+**Bug #A：`build_rotation_filter` transpose 映射写反**
+- 症状：rotation=-90°（竖屏）处理后画面倒 180°；rotation=+90° 同理
+- 根因：
+  ```python
+  # 旧代码（错误）
+  if rotation == 90:   return 'transpose=1,'   # 应该是 transpose=2
+  if rotation in (-90, 270): return 'transpose=2,'  # 应该是 transpose=1
+  ```
+- 修复：
+  ```python
+  # 新代码（正确）
+  if rotation == 90:   return 'transpose=2,'   # 顺时针90°抵消metadata逆时针90°
+  if rotation in (-90, 270): return 'transpose=1,'  # 逆时针90°抵消metadata顺时针90°
+  ```
+- 修复文件：`lib/processing.py:112-127`
+- 验证：DAY2 #1(-90°) / #2(-180°) / #3(-90°) / #7(+90°) / #8(-90°) / #26(+90°) 全 1920×1080
+
+**Bug #B：`build_video_filter` aspect_handling 条件写反**
+- 症状：竖屏源（rotation≠0）+ aspect-fit 时，竖屏内容直接以横向像素存储，播放出来是倒的
+- 根因：
+  ```python
+  # 旧代码（错误）
+  if aspect_handling == 'aspect-fill' and rotation != 0:
+      rot_filter = build_rotation_filter(rotation)  # 只在 aspect-fill 时 counter-rotate
+  ```
+- 修复：
+  ```python
+  # 新代码（正确）
+  if rotation != 0:
+      rot_filter = build_rotation_filter(rotation)  # rotation≠0 时永远 counter-rotate
+  # scale/pad 策略才区分 aspect-fill/fit
+  ```
+- 同理修 `build_cut_middle_filter`
+
+### 当前已知遗留
+- v1.0 缺陷 #1（操作清单 jargon 过重）仍未修，待 v1.3
+- executor.py 仍是 v0.7 版本，未实现 v1.0/v1.1/v1.2 新增行为
+- docs/*.md 和 README.md 仍是 v0.5 内容（v0.7 已知遗留）
+- 架构.md §5 Step 2 行 v1.2 整合未同步（v1.3 待办）
 
 ---
 
@@ -24,6 +104,7 @@
 
 ### 当前已知遗留
 - v1.0 缺陷 #1（操作清单 jargon 过重）仍未修，待 v1.2 修
+- **v1.2 已修**：阶段 2 双版整合 + Step 2.2 -noautorotate 修复（见上文 v1.2 增量上下文）
 
 ---
 

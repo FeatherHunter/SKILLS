@@ -1,5 +1,77 @@
 ﻿# 智剪工坊 · 变更日志
 
+## v1.2 (2026-07-04) - 阶段 2 双版冗余整合 + Step 2.2 -noautorotate 修复
+
+> 增量改进：消除 v1.0/v1.1 阶段 2 章节的双版冗余（伪代码版 + 详细版），合并为统一结构化版本。
+> 同步修复 Step 2.2 的 -noautorotate bug（#2 颠倒根因）。
+
+### ✨ 新增
+
+- **aspect-fill / aspect-fit 比例处理方式**（`intent.output.aspect_handling`）
+  - 手机竖屏拍的视频，sensor 像素是横向的，播放效果靠 rotation metadata 旋转
+  - 不存在"竖屏像素"，原来的 `preserve` 概念无效
+  - **aspect-fill**：旋转并填满，内容最大显示
+  - **aspect-fit**：保持原始显示方向，不旋转，加黑边适配
+  - 实现：`processing.py` 的 `build_video_filter` / `build_cut_middle_filter` 加 `aspect_handling` 参数
+  - intent.html 输出比例选项下方加"构图处理方式"下拉框
+
+### ✨ 整合
+
+- **阶段 2 双版 → 单版**：删 v1.0 "#### 阶段 2 ▸ 粗加工（5 步）" 伪代码版
+  - 把 v1.1 子步骤拆解（Step 2.1/2.2）合并进 v1.0 "### 粗加工 5 步（详细，v1.0）"
+  - 标题升级为 v1.2 整合版
+  - 每 Step 用结构化字段：输入/输出/跳过/行为/异常处理/强制约定
+- **HANDOFF.md**：v1.2 增量上下文章节同步
+
+### 🔧 Bug 修复
+
+- **Step 2.2 -noautorotate 缺失**（`processing.py:278`）
+  - **症状**：源 rotation=-180° 的视频处理后仍颠倒（DAY2 #2 实测）
+  - **根因**：ffmpeg 读入时默认自动应用 metadata rotation（让画面"人眼正"），又叠加 `transpose=1,transpose=1`（基于 metadata 推断）→ 反向旋转 → 颠倒
+  - **修复**：加 `-noautorotate`，让 ffmpeg 不自动应用 metadata，由 `transpose` 精确控制；patch tkhd 清 metadata
+  - **验证**：#1 (-90°) / #2 (-180°) 均正确
+- **`build_rotation_filter` transpose 映射写反**（`processing.py:112-127`，2026-07-04 实战发现）
+  - **症状**：rotation=-90° 的竖屏视频处理后倒 180°；rotation=+90° 同理
+  - **根因**：-90°→`transpose=2`(180°旋转)，+90°→`transpose=1`(180°旋转)——完全写反
+  - **修复**：-90°→`transpose=1`，+90°→`transpose=2`
+  - **验证**：DAY2 #1(-90°) / #3(-90°) / #8(-90°) / #7(+90°) / #26(+90°) 全 1920×1080
+- **`build_video_filter` 和 `build_cut_middle_filter` 的 aspect_handling 条件写反**
+  - **症状**：竖屏源 + aspect-fit 时，竖屏内容直接以横向像素存储，播放出来是倒的
+  - **根因**：只对 `aspect-fill` 做 counter-rotate，但竖屏源（rotation≠0）用 aspect-fit 也需要 counter-rotate
+  - **修复**：counter-rotate 条件从 `aspect_handling=='aspect-fill'` 改为 `rotation!=0`；scale/pad 策略才区分 aspect-fill/fit
+  - **验证**：DAY2 #1(-90°+aspect-fit) / #3(-90°+aspect-fit) / #7(+90°+aspect-fit) 均正确
+
+### ✨ 新增
+
+- **aspect-fill / aspect-fit 比例处理方式**（`intent.output.aspect_handling`）
+  - **aspect-fill**：旋转并填满，内容最大显示（`force_original_aspect_ratio=increase`）
+  - **aspect-fit**：保持原始显示方向，加黑边适配（`force_original_aspect_ratio=decrease` + pad）
+  - **两模式差异在 scale/pad 策略，不在 counter-rotate**
+  - 实现：`processing.py` 的 `build_video_filter` / `build_cut_middle_filter` 加 `aspect_handling` 参数
+  - intent.html 输出比例选项下方加"构图处理方式"下拉框
+
+### 📝 设计原则（继承 v1.0/v1.1 + 新增）
+
+- v1.0 三原则：零硬编码 / 零遗漏 / 零猜测
+- v1.1 信息流单向原则
+- **v1.2 新增**：契约集中原则（一个 Step 一处看完，避免双版漂移）
+- **v1.2 新增**：counter-rotate 独立原则（rotation≠0 时永远 counter-rotate，scale/pad 才区分模式）
+
+### 📝 设计原则（继承 v1.0/v1.1 + 新增）
+
+- v1.0 三原则：零硬编码 / 零遗漏 / 零猜测
+- v1.1 信息流单向原则
+- **v1.2 新增**：契约集中原则（一个 Step 一处看完，避免双版漂移）
+
+### 已知遗留
+
+- v1.0 缺陷 #1（操作清单 jargon 过重）仍未修，待 v1.3
+- executor.py 仍是 v0.7 版本，未实现 v1.0/v1.1/v1.2 新增行为
+- docs/*.md (FAQ/GETTING_STARTED/FEATURE_COMPARISON/VS_JIANYING) 和 README.md 仍是 v0.5 内容（v0.7 已知遗留）
+- SKILL.md 已更新，但架构.md §5 Step 2 行还在 v1.0 版本（v1.1 增量时改过，v1.2 整合未同步——见 v1.3 待办）
+
+---
+
 ## v1.1 (2026-07-04) - Step 2 子步骤拆解：ASR 优先
 
 > 增量改进：在 v1.0 基础上，把 Step 2 拆为 2.1 (ASR 优先) + 2.2 (基于 ASR 处理)。

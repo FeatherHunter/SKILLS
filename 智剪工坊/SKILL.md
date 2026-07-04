@@ -423,60 +423,157 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
      → 阶段 1 产物是阶段 2 的执行契约
 ```
 
-#### 阶段 2 ▸ 粗加工（5 步）
 
+
+#### 阶段 2 ▸ 粗加工（5 步）（v1.2 整合）
+
+**输入**：`intent.json` + 已确认操作清单（阶段 1 产物）
+**输出**：`00_智剪/粗加工/` 下 5 类文件
+**阶段契约**：阶段 1 操作清单是本阶段执行契约，无清单不进入本阶段（参见 § 操作清单 schema）
+
+---
+
+##### Step 1：解析 + 自检
+
+- **输入**：`intent.json` + 已确认操作清单
+- **输出**：`中间产物/自检报告.json`
+- **跳过**：无（必须遍历所有视频）
+- **行为**：
+  - 解析 JSON
+  - 检查源文件存在、必填字段、exclude 列表
+  - 写状态到 `中间产物/自检报告.json`
+- **异常处理**：不退出整体；列源缺失 / 字段缺失清单（让用户在决策.md 看到）
+- **强制（v1.0）**：异常不退出整体流程
+
+---
+
+##### Step 2：单视频处理 + ASR（v1.1 拆为 2.1 + 2.2，ASR 优先）
+
+###### Step 2.1：ASR 优先（批量转录所有需要 ASR 的视频）
+
+- **输入**：操作清单 A 象限中 `voice != mute / bgm-only` 的项
+- **处理**：faster-whisper 转录（`lib/asr.py`）
+- **输出**：
+  - `文字稿/视频_{idx}.md`（每个视频一份）
+  - `文字稿/全部.md`（汇总）
+- **跳过**：`voice == "mute"` 或 `"bgm-only"` 的视频不跑 ASR
+- **行为**：每完成一个 ASR → 立即向用户汇报
+- **目的**：让 Step 2.2 处理视频时 AI 已有文字稿可优化 ops（D2 文字卡内容、D5 水词判定）
+
+###### Step 2.2：单视频处理（基于 ASR 优化）
+
+- **输入**：源 mp4 + ops（来自 intent）+ 文字稿（Step 2.1 产出，可能为空）
+- **处理**：trim/cut/pin-range/speed + 可选基于文字稿调整 ops
+  - 例 1：文字稿含水词 + `voice: keep-with-filler-removed` → 触发 `remove_fillers`
+  - 例 2：文字稿内容 → AI 优化文字卡内容（覆盖 D2 默认）
+  - **音频同步（A）**：trim/cut/pin-range 后视频流用 `setpts=PTS-STARTPTS` 归零了 PTS（时间戳从 0 开始），但音频流原始 PTS 范围未归零，音画不同步。必须同步 trim 音频范围并重置 PTS（`atrim + asetpts=PTS-STARTPTS`）。
+    - **mute 视频**：源视频无音频轨时 `[0:a]` 不存在，需用 `anullsrc` 生成等长空白音轨（`anullsrc=r=44100:cl=stereo[a];[a]apad=whole_dur=${输出时长}`），否则 filter graph 引用失败。
+  - **旋转处理（A）**：rotation metadata = 0 → 不旋转；≠ 0 → 由 `transpose` 实现像素旋转
+    - 0° → 空 filter
+    - 90° → `transpose=1`
+    - -90°/270° → `transpose=2`
+    - ±180° → `transpose=1,transpose=1`
+    旋转后清 metadata（见"后处理"字段）
+   - **比例处理方式（来自 intent.output.aspect_handling）**：
+     - `aspect-fit`（默认）：竖屏源 → counter-rotate（竖屏构图）+ 左右黑边；横屏源 → 不旋转（横屏构图）+ 上下黑边
+       - 核心：rotation≠0 时 counter-rotate；rotation=0 时不旋转；再按目标比例加黑边适配
+       - 实现：`rotation != 0` → counter-rotate（`transpose`）；`rotation == 0` → 不旋转；`scale:force_original_aspect_ratio=decrease + pad` 填黑边
+     - `aspect-fill`：竖屏源 → counter-rotate（竖屏构图）+ 填满（可能裁切）；横屏源 → 不旋转（横屏构图）+ 填满
+       - 核心：rotation≠0 时 counter-rotate；rotation=0 时不旋转；再按目标比例强制填满
+       - 实现：`rotation != 0` → counter-rotate（`transpose`）；`rotation == 0` → 不旋转；`scale:force_original_aspect_ratio=increase` 填满
+     - **counter-rotate 独立原则**：rotation≠0 时永远 counter-rotate（让像素变正确方向）；scale/pad 策略才区分 aspect-fill/fit
+     - **四场景矩阵**：
+       | 源显示 | 目标像素 | aspect-fill | aspect-fit |
+       |---|---|---|---|
+       | 竖屏（≠0） | 竖屏 | counter-rotate，填满 | counter-rotate，填满 |
+       | 竖屏（≠0） | 横屏 | counter-rotate，填满 | counter-rotate，左右黑边 |
+       | 横屏（=0） | 竖屏 | 不旋转，上下黑边 | 不旋转，横屏构图，左右黑边 |
+       | 横屏（=0） | 横屏 | 不旋转，填满 | 不旋转，填满 |
+- **输出**：
+  - `单视频/video_{idx}.mp4`
+  - `单视频/profile_{idx}.json`（格式见下方 schema）
+- **跳过**：`exclude == true`
+- **行为**：
+  - 每处理完一个 → 立即向用户汇报（产物路径 + 摘要 + 异常）
+  - 出现卡死 / 超时 → 立即向用户汇报
+   - **应用 ops 顺序：counter-rotate → 用户 op → scale/pad（aspect-fill 或 aspect-fit）**
+  - **ASR 触发条件**：与 Step 2.1 一致（`voice != mute / bgm-only`）
+- **异常处理**：分两种，不退出整体
+  - **命令失败**：ffmpeg return code ≠ 0 → 写入 `profile.error`，继续下一个视频
+  - **产物无效**：ffmpeg 成功但输出 < 1KB → 写入 `profile.error`，继续下一个视频
+- **后处理（B）**：ffmpeg 编码成功后必须调用 `patch_mp4_rotation`（`lib/patch_mp4_rotation.py`）直接改写 mp4 tkhd matrix atom，清除残留的 displaymatrix metadata。ffmpeg 的 `-bsf:v h264_metadata=rotate=0` 和 `-metadata:s:v:0 rotate=0` 对某些编码器不生效，必须二进制 patch 才可靠。
+  - **patch 失败**：不影响 Step 2.2 成功判定；主产物（ffmpeg 写的 mp4）已存在且正确，patch 失败只记警告。
+- **强制（v1.0）**：
+  - 每处理完一个 → 立即向用户汇报，不得静默
+  - 卡死 / 超时 → 立即向用户汇报，不得静默
+  - 用户可随时叫停审查
+
+**profile_{idx}.json schema**（v1.0）：
+
+```json
+{
+  "index": 3,
+  "source_file": "video_xxx.mp4",
+  "source_resolution": "1080x1920",
+  "has_rotation_metadata": true,
+  "rotation_applied": -90,
+  "applied_ops": ["cut-middle"],
+  "output_resolution": "1920x1080",
+  "output_duration": 6.4,
+  "voice_mode": "keep",
+  "output_path": "D:\\\\...\\\\单视频\\\\video_03.mp4"
+}
 ```
-Step 1: 解析 + 自检
-  输入:  intent.json + 已确认操作清单
-  输出:  中间产物/自检报告.json
-  行为:  验证源文件、必填字段、exclude 列表
-         异常不退出，让用户在决策.md 看到
 
-Step 2: 单视频处理 + ASR（v1.1 子步骤拆解，ASR 优先）
+**A 汇总报告**（Step 2.2 完成后，v1.0 强制）：
+- AI 输出 markdown 摘要到聊天 + 写入 `中间产物/单视频汇总.md`
+- 必须包含：每个视频的 applied_ops 列表、时长变化、有/无异常
 
-Step 2.1: ASR 优先（批量转录所有需要 ASR 的视频）
-  输入:  操作清单 A 象限中 voice != mute / bgm-only 的项
-  处理:  faster-whisper 转录（lib/asr.py）
-  输出:  文字稿/视频_{idx}.md
-         文字稿/全部.md
-  跳过:  voice == "mute" 或 "bgm-only" 的视频不跑 ASR
-  行为:  每完成一个 ASR → 立即向用户汇报
-  目的:  让 Step 2.2 处理视频时 AI 已有文字稿可优化 ops（D2 文字卡内容、D5 水词判定）
+---
 
-Step 2.2: 单视频处理（基于 ASR 优化）
-  输入:  源 mp4 + ops + 文字稿（Step 2.1 产出，可能为空）
-  处理:  trim/cut/pin-range/speed + 可选基于文字稿调整 ops
-         例子:
-         - 文字稿含水词 + voice: keep-with-filler-removed → 触发 remove_fillers
-         - 文字稿内容 → AI 优化文字卡内容（覆盖 D2 默认）
-  输出:  单视频/video_{idx}.mp4
-         单视频/profile_{idx}.json
-  行为:  每处理完一个 → 立即向用户汇报（产物路径 + 摘要 + 异常）
-         出现卡死 / 超时 → 立即向用户汇报
-         应用 ops 顺序：旋转 → 用户 op → 标准 pillarbox
+##### Step 3：sequence 拼接（仅 sequence 内视频）
 
-Step 3: sequence 拼接（仅 sequence 内视频）
-  输入:  操作清单 C 象限
-  输出:  组合/seq_<name>.mp4
-         中间产物/拼接日志.log
-         中间产物/自由素材清单.md   ← 列出未约束视频（v1.0 新增）
-  行为:  按 sequence 内部顺序 xfade 链拼
-         未约束视频不处理（留给模板阶段）
+- **输入**：`单视频/` 里的成品 + `intent.json.sequences`
+- **输出**：
+  - `组合/seq_{name}.mp4`（每个 sequence 一段）
+  - `中间产物/拼接日志.log`
+  - `中间产物/自由素材清单.md`（v1.0 新增：列出**不在任何 sequence 内**的视频，留给模板阶段）
+- **跳过**：不在任何 sequence 内的视频
+- **行为**：每个 sequence 按内部顺序 xfade 链拼；跨 sequence 最后再拼一次
+- **异常处理**：ffmpeg 失败 → 写入拼接日志，不退出整体
+- **强制（v1.0）**：跨 sequence 最后再拼一次（一次性拼接全片）
 
-Step 4: 整体复核 + 模糊项兜底（v1.0 重构）
-  输入:  操作清单 D 象限 + Step 2/3 实际产物
-  行为:  把意图对齐阶段没明确的、Step 1-3 没处理的
-         全部重新列一遍
-         AI 跟用户逐条澄清 → 应用原子操作 → 更新产物
-  输出:  中间产物/模糊项处理记录.md
-         (可能的) 单视频/文字稿 更新
+---
 
-Step 5: 决策报告 + 模板衔接（v1.0 调整）
-  输入:  全量产物
-  输出:  决策.md
-         模板加载建议
-         进入模板工作流
-```
+##### Step 4：整体复核 + 模糊项兜底
+
+- **输入**：操作清单 D 象限 + Step 2/3 实际产物
+- **输出**：
+  - `中间产物/模糊项处理记录.md`
+  - （可能的）`单视频/video_xx.mp4` 更新
+  - （可能的）`文字稿/video_xx.md` 更新
+- **行为**：
+  - 重新审视所有"模糊项"（意图对齐阶段没明确 + Step 1-3 没处理的）
+  - 跟用户**逐条澄清** → 应用原子操作 → 更新产物
+  - 每处理完一个模糊项 → 写入处理记录
+- **强制（v1.0）**：
+  - 模糊项**不闷头猜**：D 象限中标记"必须问"的项目，必须等用户回答
+  - 已"建议问"的项目，AI 可提供默认假设 + 让用户否决
+
+---
+
+##### Step 5：决策报告 + 模板衔接
+
+- **输入**：全量产物
+- **输出**：`决策.md`
+- **行为**：写决策报告 + 进入模板工作流
+
+**决策.md** 必须包含：
+- intent.json 整体要求摘要
+- 异常情况报告（哪些源是竖屏、哪些有 rotation、哪些 op 可能出问题）
+- 用户在粗加工过程中提的额外要求
+- 模板加载建议（v1.0 新增：基于操作清单 + 关键帧 + ASR 文字稿）
+- 进入模板工作流（阶段 3）
 
 #### 阶段 3 ▸ 模板工作流
 
@@ -495,77 +592,6 @@ Step 5: 决策报告 + 模板衔接（v1.0 调整）
 - 封面生成（按 cover.prompt，prompt 不明时 AI 必须问）
 - 输出: 00_智剪/成片/vlog_final.mp4
 ```
-
-### 粗加工 5 步（详细，v1.0）
-
-**输入**：`intent.json` + 已确认操作清单
-**输出**：`00_智剪/粗加工/` 下 5 类文件
-
-#### Step 1：解析 + 自检
-
-- 解析 JSON
-- 检查源文件存在、必填字段、exclude 列表
-- 写状态到 `中间产物/自检报告.json`
-- **失败**：列源缺失 / 字段缺失清单（不退出，让用户看到）
-
-#### Step 2：单视频处理 + ASR（ASR 前置）
-
-- 遍历 `intent.json.videos` 中**非 exclude** 的项
-- 每个视频：源 mp4 + ops → `单视频/video_{idx}.mp4`
-- 同步 ASR 转录：`单视频/video_{idx}.mp4` → `文字稿/视频_{idx}.md`
-- 合并：`文字稿/全部.md`
-- 同时写 `单视频/profile_{idx}.json`：
-  ```json
-  {
-    "index": 3,
-    "source_file": "video_xxx.mp4",
-    "source_resolution": "1080x1920",
-    "has_rotation_metadata": true,
-    "applied_ops": ["cut-middle"],
-    "output_resolution": "1920x1080",
-    "output_duration": 6.4,
-    "voice_mode": "keep"
-  }
-  ```
-- **行为约定**（v1.0 强制）：
-  - 每处理完一个 → 立即向用户汇报（产物路径 + 摘要 + 异常）
-  - 卡死 / 超时 → 立即向用户汇报，不得静默
-  - 用户可随时叫停审查
-- **A 汇总报告**（Step 2 完成后）：
-  - AI 输出 markdown 摘要到聊天 + 写入 `中间产物/单视频汇总.md`
-  - 包含：每个视频的 applied_ops 列表、时长变化、有/无异常
-
-#### Step 3：sequence 拼接（仅 sequence 内视频）
-
-- 输入：`单视频/` 里的成品 + `intent.json.sequences`
-- 处理：每个 sequence 按内部顺序 xfade 链拼 → `组合/seq_{name}.mp4`
-- 跨 sequence 最后再拼一次
-- 写 `中间产物/拼接日志.log`
-- **v1.0 新增**：写 `中间产物/自由素材清单.md`，列出**不在任何 sequence 内**的视频（这些不在 Step 3 处理，留给模板阶段）
-
-#### Step 4：整体复核 + 模糊项兜底
-
-- 输入：操作清单 D 象限 + Step 2/3 实际产物
-- 行为：
-  - 重新审视所有"模糊项"
-  - 跟用户**逐条澄清** → 应用原子操作 → 更新产物
-  - 每处理完一个模糊项 → 写入 `中间产物/模糊项处理记录.md`
-- 输出：
-  - `中间产物/模糊项处理记录.md`
-  - （可能的）`单视频/video_xx.mp4` 更新
-  - （可能的）`文字稿/视频_xx.md` 更新
-- **行为约定**（v1.0 强制）：
-  - 模糊项**不闷头猜**：D 象限中标记"必须问"的项目，必须等用户回答
-  - 已"建议问"的项目，AI 可提供默认假设 + 让用户否决
-
-#### Step 5：决策报告 + 模板衔接
-
-写 `决策.md`：
-- intent.json 整体要求摘要
-- 异常情况报告（哪些源是竖屏、哪些有 rotation、哪些 op 可能出问题）
-- 用户在粗加工过程中提的额外要求
-- **v1.0 新增**：模板加载建议（基于操作清单 + 关键帧 + ASR 文字稿）
-- 进入模板工作流（阶段 3）
 
 ### 操作清单 schema（v1.0 强制）
 

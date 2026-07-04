@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="智剪工坊LOGO.png" />
 <title>智剪工坊 · 代码视频剪辑工作台</title>
 <style>
   /* ===== CSS 变量(主题) ===== */
@@ -129,13 +130,11 @@
     gap: 8px;
   }
   .logo-icon {
-    width: 32px; height: 32px;
-    background: var(--gradient-1);
+    width: 36px; height: 36px;
     border-radius: 8px;
-    display: grid; place-items: center;
-    color: white;
-    font-size: 18px;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    object-fit: contain;
+    display: block;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.18);
   }
   .nav-links {
     display: flex;
@@ -761,7 +760,7 @@
 <nav class="nav">
   <div class="nav-inner">
     <div class="logo">
-      <div class="logo-icon">智</div>
+      <img src="智剪工坊LOGO.png" alt="智剪工坊" class="logo-icon">
       <span>智剪工坊</span>
     </div>
     <ul class="nav-links">

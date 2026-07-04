@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="智剪工坊LOGO.png">
   <title>智剪工坊 · Vlog Intent</title>
   <style>
     :root {
@@ -83,7 +84,7 @@
       background: #000; border-radius: 8px; flex-shrink: 0; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
       color: var(--secondary); font-size: 11px; cursor: pointer; position: relative;
-      width: 64px; height: 64px; flex-shrink: 0;
+      width: 96px; height: 96px; flex-shrink: 0;
     }
     .video-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
     .video-thumb .play-hint {
@@ -99,7 +100,7 @@
     .video-grid .field { margin-bottom: 0; }
     @media (max-width: 640px) {
       .video-grid { grid-template-columns: 1fr; }
-      .video-thumb { width: 56px; height: 56px; }
+      .video-thumb { width: 80px; height: 80px; }
     }
     .ops-group {
       background: var(--card); border: 1px solid var(--border); border-radius: 10px;
@@ -300,10 +301,23 @@
     .sequences-list { display: none; }
 
     .picker-screen {
-      text-align: center; padding: 80px 20px; background: var(--card);
+      text-align: center; padding: 60px 20px 80px; background: var(--card);
       border-radius: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    .picker-screen h1 { margin-bottom: 16px; font-size: 24px; }
+    .picker-screen .brand-logo {
+      width: 88px; height: 88px;
+      display: block; margin: 0 auto 16px;
+    }
+    .picker-screen .brand-wordmark {
+      font-size: 22px; font-weight: 600; letter-spacing: -0.3px;
+      color: var(--label); margin: 0 0 4px;
+    }
+    .picker-screen .brand-tagline {
+      font-size: 12px; letter-spacing: 1px;
+      color: var(--secondary); text-transform: uppercase;
+      margin: 0 0 24px; font-family: ui-monospace, SF Mono, monospace;
+    }
+    .picker-screen h1 { margin-bottom: 16px; font-size: 22px; }
     .picker-screen p { color: var(--secondary); margin-bottom: 8px; font-size: 14px; }
     .picker-screen .picker-lead {
       max-width: 480px; margin-left: auto; margin-right: auto;
@@ -400,11 +414,28 @@
     .form-head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
       margin-bottom: 6px;
     }
-    .form-head h1 { margin-bottom: 0; }
+    .form-head .brand-mark {
+      display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+    .form-head .brand-mark img {
+      width: 32px; height: 32px; border-radius: 6px;
+    }
+    .form-head .brand-mark .wordmark {
+      font-size: 14px; font-weight: 600; color: var(--label);
+      letter-spacing: -0.2px;
+    }
+    .form-head h1 {
+      flex: 1; text-align: center;
+      margin-bottom: 0;
+      font-size: 16px; font-weight: 500; color: var(--label);
+    }
+    .form-head .revision-badge {
+      flex-shrink: 0;
+    }
     .revision-badge {
       background: var(--blue); color: #fff; font-size: 11px; font-weight: 600;
       padding: 4px 8px; border-radius: 6px; font-family: ui-monospace, monospace;
@@ -437,6 +468,9 @@
 <body>
   <div class="container">
     <div id="picker-screen" class="picker-screen" style="display:none">
+      <img src="智剪工坊LOGO.png" alt="智剪工坊" class="brand-logo">
+      <div class="brand-wordmark">智剪工坊</div>
+      <div class="brand-tagline">VIDEO EDITOR WORKSHOP</div>
       <h1>开始剪辑准备 · 第 1 步：选视频文件夹</h1>
       <p class="picker-lead">我会扫描文件夹里的 <strong>.mp4</strong> 文件，列出每个视频让你填描述，保存成 <code>intent.json</code> 发给 AI 当剪辑依据。</p>
       <p style="font-size:12px">浏览器会请求权限，授权后才能读写文件夹</p>
@@ -462,6 +496,10 @@
         </div>
       </div>
       <div class="form-head">
+        <div class="brand-mark">
+          <img src="智剪工坊LOGO.png" alt="智剪工坊">
+          <span class="wordmark">智剪工坊</span>
+        </div>
         <h1>填每段视频的描述</h1>
         <span class="revision-badge" id="revision-badge">v1</span>
       </div>
@@ -897,9 +935,9 @@
       const vw = entry.videoWidth || 1920;
       const vh = entry.videoHeight || 1080;
       const aspect = vw / vh;
-      // 缩略图：统一外框大小（64×64），里面 img 按原始比例 contain
+      // 缩略图：统一外框大小，里面 img 按原始比例 contain
       // 横屏/竖屏占地大小一致，只有内容比例不同
-      const BOX = 64;
+      const BOX = 96;  // 64 × 1.5
       let tw, th;
       if (aspect >= 1) {
         // 横屏：宽 64
@@ -1586,17 +1624,21 @@
           nextMap[i] = nextEntry.index;
           const tSel = document.querySelector(`[data-seq-trans="${i}"]`);
           const dEl = document.querySelector(`[data-seq-dur="${i}"]`);
-          if (tSel && tSel.value) {
+          // 即使 tSel.value 是 ""（默认 = AI 选）也算合法；空 type 在 load 时为 fade
+          if (tSel) {
             transMap[i] = {
-              type: tSel.value,
+              type: tSel.value || 'fade',
               duration: dEl ? parseFloat(dEl.value) || 0.5 : 0.5
             };
           }
         }
       });
-      // 找所有链起点（没有任何视频指向自己的）
+      // 找所有链起点（没有任何视频指向自己的 entry.index）
+      // 注意：hasParent 存的是 entry.index（1-based），所以比较时也得用 entry.index
       const hasParent = new Set(Object.values(nextMap));
-      const roots = videoEntries.map((_, i) => i).filter(i => !hasParent.has(i));
+      const roots = videoEntries
+        .map((e, i) => i)
+        .filter(i => !hasParent.has(videoEntries[i].index));
       // 从每个起点顺着链走，重建 sequences
       roots.forEach(startIdx => {
         const chain = [];

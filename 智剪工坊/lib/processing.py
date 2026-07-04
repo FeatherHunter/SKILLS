@@ -128,7 +128,7 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9', ro
     if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
         return build_cut_middle_filter(ops['cut-middle'], target_w, target_h)
 
-    rot_filter = build_rotation_filter(rotation)
+    # 不旋转像素（v0.7 设计），只用 pillarbox + 清 metadata
     v_filters = []
     a_filters = []
 
@@ -179,11 +179,12 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9', ro
         f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
     )
 
-    # 拼装 v 链：旋转 → 用户 op → standard pillarbox
-    v_chain = rot_filter + ",".join(v_filters) if v_filters else rot_filter
-    a_chain = ",".join(a_filters) if a_filters else "anullsrc=r=44100:cl=stereo"
+    # 拼装 v 链：用户 op → standard pillarbox（不旋转）
+    v_chain = ",".join(v_filters)
+    # 注意: 用 [0:a]anull 而不是 anullsrc，因为 anullsrc + aac 编码在某些情况下会卡死
+    a_chain = ",".join(a_filters) if a_filters else "[0:a]anull"
 
-    fc = f"[0:v]{v_chain}[v];[0:a]{a_chain}[a]"
+    fc = f"[0:v]{v_chain}[v];{a_chain}[a]"
     return fc, ["[v]", "[a]"]
 
 
@@ -235,17 +236,20 @@ def process_video(video, workspace, output_path, target_aspect='16:9'):
 
     target_w, target_h = TARGET_RESOLUTIONS.get(target_aspect, (1920, 1080))
 
-    # fast-path: 无 op + voice keep + 像素匹配 → 直接复制
+    # fast-path: 无 op + voice keep + 像素匹配 + 无 rotation → 直接复制
+    # 重要：如果源带 rotation metadata，fast-path 会保留 rotation，导致播放器二次旋转
+    # 所以 has_rotation_metadata=True 必须走完整转码清掉
     if (not has_any_op(ops) and voice == 'keep'
-            and width == target_w and height == target_h):
+            and width == target_w and height == target_h
+            and rotation == 0):
         try:
             shutil.copy2(src, output_path)
             return output_path, {
                 "index": idx,
                 "source_file": file,
                 "source_resolution": f"{width}x{height}",
-                "has_rotation_metadata": rotation != 0,
-                "rotation_applied": rotation,
+                "has_rotation_metadata": False,
+                "rotation_applied": 0,
                 "applied_ops": [],
                 "output_resolution": f"{width}x{height}",
                 "output_duration": duration,

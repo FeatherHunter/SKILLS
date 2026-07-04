@@ -319,7 +319,7 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 | op 名 | 中文 | 字段 | 用途 |
 |---|---|---|---|
 | `insert-image` | 插入图片 | `file`, `at`, `duration`, `note` | 视频中插入静态图片（停顿 N 秒） |
-| `opening-text` | 片头文字 | `text`, `duration`, `note` | 视频前 N 秒叠加文字卡（场景说明） |
+| `opening-text` | 片头文字 | `text`, `duration`, `note` | 视频前 N 秒画面上叠加场景说明文字 |
 
 **未实现的 op 触发 fallback**：如果 intent.json 里有 ops 名称不在已知列表中，AI 应：
 1. 读 op 的 note 字段看用户意图
@@ -459,14 +459,14 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
   - `文字稿/全部.md`（汇总）
 - **跳过**：`voice == "mute"` 或 `"bgm-only"` 的视频不跑 ASR
 - **行为**：每完成一个 ASR → 立即向用户汇报
-- **目的**：让 Step 2.2 处理视频时 AI 已有文字稿可优化 ops（D2 文字卡内容、D5 水词判定）
+- **目的**：让 Step 2.2 处理视频时 AI 已有文字稿可优化 ops（D2 片头叠加文字内容、D5 水词判定）
 
 ###### Step 2.2：单视频处理（基于 ASR 优化）
 
 - **输入**：源 mp4 + ops（来自 intent）+ 文字稿（Step 2.1 产出，可能为空）
 - **处理**：trim/cut/pin-range/speed + 可选基于文字稿调整 ops
   - 例 1：文字稿含水词 + `voice: keep-with-filler-removed` → 触发 `remove_fillers`
-  - 例 2：文字稿内容 → AI 优化文字卡内容（覆盖 D2 默认）
+  - 例 2：文字稿内容 → AI 优化片头叠加文字内容（覆盖 D2 默认）
   - **音频同步（A）**：trim/cut/pin-range 后视频流用 `setpts=PTS-STARTPTS` 归零了 PTS（时间戳从 0 开始），但音频流原始 PTS 范围未归零，音画不同步。必须同步 trim 音频范围并重置 PTS（`atrim + asetpts=PTS-STARTPTS`）。
     - **mute 视频**：源视频无音频轨时 `[0:a]` 不存在，需用 `anullsrc` 生成等长空白音轨（`anullsrc=r=44100:cl=stereo[a];[a]apad=whole_dur=${输出时长}`），否则 filter graph 引用失败。
   - **旋转处理（A）**：rotation metadata = 0 → 不旋转；≠ 0 → 由 `transpose` 实现像素旋转

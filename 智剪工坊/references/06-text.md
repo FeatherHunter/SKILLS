@@ -1,11 +1,15 @@
-# 06 - text (文字动画 + 烧字幕) — v0.5 已实现
+# 06 - text (文字动画 + 烧字幕 + 片头文字) — v1.0 已实现
 
-> **对应脚本:** `scripts/auto_subtitle.py` + `scripts/voice_change.py` + `scripts/translate.py`(3 个)
+> **对应脚本:** `scripts/auto_subtitle.py` + `scripts/opening_text.py` + `scripts/voice_change.py` + `scripts/translate.py`(4 个)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # 自动字幕(Whisper 转录 + 烧录)
 python scripts/auto_subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
+
+# 片头说明文字（v1.0 新增, 9 宫格简写 + 淡入淡出 + 自动中文字体）
+python scripts/opening_text.py add --input v.mp4 --output v_with_text.mp4 \
+    --text "晨间体重 新的一天" --region bottom-left --duration 2
 
 # 变声 12 种
 python scripts/voice_change.py --input v.mp4 --pitch +2 --output v_chipmunk.mp4

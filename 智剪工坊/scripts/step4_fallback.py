@@ -55,8 +55,9 @@ def detect_fillers_in_md(md_path: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 4: 模糊项兜底")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args（卡路里风格：底层 lib 无 argparse）
+    from cli_args import make_base_parser
+    parser = make_base_parser("v1.1 阶段 2 Step 4: 模糊项兜底")
     parser.add_argument("--apply", action="store_true",
                         help="应用自动候选（不推荐，AI 应逐条跟用户确认）")
     args = parser.parse_args()

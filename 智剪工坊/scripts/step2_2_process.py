@@ -26,8 +26,9 @@ SUMMARY_MD = "单视频汇总.md"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 2.2: 单视频处理")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args（与卡路里技能对齐风格）
+    from cli_args import make_base_parser, resolve_aspect
+    parser = make_base_parser("v1.1 阶段 2 Step 2.2: 单视频处理")
     parser.add_argument("--videos", default="", help="逗号分隔的视频 index（默认所有）")
     parser.add_argument("--force", action="store_true", help="强制重跑")
     args = parser.parse_args()
@@ -41,8 +42,9 @@ def main():
     single_dir.mkdir(parents=True, exist_ok=True)
     intermediate_dir.mkdir(parents=True, exist_ok=True)
 
-    aspect = intent.get('output', {}).get('aspect_ratio', '16:9') or '16:9'
-    # v1.2: aspect_handling（aspect-fill 填满；aspect-fit 适配，默认）
+    # v1.1: aspect 解析（CLI > intent > 默认 16:9），支持 5 种比例
+    # v1.2: aspect_handling（默认 preserve 保留原构图，intent.output.aspect_handling 可覆盖）
+    aspect = resolve_aspect(args, intent)
     aspect_handling = intent.get('output', {}).get('aspect_handling', 'aspect-fit')
     if aspect_handling not in ('aspect-fill', 'aspect-fit'):
         aspect_handling = 'aspect-fit'

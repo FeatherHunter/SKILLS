@@ -43,8 +43,9 @@ def probe_duration(video_path: Path, ffmpeg: str = None) -> float:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 2.1: ASR 优先")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args
+    from cli_args import make_base_parser
+    parser = make_base_parser("v1.1 阶段 2 Step 2.1: ASR 优先")
     parser.add_argument("--model", default="small", help="whisper 模型")
     parser.add_argument("--device", default="cuda", help="cuda 或 cpu")
     parser.add_argument("--language", default="zh", help="语言代码")

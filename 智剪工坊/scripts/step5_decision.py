@@ -33,8 +33,9 @@ def recommend_template(intent):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 5: 决策报告 + 模板衔接")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args（卡路里风格：底层 lib 无 argparse）
+    from cli_args import make_base_parser
+    parser = make_base_parser("v1.1 阶段 2 Step 5: 决策报告 + 模板衔接")
     args = parser.parse_args()
 
     workspace = Path(args.workspace)

@@ -18,8 +18,9 @@ from stage1_checklist import generate_and_save, INTERMEDIATE_DIR  # noqa: E402
 
 
 def main():
-    parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 1: 解析 + 自检")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args（卡路里风格：底层 lib 无 argparse，step 脚本负责解析）
+    from cli_args import make_base_parser
+    parser = make_base_parser("v1.1 阶段 2 Step 1: 解析 + 自检")
     args = parser.parse_args()
 
     workspace = Path(args.workspace)

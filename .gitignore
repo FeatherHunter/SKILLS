@@ -18,3 +18,18 @@ Thumbs.db
 
 # 智剪工坊工作流临时产物（edit 子技能原子操作中间文件）
 智剪工坊/__edit_tmp_*.mp4
+
+# 智剪工坊调试/验证产物（_check_*.py/_check_*.png/_check_*.mp4 等本地验证脚本和输出，不入库）
+智剪工坊/tests/_check_*.py
+智剪工坊/tests/_check_*.png
+智剪工坊/tests/_check_*.mp4
+智剪工坊/tests/_test_*.py
+智剪工坊/tests/_test_*.mp4
+智剪工坊/tests/_show_*.py
+智剪工坊/tests/_find_*.py
+智剪工坊/tests/_clean_*.py
+智剪工坊/tests/_diag_*.py
+智剪工坊/tests/_final_*.py
+智剪工坊/tests/_verify_*.py
+智剪工坊/tests/_batch_*.py
+智剪工坊/tests/_src_*.png

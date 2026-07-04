@@ -25,7 +25,9 @@ LOG_FILE = "拼接日志.log"
 
 def main():
     parser = argparse.ArgumentParser(description="v1.1 阶段 2 Step 3: sequence 拼接")
-    parser.add_argument("--workspace", required=True, help="工作区根目录")
+    # v1.1: 用 shared cli_args（卡路里风格：底层 lib 无 argparse）
+    from cli_args import make_base_parser
+    parser = make_base_parser("v1.1 阶段 2 Step 3: sequence 拼接")
     parser.add_argument("--sequence", default="", help="只拼接指定 sequence 名（默认全部）")
     args = parser.parse_args()
 

@@ -18,6 +18,9 @@
   python text_to_video.py --prompt "..." --api kling --out out.mp4
 
 依赖:mmx matrix MCP(默认)/ requests(其他 API)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/14-text-to-video.md
 """
 import argparse
 import json
@@ -172,7 +175,7 @@ def main():
     parser.add_argument("--prompt", required=True, help="视频描述(prompt)")
     parser.add_argument("--api", choices=["matrix", "kling", "vidu", "runway", "svd"],
                        default="matrix", help="API(默认 matrix=免费)")
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--duration", type=int, default=6, help="视频时长秒(mmx 强制 6/10)")
     args = parser.parse_args()
 
@@ -183,7 +186,7 @@ def main():
         "runway": text_to_video_runway,
         "svd": text_to_video_svd,
     }
-    ok = handlers[args.api](args.prompt, args.out, args.duration)
+    ok = handlers[args.api](args.prompt, args.output, args.duration)
     if not ok:
         sys.exit(1)
 

@@ -25,6 +25,9 @@
       --text "DIET DAY 2" --x 100 --y 200 --duration 5
 
 依赖: ffmpeg（drawtext filter, libx264）
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/06-text.md
 """
 import argparse
 import platform
@@ -348,8 +351,8 @@ def main():
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("add", help="叠加文字到视频指定区域")
-    p.add_argument("--input",  required=True, help="输入视频")
-    p.add_argument("--output", required=True, help="输出视频")
+    p.add_argument("-i", "--input",  required=True, help="输入视频")
+    p.add_argument("-o", "--output", required=True, help="输出视频")
     p.add_argument("--text",   required=True, help="文字内容")
     p.add_argument("--region", choices=list(REGIONS.keys()),
                    help="9 宫格区域简写（与 --x/--y 互斥）")

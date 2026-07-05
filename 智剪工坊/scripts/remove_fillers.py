@@ -18,6 +18,9 @@
   python remove_fillers.py cut --input v.mp4 --srt v.srt --output v_clean.mp4 --remove-words 2,5,12
 
 依赖:faster-whisper(转录)+ ffmpeg(切割)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import json
@@ -420,7 +423,7 @@ def main():
 
     # transcribe
     p_trans = subparsers.add_parser("transcribe", help="视频 → SRT + words.json")
-    p_trans.add_argument("--input", required=True)
+    p_trans.add_argument("-i", "--input", required=True)
     p_trans.add_argument("--srt", required=True)
     p_trans.add_argument("--whisper-model", default="small",
                          choices=["tiny", "base", "small", "medium", "large-v3"])
@@ -430,9 +433,9 @@ def main():
 
     # cut
     p_cut = subparsers.add_parser("cut", help="按索引切视频")
-    p_cut.add_argument("--input", required=True)
+    p_cut.add_argument("-i", "--input", required=True)
     p_cut.add_argument("--srt", required=True)
-    p_cut.add_argument("--output", required=True)
+    p_cut.add_argument("-o", "--output", required=True)
     p_cut.add_argument("--remove", help="句索引(eg 1,3,5-8)")
     p_cut.add_argument("--remove-words", help="词索引(eg 2,5,12,推荐)")
     p_cut.add_argument("--padding", type=float, default=0.05, help="切割边缘 padding(秒)")

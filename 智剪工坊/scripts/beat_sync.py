@@ -11,6 +11,9 @@
   python beat_sync.py --input video.mp4 --bgm music.mp3 --out sync.mp4
 
 依赖:librosa
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/07-audio.md
 """
 import argparse
 import json
@@ -112,19 +115,19 @@ def main():
         epilog="示例:\n  %(prog)s --analyze --bgm music.mp3 --out beats.json\n  %(prog)s --input v.mp4 --bgm music.mp3 --out sync.mp4",
     )
     parser.add_argument("--analyze", action="store_true", help="只分析节拍,输出 JSON")
-    parser.add_argument("--input", help="视频文件")
+    parser.add_argument("-i", "--input", help="视频文件")
     parser.add_argument("--bgm", help="BGM 文件")
-    parser.add_argument("--out", required=True, help="输出(beat JSON 或视频)")
+    parser.add_argument("--output", required=True, help="输出(beat JSON 或视频)")
     args = parser.parse_args()
 
     if args.analyze:
         if not args.bgm:
             raise Exception("--analyze 需要 --bgm")
-        analyze_beats(args.bgm, args.out)
+        analyze_beats(args.bgm, args.output)
     else:
         if not all([args.input, args.bgm]):
             raise Exception("需要 --input 和 --bgm")
-        cut_to_beats(args.input, args.bgm, args.out)
+        cut_to_beats(args.input, args.bgm, args.output)
 
 
 if __name__ == "__main__":

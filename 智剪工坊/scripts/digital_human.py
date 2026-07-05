@@ -16,6 +16,9 @@ AI 数字人(用真人头像 + 文字/音频 → 说话视频)
   python digital_human.py --avatar avatar.jpg --audio voice.mp3 --out out.mp4
 
 依赖:mmx matrix MCP(默认)/ edge-tts(文案→音频)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/15-digital-human.md
 """
 import argparse
 import asyncio
@@ -199,7 +202,7 @@ def main():
     parser.add_argument("--avatar", required=True, help="头像图片(人脸)")
     parser.add_argument("--audio", help="音频文件")
     parser.add_argument("--script", help="文本脚本(没填 audio 就 TTS 合成)")
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--api", choices=["matrix", "heygen", "did", "sadtalker"],
                        default="matrix", help="API(默认 matrix=免费)")
     parser.add_argument("--voice", default="male-qn-qingse", help="TTS 声音(matrix 模式用)")
@@ -212,7 +215,7 @@ def main():
     # 处理 audio
     if not args.audio:
         # script → audio via TTS
-        audio_path = Path(args.out).with_suffix(".tts.mp3")
+        audio_path = Path(args.output).with_suffix(".tts.mp3")
         if not script_to_audio(args.script, audio_path):
             sys.exit(1)
         args.audio = str(audio_path)
@@ -221,13 +224,13 @@ def main():
 
     ok = False
     if args.api == "matrix":
-        ok = digital_human_matrix(args.avatar, args.audio, args.out)
+        ok = digital_human_matrix(args.avatar, args.audio, args.output)
     elif args.api == "heygen":
-        ok = digital_human_heygen(args.avatar, args.audio, args.out)
+        ok = digital_human_heygen(args.avatar, args.audio, args.output)
     elif args.api == "did":
-        ok = digital_human_did(args.avatar, args.audio, args.out)
+        ok = digital_human_did(args.avatar, args.audio, args.output)
     elif args.api == "sadtalker":
-        ok = digital_human_sadtalker(args.avatar, args.audio, args.out)
+        ok = digital_human_sadtalker(args.avatar, args.audio, args.output)
     if not ok:
         sys.exit(1)
 

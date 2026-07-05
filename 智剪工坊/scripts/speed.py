@@ -13,6 +13,9 @@
 曲线:
   --start 1.0 --mid 0.5 --end 2.0
   → 开头 1x,中间 0.5x(慢动作),结尾 2x(加速)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/04-cinematic.md
 """
 import argparse
 import sys
@@ -110,8 +113,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="预设: slow/normal/fast/whisper/very_slow/very_fast\n\n示例:\n  %(prog)s --input in.mp4 --output out.mp4 --preset slow\n  %(prog)s --input in.mp4 --output out.mp4 --factor 1.5",
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--preset", choices=list(PRESETS.keys()), help="预设")
     parser.add_argument("--factor", type=float, help="自定义变速倍数(0.25-4.0)")
     parser.add_argument("--start", type=float, default=1.0, help="曲线变速 - 起始速度")

@@ -6,6 +6,9 @@
 用法:
   python voice_change.py --input in.mp4 --type old_man --out out.mp4
   python voice_change.py --input in.mp4 --pitch 0.7 --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/06-text.md
 """
 import argparse
 import sys
@@ -72,8 +75,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="预设: " + ", ".join(PRESETS.keys()) + "\n\n示例:\n  %(prog)s --input in.mp4 --type old_man --out out.mp4\n  %(prog)s --input in.mp4 --pitch 1.5 --out out.mp4",
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--type", choices=list(PRESETS.keys()), help="预设变声")
     parser.add_argument("--pitch", type=float, help="自定义音调倍数(0.5-2.0)")
     args = parser.parse_args()
@@ -81,13 +84,13 @@ def main():
     if args.type:
         preset = PRESETS[args.type]
         change_voice(
-            args.input, args.out,
+            args.input, args.output,
             pitch=preset.get("pitch", 1.0),
             robot=preset.get("robot", False),
             whisper=preset.get("whisper", False),
         )
     else:
-        change_voice(args.input, args.out, pitch=args.pitch or 1.0)
+        change_voice(args.input, args.output, pitch=args.pitch or 1.0)
 
 
 if __name__ == "__main__":

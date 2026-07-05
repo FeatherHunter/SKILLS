@@ -5,7 +5,7 @@
 
 ```bash
 # 帧级剪切
-python scripts/cut.py trim --input v.mp4 --ss 30 --t 20 --output out.mp4
+python scripts/cut.py trim --input v.mp4 --start 30 --t 20 --output out.mp4
 
 # 拼接(concat demuxer)
 python scripts/cut.py concat --list clips.txt --output joined.mp4

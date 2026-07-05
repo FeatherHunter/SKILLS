@@ -5,13 +5,13 @@
 
 ```bash
 # 批量加转场
-python scripts/batch.py --input videos/ --task xfade --type fade --duration 0.5 --out out/
+python scripts/batch.py --input videos/ --task xfade --type fade --duration 0.5 --output out/
 
 # 批量调色
-python scripts/batch.py --input videos/ --task color --preset cinematic --out out/
+python scripts/batch.py --input videos/ --task color --preset cinematic --output out/
 
 # 批量转码
-python scripts/batch.py --input videos/ --task reencode --resolution 1920:1080 --out out/
+python scripts/batch.py --input videos/ --task reencode --resolution 1920:1080 --output out/
 ```
 
 ---

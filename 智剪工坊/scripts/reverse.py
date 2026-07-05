@@ -6,6 +6,9 @@
 用法:
   python reverse.py --input in.mp4 --output out.mp4
   python reverse.py --input in.mp4 --output out.mp4 --no-audio  # 不倒放音频(更简单)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/04-cinematic.md
 """
 import argparse
 import sys
@@ -41,8 +44,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="示例:\n  %(prog)s --input in.mp4 --output out.mp4",
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--no-audio", dest="reverse_audio", action="store_false", help="不倒放音频")
     args = parser.parse_args()
     reverse(args.input, args.output, args.reverse_audio)

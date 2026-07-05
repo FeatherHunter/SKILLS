@@ -13,13 +13,13 @@
 
 ```bash
 # 默认用 mmx(免费)
-python scripts/text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --out out.mp4
+python scripts/text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
 
 # 指定时长(6 或 10,mmx 强制)
-python scripts/text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --out out.mp4
+python scripts/text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
 
 # 试 Kling API(需 KLING_API_KEY)
-python scripts/text_to_video.py --prompt "..." --api kling --out out.mp4
+python scripts/text_to_video.py --prompt "..." --api kling --output out.mp4
 ```
 
 ## mmx 参数

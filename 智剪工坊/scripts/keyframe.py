@@ -12,6 +12,9 @@
 
   # 透明度淡入
   python keyframe.py --input in.mp4 --action fade_in --duration 2 --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/03-effects.md
 """
 import argparse
 import sys
@@ -110,8 +113,8 @@ def main():
         description="智剪工坊 · 关键帧动画",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--action", required=True, choices=["zoom", "pan", "fade_in", "fade_out"])
 
     parser.add_argument("--start", type=float, help="zoom 起始倍数")
@@ -126,15 +129,15 @@ def main():
     if args.action == "zoom":
         if args.start is None or args.end is None:
             raise Exception("zoom 需要 --start 和 --end")
-        keyframe_zoom(args.input, args.out, args.start, args.end, args.x, args.y, args.duration)
+        keyframe_zoom(args.input, args.output, args.start, args.end, args.x, args.y, args.duration)
     elif args.action == "pan":
         if not args.from_xy or not args.to_xy:
             raise Exception("pan 需要 --from 和 --to")
-        keyframe_pan(args.input, args.out, args.from_xy, args.to_xy, args.duration)
+        keyframe_pan(args.input, args.output, args.from_xy, args.to_xy, args.duration)
     elif args.action == "fade_in":
-        keyframe_fade_in(args.input, args.out, args.duration or 2.0)
+        keyframe_fade_in(args.input, args.output, args.duration or 2.0)
     elif args.action == "fade_out":
-        keyframe_fade_out(args.input, args.out, args.duration or 2.0)
+        keyframe_fade_out(args.input, args.output, args.duration or 2.0)
 
 
 if __name__ == "__main__":

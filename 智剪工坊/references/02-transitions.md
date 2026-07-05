@@ -4,7 +4,7 @@
 > **实测状态:** ✅ 验证通过
 
 ```bash
-python scripts/xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --out joined.mp4
+python scripts/xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --output joined.mp4
 ```
 
 ---

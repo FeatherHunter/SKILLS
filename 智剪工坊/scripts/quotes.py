@@ -7,6 +7,9 @@
   python quotes.py --input in.mp4 --top 5 --out quotes.json
 
 依赖:faster-whisper
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import json
@@ -162,9 +165,9 @@ def main():
         description="智剪工坊 · 金句检测",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True, help="视频文件")
+    parser.add_argument("-i", "--input", required=True, help="视频文件")
     parser.add_argument("--top", type=int, default=5, help="Top N 金句")
-    parser.add_argument("--out", required=True, help="输出 JSON 或金句视频")
+    parser.add_argument("--output", required=True, help="输出 JSON 或金句视频")
     parser.add_argument("--mode", choices=["detect", "cut"], default="detect",
                        help="detect=只检测,cut=检测+剪切")
     parser.add_argument("--model", default="medium")
@@ -177,11 +180,11 @@ def main():
         return
 
     if args.mode == "cut":
-        json_out = Path(args.out).with_suffix(".quotes.json")
+        json_out = Path(args.output).with_suffix(".quotes.json")
         save_quotes(quotes, str(json_out))
-        cut_quotes(args.input, quotes, args.out)
+        cut_quotes(args.input, quotes, args.output)
     else:
-        save_quotes(quotes, args.out)
+        save_quotes(quotes, args.output)
 
 
 if __name__ == "__main__":

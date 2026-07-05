@@ -19,6 +19,9 @@ agent-driven 流程(用户不需要 LLM token):
 
   # 3. 替换音轨
   python rewrite_audio.py replace --video v.mp4 --audio v_new.mp3 --out v_final.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/13-rewrite-audio.md
 """
 import argparse
 import json
@@ -148,7 +151,7 @@ def cmd_synthesize(args):
         log_error("需要 --text 或 --text-file")
         sys.exit(1)
 
-    out_path = Path(args.out) if args.out else Path("output.mp3")
+    out_path = Path(args.output) if args.output else Path("output.mp3")
     ensure_dir(out_path.parent)
     log_section(f"合成: {len(text)} 字 → {out_path}")
 
@@ -168,7 +171,7 @@ def cmd_replace(args):
     """用新音频替换视频的音轨"""
     video = Path(args.video)
     audio = Path(args.audio)
-    out = Path(args.out)
+    out = Path(args.output)
 
     if not video.exists():
         log_error(f"视频不存在: {video}")
@@ -216,7 +219,7 @@ def main():
 
     # transcribe
     p_t = subparsers.add_parser("transcribe", help="视频 → SRT + words.json")
-    p_t.add_argument("--input", required=True)
+    p_t.add_argument("-i", "--input", required=True)
     p_t.add_argument("--srt", required=True)
     p_t.add_argument("--whisper-model", default="small",
                      choices=["tiny", "base", "small", "medium", "large-v3"])
@@ -232,14 +235,14 @@ def main():
                      help="matrix 声音 ID(默认 male-qn-qingse)")
     p_s.add_argument("--speed", type=float, default=1.0, help="速度 0.5-2")
     p_s.add_argument("--emotion", help="情绪(happy/sad/angry/fearful/disgusted/surprised/neutral)")
-    p_s.add_argument("--out", help="输出 MP3 路径(默认 output.mp3)")
+    p_s.add_argument("--output", help="输出 MP3 路径(默认 output.mp3)")
     p_s.set_defaults(func=cmd_synthesize)
 
     # replace
     p_r = subparsers.add_parser("replace", help="视频 + 音频 → 新视频")
-    p_r.add_argument("--video", required=True)
+    p_r.add_argument("--input", dest="video", required=True)
     p_r.add_argument("--audio", required=True)
-    p_r.add_argument("--out", required=True)
+    p_r.add_argument("--output", required=True)
     p_r.set_defaults(func=cmd_replace)
 
     args = parser.parse_args()

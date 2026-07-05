@@ -6,6 +6,9 @@
 用法:
   python fx.py --input in.mp4 --effect glow --out out.mp4
   python fx.py --input in.mp4 --effect lens_flare --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/03-effects.md
 """
 import argparse
 import sys
@@ -129,12 +132,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="特效:\n  " + "\n  ".join([f"{k} - {v['desc']}" for k, v in EFFECTS.items()]),
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--effect", required=True, choices=list(EFFECTS.keys()))
     parser.add_argument("--intensity", type=float, default=1.0, help="强度 0-1")
     args = parser.parse_args()
-    apply_effect(args.input, args.out, args.effect, args.intensity)
+    apply_effect(args.input, args.output, args.effect, args.intensity)
 
 
 if __name__ == "__main__":

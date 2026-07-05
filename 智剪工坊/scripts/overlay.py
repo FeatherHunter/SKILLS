@@ -12,6 +12,9 @@
 
   # 时间段:只在 5-10s 显示画中画
   python overlay.py --bg a.mp4 --pip b.mp4 --out out.mp4 --start 5 --end 10
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import sys
@@ -87,7 +90,7 @@ def main():
     )
     parser.add_argument("--bg", required=True, help="背景视频")
     parser.add_argument("--pip", required=True, help="画中画小视频")
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--x", type=int, help="X 坐标(像素)")
     parser.add_argument("--y", type=int, help="Y 坐标(像素)")
     parser.add_argument("--w", type=int, default=480, help="画中画宽度")
@@ -103,7 +106,7 @@ def main():
         args.x, args.y = POSITIONS[args.position]
 
     picture_in_picture(
-        args.bg, args.pip, args.out,
+        args.bg, args.pip, args.output,
         args.x, args.y, args.w, args.h,
         args.start, args.end, args.opacity, args.border
     )

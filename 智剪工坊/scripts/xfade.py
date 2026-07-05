@@ -81,7 +81,7 @@ def main():
     parser.add_argument("--type", default="fade", help=f"转场类型(默认 fade,可选: {', '.join(TRANSITIONS[:5])}...)")
     parser.add_argument("--duration", type=float, default=1.0, help="转场时长(秒,默认 1)")
     parser.add_argument("--offset", type=float, default=None, help="转场起始时间(相对 A,默认 A 末尾)")
-    parser.add_argument("--out", dest="output", required=True, help="输出视频")
+    parser.add_argument("--output", dest="output", required=True, help="输出视频")
     args = parser.parse_args()
     xfade(args.a, args.b, args.type, args.duration, args.output, args.offset)
 

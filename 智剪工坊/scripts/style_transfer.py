@@ -11,6 +11,9 @@
 
   # 用本地 OpenCV 简单风格化(快,但效果一般)
   python style_transfer.py --input in.mp4 --style "vintage" --mode opencv --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/05-color.md
 """
 import argparse
 import json
@@ -155,20 +158,20 @@ def main():
         description="智剪工坊 · 风格迁移",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True)
+    parser.add_argument("-i", "--input", required=True)
     parser.add_argument("--style", required=True, help="风格描述(prompt)或预设(oil/watercolor/sketch/emboss)")
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--mode", choices=["api", "opencv"], default="opencv", help="api 慢但好,opencv 快但一般")
     parser.add_argument("--api", default="matrix", help="API 提供商(matrix)")
     parser.add_argument("--interval", type=float, default=1.0, help="采样间隔(秒)")
     args = parser.parse_args()
 
     # 1. 提取关键帧
-    frames_dir = Path(args.out).parent / "frames_tmp"
+    frames_dir = Path(args.output).parent / "frames_tmp"
     frames = extract_keyframes(args.input, frames_dir, args.interval)
 
     # 2. 风格化每帧
-    styled_dir = Path(args.out).parent / "styled_tmp"
+    styled_dir = Path(args.output).parent / "styled_tmp"
     ensure_dir(styled_dir)
 
     if args.mode == "api":
@@ -182,7 +185,7 @@ def main():
 
     # 3. 重组
     styled_frames = sorted(styled_dir.glob("frame_*.jpg"))
-    reassemble_video(styled_frames, args.input, args.out)
+    reassemble_video(styled_frames, args.input, args.output)
 
 
 if __name__ == "__main__":

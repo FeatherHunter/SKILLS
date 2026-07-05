@@ -14,6 +14,9 @@ AI 字幕自动生成(Whisper 转录 + 烧录到视频)
   python auto_subtitle.py --input in.mp4 --mode burn --lang zh --translate en --out out.mp4
 
 依赖:faster-whisper
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/06-text.md
 """
 import argparse
 import sys
@@ -99,10 +102,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="示例:\n  %(prog)s --input in.mp4 --mode transcribe --out sub.srt\n  %(prog)s --input in.mp4 --mode burn --out out.mp4",
     )
-    parser.add_argument("--input", required=True, help="输入视频")
+    parser.add_argument("-i", "--input", required=True, help="输入视频")
     parser.add_argument("--mode", choices=["transcribe", "burn"], default="burn",
                        help="transcribe=只生成 SRT, burn=直接烧录")
-    parser.add_argument("--out", required=True, help="输出(SRT 或视频)")
+    parser.add_argument("--output", required=True, help="输出(SRT 或视频)")
     parser.add_argument("--model", default="medium", help="Whisper 模型(tiny/base/small/medium/large-v3)")
     parser.add_argument("--device", default="cuda", help="cuda / cpu")
     parser.add_argument("--lang", help="指定语言(默认自动检测)")
@@ -110,13 +113,13 @@ def main():
     args = parser.parse_args()
 
     if args.mode == "transcribe":
-        transcribe_to_srt(args.input, args.out, args.model, args.device, args.lang)
+        transcribe_to_srt(args.input, args.output, args.model, args.device, args.lang)
     else:
         # burn:先转录到 SRT,再烧录
-        srt_temp = Path(args.out).with_suffix(".srt")
+        srt_temp = Path(args.output).with_suffix(".srt")
         ok = transcribe_to_srt(args.input, str(srt_temp), args.model, args.device, args.lang)
         if ok:
-            burn_subtitle(args.input, srt_temp, args.out, args.font_size)
+            burn_subtitle(args.input, srt_temp, args.output, args.font_size)
 
 
 if __name__ == "__main__":

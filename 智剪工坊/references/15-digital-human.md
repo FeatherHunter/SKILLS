@@ -16,19 +16,19 @@
 
 ```bash
 # 头像 + 文案(自动 TTS 合成音频 + 数字人视频)
-python scripts/digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --out out.mp4
+python scripts/digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
 
 # 头像 + 现成音频
-python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --out out.mp4
+python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
 
 # 换声音(用 TTS 时)
-python scripts/digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --out out.mp4
+python scripts/digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
 ```
 
 ### 用 HeyGen / D-ID(占位)
 
 ```bash
-python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --out out.mp4
+python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
 # 需要 HEYGEN_API_KEY,完整实现待补
 ```
 

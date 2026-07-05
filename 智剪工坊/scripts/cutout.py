@@ -14,6 +14,9 @@ AI 抠图(rembg:把人物从背景分离)
   python cutout.py --input in.png --bg bg.jpg --out out.png
 
 依赖:rembg, onnxruntime(可选,加速)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import sys
@@ -143,8 +146,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="示例:\n  %(prog)s --input in.png --out out.png\n  %(prog)s --input in.png --bg bg.png --out out.png\n  %(prog)s --input in.mp4 --out out.mp4",
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--bg", help="背景图(替换背景用)")
     parser.add_argument("--interval", type=int, default=1, help="视频抽帧间隔(视频模式)")
     args = parser.parse_args()
@@ -152,11 +155,11 @@ def main():
     is_video = args.input.lower().endswith(('.mp4', '.mov', '.mkv', '.avi'))
 
     if is_video:
-        cutout_video(args.input, args.out, args.interval)
+        cutout_video(args.input, args.output, args.interval)
     elif args.bg:
-        cutout_with_bg(args.input, args.bg, args.out)
+        cutout_with_bg(args.input, args.bg, args.output)
     else:
-        cutout_image(args.input, args.out)
+        cutout_image(args.input, args.output)
 
 
 if __name__ == "__main__":

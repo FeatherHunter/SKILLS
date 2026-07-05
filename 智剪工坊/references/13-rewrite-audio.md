@@ -33,10 +33,10 @@ python scripts/rewrite_audio.py transcribe --input v.mp4 --srt v.srt
 # 2. (Mavis 读 SRT,改写文案,告诉你用哪个 voice_id)
 
 # 3. 合成新音频
-python scripts/rewrite_audio.py synthesize --text "改写后的文案" --voice male-qn-jingying --out v_new.mp3
+python scripts/rewrite_audio.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
 
 # 4. 替换音轨
-python scripts/rewrite_audio.py replace --video v.mp4 --audio v_new.mp3 --out v_final.mp4
+python scripts/rewrite_audio.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
 ```
 
 ### 子命令速查

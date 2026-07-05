@@ -29,6 +29,9 @@ P1 (6 个,扩展):
   python edit.py multi-res --input v.mp4 --output-dir out/
   python edit.py gif --input v.mp4 --output out.gif --width 480 --fps 15
   python edit.py thumbnail --input v.mp4 --output thumb.jpg --time 5
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/16-edit.md
 """
 import argparse
 import sys
@@ -403,37 +406,37 @@ def main():
 
     # 1. remove
     p = sub.add_parser("remove", help="去头/去尾/去中间")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--mode", choices=["head", "tail", "regions"], required=True)
     p.add_argument("--seconds", type=float, help="head/tail 模式:秒数")
     p.add_argument("--exclude", help="regions 模式:逗号分隔 'ss1-t1,ss2-t2'")
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 2. volume
     p = sub.add_parser("volume", help="调音量")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--factor", type=float, required=True, help="倍数(0=静音, 1=不变, 2=2倍)")
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 3. mute
     p = sub.add_parser("mute", help="静音/删除音轨")
-    p.add_argument("--input", required=True)
-    p.add_argument("--output", required=True)
+    p.add_argument("-i", "--input", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 4. letterbox
     p = sub.add_parser("letterbox", help="加黑边")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--width", type=int, default=1080)
     p.add_argument("--height", type=int, default=1920)
     p.add_argument("--bg", default="black", help="背景色,默认 black")
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 5. scale
     p = sub.add_parser("scale", help="缩放")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--width", type=int, required=True)
     p.add_argument("--height", type=int, required=True)
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 6. crop
     p = sub.add_parser("crop", help="裁剪")
@@ -442,23 +445,23 @@ def main():
     p.add_argument("--y", type=int, default=0)
     p.add_argument("--width", type=int, required=True)
     p.add_argument("--height", type=int, required=True)
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 7. rotate
     p = sub.add_parser("rotate", help="旋转 90/180/270")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--degrees", type=int, choices=[90, 180, 270], required=True)
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 8. flip
     p = sub.add_parser("flip", help="翻转(水平/垂直)")
     p.add_argument("--input", required=True)
     p.add_argument("--mode", choices=["h", "v"], default="h")
-    p.add_argument("--output", required=True)
+    p.add_argument("-o", "--output", required=True)
 
     # 9. extract-audio
     p = sub.add_parser("extract-audio", help="提取音频")
-    p.add_argument("--input", required=True)
+    p.add_argument("-i", "--input", required=True)
     p.add_argument("--output", required=True)
     p.add_argument("--format", default="mp3", choices=["mp3", "wav", "aac"])
 

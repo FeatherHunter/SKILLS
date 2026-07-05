@@ -6,6 +6,9 @@
 用法:
   python color_style.py --input in.mp4 --style vintage --out out.mp4
   python color_style.py --input in.mp4 --style comic --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/05-color.md
 """
 import argparse
 import sys
@@ -104,12 +107,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="风格:\n  " + "\n  ".join([f"{k} - {v['desc']}" for k, v in STYLES.items()]) + "\n\n示例:\n  %(prog)s --input in.mp4 --style vintage --out out.mp4",
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--style", required=True, choices=list(STYLES.keys()))
     parser.add_argument("--intensity", type=float, default=1.0, help="强度 0-1")
     args = parser.parse_args()
-    apply_style(args.input, args.out, args.style, args.intensity)
+    apply_style(args.input, args.output, args.style, args.intensity)
 
 
 if __name__ == "__main__":

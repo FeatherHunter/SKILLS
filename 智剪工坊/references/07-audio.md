@@ -5,10 +5,10 @@
 
 ```bash
 # BGM 循环混音
-python scripts/bgm_loop.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --out out.mp4
+python scripts/bgm_loop.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
 
 # 节拍卡点
-python scripts/beat_sync.py --video v.mp4 --bgm bgm.mp3 --out out.mp4
+python scripts/beat_sync.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
 ```
 
 ---

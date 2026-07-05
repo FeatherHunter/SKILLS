@@ -9,6 +9,9 @@
 
   # 圆形蒙版(只显示中心圆形)
   python mask.py --input in.mp4 --type circle --cx 540 --cy 960 --r 300 --out out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import sys
@@ -97,8 +100,8 @@ def main():
         description="智剪工坊 · 基础蒙版(矩形/圆形)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--type", choices=["rect", "circle"], required=True)
 
     # 矩形参数
@@ -118,11 +121,11 @@ def main():
     if args.type == "rect":
         if not all([args.x, args.y, args.w, args.h]):
             raise Exception("矩形蒙版需要 --x --y --w --h")
-        mask_rect(args.input, args.out, args.x, args.y, args.w, args.h, args.feather)
+        mask_rect(args.input, args.output, args.x, args.y, args.w, args.h, args.feather)
     elif args.type == "circle":
         if not all([args.cx, args.cy, args.r]):
             raise Exception("圆形蒙版需要 --cx --cy --r")
-        mask_circle(args.input, args.out, args.cx, args.cy, args.r, args.feather)
+        mask_circle(args.input, args.output, args.cx, args.cy, args.r, args.feather)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,9 @@
 
 用法:
   python bgm_loop.py --video in.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/07-audio.md
 """
 import argparse
 import sys
@@ -61,12 +64,12 @@ def main():
   %(prog)s --video vlog.mp4 --bgm bgm.mp3 --volume 0.2 --fade-out 3 --out out.mp4
         """,
     )
-    parser.add_argument("--video", required=True, help="输入视频")
+    parser.add_argument("--input", dest="video", required=True, help="输入视频")
     parser.add_argument("--bgm", required=True, help="BGM 文件(短 BGM 会自动循环)")
     parser.add_argument("--volume", type=float, default=0.18, help="BGM 音量(0-1,默认 0.18 不盖人声)")
     parser.add_argument("--video-volume", type=float, default=1.0, help="原声音量")
     parser.add_argument("--fade-out", type=float, default=0, help="BGM 结尾淡出秒数(默认 0)")
-    parser.add_argument("--out", dest="output", required=True, help="输出视频")
+    parser.add_argument("--output", required=True, help="输出视频")
     args = parser.parse_args()
     add_bgm_loop(args.video, args.bgm, args.output, args.video_volume, args.volume, args.fade_out)
 

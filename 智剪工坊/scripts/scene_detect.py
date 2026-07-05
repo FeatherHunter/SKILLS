@@ -11,6 +11,9 @@ AI 场景检测(用 OpenCV 检测镜头切换)
   python scene_detect.py --input in.mp4 --out scenes/ --mode cut
 
 依赖:opencv-python
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import json
@@ -140,8 +143,8 @@ def main():
         description="智剪工坊 · AI 场景检测",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--out", required=True, help="输出 JSON 或场景目录")
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("--output", required=True, help="输出 JSON 或场景目录")
     parser.add_argument("--threshold", type=float, default=0.3, help="检测阈值 0-1")
     parser.add_argument("--min-scene-len", type=float, default=1.0, help="最短场景长度(秒)")
     parser.add_argument("--mode", choices=["detect", "cut"], default="detect",
@@ -154,11 +157,11 @@ def main():
 
     if args.mode == "cut":
         # 检测 + 切割(场景 JSON 也保存)
-        json_out = Path(args.out) / "scenes.json" if Path(args.out).is_dir() else Path(args.out).with_suffix(".json")
+        json_out = Path(args.output) / "scenes.json" if Path(args.output).is_dir() else Path(args.output).with_suffix(".json")
         save_scenes(scenes, str(json_out))
-        cut_scenes(args.input, scenes, args.out)
+        cut_scenes(args.input, scenes, args.output)
     else:
-        save_scenes(scenes, args.out)
+        save_scenes(scenes, args.output)
 
 
 if __name__ == "__main__":

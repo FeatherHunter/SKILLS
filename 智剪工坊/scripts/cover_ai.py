@@ -10,6 +10,9 @@ AI 生成封面图 + 中文叠字(B 站风格)
   # AI 模式:从主题描述自动生成视觉图 + 叠字
   python cover_ai.py --prompt "A man's silhouette on a body weight scale, dramatic red lighting" \
     --text "184→139.9" --subtitle "Day 1" --out cover.jpg
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/08-cover.md
 """
 import argparse
 import json
@@ -130,7 +133,7 @@ def main():
     parser.add_argument("--subtitle", help="副标题")
     parser.add_argument("--tag", help="系列标签")
     parser.add_argument("--author", help="作者标识(左下角)")
-    parser.add_argument("--out", dest="output", required=True, help="输出封面(JPG)")
+    parser.add_argument("--output", dest="output", required=True, help="输出封面(JPG)")
     args = parser.parse_args()
 
     ensure_dir(Path(args.output).parent)

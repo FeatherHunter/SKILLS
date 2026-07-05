@@ -23,6 +23,9 @@
   - 视频:逐帧处理(慢 5-10x),音频 ffmpeg 单独处理后 mux
 
 依赖:opencv-python, mediapipe>=0.10, numpy
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/12-beauty.md
 """
 import argparse
 import os
@@ -453,8 +456,8 @@ def main():
             "示例: --preset natural 或单独调 --smooth 0.5 --slim 0.3"
         ),
     )
-    parser.add_argument("--input", required=True, help="输入视频或图片")
-    parser.add_argument("--output", required=True, help="输出路径")
+    parser.add_argument("-i", "--input", required=True, help="输入视频或图片")
+    parser.add_argument("-o", "--output", required=True, help="输出路径")
     parser.add_argument("--preset", choices=list(PRESETS.keys()),
                        help="用预设档位(natural/strong/...)")
     parser.add_argument("--smooth", type=float, default=None, help="磨皮强度 0-1")

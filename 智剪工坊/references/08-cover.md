@@ -8,7 +8,7 @@ python scripts/cover_ai.py \
   --prompt "A man on a fitness journey, cinematic dramatic lighting, NO TEXT" \
   --title-main "DAY 1" \
   --subtitle "减脂日记" \
-  --out cover.jpg
+  --output cover.jpg
 ```
 
 ---

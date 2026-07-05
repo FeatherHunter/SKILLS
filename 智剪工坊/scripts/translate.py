@@ -19,6 +19,9 @@ TTS:
   python translate.py --input in.mp4 --target-lang en --mode subtitle --out out_sub.mp4
 
 依赖:faster-whisper, edge-tts
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/06-text.md
 """
 import argparse
 import os
@@ -171,9 +174,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="示例:\n  %(prog)s --input in.mp4 --target-lang en --out out_en.mp4",
     )
-    parser.add_argument("--input", required=True)
+    parser.add_argument("-i", "--input", required=True)
     parser.add_argument("--target-lang", default="en", help="目标语言(en/zh/ja/ko/es/fr/de)")
-    parser.add_argument("--out", required=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument("--mode", choices=["full", "subtitle"], default="full",
                        help="full=替换音轨+字幕,subtitle=只换字幕")
     parser.add_argument("--model", default="medium")
@@ -187,7 +190,7 @@ def main():
     log_info(f"转录 {len(segments)} 段")
 
     # 2. 翻译 SRT
-    srt_path = Path(args.out).with_suffix(".srt")
+    srt_path = Path(args.output).with_suffix(".srt")
     make_translated_srt(segments, args.target_lang, str(srt_path))
 
     if args.mode == "subtitle":
@@ -201,15 +204,15 @@ def main():
                    "Outline=2,Shadow=1,MarginV=30,Alignment=2'",
             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
             "-c:a", "copy",
-            str(args.out),
+            str(args.output),
         ])
-        log_info(f"输出: {args.out}")
+        log_info(f"输出: {args.output}")
     else:
         # 完整翻译:替换音频 + 字幕
-        tts_path = Path(args.out).with_suffix(".tts.mp3")
+        tts_path = Path(args.output).with_suffix(".tts.mp3")
         ok = make_tts_audio(segments, args.target_lang, str(tts_path))
         if ok:
-            replace_audio_and_subtitle(args.input, tts_path, srt_path, args.out)
+            replace_audio_and_subtitle(args.input, tts_path, srt_path, args.output)
         else:
             log_warn("TTS 失败,退化为只烧字幕")
             log_warn("需要: pip install edge-tts")

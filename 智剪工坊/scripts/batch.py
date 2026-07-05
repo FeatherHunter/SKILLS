@@ -11,6 +11,9 @@
   python batch.py --input videos/ --output out/ --task fadeout --duration 3
   python batch.py --input videos/ --output out/ --task cover --cover cover.jpg --duration 3
   python batch.py --input videos/ --output out/ --task convert --resolution 1280x720
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/10-batch.md
 """
 import argparse
 import sys
@@ -140,8 +143,8 @@ def main():
         description="智剪工坊 · 批量处理(进度条 + 失败继续)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True, help="输入视频目录")
-    parser.add_argument("--output", required=True, help="输出目录")
+    parser.add_argument("-i", "--input", required=True, help="输入视频目录")
+    parser.add_argument("-o", "--output", required=True, help="输出目录")
     parser.add_argument("--task", required=True, choices=["trim", "fadeout", "cover", "convert", "lut"])
     parser.add_argument("--duration", type=float, help="时长秒(trim/fadeout/cover)")
     parser.add_argument("--cover", help="封面图(cover)")

@@ -9,6 +9,9 @@ HDR 视频导入导出(Rec.2020 / HLG / HDR10)
 
   # HDR 标记 + 元数据写入
   python hdr_io.py --input video.mp4 --output hdr.mp4 --mode tag --transfer hlg
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/05-color.md
 """
 import argparse
 import sys
@@ -97,8 +100,8 @@ def main():
         description="智剪工坊 · HDR 视频导入导出",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--mode", choices=["convert", "tag"], default="convert",
                        help="convert=SDR 转 HDR / tag=只标记 HDR")
     parser.add_argument("--transfer", choices=list(TRANSFER_CHARACTERISTICS.keys()),

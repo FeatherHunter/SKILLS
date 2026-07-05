@@ -14,6 +14,9 @@
   python multicam.py cut --inputs cam1.mp4 cam2.mp4 --switch 0:cam1 5:cam2 10:cam1 --out final.mp4
 
 依赖:opencv-python(音频同步检测)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/04-cinematic.md
 """
 import argparse
 import json
@@ -170,32 +173,32 @@ def main():
     # sync
     p_sync = sub.add_parser("sync", help="同步多路视频")
     p_sync.add_argument("--inputs", nargs="+", required=True)
-    p_sync.add_argument("--out", required=True)
+    p_sync.add_argument("--output", required=True)
 
     # preview
     p_prev = sub.add_parser("preview", help="生成多机位预览")
     p_prev.add_argument("--inputs", nargs="+", required=True)
-    p_prev.add_argument("--out", required=True)
+    p_prev.add_argument("--output", required=True)
     p_prev.add_argument("--layout", choices=["2x2", "hstack", "vstack"], default="2x2")
 
     # cut
     p_cut = sub.add_parser("cut", help="按切换点剪辑")
     p_cut.add_argument("--inputs", nargs="+", required=True)
     p_cut.add_argument("--switch", nargs="+", required=True, help="切换点 'time:cam_idx'")
-    p_cut.add_argument("--out", required=True)
+    p_cut.add_argument("--output", required=True)
 
     args = parser.parse_args()
 
     if args.cmd == "sync":
-        sync_videos(args.inputs, args.out)
+        sync_videos(args.inputs, args.output)
     elif args.cmd == "preview":
-        preview_multicam(args.inputs, args.out, args.layout)
+        preview_multicam(args.inputs, args.output, args.layout)
     elif args.cmd == "cut":
         switches = []
         for sw in args.switch:
             t, cam = sw.split(":")
             switches.append((float(t), int(cam)))
-        cut_by_switch(args.inputs, switches, args.out)
+        cut_by_switch(args.inputs, switches, args.output)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,9 @@
   python reframe.py --input portrait.mp4 --output landscape.mp4 --target 16:9
 
 依赖:opencv-python(可选,无人脸检测时用中心裁剪)
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/09-ai-features.md
 """
 import argparse
 import sys
@@ -122,8 +125,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="支持: " + ", ".join(ASPECT_RATIOS.keys()),
     )
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("-i", "--input", required=True)
+    parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--target", required=True, choices=list(ASPECT_RATIOS.keys()))
     parser.add_argument("--no-smart", dest="smart", action="store_false",
                        help="不用智能人脸检测,纯中心裁剪")

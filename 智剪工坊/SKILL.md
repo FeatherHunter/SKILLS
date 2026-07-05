@@ -3,45 +3,86 @@ name: 智剪工坊
 description: >
   代码视频剪辑工作台,对标剪映(图形化)+ 扩展(AI 能力)。
   触发词:剪辑、剪切、拼接、转场、调色、慢动作、推镜头、字幕、封面、BGM、流水线、一条龙、智剪工坊、视频工坊、代码剪辑、
-  美颜、磨皮、瘦脸、大眼、beauty、
-  去水词、填充词、filler、嗯啊、
-  改词、改写、翻唱、TTS、配音、换声、改写文案、
-  文字成片、文生视频、text-to-video、
-  数字人、虚拟人、digital human。
+  美颜、磨皮、瘦脸、大眼、
+  去水词、填充词、口头禅、嗯啊、
+  改词、改写、翻唱、配音、换声、改写文案、
+  文字成片、AI 生成视频、
+  数字人、虚拟人、AI 讲解、
+  音频降噪、降噪、噪声处理。
   包含 30 个原子脚本 + 主体流程(阶段 0-4：项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾)。
   底层:ffmpeg + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
+triggers:
+  - 剪辑
+  - 剪切
+  - 拼接
+  - 转场
+  - 淡入淡出
+  - 调色
+  - LUT
+  - 慢动作
+  - 推镜头
+  - 字幕
+  - 烧字幕
+  - 封面
+  - AI 封面
+  - BGM
+  - 加音乐
+  - 音频降噪
+  - 降噪
+  - 美颜
+  - 磨皮
+  - 瘦脸
+  - 大眼
+  - 去水词
+  - 填充词
+  - 嗯啊
+  - 改词
+  - 翻唱
+  - TTS
+  - 配音
+  - 换声
+  - 文字成片
+  - 数字人
+  - 虚拟人
+  - AI 讲解
+  - 批量
+  - 智能剪辑
+  - 金句
+  - 节拍卡点
+  - 自动字幕
 metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
 ---
 
 # 智剪工坊 — 代码视频剪辑工作台
 
-## 文件地图（v1.0）
+## 文件地图（v1.2 精简后）
 
-**接手这个 skill 第一件事**：读这张表。每个文件**作用**和**何时读**：
+**AI 第一件事**：只读 SKILL.md。**不要 grep 找文件**——所有需要读的子文档都在 §14 子技能索引里**显式列出**，按需加载。
 
 | 文件 | 作用 | 何时读 |
 |---|---|---|
-| **SKILL.md** | 工具契约（你正在读） | **必读第一份** |
-| 架构.md | 完整设计 + §8 决策落地位置 | 看完 SKILL 还想要上下文 |
-| HANDOFF.md | Session 交接（v1.0 增量上下文在最前） | 接手 session 时 |
-| CHANGELOG.md | 版本历史 | 查历史决策 |
-| README.md | 产品级介绍（**v0.5 旧版，待更新**） | 用户/产品视角 |
-| 模板/<name>.yaml | 类别化工作流 | 加载某个模板时 |
-| scripts/30 个 .py | 原子工具（cut/xfade/bgm_loop/...） | 单独调用某个功能 |
-| lib/common.py | ffmpeg 包装 + 错误 + 日志 | 共享逻辑 |
-| lib/asr.py | faster-whisper 包装 | 粗加工 Step 2（ASR 前置） |
-| lib/modify.py | 改素材命令菜单 + 决策报告 | AI 改素材时 |
-| executor.py | 5 原子 + run_coarse 编排 | AI 写新执行逻辑时 |
-| intent.html | 唯一前端：填表 → intent.json | 用户新建项目时 |
+| **SKILL.md** | 工具契约（本文件） | **必读第一份** |
+| **references/01-16.md** | 16 个子技能详细文档（触发词 + 参数 + ffmpeg） | 路由命中子技能后**REQUIRED** 读对应文档 |
+| `scripts/*.py` | 36 个原子脚本（参数 `-i` `-o` `--start` `--output`） | AI 调脚本时按参数调用 |
+| `lib/common.py` | ffmpeg 包装 + 错误 + 日志 + safe_run | 共享逻辑，**勿重写** |
+| `lib/asr.py` | faster-whisper 包装 | 阶段 2 Step 2.1（ASR 优先） |
+| `lib/processing.py` | 视频滤镜 + 转场 + rotation | 阶段 2 Step 2.2 / Step 3 |
+| `lib/cli_args.py` | argparse 基础封装 | 写新脚本时复用 |
+| `executor.py` | 5 个原子函数 + `run_coarse` 编排 | 阶段 2 顶层入口 |
+| `intent.html` | 唯一前端：填表 → intent.json | 阶段 0 项目初始化 |
 
-**v1.0 当前状态**：
-- ✅ 文档：SKILL.md / 架构.md / 模板/ / HANDOFF.md / CHANGELOG.md（**v1.0 重构完整流程章节**）
-- ✅ 代码：executor.py 5 原子 + lib/asr.py + lib/modify.py
-- ⏸️ docs/*.md 4 个 + README.md 仍标 v0.5（**待下个 PR 同步**）
+> **不读**：`.archive/`（CHANGELOG / HANDOFF / README / 架构 / docs/ 历史沉淀），开发者面向，AI 不读。
+
+**v1.2 当前状态**：
+- ✅ 协议层：SKILL.md + references/15 个子技能文档（一子技能一文档）
+- ✅ 代码层：scripts/ 36 个 + lib/ 9 个 + executor.py
+- ✅ 命名统一：参数 `-i` `-o` `--start` `--output`（v1.2 patch）
+- ✅ 阶段 1 必走：操作清单 schema（6 象限）作为阶段 2 执行契约
+- ✅ 阶段 2：ASR 前置 + 5 个 step 脚本（step1_check_intent / step2_1_asr / step2_2_process / step3_assemble / step4_fallback / step5_decision）
 - ⏸️ 模板库只有「健身vlog.yaml」一个
 - ⏸️ lib/modify.py 序列操作是 stub
 
-**v1.0 关键设计**（详见 §主体流程）：
+**v1.2 关键设计**（详见 §主体流程）：
 - **阶段 0-4** 端到端流程（项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾）
 - 阶段 1 必走：**操作清单 schema**（6 象限）作为阶段 2 执行契约
 - 阶段 2 Step 2：**ASR 前置**，与单视频处理同步产出
@@ -63,44 +104,43 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 
 **当前版本:** v0.7(2026-07-04)
 
-## 什么时候触发它
-
-用户在视频剪辑/AI 处理上下文中提到以下任一概念:
-
-### 基础剪辑
-- **剪辑操作**:剪辑、剪切、切这段、保留 X 秒、拼接、转场、调色、慢动作、推镜头、字幕、封面、BGM
-- **格式诉求**:1080x1920、竖屏、横屏、烧字幕、嵌入字幕
-- **技能名**:智剪工坊、视频工坊
-
-### AI 增强(核心差异)
-- **美颜**:磨皮、瘦脸、大眼、美白、beauty
-- **去水词**:填充词、filler、嗯啊、口头禅、那个、就是说
-- **改词翻唱**:TTS、配音、换声、改写文案、改词、翻唱、AI 改词
-- **文字成片**:文生视频、text-to-video、AI 生成视频
-- **数字人**:虚拟人、digital human、AI 讲解
-
 ## 14 个子技能索引
 
-| # | 子技能 | 触发词 | 文档 | 脚本 |
+**AI 路由协议**：命中下表任一子技能的触发词 → **REQUIRED: read references/XX.md** → 再调 scripts/*.py。**禁止跳过 references 直接调脚本**。
+
+| # | 子技能 | 触发词 | 文档（REQUIRED） | 脚本 |
 |---|---|---|---|---|
 | 01 | **cut** | 剪切、切这段、保留 X 秒、从 A 到 B | [references/01-cutting.md](references/01-cutting.md) | `scripts/cut.py` |
-| 02 | **xfade** | 转场、淡入淡出、溶解、擦除、切换 | [references/02-transitions.md](references/02-transitions.md) | `scripts/xfade.py` |
-| 03 | **effects** | 慢动作、推镜头、zoom in、keyframe | [references/03-effects.md](references/03-effects.md) | `scripts/fx.py`, `scripts/keyframe.py` |
-| 04 | **cinematic** | J-cut、L-cut、speed ramp、跳剪、变速、倒放 | [references/04-cinematic.md](references/04-cinematic.md) | `scripts/speed.py`, `scripts/reverse.py`, `scripts/multicam.py` |
-| 05 | **color** | 调色、LUT、cinematic、调亮、调暗、风格化、HDR | [references/05-color.md](references/05-color.md) | `scripts/color_style.py`, `scripts/style_transfer.py`, `scripts/hdr_io.py` |
-| 06 | **text** | 烧字幕、字幕动效、文字动画、自动字幕、字幕识别、变声 | [references/06-text.md](references/06-text.md) | `scripts/auto_subtitle.py`, `scripts/voice_change.py`, `scripts/translate.py` |
-| 07 | **audio** | 加音乐、循环背景音乐、混音、BGM、节拍卡点 | [references/07-audio.md](references/07-audio.md) | `scripts/bgm_loop.py`, `scripts/beat_sync.py` |
-| 08 | **cover** | AI 生图封面、设计封面、中文叠字 | [references/08-cover.md](references/08-cover.md) | `scripts/cover_ai.py` |
-| 09 | **ai-features** | AI 抠图、金句检测、场景检测、蒙版、画中画、重新构图、**去水词** | [references/09-ai-features.md](references/09-ai-features.md) | `scripts/cutout.py`, `scripts/quotes.py`, `scripts/scene_detect.py`, `scripts/mask.py`, `scripts/overlay.py`, `scripts/reframe.py`, `scripts/remove_fillers.py` |
-| 10 | **batch** | 批量处理、批量加转场、批量转码、批量封面、进度条 | [references/10-batch.md](references/10-batch.md) | `scripts/batch.py` |
-| 11 | **pipelines** | 完整 vlog、流水线、一条龙、7 步流程 | [references/11-pipelines.md](references/11-pipelines.md) | `scripts/pipeline_vlog.py` |
-| 12 | **🆕 beauty** | 美颜、磨皮、瘦脸、大眼、美白、人脸美化、beauty | [references/12-beauty.md](references/12-beauty.md) | `scripts/beauty.py` |
-| 13 | **🆕 rewrite-audio** | 去水词后改写、TTS 配音、换声、agent 改文案、翻唱 | [references/13-rewrite-audio.md](references/13-rewrite-audio.md) | `scripts/rewrite_audio.py` |
-| 14 | **🆕 text-to-video** | 文生视频、文字成片、AI 生成视频片段 | [references/14-text-to-video.md](references/14-text-to-video.md) | `scripts/text_to_video.py` |
+| 02 | **xfade** | 转场、淡入淡出、溶解、擦除、切换、黑场、白闪、圆形转场、像素化、径向 | [references/02-transitions.md](references/02-transitions.md) | `scripts/xfade.py` |
+| 03 | **effects** | 慢动作、慢放、0.5 倍速、推镜头、zoom in、推到脸、插帧、放大、缩小、模糊、抖动、镜像 | [references/03-effects.md](references/03-effects.md) | `scripts/fx.py`, `scripts/keyframe.py` |
+| 04 | **cinematic** | J-cut、L-cut、speed ramp、跳剪、变速、上下黑边、黑场、白闪、闪回、匹配剪辑 | [references/04-cinematic.md](references/04-cinematic.md) | `scripts/speed.py`, `scripts/reverse.py`, `scripts/multicam.py` |
+| 05 | **color** | 调色、LUT、cinematic、teal & orange、调亮、调暗、对比度、饱和度、色温、风格化、HDR | [references/05-color.md](references/05-color.md) | `scripts/color_style.py`, `scripts/style_transfer.py`, `scripts/hdr_io.py` |
+| 06 | **text** | 字幕、烧字幕、字幕动效、打字机、打字效果、淡入、弹跳、跑马灯、标题、文字 | [references/06-text.md](references/06-text.md) | `scripts/auto_subtitle.py`, `scripts/voice_change.py`, `scripts/translate.py` |
+| 07 | **audio** | 加音乐、配乐、背景音乐、循环、淡入、淡出、混音、音量、**音频降噪、降噪、噪声处理**、节拍、BGM | [references/07-audio.md](references/07-audio.md) | `scripts/bgm_loop.py`, `scripts/beat_sync.py` |
+| 08 | **cover** | 封面、做封面、AI 封面、AI 生图、设计封面、缩略图、thumbnail | [references/08-cover.md](references/08-cover.md) | `scripts/cover_ai.py` |
+| 09 | **ai-features** | AI 剪辑、智能剪辑、AI 抠图、自动找金句、金句、节拍卡点、自动字幕、人脸追踪、换背景、**去水词** | [references/09-ai-features.md](references/09-ai-features.md) | `scripts/cutout.py`, `scripts/quotes.py`, `scripts/scene_detect.py`, `scripts/mask.py`, `scripts/overlay.py`, `scripts/reframe.py`, `scripts/remove_fillers.py` |
+| 10 | **batch** | 批量、批处理、100 个视频都、批量加转场、批量调色、批量转码 | [references/10-batch.md](references/10-batch.md) | `scripts/batch.py` |
+| 12 | **🆕 beauty** | 美颜、磨皮、瘦脸、大眼、美白、人脸美化 | [references/12-beauty.md](references/12-beauty.md) | `scripts/beauty.py` |
+| 13 | **🆕 rewrite-audio** | 改词、改写、翻唱、配音、换声、改写文案、TTS | [references/13-rewrite-audio.md](references/13-rewrite-audio.md) | `scripts/rewrite_audio.py` |
+| 14 | **🆕 text-to-video** | 文字成片、AI 生成视频、文生视频 | [references/14-text-to-video.md](references/14-text-to-video.md) | `scripts/text_to_video.py` |
 | 15 | **🆕 digital-human** | 数字人、虚拟人、AI 讲解、头像说话 | [references/15-digital-human.md](references/15-digital-human.md) | `scripts/digital_human.py` |
-| 16 | **🆕 edit** | 去头去尾 / 调音量 / 静音 / 黑边 / 缩放 / 裁剪 / 旋转 / 翻转 / 提音 / 淡入淡出 / 水印 / 多分辨率 / GIF / 缩略图 | [references/16-edit.md](references/16-edit.md) | `scripts/edit.py`(14 子命令) |
+| 16 | **🆕 edit** | 去头去尾、调音量、静音、黑边、缩放、裁剪、旋转、翻转、提音、淡入淡出、水印、多分辨率、GIF、缩略图 | [references/16-edit.md](references/16-edit.md) | `scripts/edit.py`（14 子命令） |
 
-> 实际有 30 个 Python 脚本(部分子技能含多个脚本),详见 `scripts/` 目录。
+> 实际有 36 个 Python 脚本（部分子技能含多个脚本），详见 `scripts/` 目录。
+
+**路由示例**：
+
+```
+用户说"降噪"
+  ↓
+命中 §14 索引第 07 audio（触发词"音频降噪"）
+  ↓
+REQUIRED: 读 references/07-audio.md
+  ↓
+找到 §D 音频降噪（ffmpeg highpass / afftdn 命令）
+  ↓
+调底层 ffmpeg 或 scripts/bgm_loop.py 加 BGM 时一并处理
+```
 
 ## 调用范式
 
@@ -109,9 +149,11 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 ```
 用户: "把这两段视频加个 1 秒的淡入淡出转场"
   ↓
-路由到: xfade
+路由到: 02 xfade（命中触发词"转场"/"淡入淡出"）
+REQUIRED: 读 references/02-transitions.md
+  ↓
 参数确认: 转场类型 / 时长 / offset
-执行: scripts/xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --out joined.mp4
+执行: scripts/xfade.py -a clip1.mp4 -b clip2.mp4 --type fade --duration 1 -o joined.mp4
 输出: joined_with_fade.mp4
 ```
 
@@ -120,45 +162,45 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 ```
 用户: "去掉我 vlog 里的'嗯啊那个'"
   ↓
-路由到: remove_fillers (LLM 判断在 Mavis agent 里)
-Step 1: scripts/remove_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+路由到: 09 ai-features（命中触发词"去水词"）
+REQUIRED: 读 references/09-ai-features.md
+  ↓
+Step 1: scripts/remove_fillers.py transcribe -i vlog.mp4 --srt vlog.srt
 Step 2: (Mavis 读 SRT + words.json) 判 10 个水词,返回词索引
-Step 3: scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11,12,19,28,37,38,39,45"
+Step 3: scripts/remove_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --remove-words "1,3,11,12,19,28,37,38,39,45"
 输出: 干净视频(20s → 16.7s,省 3.3s)
 ```
 
-### 大流程(流水线)
+### 大流程(主体阶段 0-4)
 
 ```
 用户: "做一段完整 vlog,从素材到发布版"
   ↓
-路由到: pipeline-vlog
-自动串起:
-  1. 4K → 1080p 降分辨率(若有)
-  2. Whisper 转录所有段
-  3. 抽关键帧(每 15s 一帧)
-  4. AI 分析生成剪辑建议
-  5. 用户勾选保留秒数
-  6. ffmpeg 拼接 + 烧字幕 + BGM 混合
-  7. AI 生图封面 + 中文叠字
-  8. 输出最终成片 + 字幕 SRT + 封面图
+路由到: 阶段 0-4（详见 §主体流程）
+  阶段 0: AI 帮用户用 intent.html 填表 → intent.json
+  阶段 1: AI 读 intent.json → 生成操作清单（6 象限 schema）→ 用户确认
+  阶段 2: 粗加工 5 步（调 step1~5 脚本）
+  阶段 3: 模板工作流（按 健身vlog.yaml 之类）
+  阶段 4: 收尾成片（烧字幕 + BGM + 封面）
 ```
 
 ## 通用参数(所有子技能共享)
 
-| 参数 | 默认值 | 说明 |
-|---|---|---|
-| `--input` | (必填) | 输入视频或图片 |
-| `--output` | (必填) | 输出路径 |
-| `--resolution` | 1080:1920 | 输出分辨率(竖屏 vlog) |
-| `--fps` | 30 | 帧率(强制统一避免 8 小时视频 bug) |
-| `--vcodec` | libx264 | 视频编码(避开 NVENC 崩溃) |
-| `--crf` | 20 | 质量(0-51,越小越清) |
-| `--acodec` | aac | 音频编码 |
-| `--abitrate` | 128k | 音频码率 |
-| `--verbose` | False | 显示 debug 日志(写到 `~/.zhijian/logs/`) |
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频或图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+| `--start` | - | 0 | 起始时间(秒)，**v1.2 命名统一**：cut.py 原 `--ss` 已改 `--start` |
+| `--duration` | - | 全长 | 时长(秒) |
+| `--resolution` | - | 1080:1920 | 输出分辨率(竖屏 vlog) |
+| `--fps` | - | 30 | 帧率(强制统一避免 8 小时视频 bug) |
+| `--vcodec` | - | libx264 | 视频编码(避开 NVENC 崩溃) |
+| `--crf` | - | 20 | 质量(0-51,越小越清) |
+| `--acodec` | - | aac | 音频编码 |
+| `--abitrate` | - | 128k | 音频码率 |
+| `--verbose` | - | False | 显示 debug 日志(写到 `~/.zhijian/logs/`) |
 
-> 已知 bug 排查:见 [docs/FAQ.md](docs/FAQ.md)(高频 Q&A)和 [HANDOFF.md](HANDOFF.md)(完整开发历史)。子技能内部 bug 见 `references/05-color.md` / `09-ai-features.md` 等。
+> 已知 bug 排查:见 `.archive/CHANGELOG.md`(版本历史)和 `.archive/HANDOFF.md`(开发历史)。子技能内部 bug 见 `references/05-color.md` / `09-ai-features.md` 等。
 
 ## 工作流建议
 
@@ -258,7 +300,23 @@ MIT
 
 ---
 
-## AI 协作协议 (v0.6 新增)
+## AI 协作协议 (v1.2 强制)
+
+> **渐进式披露原则**：AI 必须按本协议加载文档，**禁止用 grep/glob 在目录里搜文件**。所有需要读的子文档都在 §14 子技能索引里**显式列出**。
+
+**加载顺序（AI 必读）**：
+
+```
+1. 加载本文件（SKILL.md）
+        ↓
+2. 读 §14 子技能索引 → 命中子技能（如 "转场" → 02 xfade）
+        ↓
+3. REQUIRED: 读对应 references/XX.md（§14 索引里显式列了）
+        ↓
+4. 调 scripts/*.py（按 references/XX.md 的命令例子）
+```
+
+---
 
 > 这部分定义了 AI 在拿到 `intent.json` 后**如何理解与执行**。vlog 创作者填表后，AI 按本节规则解析。
 
@@ -578,6 +636,19 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 #### 阶段 3 ▸ 模板工作流
 
+**AI 必读**：阶段 2 每一步都有对应 step 脚本，AI 不应自己写新逻辑，必须调用现有脚本。
+
+| Step | 调哪个脚本 | 做什么 |
+|---|---|---|
+| Step 1 解析 + 自检 | `scripts/step1_check_intent.py` | 解析 intent.json → 写 `中间产物/自检报告.json` |
+| Step 2.1 ASR 优先 | `scripts/step2_1_asr.py` | 批量 Whisper 转录 → `文字稿/视频_{idx}.md` |
+| Step 2.2 单视频处理 | `scripts/step2_2_process.py` | 基于 ASR 优化 + 处理 → `单视频/video_{idx}.mp4` |
+| Step 3 sequence 拼接 | `scripts/step3_assemble.py` | xfade 链按 sequence 拼 → `组合/seq_<name>.mp4` |
+| Step 4 模糊项兜底 | `scripts/step4_fallback.py` | 跟用户逐条澄清 → `模糊项处理记录.md` |
+| Step 5 决策报告 | `scripts/step5_decision.py` | 写决策报告 + 模板建议 → `决策.md` |
+
+**顶层编排入口**：`executor.py`（5 个原子函数 + `run_coarse()` 串起来）
+
 ```
 - AI 推荐模板（按操作清单 + 关键帧 + ASR）
 - 用户确认
@@ -646,6 +717,29 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 - E = 透明标记（用户一眼看出哪些是 AI 猜的）
 - F = 明确说"我不处理这个"（防止误以为漏了）
 - 每条都有状态列：pending / confirmed / n/a / info
+
+### Jargon 大白话词典（v1.2 必读）
+
+**目的**：操作清单 / 阶段 0-4 文档里大量技术术语，AI 提问给用户时必须翻译成人话。
+
+| 术语 | 大白话 | 例 |
+|---|---|---|
+| **intent.json** | 用户的剪辑需求清单 | "把 intent.json 给 AI" → "把你的剪辑清单给 AI" |
+| **ops（per-video ops）** | 每个视频要做的动作 | "视频 #3 的 ops" → "视频 #3 你要做哪些处理" |
+| **pin-range** | 强制保留某段时间 | "0:30 到 1:00 必须保留" |
+| **cut-middle** | 切掉中间某段 | "从 0:50 开始切 5 秒" |
+| **insert-image** | 视频中插入静态图片 | "在 1:00 处放 3 秒封面" |
+| **opening-text** | 视频前 N 秒叠场景文字 | "片头加 2 秒说明'DAY 1'" |
+| **sequence** | 一组视频的强制播放顺序 | "3 段视频必须按 A→B→C 顺序播" |
+| **per-video 操作** | 对单个视频的动作 | vs project-level（全局动作） |
+| **project-level 操作** | 全项目统一动作 | "所有视频都加 BGM" |
+| **ASR** | 把音频转成文字稿 | "Whisper 转录" → "把视频里说的话抄下来" |
+| **D 象限（模糊项）** | 用户没说清楚的地方 | "视频 #5 你没说怎么处理 → 必须问你" |
+| **E 象限（AI 推断）** | AI 自己猜的部分 | "我猜你希望加 BGM（你没明说）" |
+| **F 象限（未覆盖）** | 字段没处理 | "duration 字段我没用 → 不会影响你" |
+| **xfade / 转场** | 两段视频之间的过渡效果 | "两段视频之间来个 1 秒淡入淡出" |
+| **counter-rotate** | 像素反转（抵消 metadata） | "源是竖屏但像素是横的，需要反转" |
+| **aspect-fill / aspect-fit** | 填满 vs 加黑边 | "填满"裁切；"加黑边"完整保留 |
 
 ### AI 交互式采访触发条件（v1.0 强制）
 

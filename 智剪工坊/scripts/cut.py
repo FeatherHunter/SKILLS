@@ -9,6 +9,9 @@
 
   # 拼接(用文件列表)
   python cut.py concat --list clips.txt --output joined.mp4
+
+
+📖 SKILL.md §14 索引 → REQUIRED: read references/01-cutting.md
 """
 import argparse
 import sys
@@ -68,24 +71,24 @@ def main():
 
     # trim
     p_trim = sub.add_parser("trim", help="剪切单段")
-    p_trim.add_argument("--input", required=True, help="输入视频")
-    p_trim.add_argument("--ss", type=float, default=0, help="起始时间(秒)")
+    p_trim.add_argument("-i", "--input", required=True, help="输入视频")
+    p_trim.add_argument("--start", type=float, default=0, help="起始时间(秒)")
     p_trim.add_argument("--t", type=float, required=True, help="时长(秒)")
-    p_trim.add_argument("--output", required=True, help="输出视频")
+    p_trim.add_argument("-o", "--output", required=True, help="输出视频")
     p_trim.add_argument("--resolution", default="1080:1920", help="输出分辨率")
     p_trim.add_argument("--fps", type=int, default=30, help="帧率")
 
     # concat
     p_concat = sub.add_parser("concat", help="拼接多段(用文件列表)")
     p_concat.add_argument("--list", required=True, help="文件列表 txt(每行 file 'path')")
-    p_concat.add_argument("--output", required=True, help="输出视频")
+    p_concat.add_argument("-o", "--output", required=True, help="输出视频")
     p_concat.add_argument("--resolution", default="1080:1920", help="输出分辨率")
     p_concat.add_argument("--fps", type=int, default=30, help="帧率")
 
     args = parser.parse_args()
 
     if args.cmd == "trim":
-        trim(args.input, args.ss, args.t, args.output, args.resolution, args.fps)
+        trim(args.input, args.start, args.t, args.output, args.resolution, args.fps)
     elif args.cmd == "concat":
         concat(args.list, args.output, args.resolution, args.fps)
 

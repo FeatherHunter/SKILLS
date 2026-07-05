@@ -341,6 +341,11 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
     cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
     cmd.extend(['-max_interleave_delta', '100M'])
     cmd.extend(['-threads', '0'])
+    # BUGFIX (智剪工坊 v1.1.1): 加 -pix_fmt yuv420p 强制 + -movflags +faststart
+    # 单视频也走 faststart + 强制 yuv420p,统一所有输出的兼容性。
+    cmd.extend(['-vsync', 'cfr', '-r', '30'])
+    cmd.extend(['-pix_fmt', 'yuv420p'])
+    cmd.extend(['-movflags', '+faststart'])
     cmd.append(str(output_path))
 
     rc, _, err = run(cmd, timeout=600)
@@ -383,9 +388,22 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
 # ========== 拼接 ==========
 
 def xfade_concat(a_path, b_path, transition, output_path):
-    """两个视频用 xfade 转场拼接。"""
+    """两个视频用 xfade 转场拼接。
+
+    BUGFIX (智剪工坊 v1.1.1): 如果 transition.type == 'none' 或缺失,
+    走硬切(concatenate_simple),不调 ffmpeg xfade filter。
+    理由:用户写 type='none' 是表达"无转场",SKILL 不该擅自走 xfade;
+    且 ffmpeg xfade filter 不支持 transition=none,SKILL 原逻辑会 filter graph 失败早退。
+    """
+    ttype = transition.get('type', None)
+
+    # BUGFIX: type='none' 或缺失 → 硬切(不调 xfade filter,符合"零猜测"原则)
+    if not ttype or ttype == 'none':
+        logger = __import__('logging').getLogger(__name__)
+        logger.debug(f"xfade_concat: type={ttype!r} → 走硬切 (concatenate_simple)")
+        return concatenate_simple([a_path, b_path], output_path)
+
     duration = transition.get('duration', 0.5) or 0.5
-    ttype = transition.get('type', 'fade') or 'fade'
 
     a_info = get_video_info(a_path)
     b_info = get_video_info(b_path)
@@ -410,42 +428,61 @@ def xfade_concat(a_path, b_path, transition, output_path):
         str(output_path)
     ]
 
+    # BUGFIX (智剪工坊 v1.1.1): 加 -pix_fmt yuv420p,强制 libx264 输出 yuv420p。
+    # 原因:不强制时 ffmpeg 会自动选 yuv444p + High 4:4:4 Predictive,
+    # 这种 profile QuickTime/WMP/部分手机相册不兼容,导致"无法播放"。
+    cmd.extend(['-pix_fmt', 'yuv420p'])
+
     rc, _, err = run(cmd, timeout=600)
     return output_path if rc == 0 else None
 
 
 def concatenate_simple(paths, output_path):
-    """无转场，简单拼接。"""
+    """无转场，简单拼接。
+
+    BUGFIX (智剪工坊 v1.1.1): 去除 stream copy 快路径,统一走重编 + faststart。
+    原因:输入视频 fps 不一致(stream copy 后输出 VFR / 混合 fps,如 25.63),
+    且 moov atom 位置/关键帧可能有兼容性问题。统一重编 + faststart 一次性解决。
+    副作用:每次拼接都重编(慢),但兼容性彻底 OK。
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if len(paths) == 1:
-        shutil.copy2(paths[0], output_path)
-        return output_path
+        # BUGFIX: 即使单文件路径也重编一次以统一 fps + faststart
+        # (原代码用 shutil.copy2,可能不重编 + moov 位置 + faststart)
+        list_file = output_path.parent / "_concat_list.txt"
+        with open(list_file, 'w', encoding='utf-8') as f:
+            f.write(f"file '{paths[0]}'\n")
+        cmd = [
+            'ffmpeg', '-y', '-noautorotate',
+            '-f', 'concat', '-safe', '0',
+            '-i', str(list_file),
+            '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '128k',
+            '-vsync', 'cfr', '-r', '30',
+            '-pix_fmt', 'yuv420p',
+            '-movflags', '+faststart',
+            '-threads', '0',
+            str(output_path)
+        ]
+        rc, _, err = run(cmd, timeout=300)
+        list_file.unlink(missing_ok=True)
+        return output_path if rc == 0 else None
 
     list_file = output_path.parent / "_concat_list.txt"
     with open(list_file, 'w', encoding='utf-8') as f:
         for p in paths:
             f.write(f"file '{p}'\n")
 
-    # 流复制快路径
-    copy_cmd = [
-        'ffmpeg', '-y', '-noautorotate',
-        '-f', 'concat', '-safe', '0',
-        '-i', str(list_file),
-        '-c', 'copy', '-movflags', '+faststart',
-        str(output_path)
-    ]
-    rc, _, err = run(copy_cmd, timeout=300)
-    list_file.unlink(missing_ok=True)
-    if rc == 0 and output_path.exists() and output_path.stat().st_size > 1000:
-        return output_path
-
-    # Fallback: 重编
+    # BUGFIX: 去掉 stream copy,统一重编 + fps 30 + yuv420p + faststart
     cmd = [
-        'ffmpeg', '-y', '-noautorotate', '-r', '30',
+        'ffmpeg', '-y', '-noautorotate',
         '-f', 'concat', '-safe', '0',
         '-i', str(list_file),
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
         '-c:a', 'aac', '-b:a', '128k',
+        '-vsync', 'cfr', '-r', '30',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
         '-threads', '0',
         str(output_path)
     ]

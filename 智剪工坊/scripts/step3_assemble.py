@@ -114,9 +114,12 @@ def main():
             current = single_paths[0]
             for i in range(1, len(single_paths)):
                 # 找当前 transition
+                # BUGFIX (智剪工坊 v1.1.1): 默认 fallback 从 fade → none。
+                # 理由:用户没写 transition 时,SKILL 不该擅自加转场
+                # (违反"零猜测"原则)。xfade_concat 会在 type='none' 时自动走硬切。
                 trans = next((t for t in transitions
                               if t.get('after') == videos[i-1]),
-                             {'type': 'fade', 'duration': 0.5})
+                              {'type': 'none', 'duration': 0})
                 tmp = chunks_dir / f"_tmp_{name}_{i}.mp4"
                 result = xfade_concat(current, single_paths[i], trans, tmp)
                 if result is None:

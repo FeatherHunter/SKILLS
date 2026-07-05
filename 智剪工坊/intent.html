@@ -1626,8 +1626,11 @@
           const dEl = document.querySelector(`[data-seq-dur="${i}"]`);
           // 即使 tSel.value 是 ""（默认 = AI 选）也算合法；空 type 在 load 时为 fade
           if (tSel) {
+            // BUGFIX (智剪工坊 v1.1.1): 默认空 type 从 'fade' 改 'none'。
+            // 理由:符合"零猜测"原则——用户没主动选转场,SKILL 不该擅自加 fade。
+            // 想用 fade 的用户必须明确选(下拉菜单里选"淡入淡出")。
             transMap[i] = {
-              type: tSel.value || 'fade',
+              type: tSel.value || 'none',
               duration: dEl ? parseFloat(dEl.value) || 0.5 : 0.5
             };
           }

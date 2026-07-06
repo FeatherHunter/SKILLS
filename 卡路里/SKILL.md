@@ -84,6 +84,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 记吃了 | 记录饮食（库匹配/图片识别/外部搜索统一入口） | `calorie_tracker.py add` |
 | 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `add` |
 | 删吃的 | 删除饮食记录 | `calorie_tracker.py delete` |
+| 改吃的 | 修改已记录饮食（克数/食物名/备注） | `calorie_tracker.py update-meal` |
 | 查今天吃 | 今日饮食摘要（vs 目标） | `calorie_tracker.py summary` |
 | 查吃的记录 | 今日逐条饮食记录 | `calorie_tracker.py list` |
 | 查热量历史 | 最近 N 天热量摄入历史 | `calorie_tracker.py history` |
@@ -283,6 +284,7 @@ analysis/__init__.py
 ### 食物记录
 ```bash
 python scripts/calorie_tracker.py add "鸡胸肉" 165 31 0 3 150   # 食物名 热量 蛋白 碳水 脂肪 克数
+python scripts/calorie_tracker.py update-meal 5 --grams 180      # 修改记录5的克数为180g
 python scripts/calorie_tracker.py summary                        # 今日摘要（含饮水）
 python scripts/calorie_tracker.py history 7                      # 最近7天历史
 python scripts/calorie_tracker.py goal 1800 150 200 60 2000      # 设置目标：热量 蛋白 碳水 脂肪 饮水ml
@@ -381,6 +383,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 |---------|---------|
 | "查热量" vs "查热量趋势" | 前者是搜索食品库，后者是分析模块 |
 | "记运动" vs "查运动记录" | "记"=新增，"查"=查询 |
+| "记吃的" vs "改吃的" | "记"=新增，"改"=修改已有记录 |
 | "记体重" vs "查体重目标" | "记"=新增记录，"查"=查询进度 |
 | "记睡眠" vs "记录起床" | 前者是手动记录，后者是起床唤醒自动流程 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |

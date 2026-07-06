@@ -66,6 +66,8 @@ def usage():
   add <食物> <卡路里> <蛋白质> [碳水] [脂肪] [克数] [备注]
                                    添加食物记录（可用 --date / --time / --meal 补录历史）
   delete <id>                       删除记录
+  update-meal <id> [--grams <克数>] [--food <食物名>] [--note <备注>]
+                                   更新饮食记录（克数/食物名/备注）
   list                              列出今日记录
   summary                           今日摘要
   goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]
@@ -155,6 +157,18 @@ def main():
                 print("Error: delete requires <id>")
                 sys.exit(1)
             diet.delete_meal(sys.argv[2])
+
+        elif command == "update-meal":
+            if len(sys.argv) < 3:
+                print("Error: update-meal requires <id> [--grams <克数>] [--food <食物名>] [--note <备注>]")
+                sys.exit(1)
+            kwargs = _parse_kw_args(sys.argv[3:])
+            diet.update_meal(
+                sys.argv[2],
+                grams=kwargs.get('grams'),
+                food_name=kwargs.get('food'),
+                note=kwargs.get('note'),
+            )
 
         elif command == "list":
             diet.list_meals()

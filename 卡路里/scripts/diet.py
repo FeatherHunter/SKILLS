@@ -127,6 +127,61 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
     return True
 
 
+def update_meal(entry_id, grams=None, food_name=None, note=None):
+    """更新一条食物记录
+
+    Args:
+        entry_id: 记录 ID
+        grams: 克数（可选）
+        food_name: 食物名称（可选）
+        note: 备注（可选）
+    """
+    try:
+        entry_id = int(entry_id)
+    except ValueError:
+        print("Error: Entry ID must be a number")
+        return False
+
+    conn = _get_db()
+    c = conn.cursor()
+
+    c.execute('SELECT food_name, grams, calories FROM entries WHERE id = ?', (entry_id,))
+    row = c.fetchone()
+
+    if not row:
+        print(f"Error: Entry ID {entry_id} not found")
+        conn.close()
+        return False
+
+    old_food, old_grams, old_cal = row
+    updates = []
+    params = []
+    if grams is not None:
+        updates.append('grams = ?')
+        params.append(float(grams))
+    if food_name is not None:
+        updates.append('food_name = ?')
+        params.append(food_name)
+    if note is not None:
+        updates.append('note = ?')
+        params.append(note)
+
+    if not updates:
+        print("Error: No fields to update")
+        conn.close()
+        return False
+
+    params.append(entry_id)
+    c.execute(f"UPDATE entries SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+
+    new_grams = grams if grams is not None else old_grams
+    new_food = food_name if food_name is not None else old_food
+    print(f"✓ Updated entry {entry_id}: {new_food} ({new_grams}克)")
+    return True
+
+
 def delete_meal(entry_id):
     """删除一条食物记录"""
     try:

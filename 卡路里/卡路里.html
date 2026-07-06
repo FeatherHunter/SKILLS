@@ -87,7 +87,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="搜索唤醒词..." autocomplete="off" />
   </div>
-  <div class="search-hint" id="searchHint">共 56 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
+  <div class="search-hint" id="searchHint">共 57 个唤醒词 · 点击唤醒词查看 CLI 命令</div>
 </div>
 
 <div class="tabs" id="tabs">
@@ -159,6 +159,23 @@ const DATA = {
                 { name: "entries", fields: "id（指定记录）", op: "删除" }
               ],
               sideEffects: "无副作用，仅删除指定条目"
+            }
+          }
+        ]
+      },
+      {
+        name: "改吃的",
+        desc: "修改已记录饮食（克数/食物名/备注）",
+        triggers: [
+          {
+            word: "改吃的",
+            cli: "python scripts/calorie_tracker.py update-meal <id> [--grams <克数>] [--food <食物名>] [--note <备注>]",
+            flow: {
+              operation: "UPDATE",
+              tables: [
+                { name: "entries", fields: "可选: grams, food_name, note（指定记录）", op: "更新" }
+              ],
+              sideEffects: "无副作用，仅更新指定字段（克数/食物名/备注任意组合）"
             }
           }
         ]

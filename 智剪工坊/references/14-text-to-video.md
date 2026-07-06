@@ -1,3 +1,50 @@
+# 14-text-to-video - 文字成片 — v1.2 已实现
+
+> **对应脚本**: `scripts/ai_text_to_video.py`
+> **触发词**: "文字成片"、"AI 生成视频"、"文生视频"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 默认用 mmx(免费)
+python scripts/ai_text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
+
+# 指定时长(6 或 10,mmx 强制)
+python scripts/ai_text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
+
+# 试 Kling API(需 KLING_API_KEY)
+python scripts/ai_text_to_video.py --prompt "..." --api kling --output out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+- **mmx 配额:** 每天 ~3 次(避免用完)
+- **prompt 必须英文**(mmx 国际版,中文支持差)
+- **时长固定 6s/10s**(mmx 限制)
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 子技能 14 · text-to-video(文字成片 L2)
 
 ## 它是什么
@@ -13,13 +60,13 @@
 
 ```bash
 # 默认用 mmx(免费)
-python scripts/text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
+python scripts/ai_text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
 
 # 指定时长(6 或 10,mmx 强制)
-python scripts/text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
+python scripts/ai_text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
 
 # 试 Kling API(需 KLING_API_KEY)
-python scripts/text_to_video.py --prompt "..." --api kling --output out.mp4
+python scripts/ai_text_to_video.py --prompt "..." --api kling --output out.mp4
 ```
 
 ## mmx 参数
@@ -70,6 +117,9 @@ python scripts/text_to_video.py --prompt "..." --api kling --output out.mp4
 ## 相关脚本
 
 - 依赖:无
-- 同类:`scripts/digital_human.py`(image-to-video subject 模式)
+- 同类:`scripts/ai_digital_human.py`(image-to-video subject 模式)
 - 前置:无
 - 后置:无
+
+
+</details>

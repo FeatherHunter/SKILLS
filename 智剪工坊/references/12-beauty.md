@@ -1,3 +1,54 @@
+# 12-beauty - 美颜 — v1.2 已实现
+
+> **对应脚本**: `scripts/ai_beauty.py`
+> **触发词**: "美颜"、"磨皮"、"瘦脸"、"大眼"、"美白"、"人脸美化"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 用预设
+python scripts/ai_beauty.py --input v.mp4 --output v_beauty.mp4 --preset natural
+
+# 自定义强度(0-1)
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 \
+  --smooth 0.5 --whiten 0.25 --slim 0.3 --enlarge 0.3
+
+# 只磨皮(瘦脸/大眼关闭)
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 --smooth 0.5 --slim 0 --enlarge 0
+
+# 加 --verbose 看 debug 日志
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 --preset natural --verbose
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+- 大眼需要正脸(侧面效果差)
+- 多人脸只处理第 1 张脸
+- 视频处理慢(逐帧),生产用建议 GPU
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 子技能 12 · beauty(美颜 L2)
 
 ## 它是什么
@@ -15,17 +66,17 @@
 
 ```bash
 # 用预设
-python scripts/beauty.py --input v.mp4 --output v_beauty.mp4 --preset natural
+python scripts/ai_beauty.py --input v.mp4 --output v_beauty.mp4 --preset natural
 
 # 自定义强度(0-1)
-python scripts/beauty.py --input v.mp4 --output v.mp4 \
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 \
   --smooth 0.5 --whiten 0.25 --slim 0.3 --enlarge 0.3
 
 # 只磨皮(瘦脸/大眼关闭)
-python scripts/beauty.py --input v.mp4 --output v.mp4 --smooth 0.5 --slim 0 --enlarge 0
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 --smooth 0.5 --slim 0 --enlarge 0
 
 # 加 --verbose 看 debug 日志
-python scripts/beauty.py --input v.mp4 --output v.mp4 --preset natural --verbose
+python scripts/ai_beauty.py --input v.mp4 --output v.mp4 --preset natural --verbose
 ```
 
 ## 5 个 preset
@@ -100,3 +151,6 @@ A: 用 `batch.py --task beauty ...`(需先扩展 batch.py,目前不支持 beauty
 - 上游:无
 - 下游:无(独立功能)
 - 类似:剪映美颜、抖音美颜(图形化 GUI)
+
+
+</details>

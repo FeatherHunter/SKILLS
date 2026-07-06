@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).parent))  # scripts/,让 import rewrite_au
 from common import (
     get_duration, ensure_dir, log_info, log_warn, log_error, log_section, safe_run,
 )
-from rewrite_audio import synthesize_via_matrix
+from ai_rewrite import synthesize_via_matrix
 
 
 # ============================================================

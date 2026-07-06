@@ -1,14 +1,76 @@
+# 01-cutting - 剪切 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_trim.py`
+> **触发词**: "剪切"、"切这段"、"保留 X 秒"、"从 A 到 B"、"拼接"、"合并多个视频"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 帧级剪切
+python scripts/video_trim.py trim --input v.mp4 --start 30 --t 20 --output out.mp4
+
+# 拼接(concat demuxer)
+python scripts/video_trim.py concat --list clips.txt --output joined.mp4
+```
+
+### 场景 2
+
+```bash
+ffmpeg -f concat -safe 0 -i concat_list.txt \
+  -c:v libx264 -preset medium -crf 20 \
+  -c:a aac -b:a 128k \
+  _concat_raw.mp4
+```
+
+### 场景 3
+
+```bash
+ffmpeg -ss [start] -i [input] -t [dur] \
+  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,\
+       pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30" \
+  -c:v libx264 -preset medium -crf 20 \
+  -c:a aac -b:a 128k \
+  [output]
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+- **Bug 2**(详见 SKILL.md):段 10 是 23.65fps 拼接后变 8 小时 → 强制 fps=30 修复
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 01 - cutting (剪切 + 拼接) — v0.5 已实现
 
-> **对应脚本:** `scripts/cut.py`(1 个,含 `trim` / `concat` 子命令)
+> **对应脚本:** `scripts/video_trim.py`(1 个,含 `trim` / `concat` 子命令)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # 帧级剪切
-python scripts/cut.py trim --input v.mp4 --start 30 --t 20 --output out.mp4
+python scripts/video_trim.py trim --input v.mp4 --start 30 --t 20 --output out.mp4
 
 # 拼接(concat demuxer)
-python scripts/cut.py concat --list clips.txt --output joined.mp4
+python scripts/video_trim.py concat --list clips.txt --output joined.mp4
 ```
 
 ---
@@ -83,3 +145,5 @@ ffmpeg -ss [start] -i [input] -t [dur] \
 ## 已知 Bug
 
 - **Bug 2**(详见 SKILL.md):段 10 是 23.65fps 拼接后变 8 小时 → 强制 fps=30 修复
+
+</details>

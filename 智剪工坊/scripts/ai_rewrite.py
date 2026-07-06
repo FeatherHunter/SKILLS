@@ -42,7 +42,7 @@ from common import (
 # 复用 remove_fillers 的转录 / SRT 解析
 try:
     sys.path.insert(0, str(Path(__file__).parent))
-    from remove_fillers import transcribe as rf_transcribe, parse_srt, format_srt
+    from ai_fillers import transcribe as rf_transcribe, parse_srt, format_srt
     HAS_RF = True
 except ImportError:
     HAS_RF = False

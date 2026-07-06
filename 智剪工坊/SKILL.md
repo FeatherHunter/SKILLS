@@ -68,18 +68,18 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 | `lib/asr.py` | faster-whisper 包装 | 阶段 2 Step 2.1（ASR 优先） |
 | `lib/processing.py` | 视频滤镜 + 转场 + rotation | 阶段 2 Step 2.2 / Step 3 |
 | `lib/cli_args.py` | argparse 基础封装 | 写新脚本时复用 |
-| `executor.py` | 5 个原子函数 + `run_coarse` 编排 | 阶段 2 顶层入口 |
+| ~~`executor.py`~~ | ~~5 个原子函数 + `run_coarse` 编排~~ | **❌ v1.2 已删除**（v0.7 时代批处理工具，跟 v1.0 阶段 2 流程契约矛盾） |
 | `intent.html` | 唯一前端：填表 → intent.json | 阶段 0 项目初始化 |
 
 > **不读**：`.archive/`（CHANGELOG / HANDOFF / README / 架构 / docs/ 历史沉淀），开发者面向，AI 不读。
 
 **v1.2 当前状态**：
 - ✅ 协议层：SKILL.md + references/15 个子技能文档（一子技能一文档）
-- ✅ 代码层：scripts/ 36 个 + lib/ 9 个 + executor.py
+- ✅ 代码层：scripts/ 36 个 + lib/ 6 个（v1.2 删了 modify.py + llm_client.py，executor.py 也删）
 - ✅ 命名统一：参数 `-i` `-o` `--start` `--output`（v1.2 patch）
 - ✅ 阶段 1 必走：操作清单 schema（6 象限）作为阶段 2 执行契约
-- ✅ 阶段 2：ASR 前置 + 5 个 step 脚本（step1_check_intent / step2_1_asr / step2_2_process / step3_assemble / step4_fallback / step5_decision）
-- ⏸️ 模板库只有「健身vlog.yaml」一个
+- ✅ 阶段 2：ASR 前置 + 6 个 pipeline step 脚本（pipeline_step1_check / pipeline_step2_asr / pipeline_step2_process / pipeline_step3_assemble / pipeline_step4_review / pipeline_step5_decide）
+- 🔄 模板库：当前 1 个（`健身vlog.yaml`），按类别扩展（教程vlog / VLOG 等）
 - ⏸️ lib/modify.py 序列操作是 stub
 
 **v1.2 关键设计**（详见 §主体流程 章节）：
@@ -110,20 +110,20 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 
 | # | 子技能 | 触发词 | 文档（REQUIRED） | 脚本 |
 |---|---|---|---|---|
-| 01 | **cut** | 剪切、切这段、保留 X 秒、从 A 到 B | [references/01-cutting.md](references/01-cutting.md) | `scripts/cut.py` |
-| 02 | **xfade** | 转场、淡入淡出、溶解、擦除、切换、黑场、白闪、圆形转场、像素化、径向 | [references/02-transitions.md](references/02-transitions.md) | `scripts/xfade.py` |
-| 03 | **effects** | 慢动作、慢放、0.5 倍速、推镜头、zoom in、推到脸、插帧、放大、缩小、模糊、抖动、镜像 | [references/03-effects.md](references/03-effects.md) | `scripts/fx.py`, `scripts/keyframe.py` |
-| 04 | **cinematic** | J-cut、L-cut、speed ramp、跳剪、变速、上下黑边、黑场、白闪、闪回、匹配剪辑 | [references/04-cinematic.md](references/04-cinematic.md) | `scripts/speed.py`, `scripts/reverse.py`, `scripts/multicam.py` |
-| 05 | **color** | 调色、LUT、cinematic、teal & orange、调亮、调暗、对比度、饱和度、色温、风格化、HDR | [references/05-color.md](references/05-color.md) | `scripts/color_style.py`, `scripts/style_transfer.py`, `scripts/hdr_io.py` |
-| 06 | **text** | 字幕、烧字幕、字幕动效、打字机、打字效果、淡入、弹跳、跑马灯、标题、文字 | [references/06-text.md](references/06-text.md) | `scripts/auto_subtitle.py`, `scripts/voice_change.py`, `scripts/translate.py` |
-| 07 | **audio** | 加音乐、配乐、背景音乐、循环、淡入、淡出、混音、音量、**音频降噪、降噪、噪声处理**、节拍、BGM | [references/07-audio.md](references/07-audio.md) | `scripts/bgm_loop.py`, `scripts/beat_sync.py` |
-| 08 | **cover** | 封面、做封面、AI 封面、AI 生图、设计封面、缩略图、thumbnail | [references/08-cover.md](references/08-cover.md) | `scripts/cover_ai.py` |
-| 09 | **ai-features** | AI 剪辑、智能剪辑、AI 抠图、自动找金句、金句、节拍卡点、自动字幕、人脸追踪、换背景、**去水词** | [references/09-ai-features.md](references/09-ai-features.md) | `scripts/cutout.py`, `scripts/quotes.py`, `scripts/scene_detect.py`, `scripts/mask.py`, `scripts/overlay.py`, `scripts/reframe.py`, `scripts/remove_fillers.py` |
+| 01 | **cut** | 剪切、切这段、保留 X 秒、从 A 到 B | [references/01-cutting.md](references/01-cutting.md) | `scripts/video_trim.py` |
+| 02 | **xfade** | 转场、淡入淡出、溶解、擦除、切换、黑场、白闪、圆形转场、像素化、径向 | [references/02-transitions.md](references/02-transitions.md) | `scripts/video_xfade.py` |
+| 03 | **effects** | 慢动作、慢放、0.5 倍速、推镜头、zoom in、推到脸、插帧、放大、缩小、模糊、抖动、镜像 | [references/03-effects.md](references/03-effects.md) | `scripts/video_fx.py`, `scripts/video_keyframe.py` |
+| 04 | **cinematic** | J-cut、L-cut、speed ramp、跳剪、变速、上下黑边、黑场、白闪、闪回、匹配剪辑 | [references/04-cinematic.md](references/04-cinematic.md) | `scripts/video_speed.py`, `scripts/video_reverse.py`, `scripts/video_multicam.py` |
+| 05 | **color** | 调色、LUT、cinematic、teal & orange、调亮、调暗、对比度、饱和度、色温、风格化、HDR | [references/05-color.md](references/05-color.md) | `scripts/video_color.py`, `scripts/video_style.py`, `scripts/video_hdr.py` |
+| 06 | **text** | 字幕、烧字幕、字幕动效、打字机、打字效果、淡入、弹跳、跑马灯、标题、文字 | [references/06-text.md](references/06-text.md) | `scripts/video_subtitle.py`, `scripts/audio_voice.py`, `scripts/ai_translate.py` |
+| 07 | **audio** | 加音乐、配乐、背景音乐、循环、淡入、淡出、混音、音量、**音频降噪、降噪、噪声处理**、节拍、BGM | [references/07-audio.md](references/07-audio.md) | `scripts/audio_bgm.py`, `scripts/audio_beat.py` |
+| 08 | **cover** | 封面、做封面、AI 封面、AI 生图、设计封面、缩略图、thumbnail | [references/08-cover.md](references/08-cover.md) | `scripts/ai_cover.py` |
+| 09 | **ai-features** | AI 剪辑、智能剪辑、AI 抠图、自动找金句、金句、节拍卡点、自动字幕、人脸追踪、换背景、**去水词** | [references/09-ai-features.md](references/09-ai-features.md) | `scripts/ai_cutout.py`, `scripts/ai_quotes.py`, `scripts/video_scene.py`, `scripts/video_mask.py`, `scripts/video_overlay.py`, `scripts/video_reframe.py`, `scripts/ai_fillers.py` |
 | 10 | **batch** | 批量、批处理、100 个视频都、批量加转场、批量调色、批量转码 | [references/10-batch.md](references/10-batch.md) | `scripts/batch.py` |
-| 12 | **🆕 beauty** | 美颜、磨皮、瘦脸、大眼、美白、人脸美化 | [references/12-beauty.md](references/12-beauty.md) | `scripts/beauty.py` |
-| 13 | **🆕 rewrite-audio** | 改词、改写、翻唱、配音、换声、改写文案、TTS | [references/13-rewrite-audio.md](references/13-rewrite-audio.md) | `scripts/rewrite_audio.py` |
-| 14 | **🆕 text-to-video** | 文字成片、AI 生成视频、文生视频 | [references/14-text-to-video.md](references/14-text-to-video.md) | `scripts/text_to_video.py` |
-| 15 | **🆕 digital-human** | 数字人、虚拟人、AI 讲解、头像说话 | [references/15-digital-human.md](references/15-digital-human.md) | `scripts/digital_human.py` |
+| 12 | **🆕 beauty** | 美颜、磨皮、瘦脸、大眼、美白、人脸美化 | [references/12-beauty.md](references/12-beauty.md) | `scripts/ai_beauty.py` |
+| 13 | **🆕 rewrite-audio** | 改词、改写、翻唱、配音、换声、改写文案、TTS | [references/13-rewrite-audio.md](references/13-rewrite-audio.md) | `scripts/ai_rewrite.py` |
+| 14 | **🆕 text-to-video** | 文字成片、AI 生成视频、文生视频 | [references/14-text-to-video.md](references/14-text-to-video.md) | `scripts/ai_text_to_video.py` |
+| 15 | **🆕 digital-human** | 数字人、虚拟人、AI 讲解、头像说话 | [references/15-digital-human.md](references/15-digital-human.md) | `scripts/ai_digital_human.py` |
 | 16 | **🆕 edit** | 去头去尾、调音量、静音、黑边、缩放、裁剪、旋转、翻转、提音、淡入淡出、水印、多分辨率、GIF、缩略图 | [references/16-edit.md](references/16-edit.md) | `scripts/edit.py`（14 子命令） |
 
 > 实际有 36 个 Python 脚本（部分子技能含多个脚本），详见 `scripts/` 目录。
@@ -139,7 +139,7 @@ REQUIRED: 读 references/07-audio.md
   ↓
 找到 [§D 音频降噪](references/07-audio.md#d-音频降噪)（ffmpeg highpass / afftdn 命令）
   ↓
-调底层 ffmpeg 或 scripts/bgm_loop.py 加 BGM 时一并处理
+调底层 ffmpeg 或 scripts/audio_bgm.py 加 BGM 时一并处理
 ```
 
 ## 调用范式
@@ -153,7 +153,7 @@ REQUIRED: 读 references/07-audio.md
 REQUIRED: 读 references/02-transitions.md
   ↓
 参数确认: 转场类型 / 时长 / offset
-执行: scripts/xfade.py -a clip1.mp4 -b clip2.mp4 --type fade --duration 1 -o joined.mp4
+执行: scripts/video_xfade.py -a clip1.mp4 -b clip2.mp4 --type fade --duration 1 -o joined.mp4
 输出: joined_with_fade.mp4
 ```
 
@@ -165,9 +165,9 @@ REQUIRED: 读 references/02-transitions.md
 路由到: 09 ai-features（命中触发词"去水词"）
 REQUIRED: 读 references/09-ai-features.md
   ↓
-Step 1: scripts/remove_fillers.py transcribe -i vlog.mp4 --srt vlog.srt
+Step 1: scripts/ai_fillers.py transcribe -i vlog.mp4 --srt vlog.srt
 Step 2: (Mavis 读 SRT + words.json) 判 10 个水词,返回词索引
-Step 3: scripts/remove_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --remove-words "1,3,11,12,19,28,37,38,39,45"
+Step 3: scripts/ai_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --remove-words "1,3,11,12,19,28,37,38,39,45"
 输出: 干净视频(20s → 16.7s,省 3.3s)
 ```
 
@@ -284,7 +284,7 @@ Step 3: scripts/remove_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --
 | 单元测试 | ❌ 0% | 推迟(用户确认) |
 | AI 视频实测 | ❌ 0% | mmx 配额 3/天,等真 vlog 时测 |
 | 模板/<name>.yaml | ⚠️ 草稿 | 见[.archive/架构.md §8 D](.archive/架构.md) |
-| executor.py 粗加工 | ❌ 未动 | 见[.archive/架构.md §8 C](.archive/架构.md) |
+| ~~executor.py 粗加工~~ | ~~❌ 未动~~ | **v1.2 已删**（v0.7 时代批处理工具，与 v1.0 阶段 2 契约矛盾） |
 
 ## 相关工具链
 
@@ -431,7 +431,7 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 │   └── modify.py        ← 改素材操作菜单
 ├── 文档/                ← references/
 ├── intent.html
-└── executor.py          ← 粗加工执行器（5 个原子函数）
+└── ~~executor.py~~      ← **v1.2 已删**（v0.7 时代批处理工具）
 ```
 
 ### 工作区（<workspace>/）
@@ -640,14 +640,14 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 | Step | 调哪个脚本 | 做什么 |
 |---|---|---|
-| Step 1 解析 + 自检 | `scripts/step1_check_intent.py` | 解析 intent.json → 写 `中间产物/自检报告.json` |
-| Step 2.1 ASR 优先 | `scripts/step2_1_asr.py` | 批量 Whisper 转录 → `文字稿/视频_{idx}.md` |
-| Step 2.2 单视频处理 | `scripts/step2_2_process.py` | 基于 ASR 优化 + 处理 → `单视频/video_{idx}.mp4` |
-| Step 3 sequence 拼接 | `scripts/step3_assemble.py` | xfade 链按 sequence 拼 → `组合/seq_<name>.mp4` |
-| Step 4 模糊项兜底 | `scripts/step4_fallback.py` | 跟用户逐条澄清 → `模糊项处理记录.md` |
-| Step 5 决策报告 | `scripts/step5_decision.py` | 写决策报告 + 模板建议 → `决策.md` |
+| Step 1 解析 + 自检 | `scripts/pipeline_step1_check.py` | 解析 intent.json → 写 `中间产物/自检报告.json` |
+| Step 2.1 ASR 优先 | `scripts/pipeline_step2_asr.py` | 批量 Whisper 转录 → `文字稿/视频_{idx}.md` |
+| Step 2.2 单视频处理 | `scripts/pipeline_step2_process.py` | 基于 ASR 优化 + 处理 → `单视频/video_{idx}.mp4` |
+| Step 3 sequence 拼接 | `scripts/pipeline_step3_assemble.py` | xfade 链按 sequence 拼 → `组合/seq_<name>.mp4` |
+| Step 4 模糊项兜底 | `scripts/pipeline_step4_review.py` | 跟用户逐条澄清 → `模糊项处理记录.md` |
+| Step 5 决策报告 | `scripts/pipeline_step5_decide.py` | 写决策报告 + 模板建议 → `决策.md` |
 
-**顶层编排入口**：`executor.py`（5 个原子函数 + `run_coarse()` 串起来）
+**顶层编排入口**：AI 按 §AI 协作协议 v1.2 强制 加载顺序，**REQUIRED: 读 references/XX.md**，然后调 scripts/pipeline_step*.py。**v1.2 删除了 executor.py**——AI 不要一键跑完，要逐步调每步跟用户交互。
 
 ```
 - AI 推荐模板（按操作清单 + 关键帧 + ASR）
@@ -718,6 +718,74 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 - F = 明确说"我不处理这个"（防止误以为漏了）
 - 每条都有状态列：pending / confirmed / n/a / info
 
+#### G. op 白名单（AI 必读）
+
+**目的**：videos[].ops 里的合法 op 名是固定的，AI 看到不在白名单的 op 必须问用户（不要瞎猜）。
+
+**两层架构**：video 级 ops（§G.1）+ sequence 级 transitions（§G.2）
+
+##### §G.1 video 级 ops（每个视频单独处理）
+
+| op 名 | 大白话 | 对应 CLI | 参数语义 |
+|---|---|---|---|
+| `trim-head` | 剪头 N 秒 | `processing.py build_video_filter` | `{on: bool, sec: 数字}` |
+| `trim-tail` | 剪尾 N 秒 | `processing.py build_video_filter` | `{on: bool, sec: 数字}` |
+| `pin-range` | 强制保留某段时间 | `processing.py build_video_filter` | `{on: bool, start: "HH:MM:SS", end: "HH:MM:SS"}` |
+| `cut-middle` | 切掉中间某段 | `processing.py build_video_filter` | `{on: bool, from: "HH:MM:SS", to: "HH:MM:SS"}` |
+| `speed-up` | 加速 | `processing.py build_video_filter` | `{on: bool, factor: float}`（>1 加速） |
+| `slow-down` | 减速 | `processing.py build_video_filter` | `{on: bool, factor: float}`（<1 减速） |
+| `reverse` | 倒放 | `video_reverse.py` | `{on: bool}` |
+| `mute` | 静音 | `processing.py build_video_filter` | `{on: bool}`（用 voice='mute'） |
+| `fade-in` | 视频开头淡入 | `video_fade.py` / `processing.py` | `{on: bool, sec: 数字}` |
+| `fade-out` | 视频结尾淡出 | `video_fade.py` / `processing.py` | `{on: bool, sec: 数字}` |
+| `opening-text` | 视频前 N 秒叠场景文字 | `video_opening.py` | `{on: bool, text: str, duration: 秒, region: str}` |
+| `insert-image` | 视频中插入静态图片 | `video_overlay.py` | `{on: bool, file: path, at: 秒, duration: 秒}` |
+| `color` | 调色 | `video_color.py` | `{on: bool, preset: str}`（cinematic/warm/cool/vintage/bw/high-contrast） |
+| `rotate` | 旋转 90/180/270 | `edit.py rotate` | `{on: bool, degrees: int}` |
+| `scale` | 缩放 | `edit.py scale` | `{on: bool, width: int, height: int}` |
+| `crop` | 裁剪 | `edit.py crop` | `{on: bool, x: int, y: int, width: int, height: int}` |
+| `subtitle` | 自动字幕 | `video_subtitle.py` | `{on: bool, style: str, language: str}`（中文/英文/auto） |
+| `audio` | 加 BGM | `audio_bgm.py` | `{on: bool, file: path, volume: float}` |
+| `target-duration` | 成片时长上限 | `processing.py` | `{on: bool, sec: 数字}` |
+
+##### §G.2 sequence 级 transitions（两段视频之间）
+
+**字段位置**：`sequences[].transitions[].{type, duration}`
+
+**9 种 intent.html type + 路由**：
+
+| 意图 type（intent.html） | 含义 | AI 路由 | 底层 ffmpeg xfade |
+|---|---|---|---|
+| `none` | 不开转场 | 短路：ffmpeg concat 硬切 | — |
+| `cut` | 直切 | 短路：ffmpeg concat 硬切 | — |
+| `fade` | 淡入淡出 | `video_xfade.py --type fade` | `fade` |
+| `dissolve` | 溶解 | `video_xfade.py --type dissolve` | `dissolve` |
+| `wipe-left` | 左擦除 | `video_xfade.py --type wipe-left` | `wipeleft` |
+| `wipe-right` | 右擦除 | `video_xfade.py --type wipe-right` | `wiperight` |
+| `slide-up` | 上滑 | `video_xfade.py --type slide-up` | `slideup` |
+| `zoom-in` | 推进 | `video_xfade.py --type zoom-in` | `zoomin` |
+| `blur` | 模糊过渡 | `video_xfade.py --type blur` | `hblur` |
+
+**关键规则**：
+
+- AI 透传 intent.html 友好名（`wipe-left` / `slide-up` / `zoom-in` / `blur`），由 `video_xfade.py` 内部映射到 ffmpeg 合法名
+- `none` 和 `cut` 都是"不调 xfade"——区别仅在语义（`none` = 用户没选，`cut` = 用户明确要硬切）
+- `duration` 默认 0.5 秒（intent.html input value="0.5"）
+- 完整 ffmpeg xfade 支持 60+ 种 transition，但本 SKILL 只声明 9 种意图类型；如需高级类型，AI 应询问用户
+
+**AI 路由规则**：
+
+```
+看到 videos[i].ops.{op_name}
+  ↓
+在 §G.1 video 级 ops 白名单里？ → 是：调对应 CLI
+                                  → 否：D 象限"必须问"
+看到 sequences[j].transitions[k].type
+  ↓
+在 §G.2 sequence 级 9 种 type 里？ → 是：调 video_xfade.py(自动映射)
+                                     → 否：D 象限"必须问"
+```
+
 ### Jargon 大白话词典（v1.2 必读）
 
 **目的**：操作清单 / 阶段 0-4 文档里大量技术术语，AI 提问给用户时必须翻译成人话。
@@ -738,8 +806,51 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 | **E 象限（AI 推断）** | AI 自己猜的部分 | "我猜你希望加 BGM（你没明说）" |
 | **F 象限（未覆盖）** | 字段没处理 | "duration 字段我没用 → 不会影响你" |
 | **xfade / 转场** | 两段视频之间的过渡效果 | "两段视频之间来个 1 秒淡入淡出" |
+| **fade-in / 淡入** | 单段视频开头从黑渐显 | "这段视频开头加 1 秒淡入" |
+| **fade-out / 淡出** | 单段视频结尾渐黑 | "这段视频结尾加 1 秒淡出" |
+| **none 转场** | 不开转场（硬切） | "我不用转场" → 直接拼接 |
+| **cut 转场** | 直切（明确选"硬切"） | "我要硬切" → 同 none，但语义不同 |
+| **dissolve / 溶解** | 上一段逐渐透明，下一段逐渐实 | "两段之间溶解一下" |
+| **wipe / 擦除** | 一方向推开露出下一段（左/右/上/下） | "从左往右擦过去" |
+| **slide / 滑动** | 一段滑出，下一段滑入 | "上滑过渡" |
+| **zoom / 推进** | 推镜头进入下一段 | "推进到下一段" |
+| **blur / 模糊过渡** | 模糊后清晰过渡 | "中间模糊一下" |
 | **counter-rotate** | 像素反转（抵消 metadata） | "源是竖屏但像素是横的，需要反转" |
 | **aspect-fill / aspect-fit** | 填满 vs 加黑边 | "填满"裁切；"加黑边"完整保留 |
+| **target_length** | 项目目标时长（单位：**秒**，整数） | 用户填 `180` → "目标 3 分钟"；填 `90` → "目标 1 分 30 秒" |
+
+### H. intent.json 字段枚举表（AI 必读）
+
+**目的**：intent.json 各字段的可选值是枚举。AI 看到非法值必须问用户（不要瞎猜）。
+
+| 字段 | 路径 | 类型 | 可选值 / 格式 | AI 必读说明 |
+|---|---|---|---|---|
+| `version` | 顶层 | string | `"v0.5"` / `"v1.0"` / `"v1.2"` | schema 版本，AI 不修改 |
+| `_meta.revision` | 顶层 | int | `1`, `2`, `3`... | intent.json 修订号，每次保存 +1 |
+| `project.name` | 顶层 | string | 任意 | vlog 项目名（"DAY 2 减脂日记"） |
+| `project.overall_intent` | 顶层 | string | 任意自然语言 | E 象限：AI 推断（用户没结构化） |
+| `project.target_length` | 顶层 | int | **秒** | 目标时长（如 `180` = 3 分钟） |
+| `output.aspect_ratio` | 顶层 | string | `"9:16"` / `"16:9"` / `"1:1"` / `"4:3"` / `"custom"` | 输出宽高比 |
+| `output.aspect_ratio_custom` | 顶层 | string | `"W:H"`（自定义比例） | aspect_ratio="custom" 时必填 |
+| `output.aspect_handling` | 顶层 | string | `"aspect-fill"` / `"aspect-fit"` | 比例处理：填满 vs 加黑边 |
+| `cover.type` | 顶层 | string | `"ai"` / `"text"` / `"image"` | 封面生成方式（推荐 `"ai"`） |
+| `cover.prompt` | 顶层 | string | 英文 prompt 优先 | AI 生图 prompt（参考 `references/08-cover.md`） |
+| `ending.type` | 顶层 | string | `"fade"` / `"freeze"` / `"next-day"` / `"text"` | 结尾风格 |
+| `ending.prompt` | 顶层 | string | 英文/中文 | 结尾文字 / 主题（参考 §阶段 4 模板） |
+| `videos[i].file` | 数组 | string | 文件名（如 `"video_01.mp4"`） | 源视频相对路径 |
+| `videos[i].ops` | 数组 | object | 见 §G. op 白名单 | 每个视频的操作（多个 op 可组合） |
+| `videos[i].notes` | 数组 | string | 任意自然语言 | E 象限：AI 推断（用户没结构化） |
+| `sequences[i].videos` | 数组 | string[] | 文件名列表（顺序敏感） | 强制播放顺序（必须在 sequence 内） |
+| `sequences[i].transitions` | 数组 | object[] | `{after, type, duration}` 列表 | sequence 内部转场（每段之间） |
+| `sequences[i].transitions[j].after` | 数组元素 | int | video index | 表示"在 index 这段之后"的转场 |
+| `sequences[i].transitions[j].type` | 数组元素 | string | `none` / `cut` / `fade` / `dissolve` / `wipe-left` / `wipe-right` / `slide-up` / `zoom-in` / `blur` | 9 种意图 type，详见 §G.2 |
+| `sequences[i].transitions[j].duration` | 数组元素 | float | `≥0.5` 秒，默认 `0.5` | 转场时长 |
+
+**字段不在表里怎么办？**
+
+- 看 `references/01-XX.md` 的 §调用范式 + §参数 段——所有字段都有出处
+- AI 路由时**严格按 op 白名单**调 CLI（不要瞎传参）
+- 字段没 op 对应 → F 象限（明确说"这个字段我不处理"）
 
 ### AI 交互式采访触发条件（v1.0 强制）
 

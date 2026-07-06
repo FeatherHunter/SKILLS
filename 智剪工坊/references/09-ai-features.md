@@ -1,3 +1,70 @@
+# 09-ai-features - AI 智能剪辑 — v1.2 已实现
+
+> **对应脚本**: `scripts/ai_cutout.py` + `scripts/ai_quotes.py` + `scripts/video_scene.py` + `scripts/video_mask.py` + `scripts/video_overlay.py` + `scripts/video_reframe.py` + `scripts/ai_fillers.py`
+> **触发词**: "AI 剪辑"、"智能剪辑"、"AI 抠图"、"自动找金句"、"金句"、"节拍卡点"、"自动字幕"、"人脸追踪"、"换背景"、"去水词"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# AI 抠图(rembg)
+python scripts/ai_cutout.py --input v.mp4 --output no_bg.mp4
+
+# 金句检测(NLP)
+python scripts/ai_quotes.py --input v.mp4 --top 5
+
+# 场景检测(OpenCV 帧差)
+python scripts/video_scene.py --input v.mp4 --threshold 0.3
+
+# 蒙版(face / box)
+python scripts/video_mask.py --input v.mp4 --type face --output masked.mp4
+
+# 画中画(overlay)
+python scripts/video_overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
+
+# 重新构图(9:16 / 1:1 / 16:9)
+python scripts/video_reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
+
+# 🆕 去水词(L2 word-level,需要 agent 标水词)
+python scripts/ai_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/ai_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
+```
+
+### 场景 2
+
+```bash
+pip install faster-whisper rembg mediapipe librosa opencv-python
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **AI 处理慢**:rembg / MediaPipe 比 ffmpeg 慢得多,慎用全片
+2. **依赖包**:rembg / mediapipe / librosa 需要单独安装
+3. **GPU 加速**:部分 AI 库支持 CUDA,配置复杂
+4. **准确度**:AI 自动剪辑的金句不一定都好用,需要人工筛选
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 09 - ai-features (AI 智能剪辑) — v0.5 已实现
 
 > **对应脚本:** 7 个 — `cutout.py` / `quotes.py` / `scene_detect.py` / `mask.py` / `overlay.py` / `reframe.py` / `remove_fillers.py`
@@ -5,26 +72,26 @@
 
 ```bash
 # AI 抠图(rembg)
-python scripts/cutout.py --input v.mp4 --output no_bg.mp4
+python scripts/ai_cutout.py --input v.mp4 --output no_bg.mp4
 
 # 金句检测(NLP)
-python scripts/quotes.py --input v.mp4 --top 5
+python scripts/ai_quotes.py --input v.mp4 --top 5
 
 # 场景检测(OpenCV 帧差)
-python scripts/scene_detect.py --input v.mp4 --threshold 0.3
+python scripts/video_scene.py --input v.mp4 --threshold 0.3
 
 # 蒙版(face / box)
-python scripts/mask.py --input v.mp4 --type face --output masked.mp4
+python scripts/video_mask.py --input v.mp4 --type face --output masked.mp4
 
 # 画中画(overlay)
-python scripts/overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
+python scripts/video_overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
 
 # 重新构图(9:16 / 1:1 / 16:9)
-python scripts/reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
+python scripts/video_reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
 
 # 🆕 去水词(L2 word-level,需要 agent 标水词)
-python scripts/remove_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
-python scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
+python scripts/ai_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/ai_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
 ```
 
 ---
@@ -96,7 +163,7 @@ def score_quality(segment):
 ## B. 节拍卡点(对位 BGM)
 
 ```python
-# scripts/beat_sync.py
+# scripts/audio_beat.py
 import librosa
 import numpy as np
 
@@ -191,7 +258,7 @@ def track_face_centers(video_path):
 ## F. 风格迁移(进阶)
 
 ```python
-# scripts/style_transfer.py
+# scripts/video_style.py
 import cv2
 import numpy as np
 
@@ -230,3 +297,5 @@ def transfer_style(frame, style_frame):
 ```bash
 pip install faster-whisper rembg mediapipe librosa opencv-python
 ```
+
+</details>

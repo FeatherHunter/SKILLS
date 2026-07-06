@@ -1,14 +1,82 @@
+# 07-audio - 音频 — v1.2 已实现
+
+> **对应脚本**: `scripts/audio_bgm.py` + `scripts/audio_beat.py`
+> **触发词**: "BGM"、"加音乐"、"配乐"、"背景音乐"、"循环"、"淡入"、"淡出"、"混音"、"音量"、"音频降噪"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# BGM 循环混音
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
+
+# 节拍卡点
+python scripts/audio_beat.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
+```
+
+### 场景 2
+
+```bash
+ffmpeg -i video.mp4 -i bgm.mp3 \
+  -filter_complex "[1:a]volume=0.5[bgm];\
+                   [0:a][bgm]amix=inputs=2:duration=first[a]" \
+  -map 0:v -map [a] \
+  -c:v copy -c:a aac -b:a 128k \
+  out.mp4
+```
+
+### 场景 3
+
+```bash
+ffmpeg -i video.mp4 -stream_loop -1 -i bgm.mp3 \
+  -filter_complex "[0:a]volume=1.0[a0];\
+                   [1:a]volume=0.18,aloop=loop=-1:size=2e9[a1];\
+                   [a0][a1]amix=inputs=2:duration=first:dropout_transition=0[a]" \
+  -map 0:v -map [a] \
+  -c:v libx264 -preset medium -crf 20 \
+  -c:a aac -b:a 128k \
+  out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **音量平衡**:BGM 音量 < 0.3,确保不盖过原始人声
+2. **dropout_transition=0**:避免 amix 在 BGM 结束时产生噪声
+3. **stream_loop 在 filter 链外**:ffmpeg 命令行参数 -stream_loop 和 filter 内 aloop 都要加
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 07 - audio (音频处理 / BGM / 混音) — v0.5 已实现
 
-> **对应脚本:** `scripts/bgm_loop.py` + `scripts/beat_sync.py`(2 个)
+> **对应脚本:** `scripts/audio_bgm.py` + `scripts/audio_beat.py`(2 个)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # BGM 循环混音
-python scripts/bgm_loop.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
 
 # 节拍卡点
-python scripts/beat_sync.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
+python scripts/audio_beat.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
 ```
 
 ---
@@ -146,3 +214,5 @@ mavis mcp call matrix matrix_batch_text_to_music '{
 1. **音量平衡**:BGM 音量 < 0.3,确保不盖过原始人声
 2. **dropout_transition=0**:避免 amix 在 BGM 结束时产生噪声
 3. **stream_loop 在 filter 链外**:ffmpeg 命令行参数 -stream_loop 和 filter 内 aloop 都要加
+
+</details>

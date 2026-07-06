@@ -1,21 +1,103 @@
+# 06-text - 文字/字幕 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_subtitle.py` + `scripts/video_opening.py` + `scripts/audio_voice.py` + `scripts/ai_translate.py`
+> **触发词**: "字幕"、"烧字幕"、"字幕动效"、"打字机"、"打字效果"、"淡入"、"弹跳"、"跑马灯"、"标题"、"文字"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 自动字幕(Whisper 转录 + 烧录)
+python scripts/video_subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
+
+# 片头说明文字（v1.0 新增, 9 宫格简写 + 淡入淡出 + 自动中文字体）
+python scripts/video_opening.py add --input v.mp4 --output v_with_text.mp4 \
+    --text "晨间体重 新的一天" --region bottom-left --duration 2
+
+# 变声 12 种
+python scripts/audio_voice.py --input v.mp4 --pitch +2 --output v_chipmunk.mp4
+
+# 翻译(占位,完整版用 rewrite_audio)
+python scripts/ai_translate.py --input v.srt --target en --output v_en.srt
+```
+
+### 场景 2
+
+```bash
+ffmpeg -i in.mp4 \
+  -vf "subtitles=sub.srt:\
+force_style='FontName=Microsoft YaHei,\
+FontSize=22,\
+PrimaryColour=&H00FFFFFF,\
+OutlineColour=&H00000000,\
+Outline=2,\
+Shadow=1,\
+MarginV=30,\
+Alignment=2'" \
+  -c:v libx264 -preset medium -crf 20 \
+  -c:a copy \
+  out.mp4
+```
+
+### 场景 3
+
+```bash
+# 文字"Hello"在 1-3 秒逐字显示
+ffmpeg -i in.mp4 \
+  -vf "drawtext=text='Hello':fontfile=/path/font.ttf:\
+fontsize=60:fontcolor=white:\
+x=(w-text_w)/2:y=(h-text_h)/2:\
+enable='gte(t,1)':\
+alpha='if(lt(t,3),(t-1)/2,1)'" \
+  out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **drawtext 性能**:复杂 drawtext 会显著降低 ffmpeg 速度
+2. **中文字体**:Windows 自带 `C:\Windows\Fonts\msyh.ttc` / `msyhbd.ttc`
+3. **转义**:PowerShell 调用注意 `$` 转义,单引号包含参数
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 06 - text (文字动画 + 烧字幕 + 片头文字) — v1.0 已实现
 
-> **对应脚本:** `scripts/auto_subtitle.py` + `scripts/opening_text.py` + `scripts/voice_change.py` + `scripts/translate.py`(4 个)
+> **对应脚本:** `scripts/video_subtitle.py` + `scripts/video_opening.py` + `scripts/audio_voice.py` + `scripts/ai_translate.py`(4 个)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # 自动字幕(Whisper 转录 + 烧录)
-python scripts/auto_subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
+python scripts/video_subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
 
 # 片头说明文字（v1.0 新增, 9 宫格简写 + 淡入淡出 + 自动中文字体）
-python scripts/opening_text.py add --input v.mp4 --output v_with_text.mp4 \
+python scripts/video_opening.py add --input v.mp4 --output v_with_text.mp4 \
     --text "晨间体重 新的一天" --region bottom-left --duration 2
 
 # 变声 12 种
-python scripts/voice_change.py --input v.mp4 --pitch +2 --output v_chipmunk.mp4
+python scripts/audio_voice.py --input v.mp4 --pitch +2 --output v_chipmunk.mp4
 
 # 翻译(占位,完整版用 rewrite_audio)
-python scripts/translate.py --input v.srt --target en --output v_en.srt
+python scripts/ai_translate.py --input v.srt --target en --output v_en.srt
 ```
 
 ---
@@ -160,3 +242,5 @@ x=20:y=20" \
 "C:\Windows\Fonts\simsun.ttc"      # 宋体
 "C:\Windows\Fonts\arial.ttf"       # Arial
 ```
+
+</details>

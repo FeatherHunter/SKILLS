@@ -1,3 +1,51 @@
+# 10-batch - 批量处理 — v1.2 已实现
+
+> **对应脚本**: `scripts/batch.py`
+> **触发词**: "批量"、"批处理"、"100 个视频都"、"批量加转场"、"批量调色"、"批量转码"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 批量加转场
+python scripts/batch.py --input videos/ --task xfade --type fade --duration 0.5 --output out/
+
+# 批量调色
+python scripts/batch.py --input videos/ --task color --preset cinematic --output out/
+
+# 批量转码
+python scripts/batch.py --input videos/ --task reencode --resolution 1920:1080 --output out/
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **CPU/GPU 占用**:批量处理会占满所有资源,可能让电脑变卡
+2. **并行数**:ProcessPoolExecutor 适合 CPU 密集,ThreadPoolExecutor 适合 I/O 密集
+3. **错误处理**:批量处理时单个失败不应该中断整个批次
+4. **进度条**:建议加 tqdm 显示进度
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 10 - batch (批量处理) — v0.5 已实现
 
 > **对应脚本:** `scripts/batch.py`(1 个,5 个 task:xfade / color / reencode / concat / cover)
@@ -217,3 +265,5 @@ def batch_transcribe(video_dir, output_dir):
 2. **并行数**:ProcessPoolExecutor 适合 CPU 密集,ThreadPoolExecutor 适合 I/O 密集
 3. **错误处理**:批量处理时单个失败不应该中断整个批次
 4. **进度条**:建议加 tqdm 显示进度
+
+</details>

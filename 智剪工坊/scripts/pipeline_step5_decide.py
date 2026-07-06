@@ -114,13 +114,13 @@ def main():
         cover = intent.get('cover', {})
         if cover.get('type'):
             f.write(f"- **封面**: {cover.get('type')} (prompt: {cover.get('prompt', '?')[:80]}...)\n")
-            f.write(f"  - 用 `scripts/cover_ai.py` 生成\n")
+            f.write(f"  - 用 `scripts/ai_cover.py` 生成\n")
         else:
             f.write("- **封面**: 未配置（待用户决定）\n")
 
         f.write("- **字幕**: Step 4 文字卡候选可烧字幕\n")
-        f.write("  - 用 `scripts/auto_subtitle.py` 或 `scripts/overlay.py`\n")
-        f.write("- **BGM**: 待用户选择（智剪工坊 `scripts/bgm_loop.py`）\n")
+        f.write("  - 用 `scripts/video_subtitle.py` 或 `scripts/video_overlay.py`\n")
+        f.write("- **BGM**: 待用户选择（智剪工坊 `scripts/audio_bgm.py`）\n")
         f.write("- **输出**: `00_智剪/成片/vlog_final.mp4`\n\n")
 
         f.write("## 6. 已知遗留\n\n")

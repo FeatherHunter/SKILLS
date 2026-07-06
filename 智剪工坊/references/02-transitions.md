@@ -1,10 +1,72 @@
+# 02-transitions - 转场 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_xfade.py`
+> **触发词**: "转场"、"淡入淡出"、"溶解"、"擦除"、"切换"、"黑场"、"白闪"、"圆形转场"、"像素化"、"径向"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+python scripts/video_xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --output joined.mp4
+```
+
+### 场景 2
+
+```bash
+ffmpeg -i [a.mp4] -i [b.mp4] \
+  -filter_complex "xfade=transition=[type]:duration=[duration]:offset=[offset]" \
+  -c:v libx264 -preset medium -crf 20 \
+  -c:a aac -b:a 128k \
+  [output.mp4]
+```
+
+### 场景 3
+
+```bash
+ffmpeg -i a.mp4 -i b.mp4 \
+  -filter_complex "[0:a]afade=t=out:st=4:d=1[a0];\
+                   [1:a]afade=t=in:st=0:d=1[a1];\
+                   [a0][a1]concat=n=2:v=0:a=1[a]" \
+  -c:v libx264 ... \
+  [output.mp4]
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **A 和 B 分辨率必须一致**(否则需要先 scale 统一)
+2. **A 和 B 帧率必须一致**(否则需要先 fps 统一)
+3. **offset**:转场起始时间,默认是 A 时长 - duration(让转场正好在拼接点)
+4. **音频**:ffmpeg xfade 默认不处理音频,需要手动 `acrossfade` 处理
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 02 - transitions (转场 / xfade) — v0.5 已实现
 
-> **对应脚本:** `scripts/xfade.py`(1 个,60+ 转场)
+> **对应脚本:** `scripts/video_xfade.py`(1 个,60+ 转场)
 > **实测状态:** ✅ 验证通过
 
 ```bash
-python scripts/xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --output joined.mp4
+python scripts/video_xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --output joined.mp4
 ```
 
 ---
@@ -94,3 +156,5 @@ ffmpeg -i a.mp4 -i b.mp4 \
 ## 进阶:多段转场链
 
 3+ 段视频需要逐个 xfade + overlay,比较复杂,推荐用 **剪映手动** 或写 Python 脚本批量生成。
+
+</details>

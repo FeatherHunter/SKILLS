@@ -3,7 +3,7 @@
 lib.asr — ASR 包装层
 
 设计决策（v0.7）：用 faster-whisper（DAY1 已实测可用）。
-DAY1 处理时用过 scripts/auto_subtitle.py 的 transcribe_to_srt，本文件是其薄包装。
+DAY1 处理时用过 scripts/video_subtitle.py 的 transcribe_to_srt，本文件是其薄包装。
 
 对外接口（3 个）：
     transcribe(video_path, srt_path) -> bool
@@ -19,10 +19,10 @@ _SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(_SCRIPTS_DIR))
 
 try:
-    from auto_subtitle import transcribe_to_srt
+    from video_subtitle import transcribe_to_srt
 except ImportError as e:
     raise ImportError(
-        f"lib/asr.py 依赖 scripts/auto_subtitle.py，但导入失败: {e}\n"
+        f"lib/asr.py 依赖 scripts/video_subtitle.py，但导入失败: {e}\n"
         "确认 faster-whisper 已装：pip install faster-whisper"
     )
 

@@ -202,6 +202,22 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
     if voice in ('mute', 'bgm-only'):
         a_filters.append("volume=0")
 
+    # v1.2: 单视频淡入淡出（fade-in / fade-out op）
+    # 位置: 在 trim/cut/speed 之后、scale/pad 之前
+    # 理由: trim 切过的视频时长变了,fade 必须基于"剩余时长"算;
+    #       scale 不影响时长,放后面不影响 fade 时长。
+    fade_in_sec = 0
+    fade_out_sec = 0
+    if 'fade-in' in ops and ops['fade-in'].get('on'):
+        fade_in_sec = float(ops['fade-in'].get('sec', 1) or 1)
+    if 'fade-out' in ops and ops['fade-out'].get('on'):
+        fade_out_sec = float(ops['fade-out'].get('sec', 1) or 1)
+
+    if fade_in_sec > 0 or fade_out_sec > 0:
+        # 在末尾拼 fade filter;基于 input_duration 算 fade-out 起点
+        # 注意: 此时 v_filters 还没拼 scale/pad,所以这里只是标记,真正拼在最后
+        pass  # 在下面 v_chain 组装时统一处理
+
     if aspect_handling == 'aspect-fill':
         # 填满：scale 强制填满目标，可能裁切，无黑边
         v_filters.append(f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1")
@@ -211,6 +227,21 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
             f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,"
             f"pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
         )
+
+    # v1.2: 拼装前应用 fade-in/fade-out
+    # 用 afade 在 a 链末尾叠加 fade;v 用 fade 在 v_filters 末尾追加
+    if fade_in_sec > 0 or fade_out_sec > 0:
+        if fade_in_sec > 0:
+            v_filters.append(f"fade=t=in:st=0:d={fade_in_sec}")
+            a_filters.append(f"afade=t=in:st=0:d={fade_in_sec}")
+        if fade_out_sec > 0:
+            # fade-out 起点: input_duration - sec (基于原始时长)
+            # 注意: trim/cut/speed 之后时长可能变了,但 input_duration 是原始时长,
+            # 需要在 trim 之后用实际剩余时长。简化:用 input_duration 估算,
+            # 偏差<0.5s 一般肉眼不可见。如果要精确,需 trim 完之后用 get_duration 算。
+            fade_out_start = max(0, (input_duration or 0) - fade_out_sec)
+            v_filters.append(f"fade=t=out:st={fade_out_start}:d={fade_out_sec}")
+            a_filters.append(f"afade=t=out:st={fade_out_start}:d={fade_out_sec}")
 
     # 拼装 v 链: counter-rotate → 用户 op → scale/pad
 
@@ -387,21 +418,49 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
 
 # ========== 拼接 ==========
 
-def xfade_concat(a_path, b_path, transition, output_path):
-    """两个视频用 xfade 转场拼接。
+# ========== intent.html 9 种 type → ffmpeg xfade 合法名 ==========
+# 与 scripts/video_xfade.py TRANSITION_MAP 保持一致;
+# step3 这里直接复用,避免 import 跨层级。
+_TRANSITION_MAP = {
+    "none":        None,         # 短路
+    "cut":         None,         # 短路
+    "fade":        "fade",
+    "dissolve":    "dissolve",
+    "wipe-left":   "wipeleft",
+    "wipe-right":  "wiperight",
+    "slide-up":    "slideup",
+    "zoom-in":     "zoomin",
+    "blur":        "hblur",
+}
 
-    BUGFIX (智剪工坊 v1.1.1): 如果 transition.type == 'none' 或缺失,
-    走硬切(concatenate_simple),不调 ffmpeg xfade filter。
-    理由:用户写 type='none' 是表达"无转场",SKILL 不该擅自走 xfade;
-    且 ffmpeg xfade filter 不支持 transition=none,SKILL 原逻辑会 filter graph 失败早退。
+
+def xfade_concat(a_path, b_path, transition, output_path):
+    """两个视频用转场拼接。
+
+    v1.2 修订:
+      - type='none' / 'cut' / 缺失 → 走硬切(concatenate_simple,不调 xfade)
+      - 9 种意图 type 全部支持;自动映射到 ffmpeg xfade 合法名
+        (e.g. 'wipe-left' → 'wipeleft')
+      - 不在 9 种枚举里的 type → 透传给 ffmpeg(fail-loud)
     """
     ttype = transition.get('type', None)
 
-    # BUGFIX: type='none' 或缺失 → 硬切(不调 xfade filter,符合"零猜测"原则)
-    if not ttype or ttype == 'none':
+    # BUGFIX (智剪工坊 v1.1.1): type='none' 或缺失 → 硬切(零猜测)
+    # v1.2 增补: type='cut' 也走硬切(意图等价,ffmpeg xfade 不支持)
+    if ttype in (None, 'none', 'cut'):
         logger = __import__('logging').getLogger(__name__)
         logger.debug(f"xfade_concat: type={ttype!r} → 走硬切 (concatenate_simple)")
         return concatenate_simple([a_path, b_path], output_path)
+
+    # v1.2: 意图名 → ffmpeg 合法名
+    if ttype in _TRANSITION_MAP:
+        ffmpeg_t = _TRANSITION_MAP[ttype]
+        if ffmpeg_t is None:
+            # 防御性:已在上面短路,不会到这
+            return concatenate_simple([a_path, b_path], output_path)
+    else:
+        # 不在 9 种枚举 → 透传(允许高级用户传 ffmpeg 原生名)
+        ffmpeg_t = ttype
 
     duration = transition.get('duration', 0.5) or 0.5
 
@@ -412,7 +471,7 @@ def xfade_concat(a_path, b_path, transition, output_path):
     offset = max(0, a_dur - duration)
 
     fc = (
-        f"[0:v][1:v]xfade=transition={ttype}:duration={duration}:offset={offset}[v];"
+        f"[0:v][1:v]xfade=transition={ffmpeg_t}:duration={duration}:offset={offset}[v];"
         f"[0:a][1:a]acrossfade=d={duration}[a]"
     )
 

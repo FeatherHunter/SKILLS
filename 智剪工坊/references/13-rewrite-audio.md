@@ -1,3 +1,52 @@
+# 13-rewrite-audio - 改词翻唱 — v1.2 已实现
+
+> **对应脚本**: `scripts/ai_rewrite.py`
+> **触发词**: "改词"、"改写"、"翻唱"、"配音"、"换声"、"改写文案"、"TTS"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 1. 转录
+python scripts/ai_rewrite.py transcribe --input v.mp4 --srt v.srt
+
+# 2. (Mavis 读 SRT,改写文案,告诉你用哪个 voice_id)
+
+# 3. 合成新音频
+python scripts/ai_rewrite.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
+
+# 4. 替换音轨
+python scripts/ai_rewrite.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+- 输入文件必须存在（不存在时脚本会报 `FileNotFoundError`）
+- 输出目录无权限时脚本会失败
+- ffmpeg 默认用 `libx264`，避免 NVENC 崩溃
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 子技能 13 · rewrite-audio(改词翻唱 L2)
 
 ## 它是什么
@@ -28,15 +77,15 @@ replace: 视频 + MP3 → 新视频(ffmpeg)
 
 ```bash
 # 1. 转录
-python scripts/rewrite_audio.py transcribe --input v.mp4 --srt v.srt
+python scripts/ai_rewrite.py transcribe --input v.mp4 --srt v.srt
 
 # 2. (Mavis 读 SRT,改写文案,告诉你用哪个 voice_id)
 
 # 3. 合成新音频
-python scripts/rewrite_audio.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
+python scripts/ai_rewrite.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
 
 # 4. 替换音轨
-python scripts/rewrite_audio.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
+python scripts/ai_rewrite.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
 ```
 
 ### 子命令速查
@@ -91,7 +140,10 @@ matrix 也有 `matrix_batch_text_to_audio`,一次最多 10 句。后续可以加
 
 ## 相关脚本
 
-- 依赖:`scripts/remove_fillers.py`(复用 transcribe 逻辑)
-- 同类:`scripts/digital_human.py`(也用 TTS)
+- 依赖:`scripts/ai_fillers.py`(复用 transcribe 逻辑)
+- 同类:`scripts/ai_digital_human.py`(也用 TTS)
 - 前置:无
 - 后置:无
+
+
+</details>

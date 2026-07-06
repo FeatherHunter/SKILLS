@@ -1,14 +1,72 @@
+# 03-effects - 视觉特效 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_fx.py` + `scripts/video_keyframe.py`
+> **触发词**: "慢动作"、"慢放"、"0.5 倍速"、"推镜头"、"zoom in"、"推到脸"、"插帧"、"放大"、"缩小"、"模糊"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 慢动作 / 推镜头 / 模糊等
+python scripts/video_fx.py --input v.mp4 --effect zoom_in --output out.mp4
+
+# 关键帧动画
+python scripts/video_keyframe.py --input v.mp4 --keyframes "0,1.0;2,1.5" --output out.mp4
+```
+
+### 场景 2
+
+```bash
+# 2 倍慢(setpts 改变时间戳)
+ffmpeg -i in.mp4 -vf "setpts=2*PTS" -an out.mp4
+```
+
+### 场景 3
+
+```bash
+# 2 倍慢 + minterpolate 插帧(更丝滑)
+ffmpeg -i in.mp4 -vf "setpts=2*PTS,minterpolate=fps=60:mi_mode=mci" out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **minterpolate 慢**:插帧慢动作比普通慢动作慢 5-10 倍,慎用
+2. **zoompan + 字幕**:烧字幕要在 zoompan 之后(`-vf "zoompan=...,subtitles=..."`)
+3. **filter chain 顺序**:多个特效叠加注意 filter chain 顺序会影响效果
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 03 - effects (视觉特效 / 慢动作 + 推镜头) — v0.5 已实现
 
-> **对应脚本:** `scripts/fx.py` + `scripts/keyframe.py`(2 个)
+> **对应脚本:** `scripts/video_fx.py` + `scripts/video_keyframe.py`(2 个)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # 慢动作 / 推镜头 / 模糊等
-python scripts/fx.py --input v.mp4 --effect zoom_in --output out.mp4
+python scripts/video_fx.py --input v.mp4 --effect zoom_in --output out.mp4
 
 # 关键帧动画
-python scripts/keyframe.py --input v.mp4 --keyframes "0,1.0;2,1.5" --output out.mp4
+python scripts/video_keyframe.py --input v.mp4 --keyframes "0,1.0;2,1.5" --output out.mp4
 ```
 
 ---
@@ -140,3 +198,5 @@ ffmpeg -i in.mp4 -vf "transpose=1" out.mp4
 - 物体识别 + 自动跟踪放大
 
 参考 [09-ai-features.md](09-ai-features.md)。
+
+</details>

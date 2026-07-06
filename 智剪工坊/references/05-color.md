@@ -1,18 +1,88 @@
+# 05-color - 调色 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_color.py` + `scripts/video_style.py` + `scripts/video_hdr.py`
+> **触发词**: "调色"、"电影感"、"LUT"、"cinematic"、"调亮"、"调暗"、"对比度"、"饱和度"、"色温"、"teal & orange"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 调色(18 预设)
+python scripts/video_color.py --input v.mp4 --preset cinematic --output out.mp4
+
+# 风格迁移
+python scripts/video_style.py --input v.mp4 --reference ref.jpg --output out.mp4
+
+# HDR 导入/导出
+python scripts/video_hdr.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
+```
+
+### 场景 2
+
+```bash
+# 调亮
+ffmpeg -i in.mp4 -vf "eq=brightness=0.1" out.mp4
+
+# 调暗(电影感)
+ffmpeg -i in.mp4 -vf "eq=brightness=-0.05:contrast=1.1:saturation=0.9" out.mp4
+
+# 提高对比度
+ffmpeg -i in.mp4 -vf "curves=preset=contrast" out.mp4
+
+# 内置 curves preset
+# darker / contrast / cross_process / warmer / cooler / saturated
+# faded / film_contrast / medium_contrast / punchy
+```
+
+### 场景 3
+
+```bash
+ffmpeg -i in.mp4 -vf "lut3d=file=cinematic.cube" out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **LUT 是参考** —— 同一 LUT 对不同视频效果差异大,可能需要微调
+2. **顺序很关键** —— 多个调色 filter 叠加顺序会影响最终效果
+3. **资源文件** —— `assets/luts/` 下需要提前放好 .cube 文件
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 05 - color (调色 / LUT) — v0.5 已实现
 
-> **对应脚本:** `scripts/color_style.py` + `scripts/style_transfer.py` + `scripts/hdr_io.py`(3 个)
+> **对应脚本:** `scripts/video_color.py` + `scripts/video_style.py` + `scripts/video_hdr.py`(3 个)
 > **实测状态:** ✅ 验证通过
 > **注意:** ffmpeg 7.1 不支持 `curves=preset=`,已改用 `colorbalance` + `eq` filter(v0.5 修 bug 9)
 
 ```bash
 # 调色(18 预设)
-python scripts/color_style.py --input v.mp4 --preset cinematic --output out.mp4
+python scripts/video_color.py --input v.mp4 --preset cinematic --output out.mp4
 
 # 风格迁移
-python scripts/style_transfer.py --input v.mp4 --reference ref.jpg --output out.mp4
+python scripts/video_style.py --input v.mp4 --reference ref.jpg --output out.mp4
 
 # HDR 导入/导出
-python scripts/hdr_io.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
+python scripts/video_hdr.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
 ```
 
 ---
@@ -141,3 +211,5 @@ def apply_lut(frame, lut):
 ```
 
 下载后放入 `assets/luts/` 即可调用。
+
+</details>

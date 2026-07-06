@@ -1,3 +1,57 @@
+# 15-digital-human - 数字人 — v1.2 已实现
+
+> **对应脚本**: `scripts/ai_digital_human.py`
+> **触发词**: "数字人"、"虚拟人"、"AI 讲解"、"头像说话"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 头像 + 文案(自动 TTS 合成音频 + 数字人视频)
+python scripts/ai_digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
+
+# 头像 + 现成音频
+python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
+
+# 换声音(用 TTS 时)
+python scripts/ai_digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
+```
+
+### 场景 2
+
+```bash
+python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
+# 需要 HEYGEN_API_KEY,完整实现待补
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+- 输入文件必须存在（不存在时脚本会报 `FileNotFoundError`）
+- 输出目录无权限时脚本会失败
+- ffmpeg 默认用 `libx264`，避免 NVENC 崩溃
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 子技能 15 · digital-human(数字人 L2)
 
 ## 它是什么
@@ -16,19 +70,19 @@
 
 ```bash
 # 头像 + 文案(自动 TTS 合成音频 + 数字人视频)
-python scripts/digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
+python scripts/ai_digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
 
 # 头像 + 现成音频
-python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
+python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
 
 # 换声音(用 TTS 时)
-python scripts/digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
+python scripts/ai_digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
 ```
 
 ### 用 HeyGen / D-ID(占位)
 
 ```bash
-python scripts/digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
+python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
 # 需要 HEYGEN_API_KEY,完整实现待补
 ```
 
@@ -90,7 +144,10 @@ Step 2: ffmpeg 合音(silent + audio = final)
 
 ## 相关脚本
 
-- 依赖:`scripts/rewrite_audio.py`(复用 TTS 函数)
-- 同类:`scripts/text_to_video.py`(text-to-video)
+- 依赖:`scripts/ai_rewrite.py`(复用 TTS 函数)
+- 同类:`scripts/ai_text_to_video.py`(text-to-video)
 - 前置:无
 - 后置:无
+
+
+</details>

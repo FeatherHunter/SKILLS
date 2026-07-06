@@ -1,17 +1,97 @@
+# 04-cinematic - 电影感 — v1.2 已实现
+
+> **对应脚本**: `scripts/video_speed.py` + `scripts/video_reverse.py` + `scripts/video_multicam.py`
+> **触发词**: "J-cut"、"L-cut"、"speed ramp"、"跳剪"、"变速"、"上下黑边"、"黑场"、"白闪"、"闪回"、"匹配剪辑"
+> **实测状态**: ✅ 验证通过
+
+---
+
+## 1. 调用范式
+
+### 场景 1
+
+```bash
+# 曲线变速
+python scripts/video_speed.py --input v.mp4 --speed 0.5 --output out.mp4
+
+# 倒放
+python scripts/video_reverse.py --input v.mp4 --output out.mp4
+
+# 多机位
+python scripts/video_multicam.py --inputs a.mp4 b.mp4 c.mp4 --output synced.mp4
+```
+
+### 场景 2
+
+```bash
+# J-cut: 把 B 的音频向前偏移 -1s(让它先于 B 画面)
+ffmpeg -i a.mp4 -i b.mp4 \
+  -filter_complex "[1:a]adelay=1000|1000[a1];\
+                   [0:a][a1]concat=n=2:v=0:a=1[a]" \
+  -map 0:v -map [a] \
+  [output.mp4]
+
+# L-cut: 把 A 的音频向后偏移 +1s(让它晚于 A 画面结束)
+ffmpeg -i a.mp4 -i b.mp4 \
+  -filter_complex "[0:a]adelay=0|0[a0];\
+                   [0:v][1:v]concat=n=2:v=1:a=0[v];\
+                   [a0][1:a]concat=n=2:v=0:a=1[a]" \
+  -map [v] -map [a] \
+  [output.mp4]
+```
+
+### 场景 3
+
+```bash
+# 慢→快(开头 2 秒慢动作,后面加速)
+ffmpeg -i in.mp4 \
+  -vf "setpts='if(lt(T,2),2*PTS,0.5*PTS)'" \
+  -an out.mp4
+
+# 快→慢(开头加速,后面慢动作)
+ffmpeg -i in.mp4 \
+  -vf "setpts='if(lt(T,2),0.5*PTS,2*PTS)'" \
+  -an out.mp4
+```
+
+## 2. 参数
+
+| 参数 | 短选项 | 默认值 | 说明 |
+|---|---|---|---|
+| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
+| `--output` | `-o` | (必填) | 输出路径 |
+
+## 3. 常见错误 / 限制
+
+1. **setpts 表达式复杂**:多个区间变速需要用 `if` 嵌套
+2. **音频不同步**:变速后音频可能不同步,需要单独处理 `atempo`
+3. **匹配剪辑**:代码实现困难,推荐手动
+
+## 4. 相关参考
+
+- **SKILL.md §14 子技能索引**：本子技能的路由表
+- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
+- `.archive/CHANGELOG.md`：本子技能历史变更
+
+---
+
+<details>
+<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
+
 # 04 - cinematic (电影感剪辑手法) — v0.5 已实现
 
-> **对应脚本:** `scripts/speed.py` + `scripts/reverse.py` + `scripts/multicam.py`(3 个)
+> **对应脚本:** `scripts/video_speed.py` + `scripts/video_reverse.py` + `scripts/video_multicam.py`(3 个)
 > **实测状态:** ✅ 验证通过
 
 ```bash
 # 曲线变速
-python scripts/speed.py --input v.mp4 --speed 0.5 --output out.mp4
+python scripts/video_speed.py --input v.mp4 --speed 0.5 --output out.mp4
 
 # 倒放
-python scripts/reverse.py --input v.mp4 --output out.mp4
+python scripts/video_reverse.py --input v.mp4 --output out.mp4
 
 # 多机位
-python scripts/multicam.py --inputs a.mp4 b.mp4 c.mp4 --output synced.mp4
+python scripts/video_multicam.py --inputs a.mp4 b.mp4 c.mp4 --output synced.mp4
 ```
 
 ---
@@ -133,3 +213,5 @@ ffmpeg -i in.mp4 \
 1. **setpts 表达式复杂**:多个区间变速需要用 `if` 嵌套
 2. **音频不同步**:变速后音频可能不同步,需要单独处理 `atempo`
 3. **匹配剪辑**:代码实现困难,推荐手动
+
+</details>

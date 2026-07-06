@@ -9,18 +9,18 @@
 
 用法:
   # 1. 基础用法（视频开头 2 秒左下角加白色加粗文字）
-  python scripts/opening_text.py add \\
+  python scripts/video_opening.py add \\
       --input in.mp4 --output out.mp4 \\
       --text "晨间体重 新的一天" --region bottom-left --duration 2
 
   # 2. 顶部居中加大字号
-  python scripts/opening_text.py add \\
+  python scripts/video_opening.py add \\
       --input in.mp4 --output out.mp4 \\
       --text "汉堡减肥 163g / 450大卡" \\
       --region top-center --font-size 72 --font-color yellow --duration 3
 
   # 3. 精确坐标
-  python scripts/opening_text.py add \\
+  python scripts/video_opening.py add \\
       --input in.mp4 --output out.mp4 \\
       --text "DIET DAY 2" --x 100 --y 200 --duration 5
 

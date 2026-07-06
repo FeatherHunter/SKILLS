@@ -129,7 +129,7 @@ def main():
                 sample = ", ".join(set(c['word'] for c in cands[:5]))
                 f.write(f"| {idx} | {len(cands)} | {sample} |\n")
             f.write("\n**说明**：这是基于关键词的候选，最终水词判定需 AI 看 words.json + SRT 时间戳。\n")
-            f.write("**应用方法**：用 `scripts/remove_fillers.py` 走完整流程。\n")
+            f.write("**应用方法**：用 `scripts/ai_fillers.py` 走完整流程。\n")
         else:
             f.write("未检测到水词。\n")
         f.write("\n")
@@ -141,7 +141,7 @@ def main():
             for idx, card in textcard_candidates.items():
                 f.write(f"| {idx} | {card} |\n")
             f.write("\n**说明**：基于 intent.videos[i].summary 自动截取，可由用户调整。\n")
-            f.write("**应用方法**：在阶段 4 烧字幕时叠加，或用 `scripts/overlay.py` 加片头文字。\n")
+            f.write("**应用方法**：在阶段 4 烧字幕时叠加，或用 `scripts/video_overlay.py` 加片头文字。\n")
         else:
             f.write("无 summary 可生成。\n")
         f.write("\n")

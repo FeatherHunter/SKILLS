@@ -82,7 +82,7 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 - ⏸️ 模板库只有「健身vlog.yaml」一个
 - ⏸️ lib/modify.py 序列操作是 stub
 
-**v1.2 关键设计**（详见 §主体流程）：
+**v1.2 关键设计**（详见 §主体流程 章节）：
 - **阶段 0-4** 端到端流程（项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾）
 - 阶段 1 必走：**操作清单 schema**（6 象限）作为阶段 2 执行契约
 - 阶段 2 Step 2：**ASR 前置**，与单视频处理同步产出
@@ -137,7 +137,7 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
   ↓
 REQUIRED: 读 references/07-audio.md
   ↓
-找到 §D 音频降噪（ffmpeg highpass / afftdn 命令）
+找到 [§D 音频降噪](references/07-audio.md#d-音频降噪)（ffmpeg highpass / afftdn 命令）
   ↓
 调底层 ffmpeg 或 scripts/bgm_loop.py 加 BGM 时一并处理
 ```
@@ -176,7 +176,7 @@ Step 3: scripts/remove_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --
 ```
 用户: "做一段完整 vlog,从素材到发布版"
   ↓
-路由到: 阶段 0-4（详见 §主体流程）
+路由到: 阶段 0-4（详见 §主体流程 章节）
   阶段 0: AI 帮用户用 intent.html 填表 → intent.json
   阶段 1: AI 读 intent.json → 生成操作清单（6 象限 schema）→ 用户确认
   阶段 2: 粗加工 5 步（调 step1~5 脚本）
@@ -283,8 +283,8 @@ Step 3: scripts/remove_fillers.py cut -i vlog.mp4 --srt vlog.srt -o clean.mp4 --
 | 原子操作覆盖 | ✅ 100% | 14 个 edit 子命令补全剪映 P0+P1 基础操作 |
 | 单元测试 | ❌ 0% | 推迟(用户确认) |
 | AI 视频实测 | ❌ 0% | mmx 配额 3/天,等真 vlog 时测 |
-| 模板/<name>.yaml | ⚠️ 草稿 | 见[架构.md §8 D](架构.md) |
-| executor.py 粗加工 | ❌ 未动 | 见[架构.md §8 C](架构.md) |
+| 模板/<name>.yaml | ⚠️ 草稿 | 见[.archive/架构.md §8 D](.archive/架构.md) |
+| executor.py 粗加工 | ❌ 未动 | 见[.archive/架构.md §8 C](.archive/架构.md) |
 
 ## 相关工具链
 
@@ -408,7 +408,7 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 ## 主体流程
 
-> 智剪工坊为单 vlog 项目提供端到端流程。详见 [架构.md](架构.md)。
+> 智剪工坊为单 vlog 项目提供端到端流程。详见 [.archive/架构.md](.archive/架构.md)。
 
 ### 一句话目标
 
@@ -488,7 +488,7 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 **输入**：`intent.json` + 已确认操作清单（阶段 1 产物）
 **输出**：`00_智剪/粗加工/` 下 5 类文件
-**阶段契约**：阶段 1 操作清单是本阶段执行契约，无清单不进入本阶段（参见 § 操作清单 schema）
+**阶段契约**：阶段 1 操作清单是本阶段执行契约，无清单不进入本阶段（参见 [§操作清单 schema](#操作清单-schema)）
 
 ---
 

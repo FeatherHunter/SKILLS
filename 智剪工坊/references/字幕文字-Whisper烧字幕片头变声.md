@@ -1,4 +1,4 @@
-# 06-text - 文字/字幕 — v1.2 已实现
+# 字幕文字 - Whisper烧字幕片头变声
 
 > **对应脚本**: `scripts/video_subtitle.py` + `scripts/video_opening.py` + `scripts/audio_voice.py` + `scripts/ai_translate.py`
 > **触发词**: "字幕"、"烧字幕"、"字幕动效"、"打字机"、"打字效果"、"淡入"、"弹跳"、"跑马灯"、"标题"、"文字"

@@ -1,4 +1,4 @@
-# 15-digital-human - 数字人 — v1.2 已实现
+# 数字人 - AI主播头像说话
 
 > **对应脚本**: `scripts/ai_digital_human.py`
 > **触发词**: "数字人"、"虚拟人"、"AI 讲解"、"头像说话"

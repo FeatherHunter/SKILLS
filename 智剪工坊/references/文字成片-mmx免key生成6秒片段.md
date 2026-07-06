@@ -1,4 +1,4 @@
-# 14-text-to-video - 文字成片 — v1.2 已实现
+# 文字成片 - mmx免key生成6秒片段
 
 > **对应脚本**: `scripts/ai_text_to_video.py`
 > **触发词**: "文字成片"、"AI 生成视频"、"文生视频"

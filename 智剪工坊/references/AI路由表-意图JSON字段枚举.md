@@ -1,4 +1,4 @@
-# 02-routing - AI 路由表 + 字段枚举（v1.3 完整版）
+# AI路由表 - 意图JSON字段枚举
 
 > **何时加载**: AI 读 intent.html / intent.json 后,开始 §阶段 1 字段解析时
 > **目的**: 列出所有字段的可选值,AI 看到非法值必须问用户（不要瞎猜）
@@ -28,7 +28,7 @@
 | `output.pixel_format` | 顶层 | string | **默认 `yuv420p`**（v1.3 写死） | 像素格式（兼容性最好） |
 | `output.bgm_match_mode` | 顶层 | string | `loop` / `truncate` / `silence-end` / `ask`（**默认 `loop`**） | v1.3 新增：BGM 与视频时长不匹配时的处理策略 |
 | `cover.type` | 顶层 | string | `"ai"` / `"text"` / `"image"` | 封面生成方式（推荐 `"ai"`） |
-| `cover.prompt` | 顶层 | string | 英文 prompt 优先 | AI 生图 prompt（参考 `references/08-cover.md`） |
+| `cover.prompt` | 顶层 | string | 英文 prompt 优先 | AI 生图 prompt（参考 `references/AI封面-生图叠字两步法.md`） |
 | `ending.type` | 顶层 | string | `"fade"` / `"freeze"` / `"next-day"` / `"text"` | 结尾风格（详见下方 ending.type 路由说明） |
 | `ending.prompt` | 顶层 | string | 英文/中文 | 结尾文字 / 主题（参考 §阶段 4 模板） |
 | `videos[i].file` | 数组 | string | 文件名（如 `"video_01.mp4"`） | 源视频相对路径 |
@@ -107,7 +107,7 @@
 
 ## 6. 字段不在表里怎么办?
 
-- 看 `references/01-XX.md` 的 §调用范式 + §参数 段——所有字段都有出处
+- 看对应子技能 references 的 §调用范式 + §参数 段——所有字段都有出处（如 audio 字段查 `音频配乐-BGM循环淡入淡出节拍.md`）
 - AI 路由时**严格按 op 白名单**调 CLI（不要瞎传参）
 - 字段没 op 对应 → F 象限（明确说"这个字段我不处理"）
 
@@ -124,4 +124,4 @@ AI 看到模糊需求时**必须问用户**,不擅自决定。常见模糊:
 
 - **SKILL.md §AI 协作协议**: 路由总规则
 - **SKILL.md §阶段 1**: 解析 intent 流程
-- **references/03-stages.md**: 阶段 2-4 详细编排
+- **references/主流程-阶段编排.md**: 阶段 2-4 详细编排

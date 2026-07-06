@@ -1,4 +1,4 @@
-# 09-ai-features - AI 智能剪辑 — v1.2 已实现
+# AI智能剪辑 - 抠图金句去水词蒙版
 
 > **对应脚本**: `scripts/ai_cutout.py` + `scripts/ai_quotes.py` + `scripts/video_scene.py` + `scripts/video_mask.py` + `scripts/video_overlay.py` + `scripts/video_reframe.py` + `scripts/ai_fillers.py`
 > **触发词**: "AI 剪辑"、"智能剪辑"、"AI 抠图"、"自动找金句"、"金句"、"节拍卡点"、"自动字幕"、"人脸追踪"、"换背景"、"去水词"
@@ -250,7 +250,7 @@ def track_face_centers(video_path):
 
 ## E. 自动字幕(已经做过)
 
-详见 [06-text.md](06-text.md)。流程:
+详见 [字幕文字-Whisper烧字幕片头变声.md](字幕文字-Whisper烧字幕片头变声.md)。流程:
 1. Whisper 转录(带时间戳)
 2. 生成 SRT
 3. ffmpeg subtitles filter 烧录

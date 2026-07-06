@@ -55,7 +55,41 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 
 # 智剪工坊 — 代码视频剪辑工作台
 
-## 🎯 v1.3 协议层（核心变化）
+## 入口模板
+
+加载本技能后，直接输出以下内容给用户，然后在用户答复后进入对应流程：
+
+---
+
+> ⚠️ 开始之前，请把要处理的**所有视频、图片、BGM** 放到**同一个文件夹**里。
+
+### 你今天想做什么？
+
+**① 从零开始做一个完整的视频**（有多个素材，想拼成一个成片）
+→ 回答几个问题后，我会帮你规划完整流程
+
+**② 只做一个操作**（比如只剪一刀、只加字幕、只调色）
+→ 告诉我你想做什么：
+  - "剪掉开头/结尾"
+  - "去掉中间一段"
+  - "加字幕"
+  - "调色/加滤镜"
+  - "加背景音乐"
+  - "做封面"
+  - 其他需求直接说
+
+**③ 多个视频批量处理**（统一剪、统一调色等）
+→ 告诉我哪些视频 + 要做什么操作
+
+**④ 用文字生成视频**（没有素材，想用 AI 生成）
+→ 说"文字成片"或"AI 生成视频"
+
+**⑤ 数字人讲解**（AI 主播口播）
+→ 说"数字人"或"AI 讲解"
+
+---
+
+## v1.3 协议层（核心变化）
 
 **v1.3 架构核心**: **AI 是编排者，原子 CLI 是工具，step 脚本已删除**。
 
@@ -73,25 +107,27 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 | 文件 | 作用 | 何时读 |
 |---|---|---|
 | **SKILL.md**（本文件）| 工具契约 + 路由表 + 路由总规则 | **必读第一份**（~400 行）|
-| `references/01-cutting.md` | 剪头剪尾 / pin-range / cut-middle（多段）| 路由命中裁剪时 |
-| `references/02-transitions.md` | 9 种 transition 调用范式 | 路由命中转场时 |
-| `references/02-routing.md` | 字段枚举表 + 完整路由表 + E 象限匹配规则 | **阶段 1 必读**（读 intent 时）|
-| `references/03-effects.md` | 调色 / 字幕 / 文字叠加 | 路由命中 effects 时 |
-| `references/03-stages.md` | 阶段 1-4 AI 编排详细步骤 | **执行阶段 2-4 时** |
-| `references/04-cinematic.md` | 推镜头 / 慢动作 / 倒放 | 路由命中 cinematic 时 |
-| `references/04-cut.md` | **v1.3 新增**: pin-range / cut-middle multi-range | 路由命中 cut 时 |
-| `references/05-color.md` | 13 种 color preset | 路由命中 color 时 |
-| `references/05-image.md` | **v1.3 新增**: image_to_video + Ken Burns | 路由命中 photo 时 |
-| `references/06-text.md` | 字幕 / 文字叠加 / opening-text | 路由命中 text 时 |
-| `references/07-audio.md` | **v1.3 新增**: audio_bgm 4 mode + 时间段 + 淡入淡出 | 路由命中 audio 时 |
-| `references/08-cover.md` | 封面生成（ai / text / image）| 路由命中 cover 时 |
-| `references/09-ai-features.md` | AI 美颜 / 去水词 / 翻唱 | 路由命中 AI features 时 |
-| `references/10-batch.md` | 批量处理 | 路由命中批量时 |
-| `references/12-beauty.md` | 美颜 / 磨皮 / 瘦脸 / 大眼 | 路由命中美颜时 |
-| `references/13-rewrite-audio.md` | 改词 / 配音 / 换声 | 路由命中改写时 |
-| `references/14-text-to-video.md` | 文字成片 / AI 生成视频 | 路由命中 text-to-video 时 |
-| `references/15-digital-human.md` | 数字人 / AI 讲解 | 路由命中数字人时 |
-| `references/16-edit.md` | rotate / scale / crop / mute | 路由命中 edit 时 |
+| `references/剪切拼接-帧级剪切与多段合并.md` | 帧级剪切trim与多段合并concat | 路由命中裁剪时 |
+| `references/转场-9种转场类型.md` | 9种转场类型 | 路由命中转场时 |
+| `references/AI路由表-意图JSON字段枚举.md` | intent.json字段枚举 | **阶段1必读** |
+| `references/视觉特效-慢动作推镜头模糊.md` | 调色/字幕/文字叠加 | 路由命中effects时 |
+| `references/主流程-阶段编排.md` | 阶段0-4主体流程 | **选①时必读** |
+| `references/电影感剪辑-变速倒放多机位.md` | 推镜头/慢动作/倒放 | 路由命中cinematic时 |
+| `references/精剪-剪头剪尾保留段切中间.md` | pin-range/cut-middle多段 | 路由命中cut时 |
+| `references/调色预设-18种预设LUT风格迁移.md` | 13种color preset | 路由命中color时 |
+| `references/图片转视频-静态图KenBurns效果.md` | image_to_video+KenBurns | 路由命中photo时 |
+| `references/字幕文字-Whisper烧字幕片头变声.md` | 字幕/文字叠加/opening-text | 路由命中text时 |
+| `references/音频配乐-BGM循环淡入淡出节拍.md` | audio_bgm 4mode+时间段+淡入淡出 | 路由命中audio时 |
+| `references/AI封面-生图叠字两步法.md` | 封面生成（ai/text/image）| 路由命中cover时 |
+| `references/AI智能剪辑-抠图金句去水词蒙版.md` | AI抠图/去水词/翻唱 | 路由命中AI features时 |
+| `references/AI交互式采访触发条件.md` | 8条必问/建议问/不必问触发条件 | **阶段0.4 + 阶段1 + 阶段4必读** |
+| `references/场景覆盖度自检.md` | 12条场景支持情况 | 阶段0.4决定是否要问用户时 |
+| `references/批量处理-多视频统一操作.md` | 批量处理 | 路由命中批量时 |
+| `references/美颜-四种人脸美化.md` | 美颜/磨皮/瘦脸/大眼 | 路由命中美颜时 |
+| `references/改词翻唱-文案改写TTS替换音轨.md` | 改词/配音/换声 | 路由命中改写时 |
+| `references/文字成片-mmx免key生成6秒片段.md` | 文字成片/AI生成视频 | 路由命中text-to-video时 |
+| `references/数字人-AI主播头像说话.md` | 数字人/AI讲解 | 路由命中数字人时 |
+| `references/原子操作-14种基础剪辑指令.md` | rotate/scale/crop/mute | 路由命中edit时 |
 | `scripts/*.py` | 30+ 个原子 CLI（参数 `-i` `-o` `--start` `--output`）| AI 调脚本时 |
 | `lib/common.py` | ffmpeg 包装 + 错误 + 日志 + safe_run | 共享逻辑，**勿重写** |
 | `lib/processing.py` | 视频滤镜 + 转场 + rotation | 阶段 2/3 |
@@ -119,7 +155,7 @@ python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output o
 
 ### AI 增强（agent-driven 流程）
 
-AI 在 §阶段 2-4 按 SKILL.md 路由表自己编排。详见 `references/03-stages.md`。
+AI 在 §阶段 2-4 按 SKILL.md 路由表自己编排。详见 `references/主流程-阶段编排.md`。
 
 ### 大流程（主体阶段 0-4）
 
@@ -127,7 +163,62 @@ AI 在 §阶段 2-4 按 SKILL.md 路由表自己编排。详见 `references/03-s
 阶段 0 项目初始化 → 阶段 1 意图对齐 → 阶段 2 粗加工 → 阶段 3 模板 → 阶段 4 收尾
 ```
 
-详细 AI 编排步骤见 `references/03-stages.md`。
+详细 AI 编排步骤见 `references/主流程-阶段编排.md`。
+
+---
+
+## 📁 工作区（<workspace>/）
+
+**v1.3 工作区约定**（AI 必读）：
+
+```
+<workspace>/
+├── video_*.mp4                ← 源视频（AI 不动）
+├── intent.json                ← 唯一跟源混居的 AI 文件
+├── intent_v1.json             ← 版本快照
+└── 00_智剪/                   ← AI 自管区
+    ├── 粗加工/
+    │   ├── 单视频/            ← 每个视频处理后的标准片段
+    │   ├── 组合/              ← sequence + 转场拼好的组
+    │   ├── 文字稿/            ← ASR 结果
+    │   ├── 中间产物/          ← log / profile / 自检报告
+    │   ├── cover/             ← AI 封面草稿（v1.3 新增，可放多个候选）
+    │   │   ├── cover_draft_1.jpg
+    │   │   └── cover_final.jpg  ← 用户选定后复制到成片/cover.jpg
+    │   └── 决策.md            ← 整体要求 + 用户新增
+    └── 成片/
+        ├── vlog_final.mp4     ← 模板工作流深度加工后
+        └── cover.jpg          ← 最终封面（从粗加工/cover/cover_final.jpg 复制）
+```
+
+**AI 必读规则**：
+- **不动源视频**：`video_*.mp4` 永远只读
+- **唯一配置文件**：`intent.json` 跟源混居，其他 AI 文件全部进 `00_智剪/`
+- **粗加工 5 类产物**：单视频/组合/文字稿/中间产物/cover/决策.md（v1.0 强制）
+- **成片必须按 `project.title` 命名**：见 `references/AI路由表-意图JSON字段枚举.md` §B 项目级
+
+---
+
+## 🎬 阶段 0 ▸ 项目初始化（v1.3 强制）
+
+```
+0.1  AI 提示用户用 intent.html 填表
+     (路径由用户在首问时提供；
+      AI 必须主动用 shell 命令帮用户打开文件(如 Start-Process 或 xdg-open)，
+      不得仅告知路径让用户自己找)
+0.2  用户填表 → 生成 intent.json
+0.3  用户把 intent.json 给 AI
+0.4  [可选] 若 intent.json 缺失必填字段
+       → AI 触发交互式采访补全
+       → 不允许 AI 自己编默认值
+```
+
+**AI 必读规则**：
+- **0.1 主动用 shell 打开**：Mavis/AI 必须用 `Start-Process`（Windows）/ `xdg-open`（Linux）/ `open`（macOS）帮用户打开 intent.html，**不得仅告知路径让用户自己找**（v1.3 强制）
+- **0.4 缺失必填字段时必须问**：AI 不得自编默认值（v1.0 强制）
+- 详细必填字段清单见 `references/AI交互式采访触发条件.md`
+
+**后续阶段详见 `references/主流程-阶段编排.md`**（阶段 1-4 详细契约：输入/输出/跳过/异常/强制）
 
 ---
 
@@ -174,7 +265,7 @@ AI 在 §阶段 2-4 按 SKILL.md 路由表自己编排。详见 `references/03-s
 
 ### 1. 路由第一原则
 
-**AI 拿到 intent.json / 用户需求后, 第一件事是查路由表**（`references/02-routing.md`）。
+**AI 拿到 intent.json / 用户需求后, 第一件事是查路由表**（`references/AI路由表-意图JSON字段枚举.md`）。
 
 - 命中 → 调对应 atomic CLI
 - 不命中 → F 象限（明确说"智剪工坊当前不支持 X"）
@@ -237,7 +328,7 @@ AI 看到模糊需求时**必须问用户**, 不擅自决定。常见模糊:
 1. 在 `lib/processing.py` 加 build filter
 2. 加到 §G.1 video 级 ops 表
 3. 在 §H 路由表加字段定义
-4. 在 references/04-cut.md 或新建 references/ 加详细文档
+4. 在 references/精剪-剪头剪尾保留段切中间.md 或新建 references/ 加详细文档
 
 ---
 
@@ -248,9 +339,11 @@ AI 看到模糊需求时**必须问用户**, 不擅自决定。常见模糊:
 - ❌ **不要**调 `pipeline_step*.py`（v1.3 已删 6 个 step 脚本）
 - ✅ **要**直接调 atomic CLI（`scripts/video_*.py` / `scripts/audio_*.py` / `lib/processing.py`）
 
-### 1. **AI 必读 references/03-stages.md 了解阶段 1-4 详细流程**
+### 1. **触发锚点：选①时必读 references/主流程-阶段编排.md**
 
-阶段 2-4 的具体步骤在 `references/03-stages.md`, SKILL.md 只给总览。
+选①（从零开始做完整视频）→ **立即加载** `references/主流程-阶段编排.md`（主体流程骨架）
+
+阶段 2-4 的具体步骤在 `references/主流程-阶段编排.md`，SKILL.md 只给总览。
 
 ### 2. **per-video 音频同步是必须, 不是可选**
 
@@ -360,26 +453,26 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 智剪工坊/
 ├── SKILL.md                      # 本文件
 ├── intent.html                   # 唯一前端（项目初始化）
-├── references/                   # 16 个子技能文档
-│   ├── 01-cutting.md
-│   ├── 02-routing.md             # v1.3 新增
-│   ├── 02-transitions.md
-│   ├── 03-effects.md
-│   ├── 03-stages.md              # v1.3 新增
-│   ├── 04-cinematic.md
-│   ├── 04-cut.md                 # v1.3 新增
-│   ├── 05-color.md
-│   ├── 05-image.md               # v1.3 新增
-│   ├── 06-text.md
-│   ├── 07-audio.md               # v1.3 新增参数
-│   ├── 08-cover.md
-│   ├── 09-ai-features.md
-│   ├── 10-batch.md
-│   ├── 12-beauty.md
-│   ├── 13-rewrite-audio.md
-│   ├── 14-text-to-video.md
-│   ├── 15-digital-human.md
-│   └── 16-edit.md
+├── references/                   # 19 个子技能文档
+│   ├── 剪切拼接-帧级剪切与多段合并.md
+│   ├── AI路由表-意图JSON字段枚举.md
+│   ├── 转场-9种转场类型.md
+│   ├── 视觉特效-慢动作推镜头模糊.md
+│   ├── 主流程-阶段编排.md               # 选①必读（主体流程骨架）
+│   ├── 电影感剪辑-变速倒放多机位.md
+│   ├── 精剪-剪头剪尾保留段切中间.md
+│   ├── 调色预设-18种预设LUT风格迁移.md
+│   ├── 图片转视频-静态图KenBurns效果.md
+│   ├── 字幕文字-Whisper烧字幕片头变声.md
+│   ├── 音频配乐-BGM循环淡入淡出节拍.md
+│   ├── AI封面-生图叠字两步法.md
+│   ├── AI智能剪辑-抠图金句去水词蒙版.md
+│   ├── 批量处理-多视频统一操作.md
+│   ├── 美颜-四种人脸美化.md
+│   ├── 改词翻唱-文案改写TTS替换音轨.md
+│   ├── 文字成片-mmx免key生成6秒片段.md
+│   ├── 数字人-AI主播头像说话.md
+│   └── 原子操作-14种基础剪辑指令.md
 ├── scripts/                      # 30+ 个原子 CLI
 │   ├── video_*.py
 │   ├── audio_*.py

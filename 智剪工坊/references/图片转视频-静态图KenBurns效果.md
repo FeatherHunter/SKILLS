@@ -1,4 +1,4 @@
-# 05-image - 图片转视频（v1.3 新增）
+# 图片转视频 - 静态图KenBurns效果
 
 > **对应脚本**: `scripts/image_to_video.py`
 > **触发词**: "图片"、"照片"、"插图"、"配图"、"静态图"、"Ken Burns"、"推近"、"拉远"
@@ -99,4 +99,4 @@ python scripts/image_to_video.py --image photo.jpg --output photo.mp4 --width 10
 
 - **SKILL.md §G.1.b**: image_to_video 简要说明
 - **SKILL.md §H**: 字段枚举表 photos
-- **references/03-stages.md**: §阶段 2 处理图片素材的详细流程
+- **references/主流程-阶段编排.md**: §阶段 2 处理图片素材的详细流程

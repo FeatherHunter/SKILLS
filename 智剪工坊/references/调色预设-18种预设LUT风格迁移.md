@@ -1,4 +1,4 @@
-# 05-color - 调色 — v1.2 已实现
+# 调色预设 - 18种预设LUT风格迁移
 
 > **对应脚本**: `scripts/video_color.py` + `scripts/video_style.py` + `scripts/video_hdr.py`
 > **触发词**: "调色"、"电影感"、"LUT"、"cinematic"、"调亮"、"调暗"、"对比度"、"饱和度"、"色温"、"teal & orange"

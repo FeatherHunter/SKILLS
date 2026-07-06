@@ -1,81 +1,175 @@
-﻿# 健身vlog 工作流模板
-# 加载时机：AI 扫描 决策.md + 视频 + 文字稿后，看到素材匹配「健身/减肥/训练」类
-# 加载方式：AI 按 stages 顺序，一来一回对话引导
+﻿# 健身vlog 工作流模板（v1.3 重写）
+# 加载时机：AI 阶段 2 完成后，看到素材匹配「健身/减肥/训练/减脂/打卡」类
+# 加载方式：AI 读 stages，自己编排 atomic CLI
+#
+# v1.3 架构：每个 stage 是 AI 编排指南，不是硬编码 step 脚本
+# - AI 读 stage 描述 → 决定调哪些 atomic CLI → 自己执行
+# - 没有 stage 脚本、不调 step 脚本
+#
+# 模板特色（vs 普通 vlog）：
+#   1. 时间线驱动（早→中→晚强制排序）
+#   2. 节奏差异化（训练原速 / 称重慢放 / 饮食快切 / 通勤原速）
+#   3. 数据可视化（开头目标 + 结尾达成）
+#   4. DAY N 系列复用（每个 DAY 跑同 4 个 stage）
 
-# 工作流不是 config；它描述 AI 怎么跟用户决策
 stages:
-  - id: classify
-    name: 内容分类
-    ai_prompt: |
-      已扫 26 个视频，按文件名 + 时长自动分类：
-      - N 个训练动作（爬楼/打坐/...）
-      - N 个饮食（咖啡/可乐/...）
-      - N 个通勤（小区路/回家/...）
-      - N 个称重/测心率
-      请确认或调整分类。
-    user_input: 分类表确认/手动调整个别视频
-    ai_action: 写分类结果到 中间产物/分类.json
-    next: stage1_done
-
+  # ========== Stage 1: 节奏决策 ==========
   - id: rhythm
     name: 节奏决策
-    ai_prompt: |
-      健身vlog 节奏建议：
-      - 训练动作：保留原速（强度感）
-      - 称重/心率：放大慢放 2x（看清数字）
-      - 饮食：快切 2-3 秒（信息密度高）
-      - 通勤：保留原速（氛围感）
-      按这个走吗？手动调整个别视频也行。
-    user_input: 节奏表确认/手动调整个别视频
-    ai_action: |
-      对每个改节奏的视频，调用 modify.py speed <video> <factor>
-      记录到 中间产物/节奏调整.json
-    next: stage2_done
+    description: |
+      健身 vlog 有 4 类内容，节奏差异化：
+      - 训练动作 → 保留原速（看出力强度）
+      - 称重/心率数字 → 慢放 2x（看清数字）
+      - 饮食 → 快切 2-3 秒/段（信息密度高）
+      - 通勤/氛围 → 保留原速
 
+    ai_prompt: |
+      已扫 {video_count} 个视频，按文件名 + 画面内容自动分类：
+      - 训练类（动作/器械/跑步/瑜伽）：N 个 → 建议原速
+      - 称重类（体重秤/心率/数字）：N 个 → 建议慢放 2x
+      - 饮食类（食物/饮料/餐具）：N 个 → 建议快切 2-3 秒
+      - 通勤类（走路/开车/公交）：N 个 → 建议原速
+
+      请确认分类和节奏调整。
+
+    user_input: 逐个视频确认节奏（个别视频可单独调）
+
+    ai_action: |
+      AI 按用户确认的节奏，对每个视频调 atomic CLI：
+
+      慢放 2x：
+        python scripts/video_speed.py --input {video} --factor 0.5 --output {out}
+
+      快切 2-3 秒（用 trim 保留中间 2-3 秒）：
+        python scripts/video_trim.py --input {video} --start 1 --duration 2 --output {out}
+
+      原速（不动）：
+        不调任何 CLI
+
+    output: |
+      处理后的视频：单视频/video_{idx}.mp4
+      节奏记录：中间产物/节奏调整.json（按 video index 记录 factor）
+
+  # ========== Stage 2: 时间排序 ==========
   - id: order
-    name: 顺序与转场
-    ai_prompt: |
-      健身vlog 通常时间线驱动（早→中→晚）。
-      你的视频是按时间拍的，建议：
-      开场（起床称重）→ 咖啡 → 冥想 → 通勤 →
-      健身 → 中场休息 → 回家 → 收尾
-      调整顺序或加转场说明。
-    user_input: 顺序确认/转场说明
-    ai_action: |
-      重写 组合/ 的拼接顺序。
-      转场默认 fade 0.5s，特殊段可加 duration 调整。
-    next: stage3_done
+    name: 时间排序
+    description: |
+      健身 vlog 强制时间线（早→中→晚）——这是 vs 普通 vlog 的核心差异。
+      AI 必须按时间顺序重排 sequences。
 
-  - id: ending
-    name: 收尾风格
-    options:
-      - id: A
-        name: 黑屏+文字
-        desc: '黑屏 + "DAY N END" 文字停留 2 秒'
-      - id: B
-        name: 动作定格+配文
-        desc: 最后一个动作定格 + AI 配文（一句话总结）
-      - id: C
-        name: 下 DAY 预告
-        desc: 留 1-2 秒空 + "DAY 3 即将开始" 引导
     ai_prompt: |
-      收尾风格选一个：
-      A) 黑屏+文字"DAY 2 END"
-      B) 最后一个动作定格 + 配文
-      C) 接下一个 DAY 的预告
-    user_input: 选 A/B/C
-    ai_action: |
-      在 组合/ 最后一个 seq 后追加 ending 段。
-      A 用 ffmpeg drawtext；B 用 freeze frame + text；
-      C 用 ffmpeg text 段
-    next: stage4_done
+      健身 vlog 通常时间线驱动：
+      - 早晨（起床/称重/早餐）
+      - 中午（通勤/训练/午餐）
+      - 晚上（晚餐/拉伸/称重/反思）
 
-# 完成信号：所有 stage_done 触发 AI 拼 vlog_final.mp4
+      你今天的视频按时间排应是：
+      {suggested_order}
+
+      调整顺序或修改 intent.json.sequences？
+
+    user_input: 确认顺序 / 手动调整
+
+    ai_action: |
+      AI 修改 intent.json 的 sequences[0].videos 数组，按时间顺序排列：
+      - 读现有 intent.json
+      - 修改 sequences[0].videos = [新顺序]
+      - 写回 intent.json
+      - **不调任何 atomic CLI**（顺序调整由后续 stage 3 拼接时生效）
+
+    output: |
+      修改后的 intent.json（sequences[0].videos 按时间顺序）
+
+  # ========== Stage 3: 转场 ==========
+  - id: transitions
+    name: 转场效果
+    description: |
+      健身 vlog 转场风格：统一 fade 0.5s（不花哨，保持节奏感）。
+      这是节奏差异化的延伸——内容切得快，转场就柔和。
+
+    ai_prompt: |
+      建议转场：所有 sequence 内部用 fade 0.5s（柔和）。
+      个别段落可调整（如训练动作之间用 dissolve，氛围更连贯）。
+
+      接受默认 / 个别调整？
+
+    user_input: 接受默认 / 选个别段落调
+
+    ai_action: |
+      AI 修改 intent.json 的 sequences[0].transitions，统一填 fade 0.5s：
+        sequences[0].transitions = [
+          {"after": 1, "type": "fade", "duration": 0.5},
+          {"after": 2, "type": "fade", "duration": 0.5},
+          ...
+        ]
+
+      阶段 4 拼接时 video_xfade.py 自动应用此配置。
+
+    output: |
+      修改后的 intent.json（sequences[0].transitions 全为 fade 0.5s）
+
+  # ========== Stage 4: 数据叠加 ==========
+  - id: data_overlay
+    name: 数据可视化
+    description: |
+      健身 vlog 的灵魂——开头/结尾叠"今日目标"+"今日达成"。
+      普通 vlog 不会有这个 stage。
+
+    ai_prompt: |
+      健身 vlog 必备数据：
+
+      【开头】今日目标：
+      - 体重目标：{起始体重} → {目标体重}
+      - DAY N
+
+      【结尾】今日达成：
+      - 摄入：{卡路里} 大卡
+      - 训练：{时长} 分钟
+      - DAY N 完结
+
+      接受默认模板 / 修改数字？
+
+    user_input: 提供今日实际数字（卡路里、训练时长）
+
+    ai_action: |
+      AI 调 atomic CLI 加片头/片尾：
+
+      开头（用 video_opening.py 烧文字到黑屏源）：
+        python scripts/video_opening.py --input {黑屏源} --output {片头} \
+          --text "{起始} → {目标} · DAY {N}" \
+          --region middle-center \
+          --duration 3 \
+          --font-size 80
+
+      结尾（用 video_freeze.py + video_opening.py）：
+        1. python scripts/video_freeze.py --input {最后一帧} --freeze 3 --output {定格}
+        2. python scripts/video_opening.py --input {定格} --output {片尾} \
+             --text "{卡路里} 大卡 / 训练 {时长} 分钟 · DAY {N} 完结" \
+             --region middle-center \
+             --duration 3 \
+             --font-size 60
+
+      阶段 4 拼成片时把片头 + 单视频 + 片尾 concat。
+
+    output: |
+      片头：成片/opening.mp4
+      片尾：成片/ending.mp4
+      （最终 vlog_final.mp4 = 片头 + 单视频序列 + 片尾）
+
+# ========== 模板完成信号 ==========
 completion:
-  trigger: all stages done
-  ai_action: 调用 executor.py concat_final 拼成 vlog_final.mp4 到 00_智剪/成片/
+  trigger: 所有 stage 用户确认完成
+  ai_action: |
+    AI 调 atomic CLI 拼最终成片：
+      python scripts/video_xfade.py --a {片头} --b {单视频链} \
+        --type fade --duration 0.5 --output {vlog_final.mp4}
+    （或用 edit.py concat 直接拼接）
 
-# 失败处理：任一 stage 用户取消
+  output: 00_智剪/成片/vlog_final.mp4
+
+# ========== 失败处理 ==========
 failure:
-  user_signal: "skip" 或 "later"
-  ai_action: 跳过该 stage，记录到 中间产物/已跳过.md
+  user_signal: "用户说 skip / later / 取消"
+  ai_action: |
+    跳过该 stage，记录到 中间产物/已跳过.md
+    后续 stage 不依赖此 stage 的产物时可继续

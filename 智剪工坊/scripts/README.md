@@ -34,6 +34,8 @@
 | `video_reframe.py` | reframe.py | 09 ai-features（重新构图） |
 | `video_subtitle.py` | auto_subtitle.py | 06 text（自动字幕） |
 | `video_opening.py` | opening_text.py | 06 text（片头文字） |
+| `video_fade.py` | video_fade.py | 04 cinematic（视频淡入淡出，ending.type=fade 用） |
+| `video_freeze.py` | video_freeze.py | 04 cinematic（结尾定格，ending.type=freeze 用） |
 
 ## 音频处理（audio_*）
 

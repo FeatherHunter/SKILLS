@@ -92,6 +92,38 @@
       background: rgba(0,0,0,0.4); color: #fff; font-size: 12px; opacity: 0; transition: opacity 0.15s;
     }
     .video-thumb:hover .play-hint { opacity: 1; }
+
+    /* v1.3: 图片卡片缩略图背景区别 */
+    .image-card .video-thumb {
+      background: #f5f5f7;
+      border: 1px dashed var(--border);
+    }
+
+    /* v1.3: 图片放大预览（全屏覆盖） */
+    .image-zoom-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      cursor: zoom-out;
+    }
+    .image-zoom-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.85);
+    }
+    .image-zoom-img {
+      position: relative;
+      max-width: 90vw; max-height: 85vh;
+      object-fit: contain;
+      box-shadow: 0 10px 60px rgba(0,0,0,0.5);
+      border-radius: 4px;
+    }
+    .image-zoom-caption {
+      position: absolute; bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      color: #fff; font-size: 13px;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 16px; border-radius: 4px;
+      cursor: pointer;
+    }
     .video-meta { flex: 1; min-width: 0; }
     .video-filename { font-weight: 600; font-size: 13px; color: var(--label); word-break: break-all; }
     .video-auto { font-size: 11px; color: var(--secondary); margin-top: 3px; }
@@ -472,7 +504,7 @@
       <div class="brand-wordmark">智剪工坊</div>
       <div class="brand-tagline">VIDEO EDITOR WORKSHOP</div>
       <h1>开始剪辑准备 · 第 1 步：选视频文件夹</h1>
-      <p class="picker-lead">我会扫描文件夹里的 <strong>.mp4</strong> 文件，列出每个视频让你填描述，保存成 <code>intent.json</code> 发给 AI 当剪辑依据。</p>
+      <p class="picker-lead">我会扫描文件夹里的 <strong>视频</strong>(.mp4/.mov/.avi/.mkv/.webm/.m4v) 和 <strong>图片</strong>(.jpg/.jpeg/.png/.webp/.bmp)，列出每个素材让你填描述，保存成 <code>intent.json</code> 发给 AI 当剪辑依据。<br>📁 只扫描根目录，不递归子目录。</p>
       <p style="font-size:12px">浏览器会请求权限，授权后才能读写文件夹</p>
       <button class="primary" id="pick-folder-btn" style="margin-top:20px">选择文件夹</button>
       <div id="ws-hint" class="ws-hint" style="display:none"></div>
@@ -518,6 +550,11 @@
         <div class="field">
           <label>项目名 <span class="hint">如 "Day 2 探店"</span></label>
           <input type="text" data-path="project.name">
+        </div>
+        <div class="field">
+          <label>成片标题 <span class="hint">v1.3 新增。成片文件名来源，如 "DAY 2 减脂日记" → <code>DAY_2_减脂日记.mp4</code></span></label>
+          <input type="text" data-path="project.title"
+            placeholder="留空则用项目名，再 fallback 到 vlog_final">
         </div>
         <div class="field">
           <label>目标时长 <span class="hint">如 3-5 分钟</span></label>
@@ -571,7 +608,7 @@
       </section>
 
       <section>
-        <h2>视频 <span class="hint" style="font-weight:400">(<span id="video-count">0</span> 个文件)</span></h2>
+        <h2>素材 <span class="hint" style="font-weight:400">(<span id="material-count-video">0</span> 个视频 + <span id="material-count-image">0</span> 个图片 = 共 <span id="material-count-total">0</span> 个)</span></h2>
         <div id="video-list"></div>
       </section>
 
@@ -635,7 +672,10 @@
     const wsPathEl = document.getElementById('ws-path');
     const wsHintEl = document.getElementById('ws-hint');
     const videoListEl = document.getElementById('video-list');
-    const videoCountEl = document.getElementById('video-count');
+    const videoCountEl = document.getElementById('video-count');  // v1.2 旧字段，兼容
+    const materialCountVideoEl = document.getElementById('material-count-video');
+    const materialCountImageEl = document.getElementById('material-count-image');
+    const materialCountTotalEl = document.getElementById('material-count-total');
     const saveBtn = document.getElementById('save-btn');
     const pickBtn = document.getElementById('pick-folder-btn');
     const coverTypeSel = document.querySelector('[data-path="cover.type"]');
@@ -711,13 +751,38 @@
       videoEntries = [];
       for await (const entry of dirHandle.values()) {
         if (entry.kind !== 'file') continue;
-        if (!/\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(entry.name)) continue;
+        // v1.3: 同时支持视频和图片（不递归子目录）
+        if (!/\.(mp4|mov|avi|mkv|webm|m4v|jpg|jpeg|png|webp|bmp)$/i.test(entry.name)) continue;
+        const isImage = /\.(jpg|jpeg|png|webp|bmp)$/i.test(entry.name);
         try {
           const file = await entry.getFile();
-          const meta = await getVideoMeta(file);
-          const thumbDataUrl = await getVideoThumb(file, meta.duration, meta.width, meta.height);
-          videoEntries.push({ name: entry.name, file, handle: entry, thumbDataUrl,
-            durationSec: meta.duration, videoWidth: meta.width, videoHeight: meta.height });
+          if (isImage) {
+            // 图片：直接用 URL.createObjectURL，不需视频元数据
+            const thumbDataUrl = URL.createObjectURL(file);
+            videoEntries.push({
+              name: entry.name,
+              file,
+              handle: entry,
+              thumbDataUrl,
+              isImage: true,
+              durationSec: 0,
+              videoWidth: 0,
+              videoHeight: 0,
+            });
+          } else {
+            const meta = await getVideoMeta(file);
+            const thumbDataUrl = await getVideoThumb(file, meta.duration, meta.width, meta.height);
+            videoEntries.push({
+              name: entry.name,
+              file,
+              handle: entry,
+              thumbDataUrl,
+              isImage: false,
+              durationSec: meta.duration,
+              videoWidth: meta.width,
+              videoHeight: meta.height,
+            });
+          }
         } catch (e) { console.warn('跳过', entry.name, e); }
       }
       videoEntries.sort((a, b) => a.name.localeCompare(b.name));
@@ -736,12 +801,36 @@
       wsPathEl.textContent = rootName + ' (下载模式)';
       videoEntries = [];
       for (const file of files) {
-        if (!/\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(file.name)) continue;
+        // v1.3: 同时支持视频和图片（不递归子目录）
+        if (!/\.(mp4|mov|avi|mkv|webm|m4v|jpg|jpeg|png|webp|bmp)$/i.test(file.name)) continue;
+        const isImage = /\.(jpg|jpeg|png|webp|bmp)$/i.test(file.name);
         try {
-          const meta = await getVideoMeta(file);
-          const thumbDataUrl = await getVideoThumb(file, meta.duration, meta.width, meta.height);
-          videoEntries.push({ name: file.name, file, handle: null, thumbDataUrl,
-            durationSec: meta.duration, videoWidth: meta.width, videoHeight: meta.height });
+          if (isImage) {
+            const thumbDataUrl = URL.createObjectURL(file);
+            videoEntries.push({
+              name: file.name,
+              file,
+              handle: null,
+              thumbDataUrl,
+              isImage: true,
+              durationSec: 0,
+              videoWidth: 0,
+              videoHeight: 0,
+            });
+          } else {
+            const meta = await getVideoMeta(file);
+            const thumbDataUrl = await getVideoThumb(file, meta.duration, meta.width, meta.height);
+            videoEntries.push({
+              name: file.name,
+              file,
+              handle: null,
+              thumbDataUrl,
+              isImage: false,
+              durationSec: meta.duration,
+              videoWidth: meta.width,
+              videoHeight: meta.height,
+            });
+          }
         } catch (e) { console.warn('跳过', file.name, e); }
       }
       videoEntries.sort((a, b) => a.name.localeCompare(b.name));
@@ -813,11 +902,19 @@
     function renderForm() {
       pickerScreen.style.display = 'none';
       formScreen.style.display = 'block';
-      videoCountEl.textContent = videoEntries.length;
+
+      // v1.3: 素材统计（视频 + 图片分别计数）
+      const videoCount = videoEntries.filter(e => !e.isImage).length;
+      const imageCount = videoEntries.filter(e => e.isImage).length;
+      const totalCount = videoEntries.length;
+      if (videoCountEl) videoCountEl.textContent = videoCount;  // 旧字段
+      if (materialCountVideoEl) materialCountVideoEl.textContent = videoCount;
+      if (materialCountImageEl) materialCountImageEl.textContent = imageCount;
+      if (materialCountTotalEl) materialCountTotalEl.textContent = totalCount;
 
       videoListEl.innerHTML = '';
       if (videoEntries.length === 0) {
-        videoListEl.innerHTML = '<div class="empty-state">没扫到视频文件 (.mp4 / .mov / .avi / .mkv / .webm)。检查文件夹内容。</div>';
+        videoListEl.innerHTML = '<div class="empty-state">没扫到素材（视频 .mp4/.mov/.avi/.mkv/.webm 或图片 .jpg/.png/.webp）。检查文件夹内容。</div>';
       } else {
         videoEntries.forEach((entry, i) => {
           const card = document.createElement('div');
@@ -855,6 +952,35 @@
 
         videoListEl.querySelectorAll('[data-play]').forEach(el => {
           el.addEventListener('click', () => previewVideo(videoEntries[parseInt(el.dataset.play, 10)]));
+        });
+
+        // v1.3: 图片放大预览（点击 data-zoom 元素）
+        videoListEl.querySelectorAll('[data-zoom]').forEach(el => {
+          el.addEventListener('click', () => {
+            const idx = parseInt(el.dataset.zoom, 10);
+            const entry = videoEntries[idx];
+            if (!entry || !entry.thumbDataUrl) return;
+            // 创建全屏图片预览层
+            const overlay = document.createElement('div');
+            overlay.className = 'image-zoom-overlay';
+            overlay.innerHTML = `
+              <div class="image-zoom-backdrop"></div>
+              <img src="${entry.thumbDataUrl}" class="image-zoom-img" alt="${escapeHtml(entry.name)}">
+              <div class="image-zoom-caption">${escapeHtml(entry.name)} · 点击空白关闭</div>
+            `;
+            document.body.appendChild(overlay);
+            // 点击关闭（背景 + 文字）
+            overlay.querySelector('.image-zoom-backdrop').addEventListener('click', () => overlay.remove());
+            overlay.querySelector('.image-zoom-caption').addEventListener('click', () => overlay.remove());
+            // ESC 关闭
+            const escHandler = (e) => {
+              if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', escHandler);
+              }
+            };
+            document.addEventListener('keydown', escHandler);
+          });
         });
 
         videoListEl.querySelectorAll('[data-toggle-ops]').forEach(btn => {
@@ -932,34 +1058,42 @@
     }
 
     function renderVideoCard(entry, i) {
-      const vw = entry.videoWidth || 1920;
-      const vh = entry.videoHeight || 1080;
-      const aspect = vw / vh;
-      // 缩略图：统一外框大小，里面 img 按原始比例 contain
-      // 横屏/竖屏占地大小一致，只有内容比例不同
-      const BOX = 96;  // 64 × 1.5
-      let tw, th;
-      if (aspect >= 1) {
-        // 横屏：宽 64
-        tw = BOX;
-        th = Math.round(tw / aspect);
+      const isImage = entry.isImage;
+      // v1.3: 图片和视频用不同显示逻辑
+      const BOX = 96;
+      let tw = BOX, th = BOX;
+      let metaText;
+      if (isImage) {
+        // 图片：没有分辨率/时长信息，缩略图按正方形显示
+        metaText = `🖼️ 图片 · ${(entry.file.size / 1024).toFixed(0)} KB`;
       } else {
-        // 竖屏：高 64
-        th = BOX;
-        tw = Math.round(th * aspect);
+        const vw = entry.videoWidth || 1920;
+        const vh = entry.videoHeight || 1080;
+        const aspect = vw / vh;
+        if (aspect >= 1) {
+          tw = BOX;
+          th = Math.round(tw / aspect);
+        } else {
+          th = BOX;
+          tw = Math.round(th * aspect);
+        }
+        metaText = `${formatDuration(entry.durationSec)} · ${(entry.file.size / 1024 / 1024).toFixed(1)} MB · ${vw}×${vh}`;
       }
+      // v1.3: 图片用 "data-zoom" 预览（放大看），视频用 "data-play" 预览（播放）
+      const previewAction = isImage ? 'data-zoom' : 'data-play';
+      const previewHint = isImage ? '🔍 放大看' : '▶ 预览';
       return `
-        <div class="video-card" data-card-idx="${i}" data-video-index="${entry.index}">
+        <div class="video-card ${isImage ? 'image-card' : ''}" data-card-idx="${i}" data-video-index="${entry.index}">
           <div class="video-head">
             <button class="card-toggle expanded" data-card-toggle="${i}" title="折叠/展开">▶</button>
-            <div class="video-thumb" data-play="${i}" style="width:${tw}px;height:${th}px;" title="点击预览">
+            <div class="video-thumb" ${previewAction}="${i}" style="width:${tw}px;height:${th}px;" title="点击${isImage ? '放大' : '预览'}">
               ${entry.thumbDataUrl
-                ? `<img src="${entry.thumbDataUrl}"><div class="play-hint">▶ 预览</div>`
+                ? `<img src="${entry.thumbDataUrl}"><div class="play-hint">${previewHint}</div>`
                 : '<span>无缩略图</span>'}
             </div>
             <div class="video-meta">
               <div class="video-filename">#${entry.index} ${escapeHtml(entry.name)}</div>
-              <div class="video-auto">${formatDuration(entry.durationSec)} · ${(entry.file.size / 1024 / 1024).toFixed(1)} MB · ${vw}×${vh}</div>
+              <div class="video-auto">${metaText}</div>
               <div class="video-actions">
                 <button class="exclude-btn" data-exclude-btn="${i}" type="button">🚫 <span class="exclude-text">不用</span></button>
               </div>
@@ -968,7 +1102,7 @@
           <div class="card-body">
             <div class="video-grid">
               <div class="field">
-                <label>内容简介 <span class="hint">这段视频拍的是啥</span></label>
+                <label>内容简介 <span class="hint">这段${isImage ? '图片' : '视频'}拍的是啥</span></label>
                 <textarea data-video="${i}.summary" rows="2"></textarea>
               </div>
               <div class="field">

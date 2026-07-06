@@ -390,6 +390,38 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
             "index": idx, "error": "output too small"
         }, False
 
+    # v1.3: 自动调 video_normalize 归一化参数（解决多视频拼接 fps/分辨率不一致 bug）
+    # 默认参数: 30fps, 1280x720 (按 aspect_ratio), h264, aac 44100 stereo, yuv420p
+    # 用户可通过 intent.json.output.fps / video_codec / audio_codec 配置（暂未启用 html UI）
+    try:
+        import sys
+        scripts_path = Path(__file__).parent.parent / "scripts"
+        if str(scripts_path) not in sys.path:
+            sys.path.insert(0, str(scripts_path))
+        from video_normalize import video_normalize
+        from video_normalize import DEFAULT_FPS as NORM_FPS
+
+        # 临时输出: 把归一化写到 .norm.mp4,然后替换原文件
+        norm_path = output_path.with_suffix(".norm.mp4")
+        target_aspect = video.get('aspect_ratio', '16:9')  # 优先用 video 自身的 aspect
+        if 'output' in video:
+            # 若 video dict 含 output 信息(少见),优先
+            target_aspect = video['output'].get('aspect_ratio', target_aspect)
+
+        norm_result = video_normalize(
+            in_path=str(output_path),
+            output=str(norm_path),
+            fps=NORM_FPS,
+            aspect_ratio=target_aspect,
+        )
+        if norm_result and norm_path.exists():
+            # 替换原 output_path
+            import shutil
+            shutil.move(str(norm_path), str(output_path))
+            log_info(f"  ✓ 已归一化: {output_path.name} → 30fps / 标准参数")
+    except Exception as e:
+        log_warn(f"video_normalize 失败（不影响主产物）: {e}")
+
     # v1.1: ffmpeg 编码后自动 patch tkhd matrix，清 displaymatrix metadata
     # 解决: ffmpeg 编码时保留 source 的 displaymatrix，导致输出仍带旋转标签
     try:

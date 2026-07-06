@@ -394,8 +394,8 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 **核心原则（3 条）**
 
 1. **零硬编码** — 不绑定具体项目（vlog 主题、平台、用户）。所有流程描述用通用 schema，遇到项目特有需求必须从 intent.json 读取。
-2. **零遗漏** — intent.json 每个字段必须有去处（明确操作 / 隐含意图 / 未覆盖说明）。无"AI 心里有数"这种模糊状态。
-3. **零猜测** — 凡 AI 推断的、模糊的、未覆盖的，必须主动交互式采访，不允许闷头执行。详见「AI 交互式采访触发条件」章节。
+2. **零遗漏** — intent.json 每个字段必须有去处（明确操作 / AI 文本解析 / 未覆盖说明）。无"AI 心里有数"这种模糊状态。
+3. **零猜测** — 凡 AI 文本解析的、模糊的、未覆盖的，必须主动交互式采访，不允许闷头执行。详见「AI 交互式采访触发条件」章节与 §阶段 1 "AI 文本解析 → 路由表匹配 → 用户确认"。
 
 **执行契约（4 条，违反任意一条视为流程失败）**
 
@@ -447,10 +447,13 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
     │   ├── 组合/              ← sequence + 转场拼好的组
     │   ├── 文字稿/            ← ASR 结果
     │   ├── 中间产物/          ← log / profile
+    │   ├── cover/             ← AI 封面草稿（v1.3 新增，可放多个候选）
+    │   │   ├── cover_draft_1.jpg
+    │   │   └── cover_final.jpg  ← 用户选定后复制到成片/cover.jpg
     │   └── 决策.md            ← 整体要求 + 用户新增
     └── 成片/
         ├── vlog_final.mp4     ← 模板工作流深度加工后
-        └── cover.jpg          ← AI 封面
+        └── cover.jpg          ← 最终封面（从粗加工/cover/cover_final.jpg 复制）
 ```
 
 ### 完整流程（v1.0）
@@ -539,21 +542,76 @@ Step D  未匹配处理
 - **流程定义在 SKILL.md**：每个 Step 的"做什么"写在这里；"怎么做"AI 自己编排
 - **产物路径见下表**：每个 Step 的输出路径是契约，AI 必须写到指定位置
 
-**原子 CLI 路由参考**（AI 必读）：
+**完整字段 → atomic CLI 路由表**（v1.3 新增，AI 必读）：
 
-| AI 看到的字段 | 调哪个原子 CLI |
+> 本表是 AI 路由的**唯一真理**——intent.json 任何字段要执行的最终命令，都必须在本表内能查到对应。
+> 字段超出本表 = 智剪工坊不支持此效果（参见 §阶段 1 "AI 文本解析 → 路由表匹配 → 用户确认"）。
+
+#### A. videos[i].ops（per-video 操作）
+
+| intent.json 字段 | atomic CLI | 触发条件 | 参数语义 |
+|---|---|---|---|
+| `videos[i].ops.trim-head` | `video_trim.py` | `on=true` | `{on: bool, sec: 数字}` |
+| `videos[i].ops.trim-tail` | `video_trim.py` | `on=true` | `{on: bool, sec: 数字}` |
+| `videos[i].ops.pin-range` | `video_trim.py` | `on=true` | `{on: bool, start: "HH:MM:SS", end: "HH:MM:SS"}` |
+| `videos[i].ops.cut-middle` | `video_trim.py` | `on=true` | `{on: bool, from: "HH:MM:SS", to: "HH:MM:SS"}` |
+| `videos[i].ops.speed-up` | `video_speed.py` | `on=true, factor>1` | `{on: bool, factor: float}` |
+| `videos[i].ops.slow-down` | `video_speed.py` | `on=true, factor<1` | `{on: bool, factor: float}` |
+| `videos[i].ops.reverse` | `video_reverse.py` | `on=true` | `{on: bool}` |
+| `videos[i].ops.mute` | `audio_bgm.py --video-volume 0` | `on=true` | `{on: bool}`（用 voice='mute'） |
+| `videos[i].ops.fade-in` | `video_fade.py` | `on=true` | `{on: bool, sec: 数字}` |
+| `videos[i].ops.fade-out` | `video_fade.py` | `on=true` | `{on: bool, sec: 数字}` |
+| `videos[i].ops.opening-text` | `video_opening.py` | `on=true` | `{on: bool, text: str, duration: 秒, region: str}` |
+| `videos[i].ops.insert-image` | `video_overlay.py` | `on=true` | `{on: bool, file: path, at: 秒, duration: 秒}` |
+| `videos[i].ops.color` | `video_color.py` | `on=true` | `{on: bool, preset: str}`（13 种预设：warm/cool/cinematic/vintage/bw/high-contrast/noir/comic/sketch/faded/punchy/vhs/dream/sharpen） |
+| `videos[i].ops.subtitle` | `video_subtitle.py` | `on=true` | `{on: bool, style: str, language: str}`（中文/英文/auto） |
+| `videos[i].ops.rotate` | `edit.py rotate` | `on=true` | `{on: bool, degrees: int}`（90/180/270） |
+| `videos[i].ops.scale` | `edit.py scale` | `on=true` | `{on: bool, width: int, height: int}` |
+| `videos[i].ops.crop` | `edit.py crop` | `on=true` | `{on: bool, x: int, y: int, width: int, height: int}` |
+| `videos[i].ops.audio` | `audio_bgm.py` | `on=true` | `{on: bool, file: path, volume: float}` |
+| `videos[i].ops.target-duration` | `processing.py` | `on=true` | `{on: bool, sec: 数字}`（成片时长上限） |
+
+**多个 op 在同一视频上**：AI 串联调多次 CLI，或 import `lib/processing.py` 用 `build_video_filter()` 一次拼。
+
+#### B. project-level（项目级）
+
+| intent.json 字段 | atomic CLI | 触发条件 | 何时调 |
+|---|---|---|---|
+| `output.aspect_ratio` | `edit.py scale` | aspect ≠ 源分辨率 | 阶段 2 单视频处理时 |
+| `output.aspect_handling` | `edit.py scale` (策略) | aspect ≠ 源 | 阶段 2 单视频处理时（aspect-fill/fit） |
+| `output.fps` / `video_codec` / `audio_codec` / `audio_sample_rate` / `audio_channels` / `pixel_format` | `video_normalize.py`（**自动**） | 阶段 2 Step 2.2 末尾 | process_video() 末尾自动归一化参数（解决多视频拼接 fps/分辨率不一致 bug） |
+| `cover.type` | `ai_cover.py` / `video_opening.py` | 阶段 4 | cover.type='ai' → ai_cover.py；'text' → video_opening.py |
+| `cover.prompt` | `ai_cover.py --prompt` | cover.type='ai' | 阶段 4（prompt 不明 AI 必须问） |
+| `ending.type` | 见下方 ending.type 路由表 | 阶段 4 | 4 种 type 各有 atomic CLI（详见 §H 表 ending.type 路由） |
+| `ending.prompt` | `video_subtitle.py --prompt` | ending.type='text' | 阶段 4 |
+| `project.target_length` | `video_trim.py` + `xfade_concat` | 总时长 > target | 阶段 2 / 阶段 3（按需 trim 或裁剪） |
+| `project.overall_intent` | （**自由文本，见 D 类**） | — | 阶段 1 AI 文本解析 |
+| `project.title` | 阶段 4 拼成片时用作文件名 | 阶段 4 | AI 必须按 title 命名成片（如 `DAY_2_减脂日记.mp4`） |
+| `videos[i].voice=keep` | `processing.py` 默认 | 默认值 | 保留原声轨（不调任何 CLI） |
+| `videos[i].voice=keep-with-filler-removed` | `ai_fillers.py` 两段式（转录 + AI 判断 + cut） | voice ≠ mute | 阶段 2 Step 2.2（需 ASR 优先） |
+| `videos[i].voice=mute` | `processing.py build_video_filter` 加 `volume=0` | voice=mute | 阶段 2 Step 2.2 |
+| `videos[i].voice=bgm-only` | `audio_bgm.py --video-volume 0` 替换音轨 | voice=bgm-only | 阶段 2 Step 2.2（**必须先 BGM 才能跑**） |
+| `videos[i].voice=original-with-bgm` | `audio_bgm.py --video-volume 1.0 --bgm <path>` 混合 | voice=original-with-bgm | 阶段 2 Step 2.2（原声保留 + 加 BGM） |
+
+#### C. sequence 级
+
+| intent.json 字段 | atomic CLI | 触发条件 | 参数语义 |
+|---|---|---|---|
+| `sequences[i].transitions[j].type` | `video_xfade.py` | `type ∉ {none, cut}` | `{after: int, type: str, duration: 秒}` |
+| `sequences[i].transitions[j].type ∈ {none, cut}` | （**短路**） | `type='none'` 或 `type='cut'` | 不调 xfade，硬切 |
+
+**type 9 种枚举**：见 [§G.2 sequence 级 transitions 白名单](#g2-sequence-级-transitions)。
+
+#### D. 自由文本字段（AI 文本解析 → 路由表匹配 → 用户确认）
+
+| intent.json 字段 | 处理方式 |
 |---|---|
-| `videos[i].ops.trim-head` / `trim-tail` / `pin-range` / `cut-middle` | `scripts/video_trim.py` |
-| `videos[i].ops.speed-up` / `slow-down` | `scripts/video_speed.py` |
-| `videos[i].ops.reverse` | `scripts/video_reverse.py` |
-| `videos[i].ops.fade-in` / `fade-out` | `scripts/video_fade.py` |
-| `videos[i].ops.opening-text` | `scripts/video_opening.py` |
-| `videos[i].ops.insert-image` | `scripts/video_overlay.py` |
-| `videos[i].ops.color` | `scripts/video_color.py` |
-| `videos[i].ops.subtitle` | `scripts/video_subtitle.py` |
-| `videos[i].ops.rotate` / `scale` / `crop` | `scripts/edit.py` |
-| `sequences[i].transitions[j].type` | `scripts/video_xfade.py` |
-| 多个 op 在同一视频上 | AI 串联调多次，或 import `lib/processing.py` 用 `build_video_filter()` 一次拼 |
+| `videos[i].notes` | AI 文本解析 → 路由表匹配（A/B/C）→ 用户确认 |
+| `project.overall_intent` | AI 文本解析 → 路由表匹配（A/B/C）→ 用户确认 |
+| `cover.prompt` | **直接传给** `ai_cover.py --prompt`（无需解析，prompt 是 AI 生图指令） |
+| `ending.prompt` | **直接传给** `video_subtitle.py --prompt`（无需解析，prompt 是文字内容） |
+
+**D 类处理流程**见 §阶段 1 "AI 文本解析 → 路由表匹配 → 用户确认"——AI 必须先匹配，再让用户确认，不闷头猜。
 
 ---
 
@@ -756,7 +814,83 @@ stages:
 - `cover.prompt` 不明时 **必须问用户**，不闷头猜（零猜测原则）
 - 烧字幕时若 `voice == 'mute'`，跳过烧字幕
 - BGM 混合前 AI 必须问用户"加什么 BGM / 音量多少"（操作清单 D 象限已确认则直接用）
-- 拼成片路径：`00_智剪/成片/vlog_final.mp4`——这是契约，AI 必须写到这里
+- **拼成片文件名（v1.3 新增）**：
+  - 优先用 `project.title`（用户填的成片标题）
+  - fallback 用 `project.name`（项目名）
+  - 都没有 → fallback 到 `vlog_final.mp4`（向后兼容）
+  - **Windows 文件名安全**：替换 `< > : " / \ | ? *` 为 `_`
+  - **空格**：保留中文空格，英文空格 → `_`
+  - **路径**：`00_智剪/成片/<sanitized_title>.mp4`
+- **封面生成路径（v1.3 新增）**：
+  - 草稿：`00_智剪/粗加工/cover/cover_draft_N.jpg`（可多个候选）
+  - 终稿：`00_智剪/粗加工/cover/cover_final.jpg`
+  - 复制：`cp cover/cover_final.jpg ../成片/cover.jpg`（成片目录保留 cover.jpg 向后兼容）
+
+**文件名生成算法（AI 必读）**：
+
+```python
+import re
+
+def sanitize_filename(title):
+    """Windows 文件名安全化（v1.3 严格版）"""
+    if not title or not title.strip():
+        return 'vlog_final'  # 空/全空白 fallback
+    illegal = re.compile(r'[<>:"/\\|?*]')
+    safe = illegal.sub('_', title)
+    # 英文空格 → 下划线（中文空格保留）
+    safe = re.sub(r' +', '_', safe)
+    # 连续下划线压缩（避免 "Hello/World: test" → "Hello_World__test"）
+    safe = re.sub(r'_+', '_', safe)
+    # 去前导/末尾点（Windows 不允许 .hidden 这种）
+    safe = safe.strip('.')
+    # 限制长度（NTFS 路径 255 字符）
+    if len(safe) > 200:
+        safe = safe[:200]
+    # 去前导/末尾下划线
+    safe = safe.strip('_')
+    # 全点/下划线 fallback
+    if not safe or re.match(r'^[._]+$', safe):
+        return 'vlog_final'
+    return safe
+
+# 20/20 测试用例通过 + 4/4 全链路测试通过
+
+# 关键测试用例:
+# "DAY 2 减脂日记"           → "DAY_2_减脂日记"   ✓
+# "Hello/World: test"        → "Hello_World_test"  ✓ (连续下划线压缩)
+# "<test>"                   → "test"              ✓ (前导/末尾非法字符 trim)
+# "... . . ."                → "vlog_final"        ✓ (全点 fallback)
+# ".hidden"                  → "hidden"            ✓
+# "trailing."                → "trailing"          ✓
+# "中文 测试"                → "中文_测试"         ✓
+# "" / None / "   "          → "vlog_final"        ✓
+# "a" * 250                  → "a" * 200           ✓ (超长截断)
+```
+
+**全链路 fallback 顺序**：
+
+```python
+def get_output_path(intent):
+    """成片路径生成（v1.3）"""
+    project = intent.get('project', {})
+    title = project.get('title') or project.get('name') or 'vlog_final'
+    safe = sanitize_filename(title)
+    return f"00_智剪/成片/{safe}.mp4"
+
+# 优先级: title > name > vlog_final
+```
+
+**AI 必读**：以上函数已封装在 `lib/filename.py`——阶段 4 拼成片时**直接 import 使用**：
+
+```python
+import sys
+sys.path.insert(0, '/path/to/智剪工坊/lib')
+from filename import get_output_path
+
+intent = json.loads(open('intent.json').read())
+output = get_output_path(intent)
+# output = Path("00_智剪/成片/DAY_2_减脂日记.mp4")
+```
 
 ### 操作清单 schema（v1.0 强制）
 
@@ -773,7 +907,7 @@ stages:
 > 来源：<workspace>/intent.json（修订号 v{n}）
 
 ## A. per-video 操作
-| # | 文件 | 源 ops | 隐含 ops（AI 推断） | 落地 step | 状态 |
+| # | 文件 | 源 ops | 隐含 ops（AI 文本解析 + 用户确认） | 落地 step | 状态 |
 |---|------|--------|-------------------|----------|------|
 
 ## B. project-level 操作
@@ -791,10 +925,11 @@ stages:
 | # | 来源字段 | 模糊内容 | AI 默认假设 | 是否必须问 |
 |---|---------|---------|------------|-----------|
 
-## E. AI 推断 vs 用户明确
-- ✅ 用户明确：videos[*].ops 中所有 on=true 的字段
-- ⚠️ AI 推断：notes / overall_intent / cover.prompt / target_length
-- ❓ 未提及：videos 中无 ops / intent / notes 的项
+## E. AI 文本解析 vs 用户明确（v1.3 改）
+- ✅ **用户明确**：videos[*].ops 中所有 on=true 的字段（结构化，已填）
+- ⚠️ **AI 文本解析**：notes / overall_intent（自由文本，AI 对照路由表解析 + 用户确认）
+- ⚠️ **AI 直接透传**：cover.prompt / ending.prompt（自由文本，直接传给对应 CLI，无需解析）
+- ❓ **未提及**：videos 中无 ops / intent / notes 的项
 
 ## F. 未覆盖字段（out-of-scope）
 - 字段名 + 不处理的原因 + 如需处理 AI 该怎么问
@@ -810,6 +945,64 @@ stages:
 - E = 透明标记（用户一眼看出哪些是 AI 猜的）
 - F = 明确说"我不处理这个"（防止误以为漏了）
 - 每条都有状态列：pending / confirmed / n/a / info
+
+---
+
+### BGM 来源（v1.3 新增，AI 必读）
+
+**问题**：用户找 BGM 素材很费劲——自己下载要搜版权、配时长。SKILL 必须告诉用户**已有 BGM 来源**。
+
+#### 来源 1：剪映客户端自带 BGM（推荐）
+
+剪映/JianyingPro 客户端会下载大量免版权 BGM，存放在本地：
+
+```
+Windows 默认路径：
+  %LOCALAPPDATA%\JianyingPro\User Data\Music\audio\
+  即：C:\Users\<用户名>\AppData\Local\JianyingPro\User Data\Music\audio\
+
+实际路径可能因版本不同：
+  - JianyingPro
+  - JianyingPro\User Data
+  - 剪映团队版
+```
+
+**AI 必读**：
+- 引导用户去剪映客户端浏览 BGM（按情绪/风格筛选），听到喜欢的就"下载"
+- 下载后 BGM 自动存到上述路径
+- 用户告诉 AI BGM 文件名，AI 用 `audio_bgm.py --bgm <完整路径>` 加到视频
+
+#### 来源 2：mmx AI 生成音乐（matrix MCP）
+
+AI 直接生成 BGM，免下载、免版权：
+
+```bash
+# 调 mmx 生成 BGM（Python 端用 matrix MCP）
+mavis mcp call matrix matrix_generate_music \
+  --prompt "calm motivational piano background music, 60 seconds, no vocals" \
+  --duration 60 \
+  --output ~/Downloads/bgm.mp3
+```
+
+**支持的情绪/风格**：钢琴 / 弦乐 / 电子 / 氛围 / 摇滚 / 古典 等
+
+#### 来源 3：用户自己提供
+
+用户自己下载或拍摄的 mp3 / wav 文件，告诉 AI 路径即可。
+
+**AI 路由**：
+```
+用户说"加 BGM"
+  ↓
+AI 询问："BGM 用哪个来源？（剪映客户端下载 / mmx 生成 / 你提供文件）"
+  ↓
+按用户选:
+  - 剪映 → 提示用户去剪映下载，告诉 AI 文件名
+  - mmx → AI 调 matrix_generate_music 生成
+  - 自带 → 用户给文件路径
+  ↓
+AI 调 audio_bgm.py --bgm <path> --video <path> --volume <0.2-0.3> --output <out>
+```
 
 #### G. op 白名单（AI 必读）
 
@@ -833,7 +1026,7 @@ stages:
 | `fade-out` | 视频结尾淡出 | `video_fade.py` / `processing.py` | `{on: bool, sec: 数字}` |
 | `opening-text` | 视频前 N 秒叠场景文字 | `video_opening.py` | `{on: bool, text: str, duration: 秒, region: str}` |
 | `insert-image` | 视频中插入静态图片 | `video_overlay.py` | `{on: bool, file: path, at: 秒, duration: 秒}` |
-| `color` | 调色 | `video_color.py` | `{on: bool, preset: str}`（cinematic/warm/cool/vintage/bw/high-contrast） |
+| `color` | 调色 / 风格化 | `video_color.py` | `{on: bool, preset: str}`（13 种预设：warm/cool/cinematic/vintage/bw/high-contrast/noir/comic/sketch/faded/punchy/vhs/dream/sharpen） |
 | `rotate` | 旋转 90/180/270 | `edit.py rotate` | `{on: bool, degrees: int}` |
 | `scale` | 缩放 | `edit.py scale` | `{on: bool, width: int, height: int}` |
 | `crop` | 裁剪 | `edit.py crop` | `{on: bool, x: int, y: int, width: int, height: int}` |
@@ -896,8 +1089,9 @@ stages:
 | **project-level 操作** | 全项目统一动作 | "所有视频都加 BGM" |
 | **ASR** | 把音频转成文字稿 | "Whisper 转录" → "把视频里说的话抄下来" |
 | **D 象限（模糊项）** | 用户没说清楚的地方 | "视频 #5 你没说怎么处理 → 必须问你" |
-| **E 象限（AI 推断）** | AI 自己猜的部分 | "我猜你希望加 BGM（你没明说）" |
+| **E 象限（AI 文本解析）** | AI 把自由文本对照路由表解析后生成的候选 ops | "你说'音量小放大 1.5x' → 我匹配到 ops.volume.factor=1.5（请确认）" |
 | **F 象限（未覆盖）** | 字段没处理 | "duration 字段我没用 → 不会影响你" |
+| **AI 文本解析 → 路由表匹配 → 用户确认** | 自由文本字段（notes / overall_intent）的标准处理流程 | "原话 → 对照路由表 → 生成候选 ops → 让用户确认" |
 | **xfade / 转场** | 两段视频之间的过渡效果 | "两段视频之间来个 1 秒淡入淡出" |
 | **fade-in / 淡入** | 单段视频开头从黑渐显 | "这段视频开头加 1 秒淡入" |
 | **fade-out / 淡出** | 单段视频结尾渐黑 | "这段视频结尾加 1 秒淡出" |
@@ -921,18 +1115,26 @@ stages:
 | `version` | 顶层 | string | `"v0.5"` / `"v1.0"` / `"v1.2"` | schema 版本，AI 不修改 |
 | `_meta.revision` | 顶层 | int | `1`, `2`, `3`... | intent.json 修订号，每次保存 +1 |
 | `project.name` | 顶层 | string | 任意 | vlog 项目名（"DAY 2 减脂日记"） |
-| `project.overall_intent` | 顶层 | string | 任意自然语言 | E 象限：AI 推断（用户没结构化） |
+| `project.title` | 顶层 | string | 任意 | vlog 成片最终标题（成片文件名来源，例 "DAY 2 减脂日记" → `DAY_2_减脂日记.mp4`） |
+| `project.overall_intent` | 顶层 | string | 任意自然语言 | E 象限：AI 文本解析 → 路由表匹配 → 用户确认 |
 | `project.target_length` | 顶层 | int | **秒** | 目标时长（如 `180` = 3 分钟） |
 | `output.aspect_ratio` | 顶层 | string | `"9:16"` / `"16:9"` / `"1:1"` / `"4:3"` / `"custom"` | 输出宽高比 |
 | `output.aspect_ratio_custom` | 顶层 | string | `"W:H"`（自定义比例） | aspect_ratio="custom" 时必填 |
 | `output.aspect_handling` | 顶层 | string | `"aspect-fill"` / `"aspect-fit"` | 比例处理：填满 vs 加黑边 |
+| `output.fps` | 顶层 | int | **默认 30**（v1.3 写死，html UI 暂不允许配置） | 输出帧率（v1.3 默认 30，未来启用 html UI 可配） |
+| `output.video_codec` | 顶层 | string | **默认 `h264`**（v1.3 写死） | 视频编码 |
+| `output.audio_codec` | 顶层 | string | **默认 `aac`**（v1.3 写死） | 音频编码 |
+| `output.audio_sample_rate` | 顶层 | int | **默认 44100**（v1.3 写死） | 音频采样率 |
+| `output.audio_channels` | 顶层 | int | **默认 2**（v1.3 写死） | 音频声道数（1=mono, 2=stereo） |
+| `output.pixel_format` | 顶层 | string | **默认 `yuv420p`**（v1.3 写死） | 像素格式（兼容性最好） |
 | `cover.type` | 顶层 | string | `"ai"` / `"text"` / `"image"` | 封面生成方式（推荐 `"ai"`） |
 | `cover.prompt` | 顶层 | string | 英文 prompt 优先 | AI 生图 prompt（参考 `references/08-cover.md`） |
-| `ending.type` | 顶层 | string | `"fade"` / `"freeze"` / `"next-day"` / `"text"` | 结尾风格 |
+| `ending.type` | 顶层 | string | `"fade"` / `"freeze"` / `"next-day"` / `"text"` | 结尾风格（详见下方 ending.type 路由说明） |
 | `ending.prompt` | 顶层 | string | 英文/中文 | 结尾文字 / 主题（参考 §阶段 4 模板） |
 | `videos[i].file` | 数组 | string | 文件名（如 `"video_01.mp4"`） | 源视频相对路径 |
+| `videos[i].voice` | 数组元素 | string | `keep` / `keep-with-filler-removed` / `mute` / `bgm-only` / `original-with-bgm` | 音轨处理策略：保留 / 保留并去水词 / 静音 / 只留 BGM / 原声+BGM混合 |
 | `videos[i].ops` | 数组 | object | 见 §G. op 白名单 | 每个视频的操作（多个 op 可组合） |
-| `videos[i].notes` | 数组 | string | 任意自然语言 | E 象限：AI 推断（用户没结构化） |
+| `videos[i].notes` | 数组 | string | 任意自然语言 | E 象限：AI 文本解析 → 路由表匹配 → 用户确认 |
 | `sequences[i].videos` | 数组 | string[] | 文件名列表（顺序敏感） | 强制播放顺序（必须在 sequence 内） |
 | `sequences[i].transitions` | 数组 | object[] | `{after, type, duration}` 列表 | sequence 内部转场（每段之间） |
 | `sequences[i].transitions[j].after` | 数组元素 | int | video index | 表示"在 index 这段之后"的转场 |
@@ -944,6 +1146,30 @@ stages:
 - 看 `references/01-XX.md` 的 §调用范式 + §参数 段——所有字段都有出处
 - AI 路由时**严格按 op 白名单**调 CLI（不要瞎传参）
 - 字段没 op 对应 → F 象限（明确说"这个字段我不处理"）
+
+#### ending.type 路由（阶段 4，AI 必读）
+
+| 值 | 路由 | 备注 |
+|---|---|---|
+| `fade` | `video_fade.py --fade-out N` | atomic CLI：视频结尾淡出 + 音轨淡出 |
+| `freeze` | `video_freeze.py --freeze N --padding-mode {clone\|black}` | atomic CLI：最后一帧定格 N 秒（clone=克隆 / black=黑屏） |
+| `next-day` | `video_opening.py` + 黑屏源视频 | atomic CLI：黑屏 + "DAY N+1 即将开始" 文字 |
+| `text` | `video_subtitle.py` + srt | atomic CLI：烧结尾文字 |
+
+**中文 drawtext 注意点**（`next-day` 必读）：
+
+- 调 `video_opening.add_text(input, output, text=..., region=..., duration=...)`，**不要自己拼 drawtext filter 字符串**——Windows 中文乱码坑很深
+- `video_opening.py` 内部已处理 `escape_fontpath`（`C\:/Windows/Fonts/xxx.ttf`）和 `escape_drawtext`（`:` `\` `%` `'` escape）
+- 推荐字体（按顺序回退）：`C:/Windows/Fonts/msyh.ttc` → `simhei.ttf` → `simsun.ttc` → `Deng.ttf`（黑体）
+
+#### cover.type 路由（阶段 4，AI 必读）
+
+| 值 | 路由 | 备注 |
+|---|---|---|
+| `ai` | `ai_cover.py --prompt <cover.prompt> --text <文字>` | AI 生图 + 叠字（**cover.prompt 不明 AI 必须问**） |
+| `text` | `ai_cover.py --text <文字>`（无 --prompt 时不生图） | 纯文字封面（需提供背景图或纯色，**AI 必须问用户**） |
+
+**`cover.type='image'` 当前不支持**（intent.html 没字段承载图片路径）—— AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text"。
 
 ### AI 交互式采访触发条件（v1.0 强制）
 
@@ -1010,5 +1236,6 @@ stages:
 | 15 | **v1.0**：未约束视频不在 Step 3 处理，留给模板工作流 Stage 顺序阶段 |
 | 16 | **v1.0**：Step 2 每处理完一个视频立即向用户汇报（产物路径 + 摘要 + 异常） |
 | 17 | **v1.0**：不硬编码项目内容；所有流程描述用通用 schema |
-| 18 | **v1.0**：AI 推断必须显式标记（操作清单 E 象限），不混淆用户明确项 |
+| 18 | **v1.3**：AI 文本解析 → 路由表匹配 → 用户确认（自由文本字段处理流程） |
+| 19 | **v1.3**：完整字段 → atomic CLI 路由表（A/B/C/D 四类）是 AI 路由的唯一真理 |
 

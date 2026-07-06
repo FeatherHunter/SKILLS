@@ -1,53 +1,70 @@
-# 07-audio - 音频 — v1.2 已实现
+# 07-audio - 音频 — v1.3 已实现
 
 > **对应脚本**: `scripts/audio_bgm.py` + `scripts/audio_beat.py`
 > **触发词**: "BGM"、"加音乐"、"配乐"、"背景音乐"、"循环"、"淡入"、"淡出"、"混音"、"音量"、"音频降噪"
-> **实测状态**: ✅ 验证通过
+> **实测状态**: ✅ 验证通过（v1.3 9 场景严格测试 0 BUG）
 
 ---
 
-## 1. 调用范式
-
-### 场景 1
+## 1. 调用范式（v1.3 新增完整参数）
 
 ```bash
-# BGM 循环混音
+# v1.2 向后兼容: 全段 loop 模式(短 BGM 循环)
 python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
 
-# 节拍卡点
+# v1.3 新增: BGM 只在视频 10-20s 段播放
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --start 10 --end 20 --output out.mp4
+
+# v1.3 新增: 全段 + 起始 1s 淡入 + 末尾 2s 淡出
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+  --bgm-fade-in 1 --bgm-fade-out 2 --output out.mp4
+
+# v1.3 新增: 时长不匹配处理(truncate)
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+  --start 5 --end 15 --match-mode truncate --output out.mp4
+
+# v1.3 新增: 时长不匹配处理(silence-end, BGM 播完就静)
+python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+  --start 0 --end 10 --match-mode silence-end --output out.mp4
+```
+
+### 节拍卡点(原 v1.2 行为)
+
+```bash
 python scripts/audio_beat.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
 ```
 
-### 场景 2
+## 2. 参数（v1.3 完整版）
 
-```bash
-ffmpeg -i video.mp4 -i bgm.mp3 \
-  -filter_complex "[1:a]volume=0.5[bgm];\
-                   [0:a][bgm]amix=inputs=2:duration=first[a]" \
-  -map 0:v -map [a] \
-  -c:v copy -c:a aac -b:a 128k \
-  out.mp4
-```
-
-### 场景 3
-
-```bash
-ffmpeg -i video.mp4 -stream_loop -1 -i bgm.mp3 \
-  -filter_complex "[0:a]volume=1.0[a0];\
-                   [1:a]volume=0.18,aloop=loop=-1:size=2e9[a1];\
-                   [a0][a1]amix=inputs=2:duration=first:dropout_transition=0[a]" \
-  -map 0:v -map [a] \
-  -c:v libx264 -preset medium -crf 20 \
-  -c:a aac -b:a 128k \
-  out.mp4
-```
-
-## 2. 参数
-
-| 参数 | 短选项 | 默认值 | 说明 |
+| 参数 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
-| `--output` | `-o` | (必填) | 输出路径 |
+| `--input` / `--video` | path | (必填) | 输入视频文件 |
+| `--bgm` | path | (必填) | BGM 音频文件 |
+| `--output` | path | (必填) | 输出视频文件 |
+| `--volume` / `--bgm-volume` | float | 0.18 | BGM 音量（0-2，< 0.3 推荐，避免盖过人声）|
+| `--video-volume` | float | 1.0 | 原声音量（0-2）|
+| `--start` | float | 0 | **v1.3 新增**: BGM 在视频的起始时间（秒）|
+| `--end` | float | None | **v1.3 新增**: BGM 在视频的结束时间（秒，None=视频结尾）|
+| `--bgm-fade-in` | float | 0 | **v1.3 新增**: BGM 段开头淡入（秒）|
+| `--bgm-fade-out` | float | 0 | **v1.3 新增**: BGM 段末尾淡出（秒）|
+| `--match-mode` | str | `loop` | **v1.3 新增**: 时长不匹配处理（4 种,见下表）|
+
+### match-mode 4 种详解
+
+| mode | 短 BGM（< 视频）| 长 BGM（> 视频）| 何时用 |
+|---|---|---|---|
+| `loop`（默认）| 循环到视频长 | 截短到视频长 | v1.2 兼容，最常用 |
+| `truncate` | 截到视频长 | 截到视频长 | BGM 只需播一次 |
+| `silence-end` | 播完就静 | 播完就静 | BGM 是引子/片头 |
+| `ask` | — | — | AI 拿不准时**强制问用户**，不擅自决定 |
+
+### BGM 时间段控制（v1.3 严格测试已通过 9 场景）
+
+- **全段播放**（默认）: `--start 0`（`--end` 缺省 = 视频结尾）
+- **中段播放**: `--start 10 --end 20`（BGM 只在 10-20s 段播放，段外静音）
+- **叠加淡入淡出**: `--start 10 --end 20 --bgm-fade-in 1 --bgm-fade-out 1`
+- **BGM 段比 BGM 短**: 配 `--match-mode truncate` 或 `loop`
+- **BGM 段比 BGM 长**: 配 `--match-mode silence-end` 或 `loop`
 
 ## 3. 常见错误 / 限制
 

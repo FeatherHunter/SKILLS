@@ -75,18 +75,18 @@ metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } 
 
 **v1.2 当前状态**：
 - ✅ 协议层：SKILL.md + references/15 个子技能文档（一子技能一文档）
-- ✅ 代码层：scripts/ 36 个 + lib/ 6 个（v1.2 删了 modify.py + llm_client.py，executor.py 也删）
+- ✅ 代码层：scripts/ 30 个 + lib/ 6 个（v1.3 删 6 个 step 脚本 + v1.2 删 modify.py / llm_client.py / executor.py）
 - ✅ 命名统一：参数 `-i` `-o` `--start` `--output`（v1.2 patch）
 - ✅ 阶段 1 必走：操作清单 schema（6 象限）作为阶段 2 执行契约
-- ✅ 阶段 2：ASR 前置 + 6 个 pipeline step 脚本（pipeline_step1_check / pipeline_step2_asr / pipeline_step2_process / pipeline_step3_assemble / pipeline_step4_review / pipeline_step5_decide）
+- ✅ **v1.3 架构核心**：AI 是编排者，原子 CLI 是工具，step 脚本已删除
 - 🔄 模板库：当前 1 个（`健身vlog.yaml`），按类别扩展（教程vlog / VLOG 等）
-- ⏸️ lib/modify.py 序列操作是 stub
 
-**v1.2 关键设计**（详见 §主体流程 章节）：
+**v1.3 关键设计**（详见 §主体流程 章节）：
 - **阶段 0-4** 端到端流程（项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾）
 - 阶段 1 必走：**操作清单 schema**（6 象限）作为阶段 2 执行契约
-- 阶段 2 Step 2：**ASR 前置**，与单视频处理同步产出
-- 阶段 2 Step 4：**整体复核 + 模糊项兜底**（AI 不闷头猜）
+- 阶段 2：**AI 按 SKILL.md 文字描述，自己编排原子 CLI**（不再调 step 脚本）
+- 阶段 3：**AI 按 yaml 模板编排**（健身vlog.yaml 等）
+- 阶段 4：**AI 自己编排**烧字幕 + BGM + 封面 + 出成片
 - 三原则：**零硬编码 / 零遗漏 / 零猜测**
 - 工作区约定：`00_智剪/粗加工/`（单视频/组合/文字稿/中间产物/决策.md）
 
@@ -484,11 +484,34 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 
 
 
-#### 阶段 2 ▸ 粗加工（5 步）（v1.2 整合）
+#### 阶段 2 ▸ 粗加工（5 步）（v1.3 AI 编排版）
 
 **输入**：`intent.json` + 已确认操作清单（阶段 1 产物）
 **输出**：`00_智剪/粗加工/` 下 5 类文件
 **阶段契约**：阶段 1 操作清单是本阶段执行契约，无清单不进入本阶段（参见 [§操作清单 schema](#操作清单-schema)）
+
+**v1.3 AI 必读**：
+
+- **AI 是编排者**：阶段 2 流程由本节文字描述定义，AI 自己决定调哪些原子 CLI、按什么顺序
+- **不要调 step 脚本**：v1.3 已删除 6 个 `pipeline_step*.py`——AI 必须自己调原子 CLI（`video_xfade.py` / `video_fade.py` / `video_trim.py` 等）
+- **流程定义在 SKILL.md**：每个 Step 的"做什么"写在这里；"怎么做"AI 自己编排
+- **产物路径见下表**：每个 Step 的输出路径是契约，AI 必须写到指定位置
+
+**原子 CLI 路由参考**（AI 必读）：
+
+| AI 看到的字段 | 调哪个原子 CLI |
+|---|---|
+| `videos[i].ops.trim-head` / `trim-tail` / `pin-range` / `cut-middle` | `scripts/video_trim.py` |
+| `videos[i].ops.speed-up` / `slow-down` | `scripts/video_speed.py` |
+| `videos[i].ops.reverse` | `scripts/video_reverse.py` |
+| `videos[i].ops.fade-in` / `fade-out` | `scripts/video_fade.py` |
+| `videos[i].ops.opening-text` | `scripts/video_opening.py` |
+| `videos[i].ops.insert-image` | `scripts/video_overlay.py` |
+| `videos[i].ops.color` | `scripts/video_color.py` |
+| `videos[i].ops.subtitle` | `scripts/video_subtitle.py` |
+| `videos[i].ops.rotate` / `scale` / `crop` | `scripts/edit.py` |
+| `sequences[i].transitions[j].type` | `scripts/video_xfade.py` |
+| 多个 op 在同一视频上 | AI 串联调多次，或 import `lib/processing.py` 用 `build_video_filter()` 一次拼 |
 
 ---
 
@@ -634,36 +657,64 @@ AI 收到 intent.json 后，**自动检查工作区里的版本文件**：
 - 模板加载建议（v1.0 新增：基于操作清单 + 关键帧 + ASR 文字稿）
 - 进入模板工作流（阶段 3）
 
-#### 阶段 3 ▸ 模板工作流
+#### 阶段 3 ▸ 模板工作流（v1.3 yaml 驱动）
 
-**AI 必读**：阶段 2 每一步都有对应 step 脚本，AI 不应自己写新逻辑，必须调用现有脚本。
+**v1.3 状态**：模板工作流待设计。当前仅 `健身vlog.yaml` 一个雏形，引用了已删除的脚本，需重写。
 
-| Step | 调哪个脚本 | 做什么 |
-|---|---|---|
-| Step 1 解析 + 自检 | `scripts/pipeline_step1_check.py` | 解析 intent.json → 写 `中间产物/自检报告.json` |
-| Step 2.1 ASR 优先 | `scripts/pipeline_step2_asr.py` | 批量 Whisper 转录 → `文字稿/视频_{idx}.md` |
-| Step 2.2 单视频处理 | `scripts/pipeline_step2_process.py` | 基于 ASR 优化 + 处理 → `单视频/video_{idx}.mp4` |
-| Step 3 sequence 拼接 | `scripts/pipeline_step3_assemble.py` | xfade 链按 sequence 拼 → `组合/seq_<name>.mp4` |
-| Step 4 模糊项兜底 | `scripts/pipeline_step4_review.py` | 跟用户逐条澄清 → `模糊项处理记录.md` |
-| Step 5 决策报告 | `scripts/pipeline_step5_decide.py` | 写决策报告 + 模板建议 → `决策.md` |
+**v1.3 AI 必读**：
 
-**顶层编排入口**：AI 按 §AI 协作协议 v1.2 强制 加载顺序，**REQUIRED: 读 references/XX.md**，然后调 scripts/pipeline_step*.py。**v1.2 删除了 executor.py**——AI 不要一键跑完，要逐步调每步跟用户交互。
+- **流程定义在 yaml**：阶段 3 与阶段 2 不同——阶段 3 的"做什么"在 yaml 模板里（不是 SKILL.md 文字）
+- **AI 读 yaml 自己编排**：加载 `模板/<name>.yaml` 后，AI 按 yaml 里的 stages 顺序编排原子 CLI
+- **yaml 不同 = 成片风格不同**：健身vlog.yaml / 美食.yaml / 通用.yaml → 各自有 stages 编排
+
+**yaml 模板契约**（待设计）：
+
+```yaml
+# 健身vlog.yaml / 美食.yaml / 通用.yaml
+stages:
+  - id: <stage_id>
+    name: <stage 名称>
+    ai_prompt: <AI 引导用户的话>
+    user_input: <用户怎么回答>
+    ai_action: <AI 调哪些原子 CLI,顺序如何>
+    next: <下一个 stage>
+```
+
+**当前唯一模板**：`模板/健身vlog.yaml` —— **已知失效**（引用了已删的 `modify.py speed` / `executor.py concat_final`），需重写。**当前建议跳过阶段 3**，直接走阶段 4。
 
 ```
+待重写工作流:
 - AI 推荐模板（按操作清单 + 关键帧 + ASR）
 - 用户确认
 - 加载 模板/<name>.yaml
 - 按 stage 一来一回（每 stage AI 提方案 → 用户点头 → 执行）
 ```
 
-#### 阶段 4 ▸ 收尾成片
+#### 阶段 4 ▸ 收尾成片（v1.3 AI 编排）
 
-```
-- 烧字幕（按 ASR 文字稿）
-- BGM 混合
-- 封面生成 → 00_智剪/成片/cover.jpg（按 cover.prompt，prompt 不明时 AI 必须问）
-- 输出成片: 00_智剪/成片/vlog_final.mp4
-```
+**输入**：阶段 2/3 产物 + `intent.json.cover` + `intent.json.ending`
+**输出**：`00_智剪/成片/vlog_final.mp4` + `00_智剪/成片/cover.jpg`
+
+**v1.3 AI 必读**：
+
+- **AI 编排** 4 件事：烧字幕 + BGM 混合 + 封面生成 + 拼成片
+- **不调 step 脚本**（v1.3 已删），AI 自己调原子 CLI
+
+**AI 编排步骤**：
+
+| Step | 做什么 | 调哪个原子 CLI |
+|---|---|---|
+| 4.1 烧字幕 | 把 `文字稿/视频_{idx}.md` 的字幕烧到视频 | `scripts/video_subtitle.py` |
+| 4.2 BGM 混合 | 按 `intent.json.output.bgm` 或操作清单加 BGM | `scripts/audio_bgm.py` |
+| 4.3 封面生成 | 按 `intent.json.cover.prompt` 生成封面（prompt 不明时 AI 必须问） | `scripts/ai_cover.py` |
+| 4.4 拼成片 | 烧完字幕 + BGM 后拼成 `vlog_final.mp4` | `scripts/video_xfade.py` 或 `scripts/edit.py`（按需拼接） |
+
+**AI 必读规则**：
+
+- `cover.prompt` 不明时 **必须问用户**，不闷头猜（零猜测原则）
+- 烧字幕时若 `voice == 'mute'`，跳过烧字幕
+- BGM 混合前 AI 必须问用户"加什么 BGM / 音量多少"（操作清单 D 象限已确认则直接用）
+- 拼成片路径：`00_智剪/成片/vlog_final.mp4`——这是契约，AI 必须写到这里
 
 ### 操作清单 schema（v1.0 强制）
 

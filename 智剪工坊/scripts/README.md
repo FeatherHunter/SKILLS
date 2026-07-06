@@ -69,16 +69,7 @@
 |---|---|---|
 | `edit.py` | edit.py | 16 edit（14 子命令） |
 
-## 流程编排（pipeline_*）
-
-| 脚本 | 旧名 | 调用于 |
-|---|---|---|
-| `pipeline_step1_check.py` | step1_check_intent.py | §阶段 2 Step 1（解析 + 自检） |
-| `pipeline_step2_asr.py` | step2_1_asr.py | §阶段 2 Step 2.1（ASR 优先） |
-| `pipeline_step2_process.py` | step2_2_process.py | §阶段 2 Step 2.2（单视频处理） |
-| `pipeline_step3_assemble.py` | step3_assemble.py | §阶段 2 Step 3（sequence 拼接） |
-| `pipeline_step4_review.py` | step4_fallback.py | §阶段 2 Step 4（模糊项兜底） |
-| `pipeline_step5_decide.py` | step5_decision.py | §阶段 2 Step 5（决策报告） |
+> **v1.3 架构变更**：流程编排（pipeline_step*.py）已**全部删除**——AI 是编排者，原子 CLI 是工具，详见 SKILL.md §阶段 2 / §阶段 4。
 
 ---
 
@@ -88,15 +79,16 @@
 <dimension>_<action>.py
 ```
 
-- **dimension**：6 个值之一（`video` / `audio` / `ai` / `batch` / `edit` / `pipeline`）
+- **dimension**：5 个值之一（`video` / `audio` / `ai` / `batch` / `edit`）
 - **action**：动词短语（小写 + 下划线），描述"做什么"
 - **不适用**：单字名（`cut.py`、`fx.py`）、混合风格名（`color_style.py`、`bgm_loop.py`）已废弃
+- **v1.3 删除**：`pipeline_*` 维度已废弃——流程编排由 AI 在 SKILL.md 文字描述驱动
 
 ## 添加新脚本 checklist
 
-1. 选 dimension（video/audio/ai/batch/edit/pipeline）
+1. 选 dimension（video/audio/ai/batch/edit）
 2. 命名 `<dimension>_<动作>.py`
-3. 加 SKILL.md §14 子技能索引（如是新能力）或 §主体流程（如是 step 脚本）
+3. 加 SKILL.md §G.1 / §G.2 / §H 字段映射表（如是新 op / 新字段）
 4. 加 references/XX.md（如需详细文档）
 5. 在本 README.md 表格加一行
 
@@ -112,6 +104,5 @@ python scripts/video_trim.py -i in.mp4 -o out.mp4 --start 30 --duration 20
 # 子命令（edit.py）
 python scripts/edit.py remove -i v.mp4 -o out.mp4 --mode head --seconds 3
 
-# 流程（pipeline）
-python scripts/pipeline_step1_check.py /path/to/intent.json
+# v1.3: AI 自己编排，不要调已删除的 pipeline_step*.py
 ```

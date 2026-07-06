@@ -241,11 +241,11 @@
 
 | # | 子技能 | 脚本 | 状态 | 实测数据 |
 |---|---|---|---|---|
-| 12 | **美颜** | `scripts/beauty.py` | ✅ | 真人脸测试通过 |
-| 13 | **改词翻唱** | `scripts/rewrite_audio.py` | ✅ | 20s → 11.8s,省 41% 时长 |
-| 14 | **文字成片** | `scripts/text_to_video.py` | ⚠️ 代码 ✅ 实测 ❌ | mmx 配额限制 |
-| 15 | **数字人** | `scripts/digital_human.py` | ⚠️ 代码 ✅ 实测 ❌ | mmx 配额限制 |
-| 09-7 | **去水词** | `scripts/remove_fillers.py` | ✅ | 20s → 16.7s,切 10 个水词 |
+| 12 | **美颜** | `scripts/ai_beauty.py` | ✅ | 真人脸测试通过 |
+| 13 | **改词翻唱** | `scripts/ai_rewrite.py` | ✅ | 20s → 11.8s,省 41% 时长 |
+| 14 | **文字成片** | `scripts/ai_text_to_video.py` | ⚠️ 代码 ✅ 实测 ❌ | mmx 配额限制 |
+| 15 | **数字人** | `scripts/ai_digital_human.py` | ⚠️ 代码 ✅ 实测 ❌ | mmx 配额限制 |
+| 09-7 | **去水词** | `scripts/ai_fillers.py` | ✅ | 20s → 16.7s,切 10 个水词 |
 
 **核心创新:** LLM 判断放在 Mavis agent(我)这边,**不走 daemon subprocess,避开 token 失效**。
 **word-level 时间戳:** faster-whisper `word_timestamps=True`,精准切单字水词。
@@ -304,7 +304,7 @@
 
 **现象:** matrix 生图对中文/数字支持差(90% 渲染错)
 **解决:** 拆成两步 —— 先生成视觉(无文字),后用 PIL 叠中文
-**代码位置:** `scripts/cover_ai.py` 已用两步法
+**代码位置:** `scripts/ai_cover.py` 已用两步法
 
 ### Bug 4:reframe.py 的 f-string 冲突
 
@@ -387,37 +387,37 @@ Step 7: AI 生图封面 + 中文叠字
 
 **美颜:**
 ```bash
-python scripts/beauty.py --input v.mp4 --output v_beauty.mp4 --preset natural
+python scripts/ai_beauty.py --input v.mp4 --output v_beauty.mp4 --preset natural
 ```
 
 **去水词(2 段式):**
 ```bash
 # Step 1: 转录(SRT + words.json)
-python scripts/remove_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/ai_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
 # Step 2: (Mavis 读 words.json,标水词)
 # Step 3: 切掉水词
-python scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
+python scripts/ai_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
 ```
 
 **改词翻唱(2 段式):**
 ```bash
 # Step 1: transcribe
-python scripts/rewrite_audio.py transcribe --input v.mp4 --srt v.srt
+python scripts/ai_rewrite.py transcribe --input v.mp4 --srt v.srt
 # Step 2: (Mavis 改写文案,选 voice_id)
 # Step 3: synthesize
-python scripts/rewrite_audio.py synthesize --text "..." --voice male-qn-jingying --out v_new.mp3
+python scripts/ai_rewrite.py synthesize --text "..." --voice male-qn-jingying --out v_new.mp3
 # Step 4: replace
-python scripts/rewrite_audio.py replace --video v.mp4 --audio v_new.mp3 --out v_final.mp4
+python scripts/ai_rewrite.py replace --video v.mp4 --audio v_new.mp3 --out v_final.mp4
 ```
 
 **文字成片:**
 ```bash
-python scripts/text_to_video.py --prompt "A man running, cinematic" --out out.mp4
+python scripts/ai_text_to_video.py --prompt "A man running, cinematic" --out out.mp4
 ```
 
 **数字人:**
 ```bash
-python scripts/digital_human.py --avatar avatar.jpg --script "大家好" --out out.mp4
+python scripts/ai_digital_human.py --avatar avatar.jpg --script "大家好" --out out.mp4
 ```
 
 ---

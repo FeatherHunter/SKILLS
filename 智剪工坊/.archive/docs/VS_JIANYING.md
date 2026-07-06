@@ -57,10 +57,10 @@
 **智剪工坊:**
 ```bash
 # 1. 转录(生成 SRT + words.json)
-python scripts/remove_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/ai_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
 # 2. Mavis agent 读 SRT,标水词
 # 3. 切掉水词(只切那几个字,不动其他帧)
-python scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt \
+python scripts/ai_fillers.py cut --input vlog.mp4 --srt vlog.srt \
   --output clean.mp4 --remove-words "1,3,11,12,19,28,37,38,39,45"
 ```
 
@@ -74,7 +74,7 @@ python scripts/remove_fillers.py cut --input vlog.mp4 --srt vlog.srt \
 ```bash
 # 批量对 100 个视频美颜(改 batch.py 接入 beauty task)
 for f in videos/*.mp4; do
-  python scripts/beauty.py --input "$f" --output "out/$f" --preset natural
+  python scripts/ai_beauty.py --input "$f" --output "out/$f" --preset natural
 done
 ```
 
@@ -99,13 +99,13 @@ done
 **智剪工坊:**
 ```bash
 # 文字成片
-python scripts/text_to_video.py --prompt "..." --out part1.mp4
+python scripts/ai_text_to_video.py --prompt "..." --out part1.mp4
 
 # 数字人
-python scripts/digital_human.py --avatar my_face.jpg --script "..." --out part2.mp4
+python scripts/ai_digital_human.py --avatar my_face.jpg --script "..." --out part2.mp4
 
 # 拼接
-python scripts/cut.py concat --list clips.txt --out final.mp4
+python scripts/video_trim.py concat --list clips.txt --out final.mp4
 ```
 
 **优势:** prompt 自由写,头像自由选,声音自由选。

@@ -233,12 +233,12 @@
 ### ✨ 新增
 
 #### C 路线(战略 API 集成)
-- **`scripts/text_to_video.py`** —— 文字成片(默认接 mmx matrix MCP,免费)
+- **`scripts/ai_text_to_video.py`** —— 文字成片(默认接 mmx matrix MCP,免费)
   - `matrix_gen_videos` text-to-video 模式
   - 6s/10s 时长,1080P/768P 分辨率
   - 自动下载 CDN URL 到本地
   - 其他 API(kling/vidu/runway/svd)框架保留(占位)
-- **`scripts/digital_human.py`** —— 数字人(用真人头像 + 文案/音频)
+- **`scripts/ai_digital_human.py`** —— 数字人(用真人头像 + 文案/音频)
   - `matrix_gen_videos` subject 模式(保持人脸一致)
   - 自动 TTS 合成文案(用 mmx TTS,fallback edge-tts)
   - ffmpeg 合音频到生成的人脸视频
@@ -283,7 +283,7 @@
 ## v0.4 (2026-07-03) - 改词翻唱 L2
 
 ### ✨ 新增
-- **`scripts/rewrite_audio.py`** —— 改词翻唱 L2(agent-driven)
+- **`scripts/ai_rewrite.py`** —— 改词翻唱 L2(agent-driven)
   - 三个子命令:transcribe(Whisper) / synthesize(matrix TTS) / replace(ffmpeg)
   - 用 matrix MCP 的 327 个预置声音做 TTS
   - CDN URL 自动下载到本地
@@ -302,7 +302,7 @@
 ## v0.3 (2026-07-03) - 美颜 L2 + 重大 bug 修复
 
 ### ✨ 新增
-- **`scripts/beauty.py`** —— 美颜 L2 标准版
+- **`scripts/ai_beauty.py`** —— 美颜 L2 标准版
   - 4 个独立子能力:磨皮 + 美白 + 瘦脸 + 大眼
   - 5 个 preset:`off` / `slight` / `natural` / `strong` / `max`
   - 底层:mediapipe 0.10 tasks.FaceLandmarker(478 关键点)
@@ -310,7 +310,7 @@
   - 自动下载模型(3.7MB 一次性)
   - 视频逐帧处理 + 音频自动 mux
   - 图片 + 视频双模式
-- **`scripts/remove_fillers.py`** —— AI 去水词(两段式,无 LLM token 依赖)
+- **`scripts/ai_fillers.py`** —— AI 去水词(两段式,无 LLM token 依赖)
   - 架构:transcribe(Whisper → SRT + words.json)+ cut(句/词索引 → 切视频)
   - **word-level 时间戳支持**:transcribe 多输出 `.words.json`(每词 start/end/word/sentence)
   - **cut 双模式**:`--remove 1,3,5`(句,粗)或 `--remove-words 2,5,12`(词,精准,推荐)
@@ -344,7 +344,7 @@
 - ✅ 10/10 Python 依赖就位
 - ✅ beauty 4 个 preset 真实人脸图测试通过(biden + two_people)
 - ✅ 解决 mediapipe Windows 中文路径 bug
-- **`scripts/rewrite_audio.py`** —— 改词翻唱 L2(agent-driven)
+- **`scripts/ai_rewrite.py`** —— 改词翻唱 L2(agent-driven)
   - 三个子命令:transcribe(Whisper) / synthesize(matrix TTS) / replace(ffmpeg)
   - 用 matrix MCP 的 327 个预置声音做 TTS(中文/英/日/韩等 22 种语言)
   - CDN URL 自动下载到本地

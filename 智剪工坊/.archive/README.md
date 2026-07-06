@@ -44,7 +44,7 @@ python verify.py
 python scripts\cut.py trim --input your_video.mp4 --ss 30 --t 60 --output out.mp4
 
 # Mac/Linux
-python3 scripts/cut.py trim --input your_video.mp4 --ss 30 --t 60 --output out.mp4
+python3 scripts/video_trim.py trim --input your_video.mp4 --ss 30 --t 60 --output out.mp4
 ```
 
 🎉 完事。
@@ -101,7 +101,7 @@ python scripts/pipeline_vlog.py run \
 ### B. 视频加 BGM
 
 ```bash
-python scripts/bgm_loop.py --video vlog.mp4 --bgm bgm.mp3 --volume 0.18 --out vlog_bgm.mp4
+python scripts/audio_bgm.py --video vlog.mp4 --bgm bgm.mp3 --volume 0.18 --out vlog_bgm.mp4
 ```
 
 ### C. 批量加转场(20 个视频一次过)
@@ -113,13 +113,13 @@ python scripts/batch.py xfade --input videos/ --output joined/ --type fade --dur
 ### D. AI 改字幕风格
 
 ```bash
-python scripts/auto_subtitle.py --input vlog.mp4 --style cinematic --output subtitled.mp4
+python scripts/video_subtitle.py --input vlog.mp4 --style cinematic --output subtitled.mp4
 ```
 
 ### E. 视频翻译(中→英)
 
 ```bash
-python scripts/translate.py --input chinese.mp4 --target-lang en --output english.mp4
+python scripts/ai_translate.py --input chinese.mp4 --target-lang en --output english.mp4
 ```
 
 ---

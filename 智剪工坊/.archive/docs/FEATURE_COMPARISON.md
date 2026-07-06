@@ -69,27 +69,27 @@
 
 | 缺口 | 实现 | 状态 |
 |---|---|---|
-| 倒放 | `scripts/reverse.py` | ✅ |
-| 曲线变速 | `scripts/speed.py` | ✅ |
-| 画中画 | `scripts/overlay.py` | ✅ |
-| 蒙版(基础) | `scripts/mask.py` | ✅ |
-| 变声 | `scripts/voice_change.py` | ✅ |
-| 风格化滤镜 | `scripts/color_style.py` | ✅ |
-| 节拍卡点 | `scripts/beat_sync.py` | ✅ |
+| 倒放 | `scripts/video_reverse.py` | ✅ |
+| 曲线变速 | `scripts/video_speed.py` | ✅ |
+| 画中画 | `scripts/video_overlay.py` | ✅ |
+| 蒙版(基础) | `scripts/video_mask.py` | ✅ |
+| 变声 | `scripts/audio_voice.py` | ✅ |
+| 风格化滤镜 | `scripts/video_color.py` | ✅ |
+| 节拍卡点 | `scripts/audio_beat.py` | ✅ |
 
 ### P1 已补(2026-07-03 v0.5 前)
 
 | 缺口 | 实现 | 状态 |
 |---|---|---|
-| AI 字幕自动生成 | `scripts/auto_subtitle.py` | ✅ |
-| 多机位剪辑 | `scripts/multicam.py` | ✅ |
-| AI 场景检测 | `scripts/scene_detect.py` | ✅ |
-| 自动重新构图 | `scripts/reframe.py` | ✅ |
-| 风格迁移 | `scripts/style_transfer.py` | ✅ |
-| 关键帧动画 | `scripts/keyframe.py` | ✅ |
-| HDR 导入导出 | `scripts/hdr_io.py` | ✅ |
-| AI 抠图 | `scripts/cutout.py` | ✅ |
-| 金句检测 | `scripts/quotes.py` | ✅ |
+| AI 字幕自动生成 | `scripts/video_subtitle.py` | ✅ |
+| 多机位剪辑 | `scripts/video_multicam.py` | ✅ |
+| AI 场景检测 | `scripts/video_scene.py` | ✅ |
+| 自动重新构图 | `scripts/video_reframe.py` | ✅ |
+| 风格迁移 | `scripts/video_style.py` | ✅ |
+| 关键帧动画 | `scripts/video_keyframe.py` | ✅ |
+| HDR 导入导出 | `scripts/video_hdr.py` | ✅ |
+| AI 抠图 | `scripts/ai_cutout.py` | ✅ |
+| 金句检测 | `scripts/ai_quotes.py` | ✅ |
 | 批量处理 | `scripts/batch.py` | ✅ |
 
 ### P2 战略差异(智剪工坊独有)已补
@@ -97,14 +97,14 @@
 | 缺口 | 实现 | 状态 |
 |---|---|---|
 | **批量自动化** | `scripts/batch.py` | ✅ |
-| **金句自动检测** | `scripts/quotes.py` | ✅ |
-| **AI 抠图** | `scripts/cutout.py` | ✅ |
-| **AI 文字成片** | `scripts/text_to_video.py` | ✅ |
-| **AI 数字人** | `scripts/digital_human.py` | ✅ |
-| **美颜 CLI** | `scripts/beauty.py` | ✅ |
-| **去水词** | `scripts/remove_fillers.py` | ✅ |
-| **改词翻唱** | `scripts/rewrite_audio.py` | ✅ |
-| 视频翻译 | `scripts/translate.py` | ⚠️ 占位(转 TTS 用 rewrite_audio) |
+| **金句自动检测** | `scripts/ai_quotes.py` | ✅ |
+| **AI 抠图** | `scripts/ai_cutout.py` | ✅ |
+| **AI 文字成片** | `scripts/ai_text_to_video.py` | ✅ |
+| **AI 数字人** | `scripts/ai_digital_human.py` | ✅ |
+| **美颜 CLI** | `scripts/ai_beauty.py` | ✅ |
+| **去水词** | `scripts/ai_fillers.py` | ✅ |
+| **改词翻唱** | `scripts/ai_rewrite.py` | ✅ |
+| 视频翻译 | `scripts/ai_translate.py` | ⚠️ 占位(转 TTS 用 rewrite_audio) |
 
 ### P3 不补(剪映特色 / 不切实际)
 

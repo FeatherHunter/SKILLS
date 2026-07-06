@@ -13,7 +13,18 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+# v1.3: video_normalize 集成需要 log_info / log_warn
+if str(Path(__file__).parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).parent))
+try:
+    from common import log_info, log_warn
+except ImportError:
+    # common.py 不在同目录时 fallback 静默（不影响主功能）
+    def log_info(msg: str) -> None: print(f"[INFO] {msg}")
+    def log_warn(msg: str) -> None: print(f"[WARN] {msg}")
 
 
 # ========== 时间解析 ==========
@@ -162,12 +173,47 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
 
     if 'pin-range' in ops and ops['pin-range'].get('on'):
         pr = ops['pin-range']
-        start = parse_time(pr.get('from', '0')) or 0
-        end = parse_time(pr.get('to', '0')) or 0
-        if end <= start:
-            end = start + 1
-        v_filters.append(f"trim=start={start}:end={end},setpts=PTS-STARTPTS")
-        a_filters.append(f"atrim=start={start}:end={end},asetpts=PTS-STARTPTS")
+        # 解析段列表: ranges 优先,fallback 到 from/to
+        pin_segs = []
+        if 'ranges' in pr and isinstance(pr['ranges'], list) and pr['ranges']:
+            for r in pr['ranges']:
+                if not isinstance(r, dict):
+                    continue
+                f = parse_time(r.get('from', '0')) or 0
+                t = parse_time(r.get('to', '0')) or 0
+                if t > f:
+                    pin_segs.append((f, t))
+        else:
+            f = parse_time(pr.get('from', '0')) or 0
+            t = parse_time(pr.get('to', '0')) or 0
+            if t <= f:
+                t = f + 1  # 向后兼容:单段 from/to 错误时 fallback +1s
+            pin_segs.append((f, t))
+
+        if pin_segs:
+            # 排序 + 合并重叠
+            pin_segs.sort()
+            merged = [pin_segs[0]]
+            for f, t in pin_segs[1:]:
+                if f <= merged[-1][1]:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], t))
+                else:
+                    merged.append((f, t))
+
+            # 多段 → 必须用 filter_complex concat;v_filters/a_filters 是单 filter 链,放不下
+            # 标记"需要特殊处理",在下面 build filter 时把 pin-range 拆出来
+            # 简单方案: 多段时退到 aspect-fit 路径,直接生成 filter_complex
+            # 这里先记录,稍后处理
+            if len(merged) > 1:
+                # 多段 pin-range: 用 build_pin_range_multi 替代普通 filter 链
+                return _build_pin_range_multi_filter(merged, target_w, target_h,
+                                                     rotation=rotation,
+                                                     aspect_handling=aspect_handling)
+            else:
+                # 单段保持原行为
+                f, t = merged[0]
+                v_filters.append(f"trim=start={f}:end={t},setpts=PTS-STARTPTS")
+                a_filters.append(f"atrim=start={f}:end={t},asetpts=PTS-STARTPTS")
 
     if 'trim-head' in ops and ops['trim-head'].get('on'):
         sec = ops['trim-head'].get('sec', 0) or 0
@@ -259,11 +305,45 @@ def build_cut_middle_filter(cm, target_w=1920, target_h=1080, rotation=0, aspect
     aspect_handling:
       - 'aspect-fill': 旋转并填满（rotation != 0 → counter-rotate）
       - 'aspect-fit':  保持原始显示方向（rotation == 0 → 不旋转）
+
+    支持单段（向后兼容）和多段（v1.3 新增）：
+      单段：{on: True, from: "00:00:05", to: "00:00:10"}
+      多段：{on: True, ranges: [
+        {from: "00:00:05", to: "00:00:10"},
+        {from: "00:00:20", to: "00:00:25"},
+      ]}
+    多段含义：切掉所有列出的段，剩余的 concat 起来。
     """
-    cut_start = parse_time(cm.get('from', '0')) or 0
-    cut_end = parse_time(cm.get('to', '0')) or 0
-    if cut_end <= cut_start:
+    # 解析段列表：ranges 优先；fallback 到 from/to
+    segments = []
+    if 'ranges' in cm and isinstance(cm['ranges'], list) and cm['ranges']:
+        for r in cm['ranges']:
+            if not isinstance(r, dict):
+                continue
+            f = parse_time(r.get('from', '0')) or 0
+            t = parse_time(r.get('to', '0')) or 0
+            if t > f:
+                segments.append((f, t))
+    else:
+        f = parse_time(cm.get('from', '0')) or 0
+        t = parse_time(cm.get('to', '0')) or 0
+        if t > f:
+            segments.append((f, t))
+
+    if not segments:
         return None, None
+
+    # 排序 + 合并重叠/相邻段（保持多段语法简洁，输出仍最优）
+    segments.sort()
+    merged = [segments[0]]
+    for f, t in segments[1:]:
+        if f <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], t))
+        else:
+            merged.append((f, t))
+
+    # 段数 = len(merged) + 1（每段切掉后剩余的连续段）
+    keep_count = len(merged) + 1
 
     # counter-rotate（rotation≠0 时永远需要，让像素变正确方向）
     # transpose 后 PTS 会被改变（持续时间不变，但时间戳映射变了），
@@ -283,13 +363,88 @@ def build_cut_middle_filter(cm, target_w=1920, target_h=1080, rotation=0, aspect
     else:
         rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
 
+    # 构建每段的 trim
+    # keep 段: 第一个是 [0, first_cut_start], 中间是 [prev_cut_end, next_cut_start], 最后是 [last_cut_end, EOF]
+    boundaries = [0.0] + [t for _, t in merged]  # 起点列表
+    # 注意: trim=end 不指定 = 到 EOF
+    v_chains = []
+    a_chains = []
+    for i in range(keep_count):
+        seg_start = boundaries[i]
+        # 最后一段不指定 end（到 EOF）
+        if i < keep_count - 1:
+            seg_end = merged[i][0]  # 下一个 cut 起点
+            v_chains.append(
+                f"[0:v]{rot_pre}trim=start={seg_start}:end={seg_end},setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
+            )
+            a_chains.append(
+                f"[0:a]atrim=start={seg_start}:end={seg_end},asetpts=PTS-STARTPTS[a{i+1}]"
+            )
+        else:
+            v_chains.append(
+                f"[0:v]{rot_pre}trim=start={seg_start}:,setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
+            )
+            a_chains.append(
+                f"[0:a]atrim=start={seg_start}:,asetpts=PTS-STARTPTS[a{i+1}]"
+            )
+
+    # concat
+    v_labels = "".join(f"[v{i+1}]" for i in range(keep_count))
+    a_labels = "".join(f"[a{i+1}]" for i in range(keep_count))
+
     fc = (
-        f"[0:v]{rot_pre}trim=0:{cut_start},setpts=PTS-STARTPTS,{rotoscale}[v1];"
-        f"[0:v]{rot_pre}trim={cut_end}:,setpts=PTS-STARTPTS,{rotoscale}[v2];"
-        f"[v1][v2]concat=n=2:v=1:a=0[outv];"
-        f"[0:a]atrim=0:{cut_start},asetpts=PTS-STARTPTS[a1];"
-        f"[0:a]atrim={cut_end}:,asetpts=PTS-STARTPTS[a2];"
-        f"[a1][a2]concat=n=2:v=0:a=1[outa]"
+        ";".join(v_chains) + ";"
+        + ";".join(a_chains) + ";"
+        + f"{v_labels}concat=n={keep_count}:v=1:a=0[outv];"
+        + f"{a_labels}concat=n={keep_count}:v=0:a=1[outa]"
+    )
+    return fc, ["[outv]", "[outa]"]
+
+
+def _build_pin_range_multi_filter(segments, target_w, target_h, rotation=0, aspect_handling='aspect-fit'):
+    """pin-range 多段专用 filter: 保留所有列出的段,concat 起来。
+
+    segments: 已排序 + 已合并的 [(from, to), ...] 列表
+    aspect_handling:
+      - 'aspect-fill': 旋转并填满（rotation != 0 → counter-rotate）
+      - 'aspect-fit':  保持原始显示方向（rotation == 0 → 不旋转）
+    """
+    if not segments:
+        return None, None
+
+    n = len(segments)
+
+    # counter-rotate
+    if rotation != 0:
+        rot_filter = build_rotation_filter(rotation)
+        rot_pre = f"{rot_filter}setpts=PTS-STARTPTS,"
+    else:
+        rot_pre = ''
+
+    # scale/pad 策略
+    if aspect_handling == 'aspect-fill':
+        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1"
+    else:
+        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
+
+    v_chains = []
+    a_chains = []
+    for i, (f, t) in enumerate(segments):
+        v_chains.append(
+            f"[0:v]{rot_pre}trim=start={f}:end={t},setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
+        )
+        a_chains.append(
+            f"[0:a]atrim=start={f}:end={t},asetpts=PTS-STARTPTS[a{i+1}]"
+        )
+
+    v_labels = "".join(f"[v{i+1}]" for i in range(n))
+    a_labels = "".join(f"[a{i+1}]" for i in range(n))
+
+    fc = (
+        ";".join(v_chains) + ";"
+        + ";".join(a_chains) + ";"
+        + f"{v_labels}concat=n={n}:v=1:a=0[outv];"
+        + f"{a_labels}concat=n={n}:v=0:a=1[outa]"
     )
     return fc, ["[outv]", "[outa]"]
 
@@ -314,6 +469,8 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
     if not src.exists():
         return output_path, {"index": idx, "error": "source missing"}, False
 
+    # v1.3.1 兼容: 统一转 Path
+    output_path = Path(output_path) if not isinstance(output_path, Path) else output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     info = get_video_info(src)
     duration = info['duration']
@@ -535,7 +692,12 @@ def concatenate_simple(paths, output_path):
     原因:输入视频 fps 不一致(stream copy 后输出 VFR / 混合 fps,如 25.63),
     且 moov atom 位置/关键帧可能有兼容性问题。统一重编 + faststart 一次性解决。
     副作用:每次拼接都重编(慢),但兼容性彻底 OK。
+
+    BUGFIX (v1.3.1): 兼容 str 和 Path 两种入参。
+    原因:xfade_concat 内部会传 output_path(可能是 str)给本函数,直接调 .parent.mkdir() 会崩。
     """
+    # v1.3.1 兼容:统一转 Path
+    output_path = Path(output_path) if not isinstance(output_path, Path) else output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
     if len(paths) == 1:
         # BUGFIX: 即使单文件路径也重编一次以统一 fps + faststart

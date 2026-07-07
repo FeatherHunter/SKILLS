@@ -6,153 +6,91 @@
 
 ---
 
+## 📍 路径契约（**本文件是路径的唯一真理**，v1.3 强制）
+
+**AI 看到 cover 任务必读本段**。其他文件不再定义封面路径，只引用本段。
+
+### 3 步路径
+
+```
+00_智剪/粗加工/cover/cover_draft_N.jpg   ← Step 1 草稿（AI 生成，可多个候选 N=1,2,3...）
+00_智剪/粗加工/cover/cover_final.jpg     ← Step 2 终稿（用户从草稿中选定 1 个）
+00_智剪/成片/cover.jpg                    ← Step 3 拼成片时复制过来
+```
+
+### AI 执行流程（v1.3 强制）
+
+1. **生成草稿**：
+   - 调 `ai_cover.py` 或 `matrix_generate_image`
+   - 输出 `00_智剪/粗加工/cover/cover_draft_1.jpg`、`cover_draft_2.jpg`...（按用户要求数量）
+2. **用户选定终稿**：
+   - AI **必须**等用户从草稿中选 1 个
+   - 不允许 AI 自己挑
+   - 复制到 `00_智剪/粗加工/cover/cover_final.jpg`
+3. **拼成片时复制**：
+   - 阶段 4 收尾时，AI 自动 `cp cover/cover_final.jpg ../成片/cover.jpg`
+   - 这是为向后兼容：`00_智剪/成片/` 下必须有 `cover.jpg` 才能算"完整成片"
+
+### 关键规则
+
+- **草稿必须 ≥1 个**：AI 至少生成 1 张让用户选（推荐 3-4 张给用户挑）
+- **用户没选 = 流程未完成**：AI 不得跳过用户选择直接生成 `cover_final.jpg`
+- **终稿文件名固定**：`cover_final.jpg`（不带后缀编号）
+- **成片封面与草稿分离**：成片目录只放终稿副本，不放草稿
+
+---
+
 ## 1. 调用范式
 
-### 场景 1
+### 场景 1：单图生成
 
 ```bash
 python scripts/ai_cover.py \
   --prompt "A man on a fitness journey, cinematic dramatic lighting, NO TEXT" \
   --title-main "DAY 1" \
   --subtitle "减脂日记" \
-  --output cover.jpg
+  --output 00_智剪/粗加工/cover/cover_draft_1.jpg
 ```
 
-### 场景 2
+### 场景 2：批量生成（推荐 3-4 张让用户选）
+
+```bash
+for i in 1 2 3 4; do
+  python scripts/ai_cover.py \
+    --prompt "vlog cover, $i" \
+    --output "00_智剪/粗加工/cover/cover_draft_$i.jpg"
+done
+```
+
+### 场景 3：matrix MCP 直接调用
 
 ```bash
 mavis mcp call matrix matrix_generate_image --file req.json
+# 输出 → 复制到 00_智剪/粗加工/cover/cover_draft_N.jpg
 ```
 
 ## 2. 参数
 
 | 参数 | 短选项 | 默认值 | 说明 |
 |---|---|---|---|
-| `--input` | `-i` | (必填) | 输入视频/音频/图片 |
-| `--output` | `-o` | (必填) | 输出路径 |
+| `--prompt` | — | (必填) | AI 生图 prompt（英文效果更好） |
+| `--title-main` | — | `""` | 主标题文字（叠在图上） |
+| `--subtitle` | — | `""` | 副标题文字 |
+| `--theme` | — | `fitness` | 配色方案（fitness / lifestyle / professional，详见配色段） |
+| `--output` | `-o` | (必填) | 输出路径（**默认写到 `00_智剪/粗加工/cover/`**） |
+| `--input` | `-i` | — | 可选：真实照片（图生图用） |
 
-## 3. 常见错误 / 限制
+## 3. 配色方案（v1.3 三类主题）
 
-- 输入文件必须存在（不存在时脚本会报 `FileNotFoundError`）
-- 输出目录无权限时脚本会失败
-- ffmpeg 默认用 `libx264`，避免 NVENC 崩溃
+| 主题 | 主色 | 副色 | 适用 |
+|---|---|---|---|
+| `fitness` | 警示红 `#FF3838` | 目标金 `#FFD700` | 健身/挑战/热血 |
+| `lifestyle` | 主色暖橙 `#FF922B` | 副色深蓝 `#4DABF7` | 旅行/美食/治愈 |
+| `professional` | 主色深蓝 `#4D6BF7` | 副色亮金 `#FFD700` | 教程/财经/专业 |
 
-## 4. 相关参考
+**`theme` 参数必填**——AI 必须问用户或从 `intent.json.cover.theme` 读取。
 
-- **SKILL.md §14 子技能索引**：本子技能的路由表
-- **scripts/README.md**：scripts/ 目录命名规范（`<维度>_<动作>.py`）
-- `.archive/CHANGELOG.md`：本子技能历史变更
-
----
-
-<details>
-<summary>📋 原文存档（v0.5 旧版，仅供 git history 追溯）</summary>
-
-# 08 - cover-ai (AI 封面 / 生图 + 中文叠字) — v0.5 已实现
-
-> **对应脚本:** `scripts/ai_cover.py`(1 个,两步法:先生成视觉 + 后叠中文)
-> **实测状态:** ✅ 验证通过
-
-```bash
-python scripts/ai_cover.py \
-  --prompt "A man on a fitness journey, cinematic dramatic lighting, NO TEXT" \
-  --title-main "DAY 1" \
-  --subtitle "减脂日记" \
-  --output cover.jpg
-```
-
----
-
-## 触发词
-
-"封面"、"做封面"、"设计封面"、"AI 生图"、"AI 封面"、"缩略图"、"thumbnail"
-
-## 输入 / 输出
-
-- **输入**: 主题描述 / 参考图(可选)
-- **输出**: 1080x608 或 1920x1072 的封面图(JPG)
-
-## 工作流(两步)
-
-**AI 生图对中文支持差**,所以采用"先生成视觉 + 后叠中文"的两步方案。
-
-### Step 1: AI 生视觉图
-
-```bash
-mavis mcp call matrix matrix_generate_image --file req.json
-```
-
-`req.json` 示例:
-```json
-{
-  "requests": [{
-    "prompt": "A dramatic fitness transformation cover image, 16:9. A man's silhouette standing on a body weight scale, dark moody background with red lighting. NO TEXT in image. Clean composition with strong negative space for text overlay.",
-    "aspect_ratio": "16:9",
-    "resolution": "2K"
-  }]
-}
-```
-
-**Prompt 设计要点:**
-- ✅ 描述场景(人物 + 背景 + 光线)
-- ✅ 指定 NO TEXT(关键!)
-- ✅ 指定 negative space 留白
-- ✅ 指定风格(cinematic / fitness / motivational)
-- ✅ 指定 aspect ratio(16:9 适合 B 站)
-
-### Step 2: PIL 叠中文文字
-
-```python
-from PIL import Image, ImageDraw, ImageFont
-
-def overlay_text(image_path, output_path, texts):
-    img = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img)
-    
-    for text_info in texts:
-        font = ImageFont.truetype(text_info["font"], text_info["size"])
-        draw.text(
-            (text_info["x"], text_info["y"]),
-            text_info["content"],
-            font=font,
-            fill=text_info["color"]
-        )
-    
-    img.save(output_path, quality=92)
-
-# 调用示例
-overlay_text(
-    "matrix-output.png",
-    "cover_final.jpg",
-    [
-        {"content": "184", "x": 1080, "y": 320, "size": 150,
-         "font": "C:/Windows/Fonts/msyhbd.ttc", "color": (255, 56, 56)},
-        {"content": "→", "x": 1380, "y": 350, "size": 130,
-         "font": "C:/Windows/Fonts/msyhbd.ttc", "color": (255, 255, 255)},
-        {"content": "139.9", "x": 1500, "y": 320, "size": 150,
-         "font": "C:/Windows/Fonts/msyhbd.ttc", "color": (255, 215, 0)},
-        {"content": "Day 1 · 4 个月挑战", "x": 1080, "y": 530, "size": 56,
-         "font": "C:/Windows/Fonts/msyh.ttc", "color": (255, 255, 255)},
-    ]
-)
-```
-
-## 配色方案(从第一性原理)
-
-**激励/热血类(健身、挑战):**
-- 警示红: `RGB(255, 56, 56)` 或 `#FF3838`
-- 目标金: `RGB(255, 215, 0)` 或 `#FFD700`
-- 主体白: `RGB(255, 255, 255)` 或 `#FFFFFF`
-
-**治愈/生活类(旅行、美食):**
-- 主色暖橙: `RGB(255, 146, 43)` 或 `#FF922B`
-- 副色深蓝: `RGB(77, 171, 247)` 或 `#4DABF7`
-
-**专业/知识类(教程、财经):**
-- 主色深蓝: `RGB(77, 107, 247)` 或 `#4D6BF7`
-- 副色亮金: `RGB(255, 215, 0)`
-
-## 字号参考(1920x1080 画布)
+## 4. 字号参考（1920x1080 画布）
 
 | 元素 | 字号 | 位置 |
 |---|---|---|
@@ -161,7 +99,7 @@ overlay_text(
 | 系列名 | 40-60 px | 角落 / 底部 |
 | 标签 | 30-40 px | 角落 |
 
-## 字体选择
+## 5. 字体选择
 
 ```python
 # Windows 自带字体
@@ -171,42 +109,43 @@ overlay_text(
 "C:/Windows/Fonts/simsun.ttc"      # 宋体(传统)
 ```
 
-## 完整脚本
+## 6. 完整脚本
 
 封装到 `scripts/ai_cover.py`,支持:
 - 自动调用 matrix 生图
-- 自动叠中文
-- 自动配色(根据主题)
-- 输出 JPG(95% 质量)
+- 自动叠中文（PIL）
+- 自动配色（按 theme）
+- 输出 JPG（95% 质量）
 
-## 调用示例
+## 7. 调用示例
 
 ```
 用户: "给我做个减肥挑战的封面,184 到 139.9 斤"
-→ cover-ai --theme fitness --main "184→139.9" --subtitle "Day 1 · 4 个月挑战"
+→ AI:
+  1. 问 theme (fitness/lifestyle/professional)
+  2. 批量生成 3-4 张草稿到 00_智剪/粗加工/cover/cover_draft_*.jpg
+  3. 把草稿列表展示给用户
+  4. 等用户选定 → 复制为 cover_final.jpg
+  5. 阶段 4 拼成片时复制到 00_智剪/成片/cover.jpg
 ```
 
-## 输出规格
+## 8. 输出规格
 
-- **比例:** 16:9(B 站标准,实际 1146x717 也可)
-- **分辨率:** 2K(2752x1536)
-- **格式:** JPG(95% 质量)
-- **大小:** < 2 MB(B 站上传限制)
-- **文件名:** `cover_final.jpg`
+- **比例:** 16:9（B 站标准，实际 1146x717 也可）
+- **分辨率:** 2K（2752x1536）
+- **格式:** JPG（95% 质量）
+- **大小:** < 2 MB（B 站上传限制）
+- **文件名约定**: `cover_draft_N.jpg`（草稿）/ `cover_final.jpg`（终稿）/ `cover.jpg`（成片）
 
-## 进阶:img2img(图生图)
+## 9. 常见错误
 
-matrix 支持 input_files 做图生图,可以基于真实照片生成封面变体:
+- **AI 自己选终稿**：违反 v1.3 契约，必须等用户选
+- **草稿数量为 0**：AI 至少生成 1 张
+- **文件写到工作区根目录**：必须写到 `00_智剪/粗加工/cover/`
+- **文件名带版本号 `cover_final_v2.jpg`**：违反契约，必须 `cover_final.jpg`（不带后缀）
 
-```json
-{
-  "requests": [{
-    "prompt": "Same person, cinematic dramatic lighting, dark background, motivational atmosphere",
-    "input_files": ["path/to/original.jpg"]
-  }]
-}
-```
+## 10. 相关参考
 
-这能让你保持"主角一致性",封面和视频里的真人看起来是同一个人。
-
-</details>
+- **SKILL.md §⚠️ AI 必读 #5**: cover.type 路由
+- **references/主流程-阶段编排.md §阶段 4 收尾**: 拼成片时复制 cover 的具体时机
+- **scripts/ai_cover.py**: 实际脚本

@@ -423,6 +423,8 @@ AI 收到 intent.json 后, **自动检查工作区里的版本文件**：
 | `text` | `ai_cover.py --text-only` | 纯文字封面 |
 | `image` | （**当前不支持**）| 告诉用户"改用 ai 或 text" |
 
+**强制规则（v1.4 新增）**: 封面上的所有文字叠加（数字/标题/标签/徽章等）**必须通过 `ai_cover.py` 的 `overlay_text()` 实现**，禁止自己 import PIL 写独立脚本。`ai_cover.py` 内置 `msyhbd.ttc`（微软雅黑粗体）支持完整中文字符。若 `ai_cover.py` 当前参数不够用，需先扩展该 CLI，不许绕路。|
+
 ### 6. **B. project-level 操作**（v1.3 新增）
 
 `output.bgm_match_mode` 路由到 `audio_bgm.py --match-mode <mode>`（4 种: loop/truncate/silence-end/ask）。

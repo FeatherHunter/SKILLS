@@ -45,6 +45,19 @@ from common import (
     log_info, log_warn, log_error, log_section, safe_run,
 )
 
+# v1.4: extract-audio / fade-audio 重导出自 audio/extract.py（canonical 实现）
+# 旧路径 edit.py extract-audio 继续工作，复用 audio/extract.py 的逻辑
+try:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from audio.extract import extract_audio as _extract_audio
+    from audio.extract import fade_audio as _fade_audio
+    # 将重导出函数注入到本模块命名空间（edit.py CLI 继续用这些名字）
+    extract_audio = _extract_audio
+    fade_audio = _fade_audio
+except ImportError:
+    # fallback: 如果 audio/ 不存在，使用本文件内的本地实现（向后兼容兜底）
+    pass
+
 
 # ============================================================
 # P0: 8 个基础原子操作

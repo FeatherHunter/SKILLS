@@ -1,29 +1,33 @@
 ﻿# -*- coding: utf-8 -*-
 """
-lib.asr — ASR 包装层
+lib.asr — ASR 包装层（v1.4 backward compat）
 
 设计决策（v0.7）：用 faster-whisper（DAY1 已实测可用）。
-DAY1 处理时用过 scripts/video_subtitle.py 的 transcribe_to_srt，本文件是其薄包装。
+v1.4: 本文件重导出 asr/transcribe.py（canonical 实现）。
 
-对外接口（3 个）：
+对外接口（3 个）:
     transcribe(video_path, srt_path) -> bool
     transcribe_batch(video_dir, output_dir) -> dict[video_name, srt_path]
     merge_to_md(transcript_dir, output_md) -> bool
-"""
 
+⚠️ BACKWARD COMPAT（v1.4）:
+   canonical 实现已迁移至 scripts/asr/transcribe.py。
+   本文件仅作向后兼容导入。
+"""
 import sys
 from pathlib import Path
 
 # 让 scripts/ 可被 import
-_SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
-sys.path.insert(0, str(_SCRIPTS_DIR))
+# 策略：将 SKILL_ROOT 加入 path，然后用 from scripts.asr.transcribe 导入
+_SKILL_ROOT = Path(__file__).parent.parent  # SKILL_ROOT
+sys.path.insert(0, str(_SKILL_ROOT))
 
 try:
-    from video_subtitle import transcribe_to_srt
+    from scripts.asr.transcribe import transcribe_to_srt
 except ImportError as e:
     raise ImportError(
-        f"lib/asr.py 依赖 scripts/video_subtitle.py，但导入失败: {e}\n"
-        "确认 faster-whisper 已装：pip install faster-whisper"
+        f"lib/asr.py 依赖 scripts/asr/transcribe.py，但导入失败: {e}\n"
+        "确认 faster-whisper 已装: pip install faster-whisper"
     )
 
 
@@ -118,7 +122,7 @@ def _srt_to_md(srt_path):
 # CLI
 if __name__ == "__main__":
     import argparse
-    p = argparse.ArgumentParser(description="ASR 批量转录")
+    p = argparse.ArgumentParser(description="ASR 批量转录（v1.4 backward compat → scripts/asr/transcribe.py）")
     p.add_argument("--input-dir", required=True, help="视频目录")
     p.add_argument("--output-dir", required=True, help="SRT 输出目录")
     p.add_argument("--model", default="medium")

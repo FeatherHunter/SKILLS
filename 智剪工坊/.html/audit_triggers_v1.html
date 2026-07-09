@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智剪工坊 · 触发词审计 + 对抗式审查</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+    background: linear-gradient(180deg, #fafbfc 0%, #f5f6f9 100%);
+    color: #1d1d1f; line-height: 1.7;
+    padding: 40px 20px; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header {
+    background: #fff; border-radius: 16px; padding: 40px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    background: #ff3b30; color: white; font-size: 12px; font-weight: 600;
+  }
+  .badge.warn { background: #ff9500; }
+  .badge.ok { background: #34c759; }
+  .badge.info { background: #0071e3; }
+  h1 { font-size: 32px; font-weight: 700; margin: 16px 0 12px; }
+  h2 {
+    font-size: 22px; font-weight: 700; margin: 32px 0 16px;
+    padding-bottom: 12px; border-bottom: 1px solid #e5e5e7;
+  }
+  h3 {
+    font-size: 17px; font-weight: 600; margin: 24px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .meta { color: #86868b; font-size: 14px; }
+  .section {
+    background: #fff; border-radius: 16px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e5e7; font-size: 13px; }
+  th { background: #fafbfc; font-weight: 600; }
+  td code {
+    font-family: "SF Mono", "Consolas", monospace;
+    background: #fff5f5; color: #d70015;
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 12px;
+  }
+  th code { background: transparent; }
+  code {
+    font-family: "SF Mono", "Consolas", monospace;
+    background: #f5f6f9; padding: 2px 6px; border-radius: 4px;
+    font-size: 12.5px;
+  }
+  .ok-code {
+    background: #f0f9f4; color: #1f8b3a;
+  }
+  .danger {
+    background: #fff5f5; border-left: 3px solid #ff3b30;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .warning {
+    background: #fff8f0; border-left: 3px solid #ff9500;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .ok {
+    background: #f0f9f4; border-left: 3px solid #34c759;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .info {
+    background: #eef4ff; border-left: 3px solid #0071e3;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin: 20px 0;
+  }
+  .stat {
+    background: #fafbfc; border-radius: 12px; padding: 20px;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 36px; font-weight: 700; line-height: 1;
+  }
+  .stat .label { color: #86868b; font-size: 13px; margin-top: 8px; }
+  .stat.red .num { color: #ff3b30; }
+  .stat.warn .num { color: #ff9500; }
+  .stat.ok .num { color: #34c759; }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 12px; font-weight: 500; margin-right: 6px;
+  }
+  .pill.red { background: #ffe5e3; color: #d70015; }
+  .pill.warn { background: #fff3d6; color: #ad6800; }
+  .pill.ok { background: #d6f5df; color: #1f8b3a; }
+  details { margin: 12px 0; }
+  summary {
+    cursor: pointer; font-weight: 600; padding: 12px;
+    background: #fafbfc; border-radius: 8px; user-select: none;
+  }
+  summary:hover { background: #f0f1f3; }
+  details[open] summary { background: #eef4ff; }
+  .footer {
+    text-align: center; color: #86868b; font-size: 13px; padding: 24px;
+  }
+  .toc {
+    background: #fafbfc; border-radius: 12px; padding: 16px 24px;
+    margin: 16px 0;
+  }
+  .toc a {
+    color: #0071e3; text-decoration: none;
+    display: block; padding: 4px 0;
+  }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <span class="badge">🔴 对抗式审查</span>
+  <h1>智剪工坊 · 触发词 ↔ 脚本 双向审计</h1>
+  <div class="meta">
+    审查时间：2026-07-10 03:22 · 视角：第一性原理 + 对抗式 · 数据：53 triggers + 44 scripts + 23 维度 + 22 jargon · 总问题 218（启发式误报过滤后真问题 51）
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="section">
+  <h2>📊 真问题总览（过滤启发式噪音后）</h2>
+  <div class="stats">
+    <div class="stat red">
+      <div class="num">23</div>
+      <div class="label">维度路由过时（严重）</div>
+    </div>
+    <div class="stat red">
+      <div class="num">17</div>
+      <div class="label">Jargon 路由过时（严重）</div>
+    </div>
+    <div class="stat warn">
+      <div class="num">11</div>
+      <div class="label">维度路径 = v1.4 旧路径（中等）</div>
+    </div>
+    <div class="stat warn">
+      <div class="num">~20</div>
+      <div class="label">trigger YAML 覆盖盲区（待评估）</div>
+    </div>
+    <div class="stat ok">
+      <div class="num">0</div>
+      <div class="label">trigger 重复</div>
+    </div>
+  </div>
+</div>
+
+<!-- 启发式误报说明 -->
+<div class="section">
+  <h2>📐 第一性原理：审计方法</h2>
+
+  <div class="info">
+    <strong>双向约束</strong>：SKILL.md 的触发词是 AI 路由的<strong>唯一入口</strong>，必须保证：
+    <ol style="padding-left: 24px; margin-top: 8px;">
+      <li><strong>自上而下</strong>：每个触发词 → 真有脚本实现</li>
+      <li><strong>自下而上</strong>：每个脚本 → 真被触发词命中</li>
+      <li><strong>维度一致</strong>：维度索引 ↔ 触发词 ↔ 实际脚本</li>
+      <li><strong>黑话覆盖</strong>：Jargon 词典 → 用户口语词能命中触发词</li>
+    </ol>
+  </div>
+
+  <h3>启发式噪音说明</h3>
+  <div class="warning">
+    <strong>⚠️ 启发式匹配有 80+ 噪音</strong>：脚本名是英文（<code>color.py</code>），触发词是中文（<code>调色</code>）。脚本用"子串包含"启发式匹配不上。我的脚本按以下两种方式甄别真假问题：
+    <ul style="padding-left: 24px; margin-top: 8px;">
+      <li><strong>路径对照</strong>：路由路径是否能找到文件（最强判据）</li>
+      <li><strong>路径命名</strong>：路由是否使用了已删除的旧路径名</li>
+      <li><strong>语义推断</strong>：trigger 和脚本是否在语义上对应（人工判断）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 问题 1：维度路由过时 -->
+<div class="section">
+  <h2>🔴 问题 1：23 个维度路由过时（严重）</h2>
+
+  <p>SKILL.md <strong>§子技能索引</strong>（line 377-405）的"路由"列还在用 v1.4 的旧路径（<code>audio/mix.py</code>、<code>video_color.py</code> 等），但 v1.7 已经把它们迁到了 <code>scripts/audio/mix.py</code>、<code>scripts/video/color.py</code>。</p>
+
+  <table>
+    <thead>
+      <tr><th>维度</th><th>SKILL.md 旧路由</th><th>v1.7 实际路径</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>01 cutting</td><td><code>processing.py</code></td><td><code>scripts/video/trim.py</code></td></tr>
+      <tr><td>02 transitions</td><td><code>video_xfade.py</code></td><td><code>scripts/video/xfade.py</code></td></tr>
+      <tr><td>03 effects</td><td><code>video_color.py</code> / <code>video_opening.py</code></td><td><code>scripts/video/color.py</code> / <code>scripts/video/opening.py</code></td></tr>
+      <tr><td>04 cinematic</td><td><code>processing.py</code></td><td><code>lib/video_processing.py</code></td></tr>
+      <tr><td>05 image</td><td><code>image_to_video.py</code></td><td><code>scripts/video/image_to_video.py</code></td></tr>
+      <tr><td>06 text</td><td><code>video_opening.py</code></td><td><code>scripts/video/opening.py</code></td></tr>
+      <tr><td>07 audio-mix</td><td><code>audio/mix.py</code></td><td><code>scripts/audio/mix.py</code></td></tr>
+      <tr><td>07 audio-voice</td><td><code>audio/voice.py</code></td><td><code>scripts/audio/voice.py</code></td></tr>
+      <tr><td>07 audio-beat</td><td><code>audio/beat.py</code></td><td><code>scripts/audio/beat.py</code></td></tr>
+      <tr><td>07 audio-extract</td><td><code>audio/extract.py</code></td><td><code>scripts/audio/extract.py</code></td></tr>
+      <tr><td>07 audio-denoise</td><td><code>audio/denoise.py</code></td><td><code>scripts/audio/denoise.py</code></td></tr>
+      <tr><td>07 audio-separate</td><td><code>audio/separate.py</code></td><td><code>scripts/audio/separate.py</code></td></tr>
+      <tr><td>07 audio-diarize</td><td><code>audio/diarize.py</code></td><td><code>scripts/audio/diarize.py</code></td></tr>
+      <tr><td>08 cover</td><td><code>ai_cover.py</code></td><td><code>scripts/ai/cover.py</code></td></tr>
+      <tr><td>09 ai-features</td><td><code>video_beauty.py</code> / <code>video_color.py</code></td><td><code>scripts/ai/beauty.py</code> / <code>scripts/video/color.py</code></td></tr>
+      <tr><td>11 asr</td><td><code>asr/transcribe.py</code></td><td><code>scripts/asr/transcribe.py</code></td></tr>
+      <tr><td>11 asr-burn</td><td><code>asr/burn_subtitle.py</code></td><td><code>scripts/asr/burn_subtitle.py</code></td></tr>
+      <tr><td>11 asr-speaker</td><td><code>asr/speaker_srt.py</code></td><td><code>scripts/asr/speaker_srt.py</code></td></tr>
+      <tr><td>12 beauty</td><td><code>video_beauty.py</code></td><td><code>scripts/ai/beauty.py</code></td></tr>
+      <tr><td>13 rewrite-audio</td><td><code>ai_rewrite.py</code></td><td><code>scripts/ai/rewrite.py</code></td></tr>
+      <tr><td>15 digital-human</td><td><code>ai_digital_human.py</code></td><td><code>scripts/ai/digital_human.py</code></td></tr>
+      <tr><td>16 edit</td><td><code>edit.py</code></td><td><code>scripts/video/edit.py</code></td></tr>
+      <tr><td>10 batch</td><td>组合调用（无路径）</td><td><code>scripts/batch/batch.py</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="danger">
+    <strong>红线违反</strong>：维度索引是 AI 路由的二级入口。路径错误 → AI 查路由表后找不到脚本 → 报"暂未实现"。
+    按红线 §3 修改契约：维度索引必须和 scripts/ 实际目录同步。
+  </div>
+</div>
+
+<!-- 问题 2：Jargon 路由过时 -->
+<div class="section">
+  <h2>🔴 问题 2：17 个 Jargon 路由过时（严重）</h2>
+
+  <p>SKILL.md <strong>§Jargon 大白话词典</strong>（line 650-674）也有同样的旧路径问题。用户口语词 → 旧路径 → 找不到脚本。</p>
+
+  <table>
+    <thead>
+      <tr><th>用户口语</th><th>SKILL.md 旧路由</th><th>v1.7 实际路径</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>"剪头" / "剪尾"</td><td><code>processing.py</code></td><td><code>scripts/video/trim.py</code></td></tr>
+      <tr><td>"去掉中间"</td><td><code>processing.py</code></td><td><code>scripts/video/trim.py</code></td></tr>
+      <tr><td>"保留某段"</td><td><code>processing.py</code></td><td><code>scripts/video/trim.py</code></td></tr>
+      <tr><td>"加转场"</td><td><code>video_xfade.py</code></td><td><code>scripts/video/xfade.py</code></td></tr>
+      <tr><td>"加 BGM"</td><td><code>audio/mix.py</code></td><td><code>scripts/audio/mix.py</code></td></tr>
+      <tr><td>"变声"</td><td><code>audio/voice.py</code></td><td><code>scripts/audio/voice.py</code></td></tr>
+      <tr><td>"节拍卡点"</td><td><code>audio/beat.py</code></td><td><code>scripts/audio/beat.py</code></td></tr>
+      <tr><td>"提取音频"</td><td><code>audio/extract.py</code></td><td><code>scripts/audio/extract.py</code></td></tr>
+      <tr><td>"音频降噪"</td><td><code>audio/denoise.py</code></td><td><code>scripts/audio/denoise.py</code></td></tr>
+      <tr><td>"声源分离"</td><td><code>audio/separate.py</code></td><td><code>scripts/audio/separate.py</code></td></tr>
+      <tr><td>"说话人分离"</td><td><code>audio/diarize.py</code></td><td><code>scripts/audio/diarize.py</code></td></tr>
+      <tr><td>"ASR" / "语音转文字"</td><td><code>asr/transcribe.py</code></td><td><code>scripts/asr/transcribe.py</code></td></tr>
+      <tr><td>"烧字幕"</td><td><code>asr/burn_subtitle.py</code></td><td><code>scripts/asr/burn_subtitle.py</code></td></tr>
+      <tr><td>"做封面"</td><td><code>ai_cover.py</code></td><td><code>scripts/ai/cover.py</code></td></tr>
+      <tr><td>"调色"</td><td><code>video_color.py</code></td><td><code>scripts/video/color.py</code></td></tr>
+      <tr><td>"加文字"</td><td><code>video_opening.py</code></td><td><code>scripts/video/opening.py</code></td></tr>
+      <tr><td>"配字幕"</td><td><code>asr/transcribe.py</code> + <code>asr/burn_subtitle.py</code></td><td><code>scripts/asr/transcribe.py</code> + <code>scripts/asr/burn_subtitle.py</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 问题 3：trigger YAML 覆盖 -->
+<div class="section">
+  <h2>🟡 问题 3：trigger YAML 覆盖盲区（中等）</h2>
+
+  <p>维度索引表里有 ~50 个专业触发词（<code>ASR</code>、<code>Whisper</code>、<code>Ken Burns</code>、<code>4 mode</code>、<code>覆盖</code> 等），但 SKILL.md line 17-69 的 <code>triggers</code> YAML 列表里没有。</p>
+
+  <div class="info">
+    <strong>需要评估</strong>：这些词该不该加进 trigger YAML？
+    <ul style="padding-left: 24px; margin-top: 8px;">
+      <li><strong>建议加</strong>：<code>ASR</code>、<code>Whisper</code>、<code>混音</code>、<code>变声</code>、<code>节拍</code>、<code>卡点</code>、<code>图片转视频</code>、<code>封面</code>、<code>字幕烧录</code>、<code>翻唱</code>、<code>配音</code>、<code>换声</code></li>
+      <li><strong>不建议加</strong>：<code>Ken Burns</code>、<code>counter-rotate</code>（太专业）、<code>4 mode</code>（具体参数而非能力）</li>
+      <li><strong>边界</strong>：<code>AI</code>、<code>讲解</code> 等过于通用，可能误触发</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 第一性原理总结 -->
+<div class="section">
+  <h2>📐 第一性原理总结</h2>
+
+  <div class="ok">
+    <strong>✅ 真问题 51 个：</strong>
+    <ul style="padding-left: 24px; margin-top: 8px;">
+      <li><strong>23 个维度路由</strong>过时（AI 看了调不到）</li>
+      <li><strong>17 个 Jargon 路由</strong>过时（用户口语调不到）</li>
+      <li><strong>11 个 v1.4 旧路径</strong>（含 processing.py v1.7 改名）</li>
+    </ul>
+  </div>
+
+  <div class="warning">
+    <strong>⚠️ 误报 167 个</strong>：是启发式匹配的局限性（中文 trigger vs 英文脚本名），不是真问题。
+  </div>
+
+  <div class="danger">
+    <strong>🔴 红线违反</strong>：
+    <ul style="padding-left: 24px; margin-top: 8px;">
+      <li>违反 §3 修改契约（scripts 改了但 SKILL.md 维度索引没同步）</li>
+      <li>违反 §4 第一条（AI 用户按 SKILL.md 调脚本会报错"暂未实现"）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 修复建议 -->
+<div class="section">
+  <h2>🎯 修复建议（按优先级）</h2>
+
+  <table>
+    <thead>
+      <tr><th>优先级</th><th>动作</th><th>量级</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="pill red">P0</span></td>
+        <td>修 23 个维度路由（line 377-405）：旧路径 → <code>scripts/{sub}/{file}.py</code></td>
+        <td>5 min</td>
+      </tr>
+      <tr>
+        <td><span class="pill red">P0</span></td>
+        <td>修 17 个 Jargon 路由（line 650-674）：同上</td>
+        <td>5 min</td>
+      </tr>
+      <tr>
+        <td><span class="pill warn">P1</span></td>
+        <td>评估触发词覆盖：line 17-69 YAML 是否要加 10-15 个专业触发词</td>
+        <td>10 min</td>
+      </tr>
+      <tr>
+        <td><span class="pill ok">P2</span></td>
+        <td>v1.8 变更摘要写修复记录</td>
+        <td>5 min</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <details>
+    <summary>📜 v1.7 阶段漏了哪些红线同步？</summary>
+    <div style="padding: 12px; font-size: 13px; color: #555;">
+      <p>v1.7 我做的（已记 v1.7 变更摘要）：</p>
+      <ul style="padding-left: 24px;">
+        <li>✅ 删除 3 个 backward-compat stubs</li>
+        <li>✅ 建 scripts/{video,ai,batch,_internal}/ 子目录</li>
+        <li>✅ 建 lib/{asr,video}/ 子目录</li>
+        <li>✅ 改 processing.py → video_processing.py</li>
+        <li>✅ 同步 4 处 import 引用</li>
+        <li>✅ 同步 SKILL.md 文件地图 + 目录结构</li>
+      </ul>
+      <p style="margin-top: 12px;">v1.7 我漏的（v1.8 修）：</p>
+      <ul style="padding-left: 24px;">
+        <li>❌ 23 个维度路由没同步（line 377-405）</li>
+        <li>❌ 17 个 Jargon 路由没同步（line 650-674）</li>
+        <li>❌ 触发词 YAML 覆盖盲区没评估</li>
+      </ul>
+      <p style="margin-top: 12px;">漏的原因是：v1.7 阶段我的自检清单只 check 文件地图（line 254-269），没 check §子技能索引 和 §Jargon 大白话词典。</p>
+    </div>
+  </details>
+</div>
+
+<div class="footer">
+  报告生成于 2026-07-10 · 智剪工坊触发词审计 · 小匠（xiaojiang agent）<br>
+  对抗式审查 + 第一性原理 + 红线 §3 修改契约
+</div>
+
+</div>
+</body>
+</html>

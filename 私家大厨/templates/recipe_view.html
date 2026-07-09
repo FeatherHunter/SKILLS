@@ -188,6 +188,54 @@
     .info-grid{grid-template-columns:repeat(2,1fr)}
   }
 
+  /* ── History section ── */
+  .history-list{list-style:none}
+  .history-item{
+    padding:10px 0;border-bottom:0.5px solid var(--border);
+    display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;
+  }
+  .history-item:last-child{border-bottom:none}
+  .history-date{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;min-width:90px}
+  .history-seq{
+    font-size:11px;color:var(--text2);background:var(--bg);
+    padding:2px 8px;border-radius:5px;
+  }
+  .history-rating{color:#FFB800;font-size:13px}
+  .history-feedback{
+    flex-basis:100%;margin-top:4px;font-size:13px;
+    color:var(--text2);line-height:1.5;padding-left:0;
+  }
+
+  /* ── Relations section ── */
+  .relations-list{list-style:none}
+  .relation-item{
+    padding:10px 0;border-bottom:0.5px solid var(--border);
+    display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;
+  }
+  .relation-item:last-child{border-bottom:none}
+  .rel-arrow{font-size:18px;color:var(--blue);font-weight:700;min-width:20px;text-align:center}
+  .rel-type{
+    font-size:11px;background:rgba(0,122,255,0.1);color:var(--blue);
+    padding:2px 8px;border-radius:5px;font-weight:600;
+  }
+  .rel-target{font-weight:600;font-size:14px}
+  .rel-role{font-size:11px;color:var(--text3);margin-left:auto}
+  .rel-summary{
+    flex-basis:100%;margin-top:4px;font-size:13px;
+    color:var(--text2);padding-left:28px;
+  }
+
+  /* ── Priority tag ── */
+  .priority-tag{
+    display:inline-block;font-size:10px;font-weight:700;
+    background:var(--bg);color:var(--text2);
+    padding:1px 6px;border-radius:4px;margin-left:6px;
+    font-variant-numeric:tabular-nums;
+  }
+  .priority-tag[data-priority="1"]{background:rgba(255,59,48,0.1);color:#A82A22}
+  .priority-tag[data-priority="2"]{background:rgba(255,149,0,0.12);color:#9B5500}
+  .priority-tag[data-priority="3"]{background:var(--bg);color:var(--text2)}
+
   /* ── Print ── */
   @media print{
     body{background:#fff;padding:0}
@@ -211,6 +259,12 @@
     {% for m in (recipe.meal_types or []) %}<span class="badge">{{ m }}</span>{% endfor %}
     {% for s in (recipe.seasons or []) %}<span class="badge">{{ s }}季</span>{% endfor %}
   </div>
+  {# ── Batch 2.1: photo_url 显示(Jinja2 autoescape 防 XSS)── #}
+  {% if recipe.photo_url %}
+  <div style="margin-bottom:12px;border-radius:var(--radius);overflow:hidden;background:var(--bg)">
+    <img src="{{ recipe.photo_url }}" alt="{{ recipe.name }}" style="width:100%;max-height:280px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.style.display='none'" />
+  </div>
+  {% endif %}
   <h1>{{ recipe.name }}</h1>
   {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
 </div>
@@ -279,10 +333,13 @@
           data-base-qty="{{ ing.quantity or 0 }}"
           data-base-servings="{{ recipe.servings or 1 }}">
         <span class="name">{{ ing.name }}{% if ing.is_optional %}<span class="opt-tag">可选</span>{% endif %}{% if ing.substitute %}<span class="sub">/ 可用 {{ ing.substitute }}</span>{% endif %}</span>
+        {# ── Batch 2.2: quantity_text 兜底 ── #}
         {% if ing.quantity %}
         <span class="qty">
           <span class="qty-num">{{ ing.quantity }}</span>{{ ing.unit or '' }}
         </span>
+        {% elif ing.quantity_text %}
+        <span class="qty" style="color:var(--text3);font-style:italic">{{ ing.quantity_text }}</span>
         {% endif %}
       </li>
       {% endfor %}
@@ -361,7 +418,11 @@
       {% if tip.step_sequence %}<span class="step-ref">第{{ tip.step_sequence }}步</span>{% endif %}
       <div class="body">
         {{ tip.content }}
+        {# ── Batch 2.4a: priority 标记 ── #}
+        {% if tip.priority %}<span class="priority-tag" data-priority="{{ tip.priority }}">P{{ tip.priority }}</span>{% endif %}
         {% if tip.category %}<span style="font-size:11px;color:var(--text3);margin-left:6px">#{{ tip.category }}</span>{% endif %}
+        {# ── Batch 2.4b: ingredient_id JOIN 显示关联食材名 ── #}
+        {% if tip.ingredient_name %}<span style="font-size:11px;color:var(--blue);margin-left:6px">@{{ tip.ingredient_name }}</span>{% endif %}
       </div>
     </li>
     {% endfor %}
@@ -414,10 +475,66 @@
 </div>
 {% endif %}
 
+{# ── Batch 1.2a: 烹饪历史 section ── #}
+{% if recipe.history %}
+<div class="card">
+  <div class="section-title">
+    烹饪历史
+    <span class="count">共 {{ recipe.history | length }} 次</span>
+  </div>
+  <ul class="history-list">
+    {% for h in recipe.history %}
+    <li class="history-item">
+      <span class="history-date">{{ h.cook_date }}</span>
+      {% if h.cook_sequence %}<span class="history-seq">第{{ h.cook_sequence }}次</span>{% endif %}
+      {% if h.rating %}
+      <span class="history-rating">
+        {% for i in range(5) %}{% if i < h.rating %}★{% else %}<span style="color:var(--text3)">★</span>{% endif %}{% endfor %}
+        <span style="margin-left:4px">{{ h.rating }}</span>
+      </span>
+      {% endif %}
+      {% if h.feedback %}<div class="history-feedback">{{ h.feedback }}</div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{# ── Batch 1.2b: 派生关系 section ── #}
+{% if recipe.relations %}
+<div class="card">
+  <div class="section-title">
+    派生关系
+    <span class="count">共 {{ recipe.relations | length }} 条</span>
+  </div>
+  <ul class="relations-list">
+    {% for r in recipe.relations %}
+    <li class="relation-item">
+      {% if r.direction == 'parent' %}
+        <span class="rel-arrow">←</span>
+        <span class="rel-type">{{ r.relation_type or '派生' }}</span>
+        <span class="rel-target">{{ r.child_name or '(已删除)' }}</span>
+        <span class="rel-role">本菜是父本</span>
+      {% else %}
+        <span class="rel-arrow">→</span>
+        <span class="rel-type">{{ r.relation_type or '派生' }}</span>
+        <span class="rel-target">{{ r.parent_name or '(已删除)' }}</span>
+        <span class="rel-role">本菜是子本</span>
+      {% endif %}
+      {% if r.change_summary %}<div class="rel-summary">{{ r.change_summary }}</div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 <!-- ── Footer ── -->
 <div class="footer">
   {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
   {% if recipe.source_url %} · <a href="{{ recipe.source_url }}">原文链接</a>{% endif %}
+  {# ── Batch 2.3: created_at / updated_at ── #}
+  {% if recipe.created_at %} · 创建于 {{ recipe.created_at }}{% endif %}
+  {% if recipe.updated_at and recipe.updated_at != recipe.created_at %} · 更新于 {{ recipe.updated_at }}{% endif %}
   · 由「私家大厨」v4.0 生成 · {{ now if now else '' }}
 </div>
 

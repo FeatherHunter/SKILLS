@@ -796,11 +796,14 @@ def export_json(args):
         "key_points": r["key_points"],
     } for r in cursor.fetchall()]
 
-    # 8. 小贴士(LEFT JOIN - 可能有 general tips 无 step 关联)
+    # 8. 小贴士(LEFT JOIN - 可能有 general tips 无 step 关联;额外 JOIN ingredients 拿关联食材名)
     cursor.execute(
-        "SELECT t.content, t.category, t.priority, cs.sequence AS step_seq "
+        "SELECT t.content, t.category, t.priority, t.ingredient_id, "
+        "       cs.sequence AS step_seq, "
+        "       i.name AS ingredient_name "
         "FROM tips t "
         "LEFT JOIN cooking_steps cs ON t.step_id = cs.id "
+        "LEFT JOIN ingredients i ON t.ingredient_id = i.id "
         "WHERE t.recipe_id = ? "
         "ORDER BY COALESCE(cs.sequence, 0), t.priority",
         (rid,)
@@ -810,14 +813,51 @@ def export_json(args):
         "content": r["content"],
         "category": r["category"],
         "priority": r["priority"],
-        "ingredient_id": None,
+        "ingredient_id": r["ingredient_id"],
+        "ingredient_name": r["ingredient_name"],
     } for r in cursor.fetchall()]
 
     # 9. 炊具
     cursor.execute("SELECT name, category FROM cookware WHERE recipe_id = ?", (rid,))
     cookware = [{"name": r["name"], "category": r["category"]} for r in cursor.fetchall()]
 
-    # 10. 组装 - 字段映射:DB → JSON(匹配 recipe_template.json)
+    # 10. 烹饪历史(recipe_history)—— Batch 1.1 修复:不再硬编码空数组
+    cursor.execute(
+        "SELECT cook_date, cook_sequence, rating, feedback "
+        "FROM recipe_history WHERE recipe_id = ? "
+        "ORDER BY cook_date DESC, cook_sequence DESC",
+        (rid,)
+    )
+    history = [{
+        "cook_date": r["cook_date"],
+        "cook_sequence": r["cook_sequence"],
+        "rating": r["rating"],
+        "feedback": r["feedback"],
+    } for r in cursor.fetchall()]
+
+    # 11. 派生关系(recipe_relations)—— 双向(既是 parent 也是 child 都查)
+    cursor.execute(
+        "SELECT r.parent_id, r.child_id, r.relation_type, r.change_summary, "
+        "       p.name AS parent_name, c.name AS child_name, "
+        "       CASE WHEN r.parent_id = ? THEN 'parent' ELSE 'child' END AS direction "
+        "FROM recipe_relations r "
+        "LEFT JOIN recipes p ON r.parent_id = p.id "
+        "LEFT JOIN recipes c ON r.child_id = c.id "
+        "WHERE r.parent_id = ? OR r.child_id = ? "
+        "ORDER BY r.relation_type, p.name, c.name",
+        (rid, rid, rid)
+    )
+    relations = [{
+        "direction": r["direction"],
+        "relation_type": r["relation_type"],
+        "parent_id": r["parent_id"],
+        "parent_name": r["parent_name"],
+        "child_id": r["child_id"],
+        "child_name": r["child_name"],
+        "change_summary": r["change_summary"],
+    } for r in cursor.fetchall()]
+
+    # 12. 组装 - 字段映射:DB → JSON(匹配 recipe_template.json)
     result = {
         "name": main["name"],
         "description": main["description"],
@@ -827,6 +867,9 @@ def export_json(args):
         "status": main["status"],
         "photo_url": main["photo_url"],
         "source": main["source"],
+        "source_url": main["source_url"],
+        "created_at": main["created_at"],
+        "updated_at": main["updated_at"],
         "source_url": main["source_url"],
         "category": {
             "cuisine": cat["cuisine_type"] if cat else None,
@@ -858,8 +901,8 @@ def export_json(args):
             "historical_background": bg["historical_background"] if bg else None,
             "cultural_significance": bg["cultural_significance"] if bg else None,
         },
-        "history": [],
-        "relations": [],
+        "history": history,
+        "relations": relations,
     }
 
     conn.close()

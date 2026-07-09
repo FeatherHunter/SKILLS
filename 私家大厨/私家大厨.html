@@ -244,8 +244,8 @@ const DATA = [
       {
         name: "查看完整食谱",
         wakeWords: ["查看食谱"],
-        cli: '查看食谱 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  category_manager.py list <ID>\n  season_manager.py list <ID>\n  cooking_method_manager.py list <ID>\n  flavor_manager.py list <ID>\n  diet_tag_manager.py list <ID>\n  meal_type_manager.py list <ID>\n  ingredient_manager.py list <ID>\n  step_manager.py list <ID>\n  step_ingredient_manager.py list-by-step <step_id>\n  technique_manager.py list-by-step <step_id>\n  tip_manager.py list <ID>\n  cookware_manager.py list <ID>\n  nutrition_manager.py get <ID>\n  background_manager.py get <ID>\n  history_manager.py list <ID>\n  relation_manager.py list-parent <ID>\n→ 生成完整信息展示 HTML（私房菜谱）',
-        desc: "展示完整食谱（全部 section），生成精美 HTML，末尾问"要开始做吗？"",
+        cli: '查看食谱 宫保虾球\n\n→ 内部流程（v5.0）：\n  recipe_manager.py export-json <菜名> --compact\n  recipe_render.py render <菜名>\n\n→ 自动渲染 templates/recipe_view.html 模板\n→ 输出到 $CHEF_OUTPUT_DIR/recipes/<菜名>.html\n\n（v5.0 起,AI 不再自己拼 HTML,根治 audit P0-5）',
+        desc: "渲染 HTML 模板（templates/recipe_view.html）展示完整食谱，末尾问「要开始做吗？」",
         exec: {
           tables: ["recipes", "recipe_categories", "recipe_seasons", "recipe_cooking_methods", "recipe_flavors", "recipe_diet_tags", "recipe_meal_types", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips", "cookware", "nutrition_info", "background_knowledge", "recipe_history", "recipe_relations"],
           fields: "只读查询全部17张表：\nrecipes 全字段 + 所有关联表的分类/食材/步骤/技法/贴士/炊具/营养/背景/历史/关系",
@@ -473,7 +473,7 @@ const DATA = [
       },
       {
         name: "废弃食谱",
-        wakeWords: ["废弃食谱"],
+        wakeWords: ["废弃食谱", "不想要", "删掉", "废弃"],
         cli: '废弃食谱 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py discard <ID>\n\n→ status 变为"已废弃"，从列表/搜索中自动过滤',
         desc: "标记食谱为已废弃（只增不删原则，不物理删除）",
         exec: {
@@ -566,12 +566,39 @@ const DATA = [
       {
         name: "导入食谱（JSON）",
         wakeWords: ["导入食谱"],
-        cli: '导入食谱\n\n→ 内部流程：\n  1. recipe_import.py template → 查看JSON模板\n  2. AI 生成 JSON 文件\n  3. recipe_import.py import recipe.json\n     → 事务保护，失败自动回滚\n     → 自动完成全部10+步数据库操作\n\n冲突处理：\n  recipe_import.py import recipe.json --choice derive --new_name "改良版"',
+        cli: '导入食谱\n\n→ 内部流程（v5.0）：\n  1. recipe_import.py template → 查看JSON模板\n  2. recipe_json_validate.py recipe.json → jsonschema 严格校验\n  3. recipe_import.py import recipe.json\n     → 事务保护，失败自动回滚\n     → 自动完成全部10+步数据库操作\n     → 写 import_log.jsonl\n\n高级用法（v5.0 新增）：\n  --merge                       # 同名菜覆盖（保留烹饪历史）\n  --choice derive --new_name X  # 同名菜派生变体\n  JSON 顶层为数组              # 批量导入，自动聚合结果',
         desc: "JSON文件一步导入，替代10步CLI操作，带事务保护和自验证",
         exec: {
           tables: ["recipes", "recipe_categories", "recipe_seasons", "recipe_cooking_methods", "recipe_flavors", "recipe_diet_tags", "recipe_meal_types", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips", "cookware", "nutrition_info", "background_knowledge"],
           fields: "事务写入全部关联表（与录入食谱相同的表和字段）\nJSON必填：name, ingredients[].name, steps[].action\nJSON可选：description, difficulty, servings, total_time, category, seasons, cooking_methods, flavors, diet_tags, meal_types, tips, techniques, cookware, nutrition, background",
           side: "事务操作（BEGIN/COMMIT/ROLLBACK）；JSON自验证；同名冲突检测"
+        }
+      }
+    ]
+  },
+  {
+    cat: "H. 派生关系（v5.1 新增）",
+    modules: [
+      {
+        name: "添加派生关系",
+        wakeWords: ["添加派生关系"],
+        cli: '添加派生关系 宫保虾球 基于 上海排骨年糕\n\n→ 内部流程：\n  1. relation_manager.py add \\\n     --parent_id <上海排骨年糕的ID> \\\n     --child_id <宫保虾球的ID> \\\n     --relation_type 派生 \\\n     --change_summary "减辣版本"',
+        desc: "标记一道菜基于另一道菜的变体（派生/变体/改良），形成食谱族谱",
+        exec: {
+          tables: ["recipe_relations"],
+          fields: "INSERT INTO recipe_relations (id, parent_id, child_id, relation_type, change_summary)\n父本 = parent_id（被派生）\n子本 = child_id（基于父本的新菜）",
+          side: "写操作；不级联（删菜不影响关系）"
+        }
+      },
+      {
+        name: "查看派生关系",
+        wakeWords: ["查看派生关系"],
+        cli: '查看派生关系 上海排骨年糕\n\n→ 内部流程：\n  relation_manager.py list-parent <ID>   → 谁基于我变\n  relation_manager.py list-child <ID>    → 我基于谁\n  → 合并展示（按方向分组）',
+        desc: "查看一道菜的所有父本/子本关系",
+        exec: {
+          tables: ["recipe_relations", "recipes"],
+          fields: "SELECT r.*, p.name AS parent_name, c.name AS child_name\nFROM recipe_relations r\nLEFT JOIN recipes p ON r.parent_id = p.id\nLEFT JOIN recipes c ON r.child_id = c.id\nWHERE r.parent_id = ? OR r.child_id = ?",
+          side: "只读操作；recipe_render.py 已自动渲染到 recipe_view.html 派生关系 section"
         }
       }
     ]

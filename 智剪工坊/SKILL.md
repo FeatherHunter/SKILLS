@@ -258,13 +258,19 @@ SKILL.md（必读，触发词索引）
 | `scripts/asr/*.py` | ASR 链路 CLI（L6：转录/烧字幕/说话人合并）| AI 调ASR脚本时 |
 | `lib/ffmpeg/audio/*.py` | ffmpeg 音频底层 lib（10 文件，70+ 函数）| AI 调音频 lib 时 |
 | `lib/ffmpeg/video/*.py` | ffmpeg 视频底层 lib（7 文件，21+ 函数：字幕/转场/调色/速度/缩放/黑边/水印）| AI 调视频 lib 时 |
-| `lib/demucs.py` | Demucs 声源分离底层 | AI 调 demucs 时 |
-| `lib/pyannote.py` | pyannote 说话人分离底层 | AI 调 pyannote 时 |
-| `lib/whisper.py` | faster-whisper ASR 底层 | AI 调 ASR 时 |
-| `scripts/*.py`（其他）| 视频原子操作 / AI 能力编排 / 基础编辑 | AI 调脚本时 |
+| `lib/separate_demucs.py` | Demucs 声源分离底层（Python API + GPU）| AI 调 demucs 时 |
+| `lib/asr/pyannote.py` | pyannote 说话人分离底层（需 HF token）| AI 调 pyannote 时 |
+| `lib/asr/whisper.py` | faster-whisper ASR 底层 | AI 调 ASR 时 |
+| `scripts/audio/*.py` | 音频链路脚本（11 个：mix/voice/beat/extract/denoise/separate/diarize/voice_extract/silence_split/loudness_norm）| AI 调音频脚本时 |
+| `scripts/asr/*.py` | ASR 链路脚本（3 个：transcribe/burn_subtitle/speaker_srt）| AI 调 ASR 脚本时 |
+| `scripts/video/*.py` | 视频操作脚本（21 个：color/fade/freeze/trim/xfade 等）| AI 调视频脚本时 |
+| `scripts/ai/*.py` | AI 能力脚本（9 个：cover/beauty/rewrite 等）| AI 调 AI 脚本时 |
+| `scripts/batch/*.py` | 批量处理脚本 | AI 调批量时 |
 | `scripts/_internal/*.py` | 内部工具（一致性检查等）| **AI 不调，开发者用** |
+| `lib/video_processing.py` | 视频滤镜 + 转场 + rotation（v1.7 改名，原 processing.py） | 阶段 2/3 |
+| `lib/video/patch_mp4_rotation.py` | MP4 rotation 补丁 | v1.7 新增 |
 | `lib/common.py` | ffmpeg 包装 + 错误 + 日志 + safe_run | 共享逻辑，**勿重写** |
-| `lib/processing.py` | 视频滤镜 + 转场 + rotation | 阶段 2/3 |
+| `lib/cli_args.py` | CLI 参数解析辅助 | 共享逻辑 |
 | `lib/filename.py` | sanitize_filename + get_output_path | 阶段 4 命名 |
 | `intent.html` | 唯一前端：填表 → intent.json | 阶段 0 项目初始化 |
 
@@ -474,7 +480,7 @@ AI 看到模糊需求时**必须问用户**, 不擅自决定。常见模糊:
 | `"1分30秒"` | 复合 | `"1分30秒"` → 90s |
 | 完全无法解析 | **必须问用户** | 不要瞎猜 |
 
-- `parse_time()` 自动识别（详见 `lib/processing.py`）
+- `parse_time()` 自动识别（详见 `lib/video_processing.py`，v1.7 改名）
 
 ### 6. 序列（sequences）是**部分约束**, 不是全连接
 
@@ -514,7 +520,7 @@ AI 收到 intent.json 后, **自动检查工作区里的版本文件**：
 ### 10. 新增 ops（v0.6+）
 
 加新 op 必须:
-1. 在 `lib/processing.py` 加 build filter
+1. 在 `lib/video_processing.py` 加 build filter（v1.7 改名，原 `lib/processing.py`）
 2. 加到 §G.1 video 级 ops 表
 3. 在 §H 路由表加字段定义
 4. 在 references/精剪-剪头剪尾保留段切中间.md 或新建 references/ 加详细文档
@@ -554,7 +560,7 @@ AI 收到 intent.json 后, **自动检查工作区里的版本文件**：
 ### 0. **AI 是编排者, 不是 step 脚本的调用者**（v1.3 关键变化）
 
 - ❌ **不要**调 `pipeline_step*.py`（v1.3 已删 6 个 step 脚本）
-- ✅ **要**直接调 atomic CLI（`scripts/atomic/*.py` / `lib/processing.py`）
+- ✅ **要**直接调 atomic CLI（`scripts/atomic/*.py` / `lib/video_processing.py`，v1.7 改名）
 
 ### 1. **触发锚点：选①时必读 references/主流程-阶段编排.md**
 
@@ -703,7 +709,7 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 │   ├── 数字人-AI主播头像说话.md
 │   └── 原子操作-14种基础剪辑指令.md
 ├── scripts/                          # 原子 CLI（按红线原则分类）
-│   ├── audio/                       # 音频链路 L1-L5（用户可见）
+│   ├── audio/                       # 音频链路 L1-L5（用户可见，v1.7 保留）
 │   │   ├── mix.py                   # BGM 混音
 │   │   ├── voice.py                 # 变声
 │   │   ├── beat.py                  # 节拍
@@ -714,22 +720,38 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 │   │   ├── voice_extract.py         # 人声提取（v1.5）
 │   │   ├── silence_split.py         # 静音分段（v1.5）
 │   │   └── loudness_norm.py         # 响度归一（v1.5）
-│   ├── asr/                         # ASR 链路 L6（用户可见）
-│   │   ├── transcribe.py            # Whisper 转录
+│   ├── asr/                         # ASR 链路 L6（用户可见，v1.7 保留）
+│   │   ├── transcribe.py            # Whisper 转录（v1.7 改调 lib.asr.whisper）
 │   │   ├── burn_subtitle.py         # 烧字幕（v1.6 调 lib.ffmpeg.video.subtitle）
 │   │   └── speaker_srt.py           # 说话人+ASR合并（v1.4，纯文本合成）
-│   ├── video_*.py                   # 视频原子操作（用户可见）
-│   ├── ai_*.py                      # AI 能力编排（用户可见）
-│   ├── edit.py                      # 基础编辑（用户可见）
-│   └── _internal/                   # 内部工具（AI 不调，开发者用）
-│       └── _check_consistency.py
+│   ├── video/                       # ⭐ 视频操作（v1.7 新建，21 个脚本）
+│   │   ├── color.py fade.py freeze.py xfade.py trim.py
+│   │   ├── speed.py reverse.py normalize.py scene.py
+│   │   ├── mask.py overlay.py reframe.py multicam.py
+│   │   ├── opening.py subtitle.py style.py keyframe.py
+│   │   ├── fx.py hdr.py edit.py image_to_video.py
+│   │   └── __init__.py
+│   ├── ai/                          # ⭐ AI 能力（v1.7 新建，9 个脚本）
+│   │   ├── cover.py beauty.py cutout.py digital_human.py
+│   │   ├── fillers.py quotes.py rewrite.py
+│   │   ├── text_to_video.py translate.py
+│   │   └── __init__.py
+│   ├── batch/                       # ⭐ 批量处理（v1.7 新建）
+│   │   ├── batch.py
+│   │   └── __init__.py
+│   └── _internal/                   # 内部工具（AI 不调，开发者用，v1.7 新建）
+│       └── stage1_checklist.py
 ├── lib/                              # 共享逻辑（勿重写）
 │   ├── common.py                    # ffmpeg + 错误 + 日志 + safe_run
-│   ├── processing.py                # 视频滤镜 + 转场 + rotation
+│   ├── cli_args.py                  # CLI 参数解析辅助
 │   ├── filename.py                  # 命名
-│   ├── demucs.py                    # 第三方底库：声源分离（v1.5）
-│   ├── pyannote.py                  # 第三方底库：说话人分离（v1.5）
-│   ├── whisper.py                   # 第三方底库：faster-whisper ASR（v1.5）
+│   ├── video_processing.py          # ⭐ 视频处理（v1.7 改名，原 processing.py）
+│   ├── separate_demucs.py           # Demucs 声源分离底层（Python API + GPU，v1.7 改名避免与 demucs 包冲突）
+│   ├── asr/                         # ⭐ ASR 第三方底库（v1.7 新建子目录）
+│   │   ├── pyannote.py              # pyannote 说话人分离
+│   │   └── whisper.py               # faster-whisper ASR
+│   ├── video/                       # ⭐ 视频第三方底库（v1.7 新建子目录）
+│   │   └── patch_mp4_rotation.py
 │   ├── ffmpeg/
 │   │   ├── audio/                   # 音频 lib（10 文件，70+ 函数，v1.5）
 │   │   │   └── denoise / enhance / detect / normalize / transform / channel / visualize / effect / utility / measure / extract
@@ -750,6 +772,7 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 
 ## 📅 版本
 
+- **v1.7**（2026-07-10）：架构清理（scripts/ 根目录清空，所有用户可见脚本归到子目录 audio/asr/video/ai/batch；lib/ 第三方底库归到子目录 asr/video；新增 _internal/）
 - **v1.6**（2026-07-09）：scripts/asr/burn_subtitle 下沉到 lib/ffmpeg/video/，新增视频底层 lib（6 文件，21 函数，41 种 xfade）
 - **v1.5**（2026-07-09）：scripts/audio/* 全部下沉到 lib/ffmpeg/audio/，分层架构
 - **v1.4**（2026-07-09）：链路重构 + 新增声源分离/说话人分离链路 + 能力链路红线原则（最高优先级）
@@ -778,12 +801,33 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
   - 目录结构加 lib/ffmpeg/video/ 树
 - **核心优势**：所有视频能力（字幕烧录 / 转场 / 调色 / 速度 / 缩放 / 水印）通过 lib 复用，上层脚本仅做参数解析 + 用户友好日志
 
+### v1.7 变更摘要（架构清理）
+
+- **scripts/ 根目录清空**：22 个旧脚本全部归类到子目录
+  - **新建 `scripts/video/`**（21 个脚本）：video_*.py + edit.py + image_to_video.py 迁移并去 `video_` 前缀
+  - **新建 `scripts/ai/`**（9 个脚本）：ai_*.py 迁移并去 `ai_` 前缀
+  - **新建 `scripts/batch/`**（1 个脚本）：batch.py 迁移
+  - **新建 `scripts/_internal/`**（1 个工具）：stage1_checklist.py 从 lib/ 迁入
+  - **删除** 3 个 backward-compat stubs：`audio_bgm.py` / `audio_voice.py` / `audio_beat.py`（违反 §5.5）
+- **lib/ 第三方底库归子目录**：
+  - **新建 `lib/asr/`**：`pyannote.py` + `whisper.py` 从 lib/ 根目录迁入
+  - **新建 `lib/video/`**：`patch_mp4_rotation.py` 从 lib/ 根目录迁入
+  - **改名 `lib/processing.py` → `lib/video_processing.py`**（职责更清晰）
+- **同步所有 import 引用**（4 处 + SKILL.md 5 处）：
+  - `scripts/asr/transcribe.py`: `from lib.whisper` → `from lib.asr.whisper`
+  - `scripts/audio/diarize.py`: `from lib.pyannote` → `from lib.asr.pyannote`
+  - lib/asr/pyannote.py / lib/asr/whisper.py / lib/video_processing.py docstring 同步
+- **SKILL.md 同步**：文件地图 + 目录结构 + 版本 + 解析注释 + 5 处旧引用全部更新
+- **清理空目录**：`lib/pyannote/` `lib/whisper/` 空目录删除
+- **架构改进**：scripts/ 根目录 100% 清空，lib/ 顶层只剩基础设施 + 第三方入口（5 个文件），其他全部归子目录
+- **smoke test**：12/12 import 测试通过（lib.asr.pyannote / lib.asr.whisper / lib.separate_demucs / scripts/asr/transcribe / scripts/audio/diarize / scripts/audio/separate / lib.video_processing / lib.video.patch_mp4_rotation / scripts.video / scripts.ai / scripts.batch / scripts._internal）
+
 ### v1.5 变更摘要
 
 - **新增** `lib/ffmpeg/audio/` 底层 lib（10 个文件，70+ 个公开函数）
   - denoise / enhance / detect / normalize / transform / channel / visualize / effect / utility / measure / extract
 - **新增** 第三方底层 lib（按依赖分类）：
-  - `lib/demucs.py`（声源分离）
+  - `lib/separate_demucs.py`（声源分离，Python API + GPU）
   - `lib/pyannote.py`（说话人分离）
   - `lib/whisper.py`（faster-whisper ASR）
 - **删除** 历史遗留 `lib/asr.py`（被 lib/whisper.py 取代）

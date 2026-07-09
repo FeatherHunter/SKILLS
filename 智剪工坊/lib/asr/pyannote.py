@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · lib/pyannote 底层库
+智剪工坊 · lib/asr/pyannote 底层库
 
 pyannote.audio（说话人分离）封装:
   - diarize_speakers      主入口：识别说话人（输出时间戳 + 标签）
 
 调用示例:
-    from lib.pyannote import diarize_speakers
+    from lib.asr.pyannote import diarize_speakers
     result = diarize_speakers("vocals.wav", min_speakers=1, max_speakers=4)
     # result = {'segments': [{'start': 0.0, 'end': 3.5, 'speaker': 'SPEAKER_00'}, ...]}
 

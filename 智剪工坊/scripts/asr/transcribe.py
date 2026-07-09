@@ -35,7 +35,7 @@ _ensure_in_path(str(_LIB_DIR))
 from common import (
     ensure_dir, log_info, log_section, log_error, safe_run,
 )
-from lib.whisper import transcribe_to_srt, check_whisper
+from lib.asr.whisper import transcribe_to_srt, check_whisper
 
 
 def transcribe(input_path, srt_path, model="medium", device="cuda", language=None):

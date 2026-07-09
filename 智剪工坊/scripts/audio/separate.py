@@ -40,10 +40,10 @@ _ensure_in_path(str(_LIB_DIR))
 from common import (
     ensure_dir, log_info, log_warn, log_section, log_error, safe_run,
 )
-from lib.demucs import separate_vocals, separate_full, check_demucs
+from lib.separate_demucs import separate_vocals, separate_full, check_demucs
 
 
-def separate(input_path, output_dir, model="htdemucs", stem=None):
+def separate(input_path, output_dir, model="htdemucs", stem=None, device="cuda"):
     """声源分离（v1.5 迁移版本：调 lib/demucs）。
 
     Args:
@@ -51,11 +51,12 @@ def separate(input_path, output_dir, model="htdemucs", stem=None):
         output_dir: 输出目录
         model: Demucs 模型名
         stem: 只提取指定音轨（vocals / drums / bass / other）
+        device: 'cuda'（默认，GPU）/ 'cpu'
 
     Returns:
         str (vocals 路径) / dict (完整分离) / None
     """
-    log_section(f"声源分离: {Path(input_path).name} (model={model})")
+    log_section(f"声源分离: {Path(input_path).name} (model={model}, device={device})")
     ensure_dir(output_dir)
 
     if not check_demucs():
@@ -65,7 +66,7 @@ def separate(input_path, output_dir, model="htdemucs", stem=None):
 
     if stem == "vocals":
         # 只提取人声（推荐，节省一半空间）
-        result = separate_vocals(input_path, output_dir, model=model)
+        result = separate_vocals(input_path, output_dir, model=model, device=device)
         if result:
             log_info(f"人声输出: {result}")
         return result
@@ -74,7 +75,7 @@ def separate(input_path, output_dir, model="htdemucs", stem=None):
         return None
     else:
         # 完整 4 轨分离
-        result = separate_full(input_path, output_dir, model=model)
+        result = separate_full(input_path, output_dir, model=model, device=device)
         if result:
             log_info(f"分离完成: {len(result)} 轨")
         return result
@@ -100,6 +101,8 @@ Demucs 模型:
     parser.add_argument("--output-dir", help="分离输出目录")
     parser.add_argument("--model", default="htdemucs",
                         help="模型（默认 htdemucs）")
+    parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"],
+                        help="推理设备（默认 cuda，CPU 可用但慢 5-10x）")
     parser.add_argument("--stem",
                         choices=["vocals", "drums", "bass", "other"],
                         help="只提取指定音轨（仅 vocals 可单独输出）")
@@ -114,7 +117,7 @@ Demucs 模型:
         sys.exit(1)
 
     output_dir = args.output_dir or str(Path(args.output).parent)
-    result = separate(args.input, output_dir, args.model, args.stem)
+    result = separate(args.input, output_dir, args.model, args.stem, device=args.device)
 
     if result is None:
         sys.exit(1)

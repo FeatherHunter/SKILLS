@@ -43,7 +43,7 @@ _ensure_in_path(str(_LIB_DIR))
 from common import (
     ensure_dir, log_info, log_section, log_error, safe_run,
 )
-from lib.pyannote import diarize_speakers, check_pyannote
+from lib.asr.pyannote import diarize_speakers, check_pyannote
 
 
 def diarize(input_path, output_json,

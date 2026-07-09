@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · lib/whisper 底层库
+智剪工坊 · lib/asr/whisper 底层库
 
 faster-whisper（OpenAI Whisper 高效实现）封装:
   - transcribe_to_srt    主入口：音频/视频 → SRT 字幕
   - transcribe_to_text   纯文本转录（无时间戳）
 
 调用示例:
-    from lib.whisper import transcribe_to_srt
+    from lib.asr.whisper import transcribe_to_srt
     transcribe_to_srt("audio.wav", "subtitles.srt", model="medium")
 
 依赖: faster-whisper (pip install faster-whisper)

@@ -26,9 +26,18 @@ import sys
 from pathlib import Path
 
 # 让 lib/ffmpeg/audio 可被 import
-_SKILL_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(_SKILL_ROOT))
-sys.path.insert(0, str(_SKILL_ROOT / "lib"))
+# 设置 sys.path：保证 SKILL_ROOT 和 lib 都在 path（但 append，不覆盖）
+_SKILL_ROOT = Path(__file__).parent.parent.parent  # SKILL_ROOT/
+_LIB_DIR = _SKILL_ROOT / "lib"
+
+# 用 append（不会覆盖），并且只在路径里不存在时才加入
+def _ensure_in_path(p):
+    p = str(p)
+    if p not in sys.path:
+        sys.path.append(p)
+
+_ensure_in_path(str(_SKILL_ROOT))
+_ensure_in_path(str(_LIB_DIR))
 
 from common import (
     ensure_dir, log_info, log_section, log_warn, log_error, safe_run,

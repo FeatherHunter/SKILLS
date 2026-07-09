@@ -153,7 +153,34 @@
       }
     },
 
-    "history": {"type": "array"},
-    "relations": {"type": "array"}
+    "history": {
+      "type": "array",
+      "description": "烹饪历史记录(可选)。可空,空则用独立 history_manager.py add 补录。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cook_date"],
+        "properties": {
+          "cook_date": {"type": "string", "format": "date", "description": "YYYY-MM-DD"},
+          "cook_sequence": {"type": "integer", "minimum": 1, "description": "第几次做(留空自动递增)"},
+          "rating": {"type": "number", "minimum": 0, "maximum": 5},
+          "feedback": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "description": "派生关系(本菜作为子本)。parent_name 用菜名而非 UUID,AI 录入更直观。",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["parent_name", "relation_type"],
+        "properties": {
+          "parent_name": {"type": "string", "minLength": 1, "description": "父本菜名(必须已存在或在本批次中先录入)"},
+          "relation_type": {"type": "string", "enum": ["派生", "变体", "改良"]},
+          "change_summary": {"type": ["string", "null"]}
+        }
+      }
+    }
   }
 }

@@ -447,6 +447,88 @@ def _log_import(entry):
         pass  # 日志失败不影响主流程
 
 
+def add_history(conn, recipe_id, history):
+    """添加烹饪历史(Option A 扩展)。
+    cook_sequence 留空 → 自动递增(从 DB 当前最大 +1)。"""
+    if not history:
+        return 0
+    cursor = conn.cursor()
+    # 拿当前最大 cook_sequence(自动递增起点)
+    cursor.execute(
+        "SELECT COALESCE(MAX(cook_sequence), 0) FROM recipe_history WHERE recipe_id = ?",
+        (recipe_id,)
+    )
+    next_seq = (cursor.fetchone()[0] or 0) + 1
+
+    count = 0
+    for h in history:
+        seq = h.get("cook_sequence") or next_seq
+        cursor.execute(
+            "INSERT INTO recipe_history (id, recipe_id, cook_date, cook_sequence, rating, feedback) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                str(uuid.uuid4()),
+                recipe_id,
+                h["cook_date"],
+                seq,
+                h.get("rating"),
+                h.get("feedback"),
+            )
+        )
+        count += 1
+        if not h.get("cook_sequence"):
+            next_seq += 1  # 自动递增
+    return count
+
+
+def add_relations(conn, child_id, relations, child_name):
+    """添加派生关系(Option A 扩展)。
+    parent_name 查 DB 找 parent_id;若不存在则报错(允许用户先单独录父本)。
+    本菜作为 child(子本),relation.relation_type 是固定枚举。"""
+    if not relations:
+        return 0
+    cursor = conn.cursor()
+    count = 0
+    for r in relations:
+        parent_name = r["parent_name"]
+        # 自引用检查
+        if parent_name == child_name:
+            raise ValueError(f"不能派生自身:{parent_name} -> {child_name}")
+
+        # 查父本 ID
+        cursor.execute(
+            "SELECT id FROM recipes WHERE name = ? AND status != '已废弃' LIMIT 1",
+            (parent_name,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            raise ValueError(f"未找到父本食谱「{parent_name}」(请先录入父本,或在本批次中提前录入)")
+        parent_id = row[0]
+
+        # 重复检查(避免同一对 parent-child 多次登记)
+        cursor.execute(
+            "SELECT id FROM recipe_relations WHERE parent_id = ? AND child_id = ?",
+            (parent_id, child_id)
+        )
+        if cursor.fetchone():
+            # 跳过而非失败(允许幂等)
+            continue
+
+        cursor.execute(
+            "INSERT INTO recipe_relations (id, parent_id, child_id, relation_type, change_summary) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (
+                str(uuid.uuid4()),
+                parent_id,
+                child_id,
+                r.get("relation_type", "派生"),
+                r.get("change_summary"),
+            )
+        )
+        count += 1
+    return count
+
+
 def import_recipe(json_file, choice=None, new_name=None, merge=False):
     """主导入函数:加载 JSON → 验证 → 检查冲突 → 事务导入。
     merge=True 时:若同名菜已存在,删除旧数据(保留烹饪历史),复用 recipe_id 重建。"""
@@ -519,6 +601,10 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
         add_cookware(conn, recipe_id, data.get("cookware"))
         add_nutrition(conn, recipe_id, data.get("nutrition"))
         add_background(conn, recipe_id, data.get("background"))
+
+        # ── Option A 扩展:history + relations(本菜作为 child)──
+        add_history(conn, recipe_id, data.get("history"))
+        add_relations(conn, recipe_id, data.get("relations"), data["name"])
 
         # 提交事务
         conn.execute("COMMIT")
@@ -627,6 +713,10 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
         add_cookware(conn, recipe_id, data.get("cookware"))
         add_nutrition(conn, recipe_id, data.get("nutrition"))
         add_background(conn, recipe_id, data.get("background"))
+
+        # ── Option A 扩展:history + relations(本菜作为 child)──
+        add_history(conn, recipe_id, data.get("history"))
+        add_relations(conn, recipe_id, data.get("relations"), data["name"])
 
         # 提交事务
         conn.execute("COMMIT")

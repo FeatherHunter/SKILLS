@@ -13,12 +13,14 @@ from common import run_ffmpeg  # noqa: E402
 
 
 # 位置映射
+# 注意：drawtext 表达式只认 main_w/main_h/tw/th，没有 overlay_w/overlay_h
+# 改用 `tw` (text width) / `th` (text height) 替代
 POSITIONS = {
     "topleft":     "10:10",
-    "topright":    "main_w-overlay_w-10:10",
-    "bottomleft":  "10:main_h-overlay_h-10",
-    "bottomright": "main_w-overlay_w-10:main_h-overlay_h-10",
-    "center":      "(main_w-overlay_w)/2:(main_h-overlay_h)/2",
+    "topright":    "main_w-tw-10:10",
+    "bottomleft":  "10:main_h-th-10",
+    "bottomright": "main_w-tw-10:main_h-th-10",
+    "center":      "(main_w-tw)/2:(main_h-th)/2",
 }
 
 
@@ -63,17 +65,26 @@ def add_text_watermark(video, output, text, position="bottomright",
         fontsize: 字号
         fontcolor: 颜色
         opacity: 透明度（0-1）
-        shadow: 阴影深度
+        shadow: 是否显示阴影（True/False），默认 True
     """
     pos = POSITIONS.get(position, POSITIONS["bottomright"])
+    # 把 main_w-overlay_w-10 转成 main_w-tw-10（drawtext 不认 overlay_w）
+    pos_x = pos.split(':')[0].replace('overlay_w', 'tw')
+    pos_y = pos.split(':')[1].replace('overlay_h', 'th')
 
     font_path = "C\\:/Windows/Fonts/msyh.ttc"
     text_escaped = text.replace(":", r"\:").replace("'", r"\'")
 
+    # ffmpeg 7.1: drawtext 不再接受 `shadow=N` 参数，
+    # 阴影用 `shadowx=2:shadowy=2:shadowcolor=color@alpha` 控制
+    shadow_opts = ""
+    if shadow:
+        shadow_opts = ":shadowx=2:shadowy=2:shadowcolor=black@0.5"
+
     drawtext = (
         f"drawtext=text='{text_escaped}':fontfile='{font_path}':"
         f"fontsize={fontsize}:fontcolor={fontcolor}@{opacity}:"
-        f"x={pos.split(':')[0]}:y={pos.split(':')[1]}:shadow={shadow}"
+        f"x={pos_x}:y={pos_y}{shadow_opts}"
     )
     run_ffmpeg(["-i", str(video), "-vf", drawtext,
                 "-c:v", "libx264", "-preset", "medium",

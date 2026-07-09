@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智剪工坊 · 架构审计 + 重构方案</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+    background: linear-gradient(180deg, #fafbfc 0%, #f5f6f9 100%);
+    color: #1d1d1f; line-height: 1.7;
+    padding: 40px 20px; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header {
+    background: #fff; border-radius: 16px; padding: 40px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    background: #ff3b30; color: white; font-size: 12px; font-weight: 600;
+  }
+  .badge.warn { background: #ff9500; }
+  .badge.ok { background: #34c759; }
+  h1 { font-size: 32px; font-weight: 700; margin: 16px 0 12px; }
+  h2 {
+    font-size: 22px; font-weight: 700; margin: 32px 0 16px;
+    padding-bottom: 12px; border-bottom: 1px solid #e5e5e7;
+  }
+  h3 {
+    font-size: 17px; font-weight: 600; margin: 24px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .meta { color: #86868b; font-size: 14px; }
+  .section {
+    background: #fff; border-radius: 16px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  .tree {
+    font-family: "SF Mono", "Consolas", "Monaco", monospace;
+    font-size: 13px; background: #1d1d1f; color: #f5f6f9;
+    padding: 20px 24px; border-radius: 8px; overflow-x: auto;
+    line-height: 1.7; white-space: pre;
+  }
+  .tree .del { color: #ff6961; text-decoration: line-through; }
+  .tree .add { color: #34c759; }
+  .tree .mv { color: #5ac8fa; }
+  .tree .keep { color: #f5f6f9; }
+  .tree .rename { color: #ffd60a; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #e5e5e7; font-size: 14px; vertical-align: top; }
+  th { background: #fafbfc; font-weight: 600; }
+  code {
+    font-family: "SF Mono", "Consolas", monospace;
+    background: #f5f6f9; padding: 2px 6px; border-radius: 4px;
+    font-size: 13px;
+  }
+  .step {
+    background: #fafbfc; border-left: 4px solid #0071e3;
+    padding: 16px 20px; border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .step-num {
+    display: inline-block; background: #0071e3; color: white;
+    width: 26px; height: 26px; border-radius: 50%;
+    text-align: center; line-height: 26px;
+    font-weight: 700; font-size: 13px; margin-right: 10px;
+  }
+  .step-title { font-weight: 600; margin-bottom: 8px; }
+  .danger {
+    background: #fff5f5; border-left: 3px solid #ff3b30;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .warning {
+    background: #fff8f0; border-left: 3px solid #ff9500;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  .ok {
+    background: #f0f9f4; border-left: 3px solid #34c759;
+    padding: 12px 16px; border-radius: 6px;
+    margin: 12px 0;
+  }
+  details { margin: 12px 0; }
+  summary {
+    cursor: pointer; font-weight: 600; padding: 12px;
+    background: #fafbfc; border-radius: 8px; user-select: none;
+  }
+  summary:hover { background: #f0f1f3; }
+  details[open] summary { background: #eef4ff; }
+  .action-list { list-style: none; padding-left: 0; }
+  .action-list li {
+    padding: 8px 0; padding-left: 24px; position: relative;
+  }
+  .action-list li::before {
+    content: "→"; position: absolute; left: 0; color: #0071e3; font-weight: 700;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 12px; font-weight: 500; margin-right: 6px;
+  }
+  .pill.red { background: #ffe5e3; color: #d70015; }
+  .pill.yel { background: #fff3d6; color: #ad6800; }
+  .pill.grn { background: #d6f5df; color: #1f8b3a; }
+  .footer {
+    text-align: center; color: #86868b; font-size: 13px; padding: 24px;
+  }
+  .toc {
+    background: #fafbfc; border-radius: 12px; padding: 16px 24px;
+    margin: 16px 0;
+  }
+  .toc a {
+    color: #0071e3; text-decoration: none;
+    display: block; padding: 4px 0;
+  }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <span class="badge">🔴 架构审计</span>
+  <h1>智剪工坊 · 目录结构与命名规范审查</h1>
+  <div class="meta">
+    审查时间：2026-07-10 02:28 · 视角：架构师 · 范围：scripts/ + lib/ 共 4 大块 · 总文件：~80
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="section">
+  <h2>📑 目录</h2>
+  <div class="toc">
+    <a href="#current">1. 当前目录结构（实际）</a>
+    <a href="#issues">2. 7 个问题（红/黄/绿）</a>
+    <a href="#target">3. 修复后目标结构</a>
+    <a href="#violations">4. 红线违规详情（§5.5 backward-compat）</a>
+    <a href="#plan">5. 修复方案（8 步操作清单）</a>
+    <a href="#risk">6. 风险评估</a>
+    <a href="#recommend">7. 推荐执行方式</a>
+  </div>
+</div>
+
+<!-- Current -->
+<div class="section" id="current">
+  <h2>1. 当前目录结构（实际）</h2>
+
+  <h3>1.1 scripts/ — 用户可见脚本（混乱）</h3>
+  <div class="tree"><span class="del">scripts/                              ← 根目录 22 个文件（大杂烩）</span>
+├── <span class="del">ai_beauty.py</span>           ← 应该迁到 scripts/ai/
+├── <span class="del">ai_cover.py</span>            ← 应该迁到 scripts/ai/
+├── <span class="del">ai_cutout.py</span>           ← 应该迁到 scripts/ai/
+├── <span class="del">ai_digital_human.py</span>    ← 应该迁到 scripts/ai/
+├── <span class="del">ai_fillers.py</span>          ← 应该迁到 scripts/ai/
+├── <span class="del">ai_quotes.py</span>           ← 应该迁到 scripts/ai/
+├── <span class="del">ai_rewrite.py</span>          ← 应该迁到 scripts/ai/
+├── <span class="del">ai_text_to_video.py</span>    ← 应该迁到 scripts/ai/
+├── <span class="del">ai_translate.py</span>        ← 应该迁到 scripts/ai/
+├── <span class="del">audio_beat.py</span>          ← <span class="pill red">BACKWARD-COMPAT STUB</span>
+├── <span class="del">audio_bgm.py</span>           ← <span class="pill red">BACKWARD-COMPAT STUB</span>
+├── <span class="del">audio_voice.py</span>         ← <span class="pill red">BACKWARD-COMPAT STUB</span>
+├── <span class="del">batch.py</span>               ← 应该迁到 scripts/batch/
+├── <span class="del">edit.py</span>                ← 应该迁到 scripts/video/edit.py
+├── <span class="del">image_to_video.py</span>      ← 应该迁到 scripts/video/
+├── <span class="del">README.md</span>              ← 文档，应该迁到 references/
+├── <span class="del">video_color.py</span>         ← 应该迁到 scripts/video/（v1.6 lib 已覆盖）
+├── <span class="del">video_fade.py</span>          ← 应该迁到 scripts/video/
+├── <span class="del">video_freeze.py</span>        ← 应该迁到 scripts/video/
+├── <span class="del">video_fx.py</span>            ← 应该迁到 scripts/video/
+├── <span class="del">video_hdr.py</span>           ← 应该迁到 scripts/video/
+├── <span class="del">video_keyframe.py</span>      ← 应该迁到 scripts/video/
+├── <span class="del">video_mask.py</span>          ← 应该迁到 scripts/video/
+├── <span class="del">video_multicam.py</span>      ← 应该迁到 scripts/video/
+├── <span class="del">video_normalize.py</span>     ← 应该迁到 scripts/video/
+├── <span class="del">video_opening.py</span>       ← 应该迁到 scripts/video/
+├── <span class="del">video_overlay.py</span>       ← 应该迁到 scripts/video/
+├── <span class="del">video_reframe.py</span>       ← 应该迁到 scripts/video/
+├── <span class="del">video_reverse.py</span>       ← 应该迁到 scripts/video/
+├── <span class="del">video_scene.py</span>         ← 应该迁到 scripts/video/
+├── <span class="del">video_speed.py</span>         ← 应该迁到 scripts/video/
+├── <span class="del">video_style.py</span>         ← 应该迁到 scripts/video/
+├── <span class="del">video_subtitle.py</span>      ← 应该迁到 scripts/video/
+├── <span class="del">video_trim.py</span>          ← 应该迁到 scripts/video/
+├── <span class="del">video_xfade.py</span>         ← 应该迁到 scripts/video/
+│
+├── <span class="keep">audio/                            ✅ 已结构化（v1.4 重构）</span>
+│   ├── <span class="keep">mix.py voice.py beat.py extract.py</span>
+│   ├── <span class="keep">denoise.py separate.py diarize.py</span>（v1.4 链路）
+│   ├── <span class="keep">voice_extract.py silence_split.py loudness_norm.py</span>（v1.5 新增）
+│   └── <span class="keep">__init__.py</span>
+│
+└── <span class="keep">asr/                              ✅ 已结构化（v1.4 重构）</span>
+    ├── <span class="keep">transcribe.py burn_subtitle.py speaker_srt.py</span>
+    └── <span class="keep">__init__.py</span></div>
+
+  <h3>1.2 lib/ — 共享底层（混乱）</h3>
+  <div class="tree">lib/
+├── <span class="rename">cli_args.py</span>                ← 基础设施（OK，保留）
+├── <span class="rename">common.py</span>                 ← 基础设施（OK，保留）
+├── <span class="rename">filename.py</span>                ← 基础设施（OK，保留）
+├── <span class="del">patch_mp4_rotation.py</span>      ← 单一功能工具，应入 lib/ffmpeg/video/
+├── <span class="del">processing.py</span>              ← 职责不清，应改名为 video_processing 或合并
+├── <span class="rename">pyannote.py</span>                ← 第三方封装，建议迁入 lib/asr/
+├── <span class="rename">separate_demucs.py</span>         ← 第三方封装（被迫改名，因 demucs.py 冲突）
+├── <span class="del">stage1_checklist.py</span>        ← 内部工具，应入 scripts/_internal/
+├── <span class="rename">whisper.py</span>                 ← 第三方封装，建议迁入 lib/asr/
+│
+└── <span class="keep">ffmpeg/                              ✅ 结构良好</span>
+    ├── <span class="keep">audio/</span>
+    │   ├── <span class="keep">denoise/enhance/detect/normalize/transform/channel/visualize/effect/utility/measure/extract.py</span>（10 文件）
+    │   └── <span class="keep">__init__.py</span>（统一导出 70+ 函数）
+    │
+    └── <span class="keep">video/</span>  （v1.6 新增）
+        ├── <span class="keep">subtitle/transition/color/timing/transform/watermark.py</span>（6 文件）
+        └── <span class="keep">__init__.py</span>（统一导出 21 函数）</div>
+</div>
+
+<!-- Issues -->
+<div class="section" id="issues">
+  <h2>2. 7 个问题分类（🔴 红 / 🟡 黄 / 🟢 绿）</h2>
+
+  <h3><span class="pill red">RED</span> 3 个红线违规</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>问题</th><th>位置</th><th>红线条款</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><strong>backward-compat stubs 残留</strong><br>scripts/audio_beat.py / audio_bgm.py / audio_voice.py 在 v1.4 已声明删除，但物理上还在</td>
+        <td>scripts/ 根目录</td>
+        <td>§5.5 禁止 backward-compat</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><strong>video lib 双向定义</strong><br>scripts/video_*.py 19 个文件 vs v1.6 新建的 lib/ffmpeg/video/ 6 个文件 —— 谁调用谁？职责重叠</td>
+        <td>scripts/ 根目录 vs lib/ffmpeg/video/</td>
+        <td>§能力链路完整性（修改 atomic/ 必须同步 lib）</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><strong>scripts/ 根目录大杂烩</strong><br>22 个 file_xxx.py 全在根，没按职责分类（应该有 video/ ai/ batch/ 子目录）</td>
+        <td>scripts/ 根目录</td>
+        <td>§能力链路完整性 §3 修改契约</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="pill yel">YELLOW</span> 4 个中等问题</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>问题</th><th>现状</th><th>建议</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>4</td>
+        <td><strong>lib/ 根目录职责混乱</strong><br>9 个文件包含：基础设施 + 第三方封装 + 单功能工具</td>
+        <td>lib/ 根目录</td>
+        <td>按"基础设施/第三方/工具"分类</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><strong>AI 脚本散在根目录</strong><br>9 个 ai_*.py 全在 scripts/根，应归到 scripts/ai/</td>
+        <td>scripts/ 根目录</td>
+        <td>建 scripts/ai/ 子目录</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><strong>edit.py / batch.py / image_to_video.py 散在根</strong></td>
+        <td>scripts/ 根目录</td>
+        <td>归到对应子目录</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><strong>stage1_checklist.py 是内部工具</strong></td>
+        <td>lib/ 根目录</td>
+        <td>应该入 scripts/_internal/</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3><span class="pill grn">GREEN</span> 3 个做得好的</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>优点</th><th>位置</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A</td>
+        <td><strong>scripts/audio/ + scripts/asr/ 子目录</strong><br>v1.4 重构后已按职责归类，清晰</td>
+        <td>scripts/audio/ scripts/asr/</td>
+      </tr>
+      <tr>
+        <td>B</td>
+        <td><strong>lib/ffmpeg/audio/ + video/ 按能力域分类</strong><br>10+6 文件，每个文件一个主题</td>
+        <td>lib/ffmpeg/</td>
+      </tr>
+      <tr>
+        <td>C</td>
+        <td><strong>__init__.py 批量导出</strong><br>70+ 函数通过统一入口暴露，调用方无需 import 内部模块</td>
+        <td>lib/ffmpeg/audio/__init__.py</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Target -->
+<div class="section" id="target">
+  <h2>3. 修复后目标结构</h2>
+
+  <h3>scripts/ — 用户可见（按职责清晰分类）</h3>
+  <div class="tree">scripts/
+├── <span class="keep">audio/</span>          ← 音频链路脚本（11 个，已有，OK）
+├── <span class="keep">asr/</span>            ← ASR 链路脚本（3 个，已有，OK）
+├── <span class="add">video/</span>          ← <span class="pill grn">新建</span> 视频操作脚本（19 个迁过来）
+│   ├── trim.py pin_range.py cut_middle.py
+│   ├── color.py fade.py freeze.py xfade.py
+│   ├── speed.py reverse.py normalize.py scene.py
+│   ├── mask.py overlay.py reframe.py multicam.py
+│   ├── opening.py subtitle.py style.py keyframe.py
+│   ├── fx.py hdr.py edit.py image_to_video.py
+│   └── __init__.py
+├── <span class="add">ai/</span>             ← <span class="pill grn">新建</span> AI 能力脚本（9 个迁过来）
+│   ├── cover.py beauty.py cutout.py digital_human.py
+│   ├── fillers.py quotes.py rewrite.py
+│   ├── text_to_video.py translate.py
+│   └── __init__.py
+├── <span class="add">batch/</span>          ← <span class="pill grn">新建</span> 批量处理
+│   └── batch.py
+├── <span class="add">_internal/</span>      ← <span class="pill grn">新建</span> 内部工具（开发者用，AI 不调）
+│   ├── _check_consistency.py
+│   └── stage1_checklist.py
+└── （根目录 <span class="grn">清空</span>）</div>
+
+  <h3>lib/ — 共享底层（按职责清晰分类）</h3>
+  <div class="tree">lib/
+├── <span class="keep">common.py</span>           ← 基础设施（ffmpeg 包装 + 日志 + 错误）
+├── <span class="keep">cli_args.py</span>         ← 基础设施（参数解析辅助）
+├── <span class="keep">filename.py</span>         ← 基础设施（命名 + 路径）
+├── <span class="add">video_processing.py</span>  ← <span class="rename">改名</span>（原 processing.py）
+├── <span class="add">asr/</span>                ← <span class="pill grn">新建</span> ASR 第三方底层
+│   ├── <span class="mv">pyannote.py</span>     ← 从 lib/ 根目录迁入
+│   └── <span class="mv">whisper.py</span>      ← 从 lib/ 根目录迁入
+├── <span class="mv">separate_demucs.py</span>  ← 留 lib/ 根目录（保持现状，已避免与 demucs 包冲突）
+└── <span class="keep">ffmpeg/</span>             ← 已结构化
+    ├── <span class="keep">audio/</span>            ← 10 文件（v1.5）
+    │   └── ...
+    └── <span class="keep">video/</span>            ← 6 文件（v1.6）
+        └── ...
+└── <span class="add">video/</span>             ← <span class="pill grn">新建</span> 视频第三方底层（待 demucs 之类）
+    └── <span class="mv">patch_mp4_rotation.py</span>  ← 从 lib/ 根目录迁入</div>
+</div>
+
+<!-- Violations -->
+<div class="section" id="violations">
+  <h2>4. 红线违规详情（§5.5 backward-compat）</h2>
+
+  <div class="danger">
+    <strong>§5.5 禁止</strong>：任何修改后整个技能统一使用新路径和新能力，不保留旧路径 stub。
+  </div>
+
+  <h3>违规 1：3 个 backward-compat stubs</h3>
+  <table>
+    <thead>
+      <tr><th>文件</th><th>状态</th><th>原因</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>scripts/audio_bgm.py</code></td><td>已迁到 <code>scripts/audio/mix.py</code></td><td>应删除</td></tr>
+      <tr><td><code>scripts/audio_voice.py</code></td><td>已迁到 <code>scripts/audio/voice.py</code></td><td>应删除</td></tr>
+      <tr><td><code>scripts/audio_beat.py</code></td><td>已迁到 <code>scripts/audio/beat.py</code></td><td>应删除</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <strong>检查方法</strong>：grep "scripts/audio_bgm.py" 在 SKILL.md / references/*.md 应该没有引用
+  </div>
+
+  <h3>违规 2：video 脚本与 video lib 双向定义</h3>
+  <table>
+    <thead>
+      <tr><th>scripts/根目录</th><th>lib/ffmpeg/video/</th><th>关系</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>video_color.py</code></td><td><code>color.py</code></td><td>同名 / 重复</td></tr>
+      <tr><td><code>video_fade.py</code></td><td><code>timing.py</code>（含 fade）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_freeze.py</code></td><td><code>timing.py</code>（含 freeze）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_xfade.py</code></td><td><code>transition.py</code>（含 xfade）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_subtitle.py</code></td><td><code>subtitle.py</code></td><td>职责重叠</td></tr>
+      <tr><td><code>video_speed.py</code></td><td><code>timing.py</code>（含 speed）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_reverse.py</code></td><td><code>timing.py</code>（含 reverse）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_trim.py</code></td><td><code>timing.py</code>（含 trim）</td><td>职责重叠</td></tr>
+      <tr><td><code>video_opening.py</code></td><td><code>subtitle.py</code>（含 drawtext）</td><td>职责重叠</td></tr>
+      <tr><td>...</td><td>...</td><td>还有 10+ 个</td></tr>
+    </tbody>
+  </table>
+
+  <div class="danger">
+    <strong>风险</strong>：用户调 scripts/video_color.py 可能用旧 API（CPU），而 scripts/audio/separate.py 已用新 API（GPU）。两个层级混乱。
+  </div>
+</div>
+
+<!-- Plan -->
+<div class="section" id="plan">
+  <h2>5. 修复方案（8 步操作清单）</h2>
+
+  <div class="step">
+    <span class="step-num">1</span>
+    <span class="step-title">删除 3 个 backward-compat stubs</span>
+    <ul class="action-list">
+      <li><code>scripts/audio_bgm.py</code> → trash</li>
+      <li><code>scripts/audio_voice.py</code> → trash</li>
+      <li><code>scripts/audio_beat.py</code> → trash</li>
+    </ul>
+    <p style="margin-top:8px; color:#666; font-size:13px;">先 grep 检查没引用再删：<code>grep -r "audio_bgm" SKILL.md references/</code></p>
+  </div>
+
+  <div class="step">
+    <span class="step-num">2</span>
+    <span class="step-title">建立 scripts/video/ 子目录，迁移 19 个 video 脚本</span>
+    <ul class="action-list">
+      <li>新建 <code>scripts/video/</code> + <code>__init__.py</code></li>
+      <li>Move 19 个 video_*.py 到 scripts/video/，去掉 video_ 前缀</li>
+      <li>edit.py / image_to_video.py 也迁入（去掉 video_ 前缀）</li>
+    </ul>
+    <p style="margin-top:8px; color:#666; font-size:13px;">改名效果：video_color.py → scripts/video/color.py</p>
+  </div>
+
+  <div class="step">
+    <span class="step-num">3</span>
+    <span class="step-title">建立 scripts/ai/ 子目录，迁移 9 个 AI 脚本</span>
+    <ul class="action-list">
+      <li>新建 <code>scripts/ai/</code> + <code>__init__.py</code></li>
+      <li>Move 9 个 ai_*.py 到 scripts/ai/，去掉 ai_ 前缀</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-num">4</span>
+    <span class="step-title">建立 scripts/batch/ 子目录</span>
+    <ul class="action-list">
+      <li>新建 <code>scripts/batch/</code> + <code>__init__.py</code></li>
+      <li>Move batch.py</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-num">5</span>
+    <span class="step-title">建立 scripts/_internal/ 子目录（开发者工具）</span>
+    <ul class="action-list">
+      <li>新建 <code>scripts/_internal/</code></li>
+      <li>从 <code>lib/</code> 根目录 Move <code>stage1_checklist.py</code> 进来</li>
+      <li>如有 <code>_check_consistency.py</code> 也归此</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-num">6</span>
+    <span class="step-title">整理 lib/ 根目录</span>
+    <ul class="action-list">
+      <li>新建 <code>lib/asr/</code> + <code>__init__.py</code>，把 <code>pyannote.py</code> / <code>whisper.py</code> 迁入</li>
+      <li>新建 <code>lib/video/</code> + <code>__init__.py</code>，把 <code>patch_mp4_rotation.py</code> 迁入</li>
+      <li>改 <code>processing.py</code> → <code>video_processing.py</code>（清晰命名）</li>
+      <li><code>separate_demucs.py</code> 保留在 <code>lib/</code> 根目录（命名冲突被迫改名）</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-num">7</span>
+    <span class="step-title">同步所有 import 引用</span>
+    <ul class="action-list">
+      <li>grep "from scripts.video" → 改路径</li>
+      <li>grep "from scripts.ai" → 改路径</li>
+      <li>grep "from lib.pyannote" → 改 "from lib.asr.pyannote"</li>
+      <li>grep "from lib.whisper" → 改 "from lib.asr.whisper"</li>
+      <li>grep "from lib.processing" → 改 "from lib.video_processing"</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <span class="step-num">8</span>
+    <span class="step-title">更新 SKILL.md / references/</span>
+    <ul class="action-list">
+      <li>SKILL.md 文件地图：scripts/ 下的脚本路径全部更新</li>
+      <li>SKILL.md 目录结构图重画</li>
+      <li>references/07-audio.md / 08-video-lib.md 引用路径更新</li>
+      <li>v1.6 变更摘要 → v1.7 变更摘要</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Risk -->
+<div class="section" id="risk">
+  <h2>6. 风险评估</h2>
+
+  <table>
+    <thead>
+      <tr><th>风险</th><th>等级</th><th>影响</th><th>缓解</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>外部脚本/工作流引用旧路径</td>
+        <td><span class="pill yel">中</span></td>
+        <td>如果用户有 shell script 调 audio_bgm.py，会断</td>
+        <td>grep 先检查，没引用直接删</td>
+      </tr>
+      <tr>
+        <td>SKILL.md / references/ 引用旧路径</td>
+        <td><span class="pill yel">中</span></td>
+        <td>AI 找不到文档</td>
+        <td>同步更新（步骤 8）</td>
+      </tr>
+      <tr>
+        <td>video_*.py → scripts/video/ 改名 + import 引用</td>
+        <td><span class="pill yel">中</span></td>
+        <td>如果内部 import 路径硬编码，会报错</td>
+        <td>全 SKILL grep "scripts.video_color\|scripts.ai_" → 修</td>
+      </tr>
+      <tr>
+        <td>stage1_checklist 移到 _internal/，import 路径变</td>
+        <td><span class="pill yel">低</span></td>
+        <td>很少有外部引用</td>
+        <td>grep 检查</td>
+      </tr>
+      <tr>
+        <td>lib/processing.py 改名为 video_processing.py</td>
+        <td><span class="pill yel">中</span></td>
+        <td>内部调用多</td>
+        <td>grep 全 SKILL 后再批量改</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="warning">
+    <strong>建议</strong>：先 grep + 列影响清单，再批量修改。
+  </div>
+</div>
+
+<!-- Recommend -->
+<div class="section" id="recommend">
+  <h2>7. 推荐执行方式</h2>
+
+  <h3>方式 A：分阶段执行（推荐）</h3>
+  <table>
+    <thead>
+      <tr><th>阶段</th><th>动作</th><th>风险</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>第 1 阶段</td>
+        <td>删除 3 个 backward-compat stubs（步骤 1）</td>
+        <td>低</td>
+      </tr>
+      <tr>
+        <td>第 2 阶段</td>
+        <td>建 scripts/video/ + 迁 19 个视频脚本（步骤 2）</td>
+        <td>中</td>
+      </tr>
+      <tr>
+        <td>第 3 阶段</td>
+        <td>建 scripts/ai/ + scripts/batch/（步骤 3-4）</td>
+        <td>低</td>
+      </tr>
+      <tr>
+        <td>第 4 阶段</td>
+        <td>建 scripts/_internal/ + 整理 lib/（步骤 5-6）</td>
+        <td>中</td>
+      </tr>
+      <tr>
+        <td>第 5 阶段</td>
+        <td>同步所有 import + 文档（步骤 7-8）</td>
+        <td>中</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>方式 B：一次性重构（高风险）</h3>
+  <p>一次完成全部 8 步，可能产生大量冲突。</p>
+
+  <h3>方式 C：只修红线违规（最小修改）</h3>
+  <ul>
+    <li>只删除 3 个 backward-compat stubs</li>
+    <li>其他不动</li>
+    <li>优点：低风险，立刻合规</li>
+    <li>缺点：架构问题仍在</li>
+  </ul>
+</div>
+
+<div class="footer">
+  报告生成于 2026-07-10 · 智剪工坊架构审计 · 小匠（xiaojiang agent）
+</div>
+
+</div>
+</body>
+</html>

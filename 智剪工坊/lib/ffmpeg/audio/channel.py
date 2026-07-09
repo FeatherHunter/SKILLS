@@ -25,7 +25,15 @@ def widen_stereo(input_path, output_path, amount=1.0):
     Args:
         amount: 扩展强度（0=不变，1=中等，3=最强）
     """
-    af = f"stereowiden=delay={int(15*amount)}:feedback={min(0.95, 0.3+amount*0.1)}:crossfeed={min(1.0, 0.1+amount*0.2)}:dry={1.0}"
+    # ffmpeg 7.1: stereowiden 用 drymix 替代 dry，参数范围不同
+    delay_val = int(15 * amount)
+    feedback_val = min(0.95, 0.3 + amount * 0.1)
+    crossfeed_val = min(1.0, 0.1 + amount * 0.2)
+    drymix_val = min(1.0, 0.5 + amount * 0.2)  # drymix 范围 [0-1]
+    af = (
+        f"stereowiden=delay={delay_val}:feedback={feedback_val}:"
+        f"crossfeed={crossfeed_val}:drymix={drymix_val}"
+    )
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 
@@ -66,12 +74,16 @@ def split_channels(input_path, output_path_left, output_path_right):
     return True, True
 
 
-def pan_audio(input_path, output_path, pan="0.5|c0=c1"):
+def pan_audio(input_path, output_path, pan="stereo|c0=c1"):
     """声相调整（pan）。
 
     Args:
-        pan: pan 表达式，如 "0.5|c0=c1"（右移）
+        pan: pan 表达式，第一个字符必须是合法 layout
+                合法前缀：'mono' / 'stereo' / '5.1' / '7.1' 等
+                范例: "stereo|c0=c1"（右移）, "stereo|c0=c0"（中央）,
+                     "mono|c0=0.5*c0+0.5*c1"（单声道混合）
     """
+    # ffmpeg 7.1: pan= 必须以合法 channel layout 开头（不是数字 like "0.5"）
     af = f"pan={pan}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
@@ -83,7 +95,9 @@ def upmix_to_surround(input_path, output_path, surround_type="5.1"):
     Args:
         surround_type: '5.1' / '7.1'
     """
-    af = f"surround=chl={surround_type}"
+    # ffmpeg 7.1: surround 用 chl_out (output layout) + chl_in (input layout)
+    # chl_out 默认为 "5.1"，chl_in 默认为 "stereo"
+    af = f"surround=chl_out={surround_type}:chl_in=stereo"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 

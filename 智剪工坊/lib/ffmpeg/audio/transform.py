@@ -110,8 +110,14 @@ def gate(input_path, output_path, threshold_db=-30, attack=20, release=100):
 
 
 def excite(input_path, output_path, frequency=3000, amount=1.0):
-    """高频激励（aexciter）。"""
-    af = f"aexciter=frequency={frequency}:amount={amount}"
+    """高频激励（aexciter）。
+
+    Args:
+        frequency: 中心频率 (Hz, ffmpeg 范围 2000-12000), 默认 3000
+        amount: 激励强度 (0-64), 默认 1.0
+    """
+    # ffmpeg 7.1: aexciter=freq=N (2000-12000, default 7500)，不是 frequency
+    af = f"aexciter=freq={frequency}:amount={amount}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 

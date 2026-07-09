@@ -26,8 +26,12 @@ def enhance_dialog(input_path, output_path, level=0.5):
         input_path: 输入音频/视频
         output_path: 输出音频
         level: 增强强度（0=不处理，1=最强），默认 0.5
+            内部映射：ffmpeg 7.1 用 `enhance` 参数（0-3），0.5 → 1.5
     """
-    af = f"dialoguenhance=level={level}"
+    # ffmpeg 7.1: dialoguenhance=enhance=N (0-3, default 1)
+    # 旧 API 用 level= (0-1)，新版本改名为 enhance=（0-3）
+    enhance_val = level * 3
+    af = f"dialoguenhance=enhance={enhance_val}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 
@@ -99,18 +103,20 @@ def equalize(input_path, output_path, frequencies=None, gains=None):
 
 
 def dynamic_equalizer(input_path, output_path,
-                      threshold=-20, ratio=4, attack=20, release=200):
+                      threshold=20, ratio=4, attack=20, release=200):
     """动态 EQ（adynamicequalizer）。
 
     自适应 EQ，根据输入信号强度动态调整频段增益。
     适合：人声在响的时候突出，安静的时候收回去。
 
     Args:
-        threshold: 触发阈值（dB）
-        ratio: 压缩比
-        attack: 起音时间 (ms)
-        release: 释放时间 (ms)
+        threshold: 触发阈值（ffmpeg 7.1 范围 [0-100]，0=无效果，100=最强压缩门限）
+                历史接口是 dB（负数），已废弃。新接口请传正值。
+        ratio: 压缩比 (from 0 to 30, default 1)
+        attack: 起音时间 (ms, from 0.01 to 2000)
+        release: 释放时间 (ms, from 0.01 to 2000)
     """
+    # ffmpeg 7.1: threshold 范围 [0-100]，不是 dB
     af = f"adynamicequalizer=threshold={threshold}:ratio={ratio}:attack={attack}:release={release}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)

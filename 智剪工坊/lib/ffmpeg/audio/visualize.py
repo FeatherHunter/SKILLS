@@ -46,9 +46,20 @@ def waveform_image(input_path, output_path, width=1280, height=240, colors="whit
     """静态波形图（showwavespic）。
 
     输出单张 PNG 图片。
+
+    实现方式：audio → video filter chain（filter_complex），而非 -vf。
+    原因：-vf 在纯 audio 输入上无法产生 video output stream；filter_complex 强制链式转换。
     """
-    vf = f"showwavespic=s={width}x{height}:colors={colors}"
-    run_ffmpeg(["-i", str(input_path), "-vf", vf, "-frames:v", "1", "-y", str(output_path)])
+    fc = f"[0:a]showwavespic=s={width}x{height}:colors={colors}[v]"
+    run_ffmpeg([
+        "-i", str(input_path),
+        "-filter_complex", fc,
+        "-map", "[v]",
+        "-frames:v", "1",
+        "-update", "1",   # image2 muxer 持续模式
+        "-c:v", "png",    # 强制 png 编码
+        "-y", str(output_path),
+    ])
     return True, str(output_path)
 
 
@@ -71,9 +82,20 @@ def spectrum_video(input_path, output_path, width=1280, height=480,
 
 def spectrum_image(input_path, output_path, width=1280, height=480,
                   mode="combined", color="rainbow"):
-    """静态频谱图（showspectrumpic）。"""
-    vf = f"showspectrumpic=s={width}x{height}:mode={mode}:color={color}"
-    run_ffmpeg(["-i", str(input_path), "-vf", vf, "-frames:v", "1", "-y", str(output_path)])
+    """静态频谱图（showspectrumpic）。
+
+    用 filter_complex 强制 audio→video 转换（ffmpeg 7.1 + -vf 不可用）。
+    """
+    fc = f"[0:a]showspectrumpic=s={width}x{height}:mode={mode}:color={color}[v]"
+    run_ffmpeg([
+        "-i", str(input_path),
+        "-filter_complex", fc,
+        "-map", "[v]",
+        "-frames:v", "1",
+        "-update", "1",
+        "-c:v", "png",
+        "-y", str(output_path),
+    ])
     return True, str(output_path)
 
 
@@ -117,7 +139,18 @@ def volume_meter_video(input_path, output_path, width=400, height=20, rate=25):
 
 
 def histogram_image(input_path, output_path, width=1024, height=400):
-    """直方图（ahistogram）。"""
-    vf = f"ahistogram=s={width}x{height}"
-    run_ffmpeg(["-i", str(input_path), "-vf", vf, "-frames:v", "1", "-y", str(output_path)])
+    """直方图（ahistogram）。
+
+    用 filter_complex 强制 audio→video 转换（ffmpeg 7.1 + -vf 不可用）。
+    """
+    fc = f"[0:a]ahistogram=s={width}x{height}[v]"
+    run_ffmpeg([
+        "-i", str(input_path),
+        "-filter_complex", fc,
+        "-map", "[v]",
+        "-frames:v", "1",
+        "-update", "1",
+        "-c:v", "png",
+        "-y", str(output_path),
+    ])
     return True, str(output_path)

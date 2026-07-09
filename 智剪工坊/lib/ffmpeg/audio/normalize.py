@@ -34,16 +34,20 @@ def normalize_loudnorm(input_path, output_path,
     return True, str(output_path)
 
 
-def normalize_dynamic(input_path, output_path, target_rms=-23, compress=0.5):
+def normalize_dynamic(input_path, output_path, target_rms_db=-23, compress=0.5):
     """动态归一化（dynaudnorm）。
 
     自适应音量归一化，保持动态范围。
 
     Args:
-        target_rms: 目标 RMS（dBFS）
-        compress: 压缩比
+        target_rms_db: 目标 RMS（dBFS），内部转换为线性值
+                历史接口是 `target_rms`（直接传 dB 值）。已重命名为 `target_rms_db` 以区分。
+        compress: 压缩比 (ffmpeg 范围 0-30)
     """
-    af = f"dynaudnorm=f={target_rms}:c={compress}"
+    # ffmpeg 7.1: dynaudnorm 用 targetrms (0-1 线性) 或 peak (0-1)
+    # 用户传 dB，内部转换为线性值
+    target_rms = 10 ** (target_rms_db / 20)
+    af = f"dynaudnorm=targetrms={target_rms}:compress={compress}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 

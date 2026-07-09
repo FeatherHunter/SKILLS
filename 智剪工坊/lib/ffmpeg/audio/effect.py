@@ -64,13 +64,15 @@ def pulsator(input_path, output_path, hz=2, amount=0.5):
     return True, str(output_path)
 
 
-def spectral_tilt(input_path, output_path, tilt=0):
+def spectral_tilt(input_path, output_path, slope=0):
     """频谱倾斜（atilt）。
 
     Args:
-        tilt: 倾斜量（dB/octave），正值增加高频，负值增加低频
+        slope: 倾斜量（-1 到 1），正值增强高频，负值增强低频
+                历史接口名是 `tilt`。已重命名为 `slope` 以匹配 ffmpeg 7.1 参数名。
     """
-    af = f"atilt=tilt={tilt}"
+    # ffmpeg 7.1: atilt=slope=N (-1 到 1)，不是 tilt
+    af = f"atilt=slope={slope}"
     run_ffmpeg(["-i", str(input_path), "-af", af, "-c:a", "pcm_s16le", "-y", str(output_path)])
     return True, str(output_path)
 

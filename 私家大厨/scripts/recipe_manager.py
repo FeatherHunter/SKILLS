@@ -681,6 +681,197 @@ def discard(args):
     print(f"✅ 食谱「{recipe['name']}」已废弃")
     return True
 
+
+def export_json(args):
+    """导出食谱为完整 JSON 文档(供模板渲染 / 数据备份用)"""
+    name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
+    if not name:
+        print("错误：请提供菜名或 ID")
+        return False
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 1. 定位菜谱(id 精确匹配或 name 模糊)
+    cursor.execute(
+        "SELECT id, name FROM recipes WHERE id = ? OR name LIKE ? LIMIT 1",
+        (name, f"%{name}%")
+    )
+    row = cursor.fetchone()
+    if not row:
+        print(f"未找到食谱：{name}")
+        conn.close()
+        return False
+    rid = row["id"]
+
+    # 2. 主表
+    cursor.execute("SELECT * FROM recipes WHERE id = ?", (rid,))
+    main = cursor.fetchone()
+
+    # 3. 1:1 关联表
+    cursor.execute("SELECT * FROM recipe_categories WHERE recipe_id = ?", (rid,))
+    cat = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (rid,))
+    nut = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM background_knowledge WHERE recipe_id = ?", (rid,))
+    bg = cursor.fetchone()
+
+    # 4. 1:N 标量数组
+    def list_col(table, col):
+        cursor.execute(
+            f"SELECT {col} FROM {table} WHERE recipe_id = ? ORDER BY rowid",
+            (rid,)
+        )
+        return [r[col] for r in cursor.fetchall()]
+
+    seasons = list_col("recipe_seasons", "season")
+    methods = list_col("recipe_cooking_methods", "method")
+    flavors = list_col("recipe_flavors", "flavor")
+    diet_tags = list_col("recipe_diet_tags", "tag")
+    meal_types = list_col("recipe_meal_types", "meal_type")
+
+    # 5. 食材(按 sequence)
+    cursor.execute(
+        "SELECT sequence, name, category, quantity, unit, quantity_text, is_optional, substitute "
+        "FROM ingredients WHERE recipe_id = ? ORDER BY sequence",
+        (rid,)
+    )
+    ingredients = [{
+        "name": r["name"],
+        "quantity": r["quantity"],
+        "unit": r["unit"],
+        "category": r["category"],
+        "sequence": r["sequence"],
+        "is_optional": bool(r["is_optional"]),
+        "substitute": r["substitute"],
+        "quantity_text": r["quantity_text"],
+    } for r in cursor.fetchall()]
+
+    # 6. 步骤 + 步骤用材(N+1 不可避免 - 步骤 id 是变量)
+    cursor.execute(
+        "SELECT id, sequence, action, duration_minutes, heat_level, temperature, expected_result "
+        "FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence",
+        (rid,)
+    )
+    steps = []
+    for s in cursor.fetchall():
+        sid = s["id"]
+        cursor.execute(
+            "SELECT si.quantity_used, si.introduced_at, i.name "
+            "FROM step_ingredients si "
+            "JOIN ingredients i ON si.ingredient_id = i.id "
+            "WHERE si.step_id = ?",
+            (sid,)
+        )
+        ing_used = [{
+            "name": r["name"],
+            "quantity_used": r["quantity_used"],
+            "introduced_at": r["introduced_at"],
+        } for r in cursor.fetchall()]
+
+        steps.append({
+            "sequence": s["sequence"],
+            "action": s["action"],
+            "duration": s["duration_minutes"],
+            "heat_level": s["heat_level"],
+            "temperature": s["temperature"],
+            "expected_result": s["expected_result"],
+            "ingredients_used": ing_used,
+        })
+
+    # 7. 技法(JOIN cooking_steps 拿 step_sequence)
+    cursor.execute(
+        "SELECT st.technique_name, st.description, st.key_points, cs.sequence AS step_seq "
+        "FROM step_techniques st "
+        "JOIN cooking_steps cs ON st.step_id = cs.id "
+        "WHERE st.recipe_id = ? ORDER BY cs.sequence",
+        (rid,)
+    )
+    techniques = [{
+        "step_sequence": r["step_seq"],
+        "technique_name": r["technique_name"],
+        "description": r["description"],
+        "key_points": r["key_points"],
+    } for r in cursor.fetchall()]
+
+    # 8. 小贴士(LEFT JOIN - 可能有 general tips 无 step 关联)
+    cursor.execute(
+        "SELECT t.content, t.category, t.priority, cs.sequence AS step_seq "
+        "FROM tips t "
+        "LEFT JOIN cooking_steps cs ON t.step_id = cs.id "
+        "WHERE t.recipe_id = ? "
+        "ORDER BY COALESCE(cs.sequence, 0), t.priority",
+        (rid,)
+    )
+    tips = [{
+        "step_sequence": r["step_seq"],
+        "content": r["content"],
+        "category": r["category"],
+        "priority": r["priority"],
+        "ingredient_id": None,
+    } for r in cursor.fetchall()]
+
+    # 9. 炊具
+    cursor.execute("SELECT name, category FROM cookware WHERE recipe_id = ?", (rid,))
+    cookware = [{"name": r["name"], "category": r["category"]} for r in cursor.fetchall()]
+
+    # 10. 组装 - 字段映射:DB → JSON(匹配 recipe_template.json)
+    result = {
+        "name": main["name"],
+        "description": main["description"],
+        "difficulty": main["difficulty"],
+        "servings": main["servings"],
+        "total_time": main["total_time_minutes"],
+        "status": main["status"],
+        "photo_url": main["photo_url"],
+        "source": main["source"],
+        "source_url": main["source_url"],
+        "category": {
+            "cuisine": cat["cuisine_type"] if cat else None,
+            "region": cat["region"] if cat else None,
+            "country": cat["country"] if cat else None,
+        },
+        "seasons": seasons,
+        "cooking_methods": methods,
+        "flavors": flavors,
+        "diet_tags": diet_tags,
+        "meal_types": meal_types,
+        "ingredients": ingredients,
+        "steps": steps,
+        "techniques": techniques,
+        "tips": tips,
+        "cookware": cookware,
+        "nutrition": {
+            "serving_size": nut["serving_size"] if nut else None,
+            "serving_unit": nut["serving_unit"] if nut else None,
+            "calories": nut["calories"] if nut else None,
+            "protein": nut["protein"] if nut else None,
+            "fat": nut["fat"] if nut else None,
+            "carbs": nut["carbs"] if nut else None,
+            "fiber": nut["fiber"] if nut else None,
+            "sodium": nut["sodium"] if nut else None,
+        },
+        "background": {
+            "origin_story": bg["origin_story"] if bg else None,
+            "historical_background": bg["historical_background"] if bg else None,
+            "cultural_significance": bg["cultural_significance"] if bg else None,
+        },
+        "history": [],
+        "relations": [],
+    }
+
+    conn.close()
+
+    # 11. 输出 - pretty 默认, --compact 给管线用
+    if args.get("--compact"):
+        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    return True
+
+
 def main():
     if len(sys.argv) < 2:
         print("""用法：
@@ -691,6 +882,7 @@ def main():
     python recipe_manager.py update <recipe_id> [选项]
     python recipe_manager.py lint <recipe_id>
     python recipe_manager.py discard <recipe_id>
+    python recipe_manager.py export-json <菜名或ID> [--compact]
 
 选项：
     --description "描述"
@@ -731,6 +923,8 @@ def main():
                 args["<recipe_id>"] = arg
             elif action in ("lint", "discard") and i == 2:
                 args["<recipe_id>"] = arg
+            elif action == "export-json" and i == 2:
+                args["<菜名>"] = arg
             else:
                 args[f"arg{i}"] = arg
             i += 1
@@ -749,6 +943,8 @@ def main():
         lint(args)
     elif action == "discard":
         discard(args)
+    elif action == "export-json":
+        export_json(args)
     else:
         print(f"未知操作：{action}")
 

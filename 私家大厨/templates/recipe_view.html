@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>{{ recipe.name }} · 私家大厨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue2:#0A84FF;
+    --bg:#FAFAFA;--card:#FFFFFF;--border:#E5E5EA;
+    --text:#1C1C1E;--text2:#8E8E93;--text3:#AEAEB2;
+    --success:#34C759;--warn:#FF9500;--danger:#FF3B30;
+    --radius:12px;--radius-sm:8px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html{font-size:16px;-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.6;min-height:100vh;padding:0 0 60px 0;
+  }
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  /* ── Header ── */
+  .header{padding:24px 0 16px;border-bottom:0.5px solid var(--border);margin-bottom:24px}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .badge{
+    display:inline-block;padding:3px 10px;border-radius:6px;
+    font-size:12px;font-weight:600;background:rgba(0,122,255,0.1);color:var(--blue);
+  }
+  .badge.success{background:rgba(52,199,89,0.12);color:#1F7A35}
+  .badge.warn{background:rgba(255,149,0,0.12);color:#9B5500}
+  .badge.danger{background:rgba(255,59,48,0.12);color:#A82A22}
+  h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px;line-height:1.3}
+  .desc{color:var(--text2);font-size:15px}
+
+  /* ── Card / Section ── */
+  .card{
+    background:var(--card);border-radius:var(--radius);
+    padding:20px 22px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .section-title{
+    font-size:18px;font-weight:700;letter-spacing:-0.2px;
+    margin-bottom:14px;display:flex;align-items:center;gap:8px;
+  }
+  .section-title .count{
+    font-size:13px;font-weight:500;color:var(--text3);margin-left:auto;
+  }
+
+  /* ── Info Cards ── */
+  .info-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:12px;
+  }
+  .info-cell{
+    background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px;
+    text-align:center;
+  }
+  .info-cell .label{font-size:12px;color:var(--text2);margin-bottom:4px}
+  .info-cell .value{font-size:18px;font-weight:600;color:var(--text)}
+  .info-cell .value .unit{font-size:12px;color:var(--text2);font-weight:400;margin-left:2px}
+
+  /* ── Servings switcher ── */
+  .servings-control{
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg);border-radius:var(--radius-sm);padding:8px 12px;
+    margin-bottom:14px;
+  }
+  .servings-control label{font-size:13px;color:var(--text2);flex:1}
+  .serv-btn{
+    width:30px;height:30px;border-radius:50%;border:1px solid var(--blue);
+    background:#fff;color:var(--blue);font-size:18px;font-weight:600;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    line-height:1;transition:background .15s;
+  }
+  .serv-btn:hover{background:rgba(0,122,255,0.08)}
+  .serv-btn:disabled{opacity:0.3;cursor:not-allowed}
+  .serv-value{min-width:40px;text-align:center;font-weight:600;font-size:15px}
+
+  /* ── Ingredients ── */
+  .ing-group{margin-bottom:14px}
+  .ing-group-title{
+    font-size:12px;font-weight:600;color:var(--text2);
+    text-transform:uppercase;letter-spacing:0.5px;
+    margin-bottom:8px;padding-left:2px;
+  }
+  .ing-list{list-style:none}
+  .ing-item{
+    display:flex;align-items:baseline;padding:8px 0;
+    border-bottom:0.5px solid var(--border);gap:8px;
+  }
+  .ing-item:last-child{border-bottom:none}
+  .ing-item.optional{opacity:0.65}
+  .ing-item .name{flex:1;font-size:15px}
+  .ing-item .qty{font-size:14px;color:var(--text2);font-variant-numeric:tabular-nums}
+  .ing-item .opt-tag{
+    font-size:10px;background:var(--bg);color:var(--text3);
+    padding:2px 6px;border-radius:4px;margin-left:6px;
+  }
+  .ing-item .sub{
+    font-size:11px;color:var(--text3);font-style:italic;
+    margin-left:4px;
+  }
+  .toggle-row{
+    margin-top:12px;display:flex;justify-content:flex-end;
+  }
+  .toggle-btn{
+    font-size:13px;color:var(--blue);background:none;border:none;
+    cursor:pointer;padding:6px 10px;border-radius:6px;
+  }
+  .toggle-btn:hover{background:rgba(0,122,255,0.06)}
+
+  /* ── Steps ── */
+  .step{
+    display:flex;gap:14px;padding:14px 0;border-bottom:0.5px solid var(--border);
+  }
+  .step:last-child{border-bottom:none}
+  .step-num{
+    flex-shrink:0;width:28px;height:28px;border-radius:50%;
+    background:var(--blue);color:#fff;font-weight:700;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .step-body{flex:1;min-width:0}
+  .step-action{font-size:15px;line-height:1.6;margin-bottom:8px}
+  .step-meta{
+    display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;
+  }
+  .meta-chip{
+    font-size:11px;padding:3px 8px;border-radius:5px;
+    background:var(--bg);color:var(--text2);
+  }
+  .meta-chip.expected{background:rgba(52,199,89,0.1);color:#1F7A35}
+  .step-ings{
+    font-size:12px;color:var(--text2);margin-top:6px;
+    padding-left:0;list-style:none;
+  }
+  .step-ings li{padding:1px 0}
+
+  /* ── Technique / Tip / Cookware ── */
+  .simple-list{list-style:none}
+  .simple-list li{
+    padding:10px 0;border-bottom:0.5px solid var(--border);
+    display:flex;gap:10px;align-items:flex-start;
+  }
+  .simple-list li:last-child{border-bottom:none}
+  .simple-list .step-ref{
+    flex-shrink:0;font-size:11px;font-weight:600;
+    color:var(--blue);background:rgba(0,122,255,0.08);
+    padding:2px 8px;border-radius:5px;
+  }
+  .simple-list .body{flex:1;font-size:14px}
+
+  /* ── Nutrition table ── */
+  .nutrition-table{
+    width:100%;border-collapse:collapse;font-size:14px;
+  }
+  .nutrition-table th,.nutrition-table td{
+    text-align:left;padding:8px 0;
+    border-bottom:0.5px solid var(--border);
+  }
+  .nutrition-table th{color:var(--text2);font-weight:500;font-size:13px}
+  .nutrition-table td{font-variant-numeric:tabular-nums;text-align:right}
+  .nutrition-table td:first-child{text-align:left;color:var(--text)}
+  .nutrition-table tr:last-child th,.nutrition-table tr:last-child td{border-bottom:none}
+
+  /* ── Background ── */
+  .bg-section{margin-bottom:14px}
+  .bg-section:last-child{margin-bottom:0}
+  .bg-section .label{
+    font-size:12px;font-weight:600;color:var(--text2);
+    text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;
+  }
+  .bg-section .body{font-size:14px;color:var(--text);line-height:1.7}
+
+  /* ── Footer ── */
+  .footer{
+    margin-top:32px;padding-top:16px;border-top:0.5px solid var(--border);
+    text-align:center;color:var(--text3);font-size:12px;
+  }
+  .footer a{color:var(--text2);text-decoration:none}
+
+  /* ── Responsive ── */
+  @media(max-width:600px){
+    h1{font-size:22px}
+    .container{padding:16px 12px}
+    .card{padding:16px 16px}
+    .info-grid{grid-template-columns:repeat(2,1fr)}
+  }
+
+  /* ── Print ── */
+  @media print{
+    body{background:#fff;padding:0}
+    .card{box-shadow:none;border:0.5px solid var(--border);page-break-inside:avoid}
+    .servings-control,.toggle-btn,.toggle-row{display:none}
+    .ing-item.optional{opacity:1}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="badges">
+    {% if recipe.category and recipe.category.cuisine %}<span class="badge">{{ recipe.category.cuisine }}</span>{% endif %}
+    {% if recipe.difficulty %}<span class="badge">{{ recipe.difficulty }}</span>{% endif %}
+    {% if recipe.status == '已做' %}<span class="badge success">已做</span>
+    {% elif recipe.status == '已废弃' %}<span class="badge danger">已废弃</span>
+    {% else %}<span class="badge">未做</span>{% endif %}
+    {% for m in (recipe.meal_types or []) %}<span class="badge">{{ m }}</span>{% endfor %}
+    {% for s in (recipe.seasons or []) %}<span class="badge">{{ s }}季</span>{% endfor %}
+  </div>
+  <h1>{{ recipe.name }}</h1>
+  {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
+</div>
+
+<!-- ── Info Cards ── -->
+<div class="card">
+  <div class="info-grid">
+    {% if recipe.servings %}
+    <div class="info-cell">
+      <div class="label">份量</div>
+      <div class="value">{{ recipe.servings }}<span class="unit">人份</span></div>
+    </div>
+    {% endif %}
+    {% if recipe.total_time %}
+    <div class="info-cell">
+      <div class="label">总时间</div>
+      <div class="value">{{ recipe.total_time }}<span class="unit">分钟</span></div>
+    </div>
+    {% endif %}
+    {% if recipe.category and recipe.category.region %}
+    <div class="info-cell">
+      <div class="label">地域</div>
+      <div class="value" style="font-size:14px">{{ recipe.category.region }}</div>
+    </div>
+    {% endif %}
+    {% if recipe.cooking_methods %}
+    <div class="info-cell">
+      <div class="label">烹法</div>
+      <div class="value" style="font-size:14px">{{ recipe.cooking_methods | join(' / ') }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if recipe.ingredients %}
+  <div class="servings-control">
+    <label>份数(预览)</label>
+    <button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>
+    <span class="serv-value" id="serv-value">{{ recipe.servings or 1 }}</span>
+    <button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>
+    <span style="font-size:11px;color:var(--text3);margin-left:4px">基础 {{ recipe.servings or 1 }} 人份</span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Ingredients ── -->
+{% if recipe.ingredients %}
+<div class="card">
+  <div class="section-title">
+    食材
+    <span class="count">{{ recipe.ingredients | length }} 项</span>
+  </div>
+
+  {% set ns = namespace(cats={}) %}
+  {% for ing in recipe.ingredients %}
+    {% set cat = ing.category or '其他' %}
+    {% if cat not in ns.cats %}{% set _ = ns.cats.update({cat: []}) %}{% endif %}
+    {% set _ = ns.cats[cat].append(ing) %}
+  {% endfor %}
+
+  {% for cat, items in ns.cats.items() %}
+  <div class="ing-group">
+    <div class="ing-group-title">{{ cat }} ({{ items | length }})</div>
+    <ul class="ing-list">
+      {% for ing in items %}
+      <li class="ing-item{% if ing.is_optional %} optional{% endif %}"
+          data-base-qty="{{ ing.quantity or 0 }}"
+          data-base-servings="{{ recipe.servings or 1 }}">
+        <span class="name">{{ ing.name }}{% if ing.is_optional %}<span class="opt-tag">可选</span>{% endif %}{% if ing.substitute %}<span class="sub">/ 可用 {{ ing.substitute }}</span>{% endif %}</span>
+        {% if ing.quantity %}
+        <span class="qty">
+          <span class="qty-num">{{ ing.quantity }}</span>{{ ing.unit or '' }}
+        </span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+
+  {% set optional_count = recipe.ingredients | selectattr('is_optional') | list | length %}
+  {% if optional_count > 0 %}
+  <div class="toggle-row">
+    <button type="button" class="toggle-btn" id="toggle-optional">只看必需</button>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Steps ── -->
+{% if recipe.steps %}
+<div class="card">
+  <div class="section-title">
+    步骤
+    <span class="count">{{ recipe.steps | length }} 步</span>
+  </div>
+  {% for step in recipe.steps %}
+  <div class="step">
+    <div class="step-num">{{ step.sequence }}</div>
+    <div class="step-body">
+      <div class="step-action">{{ step.action }}</div>
+      <div class="step-meta">
+        {% if step.duration %}<span class="meta-chip">⏱ {{ step.duration }} 分钟</span>{% endif %}
+        {% if step.heat_level %}<span class="meta-chip">🔥 {{ step.heat_level }}</span>{% endif %}
+        {% if step.temperature %}<span class="meta-chip">🌡 {{ step.temperature }}</span>{% endif %}
+      </div>
+      {% if step.expected_result %}
+      <div class="step-meta"><span class="meta-chip expected">✓ {{ step.expected_result }}</span></div>
+      {% endif %}
+      {% if step.ingredients_used %}
+      <ul class="step-ings">
+        {% for iu in step.ingredients_used %}
+        <li>· {{ iu.name }}{% if iu.quantity_used %} {{ iu.quantity_used }}g{% endif %}{% if iu.introduced_at %} ({{ iu.introduced_at }}){% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Techniques ── -->
+{% if recipe.techniques %}
+<div class="card">
+  <div class="section-title">技法</div>
+  <ul class="simple-list">
+    {% for t in recipe.techniques %}
+    <li>
+      <span class="step-ref">第{{ t.step_sequence }}步</span>
+      <div class="body">
+        <b>{{ t.technique_name }}</b>
+        {% if t.description %}— {{ t.description }}{% endif %}
+        {% if t.key_points %}<div style="font-size:12px;color:var(--text2);margin-top:2px">要点: {{ t.key_points }}</div>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- ── Tips ── -->
+{% if recipe.tips %}
+<div class="card">
+  <div class="section-title">小贴士</div>
+  <ul class="simple-list">
+    {% for tip in recipe.tips %}
+    <li>
+      {% if tip.step_sequence %}<span class="step-ref">第{{ tip.step_sequence }}步</span>{% endif %}
+      <div class="body">
+        {{ tip.content }}
+        {% if tip.category %}<span style="font-size:11px;color:var(--text3);margin-left:6px">#{{ tip.category }}</span>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- ── Cookware ── -->
+{% if recipe.cookware %}
+<div class="card">
+  <div class="section-title">炊具</div>
+  <ul class="simple-list">
+    {% for cw in recipe.cookware %}
+    <li>
+      <div class="body">{{ cw.name }}{% if cw.category %} <span style="color:var(--text3);font-size:12px">/ {{ cw.category }}</span>{% endif %}</div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<!-- ── Nutrition ── -->
+{% if recipe.nutrition %}
+<div class="card">
+  <div class="section-title">
+    营养成分
+    <span class="count">每 {{ recipe.nutrition.serving_size }}{{ recipe.nutrition.serving_unit or 'g' }}</span>
+  </div>
+  <table class="nutrition-table">
+    <thead><tr><th>项目</th><th>含量</th></tr></thead>
+    <tbody>
+      {% if recipe.nutrition.calories is not none %}<tr><td>热量</td><td>{{ recipe.nutrition.calories }} kcal</td></tr>{% endif %}
+      {% if recipe.nutrition.protein is not none %}<tr><td>蛋白质</td><td>{{ recipe.nutrition.protein }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.fat is not none %}<tr><td>脂肪</td><td>{{ recipe.nutrition.fat }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.carbs is not none %}<tr><td>碳水</td><td>{{ recipe.nutrition.carbs }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.fiber is not none %}<tr><td>膳食纤维</td><td>{{ recipe.nutrition.fiber }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.sodium is not none %}<tr><td>钠</td><td>{{ recipe.nutrition.sodium }} mg</td></tr>{% endif %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ── Background ── -->
+{% if recipe.background and (recipe.background.origin_story or recipe.background.historical_background or recipe.background.cultural_significance) %}
+<div class="card">
+  <div class="section-title">背景</div>
+  {% if recipe.background.origin_story %}<div class="bg-section"><div class="label">起源</div><div class="body">{{ recipe.background.origin_story }}</div></div>{% endif %}
+  {% if recipe.background.historical_background %}<div class="bg-section"><div class="label">历史</div><div class="body">{{ recipe.background.historical_background }}</div></div>{% endif %}
+  {% if recipe.background.cultural_significance %}<div class="bg-section"><div class="label">文化</div><div class="body">{{ recipe.background.cultural_significance }}</div></div>{% endif %}
+</div>
+{% endif %}
+
+<!-- ── Footer ── -->
+<div class="footer">
+  {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
+  {% if recipe.source_url %} · <a href="{{ recipe.source_url }}">原文链接</a>{% endif %}
+  · 由「私家大厨」v4.0 生成 · {{ now if now else '' }}
+</div>
+
+</div>
+
+<script>
+(function(){
+  // ── Servings switcher (preview only) ──
+  var baseServings = parseInt(document.querySelector('.serv-value').textContent, 10) || 1;
+  var curServings = baseServings;
+  var dec = document.getElementById('serv-dec');
+  var inc = document.getElementById('serv-inc');
+  var valEl = document.getElementById('serv-value');
+
+  function updateQtys(){
+    var factor = curServings / baseServings;
+    document.querySelectorAll('.ing-item').forEach(function(li){
+      var baseQty = parseFloat(li.dataset.baseQty) || 0;
+      var numEl = li.querySelector('.qty-num');
+      if (!numEl || !baseQty) return;
+      var scaled = baseQty * factor;
+      // 取整到 1 位小数
+      var display = (Math.round(scaled * 10) / 10);
+      // 去掉 .0
+      display = display % 1 === 0 ? display.toFixed(0) : display.toFixed(1);
+      numEl.textContent = display;
+    });
+  }
+
+  if (dec) dec.addEventListener('click', function(){
+    if (curServings <= 1) return;
+    curServings--;
+    valEl.textContent = curServings;
+    updateQtys();
+  });
+  if (inc) inc.addEventListener('click', function(){
+    if (curServings >= 20) return;
+    curServings++;
+    valEl.textContent = curServings;
+    updateQtys();
+  });
+
+  // ── Fold optional ingredients ──
+  var toggle = document.getElementById('toggle-optional');
+  var optionalEls = document.querySelectorAll('.ing-item.optional');
+  var showingOptional = true;
+
+  if (toggle) {
+    toggle.addEventListener('click', function(){
+      showingOptional = !showingOptional;
+      optionalEls.forEach(function(el){
+        el.style.display = showingOptional ? '' : 'none';
+      });
+      toggle.textContent = showingOptional ? '只看必需' : '显示全部';
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

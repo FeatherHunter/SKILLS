@@ -13,6 +13,8 @@ import sys
 import os
 import json
 import uuid
+import tempfile
+from pathlib import Path
 from datetime import datetime
 
 # 添加scripts目录到path
@@ -147,9 +149,10 @@ def check_conflict(conn, name, choice=None, new_name=None):
         return True, {"error": f"无效选择: {choice}", "valid_choices": ["view", "derive", "update", "cancel"]}
 
 
-def create_recipe(conn, data):
-    """创建食谱主记录，返回recipe_id"""
-    recipe_id = str(uuid.uuid4())
+def create_recipe(conn, data, force_id=None):
+    """创建食谱主记录,返回 recipe_id。
+    force_id 非空时用该 ID(merge 模式)。"""
+    recipe_id = force_id or str(uuid.uuid4())
     now = get_now()
 
     cursor = conn.cursor()
@@ -410,8 +413,166 @@ def add_background(conn, recipe_id, background):
     ))
 
 
-def import_recipe(json_file, choice=None, new_name=None):
-    """主导入函数：加载JSON → 验证 → 检查冲突 → 事务导入"""
+def _delete_recipe_keep_history(conn, recipe_id):
+    """删除食谱全部数据,但保留烹饪历史(recipe_history)。
+    利用 CASCADE 删主表会自动清理依赖,但 recipe_history 是单独的 FK 行为(无 ON DELETE 限制)。"""
+    cursor = conn.cursor()
+    # 取消 recipe_history 的外键,避免被一起删(SQLite 需要 PRAGMA)
+    cursor.execute("PRAGMA foreign_keys = OFF")
+    # 先删全部依赖(显式,因为关了 FK)
+    for table in ("recipe_categories", "recipe_seasons", "recipe_cooking_methods",
+                  "recipe_flavors", "recipe_diet_tags", "recipe_meal_types",
+                  "ingredients", "step_ingredients", "step_techniques", "tips",
+                  "cookware", "nutrition_info", "background_knowledge",
+                  "recipe_relations"):
+        try:
+            cursor.execute(f"DELETE FROM {table} WHERE recipe_id = ?", (recipe_id,))
+        except Exception:
+            pass  # 表可能 schema 不同
+    cursor.execute("DELETE FROM recipes WHERE id = ?", (recipe_id,))
+    cursor.execute("PRAGMA foreign_keys = ON")
+
+
+def _log_import(entry):
+    """追加一行 JSON 到 import_log.jsonl(若用户配置了 DB 目录)。"""
+    try:
+        from db_config import DB_PATH  # type: ignore
+        log_path = Path(DB_PATH).parent / "import_log.jsonl"
+    except Exception:
+        log_path = Path.cwd() / "import_log.jsonl"
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # 日志失败不影响主流程
+
+
+def import_recipe(json_file, choice=None, new_name=None, merge=False):
+    """主导入函数:加载 JSON → 验证 → 检查冲突 → 事务导入。
+    merge=True 时:若同名菜已存在,删除旧数据(保留烹饪历史),复用 recipe_id 重建。"""
+    # 1. 加载JSON
+    try:
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        return {"success": False, "errors": [f"JSON格式错误: {str(e)}"]}
+    except FileNotFoundError:
+        return {"success": False, "errors": [f"文件不存在: {json_file}"]}
+
+    # 2. 验证
+    errors = validate_recipe(data)
+    if errors:
+        return {"success": False, "errors": errors, "hint": "请修正JSON后重新导入"}
+
+    # 3. 检查同名冲突
+    conn = get_connection()
+    try:
+        existing_recipe_id = None
+        if merge:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id FROM recipes WHERE name = ? AND status != '已废弃' LIMIT 1",
+                (data["name"],)
+            )
+            row = cursor.fetchone()
+            if row:
+                existing_recipe_id = row["id"]
+        else:
+            has_conflict, conflict_result = check_conflict(conn, data["name"], choice, new_name)
+            if has_conflict:
+                conn.close()
+                return conflict_result
+
+        # 4. 处理derive需要new_name的情况
+        if choice == "derive" and new_name:
+            data["name"] = new_name
+
+        # 5. 开启事务导入
+        conn.execute("BEGIN")
+
+        # 5a. merge 模式:删旧数据(保留 history),后续插入会复用 recipe_id
+        if existing_recipe_id:
+            _delete_recipe_keep_history(conn, existing_recipe_id)
+
+        # 创建主记录(merge 模式复用 ID,否则新生成 UUID)
+        recipe_id = create_recipe(conn, data, force_id=existing_recipe_id)
+
+        # 添加分类
+        add_category(conn, recipe_id, data.get("category"))
+
+        # 添加标签
+        add_seasons(conn, recipe_id, data.get("seasons"))
+        add_cooking_methods(conn, recipe_id, data.get("cooking_methods"))
+        add_flavors(conn, recipe_id, data.get("flavors"))
+        add_diet_tags(conn, recipe_id, data.get("diet_tags"))
+        add_meal_types(conn, recipe_id, data.get("meal_types"))
+
+        # 添加食材(返回name→id映射)
+        name_id_map = add_ingredients(conn, recipe_id, data.get("ingredients"))
+
+        # 添加步骤(返回seq→id映射,同时处理步骤×食材关联)
+        seq_id_map = add_steps(conn, recipe_id, data.get("steps"), name_id_map)
+
+        # 添加可选数据
+        add_tips(conn, recipe_id, data.get("tips"), seq_id_map)
+        add_techniques(conn, recipe_id, data.get("techniques"), seq_id_map)
+        add_cookware(conn, recipe_id, data.get("cookware"))
+        add_nutrition(conn, recipe_id, data.get("nutrition"))
+        add_background(conn, recipe_id, data.get("background"))
+
+        # 提交事务
+        conn.execute("COMMIT")
+
+        # 统计
+        stats = {
+            "success": True,
+            "recipe_id": recipe_id,
+            "name": data["name"],
+            "mode": "merge" if existing_recipe_id else "create",
+            "ingredients_count": len(data.get("ingredients", [])),
+            "steps_count": len(data.get("steps", []))
+        }
+
+        # 可选统计
+        if data.get("tips"):
+            stats["tips_count"] = len(data["tips"])
+        if data.get("techniques"):
+            stats["techniques_count"] = len(data["techniques"])
+        if data.get("cookware"):
+            stats["cookware_count"] = len(data["cookware"])
+        if data.get("nutrition"):
+            stats["has_nutrition"] = True
+        if data.get("background"):
+            stats["has_background"] = True
+
+        # 写 import_log
+        _log_import({
+            "ts": get_now(),
+            "file": str(json_file),
+            "name": data["name"],
+            "recipe_id": recipe_id,
+            "mode": stats["mode"],
+            "success": True,
+        })
+
+        return stats
+
+    except Exception as e:
+        try:
+            conn.execute("ROLLBACK")
+        except Exception:
+            pass
+        err_result = {"success": False, "error": str(e)}
+        _log_import({
+            "ts": get_now(),
+            "file": str(json_file),
+            "name": data.get("name", "?"),
+            "success": False,
+            "error": str(e),
+        })
+        return err_result
+    finally:
+        conn.close()
     # 1. 加载JSON
     try:
         with open(json_file, 'r', encoding='utf-8') as f:
@@ -518,20 +679,23 @@ def show_template():
 def main():
     if len(sys.argv) < 2:
         print("""用法：
-    python recipe_import.py import <json_file> [--choice <action>] [--new_name <新菜名>]
+    python recipe_import.py import <json_file> [--choice <action>] [--new_name <新菜名>] [--merge]
     python recipe_import.py validate <json_file>
     python recipe_import.py template
 
 说明：
-    import   - 导入JSON食谱文件
+    import   - 导入JSON食谱文件(支持数组批量、--merge 覆盖同名菜)
     validate - 仅验证JSON格式（不导入）
     template - 显示JSON模板
 
 冲突处理选项 (--choice)：
     view     - 查看现有食谱
     derive   - 基于现有食谱创建新变体（需 --new_name）
-    update   - 更新现有食谱
+    update   - 更新现有食谱(同 --merge,保留烹饪历史)
     cancel   - 取消导入
+
+--merge  : 若同名菜已存在,自动覆盖(保留烹饪历史);无冲突时等同普通 import
+数组批量 : JSON 顶层为数组时,逐道导入,失败不影响后续(aggregate result)
 """)
         return
 
@@ -552,13 +716,25 @@ def main():
             try:
                 with open(json_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                errors = validate_recipe(data)
-                if errors:
-                    print(f"验证失败：")
-                    for err in errors:
-                        print(f"  - {err}")
+                # 数组批量校验
+                if isinstance(data, list):
+                    total_err = 0
+                    for i, item in enumerate(data):
+                        errors = validate_recipe(item)
+                        if errors:
+                            print(f"[{i}] {item.get('name', '?')}: {len(errors)} 错")
+                            for err in errors[:3]:
+                                print(f"  - {err}")
+                            total_err += len(errors)
+                    print(f"批量校验:{len(data)} 道菜,共 {total_err} 错")
                 else:
-                    print(f"验证通过！")
+                    errors = validate_recipe(data)
+                    if errors:
+                        print(f"验证失败：")
+                        for err in errors:
+                            print(f"  - {err}")
+                    else:
+                        print(f"验证通过！")
             except json.JSONDecodeError as e:
                 print(f"JSON格式错误: {e}")
             except FileNotFoundError:
@@ -568,6 +744,7 @@ def main():
         # import
         choice = None
         new_name = None
+        merge = False
 
         # 解析可选参数
         i = 3
@@ -578,11 +755,56 @@ def main():
             elif sys.argv[i] == "--new_name" and i + 1 < len(sys.argv):
                 new_name = sys.argv[i + 1]
                 i += 2
+            elif sys.argv[i] == "--merge":
+                merge = True
+                i += 1
             else:
                 i += 1
 
-        result = import_recipe(json_file, choice=choice, new_name=new_name)
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        # 检测是否为数组批量
+        try:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                peek_data = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            print(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False, indent=2))
+            return
+
+        if isinstance(peek_data, list):
+            # 数组批量模式:每道菜单独导入,merge 按各自同名决定
+            results = []
+            ok = fail = 0
+            for i, item in enumerate(peek_data):
+                # 把单道菜 dump 到临时文件,复用 import_recipe 流程
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as tf:
+                    json.dump(item, tf, ensure_ascii=False)
+                    tmp_path = tf.name
+                try:
+                    r = import_recipe(tmp_path, choice=None, new_name=None, merge=merge)
+                    r["_index"] = i
+                    r["_name"] = item.get("name", "?")
+                    results.append(r)
+                    if r.get("success"):
+                        ok += 1
+                    else:
+                        fail += 1
+                finally:
+                    try:
+                        os.unlink(tmp_path)
+                    except Exception:
+                        pass
+            aggregate = {
+                "batch": True,
+                "total": len(peek_data),
+                "succeeded": ok,
+                "failed": fail,
+                "results": results,
+            }
+            print(json.dumps(aggregate, ensure_ascii=False, indent=2))
+        else:
+            # 单菜模式
+            result = import_recipe(json_file, choice=choice, new_name=new_name, merge=merge)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
         return
 
     print(f"未知操作：{action}")

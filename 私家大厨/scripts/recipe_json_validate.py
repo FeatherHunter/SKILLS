@@ -22,6 +22,61 @@
 import sys
 import os
 import json
+from pathlib import Path
+
+try:
+    import jsonschema
+    from jsonschema import Draft7Validator
+    HAS_JSONSCHEMA = True
+except ImportError:
+    HAS_JSONSCHEMA = False
+
+
+# ── jsonschema 路径格式化 ──
+SCRIPT_DIR = Path(__file__).resolve().parent
+SCHEMA_PATH = SCRIPT_DIR.parent / "templates" / "recipe_schema.json"
+_SCHEMA_CACHE = None
+
+def _load_schema():
+    global _SCHEMA_CACHE
+    if _SCHEMA_CACHE is None:
+        with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
+            _SCHEMA_CACHE = json.load(f)
+    return _SCHEMA_CACHE
+
+
+def _format_path(absolute_path):
+    """把 jsonschema 错误路径转成 jq 风格(.ingredients[0].name)"""
+    parts = []
+    for p in absolute_path:
+        if isinstance(p, int):
+            if parts:
+                parts[-1] = f"{parts[-1]}[{p}]"
+            else:
+                parts.append(f"[{p}]")
+        else:
+            parts.append(f".{p}" if parts else p)
+    return "".join(parts) or "(root)"
+
+
+def validate_with_jsonschema(data):
+    """用 jsonschema 做结构 + 枚举 + 类型校验。
+    返回 (errors, warnings) 元组,errors 是致命,warnings 是非致命(实际 jsonschema 没 warnings,所以总是空)。"""
+    if not HAS_JSONSCHEMA:
+        return (["⚠️ jsonschema 未安装,跳过 schema 校验(只跑了手动校验)"], [])
+
+    try:
+        schema = _load_schema()
+    except FileNotFoundError:
+        return ([f"❌ Schema 文件不存在:{SCHEMA_PATH}"], [])
+
+    validator = Draft7Validator(schema)
+    errors = []
+    for err in sorted(validator.iter_errors(data), key=lambda e: list(e.absolute_path)):
+        path = _format_path(err.absolute_path)
+        msg = err.message[:200]  # 截断过长消息
+        errors.append(f"❌ {path}  {msg}")
+    return (errors, [])
 
 # ══════════════════════════════════════════════════════════════
 # 标准枚举值
@@ -400,8 +455,12 @@ def main():
         print(f"❌ 文件不存在: {json_file}")
         sys.exit(1)
 
-    # 校验
-    errors, warnings, missing_fields = validate_recipe(data)
+    # 校验 - 先 jsonschema(结构 + 枚举 + 类型),再手动(语义 + 引用)
+    schema_errors, _ = validate_with_jsonschema(data)
+    manual_errors, warnings, missing_fields = validate_recipe(data)
+
+    # schema 错误优先(更基础)
+    errors = schema_errors + manual_errors
 
     # 输出结果
     print(f"\n📋 校验报告：{json_file}")

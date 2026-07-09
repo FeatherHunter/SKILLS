@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chef.local/recipe_schema.json",
+  "title": "Recipe",
+  "description": "私家大厨 JSON 食谱规范 - 与 recipe_template.json 对齐",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "ingredients", "steps"],
+  "properties": {
+    "name": {"type": "string", "minLength": 1, "description": "菜名"},
+    "description": {"type": "string"},
+    "difficulty": {"type": "string", "enum": ["快手菜", "简单", "中等", "困难", "大师"]},
+    "servings": {"type": "integer", "minimum": 1, "maximum": 100},
+    "total_time": {"type": "number", "minimum": 0, "description": "总时间(分钟)"},
+    "status": {"type": "string", "enum": ["未做", "已做", "熟练", "已废弃"]},
+    "photo_url": {"type": ["string", "null"], "format": "uri-reference"},
+    "source": {"type": ["string", "null"]},
+    "source_url": {"type": ["string", "null"], "format": "uri-reference"},
+
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cuisine": {"type": ["string", "null"], "enum": ["川菜", "粤菜", "湘菜", "闽菜", "浙菜", "苏菜", "鲁菜", "东北菜", "京菜", "沪菜", "台湾菜", "本帮菜", null]},
+        "region": {"type": ["string", "null"]},
+        "country": {"type": ["string", "null"]}
+      }
+    },
+
+    "seasons": {"type": "array", "items": {"type": "string", "enum": ["春", "夏", "秋", "冬"]}, "uniqueItems": true},
+    "cooking_methods": {"type": "array", "items": {"type": "string", "enum": ["炒", "蒸", "煮", "烤", "炸", "煎", "焖", "炖", "拌", "卤", "熏", "生食"]}, "uniqueItems": true},
+    "flavors": {"type": "array", "items": {"type": "string", "enum": ["酸", "甜", "辣", "咸", "鲜", "苦", "麻"]}, "uniqueItems": true},
+    "diet_tags": {"type": "array", "items": {"type": "string", "enum": ["素食", "清真", "无辣", "低碳", "无糖", "低脂", "无麸质", "高蛋白"]}, "uniqueItems": true},
+    "meal_types": {"type": "array", "items": {"type": "string", "enum": ["早", "中", "晚", "夜宵", "下午茶", "聚会"]}, "uniqueItems": true},
+
+    "ingredients": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "quantity": {"type": ["number", "null"], "minimum": 0},
+          "unit": {"type": ["string", "null"]},
+          "category": {"type": ["string", "null"], "enum": ["肉类", "海鲜", "蔬菜", "调料", "豆制品", "蛋类", "主食", "干货", "其他", null]},
+          "sequence": {"type": "integer", "minimum": 1},
+          "is_optional": {"type": "boolean"},
+          "substitute": {"type": ["string", "null"]},
+          "quantity_text": {"type": ["string", "null"]}
+        }
+      }
+    },
+
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "action"],
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 1},
+          "action": {"type": "string", "minLength": 1},
+          "duration": {"type": ["integer", "null"], "minimum": 0, "description": "时长(分钟)"},
+          "heat_level": {"type": ["string", "null"], "enum": ["微火", "小火", "中火", "大火", "猛火", null]},
+          "temperature": {"type": ["string", "null"]},
+          "expected_result": {"type": ["string", "null"]},
+          "ingredients_used": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "quantity_used": {"type": ["number", "null"], "minimum": 0},
+                "introduced_at": {"type": ["string", "null"], "enum": ["开局", "开局加入", "中途加入", "最后加入", null]}
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "tips": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["content"],
+        "properties": {
+          "step_sequence": {"type": ["integer", "null"], "minimum": 1},
+          "content": {"type": "string", "minLength": 1},
+          "category": {"type": ["string", "null"], "enum": ["火候", "刀工", "调味", "采购", "设备", "保存", "文化", null]},
+          "priority": {"type": "integer", "minimum": 1},
+          "ingredient_id": {"type": ["string", "null"]}
+        }
+      }
+    },
+
+    "techniques": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["technique_name"],
+        "properties": {
+          "step_sequence": {"type": ["integer", "null"], "minimum": 1},
+          "technique_name": {"type": "string", "minLength": 1},
+          "description": {"type": ["string", "null"]},
+          "key_points": {"type": ["string", "null"]}
+        }
+      }
+    },
+
+    "cookware": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "category": {"type": ["string", "null"], "enum": ["锅", "炉", "刀", "其他", null]}
+        }
+      }
+    },
+
+    "nutrition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "serving_size": {"type": ["number", "null"], "minimum": 0},
+        "serving_unit": {"type": ["string", "null"]},
+        "calories": {"type": ["integer", "null"], "minimum": 0},
+        "protein": {"type": ["number", "null"], "minimum": 0},
+        "fat": {"type": ["number", "null"], "minimum": 0},
+        "carbs": {"type": ["number", "null"], "minimum": 0},
+        "fiber": {"type": ["number", "null"], "minimum": 0},
+        "sodium": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+
+    "background": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "origin_story": {"type": ["string", "null"]},
+        "historical_background": {"type": ["string", "null"]},
+        "cultural_significance": {"type": ["string", "null"]}
+      }
+    },
+
+    "history": {"type": "array"},
+    "relations": {"type": "array"}
+  }
+}

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智剪工坊 v1.6 lib bug 修复报告</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
+    background: linear-gradient(180deg, #fafbfc 0%, #f5f6f9 100%);
+    color: #1d1d1f; line-height: 1.6;
+    padding: 40px 20px; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .header {
+    background: #fff; border-radius: 16px; padding: 40px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    background: #34c759; color: white; font-size: 12px; font-weight: 600;
+  }
+  h1 { font-size: 32px; font-weight: 700; margin: 16px 0 12px; }
+  .meta { color: #86868b; font-size: 14px; }
+  .section {
+    background: #fff; border-radius: 16px; padding: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 24px;
+  }
+  h2 {
+    font-size: 22px; font-weight: 700; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid #e5e5e7;
+  }
+  h3 { font-size: 17px; font-weight: 600; margin: 20px 0 12px; }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin: 20px 0;
+  }
+  .stat {
+    background: #fafbfc; border-radius: 12px; padding: 20px;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 36px; font-weight: 700; line-height: 1;
+  }
+  .stat .label { color: #86868b; font-size: 13px; margin-top: 8px; }
+  .stat.ok .num { color: #34c759; }
+  .stat.fix .num { color: #0071e3; }
+  .stat.test .num { color: #ff9500; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e5e7; font-size: 14px; }
+  th { background: #fafbfc; font-weight: 600; }
+  code {
+    font-family: "SF Mono", "Consolas", monospace;
+    background: #f5f6f9; padding: 2px 6px; border-radius: 4px;
+    font-size: 13px;
+  }
+  .diff {
+    font-family: "SF Mono", monospace; font-size: 12.5px;
+    padding: 12px; border-radius: 6px;
+    margin: 8px 0;
+  }
+  .diff.before { background: #fff5f5; border-left: 3px solid #ff3b30; }
+  .diff.after  { background: #f0f9f4; border-left: 3px solid #34c759; }
+  details { margin: 12px 0; }
+  summary {
+    cursor: pointer; font-weight: 600; padding: 12px;
+    background: #fafbfc; border-radius: 8px; user-select: none;
+  }
+  summary:hover { background: #f0f1f3; }
+  details[open] summary { background: #eef4ff; }
+  .fix-card {
+    background: #fafbfc; border-left: 3px solid #34c759;
+    padding: 16px; border-radius: 8px; margin: 12px 0;
+  }
+  .footer {
+    text-align: center; color: #86868b; font-size: 13px; padding: 24px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 100px;
+    font-size: 12px; font-weight: 500; margin-right: 6px;
+  }
+  .pill.audio { background: #f0f9f4; color: #34c759; }
+  .pill.video { background: #fef3f0; color: #ff3b30; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <span class="badge">✅ 12/12 修复完成 · 集成测试全过</span>
+  <h1>智剪工坊 · v1.6 lib bug 修复报告</h1>
+  <div class="meta">
+    修复时间：2026-07-10 00:33–00:40 · 修改 lib 文件：6 个 · 修复 bug：12 个 · 测试：smoke test 全过 + voice_extract.py 端到端验证
+  </div>
+</div>
+
+<!-- Summary stats -->
+<div class="section">
+  <h2>📊 修复总览</h2>
+  <div class="stats">
+    <div class="stat fix">
+      <div class="num">12</div>
+      <div class="label">lib bug 修复</div>
+    </div>
+    <div class="stat ok">
+      <div class="num">7</div>
+      <div class="label">lib 文件改动</div>
+    </div>
+    <div class="stat test">
+      <div class="num">12/12</div>
+      <div class="label">smoke test 通过</div>
+    </div>
+    <div class="stat ok">
+      <div class="num">1</div>
+      <div class="label">上层脚本验证（voice_extract）</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bug categories -->
+<div class="section">
+  <h2>🐛 12 个 bug 修复详情</h2>
+
+  <h3><span class="pill audio">audio</span>enhance.py（2 bug）</h3>
+
+  <div class="fix-card">
+    <h4>enhance_dialog (line 30)</h4>
+    <div class="diff before">af = f"dialoguenhance=level={level}"  # ffmpeg 7.1 不认 level</div>
+    <div class="diff after">af = f"dialoguenhance=enhance={level * 3}"  # 新参数 enhance (0-3)</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      ffmpeg 7.1 把 dialoguenhance 的 <code>level</code> 改为 <code>enhance</code>（范围 0-3 而非 0-1）。
+      映射：用户传 0.5 → ffmpeg 收到 1.5（中等强度）。
+    </p>
+    <p style="margin-top:8px; color:#34c759; font-size:13px;">
+      ⭐ 这是 voice_extract.py 100% 失败的根因，已修。
+    </p>
+  </div>
+
+  <div class="fix-card">
+    <h4>dynamic_equalizer (line 114)</h4>
+    <div class="diff before">threshold=-20  # 用户 dB；ffmpeg 范围 [0-100]，报错</div>
+    <div class="diff after">threshold=20  # ffmpeg 7.1 范围 [0-100]，不再是 dB</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      ffmpeg 7.1 adynamicequalizer 的 <code>threshold</code> 范围 <code>[0-100]</code>（不是 dB）。
+      函数签名更新：默认 <code>threshold=20</code>，docstring 标注「不再是 dB」。
+    </p>
+  </div>
+
+  <h3><span class="pill audio">audio</span>normalize.py（1 bug）</h3>
+
+  <div class="fix-card">
+    <h4>normalize_dynamic (line 46)</h4>
+    <div class="diff before">af = f"dynaudnorm=f={target_rms}:c={compress}"  # f 实际是 frame length (10-8000 msec)</div>
+    <div class="diff after">target_rms = 10 ** (target_rms_db / 20)
+af = f"dynaudnorm=targetrms={target_rms}:compress={compress}"  # targetrms 是线性 (0-1)</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      用户传 dB，内部转 linear：-23 dB → 0.0708 (linear)。
+      函数签名更新：<code>target_rms</code> → <code>target_rms_db</code>（语义明示）。
+    </p>
+  </div>
+
+  <h3><span class="pill audio">audio</span>transform.py（1 bug）</h3>
+
+  <div class="fix-card">
+    <h4>excite (line 114)</h4>
+    <div class="diff before">af = f"aexciter=frequency={frequency}:amount={amount}"  # ffmpeg 7.1 不认 frequency</div>
+    <div class="diff after">af = f"aexciter=freq={frequency}:amount={amount}"  # ffmpeg 7.1 用 freq (2000-12000 Hz)</div>
+  </div>
+
+  <h3><span class="pill audio">audio</span>channel.py（3 bug）</h3>
+
+  <div class="fix-card">
+    <h4>widen_stereo (line 28)</h4>
+    <div class="diff before">af = f"stereowiden=...:dry={1.0}"  # ffmpeg 7.1 不认 dry</div>
+    <div class="diff after">af = f"stereowiden=...:drymix={drymix_val}"  # drymix 范围 [0-1]</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      ffmpeg 7.1 stereowiden 把 <code>dry</code> 改成 <code>drymix</code>（范围 [0-1]）。
+    </p>
+  </div>
+
+  <div class="fix-card">
+    <h4>pan_audio (line 69)</h4>
+    <div class="diff before">def pan_audio(..., pan="0.5|c0=c1"):  # Invalid channel layout '0.5'</div>
+    <div class="diff after">def pan_audio(..., pan="stereo|c0=c1"):  # 合法 layout 开头</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      ffmpeg 7.1 pan filter 要求第一个字符必须是合法 channel layout（如 <code>stereo</code>、<code>mono</code>），不是数字。
+    </p>
+  </div>
+
+  <div class="fix-card">
+    <h4>upmix_to_surround (line 86)</h4>
+    <div class="diff before">af = f"surround=chl={surround_type}"  # ffmpeg 7.1 不认 chl</div>
+    <div class="diff after">af = f"surround=chl_out={surround_type}:chl_in=stereo"  # chl_out 是输出 layout</div>
+  </div>
+
+  <h3><span class="pill audio">audio</span>visualize.py（3 bug + 1 关键架构变更）</h3>
+
+  <div class="fix-card">
+    <h4>waveform_image / spectrum_image / histogram_image</h4>
+    <div class="diff before">vf = f"showwavespic=s=..."
+run_ffmpeg([..., "-vf", vf, "-frames:v", "1", "-y", ...])
+# ffmpeg 报 "Output file does not contain any stream"</div>
+    <div class="diff after">fc = f"[0:a]showwavespic=s=...[v]"
+run_ffmpeg([..., "-filter_complex", fc, "-map", "[v]", "-frames:v", "1", "-update", "1", "-c:v", "png", "-y", ...])
+# filter_complex 强制 audio → video 转换链</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      <strong>架构变更</strong>：从 <code>-vf</code> 切到 <code>-filter_complex</code>。
+      原因：<code>-vf</code> 在纯音频输入上无法产生 video output stream；
+      <code>-filter_complex</code> 强制链式 audio → video 转换。
+      同时加 <code>-update 1</code>（image2 muxer 持续模式）和 <code>-c:v png</code>（强制 png 编码）。
+    </p>
+  </div>
+
+  <h3><span class="pill audio">audio</span>effect.py（1 bug）</h3>
+
+  <div class="fix-card">
+    <h4>spectral_tilt (line 73)</h4>
+    <div class="diff before">af = f"atilt=tilt={tilt}"  # ffmpeg 7.1 不认 tilt</div>
+    <div class="diff after">af = f"atilt=slope={slope}"  # ffmpeg 7.1 用 slope (-1 到 1)</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      函数签名更新：<code>tilt</code> → <code>slope</code>。
+    </p>
+  </div>
+
+  <h3><span class="pill video">video</span>watermark.py（1 bug + 1 表达式修复）</h3>
+
+  <div class="fix-card">
+    <h4>add_text_watermark</h4>
+    <p style="color:#666; font-size:13px;">两处真错：</p>
+
+    <p style="margin-top:10px; color:#1d1d1f;"><strong>错 1：shadow 参数不存在</strong></p>
+    <div class="diff before">drawtext=...:shadow=1  # ffmpeg 7.1 drawtext 不认 shadow</div>
+    <div class="diff after">shadow_opts = ":shadowx=2:shadowy=2:shadowcolor=black@0.5"
+drawtext=...{shadow_opts}  # 用 shadowx/y/color 替代</div>
+
+    <p style="margin-top:10px; color:#1d1d1f;"><strong>错 2：overlay_w 表达式错误</strong></p>
+    <div class="diff before">x=main_w-overlay_w-10  # drawtext 不认 overlay_w（它属于 overlay filter）</div>
+    <div class="diff after">x=main_w-tw-10  # tw 是 drawtext 自己的 text width</div>
+    <p style="margin-top:8px; color:#666; font-size:13px;">
+      drawtext 的 x/y 表达式只能用 <code>main_w/H/tw/th</code> 等常量，不能引用 <code>overlay_w</code>。
+      POSITIONS 字典全局替换 <code>overlay_w/h</code> → <code>tw/th</code>。
+    </p>
+  </div>
+</div>
+
+<!-- Smoke test -->
+<div class="section">
+  <h2>✅ smoke test 验证（12 函数全 PASS）</h2>
+  <p style="margin:8px 0;">修复后立即跑 smoke test，所有 12 个原失败函数全部通过：</p>
+
+  <table>
+    <thead>
+      <tr><th>测试</th><th>大小</th><th>状态</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>enhance.dynamic_equalizer</td><td>882766 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>enhance.enhance_dialog</td><td>2648166 bytes</td><td>✅ PASS ⭐ 修复 voice_extract</td></tr>
+      <tr><td>normalize.normalize_dynamic</td><td>882766 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>transform.excite</td><td>882766 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>channel.widen_stereo</td><td>1765454 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>channel.upmix_to_surround</td><td>5296230 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>channel.pan_audio</td><td>1765454 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>visualize.waveform_image</td><td>1543 bytes</td><td>✅ PASS（PNG 1.5 KB）</td></tr>
+      <tr><td>visualize.spectrum_image</td><td>203690 bytes</td><td>✅ PASS（PNG 200 KB）</td></tr>
+      <tr><td>visualize.histogram_image</td><td>3480 bytes</td><td>✅ PASS（PNG 3.4 KB）</td></tr>
+      <tr><td>effect.spectral_tilt</td><td>882766 bytes</td><td>✅ PASS</td></tr>
+      <tr><td>video.add_text_watermark</td><td>164087 bytes</td><td>✅ PASS</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Voice_extract verify -->
+<div class="section">
+  <span class="badge">⭐ 端到端</span>
+  <h2 style="margin-top:12px;">🎯 上层脚本端到端验证：voice_extract.py</h2>
+  <p style="margin:12px 0;">这是 v1.5 阶段 2 新增的「人声提取」功能，本应 100% 失败。修复后跑通：</p>
+
+  <pre style="background:#1d1d1f; color:#34c759; padding:16px; border-radius:8px; font-size:13px; overflow-x:auto;">$ python scripts/audio/voice_extract.py -i src.mp4 -o voice.wav --level 0.7
+============================================================
+人声提取: src.mp4 → voice.wav (level=0.7)
+============================================================
+  [INFO] 步骤 1/2: 提取音频 → tmp.wav
+  [INFO] 步骤 2/2: 人声增强 (level=0.7)
+  [INFO] ffmpeg -i tmp.wav -af dialoguenhance=enhance=2.1 -c:a pcm_s16le -y voice.wav
+  输出: voice.wav (2.6 MB) ✅</pre>
+
+  <p style="margin-top:12px; color:#34c759;">✓ 修复链路打通，user 上层可用。</p>
+</div>
+
+<!-- Files changed -->
+<div class="section">
+  <h2>📂 修改的 lib 文件</h2>
+  <table>
+    <thead>
+      <tr><th>文件</th><th>改动函数</th><th>破坏性变更</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>lib/ffmpeg/audio/enhance.py</code></td>
+        <td>enhance_dialog, dynamic_equalizer</td>
+        <td>是（dynamic_equalizer 去除负 dB 接口）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/audio/normalize.py</code></td>
+        <td>normalize_dynamic</td>
+        <td>是（重命名 target_rms → target_rms_db）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/audio/transform.py</code></td>
+        <td>excite</td>
+        <td>否（frequency 内部映射 freq）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/audio/channel.py</code></td>
+        <td>widen_stereo, pan_audio, upmix_to_surround</td>
+        <td>是（pan_audio 默认值变更）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/audio/visualize.py</code></td>
+        <td>waveform_image, spectrum_image, histogram_image</td>
+        <td>否（结果相同，命令形式变更）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/audio/effect.py</code></td>
+        <td>spectral_tilt</td>
+        <td>是（重命名 tilt → slope）</td>
+      </tr>
+      <tr>
+        <td><code>lib/ffmpeg/video/watermark.py</code></td>
+        <td>add_text_watermark</td>
+        <td>是（shadow 参数行为变化 + POSITIONS 全局替换）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <details>
+    <summary>📋 破坏性变更的兼容说明</summary>
+    <div style="padding: 12px; font-size: 13px; color: #555;">
+      <p><strong>上层脚本调用方需要更新：</strong></p>
+      <ul style="padding-left: 24px;">
+        <li><code>dynamic_equalizer(threshold=-20)</code> → <code>dynamic_equalizer(threshold=20)</code>（不再传负 dB）</li>
+        <li><code>normalize_dynamic(target_rms=-23)</code> → <code>normalize_dynamic(target_rms_db=-23)</code>（参数重命名）</li>
+        <li><code>spectral_tilt(tilt=0.5)</code> → <code>spectral_tilt(slope=0.5)</code>（参数重命名）</li>
+        <li><code>pan_audio()</code> 默认值改动（老默认 "0.5|c0=c1" 不合法）</li>
+        <li><code>add_text_watermark(shadow=True)</code> 行为变化（用 shadowx/y 模拟）</li>
+      </ul>
+      <p style="margin-top:12px;">
+        ⚠️ 当前上层脚本（scripts/audio/, scripts/asr/）<strong>没有调用任何破坏性变更的函数</strong>，所以无需同步修改。
+      </p>
+    </div>
+  </details>
+</div>
+
+<!-- next -->
+<div class="section">
+  <h2>🚀 修复后的产物</h2>
+  <ul style="padding-left:24px;">
+    <li><code>references/08-video-lib.md</code>（v1.6 文档）</li>
+    <li>7 个 lib 文件已修，drawtext 用 main_w-tw 替代 main_w-overlay_w</li>
+    <li>所有 12 个失败函数 smoke test 通过</li>
+    <li>voice_extract.py 端到端验证通过（这是修复最大价值）</li>
+  </ul>
+
+  <h3>下一步建议</h3>
+  <ul style="padding-left:24px;">
+    <li>装 <code>pip install torch demucs pyannote-audio</code>（声源分离/说话人分离链路才能跑）</li>
+    <li>预下载 whisper 模型（让 ASR 链路可验证）</li>
+    <li>更新 SKILL.md v1.6 章节 + release notes</li>
+  </ul>
+</div>
+
+<div class="footer">
+  报告生成于 2026-07-10 · 智剪工坊 v1.6 lib bug 修复 · 小匠（xiaojiang agent）
+</div>
+
+</div>
+</body>
+</html>

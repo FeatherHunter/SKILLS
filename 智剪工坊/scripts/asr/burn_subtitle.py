@@ -3,24 +3,28 @@
 智剪工坊 · asr/burn_subtitle 子技能（音频链路 L6: 合成）
 将 SRT 字幕烧录到视频
 
-来源: 从 scripts/video_subtitle.py 的 burn_subtitle() 函数独立出来
-本文件为 asr/ 链路合成端入口。
+v1.6 重构（2026-07-09）:
+  - 改为薄封装，所有 ffmpeg 调用通过 lib/ffmpeg/video/subtitle.py
+  - 上层只做参数解析 + 用户友好的日志
 
-依赖: ffmpeg（subtitles filter）
+调用示例:
+  python scripts/asr/burn_subtitle.py --video in.mp4 --srt sub.srt --output out.mp4
+  python scripts/asr/burn_subtitle.py --video in.mp4 --srt sub.srt --output out.mp4 --font-size 26
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
-from common import (
-    run_ffmpeg, DEFAULT_ENCODE_ARGS,
-    ensure_dir, log_info, log_section, safe_run,
-)
+# lib/ 在 pythonpath（v1.5 _ensure_in_path 模式）
+_SKILL_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(_SKILL_ROOT))
+
+from lib.ffmpeg.video.subtitle import burn_subtitle as _lib_burn
+from common import ensure_dir, log_info, log_section, safe_run
 
 
-def burn_subtitle(video, srt, output, font_size=22):
-    """烧录 SRT 字幕到视频。
+def burn_subtitle_video(video, srt, output, font_size=22):
+    """烧录 SRT 字幕到视频（薄封装，调 lib）。
 
     Args:
         video: 输入视频
@@ -31,19 +35,10 @@ def burn_subtitle(video, srt, output, font_size=22):
     log_section(f"烧字幕: {Path(srt).name} → {Path(video).name}")
     ensure_dir(Path(output).parent)
 
-    # SRT 路径中的特殊字符要转义（Windows path + colon）
-    srt_escaped = str(srt).replace("\\", "/").replace(":", r"\:")
-
-    run_ffmpeg([
-        "-i", str(video),
-        "-vf", f"subtitles='{srt_escaped}':"
-               f"force_style='FontName=Microsoft YaHei,FontSize={font_size},"
-               "PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,"
-               "Outline=2,Shadow=1,MarginV=30,Alignment=2'",
-        *DEFAULT_ENCODE_ARGS,
-        str(output),
-    ])
-    log_info(f"输出: {output}")
+    ok, out_path = _lib_burn(video, srt, output, font_size=font_size)
+    if not ok:
+        raise RuntimeError(f"烧字幕失败: {out_path}")
+    log_info(f"输出: {out_path}")
 
 
 def main():
@@ -57,7 +52,7 @@ def main():
     parser.add_argument("--output", required=True, help="输出视频")
     parser.add_argument("--font-size", type=int, default=22, help="字幕字号（默认 22）")
     args = parser.parse_args()
-    burn_subtitle(args.video, args.srt, args.output, args.font_size)
+    burn_subtitle_video(args.video, args.srt, args.output, args.font_size)
 
 
 if __name__ == "__main__":

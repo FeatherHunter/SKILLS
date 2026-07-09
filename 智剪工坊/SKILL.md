@@ -2,7 +2,7 @@
 name: 智剪工坊
 description: >
   代码视频剪辑工作台,对标剪映(图形化)+ 扩展(AI 能力)。
-  触发词:剪辑、剪切、拼接、转场、调色、慢动作、推镜头、字幕、封面、BGM、流水线、一条龙、智剪工坊、视频工坊、代码剪辑、
+  触发词:剪辑、剪切、拼接、转场、调色、视频滤镜、慢动作、推镜头、字幕、烧字幕、变速、倒放、冻结帧、抽帧、水印、logo、色相、饱和度、缩放、裁剪、旋转、翻转、字母盒、封面、BGM、流水线、一条龙、智剪工坊、视频工坊、代码剪辑、
   美颜、磨皮、瘦脸、大眼、
   去水词、填充词、口头禅、嗯啊、
   改词、改写、翻唱、配音、换声、改写文案、
@@ -67,6 +67,36 @@ triggers:
   - 金句
   - 节拍卡点
   - 自动字幕
+  # === 视频底层 lib 触发词（v1.6）===
+  - 视频滤镜
+  - 加转场
+  - xfade
+  - 视频转场
+  - 色相
+  - 饱和度
+  - 视频调色
+  - 视频亮度
+  - 视频对比度
+  - 颜色平衡
+  - 曲线
+  - 变速
+  - 倒放
+  - 冻结帧
+  - 缩放（视频）
+  - 视频缩放
+  - 视频裁剪
+  - 旋转视频
+  - 视频旋转
+  - 翻转视频
+  - 视频翻转
+  - 加黑边
+  - 字母盒
+  - 加水印
+  - 视频水印
+  - logo 水印
+  - logo 叠加
+  - 抽帧
+  - 改帧率
 metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
 ---
 
@@ -213,6 +243,7 @@ SKILL.md（必读，触发词索引）
 | `references/字幕文字-Whisper烧字幕片头变声.md` | 字幕/文字叠加/opening-text | 路由命中text时 |
 | `references/音频配乐-BGM循环淡入淡出节拍.md` | BGM混音 + 变声 + 节拍 + 提取音频 | 路由命中 audio-mix / audio-voice / audio-beat / audio-extract 时 |
 | `references/ASR链路-声源分离说话人分离Whisper烧字幕.md` | 音频降噪 / 声源分离 / 说话人分离 / ASR / 烧字幕完整链路 | **路由命中 asr / audio-denoise / audio-separate / audio-diarize 时必读** |
+| `references/08-video-lib.md` | ffmpeg 视频底层 lib（字幕烧录 / 转场 41 种 / 调色 / 速度 / 缩放 / 黑边 / 水印）| 路由命中 视频滤镜/转场/调色/烧字幕/水印 时必读 |
 | `references/AI封面-生图叠字两步法.md` | 封面生成（ai/text/image） + **📍 路径契约唯一真理（草稿/终稿/成片 3 步）**| **路由命中 cover 时必读** |
 | `references/AI智能剪辑-抠图金句去水词蒙版.md` | AI抠图/去水词/翻唱 | 路由命中AI features时 |
 | `references/AI交互式采访触发条件.md` | 8条必问/建议问/不必问触发条件 | **阶段0.4 + 阶段1 + 阶段4必读** |
@@ -226,6 +257,7 @@ SKILL.md（必读，触发词索引）
 | `scripts/audio/*.py` | 音频链路 CLI（L1-L5：混音/变声/节拍/提取/降噪/分离/说话人）| AI 调音频脚本时 |
 | `scripts/asr/*.py` | ASR 链路 CLI（L6：转录/烧字幕/说话人合并）| AI 调ASR脚本时 |
 | `lib/ffmpeg/audio/*.py` | ffmpeg 音频底层 lib（10 文件，70+ 函数）| AI 调音频 lib 时 |
+| `lib/ffmpeg/video/*.py` | ffmpeg 视频底层 lib（7 文件，21+ 函数：字幕/转场/调色/速度/缩放/黑边/水印）| AI 调视频 lib 时 |
 | `lib/demucs.py` | Demucs 声源分离底层 | AI 调 demucs 时 |
 | `lib/pyannote.py` | pyannote 说话人分离底层 | AI 调 pyannote 时 |
 | `lib/whisper.py` | faster-whisper ASR 底层 | AI 调 ASR 时 |
@@ -678,11 +710,14 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 │   │   ├── extract.py               # 提取音频
 │   │   ├── denoise.py               # 降噪（v1.4）
 │   │   ├── separate.py              # 声源分离（v1.4）
-│   │   └── diarize.py               # 说话人分离（v1.4）
+│   │   ├── diarize.py               # 说话人分离（v1.4）
+│   │   ├── voice_extract.py         # 人声提取（v1.5）
+│   │   ├── silence_split.py         # 静音分段（v1.5）
+│   │   └── loudness_norm.py         # 响度归一（v1.5）
 │   ├── asr/                         # ASR 链路 L6（用户可见）
 │   │   ├── transcribe.py            # Whisper 转录
-│   │   ├── burn_subtitle.py         # 烧字幕
-│   │   └── speaker_srt.py           # 说话人+ASR合并（v1.4）
+│   │   ├── burn_subtitle.py         # 烧字幕（v1.6 调 lib.ffmpeg.video.subtitle）
+│   │   └── speaker_srt.py           # 说话人+ASR合并（v1.4，纯文本合成）
 │   ├── video_*.py                   # 视频原子操作（用户可见）
 │   ├── ai_*.py                      # AI 能力编排（用户可见）
 │   ├── edit.py                      # 基础编辑（用户可见）
@@ -692,8 +727,18 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 │   ├── common.py                    # ffmpeg + 错误 + 日志 + safe_run
 │   ├── processing.py                # 视频滤镜 + 转场 + rotation
 │   ├── filename.py                  # 命名
-│   ├── asr.py                       # ASR 批量包装
+│   ├── demucs.py                    # 第三方底库：声源分离（v1.5）
+│   ├── pyannote.py                  # 第三方底库：说话人分离（v1.5）
+│   ├── whisper.py                   # 第三方底库：faster-whisper ASR（v1.5）
+│   ├── ffmpeg/
+│   │   ├── audio/                   # 音频 lib（10 文件，70+ 函数，v1.5）
+│   │   │   └── denoise / enhance / detect / normalize / transform / channel / visualize / effect / utility / measure / extract
+│   │   └── video/                   # 视频 lib（6 文件，21+ 函数，v1.6）
+│   │       └── subtitle / transition / color / timing / transform / watermark
 │   └── ...
+├── references/                       # 子技能文档（按需读）
+│   ├── ...（v1.4 全部已存在的 references）
+│   └── 08-video-lib.md              # 视频 lib 文档（v1.6 新增）
 ├── 模板/                             # AI 阶段 3 编排模板
 │   └── 健身vlog.yaml
 └── .archive/                        # 开发者面向（AI 不读）
@@ -705,12 +750,33 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 
 ## 📅 版本
 
+- **v1.6**（2026-07-09）：scripts/asr/burn_subtitle 下沉到 lib/ffmpeg/video/，新增视频底层 lib（6 文件，21 函数，41 种 xfade）
 - **v1.5**（2026-07-09）：scripts/audio/* 全部下沉到 lib/ffmpeg/audio/，分层架构
 - **v1.4**（2026-07-09）：链路重构 + 新增声源分离/说话人分离链路 + 能力链路红线原则（最高优先级）
 - **v1.3**（2026-07）：AI 编排 + 路由表 + 11 个优化
 - v1.2（2026-06）：精简 step 脚本 + 操作清单 schema
 - v1.0（2026-05）：阶段 0-4 端到端
 - v0.7（2026-04）：早期版本
+
+### v1.6 变更摘要
+
+- **新增** `lib/ffmpeg/video/` 视频底层 lib（6 个文件，21 个公开函数）：
+  - `subtitle.py` — 字幕烧录（subtitles / drawtext）
+  - `transition.py` — 转场（xfade，**41 种类型**）
+  - `color.py` — 调色（eq / colorbalance / hue / vibrance / curves / lut3d）
+  - `timing.py` — 速度/时间（setpts 变速、trim、reverse、freeze、fps）
+  - `transform.py` — 缩放/裁剪/旋转/翻转/黑边（scale / crop / rotate / hflip / vflip / pad / letterbox）
+  - `watermark.py` — 水印（overlay + drawtext + 5 种位置）
+- **重构** `scripts/asr/burn_subtitle.py`：改为薄封装，调 `lib.ffmpeg.video.subtitle.burn_subtitle`，不再直接拼 ffmpeg 命令
+- **保留** `scripts/asr/speaker_srt.py`：纯文本合成（diar JSON + SRT），不调 ffmpeg，不属于视频 lib 范围
+- **新增** `references/08-video-lib.md`：视频 lib 完整参考（21 函数签名 + 用法示例）
+- **SKILL.md 同步**：
+  - description 触发词新增：变速 / 倒放 / 冻结帧 / 抽帧 / 水印 / logo / 色相 / 饱和度 / 缩放 / 裁剪 / 旋转 / 翻转 / 字母盒 / 视频滤镜
+  - triggers YAML 列表新增 23 个视频专属词
+  - 文件地图加 `lib/ffmpeg/video/*.py`
+  - references 列加 `08-video-lib.md`
+  - 目录结构加 lib/ffmpeg/video/ 树
+- **核心优势**：所有视频能力（字幕烧录 / 转场 / 调色 / 速度 / 缩放 / 水印）通过 lib 复用，上层脚本仅做参数解析 + 用户友好日志
 
 ### v1.5 变更摘要
 

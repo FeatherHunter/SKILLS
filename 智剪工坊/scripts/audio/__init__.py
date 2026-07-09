@@ -10,26 +10,19 @@ audio/ — 智剪工坊音频链路（L1-L5）
   L4 降噪/分离 → denoise（降噪）、separate（声源分离）
   L5 说话人   → diarize（说话人分离，依赖 L4 输出）
 
-链路示例:
-  # 场景：视频里人声被 BGM 盖住，ASR 准确率低
-  # 正确链路：
-  # 1. extract  — 提取视频音频流
-  # 2. separate — Demucs 分离人声
-  # 3. diarize  — 区分不同说话人
-  # 4. asr/     — 用干净人声做 ASR
+v1.5 重大变化:
+  - 本目录作为用户入口 CLI（用户可见）
+  - 底层 ffmpeg 调用已下沉到 lib/ffmpeg/audio/
+  - 每个脚本调 lib/ffmpeg/audio/*.py 的对应函数
 
-文件名规范:
-  L1: mix.py
-  L2: voice.py, beat.py
-  L3: extract.py
-  L4: denoise.py, separate.py
-  L5: diarize.py
+调用规范（v1.5 起）:
+  # 推荐：从 SKILL_ROOT 运行，sys.path 自动设置
+  python scripts/audio/denoise.py --input audio.wav --output clean.wav
 
-旧路径 backward-compat:
-  scripts/audio_bgm.py   → audio/mix.py
-  scripts/audio_voice.py  → audio/voice.py
-  scripts/audio_beat.py  → audio/beat.py
-  scripts/edit.py extract-audio → audio/extract.py
+  # 或 import（注意 lib 路径）
+  import sys
+  sys.path.insert(0, "scripts")  # 才能 from audio import ...
+  from audio.denoise import denoise
 """
 
 # 方便外部导入: from audio import mix, voice, beat, denoise, separate, diarize

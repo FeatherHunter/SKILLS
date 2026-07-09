@@ -1,114 +1,99 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · asr/transcribe 子技能（音频链路 L6: 分析）
-用 Whisper 将音频/视频转录为 SRT
+智剪工坊 · asr/transcribe 子技能（v1.5 迁移版本）
 
-来源: scripts/video_subtitle.py（126 行）
-本文件为 asr/ 链路主入口，old 路径 video_subtitle.py 保留 backward-compat。
+调用 lib/whisper 的 ASR 能力。
+本文件作为用户入口 CLI + 业务参数封装。
 
-链路位置:
-  L1 合成 → L2 变换 → L3 提取 → L4 降噪/分离 → L5 说话人分离
-  → L6 ASR ← 本文件（用干净人声做转录，准确率最高）
+链路位置: L6 ASR
 
-典型链路用法:
-  # 推荐：先 denoise（降噪）再转录，准确率提升
-  python audio/denoise.py --input video.mp4 --output clean.wav --mode afftdn
-  python asr/transcribe.py --input clean.wav --srt out.srt
-
-  # 完整对话链路（推荐用于多人对话）
-  python audio/separate.py --input video.mp4 --output vocals.wav --stem vocals
-  python audio/diarize.py --input vocals.wav --output diar.json
-  python asr/transcribe.py --input vocals.wav --srt audio.srt
-  python asr/speaker_srt.py --diarize diar.json --srt audio.srt --output audio_speaker.srt
+用法:
+  python scripts/asr/transcribe.py -i audio.wav --srt subtitles.srt
+  python scripts/asr/transcribe.py -i audio.wav --srt subtitles.srt --model small --device cpu
+  python scripts/asr/transcribe.py -i audio.wav --srt subtitles.srt --lang zh
 
 依赖: faster-whisper
+底层: lib.whisper (v1.5 新增)
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
+# 设置 sys.path：保证 SKILL_ROOT 和 lib 都在 path，但不覆盖标准库
+_SKILL_ROOT = Path(__file__).parent.parent.parent  # SKILL_ROOT/
+_LIB_DIR = _SKILL_ROOT / "lib"
+
+# 用 append（不会覆盖），并且只在路径里不存在时才加入
+def _ensure_in_path(p):
+    p = str(p)
+    if p not in sys.path:
+        sys.path.append(p)
+
+_ensure_in_path(str(_SKILL_ROOT))
+_ensure_in_path(str(_LIB_DIR))
+
 from common import (
-    run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS, unified_vf,
-    ensure_dir, log_info, log_warn, log_section, safe_run,
+    ensure_dir, log_info, log_section, log_error, safe_run,
 )
+from lib.whisper import transcribe_to_srt, check_whisper
 
 
-def transcribe_to_srt(audio_or_video, srt_path, model="medium", device="cuda", language=None):
-    """用 Whisper 转录音频/视频，生成 SRT。
+def transcribe(input_path, srt_path, model="medium", device="cuda", language=None):
+    """ASR 转录（v1.5 迁移版本：调 lib/whisper）。
 
     Args:
-        audio_or_video: 输入音频或视频
+        input_path: 输入音频/视频
         srt_path: 输出 SRT 路径
-        model: Whisper 模型（tiny/base/small/medium/large-v3）
+        model: 模型
         device: cuda / cpu
-        language: 强制语言代码（None=自动检测）
+        language: 强制语言（None=自动检测）
 
     Returns:
-        True（成功）；False（失败）
+        int 段数（成功）/ None（失败）
     """
-    log_section(f"Whisper 转录: {Path(audio_or_video).name}")
+    log_section(f"ASR 转录: {Path(input_path).name}")
     ensure_dir(Path(srt_path).parent)
 
-    try:
-        from faster_whisper import WhisperModel
-    except ImportError:
-        log_warn("faster-whisper 未安装")
-        log_warn("安装: pip install faster-whisper")
-        return False
+    if not check_whisper():
+        log_error("faster-whisper 未安装")
+        log_error("安装: pip install faster-whisper")
+        return None
 
-    log_info(f"加载模型: {model} ({device})")
-    wm = WhisperModel(model, device=device)
-
-    log_info("开始转录...")
-    segments, info = wm.transcribe(
-        str(audio_or_video),
-        language=language,
-        word_timestamps=False,
-        vad_filter=True,
-    )
-
-    # 生成 SRT
-    with open(srt_path, "w", encoding="utf-8") as f:
-        idx = 0
-        for seg in segments:
-            idx += 1
-            start = fmt_ts(seg.start)
-            end = fmt_ts(seg.end)
-            text = seg.text.strip()
-            f.write(f"{idx}\n{start} --> {end}\n{text}\n\n")
-
-    log_info(f"SRT 输出: {srt_path} ({idx} 段)")
-    return True
+    seg_count = transcribe_to_srt(input_path, srt_path,
+                                  model=model, device=device, language=language)
+    if seg_count is None:
+        log_error("ASR 转录失败")
+        return None
+    return seg_count
 
 
-def fmt_ts(seconds):
-    """格式化 SRT 时间戳（HH:MM:SS,mmm）。"""
-    if seconds < 0:
-        seconds = 0
-    ms = int(round((seconds - int(seconds)) * 1000))
-    s = int(seconds)
-    h, m, s = s // 3600, (s % 3600) // 60, s % 60
-    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
-
-
-# ========== CLI ==========
 def main():
     parser = argparse.ArgumentParser(
-        description="智剪工坊 · Whisper ASR 转录（音频 → SRT）",
+        description="智剪工坊 · Whisper ASR 转录",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="示例:\n  %(prog)s --input in.mp4 --srt subtitles.srt\n  %(prog)s --input clean.wav --srt audio.srt --model small --device cpu",
+        epilog="""用法:
+  %(prog)s -i audio.wav --srt subtitles.srt
+  %(prog)s -i audio.wav --srt out.srt --model small --device cpu
+  %(prog)s -i audio.wav --srt out.srt --lang zh
+
+模型选择:
+  tiny     ~75MB  最快，精度低
+  base     ~150MB 平衡
+  small    ~500MB 推荐（中文 ok）
+  medium   ~1.5GB 高精度（默认）
+  large-v3 ~3GB   最高精度
+        """,
     )
-    parser.add_argument("-i", "--input", required=True, help="输入视频/音频")
+    parser.add_argument("-i", "--input", required=True, help="输入音频/视频")
     parser.add_argument("--srt", required=True, help="输出 SRT 路径")
     parser.add_argument("--model", default="medium",
-                       help="Whisper 模型（tiny/base/small/medium/large-v3，默认 medium）")
+                       help="Whisper 模型（默认 medium）")
     parser.add_argument("--device", default="cuda", help="cuda / cpu")
     parser.add_argument("--lang", help="强制语言代码（默认自动检测）")
-    args = parser.parse_args()
 
-    ok = transcribe_to_srt(args.input, args.srt, args.model, args.device, args.lang)
-    if not ok:
+    args = parser.parse_args()
+    seg_count = transcribe(args.input, args.srt, args.model, args.device, args.lang)
+    if seg_count is None:
         sys.exit(1)
 
 

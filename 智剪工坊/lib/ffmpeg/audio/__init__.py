@@ -119,6 +119,10 @@ from .measure import (
     measure_si_sdr,
     measure_correlation,
 )
+from .extract import (
+    extract_audio,
+    fade_audio,
+)
 
 __all__ = [
     # denoise (6)
@@ -146,4 +150,6 @@ __all__ = [
     "adelay", "apad", "compensation_delay",
     # measure (4) ⭐ 新增
     "measure_psnr", "measure_sdr", "measure_si_sdr", "measure_correlation",
+    # extract (2) ⭐ 新增
+    "extract_audio", "fade_audio",
 ]

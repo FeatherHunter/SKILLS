@@ -1,73 +1,139 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · audio/voice 子技能（音频链路 L2: 变换）
-音频变声（老人 / 小孩 / 机器人 / 女声 / 男声）
+智剪工坊 · audio/voice 子技能（v1.5 迁移版本）
 
-来源: scripts/audio_voice.py（97 行）
-本文件为 audio/ 链路主入口，old 路径 audio_voice.py 保留 backward-compat。
+调用 lib/ffmpeg/audio/transform.py 的变声能力。
+本文件作为用户入口 CLI + 业务参数封装（变声预设）。
 
-依赖: ffmpeg（asetrate + atempo 链）
+音频链路层级: L2 变换
+
+用法:
+  python audio/voice.py --input in.mp4 --type old_man --output out.mp4
+  python audio/voice.py --input in.mp4 --pitch 1.5 --output out.mp4
+
+依赖: lib.ffmpeg.audio.transform
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
-from common import (
-    run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
-    ensure_dir, log_info, log_section, safe_run,
-)
+_SKILL_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_SKILL_ROOT))
+sys.path.insert(0, str(_SKILL_ROOT / "lib"))
 
-# 变声预设
+from common import (
+    ensure_dir, log_info, log_section, log_warn, log_error, safe_run,
+)
+from ffmpeg.audio.transform import change_pitch, add_tremolo
+
+
+# ========== 变声预设 → lib 参数映射 ==========
 PRESETS = {
-    "old_man": {"pitch": 0.7, "description": "老人（低沉）"},
-    "child": {"pitch": 1.5, "description": "小孩（高音）"},
-    "robot": {"pitch": 1.0, "robot": True, "description": "机器人"},
-    "female": {"pitch": 1.2, "description": "女声"},
-    "male": {"pitch": 0.85, "description": "男声（低沉）"},
-    "whisper": {"pitch": 0.95, "whisper": True, "description": "耳语"},
-    "chipmunk": {"pitch": 2.0, "description": "花栗鼠（超高音）"},
-    "deep": {"pitch": 0.5, "description": "极低沉"},
+    "old_man": {
+        "description": "老人（低沉）",
+        "pitch": 0.7,
+    },
+    "child": {
+        "description": "小孩（高音）",
+        "pitch": 1.5,
+    },
+    "robot": {
+        "description": "机器人（颤音）",
+        "pitch": 1.0,
+        "robot": True,
+    },
+    "female": {
+        "description": "女声",
+        "pitch": 1.2,
+    },
+    "male": {
+        "description": "男声（低沉）",
+        "pitch": 0.85,
+    },
+    "whisper": {
+        "description": "耳语（颤音）",
+        "pitch": 0.95,
+        "whisper": True,
+    },
+    "chipmunk": {
+        "description": "花栗鼠（超高音）",
+        "pitch": 2.0,
+    },
+    "deep": {
+        "description": "极低沉",
+        "pitch": 0.5,
+    },
 }
 
 
 def change_voice(input_path, output_path, pitch=1.0, robot=False, whisper=False):
-    """变声核心逻辑。
+    """变声（v1.5 迁移版本：调 lib/ffmpeg/audio/transform）。
 
-    - pitch < 1: 变低沉（老人）
-    - pitch > 1: 变高（小孩、女声）
-    - robot: 用 tremolo + 调制
-    - whisper: 加呼吸声 + 降音量
+    Args:
+        input_path: 输入音频/视频
+        output_path: 输出音频/视频
+        pitch: 音调倍数（0.5-2.0）
+        robot: 是否机器人声（叠加 tremolo）
+        whisper: 是否耳语（叠加 tremolo）
+    Returns:
+        output 路径（成功）；None（失败）
     """
     log_section(f"变声 pitch={pitch} robot={robot} whisper={whisper}: {Path(input_path).name}")
     ensure_dir(Path(output_path).parent)
 
-    # 音调调整: asetrate + atempo 补偿
-    if 0.5 <= pitch <= 2.0:
-        af_chain = f"asetrate={int(44100 * pitch)},aresample=44100,atempo={1.0/pitch}"
-    else:
-        af_chain = f"asetrate={int(44100 * pitch)},aresample=44100"
+    # 步骤 1: 变调（输出到临时文件）
+    import tempfile
+    pitch_output = Path(tempfile.gettempdir()) / f"voice_pitch_{Path(output_path).stem}.wav"
+    try:
+        success, _ = change_pitch(input_path, str(pitch_output), pitch=pitch)
+    except ValueError as e:
+        log_error(f"参数错误: {e}")
+        return None
+    except Exception as e:
+        log_error(f"变调失败: {e}")
+        return None
 
-    if robot:
-        af_chain = f"{af_chain},tremolo=f=20:d=0.5,chorus=0.5:0.5:50:0.4:0.25:2"
-    elif whisper:
-        af_chain = f"{af_chain},volume=0.4,highpass=f=300,lowpass=f=3000"
+    if not success:
+        log_error("变调失败（lib 返回失败）")
+        try:
+            pitch_output.unlink()
+        except Exception:
+            pass
+        return None
 
-    run_ffmpeg([
-        "-i", str(input_path),
-        "-af", af_chain,
-        "-c:v", "copy",
-        "-c:a", "aac", "-b:a", "128k",
-        str(output_path),
-    ])
-    log_info(f"输出: {output_path} ({get_duration(output_path):.1f}s)")
+    # 步骤 2: 是否需要叠加 tremolo
+    try:
+        if robot or whisper:
+            # 变调输出 + tremolo → 最终 output
+            success, _ = add_tremolo(str(pitch_output), output_path,
+                                     frequency=20 if robot else 15,
+                                     depth=0.5)
+            if not success:
+                log_warn("变调成功，但叠加 tremolo 失败")
+                # 至少变调成功了，把临时输出 copy 到 output
+                import shutil
+                shutil.copy2(str(pitch_output), output_path)
+        else:
+            # 无叠加，直接 move
+            import shutil
+            shutil.move(str(pitch_output), str(output_path))
+
+        log_info(f"输出: {output_path}")
+        return str(output_path)
+    finally:
+        # 确保临时文件清理
+        try:
+            pitch_output.unlink()
+        except Exception:
+            pass
 
 
+# ========== CLI ==========
 def main():
     parser = argparse.ArgumentParser(
-        description="智剪工坊 · 音频变声",
+        description="智剪工坊 · 音频变声（调 lib/ffmpeg/audio/transform）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="预设: " + ", ".join(PRESETS.keys()) + "\n\n示例:\n  %(prog)s --input in.mp4 --type old_man --output out.mp4\n  %(prog)s --input in.mp4 --pitch 1.5 --output out.mp4",
+        epilog=f"预设: {', '.join(PRESETS.keys())}\n\n示例:\n  %(prog)s --input in.mp4 --type old_man --output out.mp4\n  %(prog)s --input in.mp4 --pitch 1.5 --output out.mp4",
     )
     parser.add_argument("-i", "--input", required=True)
     parser.add_argument("--output", required=True)

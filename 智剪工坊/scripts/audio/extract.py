@@ -1,92 +1,78 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · audio/extract 子技能（音频链路 L3: 提取）
-从视频提取音频 + 音频淡入淡出
+智剪工坊 · audio/extract 子技能（v1.5 迁移版本）
 
-来源: 从 scripts/edit.py（extract-audio + fade-audio 子命令）
-edit.py 保留 backward-compat，本文件为 audio/ 链路主入口。
+调用 lib/ffmpeg/audio/extract.py 的能力。
+本文件作为用户入口 CLI。
 
-依赖: ffmpeg
+音频链路层级: L3 提取
+
+用法:
+  python audio/extract.py extract -i v.mp4 -o audio.wav
+  python audio/extract.py fade -i v.mp4 -o out.mp4 --fade-in 2 --fade-out 3
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
+_SKILL_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_SKILL_ROOT))
+sys.path.insert(0, str(_SKILL_ROOT / "lib"))
+
 from common import (
-    run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
-    ensure_dir, log_info, log_section, safe_run,
+    log_info, log_section, log_error, ensure_dir, safe_run,
 )
+from ffmpeg.audio.extract import extract_audio, fade_audio
 
 
-def extract_audio(input_path, output_path, fmt="mp3"):
-    """从视频提取音频流。
-
-    Args:
-        input_path: 输入视频
-        output_path: 输出音频文件
-        fmt: 输出格式（mp3 / wav / aac）
-    """
-    log_section(f"extract-audio {Path(input_path).name} → .{fmt}")
+# ========== 业务封装 ==========
+def extract(input_path, output_path, fmt="wav"):
+    """从视频提取音频。"""
+    log_section(f"提取音频: {Path(input_path).name} → .{fmt}")
     ensure_dir(Path(output_path).parent)
-    codec_map = {
-        "mp3": "libmp3lame",
-        "wav": "pcm_s16le",
-        "aac": "aac",
-    }
-    codec = codec_map.get(fmt, "copy")
-    run_ffmpeg([
-        "-i", str(input_path),
-        "-vn",
-        "-acodec", codec,
-        "-y", str(output_path),
-    ])
-    log_info(f"输出: {output_path}")
+    try:
+        success, out = extract_audio(input_path, output_path, fmt=fmt)
+        if success:
+            log_info(f"输出: {out}")
+            return out
+        log_error("提取音频失败")
+        return None
+    except Exception as e:
+        log_error(f"提取音频失败: {e}")
+        return None
 
 
-def fade_audio(input_path, output_path, fade_in=0, fade_out=0, fps=30):
-    """音频淡入淡出（秒）。
-
-    Args:
-        input_path: 输入音频/视频
-        output_path: 输出文件
-        fade_in: 淡入秒数
-        fade_out: 淡出秒数
-        fps: 帧率（用于视频输出）
-    """
-    log_section(f"fade-audio in={fade_in}s out={fade_out}s {Path(input_path).name}")
+def fade(input_path, output_path, fade_in=0, fade_out=0):
+    """音频淡入淡出。"""
+    log_section(f"音频淡入淡出 in={fade_in}s out={fade_out}s")
     ensure_dir(Path(output_path).parent)
-    duration = get_duration(input_path)
-    fade_out_st = max(0, duration - fade_out)
-    af_parts = []
-    if fade_in > 0:
-        af_parts.append(f"afade=t=in:st=0:d={fade_in}")
-    if fade_out > 0:
-        af_parts.append(f"afade=t=out:st={fade_out_st}:d={fade_out}")
-    af = ",".join(af_parts) if af_parts else "anull"
-    run_ffmpeg([
-        "-i", str(input_path),
-        "-vf", f"fps={fps}",
-        "-af", af,
-        *DEFAULT_ENCODE_ARGS,
-        str(output_path),
-    ])
-    log_info(f"输出: {output_path}")
+    try:
+        success, out = fade_audio(input_path, output_path, fade_in, fade_out)
+        if success:
+            log_info(f"输出: {out}")
+            return out
+        log_error("淡入淡出失败")
+        return None
+    except Exception as e:
+        log_error(f"淡入淡出失败: {e}")
+        return None
 
 
 # ========== CLI ==========
 def main():
-    parser = argparse.ArgumentParser(description="智剪工坊 · 音频提取与淡入淡出")
+    parser = argparse.ArgumentParser(
+        description="智剪工坊 · 音频提取与淡入淡出（调 lib/ffmpeg/audio/extract）",
+    )
     subparsers = parser.add_subparsers(dest="cmd", required=True)
 
-    # extract-audio
+    # extract
     p = subparsers.add_parser("extract", help="从视频提取音频")
     p.add_argument("-i", "--input", required=True, help="输入视频")
     p.add_argument("--output", required=True, help="输出音频")
-    p.add_argument("--format", default="mp3", choices=["mp3", "wav", "aac"],
-                   help="输出格式（默认 mp3）")
+    p.add_argument("--format", default="wav", choices=["wav", "mp3", "aac"],
+                   help="输出格式（默认 wav）")
 
-    # fade-audio
+    # fade
     p2 = subparsers.add_parser("fade", help="音频淡入淡出")
     p2.add_argument("-i", "--input", required=True, help="输入音频/视频")
     p2.add_argument("--output", required=True, help="输出文件")
@@ -96,9 +82,12 @@ def main():
     args = parser.parse_args()
 
     if args.cmd == "extract":
-        extract_audio(args.input, args.output, args.format)
+        result = extract(args.input, args.output, args.format)
     elif args.cmd == "fade":
-        fade_audio(args.input, args.output, args.fade_in, args.fade_out)
+        result = fade(args.input, args.output, args.fade_in, args.fade_out)
+
+    if result is None:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

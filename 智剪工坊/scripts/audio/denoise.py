@@ -1,65 +1,80 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · audio/denoise 子技能（音频链路 L4: 降噪）
-音频降噪（ffmpeg afftdn / rnnoise 两种模式）
+智剪工坊 · audio/denoise 子技能（v1.5 迁移版本）
 
-本文件为新增文件（v1.4）。
+调用 lib/ffmpeg/audio/denoise.py 的降噪能力。
+本文件作为用户入口 CLI + 业务参数封装。
 
-链路位置（L4）:
-  L1 合成 → L2 变换 → L3 提取 → L4 降噪/分离 ← 本文件
-  → L5 说话人分离 → L6 ASR
+音频链路层级:
+  L1 合成 → mix
+  L2 变换 → voice, beat, normalize
+  L3 提取 → extract
+  L4 降噪/分离 → 本文件
+  L5 说话人 → diarize
+  L6 ASR → asr/transcribe
 
 用法:
-  # ffmpeg 内置降噪（afftdn，速度快，质量一般）
   python audio/denoise.py --input audio.wav --output audio_clean.wav --mode afftdn
-
-  # RNNoise（质量高，需要编译版 ffmpeg 支持）
-  python audio/denoise.py --input audio.wav --output audio_clean.wav --mode rnnoise
-
-  # 降噪后直接提取人声（需要 separate.py）
   python audio/denoise.py --input video.mp4 --output voice.wav --mode afftdn --extract-voice
 
-依赖: ffmpeg（RNNoise 需要 ffmpeg 编译时带 --enable-librnnoise）
+依赖:
+  - lib.ffmpeg.audio.denoise（必须可用）
+  - faster-whisper / ffmpeg 不直接依赖（由 lib 包处理）
 """
 import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
+# 让 lib/ffmpeg/audio 可被 import
+_SKILL_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_SKILL_ROOT))
+sys.path.insert(0, str(_SKILL_ROOT / "lib"))
+
 from common import (
-    run_ffmpeg, get_duration, ensure_dir,
-    log_info, log_section, log_warn, safe_run,
+    ensure_dir, log_info, log_section, log_warn, log_error, safe_run,
+)
+from ffmpeg.audio.denoise import (
+    denoise_fft, denoise_wavelet, denoise_rnn,
+    remove_click, remove_clip, aap_denoise,
 )
 
 
-# 降噪模式
+# ========== 业务模式 → lib 函数映射 ==========
 DENOISE_MODES = {
     "afftdn": {
-        "description": "ffmpeg 内置（fft 降噪，速度快，质量一般）",
-        "params": "afftdn=nr=10:nf=-25:nl=1",
+        "description": "ffmpeg FFT 降噪（默认，中等强度）",
+        "params": {"nr": 10, "nf": -25, "nl": 1},
     },
     "rnnoise": {
-        "description": "RNNoise（神经网络，质量高，需要 ffmpeg 带 librnnoise）",
-        "params": "arnndn=model=denoise.model",
+        "description": "RNNoise 神经网络降噪（需模型文件）",
+        "params": {"model_path": "denoise.model"},  # 占位
     },
     "light": {
-        "description": "轻度降噪（afftdn 轻档，适合有人声的场景）",
-        "params": "afftdn=nr=5:nf=-15:nl=0",
+        "description": "轻度降噪（afftdn 轻档）",
+        "params": {"nr": 5, "nf": -15, "nl": 0},
     },
     "aggressive": {
-        "description": "重度降噪（afftdn 高档，适合纯音乐/录音质量差的场景）",
-        "params": "afftdn=nr=20:nf=-40:nl=2",
+        "description": "重度降噪（afftdn 高档）",
+        "params": {"nr": 20, "nf": -40, "nl": 2},
+    },
+    "wavelet": {
+        "description": "小波降噪（afwtdn）",
+        "params": {"sigma": 2},
+    },
+    "aap": {
+        "description": "仿射投影算法降噪（高阶自适应）",
+        "params": {"projection": 2, "order": 64, "mu": 1.0},
     },
 }
 
 
 def denoise(input_path, output_path, mode="afftdn"):
-    """音频降噪。
+    """音频降噪（v1.5 迁移版本：调 lib/ffmpeg/audio/denoise）。
 
     Args:
         input_path: 输入音频/视频
         output_path: 输出音频文件
-        mode: 降噪模式（afftdn / rnnoise / light / aggressive）
+        mode: 降噪模式（afftdn / rnnoise / light / aggressive / wavelet / aap）
 
     Returns:
         output 路径（成功）；None（失败）
@@ -68,51 +83,89 @@ def denoise(input_path, output_path, mode="afftdn"):
     ensure_dir(Path(output_path).parent)
 
     if mode not in DENOISE_MODES:
-        log_warn(f"未知降噪模式 {mode}，可用: {list(DENOISE_MODES.keys())}")
+        log_error(f"未知降噪模式 {mode}，可用: {list(DENOISE_MODES.keys())}")
         return None
 
     params = DENOISE_MODES[mode]["params"]
     log_info(f"降噪参数: {params}")
 
-    run_ffmpeg([
-        "-i", str(input_path),
-        "-af", params,
-        "-c:a", "pcm_s16le",
-        "-y", str(output_path),
-    ])
-    log_info(f"输出: {output_path} ({get_duration(output_path):.1f}s)")
+    # 调用 lib
+    success = False
+    try:
+        if mode == "afftdn":
+            success, _ = denoise_fft(input_path, output_path,
+                                     nr=params["nr"], nf=params["nf"], nl=params["nl"])
+        elif mode == "light":
+            success, _ = denoise_fft(input_path, output_path,
+                                     nr=params["nr"], nf=params["nf"], nl=params["nl"])
+        elif mode == "aggressive":
+            success, _ = denoise_fft(input_path, output_path,
+                                     nr=params["nr"], nf=params["nf"], nl=params["nl"])
+        elif mode == "rnnoise":
+            success, _ = denoise_rnn(input_path, output_path, params["model_path"])
+        elif mode == "wavelet":
+            success, _ = denoise_wavelet(input_path, output_path, sigma=params["sigma"])
+        elif mode == "aap":
+            success, _ = aap_denoise(input_path, output_path,
+                                     projection=params["projection"],
+                                     order=params["order"], mu=params["mu"])
+    except Exception as e:
+        log_error(f"降噪失败: {e}")
+        return None
+
+    if not success:
+        log_error("降噪失败（lib 返回失败）")
+        return None
+
+    log_info(f"输出: {output_path}")
     return str(output_path)
 
 
 def denoise_extract_voice(video_path, output_wav, mode="afftdn"):
-    """视频 → 提取音频 → 降噪 → 输出 WAV。
+    """视频 → 提取音频 → 降噪 → 输出 WAV（链式调用）。
 
-    相当于 extract_audio + denoise 串联。
+    流程：
+      1. lib.extract_audio 提取音频流
+      2. denoise 降噪
     """
     log_section(f"降噪提取人声: {Path(video_path).name}")
     ensure_dir(Path(output_wav).parent)
 
-    params = DENOISE_MODES.get(mode, DENOISE_MODES["afftdn"])["params"]
-    run_ffmpeg([
-        "-i", str(video_path),
-        "-vn",
-        "-af", params,
-        "-c:a", "pcm_s16le",
-        "-y", str(output_wav),
-    ])
-    log_info(f"输出: {output_wav}")
-    return str(output_wav)
+    # 临时文件路径
+    import tempfile
+    tmp_audio = Path(tempfile.gettempdir()) / f"{Path(video_path).stem}_extracted.wav"
+
+    try:
+        # 步骤 1: 提取音频（调 lib）
+        from ffmpeg.audio.extract import extract_audio
+        success, _ = extract_audio(str(video_path), str(tmp_audio), fmt="wav")
+        if not success:
+            log_error(f"提取音频失败: {video_path}")
+            return None
+
+        # 步骤 2: 降噪
+        result = denoise(str(tmp_audio), output_wav, mode)
+        return result
+    finally:
+        # 确保清理临时文件
+        try:
+            tmp_audio.unlink()
+        except Exception:
+            pass
 
 
+# ========== CLI ==========
 def main():
     parser = argparse.ArgumentParser(
-        description="智剪工坊 · 音频降噪（ffmpeg afftdn / RNNoise）",
+        description="智剪工坊 · 音频降噪（调 lib/ffmpeg/audio/denoise）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""降噪模式:
-  afftdn      ffmpeg 内置 FFT 降噪（速度块，质量一般）
-  rnnoise     神经网络降噪（质量高，需 ffmpeg 带 librnnoise）
-  light       轻度降噪（afftdn 轻档，适合人声场景）
-  aggressive  重度降噪（适合录音质量差或纯音乐）
+  afftdn      FFT 降噪（默认，中等强度）
+  rnnoise     RNNoise 神经网络（需模型文件）
+  light       轻度降噪
+  aggressive  重度降噪
+  wavelet     小波降噪
+  aap         仿射投影算法（高阶）
 
 示例:
   %(prog)s --input audio.wav --output audio_clean.wav --mode afftdn

@@ -1,19 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-智剪工坊 · audio/beat 子技能（音频链路 L2/L6: 节拍分析 / 分析）
-节拍卡点（分析 BGM 节拍，自动输出节拍时间戳 / 剪切点）
+智剪工坊 · audio/beat 子技能（v1.5 迁移版本）
 
-来源: scripts/audio_beat.py（134 行）
-本文件为 audio/ 链路主入口，old 路径 audio_beat.py 保留 backward-compat。
+调用 librosa 做节拍分析。
+本文件作为用户入口 CLI + 业务参数封装。
 
-依赖: librosa
+音频链路层级: L2 变换
+
+用法:
+  python audio/beat.py --analyze --bgm music.mp3 --output beats.json
+  python audio/beat.py --input video.mp4 --bgm music.mp3 --output sync.mp4
+
+依赖: librosa（非 ffmpeg，所以不调 lib/ffmpeg/audio）
 """
 import argparse
 import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
+_SKILL_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_SKILL_ROOT))
+sys.path.insert(0, str(_SKILL_ROOT / "lib"))
+
 from common import (
     run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
     ensure_dir, log_info, log_warn, log_section, safe_run,
@@ -96,7 +104,7 @@ def cut_to_beats(video_path, bgm_path, output_path, mode="cut"):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="智剪工坊 · 节拍卡点",
+        description="智剪工坊 · 节拍卡点（librosa 分析）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="示例:\n  %(prog)s --analyze --bgm music.mp3 --output beats.json\n  %(prog)s --input v.mp4 --bgm music.mp3 --output sync.mp4",
     )

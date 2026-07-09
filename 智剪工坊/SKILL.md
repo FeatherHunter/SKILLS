@@ -225,6 +225,10 @@ SKILL.md（必读，触发词索引）
 | `references/原子操作-14种基础剪辑指令.md` | rotate/scale/crop/mute | 路由命中edit时 |
 | `scripts/audio/*.py` | 音频链路 CLI（L1-L5：混音/变声/节拍/提取/降噪/分离/说话人）| AI 调音频脚本时 |
 | `scripts/asr/*.py` | ASR 链路 CLI（L6：转录/烧字幕/说话人合并）| AI 调ASR脚本时 |
+| `lib/ffmpeg/audio/*.py` | ffmpeg 音频底层 lib（10 文件，70+ 函数）| AI 调音频 lib 时 |
+| `lib/demucs.py` | Demucs 声源分离底层 | AI 调 demucs 时 |
+| `lib/pyannote.py` | pyannote 说话人分离底层 | AI 调 pyannote 时 |
+| `lib/whisper.py` | faster-whisper ASR 底层 | AI 调 ASR 时 |
 | `scripts/*.py`（其他）| 视频原子操作 / AI 能力编排 / 基础编辑 | AI 调脚本时 |
 | `scripts/_internal/*.py` | 内部工具（一致性检查等）| **AI 不调，开发者用** |
 | `lib/common.py` | ffmpeg 包装 + 错误 + 日志 + safe_run | 共享逻辑，**勿重写** |
@@ -712,13 +716,20 @@ MIT（智剪工坊 © 2024-2026 帅猎羽）
 
 - **新增** `lib/ffmpeg/audio/` 底层 lib（10 个文件，70+ 个公开函数）
   - denoise / enhance / detect / normalize / transform / channel / visualize / effect / utility / measure / extract
-- **重构** scripts/audio/*.py：mix / voice / beat / extract / denoise 5 个用户脚本改为调用 lib
+- **新增** 第三方底层 lib（按依赖分类）：
+  - `lib/demucs.py`（声源分离）
+  - `lib/pyannote.py`（说话人分离）
+  - `lib/whisper.py`（faster-whisper ASR）
+- **删除** 历史遗留 `lib/asr.py`（被 lib/whisper.py 取代）
+- **重构** scripts/audio/*.py：mix / voice / beat / extract / denoise / separate / diarize 7 个用户脚本改为调用 lib
+- **重构** scripts/asr/transcribe.py：调 lib/whisper
 - **新增** 3 个用户功能脚本（v1.5 阶段 2）：
   - `audio/voice_extract.py`（人声提取，dialoguenhance 封装）
   - `audio/silence_split.py`（静音检测 + 自动分段，silencedetect 封装）
   - `audio/loudness_norm.py`（响度归一 EBU R128，loudnorm 封装）
-- **新增** `references/07-audio.md`：音频链路完整参考文档（含 10 个用户脚本 + 10 个 lib 文件说明）
-- **核心优势**：上层脚本不再直接拼 ffmpeg 命令，所有 ffmpeg 调用通过 lib 复用
+- **修复** 10 个用户脚本的 sys.path bug（避免覆盖标准库）
+- **新增** `references/07-audio.md`：音频链路完整参考文档（含 10 个用户脚本 + 4 个 lib 模块说明）
+- **核心优势**：上层脚本不再直接拼 ffmpeg 命令，所有 ffmpeg / demucs / pyannote / whisper 调用通过 lib 复用
 
 ### v1.4 变更摘要
 

@@ -21,7 +21,7 @@ AI 行为日志记录 AI 在执行智剪工坊任务时的：
 | 文件 | 用途 | 写入时机 | 写入主体 |
 |---|---|---|---|
 | `<task_id>.md` | 人类可读总结 | 阶段结束 + 异常时 | AI 重写整文件或 append stage section |
-| `<task_id>.jsonl` | 机器可读详细 | **每次 CLI 调用前** append 一行 | AI 用 `open('a').write(json.dumps(...)+chr(10))` |
+| `<task_id>.jsonl` | 机器可读详细 | **每次 CLI 调用前后** 各 append 一行 | **AI 调 `log_decision()` 函数**（v1.14 强制，禁止自写） |
 
 ## 3. JSONL 字段 Schema
 
@@ -145,3 +145,46 @@ LLM 有 self-reference 风险：AI 输出思考后，会在后续 context 里看
 - 创建时机：阶段 0 完成、用户提交 intent.json 后
 - 跟随任务：直至阶段 5 完成
 - 归档时机：剪映导出后，可选 `mv logs/ .archive/logs/<task_id>/`
+
+## 8. AI 行为约束（v1.14 强制）
+
+### 8.1 禁止 AI 自写 JSONL
+
+❌ **禁止**：AI 用 `open('a').write(json.dumps(...)+'\n')` 直接写 JSONL（v1.13 的错误做法）
+
+### 8.2 必须调 log_decision()
+
+✅ **必须**：AI 在每个 CLI 调用前后调 `from common import log_decision`
+
+**调用前**（记录决策 + 思考）：
+
+```python
+log_decision(
+    stage="2", step="9.3", action="trim",
+    decision="trim 0-5s for video_3",
+    thinking="用户说剪开头抖动",
+    result=""
+)
+```
+
+**调用后**（记录结果）：
+
+```python
+log_decision(
+    stage="2", step="9.3", action="trim",
+    decision="trim 0-5s for video_3",
+    thinking="用户说剪开头抖动",
+    result="exit 0"  # 或 "timeout" / "error"
+)
+```
+
+### 8.3 监控机制
+
+- 监控脚本会统计 `log_decision()` 调用次数 vs CLI 次数
+- 差异 ≥ 20% → 警告（AI 写日志不全）
+- 差异 ≥ 50% → 严重（AI 没遵守协议）
+
+### 8.4 路径不变性（v1.14）
+
+- 日志文件位置：`<workspace>/00_智剪/logs/<task_id>.jsonl`（v1.14 起固定在 `00_智剪/logs/` 顶层）
+- ❌ 禁止 AI 写到 `00_智剪/粗加工/中间产物/logs/` 等其他位置

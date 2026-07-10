@@ -2,15 +2,51 @@
 """
 私家大厨 - 数据库初始化脚本
 创建17张表的DDL
-"""
 
-from db_config import get_connection, get_db_path, ensure_wal_mode
+设计哲学:
+- 严格遵循"SKILLS_DB_PATH 环境变量优先"原则
+- 如果 env var 指定路径,即使文件不存在,也在该路径创建空 DB + 建表
+- 如果 env var 没设,沿用 db_config.py 的 fallback 逻辑
+"""
+import sqlite3
+import sys
+from pathlib import Path
+
+from db_config import get_connection, get_db_path, ensure_wal_mode, DB_PATH
+
+
+def _ensure_db_file():
+    """确保 DB 文件物理存在(env var 路径或 fallback 路径)
+
+    为什么需要这一步:
+    - get_connection() 调 sqlite3.connect(str(DB_PATH)),如果文件不存在会自动创建空 DB
+    - 但用户期望 init_db 是"幂等"的 — 显式创建比隐式更可控
+    - 同时 init_db 可能被外部脚本调用,显式创建便于其他工具感知 DB 位置
+    """
+    if DB_PATH.exists():
+        return False  # 已存在,跳过
+
+    # 创建空 DB(只含 sqlite_master,无 user tables)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.close()
+    return True  # 新建
+
 
 def init_db():
     """初始化数据库，创建所有表"""
-    # 确保 WAL 模式
+    db_path = get_db_path()
+
+    # 0. 显式确保 DB 文件存在(env var 路径或 fallback)
+    created = _ensure_db_file()
+    if created:
+        print(f"📁 已创建空 DB: {db_path}")
+
+    # 1. 确保 WAL 模式
     ensure_wal_mode()
 
+    # 2. 拿连接
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("BEGIN")

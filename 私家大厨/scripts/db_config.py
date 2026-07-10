@@ -26,13 +26,22 @@ RETRY_DELAY = 0.1  # 重试间隔（秒）
 BUSY_TIMEOUT = 5000  # 忙等待超时（毫秒）
 
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
-    # 1. 环境变量（最高优先级）
+    """四层查找DB路径(按优先级):
+    1. 环境变量 SKILLS_DB_PATH(最高优先级,即使文件不存在也在此创建)
+    2. 技能目录(<skill_dir>/chef_data.db)
+    3. 父目录递归找 .db/chef_data.db
+    4. fallback: 在 <skill_dir>/.db/ 创建
+
+    设计哲学:
+    - env var 是 explicit 配置,用户已经明确指定位置 → 必须尊重,不能 fallback 到别处
+    - 不存在 → 在 env var 路径创建空 DB(让调用方负责建表)
+    """
+    # 1. 环境变量（最高优先级 — 始终返回该路径,文件不存在时由调用方创建）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
-        if p.exists():
-            return p
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
     # 2. 技能目录（默认）
     p = skill_dir / db_filename
     if p.exists():
@@ -44,7 +53,7 @@ def _find_db_path(skill_dir, db_filename):
             p = db_dir / db_filename
             if p.exists():
                 return p
-    # 4. 都找不到则创建在 .db 目录
+    # 4. fallback: 都找不到则创建在 <skill_dir>/.db/ 目录
     default_db_dir = skill_dir / ".db"
     default_db_dir.mkdir(exist_ok=True)
     return default_db_dir / db_filename

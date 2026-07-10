@@ -43,7 +43,16 @@ AI 行为日志记录 AI 在执行智剪工坊任务时的：
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | time | string (ISO 8601) | 是 | 时间戳 |
-| stage | string | 是 | 当前阶段号（"0"-"5"）|
+| stage | string | 是 | 当前阶段号（v1.12 扩展）|
+
+**stage 取值（v1.12 扩展）**：
+- "0"-"5" — 老阶段（项目初始化/意图对齐/粗加工/模板/审查/出片）
+- "step_10_review" — 粗加工审查（v1.12 新）
+- "refine" — 精加工（v1.12 新，含路径 A/B）
+- "step_12_review" — 精加工审查（v1.12 新）
+- "finalize" — 出片（v1.12 重命名自 stage 5）
+- "reuse_backup" — 二次加工备份（v1.12 新）
+- "reuse_apply" — 二次加工复用（v1.12 新）
 | step | string | 是 | 当前 stage 内步骤 |
 | action | string | 是 | 执行的操作类型（trim / color / ask / ...）|
 | decision | string | 是 | 本次决策内容 |
@@ -78,31 +87,44 @@ LLM 有 self-reference 风险：AI 输出思考后，会在后续 context 里看
 </action>
 ```
 
-## 5. Markdown (.md) 章节结构
+## 5. Markdown (.md) 章节结构（v1.12 扩展）
 
 ```markdown
 # 任务 <task_id>
 
-## Stage 0 项目初始化
+## Step 0-2 初始化
 [时间] 决策：HTML 表单填写
+
+## Step 3-4 加载 + 填表
+[时间] 决策：HTML 路径
+[时间] 决策：intent.json 保存路径
+
+## Step 5-7 意图对齐
+[时间] 决策：6 象限操作清单
+[时间] 决策：用户回答的关键问题
+
+## Step 8-9 粗加工
+[时间] 决策：调用的 CLI（trim/color/normal）
 [时间] 异常：...（如有）
 
-## Stage 1 意图对齐
-[时间] 决策：与用户确认 3 个意图点
-[时间] 决策：选择「健身 vlog」模板
+## Step 10 粗加工审查
+[时间] 决策：用户标 OK / 有问题的项
 
-## Stage 2 粗加工
-[时间] 调：scripts/video/trim.py
-[时间] 异常：CUDA OOM（已重试 3 次失败）
+## Step 11 精加工
+[时间] 决策：路径 A or B
+[时间] 决策：用户回答的核心问题（路径 A）
+[时间] 决策：编排方案 + 用户确认
 
-## Stage 3 模板
-...
+## Step 12 精加工审查
+[时间] 决策：用户标 OK / 有问题
 
-## Stage 4 产物审查·用户交互循环
-...
+## Step 13 出片
+[时间] 决策：命名 + 编码
 
-## Stage 5 收尾
-...
+## Reuse 二次加工（可选）
+[时间] 决策：备份时间 + 路径
+[时间] 决策：复用时间 + 路径
+```
 ```
 
 ## 6. 文件命名约定

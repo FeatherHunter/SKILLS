@@ -15,6 +15,7 @@ import sys
 import json
 import shutil
 import platform
+import functools
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -485,4 +486,39 @@ def safe_run(func):
             import traceback
             traceback.print_exc()
             sys.exit(2)
+    return wrapper
+
+
+# === v1.13 日志装饰器 ===
+
+def _truncate_args(args, max_len=200):
+    """截断长参数（如视频路径）避免日志过长"""
+    s = str(args)
+    if len(s) > max_len:
+        return s[:max_len] + "..."
+    return s
+
+
+def log_ffmpeg_call(func):
+    """装饰器：自动记录 ffmpeg 调用的输入/输出/错误
+
+    用法：
+        @log_ffmpeg_call
+        def extract_audio(input_path, output_path, fmt="wav"):
+            ...
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        args_repr = _truncate_args(args)
+        log_info(f"[{func.__module__}.{func.__name__}] 调用: args={args_repr}")
+        try:
+            result = func(*args, **kwargs)
+            log_info(f"[{func.__module__}.{func.__name__}] 完成: result_type={type(result).__name__}")
+            return result
+        except FFmpegError as e:
+            log_error(f"[{func.__module__}.{func.__name__}] FFmpegError: {e}")
+            raise
+        except Exception as e:
+            log_error(f"[{func.__module__}.{func.__name__}] 异常: {type(e).__name__}: {e}")
+            raise
     return wrapper

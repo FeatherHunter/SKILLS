@@ -258,6 +258,10 @@
     {% else %}<span class="badge">未做</span>{% endif %}
     {% for m in (recipe.meal_types or []) %}<span class="badge">{{ m }}</span>{% endfor %}
     {% for s in (recipe.seasons or []) %}<span class="badge">{{ s }}季</span>{% endfor %}
+    {# ── Batch 3.1 (G1): flavors 口味标签 — 橙色 warn 配色 — #}
+    {% for f in (recipe.flavors or []) %}<span class="badge warn">{{ f }}</span>{% endfor %}
+    {# ── Batch 3.2 (G1): diet_tags 饮食标签 — 绿色 success 配色 — #}
+    {% for t in (recipe.diet_tags or []) %}<span class="badge success">{{ t }}</span>{% endfor %}
   </div>
   {# ── Batch 2.1: photo_url 显示(Jinja2 autoescape 防 XSS)── #}
   {% if recipe.photo_url %}
@@ -288,6 +292,13 @@
     <div class="info-cell">
       <div class="label">地域</div>
       <div class="value" style="font-size:14px">{{ recipe.category.region }}</div>
+    </div>
+    {% endif %}
+    {# ── Batch 3.3 (G2): country 国家 — 智能去重,只在不冗余时显示 — #}
+    {% if recipe.category and recipe.category.country and not (recipe.category.region and recipe.category.country in recipe.category.region) %}
+    <div class="info-cell">
+      <div class="label">国家</div>
+      <div class="value" style="font-size:14px">{{ recipe.category.country }}</div>
     </div>
     {% endif %}
     {% if recipe.cooking_methods %}
@@ -372,6 +383,8 @@
         {% if step.duration %}<span class="meta-chip">⏱ {{ step.duration }} 分钟</span>{% endif %}
         {% if step.heat_level %}<span class="meta-chip">🔥 {{ step.heat_level }}</span>{% endif %}
         {% if step.temperature %}<span class="meta-chip">🌡 {{ step.temperature }}</span>{% endif %}
+        {# ── Batch 3.4 (G3): step 内嵌技法 — 不再需要反查下方技法 section — #}
+        {% for t in (step.techniques or []) %}<span class="meta-chip technique">🥋 {{ t.technique_name }}</span>{% endfor %}
       </div>
       {% if step.expected_result %}
       <div class="step-meta"><span class="meta-chip expected">✓ {{ step.expected_result }}</span></div>
@@ -449,17 +462,18 @@
 <div class="card">
   <div class="section-title">
     营养成分
-    <span class="count">每 {{ recipe.nutrition.serving_size }}{{ recipe.nutrition.serving_unit or 'g' }}</span>
+    {# ── Batch 3.5 (G4): 营养联动份数 — 显示"每份基准" + "当前份数"信息 — #}
+    <span class="count" id="nutrition-meta">每 {{ recipe.nutrition.serving_size or '?' }}{{ recipe.nutrition.serving_unit or 'g' }} · 基准 {{ recipe.servings or 1 }} 人份</span>
   </div>
-  <table class="nutrition-table">
+  <table class="nutrition-table" id="nutrition-table" data-base-servings="{{ recipe.servings or 1 }}">
     <thead><tr><th>项目</th><th>含量</th></tr></thead>
     <tbody>
-      {% if recipe.nutrition.calories is not none %}<tr><td>热量</td><td>{{ recipe.nutrition.calories }} kcal</td></tr>{% endif %}
-      {% if recipe.nutrition.protein is not none %}<tr><td>蛋白质</td><td>{{ recipe.nutrition.protein }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.fat is not none %}<tr><td>脂肪</td><td>{{ recipe.nutrition.fat }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.carbs is not none %}<tr><td>碳水</td><td>{{ recipe.nutrition.carbs }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.fiber is not none %}<tr><td>膳食纤维</td><td>{{ recipe.nutrition.fiber }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.sodium is not none %}<tr><td>钠</td><td>{{ recipe.nutrition.sodium }} mg</td></tr>{% endif %}
+      {% if recipe.nutrition.calories is not none %}<tr><td>热量</td><td data-base="{{ recipe.nutrition.calories }}" data-unit=" kcal">{{ recipe.nutrition.calories }} kcal</td></tr>{% endif %}
+      {% if recipe.nutrition.protein is not none %}<tr><td>蛋白质</td><td data-base="{{ recipe.nutrition.protein }}" data-unit=" g">{{ recipe.nutrition.protein }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.fat is not none %}<tr><td>脂肪</td><td data-base="{{ recipe.nutrition.fat }}" data-unit=" g">{{ recipe.nutrition.fat }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.carbs is not none %}<tr><td>碳水</td><td data-base="{{ recipe.nutrition.carbs }}" data-unit=" g">{{ recipe.nutrition.carbs }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.fiber is not none %}<tr><td>膳食纤维</td><td data-base="{{ recipe.nutrition.fiber }}" data-unit=" g">{{ recipe.nutrition.fiber }} g</td></tr>{% endif %}
+      {% if recipe.nutrition.sodium is not none %}<tr><td>钠</td><td data-base="{{ recipe.nutrition.sodium }}" data-unit=" mg">{{ recipe.nutrition.sodium }} mg</td></tr>{% endif %}
     </tbody>
   </table>
 </div>
@@ -562,6 +576,26 @@
       display = display % 1 === 0 ? display.toFixed(0) : display.toFixed(1);
       numEl.textContent = display;
     });
+    // ── Batch 3.6 (G4): 联动 nutrition 表 — 按份数缩放营养值 — #
+    var nutTable = document.getElementById('nutrition-table');
+    if (nutTable) {
+      nutTable.querySelectorAll('td[data-base]').forEach(function(td){
+        var base = parseFloat(td.dataset.base) || 0;
+        var unit = td.dataset.unit || '';
+        var scaled = base * factor;
+        // 热量取整,其他保留 1 位小数
+        var display;
+        if (unit.trim() === 'kcal') {
+          display = Math.round(scaled);
+        } else if (unit.trim() === 'mg') {
+          display = Math.round(scaled);
+        } else {
+          display = (Math.round(scaled * 10) / 10);
+          display = display % 1 === 0 ? display.toFixed(0) : display.toFixed(1);
+        }
+        td.textContent = display + unit;
+      });
+    }
   }
 
   if (dec) dec.addEventListener('click', function(){

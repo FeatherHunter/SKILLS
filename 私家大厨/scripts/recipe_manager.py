@@ -771,6 +771,18 @@ def export_json(args):
             "introduced_at": r["introduced_at"],
         } for r in cursor.fetchall()]
 
+        # G3 修复:把 step_techniques 嵌进 step,让模板能在步骤内 inline 显示
+        cursor.execute(
+            "SELECT technique_name, description, key_points "
+            "FROM step_techniques WHERE step_id = ? ORDER BY rowid",
+            (sid,)
+        )
+        techs_inline = [{
+            "technique_name": r["technique_name"],
+            "description": r["description"],
+            "key_points": r["key_points"],
+        } for r in cursor.fetchall()]
+
         steps.append({
             "sequence": s["sequence"],
             "action": s["action"],
@@ -779,6 +791,7 @@ def export_json(args):
             "temperature": s["temperature"],
             "expected_result": s["expected_result"],
             "ingredients_used": ing_used,
+            "techniques": techs_inline,
         })
 
     # 7. 技法(JOIN cooking_steps 拿 step_sequence)

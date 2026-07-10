@@ -1,5 +1,56 @@
 ﻿# 智剪工坊 · 变更日志
 
+## v1.10 (2026-07-10) - BUG 修复 + 流程化(DAY8 vlog 出片问题追踪触发)
+
+> 增量修复:从 DAY8 vlog 出片问题追踪表中识别 7 项 BUG + 4 项文档缺陷,集中修复。
+> 修复工具链路 + 文档/HTML,跨场景防止 BUG 重现。
+
+### 🐛 Bug 修复
+
+- **B2/B4 · muted 视频残留 audio metadata**(`scripts/video/trim.py`)
+  - **症状**:`-c:v copy -an` 处理后的 mp4,moov atom 里 audio trak 的 tkhd duration/sample count 等 metadata 没清除,后续 concat 时 ffmpeg 强行对齐 audio PTS → video 被压缩/拉长(实测 sequence_5 显示 7811 秒,成片 7:38 → sequence_3 加速)
+  - **修复**:
+    - 新增 `has_residual_audio_metadata()` (ffprobe 检测 audio stream 是否有 packets)
+    - 新增 `remux_clean_residual_metadata()` (自动判断 muted/with-audio 两种情况分别 remux)
+    - `concat()` 加 pre-process,自动检测并清理残留 metadata
+  - **回归**:DAY8 vlog 重跑通过(各 sequence 时长正常,不再 7811 秒)
+
+- **B1 · mix.py add_bgm Stream map 错误**(`scripts/audio/mix.py`)
+  - **症状**:第 3 步用纯 wav 当 input 却 `-map 0:v`,报 `Stream map '' matches no streams / Failed to set value '0:v'`
+  - **修复**:重写第 3 步用原视频(有 video+audio)+ filter_complex 一次性 amix,删 video_a_processed 中间产物
+  - **效果**:简化流程 + 修 BUG
+
+- **concat demuxer 7811s bug**(trim.py v1.10 第二轮发现)
+  - **症状**:即使所有 input 都"有" audio stream,concat demuxer 仍可能自己创建空 audio placeholder
+  - **修复**:`concat()` 改用 filter_complex concat(用 `[i:v] [i:a]` 显式引用),绕开 demuxer 的诡异行为
+
+- **B6 · speed.py help 文本误导**(`scripts/video/speed.py`)
+  - **症状**:`--factor 0.25-4.0` 描述,实际内部 atempo 链支持 100x+(冥想缩时)
+  - **修复**:epilog 改为 `0.25-100 推荐,>4x 需 atempo 链`
+
+### 📚 文档更新(SKILL.md)
+
+- **§AI 协作协议 §3.1**(v1.10 新增):ending.type 不在路由表时的 fallback 规则 + 禁止手写 ffmpeg drawtext
+- **§AI 协作协议 §3.2**(v1.10 新增):AI 主动决策 vs 必须问的边界(决策表 + 反例)
+- **§⚠️ muted 视频拼接风险**(v1.10 新增章节):核心问题 + 触发场景 + 方案 A/B + 检测方法
+- **§🎬 阶段 2.5: 字幕生成**(v1.10 新增):sequence 标题字幕流程化(intent.json `sequence.title` 字段 + opening.py add 工具链)
+- **§ending.type 路由表**:+2 行 `next-episode-promo` / `next-week`
+- **§2 标记 fillers.py 已修复**:`asetpts=PTS-STARTPTS` 已在第 262 行实现,免误导后续开发者
+
+### 🎨 前端(intent.html)
+
+- **新字段 sequence.title**:video card 加 `data-seq-title` input,起点 video 关联到 sequence 标题
+- **JS 逻辑**:`loadSequencesFromIntent` + 导出 intent.json 时都包含 title 字段
+
+### 📊 验证
+
+- 备份:`智剪工坊_backup_20260710_124134.zip` (24MB)
+- 回归测试:DAY8 vlog 重跑(7:38 → 7:44,含新黑屏结尾 6 秒)
+- 修复追踪表:`D:\Users\辰辰洋洋\Videos\素材\健身\DAY8\00_智剪\_追踪_BUG定位与修复.html`
+- 完整方案:`D:\Users\辰辰洋洋\Videos\素材\健身\DAY8\00_智剪\_修复方案_三层完整版.html`
+
+---
+
 ## v1.2 (2026-07-04) - 阶段 2 双版冗余整合 + Step 2.2 -noautorotate 修复
 
 > 增量改进：消除 v1.0/v1.1 阶段 2 章节的双版冗余（伪代码版 + 详细版），合并为统一结构化版本。

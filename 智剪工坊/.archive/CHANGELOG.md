@@ -428,3 +428,102 @@
 ## v0.1 (2026-07-03) - 骨架完成
 
 - 11 个子技能文档 + 5 个核心脚本
+---\n\n## v1.11 之前的版本摘要（从 SKILL.md v1.10 移除）\n\n> 注：以下为 v1.11 升级前 SKILL.md §📅 版本章节内容，已迁移到 CHANGELOG。\n\n
+## 📋 v1.11 之前的版本摘要
+
+- **v1.10**（2026-07-10）：阶段 3 实装 + 新增阶段 4「产物审查 · 用户交互循环」+ 阶段 4 顺延为 5
+  - **新阶段 4「产物审查 · 用户交互循环」**：在阶段 2 粗加工 + 阶段 3 模板 完成后、出成片前，新增 AI 列出全量产物 + 用户逐项标 OK/有问题 + 讨论队列循环 + 用户签字「全部 OK」后才能进入阶段 5 收尾的强约束
+  - **阶段 3「模板工作流」实装**：删 v1.3「待设计/暂跳过」说明，正式启用 `模板/健身vlog.yaml`（4 stages：节奏决策 → 时间排序 → 转场 → 数据叠加），补 YAML 契约（含 completion / failure 字段）
+  - 阶段编号顺延：原阶段 4「收尾成片」→ **阶段 5** 收尾成片
+  - **全 SKILL 阶段编号同步**：SKILL.md 37 处 + references/AI交互式采访触发条件.md 2 处 + references/主流程-阶段编排.md 全章 + 模板/健身vlog.yaml 2 处，「阶段 4 → 阶段 5」全文一致
+  - 流程图 L437 加「阶段 4 产物审查」节点
+- **v1.9**（2026-07-10）：安装/部署 + 阶段 0 强化 + 项目 venv
+  - 加 `## 📦 安装与配置` 章节（学习居家管家/卡路里/饼干记账 统一格式）：依赖表 + 配置项（HF_ENDPOINT / HF_HOME / TORCH_HOME）+ 一键安装 prompt + AI 撞墙自动帮设契约
+  - 加 `## 🐍 项目 venv（hybrid 隔离）` 章节：`<skill_root>/venv/` + AI 行为约定（不破坏隔离、永不自己创建/删除）
+  - **阶段 0 强化（v1.9 关键）**：加 0.0 步（问工作目录）+ 0.1 升成「第 1 件事主动打开 `智剪工坊-意图编辑.html`」（`Start-Process` / `xdg-open` / `open`），**禁止 dialog 代填**（用户选 ① 后必走）
+  - 加 2 个依赖骨架文件：`requirements.txt`（PyPI 默认源）+ `requirements-torch.txt`（PyTorch GPU CUDA 13 index）
+  - **HTML 前端改名**：`intent.html` → **`智剪工坊-意图编辑.html`**（软件型命名，跨 4 个目录同步 27 处引用，**正文零残留**）
+  - **删 `tests/` 目录**：70 个调试期私有脚本（全部 `_` 前缀）+ 14 个旧 fixture（PNG/MP4 截图），生产代码零引用，安全 trash 可恢复
+- **v1.8**（2026-07-10）：触发词 ↔ 脚本 双向审计（对抗式 + 第一性原理）
+  - 修 27 个维度路由（旧 `audio/*.py` / `video_*.py` 等 → `scripts/{sub}/{file}.py`，附 v1.7 改名标记）
+  - 修 21 个 Jargon 大白话词典路由（同上）
+  - 加 15 个专业触发词进 triggers YAML（ASR / Whisper / 语音转文字 / 混音 / 老声 / 童声 / 擦除 / AI 生成视频 / 流水线 / 封面生成 / AI 增强 / 音频提取 / 谁说了什么 / 旋转 / 裁剪）
+  - 红线章节死引用 `_check_consistency.py` 标注「尚未实现」
+  - 红线章节 19 处 `scripts/atomic/*.py` 同步改为 `scripts/{audio,asr,video,ai,batch}/*.py`
+- **v1.7**（2026-07-10）：架构清理（scripts/ 根目录清空，所有用户可见脚本归到子目录 audio/asr/video/ai/batch；lib/ 第三方底库归到子目录 asr/video；新增 _internal/）
+- **v1.6**（2026-07-09）：scripts/asr/burn_subtitle 下沉到 lib/ffmpeg/video/，新增视频底层 lib（6 文件，21 函数，41 种 xfade）
+- **v1.5**（2026-07-09）：scripts/audio/* 全部下沉到 lib/ffmpeg/audio/，分层架构
+- **v1.4**（2026-07-09）：链路重构 + 新增声源分离/说话人分离链路 + 能力链路红线原则（最高优先级）
+- **v1.3**（2026-07）：AI 编排 + 路由表 + 11 个优化
+- v1.2（2026-06）：精简 step 脚本 + 操作清单 schema
+- v1.0（2026-05）：阶段 0-5 端到端
+- v0.7（2026-04）：早期版本
+
+### v1.6 变更摘要
+
+- **新增** `lib/ffmpeg/video/` 视频底层 lib（6 个文件，21 个公开函数）：
+  - `subtitle.py` — 字幕烧录（subtitles / drawtext）
+  - `transition.py` — 转场（xfade，**41 种类型**）
+  - `color.py` — 调色（eq / colorbalance / hue / vibrance / curves / lut3d）
+  - `timing.py` — 速度/时间（setpts 变速、trim、reverse、freeze、fps）
+  - `transform.py` — 缩放/裁剪/旋转/翻转/黑边（scale / crop / rotate / hflip / vflip / pad / letterbox）
+  - `watermark.py` — 水印（overlay + drawtext + 5 种位置）
+- **重构** `scripts/asr/burn_subtitle.py`：改为薄封装，调 `lib.ffmpeg.video.subtitle.burn_subtitle`，不再直接拼 ffmpeg 命令
+- **保留** `scripts/asr/speaker_srt.py`：纯文本合成（diar JSON + SRT），不调 ffmpeg，不属于视频 lib 范围
+- **新增** `references/08-video-lib.md`：视频 lib 完整参考（21 函数签名 + 用法示例）
+- **SKILL.md 同步**：
+  - description 触发词新增：变速 / 倒放 / 冻结帧 / 抽帧 / 水印 / logo / 色相 / 饱和度 / 缩放 / 裁剪 / 旋转 / 翻转 / 字母盒 / 视频滤镜
+  - triggers YAML 列表新增 23 个视频专属词
+  - 文件地图加 `lib/ffmpeg/video/*.py`
+  - references 列加 `08-video-lib.md`
+  - 目录结构加 lib/ffmpeg/video/ 树
+- **核心优势**：所有视频能力（字幕烧录 / 转场 / 调色 / 速度 / 缩放 / 水印）通过 lib 复用，上层脚本仅做参数解析 + 用户友好日志
+
+### v1.7 变更摘要（架构清理）
+
+- **scripts/ 根目录清空**：22 个旧脚本全部归类到子目录
+  - **新建 `scripts/video/`**（21 个脚本）：video_*.py + edit.py + image_to_video.py 迁移并去 `video_` 前缀
+  - **新建 `scripts/ai/`**（9 个脚本）：ai_*.py 迁移并去 `ai_` 前缀
+  - **新建 `scripts/batch/`**（1 个脚本）：batch.py 迁移
+  - **新建 `scripts/_internal/`**（1 个工具）：stage1_checklist.py 从 lib/ 迁入
+  - **删除** 3 个 backward-compat stubs：`audio_bgm.py` / `audio_voice.py` / `audio_beat.py`（违反 §5.5）
+- **lib/ 第三方底库归子目录**：
+  - **新建 `lib/asr/`**：`pyannote.py` + `whisper.py` 从 lib/ 根目录迁入
+  - **新建 `lib/video/`**：`patch_mp4_rotation.py` 从 lib/ 根目录迁入
+  - **改名 `lib/processing.py` → `lib/video_processing.py`**（职责更清晰）
+- **同步所有 import 引用**（4 处 + SKILL.md 5 处）：
+  - `scripts/asr/transcribe.py`: `from lib.whisper` → `from lib.asr.whisper`
+  - `scripts/audio/diarize.py`: `from lib.pyannote` → `from lib.asr.pyannote`
+  - lib/asr/pyannote.py / lib/asr/whisper.py / lib/video_processing.py docstring 同步
+- **SKILL.md 同步**：文件地图 + 目录结构 + 版本 + 解析注释 + 5 处旧引用全部更新
+- **清理空目录**：`lib/pyannote/` `lib/whisper/` 空目录删除
+- **架构改进**：scripts/ 根目录 100% 清空，lib/ 顶层只剩基础设施 + 第三方入口（5 个文件），其他全部归子目录
+- **smoke test**：12/12 import 测试通过（lib.asr.pyannote / lib.asr.whisper / lib.separate_demucs / scripts/asr/transcribe / scripts/audio/diarize / scripts/audio/separate / lib.video_processing / lib.video.patch_mp4_rotation / scripts.video / scripts.ai / scripts.batch / scripts._internal）
+
+### v1.5 变更摘要
+
+- **新增** `lib/ffmpeg/audio/` 底层 lib（10 个文件，70+ 个公开函数）
+  - denoise / enhance / detect / normalize / transform / channel / visualize / effect / utility / measure / extract
+- **新增** 第三方底层 lib（按依赖分类）：
+  - `lib/separate_demucs.py`（声源分离，Python API + GPU）
+  - `lib/pyannote.py`（说话人分离）
+  - `lib/whisper.py`（faster-whisper ASR）
+- **删除** 历史遗留 `lib/asr.py`（被 lib/whisper.py 取代）
+- **重构** scripts/audio/*.py：mix / voice / beat / extract / denoise / separate / diarize 7 个用户脚本改为调用 lib
+- **重构** scripts/asr/transcribe.py：调 lib/whisper
+- **新增** 3 个用户功能脚本（v1.5 阶段 2）：
+  - `audio/voice_extract.py`（人声提取，dialoguenhance 封装）
+  - `audio/silence_split.py`（静音检测 + 自动分段，silencedetect 封装）
+  - `audio/loudness_norm.py`（响度归一 EBU R128，loudnorm 封装）
+- **修复** 10 个用户脚本的 sys.path bug（避免覆盖标准库）
+- **新增** `references/07-audio.md`：音频链路完整参考文档（含 10 个用户脚本 + 4 个 lib 模块说明）
+- **核心优势**：上层脚本不再直接拼 ffmpeg 命令，所有 ffmpeg / demucs / pyannote / whisper 调用通过 lib 复用
+
+### v1.4 变更摘要
+
+- 新增 `scripts/audio/` 子目录（L1-L5 音频链路：mix / voice / beat / extract / denoise / separate / diarize）
+- 新增 `scripts/asr/` 子目录（L6 ASR 链路：transcribe / burn_subtitle / speaker_srt）
+- 新增 `references/ASR链路-声源分离说话人分离Whisper烧字幕.md`
+- 删除 backward-compat stub：`audio_bgm.py` / `audio_voice.py` / `audio_beat.py` / `video_subtitle.py`
+- 新增 §能力链路完整性（最高优先级红线原则）
+- scripts/ 按红线原则分类：`atomic/`（用户可见）vs `_internal/`（开发者用）

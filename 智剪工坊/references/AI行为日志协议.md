@@ -10,7 +10,7 @@ AI 行为日志记录 AI 在执行智剪工坊任务时的：
 - **决策理由**（为什么这么做）
 - **思考链**（考虑过的方案）
 
-**输出位置**：`<workspace>/00_智剪/中间产物/logs/<task_id>.<ext>`
+**输出位置**：`<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.<ext>`（完整命名见 §6）
 
 **目的**：
 1. 审计 AI 是否按流程走（合规性）
@@ -60,6 +60,11 @@ LLM 有 self-reference 风险：AI 输出思考后，会在后续 context 里看
 1. **XML 标签隔离**：thinking 用 `<thinking>` 标签包裹，AI 不主动回看 thinking 内容
 2. **阶段 checkpoint**：每 stage 结束 AI 必须 re-decide "我现在还坚持前面的决策吗？"
 
+**审计时机**（3 种触发场景）：
+- **每 stage 结束**：写入 .md + checkpoint 重决策
+- **异常时**：写入 .md 异常节 + chat 通知用户
+- **决策犹豫时**（用户在 chat 追问）：写入 .md 并主动暴露 thinking 给用户审查
+
 **AI 写入模板**：
 
 ```xml
@@ -93,7 +98,7 @@ LLM 有 self-reference 风险：AI 输出思考后，会在后续 context 里看
 ## Stage 3 模板
 ...
 
-## Stage 4 产物审查
+## Stage 4 产物审查·用户交互循环
 ...
 
 ## Stage 5 收尾

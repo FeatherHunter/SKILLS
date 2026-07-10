@@ -103,7 +103,7 @@ stages:
           ...
         ]
 
-      阶段 4 拼接时 video_xfade.py 自动应用此配置。
+      阶段 5 拼接时 video_xfade.py 自动应用此配置。
 
     output: |
       修改后的 intent.json（sequences[0].transitions 全为 fade 0.5s）
@@ -149,7 +149,7 @@ stages:
              --duration 3 \
              --font-size 60
 
-      阶段 4 拼成片时把片头 + 单视频 + 片尾 concat。
+      阶段 5 拼成片时把片头 + 单视频 + 片尾 concat。
 
     output: |
       片头：成片/opening.mp4

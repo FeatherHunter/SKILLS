@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>智剪工坊 v1.10 完工报告</title>
+<style>
+:root { --bg: #fff; --text: #1d1d1f; --blue: #007aff; --blue-soft: #e8f2ff; --grey: #f5f5f7; --green: #34c759; --orange: #ff9500; --shadow: 0 4px 14px rgba(0,0,0,0.06); --radius: 12px; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 32px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+.container { max-width: 920px; margin: 0 auto; }
+h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+h2 { font-size: 22px; font-weight: 600; margin-top: 40px; padding-bottom: 8px; border-bottom: 1px solid #d2d2d7; }
+h3 { font-size: 17px; font-weight: 600; margin-top: 24px; }
+.lead { color: #6e6e73; font-size: 15px; margin-bottom: 24px; }
+.hero { background: linear-gradient(180deg, #f5f9ff 0%, #fff 100%); border-radius: var(--radius); padding: 24px 28px; margin-bottom: 28px; border: 1px solid var(--blue-soft); box-shadow: var(--shadow); }
+.badge { display: inline-block; color: white; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px; margin-right: 8px; vertical-align: middle; }
+.badge.done { background: var(--green); }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--grey); }
+th { background: var(--grey); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+.mono { font-family: "SF Mono", Consolas, monospace; font-size: 13px; color: var(--blue); }
+pre { background: var(--grey); padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+.callout { border-left: 3px solid var(--blue); background: var(--blue-soft); padding: 12px 16px; border-radius: 6px; margin: 16px 0; font-size: 14px; }
+details { background: var(--grey); border-radius: var(--radius); padding: 14px 18px; margin: 12px 0; }
+details summary { cursor: pointer; font-weight: 600; }
+details[open] summary { margin-bottom: 12px; }
+code { background: var(--grey); padding: 2px 6px; border-radius: 4px; font-family: "SF Mono", Consolas, monospace; font-size: 13px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+.kpi { background: var(--grey); border-radius: var(--radius); padding: 16px; text-align: center; }
+.kpi .num { font-size: 26px; font-weight: 700; color: var(--blue); }
+.kpi .label { color: #6e6e73; font-size: 13px; margin-top: 4px; }
+#toTop { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 22px; background: var(--blue); color: white; border: none; cursor: pointer; box-shadow: var(--shadow); font-size: 18px; display: none; z-index: 100; }
+#toTop.show { display: block; }
+</style>
+</head>
+<body>
+<button id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<div class="container">
+
+<h1>智剪工坊 v1.10 完工报告</h1>
+<p class="lead">阶段 3 实装 + 新增阶段 4「产物审查 · 用户交互循环」+ 阶段 5 收尾成片（顺延）</p>
+
+<div class="hero">
+  <span class="badge done">v1.10 完成</span>
+  <h2 style="margin-top: 12px; border: none;">阶段流程图</h2>
+  <pre style="margin-top: 16px;">阶段 0 项目初始化
+  ↓
+阶段 1 意图对齐（操作清单 + 自检报告）
+  ↓
+阶段 2 粗加工（ASR + 单视频 + sequence 拼接 + 决策）
+  ↓
+<strong>阶段 3 模板工作流（已实装 · 健身vlog.yaml）</strong>
+  ↓
+<strong>阶段 4 产物审查 · 用户交互循环（v1.10 新增）</strong> ★
+  ↓
+<strong>阶段 5 收尾成片（顺延自旧阶段 4）</strong></pre>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="num">4</div><div class="label">SKILL.md 修改</div></div>
+    <div class="kpi"><div class="num">37</div><div class="label">阶段编号引用同步</div></div>
+    <div class="kpi"><div class="num">0</div><div class="label">残留问题</div></div>
+    <div class="kpi"><div class="num">4</div><div class="label">新阶段 4 产物契约</div></div>
+  </div>
+</div>
+
+<h2>一、新增阶段 4「产物审查 · 用户交互循环」</h2>
+
+<div class="callout"><strong>用户决策</strong>：粗加工 + 模板出产物后、出成片前，加一个让用户检查素材、与 AI 反复讨论到满意再组装成成片的环节。</div>
+
+<h3>S4.1 AI 列全量产物</h3>
+<ul>
+  <li>每段 <code>单视频/video_{idx}.mp4</code> — 路径 + 时长 + applied_ops + 异常</li>
+  <li>每个 <code>组合/seq_{name}.mp4</code> — 时长 + xfade 链</li>
+  <li>模板产物 — 片头/片尾/<code>节奏调整.json</code></li>
+  <li><code>决策.md</code> 摘要（异常情况、用户额外要求）</li>
+</ul>
+
+<h3>S4.2 用户逐项检查</h3>
+<ul>
+  <li><strong>(a) 标 OK</strong> → 该项通过</li>
+  <li><strong>(b) 标 "X 有问题: 描述"</strong> → 该项进讨论队列</li>
+  <li><strong>(c) 标 "跳过"</strong> → 按意图保留但不审查</li>
+</ul>
+
+<h3>S4.3 讨论循环</h3>
+<ul>
+  <li>单视频问题 → 调 <code class="mono">lib/video_processing.py</code> 重跑 / 改 ops</li>
+  <li>sequence 问题 → 调 <code class="mono">scripts/video/xfade.py</code> 重拼</li>
+  <li>模板产物问题 → 回到阶段 3 重跑对应 yaml stage</li>
+  <li>每修完一项 → 回到 S4.1 重新摘要</li>
+</ul>
+
+<h3>S4.4 签字 + 进阶段 5</h3>
+<pre>所有项 OK 或 用户主动说「全部 OK,出成片」
+  ↓
+写 00_智剪/粗加工/中间产物/审查签字.md
+  ├─ project: 项目名
+  ├─ 时间戳: ISO 时间
+  ├─ 通过项: 列表
+  ├─ 跳过项: 列表
+  └─ 用户签字
+  ↓
+进入阶段 5</pre>
+
+<h3>关键约束</h3>
+<ul>
+  <li><strong>零隐藏产物</strong>：AI 必须列阶段 2+3 全部产物给用户，**不得**省略/跳过展示</li>
+  <li><strong>不写新脚本</strong>：讨论环节只用现有 atomic CLI / lib</li>
+  <li><strong>5 次不收敛</strong>：同一项被重跑 ≥ 5 次仍不通过 → AI 暂停要求人工介入</li>
+  <li><strong>用户不确认 → 不出成片</strong>：硬约束</li>
+</ul>
+
+<h2>二、阶段 3 实装（删 "待设计"）</h2>
+
+<p>v1.3 标 "待设计 / 当前建议暂时跳过阶段 3 直接走阶段 4"，v1.10 实装：</p>
+
+<ul>
+  <li><code class="mono">模板/健身vlog.yaml</code> 4 stages 已成形：
+    <ul>
+      <li>Stage 1 节奏决策：训练原速 / 称重慢放 / 饮食快切</li>
+      <li>Stage 2 时间排序：早→中→晚强制时间线</li>
+      <li>Stage 3 转场：统一 fade 0.5s</li>
+      <li>Stage 4 数据叠加：片头目标 + 片尾达成</li>
+    </ul>
+  </li>
+  <li>YAML 契约补完：<code>stages</code>（含 description/ai_prompt/user_input/ai_action/output）+ <code>completion</code>（trigger/ai_action/output）+ <code>failure</code>（user_signal/ai_action）</li>
+  <li>AI 编排职责明确化：加载 yaml → 逐 stage 执行 → 拿产物作为下一个 stage 输入 → completion 触发阶段 5</li>
+</ul>
+
+<h2>三、阶段编号全 SKILL 同步</h2>
+
+<table>
+<tr><th>文件</th><th>改动处数</th><th>说明</th></tr>
+<tr><td class="mono">SKILL.md</td><td>37 处 + 流程图</td><td>「阶段 4 → 5」+ 流程图加「阶段 4 产物审查」</td></tr>
+<tr><td class="mono">references/主流程-阶段编排.md</td><td>整章重写</td><td>加新阶段 4 + 阶段 3 改实装 + 阶段 4→5</td></tr>
+<tr><td class="mono">references/AI交互式采访触发条件.md</td><td>3 处</td><td>「阶段 4 → 5」（cover.prompt 必问场景）</td></tr>
+<tr><td class="mono">references/AI路由表-意图JSON字段枚举.md</td><td>1 处</td><td>「阶段 2-4」→「阶段 2-5」范围表达</td></tr>
+<tr><td class="mono">模板/健身vlog.yaml</td><td>2 处</td><td>completion + Stage 3 提到"阶段 4"→5</td></tr>
+</table>
+
+<h2>四、最终一致性核查</h2>
+
+<pre>SKILL.md                        阶段 0-5 ✓ 阶段 4 产物审查 ✓ 阶段 5 收尾 ✓
+references/主流程-阶段编排.md   阶段 0-5 ✓ 阶段 4 产物审查 ✓ 阶段 5 收尾 ✓
+references/AI交互式采访触发条件  阶段 0.4/1/5 ✓
+references/AI路由表              阶段 2-5 ✓
+模板/健身vlog.yaml               阶段 2/5 ✓
+=================================================
+零残留 ✓   跨 5 文件 100% 一致</pre>
+
+<h2>五、对下次 AI 调用影响</h2>
+
+<p>下次任何 agent 加载智剪工坊、用户说「我要剪辑 VLOG」、选 ① 后：</p>
+<ol>
+  <li>阶段 0 → AI <code>Start-Process</code> 打开 <code class="mono">智剪工坊-意图编辑.html</code></li>
+  <li>阶段 1 → 出操作清单 + 用户确认</li>
+  <li>阶段 2 → 粗加工出单视频 + 组合</li>
+  <li>阶段 3 → 如果项目匹配健身/训练/减肥类，AI 加载 <code class="mono">模板/健身vlog.yaml</code> 跑 4 stage</li>
+  <li><strong>阶段 4 → ★ AI 列全量产物、用户逐项检查、讨论循环、签字确认</strong></li>
+  <li>阶段 5 → 拼成片 → <code class="mono">00_智剪/成片/&lt;title&gt;.mp4</code></li>
+</ol>
+
+<div class="callout">
+  <strong>v1.10 完工</strong> — 阶段 4 产物审查是用户视角的「质量闸门」，挡在粗加工与成片之间，避免「AI 闷头出片 → 用户不满意 → 反复返工」。
+</div>
+
+<p class="subtitle" style="margin-top: 32px; color: #6e6e73; font-size: 13px;">生成时间 2026-07-10 · v1.10 阶段流程扩展 · 全 SKILL 阶段编号同步</p>
+
+</div>
+<script>
+window.addEventListener('scroll', () => {
+  const t = document.getElementById('toTop');
+  if (window.scrollY > 200) t.classList.add('show'); else t.classList.remove('show');
+});
+</script>
+</body>
+</html>

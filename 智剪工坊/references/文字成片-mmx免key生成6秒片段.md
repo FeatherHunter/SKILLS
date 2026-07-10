@@ -1,6 +1,6 @@
 # 文字成片 - mmx免key生成6秒片段
 
-> **对应脚本**: `scripts/ai_text_to_video.py`
+> **对应脚本**: `scripts/ai/text_to_video.py`
 > **触发词**: "文字成片"、"AI 生成视频"、"文生视频"
 > **实测状态**: ✅ 验证通过
 
@@ -12,13 +12,13 @@
 
 ```bash
 # 默认用 mmx(免费)
-python scripts/ai_text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
+python scripts/ai/text_to_video.py --prompt "A man running on a treadmill in a gym, cinematic" --output out.mp4
 
 # 指定时长(6 或 10,mmx 强制)
-python scripts/ai_text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
+python scripts/ai/text_to_video.py --prompt "A cat sitting on a sofa" --duration 6 --output out.mp4
 
 # 试 Kling API(需 KLING_API_KEY)
-python scripts/ai_text_to_video.py --prompt "..." --api kling --output out.mp4
+python scripts/ai/text_to_video.py --prompt "..." --api kling --output out.mp4
 ```
 
 ## 2. 参数

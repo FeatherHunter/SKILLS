@@ -1,6 +1,6 @@
 # 调色预设 - 18种预设LUT风格迁移
 
-> **对应脚本**: `scripts/video_color.py` + `scripts/video_style.py` + `scripts/video_hdr.py`
+> **对应脚本**: `scripts/video/color.py` + `scripts/video/style.py` + `scripts/video/hdr.py`
 > **触发词**: "调色"、"电影感"、"LUT"、"cinematic"、"调亮"、"调暗"、"对比度"、"饱和度"、"色温"、"teal & orange"
 > **实测状态**: ✅ 验证通过
 
@@ -12,13 +12,13 @@
 
 ```bash
 # 调色(18 预设)
-python scripts/video_color.py --input v.mp4 --preset cinematic --output out.mp4
+python scripts/video/color.py --input v.mp4 --preset cinematic --output out.mp4
 
 # 风格迁移
-python scripts/video_style.py --input v.mp4 --reference ref.jpg --output out.mp4
+python scripts/video/style.py --input v.mp4 --reference ref.jpg --output out.mp4
 
 # HDR 导入/导出
-python scripts/video_hdr.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
+python scripts/video/hdr.py --input hdr.mp4 --output sdr.mp4 --direction to_sdr
 ```
 
 ### 场景 2

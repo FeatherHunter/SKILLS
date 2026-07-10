@@ -1,6 +1,6 @@
 # 音频配乐 - BGM循环淡入淡出节拍
 
-> **对应脚本**: `scripts/audio_bgm.py` + `scripts/audio_beat.py`
+> **对应脚本**: `scripts/audio/mix.py` + `scripts/audio/beat.py`
 > **触发词**: "BGM"、"加音乐"、"配乐"、"背景音乐"、"循环"、"淡入"、"淡出"、"混音"、"音量"、"音频降噪"
 > **实测状态**: ✅ 验证通过（v1.3 9 场景严格测试 0 BUG）
 
@@ -10,28 +10,28 @@
 
 ```bash
 # v1.2 向后兼容: 全段 loop 模式(短 BGM 循环)
-python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
+python scripts/audio/mix.py --video v.mp4 --bgm bgm.mp3 --volume 0.18 --output out.mp4
 
 # v1.3 新增: BGM 只在视频 10-20s 段播放
-python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 --start 10 --end 20 --output out.mp4
+python scripts/audio/mix.py --video v.mp4 --bgm bgm.mp3 --start 10 --end 20 --output out.mp4
 
 # v1.3 新增: 全段 + 起始 1s 淡入 + 末尾 2s 淡出
-python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+python scripts/audio/mix.py --video v.mp4 --bgm bgm.mp3 \
   --bgm-fade-in 1 --bgm-fade-out 2 --output out.mp4
 
 # v1.3 新增: 时长不匹配处理(truncate)
-python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+python scripts/audio/mix.py --video v.mp4 --bgm bgm.mp3 \
   --start 5 --end 15 --match-mode truncate --output out.mp4
 
 # v1.3 新增: 时长不匹配处理(silence-end, BGM 播完就静)
-python scripts/audio_bgm.py --video v.mp4 --bgm bgm.mp3 \
+python scripts/audio/mix.py --video v.mp4 --bgm bgm.mp3 \
   --start 0 --end 10 --match-mode silence-end --output out.mp4
 ```
 
 ### 节拍卡点(原 v1.2 行为)
 
 ```bash
-python scripts/audio_beat.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
+python scripts/audio/beat.py --video v.mp4 --bgm bgm.mp3 --output out.mp4
 ```
 
 ## 2. 参数（v1.3 完整版）

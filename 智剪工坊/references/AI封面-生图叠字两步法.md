@@ -1,6 +1,6 @@
 # AI封面 - 生图叠字两步法
 
-> **对应脚本**: `scripts/ai_cover.py`
+> **对应脚本**: `scripts/ai/cover.py`
 > **触发词**: "封面"、"做封面"、"AI 封面"、"AI 生图"、"设计封面"、"缩略图"、"thumbnail"
 > **实测状态**: ✅ 验证通过
 
@@ -45,7 +45,7 @@
 ### 场景 1：单图生成
 
 ```bash
-python scripts/ai_cover.py \
+python scripts/ai/cover.py \
   --prompt "A man on a fitness journey, cinematic dramatic lighting, NO TEXT" \
   --title-main "DAY 1" \
   --subtitle "减脂日记" \
@@ -56,7 +56,7 @@ python scripts/ai_cover.py \
 
 ```bash
 for i in 1 2 3 4; do
-  python scripts/ai_cover.py \
+  python scripts/ai/cover.py \
     --prompt "vlog cover, $i" \
     --output "00_智剪/粗加工/cover/cover_draft_$i.jpg"
 done
@@ -111,7 +111,7 @@ mavis mcp call matrix matrix_generate_image --file req.json
 
 ## 6. 完整脚本
 
-封装到 `scripts/ai_cover.py`,支持:
+封装到 `scripts/ai/cover.py`,支持:
 - 自动调用 matrix 生图
 - 自动叠中文（PIL）
 - 自动配色（按 theme）
@@ -148,4 +148,4 @@ mavis mcp call matrix matrix_generate_image --file req.json
 
 - **SKILL.md §⚠️ AI 必读 #5**: cover.type 路由
 - **references/主流程-阶段编排.md §阶段 4 收尾**: 拼成片时复制 cover 的具体时机
-- **scripts/ai_cover.py**: 实际脚本
+- **scripts/ai/cover.py**: 实际脚本

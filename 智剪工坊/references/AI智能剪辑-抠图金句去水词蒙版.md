@@ -1,6 +1,6 @@
 # AI智能剪辑 - 抠图金句去水词蒙版
 
-> **对应脚本**: `scripts/ai_cutout.py` + `scripts/ai_quotes.py` + `scripts/video_scene.py` + `scripts/video_mask.py` + `scripts/video_overlay.py` + `scripts/video_reframe.py` + `scripts/ai_fillers.py`
+> **对应脚本**: `scripts/ai/cutout.py` + `scripts/ai/quotes.py` + `scripts/video/scene.py` + `scripts/video/mask.py` + `scripts/video/overlay.py` + `scripts/video/reframe.py` + `scripts/ai/fillers.py`
 > **触发词**: "AI 剪辑"、"智能剪辑"、"AI 抠图"、"自动找金句"、"金句"、"节拍卡点"、"自动字幕"、"人脸追踪"、"换背景"、"去水词"
 > **实测状态**: ✅ 验证通过
 
@@ -12,26 +12,26 @@
 
 ```bash
 # AI 抠图(rembg)
-python scripts/ai_cutout.py --input v.mp4 --output no_bg.mp4
+python scripts/ai/cutout.py --input v.mp4 --output no_bg.mp4
 
 # 金句检测(NLP)
-python scripts/ai_quotes.py --input v.mp4 --top 5
+python scripts/ai/quotes.py --input v.mp4 --top 5
 
 # 场景检测(OpenCV 帧差)
-python scripts/video_scene.py --input v.mp4 --threshold 0.3
+python scripts/video/scene.py --input v.mp4 --threshold 0.3
 
 # 蒙版(face / box)
-python scripts/video_mask.py --input v.mp4 --type face --output masked.mp4
+python scripts/video/mask.py --input v.mp4 --type face --output masked.mp4
 
 # 画中画(overlay)
-python scripts/video_overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
+python scripts/video/overlay.py --base a.mp4 --overlay b.mp4 --position top_right --output pip.mp4
 
 # 重新构图(9:16 / 1:1 / 16:9)
-python scripts/video_reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
+python scripts/video/reframe.py --input v.mp4 --target 9:16 --output reframed.mp4
 
 # 🆕 去水词(L2 word-level,需要 agent 标水词)
-python scripts/ai_fillers.py transcribe --input vlog.mp4 --srt vlog.srt
-python scripts/ai_fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
+python scripts/ai/fillers.py transcribe --input vlog.mp4 --srt vlog.srt
+python scripts/ai/fillers.py cut --input vlog.mp4 --srt vlog.srt --output clean.mp4 --remove-words "1,3,11"
 ```
 
 ### 场景 2

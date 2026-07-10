@@ -1,6 +1,6 @@
 # 数字人 - AI主播头像说话
 
-> **对应脚本**: `scripts/ai_digital_human.py`
+> **对应脚本**: `scripts/ai/digital_human.py`
 > **触发词**: "数字人"、"虚拟人"、"AI 讲解"、"头像说话"
 > **实测状态**: ✅ 验证通过
 
@@ -12,19 +12,19 @@
 
 ```bash
 # 头像 + 文案(自动 TTS 合成音频 + 数字人视频)
-python scripts/ai_digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
+python scripts/ai/digital_human.py --avatar avatar.jpg --script "大家好我是帅猎羽" --output out.mp4
 
 # 头像 + 现成音频
-python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
+python scripts/ai/digital_human.py --avatar avatar.jpg --audio voice.mp3 --output out.mp4
 
 # 换声音(用 TTS 时)
-python scripts/ai_digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
+python scripts/ai/digital_human.py --avatar avatar.jpg --script "Hello" --voice male-qn-jingying --output out.mp4
 ```
 
 ### 场景 2
 
 ```bash
-python scripts/ai_digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
+python scripts/ai/digital_human.py --avatar avatar.jpg --audio voice.mp3 --api heygen --output out.mp4
 # 需要 HEYGEN_API_KEY,完整实现待补
 ```
 

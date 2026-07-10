@@ -71,7 +71,7 @@
 | `sequences[i].transitions[j]` | `video_xfade.py` | type≠none/cut | `{after: int, type: 9 种, duration: 秒}` |
 | `sequences[i].transitions[j]` | `concatenate_simple` (硬切) | type=none/cut | 同上 |
 
-**多个 op 在同一视频上**: AI 串联调多次 CLI,或 import `lib/processing.py` 用 `build_video_filter()` 一次拼。
+**多个 op 在同一视频上**: AI 串联调多次 CLI,或 import `lib/video_processing.py` 用 `build_video_filter()` 一次拼。
 
 ## 3. ending.type 路由（阶段 4，AI 必读）
 

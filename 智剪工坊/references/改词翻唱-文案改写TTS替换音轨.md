@@ -1,6 +1,6 @@
 # 改词翻唱 - 文案改写TTS替换音轨
 
-> **对应脚本**: `scripts/ai_rewrite.py`
+> **对应脚本**: `scripts/ai/rewrite.py`
 > **触发词**: "改词"、"改写"、"翻唱"、"配音"、"换声"、"改写文案"、"TTS"
 > **实测状态**: ✅ 验证通过
 
@@ -12,15 +12,15 @@
 
 ```bash
 # 1. 转录
-python scripts/ai_rewrite.py transcribe --input v.mp4 --srt v.srt
+python scripts/ai/rewrite.py transcribe --input v.mp4 --srt v.srt
 
 # 2. (Mavis 读 SRT,改写文案,告诉你用哪个 voice_id)
 
 # 3. 合成新音频
-python scripts/ai_rewrite.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
+python scripts/ai/rewrite.py synthesize --text "改写后的文案" --voice male-qn-jingying --output v_new.mp3
 
 # 4. 替换音轨
-python scripts/ai_rewrite.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
+python scripts/ai/rewrite.py replace --video v.mp4 --audio v_new.mp3 --output v_final.mp4
 ```
 
 ## 2. 参数

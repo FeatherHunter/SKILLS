@@ -249,6 +249,32 @@ SKILL.md（必读，触发词索引）
 
 ---
 
+## 📂 scripts/ 目录命名约定
+
+> v1.7 引入的下划线前缀约定，AI 必须遵守。
+
+### 目录分类
+
+| 目录前缀 | AI 行为 | 用途 |
+|---|---|---|
+| `scripts/{audio,asr,video,ai,batch}/` | ✅ 可调 | 用户可见脚本（30+ 个原子 CLI）|
+| `scripts/_internal/` | ❌ 不可调 | 内部工具（开发者用，AI 不调）|
+
+### `_internal/` 命名约定
+
+- **下划线前缀** = "AI 不调"的强信号
+- 用途：一致性检查脚本、开发期调试工具、auto-fix 工具等
+- AI **禁止**调 `scripts/_internal/*.py` —— 调用即视为 SKILL 损坏（详见 §能力链路完整性 §4 红线）
+- 例外：仅当 `scripts/_internal/` 中的工具**明确**写入 SKILL.md "工具脚本可加速" 章节时，AI 才可**可选**调用
+
+### AI 行为约束
+
+- ✅ **必须**：路由用户需求到 `scripts/{audio,asr,video,ai,batch}/*.py`
+- ❌ **禁止**：自己发现 `scripts/_internal/` 中有工具就直接调用
+- ❌ **禁止**：绕过 `_internal/` 直接修改 SKILL/md/scripts（违反红线契约）
+
+---
+
 ## 📦 安装与配置
 
 ### 依赖

@@ -34,7 +34,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
        - grep lib/ 对应模块 → 新函数是否已实现？
 
 □ 4. 全部一致 → 标记完成
-       - 写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 `references/AI行为日志协议.md` §6）
+       - 写入 `<workspace>/00_智剪/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 `references/AI行为日志协议.md` §6）
        - 写入 .archive/CHANGELOG.md（如有 git）
 
 □ 5. 发现不一致：
@@ -62,7 +62,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
 
 ## 4. 报告模板
 
-写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 §2 步骤 4 备注）：
+写入 `<workspace>/00_智剪/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 §2 步骤 4 备注）：
 
 ```markdown
 ## Red Line Audit
@@ -86,7 +86,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
 
 - ✅ **必须**：5 步清单逐项打勾（不打勾 = 未完成）
 - ✅ **必须**：严重不一致立即停下报告（不修复，等用户决策）
-- ✅ **必须**：写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（事后可查，完整路径见 `references/AI行为日志协议.md` §6）
+- ✅ **必须**：写入 `<workspace>/00_智剪/logs/<task_id>_<timestamp>.md` 红线节（事后可查，完整路径见 `references/AI行为日志协议.md` §6）
 - ❌ **禁止**：跳过自检直接继续
 - ❌ **禁止**：发现严重不一致但偷偷修复
 - ❌ **禁止**：用户没明确授权就自创脚本

@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-LATEST=$(ls -t 00_智剪/中间产物/logs/*.jsonl 2>/dev/null | head -1)
+LATEST=$(ls -t 00_智剪/logs/*.jsonl 2>/dev/null | head -1)
 
 if [ -z "$LATEST" ]; then
     echo "❌ 无日志"

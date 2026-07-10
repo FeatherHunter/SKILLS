@@ -10,7 +10,7 @@ AI 行为日志记录 AI 在执行智剪工坊任务时的：
 - **决策理由**（为什么这么做）
 - **思考链**（考虑过的方案）
 
-**输出位置**：`<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.<ext>`（完整命名见 §6）
+**输出位置**：`<workspace>/00_智剪/logs/<task_id>_<timestamp>.{md,jsonl}`（v1.14 起放在 `00_智剪/logs/` 顶层，与粗加工/精加工/出片 同级，完整命名见 §6）
 
 **目的**：
 1. 审计 AI 是否按流程走（合规性）
@@ -24,6 +24,8 @@ AI 行为日志记录 AI 在执行智剪工坊任务时的：
 | `<task_id>.jsonl` | 机器可读详细 | **每次 CLI 调用前** append 一行 | AI 用 `open('a').write(json.dumps(...)+chr(10))` |
 
 ## 3. JSONL 字段 Schema
+
+**v1.14 新增**：`log_decision()` 函数（`lib/common.py`）—— AI 在每个 CLI 调用前必须调，自动写 JSONL。**禁止** AI 自己用 `open('a').write(...)` 直接写。
 
 每行一个 JSON 对象：
 
@@ -129,7 +131,7 @@ LLM 有 self-reference 风险：AI 输出思考后，会在后续 context 里看
 
 ## 6. 文件命名约定
 
-`<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.<ext>`
+`<workspace>/00_智剪/logs/<task_id>_<timestamp>.{md,jsonl}`（v1.14 起放在 `00_智剪/logs/` 顶层）
 
 - `<task_id>`：来自 intent.json.project.title 的 slug（小写、连字符）
 - `<timestamp>`：YYYYMMDD_HHMMSS

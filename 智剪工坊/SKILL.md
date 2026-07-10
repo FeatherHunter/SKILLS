@@ -260,7 +260,7 @@ SKILL.md（必读，触发词索引）
 
 1. AI 加载 SKILL.md 后，先扫本触发器
 2. 按需加载（不要一次性全加载）
-3. 加载后，把关键摘要写回 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md`（避免重复加载，完整路径见 `references/AI行为日志协议.md` §6）
+3. 加载后，把关键摘要写回 `<workspace>/00_智剪/logs/<task_id>_<timestamp>.md`（避免重复加载，完整路径见 `references/AI行为日志协议.md` §6）
 
 ---
 

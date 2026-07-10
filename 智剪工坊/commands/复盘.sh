@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-LOG_DIR="00_智剪/中间产物/logs"
+LOG_DIR="00_智剪/logs"
 
 LATEST_MD=$(ls -t "$LOG_DIR"/*.md 2>/dev/null | head -1)
 LATEST_JSONL=$(ls -t "$LOG_DIR"/*.jsonl 2>/dev/null | head -1)

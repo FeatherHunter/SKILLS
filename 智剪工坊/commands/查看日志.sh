@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")/.."
 
-LOG_DIR="00_智剪/中间产物/logs"
+LOG_DIR="00_智剪/logs"
 
 if [ ! -d "$LOG_DIR" ]; then
     echo "❌ 日志目录不存在：$LOG_DIR"

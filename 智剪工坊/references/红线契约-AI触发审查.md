@@ -9,7 +9,7 @@
 
 - 用户说"修改 SKILL.md" / "改 references/" / "改 scripts/" / "改 lib/"
 - AI 主动判断"这次改动会影响链路一致性"
-- 任何对 4 层链路（SKILL → 中间层 md → 功能层 scripts → lib）的修改
+- 任何对 5 层链路（SKILL → 中间层 md → 功能层 scripts/{audio,asr,video,ai,batch} → 内部工具 scripts/_internal → lib）的修改
 
 ## 2. 5 步自检清单
 
@@ -34,7 +34,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
        - grep lib/ 对应模块 → 新函数是否已实现？
 
 □ 4. 全部一致 → 标记完成
-       - 写入 logs/<task_id>.md 红线节
+       - 写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 `references/AI行为日志协议.md` §6）
        - 写入 .archive/CHANGELOG.md（如有 git）
 
 □ 5. 发现不一致：
@@ -48,7 +48,8 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
 
 满足任一即视为严重：
 
-- **链路断裂**：SKILL.md 列了某能力，但 scripts/ 没有对应脚本（AI 不能自创）
+- **链路断裂**：SKILL.md 列了某能力，但 scripts/ 没有对应脚本
+  — 违反 SKILL.md §⚠️ AI 必读"反模式 1：CLI 不存在就自己写"，AI 不能自创
 - **命名冲突**：scripts/ 有脚本，但 references/ 没文档（无法路由）
 - **触发词覆盖缺失**：references/ 改了章节，但 SKILL.md 触发词未同步
 - **lib 函数未实现**：scripts/ 调了 lib.x，但 lib/ 没 x 函数
@@ -61,7 +62,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
 
 ## 4. 报告模板
 
-写入 logs/<task_id>.md 红线节：
+写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（完整路径见 §2 步骤 4 备注）：
 
 ```markdown
 ## Red Line Audit
@@ -85,7 +86,7 @@ AI 修改完任何链路文件后，**必须**逐项打勾：
 
 - ✅ **必须**：5 步清单逐项打勾（不打勾 = 未完成）
 - ✅ **必须**：严重不一致立即停下报告（不修复，等用户决策）
-- ✅ **必须**：写入 logs/<task_id>.md 红线节（事后可查）
+- ✅ **必须**：写入 `<workspace>/00_智剪/中间产物/logs/<task_id>_<timestamp>.md` 红线节（事后可查，完整路径见 `references/AI行为日志协议.md` §6）
 - ❌ **禁止**：跳过自检直接继续
 - ❌ **禁止**：发现严重不一致但偷偷修复
 - ❌ **禁止**：用户没明确授权就自创脚本

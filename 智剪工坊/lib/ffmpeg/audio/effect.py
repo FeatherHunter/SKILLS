@@ -19,9 +19,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def echo_advanced(input_path, output_path,
                   in_gain=0.6, out_gain=0.3,
                   delays="1000|1800|2500", decays="0.3|0.25|0.2"):
@@ -31,6 +32,7 @@ def echo_advanced(input_path, output_path,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def compand_multi(input_path, output_path, compand_expr):
     """多段压缩/扩展（compand）。
 
@@ -43,6 +45,7 @@ def compand_multi(input_path, output_path, compand_expr):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def dc_shift(input_path, output_path, shift=0):
     """直流偏移（dcshift）。"""
     af = f"dcshift={shift}"
@@ -50,6 +53,7 @@ def dc_shift(input_path, output_path, shift=0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def crystalizer(input_path, output_path, intensity=1.0):
     """噪声锐化（crystalizer）。"""
     af = f"crystalizer=i={intensity}"
@@ -57,6 +61,7 @@ def crystalizer(input_path, output_path, intensity=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def pulsator(input_path, output_path, hz=2, amount=0.5):
     """脉冲效果（apulsator）。"""
     af = f"apulsator=hz={hz}:amount={amount}"
@@ -64,6 +69,7 @@ def pulsator(input_path, output_path, hz=2, amount=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def spectral_tilt(input_path, output_path, slope=0):
     """频谱倾斜（atilt）。
 
@@ -77,6 +83,7 @@ def spectral_tilt(input_path, output_path, slope=0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def sidechain_gate(input_path, output_path, sidechain_path, threshold=-30):
     """侧链门限（sidechaingate）。
 
@@ -92,6 +99,7 @@ def sidechain_gate(input_path, output_path, sidechain_path, threshold=-30):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def virtual_bass(input_path, output_path, cutoff=200, strength=1.0):
     """虚拟低音（virtualbass）。"""
     af = f"virtualbass=cutoff={cutoff}:strength={strength}"
@@ -99,6 +107,7 @@ def virtual_bass(input_path, output_path, cutoff=200, strength=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def drmeter(input_path, output_path):
     """DR 测量（drmeter）— 动态范围标准（CD 制作标准）。
 

@@ -15,9 +15,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def adjust_brightness_contrast(video, output,
                                brightness=0, contrast=1.0, saturation=1.0,
                                gamma=1.0):
@@ -36,6 +37,7 @@ def adjust_brightness_contrast(video, output,
     return True, str(output)
 
 
+@log_ffmpeg_call
 def color_balance(video, output,
                   rs=0, gs=0, bs=0,    # 阴影（暗部）RGB 调整
                   rm=0, gm=0, bm=0,    # 中调 RGB
@@ -59,6 +61,7 @@ def color_balance(video, output,
     return True, str(output)
 
 
+@log_ffmpeg_call
 def hue_shift(video, output, hue=0, saturation=1.0):
     """色相/饱和度（hue）。
 
@@ -73,6 +76,7 @@ def hue_shift(video, output, hue=0, saturation=1.0):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def apply_lut(video, lut_file, output):
     """应用 3D LUT 文件（lut3d）。
 
@@ -87,6 +91,7 @@ def apply_lut(video, lut_file, output):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def vibrance(video, output, intensity=0.5):
     """自然饱和度（vibrance）。
 
@@ -100,6 +105,7 @@ def vibrance(video, output, intensity=0.5):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def curves_adjust(video, output, preset="increase_contrast"):
     """预设曲线（curves）。
 

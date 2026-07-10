@@ -13,9 +13,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS  # noqa: E402
+from common import run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def extract_audio(input_path, output_path, fmt="wav"):
     """从视频提取音频（最基础操作）。
 
@@ -42,6 +43,7 @@ def extract_audio(input_path, output_path, fmt="wav"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def fade_audio(input_path, output_path, fade_in=0, fade_out=0, fps=30):
     """音频淡入淡出（afade）。
 

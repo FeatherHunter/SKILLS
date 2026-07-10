@@ -14,9 +14,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))  # lib/ffmpeg
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def burn_subtitle(video, srt, output, font_size=22, font="Microsoft YaHei"):
     """烧录 SRT 字幕到视频（subtitles 滤镜）。
 
@@ -41,6 +42,7 @@ def burn_subtitle(video, srt, output, font_size=22, font="Microsoft YaHei"):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def burn_ass_subtitle(video, ass, output):
     """烧录 ASS 高级字幕（带样式控制）。
 
@@ -56,6 +58,7 @@ def burn_ass_subtitle(video, ass, output):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def draw_text(video, output, text, x=10, y=10,
               fontsize=24, fontcolor="white", start_time=0, duration=None):
     """视频上叠加文字（drawtext）。

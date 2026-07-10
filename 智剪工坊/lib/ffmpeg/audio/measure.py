@@ -17,8 +17,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
+from common import log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def measure_psnr(input_path, reference_path):
     """PSNR 测量（apsnr）— 比较两个音频的峰值信噪比。
 
@@ -49,6 +51,7 @@ def measure_psnr(input_path, reference_path):
     }
 
 
+@log_ffmpeg_call
 def measure_sdr(input_path, reference_path):
     """SDR 测量（asdr）— 信噪失真比。
 
@@ -74,6 +77,7 @@ def measure_sdr(input_path, reference_path):
     }
 
 
+@log_ffmpeg_call
 def measure_si_sdr(input_path, reference_path):
     """SI-SDR 测量（asisdr）— 尺度不变信噪失真比。
 
@@ -98,6 +102,7 @@ def measure_si_sdr(input_path, reference_path):
     }
 
 
+@log_ffmpeg_call
 def measure_correlation(input_path_1, input_path_2):
     """两流互相关（axcorrelate）— 相似度检测。
 

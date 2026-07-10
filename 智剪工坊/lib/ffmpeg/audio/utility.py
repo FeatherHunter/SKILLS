@@ -12,9 +12,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def adelay(input_path, output_path, delays_ms=None):
     """延迟一个/多个音频通道（adelay）⭐ 胶水级。
 
@@ -34,6 +35,7 @@ def adelay(input_path, output_path, delays_ms=None):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def apad(input_path, output_path, target_duration=None, pad_dur=None):
     """用静音补齐时长（apad）⭐ 胶水级。
 
@@ -55,6 +57,7 @@ def apad(input_path, output_path, target_duration=None, pad_dur=None):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def compensation_delay(input_path, output_path, delay_ms=0, mm=0, cm=0):
     """补偿延迟（compensationdelay）— 多轨音视频同步。
 

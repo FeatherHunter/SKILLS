@@ -15,9 +15,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def scale_video(video, output, width, height, keep_aspect=True):
     """缩放（scale）。
 
@@ -40,6 +41,7 @@ def scale_video(video, output, width, height, keep_aspect=True):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def crop_video(video, output, x, y, width, height):
     """裁剪（crop）。
 
@@ -54,6 +56,7 @@ def crop_video(video, output, x, y, width, height):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def rotate_video(video, output, degrees=90):
     """旋转（rotate + transpose）。
 
@@ -76,6 +79,7 @@ def rotate_video(video, output, degrees=90):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def flip_video(video, output, mode="h"):
     """翻转（hflip/vflip）。
 
@@ -97,6 +101,7 @@ def flip_video(video, output, mode="h"):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def pad_video(video, output, top, bottom, left, right, color="black"):
     """加黑边（pad）。
 
@@ -113,6 +118,7 @@ def pad_video(video, output, top, bottom, left, right, color="black"):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def letterbox(video, output, target_width, target_height, color="black"):
     """加黑边到指定尺寸（常用：竖屏视频加到 9:16 标准）。"""
     vf = (

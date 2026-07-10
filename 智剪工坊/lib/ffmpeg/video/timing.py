@@ -14,9 +14,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def change_speed(video, output, factor=1.0):
     """变速（setpts，保持音调）。
 
@@ -33,6 +34,7 @@ def change_speed(video, output, factor=1.0):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def trim_clip(video, output, start, duration):
     """截取视频片段（trim）。
 
@@ -49,6 +51,7 @@ def trim_clip(video, output, start, duration):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def reverse_video(video, output):
     """倒放视频（reverse）。"""
     vf = "reverse"
@@ -58,6 +61,7 @@ def reverse_video(video, output):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def freeze_frame(video, output, time=0, freeze_duration=2):
     """冻结一帧（freeze）。
 
@@ -72,6 +76,7 @@ def freeze_frame(video, output, time=0, freeze_duration=2):
     return True, str(output)
 
 
+@log_ffmpeg_call
 def set_fps(video, output, fps=30):
     """改帧率（fps 滤镜）。
 

@@ -17,9 +17,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def waveform_video(input_path, output_path, width=1280, height=240,
                    mode="cline", colors="white", rate=25):
     """动态波形视频（showwaves）。
@@ -42,6 +43,7 @@ def waveform_video(input_path, output_path, width=1280, height=240,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def waveform_image(input_path, output_path, width=1280, height=240, colors="white"):
     """静态波形图（showwavespic）。
 
@@ -63,6 +65,7 @@ def waveform_image(input_path, output_path, width=1280, height=240, colors="whit
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def spectrum_video(input_path, output_path, width=1280, height=480,
                    mode="combined", color="rainbow", rate=25):
     """动态频谱视频（showspectrum）。
@@ -80,6 +83,7 @@ def spectrum_video(input_path, output_path, width=1280, height=480,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def spectrum_image(input_path, output_path, width=1280, height=480,
                   mode="combined", color="rainbow"):
     """静态频谱图（showspectrumpic）。
@@ -99,6 +103,7 @@ def spectrum_image(input_path, output_path, width=1280, height=480,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def cqt_video(input_path, output_path, width=1280, height=480,
               rate=25):
     """CQT 频谱视频（showcqt）。"""
@@ -111,6 +116,7 @@ def cqt_video(input_path, output_path, width=1280, height=480,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def freqs_video(input_path, output_path, width=1280, height=480, rate=25):
     """频率图视频（showfreqs）。"""
     vf = f"showfreqs=s={width}x{height}:rate={rate}"
@@ -122,6 +128,7 @@ def freqs_video(input_path, output_path, width=1280, height=480, rate=25):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def volume_meter_video(input_path, output_path, width=400, height=20, rate=25):
     """音量条视频（showvolume）。
 
@@ -138,6 +145,7 @@ def volume_meter_video(input_path, output_path, width=400, height=20, rate=25):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def histogram_image(input_path, output_path, width=1024, height=400):
     """直方图（ahistogram）。
 

@@ -22,9 +22,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def change_pitch(input_path, output_path, pitch=1.0):
     """变调（asetrate + atempo 组合）⭐ 核心。
 
@@ -39,6 +40,7 @@ def change_pitch(input_path, output_path, pitch=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def change_speed(input_path, output_path, speed=1.0):
     """变速（atempo，保持音调）。
 
@@ -53,6 +55,7 @@ def change_speed(input_path, output_path, speed=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def add_chorus(input_path, output_path, decay=0.5, speed=0.5, depth=0.5):
     """合唱效果（chorus）。"""
     af = f"chorus=0.5:0.5:{50*decay}:0.4:0.25:2"
@@ -60,6 +63,7 @@ def add_chorus(input_path, output_path, decay=0.5, speed=0.5, depth=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def add_tremolo(input_path, output_path, frequency=20, depth=0.5):
     """颤音（tremolo，机器人声基础）。"""
     af = f"tremolo=f={frequency}:d={depth}"
@@ -67,6 +71,7 @@ def add_tremolo(input_path, output_path, frequency=20, depth=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def add_phaser(input_path, output_path, decay=0.5, speed=0.5):
     """相位偏移（aphaser）。"""
     af = f"aphaser=in_gain=0.4:out_gain=0.74:delay={decay}:decay=0.4:speed={speed}"
@@ -74,6 +79,7 @@ def add_phaser(input_path, output_path, decay=0.5, speed=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def add_echo(input_path, output_path, delay=0.5, decay=0.5):
     """回声（aecho）。"""
     af = f"aecho={delay}:{decay}:{delay}:{decay}"
@@ -81,6 +87,7 @@ def add_echo(input_path, output_path, delay=0.5, decay=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def add_flanger(input_path, output_path, delay=0.5):
     """镶边（flanger）。"""
     af = f"flanger=delay={delay}"
@@ -88,6 +95,7 @@ def add_flanger(input_path, output_path, delay=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def compress(input_path, output_path, threshold=0.5, ratio=2, attack=20, release=100):
     """压缩器（acompressor）。"""
     af = f"acompressor=threshold={threshold}:ratio={ratio}:attack={attack}:release={release}"
@@ -95,6 +103,7 @@ def compress(input_path, output_path, threshold=0.5, ratio=2, attack=20, release
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def limit(input_path, output_path, limit_db=-3, attack=5, release=50):
     """限幅器（alimiter）。"""
     af = f"alimiter=limit={limit_db}dB:attack={attack}:release={release}"
@@ -102,6 +111,7 @@ def limit(input_path, output_path, limit_db=-3, attack=5, release=50):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def gate(input_path, output_path, threshold_db=-30, attack=20, release=100):
     """门限（agate，noise gate）。"""
     af = f"agate=threshold={threshold_db}dB:attack={attack}:release={release}"
@@ -109,6 +119,7 @@ def gate(input_path, output_path, threshold_db=-30, attack=20, release=100):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def excite(input_path, output_path, frequency=3000, amount=1.0):
     """高频激励（aexciter）。
 
@@ -122,6 +133,7 @@ def excite(input_path, output_path, frequency=3000, amount=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def crusher(input_path, output_path, level=4, bits=8):
     """比特率压缩（acrusher，低保真效果）。"""
     af = f"acrusher=level_in={level}:level_out={1.0/level}:bits={bits}"

@@ -9,7 +9,7 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
 # 位置映射
@@ -24,6 +24,7 @@ POSITIONS = {
 }
 
 
+@log_ffmpeg_call
 def add_watermark(video, logo, output,
                   position="topright", opacity=0.7):
     """加 logo 水印（overlay）。
@@ -54,6 +55,7 @@ def add_watermark(video, logo, output,
     return True, str(output)
 
 
+@log_ffmpeg_call
 def add_text_watermark(video, output, text, position="bottomright",
                        fontsize=20, fontcolor="white",
                        opacity=0.7, shadow=1):

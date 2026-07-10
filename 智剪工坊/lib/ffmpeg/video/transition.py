@@ -9,7 +9,7 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from common import run_ffmpeg, get_duration  # noqa: E402
+from common import run_ffmpeg, get_duration, log_ffmpeg_call  # noqa: E402
 
 
 # SKILL.md 声明的 9 种转场
@@ -58,6 +58,7 @@ XFADE_TYPES = {
 }
 
 
+@log_ffmpeg_call
 def xfade_transition(video_a, video_b, output,
                      transition="fade", duration=0.5):
     """两个视频间加转场（xfade）。
@@ -88,6 +89,7 @@ def xfade_transition(video_a, video_b, output,
     return True, str(output)
 
 
+@log_ffmpeg_call
 def concat_simple(video_paths, output):
     """简单拼接视频（concat demuxer，无转场）。
 

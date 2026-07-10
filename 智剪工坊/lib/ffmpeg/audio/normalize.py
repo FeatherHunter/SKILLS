@@ -12,9 +12,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def normalize_loudnorm(input_path, output_path,
                        target_lufs=-23, true_peak=-2, lra=7):
     """EBU R128 响度归一化（loudnorm）⭐ 核心。
@@ -34,6 +35,7 @@ def normalize_loudnorm(input_path, output_path,
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def normalize_dynamic(input_path, output_path, target_rms_db=-23, compress=0.5):
     """动态归一化（dynaudnorm）。
 
@@ -52,6 +54,7 @@ def normalize_dynamic(input_path, output_path, target_rms_db=-23, compress=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def adjust_volume(input_path, output_path, factor=1.0):
     """调整音量（volume）。
 
@@ -63,6 +66,7 @@ def adjust_volume(input_path, output_path, factor=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def adjust_volume_db(input_path, output_path, db=0):
     """调整音量（dB 单位，volume）。
 
@@ -74,6 +78,7 @@ def adjust_volume_db(input_path, output_path, db=0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def fade_in_out(input_path, output_path, fade_in=0, fade_out=0):
     """淡入淡出（afade）。
 

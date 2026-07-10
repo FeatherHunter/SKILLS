@@ -19,8 +19,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
+from common import log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def detect_silence(input_path, threshold=-30, min_duration=0.5):
     """静音检测（silencedetect）⭐ 核心。
 
@@ -65,6 +67,7 @@ def detect_silence(input_path, threshold=-30, min_duration=0.5):
     }
 
 
+@log_ffmpeg_call
 def detect_volume(input_path):
     """音量检测（volumedetect）。
 
@@ -84,6 +87,7 @@ def detect_volume(input_path):
     }
 
 
+@log_ffmpeg_call
 def detect_astats(input_path):
     """音频统计（astats）。
 
@@ -108,6 +112,7 @@ def detect_astats(input_path):
     return stats
 
 
+@log_ffmpeg_call
 def detect_phase(input_path, duration_limit=30):
     """相位表（aphasemeter）。
 

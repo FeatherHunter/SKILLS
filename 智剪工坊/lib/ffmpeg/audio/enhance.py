@@ -13,9 +13,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def enhance_dialog(input_path, output_path, level=0.5):
     """对话增强（dialoguenhance）⭐ 核心。
 
@@ -36,6 +37,7 @@ def enhance_dialog(input_path, output_path, level=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def deess(input_path, output_path, frequency=5000, intensity=0.5):
     """去齿音（deesser）。
 
@@ -48,6 +50,7 @@ def deess(input_path, output_path, frequency=5000, intensity=0.5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def bandpass(input_path, output_path, low=80, high=8000):
     """带通滤波（bandpass）。
 
@@ -63,6 +66,7 @@ def bandpass(input_path, output_path, low=80, high=8000):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def highpass(input_path, output_path, frequency=80):
     """高通滤波（highpass）。
 
@@ -73,6 +77,7 @@ def highpass(input_path, output_path, frequency=80):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def lowpass(input_path, output_path, frequency=12000):
     """低通滤波（lowpass）。
 
@@ -83,6 +88,7 @@ def lowpass(input_path, output_path, frequency=12000):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def equalize(input_path, output_path, frequencies=None, gains=None):
     """多频段 EQ（equalizer）。
 
@@ -102,6 +108,7 @@ def equalize(input_path, output_path, frequencies=None, gains=None):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def dynamic_equalizer(input_path, output_path,
                       threshold=20, ratio=4, attack=20, release=200):
     """动态 EQ（adynamicequalizer）。

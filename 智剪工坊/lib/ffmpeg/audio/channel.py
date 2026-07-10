@@ -16,9 +16,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg  # noqa: E402
+from common import run_ffmpeg, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def widen_stereo(input_path, output_path, amount=1.0):
     """立体声扩展（stereowiden）。
 
@@ -38,6 +39,7 @@ def widen_stereo(input_path, output_path, amount=1.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def enhance_stereo(input_path, output_path, strength=2.0):
     """增强立体声（extrastereo）。
 
@@ -49,6 +51,7 @@ def enhance_stereo(input_path, output_path, strength=2.0):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def map_channels(input_path, output_path, channel_layout="stereo"):
     """声道映射（aformat）。
 
@@ -60,6 +63,7 @@ def map_channels(input_path, output_path, channel_layout="stereo"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def split_channels(input_path, output_path_left, output_path_right):
     """拆分左右声道（channelsplit）。
 
@@ -74,6 +78,7 @@ def split_channels(input_path, output_path_left, output_path_right):
     return True, True
 
 
+@log_ffmpeg_call
 def pan_audio(input_path, output_path, pan="stereo|c0=c1"):
     """声相调整（pan）。
 
@@ -89,6 +94,7 @@ def pan_audio(input_path, output_path, pan="stereo|c0=c1"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def upmix_to_surround(input_path, output_path, surround_type="5.1"):
     """环绕声 upmix（surround）。
 
@@ -102,6 +108,7 @@ def upmix_to_surround(input_path, output_path, surround_type="5.1"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def merge_streams(input_path_1, input_path_2, output_path, layout="stereo"):
     """合并多音频流（amerge）⭐ 胶水级。
 
@@ -118,6 +125,7 @@ def merge_streams(input_path_1, input_path_2, output_path, layout="stereo"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def mix_streams(input_paths, output_path, weights=None, duration="longest"):
     """多音频流混合（amix）⭐ 胶水级。
 
@@ -143,6 +151,7 @@ def mix_streams(input_paths, output_path, weights=None, duration="longest"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def multiply_streams(input_path_1, input_path_2, output_path):
     """两流相乘（amultiply）— 侧链调制。
 
@@ -156,6 +165,7 @@ def multiply_streams(input_path_1, input_path_2, output_path):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def interleave_streams(input_paths, output_path):
     """多流交叉混合（ainterleave）。
 

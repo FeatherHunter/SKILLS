@@ -14,9 +14,10 @@ from pathlib import Path
 
 _LIB_DIR = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(_LIB_DIR))
-from common import run_ffmpeg, get_duration  # noqa: E402
+from common import run_ffmpeg, get_duration, log_ffmpeg_call  # noqa: E402
 
 
+@log_ffmpeg_call
 def denoise_fft(input_path, output_path, nr=10, nf=-25, nl=1, format="wav"):
     """FFT 降噪（afftdn）。
 
@@ -35,6 +36,7 @@ def denoise_fft(input_path, output_path, nr=10, nf=-25, nl=1, format="wav"):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def denoise_wavelet(input_path, output_path, sigma=2):
     """小波降噪（afwtdn）。
 
@@ -46,6 +48,7 @@ def denoise_wavelet(input_path, output_path, sigma=2):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def denoise_rnn(input_path, output_path, model_path):
     """RNNoise 神经网络降噪（arnndn）。
 
@@ -57,6 +60,7 @@ def denoise_rnn(input_path, output_path, model_path):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def remove_click(input_path, output_path, w=2):
     """去爆音（adeclick）。
 
@@ -68,6 +72,7 @@ def remove_click(input_path, output_path, w=2):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def remove_clip(input_path, output_path, w=5):
     """去削波失真（adeclip）。
 
@@ -79,6 +84,7 @@ def remove_clip(input_path, output_path, w=5):
     return True, str(output_path)
 
 
+@log_ffmpeg_call
 def aap_denoise(input_path, output_path, projection=2, order=64, mu=1.0):
     """仿射投影算法降噪（aap）。
 

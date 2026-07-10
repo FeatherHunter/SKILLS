@@ -174,27 +174,22 @@ def add_bgm(
         "-y", str(bgm_processed),
     ])
 
-    # 步骤 2: 原声音量调整
-    video_a_processed = Path(tempfile.gettempdir()) / f"mix_video_a_{Path(video).stem}.wav"
-
+    # v1.10 重写:不再需要 video_a_processed 中间 wav,filter_complex 一次性搞定
     try:
-        run_ffmpeg(cmd)
+        run_ffmpeg(cmd)  # 处理 BGM
 
-        run_ffmpeg([
-            "-i", str(video),
-            "-vn",
-            "-af", f"volume={video_volume}",
-            "-c:a", "pcm_s16le",
-            "-y", str(video_a_processed),
-        ])
-
-        # 步骤 3: 混合两轨 → 输出（直接用 amix filter，因为 lib.mix_streams 输出的格式受限）
+        # 步骤 3: 混合两轨 → 输出（v1.10 重写：直接用原视频 + filter_complex，
+        #         不再用 video_a_processed 中间 wav，避免 -map 0:v 在 wav 上失败的 BUG）
         cmd = [
-            "-i", str(video_a_processed),
-            "-i", str(bgm_processed),
-            "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=0[a]",
-            "-map", "0:v",
-            "-map", "[a]",
+            "-i", str(video),                 # 原视频（带 video + audio 流）
+            "-i", str(bgm_processed),         # 处理后的 BGM
+            "-filter_complex", (
+                f"[0:a]volume={video_volume}[v0];"
+                f"[1:a]volume={bgm_volume}[v1];"
+                f"[v0][v1]amix=inputs=2:duration=first:dropout_transition=0[a]"
+            ),
+            "-map", "0:v",                    # 从原视频取 video 流
+            "-map", "[a]",                    # 从 filter_complex 取混合 audio
             *DEFAULT_ENCODE_ARGS,
             "-y", str(output),
         ]
@@ -204,7 +199,7 @@ def add_bgm(
         return str(output)
     finally:
         # 确保清理临时文件（即使中途出错）
-        for tmp in (bgm_processed, video_a_processed):
+        for tmp in (bgm_processed,):
             try:
                 tmp.unlink()
             except Exception:

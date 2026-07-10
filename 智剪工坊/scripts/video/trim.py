@@ -12,8 +12,14 @@
 
 
 📖 SKILL.md §14 索引 → REQUIRED: read references/01-cutting.md
+
+v1.10 新增(B2/B4 修复):
+- `remux_clean_residual_metadata()`:清掉 -an 处理后残留的 audio metadata
+- `concat()` 加 pre-process:自动检测并清理,防止拼接时 PTS 错乱
 """
 import argparse
+import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -24,6 +30,147 @@ from common import (
     unified_vf, ensure_dir, require_param, validate_resolution,
     log_info, log_warn, log_error, log_section, safe_run, SKILL_ROOT,
 )
+
+
+# ============================================================
+# v1.10 新增:残留 metadata 检测 + 清理(B2/B4 修复)
+# ============================================================
+
+def has_residual_audio_metadata(video_path):
+    """检测 mp4 是否残留 audio metadata(即使 -an 处理过)
+
+    现象:`-c:v copy -an` 处理后的 mp4, moov atom 里 audio trak 的
+    tkhd duration / sample count 等 metadata 没被清除,后续 concat 时
+    ffmpeg 会按这些 metadata 推算 audio duration,导致 video 被压缩/拉长。
+
+    v1.10 修复:用 ffprobe 检测 audio stream 的 nb_frames / nb_read_packets。
+    - 有 audio packets → 真正的 audio stream,不动
+    - 只有 metadata 没 packets → 残留,需要清理
+
+    Returns:
+        bool: True 表示有残留 audio metadata(需要清理), False 表示干净
+    """
+    try:
+        # 用 ffprobe 看 audio stream 是否有 packets
+        r = subprocess.run(
+            ["ffprobe", "-v", "error",
+             "-select_streams", "a",
+             "-show_entries", "stream=nb_read_frames,codec_type",
+             "-of", "csv=p=0",
+             str(video_path)],
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+            timeout=30,
+        )
+        # 如果没有任何 audio stream 行 → 没有残留
+        if not r.stdout.strip():
+            return False
+        # 解析 "audio,1234" 这种输出,1234 是 packet 数
+        for line in r.stdout.strip().split("\n"):
+            parts = line.strip().split(",")
+            if len(parts) >= 2 and parts[0].strip().lower() == "audio":
+                try:
+                    nb_packets = int(parts[1].strip() or "0")
+                    if nb_packets == 0:
+                        # 只有 metadata 没 packets → 残留
+                        return True
+                except ValueError:
+                    pass
+        return False
+    except FileNotFoundError:
+        log_warn(f"ffprobe 不在 PATH,fallback 到 ffmpeg 检测")
+        # fallback: 用 ffmpeg -i 检测
+        return _has_residual_audio_metadata_fallback(video_path)
+    except Exception as e:
+        log_warn(f"检测残留 metadata 失败({video_path}): {e}")
+        return False
+
+
+def _has_residual_audio_metadata_fallback(video_path):
+    """ffprobe 不可用时的 fallback:用 ffmpeg -i"""
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-i", str(video_path)],
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+            timeout=30,
+        )
+        # 检测 audio stream 但没有 audio packet 数据 → 残留
+        # ffmpeg -i 输出里如果 muted,会有 "Stream #0:1.*Audio:" 但没有 packet 计数
+        audio_lines = [l for l in r.stderr.split("\n") if re.search(r"Stream\s+#\d+:\d+.*Audio:", l)]
+        if not audio_lines:
+            return False
+        # 进一步检测是否有 audio packets(用 ffprobe -show_packets)
+        try:
+            r2 = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "a",
+                 "-show_entries", "packet=pts", "-of", "csv=p=0",
+                 str(video_path)],
+                capture_output=True, text=True, timeout=30,
+            )
+            return not r2.stdout.strip()  # 没 packets 就是残留
+        except FileNotFoundError:
+            # 真没 ffprobe,fallback 看 ffmpeg 输出的 "Duration" 是不是异常大
+            return False
+    except Exception:
+        return False
+
+
+def remux_clean_residual_metadata(video_path):
+    """remux mp4 强制清残留 audio metadata
+
+    v1.10 修复:分两种情况:
+    - muted video (audio stream 无 packets) → -an 完全去掉 audio,重写 moov
+    - with audio video → 保留所有 stream,只重写 moov atom
+
+    Args:
+        video_path: 视频文件路径(原地修改)
+    """
+    video_path = Path(video_path)
+    tmp = video_path.with_suffix(".clean.mp4")
+    log_warn(f"清理残留 audio metadata: {video_path.name}")
+
+    # 检测是否真的没有 audio packets
+    has_real_audio = not has_residual_audio_metadata(video_path)
+
+    if has_real_audio:
+        # 视频有真实 audio,只重写 moov atom,保留所有 stream
+        log_info(f"  → 检测到真实 audio stream,保留 audio,只重写 moov")
+        run_ffmpeg([
+            "-y", "-i", str(video_path),
+            "-map", "0",            # 保留所有 stream
+            "-c", "copy",
+            "-map_metadata", "-1",  # 清空 metadata
+            "-movflags", "+faststart",
+            str(tmp),
+        ])
+    else:
+        # muted video,残留 audio metadata,完全去掉 audio
+        log_info(f"  → muted video(残留 audio metadata),-an 完全去掉")
+        run_ffmpeg([
+            "-y", "-i", str(video_path),
+            "-map", "0:v",          # 只保留 video stream
+            "-c", "copy",
+            "-map_metadata", "-1",
+            "-movflags", "+faststart",
+            str(tmp),
+        ])
+    # 替换原文件
+    tmp.replace(video_path)
+    log_info(f"清理完成: {video_path.name}")
+
+
+def _parse_concat_segments(list_file):
+    """从 concat 文件列表里解析 segment 路径"""
+    segments = []
+    list_path = Path(list_file)
+    if not list_path.exists():
+        return segments
+    for line in list_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("file "):
+            # 格式: file 'path' 或 file "path"
+            path_str = line[5:].strip().strip("'\"")
+            segments.append(Path(path_str))
+    return segments
 
 
 def trim(input_path, ss, t, output_path, resolution="1080:1920", fps=30):
@@ -43,9 +190,26 @@ def trim(input_path, ss, t, output_path, resolution="1080:1920", fps=30):
 
 
 def concat(list_file, output_path, resolution="1080:1920", fps=30):
-    """按文件列表拼接(concat demuxer)"""
+    """按文件列表拼接(concat demuxer)
+
+    v1.10 新增 pre-process: 检测每个 segment 是否残留 audio metadata,
+    有则自动 remux 清理, 防止拼接时 PTS 错乱(B2/B4 修复)。
+    """
     log_section(f"拼接 {list_file} → {output_path}")
     ensure_dir(Path(output_path).parent)
+
+    # v1.10 pre-process: 检测残留 metadata
+    segments = _parse_concat_segments(list_file)
+    cleaned_count = 0
+    for seg in segments:
+        if not seg.exists():
+            log_warn(f"segment 不存在: {seg}")
+            continue
+        if has_residual_audio_metadata(seg):
+            remux_clean_residual_metadata(seg)
+            cleaned_count += 1
+    if cleaned_count:
+        log_info(f"pre-process 完成: {cleaned_count}/{len(segments)} segments 清理了残留 metadata")
 
     run_ffmpeg([
         "-f", "concat", "-safe", "0",
@@ -65,6 +229,9 @@ def main():
 示例:
   %(prog)s trim --input in.mp4 --ss 0 --t 30 --out clip.mp4
   %(prog)s concat --list clips.txt --out joined.mp4
+
+v1.10 新增: concat 自动检测并清理 muted video 残留 audio metadata,
+            防止拼接时 PTS 错乱(详见 SKILL.md ⚠️ muted 拼接风险)。
         """,
     )
     sub = parser.add_subparsers(dest="cmd", required=True)

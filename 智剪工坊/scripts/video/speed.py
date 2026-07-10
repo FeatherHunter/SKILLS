@@ -116,7 +116,7 @@ def main():
     parser.add_argument("-i", "--input", required=True)
     parser.add_argument("-o", "--output", required=True)
     parser.add_argument("--preset", choices=list(PRESETS.keys()), help="预设")
-    parser.add_argument("--factor", type=float, help="自定义变速倍数(0.25-4.0)")
+    parser.add_argument("--factor", type=float, help="自定义变速倍数(0.25-100 推荐,>4x 需 atempo 链)")
     parser.add_argument("--start", type=float, default=1.0, help="曲线变速 - 起始速度")
     parser.add_argument("--mid", type=float, default=1.0, help="曲线变速 - 中间速度")
     parser.add_argument("--end", type=float, default=1.0, help="曲线变速 - 结束速度")

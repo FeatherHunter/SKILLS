@@ -189,17 +189,74 @@ def trim(input_path, ss, t, output_path, resolution="1080:1920", fps=30):
     log_info(f"输出: {output_path} ({get_duration(output_path):.1f}s)")
 
 
+def _has_audio_stream(video_path):
+    """检测 video 是否有真实 audio stream(用 ffmpeg -i 简单判断)"""
+    try:
+        r = subprocess.run(
+            ["ffmpeg", "-i", str(video_path)],
+            capture_output=True, text=True, encoding="utf-8", errors="ignore",
+            timeout=30,
+        )
+        for line in r.stderr.split("\n"):
+            # Stream #0:1 ... Audio: ...(即使 muted 也会有这行,但 packet count 看不到)
+            if re.search(r"Stream\s+#\d+:\d+.*Audio:", line):
+                return True
+        return False
+    except Exception:
+        return False
+
+
+def _add_silent_audio(video_path):
+    """给 muted video 加 silent audio track,长度 = video 长度
+
+    v1.10 关键修复:concat demuxer 在 inputs 音频流不一致时会自己创建空
+    audio placeholder,导致输出时长异常(如 7811 秒)。修复方法:
+    - 给所有 muted video 预先 remux 加 silent audio,audio 长度严格 = video 长度
+    - 后续 concat demuxer 看到所有 input 都有 audio,行为正常
+    """
+    video_path = Path(video_path)
+    tmp = video_path.with_suffix(".with_audio.mp4")
+
+    # 获取 video 时长
+    duration = get_duration(video_path)
+    if duration is None:
+        log_warn(f"无法获取 {video_path.name} 时长,跳过 silent audio 添加")
+        return
+
+    run_ffmpeg([
+        "-y",
+        "-i", str(video_path),
+        "-f", "lavfi", "-i", f"anullsrc=cl=stereo:r=44100",
+        "-t", f"{duration:.3f}",                # 限制 audio 时长
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "128k",
+        "-shortest",                              # 输出按最短 stream
+        "-movflags", "+faststart",
+        str(tmp),
+    ])
+    # 替换原文件
+    tmp.replace(video_path)
+    log_info(f"  → {video_path.name} 已添加 silent audio (duration={duration:.2f}s)")
+
+
 def concat(list_file, output_path, resolution="1080:1920", fps=30):
     """按文件列表拼接(concat demuxer)
 
-    v1.10 新增 pre-process: 检测每个 segment 是否残留 audio metadata,
-    有则自动 remux 清理, 防止拼接时 PTS 错乱(B2/B4 修复)。
+    v1.10 重写拼接策略:
+    1. pre-process: 检测残留 audio metadata 并清理
+    2. pre-process: 给 muted segments 加 silent audio (修复 7811s bug)
+    3. concat demuxer 拼接
+
+    之前问题:concat demuxer 在 inputs 音频流不一致时会自己创建空 audio
+    stream,导致输出时长异常。修复:确保所有 input 都有 audio stream,且
+    audio 长度匹配 video 长度。
     """
     log_section(f"拼接 {list_file} → {output_path}")
     ensure_dir(Path(output_path).parent)
 
-    # v1.10 pre-process: 检测残留 metadata
     segments = _parse_concat_segments(list_file)
+
+    # 第一遍:清理残留 metadata
     cleaned_count = 0
     for seg in segments:
         if not seg.exists():
@@ -209,8 +266,21 @@ def concat(list_file, output_path, resolution="1080:1920", fps=30):
             remux_clean_residual_metadata(seg)
             cleaned_count += 1
     if cleaned_count:
-        log_info(f"pre-process 完成: {cleaned_count}/{len(segments)} segments 清理了残留 metadata")
+        log_info(f"metadata 清理完成: {cleaned_count}/{len(segments)} segments")
 
+    # 第二遍:给 muted video 加 silent audio(防 concat demuxer bug)
+    added_audio_count = 0
+    for seg in segments:
+        if not seg.exists():
+            continue
+        if not _has_audio_stream(seg):
+            log_warn(f"  → {seg.name} 无 audio,添加 silent audio")
+            _add_silent_audio(seg)
+            added_audio_count += 1
+    if added_audio_count:
+        log_info(f"silent audio 添加完成: {added_audio_count} segments")
+
+    # concat demuxer 拼接
     run_ffmpeg([
         "-f", "concat", "-safe", "0",
         "-i", str(list_file),

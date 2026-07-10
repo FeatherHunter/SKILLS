@@ -16,6 +16,7 @@ import json
 import shutil
 import platform
 import functools
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -522,3 +523,83 @@ def log_ffmpeg_call(func):
             log_error(f"[{func.__module__}.{func.__name__}] 异常: {type(e).__name__}: {e}")
             raise
     return wrapper
+
+
+# === v1.14 日志强制机制 ===
+
+# 缓存 task_id（避免每次都读 intent.json）
+_task_id_cache = None
+
+def _get_task_id(workspace: str = ".") -> str:
+    """从 intent.json 读 task_id（缓存）"""
+    global _task_id_cache
+    if _task_id_cache is not None:
+        return _task_id_cache
+
+    intent_path = Path(workspace) / "intent.json"
+    if not intent_path.exists():
+        _task_id_cache = "unknown_task"
+        return _task_id_cache
+
+    try:
+        with open(intent_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # 优先用 project.title 转 slug，否则用 project.name，否则 fallback
+        title = data.get("project", {}).get("title") or data.get("project", {}).get("name") or "task"
+        slug = title.lower().replace(" ", "-")
+        _task_id_cache = slug
+        return _task_id_cache
+    except Exception:
+        _task_id_cache = "unknown_task"
+        return _task_id_cache
+
+
+def _get_log_path(workspace: str, task_id: str) -> Path:
+    """获取 JSONL 日志路径（v1.14: 00_智剪/logs/）"""
+    return Path(workspace) / "00_智剪" / "logs" / f"{task_id}.jsonl"
+
+
+def log_decision(stage: str, step: str, action: str, decision: str,
+                 thinking: str, result: str = "", error: str = None,
+                 workspace: str = "."):
+    """AI 在每个 CLI 调用前必调，自动写 JSONL
+
+    参数：
+      stage: 当前阶段（"2"/"step_10_review"/"refine" 等）
+      step: stage 内步骤
+      action: 操作类型（trim/color/asr/review）
+      decision: AI 决策内容
+      thinking: AI 思考过程
+      result: CLI exit code / 异常类型（默认空）
+      error: 错误信息（None = 无错误）
+      workspace: 工作目录绝对路径（默认当前目录）
+
+    行为：
+      1. 定位 <workspace>/00_智剪/logs/<task_id>.jsonl
+      2. 创建 logs/ 目录（如不存在）
+      3. 追加一行 JSON entry（8 字段：time/stage/step/action/decision/thinking/result/error）
+      4. 写失败时回退到 stderr（不阻断主流程）
+    """
+    try:
+        task_id = _get_task_id(workspace)
+        log_path = _get_log_path(workspace, task_id)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        entry = {
+            "time": datetime.now().isoformat(timespec="seconds"),
+            "stage": stage,
+            "step": step,
+            "action": action,
+            "decision": decision,
+            "thinking": thinking,
+            "result": result,
+            "error": error,
+        }
+
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    except Exception as e:
+        # 写失败时回退到 stderr（不阻断主流程）
+        sys.stderr.write(f"[log_decision] 写日志失败: {e}\n")
+        sys.stderr.flush()

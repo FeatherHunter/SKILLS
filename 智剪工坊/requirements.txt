@@ -1,38 +1,24 @@
-# -*- coding: utf-8 -*-
-# 智剪工坊 · Python 依赖清单
-# 装: pip install -r requirements.txt
+# requirements.txt — 智剪工坊核心依赖（普通包，走 PyPI 默认 index）
+# 安装方法:
+#   1. 先装 torch GPU 版（看 requirements-torch.txt）
+#   2. 然后:  pip install -r requirements.txt
 #
-# 版本策略:用 >= 锁定最低兼容版本,允许小版本升级(更快拿到 bug fix)
-# 装完跑 verify.py 确认所有依赖就位
+# 注意: 智剪工坊所有 ffmpeg 调用通过系统 ffmpeg CLI,不依赖 ffmpeg-python。
 
-# === 必需(基础) ===
-Pillow>=10.0.0           # 封面叠字 / cutout 图像合成
-numpy>=1.24.0            # 数值计算(beat_sync / reframe / scene_detect)
-
-# === 视频处理 ===
-# 全部 ffmpeg 走 subprocess(无需 ffmpeg-python / moviepy)
-
-# === 视觉 AI(常用) ===
-opencv-python>=4.8.0     # 帧差 / 人脸检测 / 视觉特效(reframe / scene_detect / style_transfer)
-# opencv-contrib-python 也行,二选一
-
-# === 音频 AI ===
-librosa>=0.10.0          # 节拍检测(beat_sync)
-soundfile>=0.12.0        # librosa 写 wav 依赖
-
-# === 语音 AI ===
-faster-whisper>=1.0.0    # GPU 转录(auto_subtitle / quotes / translate)
-
-# === 翻译 + TTS ===
-edge-tts>=6.1.0          # 微软 TTS(digital_human / translate)
-deep-translator>=1.11.0  # Google Translate 包装(translate)
-
-# === 抠图 AI ===
-rembg>=2.0.0             # 智能抠图(cutout)
-# rembg 首次跑会下 onnx 模型,约 170MB(放 ~/.u2net/)
-
-# === 字体(系统自带) ===
-# Windows: 微软雅黑 msyh.ttc(默认)
-# Mac:     PingFang SC
-# Linux:   Noto Sans CJK(需装 fonts-noto-cjk)
-# 不写进 pip,改用 os.path 探测
+av==17.1.0                # 视频 I/O（PyAV,faster-whisper/torchcodec 间接依赖）
+ctranslate2==4.8.0        # faster-whisper 推理后端
+deep-translator==1.11.4   # 字幕翻译（Google/Microsoft 等）
+demucs==4.0.1             # 音频源分离（htdemucs 模型）
+edge-tts==7.2.8           # TTS 配音（改词/翻唱链路）
+faster-whisper==1.2.1     # ASR 转文字（Whisper large-v3 模型）
+huggingface-hub           # HF 模型下载（demucs/pyannote/whisper 间接依赖）
+imageio-ffmpeg==0.6.0     # ffmpeg CLI 绑定（imageio 路径下）
+librosa==0.11.0           # 音频分析（节拍/响度检测）
+mediapipe==0.10.35        # 人脸/手势（美颜链路）
+numpy==2.4.4              # 基础数值
+opencv-python==4.13.0.92  # 视频/图像处理
+pillow==12.1.1            # 图像处理
+pyannote-audio==4.0.7     # 说话人分离（需 HF token）
+rembg==2.0.76             # AI 抠图（金句/智能剪辑）
+scipy==1.17.1             # 科学计算（音频信号）
+soundfile==0.14.0         # 音频 I/O

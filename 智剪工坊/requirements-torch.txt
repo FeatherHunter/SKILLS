@@ -1,0 +1,13 @@
+# requirements-torch.txt — PyTorch GPU 版（CUDA 13.0, 走 PyTorch 专用 index）
+# 装 torch/torchaudio 不能用 PyPI 默认源（会下到 CPU 版），必须用 PyTorch 官方 index:
+#
+#   pip install -r requirements-torch.txt --index-url https://download.pytorch.org/whl/cu130
+#
+# 装完后再:
+#   pip install -r requirements.txt
+#
+# 验证 GPU 可用:
+#   python -c "import torch; print(torch.cuda.is_available(), torch.__version__)"
+
+torch==2.13.0+cu130        # GPU AI 推理引擎（demucs/whisper/pyannote 都依赖）
+torchaudio==2.11.0+cu130   # torch 音频配套（torchaudio 加载 wav）

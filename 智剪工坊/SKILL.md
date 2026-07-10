@@ -248,6 +248,61 @@ SKILL.md（必读，触发词索引）
 
 ---
 
+## 🐍 项目 venv（hybrid 隔离）
+
+智剪工坊依赖重（GPU/torch/demucs/pyannote/whisper）,**推荐项目本地 venv 隔离**,避免污染全局 Python,出问题重装快。
+
+**venv 路径**:`<skill_root>/venv/`（即 `D:\2Study\StudyNotes\SKILLS\智剪工坊\venv\`）
+
+### 一次性创建 + 装包（已装过可跳过）
+
+```powershell
+# 1. 在技能根目录创建 venv（用系统 Python 3.10+）
+cd "D:\2Study\StudyNotes\SKILLS\智剪工坊"
+python -m venv venv
+
+# 2. 激活 venv（之后所有命令都用 venv 的 Python）
+.\venv\Scripts\Activate.ps1
+
+# 3. 先装 torch GPU 版（必须用 PyTorch 专用 index,否则下到 CPU）
+pip install -r requirements-torch.txt --index-url https://download.pytorch.org/whl/cu130
+
+# 4. 装其余包（PyPI 默认）
+pip install -r requirements.txt
+
+# 5. 验证
+python -c "import torch, demucs, pyannote, faster_whisper; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
+```
+
+### 日常激活
+
+```powershell
+cd "D:\2Study\StudyNotes\SKILLS\智剪工坊"
+.\venv\Scripts\Activate.ps1
+```
+
+激活后 shell 提示符前会多一个 `(venv)` 标识,这时跑 `python scripts/audio/separate.py ...` 走的就是 venv 里的 Python。
+
+### 模型缓存路径（不重下）
+
+模型**不**放 venv 里,**沿用**`D:\AI\cache\` 路径（HF_HOME / TORCH_HOME 已永久写入 User 注册表）：
+
+| 类型 | 路径 |
+|---|---|
+| HF 模型（Whisper large-v3 等）| `D:\AI\cache\huggingface\` |
+| PyTorch 模型（htdemucs 等）| `D:\AI\cache\torch\` |
+
+venv 只隔离 Python 包,**不隔离模型** — 这样多个 skill 共享同一份模型缓存,省磁盘。
+
+### 🤖 AI 行为约定
+
+- **检测到 venv 不存在**:AI 必须提示用户「需要创建 venv + 装包」,给出上方 5 步命令,**不自动跑**
+- **检测到 venv 存在但当前 Python 是系统 Python**:AI 提示「需要先激活 venv」,给上方激活命令
+- **不破坏 venv 隔离**:AI 跑测试/集成时**必须**用 `<skill_root>/venv/Scripts/python.exe`,不用全局 python
+- **永不自己创建/删除 venv**:venv 由用户控制,AI 只检测状态
+
+---
+
 ## 入口模板
 
 加载本技能后，直接输出以下内容给用户，然后在用户答复后进入对应流程：

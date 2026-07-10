@@ -1,4 +1,4 @@
-# 本地 SQLite 数据文件（运行时数据，不进版本控制）
+# 本地 SQLite 数据文件(运行时数据,不进版本控制)
 作息管家/.db/schedule.db
 作息管家/.db/schedule.db-shm
 作息管家/.db/schedule.db-wal
@@ -8,18 +8,19 @@
 __pycache__/
 *.pyc
 
-# 临时备份文件（带时间戳的 .bak,不入版本控制）
+# 临时备份文件（带时间戳的 .bak/.zip,不入版本控制）
 *.bak.*
 *.bak[0-9]
+*_backup_*.zip
 
 # OS
 .DS_Store
 Thumbs.db
 
-# 智剪工坊工作流临时产物（edit 子技能原子操作中间文件）
+# 智剪工坊工作流临时产物(edit 子技能原子操作中间文件)
 智剪工坊/__edit_tmp_*.mp4
 
-# 智剪工坊调试/验证产物（_check_*.py/_check_*.png/_check_*.mp4/_check_*.js 等本地验证脚本和输出，不入库）
+# 智剪工坊调试/验证产物(_check_*.py/_check_*.png/_check_*.mp4/_check_*.js 等本地验证脚本和输出,不入库)
 智剪工坊/tests/_check_*.py
 智剪工坊/tests/_check_*.js
 智剪工坊/tests/_check_*.png

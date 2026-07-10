@@ -113,6 +113,15 @@ triggers:
   - logo 叠加
   - 抽帧
   - 改帧率
+  # === v1.13 日志查询（新增）===
+  - 查看日志
+  - 日志在哪
+  - 查看 process
+  - 日志查询
+  - 我刚才的操作
+  - 复盘
+  - audit
+  - log
 metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
 ---
 
@@ -240,6 +249,7 @@ SKILL.md（必读，触发词索引）
 | AI 调用 `lib/ffmpeg/audio` 时 | `音频链路-lib详解.md` |
 | AI 调用 `lib/ffmpeg/video` 时 | `视频底层-lib详解.md` |
 | AI 遇到 muted video 拼接异常 | `视频拼接-muted风险.md` |
+| **用户说"查看日志/复盘/audit"** | `commands/查看日志.sh`（shell 优先）+ `AI行为日志协议.md` |
 | **AI 进入粗加工（Step 9）** | `粗加工-执行契约.md` |
 | **AI 进入精加工（Step 11）** | `精加工-两路径.md` |
 | **AI 进行审查（Step 10 / Step 12）** | `审查-用户交互循环.md` |

@@ -607,7 +607,7 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
 
 # ========== 拼接 ==========
 
-# ========== intent.html 9 种 type → ffmpeg xfade 合法名 ==========
+# ========== 智剪工坊-意图编辑.html 9 种 type → ffmpeg xfade 合法名 ==========
 # 与 scripts/video_xfade.py TRANSITION_MAP 保持一致;
 # step3 这里直接复用,避免 import 跨层级。
 _TRANSITION_MAP = {

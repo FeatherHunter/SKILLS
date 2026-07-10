@@ -1,6 +1,6 @@
 # AI路由表 - 意图JSON字段枚举
 
-> **何时加载**: AI 读 intent.html / intent.json 后,开始 §阶段 1 字段解析时
+> **何时加载**: AI 读 智剪工坊-意图编辑.html / intent.json 后,开始 §阶段 1 字段解析时
 > **目的**: 列出所有字段的可选值,AI 看到非法值必须问用户（不要瞎猜）
 
 ---
@@ -90,7 +90,7 @@
 | `text` | `ai_cover.py --text-only` | atomic CLI：纯文字封面（v1.3 已支持 `cover/cover_text.py` 子目录）|
 | `image` | （**当前不支持**）| AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text" |
 
-**`cover.type='image'` 当前不支持**（intent.html 没字段承载图片路径）—— AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text"。
+**`cover.type='image'` 当前不支持**（智剪工坊-意图编辑.html 没字段承载图片路径）—— AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text"。
 
 ## 5. AI 文本解析 → 路由表匹配 → 用户确认（E 象限, v1.3 改）
 

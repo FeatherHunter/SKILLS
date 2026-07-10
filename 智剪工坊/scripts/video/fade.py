@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 智剪工坊 · video_fade 子技能
-单视频淡入淡出（fade filter,对应 intent.html fade-in/fade-out op）
+单视频淡入淡出（fade filter,对应 智剪工坊-意图编辑.html fade-in/fade-out op）
 
 用法:
   python video_fade.py --in clip.mp4 --fade-in 1 --fade-out 1 --output clip_faded.mp4

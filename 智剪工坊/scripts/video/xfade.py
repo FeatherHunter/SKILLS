@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 智剪工坊 · xfade 子技能
-两段视频之间加转场(xfade filter,支持 intent.html 9 种 type)
+两段视频之间加转场(xfade filter,支持 智剪工坊-意图编辑.html 9 种 type)
 
 用法:
   python video_xfade.py --a clip1.mp4 --b clip2.mp4 --type fade --duration 1 --output joined.mp4
@@ -23,7 +23,7 @@ from common import (
 )
 
 
-# ========== 意图层 type 枚举(intent.html 9 种) ==========
+# ========== 意图层 type 枚举(智剪工坊-意图编辑.html 9 种) ==========
 # AI 看到的、用户选的、intent.json 里保存的——都是这套名。
 INTENT_TYPES = [
     "none",       # 不开转场（用户没选，零猜测默认值）
@@ -38,8 +38,8 @@ INTENT_TYPES = [
 ]
 
 
-# ========== 命名映射表(intent.html 友好名 → ffmpeg xfade 合法名) ==========
-# intent.html 用户认知的是"左擦除"等友好词;ffmpeg xfade filter 只认 wipeleft。
+# ========== 命名映射表(智剪工坊-意图编辑.html 友好名 → ffmpeg xfade 合法名) ==========
+# 智剪工坊-意图编辑.html 用户认知的是"左擦除"等友好词;ffmpeg xfade filter 只认 wipeleft。
 # AI 不该做翻译,本脚本在边界层完成。
 TRANSITION_MAP = {
     "none":        None,         # 短路：不调 xfade
@@ -81,7 +81,7 @@ def resolve_transition(transition):
     """意图名 → ffmpeg 合法名。
 
     Args:
-        transition: intent.html 友好名（"wipe-left" 等）
+        transition: 智剪工坊-意图编辑.html 友好名（"wipe-left" 等）
 
     Returns:
         ffmpeg xfade filter 合法名（"wipeleft" 等）
@@ -102,7 +102,7 @@ def xfade(a, b, transition, duration, output, offset=None, custom_offset=None):
     """两段视频加转场拼接。
 
     Args:
-        transition: intent.html 友好名（'fade'/'wipe-left'/'none'/'cut' 等）
+        transition: 智剪工坊-意图编辑.html 友好名（'fade'/'wipe-left'/'none'/'cut' 等）
         duration: 转场时长(秒)
         offset: 转场起始时间(相对 A);None=默认 A 末尾
         custom_offset: 自定义 offset(优先级高于 offset)
@@ -184,7 +184,7 @@ def main():
         description="智剪工坊 · 视频转场(xfade)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
-意图层 type(9 种, intent.html 默认):
+意图层 type(9 种, 智剪工坊-意图编辑.html 默认):
   {', '.join(INTENT_TYPES)}
 
 底层 ffmpeg xfade 60+ 种(完整列表): ffmpeg -h filter=xfade

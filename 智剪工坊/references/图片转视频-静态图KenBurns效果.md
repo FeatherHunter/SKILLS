@@ -79,7 +79,7 @@ python scripts/image_to_video.py --image photo.jpg --output photo.mp4 --width 10
 | 不支持格式 .txt | 拒绝 | 拒绝 ✅ |
 | **集成: 图片+视频混合拼接** | 16s | **16.04s** |
 
-## 7. intent.html 字段对照
+## 7. 智剪工坊-意图编辑.html 字段对照
 
 | 字段 | 路径 | 类型 | 可选值 / 格式 | 说明 |
 |---|---|---|---|---|

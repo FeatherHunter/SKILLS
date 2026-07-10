@@ -5,7 +5,7 @@
 
 用意:
   v1.3 新增:
-    - 图片素材(intent.html photo)无法直接进 xfade_concat/concatenate_simple
+    - 图片素材(智剪工坊-意图编辑.html photo)无法直接进 xfade_concat/concatenate_simple
     - 必须先转成视频流(h264 + aac + 30fps)
     - 支持默认时长 / 自定义时长 / 可选 Ken Burns 推近效果
 

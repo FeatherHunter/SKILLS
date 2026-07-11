@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<title>智剪工坊 v1.15 DEMO - Timeline Editor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1e1e2e;--surface:#282840;--surface2:#33334d;--surface3:#3f3f5a;
+  --text:#e0e0f0;--text2:#a0a0b8;--text3:#6a6a80;
+  --accent:#7c6ff7;--accent2:#5b4fd4;--accent-glow:rgba(124,111,247,.35);
+  --danger:#f74e6;--success:#2ecc71;--warn:#f39c12;
+  --border:#3f3f5a;--radius:6px;
+  --track-h:44px;--track-gap:2px;--ruler-h:24px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);overflow:hidden;font-size:13px}
+.app{display:flex;flex-direction:column;height:100vh}
+/* Topbar */
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);z-index:20;flex-shrink:0}
+.logo{font-weight:700;font-size:14px;color:var(--accent);letter-spacing:.3px}
+.logo span{color:var(--text2);font-weight:400}
+.topbar input[type="text"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:4px 10px;font-size:12px;width:180px}
+.topbar input:focus{outline:none;border-color:var(--accent)}
+.topbar .spacer{flex:1}
+.btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:5px 14px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+.btn:hover{background:var(--surface3);border-color:var(--text3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.btn.danger{color:var(--danger);border-color:transparent;background:transparent}
+.btn.danger:hover{background:rgba(247,78,100,.15)}
+.seperator{width:1px;height:22px;background:var(--border);margin:0 2px}
+/* Main layout */
+.main-area{display:flex;flex:1;overflow:hidden}
+/* Left panel */
+.left-panel{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-title{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px 4px;font-weight:600;flex-shrink:0}
+.media-list{flex:1;overflow-y:auto;padding:0 8px 8px}
+.media-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius);cursor:pointer;transition:.15s;margin-bottom:2px}
+.media-item:hover{background:var(--surface2)}
+.media-item.active{background:var(--accent-glow);box-shadow:inset 2px 0 0 var(--accent)}
+.media-thumb{width:36px;height:24px;background:linear-gradient(135deg,#4a4a6a,#33334d);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;overflow:hidden;color:#fff}
+.media-thumb img{width:100%;height:100%;object-fit:cover}
+.media-info{min-width:0;flex:1}
+.media-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-dur{font-size:10px;color:var(--text3)}
+.media-type-badge{font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface3);color:var(--text3);flex-shrink:0}
+.btn-add-media{width:calc(100% - 16px);margin:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:6px}
+.video-meta{padding:8px 12px;border-top:1px solid var(--border);overflow-y:auto;max-height:320px}
+.vm-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.vm-label{font-size:11px;color:var(--text2);width:50px;flex-shrink:0}
+.vm-input,.vm-select{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:11px;min-width:0}
+.vm-input:focus,.vm-select:focus{outline:none;border-color:var(--accent)}
+.vm-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:5px 8px;font-size:11px;resize:vertical;min-height:28px;font-family:inherit}
+.section-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 3px}
+.badge-btn{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;color:var(--text2);margin-right:4px}
+.badge-btn.on{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+/* Center - Timeline */
+.center-area{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.timeline-toolbar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.tool-group{display:flex;align-items:center;gap:2px;padding:0 6px;border-right:1px solid var(--border)}
+.tool-group:last-child{border:none}
+.tool-btn{width:32px;height:32px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.12s;font-size:14px}
+.tool-btn:hover{background:var(--surface2);color:var(--text)}
+.tool-btn.active{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+.zoom-control{display:flex;align-items:center;gap:4px}
+.zoom-control input[type=range]{width:70px;accent-color:var(--accent)}
+.zoom-label{font-size:10px;color:var(--text3);min-width:32px;text-align:center}
+.playhead-indicator{font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;min-width:70px;text-align:center;font-family:monospace}
+/* Canvas wrapper */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:#1a1a28}
+#timeline-canvas{width:100%;height:100%;display:block;cursor:default}
+#timeline-canvas.grab{cursor:grabbing}
+/* Right panel */
+.right-panel{width:250px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.props-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;text-align:center;padding:20px}
+.props-content{flex:1;overflow-y:auto;padding:10px}
+.prop-group{margin-bottom:12px}
+.prop-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.prop-label .op-color{width:10px;height:10px;border-radius:2px;display:inline-block}
+.prop-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.prop-row label{font-size:11px;color:var(--text2);min-width:45px;flex-shrink:0}
+.prop-row input[type="number"],.prop-row input[type="text"],.prop-row select{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:11px;min-width:0}
+.prop-row input:focus,.prop-row select:focus{outline:none;border-color:var(--accent)}
+.prop-time-inputs{display:flex;gap:4px;flex:1}
+.prop-time-inputs input{flex:1;min-width:0}
+.prop-note{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:100%;resize:vertical;min-height:28px;font-family:inherit;margin-top:6px}
+.props-hint{font-size:10px;color:var(--text3);margin-top:4px}
+/* Bottom panel */
+.bottom-panel{background:var(--surface);border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:16px;flex-shrink:0;flex-wrap:wrap}
+.field-inline{display:flex;align-items:center;gap:6px}
+.field-inline label{font-size:11px;color:var(--text2);white-space:nowrap}
+.field-inline select,.field-inline input[type=text]{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:11px}
+.field-inline input[type=text]{width:100px}
+.field-inline select{width:120px}
+.intent-input{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 8px;font-size:11px;min-width:120px}
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface3);color:var(--text);padding:8px 20px;border-radius:20px;font-size:12px;opacity:0;pointer-events:none;transition:.3s;z-index:1000}
+.toast.show{opacity:1}
+.toast.success{color:var(--success)}
+.toast.error{color:var(--danger)}
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+/* Context menu */
+.ctx-menu{position:fixed;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 0;min-width:130px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none}
+.ctx-menu.show{display:block}
+.ctx-item{padding:6px 14px;font-size:12px;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:8px}
+.ctx-item:hover{background:var(--accent);color:#fff}
+.ctx-item.danger:hover{background:var(--danger)}
+.ctx-sep{height:1px;background:var(--border);margin:2px 0}
+.ctx-item .key{margin-left:auto;color:var(--text3);font-size:10px}
+.ctx-item:hover .key{color:rgba(255,255,255,.6)}
+/* Empty state */
+.empty-state{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);pointer-events:none;z-index:0}
+.empty-state .big{font-size:48px;margin-bottom:12px}
+.empty-state .hint{font-size:13px;color:var(--text2)}
+.empty-state .subhint{font-size:11px;margin-top:4px}
+/* Track label on canvas */
+.track-label{position:absolute;left:0;top:0;height:100%;width:120px;background:linear-gradient(to right,var(--surface),var(--surface) 80%,transparent);display:flex;align-items:center;padding-left:8px;font-size:11px;color:var(--text2);pointer-events:none;z-index:2}
+.track-label .idx{color:var(--accent);font-weight:600;margin-right:4px}
+
+</style>
+</head><body>
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">智剪工坊 <span>v1.15-DEMO · Timeline</span></div>
+    <input type="text" id="project-title" placeholder="成片标题" value="健身减脂 Day 2">
+    <div class="seperator"></div>
+    <input type="text" id="project-name" placeholder="项目名" value="Day2_减脂日记">
+    <div class="seperator"></div>
+    <input type="text" id="project-target" placeholder="目标时长 (如 3-5)" value="2-3">
+    <div class="spacer"></div>
+    <button class="btn" id="btn-load-folder" title="打开工作区文件夹">📂 打开文件夹</button>
+    <button class="btn" id="btn-load-demo" title="加载示例素材">🎬 加载示例</button>
+    <div class="seperator"></div>
+    <button class="btn" id="btn-undo" title="撤销 (Ctrl+Z)">↩ 撤销</button>
+    <button class="btn" id="btn-redo" title="重做 (Ctrl+Y)">↪ 重做</button>
+    <div class="seperator"></div>
+    <button class="btn primary" id="btn-save" title="生成并下载 intent.json">💾 生成 JSON</button>
+  </div>
+
+  <div class="main-area">
+    <!-- Left Panel: Media + Video Meta -->
+    <div class="left-panel">
+      <div class="panel-title" id="media-title">素材 (0)</div>
+      <div class="media-list" id="media-list">
+        <div style="color:var(--text3);font-size:11px;padding:20px 8px;text-align:center">
+          点击下方按钮添加素材<br>或加载示例
+        </div>
+      </div>
+      <button class="btn btn-add-media" id="btn-add-file">+ 添加文件</button>
+
+      <div class="video-meta" id="video-meta-panel" style="display:none">
+        <div class="section-label">视频信息</div>
+        <div class="vm-row"><span class="vm-label">简介</span><textarea class="vm-textarea" id="vm-summary" placeholder="这段拍的是啥" rows="2"></textarea></div>
+        <div class="vm-row"><span class="vm-label">意图</span><textarea class="vm-textarea" id="vm-intent" placeholder="为啥用这条" rows="2"></textarea></div>
+        <div class="vm-row"><span class="vm-label">声音</span>
+          <select class="vm-select" id="vm-voice">
+            <option value="">—</option>
+            <option value="keep">保留</option>
+            <option value="keep-with-filler-removed">保留+去水词</option>
+            <option value="mute">静音</option>
+            <option value="bgm-only">只留 BGM</option>
+          </select>
+        </div>
+        <div class="section-label">音频处理（新增）</div>
+        <span class="badge-btn" id="vm-denoise" data-key="denoise">降噪</span>
+        <span class="badge-btn" id="vm-normalize" data-key="normalize">响度归一</span>
+        <span class="badge-btn" id="vm-silence" data-key="silence">去静音段</span>
+        <div style="height:6px"></div>
+        <div class="section-label">变声（新增）</div>
+        <select class="vm-select" id="vm-voice-changer" style="width:100%">
+          <option value="">不变声</option>
+          <option value="old_man">老人</option>
+          <option value="child">小孩</option>
+          <option value="robot">机器人</option>
+          <option value="female">女声</option>
+          <option value="male">男声</option>
+          <option value="chipmunk">花栗鼠</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Center: Timeline -->
+    <div class="center-area">
+      <div class="timeline-toolbar">
+        <div class="tool-group" id="toolbar-ops">
+          <button class="tool-btn active" data-op="select" title="选择工具 (V)">⬚</button>
+          <button class="tool-btn" data-op="speed-up" title="加速">⚡</button>
+          <button class="tool-btn" data-op="slow-down" title="减速">🐢</button>
+          <button class="tool-btn" data-op="cut" title="删除片段">✂️</button>
+          <button class="tool-btn" data-op="insert-image" title="插入图片">🖼</button>
+          <button class="tool-btn" data-op="text" title="文字">🅣</button>
+          <button class="tool-btn" data-op="color" title="调色">🎨</button>
+        </div>
+        <div class="tool-group">
+          <span class="playhead-indicator" id="playhead-time">00:00.0</span>
+        </div>
+        <div class="tool-group">
+          <div class="zoom-control">
+            <span class="zoom-label">缩放</span>
+            <input type="range" id="zoom-slider" min="20" max="400" value="80">
+            <span class="zoom-label" id="zoom-pct">80%</span>
+          </div>
+        </div>
+        <div class="tool-group">
+          <button class="tool-btn active" id="btn-snap" title="吸附开关 (0.5s)">🧲</button>
+          <button class="tool-btn" id="btn-play" title="从头播放">▶</button>
+        </div>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="timeline-canvas"></canvas>
+        <div class="empty-state" id="empty-state">
+          <div class="big">🎬</div>
+          <div class="hint">点击 <strong>📂 打开文件夹</strong> 或 <strong>🎬 加载示例</strong></div>
+          <div class="subhint">体验纯画布拖拽时间线编辑 (Jianying 风格)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Properties -->
+    <div class="right-panel">
+      <div class="panel-title">属性</div>
+      <div id="props-content" class="props-content">
+        <div class="props-empty">选中片段<br>查看/编辑属性</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: Global Form -->
+  <div class="bottom-panel">
+    <div class="field-inline"><label>比例</label><select id="output-aspect"><option value="9:16">9:16 竖屏</option><option value="16:9">16:9 横屏</option><option value="1:1">1:1 方形</option><option value="3:4">3:4 小红书</option><option value="4:3">4:3 经典</option></select></div>
+    <div class="field-inline"><label>封面</label><select id="cover-type"><option value="">待定</option><option value="ai-generate">AI 生成</option><option value="text-only">纯文字</option></select></div>
+    <div class="field-inline"><label>结尾</label><select id="ending-type"><option value="">待定</option><option value="voice-narration">口播</option><option value="music-fade">音乐淡出</option><option value="cut-to-black">切黑</option></select></div>
+    <div class="field-inline" style="flex:1"><label>整体想法</label><input type="text" class="intent-input" id="overall-intent" placeholder="今天想表达什么感觉？重点在哪？结尾情绪是啥？"></div>
+    <button class="btn primary" id="btn-export">📋 导出 JSON</button>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" data-act="edit">✏️ 编辑属性</div>
+  <div class="ctx-item" data-act="duplicate">📑 复制片段</div>
+  <div class="ctx-item" data-act="split">✂️ 在播放头处分割</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" data-act="delete">🗑 删除 <span class="key">Del</span></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   智剪工坊 v1.15 DEMO — Canvas Timeline Editor (Jianying-style)
+   Pure canvas drag-based multi-segment editing
+   ================================================================ */
+
+(function () {
+  // ─── Constants ───────────────────────────────────────────────
+  var OP_DEFS = {
+    'select':       { label: '选择', color: 'transparent', hasRange: false },
+    'speed-up':     { label: '加速', color: '#2ecc71' },
+    'slow-down':    { label: '减速', color: '#3498db' },
+    'cut':          { label: '删除片段', color: '#e74c3c' },
+    'insert-image': { label: '插入图片', color: '#9b59b6', needFile: true },
+    'text':         { label: '文字', color: '#f39c12', hasText: true },
+    'color':        { label: '调色', color: '#e67e22', hasStyle: true }
+  };
+
+  var TRACK_HEIGHT = 44;
+  var TRACK_GAP = 2;
+  var RULER_HEIGHT = 24;
+  var MIN_SEG = 0.3;
+  var SNAP = 0.5;
+  var COLORS = ['#2ecc71', '#3498db', '#e74c3c', '#9b59b6', '#f39c12', '#e67e22', '#1abc9c', '#e91e63'];
+
+  // ─── State ───────────────────────────────────────────────────
+  var state = {
+    videos: [],
+    zoom: 80,
+    scrollX: 0,
+    playhead: 0,
+    tool: 'select',
+    snap: true,
+    selectedVideoIdx: -1,
+    selectedSegId: null,
+    history: [],
+    historyIdx: -1,
+    dirHandle: null,
+    dirty: false
+  };
+
+  var canvas, ctx, canvasWrapEl;
+  var trackRects = [];
+  var segmentRects = [];
+  var dragging = null;
+  var ctxMenuTarget = null;
+  var autoSaveTimer = null;
+
+  // ─── DOM Helpers ─────────────────────────────────────────────
+  var $ = function (id) { return document.getElementById(id); };
+  var mediaListEl = $('media-list');
+  var metaPanel = $('video-meta-panel');
+  var propsContent = $('props-content');
+  var ctxMenuEl = $('ctx-menu');
+  var toastEl = $('toast');
+  var canvasWrap = $('canvas-wrap');
+
+  function showToast(msg, type, dur) {
+    type = type || ''; dur = dur || 2000;
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show ' + type;
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toastEl.className = 'toast'; }, dur);
+  }
+
+  // ─── Time formatting ─────────────────────────────────────────
+  function fmtTime(s) {
+    if (s == null || isNaN(s)) return '00:00.0';
+    var m = Math.floor(s / 60);
+    var sec = (s % 60).toFixed(1);
+    return String(m).padStart(2, '0') + ':' + String(sec).padStart(4, '0');
+  }
+  function parseTimeStr(str) {
+    if (!str) return 0;
+    str = String(str).trim();
+    if (str.indexOf(':') >= 0) {
+      var parts = str.split(':');
+      return parseFloat(parts[0]) * 60 + parseFloat(parts[1] || 0);
+    }
+    return parseFloat(str) || 0;
+  }
+  function uid() { return 'seg_' + Math.random().toString(36).slice(2, 9); }
+
+  // ─── Canvas Setup ────────────────────────────────────────────
+  function initCanvas() {
+    canvas = $('timeline-canvas');
+    ctx = canvas.getContext('2d');
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+  }
+  function resizeCanvas() {
+    var rect = canvasWrap.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    render();
+  }
+  function getCanvasSize() {
+    var rect = canvasWrap.getBoundingClientRect();
+    return { w: rect.width, h: rect.height };
+  }
+
+  // ─── Coordinate transforms ───────────────────────────────────
+  function timeToX(t) { return (t - state.scrollX) * (state.zoom / 10); }
+  function xToTime(x) { return x / (state.zoom / 10) + state.scrollX; }
+
+  // ─── MAIN RENDER ─────────────────────────────────────────────
+  function render() {
+    if (!ctx) return;
+    var size = getCanvasSize();
+    var w = size.w, h = size.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#1a1a28';
+    ctx.fillRect(0, 0, w, h);
+
+    trackRects = [];
+    segmentRects = [];
+
+    // Empty state
+    if (state.videos.length === 0) {
+      $('empty-state').style.display = 'flex';
+      return;
+    }
+    $('empty-state').style.display = 'none';
+
+    var totalTime = 30;
+    state.videos.forEach(function (v) { if (v.duration > totalTime) totalTime = v.duration; });
+    totalTime += 10;
+
+    drawRuler(w, totalTime);
+
+    var tracksTop = RULER_HEIGHT;
+    state.videos.forEach(function (vid, idx) {
+      var ty = tracksTop + idx * (TRACK_HEIGHT + TRACK_GAP);
+      var tw = Math.max(w, timeToX(totalTime) + 50);
+
+      // Track background
+      ctx.fillStyle = idx % 2 === 0 ? '#252538' : '#222235';
+      ctx.fillRect(0, ty, tw, TRACK_HEIGHT);
+
+      // Bottom border
+      ctx.strokeStyle = '#33334d';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, ty + TRACK_HEIGHT - 0.5);
+      ctx.lineTo(tw, ty + TRACK_HEIGHT - 0.5);
+      ctx.stroke();
+
+      // Track label
+      var icon = vid.type === 'image' ? '\u{1F5BC}' : '\u{1F3AC}';
+      ctx.fillStyle = '#a0a0b8';
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(icon + ' #' + (idx + 1) + ' ' + vid.file, 8, ty + 16);
+
+      // Duration + ops count
+      ctx.fillStyle = '#6a6a80';
+      ctx.font = '10px monospace';
+      var extra = '';
+      if (vid.segments && vid.segments.length) extra = '  ·  ' + vid.segments.length + ' ops';
+      if (vid.denoise) extra += ' \u{1F50A}';
+      if (vid.normalize) extra += ' \u{1F4CF}';
+      ctx.fillText(fmtTime(vid.duration) + extra, 8, ty + 30);
+
+      trackRects.push({ idx: idx, x: 0, y: ty, w: tw, h: TRACK_HEIGHT, vid: vid });
+
+      // Draw segments
+      (vid.segments || []).forEach(function (seg) {
+        var sx = timeToX(seg.start);
+        var sw = Math.max(3, (seg.end - seg.start) * (state.zoom / 10));
+        var opDef = OP_DEFS[seg.op] || { color: '#888' };
+
+        var isSelected = (state.selectedSegId === seg.id && state.selectedVideoIdx === idx);
+
+        // Gradient block
+        var grad = ctx.createLinearGradient(sx, ty + 4, sx, ty + TRACK_HEIGHT - 4);
+        grad.addColorStop(0, opDef.color + 'dd');
+        grad.addColorStop(1, opDef.color + 'aa');
+        ctx.fillStyle = grad;
+        roundRect(sx, ty + 4, sw, TRACK_HEIGHT - 8, 4, true, false);
+
+        // Opacity overlay for slight transparency
+        // Selection border + handles
+        if (isSelected) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          roundRect(sx + 1, ty + 5, sw - 2, TRACK_HEIGHT - 10, 3, false, true);
+          // Resize handles
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(sx - 3, ty + TRACK_HEIGHT / 2 - 6, 6, 12);
+          ctx.fillRect(sx + sw - 3, ty + TRACK_HEIGHT / 2 - 6, 6, 12);
+        }
+
+        // Label
+        if (sw > 30) {
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 10px -apple-system, sans-serif';
+          ctx.textAlign = 'left';
+          var lbl = '';
+          if (seg.op === 'speed-up') lbl = '⚡ ' + (seg.factor || 2) + 'x';
+          else if (seg.op === 'slow-down') lbl = '\u{1F422} ' + (seg.factor || 0.5) + 'x';
+          else if (seg.op === 'cut') lbl = '✂️ delete';
+          else if (seg.op === 'insert-image') lbl = '\u{1F5BC} ' + (seg.duration || 3) + 's';
+          else if (seg.op === 'text') lbl = '\u{1F163} ' + (seg.text || '').slice(0, 8);
+          else if (seg.op === 'color') lbl = '\u{1F3A8} ' + (seg.style || '').slice(0, 4);
+          ctx.fillText(lbl, sx + 6, ty + TRACK_HEIGHT / 2 + 4);
+        }
+
+        segmentRects.push({ idx: idx, segId: seg.id, op: seg.op, x: sx, y: ty + 4, w: sw, h: TRACK_HEIGHT - 8, seg: seg });
+      });
+    });
+
+    // Draw playhead
+    if (state.playhead >= state.scrollX) {
+      var px = timeToX(state.playhead);
+      if (px >= 0 && px <= w) {
+        ctx.strokeStyle = '#ff4466';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, h);
+        ctx.stroke();
+        // Head triangle
+        ctx.fillStyle = '#ff4466';
+        ctx.beginPath();
+        ctx.moveTo(px - 5, 0);
+        ctx.lineTo(px + 5, 0);
+        ctx.lineTo(px, 6);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  function roundRect(x, y, w, h, r, fill, stroke) {
+    if (w < r * 2) r = w / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  function drawRuler(w, totalTime) {
+    ctx.fillStyle = '#252538';
+    ctx.fillRect(0, 0, w, RULER_HEIGHT);
+    ctx.strokeStyle = '#3f3f5a';
+    ctx.beginPath();
+    ctx.moveTo(0, RULER_HEIGHT - 0.5);
+    ctx.lineTo(w, RULER_HEIGHT - 0.5);
+    ctx.stroke();
+
+    var pxPerSec = state.zoom / 10;
+    var interval = 1;
+    if (pxPerSec < 10) interval = 30;
+    else if (pxPerSec < 25) interval = 10;
+    else if (pxPerSec < 50) interval = 5;
+    else if (pxPerSec < 100) interval = 1;
+    else interval = 1;
+
+    ctx.fillStyle = '#6a6a80';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    var startT = Math.floor(state.scrollX / interval) * interval;
+    var endT = state.scrollX + w / pxPerSec;
+    for (var t = startT; t <= endT; t += interval) {
+      var px = timeToX(t);
+      if (px < -20 || px > w + 20) continue;
+      var isMajor = (t % (interval * 5) === 0) || interval >= 5;
+      ctx.strokeStyle = isMajor ? '#6a6a80' : '#3f3f5a';
+      ctx.beginPath();
+      ctx.moveTo(px, RULER_HEIGHT - (isMajor ? 10 : 5));
+      ctx.lineTo(px, RULER_HEIGHT);
+      ctx.stroke();
+      if (isMajor && px > 15 && px < w - 15) {
+        ctx.fillText(fmtTime(t), px, RULER_HEIGHT - 12);
+      }
+    }
+    ctx.textAlign = 'left';
+  }
+
+  // ─── Hit Testing ─────────────────────────────────────────────
+  function hitTest(px, py) {
+    for (var i = 0; i < segmentRects.length; i++) {
+      var sr = segmentRects[i];
+      if (px >= sr.x && px <= sr.x + sr.w && py >= sr.y && py <= sr.y + sr.h) {
+        var edge = null;
+        if (px < sr.x + 6) edge = 'left';
+        else if (px > sr.x + sr.w - 6) edge = 'right';
+        return { type: 'segment', segId: sr.segId, idx: sr.idx, edge: edge, op: sr.op, seg: sr.seg };
+      }
+    }
+    for (var j = 0; j < trackRects.length; j++) {
+      var tr = trackRects[j];
+      if (py >= tr.y && py <= tr.y + tr.h) {
+        return { type: 'track', idx: tr.idx, time: xToTime(px) };
+      }
+    }
+    return null;
+  }
+
+  // ─── Segment CRUD ────────────────────────────────────────────
+  function addSegment(idx, op, start, end, extra) {
+    extra = extra || {};
+    var seg = { id: uid(), op: op, start: start, end: end };
+    for (var k in extra) { if (extra.hasOwnProperty(k)) seg[k] = extra[k]; }
+    if (!state.videos[idx].segments) state.videos[idx].segments = [];
+    state.videos[idx].segments.push(seg);
+    seg.start = Math.max(0, seg.start);
+    if (seg.end - seg.start < MIN_SEG) seg.end = seg.start + MIN_SEG;
+    pushHistory();
+    state.selectedSegId = seg.id;
+    state.selectedVideoIdx = idx;
+    markDirty();
+    render();
+    updatePropsPanel();
+    return seg;
+  }
+
+  function deleteSegment(idx, segId) {
+    var v = state.videos[idx];
+    if (!v) return;
+    v.segments = (v.segments || []).filter(function (s) { return s.id !== segId; });
+    if (state.selectedSegId === segId) state.selectedSegId = null;
+    pushHistory();
+    markDirty();
+    render();
+    updatePropsPanel();
+  }
+
+  function getSegment(idx, segId) {
+    var v = state.videos[idx];
+    if (!v || !v.segments) return null;
+    for (var i = 0; i < v.segments.length; i++) {
+      if (v.segments[i].id === segId) return v.segments[i];
+    }
+    return null;
+  }
+
+  // ─── History (Undo/Redo) ─────────────────────────────────────
+  function pushHistory() {
+    state.history = state.history.slice(0, state.historyIdx + 1);
+    state.history.push(JSON.stringify(state.videos));
+    if (state.history.length > 50) state.history.shift();
+    state.historyIdx = state.history.length - 1;
+  }
+  function undo() {
+    if (state.historyIdx <= 0) return;
+    state.historyIdx--;
+    state.videos = JSON.parse(state.history[state.historyIdx]);
+    state.selectedSegId = null;
+    refreshAll();
+    showToast('↩ 已撤销');
+  }
+  function redo() {
+    if (state.historyIdx >= state.history.length - 1) return;
+    state.historyIdx++;
+    state.videos = JSON.parse(state.history[state.historyIdx]);
+    refreshAll();
+    showToast('↪ 已重做');
+  }
+
+  // ─── Mouse Interactions ──────────────────────────────────────
+  function setupMouse() {
+    var downX = 0;
+
+    canvas.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      var pos = canvasPosition(e);
+      var hit = hitTest(pos.x, pos.y);
+      if (hit && hit.type === 'segment') {
+        ctxMenuTarget = { idx: hit.idx, segId: hit.segId };
+        showContextMenu(e.clientX, e.clientY);
+      }
+    });
+
+    canvas.addEventListener('mousedown', function (e) {
+      var pos = canvasPosition(e);
+      downX = e.clientX;
+
+      if (e.button !== 0) return; // only left click for main actions
+
+      var hit = hitTest(pos.x, pos.y);
+
+      if (state.tool === 'select') {
+        if (hit && hit.type === 'segment') {
+          state.selectedVideoIdx = hit.idx;
+          state.selectedSegId = hit.segId;
+          updatePropsPanel();
+          updateMetaPanel();
+          var seg = getSegment(hit.idx, hit.segId);
+          if (seg) {
+            dragging = {
+              type: hit.edge ? 'resize' : 'move',
+              idx: hit.idx, segId: hit.segId,
+              edge: hit.edge,
+              startMouseX: e.clientX,
+              startSegStart: seg.start,
+              startSegEnd: seg.end
+            };
+            canvas.classList.add('grab');
+          }
+        } else if (hit && hit.type === 'track') {
+          state.playhead = Math.max(0, hit.time);
+          render();
+          updatePlayheadLabel();
+        } else {
+          state.selectedSegId = null;
+          state.selectedVideoIdx = -1;
+          updatePropsPanel();
+          updateMetaPanel();
+          render();
+        }
+      } else {
+        // Op tool active → click track = create new segment
+        if (hit && hit.type === 'track') {
+          var t = hit.time;
+          var snapT = state.snap ? Math.round(t / SNAP) * SNAP : t;
+          snapT = Math.max(0, snapT);
+          var defDur = state.tool === 'insert-image' ? 3 : 2;
+          var newSeg = addSegment(hit.idx, state.tool, snapT, snapT + defDur);
+          // Immediately drag-resize from right
+          dragging = {
+            type: 'resize', edge: 'right',
+            idx: hit.idx, segId: newSeg.id,
+            startMouseX: e.clientX,
+            startSegStart: newSeg.start,
+            startSegEnd: newSeg.end
+          };
+          canvas.classList.add('grab');
+        } else if (hit && hit.type === 'segment') {
+          state.selectedVideoIdx = hit.idx;
+          state.selectedSegId = hit.segId;
+          updatePropsPanel();
+          render();
+        }
+      }
+    });
+
+    window.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - dragging.startMouseX;
+      var dt = dx / (state.zoom / 10);
+      var seg = getSegment(dragging.idx, dragging.segId);
+      if (!seg) return;
+
+      var maxEnd = state.videos[dragging.idx].duration;
+
+      if (dragging.type === 'move') {
+        var newStart = dragging.startSegStart + dt;
+        if (state.snap) newStart = Math.round(newStart / SNAP) * SNAP;
+        newStart = Math.max(0, newStart);
+        var dur = dragging.startSegEnd - dragging.startSegStart;
+        seg.start = newStart;
+        seg.end = newStart + dur;
+        if (seg.end > maxEnd) { seg.end = maxEnd; seg.start = Math.max(0, maxEnd - dur); }
+      } else if (dragging.type === 'resize') {
+        if (dragging.edge === 'left') {
+          var ns = dragging.startSegStart + dt;
+          if (state.snap) ns = Math.round(ns / SNAP) * SNAP;
+          seg.start = Math.max(0, Math.min(ns, seg.end - MIN_SEG));
+        } else {
+          var ne = dragging.startSegEnd + dt;
+          if (state.snap) ne = Math.round(ne / SNAP) * SNAP;
+          seg.end = Math.max(seg.start + MIN_SEG, Math.min(ne, maxEnd));
+        }
+      }
+      render();
+      updatePropsPanel();
+    });
+
+    window.addEventListener('mouseup', function () {
+      if (dragging) {
+        dragging = null;
+        canvas.classList.remove('grab');
+        pushHistory();
+        markDirty();
+        render();
+      }
+    });
+
+    // Wheel to zoom
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var delta = e.deltaY > 0 ? -15 : 15;
+      state.zoom = Math.max(20, Math.min(400, state.zoom + delta));
+      $('zoom-slider').value = state.zoom;
+      $('zoom-pct').textContent = state.zoom + '%';
+      render();
+    }, { passive: false });
+  }
+
+  function canvasPosition(e) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  // ─── Keyboard ────────────────────────────────────────────────
+  function setupKeyboard() {
+    window.addEventListener('keydown', function (e) {
+      var tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedSegId != null && state.selectedVideoIdx >= 0) {
+        deleteSegment(state.selectedVideoIdx, state.selectedSegId);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault(); undo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'Z'))) {
+        e.preventDefault(); redo();
+      } else if (e.key === 'v') { setTool('select');
+      } else if (e.key === 'Escape') { hideCtxMenu(); state.selectedSegId = null; render(); updatePropsPanel();
+      }
+    });
+    window.addEventListener('click', function (e) {
+      if (!ctxMenuEl.contains(e.target)) hideCtxMenu();
+    });
+  }
+
+  // ─── Toolbar ─────────────────────────────────────────────────
+  function setupToolbar() {
+    document.querySelectorAll('.tool-btn[data-op]').forEach(function (btn) {
+      btn.addEventListener('click', function () { setTool(btn.dataset.op); });
+    });
+    $('btn-snap').addEventListener('click', function () {
+      state.snap = !state.snap;
+      $('btn-snap').classList.toggle('active', state.snap);
+    });
+    $('btn-play').addEventListener('click', function () {
+      state.playhead = 0; render(); animatePlayhead();
+    });
+    $('zoom-slider').addEventListener('input', function (e) {
+      state.zoom = +e.target.value;
+      $('zoom-pct').textContent = state.zoom + '%';
+      render();
+    });
+    $('btn-undo').addEventListener('click', undo);
+    $('btn-redo').addEventListener('click', redo);
+  }
+  function setTool(op) {
+    state.tool = op;
+    document.querySelectorAll('.tool-btn[data-op]').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.op === op);
+    });
+    canvas.style.cursor = op === 'select' ? 'default' : 'crosshair';
+  }
+
+  function animatePlayhead() {
+    var startT = Date.now();
+    var startPlay = state.playhead;
+    function tick() {
+      var elapsed = (Date.now() - startT) / 1000;
+      state.playhead = startPlay + elapsed;
+      render();
+      updatePlayheadLabel();
+      var maxDur = 0;
+      state.videos.forEach(function (v) { if (v.duration > maxDur) maxDur = v.duration; });
+      if (state.playhead < maxDur) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function updatePlayheadLabel() {
+    $('playhead-time').textContent = fmtTime(state.playhead);
+  }
+
+  // ─── Media List ──────────────────────────────────────────────
+  function updateMediaList() {
+    mediaListEl.innerHTML = '';
+    if (state.videos.length === 0) {
+      mediaListEl.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:20px 8px;text-align:center">点击下方按钮添加素材<br>或加载示例</div>';
+      return;
+    }
+    state.videos.forEach(function (v, i) {
+      var div = document.createElement('div');
+      div.className = 'media-item' + (i === state.selectedVideoIdx ? ' active' : '');
+      var thumbHtml = v.thumbDataUrl
+        ? '<img src="' + v.thumbDataUrl + '">'
+        : (v.type === 'image' ? '\u{1F5BC}' : '\u{1F3AC}');
+      var badge = v.type === 'image' ? 'IMG' : 'VID';
+      div.innerHTML = '<div class="media-thumb">' + thumbHtml + '</div>' +
+        '<div class="media-info"><div class="media-name">#' + (i + 1) + ' ' + v.file + '</div>' +
+        '<div class="media-dur">' + fmtTime(v.duration) + (v.segments && v.segments.length ? ' · ' + v.segments.length + ' ops' : '') + '</div></div>' +
+        '<span class="media-type-badge">' + badge + '</span>';
+      (function (idx) {
+        div.addEventListener('click', function () {
+          state.selectedVideoIdx = idx;
+          updateMediaList();
+          updateMetaPanel();
+          render();
+        });
+      })(i);
+      mediaListEl.appendChild(div);
+    });
+    var vc = state.videos.filter(function (x) { return x.type === 'video'; }).length;
+    var ic = state.videos.filter(function (x) { return x.type === 'image'; }).length;
+    $('media-title').textContent = '素材 (' + vc + 'v+' + ic + 'i)';
+  }
+
+  // ─── Video Meta Panel ────────────────────────────────────────
+  function setupMetaPanel() {
+    $('vm-summary').addEventListener('input', function (e) {
+      if (state.selectedVideoIdx >= 0) { state.videos[state.selectedVideoIdx].summary = e.target.value; markDirty(); }
+    });
+    $('vm-intent').addEventListener('input', function (e) {
+      if (state.selectedVideoIdx >= 0) { state.videos[state.selectedVideoIdx].intent = e.target.value; markDirty(); }
+    });
+    $('vm-voice').addEventListener('change', function (e) {
+      if (state.selectedVideoIdx >= 0) { state.videos[state.selectedVideoIdx].voice = e.target.value; markDirty(); }
+    });
+    $('vm-voice-changer').addEventListener('change', function (e) {
+      if (state.selectedVideoIdx >= 0) { state.videos[state.selectedVideoIdx].voiceChanger = e.target.value; markDirty(); }
+    });
+    ['denoise', 'normalize', 'silence'].forEach(function (key) {
+      var el = $('vm-' + key);
+      if (!el) return;
+      el.addEventListener('click', function () {
+        if (state.selectedVideoIdx < 0) return;
+        var v = state.videos[state.selectedVideoIdx];
+        v[key] = !v[key];
+        el.classList.toggle('on', !!v[key]);
+        render();
+        markDirty();
+      });
+    });
+  }
+
+  function updateMetaPanel() {
+    if (state.selectedVideoIdx < 0 || !state.videos[state.selectedVideoIdx]) {
+      metaPanel.style.display = 'none';
+      return;
+    }
+    var v = state.videos[state.selectedVideoIdx];
+    metaPanel.style.display = v.type === 'video' ? 'block' : 'none';
+    $('vm-summary').value = v.summary || '';
+    $('vm-intent').value = v.intent || '';
+    $('vm-voice').value = v.voice || '';
+    $('vm-voice-changer').value = v.voiceChanger || '';
+    ['denoise', 'normalize', 'silence'].forEach(function (key) {
+      var el = $('vm-' + key);
+      if (el) el.classList.toggle('on', !!v[key]);
+    });
+  }
+
+  // ─── Properties Panel ────────────────────────────────────────
+  function updatePropsPanel() {
+    if (state.selectedSegId == null || state.selectedVideoIdx < 0) {
+      propsContent.innerHTML = '<div class="props-empty">选中片段<br>查看/编辑属性</div>';
+      return;
+    }
+    var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+    if (!seg) {
+      propsContent.innerHTML = '<div class="props-empty">选中片段<br>查看/编辑属性</div>';
+      state.selectedSegId = null;
+      return;
+    }
+    var opDef = OP_DEFS[seg.op] || { label: seg.op, color: '#888' };
+    var html = '<div class="prop-group"><div class="prop-label"><span class="op-color" style="background:' + opDef.color + '"></span>' + opDef.label + '</div></div>';
+    html += '<div class="prop-group">';
+    html += '<div class="prop-row"><label>起始</label><div class="prop-time-inputs"><input type="text" id="prop-start" value="' + fmtTime(seg.start) + '"></div></div>';
+    html += '<div class="prop-row"><label>结束</label><div class="prop-time-inputs"><input type="text" id="prop-end" value="' + fmtTime(seg.end) + '"></div></div>';
+    html += '<div class="prop-row"><label>时长</label><input type="text" id="prop-dur" disabled value="' + (seg.end - seg.start).toFixed(2) + 's"></div>';
+    html += '</div>';
+
+    if (seg.op === 'speed-up' || seg.op === 'slow-down') {
+      html += '<div class="prop-group"><div class="prop-row"><label>倍数</label><input type="number" id="prop-factor" value="' + (seg.factor || (seg.op === 'speed-up' ? 2 : 0.5)) + '" min="0.1" max="100" step="0.1"></div><div class="props-hint">' + (seg.op === 'speed-up' ? '高倍速用于缩时' : '小于1减速，如0.5=半速') + '</div></div>';
+    }
+    if (seg.op === 'insert-image') {
+      html += '<div class="prop-group"><div class="prop-row"><label>时长</label><input type="number" id="prop-img-dur" value="' + (seg.duration || 3) + '" min="0.5" step="0.5"></div><div class="prop-row"><label>图片</label><input type="text" id="prop-img-file" value="' + (seg.file || '') + '" placeholder="图片文件名"></div><div class="props-hint">图片会自动转成视频段</div></div>';
+    }
+    if (seg.op === 'text') {
+      html += '<div class="prop-group"><div class="prop-row"><label>文字</label><input type="text" id="prop-text" value="' + (seg.text || '') + '" placeholder="输入文字"></div><div class="prop-row"><label>时长</label><input type="number" id="prop-text-dur" value="' + (seg.duration || 2) + '" min="0.5" step="0.5"></div></div>';
+    }
+    if (seg.op === 'color') {
+      var styles = ['warm', 'cool', 'cinematic', 'vintage', 'bw', 'high-contrast'];
+      html += '<div class="prop-group"><div class="prop-row"><label>风格</label><select id="prop-color-style">' + styles.map(function (s) { return '<option value="' + s + '"' + (seg.style === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select></div></div>';
+    }
+    html += '<div class="prop-group"><div class="prop-label">补充说明</div><textarea class="prop-note" id="prop-note" placeholder="可选补充">' + (seg.note || '') + '</textarea></div>';
+    html += '<div class="prop-group"><button class="btn danger" id="prop-del" style="width:100%">\u{1F5D1} 删除片段</button></div>';
+
+    propsContent.innerHTML = html;
+
+    // Bind inputs
+    $('prop-start').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.start = Math.max(0, Math.min(parseTimeStr(e.target.value), seg.end - MIN_SEG)); render(); markDirty(); }
+    });
+    $('prop-end').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.end = Math.max(seg.start + MIN_SEG, Math.min(parseTimeStr(e.target.value), state.videos[state.selectedVideoIdx].duration)); render(); markDirty(); }
+    });
+    if ($('prop-factor')) $('prop-factor').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.factor = +e.target.value; render(); markDirty(); }
+    });
+    if ($('prop-img-dur')) $('prop-img-dur').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.duration = +e.target.value; seg.end = seg.start + seg.duration; render(); markDirty(); }
+    });
+    if ($('prop-img-file')) $('prop-img-file').addEventListener('input', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) seg.file = e.target.value;
+    });
+    if ($('prop-text')) $('prop-text').addEventListener('input', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.text = e.target.value; render(); }
+    });
+    if ($('prop-text-dur')) $('prop-text-dur').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) { seg.duration = +e.target.value; seg.end = seg.start + seg.duration; render(); markDirty(); }
+    });
+    if ($('prop-color-style')) $('prop-color-style').addEventListener('change', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) seg.style = e.target.value;
+    });
+    $('prop-note').addEventListener('input', function (e) {
+      var seg = getSegment(state.selectedVideoIdx, state.selectedSegId);
+      if (seg) seg.note = e.target.value;
+    });
+    $('prop-del').addEventListener('click', function () {
+      deleteSegment(state.selectedVideoIdx, state.selectedSegId);
+    });
+  }
+
+  // ─── Context Menu ────────────────────────────────────────────
+  function setupCtxMenu() {
+    ctxMenuEl.querySelectorAll('.ctx-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        var act = item.dataset.act;
+        hideCtxMenu();
+        if (!ctxMenuTarget) return;
+        var idx = ctxMenuTarget.idx, segId = ctxMenuTarget.segId;
+        var seg = getSegment(idx, segId);
+        if (!seg) return;
+        if (act === 'edit') {
+          state.selectedVideoIdx = idx; state.selectedSegId = segId;
+          updatePropsPanel(); render();
+        } else if (act === 'delete') {
+          deleteSegment(idx, segId);
+        } else if (act === 'duplicate') {
+          var newSeg = JSON.parse(JSON.stringify(seg));
+          newSeg.id = uid();
+          newSeg.start = seg.end;
+          newSeg.end = seg.end + (seg.end - seg.start);
+          state.videos[idx].segments.push(newSeg);
+          state.selectedSegId = newSeg.id;
+          pushHistory(); render(); updatePropsPanel(); markDirty();
+        } else if (act === 'split') {
+          if (state.playhead > seg.start && state.playhead < seg.end) {
+            var segEnd = seg.end;
+            seg.end = state.playhead;
+            var newSeg = JSON.parse(JSON.stringify(seg));
+            newSeg.id = uid();
+            newSeg.start = state.playhead;
+            newSeg.end = segEnd;
+            state.videos[idx].segments.push(newSeg);
+            pushHistory(); render(); markDirty();
+          } else {
+            showToast('播放头不在片段内', 'error');
+          }
+        }
+        ctxMenuTarget = null;
+      });
+    });
+  }
+  function showContextMenu(x, y) {
+    ctxMenuEl.classList.add('show');
+    ctxMenuEl.style.left = x + 'px';
+    ctxMenuEl.style.top = y + 'px';
+  }
+  function hideCtxMenu() { ctxMenuEl.classList.remove('show'); }
+
+  // ─── LocalStorage Autosave ───────────────────────────────────
+  function markDirty() {
+    state.dirty = true;
+    scheduleAutoSave();
+  }
+  function scheduleAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(autoSave, 3000);
+  }
+  function autoSave() {
+    try {
+      localStorage.setItem('zhijian_demo_autosave', JSON.stringify({
+        videos: state.videos,
+        project: {
+          title: $('project-title').value,
+          name: $('project-name').value,
+          target: $('project-target').value,
+          aspect: $('output-aspect').value,
+          cover: $('cover-type').value,
+          ending: $('ending-type').value,
+          intent: $('overall-intent').value
+        },
+        ts: Date.now()
+      }));
+    } catch (e) { /* quota */ }
+  }
+  function setupAutoSave() {
+    ['project-title', 'project-name', 'project-target', 'output-aspect', 'cover-type', 'ending-type', 'overall-intent'].forEach(function (id) {
+      $(id).addEventListener('input', scheduleAutoSave);
+    });
+  }
+  function tryRestore() {
+    try {
+      var raw = localStorage.getItem('zhijian_demo_autosave');
+      if (!raw) return false;
+      var data = JSON.parse(raw);
+      if (data.videos) state.videos = data.videos;
+      if (data.project) {
+        if (data.project.title) $('project-title').value = data.project.title;
+        if (data.project.name) $('project-name').value = data.project.name;
+        if (data.project.target) $('project-target').value = data.project.target;
+        if (data.project.aspect) $('output-aspect').value = data.project.aspect;
+        if (data.project.cover) $('cover-type').value = data.project.cover;
+        if (data.project.ending) $('ending-type').value = data.project.ending;
+        if (data.project.intent) $('overall-intent').value = data.project.intent;
+      }
+      state.history = [JSON.stringify(state.videos)];
+      state.historyIdx = 0;
+      refreshAll();
+      var d = new Date(data.ts);
+      showToast('✅ 已恢复 ' + d.toLocaleTimeString(), 'success', 2500);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ─── Export ──────────────────────────────────────────────────
+  function buildOutput() {
+    var now = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var ts = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+
+    var videos = state.videos.map(function (v, idx) {
+      var out = { index: idx + 1, file: v.file, type: v.type };
+      if (v.summary) out.summary = v.summary;
+      if (v.intent) out.intent = v.intent;
+      if (v.voice) out.voice = v.voice;
+      if (v.voiceChanger) out.voiceChanger = v.voiceChanger;
+      if (v.denoise || v.normalize || v.silence) {
+        out.audio = {};
+        if (v.denoise) out.audio.denoise = true;
+        if (v.normalize) out.audio.normalize = true;
+        if (v.silence) out.audio.removeSilence = true;
+      }
+      if (v.segments && v.segments.length) {
+        out.ops = {};
+        v.segments.forEach(function (seg) {
+          if (!out.ops[seg.op]) out.ops[seg.op] = { ranges: [] };
+          var r = { from: +seg.start.toFixed(2), to: +seg.end.toFixed(2) };
+          if (seg.op === 'speed-up' || seg.op === 'slow-down') r.factor = seg.factor;
+          if (seg.op === 'insert-image') { r.duration = seg.duration; if (seg.file) r.file = seg.file; }
+          if (seg.op === 'text') { r.text = seg.text; r.duration = seg.duration; }
+          if (seg.op === 'color') r.style = seg.style;
+          if (seg.note) r.note = seg.note;
+          out.ops[seg.op].ranges.push(r);
+        });
+      }
+      return out;
+    });
+
+    return {
+      _meta: {
+        tool: '智剪工坊-timeline',
+        version: '1.15-DEMO',
+        generated: now.toISOString(),
+        timestamp: ts,
+        workspace: state.dirHandle ? state.dirHandle.name : '(unknown)'
+      },
+      project: {
+        name: $('project-name').value || 'untitled',
+        title: $('project-title').value || '',
+        target_length: $('project-target').value || '',
+        overall_intent: $('overall-intent').value || ''
+      },
+      output: { aspect_ratio: $('output-aspect').value || '9:16' },
+      cover: { type: $('cover-type').value || '', prompt: '' },
+      ending: { type: $('ending-type').value || '', script: '' },
+      videos: videos,
+      _summary: {
+        totalVideos: state.videos.filter(function (v) { return v.type === 'video'; }).length,
+        totalImages: state.videos.filter(function (v) { return v.type === 'image'; }).length,
+        totalDuration: state.videos.reduce(function (s, v) { return s + (v.duration || 0); }, 0),
+        opsUsed: Array.from(new Set(state.videos.flatMap(function (v) { return (v.segments || []).map(function (s) { return s.op; }); })))
+      }
+    };
+  }
+
+  function exportJSON() {
+    if (state.videos.length === 0) { showToast('请先添加素材', 'error'); return; }
+    var data = buildOutput();
+    var json = JSON.stringify(data, null, 2);
+    downloadJSON(json);
+  }
+
+  function downloadJSON(json) {
+    var blob = new Blob([json], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var now = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var ts = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    a.href = url;
+    a.download = 'intent_' + ts + '_timeline.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✅ 已下载 ' + a.download, 'success');
+  }
+
+  // ─── Folder Picker ───────────────────────────────────────────
+  function pickFolder() {
+    if (!('showDirectoryPicker' in window)) {
+      showToast('浏览器不支持，用"加载示例"代替', 'error');
+      return;
+    }
+    state.dirHandle = null;
+    window.showDirectoryPicker().then(function (handle) {
+      state.dirHandle = handle;
+      showToast('✅ 已选择: ' + handle.name, 'success');
+      scanFolder(handle);
+    }).catch(function (e) {
+      if (e.name !== 'AbortError') showToast('打开失败: ' + e.message, 'error');
+    });
+  }
+
+  async function scanFolder(dirHandle) {
+    var videos = [];
+    try {
+      for await (var entry of dirHandle.values()) {
+        if (entry.kind === 'file' && /\.(mp4|mov|mkv|avi|webm)$/i.test(entry.name)) {
+          videos.push({
+            id: uid(), file: entry.name, duration: 30, type: 'video',
+            summary: '', intent: '', voice: '', voiceNote: '', voiceChanger: '',
+            denoise: false, normalize: false, silence: false,
+            segments: [], thumbDataUrl: ''
+          });
+        }
+      }
+    } catch (e) {
+      // values() may not be available, fallback to entries()
+      for await (var [name, h] of dirHandle.entries()) {
+        if (h.kind === 'file' && /\.(mp4|mov|mkv|avi|webm)$/i.test(name)) {
+          videos.push({
+            id: uid(), file: name, duration: 30, type: 'video',
+            summary: '', intent: '', voice: '', voiceNote: '', voiceChanger: '',
+            denoise: false, normalize: false, silence: false,
+            segments: [], thumbDataUrl: ''
+          });
+        }
+      }
+    }
+    videos.sort(function (a, b) { return a.file.localeCompare(b.file); });
+    if (!videos.length) { showToast('文件夹里没发现视频', 'error'); return; }
+    state.videos = videos;
+    state.history = [JSON.stringify(state.videos)];
+    state.historyIdx = 0;
+    refreshAll();
+    showToast('✅ 已加载 ' + videos.length + ' 个视频', 'success');
+  }
+
+  // ─── Demo Data ───────────────────────────────────────────────
+  function loadDemoData() {
+    state.videos = [
+      {
+        id: 'demo1', file: 'IMG_2024_午餐.mp4', duration: 75, type: 'video',
+        summary: '午餐吃了4个汉堡1杯可乐', intent: '开头引子和能量展示',
+        voice: 'keep', voiceNote: '', voiceChanger: '',
+        denoise: false, normalize: true, silence: false,
+        segments: [
+          { id: uid(), op: 'speed-up', start: 0, end: 20, factor: 2.0, note: '开头像播放' },
+          { id: uid(), op: 'speed-down', start: 30, end: 45, factor: 0.5, note: '汉堡细节慢放' },
+          { id: uid(), op: 'cut', start: 48, end: 55, note: '删掉过渡片段' },
+          { id: uid(), op: 'slow-down', start: 62, end: 68, factor: 0.5, note: '可乐慢放' }
+        ],
+        thumbDataUrl: ''
+      },
+      {
+        id: 'demo2', file: 'IMG_2024_晚餐.mp4', duration: 45, type: 'video',
+        summary: '晚餐换了便利店低卡套餐', intent: '第二部分能量对比',
+        voice: 'keep', voiceNote: '', voiceChanger: '',
+        denoise: false, normalize: false, silence: false,
+        segments: [
+          { id: uid(), op: 'insert-image', start: 5, end: 8, duration: 3, file: 'calorie_comparison.jpg', note: '插入卡路里对比图' },
+          { id: uid(), op: 'color', start: 0, end: 45, style: 'cinematic', note: '全片电影感' }
+        ],
+        thumbDataUrl: ''
+      },
+      {
+        id: 'demo3', file: 'quote_card.png', duration: 5, type: 'image',
+        summary: '引用金句图片', intent: '情绪高潮 subtitle overlay',
+        voice: '', voiceNote: '', voiceChanger: '',
+        denoise: false, normalize: false, silence: false,
+        segments: [],
+        thumbDataUrl: ''
+      }
+    ];
+    state.history = [JSON.stringify(state.videos)];
+    state.historyIdx = 0;
+    refreshAll();
+    showToast('✅ 已加载示例素材 (3 文件, 7 个片段)', 'success');
+  }
+
+  // ─── Refresh All ─────────────────────────────────────────────
+  function refreshAll() {
+    updateMediaList();
+    updateMetaPanel();
+    updatePropsPanel();
+    render();
+  }
+
+  // ─── Button Bindings ─────────────────────────────────────────
+  function bindButtons() {
+    $('btn-save').addEventListener('click', exportJSON);
+    $('btn-export').addEventListener('click', exportJSON);
+    $('btn-load-folder').addEventListener('click', pickFolder);
+    $('btn-load-demo').addEventListener('click', loadDemoData);
+    $('btn-add-file').addEventListener('click', function () {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'video/*,image/*'; inp.multiple = true;
+      inp.onchange = function () {
+        var count = 0;
+        Array.prototype.forEach.call(inp.files, function (f) {
+          var isImg = f.type.indexOf('image/') === 0;
+          state.videos.push({
+            id: uid(), file: f.name, duration: isImg ? 3 : 30, type: isImg ? 'image' : 'video',
+            summary: '', intent: '', voice: '', voiceNote: '', voiceChanger: '',
+            denoise: false, normalize: false, silence: false, segments: [], thumbDataUrl: ''
+          });
+          count++;
+        });
+        state.history = [JSON.stringify(state.videos)];
+        state.historyIdx = 0;
+        refreshAll();
+        showToast('✅ 已添加 ' + count + ' 个文件', 'success');
+      };
+      inp.click();
+    });
+  }
+
+  // ─── Init ────────────────────────────────────────────────────
+  function init() {
+    initCanvas();
+    setupMouse();
+    setupKeyboard();
+    setupToolbar();
+    setupMetaPanel();
+    setupCtxMenu();
+    setupAutoSave();
+    bindButtons();
+    var restored = tryRestore();
+    if (!restored) {
+      // Auto-load demo on first visit so timeline is visible
+      loadDemoData();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+</script>
+
+</body></html>

@@ -20,6 +20,11 @@ Thumbs.db
 # 智剪工坊工作流临时产物(edit 子技能原子操作中间文件)
 智剪工坊/__edit_tmp_*.mp4
 
+# 智剪工坊 CDP 本地调试脚本(连接 Chrome DevTools Protocol 检查页面状态,不入库)
+智剪工坊/_cdp.js
+智剪工坊/package.json
+智剪工坊/package-lock.json
+
 # 智剪工坊调试/验证产物(_check_*.py/_check_*.png/_check_*.mp4/_check_*.js 等本地验证脚本和输出,不入库)
 智剪工坊/tests/_check_*.py
 智剪工坊/tests/_check_*.js

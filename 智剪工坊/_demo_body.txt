@@ -1,0 +1,128 @@
+<div class="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="logo">智剪工坊 <span>v1.15-DEMO · Timeline</span></div>
+    <input type="text" id="project-title" placeholder="成片标题" value="健身减脂 Day 2">
+    <div class="seperator"></div>
+    <input type="text" id="project-name" placeholder="项目名" value="Day2_减脂日记">
+    <div class="seperator"></div>
+    <input type="text" id="project-target" placeholder="目标时长 (如 3-5)" value="2-3">
+    <div class="spacer"></div>
+    <button class="btn" id="btn-load-folder" title="打开工作区文件夹">📂 打开文件夹</button>
+    <button class="btn" id="btn-load-demo" title="加载示例素材">🎬 加载示例</button>
+    <div class="seperator"></div>
+    <button class="btn" id="btn-undo" title="撤销 (Ctrl+Z)">↩ 撤销</button>
+    <button class="btn" id="btn-redo" title="重做 (Ctrl+Y)">↪ 重做</button>
+    <div class="seperator"></div>
+    <button class="btn primary" id="btn-save" title="生成并下载 intent.json">💾 生成 JSON</button>
+  </div>
+
+  <div class="main-area">
+    <!-- Left Panel: Media + Video Meta -->
+    <div class="left-panel">
+      <div class="panel-title" id="media-title">素材 (0)</div>
+      <div class="media-list" id="media-list">
+        <div style="color:var(--text3);font-size:11px;padding:20px 8px;text-align:center">
+          点击下方按钮添加素材<br>或加载示例
+        </div>
+      </div>
+      <button class="btn btn-add-media" id="btn-add-file">+ 添加文件</button>
+
+      <div class="video-meta" id="video-meta-panel" style="display:none">
+        <div class="section-label">视频信息</div>
+        <div class="vm-row"><span class="vm-label">简介</span><textarea class="vm-textarea" id="vm-summary" placeholder="这段拍的是啥" rows="2"></textarea></div>
+        <div class="vm-row"><span class="vm-label">意图</span><textarea class="vm-textarea" id="vm-intent" placeholder="为啥用这条" rows="2"></textarea></div>
+        <div class="vm-row"><span class="vm-label">声音</span>
+          <select class="vm-select" id="vm-voice">
+            <option value="">—</option>
+            <option value="keep">保留</option>
+            <option value="keep-with-filler-removed">保留+去水词</option>
+            <option value="mute">静音</option>
+            <option value="bgm-only">只留 BGM</option>
+          </select>
+        </div>
+        <div class="section-label">音频处理（新增）</div>
+        <span class="badge-btn" id="vm-denoise" data-key="denoise">降噪</span>
+        <span class="badge-btn" id="vm-normalize" data-key="normalize">响度归一</span>
+        <span class="badge-btn" id="vm-silence" data-key="silence">去静音段</span>
+        <div style="height:6px"></div>
+        <div class="section-label">变声（新增）</div>
+        <select class="vm-select" id="vm-voice-changer" style="width:100%">
+          <option value="">不变声</option>
+          <option value="old_man">老人</option>
+          <option value="child">小孩</option>
+          <option value="robot">机器人</option>
+          <option value="female">女声</option>
+          <option value="male">男声</option>
+          <option value="chipmunk">花栗鼠</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Center: Timeline -->
+    <div class="center-area">
+      <div class="timeline-toolbar">
+        <div class="tool-group" id="toolbar-ops">
+          <button class="tool-btn active" data-op="select" title="选择工具 (V)">⬚</button>
+          <button class="tool-btn" data-op="speed-up" title="加速">⚡</button>
+          <button class="tool-btn" data-op="slow-down" title="减速">🐢</button>
+          <button class="tool-btn" data-op="cut" title="删除片段">✂️</button>
+          <button class="tool-btn" data-op="insert-image" title="插入图片">🖼</button>
+          <button class="tool-btn" data-op="text" title="文字">🅣</button>
+          <button class="tool-btn" data-op="color" title="调色">🎨</button>
+        </div>
+        <div class="tool-group">
+          <span class="playhead-indicator" id="playhead-time">00:00.0</span>
+        </div>
+        <div class="tool-group">
+          <div class="zoom-control">
+            <span class="zoom-label">缩放</span>
+            <input type="range" id="zoom-slider" min="20" max="400" value="80">
+            <span class="zoom-label" id="zoom-pct">80%</span>
+          </div>
+        </div>
+        <div class="tool-group">
+          <button class="tool-btn active" id="btn-snap" title="吸附开关 (0.5s)">🧲</button>
+          <button class="tool-btn" id="btn-play" title="从头播放">▶</button>
+        </div>
+      </div>
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="timeline-canvas"></canvas>
+        <div class="empty-state" id="empty-state">
+          <div class="big">🎬</div>
+          <div class="hint">点击 <strong>📂 打开文件夹</strong> 或 <strong>🎬 加载示例</strong></div>
+          <div class="subhint">体验纯画布拖拽时间线编辑 (Jianying 风格)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Properties -->
+    <div class="right-panel">
+      <div class="panel-title">属性</div>
+      <div id="props-content" class="props-content">
+        <div class="props-empty">选中片段<br>查看/编辑属性</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: Global Form -->
+  <div class="bottom-panel">
+    <div class="field-inline"><label>比例</label><select id="output-aspect"><option value="9:16">9:16 竖屏</option><option value="16:9">16:9 横屏</option><option value="1:1">1:1 方形</option><option value="3:4">3:4 小红书</option><option value="4:3">4:3 经典</option></select></div>
+    <div class="field-inline"><label>封面</label><select id="cover-type"><option value="">待定</option><option value="ai-generate">AI 生成</option><option value="text-only">纯文字</option></select></div>
+    <div class="field-inline"><label>结尾</label><select id="ending-type"><option value="">待定</option><option value="voice-narration">口播</option><option value="music-fade">音乐淡出</option><option value="cut-to-black">切黑</option></select></div>
+    <div class="field-inline" style="flex:1"><label>整体想法</label><input type="text" class="intent-input" id="overall-intent" placeholder="今天想表达什么感觉？重点在哪？结尾情绪是啥？"></div>
+    <button class="btn primary" id="btn-export">📋 导出 JSON</button>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" data-act="edit">✏️ 编辑属性</div>
+  <div class="ctx-item" data-act="duplicate">📑 复制片段</div>
+  <div class="ctx-item" data-act="split">✂️ 在播放头处分割</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" data-act="delete">🗑 删除 <span class="key">Del</span></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>

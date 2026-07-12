@@ -1,0 +1,3374 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4周训练计划</title><style>
+:root{--bg:#fbfbfd;--card:#fff;--ink:#1d1d1f;--ink2:#6e6e73;--ink3:#86868b;--line:#d2d2d7;--lineS:#e8e8ed;--accent:#0071e3;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.04)}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.app{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+.header h1{font-size:32px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.header p{color:var(--ink2);font-size:14px;margin-bottom:24px}
+.tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--lineS);overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;background:none;border:none;padding:10px 18px;font-family:inherit;font-size:14px;font-weight:500;color:var(--ink2);cursor:pointer;position:relative;border-radius:6px 6px 0 0}
+.tab:hover{color:var(--ink);background:rgba(0,113,227,.06)}
+.tab.active{color:var(--accent)}
+.tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
+.week{display:none;animation:fade .2s ease}
+.week.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.session{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.sess-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--lineS);flex-wrap:wrap}
+.sess-tag{font-family:"SF Mono",monospace;font-size:11px;color:var(--ink3);background:var(--bg);padding:3px 8px;border-radius:5px}
+.sess-name{font-size:17px;font-weight:600}
+.sess-time{font-size:12px;color:var(--ink3);margin-left:auto}
+.rest-day{padding:40px;text-align:center;color:var(--ink3)}
+.rest-day h3{font-size:20px;color:var(--ink);margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);padding:8px 12px 8px 0;border-bottom:1px solid var(--lineS)}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--lineS);font-size:13px;color:var(--ink2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:500;color:var(--ink);min-width:160px}
+td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
+.part-tag{display:inline-block;font-size:10.5px;padding:2px 6px;border-radius:4px;font-weight:600}
+@media(max-width:640px){.app{padding:20px 12px 48px}.session{padding:16px 14px}.header h1{font-size:26px}td{padding:10px 4px;font-size:12px}td:first-child{min-width:120px}}
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;scrollbar-width:none}.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{background:var(--card);border:1px solid var(--lineS);padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;border-radius:8px;transition:all .15s}
+.day-tab:hover{border-color:var(--accent);color:var(--ink)}
+.day-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+</style></head>
+<body><div class="app">
+<div class="header"><h1>4周训练计划</h1>
+<p>24实测1RM + 健腹轮 = 26个动作 · 4 周循环 · 起始 2026-07-13</p></div>
+<div class="tabs" id="weekTabs">
+<button class="tab active" data-wk="1">第 1 周</button>
+<button class="tab" data-wk="2">第 2 周</button>
+<button class="tab" data-wk="3">第 3 周</button>
+<button class="tab" data-wk="4">第 4 周</button>
+</div>
+<div class="week active" data-wk="1">
+<div class="day-tabs" id="dayTabs_w1">
+<button class="day-tab active" data-day="d0_1">周一</button>
+<button class="day-tab" data-day="d0_2">周二</button>
+<button class="day-tab" data-day="d0_3">周三</button>
+<button class="day-tab" data-day="d0_4">周四</button>
+<button class="day-tab" data-day="d0_5">周五</button>
+<button class="day-tab" data-day="d0_6">周六</button>
+<button class="day-tab" data-day="d0_7">周日</button>
+</div>
+<div class="day-content" data-day="d0_1">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>42 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 12-16</td>
+<td><strong>43 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 12-16</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>42 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>29 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>57 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_2" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>43 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 12-16</td>
+<td><strong>39 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 12-16</td>
+<td><strong>55 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>45 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 12-16</td>
+<td><strong>47 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 12-16</td>
+<td><strong>47 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_3" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械倒蹬</strong><span class="sub">股四+臀 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 12-16</td>
+<td><strong>67 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 12-15</td>
+<td><strong>57 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 12-15</td>
+<td><strong>29 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_4" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>42 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 12-16</td>
+<td><strong>43 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 12-16</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>42 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>29 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>57 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_5" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>43 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 12-16</td>
+<td><strong>39 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 12-16</td>
+<td><strong>55 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 12-16</td>
+<td><strong>45 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 12-16</td>
+<td><strong>47 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 12-16</td>
+<td><strong>47 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_6" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>坐姿腿弯举</strong><span class="sub">腘绳 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 12-16</td>
+<td><strong>71 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 12-15</td>
+<td><strong>57 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 12-15</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>22 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 12-15</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 12-15</td>
+<td><strong>29 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 12-15</td>
+<td><strong>18 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 12-15</td>
+<td><strong>50 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d0_7" style="display:none">
+<div class="session rest-day"><h3>周日 · 休息日</h3><p>主动恢复，不练力量</p></div>
+</div>
+</div>
+<div class="week" data-wk="2">
+<div class="day-tabs" id="dayTabs_w2">
+<button class="day-tab active" data-day="d1_1">周一</button>
+<button class="day-tab" data-day="d1_2">周二</button>
+<button class="day-tab" data-day="d1_3">周三</button>
+<button class="day-tab" data-day="d1_4">周四</button>
+<button class="day-tab" data-day="d1_5">周五</button>
+<button class="day-tab" data-day="d1_6">周六</button>
+<button class="day-tab" data-day="d1_7">周日</button>
+</div>
+<div class="day-content" data-day="d1_1">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>51 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 5-8</td>
+<td><strong>53 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 5-8</td>
+<td><strong>61 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>51 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>35 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>70 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_2" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>53 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 5-8</td>
+<td><strong>47 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 5-8</td>
+<td><strong>66 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>54 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 5-8</td>
+<td><strong>57 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 5-8</td>
+<td><strong>57 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_3" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械倒蹬</strong><span class="sub">股四+臀 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 5-8</td>
+<td><strong>81 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 8-10</td>
+<td><strong>70 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>17 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 8-10</td>
+<td><strong>35 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_4" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>51 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 5-8</td>
+<td><strong>53 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 5-8</td>
+<td><strong>61 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>51 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>35 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>70 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_5" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>53 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 5-8</td>
+<td><strong>47 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 5-8</td>
+<td><strong>66 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 5-8</td>
+<td><strong>54 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 5-8</td>
+<td><strong>57 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 5-8</td>
+<td><strong>57 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_6" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>坐姿腿弯举</strong><span class="sub">腘绳 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 5-8</td>
+<td><strong>87 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 8-10</td>
+<td><strong>70 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 8-10</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>26 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 8-10</td>
+<td><strong>17 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 8-10</td>
+<td><strong>35 kg</strong></td>
+<td>180s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 8-10</td>
+<td><strong>22 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 8-10</td>
+<td><strong>61 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d1_7" style="display:none">
+<div class="session rest-day"><h3>周日 · 休息日</h3><p>主动恢复，不练力量</p></div>
+</div>
+</div>
+<div class="week" data-wk="3">
+<div class="day-tabs" id="dayTabs_w3">
+<button class="day-tab active" data-day="d2_1">周一</button>
+<button class="day-tab" data-day="d2_2">周二</button>
+<button class="day-tab" data-day="d2_3">周三</button>
+<button class="day-tab" data-day="d2_4">周四</button>
+<button class="day-tab" data-day="d2_5">周五</button>
+<button class="day-tab" data-day="d2_6">周六</button>
+<button class="day-tab" data-day="d2_7">周日</button>
+</div>
+<div class="day-content" data-day="d2_1">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>33 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 16-20</td>
+<td><strong>34 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 16-20</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>33 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>23 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_2" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>34 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 16-20</td>
+<td><strong>30 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 16-20</td>
+<td><strong>43 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 16-20</td>
+<td><strong>37 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 16-20</td>
+<td><strong>37 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_3" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械倒蹬</strong><span class="sub">股四+臀 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 16-20</td>
+<td><strong>52 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 15-18</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>11 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 15-18</td>
+<td><strong>23 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_4" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>33 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 16-20</td>
+<td><strong>34 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 16-20</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>33 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>23 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_5" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>34 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 16-20</td>
+<td><strong>30 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 16-20</td>
+<td><strong>43 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 16-20</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 16-20</td>
+<td><strong>37 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 16-20</td>
+<td><strong>37 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_6" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>坐姿腿弯举</strong><span class="sub">腘绳 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 16-20</td>
+<td><strong>56 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 15-18</td>
+<td><strong>45 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 15-18</td>
+<td><strong>35 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>17 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 15-18</td>
+<td><strong>11 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 15-18</td>
+<td><strong>23 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 15-18</td>
+<td><strong>14 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 15-18</td>
+<td><strong>40 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d2_7" style="display:none">
+<div class="session rest-day"><h3>周日 · 休息日</h3><p>主动恢复，不练力量</p></div>
+</div>
+</div>
+<div class="week" data-wk="4">
+<div class="day-tabs" id="dayTabs_w4">
+<button class="day-tab active" data-day="d3_1">周一</button>
+<button class="day-tab" data-day="d3_2">周二</button>
+<button class="day-tab" data-day="d3_3">周三</button>
+<button class="day-tab" data-day="d3_4">周四</button>
+<button class="day-tab" data-day="d3_5">周五</button>
+<button class="day-tab" data-day="d3_6">周六</button>
+<button class="day-tab" data-day="d3_7">周日</button>
+</div>
+<div class="day-content" data-day="d3_1">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>48 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>48 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>33 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>66 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周一</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_2" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>44 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>62 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 4-5</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周二</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_3" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械倒蹬</strong><span class="sub">股四+臀 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>76 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>66 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>16 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>33 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周三</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_4" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">上午·胸</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 24 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机卧推</strong><span class="sub">胸整体 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>48 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>上斜悍马机推胸</strong><span class="sub">胸上束 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>对握式器械推胸</strong><span class="sub">胸外侧 · main</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">下午·胸+肩</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 13 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>把手式蝴蝶机飞鸟</strong><span class="sub">胸中缝 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>蝴蝶机夹胸（版本2）</strong><span class="sub">胸中缝·泵感 · iso</span></td>
+<td><span class="part-tag" style="background:#c2410c20;color:#c2410c">胸</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>48 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>33 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>66 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周四</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_5" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">上午·背</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 20 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机大剪刀</strong><span class="sub">背阔下束 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>50 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>俯卧T-bar划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>44 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>坐姿划船</strong><span class="sub">背整体 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>62 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">下午·背</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 17 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械划船2</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>分动式高位划船</strong><span class="sub">背阔宽度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>5</strong> × 4-5</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>支撑式悍马俯身划船</strong><span class="sub">背阔厚度 · main</span></td>
+<td><span class="part-tag" style="background:#04785720;color:#047857">背</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>54 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">晚上·肩+臂+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>2</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周五</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_6" style="display:none">
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">上午·腿+臂</span>
+<span class="sess-time">10:00-11:30</span>
+<span class="sess-time"> 共 10 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>坐姿腿弯举</strong><span class="sub">腘绳 · main</span></td>
+<td><span class="part-tag" style="background:#be123c20;color:#be123c">腿</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>82 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>悍马机三头下压</strong><span class="sub">三头主力 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>6</strong> × 4-5</td>
+<td><strong>66 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">下午·臂</span>
+<span class="sess-time">15:00-17:00</span>
+<span class="sess-time"> 共 11 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>器械三头下压（正向）</strong><span class="sub">三头变体 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>4</strong> × 4-5</td>
+<td><strong>51 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>牧师器弯举</strong><span class="sub">二头短头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>25 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>哑铃弯举</strong><span class="sub">二头长头 · iso</span></td>
+<td><span class="part-tag" style="background:#4338ca20;color:#4338ca">臂</span></td>
+<td><strong>3</strong> × 4-5</td>
+<td><strong>16 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧10min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 10min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">晚上·肩+腹</span>
+<span class="sess-time">20:00-21:30</span>
+<span class="sess-time"> 共 27 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>悍马机坐姿推举</strong><span class="sub">肩前束 · main</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>7</strong> × 4-5</td>
+<td><strong>33 kg</strong></td>
+<td>90s</td>
+</tr>
+<tr>
+<td><strong>器械侧平举</strong><span class="sub">肩中束 · iso</span></td>
+<td><span class="part-tag" style="background:#b4530920;color:#b45309">肩</span></td>
+<td><strong>8</strong> × 4-5</td>
+<td><strong>21 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>器械卷腹</strong><span class="sub">腹直肌 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>11</strong> × 4-5</td>
+<td><strong>58 kg</strong></td>
+<td>60s</td>
+</tr>
+<tr>
+<td><strong>爬楼梯</strong><span class="sub">有氧20min · cardio</span></td>
+<td><span class="part-tag" style="background:#6e6e7320;color:#6e6e73">有氧</span></td>
+<td><strong>1</strong> × 20min</td>
+<td><strong>自重</strong></td>
+<td>-</td>
+</tr>
+</tbody></table>
+</div>
+<div class="session">
+<div class="sess-head">
+<span class="sess-tag">周六</span>
+<span class="sess-name">居家·腹</span>
+<span class="sess-time">22:00-22:30</span>
+<span class="sess-time"> 共 5 组</span>
+</div>
+<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>
+<tr>
+<td><strong>跪姿健腹轮前推</strong><span class="sub">健腹轮5组 · iso</span></td>
+<td><span class="part-tag" style="background:#0e749020;color:#0e7490">腹</span></td>
+<td><strong>5</strong> × 12-15</td>
+<td><strong>自重</strong></td>
+<td>60s</td>
+</tr>
+</tbody></table>
+</div>
+</div>
+<div class="day-content" data-day="d3_7" style="display:none">
+<div class="session rest-day"><h3>周日 · 休息日</h3><p>主动恢复，不练力量</p></div>
+</div>
+</div>
+<script>
+document.querySelectorAll('#weekTabs .tab').forEach(t=>{
+  t.onclick=function(){
+    document.querySelectorAll('#weekTabs .tab').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.week').forEach(w=>{
+      w.classList.toggle('active', w.dataset.wk === this.dataset.wk);
+    });
+  };
+});
+document.querySelectorAll('.day-tabs').forEach(dt=>{
+  dt.querySelectorAll('.day-tab').forEach(t=>{
+    t.onclick=function(){
+      this.parentElement.querySelectorAll('.day-tab').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      const week = this.closest('.week');
+      week.querySelectorAll('.day-content').forEach(d=>{
+        d.style.display = d.dataset.day === this.dataset.day ? '' : 'none';
+      });
+    };
+  });
+});
+</script>
+</div></body></html>

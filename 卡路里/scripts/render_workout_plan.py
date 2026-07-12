@@ -60,7 +60,10 @@ def render(output_path=None, target_week=None):
     if output_path:
         Path(output_path).write_text(html, encoding='utf-8')
         return output_path
-    return html
+    # 默认输出到技能目录
+    default_path = SKILL_DIR / '健身计划.html'
+    default_path.write_text(html, encoding='utf-8')
+    return str(default_path)
 
 
 def _render_html(config, weeks_data, total_weeks, target_week):
@@ -74,7 +77,7 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFan
 .app{max-width:900px;margin:0 auto;padding:32px 20px 60px}
 .header h1{font-size:32px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
 .header p{color:var(--ink2);font-size:14px;margin-bottom:24px}
-.tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--lineS);overflow-x:auto}
+.tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--lineS);overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;background:none;border:none;padding:10px 18px;font-family:inherit;font-size:14px;font-weight:500;color:var(--ink2);cursor:pointer;position:relative;border-radius:6px 6px 0 0}
 .tab:hover{color:var(--ink);background:rgba(0,113,227,.06)}
 .tab.active{color:var(--accent)}
@@ -97,6 +100,10 @@ td:first-child{font-weight:500;color:var(--ink);min-width:160px}
 td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 .part-tag{display:inline-block;font-size:10.5px;padding:2px 6px;border-radius:4px;font-weight:600}
 @media(max-width:640px){.app{padding:20px 12px 48px}.session{padding:16px 14px}.header h1{font-size:26px}td{padding:10px 4px;font-size:12px}td:first-child{min-width:120px}}
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;scrollbar-width:none}.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{background:var(--card);border:1px solid var(--lineS);padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;border-radius:8px;transition:all .15s}
+.day-tab:hover{border-color:var(--accent);color:var(--ink)}
+.day-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
 '''
     # 构建 HTML
     html_parts = [
@@ -128,17 +135,25 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
         for d in days_sorted:
             _day_sessions.setdefault(d['day_of_week'], []).append(d)
 
+        # Day tabs
+        html_parts.append(f'<div class="day-tabs" id="dayTabs_w{wn}">')
+        for dow in range(1, 8):
+            day_label = ['','周一','周二','周三','周四','周五','周六','周日'][dow]
+            active = ' active' if dow == 1 else ''
+            html_parts.append(f'<button class="day-tab{active}" data-day="d{w_idx}_{dow}">{day_label}</button>')
+        html_parts.append('</div>')
+
         for dow in range(1, 8):
             sessions = _day_sessions.get(dow, [])
-            if not sessions:
-                continue
-
             day_label = ['','周一','周二','周三','周四','周五','周六','周日'][dow]
+            display = '' if dow == 1 else ' style="display:none"'
 
-            # 检查是否全天休息
+            html_parts.append(f'<div class="day-content" data-day="d{w_idx}_{dow}"{display}>')
+
+            # 全天休息
             if len(sessions) == 1 and sessions[0].get('is_rest_day'):
                 html_parts.append(f'<div class="session rest-day"><h3>{day_label} · 休息日</h3><p>主动恢复，不练力量</p></div>')
-                continue
+                html_parts.append('</div>'); continue
 
             # 渲染每个 session
             for sess in sessions:
@@ -147,7 +162,6 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
                 html_parts.append('<div class="sess-head">')
                 html_parts.append(f'<span class="sess-tag">{day_label}</span>')
 
-                # 时间 → 时段标识
                 ts = sess.get('time_start', '')
                 te = sess.get('time_end', '')
                 time_str = f'{ts}-{te}' if ts and te else ''
@@ -189,6 +203,8 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 
                 html_parts.append('</div>')  # /session
 
+            html_parts.append('</div>')  # /day-content
+
         html_parts.append('</div>')  # /week
 
     # Tab 切换 JS
@@ -201,6 +217,18 @@ document.querySelectorAll('#weekTabs .tab').forEach(t=>{
       w.classList.toggle('active', w.dataset.wk === this.dataset.wk);
     });
   };
+});
+document.querySelectorAll('.day-tabs').forEach(dt=>{
+  dt.querySelectorAll('.day-tab').forEach(t=>{
+    t.onclick=function(){
+      this.parentElement.querySelectorAll('.day-tab').forEach(b=>b.classList.remove('active'));
+      this.classList.add('active');
+      const week = this.closest('.week');
+      week.querySelectorAll('.day-content').forEach(d=>{
+        d.style.display = d.dataset.day === this.dataset.day ? '' : 'none';
+      });
+    };
+  });
 });
 </script>''')
 

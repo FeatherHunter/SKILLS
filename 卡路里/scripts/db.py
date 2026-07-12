@@ -180,6 +180,10 @@ def init_db(db_path):
     _existing_tables = {row[0] for row in c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     if 'entries' in _existing_tables and 'food_log' not in _existing_tables:
         c.execute('ALTER TABLE entries RENAME TO food_log')
+    elif 'entries' in _existing_tables and 'food_log' in _existing_tables:
+        # 两个表都存在时,把 entries 数据合并到 food_log,然后删除 entries
+        c.execute('INSERT OR IGNORE INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note, created_at) SELECT date, time, food_name, grams, calories, protein, carbs, fat, note, created_at FROM entries')
+        c.execute('DROP TABLE entries')
 
     # 迁移：删除废弃的 sleep_records 表（2026-07-12，睡眠跟踪移到作息管家）
     if 'sleep_records' in _existing_tables:

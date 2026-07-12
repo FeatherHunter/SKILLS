@@ -813,14 +813,30 @@ def search_plan_event(date: str, title: str) -> dict | None:
 
 def ensure_plan_event(date: str, time_start: str, time_end: str,
                       title: str, notes: str = None, category: str = None) -> dict:
-    """确保某计划事件存在（幂等）。已存在返回 found，否则 INSERT 返回 created。
-    2026-07-12 新增：配合 search-plan-event 实现缺则建的语义。
-    不会触发其他事件的软删（与 upsert_plan_events 不同）。"""
+    """确保某计划事件存在（幂等）。
+
+    语义：确保本地 DB 和飞书日历两边都有该事件。缺哪边建哪边。
+
+    流程：
+      1. 查本地 DB → 有且 feishu_event_id 不为空 → found
+      2. 查本地 DB → 有但 feishu_event_id 为空 → 尝试创建飞书事件并回写 ID
+      3. 查本地 DB → 无 → INSERT 本地 → 尝试创建飞书事件并回写 ID
+      飞书不可用时跳过（不阻塞本地写入）。"""
     date = _normalize_date(date)
     time_end = normalize_time(time_end)
     existing = search_plan_event(date, title)
+
+    feishu_result = None
+
     if existing:
-        return {"action": "found", "id": existing["id"], "event": existing}
+        if existing.get('feishu_event_id'):
+            return {"action": "found", "id": existing["id"], "event": existing}
+        # 有本地但未同步飞书 → 尝试同步
+        feishu_result = _sync_one_feishu(existing['id'], date, time_start, time_end, title, notes)
+        event = get_plan_event(existing['id'])
+        return {"action": "found", "id": existing["id"], "event": event, "feishu": feishu_result or "unavailable"}
+
+    # 本地不存在 → INSERT
     conn = get_connection()
     try:
         _ensure_new_plans_schema(conn)
@@ -832,9 +848,44 @@ def ensure_plan_event(date: str, time_start: str, time_end: str,
         ''', (date, time_start, time_end, title, notes, category))
         conn.commit()
         new_id = c.lastrowid
-        return {"action": "created", "id": new_id, "event": get_plan_event(new_id)}
+        # 尝试同步飞书
+        feishu_result = _sync_one_feishu(new_id, date, time_start, time_end, title, notes)
+        event = get_plan_event(new_id)
+        return {"action": "created", "id": new_id, "event": event, "feishu": feishu_result or "unavailable"}
     finally:
         conn.close()
+
+
+def _sync_one_feishu(event_id: int, date: str, time_start: str, time_end: str,
+                     title: str, notes: Optional[str] = None) -> Optional[str]:
+    """为单条本地事件创建飞书日历事件并回写 feishu_event_id。
+
+    飞书不可用（未装/未授权/API 失败）返回 None，不抛异常。"""
+    try:
+        from feishu_sync import is_feishu_available, create_event, search_events
+
+        if not is_feishu_available():
+            return None
+
+        # 先查飞书是否已有同名事件（幂等）
+        existing_fs = search_events(date, date, query=title)
+        for ev in existing_fs:
+            if ev.summary == title:
+                # 飞书已有 → 回写 ID
+                set_feishu_event_id(event_id, ev.event_id)
+                return "found_feishu"
+
+        # 飞书没有 → 创建
+        iso_start = f"{date}T{time_start}:00+08:00"
+        iso_end = f"{date}T{time_end}:00+08:00"
+        desc = f"作息管家自动同步 · {notes}" if notes else "作息管家自动同步"
+        ev = create_event(iso_start, iso_end, title, description=desc)
+        if ev and ev.event_id:
+            set_feishu_event_id(event_id, ev.event_id)
+            return "created_feishu"
+        return None
+    except Exception:
+        return None
 
 
 def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True) -> dict:

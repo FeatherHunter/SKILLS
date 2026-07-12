@@ -600,6 +600,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
   Step 2 · 联动作息管家
     对每个 session 调「补计划 {日期} 健身 {session_label} {time_start}-{time_end}」
     附带 notes（前 3 动作名 + 总数），category="运动"。
+    ensure-plan-event 已内置飞书日历同步（本地 DB 和飞书日历缺哪边建哪边）。
     接口幂等，重复调用自动跳过。
 
   Step 3 · 联动备忘录
@@ -610,8 +611,25 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   Step 4 · 联动训记
     对每个 session，自动检测训记 KEY。无 KEY 则跳过并告知用户。
-    有 KEY 则逐 session 调「训记写训练 {日期} {session_label}」。
-    训记写 API 限频 45s/次，每两条间等待 45s。
+    有 KEY 则调用 xunji-trains 技能的训记 API。
+
+    数据映射（workout_plans session → xunji upsert API）：
+      schema_version = "train_open_api_v2"
+      client_request_id = "{日期}_{session_label}"
+      res[0].datestr = {日期}
+      res[0].title   = {session_label}
+      res[0].start   = 0（不传实际时间，避免训记 BUG）
+      res[0].end     = 0
+      res[0].movements = workouts_plans.movements JSON，做以下转换：
+        ① 不跳过任何动作（含爬楼梯等有氧）
+        ② 只保留 name + sets 两个字段
+        ③ 每条 set 加 "done": false
+    调用 POST /api_upsert_trains_for_llm_v2。
+
+    训记写 API 限频 45s/次。每写入一个 session：
+      等待 45s（API 限频要求）
+      汇报：「训记 ✅ {session_label} 已推送」
+    全部完成后汇报：「训记推送完成 X/X」
 
   末尾输出汇总：
     ✅ 补计划 4/4 已创建

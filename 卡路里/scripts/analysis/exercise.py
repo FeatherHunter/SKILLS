@@ -136,7 +136,7 @@ def exercise_deficit_contribution(start_date, end_date=None):
     c = conn.cursor()
     c.execute('SELECT SUM(calories_burned) FROM exercise_log WHERE date >= ? AND date <= ?', (start_date, end_date))
     total_ex = c.fetchone()[0] or 0
-    c.execute('SELECT SUM(calories) FROM entries WHERE date >= ? AND date <= ?', (start_date, end_date))
+    c.execute('SELECT SUM(calories) FROM food_log WHERE date >= ? AND date <= ?', (start_date, end_date))
     total_intake = c.fetchone()[0] or 0
     conn.close()
 

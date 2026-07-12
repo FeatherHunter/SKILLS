@@ -130,7 +130,7 @@ def print_exercise_summary(days=7):
 
 
 # ============================================================
-# 运动功能扩展 · 卡路里推算 / 强度估测 / 口语映射（2026-06-29）
+# 运动功能扩展 · 卡路里推算 / 难度估测 / 口语映射（2026-06-29）
 # ============================================================
 
 def _lookup_met(exercise_type):
@@ -250,57 +250,52 @@ def estimate_calories_met(exercise_type, body_weight, duration_minutes=None,
     return (round(cal, 1), met)
 
 
-def estimate_intensity_met(met):
-    """基于 METs 估 4 档强度（无需心率，兜底用）
+def estimate_difficulty_met(met):
+    """基于 METs 估难度（无需心率，兜底用），与训记对齐
 
     映射规则：
-      MET < 3   → 低     （散步、家务）
-      MET 3-6   → 中     （快走、骑行、力量训练）
-      MET 6-9   → 高     （跑步、跳绳）
-      MET > 9   → 极限   （冲刺、HIIT）
+      MET < 3   → easy    （散步、家务）
+      MET 3-6   → normal  （快走、骑行、力量训练）
+      MET 6-9   → hard    （跑步、跳绳）
+      MET > 9   → hard    （冲刺、HIIT，训记无 extreme 档）
 
     Args:
         met: METs 值
 
     Returns:
-        str | None: '低' / '中' / '高' / '极限'，无法判断返回 None
+        str | None: 'easy' / 'normal' / 'hard'，无法判断返回 None
     """
     if met is None or met <= 0:
         return None
     if met < 3:
-        return '低'
+        return 'easy'
     if met < 6:
-        return '中'
-    if met < 9:
-        return '高'
-    return '极限'
+        return 'normal'
+    return 'hard'
 
 
-def parse_user_intensity(user_text):
-    """口语化强度 → 4 档（用户主观感受优先于 METs 推算）
+def parse_user_difficulty(user_text):
+    """口语化难度 → easy/normal/hard（用户主观感受优先于 METs 推算）
 
     Args:
         user_text: 用户描述（如"挺累的"、"轻松"、"累死"）
 
     Returns:
-        str | None: '低' / '中' / '高' / '极限'，拿不准返回 None
+        str | None: 'easy' / 'normal' / 'hard'，拿不准返回 None
     """
     if not user_text:
         return None
     t = user_text.lower()
 
-    # 极限
-    if any(k in t for k in ['累死', '力竭', '极限', '干不动', '暴毙', '撑不住', '想死', '不行']):
-        return '极限'
-
-    # 高
-    if any(k in t for k in ['很累', '挺累', '暴汗', '喘', '气喘吁吁', '出汗多',
+    # hard
+    if any(k in t for k in ['累死', '力竭', '极限', '干不动', '暴毙', '撑不住', '想死', '不行',
+                             '很累', '挺累', '暴汗', '喘', '气喘吁吁', '出汗多',
                              '冲', '狠', 'hard', 'hiit']):
-        return '高'
+        return 'hard'
 
-    # 低
+    # easy
     if any(k in t for k in ['轻松', '没什么', '没感觉', '微微', '散步', 'easy', '很轻']):
-        return '低'
+        return 'easy'
 
     # 中
     if any(k in t for k in ['一般', '还行', '中等', '普通', '正常', '适中', '中等强度']):
@@ -352,3 +347,43 @@ def combined_calories(user_reported, estimated, deviation_threshold_warning=0.5)
         return (None,
                 f"你报 {user_reported}/AI {round(estimated,1)}/偏差 {int(deviation*100)}%/需确认",
                 deviation)
+
+
+def estimate_calories_from_training(total_volume_kg, body_weight_kg=None):
+    """从训练容量推算热量消耗（下限兜底）
+
+    用于训记数据同步场景：训记 API 不返回热量，用总容量推算保守下限。
+    公式：calories = total_volume × 0.08
+    系数 0.08 是经验值，取保守低端确保不虚高。
+
+    示例：3组×10次×10kg哑铃弯举 = 300 kg-reps → 24 卡
+
+    Args:
+        total_volume_kg: Σ(load_kg × reps)，总训练容量
+        body_weight_kg: 体重（预留，未来可加代谢补偿）
+
+    Returns:
+        float: 估算热量消耗（千卡）
+    """
+    if total_volume_kg <= 0:
+        return 0.0
+    return round(total_volume_kg * 0.08, 1)
+
+
+def convert_load_kg(weight_str, unit_str):
+    """训记 weight + unit → kg 值
+
+    Args:
+        weight_str: 重量数值字符串
+        unit_str: 单位（"kg" / "lbs"）
+
+    Returns:
+        float: 统一为 kg 的值
+    """
+    try:
+        w = float(weight_str)
+    except (ValueError, TypeError):
+        return 0.0
+    if unit_str and str(unit_str).lower() == 'lbs':
+        return round(w * 0.45359237, 1)
+    return round(w, 1)

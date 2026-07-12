@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """热量历史 — 最近 N 天每日摄入聚合
 
-数据来源：entries 表（排除饮水）
+数据来源：food_log 表（排除饮水）
 显示：日期 / 热量 / 蛋白 / 碳 / 脂 / vs 目标状态
 """
 
@@ -38,7 +38,7 @@ def get_calorie_history(days=7):
     start = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
     c.execute('''
         SELECT date, SUM(calories), SUM(protein), SUM(carbs), SUM(fat)
-        FROM entries
+        FROM food_log
         WHERE date >= ?
         GROUP BY date
         ORDER BY date DESC

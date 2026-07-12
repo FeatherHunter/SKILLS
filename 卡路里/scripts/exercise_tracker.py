@@ -105,7 +105,7 @@ def cmd_add(args):
             INSERT INTO exercise_log (
                 date, time, exercise_type, duration_minutes, calories_burned,
                 note, reps,
-                category, intensity, distance_km, avg_heart_rate, set_index, load_kg
+                category, difficulty, distance_km, avg_heart_rate, set_index, load_kg
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -117,7 +117,7 @@ def cmd_add(args):
             args.note or '',
             args.reps if args.reps else None,
             args.category if hasattr(args, 'category') and args.category else None,
-            args.intensity if hasattr(args, 'intensity') and args.intensity else None,
+            args.difficulty if hasattr(args, 'difficulty') and args.difficulty else None,
             args.distance if hasattr(args, 'distance') and args.distance else None,
             args.heart_rate if hasattr(args, 'heart_rate') and args.heart_rate else None,
             args.set_index if hasattr(args, 'set_index') and args.set_index else None,
@@ -132,8 +132,8 @@ def cmd_add(args):
         print(f"  类型: {args.type}")
         if args.category:
             print(f"  分类: {args.category}")
-        if args.intensity:
-            print(f"  强度: {args.intensity}")
+        if args.difficulty:
+            print(f"  强度: {args.difficulty}")
         print(f"  时长: {args.minutes if args.minutes else '未知'} 分钟")
         if args.distance:
             print(f"  距离: {args.distance} km")
@@ -190,9 +190,9 @@ def cmd_update(args):
     if args.category is not None:
         updates.append("category = ?")
         values.append(args.category)
-    if args.intensity is not None:
-        updates.append("intensity = ?")
-        values.append(args.intensity)
+    if args.difficulty is not None:
+        updates.append("difficulty = ?")
+        values.append(args.difficulty)
     if args.distance is not None:
         updates.append("distance_km = ?")
         values.append(args.distance)
@@ -284,8 +284,8 @@ def cmd_list(args):
                  f"{row['exercise_type']}"]
         if row['category']:
             parts.append(f"[{row['category']}]")
-        if row['intensity']:
-            parts.append(f"强度={row['intensity']}")
+        if row['difficulty']:
+            parts.append(f"强度={row['difficulty']}")
         if row['set_index']:
             parts.append(f"第{row['set_index']}组")
         if row['duration_minutes']:
@@ -448,7 +448,7 @@ def main():
     # 扩展字段（运动功能 · 2026-06-29）
     add_parser.add_argument('--category', choices=['有氧', '力量', '柔韧', '日常'],
                             help='运动分类（AI 推断时必填）')
-    add_parser.add_argument('--intensity', choices=['低', '中', '高', '极限'],
+    add_parser.add_argument('--difficulty', choices=['easy', 'normal', 'hard'],
                             help='强度等级')
     add_parser.add_argument('--distance', type=float, help='距离 km（跑步/骑行）')
     add_parser.add_argument('--heart-rate', type=int, dest='heart_rate',
@@ -468,7 +468,7 @@ def main():
     update_parser.add_argument('--reps', type=int, help='动作次数')
     # 扩展字段
     update_parser.add_argument('--category', choices=['有氧', '力量', '柔韧', '日常'])
-    update_parser.add_argument('--intensity', choices=['低', '中', '高', '极限'])
+    update_parser.add_argument('--difficulty', choices=['easy', 'normal', 'hard'])
     update_parser.add_argument('--distance', type=float, help='距离 km')
     update_parser.add_argument('--heart-rate', type=int, dest='heart_rate', help='平均心率 bpm')
     update_parser.add_argument('--set', type=int, dest='set_index', help='第几组')

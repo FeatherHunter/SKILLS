@@ -85,15 +85,15 @@ def get_db(db_path):
 def init_db(db_path):
     """初始化数据库所有表 + 应用迁移
 
-    表：entries / daily_goal / exercise_log / weight_log / nutrition_products
+    表：food_log / daily_goal / exercise_log / weight_log / nutrition_products
     迁移：daily_goal 表添加 weight_goal / goal_deadline / water_goal 列
     """
     conn = sqlite3.connect(str(db_path))
     c = conn.cursor()
 
-    # entries — 食物记录（含饮水）
+    # food_log — 食物记录（含饮水）
     c.execute('''
-        CREATE TABLE IF NOT EXISTS entries (
+        CREATE TABLE IF NOT EXISTS food_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
             time TEXT,
@@ -173,7 +173,16 @@ def init_db(db_path):
     ''')
 
     # 索引
-    c.execute('CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_food_log_date ON food_log(date)')
+
+    # 迁移：entries → food_log 改名（2026-07-12）
+    _existing_tables = {row[0] for row in c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    if 'entries' in _existing_tables and 'food_log' not in _existing_tables:
+        c.execute('ALTER TABLE entries RENAME TO food_log')
+
+    # 迁移：删除废弃的 sleep_records 表（2026-07-12，睡眠跟踪移到作息管家）
+    if 'sleep_records' in _existing_tables:
+        c.execute('DROP TABLE IF EXISTS sleep_records')
     c.execute('CREATE INDEX IF NOT EXISTS idx_weight_date ON weight_log(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_date ON exercise_log(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_product_name ON nutrition_products(product_name)')
@@ -220,7 +229,7 @@ def init_db(db_path):
 
     # 迁移：exercise_log 表新增 6 列（运动功能扩展 · 2026-06-29）
     #   - category        有氧/力量/柔韧/日常
-    #   - intensity       低/中/高/极限
+    #   - difficulty      easy/normal/hard（2026-07-12 从 intensity 改为与训记对齐）
     #   - distance_km     跑步/骑行距离
     #   - avg_heart_rate  平均心率
     #   - set_index       力量场景：第几组
@@ -231,13 +240,33 @@ def init_db(db_path):
     }
     _exercise_log_new_cols = [
         ('category', 'TEXT'),
-        ('intensity', 'TEXT'),
+        ('difficulty', 'TEXT'),
         ('distance_km', 'REAL'),
         ('avg_heart_rate', 'INTEGER'),
         ('set_index', 'INTEGER'),
         ('load_kg', 'REAL'),
     ]
     for _col, _type in _exercise_log_new_cols:
+        if _col not in _existing_cols:
+            c.execute(f'ALTER TABLE exercise_log ADD COLUMN {_col} {_type}')
+
+    # 迁移：intensity → difficulty 数据迁移（2026-07-12）
+    if 'intensity' in _existing_cols:
+        c.execute(
+            "UPDATE exercise_log SET difficulty = "
+            "CASE intensity "
+            "WHEN '低' THEN 'easy' "
+            "WHEN '中' THEN 'normal' "
+            "WHEN '高' THEN 'hard' "
+            "ELSE NULL END "
+            "WHERE difficulty IS NULL AND intensity IS NOT NULL"
+        )
+
+    # 迁移：exercise_log 加 xunji 关联字段（2026-07-12）
+    #   xunji_localid  训记训练记录唯一标识（用于关联查询 / 去重）
+    #   xunji_title    训练名称（如"胸部训练"）
+    _xunji_cols = [('xunji_localid', 'TEXT'), ('xunji_title', 'TEXT')]
+    for _col, _type in _xunji_cols:
         if _col not in _existing_cols:
             c.execute(f'ALTER TABLE exercise_log ADD COLUMN {_col} {_type}')
 

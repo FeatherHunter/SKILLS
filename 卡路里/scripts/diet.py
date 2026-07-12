@@ -90,7 +90,7 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
     now = target_time or datetime.now().strftime("%H:%M:%S")
 
     c.execute('''
-        INSERT INTO entries (date, time, food_name, grams, calories, protein, carbs, fat, note)
+        INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (today, now, food_name, grams, calories, protein, carbs, fat, note))
 
@@ -100,7 +100,7 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
     # 今日汇总
     c.execute('''
         SELECT SUM(calories), SUM(protein), SUM(carbs), SUM(fat), COUNT(*)
-        FROM entries
+        FROM food_log
         WHERE date = ?
     ''', (today,))
     total_cal, total_pro, total_carbs, total_fat, entry_count = c.fetchone()
@@ -145,7 +145,7 @@ def update_meal(entry_id, grams=None, food_name=None, note=None):
     conn = _get_db()
     c = conn.cursor()
 
-    c.execute('SELECT food_name, grams, calories FROM entries WHERE id = ?', (entry_id,))
+    c.execute('SELECT food_name, grams, calories FROM food_log WHERE id = ?', (entry_id,))
     row = c.fetchone()
 
     if not row:
@@ -172,7 +172,7 @@ def update_meal(entry_id, grams=None, food_name=None, note=None):
         return False
 
     params.append(entry_id)
-    c.execute(f"UPDATE entries SET {', '.join(updates)} WHERE id = ?", params)
+    c.execute(f"UPDATE food_log SET {', '.join(updates)} WHERE id = ?", params)
     conn.commit()
     conn.close()
 
@@ -193,7 +193,7 @@ def delete_meal(entry_id):
     conn = _get_db()
     c = conn.cursor()
 
-    c.execute('SELECT food_name, calories FROM entries WHERE id = ?', (entry_id,))
+    c.execute('SELECT food_name, calories FROM food_log WHERE id = ?', (entry_id,))
     row = c.fetchone()
 
     if not row:
@@ -201,7 +201,7 @@ def delete_meal(entry_id):
         conn.close()
         return False
 
-    c.execute('DELETE FROM entries WHERE id = ?', (entry_id,))
+    c.execute('DELETE FROM food_log WHERE id = ?', (entry_id,))
     conn.commit()
     conn.close()
 
@@ -219,7 +219,7 @@ def list_meals(target_date=None):
 
     c.execute('''
         SELECT id, food_name, grams, calories, protein, carbs, fat, time, note
-        FROM entries
+        FROM food_log
         WHERE date = ?
         ORDER BY time
     ''', (target_date,))
@@ -254,7 +254,7 @@ def get_daily_summary(target_date=None):
     # 食物统计（排除饮水）
     c.execute('''
         SELECT SUM(calories), SUM(protein), SUM(carbs), SUM(fat), COUNT(*)
-        FROM entries
+        FROM food_log
         WHERE date = ? AND food_name != '💧水'
     ''', (target_date,))
 
@@ -268,7 +268,7 @@ def get_daily_summary(target_date=None):
     # 饮水统计
     c.execute('''
         SELECT COALESCE(SUM(grams), 0)
-        FROM entries
+        FROM food_log
         WHERE date = ? AND food_name = '💧水'
     ''', (target_date,))
     total_water = c.fetchone()[0]

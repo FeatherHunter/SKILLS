@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """饮水记录 — 饮水量追踪
 
-数据存储：复用 entries 表，food_name='💧水'，grams 存 ml，calories=0
+数据存储：复用 food_log 表，food_name='💧水'，grams 存 ml，calories=0
 """
 
 import sys
@@ -49,7 +49,7 @@ def add_water(ml, target_date=None, target_time=None):
     now = target_time or datetime.now().strftime("%H:%M:%S")
 
     c.execute('''
-        INSERT INTO entries (date, time, food_name, grams, calories, protein, carbs, fat, note)
+        INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
         VALUES (?, ?, '💧水', ?, 0, 0, 0, 0, '')
     ''', (today, now, ml))
 
@@ -59,7 +59,7 @@ def add_water(ml, target_date=None, target_time=None):
     # 今日饮水汇总
     c.execute('''
         SELECT COALESCE(SUM(grams), 0)
-        FROM entries
+        FROM food_log
         WHERE date = ? AND food_name = '💧水'
     ''', (today,))
     total_water = c.fetchone()[0]

@@ -37,7 +37,7 @@ def diet_calorie_trend(start_date, end_date=None):
     c = conn.cursor()
     c.execute('''
         SELECT date, SUM(calories), SUM(protein), SUM(carbs), SUM(fat)
-        FROM entries
+        FROM food_log
         WHERE date >= ? AND date <= ?
         GROUP BY date
         ORDER BY date ASC
@@ -92,7 +92,7 @@ def diet_macro_ratio(start_date, end_date=None):
     c = conn.cursor()
     c.execute('''
         SELECT SUM(protein)*4, SUM(carbs)*4, SUM(fat)*9
-        FROM entries
+        FROM food_log
         WHERE date >= ? AND date <= ?
     ''', (start_date, end_date))
     row = c.fetchone()
@@ -165,7 +165,7 @@ def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=
     c.execute('''
         SELECT food_name, SUM(calories) as total_cal, SUM(grams) as total_grams,
                SUM(protein), SUM(carbs), SUM(fat), COUNT(*) as cnt
-        FROM entries
+        FROM food_log
         WHERE date >= ? AND date <= ?
         GROUP BY food_name
     ''', (start_date, end_date))
@@ -220,7 +220,7 @@ def diet_deficit_analysis(start_date, end_date=None):
     conn = _get_db()
     c = conn.cursor()
     c.execute('''
-        SELECT date, SUM(calories) FROM entries
+        SELECT date, SUM(calories) FROM food_log
         WHERE date >= ? AND date <= ?
         GROUP BY date ORDER BY date ASC
     ''', (start_date, end_date))

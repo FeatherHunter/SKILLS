@@ -2,7 +2,7 @@
 私家大厨 - 数据库配置
 所有manager脚本都导入此配置获取数据库路径
 
-三层查找DB路径：环境变量 > 技能目录 > 父目录.db
+两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db
 
 并发读写支持：
 - WAL 模式：允许并发读和单个写
@@ -12,11 +12,12 @@
 
 import os
 import sqlite3
+import sys
 import time
 from pathlib import Path
 from contextlib import contextmanager
 
-# Database path - three-tier lookup
+# Database path - two-tier lookup
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "chef_data.db"
 
@@ -25,38 +26,30 @@ MAX_RETRY_ATTEMPTS = 5  # 最大重试次数
 RETRY_DELAY = 0.1  # 重试间隔（秒）
 BUSY_TIMEOUT = 5000  # 忙等待超时（毫秒）
 
-def _find_db_path(skill_dir, db_filename):
-    """四层查找DB路径(按优先级):
-    1. 环境变量 SKILLS_DB_PATH(最高优先级,即使文件不存在也在此创建)
-    2. 技能目录(<skill_dir>/chef_data.db)
-    3. 父目录递归找 .db/chef_data.db
-    4. fallback: 在 <skill_dir>/.db/ 创建
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
 
-    设计哲学:
-    - env var 是 explicit 配置,用户已经明确指定位置 → 必须尊重,不能 fallback 到别处
-    - 不存在 → 在 env var 路径创建空 DB(让调用方负责建表)
-    """
-    # 1. 环境变量（最高优先级 — 始终返回该路径,文件不存在时由调用方创建）
+def _find_db_path(skill_dir, db_filename):
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
+    # 1. 环境变量（最高优先级 — 始终返回该路径，文件不存在时由调用方创建）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    # 2. 技能目录（默认）
-    p = skill_dir / db_filename
-    if p.exists():
-        return p
-    # 3. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-    # 4. fallback: 都找不到则创建在 <skill_dir>/.db/ 目录
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
+    # 2. fallback: D:/.db（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
 

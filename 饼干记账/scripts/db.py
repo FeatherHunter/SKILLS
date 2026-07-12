@@ -5,6 +5,7 @@
 
 import sqlite3
 import os
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -14,21 +15,28 @@ SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "biscuit_accountant.db"
 
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 父目录 > 技能目录"""
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
     # 1. 环境变量（最高优先级）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         return Path(env_path) / db_filename
-    # 2. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            return db_dir / db_filename
-    # 3. 技能目录下 .db 子目录（默认 fallback）
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
+    # 2. fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)

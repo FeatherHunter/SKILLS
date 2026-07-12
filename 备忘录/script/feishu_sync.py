@@ -27,16 +27,14 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Optional
+from memo_cli import DB_PATH
 
 
 # ==================== 配置 ====================
 # ⚠️ 第一性原则：技能不能硬编码用户特定信息
 #   1. 备忘录不复制用户身份（lark-cli auth status 是真值源）
 #   2. 不要求用户设置环境变量（open_id 自动检测）
-#   3. DB 路径仍走环境变量（SKILLS_DB_PATH），因为是路径而非身份
-
-# memo DB 路径环境变量（与 memo_cli.py 共享）
-ENV_SKILLS_DB_PATH = "SKILLS_DB_PATH"
+#   3. DB 路径统一走 memo_cli.DB_PATH（两层查找：环境变量 > D:/.db）
 
 
 # open_id 缓存
@@ -87,24 +85,6 @@ def _get_user_open_id() -> Optional[str]:
     except Exception:
         _USER_OPEN_ID_FAILED = True
         return None
-
-
-def _get_memo_db_path() -> str:
-    """取 memo DB 路径（跟随 memo_cli.py 的查找逻辑）"""
-    # 1. 环境变量 SKILLS_DB_PATH（最高优先级）
-    env_path = os.environ.get(ENV_SKILLS_DB_PATH)
-    if env_path:
-        return os.path.join(env_path, "memo.db")
-    # 2. 父目录 .db/ 层层找（与 memo_cli._find_db_path 行为一致）
-    script_dir = Path(__file__).parent.parent  # 技能目录
-    for parent in script_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            return str(db_dir / "memo.db")
-    # 3. 技能目录下 .db/memo.db（最后 fallback）
-    default_dir = script_dir / ".db"
-    default_dir.mkdir(exist_ok=True)
-    return str(default_dir / "memo.db")
 
 
 # ==================== 跨平台 CLI 探测 ====================
@@ -482,8 +462,7 @@ def sync_from_feishu(db_path: str = None) -> dict:
         }
 
     if db_path is None:
-        # 默认 DB 路径(通过 _get_memo_db_path 自动探测,不写死任何用户路径)
-        db_path = _get_memo_db_path()
+        db_path = str(DB_PATH)
 
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row

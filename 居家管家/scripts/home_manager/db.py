@@ -1,6 +1,7 @@
 # db.py - 数据库连接、建表、迁移
 import sqlite3
 import os
+import sys
 from pathlib import Path
 
 # ── 配置 ─────────────────────────────────────────────────────────────────────
@@ -10,22 +11,29 @@ SKILL_DIR = Path(__file__).parent.parent.parent
 DB_FILENAME = "home.db"
 
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 父目录.db > 技能目录"""
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
     env_path = os.environ.get("SKILLS_DB_PATH")
     if env_path:
         p = Path(env_path) / db_filename
         if p.exists():
             return p
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
+    # fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)

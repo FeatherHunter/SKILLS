@@ -10,11 +10,12 @@
   4. 分析 → 写入 schedule_records
   5. 下次继续从最新的最后一条记录开始
 
-路径三层查找：环境变量 SKILLS_DB_PATH > 技能目录 > 父目录.db
+路径两层查找：环境变量 SKILLS_DB_PATH > D:/.db（WSL 转 /mnt/d/.db/）
 """
 
 import sqlite3
 import os
+import sys
 from pathlib import Path
 from datetime import datetime, date, timedelta
 
@@ -56,34 +57,35 @@ def _normalize_date(d) -> str:
         ) from e
     return s
 
-# ============ 路径配置（三层查找）===========
+# ============ 路径配置（两层查找）===========
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "schedule_data.db"
 DR_FILENAME = "daily_recorder.db"
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db"""
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
     # 1. 环境变量（最高优先级，设了就直接用）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path)
         p.mkdir(parents=True, exist_ok=True)
         return p / db_filename
-    # 2. 技能目录
-    p = skill_dir / db_filename
-    if p.exists():
-        return p
-    # 3. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-    # 4. 都找不到则创建在 .db 目录
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
+    # 2. fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 DB_DIR = SKILL_DIR  # 兼容旧代码，指向技能目录
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)

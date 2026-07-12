@@ -22,6 +22,7 @@ Database module for Daily Recorder - 多 DB 滚动存储版本
 
 import sqlite3
 import os
+import sys
 import re
 import time
 from pathlib import Path
@@ -34,22 +35,29 @@ META_FILENAME = "daily_recorder_meta.db"
 MAX_SIZE_MB = 50  # GitHub 100MB 上限的安全阈值
 
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def _find_db_dir(skill_dir) -> Path:
-    """查找 .db 目录：环境变量 > 父目录层层找 > 技能目录 fallback"""
+    """查找 .db 目录：环境变量 SKILLS_DB_PATH > D:/.db"""
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         db_dir = Path(env_path)
         db_dir.mkdir(parents=True, exist_ok=True)
         return db_dir
-
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            return db_dir
-
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(parents=True, exist_ok=True)
-    return default_db_dir
+    # fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir
 
 
 def _seq_to_filename(seq: int) -> str:

@@ -2,7 +2,7 @@
 """数据库基础工具 - DB 路径解析、连接、初始化
 
 提供:
-- find_db_path(skill_dir, db_filename) — 三层查找数据库路径
+- find_db_path(skill_dir, db_filename) — 两层查找数据库路径
 - get_db(db_path) — 获取 row_factory=Row 的连接（兼容旧 API）
 - connection(db_path) — context manager 风格连接（新代码推荐）
 - init_db(db_path) — 初始化所有表 + 迁移
@@ -10,6 +10,7 @@
 
 import os
 import sqlite3
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,8 +18,20 @@ from pathlib import Path
 DB_FILENAME = "calorie_data.db"
 
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def find_db_path(skill_dir, db_filename=DB_FILENAME):
-    """三层查找 DB 路径：环境变量 > 技能目录 > 父目录 .db
+    """两层查找 DB 路径：环境变量 SKILLS_DB_PATH > D:/.db
 
     Args:
         skill_dir: 技能目录路径（通常为 Path(__file__).parent.parent）
@@ -31,23 +44,12 @@ def find_db_path(skill_dir, db_filename=DB_FILENAME):
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
         p = Path(env_path) / db_filename
-        if p.exists():
-            return p
-    # 2. 技能目录（默认）
-    p = skill_dir / db_filename
-    if p.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
         return p
-    # 3. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-    # 4. 都找不到则创建在 .db 目录
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(exist_ok=True)
-    return default_db_dir / db_filename
+    # 2. fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 
 @contextmanager

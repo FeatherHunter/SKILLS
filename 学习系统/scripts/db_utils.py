@@ -6,6 +6,7 @@ Learning System - 共享数据库工具
 """
 import sqlite3
 import os
+import sys
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -16,8 +17,20 @@ SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "learning-system.db"
 
 
+def _fallback_db_dir():
+    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
+        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+    )
+
 def _find_db_path(skill_dir, db_filename):
-    """三层查找DB路径：环境变量 > 技能目录 > 父目录.db文件夹"""
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
     # 1. 环境变量（最高优先级）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
@@ -25,25 +38,10 @@ def _find_db_path(skill_dir, db_filename):
         if p.exists():
             return p
         return Path(env_path) / db_filename
-
-    # 2. 技能目录（默认）
-    p = skill_dir / db_filename
-    if p.exists():
-        return p
-
-    # 3. 父目录层层找 .db 文件夹
-    for parent in skill_dir.parents:
-        db_dir = parent / ".db"
-        if db_dir.is_dir():
-            p = db_dir / db_filename
-            if p.exists():
-                return p
-            return p
-
-    # 4. 都找不到则创建在技能目录下的 .db
-    default_db_dir = skill_dir / ".db"
-    default_db_dir.mkdir(parents=True, exist_ok=True)
-    return default_db_dir / db_filename
+    # 2. fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
+    db_dir = _fallback_db_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    return db_dir / db_filename
 
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)

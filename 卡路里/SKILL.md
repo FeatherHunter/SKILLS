@@ -1,8 +1,8 @@
 ---
 name: 卡路里
 description: >
-  饮食热量、饮水、体重、运动、睡眠、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、设健身目标、查健身目标、改健身目标、删健身目标、记睡眠、改睡眠记录、查睡眠记录、记录起床、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  饮食热量、饮水、体重、运动、营养追踪与分析技能。
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -127,23 +127,15 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 查运动类型 | 运动类型统计（分布/总消耗排名） | `exercise_tracker.py stats` |
 | 查运动趋势 | 运动热量趋势 | `exercise_tracker.py trend` |
 
-### 💪 健身目标
+### 🏋️ 健身计划
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 设健身目标 | 添加健身目标（daily/weekly/monthly/longterm） | `fitness_goals.py add` |
-| 查健身目标 | 查询健身目标（按类型/状态） | `fitness_goals.py list` |
-| 改健身目标 | 更新健身目标 | `fitness_goals.py update` |
-| 删健身目标 | 删除健身目标 | `fitness_goals.py delete` |
-
-### 😴 睡眠
-
-| 唤醒词 | 功能 | CLI |
-|--------|------|-----|
-| 记睡眠 | 记录睡眠时长和就寝/起床时间 | `sleep_tracker.py add` |
-| 改睡眠记录 | 更新睡眠记录 | `sleep_tracker.py update` |
-| 查睡眠记录 | 查询最近 N 天睡眠记录 | `sleep_tracker.py list` |
-| 记录起床 | 起床唤醒：查录音机数据库 → 自动算时长 → 确认记录 | 录音机 → `sleep_tracker.py add` |
+| 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动） | `render_workout_plan.py` |
+| 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
+| 落地健身计划 | 将某天计划执行到作息/备忘/训记 | AI 路由（跨技能联动） |
+| 同步健身计划 | 批量落地 7 天 + 训记回写运动记录 | AI 路由（跨技能联动） |
+| 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
 
 ### 📊 分析
 
@@ -188,8 +180,6 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 - **食物记录**：记录热量、蛋白质、碳水、脂肪（克为单位）
 - **每日目标**：设置热量和三大宏量营养素目标
 - **体重追踪**：记录体重，自动计算BMI
-- **健身目标**：设置每日/每周/每月/长期健身目标，支持暂停/进行中状态
-- **睡眠记录**：记录每日睡眠时长和就寝/起床时间，**睡眠归属于就寝那天**
 - **数据分析**：3大类11种分析维度 + dashboard综合报告
 - **身材照片**：记录身材照片，支持自定义标签（正面/背面/侧面/手臂等），可生成 GIF 变化动画
 
@@ -197,9 +187,9 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 详见 [`references/database_schema.md`](references/database_schema.md)
 
-共 8 张表：`entries`、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`fitness_goals`、`sleep_records`、`body_photos`
+共 8 张表：`food_log`（饮食记录）、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`workout_plan_config`（健身计划元信息）、`workout_plans`（健身日程）、`body_photos`
 
-> **初始化说明**：`entries`/`daily_goal`/`weight_log`/`exercise_log`/`nutrition_products` 由 `db.py init_db()` 创建；`fitness_goals` 由 `fitness_goals.py init_table()` 创建；`sleep_records` 由 `sleep_tracker.py init_table()` 创建；`body_photos` 由 `body_photo_tracker.py init_table()` 创建。
+> **2026-07-12 重构**：`entries` → `food_log`；`fitness_goals` 和 `sleep_records` 已删除，重构为 `workout_plan_config` + `workout_plans`。所有表均由 `db.py init_db()` 创建。
 
 ## 📂 脚本模块结构（v2.3 拆分后）
 
@@ -237,11 +227,13 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 ### 独立 CLI 脚本（已有，未拆分）
 
 | 文件 | 行数 | 职责 |
-|---|---|---|
+|---|---|---|---|
 | `exercise_tracker.py` | 442 | 运动更完整的 CLI（add/update/list/summary/stats/trend）|
-| `fitness_goals.py` | 230 | 健身目标 CLI（add/list/update/delete）|
-| `sleep_tracker.py` | 169 | 睡眠记录 CLI（add/update/list）|
 | `body_photo_tracker.py` | 356 | 身材照片 CLI（add/list/delete/tag/gif）|
+| `plan_generator.py` | 新建 | 健身计划生成（校验+写入）|
+| `workout_plan.py` | 新建 | 计划循环逻辑 + 按日查询 |
+| `render_workout_plan.py` | 新建 | HTML 渲染（DB→Apple 风格页面）|
+| `adapters/xunji_adapter.py` | 新建 | 训记 API ↔ exercise_log 适配器 |
 | `generate_ts_config.py` | 269 | 从数据库生成 `config-calorie.ts` |
 
 ### 模块依赖图
@@ -317,23 +309,6 @@ python scripts/exercise_tracker.py summary --days 7
 python scripts/exercise_tracker.py trend --days 7
 ```
 
-### 健身目标
-```bash
-python scripts/fitness_goals.py add "每日俯卧撑" --type daily --exercise 俯卧撑 --unit 个 --target 50 --start 2026-05-23
-python scripts/fitness_goals.py list --status active
-python scripts/fitness_goals.py update 1 --target 60
-python scripts/fitness_goals.py delete 1
-```
-
-### 睡眠记录
-```bash
-python scripts/sleep_tracker.py add 2026-05-22 --hours 7.5 --bed 23:30 --wake 07:00
-python scripts/sleep_tracker.py update 2026-05-22 --hours 8 --note "睡得不错"
-python scripts/sleep_tracker.py list --days 7
-```
-
-> **睡眠归属规则**：睡眠归属于**就寝那天**。例如"昨晚11:30睡的，今天7:00醒"，记录在就寝日。
-
 ### 身材照片
 ```bash
 python scripts/body_photo_tracker.py add photo1.jpg photo2.jpg --tag 正面 --note "早起"
@@ -367,8 +342,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | 食品库/营养成分表/存食品 | 🏷️ 食品库 |
 | 体重/公斤/kg/BMI/秤 | ⚖️ 体重 |
 | 运动/跑步/骑行/俯卧撑/消耗（运动相关） | 🏃 运动 |
-| 健身目标/每日目标/俯卧撑目标/深蹲目标 | 💪 健身目标 |
-| 睡/觉/起床 | 😴 睡眠 |
+| 健身计划/训练计划/制定计划/改计划/落地计划 | 🏋️ 健身计划 |
 | 趋势/排行/缺口/配比/分布/贡献 | 📊 分析 |
 | 仪表盘/整体情况/报告/目标（营养） | 📋 综合 |
 | 身材照/体型照/身体照片 | 📸 身材照片 |
@@ -385,10 +359,10 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "记运动" vs "查运动记录" | "记"=新增，"查"=查询 |
 | "记吃的" vs "改吃的" | "记"=新增，"改"=修改已有记录 |
 | "记体重" vs "查体重目标" | "记"=新增记录，"查"=查询进度 |
-| "记睡眠" vs "记录起床" | 前者是手动记录，后者是起床唤醒自动流程 |
+| "制定健身计划" vs "落地健身计划" | 前者是对话制定，后者是执行到当天 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |
 | "设营养目标" vs "设体重目标" | 营养=每日摄入目标，体重=体重kg目标 |
-| "设健身目标" vs "设营养目标" | 健身=运动类目标，营养=饮食类目标 |
+| "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |
 | "记身材照" vs "查身材照" | "记"=新增，"查"=查询 |
 
 ---
@@ -582,30 +556,13 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
 用户做完一组就告诉 AI 一组数据，AI 逐条 add。**绝对不要**等做完 N 组再汇总成一条记录。
 
-### 💪 健身目标：设健身目标 / 查健身目标 / 改健身目标 / 删健身目标
+### 🏋️ 健身计划：查 / 制定 / 改 / 落地 / 同步
 
-- **设健身目标**：`fitness_goals.py add <名称> --type <daily|weekly|monthly|longterm> --exercise <运动> --unit <单位> --target <值> --start <日期>`
-- **查健身目标**：`fitness_goals.py list [--type <类型>] [--status <状态>]`
-- **改健身目标**：`fitness_goals.py update <ID> [--字段 值]`
-- **删健身目标**：`fitness_goals.py delete <ID>`
-
-### 😴 睡眠：记睡眠 / 改睡眠记录 / 查睡眠记录 / 记录起床
-
-**记睡眠**：
-解析输入 → `sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
-睡眠归属于就寝那天。
-
-**改睡眠记录**：`sleep_tracker.py update <日期> [--hours <时长>] [--note <备注>]`
-
-**查睡眠记录**：`sleep_tracker.py list [--days N]`
-
-**记录起床（起床唤醒处理流程）**：
-1. 检测到唤醒词"记录起床" → 立即查询录音机数据库
-2. 找到"最后一次人类消息"的时间（入睡信号）和当前唤醒消息的时间（起床信号）
-3. 计算睡眠时长 = 起床时间 - 入睡前最后一条消息时间
-4. 确认：「检测到你刚才睡了X小时，要不要记录？」（不提及"卡路里"三字）
-5. 确认后执行：`sleep_tracker.py add <就寝日期> --hours <时长> --bed <就寝时间> --wake <起床时间>`
-6. 睡眠归属于就寝那天
+- **查健身计划**：`python scripts/render_workout_plan.py` 输出 Apple 风格 HTML
+- **制定健身计划**：AI 采访式对话（Phase 1-6），产出 JSON → `plan_generator.write_plan()` 写入
+- **改健身计划**：AI 对话定位意图 → 一个唤醒词覆盖所有写操作（改时段/加时段/删时段/调整周/改配置）
+- **落地健身计划**：逐 session 调用作息管家 `补计划` + 备忘录 `查心愿`/`记心愿` + 仅今天调训记 `训记写训练`
+- **同步健身计划**：落地今天~7天后 + 训记查今日训练 → `xunji_adapter.py` 回写 exercise_log
 
 ### 📊 分析：查热量趋势 / 查营养配比 / 查热量缺口 / 查食物排行 / 查运动分布 / 查运动贡献
 

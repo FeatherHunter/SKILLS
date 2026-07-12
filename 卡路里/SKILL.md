@@ -604,14 +604,21 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     接口幂等，重复调用自动跳过。
 
   Step 3 · 联动备忘录
-    对每个 session，先「查心愿 健身 {session_label} {time_start}-{time_end}」
-    → 无匹配则「查飞书 task」同名检查
-    → 都无则「记心愿 健身 {session_label} {time_start}-{time_end}」
-    心愿分类="心愿"，due=该日期。不建过去的心愿。
+    对每个 session，先构造心愿内容：
+      心愿内容 = 「健身 {session_label} {time_start}-{time_end}」
+    此字符串在"查"和"记"时必须完全一致，AI 不得自由改写措辞。
+
+    调备忘录「查心愿 {心愿内容}」→ 精确查重。
+    无匹配 → 调「查飞书 task」检查同名 task。
+    都无 → 调「记心愿 {心愿内容}」创建，分类="心愿"，due=该日期。
+    不建过去日期的心愿。
 
   Step 4 · 联动训记
-    对每个 session，自动检测训记 KEY。无 KEY 则跳过并告知用户。
-    有 KEY 则调用 xunji-trains 技能的训记 API。
+    对每个 session，检查训记 KEY（环境变量 XUNJI_API_KEY）：
+      已配置 → 提示「已配置训记环境变量 KEY，开始同步」
+      未配置 → 提示「需要设置环境变量 XUNJI_API_KEY 为你的训记 API KEY，请提供：」
+      用户提供 → 写入系统环境变量 XUNJI_API_KEY（持久化），下次自动生效
+    KEY 就绪后，调用 xunji-trains 技能的训记 API。
 
     数据映射（workout_plans session → xunji upsert API）：
       schema_version = "train_open_api_v2"
@@ -652,8 +659,8 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   Step 2 · 训记回写运动记录
     汇报：「开始训记回写…」
-    自动检测训记 KEY，无 KEY 则跳过并告知用户。
-    有 KEY → 调训记「训记查训练 今天 include_full_data=true」
+    检查训记 KEY（同上：读 XUNJI_API_KEY，无则提示用户输入并存为系统环境变量）。
+    KEY 就绪后，调训记「训记查训练 今天 include_full_data=true」
     → xunji_adapter.py 写入 exercise_log
     → 用 xunji_localid + set_index 做幂等键，已有 UPDATE 无 INSERT。
     完成后汇报：「训记回写 ✅ 新增 X 条，更新 Y 条」

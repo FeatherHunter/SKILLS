@@ -2,12 +2,12 @@
 name: 作息管家
 description: >
   作息时间记录与计划管理技能。当用户使用以下指令时触发：
-  准备消息、同步作息、增量同步（同步类）、
-  生成摘要、汇总作息（摘要类）、
-  查作息、查作息详情、查作息时间轴、查作息报告、查作息范围、查作息游标、查作息状态（查询实测作息）、
-  查计划、看计划、查多日计划（查询计划作息，默认 list-events 含飞书同步状态；query-plans 仅作 24h 概览）、
-  商量计划、一起规划、规划明天、规划一天、讨论计划（新版事件型计划 + 飞书日历联动）、
-  改计划、删计划、看计划、同步飞书（新版 5 个命令,含 Phase 0 反向对账）、
+   准备消息、同步作息、增量同步（同步类）、
+   今天总结、汇总作息（摘要类）、
+   查作息、查作息详情、查作息时间轴、查作息范围、查作息游标、查作息状态（查询实测作息）、
+   查计划、看计划、24h 概览、查多日计划（查询计划作息）、
+   商量计划、一起规划、规划明天、规划一天、讨论计划（新版事件型计划 + 飞书日历联动）、
+   改计划、删计划、补计划、标完成、同步飞书（新版 6 个命令,含 Phase 0 反向对账）、
   初始化数据库（管理类）、
   配置定时同步、配置每日报告（Cron类）。
   当本机装了飞书 CLI（lark-cli）且已授权，作息计划可一键同步到飞书日历（拆分分钟级事件、增删改实时联动）。
@@ -36,29 +36,27 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | 1 | 准备消息 | 获取待同步消息供AI分析 | `prepare-messages` | 详见 1. 同步作息 |
 | 2 | 同步作息 | 完整同步流程（获取→分析→写入） | `prepare-messages` → AI → `add_record_full` | 详见 1. 同步作息 |
 | 3 | 增量同步 | 从游标位置继续同步 | `prepare-messages`（自动取游标） | 详见 1. 同步作息 |
-| 4 | 生成摘要 | 按分类汇总当日时间 | `summary <日期>` | 详见 2. 生成摘要 |
+| 4 | 今天总结 | 按分类汇总当日时间（满24h出综合报告，不满出摘要） | `report <日期>` 或 `summary <日期>` | 详见 2. 生成摘要 |
 | 5 | 汇总作息 | 日期范围汇总统计 | `range <开始> <结束>` | 详见 2. 生成摘要 |
 | 6 | 查作息 | 查看指定日期作息列表 | `list [日期]` | 详见 3. 查询作息 |
 | 7 | 查作息详情 | 含AI推理过程的详细展示 | `detail [日期]` | 详见 3. 查询作息 |
 | 8 | 查作息时间轴 | 24小时时间轴展示 | `timeline [日期]` | 详见 3. 查询作息 |
-| 9 | 查作息报告 | list+summary+timeline综合报告 | `report [日期]` | 详见 3. 查询作息 |
-| 10 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
-| 11 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
-| 12 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
-| **13** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id / completion） | `list-events <日期>` | **详见 3. 查询作息** |
-| 14 | 24h 概览 | 24h 时间表聚合视图（同小时用 + 合并） | `query-plans <日期>` | 详见 3. 查询作息 |
-| 15 | 查多日计划 | 多日聚合查询（list-events 不支持多日，query-plans 唯一选项） | `query-plans <日期1,日期2,...>` | 详见 3. 查询作息 |
-| **16** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` | **详见 4. 商量计划（核心入口）** |
-| **17** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` | **详见 5. 改计划** |
-| **18** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` | **详见 6. 删计划** |
-| **19** | **同步飞书** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
-| **20** | **查计划事件** | 按日期+标题轻量查询是否存在某计划（JSON 输出） | `search-plan-event <日期> --title <标题>` | **详见 10. 轻量查询与缺则建** |
-| **21** | **保计划事件** | 查日期+标题 → 缺则 INSERT（幂等，不触动其他事件） | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题>` | **详见 10. 轻量查询与缺则建** |
-| **22** | **标完成** | 复盘时标记计划完成情况 | `update-event <id> --completion "未完成" --completion-note "原因"` | **详见 5. 改计划** |
-| 23 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
-| 24 | 初始化数据库 | 创建三张数据表（含 completion 字段） | `init` | — |
-| 25 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
-| 26 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | — |
+| 9 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
+| 10 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
+| 11 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
+| **12** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id / completion）。**带具体标题时**（如"今天有健身吗"）→ `search-plan-event` 精确匹配 | `list-events <日期>` 或 `search-plan-event <日期> --title X` | **详见 3. 查询作息** |
+| **13** | **补计划** | 单条追加计划事件（幂等：已有不重复）。与商量计划的区别：补 = 增量一条，商量 = 完整24h规划 | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title X` | **详见 10. 补计划与程序化接口** |
+| **14** | **标完成** | 标记计划完成情况（已完成 / 未完成 等） | `update-event <id> --completion X --completion-note Y` | **详见 5. 改计划** |
+| 15 | 24h 概览 | 24h 时间表聚合视图（同小时用 + 合并） | `query-plans <日期>` | 详见 3. 查询作息 |
+| 16 | 查多日计划 | 多日简版视图（不含 notes/completion/飞书状态） | `query-plans <日期1,日期2,...>` | 详见 3. 查询作息 |
+| **17** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` | **详见 4. 商量计划（核心入口）** |
+| **18** | **改计划** | 单条精细修改（含 completion 标记） | `update-event <id> [--title/--completion/...]` | **详见 5. 改计划** |
+| **19** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` | **详见 6. 删计划** |
+| **20** | **同步飞书** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
+| 21 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
+| 22 | 初始化数据库 | 创建三张数据表（含 completion 字段） | `init` | — |
+| 23 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
+| 24 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | — |
 
 ---
 
@@ -156,13 +154,15 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ---
 
-### 2. 生成摘要
+### 2. 今天总结
 
-按分类汇总当日作息时间。
+按分类汇总当日作息时间（自动选择输出等级）。
 
-**前提条件**：该日期的 `schedule_records` 必须已覆盖 24 小时（00:00~23:59）。
+**触发词**：今天总结 / 生成摘要 / 查作息报告
 
-**不满足条件时**：通知用户当日作息记录不满24小时，无法生成摘要，请先补全记录。
+AI 判断逻辑：
+- **records 已满 24h** → 调 `report <日期>`（list + summary + timeline 综合报告）
+- **records 未满 24h** → 调 `summary <日期>`（仅按分类汇总，并提示补全记录后再看完整报告）
 
 **输出格式**：
 ```
@@ -193,6 +193,10 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 ### 3.1 查询计划（默认 `list-events`）
 
 **核心规则**：用户说"查计划/看计划"时,AI **必须默认走 `list-events`**,**不是** `query-plans`。
+
+**上下文路由**：
+- 用户说"今天有XX计划吗？""后天安排了XX吗？"（带具体标题）→ 调 `search-plan-event <日期> --title XX`
+- 用户说"查计划""看计划""今天的安排"（无具体标题）→ 调 `list-events <日期>`
 
 **为什么**:
 - `list-events` 返回完整字段(id / time_start-end / title / **notes** / category / **feishu_event_id** / last_synced_at / **completion**)
@@ -306,7 +310,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ### 5. 改计划
 
-**触发词**：改计划 / 修改一个日程 / 改这个
+**触发词**：改计划 / 修改一个日程 / 改这个 / 标完成 / 这条做完了 / 标记一下
 
 **执行流程**：
 1. **定位事件**：先调 `list-events <日期>` 或 `query-plans <日期>` 列出当日事件 + ID
@@ -319,6 +323,18 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
    - 若该事件**未绑飞书**（`feishu_event_id` 为 NULL）→ 询问"要同步创建飞书事件吗？"
    - 若该事件**已绑飞书** → 询问"飞书那边也要改吗？"
 5. **改时段的特殊处理**：time_start / time_end 改了 → 飞书日历"无改时间按钮" → 拆为**删旧 event_id + 建新 event_id**，**回写新 feishu_event_id** 到 schedule_plans
+
+#### 标完成（复盘标记）
+
+**触发词**：标完成 / 这条做完了 / 这条没做 / 标记一下
+
+**流程**：
+1. 用户说"健身那条标成已完成" → AI 调 `list-events` 找到匹配的 ID
+2. 调 `update-event <id> --completion "已完成" --completion-note "按时做完"`
+3. 可选 completion 值：`已完成` / `已完成（超时）` / `部分完成` / `未完成` / `未完成（不可抗力）`
+4. **找不到匹配计划时**：提示"这条计划还不存在，要先补吗？"
+
+> 注：标完成不走飞书同步（完成情况是本地复盘数据，不需要同步到日历）。
 
 **约束**：
 - 单次只能改一个事件（要改多个 → 多次 update-event）
@@ -452,13 +468,34 @@ python3 scripts/feishu_sync.py  # self-check 模式
 
 ---
 
-### 10. 轻量查询与缺则建（2026-07-12 新增）
+### 10. 补计划与程序化接口（2026-07-12 新增）
 
-**触发词**：查计划事件 / 查事件 / 保计划事件 / 确保事件
+#### 补计划（用户侧唤醒词）
 
-#### search-plan-event — 轻量查询
+**触发词**：补计划 / 加一条计划
 
-按日期+标题查找某计划事件是否存在。纯只读，JSON 输出，供 AI 程序化调用。
+**语义**：单条追加计划事件，不触动其他已有事件。与 `商量计划` 的边界：
+
+| | 补计划 | 商量计划 |
+|---|---|---|
+| 范围 | 单条增量 | 完整 24h 规划 |
+| 流程 | 直接写入 | 多轮讨论 → 心愿拉取 → 大块节奏 → 24h 校验 |
+| 触发的接口 | `ensure-plan-event` | `upsert-plan-events` |
+| 对已有事件 | 不动 | 覆盖（不匹配即软删） |
+
+用户说"帮我补一条健身计划到后天"、AI 直接调 `ensure-plan-event`，不进入商量计划的多轮流程。
+
+#### 程序化接口（其他技能调用）
+
+`ensure-plan-event` 和 `search-plan-event` 底层是 JSON 输入输出的 CLI 接口，供其他技能程序化调用：
+
+```bash
+# 其他技能 AI 直接调，不走唤醒词路由
+python scripts/schedule_cli.py ensure-plan-event <日期> \
+  --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y]
+```
+
+#### 轻量查询
 
 ```bash
 python scripts/schedule_cli.py search-plan-event <日期> --title <标题>
@@ -471,28 +508,9 @@ python scripts/schedule_cli.py search-plan-event <日期> --title <标题>
 ```
 
 - 只查 `is_active=1` 的活跃事件
-- 精确匹配 title（大小写敏感）
-- 匹配到多条时返回第一条（按 time_start 排序）
-
-#### ensure-plan-event — 缺则建
-
-查重 → 不存在就 INSERT。与 `search-plan-event` 共用底层查询逻辑。
-
-```bash
-python scripts/schedule_cli.py ensure-plan-event <日期> \
-  --time-start HH:MM --time-end HH:MM --title <标题> \
-  [--notes X] [--category Y]
-```
-
-返回：
-```json
-{"action": "found", "id": 562}       // 已有，不动
-{"action": "created", "id": 563}     // 新插入
-```
-
-**与 `upsert-plan-events` 的区别**：
-- `upsert-plan-events`：传完整 24h 列表，覆盖写入，旧事件不匹配即软删
-- `ensure-plan-event`：单条插入，不触动其他已有事件
+- 精确匹配 title
+- 匹配到多条时返回第一条
+- 此接口也由"查计划"上下文路由自动触发（用户说"今天有XX计划吗？"）
 
 ---
 

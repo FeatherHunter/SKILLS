@@ -1356,9 +1356,9 @@ def cmd_help():
   upsert-plan-events <date> --json '[]'   整日 upsert（24h 录满硬约束）
   update-event <id> [--title X ...]       单条精细修改（含 --completion --completion-note）
   deactivate-event <id>                   单条软删
-   list-events <date>                      当天事件 + 飞书同步状态
-  search-plan-event <date> --title X      按日期+标题查计划事件（轻量查询）
-  ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  缺则建（幂等）
+   list-events <date>                      当天事件 + 飞书同步状态 + 完成情况
+  search-plan-event <date> --title X      按日期+标题查计划事件（轻量查询，JSON）
+  ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  补计划：单条追加，幂等
   feishu-resync <date>                    重同步某天到飞书
 
 计划（旧版 24-hour，保留兼容）:

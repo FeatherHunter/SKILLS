@@ -30,6 +30,8 @@ from schedule_db import (
     deactivate_plan_event, set_feishu_event_id, get_plan_event,
     validate_24h_coverage, normalize_time,
     _normalize_date,  # 日期容错：CLI 入口先归一，传给下游
+    # 2026-07-12 新增：轻量查询 + 缺则建
+    search_plan_event, ensure_plan_event,
 )
 from feishu_sync import (
     is_feishu_available, LarkAPIError,
@@ -565,6 +567,12 @@ def main(argv=None):
     elif cmd == "list-events":
         cmd_list_events(args)
 
+    elif cmd == "search-plan-event":
+        cmd_search_plan_event(args)
+
+    elif cmd == "ensure-plan-event":
+        cmd_ensure_plan_event(args)
+
     elif cmd == "feishu-resync":
         cmd_feishu_resync(args)
 
@@ -862,6 +870,7 @@ def cmd_update_event(args):
     用法:
       python schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z]
                                        [--time-start HH:MM] [--time-end HH:MM]
+                                       [--completion 已完成] [--completion-note "拖延了1h"]
 
     修改后如果该事件已同步飞书，会询问是否同步修改到飞书。
     """
@@ -869,9 +878,11 @@ def cmd_update_event(args):
         print("""用法:
   python schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z]
                                        [--time-start HH:MM] [--time-end HH:MM]
+                                       [--completion 未完成] [--completion-note "下雨"]
 
 示例:
   python schedule_cli.py update-event 123 --title "通勤+早餐" --notes "骑车+豆浆"
+  python schedule_cli.py update-event 456 --completion "已完成" --completion-note "按时"
 """)
         return
 
@@ -892,6 +903,10 @@ def cmd_update_event(args):
         updates["time_start"] = args[args.index("--time-start") + 1]
     if "--time-end" in args:
         updates["time_end"] = args[args.index("--time-end") + 1]
+    if "--completion" in args:
+        updates["completion"] = args[args.index("--completion") + 1]
+    if "--completion-note" in args:
+        updates["completion_note"] = args[args.index("--completion-note") + 1]
 
     if not updates:
         print("错误: 未指定任何修改字段")
@@ -1069,8 +1084,8 @@ def cmd_list_events(args):
     print(f"\n📅 {date} 计划事件列表")
     print(f"  飞书能力: {feishu_tier} （{'CLI 可用' if status.cli_installed else '未安装'} / {'已授权' if status.authenticated else '未授权'} / {'可写' if status.calendar_writable else '无写权限'}）")
     print("=" * 90)
-    print(f"  {'ID':>5} {'时段':<11} {'title':<20} {'notes':<25} 飞书ID / 同步状态")
-    print("-" * 90)
+    print(f"  {'ID':>5} {'时段':<11} {'title':<20} {'notes':<25} 飞书ID / 同步状态        完成")
+    print("-" * 110)
 
     all_events = sorted(active + [e for e in inactive if e["id"] not in {x['id'] for x in active}], key=lambda e: e["time_start"])
     for e in all_events:
@@ -1079,9 +1094,80 @@ def cmd_list_events(args):
         title_short = (e["title"] or "")[:20]
         feishu_id = e.get("feishu_event_id") or "-"
         synced = e.get("last_synced_at") or "-"
-        print(f"{marker}{e['id']:>4} {e['time_start']}-{e['time_end']:<5} {title_short:<20} {notes_short:<25} {feishu_id[:30]} / {synced}")
+        comp = e.get("completion") or "-"
+        print(f"{marker}{e['id']:>4} {e['time_start']}-{e['time_end']:<5} {title_short:<20} {notes_short:<25} {feishu_id[:30]} / {synced}  {comp}")
     print()
     print(f"  共活跃 {len(active)} 条 / 停用 {len(inactive_ids)} 条")
+
+
+def cmd_search_plan_event(args):
+    """
+    轻量查询：按日期+标题查找计划事件
+    用法:
+      python schedule_cli.py search-plan-event <日期> --title <标题>
+    输出 JSON: {"found": true/false, "id": N, "time_start": "...", ...}
+    """
+    import json
+    title = None
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--title" and i + 1 < len(args):
+            title = args[i + 1]
+            i += 2
+        else:
+            clean_args.append(args[i])
+            i += 1
+    if not clean_args or not title:
+        print(json.dumps({"error": "用法: search-plan-event <日期> --title <标题>"}, ensure_ascii=False))
+        return
+    try:
+        date = _normalize_date(clean_args[0])
+    except ValueError as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return
+    result = search_plan_event(date, title)
+    if result:
+        result["found"] = True
+        print(json.dumps(result, ensure_ascii=False))
+    else:
+        print(json.dumps({"found": False, "date": date, "title": title}, ensure_ascii=False))
+
+
+def cmd_ensure_plan_event(args):
+    """
+    缺则建：查日期+标题是否存在，不存在则 INSERT
+    用法:
+      python schedule_cli.py ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y]
+    输出 JSON: {"action": "found"/"created", "id": N}
+    """
+    import json
+    title = notes = category = time_start = time_end = None
+    clean_args = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--title" and i + 1 < len(args):
+            title = args[i + 1]; i += 2
+        elif args[i] == "--time-start" and i + 1 < len(args):
+            time_start = args[i + 1]; i += 2
+        elif args[i] == "--time-end" and i + 1 < len(args):
+            time_end = args[i + 1]; i += 2
+        elif args[i] == "--notes" and i + 1 < len(args):
+            notes = args[i + 1]; i += 2
+        elif args[i] == "--category" and i + 1 < len(args):
+            category = args[i + 1]; i += 2
+        else:
+            clean_args.append(args[i]); i += 1
+    if not clean_args or not title or not time_start or not time_end:
+        print(json.dumps({"error": "用法: ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题>"}, ensure_ascii=False))
+        return
+    try:
+        date = _normalize_date(clean_args[0])
+    except ValueError as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return
+    result = ensure_plan_event(date, time_start, time_end, title, notes, category)
+    print(json.dumps(result, ensure_ascii=False, default=str))
 
 
 # ============================================================
@@ -1268,9 +1354,11 @@ def cmd_help():
 
 计划（新版事件型，2026-06-29）:
   upsert-plan-events <date> --json '[]'   整日 upsert（24h 录满硬约束）
-  update-event <id> [--title X ...]       单条精细修改
+  update-event <id> [--title X ...]       单条精细修改（含 --completion --completion-note）
   deactivate-event <id>                   单条软删
-  list-events <date>                      当天事件 + 飞书同步状态
+   list-events <date>                      当天事件 + 飞书同步状态
+  search-plan-event <date> --title X      按日期+标题查计划事件（轻量查询）
+  ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  缺则建（幂等）
   feishu-resync <date>                    重同步某天到飞书
 
 计划（旧版 24-hour，保留兼容）:

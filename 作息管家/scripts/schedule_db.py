@@ -667,12 +667,24 @@ def _ensure_new_plans_schema(conn) -> None:
             feishu_event_id TEXT,
             last_synced_at  TEXT,
             is_active       INTEGER NOT NULL DEFAULT 1,
+            completion      TEXT    DEFAULT NULL,
+            completion_note TEXT    DEFAULT NULL,
             created_at      TEXT    DEFAULT CURRENT_TIMESTAMP,
             updated_at      TEXT    DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_plans_date ON schedule_plans(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_plans_date_time ON schedule_plans(date, time_start)')
+
+    # 迁移：已有 DB 补加 completion 字段（2026-07-12）
+    try:
+        c.execute("ALTER TABLE schedule_plans ADD COLUMN completion TEXT DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE schedule_plans ADD COLUMN completion_note TEXT DEFAULT NULL")
+    except sqlite3.OperationalError:
+        pass
 
 
 def _to_minutes(hhmm: str) -> int:
@@ -749,31 +761,78 @@ def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
     try:
         _ensure_new_plans_schema(conn)
         c = conn.cursor()
+        cols = ("id", "date", "time_start", "time_end", "title", "notes", "category",
+                "feishu_event_id", "last_synced_at", "is_active", "completion", "completion_note")
         if include_inactive:
-            c.execute('''
-                SELECT id, date, time_start, time_end, title, notes, category,
-                       feishu_event_id, last_synced_at, is_active
+            c.execute(f'''
+                SELECT {", ".join(cols)}
                 FROM schedule_plans
                 WHERE date = ?
                 ORDER BY time_start
             ''', (date,))
         else:
-            c.execute('''
-                SELECT id, date, time_start, time_end, title, notes, category,
-                       feishu_event_id, last_synced_at, is_active
+            c.execute(f'''
+                SELECT {", ".join(cols)}
                 FROM schedule_plans
                 WHERE date = ? AND is_active = 1
                 ORDER BY time_start
             ''', (date,))
         rows = c.fetchall()
         return [
-            {
-                "id": r[0], "date": r[1], "time_start": r[2], "time_end": r[3],
-                "title": r[4], "notes": r[5], "category": r[6],
-                "feishu_event_id": r[7], "last_synced_at": r[8], "is_active": r[9],
-            }
+            dict(zip(cols, r))
             for r in rows
         ]
+    finally:
+        conn.close()
+
+
+def search_plan_event(date: str, title: str) -> dict | None:
+    """按日期+标题查找活跃计划事件。返回匹配的第一条或 None。
+    2026-07-12 新增：轻量查询接口，供 ensure-plan-event 和 AI 诊断使用。"""
+    date = _normalize_date(date)
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+        cols = ("id", "date", "time_start", "time_end", "title", "notes", "category",
+                "feishu_event_id", "last_synced_at", "is_active", "completion", "completion_note")
+        c.execute(f'''
+            SELECT {", ".join(cols)}
+            FROM schedule_plans
+            WHERE date = ? AND title = ? AND is_active = 1
+            ORDER BY time_start
+            LIMIT 1
+        ''', (date, title))
+        r = c.fetchone()
+        if not r:
+            return None
+        return dict(zip(cols, r))
+    finally:
+        conn.close()
+
+
+def ensure_plan_event(date: str, time_start: str, time_end: str,
+                      title: str, notes: str = None, category: str = None) -> dict:
+    """确保某计划事件存在（幂等）。已存在返回 found，否则 INSERT 返回 created。
+    2026-07-12 新增：配合 search-plan-event 实现缺则建的语义。
+    不会触发其他事件的软删（与 upsert_plan_events 不同）。"""
+    date = _normalize_date(date)
+    time_end = normalize_time(time_end)
+    existing = search_plan_event(date, title)
+    if existing:
+        return {"action": "found", "id": existing["id"], "event": existing}
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO schedule_plans
+                (date, time_start, time_end, title, notes, category, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+        ''', (date, time_start, time_end, title, notes, category))
+        conn.commit()
+        new_id = c.lastrowid
+        return {"action": "created", "id": new_id, "event": get_plan_event(new_id)}
     finally:
         conn.close()
 
@@ -851,9 +910,9 @@ def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True)
 
 
 def update_plan_event(event_id: int, fields: dict) -> bool:
-    """单条 UPDATE。fields 可含: title/notes/category/time_start/time_end。
+    """单条 UPDATE。fields 可含: title/notes/category/time_start/time_end/completion/completion_note。
     注:不在此处同步飞书(飞书同步由 CLI 询问流程触发,避免隐式副作用)。"""
-    allowed = {"title", "notes", "category", "time_start", "time_end"}
+    allowed = {"title", "notes", "category", "time_start", "time_end", "completion", "completion_note"}
     sets = []
     values = []
     for k, v in fields.items():
@@ -921,7 +980,7 @@ def get_plan_event(event_id: int) -> dict | None:
         c = conn.cursor()
         c.execute('''
             SELECT id, date, time_start, time_end, title, notes, category,
-                   feishu_event_id, last_synced_at, is_active
+                   feishu_event_id, last_synced_at, is_active, completion, completion_note
             FROM schedule_plans
             WHERE id=?
         ''', (event_id,))
@@ -932,6 +991,7 @@ def get_plan_event(event_id: int) -> dict | None:
             "id": r[0], "date": r[1], "time_start": r[2], "time_end": r[3],
             "title": r[4], "notes": r[5], "category": r[6],
             "feishu_event_id": r[7], "last_synced_at": r[8], "is_active": r[9],
+            "completion": r[10], "completion_note": r[11],
         }
     finally:
         conn.close()

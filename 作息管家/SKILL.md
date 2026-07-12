@@ -45,17 +45,20 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | 10 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
 | 11 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
 | 12 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
-| **13** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id） | `list-events <日期>` | **详见 3. 查询作息** |
+| **13** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id / completion） | `list-events <日期>` | **详见 3. 查询作息** |
 | 14 | 24h 概览 | 24h 时间表聚合视图（同小时用 + 合并） | `query-plans <日期>` | 详见 3. 查询作息 |
 | 15 | 查多日计划 | 多日聚合查询（list-events 不支持多日，query-plans 唯一选项） | `query-plans <日期1,日期2,...>` | 详见 3. 查询作息 |
 | **16** | **商量计划** | AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步 | `upsert-plan-events <日期> --json @plan.json` | **详见 4. 商量计划（核心入口）** |
 | **17** | **改计划** | 单条精细修改（自动判断改时段 → 飞书删旧建新） | `update-event <id> [--title/--notes/--time-start/...]` | **详见 5. 改计划** |
 | **18** | **删计划** | 单条软删（is_active=0），询问飞书同步删除 | `deactivate-event <id>` | **详见 6. 删计划** |
 | **19** | **同步飞书** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 同步飞书** |
-| 20 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
-| 21 | 初始化数据库 | 创建三张数据表 | `init` | — |
-| 22 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
-| 23 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | — |
+| **20** | **查计划事件** | 按日期+标题轻量查询是否存在某计划（JSON 输出） | `search-plan-event <日期> --title <标题>` | **详见 10. 轻量查询与缺则建** |
+| **21** | **保计划事件** | 查日期+标题 → 缺则 INSERT（幂等，不触动其他事件） | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题>` | **详见 10. 轻量查询与缺则建** |
+| **22** | **标完成** | 复盘时标记计划完成情况 | `update-event <id> --completion "未完成" --completion-note "原因"` | **详见 5. 改计划** |
+| 23 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
+| 24 | 初始化数据库 | 创建三张数据表（含 completion 字段） | `init` | — |
+| 25 | 配置定时同步 | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
+| 26 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | — |
 
 ---
 
@@ -192,7 +195,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 **核心规则**：用户说"查计划/看计划"时,AI **必须默认走 `list-events`**,**不是** `query-plans`。
 
 **为什么**:
-- `list-events` 返回完整字段(id / time_start-end / title / **notes** / category / **feishu_event_id** / last_synced_at)
+- `list-events` 返回完整字段(id / time_start-end / title / **notes** / category / **feishu_event_id** / last_synced_at / **completion**)
 - `query-plans` 是 24h 聚合视图,同小时内的多条事件用 `+` 合并,丢失 notes / 飞书同步状态 / ID
 - **从信息论角度,list-events 是上位集合,query-plans 是下位聚合**——默认应给上位
 
@@ -210,9 +213,10 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 ```
 📅 2026-07-01 计划事件列表
   飞书能力: full （CLI 可用 / 已授权 / 可写）
-     ID 时段          title           notes                  飞书ID / 同步状态
-   544 00:00-09:00 睡眠                                   1743f09d-... / 2026-06-30 17:14:18
-   564 17:45-18:30 自由/弹性                              - / -
+     ID 时段          title           notes                  飞书ID / 同步状态        完成
+   544 00:00-09:00 睡眠                                   1743f09d-... / 2026-06-30 17:14:18  -
+   564 17:45-18:30 健身          练背+有氧                  - / -                  已完成
+   565 19:00-20:00 读书          《人类简史》第3章           - / -                  未完成
    ...
   共活跃 32 条 / 停用 0 条
 ```
@@ -306,10 +310,10 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 **执行流程**：
 1. **定位事件**：先调 `list-events <日期>` 或 `query-plans <日期>` 列出当日事件 + ID
-2. **问用户改哪条** + 改什么字段（title / notes / category / time_start / time_end）
+2. **问用户改哪条** + 改什么字段（title / notes / category / time_start / time_end / completion / completion_note）
 3. **DB 写入**：
    ```bash
-   python3 scripts/schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z] [--time-start HH:MM] [--time-end HH:MM]
+   python3 scripts/schedule_cli.py update-event <id> [--title X] [--notes Y] [--category Z] [--time-start HH:MM] [--time-end HH:MM] [--completion 已完成] [--completion-note "拖延了1h"]
    ```
 4. **飞书同步判断**（关键）：
    - 若该事件**未绑飞书**（`feishu_event_id` 为 NULL）→ 询问"要同步创建飞书事件吗？"
@@ -445,6 +449,50 @@ python3 scripts/feishu_sync.py  # self-check 模式
 - **block 数量校验**：前置获取最少 block 数 → 后置验证是否达标，不达标必须重做
 
 > 详细设计见: `references/Cron任务.md`
+
+---
+
+### 10. 轻量查询与缺则建（2026-07-12 新增）
+
+**触发词**：查计划事件 / 查事件 / 保计划事件 / 确保事件
+
+#### search-plan-event — 轻量查询
+
+按日期+标题查找某计划事件是否存在。纯只读，JSON 输出，供 AI 程序化调用。
+
+```bash
+python scripts/schedule_cli.py search-plan-event <日期> --title <标题>
+```
+
+返回：
+```json
+{"found": true, "id": 562, "time_start": "17:00", "time_end": "18:00", "title": "健身", ...}
+{"found": false, "date": "2026-07-12", "title": "健身"}
+```
+
+- 只查 `is_active=1` 的活跃事件
+- 精确匹配 title（大小写敏感）
+- 匹配到多条时返回第一条（按 time_start 排序）
+
+#### ensure-plan-event — 缺则建
+
+查重 → 不存在就 INSERT。与 `search-plan-event` 共用底层查询逻辑。
+
+```bash
+python scripts/schedule_cli.py ensure-plan-event <日期> \
+  --time-start HH:MM --time-end HH:MM --title <标题> \
+  [--notes X] [--category Y]
+```
+
+返回：
+```json
+{"action": "found", "id": 562}       // 已有，不动
+{"action": "created", "id": 563}     // 新插入
+```
+
+**与 `upsert-plan-events` 的区别**：
+- `upsert-plan-events`：传完整 24h 列表，覆盖写入，旧事件不匹配即软删
+- `ensure-plan-event`：单条插入，不触动其他已有事件
 
 ---
 

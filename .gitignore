@@ -4,6 +4,12 @@
 作息管家/.db/schedule.db-wal
 作息管家/.db/schedule.db-journal
 
+# 卡路里运行时 SQLite 数据文件(同上,不入版本控制)
+卡路里/scripts/calories.db
+卡路里/scripts/calories.db-shm
+卡路里/scripts/calories.db-wal
+卡路里/scripts/calories.db-journal
+
 # Python
 __pycache__/
 *.pyc

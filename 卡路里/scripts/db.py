@@ -86,6 +86,7 @@ def init_db(db_path):
     """初始化数据库所有表 + 应用迁移
 
     表：food_log / daily_goal / exercise_log / weight_log / nutrition_products
+          / workout_plan_config / workout_plans
     迁移：daily_goal 表添加 weight_goal / goal_deadline / water_goal 列
     """
     conn = sqlite3.connect(str(db_path))
@@ -273,6 +274,45 @@ def init_db(db_path):
     # 索引：exercise_log 新列（category / set_index 加速按类/按组查询）
     c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_category ON exercise_log(category)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_type ON exercise_log(exercise_type)')
+
+    # ============ 健身计划表（2026-07-12 新建）============
+    # workout_plan_config — 计划元信息（1行）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS workout_plan_config (
+            id              INTEGER PRIMARY KEY CHECK (id = 1),
+            title           TEXT NOT NULL,
+            version         TEXT,
+            description     TEXT,
+            total_weeks     INTEGER NOT NULL,
+            start_date      TEXT NOT NULL,          -- 计划起始日期 YYYY-MM-DD
+            created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # workout_plans — 训练日程（N行：周次×星期几×时间段）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS workout_plans (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            week_number     INTEGER NOT NULL,
+            day_of_week     INTEGER NOT NULL,
+            session_index   INTEGER NOT NULL DEFAULT 1,
+            session_label   TEXT NOT NULL,
+            time_start      TEXT,
+            time_end        TEXT,
+            is_rest_day     INTEGER DEFAULT 0,
+            total_sets      INTEGER,
+            movements       TEXT NOT NULL DEFAULT '[]',
+            created_at      TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at      TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(week_number, day_of_week, session_index)
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_wp_week_day ON workout_plans(week_number, day_of_week)')
+
+    # 迁移：删除废弃的 fitness_goals 表（2026-07-12，重构为 workout_plans）
+    if 'fitness_goals' in _existing_tables:
+        c.execute('DROP TABLE IF EXISTS fitness_goals')
 
     conn.commit()
     conn.close()

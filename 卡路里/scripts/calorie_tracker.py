@@ -14,7 +14,6 @@
 
 更完整的 CLI（带 update/list/stats/trend 等子命令）见：
 - exercise_tracker.py
-- fitness_goals.py
 - body_photo_tracker.py
 """
 

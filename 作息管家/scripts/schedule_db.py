@@ -18,6 +18,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime, date, timedelta
+from typing import Optional
 
 # ============ 时间归一化工具(飞书 ISO 8601 不接受 24:00,自动转次日 00:00)===========
 def normalize_time(t: str) -> str:

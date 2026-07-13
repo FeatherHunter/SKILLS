@@ -35,7 +35,16 @@ for p in (str(_SCRIPTS_DIR), str(_ADAPTERS_DIR)):
 
 from .fetch import fetch_trains  # noqa: E402
 from xunji_adapter import xunji_response_to_rows, upsert_exercise_log  # noqa: E402
-from db import get_db  # noqa: E402
+from db import find_db_path, DB_FILENAME, get_db  # noqa: E402
+
+# DB 路径(其他模块统一模式):find_db_path 走 SKILLS_DB_PATH → fallback D:/.db
+_SKILL_DIR = _SCRIPTS_DIR.parent
+DB_PATH = find_db_path(_SKILL_DIR, DB_FILENAME)
+
+
+def _get_db():
+    """本地 calorie_data.db 连接(标准模式,跟其他 14 个模块一致)。"""
+    return get_db(DB_PATH)
 
 
 def _get_latest_body_weight_kg() -> Optional[float]:
@@ -44,7 +53,7 @@ def _get_latest_body_weight_kg() -> Optional[float]:
     用于更准的热量推算(METs 公式需要体重);backfill 不阻塞,失败返 None。
     """
     try:
-        conn = get_db()
+        conn = _get_db()
         c = conn.cursor()
         c.execute('''
             SELECT weight FROM weight_log
@@ -119,7 +128,7 @@ def _backfill_one(datestr: str, full_data: bool = True) -> dict:
         }
 
     # 写库 + 显式事务(失败回滚)
-    conn = get_db()
+    conn = _get_db()
     try:
         result = upsert_exercise_log(conn, rows)
         conn.commit()

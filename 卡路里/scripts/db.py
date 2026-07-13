@@ -251,6 +251,7 @@ def init_db(db_path):
         ('set_index', 'INTEGER'),
         ('load_kg', 'REAL'),
         ('reps', 'INTEGER'),  # 2026-07-13 补:exercise.py:53 写入时用到,原 DDL 漏声明
+        ('updated_at', 'TEXT'),  # 2026-07-13 补:xunji_adapter:97 UPDATE 用到,原 DDL 漏声明(SQLite 限制:DATETIME 默认值需应用层设)
     ]
     for _col, _type in _exercise_log_new_cols:
         if _col not in _existing_cols:

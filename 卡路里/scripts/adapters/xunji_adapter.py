@@ -86,8 +86,8 @@ def upsert_exercise_log(db_conn, rows):
             try:
                 c.execute('''
                     SELECT id FROM exercise_log
-                    WHERE xunji_localid = ? AND set_index = ?
-                ''', (row['xunji_localid'], row['set_index']))
+                    WHERE xunji_localid = ? AND exercise_type = ? AND set_index = ?
+                ''', (row['xunji_localid'], row['exercise_type'], row['set_index']))
                 existing = c.fetchone()
 
                 if existing:

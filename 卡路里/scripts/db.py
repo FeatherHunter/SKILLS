@@ -250,6 +250,7 @@ def init_db(db_path):
         ('avg_heart_rate', 'INTEGER'),
         ('set_index', 'INTEGER'),
         ('load_kg', 'REAL'),
+        ('reps', 'INTEGER'),  # 2026-07-13 补:exercise.py:53 写入时用到,原 DDL 漏声明
     ]
     for _col, _type in _exercise_log_new_cols:
         if _col not in _existing_cols:
@@ -278,6 +279,7 @@ def init_db(db_path):
     # 索引：exercise_log 新列（category / set_index 加速按类/按组查询）
     c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_category ON exercise_log(category)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_type ON exercise_log(exercise_type)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_exercise_xunji_localid ON exercise_log(xunji_localid)')  # 2026-07-13 补:加速 xunji_adapter 幂等去重
 
     # ============ 健身计划表（2026-07-12 新建）============
     # workout_plan_config — 计划元信息（1行）
@@ -313,6 +315,21 @@ def init_db(db_path):
         )
     ''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_wp_week_day ON workout_plans(week_number, day_of_week)')
+
+    # body_photos — 身材照片记录（2026-07-13 移入 db.py 统一管理，原 body_photo_tracker.py 独立 init 已删除）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS body_photos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            time TEXT NOT NULL,
+            photo_path TEXT NOT NULL,
+            tag TEXT NOT NULL,
+            note TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_body_photos_date ON body_photos(date)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_body_photos_tag ON body_photos(tag)')
 
     # 迁移：删除废弃的 fitness_goals 表（2026-07-12，重构为 workout_plans）
     if 'fitness_goals' in _existing_tables:

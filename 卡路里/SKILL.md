@@ -134,7 +134,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动） | `render_workout_plan.py` |
 | 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
 | 落地健身计划 | 将某天计划执行：补计划→查/记心愿→训记（仅今天） | `workout_plan.get_day_plan()` + 跨技能 AI 路由 |
-| 同步健身计划 | 批量落地 7 天 + 训记查训练 → xunji_adapter 回写 | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + `xunji_adapter.py` |
+| 同步健身计划 | 批量落地 3 天 + 训记查训练 → xunji_adapter 回写 | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + `xunji_adapter.py` |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
 
 ### 📊 分析
@@ -189,7 +189,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 共 8 张表：`food_log`（饮食记录）、`daily_goal`、`weight_log`、`exercise_log`、`nutrition_products`、`workout_plan_config`（健身计划元信息）、`workout_plans`（健身日程）、`body_photos`
 
-> **2026-07-12 重构**：`entries` → `food_log`；`fitness_goals` 和 `sleep_records` 已删除，重构为 `workout_plan_config` + `workout_plans`。所有表均由 `db.py init_db()` 创建。
+> **2026-07-12 重构**：`entries` → `food_log`；`fitness_goals` 和 `sleep_records` 已删除，重构为 `workout_plan_config` + `workout_plans`。所有 8 张表均由 `db.py init_db()` 统一创建。
 
 ## 📂 脚本模块结构（v2.3 拆分后）
 
@@ -202,7 +202,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | `db.py` | ~145 | 数据库基础：路径解析、连接、初始化、迁移 | `find_db_path` / `connection` / `get_db` / `init_db` |
 | `db_utils.py` | ~15 | 兼容层：re-export db.py（旧脚本继续可用） | — |
 | `diet.py` | ~215 | 饮食记录 | `add_meal` / `delete_meal` / `list_meals` / `get_daily_summary` / `infer_meal_type` |
-| `water.py` | ~65 | 饮水记录（复用 entries 表，food_name='💧水'） | `add_water` |
+| `water.py` | ~65 | 饮水记录（复用 food_log 表，food_name='💧水'） | `add_water` |
 | `nutrition_goal.py` | ~95 | 每日营养目标 | `set_nutrition_goal` / `get_nutrition_goal` |
 | `weight.py` | ~190 | 体重记录 | `log_weight` / `update_weight` / `get_weight_history` |
 | `weight_goal.py` | ~110 | 体重目标 + 进度 | `set_weight_goal` / `get_weight_goal` / `print_goal_progress` |
@@ -361,7 +361,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "记体重" vs "查体重目标" | "记"=新增记录，"查"=查询进度 |
 | "制定健身计划" vs "落地健身计划" | 前者是对话制定，后者是执行到当天 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |
-| "设营养目标" vs "设体重目标" | 营养=每日摄入目标，体重=体重kg目标 |
+| "设营养目标" vs "设体重目标" | 营养=calorie/protein/carbs/fat/water_goal 5 字段;体重=weight_goal+deadline 2 字段 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量，后者显式指定 |
 | "记身材照" vs "查身材照" | "记"=新增，"查"=查询 |
 
@@ -644,18 +644,18 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     ⚠️ 训记推送 3/4（S3 超时，重新调落地可重试）
   ```
 
-- **同步健身计划**：落地 7 天 + 训记回写。
+- **同步健身计划**：落地 3 天 + 训记回写。
   ```
   Step 1 · 批量落地
-    固定 7 天，从今天起。按天依次执行，每天开始前汇报：
-      「第 1/7 天（7月13日周一）开始落地…」
+    固定 3 天，从今天起。按天依次执行，每天开始前汇报：
+      「第 1/3 天（7月13日周一）开始落地…」
 
-    对当天调「落地健身计划」完整流程。每次必须执行全部三步（作息+备忘+训记）。
+    对当天调「落地健身计划」完整流程。每次必须执行全部三步(作息+备忘+训记)。
 
     每天完成后汇报结果：
-      「第 1/7 天 ✅ 补计划4条 / 心愿4条 / 训记3条（S3超时跳过）」
+      「第 1/3 天 ✅ 补计划4条 / 心愿4条 / 训记3条(S3超时跳过)」
 
-    训记写入每 session 间隔 45s，总耗时约 21 分钟。
+    训记写入每 session 间隔 45s，总耗时约 9 分钟。
 
   Step 2 · 训记回写运动记录
     汇报：「开始训记回写…」

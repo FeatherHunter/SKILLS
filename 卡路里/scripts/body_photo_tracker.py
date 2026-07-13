@@ -11,7 +11,7 @@ import shutil
 from datetime import datetime, date
 from pathlib import Path
 
-from db_utils import find_db_path, get_db as _get_db_conn
+from db_utils import find_db_path, get_db as _get_db_conn, init_db as _init_db
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -39,27 +39,6 @@ def get_photos_dir():
 def get_db():
     """获取数据库连接"""
     return _get_db_conn(DB_PATH)
-
-
-def init_table():
-    """初始化身材照片表"""
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS body_photos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            time TEXT NOT NULL,
-            photo_path TEXT NOT NULL,
-            tag TEXT NOT NULL,
-            note TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_body_photos_date ON body_photos(date)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_body_photos_tag ON body_photos(tag)")
-    conn.commit()
-    conn.close()
 
 
 def add_photos(photo_paths, tag, note=''):
@@ -335,8 +314,8 @@ def main():
 
     args = parser.parse_args()
 
-    # 初始化表
-    init_table()
+    # 初始化表（2026-07-13 改:本地 init_table 已删,统一调 db.init_db）
+    _init_db(DB_PATH)
 
     if args.cmd == 'add':
         add_photos(args.photos, args.tag, args.note)

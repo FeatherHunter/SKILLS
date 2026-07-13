@@ -39,7 +39,7 @@ import argparse
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from db_utils import find_db_path, get_db as _get_db_conn
+from db_utils import find_db_path, get_db as _get_db_conn, init_db as _init_db
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -54,27 +54,6 @@ DB_PATH = find_db_path(SKILL_DIR, DB_FILENAME)
 def get_db():
     """获取数据库连接"""
     return _get_db_conn(DB_PATH)
-
-
-def init_db():
-    """确保 exercise_log 表存在"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS exercise_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            time TEXT,
-            exercise_type TEXT NOT NULL,
-            duration_minutes INTEGER,
-            calories_burned INTEGER NOT NULL,
-            note TEXT DEFAULT '',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            reps INTEGER
-        )
-    """)
-    conn.commit()
-    conn.close()
 
 
 def parse_time(time_str=None):
@@ -94,7 +73,7 @@ def parse_time(time_str=None):
 
 def cmd_add(args):
     """添加运动记录"""
-    init_db()
+    _init_db(DB_PATH)  # 2026-07-13 改:本地 init_db 已删,统一调 db.init_db
     conn = get_db()
     cursor = conn.cursor()
 

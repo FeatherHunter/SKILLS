@@ -597,6 +597,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     调 workout_plan.get_day_plan(日期)。
     如果用户没说日期，默认今天。
     休息日 → 告知用户并退出。
+    **未开始(2026-07-13 增)**:返回的 dict 含 `unstarted=True` 时,表示该日期早于 plan start_date,跳过后续 Step 2/3/4,告知用户"计划 X 月 X 日开始"并退出。
 
   Step 2 · 联动作息管家
     对每个 session 调「补计划 {日期} 健身 {session_label} {time_start}-{time_end}」
@@ -609,9 +610,11 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       心愿内容 = 「健身 {session_label} {time_start}-{time_end}」
     此字符串在"查"和"记"时必须完全一致，AI 不得自由改写措辞。
 
-    调备忘录「查心愿 {心愿内容}」→ 精确查重。
-    无匹配 → 调「查飞书 task」检查同名 task。
-    都无 → 调「记心愿 {心愿内容}」创建，分类="心愿"，due=该日期。
+    **查重(2026-07-13 改为 content + due 双键精确查重)**：
+      调备忘录「查心愿 {心愿内容} --category 心愿 --due {该日期}」
+      → 有匹配 → 跳过(已存在,不动)
+      → 无匹配 → 调「记心愿 {心愿内容} --category 心愿 --due {该日期}」创建
+      注:due 是 notes 表字段,不是 reminder(2026-07-13 心愿和提醒解耦)
     不建过去日期的心愿。
 
   Step 4 · 联动训记

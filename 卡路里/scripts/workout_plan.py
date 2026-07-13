@@ -49,14 +49,16 @@ def calc_plan_week(target_date, config):
         config: get_plan_config() 返回值
 
     Returns:
-        int: 计划周次（1-based），config 为 None 时返回 None
+        int: 计划周次（1-based）
+        None: config 为 None 时,或 target_date 早于 start_date(2026-07-13 修:之前返 1 伪装成"已存在",现返 None 表明"未开始")
     """
     if not config:
         return None
     start = datetime.strptime(config['start_date'], '%Y-%m-%d').date()
-    real_week = (target_date - start).days // 7 + 1
-    if real_week < 1:
-        real_week = 1  # 起始日之前按第1周
+    days_diff = (target_date - start).days
+    if days_diff < 0:
+        return None  # 计划未开始(start 之前的日期)
+    real_week = days_diff // 7 + 1
     return ((real_week - 1) % config['total_weeks']) + 1
 
 
@@ -75,6 +77,17 @@ def get_day_plan(target_date=None):
     config = get_plan_config()
     week = calc_plan_week(target_date, config)
     dow = target_date.isoweekday()
+
+    # 2026-07-13 修:计划未开始时返 unstarted=True 标志(而不是伪装成 week=1)
+    if week is None and config is not None:
+        return {
+            "date": target_date.strftime('%Y-%m-%d'),
+            "plan_week": None,
+            "day_of_week": dow,
+            "config": config,
+            "sessions": [],
+            "unstarted": True,
+        }
 
     conn = _get_db()
     c = conn.cursor()

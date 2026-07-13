@@ -616,7 +616,6 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       调备忘录「查心愿 {心愿内容} --category 心愿 --due {该日期}」
       → 有匹配 → 跳过(已存在,不动)
       → 无匹配 → 调「记心愿 {心愿内容} --category 心愿 --due {该日期}」创建
-      注:due 是 notes 表字段,不是 reminder(2026-07-13 心愿和提醒解耦)
     不建过去日期的心愿。
 
   Step 4 · 联动训记
@@ -640,6 +639,8 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       ④ 多个 session 间自动等 45s（训记写 API 限频）
       ⑤ 输出每 session ok/fail 状态，JSON 格式
 
+    ⏱ 训记推送约 3 分钟/天。
+
     训记写入失败的 session 重新调落地可重试（client_request_id 保证幂等）。
 
   末尾输出汇总：
@@ -648,43 +649,34 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     ⚠️ 训记推送 3/4（S3 超时，重新调落地可重试）
   ```
 
-- **同步健身计划**：落地 3 天(后台批处理) + 训记回写。
+- **同步健身计划**：批量落地 3 天 + 训记回写 exercise_log。
   ```
-  Step 1 · 启动后台同步(AI 不阻塞,可继续对话)
-    1. KEY 检查同「落地健身计划」Step 4
-    2. KEY 就绪后,**AI 路由主进程同步跑作息+备忘(快,~2 秒/天)**:
-       - 作息管家:补计划
-       - 备忘录:记心愿
-    3. 训记推送**后台跑**(慢,~3 分钟/天 × 3 天 ≈ 9 分钟),用 Popen 不等:
-       ```python
-       import subprocess
-       proc = subprocess.Popen(
-           [sys.executable, "-m", "xunji_bridge", "run-sync", "--days", "3"],
-           cwd="D:/2Study/StudyNotes/SKILLS/卡路里/scripts",
-           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-       )
-       # 立即回复用户,不阻塞
-       ```
-    4. 立即回复:「✅ 已启动后台同步(预计 9 分钟),你可以继续问我别的事」
+  前置:KEY 检查同「落地健身计划」Step 4
+    检查 XUNJI_TRAINS_KEY(优先,兼容 XUNJI_API_KEY)。
+    未配置 → 调 `python scripts/xunji_bridge.py key status` 让用户看状态,
+            再用 `python scripts/xunji_bridge.py key set <KEY>` 设置。
+            KEY 申请:训记 App → 我的 → 设置 → 第三方接入。
 
-  Step 2 · mavis cron self 监控(每 30s 唤醒)
-    AI 启动一个 cron self 定时器,30s 唤醒一次检查状态文件:
-    ```bash
-    mavis cron self xunji-bridge-sync-check \
-      --every 30s \
-      --prompt "检查 ~/.mavis/xunji_bridge_sync_state.json;如果 status=completed 或 failed,告诉用户结果并删除 cron"
-    ```
-    唤醒时:
-    - 读 state 文件
-    - status=completed → 汇报:「✅ 同步完成:3/3 天,新增 X 条,更新 Y 条」+ 删 cron
-    - status=failed → 读 error_summary 汇报:「❌ 同步失败:[原因]」+ 删 cron
-    - status=running → 静默(等下次唤醒)
+  Step 1 · 批量落地(按天循环,顺序执行)
+    固定 3 天,从今天起。按天依次执行。
+    每天开始前汇报:「第 1/3 天(7月13日 周一)开始落地…」
+    对当天调「落地健身计划」**完整流程**(每次必须执行全部三步:补计划+记心愿+训记推送)。
+    每天完成后汇报:
+      「第 1/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 3 条(S3 超时跳过)」
 
-  Step 3 · 训记回写运动记录
-    （run-sync 内部已自动调 backfill,无需 AI 再调）
+  Step 2 · 训记回写运动记录
+    3 天都跑完后,统一回写。
+    汇报:「开始训记回写…」
+    KEY 就绪后,调训记 fetch 3 天(每天 include_full_data=true)。
+    → xunji_adapter.py 写入 exercise_log
+    → 幂等键:xunji_localid + set_index(已有 UPDATE 无 INSERT)。
+    完成后汇报:「训记回写 ✅ 新增 X 条,更新 Y 条」
 
-  状态文件:`~/.mavis/xunji_bridge_sync_state.json`
-  Schema 见 `scripts/xunji_bridge/run_sync.py` 头部注释
+  末尾输出模板:
+    第 1/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 3 条(S3 超时跳过)
+    第 2/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
+    第 3/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
+    训记回写 ✅ 新增 12 条,更新 0 条
   ```
 
 - **训记-覆盖X日的训练计划**：用卡路里 plan 覆盖训记某天**已有**训练(localid 已有 + start/end=0,**等同新建语义**)。

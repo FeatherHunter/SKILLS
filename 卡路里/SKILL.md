@@ -233,7 +233,8 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | `plan_generator.py` | 新建 | 健身计划生成（校验+写入）|
 | `workout_plan.py` | 新建 | 计划循环逻辑 + 按日查询 |
 | `render_workout_plan.py` | 新建 | HTML 渲染（DB→Apple 风格页面）|
-| `adapters/xunji_adapter.py` | 新建 | 训记 API ↔ exercise_log 适配器 |
+| `adapters/xunji_adapter.py` | 新建 | 训记 API ↔ exercise_log 纯函数适配器（被 xunji_bridge 调用）|
+| `xunji_bridge/` | 新建 | 训记训练拓展功能 CLI 入口包（verify/push-plan/fetch/backfill/key 5 子命令）|
 | `generate_ts_config.py` | 269 | 从数据库生成 `config-calorie.ts` |
 
 ### 模块依赖图
@@ -614,29 +615,27 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     不建过去日期的心愿。
 
   Step 4 · 联动训记
-    对每个 session，检查训记 KEY（环境变量 XUNJI_API_KEY）：
-      已配置 → 提示「已配置训记环境变量 KEY，开始同步」
-      未配置 → 提示「需要设置环境变量 XUNJI_API_KEY 为你的训记 API KEY，请提供：」
-      用户提供 → 写入系统环境变量 XUNJI_API_KEY（持久化），下次自动生效
-    KEY 就绪后，调用 xunji-trains 技能的训记 API。
+    检查训记 KEY 环境变量，权威名 `XUNJI_TRAINS_KEY`（兼容旧名 `XUNJI_API_KEY`）：
+      未配置 → 调 `python scripts/xunji_bridge.py key status` 让用户看状态，
+              再用 `python scripts/xunji_bridge.py key set <KEY>` 设置。
+              KEY 申请：训记 App → 我的 → 设置 → 第三方接入。
+      已配置(PRIMARY) → 提示「✅ 训记 KEY 已配（XUNJI_TRAINS_KEY），开始同步」
+      已配置(LEGACY fallback) → 提示「⚠ 用了旧名 XUNJI_API_KEY，建议用 key set 迁移到 XUNJI_TRAINS_KEY」
 
-    数据映射（workout_plans session → xunji upsert API）：
-      schema_version = "train_open_api_v2"
-      client_request_id = "{日期}_{session_label}"
-      res[0].datestr = {日期}
-      res[0].title   = {session_label}
-      res[0].start   = 0（不传实际时间，避免训记 BUG）
-      res[0].end     = 0
-      res[0].movements = workouts_plans.movements JSON，做以下转换：
-        ① 不跳过任何动作（含爬楼梯等有氧）
-        ② 只保留 name + sets 两个字段
-        ③ 每条 set 加 "done": false
-    调用 POST /api_upsert_trains_for_llm_v2。
+    KEY 就绪后，**不再**手写 HTTP，改为调训记训练拓展 CLI：
+      python scripts/xunji_bridge.py push-plan --date {YYYY-MM-DD}
+    该命令内部完成：
+      ① 读 workout_plans 中当天的所有 session
+      ② 按以下规则转成训记 res[] 格式：
+         - schema_version = "train_open_api_v2"
+         - client_request_id = "{日期}_{session_label}"（幂等键）
+         - datestr / title / start=0 / end=0
+         - movements 只保留 name + sets；每条 set 加 "done": false
+      ③ 调 POST /api_upsert_trains_for_llm_v2
+      ④ 多个 session 间自动等 45s（训记写 API 限频）
+      ⑤ 输出每 session ok/fail 状态，JSON 格式
 
-    训记写 API 限频 45s/次。每写入一个 session：
-      等待 45s（API 限频要求）
-      汇报：「训记 ✅ {session_label} 已推送」
-    全部完成后汇报：「训记推送完成 X/X」
+    训记写入失败的 session 重新调落地可重试（client_request_id 保证幂等）。
 
   末尾输出汇总：
     ✅ 补计划 4/4 已创建
@@ -644,27 +643,68 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     ⚠️ 训记推送 3/4（S3 超时，重新调落地可重试）
   ```
 
-- **同步健身计划**：落地 3 天 + 训记回写。
+- **同步健身计划**：落地 3 天(后台批处理) + 训记回写。
   ```
-  Step 1 · 批量落地
-    固定 3 天，从今天起。按天依次执行，每天开始前汇报：
-      「第 1/3 天（7月13日周一）开始落地…」
+  Step 1 · 启动后台同步(AI 不阻塞,可继续对话)
+    1. KEY 检查同「落地健身计划」Step 4
+    2. KEY 就绪后,**AI 路由主进程同步跑作息+备忘(快,~2 秒/天)**:
+       - 作息管家:补计划
+       - 备忘录:记心愿
+    3. 训记推送**后台跑**(慢,~3 分钟/天 × 3 天 ≈ 9 分钟),用 Popen 不等:
+       ```python
+       import subprocess
+       proc = subprocess.Popen(
+           [sys.executable, "-m", "xunji_bridge", "run-sync", "--days", "3"],
+           cwd="D:/2Study/StudyNotes/SKILLS/卡路里/scripts",
+           stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+       )
+       # 立即回复用户,不阻塞
+       ```
+    4. 立即回复:「✅ 已启动后台同步(预计 9 分钟),你可以继续问我别的事」
 
-    对当天调「落地健身计划」完整流程。每次必须执行全部三步(作息+备忘+训记)。
+  Step 2 · mavis cron self 监控(每 30s 唤醒)
+    AI 启动一个 cron self 定时器,30s 唤醒一次检查状态文件:
+    ```bash
+    mavis cron self xunji-bridge-sync-check \
+      --every 30s \
+      --prompt "检查 ~/.mavis/xunji_bridge_sync_state.json;如果 status=completed 或 failed,告诉用户结果并删除 cron"
+    ```
+    唤醒时:
+    - 读 state 文件
+    - status=completed → 汇报:「✅ 同步完成:3/3 天,新增 X 条,更新 Y 条」+ 删 cron
+    - status=failed → 读 error_summary 汇报:「❌ 同步失败:[原因]」+ 删 cron
+    - status=running → 静默(等下次唤醒)
 
-    每天完成后汇报结果：
-      「第 1/3 天 ✅ 补计划4条 / 心愿4条 / 训记3条(S3超时跳过)」
+  Step 3 · 训记回写运动记录
+    （run-sync 内部已自动调 backfill,无需 AI 再调）
 
-    训记写入每 session 间隔 45s，总耗时约 9 分钟。
-
-  Step 2 · 训记回写运动记录
-    汇报：「开始训记回写…」
-    检查训记 KEY（同上：读 XUNJI_API_KEY，无则提示用户输入并存为系统环境变量）。
-    KEY 就绪后，调训记「训记查训练 今天 include_full_data=true」
-    → xunji_adapter.py 写入 exercise_log
-    → 用 xunji_localid + set_index 做幂等键，已有 UPDATE 无 INSERT。
-    完成后汇报：「训记回写 ✅ 新增 X 条，更新 Y 条」
+  状态文件:`~/.mavis/xunji_bridge_sync_state.json`
+  Schema 见 `scripts/xunji_bridge/run_sync.py` 头部注释
   ```
+
+### 🚨 训记 API 错误处理路由表
+
+所有训记 CLI 返回的错误都带 `error_type` 字段(来自 `xunji_bridge/errors.py`)。
+AI 看到错误时按此表处理:
+
+| error_type | 含义 | AI 应对 |
+|---|---|---|
+| `auth` | apikey 缺失/无效(401/403) | 提示用户去训记 App 重新生成 KEY(我的 → 设置 → 第三方接入 → 重置) |
+| `rate_limit` | too frequent(429) | CLI 已自动 sleep retry_after + 重试 2 次。如果还是 fail,告诉用户"训记限频,等会儿重试" |
+| `vip_required` | 仅 VIP 可用 | 告诉用户"训记 API 需要会员,普通账号无法用" |
+| `validation` | 请求字段错(400) | CLI 已附 raw_body,告诉用户具体哪个字段错(基于 raw_body.message) |
+| `server` | 5xx 服务端错 | CLI 已重试 2 次。如果还 fail,告诉用户"训记服务端临时挂,稍后重试" |
+| `network` | 超时/连接错 | CLI 已重试 2 次。如果还 fail,告诉用户"网络问题,检查本地网络" |
+| `unknown` | 其他 | 把 raw_body 完整给用户,让用户判断 |
+
+**重试策略**(用户 2026-07-13 确认):**全部错误重试 2 次**(防网络抖动),但 `auth` / `vip_required` / `validation` 重试无意义,直接报。
+
+**错误字段**(完整,err_full):
+- `error_type`:7 种之一
+- `message`:人类可读
+- `retry_after`:服务端要求等待秒数(只 rate_limit 有)
+- `raw_body`:API 原始响应(调试)
+- `code`:HTTP code(如果有)
 
 ### 📊 分析：查热量趋势 / 查营养配比 / 查热量缺口 / 查食物排行 / 查运动分布 / 查运动贡献
 

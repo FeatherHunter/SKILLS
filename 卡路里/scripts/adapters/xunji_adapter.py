@@ -67,37 +67,64 @@ def upsert_exercise_log(db_conn, rows):
       - 不存在 → INSERT
 
     Args:
-        db_conn: sqlite3.Connection（调用方负责 commit）
+        db_conn: sqlite3.Connection(调用方负责 commit/rollback)
         rows: xunji_response_to_rows() 的输出
+
+    Returns:
+        {"inserted": int, "updated": int, "total": int, "errors": list[str]}
+
+    Raises:
+        任何 SQL 错误向上抛,**已写入的 row 不 commit**(调用方需 rollback 或自行处理)
     """
     c = db_conn.cursor()
+    inserted = 0
+    updated = 0
+    errors = []
 
-    for row in rows:
-        c.execute('''
-            SELECT id FROM exercise_log
-            WHERE xunji_localid = ? AND set_index = ?
-        ''', (row['xunji_localid'], row['set_index']))
-        existing = c.fetchone()
+    try:
+        for row in rows:
+            try:
+                c.execute('''
+                    SELECT id FROM exercise_log
+                    WHERE xunji_localid = ? AND set_index = ?
+                ''', (row['xunji_localid'], row['set_index']))
+                existing = c.fetchone()
 
-        if existing:
-            c.execute('''
-                UPDATE exercise_log
-                SET exercise_type=?, reps=?, load_kg=?, calories_burned=?,
-                    category=?, difficulty=?, xunji_title=?, updated_at=CURRENT_TIMESTAMP
-                WHERE id=?
-            ''', (
-                row['exercise_type'], row['reps'], row['load_kg'],
-                row['calories_burned'], row['category'], row['difficulty'],
-                row['xunji_title'], existing[0],
-            ))
-        else:
-            c.execute('''
-                INSERT INTO exercise_log
-                    (date, exercise_type, reps, set_index, load_kg, calories_burned,
-                     category, difficulty, xunji_localid, xunji_title)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                row['date'], row['exercise_type'], row['reps'], row['set_index'],
-                row['load_kg'], row['calories_burned'], row['category'],
-                row['difficulty'], row['xunji_localid'], row['xunji_title'],
-            ))
+                if existing:
+                    c.execute('''
+                        UPDATE exercise_log
+                        SET exercise_type=?, reps=?, load_kg=?, calories_burned=?,
+                            category=?, difficulty=?, xunji_title=?, updated_at=CURRENT_TIMESTAMP
+                        WHERE id=?
+                    ''', (
+                        row['exercise_type'], row['reps'], row['load_kg'],
+                        row['calories_burned'], row['category'], row['difficulty'],
+                        row['xunji_title'], existing[0],
+                    ))
+                    updated += 1
+                else:
+                    c.execute('''
+                        INSERT INTO exercise_log
+                            (date, exercise_type, reps, set_index, load_kg, calories_burned,
+                             category, difficulty, xunji_localid, xunji_title)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        row['date'], row['exercise_type'], row['reps'], row['set_index'],
+                        row['load_kg'], row['calories_burned'], row['category'],
+                        row['difficulty'], row['xunji_localid'], row['xunji_title'],
+                    ))
+                    inserted += 1
+            except Exception as e:
+                # 单行失败不中断整体,记到 errors(让调用方决定如何处理)
+                errors.append(f"localid={row.get('xunji_localid')} set_index={row.get('set_index')}: {e}")
+                # 继续下一行(不抛)
+    except Exception:
+        # 外层捕获 cursor 级别异常(数据库锁定等)
+        raise
+
+    return {
+        "inserted": inserted,
+        "updated": updated,
+        "total": inserted + updated,
+        "errors": errors,
+    }

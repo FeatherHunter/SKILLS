@@ -118,7 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
     <h1>作息管家</h1>
     <p>根据用户每日语录生成 0-24 点作息时间表，支持同步、摘要、查询、计划管理。所有操作通过 Python CLI 执行。</p>
     <div class="stats">
-        <div class="stat-item"><span>23</span><span>唤醒词</span></div>
+        <div class="stat-item"><span>24</span><span>唤醒词</span></div>
         <div class="stat-item"><span>8</span><span>功能模块</span></div>
         <div class="stat-item"><span>15</span><span>CLI 命令</span></div>
         <div class="stat-item"><span>3</span><span>数据表</span></div>
@@ -131,11 +131,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 </div>
 
 <div class="tabs" id="tabs">
-    <div class="tab active" data-mod="all">全部 <span class="tab-count">23</span></div>
+    <div class="tab active" data-mod="all">全部 <span class="tab-count">24</span></div>
     <div class="tab" data-mod="sync">同步 <span class="tab-count">3</span></div>
     <div class="tab" data-mod="summary">摘要 <span class="tab-count">2</span></div>
     <div class="tab" data-mod="query">查询 <span class="tab-count">7</span></div>
-    <div class="tab" data-mod="plan">计划 <span class="tab-count">8</span></div>
+    <div class="tab" data-mod="plan">计划 <span class="tab-count">9</span></div>
     <div class="tab" data-mod="admin">管理 <span class="tab-count">1</span></div>
     <div class="tab" data-mod="cron">Cron <span class="tab-count">2</span></div>
 </div>
@@ -694,6 +694,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
                     <div class="flow-step">已装但未授权 / 无权限 → 跳过，提示「lark-cli auth login」</div>
                     <div class="flow-step">未装 → 跳过，提示安装价值：① 计划同步 ② 分钟级拆分 ③ 双向 CRUD</div>
                     <div class="flow-note"><strong>可移植性：</strong>本技能装在别人电脑上也能工作，缺飞书不报错。<strong>提示不是引导：</strong>不主动帮装，给一行 <code>npm i -g lark-cli</code> 用户自决。</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="word-item" data-keywords="复盘 回顾今天 今天做得怎么样 复盘一下 update-event completion">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">复盘（打卡联动版）</span>
+                <span class="word-desc">2026-07-13 升级 · 拉取今日备忘录打卡作预填参考，用户主导完成情况</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-review')">python3 scripts/schedule_cli.py update-event &lt;id&gt; --completion X --completion-note Y</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-review">
+                    <div class="flow-title">执行流程（2026-07-13 升级 · 打卡联动版）</div>
+                    <div class="flow-step"><strong>前置 · 状态机快判</strong>：拉 list-events，IF 当日无活跃事件 → 提示"没计划"退出；IF 所有 completion IS NOT NULL → 跳到 Step 6 复盘讨论</div>
+                    <div class="flow-step"><strong>Step 0 · 提示同步</strong>：AI 问"你今天有没有执行过 '/备忘录 同步飞书'?" — 用户已同步 / 没同步 / 不连飞书 三分支；任意步可取消</div>
+                    <div class="flow-step"><strong>降级路径</strong>：备忘录不可用 → 跳过 Step 0 + 打卡拉取，走原版</div>
+                    <div class="flow-step"><strong>Step 1</strong>：确认日期（默认今天）</div>
+                    <div class="flow-step"><strong>Step 2 · 拉计划 + 拉打卡</strong>：list-events + memo_cli.py search-date &lt;今日&gt; &lt;今日&gt; -c 打卡</div>
+                    <div class="flow-step"><strong>Step 3 · 逐条 + 打卡预填</strong>：AI 4 档匹配（强 / 弱 / 不确定 / 无），无匹配询问"是没做还是忘了打卡?"</div>
+                    <div class="flow-step"><strong>Step 4 · 追问归因</strong>：2/3/4/5 时问"为什么?"</div>
+                    <div class="flow-step"><strong>Step 5 · 写入</strong>：逐条 update-event --completion X --completion-note Y</div>
+                    <div class="flow-step"><strong>Step 6 · 小结 + 关联打卡统计</strong>：6 档汇总 + 今日打卡匹配数 / 未匹配数</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">id, title, time_start/end, completion, completion_note</td><td>取当日活跃事件 + 状态机快判</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>memo.db</td><td>notes</td><td class="field-name">id, content, sub_category, created_at（category=打卡）</td><td>取今日打卡</td></tr>
+                        <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">completion / completion_note</td><td>逐条写入完成情况</td></tr>
+                    </table>
+                    <div class="flow-note"><strong>核心改动（2026-07-13）：</strong>原复盘只读用户自报；新版加<strong>备忘录打卡</strong>作为预填参考。<strong>不破坏已有功能：</strong>6 档 completion 不变 / 触发词不变 / CLI 命令不变 / 数据库结构不变 / 打卡读取走 memo_cli 原命令。<br><br><strong>边界：</strong>① 不写回飞书 task（仅读） ② 不反哺心愿状态 ③ 打卡文本匹配由 AI 4 档分级，不做硬关联表 ④ 用户始终是 ground truth。</div>
                 </div>
             </div>
         </div>

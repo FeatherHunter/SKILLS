@@ -16,6 +16,11 @@ API:POST https://trains.xunjiapp.cn/api_trains_for_llm_v2
     include_full_data=true  → 30s/次
     too frequent → API 报错,需等待 retry_after 再试
 
+⚠ fetch 是训记数据的**真实状态源**(2026-07-13 实测确认):
+- upsert 响应的 truncated 字段不可信(经常只回最后一个 movement,truncated 仍为 false)
+- 训记 upsert 后要看真实数据,**用 fetch --full** 而不是信 upsert 响应
+- 应用层脚本(overlay-plan 等)依赖 fetch 拿 localid + 验证写入正确性
+
 公开 API:
     fetch_trains(datestr, full_data=False, timeout=30) -> dict
         调 API 返回完整 JSON;失败返回 {"err": True, ...}
@@ -86,13 +91,13 @@ def fetch_trains(datestr: str, full_data: bool = False, timeout: int = 30, respe
                 result = json.loads(raw.decode("utf-8"))
                 if respect_rate_limit:
                     auth.update_last_call(full=full_data)
-                # 训记限频特殊形态:HTTP 200 但 res 是字符串(如 "too frequent, retry after 10s")
-                if isinstance(result.get("res"), str) and (
-                    "too frequent" in result["res"].lower() or "frequent" in result["res"].lower()
-                ):
-                    from .errors import classify_error
-                    err = classify_error({"err": True, "code": 200, "body": result})
-                    err["raw_body"] = result["res"]
+                # 软错误检测:HTTP 200 但业务错(success:false / error 字段 / res 字符串限频)
+                # 全部交给 classify_error 统一归类
+                from .errors import classify_error
+                err = classify_error(result)
+                if err.get("error_type"):
+                    if "raw_body" not in err:
+                        err["raw_body"] = result
                     return {"err": True, **err}
                 return result
         except urllib.error.HTTPError as e:

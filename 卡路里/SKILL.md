@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -135,6 +135,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
 | 落地健身计划 | 将某天计划执行：补计划→查/记心愿→训记（仅今天） | `workout_plan.get_day_plan()` + 跨技能 AI 路由 |
 | 同步健身计划 | 批量落地 3 天 + 训记查训练 → xunji_adapter 回写 | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + `xunji_adapter.py` |
+| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练(localid 已有,start/end=0) | `xunji_bridge.py overlay-plan --date X` |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
 
 ### 📊 分析
@@ -234,7 +235,7 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | `workout_plan.py` | 新建 | 计划循环逻辑 + 按日查询 |
 | `render_workout_plan.py` | 新建 | HTML 渲染（DB→Apple 风格页面）|
 | `adapters/xunji_adapter.py` | 新建 | 训记 API ↔ exercise_log 纯函数适配器（被 xunji_bridge 调用）|
-| `xunji_bridge/` | 新建 | 训记训练拓展功能 CLI 入口包（verify/push-plan/fetch/backfill/key 5 子命令）|
+| `xunji_bridge/` | 新建 | 训记训练拓展功能 CLI 入口包(verify/fetch/upsert/push-plan/overlay-plan/backfill/key/run-sync 8 子命令) |
 | `generate_ts_config.py` | 269 | 从数据库生成 `config-calorie.ts` |
 
 ### 模块依赖图
@@ -566,6 +567,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     A. 安全止损 — 制止明显不安全的要求（如"每天 50 组胸"）
     B. 解释决策 — 每次建议必须说"因为..."
     C. 现状感知 — 利用基线信息在后续决策中引用
+    D. start_date 必须是周一(2026-07-13 加) — 健身计划以自然周对齐;若用户给的不是周一,先 round 到最近周一再写入;不 round 会导致用户口语"第 N 周"跟算法返的 plan_week 错位(因为 n 周循环按距离 start 的整 7 天算)
 
   第1轮·基线建立：
     当前训练状态 + 目标 + 水平 + 伤病/保护部位 + 器材清单 + 讨厌的动作
@@ -631,7 +633,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       ① 读 workout_plans 中当天的所有 session
       ② 按以下规则转成训记 res[] 格式：
          - schema_version = "train_open_api_v2"
-         - client_request_id = "{日期}_{session_label}"（幂等键）
+         - client_request_id = "{日期}_{session_label}_{uuid8}"（幂等键；uuid8 后缀满足训记 unique-id-from-agent 硬约束,避免同 label 重推被训记去重）
          - datestr / title / start=0 / end=0
          - movements 只保留 name + sets；每条 set 加 "done": false
       ③ 调 POST /api_upsert_trains_for_llm_v2
@@ -683,6 +685,52 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   状态文件:`~/.mavis/xunji_bridge_sync_state.json`
   Schema 见 `scripts/xunji_bridge/run_sync.py` 头部注释
+  ```
+
+- **训记-覆盖X日的训练计划**：用卡路里 plan 覆盖训记某天**已有**训练(localid 已有 + start/end=0,**等同新建语义**)。
+  ```
+  适用场景:
+    - 训记那天的训练已经在(可能手建,可能 push-plan 建过),想用卡路里 plan 同步内容
+    - 注意:跟「落地健身计划」的区别 —— 落地走 push-plan(新建 localid=0),
+            本触发词走 overlay-plan(更新 localid 已有)
+  跟「落地健身计划」Step 1/2/3 的区别:
+    - 训记-覆盖只动训记,不动作息/备忘
+    - 不调「补计划」、不调「记心愿」
+
+  Step 1 · 解析日期
+    用户说"覆盖7.13"/"训记-覆盖2026-07-13的训练计划"等
+    → 解析成 YYYY-MM-DD
+    → 昨天/前天拒绝(训记"覆盖历史"无意义,改 plan 才有意义)
+
+  Step 2 · 调底层 CLI
+    不手写 HTTP,直接调:
+      python scripts/xunji_bridge.py overlay-plan --date {YYYY-MM-DD}
+    可选参数:
+      --dry-run       预览将要推什么(不实推)
+      --missing fail  卡路里有但训记没的 title → 报错退出(默认)
+      --missing skip  卡路里有但训记没的 title → 跳过,只推匹配的
+
+  Step 3 · 内部做了什么
+    ① fetch 训记 list(只拿 title → localid 映射,**不取 start/end**)
+    ② 拉卡路里 plan(get_day_plan)
+    ③ 按 title 对账
+    ④ 缺 title → 按 --missing 策略处理
+    ⑤ 训记有但卡路里没 → 报告保留(不删)
+    ⑥ 构造 res[]:localid 已有,start=0, end=0
+    ⑦ 调底层 upsert.upsert_trains(单次,训记 API 单次最多 4 条训练)
+    ⑧ 输出对账结果 + 训记响应
+
+  Step 4 · 训记响应处理
+    success → 告知用户「✅ 覆盖 X 条训练(start/end 都改 0)」
+    fail_count > 0 → 报告训记错误(error_type 路由见下方"训记 API 错误处理路由表")
+    missing=fail 命中 → 报告哪些 title 训记找不到,让用户决定:
+        - 是训记那边没建 → 改用 push-plan(新建)
+        - 是 plan 改了 title → 同步改回去或忽略
+
+  末尾输出模板:
+    ✅ 训记覆盖 4/4 完成(上午·臂 / 下午·胸 / 晚上·肩+腿 / 居家·腹,start/end=0)
+    或:
+    ❌ 卡路里有但训记没:[title 列表](请先在训记 App 建对应训练,或用 push-plan 新建)
   ```
 
 ### 🚨 训记 API 错误处理路由表

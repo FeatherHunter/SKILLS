@@ -2,12 +2,15 @@
 # -*- coding: utf-8 -*-
 """xunji_bridge CLI 入口。
 
-5 个子命令:
+8 个子命令:
     verify <动作名>...            校验动作名是否在训记官方库
-    push-plan --date YYYY-MM-DD   推送当天的 plan 到训记(45s 限频)
     fetch --date YYYY-MM-DD       拉训记数据,纯 JSON 输出
+    upsert --json <res[]>         训记 upsert API 原子封装(增/改,client_request_id 唯一性兜底)
+    push-plan --date YYYY-MM-DD   推送当天的 plan 到训记(45s 限频,新建,localid=0)
+    overlay-plan --date YYYY-MM-DD  覆盖当天的 plan 到训记(localid 已有,start/end=0)
     backfill --date YYYY-MM-DD    拉 + 写 exercise_log(幂等)
     key status|set|clear [--legacy]  KEY 管理
+    run-sync --days N             后台串行 N 天同步训记(写状态文件)
 
 用法示例:
     python scripts/xunji_bridge.py --help
@@ -15,9 +18,13 @@
     python scripts/xunji_bridge.py key status
     python scripts/xunji_bridge.py key set <YOUR_KEY>
     python scripts/xunji_bridge.py fetch --date 2026-07-13
+    python scripts/xunji_bridge.py upsert --json '[{"datestr":"2026-07-13","localid":1783908000,...}]'
+    python scripts/xunji_bridge.py upsert --json-file /tmp/res.json --dry-run
     python scripts/xunji_bridge.py backfill --date 2026-07-13
     python scripts/xunji_bridge.py backfill --days 2
     python scripts/xunji_bridge.py push-plan --date 2026-07-13 --dry-run
+    python scripts/xunji_bridge.py overlay-plan --date 2026-07-13 --dry-run
+    python scripts/xunji_bridge.py overlay-plan --date 2026-07-13
 
 退出码:
     0  成功
@@ -32,7 +39,7 @@ import argparse
 import json
 import sys
 
-from . import auth, catalog, fetch, push, backfill as backfill_mod, run_sync, errors
+from . import auth, catalog, fetch, upsert, push, overlay, backfill as backfill_mod, run_sync, errors
 from . import __version__
 
 EXIT_OK = 0
@@ -156,6 +163,82 @@ def cmd_run_sync(args) -> int:
     return EXIT_OK
 
 
+def cmd_upsert(args) -> int:
+    """训记 upsert API 原子调用(增/改)。"""
+    # 收 res[] 列表:--json 字符串 OR --json-file 文件
+    if bool(args.json) == bool(args.json_file):
+        print("用法:upsert 必须二选一传 --json <res[]> 字符串 或 --json-file <path>", file=sys.stderr)
+        return EXIT_ERR
+    try:
+        if args.json_file:
+            with open(args.json_file, "r", encoding="utf-8") as f:
+                res_list = json.load(f)
+        else:
+            res_list = json.loads(args.json)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"res[] 解析失败:{e}", file=sys.stderr)
+        return EXIT_ERR
+
+    if not isinstance(res_list, list):
+        print(f"res[] 必须是 JSON 数组(实际:{type(res_list).__name__})", file=sys.stderr)
+        return EXIT_ERR
+
+    # dry-run 时打印对账报告(stderr),方便用户预览将要推什么
+    if args.dry_run:
+        print(f"  → 准备 upsert {len(res_list)} 条训练(训记单次最多 4 条):", file=sys.stderr, flush=True)
+        for i, item in enumerate(res_list, 1):
+            datestr = item.get("datestr", "?")
+            localid = item.get("localid", 0)
+            title = item.get("title", "")
+            start = item.get("start", 0)
+            end = item.get("end", 0)
+            n_moves = len(item.get("movements", []) or [])
+            kind = "新建" if localid == 0 else f"更新(localid={localid})"
+            print(
+                f"    [{i}/{len(res_list)}] {datestr}  {kind}  "
+                f"title={title!r}  start={start}  end={end}  movements={n_moves}",
+                file=sys.stderr, flush=True,
+            )
+
+    try:
+        resp = upsert.upsert_trains(
+            res_list,
+            client_request_id=args.client_request_id,
+            dry_run=args.dry_run,
+            include_full_data=args.include_full_data,
+        )
+    except RuntimeError as e:  # auth.require_key 抛的
+        print(f"鉴权失败:{e}", file=sys.stderr)
+        return EXIT_AUTH
+    _print_json(resp)
+    if resp.get("err"):
+        return EXIT_API
+    return EXIT_OK
+
+
+def cmd_overlay_plan(args) -> int:
+    """用卡路里 plan 覆盖训记某天的训练(localid 已有,start/end=0)。"""
+    from . import overlay as _overlay
+    try:
+        result = _overlay.overlay_day_plan(
+            args.date,
+            dry_run=args.dry_run,
+            missing=args.missing,
+        )
+    except RuntimeError as e:
+        print(f"鉴权失败:{e}", file=sys.stderr)
+        return EXIT_AUTH
+    _print_json(result)
+    if result.get("err"):
+        # 区分:missing=fail 报"err"是业务报错,不是 API 错;走 EXIT_ERR
+        if "missing=fail" in str(result.get("err", "")):
+            return EXIT_ERR
+        return EXIT_API
+    if result.get("fail_count", 0) > 0:
+        return EXIT_API
+    return EXIT_OK
+
+
 # ── argparse 装配 ──────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
@@ -204,6 +287,26 @@ def build_parser() -> argparse.ArgumentParser:
     p_sync.add_argument("--start-offset", type=int, default=0, help="起始日偏移(0=今天,1=明天,...)")
     p_sync.add_argument("--dry-run", action="store_true", help="只创建状态文件,不实际跑")
     p_sync.set_defaults(func=cmd_run_sync)
+
+    # upsert(原子:训记 upsert API 1:1)
+    p_upsert = sub.add_parser("upsert", help="训记 upsert API 原子调用(增/改,res[] 透传)")
+    p_upsert.add_argument("--json", help='res[] JSON 字符串,例: \'[{"datestr":"2026-07-13","localid":0,"title":"x","start":0,"end":0,"movements":[]}]\'')
+    p_upsert.add_argument("--json-file", help="res[] JSON 文件路径(优先于 --json)")
+    p_upsert.add_argument("--client-request-id", help="幂等键(缺则自动 uuid4)")
+    p_upsert.add_argument("--include-full-data", action="store_true", help="传 include_full_data=true(改 RPE/difficulty/note 时建议)")
+    p_upsert.add_argument("--dry-run", action="store_true", help="只构造 payload 不发请求")
+    p_upsert.set_defaults(func=cmd_upsert)
+
+    # overlay-plan(应用层:用卡路里 plan 覆盖训记某天训练,localid 已有,start/end=0)
+    p_overlay = sub.add_parser(
+        "overlay-plan",
+        help="用卡路里 plan 覆盖训记某天的训练(localid 已有,start/end=0)",
+    )
+    p_overlay.add_argument("--date", required=True, help="YYYY-MM-DD")
+    p_overlay.add_argument("--dry-run", action="store_true", help="只构造 payload 不发请求")
+    p_overlay.add_argument("--missing", choices=["fail", "skip"], default="fail",
+                           help="卡路里有但训记没的 title 处理策略(默认 fail)")
+    p_overlay.set_defaults(func=cmd_overlay_plan)
 
     return parser
 

@@ -8,6 +8,17 @@
 - 错误字段完整(error_type / message / retry_after / raw_body)
 - 集中管理:不分散到各 fetch/push/backfill 模块
 
+训记的两种错误模式(关键事实,所有调训记 API 的代码必须处理):
+    1. 硬错误:HTTPError(HTTP 4xx/5xx,带 code + body)
+       → classify_error(urllib.error.HTTPError) 走标准路径
+    2. 软错误:HTTP 200 但业务错(连接成功但操作失败)
+       → classify_error({"success": false, "error": "..."}) / 含 error 字段
+       → 也覆盖老 fetch 的 "res": "too frequent..." 字符串限频
+       → 走 _classify_by_code_and_body(200, body, body_raw) 跟硬错误同一套分类
+
+所有调训记 API 的代码必须走 classify_error 处理响应,不要自己 if 字段判断
+(否则会漏判软错误,导致误报"成功"—— 2026-07-13 实推踩过这个坑)。
+
 公开 API:
     classify_error(err_input) -> dict
         把 HTTPError / API 错误响应 / 网络异常 → 结构化错误 dict
@@ -65,8 +76,22 @@ def classify_error(err_input: Any) -> dict:
         code = err_input.code
         return _classify_by_code_and_body(code, body, body_raw)
 
-    # 输入 2:dict(API 内部错误)
+    # 输入 2:dict(API 内部错误 / 软错误)
     if isinstance(err_input, dict):
+        # 软错误检测:HTTP 200 但 success:false / 含 error 字段 / 老格式 res 字符串限频
+        # 命中后走 _classify_by_code_and_body 走完正常错误分类流程
+        if "err" not in err_input and (
+            err_input.get("success") is False
+            or "error" in err_input
+            or (
+                isinstance(err_input.get("res"), str)
+                and "too frequent" in err_input["res"].lower()
+            )
+        ):
+            body = err_input
+            body_raw = json.dumps(body, ensure_ascii=False) if body is not None else ""
+            return _classify_by_code_and_body(200, body, body_raw)  # code=200:HTTP 200 业务错
+
         if not err_input.get("err"):
             # 正常的 dict 不是错误
             return {"error_type": None, "message": "", "retry_after": None,
@@ -181,6 +206,8 @@ def _parse_retry_after(body) -> Optional[int]:
     - body.retry_after: 45
     - body.retryAfter: 45
     - body.message 含 "45s"
+    - body.error 含 "retry after 45s"(2026-07-13 实推踩到,upsert 软错误格式)
+    - body.res 是字符串(如 "too frequent, retry after 10s",老 fetch 限频格式)
     """
     if not isinstance(body, dict):
         return None
@@ -189,8 +216,16 @@ def _parse_retry_after(body) -> Optional[int]:
         return int(val)
     if isinstance(val, str) and val.isdigit():
         return int(val)
-    # 尝试从 message 提取
-    msg = body.get("message") or body.get("msg") or ""
+    # 尝试从 message / error / res(字符串)提取
+    candidates = [
+        body.get("message") or "",
+        body.get("msg") or "",
+        body.get("error") or "",
+    ]
+    res = body.get("res")
+    if isinstance(res, str):
+        candidates.append(res)
+    msg = " ".join(candidates)
     import re
     m = re.search(r"(\d+)\s*s", str(msg))
     if m:

@@ -1,58 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""训记训练数据 —— 写(push / upsert)。
+"""训记训练数据 —— 推 plan(应用层)。
 
-API:POST https://trains.xunjiapp.cn/api_upsert_trains_for_llm_v2
+职责:
+- 从卡路里 DB 读 plan(session 数据)
+- 逐个 session 转成训记 res[] 格式
+- 45s 限频(应用层组合策略,不是单次 API 约束)
+- 调底层 `upsert.upsert_trains()` 写训记
 
-请求体:
-    {
-        "schema_version": "train_open_api_v2",
-        "client_request_id": "<unique-id>",
-        "dry_run": false,
-        "res": [
-            {
-                "datestr": "2026-07-01",
-                "localid": 0,                 # 新建时传 0;更新已有训练时传实际 localid
-                "title": "胸部训练",
-                "start": 0,                    # 按卡路里 SKILL.md 约定传 0(避免训记 BUG)
-                "end": 0,
-                "movements": [
-                    {"name": "悍马机卧推", "sets": [
-                        {"done": false, "weight": "42", "unit": "kg", "reps": "12"}
-                    ]}
-                ]
-            }
-        ]
-    }
-
-限频:45s/次。脚本内置 sleep,多 session 自动等。
+**本层不直接调 HTTP**。HTTP 调用已下沉到 `upsert.py`(原子层)。
 
 公开 API:
     plan_session_to_xunji(date_str, week, dow, session_index) -> dict
         从卡路里 DB workout_plans 取某个 session,转成训记 res[] 的一项
 
-    upsert_trains(res_list, client_request_id, dry_run=False, timeout=30) -> dict
-        调 API;失败返回 {"err": True, ...}
-
     push_day_plan(date_str, dry_run=False) -> dict
         取一整天所有 session,逐个 upsert,自动 45s 限频
+        返回 {date, session_count, results, ok_count, fail_count}
 """
 from __future__ import annotations
 
-import json
 import sys
 import time
+import uuid
 from pathlib import Path
-from typing import Any
 
-import urllib.error
-import urllib.request
 
-from . import auth
-
-BASE_URL = "https://trains.xunjiapp.cn"
-ENDPOINT = f"{BASE_URL}/api_upsert_trains_for_llm_v2"
-RATE_LIMIT_SECONDS = 45  # 训记写 API 限频要求
+RATE_LIMIT_SECONDS = 45  # 训记写 API 限频要求(应用层策略)
 
 
 def _safe_str(v, default: str = "0") -> str:
@@ -136,55 +110,6 @@ def _session_to_res(date_str: str, session: dict) -> dict:
     }
 
 
-def upsert_trains(
-    res_list: list[dict],
-    client_request_id: str,
-    dry_run: bool = False,
-    timeout: int = 30,
-) -> dict:
-    """调训记 upsert API。失败返回 dict 带 err 标记。"""
-    if dry_run:
-        return {"dry_run": True, "client_request_id": client_request_id, "res_count": len(res_list)}
-
-    key = auth.require_key()
-    payload = {
-        "schema_version": "train_open_api_v2",
-        "client_request_id": client_request_id,
-        "dry_run": False,
-        "res": res_list,
-    }
-    body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        ENDPOINT,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}",
-        },
-        method="POST",
-    )
-
-    def _do_call() -> dict:
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read()
-                return json.loads(raw.decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            from .errors import classify_error
-            err = classify_error(e)
-            return {"err": True, **err}
-        except Exception as e:
-            from .errors import classify_error
-            err = classify_error(e)
-            return {"err": True, **err}
-
-    from .errors import retry_with_backoff
-    response, attempts = retry_with_backoff(_do_call, max_retries=2, sleep_base=5)
-    if attempts > 1:
-        response = {**response, "attempts": attempts}
-    return response
-
-
 def push_day_plan(date_str: str, dry_run: bool = False, sleep_seconds: int = RATE_LIMIT_SECONDS) -> dict:
     """推送一整天的所有 session 到训记,自动 45s 限频。
 
@@ -223,7 +148,9 @@ def push_day_plan(date_str: str, dry_run: bool = False, sleep_seconds: int = RAT
 
     for i, s in enumerate(sessions):
         session_label = s.get("session_label", "")
-        client_request_id = f"{date_str}_{session_label}"  # 按卡路里 SKILL.md 约定
+        # 训记要求 client_request_id unique-id-from-agent。
+        # 用 {date}_{label}_{uuid8} 兼顾语义(日志反查)+ 唯一(覆盖同名 session 不被训记去重)。
+        client_request_id = f"{date_str}_{session_label}_{uuid.uuid4().hex[:8]}"
 
         # 非首个 session 需要等限频
         if i > 0 and not dry_run:
@@ -231,7 +158,12 @@ def push_day_plan(date_str: str, dry_run: bool = False, sleep_seconds: int = RAT
             time.sleep(sleep_seconds)
 
         res_item = _session_to_res(date_str, s)
-        resp = upsert_trains([res_item], client_request_id=client_request_id, dry_run=dry_run)
+        from . import upsert as _upsert
+        resp = _upsert.upsert_trains(
+            [res_item],
+            client_request_id=client_request_id,
+            dry_run=dry_run,
+        )
 
         is_ok = not resp.get("err")
         if is_ok:

@@ -10,11 +10,13 @@
 部位推断:用 exercise._infer_category(name)
 
 公开 API:
-    backfill_date(datestr, full_data=True) -> dict
-        拉某天的训记数据 + 写 exercise_log
+    backfill_range(end_datestr=None, days=1, full_data=True) -> dict
+        拉 [end_datestr-days+1, end_datestr] 区间(单日 = days=1)
+        统一 API:单日和范围用同一个函数,输出格式永远一致
+        返回:{end_date, days, results[], total_inserted, total_updated}
 
-    backfill_range(datestr, days=2, full_data=True) -> dict
-        拉 [datestr, datestr-days+1] 区间(默认今天+昨天 = 2 天)
+    _backfill_one(datestr, full_data=True) -> dict
+        内部 helper,回写单日。外部应通过 backfill_range 调用。
 """
 from __future__ import annotations
 
@@ -57,7 +59,7 @@ def _get_latest_body_weight_kg() -> Optional[float]:
     return None
 
 
-def backfill_date(datestr: str, full_data: bool = True) -> dict:
+def _backfill_one(datestr: str, full_data: bool = True) -> dict:
     """回写某天的训记数据到 exercise_log。
 
     Args:
@@ -151,7 +153,7 @@ def backfill_date(datestr: str, full_data: bool = True) -> dict:
     }
 
 
-def backfill_range(end_datestr: Optional[str] = None, days: int = 2, full_data: bool = True) -> dict:
+def backfill_range(end_datestr: Optional[str] = None, days: int = 1, full_data: bool = True) -> dict:
     """回写 [end_datestr - days + 1, end_datestr] 区间(默认今天+昨天)。
 
     Args:
@@ -163,7 +165,7 @@ def backfill_range(end_datestr: Optional[str] = None, days: int = 2, full_data: 
         {
             "end_date": str,
             "days": int,
-            "results": [backfill_date() 输出列表],
+            "results": [_backfill_one() 输出列表],
             "total_inserted": int,
             "total_updated": int,
         }
@@ -178,7 +180,7 @@ def backfill_range(end_datestr: Optional[str] = None, days: int = 2, full_data: 
     total_upd = 0
     for i in range(days):
         d = (end - timedelta(days=i)).isoformat()
-        r = backfill_date(d, full_data=full_data)
+        r = _backfill_one(d, full_data=full_data)
         results.append(r)
         total_ins += r.get("inserted", 0)
         total_upd += r.get("updated", 0)

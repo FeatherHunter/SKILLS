@@ -718,15 +718,23 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   末尾输出(JSON):
     {
-      "date": "2026-07-13",
-      "fetch_ok": true,
-      "trains_count": 3,
-      "inserted": 2,
-      "updated": 1,
-      "skipped_empty": false,
-      "body_weight_kg": 70.0,
-      "errors": [],
-      "err": null
+      "end_date": "2026-07-13",
+      "days": 1,
+      "results": [
+        {
+          "date": "2026-07-13",
+          "fetch_ok": true,
+          "trains_count": 3,
+          "inserted": 2,
+          "updated": 1,
+          "skipped_empty": false,
+          "body_weight_kg": 70.0,
+          "errors": [],
+          "err": null
+        }
+      ],
+      "total_inserted": 2,
+      "total_updated": 1
     }
   ```
 

@@ -96,19 +96,16 @@ def cmd_fetch(args) -> int:
 
 def cmd_backfill(args) -> int:
     try:
-        if args.days and args.days > 1:
-            result = backfill_mod.backfill_range(end_datestr=args.date, days=args.days)
-        else:
-            result = backfill_mod.backfill_date(args.date, full_data=True)
+        # 2026-07-13 改:统一 API,单日(days=1)和范围用同一个 backfill_range
+        # args.days 默认 0 → max(0, 1) = 1(走单日)
+        days = max(args.days, 1)
+        result = backfill_mod.backfill_range(end_datestr=args.date, days=days)
     except RuntimeError as e:
         print(f"鉴权失败:{e}", file=sys.stderr)
         return EXIT_AUTH
-    # backfill_range 返 end_date 字段,backfill_date 返 date 字段;统一一下显示
-    if "end_date" in result and "date" not in result:
-        result = {"date": result["end_date"], **result}
     _print_json(result)
     # 任何一天 fetch 失败 → 退出码 EXIT_API
-    for r in result.get("results", [result]):
+    for r in result.get("results", []):
         if r.get("fetch_ok") is False:
             return EXIT_API
     return EXIT_OK

@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -134,7 +134,8 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动，含今日复盘 section） | `render_workout_plan.py` |
 | 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
 | 落地健身计划 | 将某天计划执行：补计划→查/记心愿→训记（仅今天） | `workout_plan.get_day_plan()` + 跨技能 AI 路由 |
-| 同步健身计划 | 批量落地 3 天 + 训记查训练 → xunji_adapter 回写 | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + `xunji_adapter.py` |
+| 同步健身计划 | 批量落地 3 天 + 调「回写训记」(Step 2 引用) | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + 调「回写训记」 |
+| 回写训记 | 拉训记数据回写 exercise_log(幂等),独立 Step 2 | `python scripts/xunji_bridge.py backfill [--date X] [--days N]` |
 | 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练(localid 已有,start/end=0) | `xunji_bridge.py overlay-plan --date X` |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
 | 复盘训练 | 对指定时间段的训练做 plan vs 实绩对比（完成率/漏做/超额/异常） | `python scripts/exercise_review.py --start X --end Y` |
@@ -683,12 +684,10 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     每天完成后汇报:
       「第 1/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 3 条(S3 超时跳过)」
 
-  Step 2 · 训记回写运动记录
-    3 天都跑完后,统一回写。
-    汇报:「开始训记回写…」
-    KEY 就绪后,调训记 fetch 3 天(每天 include_full_data=true)。
-    → xunji_adapter.py 写入 exercise_log
-    → 幂等键:xunji_localid + set_index(已有 UPDATE 无 INSERT)。
+  Step 2 · 训记回写(2026-07-13 改:独立为「回写训记」trigger,此处引用)
+    3 天都跑完后,调「回写训记」3 天(--days 3)。
+    触发词路由:`python scripts/xunji_bridge.py backfill --days 3`
+    实现细节见「回写训记」章节(幂等键 / 错误处理 / 体重推算都在那里)。
     完成后汇报:「训记回写 ✅ 新增 X 条,更新 Y 条」
 
   末尾输出模板:
@@ -696,6 +695,39 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     第 2/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
     第 3/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
     训记回写 ✅ 新增 12 条,更新 0 条
+  ```
+
+- **回写训记**：`python scripts/xunji_bridge.py backfill [--date YYYY-MM-DD] [--days N]` → 拉训记数据回写 exercise_log(幂等)。
+  ```
+  行为:
+    调训记 fetch(include_full_data=true)
+    → xunji_adapter.py 解析 → upsert_exercise_log
+    → 幂等键:xunji_localid + set_index(同组不会重复写)
+    → 自动取最新体重推算热量
+
+  参数:
+    --date YYYY-MM-DD  单日(默认今天)
+    --days N           范围 [date-N+1, date](默认 1)
+
+  前置:KEY 检查同「落地健身计划」Step 4(XUNJI_TRAINS_KEY)
+
+  使用场景:
+    - 「同步健身计划」Step 2 自动调(--days 3)
+    - 晚上 6 点已同步过、8 点又有新训练 → 「回写训记」单独跑
+    - 周末补练漏写 → 「回写训记 --date X --days N」
+
+  末尾输出(JSON):
+    {
+      "date": "2026-07-13",
+      "fetch_ok": true,
+      "trains_count": 3,
+      "inserted": 2,
+      "updated": 1,
+      "skipped_empty": false,
+      "body_weight_kg": 70.0,
+      "errors": [],
+      "err": null
+    }
   ```
 
 - **训记-覆盖X日的训练计划**：用卡路里 plan 覆盖训记某天**已有**训练(localid 已有 + start/end=0,**等同新建语义**)。

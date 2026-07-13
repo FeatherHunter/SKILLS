@@ -496,11 +496,12 @@
       <button class="trigger-tag" onclick="toggleDetail(this)">记打卡</button>
       <button class="trigger-tag" onclick="toggleDetail(this)">记情绪日记</button>
     </div>
-    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [-m 媒体] [--tasklist-guid 飞书清单GUID]</button>
+    <button class="cli-cmd" onclick="toggleFlow(this)">script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [-m 媒体] [--tasklist-guid 飞书清单GUID] [--due YYYY-MM-DD]</button>
     <div class="detail-panel">
       <h4>CLI 完整语法</h4>
-      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span> <span class="hl-flag">--tasklist-guid</span> <span class="hl-val">飞书清单GUID</span></pre>
+      <pre><span class="hl-cmd">script/memo_cli.py add</span> <span class="hl-val">"内容"</span> <span class="hl-flag">-c</span> <span class="hl-val">顶层分类</span> <span class="hl-flag">-s</span> <span class="hl-val">子分类</span> <span class="hl-flag">-m</span> <span class="hl-val">媒体路径</span> <span class="hl-flag">--tasklist-guid</span> <span class="hl-val">飞书清单GUID</span> <span class="hl-flag">--due</span> <span class="hl-val">YYYY-MM-DD</span></pre>
       <p><b>--tasklist-guid</b>：仅当 category=心愿 时生效。指定飞书 tasklist GUID，task 进指定清单；不传则飞书 task 进"我的任务"主页。</p>
+      <p><b>--due</b>（2026-07-13 增）：仅 category=心愿 时生效。add 时本地 note + 飞书 task + 飞书 task.due 一次原子建好,无需后续 set-due 补救。YYYY-MM-DD 格式(如 2026-07-14)。</p>
       <h4>顶层分类（4 种）</h4>
       <table class="detail-table">
         <tr><th>分类</th><th>语义</th></tr>
@@ -1115,7 +1116,7 @@ script/memo_cli.py set-due 36 --due null</pre>
       <h4>联动矩阵</h4>
       <table class="detail-table">
         <tr><th>本地操作</th><th>飞书动作</th><th>API</th></tr>
-        <tr><td><code>add 心愿</code></td><td>建飞书 task + 写回 feishu_task_guid</td><td><code>task tasks create --data {summary, description, members, [tasklists]}</code></td></tr>
+        <tr><td><code>add 心愿</code></td><td>建飞书 task(+ due,如有) + 写回 feishu_task_guid</td><td><code>task +create --summary ... --description ... --assignee ... [--due YYYY-MM-DD] [--tasklist-id ...]</code></td></tr>
         <tr><td><code>update 心愿</code></td><td>改飞书 task 标题</td><td><code>task +update --task-id X --summary ...</code></td></tr>
         <tr><td><code>delete 心愿</code></td><td>标飞书 task 完成（飞书无 delete）</td><td><code>task +complete --task-id X</code></td></tr>
         <tr><td><code>complete-wish 心愿</code></td><td>标飞书 task 完成</td><td><code>task +complete --task-id X</code></td></tr>
@@ -1129,6 +1130,7 @@ script/memo_cli.py set-due 36 --due null</pre>
         <li data-step="·"><b>仅心愿联动</b>：备忘/打卡/情绪日记不联动飞书（不必要）</li>
         <li data-step="·"><b>需要 task_guid</b>：add 触发时自动建 + 写回 notes.feishu_task_guid；update/delete/complete-wish 依赖这个字段</li>
         <li data-step="·"><b>memo_id 编码进 description</b>：飞书 task create 不支持 <code>extra</code> 字段，用 <code>description="原备忘 #N"</code> + 正则反查</li>
+        <li data-step="·"><b>add 一次到位(2026-07-13)</b>：<code>add 心愿 --due YYYY-MM-DD</code> 一次性建好本地 note + 飞书 task + 飞书 task.due,无需后续 set-due 补救(接口第一责任)</li>
       </ul>
     </div>
   </div>

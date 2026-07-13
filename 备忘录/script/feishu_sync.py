@@ -177,7 +177,8 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
 # ==================== 同步操作 ====================
 
 def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
-                  tasklist_guid: Optional[str] = None) -> dict:
+                  tasklist_guid: Optional[str] = None,
+                  due_iso: Optional[str] = None) -> dict:
     """新建飞书 task,返回 {ok, task_guid, error}
 
     第一性原则：
@@ -185,18 +186,22 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
     - 飞书 task 可不指定 tasklist（tasklists 是可选字段），会进飞书"我的任务"主页
     - tasklist_guid 由调用方显式传入（CLI 参数），不读环境变量"预配置"
     - 零配置即可使用飞书联动（不传 tasklist_guid → 进飞书主页）
+    - add 心愿接口的第一责任 = 本地 note + 飞书 task 一次性建好(2026-07-13)
+      due 与 title 同属核心字段,add 时直接透传给飞书 task,无需 set-due 补救
 
     行为：
       1. 自动从 lark-cli auth 读 user open_id（缓存）
       2. 接受 tasklist_guid 参数（可选，默认 None）
-      3. 调 lark-cli `task +create --summary <title> --description <desc> --assignee <open_id> [--tasklist-id <guid>]`
-      4. 返回 task_guid（用于写入 notes.feishu_task_guid）
+      3. 接受 due_iso 参数（可选，YYYY-MM-DD；与 title 同属"创建时即带"的核心字段）
+      4. 调 lark-cli `task +create --summary <title> --description <desc> --assignee <open_id> [--tasklist-id <guid>] [--due <date>]`
+      5. 返回 task_guid（用于写入 notes.feishu_task_guid）
 
     参数：
       memo_id: memo note id（用于编码到 description 反查）
       content: 飞书 task 标题
       category: memo 分类（保留扩展性，目前不影响 tasklist 选择）
       tasklist_guid: 飞书 tasklist GUID（可选）。None → task 进飞书"我的任务"主页
+      due_iso: 期望完成日期 YYYY-MM-DD（2026-07-13 增）。None/空 → 不传 --due,行为不变(向后兼容)
 
     返回：
       {"ok": bool, "task_guid": str | None, "error": str | None}
@@ -215,6 +220,10 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
         "--description", f"原备忘 #{memo_id}",
         "--assignee", user_open_id,
     ]
+    # 2026-07-13 增:add 时直接带 due(与 title 同为核心字段,1 次 API 调用原子写入)
+    # YYYY-MM-DD 本身就是 ISO 8601 date-only 形式,lark-cli --due 直接接受
+    if due_iso:
+        args += ["--due", due_iso]
     # 只有传了 tasklist_guid 才加（飞书会建无 tasklist 的 task 在"我的任务"主页）
     if tasklist_guid:
         args += ["--tasklist-id", tasklist_guid]

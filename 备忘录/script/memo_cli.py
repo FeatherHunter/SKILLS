@@ -127,9 +127,13 @@ def add_note(args):
                 from feishu_sync import is_feishu_available, add_wish_sync
                 if is_feishu_available():
                     # tasklist_guid 由调用方通过 --tasklist-guid 显式传入（不读环境变量）
+                    # 2026-07-13 改:due 同步透传给 add_wish_sync
+                    #   add 心愿接口的第一责任 = 本地 note + 飞书 task 一次性建好(含 due)
+                    #   add_wish_sync 内部判 None 跳过 --due,无回归
                     sync_r = add_wish_sync(
                         note_id, content.strip(), category,
                         tasklist_guid=getattr(args, 'tasklist_guid', None),
+                        due_iso=due,
                     )
                     if sync_r.get("ok") and sync_r.get("task_guid"):
                         # 把 task_guid 写回 notes.feishu_task_guid

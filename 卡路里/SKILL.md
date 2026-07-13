@@ -77,102 +77,110 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 > 用户说"卡路里 help"时显示本表。全部唤醒词为动词+名词结构。
 
+**CLI 列规则（最严格标准 · 2026-07-13 修）**:
+- **原子 trigger**（暴露 CLI）: `python scripts/<file>.py <subcommand> [args]`
+- **组合 trigger**（跨 skill）: `组合:<trigger1> + <trigger2> + ...`（不写 Python 函数）
+- **分析类 trigger**（Python API）: `AI 路由（Python API）`
+- **纯 AI 路由**（无 CLI）: `AI 路由（无 CLI）`
+
+**参数占位符**:统一用 `<X>` 尖括号（如 `<DATE>`、`<N>`），不写裸 `X` 或大括号 `{X}`
+
 ### 🍚 饮食记录
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记吃了 | 记录饮食（库匹配/图片识别/外部搜索统一入口） | `calorie_tracker.py add` |
-| 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `add` |
-| 删吃的 | 删除饮食记录 | `calorie_tracker.py delete` |
-| 改吃的 | 修改已记录饮食（克数/食物名/备注） | `calorie_tracker.py update-meal` |
-| 查今天吃 | 今日饮食摘要（vs 目标） | `calorie_tracker.py summary` |
-| 查吃的记录 | 今日逐条饮食记录 | `calorie_tracker.py list` |
-| 查热量历史 | 最近 N 天热量摄入历史 | `calorie_tracker.py history` |
-| 记喝水 | 记录饮水量（ml） | `calorie_tracker.py water <ml>` |
-| 查今天喝水 | 今日饮水量（含在 summary 中） | `calorie_tracker.py summary` |
+| 记吃了 | 记录饮食（库匹配/图片识别/外部搜索统一入口） | `python scripts/calorie_tracker.py add` |
+| 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `python scripts/calorie_tracker.py add` |
+| 删吃的 | 删除饮食记录 | `python scripts/calorie_tracker.py delete` |
+| 改吃的 | 修改已记录饮食 | `python scripts/calorie_tracker.py update-meal` |
+| 查今天吃 | 今日饮食摘要 | `python scripts/calorie_tracker.py summary` |
+| 查吃的记录 | 今日逐条饮食记录 | `python scripts/calorie_tracker.py list` |
+| 查热量历史 | 最近 N 天热量摄入历史 | `python scripts/calorie_tracker.py history` |
+| 记喝水 | 记录饮水量 | `python scripts/calorie_tracker.py water` |
+| 查今天喝水 | 今日饮水量 | `python scripts/calorie_tracker.py summary` |
 
 ### 🏷️ 食品库
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查热量 | 搜索食品营养成分 | `calorie_tracker.py search-product` |
-| 存食品 | 添加食品营养成分表到库 | `calorie_tracker.py add-product` |
-| 改食品 | 更新食品营养成分 | `calorie_tracker.py update-product` |
-| 查食品库 | 列出全部食品营养成分 | `calorie_tracker.py list-products` |
-| 批量导入 | 批量录入/更新食品库（JSONL）| `batch_import.py import <file>` |
-| 校验批量 | 只校验 JSONL 不写入 | `batch_import.py validate <file>` |
-| 查食品库去重 | 全库去重检查（只报告）| `batch_import.py dedupe` |
+| 查热量 | 搜索食品营养成分 | `python scripts/calorie_tracker.py search-product` |
+| 存食品 | 添加食品营养成分表到库 | `python scripts/calorie_tracker.py add-product` |
+| 改食品 | 更新食品营养成分 | `python scripts/calorie_tracker.py update-product` |
+| 查食品库 | 列出全部食品营养成分 | `python scripts/calorie_tracker.py list-products` |
+| 批量导入 | 批量录入/更新食品库 | `python scripts/batch_import.py import` |
+| 校验批量 | 只校验 JSONL 不写入 | `python scripts/batch_import.py validate` |
+| 查食品库去重 | 全库去重检查 | `python scripts/batch_import.py dedupe` |
 
 ### ⚖️ 体重
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记体重 | 记录体重（自动算 BMI） | `calorie_tracker.py weight` |
-| 改体重记录 | 修改历史体重记录 | `calorie_tracker.py weight-update` |
-| 查体重历史 | 体重历史记录 | `calorie_tracker.py weight-history` |
-| 查体重趋势 | 体重趋势分析（均重/日均变化/趋势判断） | `weight_analysis(trend)` |
-| 对比体重 | 两时间段体重对比 | `weight_analysis(compare)` |
-| 查体重波动 | 体重波动分析（标准差/异常记录） | `weight_analysis(volatility)` |
-| 设体重目标 | 设定体重目标和截止日期 | `set_weight_goal()` |
-| 查体重目标 | 体重目标达成进度 | `weight_analysis(milestone)` |
+| 记体重 | 记录体重（自动算 BMI） | `python scripts/calorie_tracker.py weight` |
+| 改体重记录 | 修改历史体重记录 | `python scripts/calorie_tracker.py weight-update` |
+| 查体重历史 | 体重历史记录 | `python scripts/calorie_tracker.py weight-history` |
+| 查体重趋势 | 体重趋势分析 | `AI 路由（Python API）` |
+| 对比体重 | 两时间段体重对比 | `AI 路由（Python API）` |
+| 查体重波动 | 体重波动分析 | `AI 路由（Python API）` |
+| 设体重目标 | 设定体重目标和截止日期 | `python scripts/calorie_tracker.py weight-goal` |
+| 查体重目标 | 体重目标达成进度 | `AI 路由（Python API）` |
 
 ### 🏃 运动
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记运动 | 记录运动消耗 | `exercise_tracker.py add` |
-| 改运动记录 | 更新运动记录 | `exercise_tracker.py update` |
-| 查运动记录 | 查询运动记录（按日期/天数/类型） | `exercise_tracker.py list` |
-| 查运动汇总 | 运动汇总统计 | `exercise_tracker.py summary` |
-| 查运动类型 | 运动类型统计（分布/总消耗排名） | `exercise_tracker.py stats` |
-| 查运动趋势 | 运动热量趋势 | `exercise_tracker.py trend` |
+| 记运动 | 记录运动消耗 | `python scripts/exercise_tracker.py add` |
+| 改运动记录 | 更新运动记录 | `python scripts/exercise_tracker.py update` |
+| 查运动记录 | 查询运动记录 | `python scripts/exercise_tracker.py list` |
+| 查运动汇总 | 运动汇总统计 | `python scripts/exercise_tracker.py summary` |
+| 查运动类型 | 运动类型统计 | `python scripts/exercise_tracker.py stats` |
+| 查运动趋势 | 运动热量趋势 | `python scripts/exercise_tracker.py trend` |
 
 ### 🏋️ 健身计划
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动，含今日复盘 section） | `render_workout_plan.py` |
-| 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
-| 落地健身计划 | 将某天计划执行：补计划→查/记心愿→训记（仅今天） | `workout_plan.get_day_plan()` + 跨技能 AI 路由 |
-| 同步健身计划 | 批量落地 3 天 + 调「回写训记」(Step 2 引用) | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + 调「回写训记」 |
-| 回写训记 | 拉训记数据回写 exercise_log(幂等),独立 Step 2 | `python scripts/xunji_bridge.py backfill [--date X] [--days N]` |
-| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练(localid 已有,start/end=0) | `xunji_bridge.py overlay-plan --date X` |
-| 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
-| 复盘训练 | 对指定时间段的训练做 plan vs 实绩对比（完成率/漏做/超额/异常） | `python scripts/exercise_review.py --start X --end Y` |
+| 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动，含今日复盘 section） | `python scripts/render_workout_plan.py` |
+| 制定健身计划 | AI 采访式对话 → 校验 → 写入 | `AI 路由（无 CLI）` |
+| 落地健身计划 | 将某天计划执行（补计划 + 记心愿 + 训记推送） | `组合:补计划 + 记心愿 + 训记推送` |
+| 同步健身计划 | 批量落地 3 天 + 调「回写训记」 | `组合:落地健身计划 × 3 + 回写训记` |
+| 回写训记 | 拉训记数据回写 exercise_log（幂等） | `python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` |
+| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练 | `python scripts/xunji_bridge.py overlay-plan --date <DATE>` |
+| 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次 | `AI 路由 → python scripts/plan_generator.py` |
+| 复盘训练 | 对指定时间段做 plan vs 实绩对比 | `python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` |
 
 ### 📊 分析
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查热量趋势 | 热量摄入趋势（工作日 vs 周末/合规率） | `diet_analysis(calorie_trend)` |
-| 查营养配比 | 营养素占比分析（蛋白/碳水/脂肪） | `diet_analysis(macro_ratio)` |
-| 查热量缺口 | 热量缺口分析（饮食 vs 运动贡献） | `diet_analysis(deficit_analysis)` |
-| 查食物排行 | 食物排行榜（默认高热量榜） | `diet_food_ranking(high_calorie)` |
-| 查高热量榜 | 热量炸弹 TOP5 | `diet_food_ranking(high_calorie)` |
-| 查低热量榜 | 低热量健康 TOP5 | `diet_food_ranking(low_calorie)` |
-| 查频繁吃榜 | 最常吃的食物 TOP5 | `diet_food_ranking(frequent)` |
-| 查高碳水榜 | 高碳水食物 TOP5 | `diet_food_ranking(high_carb)` |
-| 查高蛋白榜 | 高蛋白食物 TOP5 | `diet_food_ranking(high_protein)` |
-| 查运动分布 | 运动类型分布（消耗/频次/时长占比） | `exercise_analysis(type_breakdown)` |
-| 查运动贡献 | 运动对热量缺口的贡献占比 | `exercise_analysis(deficit_contribution)` |
+| 查热量趋势 | 热量摄入趋势 | `AI 路由（Python API）` |
+| 查营养配比 | 营养素占比分析 | `AI 路由（Python API）` |
+| 查热量缺口 | 热量缺口分析 | `AI 路由（Python API）` |
+| 查食物排行 | 食物排行榜（默认高热量榜） | `AI 路由（Python API）` |
+| 查高热量榜 | 热量炸弹 TOP5 | `AI 路由（Python API）` |
+| 查低热量榜 | 低热量健康 TOP5 | `AI 路由（Python API）` |
+| 查频繁吃榜 | 最常吃的食物 TOP5 | `AI 路由（Python API）` |
+| 查高碳水榜 | 高碳水食物 TOP5 | `AI 路由（Python API）` |
+| 查高蛋白榜 | 高蛋白食物 TOP5 | `AI 路由（Python API）` |
+| 查运动分布 | 运动类型分布 | `AI 路由（Python API）` |
+| 查运动贡献 | 运动对热量缺口的贡献占比 | `AI 路由（Python API）` |
 
 ### 📋 综合
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 设营养目标 | 设置每日营养目标（热量/蛋白/碳水/脂肪/饮水ml） | `calorie_tracker.py goal` |
-| 查营养目标 | 查看当前每日营养目标 | `calorie_tracker.py get_goal()` |
-| 查健康报告 | 四维度综合健康仪表盘 | `dashboard()` |
-| 查卡路里数据 | 数据健康检查（Lint 5 项） | Lint 检查流程 |
+| 设营养目标 | 设置每日营养目标 | `python scripts/calorie_tracker.py goal` |
+| 查营养目标 | 查看当前每日营养目标 | `python scripts/calorie_tracker.py get-goal` |
+| 查健康报告 | 四维度综合健康仪表盘 | `AI 路由（Python API）` |
+| 查卡路里数据 | 数据健康检查 | `AI 路由（无 CLI）` |
 
 ### 📸 身材照片
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记身材照 | 记录身材照片（支持批量） | `body_photo_tracker.py add` |
-| 查身材照 | 查看照片历史 | `body_photo_tracker.py list` |
-| 删身材照 | 删除照片 | `body_photo_tracker.py delete` |
-| 改照片标签 | 修改照片标签 | `body_photo_tracker.py tag` |
+| 记身材照 | 记录身材照片 | `python scripts/body_photo_tracker.py add` |
+| 查身材照 | 查看照片历史 | `python scripts/body_photo_tracker.py list` |
+| 删身材照 | 删除照片 | `python scripts/body_photo_tracker.py delete` |
+| 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` |
 
 ---
 
@@ -416,16 +424,16 @@ dashboard(start, end)                      # 综合四维度仪表盘
 
 ### 🏷️ 食品库：存食品 / 查热量 / 改食品 / 查食品库
 
-- **存食品**：解析输入或图片 → 提取营养成分 → `calorie_tracker.py add-product <产品名> <品牌> <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注]`
-- **查热量**：`calorie_tracker.py search-product <关键词>`
-- **改食品**：`calorie_tracker.py update-product <id> [--字段 值]`
-- **查食品库**：`calorie_tracker.py list-products`
+- **存食品**：解析输入或图片 → 提取营养成分 → `python scripts/calorie_tracker.py add-product <产品名> <品牌> <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注]`
+- **查热量**：`python scripts/calorie_tracker.py search-product <关键词>`
+- **改食品**：`python scripts/calorie_tracker.py update-product <id> [--字段 值]`
+- **查食品库**：`python scripts/calorie_tracker.py list-products`
 
 ### 📦 批量导入食品库（2026-06-30 新增）
 
 适用场景:批量录入 / 批量更新 **10+ 条** 食品数据。
 
-工具:`scripts/batch_import.py`
+工具:`python scripts/batch_import.py`
 
 **子命令**:
 
@@ -456,23 +464,23 @@ dashboard(start, end)                      # 综合四维度仪表盘
 
 ### ⚖️ 体重：记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标
 
-- **记体重**：`calorie_tracker.py weight <体重> <身高>`（身高必传，BMI 必须计算）
-- **改体重记录**：`calorie_tracker.py weight-update <ID> [--weight <公斤>] [--height <身高cm>] [--note <备注>]`
-- **查体重历史**：`calorie_tracker.py weight-history [天数]`
-- **查体重趋势**：`weight_analysis(start, end, 'trend')`
-- **对比体重**：`weight_analysis(start, end, 'compare', compare_start, compare_end)`
-- **查体重波动**：`weight_analysis(start, end, 'volatility')`
-- **设体重目标**：`set_weight_goal(weight_goal, deadline)`
-- **查体重目标**：`weight_analysis(start, end, 'milestone')`
+- **记体重**：`python scripts/calorie_tracker.py weight <体重> <身高>`（身高必传，BMI 必须计算）
+- **改体重记录**：`python scripts/calorie_tracker.py weight-update <ID> [--weight <公斤>] [--height <身高cm>] [--note <备注>]`
+- **查体重历史**：`python scripts/calorie_tracker.py weight-history [天数]`
+- **查体重趋势**：`AI 路由（Python API）: weight_analysis(start, end, 'trend')`
+- **对比体重**：`AI 路由（Python API）: weight_analysis(start, end, 'compare', compare_start, compare_end)`
+- **查体重波动**：`AI 路由（Python API）: weight_analysis(start, end, 'volatility')`
+- **设体重目标**：`AI 路由（Python API）: set_weight_goal(weight_goal, deadline)`
+- **查体重目标**：`AI 路由（Python API）: weight_analysis(start, end, 'milestone')`
 
 ### 🏃 运动：记运动 / 改运动记录 / 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势
 
-- **记运动**：`exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>] [--category <类>] [--intensity <级>] [--distance <km>] [--heart-rate <bpm>] [--set <N>] [--load <kg>]`
-- **改运动记录**：`exercise_tracker.py update --id <ID> [--字段 值]`
-- **查运动记录**：`exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>] [--category <类>]`
-- **查运动汇总**：`exercise_tracker.py summary [--days N]`
-- **查运动类型**：`exercise_tracker.py stats --type <breakdown|total>`
-- **查运动趋势**：`exercise_tracker.py trend [--days N]`
+- **记运动**：`python scripts/exercise_tracker.py add --date <日期> --type <类型> --calories <卡> [--minutes <分钟>] [--reps <次数>] [--category <类>] [--intensity <级>] [--distance <km>] [--heart-rate <bpm>] [--set <N>] [--load <kg>]`
+- **改运动记录**：`python scripts/exercise_tracker.py update --id <ID> [--字段 值]`
+- **查运动记录**：`python scripts/exercise_tracker.py list [--days N] [--date <日期>] [--type <类型>] [--category <类>]`
+- **查运动汇总**：`python scripts/exercise_tracker.py summary [--days N]`
+- **查运动类型**：`python scripts/exercise_tracker.py stats --type <breakdown|total>`
+- **查运动趋势**：`python scripts/exercise_tracker.py trend [--days N]`
 
 #### 🎯 运动 AI 路由规则（必读 · 2026-06-29 扩展）
 
@@ -595,11 +603,11 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     确认 → 生成 JSON → validate_plan() → write_plan()
   ```
 - **改健身计划**：AI 对话定位意图 → 一个唤醒词覆盖所有写操作（改时段/加时段/删时段/调整周/改配置）
-- **复盘训练**：`python scripts/exercise_review.py [--start YYYY-MM-DD --end YYYY-MM-DD | --today | --yesterday | --days N]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比（完成率 / 漏做 / 超额 / 异常）。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。
+- **复盘训练**：`python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比（完成率 / 漏做 / 超额 / 异常）。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。
   ```
   参数：
-    --start      YYYY-MM-DD  开始日期
-    --end        YYYY-MM-DD  结束日期
+    --start      <DATE>       开始日期
+    --end        <DATE>       结束日期
     --today                  今日（start=end=today）
     --yesterday              昨日（start=end=yesterday）
     --day-before-yesterday   前日（start=end=today-2）
@@ -647,7 +655,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       已配置(LEGACY fallback) → 提示「⚠ 用了旧名 XUNJI_API_KEY，建议用 key set 迁移到 XUNJI_TRAINS_KEY」
 
     KEY 就绪后，**不再**手写 HTTP，改为调训记训练拓展 CLI：
-      python scripts/xunji_bridge.py push-plan --date {YYYY-MM-DD}
+      python scripts/xunji_bridge.py push-plan --date <DATE>
     该命令内部完成：
       ① 读 workout_plans 中当天的所有 session
       ② 按以下规则转成训记 res[] 格式：
@@ -697,7 +705,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     训记回写 ✅ 新增 12 条,更新 0 条
   ```
 
-- **回写训记**：`python scripts/xunji_bridge.py backfill [--date YYYY-MM-DD] [--days N]` → 拉训记数据回写 exercise_log(幂等)。
+- **回写训记**：`python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` → 拉训记数据回写 exercise_log(幂等)。
   ```
   行为:
     调训记 fetch(include_full_data=true)
@@ -706,7 +714,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     → 自动取最新体重推算热量
 
   参数:
-    --date YYYY-MM-DD  单日(默认今天)
+    --date <DATE>  单日（默认今天）
     --days N           范围 [date-N+1, date](默认 1)
 
   前置:KEY 检查同「落地健身计划」Step 4(XUNJI_TRAINS_KEY)
@@ -714,7 +722,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
   使用场景:
     - 「同步健身计划」Step 2 自动调(--days 3)
     - 晚上 6 点已同步过、8 点又有新训练 → 「回写训记」单独跑
-    - 周末补练漏写 → 「回写训记 --date X --days N」
+    - 周末补练漏写 → 「回写训记 --date <DATE> --days <N>」
 
   末尾输出(JSON):
     {
@@ -755,7 +763,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   Step 2 · 调底层 CLI
     不手写 HTTP,直接调:
-      python scripts/xunji_bridge.py overlay-plan --date {YYYY-MM-DD}
+      python scripts/xunji_bridge.py overlay-plan --date <DATE>
     可选参数:
       --dry-run       预览将要推什么(不实推)
       --missing fail  卡路里有但训记没的 title → 报错退出(默认)

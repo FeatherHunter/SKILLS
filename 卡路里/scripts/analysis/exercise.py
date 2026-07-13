@@ -8,7 +8,7 @@
 """
 
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from analysis._utils import _get_db, _parse_date, _days_between, BMR_ACTIVITY_FACTOR
@@ -168,3 +168,124 @@ def exercise_deficit_contribution(start_date, end_date=None):
   评估：{'运动贡献偏低，建议增加运动比例' if ex_pct < 15 else ('运动贡献较高 ✓' if ex_pct > 25 else '运动贡献适中')}
 {'-'*40}""")
     return {'diet_pct': diet_pct, 'ex_pct': ex_pct}
+
+
+def exercise_review(start_date, end_date=None, silent=False):
+    """复盘训练 — 计划 vs 实绩对比
+
+    对 [start_date, end_date] 范围内每一天：
+    - 查 workout_plans 当天所有 session
+    - 查 exercise_log 当天所有记录
+    - 对比：完成组数 vs 计划组数
+    - 标出漏做 / 超额 / 异常
+
+    Args:
+        start_date: 开始日期
+        end_date: 结束日期（默认同日）
+        silent: True 时不打印报告（仅 return data），供 HTML 渲染器调用避免污染输出
+
+    Returns:
+        dict: {date_str: {plan_week, sessions, plan_total_sets, actual_total_sets,
+                          completion_rate, anomalies, note}}
+    """
+    from workout_plan import get_day_plan  # 懒加载,避免循环 import
+
+    start_date = _parse_date(start_date)
+    end_date = _parse_date(end_date) or start_date
+
+    conn = _get_db()
+    c = conn.cursor()
+
+    results = {}
+    cur = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+    while cur <= end_dt:
+        date_str = cur.strftime('%Y-%m-%d')
+
+        # 1) 拉 plan
+        plan = get_day_plan(cur)
+        plan_sessions = plan.get('sessions', [])
+        plan_total_sets = sum(s.get('total_sets') or 0 for s in plan_sessions)
+        session_labels = [s.get('session_label', '') for s in plan_sessions]
+
+        # 2) 拉 exercise_log 当天所有记录
+        c.execute('''
+            SELECT id, exercise_type, duration_minutes, calories_burned,
+                   set_index, reps, load_kg
+            FROM exercise_log
+            WHERE date = ?
+            ORDER BY exercise_type, set_index
+        ''', (date_str,))
+        ex_rows = c.fetchall()
+
+        # 3) 聚合实绩
+        actual = {}
+        for r in ex_rows:
+            etype = r[1]
+            if etype not in actual:
+                actual[etype] = {'sets': 0, 'reps_total': 0, 'load_max': 0,
+                                 'calories': 0, 'minutes': 0}
+            actual[etype]['sets'] += 1
+            actual[etype]['reps_total'] += r[5] or 0
+            actual[etype]['load_max'] = max(actual[etype]['load_max'], r[6] or 0)
+            actual[etype]['calories'] += r[3] or 0
+            actual[etype]['minutes'] += r[2] or 0
+        actual_total_sets = sum(v['sets'] for v in actual.values())
+
+        # 4) 对比 + 异常
+        anomalies = []
+        note = None
+        # 2026-07-13 加:date 早于 plan.start_date 时,plan 返 unstarted=True,独立分支
+        if plan.get('unstarted'):
+            note = f'计划尚未开始(起始 {plan["config"]["start_date"]})'
+            completion_rate = None
+        elif plan_total_sets == 0 and actual_total_sets == 0:
+            note = '休息日 / 无计划无实绩'
+            completion_rate = None
+        elif plan_total_sets == 0 and actual_total_sets > 0:
+            note = f'计划休息但实做了 {actual_total_sets} 组'
+            completion_rate = None
+            anomalies.append(f'⚠️ {note}')
+        elif plan_total_sets > 0 and actual_total_sets == 0:
+            note = '计划有训练但完全未做'
+            completion_rate = 0.0
+            anomalies.append(f'❌ {note}')
+        else:
+            completion_rate = actual_total_sets / plan_total_sets * 100
+            if completion_rate < 50:
+                anomalies.append(f'⚠️ 完成率仅 {completion_rate:.0f}%')
+            elif completion_rate > 130:
+                anomalies.append(f'⚠️ 超额完成 ({completion_rate:.0f}%)')
+
+        results[date_str] = {
+            'plan_week': plan.get('plan_week'),
+            'sessions': session_labels,
+            'plan_total_sets': plan_total_sets,
+            'actual_total_sets': actual_total_sets,
+            'completion_rate': completion_rate,
+            'anomalies': anomalies,
+            'note': note,
+        }
+
+        cur += timedelta(days=1)
+
+    conn.close()
+
+    # 5) 输出报告（silent=True 时不打印，仅 return）
+    if not silent:
+        print(f"📋 训练复盘（{start_date} ~ {end_date}）\n{'='*50}")
+        for date_str, r in results.items():
+            week_str = f" week {r['plan_week']}" if r['plan_week'] else ''
+            print(f"\n【{date_str}】{week_str}")
+            if r['sessions']:
+                print(f"  计划: {' / '.join(r['sessions'])}")
+            print(f"  计划组数: {r['plan_total_sets']} | 实做组数: {r['actual_total_sets']}")
+            if r['completion_rate'] is not None:
+                print(f"  完成率: {r['completion_rate']:.0f}%")
+            if r['note']:
+                print(f"  {r['note']}")
+            for a in r['anomalies']:
+                print(f"  {a}")
+            print(f"\n{'='*50}")
+    return results

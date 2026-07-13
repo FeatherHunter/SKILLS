@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -131,12 +131,13 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动） | `render_workout_plan.py` |
+| 查健身计划 | 查看训练计划 HTML 页面（DB 数据驱动，含今日复盘 section） | `render_workout_plan.py` |
 | 制定健身计划 | AI 采访式对话 → 校验 → 写入 workout_plans | AI 路由（多轮对话） |
 | 落地健身计划 | 将某天计划执行：补计划→查/记心愿→训记（仅今天） | `workout_plan.get_day_plan()` + 跨技能 AI 路由 |
 | 同步健身计划 | 批量落地 3 天 + 训记查训练 → xunji_adapter 回写 | `workout_plan.get_day_plan()` + 跨技能 AI 路由 + `xunji_adapter.py` |
 | 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练(localid 已有,start/end=0) | `xunji_bridge.py overlay-plan --date X` |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次、修改配置 | `plan_generator.py` 全部 CRUD |
+| 复盘训练 | 对指定时间段的训练做 plan vs 实绩对比（完成率/漏做/超额/异常） | `python scripts/exercise_review.py --start X --end Y` |
 
 ### 📊 分析
 
@@ -593,6 +594,24 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     确认 → 生成 JSON → validate_plan() → write_plan()
   ```
 - **改健身计划**：AI 对话定位意图 → 一个唤醒词覆盖所有写操作（改时段/加时段/删时段/调整周/改配置）
+- **复盘训练**：`python scripts/exercise_review.py [--start YYYY-MM-DD --end YYYY-MM-DD | --today | --yesterday | --days N]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比（完成率 / 漏做 / 超额 / 异常）。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。
+  ```
+  参数：
+    --start      YYYY-MM-DD  开始日期
+    --end        YYYY-MM-DD  结束日期
+    --today                  今日（start=end=today）
+    --yesterday              昨日（start=end=yesterday）
+    --day-before-yesterday   前日（start=end=today-2）
+    --days N                 最近 N 天（start=today-N+1, end=today）
+  数据来源：
+    - workout_plans（每日 sessions + total_sets）
+    - exercise_log（每日实绩，set_index 计数）
+  报告内容（每天）：
+    - 计划组数 vs 实做组数
+    - 完成率
+    - 异常项：完成率 < 50% / 超额 > 130% / 计划未做 / 计划休息但实做
+  使用场景：晚上 10 点同步健身计划 → 触发"复盘训练" → 看 plan vs 实绩差距 → 决定要不要改健身计划。
+  ```
 - **落地健身计划**：将指定日期的训练计划落地到作息/备忘/训记三个系统。执行必须全部完成三步，逐 session 独立执行，某条失败跳过继续。
   ```
   Step 1 · 数据准备

@@ -36,6 +36,7 @@ from analysis.exercise import (
     exercise_trend,
     exercise_type_breakdown,
     exercise_deficit_contribution,
+    exercise_review,
 )
 from analysis.dashboard import dashboard
 
@@ -112,6 +113,7 @@ def exercise_analysis(start_date, end_date=None, analysis_type='exercise_trend')
             - 'exercise_trend'         运动趋势（天数/时长/消耗/间隔）
             - 'type_breakdown'         运动类型分布（消耗/频次/时长占比）
             - 'deficit_contribution'   运动对缺口的贡献占比
+            - 'review'                 复盘训练（计划 vs 实绩对比）
     """
     if analysis_type == 'exercise_trend':
         return exercise_trend(start_date, end_date)
@@ -119,6 +121,8 @@ def exercise_analysis(start_date, end_date=None, analysis_type='exercise_trend')
         return exercise_type_breakdown(start_date, end_date)
     elif analysis_type == 'deficit_contribution':
         return exercise_deficit_contribution(start_date, end_date)
+    elif analysis_type == 'review':
+        return exercise_review(start_date, end_date)
     else:
         print(f"⚠️ 未知分析类型: {analysis_type}，使用运动趋势")
         return exercise_trend(start_date, end_date)
@@ -134,4 +138,5 @@ __all__ = [
     'weight_trend', 'weight_compare', 'weight_milestone', 'weight_volatility',
     'diet_calorie_trend', 'diet_macro_ratio', 'diet_food_ranking', 'diet_deficit_analysis',
     'exercise_trend', 'exercise_type_breakdown', 'exercise_deficit_contribution',
+    'exercise_review',
 ]

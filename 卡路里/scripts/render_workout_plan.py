@@ -22,7 +22,7 @@ def _get_db():
     return get_db(DB_PATH)
 
 
-def render(output_path=None, target_week=None):
+def render(output_path=None, target_week=None, include_review=True):
     """主渲染函数"""
     conn = _get_db()
     c = conn.cursor()
@@ -54,8 +54,20 @@ def render(output_path=None, target_week=None):
 
     total_weeks = config['total_weeks']
 
+    # ── review (可选,2026-07-13 加:HTML 强制规定 1 联动) ──
+    review_data = None
+    if include_review:
+        try:
+            from analysis.exercise import exercise_review
+            from datetime import date
+            today_str = date.today().strftime('%Y-%m-%d')
+            review_data = exercise_review(today_str, today_str, silent=True)
+        except Exception as e:
+            print(f"⚠️ 复盘 section 渲染失败: {e}")
+            review_data = None
+
     # ── 渲染 ──
-    html = _render_html(config, weeks_data, total_weeks, target_week)
+    html = _render_html(config, weeks_data, total_weeks, target_week, review_data)
 
     if output_path:
         Path(output_path).write_text(html, encoding='utf-8')
@@ -66,7 +78,7 @@ def render(output_path=None, target_week=None):
     return str(default_path)
 
 
-def _render_html(config, weeks_data, total_weeks, target_week):
+def _render_html(config, weeks_data, total_weeks, target_week, review_data=None):
     week_nums = sorted(weeks_data.keys())
 
     # 简版 CSS（复用参考模板核心样式）
@@ -104,6 +116,17 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 .day-tab{background:var(--card);border:1px solid var(--lineS);padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;border-radius:8px;transition:all .15s}
 .day-tab:hover{border-color:var(--accent);color:var(--ink)}
 .day-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.review-section{background:#fff;border:1px solid var(--lineS);border-radius:16px;padding:22px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
+.review-section h2{font-size:18px;font-weight:600;margin-bottom:14px}
+.review-stat{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.stat-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.stat-value{font-size:32px;font-weight:600;color:var(--accent);line-height:1}
+.review-detail{color:var(--ink2);font-size:13px;margin-bottom:10px;line-height:1.6}
+.review-detail p{margin-bottom:3px}
+.review-detail strong{color:var(--ink);font-weight:500}
+.anomalies{list-style:none;padding:0;margin-top:8px}
+.anomalies li{padding:5px 0;color:var(--ink2);font-size:13px}
+.no-review{color:var(--ink3);font-style:italic;font-size:13px}
 '''
     # 构建 HTML
     html_parts = [
@@ -114,6 +137,46 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
         f'<div class="header"><h1>{config["title"]}</h1>',
         f'<p>{config["desc"] or ""} · {total_weeks} 周循环 · 起始 {config["start_date"]}</p></div>',
     ]
+
+    # 复盘 section（顶部，2026-07-13 加：HTML 强制规定 1 联动）
+    if review_data:
+        from datetime import date
+        today_str = date.today().strftime('%Y-%m-%d')
+        today_review = review_data.get(today_str) or next(iter(review_data.values()), None)
+        if today_review:
+            rate = today_review.get('completion_rate')
+            sessions = today_review.get('sessions', [])
+            plan_sets = today_review.get('plan_total_sets', 0)
+            actual_sets = today_review.get('actual_total_sets', 0)
+            anomalies = today_review.get('anomalies', [])
+            note = today_review.get('note')
+            html_parts.append('<div class="review-section">')
+            html_parts.append(f'<h2>📋 今日复盘 · {today_str}</h2>')
+            if rate is not None:
+                html_parts.append('<div class="review-stat">')
+                html_parts.append('<span class="stat-label">完成率</span>')
+                html_parts.append(f'<span class="stat-value">{rate:.0f}%</span>')
+                html_parts.append('</div>')
+            html_parts.append('<div class="review-detail">')
+            if sessions:
+                sessions_filtered = [s for s in sessions if s]  # 过滤空字符串,避免 " / 上午·臂" 双斜杠
+                if sessions_filtered:
+                    html_parts.append(f'<p><strong>训练:</strong> {" / ".join(sessions_filtered)}</p>')
+            if plan_sets or actual_sets:
+                html_parts.append(f'<p><strong>组数:</strong> 计划 {plan_sets} · 实做 {actual_sets}</p>')
+            if note:
+                html_parts.append(f'<p><strong>备注:</strong> {note}</p>')
+            html_parts.append('</div>')
+            if anomalies:
+                html_parts.append('<ul class="anomalies">')
+                for a in anomalies:
+                    html_parts.append(f'<li>{a}</li>')
+                html_parts.append('</ul>')
+            html_parts.append('</div>')
+        else:
+            html_parts.append('<div class="review-section"><h2>📋 今日复盘</h2><p class="no-review">暂无复盘数据</p></div>')
+    else:
+        html_parts.append('<div class="review-section"><h2>📋 今日复盘</h2><p class="no-review">复盘数据未启用</p></div>')
 
     # 周 Tab
     html_parts.append('<div class="tabs" id="weekTabs">')
@@ -241,8 +304,9 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description='渲染健身计划HTML')
     p.add_argument('-o','--output',help='输出文件路径')
     p.add_argument('-w','--week',type=int,help='聚焦第几周')
+    p.add_argument('--no-review', action='store_true', help='关闭复盘 section（默认开启）')
     args = p.parse_args()
-    result = render(args.output, args.week)
+    result = render(args.output, args.week, include_review=not args.no_review)
     if isinstance(result, str) and not args.output:
         print(result)
     elif args.output:

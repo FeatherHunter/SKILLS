@@ -9,6 +9,11 @@
 卡路里/scripts/calories.db-shm
 卡路里/scripts/calories.db-wal
 卡路里/scripts/calories.db-journal
+# 卡路里主数据库文件 db.py DB_FILENAME,运行时本地数据,不入版本控制
+卡路里/scripts/calorie_data.db
+卡路里/scripts/calorie_data.db-shm
+卡路里/scripts/calorie_data.db-wal
+卡路里/scripts/calorie_data.db-journal
 
 # 卡路里本地调试/查询脚本(check/today/del/verify 等一次性脚本,不入库)
 卡路里/check_*.py

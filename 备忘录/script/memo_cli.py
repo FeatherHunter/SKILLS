@@ -98,12 +98,23 @@ def add_note(args):
     # ---- sub_category：自由文本，不做白名单校验，AI 智能推断 1 个 2 字 ----
     sub_category = args.sub_category
     media_path = _resolve_media_path(args.media)
+    # ---- due 字段(2026-07-13 健身计划同步新增):仅 category=心愿 时支持 ----
+    due = getattr(args, "due", None)
+    if due:
+        # 校验 YYYY-MM-DD 格式
+        try:
+            datetime.strptime(due, "%Y-%m-%d")
+        except ValueError:
+            error_json(f"due 格式错误,需 YYYY-MM-DD: {due}")
+        if category != "心愿":
+            # due 仅对心愿生效;非心愿时静默忽略(不报错,避免破坏其他调用)
+            due = None
     conn = get_conn()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         cur = conn.execute(
-            "INSERT INTO notes (content, category, sub_category, media_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (content.strip(), category, sub_category, media_path, now, now)
+            "INSERT INTO notes (content, category, sub_category, media_path, due, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (content.strip(), category, sub_category, media_path, due, now, now)
         )
         note_id = cur.lastrowid
         conn.commit()
@@ -135,7 +146,7 @@ def add_note(args):
             except Exception as e:
                 feishu_sync_result = {"synced": False, "error": str(e)}
 
-        out_data = {"id": note_id, "content": content.strip(), "category": category, "sub_category": sub_category}
+        out_data = {"id": note_id, "content": content.strip(), "category": category, "sub_category": sub_category, "due": due}
         if feishu_sync_result is not None:
             out_data["feishu_sync"] = feishu_sync_result
         output_json(out_data, message="笔记已添加")
@@ -148,6 +159,7 @@ def search_notes(args):
     keyword = args.keyword
     category = args.category
     sub_category = getattr(args, 'sub_category', None)
+    due = getattr(args, 'due', None)  # 2026-07-13 新增:按 due 精确过滤
     limit = args.limit if args.limit is not None else 20
     if limit <= 0:
         error_json("limit 必须是正整数")
@@ -167,6 +179,9 @@ def search_notes(args):
             if sub_category:
                 sql += " AND n.sub_category = ?"
                 params.append(sub_category)
+            if due:
+                sql += " AND n.due = ?"
+                params.append(due)
             sql += " ORDER BY n.updated_at DESC LIMIT ?"
             params.append(limit)
             cur = conn.execute(sql, params)
@@ -180,6 +195,9 @@ def search_notes(args):
             if sub_category:
                 sql += " AND sub_category = ?"
                 params.append(sub_category)
+            if due:
+                sql += " AND due = ?"
+                params.append(due)
             sql += " ORDER BY updated_at DESC LIMIT ?"
             params.append(limit)
             cur = conn.execute(sql, params)
@@ -1187,12 +1205,14 @@ def main():
     p_add.add_argument("--sub-category", "-s", help="备忘内部分类：社交/工作/学习/灵感/记账/成就")
     p_add.add_argument("--media", "-m")
     p_add.add_argument("--tasklist-guid", help="飞书 tasklist GUID（仅 category=心愿 时生效；不传则飞书 task 进'我的任务'主页）")
+    p_add.add_argument("--due", help="截止日期 YYYY-MM-DD(仅 category=心愿 时生效;非心愿时静默忽略)")
 
     # search
     p_search = sub.add_parser("search")
     p_search.add_argument("keyword", nargs="?", default="")
     p_search.add_argument("--category", "-c", help="顶层分类过滤")
     p_search.add_argument("--sub-category", "-s", help="子分类过滤")
+    p_search.add_argument("--due", help="按 due 精确过滤 YYYY-MM-DD(2026-07-13 健身计划同步新增)")
     p_search.add_argument("--limit", "-l", type=int)
 
     # update

@@ -71,9 +71,14 @@ if %ERRORLEVEL% NEQ 0 (
 )
 %PY% -c "import imageio_ffmpeg; print('  [OK] ffmpeg:', imageio_ffmpeg.get_ffmpeg_exe())"
 
-REM ----- 4. 创建目录 + 写 config.json -----
+REM ----- 4. 装 ffprobe（imageio_ffmpeg 只有 ffmpeg 没 ffprobe）-----
 echo.
-echo [4/5] 创建目录结构...
+echo [4/6] 装 ffprobe...
+%PY% tools/install_ffprobe.py
+
+REM ----- 5. 创建目录 + 写 config.json -----
+echo.
+echo [5/6] 创建目录结构...
 if not exist assets\fonts        mkdir assets\fonts
 if not exist assets\luts         mkdir assets\luts
 if not exist assets\templates    mkdir assets\templates
@@ -88,7 +93,7 @@ move /Y config.json.tmp config.json >nul 2>&1
 
 REM ----- 5. 跑 verify.py 验证 -----
 echo.
-echo [5/5] 跑 verify.py 验证环境...
+echo [6/6] 跑 verify.py 验证环境...
 %PY% verify.py
 if %ERRORLEVEL% NEQ 0 (
     echo.

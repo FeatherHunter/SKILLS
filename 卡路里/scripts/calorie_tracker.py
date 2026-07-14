@@ -149,7 +149,8 @@ def main():
 
             kwargs = _parse_kw_args(kw_args)
             diet.add_meal(
-                food, calories, protein, carbs, fat, grams, note,
+                food, calories, protein, carbs, fat, grams,
+                kwargs.get('note') or note,
                 target_date=kwargs.get('date'),
                 target_time=kwargs.get('time'),
                 meal_override=kwargs.get('meal'),

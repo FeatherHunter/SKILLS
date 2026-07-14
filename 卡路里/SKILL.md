@@ -640,10 +640,23 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
       心愿内容 = 「健身 {session_label} {time_start}-{time_end}」
     此字符串在"查"和"记"时必须完全一致，AI 不得自由改写措辞。
 
-    **查重(2026-07-13 改为 content + due 双键精确查重)**：
-      调备忘录「查心愿 {心愿内容} --category 心愿 --due {该日期}」
-      → 有匹配 → 跳过(已存在,不动)
-      → 无匹配 → 调「记心愿 {心愿内容} --category 心愿 --due {该日期}」创建
+    **查重(2026-07-14 改为三步:本地 + 飞书,content + due 双键,都没有才新建)**：
+      第一性:本地 notes 是 SoT,飞书 task 是镜像,二者必须 1:1 对应。
+      任何"只建一边"都视为数据不一致,必须靠"三步查重"防止。
+
+      Step 3.1 · 查本地 notes 表(备忘录的"查心愿")
+        调备忘录「查心愿 {心愿内容} --category 心愿 --due {该日期}」
+        → 有匹配 → 跳过(已存在,不动)
+
+      Step 3.2 · 查飞书 task 列表(lark-cli)
+        调「lark-cli task +search --query <心愿内容> --due <该日期>,<该日期> --format json」
+        解析 `data.items[]`,找 `summary == 心愿内容` 且 `due_at` 以该日期开头的项
+        → 有匹配(同 summary + due)→ 跳过(已存在,不动)
+        (注:即使本地没查到,只要飞书查到也算已存在,避免重复)
+
+      Step 3.3 · 都没有才新建
+        调备忘录「记心愿 {心愿内容} --category 心愿 --due {该日期}」创建
+        (add_wish_sync 内部会调 lark-cli task +create 同步到飞书)
     不建过去日期的心愿。
 
   Step 4 · 联动训记

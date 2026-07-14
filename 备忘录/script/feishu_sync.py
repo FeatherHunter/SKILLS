@@ -176,10 +176,36 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
 
 # ==================== 同步操作 ====================
 
+def _search_feishu_task_by_due_and_summary(due_iso: str, summary: str) -> Optional[str]:
+    """查飞书 task 列表,找同 summary + due 的 task,返回 guid;没有返回 None。
+
+    用途:add_wish_sync 前的双侧查重(类似作息管家 diff_and_sync 的第二步)。
+    2026-07-14 实测 lark-cli task +search --format json 返回字段:
+      data.items[].summary   (str, 标题)
+      data.items[].due_at    (str, "2026-07-14 08:00:00" 形式,前缀匹配 due_iso)
+      data.items[].guid      (str, 任务 GUID)
+    """
+    r = _run_lark([
+        "task", "+search",
+        "--query", summary,
+        "--due", f"{due_iso},{due_iso}",
+        "--format", "json",
+    ])
+    if not r.get("ok"):
+        return None
+    items = (r.get("data") or {}).get("items") or []
+    for item in items:
+        item_summary = item.get("summary", "")
+        item_due_at = item.get("due_at", "")
+        if item_summary == summary and item_due_at.startswith(due_iso):
+            return item.get("guid")
+    return None
+
+
 def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
                   tasklist_guid: Optional[str] = None,
                   due_iso: Optional[str] = None) -> dict:
-    """新建飞书 task,返回 {ok, task_guid, error}
+    """新建飞书 task,返回 {ok, task_guid, error, existed}
 
     第一性原则：
     - lark-cli auth 身份 = assignee 真值源,自动检测（不读 env）
@@ -188,6 +214,13 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
     - 零配置即可使用飞书联动（不传 tasklist_guid → 进飞书主页）
     - add 心愿接口的第一责任 = 本地 note + 飞书 task 一次性建好(2026-07-13)
       due 与 title 同属核心字段,add 时直接透传给飞书 task,无需 set-due 补救
+
+    2026-07-14 增:飞书查重(类似作息管家 diff_and_sync 的第二步)
+      add 前先查飞书 task 列表,如果同 summary + due 的 task 已存在,直接复用其 guid。
+      防止"本地无、飞书有"时新建重复 task(2026-07-14 实测 7/14 重复 4 条的修复)。
+      返回的 dict 多一个 existed: bool 字段(存在则 True,新建则 False)。
+      - existed=True 时 task_guid 是复用的,不会建新 task
+      - 调用方(memo_cli.add_note)应把 task_guid 写回 notes.feishu_task_guid
 
     行为：
       1. 自动从 lark-cli auth 读 user open_id（缓存）
@@ -204,8 +237,14 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
       due_iso: 期望完成日期 YYYY-MM-DD（2026-07-13 增）。None/空 → 不传 --due,行为不变(向后兼容)
 
     返回：
-      {"ok": bool, "task_guid": str | None, "error": str | None}
+      {"ok": bool, "task_guid": str | None, "error": str | None, "existed": bool}
     """
+    # 2026-07-14 增:飞书查重(防重复,类似 diff_and_sync 第二步)
+    if due_iso:
+        existing_guid = _search_feishu_task_by_due_and_summary(due_iso, content)
+        if existing_guid:
+            return {"ok": True, "task_guid": existing_guid, "error": None, "existed": True}
+
     # 配置检查：从 lark-cli auth 自动读取 open_id（缓存）
     user_open_id = _get_user_open_id()
     if not user_open_id:
@@ -232,9 +271,9 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
     if r.get("ok"):
         task_data = r.get("data") or {}
         task_guid = task_data.get("task", {}).get("guid") or task_data.get("guid")
-        return {"ok": True, "task_guid": task_guid, "error": None}
+        return {"ok": True, "task_guid": task_guid, "error": None, "existed": False}
     else:
-        return {"ok": False, "task_guid": None, "error": r.get("error") or r.get("_raw", "unknown")}
+        return {"ok": False, "task_guid": None, "error": r.get("error") or r.get("_raw", "unknown"), "existed": False}
 
 
 def update_wish_sync(task_guid: str, content: str) -> dict:

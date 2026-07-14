@@ -24,11 +24,11 @@ import sys
 from pathlib import Path
 
 # 引入公共库
-sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
 from common import (
     run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
     unified_vf, ensure_dir, require_param, validate_resolution,
-    log_info, log_warn, log_error, log_section, safe_run, SKILL_ROOT,
+    log_info, log_warn, log_error, log_section, safe_run, ParamError, SKILL_ROOT,
 )
 
 
@@ -304,6 +304,19 @@ def concat(list_file, output_path, resolution="1080:1920", fps=30):
     log_info(f"输出: {output_path} ({get_duration(output_path):.1f}s)")
 
 
+def _parse_time(s: str) -> float:
+    """解析时间字符串: '5' / '1:30' / '00:01:30' → 秒"""
+    s = s.strip()
+    if ":" in s:
+        parts = s.split(":")
+        if len(parts) == 2:
+            return int(parts[0]) * 60 + float(parts[1])
+        elif len(parts) == 3:
+            return int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+        raise ParamError(f"时间格式错误: {s}")
+    return float(s)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="智剪工坊 · 视频剪切/拼接",
@@ -320,10 +333,12 @@ v1.10 新增: concat 自动检测并清理 muted video 残留 audio metadata,
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     # trim
-    p_trim = sub.add_parser("trim", help="剪切单段")
+    p_trim = sub.add_parser("trim", help="剪切单段(支持 --ss --t 或 --from --to)")
     p_trim.add_argument("-i", "--input", required=True, help="输入视频")
     p_trim.add_argument("--start", type=float, default=0, help="起始时间(秒)")
-    p_trim.add_argument("--t", type=float, required=True, help="时长(秒)")
+    p_trim.add_argument("--t", type=float, required=False, help="时长(秒)")
+    p_trim.add_argument("--from", dest="from_", help="起始时间(M:SS 或 HH:MM:SS)")
+    p_trim.add_argument("--to", help="结束时间(M:SS 或 HH:MM:SS)")
     p_trim.add_argument("-o", "--output", required=True, help="输出视频")
     p_trim.add_argument("--resolution", default="1080:1920", help="输出分辨率")
     p_trim.add_argument("--fps", type=int, default=30, help="帧率")
@@ -338,7 +353,18 @@ v1.10 新增: concat 自动检测并清理 muted video 残留 audio metadata,
     args = parser.parse_args()
 
     if args.cmd == "trim":
-        trim(args.input, args.start, args.t, args.output, args.resolution, args.fps)
+        # 支持 --from --to（转为 --start --t）
+        from_sec = args.start
+        t = args.t
+        if args.from_ is not None or args.to is not None:
+            from_sec = _parse_time(args.from_) if args.from_ else 0
+            to_sec = _parse_time(args.to) if args.to else 0
+            if to_sec <= from_sec:
+                raise ParamError(f"--to ({to_sec}s) 必须 > --from ({from_sec}s)")
+            t = to_sec - from_sec
+        if t is None:
+            raise ParamError("请提供 --t 或 --from + --to")
+        trim(args.input, from_sec, t, args.output, args.resolution, args.fps)
     elif args.cmd == "concat":
         concat(args.list, args.output, args.resolution, args.fps)
 

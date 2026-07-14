@@ -30,6 +30,9 @@ __pycache__/
 # 临时备份文件（带时间戳的 .bak/.zip,不入版本控制）
 *.bak.*
 *.bak[0-9]
+*.bak
+作息管家/plan_*.json
+备忘录/=
 *_backup_*.zip
 
 # OS

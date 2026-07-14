@@ -151,30 +151,36 @@ def xfade(a, b, transition, duration, output, offset=None, custom_offset=None):
 
 
 def _concat_hard_cut(a, b, output):
-    """type='none'/'cut' 短路路径: 用 ffmpeg concat 协议硬切拼接。
+    """type='none'/'cut' 短路路径: filter_complex concat 硬切拼接。
 
-    不用 stream copy: 输入可能 fps 不一致,stream copy 后 VFR 导致兼容性 bug。
-    统一走重编 + faststart 一次性解决。
+    v1.15 修复: 从 concat demuxer 改为 filter_complex concat,
+    与 trim.py concat 保持一致,避免 muted 视频拼接时 PTS 错乱
+    (7811s bug, 详见 SKILL.md muted 拼接风险)。
     """
-    ensure_dir(Path(output).parent)
-    list_file = Path(output).parent / f"_concat_{Path(output).stem}.txt"
-    list_file.write_text(
-        f"file '{Path(a).resolve()}'\nfile '{Path(b).resolve()}'\n",
-        encoding='utf-8'
-    )
-    try:
-        run_ffmpeg([
-            "-f", "concat", "-safe", "0", "-i", str(list_file),
-            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-            "-c:a", "aac", "-b:a", "128k",
-            "-vsync", "cfr", "-r", "30",
-            "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart",
-            str(output),
-        ])
-    finally:
-        if list_file.exists():
-            list_file.unlink()
+    # 给 muted 源补 silent audio (防止 filter 引用失败)
+    from trim import _has_audio_stream, _add_silent_audio
+    if not _has_audio_stream(a):
+        _add_silent_audio(a)
+    if not _has_audio_stream(b):
+        _add_silent_audio(b)
+
+    run_ffmpeg([
+        "-i", str(a),
+        "-i", str(b),
+        "-filter_complex",
+        "[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+        "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30[v0];"
+        "[1:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+        "pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30[v1];"
+        "[v0][0:a][v1][1:a]concat=n=2:v=1:a=1[v][a]",
+        "-map", "[v]",
+        "-map", "[a]",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+        "-c:a", "aac", "-b:a", "128k",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        str(output),
+    ])
     log_info(f"硬切输出: {output} ({get_duration(output):.1f}s)")
     return str(output)
 

@@ -249,7 +249,7 @@ SKILL.md（必读，触发词索引）
 | AI 调用 `lib/ffmpeg/audio` 时 | `音频链路-lib详解.md` |
 | AI 调用 `lib/ffmpeg/video` 时 | `视频底层-lib详解.md` |
 | AI 遇到 muted video 拼接异常 | `视频拼接-muted风险.md` |
-| **AI 处理带 displaymatrix / rotation 的视频源**（手机竖屏拍摄最常见） | `rotation-metadata-处理.md`（3 层坑 + 修复套路） |
+| **AI 加载后必读（环境/排错）** | `tools/install_ffprobe.py`（ffprobe 缺失时跑一次） |
 | **用户说"查看日志/复盘/audit"** | `commands/查看日志.sh`（shell 优先）+ `AI行为日志协议.md` |
 | **AI 进入粗加工（Step 9）** | `粗加工-执行契约.md` |
 | **AI 进入精加工（Step 11）** | `精加工-两路径.md` |
@@ -315,7 +315,7 @@ SKILL.md（必读，触发词索引）
 ### 依赖
 
 - **Python >= 3.10**
-- **ffmpeg 7.1+**（系统 PATH 可调用）
+- **ffmpeg 7.1+**（系统 PATH 可调用）+ **ffprobe**（必备；imageio-ffmpeg 只有 ffmpeg，用 `tools/install_ffprobe.py` 装或从 npmmirror 下载）
 - **GPU 链路（可选,推荐）**:CUDA 13.0+ + PyTorch 2.x — 启用 demucs（音频分离）/ whisper（ASR）/ pyannote（说话人分离）
 - **Python 包**（按需安装,见下表）
 

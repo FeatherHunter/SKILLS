@@ -308,9 +308,27 @@ def list_sub_skills() -> List[Path]:
 import logging
 from logging.handlers import RotatingFileHandler
 
-# 全局状态
-_LOG_VERBOSE = False
-_LOG_FILE_INITIALIZED = False
+def setup_console():
+    """修复 Windows PowerShell 下 Python CLI 的 stdout/stderr 输出问题。
+
+    症状: CLI 返回 0 但 stdout 空、文件没写（pipe/BOM/encoding 混用）。
+    根因: Windows CP936 编码下 unicode→GBK 转换失败导致 print 静默丢弃；
+          加上 PowerShell 管道 vs TTY 检测不准，buffering 阻塞。
+
+    本函数在 safe_run 装饰器入口自动调用，所有 CLI 入口无需逐文件修改。
+    Python 3.7+ 才支持 reconfigure，智剪工坊最低 3.10 所以安全。
+    """
+    import sys
+    # 仅 Windows 需要修复（Linux/Mac 默认 UTF-8）
+    if sys.platform != "win32":
+        return
+    # stdout: 强制 UTF-8 + line buffering（解决 pipe 时 buffering 阻塞）
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace",
+                               line_buffering=True)
+    # stderr: 强制 UTF-8 + unbuffered（错误信息实时可读）
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -431,11 +449,14 @@ def safe_run(func):
     - 其他:打印 traceback,exit 2
     """
     def wrapper(*args, **kwargs):
+        setup_console()  # 修复 Windows CLI 输出丢失
         try:
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            sys.stdout.flush(); sys.stderr.flush()  # 确保成功路径也输出
+            return result
         except SkillError as e:
             log_error(str(e))
-            sys.exit(1)
+            sys.stdout.flush(); sys.stderr.flush(); sys.exit(1)
         except ImportError as e:
             # 缺包:解析出包名给安装命令
             missing = str(e).split("'")[-2] if "'" in str(e) else str(e).split()[-1]
@@ -486,7 +507,9 @@ def safe_run(func):
             log_error(f"未预期错误: {e}")
             import traceback
             traceback.print_exc()
-            sys.exit(2)
+            sys.stdout.flush(); sys.stderr.flush(); sys.exit(2)
+        finally:
+            sys.stdout.flush(); sys.stderr.flush()  # 异常路径也 flush
     return wrapper
 
 

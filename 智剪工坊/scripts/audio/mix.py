@@ -264,4 +264,4 @@ match-mode (v1.3):
 
 
 if __name__ == "__main__":
-    safe_run(main)
+    safe_run(main)()

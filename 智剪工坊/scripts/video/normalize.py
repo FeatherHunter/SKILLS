@@ -287,4 +287,4 @@ intent.json.output.fps / video_codec / audio_codec 是配置入口。
 
 
 if __name__ == "__main__":
-    safe_run(main)
+    safe_run(main)()

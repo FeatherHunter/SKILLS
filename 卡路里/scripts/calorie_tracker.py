@@ -125,7 +125,12 @@ def main():
             while i < len(args):
                 if args[i].startswith('--'):
                     kw_args.append(args[i])
-                    i += 1
+                    # 同时把 value 也加入 kw_args（如果下一个不是 --flag）
+                    if i + 1 < len(args) and not args[i+1].startswith('--'):
+                        kw_args.append(args[i+1])
+                        i += 2
+                    else:
+                        i += 1
                 else:
                     positional.append(args[i])
                     i += 1

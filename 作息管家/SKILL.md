@@ -44,8 +44,8 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | 9 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
 | 10 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
 | 11 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
-| **12** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id / completion）。**带具体标题时**（如"今天有健身吗"）→ `search-plan-event` 精确匹配 | `list-events <日期>` 或 `search-plan-event <日期> --title X` | **详见 3. 查询作息** |
-| **13** | **补计划** | 单条追加计划事件（幂等：已有不重复）。与商量计划的区别：补 = 增量一条，商量 = 完整24h规划 | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title X` | **详见 10. 补计划与程序化接口** |
+| **12** | **查计划 / 看计划（默认）** | 查单日完整事件 + 飞书同步状态（id / notes / category / feishu_event_id / completion）。**带具体标题时**（如"今天有健身吗"）→ `search-plan-event` 精确匹配（2026-07-15 起可选 `--time-start/--time-end` 按三元组查重） | `list-events <日期>` 或 `search-plan-event <日期> --title X [--time-start HH:MM --time-end HH:MM]` | **详见 3. 查询作息** |
+| **13** | **补计划** | 单条追加计划事件。**幂等（2026-07-15 修复）：按 (date+time_start+time_end) 三元组查重，title 不参与（title 是展示标签不是身份）**。与商量计划的区别：补 = 增量一条，商量 = 完整24h规划 | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title X` | **详见 10. 补计划与程序化接口** |
 | **14** | **复盘** | 对当天计划逐条回顾：哪些做了、哪些没做、为什么 → 写入 completion 字段 | `list-events` → 逐条 `update-event --completion` | **详见 11. 复盘** |
 | 15 | 24h 概览 | 24h 时间表聚合视图（同小时用 + 合并） | `query-plans <日期>` | 详见 3. 查询作息 |
 | 16 | 查多日计划 | 多日简版视图（不含 notes/completion/飞书状态） | `query-plans <日期1,日期2,...>` | 详见 3. 查询作息 |
@@ -505,6 +505,9 @@ python scripts/schedule_cli.py ensure-plan-event <日期> \
 
 ```bash
 python scripts/schedule_cli.py search-plan-event <日期> --title <标题>
+# 2026-07-15 新增：可选按 (date+time) 精确查重（title 不参与）
+python scripts/schedule_cli.py search-plan-event <日期> --time-start HH:MM --time-end HH:MM
+# 标题+时间 一起传 → 三元组查重
 ```
 
 返回：
@@ -514,9 +517,40 @@ python scripts/schedule_cli.py search-plan-event <日期> --title <标题>
 ```
 
 - 只查 `is_active=1` 的活跃事件
-- 精确匹配 title
+- **2026-07-15 升级**：精确匹配 title（兼容路径）；同时支持可选的 time_start/time_end 参数触发三元组查重
 - 匹配到多条时返回第一条
 - 此接口也由"查计划"上下文路由自动触发（用户说"今天有XX计划吗？"）
+
+#### 幂等性语义（2026-07-15 升级 · 修复"按 (date+time) 查重"bug）
+
+**第一性原理**：身份 = `(date, time_start, time_end)`，title 是展示标签（不是身份）。
+
+**查重维度优先级**：
+
+| 调用方式 | 查重维度 | title 参与？ |
+|---|---|---|
+| `ensure-plan-event` 传 time_start + time_end | `(date, time_start, time_end)` 三元组 | ❌ 否 |
+| `search-plan-event` 传 time_start + time_end | `(date, time_start, time_end)` 三元组 | ❌ 否 |
+| `search-plan-event` 只传 title（旧路径） | `(date, title)` 二元组 | ✅ 是 |
+
+**title 语义规则**：
+- 同 `(date, time_start, time_end)` + 不同 `title` → **视为同一条**（返回 found，不建新）
+- 同 `date` + 不同 `time` + 同 `title` → 视为不同事件（新建）
+- `title` 是给人看的"标签"，不影响"是不是同一条计划"
+
+**飞书侧查重**（`_sync_one_feishu` 内部）：
+- 飞书 API 不支持 time 过滤 → 先按 `title` 拉候选 → 再按 `time_start + time_end` 精确比对
+- 命中 (date+time+title) → 回写现有 `event_id`（飞书侧幂等，不重创建）
+- 未命中 → `create_event` 新建 + 回写 `event_id`
+
+**修复前 vs 修复后**：
+- **修复前 bug**（2026-07-15 修）：`ensure-plan-event(date, 10:00, 11:30, "健身 上午·臂")` 调一次 + `ensure-plan-event(date, 10:00, 11:30, "健身·上午·臂 10:00")` 调一次 → DB 出现 2 条 7/15 10:00-11:30 计划（不幂等）
+- **修复后**：同样的 2 次调用 → DB 仍是 1 条（幂等）
+
+**为什么这个修复必要**：
+- 网络抖动重试是常态——不幂等会导致数据重复
+- AI 可能因为上下文混乱或自查而重复发同一命令
+- 跨技能联动时（卡路里/备忘录→作息），多源调用需要幂等保护
 
 ---
 

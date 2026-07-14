@@ -584,6 +584,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
             </div>
         </div>
 
+        <div class="word-item" data-keywords="补计划 加一条计划 ensure-plan-event 单条增量 幂等">
+            <div class="word-head" onclick="toggleWord(this)">
+                <span class="word-name">补计划</span>
+                <span class="word-desc">单条追加计划事件，幂等：按 (date+time) 三元组查重，title 不参与（仅展示标签）</span>
+                <svg class="word-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="word-detail">
+                <div class="cli-row">
+                    <span class="cli-label">CLI 命令</span>
+                    <span class="cli-cmd" onclick="toggleFlow(this,'flow-plan-ensure')">python3 scripts/schedule_cli.py ensure-plan-event &lt;日期&gt; --time-start HH:MM --time-end HH:MM --title &lt;标题&gt; [--notes X] [--category Y]</span>
+                </div>
+                <div class="flow-panel" id="flow-plan-ensure">
+                    <div class="flow-title">执行流程</div>
+                    <div class="flow-step">search_plan_event(date, title, time_start, time_end) → 按 (date, time_start, time_end) 三元组查重（title 不参与查重）</div>
+                    <div class="flow-step">命中 (date+time) → 返回 found，不建新（"重发 100 遍也只算 1 次"）</div>
+                    <div class="flow-step">未命中 → INSERT 本地 schedule_plans → 调 _sync_one_feishu 同步飞书</div>
+                    <div class="flow-step">_sync_one_feishu 飞书查重：search_events(date, date, query=title) 拿候选，再按 time_start+time_end 精确比对</div>
+                    <div class="flow-step">飞书命中 (date+time+title) → 回写现有 event_id（飞书侧幂等，不重建）</div>
+                    <div class="flow-step">飞书未命中 → create_event 新建 + set_feishu_event_id 回写</div>
+                    <table class="flow-table">
+                        <tr><th>操作</th><th>数据库</th><th>表</th><th>字段</th><th>类型</th></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">id / title / time_start / time_end / feishu_event_id</td><td>三元组查重</td></tr>
+                        <tr><td><span class="flow-badge badge-write">INSERT</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">date / time_start / time_end / title / notes / category / is_active=1</td><td>新建事件（未命中时）</td></tr>
+                        <tr><td><span class="flow-badge badge-write">UPDATE</span></td><td>schedule_data.db</td><td>schedule_plans</td><td class="field-name">feishu_event_id / last_synced_at</td><td>飞书同步后回写</td></tr>
+                        <tr><td><span class="flow-badge badge-read">READ</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">+search-event query=title</td><td>飞书查重候选</td></tr>
+                        <tr><td><span class="flow-badge badge-write">CREATE</span></td><td>feishu（lark-cli）</td><td>飞书日历</td><td class="field-name">calendar +create</td><td>必要时新建飞书事件</td></tr>
+                    </table>
+                    <div class="flow-note">
+                        <strong>幂等性（2026-07-15 修复）：</strong>身份 = (date, time_start, time_end) 三元组，title 是展示标签不参与查重。同 (date+time) + 不同 title → 视为同一条，重复调用不建新事件。<br>
+                        <strong>title 语义：</strong>"健身 上午·臂" vs "健身·上午·臂 10:00" 视为同一条计划。<br>
+                        <strong>飞书查重：</strong>飞书 API 不支持 time 过滤，先按 title 拉候选再按 time_start+time_end 精确比对，避免飞书侧出现"同 title 重复事件"。<br>
+                        <strong>修复前 bug：</strong>同 (date+time) + 不同 title → 误判为不存在 → 新建重复事件（已在 7/15 数据中触发并清理：硬删 16 条本地孤儿 + lark-cli 删 6 个孤儿飞书事件）。
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="word-item" data-keywords="改计划 update-event 修改一个日程 单条修改">
             <div class="word-head" onclick="toggleWord(this)">
                 <span class="word-name">改计划</span>

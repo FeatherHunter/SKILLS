@@ -787,10 +787,49 @@ def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
         conn.close()
 
 
-def search_plan_event(date: str, title: str) -> dict | None:
-    """按日期+标题查找活跃计划事件。返回匹配的第一条或 None。
-    2026-07-12 新增：轻量查询接口，供 ensure-plan-event 和 AI 诊断使用。"""
+def search_plan_event(date: str, title: str,
+                       time_start: str | None = None,
+                       time_end: str | None = None) -> dict | None:
+    """按日期[+时间[+标题]]查找活跃计划事件。返回匹配的第一条或 None。
+
+    2026-07-12 新增：轻量查询接口，供 ensure-plan-event 和 AI 诊断使用。
+    2026-07-15 升级：补计划幂等性修复 - 支持按 (date+time) 三元组精确查重。
+
+    查重维度（按以下优先级构造 WHERE）：
+      1. date 必传
+      2. time_start + time_end 同时传入 → 按 (date+time_start+time_end) 三元组
+         （title 不参与匹配，title 是展示标签，不是身份）
+      3. 否则按 (date+title) 二元组（兼容旧调用方）
+
+    Args:
+        date:       日期 YYYY-MM-DD
+        title:      标题
+        time_start: 可选，时段开始 HH:MM（与 time_end 同时传入触发三元组查重）
+        time_end:   可选，时段结束 HH:MM
+
+    Returns:
+        dict | None: 匹配的第一条活跃事件（按 time_start 排序）或 None
+    """
     date = _normalize_date(date)
+    if time_start is not None:
+        time_start = normalize_time(time_start)
+    if time_end is not None:
+        time_end = normalize_time(time_end)
+
+    # 构造 WHERE 条件 + 参数（参数化防 SQL 注入）
+    where_clauses = ["date = ?", "is_active = 1"]
+    where_params: list = [date]
+    if time_start is not None and time_end is not None:
+        # 三元组查重（修复后路径）— title 不参与
+        where_clauses.append("time_start = ?")
+        where_params.append(time_start)
+        where_clauses.append("time_end = ?")
+        where_params.append(time_end)
+    else:
+        # 二元组查重（兼容旧调用方）— 保留
+        where_clauses.append("title = ?")
+        where_params.append(title)
+
     conn = get_connection()
     try:
         _ensure_new_plans_schema(conn)
@@ -800,10 +839,10 @@ def search_plan_event(date: str, title: str) -> dict | None:
         c.execute(f'''
             SELECT {", ".join(cols)}
             FROM schedule_plans
-            WHERE date = ? AND title = ? AND is_active = 1
+            WHERE {" AND ".join(where_clauses)}
             ORDER BY time_start
             LIMIT 1
-        ''', (date, title))
+        ''', where_params)
         r = c.fetchone()
         if not r:
             return None
@@ -824,8 +863,11 @@ def ensure_plan_event(date: str, time_start: str, time_end: str,
       3. 查本地 DB → 无 → INSERT 本地 → 尝试创建飞书事件并回写 ID
       飞书不可用时跳过（不阻塞本地写入）。"""
     date = _normalize_date(date)
+    time_start_norm = normalize_time(time_start)
     time_end = normalize_time(time_end)
-    existing = search_plan_event(date, title)
+    # 2026-07-15 修复：按 (date+time_start+time_end) 三元组查重
+    # title 不参与匹配 — 同一时段不同 title 视为同一条（幂等性第一性）
+    existing = search_plan_event(date, title, time_start=time_start_norm, time_end=time_end)
 
     feishu_result = None
 
@@ -833,7 +875,7 @@ def ensure_plan_event(date: str, time_start: str, time_end: str,
         if existing.get('feishu_event_id'):
             return {"action": "found", "id": existing["id"], "event": existing}
         # 有本地但未同步飞书 → 尝试同步
-        feishu_result = _sync_one_feishu(existing['id'], date, time_start, time_end, title, notes)
+        feishu_result = _sync_one_feishu(existing['id'], date, time_start_norm, time_end, title, notes)
         event = get_plan_event(existing['id'])
         return {"action": "found", "id": existing["id"], "event": event, "feishu": feishu_result or "unavailable"}
 
@@ -846,37 +888,64 @@ def ensure_plan_event(date: str, time_start: str, time_end: str,
             INSERT INTO schedule_plans
                 (date, time_start, time_end, title, notes, category, is_active)
             VALUES (?, ?, ?, ?, ?, ?, 1)
-        ''', (date, time_start, time_end, title, notes, category))
+        ''', (date, time_start_norm, time_end, title, notes, category))
         conn.commit()
         new_id = c.lastrowid
         # 尝试同步飞书
-        feishu_result = _sync_one_feishu(new_id, date, time_start, time_end, title, notes)
+        feishu_result = _sync_one_feishu(new_id, date, time_start_norm, time_end, title, notes)
         event = get_plan_event(new_id)
         return {"action": "created", "id": new_id, "event": event, "feishu": feishu_result or "unavailable"}
     finally:
         conn.close()
 
 
+def _parse_iso_time(iso_str: str) -> str:
+    """从 ISO 8601 字符串提取 HH:MM（不依赖 datetime，避免时区解析坑）。
+
+    例: '2026-07-15T10:00:00+08:00' → '10:00'
+       '2026-07-15T22:30:00.000+08:00' → '22:30'
+       '20260715T100000+0800'（紧凑格式）→ '10:00'
+
+    失败返回空串。"""
+    if not iso_str:
+        return ""
+    # 找 T
+    t_idx = iso_str.find('T')
+    if t_idx < 0 or t_idx + 6 > len(iso_str):
+        return ""
+    # T 后 5 字符固定是 HH:MM
+    return iso_str[t_idx + 1: t_idx + 6]
+
+
 def _sync_one_feishu(event_id: int, date: str, time_start: str, time_end: str,
                      title: str, notes: Optional[str] = None) -> Optional[str]:
     """为单条本地事件创建飞书日历事件并回写 feishu_event_id。
 
-    飞书不可用（未装/未授权/API 失败）返回 None，不抛异常。"""
+    飞书不可用（未装/未授权/API 失败）返回 None，不抛异常。
+
+    2026-07-15 修复：飞书侧按 (date+time_start+time_end+title) 四元组查重。
+    旧逻辑只按 title 查，导致同 title 不同时段事件会误绑，飞书侧出现重复。
+    新逻辑：先按 title 拿候选，再 time 精确比对。"""
     try:
         from feishu_sync import is_feishu_available, create_event, search_events
 
         if not is_feishu_available():
             return None
 
-        # 先查飞书是否已有同名事件（幂等）
+        # 2026-07-15 修复：飞书侧按 (date+time_start+time_end+title) 四元组查重
+        # 飞书 search_events 不支持 time 过滤，先按 title 拿候选再 time 比对
         existing_fs = search_events(date, date, query=title)
         for ev in existing_fs:
-            if ev.summary == title:
-                # 飞书已有 → 回写 ID
+            if ev.summary != title:
+                continue
+            ev_time_start = _parse_iso_time(ev.start)
+            ev_time_end = _parse_iso_time(ev.end)
+            if ev_time_start == time_start and ev_time_end == time_end:
+                # 飞书已有匹配 (date+time+title 一致) → 回写 ID（幂等）
                 set_feishu_event_id(event_id, ev.event_id)
                 return "found_feishu"
 
-        # 飞书没有 → 创建
+        # 飞书没有匹配 → 创建
         iso_start = f"{date}T{time_start}:00+08:00"
         iso_end = f"{date}T{time_end}:00+08:00"
         desc = f"作息管家自动同步 · {notes}" if notes else "作息管家自动同步"

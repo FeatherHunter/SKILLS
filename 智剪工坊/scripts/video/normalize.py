@@ -55,7 +55,7 @@ def get_video_info_simple(video_path):
     import subprocess
     cmd = ["ffmpeg", "-i", str(video_path)]
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
         stderr = r.stderr
         # 匹配 "1920x1080"
         wh_match = re.search(r"(\d{2,4})x(\d{2,4})", stderr)

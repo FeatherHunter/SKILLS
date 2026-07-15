@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -172,6 +172,82 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 | 查营养目标 | 查看当前每日营养目标 | `python scripts/calorie_tracker.py get-goal` |
 | 查健康报告 | 四维度综合健康仪表盘 | `AI 路由（Python API）` |
 | 查卡路里数据 | 数据健康检查 | `AI 路由（无 CLI）` |
+
+### 📋 复盘（2026-07-15 新增）
+
+> **核心定位**：运动表现(健身计划 vs 运动记录)是第 1 优先级,其次是饮食摄入和热量平衡。
+> **设计**：从第一性原理出发,3 步公式 = 回顾 → 反思 → 改进。区别于"健康报告"(只给数据)。
+
+| 唤醒词 | 功能 | 默认参数 | CLI |
+|--------|------|---------|-----|
+| `复盘` | 立即生成复盘 + 飞书发送 | 过去 7 天 | `python scripts/calorie_tracker.py review --full` |
+| `今日复盘` / `复盘今日` / `日复盘` | 当日复盘 | 今天 | `python scripts/calorie_tracker.py review --full --type day` |
+| `本周复盘` / `复盘本周` / `周复盘` | 本周复盘 | 本周一-今天 | `python scripts/calorie_tracker.py review --full --type week` |
+| `本月复盘` / `复盘本月` / `月复盘` | 本月复盘 | 本月 1 号-今天 | `python scripts/calorie_tracker.py review --full --type month` |
+| `本年复盘` / `复盘本年` / `年复盘` | 本年复盘 | 今年 1/1-今天 | `python scripts/calorie_tracker.py review --full --type year` |
+| `复盘 7/1 到 7/14` | 自定义范围 | — | `python scripts/calorie_tracker.py review --full --range 2026-07-01:2026-07-14` |
+| `定时复盘` | 入口(开/关/查) | — | — |
+| `开启定时复盘` | 启动 cron(默认 23:00 / 过去 7 天) | — | `mavis cron create ...` |
+| `关闭定时复盘` | 删除 cron | — | `mavis cron delete ...` |
+| `查定时复盘` | 查看当前配置 | — | `mavis cron list` |
+
+#### 复盘子命令(Q16=B 多子命令)
+
+```bash
+# 全跑(默认):生成 HTML → 上传飞书云盘 → 飞书发送摘要
+python scripts/calorie_tracker.py review --full [--range X:Y] [--type day|week|month|year]
+
+# 分步跑(调试用)
+python scripts/calorie_tracker.py review --gen [--range X:Y] [--type ...]
+python scripts/calorie_tracker.py review --archive --html-path <path>
+python scripts/calorie_tracker.py review --send --html-path <path>
+```
+
+#### 数据流
+
+```
+calorie_tracker.py review --full
+    ↓
+review_engine.py: 5 维 SQL + 衍生计算(TDEE / 缺口 / 理论减重)
+    ↓
+review_prompts.py: 拼装 prompt + 调 LLM(运动表现复盘 AI)
+    ↓
+review.html: LLM 装填 data-field → 完整 HTML
+    ↓
+review_feishu.py: 飞盘上传 + 飞书消息发送(group / im)
+```
+
+#### 8 个口语化 dim(从第一性原理)
+
+| 顺序 | 标题 | 副标签 | 数据维度 |
+|---|---|---|---|
+| 1 | **总结** | 3 亮点 + 3 问题 + 3 建议 | 3+3+3 摘要 |
+| 2 | **训练** ⭐P1 | 健身计划 vs 运动记录 | 完成率 / 频次 / 组数 / 时长 / 5-7 条 plan vs actual |
+| 3 | **饮食** | 吃进去多少 | 平均热量 / 蛋白碳脂 / vs 目标 / 异常天 |
+| 4 | **运动** | 消耗多少 | 运动消耗 / 日均 / TDEE / 类型 |
+| 5 | **热量** | 缺口多少 | 周缺口 / 日均 / 预期 / 理论减重 |
+| 6 | **体重** | 变化趋势 | 起 / 止 / 变化 / 波动 / 7 天折线 |
+| 7 | **习惯** | 高频 + 异常 | 营养结构比例 / Top 5 食物 / 行为异常 |
+| 8 | **目标** | 进度 | 进度条 / vs 体重 / vs 营养 / 预计还需 N 周 |
+
+#### 环境变量(Q10=C + 不破坏 config-calorie.ts)
+
+| 变量 | 用途 | 默认 |
+|------|------|------|
+| `REVIEW_FEISHU_CHANNEL` | 'group' / 'im' | `group` |
+| `REVIEW_FEISHU_WEBHOOK_URL` | webhook 群消息 URL | — |
+| `REVIEW_FEISHU_USER_OPEN_ID` | IM 用户 open_id | — |
+| `USER_AGE` | Mifflin-St Jeor 计算年龄 | `30` |
+| `USER_GENDER` | 'male' / 'female' | `male` |
+
+#### 相关文件
+
+| 文件 | 角色 |
+|------|------|
+| `review.html` | 装填模板(数据→HTML 视觉) |
+| `scripts/review_engine.py` | 5 维 SQL + 衍生计算 + 摘要提取 |
+| `scripts/review_prompts.py` | 喂 LLM 的 prompt 模板 + 调用接口 |
+| `scripts/review_feishu.py` | 飞书发送(group / im)+ 飞盘上传 |
 
 ### 📸 身材照片
 

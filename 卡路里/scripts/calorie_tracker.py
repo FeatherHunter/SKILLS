@@ -19,6 +19,7 @@
 
 import sys
 from datetime import date, datetime
+from pathlib import Path
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -33,6 +34,11 @@ import weight_goal
 import exercise
 import product_library
 import calorie_history
+
+# 复盘模块(Q16=B 多子命令:review --gen / --send / --archive / --full)
+import review_engine
+import review_prompts
+import review_feishu
 
 
 def _parse_kw_args(args):
@@ -289,6 +295,44 @@ def main():
             limit = int(sys.argv[2]) if len(sys.argv) > 2 else 50
             product_library.list_products(limit)
 
+        elif command == "review":
+            # 复盘子命令(Q16=B 多子命令)
+            #   review --gen [--range X:Y] [--type day|week|month|year]
+            #       → 生成 HTML(LLM 装填 review.html 模板)
+            #   review --send --html-path <path>
+            #       → 从 HTML 提取 3+3+3,LLM 生成飞书消息,发送
+            #   review --archive --html-path <path>
+            #       → 上传 HTML 到飞书云盘,返回 URL
+            #   review --full [--range X:Y] [--type ...]  # 默认行为
+            #       → gen + archive + send 全跑
+
+            if len(sys.argv) < 3:
+                print("Error: review 需要子命令 --gen / --send / --archive / --full")
+                print("  用法:")
+                print("    review --full [--range 2026-07-08:2026-07-14] [--type week]")
+                print("    review --gen  [--range X:Y] [--type day|week|month|year]")
+                print("    review --archive --html-path <path>")
+                print("    review --send --html-path <path>")
+                sys.exit(1)
+
+            sub = sys.argv[2]
+            kw = _parse_kw_args(sys.argv[3:])
+
+            if sub == '--gen':
+                _review_gen(kw)
+            elif sub == '--archive':
+                _review_archive(kw)
+            elif sub == '--send':
+                _review_send(kw)
+            elif sub == '--full':
+                # 全跑:gen → archive → send
+                html_path = _review_gen(kw)
+                url = _review_archive({'html-path': str(html_path)})
+                _review_send({'html-path': str(html_path), 'feishu-url': url})
+            else:
+                print(f"Error: review 子命令 '{sub}' 未知")
+                sys.exit(1)
+
         else:
             print(f"Error: Unknown command '{command}'")
             usage()
@@ -297,6 +341,124 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
+
+# ==================== 复盘子命令实现 ====================
+
+def _review_gen(kw: dict) -> Path:
+    """生成复盘 HTML(LLM 装填 review.html 模板)
+
+    Args:
+        kw: 包含 --range / --type
+
+    Returns:
+        Path: 生成的 HTML 文件路径(系统 temp 目录)
+    """
+    import tempfile
+
+    # 1. 解析时间范围
+    range_arg = kw.get('range')
+    range_type = kw.get('type', 'week')
+    start, end = review_engine.parse_range(range_arg, range_type)
+    print(f"→ 时间范围: {start} 至 {end}")
+
+    # 2. 查询 5 维原始数据
+    skill_dir = Path(__file__).parent.parent
+    raw_data = review_engine.query_5dims(start, end, skill_dir)
+    print(f"→ 数据查询完毕: {len(raw_data['daily_intake'])} 天摄入, "
+          f"{len(raw_data['daily_burn'])} 天运动, "
+          f"{len(raw_data['weight_logs'])} 条体重")
+
+    # 3. 衍生计算
+    enriched = review_engine.derive(raw_data)
+    print(f"→ 衍生计算: TDEE={enriched['tdee']}, "
+          f"周缺口={enriched['weekly_deficit']}, "
+          f"理论减重={enriched['theoretical_weight_loss']}kg")
+
+    # 4. 拼 prompt + 调 LLM
+    prompt = review_prompts.build_html_prompt(enriched)
+    print("→ 调 LLM 装填 review.html...")
+    html_output = review_prompts.call_llm(prompt)
+
+    # 5. 保存到系统 temp 目录(Q17=C)
+    temp_dir = Path(tempfile.gettempdir()) / 'calorie_reviews'
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    html_path = temp_dir / f'review_{start}_{end}.html'
+    html_path.write_text(html_output, encoding='utf-8')
+    print(f"✓ HTML 已生成: {html_path}")
+
+    return html_path
+
+
+def _review_archive(kw: dict) -> str:
+    """上传 HTML 到飞书云盘
+
+    Args:
+        kw: 包含 --html-path
+
+    Returns:
+        str: 飞书云盘链接
+    """
+    html_path = kw.get('html-path')
+    if not html_path:
+        print("Error: --archive 需要 --html-path 参数")
+        sys.exit(1)
+
+    print(f"→ 上传 {html_path} 到飞书云盘...")
+    url = review_feishu.upload_to_feishu_drive(html_path)
+    print(f"✓ 飞书链接: {url}")
+    return url
+
+
+def _review_send(kw: dict) -> None:
+    """从 HTML 提取摘要,LLM 生成飞书消息,发送
+
+    Args:
+        kw: 包含 --html-path 和 --feishu-url
+    """
+    html_path = kw.get('html-path')
+    feishu_url = kw.get('feishu-url', '')
+    if not html_path:
+        print("Error: --send 需要 --html-path 参数")
+        sys.exit(1)
+
+    html_path = Path(html_path)
+    if not html_path.exists():
+        print(f"Error: HTML 文件不存在: {html_path}")
+        sys.exit(1)
+
+    # 1. 提取摘要
+    html_output = html_path.read_text(encoding='utf-8')
+    summary = review_engine.extract_summary(html_output)
+    print(f"→ 摘要提取: {summary['date_range']}")
+
+    # 2. LLM 生成飞书消息
+    feishu_prompt = review_prompts.build_feishu_prompt(summary, feishu_url)
+    print("→ 调 LLM 生成飞书消息...")
+    feishu_text = review_prompts.call_llm(feishu_prompt)
+
+    # 3. 替换模板里的占位符
+    # LLM 输出格式: 完整模板字符串,占位符仍是 {{xxx}}
+    # 直接用 fill_template 函数替换
+    final_text = _fill_feishu_template(feishu_text, summary, feishu_url)
+
+    # 4. 发送
+    print("→ 发送飞书...")
+    success = review_feishu.send_feishu(final_text)
+    if success:
+        print("✓ 飞书消息发送成功")
+    else:
+        print("✗ 飞书消息发送失败")
+        sys.exit(1)
+
+
+def _fill_feishu_template(template: str, summary: dict, feishu_url: str) -> str:
+    """把 {{xxx}} 占位符替换为实际值"""
+    result = template
+    for key, value in summary.items():
+        result = result.replace('{{' + key + '}}', str(value))
+    result = result.replace('{{feishu_url}}', feishu_url)
+    return result
 
 
 if __name__ == "__main__":

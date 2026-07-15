@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>封面合成 (cover-composer) · HTML 镜像</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.7; color: #1d1d1f; background: #fafafa; }
+  h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 600; margin-top: 48px; padding-bottom: 8px; border-bottom: 1px solid #d2d2d7; }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 28px; color: #6e6e73; }
+  p { margin: 12px 0; font-size: 15px; }
+  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; }
+  code { background: #f5f5f7; padding: 2px 7px; border-radius: 5px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 12px; overflow-x: auto; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #d2d2d7; }
+  th { background: #f5f5f7; font-weight: 600; }
+  blockquote { border-left: 3px solid #0071e3; padding: 8px 16px; color: #6e6e73; background: #f5f5f7; border-radius: 0 8px 8px 0; margin: 18px 0; }
+  ul { margin: 10px 0 10px 24px; }
+  li { margin-bottom: 4px; }
+  .meta { color: #86868b; font-size: 13px; margin-bottom: 32px; }
+  .pill { display: inline-block; background: #f5f5f7; color: #6e6e73; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 4px; }
+  .anti { background: #fff5f5; border: 1px solid #ffd1d1; border-radius: 8px; padding: 12px 16px; margin: 12px 0; }
+  .anti-title { color: #ff3b30; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>封面合成 (cover-composer)</h1>
+<p class="meta">v1.0 · 2026-07-15 · <a href="SKILL.md" style="color:#0071e3;">SKILL.md</a> · <a href="changelog.md" style="color:#0071e3;">changelog</a> · <a href="references/反模式.md" style="color:#0071e3;">反模式</a></p>
+
+<blockquote>
+<p><b>多图旋转叠加 + 文字水印 + 半透明黑防御</b></p>
+</blockquote>
+
+<h2>管什么</h2>
+<ul>
+  <li>多张照片(+ 文字水印)在 16:9 / 9:16 / 4:3 / 1:1 画布上的<strong>层叠合成</strong></li>
+  <li>多图旋转 / 透明叠加 / 对称布局 / 文字水印</li>
+  <li>半透明黑检测 / 对称性检测 / 暗像素区检测</li>
+  <li>平台预设模板(抖音 / B 站 / 视频号 / 小红书 / YouTube / 微博)</li>
+</ul>
+
+<h2>不管什么</h2>
+<ul>
+  <li>单图磨皮 / 调色 / 滤镜(用其它 skill)</li>
+  <li>视频帧提取 / 视频 thumbnail(用 ffmpeg)</li>
+  <li>GIF / 动图 / AI 生图(用其它 skill)</li>
+  <li>多文字复杂海报(用 design-tool)</li>
+</ul>
+
+<h2>触发词</h2>
+<p>
+<span class="pill">封面合成</span>
+<span class="pill">多图拼图</span>
+<span class="pill">做封面</span>
+<span class="pill">缩略图</span>
+<span class="pill">拼贴</span>
+<span class="pill">海报合成</span>
+<span class="pill">cover compose</span>
+<span class="pill">photo collage</span>
+<span class="pill">thumbnail</span>
+</p>
+
+<h2>快速上手</h2>
+
+<pre><code># 1. 查平台预设
+封面合成 presets --platform douyin
+# → {"ratio": "9:16", "size": [1080, 1920], "name": "抖音"}
+
+# 2. 合成(DAY14 真实用法)
+封面合成 compose \
+  --photos main.jpg left.jpg right.jpg \
+  --layout symmetric-cascade \
+  --aspect 16:9 \
+  --text '{"main":"14 天","sub":"-7 斤","tags":"腰突 大基数"}' \
+  -o cover.jpg
+
+# 3. 自检
+封面合成 diagnose cover.jpg</code></pre>
+
+<h2>5 层架构</h2>
+
+<pre><code>封面合成/
+├── SKILL.md                   # ① 文档
+├── 封面合成.html              # ① 镜像(本文件)
+├── changelog.md               # ① 版本
+├── references/                # ① 深入文档
+│   ├── 反模式.md
+│   ├── 术语对照表.md
+│   └── 案例集.md
+├── scripts/                   # ②③ CLI + 业务
+│   ├── cli.py                 # ② 入口
+│   ├── compose.py             # ③ 主流程
+│   ├── layout.py              # ③ 布局引擎(4 种)
+│   ├── layers.py              # ③ ⭐ 旋转 / 二值化(踩坑封装)
+│   ├── text.py                # ③ 文字水印
+│   ├── diagnose.py            # ③ 诊断子命令
+│   ├── presets.py             # ③ 平台预设
+│   └── validators.py          # ③ 硬规则
+└── lib/                       # ④ 数据层
+    ├── canvas.py              # ④ 画布 + 智能保存
+    ├── diagnostics.py         # ④ 像素分析
+    └── presets_data.py        # ④ 平台规格常量</code></pre>
+
+<h2>核心 API</h2>
+
+<h3>`compose()` 主入口</h3>
+<pre><code>def compose(
+    photos: List[str],
+    layout: str = "symmetric-cascade",
+    aspect: str = "16:9",
+    text: Any = None,        # JSON 字符串 或 dict
+    bg: str = "#000000",
+    output: str = None
+) -> dict:
+    """Returns: {status, data, message, warnings}"""</code></pre>
+
+<h3>4 种 layout</h3>
+<table>
+  <tr><th>layout</th><th>用途</th><th>z 分布</th></tr>
+  <tr><td><code>symmetric-cascade</code>(默认)</td><td>主图 + 左右副图,镜像对称</td><td>主=0, 副=1</td></tr>
+  <tr><td><code>cascade</code></td><td>主图 + 副图堆叠(右下偏移)</td><td>主=0, 副=1+</td></tr>
+  <tr><td><code>polaroid</code></td><td>主图中央,副图四角散落</td><td>主=1, 副=2+</td></tr>
+  <tr><td><code>grid</code></td><td>网格平铺(多图无主图)</td><td>全 =0</td></tr>
+</table>
+
+<h3>8 条核心反模式(详见 <a href="references/反模式.md">反模式.md</a>)</h3>
+<div class="anti">
+  <div class="anti-title">❌ #1 RGB rotate 角是黑实色</div>
+  <p>必须先转 RGBA 再 rotate,否则 expand 后的新角用 0 填黑</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #2 alpha 羽化导致半透明黑</div>
+  <p>GaussianBlur 羽化让 alpha 有中间值,跟画布混出色差。二值化(&gt;128 → 255)替代</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #3 shadow 扩散污染主图</div>
+  <p>每个图层加 shadow 会叠加成"半透明黑雾",直接去掉 shadow</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #4 RGB 转 RGBA alpha 默认 255</div>
+  <p>转出来不透明。直接用 Image.new("RGBA", (W,H), (0,0,0,0)) 创建透明画布</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #5 JPG 保存丢 alpha</div>
+  <p>JPG 不支持 alpha。透明需求用 PNG,不需要透明用 .convert("RGB") 显式转</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #7 PIL rotate 抗锯齿 alpha 中间值</div>
+  <p>Image.BICUBIC 抗锯齿在像素边界做插值,产生中间值 alpha。必须二值化</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #9 隐式 z-order</div>
+  <p>LayerSpec.z 显式声明,不要靠 paste 顺序</p>
+</div>
+<div class="anti">
+  <div class="anti-title">❌ #10 文字无描边在亮色照片上读不清</div>
+  <p>stroke_fill=(0,0,0) + stroke_width=字号×5% 黑色描边</p>
+</div>
+
+<h2>3 条铁律(踩了 16 个坑后总结)</h2>
+<ol>
+  <li><b>alpha 必须是 0 或 255</b>(不要中间值)</li>
+  <li><b>画布必须从一开始就是 RGBA</b>(不要从 RGB 转)</li>
+  <li><b>永远显式 z-order</b>(不要靠 paste 顺序)</li>
+</ol>
+
+<p>满足这 3 条,半透明黑问题消失 90%。剩下 10% 来自 shadow / 抗锯齿,需要 <code>diagnose()</code> 兜底。</p>
+
+<h2>版本</h2>
+<p>见 <a href="changelog.md">changelog.md</a>。当前 v1.0。</p>
+
+</body>
+</html>

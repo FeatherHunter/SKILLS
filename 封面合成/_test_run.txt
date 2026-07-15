@@ -1,0 +1,11 @@
+﻿python : <string>:12: SyntaxWarning: invalid escape sequence '\:'
+At line:1 char:146
++ ... t.Encoding]::UTF8; cd "D:\2Study\StudyNotes\SKILLS\封面合成"; python -c "
++                                                               ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (<string>:12: Sy...e sequence '\:':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 6
+    sys.argv = ['cover-composer', 'compose',
+               ^
+SyntaxError: '[' was never closed

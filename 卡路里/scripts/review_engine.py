@@ -1,53 +1,69 @@
 #!/usr/bin/env python3
-"""复盘模块 - 5 维数据查询 + 衍生计算 + 摘要提取
+"""复盘模块 - 业务层(③)
 
-数据流:
-    review_tracker review --gen
-        ↓
-    query_5dims(start, end) → raw_data
-        ↓
-    derive(raw_data) → enriched_data
-        ↓
-    review_prompts.build_html_prompt(enriched_data)
-        ↓
-    LLM → 完整 HTML
-        ↓
-    extract_summary(html) → 飞书消息字段
+按 5 层架构定位:
+- ③ 业务层:领域查询 + 衍生计算 + 摘要提取
+- 所有 SQL 走 db.connection()(数据层 ④)
+- 不直接 sqlite3.connect (符合"所有 SQL 走 db.py")
 """
 
 import json
-import sqlite3
 import statistics
 from datetime import date, datetime, timedelta
+from html.parser import HTMLParser
 from pathlib import Path
 
-import db as db_module
-import workout_plan
+import db as db_module  # ④ 数据层
+import workout_plan     # 健身计划循环逻辑
+
+
+# ==================== 错误类(契约层用) ====================
+
+class ReviewError(Exception):
+    """复盘模块错误基类"""
+    pass
+
+
+class RangeParseError(ReviewError):
+    """日期范围解析错误"""
+    pass
+
+
+class DataNotFoundError(ReviewError):
+    """数据缺失错误(如没有 workout_plan_config)"""
+    pass
 
 
 # ==================== 时间范围解析 ====================
 
-def parse_range(range_arg: str | None, range_type: str = 'week') -> tuple[str, str]:
-    """解析时间范围 → (start_date, end_date) 字符串 YYYY-MM-DD
+def parse_range(range_arg, range_type='week'):
+    """解析时间范围 → (start_date, end_date) tuple
 
     Args:
         range_arg: "2026-07-08:2026-07-14" 格式,或 None
-        range_type: day / week / month / year(默认 week)
+        range_type: day / week / month / year(默认 week = 过去 7 天)
 
     Returns:
-        (start, end) 元组
+        (start, end) 元组,ISO 格式字符串
+
+    Raises:
+        RangeParseError: 日期格式无法解析
     """
     today = date.today()
 
     if range_arg:
-        # 解析 "2026-07-08:2026-07-14" 或 "7/8:7/14"
         if ':' in range_arg:
             parts = range_arg.split(':')
-            start = _normalize_date(parts[0].strip(), today)
-            end = _normalize_date(parts[1].strip(), today)
+            try:
+                start = _normalize_date(parts[0].strip(), today)
+                end = _normalize_date(parts[1].strip(), today)
+            except ValueError as e:
+                raise RangeParseError(f"日期格式错误: {e}")
         else:
-            # 单日期 = 当天
-            start = end = _normalize_date(range_arg.strip(), today)
+            try:
+                start = end = _normalize_date(range_arg.strip(), today)
+            except ValueError as e:
+                raise RangeParseError(f"日期格式错误: {e}")
         return start.isoformat(), end.isoformat()
 
     # 默认范围
@@ -58,30 +74,23 @@ def parse_range(range_arg: str | None, range_type: str = 'week') -> tuple[str, s
         start = today - timedelta(days=6)
         return start.isoformat(), today.isoformat()
     elif range_type == 'month':
-        # 本月 1 号到今天
         start = today.replace(day=1)
         return start.isoformat(), today.isoformat()
     elif range_type == 'year':
-        # 今年 1/1 到今天
         start = today.replace(month=1, day=1)
         return start.isoformat(), today.isoformat()
     else:
-        raise ValueError(f"未知 range_type: {range_type}")
+        raise RangeParseError(f"未知 range_type: {range_type}")
 
 
-def _normalize_date(s: str, ref: date) -> date:
-    """支持 "2026-07-08" 或 "7/8" 格式"""
+def _normalize_date(s, ref):
+    """支持 "2026-07-08" / "7/8" / "8" 格式"""
     s = s.strip()
-    # ISO 格式
     if '-' in s and len(s) == 10:
         return datetime.strptime(s, '%Y-%m-%d').date()
-    # "7/8" 格式(月/日)
     if '/' in s:
         parts = s.split('/')
-        month = int(parts[0])
-        day = int(parts[1])
-        return ref.replace(month=month, day=day)
-    # 数字格式(8 = 8号)
+        return ref.replace(month=int(parts[0]), day=int(parts[1]))
     if s.isdigit():
         return ref.replace(day=int(s))
     raise ValueError(f"无法解析日期: {s}")
@@ -89,22 +98,29 @@ def _normalize_date(s: str, ref: date) -> date:
 
 # ==================== 5 维数据查询 ====================
 
-def query_5dims(start: str, end: str, skill_dir: Path) -> dict:
+def query_5dims(start, end, skill_dir):
     """查询 5 维原始数据(按天聚合)
 
+    按 5 层规范:所有 SQL 走 db.connection()
+
+    Args:
+        start: 开始日期 ISO 字符串
+        end: 结束日期 ISO 字符串
+        skill_dir: 技能根目录(用于 db.find_db_path)
+
     Returns:
-        dict with keys:
-            range, daily_intake, daily_burn, weight_logs, fitness_plan,
-            daily_intake_summary, daily_burn_summary,
-            user_profile, nutrition_targets, weight_goal
+        dict 含 keys: range, daily_intake, daily_burn, weight_logs,
+                      fitness_plan, user_profile, nutrition_targets
+
+    Raises:
+        DataNotFoundError: 关键表无数据(如没有 workout_plan_config)
     """
     db_path = db_module.find_db_path(skill_dir)
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
 
-    try:
-        # 1. 每日摄入(按 date 聚合)
-        daily_intake_rows = conn.execute('''
+    # ✅ 符合 5 层:用 db.connection() context manager
+    with db_module.connection(db_path) as conn:
+        # 1. 每日摄入
+        daily_intake = [dict(r) for r in conn.execute('''
             SELECT date,
                 SUM(calories) AS total_calorie,
                 SUM(protein) AS total_protein,
@@ -112,16 +128,14 @@ def query_5dims(start: str, end: str, skill_dir: Path) -> dict:
                 SUM(fat) AS total_fat,
                 COUNT(*) AS meal_count
             FROM food_log
-            WHERE food_name != '💧水'  -- 排除饮水
+            WHERE food_name != '💧水'
               AND date BETWEEN ? AND ?
             GROUP BY date
             ORDER BY date
-        ''', (start, end)).fetchall()
-
-        daily_intake = [dict(r) for r in daily_intake_rows]
+        ''', (start, end)).fetchall()]
 
         # 2. 每日消耗
-        daily_burn_rows = conn.execute('''
+        daily_burn = [dict(r) for r in conn.execute('''
             SELECT date,
                 SUM(calories_burned) AS total_burned,
                 SUM(duration_minutes) AS total_minutes,
@@ -131,23 +145,29 @@ def query_5dims(start: str, end: str, skill_dir: Path) -> dict:
             WHERE date BETWEEN ? AND ?
             GROUP BY date
             ORDER BY date
-        ''', (start, end)).fetchall()
-
-        daily_burn = [dict(r) for r in daily_burn_rows]
+        ''', (start, end)).fetchall()]
 
         # 3. 体重日志
-        weight_rows = conn.execute('''
+        weight_logs = [dict(r) for r in conn.execute('''
             SELECT date, weight_kg, height_cm
             FROM weight_log
             WHERE date BETWEEN ? AND ?
             ORDER BY date
-        ''', (start, end)).fetchall()
-        weight_logs = [dict(r) for r in weight_rows]
+        ''', (start, end)).fetchall()]
 
-        # 4. 健身计划(循环计算每天的 plan)
-        fitness_plan_data = _query_fitness_plan(conn, start, end)
+        # 4. 健身计划(必须存在,否则失败)
+        config_row = conn.execute(
+            'SELECT * FROM workout_plan_config WHERE id = 1'
+        ).fetchone()
+        if not config_row:
+            raise DataNotFoundError(
+                "workout_plan_config 表无数据,"
+                "请先'制定健身计划'初始化"
+            )
+        config = dict(config_row)
+        fitness_plan_data = _query_fitness_plan(conn, start, end, config)
 
-        # 5. user_profile(从 weight_log 取身高,从 config 取年龄+性别)
+        # 5. user_profile(从 weight_log 取身高,从 USER_AGE/GENDER env 取)
         user_profile = _query_user_profile(conn)
 
         # 6. daily_goal(单行)
@@ -156,52 +176,38 @@ def query_5dims(start: str, end: str, skill_dir: Path) -> dict:
         ).fetchone()
         nutrition_targets = dict(goal_row) if goal_row else {}
 
-        return {
-            'range': {'start': start, 'end': end, 'days': _days_between(start, end) + 1},
-            'daily_intake': daily_intake,
-            'daily_burn': daily_burn,
-            'weight_logs': weight_logs,
-            'fitness_plan': fitness_plan_data,
-            'user_profile': user_profile,
-            'nutrition_targets': nutrition_targets,
-        }
-    finally:
-        conn.close()
+    return {
+        'range': {
+            'start': start,
+            'end': end,
+            'days': _days_between(start, end) + 1,
+        },
+        'daily_intake': daily_intake,
+        'daily_burn': daily_burn,
+        'weight_logs': weight_logs,
+        'fitness_plan': fitness_plan_data,
+        'user_profile': user_profile,
+        'nutrition_targets': nutrition_targets,
+    }
 
 
-def _query_fitness_plan(conn, start: str, end: str) -> list[dict]:
-    """查询区间内每天的健身计划(走循环逻辑)
+def _query_fitness_plan(conn, start, end, config):
+    """查询区间内每天的健身计划(走循环逻辑)"""
+    from datetime import datetime, timedelta
 
-    Returns:
-        list of dict: [
-            {date, plan_label, plan_movements, plan_total_sets},
-            ...
-        ]
-    """
-    config_row = conn.execute(
-        'SELECT * FROM workout_plan_config WHERE id = 1'
-    ).fetchone()
-    if not config_row:
-        return []
-
-    config = dict(config_row)
     total_weeks = config['total_weeks']
     plan_start = datetime.strptime(config['start_date'], '%Y-%m-%d').date()
 
-    # 查询所有 plans
-    all_plans_rows = conn.execute('''
+    all_plans = [dict(r) for r in conn.execute('''
         SELECT * FROM workout_plans
         ORDER BY week_number, day_of_week, session_index
-    ''').fetchall()
-    all_plans = [dict(r) for r in all_plans_rows]
+    ''').fetchall()]
 
-    # 按 (week_number, day_of_week) 索引
     plan_index = {}
     for p in all_plans:
         key = (p['week_number'], p['day_of_week'])
         plan_index.setdefault(key, []).append(p)
 
-    # 计算区间内每天的 plan
     start_d = datetime.strptime(start, '%Y-%m-%d').date()
     end_d = datetime.strptime(end, '%Y-%m-%d').date()
 
@@ -228,13 +234,9 @@ def _query_fitness_plan(conn, start: str, end: str) -> list[dict]:
     return result
 
 
-def _query_user_profile(conn) -> dict:
-    """查询用户基础信息
-
-    数据库无 user_profile 表,从以下来源聚合:
-    - 身高:weight_log 最近一条
-    - 年龄+性别:从 config-calorie.ts 或环境变量读(待实现)
-    """
+def _query_user_profile(conn):
+    """查询用户基础信息(身高从 weight_log, 年龄/性别从 env)"""
+    import os
     height_row = conn.execute('''
         SELECT height_cm FROM weight_log
         WHERE height_cm IS NOT NULL
@@ -242,16 +244,14 @@ def _query_user_profile(conn) -> dict:
     ''').fetchone()
     height = height_row['height_cm'] if height_row else None
 
-    # TODO: 从 config 读年龄+性别,目前用环境变量 fallback
-    import os
     return {
         'height_cm': height,
-        'age': int(os.environ.get('USER_AGE', 30)),  # 默认 30
-        'gender': os.environ.get('USER_GENDER', 'male'),  # 默认 male
+        'age': int(os.environ.get('USER_AGE', 30)),
+        'gender': os.environ.get('USER_GENDER', 'male'),
     }
 
 
-def _days_between(start: str, end: str) -> int:
+def _days_between(start, end):
     """两个日期相差几天"""
     start_d = datetime.strptime(start, '%Y-%m-%d').date()
     end_d = datetime.strptime(end, '%Y-%m-%d').date()
@@ -260,16 +260,18 @@ def _days_between(start: str, end: str) -> int:
 
 # ==================== 衍生计算 ====================
 
-def derive(raw_data: dict) -> dict:
+def derive(raw_data):
     """衍生计算:Mifflin-St Jeor TDEE / 缺口 / 理论减重 / 营养结构比例"""
     enriched = dict(raw_data)
 
-    # 1. TDEE(每日总能量消耗)
+    # 1. TDEE
+    latest_weight = _get_latest_weight(raw_data.get('weight_logs', []))
+    user_profile = raw_data.get('user_profile', {})
     enriched['tdee'] = _calc_tdee(
-        weight_kg=_get_latest_weight(raw_data.get('weight_logs', [])),
-        height_cm=raw_data.get('user_profile', {}).get('height_cm'),
-        age=raw_data.get('user_profile', {}).get('age', 30),
-        gender=raw_data.get('user_profile', {}).get('gender', 'male'),
+        weight_kg=latest_weight,
+        height_cm=user_profile.get('height_cm'),
+        age=user_profile.get('age', 30),
+        gender=user_profile.get('gender', 'male'),
     )
 
     # 2. 摄入汇总
@@ -302,7 +304,7 @@ def derive(raw_data: dict) -> dict:
             'days_count': 0, 'total_burned': 0, 'avg_burned': 0, 'total_minutes': 0,
         }
 
-    # 4. 营养结构比例(按热量)
+    # 4. 营养结构比例
     intake = enriched['intake_summary']
     total_kcal = intake['avg_protein'] * 4 + intake['avg_carbs'] * 4 + intake['avg_fat'] * 9
     if total_kcal > 0:
@@ -322,33 +324,29 @@ def derive(raw_data: dict) -> dict:
     weekly_deficit = total_burned_all - total_intake  # 正=赤字
     enriched['weekly_deficit'] = round(weekly_deficit)
     enriched['avg_daily_deficit'] = round(weekly_deficit / days)
-    enriched['theoretical_weight_loss'] = round(weekly_deficit / 7700, 1)  # 7700 kcal/kg
+    enriched['theoretical_weight_loss'] = round(weekly_deficit / 7700, 1)
 
     return enriched
 
 
-def _calc_tdee(weight_kg: float | None, height_cm: float | None,
-               age: int, gender: str) -> int:
-    """Mifflin-St Jeor 公式 + 活动系数
+def _calc_tdee(weight_kg, height_cm, age, gender='male'):
+    """Mifflin-St Jeor 公式 + 活动系数 1.55(中度)
 
-    BMR = 10*W + 6.25*H - 5*A + (5 男 / -161 女)
-    TDEE = BMR × 活动系数(轻度 1.375 / 中度 1.55 / 高度 1.725)
+    BMR: 10W + 6.25H - 5A + (5 男 / -161 女)
+    TDEE = BMR × 1.55
     """
     if not weight_kg or not height_cm:
-        return 1800  # fallback 默认值
+        return 1800  # fallback
 
     if gender == 'male':
         bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
     else:
         bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
 
-    # 活动系数:用 1.55(中等活动),无更细数据
-    activity_factor = 1.55
-    return round(bmr * activity_factor)
+    return round(bmr * 1.55)
 
 
-def _get_latest_weight(weight_logs: list[dict]) -> float | None:
-    """从 weight_logs 取最后一条的体重"""
+def _get_latest_weight(weight_logs):
     if not weight_logs:
         return None
     return weight_logs[-1].get('weight_kg')
@@ -356,37 +354,41 @@ def _get_latest_weight(weight_logs: list[dict]) -> float | None:
 
 # ==================== 摘要提取 ====================
 
-def extract_summary(html_output: str) -> dict:
-    """从 LLM 输出的 HTML 提取 3+3+3 摘要(用于飞书消息)
+class _SummaryExtractor(HTMLParser):
+    """从 LLM 输出的 HTML 提取 data-field 内容"""
+
+    def __init__(self):
+        super().__init__()
+        self.current_field = None
+        self.current_text = ''
+        self.results = {}
+
+    def handle_starttag(self, tag, attrs):
+        attrs_dict = dict(attrs)
+        if 'data-field' in attrs_dict:
+            self.current_field = attrs_dict['data-field']
+            self.current_text = ''
+
+    def handle_data(self, data):
+        if self.current_field:
+            self.current_text += data
+
+    def handle_endtag(self, tag):
+        if self.current_field and tag in ('span', 'div', 'li', 'h2', 'h3'):
+            self.results[self.current_field] = self.current_text.strip()
+            self.current_field = None
+
+
+def extract_summary(html_output):
+    """从 LLM 输出的 HTML 提取 3+3+3 摘要
+
+    Args:
+        html_output: 完整 HTML 字符串
 
     Returns:
-        dict with keys: date_range, win_1..3, fail_1..3, todo_1..3
+        dict 含 keys: date_range, win_1..3, fail_1..3, todo_1..3
     """
-    from html.parser import HTMLParser
-
-    class FieldExtractor(HTMLParser):
-        def __init__(self):
-            super().__init__()
-            self.current_field = None
-            self.current_text = ''
-            self.results = {}
-
-        def handle_starttag(self, tag, attrs):
-            attrs_dict = dict(attrs)
-            if 'data-field' in attrs_dict:
-                self.current_field = attrs_dict['data-field']
-                self.current_text = ''
-
-        def handle_data(self, data):
-            if self.current_field:
-                self.current_text += data
-
-        def handle_endtag(self, tag):
-            if self.current_field and tag in ('span', 'div', 'li', 'h2', 'h3'):
-                self.results[self.current_field] = self.current_text.strip()
-                self.current_field = None
-
-    parser = FieldExtractor()
+    parser = _SummaryExtractor()
     parser.feed(html_output)
 
     return {

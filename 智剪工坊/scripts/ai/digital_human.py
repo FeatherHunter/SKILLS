@@ -31,7 +31,7 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
 sys.path.insert(0, str(Path(__file__).parent))  # scripts/,让 import rewrite_audio 找得到
 from common import (
     get_duration, ensure_dir, log_info, log_warn, log_error, log_section, safe_run,

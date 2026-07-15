@@ -38,7 +38,7 @@ import sys
 from pathlib import Path
 
 # 引入公共库
-sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "lib"))
 from common import (
     run_ffmpeg, get_duration, DEFAULT_ENCODE_ARGS,
     unified_vf, ensure_dir,

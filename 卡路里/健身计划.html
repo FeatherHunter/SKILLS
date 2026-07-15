@@ -34,10 +34,36 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 .day-tab{background:var(--card);border:1px solid var(--lineS);padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;border-radius:8px;transition:all .15s}
 .day-tab:hover{border-color:var(--accent);color:var(--ink)}
 .day-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+.review-section{background:#fff;border:1px solid var(--lineS);border-radius:16px;padding:22px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
+.review-section h2{font-size:18px;font-weight:600;margin-bottom:14px}
+.review-stat{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.stat-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.stat-value{font-size:32px;font-weight:600;color:var(--accent);line-height:1}
+.review-detail{color:var(--ink2);font-size:13px;margin-bottom:10px;line-height:1.6}
+.review-detail p{margin-bottom:3px}
+.review-detail strong{color:var(--ink);font-weight:500}
+.anomalies{list-style:none;padding:0;margin-top:8px}
+.anomalies li{padding:5px 0;color:var(--ink2);font-size:13px}
+.no-review{color:var(--ink3);font-style:italic;font-size:13px}
 </style></head>
 <body><div class="app">
 <div class="header"><h1>4周训练计划</h1>
 <p>科学定制·6天/周·270组 · 4 周循环 · 起始 2026-07-13</p></div>
+<div class="review-section">
+<h2>📋 今日复盘 · 2026-07-15</h2>
+<div class="review-stat">
+<span class="stat-label">完成率</span>
+<span class="stat-value">0%</span>
+</div>
+<div class="review-detail">
+<p><strong>训练:</strong> 上午·臂 / 下午·胸 / 晚上·腿 / 居家·腹</p>
+<p><strong>组数:</strong> 计划 48 · 实做 0</p>
+<p><strong>备注:</strong> 计划有训练但完全未做</p>
+</div>
+<ul class="anomalies">
+<li>❌ 计划有训练但完全未做</li>
+</ul>
+</div>
 <div class="tabs" id="weekTabs">
 <button class="tab active" data-wk="1">第 1 周</button>
 <button class="tab" data-wk="2">第 2 周</button>

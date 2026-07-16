@@ -11,6 +11,13 @@ import os
 import argparse
 from datetime import datetime, timedelta
 
+# 强制 stdout UTF-8,Windows 默认 GBK 装不下 ✓ 等符号会抛 UnicodeEncodeError
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 from pathlib import Path
 
 # ==================== 可配置常量 ====================

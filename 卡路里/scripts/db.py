@@ -332,6 +332,19 @@ def init_db(db_path):
     c.execute('CREATE INDEX IF NOT EXISTS idx_body_photos_date ON body_photos(date)')
     c.execute('CREATE INDEX IF NOT EXISTS idx_body_photos_tag ON body_photos(tag)')
 
+    # user_profile — 用户档案（2026-07-16 新增，单行表,review TDEE 用）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS user_profile (
+            id INTEGER PRIMARY KEY CHECK (id = 1),  -- 单行表
+            age INTEGER,                           -- 年龄(岁)
+            gender TEXT,                           -- 'male' / 'female'
+            height_cm REAL,                        -- 身高(cm,从 weight_log 同步过来)
+            note TEXT DEFAULT '',                  -- 备注
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # 迁移：删除废弃的 fitness_goals 表（2026-07-12，重构为 workout_plans）
     if 'fitness_goals' in _existing_tables:
         c.execute('DROP TABLE IF EXISTS fitness_goals')

@@ -35,6 +35,8 @@ import weight_goal
 import exercise
 import product_library
 import calorie_history
+import profile
+import review_cli
 
 
 
@@ -292,6 +294,64 @@ def main():
         elif command == "list-products":
             limit = int(sys.argv[2]) if len(sys.argv) > 2 else 50
             product_library.list_products(limit)
+
+        elif command == "profile":
+            # profile 子命令
+            #   profile set <age> <gender> [--height <cm>] [--note <text>]
+            #   profile get
+            #   profile show
+            #   profile sync-height(从 weight_log 同步身高)
+            if len(sys.argv) < 3:
+                print("用法:")
+                print("  profile set <age> <gender> [--height <cm>] [--note <text>]")
+                print("    示例:profile set 30 male --height 175")
+                print("  profile get")
+                print("  profile show")
+                print("  profile sync-height")
+                sys.exit(1)
+
+            sub = sys.argv[2]
+            try:
+                if sub == "set":
+                    if len(sys.argv) < 5:
+                        print("Error: profile set 需要 <age> <gender>")
+                        print("  示例:profile set 30 male --height 175")
+                        sys.exit(1)
+                    age = int(sys.argv[3])
+                    gender = sys.argv[4]
+                    kwargs = _parse_kw_args(sys.argv[5:])
+                    profile.set_profile(
+                        age=age,
+                        gender=gender,
+                        height_cm=float(kwargs["height"]) if "height" in kwargs else None,
+                        note=kwargs.get("note"),
+                    )
+                    print("✓ 档案已更新")
+                    profile.print_profile()
+                elif sub == "get":
+                    import json
+                    p = profile.get_profile()
+                    print(json.dumps(p, ensure_ascii=False, indent=2))
+                elif sub == "show":
+                    profile.print_profile()
+                elif sub == "sync-height":
+                    height = profile.sync_height_from_weight_log()
+                    if height:
+                        print(f"✓ 身高已从 weight_log 同步:{height} cm")
+                    else:
+                        print("⚠ weight_log 表中没有身高数据")
+                else:
+                    print(f"Error: profile 子命令 \"{sub}\" 未知")
+                    sys.exit(1)
+            except profile.InvalidAgeError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+            except profile.InvalidGenderError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+            except profile.ProfileError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
 
         elif command == "review":
             # 复盘子命令(Q23=A):委托给独立 review_cli.py(符合 5 层契约层)

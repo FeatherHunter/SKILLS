@@ -14,6 +14,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import db as db_module  # ④ 数据层
+import profile          # 用户档案(③ 业务层)
 import workout_plan     # 健身计划循环逻辑
 
 
@@ -235,7 +236,28 @@ def _query_fitness_plan(conn, start, end, config):
 
 
 def _query_user_profile(conn):
-    """查询用户基础信息(身高从 weight_log, 年龄/性别从 env)"""
+    """查询用户基础信息
+
+    优先从 user_profile 表(由 profile.set_profile 设置)读取
+    fallback:身高从 weight_log,年龄/性别默认 30/male
+    """
+    p = profile.get_profile()
+    if p:
+        height = p.get('height_cm')
+        if height is None:
+            height_row = conn.execute('''
+                SELECT height_cm FROM weight_log
+                WHERE height_cm IS NOT NULL
+                ORDER BY date DESC LIMIT 1
+            ''').fetchone()
+            height = height_row['height_cm'] if height_row else None
+        return {
+            'height_cm': height,
+            'age': p.get('age') or 30,
+            'gender': p.get('gender') or 'male',
+        }
+
+    # 老库 fallback:身高从 weight_log,年龄/性别从 env
     import os
     height_row = conn.execute('''
         SELECT height_cm FROM weight_log
@@ -243,7 +265,6 @@ def _query_user_profile(conn):
         ORDER BY date DESC LIMIT 1
     ''').fetchone()
     height = height_row['height_cm'] if height_row else None
-
     return {
         'height_cm': height,
         'age': int(os.environ.get('USER_AGE', 30)),

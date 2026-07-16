@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘
+  触发词：记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、制定健身计划、改健身计划、落地健身计划、同步健身计划、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养配比、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案、同步身高
 metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -237,8 +237,8 @@ review_feishu.py: 飞盘上传 + 飞书消息发送(group / im)
 | `REVIEW_FEISHU_CHANNEL` | 'group' / 'im' | `group` |
 | `REVIEW_FEISHU_WEBHOOK_URL` | webhook 群消息 URL | — |
 | `REVIEW_FEISHU_USER_OPEN_ID` | IM 用户 open_id | — |
-| `USER_AGE` | Mifflin-St Jeor 计算年龄 | `30` |
-| `USER_GENDER` | 'male' / 'female' | `male` |
+| `USER_AGE` | **(已废弃)** review_engine.py 现走 user_profile 表,无需此 env | — |
+| `USER_GENDER` | **(已废弃)** 同上 | — |
 
 #### 相关文件
 
@@ -370,6 +370,26 @@ python scripts/calorie_tracker.py history 7                      # 最近7天历
 python scripts/calorie_tracker.py goal 1800 150 200 60 2000      # 设置目标：热量 蛋白 碳水 脂肪 饮水ml
 python scripts/calorie_tracker.py water 500                      # 记录饮水 500ml
 ```
+
+### 用户档案(profile,2026-07-16 新增)
+```bash
+python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
+python scripts/calorie_tracker.py profile get       # JSON 输出
+python scripts/calorie_tracker.py profile show      # 人类可读
+python scripts/calorie_tracker.py profile sync-height  # 从 weight_log 自动同步身高
+```
+
+用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。
+
+### 用户档案(profile,2026-07-16 新增)
+```bash
+python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
+python scripts/calorie_tracker.py profile get       # JSON 输出
+python scripts/calorie_tracker.py profile show      # 人类可读
+python scripts/calorie_tracker.py profile sync-height  # 从 weight_log 自动同步身高
+```
+
+用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。
 
 ### 食品库
 ```bash

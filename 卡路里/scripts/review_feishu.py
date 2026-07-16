@@ -251,7 +251,8 @@ def upload_to_feishu_drive(file_path):
 
     按 5 层规范:
     - try/except 失败降级
-    - 一条命令 Set-Location + lark-cli(避免跨调用 cwd 不持久)
+    - 用 subprocess 的 cwd= 参数(直接设子进程 cwd,不走 shell)
+    - 列表传参(避免 PowerShell 中文乱码)
     - 避免 Windows junction(用真实目录)
 
     Returns:
@@ -267,13 +268,17 @@ def upload_to_feishu_drive(file_path):
     dir_ = file_path.parent
     name = file_path.name
 
-    # 一条命令搞定(避免 mavis bash 跨调用 cwd 不持久)
-    ps_cmd = f'Set-Location "{dir_}"; lark-cli drive +upload --as user --file "./{name}" --name {name} --format json'
-
+    # 用 subprocess.cwd= 直接设子进程 cwd(避免 mavis bash 跨调用 cwd 不持久)
+    # 不用 shell=True(之前用 Set-Location + shell=True 在 cmd.exe 下不工作,bug 已修)
+    # 显式加 .cmd 后缀(CreateProcess 在 Windows 上 PATHEXT 解析可能跳过 .ps1)
     try:
         result = subprocess.run(
-            ps_cmd,
-            shell=True,
+            ['lark-cli.cmd', 'drive', '+upload',
+             '--as', 'user',
+             '--file', f'./{name}',
+             '--name', name,
+             '--format', 'json'],
+            cwd=str(dir_),  # ← Python 直接设子进程 cwd
             capture_output=True, text=True, encoding='utf-8',
             timeout=30,
         )

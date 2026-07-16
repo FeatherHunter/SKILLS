@@ -74,6 +74,7 @@ def find_dark_areas(img: Image.Image, threshold=30) -> Dict[str, Any]:
         "count": count,
         "pct": pct,
         "threshold": threshold,
+        "warning": warning,
     }
 
 

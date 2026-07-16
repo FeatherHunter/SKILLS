@@ -19,11 +19,27 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 
-from .pipeline import compose
-from .auto import auto_compose
-from .diagnose import diagnose_image
-from .presets import get_preset, list_presets
+# 兼容两种调用方式:
+# 1) python -m cover_compose.cli ...  (包内运行, 相对导入)
+# 2) python scripts/ai/cover_compose/cli.py ...  (直接运行, 绝对导入)
+_SKILL_AI_DIR = str(Path(__file__).parent.parent)
+if _SKILL_AI_DIR not in sys.path:
+    sys.path.insert(0, _SKILL_AI_DIR)
+
+try:
+    # 优先相对导入(包内运行)
+    from .pipeline import compose
+    from .auto import auto_compose
+    from .diagnose import diagnose_image
+    from .presets import get_preset, list_presets
+except ImportError:
+    # 兜底: 绝对导入(直接 python cli.py)
+    from cover_compose.pipeline import compose
+    from cover_compose.auto import auto_compose
+    from cover_compose.diagnose import diagnose_image
+    from cover_compose.presets import get_preset, list_presets
 
 
 def cmd_compose(args):

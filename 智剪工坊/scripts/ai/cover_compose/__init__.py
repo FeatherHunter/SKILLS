@@ -15,6 +15,12 @@
 详细:见 references/封面合成-多图拼版PIL.md
 """
 from .pipeline import compose, parse_text_spec, ASPECT_RATIOS
+from .auto import auto_compose
+from .diagnose import diagnose_image
+from .presets import get_preset, list_presets
 
-__all__ = ["compose", "parse_text_spec", "ASPECT_RATIOS"]
+__all__ = [
+    "compose", "auto_compose", "parse_text_spec", "ASPECT_RATIOS",
+    "diagnose_image", "get_preset", "list_presets",
+]
 __version__ = "1.0.0"

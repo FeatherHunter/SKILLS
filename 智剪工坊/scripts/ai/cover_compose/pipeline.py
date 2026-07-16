@@ -30,19 +30,22 @@ ASPECT_RATIOS = {
 
 
 def parse_text_spec(text_spec):
-    """text_spec 可以是 JSON 字符串 或 dict
+    """text_spec 可以是 JSON 字符串 / dict / None
 
-    支持两种格式:
-    1. 简单: {"main": "14 天", "sub": "-7 斤"}
-    2. 完整: {"lines": [{"text": "14 天", "position": "top-center", "size": 64, ...}]}
+    支持格式:
+    - None: 无文字层(返回 None, None,调用方跳过烧文字)
+    - 简单 dict: {"main": "14 天", "sub": "-7 斤"}
+    - 完整 dict: {"lines": [{"text": "...", "position": "...", "size": 64, ...}]}
     """
+    if text_spec is None:
+        return None, None
     if isinstance(text_spec, str):
         try:
             text_spec = json.loads(text_spec)
         except json.JSONDecodeError as e:
             return None, f"text JSON 解析失败:{e}"
     if not isinstance(text_spec, dict):
-        return None, f"text 必须是 dict 或 JSON 字符串,收到 {type(text_spec).__name__}"
+        return None, f"text 必须是 dict / JSON 字符串 / None,收到 {type(text_spec).__name__}"
 
     # 简单格式自动转换
     if "lines" not in text_spec:

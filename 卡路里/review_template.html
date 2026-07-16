@@ -208,6 +208,48 @@
   .metric-inline-delta.green { color: var(--green); }
   .metric-inline-delta.warn { color: var(--orange); }
   .metric-inline-delta.red { color: var(--red); }
+
+  /* ========== 移动端适配(<= 480px,如 iPhone 13) ========== */
+  /* 问题 1:3+3+3 总结 3 列在窄屏超出右边界 */
+  /* 问题 2:热量/饮食/运动/体重 dim 的 4 列 metric 数字挤换行 */
+  /* 解决:3 列 → 1 列堆叠,4/5 列 → 2 列 */
+  @media (max-width: 480px) {
+    body { padding: 16px 14px 60px; }
+    .dim { padding: 16px; margin-bottom: 10px; }
+    .dim h2 { font-size: 18px; }
+
+    /* 3+3+3 总结 → 1 列堆叠 */
+    .summary-grid {
+      grid-template-columns: 1fr !important;
+      gap: 8px;
+    }
+
+    /* 所有 metric grid → 2 列(覆盖 3/4/5 列) */
+    .metric-grid,
+    .metric-grid.cols-3,
+    .metric-grid.cols-5 {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 10px;
+    }
+
+    /* 缩小 metric value 字号(覆盖 inline style) */
+    .metric .value {
+      font-size: 20px !important;
+      min-height: 28px;
+    }
+    /* 特殊小字号 value(连续训练 20px / 类型分布 14px) */
+    .metric .value[style*="font-size:20px"] { font-size: 16px !important; }
+    .metric .value[style*="font-size:18px"] { font-size: 15px !important; }
+    .metric .value[style*="font-size:14px"] { font-size: 11px !important; }
+
+    /* 营养结构条文字缩小,防止在窄 seg 内溢出 */
+    .macro-bar { height: 22px; }
+    .macro-bar .seg { font-size: 10px !important; }
+
+    /* 头部 h1 缩小 */
+    header h1 { font-size: 20px; }
+    header { padding: 20px 0 16px; }
+  }
 </style>
 </head>
 <body>

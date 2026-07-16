@@ -24,8 +24,8 @@ from PIL import Image
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.diagnostics import (
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from infra.cover_diagnostics import (
     find_semi_transparent, find_dark_areas, find_dark_areas_by_region,
     symmetry_check, full_diagnose,
 )

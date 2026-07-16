@@ -1,11 +1,18 @@
 """
-封面合成 scripts/cli.py
-② 契约层:CLI 入口
+封面合成 operations/cli.py
+② 契约层(CLI 入口)
 
 子命令:
-- compose: 合成封面
-- diagnose: 诊断图片问题(半透明黑/暗区/对称)
-- presets: 输出平台/比例预设
+- compose:    合成封面(手动挡:用户传参数)
+- auto:       智能合成(自动挡:AI 决策)
+- diagnose:   诊断图片问题(半透明黑/暗区/对称)
+- presets:    输出平台/比例预设
+
+双层 API 设计:
+- compose 子命令(手动挡):用户传 --layout --aspect --text --bg,直接调 ① core/pipeline.compose
+- auto 子命令(自动挡):用户只传 --photos,operations/auto_compose.py 调 infra 决策,
+                   决定后调 ① core/pipeline.compose
+- 两者都通过 core/pipeline.compose() 落地(同样的"基础 API")
 
 输出格式:统一 {status, data, message, warnings}
 退出码: 0=ok, 1=error, 2=warn
@@ -15,15 +22,16 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent))
-sys.path.insert(0, str(Path(__file__).parent))
-from compose import compose
-from diagnose import diagnose_image
-from presets import get_preset, list_presets
+from core.cover_pipeline import compose
+from operations.cover_auto import auto_compose
+from operations.cover_diagnose import diagnose_image
+from operations.cover_presets import get_preset, list_presets
 
 
 def cmd_compose(args):
-    """合成封面子命令"""
+    """手动挡 compose:用户传完整参数,直接调 ① compose"""
     text = None
     if args.text:
         text = args.text
@@ -33,6 +41,28 @@ def cmd_compose(args):
         aspect=args.aspect,
         text=text,
         bg=args.bg,
+        output=args.output,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if result["status"] == "error":
+        sys.exit(1)
+    elif result["status"] == "warn":
+        sys.exit(2)
+    sys.exit(0)
+
+
+def cmd_auto(args):
+    """自动挡 auto:用户只传 --photos,自动分析 + 决策 + 调 ① compose"""
+    hint = None
+    if args.hint:
+        # 尝试解析为 JSON
+        try:
+            hint = json.loads(args.hint)
+        except json.JSONDecodeError:
+            hint = args.hint  # 不是 JSON 当字符串用
+    result = auto_compose(
+        photos=args.photos,
+        hint=hint,
         output=args.output,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
@@ -85,8 +115,12 @@ def main():
         description="封面合成:多图旋转叠加 + 文字水印 + 半透明黑防御",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+双层 API 设计:
+  手动挡 compose:  传 --layout --aspect --text --bg 完全控制
+  自动挡 auto:     只传 --photos,AI 自动分析决策
+
 示例:
-  cover-composer compose --photos a.jpg b.jpg c.jpg --output cover.jpg
+  cover-composer auto --photos a.jpg b.jpg c.jpg -o cover.jpg
   cover-composer compose --photos a.jpg b.jpg c.jpg --layout polaroid --text '{"main":"14 天","sub":"-7 斤"}' -o cover.jpg
   cover-composer diagnose cover.jpg
   cover-composer presets --platform douyin
@@ -95,8 +129,15 @@ def main():
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    # compose
-    c = sub.add_parser("compose", help="合成封面")
+    # 自动挡 auto
+    a = sub.add_parser("auto", help="智能合成(只传 --photos,AI 自动分析决策)")
+    a.add_argument("--photos", nargs="+", required=True, help="图片路径(1+ 张)")
+    a.add_argument("--hint", help="文字提示(字符串或 JSON,可选)")
+    a.add_argument("--output", "-o", required=True, help="输出路径(.jpg/.png)")
+    a.set_defaults(func=cmd_auto)
+
+    # 手动挡 compose
+    c = sub.add_parser("compose", help="手动合成(用户传完整参数)")
     c.add_argument("--photos", nargs="+", required=True, help="2+ 张图片路径")
     c.add_argument("--layout", choices=["symmetric-cascade", "cascade", "polaroid", "grid"],
                    default="symmetric-cascade", help="布局类型(默认 symmetric-cascade)")

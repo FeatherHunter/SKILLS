@@ -36,39 +36,74 @@
 
 ---
 
-## ① 文档层 (本文件)
-
-### 5 层架构速查
+## 5 层架构速查
 
 ```
 封面合成/
-├── SKILL.md                   # 本文件(① Agent 读)
-├── 封面合成.html              # ① 人类读镜像
-├── changelog.md               # ① 版本日志
+├── SKILL.md                   # ① 文档
+├── 封面合成.html              # ① HTML 镜像
+├── changelog.md               # ① 版本
 ├── references/                # ① 深入文档
-│   ├── 反模式.md              # ⭐ 今天踩的 16 个坑全在这里
-│   ├── 术语对照表.md         # "alpha 二值化" 是什么鬼?
-│   └── 案例集.md              # 抖音 / B 站 / 视频号案例
-├── scripts/                   # ②③ CLI + 业务
-│   ├── cli.py                 # ② argparse 入口
-│   ├── compose.py             # ③ 主流程
-│   ├── layout.py              # ③ 布局引擎
-│   ├── layers.py              # ③ ⭐ 旋转 / 羽化 / 二值化(踩坑封装)
-│   ├── text.py                # ③ 文字水印
-│   ├── diagnose.py            # ③ 诊断子命令
-│   ├── presets.py             # ③ 平台预设查询
-│   └── validators.py          # ③ 硬规则集中校验
-└── lib/                       # ④ 数据层
-    ├── canvas.py              # ④ RGBA 画布 + 智能保存
-    ├── diagnostics.py         # ④ 像素分析(brightness / alpha / bbox)
-    └── presets_data.py        # ④ 平台规格常量
+│   ├── 反模式.md
+│   ├── 术语对照表.md
+│   └── 案例集.md
+├── features/                  # ③ 业务子模块(按操作类型切)
+│   ├── compose.md             # 合成入口文档
+│   ├── diagnose.md            # 诊断入口文档
+│   ├── presets.md             # 预设查询文档
+│   └── text.md                # 文字水印文档
+├── operations/                # ② 契约层(CLI 子命令入口)
+│   ├── cli.py                 # ② 统一入口
+│   ├── auto_compose.py        # ② 智能挡(分析图 + 决策 + 调 ①)
+│   ├── diagnose.py            # ② diagnose 子命令
+│   └── presets.py             # ② presets 子命令
+├── core/                      # ③ 业务核心(与 features 文档对应)
+│   ├── layers.py              # 旋转/羽化/二值化(踩坑封装)
+│   ├── layout.py              # 布局引擎
+│   ├── text.py                # 文字水印
+│   ├── validators.py          # 硬规则集中
+│   └── pipeline.py            # 主流程编排(① 基础 API,参数化)
+└── infra/                     # ④ 基础设施(纯函数,无业务)
+    ├── canvas.py              # RGBA 画布 + 智能保存
+    ├── diagnostics.py         # 像素分析 + 图片特征分析(给 auto_compose 用)
+    └── presets_data.py        # 平台规格常量
 ```
+
+### 命名约定
+
+- `operations/` — **入口**层,CLI 子命令,做"接收参数 → 调度核心"
+- `core/` — **业务核心**层,纯算法(rotation、layout、文字),无 CLI 逻辑
+- `infra/` — **基础设施**层,纯函数(RGBA 画布、像素诊断、平台规格常量),无业务
+- `features/` — **业务说明文档**层,markdown 文档,对应每个 CLI 子命令
+- `references/` — **深入文档**层,反模式 / 术语 / 案例
+
+`operations` → `core` → `infra` 层层依赖(只能向下)。`features` / `references` 是文档,不依赖代码。
+
+### 双层 API 设计(关键)
+
+```
+                    ┌─────────────────┐
+                    │  ② 智能 CLI       │  ← operations/auto_compose.py
+                    │  (智能决策)        │     (分析图 → 决策 → 调 ①)
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  ① 基础 API       │  ← core/pipeline.py
+                    │  (参数化)          │     (接收完整参数,直接合成)
+                    └─────────────────┘
+```
+
+- **手动挡 compose**(用户传完整参数)→ ① 直接执行
+- **自动挡 auto**(用户只传 --photos)→ ② 分析决策 → 调 ①
+- 两者都通过 `core/pipeline.py:compose()` 这个**唯一基础 API** 落地
+- `operations/auto_compose.py` 不直接调 `core/layers.py` / `core/text.py` / `core/layout.py`,只调 `compose()` 保持 ① 的纯粹性
 
 ---
 
 ## ② 契约层 (CLI)
 
-### 子命令 1: `compose` 合成封面
+### 子命令 1: `compose` 合成封面(手动挡)
 
 ```bash
 封面合成 compose \
@@ -90,6 +125,40 @@
 | `--text` | ❌ | None | 文字层 JSON(见下) |
 | `--bg` | ❌ | `#000000` | 画布背景色(hex 或 'auto') |
 | `--output`, `-o` | ✅ | - | 输出路径(.jpg/.png) |
+
+### 子命令 1.5: `auto` 智能合成(自动挡)
+
+```bash
+封面合成 auto --photos a.jpg b.jpg c.jpg -o cover.jpg
+封面合成 auto --photos a.jpg b.jpg c.jpg --hint "14 天" -o cover.jpg
+```
+
+**参数**:
+
+| 参数 | 必填 | 默认 | 说明 |
+|---|---|---|---|
+| `--photos` | ✅ | - | 1+ 张图片路径 |
+| `--hint` | ❌ | None | 文字提示(字符串 / JSON / 不传) |
+| `--output`, `-o` | ✅ | - | 输出路径 |
+
+**自动挡的决策**(详见 `features/auto.md`):
+- `layout`:1 张 → cascade,2-3 张 → symmetric-cascade,4+ 张 → polaroid
+- `aspect`:全 portrait → 9:16,全 landscape → 16:9,混合 → 16:9
+- `bg`:主图亮 → 用主图主色,否则 → #000000
+- `text`:从主图文件名提取,或用 hint
+
+**双层 API 关系**:
+```
+operations/auto_compose.py (② 智能挡)
+    ↓ 调
+core/pipeline.py:compose() (① 基础 API,只接受完整参数)
+    ↓ 调
+core/layers / core/text / core/layout (③ 业务核心)
+    ↓ 调
+infra/canvas / infra/diagnostics (④ 基础设施)
+```
+
+依赖方向严格 `operations → core → infra`(只能向下)。auto 不会绕过 compose 直接调 core/layers。
 
 **`--text` JSON 两种格式**:
 
@@ -168,9 +237,9 @@
 
 ---
 
-## ③ 业务层 (核心模块)
+## ③ 业务核心(`core/`)
 
-### `rotate_hard(path, w, h, angle)` ⭐ 今天踩坑封装
+### `layers.rotate_hard(path, w, h, angle)` ⭐ 今天踩坑封装
 
 硬旋转,7 步流程:
 
@@ -189,15 +258,15 @@ def rotate_hard(path, target_w, target_h, angle):
 
 防坑:旋转黑边 / alpha 羽化 / 中间值残影
 
-### `binarize_alpha(rgba)`
+### `layers.binarize_alpha(rgba)`
 
 alpha 通道二值化(>128 → 255),消除 PIL 抗锯齿的中间值
 
-### `place(canvas, img, x, y)`
+### `layers.place(canvas, img, x, y)`
 
 纯硬贴图层,无 shadow 无 feathering
 
-### `layout` 支持 4 种
+### `layout` 支持 4 种(`core/layout.py`)
 
 | layout | 用途 |
 |---|---|
@@ -206,19 +275,28 @@ alpha 通道二值化(>128 → 255),消除 PIL 抗锯齿的中间值
 | `polaroid` | 主图中央,副图四角散落(拍立得风) |
 | `grid` | 网格平铺(多图无主图场景) |
 
+### `core/pipeline.py` 主流程
+
+```
+photos → 校验(validators) → 画布(infra.canvas) →
+布局(core.layout) → 按 z 处理每张图(core.layers) →
+文字(core.text) → 诊断(infra.diagnostics) → 保存(infra.canvas.safe_save) →
+返回 {status, data, message, warnings}
+```
+
 ---
 
-## ④ 数据层 (`lib/`)
+## ④ 基础设施(`infra/`)
 
-- `lib/canvas.py` — RGBA 画布创建 + 智能保存(.jpg 强制转 RGB,.png 留 alpha)
-- `lib/diagnostics.py` — 像素分析(brightness / alpha / bbox / symmetry)
-- `lib/presets_data.py` — 平台规格常量(不存 DB)
+- `infra/canvas.py` — RGBA 画布创建 + 智能保存(.jpg 强制转 RGB,.png 留 alpha)
+- `infra/diagnostics.py` — 像素分析(brightness / alpha / bbox / symmetry)
+- `infra/presets_data.py` — 平台规格常量(不存 DB)
 
 ---
 
 ## ⑤ 集成层
 
-- ✅ 输入校验:`validators.py` 在 compose() 入口校验,status=error 不 crash
+- ✅ 输入校验:`core/validators.py` 在 pipeline() 入口校验,status=error 不 crash
 - ✅ 失败降级:photos[i] 不存在 → status=error,明确告诉用户哪个
 - ✅ 输出标准 JSON:供其它 Skill(如居家管家、智剪工坊)解析,联动生成 vlog 封面
 
@@ -248,10 +326,10 @@ alpha 通道二值化(>128 → 255),消除 PIL 抗锯齿的中间值
 | ② 契约 | argparse schema 文档化 | ✅ |
 | ② 契约 | 统一 `{status, data, message}` JSON | ✅ |
 | ② 契约 | 错误含字段名 + 当前值 + 期望值 + 怎么修 | ✅ |
-| ③ 业务 | 模块切分 6 个,各 50-200 行 | ✅ |
+| ③ 业务 | 模块切分 4 个(operations/core/infra/features),各 50-200 行 | ✅ |
 | ③ 业务 | 软规则用心法表达 | ✅ (在 references/) |
-| ③ 业务 | 硬规则集中在 `validators.py` | ✅ |
-| ④ 数据 | canvas.py / diagnostics.py / presets_data.py | ✅ |
+| ③ 业务 | 硬规则集中在 `core/validators.py` | ✅ |
+| ④ 数据 | infra/canvas.py / diagnostics.py / presets_data.py | ✅ |
 | ⑤ 集成 | 输入校验 + 失败降级 + 标准 JSON | ✅ |
 
 ---
@@ -263,7 +341,14 @@ alpha 通道二值化(>128 → 255),消除 PIL 抗锯齿的中间值
 封面合成 presets --platform douyin
 # → {"ratio": "9:16", "size": [1080, 1920], "name": "抖音"}
 
-# 2. 合成
+# 2a. 自动挡(只传 --photos,AI 决策)
+封面合成 auto \
+  --photos ~/DAY14/汉堡特写.jpg ~/DAY14/吃包.jpg ~/DAY14/健身房.jpg \
+  -o ~/DAY14/cover.jpg
+# → 智能决策:layout=symmetric-cascade, aspect=9:16, bg=#000000
+# → 返回的 decisions 字段告诉你 AI 为啥这样选
+
+# 2b. 手动挡(传完整参数,精确控制)
 封面合成 compose \
   --photos ~/DAY14/汉堡特写.jpg ~/DAY14/吃包.jpg ~/DAY14/健身房.jpg \
   --layout symmetric-cascade \
@@ -284,3 +369,4 @@ alpha 通道二值化(>128 → 255),消除 PIL 抗锯齿的中间值
 - 初版。从智剪工坊 DAY14 封面处理的 16 个真实踩坑提取
 - 4 个 layout + 3 个子命令
 - 完整的 5 层架构 + 16 条反模式防御
+- 目录重构:scripts → operations+core,lib → infra,新增 features(业务说明文档)

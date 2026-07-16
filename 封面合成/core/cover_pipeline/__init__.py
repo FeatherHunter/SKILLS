@@ -18,12 +18,12 @@ from typing import Dict, Any, List
 import sys
 import json
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.canvas import make_canvas, safe_save, hex_to_rgb
-from lib.diagnostics import full_diagnose
-from scripts.layout import get_layout, LayerSpec
-from scripts.layers import rotate_hard, place, text_layer
-from scripts.validators import validate_all
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from infra.cover_canvas import make_canvas, safe_save, hex_to_rgb
+from infra.cover_diagnostics import full_diagnose
+from core.cover_layout import get_layout, LayerSpec
+from core.cover_layers import rotate_hard, place, text_layer
+from core.cover_validators import validate_all
 
 
 ASPECT_RATIOS = {

@@ -8,8 +8,8 @@ CLI:
 from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.presets_data import PLATFORM_SPECS, SAFE_AREA_4_3_IN_16_9, SAFE_AREA_9_16
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from infra.cover_presets_data import PLATFORM_SPECS, SAFE_AREA_4_3_IN_16_9, SAFE_AREA_9_16
 
 
 def get_preset(platform: str = None, aspect: str = None) -> dict:

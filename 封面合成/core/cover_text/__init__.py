@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.presets_data import FONT_PATHS
+from infra.cover_presets_data import FONT_PATHS
 
 
 # 9 宫格位置(支持更精细的 absolute positioning)

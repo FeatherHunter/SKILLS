@@ -14,8 +14,9 @@ from typing import Tuple
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from lib.canvas import hex_to_rgb
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from infra.cover_canvas import hex_to_rgb
+from infra.cover_presets_data import FONT_PATHS
 
 
 def rotate_hard(path: str, target_w: int, target_h: int, angle: float) -> Image.Image:
@@ -111,7 +112,7 @@ def text_layer(canvas: Image.Image, content: str, position: str,
 
     # 字体
     if font_path is None:
-        from lib.presets_data import FONT_PATHS
+        from infra.cover_presets_data import FONT_PATHS
         font_path = FONT_PATHS["bold"]
     font = ImageFont.truetype(font_path, font_size)
 
@@ -149,7 +150,7 @@ def fit_text_to_area(canvas: Image.Image, content: str, max_width: int,
     Returns: 实际使用的字号
     """
     if font_path is None:
-        from lib.presets_data import FONT_PATHS
+        from infra.presets_data import FONT_PATHS
         font_path = FONT_PATHS["bold"]
 
     size = start_size

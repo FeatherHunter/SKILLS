@@ -33,17 +33,19 @@ def parse_text_spec(text_spec):
     """text_spec 可以是 JSON 字符串 / dict / None
 
     支持格式:
-    - None: 无文字层(返回 None, None,调用方跳过烧文字)
+    - None / "" / "null": 无文字层(返回 None, None, 调用方跳过烧文字)
     - 简单 dict: {"main": "14 天", "sub": "-7 斤"}
     - 完整 dict: {"lines": [{"text": "...", "position": "...", "size": 64, ...}]}
     """
-    if text_spec is None:
+    if text_spec is None or text_spec == "" or text_spec == "null":
         return None, None
     if isinstance(text_spec, str):
         try:
             text_spec = json.loads(text_spec)
         except json.JSONDecodeError as e:
             return None, f"text JSON 解析失败:{e}"
+    if text_spec is None:  # JSON 解析后是 "null" 的情况
+        return None, None
     if not isinstance(text_spec, dict):
         return None, f"text 必须是 dict / JSON 字符串 / None,收到 {type(text_spec).__name__}"
 

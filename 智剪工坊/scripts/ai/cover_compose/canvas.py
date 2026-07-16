@@ -9,6 +9,7 @@
 from PIL import Image
 from pathlib import Path
 from typing import Tuple
+import os
 
 
 def hex_to_rgb(hex_color: str) -> Tuple[int, int, int]:
@@ -37,18 +38,23 @@ def safe_save(canvas: Image.Image, output_path: str) -> str:
 
     - .png → RGBA(alpha 保留)
     - .jpg/.jpeg → RGB(强制转,丢掉 alpha)
-    - 自动 .bak 已有同名文件(YYYYMMDD_HHMMSS 后缀)
+    - 自动 .bak 已有同名文件(YYYYMMDD_HHMMSS_mmm + pid 后缀,防同秒冲突)
 
     Returns: 实际保存的路径(可能加了 .bak 后缀如果原文件存在)
     """
     p = Path(output_path)
     p.parent.mkdir(parents=True, exist_ok=True)
 
-    # 备份已有文件
+    # 备份已有文件(用毫秒 + 进程 id 防连续调用冲突)
     if p.exists():
         from datetime import datetime
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        bak = p.with_suffix(f".{ts}{p.suffix}")
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # 毫秒精度
+        bak = p.with_suffix(f".{ts}_pid{os.getpid()}{p.suffix}")
+        # 如果 bak 已存在(极端情况),追加数字
+        n = 1
+        while bak.exists():
+            bak = p.with_suffix(f".{ts}_pid{os.getpid()}_{n}{p.suffix}")
+            n += 1
         p.rename(bak)
 
     # 按扩展名决定格式

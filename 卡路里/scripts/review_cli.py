@@ -6,11 +6,18 @@
 - subcommand: gen / send / archive / full
 - 不依赖 calorie_tracker.py(独立,符合 Q23=A)
 
+设计决策(用户 2026-07-16 拍板):
+- **手动复盘 = agent(我)直接处理**,不调用户态 LLM
+- gen 只查数据,agent 自己读数据 + 自己写 HTML
+- send 接受 --text,agent 自己写飞书摘要
+- full 接受 --html-path --text(由 agent 写好后传入)
+- **不调 llm_call.py**:用户态 401,token 不会被 mavis 框架自动注入
+
 用法:
     python review_cli.py gen [--range X:Y] [--type day|week|month|year]
     python review_cli.py archive --html-path <path>
-    python review_cli.py send --html-path <path> [--feishu-url <url>]
-    python review_cli.py full [--range X:Y] [--type day|week|month|year]
+    python review_cli.py send --text "..." [--feishu-url <url>]
+    python review_cli.py full --html-path <path> --text "..." [--feishu-url <url>]
 """
 
 import argparse
@@ -31,10 +38,13 @@ import review_feishu
 # ==================== subcommand handlers ====================
 
 def cli_gen(args):
-    """生成复盘 HTML(LLM 装填)
+    """只查数据 + 衍生计算(不调 LLM)
+
+    agent 拿到 data_path 后,自己读 JSON + 自己写 HTML。
 
     Returns:
         (status, data, message) tuple
+        data: { data_path, prompt_path, start, end, tdee, weekly_deficit }
     """
     try:
         # 1. 解析时间范围
@@ -67,32 +77,36 @@ def cli_gen(args):
         f"理论减重={enriched['theoretical_weight_loss']}kg"
     )
 
-    # 4. LLM 装填
-    prompt = review_prompts.build_html_prompt(enriched)
-    print("→ 调 LLM 装填 review.html...")
-    try:
-        html_output = review_prompts.call_llm(prompt)
-    except Exception as e:
-        return ('error', None, f"LLM 调用失败: {e}")
-
-    # 5. 保存到 temp(Q17=C)
+    # 4. 保存 raw_data + enriched 到 temp
     temp_dir = Path(tempfile.gettempdir()) / 'calorie_reviews'
     temp_dir.mkdir(parents=True, exist_ok=True)
-    # 文件名带 idempotency_key(同一天多次跑会覆盖,不重复)
+    # idempotency_key(同一天多次跑会覆盖,不重复)
     idempotency_key = uuid.uuid4().hex[:8]
-    html_path = temp_dir / f'review_{start}_{end}_{idempotency_key}.html'
-    html_path.write_text(html_output, encoding='utf-8')
+    data_path = temp_dir / f'data_{start}_{end}_{idempotency_key}.json'
+    data_path.write_text(
+        json.dumps(
+            {'raw_data': raw_data, 'enriched': enriched},
+            ensure_ascii=False, indent=2,
+        ),
+        encoding='utf-8',
+    )
+
+    # 5. 也保存 prompt 模板给 agent 参考(可选,agent 可以自己写 prompt)
+    prompt = review_prompts.build_html_prompt(enriched)
+    prompt_path = temp_dir / f'prompt_{start}_{end}_{idempotency_key}.txt'
+    prompt_path.write_text(prompt, encoding='utf-8')
 
     return (
         'ok',
         {
-            'html_path': str(html_path),
+            'data_path': str(data_path),
+            'prompt_path': str(prompt_path),
             'start': start,
             'end': end,
             'tdee': enriched['tdee'],
             'weekly_deficit': enriched['weekly_deficit'],
         },
-        f"HTML 已生成: {html_path}",
+        f"数据已生成: {data_path}",
     )
 
 
@@ -115,38 +129,27 @@ def cli_archive(args):
 
 
 def cli_send(args):
-    """从 HTML 提取摘要,LLM 生成飞书消息,发送
+    """发飞书纯文本(接受 --text,不调 LLM)
+
+    agent 自己在对话里生成飞书摘要文本,通过 --text 传入。
 
     Returns:
         (status, data, message) tuple
     """
-    html_path = Path(args.html_path)
-    if not html_path.exists():
-        return ('error', None, f"HTML 文件不存在: {html_path}")
+    text = args.text
+    if not text or not text.strip():
+        return ('error', None, "--text 不能为空(由 agent 生成飞书摘要后传入)")
 
     feishu_url = args.feishu_url or ''
 
-    # 1. 提取摘要
-    try:
-        html_output = html_path.read_text(encoding='utf-8')
-        summary = review_engine.extract_summary(html_output)
-    except Exception as e:
-        return ('error', None, f"摘要提取失败: {e}")
+    # 把飞书 URL 追加到文本末尾(如果有)
+    final_text = text
+    if feishu_url and 'http' not in text[-100:]:
+        final_text = f"{text}\n\n📊 详细报告: {feishu_url}"
 
-    print(f"→ 摘要提取: {summary.get('date_range', '(无)')}")
+    print(f"→ 文本长度: {len(final_text)} 字")
 
-    # 2. LLM 生成飞书消息
-    feishu_prompt = review_prompts.build_feishu_prompt(summary, feishu_url)
-    print("→ 调 LLM 生成飞书消息...")
-    try:
-        feishu_text_template = review_prompts.call_llm(feishu_prompt)
-    except Exception as e:
-        return ('error', None, f"飞书消息生成失败: {e}")
-
-    # 3. 替换占位符
-    final_text = _fill_template(feishu_text_template, summary, feishu_url)
-
-    # 4. 发送(失败降级)
+    # 发送(失败降级)
     results = review_feishu.send_feishu(final_text)
     print(
         f"→ 飞书发送: sent={results['sent']}, "
@@ -161,18 +164,26 @@ def cli_send(args):
 
 
 def cli_full(args):
-    """全跑:gen → archive → send
+    """archive + send(假设 HTML 和 text 都已存在)
+
+    agent 流程:
+    1. 跑 gen 拿数据
+    2. agent 自己写 HTML,保存到 temp
+    3. agent 自己写飞书文本
+    4. 跑 full 传入 --html-path --text,自动 archive + send
 
     Returns:
         (status, data, message) tuple
     """
-    # 1. gen
-    status, data, msg = cli_gen(args)
-    if status != 'ok':
-        return (status, data, msg)
-    html_path = data['html_path']
+    html_path = args.html_path
+    text = args.text
 
-    # 2. archive
+    if not html_path:
+        return ('error', None, "--html-path 必填(agent 先写好 HTML 再传)")
+    if not text or not text.strip():
+        return ('error', None, "--text 必填(agent 先写好飞书文本再传)")
+
+    # 1. archive
     archive_status, archive_data, archive_msg = cli_archive(
         type('Args', (), {'html_path': html_path})()
     )
@@ -180,19 +191,10 @@ def cli_full(args):
         return (archive_status, archive_data, f"archive 失败: {archive_msg}")
     feishu_url = archive_data['url']
 
-    # 3. send
+    # 2. send(用传入的 text + archive 拿到的 url)
     return cli_send(
-        type('Args', (), {'html_path': html_path, 'feishu_url': feishu_url})()
+        type('Args', (), {'text': text, 'feishu_url': feishu_url})()
     )
-
-
-def _fill_template(template, summary, feishu_url):
-    """替换 {{xxx}} 占位符"""
-    result = template
-    for key, value in summary.items():
-        result = result.replace('{{' + key + '}}', str(value))
-    result = result.replace('{{feishu_url}}', feishu_url)
-    return result
 
 
 # ==================== argparse + main ====================
@@ -203,36 +205,42 @@ def build_parser():
         description='卡路里复盘 CLI(独立,符合 5 层契约层)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
+设计:手动复盘由 agent 直接处理(不调 LLM)。
+  1. python review_cli.py gen --type week  → 拿数据
+  2. agent 读数据,自己写 HTML,保存到 temp
+  3. python review_cli.py full --html-path <temp.html> --text "飞书摘要"
+     → 自动 archive + send
+
 示例:
   %(prog)s gen --type week
   %(prog)s gen --range 2026-07-08:2026-07-14
   %(prog)s archive --html-path /tmp/review.html
-  %(prog)s send --html-path /tmp/review.html
-  %(prog)s full --type week
+  %(prog)s send --text "🍱 卡路里周复盘..." [--feishu-url <url>]
+  %(prog)s full --html-path <temp.html> --text "..." [--feishu-url <url>]
         ''',
     )
     sub = parser.add_subparsers(dest='command', required=True, metavar='SUBCOMMAND')
 
-    # gen
-    gen_p = sub.add_parser('gen', help='生成复盘 HTML(LLM 装填)')
+    # gen —— 只查数据,不调 LLM
+    gen_p = sub.add_parser('gen', help='查询复盘数据(不调 LLM,由 agent 自己写 HTML)')
     gen_p.add_argument('--range', help='日期范围 X:Y(例 2026-07-08:2026-07-14)')
     gen_p.add_argument('--type', choices=['day', 'week', 'month', 'year'],
                        default='week', help='时间粒度(默认 week = 过去 7 天)')
 
-    # archive
+    # archive —— 上传 HTML
     archive_p = sub.add_parser('archive', help='上传 HTML 到飞书云盘')
     archive_p.add_argument('--html-path', required=True, help='本地 HTML 文件路径')
 
-    # send
-    send_p = sub.add_parser('send', help='发飞书摘要(targets 从 env 读)')
-    send_p.add_argument('--html-path', required=True, help='本地 HTML 文件路径')
-    send_p.add_argument('--feishu-url', help='飞书云盘链接(可选)')
+    # send —— 发飞书纯文本(接受 --text)
+    send_p = sub.add_parser('send', help='发飞书文本(由 agent 写好传入,不调 LLM)')
+    send_p.add_argument('--text', required=True, help='飞书消息文本(必填)')
+    send_p.add_argument('--feishu-url', help='可选,附加到文本末尾(详细报告链接)')
 
-    # full
-    full_p = sub.add_parser('full', help='全跑:gen + archive + send')
-    full_p.add_argument('--range', help='日期范围 X:Y')
-    full_p.add_argument('--type', choices=['day', 'week', 'month', 'year'],
-                        default='week', help='时间粒度(默认 week)')
+    # full —— archive + send(需要 HTML 和 text 都已存在)
+    full_p = sub.add_parser('full', help='archive + send(HTML 和 text 必填)')
+    full_p.add_argument('--html-path', required=True, help='HTML 文件路径(agent 已写好)')
+    full_p.add_argument('--text', required=True, help='飞书文本(agent 已写好)')
+    full_p.add_argument('--feishu-url', help='可选,自定义飞书 URL(不传则走 archive)')
 
     return parser
 

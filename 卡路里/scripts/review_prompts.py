@@ -14,8 +14,8 @@ import subprocess
 import time
 from pathlib import Path
 
-# HTML 模板路径(同目录的 review.html)
-TEMPLATE_PATH = Path(__file__).parent.parent / 'review.html'
+# HTML 模板路径(同目录的 review_template.html,Q24=A 改名)
+TEMPLATE_PATH = Path(__file__).parent.parent / 'review_template.html'
 
 
 def load_html_template() -> str:
@@ -150,39 +150,35 @@ def build_feishu_prompt(review_data: dict, feishu_url: str) -> str:
 # ==================== LLM 调用 ====================
 
 def call_llm(prompt: str, max_retries: int = 3, timeout_sec: int = 180) -> str:
-    """调 LLM(走 mavis llm-call skill)
+    """调 LLM —— **手动复盘场景下不调此函数**
 
-    失败重试 max_retries 次,指数退避(2/4/8 秒)
+    设计决策(用户 2026-07-16 拍板):
+    - **手动复盘**:agent(我)直接处理,在对话里读 prompt 自己生成 HTML/摘要
+    - **cron 自动复盘**:已遗留,后续再设计
+    - 本函数保留为占位(NotImplementedError),不删除以避免破坏 API 契约
 
-    Returns:
-        LLM 输出字符串(完整 HTML 或飞书消息)
+    为什么不在用户态调 LLM:
+    - llm_call.py 是用户态脚本,config.yaml 里的 `apiKey: sk-xxx` 是 placeholder
+    - mavis 框架只在 IDE 进程内部自动注入真 token
+    - 用户态 subprocess 调永远会 401 token required
+
+    替代路径:
+    - gen 子命令只查数据 → agent 自己读数据 + 自己写 HTML
+    - send 子命令接受 --text → agent 自己写飞书文本 + 传入
+    - 完全跳过 LLM 调用层
+
+    Args:
+        prompt: LLM prompt(本函数不消费)
+        max_retries: 重试次数(本函数不消费)
+        timeout_sec: 超时(本函数不消费)
 
     Raises:
-        RuntimeError: 重试 max_retries 次后仍失败
+        NotImplementedError: 永远
     """
-    # 用 subprocess 调 mavis llm-call skill
-    # 实际调用方式取决于 llm-call skill 的 CLI 接口
-    # 当前用占位:python -m mavis.llm_call (待接入实际 skill)
-    last_error = None
-    for attempt in range(1, max_retries + 1):
-        try:
-            # TODO: 接入实际的 llm-call skill
-            # 当前用 echo 占位,等接入后改成实际调用
-            result = subprocess.run(
-                ['echo', prompt[:100]],  # 占位:实际应调 LLM
-                capture_output=True, text=True, encoding='utf-8',
-                timeout=timeout_sec,
-            )
-            if result.returncode == 0:
-                return result.stdout.strip()
-            last_error = result.stderr or "unknown error"
-        except subprocess.TimeoutExpired:
-            last_error = f"LLM 调用超时({timeout_sec}s)"
-        except Exception as e:
-            last_error = str(e)
-
-        if attempt < max_retries:
-            wait = 2 ** attempt  # 2, 4, 8 seconds
-            time.sleep(wait)
-
-    raise RuntimeError(f"LLM 调用失败({max_retries} 次重试): {last_error}")
+    raise NotImplementedError(
+        "call_llm() 已废弃:手动复盘由 agent 直接处理(不调 LLM)。\n"
+        " 替代方案:\n"
+        "  - gen: 只查数据,agent 自己写 HTML\n"
+        "  - send: 接受 --text,agent 自己写飞书摘要\n"
+        " 详见 review_prompts.py 顶部注释"
+    )

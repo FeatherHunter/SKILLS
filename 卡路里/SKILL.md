@@ -195,27 +195,43 @@ DB 查找顺序：`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `
 
 ```bash
 # 全跑(默认):生成 HTML → 上传飞书云盘 → 飞书发送摘要
-python scripts/calorie_tracker.py review --full [--range X:Y] [--type day|week|month|year]
+# 注意:full 需要先有 HTML(--html-path)和飞书文本(--text),由 agent 提前生成
+python scripts/calorie_tracker.py review --full --html-path <temp.html> --text "飞书摘要..." [--feishu-url <url>]
 
-# 分步跑(调试用)
-python scripts/calorie_tracker.py review --gen [--range X:Y] [--type ...]
-python scripts/calorie_tracker.py review --archive --html-path <path>
-python scripts/calorie_tracker.py review --send --html-path <path>
+# 分步跑(推荐调试用)
+# 1. 查数据 → 拿到 data_path(原始数据 JSON)+ prompt_path(LLM 提示模板)
+python scripts/calorie_tracker.py review --gen [--range X:Y] [--type day|week|month|year]
+
+# 2. agent 读 data_path,自己写 HTML 装填 70 个 data-field,保存到 temp
+
+# 3. 上传 HTML 到飞书云盘 → 拿到飞书 URL
+python scripts/calorie_tracker.py review --archive --html-path <temp.html>
+
+# 4. 发飞书文本(纯文本,agent 自己写摘要,可选带飞书 URL)
+python scripts/calorie_tracker.py review --send --text "飞书摘要..." [--feishu-url <url>]
 ```
 
-#### 数据流
+#### 数据流(2026-07-16 重构:agent 直接处理,不调用户态 LLM)
 
 ```
-calorie_tracker.py review --full
+calorie_tracker.py review --gen
     ↓
-review_engine.py: 5 维 SQL + 衍生计算(TDEE / 缺口 / 理论减重)
+review_engine.py: 7 维 SQL(摄入/运动/体重/健身计划/profile/营养目标/Top 5 食物)+ 衍生计算(TDEE/缺口/理论减重/营养比例)
     ↓
-review_prompts.py: 拼装 prompt + 调 LLM(运动表现复盘 AI)
+review_cli.py gen: 保存 data_path + prompt_path 到 temp
     ↓
-review.html: LLM 装填 data-field → 完整 HTML
+agent(我,小匠/M3)读 data → 写 HTML 装填 70 个 data-field
     ↓
-review_feishu.py: 飞盘上传 + 飞书消息发送(group / im)
+calorie_tracker.py review --archive: 上传 HTML 到飞书云盘
+    ↓
+agent 写飞书摘要文本
+    ↓
+calorie_tracker.py review --send: 发送到群/IM
 ```
+
+**为什么 agent 直接处理**:`llm_call.py` 在用户态跑永远 401(`apiKey: sk-xxx` 是 placeholder),
+mavis 框架只在 IDE 进程内部自动注入真 token。手动复盘场景 agent(我)本来就在对话里,
+**我就是 LLM**,不需要绕一圈调 API。`call_llm()` 已改为 `NotImplementedError`。
 
 #### 8 个口语化 dim(从第一性原理)
 
@@ -230,24 +246,26 @@ review_feishu.py: 飞盘上传 + 飞书消息发送(group / im)
 | 7 | **习惯** | 高频 + 异常 | 营养结构比例 / Top 5 食物 / 行为异常 |
 | 8 | **目标** | 进度 | 进度条 / vs 体重 / vs 营养 / 预计还需 N 周 |
 
-#### 环境变量(Q10=C + 不破坏 config-calorie.ts)
+#### 环境变量
 
 | 变量 | 用途 | 默认 |
 |------|------|------|
-| `REVIEW_FEISHU_CHANNEL` | 'group' / 'im' | `group` |
-| `REVIEW_FEISHU_WEBHOOK_URL` | webhook 群消息 URL | — |
-| `REVIEW_FEISHU_USER_OPEN_ID` | IM 用户 open_id | — |
+| `REVIEW_FEISHU_TARGETS` | JSON 数组,例 `[{"type": "group", "group_name": "加油小分队🧸"}, {"type": "im", "open_id": "ou_xxx"}]` | 空(不发送,只走 gen+archive) |
 | `USER_AGE` | **(已废弃)** review_engine.py 现走 user_profile 表,无需此 env | — |
 | `USER_GENDER` | **(已废弃)** 同上 | — |
+
+**注意**:`REVIEW_FEISHU_CHANNEL` / `REVIEW_FEISHU_WEBHOOK_URL` / `REVIEW_FEISHU_USER_OPEN_ID` 已废弃,
+统一改为 `REVIEW_FEISHU_TARGETS` JSON 数组(支持多目标,失败降级)。
 
 #### 相关文件
 
 | 文件 | 角色 |
 |------|------|
-| `review.html` | 装填模板(数据→HTML 视觉) |
-| `scripts/review_engine.py` | 5 维 SQL + 衍生计算 + 摘要提取 |
-| `scripts/review_prompts.py` | 喂 LLM 的 prompt 模板 + 调用接口 |
-| `scripts/review_feishu.py` | 飞书发送(group / im)+ 飞盘上传 |
+| `review_template.html` | 装填模板(70 个 data-field,8 个 dim,Apple 系统色) |
+| `scripts/review_cli.py` | 独立 CLI 入口(gen/archive/send/full 4 子命令) |
+| `scripts/review_engine.py` | 7 维 SQL + 衍生计算 + 摘要提取 |
+| `scripts/review_prompts.py` | LLM 提示模板(call_llm 已废弃,NotImplementedError) |
+| `scripts/review_feishu.py` | 飞书发送(group/im)+ 飞盘上传(用 cwd= 而非 Set-Location) |
 
 ### 📸 身材照片
 

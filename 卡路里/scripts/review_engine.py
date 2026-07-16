@@ -177,6 +177,27 @@ def query_5dims(start, end, skill_dir):
         ).fetchone()
         nutrition_targets = dict(goal_row) if goal_row else {}
 
+        # 7. Top 5 频繁吃食物(高频榜:出现次数降序)
+        #    排除饮水(💧水),跟其他 5 维一致
+        top_foods_rows = conn.execute('''
+            SELECT food_name, SUM(calories) AS total_cal, COUNT(*) AS cnt
+            FROM food_log
+            WHERE food_name != '💧水'
+              AND date BETWEEN ? AND ?
+            GROUP BY food_name
+            ORDER BY cnt DESC, total_cal DESC
+            LIMIT 5
+        ''', (start, end)).fetchall()
+        top_foods = [
+            {
+                'name': row[0],
+                'total_cal': row[1],
+                'cnt': row[2],
+                'avg_cal_per_meal': round(row[1] / max(row[2], 1)),
+            }
+            for row in top_foods_rows
+        ]
+
     return {
         'range': {
             'start': start,
@@ -189,6 +210,7 @@ def query_5dims(start, end, skill_dir):
         'fitness_plan': fitness_plan_data,
         'user_profile': user_profile,
         'nutrition_targets': nutrition_targets,
+        'top_foods': top_foods,
     }
 
 

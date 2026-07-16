@@ -83,6 +83,13 @@ triggers:
   - 旋转
   - 裁剪
   - 自动字幕
+  # === v1.20 新增(cover_compose 多图拼版合并入智剪工坊)===
+  - 多图拼版
+  - 拼图封面
+  - 多图合成
+  - 多图封面
+  - 拼版封面
+  - collage
   # === 视频底层 lib 触发词(v1.6)===
   - 视频滤镜
   - 加转场
@@ -229,6 +236,7 @@ SKILL.md(必读,触发词索引)
 | 图片转视频/Ken Burns | `图片转视频-静态图KenBurns效果.md` |
 | 旋转/缩放/裁剪/静音/提取音频 | `原子操作-14种基础剪辑指令.md` |
 | 封面/AI 封面 | `AI封面-生图叠字两步法.md` |
+| 多图拼版/拼图封面/多图合成/collage | `封面合成-多图拼版PIL.md`(+ `封面合成-反模式.md` 排错 + `封面合成-案例集.md` 复用) |
 | 帧级剪切/多段拼接/分段合并 | `剪切拼接-帧级剪切与多段合并.md` |
 | 视频特效/调色/字幕/文字叠加 | `视觉特效-慢动作推镜头模糊.md` |
 
@@ -901,7 +909,22 @@ MIT(智剪工坊 © 2024-2026 帅猎羽)
 │   │   ├── fx.py hdr.py edit.py image_to_video.py
 │   │   └── __init__.py
 │   ├── ai/                          # ⭐ AI 能力(v1.7 新建,9 个脚本)
-│   │   ├── cover.py beauty.py cutout.py digital_human.py
+│   │   ├── cover.py                 # AI 生图 + 叠字(matrix MCP)
+│   │   ├── cover_compose/           # ⭐ 多图拼版(v1.20 合并入智剪工坊,12 模块)
+│   │   │   ├── __init__.py          #   导出 compose / parse_text_spec / ASPECT_RATIOS
+│   │   │   ├── cli.py               #   ② 契约层: 4 子命令( compose/auto/diagnose/presets)
+│   │   │   ├── auto.py              #   ② 契约层: 智能挡(看图决策)
+│   │   │   ├── diagnose.py          #   ② 契约层: 诊断子命令
+│   │   │   ├── presets.py           #   ② 契约层: 平台/比例预设
+│   │   │   ├── pipeline.py          #   ③ 业务核心: ⭐ 基础 API compose()
+│   │   │   ├── layers.py            #   ③ 业务核心: 旋转/二值化/place
+│   │   │   ├── layout.py            #   ③ 业务核心: 4 种布局
+│   │   │   ├── text.py              #   ③ 业务核心: 9 宫格 + 批量文字
+│   │   │   ├── validators.py        #   ③ 业务核心: 硬规则校验
+│   │   │   ├── canvas.py            #   ④ 基础设施: 画布 + 智能保存
+│   │   │   ├── diagnostics.py       #   ④ 基础设施: 像素分析 + AI 决策
+│   │   │   └── presets_data.py      #   ④ 数据: 平台规格 + 字体常量
+│   │   ├── beauty.py cutout.py digital_human.py
 │   │   ├── fillers.py quotes.py rewrite.py
 │   │   ├── text_to_video.py translate.py
 │   │   └── __init__.py

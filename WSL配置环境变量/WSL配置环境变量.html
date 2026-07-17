@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSL配置环境变量 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#wsl-配置环境变量-1">WSL 配置环境变量</a></li>
+<li><a href="#根因总结-必读-1">🎯 根因总结（必读）</a></li>
+<li><a href="#需要设置的变量清单-2">需要设置的变量清单</a></li>
+<li><a href="#完整配置步骤-必须全部执行-3">完整配置步骤（必须全部执行）</a></li>
+<li><a href="#前置要求-4">前置要求</a></li>
+<li><a href="#验证清单-5">验证清单</a></li>
+<li><a href="#方案对比-6">方案对比</a></li>
+<li><a href="#常见问题-7">常见问题</a></li>
+<li><a href="#涉及路径-8">涉及路径</a></li>
+<li><a href="#更新记录-9">更新记录</a></li></ol></div>
+<h1 id="wsl-配置环境变量-1">WSL 配置环境变量</h1>
+<blockquote>
+<p>本技能用于在 WSL 中配置全局环境变量，确保在所有场景下（交互式 shell、非交互式 shell、systemd 服务、WSLENV 不生效等）都能被读取。</p>
+</blockquote>
+<hr />
+<h2 id="根因总结-必读-1">🎯 根因总结（必读）</h2>
+<p><strong>为什么环境变量传不到 OpenClaw？</strong></p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>失败原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>~/.bashrc</code></td>
+<td>只在交互式 non-login shell 生效</td>
+</tr>
+<tr>
+<td><code>~/.profile</code></td>
+<td>只在 login shell 生效</td>
+</tr>
+<tr>
+<td><code>/etc/environment</code></td>
+<td>PAM 模块加载，systemd 服务不经过 PAM</td>
+</tr>
+<tr>
+<td>WSLENV</td>
+<td>只在"Windows 启动 WSL 程序"时生效，WSL 内部 systemd 服务触达不到</td>
+</tr>
+<tr>
+<td>systemd --user</td>
+<td>WSL 默认不支持完整的 user systemd 和 D-Bus session</td>
+</tr>
+</tbody>
+</table>
+<p><strong>唯一有效方案</strong>：<code>systemd service override</code> + <code>EnvironmentFile=/etc/environment</code></p>
+<hr />
+<h2 id="需要设置的变量清单-2">需要设置的变量清单</h2>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SKILLS_DB_PATH</td>
+<td>/mnt/d/2Study/StudyNotes/.db</td>
+</tr>
+<tr>
+<td>HOME_PHOTOS_DIR</td>
+<td>/mnt/d/2Study/StudyNotes/.db/HomeHub/photos</td>
+</tr>
+<tr>
+<td>MEDAL_RESOURCE_PATH</td>
+<td>/mnt/d/2Study/StudyNotes/.db/MedalHub</td>
+</tr>
+<tr>
+<td>CHEF_OUTPUT_DIR</td>
+<td>/mnt/d/2Study/StudyNotes/.db/CookHub</td>
+</tr>
+<tr>
+<td>MEMO_DB_PATH</td>
+<td>/mnt/d/2Study/StudyNotes/.db/MemoHub</td>
+</tr>
+<tr>
+<td>MEMO_MEDIA_DIR</td>
+<td>/mnt/d/2Study/StudyNotes/.db/MemoHub/media</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="完整配置步骤-必须全部执行-3">完整配置步骤（必须全部执行）</h2>
+<h3>Step 1：写入 /etc/environment（用户 shell 层 + systemd 源文件）</h3>
+<pre><code class="language-bash">sudo tee /etc/environment &lt;&lt; 'EOF'
+SKILLS_DB_PATH=/mnt/d/2Study/StudyNotes/.db
+HOME_PHOTOS_DIR=/mnt/d/2Study/StudyNotes/.db/HomeHub/photos
+MEDAL_RESOURCE_PATH=/mnt/d/2Study/StudyNotes/.db/MedalHub
+CHEF_OUTPUT_DIR=/mnt/d/2Study/StudyNotes/.db/CookHub
+MEMO_DB_PATH=/mnt/d/2Study/StudyNotes/.db/MemoHub
+MEMO_MEDIA_DIR=/mnt/d/2Study/StudyNotes/.db/MemoHub/media
+EOF
+</code></pre>
+<hr />
+<h3>Step 2：创建 systemd service override（⭐关键步骤）</h3>
+<p><strong>原理</strong>：systemd 支持 <code>xxx.service.d/</code> 目录存放增量配置文件（drop-in override），会自动合并到原始 service 文件中，<strong>不修改原始文件</strong>。</p>
+<pre><code class="language-bash">sudo mkdir -p /etc/systemd/system/openclaw-gateway.service.d
+sudo tee /etc/systemd/system/openclaw-gateway.service.d/override.conf &lt;&lt; 'EOF'
+[Service]
+EnvironmentFile=/etc/environment
+EOF
+</code></pre>
+<hr />
+<h3>Step 3：验证 systemd 加载成功</h3>
+<pre><code class="language-bash">systemctl show openclaw-gateway --property=Environment
+</code></pre>
+<p><strong>期望输出</strong>：应包含 <code>HOME_PHOTOS_DIR=/mnt/d/2Study/StudyNotes/.db/HomeHub/photos</code> 等变量</p>
+<hr />
+<h3>Step 4：Windows 重启验证</h3>
+<pre><code>1. Windows 完全重启（不是 WSL reconnect）
+2. WSL 启动后，OpenClaw 自动运行
+3. 验证命令：
+   python3 -c &quot;import os; print(os.environ.get('HOME_PHOTOS_DIR'))&quot;
+   期望输出：/mnt/d/2Study/StudyNotes/.db/HomeHub/photos
+</code></pre>
+<hr />
+<h2 id="前置要求-4">前置要求</h2>
+<h3>需要有 sudo 密码</h3>
+<p>如果没有设置过 sudo 密码，在 Windows 管理员 PowerShell 中执行：</p>
+<pre><code class="language-powershell">wsl -u root -- passwd feather
+</code></pre>
+<p>然后输入新密码并确认。</p>
+<hr />
+<h2 id="验证清单-5">验证清单</h2>
+<table>
+<thead>
+<tr>
+<th>验证场景</th>
+<th>命令</th>
+<th>期望输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>/etc/environment 内容</td>
+<td><code>cat /etc/environment</code></td>
+<td>应包含所有变量</td>
+</tr>
+<tr>
+<td>override 文件存在</td>
+<td><code>cat /etc/systemd/system/openclaw-gateway.service.d/override.conf</code></td>
+<td>应包含 <code>EnvironmentFile=/etc/environment</code></td>
+</tr>
+<tr>
+<td>systemd 环境注入</td>
+<td><code>systemctl show openclaw-gateway --property=Environment</code></td>
+<td>应包含所有变量</td>
+</tr>
+<tr>
+<td>交互式 shell</td>
+<td><code>python3 -c "import os; print(os.environ.get('HOME_PHOTOS_DIR'))"</code></td>
+<td><code>/mnt/d/2Study/StudyNotes/.db/HomeHub/photos</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="方案对比-6">方案对比</h2>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>适用场景</th>
+<th>生效范围</th>
+<th>关键限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/etc/environment</code></td>
+<td>交互式 shell</td>
+<td>用户所有进程</td>
+<td>systemd 服务<strong>不生效</strong></td>
+</tr>
+<tr>
+<td><code>~/.bashrc</code></td>
+<td>交互式 shell</td>
+<td>当前用户</td>
+<td>非交互式/shell 脚本<strong>不生效</strong></td>
+</tr>
+<tr>
+<td><code>~/.profile</code></td>
+<td>login shell</td>
+<td>login 会话</td>
+<td>服务/脚本<strong>不生效</strong></td>
+</tr>
+<tr>
+<td>WSLENV</td>
+<td>Windows → WSL 调用</td>
+<td>Windows 启动的程序</td>
+<td>WSL 内部服务<strong>不生效</strong></td>
+</tr>
+<tr>
+<td><code>systemd override</code> + <code>EnvironmentFile</code></td>
+<td>systemd 服务</td>
+<td>OpenClaw 等系统服务</td>
+<td>✅ <strong>唯一有效方案</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="常见问题-7">常见问题</h2>
+<h3>Q: 为什么要用 override.conf？不直接改 service 文件？</h3>
+<p>A: override.conf 是 systemd 官方推荐的"增量修改"方式，不修改原始文件，安全且易于管理。直接改原始 service 文件在 OpenClaw 更新时会被覆盖。</p>
+<h3>Q: daemon-reload 什么时候需要？</h3>
+<p>A: 如果是 Windows 完全重启，不需要（systemd 重启时自动重新加载）。如果只是 WSL reconnect，需要：<code>sudo systemctl daemon-reload</code></p>
+<h3>Q: 为什么 WSLENV 对 systemd 服务无效？</h3>
+<p>A: WSLENV 是 Windows 和 WSL 之间的桥接机制，只在 Windows 启动 WSL 程序时生效。OpenClaw 是 WSL 内部通过 systemd 启动的，完全在 Windows 上下文之外。</p>
+<h3>Q: /etc/environment 有什么限制？</h3>
+<p>A: 只支持 <code>VAR=value</code> 格式，不支持 <code>VAR=$(cmd)</code> 命令替换。</p>
+<h3>Q: 改完发现变量还是读不到？</h3>
+<p>A: 按以下顺序排查：
+   1. <code>cat /etc/environment</code> — 确认文件内容正确
+   2. <code>cat /etc/systemd/system/openclaw-gateway.service.d/override.conf</code> — 确认 override 存在
+   3. <code>sudo systemctl daemon-reload</code> — 重新加载 systemd 配置
+   4. <code>sudo systemctl restart openclaw-gateway</code> — 重启服务
+   5. <code>systemctl show openclaw-gateway --property=Environment</code> — 确认变量已注入</p>
+<hr />
+<h2 id="涉及路径-8">涉及路径</h2>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>用途</th>
+<th>是否被修改</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/etc/environment</code></td>
+<td>系统级环境变量（用户 shell + systemd 源文件）</td>
+<td>新增变量</td>
+</tr>
+<tr>
+<td><code>/etc/systemd/system/openclaw-gateway.service</code></td>
+<td>OpenClaw 原始 service 文件</td>
+<td><strong>未修改</strong></td>
+</tr>
+<tr>
+<td><code>/etc/systemd/system/openclaw-gateway.service.d/override.conf</code></td>
+<td>systemd 增量配置（OpenClaw 用）</td>
+<td><strong>新增文件</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="更新记录-9">更新记录</h2>
+<ul>
+<li>2026-05-25：首次完整探索，发现 OpenClaw 是 systemd 服务，必须通过 <code>override.conf</code> + <code>EnvironmentFile</code> 机制注入环境变量。补充了根因总结、验证步骤、方案对比和排查路径。</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>WSL配置环境变量/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

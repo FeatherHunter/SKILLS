@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wsl-openclaw-autostart — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#wsl-openclaw-开机自启配置-1">WSL OpenClaw 开机自启配置</a></li>
+<li><a href="#核心问题-1">核心问题</a></li>
+<li><a href="#最终架构-2">最终架构</a></li>
+<li><a href="#环境准备-全新电脑必做-3">环境准备（全新电脑必做）</a></li>
+<li><a href="#前置条件-4">前置条件</a></li>
+<li><a href="#前置条件-5">前置条件</a></li>
+<li><a href="#配置步骤-6">配置步骤</a></li>
+<li><a href="#日常管理命令-7">日常管理命令</a></li>
+<li><a href="#故障排查-8">故障排查</a></li>
+<li><a href="#变量速查表-ai-执行前必读-9">变量速查表（AI 执行前必读）</a></li>
+<li><a href="#环境变量说明-systemd-service-内-10">环境变量说明（systemd service 内）</a></li></ol></div>
+<h1 id="wsl-openclaw-开机自启配置-1">WSL OpenClaw 开机自启配置</h1>
+<p>在 WSL2 中配置 OpenClaw Gateway 作为系统级服务，实现 Windows 重启后全自动运行，无需手动操作。</p>
+<blockquote>
+<p><strong>适用场景</strong>：已有 OpenClaw 实例，需要从 PM2 迁移到 systemd，解决重启循环和休眠中断问题。
+<strong>冷启动场景</strong>（全新电脑）：按本文从头执行，AI 需先完成「环境准备」再进入「前置条件」。</p>
+</blockquote>
+<h2 id="核心问题-1">核心问题</h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>根因</th>
+<th>表现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway 每~20秒被 SIGKILL</td>
+<td>PM2 的 <code>pm2-feather.service</code>(systemd) 陷入死循环 stop/start，每次 stop 执行 <code>pm2 kill</code></td>
+<td>Gateway 不断重启，QQ Bot 无法回复</td>
+</tr>
+<tr>
+<td>用户级 systemd 服务随 WSL 休眠而停</td>
+<td>WSL 没有交互式 bash 会话时自动休眠（默认~15秒）</td>
+<td>用户关闭终端后 Gateway 失联</td>
+</tr>
+<tr>
+<td><code>vmIdleTimeout=-1</code> 可能不生效</td>
+<td>依赖 Windows 版本和 <code>networkingMode=Mirrored</code> 兼容性</td>
+<td>WSL 持续休眠终止</td>
+</tr>
+</tbody>
+</table>
+<h2 id="最终架构-2">最终架构</h2>
+<pre><code>Windows 启动
+  └─ 注册表 Run 键 → wscript.exe wsl-keepalive.vbs
+       └─ WSL 内 bash 无限循环 sleep (保持 WSL 不休眠)
+            └─ systemd (系统级) → openclaw-gateway.service
+                 └─ node openclaw.mjs gateway --port 18795 --bind lan
+</code></pre>
+<h2 id="环境准备-全新电脑必做-3">环境准备（全新电脑必做）</h2>
+<p>如果以下任一项缺失，AI 必须先完成环境搭建，否则后续步骤会失败。</p>
+<h3>确认 WSL2 已安装</h3>
+<pre><code class="language-powershell">wsl --status
+</code></pre>
+<p>如果报错 "WSL is not installed"，用户需要以管理员身份运行：</p>
+<pre><code class="language-powershell">wsl --install -d Ubuntu-22.04
+</code></pre>
+<p>安装后重启电脑。</p>
+<h3>确认 Node.js 已安装</h3>
+<pre><code class="language-bash">wsl bash -c &quot;node --version &amp;&amp; npm --version&quot;
+</code></pre>
+<p>如果失败，在 WSL 内安装：</p>
+<pre><code class="language-bash">wsl bash -c &quot;curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -; sudo apt-get install -y nodejs&quot;
+</code></pre>
+<h3>确认 Python3 已安装</h3>
+<pre><code class="language-bash">wsl bash -c &quot;python3 --version&quot;
+</code></pre>
+<p>如果失败：<code>wsl bash -c "sudo apt-get install -y python3"</code></p>
+<h2 id="前置条件-4">前置条件</h2>
+<pre><code>Windows 启动
+  └─ 注册表 Run 键 → wscript.exe wsl-keepalive.vbs
+       └─ WSL 内 bash 无限循环 sleep (保持 WSL 不休眠)
+            └─ systemd (系统级) → openclaw-gateway.service
+                 └─ node openclaw.mjs gateway --port 18795 --bind lan
+</code></pre>
+<h2 id="前置条件-5">前置条件</h2>
+<p>在执行以下步骤前，AI 必须先确认或完成这些基础准备：</p>
+<h3>0.1 探测 WSL 用户名</h3>
+<pre><code class="language-bash">wsl whoami
+</code></pre>
+<p>将输出结果记为 <code>&lt;WSL_USER&gt;</code>，替换后续所有 <code>&lt;用户名&gt;</code> 占位符。例如输出 <code>feather</code>，则 <code>/home/&lt;用户名&gt;</code> = <code>/home/feather</code>。</p>
+<h3>0.2 确认 npm 全局安装路径</h3>
+<pre><code class="language-bash">wsl bash -c &quot;npm prefix -g&quot;
+</code></pre>
+<p>输出示例：<code>/usr/local/node22</code>。openclaw.mjs 的路径规律是 <code>{prefix}/lib/node_modules/openclaw/openclaw.mjs</code>。例如 prefix 是 <code>/usr/local/node22</code>，则路径为 <code>/usr/local/node22/lib/node_modules/openclaw/openclaw.mjs</code>。</p>
+<p>验证入口文件确实存在：</p>
+<pre><code class="language-bash">wsl ls -la /usr/local/node22/lib/node_modules/openclaw/openclaw.mjs
+</code></pre>
+<p>如果不存在，用 <code>wsl find / -name "openclaw.mjs" 2&gt;/dev/null</code> 寻找。</p>
+<h3>0.3 确认代理端口</h3>
+<pre><code class="language-bash"># 在 WSL 中测试常见代理端口
+wsl bash -c &quot;curl -x http://127.0.0.1:7890 -s -o /dev/null -w '%{http_code}' https://registry.npmjs.org 2&gt;/dev/null || echo '7890 failed'; curl -x http://127.0.0.1:7891 -s -o /dev/null -w '%{http_code}' https://registry.npmjs.org 2&gt;/dev/null || echo '7891 failed'&quot;
+</code></pre>
+<p>哪个端口返回 <code>200</code> 就用哪个。如果都不通，说明没有代理，后续跳过所有 <code>http_proxy</code> 环境变量即可。</p>
+<h3>0.4 确认 .wslconfig 存在并包含 networkingMode=Mirrored</h3>
+<pre><code class="language-powershell"># PowerShell
+$cfg = &quot;$env:USERPROFILE\.wslconfig&quot;
+if (Test-Path $cfg) { 
+    $content = Get-Content $cfg -Raw
+    if ($content -notmatch &quot;networkingMode\s*=\s*Mirrored&quot;) {
+        Add-Content $cfg &quot;`nnetworkingMode=Mirrored&quot;
+        Write-Host &quot;Added networkingMode=Mirrored&quot;
+    }
+    if ($content -notmatch &quot;vmIdleTimeout&quot;) {
+        Add-Content $cfg &quot;`nvmIdleTimeout=-1&quot;
+        Write-Host &quot;Added vmIdleTimeout=-1&quot;
+    }
+} else {
+    @&quot;
+[wsl2]
+networkingMode=Mirrored
+vmIdleTimeout=-1
+&quot;@ | Set-Content $cfg -Encoding ASCII
+    Write-Host &quot;Created .wslconfig&quot;
+}
+</code></pre>
+<p>必须有 <code>networkingMode=Mirrored</code>，否则 Windows 上 <code>127.0.0.1:18795</code> 无法访问 WSL 内的端口。</p>
+<h3>0.5 确认 OpenClaw 已安装</h3>
+<pre><code class="language-bash">wsl bash -c &quot;npm list -g openclaw 2&gt;/dev/null | grep openclaw || echo 'NOT INSTALLED'&quot;
+</code></pre>
+<p>如果未安装，执行：</p>
+<pre><code class="language-bash"># 有代理的情况
+wsl bash -c &quot;export http_proxy=http://127.0.0.1:&lt;代理端口&gt;; export https_proxy=http://127.0.0.1:&lt;代理端口&gt;; sudo npm install -g openclaw@latest&quot;
+
+# 无代理的情况
+wsl bash -c &quot;sudo npm install -g openclaw@latest&quot;
+</code></pre>
+<h3>0.6 确认 QQ Bot 凭证已配置</h3>
+<pre><code class="language-bash">wsl bash -c &quot;python3 -c \&quot;import json; c=json.load(open('/home/&lt;WSL_USER&gt;/.openclaw/openclaw.json')); print('QQ Bot enabled:', c.get('channels',{}).get('qqbot',{}).get('enabled')); print('Has token:', 'token' in c.get('channels',{}).get('qqbot',{}))\&quot;&quot;
+</code></pre>
+<p>如果未配置，提醒用户去 QQ 开放平台获取凭证后填入 <code>openclaw.json</code>。</p>
+<h3>0.7 确认 node 二进制路径</h3>
+<pre><code class="language-bash">wsl bash -c &quot;which node&quot;
+</code></pre>
+<p>常见路径：<code>/usr/bin/node</code>、<code>/usr/local/bin/node</code>、<code>~/.nvm/versions/node/vXX/bin/node</code>。
+将结果记为 <code>&lt;NODE_PATH&gt;</code>，后续 Step 6 的 <code>ExecStart</code> 需要使用。</p>
+<h2 id="配置步骤-6">配置步骤</h2>
+<h3>Step 1：禁用 PM2 systemd 服务</h3>
+<p>PM2 的 systemd 服务会导致 Gateway 反复被 kill（PM2 每~20秒会在 stop/start 间死循环）。</p>
+<pre><code class="language-bash"># 在 WSL 中执行（需要 root）
+wsl -u root systemctl disable --now pm2-feather.service
+</code></pre>
+<p>验证 PM2 已死：</p>
+<pre><code class="language-bash">wsl systemctl status pm2-feather.service --no-pager
+# 期望：Active: inactive (dead)
+</code></pre>
+<h3>Step 2：安装 OpenClaw（如 0.5 已确认安装则跳过）</h3>
+<blockquote>
+<p><strong>AI 执行提示</strong>：将 <code>&lt;WSL_USER&gt;</code> 和 <code>&lt;NPM_PREFIX&gt;</code> 替换为 0.1、0.2 探测到的实际值。</p>
+</blockquote>
+<pre><code class="language-bash"># 安装（有代理）
+wsl bash -c &quot;export http_proxy=http://127.0.0.1:&lt;代理端口&gt;; export https_proxy=http://127.0.0.1:&lt;代理端口&gt;; sudo npm install -g openclaw@latest&quot;
+
+# 安装（无代理）
+wsl bash -c &quot;sudo npm install -g openclaw@latest&quot;
+
+# 验证
+wsl &lt;NPM_PREFIX&gt;/lib/node_modules/openclaw/openclaw.mjs --version
+</code></pre>
+<h3>Step 3：修复 OpenClaw 配置文件</h3>
+<p>如果 <code>openclaw.json</code> 已存在，清理陈旧插件条目；如果不存在（全新安装），创建基础配置。</p>
+<pre><code class="language-bash">wsl bash -c &quot;
+if [ -f /home/&lt;WSL_USER&gt;/.openclaw/openclaw.json ]; then
+    python3 -c \&quot;
+import json
+with open('/home/&lt;WSL_USER&gt;/.openclaw/openclaw.json') as f:
+    config = json.load(f)
+config['plugins']['entries'].pop('openclaw-qqbot', None)
+config['plugins']['entries'].pop('openclaw-weixin', None)
+config['plugins']['allow'] = ['qqbot']
+with open('/home/&lt;WSL_USER&gt;/.openclaw/openclaw.json', 'w') as f:
+    json.dump(config, f, indent=2, ensure_ascii=False)
+print('Config cleaned')
+\&quot;
+else
+    echo 'openclaw.json not found. Please ensure OpenClaw is installed and has been run at least once (openclaw init).'
+fi
+&quot;
+</code></pre>
+<blockquote>
+<p>如果文件不存在，运行 <code>wsl openclaw init</code> 先初始化。</p>
+</blockquote>
+<p>确保 QQ Bot 通道已启用（手动编辑 <code>openclaw.json</code> 或运行 <code>openclaw config</code>）：</p>
+<pre><code class="language-json">&quot;channels&quot;: {
+  &quot;qqbot&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;name&quot;: &quot;QQ频道Bot&quot;,
+    &quot;token&quot;: &quot;bot:v1_...&quot;,
+    &quot;allowFrom&quot;: [&quot;*&quot;],
+    &quot;appId&quot;: &quot;你的AppID&quot;,
+    &quot;clientSecret&quot;: &quot;你的ClientSecret&quot;
+  }
+}
+</code></pre>
+<blockquote>
+<p>QQ Bot 凭证需用户自行从 QQ 开放平台获取，填入 <code>openclaw.json</code> 的 <code>channels.qqbot</code> 段：</p>
+</blockquote>
+<pre><code class="language-json">&quot;channels&quot;: {
+  &quot;qqbot&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;token&quot;: &quot;bot:v1_...&quot;,
+    &quot;appId&quot;: &quot;...&quot;,
+    &quot;clientSecret&quot;: &quot;...&quot;
+  }
+}
+</code></pre>
+<h3>Step 5：确认 Gateway 入口文件路径</h3>
+<pre><code class="language-bash"># 用 0.2 探测到的 prefix 拼接路径
+wsl ls -la &lt;NPM_PREFIX&gt;/lib/node_modules/openclaw/openclaw.mjs
+</code></pre>
+<p>如果不存在，全局搜索：</p>
+<pre><code class="language-bash">wsl find / -name &quot;openclaw.mjs&quot; -type f 2&gt;/dev/null
+</code></pre>
+<p>记下完整路径，后续 Step 6 的 <code>ExecStart</code> 需要使用。</p>
+<h3>Step 6：创建系统级 systemd 服务文件</h3>
+<blockquote>
+<p><strong>AI 执行提示</strong>：必须先将以下变量替换为实际值，再执行脚本：
+- <code>&lt;WSL_USER&gt;</code> → 0.1 探测到的用户名（如 <code>feather</code>）
+- <code>&lt;NODE_PATH&gt;</code> → 0.7 探测到的 node 路径（如 <code>/usr/bin/node</code>）
+- <code>&lt;OPENCLAW_ENTRY&gt;</code> → Step 5 确认的 openclaw.mjs 完整路径
+- <code>&lt;NPM_PREFIX&gt;</code> → 0.2 的 npm prefix（用于拼接 PATH）
+- <code>&lt;PROXY_PORT&gt;</code> → 0.3 确认的代理端口；如果无代理，删除 4 行 <code>Environment=http*</code> 和 <code>Environment=HTTP*</code></p>
+</blockquote>
+<pre><code class="language-bash">wsl -u root python3 -c &quot;
+content = '''[Unit]
+Description=OpenClaw Gateway
+After=network-online.target
+Wants=network-online.target
+StartLimitBurst=10
+StartLimitIntervalSec=120
+
+[Service]
+Type=simple
+User=&lt;WSL_USER&gt;
+ExecStart=&lt;NODE_PATH&gt; &lt;OPENCLAW_ENTRY&gt; gateway --port 18795 --bind lan
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+TimeoutStartSec=90
+SuccessExitStatus=0 143
+KillMode=control-group
+Environment=HOME=/home/&lt;WSL_USER&gt;
+Environment=TMPDIR=/tmp
+Environment=PATH=/home/&lt;WSL_USER&gt;/.local/bin:/usr/bin:/usr/local/bin:&lt;NPM_PREFIX&gt;/bin:/usr/local/sbin:/usr/sbin:/sbin:/bin
+Environment=http_proxy=http://127.0.0.1:&lt;PROXY_PORT&gt;
+Environment=https_proxy=http://127.0.0.1:&lt;PROXY_PORT&gt;
+Environment=HTTP_PROXY=http://127.0.0.1:&lt;PROXY_PORT&gt;
+Environment=HTTPS_PROXY=http://127.0.0.1:&lt;PROXY_PORT&gt;
+
+[Install]
+WantedBy=multi-user.target
+'''
+with open('/etc/systemd/system/openclaw-gateway.service', 'w') as f:
+    f.write(content)
+print('Service file written')
+&quot;
+</code></pre>
+<blockquote>
+<p><strong>端口自定义</strong>：如果需要使用其他端口（如 <code>8080</code>），修改 <code>--port 18795</code> 即可。确保后续访问地址同步修改。</p>
+</blockquote>
+<h3>Step 7：启用并启动服务</h3>
+<pre><code class="language-bash"># 重载 systemd 配置
+wsl -u root systemctl daemon-reload
+
+# 启用开机自启并立即启动
+wsl -u root systemctl enable --now openclaw-gateway
+
+# 检查状态
+wsl systemctl status openclaw-gateway --no-pager
+# 期望：Active: active (running)
+</code></pre>
+<h3>Step 8：禁止 WSL 自动休眠</h3>
+<p>编辑 Windows 端的 <code>.wslconfig</code> 文件（位于 <code>%USERPROFILE%\.wslconfig</code>）：</p>
+<pre><code class="language-ini">[wsl2]
+networkingMode=Mirrored
+vmIdleTimeout=-1
+</code></pre>
+<blockquote>
+<p><code>vmIdleTimeout=-1</code> 表示永不休眠。无需重启 Windows，但需要完全关闭 WSL 后重新打开。</p>
+</blockquote>
+<pre><code class="language-powershell"># PowerShell
+wsl --shutdown
+</code></pre>
+<h3>Step 9：创建 WSL 保活脚本</h3>
+<p>此脚本通过维持一个 WSL 内的 bash 会话，防止 WSL 休眠：</p>
+<p><code>%USERPROFILE%\wsl-keepalive.vbs</code>：</p>
+<pre><code class="language-vbscript">Dim WshShell
+Set WshShell = CreateObject(&quot;WScript.Shell&quot;)
+Do
+    WshShell.Run &quot;wsl.exe -e bash -c &quot;&quot;while true; do sleep 86400; done&quot;&quot;&quot;, 0, True
+    WScript.Sleep 5000
+Loop
+</code></pre>
+<blockquote>
+<p><code>0</code> = 隐藏窗口，<code>True</code> = 等待子进程结束（WSL 断线后自动重连），<code>86400</code> = 24小时循环 sleep。</p>
+</blockquote>
+<h3>Step 10：添加到 Windows 开机启动</h3>
+<pre><code class="language-powershell"># PowerShell（管理员不需要，普通用户即可）
+Set-ItemProperty -Path &quot;HKCU:\Software\Microsoft\Windows\CurrentVersion\Run&quot; -Name &quot;WSL KeepAlive&quot; -Value &quot;C:\Windows\System32\wscript.exe `&quot;${env:USERPROFILE}\wsl-keepalive.vbs`&quot;&quot;
+</code></pre>
+<p>验证注册表项：</p>
+<pre><code class="language-powershell">Get-ItemProperty -Path &quot;HKCU:\Software\Microsoft\Windows\CurrentVersion\Run&quot; -Name &quot;WSL KeepAlive&quot;
+</code></pre>
+<h3>Step 11：立即启动保活脚本（本次）</h3>
+<pre><code class="language-powershell">Start-Process &quot;C:\Windows\System32\wscript.exe&quot; -ArgumentList &quot;`&quot;${env:USERPROFILE}\wsl-keepalive.vbs`&quot;&quot; -WindowStyle Hidden
+</code></pre>
+<h3>Step 12：验证完整性</h3>
+<pre><code class="language-bash"># 1. 确认 WSL 中有一个 bash 保活会话
+wsl who
+# 期望输出至少一行
+
+# 2. 确认 Gateway 正在运行
+wsl systemctl status openclaw-gateway --no-pager
+# 期望：Active: active (running)
+
+# 3. 测试 HTTP 端口
+curl http://127.0.0.1:18795/
+# 期望：返回 200 或 HTML 内容
+
+# 4. 确认 PM2 已死
+wsl systemctl status pm2-feather.service --no-pager
+# 期望：Active: inactive (dead)
+</code></pre>
+<h3>Step 13：重启 WSL 验证自动恢复</h3>
+<pre><code class="language-bash"># 完全关闭
+wsl --shutdown
+
+# 等待几秒
+
+# 仅执行状态检查（不执行任何启动命令）
+wsl systemctl status openclaw-gateway --no-pager
+# 期望：Active: active (running) —— 自动启动
+</code></pre>
+<h2 id="日常管理命令-7">日常管理命令</h2>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>启动 Gateway</td>
+<td><code>wsl -u root systemctl start openclaw-gateway</code></td>
+</tr>
+<tr>
+<td>停止 Gateway</td>
+<td><code>wsl -u root systemctl stop openclaw-gateway</code></td>
+</tr>
+<tr>
+<td>重启 Gateway</td>
+<td><code>wsl -u root systemctl restart openclaw-gateway</code></td>
+</tr>
+<tr>
+<td>查看状态</td>
+<td><code>wsl systemctl status openclaw-gateway --no-pager</code></td>
+</tr>
+<tr>
+<td>实时日志</td>
+<td><code>wsl journalctl -u openclaw-gateway -f</code></td>
+</tr>
+<tr>
+<td>查看最近日志</td>
+<td><code>wsl journalctl -u openclaw-gateway --no-pager -n 50</code></td>
+</tr>
+<tr>
+<td>Web 管理页面</td>
+<td><code>http://127.0.0.1:18795/</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="故障排查-8">故障排查</h2>
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>排查步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gateway 反复重启</td>
+<td><code>wsl journalctl -u openclaw-gateway --no-pager -n 20</code> 查找 <code>SIGTERM</code>/<code>Stopping</code></td>
+</tr>
+<tr>
+<td>端口被占用</td>
+<td><code>wsl bash -c "ss -tlnp \| grep 18795"</code> 然后 <code>wsl bash -c "kill -9 &lt;PID&gt;"</code></td>
+</tr>
+<tr>
+<td>QQ Bot 无响应</td>
+<td>查看日志中是否有 <code>Processing message</code> 和 <code>Gateway resumed</code></td>
+</tr>
+<tr>
+<td>WSL 保活不生效</td>
+<td>检查 <code>wsl who</code> 是否有用户会话，重启保活 VBS</td>
+</tr>
+<tr>
+<td>PM2 死灰复燃</td>
+<td><code>wsl -u root systemctl disable --now pm2-feather.service</code> 再次确认</td>
+</tr>
+</tbody>
+</table>
+<h2 id="变量速查表-ai-执行前必读-9">变量速查表（AI 执行前必读）</h2>
+<p>AI 在另一台电脑上执行时，首先完成以下探测，将结果填入变量列，然后按变量替换所有步骤中的占位符。</p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>探测命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;WSL_USER&gt;</code></td>
+<td><code>wsl whoami</code></td>
+<td>WSL 用户名</td>
+</tr>
+<tr>
+<td><code>&lt;NODE_PATH&gt;</code></td>
+<td><code>wsl bash -c "which node"</code></td>
+<td>node 可执行文件路径</td>
+</tr>
+<tr>
+<td><code>&lt;NPM_PREFIX&gt;</code></td>
+<td><code>wsl bash -c "npm prefix -g"</code></td>
+<td>npm 全局安装前缀，如 <code>/usr/local/node22</code></td>
+</tr>
+<tr>
+<td><code>&lt;OPENCLAW_ENTRY&gt;</code></td>
+<td><code>wsl find / -name "openclaw.mjs" 2&gt;/dev/null</code></td>
+<td>openclaw 入口文件完整路径</td>
+</tr>
+<tr>
+<td><code>&lt;PROXY_PORT&gt;</code></td>
+<td><code>wsl bash -c "curl -x http://127.0.0.1:7890 -s -o /dev/null -w '%{http_code}' https://registry.npmjs.org"</code></td>
+<td>测试 7890/7891 等常见端口，200=可用，无代理则删</td>
+</tr>
+<tr>
+<td><code>HAS_PROXY</code></td>
+<td>上述测试</td>
+<td><code>true</code>=保留代理环境变量，<code>false</code>=删除</td>
+</tr>
+</tbody>
+</table>
+<h2 id="环境变量说明-systemd-service-内-10">环境变量说明（systemd service 内）</h2>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>http_proxy</code></td>
+<td><code>http://127.0.0.1:7890</code></td>
+<td>HTTP 代理（按实际修改）</td>
+</tr>
+<tr>
+<td><code>https_proxy</code></td>
+<td><code>http://127.0.0.1:7890</code></td>
+<td>HTTPS 代理（按实际修改）</td>
+</tr>
+<tr>
+<td><code>HOME</code></td>
+<td><code>/home/&lt;用户名&gt;</code></td>
+<td>用户主目录</td>
+</tr>
+<tr>
+<td><code>PATH</code></td>
+<td>包含 node22/bin</td>
+<td>确保 Node.js 可执行文件在 PATH 中</td>
+</tr>
+</tbody>
+</table>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>wsl-openclaw-autostart/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

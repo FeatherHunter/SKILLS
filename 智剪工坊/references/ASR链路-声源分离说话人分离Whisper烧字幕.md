@@ -120,6 +120,7 @@ python scripts/asr/burn_subtitle.py \
 | 5 | pyannote 模型首次下载 ~200MB,建议用户提前下完 | 同上 |
 | 6 | Whisper `medium` 模型 ~1.5GB,GPU 默认;CPU 慢 10x | 长视频可能 OOM |
 | 7 | demucs 分离出的人声用于 ASR 比直接 ASR 准确率提升 15-20% | 不分离 |
+| 10 | **中国网络环境** HF 直连经常超时,设 `$env:HF_ENDPOINT = "https://hf-mirror.com"` 再跑 | 模型下载失败 |
 | 8 | 输出 SRT 路径在工作区(如 `00_智剪/粗加工/sub.srt`),Step 13 才找得到 | 找不到 SRT |
 | 9 | HF token 是用户隐私 — 建议用户存 .env,不要每次明文 --token | 暴露 token |
 
@@ -135,7 +136,7 @@ python scripts/asr/burn_subtitle.py \
 | `No HuggingFace token` 或 401 | 跑说话人分离但没传 token / 没接受模型协议 | 让用户去 hf.co 申请 + 传 `--token` |
 | `CUDA out of memory` | 模型太大或视频太长 | 改 `--device cpu` 或 `--model small` |
 | `subtitles path` 报错 | SRT 路径有空格或中文 | 路径避免空格 |
-| demucs 下载卡住 | huggingface 网络问题 | 用户代理 / 改镜像源 |
+| demucs / Whisper / pyannote 下载卡住 | huggingface 网络问题(中国常见) | **设镜像源** `$env:HF_ENDPOINT = "https://hf-mirror.com"` 后再跑 |
 
 ---
 
@@ -181,3 +182,4 @@ python scripts/asr/burn_subtitle.py --video input.mp4 --srt v_speaker.srt --outp
 - **v1.4 新增**:链路补全,新增降噪 / 声源分离 / 说话人分离
 - **v1.5**:scripts/audio/*.py 调 lib/ffmpeg/audio/*.py(分层架构)
 - **v1.7+**:本文档补回(原 ASR链路-...md 文件被误删)
+- **v1.18+**:补 hf-mirror 镜像源(中国网络环境实测经验)

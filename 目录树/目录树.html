@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>目录树 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#目录树-技能文档-1">目录树 · 技能文档</a></li>
+<li><a href="#触发词-1">触发词</a></li>
+<li><a href="#核心功能-2">核心功能</a></li>
+<li><a href="#输入确认流程-3">输入确认流程</a></li>
+<li><a href="#强制-html-生成规则-所有生成任务必须遵守-4">强制 HTML 生成规则（所有生成任务必须遵守）</a></li>
+<li><a href="#工作流程-5">工作流程</a></li>
+<li><a href="#生成脚本-6">生成脚本</a></li>
+<li><a href="#大数据目录优化技术-10-万条目-7">大数据目录优化技术（≥10 万条目）</a></li>
+<li><a href="#输出结果-8">输出结果</a></li>
+<li><a href="#错误处理-9">错误处理</a></li></ol></div>
+<h1 id="目录树-技能文档-1">目录树 · 技能文档</h1>
+<p>生成的HTML风格必须符合：
+亮色单色背景 + 新禅意科技美学。</p>
+<p><strong>视觉规范（v3.2+）：</strong>
+- 背景：纯净米白 <code>#f6f5f1</code>（单色，无渐变）
+- 墨烟：极淡墨灰横向云雾纹理（CSS <code>repeating-linear-gradient</code> 实现，不喧宾夺主）
+- 磨砂玻璃：<code>backdrop-filter: blur(10~20px)</code> + 1px 内嵌光晕边框
+- 中心几何体：单线条三角 + 同心圆（SVG thin-line）
+- 远山剪影：底部淡墨山影 SVG，opacity 0.5
+- 按钮微光：hover 时 <code>box-shadow: 0 0 10px rgba(100,140,180,0.1)</code>
+- 留白即呼吸：两栏布局，大量负空间</p>
+<p><strong>注：</strong> 背景色为浅色，视觉方向与 v3.1 的深色背景不同，以本节规范为准。</p>
+<h2 id="触发词-1">触发词</h2>
+<ul>
+<li><code>目录树</code></li>
+<li><code>目录导航</code></li>
+</ul>
+<hr />
+<h2 id="核心功能-2">核心功能</h2>
+<h3>1. 扫描给定目录</h3>
+<p>递归扫描指定根目录，返回完整的目录和文件树结构。</p>
+<ul>
+<li>扫描所有层级（深度无限制）</li>
+<li>记录：name / path / is_dir / size / children[]</li>
+<li><code>.git</code> 目录只显示自身及其文件数量，不递归其内部内容</li>
+</ul>
+<h3>2. 输出文件名命名规则</h3>
+<p>输出路径：<code>docs/directory-tree/</code></p>
+<p>文件名 = 取根目录<strong>最后两个有意义段</strong>，用下划线连接：</p>
+<pre><code>/mnt/d/2Study/StudyNotes         → 2Study_StudyNotes.html
+/mnt/d/Work/Projects             → Work_Projects.html
+/mnt/d/2Study/StudyNotes/SKILLS  → StudyNotes_SKILLS.html
+D:\Work\Projects                  → Work_Projects.html
+</code></pre>
+<p>规则：
+- 路径分隔符（/、\）→ 替换为 <code>_</code>
+- 盘符保留（如 <code>d_</code>、<code>D_</code>）
+- 特殊字符清理
+- 后缀为 <code>.html</code></p>
+<h3>3. 多根目录管理</h3>
+<p>同一个根目录每次生成覆盖同名文件，不同根目录生成不同文件名，不会冲突。</p>
+<hr />
+<h2 id="输入确认流程-3">输入确认流程</h2>
+<pre><code>Step 1：读取环境变量 DIR_NAV_ROOT
+        → 有值 → 验证路径存在 → 直接使用
+
+Step 2：无环境变量 → 检查会话状态 current_root
+            → 有 → 直接使用
+            → 无 → 询问用户输入路径
+
+Step 3：用户输入路径 → 验证存在 → 存入会话状态
+</code></pre>
+<hr />
+<h2 id="强制-html-生成规则-所有生成任务必须遵守-4">强制 HTML 生成规则（所有生成任务必须遵守）</h2>
+<h3>规则1：默认全部折叠</h3>
+<ul>
+<li><strong>所有目录默认折叠</strong>，包括根目录的第一层子目录</li>
+<li>用户点击才能展开</li>
+<li>不能有任何目录在页面加载时默认展开</li>
+</ul>
+<h3>规则2：每项必有复制按钮</h3>
+<ul>
+<li><strong>每个目录和每个文件</strong>右侧必须有「复制路径」按钮</li>
+<li>点击后复制该目录或文件的<strong>绝对路径</strong></li>
+<li>路径格式,同时提供两个系统的：</li>
+<li>WSL 路径（以 <code>/mnt/</code> 开头）→ 直接复制，如 <code>/mnt/d/2Study/StudyNotes/SKILLS</code></li>
+<li>Windows 路径（以 <code>D:\</code> 等盘符开头）→ 保持原格式复制，如 <code>D:\Work\Projects</code></li>
+</ul>
+<h3>规则3：其他规范</h3>
+<ul>
+<li>纯静态 HTML，无需服务器，双击即可打开</li>
+<li>无 emoji</li>
+<li>路径格式自动判断 WSL / Windows</li>
+</ul>
+<h3>规则4：必须使用tast-skill 和 ui-ux-pro-max-skill 这两个技能</h3>
+<h3>规则5：必须使用superpowers 技能 写代码</h3>
+<h3>规则6：顶级视觉风格</h3>
+<p>neo-Zen 新禅意科技美学，单色米白背景——墨汁云烟极淡横向纹理在背景中缓慢弥散，银灰细线几何体（三角+同心圆）居于画面正中，纳米级细腻磨砂玻璃作为行级材质，古老书法笔触解构为极简导航线条与电路纹理的融合形态，远山剪影在底部淡入为朦胧的远红外热感成像，按钮点缀含蓄的冷调银蓝微光，留白即呼吸，侘寂残缺之美融入冷冽精密的科技理性，8K 高清，文化纵深与数字静谧交织</p>
+<hr />
+<h2 id="工作流程-5">工作流程</h2>
+<pre><code>用户：目录树
+    ↓
+确认根目录（环境变量 / 会话状态 / 用户输入）
+    ↓
+检测 docs/directory-tree/ 下是否已有对应文件
+    ↓
+有缓存 → 询问用户：「更新？还是打开已有文件？」
+         → 输入「更新」→ 重新扫描生成
+         → 输入其他 → 打开现有 HTML
+无缓存 → 直接生成
+    ↓
+生成完毕 → 告知用户文件路径
+</code></pre>
+<hr />
+<h2 id="生成脚本-6">生成脚本</h2>
+<p>生成脚本位于同目录 <code>scripts/generate.py</code>，可直接运行：</p>
+<pre><code class="language-bash">python scripts/generate.py &quot;/mnt/d/2Study/StudyNotes&quot;
+</code></pre>
+<p>脚本目录结构：</p>
+<pre><code>SKILLS/目录树/
+├── SKILL.md              # 本文档
+├── generate.py          # 主生成脚本（see scripts/）
+├── scripts/
+│   ├── generate.py      # 主脚本
+│   └── .scan_record.json # 最近一次扫描记录（自动生成）
+└── example/
+    └── 2Study_StudyNotes.html  # 完整样例（当前 StudyNotes 目录树）
+</code></pre>
+<hr />
+<h2 id="大数据目录优化技术-10-万条目-7">大数据目录优化技术（≥10 万条目）</h2>
+<p>普通目录树对大目录（10 万级以上条目）有三大瓶颈：</p>
+<ol>
+<li><strong>Python <code>os.walk</code> / <code>scandir</code> 在 WSL DrvFs 上极慢</strong>（超时）</li>
+<li><strong>内存中构建完整 JSON 树 → 字符串拼接 → HTML 体积爆炸</strong>（461MB）</li>
+<li><strong>一次性渲染所有 DOM 节点 → 浏览器卡死</strong></li>
+</ol>
+<h3>解决思路：三层分离</h3>
+<pre><code>Step 1: find 命令流式输出到文件（绕过 Python I/O 瓶颈）
+         find [root] -not -path &quot;*/.git/*&quot; -printf &quot;%y|%p|%s|%h\n&quot; &gt; /tmp/dir-tree-raw.txt
+
+Step 2: Python 快速解析 raw 文件（不做路径操作，只字符串 split）
+         每行: kind|path|size|parent
+         取 name: rsplit(&quot;/&quot;, 1)
+
+Step 3: 树结构数据 zlib 压缩后 base64 嵌入 HTML（不参与 DOM）
+         顶层目录渲染为折叠状态 DOM
+         展开时 JS 从压缩数据动态解压渲染子节点（lazy render）
+</code></pre>
+<h3>文件格式设计</h3>
+<pre><code># find 输出格式（每行一条目）
+d|/mnt/d/root/subdir|4096|/mnt/d/root
+f|/mnt/d/root/subdir/file.txt|1234|/mnt/d/root/subdir
+
+# 树结构压缩格式（dir 行，\x00 分隔父子）
+/mnt/d/root/dir1\x00child1\x00child2\x00...
+/mnt/d/root/dir1/subdir\x00...
+</code></pre>
+<h3>压缩效果（实测 StudyNotes 目录）</h3>
+<table>
+<thead>
+<tr>
+<th>目录规模</th>
+<th>raw 树数据</th>
+<th>zlib 压缩后</th>
+<th>HTML 最终体积</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~13 万条目</td>
+<td>~59MB</td>
+<td>~3MB</td>
+<td><strong>3.9MB</strong></td>
+</tr>
+<tr>
+<td>旧方案（全 DOM 预渲染）</td>
+<td>—</td>
+<td>—</td>
+<td><strong>461MB</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>实现代码骨架</h3>
+<p><strong>Step 1: find 输出到文件</strong></p>
+<pre><code class="language-python">import subprocess
+with open(&quot;/tmp/dir-tree-raw.txt&quot;, &quot;wb&quot;) as f:
+    subprocess.Popen([
+        &quot;find&quot;, root,
+        &quot;-not&quot;, &quot;-path&quot;, &quot;*/.git/*&quot;,
+        &quot;-printf&quot;, &quot;%y|%p|%s|%h\\n&quot;
+    ], stdout=f).wait()
+</code></pre>
+<p><strong>Step 2: 快速解析（不做路径操作，只做字符串 split）</strong></p>
+<pre><code class="language-python">nodes = {}
+with open(&quot;/tmp/dir-tree-raw.txt&quot;, &quot;rb&quot;) as f:
+    for raw in f:
+        parts = raw.decode().rstrip().split(&quot;|&quot;)
+        kind, path, size = parts[0], parts[1], int(parts[2])
+        si = path.rfind(&quot;/&quot;)
+        name = path[si+1:]
+        nodes[path] = {
+            &quot;name&quot;: name,
+            &quot;is_dir&quot;: kind.lower() == &quot;d&quot;,
+            &quot;size&quot;: size,
+            &quot;children&quot;: []
+        }
+
+# 构建 children 引用
+for path in list(nodes):
+    pi = path.rfind(&quot;/&quot;)
+    parent = path[:pi]
+    if parent in nodes:
+        nodes[parent][&quot;children&quot;].append(path)
+</code></pre>
+<p><strong>Step 3: 树数据压缩嵌入</strong></p>
+<pre><code class="language-python">import zlib, base64
+
+dir_lines = [
+    path + &quot;\x00&quot; + &quot;\x00&quot;.join(n[&quot;children&quot;])
+    for path, n in nodes.items()
+    if n[&quot;is_dir&quot;] and n[&quot;children&quot;]
+]
+all_lines = &quot;\n&quot;.join(dir_lines)
+compressed = zlib.compress(all_lines.encode(&quot;utf-8&quot;), level=6)
+compressed_b64 = base64.b64encode(compressed).decode(&quot;ascii&quot;)
+# HTML 中: window.__treeData = compressed_b64
+</code></pre>
+<p><strong>Step 4: 浏览器 JS 解压（pako）</strong></p>
+<pre><code class="language-javascript">const bstr = atob(window.__treeData);
+const buf = new Uint8Array(bstr.split(&quot;&quot;).map(c =&gt; c.charCodeAt(0)));
+const text = new TextDecoder().decode(pako.inflate(buf));
+
+const treeIndex = {};
+text.split(&quot;\n&quot;).forEach(line =&gt; {
+  const nullIdx = line.indexOf(&quot;\x00&quot;);
+  if (nullIdx &lt; 0) return;
+  const parent = line.slice(0, nullIdx);
+  const children = line.slice(nullIdx + 1).split(&quot;\x00&quot;).filter(Boolean);
+  treeIndex[parent] = children;
+});
+
+
+// 展开时 lazy render 子节点
+function toggle(path) {
+  if (expanded.has(path)) { /* collapse */ }
+  else {
+    expanded.add(path);
+    const nested = item.querySelector(&quot;.nl&quot;);
+    if (!nested.innerHTML)
+      nested.innerHTML = renderChildren(treeIndex[path] || []);
+  }
+}
+</code></pre>
+<h3>CDN 依赖</h3>
+<pre><code class="language-html">&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<blockquote>
+<p><code>pako</code> 是唯一外部依赖（zlib decompress），纯前端无需服务器。</p>
+</blockquote>
+<h3>何时启用</h3>
+<p>当 <code>find [root] -not -path "*/.git/*" | wc -l</code> 超过 <strong>5 万条目</strong>时，
+自动切换为压缩 lazy-render 模式。</p>
+<hr />
+<h2 id="输出结果-8">输出结果</h2>
+<p>每个生成任务返回：
+- 扫描到的总条目数（目录 + 文件）
+- 扫描耗时
+- HTML 文件路径
+- GitHub Pages 访问地址（如果已 push）</p>
+<hr />
+<h2 id="错误处理-9">错误处理</h2>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>根目录路径无效</td>
+<td>报错并重新询问</td>
+</tr>
+<tr>
+<td>目录无法访问</td>
+<td>提示「无权限访问该目录」</td>
+</tr>
+<tr>
+<td>空目录</td>
+<td>正常返回空树结构</td>
+</tr>
+<tr>
+<td>扫描中断</td>
+<td>返回已扫描的部分 + 警告</td>
+</tr>
+</tbody>
+</table>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>目录树/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>multi-search-engine-2.1.3 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#multi-search-engine-1">Multi Search Engine</a></li>
+<li><a href="#workflow-1">Workflow</a></li>
+<li><a href="#search-engines-2">Search Engines</a></li>
+<li><a href="#quick-examples-3">Quick Examples</a></li>
+<li><a href="#advanced-operators-4">Advanced Operators</a></li>
+<li><a href="#time-filters-5">Time Filters</a></li>
+<li><a href="#privacy-engines-6">Privacy Engines</a></li>
+<li><a href="#bangs-shortcuts-duckduckgo-7">Bangs Shortcuts (DuckDuckGo)</a></li>
+<li><a href="#wolframalpha-queries-8">WolframAlpha Queries</a></li>
+<li><a href="#documentation-9">Documentation</a></li>
+<li><a href="#license-10">License</a></li>
+<li><a href="#security-amp-privacy-notice-11">Security &amp; Privacy Notice</a></li></ol></div>
+<h1 id="multi-search-engine-1">Multi Search Engine</h1>
+<p>Integration of 16 search engines for web crawling without API keys.</p>
+<h2 id="workflow-1">Workflow</h2>
+<ol>
+<li>
+<p><strong>Preparation</strong>: AI Agent initializes an empty in-memory cookie store. Cookies are only acquired dynamically during search operations when access is denied</p>
+</li>
+<li>
+<p><strong>Language Evaluation</strong>: Detect the language attribute of the search query. If the query is in Chinese, use Domestic search engines (Baidu, Bing CN, Bing INT, 360, Sogou, WeChat, Shenma). If the query is non-Chinese, use International search engines (Google, Google HK, DuckDuckGo, Yahoo, Startpage, Brave, Ecosia, Qwant, WolframAlpha). Select engines based on query relevance and availability.</p>
+</li>
+<li>
+<p><strong>Controlled Search</strong>: Use web_fetch to execute search requests with rate limiting:
+   - Add 1-2 second delay between requests to respect server load
+   - Batch requests in groups of 3-4 engines with sequential execution between batches
+   - Include standard browser headers to identify as legitimate user agent
+   - If access is denied (403/429), fetch engine homepage to obtain fresh session cookies</p>
+</li>
+<li>
+<p><strong>Cookie Management</strong>: 
+   - Cookies are stored ONLY in memory during runtime
+   - Cookies are acquired on-demand when search requests fail
+   - No cookies are read from or written to config.json or any file
+   - Cookies are cleared after search session completes
+   - Only session cookies from search engine domains are captured</p>
+</li>
+<li>
+<p><strong>Retry Mechanism</strong>: If a search fails due to cookie/session issues, retry once with freshly acquired cookies after a 2-second delay</p>
+</li>
+<li>
+<p><strong>Result Aggregation</strong>: Consolidate successful results from search engines, organize and summarize them to output a core search report</p>
+</li>
+</ol>
+<h2 id="search-engines-2">Search Engines</h2>
+<h3>Domestic (7)</h3>
+<ul>
+<li><strong>Baidu</strong>: <code>https://www.baidu.com/s?wd={keyword}</code></li>
+<li><strong>Bing CN</strong>: <code>https://cn.bing.com/search?q={keyword}&amp;ensearch=0</code></li>
+<li><strong>Bing INT</strong>: <code>https://cn.bing.com/search?q={keyword}&amp;ensearch=1</code></li>
+<li><strong>360</strong>: <code>https://www.so.com/s?q={keyword}</code></li>
+<li><strong>Sogou</strong>: <code>https://sogou.com/web?query={keyword}</code></li>
+<li><strong>WeChat</strong>: <code>https://wx.sogou.com/weixin?type=2&amp;query={keyword}</code></li>
+<li><strong>Shenma</strong>: <code>https://m.sm.cn/s?q={keyword}</code></li>
+</ul>
+<h3>International (9)</h3>
+<ul>
+<li><strong>Google</strong>: <code>https://www.google.com/search?q={keyword}</code></li>
+<li><strong>Google HK</strong>: <code>https://www.google.com.hk/search?q={keyword}</code></li>
+<li><strong>DuckDuckGo</strong>: <code>https://duckduckgo.com/html/?q={keyword}</code></li>
+<li><strong>Yahoo</strong>: <code>https://search.yahoo.com/search?p={keyword}</code></li>
+<li><strong>Startpage</strong>: <code>https://www.startpage.com/sp/search?query={keyword}</code></li>
+<li><strong>Brave</strong>: <code>https://search.brave.com/search?q={keyword}</code></li>
+<li><strong>Ecosia</strong>: <code>https://www.ecosia.org/search?q={keyword}</code></li>
+<li><strong>Qwant</strong>: <code>https://www.qwant.com/?q={keyword}</code></li>
+<li><strong>WolframAlpha</strong>: <code>https://www.wolframalpha.com/input?i={keyword}</code></li>
+</ul>
+<h2 id="quick-examples-3">Quick Examples</h2>
+<pre><code class="language-javascript">// Basic search
+web_fetch({&quot;url&quot;: &quot;https://www.google.com/search?q=python+tutorial&quot;})
+
+// Site-specific
+web_fetch({&quot;url&quot;: &quot;https://www.google.com/search?q=site:github.com+react&quot;})
+
+// File type
+web_fetch({&quot;url&quot;: &quot;https://www.google.com/search?q=machine+learning+filetype:pdf&quot;})
+
+// Time filter (past week)
+web_fetch({&quot;url&quot;: &quot;https://www.google.com/search?q=ai+news&amp;tbs=qdr:w&quot;})
+
+// Privacy search
+web_fetch({&quot;url&quot;: &quot;https://duckduckgo.com/html/?q=privacy+tools&quot;})
+
+// DuckDuckGo Bangs
+web_fetch({&quot;url&quot;: &quot;https://duckduckgo.com/html/?q=!gh+tensorflow&quot;})
+
+// Knowledge calculation
+web_fetch({&quot;url&quot;: &quot;https://www.wolframalpha.com/input?i=100+USD+to+CNY&quot;})
+</code></pre>
+<h2 id="advanced-operators-4">Advanced Operators</h2>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>site:</code></td>
+<td><code>site:github.com python</code></td>
+<td>Search within site</td>
+</tr>
+<tr>
+<td><code>filetype:</code></td>
+<td><code>filetype:pdf report</code></td>
+<td>Specific file type</td>
+</tr>
+<tr>
+<td><code>""</code></td>
+<td><code>"machine learning"</code></td>
+<td>Exact match</td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td><code>python -snake</code></td>
+<td>Exclude term</td>
+</tr>
+<tr>
+<td><code>OR</code></td>
+<td><code>cat OR dog</code></td>
+<td>Either term</td>
+</tr>
+</tbody>
+</table>
+<h2 id="time-filters-5">Time Filters</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tbs=qdr:h</code></td>
+<td>Past hour</td>
+</tr>
+<tr>
+<td><code>tbs=qdr:d</code></td>
+<td>Past day</td>
+</tr>
+<tr>
+<td><code>tbs=qdr:w</code></td>
+<td>Past week</td>
+</tr>
+<tr>
+<td><code>tbs=qdr:m</code></td>
+<td>Past month</td>
+</tr>
+<tr>
+<td><code>tbs=qdr:y</code></td>
+<td>Past year</td>
+</tr>
+</tbody>
+</table>
+<h2 id="privacy-engines-6">Privacy Engines</h2>
+<ul>
+<li><strong>DuckDuckGo</strong>: No tracking</li>
+<li><strong>Startpage</strong>: Google results + privacy</li>
+<li><strong>Brave</strong>: Independent index</li>
+<li><strong>Qwant</strong>: EU GDPR compliant</li>
+</ul>
+<h2 id="bangs-shortcuts-duckduckgo-7">Bangs Shortcuts (DuckDuckGo)</h2>
+<table>
+<thead>
+<tr>
+<th>Bang</th>
+<th>Destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>!g</code></td>
+<td>Google</td>
+</tr>
+<tr>
+<td><code>!gh</code></td>
+<td>GitHub</td>
+</tr>
+<tr>
+<td><code>!so</code></td>
+<td>Stack Overflow</td>
+</tr>
+<tr>
+<td><code>!w</code></td>
+<td>Wikipedia</td>
+</tr>
+<tr>
+<td><code>!yt</code></td>
+<td>YouTube</td>
+</tr>
+</tbody>
+</table>
+<h2 id="wolframalpha-queries-8">WolframAlpha Queries</h2>
+<ul>
+<li>Math: <code>integrate x^2 dx</code></li>
+<li>Conversion: <code>100 USD to CNY</code></li>
+<li>Stocks: <code>AAPL stock</code></li>
+<li>Weather: <code>weather in Beijing</code></li>
+</ul>
+<h2 id="documentation-9">Documentation</h2>
+<ul>
+<li><code>references/advanced-search.md</code> - Domestic search guide</li>
+<li><code>references/international-search.md</code> - International search guide</li>
+<li><code>CHANGELOG.md</code> - Version history</li>
+</ul>
+<h2 id="license-10">License</h2>
+<p>MIT</p>
+<h2 id="security-amp-privacy-notice-11">Security &amp; Privacy Notice</h2>
+<h3>Cookie Handling</h3>
+<ul>
+<li><strong>Purpose</strong>: Cookies are used ONLY to maintain search session state when access is denied (403/429 errors)</li>
+<li><strong>Storage</strong>: Cookies are kept STRICTLY in memory during runtime - NEVER persisted to disk or config files</li>
+<li><strong>Acquisition</strong>: Cookies are acquired on-demand from search engine homepages only when search requests fail</li>
+<li><strong>Scope</strong>: Only session cookies from the specific search engine domain are captured</li>
+<li><strong>Lifecycle</strong>: Cookies are cleared immediately after the search session completes</li>
+<li><strong>No Pre-configuration</strong>: No cookies are loaded from config.json or any external file at startup</li>
+<li><strong>No API Keys</strong>: This tool uses standard web search URLs, no authentication required</li>
+</ul>
+<h3>Crawling Ethics</h3>
+<ul>
+<li><strong>Rate Limiting</strong>: Implement reasonable delays between requests (recommend 1-2 seconds)</li>
+<li><strong>Respect robots.txt</strong>: Honor search engine crawling policies</li>
+<li><strong>Terms of Service</strong>: Users are responsible for complying with search engine ToS</li>
+<li><strong>Purpose</strong>: Designed for legitimate search aggregation, not mass data scraping</li>
+</ul>
+<h3>Data Handling</h3>
+<ul>
+<li><strong>No Personal Data</strong>: Tool does not collect or transmit user personal information</li>
+<li><strong>Local Execution</strong>: All operations run locally, no external data transmission</li>
+<li><strong>Session Isolation</strong>: Cookies are session-specific and cleared after use</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>multi-search-engine-2.1.3/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

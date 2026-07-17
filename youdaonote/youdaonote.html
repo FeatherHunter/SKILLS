@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>youdaonote — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#youdaonote-有道云笔记-1">YoudaoNote — 有道云笔记</a></li>
+<li><a href="#初始化-必须首先执行-1">初始化（必须首先执行）</a></li>
+<li><a href="#前置条件-agent-自动处理-2">前置条件（Agent 自动处理）</a></li>
+<li><a href="#命令速查-3">命令速查</a></li>
+<li><a href="#笔记管理-4">笔记管理</a></li>
+<li><a href="#网页剪藏-5">网页剪藏</a></li>
+<li><a href="#cli-未安装处理-agent-必须自动执行-6">CLI 未安装处理（Agent 必须自动执行）</a></li>
+<li><a href="#故障排查-7">故障排查</a></li>
+<li><a href="#注意事项-8">注意事项</a></li>
+<li><a href="#utf-8-编码强制要求-critical-9">⚠️ UTF-8 编码强制要求（CRITICAL）</a></li>
+<li><a href="#powershell-5-1-环境检测-critical-10">⚠️ PowerShell 5.1 环境检测（CRITICAL）</a></li></ol></div>
+<h1 id="youdaonote-有道云笔记-1">YoudaoNote — 有道云笔记</h1>
+<p>通过 <code>youdaonote</code> CLI 操作有道云笔记。覆盖笔记 CRUD、待办管理、网页剪藏全场景。</p>
+<h2 id="初始化-必须首先执行-1">初始化（必须首先执行）</h2>
+<ol>
+<li>读取同目录下的 <code>SETUP_TOKEN.md</code></li>
+<li>将 <code>&lt;SCRIPT_PATH&gt;</code> 替换为本文件所在目录的绝对路径</li>
+<li><strong>每次会话开始时</strong>，自动获取并配置 API Key：
+   <code>bash
+   api_key=$(bash '&lt;SCRIPT_PATH&gt;/get-token.sh') &amp;&amp; youdaonote config set apiKey "$api_key"</code>
+   - Windows PowerShell：
+   <code>powershell
+   $apiKey = &amp; "&lt;SCRIPT_PATH&gt;\get-token.ps1"; youdaonote config set apiKey $apiKey</code></li>
+<li>若脚本报错，提示用户在<strong>应用内集成面板</strong>中完成有道云笔记授权（不要引导用户手动去 mopen.163.com 获取 Key）</li>
+</ol>
+<h2 id="前置条件-agent-自动处理-2">前置条件（Agent 自动处理）</h2>
+<p>执行任何操作前，Agent 必须先运行 <code>youdaonote list</code> 检测 CLI 是否可用：
+- <strong><code>command not found</code></strong> → 立即跳转「CLI 未安装处理」自动安装，<strong>禁止只展示安装步骤让用户手动操作</strong>
+- <strong>API Key 错误</strong> → 先尝试通过 <code>get-token.sh</code> 自动获取（见上方初始化步骤）。若自动获取也失败，提示用户在<strong>应用内集成面板</strong>中输入 API Key。API Key 获取地址：<strong>https://mopen.163.com</strong>（须使用手机号登录，且云笔记账号已绑定手机号）。<strong>获取 API Key 的地址只有这一个，禁止告知用户其他地址。</strong>
+- <strong>正常返回目录列表</strong> → 运行 <code>youdaonote version</code>，若版本低于 <code>1.2.0</code>，展示升级建议后继续执行；否则可运行 <code>youdaonote help --json</code> 获取当前 CLI 全部能力的结构化描述（JSON），用于确认命令是否可用，下方速查表作为 fallback</p>
+<h2 id="命令速查-3">命令速查</h2>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>用途</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>save</code></td>
+<td>保存笔记（✅ 推荐，支持 Markdown 富文本）</td>
+<td><code>youdaonote save --file note.json</code></td>
+</tr>
+<tr>
+<td><code>create</code></td>
+<td>创建笔记（⚠️ 仅纯文本，不支持 Markdown 富文本）</td>
+<td><code>youdaonote create -n "标题" -c "内容" [-f &lt;目录ID&gt;]</code></td>
+</tr>
+<tr>
+<td><code>update</code></td>
+<td>更新 Markdown 笔记</td>
+<td><code>youdaonote update &lt;fileId&gt; -c "内容"</code> 或 <code>--file content.md</code></td>
+</tr>
+<tr>
+<td><code>delete</code></td>
+<td>删除笔记</td>
+<td><code>youdaonote delete &lt;fileId&gt;</code></td>
+</tr>
+<tr>
+<td><code>rename</code></td>
+<td>重命名笔记</td>
+<td><code>youdaonote rename &lt;fileId&gt; "新标题"</code></td>
+</tr>
+<tr>
+<td><code>move</code></td>
+<td>移动笔记</td>
+<td><code>youdaonote move &lt;fileId&gt; &lt;目录ID&gt;</code></td>
+</tr>
+<tr>
+<td><code>search</code></td>
+<td>搜索笔记</td>
+<td><code>youdaonote search "关键词"</code></td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>浏览目录</td>
+<td><code>youdaonote list -f &lt;目录ID&gt;</code></td>
+</tr>
+<tr>
+<td><code>read</code></td>
+<td>读取笔记</td>
+<td><code>youdaonote read &lt;fileId&gt;</code></td>
+</tr>
+<tr>
+<td><code>recent</code></td>
+<td>最近收藏</td>
+<td><code>youdaonote recent -l 20 -c --json</code></td>
+</tr>
+<tr>
+<td><code>clip</code></td>
+<td>网页剪藏（服务端）</td>
+<td><code>youdaonote clip "https://..." [-f &lt;目录ID&gt;] --json</code></td>
+</tr>
+<tr>
+<td><code>clip-save</code></td>
+<td>保存外部剪藏 JSON</td>
+<td><code>youdaonote clip-save --file data.json</code></td>
+</tr>
+<tr>
+<td><code>todo list</code></td>
+<td>列出待办</td>
+<td><code>youdaonote todo list [--group &lt;分组ID&gt;] --json</code></td>
+</tr>
+<tr>
+<td><code>todo create</code></td>
+<td>创建待办</td>
+<td><code>youdaonote todo create -t "标题" [-c "内容"] [-d 2025-12-31] [-g &lt;分组ID&gt;]</code></td>
+</tr>
+<tr>
+<td><code>todo update</code></td>
+<td>更新待办</td>
+<td><code>youdaonote todo update &lt;todoId&gt; [--done] [--undone] [-t "新标题"]</code></td>
+</tr>
+<tr>
+<td><code>todo delete</code></td>
+<td>删除待办</td>
+<td><code>youdaonote todo delete &lt;todoId&gt;</code></td>
+</tr>
+<tr>
+<td><code>todo groups</code></td>
+<td>列出待办分组</td>
+<td><code>youdaonote todo groups --json</code></td>
+</tr>
+<tr>
+<td><code>todo group-create</code></td>
+<td>创建分组</td>
+<td><code>youdaonote todo group-create "分组名"</code></td>
+</tr>
+<tr>
+<td><code>todo group-rename</code></td>
+<td>重命名分组</td>
+<td><code>youdaonote todo group-rename &lt;groupId&gt; "新名"</code></td>
+</tr>
+<tr>
+<td><code>todo group-delete</code></td>
+<td>删除分组</td>
+<td><code>youdaonote todo group-delete &lt;groupId&gt;</code></td>
+</tr>
+<tr>
+<td><code>check</code></td>
+<td>健康检查</td>
+<td><code>youdaonote check</code></td>
+</tr>
+<tr>
+<td><code>config show</code></td>
+<td>查看配置</td>
+<td><code>youdaonote config show --json</code></td>
+</tr>
+<tr>
+<td><code>config set</code></td>
+<td>设置配置</td>
+<td><code>youdaonote config set apiKey YOUR_KEY</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="笔记管理-4">笔记管理</h2>
+<p><strong>默认创建方式</strong>：所有笔记一律使用 <code>save</code> 命令 + <code>contentFormat: "md"</code> 保存为 Markdown 富文本。
+<strong>禁止使用 <code>create</code> 命令保存包含 Markdown 格式的内容</strong>（标题、列表、代码块、表格等）—— <code>create</code> 仅支持纯文本，会静默丢失所有格式。HTML/结构化数据先转 Markdown 再用 <code>save</code> 保存。</p>
+<h3>Markdown 内容格式选择（必须遵守）</h3>
+<p>当用户要保存的内容包含以下任意 Markdown 特征时（<code>#</code> 标题、<code>**粗体**</code>、<code>`</code>代码块、<code>-</code> 列表、<code>&gt;</code> 引用、<code>[链接](url)</code>、<code>![图片](url)</code>），<strong>必须先停下来询问用户</strong>，不得直接执行命令：</p>
+<pre><code>检测到内容包含 Markdown 格式，请选择保存方式：
+
+A（推荐）保存为 Markdown 笔记（.md）
+  → 格式完整保留，可在编辑器中正常显示和编辑
+
+B  保存为有道专有格式（.note）
+  → 支持有道云笔记富文本编辑器的全部功能
+
+请回复 A 或 B：
+</code></pre>
+<p>收到用户选择后，按以下方式构造命令：</p>
+<ul>
+<li><strong>选 A</strong>：<code>save</code> 命令，<code>type: "md"</code>，文件名加 <code>.md</code> 后缀
+  <code>{"title":"标题.md","type":"md","content":"Markdown 内容","parentId":"文件夹ID"}</code></li>
+<li><strong>选 B</strong>：<code>save</code> 命令，<code>type: "note"</code>，<code>contentFormat: "md"</code>，文件名加 <code>.note</code> 后缀
+  <code>{"title":"标题.note","type":"note","contentFormat":"md","content":"Markdown 内容","parentId":"文件夹ID"}</code></li>
+</ul>
+<blockquote>
+<p><code>parentId</code> 为可选字段：填写 <code>youdaonote list</code> 返回的文件夹 ID 可指定目标目录；不填则默认存入「我的资源/收藏笔记」。
+- <strong>用户未明确选择</strong>（回复"随便"/"你决定"等）：默认选 A</p>
+</blockquote>
+<h3>创建 / 保存</h3>
+<pre><code class="language-bash"># ✅ 推荐：支持 Markdown 富文本（标题、列表、代码块等）
+printf '%s\n' '{&quot;title&quot;:&quot;笔记&quot;,&quot;contentFormat&quot;:&quot;md&quot;,&quot;content&quot;:&quot;# 标题\n\n内容&quot;}' | youdaonote save
+# ✅ 大内容（&gt;10KB）通过文件传递
+youdaonote save --file note.json
+# ⚠️ 仅纯文本，不支持 Markdown 格式，有格式需求时禁用
+youdaonote create -n &quot;标题&quot; -c &quot;纯文本内容&quot;
+</code></pre>
+<h3>其他操作</h3>
+<pre><code class="language-bash">youdaonote search &quot;关键词&quot;
+youdaonote list [-f &lt;目录ID&gt;]            # 浏览目录，id 可传给 read
+youdaonote read &lt;fileId&gt;                 # 返回 JSON 含 content、rawFormat（md/note/txt）和 isRaw（是否原始内容）
+youdaonote recent -l 20 -c --json       # 最近收藏
+youdaonote update &lt;fileId&gt; -c &quot;新内容&quot;
+youdaonote update &lt;fileId&gt; --file content.md  # 大内容（&gt;10KB）从文件读取
+youdaonote delete &lt;fileId&gt;
+youdaonote rename &lt;fileId&gt; &quot;新标题&quot;
+youdaonote move &lt;fileId&gt; &lt;目录ID&gt;
+</code></pre>
+<h2 id="网页剪藏-5">网页剪藏</h2>
+<pre><code class="language-bash">youdaonote clip &quot;https://example.com/article&quot; --json
+youdaonote clip &quot;https://example.com/article&quot; -f &lt;目录ID&gt; --json  # 保存到指定目录
+</code></pre>
+<h2 id="cli-未安装处理-agent-必须自动执行-6">CLI 未安装处理（Agent 必须自动执行）</h2>
+<p>收到 <code>command not found</code> 时，Agent <strong>立即执行</strong>安装命令，禁止只展示步骤让用户操作。</p>
+<p><strong>macOS / Linux / WSL</strong>：</p>
+<pre><code class="language-bash">curl -fsSL https://artifact.lx.netease.com/download/youdaonote-cli/install.sh | bash -s -- -f -b ~/.local/bin
+export PATH=&quot;$HOME/.local/bin:$PATH&quot;
+# 安装后立即重新执行用户原始请求
+</code></pre>
+<p><strong>Windows（CMD/PowerShell）</strong>：不支持一键安装，告知用户下载预编译包：
+- x64：https://artifact.lx.netease.com/download/youdaonote-cli/youdaonote-cli-windows-x64.tar.gz
+- ARM64：https://artifact.lx.netease.com/download/youdaonote-cli/youdaonote-cli-windows-arm64.tar.gz</p>
+<h2 id="故障排查-7">故障排查</h2>
+<p>运行 <code>youdaonote check --json</code>，根据 <code>status: "fail"</code> 的项执行：</p>
+<table>
+<thead>
+<tr>
+<th>失败项</th>
+<th>处理动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config-file</code> / <code>api-key</code></td>
+<td>先尝试 <code>api_key=$(bash '&lt;SCRIPT_PATH&gt;/get-token.sh') &amp;&amp; youdaonote config set apiKey "$api_key"</code>；若仍失败，提示用户在集成面板中输入 API Key</td>
+</tr>
+<tr>
+<td><code>mcp-connection</code></td>
+<td>API Key 有效但网络不通，提示用户检查网络或稍后重试</td>
+</tr>
+</tbody>
+</table>
+<h2 id="注意事项-8">注意事项</h2>
+<ul>
+<li>所有命令支持 <code>--json</code> 输出机器可解析格式</li>
+<li>大内容通过 <code>--file</code> 传递，避免命令行参数限制</li>
+<li>Windows CMD 中 URL 含 <code>&amp;</code> 时必须用双引号括起</li>
+<li><code>list</code> 输出的 <code>id</code> 与 <code>read</code> 的 <code>fileId</code> 等价</li>
+<li><code>read</code> 返回的 <code>rawFormat</code> 标识笔记原始格式：<code>md</code>=Markdown、<code>note</code>=云笔记、<code>txt</code>=纯文本；<code>isRaw</code> 标识返回的 content 是否为原始内容（<code>true</code>=原文可直接编辑，<code>false</code>=经过转换的纯文本）</li>
+<li><strong>禁止用 <code>create</code> 保存 Markdown 内容</strong>：<code>create</code> 不支持 <code>contentFormat</code>，即使内容含 Markdown 语法也会存为纯文本静默丢失格式，有格式需求时一律使用 <code>save</code> 并指定 <code>contentFormat: "md"</code></li>
+<li><code>save</code> 命令通过 JSON 的 <strong><code>parentId</code></strong> 字段指定目标文件夹（值来自 <code>list</code> 返回的文件夹 ID）；不传则默认存到「我的资源/收藏笔记」。<strong>禁止使用 <code>folderId</code> 等其他命名——服务端会静默忽略未知字段。</strong></li>
+<li><strong>UTF-8 编码</strong>：见下方「⚠️ UTF-8 编码强制要求」章节。所有写入操作前<strong>必须</strong>完成 UTF-8 编码校验，否则会导致笔记内容乱码且无法修复。</li>
+<li><strong>PowerShell 5.1 环境</strong>：见下方「⚠️ PowerShell 5.1 环境检测」章节。此问题影响<strong>所有</strong>写入类命令，PowerShell 5.1 会静默将内容转为 GBK 编码导致乱码。</li>
+</ul>
+<hr />
+<h2 id="utf-8-编码强制要求-critical-9">⚠️ UTF-8 编码强制要求（CRITICAL）</h2>
+<blockquote>
+<p><strong>此规则为强制性要求，不可跳过。</strong> 非法编码会导致笔记在有道云笔记中显示为乱码，且无法修复，必须重新写入。</p>
+</blockquote>
+<p><strong>每次调用写入类命令（<code>save</code>、<code>create</code>、<code>update</code>、<code>clip-save</code>、<code>todo create</code>、<code>todo update</code>）之前，必须对标题、内容等所有字符串字段执行 UTF-8 编码校验/转换。</strong> 无论内容来源如何——用户直接输入、从文件读取、WebFetch 抓取、剪贴板粘贴、外部 API 返回——都不能假设已经是合法 UTF-8，必须显式确认。</p>
+<h3>强制检查清单（写入前）</h3>
+<p>在构造写入内容<strong>之前</strong>，完成以下步骤：</p>
+<ol>
+<li><strong>来自文件的内容</strong>：先检测文件编码，转为 UTF-8 后再读入变量</li>
+<li><strong>来自 WebFetch / HTTP 请求的内容</strong>：响应可能为 GBK/Latin-1 等，必须转码</li>
+<li><strong>来自用户输入或变量拼接的内容</strong>：清洗非法 UTF-8 字节（<code>\xff\xfe</code> 等）</li>
+<li><strong>标题字段同理</strong>：笔记标题、待办标题也必须为合法 UTF-8</li>
+</ol>
+<h3>各环境转码方法</h3>
+<p><strong>Python（推荐，几乎所有环境都有）：</strong></p>
+<pre><code class="language-bash"># 读取文件，自动检测编码并转为 UTF-8
+content=$(python3 -c &quot;
+import sys
+data = open('tmpfile', 'rb').read()
+for enc in ['utf-8', 'gbk', 'gb2312', 'big5', 'latin-1']:
+    try:
+        sys.stdout.write(data.decode(enc))
+        break
+    except (UnicodeDecodeError, LookupError):
+        continue
+&quot; 2&gt;/dev/null)
+
+# 如果内容已在变量中，清洗非法 UTF-8 字节
+content=$(printf '%s' &quot;$content&quot; | python3 -c &quot;import sys; sys.stdout.write(sys.stdin.buffer.read().decode('utf-8','ignore'))&quot;)
+</code></pre>
+<p><strong>Node.js：</strong></p>
+<pre><code class="language-bash">content=$(node -e &quot;const fs=require('fs');const buf=fs.readFileSync('tmpfile');process.stdout.write(buf.toString('utf8'))&quot;)
+# 已知编码（如 GBK）：
+content=$(node -e &quot;const fs=require('fs');process.stdout.write(new TextDecoder('gbk').decode(fs.readFileSync('tmpfile')))&quot;)
+</code></pre>
+<p><strong>Unix (macOS/Linux)：</strong></p>
+<pre><code class="language-bash">content=$(iconv -f &quot;$(file -b --mime-encoding tmpfile)&quot; -t UTF-8 tmpfile 2&gt;/dev/null || cat tmpfile)
+</code></pre>
+<p><strong>Windows PowerShell：</strong></p>
+<pre><code class="language-powershell"># 读取非 UTF-8 文件并转码
+$content = [System.IO.File]::ReadAllText('tmpfile', [System.Text.Encoding]::Default)
+[System.IO.File]::WriteAllText('tmpfile.utf8', $content, [System.Text.Encoding]::UTF8)
+</code></pre>
+<h2 id="powershell-5-1-环境检测-critical-10">⚠️ PowerShell 5.1 环境检测（CRITICAL）</h2>
+<blockquote>
+<p><strong>此问题极其隐蔽：PowerShell 5.1 下，命令行参数中的中文字符可能被静默转为系统 ANSI 编码（中文 Windows 为 GBK），导致 CLI 收到的内容已是乱码。</strong></p>
+</blockquote>
+<p><strong>当 agent 运行在 PowerShell 环境时，必须在首次写入操作前检测版本：</strong></p>
+<pre><code class="language-powershell"># 检测 PowerShell 版本 — 在任何写入操作之前执行
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    Write-Host &quot;⚠️ 检测到 PowerShell 5.1，将使用 UTF-8 编码模式&quot;
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    $OutputEncoding = [System.Text.Encoding]::UTF8
+    $useUtf8Mode = $true
+} else {
+    Write-Host &quot;✅ PowerShell 7+，默认 UTF-8，无需额外处理&quot;
+    $useUtf8Mode = $false
+}
+</code></pre>
+<p><strong>PowerShell 5.1 下写入中文内容时，优先通过 <code>--file</code> 传递 UTF-8 编码的文件</strong>，避免命令行参数的编码损坏：</p>
+<pre><code class="language-powershell"># PowerShell 5.1 安全写入模板
+# 1. 先将内容写入 UTF-8 临时文件
+$content = &quot;笔记内容...&quot;
+$tmpFile = [System.IO.Path]::GetTempFileName() + &quot;.json&quot;
+$json = @{ title = &quot;标题&quot;; content = $content; contentFormat = &quot;md&quot; } | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($tmpFile, $json, [System.Text.Encoding]::UTF8)
+
+# 2. 通过 --file 传入（避免命令行参数编码问题）
+&amp; youdaonote save --file $tmpFile --json
+Remove-Item $tmpFile -ErrorAction SilentlyContinue
+</code></pre>
+<blockquote>
+<p><strong>总结：</strong> 在 PowerShell 5.1 环境中，中文内容<strong>必须</strong>通过 UTF-8 编码的文件传入 CLI，而非直接放在命令行参数中。不检测版本直接传中文参数 = 内容必乱码。这是 PowerShell 5.1 的已知设计缺陷，不是 bug 可以被修复。</p>
+</blockquote>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>youdaonote/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

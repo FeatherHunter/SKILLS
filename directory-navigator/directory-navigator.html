@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>directory-navigator — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#目录模式-技能文档-1">目录模式 · 技能文档</a></li>
+<li><a href="#核心交互逻辑-1">核心交互逻辑</a></li>
+<li><a href="#触发与退出-2">触发与退出</a></li>
+<li><a href="#启动流程-首次唤醒-3">启动流程（首次唤醒）</a></li>
+<li><a href="#导航状态格式-固定格式-4">导航状态格式（固定格式）</a></li>
+<li><a href="#选中文件后的操作流程-5">选中文件后的操作流程</a></li>
+<li><a href="#核心规则-6">核心规则</a></li>
+<li><a href="#状态管理-7">状态管理</a></li>
+<li><a href="#分页逻辑-8">分页逻辑</a></li>
+<li><a href="#示例对话流-9">示例对话流</a></li></ol></div>
+<h1 id="目录模式-技能文档-1">目录模式 · 技能文档</h1>
+<h2 id="核心交互逻辑-1">核心交互逻辑</h2>
+<p>用户在微信里通过文字指令，像操作文件夹一样逐层深入/回退目录，选中文件后下达具体操作指令（发送、分析、修改等）。</p>
+<hr />
+<h2 id="触发与退出-2">触发与退出</h2>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>用户输入</th>
+<th>AI 行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>首次唤醒</td>
+<td><code>目录模式</code></td>
+<td>进入根目录选择</td>
+</tr>
+<tr>
+<td>恢复上下文</td>
+<td><code>目录模式</code></td>
+<td>回忆当前目录位置，重新显示内容</td>
+</tr>
+<tr>
+<td>返回上一层</td>
+<td><code>0</code></td>
+<td>退回上级目录</td>
+</tr>
+<tr>
+<td>彻底退出</td>
+<td><code>退出目录模式</code></td>
+<td>退出导航模式，记住当前目录路径</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="启动流程-首次唤醒-3">启动流程（首次唤醒）</h2>
+<p>AI 输出固定格式：</p>
+<pre><code>📂 目录模式 · 选择根目录
+━━━━━━━━━━━━━━━━━━━━
+请选择操作目录：
+
+[1] 工作目录
+    D:\2Study\StudyNotes
+
+[2] 日志目录
+    D:\2Study\StudyNotes\2026\个人\20260503
+    （系统自动以当天日期构建路径，如不存在将报错提醒）
+
+[3] 其他目录
+    请输入完整路径
+
+━━━━━━━━━━━━━━━━━━━━
+输入数字选择，0退出目录模式
+</code></pre>
+<h3>日期目录构建规则</h3>
+<p>日志目录格式：<code>D:\2Study\StudyNotes\{年份}\个人\{年月日}</code>
+- 年份：当前年份（如 2026）
+- 月日：YYYYMMDD 格式（如 20260503）</p>
+<p><strong>不存在时</strong>：AI 报错提示「日志目录不存在，请选择其他目录」，不自动创建。</p>
+<hr />
+<h2 id="导航状态格式-固定格式-4">导航状态格式（固定格式）</h2>
+<p>每次目录展示严格遵循此格式，用户形成肌肉记忆：</p>
+<pre><code>📂 D:\2Study\StudyNotes\2026\个人\
+━━━━━━━━━━━━━━━━━━━━
+——文件夹——
+[1] 01-日记/
+[2] 02-周记/
+[3] 03-随手记/
+
+——文件——
+[4] 2026年度目标.md
+[5] 阅读清单.txt
+
+━━━━ 第1页/共3页 ━━━━
+上一页 下一页 0返回上一层
+━━━━━━━━━━━━━━━━━━━━
+输入数字进入文件夹/选中文件，0返回上一层
+</code></pre>
+<h3>格式规则</h3>
+<ul>
+<li><strong>路径显示</strong>：完整路径，不做缩写</li>
+<li><strong>文件夹在前、文件在后</strong>：两组分别排列，之间用空行分隔</li>
+<li><strong>每页最多10项</strong>：超出自动分页，支持「上一页」「下一页」</li>
+<li><strong>当前页标注</strong>：「第X页/共Y页」</li>
+</ul>
+<hr />
+<h2 id="选中文件后的操作流程-5">选中文件后的操作流程</h2>
+<pre><code>你选中了：travel.jpg
+━━━━━━━━━━━━━━━━━━━━
+请输入指令：（可发送微信、读取内容、分析处理等）
+</code></pre>
+<p>用户下达指令，格式：<code>{数字} {指令}</code></p>
+<p>示例：
+- <code>3 发给微信</code> → 将当前目录下的第3项发送到微信
+- <code>5 读取内容</code> → 读取当前目录下的第5项</p>
+<p>AI 根据空格分割：
+- 数字部分 → 定位当前目录下的条目
+- 其余部分 → 执行对应操作</p>
+<p><strong>AI 困惑时</strong>：主动交互式澄清，不自作主张。</p>
+<hr />
+<h2 id="核心规则-6">核心规则</h2>
+<table>
+<thead>
+<tr>
+<th>规则</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>固定格式</td>
+<td>每次目录展示格式统一，用户形成稳定预期</td>
+</tr>
+<tr>
+<td>上下文保持</td>
+<td>退出目录模式后，AI 内部记住当前目录路径，同一会话内说「目录模式」恢复</td>
+</tr>
+<tr>
+<td>指令不受限</td>
+<td>导航过程中可随时下达其他指令（查天气、写作等），AI 记住目录位置</td>
+</tr>
+<tr>
+<td>权限禁区</td>
+<td>无法访问的目录直接通知用户，不卡死</td>
+</tr>
+<tr>
+<td>报错处理</td>
+<td>AI 困惑时主动交互式澄清，不自作主张</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="状态管理-7">状态管理</h2>
+<h3>AI 内部维护（会话级）</h3>
+<pre><code>current_root: str          # 当前根目录路径
+current_path: str          # 当前完整路径
+current_page: int          # 当前页码
+total_pages: int           # 总页数
+navigation_history: list   # 导航历史，用于支持多次0返回
+</code></pre>
+<h3>初始状态</h3>
+<p>首次启动前，以上状态均为空，说「目录模式」时根据是否有已有状态决定：
+- 有状态 → 恢复目录展示
+- 无状态 → 进入根目录选择</p>
+<hr />
+<h2 id="分页逻辑-8">分页逻辑</h2>
+<ul>
+<li>每页最多10项（文件夹+文件混合计数上限10）</li>
+<li>文件夹与文件分别计算，分别排列</li>
+<li>例如：3个文件夹 + 7个文件 = 1页；3个文件夹 + 8个文件 = 第一页7个文件，第二页1个文件</li>
+<li>用户输入「下一页」/「上一页」切换，AI 根据已有目录内容响应</li>
+</ul>
+<hr />
+<h2 id="示例对话流-9">示例对话流</h2>
+<pre><code>用户：目录模式
+AI：📂 目录模式 · 选择根目录
+    [1] 工作目录
+    [2] 日志目录
+    [3] 其他目录
+    输入数字选择，0退出目录模式
+
+用户：1
+AI：📂 D:\2Study\StudyNotes\
+    ——文件夹——
+    [1] 2024/
+    [2] 2023/
+    [3] 个人/
+
+    ——文件——
+    [4] README.md
+
+    输入数字进入文件夹/选中文件，0返回上一层
+
+用户：3
+AI：📂 D:\2Study\StudyNotes\个人\
+    ——文件夹——
+    [1] 01-日记/
+    [2] 02-周记/
+    [3] 03-随手记/
+
+    ——文件——
+    [4] 2026年度目标.md
+    [5] 阅读清单.txt
+
+    输入数字进入文件夹/选中文件，0返回上一层
+
+用户：4
+AI：你选中了：2026年度目标.md
+    请输入指令：（可发送微信、读取内容、分析处理等）
+
+用户：发给微信
+AI：[文件已发送至微信]
+
+用户：帮我查一下明天天气
+AI：明天天气预报显示……（继续响应，记住当前目录在 D:\2Study\StudyNotes\个人\）
+
+用户：目录模式
+AI：📂 D:\2Study\StudyNotes\个人\
+    ——文件夹——
+    [1] 01-日记/
+    [2] 02-周记/
+    [3] 03-随手记/
+
+    ——文件——
+    [4] 2026年度目标.md
+    [5] 阅读清单.txt
+
+    输入数字进入文件夹/选中文件，0返回上一层
+
+用户：0
+AI：📂 D:\2Study\StudyNotes\
+    ——文件夹——
+    [1] 2024/
+    [2] 2023/
+    [3] 个人/
+
+    ——文件——
+    [4] README.md
+
+    输入数字进入文件夹/选中文件，0返回上一层
+
+用户：退出目录模式
+AI：已退出目录模式。当前目录已记忆： D:\2Study\StudyNotes\
+    有需要随时说「目录模式」继续。
+</code></pre>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>directory-navigator/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

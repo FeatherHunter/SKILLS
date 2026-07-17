@@ -17,6 +17,11 @@ import urllib.request
 from pathlib import Path
 from uuid import uuid4
 
+# Windows 上统一 UTF-8 输出(避免 subprocess 编码冲突)
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 
 # ==================== 错误类 ====================
 

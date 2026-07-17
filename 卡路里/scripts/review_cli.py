@@ -28,6 +28,12 @@ import tempfile
 import uuid
 from pathlib import Path
 
+# Windows 上 Python 默认 stdout 是 GBK(cp936),calorie_tracker 委托时用 utf-8 读会崩
+# 统一改成 UTF-8 输出(对齐 calorie_history.py / nutrition_goal.py 等其他模块)
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
 # ③ 业务层模块
 import review_engine
 import review_prompts

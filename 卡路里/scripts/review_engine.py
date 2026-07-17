@@ -9,9 +9,15 @@
 
 import json
 import statistics
+import sys
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from pathlib import Path
+
+# Windows 上统一 UTF-8 输出(避免 subprocess 编码冲突)
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
 
 import db as db_module  # ④ 数据层
 import profile          # 用户档案(③ 业务层)
@@ -304,10 +310,32 @@ def _days_between(start, end):
 # ==================== 衍生计算 ====================
 
 def derive(raw_data):
-    """衍生计算:Mifflin-St Jeor TDEE / 缺口 / 理论减重 / 营养结构比例"""
+    """衍生计算:Mifflin-St Jeor TDEE / 缺口 / 理论减重 / 营养结构比例
+
+    2026-07-17 修复:
+    - 区分 complete_days(完整日)和 today_partial(今日不完整)
+    - avg_* / 缺口 / 营养达标率 都用 complete_days,避免今日污染
+    - today_partial 单独装填 HTML,展示"今日进度"
+    """
     enriched = dict(raw_data)
 
-    # 1. TDEE
+    # 0. 区分完整日 vs 今日(partial)
+    today_iso = date.today().isoformat()
+    daily_intake_full = raw_data.get('daily_intake', [])
+    complete_days_intake = [d for d in daily_intake_full if d['date'] < today_iso]
+    today_partial_intake = next((d for d in daily_intake_full if d['date'] == today_iso), None)
+
+    daily_burn_full = raw_data.get('daily_burn', [])
+    complete_days_burn = [d for d in daily_burn_full if d['date'] < today_iso]
+    today_partial_burn = next((d for d in daily_burn_full if d['date'] == today_iso), None)
+
+    enriched['today_partial'] = {
+        'intake': today_partial_intake,
+        'burn': today_partial_burn,
+    }
+    enriched['complete_days_count'] = len(complete_days_intake)
+
+    # 1. TDEE(用最新体重,可能是今日的)
     latest_weight = _get_latest_weight(raw_data.get('weight_logs', []))
     user_profile = raw_data.get('user_profile', {})
     enriched['tdee'] = _calc_tdee(
@@ -317,15 +345,25 @@ def derive(raw_data):
         gender=user_profile.get('gender', 'male'),
     )
 
-    # 2. 摄入汇总
-    daily_intake = raw_data.get('daily_intake', [])
-    if daily_intake:
+    # 2. 摄入汇总(用 complete_days,排除今日)
+    if complete_days_intake:
         enriched['intake_summary'] = {
-            'days_count': len(daily_intake),
-            'avg_calorie': round(sum(d['total_calorie'] for d in daily_intake) / len(daily_intake), 1),
-            'avg_protein': round(sum(d['total_protein'] for d in daily_intake) / len(daily_intake), 1),
-            'avg_carbs': round(sum(d['total_carbs'] for d in daily_intake) / len(daily_intake), 1),
-            'avg_fat': round(sum(d['total_fat'] for d in daily_intake) / len(daily_intake), 1),
+            'days_count': len(complete_days_intake),
+            'avg_calorie': round(sum(d['total_calorie'] for d in complete_days_intake) / len(complete_days_intake), 1),
+            'avg_protein': round(sum(d['total_protein'] for d in complete_days_intake) / len(complete_days_intake), 1),
+            'avg_carbs': round(sum(d['total_carbs'] for d in complete_days_intake) / len(complete_days_intake), 1),
+            'avg_fat': round(sum(d['total_fat'] for d in complete_days_intake) / len(complete_days_intake), 1),
+        }
+    elif today_partial_intake:
+        # 只有今日数据,日均=今日(标注 partial)
+        d = today_partial_intake
+        enriched['intake_summary'] = {
+            'days_count': 1,
+            'is_partial': True,
+            'avg_calorie': d['total_calorie'],
+            'avg_protein': d['total_protein'],
+            'avg_carbs': d['total_carbs'],
+            'avg_fat': d['total_fat'],
         }
     else:
         enriched['intake_summary'] = {
@@ -333,21 +371,29 @@ def derive(raw_data):
             'avg_calorie': 0, 'avg_protein': 0, 'avg_carbs': 0, 'avg_fat': 0,
         }
 
-    # 3. 消耗汇总
-    daily_burn = raw_data.get('daily_burn', [])
-    if daily_burn:
+    # 3. 消耗汇总(用 complete_days,排除今日)
+    if complete_days_burn:
         enriched['burn_summary'] = {
-            'days_count': len(daily_burn),
-            'total_burned': sum(d['total_burned'] for d in daily_burn),
-            'avg_burned': round(sum(d['total_burned'] for d in daily_burn) / len(daily_burn), 1),
-            'total_minutes': sum(d['total_minutes'] or 0 for d in daily_burn),
+            'days_count': len(complete_days_burn),
+            'total_burned': sum(d['total_burned'] for d in complete_days_burn),
+            'avg_burned': round(sum(d['total_burned'] for d in complete_days_burn) / len(complete_days_burn), 1),
+            'total_minutes': sum(d['total_minutes'] or 0 for d in complete_days_burn),
+        }
+    elif today_partial_burn:
+        d = today_partial_burn
+        enriched['burn_summary'] = {
+            'days_count': 1,
+            'is_partial': True,
+            'total_burned': d['total_burned'],
+            'avg_burned': d['total_burned'],
+            'total_minutes': d['total_minutes'] or 0,
         }
     else:
         enriched['burn_summary'] = {
             'days_count': 0, 'total_burned': 0, 'avg_burned': 0, 'total_minutes': 0,
         }
 
-    # 4. 营养结构比例
+    # 4. 营养结构比例(基于 intake_summary)
     intake = enriched['intake_summary']
     total_kcal = intake['avg_protein'] * 4 + intake['avg_carbs'] * 4 + intake['avg_fat'] * 9
     if total_kcal > 0:
@@ -359,19 +405,20 @@ def derive(raw_data):
     else:
         enriched['macro_ratio'] = {'protein_pct': 0, 'carbs_pct': 0, 'fat_pct': 0}
 
-    # 5. 缺口(周)
-    days = raw_data.get('range', {}).get('days', 7)
+    # 5. 缺口(基于完整日)
+    #    days 用 complete_days_count(不是 range.days),避免除以 7 但只有 6 天完整
+    days = enriched['complete_days_count'] if enriched['complete_days_count'] > 0 else raw_data.get('range', {}).get('days', 7)
     total_intake = intake['avg_calorie'] * days
     total_burned_exercise = enriched['burn_summary']['total_burned']
     total_burned_all = total_burned_exercise + enriched['tdee'] * days
     weekly_deficit = total_burned_all - total_intake  # 正=赤字
     enriched['weekly_deficit'] = round(weekly_deficit)
-    enriched['avg_daily_deficit'] = round(weekly_deficit / days)
+    enriched['avg_daily_deficit'] = round(weekly_deficit / days) if days > 0 else 0
     enriched['theoretical_weight_loss'] = round(weekly_deficit / 7700, 1)
 
-    # 6. 营养配比达标率(消除 LLM 幻觉:agent 不再自己脑补数字)
+    # 6. 营养配比达标率(基于 complete_days,避免今日污染)
     enriched['nutrition_match'] = _calc_nutrition_match_rate(
-        daily_intake,
+        complete_days_intake,  # ← 用完整日,不是 daily_intake_full
         raw_data.get('nutrition_targets', {}),
     )
 

@@ -369,7 +369,65 @@ def derive(raw_data):
     enriched['avg_daily_deficit'] = round(weekly_deficit / days)
     enriched['theoretical_weight_loss'] = round(weekly_deficit / 7700, 1)
 
+    # 6. 营养配比达标率(消除 LLM 幻觉:agent 不再自己脑补数字)
+    enriched['nutrition_match'] = _calc_nutrition_match_rate(
+        daily_intake,
+        raw_data.get('nutrition_targets', {}),
+    )
+
     return enriched
+
+
+def _calc_nutrition_match_rate(daily_intake, nutrition_targets):
+    """统计 N 天里营养配比达标的天数(2026-07-17 设计)
+
+    达标定义(同时满足):
+    - 卡路里:实际 vs 目标,偏差 ≤ 10%(±185 卡,目标 1850)
+    - 蛋白:实际 ≥ 目标 × 80%(目标 163 × 80% = 130g)
+
+    Returns:
+        {
+            'days_count': N,
+            'matched_days': M,
+            'match_rate_pct': round(M/N*100),
+            'summary': '43%(3/7 天 配比达标)',
+        }
+    """
+    if not daily_intake:
+        return {
+            'days_count': 0,
+            'matched_days': 0,
+            'match_rate_pct': 0,
+            'summary': '无数据',
+        }
+
+    cal_goal = nutrition_targets.get('calorie_goal') if nutrition_targets else None
+    protein_goal = nutrition_targets.get('protein_goal') if nutrition_targets else None
+
+    if not cal_goal or not protein_goal:
+        return {
+            'days_count': len(daily_intake),
+            'matched_days': 0,
+            'match_rate_pct': 0,
+            'summary': '无营养目标',
+        }
+
+    matched = 0
+    for day in daily_intake:
+        cal_ok = abs(day['total_calorie'] - cal_goal) <= cal_goal * 0.10
+        protein_ok = day['total_protein'] >= protein_goal * 0.80
+        if cal_ok and protein_ok:
+            matched += 1
+
+    total = len(daily_intake)
+    pct = round(matched / total * 100)
+
+    return {
+        'days_count': total,
+        'matched_days': matched,
+        'match_rate_pct': pct,
+        'summary': f'{pct}%({matched}/{total} 天 配比达标)',
+    }
 
 
 def _calc_tdee(weight_kg, height_cm, age, gender='male'):

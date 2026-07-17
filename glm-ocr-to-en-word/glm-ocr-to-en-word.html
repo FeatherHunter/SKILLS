@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>glm-ocr-to-en-word — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#glm-ocr-to-en-word-基于glm-ocr的pdf转英文word文档技能-1">glm-ocr-to-en-word 基于GLM-OCR的PDF转英文Word文档技能</a></li>
+<li><a href="#技能概述-1">技能概述</a></li>
+<li><a href="#大pdf处理-先截图再ocr-重要-2">大PDF处理：先截图再OCR（重要）</a></li>
+<li><a href="#开场交互式询问-3">开场交互式询问</a></li>
+<li><a href="#日志机制-4">日志机制</a></li>
+<li><a href="#文件结构-5">文件结构</a></li>
+<li><a href="#方案一-layout_details精确还原-6">方案一：layout_details精确还原</a></li>
+<li><a href="#方案二-markdown-html-pandoc-推荐-7">方案二：Markdown + HTML + pandoc（推荐）</a></li>
+<li><a href="#断点续传机制-8">断点续传机制</a></li>
+<li><a href="#常见问题排查-9">常见问题排查</a></li>
+<li><a href="#ai禁止行为清单-10">AI禁止行为清单</a></li>
+<li><a href="#ai必须执行的正确行为-11">AI必须执行的正确行为</a></li>
+<li><a href="#脚本职责边界-12">脚本职责边界</a></li>
+<li><a href="#参考文件-13">参考文件</a></li></ol></div>
+<h1 id="glm-ocr-to-en-word-基于glm-ocr的pdf转英文word文档技能-1">glm-ocr-to-en-word 基于GLM-OCR的PDF转英文Word文档技能</h1>
+<h2 id="技能概述-1">技能概述</h2>
+<p>本技能采用<strong>逐页并行处理模式</strong>，将PDF逐页处理，每页生成独立文件，支持子代理并行翻译，保留完整过程痕迹和日志。</p>
+<p><strong>核心流程</strong>：</p>
+<pre><code>PDF → [逐页OCR] → [子代理并行翻译] → [逐页构建Word] → [合并]
+</code></pre>
+<p><strong>核心优势</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>无上下文污染</td>
+<td>每页独立处理，子代理只处理单页</td>
+</tr>
+<tr>
+<td>过程可追溯</td>
+<td>每页独立文件，完整日志记录</td>
+</tr>
+<tr>
+<td>并行加速</td>
+<td>支持子代理并行翻译，大幅提升速度</td>
+</tr>
+<tr>
+<td>断点续传</td>
+<td>页级粒度，任意步骤可中断恢复</td>
+</tr>
+<tr>
+<td>日志排查</td>
+<td>每个环节写入日志文件，便于问题定位</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="大pdf处理-先截图再ocr-重要-2">大PDF处理：先截图再OCR（重要）</h2>
+<p><strong>若PDF文件较大（&gt;3MB），直接发给GLM-OCR会超时。正确做法：先截图再OCR。</strong></p>
+<h3>流程</h3>
+<pre><code class="language-bash"># 1. 用PyMuPDF将PDF每页渲染为PNG（2x缩放）
+python3 -c &quot;
+import pymupdf, os
+doc = pymupdf.open('大PDF.pdf')
+for i in range(1, 11):  # 先处理10页测试
+    page = doc[i-1]
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
+    pix.save(f'output/page_{i}.png')
+&quot;
+
+# 2. 图片发给GLM-OCR（秒级响应）
+python3 -c &quot;
+import requests, base64, json, os, time
+API_URL = 'https://open.bigmodel.cn/api/paas/v4/layout_parsing'
+API_KEY = '你的KEY'
+for i in range(1, 11):
+    with open(f'output/page_{i}.png', 'rb') as f:
+        img_base64 = base64.b64encode(f.read()).decode()
+    resp = requests.post(API_URL,
+        headers={'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/json'},
+        json={'model': 'glm-ocr', 'file': f'data:image/png;base64,{img_base64}', 'return_crop_images': False},
+        timeout=120
+    )
+    md = resp.json().get('md_results', '')
+    with open(f'output/page_{i}.md', 'w', encoding='utf-8') as f:
+        f.write(md)
+    print(f'第{i}页完成')
+    time.sleep(1)
+&quot;
+</code></pre>
+<h3>关键参数</h3>
+<ul>
+<li><code>pymupdf.Matrix(2, 2)</code> — 2x缩放，保证OCR识别质量</li>
+<li>每页PNG约200-400KB，比同等PDF小很多，API响应快</li>
+<li><code>timeout=120</code> — 截图方案单张通常&lt;10s</li>
+</ul>
+<hr />
+<h2 id="开场交互式询问-3">开场交互式询问</h2>
+<p><strong>AI必须在开始任何处理前，先询问用户选择方案：</strong></p>
+<pre><code>【方案选择】
+
+检测到PDF转英文Word请求，请选择处理方案：
+
+方案一：layout_details精确还原（推荐）
+  - 使用GLM-OCR的结构化JSON数据
+  - python-docx精确还原表格、图片位置
+  - 支持复杂表格合并、元素定位
+  - 适合：复杂排版、含表格/图片的文档
+
+方案二：Markdown + HTML + pandoc（推荐）
+  - 使用GLM-OCR的Markdown输出
+  - MD转HTML（保留HTML表格含colspan/rowspan）
+  - pandoc -f html 转换为Word，配合reference.docx模板控制字体样式
+  - 适合：含复杂表格的文档，表格合并单元格支持好
+
+请回复 &quot;方案一&quot; 或 &quot;方案二&quot;
+</code></pre>
+<hr />
+<h2 id="日志机制-4">日志机制</h2>
+<p><strong>所有脚本自动记录日志到 <code>temp/logs/</code> 目录</strong>：</p>
+<pre><code>temp/logs/
+├── step1_ocr.log              ← 阶段1 OCR日志
+├── step2_translate.log        ← 阶段2 翻译日志（AI追加）
+├── step3_build_word.log       ← 阶段3 Word构建日志
+└── step4_merge.log            ← 阶段4 合并日志
+</code></pre>
+<h3>日志格式</h3>
+<p>每条日志包含：时间戳、级别、页码（如有）、操作、详情</p>
+<pre><code>[2025-04-19 12:00:00] [INFO] [Page 1] OCR开始
+[2025-04-19 12:00:05] [INFO] [Page 1] OCR完成，元素数: 15
+[2025-04-19 12:00:05] [INFO] [Page 1] 图片下载: 2张
+[2025-04-19 12:00:10] [ERROR] [Page 3] OCR失败: API超时
+[2025-04-19 12:00:15] [INFO] [Page 3] 重试成功
+</code></pre>
+<h3>日志用途</h3>
+<ol>
+<li><strong>问题排查</strong>：某页翻译质量差，查看该页日志定位原因</li>
+<li><strong>断点恢复</strong>：读取日志确定哪些页已完成</li>
+<li><strong>性能分析</strong>：统计各阶段耗时</li>
+</ol>
+<hr />
+<h2 id="文件结构-5">文件结构</h2>
+<h3>方案一文件结构</h3>
+<pre><code>temp/
+├── logs/
+│   ├── step1_ocr.log              ← OCR日志
+│   ├── step2_translate.log        ← 翻译日志
+│   ├── step3_build_word.log       ← Word构建日志
+│   └── step4_merge.log            ← 合并日志
+├── manifest.json                  ← 逐页处理清单
+├── images/                        ← 下载的图片
+├── page_1_ocr.json                ← 第1页OCR原始结果
+├── page_2_ocr.json                ← 第2页OCR原始结果
+├── ...
+├── page_1_translated.json         ← 第1页翻译结果
+├── page_2_translated.json         ← 第2页翻译结果
+├── ...
+├── layout_details_final.json      ← 翻译结果合并文件
+├── word_pages/                    ← 逐页Word存放目录
+│   ├── page_1_en.docx
+│   ├── page_2_en.docx
+│   └── ...
+└── （最终输出文件在temp外）
+</code></pre>
+<h3>方案二文件结构</h3>
+<pre><code>temp/
+├── logs/
+│   ├── step1_ocr.log
+│   ├── step2_translate.log
+│   ├── step3_build_word.log
+│   └── step4_merge.log
+├── manifest.json
+├── images/
+├── page_1.md                      ← 第1页OCR Markdown
+├── page_2.md
+├── ...
+├── page_1_translated.md           ← 第1页翻译后Markdown
+├── page_2_translated.md
+├── ...
+├── word_pages/
+│   ├── page_1_en.docx
+│   └── ...
+└── （最终输出文件在temp外）
+</code></pre>
+<hr />
+<h2 id="方案一-layout_details精确还原-6">方案一：layout_details精确还原</h2>
+<h3>执行分工</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>执行者</th>
+<th>职责</th>
+<th>日志文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>阶段1：逐页OCR</td>
+<td>Python脚本</td>
+<td>调用API，保存JSON/MD，下载图片</td>
+<td>step1_ocr.log</td>
+</tr>
+<tr>
+<td>阶段2：并行翻译</td>
+<td><strong>AI/子代理</strong></td>
+<td>逐页翻译，保存结果，质量验证</td>
+<td>step2_translate.log</td>
+</tr>
+<tr>
+<td>阶段3：构建Word</td>
+<td>Python脚本</td>
+<td>逐页构建Word</td>
+<td>step3_build_word.log</td>
+</tr>
+<tr>
+<td>阶段4：合并Word</td>
+<td>Python脚本</td>
+<td>合并所有页为最终文档</td>
+<td>step4_merge.log</td>
+</tr>
+</tbody>
+</table>
+<h3>前置要求</h3>
+<h4>必须提供：智谱GLM-OCR的API Key</h4>
+<ol>
+<li>注册智谱开放平台：https://open.bigmodel.cn</li>
+<li>在API Keys页面创建密钥</li>
+<li>执行前告知API Key</li>
+</ol>
+<h4>依赖安装</h4>
+<pre><code class="language-bash">pip install python-docx beautifulsoup4 requests pypandoc
+</code></pre>
+<hr />
+<h3>阶段1：Python脚本 - 逐页OCR识别</h3>
+<h4>运行命令</h4>
+<pre><code class="language-bash">python scripts/step1_ocr.py &quot;PDF路径&quot; &quot;API_KEY&quot;
+</code></pre>
+<h4>脚本行为</h4>
+<ol>
+<li>逐页调用GLM-OCR API</li>
+<li>每页保存 <code>page_N_ocr.json</code> 和 <code>page_N.md</code></li>
+<li>下载图片到 <code>images/</code></li>
+<li>生成 <code>manifest.json</code> 清单</li>
+<li>所有操作写入 <code>logs/step1_ocr.log</code></li>
+</ol>
+<h4>日志示例</h4>
+<pre><code>[2025-04-19 12:00:00] [INFO] ========== 阶段1：逐页OCR开始 ==========
+[2025-04-19 12:00:00] [INFO] PDF路径: xxx.pdf
+[2025-04-19 12:00:00] [INFO] PDF大小: 9.3MB
+[2025-04-19 12:00:01] [INFO] [Page 1] 开始OCR
+[2025-04-19 12:00:06] [INFO] [Page 1] OCR完成，元素数: 15，Token: 6124
+[2025-04-19 12:00:06] [INFO] [Page 1] 图片下载: page_1_img_0.png
+[2025-04-19 12:00:07] [INFO] [Page 1] 保存: page_1_ocr.json
+[2025-04-19 12:00:07] [INFO] [Page 2] 开始OCR
+...
+[2025-04-19 12:05:00] [INFO] ========== 阶段1完成 ==========
+[2025-04-19 12:05:00] [INFO] 总页数: 24
+[2025-04-19 12:05:00] [INFO] 总Token: 146765
+[2025-04-19 12:05:00] [INFO] 清单文件: temp/manifest.json
+</code></pre>
+<h4>断点续传</h4>
+<ul>
+<li><code>page_N_ocr.json</code> 已存在则跳过该页</li>
+<li>日志记录跳过原因</li>
+</ul>
+<hr />
+<h3>阶段2：AI并行翻译（核心）</h3>
+<h4>⚠️ 强制规则</h4>
+<p><strong>阶段2必须由AI直接执行翻译，不得使用任何Python脚本替代。</strong></p>
+<table>
+<thead>
+<tr>
+<th>可用脚本</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scripts/step2_helper.py validate</td>
+<td>验证质量（检查残留中文）</td>
+</tr>
+<tr>
+<td>scripts/step2_helper.py merge</td>
+<td>合并结果</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4>子代理并行翻译</h4>
+<p><strong>AI读取 <code>manifest.json</code> 获取总页数，分批调度子代理并行翻译</strong></p>
+<h5>调度计划输出</h5>
+<pre><code>【并行翻译调度计划】
+- 总页数: 24
+- 并行度: 4（每批处理4页）
+- 分批计划:
+  第1批: 页1-4
+  第2批: 页5-8
+  第3批: 页9-12
+  第4批: 页13-16
+  第5批: 页17-20
+  第6批: 页21-24
+
+开始调度子代理并行翻译...
+</code></pre>
+<h5>子代理任务模板</h5>
+<pre><code>你是一个翻译子代理。请完成以下任务：
+
+1. 用Read工具读取 temp/page_{N}_ocr.json
+2. 翻译该页所有元素的content字段（中文→英文）
+   - 不翻译：数字、批号、化学式、图片路径、HTML标签本身
+   - 翻译：中文术语、中文句子、表格单元格文本
+3. 用Write工具保存翻译结果到 temp/page_{N}_translated.json
+4. 运行验证：python scripts/step2_helper.py validate &quot;temp/page_{N}_translated.json&quot;
+5. 如有残留中文，补充翻译并重新验证
+6. 完成后返回：页码、元素数量、验证结果（chinese_count）
+</code></pre>
+<h5>AI记录翻译日志</h5>
+<p>每批子代理完成后，AI追加日志到 <code>logs/step2_translate.log</code>：</p>
+<pre><code>[2025-04-19 12:10:00] [INFO] ========== 阶段2：并行翻译开始 ==========
+[2025-04-19 12:10:00] [INFO] 总页数: 24，并行度: 4
+[2025-04-19 12:10:05] [INFO] [Batch 1] 启动子代理处理页1-4
+[2025-04-19 12:10:30] [INFO] [Page 1] 翻译完成，元素数: 15，chinese_count: 0
+[2025-04-19 12:10:31] [INFO] [Page 2] 翻译完成，元素数: 12，chinese_count: 0
+[2025-04-19 12:10:32] [WARN] [Page 3] 翻译完成，chinese_count: 2，需补充翻译
+[2025-04-19 12:10:35] [INFO] [Page 3] 补充翻译完成，chinese_count: 0
+[2025-04-19 12:10:40] [INFO] [Batch 1] 完成
+...
+[2025-04-19 12:15:00] [INFO] ========== 阶段2完成 ==========
+</code></pre>
+<h5>翻译质量验证</h5>
+<p>每页翻译后必须验证：</p>
+<pre><code class="language-bash">python scripts/step2_helper.py validate &quot;temp/page_N_translated.json&quot;
+</code></pre>
+<p>验证结果写入日志，chinese_count &gt; 0 则补充翻译后重新验证。</p>
+<hr />
+<h4>翻译规则（严格遵守）</h4>
+<p><strong>禁止翻译的数据</strong>：
+- 数字（如：250mg, 20240101, 97.5%, 200万）
+- 日期（如：2025年09月18日 → 转换为 2025-09-18）
+- 批号、编号、编码
+- 化学式、分子式
+- 图片路径（保持原路径不变）
+- HTML标签本身（只翻译标签内的文本）</p>
+<p><strong>必须翻译的内容</strong>：
+- 中文术语 → 英文（根据上下文理解）
+- 中文句子 → 英文句子
+- 表格单元格文本 → 英文（保留HTML结构）</p>
+<hr />
+<h3>阶段3：Python脚本 - 逐页构建Word</h3>
+<h4>运行命令</h4>
+<pre><code class="language-bash"># 对每页执行（可并行）
+python scripts/step3_build_word.py &quot;temp/page_N_translated.json&quot; &quot;temp/word_pages/page_N_en.docx&quot;
+</code></pre>
+<h4>日志示例</h4>
+<pre><code>[2025-04-19 12:20:00] [INFO] ========== 阶段3：逐页构建Word开始 ==========
+[2025-04-19 12:20:01] [INFO] [Page 1] 读取: page_1_translated.json
+[2025-04-19 12:20:02] [INFO] [Page 1] 元素数: 15，表格数: 2
+[2025-04-19 12:20:03] [INFO] [Page 1] 保存: word_pages/page_1_en.docx
+[2025-04-19 12:20:04] [INFO] [Page 2] 读取: page_2_translated.json
+...
+[2025-04-19 12:25:00] [INFO] ========== 阶段3完成 ==========
+</code></pre>
+<hr />
+<h3>阶段4：Python脚本 - 合并Word</h3>
+<h4>运行命令</h4>
+<pre><code class="language-bash">python scripts/step4_merge_word.py &quot;输出_en.docx&quot; --dir &quot;temp/word_pages&quot;
+</code></pre>
+<h4>日志示例</h4>
+<pre><code>[2025-04-19 12:30:00] [INFO] ========== 阶段4：合并Word开始 ==========
+[2025-04-19 12:30:00] [INFO] 输入目录: temp/word_pages
+[2025-04-19 12:30:00] [INFO] 找到24个Word文件
+[2025-04-19 12:30:01] [INFO] 合并: page_1_en.docx
+[2025-04-19 12:30:02] [INFO] 合并: page_2_en.docx
+...
+[2025-04-19 12:30:30] [INFO] ========== 阶段4完成 ==========
+[2025-04-19 12:30:30] [INFO] 输出文件: 输出_en.docx
+[2025-04-19 12:30:30] [INFO] 文件大小: 120.5 KB
+</code></pre>
+<hr />
+<h2 id="方案二-markdown-html-pandoc-推荐-7">方案二：Markdown + HTML + pandoc（推荐）</h2>
+<h3>核心流程</h3>
+<pre><code>MD → HTML(保留HTML表格) → pandoc -f html → Word
+</code></pre>
+<h3>关键技术</h3>
+<ol>
+<li><strong>MD转HTML</strong>：保留原始HTML表格（含colspan/rowspan），非表格内容转为HTML标签</li>
+<li><strong>pandoc -f html</strong>：从HTML输入，完整支持表格合并单元格</li>
+<li><strong>reference.docx模板</strong>：控制输出Word的字体、字号、行距等样式</li>
+</ol>
+<h3>模板文件</h3>
+<p><code>templates/reference.docx</code> 定义了输出Word的默认样式：
+- Normal样式：Times New Roman 12pt，1.5倍行距
+- 表格：Times New Roman 10pt</p>
+<h3>执行分工</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>执行者</th>
+<th>职责</th>
+<th>日志文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>阶段1：逐页OCR</td>
+<td>Python脚本</td>
+<td>调用API，保存Markdown</td>
+<td>step1_ocr.log</td>
+</tr>
+<tr>
+<td>阶段2：并行翻译</td>
+<td><strong>AI/子代理</strong></td>
+<td>逐页翻译Markdown</td>
+<td>step2_translate.log</td>
+</tr>
+<tr>
+<td>阶段3：转Word</td>
+<td>Python脚本</td>
+<td>MD→HTML→pandoc→Word</td>
+<td>step3_build_word.log</td>
+</tr>
+<tr>
+<td>阶段4：合并Word</td>
+<td>Python脚本</td>
+<td>合并所有页</td>
+<td>step4_merge.log</td>
+</tr>
+</tbody>
+</table>
+<h3>完整流程</h3>
+<pre><code>1. 阶段1（Python脚本 - 逐页OCR）
+   python scripts/step1_ocr.py &quot;PDF路径&quot; &quot;API_KEY&quot;
+   → 输出: temp/page_N.md, temp/manifest.json
+   → 日志: temp/logs/step1_ocr.log
+
+2. 阶段2（AI - 子代理并行翻译）
+   → 读取 manifest.json，分批调度子代理
+   → 每页读取 page_N.md，翻译保存 page_N_translated.md
+   → 逐页验证: python scripts/step2_md_helper.py validate
+   → 追加日志: temp/logs/step2_translate.log
+
+3. 阶段3（Python脚本 - 逐页转Word）
+   python scripts/step3_md_to_word.py &quot;temp/page_N_translated.md&quot; &quot;temp/word_pages/page_N_en.docx&quot;
+   → 内部流程: MD → HTML → pandoc -f html --reference-doc → Word
+   → 自动使用 templates/reference.docx 模板
+   → 日志: temp/logs/step3_build_word.log
+
+4. 阶段4（Python脚本 - 合并）
+   python scripts/step4_merge_word.py &quot;输出_en.docx&quot; --dir &quot;temp/word_pages&quot;
+   → 日志: temp/logs/step4_merge.log
+</code></pre>
+<h3>子代理任务模板（方案二）</h3>
+<pre><code>你是一个翻译子代理。请完成以下任务：
+
+1. 用Read工具读取 temp/page_{N}.md
+2. 翻译Markdown内容（中文→英文）
+   - 保留Markdown格式标记（#, *, -, &gt;, |, ``` 等）
+   - 保留数字、批号、化学式
+3. 用Write工具保存翻译结果到 temp/page_{N}_translated.md
+4. 运行验证：python scripts/step2_md_helper.py validate &quot;temp/page_{N}_translated.md&quot;
+5. 如有残留中文，补充翻译并重新验证
+6. 完成后返回：页码、验证结果（chinese_count）
+</code></pre>
+<hr />
+<h2 id="断点续传机制-8">断点续传机制</h2>
+<h3>检查点文件</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>检查点文件</th>
+<th>存在则跳过</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>阶段1</td>
+<td>page_N_ocr.json / page_N.md</td>
+<td>跳过该页OCR</td>
+</tr>
+<tr>
+<td>阶段2</td>
+<td>page_N_translated.json / page_N_translated.md</td>
+<td>跳过该页翻译</td>
+</tr>
+<tr>
+<td>阶段3</td>
+<td>word_pages/page_N_en.docx</td>
+<td>跳过该页Word构建</td>
+</tr>
+<tr>
+<td>阶段4</td>
+<td>最终输出文件</td>
+<td>跳过合并</td>
+</tr>
+</tbody>
+</table>
+<h3>日志辅助断点</h3>
+<pre><code class="language-bash"># 查看哪些页已完成OCR
+grep &quot;OCR完成&quot; temp/logs/step1_ocr.log
+
+# 查看哪些页翻译有问题
+grep &quot;chinese_count: [1-9]&quot; temp/logs/step2_translate.log
+</code></pre>
+<hr />
+<h2 id="常见问题排查-9">常见问题排查</h2>
+<h3>问题：某页翻译质量差</h3>
+<pre><code class="language-bash"># 1. 查看该页日志
+grep &quot;\[Page N\]&quot; temp/logs/step2_translate.log
+
+# 2. 对比原始和翻译后文件
+diff temp/page_N.md temp/page_N_translated.md
+
+# 3. 重新翻译该页
+# 删除 page_N_translated.md，重新调度子代理
+</code></pre>
+<h3>问题：OCR失败</h3>
+<pre><code class="language-bash"># 查看OCR日志
+grep &quot;ERROR\|WARN&quot; temp/logs/step1_ocr.log
+
+# 手动重试该页
+python scripts/step1_ocr.py &quot;PDF路径&quot; &quot;API_KEY&quot; --page 5
+</code></pre>
+<h3>问题：Word构建失败</h3>
+<pre><code class="language-bash"># 查看构建日志
+grep &quot;ERROR&quot; temp/logs/step3_build_word.log
+
+# 检查翻译JSON格式
+python -m json.tool temp/page_N_translated.json
+</code></pre>
+<hr />
+<h2 id="ai禁止行为清单-10">AI禁止行为清单</h2>
+<table>
+<thead>
+<tr>
+<th>禁止行为</th>
+<th>后果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>❌ 编写Python脚本执行翻译</td>
+<td>翻译质量低，无法处理OCR错误</td>
+</tr>
+<tr>
+<td>❌ 创建预置翻译词库</td>
+<td>词库无法覆盖所有行业场景</td>
+</tr>
+<tr>
+<td>❌ 用字符串替换替代翻译</td>
+<td>无法理解上下文</td>
+</tr>
+<tr>
+<td>❌ 验证时只是"浏览"而非运行脚本</td>
+<td>无法保证质量</td>
+</tr>
+<tr>
+<td>❌ 未询问用户选择方案直接开始</td>
+<td>用户无法选择适合的方案</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ai必须执行的正确行为-11">AI必须执行的正确行为</h2>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅ 开场询问方案选择</td>
+<td>必须问用户选方案一还是方案二</td>
+</tr>
+<tr>
+<td>✅ 调度子代理并行翻译</td>
+<td>读取manifest，分批调度子代理</td>
+</tr>
+<tr>
+<td>✅ 记录翻译日志</td>
+<td>每批完成后追加日志到step2_translate.log</td>
+</tr>
+<tr>
+<td>✅ 逐页验证质量</td>
+<td>每页翻译后运行validate</td>
+</tr>
+<tr>
+<td>✅ 闭环验证</td>
+<td>chinese_count=0才算通过</td>
+</tr>
+<tr>
+<td>✅ 断点续传</td>
+<td>检查已存在文件，跳过已完成页</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="脚本职责边界-12">脚本职责边界</h2>
+<h3>方案一脚本</h3>
+<table>
+<thead>
+<tr>
+<th>脚本</th>
+<th>职责</th>
+<th>禁止</th>
+<th>日志</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scripts/step1_ocr.py</td>
+<td>逐页OCR识别</td>
+<td>❌ 禁止翻译</td>
+<td>step1_ocr.log</td>
+</tr>
+<tr>
+<td>scripts/step2_helper.py</td>
+<td>验证+合并</td>
+<td>❌ 禁止翻译</td>
+<td>step2_translate.log</td>
+</tr>
+<tr>
+<td>scripts/step3_build_word.py</td>
+<td>构建Word</td>
+<td>❌ 禁止翻译</td>
+<td>step3_build_word.log</td>
+</tr>
+<tr>
+<td>scripts/step4_merge_word.py</td>
+<td>合并Word</td>
+<td>❌ 禁止翻译</td>
+<td>step4_merge.log</td>
+</tr>
+</tbody>
+</table>
+<h3>方案二脚本</h3>
+<table>
+<thead>
+<tr>
+<th>脚本</th>
+<th>职责</th>
+<th>禁止</th>
+<th>日志</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scripts/step1_ocr.py</td>
+<td>逐页OCR识别</td>
+<td>❌ 禁止翻译</td>
+<td>step1_ocr.log</td>
+</tr>
+<tr>
+<td>scripts/step2_md_helper.py</td>
+<td>验证Markdown</td>
+<td>❌ 禁止翻译</td>
+<td>step2_translate.log</td>
+</tr>
+<tr>
+<td>scripts/step3_md_to_html.py</td>
+<td>MD转HTML</td>
+<td>❌ 禁止翻译</td>
+<td>step3_build_word.log</td>
+</tr>
+<tr>
+<td>scripts/step3_md_to_word.py</td>
+<td>HTML→pandoc→Word</td>
+<td>❌ 禁止翻译</td>
+<td>step3_build_word.log</td>
+</tr>
+<tr>
+<td>scripts/step4_merge_word.py</td>
+<td>合并Word</td>
+<td>❌ 禁止翻译</td>
+<td>step4_merge.log</td>
+</tr>
+</tbody>
+</table>
+<p><strong>只有AI能翻译，脚本永远不能翻译。</strong></p>
+<hr />
+<h2 id="参考文件-13">参考文件</h2>
+<h3>方案一</h3>
+<ul>
+<li><code>scripts/step1_ocr.py</code> - 阶段1：逐页OCR识别</li>
+<li><code>scripts/step2_helper.py</code> - 阶段2辅助：验证和合并</li>
+<li><code>scripts/step3_build_word.py</code> - 阶段3：构建Word文档</li>
+<li><code>scripts/step4_merge_word.py</code> - 阶段4：合并多个Word文档</li>
+</ul>
+<h3>方案二</h3>
+<ul>
+<li><code>scripts/step1_ocr.py</code> - 阶段1：逐页OCR识别（同上）</li>
+<li><code>scripts/step2_md_helper.py</code> - 阶段2辅助：验证Markdown翻译</li>
+<li><code>scripts/step3_md_to_html.py</code> - 阶段3：Markdown转HTML（保留HTML表格）</li>
+<li><code>scripts/step3_md_to_word.py</code> - 阶段3：HTML→pandoc→Word（使用reference.docx模板）</li>
+<li><code>scripts/step4_merge_word.py</code> - 阶段4：合并多个Word文档（同上）</li>
+<li><code>templates/reference.docx</code> - Word样式模板（Times New Roman 12pt）</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>glm-ocr-to-en-word/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

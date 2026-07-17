@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chatgpt-image2 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#chatgpt-image2-图片生成技能-1">chatgpt-image2 - 图片生成技能</a></li>
+<li><a href="#简介-1">简介</a></li>
+<li><a href="#配置-2">配置</a></li>
+<li><a href="#重要-接口调用方式-3">⚠️ 重要：接口调用方式</a></li>
+<li><a href="#工具调用方式-4">工具调用方式</a></li>
+<li><a href="#尺寸选项-5">尺寸选项</a></li>
+<li><a href="#支持的参数-6">支持的参数</a></li>
+<li><a href="#返回格式-7">返回格式</a></li>
+<li><a href="#适用场景-8">适用场景</a></li>
+<li><a href="#注意事项-9">⚠️ 注意事项</a></li>
+<li><a href="#相关文档-10">相关文档</a></li></ol></div>
+<h1 id="chatgpt-image2-图片生成技能-1">chatgpt-image2 - 图片生成技能</h1>
+<h2 id="简介-1">简介</h2>
+<p>基于 AI Hub API 的 <strong>GPT-Image-2</strong> 模型，<code>nano-banana-2</code> 作为备用模型。</p>
+<h2 id="配置-2">配置</h2>
+<ul>
+<li><strong>API 地址</strong>：<code>https://api.xbai.top/v1</code></li>
+<li><strong>API Key</strong>：<code>sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr</code></li>
+<li><strong>主模型</strong>：<code>gpt-image-2</code>（高质量生图）</li>
+<li><strong>备用模型</strong>：<code>nano-banana-2</code>（快速生图）</li>
+</ul>
+<h2 id="重要-接口调用方式-3">⚠️ 重要：接口调用方式</h2>
+<p><strong>必须使用 <code>/v1/images/generations</code> 接口生成图片，不要用 <code>/v1/images/edits</code>！</strong></p>
+<p>GPT-Image-2 的 <code>/v1/images/edits</code>（垫图/参考图）接口响应极慢（经常超时），而生图接口稳定且速度快。</p>
+<h2 id="工具调用方式-4">工具调用方式</h2>
+<h3>方式一：Python requests（推荐）</h3>
+<pre><code class="language-python">import requests
+
+resp = requests.post(
+    'https://api.xbai.top/v1/images/generations',
+    headers={'Authorization': 'Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr'},
+    json={
+        'model': 'gpt-image-2',
+        'prompt': '你的图片描述',
+        'n': 1,
+        'size': '1024x1024',
+        'quality': 'standard',
+        'response_format': 'url'
+    },
+    timeout=180
+)
+
+url = resp.json()['data'][0]['url']
+# 下载图片
+img_data = requests.get(url).content
+with open('output.png', 'wb') as f:
+    f.write(img_data)
+</code></pre>
+<h3>方式二：curl</h3>
+<pre><code class="language-bash">curl -s --max-time 180 --request POST \
+  --url https://api.xbai.top/v1/images/generations \
+  --header &quot;Authorization: Bearer sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr&quot; \
+  --header &quot;Content-Type: application/json&quot; \
+  --data '{
+    &quot;model&quot;: &quot;gpt-image-2&quot;,
+    &quot;prompt&quot;: &quot;你的图片描述&quot;,
+    &quot;n&quot;: 1,
+    &quot;size&quot;: &quot;1024x1024&quot;,
+    &quot;quality&quot;: &quot;standard&quot;,
+    &quot;response_format&quot;: &quot;url&quot;
+  }'
+</code></pre>
+<h3>方式三：OpenAI Python 库</h3>
+<pre><code class="language-python">from openai import OpenAI
+
+client = OpenAI(
+    api_key=&quot;sk-C2fSyNPHTzeqIzu1TrIHWyxA8GOq0acjerGOdsNDyz6gORxr&quot;,
+    base_url=&quot;https://api.xbai.top/v1&quot;
+)
+
+response = client.images.generate(
+    model=&quot;gpt-image-2&quot;,
+    prompt=&quot;你的图片描述&quot;,
+    n=1,
+    size=&quot;1024x1024&quot;,
+    quality=&quot;standard&quot;,
+    response_format=&quot;url&quot;
+)
+
+image_url = response.data[0].url
+</code></pre>
+<h2 id="尺寸选项-5">尺寸选项</h2>
+<table>
+<thead>
+<tr>
+<th>尺寸</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>256x256</code></td>
+<td>小图</td>
+</tr>
+<tr>
+<td><code>512x512</code></td>
+<td>中图</td>
+</tr>
+<tr>
+<td><code>1024x1024</code></td>
+<td>常用方图</td>
+</tr>
+<tr>
+<td><code>1024x1792</code></td>
+<td>竖图</td>
+</tr>
+<tr>
+<td><code>1792x1024</code></td>
+<td>横图</td>
+</tr>
+</tbody>
+</table>
+<h2 id="支持的参数-6">支持的参数</h2>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>说明</th>
+<th>可选值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td>string</td>
+<td>生图模型</td>
+<td><code>gpt-image-2</code>（默认）、<code>nano-banana-2</code></td>
+</tr>
+<tr>
+<td>prompt</td>
+<td>string</td>
+<td>图片描述</td>
+<td>最长 4000 字符</td>
+</tr>
+<tr>
+<td>n</td>
+<td>int</td>
+<td>生成数量</td>
+<td>1-4，默认 1</td>
+</tr>
+<tr>
+<td>size</td>
+<td>string</td>
+<td>图片尺寸</td>
+<td>见上方尺寸选项</td>
+</tr>
+<tr>
+<td>quality</td>
+<td>string</td>
+<td>图片质量</td>
+<td><code>standard</code>（默认）、<code>hd</code></td>
+</tr>
+<tr>
+<td>response_format</td>
+<td>string</td>
+<td>返回格式</td>
+<td><code>url</code>（默认）、<code>b64_json</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="返回格式-7">返回格式</h2>
+<pre><code class="language-json">{
+  &quot;created&quot;: 1234567890,
+  &quot;data&quot;: [
+    {
+      &quot;url&quot;: &quot;https://example.com/generated-image.png&quot;
+    }
+  ]
+}
+</code></pre>
+<h2 id="适用场景-8">适用场景</h2>
+<ul>
+<li>数据可视化（折线图、柱状图等）</li>
+<li>产品图片生成</li>
+<li>艺术风格转换</li>
+<li>动漫/游戏角色设计</li>
+</ul>
+<h2 id="注意事项-9">⚠️ 注意事项</h2>
+<ol>
+<li><strong>不要用 <code>/v1/images/edits</code></strong> - 该接口响应极慢，容易超时</li>
+<li><strong>超时时间设置 120-180 秒</strong> - GPT-Image-2 生成需要时间</li>
+<li><strong>下载图片后及时保存</strong> - 返回的 URL 有时效性</li>
+</ol>
+<h2 id="相关文档-10">相关文档</h2>
+<ul>
+<li>AI Hub API 文档：https://docs.codexzh.com/ai-hub-api/image-tutorial</li>
+<li>模型列表：https://docs.codexzh.com/ai-hub-api/models-list</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>chatgpt-image2/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

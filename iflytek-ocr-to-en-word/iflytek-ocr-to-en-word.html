@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iflytek-ocr-to-en-word — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#pdf手写体ocr识别-中文word翻译英文版-1">PDF手写体OCR识别 + 中文Word翻译英文版</a></li>
+<li><a href="#核心功能-1">核心功能</a></li>
+<li><a href="#配置api密钥-2">配置API密钥</a></li>
+<li><a href="#工作流程-3">工作流程</a></li>
+<li><a href="#避免上下文压缩策略-4">避免上下文压缩策略</a></li>
+<li><a href="#快速开始-5">快速开始</a></li>
+<li><a href="#word文档结构-6">Word文档结构</a></li>
+<li><a href="#相关链接-7">相关链接</a></li>
+<li><a href="#文件结构-8">文件结构</a></li></ol></div>
+<h1 id="pdf手写体ocr识别-中文word翻译英文版-1">PDF手写体OCR识别 + 中文Word翻译英文版</h1>
+<h2 id="核心功能-1">核心功能</h2>
+<p>将PDF手写体中文文档 → Word文档 → 英文版Word文档</p>
+<pre><code>PDF(中文手写体) → 科大讯飞OCR → 中文Word → 分批翻译 → 英文Word
+</code></pre>
+<hr />
+<h2 id="配置api密钥-2">配置API密钥</h2>
+<blockquote>
+<p><strong>首次使用需要配置，配置保存在 <code>.key</code> 文件中</strong></p>
+</blockquote>
+<h3>配置文件位置</h3>
+<pre><code>{SKILL目录}/.key
+</code></pre>
+<h3>配置格式</h3>
+<pre><code class="language-json">{
+  &quot;APP_ID&quot;: &quot;your_app_id&quot;,
+  &quot;API_SECRET&quot;: &quot;your_api_secret&quot;,
+  &quot;API_KEY&quot;: &quot;your_api_key&quot;
+}
+</code></pre>
+<h3>配置方式</h3>
+<p><strong>直接告诉AI你的密钥：</strong></p>
+<pre><code>请配置科大讯飞OCR密钥：
+APP_ID: your_app_id
+API_SECRET: your_api_secret
+API_KEY: your_api_key
+</code></pre>
+<p>AI会自动保存到 <code>.key</code> 文件。</p>
+<h3>获取密钥</h3>
+<ol>
+<li>访问 <a href="https://console.xfyun.cn/services/pdfOcr">科大讯飞控制台</a></li>
+<li>创建应用，获取 APP_ID、API_SECRET、API_KEY</li>
+<li>提供给AI配置</li>
+</ol>
+<h3>密钥失败时</h3>
+<p>如果API调用失败（密钥过期、额度不足等），AI会交互式提醒：</p>
+<pre><code>⚠️ API调用失败，请提供新的密钥配置：
+APP_ID: 
+API_SECRET: 
+API_KEY: 
+</code></pre>
+<hr />
+<h2 id="工作流程-3">工作流程</h2>
+<h3>阶段1：PDF OCR识别</h3>
+<pre><code>Step 1️⃣  上传PDF → 科大讯飞OCR服务
+    ↓
+Step 2️⃣  轮询状态 → 等待识别完成
+    ↓
+Step 3️⃣  下载Word → 获取中文Word文档
+    ↓
+Step 4️⃣  用户确认 → 检查识别质量
+</code></pre>
+<h3>阶段2：分批翻译</h3>
+<pre><code>Step 5️⃣  解压Word → 提取XML文件
+    ↓
+Step 6️⃣  提取中文 → 生成待翻译列表
+    ↓
+Step 7️⃣  分批翻译 → 每批100条，避免上下文压缩
+    ↓
+Step 8️⃣  应用翻译 → 替换XML中的中文
+    ↓
+Step 9️⃣  重新打包 → 生成英文版Word
+</code></pre>
+<hr />
+<h2 id="避免上下文压缩策略-4">避免上下文压缩策略</h2>
+<blockquote>
+<p><strong>重要</strong>: 翻译阶段采用分批处理，每批100条文本</p>
+</blockquote>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│ Step 1: 提取所有中文文本到 texts_to_translate.json              │
+│         (约700+条)                                              │
+└────────────────────────────────┬────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 2: 分批翻译，每批写入独立JSON文件                          │
+│         translations_1.json (100条)                             │
+│         translations_2.json (100条)                            │
+│         ...                                                     │
+└────────────────────────────────┬────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 3: 合并所有翻译 → all_translations.json                    │
+└────────────────────────────────┬────────────────────────────────┘
+                                 ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Step 4: 应用翻译到XML文件 → 重新打包Word                        │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<hr />
+<h2 id="快速开始-5">快速开始</h2>
+<h3>方式1：告诉AI处理</h3>
+<pre><code>使用 ocr-to-en-word 将 xxx.pdf 转换为英文Word
+</code></pre>
+<p>AI会自动完成：
+1. 读取 <code>.key</code> 配置
+2. 调用OCR识别
+3. <strong>分批翻译（AI作为翻译引擎，每批100条避免上下文压缩）</strong>
+4. 生成英文Word</p>
+<h3>方式2：AI交互式翻译</h3>
+<pre><code>OCR识别完成后，AI会提取中文文本并分批翻译：
+
+阶段1: PDF → 中文Word（科大讯飞OCR）
+阶段2: 中文Word → 提取中文文本（~700条）
+阶段3: 分批翻译（translations_1.json, translations_2.json...）
+阶段4: 合并应用 → 英文Word
+</code></pre>
+<p>AI在翻译阶段会：
+- 每批100条独立翻译
+- 写入独立JSON文件避免上下文压缩
+- 合并后应用到Word</p>
+<h3>方式3：命令行</h3>
+<pre><code class="language-bash"># 一键完成
+python scripts/ocr_translate.py input.pdf -o output_en.docx
+
+# 仅翻译已有Word
+python scripts/translate_to_en.py input.docx --extract
+python scripts/translate_to_en.py input.docx --apply translations.json -o output_en.docx
+</code></pre>
+<hr />
+<h2 id="word文档结构-6">Word文档结构</h2>
+<p><code>.docx</code> 本质是ZIP压缩包：</p>
+<pre><code>document.docx
+├── word/document.xml       # 主文档内容 (翻译这里)
+├── word/header*.xml        # 页眉 (翻译这里)
+├── word/footer*.xml        # 页脚 (翻译这里)
+├── word/styles.xml         # 样式 (不翻译)
+└── word/media/             # 图片 (不翻译)
+</code></pre>
+<h3>翻译规则</h3>
+<ul>
+<li>翻译 <code>&lt;w:t&gt;</code> 标签内的文本</li>
+<li>不翻译XML标签名、属性名</li>
+<li>不翻译技术标识符（文件编号、代码等）</li>
+</ul>
+<hr />
+<h2 id="相关链接-7">相关链接</h2>
+<ul>
+<li><a href="https://www.xfyun.cn/">科大讯飞开放平台</a></li>
+<li><a href="https://console.xfyun.cn/services/pdfOcr">OCR服务控制台</a></li>
+<li><a href="https://www.xfyun.cn/doc/words/OCRforLLM/skill.html">API文档</a></li>
+</ul>
+<hr />
+<h2 id="文件结构-8">文件结构</h2>
+<pre><code>iflytek-ocr-to-en-word/
+├── SKILL.md                         # 本文件
+├── .key                             # API密钥配置
+├── scripts/
+│   ├── ocr_translate.py             # 一键完成（复用下方官方OCR）
+│   └── translate_to_en.py           # Word翻译脚本
+└── ocr-skill/                       # 科大讯飞官方OCR脚本
+    ├── scripts/
+    │   ├── image_ocr.py
+    │   └── pdf_ocr.py               # 官方实现，被 ocr_translate.py import
+    └── SKILL.md
+</code></pre>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>iflytek-ocr-to-en-word/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

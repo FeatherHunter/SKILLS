@@ -3,715 +3,309 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>百科采集</title>
+<title>百科采集 — Skill HTML 镜像</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --blue:#007AFF;
-  --blue-light:#E8F2FF;
-  --black:#1d1d1f;
-  --gray:#86868b;
-  --gray-light:#f5f5f7;
-  --border:#e5e5ea;
-  --bg:#ffffff;
-  --radius:10px;
-}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Arial,sans-serif;
-  color:var(--black);
-  background:var(--bg);
-  line-height:1.6;
-  -webkit-font-smoothing:antialiased;
-}
-/* Header */
-.header{
-  padding:48px 24px 32px;
-  max-width:800px;
-  margin:0 auto;
-}
-.header h1{
-  font-size:34px;
-  font-weight:700;
-  letter-spacing:-.5px;
-  margin-bottom:8px;
-}
-.header p{
-  font-size:17px;
-  color:var(--gray);
-  line-height:1.5;
-}
-/* Search */
-.search-wrap{
-  max-width:800px;
-  margin:0 auto;
-  padding:0 24px 20px;
-}
-.search-input{
-  width:100%;
-  padding:12px 16px;
-  font-size:17px;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  outline:none;
-  background:var(--gray-light);
-  transition:border-color .2s;
-  font-family:inherit;
-}
-.search-input:focus{border-color:var(--blue);background:#fff}
-.search-input::placeholder{color:#c7c7cc}
-/* Tabs */
-.tabs{
-  max-width:800px;
-  margin:0 auto;
-  padding:0 24px;
-  display:flex;
-  gap:8px;
-  border-bottom:1px solid var(--border);
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  padding:10px 18px;
-  font-size:15px;
-  font-weight:500;
-  color:var(--gray);
-  border:none;
-  background:none;
-  cursor:pointer;
-  white-space:nowrap;
-  border-bottom:2px solid transparent;
-  transition:color .2s,border-color .2s;
-  font-family:inherit;
-}
-.tab:hover{color:var(--black)}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-/* Container */
-.container{
-  max-width:800px;
-  margin:0 auto;
-  padding:24px;
-}
-/* Count */
-.count{
-  font-size:13px;
-  color:var(--gray);
-  margin-bottom:16px;
-}
-/* Card */
-.card{
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  margin-bottom:12px;
-  overflow:hidden;
-  transition:border-color .2s;
-}
-.card:hover{border-color:#c7c7cc}
-.card-head{
-  padding:16px 20px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  -webkit-tap-highlight-color:transparent;
-}
-.card-title{
-  font-size:17px;
-  font-weight:600;
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.card-badge{
-  font-size:12px;
-  font-weight:500;
-  color:var(--blue);
-  background:var(--blue-light);
-  padding:2px 8px;
-  border-radius:6px;
-}
-.card-desc{
-  font-size:14px;
-  color:var(--gray);
-  margin-top:2px;
-}
-.card-right{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.card-arrow{
-  font-size:12px;
-  color:#c7c7cc;
-  transition:transform .25s;
-}
-.card.open .card-arrow{transform:rotate(90deg)}
-/* Wake words */
-.card-body{
-  max-height:0;
-  overflow:hidden;
-  transition:max-height .3s ease;
-}
-.card.open .card-body{max-height:2000px}
-.card-inner{
-  padding:0 20px 20px;
-  border-top:1px solid var(--border);
-}
-.section-label{
-  font-size:13px;
-  font-weight:600;
-  color:var(--gray);
-  text-transform:uppercase;
-  letter-spacing:.5px;
-  margin:16px 0 10px;
-}
-/* Word chips */
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-.chip{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:8px 14px;
-  font-size:15px;
-  font-weight:500;
-  color:var(--blue);
-  background:var(--blue-light);
-  border:1px solid transparent;
-  border-radius:8px;
-  cursor:pointer;
-  transition:all .15s;
-  -webkit-tap-highlight-color:transparent;
-  font-family:inherit;
-}
-.chip:hover{background:#d6e8ff}
-.chip:active{background:#bddcff}
-.chip.selected{background:var(--blue);color:#fff}
-.chip .chip-cmd{
-  font-size:12px;
-  color:var(--gray);
-  display:none;
-}
-.chip.selected .chip-cmd{color:rgba(255,255,255,.8)}
-/* Detail panel */
-.detail{
-  background:var(--gray-light);
-  border-radius:8px;
-  padding:16px;
-  margin-top:12px;
-  display:none;
-  font-size:14px;
-  line-height:1.7;
-}
-.detail.show{display:block}
-.detail-title{
-  font-size:13px;
-  font-weight:600;
-  color:var(--gray);
-  margin-bottom:8px;
-}
-.detail p{margin-bottom:8px}
-.detail p:last-child{margin-bottom:0}
-/* CLI tag */
-.cli-tag{
-  display:inline-block;
-  font-family:"SF Mono","Fira Code",Menlo,Consolas,monospace;
-  font-size:13px;
-  color:var(--blue);
-  background:var(--blue-light);
-  padding:3px 10px;
-  border-radius:6px;
-  cursor:pointer;
-  margin:4px 4px 4px 0;
-  transition:background .15s;
-  border:1px solid transparent;
-  word-break:break-all;
-}
-.cli-tag:hover{background:#d6e8ff;border-color:#b8d4ff}
-.cli-tag:active{background:#bddcff}
-/* Flow panel */
-.flow{
-  margin-top:12px;
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:16px;
-  display:none;
-  font-size:13px;
-  line-height:1.8;
-}
-.flow.show{display:block}
-.flow-title{
-  font-size:13px;
-  font-weight:600;
-  color:var(--gray);
-  margin-bottom:10px;
-}
-.flow ol{padding-left:20px;margin:0}
-.flow li{margin-bottom:4px}
-.flow .side-effect{
-  margin-top:10px;
-  padding:10px 12px;
-  background:#fff8f0;
-  border-left:3px solid #ff9500;
-  border-radius:0 6px 6px 0;
-  font-size:13px;
-  color:#8b5e00;
-}
-.flow .tool-call{
-  font-family:"SF Mono","Fira Code",Menlo,Consolas,monospace;
-  font-size:12px;
-  color:#6e6e73;
-  background:var(--gray-light);
-  padding:2px 6px;
-  border-radius:4px;
-}
-/* Empty state */
-.empty{
-  text-align:center;
-  padding:60px 24px;
-  color:var(--gray);
-  font-size:15px;
-  display:none;
-}
-.empty.show{display:block}
-/* Responsive */
-@media(max-width:480px){
-  .header{padding:32px 16px 24px}
-  .header h1{font-size:28px}
-  .search-wrap{padding:0 16px 16px}
-  .tabs{padding:0 16px}
-  .container{padding:16px}
-  .card-head{padding:14px 16px}
-  .card-inner{padding:0 16px 16px}
-  .tab{padding:8px 14px;font-size:14px}
-  .chip{padding:7px 12px;font-size:14px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-
-<div class="header">
-  <h1>百科采集</h1>
-  <p>全网百科知识采集 · 22领域 · Tavily/MiniMax 双引擎 · 12个唤醒词</p>
-</div>
-
-<div class="search-wrap">
-  <input class="search-input" id="search" type="text" placeholder="搜索唤醒词或功能...">
-</div>
-
-<div class="tabs" id="tabs">
-  <button class="tab active" data-cat="all">全部</button>
-  <button class="tab" data-cat="A">采集模式</button>
-  <button class="tab" data-cat="B">搜索引擎</button>
-  <button class="tab" data-cat="C">输出控制</button>
-</div>
-
-<div class="container" id="list"></div>
-<div class="empty" id="empty">无匹配结果</div>
-
-<script>
-const DATA = [
-  {
-    cat:"A", catName:"采集模式",
-    title:"采集百科",
-    desc:"全流程随机采集，从选领域到生成文档一步到位",
-    words:[
-      {word:"采集百科", desc:"随机选领域，执行完整采集流程"},
-      {word:"指定领域", desc:"指定目标领域采集，后接领域名", example:"指定领域 医学"},
-      {word:"搜索百科", desc:"仅执行搜索，不生成文档"},
-      {word:"迭代采集", desc:"搜索失败时自动换领域重试"},
-      {word:"批量采集", desc:"一次采集多个领域", example:"批量采集 历史 地理 天文"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"Tavily 深度搜索", flow:[
-        "将领域名拼接为查询词：如 \"医学 百科知识\"",
-        "调用 Tavily Search API 获取深度科普内容",
-        "返回搜索结果列表（标题、摘要、URL）",
-        "AI 评估结果质量：内容是否足够、是否需要补充"
-      ], side:"只读操作，无副作用。不修改任何文件或数据库。"},
-      {cmd:"mcp_minimax_web_search", desc:"MiniMax 备用搜索", flow:[
-        "当 Tavily 搜索失败或结果不理想时触发",
-        "将领域名拼接为查询词",
-        "调用 MiniMax Web Search API",
-        "返回搜索结果，与 Tavily 结果合并去重"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"Write File", desc:"生成 Markdown 文档", flow:[
-        "整合所有搜索结果为结构化内容",
-        "生成包含 4 个板块的 Markdown 文本",
-        "写入文件：/mnt/d/2Study/StudyNotes/百科/{DATE}_百科.md",
-        "验证文件非空即为成功"
-      ], side:"创建新文件。不修改已有文件，不删除任何内容。"}
-    ]
-  },
-  {
-    cat:"A", catName:"采集模式",
-    title:"指定领域",
-    desc:"跳过随机选领域，直接指定目标领域进行采集",
-    words:[
-      {word:"指定领域", desc:"后接领域名，直接采集该领域", example:"指定领域 天文"},
-      {word:"采集百科", desc:"随机选择领域，全流程采集"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"按指定领域搜索", flow:[
-        "用户指定领域（如\"医学\"），跳过随机选择",
-        "查询词：\"{领域} 百科知识\"",
-        "调用 Tavily Search API",
-        "返回搜索结果"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"mcp_minimax_web_search", desc:"备用搜索", flow:[
-        "Tavily 失败时调用",
-        "使用相同领域名查询",
-        "返回备用搜索结果"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"A", catName:"采集模式",
-    title:"搜索百科",
-    desc:"仅执行搜索步骤，不生成文档，适合预览内容再决定是否生成",
-    words:[
-      {word:"搜索百科", desc:"只搜索，不生成文档"},
-      {word:"深度搜索", desc:"双引擎联合搜索，结果更全面"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"Tavily 搜索", flow:[
-        "随机或指定领域",
-        "执行 Tavily 搜索",
-        "返回结果供用户预览",
-        "不执行文档生成步骤"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"mcp_minimax_web_search", desc:"MiniMax 搜索", flow:[
-        "Tavily 失败时自动触发",
-        "返回备用搜索结果",
-        "不执行文档生成步骤"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"A", catName:"采集模式",
-    title:"迭代采集",
-    desc:"搜索失败时自动换一个不重复的领域重新搜索，循环直到成功",
-    words:[
-      {word:"迭代采集", desc:"换领域循环搜索直到成功"},
-      {word:"采集百科", desc:"全流程采集，失败时也会自动迭代"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"Tavily 搜索（重试）", flow:[
-        "选择一个与之前不同的领域",
-        "重新执行 Tavily 搜索",
-        "如仍失败，再次换领域重试",
-        "循环直到获得有效内容"
-      ], side:"只读操作，无副作用。可能多次调用 API。"},
-      {cmd:"mcp_minimax_web_search", desc:"MiniMax 搜索（重试）", flow:[
-        "Tavily 每轮失败后触发",
-        "与 Tavily 并行尝试",
-        "两者都失败则换领域重新开始"
-      ], side:"只读操作，无副作用。可能多次调用 API。"}
-    ]
-  },
-  {
-    cat:"A", catName:"采集模式",
-    title:"批量采集",
-    desc:"一次采集多个领域，每个领域独立执行完整流程",
-    words:[
-      {word:"批量采集", desc:"多领域串行采集", example:"批量采集 历史 地理 天文"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search × N", desc:"每个领域独立搜索", flow:[
-        "解析用户指定的多个领域",
-        "逐个领域执行 Tavily 搜索",
-        "每个领域独立生成一份文档",
-        "每个领域的流程互不干扰"
-      ], side:"只读搜索 + 创建多个文件。每个领域生成一个独立的 Markdown 文件。"},
-      {cmd:"Write File × N", desc:"生成多份文档", flow:[
-        "为每个成功采集的领域生成文档",
-        "文件名格式：{DATE}_百科_{领域}.md",
-        "均保存到 /mnt/d/2Study/StudyNotes/百科/ 目录"
-      ], side:"创建多个新文件。不修改已有文件。"}
-    ]
-  },
-  {
-    cat:"B", catName:"搜索引擎",
-    title:"深度搜索",
-    desc:"Tavily + MiniMax 双引擎同时搜索，结果合并去重",
-    words:[
-      {word:"深度搜索", desc:"双引擎联合搜索"},
-      {word:"搜索百科", desc:"单引擎搜索（默认 Tavily）"},
-      {word:"备用搜索", desc:"仅 MiniMax 搜索"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"Tavily 引擎", flow:[
-        "主搜索引擎，优先使用",
-        "查询格式：\"{领域} 百科知识\"",
-        "返回高质量科普内容"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"mcp_minimax_web_search", desc:"MiniMax 引擎", flow:[
-        "与 Tavily 同时调用",
-        "查询格式：\"{领域} 百科 趣味知识\"",
-        "返回结果与 Tavily 合并去重"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"B", catName:"搜索引擎",
-    title:"备用搜索",
-    desc:"直接调用 MiniMax 搜索，跳过 Tavily",
-    words:[
-      {word:"备用搜索", desc:"直接使用 MiniMax"},
-      {word:"切换引擎", desc:"手动指定搜索引擎"}
-    ],
-    cli:[
-      {cmd:"mcp_minimax_web_search", desc:"MiniMax 直接搜索", flow:[
-        "跳过 Tavily，直接调用 MiniMax",
-        "查询格式：\"{领域} 百科知识\"",
-        "返回搜索结果"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"B", catName:"搜索引擎",
-    title:"切换引擎",
-    desc:"手动指定使用哪个搜索引擎",
-    words:[
-      {word:"切换引擎", desc:"指定搜索引擎", example:"切换引擎 MiniMax"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"切换到 Tavily", flow:[
-        "用户指定使用 Tavily",
-        "后续搜索仅使用 Tavily",
-        "失败时不自动切换到 MiniMax"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"mcp_minimax_web_search", desc:"切换到 MiniMax", flow:[
-        "用户指定使用 MiniMax",
-        "后续搜索仅使用 MiniMax",
-        "失败时不自动切换到 Tavily"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"C", catName:"输出控制",
-    title:"生成百科",
-    desc:"已有搜索结果时，直接生成完整文档",
-    words:[
-      {word:"生成百科", desc:"生成完整文档（4个板块）"},
-      {word:"精简百科", desc:"精简输出（标题+介绍）"},
-      {word:"扩展知识", desc:"仅输出延伸知识"},
-      {word:"百科评语", desc:"仅输出悟空评语"}
-    ],
-    cli:[
-      {cmd:"Write File", desc:"生成完整 Markdown 文档", flow:[
-        "整合已有的搜索结果",
-        "生成 4 个板块：",
-        "  1. 词条标题 + 领域标签",
-        "  2. 百科词条介绍（300-500字）",
-        "  3. 延伸知识（2-3个趣味知识点）",
-        "  4. 悟空评语（20字以内）",
-        "写入 /mnt/d/2Study/StudyNotes/百科/{DATE}_百科.md"
-      ], side:"创建新文件。不修改已有文件。"}
-    ]
-  },
-  {
-    cat:"C", catName:"输出控制",
-    title:"精简百科",
-    desc:"只输出词条标题和介绍，省略延伸知识和评语",
-    words:[
-      {word:"精简百科", desc:"仅标题+介绍"}
-    ],
-    cli:[
-      {cmd:"Write File", desc:"生成精简文档", flow:[
-        "整合搜索结果",
-        "只生成 2 个板块：词条标题、百科词条介绍",
-        "省略延伸知识和悟空评语",
-        "写入文件"
-      ], side:"创建新文件。文件内容较完整版更短。"}
-    ]
-  },
-  {
-    cat:"C", catName:"输出控制",
-    title:"扩展知识",
-    desc:"只输出延伸知识板块，适合已有主文档时补充内容",
-    words:[
-      {word:"扩展知识", desc:"仅输出延伸知识部分"}
-    ],
-    cli:[
-      {cmd:"mcp_tavily_tavily_search", desc:"搜索延伸知识", flow:[
-        "基于已有词条，搜索相关延伸内容",
-        "查找趣味知识点、冷知识等",
-        "返回 2-3 个延伸知识点"
-      ], side:"只读操作，无副作用。"},
-      {cmd:"mcp_minimax_web_search", desc:"备用搜索延伸内容", flow:[
-        "Tavily 失败时触发",
-        "搜索相同主题的延伸内容"
-      ], side:"只读操作，无副作用。"}
-    ]
-  },
-  {
-    cat:"C", catName:"输出控制",
-    title:"百科评语",
-    desc:"只生成悟空评语（20字以内的精炼点评）",
-    words:[
-      {word:"百科评语", desc:"仅输出悟空评语"}
-    ],
-    cli:[
-      {cmd:"AI 生成", desc:"基于搜索结果生成评语", flow:[
-        "读取已有的搜索结果或文档内容",
-        "AI 生成一句 20 字以内的精炼点评",
-        "风格：犀利、有趣、有洞察",
-        "输出为纯文本，不写入文件"
-      ], side:"无副作用。纯文本输出，不创建或修改文件。"}
-    ]
-  }
-];
-
-const listEl = document.getElementById('list');
-const emptyEl = document.getElementById('empty');
-const searchEl = document.getElementById('search');
-const tabsEl = document.getElementById('tabs');
-
-let activeTab = 'all';
-let searchQuery = '';
-
-function render() {
-  const q = searchQuery.toLowerCase().trim();
-  const filtered = DATA.filter(item => {
-    const catMatch = activeTab === 'all' || item.cat === activeTab;
-    if (!q) return catMatch;
-    const wordMatch = item.words.some(w =>
-      w.word.toLowerCase().includes(q) ||
-      w.desc.toLowerCase().includes(q)
-    );
-    const titleMatch = item.title.toLowerCase().includes(q);
-    const descMatch = item.desc.toLowerCase().includes(q);
-    const cliMatch = item.cli.some(c =>
-      c.cmd.toLowerCase().includes(q) ||
-      c.desc.toLowerCase().includes(q)
-    );
-    return catMatch && (wordMatch || titleMatch || descMatch || cliMatch);
-  });
-
-  if (filtered.length === 0) {
-    listEl.innerHTML = '';
-    emptyEl.classList.add('show');
-    return;
-  }
-  emptyEl.classList.remove('show');
-
-  listEl.innerHTML = filtered.map((item, i) => `
-    <div class="card" data-idx="${i}">
-      <div class="card-head" onclick="toggle(this)">
-        <div>
-          <div class="card-title">
-            ${item.title}
-            <span class="card-badge">${item.catName}</span>
-          </div>
-          <div class="card-desc">${item.desc}</div>
-        </div>
-        <div class="card-right">
-          <span class="card-arrow">&#9654;</span>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-inner">
-          <div class="section-label">唤醒词</div>
-          <div class="chips">
-            ${item.words.map(w => `
-              <button class="chip" onclick="selectWord(this)" data-word='${JSON.stringify(w)}'>
-                ${w.word}
-              </button>
-            `).join('')}
-          </div>
-          <div class="detail" id="detail-${i}"></div>
-
-          <div class="section-label">CLI 命令</div>
-          <div>
-            ${item.cli.map((c, ci) => `
-              <span class="cli-tag" onclick="showFlow(this)" data-cli='${JSON.stringify(c)}'>${c.cmd}</span>
-            `).join('')}
-          </div>
-          <div class="flow" id="flow-${i}"></div>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function toggle(head) {
-  const card = head.closest('.card');
-  card.classList.toggle('open');
-}
-
-function selectWord(btn) {
-  const chips = btn.closest('.chips');
-  const wasSelected = btn.classList.contains('selected');
-  chips.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-
-  const card = btn.closest('.card');
-  const detail = card.querySelector('.detail');
-
-  if (wasSelected) {
-    detail.classList.remove('show');
-    detail.innerHTML = '';
-    return;
-  }
-
-  btn.classList.add('selected');
-  const w = JSON.parse(btn.dataset.word);
-  let html = `<div class="detail-title">${w.word}</div>`;
-  html += `<p>${w.desc}</p>`;
-  if (w.example) {
-    html += `<p><strong>示例：</strong><span class="cli-tag" style="cursor:default">${w.example}</span></p>`;
-  }
-  detail.innerHTML = html;
-  detail.classList.add('show');
-}
-
-function showFlow(tag) {
-  const card = tag.closest('.card');
-  const flowEl = card.querySelector('.flow');
-  const wasActive = flowEl.classList.contains('show') &&
-    flowEl.dataset.cmd === tag.dataset.cli;
-
-  card.querySelectorAll('.cli-tag').forEach(t => t.style.borderColor = 'transparent');
-
-  if (wasActive) {
-    flowEl.classList.remove('show');
-    flowEl.innerHTML = '';
-    return;
-  }
-
-  tag.style.borderColor = 'var(--blue)';
-  const c = JSON.parse(tag.dataset.cli);
-  flowEl.dataset.cmd = tag.dataset.cli;
-
-  let html = `<div class="flow-title">执行流程：${c.desc}</div>`;
-  html += '<ol>' + c.flow.map(s => `<li>${s}</li>`).join('') + '</ol>';
-  if (c.side) {
-    html += `<div class="side-effect"><strong>副作用：</strong>${c.side}</div>`;
-  }
-  flowEl.innerHTML = html;
-  flowEl.classList.add('show');
-}
-
-// Tab click
-tabsEl.addEventListener('click', e => {
-  const tab = e.target.closest('.tab');
-  if (!tab) return;
-  tabsEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  activeTab = tab.dataset.cat;
-  render();
-});
-
-// Search
-searchEl.addEventListener('input', e => {
-  searchQuery = e.target.value;
-  render();
-});
-
-// Initial render
-render();
-</script>
+<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-最高优先级-1">强制性规定（最高优先级）</a></li>
+<li><a href="#唤醒词清单-12个-2">唤醒词清单（12个）</a></li>
+<li><a href="#路由算法-3">路由算法</a></li>
+<li><a href="#工作流-4">工作流</a></li>
+<li><a href="#输出路径-5">输出路径</a></li>
+<li><a href="#注意事项-6">注意事项</a></li>
+<li><a href="#成功标准-7">成功标准</a></li></ol></div>
+<h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
+<ol>
+<li><strong>HTML 同步</strong>：该技能的所有优化和变动、脚本的所有变动都要体现在 <code>百科采集.html</code> 上。HTML 是技能功能的可视化手册，任何功能变更若未同步到 HTML 视为未完成。</li>
+<li><strong>优先级</strong>：本强制性规定优先级最高，高于下方所有操作规范和功能说明。</li>
+<li><strong>变更确认</strong>：对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认，未经确认不得执行写入操作。</li>
+</ol>
+<hr />
+<h2 id="唤醒词清单-12个-2">唤醒词清单（12个）</h2>
+<blockquote>
+<p>全部为动词+名词格式，指令化，不追求自然。</p>
+</blockquote>
+<h3>A. 采集模式（5个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>采集百科</td>
+<td>全流程(随机)</td>
+<td>随机选领域→搜索→生成文档</td>
+</tr>
+<tr>
+<td>指定领域</td>
+<td>全流程(指定)</td>
+<td>后接领域名，如"指定领域 医学"</td>
+</tr>
+<tr>
+<td>搜索百科</td>
+<td>仅搜索</td>
+<td>只执行搜索，不生成文档</td>
+</tr>
+<tr>
+<td>迭代采集</td>
+<td>换领域重试</td>
+<td>搜索失败时换领域循环</td>
+</tr>
+<tr>
+<td>批量采集</td>
+<td>多领域采集</td>
+<td>一次采集多个领域</td>
+</tr>
+</tbody>
+</table>
+<h3>B. 搜索引擎（3个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>深度搜索</td>
+<td>双引擎搜索</td>
+<td>Tavily + MiniMax 联合搜索</td>
+</tr>
+<tr>
+<td>备用搜索</td>
+<td>MiniMax搜索</td>
+<td>直接调用 MiniMax</td>
+</tr>
+<tr>
+<td>切换引擎</td>
+<td>手动切换</td>
+<td>指定使用哪个搜索引擎</td>
+</tr>
+</tbody>
+</table>
+<h3>C. 输出控制（4个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生成百科</td>
+<td>生成文档</td>
+<td>已有搜索结果时，生成完整文档</td>
+</tr>
+<tr>
+<td>精简百科</td>
+<td>精简输出</td>
+<td>只输出标题+介绍，省略延伸/评语</td>
+</tr>
+<tr>
+<td>扩展知识</td>
+<td>延伸板块</td>
+<td>只输出延伸知识部分</td>
+</tr>
+<tr>
+<td>百科评语</td>
+<td>评语板块</td>
+<td>只输出悟空评语</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="路由算法-3">路由算法</h2>
+<h3>匹配流程</h3>
+<pre><code>用户输入
+    ↓
+第1步：唤醒词识别
+    按 A&gt;B&gt;C 优先级扫描唤醒词
+    命中即确定意图，不再往下匹配
+    同优先级下，选最长匹配（&quot;深度搜索&quot;优先于&quot;搜索百科&quot;）
+    ↓
+第2步：领域/参数提取
+    &quot;指定领域 医学&quot; → 提取&quot;医学&quot;作为目标领域
+    &quot;批量采集 历史 地理 天文&quot; → 提取多个领域
+    &quot;采集百科&quot; → 随机选领域
+    ↓
+第3步：执行对应工作流
+    A类 → 执行 Step1-5 全流程（或对应子步骤）
+    B类 → 执行搜索相关步骤
+    C类 → 执行输出相关步骤
+    ↓
+第4步：兜底
+    无唤醒词命中 → 默认走&quot;采集百科&quot;全流程
+</code></pre>
+<h3>唤醒词与工作流映射</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>执行步骤</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>采集百科</td>
+<td>Step1→2→3→4→5</td>
+<td>全流程</td>
+</tr>
+<tr>
+<td>指定领域</td>
+<td>Step2→3→4→5</td>
+<td>跳过Step1</td>
+</tr>
+<tr>
+<td>搜索百科</td>
+<td>Step2→3→4</td>
+<td>不执行Step5</td>
+</tr>
+<tr>
+<td>迭代采集</td>
+<td>Step4→1→2→3→4</td>
+<td>循环直到成功</td>
+</tr>
+<tr>
+<td>批量采集</td>
+<td>Step1→2→3→4→5 × N</td>
+<td>多领域串行</td>
+</tr>
+<tr>
+<td>深度搜索</td>
+<td>Step2+Step3</td>
+<td>双引擎同时搜索</td>
+</tr>
+<tr>
+<td>备用搜索</td>
+<td>Step3</td>
+<td>直接MiniMax</td>
+</tr>
+<tr>
+<td>切换引擎</td>
+<td>手动指定</td>
+<td>用户指定引擎</td>
+</tr>
+<tr>
+<td>生成百科</td>
+<td>Step5</td>
+<td>已有搜索结果</td>
+</tr>
+<tr>
+<td>精简百科</td>
+<td>Step5(精简)</td>
+<td>标题+介绍</td>
+</tr>
+<tr>
+<td>扩展知识</td>
+<td>Step5(部分)</td>
+<td>仅延伸知识</td>
+</tr>
+<tr>
+<td>百科评语</td>
+<td>Step5(部分)</td>
+<td>仅悟空评语</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="工作流-4">工作流</h2>
+<h3>Step 1：随机选行业领域</h3>
+<p>从以下领域中随机挑选一个：</p>
+<p>医学、历史、地理、科技、生物、物理、化学、天文、民俗、艺术、哲学、文学、经济、法律、教育、心理、宗教、军事、农业、气象、材料、环境</p>
+<h3>Step 2：Tavily 深度搜索</h3>
+<p>使用 mcp_tavily_tavily_search 对该领域进行百科知识搜索。
+- 查询格式：如 "医学 百科知识" / "历史 百科 趣味知识"
+- 获取有深度的科普内容</p>
+<h3>Step 3：失败时切换 MiniMax 搜索</h3>
+<p>如果 Tavily 搜索失败或结果不理想，使用 mcp_minimax_web_search 补充搜索。</p>
+<h3>Step 4：迭代直到成功</h3>
+<p>如果上述两步都未获得有效内容，换一个相关但不重复的领域重新搜索，循环迭代直到成功采集到内容。</p>
+<h3>Step 5：生成文档</h3>
+<p>整合搜索结果，输出 Markdown 文件，内容包括：</p>
+<ol>
+<li><strong>词条标题</strong> + 领域标签</li>
+<li><strong>百科词条介绍</strong>（300-500字，图文并茂的自然段落）</li>
+<li><strong>延伸知识</strong>（2-3个趣味知识点）</li>
+<li><strong>悟空评语</strong>（20字以内，一句话点评）</li>
+</ol>
+<hr />
+<h2 id="输出路径-5">输出路径</h2>
+<p><code>/mnt/d/2Study/StudyNotes/百科/{DATE}_百科.md</code></p>
+<hr />
+<h2 id="注意事项-6">注意事项</h2>
+<ul>
+<li>每次只选一个领域深挖，不贪多</li>
+<li>内容要扎实、有趣、有料，避免水词</li>
+<li>文件名格式：<code>2026-04-30_百科.md</code>（实际执行时替换为当天日期）</li>
+<li>文档保存到 <code>/mnt/d/2Study/StudyNotes/百科/</code> 目录</li>
+</ul>
+<h2 id="成功标准-7">成功标准</h2>
+<p>文件写入成功，且内容完整（非空），即视为任务完成。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>百科采集/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

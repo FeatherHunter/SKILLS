@@ -2,206 +2,550 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>封面合成 (cover-composer) · HTML 镜像</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>封面合成 — Skill HTML 镜像</title>
 <style>
-  body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; line-height: 1.7; color: #1d1d1f; background: #fafafa; }
-  h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
-  h2 { font-size: 24px; font-weight: 600; margin-top: 48px; padding-bottom: 8px; border-bottom: 1px solid #d2d2d7; }
-  h3 { font-size: 18px; font-weight: 600; margin-top: 28px; color: #6e6e73; }
-  p { margin: 12px 0; font-size: 15px; }
-  code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; }
-  code { background: #f5f5f7; padding: 2px 7px; border-radius: 5px; color: #c7254e; }
-  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 12px; overflow-x: auto; line-height: 1.6; }
-  pre code { background: none; padding: 0; color: inherit; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #d2d2d7; }
-  th { background: #f5f5f7; font-weight: 600; }
-  blockquote { border-left: 3px solid #0071e3; padding: 8px 16px; color: #6e6e73; background: #f5f5f7; border-radius: 0 8px 8px 0; margin: 18px 0; }
-  ul { margin: 10px 0 10px 24px; }
-  li { margin-bottom: 4px; }
-  .meta { color: #86868b; font-size: 13px; margin-bottom: 32px; }
-  .pill { display: inline-block; background: #f5f5f7; color: #6e6e73; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 4px; }
-  .anti { background: #fff5f5; border: 1px solid #ffd1d1; border-radius: 8px; padding: 12px 16px; margin: 12px 0; }
-  .anti-title { color: #ff3b30; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-
-<h1>封面合成 (cover-composer)</h1>
-<p class="meta">v1.0 · 2026-07-15 · <a href="SKILL.md" style="color:#0071e3;">SKILL.md</a> · <a href="changelog.md" style="color:#0071e3;">changelog</a> · <a href="references/反模式.md" style="color:#0071e3;">反模式</a></p>
-
+<div class="toc"><h4>目录</h4><ol><li><a href="#封面合成-cover-composer-1">封面合成 (cover-composer)</a></li>
+<li><a href="#管什么-1">管什么</a></li>
+<li><a href="#不管什么-2">不管什么</a></li>
+<li><a href="#触发词-3">触发词</a></li>
+<li><a href="#5-层架构速查-4">5 层架构速查</a></li>
+<li><a href="#②-契约层-cli-5">② 契约层 (CLI)</a></li>
+<li><a href="#③-业务核心-code-core-code-6">③ 业务核心(<code>core/</code>)</a></li>
+<li><a href="#④-基础设施-code-infra-code-7">④ 基础设施(<code>infra/</code>)</a></li>
+<li><a href="#⑤-集成层-8">⑤ 集成层</a></li>
+<li><a href="#反模式清单-精简版-详见-references-反模式-md-9">反模式清单(精简版,详见 references/反模式.md)</a></li>
+<li><a href="#自检清单-按手册-③-10">自检清单 (按手册 ③)</a></li>
+<li><a href="#快速上手-3-分钟-11">快速上手(3 分钟)</a></li>
+<li><a href="#完整-changelog-12">完整 changelog</a></li></ol></div>
+<h1 id="封面合成-cover-composer-1">封面合成 (cover-composer)</h1>
 <blockquote>
-<p><b>多图旋转叠加 + 文字水印 + 半透明黑防御</b></p>
+<p>多图旋转叠加 + 文字水印 + 半透明黑防御
+v1.0 · 2026-07-15</p>
 </blockquote>
-
-<h2>管什么</h2>
+<h2 id="管什么-1">管什么</h2>
+<p>多张照片(+ 文字水印)在 16:9 / 9:16 / 4:3 / 1:1 画布上的<strong>层叠合成</strong>:</p>
 <ul>
-  <li>多张照片(+ 文字水印)在 16:9 / 9:16 / 4:3 / 1:1 画布上的<strong>层叠合成</strong></li>
-  <li>多图旋转 / 透明叠加 / 对称布局 / 文字水印</li>
-  <li>半透明黑检测 / 对称性检测 / 暗像素区检测</li>
-  <li>平台预设模板(抖音 / B 站 / 视频号 / 小红书 / YouTube / 微博)</li>
+<li>✅ 多图旋转 / 透明叠加 / 对称布局 / 文字水印</li>
+<li>✅ 半透明黑检测 / 对称性检测 / 暗像素区检测</li>
+<li>✅ 平台预设模板(抖音 / B 站 / 视频号 / 小红书 / YouTube / 微博)</li>
+<li>✅ 16 张照片以内的 collage 自动布局(主图 + 左右副图 + 散落副图)</li>
 </ul>
-
-<h2>不管什么</h2>
+<h2 id="不管什么-2">不管什么</h2>
 <ul>
-  <li>单图磨皮 / 调色 / 滤镜(用其它 skill)</li>
-  <li>视频帧提取 / 视频 thumbnail(用 ffmpeg)</li>
-  <li>GIF / 动图 / AI 生图(用其它 skill)</li>
-  <li>多文字复杂海报(用 design-tool)</li>
+<li>❌ 单图磨皮 / 调色 / 滤镜 → 用其它 skill(如 cover-editor)</li>
+<li>❌ 视频帧提取 / 视频 thumbnail → 用 ffmpeg</li>
+<li>❌ GIF / 动图 / AI 生图 → 用其它 skill</li>
+<li>❌ 大型 LUT / 调色分级 → 用其它 skill</li>
+<li>❌ 多文字 / 复杂海报 → 用 design-tool</li>
 </ul>
-
-<h2>触发词</h2>
-<p>
-<span class="pill">封面合成</span>
-<span class="pill">多图拼图</span>
-<span class="pill">做封面</span>
-<span class="pill">缩略图</span>
-<span class="pill">拼贴</span>
-<span class="pill">海报合成</span>
-<span class="pill">cover compose</span>
-<span class="pill">photo collage</span>
-<span class="pill">thumbnail</span>
-</p>
-
-<h2>快速上手</h2>
-
-<pre><code># 1. 查平台预设
-封面合成 presets --platform douyin
-# → {"ratio": "9:16", "size": [1080, 1920], "name": "抖音"}
-
-# 2. 合成(DAY14 真实用法)
-封面合成 compose \
-  --photos main.jpg left.jpg right.jpg \
-  --layout symmetric-cascade \
-  --aspect 16:9 \
-  --text '{"main":"14 天","sub":"-7 斤","tags":"腰突 大基数"}' \
-  -o cover.jpg
-
-# 3. 自检
-封面合成 diagnose cover.jpg</code></pre>
-
-<h2>5 层架构</h2>
-
+<h2 id="触发词-3">触发词</h2>
+<table>
+<thead>
+<tr>
+<th>中文</th>
+<th>英文</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>封面合成</td>
+<td>cover compose</td>
+</tr>
+<tr>
+<td>多图拼图</td>
+<td>photo collage</td>
+</tr>
+<tr>
+<td>做封面</td>
+<td>make cover</td>
+</tr>
+<tr>
+<td>缩略图</td>
+<td>thumbnail</td>
+</tr>
+<tr>
+<td>拼贴</td>
+<td>collage</td>
+</tr>
+<tr>
+<td>海报合成</td>
+<td>poster</td>
+</tr>
+<tr>
+<td>3 张图叠在一起</td>
+<td>stack 3 photos</td>
+</tr>
+<tr>
+<td>加文字</td>
+<td>add text overlay</td>
+</tr>
+<tr>
+<td>旋转叠图</td>
+<td>rotated collage</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-层架构速查-4">5 层架构速查</h2>
 <pre><code>封面合成/
 ├── SKILL.md                   # ① 文档
-├── 封面合成.html              # ① 镜像(本文件)
+├── 封面合成.html              # ① HTML 镜像
 ├── changelog.md               # ① 版本
 ├── references/                # ① 深入文档
 │   ├── 反模式.md
 │   ├── 术语对照表.md
 │   └── 案例集.md
-├── scripts/                   # ②③ CLI + 业务
-│   ├── cli.py                 # ② 入口
-│   ├── compose.py             # ③ 主流程
-│   ├── layout.py              # ③ 布局引擎(4 种)
-│   ├── layers.py              # ③ ⭐ 旋转 / 二值化(踩坑封装)
-│   ├── text.py                # ③ 文字水印
-│   ├── diagnose.py            # ③ 诊断子命令
-│   ├── presets.py             # ③ 平台预设
-│   └── validators.py          # ③ 硬规则
-└── lib/                       # ④ 数据层
-    ├── canvas.py              # ④ 画布 + 智能保存
-    ├── diagnostics.py         # ④ 像素分析
-    └── presets_data.py        # ④ 平台规格常量</code></pre>
-
-<h2>核心 API</h2>
-
+├── features/                  # ③ 业务子模块(按操作类型切)
+│   ├── compose.md             # 合成入口文档
+│   ├── diagnose.md            # 诊断入口文档
+│   ├── presets.md             # 预设查询文档
+│   └── text.md                # 文字水印文档
+├── operations/                # ② 契约层(CLI 子命令入口)
+│   ├── cli.py                 # ② 统一入口
+│   ├── auto_compose.py        # ② 智能挡(分析图 + 决策 + 调 ①)
+│   ├── diagnose.py            # ② diagnose 子命令
+│   └── presets.py             # ② presets 子命令
+├── core/                      # ③ 业务核心(与 features 文档对应)
+│   ├── layers.py              # 旋转/羽化/二值化(踩坑封装)
+│   ├── layout.py              # 布局引擎
+│   ├── text.py                # 文字水印
+│   ├── validators.py          # 硬规则集中
+│   └── pipeline.py            # 主流程编排(① 基础 API,参数化)
+└── infra/                     # ④ 基础设施(纯函数,无业务)
+    ├── canvas.py              # RGBA 画布 + 智能保存
+    ├── diagnostics.py         # 像素分析 + 图片特征分析(给 auto_compose 用)
+    └── presets_data.py        # 平台规格常量
+</code></pre>
+<h3>命名约定</h3>
+<ul>
+<li><code>operations/</code> — <strong>入口</strong>层,CLI 子命令,做"接收参数 → 调度核心"</li>
+<li><code>core/</code> — <strong>业务核心</strong>层,纯算法(rotation、layout、文字),无 CLI 逻辑</li>
+<li><code>infra/</code> — <strong>基础设施</strong>层,纯函数(RGBA 画布、像素诊断、平台规格常量),无业务</li>
+<li><code>features/</code> — <strong>业务说明文档</strong>层,markdown 文档,对应每个 CLI 子命令</li>
+<li><code>references/</code> — <strong>深入文档</strong>层,反模式 / 术语 / 案例</li>
+</ul>
+<p><code>operations</code> → <code>core</code> → <code>infra</code> 层层依赖(只能向下)。<code>features</code> / <code>references</code> 是文档,不依赖代码。</p>
 <h3>双层 API 设计(关键)</h3>
-<pre>
-                    ┌─────────────────┐
+<pre><code>                    ┌─────────────────┐
                     │  ② 智能 CLI       │  ← operations/auto_compose.py
                     │  (智能决策)        │     (分析图 → 决策 → 调 ①)
                     └────────┬────────┘
                              │
                              ▼
                     ┌─────────────────┐
-                    │  ① 基础 API       │  ← core/pipeline.py:compose()
+                    │  ① 基础 API       │  ← core/pipeline.py
                     │  (参数化)          │     (接收完整参数,直接合成)
                     └─────────────────┘
-</pre>
-<p><b>手动挡 compose</b>(用户传完整参数)→ ① 直接执行<br>
-<b>自动挡 auto</b>(用户只传 --photos)→ ② 分析决策 → 调 ①<br>
-两者都通过 <code>core/pipeline.py:compose()</code> 这个<b>唯一基础 API</b>落地</p>
-
-<h3>`compose()` 主入口</h3>
-<pre><code>def compose(
-    photos: List[str],
-    layout: str = "symmetric-cascade",
-    aspect: str = "16:9",
-    text: Any = None,        # JSON 字符串 或 dict
-    bg: str = "#000000",
-    output: str = None
-) -> dict:
-    """Returns: {status, data, message, warnings, decisions(only from auto)}"""
 </code></pre>
-
-<h2>核心 API</h2>
-
-<h3>`compose()` 主入口</h3>
-<pre><code>def compose(
-    photos: List[str],
-    layout: str = "symmetric-cascade",
-    aspect: str = "16:9",
-    text: Any = None,        # JSON 字符串 或 dict
-    bg: str = "#000000",
-    output: str = None
-) -> dict:
-    """Returns: {status, data, message, warnings}"""</code></pre>
-
-<h3>4 种 layout</h3>
+<ul>
+<li><strong>手动挡 compose</strong>(用户传完整参数)→ ① 直接执行</li>
+<li><strong>自动挡 auto</strong>(用户只传 --photos)→ ② 分析决策 → 调 ①</li>
+<li>两者都通过 <code>core/pipeline.py:compose()</code> 这个<strong>唯一基础 API</strong> 落地</li>
+<li><code>operations/auto_compose.py</code> 不直接调 <code>core/layers.py</code> / <code>core/text.py</code> / <code>core/layout.py</code>,只调 <code>compose()</code> 保持 ① 的纯粹性</li>
+</ul>
+<hr />
+<h2 id="②-契约层-cli-5">② 契约层 (CLI)</h2>
+<h3>子命令 1: <code>compose</code> 合成封面(手动挡)</h3>
+<pre><code class="language-bash">封面合成 compose \
+  --photos main.jpg left.jpg right.jpg \
+  --layout symmetric-cascade \
+  --aspect 16:9 \
+  --text '{&quot;main&quot;:&quot;14 天&quot;,&quot;sub&quot;:&quot;-7 斤&quot;,&quot;tags&quot;:&quot;腰突 大基数&quot;}' \
+  --bg &quot;#000000&quot; \
+  --output cover.jpg
+</code></pre>
+<p><strong>参数</strong>:</p>
 <table>
-  <tr><th>layout</th><th>用途</th><th>z 分布</th></tr>
-  <tr><td><code>symmetric-cascade</code>(默认)</td><td>主图 + 左右副图,镜像对称</td><td>主=0, 副=1</td></tr>
-  <tr><td><code>cascade</code></td><td>主图 + 副图堆叠(右下偏移)</td><td>主=0, 副=1+</td></tr>
-  <tr><td><code>polaroid</code></td><td>主图中央,副图四角散落</td><td>主=1, 副=2+</td></tr>
-  <tr><td><code>grid</code></td><td>网格平铺(多图无主图)</td><td>全 =0</td></tr>
+<thead>
+<tr>
+<th>参数</th>
+<th>必填</th>
+<th>默认</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--photos</code></td>
+<td>✅</td>
+<td>-</td>
+<td>2+ 张图片路径(第 1 张 = 主图)</td>
+</tr>
+<tr>
+<td><code>--layout</code></td>
+<td>❌</td>
+<td><code>symmetric-cascade</code></td>
+<td>布局类型(symmetric-cascade/cascade/polaroid/grid)</td>
+</tr>
+<tr>
+<td><code>--aspect</code></td>
+<td>❌</td>
+<td><code>16:9</code></td>
+<td>画布比例(16:9/9:16/4:3/1:1 等)</td>
+</tr>
+<tr>
+<td><code>--text</code></td>
+<td>❌</td>
+<td>None</td>
+<td>文字层 JSON(见下)</td>
+</tr>
+<tr>
+<td><code>--bg</code></td>
+<td>❌</td>
+<td><code>#000000</code></td>
+<td>画布背景色(hex 或 'auto')</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>✅</td>
+<td>-</td>
+<td>输出路径(.jpg/.png)</td>
+</tr>
+</tbody>
 </table>
-
-<h3>8 条核心反模式(详见 <a href="references/反模式.md">反模式.md</a>)</h3>
-<div class="anti">
-  <div class="anti-title">❌ #1 RGB rotate 角是黑实色</div>
-  <p>必须先转 RGBA 再 rotate,否则 expand 后的新角用 0 填黑</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #2 alpha 羽化导致半透明黑</div>
-  <p>GaussianBlur 羽化让 alpha 有中间值,跟画布混出色差。二值化(&gt;128 → 255)替代</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #3 shadow 扩散污染主图</div>
-  <p>每个图层加 shadow 会叠加成"半透明黑雾",直接去掉 shadow</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #4 RGB 转 RGBA alpha 默认 255</div>
-  <p>转出来不透明。直接用 Image.new("RGBA", (W,H), (0,0,0,0)) 创建透明画布</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #5 JPG 保存丢 alpha</div>
-  <p>JPG 不支持 alpha。透明需求用 PNG,不需要透明用 .convert("RGB") 显式转</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #7 PIL rotate 抗锯齿 alpha 中间值</div>
-  <p>Image.BICUBIC 抗锯齿在像素边界做插值,产生中间值 alpha。必须二值化</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #9 隐式 z-order</div>
-  <p>LayerSpec.z 显式声明,不要靠 paste 顺序</p>
-</div>
-<div class="anti">
-  <div class="anti-title">❌ #10 文字无描边在亮色照片上读不清</div>
-  <p>stroke_fill=(0,0,0) + stroke_width=字号×5% 黑色描边</p>
-</div>
-
-<h2>3 条铁律(踩了 16 个坑后总结)</h2>
+<h3>子命令 1.5: <code>auto</code> 智能合成(自动挡)</h3>
+<pre><code class="language-bash">封面合成 auto --photos a.jpg b.jpg c.jpg -o cover.jpg
+封面合成 auto --photos a.jpg b.jpg c.jpg --hint &quot;14 天&quot; -o cover.jpg
+</code></pre>
+<p><strong>参数</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>必填</th>
+<th>默认</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--photos</code></td>
+<td>✅</td>
+<td>-</td>
+<td>1+ 张图片路径</td>
+</tr>
+<tr>
+<td><code>--hint</code></td>
+<td>❌</td>
+<td>None</td>
+<td>文字提示(字符串 / JSON / 不传)</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>✅</td>
+<td>-</td>
+<td>输出路径</td>
+</tr>
+</tbody>
+</table>
+<p><strong>自动挡的决策</strong>(详见 <code>features/auto.md</code>):
+- <code>layout</code>:1 张 → cascade,2-3 张 → symmetric-cascade,4+ 张 → polaroid
+- <code>aspect</code>:全 portrait → 9:16,全 landscape → 16:9,混合 → 16:9
+- <code>bg</code>:主图亮 → 用主图主色,否则 → #000000
+- <code>text</code>:从主图文件名提取,或用 hint</p>
+<p><strong>双层 API 关系</strong>:</p>
+<pre><code>operations/auto_compose.py (② 智能挡)
+    ↓ 调
+core/pipeline.py:compose() (① 基础 API,只接受完整参数)
+    ↓ 调
+core/layers / core/text / core/layout (③ 业务核心)
+    ↓ 调
+infra/canvas / infra/diagnostics (④ 基础设施)
+</code></pre>
+<p>依赖方向严格 <code>operations → core → infra</code>(只能向下)。auto 不会绕过 compose 直接调 core/layers。</p>
+<p><strong><code>--text</code> JSON 两种格式</strong>:</p>
+<p>简单格式(自动转 3 行):</p>
+<pre><code class="language-json">{
+  &quot;main&quot;: &quot;14 天&quot;,
+  &quot;sub&quot;: &quot;-7 斤&quot;,
+  &quot;tags&quot;: &quot;腰突 · 大基数&quot;
+}
+</code></pre>
+<p>完整格式(自定义):</p>
+<pre><code class="language-json">{
+  &quot;lines&quot;: [
+    {&quot;text&quot;: &quot;14 天&quot;, &quot;position&quot;: &quot;middle-center&quot;, &quot;size&quot;: 200, &quot;font_color&quot;: [255,215,0], &quot;outline_color&quot;: [0,0,0], &quot;outline_width&quot;: 8},
+    {&quot;text&quot;: &quot;腰突 · 大基数&quot;, &quot;position&quot;: &quot;bottom-center&quot;, &quot;size&quot;: 60}
+  ]
+}
+</code></pre>
+<p><strong>统一输出格式</strong>:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot; | &quot;warn&quot; | &quot;error&quot;,
+  &quot;data&quot;: {
+    &quot;path&quot;: &quot;cover.jpg&quot;,
+    &quot;size&quot;: [1920, 1080],
+    &quot;applied_layers&quot;: [{&quot;path&quot;: &quot;a.jpg&quot;, &quot;x&quot;: 240, &quot;y&quot;: 30, &quot;w&quot;: 1250, &quot;h&quot;: 1020, &quot;angle&quot;: 0, &quot;z&quot;: 1}],
+    &quot;text_lines&quot;: 3
+  },
+  &quot;message&quot;: &quot;合成完成:共 3 个图层&quot;,
+  &quot;warnings&quot;: []
+}
+</code></pre>
+<p><strong>退出码</strong>: 0=ok, 1=error, 2=warn</p>
+<h3>子命令 2: <code>diagnose</code> 诊断图片</h3>
+<pre><code class="language-bash">封面合成 diagnose cover.jpg --check transparency,darkness,symmetry
+</code></pre>
+<p><strong>检查项</strong>:
+- <code>transparency</code>: 扫半透明像素(alpha ∈ [10,245])
+- <code>darkness</code>: 扫过暗像素(RGB &lt; 30)占比,以及暗斑位置
+- <code>symmetry</code>: 左右翻转对比,差异 &gt; 8% 警告</p>
+<p>输出示例:</p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;warn&quot;,
+  &quot;data&quot;: {
+    &quot;image&quot;: &quot;cover.jpg&quot;,
+    &quot;size&quot;: [1920, 1080],
+    &quot;semi_transparent&quot;: {&quot;count&quot;: 5230, &quot;pct&quot;: 0.25, &quot;warning&quot;: false},
+    &quot;dark_areas&quot;: {&quot;count&quot;: 1200000, &quot;pct&quot;: 55.7, &quot;warning&quot;: false},
+    &quot;symmetry&quot;: {&quot;diff_pct&quot;: 5.2, &quot;warning&quot;: false}
+  },
+  &quot;message&quot;: &quot;诊断完成:无问题&quot;,
+  &quot;warnings&quot;: []
+}
+</code></pre>
+<h3>子命令 3: <code>presets</code> 平台/比例预设</h3>
+<pre><code class="language-bash">封面合成 presets --list
+封面合成 presets --platform douyin
+封面合成 presets --aspect 16:9
+</code></pre>
+<p>支持的平台:抖音 / 视频号 / 小红书 / 快手 / B站 / YouTube / 微博 + 通用 16:9 / 9:16 / 4:3 / 1:1</p>
+<hr />
+<h2 id="③-业务核心-code-core-code-6">③ 业务核心(<code>core/</code>)</h2>
+<h3><code>layers.rotate_hard(path, w, h, angle)</code> ⭐ 今天踩坑封装</h3>
+<p>硬旋转,7 步流程:</p>
+<pre><code class="language-python">def rotate_hard(path, target_w, target_h, angle):
+    im = Image.open(path).convert(&quot;RGB&quot;).resize((target_w, target_h), Image.LANCZOS)
+    w, h = im.size
+    diag = int(sqrt(w**2 + h**2)) + 20
+    rgba = im.convert(&quot;RGBA&quot;)
+    temp = Image.new(&quot;RGBA&quot;, (diag, diag), (0,0,0,0))
+    temp.paste(rgba, ((diag-w)//2, (diag-h)//2), rgba)
+    rotated = temp.rotate(angle, resample=Image.BICUBIC, expand=False)
+    cropped = rotated.crop(rotated.getbbox())
+    return binarize_alpha(cropped)
+</code></pre>
+<p>防坑:旋转黑边 / alpha 羽化 / 中间值残影</p>
+<h3><code>layers.binarize_alpha(rgba)</code></h3>
+<p>alpha 通道二值化(&gt;128 → 255),消除 PIL 抗锯齿的中间值</p>
+<h3><code>layers.place(canvas, img, x, y)</code></h3>
+<p>纯硬贴图层,无 shadow 无 feathering</p>
+<h3><code>layout</code> 支持 4 种(<code>core/layout.py</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>layout</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>symmetric-cascade</code> (默认)</td>
+<td>主图 + 左右副图,镜像对称</td>
+</tr>
+<tr>
+<td><code>cascade</code></td>
+<td>主图 + 副图堆叠(右下偏移)</td>
+</tr>
+<tr>
+<td><code>polaroid</code></td>
+<td>主图中央,副图四角散落(拍立得风)</td>
+</tr>
+<tr>
+<td><code>grid</code></td>
+<td>网格平铺(多图无主图场景)</td>
+</tr>
+</tbody>
+</table>
+<h3><code>core/pipeline.py</code> 主流程</h3>
+<pre><code>photos → 校验(validators) → 画布(infra.canvas) →
+布局(core.layout) → 按 z 处理每张图(core.layers) →
+文字(core.text) → 诊断(infra.diagnostics) → 保存(infra.canvas.safe_save) →
+返回 {status, data, message, warnings}
+</code></pre>
+<hr />
+<h2 id="④-基础设施-code-infra-code-7">④ 基础设施(<code>infra/</code>)</h2>
+<ul>
+<li><code>infra/canvas.py</code> — RGBA 画布创建 + 智能保存(.jpg 强制转 RGB,.png 留 alpha)</li>
+<li><code>infra/diagnostics.py</code> — 像素分析(brightness / alpha / bbox / symmetry)</li>
+<li><code>infra/presets_data.py</code> — 平台规格常量(不存 DB)</li>
+</ul>
+<hr />
+<h2 id="⑤-集成层-8">⑤ 集成层</h2>
+<ul>
+<li>✅ 输入校验:<code>core/validators.py</code> 在 pipeline() 入口校验,status=error 不 crash</li>
+<li>✅ 失败降级:photos[i] 不存在 → status=error,明确告诉用户哪个</li>
+<li>✅ 输出标准 JSON:供其它 Skill(如居家管家、智剪工坊)解析,联动生成 vlog 封面</li>
+</ul>
+<hr />
+<h2 id="反模式清单-精简版-详见-references-反模式-md-9">反模式清单(精简版,详见 references/反模式.md)</h2>
+<p><strong>核心 8 条</strong>,每条都是真实坑:</p>
 <ol>
-  <li><b>alpha 必须是 0 或 255</b>(不要中间值)</li>
-  <li><b>画布必须从一开始就是 RGBA</b>(不要从 RGB 转)</li>
-  <li><b>永远显式 z-order</b>(不要靠 paste 顺序)</li>
+<li>❌ <code>Image.rotate(expand=True)</code> on RGB → 角是黑实色 → ✅ <strong>先转 RGBA 再 rotate</strong></li>
+<li>❌ GaussianBlur 羽化 alpha → 半透明黑 → ✅ <strong>二值化</strong>(&gt;128 → 255)</li>
+<li>❌ shadow 扩散 + 画布色 → 半透明黑 → ✅ <strong>完全去掉 shadow</strong></li>
+<li>❌ RGB 转 RGBA → alpha 默认 255 → ✅ RGBA 直接创建,fill=(0,0,0,0)</li>
+<li>❌ JPG 保存 RGBA → alpha 丢 → ✅ .png 留 alpha,.jpg 强制 RGB</li>
+<li>❌ shadow offset (12,12) → 视觉不对称 → ✅ all-around 或去掉</li>
+<li>❌ 不显式 z-order → 谁覆盖谁不确定 → ✅ LayerSpec.z 显式</li>
+<li>❌ 文字无描边 → 亮色照片读不清 → ✅ stroke_fill=(0,0,0) 黑色描边</li>
 </ol>
+<hr />
+<h2 id="自检清单-按手册-③-10">自检清单 (按手册 ③)</h2>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>项目</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 文档</td>
+<td>SKILL.md 第一段 30 秒答"管什么 / 不管什么"</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>① 文档</td>
+<td>触发词表 = 9 个动词+名词组合</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>② 契约</td>
+<td>argparse schema 文档化</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>② 契约</td>
+<td>统一 <code>{status, data, message}</code> JSON</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>② 契约</td>
+<td>错误含字段名 + 当前值 + 期望值 + 怎么修</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>③ 业务</td>
+<td>模块切分 4 个(operations/core/infra/features),各 50-200 行</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>③ 业务</td>
+<td>软规则用心法表达</td>
+<td>✅ (在 references/)</td>
+</tr>
+<tr>
+<td>③ 业务</td>
+<td>硬规则集中在 <code>core/validators.py</code></td>
+<td>✅</td>
+</tr>
+<tr>
+<td>④ 数据</td>
+<td>infra/canvas.py / diagnostics.py / presets_data.py</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>⑤ 集成</td>
+<td>输入校验 + 失败降级 + 标准 JSON</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="快速上手-3-分钟-11">快速上手(3 分钟)</h2>
+<pre><code class="language-bash"># 1. 查平台预设
+封面合成 presets --platform douyin
+# → {&quot;ratio&quot;: &quot;9:16&quot;, &quot;size&quot;: [1080, 1920], &quot;name&quot;: &quot;抖音&quot;}
 
-<p>满足这 3 条,半透明黑问题消失 90%。剩下 10% 来自 shadow / 抗锯齿,需要 <code>diagnose()</code> 兜底。</p>
+# 2a. 自动挡(只传 --photos,AI 决策)
+封面合成 auto \
+  --photos ~/DAY14/汉堡特写.jpg ~/DAY14/吃包.jpg ~/DAY14/健身房.jpg \
+  -o ~/DAY14/cover.jpg
+# → 智能决策:layout=symmetric-cascade, aspect=9:16, bg=#000000
+# → 返回的 decisions 字段告诉你 AI 为啥这样选
 
-<h2>版本</h2>
-<p>见 <a href="changelog.md">changelog.md</a>。当前 v1.0。</p>
+# 2b. 手动挡(传完整参数,精确控制)
+封面合成 compose \
+  --photos ~/DAY14/汉堡特写.jpg ~/DAY14/吃包.jpg ~/DAY14/健身房.jpg \
+  --layout symmetric-cascade \
+  --aspect 16:9 \
+  --text '{&quot;main&quot;:&quot;14 天&quot;,&quot;sub&quot;:&quot;-7 斤&quot;,&quot;tags&quot;:&quot;腰突 大基数&quot;}' \
+  -o ~/DAY14/cover.jpg
 
+# 3. 自检
+封面合成 diagnose ~/DAY14/cover.jpg
+# → status: &quot;ok&quot; 或 &quot;warn&quot;,给出具体警告和修复建议
+</code></pre>
+<hr />
+<h2 id="完整-changelog-12">完整 changelog</h2>
+<h3>v1.0 (2026-07-15)</h3>
+<ul>
+<li>初版。从智剪工坊 DAY14 封面处理的 16 个真实踩坑提取</li>
+<li>4 个 layout + 3 个子命令</li>
+<li>完整的 5 层架构 + 16 条反模式防御</li>
+<li>目录重构:scripts → operations+core,lib → infra,新增 features(业务说明文档)</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>封面合成/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

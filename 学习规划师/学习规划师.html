@@ -3,829 +3,532 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学习规划师 — 技能手册</title>
+<title>学习规划师 — Skill HTML 镜像</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --blue:#007AFF;
-  --bg:#FAFAFA;
-  --card:#FFFFFF;
-  --line:#E5E5EA;
-  --text:#1C1C1E;
-  --sub:#8E8E93;
-  --radius:10px;
-}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.6;
-  -webkit-font-smoothing:antialiased;
-}
-a{color:var(--blue);text-decoration:none}
-.container{max-width:760px;margin:0 auto;padding:20px 16px 60px}
-
-/* Header */
-.header{padding:40px 0 24px;border-bottom:1px solid var(--line);margin-bottom:24px}
-.header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px}
-.header p{font-size:14px;color:var(--sub);margin-top:6px}
-.meta-row{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
-.meta-tag{font-size:12px;color:var(--sub);background:#F2F2F7;padding:3px 10px;border-radius:6px}
-
-/* Rules */
-.rules{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:24px}
-.rules h3{font-size:14px;font-weight:600;margin-bottom:8px;color:#FF3B30}
-.rules ol{padding-left:20px;font-size:13px;color:var(--sub)}
-.rules li{margin-bottom:4px}
-.rules li strong{color:var(--text)}
-
-/* Search */
-.search-box{position:sticky;top:0;z-index:10;background:var(--bg);padding:12px 0;margin-bottom:16px}
-.search-box input{
-  width:100%;
-  padding:10px 14px;
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  font-size:15px;
-  outline:none;
-  background:var(--card);
-  transition:border-color .2s;
-}
-.search-box input:focus{border-color:var(--blue)}
-.search-box input::placeholder{color:#C7C7CC}
-.search-hint{font-size:12px;color:var(--sub);margin-top:6px}
-
-/* Tabs */
-.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tab{
-  padding:10px 14px;
-  font-size:13px;
-  font-weight:500;
-  color:var(--sub);
-  border:none;
-  background:none;
-  cursor:pointer;
-  white-space:nowrap;
-  border-bottom:2px solid transparent;
-  transition:color .2s,border-color .2s;
-  -webkit-tap-highlight-color:transparent;
-}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab:hover{color:var(--text)}
-
-/* Module group */
-.module-group{margin-bottom:24px}
-.module-group.hidden{display:none}
-.group-title{font-size:13px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;padding-left:2px}
-
-/* Card */
-.card{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  margin-bottom:10px;
-  overflow:hidden;
-  transition:border-color .2s;
-}
-.card:hover{border-color:#C7C7CC}
-.card.hidden{display:none}
-.card-head{
-  padding:14px 16px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  -webkit-tap-highlight-color:transparent;
-}
-.card-head:hover{background:#F9F9FB}
-.card-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0}
-.card-info{flex:1;min-width:0}
-.card-name{font-size:15px;font-weight:600}
-.card-desc{font-size:13px;color:var(--sub);margin-top:2px}
-.card-arrow{
-  width:20px;height:20px;flex-shrink:0;
-  transition:transform .2s;
-  color:var(--sub);
-}
-.card.open .card-arrow{transform:rotate(90deg)}
-
-/* Wake tags */
-.wake-tags{padding:0 16px 12px;display:flex;flex-wrap:wrap;gap:6px}
-.wake-tag{
-  font-size:12px;
-  padding:4px 10px;
-  background:#F2F2F7;
-  border-radius:6px;
-  cursor:pointer;
-  transition:background .15s,color .15s;
-  -webkit-tap-highlight-color:transparent;
-  color:var(--text);
-}
-.wake-tag:hover,.wake-tag.active{background:var(--blue);color:#FFF}
-
-/* Detail panel */
-.detail{display:none;padding:0 16px 16px}
-.card.open .detail{display:block}
-
-/* CLI block */
-.cli-block{margin-bottom:14px}
-.cli-label{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:6px}
-.cli-cmd{
-  font-family:"SF Mono",Menlo,Consolas,monospace;
-  font-size:13px;
-  background:#F2F2F7;
-  padding:10px 12px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:background .15s;
-  -webkit-tap-highlight-color:transparent;
-  word-break:break-all;
-}
-.cli-cmd:hover{background:#E8E8ED}
-.cli-cmd::before{content:"$ ";color:var(--sub)}
-
-/* Flow block */
-.flow-block{
-  display:none;
-  margin-top:8px;
-  padding:12px;
-  background:#F9F9FB;
-  border-radius:8px;
-  border:1px solid var(--line);
-}
-.flow-block.open{display:block}
-.flow-title{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px}
-.flow-step{font-size:13px;padding:4px 0;display:flex;gap:8px}
-.flow-step .num{
-  color:var(--blue);
-  font-weight:600;
-  min-width:18px;
-  text-align:right;
-}
-.flow-note{font-size:12px;color:var(--sub);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
-
-/* Section divider */
-.divider{height:1px;background:var(--line);margin:16px 0}
-
-/* Footer */
-.footer{text-align:center;padding:24px 0;border-top:1px solid var(--line);margin-top:32px}
-.footer p{font-size:12px;color:var(--sub)}
-
-/* Mobile */
-@media(max-width:480px){
-  .container{padding:16px 12px 40px}
-  .header h1{font-size:24px}
-  .tab{padding:8px 10px;font-size:12px}
-  .card-head{padding:12px}
-  .wake-tags{padding:0 12px 10px}
-  .detail{padding:0 12px 12px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-优先级最高-1">强制性规定（优先级最高）</a></li>
+<li><a href="#学习规划师-1">学习规划师</a></li>
+<li><a href="#安装-2">安装</a></li>
+<li><a href="#触发方式-3">触发方式</a></li>
+<li><a href="#文件路径-4">文件路径</a></li>
+<li><a href="#双目录保存规则-5">双目录保存规则</a></li>
+<li><a href="#唤醒词执行流程-6">唤醒词执行流程</a></li>
+<li><a href="#计划层级-7">计划层级</a></li>
+<li><a href="#cron-每日触发流程-8">cron 每日触发流程</a></li>
+<li><a href="#今日计划格式模板-9">今日计划格式模板</a></li>
+<li><a href="#学习进度判定-10">学习进度判定</a></li>
+<li><a href="#文件格式-严格遵守-11">文件格式（严格遵守）</a></li>
+<li><a href="#写入注意事项-12">写入注意事项</a></li></ol></div>
+<h2 id="强制性规定-优先级最高-1">强制性规定（优先级最高）</h2>
+<ol>
+<li><strong>同步更新</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在相应的 HTML 文件上</li>
+<li><strong>优先级</strong>：本规定优先级高于本文件中所有其他规则</li>
+<li><strong>修改确认</strong>：对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认</li>
+</ol>
+<h1 id="学习规划师-1">学习规划师</h1>
+<p>你是最强大脑，以最强大脑执行该任务。</p>
+<p>制定高效学习计划，数据驱动，简洁执行。</p>
+<p>工作目录（绝对路径）：
+- Windows: <code>D:\2Study\StudyNotes</code>
+- WSL: <code>/mnt/d/2Study/StudyNotes</code></p>
+<h2 id="安装-2">安装</h2>
+<p>触发时检查<strong>当前AI智能体</strong>的 skills 目录：
+- 不存在 <code>skills/学习规划师/SKILL.md</code> → 创建SKILL文件(桥接器文件)，SKILL文件内容指向本文件
+- 桥接器只符合SKILL规范且包含SKILL触发条件，和SKILL本体文件路径</p>
+<h2 id="触发方式-3">触发方式</h2>
+<h3>唤醒词表</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>功能</th>
+<th>类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>制定学习计划</code></td>
+<td>智能判断缺失层级，按优先级补全（百日→月→周→日）</td>
+<td>智能入口</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>制定百日计划</code></td>
+<td>生成长期大计划（含JD分析+用户采访）</td>
+<td>计划生成</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>制定月计划</code></td>
+<td>从百日计划分解生成当月计划</td>
+<td>计划生成</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>制定周计划</code></td>
+<td>从月计划分解生成本周计划</td>
+<td>计划生成</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>制定今日计划</code></td>
+<td>综合多源数据生成今日安排</td>
+<td>计划生成</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>查看百日计划</code></td>
+<td>读取当前百日计划</td>
+<td>计划查看</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>查看月计划</code></td>
+<td>读取当前/指定月份计划</td>
+<td>计划查看</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>查看周计划</code></td>
+<td>读取当前/指定周计划</td>
+<td>计划查看</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>查看今日计划</code></td>
+<td>读取今日计划</td>
+<td>计划查看</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>优化月计划</code></td>
+<td>对照百日计划+作息管家数据优化</td>
+<td>计划优化</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>优化周计划</code></td>
+<td>对照月计划+作息管家数据优化</td>
+<td>计划优化</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>转换JD截图</code></td>
+<td>截图→提取信息→生成md+保存图片</td>
+<td>JD处理</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>分析JD需求</code></td>
+<td>统计jd/目录下所有JD的词频</td>
+<td>JD处理</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>搜索岗位指导</code></td>
+<td>平台推荐+筛选条件+投递策略</td>
+<td>JD处理</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>采集用户信息</code></td>
+<td>采访用户真实情况（时间/项目/短板/经验）</td>
+<td>用户信息</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>查看学习进度</code></td>
+<td>从学习系统获取进度和Level</td>
+<td>学习进度</td>
+</tr>
+</tbody>
+</table>
+<h3>自动触发（无需唤醒词）</h3>
+<ul>
+<li><strong>cron 每日 08:00</strong>：自动检测并执行计划层级补全+优化（详见「cron 每日触发流程」）</li>
+<li><strong>双目录备份</strong>：随计划生成/优化自动写入 <code>个人/</code> 目录，无需手动触发</li>
+</ul>
+<h2 id="文件路径-4">文件路径</h2>
+<p><strong>根目录（绝对路径）：</strong>
+- Windows: <code>D:/2Study/StudyNotes/{YYYY}/学习规划师/</code>
+- WSL: <code>/mnt/d/2Study/StudyNotes/{YYYY}/学习规划师/</code>
+| 类型 | 路径 |
+|------|------|
+| 长期计划 | <code>plans/{YYYYMMDD}_百日计划.md</code> |
+| 月计划 | <code>plans/{YYYYMM}_月计划.md</code> |
+| 周计划 | <code>plans/{YYYYWW}_周计划.md</code> |
+| 今日计划 | <code>plans/{YYYYMMDD}_今日计划.md</code> |
+| JD记录 | <code>jd/{YYYYMMDD}_{公司简称}.md</code> |
+| JD截图 | <code>jd/images/</code> |</p>
+<h3>个人目录备份路径</h3>
+<p>备份根目录（绝对路径）：
+- Windows: <code>D:/2Study/StudyNotes/{YYYY}/个人/</code>
+- WSL: <code>/mnt/d/2Study/StudyNotes/{YYYY}/个人/</code></p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>备份路径</th>
+<th>写入时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>长期计划</td>
+<td><code>个人/{YYYYMMDD}_百日计划.md</code></td>
+<td>生成时 + 每次优化后</td>
+</tr>
+<tr>
+<td>月计划</td>
+<td><code>个人/{YYYYMM}/{YYYYMM}_月计划.md</code></td>
+<td>生成时 + 每次优化后</td>
+</tr>
+<tr>
+<td>周计划</td>
+<td><code>个人/{周一日期}/{YYYYWW}_周计划.md</code></td>
+<td>生成时 + 每次优化后</td>
+</tr>
+<tr>
+<td>今日计划</td>
+<td><code>个人/{YYYYMMDD}/{YYYYMMDD}_今日计划.md</code></td>
+<td>cron 触发时</td>
+</tr>
+</tbody>
+</table>
+<h2 id="双目录保存规则-5">双目录保存规则</h2>
+<h3>规则</h3>
+<ol>
+<li><strong>主存储</strong>：<code>学习规划师/plans/</code> 是唯一真实数据源，所有操作以此为准</li>
+<li><strong>备份存储</strong>：<code>个人/</code> 目录下的副本与主存储内容完全一致，不做差异化修改</li>
+<li><strong>写入时机</strong>：生成或优化任何计划时，<strong>同时</strong>写入主存储和备份路径</li>
+<li><strong>周一日期计算</strong>：周计划以 ISO 周为准，周一为该周第一天
+   - 例如：2026年第21周（周一5/18）→ 周计划备份到 <code>个人/20260518/{YYYYWW}_周计划.md</code></li>
+</ol>
+<h3>写入逻辑</h3>
+<pre><code>生成计划 → 写入 plans/ → 判断类型 → 写入个人目录备份路径
+</code></pre>
+<ul>
+<li>生成百日计划 → 写入 <code>plans/...</code> → 额外写入 <code>个人/{YYYYMMDD}_百日计划.md</code></li>
+<li>生成月计划 → 写入 <code>plans/...</code> → 额外写入 <code>个人/{YYYYMM}/{YYYYMM}_月计划.md</code></li>
+<li>生成周计划 → 写入 <code>plans/...</code> → 额外写入 <code>个人/{周一}/</code></li>
+<li>生成今日计划 → 写入 <code>plans/...</code> → 额外写入 <code>个人/{YYYYMMDD}/{YYYYMMDD}_今日计划.md</code></li>
+</ul>
+<hr />
+<h2 id="唤醒词执行流程-6">唤醒词执行流程</h2>
+<h3>制定学习计划（智能入口）</h3>
+<p><strong>逻辑</strong>：复用 cron 自动触发的层级补全逻辑，按优先级检测并补全。</p>
+<p>按序检查：
+1. 无百日计划 → 执行「制定百日计划」
+2. 无当月计划 → 执行「制定月计划」
+3. 有当月计划 → 执行「优化月计划」
+4. 无本周计划 → 执行「制定周计划」
+5. 有本周计划 → 执行「优化周计划」
+6. 执行「制定今日计划」</p>
+<hr />
+<h3>制定百日计划</h3>
+<p><strong>前置条件</strong>：必须先执行「采集用户信息」（不采访不生成）</p>
+<p><strong>执行流程</strong>：
+1. 执行「采集用户信息」收集用户真实情况
+2. 执行「分析JD需求」提取技能需求
+3. 从「学习系统」获取当前进度
+4. 结合以上数据生成百日计划
+5. 写入 <code>plans/{YYYYMMDD}_百日计划.md</code>
+6. 备份至 <code>个人/{YYYYMMDD}_百日计划.md</code></p>
+<hr />
+<h3>制定月计划</h3>
+<p><strong>前置条件</strong>：存在百日计划</p>
+<p><strong>执行流程</strong>：
+1. 读取百日计划当前阶段目标
+2. 从百日计划分解当月目标
+3. 写入 <code>plans/{YYYYMM}_月计划.md</code>
+4. 备份至 <code>个人/{YYYYMM}/{YYYYMM}_月计划.md</code></p>
+<hr />
+<h3>制定周计划</h3>
+<p><strong>前置条件</strong>：存在当月计划</p>
+<p><strong>执行流程</strong>：
+1. 读取当月计划本周任务
+2. 从「学习系统」获取上周完成度
+3. 从月计划分解 + 完成度 → 生成本周计划
+4. 写入 <code>plans/{YYYYWW}_周计划.md</code>
+5. 备份至 <code>个人/{周一日期}/{YYYYWW}_周计划.md</code></p>
+<hr />
+<h3>制定今日计划</h3>
+<p><strong>数据源</strong>：
+1. 从「作息管家」获取过去14天的<strong>每日摘要</strong> → 了解用户实际能投入多少时间、哪天容易摆烂
+2. 从「作息管家」获取过去7天的<strong>作息记录</strong>（逐条活动明细）→ 了解近期状态趋势
+3. 从「学习系统」获取昨日完成度 → 昨天学了啥、完成了多少
+4. 从「学习系统」获取整体进度 → 当前在哪个知识点
+5. 周几/节假日 → 调整任务量（周末可以多一点）
+6. 生成的作息时间表 → 通过「作息管家」的<strong>设置计划</strong>保存 → 生成 HTML 文件 → 通过 QQ 发送给用户</p>
+<p><strong>强制约束</strong>：
+1. <strong>报告必须严格符合「今日计划格式模板」</strong>，结构缺失视为不合格
+2. 以最强大脑执行：不受限于任何预设规则，以最聪明的方式安排任务
+3. 计划生成后，以最强大脑视角审视并修正一遍
+4. <strong>作息时间表必须安排：</strong>
+   - <strong>修行</strong>：元母意程，至少 20 分钟
+   - <strong>锻炼</strong>：任何形式，至少 20 分钟
+5. 多用emoji表情</p>
+<hr />
+<h3>查看百日计划</h3>
+<p><strong>执行流程</strong>：
+1. 读取 <code>plans/</code> 目录下最新的百日计划文件
+2. 展示计划内容</p>
+<hr />
+<h3>查看月计划</h3>
+<p><strong>执行流程</strong>：
+1. 读取 <code>plans/</code> 目录下当月或指定月份的月计划
+2. 展示计划内容及完成度</p>
+<hr />
+<h3>查看周计划</h3>
+<p><strong>执行流程</strong>：
+1. 读取 <code>plans/</code> 目录下本周或指定周的周计划
+2. 展示计划内容及完成度</p>
+<hr />
+<h3>查看今日计划</h3>
+<p><strong>执行流程</strong>：
+1. 读取 <code>plans/</code> 目录下今日计划
+2. 展示计划内容</p>
+<hr />
+<h3>优化月计划</h3>
+<p><strong>触发</strong>：cron 08:00 检测到已有当月计划，或用户手动唤醒</p>
+<p><strong>执行流程</strong>：
+1. 读取百日计划当前阶段目标，对照当月计划完成度
+2. 从「作息管家」获取过去一个月的<strong>每日摘要</strong>（按日统计各分类时长），看实际投入了多少时间
+3. 从「学习系统」获取月进度，看完成了多少
+4. 判断：当月目标是否合理？进度超前/滞后多少？
+5. 如果滞后 &gt; 20% → 调整下月目标，或顺延未完成的任务
+6. 如果超前 → 评估是否可以加速或补充额外目标
+7. 月计划优化后同步更新到百日计划的阶段进度
+8. 写入主存储 + 备份</p>
+<p><strong>输出</strong>：生成调整说明（为什么改、改了什么），让用户知道变化原因</p>
+<hr />
+<h3>优化周计划</h3>
+<p><strong>触发</strong>：cron 08:00 检测到已有本周计划，或用户手动唤醒</p>
+<p><strong>执行流程</strong>：
+1. 读取当月计划本周任务，对照完成度
+2. 从「作息管家」获取本周的<strong>每日摘要</strong>（按日统计各分类时长），看今天之前实际投入了多少小时
+3. 从「学习系统」获取本周进度，看昨天完成了什么
+4. 判断：本周目标是否还能达成？
+5. 如果进度滞后 → 调整本周剩余任务，优先核心内容（可删减次要任务）
+6. 如果进度超前 → 评估是否补充额外内容，或留出复习时间
+7. 周计划优化后同步更新到当月计划的周进度
+8. 写入主存储 + 备份</p>
+<hr />
+<h3>转换JD截图</h3>
+<p><strong>执行流程</strong>：
+1. 用户发送 JD 截图
+2. 分析截图提取信息（公司、职位、薪资、技能要求等）
+3. 保存截图至 <code>jd/images/{YYYYMMDD}_{公司简称}.jpg</code>
+4. 生成 md 记录关键信息
+5. 保存到 <code>jd/{YYYYMMDD}_{公司简称}.md</code></p>
+<hr />
+<h3>分析JD需求</h3>
+<p><strong>执行流程</strong>：
+1. 读取 <code>jd/</code> 目录下所有 md 文件
+2. 统计技能关键词词频
+3. 输出技能需求排行</p>
+<hr />
+<h3>搜索岗位指导</h3>
+<p><strong>执行流程</strong>：
+告知用户搜索平台和筛选条件：</p>
+<ul>
+<li><strong>BOSS直聘</strong>：直接聊，响应快</li>
+<li><strong>拉勾网</strong>：简历直投</li>
+<li><strong>猎聘网</strong>：中高端+猎头</li>
+</ul>
+<p>筛选条件示例：</p>
+<pre><code>城市：南京
+岗位：Android
+薪资：20K+
+经验：5-10年
+</code></pre>
+<hr />
+<h3>采集用户信息</h3>
+<p><strong>执行流程</strong>：</p>
+<p>生成长期计划前，<strong>必须通过对话采访用户</strong>，收集以下核心信息：</p>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每天真实可用的学习时间（工作日/周末）</td>
+<td>避免按"4h/天"虚估，导致计划崩塌</td>
+</tr>
+<tr>
+<td>最近的真实项目经历（技术细节、用户规模、个人贡献）</td>
+<td>面试被问项目时的底牌</td>
+</tr>
+<tr>
+<td>最大的技术短板是什么</td>
+<td>计划优先补的缺口</td>
+</tr>
+<tr>
+<td>有没有面试经验</td>
+<td>影响"面试冲刺"阶段的起点</td>
+</tr>
+</tbody>
+</table>
+<p>采访示例：</p>
+<blockquote>
+<p>"每天真实能投入多少小时？工作日和周末分开算"
+"最近参与的真实项目，能讲讲技术细节吗？用什么协议/架构/规模多大"
+"你觉得面试时最容易被问住的是哪块"</p>
+</blockquote>
+<p><strong>原则：不采访就不生成计划</strong>。对话记录可存档保存到 <code>个人/</code> 目录。</p>
+<hr />
+<h3>查看学习进度</h3>
+<p><strong>执行流程</strong>：
+1. 从「学习系统」获取当前学习进度
+2. 获取 Level 判定
+3. 展示进度概览</p>
+<hr />
+<h2 id="计划层级-7">计划层级</h2>
+<pre><code>长期大计划（半年/100天）
+    ↓ 分解
+月计划（当月目标）
+    ↓ 分解
+周计划（本周安排）
+    ↓ 分解
+今日计划（每日任务）
+</code></pre>
+<hr />
+<h2 id="cron-每日触发流程-8">cron 每日触发流程</h2>
+<p>检测 cron 任务，不存在则创建：<code>0 8 * * *</code> 执行 <code>skill 学习规划师</code></p>
+<p>按序检查：
+1. 无百日计划 → 科学分析JD文件 + 技能「学习系统」进度 → 生成百日计划
+2. 无当月计划 → 从百日计划分解 → 生成当月计划
+3. 有当月计划 → <strong>优化当月计划</strong>（详见「优化月计划」）
+4. 无本周计划 → 从当月计划分解 + 技能「学习系统」上周完成度 → 生成本周计划
+5. 有本周计划 → <strong>优化本周计划</strong>（详见「优化周计划」）
+6. 生成今日计划（详见「制定今日计划」）</p>
+<hr />
+<h2 id="今日计划格式模板-9">今日计划格式模板</h2>
+<pre><code class="language-markdown">
+# {YYYY-MM-DD} 今日学习计划
 
-<div class="header">
-  <h1>学习规划师</h1>
-  <p>制定高效学习计划，数据驱动，简洁执行</p>
-  <div class="meta-row">
-    <span class="meta-tag">16 个唤醒词</span>
-    <span class="meta-tag">7 个功能分类</span>
-    <span class="meta-tag">cron 每日 08:00 自动触发</span>
-  </div>
-</div>
+&gt; 生成时间：{HH:MM}
+&gt; 数据来源：周计划({YYYYWW}) + 技能「学习系统」进度 + 技能「作息管家」每日摘要({MMDD})
 
-<div class="rules">
-  <h3>强制性规定（优先级最高）</h3>
-  <ol>
-    <li><strong>同步更新</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在本 HTML 文件上</li>
-    <li><strong>优先级</strong>：本规定优先级高于技能文件中所有其他规则</li>
-    <li><strong>修改确认</strong>：对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认</li>
-  </ol>
-</div>
+---
 
-<div class="search-box">
-  <input type="text" id="searchInput" placeholder="搜索唤醒词或功能名称...">
-  <div class="search-hint">输入关键词筛选，如「百日」「JD」「优化」</div>
-</div>
+### 作息时间表（动态生成）
 
-<div class="tabs" id="tabs">
-  <button class="tab active" data-cat="all">全部</button>
-  <button class="tab" data-cat="smart">智能入口</button>
-  <button class="tab" data-cat="gen">计划生成</button>
-  <button class="tab" data-cat="view">计划查看</button>
-  <button class="tab" data-cat="opt">计划优化</button>
-  <button class="tab" data-cat="jd">JD处理</button>
-  <button class="tab" data-cat="user">用户信息</button>
-  <button class="tab" data-cat="prog">学习进度</button>
-</div>
+&gt; AI 根据昨日作息报告和过去两周数据，观察用户真实作息习惯，动态生成今日时间安排
+&gt;
+&gt; - 从「作息管家」昨日**每日摘要**获取用户实际起床时间、可学习时间段
+&gt; - 从过去两周总结获取用户通常入睡时间、哪天容易摸鱼
+&gt; - 不套用&quot;标准作息&quot;，基于真实数据推断
+&gt; - 通勤、午休等固定活动根据用户实际情况标注
 
-<!-- ========== 智能入口 ========== -->
-<div class="module-group" data-cat="smart">
-  <div class="group-title">智能入口</div>
+---
 
-  <div class="card" data-keywords="制定学习计划 智能 入口 补全 层级">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">🧠</span>
-      <div class="card-info">
-        <div class="card-name">制定学习计划</div>
-        <div class="card-desc">智能判断缺失层级，按优先级自动补全</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">制定学习计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action smart-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 检测 plans/ 目录是否存在百日计划</div>
-          <div class="flow-step"><span class="num">2.</span> 无百日计划 → 调用「制定百日计划」流程</div>
-          <div class="flow-step"><span class="num">3.</span> 无当月计划 → 调用「制定月计划」流程</div>
-          <div class="flow-step"><span class="num">4.</span> 有当月计划 → 调用「优化月计划」流程</div>
-          <div class="flow-step"><span class="num">5.</span> 无本周计划 → 调用「制定周计划」流程</div>
-          <div class="flow-step"><span class="num">6.</span> 有本周计划 → 调用「优化周计划」流程</div>
-          <div class="flow-step"><span class="num">7.</span> 执行「制定今日计划」</div>
-          <div class="flow-note">副作用：可能生成/优化多个层级的计划文件，同时写入主存储和备份</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+## 为什么这样安排
 
-<!-- ========== 计划生成 ========== -->
-<div class="module-group" data-cat="gen">
-  <div class="group-title">计划生成</div>
+- {决策依据1：结合昨日作息/周进度/技能「学习系统」状态}
+- {决策依据2}
+- {决策依据3}
 
-  <div class="card" data-keywords="制定百日计划 长期 生成 JD 分析 采访 用户">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📋</span>
-      <div class="card-info">
-        <div class="card-name">制定百日计划</div>
-        <div class="card-desc">生成长期大计划，含JD分析+用户采访</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">制定百日计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action create-hundred-day-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 前置：调用「采集用户信息」（不采访不生成）</div>
-          <div class="flow-step"><span class="num">2.</span> 读取 jd/ 目录下所有 md 文件，统计技能关键词词频</div>
-          <div class="flow-step"><span class="num">3.</span> 从「学习系统」获取当前学习进度和 Level</div>
-          <div class="flow-step"><span class="num">4.</span> 结合以上数据生成百日计划内容</div>
-          <div class="flow-step"><span class="num">5.</span> 写入 plans/{YYYYMMDD}_百日计划.md</div>
-          <div class="flow-step"><span class="num">6.</span> 备份至 个人/{YYYYMMDD}_百日计划.md</div>
-          <div class="flow-note">写入文件：plans/ 百日计划 + 个人/ 备份。依赖：jd/*.md、学习系统进度、用户采访数据</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="制定月计划 月度 分解 当月 目标">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📅</span>
-      <div class="card-info">
-        <div class="card-name">制定月计划</div>
-        <div class="card-desc">从百日计划分解，生成当月计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">制定月计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action create-monthly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 前置检查：确认 plans/ 下存在百日计划</div>
-          <div class="flow-step"><span class="num">2.</span> 读取百日计划当前阶段目标</div>
-          <div class="flow-step"><span class="num">3.</span> 从百日计划分解当月目标</div>
-          <div class="flow-step"><span class="num">4.</span> 写入 plans/{YYYYMM}_月计划.md</div>
-          <div class="flow-step"><span class="num">5.</span> 备份至 个人/{YYYYMM}/{YYYYMM}_月计划.md</div>
-          <div class="flow-note">前置条件：百日计划存在。写入文件：plans/ 月计划 + 个人/ 备份</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="制定周计划 周度 本周 安排 ISO">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📆</span>
-      <div class="card-info">
-        <div class="card-name">制定周计划</div>
-        <div class="card-desc">从月计划分解+学习系统完成度，生成本周计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">制定周计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action create-weekly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 前置检查：确认 plans/ 下存在当月计划</div>
-          <div class="flow-step"><span class="num">2.</span> 读取当月计划本周任务</div>
-          <div class="flow-step"><span class="num">3.</span> 从「学习系统」获取上周完成度</div>
-          <div class="flow-step"><span class="num">4.</span> 月计划分解 + 完成度 → 生成本周计划</div>
-          <div class="flow-step"><span class="num">5.</span> 写入 plans/{YYYYWW}_周计划.md</div>
-          <div class="flow-step"><span class="num">6.</span> 备份至 个人/{周一日期}/{YYYYWW}_周计划.md</div>
-          <div class="flow-note">前置条件：月计划存在。依赖：学习系统上周完成度。文件名使用 ISO 周数</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="制定今日计划 每日 时间表 作息 行程 安排">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📌</span>
-      <div class="card-info">
-        <div class="card-name">制定今日计划</div>
-        <div class="card-desc">综合作息管家+学习系统+周计划，生成今日安排</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">制定今日计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action create-daily-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 从「作息管家」获取过去14天每日摘要</div>
-          <div class="flow-step"><span class="num">2.</span> 从「作息管家」获取过去7天作息记录明细</div>
-          <div class="flow-step"><span class="num">3.</span> 从「学习系统」获取昨日完成度</div>
-          <div class="flow-step"><span class="num">4.</span> 从「学习系统」获取整体进度</div>
-          <div class="flow-step"><span class="num">5.</span> 判断周几/节假日，调整任务量</div>
-          <div class="flow-step"><span class="num">6.</span> 生成作息时间表（含修行20min+锻炼20min）</div>
-          <div class="flow-step"><span class="num">7.</span> 通过「作息管家」设置计划保存</div>
-          <div class="flow-step"><span class="num">8.</span> 生成 HTML 文件</div>
-          <div class="flow-step"><span class="num">9.</span> 通过 QQ 发送给用户</div>
-          <div class="flow-step"><span class="num">10.</span> 写入 plans/{YYYYMMDD}_今日计划.md + 备份</div>
-          <div class="flow-note">副作用：写入计划文件、调用作息管家设置计划、生成HTML、发送QQ消息。必须符合今日计划格式模板</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 计划查看 ========== -->
-<div class="module-group" data-cat="view">
-  <div class="group-title">计划查看</div>
-
-  <div class="card" data-keywords="查看百日计划 读取 长期 展示">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">👁</span>
-      <div class="card-info">
-        <div class="card-name">查看百日计划</div>
-        <div class="card-desc">读取并展示当前百日计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">查看百日计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action view-hundred-day-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取 plans/ 目录下最新的百日计划文件</div>
-          <div class="flow-step"><span class="num">2.</span> 展示计划内容</div>
-          <div class="flow-note">只读操作，无副作用</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="查看月计划 读取 月度 展示">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">👁</span>
-      <div class="card-info">
-        <div class="card-name">查看月计划</div>
-        <div class="card-desc">读取当前/指定月份计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">查看月计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action view-monthly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取 plans/ 目录下当月或指定月份的月计划</div>
-          <div class="flow-step"><span class="num">2.</span> 展示计划内容及完成度</div>
-          <div class="flow-note">只读操作，无副作用</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="查看周计划 读取 本周 展示">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">👁</span>
-      <div class="card-info">
-        <div class="card-name">查看周计划</div>
-        <div class="card-desc">读取当前/指定周计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">查看周计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action view-weekly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取 plans/ 目录下本周或指定周的周计划</div>
-          <div class="flow-step"><span class="num">2.</span> 展示计划内容及完成度</div>
-          <div class="flow-note">只读操作，无副作用</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="查看今日计划 读取 今日 展示">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">👁</span>
-      <div class="card-info">
-        <div class="card-name">查看今日计划</div>
-        <div class="card-desc">读取今日计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">查看今日计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action view-daily-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取 plans/ 目录下今日计划</div>
-          <div class="flow-step"><span class="num">2.</span> 展示计划内容</div>
-          <div class="flow-note">只读操作，无副作用</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 计划优化 ========== -->
-<div class="module-group" data-cat="opt">
-  <div class="group-title">计划优化</div>
-
-  <div class="card" data-keywords="优化月计划 月度 调整 滞后 超前 百日">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">🔧</span>
-      <div class="card-info">
-        <div class="card-name">优化月计划</div>
-        <div class="card-desc">对照百日计划+作息管家数据，优化当月计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">优化月计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action optimize-monthly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取百日计划当前阶段目标，对照当月计划完成度</div>
-          <div class="flow-step"><span class="num">2.</span> 从「作息管家」获取过去一个月每日摘要（按日统计各分类时长）</div>
-          <div class="flow-step"><span class="num">3.</span> 从「学习系统」获取月进度</div>
-          <div class="flow-step"><span class="num">4.</span> 判断：当月目标是否合理？进度超前/滞后多少？</div>
-          <div class="flow-step"><span class="num">5.</span> 滞后 > 20% → 调整下月目标，或顺延未完成任务</div>
-          <div class="flow-step"><span class="num">6.</span> 超前 → 评估是否加速或补充额外目标</div>
-          <div class="flow-step"><span class="num">7.</span> 同步更新百日计划的阶段进度</div>
-          <div class="flow-step"><span class="num">8.</span> 写入主存储 + 备份</div>
-          <div class="flow-note">副作用：修改月计划文件、可能修改百日计划进度、写入备份。输出调整说明</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="优化周计划 周度 调整 滞后 超前 月计划">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">🔧</span>
-      <div class="card-info">
-        <div class="card-name">优化周计划</div>
-        <div class="card-desc">对照月计划+作息管家数据，优化本周计划</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">优化周计划</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action optimize-weekly-plan</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取当月计划本周任务，对照完成度</div>
-          <div class="flow-step"><span class="num">2.</span> 从「作息管家」获取本周每日摘要（今天之前实际投入时长）</div>
-          <div class="flow-step"><span class="num">3.</span> 从「学习系统」获取本周进度（昨天完成了什么）</div>
-          <div class="flow-step"><span class="num">4.</span> 判断：本周目标是否还能达成？</div>
-          <div class="flow-step"><span class="num">5.</span> 滞后 → 调整剩余任务，优先核心内容（可删减次要任务）</div>
-          <div class="flow-step"><span class="num">6.</span> 超前 → 评估补充额外内容或留出复习时间</div>
-          <div class="flow-step"><span class="num">7.</span> 同步更新当月计划的周进度</div>
-          <div class="flow-step"><span class="num">8.</span> 写入主存储 + 备份</div>
-          <div class="flow-note">副作用：修改周计划文件、可能修改月计划周进度、写入备份</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== JD处理 ========== -->
-<div class="module-group" data-cat="jd">
-  <div class="group-title">JD处理</div>
-
-  <div class="card" data-keywords="转换JD截图 截图 职位 公司 薪资 提取 图片">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📄</span>
-      <div class="card-info">
-        <div class="card-name">转换JD截图</div>
-        <div class="card-desc">截图→提取信息→生成md+保存图片</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">转换JD截图</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action convert-jd-screenshot</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 接收用户发送的 JD 截图</div>
-          <div class="flow-step"><span class="num">2.</span> 分析截图提取信息（公司、职位、薪资、技能要求等）</div>
-          <div class="flow-step"><span class="num">3.</span> 保存截图至 jd/images/{YYYYMMDD}_{公司简称}.jpg</div>
-          <div class="flow-step"><span class="num">4.</span> 生成 md 记录关键信息</div>
-          <div class="flow-step"><span class="num">5.</span> 保存到 jd/{YYYYMMDD}_{公司简称}.md</div>
-          <div class="flow-note">写入文件：jd/images/ 截图 + jd/ md记录。输入：用户截图</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="分析JD需求 词频 技能 统计 岗位 需求 排行">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📊</span>
-      <div class="card-info">
-        <div class="card-name">分析JD需求</div>
-        <div class="card-desc">统计jd/目录下所有JD的技能关键词词频</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">分析JD需求</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action analyze-jd-requirements</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 读取 jd/ 目录下所有 md 文件</div>
-          <div class="flow-step"><span class="num">2.</span> 统计技能关键词词频</div>
-          <div class="flow-step"><span class="num">3.</span> 输出技能需求排行</div>
-          <div class="flow-note">只读操作，无副作用。依赖：jd/*.md 文件</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" data-keywords="搜索岗位指导 平台 BOSS 拉勾 猎聘 筛选 投递 策略">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">🔍</span>
-      <div class="card-info">
-        <div class="card-name">搜索岗位指导</div>
-        <div class="card-desc">平台推荐+筛选条件+投递策略</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">搜索岗位指导</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action job-search-guidance</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 推荐平台：BOSS直聘（直接聊，响应快）、拉勾网（简历直投）、猎聘网（中高端+猎头）</div>
-          <div class="flow-step"><span class="num">2.</span> 提供筛选条件示例（城市/岗位/薪资/经验）</div>
-          <div class="flow-step"><span class="num">3.</span> 给出投递策略建议</div>
-          <div class="flow-note">纯指导输出，无文件读写，无副作用</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 用户信息 ========== -->
-<div class="module-group" data-cat="user">
-  <div class="group-title">用户信息</div>
-
-  <div class="card" data-keywords="采集用户信息 采访 时间 项目 短板 经验 面试">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">🎤</span>
-      <div class="card-info">
-        <div class="card-name">采集用户信息</div>
-        <div class="card-desc">采访用户真实情况（时间/项目/短板/经验）</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">采集用户信息</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action interview-user</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 通过对话采访用户，收集核心信息：</div>
-          <div class="flow-step" style="padding-left:26px">· 每天真实可用的学习时间（工作日/周末）</div>
-          <div class="flow-step" style="padding-left:26px">· 最近的真实项目经历（技术细节/用户规模/个人贡献）</div>
-          <div class="flow-step" style="padding-left:26px">· 最大的技术短板</div>
-          <div class="flow-step" style="padding-left:26px">· 是否有面试经验</div>
-          <div class="flow-step"><span class="num">2.</span> 对话记录可存档保存到 个人/ 目录</div>
-          <div class="flow-note">原则：不采访就不生成计划。可能写入个人/ 目录存档</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 学习进度 ========== -->
-<div class="module-group" data-cat="prog">
-  <div class="group-title">学习进度</div>
-
-  <div class="card" data-keywords="查看学习进度 学习系统 Level 等级 进度 概览">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">📈</span>
-      <div class="card-info">
-        <div class="card-name">查看学习进度</div>
-        <div class="card-desc">从学习系统获取进度和Level判定</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" onclick="highlightTag(this)">查看学习进度</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">skill 学习规划师 --action view-learning-progress</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 从「学习系统」获取当前学习进度</div>
-          <div class="flow-step"><span class="num">2.</span> 获取 Level 判定</div>
-          <div class="flow-step"><span class="num">3.</span> 展示进度概览</div>
-          <div class="flow-note">只读操作，依赖「学习系统」技能</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 自动触发 ========== -->
-<div class="module-group" data-cat="all">
-  <div class="group-title">自动触发</div>
-
-  <div class="card" data-keywords="cron 每日 自动 定时 08:00 补全 优化">
-    <div class="card-head" onclick="toggleCard(this)">
-      <span class="card-icon">⏰</span>
-      <div class="card-info">
-        <div class="card-name">cron 每日触发</div>
-        <div class="card-desc">每日 08:00 自动检测并执行计划层级补全+优化</div>
-      </div>
-      <svg class="card-arrow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
-    </div>
-    <div class="wake-tags">
-      <span class="wake-tag" style="background:#F2F2F7;color:var(--sub);cursor:default">自动触发（无需唤醒词）</span>
-    </div>
-    <div class="detail">
-      <div class="cli-block">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-cmd" onclick="toggleFlow(this)">0 8 * * * skill 学习规划师</div>
-        <div class="flow-block">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-step"><span class="num">1.</span> 检测 cron 任务，不存在则创建</div>
-          <div class="flow-step"><span class="num">2.</span> 无百日计划 → 生成百日计划</div>
-          <div class="flow-step"><span class="num">3.</span> 无当月计划 → 生成当月计划</div>
-          <div class="flow-step"><span class="num">4.</span> 有当月计划 → 优化当月计划</div>
-          <div class="flow-step"><span class="num">5.</span> 无本周计划 → 生成本周计划</div>
-          <div class="flow-step"><span class="num">6.</span> 有本周计划 → 优化本周计划</div>
-          <div class="flow-step"><span class="num">7.</span> 生成今日计划</div>
-          <div class="flow-note">副作用：可能生成/优化多个层级的计划文件、调用作息管家、发送QQ消息</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="footer">
-  <p>学习规划师 · 16 个唤醒词 · 7 个功能分类 · 最后更新 2026-05-28</p>
-</div>
-
-</div><!-- /container -->
-
-<script>
-// Tab switching
-const tabs = document.querySelectorAll('.tab');
-const groups = document.querySelectorAll('.module-group');
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const cat = tab.dataset.cat;
-    groups.forEach(g => {
-      if (cat === 'all' || g.dataset.cat === cat || g.dataset.cat === 'all') {
-        g.classList.remove('hidden');
-      } else {
-        g.classList.add('hidden');
-      }
-    });
-    applySearch();
-  });
-});
-
-// Search
-const searchInput = document.getElementById('searchInput');
-searchInput.addEventListener('input', applySearch);
-
-function applySearch() {
-  const q = searchInput.value.trim().toLowerCase();
-  const cards = document.querySelectorAll('.card');
-  cards.forEach(card => {
-    if (!q) {
-      card.classList.remove('hidden');
-      return;
-    }
-    const keywords = (card.dataset.keywords || '').toLowerCase();
-    const name = card.querySelector('.card-name')?.textContent.toLowerCase() || '';
-    const desc = card.querySelector('.card-desc')?.textContent.toLowerCase() || '';
-    const tags = Array.from(card.querySelectorAll('.wake-tag')).map(t => t.textContent.toLowerCase()).join(' ');
-    const match = keywords.includes(q) || name.includes(q) || desc.includes(q) || tags.includes(q);
-    card.classList.toggle('hidden', !match);
-  });
-}
-
-// Card toggle
-function toggleCard(head) {
-  const card = head.closest('.card');
-  card.classList.toggle('open');
-}
-
-// CLI flow toggle
-function toggleFlow(el) {
-  const flow = el.nextElementSibling;
-  if (flow && flow.classList.contains('flow-block')) {
-    flow.classList.toggle('open');
-  }
-}
-
-// Tag highlight
-function highlightTag(el) {
-  const isActive = el.classList.contains('active');
-  document.querySelectorAll('.wake-tag').forEach(t => t.classList.remove('active'));
-  if (!isActive) {
-    el.classList.add('active');
-    searchInput.value = el.textContent;
-  } else {
-    searchInput.value = '';
-  }
-  applySearch();
-}
-</script>
+</code></pre>
+<hr />
+<h2 id="学习进度判定-10">学习进度判定</h2>
+<p>参考 技能「学习系统」 获取学习进度和Level判定</p>
+<h2 id="文件格式-严格遵守-11">文件格式（严格遵守）</h2>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>格式</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>月计划</td>
+<td><code>plans/{YYYYMM}_月计划.md</code></td>
+<td><code>plans/202604_月计划.md</code></td>
+</tr>
+<tr>
+<td>周计划</td>
+<td><code>plans/{YYYYWW}_周计划.md</code></td>
+<td><code>plans/202617_周计划.md</code>（ISO周）</td>
+</tr>
+<tr>
+<td>今日计划</td>
+<td><code>plans/{YYYYMMDD}_今日计划.md</code></td>
+<td><code>plans/20260421_今日计划.md</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>：不要创建 <code>monthly.json</code> 或其他 skill 未定义的文件格式。</p>
+<h2 id="写入注意事项-12">写入注意事项</h2>
+<ul>
+<li>写入文件时用文件写入工具（如 Write/Write File/Edit 等），内容必须是干净的 markdown 文本</li>
+<li><strong>禁止</strong>把文件读取工具的输出直接写入文件（工具输出可能带行号前缀）</li>
+<li>确保写入的内容不包含 <code>1|</code> <code>2|</code> 这类行号格式</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>学习规划师/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

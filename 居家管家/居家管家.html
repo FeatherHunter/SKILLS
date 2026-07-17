@@ -2,1057 +2,832 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>居家管家 — 功能手册</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>居家管家 — Skill HTML 镜像</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --blue:#007AFF;
-  --bg:#FAFAFA;
-  --card:#FFFFFF;
-  --border:#E5E5EA;
-  --text:#1C1C1E;
-  --text2:#8E8E93;
-  --text3:#AEAEB2;
-  --radius:10px;
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
-}
-html{font-size:16px;-webkit-text-size-adjust:100%}
-body{
-  font-family:var(--font);
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.5;
-  min-height:100vh;
-  padding-bottom:env(safe-area-inset-bottom,0);
-}
-
-/* ── Header ── */
-.header{
-  position:sticky;top:0;z-index:100;
-  background:rgba(250,250,250,0.85);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:0.5px solid var(--border);
-  padding:12px 16px 0;
-}
-.header h1{
-  font-size:22px;font-weight:700;letter-spacing:-0.3px;
-  margin-bottom:12px;
-}
-
-/* ── Search ── */
-.search-wrap{
-  position:relative;margin-bottom:12px;
-}
-.search-wrap svg{
-  position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  width:16px;height:16px;color:var(--text3);pointer-events:none;
-}
-#search{
-  width:100%;padding:8px 12px 8px 32px;
-  font-size:15px;font-family:var(--font);
-  background:#F2F2F7;border:none;border-radius:8px;
-  outline:none;color:var(--text);
-  transition:background .2s;
-}
-#search:focus{background:#E8E8ED}
-#search::placeholder{color:var(--text3)}
-
-/* ── Tabs ── */
-.tabs{
-  display:flex;gap:0;overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  margin:0 -16px;padding:0 16px;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex-shrink:0;
-  padding:8px 14px 10px;
-  font-size:13px;font-weight:500;
-  color:var(--text2);
-  border:none;background:none;
-  cursor:pointer;
-  border-bottom:2px solid transparent;
-  transition:color .2s,border-color .2s;
-  white-space:nowrap;
-  font-family:var(--font);
-}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab:hover{color:var(--text)}
-
-/* ── Main ── */
-.main{padding:16px;max-width:680px;margin:0 auto}
-
-/* ── Category section ── */
-.cat-section{margin-bottom:24px}
-.cat-title{
-  font-size:13px;font-weight:600;
-  color:var(--text2);text-transform:uppercase;
-  letter-spacing:0.5px;margin-bottom:10px;
-  padding-left:2px;
-}
-
-/* ── Module card ── */
-.mod{
-  background:var(--card);
-  border-radius:var(--radius);
-  border:0.5px solid var(--border);
-  margin-bottom:8px;
-  overflow:hidden;
-  transition:box-shadow .2s;
-}
-.mod:hover{box-shadow:0 1px 3px rgba(0,0,0,0.04)}
-
-.mod-header{
-  padding:14px 16px;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:space-between;
-  -webkit-tap-highlight-color:transparent;
-  user-select:none;
-}
-.mod-header:active{background:#F8F8FA}
-
-.mod-name{
-  font-size:16px;font-weight:600;
-  color:var(--text);
-}
-.mod-desc{
-  font-size:13px;color:var(--text2);
-  margin-top:2px;
-}
-.mod-left{flex:1;min-width:0}
-.mod-arrow{
-  width:20px;height:20px;flex-shrink:0;
-  color:var(--text3);
-  transition:transform .25s ease;
-  margin-left:8px;
-}
-.mod.open .mod-arrow{transform:rotate(90deg)}
-
-/* ── Expanded content ── */
-.mod-body{
-  max-height:0;overflow:hidden;
-  transition:max-height .3s ease;
-}
-.mod.open .mod-body{
-  max-height:2000px;
-}
-.mod-inner{
-  padding:0 16px 16px;
-  border-top:0.5px solid var(--border);
-}
-
-/* ── Wake words ── */
-.ww-list{
-  display:flex;flex-wrap:wrap;gap:6px;
-  margin:12px 0;
-}
-.ww{
-  display:inline-flex;align-items:center;
-  padding:5px 12px;
-  font-size:14px;font-weight:500;
-  color:var(--blue);
-  background:rgba(0,122,255,0.08);
-  border-radius:16px;
-  cursor:pointer;
-  transition:background .15s;
-  -webkit-tap-highlight-color:transparent;
-  user-select:none;
-}
-.ww:hover{background:rgba(0,122,255,0.14)}
-.ww:active{background:rgba(0,122,255,0.2)}
-.ww.expanded{
-  background:var(--blue);color:#fff;
-}
-
-/* ── CLI block ── */
-.cli-block{
-  display:none;
-  margin:8px 0;
-  padding:12px 14px;
-  background:#F2F2F7;
-  border-radius:8px;
-  font-size:13px;
-  line-height:1.6;
-  font-family:"SF Mono","Fira Code","Menlo",monospace;
-  color:var(--text);
-  word-break:break-all;
-  white-space:pre-wrap;
-}
-.cli-block.show{display:block}
-.cli-label{
-  font-size:11px;font-weight:600;
-  color:var(--text3);text-transform:uppercase;
-  letter-spacing:0.5px;margin-bottom:4px;
-  font-family:var(--font);
-}
-.cli-cmd{
-  cursor:pointer;
-  padding:2px 0;
-  transition:color .15s;
-}
-.cli-cmd:hover{color:var(--blue)}
-
-/* ── Execution flow ── */
-.exec-block{
-  display:none;
-  margin:8px 0 4px;
-  padding:12px 14px;
-  background:#F9F9FB;
-  border-radius:8px;
-  font-size:13px;
-  line-height:1.7;
-  border:0.5px solid var(--border);
-}
-.exec-block.show{display:block}
-.exec-title{
-  font-size:12px;font-weight:600;
-  color:var(--text2);margin-bottom:8px;
-}
-.exec-table{
-  font-size:13px;margin:4px 0;
-}
-.exec-table code{
-  background:#E8E8ED;padding:1px 5px;
-  border-radius:4px;font-family:"SF Mono","Menlo",monospace;
-  font-size:12px;
-}
-.exec-side{
-  margin-top:8px;padding-top:8px;
-  border-top:0.5px solid var(--border);
-  font-size:12px;color:var(--text2);
-}
-.exec-side strong{color:var(--text);font-weight:600}
-
-/* ── Empty state ── */
-.empty{
-  text-align:center;
-  padding:48px 16px;
-  color:var(--text3);
-  font-size:15px;
-}
-
-/* ── Responsive ── */
-@media(max-width:375px){
-  .header h1{font-size:20px}
-  .tab{font-size:12px;padding:6px 10px 8px}
-  .mod-name{font-size:15px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-
-<div class="header">
-  <h1>居家管家</h1>
-  <div class="search-wrap">
-    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-    <input type="text" id="search" placeholder="搜索唤醒词或功能…" autocomplete="off" />
-  </div>
-  <div class="tabs" id="tabs"></div>
-</div>
-
-<div class="main" id="main"></div>
-
-<script>
-// ── Data ──
-const DATA = [
-  {
-    cat: "物品录入",
-    modules: [
-      {
-        name: "文字录入",
-        wakeWords: ["录物品"],
-        cli: 'add --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX"',
-        desc: "自然语言描述物品，AI 解析后写入数据库。tag 录入走 Step 3.5 三阶段（必填 → 推荐含条件性判定 → 凑数）+ Step 3.6 验收，写库前强制 Step 4 检查相似（含 tag Jaccard 相似度）+ 硬约束 tags≥10 且 remark 非空，⚠️ 无跳过通道",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "items: name, category, owner, purchase_price, remark, photo, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag",
-          side: "⚠️ 硬约束：tags 数量 < 10 → 报错；remark 为空 → 报错。错误信息：'需要 tag 最少十个，备注不能为空且要全面'。⚠️ 无任何跳过通道。\n\ntag 维度：AI 按 categories.md §'各类 tag 必填/推荐维度'加载模板；必填维度必问；推荐维度中标记 * 的条件性维度按双重判定（能否回答 + 有无意义），适用才问；跳过维度记录到清单展示。\n\ntag 验收（Step 3.6）：必填齐全、总数≥10（不计入跳过）、无重复/相似 tag。\n\ntag 凑数：不足 10 个时 AI 推荐 2-3 个高频补充维度（状态/场景/使用者）。"
-        }
-      },
-      {
-        name: "拍照录入",
-        wakeWords: ["拍物品"],
-        cli: '# 1. AI 先看图提取最全面详细而严谨的 tag (≥10 个) + 名称 + 分类 + 备注\n# 2. 一次性 add（带完整 tags + photo + remark）\nadd --name "XX" --category "XX" --location "XX" --tags "t1,t2,t3,t4,t5,t6,t7,t8,t9,t10" --remark "XX" --photo "$HOME_PHOTOS_DIR/YYYYMMDD_{ID}_XX.jpg"',
-        desc: "从图片提取最全面详细而严谨的 tag（≥10 个）+ 备注，AI 视觉分析后一次性 add 到位。⚠️ 无任何应急通道：图片信息不够时只能重拍或改文字录入",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "items: name, category, owner, photo, remark, created_at, updated_at\nitem_locations: item_id, location, quantity, location_status, purchase_date, expiration_date\nitem_tags: item_id, tag (≥10 个)",
-          side: "⚠️ 必须先看图再 add（不再分两步）。流程：AI 提取图片 tag → 展示给用户确认 → 按 {category} 模板补全缺失维度 → Step 3.5 三阶段 + Step 3.6 验收。⚠️ 无应急通道：tag < 10 或 remark 空一律报错。\n\n图片识别 10 维度：颜色/品牌/规格/材质/口味/场景/季节/新旧/包装/产地，与模板必填/推荐维度映射。"
-        }
-      }
-    ]
-  },
-  {
-    cat: "物品查找",
-    modules: [
-      {
-        name: "物品搜索",
-        wakeWords: ["查物品"],
-        cli: 'search --name "XX"\nsearch --location "XX"\nsearch --tag "XX"\nsearch --name "XX" --tag "白色" --location "卧室"',
-        desc: "按名称/位置/标签/分类/状态组合搜索，支持模糊匹配",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.*（DISTINCT）\nJOIN item_locations（当有 location/status 条件时）\nJOIN item_tags（当有 tag 条件时）",
-          side: "只读操作，不修改任何数据；access_count 不变"
-        }
-      },
-      {
-        name: "物品详情",
-        wakeWords: ["看物品"],
-        cli: "detail --id {ID}",
-        desc: "查看物品完整信息，含所有位置、标签、图片路径",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "读取 items 全部字段\n读取 item_locations: location, quantity, reason, location_status, purchase_date, expiration_date\n读取 item_tags: tag",
-          side: "access_count +1，last_accessed_at 更新为当前时间"
-        }
-      },
-      {
-        name: "物品搜索HTML",
-        wakeWords: ["查物品-html"],
-        cli: 'search --name "XX" --json\nsearch --location "XX" --json',
-        desc: "搜索物品并生成带图片的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
-          side: "只读操作；HTML 生成在 Skill 层完成，脚本仅提供 --json 结构化输出"
-        }
-      },
-      {
-        name: "物品详情HTML",
-        wakeWords: ["看物品-html"],
-        cli: "detail --id {ID} --json",
-        desc: "查看物品详情并生成带图片的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
-          side: "只读操作；access_count +1；HTML 生成在 Skill 层完成"
-        }
-      },
-      {
-        name: "位置推荐",
-        wakeWords: ["推位置"],
-        cli: 'suggest-locations --category "衣物"\nsuggest-locations --category "衣物" --with-examples',
-        desc: "录入物品时推荐同类物品常用的位置，按使用次数排序；--with-examples 模式附带代表物品名（解决记忆模糊痛点）",
-        exec: {
-          tables: ["items", "item_locations"],
-          fields: "item_locations.location, COUNT(DISTINCT item_id) as cnt\nGROUP BY location ORDER BY cnt DESC\n[--with-examples] 额外 JOIN items 取每个位置最近 2 件代表",
-          side: "只读操作，不修改任何数据；access_count 不变"
-        }
-      },
-      {
-        name: "参考锚定",
-        wakeWords: ["找位置"],
-        cli: 'find-location --reference "黑卫衣"',
-        desc: "根据参考物品名找它的所有位置（'和XX放一起'/'参考XX'用），支持模糊匹配，按名称相似度+最近访问排序",
-        exec: {
-          tables: ["items", "item_locations"],
-          fields: "items: 模糊搜索 name LIKE '%XX%'，按精确度+last_accessed_at 排序\nitem_locations: 查每个候选物品的所有位置",
-          side: "只读操作，不修改任何数据；access_count 不变"
-        }
-      },
-      {
-        name: "快递查询",
-        wakeWords: ["查快递"],
-        cli: 'search --status "快递中"',
-        desc: "查找所有状态为\"快递中\"的物品",
-        exec: {
-          tables: ["items", "item_locations"],
-          fields: "查询 items.*\nJOIN item_locations WHERE location_status = '快递中'",
-          side: "只读操作；access_count 不变"
-        }
-      }
-    ]
-  },
-  {
-    cat: "物品更新",
-    modules: [
-      {
-        name: "通用更新",
-        wakeWords: ["改物品"],
-        cli: "update --id {ID} --name \"新名称\" --remark \"新备注\"\nupdate --id {ID} --category \"新分类\"",
-        desc: "修改物品名称、分类、所有者、备注、单价等基本信息",
-        exec: {
-          tables: ["items"],
-          fields: "items: name / category / owner / remark / purchase_price / photo（按需更新）+ updated_at",
-          side: "access_count +1，last_accessed_at 更新"
-        }
-      },
-      {
-        name: "位置移动",
-        wakeWords: ["移物品"],
-        cli: 'update --id {ID} --new-location "厨房/冰箱" --location "客厅/茶几"',
-        desc: "将物品从一个位置搬到另一个位置",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: location → 新位置 + updated_at\nitems: updated_at",
-          side: "access_count +1；如同时传 --location-status 则作用于新位置"
-        }
-      },
-      {
-        name: "追加新位置",
-        wakeWords: ["改物品"],
-        cli: 'update --id {ID} --add-location "办公室/抽屉"\nupdate --id {ID} --add-location "厨房/冰箱" --add-quantity 2',
-        desc: "为已有物品追加一条新的位置记录（不替换现有位置，一物多位置用）。心愿 ID: 84",
-        exec: {
-          tables: ["item_locations"],
-          fields: "INSERT 一条新记录：item_id, location, quantity, location_status, purchase_date, expiration_date",
-          side: "access_count +1；原位置全部保留；如追加位置与现有位置重名会报错"
-        }
-      },
-      {
-        name: "数量增加",
-        wakeWords: ["补物品"],
-        cli: 'update --id {ID} --plus 3\nupdate --id {ID} --plus 2 --location "客厅/冰箱"',
-        desc: "补充库存，增加指定位置的数量",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: quantity += N + updated_at\nitems: updated_at",
-          side: "access_count +1；如原状态为\"已用完/已废弃\"，AI 必须询问新状态"
-        }
-      },
-      {
-        name: "数量减少",
-        wakeWords: ["减物品"],
-        cli: 'update --id {ID} --minus 1\nupdate --id {ID} --minus 1 --location "客厅/冰箱"',
-        desc: "消耗物品，减少指定位置的数量",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: quantity -= N + updated_at\nitems: updated_at",
-          side: "access_count +1；quantity 减到 0 时，该位置记录自动删除"
-        }
-      },
-      {
-        name: "标签更新",
-        wakeWords: ["标物品"],
-        cli: '# 覆盖式\nupdate --id {ID} --tags "新标签1,新标签2"\n# 追加（逗号分隔）\nupdate --id {ID} --add-tag "红色,短袖"\n# 删除\nupdate --id {ID} --remove-tag "白色,旧款"\n# 追加+删除组合（纠错用）\nupdate --id {ID} --remove-tag "白" --add-tag "白色"',
-        desc: "管理物品标签：覆盖式（--tags）/ 追加（--add-tag）/ 删除（--remove-tag）/ 组合（纠错用）。update 不强制 tag≥10，允许纠错和合并",
-        exec: {
-          tables: ["item_tags", "items"],
-          fields: "item_tags:\n  --tags: DELETE 全部旧标签 → INSERT 新标签（覆盖）\n  --add-tag: INSERT 单/多个 tag（追加，UNIQUE 跳过重复）\n  --remove-tag: DELETE 单/多个 tag（按值删除）\nitems: updated_at",
-          side: "access_count +1；tag 字符串自动 strip()，空字符串/纯空格跳过；删除不存在的 tag 静默成功；update 不强制 tag≥10，允许纠错和合并"
-        }
-      },
-      {
-        name: "标记废弃",
-        wakeWords: ["废物品"],
-        cli: 'update --id {ID} --location-status "已废弃"',
-        desc: "标记物品为废弃状态",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: location_status = '已废弃' + updated_at\nitems: updated_at",
-          side: "access_count +1；quantity 保持原值不变"
-        }
-      },
-      {
-        name: "标记借出",
-        wakeWords: ["借物品"],
-        cli: 'update --id {ID} --location-status "借用中"',
-        desc: "标记物品为借出状态",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: location_status = '借用中' + updated_at\nitems: updated_at",
-          side: "access_count +1"
-        }
-      },
-      {
-        name: "标记维修",
-        wakeWords: ["修物品"],
-        cli: 'update --id {ID} --location-status "维修中"',
-        desc: "标记物品为维修状态",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: location_status = '维修中' + updated_at\nitems: updated_at",
-          side: "access_count +1"
-        }
-      }
-    ]
-  },
-  {
-    cat: "盘点管理",
-    modules: [
-      {
-        name: "按位置盘点",
-        wakeWords: ["盘物品"],
-        cli: 'inventory --location "卧室/衣柜"',
-        desc: "盘点指定位置下的所有物品，逐个确认状态",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.* + item_locations.location/quantity/location_status\nJOIN item_locations WHERE location LIKE '%位置%'\n读取 item_tags",
-          side: "只读操作，access_count 不变；盘点中用户可触发 update 修改"
-        }
-      },
-      {
-        name: "全屋盘点",
-        wakeWords: ["盘全部"],
-        cli: "list",
-        desc: "列出全部物品，无筛选条件",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.* 全部\n读取每个物品的 item_locations 和 item_tags",
-          side: "只读操作，access_count 不变"
-        }
-      }
-    ]
-  },
-  {
-    cat: "穿搭推荐",
-    modules: [
-      {
-        name: "穿搭推荐",
-        wakeWords: ["穿什么"],
-        cli: 'list --category "衣物" --status "在家"\nlist --category "鞋帽" --status "在家"',
-        desc: "根据天气+标签推荐今日穿搭，不自动改状态",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items WHERE category IN ('衣物','鞋帽')\nJOIN item_locations WHERE location_status = '在家'\n读取 item_tags 用于季节/材质匹配",
-          side: "只读操作；AI 根据温度+天气通过 tags 匹配推荐，不改任何状态"
-        }
-      }
-    ]
-  },
-  {
-    cat: "旅游管理",
-    modules: [
-      {
-        name: "出门标记",
-        wakeWords: ["带物品"],
-        cli: 'update --id {ID} --location-status "旅游中"',
-        desc: "出门前标记要带的物品为\"旅游中\"状态",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations: location_status = '旅游中' + updated_at\nitems: updated_at",
-          side: "access_count +1"
-        }
-      },
-      {
-        name: "回家归位",
-        wakeWords: ["归物品"],
-        cli: 'search --status "旅游中"\n→ 逐个 update --id {ID} --location-status "在家"\n→ 可选 update --id {ID} --new-location "新位置" --location-status "在家"',
-        desc: "查询所有\"旅游中\"物品，逐个确认归位或换位置",
-        exec: {
-          tables: ["items", "item_locations"],
-          fields: "item_locations: location_status = '在家' + updated_at\n（可选）item_locations: location = 新位置\nitems: updated_at",
-          side: "access_count +1（每次 update 都 +1）；逐个确认，不批量修改"
-        }
-      }
-    ]
-  },
-  {
-    cat: "频率统计",
-    modules: [
-      {
-        name: "总体统计",
-        wakeWords: ["统物品"],
-        cli: "stats --type summary",
-        desc: "查看物品总数、各状态分布、分类分布",
-        exec: {
-          tables: ["items", "item_locations"],
-          fields: "items: COUNT(*)\nitem_locations: GROUP BY location_status → 各状态数量\nitems: GROUP BY category → 各分类数量",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "总体统计HTML",
-        wakeWords: ["统物品-html"],
-        cli: "list --json",
-        desc: "生成全部物品的 HTML 页面（苹果风/简约，支持 base64 图片嵌入）",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "查询 items.* + item_locations.* + item_tags.*（完整字段）\n读取 items.photo → Base64 编码 → 嵌入 HTML",
-          side: "只读操作；HTML 生成在 Skill 层完成，脚本仅提供 --json 结构化输出"
-        }
-      },
-      {
-        name: "高频物品",
-        wakeWords: ["查高频"],
-        cli: "stats --type frequent --limit 20",
-        desc: "访问次数最多的物品 TOP N",
-        exec: {
-          tables: ["items", "item_tags"],
-          fields: "items: ORDER BY access_count DESC LIMIT N\n读取 item_tags",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "低频物品",
-        wakeWords: ["查低频"],
-        cli: "stats --type dormant --limit 20",
-        desc: "最久未访问的物品 TOP N",
-        exec: {
-          tables: ["items", "item_tags"],
-          fields: "items: WHERE last_accessed_at IS NOT NULL ORDER BY last_accessed_at ASC LIMIT N\n读取 item_tags",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "过期检查",
-        wakeWords: ["查过期"],
-        cli: 'stats --type expiring --days 30\nstats --type expiring --expired-only\nstats --type expiring --category "食品" --days 7',
-        desc: "查询 N 天内（含已过期）快过期的物品，按到期日升序。心愿 ID: 1",
-        exec: {
-          tables: ["item_locations", "items"],
-          fields: "item_locations.expiration_date, julianday 计算 days_left\nJOIN items（分类/名称）\nORDER BY days_left ASC\n可选参数：--days / --expired-only / --category",
-          side: "只读操作，access_count 不变"
-        }
-      }
-    ]
-  },
-  {
-    cat: "标签管理",
-    modules: [
-      {
-        name: "列出标签",
-        wakeWords: ["看标签"],
-        cli: "tag-list",
-        desc: "列出所有标签及使用次数",
-        exec: {
-          tables: ["item_tags"],
-          fields: "SELECT tag, COUNT(*) FROM item_tags GROUP BY tag ORDER BY cnt DESC",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "合并标签",
-        wakeWords: ["合标签"],
-        cli: 'tag-merge --from "白" --to "白色"',
-        desc: "将旧标签的所有引用替换为新标签",
-        exec: {
-          tables: ["item_tags"],
-          fields: "对每个含旧标签的 item_id：\n  INSERT OR IGNORE (item_id, 新标签)\n  DELETE (item_id, 旧标签)",
-          side: "旧标签完全消失；如果新标签已存在于某物品则跳过（UNIQUE 约束）"
-        }
-      }
-    ]
-  },
-  {
-    cat: "账号管理",
-    modules: [
-      {
-        name: "查看账号",
-        wakeWords: ["查账号"],
-        cli: 'account --action list\naccount --action show --platform "XX" --master-key "XX"',
-        desc: "列出全部账号（隐藏密码）或查看指定平台的账号密码",
-        exec: {
-          tables: ["accounts"],
-          fields: "list: SELECT id, platform, username, tags, note, created_at\nshow: SELECT * WHERE platform = ? → 解密 encrypted_password",
-          side: "list 不需密钥；show 需要 master-key 验证后解密密码"
-        }
-      },
-      {
-        name: "新增账号",
-        wakeWords: ["存账号"],
-        cli: 'account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"',
-        desc: "新增账号，密码用 master-key 加密存储",
-        exec: {
-          tables: ["accounts"],
-          fields: "INSERT: platform, username, encrypted_password, tags, note, created_at, updated_at",
-          side: "platform 有 UNIQUE 约束，重复会报错；密码用 Fernet 对称加密"
-        }
-      },
-      {
-        name: "更新账号",
-        wakeWords: ["改账号"],
-        cli: 'account --action show --platform "XX" --master-key "XX"\n→ 确认后重新 account --action add（覆盖）',
-        desc: "查看当前账号后重新录入以覆盖",
-        exec: {
-          tables: ["accounts"],
-          fields: "show: 读取并解密密码\nadd: INSERT OR REPLACE platform, encrypted_password 等",
-          side: "本质是删除旧记录+插入新记录（通过 UNIQUE 约束实现覆盖）"
-        }
-      }
-    ]
-  },
-  {
-    cat: "数据健康",
-    modules: [
-      {
-        name: "数据健康检查",
-        wakeWords: ["查异常"],
-        cli: "（无 CLI，AI 执行 Lint 检查逻辑）",
-        desc: "检查标签完整性、表利用率、状态时效性、位置规范性",
-        exec: {
-          tables: ["items", "item_locations", "item_tags"],
-          fields: "AI 执行多条只读查询：\n- items: 检查分类/位置/状态合理性\n- item_tags: 检查是否有物品无标签 / tag 数量 < 10 / 重复或相似 tag（白 vs 白色）\n- item_locations: 检查相似位置路径、位置路径级数\n- item_locations: 检查快递中/旅游中/洗护中/维修中 是否超时\n- 录入合规性（按 categories.md 模板）：每件物品的 tag 是否覆盖必填维度、推荐维度中条件性的是否合理跳过",
-          side: "只读检查，不修改任何数据；发现问题后列出清单让用户确认处理"
-        }
-      }
-    ]
-  },
-  {
-    cat: "分类管理",
-    desc: "AI 内部工具(非用户唤醒词) — categories 表的 CRUD,扩域/迁移时用",
-    modules: [
-      {
-        name: "建表",
-        wakeWords: [],
-        cli: "category_manager init",
-        desc: "创建 categories 表 + 2 索引(幂等:无表时建表,已有则 no-op)",
-        exec: {
-          tables: ["categories"],
-          fields: "id PK / parent_id / name / description / sort_order / is_active / created_at / updated_at + idx_parent_id + idx_name",
-          side: "DDL 幂等,重复执行无副作用"
-        }
-      },
-      {
-        name: "列出分类",
-        wakeWords: [],
-        cli: "category_manager list\ncategory_manager list --parent N",
-        desc: "列出所有分类(可按 parent_id 筛选二级/三级);只列 is_active=1",
-        exec: {
-          tables: ["categories"],
-          fields: "id, parent_id, name, description(只列 is_active=1)",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "树形展示",
-        wakeWords: [],
-        cli: "category_manager tree",
-        desc: "树形展示所有分类(顶级 → 二级 → 三级缩进)。当前 8 顶级 277 节点",
-        exec: {
-          tables: ["categories"],
-          fields: "按 parent_id 分组递归渲染",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "批量导入",
-        wakeWords: [],
-        cli: "category_manager import <file.json>\ncategory_manager import <file.json> --merge\ncategory_manager import <file.json> --force",
-        desc: "从 JSON 文件批量导入分类(L1→L2→L3 顺序)。--merge 合并模式(同名跳过,推荐);--force 清空重建(id 重排,危险)",
-        exec: {
-          tables: ["categories"],
-          fields: "INSERT INTO categories (parent_id, name, description, sort_order)",
-          side: "写入前 _validate_name 自检(禁空/过长/数字前缀/emoji/重名);违规不写"
-        }
-      },
-      {
-        name: "查看详情",
-        wakeWords: [],
-        cli: "category_manager show --id N",
-        desc: "查看指定 ID 的分类详情(含子分类列表)",
-        exec: {
-          tables: ["categories"],
-          fields: "id, parent_id, name, description, sort_order, is_active, created_at, updated_at + 子分类",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "统计",
-        wakeWords: [],
-        cli: "category_manager count",
-        desc: "统计分类总数 + 顶级分类数",
-        exec: {
-          tables: ["categories"],
-          fields: "COUNT(*) 总数,COUNT(WHERE parent_id IS NULL) 顶级数",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "命名规范自检",
-        wakeWords: [],
-        cli: "内置 _validate_name(name, parent_name, conn) — 写入路径自动调",
-        desc: "校验 node name 是否合规:①非空 1-30 字 ②禁数字前缀(`3. xxx`/`[1]xxx`/`(2)xxx`) ③禁 emoji ④同 parent 下唯一。违规抛 ValueError,import/add 拒收不写入",
-        exec: {
-          tables: ["categories"],
-          fields: "规则:re.match(r'^\\d+[\\.\\s\\),\\:]', n) 等",
-          side: "SKILL 本身防御:不依赖 memory,代码层强制"
-        }
-      }
-    ]
-  },
-  {
-    cat: "自动展开机制",
-    desc: "list / search / stats / suggest-locations 传 category-id 自动展开下级",
-    modules: [
-      {
-        name: "顶级 ID",
-        wakeWords: [],
-        cli: "list --category-id 137  # 食物与饮品 顶级",
-        desc: "传顶级 ID(1 级)→ 自动列全部二级 + 三级物品",
-        exec: {
-          tables: ["items"],
-          fields: "递归 CTE 查所有下级 id,再 IN 查 items",
-          side: "例:--category-id 137 → 98 件(全部食物)"
-        }
-      },
-      {
-        name: "二级 ID",
-        wakeWords: [],
-        cli: "list --category-id 145  # 下装 二级",
-        desc: "传二级 ID(2 级)→ 自动列二级 + 下属三级物品",
-        exec: {
-          tables: ["items"],
-          fields: "递归 CTE 查所有下级 id(含自身)",
-          side: "例:--category-id 145 → 30 件(下装 9 个三级合计)"
-        }
-      },
-      {
-        name: "三级 ID",
-        wakeWords: [],
-        cli: "list --category-id 176  # 卫衣 三级",
-        desc: "传三级 ID(3 级)→ 精确匹配该三级物品(无下级,等价 = ?)",
-        exec: {
-          tables: ["items"],
-          fields: "category_id = ?",
-          side: "例:--category-id 176 → 15 件(卫衣精确)"
-        }
-      }
-    ]
-  }
-];
-
-// ── Database schema (for reference) ──
-const DB_SCHEMA = [
-  { name: "items", desc: "物品主表", fields: [
-    {f:"id",t:"INTEGER",d:"主键自增"},
-    {f:"name",t:"TEXT",d:"物品名称"},
-    {f:"category_id",t:"INTEGER",d:"分类 ID(→ categories.id,FK,必填)"},
-    {f:"category",t:"TEXT",d:"分类名(从 categories 表 derive,只读)"},
-    {f:"owner",t:"TEXT",d:"所有者(默认\"使用者\")"},
-    {f:"purchase_price",t:"REAL",d:"单价(元/件)"},
-    {f:"remark",t:"TEXT",d:"备注"},
-    {f:"photo",t:"TEXT",d:"图片纯文件名(完整路径 = $HOME_PHOTOS_DIR + 文件名)"},
-    {f:"access_count",t:"INTEGER",d:"被访问次数"},
-    {f:"last_accessed_at",t:"TIMESTAMP",d:"最后访问时间"},
-    {f:"created_at",t:"TIMESTAMP",d:"创建时间"},
-    {f:"updated_at",t:"TIMESTAMP",d:"更新时间"}
-  ]},
-  { name: "item_locations", desc: "物品位置表（支持一物多位置）", fields: [
-    {f:"id",t:"INTEGER",d:"主键自增"},
-    {f:"item_id",t:"INTEGER",d:"关联 items.id"},
-    {f:"location",t:"TEXT",d:"位置路径（如 客厅/冰箱/上层）"},
-    {f:"quantity",t:"INTEGER",d:"该位置数量（=0 时自动删除）"},
-    {f:"reason",t:"TEXT",d:"原因（可选）"},
-    {f:"location_status",t:"TEXT",d:"位置状态（在家/备用/借用中等）"},
-    {f:"purchase_date",t:"TEXT",d:"购买日期 YYYY-MM-DD"},
-    {f:"expiration_date",t:"TEXT",d:"过期日期 YYYY-MM-DD"},
-    {f:"created_at",t:"TEXT",d:"创建时间"},
-    {f:"updated_at",t:"TEXT",d:"更新时间"}
-  ]},
-  { name: "item_tags", desc: "标签表（同一物品同标签不重复）", fields: [
-    {f:"id",t:"INTEGER",d:"主键自增"},
-    {f:"item_id",t:"INTEGER",d:"关联 items.id"},
-    {f:"tag",t:"TEXT",d:"标签名"}
-  ]},
-  { name: "accounts", desc: "账号密码表（加密存储）", fields: [
-    {f:"id",t:"INTEGER",d:"主键自增"},
-    {f:"platform",t:"TEXT",d:"平台名（UNIQUE）"},
-    {f:"username",t:"TEXT",d:"用户名"},
-    {f:"encrypted_password",t:"TEXT",d:"加密后的密码"},
-    {f:"tags",t:"TEXT",d:"标签"},
-    {f:"note",t:"TEXT",d:"备注"},
-    {f:"created_at",t:"TEXT",d:"创建时间"},
-    {f:"updated_at",t:"TEXT",d:"更新时间"}
-  ]},
-  { name: "categories", desc: "分类表（权威源,8 顶级 277 节点）", fields: [
-    {f:"id",t:"INTEGER",d:"主键自增"},
-    {f:"parent_id",t:"INTEGER",d:"父级 ID,顶级 NULL"},
-    {f:"name",t:"TEXT",d:"分类名(_validate_name 自检:禁空/过长/数字前缀/emoji)"},
-    {f:"description",t:"TEXT",d:"描述"},
-    {f:"sort_order",t:"INTEGER",d:"列表显示顺序"},
-    {f:"is_active",t:"INTEGER",d:"软删除(1=启用,0=停用)"},
-    {f:"created_at",t:"TIMESTAMP",d:"创建时间"},
-    {f:"updated_at",t:"TIMESTAMP",d:"更新时间"}
-  ]}
-];
-
-// ── Statuses ──
-const STATUSES = [
-  {s:"在家",d:"在固定位置",e:"默认状态、归位后"},
-  {s:"备用",d:"备用库存",e:"囤货、未拆封替换品"},
-  {s:"穿着中",d:"正在身上使用",e:"衣服穿在身上"},
-  {s:"旅游中",d:"带出去旅游",e:"出行前确认"},
-  {s:"洗护中",d:"在洗衣机/晾衣架",e:"脏衣服送洗"},
-  {s:"借用中",d:"借给朋友",e:"外借确认"},
-  {s:"维修中",d:"坏了在修",e:"送修确认"},
-  {s:"已用完",d:"消耗品用完",e:"quantity 归 0"},
-  {s:"快递中",d:"已下单/在配送",e:"网购等待收货"},
-  {s:"待处理",d:"需要清理或处理",e:"待整理物品"},
-  {s:"已废弃",d:"废弃了",e:"用户明确表态"}
-];
-
-// ── Render ──
-const $tabs = document.getElementById('tabs');
-const $main = document.getElementById('main');
-const $search = document.getElementById('search');
-
-// Build tabs
-let activeCat = 0;
-const allTab = document.createElement('button');
-allTab.className = 'tab active';
-allTab.textContent = '全部';
-allTab.dataset.idx = '-1';
-$tabs.appendChild(allTab);
-
-DATA.forEach((cat, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'tab';
-  btn.textContent = cat.cat;
-  btn.dataset.idx = String(i);
-  $tabs.appendChild(btn);
-});
-
-// Build all content
-function render(filter = '', catIdx = -1) {
-  $main.innerHTML = '';
-  let found = false;
-  const q = filter.toLowerCase();
-
-  DATA.forEach((cat, ci) => {
-    if (catIdx !== -1 && ci !== catIdx) return;
-
-    const filtered = cat.modules.filter(m => {
-      if (!q) return true;
-      if (m.name.toLowerCase().includes(q)) return true;
-      if (m.desc.toLowerCase().includes(q)) return true;
-      return m.wakeWords.some(w => w.includes(q));
-    });
-
-    if (!filtered.length) return;
-    found = true;
-
-    const sec = document.createElement('div');
-    sec.className = 'cat-section';
-    sec.innerHTML = `<div class="cat-title">${cat.cat}</div>`;
-
-    filtered.forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'mod';
-
-      // Build wake word buttons
-      const wwHtml = m.wakeWords.map(w =>
-        `<span class="ww" data-cmd="${esc(m.cli)}">${esc(w)}</span>`
-      ).join('');
-
-      // Build execution detail
-      const exec = m.exec;
-      const execHtml = `
-        <div class="exec-block">
-          <div class="exec-title">执行流程</div>
-          <div class="exec-table">
-            <strong>涉及表：</strong>${exec.tables.map(t=>'<code>'+t+'</code>').join(' ')}
-          </div>
-          <div class="exec-table" style="white-space:pre-wrap;margin-top:6px">
-            <strong>操作字段：</strong>\n${esc(exec.fields)}
-          </div>
-          <div class="exec-side">
-            <strong>副作用：</strong>${esc(exec.side)}
-          </div>
-        </div>`;
-
-      card.innerHTML = `
-        <div class="mod-header">
-          <div class="mod-left">
-            <div class="mod-name">${esc(m.name)}</div>
-            <div class="mod-desc">${esc(m.desc)}</div>
-          </div>
-          <svg class="mod-arrow" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <div class="mod-body">
-          <div class="mod-inner">
-            <div style="font-size:12px;color:var(--text3);margin:12px 0 6px;font-weight:600;letter-spacing:0.3px">唤醒词</div>
-            <div class="ww-list">${wwHtml}</div>
-            <div class="cli-block">
-              <div class="cli-label">CLI 命令 <span style="font-weight:400;text-transform:none">（点击展开执行流程）</span></div>
-              <div class="cli-cmd">${esc(m.cli)}</div>
-            </div>
-            ${execHtml}
-          </div>
-        </div>
-      `;
-      sec.appendChild(card);
-    });
-
-    $main.appendChild(sec);
-  });
-
-  if (!found) {
-    $main.innerHTML = '<div class="empty">没有匹配的结果</div>';
-  }
-
-  // Bind events
-  bindEvents();
-}
-
-function bindEvents() {
-  // Module expand/collapse
-  document.querySelectorAll('.mod-header').forEach(h => {
-    h.addEventListener('click', () => {
-      const mod = h.parentElement;
-      mod.classList.toggle('open');
-    });
-  });
-
-  // Wake word click → show CLI
-  document.querySelectorAll('.ww').forEach(ww => {
-    ww.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const mod = ww.closest('.mod');
-      const cliBlock = mod.querySelector('.cli-block');
-      const execBlock = mod.querySelector('.exec-block');
-
-      // Toggle this wake word
-      const wasExpanded = ww.classList.contains('expanded');
-
-      // Reset all wake words in this module
-      mod.querySelectorAll('.ww').forEach(w => w.classList.remove('expanded'));
-
-      if (!wasExpanded) {
-        ww.classList.add('expanded');
-        cliBlock.classList.add('show');
-        // Don't auto-show exec, let user click CLI
-      } else {
-        cliBlock.classList.remove('show');
-        execBlock.classList.remove('show');
-      }
-    });
-  });
-
-  // CLI command click → show execution flow
-  document.querySelectorAll('.cli-cmd').forEach(cmd => {
-    cmd.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const mod = cmd.closest('.mod');
-      const execBlock = mod.querySelector('.exec-block');
-      execBlock.classList.toggle('show');
-    });
-  });
-}
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-// ── Tab switching ──
-$tabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab');
-  if (!btn) return;
-  $tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  activeCat = parseInt(btn.dataset.idx);
-  render($search.value.trim(), activeCat);
-});
-
-// ── Search ──
-let searchTimer;
-$search.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    render($search.value.trim(), activeCat);
-  }, 150);
-});
-
-// ── Initial render ──
-render();
-</script>
+<div class="toc"><h4>目录</h4><ol><li><a href="#html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</a></li>
+<li><a href="#操作规范-强制-2">⚠️ 操作规范（强制）</a></li>
+<li><a href="#分类命名规范-强制-3">⚠️ 分类命名规范（强制）</a></li>
+<li><a href="#路由表-4">路由表</a></li>
+<li><a href="#安装与配置-5">安装与配置</a></li>
+<li><a href="#功能概述-6">功能概述</a></li>
+<li><a href="#快速导航-7">快速导航</a></li>
+<li><a href="#核心使用原则-8">⚠️ 核心使用原则</a></li>
+<li><a href="#联动说明-9">联动说明</a></li>
+<li><a href="#lint-检查-数据健康检查-10">Lint 检查（数据健康检查）</a></li>
+<li><a href="#错误处理-11">错误处理</a></li></ol></div>
+<p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到物品价格→询问是否记录支出；物品是食品/饮料→询问是否记录卡路里）。详见路由器的联动规则表。</p>
+<h2 id="html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</h2>
+<blockquote>
+<p><strong>此规范优先级高于本文件中所有其他规定。</strong></p>
+</blockquote>
+<ol>
+<li><strong>全量同步</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>居家管家.html</code> 上。任何功能模块的新增、修改、删除，任何唤醒词的调整，任何 CLI 命令的变化，任何脚本逻辑的改动——都必须同步更新 HTML 页面中对应的内容。</li>
+<li><strong>最高优先级</strong>：本条规定在所有规范中优先级最高。当其他流程或习惯与本条冲突时，以本条为准。</li>
+<li><strong>逐行确认</strong>：对该技能的所有文件、脚本的任何一行修改，都需要明确得到用户的 1 次确认后方可执行。不得批量静默修改，不得跳过确认步骤。</li>
+</ol>
+<hr />
+<h2 id="操作规范-强制-2">⚠️ 操作规范（强制）</h2>
+<p>本技能所有数据操作必须通过 CLI，禁止直连数据库。</p>
+<hr />
+<h2 id="分类命名规范-强制-3">⚠️ 分类命名规范（强制）</h2>
+<p><strong>所有写入 categories 表的 name 字段必须满足以下规则。违规会被 <code>category_manager.py</code> 拒收，不入库。</strong></p>
+<h3>规则</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>规则</th>
+<th>违规示例</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>非空,strip 后 1-30 字</td>
+<td><code>""</code> / <code>"   "</code></td>
+<td>占位/空白无意义</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>禁数字前缀</strong></td>
+<td><code>3. 家居</code> / <code>2 衣物</code> / <code>[1]数码</code> / <code>(2)图书</code></td>
+<td>DB id 137/138/205-210 已是天然编号,name 再加 = 双重编号 = 装饰</td>
+</tr>
+<tr>
+<td>3</td>
+<td>禁 emoji</td>
+<td><code>🎉 食物</code></td>
+<td>装饰,破坏纯文本</td>
+</tr>
+<tr>
+<td>4</td>
+<td>同 parent 下 name 唯一</td>
+<td>两个同名二级</td>
+<td>防止 merge 漏掉产生歧义</td>
+</tr>
+</tbody>
+</table>
+<h3>第一性</h3>
+<ul>
+<li>数字编号是 <strong>DB id 的事</strong>,name 负责语义</li>
+<li>8 顶级 name <strong>统一不带前缀</strong>:<code>食物与饮品</code> / <code>衣物与穿戴</code> / <code>家居与陈设</code> / <code>工具与器材</code> / <code>数码与电子</code> / <code>健康与医药</code> / <code>文体与娱乐</code> / <code>资产与凭证</code></li>
+<li>跨次加节点时,先看现有 name 风格,跟齐</li>
+</ul>
+<h3>实现位置</h3>
+<p><code>scripts/category_manager.py</code> 的 <code>_validate_name(name, parent_name, conn)</code> 函数,被 <code>cmd_import</code> / 未来 <code>cmd_add</code> 调用。</p>
+<hr />
+<h2 id="路由表-4">路由表</h2>
+<p>AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应功能。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>功能</th>
+<th>加载文件</th>
+<th>需要物品名？</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>查物品</td>
+<td>物品搜索</td>
+<td>features/search.md</td>
+<td>可选（无则列全部）</td>
+</tr>
+<tr>
+<td>2</td>
+<td>看物品</td>
+<td>物品详情</td>
+<td>features/search.md → detail</td>
+<td>是（多件时让用户选）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>录物品</td>
+<td>文字录入</td>
+<td>features/add.md</td>
+<td>否（AI 解析描述）</td>
+</tr>
+<tr>
+<td>4</td>
+<td>拍物品</td>
+<td>拍照录入</td>
+<td>features/add.md → 图片子流程</td>
+<td>否（从图片提取）</td>
+</tr>
+<tr>
+<td>5</td>
+<td>改物品</td>
+<td>通用更新</td>
+<td>features/update.md</td>
+<td>是</td>
+</tr>
+<tr>
+<td>6</td>
+<td>移物品</td>
+<td>位置移动</td>
+<td>features/update.md → 位置移动</td>
+<td>是</td>
+</tr>
+<tr>
+<td>7</td>
+<td>补物品</td>
+<td>数量增加</td>
+<td>features/update.md → 数量变更</td>
+<td>是</td>
+</tr>
+<tr>
+<td>8</td>
+<td>减物品</td>
+<td>数量减少</td>
+<td>features/update.md → 数量变更</td>
+<td>是</td>
+</tr>
+<tr>
+<td>9</td>
+<td>标物品</td>
+<td>标签更新</td>
+<td>features/update.md → 标签更新</td>
+<td>是</td>
+</tr>
+<tr>
+<td>10</td>
+<td>废物品</td>
+<td>标记废弃</td>
+<td>features/update.md → 状态变更</td>
+<td>是</td>
+</tr>
+<tr>
+<td>11</td>
+<td>借物品</td>
+<td>标记借出</td>
+<td>features/update.md → 状态变更</td>
+<td>是</td>
+</tr>
+<tr>
+<td>12</td>
+<td>修物品</td>
+<td>标记维修</td>
+<td>features/update.md → 状态变更</td>
+<td>是</td>
+</tr>
+<tr>
+<td>13</td>
+<td>盘物品</td>
+<td>按位置盘点</td>
+<td>features/inventory.md</td>
+<td>是（位置）</td>
+</tr>
+<tr>
+<td>14</td>
+<td>盘全部</td>
+<td>全屋盘点</td>
+<td>features/inventory.md</td>
+<td>否</td>
+</tr>
+<tr>
+<td>15</td>
+<td>穿什么</td>
+<td>穿搭推荐</td>
+<td>features/fashion.md</td>
+<td>否</td>
+</tr>
+<tr>
+<td>16</td>
+<td>带物品</td>
+<td>出门标记</td>
+<td>features/travel.md → 出门前</td>
+<td>是</td>
+</tr>
+<tr>
+<td>17</td>
+<td>归物品</td>
+<td>回家归位</td>
+<td>features/travel.md → 回家后</td>
+<td>否（查所有旅游中）</td>
+</tr>
+<tr>
+<td>18</td>
+<td>统物品</td>
+<td>总体统计</td>
+<td>features/stats.md → summary</td>
+<td>否</td>
+</tr>
+<tr>
+<td>19</td>
+<td>查高频</td>
+<td>高频物品</td>
+<td>features/stats.md → frequent</td>
+<td>否</td>
+</tr>
+<tr>
+<td>20</td>
+<td>查低频</td>
+<td>低频物品</td>
+<td>features/stats.md → dormant</td>
+<td>否</td>
+</tr>
+<tr>
+<td>21</td>
+<td>查过期</td>
+<td>过期检查</td>
+<td>features/stats.md → expiring</td>
+<td>否</td>
+</tr>
+<tr>
+<td>22</td>
+<td>看标签</td>
+<td>列出标签</td>
+<td>features/tags.md → 列表</td>
+<td>否</td>
+</tr>
+<tr>
+<td>23</td>
+<td>合标签</td>
+<td>合并标签</td>
+<td>features/tags.md → 合并</td>
+<td>是（from/to）</td>
+</tr>
+<tr>
+<td>24</td>
+<td>查快递</td>
+<td>快递查询</td>
+<td>features/search.md → 快递</td>
+<td>否</td>
+</tr>
+<tr>
+<td>25</td>
+<td>推位置</td>
+<td>位置推荐</td>
+<td>features/add.md → Step 2.5</td>
+<td>是（category-id 整数）</td>
+</tr>
+<tr>
+<td>26</td>
+<td>找位置</td>
+<td>参考锚定</td>
+<td>features/add.md → Step 2.6</td>
+<td>是（reference）</td>
+</tr>
+<tr>
+<td>27</td>
+<td>查账号</td>
+<td>查看账号</td>
+<td>accounts.py → show/list</td>
+<td>是（平台名，无则列全部）</td>
+</tr>
+<tr>
+<td>28</td>
+<td>存账号</td>
+<td>新增账号</td>
+<td>accounts.py → add</td>
+<td>是</td>
+</tr>
+<tr>
+<td>29</td>
+<td>改账号</td>
+<td>更新账号</td>
+<td>accounts.py → show</td>
+<td>是（平台名）</td>
+</tr>
+<tr>
+<td>30</td>
+<td>查异常</td>
+<td>数据健康检查</td>
+<td>SKILL.md → Lint 检查</td>
+<td>否</td>
+</tr>
+<tr>
+<td>31</td>
+<td>查物品-html</td>
+<td>物品搜索→HTML</td>
+<td>features/search.md → Step 4</td>
+<td>可选（无则列全部）</td>
+</tr>
+<tr>
+<td>32</td>
+<td>看物品-html</td>
+<td>物品详情→HTML</td>
+<td>features/search.md → Step 4</td>
+<td>是（多件时先选）</td>
+</tr>
+<tr>
+<td>33</td>
+<td>统物品-html</td>
+<td>总体统计→HTML</td>
+<td>features/search.md → Step 4</td>
+<td>否</td>
+</tr>
+</tbody>
+</table>
+<h3>匹配规则</h3>
+<ol>
+<li><strong>精确匹配</strong>：用户输入包含表中唤醒词即命中</li>
+<li><strong>最长匹配</strong>：同时命中多个时，取最长的（如"查高频"优先于"查"）</li>
+<li><strong>物品名提取</strong>：唤醒词前后的文字作为物品名/参数</li>
+<li><strong>缺失物品名</strong>：需要物品名但用户未提供时，追问</li>
+</ol>
+<h3>唤醒词 CLI 映射</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>CLI 命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查物品</td>
+<td><code>search --name "XX"</code> 或 <code>search --location "XX"</code> 或 <code>search --tag "XX"</code></td>
+</tr>
+<tr>
+<td>看物品</td>
+<td><code>detail --id {ID}</code></td>
+</tr>
+<tr>
+<td>录物品</td>
+<td><code>add --name "XX" --category-id N --location "XX"</code> (category-id 必填,从 categories 表查)</td>
+</tr>
+<tr>
+<td>拍物品</td>
+<td><code>add</code> → 得到 ID → <code>update --id {ID} --photo "XX" --tags "XX"</code></td>
+</tr>
+<tr>
+<td>改物品</td>
+<td><code>update --id {ID}</code> + 对应参数</td>
+</tr>
+<tr>
+<td>移物品</td>
+<td><code>update --id {ID} --new-location "新位置" --location "原位置"</code></td>
+</tr>
+<tr>
+<td>补物品</td>
+<td><code>update --id {ID} --plus N</code></td>
+</tr>
+<tr>
+<td>减物品</td>
+<td><code>update --id {ID} --minus N</code></td>
+</tr>
+<tr>
+<td>标物品</td>
+<td><code>update --id {ID} --tags "新标签"</code></td>
+</tr>
+<tr>
+<td>废物品</td>
+<td><code>update --id {ID} --location-status "已废弃"</code></td>
+</tr>
+<tr>
+<td>借物品</td>
+<td><code>update --id {ID} --location-status "借用中"</code></td>
+</tr>
+<tr>
+<td>修物品</td>
+<td><code>update --id {ID} --location-status "维修中"</code></td>
+</tr>
+<tr>
+<td>盘物品</td>
+<td><code>inventory --location "位置"</code></td>
+</tr>
+<tr>
+<td>盘全部</td>
+<td><code>list</code>（无筛选条件）</td>
+</tr>
+<tr>
+<td>穿什么</td>
+<td><code>list --category-id 138 --status "在家"</code> (衣物顶级) + <code>list --category-id 148 --status "在家"</code> (鞋类二级)</td>
+</tr>
+<tr>
+<td>带物品</td>
+<td><code>update --id {ID} --location-status "旅游中"</code></td>
+</tr>
+<tr>
+<td>归物品</td>
+<td><code>search --status "旅游中"</code> → 逐个 <code>update --id {ID} --location-status "在家"</code></td>
+</tr>
+<tr>
+<td>统物品</td>
+<td><code>stats --type summary</code></td>
+</tr>
+<tr>
+<td>查高频</td>
+<td><code>stats --type frequent --limit 20</code></td>
+</tr>
+<tr>
+<td>查低频</td>
+<td><code>stats --type dormant --limit 20</code></td>
+</tr>
+<tr>
+<td>查过期</td>
+<td><code>stats --type expiring [--days 30] [--expired-only] [--category-id N]</code></td>
+</tr>
+<tr>
+<td>看标签</td>
+<td><code>tag-list</code></td>
+</tr>
+<tr>
+<td>合标签</td>
+<td><code>tag-merge --from "旧" --to "新"</code></td>
+</tr>
+<tr>
+<td>查快递</td>
+<td><code>search --status "快递中"</code></td>
+</tr>
+<tr>
+<td>推位置</td>
+<td><code>suggest-locations --category-id N [--with-examples]</code></td>
+</tr>
+<tr>
+<td>找位置</td>
+<td><code>find-location --reference "XX"</code></td>
+</tr>
+<tr>
+<td>查账号</td>
+<td><code>account --action list</code> 或 <code>account --action show --platform "XX" --master-key "XX"</code></td>
+</tr>
+<tr>
+<td>存账号</td>
+<td><code>account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"</code></td>
+</tr>
+<tr>
+<td>改账号</td>
+<td><code>account --action show --platform "XX" --master-key "XX"</code>（查看后重新录入）</td>
+</tr>
+<tr>
+<td>查异常</td>
+<td>无 CLI，AI 执行 Lint 检查逻辑（见下方）</td>
+</tr>
+<tr>
+<td>查物品-html</td>
+<td><code>search --name "XX" --json</code></td>
+</tr>
+<tr>
+<td>看物品-html</td>
+<td><code>detail --id {ID} --json</code></td>
+</tr>
+<tr>
+<td>统物品-html</td>
+<td><code>list --json</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="安装与配置-5">安装与配置</h2>
+<p><strong>依赖</strong>：Python 3.x</p>
+<p><strong>环境变量</strong>（可选）：
+- <code>SKILLS_DB_PATH</code>：数据库目录
+- <code>HOME_PHOTOS_DIR</code>：照片目录</p>
+<p><strong>网页版</strong>：<a href="https://featherhunter.github.io/StudyNotes/skillboard/">SkillBoard</a> - 通过浏览器使用本系统，支持电脑和手机。使用时选择 <code>home.db</code> 文件即可。</p>
+<p><strong>一键安装</strong>：复制以下 prompt 给 AI：</p>
+<pre><code>帮我安装&quot;居家管家&quot;技能：
+1. 检查 Python 环境
+2. 引导我配置环境变量
+3. 显示当前环境变量配置
+4. 告诉我如何更改数据目录
+</code></pre>
+<hr />
+<h2 id="功能概述-6">功能概述</h2>
+<ul>
+<li><strong>物品录入</strong>：自然语言描述物品，AI 解析后写入数据库</li>
+<li><strong>物品查找</strong>：按名称/位置/标签/分类/状态搜索</li>
+<li><strong>物品更新</strong>：位置变动、状态变更、数量调整、标签修改</li>
+<li><strong>物品盘点</strong>：按需盘点指定位置的所有物品</li>
+<li><strong>穿搭推荐</strong>：根据天气+标签推荐今日穿搭</li>
+<li><strong>旅游归位</strong>：出门带物+回家归位的完整流程</li>
+<li><strong>频率统计</strong>：区分高频/低频物品，识别长期未用物品</li>
+<li><strong>标签管理</strong>：合并相似标签</li>
+<li><strong>照片管理</strong>：支持配置照片存储路径（环境变量 <code>HOME_PHOTOS_DIR</code>，默认为技能目录/photos）</li>
+</ul>
+<h2 id="快速导航-7">快速导航</h2>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>参考文档</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查物品</td>
+<td>物品搜索</td>
+<td>features/search.md</td>
+</tr>
+<tr>
+<td>看物品</td>
+<td>物品详情</td>
+<td>features/search.md</td>
+</tr>
+<tr>
+<td>录物品</td>
+<td>物品录入</td>
+<td>features/add.md</td>
+</tr>
+<tr>
+<td>拍物品</td>
+<td>拍照录入</td>
+<td>features/add.md</td>
+</tr>
+<tr>
+<td>改物品</td>
+<td>通用更新</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>移物品</td>
+<td>位置移动</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>补物品</td>
+<td>数量增加</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>减物品</td>
+<td>数量减少</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>标物品</td>
+<td>标签更新</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>废物品</td>
+<td>标记废弃</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>借物品</td>
+<td>标记借出</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>修物品</td>
+<td>标记维修</td>
+<td>features/update.md</td>
+</tr>
+<tr>
+<td>盘物品</td>
+<td>按位置盘点</td>
+<td>features/inventory.md</td>
+</tr>
+<tr>
+<td>盘全部</td>
+<td>全屋盘点</td>
+<td>features/inventory.md</td>
+</tr>
+<tr>
+<td>穿什么</td>
+<td>穿搭推荐</td>
+<td>features/fashion.md</td>
+</tr>
+<tr>
+<td>带物品</td>
+<td>出门标记</td>
+<td>features/travel.md</td>
+</tr>
+<tr>
+<td>归物品</td>
+<td>回家归位</td>
+<td>features/travel.md</td>
+</tr>
+<tr>
+<td>统物品</td>
+<td>总体统计</td>
+<td>features/stats.md</td>
+</tr>
+<tr>
+<td>查高频</td>
+<td>高频物品</td>
+<td>features/stats.md</td>
+</tr>
+<tr>
+<td>查低频</td>
+<td>低频物品</td>
+<td>features/stats.md</td>
+</tr>
+<tr>
+<td>查过期</td>
+<td>过期检查</td>
+<td>features/stats.md</td>
+</tr>
+<tr>
+<td>看标签</td>
+<td>列出标签</td>
+<td>features/tags.md</td>
+</tr>
+<tr>
+<td>合标签</td>
+<td>合并标签</td>
+<td>features/tags.md</td>
+</tr>
+<tr>
+<td>查快递</td>
+<td>快递查询</td>
+<td>features/search.md</td>
+</tr>
+<tr>
+<td>推位置</td>
+<td>位置推荐</td>
+<td>features/add.md</td>
+</tr>
+<tr>
+<td>找位置</td>
+<td>参考锚定</td>
+<td>features/add.md</td>
+</tr>
+<tr>
+<td>查账号</td>
+<td>查看账号</td>
+<td>accounts.py</td>
+</tr>
+<tr>
+<td>存账号</td>
+<td>新增账号</td>
+<td>accounts.py</td>
+</tr>
+<tr>
+<td>改账号</td>
+<td>更新账号</td>
+<td>accounts.py</td>
+</tr>
+<tr>
+<td>查异常</td>
+<td>数据健康检查</td>
+<td>SKILL.md（Lint 检查）</td>
+</tr>
+<tr>
+<td>查物品-html</td>
+<td>物品搜索→HTML</td>
+<td>features/search.md</td>
+</tr>
+<tr>
+<td>看物品-html</td>
+<td>物品详情→HTML</td>
+<td>features/search.md</td>
+</tr>
+<tr>
+<td>统物品-html</td>
+<td>总体统计→HTML</td>
+<td>features/search.md</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="核心使用原则-8">⚠️ 核心使用原则</h2>
+<ol>
+<li><strong>任何写操作前必须交互确认</strong>：AI 先展示将要执行的操作，用户说"对"才执行</li>
+<li><strong>多物品冲突时让用户选</strong>：搜到多个同名物品，列出来让用户选，不默认选任何一个</li>
+<li><strong>物品只增不删，可修改</strong>：物品不会物理删除。item_locations 中 quantity=0 时自动删除该位置记录；位置状态为"已用完"或"已废弃"时需用户明确表态</li>
+<li><strong>AI 不得自行推断</strong>：当用户意图存在多种可能时，AI 必须询问确认，不得私自选择</li>
+<li><strong>库存补充必须问</strong>：搜索到名称相同的"已用完"或"已废弃"物品时，AI 必须询问用户是"补充到现有记录"还是"新建记录"，用户确认前不得写入数据库</li>
+</ol>
+<hr />
+<h2 id="联动说明-9">联动说明</h2>
+<p>联动逻辑已集中到技能路由器（<code>图片路由/SKILL.md</code>），本技能不再单独维护联动规则。完成主操作后请检查路由器的联动规则表。</p>
+<hr />
+<h2 id="lint-检查-数据健康检查-10">Lint 检查（数据健康检查）</h2>
+<p><strong>唤醒词</strong>：<code>查异常</code></p>
+<h3>检查项</h3>
+<p><strong>1. 标签完整性</strong>
+- 物品是否缺少标签？标签太少（如少于2个）？
+- 重要属性是否遗漏（如品牌、颜色、型号）？</p>
+<p><strong>2. 表利用率</strong>
+- items 表：所有物品是否都有合理的分类、位置、状态？
+- item_tags 表：是否有物品完全没有标签？
+- item_locations 表：是否有相似位置路径未合并？（如 <code>卧室/东南角/小冰箱上/眼镜装扮抽屉</code> vs <code>卧室东南角/小冰箱上/眼镜装扮抽屉</code>）</p>
+<p><strong>3. 状态时效性</strong>
+- <code>快递中</code> 的物品是否超过合理时限未收到？是否忘了更新状态？
+- <code>旅游中</code> 的物品是否长期未归位？
+- <code>洗护中</code>、<code>维修中</code> 的物品是否处理完毕未更新？</p>
+<p><strong>4. 位置规范性</strong>
+- 位置路径是否至少两级（如 <code>客厅/电视柜</code>）？
+- 是否存在单级位置（如只有"客厅"）？</p>
+<h3>处理原则</h3>
+<ul>
+<li>发现问题后列出清单，让用户确认是否需要处理</li>
+<li>不要自动修改，只能建议</li>
+<li>用户说"检查一下"时执行，不主动触发</li>
+</ul>
+<hr />
+<h2 id="错误处理-11">错误处理</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>AI 处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>搜不到物品</td>
+<td>告知用户，询问是否换个关键词或新建物品</td>
+</tr>
+<tr>
+<td>搜到多个同名物品</td>
+<td>列出让用户选择，不默认选任何一个</td>
+</tr>
+<tr>
+<td>录入时发现同名"已用完/已废弃"物品</td>
+<td>列出选项让用户选择，不能自动决定</td>
+</tr>
+<tr>
+<td>补充库存时原物品状态为"已用完/已废弃"</td>
+<td>询问用户新状态是什么（在家/备用/快递中/其他）</td>
+</tr>
+<tr>
+<td>用户输入模糊无法解析</td>
+<td>追问确认</td>
+</tr>
+<tr>
+<td>数据库写入失败</td>
+<td>告知用户失败原因，询问重试</td>
+</tr>
+<tr>
+<td>首次使用（无数据库）</td>
+<td>脚本自动建表，无需手动操作</td>
+</tr>
+<tr>
+<td>盘点中途退出</td>
+<td>已确认的已写入，未确认的保持原样</td>
+</tr>
+<tr>
+<td>穿搭推荐无匹配</td>
+<td>告知无匹配衣物，建议扩展标签或录入</td>
+</tr>
+<tr>
+<td>天气数据获取失败</td>
+<td>告知无法获取天气，改用纯标签筛选</td>
+</tr>
+<tr>
+<td>标签合并不存在</td>
+<td>脚本输出"标签不存在"，AI 告知用户</td>
+</tr>
+</tbody>
+</table>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>居家管家/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

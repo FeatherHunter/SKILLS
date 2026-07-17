@@ -3,1061 +3,831 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>饼干记账 — 技能手册</title>
+<title>饼干记账 — Skill HTML 镜像</title>
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --blue: #007AFF;
-    --blue-hover: #0066D6;
-    --text: #1d1d1f;
-    --text-secondary: #86868b;
-    --bg: #ffffff;
-    --bg-secondary: #f5f5f7;
-    --border: #e5e5ea;
-    --green: #34C759;
-    --red: #FF3B30;
-    --orange: #FF9500;
-    --radius: 10px;
-    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC', sans-serif;
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
   }
-
-  html { font-size: 15px; }
   body {
-    font-family: var(--font);
-    color: var(--text);
-    background: var(--bg);
-    line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
     -webkit-font-smoothing: antialiased;
   }
-
-  /* ── Header ── */
-  .header {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 48px 24px 0;
-  }
-  .header h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--text);
-  }
-  .header p {
-    margin-top: 6px;
-    color: var(--text-secondary);
-    font-size: 0.93rem;
-  }
-
-  /* ── Search ── */
-  .search-bar {
-    max-width: 960px;
-    margin: 24px auto 0;
-    padding: 0 24px;
-  }
-  .search-bar input {
-    width: 100%;
-    padding: 10px 16px;
-    font-size: 0.93rem;
-    font-family: var(--font);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    outline: none;
-    background: var(--bg-secondary);
-    transition: border-color 0.2s;
-  }
-  .search-bar input:focus {
-    border-color: var(--blue);
-    background: var(--bg);
-  }
-  .search-bar input::placeholder { color: var(--text-secondary); }
-
-  /* ── Tabs ── */
-  .tabs {
-    max-width: 960px;
-    margin: 20px auto 0;
-    padding: 0 24px;
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .tab {
-    padding: 10px 20px;
-    font-size: 0.87rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    transition: color 0.2s, border-color 0.2s;
-    font-family: var(--font);
-    white-space: nowrap;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active {
-    color: var(--blue);
-    border-bottom-color: var(--blue);
-  }
-  .tab .count {
-    display: inline-block;
-    margin-left: 4px;
-    font-size: 0.73rem;
-    color: var(--text-secondary);
-    font-weight: 400;
-  }
-
-  /* ── Content ── */
-  .content {
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 8px 24px 80px;
-  }
-
-  /* ── Module Card ── */
-  .module {
-    padding: 24px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .module:last-child { border-bottom: none; }
-  .module.hidden { display: none; }
-
-  .module-header {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    cursor: pointer;
-  }
-  .module-name {
-    font-size: 1.07rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .module-type {
-    font-size: 0.73rem;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  .type-write { color: var(--red); background: rgba(255,59,48,0.08); }
-  .type-query { color: var(--blue); background: rgba(0,122,255,0.08); }
-  .type-analyze { color: var(--orange); background: rgba(255,149,0,0.08); }
-  .type-stats { color: var(--green); background: rgba(52,199,89,0.08); }
-
-  .module-desc {
-    margin-top: 6px;
-    font-size: 0.87rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  /* ── Triggers ── */
-  .triggers {
-    margin-top: 14px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .trigger {
-    display: inline-flex;
-    align-items: center;
-    padding: 5px 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--blue);
-    background: rgba(0,122,255,0.06);
-    border: 1px solid rgba(0,122,255,0.15);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    font-family: var(--font);
-  }
-  .trigger:hover {
-    background: rgba(0,122,255,0.12);
-    border-color: rgba(0,122,255,0.3);
-  }
-  .trigger.active {
-    background: var(--blue);
-    color: #fff;
-    border-color: var(--blue);
-  }
-
-  /* ── CLI Command ── */
-  .cli-block {
-    margin-top: 14px;
-    display: none;
-  }
-  .cli-block.visible { display: block; }
-
-  .cli-label {
-    font-size: 0.73rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
-  }
-
-  .cli-command {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .cli-command:hover { border-color: var(--blue); }
-  .cli-command code {
-    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
-    font-size: 0.8rem;
-    color: var(--text);
-    word-break: break-all;
-    flex: 1;
-  }
-  .cli-command .expand-icon {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    transition: transform 0.2s;
-    flex-shrink: 0;
-  }
-  .cli-command.expanded .expand-icon { transform: rotate(90deg); }
-
-  /* ── Execution Flow ── */
-  .flow {
-    margin-top: 10px;
-    padding: 16px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    display: none;
-    font-size: 0.8rem;
-    line-height: 1.7;
-  }
-  .flow.visible { display: block; }
-
-  .flow-title {
-    font-weight: 600;
-    font-size: 0.8rem;
-    color: var(--text);
-    margin-bottom: 10px;
-  }
-
-  .flow-section {
-    margin-bottom: 12px;
-  }
-  .flow-section:last-child { margin-bottom: 0; }
-
-  .flow-label {
-    font-size: 0.73rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 4px;
-  }
-
-  .flow-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-    margin-top: 4px;
-  }
-  .table-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .flow-table th {
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-secondary);
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.73rem;
-  }
-  .flow-table td {
-    padding: 4px 8px;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
-    color: var(--text);
-  }
-  .flow-table tr:last-child td { border-bottom: none; }
-
-  .tag {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 0.67rem;
-    font-weight: 500;
-  }
-  .tag-read { color: var(--blue); background: rgba(0,122,255,0.08); }
-  .tag-write { color: var(--red); background: rgba(255,59,48,0.08); }
-  .tag-create { color: var(--green); background: rgba(52,199,89,0.08); }
-
-  .flow-note {
-    margin-top: 6px;
-    padding: 8px 10px;
-    background: rgba(255,149,0,0.06);
-    border-left: 2px solid var(--orange);
-    border-radius: 0 4px 4px 0;
-    font-size: 0.8rem;
-    color: var(--text);
-  }
-
-  .flow-step {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .flow-step-num {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--blue);
-    color: #fff;
-    font-size: 0.6rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    margin-top: 1px;
-  }
-  .flow-step-text { color: var(--text); }
-
-  /* ── No Results ── */
-  .no-results {
-    text-align: center;
-    padding: 48px 0;
-    color: var(--text-secondary);
-    font-size: 0.93rem;
-    display: none;
-  }
-  .no-results.visible { display: block; }
-
-  /* ── Responsive ── */
-  @media (max-width: 640px) {
-    .header { padding-top: 24px; padding-left: 16px; padding-right: 16px; }
-    .header h1 { font-size: 1.5rem; }
-    .header p { font-size: 0.8rem; }
-
-    .search-bar { padding: 0 16px; margin-top: 16px; }
-    .search-bar input { font-size: 16px; /* prevent iOS zoom */ padding: 12px 14px; }
-
-    .tabs { padding: 0 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .tabs::-webkit-scrollbar { display: none; }
-    .tab { padding: 12px 14px; font-size: 0.8rem; min-height: 44px; }
-
-    .content { padding: 4px 16px 60px; }
-    .module { padding: 20px 0; }
-
-    .module-name { font-size: 1rem; }
-    .module-desc { font-size: 0.8rem; }
-
-    .triggers { gap: 6px; }
-    .trigger { padding: 8px 12px; font-size: 0.78rem; min-height: 36px; }
-
-    .cli-command { padding: 10px 12px; }
-    .cli-command code { font-size: 0.7rem; word-break: break-all; overflow-wrap: break-word; }
-
-    .flow { padding: 14px 12px; font-size: 0.78rem; }
-    .flow-table { font-size: 0.73rem; }
-    .flow-table th, .flow-table td { padding: 5px 6px; }
-    .flow-table td:first-child { max-width: 100px; overflow: hidden; text-overflow: ellipsis; }
-
-    .flow-note { font-size: 0.73rem; padding: 7px 9px; }
-  }
-
-  /* ── Very small screens ── */
-  @media (max-width: 380px) {
-    .header h1 { font-size: 1.3rem; }
-    .tab { padding: 10px 10px; font-size: 0.75rem; }
-    .trigger { padding: 6px 10px; font-size: 0.73rem; }
-    .cli-command code { font-size: 0.65rem; }
-  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-最高优先级-1">强制性规定（最高优先级）</a></li>
+<li><a href="#操作规范-强制-2">操作规范（强制）</a></li>
+<li><a href="#安装与配置-3">安装与配置</a></li>
+<li><a href="#功能概述-4">功能概述</a></li>
+<li><a href="#唤醒词总表-5">唤醒词总表</a></li>
+<li><a href="#使用流程-6">使用流程</a></li>
+<li><a href="#命令行参考-7">命令行参考</a></li>
+<li><a href="#分类参考-8">分类参考</a></li>
+<li><a href="#错误处理-9">错误处理</a></li></ol></div>
+<p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。</p>
+<h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
+<ol>
+<li><strong>该技能的所有优化和变动、脚本的所有变动都要体现在 <code>饼干记账.html</code> 上</strong> — HTML 是技能的可视化手册，任何功能变更必须同步更新</li>
+<li><strong>本规定优先级最高</strong>，高于下方所有操作规范</li>
+<li><strong>对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认</strong> — 禁止未经确认的自动修改</li>
+</ol>
+<hr />
+<h2 id="操作规范-强制-2">操作规范（强制）</h2>
+<ul>
+<li>所有数据操作通过 CLI（<code>scripts/record_bill.py</code>），禁止直连数据库</li>
+<li>只读操作（查询/分析/统计）不需确认；写入操作（记支出/记收入/拍账单/改记录）需用户确认</li>
+<li>不支持删除已有记录；修改功能见「改记录」流程</li>
+<li>金额必须明确，不能猜测</li>
+</ul>
+<hr />
+<h2 id="安装与配置-3">安装与配置</h2>
+<h3>依赖</h3>
+<ul>
+<li>Python 3.x（系统自带 sqlite3）</li>
+</ul>
+<h3>配置项</h3>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SKILLS_DB_PATH</code></td>
+<td>数据库目录</td>
+</tr>
+</tbody>
+</table>
+<h3>一键安装</h3>
+<pre><code>请帮我初始化饼干记账技能：
+1. 检查 Python 环境
+2. 引导我配置环境变量
+3. 显示当前环境变量配置
+4. 告诉我如何更改数据目录
+</code></pre>
+<hr />
+<h2 id="功能概述-4">功能概述</h2>
+<ul>
+<li><strong>文字记账</strong>：解析自然语言，提取金额、分类、备注</li>
+<li><strong>图片记账</strong>：看图识别账单金额，用户确认后记录</li>
+<li><strong>查询统计</strong>：今日/指定日期/日期范围/分类查询</li>
+<li><strong>分析报表</strong>：月度汇总、周期对比、分类明细、收支总览</li>
+</ul>
+<hr />
+<h2 id="唤醒词总表-5">唤醒词总表</h2>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI 指令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>写入</td>
+<td><code>记支出</code></td>
+<td>记账（支出）</td>
+<td><code>add --amount &lt;负数&gt;</code></td>
+</tr>
+<tr>
+<td>写入</td>
+<td><code>记收入</code></td>
+<td>收入记录</td>
+<td><code>add --amount &lt;正数&gt;</code></td>
+</tr>
+<tr>
+<td>写入</td>
+<td><code>拍账单</code></td>
+<td>图片记账</td>
+<td>图片识别 → <code>add</code></td>
+</tr>
+<tr>
+<td>写入</td>
+<td><code>改记录</code></td>
+<td>修改已有记录</td>
+<td><code>update --id &lt;ID&gt; [--字段 新值 ...]</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>查今天</code></td>
+<td>今日摘要</td>
+<td><code>summary</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>查日期</code></td>
+<td>指定日期查询</td>
+<td><code>list --date &lt;YYYY-MM-DD&gt;</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>查范围</code></td>
+<td>日期范围查询</td>
+<td><code>list --from &lt;日期&gt; --to &lt;日期&gt;</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>查分类</code></td>
+<td>按分类查询</td>
+<td><code>list --category &lt;分类&gt;</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>查最近</code></td>
+<td>最近N条</td>
+<td><code>recent --limit &lt;N&gt;</code></td>
+</tr>
+<tr>
+<td>查询</td>
+<td><code>搜备注</code></td>
+<td>搜索备注</td>
+<td><code>search "&lt;关键词&gt;"</code></td>
+</tr>
+<tr>
+<td>分析</td>
+<td><code>看月度</code></td>
+<td>月度汇总</td>
+<td><code>monthly --month &lt;YYYY-MM&gt;</code></td>
+</tr>
+<tr>
+<td>分析</td>
+<td><code>看对比</code></td>
+<td>周期对比</td>
+<td><code>compare --period week/month</code></td>
+</tr>
+<tr>
+<td>分析</td>
+<td><code>看分类</code></td>
+<td>分类明细</td>
+<td><code>breakdown [--from --to]</code></td>
+</tr>
+<tr>
+<td>分析</td>
+<td><code>看总览</code></td>
+<td>收支总览</td>
+<td><code>overview [--month &lt;YYYY-MM&gt;]</code></td>
+</tr>
+<tr>
+<td>统计</td>
+<td><code>做统计</code></td>
+<td>记账统计</td>
+<td><code>stats</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="使用流程-6">使用流程</h2>
+<h3>Step 1：判断输入类型</h3>
+<table>
+<thead>
+<tr>
+<th>输入类型</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>纯文字</td>
+<td>直接匹配唤醒词，解析金额、分类、备注</td>
+</tr>
+<tr>
+<td>纯图片（无文字）</td>
+<td>进入「拍账单」流程，识别图片内容，展示结果，用户确认后记账</td>
+</tr>
+<tr>
+<td>图片+文字</td>
+<td>看图判断金额，用户文字作为备注或分类提示</td>
+</tr>
+</tbody>
+</table>
+<h3>Step 2：匹配唤醒词</h3>
+<p>用户输入 → 匹配上述 14 个唤醒词之一 → 进入对应功能流程。</p>
+<p><strong>自然语言别名映射（AI 解析时同时匹配）：</strong></p>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>路由到</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"花了X"、"付了"、"消费"、"买了"</td>
+<td>→ <code>记支出</code></td>
+</tr>
+<tr>
+<td>"收到X"、"进账"、"工资"、"赚了"</td>
+<td>→ <code>记收入</code></td>
+</tr>
+<tr>
+<td>"截图"、"发照片"</td>
+<td>→ <code>拍账单</code></td>
+</tr>
+<tr>
+<td>"改下"、"改记录"、"改成X"、"改X"、"修正"、"编辑"</td>
+<td>→ <code>改记录</code></td>
+</tr>
+<tr>
+<td>"今天花了多少"、"今日支出"、"查账"</td>
+<td>→ <code>查今天</code></td>
+</tr>
+<tr>
+<td>"昨天花了多少"、"5月1号的账"</td>
+<td>→ <code>查日期</code></td>
+</tr>
+<tr>
+<td>"这周的账"、"上周消费"、"5月1到10号"</td>
+<td>→ <code>查范围</code></td>
+</tr>
+<tr>
+<td>"餐饮类的记录"、"交通花了多少"</td>
+<td>→ <code>查分类</code></td>
+</tr>
+<tr>
+<td>"最近的记录"、"最近5条"</td>
+<td>→ <code>查最近</code></td>
+</tr>
+<tr>
+<td>"找一下XX"、"有没有XX的记录"</td>
+<td>→ <code>搜备注</code></td>
+</tr>
+<tr>
+<td>"这个月消费"、"本月支出"、"月度汇总"</td>
+<td>→ <code>看月度</code></td>
+</tr>
+<tr>
+<td>"这周和上周比"、"本月和上月比"</td>
+<td>→ <code>看对比</code></td>
+</tr>
+<tr>
+<td>"各类支出占比"、"分类明细"</td>
+<td>→ <code>看分类</code></td>
+</tr>
+<tr>
+<td>"收支情况"、"本月收支"</td>
+<td>→ <code>看总览</code></td>
+</tr>
+<tr>
+<td>"记了多少笔"、"记账情况"</td>
+<td>→ <code>做统计</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Step 3：解析参数</h3>
+<h4>记支出</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"午饭35"</td>
+<td>分类=餐饮/外卖/午餐, 金额=-35</td>
+</tr>
+<tr>
+<td>"奶茶25"</td>
+<td>分类=餐饮/咖啡奶茶/奶茶, 金额=-25</td>
+</tr>
+<tr>
+<td>"打车20用支付宝"</td>
+<td>分类=出行/网约车, 金额=-20, 账户=支付宝</td>
+</tr>
+<tr>
+<td>"洗发水80"</td>
+<td>分类=居家/日用品(默认,如上下文有"理发/发廊"则→穿着/洗护), 金额=-80</td>
+</tr>
+<tr>
+<td>"昨天买书58"</td>
+<td>分类=玩乐/影音游戏/书籍影视(默认,如上下文有"教材/考试/备考"则→学习/书籍), 金额=-58, 时间=昨天</td>
+</tr>
+<tr>
+<td>"记账到旅行账本"</td>
+<td>账本=旅行</td>
+</tr>
+</tbody>
+</table>
+<p><strong>文字解析关键词：</strong>
+- "花了 / 付了 / 消费 / 支出 / 买了" → 负数金额
+- 未指定时间 → 默认当前时间
+- 未指定分类 → 根据内容推断，告知用户可纠正
+- 分类参考 <code>references/categories.md</code>(L1/L2/L3 三级 + 歧义词智能判断)</p>
+<h4>记收入</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"工资8000"</td>
+<td>分类=工资/基本工资, 金额=+8000</td>
+</tr>
+<tr>
+<td>"绩效3000"</td>
+<td>分类=工资/绩效, 金额=+3000</td>
+</tr>
+<tr>
+<td>"项目奖金5000"</td>
+<td>分类=奖金/项目奖金, 金额=+5000</td>
+</tr>
+<tr>
+<td>"副业赚了2000"</td>
+<td>分类=兼职/副业, 金额=+2000</td>
+</tr>
+<tr>
+<td>"基金分红300"</td>
+<td>分类=投资/分红, 金额=+300</td>
+</tr>
+<tr>
+<td>"红包100"</td>
+<td>分类=其他收入/红包, 金额=+100</td>
+</tr>
+</tbody>
+</table>
+<p><strong>文字解析关键词：</strong>
+- "收到 / 收入 / 进账 / 工资 / 赚了" → 正数金额</p>
+<h4>拍账单</h4>
+<table>
+<thead>
+<tr>
+<th>用户输入</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>发截图/账单图片</td>
+<td>识别金额，展示结果，用户确认后记录</td>
+</tr>
+<tr>
+<td>发模糊图片</td>
+<td>描述看到的内容，请用户确认金额</td>
+</tr>
+<tr>
+<td>发非账单图片</td>
+<td>告知非账单，询问是否手动输入</td>
+</tr>
+</tbody>
+</table>
+<p><strong>图片识别规则：</strong>
+1. 优先取「实付 / 实收 / 已支付 / 需付」金额
+2. 其次取「合计 / 总计 / 总额 / 应付」金额
+3. 忽略：单品价格、优惠减免、配送费、税额、找零
+4. 无法判断时，描述看到的内容并请用户确认</p>
+<h4>改记录</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"把那条午饭改成 38"</td>
+<td>id=查最近匹配项, amount=-38</td>
+</tr>
+<tr>
+<td>"改备注加牛奶"</td>
+<td>id=用户指定或查最近匹配, note="原备注+牛奶"</td>
+</tr>
+<tr>
+<td>"ID=123 改成分类=交通"</td>
+<td>id=123, category=交通</td>
+</tr>
+<tr>
+<td>"把刚记的那笔改一下"</td>
+<td>id=查最近第 1 条,字段待用户告知</td>
+</tr>
+</tbody>
+</table>
+<p><strong>改记录流程(AI 层负责 diff + 确认):</strong>
+1. 通过 <code>查最近</code> / <code>查日期</code> / <code>搜备注</code> 定位目标记录的 ID(必要时把候选展示给用户挑)
+2. 用户告知要改哪些字段、改成什么 → AI 计算 原值 → 新值 的 diff
+3. <strong>展示 diff 给用户,等待"确认"</strong>(未确认前不调 update CLI)
+4. 用户回复「确认」→ AI 调 <code>update --id &lt;ID&gt; [...新字段]</code>
+5. CLI 返回结果 → AI 反馈「已修改」</p>
+<p><strong>确认模板:</strong></p>
+<pre><code>📝 待修改(ID=123):
+  分类:    餐饮     →  餐饮(未改)
+  金额:    -35.00   →  -38.00
+  备注:    午饭     →  午饭+牛奶
+确认改?(回复「确认」或「取消」)
+</code></pre>
+<h4>查今天</h4>
+<p>无参数。返回今日 count / expense / income / net。</p>
+<h4>查日期</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"查昨天"</td>
+<td>--date = 昨天日期</td>
+</tr>
+<tr>
+<td>"5月1号的账"</td>
+<td>--date = 2026-05-01</td>
+</tr>
+<tr>
+<td>"上周五花了多少"</td>
+<td>--date = 计算后的日期</td>
+</tr>
+</tbody>
+</table>
+<h4>查范围</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"这周的账"</td>
+<td>--from 本周一 --to 今天</td>
+</tr>
+<tr>
+<td>"上周消费"</td>
+<td>--from 上周一 --to 上周日</td>
+</tr>
+<tr>
+<td>"5月1到10号"</td>
+<td>--from 2026-05-01 --to 2026-05-10</td>
+</tr>
+</tbody>
+</table>
+<h4>查分类</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"餐饮类的记录"</td>
+<td>--category 餐饮</td>
+</tr>
+<tr>
+<td>"交通花了多少"</td>
+<td>--category 交通</td>
+</tr>
+</tbody>
+</table>
+<p>注意：此命令返回该分类下的逐条记录。如需分类汇总统计，使用「看分类」。</p>
+<h4>查最近</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"最近5条"</td>
+<td>--limit 5</td>
+</tr>
+<tr>
+<td>"最近的记录"</td>
+<td>--limit 10（默认）</td>
+</tr>
+</tbody>
+</table>
+<h4>搜备注</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"搜午饭"</td>
+<td>keyword = 午饭</td>
+</tr>
+<tr>
+<td>"有没有咖啡的记录"</td>
+<td>keyword = 咖啡</td>
+</tr>
+</tbody>
+</table>
+<h4>看月度</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"本月汇总"</td>
+<td>--month = 当前月（YYYY-MM）</td>
+</tr>
+<tr>
+<td>"3月份的账"</td>
+<td>--month = 2026-03</td>
+</tr>
+</tbody>
+</table>
+<p>返回：支出/收入/净额 + 分类明细。</p>
+<h4>看对比</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"这周和上周比"</td>
+<td>--period week</td>
+</tr>
+<tr>
+<td>"本月和上月比"</td>
+<td>--period month</td>
+</tr>
+</tbody>
+</table>
+<p>返回：本期/上期的支出/收入/净额 + 变化率。</p>
+<h4>看分类</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"各类支出占比"</td>
+<td>无参数，默认本月</td>
+</tr>
+<tr>
+<td>"5月的分类明细"</td>
+<td>--from 2026-05-01 --to 2026-05-31</td>
+</tr>
+</tbody>
+</table>
+<p>返回：各分类总支出/占比/笔数/均值。</p>
+<h4>看总览</h4>
+<table>
+<thead>
+<tr>
+<th>用户说</th>
+<th>解析结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"本月收支"</td>
+<td>--month = 当前月（默认）</td>
+</tr>
+<tr>
+<td>"3月收支情况"</td>
+<td>--month = 2026-03</td>
+</tr>
+</tbody>
+</table>
+<p>返回：笔数/支出/收入/净额。</p>
+<h4>做统计</h4>
+<p>无参数。返回总笔数、记账天数、首笔时间、最近记录时间。</p>
+<h3>Step 4：执行指令</h3>
+<pre><code class="language-bash"># 记支出(多级分类:L1/L2/L3 用 / 分隔)
+python3 scripts/record_bill.py add --category 餐饮/外卖/午餐 --amount -35.0 --note &quot;午饭&quot;
+python3 scripts/record_bill.py add --category 餐饮/咖啡奶茶/奶茶 --amount -25.0
 
-<div class="header">
-  <h1>饼干记账</h1>
-  <p>记账技能 · 14 个唤醒词 · 10 个 CLI 子命令 · SQLite 存储</p>
-</div>
+# 改记录(按 ID)
+python3 scripts/record_bill.py update --id 123 --note &quot;午饭+牛奶&quot;
+python3 scripts/record_bill.py update --id 123 --amount -38.0 --category 餐饮
+python3 scripts/record_bill.py update --id 123 --amount -50 --account 微信 --ledger 餐饮
 
-<div class="search-bar">
-  <input type="text" id="searchInput" placeholder="搜索唤醒词或功能…" autocomplete="off">
-</div>
+# 记收入
+python3 scripts/record_bill.py add --category 工资/基本工资 --amount 8000.0 --note &quot;5月工资&quot;
 
-<div class="tabs" id="tabs">
-  <button class="tab active" data-category="all">全部<span class="count">15</span></button>
-  <button class="tab" data-category="write">写入<span class="count">4</span></button>
-  <button class="tab" data-category="query">查询<span class="count">6</span></button>
-  <button class="tab" data-category="analyze">分析<span class="count">4</span></button>
-  <button class="tab" data-category="stats">统计<span class="count">1</span></button>
-</div>
+# 查今天
+python3 scripts/record_bill.py summary
 
-<div class="content" id="modules"></div>
-<div class="no-results" id="noResults">没有匹配的唤醒词</div>
+# 查日期
+python3 scripts/record_bill.py list --date 2026-05-27
 
-<script>
-const DATA = [
-  // ── 写入类 ──
-  {
-    category: "write",
-    typeLabel: "写入",
-    typeClass: "type-write",
-    name: "记支出",
-    desc: "解析自然语言，提取金额、分类、备注，将支出记录写入数据库。支持推断分类、指定时间、账户和账本。",
-    triggers: [
-      { word: "记支出", example: "记支出 午饭35" },
-      { word: "花了", example: "花了35吃午饭" },
-      { word: "付了", example: "付了20打车" },
-      { word: "消费", example: "消费了100购物" },
-      { word: "买了", example: "买了一本书58" },
-      { word: "支出", example: "支出咖啡15" },
-    ],
-    cli: "python3 scripts/record_bill.py add --category 餐饮/外卖/午餐 --amount -35.0 --note \"午饭\"",
-    flow: {
-      type: "write",
-      table: "bills",
-      operation: "INSERT",
-      fields: [
-        { name: "category", type: "TEXT", desc: "分类(L1/L2/L3 三级,用 / 分隔,如 餐饮/外卖/午餐)", required: true },
-        { name: "amount", type: "REAL", desc: "金额（负数为支出）", required: true },
-        { name: "time", type: "TEXT", desc: "时间 YYYY-MM-DD HH:MM:SS", required: false },
-        { name: "account", type: "TEXT", desc: "账户（支付宝/微信…）", required: false },
-        { name: "ledger", type: "TEXT", desc: "账本（默认\"生活\"）", required: false },
-        { name: "currency", type: "TEXT", desc: "货币（默认\"人民币\"）", required: false },
-        { name: "note", type: "TEXT", desc: "备注", required: false },
-      ],
-      sideEffects: ["自动创建 bills 表（如不存在）", "自动创建 idx_bills_time、idx_bills_category 索引", "写入后返回新记录的 id"],
-      steps: [
-        "调用 db.add_bill() → db.insert_record()",
-        "init_db() 确保表和索引存在",
-        "INSERT INTO bills (category, time, amount, account, ledger, currency, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        "conn.commit() 写入磁盘",
-        "返回 {id, category, time, amount}",
-      ],
-    },
-  },
-  {
-    category: "write",
-    typeLabel: "写入",
-    typeClass: "type-write",
-    name: "记收入",
-    desc: "解析自然语言，将收入记录写入数据库。金额为正数，支持工资、奖金、兼职等分类。",
-    triggers: [
-      { word: "记收入", example: "记收入 工资8000" },
-      { word: "收到", example: "收到工资8000" },
-      { word: "进账", example: "进账5000奖金" },
-      { word: "工资", example: "工资到账8000" },
-      { word: "赚了", example: "兼职赚了2000" },
-    ],
-    cli: "python3 scripts/record_bill.py add --category 工资/基本工资 --amount 8000.0 --note \"5月工资\"",
-    flow: {
-      type: "write",
-      table: "bills",
-      operation: "INSERT",
-      fields: [
-        { name: "category", type: "TEXT", desc: "分类(L1/L2 二级,用 / 分隔,如 工资/基本工资)", required: true },
-        { name: "amount", type: "REAL", desc: "金额（正数为收入）", required: true },
-        { name: "time", type: "TEXT", desc: "时间", required: false },
-        { name: "note", type: "TEXT", desc: "备注", required: false },
-      ],
-      sideEffects: ["同「记支出」，写入 bills 表"],
-      steps: [
-        "解析用户输入：识别\"收到/工资/赚了\"等关键词 → 正数金额",
-        "调用 db.add_bill(category, +amount, time, ...)",
-        "INSERT INTO bills … VALUES (分类, 时间, +金额, …)",
-        "返回确认信息",
-      ],
-    },
-  },
-  {
-    category: "write",
-    typeLabel: "写入",
-    typeClass: "type-write",
-    name: "拍账单",
-    desc: "识别账单图片中的金额，用户确认后记录。优先取「实付/实收」金额，其次取「合计/总计」。",
-    triggers: [
-      { word: "拍账单", example: "拍账单（附图片）" },
-      { word: "截图", example: "发截图（附图片）" },
-      { word: "发照片", example: "发照片记账" },
-    ],
-    cli: "图片识别 → python3 scripts/record_bill.py add --category <推断> --amount <识别金额> --note \"<描述>\"",
-    flow: {
-      type: "write",
-      table: "bills",
-      operation: "INSERT（经用户确认后）",
-      fields: [
-        { name: "category", type: "TEXT", desc: "根据图片内容推断", required: true },
-        { name: "amount", type: "REAL", desc: "从图片中识别的金额", required: true },
-        { name: "note", type: "TEXT", desc: "图片内容描述", required: false },
-      ],
-      sideEffects: [
-        "先进行图片识别（不写数据库）",
-        "展示识别结果，等待用户确认",
-        "确认后才执行 INSERT",
-        "无法识别时请用户手动输入",
-      ],
-      steps: [
-        "接收图片 → AI 识别账单内容",
-        "提取金额（优先实付 > 合计 > 总额）",
-        "推断分类(参考 references/categories.md 分类心法 5 维度判断,关键词表兜底)",
-        "展示识别结果，请用户确认",
-        "用户确认 → 执行 add 命令写入",
-      ],
-    },
-  },
-  {
-    category: "write",
-    typeLabel: "写入",
-    typeClass: "type-write",
-    name: "改记录",
-    desc: "按 ID 修改已有记录。AI 层负责展示 diff 并等待用户确认,update CLI 一次性原子写入。删除功能未开放。",
-    triggers: [
-      { word: "改记录", example: "改记录 ID=123 备注加牛奶" },
-      { word: "改下", example: "改下那条午饭" },
-      { word: "改成", example: "改成38" },
-      { word: "修正", example: "修正 ID=123" },
-      { word: "编辑", example: "编辑 ID=123" },
-    ],
-    cli: "python3 scripts/record_bill.py update --id <ID> [--category X] [--amount Y] [--time T] [--account A] [--ledger L] [--currency C] [--note N]（至少传一个字段）",
-    flow: {
-      type: "write",
-      table: "bills",
-      operation: "UPDATE",
-      fields: [
-        { name: "id", type: "INTEGER", desc: "目标记录 ID（必需）", required: true },
-        { name: "category", type: "TEXT", desc: "新分类", required: false },
-        { name: "amount", type: "REAL", desc: "新金额（负数为支出）", required: false },
-        { name: "time", type: "TEXT", desc: "新时间 YYYY-MM-DD HH:MM:SS", required: false },
-        { name: "account", type: "TEXT", desc: "新账户", required: false },
-        { name: "ledger", type: "TEXT", desc: "新账本", required: false },
-        { name: "currency", type: "TEXT", desc: "新货币", required: false },
-        { name: "note", type: "TEXT", desc: "新备注", required: false },
-      ],
-      sideEffects: [
-        "id / created_at 字段锁定,不可修改",
-        "AI 层负责 diff + 确认（未确认前不调 update CLI）",
-        "至少传一个可修改字段,否则 CLI 报错",
-        "ID 不存在时返回失败,不抛异常",
-      ],
-      steps: [
-        "AI 用「查最近 / 查日期 / 搜备注」定位目标 ID",
-        "AI 计算 diff（原值 → 新值）",
-        "展示 diff 给用户,等待「确认」",
-        "用户确认 → 执行 update CLI",
-        "UPDATE bills SET <字段>=? WHERE id=?",
-        "返回修改结果",
-      ],
-    },
-  },
+# 查范围
+python3 scripts/record_bill.py list --from 2026-05-01 --to 2026-05-31
 
-  // ── 查询类 ──
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "查今天",
-    desc: "返回今日摘要：记录数、支出、收入、净额。",
-    triggers: [
-      { word: "查今天", example: "查今天" },
-      { word: "今天花了多少", example: "今天花了多少" },
-      { word: "今日支出", example: "今日支出" },
-      { word: "查账", example: "查账" },
-    ],
-    cli: "python3 scripts/record_bill.py summary",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT",
-      fields: [
-        { name: "COUNT(*)", type: "聚合", desc: "记录数" },
-        { name: "SUM(ABS(amount)) WHERE amount<0", type: "聚合", desc: "总支出" },
-        { name: "SUM(amount) WHERE amount>0", type: "聚合", desc: "总收入" },
-        { name: "income - expense", type: "计算", desc: "净额" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "计算今日日期范围：今天 00:00:00 ~ 明天 00:00:00",
-        "SELECT COUNT(*), SUM(CASE…), SUM(CASE…) FROM bills WHERE time >= ? AND time < ?",
-        "返回 {date, count, expense, income, net}",
-      ],
-    },
-  },
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "查日期",
-    desc: "查询指定日期的所有记录明细。",
-    triggers: [
-      { word: "查日期", example: "查日期 5月1号" },
-      { word: "昨天花了多少", example: "昨天花了多少" },
-      { word: "5月1号的账", example: "5月1号的账" },
-      { word: "上周五花了多少", example: "上周五花了多少" },
-    ],
-    cli: "python3 scripts/record_bill.py list --date 2026-05-27",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT",
-      fields: [
-        { name: "*", type: "全部字段", desc: "id, category, time, amount, account, ledger, currency, note, created_at" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "解析日期：\"昨天\" → 计算日期，\"5月1号\" → 2026-05-01",
-        "SELECT * FROM bills WHERE time >= '日期 00:00:00' AND time <= '日期 23:59:59' ORDER BY time DESC",
-        "格式化输出每条记录",
-      ],
-    },
-  },
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "查范围",
-    desc: "查询指定日期范围内的所有记录。",
-    triggers: [
-      { word: "查范围", example: "查范围 5月1到10号" },
-      { word: "这周的账", example: "这周的账" },
-      { word: "上周消费", example: "上周消费" },
-      { word: "5月1到10号", example: "5月1到10号" },
-    ],
-    cli: "python3 scripts/record_bill.py list --from 2026-05-01 --to 2026-05-31",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT",
-      fields: [
-        { name: "*", type: "全部字段", desc: "同查日期" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "解析日期范围：\"这周\" → 本周一~今天，\"上周\" → 上周一~上周日",
-        "SELECT * FROM bills WHERE time >= '起始 00:00:00' AND time <= '结束 23:59:59' ORDER BY time DESC",
-        "--from 和 --to 必须同时指定",
-      ],
-    },
-  },
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "查分类",
-    desc: "按分类查询所有记录明细。如需分类汇总统计，请使用「看分类」。",
-    triggers: [
-      { word: "查分类", example: "查分类 餐饮" },
-      { word: "餐饮类的记录", example: "餐饮类的记录" },
-      { word: "交通花了多少", example: "交通花了多少" },
-    ],
-    cli: "python3 scripts/record_bill.py list --category 餐饮",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT",
-      fields: [
-        { name: "*", type: "全部字段", desc: "筛选 category = 指定值(支持多级,如 '餐饮' 或 '餐饮/外卖/午餐')" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "SELECT * FROM bills WHERE category = '餐饮' ORDER BY time DESC",
-        "返回该分类下的逐条记录(精确匹配,父级不自动带出子级)",
-        "注意：此命令返回逐条记录，非汇总。汇总请用「看分类」",
-      ],
-    },
-  },
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "查最近",
-    desc: "查询最近 N 条记录，默认 10 条。",
-    triggers: [
-      { word: "查最近", example: "查最近 5条" },
-      { word: "最近的记录", example: "最近的记录" },
-      { word: "最近5条", example: "最近5条" },
-    ],
-    cli: "python3 scripts/record_bill.py recent --limit 10",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT",
-      fields: [
-        { name: "*", type: "全部字段", desc: "按时间倒序，限制 N 条" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "SELECT * FROM bills ORDER BY time DESC LIMIT 10",
-        "默认 limit=10，可通过 --limit 指定",
-      ],
-    },
-  },
-  {
-    category: "query",
-    typeLabel: "查询",
-    typeClass: "type-query",
-    name: "搜备注",
-    desc: "按关键词模糊搜索备注字段。",
-    triggers: [
-      { word: "搜备注", example: "搜备注 午饭" },
-      { word: "找一下", example: "找一下咖啡" },
-      { word: "有没有XX的记录", example: "有没有奶茶的记录" },
-    ],
-    cli: "python3 scripts/record_bill.py search \"午饭\"",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT（LIKE 模糊匹配）",
-      fields: [
-        { name: "note", type: "TEXT", desc: "WHERE note LIKE '%关键词%'" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "SELECT * FROM bills WHERE note LIKE '%午饭%' ORDER BY time DESC",
-        "返回备注中包含关键词的所有记录",
-      ],
-    },
-  },
+# 查分类
+python3 scripts/record_bill.py list --category 餐饮
 
-  // ── 分析类 ──
-  {
-    category: "analyze",
-    typeLabel: "分析",
-    typeClass: "type-analyze",
-    name: "看月度",
-    desc: "月度汇总：支出、收入、净额，以及各分类明细（总支出/笔数）。",
-    triggers: [
-      { word: "看月度", example: "看月度" },
-      { word: "本月汇总", example: "本月汇总" },
-      { word: "这个月消费", example: "这个月消费" },
-      { word: "月度汇总", example: "月度汇总" },
-      { word: "3月份的账", example: "3月份的账" },
-    ],
-    cli: "python3 scripts/record_bill.py monthly --month 2026-05",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT + GROUP BY",
-      fields: [
-        { name: "category", type: "TEXT", desc: "分组字段" },
-        { name: "SUM(ABS(amount))", type: "聚合", desc: "分类总支出" },
-        { name: "COUNT(*)", type: "聚合", desc: "分类笔数" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "计算月份范围：2026-05-01 00:00:00 ~ 2026-06-01 00:00:00",
-        "查询分类明细：SELECT category, SUM(ABS(amount)), COUNT(*) WHERE amount<0 GROUP BY category ORDER BY total DESC",
-        "查询总收支：SELECT SUM(CASE…), SUM(CASE…) FROM bills WHERE time >= ? AND time < ?",
-        "返回 {month, categories[], expense, income, net}",
-      ],
-    },
-  },
-  {
-    category: "analyze",
-    typeLabel: "分析",
-    typeClass: "type-analyze",
-    name: "看对比",
-    desc: "周期对比：本周 vs 上周 或 本月 vs 上月，显示支出/收入/净额及变化率。",
-    triggers: [
-      { word: "看对比", example: "看对比" },
-      { word: "这周和上周比", example: "这周和上周比" },
-      { word: "本月和上月比", example: "本月和上月比" },
-    ],
-    cli: "python3 scripts/record_bill.py compare --period week",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT × 2（本期 + 上期）",
-      fields: [
-        { name: "expense", type: "聚合", desc: "各期总支出" },
-        { name: "income", type: "聚合", desc: "各期总收入" },
-        { name: "expense_diff", type: "计算", desc: "支出差额" },
-        { name: "expense_pct", type: "计算", desc: "支出变化率(%)" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "根据 period 计算两段时间范围",
-        "week：本周一~今天 vs 上周一~上周日",
-        "month：本月 vs 上月",
-        "分别调用 _get_totals() 获取两期数据",
-        "计算差值和变化率",
-        "返回 {this{label,expense,income,net}, last{…}, change{diff,pct}}",
-      ],
-    },
-  },
-  {
-    category: "analyze",
-    typeLabel: "分析",
-    typeClass: "type-analyze",
-    name: "看分类",
-    desc: "分类支出明细：各分类总支出、占比、笔数、均值。不指定日期默认本月。",
-    triggers: [
-      { word: "看分类", example: "看分类" },
-      { word: "各类支出占比", example: "各类支出占比" },
-      { word: "分类明细", example: "分类明细" },
-      { word: "5月的分类明细", example: "5月的分类明细" },
-    ],
-    cli: "python3 scripts/record_bill.py breakdown --from 2026-05-01 --to 2026-05-31",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT + GROUP BY + 计算占比",
-      fields: [
-        { name: "category", type: "TEXT", desc: "分组字段" },
-        { name: "SUM(ABS(amount))", type: "聚合", desc: "分类总支出" },
-        { name: "COUNT(*)", type: "聚合", desc: "笔数" },
-        { name: "AVG(ABS(amount))", type: "聚合", desc: "均值" },
-        { name: "pct", type: "计算", desc: "占总支出百分比" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "默认日期范围：本月1日 ~ 今天",
-        "SELECT category, SUM(ABS(amount)), COUNT(*), AVG(ABS(amount)) WHERE amount<0 GROUP BY category",
-        "计算 grand_total = 所有分类总和",
-        "计算每个分类的 pct = total / grand_total * 100",
-        "返回 {from, to, categories[], grand_total, category_pct[]}",
-      ],
-    },
-  },
-  {
-    category: "analyze",
-    typeLabel: "分析",
-    typeClass: "type-analyze",
-    name: "看总览",
-    desc: "指定月份的收支总览：笔数、支出、收入、净额。",
-    triggers: [
-      { word: "看总览", example: "看总览" },
-      { word: "收支情况", example: "收支情况" },
-      { word: "本月收支", example: "本月收支" },
-      { word: "3月收支情况", example: "3月收支情况" },
-    ],
-    cli: "python3 scripts/record_bill.py overview --month 2026-05",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT（聚合）",
-      fields: [
-        { name: "COUNT(*)", type: "聚合", desc: "总笔数" },
-        { name: "SUM(CASE WHEN amount<0 …)", type: "聚合", desc: "总支出" },
-        { name: "SUM(CASE WHEN amount>0 …)", type: "聚合", desc: "总收入" },
-        { name: "SUM(amount)", type: "聚合", desc: "净额" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "计算月份范围：指定月-01 ~ 下月-01",
-        "SELECT COUNT(*), SUM(CASE…), SUM(CASE…), SUM(amount) FROM bills WHERE time >= ? AND time < ?",
-        "返回 {count, expense, income, net}",
-      ],
-    },
-  },
+# 查最近
+python3 scripts/record_bill.py recent --limit 10
 
-  // ── 统计类 ──
-  {
-    category: "stats",
-    typeLabel: "统计",
-    typeClass: "type-stats",
-    name: "做统计",
-    desc: "全局记账统计：总笔数、记账天数、首笔时间、最近记录时间。",
-    triggers: [
-      { word: "做统计", example: "做统计" },
-      { word: "记了多少笔", example: "记了多少笔" },
-      { word: "记账情况", example: "记账情况" },
-    ],
-    cli: "python3 scripts/record_bill.py stats",
-    flow: {
-      type: "read",
-      table: "bills",
-      operation: "SELECT（全局聚合）",
-      fields: [
-        { name: "COUNT(*)", type: "聚合", desc: "总笔数" },
-        { name: "COUNT(DISTINCT SUBSTR(time,1,10))", type: "聚合", desc: "记账天数" },
-        { name: "MIN(time)", type: "聚合", desc: "首笔时间" },
-        { name: "MAX(time)", type: "聚合", desc: "最近记录时间" },
-      ],
-      sideEffects: ["纯只读，无副作用"],
-      steps: [
-        "SELECT COUNT(*), COUNT(DISTINCT SUBSTR(time,1,10)), MIN(time), MAX(time) FROM bills",
-        "返回 {total_records, total_days, first_record, last_record}",
-      ],
-    },
-  },
-];
+# 搜备注
+python3 scripts/record_bill.py search &quot;午饭&quot;
 
-// ── Render ──
-const modulesEl = document.getElementById('modules');
-const searchInput = document.getElementById('searchInput');
-const tabsEl = document.getElementById('tabs');
-const noResults = document.getElementById('noResults');
+# 看月度
+python3 scripts/record_bill.py monthly --month 2026-05
 
-let activeCategory = 'all';
-let activeTrigger = null;
+# 看对比
+python3 scripts/record_bill.py compare --period week
 
-function renderModules() {
-  modulesEl.innerHTML = '';
-  let visibleCount = 0;
+# 看分类
+python3 scripts/record_bill.py breakdown
+python3 scripts/record_bill.py breakdown --from 2026-05-01 --to 2026-05-31
 
-  DATA.forEach((mod, idx) => {
-    const div = document.createElement('div');
-    div.className = 'module';
-    div.dataset.category = mod.category;
-    div.dataset.idx = idx;
+# 看总览
+python3 scripts/record_bill.py overview
+python3 scripts/record_bill.py overview --month 2026-05
 
-    // Triggers HTML
-    const triggersHTML = mod.triggers.map((t, ti) =>
-      `<button class="trigger" data-mod="${idx}" data-trigger="${ti}">${t.word}</button>`
-    ).join('');
-
-    // Flow fields table
-    const fieldsHTML = mod.flow.fields.map(f =>
-      `<tr><td><code>${f.name}</code></td><td>${f.type}</td><td>${f.desc}</td></tr>`
-    ).join('');
-
-    // Flow steps
-    const stepsHTML = mod.flow.steps.map((s, si) =>
-      `<div class="flow-step"><span class="flow-step-num">${si+1}</span><span class="flow-step-text">${s}</span></div>`
-    ).join('');
-
-    // Side effects
-    const sideHTML = mod.flow.sideEffects.map(s => `<div>${s}</div>`).join('');
-
-    div.innerHTML = `
-      <div class="module-header">
-        <span class="module-name">${mod.name}</span>
-        <span class="module-type ${mod.typeClass}">${mod.typeLabel}</span>
-      </div>
-      <div class="module-desc">${mod.desc}</div>
-      <div class="triggers">${triggersHTML}</div>
-      <div class="cli-block" data-mod="${idx}">
-        <div class="cli-label">CLI 命令</div>
-        <div class="cli-command" data-mod="${idx}">
-          <code>${mod.cli}</code>
-          <span class="expand-icon">▶</span>
-        </div>
-        <div class="flow" data-mod="${idx}">
-          <div class="flow-title">执行流程</div>
-          <div class="flow-section">
-            <div class="flow-label">操作类型</div>
-            <div><span class="tag ${mod.flow.type === 'read' ? 'tag-read' : 'tag-write'}">${mod.flow.type === 'read' ? '只读' : '写入'}</span> &nbsp;${mod.flow.operation} → <code>${mod.flow.table}</code></div>
-          </div>
-          <div class="flow-section">
-            <div class="flow-label">涉及字段</div>
-            <div class="table-scroll">
-            <table class="flow-table">
-              <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
-              <tbody>${fieldsHTML}</tbody>
-            </table>
-            </div>
-          </div>
-          <div class="flow-section">
-            <div class="flow-label">执行步骤</div>
-            ${stepsHTML}
-          </div>
-          ${mod.flow.sideEffects.length ? `<div class="flow-section"><div class="flow-label">副作用</div><div class="flow-note">${sideHTML}</div></div>` : ''}
-        </div>
-      </div>
-    `;
-
-    modulesEl.appendChild(div);
-  });
-}
-
-function applyFilters() {
-  const query = searchInput.value.trim().toLowerCase();
-  let visibleCount = 0;
-
-  document.querySelectorAll('.module').forEach(div => {
-    const idx = parseInt(div.dataset.idx);
-    const mod = DATA[idx];
-
-    // Category filter
-    const catMatch = activeCategory === 'all' || mod.category === activeCategory;
-
-    // Search filter
-    let searchMatch = true;
-    if (query) {
-      const triggerWords = mod.triggers.map(t => t.word.toLowerCase());
-      const examples = mod.triggers.map(t => t.example.toLowerCase());
-      searchMatch = mod.name.toLowerCase().includes(query) ||
-                    mod.desc.toLowerCase().includes(query) ||
-                    triggerWords.some(w => w.includes(query)) ||
-                    examples.some(e => e.includes(query));
-    }
-
-    const visible = catMatch && searchMatch;
-    div.classList.toggle('hidden', !visible);
-    if (visible) visibleCount++;
-  });
-
-  noResults.classList.toggle('visible', visibleCount === 0);
-}
-
-// Tab click
-tabsEl.addEventListener('click', e => {
-  const tab = e.target.closest('.tab');
-  if (!tab) return;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  tab.classList.add('active');
-  activeCategory = tab.dataset.category;
-  // Reset active trigger
-  activeTrigger = null;
-  document.querySelectorAll('.trigger').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.cli-block').forEach(b => b.classList.remove('visible'));
-  applyFilters();
-});
-
-// Search
-searchInput.addEventListener('input', () => {
-  applyFilters();
-});
-
-// Trigger click → show CLI
-modulesEl.addEventListener('click', e => {
-  const trigger = e.target.closest('.trigger');
-  if (trigger) {
-    const modIdx = trigger.dataset.mod;
-    const wasActive = trigger.classList.contains('active');
-
-    // Clear all triggers in this module
-    trigger.closest('.triggers').querySelectorAll('.trigger').forEach(t => t.classList.remove('active'));
-
-    // Hide all cli-blocks in this module
-    const cliBlock = document.querySelector(`.cli-block[data-mod="${modIdx}"]`);
-
-    if (wasActive) {
-      cliBlock.classList.remove('visible');
-      return;
-    }
-
-    trigger.classList.add('active');
-    cliBlock.classList.add('visible');
-    // Also collapse flow
-    cliBlock.querySelector('.flow').classList.remove('visible');
-    cliBlock.querySelector('.cli-command').classList.remove('expanded');
-    return;
-  }
-
-  // CLI command click → toggle flow
-  const cliCmd = e.target.closest('.cli-command');
-  if (cliCmd) {
-    const modIdx = cliCmd.dataset.mod;
-    const flow = document.querySelector(`.flow[data-mod="${modIdx}"]`);
-    const isVisible = flow.classList.contains('visible');
-    flow.classList.toggle('visible');
-    cliCmd.classList.toggle('expanded');
-    return;
-  }
-});
-
-// Init
-renderModules();
-applyFilters();
-</script>
+# 做统计
+python3 scripts/record_bill.py stats
+</code></pre>
+<h3>Step 5：回复用户</h3>
+<pre><code>✓ 已记录：餐饮 -35.00
+</code></pre>
+<hr />
+<h2 id="命令行参考-7">命令行参考</h2>
+<p>共 10 个子命令：</p>
+<table>
+<thead>
+<tr>
+<th>子命令</th>
+<th>说明</th>
+<th>必需参数</th>
+<th>可选参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add</code></td>
+<td>添加账单</td>
+<td><code>--category</code>, <code>--amount</code></td>
+<td><code>--time</code>, <code>--account</code>, <code>--ledger</code>, <code>--currency</code>, <code>--note</code></td>
+</tr>
+<tr>
+<td><code>update</code></td>
+<td>修改账单</td>
+<td><code>--id</code> (必需)</td>
+<td><code>--category</code>, <code>--amount</code>, <code>--time</code>, <code>--account</code>, <code>--ledger</code>, <code>--currency</code>, <code>--note</code>(至少传一个)</td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td>查询记录</td>
+<td>（无）</td>
+<td><code>--date</code>, <code>--from</code>+<code>--to</code>, <code>--category</code></td>
+</tr>
+<tr>
+<td><code>search</code></td>
+<td>搜索备注</td>
+<td><code>keyword</code>（位置参数）</td>
+<td>（无）</td>
+</tr>
+<tr>
+<td><code>summary</code></td>
+<td>今日摘要</td>
+<td>（无）</td>
+<td>（无）</td>
+</tr>
+<tr>
+<td><code>monthly</code></td>
+<td>月度汇总</td>
+<td><code>--month</code></td>
+<td>（无）</td>
+</tr>
+<tr>
+<td><code>compare</code></td>
+<td>周期对比</td>
+<td>（无）</td>
+<td><code>--period</code> (week/month, 默认 week)</td>
+</tr>
+<tr>
+<td><code>recent</code></td>
+<td>最近N条</td>
+<td>（无）</td>
+<td><code>--limit</code> (默认 10)</td>
+</tr>
+<tr>
+<td><code>breakdown</code></td>
+<td>分类明细</td>
+<td>（无）</td>
+<td><code>--from</code>, <code>--to</code></td>
+</tr>
+<tr>
+<td><code>overview</code></td>
+<td>收支总览</td>
+<td>（无）</td>
+<td><code>--month</code> (默认当月)</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>记账统计</td>
+<td>（无）</td>
+<td>（无）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="分类参考-8">分类参考</h2>
+<p>分类采用 <strong>L1/L2/L3 三级</strong> 结构(支出)/ <strong>L1/L2 二级</strong> 结构(收入),用 <code>/</code> 分隔(如 <code>餐饮/外卖/午餐</code>)。</p>
+<p><strong>AI 解析必读 <code>references/categories.md</code> 的「分类心法」章节</strong> — 心法包含 5 个判断维度(主体/目的/对象/工具vs体验/谁付费)和边界示例。<strong>不要"关键词查表",要按意图推场景。</strong> 关键词表只在心法覆盖不到时兜底。</p>
+<p><strong>支出 L1(10 个):</strong> 餐饮、居家、穿着、出行、玩乐、学习、健康、社交、宠物、其他</p>
+<p><strong>收入 L1(5 个):</strong> 工资、奖金、兼职、投资、其他收入</p>
+<blockquote>
+<p>旧数据中不带 <code>/</code> 的分类(如 <code>餐饮</code>、<code>交通</code>)自动视为 L1,无需迁移。</p>
+</blockquote>
+<hr />
+<h2 id="错误处理-9">错误处理</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>图片模糊/看不清金额</td>
+<td>描述看到的内容，请用户确认</td>
+</tr>
+<tr>
+<td>图片非账单</td>
+<td>告知用户并询问是否手动输入</td>
+</tr>
+<tr>
+<td>未指定分类</td>
+<td>根据内容推断，告知用户可纠正</td>
+</tr>
+<tr>
+<td>金额不明确</td>
+<td>请用户确认，不自动猜测</td>
+</tr>
+</tbody>
+</table>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>饼干记账/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

@@ -2,768 +2,1116 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>私家大厨 — 功能手册</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>私家大厨 — Skill HTML 镜像</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --blue:#007AFF;
-  --bg:#FAFAFA;
-  --card:#FFFFFF;
-  --border:#E5E5EA;
-  --text:#1C1C1E;
-  --text2:#8E8E93;
-  --text3:#AEAEB2;
-  --radius:10px;
-  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;
-}
-html{font-size:16px;-webkit-text-size-adjust:100%}
-body{
-  font-family:var(--font);
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.5;
-  min-height:100vh;
-  padding-bottom:env(safe-area-inset-bottom,0);
-}
-
-/* ── Header ── */
-.header{
-  position:sticky;top:0;z-index:100;
-  background:rgba(250,250,250,0.85);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:0.5px solid var(--border);
-  padding:12px 16px 0;
-}
-.header h1{
-  font-size:22px;font-weight:700;letter-spacing:-0.3px;
-  margin-bottom:12px;
-}
-
-/* ── Search ── */
-.search-wrap{
-  position:relative;margin-bottom:12px;
-}
-.search-wrap svg{
-  position:absolute;left:10px;top:50%;transform:translateY(-50%);
-  width:16px;height:16px;color:var(--text3);pointer-events:none;
-}
-#search{
-  width:100%;padding:8px 12px 8px 32px;
-  font-size:15px;font-family:var(--font);
-  background:#F2F2F7;border:none;border-radius:8px;
-  outline:none;color:var(--text);
-  transition:background .2s;
-}
-#search:focus{background:#E8E8ED}
-#search::placeholder{color:var(--text3)}
-
-/* ── Tabs ── */
-.tabs{
-  display:flex;gap:0;overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  margin:0 -16px;padding:0 16px;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex-shrink:0;
-  padding:8px 12px 10px;
-  font-size:13px;font-weight:500;
-  color:var(--text2);
-  border:none;background:none;
-  cursor:pointer;
-  border-bottom:2px solid transparent;
-  transition:color .2s,border-color .2s;
-  white-space:nowrap;
-  font-family:var(--font);
-}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab:hover{color:var(--text)}
-
-/* ── Main ── */
-.main{padding:16px;max-width:680px;margin:0 auto}
-
-/* ── Category section ── */
-.cat-section{margin-bottom:24px}
-.cat-title{
-  font-size:13px;font-weight:600;
-  color:var(--text2);text-transform:uppercase;
-  letter-spacing:0.5px;margin-bottom:10px;
-  padding-left:2px;
-}
-
-/* ── Module card ── */
-.mod{
-  background:var(--card);
-  border-radius:var(--radius);
-  border:0.5px solid var(--border);
-  margin-bottom:8px;
-  overflow:hidden;
-  transition:box-shadow .2s;
-}
-.mod:hover{box-shadow:0 1px 3px rgba(0,0,0,0.04)}
-.mod-header{
-  padding:14px 16px;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:space-between;
-  -webkit-tap-highlight-color:transparent;
-  user-select:none;
-}
-.mod-header:active{background:#F8F8FA}
-.mod-name{font-size:16px;font-weight:600;color:var(--text)}
-.mod-desc{font-size:13px;color:var(--text2);margin-top:2px}
-.mod-left{flex:1;min-width:0}
-.mod-arrow{
-  width:20px;height:20px;flex-shrink:0;
-  color:var(--text3);
-  transition:transform .25s ease;
-  margin-left:8px;
-}
-.mod.open .mod-arrow{transform:rotate(90deg)}
-
-/* ── Expanded content ── */
-.mod-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
-.mod.open .mod-body{max-height:3000px}
-.mod-inner{padding:0 16px 16px;border-top:0.5px solid var(--border)}
-
-/* ── Wake words ── */
-.ww-list{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
-.ww{
-  display:inline-flex;align-items:center;
-  padding:5px 12px;
-  font-size:14px;font-weight:500;
-  color:var(--blue);
-  background:rgba(0,122,255,0.08);
-  border-radius:16px;
-  cursor:pointer;
-  transition:background .15s;
-  -webkit-tap-highlight-color:transparent;
-  user-select:none;
-}
-.ww:hover{background:rgba(0,122,255,0.14)}
-.ww:active{background:rgba(0,122,255,0.2)}
-.ww.expanded{background:var(--blue);color:#fff}
-
-/* ── CLI block ── */
-.cli-block{
-  display:none;
-  margin:8px 0;
-  padding:12px 14px;
-  background:#F2F2F7;
-  border-radius:8px;
-  font-size:13px;
-  line-height:1.6;
-  font-family:"SF Mono","Fira Code","Menlo",monospace;
-  color:var(--text);
-  word-break:break-all;
-  white-space:pre-wrap;
-}
-.cli-block.show{display:block}
-.cli-label{
-  font-size:11px;font-weight:600;
-  color:var(--text3);text-transform:uppercase;
-  letter-spacing:0.5px;margin-bottom:4px;
-  font-family:var(--font);
-}
-.cli-cmd{cursor:pointer;padding:2px 0;transition:color .15s}
-.cli-cmd:hover{color:var(--blue)}
-
-/* ── Execution flow ── */
-.exec-block{
-  display:none;
-  margin:8px 0 4px;
-  padding:12px 14px;
-  background:#F9F9FB;
-  border-radius:8px;
-  font-size:13px;
-  line-height:1.7;
-  border:0.5px solid var(--border);
-}
-.exec-block.show{display:block}
-.exec-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px}
-.exec-table{font-size:13px;margin:4px 0}
-.exec-table code{
-  background:#E8E8ED;padding:1px 5px;
-  border-radius:4px;font-family:"SF Mono","Menlo",monospace;
-  font-size:12px;
-}
-.exec-side{
-  margin-top:8px;padding-top:8px;
-  border-top:0.5px solid var(--border);
-  font-size:12px;color:var(--text2);
-}
-.exec-side strong{color:var(--text);font-weight:600}
-
-/* ── Empty state ── */
-.empty{text-align:center;padding:48px 16px;color:var(--text3);font-size:15px}
-
-/* ── Responsive ── */
-@media(max-width:375px){
-  .header h1{font-size:20px}
-  .tab{font-size:12px;padding:6px 10px 8px}
-  .mod-name{font-size:15px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#私家大厨-1">私家大厨 🍳</a></li>
+<li><a href="#html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</a></li>
+<li><a href="#唤醒词清单-30个-2">唤醒词清单（30个）</a></li>
+<li><a href="#依赖-3">依赖</a></li>
+<li><a href="#配置-4">配置</a></li>
+<li><a href="#一键安装-5">一键安装</a></li>
+<li><a href="#操作规范-强制-6">⚠️ 操作规范（强制）</a></li>
+<li><a href="#ai使用规范-强制-7">AI使用规范（强制）</a></li>
+<li><a href="#路由算法-核心-8">路由算法（核心）</a></li>
+<li><a href="#路由表-35个唤醒词-9">路由表（35个唤醒词）</a></li>
+<li><a href="#菜名提取示例-10">菜名提取示例</a></li>
+<li><a href="#快速导航-11">快速导航</a></li>
+<li><a href="#json文件导入-12">JSON文件导入</a></li>
+<li><a href="#核心原则-13">核心原则</a></li>
+<li><a href="#表结构-14">表结构</a></li>
+<li><a href="#数据库并发支持-15">数据库并发支持</a></li>
+<li><a href="#与其他技能联动-16">与其他技能联动</a></li></ol></div>
+<h1 id="私家大厨-1">私家大厨 🍳</h1>
+<h2 id="html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</h2>
+<blockquote>
+<p><strong>此规范优先级高于本文件中所有其他规定。</strong></p>
+</blockquote>
+<ol>
+<li><strong>全量同步</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>私家大厨.html</code> 上。任何功能模块的新增、修改、删除，任何唤醒词的调整，任何 CLI 命令的变化，任何脚本逻辑的改动——都必须同步更新 HTML 页面中对应的内容。</li>
+<li><strong>最高优先级</strong>：本条规定在所有规范中优先级最高。当其他流程或习惯与本条冲突时，以本条为准。</li>
+<li><strong>逐行确认</strong>：对该技能的所有文件、脚本的任何一行修改，都需要明确得到用户的 1 次确认后方可执行。不得批量静默修改，不得跳过确认步骤。</li>
+</ol>
+<hr />
+<blockquote>
+<p>版本：v4.0
+设计：基于17张表，8大功能，35个唤醒词，无删除操作
+路由：唤醒词（动词+名词） + 菜名提取 + 优先级 + 兜底search</p>
+</blockquote>
+<hr />
+<h2 id="唤醒词清单-30个-2">唤醒词清单（30个）</h2>
+<blockquote>
+<p>全部为动词+名词格式，指令化，不追求自然。
+总览词和细分词并列共存，互不冲突。</p>
+</blockquote>
+<h3>A. 做菜模式（2个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>做菜模式</td>
+<td>进入做菜模式，需配合菜名</td>
+</tr>
+<tr>
+<td>开始做菜</td>
+<td>"开始做宫保虾球"</td>
+</tr>
+</tbody>
+</table>
+<h3>B. 查看食谱（5个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查看食谱</td>
+<td>展示完整食谱（全部section）</td>
+</tr>
+<tr>
+<td>查看食材</td>
+<td>仅展示食材清单</td>
+</tr>
+<tr>
+<td>查看步骤</td>
+<td>仅展示烹饪步骤</td>
+</tr>
+<tr>
+<td>查看营养</td>
+<td>仅展示营养信息</td>
+</tr>
+<tr>
+<td>查看背景</td>
+<td>仅展示背景知识</td>
+</tr>
+</tbody>
+</table>
+<h3>C. 搜索筛选（10个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>搜索食谱</td>
+<td>按菜名关键词搜索</td>
+</tr>
+<tr>
+<td>筛选菜系</td>
+<td>"筛选川菜"</td>
+</tr>
+<tr>
+<td>筛选食材</td>
+<td>"筛选含虾的菜"</td>
+</tr>
+<tr>
+<td>筛选难度</td>
+<td>"筛选简单菜"</td>
+</tr>
+<tr>
+<td>筛选时间</td>
+<td>"筛选30分钟内的菜"</td>
+</tr>
+<tr>
+<td>筛选炊具</td>
+<td>"筛选用砂锅的菜"</td>
+</tr>
+<tr>
+<td>筛选口味</td>
+<td>"筛选辣的菜"</td>
+</tr>
+<tr>
+<td>筛选季节</td>
+<td>"筛选适合夏天的菜"</td>
+</tr>
+<tr>
+<td>筛选状态</td>
+<td>"筛选已做的菜"</td>
+</tr>
+<tr>
+<td>查看全部</td>
+<td>列出所有食谱，无筛选条件</td>
+</tr>
+</tbody>
+</table>
+<h3>D. 修改食谱（6个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>修改食谱</td>
+<td>通用修改入口</td>
+</tr>
+<tr>
+<td>修改步骤</td>
+<td>改步骤内容/顺序</td>
+</tr>
+<tr>
+<td>修改食材</td>
+<td>改食材用量/添加食材</td>
+</tr>
+<tr>
+<td>修改难度</td>
+<td>改难度等级</td>
+</tr>
+<tr>
+<td>修改份量</td>
+<td>改份数</td>
+</tr>
+<tr>
+<td>废弃食谱</td>
+<td>标记为已废弃（只增不删）</td>
+</tr>
+<tr>
+<td>不想要</td>
+<td>口语化入口，等价于「废弃食谱」</td>
+</tr>
+<tr>
+<td>删掉</td>
+<td>口语化入口，等价于「废弃食谱」</td>
+</tr>
+<tr>
+<td>废弃</td>
+<td>简写入口，等价于「废弃食谱」</td>
+</tr>
+</tbody>
+</table>
+<h3>E. 烹饪历史（3个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记录做菜</td>
+<td>记录一次烹饪（评分+反馈）</td>
+</tr>
+<tr>
+<td>查看历史</td>
+<td>查看某道菜的烹饪历史</td>
+</tr>
+<tr>
+<td>查看统计</td>
+<td>查看评分统计（均分/次数）</td>
+</tr>
+</tbody>
+</table>
+<h3>F. 采购清单（2个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生成清单</td>
+<td>生成采购清单</td>
+</tr>
+<tr>
+<td>排除可选</td>
+<td>生成不含可选食材的清单</td>
+</tr>
+</tbody>
+</table>
+<h3>G. 录入食谱（2个）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>录入食谱</td>
+<td>录入新食谱（图片/文本/JSON）</td>
+</tr>
+<tr>
+<td>导入食谱</td>
+<td>JSON文件导入</td>
+</tr>
+</tbody>
+</table>
+<h3>H. 派生关系（2个，v5.1 新增）</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>添加派生关系</td>
+<td>标记一道菜基于另一道菜的变体（派生/变体/改良）</td>
+</tr>
+<tr>
+<td>查看派生关系</td>
+<td>查看一道菜的所有父本/子本关系</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="依赖-3">依赖</h2>
+<ul>
+<li>Python 3.x</li>
+<li>sqlite3（Python 内置）</li>
+</ul>
+<h2 id="配置-4">配置</h2>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+<th>默认值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CHEF_OUTPUT_DIR</code></td>
+<td>HTML 输出目录</td>
+<td><code>output/</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="一键安装-5">一键安装</h2>
+<p>复制以下内容发送给 AI：</p>
+<pre><code>帮我初始化私家大厨技能：
+1. 询问我 HTML 输出目录路径，然后帮我设置环境变量 CHEF_OUTPUT_DIR
+2. 显示当前环境变量配置
+3. 告诉我如何更改数据目录
+</code></pre>
+<hr />
+<h2 id="操作规范-强制-6">⚠️ 操作规范（强制）</h2>
+<p>本技能所有数据操作必须通过 CLI，禁止直连数据库。</p>
+<hr />
+<h2 id="ai使用规范-强制-7">AI使用规范（强制）</h2>
+<h3>调用任何manager前，必须：</h3>
+<ol>
+<li><strong>展示完整参数示例</strong> — 让用户知道这条命令会用哪些参数</li>
+<li><strong>对未提供字段进行合理推测</strong> — 基于菜系特点/常见值/烹饪逻辑</li>
+<li><strong>推测不出时询问用户</strong> — 不能留空不填</li>
+</ol>
+<h3>字段推测规则（仅录入时使用）</h3>
+<blockquote>
+<p>详见 <code>features/add.md</code> — 仅在录入食谱时调用，查看/做菜模式不需要此规则。</p>
+</blockquote>
+<h3>HTML 生成强制（v5.0 新增）</h3>
+<p><strong>「查看食谱」</strong> 的 HTML 输出必须通过 <code>scripts/recipe_render.py</code> 命令，<strong>AI 禁止自行拼 HTML</strong>：</p>
+<pre><code class="language-bash">python scripts/recipe_render.py render &lt;菜名或ID&gt;
+</code></pre>
+<p>执行后把生成的 HTML 文件路径告诉用户。AI 不要：
+- 自行拼接 HTML 字符串
+- 调用 taste-skill / ui-ux-pro-max-skill（已废弃，统一由模板服务）
+- 内联 CSS / JS（已统一在 <code>templates/recipe_view.html</code>）</p>
+<p><strong>「做菜模式」</strong> 的 HTML 暂由 AI 自己生成（等 render.py 第二模板上线后统一）。</p>
+<hr />
+<h2 id="路由算法-核心-8">路由算法（核心）</h2>
+<h3>匹配流程</h3>
+<pre><code>用户输入
+    ↓
+第1步：唤醒词识别
+    按 A&gt;B&gt;C&gt;D&gt;E&gt;F&gt;G 优先级，扫描唤醒词（动词+名词格式）
+    命中即确定意图，不再往下匹配
+    同优先级下，选最长匹配（&quot;查看食材&quot;优先于&quot;查看食谱&quot;）
+    ↓
+第2步：菜名/条件提取
+    根据唤醒词在输入中的位置，按以下规则提取：
 
-<div class="header">
-  <h1>私家大厨</h1>
-  <div class="search-wrap">
-    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-    <input type="text" id="search" placeholder="搜索唤醒词或功能…" autocomplete="off" />
-  </div>
-  <div class="tabs" id="tabs"></div>
-</div>
+    规则A：唤醒词在开头
+        &quot;开始做宫保虾球&quot; → 取唤醒词后面的文字 → &quot;宫保虾球&quot;
+        &quot;查看食材宫保虾球&quot; → 取唤醒词后面的文字 → &quot;宫保虾球&quot;
+        &quot;筛选川菜&quot; → 取唤醒词后面的文字 → &quot;川菜&quot;（筛选条件）
 
-<div class="main" id="main"></div>
+    规则B：唤醒词在末尾
+        &quot;宫保虾球查看食谱&quot; → 取唤醒词前面的文字 → &quot;宫保虾球&quot;
 
-<script>
-const DATA = [
-  {
-    cat: "A. 做菜模式",
-    modules: [
-      {
-        name: "做菜模式",
-        wakeWords: ["做菜模式", "开始做菜"],
-        cli: '开始做菜 "宫保虾球"\n做菜模式 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  ingredient_manager.py list <ID>\n  step_manager.py list <ID>\n  step_ingredient_manager.py list-by-step <step_id>\n  technique_manager.py list-by-step <step_id>\n  tip_manager.py list <ID>\n→ 生成可交互 HTML（烹饪之途）',
-        desc: "进入做菜模式，生成可交互检查清单 HTML，帮助用户按步骤完成烹饪",
-        exec: {
-          tables: ["recipes", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips"],
-          fields: "只读查询：\nrecipes: name, difficulty, servings, total_time_minutes\ningredients: name, quantity, unit, category, is_optional\ncooking_steps: sequence, action, duration_minutes, heat_level, temperature, expected_result\nstep_ingredients: quantity_used, introduced_at\nstep_techniques: technique_name, description, key_points\ntips: content, category, priority",
-          side: "只读操作，不修改数据库；生成 HTML 文件保存到 $CHEF_OUTPUT_DIR；access_count 不变"
-        }
-      }
-    ]
-  },
-  {
-    cat: "B. 查看食谱",
-    modules: [
-      {
-        name: "查看完整食谱",
-        wakeWords: ["查看食谱"],
-        cli: '查看食谱 宫保虾球\n\n→ 内部流程（v5.0）：\n  recipe_manager.py export-json <菜名> --compact\n  recipe_render.py render <菜名>\n\n→ 自动渲染 templates/recipe_view.html 模板\n→ 输出到 $CHEF_OUTPUT_DIR/recipes/<菜名>.html\n\n（v5.0 起,AI 不再自己拼 HTML,根治 audit P0-5）',
-        desc: "渲染 HTML 模板（templates/recipe_view.html）展示完整食谱，末尾问「要开始做吗？」",
-        exec: {
-          tables: ["recipes", "recipe_categories", "recipe_seasons", "recipe_cooking_methods", "recipe_flavors", "recipe_diet_tags", "recipe_meal_types", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips", "cookware", "nutrition_info", "background_knowledge", "recipe_history", "recipe_relations"],
-          fields: "只读查询全部17张表：\nrecipes 全字段 + 所有关联表的分类/食材/步骤/技法/贴士/炊具/营养/背景/历史/关系",
-          side: "只读操作；生成 HTML 文件保存到 $CHEF_OUTPUT_DIR"
-        }
-      },
-      {
-        name: "仅查看食材",
-        wakeWords: ["查看食材"],
-        cli: '查看食材 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  ingredient_manager.py list <ID>',
-        desc: "仅展示食材清单（名称、用量、单位、分类、可选标记）",
-        exec: {
-          tables: ["recipes", "ingredients"],
-          fields: "只读查询：\nrecipes: id, name\ningredients: name, quantity, unit, category, is_optional, substitute, quantity_text",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "仅查看步骤",
-        wakeWords: ["查看步骤"],
-        cli: '查看步骤 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  step_manager.py list <ID>\n  step_ingredient_manager.py list-by-step <step_id>\n  technique_manager.py list-by-step <step_id>',
-        desc: "仅展示烹饪步骤（含时间、火候、预期效果、技法）",
-        exec: {
-          tables: ["recipes", "cooking_steps", "step_ingredients", "step_techniques"],
-          fields: "只读查询：\nrecipes: id, name\ncooking_steps: sequence, action, duration_minutes, heat_level, temperature, expected_result\nstep_ingredients: quantity_used, introduced_at\nstep_techniques: technique_name, description, key_points",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "仅查看营养",
-        wakeWords: ["查看营养"],
-        cli: '查看营养 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  nutrition_manager.py get <ID>',
-        desc: "仅展示营养信息（热量、蛋白质、脂肪、碳水、膳食纤维、钠）",
-        exec: {
-          tables: ["recipes", "nutrition_info"],
-          fields: "只读查询：\nrecipes: id, name\nnutrition_info: serving_size, serving_unit, calories, protein, fat, carbs, fiber, sodium",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "仅查看背景",
-        wakeWords: ["查看背景"],
-        cli: '查看背景 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名>\n  background_manager.py get <ID>',
-        desc: "仅展示背景知识（起源故事、历史背景、文化意义）",
-        exec: {
-          tables: ["recipes", "background_knowledge"],
-          fields: "只读查询：\nrecipes: id, name\nbackground_knowledge: origin_story, historical_background, cultural_significance",
-          side: "只读操作"
-        }
-      }
-    ]
-  },
-  {
-    cat: "C. 搜索筛选",
-    modules: [
-      {
-        name: "按菜名搜索",
-        wakeWords: ["搜索食谱"],
-        cli: '搜索食谱 排骨\n\n→ 内部流程：\n  recipe_manager.py search 排骨\n\n→ 模糊匹配 recipes.name',
-        desc: "按菜名关键词模糊搜索",
-        exec: {
-          tables: ["recipes"],
-          fields: "只读查询：\nSELECT * FROM recipes WHERE name LIKE '%排骨%' AND status != '已废弃'",
-          side: "只读操作；已废弃食谱自动过滤"
-        }
-      },
-      {
-        name: "按菜系筛选",
-        wakeWords: ["筛选菜系"],
-        cli: '筛选菜系 川菜\n\n→ 内部流程：\n  category_manager.py search 川菜\n\n→ 匹配 recipe_categories.cuisine_type',
-        desc: "按菜系筛选食谱（川菜/粤菜/湘菜等）",
-        exec: {
-          tables: ["recipes", "recipe_categories"],
-          fields: "只读查询：\nSELECT r.* FROM recipes r JOIN recipe_categories c ON r.id = c.recipe_id WHERE c.cuisine_type = '川菜'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按食材筛选",
-        wakeWords: ["筛选食材"],
-        cli: '筛选食材 虾\n\n→ 内部流程：\n  ingredient_manager.py search 虾\n\n→ 匹配 ingredients.name',
-        desc: "按食材筛选（哪些菜用到了 XX）",
-        exec: {
-          tables: ["recipes", "ingredients"],
-          fields: "只读查询：\nSELECT DISTINCT r.* FROM recipes r JOIN ingredients i ON r.id = i.recipe_id WHERE i.name LIKE '%虾%'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按难度筛选",
-        wakeWords: ["筛选难度"],
-        cli: '筛选难度 简单\n\n→ 内部流程：\n  recipe_manager.py list --difficulty 简单\n\n→ 匹配 recipes.difficulty IN (快手菜, 简单)',
-        desc: "按难度等级筛选（快手菜/简单/中等/困难/大师）",
-        exec: {
-          tables: ["recipes"],
-          fields: "只读查询：\nSELECT * FROM recipes WHERE difficulty IN ('快手菜','简单') AND status != '已废弃'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按时间筛选",
-        wakeWords: ["筛选时间"],
-        cli: '筛选时间 30分钟\n\n→ 内部流程：\n  recipe_manager.py list → AI 按 total_time_minutes 过滤\n\n→ 匹配 recipes.total_time_minutes <= 30',
-        desc: "按总时间筛选（30分钟以内等）",
-        exec: {
-          tables: ["recipes"],
-          fields: "只读查询：\nSELECT * FROM recipes WHERE total_time_minutes <= 30 AND status != '已废弃'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按炊具筛选",
-        wakeWords: ["筛选炊具"],
-        cli: '筛选炊具 砂锅\n\n→ 内部流程：\n  cookware_manager.py search 砂锅\n\n→ 匹配 cookware.name',
-        desc: "按炊具筛选（砂锅/烤箱/炒锅等）",
-        exec: {
-          tables: ["recipes", "cookware"],
-          fields: "只读查询：\nSELECT r.* FROM recipes r JOIN cookware cw ON r.id = cw.recipe_id WHERE cw.name LIKE '%砂锅%'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按口味筛选",
-        wakeWords: ["筛选口味"],
-        cli: '筛选口味 辣\n\n→ 内部流程：\n  flavor_manager.py search 辣\n\n→ 匹配 recipe_flavors.flavor',
-        desc: "按口味筛选（酸/甜/辣/咸/鲜/苦/麻）",
-        exec: {
-          tables: ["recipes", "recipe_flavors"],
-          fields: "只读查询：\nSELECT r.* FROM recipes r JOIN recipe_flavors f ON r.id = f.recipe_id WHERE f.flavor = '辣'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按季节筛选",
-        wakeWords: ["筛选季节"],
-        cli: '筛选季节 夏\n\n→ 内部流程：\n  season_manager.py search 夏\n\n→ 匹配 recipe_seasons.season',
-        desc: "按季节筛选（春/夏/秋/冬）",
-        exec: {
-          tables: ["recipes", "recipe_seasons"],
-          fields: "只读查询：\nSELECT r.* FROM recipes r JOIN recipe_seasons s ON r.id = s.recipe_id WHERE s.season = '夏'",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "按状态筛选",
-        wakeWords: ["筛选状态"],
-        cli: '筛选状态 已做\n\n→ 内部流程：\n  recipe_manager.py list --status 已做\n\n→ 匹配 recipes.status',
-        desc: "按状态筛选（未做/已做/熟练/已废弃）",
-        exec: {
-          tables: ["recipes"],
-          fields: "只读查询：\nSELECT * FROM recipes WHERE status = '已做' ORDER BY updated_at DESC",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "查看全部食谱",
-        wakeWords: ["查看全部"],
-        cli: '查看全部\n\n→ 内部流程：\n  recipe_manager.py list\n\n→ 列出所有非废弃食谱',
-        desc: "列出所有食谱，无筛选条件",
-        exec: {
-          tables: ["recipes"],
-          fields: "只读查询：\nSELECT * FROM recipes WHERE status != '已废弃' ORDER BY name",
-          side: "只读操作"
-        }
-      }
-    ]
-  },
-  {
-    cat: "D. 修改食谱",
-    modules: [
-      {
-        name: "修改主信息",
-        wakeWords: ["修改食谱"],
-        cli: '修改食谱 宫保虾球 的难度为 困难\n\n→ 内部流程：\n  recipe_manager.py show <菜名> → 获取 ID\n  recipe_manager.py update <ID> --difficulty 困难',
-        desc: "修改食谱主表字段（名称/描述/难度/份量/时间/状态/照片/来源）",
-        exec: {
-          tables: ["recipes"],
-          fields: "UPDATE recipes SET difficulty = '困难', updated_at = <now> WHERE id = <ID>",
-          side: "写操作；updated_at 更新为当前时间"
-        }
-      },
-      {
-        name: "修改步骤",
-        wakeWords: ["修改步骤"],
-        cli: '修改步骤 宫保虾球 第3步\n\n→ 内部流程：\n  step_manager.py list <recipe_id> → 获取 step_id\n  step_manager.py update <step_id> --action "新动作" --heat_level 小火\n\n调换顺序：\n  step_manager.py reorder <recipe_id> --from 2 --to 3',
-        desc: "修改步骤内容、火候、时长，或调整步骤顺序",
-        exec: {
-          tables: ["cooking_steps"],
-          fields: "UPDATE cooking_steps SET action = ?, duration_minutes = ?, heat_level = ?, temperature = ?, expected_result = ? WHERE id = <step_id>\n\nreorder: 交换两个步骤的 sequence 值",
-          side: "写操作"
-        }
-      },
-      {
-        name: "修改食材",
-        wakeWords: ["修改食材"],
-        cli: '修改食材 宫保虾球 虾 的用量为 400g\n\n→ 内部流程：\n  ingredient_manager.py list <recipe_id> → 获取 ingredient_id\n  ingredient_manager.py update <ingredient_id> --quantity 400 --unit g\n\n添加新食材：\n  ingredient_manager.py add <recipe_id> --name 姜丝 --quantity 10 --unit g',
-        desc: "修改食材用量/单位，或添加新食材（含步骤关联）",
-        exec: {
-          tables: ["ingredients", "step_ingredients"],
-          fields: "update: UPDATE ingredients SET name/quantity/unit/category/substitute WHERE id = <ingredient_id>\nadd: INSERT INTO ingredients (recipe_id, name, quantity, unit, category, sequence)\n关联: INSERT INTO step_ingredients (step_id, ingredient_id, quantity_used, introduced_at)",
-          side: "写操作"
-        }
-      },
-      {
-        name: "修改难度",
-        wakeWords: ["修改难度"],
-        cli: '修改难度 宫保虾球 为 困难\n\n→ 内部流程：\n  recipe_manager.py update <ID> --difficulty 困难',
-        desc: "修改难度等级（快手菜/简单/中等/困难/大师）",
-        exec: {
-          tables: ["recipes"],
-          fields: "UPDATE recipes SET difficulty = '困难', updated_at = <now> WHERE id = <ID>",
-          side: "写操作"
-        }
-      },
-      {
-        name: "修改份量",
-        wakeWords: ["修改份量"],
-        cli: '修改份量 宫保虾球 为 4人份\n\n→ 内部流程：\n  recipe_manager.py update <ID> --servings 4',
-        desc: "修改份数（人数）",
-        exec: {
-          tables: ["recipes"],
-          fields: "UPDATE recipes SET servings = 4, updated_at = <now> WHERE id = <ID>",
-          side: "写操作"
-        }
-      },
-      {
-        name: "废弃食谱",
-        wakeWords: ["废弃食谱", "不想要", "删掉", "废弃"],
-        cli: '废弃食谱 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py discard <ID>\n\n→ status 变为"已废弃"，从列表/搜索中自动过滤',
-        desc: "标记食谱为已废弃（只增不删原则，不物理删除）",
-        exec: {
-          tables: ["recipes"],
-          fields: "UPDATE recipes SET status = '已废弃', updated_at = <now> WHERE id = <ID>",
-          side: "写操作；已废弃食谱不再出现在 list/search 结果中；可通过 show 查看简要信息"
-        }
-      }
-    ]
-  },
-  {
-    cat: "E. 烹饪历史",
-    modules: [
-      {
-        name: "记录做菜",
-        wakeWords: ["记录做菜"],
-        cli: '记录做菜 宫保虾球 评分4.5 反馈"虾很Q弹"\n\n→ 内部流程：\n  history_manager.py add <recipe_id> --cook_date 2026-05-15 --rating 4.5 --feedback "虾很Q弹"\n\n→ 首次记录时自动更新 recipes.status 为"已做"',
-        desc: "记录一次烹饪（日期、评分1-5、反馈），首次记录自动更新食谱状态",
-        exec: {
-          tables: ["recipe_history", "recipes"],
-          fields: "INSERT INTO recipe_history (id, recipe_id, cook_date, cook_sequence, rating, feedback)\n\n首次做菜时：UPDATE recipes SET status = '已做' WHERE id = <ID>",
-          side: "写操作；自动计算 cook_sequence（第N次做）；首次做菜时 recipes.status 从'未做'变为'已做'"
-        }
-      },
-      {
-        name: "查看历史",
-        wakeWords: ["查看历史"],
-        cli: '查看历史 宫保虾球\n\n→ 内部流程：\n  history_manager.py list <recipe_id>',
-        desc: "查看某道菜的全部烹饪历史（日期、第几次、评分、反馈）",
-        exec: {
-          tables: ["recipe_history"],
-          fields: "只读查询：\nSELECT * FROM recipe_history WHERE recipe_id = <ID> ORDER BY cook_date DESC",
-          side: "只读操作"
-        }
-      },
-      {
-        name: "查看统计",
-        wakeWords: ["查看统计"],
-        cli: '查看统计 宫保虾球\n\n→ 内部流程：\n  history_manager.py stats <recipe_id>\n\n→ 输出：总次数、平均评分、最高/最低评分及日期',
-        desc: "查看评分统计（总次数、平均分、最高分、最低分）",
-        exec: {
-          tables: ["recipe_history"],
-          fields: "只读查询：\nSELECT COUNT(*), AVG(rating), MAX(rating), MIN(rating) FROM recipe_history WHERE recipe_id = <ID>",
-          side: "只读操作"
-        }
-      }
-    ]
-  },
-  {
-    cat: "F. 采购清单",
-    modules: [
-      {
-        name: "生成采购清单",
-        wakeWords: ["生成清单"],
-        cli: '生成清单 宫保虾球\n\n→ 内部流程：\n  recipe_manager.py show <菜名> → 获取 ID\n  shopping_manager.py generate <ID>\n→ 返回 JSON → AI 生成可交互 HTML\n\n多菜谱：\n  shopping_manager.py generate "id1,id2"',
-        desc: "根据食谱生成可交互采购清单 HTML，支持多菜合并",
-        exec: {
-          tables: ["recipes", "ingredients"],
-          fields: "只读查询：\nrecipes: id, name, servings\ningredients: name, quantity, unit, quantity_text, category, is_optional, substitute",
-          side: "只读操作；生成 HTML 文件保存到 $CHEF_OUTPUT_DIR/shopping/"
-        }
-      },
-      {
-        name: "排除可选食材",
-        wakeWords: ["排除可选"],
-        cli: '排除可选 宫保虾球\n\n→ 内部流程：\n  shopping_manager.py generate <ID> --exclude-optional\n→ 过滤 is_optional = 0 的食材',
-        desc: "生成不含可选食材的精简采购清单",
-        exec: {
-          tables: ["recipes", "ingredients"],
-          fields: "只读查询（追加条件 is_optional = 0）：\nrecipes: id, name, servings\ningredients: name, quantity, unit, category WHERE is_optional = 0",
-          side: "只读操作"
-        }
-      }
-    ]
-  },
-  {
-    cat: "G. 录入食谱",
-    modules: [
-      {
-        name: "录入食谱",
-        wakeWords: ["录入食谱"],
-        cli: '录入食谱 宫保虾球\n\n→ AI 解析图片/文本 → 确认 → 执行10步CLI：\n  1. recipe_manager.py add "宫保虾球" --description ... --difficulty ...\n  2. category_manager.py add <ID> --cuisine 川菜\n  3. season_manager.py add <ID> --season 春,夏\n  4. cooking_method_manager.py add <ID> --method 炒\n  5. flavor_manager.py add <ID> --flavor 辣\n  6. ingredient_manager.py add <ID> --name 虾 --quantity 300 --unit g\n  7. step_manager.py add <ID> --action "虾去壳开背" --sequence 1\n  8. step_ingredient_manager.py add --step_id ... --ingredient_id ...\n  9. technique_manager.py add --recipe_id <ID> --technique_name 腌制\n  10. tip_manager.py add <ID> --content "开背去虾线"\n  11. background_manager.py add <ID> --origin_story ...\n  12. cookware_manager.py add <ID> --name 炒锅\n  13. nutrition_manager.py add <ID> --calories 320',
-        desc: "录入新食谱（图片/文本解析），需执行10+步CLI写入全部关联表",
-        exec: {
-          tables: ["recipes", "recipe_categories", "recipe_seasons", "recipe_cooking_methods", "recipe_flavors", "recipe_diet_tags", "recipe_meal_types", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips", "cookware", "nutrition_info", "background_knowledge"],
-          fields: "写入全部15张表（recipe_history 和 recipe_relations 可选）：\nrecipes: name, description, difficulty, servings, total_time_minutes, status, photo_url, source, source_url\n各分类关联表: recipe_id + 对应字段\ningredients: name, quantity, unit, category, sequence\ncooking_steps: sequence, action, duration_minutes, heat_level\nstep_ingredients: step_id, ingredient_id, quantity_used\nstep_techniques: technique_name, description\ntips: content, category, priority\ncookware: name, category\nnutrition_info: calories, protein, fat, carbs\nbackground_knowledge: origin_story, historical_background, cultural_significance",
-          side: "大量写操作；同名食谱有冲突检测（JSON返回choices：view/derive/update/cancel）"
-        }
-      },
-      {
-        name: "导入食谱（JSON）",
-        wakeWords: ["导入食谱"],
-        cli: '导入食谱\n\n→ 内部流程（v5.0）：\n  1. recipe_import.py template → 查看JSON模板\n  2. recipe_json_validate.py recipe.json → jsonschema 严格校验\n  3. recipe_import.py import recipe.json\n     → 事务保护，失败自动回滚\n     → 自动完成全部10+步数据库操作\n     → 写 import_log.jsonl\n\n高级用法（v5.0 新增）：\n  --merge                       # 同名菜覆盖（保留烹饪历史）\n  --choice derive --new_name X  # 同名菜派生变体\n  JSON 顶层为数组              # 批量导入，自动聚合结果',
-        desc: "JSON文件一步导入，替代10步CLI操作，带事务保护和自验证",
-        exec: {
-          tables: ["recipes", "recipe_categories", "recipe_seasons", "recipe_cooking_methods", "recipe_flavors", "recipe_diet_tags", "recipe_meal_types", "ingredients", "cooking_steps", "step_ingredients", "step_techniques", "tips", "cookware", "nutrition_info", "background_knowledge"],
-          fields: "事务写入全部关联表（与录入食谱相同的表和字段）\nJSON必填：name, ingredients[].name, steps[].action\nJSON可选：description, difficulty, servings, total_time, category, seasons, cooking_methods, flavors, diet_tags, meal_types, tips, techniques, cookware, nutrition, background",
-          side: "事务操作（BEGIN/COMMIT/ROLLBACK）；JSON自验证；同名冲突检测"
-        }
-      }
-    ]
-  },
-  {
-    cat: "H. 派生关系（v5.1 新增）",
-    modules: [
-      {
-        name: "添加派生关系",
-        wakeWords: ["添加派生关系"],
-        cli: '添加派生关系 宫保虾球 基于 上海排骨年糕\n\n→ 内部流程：\n  1. relation_manager.py add \\\n     --parent_id <上海排骨年糕的ID> \\\n     --child_id <宫保虾球的ID> \\\n     --relation_type 派生 \\\n     --change_summary "减辣版本"',
-        desc: "标记一道菜基于另一道菜的变体（派生/变体/改良），形成食谱族谱",
-        exec: {
-          tables: ["recipe_relations"],
-          fields: "INSERT INTO recipe_relations (id, parent_id, child_id, relation_type, change_summary)\n父本 = parent_id（被派生）\n子本 = child_id（基于父本的新菜）",
-          side: "写操作；不级联（删菜不影响关系）"
-        }
-      },
-      {
-        name: "查看派生关系",
-        wakeWords: ["查看派生关系"],
-        cli: '查看派生关系 上海排骨年糕\n\n→ 内部流程：\n  relation_manager.py list-parent <ID>   → 谁基于我变\n  relation_manager.py list-child <ID>    → 我基于谁\n  → 合并展示（按方向分组）',
-        desc: "查看一道菜的所有父本/子本关系",
-        exec: {
-          tables: ["recipe_relations", "recipes"],
-          fields: "SELECT r.*, p.name AS parent_name, c.name AS child_name\nFROM recipe_relations r\nLEFT JOIN recipes p ON r.parent_id = p.id\nLEFT JOIN recipes c ON r.child_id = c.id\nWHERE r.parent_id = ? OR r.child_id = ?",
-          side: "只读操作；recipe_render.py 已自动渲染到 recipe_view.html 派生关系 section"
-        }
-      }
-    ]
-  }
-];
+    规则C：唤醒词在中间
+        &quot;宫保虾球修改步骤&quot; → 取唤醒词前面的文字 → &quot;宫保虾球&quot;
 
-// ── Render ──
-const $tabs = document.getElementById('tabs');
-const $main = document.getElementById('main');
-const $search = document.getElementById('search');
+    清洗：提取后去掉首尾空格，去掉末尾的&quot;的&quot;、&quot;了&quot;、&quot;吧&quot;等语气词
+    过滤：菜名必须 ≥2 个字符，且不能是&quot;一个&quot;、&quot;一道&quot;、&quot;新菜&quot;等泛指短语
+    菜名缺失 → 追问用户（不能猜）
+    ↓
+第3步：功能分流
+    唤醒词 + 菜名/条件 → 加载对应 features/*.md
+    细分唤醒词（如&quot;查看食材&quot;）→ 告知 AI 只展示对应部分
+    菜名缺失 → 追问用户（不能猜）
+    ↓
+第4步：兜底
+    没有任何唤醒词命中 → 默认走 search.md（可能是纯菜名输入）
+</code></pre>
+<h3>匹配规则</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>规则</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>优先级排序</td>
+<td>A&gt;B&gt;C&gt;D&gt;E&gt;F&gt;G，高优先级命中直接分流</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>最长匹配</td>
+<td>同优先级下，选唤醒词最长的；同长度时，细分词优先于总览词（"查看食材"优先于"查看食谱"，"修改步骤"优先于"修改食谱"）</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>关键词独立</td>
+<td>触发词是独立词，不是子串匹配</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>菜名提取</td>
+<td>触发词在开头→取后面文字；触发词在末尾或中间→取前面文字。提取后清洗语气词，过滤泛指短语</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>兜底 search</td>
+<td>没有任何关键词命中 → 走 search.md</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>追问确认</td>
+<td>菜名提取失败（&lt;2字符或为空）→ 追问用户</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>泛指过滤</td>
+<td>菜名提取结果为"一个/一道/新菜/什么/哪些"等泛指短语时，视为无效菜名，追问用户</td>
+</tr>
+<tr>
+<td>R8</td>
+<td>筛选条件提取</td>
+<td>"筛选XX"类唤醒词，XX后面的文字作为筛选条件，不作为菜名</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="路由表-35个唤醒词-9">路由表（35个唤醒词）</h2>
+<blockquote>
+<p>全部为动词+名词格式。总览词和细分词并列共存，由 R2（最长匹配）保证不冲突。</p>
+</blockquote>
+<h3>A. 做菜模式 → <code>view.md</code>（功能二）</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>做菜模式</td>
+<td>进入做菜模式，需配合菜名</td>
+</tr>
+<tr>
+<td>2</td>
+<td>开始做菜</td>
+<td>"开始做宫保虾球"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>B. 查看食谱 → <code>view.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3</td>
+<td>查看食谱</td>
+<td>展示完整食谱（全部section），末尾问"要开始做吗？"</td>
+</tr>
+<tr>
+<td>4</td>
+<td>查看食材</td>
+<td>仅展示食材清单</td>
+</tr>
+<tr>
+<td>5</td>
+<td>查看步骤</td>
+<td>仅展示烹饪步骤</td>
+</tr>
+<tr>
+<td>6</td>
+<td>查看营养</td>
+<td>仅展示营养信息</td>
+</tr>
+<tr>
+<td>7</td>
+<td>查看背景</td>
+<td>仅展示背景知识</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>C. 搜索筛选 → <code>search.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8</td>
+<td>搜索食谱</td>
+<td>按菜名关键词搜索</td>
+</tr>
+<tr>
+<td>9</td>
+<td>筛选菜系</td>
+<td>"筛选川菜"，按菜系筛选</td>
+</tr>
+<tr>
+<td>10</td>
+<td>筛选食材</td>
+<td>"筛选含虾的菜"，按食材筛选</td>
+</tr>
+<tr>
+<td>11</td>
+<td>筛选难度</td>
+<td>"筛选简单菜"，按难度筛选</td>
+</tr>
+<tr>
+<td>12</td>
+<td>筛选时间</td>
+<td>"筛选30分钟内的菜"，按时间筛选</td>
+</tr>
+<tr>
+<td>13</td>
+<td>筛选炊具</td>
+<td>"筛选用砂锅的菜"，按炊具筛选</td>
+</tr>
+<tr>
+<td>14</td>
+<td>筛选口味</td>
+<td>"筛选辣的菜"，按口味筛选</td>
+</tr>
+<tr>
+<td>15</td>
+<td>筛选季节</td>
+<td>"筛选适合夏天的菜"，按季节筛选</td>
+</tr>
+<tr>
+<td>16</td>
+<td>筛选状态</td>
+<td>"筛选已做的菜"，按状态筛选</td>
+</tr>
+<tr>
+<td>17</td>
+<td>查看全部</td>
+<td>列出所有食谱，无筛选条件</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>D. 修改食谱 → <code>update.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>18</td>
+<td>修改食谱</td>
+<td>通用修改入口，需配合菜名和具体修改内容</td>
+</tr>
+<tr>
+<td>19</td>
+<td>修改步骤</td>
+<td>改步骤内容/顺序</td>
+</tr>
+<tr>
+<td>20</td>
+<td>修改食材</td>
+<td>改食材用量/添加食材</td>
+</tr>
+<tr>
+<td>21</td>
+<td>修改难度</td>
+<td>改难度等级</td>
+</tr>
+<tr>
+<td>22</td>
+<td>修改份量</td>
+<td>改份数</td>
+</tr>
+<tr>
+<td>23</td>
+<td>废弃食谱</td>
+<td>标记为已废弃（只增不删原则）</td>
+</tr>
+<tr>
+<td>24</td>
+<td>不想要</td>
+<td>口语化入口，等价于「废弃食谱」</td>
+</tr>
+<tr>
+<td>25</td>
+<td>删掉</td>
+<td>口语化入口，等价于「废弃食谱」</td>
+</tr>
+<tr>
+<td>26</td>
+<td>废弃</td>
+<td>简写入口，等价于「废弃食谱」</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>H. 派生关系 → <code>relation.md</code>（v5.1 新增）</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>27</td>
+<td>添加派生关系</td>
+<td>标记一道菜基于另一道菜的变体（派生/变体/改良）</td>
+</tr>
+<tr>
+<td>28</td>
+<td>查看派生关系</td>
+<td>查看一道菜的所有父本/子本关系</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>E. 烹饪历史 → <code>history.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>24</td>
+<td>记录做菜</td>
+<td>记录一次烹饪（评分+反馈）</td>
+</tr>
+<tr>
+<td>25</td>
+<td>查看历史</td>
+<td>查看某道菜的烹饪历史</td>
+</tr>
+<tr>
+<td>26</td>
+<td>查看统计</td>
+<td>查看评分统计（均分/次数）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>F. 采购清单 → <code>shopping.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>27</td>
+<td>生成清单</td>
+<td>生成采购清单，支持多菜名</td>
+</tr>
+<tr>
+<td>28</td>
+<td>排除可选</td>
+<td>生成不含可选食材的清单</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>G. 录入食谱 → <code>add.md</code></h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>29</td>
+<td>录入食谱</td>
+<td>录入新食谱（图片/文本解析，信息完整时走JSON导入）</td>
+</tr>
+<tr>
+<td>30</td>
+<td>导入食谱</td>
+<td>JSON文件导入</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="菜名提取示例-10">菜名提取示例</h2>
+<table>
+<thead>
+<tr>
+<th>用户输入</th>
+<th>唤醒词</th>
+<th>位置</th>
+<th>提取菜名</th>
+<th>路由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"开始做红酒慢炖牛腩"</td>
+<td>开始做菜</td>
+<td>开头</td>
+<td>红酒慢炖牛腩</td>
+<td>view.md（做菜模式）</td>
+</tr>
+<tr>
+<td>"做菜模式宫保虾球"</td>
+<td>做菜模式</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（做菜模式）</td>
+</tr>
+<tr>
+<td>"查看食谱宫保虾球"</td>
+<td>查看食谱</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（完整食谱）</td>
+</tr>
+<tr>
+<td>"查看食材宫保虾球"</td>
+<td>查看食材</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（仅食材）</td>
+</tr>
+<tr>
+<td>"查看步骤宫保虾球"</td>
+<td>查看步骤</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（仅步骤）</td>
+</tr>
+<tr>
+<td>"查看营养宫保虾球"</td>
+<td>查看营养</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（仅营养）</td>
+</tr>
+<tr>
+<td>"查看背景宫保虾球"</td>
+<td>查看背景</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>view.md（仅背景）</td>
+</tr>
+<tr>
+<td>"搜索食谱排骨"</td>
+<td>搜索食谱</td>
+<td>开头</td>
+<td>排骨</td>
+<td>search.md</td>
+</tr>
+<tr>
+<td>"筛选川菜"</td>
+<td>筛选菜系</td>
+<td>开头</td>
+<td>川菜（筛选条件）</td>
+<td>search.md</td>
+</tr>
+<tr>
+<td>"筛选含虾的菜"</td>
+<td>筛选食材</td>
+<td>开头</td>
+<td>虾（筛选条件）</td>
+<td>search.md</td>
+</tr>
+<tr>
+<td>"筛选简单菜"</td>
+<td>筛选难度</td>
+<td>开头</td>
+<td>简单（筛选条件）</td>
+<td>search.md</td>
+</tr>
+<tr>
+<td>"查看全部"</td>
+<td>查看全部</td>
+<td>完整</td>
+<td>无</td>
+<td>search.md（列出全部）</td>
+</tr>
+<tr>
+<td>"修改食谱宫保虾球"</td>
+<td>修改食谱</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"修改步骤宫保虾球"</td>
+<td>修改步骤</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"废弃食谱宫保虾球"</td>
+<td>废弃食谱</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"不想要宫保虾球"</td>
+<td>不想要</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"删掉宫保虾球"</td>
+<td>删掉</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"废弃宫保虾球"</td>
+<td>废弃</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>update.md</td>
+</tr>
+<tr>
+<td>"记录做菜宫保虾球"</td>
+<td>记录做菜</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>history.md</td>
+</tr>
+<tr>
+<td>"查看历史宫保虾球"</td>
+<td>查看历史</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>history.md</td>
+</tr>
+<tr>
+<td>"查看统计宫保虾球"</td>
+<td>查看统计</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>history.md</td>
+</tr>
+<tr>
+<td>"生成清单宫保虾球"</td>
+<td>生成清单</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>shopping.md</td>
+</tr>
+<tr>
+<td>"录入食谱宫保虾球"</td>
+<td>录入食谱</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>add.md</td>
+</tr>
+<tr>
+<td>"导入食谱"</td>
+<td>导入食谱</td>
+<td>完整</td>
+<td>无</td>
+<td>add.md（JSON导入）</td>
+</tr>
+<tr>
+<td>"添加派生关系 宫保虾球 基于 上海排骨年糕"</td>
+<td>添加派生关系</td>
+<td>开头</td>
+<td>宫保虾球</td>
+<td>relation.md</td>
+</tr>
+<tr>
+<td>"查看派生关系 上海排骨年糕"</td>
+<td>查看派生关系</td>
+<td>开头</td>
+<td>上海排骨年糕</td>
+<td>relation.md</td>
+</tr>
+<tr>
+<td>"宫保虾球"</td>
+<td>无命中</td>
+<td>-</td>
+<td>宫保虾球</td>
+<td>search.md（兜底菜名搜索）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="快速导航-11">快速导航</h2>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>唤醒词数</th>
+<th>参考文档</th>
+<th>分类</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>做菜模式</td>
+<td>2</td>
+<td><code>features/view.md</code>（功能二）</td>
+<td>A</td>
+</tr>
+<tr>
+<td>查看食谱</td>
+<td>5</td>
+<td><code>features/view.md</code>（功能一）</td>
+<td>B</td>
+</tr>
+<tr>
+<td>搜索筛选</td>
+<td>10</td>
+<td><code>features/search.md</code></td>
+<td>C</td>
+</tr>
+<tr>
+<td>修改食谱</td>
+<td>9</td>
+<td><code>features/update.md</code></td>
+<td>D</td>
+</tr>
+<tr>
+<td>烹饪历史</td>
+<td>3</td>
+<td><code>features/history.md</code></td>
+<td>E</td>
+</tr>
+<tr>
+<td>采购清单</td>
+<td>2</td>
+<td><code>features/shopping.md</code></td>
+<td>F</td>
+</tr>
+<tr>
+<td>录入食谱</td>
+<td>2</td>
+<td><code>features/add.md</code></td>
+<td>G</td>
+</tr>
+<tr>
+<td>派生关系</td>
+<td>2</td>
+<td><code>features/relation.md</code></td>
+<td>H</td>
+</tr>
+<tr>
+<td>数据库结构</td>
+<td>-</td>
+<td><code>references/database_schema.md</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>分类参考</td>
+<td>-</td>
+<td><code>references/categories.md</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>CLI命令</td>
+<td>-</td>
+<td><code>references/commands.md</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>SkillBoard配置</td>
+<td>-</td>
+<td>config-chef-cookbook.ts</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="json文件导入-12">JSON文件导入</h2>
+<blockquote>
+<p>将10步CLI操作简化为1步JSON导入。适合信息完整的场景。</p>
+</blockquote>
+<pre><code class="language-bash"># 1. 查看模板
+python scripts/recipe_import.py template
 
-let activeCat = -1;
+# 2. AI生成JSON文件
 
-// Build tabs
-const allTab = document.createElement('button');
-allTab.className = 'tab active';
-allTab.textContent = '全部';
-allTab.dataset.idx = '-1';
-$tabs.appendChild(allTab);
+# 3. 校验JSON
+python scripts/recipe_json_validate.py recipe.json
 
-DATA.forEach((cat, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'tab';
-  btn.textContent = cat.cat;
-  btn.dataset.idx = String(i);
-  $tabs.appendChild(btn);
-});
-
-function render(filter = '', catIdx = -1) {
-  $main.innerHTML = '';
-  let found = false;
-  const q = filter.toLowerCase();
-
-  DATA.forEach((cat, ci) => {
-    if (catIdx !== -1 && ci !== catIdx) return;
-
-    const filtered = cat.modules.filter(m => {
-      if (!q) return true;
-      if (m.name.toLowerCase().includes(q)) return true;
-      if (m.desc.toLowerCase().includes(q)) return true;
-      return m.wakeWords.some(w => w.includes(q));
-    });
-
-    if (!filtered.length) return;
-    found = true;
-
-    const sec = document.createElement('div');
-    sec.className = 'cat-section';
-    sec.innerHTML = `<div class="cat-title">${cat.cat}</div>`;
-
-    filtered.forEach(m => {
-      const card = document.createElement('div');
-      card.className = 'mod';
-
-      const wwHtml = m.wakeWords.map(w =>
-        `<span class="ww" data-cmd="${esc(m.cli)}">${esc(w)}</span>`
-      ).join('');
-
-      const exec = m.exec;
-      const execHtml = `
-        <div class="exec-block">
-          <div class="exec-title">执行流程</div>
-          <div class="exec-table">
-            <strong>涉及表：</strong>${exec.tables.map(t=>'<code>'+t+'</code>').join(' ')}
-          </div>
-          <div class="exec-table" style="white-space:pre-wrap;margin-top:6px">
-            <strong>操作字段：</strong>\n${esc(exec.fields)}
-          </div>
-          <div class="exec-side">
-            <strong>副作用：</strong>${esc(exec.side)}
-          </div>
-        </div>`;
-
-      card.innerHTML = `
-        <div class="mod-header">
-          <div class="mod-left">
-            <div class="mod-name">${esc(m.name)}</div>
-            <div class="mod-desc">${esc(m.desc)}</div>
-          </div>
-          <svg class="mod-arrow" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-          </svg>
-        </div>
-        <div class="mod-body">
-          <div class="mod-inner">
-            <div style="font-size:12px;color:var(--text3);margin:12px 0 6px;font-weight:600;letter-spacing:0.3px">唤醒词</div>
-            <div class="ww-list">${wwHtml}</div>
-            <div class="cli-block">
-              <div class="cli-label">CLI 命令 <span style="font-weight:400;text-transform:none">（点击展开执行流程）</span></div>
-              <div class="cli-cmd">${esc(m.cli)}</div>
-            </div>
-            ${execHtml}
-          </div>
-        </div>
-      `;
-      sec.appendChild(card);
-    });
-
-    $main.appendChild(sec);
-  });
-
-  if (!found) {
-    $main.innerHTML = '<div class="empty">没有匹配的结果</div>';
-  }
-
-  bindEvents();
-}
-
-function bindEvents() {
-  document.querySelectorAll('.mod-header').forEach(h => {
-    h.addEventListener('click', () => {
-      h.parentElement.classList.toggle('open');
-    });
-  });
-
-  document.querySelectorAll('.ww').forEach(ww => {
-    ww.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const mod = ww.closest('.mod');
-      const cliBlock = mod.querySelector('.cli-block');
-      const execBlock = mod.querySelector('.exec-block');
-      const wasExpanded = ww.classList.contains('expanded');
-      mod.querySelectorAll('.ww').forEach(w => w.classList.remove('expanded'));
-      if (!wasExpanded) {
-        ww.classList.add('expanded');
-        cliBlock.classList.add('show');
-      } else {
-        cliBlock.classList.remove('show');
-        execBlock.classList.remove('show');
-      }
-    });
-  });
-
-  document.querySelectorAll('.cli-cmd').forEach(cmd => {
-    cmd.addEventListener('click', (e) => {
-      e.stopPropagation();
-      cmd.closest('.mod').querySelector('.exec-block').classList.toggle('show');
-    });
-  });
-}
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-$tabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab');
-  if (!btn) return;
-  $tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  activeCat = parseInt(btn.dataset.idx);
-  render($search.value.trim(), activeCat);
-});
-
-let searchTimer;
-$search.addEventListener('input', () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    render($search.value.trim(), activeCat);
-  }, 150);
-});
-
-render();
-</script>
+# 4. 校验通过后导入
+python scripts/recipe_import.py import recipe.json
+</code></pre>
+<p>详细说明见 <code>references/commands.md</code> 和 <code>features/add.md</code>。</p>
+<hr />
+<h2 id="核心原则-13">核心原则</h2>
+<h3>只增不删</h3>
+<ul>
+<li>没有物理删除操作</li>
+<li>整道食谱废弃用 discard（status = '已废弃'），自动从列表/搜索中过滤</li>
+<li>已废弃食谱可通过 show 查看简要信息</li>
+</ul>
+<h3>交互确认</h3>
+<ul>
+<li>所有写操作前必须展示，用户确认后执行</li>
+<li>多选项时让用户选择，不默认</li>
+</ul>
+<h3>自然语言解析</h3>
+<ul>
+<li>AI 负责解析用户意图，转换为 CLI 命令</li>
+<li>信息不完整时追问，不猜测</li>
+</ul>
+<hr />
+<h2 id="表结构-14">表结构</h2>
+<p>共17张表，详见 <code>references/database_schema.md</code></p>
+<hr />
+<h2 id="数据库并发支持-15">数据库并发支持</h2>
+<ul>
+<li><strong>WAL 模式</strong>：允许并发读和单个写</li>
+<li><strong>连接重试</strong>：数据库锁定时自动重试（最多5次）</li>
+<li><strong>上下文管理器</strong>：自动关闭连接，异常时回滚</li>
+<li>详见 <code>scripts/db_config.py</code></li>
+</ul>
+<hr />
+<h2 id="与其他技能联动-16">与其他技能联动</h2>
+<table>
+<thead>
+<tr>
+<th>技能</th>
+<th>联动场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>卡路里</td>
+<td>采购食品时可同步记录营养成分</td>
+</tr>
+<tr>
+<td>居家管家</td>
+<td>炊具借用/归位时参考</td>
+</tr>
+</tbody>
+</table>
+<p><strong>处理原则</strong>：主动思考是否需要联动，先完成主技能，再询问用户。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>私家大厨/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

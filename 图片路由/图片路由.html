@@ -2,759 +2,314 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>图片路由 — 技能文档</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图片路由 — Skill HTML 镜像</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#f5f5f7;
-  --card:#fff;
-  --text:#1d1d1f;
-  --text2:#86868b;
-  --blue:#007AFF;
-  --blue-light:rgba(0,122,255,0.06);
-  --blue-hover:#0066d6;
-  --border:#e5e5ea;
-  --code-bg:#f5f5f7;
-  --flow-bg:#f0f5ff;
-  --radius:10px;
-}
-html{font-size:16px}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","Segoe UI",sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  line-height:1.65;
-  -webkit-font-smoothing:antialiased;
-  padding-bottom:env(safe-area-inset-bottom);
-}
-a{color:var(--blue);text-decoration:none}
-a:hover{text-decoration:underline}
-
-/* layout */
-.container{max-width:720px;margin:0 auto;padding:24px 20px 60px}
-
-/* header */
-.header{
-  padding:48px 0 32px;
-  border-bottom:1px solid var(--border);
-  margin-bottom:28px;
-}
-.header h1{
-  font-size:1.75rem;
-  font-weight:700;
-  letter-spacing:-.02em;
-  margin-bottom:6px;
-}
-.header p{
-  font-size:.9375rem;
-  color:var(--text2);
-  line-height:1.55;
-}
-.meta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:16px;
-  margin-top:14px;
-  font-size:.8125rem;
-  color:var(--text2);
-}
-.meta span{display:flex;align-items:center;gap:4px}
-
-/* search */
-.search-wrap{
-  position:sticky;
-  top:0;
-  z-index:10;
-  background:var(--bg);
-  padding:16px 0 12px;
-}
-.search-box{
-  position:relative;
-}
-.search-box svg{
-  position:absolute;
-  left:14px;
-  top:50%;
-  transform:translateY(-50%);
-  color:var(--text2);
-  pointer-events:none;
-}
-.search-input{
-  width:100%;
-  height:44px;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:0 14px 0 40px;
-  font-size:.9375rem;
-  font-family:inherit;
-  background:var(--card);
-  color:var(--text);
-  outline:none;
-  transition:border-color .2s;
-}
-.search-input:focus{border-color:var(--blue)}
-.search-input::placeholder{color:#c7c7cc}
-.search-count{
-  font-size:.75rem;
-  color:var(--text2);
-  margin-top:6px;
-  min-height:1em;
-}
-
-/* tabs */
-.tabs{
-  display:flex;
-  gap:6px;
-  margin-bottom:24px;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  padding-bottom:2px;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex-shrink:0;
-  height:34px;
-  padding:0 16px;
-  border:1px solid var(--border);
-  border-radius:17px;
-  background:var(--card);
-  font-size:.8125rem;
-  font-family:inherit;
-  color:var(--text2);
-  cursor:pointer;
-  transition:all .2s;
-  white-space:nowrap;
-}
-.tab:hover{border-color:var(--blue);color:var(--blue)}
-.tab.active{
-  background:var(--blue);
-  border-color:var(--blue);
-  color:#fff;
-}
-.tab .count{
-  display:inline-block;
-  margin-left:4px;
-  opacity:.6;
-  font-size:.75rem;
-}
-
-/* section */
-.section-title{
-  font-size:.75rem;
-  font-weight:600;
-  color:var(--text2);
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  margin:28px 0 12px;
-  padding-left:2px;
-}
-.section-title:first-of-type{margin-top:0}
-
-/* cards */
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:20px;
-  margin-bottom:12px;
-  transition:border-color .2s;
-}
-.card:hover{border-color:#c7c7cc}
-.card-head{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:10px;
-}
-.card-name{
-  font-size:1rem;
-  font-weight:600;
-}
-.wake-tag{
-  display:inline-block;
-  padding:3px 10px;
-  background:var(--blue-light);
-  color:var(--blue);
-  border-radius:6px;
-  font-size:.8125rem;
-  font-weight:500;
-  cursor:pointer;
-  transition:background .2s;
-  flex-shrink:0;
-}
-.wake-tag:hover{background:rgba(0,122,255,0.12)}
-.wake-tag.dim{opacity:.35}
-.card-desc{
-  font-size:.875rem;
-  color:var(--text2);
-  margin-bottom:12px;
-  line-height:1.55;
-}
-
-/* cli */
-.cli-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-}
-.cli-label{
-  font-size:.75rem;
-  color:var(--text2);
-  flex-shrink:0;
-}
-.cli-cmd{
-  display:inline-block;
-  padding:4px 10px;
-  background:var(--code-bg);
-  border:1px solid var(--border);
-  border-radius:6px;
-  font-family:"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:.8125rem;
-  color:var(--text);
-  cursor:pointer;
-  word-break:break-all;
-  transition:border-color .2s;
-}
-.cli-cmd:hover{border-color:var(--blue)}
-
-/* flow */
-.flow-wrap{
-  margin-top:12px;
-  display:none;
-  animation:fadeIn .2s ease;
-}
-.flow-wrap.open{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.flow{
-  background:var(--flow-bg);
-  border-radius:8px;
-  padding:16px;
-}
-.flow-title{
-  font-size:.75rem;
-  font-weight:600;
-  color:var(--blue);
-  margin-bottom:12px;
-}
-.flow-steps{list-style:none;position:relative;padding-left:24px}
-.flow-steps::before{
-  content:"";
-  position:absolute;
-  left:7px;
-  top:8px;
-  bottom:8px;
-  width:1.5px;
-  background:rgba(0,122,255,0.2);
-}
-.flow-step{
-  position:relative;
-  font-size:.8125rem;
-  line-height:1.6;
-  padding:4px 0;
-}
-.flow-step::before{
-  content:"";
-  position:absolute;
-  left:-20px;
-  top:10px;
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:var(--blue);
-}
-.flow-step code{
-  font-family:"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  font-size:.75rem;
-  background:rgba(0,122,255,0.08);
-  padding:1px 5px;
-  border-radius:3px;
-}
-.flow-note{
-  margin-top:12px;
-  padding-top:10px;
-  border-top:1px solid rgba(0,122,255,0.1);
-  font-size:.75rem;
-  color:var(--text2);
-  line-height:1.55;
-}
-
-/* footer */
-.footer{
-  margin-top:48px;
-  padding-top:20px;
-  border-top:1px solid var(--border);
-  font-size:.75rem;
-  color:var(--text2);
-  text-align:center;
-}
-
-/* mobile */
-@media(max-width:480px){
-  .container{padding:16px 16px 48px}
-  .header{padding:32px 0 24px}
-  .header h1{font-size:1.5rem}
-  .card{padding:16px}
-  .card-head{flex-direction:column;gap:6px}
-  .tabs{gap:5px}
-  .tab{height:32px;padding:0 14px;font-size:.75rem}
-  .meta{gap:12px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-<div class="container">
-
-<!-- Header -->
-<header class="header">
-  <h1>图片路由</h1>
-  <p>图片内容智能识别与技能路由。用户发送图片时自动触发，或通过文字指令唤醒。识别图片内容后判断归属领域，路由到对应技能执行。</p>
-  <div class="meta">
-    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> v3.0 · 终极版</span>
-    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg> 13 唤醒词</span>
-    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> mmx vision describe</span>
-  </div>
-</header>
-
-<!-- Search -->
-<div class="search-wrap">
-  <div class="search-box">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input class="search-input" type="text" placeholder="搜索唤醒词或功能..." id="searchInput">
-  </div>
-  <div class="search-count" id="searchCount"></div>
-</div>
-
-<!-- Tabs -->
-<div class="tabs" id="tabs">
-  <button class="tab active" data-cat="all">全部 <span class="count">13</span></button>
-  <button class="tab" data-cat="识别">图片识别 <span class="count">4</span></button>
-  <button class="tab" data-cat="判断">路由判断 <span class="count">1</span></button>
-  <button class="tab" data-cat="执行">路由执行 <span class="count">4</span></button>
-  <button class="tab" data-cat="批量">批量组合 <span class="count">2</span></button>
-  <button class="tab" data-cat="查询">查询重试 <span class="count">2</span></button>
-</div>
-
-<!-- ========== 图片识别 ========== -->
-<div class="section-title" data-cat="识别">图片识别</div>
-
-<div class="card" data-cat="识别" data-wake="识别图片">
-  <div class="card-head">
-    <span class="card-name">图片内容识别</span>
-    <span class="wake-tag" data-cmd="vision-1">识别图片</span>
-  </div>
-  <div class="card-desc">对图片做快速内容识别，返回图片中包含的物体、场景、文字等描述信息。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="vision-1">mmx vision describe --image &lt;path&gt; --prompt "描述这张图片的内容"</span>
-  </div>
-  <div class="flow-wrap" id="flow-vision-1">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 MiniMax Vision API，传入图片路径</li>
-        <li class="flow-step">API 返回图片内容的自然语言描述</li>
-        <li class="flow-step">无数据库操作，无副作用</li>
-      </ol>
-      <div class="flow-note">副作用：无。仅返回识别结果，不写入任何数据。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="识别" data-wake="解析图片">
-  <div class="card-head">
-    <span class="card-name">深度解析</span>
-    <span class="wake-tag" data-cmd="vision-2">解析图片</span>
-  </div>
-  <div class="card-desc">对图片做深度解析，强调细节提取——包括 OCR 文字、数字、表格结构、小字备注等。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="vision-2">mmx vision describe --image &lt;path&gt; --prompt "详细解析图片内容，提取所有文字、数字、表格"</span>
-  </div>
-  <div class="flow-wrap" id="flow-vision-2">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 MiniMax Vision API，prompt 侧重细节提取</li>
-        <li class="flow-step">API 返回包含文字、数字、结构的详细描述</li>
-        <li class="flow-step">无数据库操作，无副作用</li>
-      </ol>
-      <div class="flow-note">副作用：无。与「识别图片」使用同一工具，区别在于 prompt 侧重点不同。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="识别" data-wake="描述图片">
-  <div class="card-head">
-    <span class="card-name">自然语言描述</span>
-    <span class="wake-tag" data-cmd="vision-3">描述图片</span>
-  </div>
-  <div class="card-desc">用自然语言描述图片整体内容，适合用户分享图片时了解 AI 看到了什么。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="vision-3">mmx vision describe --image &lt;path&gt; --prompt "描述这张图片的内容"</span>
-  </div>
-  <div class="flow-wrap" id="flow-vision-3">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 MiniMax Vision API</li>
-        <li class="flow-step">API 返回自然语言描述</li>
-        <li class="flow-step">无数据库操作，无副作用</li>
-      </ol>
-      <div class="flow-note">副作用：无。与「识别图片」同一命令，语义侧重不同（描述 vs 识别）。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="识别" data-wake="提取文字">
-  <div class="card-head">
-    <span class="card-name">OCR 文字提取</span>
-    <span class="wake-tag" data-cmd="vision-4">提取文字</span>
-  </div>
-  <div class="card-desc">专门做 OCR，提取图片中的文字和数字。适合小票、账单、截图、文档照片等场景。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="vision-4">mmx vision describe --image &lt;path&gt; --prompt "提取图片中所有文字和数字，保持原始格式"</span>
-  </div>
-  <div class="flow-wrap" id="flow-vision-4">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 MiniMax Vision API，prompt 专注 OCR</li>
-        <li class="flow-step">API 返回提取的文字和数字，保留原始格式</li>
-        <li class="flow-step">无数据库操作，无副作用</li>
-      </ol>
-      <div class="flow-note">副作用：无。纯识别，不写入数据。提取结果可用于后续路由或记录。</div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 路由判断 ========== -->
-<div class="section-title" data-cat="判断">路由判断</div>
-
-<div class="card" data-cat="判断" data-wake="判断路由">
-  <div class="card-head">
-    <span class="card-name">分析归属领域</span>
-    <span class="wake-tag" data-cmd="route-judge">判断路由</span>
-  </div>
-  <div class="card-desc">识别图片内容后，分析图片属于哪个技能领域（记账/管家/卡路里），只判断不执行。适合用户想先了解图片归类再决定操作。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="route-judge">mmx vision describe → 归属判断</span>
-  </div>
-  <div class="flow-wrap" id="flow-route-judge">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片内容</li>
-        <li class="flow-step">AI 基于识别结果判断归属领域：
-          <br>· 涉及金额/交易 → 饼干记账
-          <br>· 涉及物品存放 → 居家管家
-          <br>· 涉及食物/营养 → 卡路里</li>
-        <li class="flow-step">向用户展示判断结论，不执行任何操作</li>
-      </ol>
-      <div class="flow-note">副作用：无。纯判断，不触发下游技能，不写入数据。</div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 路由执行 ========== -->
-<div class="section-title" data-cat="执行">路由执行</div>
-
-<div class="card" data-cat="执行" data-wake="路由记账">
-  <div class="card-head">
-    <span class="card-name">路由到饼干记账</span>
-    <span class="wake-tag" data-cmd="route-account">路由记账</span>
-  </div>
-  <div class="card-desc">识别图片后直接路由到饼干记账。适用于金额/交易类图片：小票、转账截图、账单页面。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="route-account">mmx vision describe → 饼干记账</span>
-  </div>
-  <div class="flow-wrap" id="flow-route-account">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
-        <li class="flow-step">AI 提取金额信息（优先「实付/实收」，其次「合计/总计」）</li>
-        <li class="flow-step">调用饼干记账 CLI：<code>python scripts/cookie_cli.py add -a &lt;金额&gt; -t "图片记账"</code></li>
-        <li class="flow-step">写入 <code>cookie.db</code> → <code>transactions</code> 表 → <code>amount</code>、<code>description</code>、<code>category</code> 字段</li>
-      </ol>
-      <div class="flow-note">副作用：向饼干记账数据库写入一条交易记录。需用户确认后执行。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="执行" data-wake="路由管家">
-  <div class="card-head">
-    <span class="card-name">路由到居家管家</span>
-    <span class="wake-tag" data-cmd="route-home">路由管家</span>
-  </div>
-  <div class="card-desc">识别图片后直接路由到居家管家。适用于物品类图片：快递包裹、收纳柜、物品照片。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="route-home">mmx vision describe → 居家管家</span>
-  </div>
-  <div class="flow-wrap" id="flow-route-home">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
-        <li class="flow-step">AI 提取物品名称、位置、数量等信息</li>
-        <li class="flow-step">调用居家管家 CLI：<code>python scripts/home_cli.py add --name "XX" --location "XX"</code></li>
-        <li class="flow-step">写入 <code>home.db</code> → <code>items</code> 表 → <code>name</code>、<code>location</code>、<code>category</code>、<code>status</code> 字段</li>
-      </ol>
-      <div class="flow-note">副作用：向居家管家数据库写入一条物品记录。需用户确认后执行。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="执行" data-wake="路由卡路里">
-  <div class="card-head">
-    <span class="card-name">路由到卡路里</span>
-    <span class="wake-tag" data-cmd="route-calorie">路由卡路里</span>
-  </div>
-  <div class="card-desc">识别图片后直接路由到卡路里。适用于食物/营养类图片：饭菜照片、营养成分表、菜单。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="route-calorie">mmx vision describe → 卡路里</span>
-  </div>
-  <div class="flow-wrap" id="flow-route-calorie">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
-        <li class="flow-step">AI 提取食物名称、热量、营养成分</li>
-        <li class="flow-step">调用卡路里 CLI：<code>python scripts/calorie_tracker.py add "食物名" &lt;热量&gt; &lt;蛋白&gt; &lt;碳水&gt; &lt;脂肪&gt; &lt;克数&gt;</code></li>
-        <li class="flow-step">写入 <code>calorie.db</code> → <code>entries</code> 表 → <code>name</code>、<code>calories</code>、<code>protein</code>、<code>carbs</code>、<code>fat</code>、<code>grams</code> 字段</li>
-      </ol>
-      <div class="flow-note">副作用：向卡路里数据库写入一条饮食记录。需用户确认后执行。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="执行" data-wake="自动路由">
-  <div class="card-head">
-    <span class="card-name">AI 自动判断推荐</span>
-    <span class="wake-tag" data-cmd="route-auto">自动路由</span>
-  </div>
-  <div class="card-desc">AI 自动识别图片内容、判断归属领域、推荐对应技能，用户确认后执行。默认路由模式。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="route-auto">mmx vision describe → 判断 → 推荐</span>
-  </div>
-  <div class="flow-wrap" id="flow-route-auto">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
-        <li class="flow-step">AI 判断归属领域（记账/管家/卡路里/不相关）</li>
-        <li class="flow-step">向用户展示识别结果 + 推荐操作</li>
-        <li class="flow-step">用户确认后，调用对应技能 CLI 执行</li>
-      </ol>
-      <div class="flow-note">副作用：确认前无副作用。确认后根据推荐技能写入对应数据库。</div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 批量组合 ========== -->
-<div class="section-title" data-cat="批量">批量组合</div>
-
-<div class="card" data-cat="批量" data-wake="批量路由">
-  <div class="card-head">
-    <span class="card-name">多图分别路由</span>
-    <span class="wake-tag" data-cmd="batch-route">批量路由</span>
-  </div>
-  <div class="card-desc">连续发送多张图片时，一次性识别并分别路由到对应技能。每张图片独立判断归属。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="batch-route">循环 mmx vision describe → 分别路由</span>
-  </div>
-  <div class="flow-wrap" id="flow-batch-route">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">遍历所有待处理图片</li>
-        <li class="flow-step">逐张调用 <code>mmx vision describe</code> 识别</li>
-        <li class="flow-step">每张图片独立判断归属领域</li>
-        <li class="flow-step">汇总展示所有路由建议，用户逐一确认执行</li>
-      </ol>
-      <div class="flow-note">副作用：确认后根据各图片路由结果写入对应数据库。每张图片独立处理，互不影响。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="批量" data-wake="组合执行">
-  <div class="card-head">
-    <span class="card-name">一图多技能联动</span>
-    <span class="wake-tag" data-cmd="combo-exec">组合执行</span>
-  </div>
-  <div class="card-desc">一张图片触发多个技能。例如食物照片同时触发记账（记录消费）和卡路里（记录摄入）。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="combo-exec">mmx vision describe → 多技能顺序执行</span>
-  </div>
-  <div class="flow-wrap" id="flow-combo-exec">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">调用 <code>mmx vision describe</code> 识别图片</li>
-        <li class="flow-step">AI 检测到多信号叠加（如食物+金额）</li>
-        <li class="flow-step">推荐多个技能组合，展示给用户</li>
-        <li class="flow-step">用户逐一确认，依次调用各技能 CLI 执行</li>
-      </ol>
-      <div class="flow-note">副作用：向多个数据库写入记录。每个技能执行完成后单独询问是否继续。</div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== 查询重试 ========== -->
-<div class="section-title" data-cat="查询">查询重试</div>
-
-<div class="card" data-cat="查询" data-wake="查看路由">
-  <div class="card-head">
-    <span class="card-name">查看最近路由结果</span>
-    <span class="wake-tag" data-cmd="query-route">查看路由</span>
-  </div>
-  <div class="card-desc">查看最近一次图片路由的识别结果和执行状态。无需重新识别，直接从上下文读取。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="query-route">读取上下文</span>
-  </div>
-  <div class="flow-wrap" id="flow-query-route">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">从当前会话上下文中读取最近的路由记录</li>
-        <li class="flow-step">展示：识别内容、判断结果、执行状态</li>
-        <li class="flow-step">无 API 调用，无数据库操作</li>
-      </ol>
-      <div class="flow-note">副作用：无。纯查询，不修改任何数据。</div>
-    </div>
-  </div>
-</div>
-
-<div class="card" data-cat="查询" data-wake="重新路由">
-  <div class="card-head">
-    <span class="card-name">重新判断路由</span>
-    <span class="wake-tag" data-cmd="re-route">重新路由</span>
-  </div>
-  <div class="card-desc">对同一张图片重新识别并判断路由。用于上次判断不准确时的纠错场景。</div>
-  <div class="cli-row">
-    <span class="cli-label">CLI</span>
-    <span class="cli-cmd" data-cmd="re-route">mmx vision describe → 重新判断</span>
-  </div>
-  <div class="flow-wrap" id="flow-re-route">
-    <div class="flow">
-      <div class="flow-title">执行流程</div>
-      <ol class="flow-steps">
-        <li class="flow-step">重新调用 <code>mmx vision describe</code> 识别同一图片</li>
-        <li class="flow-step">AI 重新判断归属领域</li>
-        <li class="flow-step">展示新的路由建议，用户确认后执行</li>
-      </ol>
-      <div class="flow-note">副作用：确认前无副作用。重新识别不影响之前已执行的记录。</div>
-    </div>
-  </div>
-</div>
-
-<!-- Special trigger note -->
-<div style="margin-top:32px;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)">
-  <div style="font-size:.875rem;font-weight:600;margin-bottom:6px">特殊触发：图片事件</div>
-  <div style="font-size:.8125rem;color:var(--text2);line-height:1.6">用户发送图片时自动触发此技能，无需文字唤醒词。图片事件优先于文字指令匹配。</div>
-</div>
-
-<!-- Footer -->
-<footer class="footer">
-  <p>图片路由技能文档 v3.0 终极版 · 13 唤醒词 · 5 分类 · 核心原则：事无巨细，全面解析</p>
+<div class="toc"><h4>目录</h4><ol><li><a href="#html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</a></li>
+<li><a href="#图片路由技能-v1-0-1">图片路由技能 v1.0</a></li>
+<li><a href="#核心定位-2">核心定位</a></li>
+<li><a href="#路由表-3">路由表</a></li>
+<li><a href="#触发条件-4">触发条件</a></li>
+<li><a href="#使用流程-5">使用流程</a></li>
+<li><a href="#ai-执行指南-6">AI 执行指南</a></li></ol></div>
+<h2 id="html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</h2>
+<blockquote>
+<p><strong>此规范优先级高于本文件中所有其他规定。</strong></p>
+</blockquote>
+<ol>
+<li><strong>全量同步</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>图片路由.html</code> 上。任何功能模块的新增、修改、删除，任何唤醒词的调整，任何 CLI 命令的变化，任何脚本逻辑的改动——都必须同步更新 HTML 页面中对应的内容。</li>
+<li><strong>最高优先级</strong>：本条规定在所有规范中优先级最高。当其他流程或习惯与本条冲突时，以本条为准。</li>
+<li><strong>逐行确认</strong>：对该技能的所有文件、脚本的任何一行修改，都需要明确得到用户的 1 次确认后方可执行。不得批量静默修改，不得跳过确认步骤。</li>
+</ol>
+<hr />
+<h1 id="图片路由技能-v1-0-1">图片路由技能 v1.0</h1>
+<h2 id="核心定位-2">核心定位</h2>
+<p>作为用户发图片时的统一入口，负责：
+1. <strong>快速判断</strong>：图片是否与任一技能相关
+2. <strong>内容识别</strong>：识别图片具体内容
+3. <strong>技能推荐</strong>：推荐可执行的技能组合
+4. <strong>路由执行</strong>：用户确认后依次调用技能</p>
+<h2 id="路由表-3">路由表</h2>
+<p>AI 收到用户输入后，按以下表匹配唤醒词，命中即执行对应功能。</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>功能</th>
+<th>动作</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>识别图片</td>
+<td>图片内容识别</td>
+<td>mmx vision describe</td>
+<td>返回图片描述</td>
+</tr>
+<tr>
+<td>2</td>
+<td>解析图片</td>
+<td>深度解析（OCR、细节）</td>
+<td>mmx vision describe --prompt 细节</td>
+<td>强调细节提取</td>
+</tr>
+<tr>
+<td>3</td>
+<td>描述图片</td>
+<td>自然语言描述图片</td>
+<td>mmx vision describe</td>
+<td>整体描述</td>
+</tr>
+<tr>
+<td>4</td>
+<td>提取文字</td>
+<td>OCR 提取图片中的文字</td>
+<td>mmx vision describe --prompt OCR</td>
+<td>专注文字/数字</td>
+</tr>
+<tr>
+<td>5</td>
+<td>判断路由</td>
+<td>分析图片属于哪个技能领域</td>
+<td>mmx vision → 判断</td>
+<td>只判断不执行</td>
+</tr>
+<tr>
+<td>6</td>
+<td>路由记账</td>
+<td>识别后直接路由到饼干记账</td>
+<td>mmx vision → 饼干记账</td>
+<td>金额/交易类图片</td>
+</tr>
+<tr>
+<td>7</td>
+<td>路由管家</td>
+<td>识别后直接路由到居家管家</td>
+<td>mmx vision → 居家管家</td>
+<td>物品类图片</td>
+</tr>
+<tr>
+<td>8</td>
+<td>路由卡路里</td>
+<td>识别后直接路由到卡路里</td>
+<td>mmx vision → 卡路里</td>
+<td>食物类图片</td>
+</tr>
+<tr>
+<td>9</td>
+<td>自动路由</td>
+<td>AI 自动判断并推荐技能</td>
+<td>mmx vision → 判断 → 推荐</td>
+<td>需用户确认</td>
+</tr>
+<tr>
+<td>10</td>
+<td>批量路由</td>
+<td>多张图片分别识别路由</td>
+<td>循环 mmx vision</td>
+<td>连续发图场景</td>
+</tr>
+<tr>
+<td>11</td>
+<td>组合执行</td>
+<td>一张图触发多技能</td>
+<td>mmx vision → 多技能</td>
+<td>如食物→记账+卡路里</td>
+</tr>
+<tr>
+<td>12</td>
+<td>查看路由</td>
+<td>查看最近路由结果</td>
+<td>读取上下文</td>
+<td>查询类</td>
+</tr>
+<tr>
+<td>13</td>
+<td>重新路由</td>
+<td>对同一图片重新判断路由</td>
+<td>mmx vision → 判断</td>
+<td>纠错场景</td>
+</tr>
+</tbody>
+</table>
+<h3>匹配规则</h3>
+<ol>
+<li><strong>图片事件优先</strong>：用户发送图片时自动触发，无需文字唤醒词</li>
+<li><strong>文字指令匹配</strong>：用户输入包含表中唤醒词即命中</li>
+<li><strong>最长匹配</strong>：同时命中多个时，取最长的</li>
+<li><strong>组合优先</strong>：用户同时发图片+唤醒词时，以唤醒词为准决定路由方向</li>
+</ol>
+<h2 id="触发条件-4">触发条件</h2>
+<p>两种触发方式：</p>
+<ol>
+<li><strong>图片事件触发</strong>：用户发送图片时自动触发</li>
+<li><strong>文字指令触发</strong>：用户输入包含路由表中任一唤醒词时触发</li>
+</ol>
+<h2 id="使用流程-5">使用流程</h2>
+<h3>流程原则（v3 终极版）</h3>
+<p>AI 根据图片内容自主判断，灵活处理。</p>
+<p><strong>唯一原则：事无巨细，全面解析。</strong></p>
+<h3>路由表参考</h3>
+<ul>
+<li>涉及金额/交易 → 饼干记账</li>
+<li>涉及物品存放 → 居家管家</li>
+<li>涉及食物/营养 → 卡路里</li>
+</ul>
+<h3>联动规则表（跨技能联动）</h3>
+<p>完成主技能后，按以下表判断是否需要联动。<strong>只询问，不强制。</strong></p>
+<table>
+<thead>
+<tr>
+<th>主技能完成</th>
+<th>联动条件</th>
+<th>追加询问</th>
+<th>联动技能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>饼干记账（记支出）</td>
+<td>用户提到买了实物物品</td>
+<td>“要录入居家管家吗？”</td>
+<td>居家管家</td>
+</tr>
+<tr>
+<td>饼干记账（记支出）</td>
+<td>用户提到买了食物/饮料</td>
+<td>“要记录卡路里吗？”</td>
+<td>卡路里</td>
+</tr>
+<tr>
+<td>卡路里（记吃了）</td>
+<td>用户提到食物花费/价格</td>
+<td>“要记一笔支出吗？”</td>
+<td>饼干记账</td>
+</tr>
+<tr>
+<td>卡路里（记吃了）</td>
+<td>用户提到买了新食品（库中无）</td>
+<td>“要存入食品库吗？”</td>
+<td>卡路里内部</td>
+</tr>
+<tr>
+<td>居家管家（录物品）</td>
+<td>用户提到物品价格/花费</td>
+<td>“要记一笔支出吗？”</td>
+<td>饼干记账</td>
+</tr>
+<tr>
+<td>居家管家（录物品）</td>
+<td>物品是食品/饮料/保健品</td>
+<td>“要记录卡路里吗？”</td>
+<td>卡路里</td>
+</tr>
+<tr>
+<td>居家管家（拍物品）</td>
+<td>同上（拍照识别后）</td>
+<td>同上</td>
+<td>同上</td>
+</tr>
+</tbody>
+</table>
+<h4>联动判断原则</h4>
+<ol>
+<li><strong>先完成主技能</strong>：联动询问在主操作确认成功后才出现</li>
+<li><strong>只问不强制</strong>：用户说“不用”就结束，不追问</li>
+<li><strong>上下文判断</strong>：用户话语中是否有联动条件的关键词，不靠猜</li>
+<li><strong>一次只问一个</strong>：同时满足多个联动条件时，问最相关的一个</li>
+</ol>
+<h4>不触发联动的情况</h4>
+<ul>
+<li>查询类操作（查今天、查物品等）</li>
+<li>分析类操作（看月度、查趋势等）</li>
+<li>用户只是分享信息，没有明确的记账/记录意图</li>
+<li>用户已明确说“只记账”“只录入”等限定语</li>
+</ul>
+<h3>重要原则</h3>
+<ul>
+<li><strong>优先相信用户的直接意图</strong>，避免过度关联</li>
+<li>如果用户只是分享图片，不要主动推荐技能</li>
+<li>用户明确要求记录时才调用技能</li>
+</ul>
+<h3>历史变更</h3>
+<ul>
+<li>v3（2026-06-08）：大幅简化，只留核心原则</li>
+<li>v2：放开 subagent 强制 + image 工具禁令 + 4 渠道表</li>
+<li>v1：默认 subagent 异步 + 严禁 image 工具</li>
+</ul>
+<hr />
+<h2 id="ai-执行指南-6">AI 执行指南</h2>
+<p><strong>v3 起不再规定具体执行方式。</strong> AI 自行选择：直接看图、调工具、subagent、workboard 都行。</p>
+<p><strong>唯一原则：事无巨细，全面解析。</strong></p>
+<hr />
+<h3>用户确认</h3>
+<p>无论识别结果如何，都需要展示给用户并确认：
+- 识别出了什么
+- 建议执行哪些操作
+- 用户选择后执行</p>
+<p>每个技能执行完成后询问是否继续，不需要一次确认所有要执行的技能。</p>
+<hr />
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>图片路由/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
 </footer>
-
-</div>
-
-<script>
-(function(){
-  const searchInput=document.getElementById('searchInput');
-  const searchCount=document.getElementById('searchCount');
-  const tabs=document.querySelectorAll('.tab');
-  const cards=document.querySelectorAll('.card');
-  const sectionTitles=document.querySelectorAll('.section-title');
-  let activeCat='all';
-
-  // Tab switching
-  tabs.forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      tabs.forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      activeCat=tab.dataset.cat;
-      filterCards();
-    });
-  });
-
-  // Search
-  searchInput.addEventListener('input',filterCards);
-
-  function filterCards(){
-    const q=searchInput.value.trim().toLowerCase();
-    let visible=0;
-    cards.forEach(card=>{
-      const cat=card.dataset.cat;
-      const wake=card.dataset.wake||'';
-      const text=card.textContent.toLowerCase();
-      const catMatch=activeCat==='all'||cat===activeCat;
-      const searchMatch=!q||wake.includes(q)||text.includes(q);
-      if(catMatch&&searchMatch){
-        card.style.display='';
-        visible++;
-      }else{
-        card.style.display='none';
-      }
-    });
-    // Dim/highlight wake tags
-    document.querySelectorAll('.wake-tag').forEach(tag=>{
-      if(q&&!tag.dataset.cmd){return}
-      const cmd=tag.dataset.cmd;
-      const card=tag.closest('.card');
-      if(card&&card.style.display==='none')return;
-      if(q&&!tag.textContent.toLowerCase().includes(q)){
-        tag.classList.add('dim');
-      }else{
-        tag.classList.remove('dim');
-      }
-    });
-    // Section titles
-    sectionTitles.forEach(st=>{
-      const cat=st.dataset.cat;
-      const catMatch=activeCat==='all'||cat===activeCat;
-      st.style.display=catMatch?'':'none';
-    });
-    // Count
-    if(q){
-      searchCount.textContent=visible+' 个结果';
-    }else{
-      searchCount.textContent='';
-    }
-  }
-
-  // Click wake tag or CLI cmd → toggle flow
-  document.addEventListener('click',e=>{
-    const tag=e.target.closest('.wake-tag');
-    const cmd=e.target.closest('.cli-cmd');
-    const target=tag||cmd;
-    if(!target)return;
-    const cmdId=target.dataset.cmd;
-    if(!cmdId)return;
-    const flow=document.getElementById('flow-'+cmdId);
-    if(!flow)return;
-    // Close others
-    document.querySelectorAll('.flow-wrap.open').forEach(f=>{
-      if(f!==flow)f.classList.remove('open');
-    });
-    flow.classList.toggle('open');
-  });
-})();
-</script>
 </body>
 </html>

@@ -2,847 +2,1617 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>勋章技能手册</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>勋章 — Skill HTML 镜像</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --blue:#007AFF;
-  --bg:#F5F5F7;
-  --card:#FFFFFF;
-  --text:#1D1D1F;
-  --text2:#86868B;
-  --border:#E5E5EA;
-  --radius:10px;
-}
-html{font-size:16px}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","Segoe UI",sans-serif;
-  background:var(--bg);color:var(--text);
-  line-height:1.6;padding:0;margin:0;
-  -webkit-font-smoothing:antialiased;
-}
-/* Header */
-.header{
-  background:var(--card);
-  padding:48px 20px 24px;
-  border-bottom:1px solid var(--border);
-  text-align:center;
-  position:sticky;top:0;z-index:100;
-}
-.header h1{font-size:1.5rem;font-weight:600;letter-spacing:-0.02em}
-.header p{font-size:0.85rem;color:var(--text2);margin-top:4px}
-/* Search */
-.search-wrap{
-  padding:12px 16px;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  position:sticky;top:88px;z-index:99;
-}
-.search-box{
-  width:100%;padding:10px 14px;
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  font-size:0.9rem;outline:none;
-  background:var(--bg);
-  transition:border-color 0.2s;
-}
-.search-box:focus{border-color:var(--blue)}
-.search-box::placeholder{color:#AEAEB2}
-/* Tabs */
-.tabs{
-  display:flex;overflow-x:auto;
-  padding:12px 16px 0;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  gap:4px;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex-shrink:0;
-  padding:8px 14px;
-  font-size:0.8rem;
-  font-weight:500;
-  color:var(--text2);
-  background:none;border:none;
-  border-bottom:2px solid transparent;
-  cursor:pointer;
-  transition:all 0.2s;
-  white-space:nowrap;
-}
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab:hover{color:var(--text)}
-/* Content */
-.content{padding:16px;max-width:680px;margin:0 auto}
-.section{margin-bottom:32px}
-.section-title{
-  font-size:0.75rem;font-weight:600;
-  color:var(--text2);text-transform:uppercase;
-  letter-spacing:0.05em;
-  padding:0 4px 8px;
-}
-/* Card */
-.card{
-  background:var(--card);
-  border-radius:var(--radius);
-  border:1px solid var(--border);
-  overflow:hidden;
-  margin-bottom:8px;
-}
-.card-head{
-  padding:14px 16px;
-  display:flex;justify-content:space-between;align-items:center;
-  cursor:pointer;
-  transition:background 0.15s;
-}
-.card-head:active{background:#F5F5F7}
-.card-title{font-size:0.95rem;font-weight:600}
-.card-arrow{
-  font-size:0.7rem;color:var(--text2);
-  transition:transform 0.2s;
-}
-.card.open .card-arrow{transform:rotate(90deg)}
-.card-body{
-  display:none;
-  padding:0 16px 16px;
-  border-top:1px solid var(--border);
-}
-.card.open .card-body{display:block}
-/* Trigger list */
-.trigger-list{list-style:none;padding:0}
-.trigger-item{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:12px 0;
-  border-bottom:1px solid var(--border);
-  cursor:pointer;
-}
-.trigger-item:last-child{border-bottom:none}
-.trigger-word{
-  font-size:0.9rem;font-weight:500;
-  color:var(--text);
-  padding:4px 10px;
-  background:#F2F2F7;
-  border-radius:6px;
-  transition:background 0.15s;
-}
-.trigger-item:hover .trigger-word{background:#E5E5EA}
-.trigger-arrow{font-size:0.7rem;color:var(--text2)}
-/* CLI detail */
-.cli-detail{
-  display:none;
-  margin:8px 0 16px;
-  padding:12px 14px;
-  background:#F2F2F7;
-  border-radius:8px;
-  font-size:0.8rem;
-}
-.cli-detail.show{display:block}
-.cli-detail .cli-label{
-  font-size:0.7rem;font-weight:600;
-  color:var(--text2);text-transform:uppercase;
-  letter-spacing:0.04em;margin-bottom:6px;
-}
-.cli-cmd{
-  font-family:"SF Mono","Fira Code","Cascadia Code",monospace;
-  font-size:0.78rem;
-  background:#1D1D1F;color:#F5F5F7;
-  padding:8px 12px;border-radius:6px;
-  margin:6px 0;
-  word-break:break-all;
-  cursor:pointer;
-  transition:opacity 0.15s;
-}
-.cli-cmd:hover{opacity:0.85}
-.cli-cmd:active{opacity:0.7}
-/* Flow */
-.flow-block{
-  display:none;
-  margin:8px 0 0;
-  padding:12px 14px;
-  background:#FAFAFA;
-  border-radius:8px;
-  border:1px solid var(--border);
-}
-.flow-block.show{display:block}
-.flow-step{
-  display:flex;align-items:flex-start;
-  margin-bottom:10px;font-size:0.8rem;
-}
-.flow-step:last-child{margin-bottom:0}
-.flow-num{
-  flex-shrink:0;
-  width:20px;height:20px;
-  background:var(--blue);color:#fff;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.65rem;font-weight:600;
-  margin-right:10px;margin-top:1px;
-}
-.flow-text{flex:1}
-.flow-table{
-  font-size:0.7rem;
-  border-collapse:collapse;
-  width:100%;margin:6px 0;
-}
-.flow-table th{
-  text-align:left;font-weight:600;
-  padding:4px 8px;
-  background:#F2F2F7;
-  border:1px solid var(--border);
-}
-.flow-table td{
-  padding:4px 8px;
-  border:1px solid var(--border);
-}
-/* Description */
-.desc{
-  font-size:0.8rem;color:var(--text2);
-  margin-top:8px;line-height:1.5;
-}
-/* Badge */
-.badge{
-  display:inline-block;
-  padding:2px 8px;
-  border-radius:4px;
-  font-size:0.65rem;font-weight:600;
-}
-.badge-blue{background:#E3F2FD;color:#1565C0}
-.badge-green{background:#E8F5E9;color:#2E7D32}
-.badge-orange{background:#FFF3E0;color:#E65100}
-.badge-purple{background:#F3E5F5;color:#6A1B9A}
-.badge-red{background:#FFEBEE;color:#C62828}
-/* Empty state */
-.empty{
-  text-align:center;
-  padding:48px 20px;
-  color:var(--text2);
-  font-size:0.9rem;
-}
-/* Footer */
-.footer{
-  text-align:center;
-  padding:32px 16px 48px;
-  font-size:0.75rem;color:#AEAEB2;
-}
-/* Mobile */
-@media(max-width:480px){
-  .header{padding:36px 16px 20px}
-  .header h1{font-size:1.3rem}
-  .content{padding:12px}
-  .card-head{padding:12px 14px}
-  .cli-cmd{font-size:0.72rem;padding:6px 10px}
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-优先级最高-1">强制性规定（优先级最高）</a></li>
+<li><a href="#勋章技能-2">勋章技能</a></li>
+<li><a href="#快速指令表-1">快速指令表</a></li>
+<li><a href="#角色定位-必须内化-不可遗忘-2">角色定位（必须内化，不可遗忘）</a></li>
+<li><a href="#执行流程-3">执行流程</a></li>
+<li><a href="#禁用词汇清单-路径c-绝对禁止-4">禁用词汇清单（路径C - 绝对禁止）</a></li>
+<li><a href="#prompt质量分级表-路径c-5">Prompt质量分级表（路径C）</a></li>
+<li><a href="#7个必须维度-路径c-每少一个效果打折扣-6">7个必须维度（路径C - 每少一个效果打折扣）</a></li>
+<li><a href="#顶级正面案例-路径c-必须参考-7">顶级正面案例（路径C - 必须参考）</a></li>
+<li><a href="#生成前自检流程-必须通过才能生成-8">生成前自检流程（必须通过才能生成）</a></li>
+<li><a href="#输出-验收标准-9">输出=验收标准</a></li>
+<li><a href="#环境变量-必填-10">环境变量（必填）</a></li>
+<li><a href="#核心原则-必须遵守-11">核心原则（必须遵守）</a></li>
+<li><a href="#视觉设计体系-12">视觉设计体系</a></li>
+<li><a href="#生图prompt构建指南-13">生图Prompt构建指南</a></li>
+<li><a href="#奖励分类-14">奖励分类</a></li>
+<li><a href="#渲染路径规范-15">渲染路径规范</a></li>
+<li><a href="#cli-命令-16">CLI 命令</a></li>
+<li><a href="#ai执行规范-17">AI执行规范</a></li>
+<li><a href="#成就系统-18">成就系统</a></li></ol></div>
+<h1 id="强制性规定-优先级最高-1">强制性规定（优先级最高）</h1>
+<blockquote>
+<p>以下规定优先级高于本文件中的任何其他规则。</p>
+</blockquote>
+<ol>
+<li>
+<p><strong>同步更新 HTML</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>勋章.html</code> 上。HTML 是技能的唯一可视化参考文档，任何功能变更如果未同步到 HTML，视为未完成。</p>
+</li>
+<li>
+<p><strong>逐行确认</strong>：对该技能的所有文件（SKILL.md、scripts/*.py、勋章.html）的任何一行修改，都需要明确得到用户的 1 次确认。未经确认不得执行写入操作。</p>
+</li>
+<li>
+<p><strong>查询类严禁生成</strong>：当用户触发查询类唤醒词（查勋章记录/统计/某类/最近）时，严禁进入"颁发"或"设计生成"路径。查询是只读操作，只读取 medal.py list/stats 的输出 + 发送已有 file_path 文件。</p>
+</li>
+</ol>
+<hr />
+<h1 id="勋章技能-2">勋章技能</h1>
+<blockquote>
+<p>颁发勋章/证书/奖杯奖励，查询勋章记录与统计，检查成就链进度，生成与审查勋章设计图</p>
+</blockquote>
+<hr />
+<h2 id="快速指令表-1">快速指令表</h2>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>执行方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>颁勋章</td>
+<td>颁发badge类型奖励</td>
+<td><code>medal.py add --type badge</code></td>
+</tr>
+<tr>
+<td>颁证书</td>
+<td>颁发certificate类型奖励</td>
+<td><code>medal.py add --type certificate</code></td>
+</tr>
+<tr>
+<td>颁奖杯</td>
+<td>颁发trophy类型奖励</td>
+<td><code>medal.py add --type trophy</code></td>
+</tr>
+<tr>
+<td>颁早睡勋章</td>
+<td>颁发早睡链勋章+检查进阶</td>
+<td><code>medal.py add</code> + 查历史</td>
+</tr>
+<tr>
+<td>颁学习勋章</td>
+<td>颁发学习链勋章+检查进阶</td>
+<td><code>medal.py add</code> + 查历史</td>
+</tr>
+<tr>
+<td>颁运动勋章</td>
+<td>颁发运动链勋章+检查进阶</td>
+<td><code>medal.py add</code> + 查历史</td>
+</tr>
+<tr>
+<td>颁休息勋章</td>
+<td>颁发休息链勋章+检查进阶</td>
+<td><code>medal.py add</code> + 查历史</td>
+</tr>
+<tr>
+<td>颁体重勋章</td>
+<td>颁发体重链勋章+检查进阶</td>
+<td><code>medal.py add</code> + 查历史</td>
+</tr>
+<tr>
+<td>查勋章记录</td>
+<td>查询所有勋章历史</td>
+<td><code>medal.py list</code></td>
+</tr>
+<tr>
+<td>查勋章统计</td>
+<td>查看数量统计</td>
+<td><code>medal.py stats</code></td>
+</tr>
+<tr>
+<td>查某类勋章</td>
+<td>按类型筛选</td>
+<td><code>medal.py list --type X</code></td>
+</tr>
+<tr>
+<td>查最近勋章</td>
+<td>查最近N条</td>
+<td><code>medal.py list --limit N</code></td>
+</tr>
+<tr>
+<td>查早睡链</td>
+<td>检查早睡成就进度</td>
+<td>读历史+分析连续性</td>
+</tr>
+<tr>
+<td>查学习链</td>
+<td>检查学习成就进度</td>
+<td>读历史+分析累计</td>
+</tr>
+<tr>
+<td>查运动链</td>
+<td>检查运动成就进度</td>
+<td>读历史+分析连续性</td>
+</tr>
+<tr>
+<td>查休息链</td>
+<td>检查休息成就进度</td>
+<td>读历史+分析连续性</td>
+</tr>
+<tr>
+<td>查体重链</td>
+<td>检查体重成就进度</td>
+<td>读历史+对比目标</td>
+</tr>
+<tr>
+<td>查成就进度</td>
+<td>汇总所有成就链</td>
+<td>读历史+全面分析</td>
+</tr>
+<tr>
+<td>生勋章图</td>
+<td>生成勋章设计</td>
+<td>自动选择路径A/B/C</td>
+</tr>
+<tr>
+<td>生证书图</td>
+<td>生成证书设计</td>
+<td>自动选择路径A/B/C</td>
+</tr>
+<tr>
+<td>生奖杯图</td>
+<td>生成奖杯设计</td>
+<td>自动选择路径A/B/C</td>
+</tr>
+<tr>
+<td>生SVG勋章</td>
+<td>路径A生成</td>
+<td>HTML+SVG→GIF</td>
+</tr>
+<tr>
+<td>生混合勋章</td>
+<td>路径B生成</td>
+<td>生图+SVG→GIF</td>
+</tr>
+<tr>
+<td>生纯图勋章</td>
+<td>路径C生成</td>
+<td>直接生图→PNG</td>
+</tr>
+<tr>
+<td>审勋章设计</td>
+<td>审查勋章质量</td>
+<td>MiniMax视觉审查</td>
+</tr>
+<tr>
+<td>审证书设计</td>
+<td>审查证书质量</td>
+<td>MiniMax视觉审查</td>
+</tr>
+<tr>
+<td>审奖杯设计</td>
+<td>审查奖杯质量</td>
+<td>MiniMax视觉审查</td>
+</tr>
+<tr>
+<td>初始化勋章库</td>
+<td>初始化数据库</td>
+<td><code>medal.py init</code></td>
+</tr>
+<tr>
+<td>迁移勋章库</td>
+<td>数据库迁移</td>
+<td>ALTER TABLE</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="角色定位-必须内化-不可遗忘-2">角色定位（必须内化，不可遗忘）</h2>
+<p>你是一位守护「神圣器物美学」的匠人。</p>
+<p>你创作的不是一张图，而是一件<strong>精神器物</strong>：
+- 勋章的魂在「静谧」
+- 证书的魂在「神秘」
+- 奖杯的魂在「不可战胜」</p>
+<p>当你提笔时，你不是在描述一张图，你是在<strong>召唤一个世界</strong>。</p>
+<p><strong>每一次生成都是唯一的仪式，不可敷衍。</strong></p>
+<hr />
+<h2 id="执行流程-3">执行流程</h2>
+<h3>颁发类唤醒词执行流程</h3>
+<pre><code>用户说「颁勋章/证书/奖杯」
+    ↓
+确认奖励类型和名称
+    ↓
+选择渲染路径（A/B/C）
+    ↓
+执行设计生成流程
+    ↓
+视觉审查（最多3轮迭代）
+    ↓
+medal.py add 写入数据库
+    ↓
+发送奖励文件给用户
+</code></pre>
+<h3>成就链颁发类执行流程</h3>
+<pre><code>用户说「颁早睡/学习/运动/休息/体重勋章」
+    ↓
+确认具体事件和数据
+    ↓
+颁发基础勋章（badge）
+    ↓
+查询历史记录
+    ↓
+检查是否解锁进阶（certificate）
+    ↓
+检查是否解锁里程碑（trophy）
+    ↓
+颁发所有达成的勋章
+    ↓
+写remark记录进度
+</code></pre>
+<h3>查询类执行流程</h3>
+<pre><code>用户说「查勋章记录/统计/某类/最近」
+    ↓
+执行medal.py list/stats
+    ↓
+格式化输出结果
+    ↓
+如有需要，分析趋势
+    ↓
+询问用户是否要查看勋章/证书/奖杯的图
+    ↓
+用户确认 → 将结果中所有勋章/证书/奖杯的图（file_path）通过 qqbot 发送给用户
+</code></pre>
+<h3>成就链检查类执行流程</h3>
+<pre><code>用户说「查早睡/学习/运动/休息/体重链」或「查成就进度」
+    ↓
+查询该类型所有历史记录
+    ↓
+按日期排序分析连续性
+    ↓
+计算当前进度：
+  - 基础：是否达成单次
+  - 进阶：累计次数是否达标
+  - 里程碑：连续天数是否达标
+    ↓
+输出进度报告
+    ↓
+如有中断，说明原因
+</code></pre>
+<h3>设计生成类执行流程</h3>
+<pre><code>用户说「生勋章图/证书图/奖杯图」或指定路径
+    ↓
+事件解构（核心符号、情感色调、发生场景、动效语言）
+    ↓
+选择渲染路径（自动或指定）
+    ↓
+路径A：AI生成HTML+SVG → Playwright截图 → 迭代审查 → ffmpeg合成GIF
+路径B：mmx生成主体图 → AI生成HTML+SVG边框 → Playwright截图 → 迭代审查 → ffmpeg合成GIF
+路径C：mmx生成完整图 → 迭代审查 → 保存PNG
+    ↓
+medal.py add 写入数据库
+    ↓
+发送奖励文件给用户
+</code></pre>
+<h3>视觉审查类执行流程</h3>
+<pre><code>用户说「审勋章/证书/奖杯设计」
+    ↓
+读取设计文件
+    ↓
+通过 subagent 调 mmx vision describe 审查
+    ↓
+7维度检查：
+  1. 视觉焦点是否明确
+  2. 材质质感如何
+  3. 配色是否和谐
+  4. 构图是否克制
+  5. 身份标识是否清晰
+  6. 图中是否出现文字
+  7. 改进建议
+    ↓
+输出审查报告
+    ↓
+如不合格，提供修改建议
+</code></pre>
+<h3>管理类执行流程</h3>
+<pre><code>用户说「初始化勋章库」或「迁移勋章库」
+    ↓
+执行medal.py init
+    ↓
+确认数据库表结构创建成功
+    ↓
+输出完成提示
+</code></pre>
+<hr />
+<h2 id="禁用词汇清单-路径c-绝对禁止-4">禁用词汇清单（路径C - 绝对禁止）</h2>
+<p>以下词汇会让AI生成"通用模板感"，必须替换为具体视觉描述：</p>
+<table>
+<thead>
+<tr>
+<th>❌ 禁用词汇</th>
+<th>替换方向</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"蓝色"</td>
+<td>精确到色相</td>
+<td>"深靛蓝"、"普鲁士蓝"、"钴蓝"</td>
+</tr>
+<tr>
+<td>"金属质感"</td>
+<td>具体材质+状态</td>
+<td>"水银液态金属"、"氧化古铜"</td>
+</tr>
+<tr>
+<td>"清新禅意风格"</td>
+<td>视觉现象描述</td>
+<td>"涟漪扩散形成年轮"</td>
+</tr>
+<tr>
+<td>"金属浮雕质感"</td>
+<td>多层结构描述</td>
+<td>"阴影层→主体层→高光层"</td>
+</tr>
+<tr>
+<td>"好看"、"漂亮"</td>
+<td>废话，禁止使用</td>
+<td>-</td>
+</tr>
+<tr>
+<td>"圆形边框"</td>
+<td>具体形态描述</td>
+<td>"水银液态金属，表面有微型山脊状波纹"</td>
+</tr>
+<tr>
+<td>"发光主体"</td>
+<td>光学现象</td>
+<td>"宝珠散发白金光晕，向外扩散形成涟漪"</td>
+</tr>
+<tr>
+<td>"黑色背景"</td>
+<td>精确环境</td>
+<td>"深海海底光学效果"、"绝对零度蓝黑虚空"</td>
+</tr>
+<tr>
+<td>"金色光效"</td>
+<td>具体光效</td>
+<td>"日冕物质抛射成金色丝状光流"</td>
+</tr>
+<tr>
+<td>"抽象概念词"</td>
+<td>具体视觉符号</td>
+<td>禁止："神圣感" → 允许："不可战胜的压迫感"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>原则</strong>：每当你写"XX风格"、"XX感"、"XX效果"时，立刻停下来——这意味着你还在用抽象词汇描述，AI无法理解。</p>
+<hr />
+<h2 id="prompt质量分级表-路径c-5">Prompt质量分级表（路径C）</h2>
+<table>
+<thead>
+<tr>
+<th>等级</th>
+<th>特征</th>
+<th>示例</th>
+<th>评级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>❌ <strong>禁用</strong></td>
+<td>颜色泛泛、色调模糊</td>
+<td>"浅蓝与银白配色"</td>
+<td>不合格</td>
+</tr>
+<tr>
+<td>✅ <strong>最低</strong></td>
+<td>有具体颜色名</td>
+<td>"深靛蓝+紫罗兰+月白"</td>
+<td>勉强可用</td>
+</tr>
+<tr>
+<td>✅✅ <strong>优秀</strong></td>
+<td>有色相+明度+材质描述</td>
+<td>"铂金色水银液态金属边框"</td>
+<td>合格</td>
+</tr>
+<tr>
+<td>✅✅✅ <strong>顶级</strong></td>
+<td>有物理现象+光学效果</td>
+<td>"干涉衍射、七彩折射、宝珠光晕涟漪扩散"</td>
+<td>完美</td>
+</tr>
+</tbody>
+</table>
+<p><strong>路径C的Prompt至少要达到「优秀」级别，否则效果必然平庸。</strong></p>
+<hr />
+<h2 id="7个必须维度-路径c-每少一个效果打折扣-6">7个必须维度（路径C - 每少一个效果打折扣）</h2>
+<p>生成Prompt时必须覆盖以下7个维度，缺任何一个都是不完整的Prompt：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>维度</th>
+<th>检查问题</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>颜色</strong></td>
+<td>有没有精确到色相？（不是"蓝色"而是"深靛蓝"）</td>
+<td>"深靛蓝、铂金色、珍珠白"</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>主体</strong></td>
+<td>有没有具体物件+状态？（不是"莲花"而是"未开的莲花蓓蕾"）</td>
+<td>"墨蓝湖水下沉睡的莲花蓓蕾"</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>光效</strong></td>
+<td>有没有光学现象？（折射/衍射/散射/干涉/丁达尔）</td>
+<td>"露珠表面折射出七彩微光"</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>质感</strong></td>
+<td>有没有材质对比？（液态vs凝固、透明vs固态）</td>
+<td>"水银液态金属 vs 凝固岩浆"</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>背景</strong></td>
+<td>背景是否明确？（不是"深色背景"而是具体环境）</td>
+<td>"深海海底光学效果"、"绝对零度蓝黑虚空"</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>尺度感</strong></td>
+<td>有没有微观/宏观的尺度描述？</td>
+<td>"像显微镜下的金属晶体结构"</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>氛围</strong></td>
+<td>有没有通过现象传达情感？（不是"神圣感"而是"静谧与压迫感下的绝对平和"）</td>
+<td>"完全的静谧与压迫感下的绝对平和"</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="顶级正面案例-路径c-必须参考-7">顶级正面案例（路径C - 必须参考）</h2>
+<h3>勋章案例：元母意程冥想勋章</h3>
+<p><strong>Prompt（可直接复制为标准答案）：</strong></p>
+<pre><code>一枚至纯的圆形水月勋章，轮廓如同凝视水面时看到的月光倒影。中央是一汪静谧的墨蓝湖水，湖面下沉睡着一朵未开的莲花蓓蕾，涟漪从花蕾向外扩散，每一圈都是银色的年轮。湖面倒映着漫天星辰，但星星不是点状的，而是拖着长尾流过天际的流星群。外圈是一圈流动的水银液态金属，表面有微型山脊状波纹，像显微镜下的金属晶体结构。整个勋章悬浮在一滴巨大露珠之中，露珠表面折射出七彩微光。深靛蓝、铂金色、珍珠白三色配色。背景是深海海底的光学效果——完全的静谧与压迫感下的绝对平和。高清 8K 电影级静帧 神圣感 冥想美学巅峰
+</code></pre>
+<p><strong>覆盖维度</strong>：颜色✅ 主体✅ 光效✅ 质感✅ 背景✅ 尺度感✅ 氛围✅</p>
+<hr />
+<h3>证书案例：元母意程修行证书</h3>
+<p><strong>Prompt（可直接复制为标准答案）：</strong></p>
+<pre><code>一幅古老的神秘书卷，并非卷起而是完全展开悬浮于虚空。纸面是极深沉的乌金纸，带着细腻的金粉星辰撒点，每个金点都在微微明灭如同呼吸。书卷边缘有燃烧过的焦痕，但火焰被凝固在最美的那一刻——火舌化作金色凤凰尾羽的轮廓，羽枝纤细如发，根根清晰。书卷中央是一面墨池，池中是液态的月光，水面以下沉淀着七层色彩：赤、橙、黄、绿、青、蓝、紫，每层都是不同矿物质的折射。池中插着一支纯白羽毛笔，笔尖悬停在纸面上方一厘米处，笔尖有一滴正在坠落的墨滴，这一刻被无限延长——墨滴内部封印着一座微型宇宙正在诞生。古铜、玄黑、月光金三色配色。东方玄学器物美学巅峰。
+</code></pre>
+<p><strong>覆盖维度</strong>：颜色✅ 主体✅ 光效✅ 质感✅ 背景✅ 尺度感✅ 氛围✅</p>
+<hr />
+<h3>奖杯案例：元母意程修行奖杯</h3>
+<p><strong>Prompt（可直接复制为标准答案）：</strong></p>
+<pre><code>一座从天外坠落的圣杯，不是人类铸造而是星球碰撞时产生的天然矿晶雕塑。杯身是一整块透明菱镁水晶，体内困着一颗1:1比例缩小的恒星——不是画上去的光点，而是真正沸腾的等离子体金球，日冕物质从边缘抛射出去变成金色的丝状光流，光流撞击水晶内壁后没有消失而是沿着杯壁螺旋上升，从杯口溢出后化作燃烧的莲花花瓣向外绽放。杯座是凝固的岩浆——深红的玄武岩表面还保留着流动的皱褶，但岩浆已被瞬间冻结定格。整座奖杯浸泡在绝对零度的蓝黑色虚空背景中，背景里有数十个模糊的遥远星系作为光污染源。杯身水晶在多个光源下产生干涉衍射——从正面看是冷蓝，从侧面看是粉紫，从上方俯视是金橙。深紫、恒星金、冰蓝三色配色。宇宙级视觉奇观 不可战胜的神圣感。
+</code></pre>
+<p><strong>覆盖维度</strong>：颜色✅ 主体✅ 光效✅ 质感✅ 背景✅ 尺度感✅ 氛围✅</p>
+<hr />
+<h2 id="生成前自检流程-必须通过才能生成-8">生成前自检流程（必须通过才能生成）</h2>
+<h3>路径C Prompt自检清单</h3>
+<p>生成图片前，逐项检查，每项都必须合格：</p>
+<pre><code>❏ 我写的prompt里有没有❌禁用词汇？（有→替换）
+❏ 颜色有没有精确到色相？（没有→补全）
+❏ 有没有具体物件+状态描述？（模糊→具体化）
+❏ 有没有光学现象？（没有→加入折射/衍射/干涉等）
+❏ 有没有材质对比？（没有→加入液态/凝固/透明等对比）
+❏ 背景有没有明确？（泛泛→具体环境）
+❏ 有没有尺度感？（没有→加入微观/宏观描述）
+❏ 有没有通过现象传达氛围？（抽象词→视觉现象）
+❏ 7个维度是否全部覆盖？（缺→补全）
+</code></pre>
+<p><strong>只有全部通过，才能调用image_generate。</strong></p>
+<hr />
+<h2 id="输出-验收标准-9">输出=验收标准</h2>
+<p>生成的图片如果"不够好"，问题不在AI的审美，而在<strong>Prompt本身就违反了规范</strong>。</p>
+<p><strong>正确的做法是回溯Prompt检查哪个维度缺失，而不是让AI去"提高审美"。</strong></p>
+<table>
+<thead>
+<tr>
+<th>症状</th>
+<th>原因</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>图片平庸没特色</td>
+<td>缺少光学现象+尺度感</td>
+<td>加入干涉衍射+微观描述</td>
+</tr>
+<tr>
+<td>颜色模糊像模板</td>
+<td>颜色没精确到色相</td>
+<td>替换为具体色相词</td>
+</tr>
+<tr>
+<td>没有神圣感</td>
+<td>用抽象词而非视觉现象</td>
+<td>改为具体光学现象描述</td>
+</tr>
+<tr>
+<td>像普通插画</td>
+<td>缺少身份标识或材质对比</td>
+<td>加入边框/丝带/底座+质感对比</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="环境变量-必填-10">环境变量（必填）</h2>
+<p><strong>必须配置以下两个环境变量</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SKILLS_DB_PATH</code></td>
+<td>勋章数据库存放目录</td>
+</tr>
+<tr>
+<td><code>MEDAL_RESOURCE_PATH</code></td>
+<td>勋章GIF资源存储目录</td>
+</tr>
+</tbody>
+</table>
+<p><strong>配置方式</strong>：通过交互引导用户提供路径，或由用户自行配置。</p>
+<p><strong>注意</strong>：AI执行任何操作前必须检查环境变量是否已设置，缺失则报错并提示用户配置。</p>
+<hr />
+<h2 id="核心原则-必须遵守-11">核心原则（必须遵守）</h2>
+<ol>
+<li><strong>每次必须全新设计</strong>：不允许复用任何之前的HTML、动画、元素，100件事100种设计</li>
+<li><strong>勋章/奖杯/证书各有灵魂</strong>：勋章如独特印章让人眼前一亮；奖杯光芒四射有胜利重量感；证书优雅庄重值得珍藏</li>
+</ol>
+<h2 id="视觉设计体系-12">视觉设计体系</h2>
+<blockquote>
+<p>设计分两层：<strong>质量层</strong>保证不丑，<strong>创意层</strong>保证不重复。
+质量层是铁律不可妥协；创意层因事件而异，自由发挥。</p>
+</blockquote>
+<h3>第一层：创意从事件中来</h3>
+<p>设计前必须经过三个阶段：<strong>类型判断 → 事件解构 → 设计概念</strong>。跳过任何一步都会导致设计缺乏灵魂。</p>
+<h4>阶段一：类型判断</h4>
+<p>根据事件的性质，先确定颁发的是勋章、证书还是奖杯。这决定了设计的<strong>气质和分量</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>事件性质</th>
+<th>颁发类型</th>
+<th>设计气质</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>完成了某件事</td>
+<td>勋章</td>
+<td>轻巧、独特、像一枚值得收藏的印章</td>
+</tr>
+<tr>
+<td>达到了某个里程碑</td>
+<td>证书</td>
+<td>庄重、优雅、像一份值得珍藏的文书</td>
+</tr>
+<tr>
+<td>赢得了某种竞争</td>
+<td>奖杯</td>
+<td>辉煌、厚重、像一座值得展示的雕塑</td>
+</tr>
+</tbody>
+</table>
+<h4>阶段二：事件解构</h4>
+<p>每个勋章的灵魂来自用户<strong>具体做了什么</strong>。<strong>不要从配色表里挑颜色，从事件本身提取颜色。</strong></p>
+<h4>示例（不是模板，是思路）</h4>
+<table>
+<thead>
+<tr>
+<th>用户做了什么</th>
+<th>核心情感</th>
+<th>视觉符号</th>
+<th>自然配色</th>
+<th>动效气质</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>劳动/打扫</td>
+<td>辛苦后的满足</td>
+<td>汗珠→光芒</td>
+<td>暖黄+泥土棕</td>
+<td>从暗到亮的揭示</td>
+</tr>
+<tr>
+<td>散步/跑步</td>
+<td>自由/呼吸</td>
+<td>延伸的道路</td>
+<td>天蓝+草绿</td>
+<td>流动、呼吸感</td>
+</tr>
+<tr>
+<td>健身成果</td>
+<td>力量/突破</td>
+<td>岩石裂开</td>
+<td>深灰+火焰橙</td>
+<td>冲击、爆发</td>
+</tr>
+<tr>
+<td>认真工作</td>
+<td>专注/成就</td>
+<td>齿轮咬合</td>
+<td>深蓝+银白</td>
+<td>精密、节奏感</td>
+</tr>
+<tr>
+<td>学了新知识</td>
+<td>豁然开朗</td>
+<td>灯泡/光束</td>
+<td>深紫+亮金</td>
+<td>从暗到明的绽放</td>
+</tr>
+<tr>
+<td>读完一本书</td>
+<td>旅程结束</td>
+<td>合上的书</td>
+<td>纸白+墨棕</td>
+<td>缓缓闭合</td>
+</tr>
+<tr>
+<td>跑步PB</td>
+<td>超越自我</td>
+<td>冲线瞬间</td>
+<td>赛道红+金色</td>
+<td>冲刺加速</td>
+</tr>
+<tr>
+<td>做了一顿饭</td>
+<td>温暖/创造</td>
+<td>蒸汽升腾</td>
+<td>暖橙+米白</td>
+<td>轻柔飘动</td>
+</tr>
+<tr>
+<td>早起打卡</td>
+<td>自律/清新</td>
+<td>日出地平线</td>
+<td>晨曦粉+金</td>
+<td>缓慢升起</td>
+</tr>
+<tr>
+<td>熬夜完成</td>
+<td>坚持/疲惫</td>
+<td>星空下的笔</td>
+<td>深蓝+银星</td>
+<td>闪烁微光</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键原则</strong>：100件事应该有100种设计，而不是100个不同颜色的同一个模板。</p>
+<h4>事件解构四步法（适用于任何事件）</h4>
+<p>遇到任何事件，按以下步骤提取视觉元素：</p>
+<p><strong>第一步：提取核心符号</strong>
+- 这件事的<strong>标志性物件</strong>是什么？（书、锤子、跑道、锅铲、键盘、画笔……）
+- 这件事的<strong>标志性动作</strong>是什么？（翻开、敲击、奔跑、搅拌、点亮……）
+- 选一个最能代表这件事的，作为视觉焦点</p>
+<p><strong>第二步：感受情感色调</strong>
+- 做完这件事的感受：<strong>温暖</strong>？<strong>力量</strong>？<strong>平静</strong>？<strong>兴奋</strong>？<strong>满足</strong>？
+- 情感决定画面的冷暖和明暗：
+  - 温暖/满足 → 暖色调（黄、橙、棕）
+  - 力量/突破 → 高对比（深底+亮色冲击）
+  - 平静/自由 → 冷色调（蓝、绿、白）
+  - 兴奋/胜利 → 鲜艳+光效（金、红、粒子）</p>
+<p><strong>第三步：想象发生场景</strong>
+- 这件事发生在<strong>哪里</strong>？（书房、健身房、厨房、田野、深夜书桌……）
+- 场景决定<strong>背景质感和光线</strong>：
+  - 室内暖光 → 柔和的暖色渐变背景
+  - 户外阳光 → 明亮的自然色调+光斑
+  - 深夜 → 深邃背景+星光/灯光点缀
+  - 赛场 → 高饱和+动态模糊</p>
+<p><strong>第四步：确定动效语言</strong>
+- 这件事的<strong>节奏</strong>是什么？（缓慢而坚定？瞬间爆发？轻柔流动？精密运转？）
+- 动效应匹配事件本身的节奏：
+  - 阅读/冥想 → 缓慢渐显、柔和呼吸
+  - 冲刺/举重 → 爆发入场、冲击感
+  - 创作/烹饪 → 流动感、有机曲线
+  - 编程/工程 → 精确节奏、几何运动</p>
+<p><strong>示例：用户说"我刚跑完5公里"</strong>
+1. 核心符号：跑鞋、终点线、跑道弧线 → 选"跑鞋踏过终点线"作焦点
+2. 情感色调：成就感+畅快 → 暖色高对比，金色光效
+3. 发生场景：户外跑道 → 天空蓝渐变背景+阳光光斑
+4. 动效语言：奔跑的动感 → 从左到右的速度线+冲线瞬间的爆发光效</p>
+<p><strong>示例：用户说"我读完了《百年孤独》"</strong>
+1. 核心符号：书页、文字、马孔多 → 选"缓缓合上的书"作焦点
+2. 情感色调：旅程结束的怅然+满足 → 暖棕+纸白色调
+3. 发生场景：安静的阅读角 → 柔和暖光背景
+4. 动效语言：文学的优雅 → 书页缓缓闭合、文字渐隐如墨迹消散</p>
+<h4>阶段三：设计概念（最关键，最容易跳过）</h4>
+<p>事件解构产出的是<strong>视觉素材</strong>（符号、配色、动效），但素材本身不是设计。在画HTML之前，必须先想清楚：<strong>这些素材怎么组织成一个勋章/证书/奖杯？</strong></p>
+<p>这一步决定设计的成败。常见方向：</p>
+<p><strong>经典形态</strong>——传统的边框+中心图案。边框定义"这是勋章"，中心图案承载事件内容。适合需要明确仪式感的场景。</p>
+<blockquote>
+<p>例：圆形金属边框 + 中间浮雕着合上的书 → 一看就知道是读书勋章</p>
+</blockquote>
+<p><strong>形态融合</strong>——边框本身来自事件。边框不是通用的圆形，而是事件中的某个元素变成了框。</p>
+<blockquote>
+<p>例：炸篮网格纹组成圆形边框 + 中间是炸鸡 → 勋章形态和事件融为一体</p>
+</blockquote>
+<p><strong>突破形态</strong>——没有传统边框，但通过材质和构图传达"这是勋章"。完全用事件的视觉语言表达奖励感。</p>
+<blockquote>
+<p>例：一块金属质感的炸鸡浮雕，底部有绶带，背后有光晕 → 虽然没有圆框，但材质+绶带+光晕=勋章</p>
+</blockquote>
+<p><strong>微缩场景</strong>——整个勋章是一个小世界。事件的场景被微缩进一个奖章里。</p>
+<blockquote>
+<p>例：俯视视角的一盘炸鸡，但全部用金属浮雕质感呈现，周围环绕橄榄枝 → 场景即勋章</p>
+</blockquote>
+<p><strong>选择方向时问自己</strong>：
+- 这个事件是偏<strong>仪式感</strong>的还是偏<strong>生活感</strong>的？仪式感用经典形态，生活感可以突破形态
+- 事件有没有天然的"框"可以利用？有就用形态融合
+- 事件的核心物件有没有足够的视觉冲击力？有就可以尝试突破形态</p>
+<p><strong>最重要的原则</strong>：先想形态，再填内容。形态和内容是两层，分别设计再组合。不要直接把内容当成形态。</p>
+<p><strong>渲染路径选择</strong>：设计概念确定后，AI 自主选择最佳渲染路径：</p>
+<table>
+<thead>
+<tr>
+<th>判断因素</th>
+<th>倾向路径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>事件偏几何/机械/科技/像素/扁平</td>
+<td>A（SVG路径）</td>
+</tr>
+<tr>
+<td>事件有复杂有机质感（食物、自然、人物、动物）</td>
+<td>B（混合路径）</td>
+</tr>
+<tr>
+<td>事件偏写实/摄影风格/需要高度细节</td>
+<td>B 或 C</td>
+</tr>
+<tr>
+<td>用户要快速出图、不需要动画</td>
+<td>C（纯生图路径）</td>
+</tr>
+<tr>
+<td>用户明确要GIF/动画</td>
+<td>A 或 B</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>路径A（SVG路径）</strong>：AI 手写 HTML+SVG → 截图审查 → GIF。适合几何感强、精密机械、扁平插画风格</li>
+<li><strong>路径B（混合路径）</strong>：MiniMax 生成主体图 + SVG 边框/动效 → 包装 HTML → 截图审查 → GIF。适合有机质感、写实材质、复杂场景</li>
+<li><strong>路径C（纯生图路径）</strong>：MiniMax 直接生成完整勋章图 → 视觉审查 → 保存 PNG。适合不需要动效、快速颁发</li>
+</ul>
+<p>路径A后续见"GIF生成规范"；路径B/C后续见"生图路径规范"。</p>
+<p><strong>材质和背景从事件的世界观中提取，禁止使用默认值</strong>：</p>
+<p>设计时最容易犯的错误是：金属框 + 黑色背景 + 发光主体。这是"通用勋章模板"，不是设计。</p>
+<ul>
+<li>如果事件来自<strong>某个游戏</strong> → 用那个游戏的视觉语言（配色、材质、UI风格）</li>
+<li>如果事件来自<strong>某个App</strong> → 用那个App的设计语言</li>
+<li>如果事件来自<strong>真实生活</strong> → 用那个场景的自然环境色和材质</li>
+<li>只有当事件没有明确归属时 → 才用通用的勋章视觉语言</li>
+</ul>
+<p>示例：
+- 炉石传说排位 → 酒馆木纹+羊皮纸+暖金色，不是金属+黑背景
+- 原神探索提瓦特 → 游戏内的元素色调+璃月/蒙德风格
+- 跑完5公里 → 跑道塑胶色+天空蓝+自然光
+- 做了一顿饭 → 厨房暖光+木桌面+陶瓷质感</p>
+<h3>第二层：质量铁律（不可妥协）</h3>
+<p>无论创意如何发挥，以下规则必须遵守：</p>
+<h4>SVG绘制</h4>
+<ul>
+<li><strong>勋章主体必须用SVG</strong>：勋章的边框、主体图案、挂环、绶带必须用 <code>&lt;svg&gt;</code> 绘制。CSS 只负责页面布局和背景，不要用 CSS 画勋章元素（CSS 圆角矩形、CSS 三角形 hack、CSS conic-gradient 旋转等都不行——质感差、动效受限、渲染不一致）</li>
+<li><strong>渐变创造质感</strong>：每个主要形状都用 <code>&lt;linearGradient&gt;</code> 或 <code>&lt;radialGradient&gt;</code>，禁止纯色 <code>fill</code></li>
+<li><strong>背景是环境，不是纯色</strong>：背景本身需要材质。木纹桌面用 <code>feTurbulence</code>，纸张用纤维纹理，石板用噪点，夜空用星点。一个纯色渐变做背景 = 偷懒</li>
+<li><strong>复杂物体用多面叠加</strong>：宝石、水晶、金属雕件不是单个形状+单个渐变。用多个形状叠加，每个面用不同渐变模拟不同角度受光。一个六边形+一个紫色渐变 ≠ 宝石</li>
+<li><strong>三层结构</strong>：阴影层（深色偏移）→ 主体层 → 高光层（亮色叠加）</li>
+<li><strong>柔和阴影</strong>：用 <code>&lt;filter&gt;</code> 的 <code>feGaussianBlur</code> + <code>feOffset</code> 做投影，不要硬边</li>
+<li><strong>滤镜泄漏警告</strong>：<code>feTurbulence</code>（噪点纹理）会在整个滤镜区域（矩形）内生成噪点，不仅限于应用它的形状。圆形+feTurbulence = 圆外出现灰色矩形纹理。解决方案：要么把滤镜包在 <code>&lt;clipPath&gt;</code> 内，要么对非矩形形状（圆形、不规则轮廓）避免使用 feTurbulence，改用 <code>feImage</code> 或直接用渐变模拟纹理</li>
+<li><strong>圆角与曲线</strong>：用 <code>rx</code>/<code>ry</code> 和贝塞尔曲线，避免尖锐直角</li>
+<li><strong>最多3个核心元素</strong>：一个焦点 + 一到两个辅助，不要堆砌</li>
+<li><strong>配色必须来自事件</strong>：所有颜色（包括背景色、装饰色、绶带色）必须从事件的世界观中提取，禁止使用默认配色。冥想→深蓝/靛青/月白（宁静），不是红+蓝的随意搭配。运动→活力色系，读书→暖纸色系。如果发现自己在用"通用的勋章配色"，停下来重新从事件提取</li>
+<li><strong>身份标识不可省略</strong>：每个设计必须一眼看出是"勋章/证书/奖杯"，而不是一张插画。最低要求：</li>
+<li>勋章：必须包含<strong>边框</strong>（圆形/盾形/六角形等）+ <strong>挂环或绶带</strong>。挂环和绶带是两种不同的连接方式，选一种即可。没有边框也没有连接件的设计看起来像插画或图标，不是勋章</li>
+<li>证书：必须有文书边框（矩形装饰框）</li>
+<li>奖杯：必须有底座或台面</li>
+<li>没有身份标识的设计 = 失败，无论画面多好看</li>
+</ul>
+<h4>动效节奏</h4>
+<ul>
+<li><strong>入场必须有层次</strong>：背景先动 → 主体入场 → 细节点缀，有先后</li>
+<li><strong>缓动函数</strong>：入场用 <code>cubic-bezier(0.34, 1.56, 0.64, 1)</code>，循环用 <code>ease-in-out</code>，禁止 <code>linear</code></li>
+<li><strong>循环要微妙</strong>：呼吸（±10%亮度）、微移（±3px）、高光漂移——不要旋转/弹跳/同步运动</li>
+</ul>
+<h4>文字</h4>
+<p><strong>文字不是必选项</strong>。勋章可以完全没有文字——如果视觉本身已经传达了事件含义，文字就是多余的。只在以下情况加文字：
+- 视觉符号本身不够明确（如抽象图案需要点明主题）
+- 事件有标志性数字值得铭刻（如"4000""5km"）
+- 文字本身作为装饰元素融入构图</p>
+<p><strong>字数限制</strong>：勋章最多 4 个字；证书可以更长，但文字是装饰的一部分，不是信息载体。</p>
+<p><strong>对比度铁律</strong>（防止看不清）：
+- 文字颜色必须与背景有足够对比度。深底用浅字，浅底用深字
+- 禁止用低 opacity 让文字"融入背景"作为设计手法——这会导致不可读。如果希望文字低调，用更小的字号或更细的字重，而不是降低 opacity
+- SVG <code>&lt;text&gt;</code> 的 fill 不低于 <code>rgba(x,x,x,0.7)</code>；CSS 的 color 不低于 <code>opacity: 0.65</code>
+- 文字下方如有复杂图案，必须加半透明底色块或文字阴影确保可读性
+- <strong>浅色背景特别注意</strong>：春日、纸张、晨曦等浅色调勋章，文字容易被"柔和化"导致不可读。浅底上的文字颜色至少 rgba(100,70,50,0.75)，不要用"淡雅"作为牺牲对比度的理由</p>
+<p><strong>字体粗细</strong>：
+- <code>font-weight: bold</code>（700）— 主标题、数字，强调存在感
+- <code>font-weight: 600</code> — 副标题，稍弱但仍清晰
+- <code>font-weight: normal</code>（400）— 注释性文字、英文副标
+- 禁止用 <code>lighter</code> 或 <code>100-300</code>，在小字号下几乎不可见</p>
+<p><strong>字号参考</strong>：
+- 勋章主文字：12-16px（CSS）或 14-20px（SVG）
+- 勋章副文字/英文：8-10px
+- 数字铭刻（如分数、里程）：28-40px，是视觉焦点的一部分
+- 证书文字：按层级递减</p>
+<p><strong>字体选择</strong>（必须与事件关联，禁止无脑用 Georgia）：</p>
+<table>
+<thead>
+<tr>
+<th>事件气质</th>
+<th>推荐字体</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>古典/仪式感/传统</td>
+<td>Georgia, Palatino, "Times New Roman"</td>
+<td>衬线体，庄重典雅</td>
+</tr>
+<tr>
+<td>现代/科技/游戏</td>
+<td>"Segoe UI", Helvetica, Arial</td>
+<td>无衬线，干净利落</td>
+</tr>
+<tr>
+<td>东方/水墨/书法</td>
+<td>"STKaiti", "KaiTi", "SimSun", serif</td>
+<td>楷体/宋体，东方韵味</td>
+</tr>
+<tr>
+<td>手工/温暖/生活</td>
+<td>"Comic Sans MS"（慎用）, cursive</td>
+<td>手写感，亲切</td>
+</tr>
+<tr>
+<td>运动/力量/竞技</td>
+<td>"Impact", "Arial Black", sans-serif</td>
+<td>粗壮有力，冲击感</td>
+</tr>
+<tr>
+<td>童趣/活泼/游戏</td>
+<td>"Trebuchet MS", "Verdana", sans-serif</td>
+<td>圆润友好</td>
+</tr>
+<tr>
+<td>炉石/魔兽/奇幻</td>
+<td>"Palatino Linotype", Palatino, serif</td>
+<td>古典衬线带奇幻感</td>
+</tr>
+<tr>
+<td>日式/樱花/和风</td>
+<td>"MS Mincho", "Hiragino Mincho ProN"</td>
+<td>明朝体，日式典雅</td>
+</tr>
+</tbody>
+</table>
+<p><strong>核心原则</strong>：字体是设计的一部分，不是默认参数。选字体前问自己——"如果这个勋章是一件实物，上面的字会是什么风格？" 酒馆木牌用古典衬线，跑道号码牌用粗体无衬线，樱花和风用明朝体。</p>
+<h3>SVG材质技法库</h3>
+<p>见同目录下 <code>materials.md</code>。包含23种可直接使用的SVG材质代码模式，涵盖金属、宝石、纹理、光效、自然五大类。</p>
+<p>这些材质是<strong>积木块</strong>，不是模板。同一种材质换色相、换角度、换透明度就能变成完全不同的效果。设计时自由选择、组合、修改——不要固定搭配。</p>
+<h3>设计前概念自检（生成HTML前必须确认）</h3>
+<ul>
+<li>[ ] <strong>事件解构完成</strong>：核心符号、情感色调、发生场景、动效语言四项都明确了吗？</li>
+<li>[ ] <strong>唯一性检验</strong>：这个设计换一件事还能用吗？如果能，说明不够具体，重新解构</li>
+<li>[ ] <strong>焦点清晰</strong>：整个设计只有<strong>一个</strong>视觉焦点吗？如果脑中有两个以上的元素在竞争注意力，砍掉多余的</li>
+<li>[ ] <strong>减法检验</strong>：列出所有要放的元素，逐个问"去掉它画面是否更好"，直到不能再删</li>
+<li>[ ] <strong>文字可读性</strong>：如果有文字——对比度够吗？字号够大吗？字体和事件气质匹配吗？去掉文字画面是否更好？</li>
+</ul>
+<p>材质质感、光影深度、动效节奏的验证交给后面的<strong>视觉审查</strong>步骤——设计前管概念，渲染后管执行。</p>
+<h3>反面案例</h3>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>为什么丑</th>
+<th>正确做法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>纯色渐变做背景</td>
+<td>没有环境感，像色卡</td>
+<td>用feTurbulence做材质纹理（木纹、石板、纸张）</td>
+</tr>
+<tr>
+<td>单个形状+单个渐变当宝石/水晶</td>
+<td>像塑料色块，不像宝石</td>
+<td>多面叠加，每面不同渐变模拟受光</td>
+</tr>
+<tr>
+<td>每次都是齿轮+麦穗+星星</td>
+<td>元素不来自事件，千篇一律</td>
+<td>从事件中提取符号</td>
+</tr>
+<tr>
+<td>所有元素同时 rotate</td>
+<td>眩晕，没有节奏</td>
+<td>分层入场，循环用微动效</td>
+</tr>
+<tr>
+<td>大段文字说明</td>
+<td>勋章不是文档</td>
+<td>最多4个字，或不放文字</td>
+</tr>
+<tr>
+<td>金属框+黑背景当默认勋章</td>
+<td>像通用模板，没有个性</td>
+<td>从事件世界观提取材质和背景</td>
+</tr>
+<tr>
+<td>emoji 当图标用</td>
+<td>缩放模糊，风格不统一</td>
+<td>必须用SVG矢量绘制</td>
+</tr>
+<tr>
+<td>10次设计用同一套配色</td>
+<td>没有灵魂，像批量生产</td>
+<td>每次从事件提取色彩</td>
+</tr>
+<tr>
+<td>低opacity文字"融入背景"</td>
+<td>看不清，不可读</td>
+<td>用字号/字重控制低调感，不用opacity</td>
+</tr>
+<tr>
+<td>所有勋章都用Georgia</td>
+<td>字体和事件无关，千篇一律</td>
+<td>根据事件气质选字体（衬线/无衬线/明朝体等）</td>
+</tr>
+<tr>
+<td>文字无阴影无底色块</td>
+<td>叠在复杂图案上不可读</td>
+<td>加半透明底色块或text-shadow</td>
+</tr>
+<tr>
+<td>圆形/不规则形状用feTurbulence</td>
+<td>噪点泄漏到形状外，出现灰色矩形</td>
+<td>用clipPath包住滤镜，或改用渐变模拟纹理</td>
+</tr>
+<tr>
+<td>CSS画勋章元素（圆角矩形、三角形hack、conic-gradient）</td>
+<td>质感差、动效受限、渲染不一致</td>
+<td>勋章主体必须用SVG绘制</td>
+</tr>
+<tr>
+<td>没有挂环也没有绶带的勋章</td>
+<td>看起来像插画或APP图标，不像勋章</td>
+<td>必须有边框+挂环或绶带（二选一）</td>
+</tr>
+<tr>
+<td>绶带颜色与事件情感冲突</td>
+<td>红色绶带配冥想勋章=违和</td>
+<td>绶带颜色必须从事件情感中提取</td>
+</tr>
+<tr>
+<td>默认蓝/黑配色用在所有勋章</td>
+<td>像批量生产的模板</td>
+<td>每次从事件世界观提取配色</td>
+</tr>
+<tr>
+<td>prompt里写"刻着XX字""标题XX"</td>
+<td>AI生图的文字必然模糊变形，丑到无法使用</td>
+<td>路径C禁止在图中生成文字，用纯图案表达含义</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="生图prompt构建指南-13">生图Prompt构建指南</h2>
+<blockquote>
+<p>适用于路径B和路径C。Prompt用中文写。</p>
+</blockquote>
+<h3>核心思路</h3>
+<p>Prompt不是填表，是<strong>描述你脑海中看到的那幅画</strong>。</p>
+<p>事件解构已经给了你素材（符号、色彩、场景、节奏），现在要做的是把这些素材"画"出来——用文字描述给AI听。问自己：<strong>如果这个勋章/奖杯是一件实物，它长什么样？摸起来什么质感？放在什么光线下？</strong></p>
+<h3>写Prompt的思路</h3>
+<ol>
+<li><strong>先想清楚主体是什么</strong>：不是抽象概念，是具体的物件。"读书"的主体不是"知识"，是"一本合上的书"</li>
+<li><strong>再想它长什么样</strong>：什么材质？金属的、纸的、木头的？表面有雕刻还是光滑的？反光还是哑光？</li>
+<li><strong>然后想它在什么环境里</strong>：深色背景？暖光？自然光？星空下？</li>
+<li><strong>最后想整体气质</strong>：是庄严的、温暖的、有力量感的、还是轻盈的？</li>
+</ol>
+<p><strong>铁律：Prompt中禁止出现任何文字内容。</strong> 不要写"刻着XX"、"标题XX"、"写着XX"、"铭文XX"。AI生图模型的文字渲染能力极差，生成的文字必然模糊变形。勋章/证书的含义完全通过图案、材质、配色来传达。</p>
+<h3>路径B的额外要求</h3>
+<p>路径B的图要嵌入HTML，所以prompt里要加：
+- <strong>主体居中，周围留够空白</strong>（方便后续加边框）
+- <strong>背景干净</strong>（纯深色或透明，方便抠图或直接用）
+- 不要把画面撑太满，给SVG边框留空间</p>
+<h3>路径C的额外要求</h3>
+<p>路径C直接出最终图，所以prompt里要包含：
+- <strong>勋章形态</strong>：边框、挂环或绶带
+- <strong>身份感</strong>：一看就知道是勋章而不是插画
+- <strong>材质感</strong>：金属浮雕、丝带光泽、浮雕纹理</p>
+<p><strong>路径C绝对禁止在图片中生成文字</strong>（这是硬性约束，不可违反）：
+- Prompt中<strong>不得包含任何文字描述</strong>：不要写"刻着XX字"、"标题XX"、"写着XX"、"铭文XX"
+- <strong>不要依赖AI生图的文字能力</strong>：当前所有AI生图模型（包括mmx）的文字渲染质量极差，生成的文字必然模糊、变形、错乱
+- <strong>用纯视觉符号传达含义</strong>：勋章的含义完全通过图案、材质、配色来表达，不靠文字
+- 如果确实需要文字（如证书标题、数字铭刻），<strong>必须在生成图片后通过HTML/SVG叠加层添加</strong>——但这会让路径C变成路径B，所以除非必要，路径C应避免需要文字的场景
+- <strong>证书场景特别注意</strong>：证书容易让人想加标题，但路径C的证书只能用装饰性边框+浮雕图案表达"证书感"，不能依赖文字</p>
+<h3>怎么让prompt不简单</h3>
+<p>一个简单的prompt和一个好prompt的区别在于<strong>细节密度</strong>。简单prompt只说了"是什么"，好prompt还说了"怎么拍的、什么光、什么触感、什么氛围"。</p>
+<p>补充细节的方向：
+- <strong>光线</strong>：从哪个方向照过来？暖光还是冷光？有没有光斑、光晕、丁达尔效应？
+- <strong>材质触感</strong>：表面是光滑的还是粗糙的？有没有磨损、氧化、使用痕迹？
+- <strong>构图视角</strong>：俯视？平视？微距特写？广角？
+- <strong>色彩细节</strong>：不要只说"金色"，是哑光古金、亮面玫瑰金、还是暗铜色？
+- <strong>环境氛围</strong>：有没有烟雾、尘埃、水汽、光粒子？</p>
+<h3>两个示例</h3>
+<p><strong>事件："读完了《百年孤独》"</strong></p>
+<p>事件解构：核心符号=合上的书，情感=旅程结束的满足+淡淡怅然，场景=安静阅读角，节奏=缓慢优雅</p>
+<p>→ 想象：一本深棕色皮面精装书静静合着，封面的烫金花纹已经有些磨损，书脊上有细密的裂纹。暖黄台灯光从左上方打下来，照出皮革的纹理和纸页边缘微微泛黄的色泽。旁边隐约能看到一枚铜制书签。整体有种"陪伴了很久"的温度感。</p>
+<p>路径B的prompt：</p>
+<pre><code>一本深棕色皮面精装书静静合着，封面有磨损的烫金巴洛克花纹，书脊有细密裂纹，书页边缘微微泛黄。暖黄台灯光从左上方45度角照射，皮革表面有细腻的高光反射，旁边放着一枚铜制书签。古典油画质感，暗调暖色，居中构图，纯黑色背景，周围留白充足
+</code></pre>
+<p>路径C的prompt：</p>
+<pre><code>一枚圆形青铜勋章，中央浮雕着一本合上的皮面精装书，封面有精致的巴洛克烫金花纹，书脊有岁月痕迹。边框是古铜色金属，环绕着细密的卷草纹，底部垂着深棕色丝带，顶部有挂环。整体呈暖棕古金色调，金属浮雕质感，表面有轻微氧化包浆，古典藏书票风格，高清细节
+</code></pre>
+<p><strong>事件："跑完5公里"</strong></p>
+<p>事件解构：核心符号=跑鞋冲过终点线，情感=畅快+成就感，场景=户外跑道，节奏=冲刺爆发</p>
+<p>→ 想象：一双白色跑鞋刚刚踏过红色塑胶跑道上的白色终点线，鞋底还沾着些许红色颗粒。傍晚的阳光从侧面打过来，在跑道上拉出长长的影子。背景是模糊的看台和天空，空气中有种"终于到了"的释放感。</p>
+<p>路径B的prompt：</p>
+<pre><code>一双白色跑鞋刚刚踏过红色塑胶跑道上的白色终点线，鞋底沾着红色橡胶颗粒。傍晚金色阳光从右侧低角度照射，跑道上拉出长长的影子，背景是模糊的看台和橙紫色天空。电影感运动摄影，动态模糊，高对比度，居中构图，纯黑色背景，周围留白充足
+</code></pre>
+<p>路径C的prompt：</p>
+<pre><code>一枚圆形运动勋章，中央浮雕着一双跑鞋冲过终点线的瞬间，红色跑道质感环绕边框，金色与深红色配色。底部有红金相间的丝带，顶部挂环。整体充满力量感，金属浮雕质感，表面有光泽反射，史诗感体育徽章风格，高清细节
+</code></pre>
+<hr />
+<h2 id="奖励分类-14">奖励分类</h2>
+<h3>颁发原则</h3>
+<p><strong>宁可多发，不可漏发</strong>。奖励的意义是鼓励，不是考核。只要用户做了一件值得肯定的事，就该有回应。</p>
+<p>判断标准：<strong>用户是否为此付出了努力或克服了阻力？</strong> 是→颁发。不需要"完美完成"才算，开始做了、坚持了、尝试了，都算。</p>
+<h3>勋章 (Badge)</h3>
+<p><strong>触发条件</strong>：做了任何值得肯定的事</p>
+<p>包括但不限于：
+- 完成任务、习惯打卡
+- <strong>开始做某件事</strong>（开始了就是胜利）
+- <strong>坚持了一段时间</strong>（哪怕只有10分钟）
+- <strong>尝试了新事物</strong>（第一次做饭、第一次跑步）
+- <strong>帮助了别人</strong>
+- <strong>学到了一点东西</strong>
+- <strong>克服了一点小阻力</strong>（不想做但还是做了）</p>
+<p><strong>气质</strong>：轻巧、高频、像朋友说"不错哦"</p>
+<p><strong>数据库记录</strong>：medal_type = "badge"</p>
+<hr />
+<h3>证书 (Certificate)</h3>
+<p><strong>触发条件</strong>：完成了有份量的事或达到了某个节点</p>
+<p>包括但不限于：
+- 完成课程、项目、一本书
+- 达成里程碑（连续打卡7天、跑了100公里）
+- 通过考试、提交了作品
+- <strong>完成了一件拖了很久的事</strong>
+- <strong>在某个领域有了明显进步</strong></p>
+<p><strong>气质</strong>：庄重、有仪式感、像一份正式认可</p>
+<p><strong>数据库记录</strong>：medal_type = "certificate"</p>
+<hr />
+<h3>奖杯 (Trophy)</h3>
+<p><strong>触发条件</strong>：赢了——不管是赢别人还是赢自己</p>
+<p>包括但不限于：
+- 比赛获胜、排名靠前
+- <strong>打破了个人记录</strong>（PB、最快、最多）
+- <strong>完成了一个挑战</strong>（30天挑战、马拉松）
+- <strong>克服了一个重大困难</strong>
+- <strong>在某件事上做到了自己没想过能做到的程度</strong></p>
+<p><strong>气质</strong>：辉煌、有重量感、像一座值得展示的雕塑</p>
+<p><strong>数据库记录</strong>：medal_type = "trophy"</p>
+<hr />
+<h2 id="渲染路径规范-15">渲染路径规范</h2>
+<blockquote>
+<p>三条路径共享前三步（类型判断 → 事件解构 → 设计概念），从第四步开始分流。</p>
+</blockquote>
+<h3>路径A：SVG路径（产出GIF）</h3>
+<p><strong>技术栈</strong>：Playwright + ffmpeg + MiniMax视觉审查</p>
+<p><strong>流程</strong>：</p>
+<pre><code>第四步：设计HTML
+    AI生成全新HTML（含CSS动画+SVG图形）
+    body尺寸根据类型决定（脚本会自动读取body尺寸并按输出分辨率等比缩放）：
+    - 勋章：400x450（接近正方形，适合圆形/方形徽章）
+    - 证书：600x400（横向，适合文书/卷轴）
+    - 奖杯：350x500（竖长，适合奖杯轮廓）
+    ↓
+第五步：保存中间文件
+    保存HTML到 MEDAL_RESOURCE_PATH/&lt;名称&gt;.html
+    ↓
+第六步：视觉审查（核心迭代步骤）
+    使用 Playwright 渲染HTML并截图单帧（非GIF）
+    注意：截图等待时间必须覆盖所有动画延迟。如果入场动画延迟2秒+持续1秒，截图至少等3.5秒，否则会漏掉晚入场的元素
+    ↓
+    通过 subagent 调 mmx vision describe（ui-review 模式）分析截图
+    ↓
+    AI根据审查结果修改HTML → 重新渲染截图 → 再次审查
+    ↓
+    迭代直到审查通过（最多3轮）
+    ↓
+第七步：生成最终GIF
+    python3 scripts/generate_medal_gif.py --html-file &lt;HTML文件路径&gt; --output &lt;文件名&gt;
+    ↓
+    ffmpeg合成GIF → 保存到 MEDAL_RESOURCE_PATH/&lt;名称&gt;.gif
+</code></pre>
+<p><strong>中间文件要求</strong>：HTML源文件必须与GIF保存在同一目录（MEDAL_RESOURCE_PATH），文件名一致仅后缀不同，便于回溯和调试。</p>
+<hr />
+<h3>路径B：混合路径（产出GIF）</h3>
+<p><strong>技术栈</strong>：mmx image generate + Playwright + ffmpeg + MiniMax视觉审查</p>
+<p><strong>流程</strong>：</p>
+<pre><code>第四步：生成主体图
+    事件解构结果 → 构建prompt（见&quot;生图Prompt构建指南&quot;路径B约束）
+    ↓
+    mmx image generate --prompt &quot;&lt;prompt&gt;&quot; --out $MEDAL_RESOURCE_PATH/&lt;名称&gt;_subject.png --width 512 --height 512
+    ↓
+第五步：包装成动画HTML
+    主体图作为 &lt;img&gt; 嵌入HTML（src指向本地文件路径）
+    外围用SVG画边框、挂环、绶带（几何形状SVG擅长）
+    CSS做动画：光晕呼吸、入场层次、微动效
+    body尺寸：同路径A规范
+    ↓
+第六步：保存HTML到 MEDAL_RESOURCE_PATH/&lt;名称&gt;.html
+    ↓
+第七步：视觉审查（同路径A）
+    Playwright渲染截图 → 通过 subagent 调 mmx vision describe 审查 → 迭代修改
+    ↓
+第八步：生成GIF（同路径A）
+    python3 scripts/generate_medal_gif.py --html-file &lt;HTML文件路径&gt; --output &lt;文件名&gt;
+</code></pre>
+<p><strong>关键</strong>：路径B的HTML中，<code>&lt;img&gt;</code> 标签的 <code>src</code> 使用绝对路径引用生成的主体图PNG。Playwright渲染时能直接读取本地文件。</p>
+<hr />
+<h3>路径C：纯生图路径（产出PNG）</h3>
+<p><strong>技术栈</strong>：mmx image generate + MiniMax视觉审查</p>
+<p><strong>流程</strong>：</p>
+<pre><code>第四步：生成完整勋章图
+    事件解构结果 → 构建prompt（见&quot;生图Prompt构建指南&quot;路径C约束）
+    ↓
+    mmx image generate --prompt &quot;&lt;prompt&gt;&quot; --out $MEDAL_RESOURCE_PATH/&lt;名称&gt;.png --width 1024 --height 1024
+    ↓
+第五步：视觉审查
+    通过 subagent 调 mmx vision describe 直接审查生成的图片：
+    - 是否符合勋章/证书/奖杯的形态？
+    - 材质质感如何？是否有金属/玻璃/纸张的感觉？
+    - 配色是否与事件匹配？
+    - 身份标识是否清晰（边框、挂环/绶带）？
+    - 图中是否出现了文字？如果出现了模糊/变形的文字，必须判定为不合格并重新生成
+    ↓
+    不满意 → 调整prompt重新生成（最多3轮）
+    ↓
+第六步：调用 medal.py add --file 写入数据库
+</code></pre>
+<p><strong>路径C不需要Playwright和ffmpeg</strong>，直接保存图片即可。</p>
+<hr />
+<h3>视觉审查通用提示词</h3>
+<p>三条路径共用同一套审查标准，通过 subagent 调 <code>mmx vision describe</code>（ui-review 模式）：</p>
+<pre><code>这是一个勋章/证书/奖杯的设计稿。请从以下角度评审：
+1. 视觉焦点是否明确？第一眼看到什么？
+2. 材质质感如何？是否有金属/玻璃/纸张的感觉，还是纯色扁平？
+3. 配色是否和谐？是否与[具体事件]的氛围匹配？
+4. 构图是否克制？有没有元素过载？
+5. 身份标识是否清晰？（边框、挂环/绶带、底座）
+6. 图中是否出现了文字？如果有，文字是否清晰可读、没有变形？（AI生图的文字质量通常很差，出现模糊/错乱文字必须判定为不合格）
+7. 如果要改进，具体改什么？
+</code></pre>
+<hr />
+<h3>脚本参考</h3>
+<p><strong>GIF生成脚本</strong>：<code>scripts/generate_medal_gif.py</code></p>
+<pre><code class="language-bash"># 先保存HTML到资源目录，再用 --html-file 生成GIF（推荐）
+python3 scripts/generate_medal_gif.py --html-file $MEDAL_RESOURCE_PATH/badge.html --output badge.gif
 
-<div class="header">
-  <h1>勋章技能手册</h1>
-  <p>29 个唤醒词 · 7 大模块 · 完整 CLI 参考</p>
-</div>
+# 直接传入HTML代码（不留中间文件，仅应急使用）
+python3 scripts/generate_medal_gif.py --html &quot;&lt;html&gt;...&lt;/html&gt;&quot; --output badge.gif
+</code></pre>
+<p><strong>AI自行决定的参数</strong>（不限制）：
+- 动画时长、帧率、颜色质量、尺寸、背景样式、整体风格</p>
+<p><strong>生成后</strong>调用 <code>medal.py add</code> 写入数据库，然后发送奖励文件给用户。</p>
+<hr />
+<h2 id="cli-命令-16">CLI 命令</h2>
+<h3>颁发奖励</h3>
+<pre><code class="language-bash">python3 scripts/medal.py add --type &lt;badge|certificate|trophy&gt; --name &lt;名称&gt; --file &lt;文件路径&gt; --remark &lt;备注&gt;
+</code></pre>
+<p>支持格式：GIF（路径A/B）、PNG/JPG（路径C）</p>
+<h3>查询奖励记录</h3>
+<pre><code class="language-bash">python3 scripts/medal.py list [--type &lt;类型&gt;] [--limit &lt;数量&gt;]
+</code></pre>
+<h3>查看统计</h3>
+<pre><code class="language-bash">python3 scripts/medal.py stats
+</code></pre>
+<h3>初始化数据库</h3>
+<pre><code class="language-bash">python3 scripts/medal.py init
+</code></pre>
+<hr />
+<h2 id="ai执行规范-17">AI执行规范</h2>
+<ol>
+<li><strong>主动鼓励</strong>：当用户分享了任何完成的事情、进步、努力，AI应主动提议颁发奖励。不需要用户开口要——"你刚做完了XX，要不要颁个勋章？"</li>
+<li><strong>禁止直接操作数据库</strong>：所有读写必须通过 <code>scripts/medal.py</code> CLI</li>
+<li><strong>环境变量必检</strong>：执行前检查 <code>SKILLS_DB_PATH</code> 和 <code>MEDAL_RESOURCE_PATH</code></li>
+<li><strong>生成前确认</strong>：展示将颁发的奖励类型、名称和选择的渲染路径，用户确认后再生成</li>
+<li><strong>奖励文件必须发送</strong>：生成后必须通过 qqbot 发送给用户（GIF或PNG）</li>
+<li><strong>每次全新设计</strong>：不允许复用任何之前的HTML或prompt，必须完全重新设计</li>
+<li><strong>结合具体事件</strong>：设计必须与用户完成的具体事情紧密相关</li>
+<li><strong>路径A/B保留中间文件</strong>：HTML源文件必须先保存到 <code>MEDAL_RESOURCE_PATH</code>，再用 <code>--html-file</code> 调用脚本，禁止用 <code>--html</code> 直接传入</li>
+<li><strong>路径B保留主体图</strong>：生成的主体PNG必须保存到 <code>MEDAL_RESOURCE_PATH</code>，便于回溯</li>
+<li><strong>视觉审查必做</strong>：三条路径都必须进行视觉审查，不可跳过。迭代直到审查通过，最多3轮</li>
+<li><strong>路径选择需说明理由</strong>：AI选择渲染路径时，应简要说明为什么选这条路径</li>
+<li><strong>成就链主动检查</strong>：颁发勋章时，应主动检查用户是否解锁了对应的进阶/里程碑成就</li>
+<li><strong>查询结果格式化</strong>：查询类唤醒词输出结果时，使用清晰的表格或列表格式</li>
+<li><strong>成就链进度报告</strong>：检查成就链时，输出当前等级、进度百分比、下一解锁条件</li>
+<li><strong>视觉审查必须 subagent</strong>：审查设计稿/截图时，必须通过 subagent 子代理调用 <code>mmx vision describe</code>。主 agent 不得直接使用 <code>image</code> 工具或任何视觉模型 API；任何视觉识别都需经 subagent 中转。违者视为严重违规，需向用户说明原因并立即纠正。</li>
+</ol>
+<hr />
+<hr />
+<h2 id="成就系统-18">成就系统</h2>
+<h3>角色定位</h3>
+<p>当用户完成某件事时，AI需要：
+1. <strong>颁发本次奖励</strong>（基础勋章）
+2. <strong>检查是否解锁成就</strong>（进阶/里程碑勋章）
+3. <strong>写清楚 remark</strong>（让未来的自己能读懂上下文）</p>
+<p>进度追踪完全依赖现有勋章记录，不新增任何表或存储结构。</p>
+<hr />
+<h3>进度查询方法</h3>
+<p><strong>每次颁发勋章前，先查数据库</strong>：</p>
+<pre><code class="language-bash"># 查询某类勋章的所有历史记录
+python3 scripts/medal.py list --type badge --limit 100
 
-<div class="search-wrap">
-  <input type="text" class="search-box" id="searchInput" placeholder="搜索唤醒词或功能...">
-</div>
+# 查看统计
+python3 scripts/medal.py stats
+</code></pre>
+<p><strong>AI自行分析查询结果，推算进度</strong>：
+- medal_name → 判断事件类别（如"早睡党"属于早睡链）
+- awarded_at → 判断时间连续性（按日期排序，检查是否连续中断）
+- remark → 获取上下文详情（入睡时间、睡眠时长等）</p>
+<hr />
+<h3>成就链匹配规则</h3>
+<p>每个成就链由三级组成：</p>
+<table>
+<thead>
+<tr>
+<th>等级</th>
+<th>解锁条件</th>
+<th>触发时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基础</td>
+<td>单次完成某事</td>
+<td>用户做了一件值得鼓励的事，立刻颁发 badge</td>
+</tr>
+<tr>
+<td>进阶</td>
+<td>累计N次同类型行为</td>
+<td>颁发基础勋章时，顺便查历史记录，达到条件则追加颁发 certificate</td>
+</tr>
+<tr>
+<td>里程碑</td>
+<td>连续N天同类型行为</td>
+<td>颁发基础勋章时，查历史记录按日期排序，连续天数达标则颁发 trophy</td>
+</tr>
+</tbody>
+</table>
+<p><strong>连续判定规则</strong>：连续N天中若中断1天即视为断链，连续天数从最近一次开始重新累计。</p>
+<hr />
+<h3>remark 写作规范</h3>
+<p>remark 是AI自己的"记忆备份"，未来判断进度时全靠它。</p>
+<p><strong>必须包含的要素</strong>：
+- 日期（05-25）
+- 时间（22:30入睡）
+- 关键上下文（睡了6.5小时/学习2小时/骑行了45分钟）</p>
+<p><strong>格式示例</strong>：</p>
+<pre><code>早睡链：05-25 22:30入睡，睡了6.5小时
+学习链：05-25 学习Java并发2小时
+运动链：05-25 骑行上班45分钟
+体重链：05-25 称重95.2kg
+</code></pre>
+<p><strong>中断恢复时</strong>remark格式：</p>
+<pre><code>早睡链：05-28 中断恢复，前两天加班到凌晨
+学习链：05-20 中断，连续3天未学习
+</code></pre>
+<hr />
+<h3>成就链清单</h3>
+<h4>早睡链</h4>
+<table>
+<thead>
+<tr>
+<th>勋章名</th>
+<th>解锁条件</th>
+<th>类型</th>
+<th>颁发文案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🌙 早睡党</td>
+<td>单次23:00前入睡</td>
+<td>badge</td>
+<td>你今天早睡了一次，好梦</td>
+</tr>
+<tr>
+<td>🌙🌙 早睡达人</td>
+<td>累计早睡满7次</td>
+<td>certificate</td>
+<td>累计早睡7次，继续保持</td>
+</tr>
+<tr>
+<td>🏆 早睡里程碑</td>
+<td>连续早睡满14天</td>
+<td>trophy</td>
+<td>连续14天早睡达成！真正的自律</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI执行步骤</strong>：
+1. 用户说"刚睡"或"22:30睡的"→ 颁发"早睡党"
+2. 查 medals.db 统计"早睡"类 badge 数量 → 达到7次 → 颁发"早睡达人"
+3. 按 awarded_at 排序检查是否连续中断 → 连续14天 → 颁发"早睡里程碑"
+4. remark写清楚入睡时间和睡眠时长</p>
+<h4>学习链</h4>
+<table>
+<thead>
+<tr>
+<th>勋章名</th>
+<th>解锁条件</th>
+<th>类型</th>
+<th>颁发文案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📖 开始学习</td>
+<td>单日学习超30分钟</td>
+<td>badge</td>
+<td>今天学习了，好样的</td>
+</tr>
+<tr>
+<td>📖📖 学习达人</td>
+<td>累计学习满10小时</td>
+<td>certificate</td>
+<td>累计学习10小时，积累中</td>
+</tr>
+<tr>
+<td>🏆 学习里程碑</td>
+<td>连续学习满7天</td>
+<td>trophy</td>
+<td>连续学习7天，稳</td>
+</tr>
+<tr>
+<td>📚 深度学习</td>
+<td>单日学习超3小时</td>
+<td>certificate</td>
+<td>深度学习3小时+</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI执行步骤</strong>：
+1. 用户提到学了什么 → 颁发"开始学习"
+2. 查 medals.db 统计"学习"类 badge 累计时长 → 达到10小时 → 颁发"学习达人"
+3. 按 awarded_at 排序检查连续天数 → 连续7天 → 颁发"学习里程碑"
+4. 单日学习超3小时 → 颁发"深度学习"
+5. remark写清楚学习主题和时长</p>
+<h4>休息链</h4>
+<table>
+<thead>
+<tr>
+<th>勋章名</th>
+<th>解锁条件</th>
+<th>类型</th>
+<th>颁发文案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🛏️ 休闲党</td>
+<td>单日以休息为主</td>
+<td>badge</td>
+<td>今天好好休息了，赞</td>
+</tr>
+<tr>
+<td>🛏️🛏️ 躺平达人</td>
+<td>连续2天休息</td>
+<td>badge</td>
+<td>连续躺了两天，放松好了</td>
+</tr>
+<tr>
+<td>🏅 周末休息达人</td>
+<td>连续2个周末以休息为主</td>
+<td>certificate</td>
+<td>连续两个周末都好好休息了</td>
+</tr>
+<tr>
+<td>⚠️ 摆烂警告</td>
+<td>连续5天只有休息无学习无运动</td>
+<td>trophy</td>
+<td>一周都在休息！身体充满电了吧，该动动了</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI执行步骤</strong>：
+1. 用户说"休息"/"躺了一天" → 颁发"休闲党"
+2. 查连续休息天数 → 连续2天 → 颁发"躺平达人"
+3. 查连续周末休息 → 连续2个周末 → 颁发"周末休息达人"
+4. 查5天内只有休息记录无学习无运动 → 颁发"摆烂警告"（提醒用户该动动了）
+5. remark写清楚休息原因</p>
+<h4>体重链</h4>
+<blockquote>
+<p><strong>数据来源</strong>：涉及到体重相关的信息（目标体重、历史记录、单位等）需要通过卡路里技能的体重模块查看。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>勋章名</th>
+<th>解锁条件</th>
+<th>类型</th>
+<th>颁发文案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>📉 体重下降</td>
+<td>较上次记录下降0.5kg+</td>
+<td>certificate</td>
+<td>减了X公斤，继续加油</td>
+</tr>
+<tr>
+<td>🏆 体重达标</td>
+<td>达到目标体重</td>
+<td>trophy</td>
+<td>达成目标体重！</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI执行步骤</strong>：
+1. 用户说"称了体重" → 不颁发奖励，仅记录
+2. 读取卡路里技能文件获取目标体重
+3. 查本次与上次体重差值
+4. 本次下降0.5kg+ → 颁发"体重下降" certificate
+5. 下降到目标体重 → 颁发"体重达标" trophy
+6. 体重较上次回升 → 仅文字警告，不颁发奖励
+7. 体重较目标回升 → 仅文字警告，不颁发奖励
+8. remark写清楚体重数值和目标差值</p>
+<h4>运动链</h4>
+<table>
+<thead>
+<tr>
+<th>勋章名</th>
+<th>解锁条件</th>
+<th>类型</th>
+<th>颁发文案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>🏃 开始运动</td>
+<td>单日运动超20分钟</td>
+<td>badge</td>
+<td>今天运动了，赞</td>
+</tr>
+<tr>
+<td>🏃🏃 运动达人</td>
+<td>累计运动满5次</td>
+<td>certificate</td>
+<td>累计运动5次了</td>
+</tr>
+<tr>
+<td>🏆 运动里程碑</td>
+<td>连续运动满7天</td>
+<td>trophy</td>
+<td>连续运动7天，突破</td>
+</tr>
+<tr>
+<td>💪 运动增量</td>
+<td>单日运动超1小时</td>
+<td>certificate</td>
+<td>运动1小时+，狠</td>
+</tr>
+</tbody>
+</table>
+<p><strong>AI执行步骤</strong>：
+1. 用户说"跑了步"/"骑了车" → 颁发"开始运动"
+2. 查 medals.db 统计"运动"类 badge 数量 → 达到5次 → 颁发"运动达人"
+3. 按 awarded_at 排序检查连续天数 → 连续7天 → 颁发"运动里程碑"
+4. 单日运动超1小时 → 颁发"运动增量"
+5. remark写清楚运动类型和时长</p>
+<hr />
+<h3>触发时机</h3>
+<p><strong>主动检查</strong>：
+- 用户提到完成某件事（早睡/学习/运动/休息/称重）时 → 颁发基础勋章 + 检查进阶/里程碑
+- 用户说"今天做了XX" → 默认颁发 badge，除非明显是大成就才直接发更高</p>
+<p><strong>被动记录</strong>：
+- 中断（某天没有早睡/学习/运动）→ remark 记录中断，不发勋章
+- 恢复时 remark 注明"中断恢复+原因"</p>
+<hr />
+<h3>新增成就链</h3>
+<p>在 SKILL.md 中追加以下格式：</p>
+<pre><code class="language-markdown">#### X链
 
-<div class="tabs" id="tabBar">
-  <button class="tab active" data-cat="all">全部</button>
-  <button class="tab" data-cat="award">颁发类</button>
-  <button class="tab" data-cat="chain-award">成就链颁发</button>
-  <button class="tab" data-cat="query">查询类</button>
-  <button class="tab" data-cat="chain-check">成就链检查</button>
-  <button class="tab" data-cat="generate">设计生成</button>
-  <button class="tab" data-cat="review">视觉审查</button>
-  <button class="tab" data-cat="manage">管理类</button>
-</div>
+| 勋章名 | 解锁条件 | 类型 | 颁发文案 |
+|--------|----------|------|---------|
+| emoji 基础勋章 | 单次X | badge | 鼓励文案 |
+| emoji🔗 进阶勋章 | 累计N次X | certificate | 鼓励文案 |
+| 🏆 里程碑勋章 | 连续N天/次X | trophy | 鼓励文案 |
 
-<div class="content" id="content"></div>
-
-<div class="footer">
-  勋章技能 v2.0 · 最后更新 2026-05-28
-</div>
-
-<script>
-// ── 数据 ──
-const modules = [
-  {
-    cat: "award",
-    title: "颁发类",
-    desc: "手动触发，颁发勋章/证书/奖杯奖励。生成设计图 → 视觉审查 → 写入数据库 → 发送文件。",
-    triggers: [
-      {
-        word: "颁勋章",
-        desc: "颁发 badge 类型奖励，轻量级鼓励。",
-        cli: "python3 scripts/medal.py add --type badge --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
-        flow: [
-          { text: "选择渲染路径（A/B/C），事件解构生成设计图" },
-          { text: "视觉审查，最多 3 轮迭代" },
-          { text: "medal.py add 写入数据库" },
-          {
-            table: {
-              headers: ["操作", "表", "字段", "说明"],
-              rows: [
-                ["INSERT", "medals", "id, medal_type, medal_name, file_path, awarded_at, remark", "medal_type 固定为 badge"]
-              ]
-            }
-          },
-          { text: "通过 qqbot 发送奖励文件" }
-        ]
-      },
-      {
-        word: "颁证书",
-        desc: "颁发 certificate 类型奖励，中量级认可。",
-        cli: "python3 scripts/medal.py add --type certificate --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
-        flow: [
-          { text: "同颁勋章流程，medal_type 为 certificate" },
-          {
-            table: {
-              headers: ["操作", "表", "字段", "说明"],
-              rows: [
-                ["INSERT", "medals", "同上", "medal_type 固定为 certificate"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "颁奖杯",
-        desc: "颁发 trophy 类型奖励，重量级荣誉。",
-        cli: "python3 scripts/medal.py add --type trophy --name \"<名称>\" --file \"<文件路径>\" --remark \"<备注>\"",
-        flow: [
-          { text: "同颁勋章流程，medal_type 为 trophy" },
-          {
-            table: {
-              headers: ["操作", "表", "字段", "说明"],
-              rows: [
-                ["INSERT", "medals", "同上", "medal_type 固定为 trophy"]
-              ]
-            }
-          }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "chain-award",
-    title: "成就链颁发类",
-    desc: "手动触发，颁发对应成就链勋章后自动检查进阶/里程碑是否解锁。",
-    triggers: [
-      {
-        word: "颁早睡勋章",
-        desc: "颁发早睡链勋章，自动检查进阶（累计7次）和里程碑（连续14天）。",
-        cli: "python3 scripts/medal.py add --type badge --name \"早睡党\" --file \"<路径>\" --remark \"早睡链：MM-DD HH:MM入睡\"",
-        flow: [
-          { text: "颁发「早睡党」badge" },
-          { text: "查询 medals 表中 medal_name 含「早睡」的 badge 记录" },
-          { text: "累计 ≥7 次 → 追加颁发「早睡达人」certificate" },
-          { text: "按 awarded_at 排序，检查连续天数 ≥14 → 追加颁发「早睡里程碑」trophy" },
-          { text: "remark 写明入睡时间和睡眠时长" },
-          {
-            table: {
-              headers: ["操作", "表", "说明"],
-              rows: [
-                ["INSERT", "medals", "1~3 条记录，取决于解锁条件"],
-                ["SELECT", "medals", "查询历史判断进度"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "颁学习勋章",
-        desc: "颁发学习链勋章，自动检查进阶（累计10h）和里程碑（连续7天）。",
-        cli: "python3 scripts/medal.py add --type badge --name \"开始学习\" --file \"<路径>\" --remark \"学习链：MM-DD 学XX N小时\"",
-        flow: [
-          { text: "颁发「开始学习」badge" },
-          { text: "查询学习类 badge 累计时长，≥10h → 颁发「学习达人」certificate" },
-          { text: "连续学习 ≥7 天 → 颁发「学习里程碑」trophy" },
-          { text: "单日 ≥3h → 颁发「深度学习」certificate" }
-        ]
-      },
-      {
-        word: "颁运动勋章",
-        desc: "颁发运动链勋章，自动检查进阶（累计5次）和里程碑（连续7天）。",
-        cli: "python3 scripts/medal.py add --type badge --name \"开始运动\" --file \"<路径>\" --remark \"运动链：MM-DD XX运动 N分钟\"",
-        flow: [
-          { text: "颁发「开始运动」badge" },
-          { text: "运动类 badge ≥5 次 → 颁发「运动达人」certificate" },
-          { text: "连续运动 ≥7 天 → 颁发「运动里程碑」trophy" },
-          { text: "单日 ≥1h → 颁发「运动增量」certificate" }
-        ]
-      },
-      {
-        word: "颁休息勋章",
-        desc: "颁发休息链勋章，自动检查连续休息和摆烂警告。",
-        cli: "python3 scripts/medal.py add --type badge --name \"休闲党\" --file \"<路径>\" --remark \"休息链：MM-DD 休息原因\"",
-        flow: [
-          { text: "颁发「休闲党」badge" },
-          { text: "连续 2 天休息 → 颁发「躺平达人」badge" },
-          { text: "连续 2 个周末休息 → 颁发「周末休息达人」certificate" },
-          { text: "连续 5 天只有休息无学习无运动 → 颁发「摆烂警告」trophy（提醒该动动了）" }
-        ]
-      },
-      {
-        word: "颁体重勋章",
-        desc: "检查体重变化：下降颁发奖励，上升仅警告。目标体重从卡路里技能读取。",
-        cli: "python3 scripts/medal.py add --type certificate --name \"体重下降\" --file \"<路径>\" --remark \"体重链：MM-DD 称重XXkg\"",
-        flow: [
-          { text: "用户说「称了体重」 → 不颁发奖励，仅记录" },
-          { text: "读取卡路里技能文件获取目标体重" },
-          { text: "查本次与上次体重差值" },
-          { text: "本次下降 ≥0.5kg → 颁发「体重下降」certificate" },
-          { text: "下降到目标体重 → 颁发「体重达标」trophy" },
-          { text: "体重较上次回升 → 仅文字警告，不颁发奖励" },
-          { text: "体重较目标回升 → 仅文字警告，不颁发奖励" }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "query",
-    title: "查询类",
-    desc: "查询勋章记录和统计信息，只读操作，不修改数据。⚠️ 严禁颁发新勋章或生成新图。",
-    triggers: [
-      {
-        word: "查勋章记录",
-        desc: "📖 [只读] 查询所有勋章历史记录，默认返回最近 50 条。",
-        cli: "python3 scripts/medal.py list [--type <类型>] [--limit <数量>]",
-        flow: [
-          { text: "执行 SELECT 查询 medals 表" },
-          {
-            table: {
-              headers: ["操作", "表", "说明"],
-              rows: [
-                ["SELECT", "medals", "按 awarded_at DESC 排序，支持 --type 和 --limit 过滤"]
-              ]
-            }
-          },
-          { text: "副作用：无，只读操作" },
-          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
-          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
-        ]
-      },
-      {
-        word: "查勋章统计",
-        desc: "📖 [只读] 查看勋章数量统计，按类型汇总。",
-        cli: "python3 scripts/medal.py stats",
-        flow: [
-          { text: "执行 COUNT 查询，按 medal_type 分组" },
-          {
-            table: {
-              headers: ["操作", "表", "说明"],
-              rows: [
-                ["SELECT COUNT(*)", "medals", "总数"],
-                ["SELECT ... GROUP BY medal_type", "medals", "按 badge/certificate/trophy 分组统计"]
-              ]
-            }
-          },
-          { text: "副作用：无，只读操作" },
-          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
-          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
-        ]
-      },
-      {
-        word: "查某类勋章",
-        desc: "📖 [只读] 按类型筛选查询（badge/certificate/trophy）。",
-        cli: "python3 scripts/medal.py list --type badge",
-        flow: [
-          { text: "执行 SELECT ... WHERE medal_type = ? 查询" },
-          { text: "副作用：无，只读操作" },
-          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
-          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
-        ]
-      },
-      {
-        word: "查最近勋章",
-        desc: "📖 [只读] 查看最近 N 条勋章记录。",
-        cli: "python3 scripts/medal.py list --limit 10",
-        flow: [
-          { text: "执行 SELECT ... LIMIT N 查询" },
-          { text: "副作用：无，只读操作" },
-          { text: "询问用户是否要查看勋章/证书/奖杯的图" },
-          { text: "用户确认 → 将结果中所有 file_path 通过 qqbot 发送给用户" }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "chain-check",
-    title: "成就链检查类",
-    desc: "查询成就链进度，分析历史记录判断当前等级和解锁条件。只读操作。",
-    triggers: [
-      {
-        word: "查早睡链",
-        desc: "检查早睡成就链进度：基础(单次)、进阶(累计7次)、里程碑(连续14天)。",
-        cli: "python3 scripts/medal.py list --type badge --limit 100",
-        flow: [
-          { text: "查询所有早睡类 badge 记录" },
-          { text: "按 awarded_at 排序，分析连续性" },
-          { text: "输出：当前等级、累计次数、连续天数、下一解锁条件" },
-          { text: "副作用：无，只读操作" }
-        ]
-      },
-      {
-        word: "查学习链",
-        desc: "检查学习成就链进度：基础(30min)、进阶(累计10h)、里程碑(连续7天)、深度(单日3h)。",
-        cli: "python3 scripts/medal.py list --type badge --limit 100",
-        flow: [
-          { text: "查询所有学习类记录" },
-          { text: "统计累计时长和连续天数" },
-          { text: "副作用：无，只读操作" }
-        ]
-      },
-      {
-        word: "查运动链",
-        desc: "检查运动成就链进度：基础(20min)、进阶(累计5次)、里程碑(连续7天)、增量(单日1h)。",
-        cli: "python3 scripts/medal.py list --type badge --limit 100",
-        flow: [
-          { text: "查询所有运动类记录" },
-          { text: "统计累计次数和连续天数" },
-          { text: "副作用：无，只读操作" }
-        ]
-      },
-      {
-        word: "查休息链",
-        desc: "检查休息成就链进度：休闲党、躺平达人(2天)、周末休息(2个周末)、摆烂警告(5天)。",
-        cli: "python3 scripts/medal.py list --type badge --limit 100",
-        flow: [
-          { text: "查询所有休息类记录" },
-          { text: "同时检查是否有学习/运动记录，判断摆烂警告" },
-          { text: "副作用：无，只读操作" }
-        ]
-      },
-      {
-        word: "查体重链",
-        desc: "检查体重成就链进度：记录、下降(0.5kg)、达标(目标)、回升(1kg)。",
-        cli: "python3 scripts/medal.py list --type badge --limit 100",
-        flow: [
-          { text: "查询所有体重类记录" },
-          { text: "对比最近两次记录和目标体重" },
-          { text: "副作用：无，只读操作" }
-        ]
-      },
-      {
-        word: "查成就进度",
-        desc: "汇总查看所有成就链进度，全景概览。",
-        cli: "python3 scripts/medal.py list --limit 100 && python3 scripts/medal.py stats",
-        flow: [
-          { text: "遍历所有成就链，逐一分析进度" },
-          { text: "输出每条链的当前等级和下一解锁条件" },
-          { text: "副作用：无，只读操作" }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "generate",
-    title: "设计生成类",
-    desc: "生成勋章/证书/奖杯设计图。三条渲染路径可选：A(SVG动画→GIF)、B(生图+SVG→GIF)、C(直接生图→PNG)。",
-    triggers: [
-      {
-        word: "生勋章图",
-        desc: "生成勋章设计图，AI 自动选择最佳渲染路径。",
-        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>.png",
-        flow: [
-          { text: "事件解构：核心符号、情感色调、发生场景、动效语言" },
-          { text: "AI 根据事件特征选择路径 A/B/C" },
-          { text: "路径 A：AI 写 HTML+SVG → Playwright 截图 → 迭代审查 → ffmpeg 合成 GIF" },
-          { text: "路径 B：mmx 生成主体图 → AI 写 HTML+SVG 边框 → Playwright 截图 → 迭代审查 → ffmpeg 合成 GIF" },
-          { text: "路径 C：mmx 生成完整图 → 迭代审查 → 保存 PNG" },
-          { text: "调用 medal.py add 写入数据库" },
-          {
-            table: {
-              headers: ["路径", "输出", "工具链"],
-              rows: [
-                ["A", "GIF", "Playwright + ffmpeg"],
-                ["B", "GIF", "mmx + Playwright + ffmpeg"],
-                ["C", "PNG", "mmx"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "生证书图",
-        desc: "生成证书设计图，自动选择路径。",
-        cli: "同生勋章图，body 尺寸 600x400",
-        flow: [
-          { text: "同生勋章图流程，证书尺寸 600x400（横向）" },
-          { text: "证书必须有文书边框（矩形装饰框）" }
-        ]
-      },
-      {
-        word: "生奖杯图",
-        desc: "生成奖杯设计图，自动选择路径。",
-        cli: "同生勋章图，body 尺寸 350x500",
-        flow: [
-          { text: "同生勋章图流程，奖杯尺寸 350x500（竖长）" },
-          { text: "奖杯必须有底座或台面" }
-        ]
-      },
-      {
-        word: "生SVG勋章",
-        desc: "路径 A：AI 手写 HTML+SVG 动画 → Playwright 截图 → ffmpeg 合成 GIF。适合几何/机械/像素风格。",
-        cli: "python3 scripts/generate_medal_gif.py --html-file $MEDAL_RESOURCE_PATH/<名称>.html --output <名称>.gif",
-        flow: [
-          { text: "AI 生成全新 HTML（含 CSS 动画 + SVG 图形）" },
-          { text: "保存 HTML 到 MEDAL_RESOURCE_PATH/<名称>.html" },
-          { text: "Playwright 渲染截图 → MiniMax 视觉审查" },
-          { text: "迭代修改，最多 3 轮" },
-          { text: "ffmpeg 合成 GIF" },
-          { text: "medal.py add 写入数据库" },
-          {
-            table: {
-              headers: ["文件", "说明"],
-              rows: [
-                ["<名称>.html", "源文件，保留用于回溯"],
-                ["<名称>.gif", "最终输出"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "生混合勋章",
-        desc: "路径 B：mmx 生成主体图 + SVG 边框/动效 → 包装 HTML → Playwright → ffmpeg → GIF。适合有机/写实场景。",
-        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>_subject.png --width 512 --height 512",
-        flow: [
-          { text: "mmx 生成主体图 PNG（512x512）" },
-          { text: "AI 生成 HTML，主体图作为 <img> 嵌入，外围 SVG 边框" },
-          { text: "Playwright 渲染截图 → 视觉审查" },
-          { text: "ffmpeg 合成 GIF" },
-          { text: "medal.py add 写入数据库" },
-          {
-            table: {
-              headers: ["文件", "说明"],
-              rows: [
-                ["<名称>_subject.png", "主体图，保留"],
-                ["<名称>.html", "HTML 源文件，保留"],
-                ["<名称>.gif", "最终输出"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "生纯图勋章",
-        desc: "路径 C：mmx 直接生成完整勋章图 → 视觉审查 → 保存 PNG。快速颁发，无需动画。",
-        cli: "mmx image generate --prompt \"<prompt>\" --out $MEDAL_RESOURCE_PATH/<名称>.png --width 1024 --height 1024",
-        flow: [
-          { text: "构建 prompt（路径 C 约束：禁止文字、必须有身份标识）" },
-          { text: "mmx 生成完整图（1024x1024）" },
-          { text: "视觉审查，不满意则调整 prompt 重新生成（最多 3 轮）" },
-          { text: "medal.py add 写入数据库" },
-          {
-            table: {
-              headers: ["文件", "说明"],
-              rows: [
-                ["<名称>.png", "最终输出"]
-              ]
-            }
-          }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "review",
-    title: "视觉审查类",
-    desc: "审查生成的设计图质量，7 维度检查。三条路径共享同一套审查标准。",
-    triggers: [
-      {
-        word: "审勋章设计",
-        desc: "审查勋章设计图质量，输出 7 维度评审报告。",
-        cli: "mmx vision describe（ui-review 模式，通过 subagent）",
-        flow: [
-          { text: "读取设计文件（HTML 截图或 PNG）" },
-          { text: "通过 subagent 调 mmx vision describe 审查" },
-          { text: "7 维度检查：视觉焦点、材质质感、配色、构图、身份标识、文字、改进建议" },
-          { text: "不合格 → 提供修改建议，最多迭代 3 轮" },
-          {
-            table: {
-              headers: ["维度", "检查内容"],
-              rows: [
-                ["视觉焦点", "第一眼看到什么？"],
-                ["材质质感", "是否有金属/玻璃/纸张感觉？"],
-                ["配色", "是否与事件氛围匹配？"],
-                ["构图", "是否元素过载？"],
-                ["身份标识", "边框、挂环/绶带、底座是否清晰？"],
-                ["文字", "是否出现模糊变形文字？"],
-                ["改进建议", "具体改什么？"]
-              ]
-            }
-          }
-        ]
-      },
-      {
-        word: "审证书设计",
-        desc: "审查证书设计图质量。",
-        cli: "同审勋章设计",
-        flow: [
-          { text: "同审勋章设计流程" },
-          { text: "证书额外检查：文书边框是否完整" }
-        ]
-      },
-      {
-        word: "审奖杯设计",
-        desc: "审查奖杯设计图质量。",
-        cli: "同审勋章设计",
-        flow: [
-          { text: "同审勋章设计流程" },
-          { text: "奖杯额外检查：底座或台面是否存在" }
-        ]
-      }
-    ]
-  },
-  {
-    cat: "manage",
-    title: "管理类",
-    desc: "数据库初始化和迁移操作。",
-    triggers: [
-      {
-        word: "初始化勋章库",
-        desc: "初始化勋章数据库表结构，首次使用时执行。",
-        cli: "python3 scripts/medal.py init",
-        flow: [
-          { text: "连接 SQLite 数据库 medals.db" },
-          { text: "检查旧表是否有 gif_path 列，有则迁移到 file_path" },
-          { text: "创建 medals 表（如不存在）" },
-          { text: "创建索引 idx_medals_type" },
-          {
-            table: {
-              headers: ["操作", "表", "字段"],
-              rows: [
-                ["CREATE TABLE IF NOT EXISTS", "medals", "id, medal_type, medal_name, file_path, awarded_at, remark"],
-                ["CREATE INDEX IF NOT EXISTS", "idx_medals_type", "medal_type"],
-                ["ALTER TABLE (如需)", "medals", "gif_path → file_path"]
-              ]
-            }
-          },
-          { text: "副作用：创建表/索引，可能重命名列" }
-        ]
-      },
-      {
-        word: "迁移勋章库",
-        desc: "数据库结构升级迁移。",
-        cli: "python3 scripts/medal.py init",
-        flow: [
-          { text: "同初始化流程，包含列迁移逻辑" },
-          { text: "当前迁移：gif_path → file_path（如需要）" },
-          { text: "副作用：可能修改表结构" }
-        ]
-      }
-    ]
-  }
-];
-
-// ── 渲染 ──
-const contentEl = document.getElementById("content");
-let currentCat = "all";
-let searchQuery = "";
-
-function render() {
-  const q = searchQuery.toLowerCase().trim();
-  let html = "";
-
-  modules.forEach(mod => {
-    if (currentCat !== "all" && mod.cat !== currentCat) return;
-
-    const filtered = mod.triggers.filter(t => {
-      if (!q) return true;
-      return t.word.toLowerCase().includes(q) ||
-             t.desc.toLowerCase().includes(q) ||
-             t.cli.toLowerCase().includes(q);
-    });
-
-    if (filtered.length === 0) return;
-
-    html += `<div class="section" data-cat="${mod.cat}">
-      <div class="section-title">${mod.title}</div>
-      <div class="desc">${mod.desc}</div>`;
-
-    filtered.forEach((t, i) => {
-      const id = `${mod.cat}-${i}`;
-      html += `<div class="card" id="card-${id}">
-        <div class="card-head" onclick="toggleCard('${id}')">
-          <span class="card-title">${t.word}</span>
-          <span class="card-arrow">›</span>
-        </div>
-        <div class="card-body">
-          <div class="desc">${t.desc}</div>
-          <div style="margin-top:12px">
-            <div class="cli-label">CLI 命令</div>
-            <div class="cli-cmd" onclick="toggleFlow('${id}')">${escapeHtml(t.cli)}</div>
-            <div class="flow-block" id="flow-${id}">${renderFlow(t.flow)}</div>
-          </div>
-        </div>
-      </div>`;
-    });
-
-    html += `</div>`;
-  });
-
-  if (!html) {
-    html = `<div class="empty">没有匹配的唤醒词</div>`;
-  }
-
-  contentEl.innerHTML = html;
-}
-
-function renderFlow(flow) {
-  if (!flow || flow.length === 0) return "";
-  let html = '<div class="cli-label" style="margin-top:8px">执行流程</div>';
-  flow.forEach((step, i) => {
-    html += `<div class="flow-step">
-      <div class="flow-num">${i + 1}</div>
-      <div class="flow-text">`;
-    if (step.text) {
-      html += step.text;
-    }
-    if (step.table) {
-      html += `<table class="flow-table">
-        <tr>${step.table.headers.map(h => `<th>${h}</th>`).join("")}</tr>
-        ${step.table.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}
-      </table>`;
-    }
-    html += `</div></div>`;
-  });
-  return html;
-}
-
-function escapeHtml(s) {
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
-function toggleCard(id) {
-  const card = document.getElementById("card-" + id);
-  card.classList.toggle("open");
-}
-
-function toggleFlow(id) {
-  const flow = document.getElementById("flow-" + id);
-  flow.classList.toggle("show");
-}
-
-// ── Tab 切换 ──
-document.getElementById("tabBar").addEventListener("click", e => {
-  if (!e.target.classList.contains("tab")) return;
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  e.target.classList.add("active");
-  currentCat = e.target.dataset.cat;
-  render();
-});
-
-// ── 搜索 ──
-document.getElementById("searchInput").addEventListener("input", e => {
-  searchQuery = e.target.value;
-  render();
-});
-
-// ── 初始化 ──
-render();
-</script>
+**AI执行步骤**：
+1. 用户做X → ...
+2. 查历史记录 → 达到条件 → ...
+3. remark写清楚...
+</code></pre>
+<p><strong>无需修改任何代码或数据库</strong>，AI读取规则后自动执行。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>勋章/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
 </body>
 </html>

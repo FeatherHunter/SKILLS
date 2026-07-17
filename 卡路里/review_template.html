@@ -132,13 +132,24 @@
   .sub-list ul li { margin: 4px 0; }
   .sub-list .empty { color: var(--text-mute); font-style: italic; }
 
-  /* ========== mini 折线图 ========== */
+  /* ========== mini 折线图(支持智能密度 7/30/365 天) ========== */
   .mini-chart { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
   .mini-chart .title {
     font-size: 11px; color: var(--text-sub);
     text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: baseline;
   }
-  .mini-chart svg { width: 100%; height: 60px; }
+  .mini-chart .trend-range {
+    font-size: 10px; color: var(--text-mute); text-transform: none; letter-spacing: 0;
+  }
+  .mini-chart svg { width: 100%; height: 110px; }
+  .mini-chart .chart-note {
+    font-size: 11px; color: var(--text-sub); margin-top: 6px;
+    text-align: center; font-style: italic;
+  }
+  @media (max-width: 480px) {
+    .mini-chart svg { height: 100px; }
+  }
 
   /* ========== 进度条 ========== */
   .progress-row {
@@ -488,10 +499,13 @@
     </div>
   </div>
   <div class="mini-chart">
-    <div class="title">7 天体重趋势</div>
-    <svg viewBox="0 0 300 60" preserveAspectRatio="none">
-      <polyline data-field="weight_trend_svg" data-format="SVG points 字符串,7 个点" fill="none" stroke="#34C759" stroke-width="2" points="0,30 50,32 100,28 150,25 200,22 250,20 300,18" />
-    </svg>
+    <div class="title">
+      <span data-field="weight_trend_title">体重趋势</span>
+      <span class="trend-range" data-field="weight_trend_range">—</span>
+    </div>
+    <!-- agent 装填:完整 SVG(轴 + 标签 + 数据点),支持 7/30/365 天不同密度 -->
+    <div data-field="weight_trend_svg"></div>
+    <div class="chart-note" data-field="weight_trend_note">—</div>
   </div>
   <div class="sub-list">
     <div class="title">vs 目标</div>

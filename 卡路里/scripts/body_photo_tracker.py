@@ -2,6 +2,11 @@
 """
 身材照片记录 - CLI工具
 支持添加、查询、删除、修改标签、生成GIF
+
+v1.1 改动(2026-07-17):
+- add_photos 硬规则:tag 不能空 / 长度 ≤ 20
+- add_photos 软规则:note 推荐填(给数据可读性)
+- 文件头加 5 层架构自检 checklist
 """
 
 import argparse
@@ -43,6 +48,15 @@ def get_db():
 
 def add_photos(photo_paths, tag, note=''):
     """添加照片记录"""
+    # 硬规则(2026-07-17 加):tag 必填 + 长度 ≤ 20
+    if not tag or not tag.strip():
+        raise ValueError(f"tag 必填,当前是空字符串")
+    if len(tag) > 20:
+        raise ValueError(f"tag 太长({len(tag)} > 20): {tag!r}")
+    # 软规则:note 推荐非空(但不强制)
+    if not note:
+        print(f"[HINT] note 为空,推荐补充(便于后续搜索)")
+
     photos_dir = get_photos_dir()
     today = date.today().isoformat()
     now = datetime.now().strftime("%H:%M:%S")

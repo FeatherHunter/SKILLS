@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>共享单车提醒 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#共享单车提醒-1">共享单车提醒</a></li>
+<li><a href="#触发条件-1">触发条件</a></li>
+<li><a href="#执行流程-2">执行流程</a></li>
+<li><a href="#关键规则-3">关键规则</a></li>
+<li><a href="#防重复机制-4">防重复机制</a></li></ol></div>
+<h1 id="共享单车提醒-1">共享单车提醒</h1>
+<h2 id="触发条件-1">触发条件</h2>
+<p>用户提到以下关键词时激活本技能：
+- "骑车了""正在骑车""骑完车""骑车中""骑车回家""骑车上班""扫了小黄车""扫了美团""共享单车""小黄车""美团单车""哈啰""青桔""电动车""电单车""关车了""锁车了""车关了"等</p>
+<p>取消提醒关键词（收到即取消）：
+- "关了""锁了""已关""关车了""锁车了""车关了"</p>
+<h2 id="执行流程-2">执行流程</h2>
+<h3>Step 1：识别并确认</h3>
+<p>当用户说开始骑车，立即回复：</p>
+<blockquote>
+<p>"🚲 好的，记住了！会定期提醒你关锁~"</p>
+</blockquote>
+<p>同时执行 Step 2 创建循环提醒。</p>
+<h3>Step 2：创建循环 cron 任务</h3>
+<p>使用 <code>exec</code> 工具调用 OpenClaw 的 cron 命令创建周期性提醒：</p>
+<pre><code class="language-bash">openclaw cron add \
+  --name &quot;共享单车提醒&quot; \
+  --cron &quot;*/3 * * * *&quot; \
+  --tz &quot;Asia/Shanghai&quot; \
+  --message &quot;🚲 哥们，车关了吗？别忘了锁车哦！&quot; \
+  --channel qqbot \
+  --to &quot;18CD32F5999F760615E9862E343E59FC&quot; \
+  --session isolated
+</code></pre>
+<p><strong>注意</strong>：必须使用 <code>exec</code> 工具实际执行 <code>openclaw cron add</code> 命令，不能只是口头承诺。</p>
+<p><strong>重要</strong>：不要使用 <code>--session isolated</code>，否则 cron 在隔离会话运行，无法感知用户的取消回复。</p>
+<h3>Step 3：等待用户回复</h3>
+<ul>
+<li><strong>用户回复"关了""锁了""已关""关车了""锁车了""车关了"</strong> → 执行 Step 4 取消提醒</li>
+<li><strong>用户没回复</strong> → cron 会继续每3分钟发提醒</li>
+<li><strong>用户说"还没""等一下"</strong> → 继续等待，不取消提醒</li>
+</ul>
+<h3>Step 4：取消循环提醒</h3>
+<p>当用户确认已关锁，使用 <code>exec</code> 工具调用：</p>
+<pre><code class="language-bash">openclaw cron list 2&gt;/dev/null | grep &quot;共享单车提醒&quot;
+# 找到 ID 后
+openclaw cron rm &lt;job-id&gt;
+</code></pre>
+<p>并回复：</p>
+<blockquote>
+<p>"✅ 收到，车已锁好，放心啦！"</p>
+</blockquote>
+<h2 id="关键规则-3">关键规则</h2>
+<ol>
+<li><strong>每次用户说骑车就重新创建提醒</strong>，即使之前有未取消的提醒（先 list 找到 ID → rm → 再 add 新提醒）</li>
+<li><strong>提醒内容要简洁</strong>，2-3句话，配合 emoji</li>
+<li><strong>只有关锁相关词才取消</strong>："关了""锁了""已关""车关了"，其他回复都继续提醒</li>
+<li><strong>提醒频率是每3分钟</strong>，不是更频繁，避免打扰</li>
+<li><strong>必须用 OpenClaw 内置 cron</strong>（<code>openclaw cron add</code>），不要用 qqbot_remind 工具</li>
+</ol>
+<h2 id="防重复机制-4">防重复机制</h2>
+<p>创建提醒前先检查是否已有同名 cron：</p>
+<pre><code class="language-bash">openclaw cron list 2&gt;/dev/null | grep &quot;共享单车提醒&quot;
+</code></pre>
+<p>如果有，先删再创建，避免重复定时器。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>共享单车提醒/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

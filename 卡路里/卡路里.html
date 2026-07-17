@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-最高优先级-1">⚠️ 强制性规定（最高优先级）</a></li>
+<li><a href="#操作规范-强制-2">⚠️ 操作规范（强制）</a></li>
+<li><a href="#核心原则-3">核心原则</a></li>
+<li><a href="#安装与配置-4">📦 安装与配置</a></li>
+<li><a href="#触发词速查表-5">🤝 触发词速查表</a></li>
+<li><a href="#卡路里-热量追踪技能-v2-0-1">卡路里 - 热量追踪技能 v2.0</a></li>
+<li><a href="#功能概述-6">功能概述</a></li>
+<li><a href="#数据库结构-7">数据库结构</a></li>
+<li><a href="#脚本模块结构-v2-3-拆分后-8">📂 脚本模块结构（v2.3 拆分后）</a></li>
+<li><a href="#命令行用法-9">命令行用法</a></li>
+<li><a href="#ai-路由规则-10">AI 路由规则</a></li>
+<li><a href="#ai-触发场景详述-11">AI 触发场景详述</a></li>
+<li><a href="#示例对话-12">示例对话</a></li>
+<li><a href="#联动说明-13">联动说明</a></li>
+<li><a href="#lint-检查-数据健康检查-14">Lint 检查（数据健康检查）</a></li>
+<li><a href="#typescript-配置生成-15">TypeScript 配置生成</a></li></ol></div>
+<p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到食物花费→询问是否记录支出；用户提到买了新食品→询问是否存入食品库）。详见路由器的联动规则表。</p>
+<h2 id="强制性规定-最高优先级-1">⚠️ 强制性规定（最高优先级）</h2>
+<ol>
+<li><strong>HTML 同步</strong>：本技能的所有优化和变动、脚本的所有变动都必须体现在相应的 HTML 页面上。HTML 是技能功能的可视化镜像，任何功能变更若未同步到 HTML 视为未完成。</li>
+<li><strong>优先级</strong>：本强制性规定优先级最高，高于下方所有操作规范和功能说明。</li>
+<li><strong>变更确认</strong>：对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认，未经确认不得执行写入操作。</li>
+</ol>
+<hr />
+<h2 id="操作规范-强制-2">⚠️ 操作规范（强制）</h2>
+<p>本技能所有数据操作必须通过 CLI，禁止直连数据库。</p>
+<h2 id="核心原则-3">核心原则</h2>
+<ul>
+<li><strong>数据操作只走 CLI</strong>：所有增删改查通过 <code>scripts/</code> 下的 Python 脚本执行，禁止直接操作 SQLite</li>
+<li><strong>睡眠归属就寝日</strong>：睡眠记录归属于就寝那天，不是起床日</li>
+<li><strong>Path C 参考数据不存库</strong>：外部搜索到的营养数据仅用于本次记录，不写入 nutrition_products</li>
+<li><strong>起床确认不提卡路里</strong>：唤醒词场景的确认语中不出现"卡路里"三字，直接问"要不要记录"</li>
+<li><strong>只建议不自动修改</strong>：Lint 检查发现问题后列出清单，让用户决定</li>
+</ul>
+<h3>📚 nutrition_products 数据治理原则（2026-06-30 共识）</h3>
+<p><code>source</code> 字段记录<strong>"这条数据是怎么来的"</strong>，不是"理想来源"：
+- ❌ <strong>不维护"推荐来源枚举"</strong>——AI 想用什么字符串都行
+- ✅ <strong>AI 不知道就写 "未知" / "AI估算,未查证"</strong>,不要编造权威来源
+- ✅ <strong>完全自由文本</strong>,只要非空
+- 数据示例：<code>"中国食物成分表第6版"</code> / <code>"USDA FoodData Central"</code> / <code>"包装标签实测 2025-06"</code> / <code>"AI估算,未查证"</code> / <code>"未知"</code></p>
+<p><code>is_deprecated</code> 字段标记废弃条目：
+- <code>0</code> = 有效,默认查询可见
+- <code>1</code> = 废弃,默认查询不返回
+- 替代旧的 note 字符串标记(如 <code>[已废弃]</code>)
+- <code>dedupe</code> 命令会检查有效条目中的重复</p>
+<hr />
+<h2 id="安装与配置-4">📦 安装与配置</h2>
+<h3>依赖</h3>
+<ul>
+<li>Python &gt;= 3.7</li>
+<li>无第三方依赖（仅用标准库 sqlite3、argparse、datetime）</li>
+</ul>
+<h3>配置项</h3>
+<table>
+<thead>
+<tr>
+<th>环境变量</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SKILLS_DB_PATH</code></td>
+<td>数据库文件所在目录</td>
+</tr>
+</tbody>
+</table>
+<p>DB 查找顺序：<code>SKILLS_DB_PATH</code> 环境变量 → 技能目录 → 父目录 <code>.db/</code> 文件夹 → 自动创建 <code>.db/</code> 目录。</p>
+<h3>一键安装 prompt</h3>
+<p>将以下内容发送给 AI 即可安装本技能：</p>
+<pre><code>请帮我安装卡路里技能：
+1. 检查 Python 环境
+2. 引导我配置环境变量
+3. 显示当前环境变量配置
+4. 告诉我如何更改数据目录
+</code></pre>
+<hr />
+<h2 id="触发词速查表-5">🤝 触发词速查表</h2>
+<blockquote>
+<p>用户说"卡路里 help"时显示本表。全部唤醒词为动词+名词结构。</p>
+</blockquote>
+<p><strong>CLI 列规则（最严格标准 · 2026-07-13 修）</strong>:
+- <strong>原子 trigger</strong>（暴露 CLI）: <code>python scripts/&lt;file&gt;.py &lt;subcommand&gt; [args]</code>
+- <strong>组合 trigger</strong>（跨 skill）: <code>组合:&lt;trigger1&gt; + &lt;trigger2&gt; + ...</code>（不写 Python 函数）
+- <strong>分析类 trigger</strong>（Python API）: <code>AI 路由（Python API）</code>
+- <strong>纯 AI 路由</strong>（无 CLI）: <code>AI 路由（无 CLI）</code></p>
+<p><strong>参数占位符</strong>:统一用 <code>&lt;X&gt;</code> 尖括号（如 <code>&lt;DATE&gt;</code>、<code>&lt;N&gt;</code>），不写裸 <code>X</code> 或大括号 <code>{X}</code></p>
+<h3>🍚 饮食记录</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记吃了</td>
+<td>记录饮食（库匹配/图片识别/外部搜索统一入口）</td>
+<td><code>python scripts/calorie_tracker.py add</code></td>
+</tr>
+<tr>
+<td>拍营养表</td>
+<td>图片识别营养成分表并记录</td>
+<td><code>mmx vision describe</code> → <code>python scripts/calorie_tracker.py add</code></td>
+</tr>
+<tr>
+<td>删吃的</td>
+<td>删除饮食记录</td>
+<td><code>python scripts/calorie_tracker.py delete</code></td>
+</tr>
+<tr>
+<td>改吃的</td>
+<td>修改已记录饮食</td>
+<td><code>python scripts/calorie_tracker.py update-meal</code></td>
+</tr>
+<tr>
+<td>查今天吃</td>
+<td>今日饮食摘要</td>
+<td><code>python scripts/calorie_tracker.py summary</code></td>
+</tr>
+<tr>
+<td>查吃的记录</td>
+<td>今日逐条饮食记录</td>
+<td><code>python scripts/calorie_tracker.py list</code></td>
+</tr>
+<tr>
+<td>查热量历史</td>
+<td>最近 N 天热量摄入历史</td>
+<td><code>python scripts/calorie_tracker.py history</code></td>
+</tr>
+<tr>
+<td>记喝水</td>
+<td>记录饮水量</td>
+<td><code>python scripts/calorie_tracker.py water</code></td>
+</tr>
+<tr>
+<td>查今天喝水</td>
+<td>今日饮水量</td>
+<td><code>python scripts/calorie_tracker.py summary</code></td>
+</tr>
+</tbody>
+</table>
+<h3>🏷️ 食品库</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查热量</td>
+<td>搜索食品营养成分</td>
+<td><code>python scripts/calorie_tracker.py search-product</code></td>
+</tr>
+<tr>
+<td>存食品</td>
+<td>添加食品营养成分表到库</td>
+<td><code>python scripts/calorie_tracker.py add-product</code></td>
+</tr>
+<tr>
+<td>改食品</td>
+<td>更新食品营养成分</td>
+<td><code>python scripts/calorie_tracker.py update-product</code></td>
+</tr>
+<tr>
+<td>查食品库</td>
+<td>列出全部食品营养成分</td>
+<td><code>python scripts/calorie_tracker.py list-products</code></td>
+</tr>
+<tr>
+<td>批量导入</td>
+<td>批量录入/更新食品库</td>
+<td><code>python scripts/batch_import.py import</code></td>
+</tr>
+<tr>
+<td>校验批量</td>
+<td>只校验 JSONL 不写入</td>
+<td><code>python scripts/batch_import.py validate</code></td>
+</tr>
+<tr>
+<td>查食品库去重</td>
+<td>全库去重检查</td>
+<td><code>python scripts/batch_import.py dedupe</code></td>
+</tr>
+</tbody>
+</table>
+<h3>⚖️ 体重</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记体重</td>
+<td>记录体重（自动算 BMI）</td>
+<td><code>python scripts/calorie_tracker.py weight</code></td>
+</tr>
+<tr>
+<td>改体重记录</td>
+<td>修改历史体重记录</td>
+<td><code>python scripts/calorie_tracker.py weight-update</code></td>
+</tr>
+<tr>
+<td>查体重历史</td>
+<td>体重历史记录</td>
+<td><code>python scripts/calorie_tracker.py weight-history</code></td>
+</tr>
+<tr>
+<td>查体重趋势</td>
+<td>体重趋势分析</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>对比体重</td>
+<td>两时间段体重对比</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查体重波动</td>
+<td>体重波动分析</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>设体重目标</td>
+<td>设定体重目标和截止日期</td>
+<td><code>python scripts/calorie_tracker.py weight-goal</code></td>
+</tr>
+<tr>
+<td>查体重目标</td>
+<td>体重目标达成进度</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+</tbody>
+</table>
+<h3>🏃 运动</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记运动</td>
+<td>记录运动消耗</td>
+<td><code>python scripts/exercise_tracker.py add</code></td>
+</tr>
+<tr>
+<td>改运动记录</td>
+<td>更新运动记录</td>
+<td><code>python scripts/exercise_tracker.py update</code></td>
+</tr>
+<tr>
+<td>查运动记录</td>
+<td>查询运动记录</td>
+<td><code>python scripts/exercise_tracker.py list</code></td>
+</tr>
+<tr>
+<td>查运动汇总</td>
+<td>运动汇总统计</td>
+<td><code>python scripts/exercise_tracker.py summary</code></td>
+</tr>
+<tr>
+<td>查运动类型</td>
+<td>运动类型统计</td>
+<td><code>python scripts/exercise_tracker.py stats</code></td>
+</tr>
+<tr>
+<td>查运动趋势</td>
+<td>运动热量趋势</td>
+<td><code>python scripts/exercise_tracker.py trend</code></td>
+</tr>
+</tbody>
+</table>
+<h3>🏋️ 健身计划</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查健身计划</td>
+<td>查看训练计划 HTML 页面（DB 数据驱动，含今日复盘 section）</td>
+<td><code>python scripts/render_workout_plan.py</code></td>
+</tr>
+<tr>
+<td>制定健身计划</td>
+<td>AI 采访式对话 → 校验 → 写入</td>
+<td><code>AI 路由（无 CLI）</code></td>
+</tr>
+<tr>
+<td>落地健身计划</td>
+<td>将某天计划执行（补计划 + 记心愿 + 训记推送）</td>
+<td><code>组合:补计划 + 记心愿 + 训记推送</code></td>
+</tr>
+<tr>
+<td>同步健身计划</td>
+<td>批量落地 3 天 + 调「回写训记」</td>
+<td><code>组合:落地健身计划 × 3 + 回写训记</code></td>
+</tr>
+<tr>
+<td>回写训记</td>
+<td>拉训记数据回写 exercise_log（幂等）</td>
+<td><code>python scripts/xunji_bridge.py backfill [--date &lt;DATE&gt;] [--days &lt;N&gt;]</code></td>
+</tr>
+<tr>
+<td>训记-覆盖X日的训练计划</td>
+<td>用卡路里 plan 覆盖训记某天训练</td>
+<td><code>python scripts/xunji_bridge.py overlay-plan --date &lt;DATE&gt;</code></td>
+</tr>
+<tr>
+<td>改健身计划</td>
+<td>AI 对话定位意图 → 改/增/删时段、调整周次</td>
+<td><code>AI 路由 → python scripts/plan_generator.py</code></td>
+</tr>
+<tr>
+<td>复盘训练</td>
+<td>对指定时间段做 plan vs 实绩对比</td>
+<td><code>python scripts/exercise_review.py [--start &lt;DATE&gt; --end &lt;DATE&gt;] [--today] [--yesterday] [--day-before-yesterday] [--days &lt;N&gt;]</code></td>
+</tr>
+</tbody>
+</table>
+<h3>📊 分析</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>查热量趋势</td>
+<td>热量摄入趋势</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查营养配比</td>
+<td>营养素占比分析</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查热量缺口</td>
+<td>热量缺口分析</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查食物排行</td>
+<td>食物排行榜（默认高热量榜）</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查高热量榜</td>
+<td>热量炸弹 TOP5</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查低热量榜</td>
+<td>低热量健康 TOP5</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查频繁吃榜</td>
+<td>最常吃的食物 TOP5</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查高碳水榜</td>
+<td>高碳水食物 TOP5</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查高蛋白榜</td>
+<td>高蛋白食物 TOP5</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查运动分布</td>
+<td>运动类型分布</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查运动贡献</td>
+<td>运动对热量缺口的贡献占比</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+</tbody>
+</table>
+<h3>📋 综合</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>设营养目标</td>
+<td>设置每日营养目标</td>
+<td><code>python scripts/calorie_tracker.py goal</code></td>
+</tr>
+<tr>
+<td>查营养目标</td>
+<td>查看当前每日营养目标</td>
+<td><code>python scripts/calorie_tracker.py get-goal</code></td>
+</tr>
+<tr>
+<td>查健康报告</td>
+<td>四维度综合健康仪表盘</td>
+<td><code>AI 路由（Python API）</code></td>
+</tr>
+<tr>
+<td>查卡路里数据</td>
+<td>数据健康检查</td>
+<td><code>AI 路由（无 CLI）</code></td>
+</tr>
+</tbody>
+</table>
+<h3>📋 复盘（2026-07-15 新增）</h3>
+<blockquote>
+<p><strong>核心定位</strong>：运动表现(健身计划 vs 运动记录)是第 1 优先级,其次是饮食摄入和热量平衡。
+<strong>设计</strong>：从第一性原理出发,3 步公式 = 回顾 → 反思 → 改进。区别于"健康报告"(只给数据)。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>默认参数</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>复盘</code></td>
+<td>立即生成复盘 + 飞书发送</td>
+<td>过去 7 天</td>
+<td><code>python scripts/calorie_tracker.py review --full</code></td>
+</tr>
+<tr>
+<td><code>今日复盘</code> / <code>复盘今日</code> / <code>日复盘</code></td>
+<td>当日复盘</td>
+<td>今天</td>
+<td><code>python scripts/calorie_tracker.py review --full --type day</code></td>
+</tr>
+<tr>
+<td><code>本周复盘</code> / <code>复盘本周</code> / <code>周复盘</code></td>
+<td>本周复盘</td>
+<td>本周一-今天</td>
+<td><code>python scripts/calorie_tracker.py review --full --type week</code></td>
+</tr>
+<tr>
+<td><code>本月复盘</code> / <code>复盘本月</code> / <code>月复盘</code></td>
+<td>本月复盘</td>
+<td>本月 1 号-今天</td>
+<td><code>python scripts/calorie_tracker.py review --full --type month</code></td>
+</tr>
+<tr>
+<td><code>本年复盘</code> / <code>复盘本年</code> / <code>年复盘</code></td>
+<td>本年复盘</td>
+<td>今年 1/1-今天</td>
+<td><code>python scripts/calorie_tracker.py review --full --type year</code></td>
+</tr>
+<tr>
+<td><code>复盘 7/1 到 7/14</code></td>
+<td>自定义范围</td>
+<td>—</td>
+<td><code>python scripts/calorie_tracker.py review --full --range 2026-07-01:2026-07-14</code></td>
+</tr>
+<tr>
+<td><code>定时复盘</code></td>
+<td>入口(开/关/查)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>开启定时复盘</code></td>
+<td>启动 cron(默认 23:00 / 过去 7 天)</td>
+<td>—</td>
+<td><code>mavis cron create ...</code></td>
+</tr>
+<tr>
+<td><code>关闭定时复盘</code></td>
+<td>删除 cron</td>
+<td>—</td>
+<td><code>mavis cron delete ...</code></td>
+</tr>
+<tr>
+<td><code>查定时复盘</code></td>
+<td>查看当前配置</td>
+<td>—</td>
+<td><code>mavis cron list</code></td>
+</tr>
+</tbody>
+</table>
+<h4>复盘子命令(Q16=B 多子命令)</h4>
+<pre><code class="language-bash"># 全跑(默认):生成 HTML → 上传飞书云盘 → 飞书发送摘要
+# 注意:full 需要先有 HTML(--html-path)和飞书文本(--text),由 agent 提前生成
+python scripts/calorie_tracker.py review --full --html-path &lt;temp.html&gt; --text &quot;飞书摘要...&quot; [--feishu-url &lt;url&gt;]
+
+# 分步跑(推荐调试用)
+# 1. 查数据 → 拿到 data_path(原始数据 JSON)+ prompt_path(LLM 提示模板)
+python scripts/calorie_tracker.py review --gen [--range X:Y] [--type day|week|month|year]
+
+# 2. agent 读 data_path,自己写 HTML 装填 70 个 data-field,保存到 temp
+
+# 3. 上传 HTML 到飞书云盘 → 拿到飞书 URL
+python scripts/calorie_tracker.py review --archive --html-path &lt;temp.html&gt;
+
+# 4. 发飞书文本(纯文本,agent 自己写摘要,可选带飞书 URL)
+python scripts/calorie_tracker.py review --send --text &quot;飞书摘要...&quot; [--feishu-url &lt;url&gt;]
+</code></pre>
+<h4>数据流(2026-07-16 重构:agent 直接处理,不调用户态 LLM)</h4>
+<pre><code>calorie_tracker.py review --gen
+    ↓
+review_engine.py: 7 维 SQL(摄入/运动/体重/健身计划/profile/营养目标/Top 5 食物)+ 衍生计算(TDEE/缺口/理论减重/营养比例)
+    ↓
+review_cli.py gen: 保存 data_path + prompt_path 到 temp
+    ↓
+agent(我,小匠/M3)读 data → 写 HTML 装填 70 个 data-field
+    ↓
+calorie_tracker.py review --archive: 上传 HTML 到飞书云盘
+    ↓
+agent 写飞书摘要文本
+    ↓
+calorie_tracker.py review --send: 发送到群/IM
+</code></pre>
+<p><strong>为什么 agent 直接处理</strong>:<code>llm_call.py</code> 在用户态跑永远 401(<code>apiKey: sk-xxx</code> 是 placeholder),
+mavis 框架只在 IDE 进程内部自动注入真 token。手动复盘场景 agent(我)本来就在对话里,
+<strong>我就是 LLM</strong>,不需要绕一圈调 API。<code>call_llm()</code> 已改为 <code>NotImplementedError</code>。</p>
+<h4>8 个口语化 dim(从第一性原理)</h4>
+<table>
+<thead>
+<tr>
+<th>顺序</th>
+<th>标题</th>
+<th>副标签</th>
+<th>数据维度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>总结</strong></td>
+<td>3 亮点 + 3 问题 + 3 建议</td>
+<td>3+3+3 摘要</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>训练</strong> ⭐P1</td>
+<td>健身计划 vs 运动记录</td>
+<td>完成率 / 频次 / 组数 / 时长 / 5-7 条 plan vs actual</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>饮食</strong></td>
+<td>吃进去多少</td>
+<td>平均热量 / 蛋白碳脂 / vs 目标 / 异常天</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>运动</strong></td>
+<td>消耗多少</td>
+<td>运动消耗 / 日均 / TDEE / 类型</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>热量</strong></td>
+<td>缺口多少</td>
+<td>周缺口 / 日均 / 预期 / 理论减重</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>体重</strong></td>
+<td>变化趋势</td>
+<td>起 / 止 / 变化 / 波动 / 7 天折线</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>习惯</strong></td>
+<td>高频 + 异常</td>
+<td>营养结构比例 / Top 5 食物 / 行为异常</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>目标</strong></td>
+<td>进度</td>
+<td>进度条 / vs 体重 / vs 营养 / 预计还需 N 周</td>
+</tr>
+</tbody>
+</table>
+<h4>环境变量</h4>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>用途</th>
+<th>默认</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>REVIEW_FEISHU_TARGETS</code></td>
+<td>JSON 数组,例 <code>[{"type": "group", "group_name": "加油小分队🧸"}, {"type": "im", "open_id": "ou_xxx"}]</code></td>
+<td>空(不发送,只走 gen+archive)</td>
+</tr>
+<tr>
+<td><code>USER_AGE</code></td>
+<td><strong>(已废弃)</strong> review_engine.py 现走 user_profile 表,无需此 env</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>USER_GENDER</code></td>
+<td><strong>(已废弃)</strong> 同上</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>注意</strong>:<code>REVIEW_FEISHU_CHANNEL</code> / <code>REVIEW_FEISHU_WEBHOOK_URL</code> / <code>REVIEW_FEISHU_USER_OPEN_ID</code> 已废弃,
+统一改为 <code>REVIEW_FEISHU_TARGETS</code> JSON 数组(支持多目标,失败降级)。</p>
+<h4>相关文件</h4>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>角色</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>review_template.html</code></td>
+<td>装填模板(70 个 data-field,8 个 dim,Apple 系统色)</td>
+</tr>
+<tr>
+<td><code>scripts/review_cli.py</code></td>
+<td>独立 CLI 入口(gen/archive/send/full 4 子命令)</td>
+</tr>
+<tr>
+<td><code>scripts/review_engine.py</code></td>
+<td>7 维 SQL + 衍生计算 + 摘要提取</td>
+</tr>
+<tr>
+<td><code>scripts/review_prompts.py</code></td>
+<td>LLM 提示模板(call_llm 已废弃,NotImplementedError)</td>
+</tr>
+<tr>
+<td><code>scripts/review_feishu.py</code></td>
+<td>飞书发送(group/im)+ 飞盘上传(用 cwd= 而非 Set-Location)</td>
+</tr>
+</tbody>
+</table>
+<h3>📸 身材照片</h3>
+<table>
+<thead>
+<tr>
+<th>唤醒词</th>
+<th>功能</th>
+<th>CLI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记身材照</td>
+<td>记录身材照片</td>
+<td><code>python scripts/body_photo_tracker.py add</code></td>
+</tr>
+<tr>
+<td>查身材照</td>
+<td>查看照片历史</td>
+<td><code>python scripts/body_photo_tracker.py list</code></td>
+</tr>
+<tr>
+<td>删身材照</td>
+<td>删除照片</td>
+<td><code>python scripts/body_photo_tracker.py delete</code></td>
+</tr>
+<tr>
+<td>改照片标签</td>
+<td>修改照片标签</td>
+<td><code>python scripts/body_photo_tracker.py tag</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="卡路里-热量追踪技能-v2-0-1">卡路里 - 热量追踪技能 v2.0</h1>
+<h2 id="功能概述-6">功能概述</h2>
+<ul>
+<li><strong>食物记录</strong>：记录热量、蛋白质、碳水、脂肪（克为单位）</li>
+<li><strong>每日目标</strong>：设置热量和三大宏量营养素目标</li>
+<li><strong>体重追踪</strong>：记录体重，自动计算BMI</li>
+<li><strong>数据分析</strong>：3大类11种分析维度 + dashboard综合报告</li>
+<li><strong>身材照片</strong>：记录身材照片，支持自定义标签（正面/背面/侧面/手臂等），可生成 GIF 变化动画</li>
+</ul>
+<h2 id="数据库结构-7">数据库结构</h2>
+<p>详见 <a href="references/database_schema.md"><code>references/database_schema.md</code></a></p>
+<p>共 8 张表：<code>food_log</code>（饮食记录）、<code>daily_goal</code>、<code>weight_log</code>、<code>exercise_log</code>、<code>nutrition_products</code>、<code>workout_plan_config</code>（健身计划元信息）、<code>workout_plans</code>（健身日程）、<code>body_photos</code></p>
+<blockquote>
+<p><strong>2026-07-12 重构</strong>：<code>entries</code> → <code>food_log</code>；<code>fitness_goals</code> 和 <code>sleep_records</code> 已删除，重构为 <code>workout_plan_config</code> + <code>workout_plans</code>。所有 8 张表均由 <code>db.py init_db()</code> 统一创建。</p>
+</blockquote>
+<h2 id="脚本模块结构-v2-3-拆分后-8">📂 脚本模块结构（v2.3 拆分后）</h2>
+<p>业务逻辑按"领域对象"拆分到独立文件，每个文件 ≤ 350 行，单屏可读。</p>
+<h3>核心模块（calorie_tracker.py 拆分）</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>行数</th>
+<th>职责</th>
+<th>公共 API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db.py</code></td>
+<td>~145</td>
+<td>数据库基础：路径解析、连接、初始化、迁移</td>
+<td><code>find_db_path</code> / <code>connection</code> / <code>get_db</code> / <code>init_db</code></td>
+</tr>
+<tr>
+<td><code>db_utils.py</code></td>
+<td>~15</td>
+<td>兼容层：re-export db.py（旧脚本继续可用）</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>diet.py</code></td>
+<td>~215</td>
+<td>饮食记录</td>
+<td><code>add_meal</code> / <code>delete_meal</code> / <code>list_meals</code> / <code>get_daily_summary</code> / <code>infer_meal_type</code></td>
+</tr>
+<tr>
+<td><code>water.py</code></td>
+<td>~65</td>
+<td>饮水记录（复用 food_log 表，food_name='💧水'）</td>
+<td><code>add_water</code></td>
+</tr>
+<tr>
+<td><code>nutrition_goal.py</code></td>
+<td>~95</td>
+<td>每日营养目标</td>
+<td><code>set_nutrition_goal</code> / <code>get_nutrition_goal</code></td>
+</tr>
+<tr>
+<td><code>weight.py</code></td>
+<td>~190</td>
+<td>体重记录</td>
+<td><code>log_weight</code> / <code>update_weight</code> / <code>get_weight_history</code></td>
+</tr>
+<tr>
+<td><code>weight_goal.py</code></td>
+<td>~110</td>
+<td>体重目标 + 进度</td>
+<td><code>set_weight_goal</code> / <code>get_weight_goal</code> / <code>print_goal_progress</code></td>
+</tr>
+<tr>
+<td><code>exercise.py</code></td>
+<td>~110</td>
+<td>运动记录</td>
+<td><code>add_exercise</code> / <code>get_exercise_log</code> / <code>print_exercise_summary</code></td>
+</tr>
+<tr>
+<td><code>product_library.py</code></td>
+<td>~160</td>
+<td>食品库 CRUD</td>
+<td><code>add_product</code> / <code>search_products</code> / <code>update_product</code> / <code>list_products</code></td>
+</tr>
+<tr>
+<td><code>calorie_history.py</code></td>
+<td>~55</td>
+<td>热量历史</td>
+<td><code>get_calorie_history</code></td>
+</tr>
+<tr>
+<td><code>calorie_tracker.py</code></td>
+<td>~250</td>
+<td><strong>CLI 入口</strong>：main + argparse + usage</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3>分析包（analysis/）</h3>
+<p>11 个分析函数按维度拆分到子模块，4 个统一入口在 <code>__init__.py</code>。</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>行数</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analysis/__init__.py</code></td>
+<td>~125</td>
+<td>4 统一入口 + 11 原子函数 re-export</td>
+</tr>
+<tr>
+<td><code>analysis/_utils.py</code></td>
+<td>~55</td>
+<td>共享工具：<code>_get_db</code> / <code>_parse_date</code> / <code>_days_between</code> / <code>BMR_ACTIVITY_FACTOR</code></td>
+</tr>
+<tr>
+<td><code>analysis/weight.py</code></td>
+<td>~210</td>
+<td>4 个体重分析：<code>weight_trend</code> / <code>weight_compare</code> / <code>weight_milestone</code> / <code>weight_volatility</code></td>
+</tr>
+<tr>
+<td><code>analysis/diet.py</code></td>
+<td>~225</td>
+<td>4 个饮食分析：<code>diet_calorie_trend</code> / <code>diet_macro_ratio</code> / <code>diet_food_ranking</code> / <code>diet_deficit_analysis</code></td>
+</tr>
+<tr>
+<td><code>analysis/exercise.py</code></td>
+<td>~135</td>
+<td>3 个运动分析：<code>exercise_trend</code> / <code>exercise_type_breakdown</code> / <code>exercise_deficit_contribution</code></td>
+</tr>
+<tr>
+<td><code>analysis/dashboard.py</code></td>
+<td>~45</td>
+<td>综合报告 <code>dashboard(start, end)</code></td>
+</tr>
+</tbody>
+</table>
+<h3>独立 CLI 脚本（已有，未拆分）</h3>
+<p>| 文件 | 行数 | 职责 |
+|---|---|---|---|
+| <code>exercise_tracker.py</code> | 442 | 运动更完整的 CLI（add/update/list/summary/stats/trend）|
+| <code>body_photo_tracker.py</code> | 356 | 身材照片 CLI（add/list/delete/tag/gif）|
+| <code>plan_generator.py</code> | 新建 | 健身计划生成（校验+写入）|
+| <code>workout_plan.py</code> | 新建 | 计划循环逻辑 + 按日查询 |
+| <code>render_workout_plan.py</code> | 新建 | HTML 渲染（DB→Apple 风格页面）|
+| <code>adapters/xunji_adapter.py</code> | 新建 | 训记 API ↔ exercise_log 纯函数适配器（被 xunji_bridge 调用）|
+| <code>xunji_bridge/</code> | 新建 | 训记训练拓展功能 CLI 入口包(verify/fetch/upsert/push-plan/overlay-plan/backfill/key/run-sync 8 子命令) |
+| <code>generate_ts_config.py</code> | 269 | 从数据库生成 <code>config-calorie.ts</code> |</p>
+<h3>模块依赖图</h3>
+<pre><code>calorie_tracker.py（CLI 入口）
+   ├─ diet.py
+   │    └─ nutrition_goal.py
+   ├─ water.py
+   │    └─ nutrition_goal.py
+   ├─ nutrition_goal.py
+   ├─ weight.py
+   ├─ weight_goal.py
+   ├─ exercise.py
+   ├─ product_library.py
+   └─ calorie_history.py
+        └─ nutrition_goal.py
+
+analysis/__init__.py
+   ├─ analysis/weight.py
+   │    └─ weight_goal.py（get_weight_goal）
+   ├─ analysis/diet.py
+   │    └─ nutrition_goal.py（get_nutrition_goal）
+   ├─ analysis/exercise.py
+   └─ analysis/dashboard.py
+        └─ weight.py / diet.py / exercise.py
+
+所有模块 → db.py（数据库基础）
+</code></pre>
+<h3>拆分原则</h3>
+<ol>
+<li><strong>业务领域优先</strong>：文件名 = 管什么（diet/weight/exercise），不叫 <code>entries.py</code>/<code>ops/</code> 等抽象名</li>
+<li><strong>避免歧义命名</strong>：<code>weight_goal</code> 比 <code>goal.py</code> 清晰（还有 <code>nutrition_goal.py</code>）</li>
+<li><strong>CLI 入口稳定</strong>：calorie_tracker.py / exercise_tracker.py 等保留同名入口，内部委托给各模块</li>
+<li><strong>兼容层保留</strong>：<code>db_utils.py</code> 转发到 <code>db.py</code>，旧脚本 import 路径不变</li>
+</ol>
+<h2 id="命令行用法-9">命令行用法</h2>
+<h3>食物记录</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py add &quot;鸡胸肉&quot; 165 31 0 3 150   # 食物名 热量 蛋白 碳水 脂肪 克数
+python scripts/calorie_tracker.py update-meal 5 --grams 180      # 修改记录5的克数为180g
+python scripts/calorie_tracker.py summary                        # 今日摘要（含饮水）
+python scripts/calorie_tracker.py history 7                      # 最近7天历史
+python scripts/calorie_tracker.py goal 1800 150 200 60 2000      # 设置目标：热量 蛋白 碳水 脂肪 饮水ml
+python scripts/calorie_tracker.py water 500                      # 记录饮水 500ml
+</code></pre>
+<h3>用户档案(profile,2026-07-16 新增)</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 175 --note &quot;默认值&quot;
+python scripts/calorie_tracker.py profile get       # JSON 输出
+python scripts/calorie_tracker.py profile show      # 人类可读
+python scripts/calorie_tracker.py profile sync-height  # 从 weight_log 自动同步身高
+</code></pre>
+<p>用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。</p>
+<h3>用户档案(profile,2026-07-16 新增)</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 175 --note &quot;默认值&quot;
+python scripts/calorie_tracker.py profile get       # JSON 输出
+python scripts/calorie_tracker.py profile show      # 人类可读
+python scripts/calorie_tracker.py profile sync-height  # 从 weight_log 自动同步身高
+</code></pre>
+<p>用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。</p>
+<h3>食品库</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py search-product &quot;可乐&quot;          # 搜索
+python scripts/calorie_tracker.py add-product &quot;可口可乐&quot; &quot;可口可乐&quot; 42 0 0 0 10.6 10.6 0 20 &quot;330ml&quot;
+python scripts/calorie_tracker.py update-product 1 --calories 45 # 更新
+</code></pre>
+<h3>体重</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py weight 70 178                  # 记录体重(kg) 身高(cm)（身高必传）
+python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录（按ID）
+python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
+python scripts/calorie_tracker.py weight-goal 73 2026-12-31      # 设置体重目标 + 截止日期
+python scripts/calorie_tracker.py weight-goal-progress           # 查看体重目标进度
+</code></pre>
+<h3>运动</h3>
+<pre><code class="language-bash">python scripts/calorie_tracker.py exercise-add 骑行 300 --minutes 40   # 快速记录运动
+python scripts/calorie_tracker.py exercise-summary 7                   # 近7天运动汇总
+python scripts/exercise_tracker.py add --date 2026-05-23 --type 骑行 --calories 300 --minutes 40
+python scripts/exercise_tracker.py list --days 7
+python scripts/exercise_tracker.py summary --days 7
+python scripts/exercise_tracker.py trend --days 7
+</code></pre>
+<h3>身材照片</h3>
+<pre><code class="language-bash">python scripts/body_photo_tracker.py add photo1.jpg photo2.jpg --tag 正面 --note &quot;早起&quot;
+python scripts/body_photo_tracker.py list --days 30 --tag 正面
+python scripts/body_photo_tracker.py delete 1
+python scripts/body_photo_tracker.py tag 1 侧面
+python scripts/body_photo_tracker.py gif --tag 正面 --start 2026-01-01 --end 2026-05-30
+</code></pre>
+<h3>分析接口（11种维度）</h3>
+<pre><code class="language-python">weight_analysis(start, end, 'trend')       # 趋势|compare|milestone|volatility
+diet_analysis(start, end, 'calorie_trend') # calorie_trend|macro_ratio|food_ranking|deficit_analysis
+exercise_analysis(start, end, 'exercise_trend') # exercise_trend|type_breakdown|deficit_contribution
+dashboard(start, end)                      # 综合四维度仪表盘
+</code></pre>
+<hr />
+<h2 id="ai-路由规则-10">AI 路由规则</h2>
+<p><strong>重要提示</strong>：所有命令使用技能目录下的 <code>scripts/</code> 路径前缀。</p>
+<h3>Step 1：识别功能域</h3>
+<p>根据用户输入关键词判断功能域：</p>
+<table>
+<thead>
+<tr>
+<th>关键词</th>
+<th>功能域</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>吃/食物/餐/喝/摄入/卡路里（食物相关）</td>
+<td>🍚 饮食记录</td>
+</tr>
+<tr>
+<td>食品库/营养成分表/存食品</td>
+<td>🏷️ 食品库</td>
+</tr>
+<tr>
+<td>体重/公斤/kg/BMI/秤</td>
+<td>⚖️ 体重</td>
+</tr>
+<tr>
+<td>运动/跑步/骑行/俯卧撑/消耗（运动相关）</td>
+<td>🏃 运动</td>
+</tr>
+<tr>
+<td>健身计划/训练计划/制定计划/改计划/落地计划</td>
+<td>🏋️ 健身计划</td>
+</tr>
+<tr>
+<td>趋势/排行/缺口/配比/分布/贡献</td>
+<td>📊 分析</td>
+</tr>
+<tr>
+<td>仪表盘/整体情况/报告/目标（营养）</td>
+<td>📋 综合</td>
+</tr>
+<tr>
+<td>身材照/体型照/身体照片</td>
+<td>📸 身材照片</td>
+</tr>
+</tbody>
+</table>
+<h3>Step 2：域内精确匹配</h3>
+<p>在已识别的域内，按触发词速查表精确匹配唤醒词，执行对应 CLI。</p>
+<h3>Step 3：歧义消解</h3>
+<table>
+<thead>
+<tr>
+<th>歧义场景</th>
+<th>判断规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"查热量" vs "查热量趋势"</td>
+<td>前者是搜索食品库，后者是分析模块</td>
+</tr>
+<tr>
+<td>"记运动" vs "查运动记录"</td>
+<td>"记"=新增，"查"=查询</td>
+</tr>
+<tr>
+<td>"记吃的" vs "改吃的"</td>
+<td>"记"=新增，"改"=修改已有记录</td>
+</tr>
+<tr>
+<td>"记体重" vs "查体重目标"</td>
+<td>"记"=新增记录，"查"=查询进度</td>
+</tr>
+<tr>
+<td>"制定健身计划" vs "落地健身计划"</td>
+<td>前者是对话制定，后者是执行到当天</td>
+</tr>
+<tr>
+<td>"查食物排行" vs "查高热量榜"</td>
+<td>前者默认高热量，后者显式指定</td>
+</tr>
+<tr>
+<td>"设营养目标" vs "设体重目标"</td>
+<td>营养=calorie/protein/carbs/fat/water_goal 5 字段;体重=weight_goal+deadline 2 字段</td>
+</tr>
+<tr>
+<td>"查食物排行" vs "查高热量榜"</td>
+<td>前者默认高热量，后者显式指定</td>
+</tr>
+<tr>
+<td>"记身材照" vs "查身材照"</td>
+<td>"记"=新增，"查"=查询</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="ai-触发场景详述-11">AI 触发场景详述</h2>
+<p><strong>所有 CLI 路径前缀</strong>：<code>python scripts/</code></p>
+<h3>🍚 饮食记录：记吃了</h3>
+<p><strong>完整流程（重要）</strong>：</p>
+<h4>Step 1：解析用户输入</h4>
+<p>提取：食物名、克数（如有）</p>
+<h4>Step 2：模糊查询 nutrition_products 表</h4>
+<p>执行：<code>python scripts/calorie_tracker.py search-product &lt;食物名&gt;</code></p>
+<h4>Step 3：根据查询结果分流</h4>
+<p><strong>Path A：找到匹配结果（≥1条）</strong></p>
+<pre><code>列表显示 → 用户选择 → 确认克数 → 计算热量/100 × 克数 → 执行 add → 返回今日汇总
+</code></pre>
+<p><strong>Path B：库中没找到，用户提供了营养成分表图片（拍营养表）</strong></p>
+<pre><code>调用 mmx vision describe 识别图片：
+  mmx vision describe --image &lt;图片路径&gt; \
+    --prompt &quot;请识别这张营养成分表，提取：产品名称、品牌、热量(千卡)、蛋白质(克)、脂肪(克)、饱和脂肪(克)、碳水化合物(克)、糖(克)、膳食纤维(克)、钠(毫克)。请以JSON格式返回。&quot;
+→ 展示结果 → 用户确认 → add-product 存库 → 继续 Path A
+</code></pre>
+<p><strong>Path C：库中没找到，用户无法提供营养成分表</strong></p>
+<pre><code>讨论估算克数 → mmx search 查询参考数据：
+  mmx search query --q &quot;&lt;食物名&gt; 营养成分表 每100克热量&quot;
+→ 用户确认 → 执行 add（参考数据不存库）
+</code></pre>
+<h4>Step 4：返回确认信息</h4>
+<pre><code>✓ 已记录：&lt;食物名&gt; (&lt;热量&gt;卡, &lt;克数&gt;克)
+餐次：&lt;早/午/晚/下午茶/夜宵&gt;
+今日：&lt;热量&gt;/&lt;目标&gt;卡 | 蛋白&lt;蛋白&gt;/&lt;目标&gt;g | 碳&lt;碳&gt;/&lt;目标&gt;g | 脂&lt;脂&gt;/&lt;目标&gt;g
+</code></pre>
+<h3>🏷️ 食品库：存食品 / 查热量 / 改食品 / 查食品库</h3>
+<ul>
+<li><strong>存食品</strong>：解析输入或图片 → 提取营养成分 → <code>python scripts/calorie_tracker.py add-product &lt;产品名&gt; &lt;品牌&gt; &lt;热量&gt; &lt;蛋白&gt; &lt;脂肪&gt; &lt;饱和脂肪&gt; &lt;碳水&gt; &lt;糖&gt; &lt;纤维&gt; &lt;钠&gt; [备注]</code></li>
+<li><strong>查热量</strong>：<code>python scripts/calorie_tracker.py search-product &lt;关键词&gt;</code></li>
+<li><strong>改食品</strong>：<code>python scripts/calorie_tracker.py update-product &lt;id&gt; [--字段 值]</code></li>
+<li><strong>查食品库</strong>：<code>python scripts/calorie_tracker.py list-products</code></li>
+</ul>
+<h3>📦 批量导入食品库（2026-06-30 新增）</h3>
+<p>适用场景:批量录入 / 批量更新 <strong>10+ 条</strong> 食品数据。</p>
+<p>工具:<code>python scripts/batch_import.py</code></p>
+<p><strong>子命令</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>子命令</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>validate &lt;file.jsonl&gt;</code></td>
+<td>只校验 JSONL,不读写数据库</td>
+</tr>
+<tr>
+<td><code>import &lt;file.jsonl&gt; [--dry-run]</code></td>
+<td>批量导入(重复时逐条询问)</td>
+</tr>
+<tr>
+<td><code>dedupe</code></td>
+<td>全库去重检查(只报告,不修改)</td>
+</tr>
+<tr>
+<td><code>export --source X --output F</code></td>
+<td>按条件导出 JSONL</td>
+</tr>
+</tbody>
+</table>
+<p><strong>JSONL 字段规范</strong>:</p>
+<ul>
+<li><strong>必填(7)</strong>:<code>product_name</code>, <code>calories</code>, <code>protein</code>, <code>fat</code>, <code>carbohydrates</code>, <code>sodium</code>, <code>source</code></li>
+<li><strong>可选(6)</strong>:<code>brand</code>, <code>saturated_fat</code>, <code>sugar</code>, <code>dietary_fiber</code>, <code>note</code>, <code>is_deprecated</code></li>
+</ul>
+<p><strong>去重判定</strong>:<code>product_name + brand</code> 完全相同视为同一条</p>
+<p><strong>重复处理</strong>(逐条交互):</p>
+<table>
+<thead>
+<tr>
+<th>快捷键</th>
+<th>动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>o</code></td>
+<td>覆盖(更新数据)</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>跳过</td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td>标废弃(is_deprecated=1)</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>全部应用此选择(再问一次具体动作)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>完整示例</strong>:<code>python scripts/batch_import.py --help</code></p>
+<h3>⚖️ 体重：记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标</h3>
+<ul>
+<li><strong>记体重</strong>：<code>python scripts/calorie_tracker.py weight &lt;体重&gt; &lt;身高&gt;</code>（身高必传，BMI 必须计算）</li>
+<li><strong>改体重记录</strong>：<code>python scripts/calorie_tracker.py weight-update &lt;ID&gt; [--weight &lt;公斤&gt;] [--height &lt;身高cm&gt;] [--note &lt;备注&gt;]</code></li>
+<li><strong>查体重历史</strong>：<code>python scripts/calorie_tracker.py weight-history [天数]</code></li>
+<li><strong>查体重趋势</strong>：<code>AI 路由（Python API）: weight_analysis(start, end, 'trend')</code></li>
+<li><strong>对比体重</strong>：<code>AI 路由（Python API）: weight_analysis(start, end, 'compare', compare_start, compare_end)</code></li>
+<li><strong>查体重波动</strong>：<code>AI 路由（Python API）: weight_analysis(start, end, 'volatility')</code></li>
+<li><strong>设体重目标</strong>：<code>AI 路由（Python API）: set_weight_goal(weight_goal, deadline)</code></li>
+<li><strong>查体重目标</strong>：<code>AI 路由（Python API）: weight_analysis(start, end, 'milestone')</code></li>
+</ul>
+<h3>🏃 运动：记运动 / 改运动记录 / 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势</h3>
+<ul>
+<li><strong>记运动</strong>：<code>python scripts/exercise_tracker.py add --date &lt;日期&gt; --type &lt;类型&gt; --calories &lt;卡&gt; [--minutes &lt;分钟&gt;] [--reps &lt;次数&gt;] [--category &lt;类&gt;] [--intensity &lt;级&gt;] [--distance &lt;km&gt;] [--heart-rate &lt;bpm&gt;] [--set &lt;N&gt;] [--load &lt;kg&gt;]</code></li>
+<li><strong>改运动记录</strong>：<code>python scripts/exercise_tracker.py update --id &lt;ID&gt; [--字段 值]</code></li>
+<li><strong>查运动记录</strong>：<code>python scripts/exercise_tracker.py list [--days N] [--date &lt;日期&gt;] [--type &lt;类型&gt;] [--category &lt;类&gt;]</code></li>
+<li><strong>查运动汇总</strong>：<code>python scripts/exercise_tracker.py summary [--days N]</code></li>
+<li><strong>查运动类型</strong>：<code>python scripts/exercise_tracker.py stats --type &lt;breakdown|total&gt;</code></li>
+<li><strong>查运动趋势</strong>：<code>python scripts/exercise_tracker.py trend [--days N]</code></li>
+</ul>
+<h4>🎯 运动 AI 路由规则（必读 · 2026-06-29 扩展）</h4>
+<h5>A · 卡路里综合考虑规则</h5>
+<p>用户可能给卡路里值、可能不给。AI 必须按以下流程处理：</p>
+<pre><code>Step 1  识别用户报的卡路里值（若有）
+Step 2  AI 用 METs 公式独立推算（不依赖心率）
+        - 有氧/柔韧/日常：cal = MET × 体重 × 时长(h)
+        - 力量训练    ：cal = MET × 体重 × 组数 × 0.05h
+        - 体重从 weight_log 最新一条取，不向用户追问
+Step 3  对比两个值，按偏差处理：
+        - 偏差 &lt; 20%       → 取 AI 推算值入档
+        - 偏差 20-50%      → 取两者中位 + note 标记
+        - 偏差 &gt; 50%       → 反问用户确认哪个对（不入档）
+</code></pre>
+<p>实现：<code>exercise.combined_calories(user_reported, estimated)</code> 返回 <code>(final, note_suffix, deviation)</code>。</p>
+<h5>B · 强度字段优先级</h5>
+<pre><code>1. 用户口语明确说（如&quot;很累&quot;、&quot;轻松&quot;、&quot;累死&quot;） → AI 翻译成 4 档（最高优先）
+2. AI 基于 METs 兜底（无口率）                 → 按 MET 范围估
+3. 都没有                                       → NULL（不强制）
+</code></pre>
+<p>口语映射表（节选）：
+| 用户说 | 4 档 |
+|---|---|
+| "挺轻松"、"没什么感觉"、"散步" | 低 |
+| "一般"、"还行"、"中等" | 中 |
+| "挺累"、"暴汗"、"喘" | 高 |
+| "累死"、"力竭"、"撑不住" | 极限 |</p>
+<p>METs 兜底映射：
+| MET 范围 | 4 档 |
+|---|---|
+| &lt; 3 | 低 |
+| 3-6 | 中 |
+| 6-9 | 高 |
+| &gt; 9 | 极限 |</p>
+<p>实现：<code>exercise.parse_user_intensity(text)</code> + <code>exercise.estimate_intensity_met(met)</code>。</p>
+<h5>C · 心率询问规则（场景化）</h5>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>AI 是否问心率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>有氧（跑步/骑行/跳绳/八段锦）</td>
+<td>✅ 主动问 1 次</td>
+</tr>
+<tr>
+<td>力量训练（哑铃/深蹲/俯卧撑）</td>
+<td>❌ 不问</td>
+</tr>
+<tr>
+<td>日常活动（家务/做饭）</td>
+<td>❌ 不问</td>
+</tr>
+</tbody>
+</table>
+<p>问法示例：<code>"顺便问下，平均心率有记到吗？没记就跳过"</code>
+用户答"没记"或忽略 → 心率字段 NULL，不卡流程。</p>
+<h5>D · 运动分类路由</h5>
+<p><code>category</code> 字段 4 个值，AI 根据动作名自动推断：</p>
+<table>
+<thead>
+<tr>
+<th>关键词</th>
+<th>category</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>哑铃/杠铃/史密斯/弯举/推举/深蹲/卧推/划船/俯卧撑/引体/平板支撑</td>
+<td>力量</td>
+</tr>
+<tr>
+<td>八段锦/太极/瑜伽/拉伸</td>
+<td>柔韧</td>
+</tr>
+<tr>
+<td>家务/做饭/洗衣/打扫/通勤/走路/散步</td>
+<td>日常</td>
+</tr>
+<tr>
+<td>跑步/骑行/跳绳/椭圆机/游泳/其他</td>
+<td>有氧（兜底）</td>
+</tr>
+</tbody>
+</table>
+<p>实现：<code>exercise._infer_category(exercise_type)</code>。</p>
+<h5>E · 力量训练流式录入</h5>
+<p>每组 = 1 行 exercise_log：</p>
+<pre><code class="language-bash"># 第 1 组
+exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
+  --set 1 --reps 10 --load 10 --category 力量 --calories 22
+
+# 第 2 组
+exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
+  --set 2 --reps 10 --load 10 --category 力量 --calories 22
+</code></pre>
+<p>用户做完一组就告诉 AI 一组数据，AI 逐条 add。<strong>绝对不要</strong>等做完 N 组再汇总成一条记录。</p>
+<h3>🏋️ 健身计划：查 / 制定 / 改 / 落地 / 同步</h3>
+<ul>
+<li><strong>查健身计划</strong>：<code>python scripts/render_workout_plan.py</code> 输出 Apple 风格 HTML</li>
+<li><strong>制定健身计划</strong>：AI 4 轮对话制→ 产出 JSON → <code>plan_generator.write_plan()</code> 写入
+  ```
+  贯穿规则：
+    A. 安全止损 — 制止明显不安全的要求（如"每天 50 组胸"）
+    B. 解释决策 — 每次建议必须说"因为..."
+    C. 现状感知 — 利用基线信息在后续决策中引用
+    D. start_date 必须是周一(2026-07-13 加) — 健身计划以自然周对齐;若用户给的不是周一,先 round 到最近周一再写入;不 round 会导致用户口语"第 N 周"跟算法返的 plan_week 错位(因为 n 周循环按距离 start 的整 7 天算)</li>
+</ul>
+<p>第1轮·基线建立：
+    当前训练状态 + 目标 + 水平 + 伤病/保护部位 + 器材清单 + 讨厌的动作
+    → 建立完整用户画像</p>
+<p>第2轮·结构性决策：
+    每周几天 / 每天几时段 / 每时段多久
+    部位优先级 + 周总组数（AI 建议 + 解释为什么）
+    分化策略（推拉腿/部位分化/全身）
+    AI 实时校验：时段数×时长÷3min ≥ 总组数
+    → 确定时间框架和部位分配</p>
+<p>第3轮·精细化：
+    周期化：几周循环 + 周权重方案
+    递进协议：每周期内如何推进（RPE递增/rep递增/重量递增）
+    热身 + 有氧如何嵌入
+    评估指标：4周后怎么判断效果
+    → 确定训练变量</p>
+<p>第4轮·动作落地：
+    AI 推荐候选动作 → 用户确认 + 主备关系
+    AI 校验：角度多样性/器材匹配/训记库中验证
+    确认 → 生成 JSON → validate_plan() → write_plan()
+  <code>- **改健身计划**：AI 对话定位意图 → 一个唤醒词覆盖所有写操作（改时段/加时段/删时段/调整周/改配置）
+- **复盘训练**：`python scripts/exercise_review.py [--start &lt;DATE&gt; --end &lt;DATE&gt;] [--today] [--yesterday] [--day-before-yesterday] [--days &lt;N&gt;]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比（完成率 / 漏做 / 超额 / 异常）。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。</code>
+  参数：
+    --start      <DATE>       开始日期
+    --end        <DATE>       结束日期
+    --today                  今日（start=end=today）
+    --yesterday              昨日（start=end=yesterday）
+    --day-before-yesterday   前日（start=end=today-2）
+    --days N                 最近 N 天（start=today-N+1, end=today）
+  数据来源：
+    - workout_plans（每日 sessions + total_sets）
+    - exercise_log（每日实绩，set_index 计数）
+  报告内容（每天）：
+    - 计划组数 vs 实做组数
+    - 完成率
+    - 异常项：完成率 &lt; 50% / 超额 &gt; 130% / 计划未做 / 计划休息但实做
+  使用场景：晚上 10 点同步健身计划 → 触发"复盘训练" → 看 plan vs 实绩差距 → 决定要不要改健身计划。
+  <code>- **落地健身计划**：将指定日期的训练计划落地到作息/备忘/训记三个系统。执行必须全部完成三步，逐 session 独立执行，某条失败跳过继续。</code>
+  Step 1 · 数据准备
+    调 workout_plan.get_day_plan(日期)。
+    如果用户没说日期，默认今天。
+    休息日 → 告知用户并退出。
+    <strong>未开始(2026-07-13 增)</strong>:返回的 dict 含 <code>unstarted=True</code> 时,表示该日期早于 plan start_date,跳过后续 Step 2/3/4,告知用户"计划 X 月 X 日开始"并退出。</p>
+<p>Step 2 · 联动作息管家
+    对每个 session 调「补计划 {日期} 健身 {session_label} {time_start}-{time_end}」
+    附带 notes（前 3 动作名 + 总数），category="运动"。
+    ensure-plan-event 已内置飞书日历同步（本地 DB 和飞书日历缺哪边建哪边）。
+    接口幂等，重复调用自动跳过。</p>
+<p>Step 3 · 联动备忘录
+    对每个 session，先构造心愿内容：
+      心愿内容 = 「健身 {session_label} {time_start}-{time_end}」
+    此字符串在"查"和"记"时必须完全一致，AI 不得自由改写措辞。</p>
+<pre><code>**查重(2026-07-14 改为三步:本地 + 飞书,content + due 双键,都没有才新建)**：
+  第一性:本地 notes 是 SoT,飞书 task 是镜像,二者必须 1:1 对应。
+  任何"只建一边"都视为数据不一致,必须靠"三步查重"防止。
+
+  Step 3.1 · 查本地 notes 表(备忘录的"查心愿")
+    调备忘录「查心愿 {心愿内容} --category 心愿 --due {该日期}」
+    → 有匹配 → 跳过(已存在,不动)
+
+  Step 3.2 · 查飞书 task 列表(lark-cli)
+    调「lark-cli task +search --query &lt;心愿内容&gt; --due &lt;该日期&gt;,&lt;该日期&gt; --format json」
+    解析 `data.items[]`,找 `summary == 心愿内容` 且 `due_at` 以该日期开头的项
+    → 有匹配(同 summary + due)→ 跳过(已存在,不动)
+    (注:即使本地没查到,只要飞书查到也算已存在,避免重复)
+
+  Step 3.3 · 都没有才新建
+    调备忘录「记心愿 {心愿内容} --category 心愿 --due {该日期}」创建
+    (add_wish_sync 内部会调 lark-cli task +create 同步到飞书)
+不建过去日期的心愿。
+</code></pre>
+<p>Step 4 · 联动训记
+    检查训记 KEY 环境变量，权威名 <code>XUNJI_TRAINS_KEY</code>（兼容旧名 <code>XUNJI_API_KEY</code>）：
+      未配置 → 调 <code>python scripts/xunji_bridge.py key status</code> 让用户看状态，
+              再用 <code>python scripts/xunji_bridge.py key set &lt;KEY&gt;</code> 设置。
+              KEY 申请：训记 App → 我的 → 设置 → 第三方接入。
+      已配置(PRIMARY) → 提示「✅ 训记 KEY 已配（XUNJI_TRAINS_KEY），开始同步」
+      已配置(LEGACY fallback) → 提示「⚠ 用了旧名 XUNJI_API_KEY，建议用 key set 迁移到 XUNJI_TRAINS_KEY」</p>
+<pre><code>KEY 就绪后，**不再**手写 HTTP，改为调训记训练拓展 CLI：
+  python scripts/xunji_bridge.py push-plan --date &lt;DATE&gt;
+该命令内部完成：
+  ① 读 workout_plans 中当天的所有 session
+  ② 按以下规则转成训记 res[] 格式：
+     - schema_version = "train_open_api_v2"
+     - client_request_id = "{日期}_{session_label}_{uuid8}"（幂等键；uuid8 后缀满足训记 unique-id-from-agent 硬约束,避免同 label 重推被训记去重）
+     - datestr / title / start=0 / end=0
+     - movements 只保留 name + sets；每条 set 加 "done": false
+  ③ 调 POST /api_upsert_trains_for_llm_v2
+  ④ 多个 session 间自动等 45s（训记写 API 限频）
+  ⑤ 输出每 session ok/fail 状态，JSON 格式
+
+⏱ 训记推送约 3 分钟/天。
+
+训记写入失败的 session 重新调落地可重试（client_request_id 保证幂等）。
+</code></pre>
+<p>末尾输出汇总：
+    ✅ 补计划 4/4 已创建
+    ✅ 心愿 3/4 已建（1 条已存在跳过）
+    ⚠️ 训记推送 3/4（S3 超时，重新调落地可重试）
+  ```</p>
+<ul>
+<li><strong>同步健身计划</strong>：批量落地 3 天 + 训记回写 exercise_log。
+  <code>``
+  前置:KEY 检查同「落地健身计划」Step 4
+    检查 XUNJI_TRAINS_KEY(优先,兼容 XUNJI_API_KEY)。
+    未配置 → 调</code>python scripts/xunji_bridge.py key status<code>让用户看状态,
+            再用</code>python scripts/xunji_bridge.py key set <KEY>` 设置。
+            KEY 申请:训记 App → 我的 → 设置 → 第三方接入。</li>
+</ul>
+<p>Step 1 · 批量落地(按天循环,顺序执行)
+    固定 3 天,从今天起。按天依次执行。
+    每天开始前汇报:「第 1/3 天(7月13日 周一)开始落地…」
+    对当天调「落地健身计划」<strong>完整流程</strong>(每次必须执行全部三步:补计划+记心愿+训记推送)。
+    每天完成后汇报:
+      「第 1/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 3 条(S3 超时跳过)」</p>
+<p>Step 2 · 训记回写(2026-07-13 改:独立为「回写训记」trigger,此处引用)
+    3 天都跑完后,调「回写训记」3 天(--days 3)。
+    触发词路由:<code>python scripts/xunji_bridge.py backfill --days 3</code>
+    实现细节见「回写训记」章节(幂等键 / 错误处理 / 体重推算都在那里)。
+    完成后汇报:「训记回写 ✅ 新增 X 条,更新 Y 条」</p>
+<p>末尾输出模板:
+    第 1/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 3 条(S3 超时跳过)
+    第 2/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
+    第 3/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条
+    训记回写 ✅ 新增 12 条,更新 0 条
+  ```</p>
+<ul>
+<li><strong>回写训记</strong>：<code>python scripts/xunji_bridge.py backfill [--date &lt;DATE&gt;] [--days &lt;N&gt;]</code> → 拉训记数据回写 exercise_log(幂等)。
+  ```
+  行为:
+    调训记 fetch(include_full_data=true)
+    → xunji_adapter.py 解析 → upsert_exercise_log
+    → 幂等键:xunji_localid + set_index(同组不会重复写)
+    → 自动取最新体重推算热量</li>
+</ul>
+<p>参数:
+    --date <DATE>  单日（默认今天）
+    --days N           范围 <a href="默认 1">date-N+1, date</a></p>
+<p>前置:KEY 检查同「落地健身计划」Step 4(XUNJI_TRAINS_KEY)</p>
+<p>使用场景:
+    - 「同步健身计划」Step 2 自动调(--days 3)
+    - 晚上 6 点已同步过、8 点又有新训练 → 「回写训记」单独跑
+    - 周末补练漏写 → 「回写训记 --date <DATE> --days <N>」</p>
+<p>末尾输出(JSON):
+    {
+      "end_date": "2026-07-13",
+      "days": 1,
+      "results": [
+        {
+          "date": "2026-07-13",
+          "fetch_ok": true,
+          "trains_count": 3,
+          "inserted": 2,
+          "updated": 1,
+          "skipped_empty": false,
+          "body_weight_kg": 70.0,
+          "errors": [],
+          "err": null
+        }
+      ],
+      "total_inserted": 2,
+      "total_updated": 1
+    }
+  ```</p>
+<ul>
+<li><strong>训记-覆盖X日的训练计划</strong>：用卡路里 plan 覆盖训记某天<strong>已有</strong>训练(localid 已有 + start/end=0,<strong>等同新建语义</strong>)。
+  ```
+  适用场景:<ul>
+<li>训记那天的训练已经在(可能手建,可能 push-plan 建过),想用卡路里 plan 同步内容</li>
+<li>注意:跟「落地健身计划」的区别 —— 落地走 push-plan(新建 localid=0),
+        本触发词走 overlay-plan(更新 localid 已有)
+  跟「落地健身计划」Step 1/2/3 的区别:</li>
+<li>训记-覆盖只动训记,不动作息/备忘</li>
+<li>不调「补计划」、不调「记心愿」</li>
+</ul>
+</li>
+</ul>
+<p>Step 1 · 解析日期
+    用户说"覆盖7.13"/"训记-覆盖2026-07-13的训练计划"等
+    → 解析成 YYYY-MM-DD
+    → 昨天/前天拒绝(训记"覆盖历史"无意义,改 plan 才有意义)</p>
+<p>Step 2 · 调底层 CLI
+    不手写 HTTP,直接调:
+      python scripts/xunji_bridge.py overlay-plan --date <DATE>
+    可选参数:
+      --dry-run       预览将要推什么(不实推)
+      --missing fail  卡路里有但训记没的 title → 报错退出(默认)
+      --missing skip  卡路里有但训记没的 title → 跳过,只推匹配的</p>
+<p>Step 3 · 内部做了什么
+    ① fetch 训记 list(只拿 title → localid 映射,<strong>不取 start/end</strong>)
+    ② 拉卡路里 plan(get_day_plan)
+    ③ 按 title 对账
+    ④ 缺 title → 按 --missing 策略处理
+    ⑤ 训记有但卡路里没 → 报告保留(不删)
+    ⑥ 构造 res[]:localid 已有,start=0, end=0
+    ⑦ 调底层 upsert.upsert_trains(单次,训记 API 单次最多 4 条训练)
+    ⑧ 输出对账结果 + 训记响应</p>
+<p>Step 4 · 训记响应处理
+    success → 告知用户「✅ 覆盖 X 条训练(start/end 都改 0)」
+    fail_count &gt; 0 → 报告训记错误(error_type 路由见下方"训记 API 错误处理路由表")
+    missing=fail 命中 → 报告哪些 title 训记找不到,让用户决定:
+        - 是训记那边没建 → 改用 push-plan(新建)
+        - 是 plan 改了 title → 同步改回去或忽略</p>
+<p>末尾输出模板:
+    ✅ 训记覆盖 4/4 完成(上午·臂 / 下午·胸 / 晚上·肩+腿 / 居家·腹,start/end=0)
+    或:
+    ❌ 卡路里有但训记没:<a href="请先在训记 App 建对应训练,或用 push-plan 新建">title 列表</a>
+  ```</p>
+<h3>🚨 训记 API 错误处理路由表</h3>
+<p>所有训记 CLI 返回的错误都带 <code>error_type</code> 字段(来自 <code>xunji_bridge/errors.py</code>)。
+AI 看到错误时按此表处理:</p>
+<table>
+<thead>
+<tr>
+<th>error_type</th>
+<th>含义</th>
+<th>AI 应对</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>auth</code></td>
+<td>apikey 缺失/无效(401/403)</td>
+<td>提示用户去训记 App 重新生成 KEY(我的 → 设置 → 第三方接入 → 重置)</td>
+</tr>
+<tr>
+<td><code>rate_limit</code></td>
+<td>too frequent(429)</td>
+<td>CLI 已自动 sleep retry_after + 重试 2 次。如果还是 fail,告诉用户"训记限频,等会儿重试"</td>
+</tr>
+<tr>
+<td><code>vip_required</code></td>
+<td>仅 VIP 可用</td>
+<td>告诉用户"训记 API 需要会员,普通账号无法用"</td>
+</tr>
+<tr>
+<td><code>validation</code></td>
+<td>请求字段错(400)</td>
+<td>CLI 已附 raw_body,告诉用户具体哪个字段错(基于 raw_body.message)</td>
+</tr>
+<tr>
+<td><code>server</code></td>
+<td>5xx 服务端错</td>
+<td>CLI 已重试 2 次。如果还 fail,告诉用户"训记服务端临时挂,稍后重试"</td>
+</tr>
+<tr>
+<td><code>network</code></td>
+<td>超时/连接错</td>
+<td>CLI 已重试 2 次。如果还 fail,告诉用户"网络问题,检查本地网络"</td>
+</tr>
+<tr>
+<td><code>unknown</code></td>
+<td>其他</td>
+<td>把 raw_body 完整给用户,让用户判断</td>
+</tr>
+</tbody>
+</table>
+<p><strong>重试策略</strong>(用户 2026-07-13 确认):<strong>全部错误重试 2 次</strong>(防网络抖动),但 <code>auth</code> / <code>vip_required</code> / <code>validation</code> 重试无意义,直接报。</p>
+<p><strong>错误字段</strong>(完整,err_full):
+- <code>error_type</code>:7 种之一
+- <code>message</code>:人类可读
+- <code>retry_after</code>:服务端要求等待秒数(只 rate_limit 有)
+- <code>raw_body</code>:API 原始响应(调试)
+- <code>code</code>:HTTP code(如果有)</p>
+<h3>📊 分析：查热量趋势 / 查营养配比 / 查热量缺口 / 查食物排行 / 查运动分布 / 查运动贡献</h3>
+<ul>
+<li><strong>查热量趋势</strong>：<code>diet_analysis(start, end, 'calorie_trend')</code> — 工作日 vs 周末 / 合规率</li>
+<li><strong>查营养配比</strong>：<code>diet_analysis(start, end, 'macro_ratio')</code> — 蛋白/碳水/脂肪占比</li>
+<li><strong>查热量缺口</strong>：<code>diet_analysis(start, end, 'deficit_analysis')</code> — 饮食 vs 运动贡献</li>
+<li><strong>查食物排行</strong>：<code>diet_food_ranking(start, end, category)</code> — category 可选：high_calorie / low_calorie / frequent / high_carb / high_protein</li>
+<li><strong>查运动分布</strong>：<code>exercise_analysis(start, end, 'type_breakdown')</code> — 消耗/频次/时长占比</li>
+<li><strong>查运动贡献</strong>：<code>exercise_analysis(start, end, 'deficit_contribution')</code> — 运动对缺口贡献</li>
+</ul>
+<h3>📋 综合：设营养目标 / 查营养目标 / 查健康报告 / 查卡路里数据</h3>
+<ul>
+<li><strong>设营养目标</strong>：<code>calorie_tracker.py goal &lt;热量&gt; [蛋白] [碳水] [脂肪]</code></li>
+<li><strong>查营养目标</strong>：读取 <code>daily_goal</code> 表返回当前目标</li>
+<li><strong>查健康报告</strong>：<code>dashboard(start, end)</code> — 四维度综合仪表盘</li>
+<li><strong>查卡路里数据</strong>：Lint 5 项检查（见下方）</li>
+</ul>
+<hr />
+<h2 id="示例对话-12">示例对话</h2>
+<p><strong>用户</strong>：记吃了 米饭 200克
+<strong>AI</strong>：米饭大概 200克，232卡，4g蛋白，50g碳水，0.5g脂肪 → ✓ 已记录，今日 232/1800卡</p>
+<p><strong>用户</strong>：记体重 70公斤 178
+<strong>AI</strong>：✓ 体重已记录 70.0公斤，BMI 22.1（正常范围）</p>
+<p><strong>用户</strong>：查热量 鸡胸肉
+<strong>AI</strong>：找到 1 个匹配：鸡胸肉 | 165卡/100g | 蛋白31g | 脂肪3g</p>
+<p><strong>用户</strong>：记运动 骑行 40分钟 300卡
+<strong>AI</strong>：✓ 已记录运动：骑行 40分钟 300卡</p>
+<p><strong>用户</strong>：查体重趋势
+<strong>AI</strong>：📊 体重趋势（2026-04-28 ~ 2026-05-28）均重 70.2kg | 变化 -1.3kg | 趋势下降 ✓</p>
+<hr />
+<h2 id="联动说明-13">联动说明</h2>
+<p>联动逻辑已集中到技能路由器（<code>图片路由/SKILL.md</code>），本技能不再单独维护联动规则。完成主操作后请检查路由器的联动规则表。</p>
+<hr />
+<h2 id="lint-检查-数据健康检查-14">Lint 检查（数据健康检查）</h2>
+<p><strong>触发词</strong>：<code>"查卡路里数据"</code></p>
+<h3>检查项</h3>
+<ol>
+<li><strong>数据新鲜度</strong>：今日是否记录体重/饮食/运动</li>
+<li><strong>体重目标进度</strong>：调用 <code>weight_milestone()</code> 检查差距和预计达成时间</li>
+<li><strong>热量趋势预警</strong>：调用 <code>diet_calorie_trend()</code> 检查近7天，连续3天超标则预警</li>
+<li><strong>热量缺口分析</strong>：调用 <code>diet_deficit_analysis()</code> 检查缺口，长期为正需提示</li>
+<li><strong>运动连续性</strong>：调用 <code>exercise_trend()</code> 检查，连续7天以上未运动则预警</li>
+</ol>
+<p>原则：发现问题列出清单，只建议不自动修改。</p>
+<hr />
+<h2 id="typescript-配置生成-15">TypeScript 配置生成</h2>
+<p>触发场景：表结构变了、表数量变了、数据库路径变了、SkillBoard 报错缺字段。</p>
+<p>运行 <code>python scripts/generate_ts_config.py</code> 重新生成 <code>config-calorie.ts</code>，检查输出确认7张表都在。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>卡路里/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

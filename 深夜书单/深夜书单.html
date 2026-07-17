@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深夜书单 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#领域随机选择-1">领域随机选择</a></li>
+<li><a href="#下载策略-按顺序尝试-失败就换下一个-直到成功-2">下载策略（按顺序尝试，失败就换下一个，直到成功）</a></li>
+<li><a href="#成功标准-3">成功标准</a></li>
+<li><a href="#命名规则-4">命名规则</a></li>
+<li><a href="#静默执行-5">静默执行</a></li>
+<li><a href="#最后强制检查和约束-6">最后强制检查和约束</a></li></ol></div>
+<p>你是我的电子书猎手。任务只有一个：无论用什么方法，必须下载到一本佛学、毛泽东、国学或 AI 领域的电子书（PDF 优先），保存到 /mnt/d/2Study/StudyNotes/图书馆 目录。</p>
+<h2 id="领域随机选择-1">领域随机选择</h2>
+<h2 id="下载策略-按顺序尝试-失败就换下一个-直到成功-2">下载策略（按顺序尝试，失败就换下一个，直到成功）</h2>
+<h3>方法 1 — LibGen</h3>
+<ol>
+<li>用 mcp_exa_web_search_exa 搜索："{领域} filetype:pdf" 或 "{领域} 图书 PDF 下载"</li>
+<li>从搜索结果中找到 PDF 下载链接</li>
+<li>用 terminal 执行 curl/wget 下载到图书馆目录</li>
+</ol>
+<h3>方法 2 — Z-Library 镜像</h3>
+<ol>
+<li>搜索 "zlib mirror" 或 "Z-Library 新网址"</li>
+<li>找到可用镜像后，搜索目标书籍</li>
+<li>下载 PDF</li>
+</ol>
+<h3>方法 3 — 学术资源</h3>
+<ol>
+<li>用 mcp_exa_web_search_exa 搜索："{领域} PDF 下载 百度云" 或 "{领域} 电子书 免费下载"</li>
+<li>找百度云/阿里云盘/蓝奏云等直链</li>
+<li>用 terminal curl 下载（如果需要提取码，先尝试常见组合如 1234、abcd、或与书名相关的拼音）</li>
+</ol>
+<h3>方法 4 — GitHub 免费书</h3>
+<ol>
+<li>搜索 "site:github.com {领域} PDF"</li>
+<li>找 README 或 Release 中的 PDF 下载链接</li>
+<li>下载</li>
+</ol>
+<h3>方法 5 — 高校图书馆镜像</h3>
+<ol>
+<li>搜索 "{领域} PDF 上海图书馆" 或 "{领域} PDF 书名 filetype:pdf"</li>
+<li>找到高可信度直链后下载</li>
+</ol>
+<h3>方法 6 — 通用搜索 + 暴力下载</h3>
+<ol>
+<li>用 mcp_tavily_tavily_search 搜索："{领域} 图书 pdf 下载"</li>
+<li>遍历所有结果中的链接，找直链 PDF</li>
+<li>尝试下载</li>
+</ol>
+<h2 id="成功标准-3">成功标准</h2>
+<ul>
+<li>文件成功保存到 /mnt/d/2Study/StudyNotes/图书馆</li>
+<li>文件大小 &gt; 1MB（排除错误页面）</li>
+<li>文件格式为 pdf/epub/mobi 任一皆可，PDF 优先</li>
+</ul>
+<h2 id="命名规则-4">命名规则</h2>
+<p>文件名格式：{领域}<em>{书名作者关键词}</em>{日期}.{后缀}</p>
+<h2 id="静默执行-5">静默执行</h2>
+<p>完成后直接退出，不发任何微信消息。如果所有方法都失败，在图书馆目录创建一个空文件叫 FAILED_{日期}.txt 记录失败状态。</p>
+<h2 id="最后强制检查和约束-6">最后强制检查和约束</h2>
+<p>检查生成的pdf文件，如果格式损坏则删除该PDF文件。禁止删除用户其他文件。</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>深夜书单/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

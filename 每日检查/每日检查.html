@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日检查 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#每日检查-1">每日检查</a></li>
+<li><a href="#核心设计-1">核心设计</a></li>
+<li><a href="#每日检查问题列表-共16个-2">每日检查问题列表（共16个）</a></li>
+<li><a href="#特殊交互要求-3">特殊交互要求</a></li>
+<li><a href="#视觉风格规范-必须遵守-4">视觉风格规范（必须遵守）</a></li>
+<li><a href="#工作流程-5">工作流程</a></li>
+<li><a href="#触发方式-6">触发方式</a></li>
+<li><a href="#注意事项-7">注意事项</a></li></ol></div>
+<h1 id="每日检查-1">每日检查</h1>
+<h2 id="核心设计-1">核心设计</h2>
+<p><strong>不再使用数据库，不再使用issues表，不再使用脚本</strong>。</p>
+<p>视觉化流程：
+1. AI查询各技能数据
+2. 生成精美HTML页面（AI自由发挥视觉设计）
+3. Playwright截图
+4. 发送图片给用户</p>
+<hr />
+<h2 id="每日检查问题列表-共16个-2">每日检查问题列表（共16个）</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>唤醒词</th>
+<th>CLI 命令</th>
+<th>来源技能</th>
+<th>查什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>查今天吃</td>
+<td><code>python calorie_tracker.py list</code></td>
+<td>卡路里</td>
+<td>今日所有饮食记录 + 总热量</td>
+</tr>
+<tr>
+<td>2</td>
+<td>查今天</td>
+<td><code>python record_bill.py summary</code></td>
+<td>饼干记账</td>
+<td>今日支出 + 月度结余</td>
+</tr>
+<tr>
+<td>3</td>
+<td>查询今日</td>
+<td><code>python query.py --date &lt;YYYYMMDD&gt;</code></td>
+<td>录音机</td>
+<td>今日所有消息 + 关键事件</td>
+</tr>
+<tr>
+<td>4</td>
+<td>看提醒</td>
+<td><code>python memo_cli.py reminders</code></td>
+<td>备忘录</td>
+<td>今日待触发提醒 + 状态</td>
+</tr>
+<tr>
+<td>5</td>
+<td>查已提醒备忘</td>
+<td><code>python memo_cli.py completed</code></td>
+<td>备忘录</td>
+<td>今日已完成提醒 + 完成度</td>
+</tr>
+<tr>
+<td>6</td>
+<td>查作息计划</td>
+<td><code>python schedule_cli.py query-plans &lt;今日&gt;</code></td>
+<td>作息管家</td>
+<td>当前时段在计划中的安排</td>
+</tr>
+<tr>
+<td>7</td>
+<td>查多日计划</td>
+<td><code>python schedule_cli.py query-plans &lt;今日,明日,后日&gt;</code></td>
+<td>作息管家</td>
+<td>未来 N 天关键节点</td>
+</tr>
+<tr>
+<td>8</td>
+<td>查睡眠记录</td>
+<td><code>python sleep_tracker.py list</code></td>
+<td>卡路里</td>
+<td>昨晚睡眠时长/质量</td>
+</tr>
+<tr>
+<td>9</td>
+<td>查运动记录</td>
+<td><code>python exercise_tracker.py list</code></td>
+<td>卡路里</td>
+<td>今日运动项目 + 时长</td>
+</tr>
+<tr>
+<td>10</td>
+<td>查体重趋势</td>
+<td><code>python calorie_tracker.py weight-history</code></td>
+<td>卡路里</td>
+<td>体重变化（今日/昨日/周均）</td>
+</tr>
+<tr>
+<td>11</td>
+<td>查卡路里数据</td>
+<td><code>python calorie_tracker.py summary</code></td>
+<td>卡路里</td>
+<td>今日热量摄入/消耗/缺口</td>
+</tr>
+<tr>
+<td>12</td>
+<td>查营养配比</td>
+<td><code>python calorie_tracker.py list</code> (AI 解析宏量)</td>
+<td>卡路里</td>
+<td>今日宏量营养素比例（碳水/蛋白/脂肪）</td>
+</tr>
+<tr>
+<td>13</td>
+<td>查快递</td>
+<td><code>python home_manager.py list --status 快递中</code></td>
+<td>居家管家</td>
+<td>在途/待取快递</td>
+</tr>
+<tr>
+<td>14</td>
+<td>查过期</td>
+<td><code>python home_manager.py stats --type expiring</code></td>
+<td>居家管家</td>
+<td>即将/已过期物品</td>
+</tr>
+<tr>
+<td>15</td>
+<td>看总览</td>
+<td><code>python record_bill.py overview</code></td>
+<td>饼干记账</td>
+<td>本月财务总览（收入/支出/结余）</td>
+</tr>
+<tr>
+<td>16</td>
+<td>查作息报告</td>
+<td><code>python schedule_cli.py report &lt;今日&gt;</code></td>
+<td>作息管家</td>
+<td>今日作息分析报告</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>设计说明</strong>：
+- 表格新增「CLI 命令」列，每个子任务都对应一个可被脚本/AI 触发的命令
+- 16 条全部走 CLI，零歧义、零依赖 AI 二次解析（#12 通过 list 输出含宏量字段由 AI 聚合）
+- 删除原 #6（学习规划师无 CLI）、#16（居家管家无 health）、#17（卡路里无独立 dashboard CLI）、#19（勋章无 chain 聚合 CLI）</p>
+</blockquote>
+<hr />
+<h2 id="特殊交互要求-3">特殊交互要求</h2>
+<h3>睡眠汇报</h3>
+<p>查询到睡眠时长后，必须对用户说："千里之行，始于足下"</p>
+<h3>运动关注</h3>
+<p>重点询问今日运动情况，用户之前反馈这是弱项，需要关注。</p>
+<hr />
+<h2 id="视觉风格规范-必须遵守-4">视觉风格规范（必须遵守）</h2>
+<h3>页面尺寸</h3>
+<ul>
+<li>HTML宽度：<strong>1200px</strong>（固定）</li>
+<li>高度：<strong>1600px</strong>（3:4比例）</li>
+<li>字体大小：主文字 28px，副文字 22-24px，标题 72px</li>
+<li>1:1 截图（不缩放）</li>
+</ul>
+<h3>配色方案（简约浅色系 Apple风）</h3>
+<ul>
+<li>背景：#FAFAFA（浅灰白）</li>
+<li>卡片背景：#FFFFFF（纯白）</li>
+<li>主文字：#1C1C1E（近黑）</li>
+<li>次文字：#8E8E93（灰色）</li>
+<li>成功色：#34C759（绿色）</li>
+<li>警告色：#FF9500（橙色）</li>
+<li>强调色：#007AFF（Apple蓝）</li>
+</ul>
+<h3>字体</h3>
+<ul>
+<li>标题：700 weight，64px</li>
+<li>日期：500 weight，28px</li>
+<li>主文字：500 weight，32px</li>
+<li>副文字：400 weight，26-28px</li>
+</ul>
+<h3>布局</h3>
+<ul>
+<li>页面宽度：800px（固定）</li>
+<li>卡片圆角：28px</li>
+<li>内边距：36px</li>
+<li>卡片间距：20px</li>
+</ul>
+<h3>卡片样式</h3>
+<ul>
+<li>白色背景</li>
+<li>圆角28px</li>
+<li>轻微阴影</li>
+</ul>
+<h3>图标样式</h3>
+<ul>
+<li>图标容器：72x72px，圆角16px</li>
+<li>图标emoji：36px</li>
+<li>已完成图标背景：#E8F5E9（浅绿）</li>
+<li>待确认图标背景：#FFF3E0（浅橙）</li>
+</ul>
+<hr />
+<h2 id="工作流程-5">工作流程</h2>
+<h3>Step 1：查询各技能数据</h3>
+<p>按顺序执行上面16个调度子任务（每条触发对应技能的 CLI）。</p>
+<h3>Step 2：判断已完成 vs 待确认</h3>
+<p>根据查询结果判断每项状态：</p>
+<p><strong>已完成</strong> - 有明确数据：
+- 体重：今早有记录
+- 热量：今日有摄入记录
+- 运动：今日有运动记录
+- 快递：有快递状态记录
+- 物品：有快过期物品记录
+- 记账：今日有支出记录
+- 备忘录：有今日待办
+- 录音机：最近有汇报记录
+- 作息：今日作息正常
+- 睡眠：昨天有睡眠记录</p>
+<p><strong>待确认</strong> - 无数据：
+- 查不到记录 → 抛一个问题</p>
+<h3>Step 3：生成HTML</h3>
+<ol>
+<li>读取同目录下的 <code>template.html</code> 模板</li>
+<li>
+<p>用查到的数据替换模板中的占位符：
+   - <code>{{date}}</code> → 今天的日期（如 "05月25日 · 周一"）
+   - <code>{{done_cards}}</code> → 已完成项的卡片HTML，使用以下格式：
+     <code>html
+     &lt;div class="done-item"&gt;
+       &lt;div class="done-icon green|blue|orange|purple|teal"&gt;
+         &lt;svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"&gt;
+           &lt;!-- 体重: scale, 热量: fire, 运动: activity, 快递: package, 记账: dollar-sign --&gt;
+         &lt;/svg&gt;
+       &lt;/div&gt;
+       &lt;div&gt;
+         &lt;div class="done-label"&gt;问题标题&lt;/div&gt;
+         &lt;div class="done-value"&gt;结果 · 副说明&lt;/div&gt;
+       &lt;/div&gt;
+     &lt;/div&gt;</code>
+     <strong>SVG图标对照</strong>：</p>
+<ul>
+<li>体重：<code>&lt;path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"&gt;&lt;circle cx="12" cy="12" r="3"&gt;&lt;/circle&gt;&lt;/svg&gt;</code>（天平图标）</li>
+<li>热量：<code>&lt;path d="M12 2c-1.1 3-4 5-4 9a4 4 0 0 0 8 0c0-4-2.9-6-4-9z"&gt;&lt;/path&gt;</code>（火焰图标）</li>
+<li>运动：<code>&lt;polyline points="22 12 18 12 15 21 9 3 6 12 2 12"&gt;&lt;/polyline&gt;</code>（心电图图标）</li>
+<li>快递：<code>&lt;path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"&gt;&lt;/path&gt;</code>（包裹图标）</li>
+<li>记账：<code>&lt;line x1="12" y1="1" x2="12" y2="23"&gt;&lt;/line&gt;&lt;path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"&gt;&lt;/path&gt;</code>（美元图标）</li>
+<li>备忘录：<code>&lt;path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"&gt;&lt;/path&gt;&lt;polyline points="14 2 14 8 20 8"&gt;&lt;/polyline&gt;</code>（文档图标）</li>
+<li>汇报：<code>&lt;path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"&gt;&lt;/path&gt;&lt;path d="M19 10v2a7 7 0 0 1-14 0v-2"&gt;&lt;/path&gt;</code>（麦克风图标）</li>
+<li>作息：<code>&lt;circle cx="12" cy="12" r="10"&gt;&lt;/circle&gt;&lt;polyline points="12 6 12 12 16 14"&gt;&lt;/polyline&gt;</code>（时钟图标）</li>
+<li>睡眠：<code>&lt;path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"&gt;&lt;/path&gt;</code>（月亮图标）</li>
+<li><code>{{todo_cards}}</code> → 待确认项的卡片HTML（使用 <code>.todo-item</code> 格式，无需图标）</li>
+<li><code>{{done_count}}</code> → 已完成数量</li>
+<li><code>{{total_count}}</code> → 总数量（固定16）</li>
+<li><code>{{skill_tags}}</code> → 所有可用技能的标签HTML（如 <code>&lt;span class="skill-tag"&gt;卡路里&lt;/span&gt;&lt;span class="skill-tag"&gt;居家管家&lt;/span&gt;...</code>）</li>
+<li>可用技能（健康类：卡路里/作息管家，生活类：居家管家/饼干记账/私家大厨，学习工作类：备忘录/勋章/学习系统/学习规划师/面试管家，其他：录音机）：卡路里、作息管家、居家管家、饼干记账、私家大厨、备忘录、勋章、学习系统、学习规划师、面试管家、录音机</li>
+</ul>
+</li>
+<li>
+<p><strong>AI自由发挥</strong>：
+   - 保持简约浅色系 Apple 风格
+   - 卡片圆角、阴影
+   - 字体大小按规范（主文字 32px）
+   - 装饰元素简洁</p>
+</li>
+</ol>
+<h3>Step 4：Playwright截图</h3>
+<ol>
+<li>保存HTML到临时文件（/tmp/daily_check_{timestamp}.html）</li>
+<li>使用 <code>scripts/screenshot.py</code> 截图：
+   <code>bash
+   python3 scripts/screenshot.py &lt;html_path&gt; &lt;output_path&gt; 1200 1</code>
+   - 参数1：HTML文件路径
+   - 参数2：输出图片路径
+   - 参数3：viewport_width = 1200
+   - 参数4：scale = 1（1:1截图，不缩放）</li>
+<li>截图保存到：<code>~/.openclaw/media/qqbot/daily_check_{timestamp}.png</code></li>
+</ol>
+<h3>Step 5：发送图片</h3>
+<p>使用 message 工具发送图片到 QQ：</p>
+<pre><code class="language-python">message(
+  action=&quot;send&quot;,
+  attachments=[{&quot;path&quot;: &quot;/home/feather/.openclaw/media/qqbot/daily_check_{timestamp}.png&quot;, &quot;type&quot;: &quot;image&quot;}],
+  message=&quot;每日检查 · {日期}&quot;,
+  target=&quot;qqbot:c2c:18CD32F5999F760615E9862E343E59FC&quot;
+)
+</code></pre>
+<p><strong>重要</strong>：
+- <code>attachments</code> 参数必须用数组，元素是 <code>{"path": ..., "type": "image"}</code>
+- <code>image</code> 参数已废弃，不要用
+- 截图路径必须在 <code>~/.openclaw/media/qqbot/</code> 下才能发送
+- 必须有 <code>message</code> 参数（可以是简单文字如"每日检查"）</p>
+<h3>Step 6：文字补充输出</h3>
+<p>发送图片后，用语言补充输出当次检查的完整汇报，按以下顺序：</p>
+<ol>
+<li><strong>开场</strong>：简要说明这是今日第X次检查</li>
+<li><strong>已完成项</strong>：逐一念出已完成的项目及其数据</li>
+<li><strong>待确认项</strong>：逐一念出待确认的项目</li>
+<li><strong>总结</strong>：本次检查X项已完成，X项待确认</li>
+<li><strong>引导</strong>：想了解更多技能用法？问「XX技能 支持哪些使用场景」</li>
+</ol>
+<hr />
+<h2 id="触发方式-6">触发方式</h2>
+<h3>手动触发</h3>
+<p>用户说以下任意一句即触发：
+- "每日检查"
+- "健康检查"
+- "检查一下"
+- "lint"</p>
+<h3>定时触发</h3>
+<p>Cron：每天 22:00</p>
+<hr />
+<h2 id="注意事项-7">注意事项</h2>
+<ul>
+<li>查询各技能时，如果某技能没有数据，返回"暂无数据"而不是报错</li>
+<li>如果某技能查询出错，跳过该技能，不影响其他</li>
+<li>不存任何数据到数据库，每次检查都是独立对话</li>
+<li>16个调度子任务顺序按上面列表执行</li>
+<li>展示数据时用实际日期（如"05月25日 · 周一"）</li>
+<li>HTML中AI可以自由发挥视觉效果，但必须保持简约浅色系 Apple 风格</li>
+<li>字体大小规范：主文字 32px，副文字 26-28px</li>
+<li>截图必须 1:1（scale=1），不要缩放</li>
+<li>查询睡眠后必须说"千里之行，始于足下"</li>
+<li>重点关注今日运动情况</li>
+<li>页面底部增加「探索更多技能」提示区，展示所有可用技能列表</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>每日检查/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

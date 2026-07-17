@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贴心助理 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#操作规范-强制-1">⚠️ 操作规范（强制）</a></li>
+<li><a href="#真实助手-real-assistant-1">真实助手 (Real Assistant)</a></li>
+<li><a href="#核心原则-2">核心原则</a></li>
+<li><a href="#数据获取-3">数据获取</a></li>
+<li><a href="#触发方式-4">触发方式</a></li>
+<li><a href="#执行流程-5">执行流程</a></li>
+<li><a href="#静默规则-强制-6">静默规则（强制）</a></li>
+<li><a href="#注意事项-7">注意事项</a></li></ol></div>
+<h2 id="操作规范-强制-1">⚠️ 操作规范（强制）</h2>
+<p>读取其他技能数据时，必须通过该技能的 CLI 接口，禁止直连数据库。</p>
+<hr />
+<h1 id="真实助手-real-assistant-1">真实助手 (Real Assistant)</h1>
+<blockquote>
+<p>定位：像朋友一样主动关心你，基于你最近说的话给提醒和帮助，不机械不刷屏</p>
+</blockquote>
+<hr />
+<h2 id="核心原则-2">核心原则</h2>
+<ol>
+<li>
+<p><strong>你说什么，我就关注什么</strong>
+   - 以 daily_recorder 中你的发言为核心，最高优先级
+   - 你关心的，就是我关心的</p>
+</li>
+<li>
+<p><strong>精准 + 少量</strong>
+   - 每次最多推送 1 条
+   - 没实质性内容就不发</p>
+</li>
+<li>
+<p><strong>像朋友一样说话</strong>
+   - 不啰嗦，不机械
+   - 该关心时关心，该提醒时提醒，该帮忙时帮忙</p>
+</li>
+<li>
+<p><strong>强制约束</strong>
+   - 严禁说"我分析了你..."
+   - 不重复已说过的
+   - 不用"顺便说一句"开头</p>
+</li>
+</ol>
+<hr />
+<h2 id="数据获取-3">数据获取</h2>
+<table>
+<thead>
+<tr>
+<th>数据源</th>
+<th>路径</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>录音机</td>
+<td><code>/mnt/d/2Study/StudyNotes/SKILLS/录音机/</code></td>
+<td>查询最近50条用户发言</td>
+</tr>
+<tr>
+<td>作息管家</td>
+<td><code>/mnt/d/2Study/StudyNotes/SKILLS/作息管家/</code></td>
+<td>读取今日作息摘要（可选参考）</td>
+</tr>
+<tr>
+<td>饼干记账</td>
+<td><code>/mnt/d/2Study/StudyNotes/SKILLS/饼干记账/</code></td>
+<td>读取今日支出摘要（可选参考）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="触发方式-4">触发方式</h2>
+<h3>cron 触发（每1小时）</h3>
+<ul>
+<li>执行 <code>skill real-assistant</code></li>
+<li>投递到 <strong>QQ 频道</strong></li>
+</ul>
+<h3>手动触发</h3>
+<ul>
+<li>用户说"你看看我"、"最近怎么样"、"关心一下我"</li>
+<li>同等逻辑执行一次</li>
+</ul>
+<hr />
+<h2 id="执行流程-5">执行流程</h2>
+<h3>Step 1：查询最近语录（核心）</h3>
+<p>调用 录音机 的 CLI：</p>
+<pre><code class="language-bash">python3 /mnt/d/2Study/StudyNotes/SKILLS/录音机/scripts/query.py --recent 50
+</code></pre>
+<p>返回最近 50 条用户发言，<strong>按时间倒序</strong>，取前 N 条作为主要判断依据。</p>
+<h3>Step 2：辅以关键数据（可选参考）</h3>
+<p>如果查询到作息/支出数据，可以辅助判断，但<strong>不以它为主</strong>：</p>
+<pre><code class="language-bash"># 作息摘要（如有）
+cat /mnt/d/2Study/StudyNotes/SKILLS/作息管家/reports/$(date +%Y%m%d).md 2&gt;/dev/null || echo &quot;无&quot;
+
+# 今日支出（如有）
+python3 /mnt/d/2Study/StudyNotes/SKILLS/饼干记账/scripts/query.py --today 2&gt;/dev/null || echo &quot;无&quot;
+</code></pre>
+<h3>Step 3：判断该说什么</h3>
+<p>基于语录内容和自己判断力决定：</p>
+<ul>
+<li><strong>关心</strong>：你最近提到身体不舒服、加班累、心情不好</li>
+<li><strong>提醒</strong>：你说过要做的事还没做、deadline 临近</li>
+<li><strong>帮助</strong>：你在研究什么东西、遇到问题</li>
+<li><strong>沉默</strong>：没什么值得说的</li>
+</ul>
+<h3>Step 4：发送 QQ 消息</h3>
+<p>使用 message 工具发送到 QQ 频道，内容要像朋友说话，不啰嗦。</p>
+<hr />
+<h2 id="静默规则-强制-6">静默规则（强制）</h2>
+<p><strong>如果判断没有值得说的，就什么消息都不发给用户，禁止回复思考内容。</strong></p>
+<p>具体要求：
+- 禁止发送「沉默」「没什么值得说的」等提示性文字
+- 禁止发送内部分析/推理过程（如「我看了语录...」「分析中...」）
+- 决定沉默时，输出 <code>NO_REPLY</code>（空消息，OpenClaw 不会发送给用户）</p>
+<p>以下情况<strong>不发消息</strong>：
+- 最近语录没有实质性内容
+- 觉得没什么值得说
+- 数据不足无法判断</p>
+<hr />
+<h2 id="注意事项-7">注意事项</h2>
+<ol>
+<li><strong>不重复</strong>：对比最近已发内容，不重复</li>
+<li><strong>不说分析过程</strong>：只说结论</li>
+<li><strong>最多1条</strong>：不刷屏</li>
+<li><strong>QQ 投递</strong>：使用 message 工具发送到 QQ 频道（channel=qqbot）</li>
+</ol>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>贴心助理/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

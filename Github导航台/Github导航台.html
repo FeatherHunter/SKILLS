@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Github导航台 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#github导航台-技能文档-1">Github导航台 · 技能文档</a></li>
+<li><a href="#触发词-1">触发词</a></li>
+<li><a href="#ai-工作流-agent-执行步骤-2">AI 工作流（Agent 执行步骤）</a></li>
+<li><a href="#设计思路-3">设计思路</a></li>
+<li><a href="#首次使用-环境变量配置-4">首次使用：环境变量配置</a></li>
+<li><a href="#使用方法-5">使用方法</a></li>
+<li><a href="#文件说明-6">文件说明</a></li>
+<li><a href="#环境变量说明-7">环境变量说明</a></li>
+<li><a href="#错误处理-8">错误处理</a></li>
+<li><a href="#部署到-github-pages-9">部署到 GitHub Pages</a></li>
+<li><a href="#目录规范-10">目录规范</a></li></ol></div>
+<h1 id="github导航台-技能文档-1">Github导航台 · 技能文档</h1>
+<p>生成HTML页面必须要是该风格：
+历史图书馆数字档案网站，温暖的学术怀旧——泛黄羊皮纸与岁月斑点纹理，dark academia 深勃艮第红、墨黑、黄铜金的色调，维多利亚时代植物铜版画用作雅致的装饰分隔线，Garamond 风格衬线字体与宽裕的行距，一摞古董皮面书在页脚处隐约淡出，钨丝台灯光线投下柔和的暗角阴影，图书馆目录卡的检索美学，博物馆级数字策展，光束中飞舞的微尘，沉静的智性氛围</p>
+<h2 id="触发词-1">触发词</h2>
+<ul>
+<li><code>更新文档导航</code></li>
+<li><code>导航台</code></li>
+<li><code>docs 导航</code></li>
+</ul>
+<hr />
+<h2 id="ai-工作流-agent-执行步骤-2">AI 工作流（Agent 执行步骤）</h2>
+<p>当用户触发上述任意关键词时，AI 必须依次执行以下步骤：</p>
+<h3>步骤 1：检查并配置环境变量</h3>
+<blockquote>
+<p><strong>OpenClaw 必须优先执行此步骤，未配置完整不得进入步骤 2。</strong></p>
+</blockquote>
+<p>在继续之前，AI 必须确认两个环境变量已配置：</p>
+<ul>
+<li><code>STUDYNOTES_DOCS</code> — 导航台根目录的绝对路径</li>
+<li><code>GITHUB_PAGES_BASE</code> — GitHub Pages 根地址，结尾必须带 <code>/</code></li>
+</ul>
+<p><strong>判断逻辑：</strong></p>
+<ol>
+<li>AI 先尝试在<strong>自身运行环境</strong>中读取这两个环境变量</li>
+<li>如有任一缺失 → 询问用户缺失变量的值，并将两个变量都写入 <code>SKILLS/Github导航台/.env</code> 文件（供 Python 脚本使用）</li>
+<li>两者都缺失 → 依次询问，先问 <code>STUDYNOTES_DOCS</code>，再问 <code>GITHUB_PAGES_BASE</code></li>
+<li>询问时给出明确格式要求（路径 vs URL），不要让用户猜测</li>
+</ol>
+<p><strong>注意：</strong> OpenClaw 的进程环境与系统环境变量独立，不要假设系统变量已对 AI 进程可见。未配置完整时必须引导用户配置，不能跳过。</p>
+<h3>步骤 2：运行 generate_nav.py</h3>
+<p>在 <code>SKILLS/Github导航台/</code> 目录下执行：</p>
+<pre><code class="language-bash">cd &quot;$SKILL_DIR&quot;
+python generate_nav.py
+</code></pre>
+<p>此脚本会扫描 <code>STUDYNOTES_DOCS</code> 环境变量指定的目录，在 <strong>SKILL 目录下</strong>生成 <code>structure.json</code>。</p>
+<h3>步骤 3：运行 deploy.py</h3>
+<p>在同一个目录下执行：</p>
+<pre><code class="language-bash">python deploy.py
+</code></pre>
+<p>此脚本完成：扫描 → 复制 index.html → git commit + push。</p>
+<h3>步骤 4：报告结果</h3>
+<p>告知用户：
+- 生成了哪些子目录和文件
+- 是否已推送到远程仓库
+- GitHub Pages 大约 1-2 分钟后自动更新</p>
+<hr />
+<h3>快速判断：是否需要重新部署</h3>
+<p>运行前先检查 <code>STUDYNOTES_DOCS</code> 目录自上次部署后有无变化：</p>
+<pre><code class="language-bash">cd &quot;$STUDYNOTES_DOCS&quot;
+git status --porcelain
+</code></pre>
+<p>如有变化才执行步骤 2-3；如无变化，告知用户"已是最新"。</p>
+<hr />
+<h2 id="设计思路-3">设计思路</h2>
+<h3>核心架构</h3>
+<pre><code>SKILL 目录/
+├── generate_nav.py    # 扫描 $STUDYNOTES_DOCS 目录
+├── deploy.py          # 一键部署脚本
+├── index.html         # 导航台页面
+├── structure.json     # 由 generate_nav.py 生成（部署时复制到目标目录）
+├── .env               # 路径配置（自动生成）
+└── SKILL.md           # 本文档
+
+STUDYNOTES_DOCS 目录（GitHub Pages 部署目录）/
+├── index.html         # 导航台首页（由 deploy.py 从 SKILL 目录复制）
+├── structure.json     # 动态数据（由 deploy.py 从 SKILL 目录复制）
+└── ...                # 其他子目录和 HTML 文件
+</code></pre>
+<h3>数据流</h3>
+<pre><code>deploy.py 运行
+    ↓
+generate_nav.py 扫描 $STUDYNOTES_DOCS 目录结构
+    ↓
+在 SKILL 目录下生成 structure.json（子目录 + 根文件列表）
+    ↓
+deploy.py 复制 index.html + structure.json → $STUDYNOTES_DOCS/
+    ↓
+git commit + push → GitHub Pages 自动更新
+    ↓
+用户访问 GitHub Pages → index.html fetch structure.json → 动态渲染
+</code></pre>
+<h3>为什么这样设计</h3>
+<ol>
+<li><strong>静态部署 + 动态内容</strong>：GitHub Pages 只能托管静态文件，通过 JSON 数据文件实现内容动态化</li>
+<li><strong>环境变量隔离</strong>：导航台路径通过环境变量配置，脚本可跨环境复用</li>
+<li><strong>一键部署</strong>：deploy.py 将扫描、复制、推送三步合一</li>
+<li><strong>无需手动维护</strong>：每次部署自动扫描目录结构，永远与实际文件同步</li>
+</ol>
+<hr />
+<h2 id="首次使用-环境变量配置-4">首次使用：环境变量配置</h2>
+<h3>第一步：设置环境变量</h3>
+<p>在系统环境变量中添加两个变量：</p>
+<pre><code>变量名: STUDYNOTES_DOCS
+值: &lt;你的导航台根目录绝对路径&gt;
+
+变量名: GITHUB_PAGES_BASE
+值: &lt;你的 GitHub Pages 根地址，结尾必须带 /&gt;
+  例如: https://&lt;用户名&gt;.github.io/&lt;仓库名&gt;/
+</code></pre>
+<p><strong>Windows 方法</strong>：设置 → 系统 → 关于 → 高级系统设置 → 环境变量 → 新建用户变量</p>
+<h3>或者：让脚本引导配置</h3>
+<p>如果不设置环境变量，首次运行 <code>generate_nav.py</code> 时会依次提示你输入两个路径，输入后自动保存到 <code>.env</code> 文件。</p>
+<hr />
+<h2 id="使用方法-5">使用方法</h2>
+<h3>方式一：一键部署（推荐）</h3>
+<pre><code class="language-bash">cd &quot;$SKILL_DIR&quot;
+python deploy.py
+</code></pre>
+<p>自动完成：扫描 → 生成 JSON → 复制文件 → git 推送</p>
+<h3>方式二：分步执行</h3>
+<pre><code class="language-bash"># 1. 扫描 STUDYNOTES_DOCS 目录生成 structure.json
+python generate_nav.py
+
+# 2. 将 index.html 和 structure.json 复制到 $STUDYNOTES_DOCS/
+# （需要先设置环境变量 STUDYNOTES_DOCS）
+</code></pre>
+<h3>方式三：在 Claude Code 中触发</h3>
+<p>直接对 AI 说「更新文档导航」，AI 会引导你运行部署流程。</p>
+<hr />
+<h2 id="文件说明-6">文件说明</h2>
+<h3>generate_nav.py</h3>
+<p>扫描 <code>STUDYNOTES_DOCS</code> 环境变量指定的目录，在 <strong>SKILL 目录下</strong>生成 <code>structure.json</code>。</p>
+<p><strong>输入</strong>：<code>STUDYNOTES_DOCS</code> 目录结构
+<strong>输出</strong>：<code>SKILL目录/structure.json</code></p>
+<p>JSON 格式：</p>
+<pre><code class="language-json">{
+  &quot;subdirs&quot;: [
+    {
+      &quot;name&quot;: &quot;directory-tree&quot;,
+      &quot;path&quot;: &quot;directory-tree/&quot;,
+      &quot;files&quot;: [{ &quot;name&quot;: &quot;2Study_StudyNotes.html&quot;, &quot;label&quot;: &quot;目录树&quot; }]
+    }
+  ],
+  &quot;rootFiles&quot;: [
+    { &quot;name&quot;: &quot;index.html&quot;, &quot;label&quot;: &quot;本导航台&quot;, &quot;isEntry&quot;: true }
+  ]
+}
+</code></pre>
+<h3>deploy.py</h3>
+<p>三步流程：
+1. 运行 <code>generate_nav.py</code> 生成 <code>structure.json</code>
+2. 复制 <code>index.html</code> 和 <code>structure.json</code> 到 <code>STUDYNOTES_DOCS</code> 目录
+3. 检查 git 变化，有变化则 commit + push</p>
+<h3>index.html</h3>
+<p>导航台页面，<strong>UI 样式完全不变</strong>，数据来源从硬编码改为 <code>fetch('structure.json')</code> 动态加载。</p>
+<hr />
+<h2 id="环境变量说明-7">环境变量说明</h2>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>必须</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STUDYNOTES_DOCS</code></td>
+<td>是</td>
+<td>导航台根目录的绝对路径</td>
+</tr>
+<tr>
+<td><code>GITHUB_PAGES_BASE</code></td>
+<td>是</td>
+<td>GitHub Pages 根地址，结尾带 <code>/</code>，如 <code>https://&lt;用户名&gt;.github.io/&lt;仓库名&gt;/</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>配置优先级</strong>：
+1. 系统环境变量（永久）
+2. <code>.env</code> 文件（同目录，首次运行自动生成）
+3. 脚本内兜底值（向上三级到 SKILL 所在项目根目录，仅作为最后兜底）</p>
+<blockquote>
+<p>两个环境变量都需要设置，缺一不可。</p>
+</blockquote>
+<hr />
+<h2 id="错误处理-8">错误处理</h2>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>环境变量未设置</td>
+<td>提示用户输入，输入后保存到 <code>.env</code></td>
+</tr>
+<tr>
+<td>目标路径无效</td>
+<td>报错退出，提示检查 <code>STUDYNOTES_DOCS</code> 环境变量</td>
+</tr>
+<tr>
+<td>structure.json 加载失败</td>
+<td>控制台报错，显示空状态</td>
+</tr>
+<tr>
+<td>git push 失败</td>
+<td>报错，本地文件保留</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="部署到-github-pages-9">部署到 GitHub Pages</h2>
+<ol>
+<li>确保 <code>STUDYNOTES_DOCS</code> 目录是 GitHub 仓库的 GitHub Pages source</li>
+<li>运行 <code>deploy.py</code></li>
+<li>等待 1-2 分钟，GitHub Pages 自动更新</li>
+</ol>
+<hr />
+<h2 id="目录规范-10">目录规范</h2>
+<ul>
+<li>所有文件放在 <code>SKILLS/Github导航台/</code> 目录下</li>
+<li><code>SKILL目录/structure.json</code> 由 <code>generate_nav.py</code> 自动生成，<strong>不要手动编辑</strong></li>
+<li><code>$STUDYNOTES_DOCS/index.html</code> 和 <code>$STUDYNOTES_DOCS/structure.json</code> 由 <code>deploy.py</code> 复制覆盖，不要在导航台目录里直接修改</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>Github导航台/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

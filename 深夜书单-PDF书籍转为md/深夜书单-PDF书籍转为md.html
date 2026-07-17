@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深夜书单-PDF书籍转为md — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#关键路径-1">关键路径</a></li>
+<li><a href="#处理逻辑-严格按顺序执行-2">处理逻辑（严格按顺序执行）</a></li>
+<li><a href="#重要约束-3">重要约束</a></li></ol></div>
+<p>你是OCR处理助手。你的任务：扫描图书馆，找到一本需要OCR处理的PDF，逐页处理每一页为.md文件。</p>
+<h2 id="关键路径-1">关键路径</h2>
+<ul>
+<li>图书馆目录：D:\2Study\StudyNotes\图书馆（或 /mnt/d/2Study/StudyNotes/图书馆）</li>
+<li>技能目录：D:\2Study\StudyNotes\SKILLS glm-ocr-to-en-word（或 /mnt/d/2Study/StudyNotes/SKILLS/glm-ocr-to-en-word）</li>
+<li>API_KEY：b909799341684d51b2565927540b087f.KtmqK8cHzQUpBzln</li>
+<li>API_URL：https://open.bigmodel.cn/api/paas/v4/layout_parsing</li>
+</ul>
+<h2 id="处理逻辑-严格按顺序执行-2">处理逻辑（严格按顺序执行）</h2>
+<h3>第1步：扫描找到下一本要处理的书</h3>
+<p>扫描图书馆目录下所有.pdf文件，对每本PDF检查：
+- 如果同名目录不存在 → 需要处理
+- 如果同名目录存在但里面page_<em>.md文件数量 &lt; PDF总页数 → 断点续传，继续处理
+- 如果同名目录存在且page_</em>.md数量 == PDF总页数 → 已完成，跳过</p>
+<p><strong>取第一本"需要处理"的PDF（按字母顺序第一个）为当前任务目标。</strong>
+如果所有书都处理完了（每本PDF都有对应的、page数量等于总页数的目录），直接输出"所有书籍均已处理完毕，退出。"并结束。</p>
+<h3>第2步：确认目标</h3>
+<p>设：
+- pdf_path = "D:\2Study\StudyNotes\图书馆\{书名}.pdf"
+- output_dir = "D:\2Study\StudyNotes\图书馆\{书名}"</p>
+<p>创建输出目录（如果不存在）。</p>
+<h3>第3步：获取PDF总页数</h3>
+<p>用 pymupdf（PyMuPDF）获取PDF总页数。</p>
+<h3>第4步：确定起始页</h3>
+<p>扫描output_dir中已有的page_<em>.md文件，找出最大页码N。则从第N+1页开始处理。
+如果没有任何page_</em>.md，则从第1页开始。</p>
+<h3>第5步：逐页渲染PNG</h3>
+<p>用PyMuPDF将PDF的每一页渲染为PNG图片：</p>
+<pre><code class="language-python">import pymupdf
+doc = pymupdf.open(pdf_path)
+for page_num in range(1, doc.page_count + 1):
+    page = doc[page_num - 1]
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(2, 2))
+    pix.save(f&quot;{output_dir}/page_{page_num}.png&quot;)
+</code></pre>
+<p>注意：只渲染尚未生成.png文件的页面（断点续传）。</p>
+<h3>第6步：GLM-OCR识别</h3>
+<p>对每一张PNG（从未处理的那页开始），调用GLM-OCR API：</p>
+<pre><code class="language-python">import requests, base64
+API_URL = &quot;https://open.bigmodel.cn/api/paas/v4/layout_parsing&quot;
+with open(png_path, &quot;rb&quot;) as f:
+    img_base64 = base64.b64encode(f.read()).decode()
+resp = requests.post(API_URL,
+    headers={&quot;Authorization&quot;: f&quot;Bearer {API_KEY}&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;},
+    json={&quot;model&quot;: &quot;glm-ocr&quot;, &quot;file&quot;: f&quot;data:image/png;base64,{img_base64}&quot;, &quot;return_crop_images&quot;: False},
+    timeout=120
+)
+md_content = resp.json().get(&quot;md_results&quot;, &quot;&quot;)
+# 保存为 .md 文件
+with open(md_path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    f.write(md_content)
+</code></pre>
+<p>注意：
+- 如果该页.md文件已存在，跳过API调用（断点续传）
+- 每页处理完立即保存.md，不要等全部完成
+- 每页之间sleep 1秒，避免API限流
+- 如果API返回error或超时，记录错误页码，继续处理下一页</p>
+<h3>第7步：验证</h3>
+<p>处理完成后，统计output_dir中page_*.md的数量，对比PDF总页数。
+如果相等：输出"✅ {书名} 处理完成，共{N}页"
+如果不等：输出"⚠️ {书名} 处理中断，已完成{M}页，还剩{L}页"</p>
+<h2 id="重要约束-3">重要约束</h2>
+<ul>
+<li>必须处理完一本书的所有页面才算该书处理完成</li>
+<li>不需要翻译，只需要OCR识别后的.md原文</li>
+<li>不需要生成Word文件，只生成.md文件</li>
+<li>如果API调用失败（超时/报错），记录该页码，继续处理下一页</li>
+<li>所有处理过的文件都保存在output_dir中</li>
+<li>不要删除任何已存在的文件（断点续传）</li>
+<li>每次cron运行只处理一本书，不要同时处理多本</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>深夜书单-PDF书籍转为md/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

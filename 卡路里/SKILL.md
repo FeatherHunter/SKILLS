@@ -261,11 +261,68 @@ mavis 框架只在 IDE 进程内部自动注入真 token。手动复盘场景 ag
 
 | 文件 | 角色 |
 |------|------|
-| `review_template.html` | 装填模板(70 个 data-field,8 个 dim,Apple 系统色) |
+| `review_template.html` | 装填模板(70+ 个 data-field,8 个 dim,Apple 系统色,移动端自适应) |
 | `scripts/review_cli.py` | 独立 CLI 入口(gen/archive/send/full 4 子命令) |
-| `scripts/review_engine.py` | 7 维 SQL + 衍生计算 + 摘要提取 |
-| `scripts/review_prompts.py` | LLM 提示模板(call_llm 已废弃,NotImplementedError) |
+| `scripts/review_engine.py` | 7 维 SQL + 衍生计算 + 摘要提取 + **体重 SVG 渲染器(算法生成,2026-07-17)** |
+| `scripts/review_prompts.py` | agent 装填参考 prompt(call_llm 已废弃 NotImplementedError) |
 | `scripts/review_feishu.py` | 飞书发送(group/im)+ 飞盘上传(用 cwd= 而非 Set-Location) |
+
+#### 📐 agent 装填协议(2026-07-17 增)
+
+**核心原则**:agent 不调用户态 LLM(`llm_call.py` 永远 401),而是**自己在对话里读 enriched JSON,装填 data-field**。
+
+**装填数据流**:
+
+```
+review_cli.py gen --type week
+    ↓ 保存 raw_data + enriched 到 temp/data_*.json
+agent 读 JSON
+    ↓
+装填 review_template.html 的 70+ 个 data-field
+    ↓
+保存到 temp/review_*.html
+    ↓
+review_cli.py archive --html-path <html>  → 飞书 URL
+```
+
+**关键字段类型**(2026-07-17 修订):
+
+| data-field | 来源 | 类型 |
+|---|---|---|
+| 70 个普通字段(text/数字) | enriched 里的 derived 字段 | 直接装填 textContent |
+| `weight_trend_svg` | **`enriched.weight_trend_svg`(算法渲染字符串)** | **完整 `<svg>` 字符串**(不要自己写) |
+| `weight_trend_title` | `enriched.weight_trend_meta.title` | text |
+| `weight_trend_range` | `enriched.weight_trend_meta.range_text` | text |
+| `weight_trend_note` | 自己基于 meta + 实际数据写 | text(解释趋势 + 异常) |
+| `top_food_1..5` | `enriched.top_foods[].name + cnt + avg` | text |
+| `nutrition_goal_match_rate` | **`enriched.nutrition_match.summary`** | text(真实统计,不编) |
+| `estimated_weeks_left` | 自己基于 weekly_deficit 算 | text |
+
+**体重 SVG 自动渲染细节**(`_render_weight_trend_svg` 算法):
+
+- **数据点**:每天取最后一条体重
+- **Y 轴范围**:自动算(data min/max ± 0.3kg),goal_weight 距数据 > 5kg 不纳入(避免数据挤)
+- **X 轴密度**:
+  - ≤7 点:每天
+  - ≤30 点:每 5 天
+  - ≤90 点:每周
+  - >90 点:每月
+- **标记**:
+  - 🔵 最低点:橙色 ▼
+  - 🟢 第一天:绿色
+  - 🔵 最后一天:蓝色 ▲
+  - 🟣 最高点:紫色 ★(如果唯一)
+- **目标虚线**:只在 goal 距数据 ≤ 5kg 时画(否则用文字说明 `vs_weight_goal`)
+
+**enriched.today_partial** 字段(2026-07-17 增):
+- `enriched.today_partial.intake` = 今日已摄入(数据未完整,**不纳入 avg**)
+- `enriched.today_partial.burn` = 今日已运动
+- `enriched.complete_days_count` = 完整日数(默认 = 7-1 = 6)
+- **平均/缺口/营养达标率** 全部用 complete_days 算(避免今日污染)
+
+**异常天装填**:
+- 从 `enriched.daily_intake` 里挑"脂肪/碳水/热量"异常的 complete_days
+- **不要把 today_partial 当异常**(今日数据未完整)
 
 #### 🤖 AI 触发场景详述(2026-07-17 增)
 

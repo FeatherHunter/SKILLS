@@ -68,8 +68,9 @@ HTML_PROMPT = """你是【运动表现复盘 AI】,服务于卡路里技能。
 5. 3+3+3 摘要每条 ≤20 字,带具体场景(日期+数字)
 6. **vs 目标字段:都给(绝对值 + 百分比)**,格式 `value / pct%`
 7. 营养结构比例:protein + carbs + fat = 100(整数百分比)
-8. SVG 体重趋势:7 个点,例 "0,30 50,32 100,28 150,25 200,22 250,20 300,18"
-9. **【强制】训练 dim 最详细,plan_actual 不能都是"无",至少 3 条有效内容**
+8. **SVG 体重趋势**(data-field="weight_trend_svg"):**不要自己写 SVG**,直接装填 `enriched.weight_trend_svg` 字符串(由 review_engine._render_weight_trend_svg 算法生成,含自动 Y 轴 + 智能 X 密度 + 最低/最高/终点高亮)
+9. 体重趋势标题(title 字段)装填 `enriched.weight_trend_meta.title`,右上小字(range 字段)装填 `enriched.weight_trend_meta.range_text`
+10. **【强制】训练 dim 最详细,plan_actual 不能都是"无",至少 3 条有效内容**
 
 ## 输出要求
 完整 HTML 字符串(已填值的),不要输出任何解释、注释、```html 标记。

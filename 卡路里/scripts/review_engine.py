@@ -8,6 +8,7 @@
 """
 
 import json
+import math
 import statistics
 import sys
 from datetime import date, datetime, timedelta
@@ -422,7 +423,251 @@ def derive(raw_data):
         raw_data.get('nutrition_targets', {}),
     )
 
+    # 7. 体重趋势 SVG(算法渲染,自动 Y 轴 + 智能 X 密度)
+    weight_trend_result = _render_weight_trend_svg(
+        raw_data.get('weight_logs', []),
+        goal_weight=raw_data.get('nutrition_targets', {}).get('weight_goal') if raw_data.get('nutrition_targets') else None,
+    )
+    enriched['weight_trend_svg'] = weight_trend_result['svg']
+    enriched['weight_trend_meta'] = weight_trend_result['meta']
+
     return enriched
+
+
+def _render_weight_trend_svg(weight_logs, goal_weight=None):
+    """渲染体重趋势 SVG(2026-07-17 设计)
+
+    解决 B3( Y 轴硬编码)+ B4( X 轴硬编码)+ 智能密度:
+    - Y 轴范围 自动算(data min/max ± 0.3kg 余量)
+    - X 轴密度 智能:
+      - ≤7 个数据点:每天显示
+      - ≤30 个数据点:每 5 天
+      - ≤90 个数据点:每 7 天(按周)
+      - >90 个数据点:每 30 天(按月)
+
+    返回:
+        {
+            'svg': '<svg>...</svg>' 完整 SVG 字符串,
+            'meta': {
+                'data_count': N,
+                'y_min': 87.5,
+                'y_max': 90.0,
+                'title': '7 天体重趋势',
+                'range_text': '88.25 ~ 89.15 kg',
+                'has_goal_line': True/False,
+            }
+        }
+    """
+    if not weight_logs:
+        return {
+            'svg': '<svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMid meet"></svg>',
+            'meta': {
+                'data_count': 0, 'y_min': 0, 'y_max': 0,
+                'title': '体重趋势', 'range_text': '—', 'has_goal_line': False,
+            },
+        }
+
+    # 1. 数据预处理(每天取最后一条)
+    daily_last = {}
+    for w in weight_logs:
+        daily_last[w['date']] = w['weight_kg']
+    points = sorted(
+        [{'date': d, 'weight': w} for d, w in daily_last.items()],
+        key=lambda x: x['date'],
+    )
+    n = len(points)
+
+    # 2. X 轴密度(基于数据点数)
+    if n <= 7:
+        x_step_show = 1
+    elif n <= 30:
+        x_step_show = 5
+    elif n <= 90:
+        x_step_show = 7
+    else:
+        x_step_show = 30
+
+    # 3. Y 轴范围(自动算 + goal_weight 智能处理)
+    weights = [p['weight'] for p in points]
+    w_min, w_max = min(weights), max(weights)
+
+    # goal_weight 距实际数据 > 5kg 不纳入 Y 轴(否则太远把图拉糊)
+    goal_in_range = False
+    if goal_weight is not None:
+        data_mid = (w_min + w_max) / 2
+        distance_from_data = abs(goal_weight - data_mid)
+        if distance_from_data <= 5.0:
+            w_min = min(w_min, goal_weight)
+            w_max = max(w_max, goal_weight)
+            goal_in_range = True
+
+    # 加 0.3kg 余量
+    y_min = math.floor(w_min - 0.3)
+    y_max = math.ceil(w_max + 0.3)
+    if y_max - y_min < 1:
+        # 数据波动小(<1kg),扩大范围
+        y_min -= 0.5
+        y_max += 0.5
+
+    y_range = y_max - y_min
+
+    # 4. SVG 尺寸(viewBox 0 0 320 110)
+    width, height = 320, 110
+    margin_left = 42
+    margin_right = 8
+    margin_top = 16
+    margin_bottom = 22
+    plot_w = width - margin_left - margin_right
+    plot_h = height - margin_top - margin_bottom
+
+    # 5. 坐标计算
+    x_coords = [
+        margin_left + (i / max(n - 1, 1)) * plot_w
+        for i in range(n)
+    ]
+    y_coords = [
+        margin_top + (1 - (w - y_min) / y_range) * plot_h
+        for w in weights
+    ]
+
+    # 6. SVG parts
+    parts = [
+        f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" style="display:block;">'
+    ]
+
+    # Y 轴线
+    parts.append(
+        f'<line x1="{margin_left}" y1="{margin_top}" '
+        f'x2="{margin_left}" y2="{margin_top + plot_h}" '
+        f'stroke="#C7C7CC" stroke-width="1"/>'
+    )
+
+    # Y 轴刻度(4 tick)
+    for i in range(4):
+        y_val = y_max - (i / 3) * y_range
+        y_pos = margin_top + (i / 3) * plot_h
+        parts.append(
+            f'<text x="{margin_left - 4}" y="{y_pos + 4:.1f}" '
+            f'text-anchor="end" font-size="9" fill="#8E8E93">'
+            f'{y_val:.1f}</text>'
+        )
+
+    # Y 单位标签
+    parts.append(
+        f'<text x="{margin_left - 4}" y="{height - 6}" '
+        f'text-anchor="end" font-size="8" fill="#C7C7CC">kg</text>'
+    )
+
+    # X 轴线
+    parts.append(
+        f'<line x1="{margin_left}" y1="{margin_top + plot_h}" '
+        f'x2="{margin_left + plot_w}" y2="{margin_top + plot_h}" '
+        f'stroke="#C7C7CC" stroke-width="1"/>'
+    )
+
+    # 数据线
+    poly_points = ' '.join(
+        f'{x_coords[i]:.1f},{y_coords[i]:.1f}' for i in range(n)
+    )
+    parts.append(
+        f'<polyline points="{poly_points}" fill="none" stroke="#34C759" '
+        f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    )
+
+    # 数据点 + 标签
+    weight_min_val = min(weights)
+    weight_max_val = max(weights)
+    for i in range(n):
+        x, y = x_coords[i], y_coords[i]
+        w = weights[i]
+        is_min = w == weight_min_val and weight_min_val != weight_max_val
+        is_max = w == weight_max_val and weight_min_val != weight_max_val
+        is_last = i == n - 1
+
+        if is_min:
+            color = '#FF9500'
+            label = f'{w} ▼'
+        elif is_last:
+            color = '#007AFF'
+            label = f'{w} ▲'
+        elif is_max:
+            color = '#AF52DE'
+            label = f'{w} ★'
+        else:
+            color = '#34C759'
+            label = None
+
+        parts.append(
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" '
+            f'r="{4 if (is_min or is_last or is_max) else 3}" '
+            f'fill="{color}"/>'
+        )
+        if label:
+            label_y = y - 6 if y > 20 else y + 12
+            parts.append(
+                f'<text x="{x:.1f}" y="{label_y:.1f}" '
+                f'text-anchor="middle" font-size="9" '
+                f'fill="{color}" font-weight="700">{label}</text>'
+            )
+
+    # X 轴日期(按 x_step_show 间隔)
+    for i in range(n):
+        if i % x_step_show == 0 or i == n - 1:
+            x = x_coords[i]
+            date_obj = points[i]['date']
+            # 'YYYY-MM-DD' → 'MM/DD'
+            month_day = date_obj[5:].replace('-', '/')
+            parts.append(
+                f'<text x="{x:.1f}" y="{height - 6}" '
+                f'text-anchor="middle" font-size="9" '
+                f'fill="#8E8E93">{month_day}</text>'
+            )
+
+    # 目标体重虚线(只在 goal_in_range 时画)
+    has_goal_line = goal_in_range
+    if has_goal_line:
+        goal_y = margin_top + (1 - (goal_weight - y_min) / y_range) * plot_h
+        parts.append(
+            f'<line x1="{margin_left}" y1="{goal_y:.1f}" '
+            f'x2="{margin_left + plot_w}" y2="{goal_y:.1f}" '
+            f'stroke="#34C759" stroke-width="0.5" '
+            f'stroke-dasharray="3,3" opacity="0.4"/>'
+        )
+        parts.append(
+            f'<text x="{margin_left + plot_w - 2}" y="{goal_y - 3:.1f}" '
+            f'text-anchor="end" font-size="8" fill="#34C759">'
+            f'目标 {goal_weight}</text>'
+        )
+
+    parts.append('</svg>')
+    svg_str = '\n'.join(parts)
+
+    # 标题:基于数据点数
+    title = f'{n} 天体重趋势' if n <= 14 else f'近 {n} 天体重趋势'
+    range_text = f'{w_min:.1f} ~ {w_max:.1f} kg'
+
+    meta_payload = {
+        'data_count': n,
+        'y_min': y_min,
+        'y_max': y_max,
+        'title': title,
+        'range_text': range_text,
+        'has_goal_line': has_goal_line,
+    }
+    if goal_weight is not None:
+        meta_payload['goal_weight'] = goal_weight
+        meta_payload['goal_in_range'] = goal_in_range
+        if not goal_in_range:
+            # goal 不在范围,但提示距图底/顶多远
+            data_mid = (min(weights) + max(weights)) / 2
+            meta_payload['distance_from_data'] = round(
+                abs(goal_weight - data_mid), 1
+            )
+
+    return {
+        'svg': svg_str,
+        'meta': meta_payload,
+    }
 
 
 def _calc_nutrition_match_rate(daily_intake, nutrition_targets):

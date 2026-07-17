@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>skill-symlink — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#skill-软链接工具-1">Skill 软链接工具</a></li>
+<li><a href="#使用场景-1">使用场景</a></li>
+<li><a href="#规则-2">规则</a></li>
+<li><a href="#执行流程-3">执行流程</a></li>
+<li><a href="#命令模板-4">命令模板</a></li>
+<li><a href="#示例-5">示例</a></li>
+<li><a href="#错误处理-6">错误处理</a></li>
+<li><a href="#审计-检查同步状态-7">审计：检查同步状态</a></li>
+<li><a href="#注意事项-8">注意事项</a></li></ol></div>
+<h1 id="skill-软链接工具-1">Skill 软链接工具</h1>
+<p>把 Windows 上的 skill 文件同步到 WSL 的 <code>~/.hermes/skills/</code> 目录。</p>
+<h2 id="使用场景-1">使用场景</h2>
+<p>用户说：
+- "帮我软链接XXX skill"
+- "创建XXX的软链接"
+- "同步XXX到WSL"</p>
+<h2 id="规则-2">规则</h2>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Windows 源目录</strong></td>
+<td><code>D:\2Study\StudyNotes\SKILLS</code></td>
+</tr>
+<tr>
+<td><strong>WSL 目标目录</strong></td>
+<td><code>/home/feather/.hermes/skills</code></td>
+</tr>
+<tr>
+<td><strong>链接方式</strong></td>
+<td>单文件软链接 <code>SKILL.md</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="执行流程-3">执行流程</h2>
+<pre><code>1. 解析 skill 名称
+   - 用户说 &quot;daily-checkin&quot; → 目录名相同
+   - 用户说 &quot;XXX skill&quot; → 去掉空格，尝试匹配
+
+2. 确认源文件存在
+   - 检查 `D:\2Study\StudyNotes\SKILLS\{skill-name}\SKILL.md`
+   - 如果不存在，列出相似名称供用户选择
+
+3. 确认目标目录存在
+   - 检查 `~/.hermes/skills/{skill-name}/`
+   - 不存在则创建
+
+4. 执行软链接
+   - 命令: `ln -sf {源文件} {目标文件}`
+   - 验证链接是否成功
+
+5. 反馈结果
+   - 成功：显示链接路径
+   - 失败：显示错误原因
+</code></pre>
+<h2 id="命令模板-4">命令模板</h2>
+<pre><code class="language-bash"># 1. 创建目标目录（如不存在）
+mkdir -p /home/feather/.hermes/skills/{skill-name}
+
+# 2. 创建软链接
+ln -sf /mnt/d/2Study/StudyNotes/SKILLS/{skill-name}/SKILL.md \
+       /home/feather/.hermes/skills/{skill-name}/SKILL.md
+
+# 3. 验证
+ls -la /home/feather/.hermes/skills/{skill-name}/SKILL.md
+</code></pre>
+<h2 id="示例-5">示例</h2>
+<h3>用户："帮我软链接 daily-checkin"</h3>
+<pre><code class="language-bash">mkdir -p /home/feather/.hermes/skills/daily-checkin
+ln -sf /mnt/d/2Study/StudyNotes/SKILLS/daily-checkin/SKILL.md \
+       /home/feather/.hermes/skills/daily-checkin/SKILL.md
+ls -la /home/feather/.hermes/skills/daily-checkin/SKILL.md
+</code></pre>
+<p>输出：</p>
+<pre><code>✅ daily-checkin/SKILL.md → /mnt/d/2Study/StudyNotes/SKILLS/daily-checkin/SKILL.md
+</code></pre>
+<h2 id="错误处理-6">错误处理</h2>
+<table>
+<thead>
+<tr>
+<th>错误</th>
+<th>原因</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>源文件不存在</td>
+<td>skill名称拼写错误</td>
+<td>列出相似名称供选择</td>
+</tr>
+<tr>
+<td>目标目录无写权限</td>
+<td>权限问题</td>
+<td>提示用户</td>
+</tr>
+<tr>
+<td>软链接已存在</td>
+<td>重复执行</td>
+<td>覆盖更新，告知用户</td>
+</tr>
+</tbody>
+</table>
+<h2 id="审计-检查同步状态-7">审计：检查同步状态</h2>
+<p>用户说：
+- "检查skill同步状态"
+- "哪些skill还没同步"
+- "查看同步情况"</p>
+<h3>审计方法</h3>
+<p>用以下 Python 脚本自动分类：</p>
+<pre><code class="language-python">import os
+
+wsl_base = &quot;/home/feather/.hermes/skills&quot;
+win_base = &quot;/mnt/d/2Study/StudyNotes/SKILLS&quot;
+
+win_skills = [d for d in os.listdir(win_base)
+              if os.path.isdir(os.path.join(win_base, d)) and not d.endswith('.zip')]
+
+wsl_has_dir = set(d for d in os.listdir(wsl_base)
+                  if os.path.isdir(os.path.join(wsl_base, d)) and not d.startswith('.'))
+
+synced, not_synced, missing = [], [], []
+
+for name in sorted(win_skills):
+    if name in wsl_has_dir:
+        skill_md = os.path.join(wsl_base, name, &quot;SKILL.md&quot;)
+        if os.path.islink(skill_md):
+            synced.append(name)
+        else:
+            not_synced.append(name)
+    else:
+        missing.append(name)
+
+# 打印结果
+</code></pre>
+<h3>四类结果及含义</h3>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>含义</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅ 已同步</td>
+<td>WSL有目录 + SKILL.md是软链接</td>
+<td>无需操作</td>
+</tr>
+<tr>
+<td>⚠️ 有目录但未软链接</td>
+<td>WSL有目录但SKILL.md不是链接</td>
+<td>补充软链接</td>
+</tr>
+<tr>
+<td>🔲 WSL有目录但无SKILL.md</td>
+<td>系统内置skill</td>
+<td>不处理</td>
+</tr>
+<tr>
+<td>❌ Windows有但WSL没有</td>
+<td>需要新建目录+软链接</td>
+<td>创建同步</td>
+</tr>
+</tbody>
+</table>
+<h3>当前状态（2026-04-22）</h3>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>数量</th>
+<th>详情</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅ 已同步</td>
+<td>6个</td>
+<td>daily-checkin, daily-schedule, real-assistant, skill-symlink, study-planner, hermes-openclaw-bridge</td>
+</tr>
+<tr>
+<td>❌ 待同步</td>
+<td>8个</td>
+<td>find-skills-skill-1.0.0, glm-ocr-to-en-word, hermes-agent-install-1.0.0, hourly-care, iflytek-ocr-to-en-word, minimax-skills, openclaw-update-1.0.0, pdf-to-en-word</td>
+</tr>
+</tbody>
+</table>
+<h3>待同步的命令模板</h3>
+<pre><code class="language-bash"># 格式：目录名与Windows源名相同（不要-1.0.0后缀）
+mkdir -p /home/feather/.hermes/skills/{skill-name}
+ln -sf /mnt/d/2Study/StudyNotes/SKILLS/{windows-dir-name}/SKILL.md \
+       /home/feather/.hermes/skills/{skill-name}/SKILL.md
+</code></pre>
+<p>注意：Windows源目录名可能带版本号（如 <code>find-skills-skill-1.0.0</code>），WSL目标目录名通常不带版本号。</p>
+<h2 id="注意事项-8">注意事项</h2>
+<ul>
+<li>软链接是符号链接，删除Windows源文件会导致链接失效</li>
+<li>修改Windows文件后，WSL立即生效（无需重启）</li>
+<li>如果要快速查看当前已配置的软链接，执行：
+  <code>bash
+  ls -la ~/.hermes/skills/ | grep "\.md -&gt;"</code></li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>skill-symlink/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

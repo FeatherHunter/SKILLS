@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>best-minds-1.0.0 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#best-minds-1">Best Minds</a></li>
+<li><a href="#核心-1">核心</a></li>
+<li><a href="#原则-2">原则</a></li>
+<li><a href="#vs-ai-coaches-3">vs ai-coaches</a></li></ol></div>
+<!--
+input: 用户问题
+output: 领域专家视角的回答
+pos: 辅助 skill，思维方法论
+
+架构守护者：一旦我被修改，请同步更新：
+1. 本文件的头部注释
+2. 所属文件夹的 README.md
+-->
+
+<h1 id="best-minds-1">Best Minds</h1>
+<blockquote>
+<p>"Don't think of LLMs as entities but as simulators."
+— Andrej Karpathy</p>
+</blockquote>
+<h2 id="核心-1">核心</h2>
+<p>不要问 AI "你怎么看"。</p>
+<p>要问：<strong>这个问题，世界上谁最懂？TA 会怎么说？</strong></p>
+<p>然后模拟那个人。</p>
+<h2 id="原则-2">原则</h2>
+<ol>
+<li><strong>问题决定人数</strong> — 一个人够就一个，需要碰撞才多个</li>
+<li><strong>找真正最懂的</strong> — 不是找"合适的"，是找"最强的"</li>
+<li><strong>基于真实</strong> — 模拟要基于 TA 公开的思想、著作、言论</li>
+<li><strong>引用原话</strong> — 尽可能用 TA 说过的话</li>
+</ol>
+<h2 id="vs-ai-coaches-3">vs ai-coaches</h2>
+<table>
+<thead>
+<tr>
+<th>ai-coaches</th>
+<th>best-minds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>从 13 个预设智者选</td>
+<td>从全世界找</td>
+</tr>
+<tr>
+<td>基于关键词匹配</td>
+<td>基于问题本质</td>
+</tr>
+</tbody>
+</table>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>best-minds-1.0.0/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

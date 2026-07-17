@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hermes-openclaw-bridge — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#hermes-openclaw-bridge-1">Hermes OpenClaw Bridge</a></li>
+<li><a href="#架构-1">架构</a></li>
+<li><a href="#调用命令-2">调用命令</a></li>
+<li><a href="#解析结果-3">解析结果</a></li>
+<li><a href="#完整示例-4">完整示例</a></li>
+<li><a href="#使用场景-5">使用场景</a></li>
+<li><a href="#吸收的专项知识-references-6">吸收的专项知识（references/）</a></li>
+<li><a href="#限制与注意事项-7">限制与注意事项</a></li>
+<li><a href="#检查-openclaw-状态-8">检查 OpenClaw 状态</a></li>
+<li><a href="#故障排查-9">故障排查</a></li></ol></div>
+<h1 id="hermes-openclaw-bridge-1">Hermes OpenClaw Bridge</h1>
+<p>让 Hermes 作为调度器，调用 OpenClaw agent 执行任务，结果返回 Hermes 处理。</p>
+<h2 id="架构-1">架构</h2>
+<pre><code>微信/消息 → Hermes → [terminal工具] → openclaw agent CLI
+                                         ↓
+                                   OpenClaw 执行
+                                         ↓
+                                   返回 JSON 结果
+                                         ↓
+                          Hermes 解析 → 处理 → 回复用户
+</code></pre>
+<h2 id="调用命令-2">调用命令</h2>
+<pre><code class="language-bash">openclaw agent --agent &lt;agent_id&gt; --message &quot;&lt;任务描述&gt;&quot; --json
+</code></pre>
+<h3>参数说明</h3>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--agent</code></td>
+<td>指定 agent ID</td>
+<td><code>main</code>、<code>ops</code> 等</td>
+</tr>
+<tr>
+<td><code>--message</code></td>
+<td>任务描述，可包含上下文</td>
+<td>"用户说：XXX，请执行YYY"</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>输出 JSON 格式，方便解析</td>
+<td>必须加</td>
+</tr>
+<tr>
+<td><code>--timeout</code></td>
+<td>超时秒数，默认 600</td>
+<td><code>--timeout 300</code></td>
+</tr>
+<tr>
+<td><code>--thinking</code></td>
+<td>思考深度</td>
+<td><code>off</code>, <code>medium</code>, <code>high</code></td>
+</tr>
+</tbody>
+</table>
+<h3>返回格式</h3>
+<pre><code class="language-json">{
+  &quot;runId&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;summary&quot;: &quot;completed&quot;,
+  &quot;result&quot;: {
+    &quot;payloads&quot;: [
+      { &quot;text&quot;: &quot;执行结果文本&quot;, &quot;mediaUrl&quot;: null }
+    ],
+    &quot;meta&quot;: {
+      &quot;durationMs&quot;: 24046,
+      &quot;agentMeta&quot;: {
+        &quot;sessionId&quot;: &quot;uuid&quot;,
+        &quot;provider&quot;: &quot;minimax&quot;,
+        &quot;model&quot;: &quot;MiniMax-M2.7-highspeed&quot;,
+        &quot;usage&quot;: { &quot;input&quot;: 104, &quot;output&quot;: 31, ... }
+      }
+    }
+  }
+}
+</code></pre>
+<h2 id="解析结果-3">解析结果</h2>
+<p>Hermes 的 <code>terminal()</code> 返回后，用 Python 解析：</p>
+<pre><code class="language-python">import json
+result = terminal(&quot;openclaw agent --agent main --message '...' --json&quot;)
+data = json.loads(result[&quot;output&quot;])
+text = data[&quot;result&quot;][&quot;payloads&quot;][0][&quot;text&quot;]
+</code></pre>
+<h2 id="完整示例-4">完整示例</h2>
+<h3>Python execute_code 方式</h3>
+<pre><code class="language-python">from hermes_tools import terminal
+import json
+
+def call_openclaw(task: str, context: str = &quot;&quot;) -&gt; str:
+    msg = f&quot;【来自Hermes调度】\n任务：{task}&quot;
+    if context:
+        msg += f&quot;\n上下文：{context}&quot;
+
+    res = terminal(f'openclaw agent --agent main --message &quot;{msg}&quot; --json')
+    data = json.loads(res[&quot;output&quot;])
+
+    if data[&quot;status&quot;] == &quot;ok&quot;:
+        return data[&quot;result&quot;][&quot;payloads&quot;][0][&quot;text&quot;]
+    else:
+        return f&quot;执行失败：{data.get('error', 'unknown')}&quot;
+</code></pre>
+<h3>Hermes cron prompt 调用方式</h3>
+<p>在 cron 的 prompt 中直接写：</p>
+<pre><code>用以下命令让 OpenClaw 执行任务：
+  openclaw agent --agent main --message &quot;【任务描述】&quot; --json
+解析返回的 JSON，从 result.payloads[0].text 提取结果。
+</code></pre>
+<h2 id="使用场景-5">使用场景</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>为什么用 Bridge</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenClaw 独有插件</td>
+<td>OpenClaw 有特定插件 Hermes 没有</td>
+<td>OpenClaw 的某些第三方集成</td>
+</tr>
+<tr>
+<td>隔离执行</td>
+<td>危险操作想在沙盒里跑</td>
+<td>未验证的代码、下载陌生脚本</td>
+</tr>
+<tr>
+<td>已有 workflow</td>
+<td>OpenClaw 已有成熟流程不想迁移</td>
+<td>之前写好的 OpenClaw cron 任务链</td>
+</tr>
+<tr>
+<td>OpenClaw 调试</td>
+<td>想单独在 OpenClaw 环境测试</td>
+<td><code>--thinking high</code> 深度思考</td>
+</tr>
+<tr>
+<td>负载分担</td>
+<td>两个系统跑不同类型任务</td>
+<td>Hermes 跑对话，OpenClaw 跑定时脚本</td>
+</tr>
+</tbody>
+</table>
+<h2 id="吸收的专项知识-references-6">吸收的专项知识（references/）</h2>
+<p>以下专项经验已沉淀为 reference 文件，伞技能本身保留通用框架：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>references/openclaw-npm-update.md</code></td>
+<td>OpenClaw npm 更新 + PM2 重启 + 双 Gateway 架构辨别</td>
+</tr>
+<tr>
+<td><code>references/hermes-wechat-file-send-debug.md</code></td>
+<td>微信文件发送调试：两个独立通道、getUploadUrl 错误分析</td>
+</tr>
+<tr>
+<td><code>references/hermes-wechat-voice-limitation.md</code></td>
+<td>微信语音发送能力调查：所有路径均不可用</td>
+</tr>
+<tr>
+<td><code>references/openclaw-weixin-upload-bug.md</code></td>
+<td>openclaw-weixin 文件上传 Bug：iLink API v2.1 字段变更</td>
+</tr>
+<tr>
+<td><code>references/hermes-wechat-send.md</code></td>
+<td>OpenClaw CLI 发送微信消息的正确命令</td>
+</tr>
+<tr>
+<td><code>references/hermes-wechat-system-notification-suppression.md</code></td>
+<td>屏蔽微信 ⚡打断通知的配置方法</td>
+</tr>
+</tbody>
+</table>
+<h2 id="限制与注意事项-7">限制与注意事项</h2>
+<ul>
+<li><strong>不是消息通道</strong> — 这是 Hermes 主动调用 OpenClaw，不是 OpenClaw 收到微信消息转发 Hermes</li>
+<li><strong>单向调度</strong> — Hermes → OpenClaw，OpenClaw 不会主动回调 Hermes</li>
+<li><strong>需要 OpenClaw Gateway 运行</strong> — <code>openclaw-gateway</code> 必须在跑，端口 18789</li>
+<li><strong>结果需解析</strong> — 需要 terminal 返回后手动解析 JSON</li>
+<li><strong>超时默认 600s</strong> — 复杂任务可能需要 <code>--timeout</code> 调大</li>
+</ul>
+<h2 id="检查-openclaw-状态-8">检查 OpenClaw 状态</h2>
+<pre><code class="language-bash">openclaw health
+# 或
+openclaw agents list
+</code></pre>
+<h2 id="故障排查-9">故障排查</h2>
+<p><strong>报错：Gateway agent failed</strong>
+→ OpenClaw Gateway 没在跑，启动它：<code>openclaw gateway run</code> 或 <code>tmux new -s openclaw 'openclaw gateway run'</code></p>
+<p><strong>报错：Pass --to / --session-id / --agent</strong>
+→ 没指定 agent，需要加 <code>--agent main</code> 或其他 agent ID</p>
+<p><strong>返回空 text</strong>
+→ 检查 <code>result.payloads</code> 是否有内容，或看 <code>result.meta</code> 里的错误信息</p>
+<p><strong>JSON 解析失败</strong>
+→ 某些命令输出可能不是纯 JSON，先 <code>terminal(... --json 2&gt;&amp;1)</code> 捕获所有输出再解析</p>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>hermes-openclaw-bridge/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

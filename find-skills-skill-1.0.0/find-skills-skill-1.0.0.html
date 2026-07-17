@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>find-skills-skill-1.0.0 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#find-skills-skill-1">Find Skills Skill</a></li>
+<li><a href="#when-to-use-1">When to Use</a></li>
+<li><a href="#when-not-to-use-2">When NOT to Use</a></li>
+<li><a href="#sources-for-finding-skills-3">Sources for Finding Skills</a></li>
+<li><a href="#search-strategies-4">Search Strategies</a></li>
+<li><a href="#installation-tips-5">Installation Tips</a></li>
+<li><a href="#common-skill-categories-6">Common Skill Categories</a></li>
+<li><a href="#troubleshooting-7">Troubleshooting</a></li>
+<li><a href="#best-practices-8">Best Practices</a></li>
+<li><a href="#related-skills-9">Related Skills</a></li></ol></div>
+<h1 id="find-skills-skill-1">Find Skills Skill</h1>
+<p>Search and discover OpenClaw skills from various sources.</p>
+<h2 id="when-to-use-1">When to Use</h2>
+<p>✅ <strong>USE this skill when:</strong></p>
+<ul>
+<li>"Find skills for [task]"</li>
+<li>"Search for OpenClaw skills"</li>
+<li>"What skills are available?"</li>
+<li>"Discover new skills"</li>
+<li>"Find skills by category"</li>
+</ul>
+<h2 id="when-not-to-use-2">When NOT to Use</h2>
+<p>❌ <strong>DON'T use this skill when:</strong></p>
+<ul>
+<li>Installing skills → use <code>clawhub install</code></li>
+<li>Managing installed skills → use <code>openclaw skills list</code></li>
+<li>Creating new skills → use skill-creator skill</li>
+</ul>
+<h2 id="sources-for-finding-skills-3">Sources for Finding Skills</h2>
+<h3>1. ClawHub (Primary)</h3>
+<pre><code class="language-bash"># Search skills
+npx clawhub search &quot;keyword&quot;
+
+# Browse categories
+npx clawhub browse
+</code></pre>
+<h3>2. OpenClaw Directory</h3>
+<ul>
+<li>Website: https://www.openclawdirectory.dev/skills</li>
+<li>Browse by category, popularity, or search</li>
+</ul>
+<h3>3. LobeHub Skills Marketplace</h3>
+<ul>
+<li>Website: https://lobehub.com/skills</li>
+<li>Community-contributed skills</li>
+</ul>
+<h3>4. GitHub</h3>
+<ul>
+<li>Search: <code>openclaw skill</code> or <code>agent-skill</code></li>
+<li>Look for repositories with <code>SKILL.md</code> files</li>
+</ul>
+<h3>5. Community Forums</h3>
+<ul>
+<li>SitePoint: https://www.sitepoint.com/community/</li>
+<li>Discord: https://discord.com/invite/clawd</li>
+</ul>
+<h2 id="search-strategies-4">Search Strategies</h2>
+<h3>By Functionality</h3>
+<pre><code class="language-bash"># Web search skills
+npx clawhub search &quot;web search&quot;
+
+# Weather skills
+npx clawhub search &quot;weather&quot;
+
+# Document skills
+npx clawhub search &quot;document&quot;
+</code></pre>
+<h3>By Provider</h3>
+<pre><code class="language-bash"># Tavily skills
+npx clawhub search &quot;tavily&quot;
+
+# GitHub skills
+npx clawhub search &quot;github&quot;
+
+# Calendar skills
+npx clawhub search &quot;calendar&quot;
+</code></pre>
+<h3>By Popularity</h3>
+<pre><code class="language-bash"># Most installed skills
+npx clawhub search --sort installs
+
+# Most starred skills
+npx clawhub search --sort stars
+</code></pre>
+<h2 id="installation-tips-5">Installation Tips</h2>
+<ol>
+<li><strong>Check requirements</strong> before installing</li>
+<li><strong>Read SKILL.md</strong> for usage instructions</li>
+<li><strong>Test in isolation</strong> before production use</li>
+<li><strong>Check for updates</strong> regularly</li>
+</ol>
+<h2 id="common-skill-categories-6">Common Skill Categories</h2>
+<h3>Core Skills</h3>
+<ul>
+<li><code>weather</code> - Weather forecasts</li>
+<li><code>skill-creator</code> - Create new skills</li>
+<li><code>healthcheck</code> - Security audits</li>
+</ul>
+<h3>Integration Skills</h3>
+<ul>
+<li><code>github</code> - GitHub operations</li>
+<li><code>feishu</code> - Feishu integration</li>
+<li><code>notion</code> - Notion API</li>
+</ul>
+<h3>Search Skills</h3>
+<ul>
+<li><code>tavily-search</code> - Web search via Tavily</li>
+<li><code>web-search-plus</code> - Enhanced web search</li>
+</ul>
+<h3>Agent Skills</h3>
+<ul>
+<li><code>proactive-agent</code> - Proactive automation</li>
+<li><code>coding-agent</code> - Code generation</li>
+</ul>
+<h2 id="troubleshooting-7">Troubleshooting</h2>
+<h3>Rate Limits</h3>
+<p>If you hit rate limits with clawhub:
+1. Wait 1 hour before retrying
+2. Use alternative sources (websites)
+3. Search manually on GitHub</p>
+<h3>Installation Issues</h3>
+<ol>
+<li>Check skill requirements</li>
+<li>Verify network connectivity</li>
+<li>Check OpenClaw version compatibility</li>
+</ol>
+<h2 id="best-practices-8">Best Practices</h2>
+<ol>
+<li><strong>Search before creating</strong> - Don't reinvent the wheel</li>
+<li><strong>Read documentation</strong> - Understand skill capabilities</li>
+<li><strong>Start simple</strong> - Install one skill at a time</li>
+<li><strong>Test thoroughly</strong> - Verify skill works as expected</li>
+<li><strong>Provide feedback</strong> - Help improve skills</li>
+</ol>
+<h2 id="related-skills-9">Related Skills</h2>
+<ul>
+<li><code>clawhub</code> - ClawHub CLI tool</li>
+<li><code>skill-creator</code> - Create new skills</li>
+<li><code>healthcheck</code> - System health checks</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:03 &nbsp;·&nbsp;
+  源文件: <code>find-skills-skill-1.0.0/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

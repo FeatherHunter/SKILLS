@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>skill-optimizer — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#skill-optimizer-1">Skill Optimizer</a></li>
+<li><a href="#设计模式-1">设计模式</a></li>
+<li><a href="#gotchas-2">Gotchas</a></li>
+<li><a href="#工作流-3">工作流</a></li>
+<li><a href="#审查标准-4">审查标准</a></li></ol></div>
+<h1 id="skill-optimizer-1">Skill Optimizer</h1>
+<p>先审查，再规划，最后在确认后修改。</p>
+<h2 id="设计模式-1">设计模式</h2>
+<p>本 skill 主要采用：
+- <strong>Reviewer</strong>：先判断目标 skill 的问题，再给诊断
+- <strong>Inversion</strong>：先出计划并等待确认，不直接改文件
+- <strong>Generator（轻度）</strong>：在用户确认后，输出更清晰的 skill 结构或工作流</p>
+<h2 id="gotchas-2">Gotchas</h2>
+<ul>
+<li>不要把“审查结论”和“直接开始改文件”混成一步</li>
+<li>不要为了显得全面就偷偷扩大改动面</li>
+<li>不要在没确认前修改目标 skill</li>
+<li>不要为了“审查完整”而把无关 reference 全部读进上下文</li>
+<li>如果用户明确只要某个方向优化，先围绕这个方向，不要擅自重构整个 skill</li>
+</ul>
+<h2 id="工作流-3">工作流</h2>
+<p>复制此清单并跟踪进度：</p>
+<pre><code class="language-text">优化进度：
+- [ ] 步骤 1：Scope（确定范围）
+- [ ] 步骤 2：Review（审查目标 skill）
+- [ ] 步骤 3：Plan（输出优化计划并等待确认）
+- [ ] 步骤 4：Implement（确认后实施）
+- [ ] 步骤 5：Verify（校验结果）
+</code></pre>
+<h3>Step 1: Scope（确定范围）</h3>
+<p>先确认目标 skill 和本次优化范围。</p>
+<ul>
+<li>优先采用用户明确提出的优化方向，例如触发词、description、结构拆分、脚本化、确认流程。</li>
+<li>如果用户只说“优化这个 skill”，先做完整审查，再给出分优先级计划。</li>
+<li>如果目标 skill 不明确，只问一个最短问题，不要一次追问很多细节。</li>
+</ul>
+<h3>Step 2: Review（审查目标 skill）</h3>
+<p>先读目标 skill 的 <code>SKILL.md</code>，再按需读取它直接链接的 <code>references/</code>、<code>scripts/</code>、<code>assets/</code>。</p>
+<ul>
+<li>默认使用 <a href="references/review-checklist.md">references/review-checklist.md</a> 做审查基线。</li>
+<li>默认再结合 <a href="references/skill-design-review-framework.md">references/skill-design-review-framework.md</a> 判断模式是否匹配、设计是否合理。</li>
+<li>需要判断最佳实践取舍时，再读取 <a href="references/skill-creation-best-practices-claude-api-docs.md">references/skill-creation-best-practices-claude-api-docs.md</a>。</li>
+<li>不要为了“审查完整”而把无关 reference 全部读入上下文。</li>
+</ul>
+<p>重点检查：</p>
+<ul>
+<li>触发语义是否清楚：<code>name</code>、目录名、<code>description</code> 是否一致，且便于触发</li>
+<li>工作流是否可靠：步骤是否清晰，是否存在必须确认却没卡住的环节</li>
+<li>输出契约是否明确：审查结论、优化计划、最终修改结果是否分开</li>
+<li>结构是否合适：正文是否过胖，是否应拆到 <code>references/</code> / <code>scripts/</code> / <code>assets/</code></li>
+<li>设计是否合理：模式是否匹配，是否存在过度设计、脚本缺失或资源组织问题</li>
+<li>进度跟踪是否必要：多步骤工作流是否适合用 markdown checkbox 清单跟踪进度，若目标 skill 缺少且有必要，则提议增加</li>
+</ul>
+<p>如果用户只要求微调某一部分（例如只改 description、只补 references、只修确认门槛），优先做局部审查，不要擅自把任务升级成整 skill 重构。</p>
+<h3>Step 3: Plan（输出优化计划并等待确认）</h3>
+<p>先给诊断，再给计划，不要直接改文件。</p>
+<p>输出必须包含两个部分：</p>
+<pre><code class="language-markdown"># Skill 审查结论
+
+## 审查对象
+- 目标 skill：...
+- 本次范围：...
+
+## 模式判断
+- 主模式：...
+- 次模式：...
+- 当前判断：模式匹配 / 模式错位 / 模式不清
+
+## 高优先级
+- [问题] 影响触发、正确性或执行稳定性
+
+## 中优先级
+- [问题] 影响可维护性、可复用性或上下文成本
+
+## 低优先级
+- [问题] 体验提升项，可选
+
+## 不改动项
+- ...
+
+## 额外建议
+- ...
+
+# 优化计划
+1. 修改 [目标文件路径]
+   - 变更内容：
+   - 原因：
+   - 是否受用户指定方向驱动：是/否
+
+仅当用户明确回复“按计划执行”“开始修改”“确认修改”等开始执行类确认语时，才能进入实施阶段。
+</code></pre>
+<p>规则：</p>
+<ul>
+<li>如果用户明确给了优化方向，先围绕这些方向出计划，再补充少量高价值附加建议。</li>
+<li>如果发现超出本次范围的大问题，单独列为“额外建议”，不要偷偷扩大改动面。</li>
+<li>未获得确认前，不要修改目标 skill。</li>
+<li>“我看看”“有道理”“先这样”不算确认；只有明确开始执行类确认语才算进入 Step 4。</li>
+</ul>
+<h3>Step 4: Implement（确认后实施）</h3>
+<p>在用户确认后，再修改目标 skill。</p>
+<ul>
+<li>优先改动计划中已确认的文件。</li>
+<li>尽量小步重构；仅在确有收益时拆分新的 <code>references/</code>、<code>scripts/</code>、<code>assets/</code>。</li>
+<li>如果新增引用文件，确保它们都直接从目标 <code>SKILL.md</code> 链接，避免深层跳转。</li>
+<li>保留用户原有有效内容；只删除重复、失效或与新流程冲突的部分。</li>
+<li>如果用户确认语义含糊，继续停留在 Step 3，不要自行解释成“已确认”。</li>
+</ul>
+<h3>Step 5: Verify（校验结果）</h3>
+<p>改完后至少完成这些校验：</p>
+<ul>
+<li>frontmatter 只包含 <code>name</code> 和 <code>description</code></li>
+<li><code>name</code>、目录名、触发语义一致</li>
+<li><code>description</code> 能独立表达触发条件</li>
+<li><code>SKILL.md</code> 主体比改动前更短、更清晰，且工作流可执行</li>
+<li>新增 <code>references/</code> 是否只承载细节，没有和 <code>SKILL.md</code> 重复大段内容</li>
+<li>如有“先审查后确认再修改”的门槛，是否在说明里写清楚</li>
+<li>Step 3 模板是否明确写出范围、不改动项和可接受确认语</li>
+</ul>
+<p>最后向用户汇报：</p>
+<ul>
+<li>已修改的文件</li>
+<li>已落实的优化方向</li>
+<li>仍保留的风险或后续建议</li>
+</ul>
+<h2 id="审查标准-4">审查标准</h2>
+<p>需要快速判定时，直接按这组优先级处理：</p>
+<ol>
+<li>先修触发失败、确认缺失、流程不可执行的问题</li>
+<li>再修结构臃肿、重复内容、资源组织混乱的问题</li>
+<li>最后处理措辞润色、示例补充、可读性增强</li>
+</ol>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>skill-optimizer/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

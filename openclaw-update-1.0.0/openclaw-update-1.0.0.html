@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>openclaw-update-1.0.0 — Skill HTML 镜像</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 4px; font-size: 15px; }
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
+  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .toc { background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
+  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
+            text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .pill { display: inline-block; background: var(--card); color: var(--fg2);
+           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
+           border: 1px solid var(--border); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="toc"><h4>目录</h4><ol><li><a href="#openclaw-update-skill-1">OpenClaw Update Skill</a></li>
+<li><a href="#when-to-use-1">When to Use</a></li>
+<li><a href="#when-not-to-use-2">When NOT to Use</a></li>
+<li><a href="#核心概念-两种安装形态-3">核心概念：两种安装形态</a></li>
+<li><a href="#完整升级流程-4">完整升级流程</a></li>
+<li><a href="#故障排查速查表-5">故障排查速查表</a></li>
+<li><a href="#升级流程决策树-6">升级流程决策树</a></li>
+<li><a href="#wsl-中-sudo-npm-的三大陷阱-7">WSL 中 sudo npm 的三大陷阱</a></li>
+<li><a href="#related-skills-8">Related Skills</a></li></ol></div>
+<h1 id="openclaw-update-skill-1">OpenClaw Update Skill</h1>
+<p>在 WSL2 环境中升级 OpenClaw npm 全局包，处理 sudo npm registry 独立配置、代理环境变量传递、Git SSH 重定向等常见问题。</p>
+<h2 id="when-to-use-1">When to Use</h2>
+<p>✅ <strong>USE this skill when:</strong></p>
+<ul>
+<li>"升级 openclaw"</li>
+<li>"openclaw update"</li>
+<li>"npm install -g openclaw 卡死"</li>
+<li>"npm install -g openclaw 报错 EACCES / ETIMEDOUT / ENOTEMPTY"</li>
+<li>"sudo npm 超时"</li>
+<li>"禁用源码型 OpenClaw"</li>
+</ul>
+<h2 id="when-not-to-use-2">When NOT to Use</h2>
+<p>❌ <strong>DON'T use this skill when:</strong></p>
+<ul>
+<li>首次安装 OpenClaw → 用官方安装命令</li>
+<li>源码型 OpenClaw 的 git pull 更新 → <code>cd ~/OpenClaw &amp;&amp; git pull &amp;&amp; pnpm install &amp;&amp; pnpm build</code></li>
+<li>OpenClaw 配置问题 → <code>openclaw config</code></li>
+</ul>
+<h2 id="核心概念-两种安装形态-3">核心概念：两种安装形态</h2>
+<table>
+<thead>
+<tr>
+<th>形态</th>
+<th>位置</th>
+<th>特点</th>
+<th>升级方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>源码型</strong></td>
+<td><code>~/OpenClaw/</code>（git clone）</td>
+<td>可改源码、体积大、需构建</td>
+<td><code>git pull</code> + <code>pnpm install</code> + <code>pnpm build</code></td>
+</tr>
+<tr>
+<td><strong>非源码型</strong></td>
+<td><code>/usr/local/node22/lib/node_modules/openclaw/</code>（npm -g）</td>
+<td>即装即用、不可改源码</td>
+<td><code>npm install -g openclaw@latest</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 本 SKILL 专注于<strong>非源码型（npm 全局包）</strong>的升级。</p>
+</blockquote>
+<h2 id="完整升级流程-4">完整升级流程</h2>
+<h3>Step 1：确认当前版本与最新版本</h3>
+<pre><code class="language-bash"># 当前版本
+npm list -g openclaw
+
+# 最新版本（需要代理）
+export http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+export https_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+npm view openclaw version
+</code></pre>
+<h3>Step 2：禁用源码型安装（如有）</h3>
+<p>源码型目录可能干扰 npm 全局包的路径解析。如果存在源码型安装，建议禁用：</p>
+<pre><code class="language-bash"># 重命名即可，不删除，随时可恢复
+mv ~/OpenClaw ~/OpenClaw.disabled
+
+# 恢复方式：mv ~/OpenClaw.disabled ~/OpenClaw
+</code></pre>
+<h3>Step 3：处理 sudo npm registry 问题（关键！）</h3>
+<blockquote>
+<p>⚠️ <strong>这是最容易踩坑的地方</strong>。<code>sudo npm</code> 使用的是 root 用户的 <code>.npmrc</code>，与当前用户的 npm 配置<strong>完全独立</strong>。</p>
+</blockquote>
+<pre><code class="language-bash"># 检查当前用户的 registry
+npm config get registry
+# 可能是：https://mirrors.cloud.tencent.com/npm/
+
+# 检查 sudo 的 registry（可能不同！）
+sudo npm config get registry
+# 可能是：https://registry.npmmirror.com/
+
+# 如果 sudo 的 registry 是国内镜像，在 WSL 代理环境下反而会超时
+# 解决：将 sudo 的 registry 切到官方源（走代理）
+sudo npm config set registry https://registry.npmjs.org/
+</code></pre>
+<p><strong>核心洞察</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>registry 选择</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>有代理</td>
+<td><code>registry.npmjs.org</code></td>
+<td>代理可直连官方源，国内镜像反而可能超时</td>
+</tr>
+<tr>
+<td>无代理</td>
+<td>国内镜像（npmmirror / tencent）</td>
+<td>无法直连官方源，必须走镜像</td>
+</tr>
+</tbody>
+</table>
+<h3>Step 4：传递代理环境变量给 sudo</h3>
+<blockquote>
+<p>⚠️ <code>sudo</code> 默认重置环境变量，不会继承当前 shell 的 <code>http_proxy</code>/<code>https_proxy</code>。</p>
+</blockquote>
+<pre><code class="language-bash"># ❌ 错误：sudo 不继承代理
+export http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+sudo npm install -g openclaw@latest  # 会超时！
+
+# ✅ 正确：显式传递代理给 sudo
+sudo http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt; \
+     https_proxy=http://&lt;代理地址&gt;:&lt;端口&gt; \
+     npm install -g openclaw@latest
+</code></pre>
+<h3>Step 5：处理 Git SSH 依赖问题</h3>
+<p>OpenClaw 的某些依赖通过 SSH 协议引用 GitHub 仓库（如 <code>ssh://git@github.com/...</code>），WSL 中无 SSH key 会导致 <code>Permission denied (publickey)</code>。</p>
+<pre><code class="language-bash"># 临时将 git SSH 重定向为 HTTPS（安装完记得还原）
+git config --global url.&quot;https://github.com/&quot;.insteadOf &quot;ssh://git@github.com/&quot;
+git config --global url.&quot;https://github.com/&quot;.insteadOf &quot;git@github.com:&quot;
+</code></pre>
+<blockquote>
+<p>⚠️ 这只是临时配置，Step 9 会清理。</p>
+</blockquote>
+<h3>Step 6：清理上次失败安装的残留</h3>
+<p>如果之前 <code>npm install</code> 失败过，会留下临时目录导致 <code>ENOTEMPTY</code> 错误：</p>
+<pre><code class="language-bash"># 清理残留
+sudo rm -rf /usr/local/node22/lib/node_modules/.openclaw-*
+sudo rm -rf /usr/local/node22/lib/node_modules/openclaw
+</code></pre>
+<h3>Step 7：执行升级</h3>
+<pre><code class="language-bash">export http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+export https_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+sudo http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt; \
+     https_proxy=http://&lt;代理地址&gt;:&lt;端口&gt; \
+     npm install -g openclaw@&lt;目标版本&gt;
+</code></pre>
+<blockquote>
+<p>💡 如果 GnuTLS 问题导致 git 依赖拉取失败，可临时关闭 SSL 验证：
+<code>git config --global http.sslVerify false</code>（安装完务必还原！）</p>
+</blockquote>
+<h3>Step 8：验证升级</h3>
+<pre><code class="language-bash">npm list -g openclaw
+# 期望：openclaw@&lt;目标版本&gt;
+
+node /usr/local/node22/lib/node_modules/openclaw/openclaw.mjs --version
+# 期望：OpenClaw &lt;版本号&gt;
+</code></pre>
+<h3>Step 9：清理临时配置</h3>
+<pre><code class="language-bash"># 还原 git SSL 验证
+git config --global http.sslVerify true
+
+# 移除 SSH→HTTPS 重定向（逐条移除，可能有多条）
+git config --global --unset url.&quot;https://github.com/&quot;.insteadOf
+# 重复执行直到没有输出
+</code></pre>
+<h3>Step 10：启动验证</h3>
+<pre><code class="language-bash"># 方式一：直接启动 gateway
+node /usr/local/node22/lib/node_modules/openclaw/openclaw.mjs gateway --port 18789
+
+# 方式二：使用启动脚本
+# Windows 端双击 启动OpenClaw.bat
+</code></pre>
+<h2 id="故障排查速查表-5">故障排查速查表</h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>原因</th>
+<th>方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>EACCES: permission denied</code></td>
+<td>npm 全局目录需 root 权限</td>
+<td>用 <code>sudo npm install -g</code></td>
+</tr>
+<tr>
+<td><code>ETIMEDOUT</code> 连接 npmmirror</td>
+<td>sudo 的 registry 是国内镜像，代理下反而超时</td>
+<td><code>sudo npm config set registry https://registry.npmjs.org/</code></td>
+</tr>
+<tr>
+<td><code>Permission denied (publickey)</code></td>
+<td>npm 依赖用 git SSH 协议</td>
+<td>配置 git URL 重写：SSH→HTTPS</td>
+</tr>
+<tr>
+<td><code>ENOTEMPTY: directory not empty</code></td>
+<td>上次失败安装残留</td>
+<td><code>sudo rm -rf .../node_modules/.openclaw-* .../node_modules/openclaw</code></td>
+</tr>
+<tr>
+<td><code>GnuTLS recv error</code></td>
+<td>WSL git GnuTLS 与代理不兼容</td>
+<td>临时 <code>git config --global http.sslVerify false</code></td>
+</tr>
+<tr>
+<td><code>EBADENGINE</code> undici 警告</td>
+<td>Node.js 版本稍低于依赖要求</td>
+<td>通常可忽略，不影响运行</td>
+</tr>
+<tr>
+<td>升级后 <code>npm list</code> 显示旧版本</td>
+<td>残留目录未清理</td>
+<td>先 Step 6 清理再安装</td>
+</tr>
+</tbody>
+</table>
+<h2 id="升级流程决策树-6">升级流程决策树</h2>
+<pre><code>npm install -g openclaw@latest
+│
+├─ 成功 → 验证版本 → 完成
+│
+├─ EACCES → 加 sudo 重试
+│   │
+│   ├─ 成功 → 完成
+│   │
+│   ├─ ETIMEDOUT (npmmirror) → 切 sudo registry 到 npmjs.org → 重试
+│   │
+│   ├─ Permission denied (publickey) → 配 git SSH→HTTPS → 重试
+│   │
+│   ├─ ENOTEMPTY → 清理残留目录 → 重试
+│   │
+│   └─ GnuTLS error → 临时关 sslVerify → 重试 → 还原
+│
+└─ 其他 → 检查网络/代理/Node版本
+</code></pre>
+<h2 id="wsl-中-sudo-npm-的三大陷阱-7">WSL 中 sudo npm 的三大陷阱</h2>
+<h3>陷阱 1：sudo 的 npm 配置独立</h3>
+<pre><code>~/.npmrc          → 当前用户的配置
+/root/.npmrc      → sudo (root) 的配置
+</code></pre>
+<p><strong>症状</strong>：用户配了 tencent 镜像，sudo 用的是 npmmirror 镜像，两者可能都不适合当前网络环境。</p>
+<p><strong>解决</strong>：<code>sudo npm config set registry &lt;正确源&gt;</code></p>
+<h3>陷阱 2：sudo 不继承代理环境变量</h3>
+<pre><code class="language-bash"># 当前 shell 有代理
+export http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt;
+
+# sudo 后环境变量丢失
+sudo npm install -g openclaw  # 超时！
+
+# 必须显式传递
+sudo http_proxy=http://&lt;代理地址&gt;:&lt;端口&gt; npm install -g openclaw
+</code></pre>
+<h3>陷阱 3：国内镜像 ≠ 更快</h3>
+<p>在有代理的 WSL 环境下：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐源</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>有代理</td>
+<td><code>registry.npmjs.org</code></td>
+<td>代理已打通外网，官方源最稳定</td>
+</tr>
+<tr>
+<td>无代理</td>
+<td>国内镜像</td>
+<td>无法直连官方源，必须走镜像</td>
+</tr>
+</tbody>
+</table>
+<h2 id="related-skills-8">Related Skills</h2>
+<ul>
+<li><code>hermes-agent-install</code> - Hermes Agent 安装（同样涉及 WSL 代理问题）</li>
+</ul>
+<footer>
+  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  源文件: <code>openclaw-update-1.0.0/SKILL.md</code><br>
+  工具: <code>html_mirror_generator/generate.py v1</code>
+</footer>
+</body>
+</html>

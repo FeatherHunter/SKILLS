@@ -1,0 +1,71 @@
+{
+  "_meta": {
+    "tool": "智剪工坊",
+    "version": "0.7",
+    "revision": 1,
+    "created": "2026-07-18T12:29:36.956Z",
+    "updated": "2026-07-18T12:29:36.956Z",
+    "workspace": "DAY17",
+    "history": [
+      {
+        "revision": 1,
+        "timestamp": "2026-07-18T12:29:36.956Z"
+      }
+    ]
+  },
+  "project": {
+    "name": "DAY17"
+  },
+  "output": {
+    "aspect_ratio": "9:16",
+    "aspect_handling": "aspect-fit"
+  },
+  "videos": [
+    {
+      "file": "IMG_20260718_182613.jpg",
+      "index": 1,
+      "summary": "身材照 转为 3秒视频即可"
+    },
+    {
+      "file": "video_20260718_122703.mp4",
+      "index": 2,
+      "summary": "悍马机哑铃推肩",
+      "voice": "keep",
+      "ops": {
+        "pin-range": {
+          "on": true,
+          "from": "1:02",
+          "to": "1:39"
+        }
+      }
+    },
+    {
+      "file": "video_20260718_125549.mp4",
+      "index": 3,
+      "summary": "器械侧平举",
+      "voice": "keep",
+      "ops": {
+        "pin-range": {
+          "on": true,
+          "from": "13",
+          "to": "42"
+        }
+      }
+    },
+    {
+      "file": "video_20260718_172515.mp4",
+      "index": 4,
+      "summary": "悍马机附身划船",
+      "voice": "keep",
+      "ops": {
+        "pin-range": {
+          "on": true,
+          "from": "9",
+          "to": "27"
+        }
+      }
+    }
+  ],
+  "cover": {},
+  "ending": {}
+}

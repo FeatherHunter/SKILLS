@@ -1,5 +1,17 @@
-#!/usr/bin/env python3
-"""健身计划 HTML 渲染器：从 DB 读取 → 生成 Apple 风格训练计划页面"""
+﻿#!/usr/bin/env python3
+"""健身计划 HTML 渲染器
+
+职责定位（2026-07-18 复盘）：
+- 本 HTML = 训练前看今天练什么（"今天该做哪些动作、几组、几kg"）
+- 训练复盘 = 走独立 CLI：`/卡路里 复盘今日`，由 exercise_review 动态算
+- 本 HTML 不嵌入任何复盘数据（避免写死假数据，如完成率 0%）
+- include_review 默认 False；要开复盘 section 必须显式传 --review
+
+历史教训：
+- 518e651 / c8915a3 曾在 HTML 顶部手写"今日复盘"模块，完成率硬编码 0%
+- 卡路里技能 SKILL.md 强制规定 1 已重新解读为"卡路里复盘联动"，
+  不适用于训练计划 HTML（这是两个独立职责）
+"""
 
 import json
 import sys
@@ -22,7 +34,7 @@ def _get_db():
     return get_db(DB_PATH)
 
 
-def render(output_path=None, target_week=None, include_review=True):
+def render(output_path=None, target_week=None, include_review=False):
     """主渲染函数"""
     conn = _get_db()
     c = conn.cursor()
@@ -54,7 +66,9 @@ def render(output_path=None, target_week=None, include_review=True):
 
     total_weeks = config['total_weeks']
 
-    # ── review (可选,2026-07-13 加:HTML 强制规定 1 联动) ──
+    # ── review (可选，默认关闭) ──
+    # 训练计划 HTML 职责 = 训练前看今天练什么，不含复盘
+    # 训练复盘请用独立 CLI：`/卡路里 复盘今日`
     review_data = None
     if include_review:
         try:
@@ -138,7 +152,8 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
         f'<p>{config["desc"] or ""} · {total_weeks} 周循环 · 起始 {config["start_date"]}</p></div>',
     ]
 
-    # 复盘 section（顶部，2026-07-13 加：HTML 强制规定 1 联动）
+    # 复盘 section（仅在 --review 显式开启时渲染；默认不渲染）
+    # 设计原则：训练计划 HTML = 训练前看今天练什么；复盘走独立 CLI `/卡路里 复盘今日`
     if review_data:
         from datetime import date
         today_str = date.today().strftime('%Y-%m-%d')
@@ -175,8 +190,7 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
             html_parts.append('</div>')
         else:
             html_parts.append('<div class="review-section"><h2>📋 今日复盘</h2><p class="no-review">暂无复盘数据</p></div>')
-    else:
-        html_parts.append('<div class="review-section"><h2>📋 今日复盘</h2><p class="no-review">复盘数据未启用</p></div>')
+    # 如果 include_review=False（默认），不渲染任何复盘 section（设计原则：复盘走独立 CLI）
 
     # 周 Tab
     html_parts.append('<div class="tabs" id="weekTabs">')
@@ -304,9 +318,9 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser(description='渲染健身计划HTML')
     p.add_argument('-o','--output',help='输出文件路径')
     p.add_argument('-w','--week',type=int,help='聚焦第几周')
-    p.add_argument('--no-review', action='store_true', help='关闭复盘 section（默认开启）')
+    p.add_argument('--review', action='store_true', help='打开复盘 section（默认关闭。复盘请用 `/卡路里 复盘今日` CLI）')
     args = p.parse_args()
-    result = render(args.output, args.week, include_review=not args.no_review)
+    result = render(args.output, args.week, include_review=args.review)
     if isinstance(result, str) and not args.output:
         print(result)
     elif args.output:

@@ -284,7 +284,8 @@ def get_daily_summary(target_date=None):
 
     if goal:
         cal_goal, pro_goal, carb_goal, fat_goal = goal[1], goal[2], goal[3], goal[4]
-        water_goal = goal[6] if len(goal) > 6 and goal[6] else 2000
+        # water_goal 在 daily_goal 表索引 8(2026-07-18 修:索引 6 是 weight_goal 不是 water)
+        water_goal = goal[8] if len(goal) > 8 and goal[8] else 2000
         cal_remaining = cal_goal - total_cal
         pro_remaining = pro_goal - total_pro
         carb_remaining = carb_goal - total_carbs

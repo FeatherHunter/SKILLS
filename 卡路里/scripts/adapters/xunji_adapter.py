@@ -39,7 +39,18 @@ def xunji_response_to_rows(resp_json, body_weight_kg=None):
                     continue  # 只同步完成的组
 
                 load = convert_load_kg(s.get('weight', '0'), s.get('unit', 'kg'))
-                reps = int(s.get('reps', 0))
+                # reps 可能是 "12" 或 "12-16"(范围值),范围值取最大值(惯例)
+                reps_raw = s.get('reps', 0)
+                if isinstance(reps_raw, str) and '-' in reps_raw:
+                    try:
+                        reps = max(int(x) for x in reps_raw.split('-') if x.strip())
+                    except (ValueError, TypeError):
+                        reps = 0
+                else:
+                    try:
+                        reps = int(reps_raw)
+                    except (ValueError, TypeError):
+                        reps = 0
                 volume = load * reps
 
                 rows.append({

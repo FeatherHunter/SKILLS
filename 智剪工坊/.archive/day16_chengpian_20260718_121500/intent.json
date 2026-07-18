@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "tool": "智剪工坊",
+    "version": "0.7",
+    "revision": 2,
+    "created": "2026-07-18T02:40:53.230Z",
+    "updated": "2026-07-18T04:08:31.905544Z",
+    "workspace": "DAY16",
+    "history": [
+      {
+        "revision": 1,
+        "timestamp": "2026-07-18T02:40:53.230Z"
+      },
+      {
+        "revision": 2,
+        "timestamp": "2026-07-18T04:08:31.905544Z"
+      }
+    ]
+  },
+  "project": {
+    "name": "健身日记 DAY16｜88.8kg 反弹 +0.6｜推胸日 22 组",
+    "title": "健身日记 DAY16｜88.8kg 反弹 +0.6｜推胸日 22 组",
+    "target_length": "不限"
+  },
+  "output": {
+    "aspect_ratio": "9:16",
+    "aspect_handling": "aspect-fit",
+    "bgm": "C:\\Users\\辰辰洋洋\\Videos\\素材\\健身\\DAY1\\Day1_bgm.mp3",
+    "bgm_match_mode": "loop"
+  },
+  "sequences": [
+    {
+      "videos": [
+        3,
+        1,
+        2,
+        4
+      ],
+      "transitions": []
+    }
+  ],
+  "videos": [
+    {
+      "file": "IMG_20260717_174326.jpg",
+      "index": 1,
+      "summary": "身材照 很肥硕"
+    },
+    {
+      "file": "IMG_20260717_214232.jpg",
+      "index": 2,
+      "summary": "健身后暴汗",
+      "voice": "keep"
+    },
+    {
+      "file": "video_20260717_092227.mp4",
+      "index": 3,
+      "summary": "测量体重",
+      "voice": "keep",
+      "ops": {
+        "trim-tail": {
+          "on": true,
+          "sec": 2
+        }
+      }
+    },
+    {
+      "file": "video_20260717_215135.mp4",
+      "index": 4,
+      "voice": "keep-with-filler-removed",
+      "ops": {
+        "trim-tail": {
+          "on": true,
+          "sec": 2
+        }
+      }
+    }
+  ],
+  "cover": {
+    "type": "image",
+    "path": "C:\\Users\\辰辰洋洋\\Videos\\素材\\健身\\DAY16\\IMG_20260717_214232.jpg",
+    "overlay": {
+      "main": "暴汗！",
+      "subtitle": "88.8kg 反弹 +0.6",
+      "tag": "推胸日 22 组 · DAY16",
+      "style": "大金字 + 白副字"
+    }
+  },
+  "ending": {
+    "type": "next-episode-promo",
+    "prompt": "第十六天结束，明天见！"
+  }
+}

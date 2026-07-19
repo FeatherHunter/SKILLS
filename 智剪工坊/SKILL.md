@@ -833,6 +833,14 @@ output_path = f"{workspace}/成片/{slugify(project.title)}.mp4"
 | `text` | `ai_cover.py --text-only` | 纯文字封面 |
 | `image` | **`cover_compose/`** (v1.20 新增) | 多图拼版 — 见 `references/封面合成-多图拼版PIL.md` |
 
+> 💡 **多行标题旁注**：`--title-main` / `--title-sub` 只支持**1 行**文本。
+> 如果要做"4 行 DAY15 标题"这种多行排版，绕道 2 个方案：
+> - **方案 A**：`cover_compose/` 子模块（DAY15/DAY16/DAY17 都在用，
+>   支持模板化多行 + 背景图 + 暗化层）
+> - **方案 B**：PIL 直画（最灵活，但写 ~30 行 Python 自己控制字号/位置/颜色）
+> 
+> 详见 `references/封面合成-多图拼版PIL.md`。
+
 **强制规则(v1.4, v1.20 修订)**: 封面上的所有文字叠加(数字/标题/标签/徽章等)**必须通过 `ai_cover.py` 的 `overlay_text()` 或 `cover_compose/cli.py` 的 `text_layer()` / `draw_text()` 实现**,禁止自己 import PIL 写独立脚本。
 
 | 能力 | 合法实现 |

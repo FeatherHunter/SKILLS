@@ -63,6 +63,13 @@
 | `videos[i].ops.color` | `video_color.py` | `on=true` | `{on: bool, preset: str}`（13 种预设: warm/cool/cinematic/vintage/bw/high-contrast/noir/comic/sketch/faded/punchy/vhs/dream/sharpen）|
 | `videos[i].ops.rotate` | `edit.py rotate` | `on=true` | `{on: bool, degrees: int}`（90/180/270）|
 | `videos[i].ops.scale` | `edit.py scale` | `on=true` | `{on: bool, width: int, height: int}` |
+| `videos[i].ops.asr-transcribe` | `asr/transcribe.py` | `on=true` | `{on: bool, model: tiny/base/small/medium/large-v3, lang: zh/en/auto}`（**v1.19 新增**：Whisper ASR）|
+| `videos[i].ops.asr-burn` | `asr/burn_subtitle.py` | `on=true` | `{on: bool, font_size: 数字, 默认 22}`（**v1.19 新增**：SRT 烧到视频）|
+| `videos[i].ops.asr-speaker` | `asr/speaker_srt.py` | `on=true` | `{on: bool}`（**v1.19 新增**：前提 asr-transcribe + audio-diarize）|
+| `videos[i].ops.audio-denoise` | `audio/denoise.py` | `on=true` | `{on: bool}`（**v1.19 新增**：ffmpeg afftdn 降噪）|
+| `videos[i].ops.audio-separate` | `audio/separate.py` | `on=true` | `{on: bool, model: htdemucs/htdemucs_ft/mdx_q}`（**v1.19 新增**：demucs 声源分离）|
+| `videos[i].ops.audio-diarize` | `audio/diarize.py` | `on=true` | `{on: bool}`（**v1.19 新增**：需 HF token）|
+| `videos[i].ops.voice-filler-removed` | **（暂无 CLI，HTML UI 已加）** | `on=true` | `{on: bool}`（**v1.19 新增**：v2 待实现）|
 | `videos[i].ops.crop` | `edit.py crop` | `on=true` | `{on: bool, x: int, y: int, width: int, height: int}` |
 | `videos[i].ops.subtitle` | `video_subtitle.py` | `on=true` | `{on: bool, style: str, language: str}`（中文/英文/auto）|
 | `videos[i].ops.audio` | `audio_bgm.py` | `on=true` | `{on: bool, file: path, volume: float, start: 秒, end: 秒, bgm_fade_in: 秒, bgm_fade_out: 秒, match_mode: str}`（match_mode v1.3 新增，4 种: loop/truncate/silence-end/ask）|

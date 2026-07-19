@@ -21,6 +21,7 @@
 | "ASR/语音转文字" | asr-transcribe | `scripts/asr/transcribe.py` (v1.7 调 `lib/asr/whisper.py` GPU) |
 | "烧字幕" | asr-burn | `scripts/asr/burn_subtitle.py` (v1.6 调 `lib/ffmpeg/video/subtitle.py`) |
 | "带说话人的字幕" | asr-speaker | `scripts/asr/speaker_srt.py` |
+| "去水词/去口头禅/嗯啊" | voice-filler-removed | **（v1.19 待实现）** HTML UI 已加, CLI 待写 |
 | "配字幕" | subtitle | `scripts/asr/transcribe.py` + `scripts/asr/burn_subtitle.py` |
 | "做封面" | cover | `scripts/ai/cover.py` |
 | "调色" | color | `scripts/video/color.py` |

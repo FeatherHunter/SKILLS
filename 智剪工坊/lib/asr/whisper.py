@@ -12,6 +12,7 @@ faster-whisper（OpenAI Whisper 高效实现）封装:
 
 依赖: faster-whisper (pip install faster-whisper)
 """
+import os
 import sys
 from pathlib import Path
 
@@ -67,8 +68,13 @@ def transcribe_to_srt(audio_or_video, srt_path,
         log_error(f"导入失败: {e}")
         return None
 
-    log_info(f"加载模型: {model} ({device})")
-    wm = WhisperModel(model, device=device)
+    # v1.19: 读 env 控制 local_files_only（解决 Python SSL 失败时的 fallback：cache 有就完全不走网）
+    local_files_only = os.environ.get("HF_HUB_OFFLINE", "0") == "1"
+    # v1.19: 显式传 download_root（默认 ~/.cache/huggingface/hub，但环境可能有 HUGGINGFACE_HUB_CACHE=不同路径）
+    # 不传会导致"找不到 cache" 错误（实测 2026-07-20）
+    download_root = os.environ.get("HF_HUB_DOWNLOAD_ROOT") or os.path.expanduser("~/.cache/huggingface/hub")
+    log_info(f"加载模型: {model} ({device}, local_files_only={local_files_only}, cache={download_root})")
+    wm = WhisperModel(model, device=device, local_files_only=local_files_only, download_root=download_root)
 
     log_info("开始转录...")
     segments_iter, info = wm.transcribe(

@@ -148,6 +148,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次 | `AI 路由 → python scripts/plan_generator.py` |
 | 复盘训练 | 对指定时间段做 plan vs 实绩对比 | `python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` |
 | 扫禁忌 | 检测 plan/DB 中禁忌动作(腰/膝/肩) | `python scripts/scan_contraindications.py [--part {腰\|膝\|肩\|all}] [--strict]` |
+| 审计动作名 | 扫描 plan 里非训记官方动作名(push-plan 前必跑) | `python scripts/audit_plan_names.py [--strict] [--fix-suggestions]` |
 
 ### 📊 分析
 

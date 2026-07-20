@@ -72,12 +72,20 @@ def _init_state(days: int) -> dict:
 
 
 def _run_subprocess(args: list[str], timeout: int = 900) -> dict:
-    """调 xunji_bridge 子命令,返 {rc, stdout, stderr}。"""
+    """调 xunji_bridge 子命令,返 {rc, stdout, stderr}。
+
+    ⚠ Windows 必须显式 encoding='utf-8' + errors='replace':
+       - text=True 默认 locale(中文 Windows = GBK),子进程 stdout 含中文时 UnicodeDecodeError
+       - 错误后 stdout=None → 上层 json.loads 抛 'NoneType' object is not subscriptable 假象
+       - 修复后子进程失败时 stdout 永远是 str,异常清晰可读
+    """
     proc = subprocess.run(
         [sys.executable, "-m", "xunji_bridge"] + args,
         cwd=str(_SCRIPTS_DIR),
         capture_output=True,
         text=True,
+        encoding="utf-8",       # 2026-07-20 修:GBK 崩溃陷阱
+        errors="replace",       # 防止任何残留编码异常中断流程
         timeout=timeout,
     )
     return {

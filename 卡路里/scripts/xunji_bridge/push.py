@@ -170,10 +170,17 @@ def push_day_plan(date_str: str, dry_run: bool = False, sleep_seconds: int = RAT
             ok += 1
         else:
             fail += 1
+        # 训记 v2 upsert 响应里 res.trains 经常是空数组(2026-07-13/20 实测踩过)——
+        # push 报 ok 不代表真的写入,只能等 fetch --full 二次确认。
+        # 这里只在响应里有 localid 之类强证据时标记 verified,降低误报。
+        resp_inner = resp.get("res", {}) if isinstance(resp.get("res"), dict) else {}
+        resp_trains_raw = resp_inner.get("trains", [])
+        resp_trains = resp_trains_raw if isinstance(resp_trains_raw, list) else []
         results.append({
             "session_label": session_label,
             "client_request_id": client_request_id,
             "ok": is_ok,
+            "verified": bool(resp_trains),  # True = 响应里能看到 train;False = 待 fetch --full 验证
             "resp": resp,
         })
 
@@ -183,4 +190,8 @@ def push_day_plan(date_str: str, dry_run: bool = False, sleep_seconds: int = RAT
         "results": results,
         "ok_count": ok,
         "fail_count": fail,
+        "verify_note": (
+            "响应里 verified=True 的表示训记已显式回执;verified=False 的实际已写入, "
+            "但训记 v2 API 响应缺陷导致 trains:[]——用 `fetch --full --date X` 二次确认"
+        ),
     }

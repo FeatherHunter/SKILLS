@@ -569,10 +569,13 @@
     /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
     /* ========================================================== */
     .anchor-rail {
-      position: fixed; top: 50%; right: 12px;
-      transform: translateY(-50%);
-      width: 22px; height: 56vh;
+      position: sticky;  /* v1.23 fix:absolute 在 form-screen 高度=文档时,滚动会移出视口;sticky 永远在视口中央 */
+      top: 50%;  /* sticky 元素 top:50% = 视口高度 50% = 屏幕中央 */
+      right: -40px;  /* 凸出 .container 40px,贴中间操作区右侧外缘 */
+      transform: translateY(-50%);  /* 相对自身高度居中 */
+      width: 40px; height: 72vh;  /* v1.23:22px→40px 加宽,56vh→72vh 加高 */
       z-index: 40;
+      align-self: flex-start;  /* 防止 flex/grid 拉伸,sticky 正常工作 */
       pointer-events: none;  /* 默认透传,只锚点本身接收事件 */
       opacity: 0;
       transition: opacity 0.4s ease;
@@ -607,7 +610,7 @@
     .anchor-rail .anchor {
       position: absolute;
       left: 50%; transform: translate(-50%, -50%);
-      width: 5px; height: 5px;
+      width: 7px; height: 7px;  /* v1.23:5px→7px 更易点 */
       background: var(--secondary);
       border-radius: 50%;
       opacity: 0.5;
@@ -617,12 +620,12 @@
     }
     .anchor-rail .anchor:hover {
       opacity: 1;
-      transform: translate(-50%, -50%) scale(1.8);
+      transform: translate(-50%, -50%) scale(1.5);  /* v1.23:1.8→1.5 (有 40px 宽容器兜底) */
       background: var(--label);
     }
     .anchor-rail .anchor.active {
       opacity: 1;
-      width: 7px; height: 7px;
+      width: 10px; height: 10px;  /* v1.23:7px→10px 更醒目 */
       background: var(--blue);
       box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
     }
@@ -859,7 +862,7 @@
       <div id="ws-hint" class="ws-hint" style="display:none"></div>
     </div>
 
-    <div id="form-screen" style="display:none">
+    <div id="form-screen" style="display:none; position: relative;">
       <!-- iOS HIG 顶部导航栏 (3 段式: 返回 / 标题 / 进度) -->
       <div class="ios-topbar">
         <div class="ios-topbar-left">
@@ -2762,11 +2765,17 @@
       }
       anchorRail.classList.remove('no-content');
       const railHeight = anchorRail.getBoundingClientRect().height;
-      anchorItems.forEach(item => {
+      // v1.23:比例基准改为"第一个锚点→最后一个锚点"范围,不再用整个文档
+      // 解决视频展开/折叠后圆点位置和真实位置视觉不对应的问题
+      const centers = anchorItems.map(item => {
         const rect = item.el.getBoundingClientRect();
-        const elTop = rect.top + window.scrollY;
-        const elCenter = elTop + rect.height / 2;
-        const ratio = Math.max(0, Math.min(1, elCenter / document.documentElement.scrollHeight));
+        return rect.top + window.scrollY + rect.height / 2;
+      });
+      const firstCenter = centers[0];
+      const lastCenter = centers[centers.length - 1];
+      const range = Math.max(1, lastCenter - firstCenter);  // 防止除 0
+      anchorItems.forEach((item, i) => {
+        const ratio = Math.max(0, Math.min(1, (centers[i] - firstCenter) / range));
         item.dot.style.top = (ratio * railHeight) + 'px';
       });
     }
@@ -2788,15 +2797,24 @@
           anchorItems.forEach(item => item.dot.classList.remove('active'));
           closest.dot.classList.add('active');
         }
-        // active-band 当前可视区位置
+        // v1.23:active-band 用"第一个→最后一个锚点"范围映射视口
+        // 跟圆点同坐标系,不再用 scrollY/scrollHeight (会跟圆点分裂)
         const band = anchorRail.querySelector('.active-band');
-        if (band) {
-          const docH = document.documentElement.scrollHeight;
+        if (band && anchorItems.length) {
+          // 重算 first/last center (因为视频展开/折叠会让范围变化)
+          const centers = anchorItems.map(item => {
+            const rect = item.el.getBoundingClientRect();
+            return rect.top + window.scrollY + rect.height / 2;
+          });
+          const firstCenter = centers[0];
+          const lastCenter = centers[centers.length - 1];
+          const range = Math.max(1, lastCenter - firstCenter);
           const railH = anchorRail.getBoundingClientRect().height;
-          const top = window.scrollY / docH;
-          const bottom = (window.scrollY + window.innerHeight) / docH;
-          band.style.top = (top * railH) + 'px';
-          band.style.height = Math.max(20, (bottom - top) * railH) + 'px';
+          // 视口范围 [scrollY, scrollY+innerHeight] 映射到 first/last 比例
+          const topRatio = Math.max(0, Math.min(1, (window.scrollY - firstCenter) / range));
+          const bottomRatio = Math.max(0, Math.min(1, (window.scrollY + window.innerHeight - firstCenter) / range));
+          band.style.top = (topRatio * railH) + 'px';
+          band.style.height = Math.max(20, (bottomRatio - topRatio) * railH) + 'px';
         }
       }, { root: null, rootMargin: '-30% 0px -30% 0px', threshold: 0 });
       anchorItems.forEach(item => anchorObserver.observe(item.el));

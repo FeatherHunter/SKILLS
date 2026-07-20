@@ -208,21 +208,37 @@ def main():
             )
 
         elif command == "weight":
-            # 2026-07-20 改:身高从 user_profile 读,不再 CLI 传
-            if len(sys.argv) < 3 or len(sys.argv) > 4:
-                print("Error: weight requires <kg> [note]")
-                print("  2026-07-20 改:身高不再 CLI 传,自动从 user_profile 读")
-                print("  旧用法 'weight 70 178' 不再支持,请改:")
-                print("    1) calorie_tracker.py profile set 30 male --height 177")
-                print("    2) calorie_tracker.py weight 70")
+            # 2026-07-20 改:身高从 user_profile 读,note 用 --note 标志(强制)
+            if len(sys.argv) < 3:
+                print("Error: weight requires <kg> [--note '<备注>']")
+                print("  2026-07-20 改:身高不再 CLI 传")
+                print("  note 必须用 --note 标志(不接受位置参数)")
+                print("  用法:")
+                print("    calorie_tracker.py weight 70")
+                print("    calorie_tracker.py weight 70 --note '我今天吃饱了'")
                 sys.exit(1)
-            note = sys.argv[3] if len(sys.argv) > 3 else ''
-            # 2026-07-20 防呆:note 不能是纯数字(看起来像身高)
-            if note and note.replace('.', '').replace('-', '').isdigit():
-                print(f"Error: '{note}' 看起来像身高,但 2026-07-20 后身高已不在 CLI 传")
-                print("  身高从 user_profile 读,请先跑:profile set 30 male --height <cm>")
-                print("  然后再跑:weight <kg> [备注]")
-                print(f"  示例:weight 70 '我今天吃饱了'")
+            args = sys.argv[3:]
+            # 解析 --note 标志(必须成对出现)
+            note = ''
+            consumed = []
+            i = 0
+            while i < len(args):
+                if args[i] == '--note':
+                    if i + 1 >= len(args):
+                        print("Error: --note 标志后必须跟备注内容")
+                        sys.exit(1)
+                    note = args[i + 1]
+                    consumed.extend([i, i + 1])
+                    i += 2
+                else:
+                    i += 1
+            # 任何未被消费的参数都是非法的
+            extra = [a for idx, a in enumerate(args) if idx not in consumed]
+            if extra:
+                print(f"Error: 未知参数: {extra}")
+                print("  2026-07-20 改:note 必须用 --note 标志")
+                print(f"  旧用法 'weight 70 178' / 'weight 70 我今天吃饱了' 不再支持")
+                print(f"  请改:calorie_tracker.py weight 70 --note '<备注>'")
                 sys.exit(1)
             weight.log_weight(sys.argv[2], note=note)
 

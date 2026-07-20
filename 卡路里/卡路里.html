@@ -262,7 +262,7 @@
 <tbody>
 <tr>
 <td>记体重</td>
-<td>记录体重(自动算 BMI)</td>
+<td>记录体重(2026-07-20 改:身高从 user_profile 读;note 用 --note 标志)</td>
 <td><code>python scripts/calorie_tracker.py weight</code></td>
 </tr>
 <tr>
@@ -953,17 +953,15 @@ python scripts/calorie_tracker.py goal 1800 150 200 60 2000      # 设置目标:
 python scripts/calorie_tracker.py water 500                      # 记录饮水 500ml
 </code></pre>
 <h3>用户档案(profile,2026-07-16 新增)</h3>
-<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 175 --note &quot;默认值&quot;
+<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 177 --note &quot;默认值&quot;
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
-python scripts/calorie_tracker.py profile sync-height  # 2026-07-20 删
 </code></pre>
 <p>用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。</p>
 <h3>用户档案(profile,2026-07-16 新增)</h3>
-<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 175 --note &quot;默认值&quot;
+<pre><code class="language-bash">python scripts/calorie_tracker.py profile set 30 male --height 177 --note &quot;默认值&quot;
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
-python scripts/calorie_tracker.py profile sync-height  # 2026-07-20 删
 </code></pre>
 <p>用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。</p>
 <h3>食品库</h3>
@@ -972,7 +970,10 @@ python scripts/calorie_tracker.py add-product &quot;可口可乐&quot; &quot;可
 python scripts/calorie_tracker.py update-product 1 --calories 45 # 更新
 </code></pre>
 <h3>体重</h3>
-<pre><code class="language-bash">python scripts/calorie_tracker.py weight 70 178                  # ⚠ 2026-07-20 改:身高已不在 CLI 传,先 profile set 再 weight 70
+<pre><code class="language-bash"># 2026-07-20 改:身高已不在 CLI 传;note 强制 --note 标志
+python scripts/calorie_tracker.py weight 70                       # 不带备注
+python scripts/calorie_tracker.py weight 70 --note &quot;吃饱了&quot;       # 带备注
+# 旧用法 'weight 70 178' / 'weight 70 吃饱了' 都不再支持
 python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录(按ID)
 python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
 python scripts/calorie_tracker.py weight-goal 73 2026-12-31      # 设置体重目标 + 截止日期
@@ -1608,8 +1609,8 @@ AI 看到错误时按此表处理:</p>
 <h2 id="示例对话-12">示例对话</h2>
 <p><strong>用户</strong>:记吃了 米饭 200克
 <strong>AI</strong>:米饭大概 200克,232卡,4g蛋白,50g碳水,0.5g脂肪 → ✓ 已记录,今日 232/1800卡</p>
-<p><strong>用户</strong>:记体重 70公斤 178
-<strong>AI</strong>:✓ 体重已记录 70.0公斤,BMI 22.1(正常范围)</p>
+<p><strong>用户</strong>:记体重 70(2026-07-20 改:身高从 user_profile 自动读,先 profile set)
+<strong>AI</strong>:✓ 体重已记录 70.0公斤,BMI 22.3(用 177 算,正常范围)</p>
 <p><strong>用户</strong>:查热量 鸡胸肉
 <strong>AI</strong>:找到 1 个匹配:鸡胸肉 | 165卡/100g | 蛋白31g | 脂肪3g</p>
 <p><strong>用户</strong>:记运动 骑行 40分钟 300卡

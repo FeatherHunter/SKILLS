@@ -154,7 +154,7 @@ def print_profile(profile=None):
 
     if not profile:
         print("(档案未设置)")
-        print("  用 profile set 设置,例如:calorie_tracker profile set 30 male --height 175")
+        print("  用 profile set 设置,例如:calorie_tracker profile set 30 male --height 177")
         return
 
     print(f"年龄:   {profile.get('age', '(未设)')}")
@@ -163,8 +163,3 @@ def print_profile(profile=None):
     if profile.get('note'):
         print(f"备注:   {profile['note']}")
     print(f"更新时间: {profile.get('updated_at', '(未知)')}")
-
-
-# 2026-07-20 删:sync_height_from_weight_log() 函数已删除
-# 身高 SoT = user_profile.height_cm,直接用 profile set 设
-# 历史回滚:从 git 找 scripts/profile.py 2026-07-20 前的版本

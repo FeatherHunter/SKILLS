@@ -155,9 +155,9 @@ def query_5dims(start, end, skill_dir):
             ORDER BY date
         ''', (start, end)).fetchall()]
 
-        # 3. 体重日志
+        # 3. 体重日志(2026-07-20 改:不再 SELECT height_cm,身高已迁到 user_profile)
         weight_logs = [dict(r) for r in conn.execute('''
-            SELECT date, weight_kg, height_cm
+            SELECT date, weight_kg
             FROM weight_log
             WHERE date BETWEEN ? AND ?
             ORDER BY date
@@ -265,39 +265,16 @@ def _query_fitness_plan(conn, start, end, config):
 
 
 def _query_user_profile(conn):
-    """查询用户基础信息
+    """查询用户基础信息(2026-07-20 改:身高只在 user_profile,无 weight_log fallback)
 
-    优先从 user_profile 表(由 profile.set_profile 设置)读取
-    fallback:身高从 weight_log,年龄/性别默认 30/male
+    Returns:
+        dict: {height_cm, age, gender},缺失字段用默认(177/30/male)
     """
-    p = profile.get_profile()
-    if p:
-        height = p.get('height_cm')
-        if height is None:
-            height_row = conn.execute('''
-                SELECT height_cm FROM weight_log
-                WHERE height_cm IS NOT NULL
-                ORDER BY date DESC LIMIT 1
-            ''').fetchone()
-            height = height_row['height_cm'] if height_row else None
-        return {
-            'height_cm': height,
-            'age': p.get('age') or 30,
-            'gender': p.get('gender') or 'male',
-        }
-
-    # 老库 fallback:身高从 weight_log,年龄/性别从 env
-    import os
-    height_row = conn.execute('''
-        SELECT height_cm FROM weight_log
-        WHERE height_cm IS NOT NULL
-        ORDER BY date DESC LIMIT 1
-    ''').fetchone()
-    height = height_row['height_cm'] if height_row else None
+    p = profile.get_profile() or {}
     return {
-        'height_cm': height,
-        'age': int(os.environ.get('USER_AGE', 30)),
-        'gender': os.environ.get('USER_GENDER', 'male'),
+        'height_cm': p.get('height_cm'),
+        'age': p.get('age') or 30,
+        'gender': p.get('gender') or 'male',
     }
 
 

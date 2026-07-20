@@ -115,7 +115,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记体重 | 记录体重(2026-07-20 改:身高从 user_profile 读) | `python scripts/calorie_tracker.py weight` |
+| 记体重 | 记录体重(2026-07-20 改:身高从 user_profile 读;note 用 --note 标志) | `python scripts/calorie_tracker.py weight` |
 | 改体重记录 | 修改历史体重记录 | `python scripts/calorie_tracker.py weight-update` |
 | 查体重历史 | 体重历史记录 | `python scripts/calorie_tracker.py weight-history` |
 | 查体重趋势 | 体重趋势分析 | `AI 路由(Python API)` |
@@ -508,7 +508,7 @@ python scripts/calorie_tracker.py water 500                      # 记录饮水 
 
 ### 用户档案(profile,2026-07-16 新增)
 ```bash
-python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
+python scripts/calorie_tracker.py profile set 30 male --height 177 --note "默认值"
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
 ```
@@ -517,7 +517,7 @@ python scripts/calorie_tracker.py profile show      # 人类可读
 
 ### 用户档案(profile,2026-07-16 新增)
 ```bash
-python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
+python scripts/calorie_tracker.py profile set 30 male --height 177 --note "默认值"
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
 ```
@@ -533,7 +533,10 @@ python scripts/calorie_tracker.py update-product 1 --calories 45 # 更新
 
 ### 体重
 ```bash
-python scripts/calorie_tracker.py weight 70 178                  # ⚠ 2026-07-20 改:身高已不在 CLI 传,先 profile set 再 weight 70
+# 2026-07-20 改:身高已不在 CLI 传;note 强制 --note 标志
+python scripts/calorie_tracker.py weight 70                       # 不带备注
+python scripts/calorie_tracker.py weight 70 --note "吃饱了"       # 带备注
+# 旧用法 'weight 70 178' / 'weight 70 吃饱了' 都不再支持
 python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录(按ID)
 python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
 python scripts/calorie_tracker.py weight-goal 73 2026-12-31      # 设置体重目标 + 截止日期
@@ -697,18 +700,24 @@ dashboard(start, end)                      # 综合四维度仪表盘
 - **现在**:user_profile.height_cm 是 SoT(单一来源),weight_log.height_cm 列保留但不再写入
 - **旧数据 100% 保留**:101 条 weight_log 身高已一次性回填为 **177cm**(用户真身高),BMI 也按 177 重算
 - **"记体重"不再需要传身高**:自动从 user_profile 读
-- **旧 CLI `weight 70 178` 已删除**:直接报错
+- **旧 CLI `weight 70 178` 已删除**:直接报错(SKILL 层修,parser 自然拒绝未知参数)
+- **旧 CLI `weight 70 "我吃饱了"` 已删除**:note 必须用 `--note` 标志
 - **旧 CLI `weight-update 5 --height 178` 已删除**:直接报错
 - **profile sync-height 命令已删除**:函数也删除(2026-07-20)
+- **note 标志用法**:
+  - ✅ `weight 70`(不带备注)
+  - ✅ `weight 70 --note "我今天吃饱了"`(带备注)
+  - ❌ `weight 70 178`(178 是未识别参数,parser 报错)
+  - ❌ `weight 70 我今天吃饱了`(没 --note 标志,parser 报错)
 - **首次使用流程**:
   1. `calorie_tracker.py profile set 30 male --height 177`(身高只在这里设)
-  2. `calorie_tracker.py weight 70 [备注]`(BMI 自动算)
+  2. `calorie_tracker.py weight 70 [--note '<备注>']`(BMI 自动算)
   3. 不需要再设,以后 `weight 70` 即可
 - **回滚**:从 git 找 `scripts/weight.py` `scripts/calorie_tracker.py` `scripts/profile.py` 2026-07-20 前版本
 
 ### ⚖️ 体重:记体重 / 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 / 设体重目标 / 查体重目标
 
-- **记体重**:`python scripts/calorie_tracker.py weight <体重> [备注]`(2026-07-20 改:身高从 user_profile 自动读,首次使用先 `profile set 30 male --height 177`)
+- **记体重**:`python scripts/calorie_tracker.py weight <体重> [--note '<备注>']`(2026-07-20 改:身高从 user_profile 自动读;note 强制 --note 标志)
 - **改体重记录**:`python scripts/calorie_tracker.py weight-update <ID> [--weight <公斤>] [--note <备注>]`(2026-07-20 改:--height 已删除,身高只能从 profile 改)
 - **查体重历史**:`python scripts/calorie_tracker.py weight-history [天数]`
 - **查体重趋势**:`AI 路由(Python API): weight_analysis(start, end, 'trend')`

@@ -258,7 +258,7 @@ SKILL.md(必读,触发词索引)
 | AI 调用 `lib/ffmpeg/audio` 时 | `音频链路-lib详解.md` |
 | AI 调用 `lib/ffmpeg/video` 时 | `视频底层-lib详解.md` |
 | AI 遇到 muted video 拼接异常 | `视频拼接-muted风险.md` |
-| **AI 加载后必读(环境/排错)** | `tools/install_ffprobe.py`(ffprobe 缺失时跑一次) |
+| **AI 加载后必读(环境/排错)** | `tools/install_ffprobe.py`(ffprobe 缺失时跑一次)+ **`🤖 AI 加载技能主动环境体检` 小节** |
 | **用户说"查看日志/复盘/audit"** | `commands/查看日志.sh`(shell 优先)+ `AI行为日志协议.md` |
 | **AI 进入粗加工(Step 9)** | `粗加工-执行契约.md` |
 | **AI 进入精加工(Step 11)** | `精加工-两路径.md` |
@@ -339,16 +339,79 @@ SKILL.md(必读,触发词索引)
 | 环境变量 | 说明 | 影响范围 |
 |---------|------|---------|
 | `HF_ENDPOINT` | HuggingFace 镜像源(默认 `https://hf-mirror.com`) | demucs / pyannote / whisper 模型下载;**首次未设会导致 huggingface.co 超时** |
-| `HF_HOME` | HF 模型缓存路径(默认 `D:/AI/cache/huggingface`) | 1.5 GB+ 模型缓存到 D 盘,C 盘不动 |
+| `HF_HUB_CACHE` | HF 模型缓存根路径(默认 `~/.cache/huggingface/hub`)。**推荐永久设为 `D:/AI/cache/huggingface/hub`**(避免 1.5GB+ 模型堆 C 盘) | 实际 cache 根;`HF_HOME`(老名字)等价,设了会被覆盖 |
 | `TORCH_HOME` | PyTorch 模型缓存路径(默认 `D:/AI/cache/torch`) | demucs 主模型存 D 盘 |
 
 **首次设置**(永久写到 User 注册表,新 shell 自动生效):
 
 ```powershell
 [System.Environment]::SetEnvironmentVariable("HF_ENDPOINT", "https://hf-mirror.com", "User")
-[System.Environment]::SetEnvironmentVariable("HF_HOME", "D:/AI/cache/huggingface", "User")
+[System.Environment]::SetEnvironmentVariable("HF_HUB_CACHE", "D:/AI/cache/huggingface/hub", "User")
 [System.Environment]::SetEnvironmentVariable("TORCH_HOME", "D:/AI/cache/torch", "User")
 ```
+
+> **v1.21 重要修正**:`HF_HOME` 实际只影响 HF 的 assets 缓存,模型走 `HF_HUB_CACHE`(标准 hf_hub env)。之前用 `HF_HOME=D:/AI/cache/huggingface` 是不准的,模型实际仍下到 `~/.cache/huggingface/hub`。
+> **新增的智剪工坊兜底**:`HF_HUB_DOWNLOAD_ROOT`(v1.19 自定义)作为最低优先级 fallback,只在标准 env 都没设时生效。
+> 解析优先级(实测 2026-07-20):`HF_HUB_CACHE` > `HUGGINGFACE_HUB_CACHE` > `HF_HUB_DOWNLOAD_ROOT` > `~/.cache/huggingface/hub`
+
+### 🎤 Whisper 模型选择(ASR 第一次使用必读)
+
+ASR 链路核心是 Whisper 模型,**模型大小直接影响识别质量 + 推理速度**。智剪工坊支持 5 种 Whisper,选择策略如下:
+
+| 模型 | 大小 | 推理时间 (4 分钟视频) | 中文质量 | 简/繁 | 适用场景 |
+|------|------|----------------------|---------|-------|---------|
+| `tiny`     | 75 MB   | ~3s  | 低 | 简体 | 草稿预览,不推荐正式 |
+| `base`     | 150 MB  | ~5s  | 中低 | 简体 | 快速草稿 |
+| `small`    | 500 MB  | ~8s  | 中 | **简体** | 入门推荐(质量/速度平衡) |
+| `medium`   | 1.5 GB  | ~16s | 中高 | **繁体** | 历史默认,但**输出繁体不友好** |
+| `large-v3` | 2.88 GB | ~50s | **最高** | **简体** | **批量/正式推荐(质量最好 + 简体)** |
+
+> **第一性原理 3 问**(选模型前必答):
+> 1. **您需要简体还是繁体字幕?** 大部分情况需要简体 → 选 `small` / `large-v3`,避开 `medium`(输出繁体)
+> 2. **追求质量还是速度?** 草稿/预览选 `small`,正式/批量选 `large-v3`
+> 3. **VRAM 是否够?** RTX 3060(12GB) 以上全 OK;< 6GB VRAM 建议 `small` 避免 OOM
+>
+> **2026-07-20 实测结论**:`large-v3` 比 `medium` 错字更少 + 输出简体,推荐作为新默认
+
+#### 🤖 AI 第一次使用 ASR 时的流程(契约)
+
+**当用户首次触发 ASR(ASR / Whisper / 语音转文字 / 自动字幕 等)时**,AI 必须按以下流程处理:
+
+1. **检测模型是否就绪**: 跑 `python tools/download_whisper_model.py --status` 看 cache 里哪些模型已下
+2. **看 HTML 上的选择**: `智剪工坊-意图编辑.html` L1391 已经列出 5 个模型,用户在 HTML 上选的模型 = 用户明确意图
+3. **如果用户选的模型没下**: 提示用户"需要下载 X 模型(~Y MB),是否下载?",授权后跑:
+   ```bash
+   python tools/download_whisper_model.py <model>
+   ```
+4. **如果用户没说选哪个**: 走"默认推荐"链路,主动告知三种推荐:
+   - **A. 简体 + 质量优先**:`large-v3`(~2.88GB,首次下 ~5 分钟,推荐)
+   - **B. 简体 + 速度优先**:`small`(~500MB,首次下 ~30s,适合快速草稿)
+   - **C. 复用已有**: 跑 `--status` 看已下哪些,直接用
+5. **下载完自动生效**: 脚本把模型放到 `HF_HUB_CACHE` 路径,whisper.py 自动识别
+
+> **AI 不要替用户决定默认模型**。给 A/B/C 三个推荐 + 解释,让用户选。
+> 唯一例外:用户在 HTML 选了具体模型 → 那是 ground truth,直接下载该模型。
+
+#### 📥 一键下载命令
+
+```bash
+# 看哪些已下
+python tools/download_whisper_model.py --status
+
+# 列所有支持模型
+python tools/download_whisper_model.py --list
+
+# 下载指定模型
+python tools/download_whisper_model.py large-v3     # 推荐(质量 + 简体)
+python tools/download_whisper_model.py small        # 快速草稿
+python tools/download_whisper_model.py medium       # 老默认(繁体,慎用)
+
+# 强制走 curl.exe(跳过 Python,用于 SSL 严重失败时)
+python tools/download_whisper_model.py large-v3 --force-curl
+```
+
+> **脚本报错时**:脚本内部已经处理 4 大坑(SSL EOF / 镜像 / 404 写死 / PowerShell 编码),
+> 真出意外会显示明确修复命令。**完整设计 + 4 大坑踩坑记录**见 `tools/download_whisper_model.py` 头注释。
 
 ### 一键安装 prompt
 
@@ -357,6 +420,59 @@ SKILL.md(必读,触发词索引)
 2. **引导配置环境变量**:未设则提示用户授权,授权后用 PowerShell `SetEnvironmentVariable` 写注册表永久生效
 3. **显示当前环境变量配置**:逐个 `GetEnvironmentVariable` 输出
 4. **验证**:跑一次 `python scripts/audio/voice_extract.py --help` 确认链路通
+
+### 🤖 AI 加载技能主动环境体检(新用户新电脑契约,v1.20 新增)
+
+**适用场景**:**新用户第一次加载智剪工坊技能**,或用户说"我换了电脑/重装了系统/新同事要用"。**AI 不要等用户撞墙才动手,主动跑一次体检**。
+
+**为什么必须做**(2026-07-20 用户真实需求):
+- 智剪工坊依赖 3 个 HF 环境变量(`HF_ENDPOINT` / `HF_HUB_CACHE` / `TORCH_HOME`)+ Whisper 模型下载
+- 新电脑/重装后**默认全是空的**,用户第一句话如果是"我要剪辑"而不是"帮我安装",AI 不会主动跑一键安装
+- 等用户撞到"huggingface.co 超时"才提示 = 已经浪费用户 1+ 小时排查
+
+**执行流程**(AI 主动跑,不需用户触发):
+
+1. **检测**:
+   ```bash
+   # 检查 3 个 env 是否设
+   [System.Environment]::GetEnvironmentVariable("HF_ENDPOINT", "User")
+   [System.Environment]::GetEnvironmentVariable("HF_HUB_CACHE", "User")
+   [System.Environment]::GetEnvironmentVariable("TORCH_HOME", "User")
+   # 检查 Whisper 模型
+   python tools/download_whisper_model.py --status
+   ```
+
+2. **判定"未就绪"**(以下任一即触发提示):
+   - `HF_ENDPOINT` 未设(走 hf-mirror.com 防超时)
+   - `HF_HUB_CACHE` 未设 → 模型下到 `~/.cache` 占 C 盘(用户没大 C 盘会满)
+   - `TORCH_HOME` 未设 → demucs 模型堆 C 盘
+   - `--status` 显示 0 个模型(完全没下过)
+
+3. **主动提示**(不阻塞,给选项让用户选):
+   ```
+   🤖 智剪工坊环境体检
+   ┌──────────────────────────────────────────┐
+   │ HF_ENDPOINT     = ✅ https://hf-mirror.com
+   │ HF_HUB_CACHE    = ❌ 未设 → 模型会下到 C 盘
+   │ TORCH_HOME      = ✅ D:/AI/cache/torch
+   │ Whisper 模型    = ❌ 0 个
+   └──────────────────────────────────────────┘
+   
+   检测到 2 项未配置(可能影响 ASR/音频分离),请选:
+   - A. 一键设 3 个 env 永久(写注册表,新 shell 生效)
+   - B. 暂时跳过,出问题再说
+   - C. 详细看哪些命令会跑
+   ```
+
+4. **用户选 A 后** → 调下面"🤖 AI 撞墙自动帮设(契约)"的 3-5 步执行(写注册表 + 验证回显)
+
+5. **用户选 B 后** → 记"env 没设"在 AI 行为日志,后续撞墙时主动提示
+
+6. **主动下 Whisper 模型**(可选):体检完,给 3 选 1(详见上方"🎤 Whisper 模型选择"小节)
+
+> **新用户价值**: 5 分钟体检 + 一次性授权 → 用户后续用智剪工坊再也不会撞 huggingface.co 墙 + 模型不堆 C 盘
+> **老用户价值**: 体检脚本能发现 env 写错/失效/cache 路径漂移等隐藏问题
+> **不打扰原则**: 已就绪(env 全设 + ≥1 个模型)→ **不主动提示**,只在 AI 行为日志里记"环境就绪"
 
 ### 🤖 AI 撞墙自动帮设(契约)
 

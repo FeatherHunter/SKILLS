@@ -68,11 +68,17 @@ def transcribe_to_srt(audio_or_video, srt_path,
         log_error(f"导入失败: {e}")
         return None
 
-    # v1.19: 读 env 控制 local_files_only（解决 Python SSL 失败时的 fallback：cache 有就完全不走网）
+    # v1.21: cache 路径解析优先级(与 huggingface_hub 标准 env 对齐)
+    #   HF_HUB_CACHE > HUGGINGFACE_HUB_CACHE > HF_HUB_DOWNLOAD_ROOT (v1.19 自定义, 兼容保留) > ~/.cache/huggingface/hub
+    #   之前只用 HF_HUB_DOWNLOAD_ROOT 是不准的——hf_hub 内部按 HF_HUB_CACHE 解析, 导致 download_root 被覆盖
+    #   实测 2026-07-20: 设 HF_HUB_DOWNLOAD_ROOT=D:\AI\cache\... 仍写到 C:\Users\...\.cache\
     local_files_only = os.environ.get("HF_HUB_OFFLINE", "0") == "1"
-    # v1.19: 显式传 download_root（默认 ~/.cache/huggingface/hub，但环境可能有 HUGGINGFACE_HUB_CACHE=不同路径）
-    # 不传会导致"找不到 cache" 错误（实测 2026-07-20）
-    download_root = os.environ.get("HF_HUB_DOWNLOAD_ROOT") or os.path.expanduser("~/.cache/huggingface/hub")
+    download_root = (
+        os.environ.get("HF_HUB_CACHE")
+        or os.environ.get("HUGGINGFACE_HUB_CACHE")
+        or os.environ.get("HF_HUB_DOWNLOAD_ROOT")  # v1.19 兼容
+        or os.path.expanduser("~/.cache/huggingface/hub")
+    )
     log_info(f"加载模型: {model} ({device}, local_files_only={local_files_only}, cache={download_root})")
     wm = WhisperModel(model, device=device, local_files_only=local_files_only, download_root=download_root)
 

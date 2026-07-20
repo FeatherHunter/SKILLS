@@ -564,6 +564,99 @@
       padding: 4px 8px; border-radius: 6px; font-family: ui-monospace, monospace;
       white-space: nowrap;
     }
+
+    /* ========================================================== */
+    /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
+    /* ========================================================== */
+    .anchor-rail {
+      position: fixed; top: 50%; right: 12px;
+      transform: translateY(-50%);
+      width: 22px; height: 56vh;
+      z-index: 40;
+      pointer-events: none;  /* 默认透传,只锚点本身接收事件 */
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .anchor-rail.visible { opacity: 1; }
+    .anchor-rail.no-content { display: none; }
+
+    /* 轨道细线 (1.5px 半透明灰) */
+    .anchor-rail::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 1.5px; height: 100%;
+      background: var(--secondary);
+      opacity: 0.3;
+      border-radius: 1px;
+    }
+
+    /* 当前可视区高亮段 (蓝色填充,反映"我在哪里") */
+    .anchor-rail .active-band {
+      position: absolute;
+      left: 50%; transform: translateX(-50%);
+      width: 3px;
+      background: var(--blue);
+      border-radius: 2px;
+      box-shadow: 0 0 8px rgba(0, 122, 255, 0.45);
+      transition: top 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), height 0.18s ease;
+      pointer-events: none;
+    }
+
+    /* 锚点圆点 (默认 5px 灰 50% 透明) */
+    .anchor-rail .anchor {
+      position: absolute;
+      left: 50%; transform: translate(-50%, -50%);
+      width: 5px; height: 5px;
+      background: var(--secondary);
+      border-radius: 50%;
+      opacity: 0.5;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .anchor-rail .anchor:hover {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.8);
+      background: var(--label);
+    }
+    .anchor-rail .anchor.active {
+      opacity: 1;
+      width: 7px; height: 7px;
+      background: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+    }
+    .anchor-rail .anchor.dimmed { opacity: 0.15; }
+
+    /* 锚点 tooltip (hover 滑出,Apple 风格毛玻璃) */
+    .anchor-rail .anchor::after {
+      content: attr(data-label);
+      position: absolute;
+      right: 14px; top: 50%; transform: translate(4px, -50%);
+      background: rgba(28, 28, 30, 0.92);
+      color: #fff;
+      font-size: 11px; font-weight: 500;
+      padding: 4px 8px; border-radius: 5px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      backdropfilter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+      letter-spacing: 0.2px;
+    }
+    .anchor-rail .anchor:hover::after {
+      opacity: 1;
+      transform: translate(0, -50%);
+    }
+
+    /* 暗色模式 */
+    @media (prefers-color-scheme: dark) {
+      .anchor-rail .anchor { background: rgba(235, 235, 245, 0.55); }
+      .anchor-rail .anchor:hover { background: rgba(235, 235, 245, 0.95); }
+    }
+
     /* 文字按钮 (Apple HIG 次要操作标准) - 蓝色文字透明背景 */
     button.text-btn {
       background: transparent; border: none; padding: 6px 10px;
@@ -877,6 +970,8 @@
             placeholder="如：'今天就到这里，明天见'"></textarea>
         </div>
       </section>
+      <!-- v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 当前可视区高亮 -->
+      <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
 
       <div class="actions">
         <div class="save-row">
@@ -1185,6 +1280,11 @@
           const card = document.createElement('div');
           card.innerHTML = renderVideoCard(entry, i);
           videoListEl.appendChild(card);
+        // v1.22 构建/重建锚点导航条 (每次视频列表刷新后调用)
+        if (typeof buildAnchorRail === 'function') {
+          // 延迟一帧,等所有 card 完成布局后再算位置
+          requestAnimationFrame(buildAnchorRail);
+        }
         });
         // 绑定折叠：点 ▶ 按钮，或点 video-head 非按钮/非缩略图区域
         document.querySelectorAll('[data-card-toggle]').forEach(btn => {
@@ -2572,6 +2672,9 @@
       }
       document.getElementById('form-screen').style.display = 'none';
       document.getElementById('picker-screen').style.display = '';
+      // v1.22 隐藏锚点条 (回到 picker 后不再需要)
+      const ar = document.getElementById('anchor-rail');
+      if (ar) { ar.classList.remove('visible'); ar.classList.add('no-content'); }
       updateProgressRing(1, 3);
     });
 
@@ -2589,6 +2692,154 @@
     });
 
     // v1.20 新增:初始化顶栏进度 + 状态
+    
+
+    // ============================================================
+    // v1.22 锚点导航条 (Apple HIG minimap) - 收集 + 渲染 + 滚动同步
+    // ============================================================
+    const anchorRail = document.getElementById('anchor-rail');
+    let anchorItems = [];  // [{el, label, dot}]
+    let anchorObserver = null;
+    let railScrollRaf = null;
+    let railHideTimer = null;
+
+    function buildAnchorRail() {
+      if (!anchorRail) return;
+      const sections = Array.from(document.querySelectorAll('#form-screen > section'));
+      const videoCards = Array.from(document.querySelectorAll('#video-list .video-card'));
+
+      anchorItems = [];
+      anchorRail.innerHTML = '';
+
+      // 1) active-band (高亮段)
+      const band = document.createElement('div');
+      band.className = 'active-band';
+      anchorRail.appendChild(band);
+
+      // 2) section 锚点
+      sections.forEach(sec => {
+        const h2 = sec.querySelector('h2');
+        if (!h2) return;
+        const label = h2.textContent.trim();
+        if (!label) return;
+        const dot = document.createElement('div');
+        dot.className = 'anchor';
+        dot.dataset.label = label;
+        dot.addEventListener('click', () => {
+          sec.scrollIntoView({behavior: 'smooth', block: 'start'});
+        });
+        anchorRail.appendChild(dot);
+        anchorItems.push({el: sec, label, dot});
+      });
+
+      // 3) video-card 锚点 (按需延迟,因为视频列表可能异步加载)
+      videoCards.forEach((card, i) => {
+        const name = card.dataset.cardName || (card.querySelector('.video-name')?.textContent || '').trim();
+        const idx = card.dataset.cardIdx || (i + 1);
+        const shortName = name.length > 14 ? name.slice(0, 13) + '…' : name;
+        const label = `#${idx}${shortName ? ' ' + shortName : ''}`;
+        const dot = document.createElement('div');
+        dot.className = 'anchor';
+        dot.dataset.label = label;
+        dot.addEventListener('click', () => {
+          card.scrollIntoView({behavior: 'smooth', block: 'center'});
+        });
+        anchorRail.appendChild(dot);
+        anchorItems.push({el: card, label, dot});
+      });
+
+      updateAnchorRailPositions();
+      setupAnchorObserver();
+      showAnchorRail();
+    }
+
+    function updateAnchorRailPositions() {
+      if (!anchorRail || !anchorItems.length) return;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 100) {
+        anchorRail.classList.add('no-content');
+        return;
+      }
+      anchorRail.classList.remove('no-content');
+      const railHeight = anchorRail.getBoundingClientRect().height;
+      anchorItems.forEach(item => {
+        const rect = item.el.getBoundingClientRect();
+        const elTop = rect.top + window.scrollY;
+        const elCenter = elTop + rect.height / 2;
+        const ratio = Math.max(0, Math.min(1, elCenter / document.documentElement.scrollHeight));
+        item.dot.style.top = (ratio * railHeight) + 'px';
+      });
+    }
+
+    function setupAnchorObserver() {
+      if (anchorObserver) { anchorObserver.disconnect(); anchorObserver = null; }
+      if (!anchorItems.length) return;
+      anchorObserver = new IntersectionObserver(() => {
+        const centerY = window.scrollY + window.innerHeight / 2;
+        let closest = null;
+        let closestDist = Infinity;
+        anchorItems.forEach(item => {
+          const rect = item.el.getBoundingClientRect();
+          const elCenter = rect.top + window.scrollY + rect.height / 2;
+          const dist = Math.abs(elCenter - centerY);
+          if (dist < closestDist) { closestDist = dist; closest = item; }
+        });
+        if (closest) {
+          anchorItems.forEach(item => item.dot.classList.remove('active'));
+          closest.dot.classList.add('active');
+        }
+        // active-band 当前可视区位置
+        const band = anchorRail.querySelector('.active-band');
+        if (band) {
+          const docH = document.documentElement.scrollHeight;
+          const railH = anchorRail.getBoundingClientRect().height;
+          const top = window.scrollY / docH;
+          const bottom = (window.scrollY + window.innerHeight) / docH;
+          band.style.top = (top * railH) + 'px';
+          band.style.height = Math.max(20, (bottom - top) * railH) + 'px';
+        }
+      }, { root: null, rootMargin: '-30% 0px -30% 0px', threshold: 0 });
+      anchorItems.forEach(item => anchorObserver.observe(item.el));
+    }
+
+    function showAnchorRail() {
+      if (!anchorRail) return;
+      anchorRail.classList.add('visible');
+      if (railHideTimer) { clearTimeout(railHideTimer); railHideTimer = null; }
+    }
+    function hideAnchorRail() {
+      if (!anchorRail) return;
+      if (railHideTimer) clearTimeout(railHideTimer);
+      railHideTimer = setTimeout(() => {
+        if (anchorRail.matches(':hover')) return;
+        anchorRail.classList.remove('visible');
+      }, 2000);
+    }
+
+    // 滚动节流 + 自动显示/隐藏 (Apple:不打扰,只在用户有滚动意图时显示)
+    window.addEventListener('scroll', () => {
+      showAnchorRail();
+      hideAnchorRail();
+      if (railScrollRaf) return;
+      railScrollRaf = requestAnimationFrame(() => {
+        updateAnchorRailPositions();
+        railScrollRaf = null;
+      });
+    }, { passive: true });
+
+    window.addEventListener('resize', () => updateAnchorRailPositions());
+
+    // 视频列表高度变化时重算 (展开/折叠)
+    if (window.ResizeObserver) {
+      const videoList = document.getElementById('video-list');
+      if (videoList) new ResizeObserver(() => updateAnchorRailPositions()).observe(videoList);
+    }
+
+    // hover 锚点条本身保持可见
+    anchorRail?.addEventListener('mouseenter', () => {
+      if (railHideTimer) { clearTimeout(railHideTimer); railHideTimer = null; }
+    });
+
     updateProgressRing(2, 3);
     updateSaveStatus('saved', '已加载现有 intent.json');
     // v1.18.1:删 v1.17 旧 Set.add 逻辑(原 L2068-2092),由 attrToPath + changeMap 取代

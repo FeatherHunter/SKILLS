@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>备忘录 — Skill HTML 镜像</title>
+<title>备忘录 - Skill HTML 镜像</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -60,42 +60,42 @@
 </head>
 <body>
 <div class="toc"><h4>目录</h4><ol><li><a href="#备忘录-memorandum-1">备忘录 (Memorandum)</a></li>
-<li><a href="#强制性规定-最高优先级-1">强制性规定（最高优先级）</a></li>
+<li><a href="#强制性规定-最高优先级-1">强制性规定(最高优先级)</a></li>
 <li><a href="#描述-2">描述</a></li>
 <li><a href="#快速开始-3">快速开始</a></li>
 <li><a href="#环境变量-4">环境变量</a></li>
 <li><a href="#操作规范-5">操作规范</a></li>
-<li><a href="#重要约定-提醒路由-6">⚠️ 重要约定：提醒路由</a></li>
+<li><a href="#重要约定-提醒路由-6">⚠️ 重要约定:提醒路由</a></li>
 <li><a href="#功能与触发词-7">功能与触发词</a></li>
 <li><a href="#定时提醒机制-8">定时提醒机制</a></li>
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
-<h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
+<h2 id="强制性规定-最高优先级-1">强制性规定(最高优先级)</h2>
 <ol>
-<li><strong>HTML 同步</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>备忘录.html</code> 上。</li>
-<li><strong>优先级</strong>：本规定优先级最高，高于所有其他规范。</li>
-<li><strong>用户确认</strong>：对该技能的所有文件、脚本的任何一行修改，都需要明确得到用户的 1 次确认后才能执行。</li>
+<li><strong>HTML 同步</strong>:该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>备忘录.html</code> 上。</li>
+<li><strong>优先级</strong>:本规定优先级最高,高于所有其他规范。</li>
+<li><strong>用户确认</strong>:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。</li>
 </ol>
 <h2 id="描述-2">描述</h2>
-<p>私人备忘工具，支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。</p>
-<p><strong>触发词</strong>：记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿、心愿排期、备忘录同步飞书</p>
-<p><strong>分类子唤醒词</strong>（心愿/打卡/情绪日记，自带顶层分类，操作同上）：
+<p>私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。</p>
+<p><strong>触发词</strong>:记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿、心愿排期、备忘录同步</p>
+<p><strong>分类子唤醒词</strong>(心愿/打卡/情绪日记,自带顶层分类,操作同上):
 - 记心愿、删心愿、改心愿、查心愿
 - 记打卡、删打卡、改打卡、查打卡
-- 记情绪、删情绪、改情绪、查情绪（情绪日记的子唤醒词）</p>
+- 记情绪、删情绪、改情绪、查情绪(情绪日记的子唤醒词)</p>
 <h2 id="快速开始-3">快速开始</h2>
-<p>复制以下 prompt 给 AI 安装技能：</p>
-<pre><code>请帮我安装备忘录技能：
+<p>复制以下 prompt 给 AI 安装技能:</p>
+<pre><code>请帮我安装备忘录技能:
 1. 读取 SKILL.md 了解功能
-2. 检查环境变量，交互式帮助用户配置，强烈建议用户配置属于自己专属的环境变量
+2. 检查环境变量,交互式帮助用户配置,强烈建议用户配置属于自己专属的环境变量
 3. 运行 script/init.sql 初始化数据库
-4. 设置 cron 任务：每分钟检查提醒，通过 QQ 渠道推送消息
-5. 验证：运行 python3 script/memo_cli.py --help
+4. 设置 cron 任务:每分钟检查提醒,通过 QQ 渠道推送消息
+5. 验证:运行 python3 script/memo_cli.py --help
 </code></pre>
-<p><strong>⚠️ Cron 任务特性</strong>：
+<p><strong>⚠️ Cron 任务特性</strong>:
 - 当有待提醒事项时 → 通过 message 工具发送到 QQ
-- 当无提醒事项时 → 输出「NO_REPLY」静默，不发送任何消息
-- 提醒检查由 SKILL 内部逻辑决定，cron payload 只触发执行，不描述判断结果</p>
+- 当无提醒事项时 → 输出「NO_REPLY」静默,不发送任何消息
+- 提醒检查由 SKILL 内部逻辑决定,cron payload 只触发执行,不描述判断结果</p>
 <h2 id="环境变量-4">环境变量</h2>
 <table>
 <thead>
@@ -110,7 +110,7 @@
 <tr>
 <td><code>SKILLS_DB_PATH</code></td>
 <td>否</td>
-<td>数据库根目录（统一配置）</td>
+<td>数据库根目录(统一配置)</td>
 <td>父目录 .db/ 层层找</td>
 </tr>
 <tr>
@@ -121,249 +121,249 @@
 </tr>
 </tbody>
 </table>
-<p><strong>注</strong>：
-- 没有 <code>MEMO_FEISHU_USER_OPEN_ID</code> —— 飞书 task assignee 自动从 <code>lark-cli auth status</code> 读取（lark-cli 已登录的用户就是 assignee）
-- 没有 tasklist 环境变量 —— tasklist 由 <code>add --tasklist-guid &lt;guid&gt;</code> 每次显式传入（少用场景）</p>
+<p><strong>注</strong>:
+- 没有 <code>MEMO_FEISHU_USER_OPEN_ID</code> -- 飞书 task assignee 自动从 <code>lark-cli auth status</code> 读取(lark-cli 已登录的用户就是 assignee)
+- 没有 tasklist 环境变量 -- tasklist 由 <code>add --tasklist-guid &lt;guid&gt;</code> 每次显式传入(少用场景)</p>
 <h2 id="操作规范-5">操作规范</h2>
 <ul>
 <li>所有操作通过 <code>script/memo_cli.py</code> 执行</li>
-<li>提醒必须关联笔记，不可独立存在</li>
+<li>提醒必须关联笔记,不可独立存在</li>
 <li>媒体文件路径使用相对路径存储</li>
-<li>CLI 返回 JSON：<code>{"status": "ok/error", "data": ..., "message": "..."}</code></li>
+<li>CLI 返回 JSON:<code>{"status": "ok/error", "data": ..., "message": "..."}</code></li>
 </ul>
 <h3>媒体附件</h3>
 <ul>
-<li>参数：<code>--media &lt;文件名&gt;</code></li>
-<li>支持类型：图片（jpg/png/gif）、音频、视频</li>
-<li>存储路径：<code>MEMO_MEDIA_DIR/</code> 目录下</li>
-<li>示例：<code>script/memo_cli.py add "购物小票" -c 记账 --media slip_20260522.jpg</code></li>
+<li>参数:<code>--media &lt;文件名&gt;</code></li>
+<li>支持类型:图片(jpg/png/gif)、音频、视频</li>
+<li>存储路径:<code>MEMO_MEDIA_DIR/</code> 目录下</li>
+<li>示例:<code>script/memo_cli.py add "购物小票" -c 记账 --media slip_20260522.jpg</code></li>
 </ul>
-<h2 id="重要约定-提醒路由-6">⚠️ 重要约定：提醒路由</h2>
-<p>所有「提醒」类请求（无论是否以「备忘录」开头）：
-- <strong>必须</strong>走备忘录 CLI（先 add → 再 remind）
+<h2 id="重要约定-提醒路由-6">⚠️ 重要约定:提醒路由</h2>
+<p>所有「提醒」类请求(无论是否以「备忘录」开头):
+- <strong>必须</strong>走备忘录 CLI(先 add → 再 remind)
 - <strong>禁止</strong>使用 qqbot_remind 或其他提醒工具
 - 这是技能内置的强制路由规则</p>
 <hr />
 <h2 id="功能与触发词-7">功能与触发词</h2>
 <h3>添加笔记</h3>
 <ul>
-<li>触发词：记备忘</li>
-<li>子唤醒词：记心愿、记打卡、记情绪日记（自带顶层分类，跳过分类确认）</li>
-<li>命令：<code>script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [--due YYYY-MM-DD]</code></li>
-<li><strong>顶层分类</strong>（4 种）：备忘（默认）/ 心愿 / 打卡 / 情绪日记</li>
-<li><strong>子分类</strong>：自由文本字段，AI 智能从用户原话推断 → 见下方"sub_category 原则"</li>
-<li><strong><code>--due</code></strong>（仅心愿生效，2026-07-13 改）：</li>
+<li>触发词:记备忘</li>
+<li>子唤醒词:记心愿、记打卡、记情绪日记(自带顶层分类,跳过分类确认)</li>
+<li>命令:<code>script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [--due YYYY-MM-DD]</code></li>
+<li><strong>顶层分类</strong>(4 种):备忘(默认)/ 心愿 / 打卡 / 情绪日记</li>
+<li><strong>子分类</strong>:自由文本字段,AI 智能从用户原话推断 → 见下方"sub_category 原则"</li>
+<li><strong><code>--due</code></strong>(仅心愿生效,2026-07-13 改):</li>
 <li>add 心愿时传 <code>--due YYYY-MM-DD</code> → 本地 note + 飞书 task + 飞书 task.due <strong>1 次原子建好</strong></li>
 <li>与 title 同属"创建时即带"的核心字段,无需后续 <code>set-due</code> 补救</li>
 <li>不传/非心愿 → 静默忽略,无回归</li>
-<li><strong>AI交互规范</strong>：添加前必须先问用户一个问题确认分类（如下示例），不得直接使用默认分类写入</li>
-<li>示例1：用户说「去医院」→ AI问「这个是工作相关还是心愿？」→ 用户选心愿 → 写入 <code>-c 心愿</code></li>
-<li>示例2：用户说「今天运动」→ AI问「这是打卡还是心愿？」→ 用户选打卡 → 写入 <code>-c 打卡</code></li>
-<li>示例3：用户说「今天心情很差」→ AI问「这是情绪日记还是心愿？」→ 用户选情绪日记 → 写入 <code>-c 情绪日记</code></li>
-<li>示例4：用户说「张三生日10月3号」→ AI问「这是社交类的备忘吗？」→ 写 <code>-c 备忘 -s 社交</code></li>
-<li>示例5：用户已明确指定分类 → 直接写入</li>
-<li><strong>例外</strong>：使用子唤醒词（记心愿/记打卡/记情绪）时，顶层分类已确定，跳过确认直接写入</li>
-<li><strong>子分类默认行为</strong>：用户说"记备忘"但没说子分类时 → sub_category 可为 NULL，AI 不必追问</li>
+<li><strong>AI交互规范</strong>:添加前必须先问用户一个问题确认分类(如下示例),不得直接使用默认分类写入</li>
+<li>示例1:用户说「去医院」→ AI问「这个是工作相关还是心愿?」→ 用户选心愿 → 写入 <code>-c 心愿</code></li>
+<li>示例2:用户说「今天运动」→ AI问「这是打卡还是心愿?」→ 用户选打卡 → 写入 <code>-c 打卡</code></li>
+<li>示例3:用户说「今天心情很差」→ AI问「这是情绪日记还是心愿?」→ 用户选情绪日记 → 写入 <code>-c 情绪日记</code></li>
+<li>示例4:用户说「张三生日10月3号」→ AI问「这是社交类的备忘吗?」→ 写 <code>-c 备忘 -s 社交</code></li>
+<li>示例5:用户已明确指定分类 → 直接写入</li>
+<li><strong>例外</strong>:使用子唤醒词(记心愿/记打卡/记情绪)时,顶层分类已确定,跳过确认直接写入</li>
+<li><strong>子分类默认行为</strong>:用户说"记备忘"但没说子分类时 → sub_category 可为 NULL,AI 不必追问</li>
 </ul>
 <h3>sub_category 原则</h3>
-<p>sub_category 是<strong>自由文本字段</strong>，AI 智能从用户原话推断：</p>
+<p>sub_category 是<strong>自由文本字段</strong>,AI 智能从用户原话推断:</p>
 <ul>
-<li><strong>1 个，2 字</strong>（简短但比 1 字精确）</li>
-<li><strong>AI 智能推断</strong>：从用户原话提取内容维度</li>
-<li><strong>推断不出 → NULL</strong>：AI 不乱猜、不强制追问、不预设列表</li>
-<li><strong>适用于所有 category</strong>：不限于 <code>备忘</code>，任何顶层分类下的笔记都可以有 sub_category</li>
-<li><strong>不预设任何白名单</strong>：任何有意义的 2 字都可以（如"工作"/"学习"/"跑步"/"社交"等）</li>
+<li><strong>1 个,2 字</strong>(简短但比 1 字精确)</li>
+<li><strong>AI 智能推断</strong>:从用户原话提取内容维度</li>
+<li><strong>推断不出 → NULL</strong>:AI 不乱猜、不强制追问、不预设列表</li>
+<li><strong>适用于所有 category</strong>:不限于 <code>备忘</code>,任何顶层分类下的笔记都可以有 sub_category</li>
+<li><strong>不预设任何白名单</strong>:任何有意义的 2 字都可以(如"工作"/"学习"/"跑步"/"社交"等)</li>
 </ul>
-<p><strong>例子</strong>：
-- "今天跑了 5 公里" → 写入 <code>-c 打卡 -s 跑步</code>（顶层分类=打卡,AI 推断 sub_category=跑步）
+<p><strong>例子</strong>:
+- "今天跑了 5 公里" → 写入 <code>-c 打卡 -s 跑步</code>(顶层分类=打卡,AI 推断 sub_category=跑步)
 - "今天学 Python" → 写入 <code>-c 备忘 -s 学习</code>
 - "张三生日 10/3" → 写入 <code>-c 备忘 -s 社交</code>
-- "今天去医院" → 写入 <code>-c 备忘</code>，<code>sub_category=NULL</code>（AI 推断不出维度）
-- "看到一只猫" → 写入 <code>-c 备忘</code>，<code>sub_category=NULL</code>（AI 推断不出维度）</p>
+- "今天去医院" → 写入 <code>-c 备忘</code>,<code>sub_category=NULL</code>(AI 推断不出维度)
+- "看到一只猫" → 写入 <code>-c 备忘</code>,<code>sub_category=NULL</code>(AI 推断不出维度)</p>
 <h3>搜索笔记</h3>
 <ul>
-<li>触发词：搜备忘、查备忘（别名）</li>
-<li>子唤醒词：查心愿、查打卡、查情绪日记（自动带 <code>-c 顶层分类</code> 过滤）</li>
-<li>命令：<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类]</code></li>
-<li><strong>过滤维度</strong>：可同时按顶层分类和子分类过滤（如 <code>search -c 备忘 -s 学习</code>）</li>
+<li>触发词:搜备忘、查备忘(别名)</li>
+<li>子唤醒词:查心愿、查打卡、查情绪日记(自动带 <code>-c 顶层分类</code> 过滤)</li>
+<li>命令:<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类]</code></li>
+<li><strong>过滤维度</strong>:可同时按顶层分类和子分类过滤(如 <code>search -c 备忘 -s 学习</code>)</li>
 </ul>
 <h3>更新笔记</h3>
 <ul>
-<li>触发词：改备忘</li>
-<li>子唤醒词：改心愿、改打卡、改情绪日记（先按顶层分类搜索，再更新）</li>
-<li>先搜索找到笔记 ID，再更新</li>
-<li>命令：<code>script/memo_cli.py update &lt;id&gt; [--content "新内容"] [-c 顶层分类] [-s 子分类]</code></li>
-<li><strong>子分类规则</strong>：sub_category 是自由文本字段，适用于所有 category（详见上方"sub_category 原则"）</li>
+<li>触发词:改备忘</li>
+<li>子唤醒词:改心愿、改打卡、改情绪日记(先按顶层分类搜索,再更新)</li>
+<li>先搜索找到笔记 ID,再更新</li>
+<li>命令:<code>script/memo_cli.py update &lt;id&gt; [--content "新内容"] [-c 顶层分类] [-s 子分类]</code></li>
+<li><strong>子分类规则</strong>:sub_category 是自由文本字段,适用于所有 category(详见上方"sub_category 原则")</li>
 </ul>
 <h3>删除笔记</h3>
 <ul>
-<li>触发词：删备忘</li>
-<li>子唤醒词：删心愿、删打卡、删情绪日记（先按顶层分类搜索，再删除）</li>
-<li>先搜索找到笔记 ID，再删除</li>
-<li>命令：<code>script/memo_cli.py delete &lt;id&gt; [--with-reminders]</code></li>
+<li>触发词:删备忘</li>
+<li>子唤醒词:删心愿、删打卡、删情绪日记(先按顶层分类搜索,再删除)</li>
+<li>先搜索找到笔记 ID,再删除</li>
+<li>命令:<code>script/memo_cli.py delete &lt;id&gt; [--with-reminders]</code></li>
 </ul>
 <h3>查看笔记详情</h3>
 <ul>
-<li>触发词：看备忘</li>
-<li>命令：<code>script/memo_cli.py get &lt;id&gt;</code></li>
+<li>触发词:看备忘</li>
+<li>命令:<code>script/memo_cli.py get &lt;id&gt;</code></li>
 </ul>
 <h3>按时间搜索</h3>
 <ul>
-<li>触发词：按时间搜备忘</li>
-<li>命令：<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类]</code></li>
+<li>触发词:按时间搜备忘</li>
+<li>命令:<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类]</code></li>
 </ul>
 <h3>编辑笔记顶层分类</h3>
 <ul>
-<li>触发词：备忘改分类</li>
-<li>先搜索找到笔记 ID，再更新顶层分类</li>
-<li>命令：<code>script/memo_cli.py update-category &lt;id&gt; &lt;顶层分类&gt;</code></li>
-<li><strong>副作用</strong>：改顶层分类时<strong>不会</strong>清空 <code>sub_category</code>（sub_category 是内容维度的二阶属性，与顶层分类独立）</li>
+<li>触发词:备忘改分类</li>
+<li>先搜索找到笔记 ID,再更新顶层分类</li>
+<li>命令:<code>script/memo_cli.py update-category &lt;id&gt; &lt;顶层分类&gt;</code></li>
+<li><strong>副作用</strong>:改顶层分类时<strong>不会</strong>清空 <code>sub_category</code>(sub_category 是内容维度的二阶属性,与顶层分类独立)</li>
 </ul>
 <h3>编辑笔记子分类</h3>
 <ul>
-<li>触发词：备忘改子分类</li>
-<li>先搜索找到笔记 ID，再更新子分类</li>
-<li>命令：<code>script/memo_cli.py update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</code></li>
-<li><strong>规则</strong>：适用于所有 category（sub_category 是自由文本字段）；传 <code>null</code> 表示清除子分类</li>
+<li>触发词:备忘改子分类</li>
+<li>先搜索找到笔记 ID,再更新子分类</li>
+<li>命令:<code>script/memo_cli.py update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</code></li>
+<li><strong>规则</strong>:适用于所有 category(sub_category 是自由文本字段);传 <code>null</code> 表示清除子分类</li>
 </ul>
 <h3>心愿排期</h3>
 <ul>
-<li>触发词：心愿排期</li>
-<li>给心愿设置期望完成日期（due），<strong>自动同步到飞书 task due</strong></li>
-<li>第一性：备忘录 <code>notes.due</code> 是 source of truth，飞书 <code>task.due</code> 是镜像</li>
-<li><strong>单条</strong>：<code>script/memo_cli.py set-due &lt;id&gt; --due &lt;YYYY-MM-DD&gt;</code></li>
-<li><strong>批量</strong>：<code>script/memo_cli.py set-due &lt;id1&gt; &lt;id2&gt; &lt;id3&gt; ... --due &lt;YYYY-MM-DD&gt;</code></li>
-<li><strong>清除</strong>：<code>script/memo_cli.py set-due &lt;id&gt; --due null</code></li>
-<li>飞书侧：飞书 task 自动出现 <code>is_all_day=true</code> 的 due，飞书日历"待办"区可见</li>
-<li><strong>使用场景</strong>：</li>
-<li>单独使用：用户说"心愿 #36 #48 安排在 6/30" → AI 调批量 set-due</li>
-<li>cross-skill 联动：作息"商量计划"流程最后一步（待 B 阶段实现），统一调"心愿排期"批量设 due = 那天</li>
-<li><strong>失败降级</strong>：</li>
-<li>飞书同步失败 → 本地 due 仍生效，errors 累积</li>
-<li>心愿无 feishu_task_guid → 提示用户跑 <code>备忘录同步飞书</code> 补建后重试</li>
+<li>触发词:心愿排期</li>
+<li>给心愿设置期望完成日期(due),<strong>自动同步到飞书 task due</strong></li>
+<li>第一性:备忘录 <code>notes.due</code> 是 source of truth,飞书 <code>task.due</code> 是镜像</li>
+<li><strong>单条</strong>:<code>script/memo_cli.py set-due &lt;id&gt; --due &lt;YYYY-MM-DD&gt;</code></li>
+<li><strong>批量</strong>:<code>script/memo_cli.py set-due &lt;id1&gt; &lt;id2&gt; &lt;id3&gt; ... --due &lt;YYYY-MM-DD&gt;</code></li>
+<li><strong>清除</strong>:<code>script/memo_cli.py set-due &lt;id&gt; --due null</code></li>
+<li>飞书侧:飞书 task 自动出现 <code>is_all_day=true</code> 的 due,飞书日历"待办"区可见</li>
+<li><strong>使用场景</strong>:</li>
+<li>单独使用:用户说"心愿 #36 #48 安排在 6/30" → AI 调批量 set-due</li>
+<li>cross-skill 联动:作息"商量计划"流程最后一步(待 B 阶段实现),统一调"心愿排期"批量设 due = 那天</li>
+<li><strong>失败降级</strong>:</li>
+<li>飞书同步失败 → 本地 due 仍生效,errors 累积</li>
+<li>心愿无 feishu_task_guid → 提示用户跑 <code>备忘录同步</code> 补建后重试</li>
 </ul>
-<h4>排期日期的用户-facing 表达（中文）</h4>
+<h4>排期日期的用户-facing 表达(中文)</h4>
 <ul>
-<li>对用户说的时候，<strong>不要用 "due" 这个英文术语</strong>，用以下中文之一：</li>
+<li>对用户说的时候,<strong>不要用 "due" 这个英文术语</strong>,用以下中文之一:</li>
 <li>"排期日期"</li>
 <li>"放到 X 日完成"</li>
 <li>"哪天想做"</li>
-<li>表述转换示例：</li>
+<li>表述转换示例:</li>
 <li>❌ "给这条心愿 due 到 7/3"</li>
 <li>✅ "给这条心愿设个排期日期 = 7/3" / "放到 7/3 完成"</li>
 <li>❌ "due 已同步到飞书"</li>
 <li>✅ "飞书 task 也带上日期了"</li>
-<li>技术字段名不动：<code>notes.due</code> 字段、CLI 参数 <code>--due</code>、飞书 <code>task.due</code> 仍是英文（这层是数据/接口，不是 UI）</li>
+<li>技术字段名不动:<code>notes.due</code> 字段、CLI 参数 <code>--due</code>、飞书 <code>task.due</code> 仍是英文(这层是数据/接口,不是 UI)</li>
 </ul>
-<h4>心愿 add 时的时间锚点识别（B 方案 / 2026-07-02 定稿）</h4>
+<h4>心愿 add 时的时间锚点识别(B 方案 / 2026-07-02 定稿)</h4>
 <ul>
-<li><strong>触发条件</strong>：<code>add 心愿</code> 时，AI 检测原话里的明确时间锚点</li>
-<li><strong>识别</strong>：<code>明天</code> / <code>后天</code> / <code>今天</code> / 具体日期（"7/3"、"7 月 3 日"）/ 周 X（周一、周二…）</li>
-<li><strong>不触发</strong>：原话没有时间词（如"想学 Python"）—— 强加排期 = 污染</li>
-<li><strong>批量优先</strong>：同一段话多个心愿 + 同一锚点 → 收成 <strong>1 次询问</strong>，不逐条烦人</li>
-<li><strong>多日期智能识别</strong>：原话含多个不同日期锚点 → AI 内部智能拆分不同组，<strong>一次询问里列出所有组</strong>，不让用户多轮交互</li>
-<li><strong>询问模板（标准版）</strong>：<blockquote>
-<p>刚才那 N 条全部进了心愿库。看时间提到了 [锚点]，
-默认安排到 [日期]（本地存"排期日期"，飞书 task 也会带上）。
-要不要都给 [日期]？还是有几条要换日子？</p>
+<li><strong>触发条件</strong>:<code>add 心愿</code> 时,AI 检测原话里的明确时间锚点</li>
+<li><strong>识别</strong>:<code>明天</code> / <code>后天</code> / <code>今天</code> / 具体日期("7/3"、"7 月 3 日")/ 周 X(周一、周二...)</li>
+<li><strong>不触发</strong>:原话没有时间词(如"想学 Python")-- 强加排期 = 污染</li>
+<li><strong>批量优先</strong>:同一段话多个心愿 + 同一锚点 → 收成 <strong>1 次询问</strong>,不逐条烦人</li>
+<li><strong>多日期智能识别</strong>:原话含多个不同日期锚点 → AI 内部智能拆分不同组,<strong>一次询问里列出所有组</strong>,不让用户多轮交互</li>
+<li><strong>询问模板(标准版)</strong>:<blockquote>
+<p>刚才那 N 条全部进了心愿库。看时间提到了 [锚点],
+默认安排到 [日期](本地存"排期日期",飞书 task 也会带上)。
+要不要都给 [日期]?还是有几条要换日子?</p>
 </blockquote>
 </li>
-<li><strong>选项维度</strong>：用户可回应</li>
+<li><strong>选项维度</strong>:用户可回应</li>
 <li>"都 X 日" → AI 批量 set-due</li>
-<li>"X/Y/Z 几条不要"（保留无排期日期）→ AI 仅对剩下的 set-due</li>
+<li>"X/Y/Z 几条不要"(保留无排期日期)→ AI 仅对剩下的 set-due</li>
 <li>"X 条改 Y 日" → AI 分组批量 set-due</li>
-<li><strong>精度</strong>：仅日期级（YYYY-MM-DD），不精确到时分（飞书日历只挂日期）</li>
-<li><strong>飞书缺失优雅降级</strong>：未装飞书 CLI 或未登录时本地排期日期照常生效，飞书同步步骤跳过，流程不阻断；本地 <code>notes.due</code> 是 source of truth，飞书是 best-effort 镜像</li>
-<li><strong>回执</strong>：每次批量 set-due 后列回执（如"10088-10095 → 7/3"），透明优先</li>
-<li><strong>changelog</strong>：</li>
+<li><strong>精度</strong>:仅日期级(YYYY-MM-DD),不精确到时分(飞书日历只挂日期)</li>
+<li><strong>飞书缺失优雅降级</strong>:未装飞书 CLI 或未登录时本地排期日期照常生效,飞书同步步骤跳过,流程不阻断;本地 <code>notes.due</code> 是 source of truth,飞书是 best-effort 镜像</li>
+<li><strong>回执</strong>:每次批量 set-due 后列回执(如"10088-10095 → 7/3"),透明优先</li>
+<li><strong>changelog</strong>:</li>
 <li>2026-07-02 B 方案首次定稿。下次有疑问或新增场景先翻这一节</li>
 </ul>
 <h3>设置提醒</h3>
 <ul>
-<li>触发词：设提醒</li>
-<li>时间识别：明天、后天、今天 + 时间</li>
-<li>重复规则：每天，每天→每天，每周→每周，每月→每月，每年→每年</li>
-<li>流程：直接创建提醒，无需先有笔记（提醒内容存 reminders.content）</li>
-<li>命令：<code>script/memo_cli.py remind &lt;note_id&gt; --at "YYYY-MM-DD HH:MM" --content "提醒内容" --repeat-type 每天 --rule "09:00"</code></li>
+<li>触发词:设提醒</li>
+<li>时间识别:明天、后天、今天 + 时间</li>
+<li>重复规则:每天,每天→每天,每周→每周,每月→每月,每年→每年</li>
+<li>流程:直接创建提醒,无需先有笔记(提醒内容存 reminders.content)</li>
+<li>命令:<code>script/memo_cli.py remind &lt;note_id&gt; --at "YYYY-MM-DD HH:MM" --content "提醒内容" --repeat-type 每天 --rule "09:00"</code></li>
 </ul>
-<h3>记提醒（添笔记 + 设提醒）</h3>
+<h3>记提醒(添笔记 + 设提醒)</h3>
 <ul>
-<li>触发词：记提醒</li>
-<li>时间识别：明天、后天、今天 + 时间</li>
-<li>重复规则：每天，每天→每天，每周→每周，每月→每月，每年→每年</li>
-<li>流程：先添加笔记，再设置提醒（笔记内容 + 提醒内容分别存储）</li>
-<li>命令示例：<code>script/memo_cli.py add "我要健身" -c 心愿 &amp;&amp; script/memo_cli.py remind &lt;id&gt; --at "09:00" --content "跑步10分钟" --repeat-type 每天</code></li>
+<li>触发词:记提醒</li>
+<li>时间识别:明天、后天、今天 + 时间</li>
+<li>重复规则:每天,每天→每天,每周→每周,每月→每月,每年→每年</li>
+<li>流程:先添加笔记,再设置提醒(笔记内容 + 提醒内容分别存储)</li>
+<li>命令示例:<code>script/memo_cli.py add "我要健身" -c 心愿 &amp;&amp; script/memo_cli.py remind &lt;id&gt; --at "09:00" --content "跑步10分钟" --repeat-type 每天</code></li>
 </ul>
 <h3>查看提醒</h3>
 <ul>
-<li>触发词：看提醒</li>
-<li>命令：<code>script/memo_cli.py reminders</code></li>
+<li>触发词:看提醒</li>
+<li>命令:<code>script/memo_cli.py reminders</code></li>
 </ul>
 <h3>废弃提醒</h3>
 <ul>
-<li>命令：<code>script/memo_cli.py dismiss &lt;id&gt;</code></li>
+<li>命令:<code>script/memo_cli.py dismiss &lt;id&gt;</code></li>
 </ul>
 <h3>查询已完成提醒</h3>
 <ul>
-<li>触发词：查已提醒备忘</li>
-<li>命令：<code>script/memo_cli.py completed</code></li>
-<li><strong>匹配逻辑</strong>：</li>
-<li><strong>一次性提醒</strong>：有 <code>notified_at</code>（已触发过）+ 关联打卡笔记 → 算已完成</li>
-<li><strong>每天重复</strong>：关联打卡笔记 → 算今天已完成</li>
-<li><strong>每周重复</strong>：打卡日期在当周 + 对应星期符合规则 → 算本周已完成</li>
-<li><strong>每月重复</strong>：打卡日期在当月 + 对应日期符合规则 → 算本月已完成</li>
-<li><strong>每年重复</strong>：打卡日期在年内 + 对应月日符合规则 → 算今年已完成</li>
-<li><strong>返回字段</strong>：提醒内容、打卡笔记、打卡时间、周期描述、类型</li>
+<li>触发词:查已提醒备忘</li>
+<li>命令:<code>script/memo_cli.py completed</code></li>
+<li><strong>匹配逻辑</strong>:</li>
+<li><strong>一次性提醒</strong>:有 <code>notified_at</code>(已触发过)+ 关联打卡笔记 → 算已完成</li>
+<li><strong>每天重复</strong>:关联打卡笔记 → 算今天已完成</li>
+<li><strong>每周重复</strong>:打卡日期在当周 + 对应星期符合规则 → 算本周已完成</li>
+<li><strong>每月重复</strong>:打卡日期在当月 + 对应日期符合规则 → 算本月已完成</li>
+<li><strong>每年重复</strong>:打卡日期在年内 + 对应月日符合规则 → 算今年已完成</li>
+<li><strong>返回字段</strong>:提醒内容、打卡笔记、打卡时间、周期描述、类型</li>
 </ul>
-<h3>备忘录同步飞书（自动 + 反向）</h3>
-<p>本技能可在<strong>飞书 CLI 已安装</strong>时与飞书任务双向联动：</p>
+<h3>备忘录同步(自动 + 反向)</h3>
+<p>本技能可在<strong>飞书 CLI 已安装</strong>时与飞书任务双向联动:</p>
 <ul>
-<li><strong>触发词</strong>：备忘录同步飞书</li>
-<li><strong>自动联动</strong>（无需触发词）：</li>
-<li><code>add 心愿</code>：自动建飞书 task，写回 <code>notes.feishu_task_guid</code></li>
-<li><code>update 心愿</code>：自动同步更新飞书 task 标题</li>
-<li><code>delete 心愿</code>：自动标飞书 task 完成（飞书无 delete 概念）</li>
-<li><code>complete-wish 心愿</code>：自动标飞书 task 完成</li>
-<li><strong>双向对账</strong>（触发词触发）：<code>备忘录同步飞书</code></li>
-<li><strong>第一步：本地补建</strong>（本地 → 飞书）<ul>
+<li><strong>触发词</strong>:备忘录同步</li>
+<li><strong>自动联动</strong>(无需触发词):</li>
+<li><code>add 心愿</code>:自动建飞书 task,写回 <code>notes.feishu_task_guid</code></li>
+<li><code>update 心愿</code>:自动同步更新飞书 task 标题</li>
+<li><code>delete 心愿</code>:自动标飞书 task 完成(飞书无 delete 概念)</li>
+<li><code>complete-wish 心愿</code>:自动标飞书 task 完成</li>
+<li><strong>双向对账</strong>(触发词触发):<code>备忘录同步</code></li>
+<li><strong>第一步:本地补建</strong>(本地 → 飞书)<ul>
 <li>查 <code>notes WHERE category='心愿' AND feishu_task_guid IS NULL</code></li>
-<li>对每个 note 调 <code>add_wish_sync</code> 建飞书 task，写回 <code>feishu_task_guid</code></li>
+<li>对每个 note 调 <code>add_wish_sync</code> 建飞书 task,写回 <code>feishu_task_guid</code></li>
 <li>处理历史心愿 / 旧 demo 残留 / 之前同步失败的心愿</li>
 </ul>
 </li>
-<li><strong>第二步：反向同步 done</strong>（飞书 → 本地）<ul>
-<li>筛飞书 <code>status=done</code> 的 task，反查 <code>notes.feishu_task_guid</code></li>
+<li><strong>第二步:反向同步 done</strong>(飞书 → 本地)<ul>
+<li>筛飞书 <code>status=done</code> 的 task,反查 <code>notes.feishu_task_guid</code></li>
 <li>对本地还在的心愿触发 <code>complete-wish</code></li>
 </ul>
 </li>
-<li><strong>第三步：反向同步 due</strong>（飞书 → 本地 · 仅 <code>status=todo</code>）<ul>
-<li>用户在飞书 App 改/清 due 后，本地 <code>notes.due</code> 不会自动跟上 → 跑这里反向同步</li>
-<li>list 接口 <code>task +get-related-tasks</code> <strong>不带 due 字段</strong>，所以步骤 3 对每个 todo task 单独调 <code>task tasks get</code> 取 <code>due.timestamp</code></li>
-<li>时间戳换算：UTC ms → 北京日期（UTC +8h）→ <code>YYYY-MM-DD</code> 字符串</li>
-<li><strong>飞书优先</strong>四象限处理（用户决策：飞书说了算）：</li>
-<li>飞书有 due / 本地无 → 写本地（<code>due_added</code>）</li>
-<li>飞书有 due / 本地有但不同 → 覆盖本地（<code>due_overridden</code>）</li>
-<li>飞书无 due / 本地有 → 清本地（<code>due_removed</code>，飞书清 → 本地也清）</li>
-<li>一致 → 跳过（不计入 <code>due_*</code> 字段）</li>
-<li>性能：N 个 todo wish 需 N 次 <code>task tasks get</code> API call（串行，单次 &lt;1s）。N≤50 时通常 &lt;10s 完成</li>
+<li><strong>第三步:反向同步 due</strong>(飞书 → 本地 · 仅 <code>status=todo</code>)<ul>
+<li>用户在飞书 App 改/清 due 后,本地 <code>notes.due</code> 不会自动跟上 → 跑这里反向同步</li>
+<li>list 接口 <code>task +get-related-tasks</code> <strong>不带 due 字段</strong>,所以步骤 3 对每个 todo task 单独调 <code>task tasks get</code> 取 <code>due.timestamp</code></li>
+<li>时间戳换算:UTC ms → 北京日期(UTC +8h)→ <code>YYYY-MM-DD</code> 字符串</li>
+<li><strong>飞书优先</strong>四象限处理(用户决策:飞书说了算):</li>
+<li>飞书有 due / 本地无 → 写本地(<code>due_added</code>)</li>
+<li>飞书有 due / 本地有但不同 → 覆盖本地(<code>due_overridden</code>)</li>
+<li>飞书无 due / 本地有 → 清本地(<code>due_removed</code>,飞书清 → 本地也清)</li>
+<li>一致 → 跳过(不计入 <code>due_*</code> 字段)</li>
+<li>性能:N 个 todo wish 需 N 次 <code>task tasks get</code> API call(串行,单次 &lt;1s)。N≤50 时通常 &lt;10s 完成</li>
 </ul>
 </li>
-<li><strong>报告字段</strong>：<ul>
-<li><code>backfilled</code>（步骤 1 本地补建数）</li>
-<li><code>scanned_done</code> / <code>synced</code>（步骤 2 done 反向同步数）</li>
-<li><code>scanned_pending</code> / <code>due_added</code> / <code>due_overridden</code> / <code>due_removed</code>（步骤 3 due 反向同步）</li>
+<li><strong>报告字段</strong>:<ul>
+<li><code>backfilled</code>(步骤 1 本地补建数)</li>
+<li><code>scanned_done</code> / <code>synced</code>(步骤 2 done 反向同步数)</li>
+<li><code>scanned_pending</code> / <code>due_added</code> / <code>due_overridden</code> / <code>due_removed</code>(步骤 3 due 反向同步)</li>
 <li><code>skipped_no_memo_id</code> / <code>skipped_already_done</code> / <code>skipped_no_local_note</code></li>
 <li><code>errors[]</code></li>
 </ul>
 </li>
-<li><strong>自动检测</strong>：<code>is_feishu_available()</code> 检查 lark-cli 是否在 <code>%APPDATA%\npm\</code>（Windows）或 <code>which lark-cli</code>（WSL/Linux/Mac）</li>
-<li><strong>失败降级</strong>：飞书 API 失败不阻塞本地操作（仅 stderr 记录）</li>
-<li>命令：<code>script/memo_cli.py sync-from-feishu</code> 或 <code>script/feishu_sync.py sync-from-feishu</code></li>
+<li><strong>自动检测</strong>:<code>is_feishu_available()</code> 检查 lark-cli 是否在 <code>%APPDATA%\npm\</code>(Windows)或 <code>which lark-cli</code>(WSL/Linux/Mac)</li>
+<li><strong>失败降级</strong>:飞书 API 失败不阻塞本地操作(仅 stderr 记录)</li>
+<li>命令:<code>script/memo_cli.py sync-from-feishu</code> 或 <code>script/feishu_sync.py sync-from-feishu</code></li>
 </ul>
-<h4>飞书联动环境变量（用户特定，必须自己配置）</h4>
+<h4>飞书联动环境变量(用户特定,必须自己配置)</h4>
 <p>⚠️ <strong>不要硬编码用户特定信息到代码里</strong>。所有用户/本机特定配置通过环境变量传入。</p>
-<p><strong>默认行为</strong>：飞书 task <strong>不指定 tasklist</strong>（建在飞书"我的任务"主页）。零配置即可使用飞书联动。</p>
-<p><strong>tasklist 怎么传</strong>：每次 <code>add</code> 心愿时<strong>显式传</strong> <code>--tasklist-guid &lt;guid&gt;</code>。<strong>没有环境变量预配置</strong>——用户完全控制。</p>
+<p><strong>默认行为</strong>:飞书 task <strong>不指定 tasklist</strong>(建在飞书"我的任务"主页)。零配置即可使用飞书联动。</p>
+<p><strong>tasklist 怎么传</strong>:每次 <code>add</code> 心愿时<strong>显式传</strong> <code>--tasklist-guid &lt;guid&gt;</code>。<strong>没有环境变量预配置</strong>--用户完全控制。</p>
 <table>
 <thead>
 <tr>
@@ -377,64 +377,64 @@
 <tr>
 <td>~~<code>MEMO_FEISHU_USER_OPEN_ID</code>~~</td>
 <td><strong>已删除</strong></td>
-<td>不再需要 —— assignee 自动从 <code>lark-cli auth status</code> 读取</td>
+<td>不再需要 -- assignee 自动从 <code>lark-cli auth status</code> 读取</td>
 <td>--</td>
 </tr>
 </tbody>
 </table>
-<p><strong>未设置时行为</strong>：
-- 不存在 —— <strong>lark-cli auth login 之后自动可用</strong>（<code>lark-cli auth status</code> 返回 identities.user.openId 作为 assignee）
-- 飞书同步失败原因只会是：lark-cli 未安装 / 未登录 / 提取失败</p>
-<h4>tasklist 显式传入流程（少用场景）</h4>
-<p>用户偶尔想把心愿放进特定 tasklist：</p>
+<p><strong>未设置时行为</strong>:
+- 不存在 -- <strong>lark-cli auth login 之后自动可用</strong>(<code>lark-cli auth status</code> 返回 identities.user.openId 作为 assignee)
+- 飞书同步失败原因只会是:lark-cli 未安装 / 未登录 / 提取失败</p>
+<h4>tasklist 显式传入流程(少用场景)</h4>
+<p>用户偶尔想把心愿放进特定 tasklist:</p>
 <ol>
-<li><strong>AI 跑 <code>feishu_sync.py list-tasklists</code></strong> → 列飞书侧所有 tasklist（含 name 和 guid）</li>
-<li><strong>AI 给用户看</strong>：列出如 <code>📋 备忘录心愿 (guid=xxx)</code>, <code>🛒 购物 (guid=yyy)</code></li>
+<li><strong>AI 跑 <code>feishu_sync.py list-tasklists</code></strong> → 列飞书侧所有 tasklist(含 name 和 guid)</li>
+<li><strong>AI 给用户看</strong>:列出如 <code>📋 备忘录心愿 (guid=xxx)</code>, <code>🛒 购物 (guid=yyy)</code></li>
 <li><strong>用户说"进 备忘录心愿"</strong></li>
 <li><strong>AI 传 <code>--tasklist-guid xxx</code></strong> → 飞书 task 进指定 tasklist</li>
 </ol>
-<p><strong>CLI 用法</strong>：</p>
-<pre><code class="language-bash"># 默认（不指定 tasklist）→ 飞书主页
+<p><strong>CLI 用法</strong>:</p>
+<pre><code class="language-bash"># 默认(不指定 tasklist)→ 飞书主页
 memo_cli.py add &quot;今天买咖啡&quot; -c 心愿
 
 # 显式指定 tasklist → 飞书指定清单
 memo_cli.py add &quot;今天买咖啡&quot; -c 心愿 --tasklist-guid &lt;xxx-xxx-xxx&gt;
 </code></pre>
-<h4>AI 首次引导（用户首次使用飞书联动时）</h4>
-<p>当用户第一次说"我想让心愿同步到飞书"或类似意图时：</p>
+<h4>AI 首次引导(用户首次使用飞书联动时)</h4>
+<p>当用户第一次说"我想让心愿同步到飞书"或类似意图时:</p>
 <ol>
-<li><strong>检测 lark-cli</strong>（运行 <code>python script/feishu_sync.py check</code> 看可用性）</li>
-<li><strong>如果 lark-cli 不可用</strong>：
-   - 提示用户先 <code>lark-cli auth login</code>（标准飞书开发者授权）</li>
-<li><strong>否则零配置直接生效</strong>：
+<li><strong>检测 lark-cli</strong>(运行 <code>python script/feishu_sync.py check</code> 看可用性)</li>
+<li><strong>如果 lark-cli 不可用</strong>:
+   - 提示用户先 <code>lark-cli auth login</code>(标准飞书开发者授权)</li>
+<li><strong>否则零配置直接生效</strong>:
    - 自动从 <code>lark-cli auth status</code> 读 user open_id
    - 创建的飞书 task 自动指派给当前 lark-cli 登录的用户</li>
-<li><strong>如果用户想要分到 tasklist</strong>：
+<li><strong>如果用户想要分到 tasklist</strong>:
    - 引导用户在飞书 App 手动建 tasklist
    - AI 跑 <code>list-tasklists</code> 列出飞书侧 tasklist
    - 用户说"这个心愿进 🧹" → AI 传 <code>--tasklist-guid &lt;guid&gt;</code>
-   - 不存环境变量，每次 add 显式传</li>
+   - 不存环境变量,每次 add 显式传</li>
 </ol>
-<h3>完成心愿：流式工作流</h3>
-<p>心愿完成是一个<strong>原子操作</strong>：删除原心愿 + 新建打卡 note，两步必须同时成功或同时回滚。
-- 触发词：完成心愿
-- 命令：<code>script/memo_cli.py complete-wish &lt;心愿id&gt; [--content "打卡内容"]</code>
-- 行为：
-  1. 校验 <code>id</code> 存在于 <code>notes</code>，且 <code>category='心愿'</code>（不是心愿分类报错）
-  2. 决定打卡 content：用户提供 → 用用户的；没提供 → 拷贝原心愿 <code>notes.content</code>
-  3. 事务原子执行（兼容 NO ACTION / CASCADE 两种 FK 行为）：
-     - <code>DELETE FROM reminders WHERE note_id = ?</code>（先删提醒，避开 FK 约束）
+<h3>完成心愿:流式工作流</h3>
+<p>心愿完成是一个<strong>原子操作</strong>:删除原心愿 + 新建打卡 note,两步必须同时成功或同时回滚。
+- 触发词:完成心愿
+- 命令:<code>script/memo_cli.py complete-wish &lt;心愿id&gt; [--content "打卡内容"]</code>
+- 行为:
+  1. 校验 <code>id</code> 存在于 <code>notes</code>,且 <code>category='心愿'</code>(不是心愿分类报错)
+  2. 决定打卡 content:用户提供 → 用用户的;没提供 → 拷贝原心愿 <code>notes.content</code>
+  3. 事务原子执行(兼容 NO ACTION / CASCADE 两种 FK 行为):
+     - <code>DELETE FROM reminders WHERE note_id = ?</code>(先删提醒,避开 FK 约束)
      - <code>DELETE FROM notes WHERE id = ?</code>
      - <code>INSERT INTO notes (content, category='打卡', created_at, updated_at)</code>
-- 设计取舍：
-  - <strong>不写 <code>reminder_id</code></strong>：CASCADE 删 reminders 后该字段会悬空，留 NULL 更干净
-  - <strong>硬删除</strong>：流式工作流意味着心愿生命终结于"完成"那一刻
-- 与「完成提醒：提醒与打卡的完整流程」的关系：
-  - 旧流程：add → remind → 关联 → 打卡追加（手动 4 步）
-  - 新流程：complete-wish（一步原子，自动完成删心愿 + 建打卡）
+- 设计取舍:
+  - <strong>不写 <code>reminder_id</code></strong>:CASCADE 删 reminders 后该字段会悬空,留 NULL 更干净
+  - <strong>硬删除</strong>:流式工作流意味着心愿生命终结于"完成"那一刻
+- 与「完成提醒:提醒与打卡的完整流程」的关系:
+  - 旧流程:add → remind → 关联 → 打卡追加(手动 4 步)
+  - 新流程:complete-wish(一步原子,自动完成删心愿 + 建打卡)
   - 推荐用新流程</p>
-<h3>完成提醒：提醒与打卡的完整流程（旧流程，推荐用「完成心愿」替换）</h3>
-<p>提醒完成后，可以追加打卡记录，形成完整的"计划→提醒→完成"链路：</p>
+<h3>完成提醒:提醒与打卡的完整流程(旧流程,推荐用「完成心愿」替换)</h3>
+<p>提醒完成后,可以追加打卡记录,形成完整的"计划→提醒→完成"链路:</p>
 <table>
 <thead>
 <tr>
@@ -456,60 +456,60 @@ memo_cli.py add &quot;今天买咖啡&quot; -c 心愿 --tasklist-guid &lt;xxx-xx
 </tr>
 <tr>
 <td>3. 笔记关联提醒</td>
-<td><code>notes.reminder_id=5</code>（自动或手动）</td>
+<td><code>notes.reminder_id=5</code>(自动或手动)</td>
 <td></td>
 </tr>
 <tr>
 <td>4. 提醒触发后打卡</td>
-<td><code>add "晒衣服" -c 打卡</code> → 获得 <code>notes.id=20</code>，并设置 <code>notes.reminder_id=5</code></td>
+<td><code>add "晒衣服" -c 打卡</code> → 获得 <code>notes.id=20</code>,并设置 <code>notes.reminder_id=5</code></td>
 <td></td>
 </tr>
 </tbody>
 </table>
-<p><strong>通过 <code>reminder_id</code> 可以追溯</strong>：
+<p><strong>通过 <code>reminder_id</code> 可以追溯</strong>:
 - 这条打卡记录源自哪个提醒
 - 提醒什么时候触发过
 - 原笔记内容是什么</p>
 <h2 id="定时提醒机制-8">定时提醒机制</h2>
 <h3>Cron 配置</h3>
 <ul>
-<li><strong>触发频率</strong>：每 {CRON_INTERVAL_MINUTES} 分钟检查一次（可配置 <code>MEMO_CRON_INTERVAL</code> 环境变量）</li>
-<li><strong>无提醒时</strong>：静默处理，输出「NO_REPLY」，不发送任何消息</li>
-<li><strong>有待提醒时</strong>：通过 message 工具发送到 QQ，target 由 cron job 的 delivery 配置决定（禁止在 SKILL 中硬编码）</li>
+<li><strong>触发频率</strong>:每 {CRON_INTERVAL_MINUTES} 分钟检查一次(可配置 <code>MEMO_CRON_INTERVAL</code> 环境变量)</li>
+<li><strong>无提醒时</strong>:静默处理,输出「NO_REPLY」,不发送任何消息</li>
+<li><strong>有待提醒时</strong>:通过 message 工具发送到 QQ,target 由 cron job 的 delivery 配置决定(禁止在 SKILL 中硬编码)</li>
 </ul>
 <h3>提醒逻辑</h3>
 <ul>
-<li><strong>提前a分钟</strong>：提前a分钟的时间点精确触发（可配置 <code>MEMO_ADVANCE_MINUTES</code>，默认10；如 8:50 触发 9:00 的提醒）</li>
-<li><strong>准点触发</strong>：提醒时间 T ~ T+窗口分钟内任意一次检查都会触发（窗口 = cron间隔 × <code>MEMO_GRACE_MULTIPLIER</code>，默认 T~T+4）</li>
-<li>一次性提醒：触发后记录 notified_at，避免重复通知</li>
-<li>重复提醒（每天/每周/每月/每年）：正常触发，下次周期重置 notified_at</li>
+<li><strong>提前a分钟</strong>:提前a分钟的时间点精确触发(可配置 <code>MEMO_ADVANCE_MINUTES</code>,默认10;如 8:50 触发 9:00 的提醒)</li>
+<li><strong>准点触发</strong>:提醒时间 T ~ T+窗口分钟内任意一次检查都会触发(窗口 = cron间隔 × <code>MEMO_GRACE_MULTIPLIER</code>,默认 T~T+4)</li>
+<li>一次性提醒:触发后记录 notified_at,避免重复通知</li>
+<li>重复提醒(每天/每周/每月/每年):正常触发,下次周期重置 notified_at</li>
 </ul>
-<h3>提醒输出格式（SKILL 内部执行时使用）</h3>
+<h3>提醒输出格式(SKILL 内部执行时使用)</h3>
 <pre><code>🔔 {内容}
 ⏰ {时间} · {重复类型}
 </code></pre>
-<p><strong>示例</strong>：</p>
+<p><strong>示例</strong>:</p>
 <pre><code>🔔 检查烤箱状态
 ⏰ 19:08 · 一次性
 </code></pre>
-<p><strong>设计原则</strong>：
-- 内容在第一行，换行不影响核心信息
-- 时间+重复在第二行，跟内容保持关联
-- 用 <code>·</code> 分隔，视觉清晰
-- <code>{重复类型}</code> 可选值：一次性 / 每天 / 每周 / 每月 / 每年</p>
-<p><strong>SKILL 执行提醒时的行为</strong>：
+<p><strong>设计原则</strong>:
+- 内容在第一行,换行不影响核心信息
+- 时间+重复在第二行,跟内容保持关联
+- 用 <code>·</code> 分隔,视觉清晰
+- <code>{重复类型}</code> 可选值:一次性 / 每天 / 每周 / 每月 / 每年</p>
+<p><strong>SKILL 执行提醒时的行为</strong>:
 1. 执行 reminder_scheduler.py 检查到期提醒
 2. 有提醒 → 按上述格式输出 → 通过 message 工具发送
 3. 无提醒 → 输出 NO_REPLY</p>
 <h3>Cron Payload 示例</h3>
 <pre><code>请读取 ${SKILL_DIR}/SKILL.md 并执行提醒检查流程
 </code></pre>
-<p><strong>说明</strong>：<code>${SKILL_DIR}</code> 是占位符，部署时替换为技能实际目录的绝对路径（如 <code>/mnt/d/2Study/StudyNotes/SKILLS/备忘录</code> 或 <code>D:\2Study\StudyNotes\SKILLS\备忘录</code>）。Payload 只负责触发 skill 执行，不描述"有提醒/无提醒"的判断逻辑，该逻辑由 SKILL 内部决定。</p>
+<p><strong>说明</strong>:<code>${SKILL_DIR}</code> 是占位符,部署时替换为技能实际目录的绝对路径(如 <code>/mnt/d/2Study/StudyNotes/SKILLS/备忘录</code> 或 <code>D:\2Study\StudyNotes\SKILLS\备忘录</code>)。Payload 只负责触发 skill 执行,不描述"有提醒/无提醒"的判断逻辑,该逻辑由 SKILL 内部决定。</p>
 <h2 id="参考文档-9">参考文档</h2>
 <ul>
-<li>数据库结构：<code>reference/schema.md</code></li>
-<li>对话示例：<code>reference/examples.md</code></li>
-<li>Cron 配置：<code>reference/cron.md</code></li>
+<li>数据库结构:<code>reference/schema.md</code></li>
+<li>对话示例:<code>reference/examples.md</code></li>
+<li>Cron 配置:<code>reference/cron.md</code></li>
 </ul>
 <footer>
   HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;

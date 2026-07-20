@@ -208,23 +208,37 @@ def main():
             )
 
         elif command == "weight":
-            if len(sys.argv) < 4:
-                print("Error: weight requires <kg> <height_cm> [note]")
-                print("  用法: weight <公斤> <身高cm> [备注]")
-                print("  示例: weight 70 178")
+            # 2026-07-20 改:身高从 user_profile 读,不再 CLI 传
+            if len(sys.argv) < 3 or len(sys.argv) > 4:
+                print("Error: weight requires <kg> [note]")
+                print("  2026-07-20 改:身高不再 CLI 传,自动从 user_profile 读")
+                print("  旧用法 'weight 70 178' 不再支持,请改:")
+                print("    1) calorie_tracker.py profile set 30 male --height 177")
+                print("    2) calorie_tracker.py weight 70")
                 sys.exit(1)
-            note = sys.argv[4] if len(sys.argv) > 4 else ''
-            weight.log_weight(sys.argv[2], sys.argv[3], note)
+            note = sys.argv[3] if len(sys.argv) > 3 else ''
+            # 2026-07-20 防呆:note 不能是纯数字(看起来像身高)
+            if note and note.replace('.', '').replace('-', '').isdigit():
+                print(f"Error: '{note}' 看起来像身高,但 2026-07-20 后身高已不在 CLI 传")
+                print("  身高从 user_profile 读,请先跑:profile set 30 male --height <cm>")
+                print("  然后再跑:weight <kg> [备注]")
+                print(f"  示例:weight 70 '我今天吃饱了'")
+                sys.exit(1)
+            weight.log_weight(sys.argv[2], note=note)
 
         elif command == "weight-update":
+            # 2026-07-20 改:--height 参数已删除
             if len(sys.argv) < 3:
-                print("Error: weight-update requires <id> [--weight <公斤>] [--height <身高cm>] [--note <备注>]")
+                print("Error: weight-update requires <id> [--weight <kg>] [--note <备注>]")
                 sys.exit(1)
             kwargs = _parse_kw_args(sys.argv[3:])
+            if 'height' in kwargs:
+                print("Error: --height 参数已删除(2026-07-20)")
+                print("  身高从 user_profile 读,请用:profile set 30 male --height <cm>")
+                sys.exit(1)
             weight.update_weight(
                 sys.argv[2],
                 weight_kg=kwargs.get('weight'),
-                height_cm=kwargs.get('height'),
                 note=kwargs.get('note'),
             )
 
@@ -300,14 +314,13 @@ def main():
             #   profile set <age> <gender> [--height <cm>] [--note <text>]
             #   profile get
             #   profile show
-            #   profile sync-height(从 weight_log 同步身高)
+            # (2026-07-20 删:profile sync-height)
             if len(sys.argv) < 3:
                 print("用法:")
                 print("  profile set <age> <gender> [--height <cm>] [--note <text>]")
-                print("    示例:profile set 30 male --height 175")
+                print("    示例:profile set 30 male --height 177")
                 print("  profile get")
                 print("  profile show")
-                print("  profile sync-height")
                 sys.exit(1)
 
             sub = sys.argv[2]
@@ -315,7 +328,7 @@ def main():
                 if sub == "set":
                     if len(sys.argv) < 5:
                         print("Error: profile set 需要 <age> <gender>")
-                        print("  示例:profile set 30 male --height 175")
+                        print("  示例:profile set 30 male --height 177")
                         sys.exit(1)
                     age = int(sys.argv[3])
                     gender = sys.argv[4]
@@ -334,12 +347,7 @@ def main():
                     print(json.dumps(p, ensure_ascii=False, indent=2))
                 elif sub == "show":
                     profile.print_profile()
-                elif sub == "sync-height":
-                    height = profile.sync_height_from_weight_log()
-                    if height:
-                        print(f"✓ 身高已从 weight_log 同步:{height} cm")
-                    else:
-                        print("⚠ weight_log 表中没有身高数据")
+                # 2026-07-20 删:profile sync-height 子命令
                 else:
                     print(f"Error: profile 子命令 \"{sub}\" 未知")
                     sys.exit(1)

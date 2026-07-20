@@ -510,7 +510,6 @@ python scripts/calorie_tracker.py water 500                      # 记录饮水 
 python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
-# python scripts/calorie_tracker.py profile sync-height  (2026-07-20 删,身高用 profile set 直接设)
 ```
 
 用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。
@@ -520,7 +519,6 @@ python scripts/calorie_tracker.py profile show      # 人类可读
 python scripts/calorie_tracker.py profile set 30 male --height 175 --note "默认值"
 python scripts/calorie_tracker.py profile get       # JSON 输出
 python scripts/calorie_tracker.py profile show      # 人类可读
-# python scripts/calorie_tracker.py profile sync-height  (2026-07-20 删,身高用 profile set 直接设)
 ```
 
 用途:review TDEE(Mifflin-St Jeor 公式)需要年龄+性别,优先从 user_profile 表读取。

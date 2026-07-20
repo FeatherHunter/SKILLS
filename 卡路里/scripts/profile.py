@@ -165,22 +165,6 @@ def print_profile(profile=None):
     print(f"更新时间: {profile.get('updated_at', '(未知)')}")
 
 
-def sync_height_from_weight_log():
-    """从 weight_log 表读最近一条身高,同步到 user_profile
-
-    用法:用户记录体重时,自动同步身高(避免反复手动输入)
-    """
-    db_path = db_module.find_db_path(_skill_dir())
-
-    with db_module.connection(db_path) as conn:
-        row = conn.execute('''
-            SELECT height_cm FROM weight_log
-            WHERE height_cm IS NOT NULL
-            ORDER BY date DESC LIMIT 1
-        ''').fetchone()
-
-    if not row or not row['height_cm']:
-        return None
-
-    set_profile(height_cm=row['height_cm'])
-    return row['height_cm']
+# 2026-07-20 删:sync_height_from_weight_log() 函数已删除
+# 身高 SoT = user_profile.height_cm,直接用 profile set 设
+# 历史回滚:从 git 找 scripts/profile.py 2026-07-20 前的版本

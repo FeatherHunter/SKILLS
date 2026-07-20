@@ -2,8 +2,8 @@
 """体重记录 — 体重添加/修改/历史
 
 数据存储：weight_log 表
-- weight_kg, height_cm, bmi (kg/m²)
-- 身高必传，BMI 自动计算
+- weight_kg, height_cm(2026-07-20 起新记录只读 user_profile.height_cm), bmi
+- 身高只在 user_profile(单一来源),新记录 weight_log.height_cm 自动从 profile 读
 
 关联：
 - 体重目标 → weight_goal.py
@@ -31,15 +31,14 @@ def _get_db():
     return get_db(DB_PATH)
 
 
-def log_weight(weight_kg, height_cm, note='', target_date=None, target_time=None):
-    """记录体重（身高必传，BMI 必须计算）
+def log_weight(weight_kg, note='', target_date=None, target_time=None):
+    """记录体重(2026-07-20 改:身高从 user_profile 自动读,不再接收 height 参数)
 
     Args:
-        weight_kg: 体重（公斤）
-        height_cm: 身高（厘米），必传
+        weight_kg: 体重(公斤)
         note: 备注
-        target_date: 目标日期（YYYY-MM-DD），默认今天
-        target_time: 目标时间（HH:MM:SS），默认当前
+        target_date: 目标日期(YYYY-MM-DD),默认今天
+        target_time: 目标时间(HH:MM:SS),默认当前
     """
     try:
         weight_kg = float(weight_kg)
@@ -50,14 +49,14 @@ def log_weight(weight_kg, height_cm, note='', target_date=None, target_time=None
         print("Error: Weight must be a number")
         return False
 
-    try:
-        height_cm = float(height_cm)
-        if height_cm <= 0:
-            print("Error: Height must be a positive number (cm)")
-            return False
-    except (ValueError, TypeError):
-        print("Error: Height must be a number (cm)")
+    # 2026-07-20 改:身高从 user_profile 读(单一来源)
+    from profile import get_profile as _get_user_profile
+    _p = _get_user_profile()
+    if not _p or not _p.get('height_cm'):
+        print("Error: user_profile 未设身高,无法计算 BMI")
+        print("  请先跑:calorie_tracker.py profile set 30 male --height 177")
         return False
+    height_cm = _p['height_cm']
 
     height_m = height_cm / 100
     bmi = round(weight_kg / (height_m ** 2), 1)
@@ -84,21 +83,20 @@ def log_weight(weight_kg, height_cm, note='', target_date=None, target_time=None
     return True
 
 
-def update_weight(weight_id, weight_kg=None, height_cm=None, note=None):
-    """按 ID 更新体重记录，若传身高则重算 BMI
+def update_weight(weight_id, weight_kg=None, note=None):
+    """按 ID 更新体重记录(2026-07-20 改:height_cm 参数已删除)
 
     Args:
         weight_id: 体重记录 ID
-        weight_kg: 新体重（公斤），可选
-        height_cm: 新身高（厘米），可选
-        note: 新备注，可选
+        weight_kg: 新体重(公斤),可选
+        note: 新备注,可选
 
     Returns:
         bool: 是否更新成功
 
-    注意：
-        - 至少需要传入 --weight / --height / --note 中的一个
-        - 若旧记录无身高数据，必须同时传 --weight 和 --height
+    注意:
+        - 至少需要传入 --weight / --note 中的一个
+        - BMI 自动从 user_profile 读身高重算(2026-07-20 改)
     """
     try:
         weight_id = int(weight_id)
@@ -106,37 +104,39 @@ def update_weight(weight_id, weight_kg=None, height_cm=None, note=None):
         print("Error: 体重记录 ID 必须是数字")
         return False
 
-    if weight_kg is None and height_cm is None and note is None:
-        print("Error: 至少需要传入 --weight 或 --height 或 --note 中的一个")
+    if weight_kg is None and note is None:
+        print("Error: 至少需要传入 --weight 或 --note 中的一个")
+        return False
+
+    # 2026-07-20 改:身高从 user_profile 读
+    from profile import get_profile as _get_user_profile
+    _p = _get_user_profile()
+    profile_height = _p.get('height_cm') if _p else None
+    if profile_height is None or profile_height <= 0:
+        print("Error: user_profile 未设身高,无法重算 BMI")
+        print("  请先跑:calorie_tracker.py profile set 30 male --height 177")
         return False
 
     conn = _get_db()
     c = conn.cursor()
 
-    c.execute('SELECT id, weight_kg, height_cm FROM weight_log WHERE id = ?', (weight_id,))
+    c.execute('SELECT id, weight_kg FROM weight_log WHERE id = ?', (weight_id,))
     row = c.fetchone()
     if not row:
         print(f"Error: 体重记录 ID {weight_id} 不存在")
         conn.close()
         return False
 
-    old_weight, old_height = row[1], row[2]
+    old_weight = row[1]
 
     new_weight = float(weight_kg) if weight_kg is not None else old_weight
-    new_height = float(height_cm) if height_cm is not None else old_height
 
-    if new_height is None or new_height <= 0:
-        print("Error: 该记录缺少身高数据，无法单独修改体重（BMI 重算需要身高）")
-        print("  提示：请同时传入 --height <身高cm>")
-        print(f"  示例: weight-update {weight_id} --weight {weight_kg} --height <身高cm>")
-        conn.close()
-        return False
-
-    height_m = new_height / 100
+    height_m = profile_height / 100
     bmi = round(new_weight / (height_m ** 2), 1)
 
-    set_parts = ["weight_kg = ?", "height_cm = ?", "bmi = ?"]
-    values = [new_weight, new_height, bmi]
+    # 2026-07-20 改:不再写 height_cm 列(保留列,不动数据)
+    set_parts = ["weight_kg = ?", "bmi = ?"]
+    values = [new_weight, bmi]
 
     if note is not None:
         set_parts.append("note = ?")

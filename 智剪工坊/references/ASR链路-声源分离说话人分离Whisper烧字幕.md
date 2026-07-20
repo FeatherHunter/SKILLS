@@ -119,6 +119,7 @@ python scripts/asr/burn_subtitle.py \
 | 4 | pyannote 需要 HuggingFace token + 接受模型协议 | 不接受协议会 401 |
 | 5 | pyannote 模型首次下载 ~200MB,建议用户提前下完 | 同上 |
 | 6 | Whisper 模型 5 种可选(详见 §7.1):`tiny` 75MB / `base` 150MB / `small` 500MB(简体推荐入门) / `medium` 1.5GB(繁体) / `large-v3` 2.88GB(**简体 + 质量最高,新默认推荐**);GPU 默认;CPU 慢 10x | 长视频可能 OOM |
+| 11 | **SRT 文件名 = 视频同名(只改后缀)**: `1-先看这一课.mp4` → `1-先看这一课.srt`。**违反会导致播放器/VLC 不加载字幕**(实测 2026-07-20 bug fix: 不要加 `-large-v3` / `-medium` 等后缀) | 字幕不被加载 |
 | 7 | demucs 分离出的人声用于 ASR 比直接 ASR 准确率提升 15-20% | 不分离 |
 | 10 | **中国网络环境** HF 直连经常超时,设 `$env:HF_ENDPOINT = "https://hf-mirror.com"` 再跑 | 模型下载失败 |
 | 8 | 输出 SRT 路径在工作区(如 `00_智剪/粗加工/sub.srt`),Step 13 才找得到 | 找不到 SRT |
@@ -284,3 +285,4 @@ python tools/download_whisper_model.py large-v3 --force-curl
 - **v1.18+**:补 hf-mirror 镜像源(中国网络环境实测经验)
 - **v1.20**:新增 §7.1 Whisper 模型选择与下载小节(5 种模型对比 + `tools/download_whisper_model.py` 无坑脚本);**主流程 Step 9.2.1 强制 AI 加载 SRT 自检错别字**(Whisper 同音字问题实测)
 - **v1.20.1**:修"直接调 ASR 不走粗加工"的设计漏洞 — 把"AI 加载 SRT 自检错别字"契约从主流程 9.2.1 提升为 op 级,在本文件 §7.2 独立存在,任何 ASR 调用都触发(2026-07-20)
+- **v1.20.2**:修 SRT 文件名 bug — 加硬规则 #11"文件名 = 视频同名(只改后缀)",原 `*-large-v3.srt` 后缀导致播放器不加载字幕。实测接色/解色 → 戒色 改 21 处(用户拍板 ground truth)

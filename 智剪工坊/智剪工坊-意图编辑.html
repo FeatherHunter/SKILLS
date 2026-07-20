@@ -564,6 +564,17 @@
       padding: 4px 8px; border-radius: 6px; font-family: ui-monospace, monospace;
       white-space: nowrap;
     }
+    /* 文字按钮 (Apple HIG 次要操作标准) - 蓝色文字透明背景 */
+    button.text-btn {
+      background: transparent; border: none; padding: 6px 10px;
+      color: var(--blue); font-size: 15px; font-family: inherit;
+      cursor: pointer; font-weight: 400;
+      transition: opacity 0.15s;
+    }
+    button.text-btn:hover { opacity: 0.7; }
+    button.text-btn:disabled { color: var(--secondary); cursor: not-allowed; opacity: 0.5; }
+    /* 顶栏内的 text-btn 稍微紧凑一些 (44px 高度约束) */
+    .ios-topbar button.text-btn { font-size: 16px; padding: 6px 8px; }
     .revision-note-input {
       flex: 1; padding: 6px 10px; border: 1px solid var(--border);
       border-radius: 6px; font-size: 13px; font-family: inherit;
@@ -592,15 +603,49 @@
     .status-dot.error { background: #ff3b30; box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.15); }
 
     /* save-success: 保存后文件名+复制路径 (新布局下全宽新行) */
-    .save-row .save-success { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--label); flex: 1 1 100%; margin-top: 4px; flex-wrap: wrap; }
+    /* save-success 状态条 (Apple HIG:常驻非模态通知) */
+    .save-row .save-success {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: var(--label);
+      flex: 1 1 100%; margin-top: 8px; padding: 8px 12px;
+      background: rgba(52, 199, 89, 0.08);  /* 系统绿 8% 透明 (success 背景) */
+      border-radius: 8px; border-left: 3px solid #34c759;  /* Apple 通知左边竖条 */
+      flex-wrap: wrap; align-items: center;
+    }
+    .save-row .save-success .save-check { color: #1d7d3a; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .save-row .save-success .save-label { color: var(--secondary); font-size: 12px; }
+    .save-row .save-success code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 6px; border-radius: 4px; font-size: 12px;
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .save-row .save-success .copy-path-btn {
+      background: rgba(0, 0, 0, 0.06); color: var(--label);
+      border: none; padding: 4px 10px; border-radius: 6px;
+      font-size: 12px; cursor: pointer; font-family: inherit;
+      margin-left: auto;  /* 推到右边 */
+      transition: background 0.15s;
+    }
+    .save-row .save-success .copy-path-btn:hover { background: rgba(0, 0, 0, 0.12); }
+    .save-row .save-success .close-btn {
+      background: transparent; border: none; padding: 0 6px;
+      color: var(--secondary); font-size: 20px; font-weight: 300;
+      cursor: pointer; line-height: 1; font-family: inherit;
+      transition: color 0.15s;
+    }
+    .save-row .save-success .close-btn:hover { color: var(--label); }
+    @media (prefers-color-scheme: dark) {
+      .save-row .save-success { background: rgba(52, 199, 89, 0.15); }
+      .save-row .save-success .save-check { color: #5dd87e; }
+      .save-row .save-success code { background: rgba(255, 255, 255, 0.08); }
+      .save-row .save-success .copy-path-btn { background: rgba(255, 255, 255, 0.1); color: var(--label); }
+      .save-row .save-success .copy-path-btn:hover { background: rgba(255, 255, 255, 0.18); }
+    }
     .save-row .save-success code { background: var(--gray-fill); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-    .save-row .copy-path-btn { background: var(--gray-fill); color: var(--label); border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
-    .save-row .copy-path-btn:hover { background: var(--border); }
 
     /* 旧 .save-row (v1.16 风格,已废弃,保留以防 JS 引用) */
     .save-row { display: flex; justify-content: flex-end; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .save-row .save-success { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--label); }
-    .save-row .save-success code { background: var(--gray-fill); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
     /* v1.16 新增:次要按钮(配置总览按钮) */
     button.secondary { background: var(--card); color: var(--label); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
     button.secondary:hover { border-color: var(--blue); color: var(--blue); }
@@ -689,8 +734,6 @@
     .ops-subgroup > summary:hover { background: var(--gray-fill); border-radius: 6px; }
     .ops-subgroup > .op-row { padding-left: 10px; padding-right: 10px; }
     .ops-subgroup .op-row:first-of-type { padding-top: 4px; }
-    .save-row .copy-path-btn { background: var(--gray-fill); color: var(--label); border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
-    .save-row .copy-path-btn:hover { background: var(--border); }
     .unsure-btn { background: var(--gray-fill); color: var(--label); border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; white-space: nowrap; }
     .unsure-btn:hover { background: var(--border); }
     /* v1.14: seq-title-input 灰显样式 */
@@ -844,7 +887,7 @@
         </div>
         <div class="save-actions">
           <button class="text-btn" id="overview-btn" type="button" title="查看当前项目配置总览(实时)">查看总览</button>
-          <button class="primary" id="save-btn">保存 v<span id="save-rev-label">3</span></button>
+          <button class="primary" id="save-btn">保存 <span id="save-rev-label">v3</span></button>
         </div>
       </div>      </div>
     </div>
@@ -2386,14 +2429,15 @@
       const el = document.getElementById('save-success');
       if (!el) return;
       const wsName = (dirHandle && dirHandle.name) ? dirHandle.name : '(workspace)';
-      // workspace + 文件名拼接的"参考路径"——用户可手动拼到自己系统的真实路径
       const refPath = `./${wsName}/${latestName}`;
+      // v1.21 重构:常驻非模态通知条 (Apple HIG:不自动消失,提供手动关闭)
       el.innerHTML = `
-        <span style="color:var(--secondary)">已保存</span>
-        <code>${escapeHtml(latestName)}</code>
-        <span style="color:var(--secondary)">+</span>
-        <code>${escapeHtml(snapshotName)}</code>
-        <button type="button" class="copy-path-btn" id="copy-path-btn">复制路径</button>
+        <span class="save-check">✓ 已保存</span>
+        <code title="${escapeHtml(latestName)}">${escapeHtml(latestName)}</code>
+        <span class="save-label">+ 快照</span>
+        <code title="${escapeHtml(snapshotName)}">${escapeHtml(snapshotName)}</code>
+        <button type="button" class="copy-path-btn" id="copy-path-btn" title="复制参考路径 ${escapeHtml(refPath)}">复制路径</button>
+        <button type="button" class="close-btn" id="save-success-close" title="关闭" aria-label="关闭">×</button>
         <textarea id="copy-path-text" readonly style="position:absolute;left:-9999px;top:-9999px">${escapeHtml(refPath)}</textarea>
       `;
       el.style.display = 'flex';
@@ -2405,7 +2449,6 @@
             await navigator.clipboard.writeText(text);
             btn.textContent = '已复制';
           } catch (e) {
-            // Fallback: 选 textarea 内容（极少数浏览器/无 clipboard 权限）
             const ta = document.getElementById('copy-path-text');
             if (ta) { ta.style.position = 'static'; ta.select(); document.execCommand('copy'); ta.style.position = 'absolute'; }
             btn.textContent = '已复制';
@@ -2413,13 +2456,12 @@
           setTimeout(() => { btn.textContent = '复制路径'; }, 2000);
         };
       }
-      // v1.16 新增:save-success 提示 5 秒后自动隐藏(避免多次保存后视觉残留)
-      clearTimeout(showSaveSuccess._autoHide);
-      showSaveSuccess._autoHide = setTimeout(() => {
-        const el = document.getElementById('save-success');
-        if (el) el.style.display = 'none';
-      }, 5000);
-    }
+      // v1.21 新增:手动关闭按钮
+      const closeBtn = document.getElementById('save-success-close');
+      if (closeBtn) closeBtn.onclick = () => { el.style.display = 'none'; };
+      // v1.21 去掉 5 秒自动隐藏 (clearTimeout setTimeout 都不再需要)
+      // 多次保存会自然覆盖最新内容
+        }
 
     // ============================================================
     // v1.16 新增:配置总览 - 4 区块 + 健康检查 + 复制报告

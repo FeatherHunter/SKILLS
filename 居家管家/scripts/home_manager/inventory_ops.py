@@ -24,11 +24,13 @@ def inventory(location):
 
     cursor.execute("""
         SELECT DISTINCT i.*, il.location as matched_location,
-               il.quantity as matched_quantity, il.location_status
+               il.quantity as matched_quantity, il.location_status,
+               c.name AS category_name
         FROM items i
         JOIN item_locations il ON i.id = il.item_id
+        LEFT JOIN categories c ON i.category_id = c.id
         WHERE il.location LIKE ?
-        ORDER BY i.category, i.name
+        ORDER BY c.name, i.name
     """, (f"%{location}%",))
     rows = cursor.fetchall()
 
@@ -60,7 +62,7 @@ def inventory(location):
             parts.append(f"{m['location']} ×{m['quantity']}[{m['location_status']}]")
         locs_str = " | ".join(parts)
         tags_str = get_tags(conn, row["id"])
-        print(f"ID:{row['id']} | {row['name']} | {row['category']} | "
+        print(f"ID:{row['id']} | {row['name']} | {row['category_name'] or '(未分类)'} | "
               f"{locs_str} | {tags_str}")
 
     conn.close()
@@ -78,82 +80,48 @@ def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category_
         category: (expiring 用) 按分类筛选
     """
     conn = get_conn()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    if stat_type == "frequent":
-        cursor.execute("""
-            SELECT * FROM items ORDER BY access_count DESC LIMIT ?
-        """, (limit,))
-        title = f"高频物品 TOP{limit}"
-    elif stat_type == "dormant":
-        cursor.execute("""
-            SELECT * FROM items
-            WHERE last_accessed_at IS NOT NULL
-            ORDER BY last_accessed_at ASC LIMIT ?
-        """, (limit,))
-        title = f"长期未访问 TOP{limit}"
-    elif stat_type == "expiring":
-        return _stats_expiring(conn, limit, days, expired_only, category_id)
-    elif stat_type == "summary":
-        cursor.execute("SELECT COUNT(*) as total FROM items")
-        total = cursor.fetchone()["total"]
+        if stat_type == "frequent":
+            cursor.execute("""
+                SELECT i.*, c.name AS category_name
+                FROM items i LEFT JOIN categories c ON i.category_id = c.id
+                ORDER BY access_count DESC LIMIT ?
+            """, (limit,))
+            title = f"高频物品 TOP{limit}"
+        elif stat_type == "dormant":
+            cursor.execute("""
+                SELECT i.*, c.name AS category_name
+                FROM items i LEFT JOIN categories c ON i.category_id = c.id
+                WHERE last_accessed_at IS NOT NULL
+                ORDER BY last_accessed_at ASC LIMIT ?
+            """, (limit,))
+            title = f"长期未访问 TOP{limit}"
+        elif stat_type == "expiring":
+            return _stats_expiring(conn, limit, days, expired_only, category_id)
+        elif stat_type == "summary":
+            return _stats_summary(conn)
+        else:
+            print(f"未知统计类型: {stat_type}，可选: frequent / dormant / summary / expiring")
+            return 1
 
-        # 从 item_locations 实时统计各状态
-        cursor.execute("""
-            SELECT location_status, COUNT(DISTINCT item_id) as cnt
-            FROM item_locations
-            GROUP BY location_status
-            ORDER BY cnt DESC
-        """)
-        status_counts = {row["location_status"]: row["cnt"] for row in cursor.fetchall()}
-
-        all_statuses = ["在家", "备用", "穿着中", "旅游中", "洗护中",
-                        "借用中", "维修中", "已用完", "快递中", "待处理", "已废弃"]
-        total_in_items = sum(status_counts.values())
-
-        print(f"总物品数：{total}")
-        print(f"位置记录总数：{total_in_items}")
-        print("-" * 40)
-        print("各状态分布：")
-        for s in all_statuses:
-            cnt = status_counts.get(s, 0)
-            bar = "█" * cnt
-            print(f"  {s:　<4} {cnt:>3} {bar}")
-
-        cursor.execute("""
-            SELECT category, COUNT(*) as cnt FROM items
-            GROUP BY category ORDER BY cnt DESC
-        """)
-        cats = cursor.fetchall()
-
-        print("-" * 40)
-        print("分类分布：")
-        for c in cats:
-            bar = "█" * c["cnt"]
-            print(f"  {c['category']:　<6} {c['cnt']:>3} {bar}")
-        conn.close()
+        rows = cursor.fetchall()
+        if not rows:
+            print("(无数据)")
+        else:
+            print(title)
+            print("-" * 80)
+            for row in rows:
+                tags_str = get_tags(conn, row["id"])
+                accessed = row["last_accessed_at"] or "从未"
+                accessed_fmt = accessed[:16] if accessed != "从未" else accessed
+                print(f"访问{row['access_count']}次 | 最后:{accessed_fmt} | "
+                      f"ID:{row['id']} | {row['name']} | {row['category_name'] or '(未分类)'} | "
+                      f"{tags_str}")
         return 0
-    else:
-        print(f"未知统计类型: {stat_type}，可选: frequent / dormant / summary")
+    finally:
         conn.close()
-        return 1
-
-    rows = cursor.fetchall()
-    if not rows:
-        print("(无数据)")
-    else:
-        print(title)
-        print("-" * 80)
-        for row in rows:
-            tags_str = get_tags(conn, row["id"])
-            accessed = row["last_accessed_at"] or "从未"
-            accessed_fmt = accessed[:16] if accessed != "从未" else accessed
-            print(f"访问{row['access_count']}次 | 最后:{accessed_fmt} | "
-                  f"ID:{row['id']} | {row['name']} | {row['category']} | "
-                  f"{tags_str}")
-
-    conn.close()
-    return 0
 
 
 def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
@@ -288,4 +256,104 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
         print(f"     └ 📍 {row['location']} ×{row['quantity']}[{row['location_status']}]  到期:{row['expiration_date']}")
 
     conn.close()
+    return 0
+
+
+def _stats_summary(conn):
+    """总体统计:总览 + 3 层分类树 + 总价值(items.purchase_price 累加)
+
+    设计要点:
+      - 用 WITH RECURSIVE 一次性拿全 categories 树 + 累计每节点物品数 / 总价值
+      - l1_id / l2_id 在 SQL 里带下来,Python 累加用 ID 比较(避免名字前缀冲突)
+      - 0 件的叶子分类(L3)不展示,符合 categories.md 原则#3:叶子 ≥ 3 件才独立
+      - 0 件的顶级域(L1)也不展示,避免噪音
+    """
+    from collections import defaultdict
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) AS n FROM items")
+    total = cursor.fetchone()['n']
+
+    cursor.execute("SELECT COUNT(DISTINCT item_id) AS n FROM item_locations")
+    total_in_items = cursor.fetchone()['n']
+
+    cursor.execute("""
+        SELECT location_status, COUNT(DISTINCT item_id) AS cnt
+        FROM item_locations GROUP BY location_status ORDER BY cnt DESC
+    """)
+    status_counts = {r['location_status']: r['cnt'] for r in cursor.fetchall()}
+
+    cursor.execute("""
+        WITH RECURSIVE cat_path AS (
+          SELECT id, parent_id, name, name AS full_path, 1 AS lvl,
+                 id AS l1_id, 0 AS l2_id
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, c.name,
+                 cp.full_path || '/' || c.name, cp.lvl + 1,
+                 CASE WHEN cp.lvl+1 = 1 THEN c.id ELSE cp.l1_id END,
+                 CASE WHEN cp.lvl+1 = 2 THEN c.id
+                      WHEN cp.lvl+1 = 3 THEN cp.id
+                      ELSE 0 END
+          FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
+        )
+        SELECT cp.lvl, cp.id, cp.name, cp.full_path, cp.l1_id, cp.l2_id,
+               COUNT(i.id) AS cnt,
+               ROUND(SUM(COALESCE(i.purchase_price, 0)), 2) AS total_value
+        FROM cat_path cp
+        LEFT JOIN items i ON i.category_id = cp.id
+        GROUP BY cp.id, cp.lvl, cp.name, cp.full_path, cp.l1_id, cp.l2_id
+    """)
+    tree_rows = [dict(r) for r in cursor.fetchall()]
+
+    by_lvl = defaultdict(list)
+    for r in tree_rows:
+        by_lvl[r['lvl']].append(r)
+
+    # 累加:L3 → L2(用 l2_id 精确匹配)→ L1(用 l1_id 精确匹配)
+    for r2 in list(by_lvl.get(2, [])):
+        sub = [s for s in by_lvl.get(3, []) if s['l2_id'] == r2['id']]
+        r2['cnt'] += sum(s['cnt'] for s in sub)
+        r2['total_value'] += sum(s['total_value'] for s in sub)
+    for r1 in list(by_lvl.get(1, [])):
+        sub = [s for s in by_lvl.get(2, []) if s['l1_id'] == r1['id']]
+        r1['cnt'] += sum(s['cnt'] for s in sub)
+        r1['total_value'] += sum(s['total_value'] for s in sub)
+
+    cursor.execute("""
+        SELECT COUNT(*) AS priced_cnt, ROUND(SUM(purchase_price), 2) AS total_value
+        FROM items WHERE purchase_price IS NOT NULL AND purchase_price > 0
+    """)
+    priced = cursor.fetchone()
+
+    all_statuses = ["在家", "备用", "穿着中", "旅游中", "洗护中",
+                    "借用中", "维修中", "已用完", "快递中", "待处理", "已废弃"]
+
+    print(f"物品总数:{total} 件  |  有价物品:{priced['priced_cnt']} 件  |  总价值:¥{priced['total_value']:.2f}")
+    print(f"位置记录总数:{total_in_items}")
+    print("-" * 40)
+    print("各状态分布:")
+    for s in all_statuses:
+        cnt = status_counts.get(s, 0)
+        bar = "█" * min(cnt, 50)
+        print(f"  {s:<4} {cnt:>4}  {bar}")
+    print("-" * 40)
+    print("分类分布(按 3 层树):")
+    for r1 in sorted(by_lvl.get(1, []), key=lambda x: -x['cnt']):
+        if r1['cnt'] == 0:
+            continue
+        val1 = f"¥{r1['total_value']:>9.2f}" if r1['total_value'] > 0 else f"{' ':>10}"
+        print(f"  📁 {r1['name']:<8} {r1['cnt']:>4} 件  {val1}")
+        l2_children = [s for s in by_lvl.get(2, []) if s['l1_id'] == r1['id']]
+        for r2 in sorted(l2_children, key=lambda x: -x['cnt']):
+            if r2['cnt'] == 0:
+                continue
+            val2 = f"¥{r2['total_value']:>9.2f}" if r2['total_value'] > 0 else f"{' ':>10}"
+            print(f"     ├ {r2['name']:<8} {r2['cnt']:>4} 件  {val2}")
+            l3_children = [s for s in by_lvl.get(3, []) if s['l2_id'] == r2['id']]
+            for r3 in sorted(l3_children, key=lambda x: -x['cnt']):
+                if r3['cnt'] == 0:
+                    continue
+                val3 = f"¥{r3['total_value']:>9.2f}" if r3['total_value'] > 0 else f"{' ':>10}"
+                print(f"     │   └ {r3['name']:<8} {r3['cnt']:>4} 件  {val3}")
     return 0

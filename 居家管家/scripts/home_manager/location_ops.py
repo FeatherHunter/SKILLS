@@ -115,8 +115,9 @@ def find_location_by_reference(conn, reference_name, limit=5):
     cursor = conn.cursor()
     # 模糊搜索参考物品（用 CASE 排序，NULL last 用额外 CASE 兜底）
     cursor.execute("""
-        SELECT i.id, i.name, i.category
+        SELECT i.id, i.name, c.name AS category
         FROM items i
+        LEFT JOIN categories c ON i.category_id = c.id
         WHERE i.name LIKE ?
         ORDER BY
             CASE WHEN i.name = ? THEN 0

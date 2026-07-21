@@ -183,20 +183,32 @@
 
 > 详见 `features/add.md` — 仅在录入食谱时调用，查看/做菜模式不需要此规则。
 
-### HTML 生成强制（v5.0 新增）
+### HTML 生成强制（v5.0 新增，v5.2 强化）
 
-**「查看食谱」** 的 HTML 输出必须通过 `scripts/recipe_render.py` 命令，**AI 禁止自行拼 HTML**：
+**「查看食谱」** AI 收到时**必须自动**按以下 2 步走，**禁止只跑第 1 步**：
 
 ```bash
+# 第 1 步:展示文本(必跑)
+python scripts/recipe_manager.py show <菜名或ID>
+
+# 第 2 步:同步 HTML(必跑,紧跟第 1 步)
 python scripts/recipe_render.py render <菜名或ID>
 ```
 
-执行后把生成的 HTML 文件路径告诉用户。AI 不要：
-- 自行拼接 HTML 字符串
-- 调用 taste-skill / ui-ux-pro-max-skill（已废弃，统一由模板服务）
-- 内联 CSS / JS（已统一在 `templates/recipe_view.html`）
+**4 条执行规则**:
 
-**「做菜模式」** 的 HTML 暂由 AI 自己生成（等 render.py 第二模板上线后统一）。
+1. **两步必跑** —— 收到"查看食谱 X"时,**自动**依次跑 show + render,不要等用户追问
+2. **HTML 必发** —— render 成功后,**用 `<media>` 标签**把生成的 HTML 文件**推给用户**;只告诉路径不算交付
+3. **失败降级** —— render 失败时静默降级,只 stderr 一行"HTML 同步跳过:{原因}",show 文本照常展示
+4. **不调 render 也行** 的例外 —— 同一会话内刚跑过 render(<5 分钟)且没改过菜谱,可跳过第 2 步直接发旧 HTML
+
+**禁止事项**:
+- 自行拼接 HTML 字符串
+- 调用 taste-skill / ui-ux-pro-max-skill(已废弃,统一由模板服务)
+- 内联 CSS / JS(已统一在 `templates/recipe_view.html`)
+- 只告诉用户 HTML 路径而不发文件(违反"必发"规则)
+
+**「做菜模式」** 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。
 
 ---
 

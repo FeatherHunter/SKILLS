@@ -398,15 +398,29 @@
 <blockquote>
 <p>详见 <code>features/add.md</code> — 仅在录入食谱时调用，查看/做菜模式不需要此规则。</p>
 </blockquote>
-<h3>HTML 生成强制（v5.0 新增）</h3>
-<p><strong>「查看食谱」</strong> 的 HTML 输出必须通过 <code>scripts/recipe_render.py</code> 命令，<strong>AI 禁止自行拼 HTML</strong>：</p>
-<pre><code class="language-bash">python scripts/recipe_render.py render &lt;菜名或ID&gt;
+<h3>HTML 生成强制（v5.0 新增，v5.2 强化）</h3>
+<p><strong>「查看食谱」</strong> AI 收到时<strong>必须自动</strong>按以下 2 步走，<strong>禁止只跑第 1 步</strong>：</p>
+<pre><code class="language-bash"># 第 1 步:展示文本(必跑)
+python scripts/recipe_manager.py show &lt;菜名或ID&gt;
+
+# 第 2 步:同步 HTML(必跑,紧跟第 1 步)
+python scripts/recipe_render.py render &lt;菜名或ID&gt;
 </code></pre>
-<p>执行后把生成的 HTML 文件路径告诉用户。AI 不要：
-- 自行拼接 HTML 字符串
-- 调用 taste-skill / ui-ux-pro-max-skill（已废弃，统一由模板服务）
-- 内联 CSS / JS（已统一在 <code>templates/recipe_view.html</code>）</p>
-<p><strong>「做菜模式」</strong> 的 HTML 暂由 AI 自己生成（等 render.py 第二模板上线后统一）。</p>
+<p><strong>4 条执行规则</strong>:</p>
+<ol>
+<li><strong>两步必跑</strong> —— 收到"查看食谱 X"时,<strong>自动</strong>依次跑 show + render,不要等用户追问</li>
+<li><strong>HTML 必发</strong> —— render 成功后,<strong>用 <code>&lt;media&gt;</code> 标签</strong>把生成的 HTML 文件<strong>推给用户</strong>;只告诉路径不算交付</li>
+<li><strong>失败降级</strong> —— render 失败时静默降级,只 stderr 一行"HTML 同步跳过:{原因}",show 文本照常展示</li>
+<li><strong>不调 render 也行</strong> 的例外 —— 同一会话内刚跑过 render(&lt;5 分钟)且没改过菜谱,可跳过第 2 步直接发旧 HTML</li>
+</ol>
+<p><strong>禁止事项</strong>:</p>
+<ul>
+<li>自行拼接 HTML 字符串</li>
+<li>调用 taste-skill / ui-ux-pro-max-skill(已废弃,统一由模板服务)</li>
+<li>内联 CSS / JS(已统一在 <code>templates/recipe_view.html</code>)</li>
+<li>只告诉用户 HTML 路径而不发文件(违反"必发"规则)</li>
+</ul>
+<p><strong>「做菜模式」</strong> 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。</p>
 <hr />
 <h2 id="路由算法-核心-8">路由算法（核心）</h2>
 <h3>匹配流程</h3>

@@ -24,6 +24,10 @@ import os
 import json
 from pathlib import Path
 
+# 5 层架构改造:从 references/enums.py 读所有合法值,统一来源
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/references")
+import enums
+
 try:
     import jsonschema
     from jsonschema import Draft7Validator
@@ -59,6 +63,47 @@ def _format_path(absolute_path):
     return "".join(parts) or "(root)"
 
 
+def _patch_schema_with_enums(schema):
+    """5 层架构改造:从 references/enums.py 动态注入合法值,避免硬编码不一致"""
+    # 路径 → enums key 映射
+    # 注意:这个映射是 schema 内部路径(单数)→ enums.ENUMS 复数 key
+    enum_paths = [
+        # (path_in_schema, enums_key)
+        (("properties", "difficulty", "enum"), "difficulty"),
+        (("properties", "status", "enum"), "status"),
+        (("properties", "seasons", "items", "enum"), "seasons"),
+        (("properties", "cooking_methods", "items", "enum"), "cooking_methods"),
+        (("properties", "flavors", "items", "enum"), "flavors"),
+        (("properties", "diet_tags", "items", "enum"), "diet_tags"),
+        (("properties", "meal_types", "items", "enum"), "meal_types"),
+        (("properties", "category", "properties", "cuisine", "enum"), "cuisine_types"),
+        (("properties", "ingredients", "items", "properties", "category", "enum"), "ingredient_categories"),
+        (("properties", "ingredients", "items", "properties", "unit", "enum"), None),  # unit 自由文本,不改
+        (("properties", "steps", "items", "properties", "heat_level", "enum"), "heat_levels"),
+        (("properties", "steps", "items", "properties", "ingredients_used", "items", "properties", "introduced_at", "enum"), "introduced_at"),
+        (("properties", "tips", "items", "properties", "category", "enum"), "tip_categories"),
+        (("properties", "cookware", "items", "properties", "category", "enum"), "cookware_categories"),
+        (("properties", "relations", "items", "properties", "relation_type", "enum"), "relation_types"),
+    ]
+
+    for path, enum_key in enum_paths:
+        if enum_key is None:
+            continue
+        # 沿 path 走到目标
+        target = schema
+        try:
+            for k in path:
+                target = target[k]
+        except (KeyError, TypeError):
+            continue
+        if enum_key in ALL_VALID_ENUMS:
+            # 替换 enum 列表
+            target.clear()
+            target.extend(ALL_VALID_ENUMS[enum_key])
+
+    return schema
+
+
 def validate_with_jsonschema(data):
     """用 jsonschema 做结构 + 枚举 + 类型校验。
     返回 (errors, warnings) 元组,errors 是致命,warnings 是非致命(实际 jsonschema 没 warnings,所以总是空)。"""
@@ -67,6 +112,8 @@ def validate_with_jsonschema(data):
 
     try:
         schema = _load_schema()
+        # 5 层架构:动态注入 enums 合法值(消除硬编码不一致)
+        schema = _patch_schema_with_enums(schema)
     except FileNotFoundError:
         return ([f"❌ Schema 文件不存在:{SCHEMA_PATH}"], [])
 
@@ -79,24 +126,34 @@ def validate_with_jsonschema(data):
     return (errors, [])
 
 # ══════════════════════════════════════════════════════════════
-# 标准枚举值
+# 标准枚举值(5 层架构:从 references/enums.py 读)
 # ══════════════════════════════════════════════════════════════
 
-ENUMS = {
-    "difficulty": ["快手菜", "简单", "中等", "困难", "大师"],
-    "status": ["未做", "已做", "熟练", "已废弃"],
-    "season": ["春", "夏", "秋", "冬"],
-    "cooking_method": ["炒", "蒸", "煮", "烤", "炸", "煎", "焖", "炖", "拌", "卤", "熏", "生食"],
-    "flavor": ["酸", "甜", "辣", "咸", "鲜", "苦", "麻"],
-    "diet_tag": ["素食", "清真", "无辣", "低碳", "无糖", "低脂", "无麸质", "高蛋白"],
-    "meal_type": ["早", "中", "晚", "夜宵", "下午茶", "聚会"],
-    "ingredient_category": ["肉类", "海鲜", "蔬菜", "调料", "豆制品", "蛋类", "主食", "干货", "其他"],
-    "cookware_category": ["锅", "炉", "刀", "其他"],
-    "tip_category": ["火候", "刀工", "调味", "采购", "设备", "保存", "文化"],
-    "heat_level": ["微火", "小火", "中火", "大火", "猛火"],
-    "introduced_at": ["开局", "开局加入", "中途加入", "最后加入"],
-    "cuisine_type": ["川菜", "粤菜", "湘菜", "闽菜", "浙菜", "苏菜", "鲁菜", "东北菜", "京菜", "沪菜", "台湾菜", "本帮菜"],
-    "relation_type": ["派生", "变体", "改良"],
+# 历史遗留:本文件历史用单数 key (cooking_method / flavor / diet_tag 等)
+# enums.py 用复数 key (cooking_methods / flavors / diet_tags 等)
+# 用这个映射做兼容
+KEY_MAPPING = {
+    "difficulty": "difficulty",
+    "status": "status",
+    "season": "seasons",
+    "cooking_method": "cooking_methods",
+    "flavor": "flavors",
+    "diet_tag": "diet_tags",
+    "meal_type": "meal_types",
+    "cuisine_type": "cuisine_types",
+    "ingredient_category": "ingredient_categories",
+    "cookware_category": "cookware_categories",
+    "tip_category": "tip_categories",
+    "heat_level": "heat_levels",
+    "introduced_at": "introduced_at",
+    "relation_type": "relation_types",
+}
+
+# status 在 enums.py 里只包含业务可见的 3 个,加 "已废弃" 用于校验脚本的兼容
+STATUS_WITH_ARCHIVED = list(enums.STATUS) + [enums.ARCHIVED_STATUS]
+ALL_VALID_ENUMS = {
+    "status": STATUS_WITH_ARCHIVED,
+    **enums.ENUMS,
 }
 
 # ══════════════════════════════════════════════════════════════
@@ -259,11 +316,16 @@ def check_type(value, expected_type, path, errors):
 
 
 def check_enum(value, enum_key, path, warnings):
-    """检查枚举值，不在标准值中则警告"""
+    """检查枚举值，不在标准值中则警告
+
+    5 层架构改造:从 references/enums.py 读合法值(单数 key → 复数 key 映射)
+    """
     if value is None:
         return
-    if enum_key in ENUMS:
-        valid = ENUMS[enum_key]
+    # 单数 key → enums 复数 key
+    enums_key = KEY_MAPPING.get(enum_key)
+    if enums_key and enums_key in ALL_VALID_ENUMS:
+        valid = ALL_VALID_ENUMS[enums_key]
         if isinstance(value, list):
             for i, v in enumerate(value):
                 if isinstance(v, str) and v not in valid:

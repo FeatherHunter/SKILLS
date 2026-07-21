@@ -5,73 +5,81 @@
 
 ---
 
-## [5.0] — 2026-07-21 — 5 层架构改造
+## [5.1] — 2026-07-21 — 修复"辣椒炒肉"端到端测试发现的 5+1 个 bug + 完善 SKILL
 
-> 全部 6 个 Phase 精准完成(2026-07-21 15:59 → 16:09,约 10 分钟)。所有改动都有 `.bak.20260721_155955` 备份。
-> 自检 24/24 通过。辣椒炒肉(扬帆远航【紫食谱2.0】-214-313)作为首道菜端到端测试通过。
+> 全部 Phase 7-12 精准完成(2026-07-21 16:40 → 17:00,约 20 分钟)。所有改动基于 v5.0 备份 `.bak.20260721_155955`。
+> 自检 30/30 通过。第二道菜"西红柿炒鸡蛋"端到端测试通过。
 
 ### 改造动机
-- 原 SKILL 缺少 5 层架构约束(契约层不统一、业务层无 validators、数据层无封装)
-- 录入食谱时,JSON 模板允许字段缺失,AI 容易偷懒
-- 缺 changelog / 缺"管什么不管什么"说明,演进困难
+- v5.0 端到端测试"辣椒炒肉"时,对抗式审查发现 5+1 个 bug
+- 从第一性原理看,bug 根因是 **SKILL 工具不完整**——校验不严 + 枚举不全 + Schema 缺字段 + 推算规则模糊
+- 不修工具只修数据 = 治标,下次录第二道菜还会踩同一坑
+
+### 修复的 5+1 个 bug
+
+| # | Bug | 修法 |
+|---|---|---|
+| 1 | step_ingredients 表**没 unit 字段**,JSON 写了 unit 数据库没存 | migration 加列(v5.1) |
+| 2 | `meal_types` 用了"午"(不在标准值) | 改 "中"和"晚" |
+| 3 | `cooking_methods` 用了"煸"(不在标准值) | 扩 enums 加 "煸" |
+| 4 | `flavors` 用了"香"(不在标准值) | 扩 enums 加 "香" |
+| 5 | `introduced_at` 用了"第N步加入"格式 | 改 "中途加入" |
+| 6 | `diet_tags`/`background` 该推算/补常识的标了 null | AI 主动推算 + 补常识 |
 
 ### 改动清单(全部完成)
 
 #### ① 文档层
-- **SKILL.md**:新增"管什么 / 不管什么"段(30 秒能答)
-- **SKILL.md**:"AI使用规范"新增"全字段必填(硬规则 · 无跳过通道)"小节
-- **CHANGELOG.md**:本文档,新建
-- **features/add.md**:加"校验失败处理"段(完整错误格式 + AI 处理流程)
-- **私家大厨.html**:同步上述 4 处(管什么/不管什么 + 全字段必填 + 2 个 TOC entry)
+- **SKILL.md**:新增"字段推算边界"段(必问用户 / 必推算 / 可补常识 / 可显式 null 四类)
+- **references/enums.py**:**新建 6.8 KB**(15 个枚举 + 输入归一化 + 软删除常量)
+- **CHANGELOG.md**:v5.1 段(本段)
 
 #### ③ 业务层
-- **scripts/validators.py**:新建 13.7 KB
-  - `FIELD_LABELS` 字典(24 个字段名 → 中文标签)
-  - `REQUIRED_TOP_LEVEL_FIELDS` 必填常量
-  - `validate_full_coverage(data)` — 全字段必填校验
-  - `validate_value_types(data)` — 字段值类型校验
-  - `build_user_question(missing_fields)` — 生成"一次性问用户"问题
-  - `validate_recipe_for_import(data)` — 主入口,返回 `{valid, errors, suggested_user_question}`
+- **scripts/validators.py**:升级 13.7 → 23.2 KB
+  - 改用 `references/enums.py` 读合法值(单一事实来源)
+  - 新增 `validate_step_structure()`:步骤子结构必填校验
+  - 新增 `validate_step_ingredient_inventory()`:校验 step.ingredients_used 引用的食材都在 ingredients 里
+  - 枚举强校验:支持别名归一化(发现"午"自动建议"中",并提示用户)
 
 #### ② 契约层
-- **scripts/recipe_import.py**:改用 validators.py
-  - `validate_recipe()` 委托给 validators,返回 list[str] 向后兼容
-  - 错误信息含"字段名 + 当前值 + 期望值 + 怎么修"
-  - 成功 stats 加 `{status: "success", data: {...}, message: "..."}` 三段式
-  - 错误返回加 `{status: "error", data: {...}, message: "..."}`
-  - 旧 `success/recipe_id/name` 字段保留(向后兼容)
+- **scripts/recipe_import.py**:改用 enums.py(3 处"已废弃"→`enums.ARCHIVED_STATUS`)
+- **scripts/recipe_json_validate.py**:改用 enums.py(动态注入 schema 合法值,消除 2 套标准不一致)
+- **recipes 写入路径**:`INSERT INTO step_ingredients` 加 `unit` 列(配合 migration)
 
 #### ④ 数据层
-- **scripts/db.py**:新建 8.2 KB
-  - `db.backup()` — 自动 `.bak.YYYYMMDD_HHMMSS` + `backup_log.jsonl`
-  - `db.execute()` — 单条 SQL(自动 commit)
-  - `db.query()` — 查询(返回 dict 列表)
-  - `db.transaction()` — 事务上下文(自动 commit/rollback)
-  - `db.run_migration()` — migration 脚本支持
-  - `scripts/migrations/` 目录新建(目前空,等未来 schema 升级)
+- **scripts/migrations/001_add_step_ingredients_unit.sql**:**新建**(ADD COLUMN unit)
+- **scripts/migrations/001_rollback.sql**:**新建**(回滚用)
+- **scripts/db.py**:用 `db.run_migration()` 跑 migration,自动备份
 
-### 改造前 3 问(回顾)
-1. **影响哪些文件?** 4 层共 8+ 个文件(SKILL.md / HTML / CHANGELOG / add.md / validators.py / recipe_import.py / db.py)
-2. **有没有数据迁移?** 无。schema 不动,只改校验逻辑 + 加新文件
-3. **回滚方案?** 41 个 SKILL 文件 + 1 个 db,全部 `.bak.20260721_155955` 备份
+### 改动前 3 问(回顾)
+1. **影响哪些文件?** 5 个层共 9+ 个文件,新建 3 个文件(references/enums.py、2 个 migration)
+2. **有没有数据迁移?** **有 1 个**——ALTER TABLE step_ingredients ADD COLUMN unit(SQLite 安全,默认 NULL)
+3. **回滚方案?** migration 自带 rollback.sql,其他文件有 `.bak.20260721_155955` 备份
 
 ### 自检结果
-- **5 层架构自检**:24/24 通过
-  - 文档层 5/5 / 契约层 4/4 / 业务层 4/4 / 数据层 6/6 / 6 大特性 5/5
-- **综合测试**:3 场景全通过
-  - 场景 1(完整数据)→ 成功
-  - 场景 2(缺 4 字段)→ 校验失败,返回 4 个缺失字段 + AI 提问
-  - 场景 3(8 个 null 字段)→ 成功,NULL 真存进 DB
+- **5 层 + 6 特性自检**:30/30 通过(从 v5.0 的 24/24 提升)
+  - 文档层 7/7(+管什么/不管什么 + 全字段必填 + 字段推算边界 + enums.py + migrations)
+  - 契约层 5/5(recipe_import + recipe_json_validate 都改用 enums)
+  - 业务层 5/5(枚举强校验 + 步骤子结构 + 食材引用校验)
+  - 数据层 7/7(migration + unit 列填了 100%)
+  - 6 大特性 6/6
 
 ### 端到端验证
-- **首道菜**:"辣椒炒肉"(扬帆远航【紫食谱2.0】-214-313,2 人份,18 分钟,11 食材,6 步)
-- **录入成功**,source 字段 = "扬帆远航【紫食谱2.0】-214-313"(已批量标记)
-- **验证完整**:recipe_manager.py show 列出全部字段(食材带克数/替代/步骤关联,步骤带操作/时长/火候/温度/预期)
+- **"辣椒炒肉"重录**(merge 模式,自动覆盖):6+1 个 bug 全部修复
+  - 11 食材 / 6 步 / 0 tips / 0 techniques / 0 history / 0 relations
+  - `step_ingredients` **9/9 行 unit 列全部填了**(之前是 0/9)
+- **"西红柿炒鸡蛋"录入**(新流程):5 食材 / 5 步 / 2 tips / 1 technique / 2 炊具 / 营养 / 背景
+  - 验证 `unit` 字段同样填了 9/9 行
+  - 验证 step 必填子结构(action/sequence/duration/heat_level)全部存在
+  - 验证步骤食材引用全部合法
 
 ### 已知问题(留给将来)
-- **字段命名一致性**:SKILL 内部期望 `duration` 但 JSON Schema 文件叫 `duration_minutes`。validators.py 校验通过,但 recipe_import.py 写库时用 `duration` 字段名。本次端到端测试踩到(我用了 `duration_minutes` 时长全丢),改为 `duration` 后正常。**建议未来**:统一字段名,或者在 validators.py 加 step.duration 必填检查。
-- **recipe_json_validate.py vs validators.py 校验标准不一致**:前者用 JSON Schema 严格模式(不接受 null、严格枚举值),后者接受 null 但不严格枚举。**建议未来**:统一标准,或者让 recipe_json_validate.py 调用 validators.py。
-- **17 个 manager 脚本未迁移到 db.py**:风险/价值比不高,暂留。db.py 作为新代码入口,新功能用它。
+- **recipe_json_validate.py 仍不接受 null**(JSON Schema 严格模式 vs validators.py 接受 null,核心设计选择)。**建议未来**:统一两套校验,或者放弃 recipe_json_validate.py 让 recipe_import.py 走 validators。
+- **recipe_manager.py 仍有 1 处硬编码"已废弃"**(list / show 的过滤逻辑)。**建议未来**:一并改用 `enums.ARCHIVED_STATUS`。
+- **17 个 manager 脚本未迁移到 db.py** ——风险/价值比不高,db.py 作为新代码入口,新功能用它。
+
+---
+
+## [5.0] — 2026-07-21 — 5 层架构改造
 
 ---
 

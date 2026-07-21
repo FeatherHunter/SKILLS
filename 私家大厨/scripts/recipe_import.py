@@ -19,8 +19,10 @@ from datetime import datetime
 
 # 添加scripts目录到path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/references")
 from db_config import get_connection
 import validators  # 业务层校验器(5 层架构改造)
+import enums  # references/enums.py(5 层架构:契约层读 references)
 
 
 def get_now():
@@ -28,52 +30,67 @@ def get_now():
 
 
 def validate_recipe(data):
-    """验证食谱 JSON 数据,返回错误列表(向后兼容格式)
-
-    5 层架构改造:委托给业务层 validators(无跳过通道)
-    错误信息含字段名 + 当前值 + 期望值 + 怎么修
-    """
-    result = validators.validate_recipe_for_import(data)
-
-    if result["valid"]:
-        return []
-
-    # 把 validators 的 dict 错误转成 list[str](向后兼容旧接口)
+    """验证食谱JSON数据，返回错误列表"""
     errors = []
-    for err in result["errors"]:
-        err_type = err.get("type", "?")
 
-        if err_type == "missing_fields":
-            fields_str = ", ".join(err.get("fields", []))
-            errors.append(
-                f"缺少 {err.get('count', '?')} 个必填字段: {fields_str}"
-            )
-            if err.get("hint"):
-                errors.append(f"  hint: {err['hint']}")
-        elif err_type == "missing_field":
-            errors.append(
-                f"[{err.get('field', '?')}] 缺失字段."
-                f" 期望={err.get('expected', '?')}. {err.get('hint', '')}"
-            )
-        elif err_type == "value_error":
-            errors.append(
-                f"[{err.get('field', '?')}] 当前值={err.get('current_value', '?')!r},"
-                f" 期望={err.get('expected', '?')}. {err.get('hint', '')}"
-            )
-        elif err_type == "type_error":
-            errors.append(
-                f"[{err.get('field', '?')}] 当前类型={err.get('current_value', '?')!r},"
-                f" 期望={err.get('expected', '?')}. {err.get('hint', '')}"
-            )
-        elif err_type == "json_error":
-            errors.append(f"JSON 格式错误: {err.get('message', '?')}")
-        else:
-            errors.append(f"[{err_type}] {err}")
+    # 1. 必填字段检查
+    if not data.get("name"):
+        errors.append("缺少必填字段: name（菜名）")
+    if not data.get("ingredients"):
+        errors.append("缺少必填字段: ingredients（食材列表）")
+    if not data.get("steps"):
+        errors.append("缺少必填字段: steps（步骤列表）")
 
-    # 末尾加 suggested_user_question(给 AI 看)
-    if result.get("suggested_user_question"):
-        errors.append("")  # 空行分隔
-        errors.append(f"AI 提问: {result['suggested_user_question']}")
+    # 2. 数据类型检查
+    if "name" in data and not isinstance(data["name"], str):
+        errors.append("name 必须是字符串")
+    if "servings" in data and data["servings"] is not None:
+        if not isinstance(data["servings"], int):
+            errors.append("servings 必须是整数")
+    if "total_time" in data and data["total_time"] is not None:
+        if not isinstance(data["total_time"], (int, float)):
+            errors.append("total_time 必须是数字")
+    if "difficulty" in data and data["difficulty"] is not None:
+        valid_difficulty = ["快手菜", "简单", "中等", "困难", "大师"]
+        if data["difficulty"] not in valid_difficulty:
+            errors.append(f"difficulty 必须是以下之一: {', '.join(valid_difficulty)}")
+
+    # 3. 食材验证
+    if "ingredients" in data and not isinstance(data["ingredients"], list):
+        errors.append("ingredients 必须是数组")
+    for i, ing in enumerate(data.get("ingredients", [])):
+        if not isinstance(ing, dict):
+            errors.append(f"ingredients[{i}] 必须是对象")
+            continue
+        if not ing.get("name"):
+            errors.append(f"ingredients[{i}] 缺少 name（食材名）")
+        if "quantity" in ing and ing["quantity"] is not None:
+            if not isinstance(ing["quantity"], (int, float)):
+                errors.append(f"ingredients[{i}].quantity 必须是数字")
+
+    # 4. 步骤验证
+    if "steps" in data and not isinstance(data["steps"], list):
+        errors.append("steps 必须是数组")
+    for i, step in enumerate(data.get("steps", [])):
+        if not isinstance(step, dict):
+            errors.append(f"steps[{i}] 必须是对象")
+            continue
+        if not step.get("action"):
+            errors.append(f"steps[{i}] 缺少 action（步骤描述）")
+        if "sequence" in step and step["sequence"] is not None:
+            if not isinstance(step["sequence"], int):
+                errors.append(f"steps[{i}].sequence 必须是整数")
+        if "duration" in step and step["duration"] is not None:
+            if not isinstance(step["duration"], (int, float)):
+                errors.append(f"steps[{i}].duration 必须是数字")
+
+    # 5. 营养信息验证
+    if "nutrition" in data and data["nutrition"]:
+        nutri = data["nutrition"]
+        for field in ["calories", "protein", "fat", "carbs", "fiber", "sodium", "serving_size"]:
+            if field in nutri and nutri[field] is not None:
+                if not isinstance(nutri[field], (int, float)):
+                    errors.append(f"nutrition.{field} 必须是数字")
 
     return errors
 
@@ -81,9 +98,9 @@ def validate_recipe(data):
 def check_conflict(conn, name, choice=None, new_name=None):
     """检查同名食谱冲突，返回 (has_conflict, result)"""
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT id, name, status FROM recipes
-        WHERE name = ? AND status != '已废弃'
+        WHERE name = ? AND status != '{enums.ARCHIVED_STATUS}'
     """, (name,))
     existing = cursor.fetchone()
 
@@ -273,20 +290,21 @@ def add_steps(conn, recipe_id, steps, name_id_map):
             step.get("expected_result")
         ))
 
-        # 处理步骤×食材关联
+        # 处理步骤×食材关联(v5.1 加 unit 列)
         for si in step.get("ingredients_used", []):
             ing_name = si.get("name")
             if ing_name and ing_name in name_id_map:
                 link_id = str(uuid.uuid4())
                 cursor.execute("""
-                    INSERT INTO step_ingredients (id, step_id, ingredient_id, quantity_used, introduced_at)
-                    VALUES (?, ?, ?, ?, ?)
+                    INSERT INTO step_ingredients (id, step_id, ingredient_id, quantity_used, introduced_at, unit)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 """, (
                     link_id,
                     step_id,
                     name_id_map[ing_name],
                     si.get("quantity_used"),
-                    si.get("introduced_at", f"第{seq}步加入")
+                    si.get("introduced_at", "中途加入"),
+                    si.get("unit")
                 ))
             elif ing_name:
                 print(f"警告：步骤引用的食材 '{ing_name}' 未在食材列表中找到，跳过关联")
@@ -483,7 +501,7 @@ def add_relations(conn, child_id, relations, child_name):
 
         # 查父本 ID
         cursor.execute(
-            "SELECT id FROM recipes WHERE name = ? AND status != '已废弃' LIMIT 1",
+            f"SELECT id FROM recipes WHERE name = ? AND status != '{enums.ARCHIVED_STATUS}' LIMIT 1",
             (parent_name,)
         )
         row = cursor.fetchone()
@@ -539,7 +557,7 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
         if merge:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id FROM recipes WHERE name = ? AND status != '已废弃' LIMIT 1",
+                f"SELECT id FROM recipes WHERE name = ? AND status != '{enums.ARCHIVED_STATUS}' LIMIT 1",
                 (data["name"],)
             )
             row = cursor.fetchone()

@@ -136,16 +136,29 @@ def show(args):
     
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # 查主表
-    cursor.execute("SELECT * FROM recipes WHERE id = ? OR name LIKE ?", (name, f"%{name}%"))
+
+    # 1. 精确匹配(优先) — show 是"看这一道",不是"找一找",必须精确
+    #    v5.2 修复:之前用 LIKE 模糊匹配,导致拼错菜名也"找到"——用户做错菜
+    cursor.execute("SELECT * FROM recipes WHERE id = ? OR name = ?", (name, name))
     recipe = cursor.fetchone()
-    
+
     if not recipe:
-        print(f"未找到食谱：{name}")
+        # 2. fallback:用 search 的逻辑找相似,给用户友好提示
+        cursor.execute("SELECT name FROM recipes WHERE name LIKE ? LIMIT 5", (f"%{name}%",))
+        similar = cursor.fetchall()
+        if similar:
+            similar_names = [s['name'] for s in similar]
+            print(f"未找到食谱:{name}")
+            print(f"  但找到 {len(similar_names)} 个相似菜:")
+            for n in similar_names:
+                print(f"    - {n}")
+            print(f"  提示:输入 '查看食谱 完整菜名' 重新查看")
+        else:
+            print(f"未找到食谱:{name}(也没找到相似菜)")
+            print(f"  试试 '搜索食谱 {name}' 模糊搜,或 '查看全部' 列所有菜")
         conn.close()
         return False
-    
+
     recipe_status = recipe["status"]
     if recipe_status == '已废弃':
         print(f"⚠️ 「{recipe['name']}」已废弃")

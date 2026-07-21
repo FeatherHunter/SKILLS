@@ -107,7 +107,7 @@ def render(args):
         output_path = Path(output_arg)
     else:
         # 默认:$CHEF_OUTPUT_DIR/recipes/<slug>.html(尊重环境变量)
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "output"))
+        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
         recipes_dir = base_dir / "recipes"
         recipes_dir.mkdir(parents=True, exist_ok=True)
         slug = slugify(recipe.get("name") or "") or recipe.get("id", "untitled")[:8]

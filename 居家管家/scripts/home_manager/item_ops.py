@@ -617,7 +617,11 @@ def item_detail(item_id):
     conn = get_conn()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    cursor.execute("""
+        SELECT i.*, c.name AS category_name
+        FROM items i LEFT JOIN categories c ON i.category_id = c.id
+        WHERE i.id = ?
+    """, (item_id,))
     row = cursor.fetchone()
     if not row:
         print(f"✗ 未找到 ID={item_id} 的物品")
@@ -638,7 +642,7 @@ def item_detail(item_id):
     print(f"===== 物品详情 =====")
     print(f"ID:       {item['id']}")
     print(f"名称:     {item['name']}")
-    print(f"分类:     {item['category']}")
+    print(f"分类:     {item['category_name'] or '(未分类)'}")
 
     if locations:
         print("位置分布：")

@@ -245,9 +245,9 @@ def main():
         try:
             if args.with_examples:
                 results = suggest_locations_with_examples(
-                    conn, args.category, limit=args.limit
+                    conn, args.category_id, limit=args.limit
                 )
-                print(f"📍 位置推荐（{args.category}）：共 {len(results)} 个位置")
+                print(f"📍 位置推荐（category_id={args.category_id}）：共 {len(results)} 个位置")
                 print("-" * 70)
                 for i, (loc, cnt, examples) in enumerate(results, 1):
                     ex_str = "、".join(examples) if examples else "(无)"

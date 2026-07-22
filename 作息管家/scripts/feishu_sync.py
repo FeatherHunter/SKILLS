@@ -1006,10 +1006,13 @@ def _diff_and_sync_impl(
 
 
 def _compose_description(e: PlanEvent) -> str:
-    """PlanEvent → 飞书事件 description 字符串"""
+    """PlanEvent → 飞书事件 description 字符串(2026-07-22 加 emoji 前缀)"""
     parts = []
     if e.category:
-        parts.append(f"[{e.category}]")
+        # 2026-07-22 重构: 加 emoji 前缀
+        from validators import format_category_for_feishu
+        cat_display = format_category_for_feishu(e.category)
+        parts.append(f"[{cat_display}]")
     if e.notes:
         parts.append(e.notes)
     parts.append("作息管家自动同步")

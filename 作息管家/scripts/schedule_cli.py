@@ -503,6 +503,9 @@ def main(argv=None):
         init_db()
         print("✓ 数据库初始化完成")
 
+    elif cmd == "add":
+        cmd_add_record(args)
+
     elif cmd == "prepare-messages":
         cmd_prepare_messages(args)
 
@@ -1526,6 +1529,145 @@ def cmd_approve_category(args):
 
 
 # ============================================================
+# 2026-07-22 新增：add 入口(规范化写入路径)
+# ============================================================
+#
+# 设计要点:
+#   - 暴露 add_record_full 给 CLI,所有写入都走校验
+#   - 支持命令行参数 + --json 两种方式
+#   - category 仅一级时给"建议细化"警告(Q2=C 决策)
+#   - schedule_records 无飞书事件,不需要询问同步(Q4)
+#
+
+def cmd_add_record(args):
+    """
+    add [--date D] [--time-start S] [--time-end E] [--duration N] [--activity A]
+        --category C --source-contents SC --source-timestamps ST --analysis-reasoning AR
+        [--json @file.json | --json '{...}']
+
+    必填 9 字段:date / time_start / time_end / duration_minutes / activity /
+                category / source_contents / source_timestamps / analysis_reasoning
+    """
+    import json as _json
+
+    # === 1. 解析参数 ===
+    parsed = {}
+    json_payload = None
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--json":
+            # --json @file.json 或 --json '{...}'
+            if i + 1 >= len(args):
+                print(_json.dumps({"status": "error", "message": "--json 后需跟文件名(@file)或 JSON 字符串"}, ensure_ascii=False))
+                return
+            v = args[i + 1]
+            if v.startswith("@"):
+                file_path = v[1:]
+                try:
+                    with open(file_path, encoding="utf-8") as f:
+                        json_payload = _json.load(f)
+                except Exception as e:
+                    print(_json.dumps({"status": "error", "message": f"读取 JSON 文件失败: {e}"}, ensure_ascii=False))
+                    return
+            else:
+                try:
+                    json_payload = _json.loads(v)
+                except Exception as e:
+                    print(_json.dumps({"status": "error", "message": f"JSON 解析失败: {e}"}, ensure_ascii=False))
+                    return
+            i += 2
+            continue
+        # --key value 形式
+        if a.startswith("--") and i + 1 < len(args):
+            key = a[2:].replace("-", "_")
+            parsed[key] = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    if json_payload:
+        data = json_payload
+    else:
+        data = parsed
+
+    # === 2. 字段映射 + 必填校验 ===
+    field_map = {
+        "date": "date",
+        "time_start": "time_start",
+        "time_end": "time_end",
+        "duration_minutes": "duration_minutes",
+        "activity": "activity",
+        "category": "category",
+        "source_contents": "source_contents",
+        "source_timestamps": "source_timestamps",
+        "analysis_reasoning": "analysis_reasoning",
+    }
+    kwargs = {}
+    missing = []
+    for k_in, k_out in field_map.items():
+        v = data.get(k_in)
+        if v is None or v == "":
+            missing.append(k_in)
+        else:
+            # duration_minutes 转换
+            if k_in == "duration_minutes":
+                try:
+                    v = int(v)
+                except (TypeError, ValueError):
+                    print(_json.dumps({"status": "error", "message": f"duration_minutes 必须是整数: {v!r}"}, ensure_ascii=False))
+                    return
+            kwargs[k_out] = v
+    if missing:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"缺少必填字段: {', '.join(missing)}",
+            "required": list(field_map.keys())
+        }, ensure_ascii=False))
+        return
+
+    # === 3. category 校验(下沉到 add_record_full) ===
+    # add_record_full 内部已调 validators.validate_category()
+    # 一级放行但 Q2=C 决策:在 CLI 层加"建议细化"警告
+    from validators import parse_category, list_level2
+    level1, level2 = parse_category(kwargs["category"])
+    warning = None
+    if level1 and not level2:
+        # 一级 category, 建议细化
+        level2_options = list_level2(level1).get(level1, [])
+        if level2_options:
+            warning = (
+                f"💡 category='{level1}' 是一级,建议细化到二级。"
+                f"可选: {level2_options[:8]}{'...' if len(level2_options) > 8 else ''}"
+            )
+
+    # === 4. 写入 ===
+    try:
+        from schedule_db import add_record_full
+        record_id = add_record_full(**kwargs)
+        result = {
+            "status": "ok",
+            "data": {"id": record_id, "category": kwargs["category"], "date": kwargs["date"]},
+            "message": f"✓ 记录 id={record_id} 已写入 ({kwargs['date']} {kwargs['time_start']}~{kwargs['time_end']} {kwargs['category']})"
+        }
+        if warning:
+            result["warning"] = warning
+            result["message"] += f"\n{warning}"
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+    except ValueError as e:
+        # 校验失败
+        print(_json.dumps({
+            "status": "error",
+            "message": f"写入失败: {e}"
+        }, ensure_ascii=False))
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"未知错误: {type(e).__name__}: {e}"
+        }, ensure_ascii=False))
+
+
+# ============================================================
 # help 更新
 # ============================================================
 
@@ -1535,6 +1677,7 @@ def cmd_help():
 
 基础:
   init                                    初始化数据库
+  add <参数> 或 --json                    写入作息记录(规范化入口,2026-07-22 新增)
   prepare-messages [start] [end] [--page N] [--page-size N]   取待同步消息
   list [date]                             查看某日作息
   detail [date]                           含 AI 推理的详情

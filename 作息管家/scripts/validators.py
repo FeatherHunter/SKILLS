@@ -135,6 +135,65 @@ def is_valid_category(category: str) -> bool:
     return validate_category(category)[0]
 
 
+# === 飞书 emoji 映射 (2026-07-22 重构) ===
+# 一级 emoji(必须有,所有合法一级都有 emoji)
+CATEGORY_EMOJI_MAP = {
+    "维持": "🌱",
+    "健康": "💪",
+    "工作": "💼",
+    "学习": "📖",
+    "创作": "🎨",
+    "投入": "🤝",
+    "调整": "😌",
+    "日常": "📋",
+}
+
+# 二级 emoji(可选,没配的回退到一级 emoji)
+CATEGORY_EMOJI_LEVEL2 = {
+    "维持": {"睡眠": "😴", "用餐": "🍚", "做饭": "🍳", "洗漱": "🚿", "通勤": "🚴", "采购": "🛒", "就医": "💊", "护肤": "💆", "散步": "🚶"},
+    "健康": {"运动": "🏃", "健身": "🏋️", "修行": "🧘", "冥想": "🧠", "看病": "🩺", "康复": "🩹", "保健": "🛡️", "八段锦": "☯️"},
+    "工作": {"AI调优": "🤖", "开发": "💻", "剪辑": "🎬", "文案": "📝", "运营": "📊", "会议": "🤝", "财务": "💰", "调研": "🔍", "学习": "📚"},
+    "学习": {"技术": "💻", "语言": "🗣️", "考试": "✏️", "读书": "📕", "研究": "🔬", "AI": "🤖", "阅读": "📰"},
+    "创作": {"文字": "✍️", "视频": "🎥", "音频": "🎵", "设计": "🖌️", "编程": "💻", "菜谱": "🍴", "SOP": "📋", "教学": "👨‍🏫"},
+    "投入": {"家人": "👨‍👩‍👧", "朋友": "🧑‍🤝‍🧑", "同事": "👔", "伴侣": "❤️", "宠物": "🐾", "社交": "👋", "服务": "🛎️", "沟通": "💬", "AI": "🤖"},
+    "调整": {"游戏": "🎮", "视频": "📺", "音乐": "🎧", "手机": "📱", "玩耍": "🎈", "发呆": "💭", "追剧": "🍿", "散步": "🚶", "午睡": "😴", "过渡": "⏳", "休息": "🛋️", "阅读": "📰"},
+    "日常": {"代办": "☑️", "决策": "🤔", "杂事": "🔧", "收拾": "🧹", "行政": "📑", "等候": "⏳", "园艺": "🌿"},
+}
+
+
+def get_emoji_prefix(category: str) -> str:
+    """
+    根据 category 返回 emoji 字符串(用于飞书 description 头部)。
+    例: get_emoji_prefix('工作.AI调优') → '💼🤖'
+        get_emoji_prefix('工作') → '💼'
+        get_emoji_prefix('日常.园艺') → '📋🌿'
+        get_emoji_prefix('') → ''
+    策略(Q3=B): 永远有一级 emoji 兜底,二级 emoji 缺时只显示一级
+    """
+    if not category:
+        return ""
+    level1, level2 = parse_category(category)
+    if not level1 or level1 not in CATEGORY_EMOJI_MAP:
+        return ""
+    result = CATEGORY_EMOJI_MAP[level1]
+    if level2 and level2 in CATEGORY_EMOJI_LEVEL2.get(level1, {}):
+        result += CATEGORY_EMOJI_LEVEL2[level1][level2]
+    return result
+
+
+def format_category_for_feishu(category: str) -> str:
+    """
+    把 category 渲染成飞书 description 用的格式:
+    '工作.AI调优' → '💼🤖 工作.AI调优'
+    '工作'         → '💼 工作'
+    ''             → ''
+    """
+    if not category:
+        return ""
+    emoji = get_emoji_prefix(category)
+    return f"{emoji} {category}".strip() if emoji else category
+
+
 def list_level1() -> list:
     """列出所有一级"""
     return sorted(LEVEL1_WHITELIST)

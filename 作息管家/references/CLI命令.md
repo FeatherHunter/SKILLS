@@ -13,13 +13,35 @@ python3 scripts/schedule_cli.py init
 ```
 创建 schedule_records、daily_summary、schedule_plans（新版）三表。
 
-### 2. 准备同步消息
+### 2. 写入作息记录（2026-07-22 新增规范化入口）
+```bash
+# 方式 A: 命令行参数
+python3 scripts/schedule_cli.py add \
+  --date 2026-07-22 --time-start 10:00 --time-end 11:00 \
+  --duration-minutes 60 --activity "写小帅相关代码" \
+  --category "工作.AI调优" \
+  --source-contents "我在优化 AI" --source-timestamps "10:00" \
+  --analysis-reasoning "AI 主动优化"
+
+# 方式 B: JSON 文件
+python3 scripts/schedule_cli.py add --json @record.json
+```
+
+**必填 9 字段**：`date / time_start / time_end / duration_minutes / activity / category / source_contents / source_timestamps / analysis_reasoning`
+
+**触发词**：记作息 / 补一条作息 / 录作息
+
+**返回**：`{status, data:{id, category, date}, message}` JSON 三段式。
+
+**重要**：所有写入路径必须走 `add` CLI，**禁止直接调 `add_record_full` 函数绕过校验**。
+
+### 3. 准备同步消息
 ```bash
 python3 scripts/schedule_cli.py prepare-messages [<开始> [<结束>]] [--page N] [--page-size N]
 ```
 分页获取游标到当前时间的消息（供 AI 分析）。
 
-### 3~9. 查询 / 报告 / 状态
+### 4~10. 查询 / 报告 / 状态
 （保持不变：list / detail / summary / timeline / report / range / status）
 
 ---

@@ -20,18 +20,19 @@
 
 ---
 
-> 版本：**v3** (2026-07-22 L1+L2+L3+P1+P2 完整重构)
-> 设计：基于17张表(98 字段全 NOT NULL 兜底)，8大功能，35个唤醒词，无删除操作
+> 版本：**v3** (2026-07-22 L1+L2+L3+L4+P1+P2+Scope 完整重构)
+> 设计：基于17张表(99 字段 / 96 实际必填 / 3 显式可空:step_ingredients.unit + tips.step_id + tips.ingredient_id),8大功能,35个唤醒词,无删除操作
 > 食材分类：v5.2 起 **11 类**(原 9 类拆出"葱姜蒜"和"香草"),见 `references/categories.md`
 > 贴士分类：v3 P1 起 **8 类**(原 7 类增加"其他"兜底)
 > 火候枚举：5 值(微火/小火/中火/大火/猛火),`validators.validate_heat_level` 强校验
+> 贴士 scope(v3 P1.5 决策 2):**`step` / `ingredient` / `recipe` 三选一** 必填,通过 `--scope <值>` 显式声明 tip 关联范围
 > 5层架构改造：
 > - v5.0 (2026-07-21) — 24/24 + 30/30 自检通过,见 `CHANGELOG.md` [5.1]
-> - **v3 L1** (2026-07-22) — DB NOT NULL 兜底墙(98 字段),`init_db.py` + `migrations/004_all_fields_not_null.sql`
+> - **v3 L1** (2026-07-22) — DB NOT NULL 兜底墙,`init_db.py` + `migrations/004_all_fields_not_null.sql`
 > - **v3 L2** (2026-07-22) — validators 占位符黑名单 + 18 manager 改 db.py + orchestrator.py 新建
 > - **v3 L3** (2026-07-22) — CLI 三段式统一 + `--human`/`--json` 开关 + orchestrator 完整迁移
 > - **v3 L4** (2026-07-22) — 18 manager 函数体真迁 db.execute/query/transaction(`recipe_manager.export_json` 整体重构,4 处隐 bug 顺手修)
-> - **v3 P1** (2026-07-22) — 6 真 CLI bug 修复:`CLI-001/002/004/005/006/007`(`ingredient_manager` remove `disable` + 缺字段友好报错 + `step_manager` 缺字段友好报错 + enum 校验下沉)
+> - **v3 P1** (2026-07-22) — 6 真 CLI bug 修复 + L1 哲学回归(无默认值兜底)+ `step_ingredients.unit` 改 NOT NULL(`migration 005`) + tips 加 `--scope` 值格式 flag + 加 7 个 validators(cookware/relation/serving_unit/rating/positive_int/date_format/array_enum)
 > - **v3 P2** (2026-07-22) — `L4_verify.py` 盲点修复(加正信号 + import 完整性)
 > 详细变更见 `CHANGELOG.md`
 
@@ -229,6 +230,54 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 - ✅ user 明确说 "无替代品" → `--substitute "无替代品"`(显式传,不是默认)
 
 **适用范围**:所有 CLI add path(`ingredient_manager` / `step_manager` / `tip_manager` / `recipe_manager`),不仅限录入食谱;做饭路径不强制(读路径字段可推算)。
+
+### tip scope 枚举(v3 P1.5 决策 2 · 方案 A+)
+
+`tips` 表的 `step_id` 和 `ingredient_id` 故意保留可空 — L1 哲学允许"菜级 tip"。但 L1 NOT NULL 设计意图要求 AI **显式声明** 这条 tip 关联什么。
+
+**`tip_manager.add` 必传 `--scope`**,枚举三选一,值直接跟字段语义挂钩 — AI 看到 `--scope recipe` 立刻明白"这条 tip 的 scope 是 recipe":
+
+| `--scope` 值 | 含义 | 必须字段 |
+|---|---|---|
+| `step` | 此 tip 关联某个步骤 | `--step_id` |
+| `ingredient` | 此 tip 关联某个食材 | `--ingredient_id` |
+| `recipe` | 此 tip 是整道菜级(常识/保存等) | (都允许空) |
+
+**validator 强制规则**(`scripts/validators.py::validate_tip_scope`):
+- `scope='step'` 缺 `--step_id` → 友好报错
+- `scope='ingredient'` 缺 `--ingredient_id` → 友好报错
+- `scope` 非法值 → 报错列出合法值
+
+**JSON 路径**(`import_orchestrator.py`):JSON tip 必须有 `"scope": "step|ingredient|recipe"` 字段。
+
+**为什么选方案 A+**:0 schema 改动 + 值格式 flag 比 magic word(`--confirm-detached`)AI 一眼能懂 + DB schema 仍是 L1 一致(允许空)。
+
+### validators 9 个校验函数(v3 P1.5 决策 3)
+
+除原有占位符/tips 业务校验外,v3 P1.5 新增 7 个 enum/范围/格式校验函数(`scripts/validators.py`):
+
+| 函数 | 校验目标 | 合法值/范围 |
+|---|---|---|
+| `validate_cookware_category` | `cookware.category` | 锅/炉/刀/其他 |
+| `validate_relation_type` | `recipe_relations.relation_type` | 派生/变体/改良 |
+| `validate_serving_unit` | `nutrition_info.serving_unit` | g/ml/份/杯 |
+| `validate_rating_range` | `recipe_history.rating` | 0-5(含小数) |
+| `validate_positive_int` | `recipe_history.cook_sequence` 等 | 正整数 > 0 |
+| `validate_date_format` | `recipe_history.cook_date` | YYYY-MM-DD |
+| `validate_array_enum` | 5 张 tag array | 各自 enum 值 |
+
+**集成方式**:CLI `*_manager.py::add()` 在 INSERT 前调用,JSON 路径 `validate_recipe_for_import()` 调用。
+
+### step_ingredients.unit NOT NULL(v3 P1.5 决策 1)
+
+L1 阶段 `migrations/004_all_fields_not_null.sql` 漏设 `unit` NOT NULL,12 行数据实测全有值但仍有 schema 风险。`migrations/005_step_ingredients_unit_not_null.sql` 用 SQLite recreate table 模式迁移:
+
+1. `CREATE TABLE step_ingredients_new (... unit TEXT NOT NULL ...)`
+2. `INSERT INTO step_ingredients_new SELECT * FROM step_ingredients WHERE unit IS NOT NULL`
+3. `DROP TABLE step_ingredients` + `RENAME`
+4. 重建索引
+
+**对应 CLI 改动**:`step_ingredient_manager.add` 加 friendly 报错(unit 缺/缺 quantity_used/introduced_at),`recipe_import.add_step_ingredients` 用 `name_unit_map`(从 ingredients.unit 兜底)。
 
 ### 字段推算边界(AI 何时推算,何时问用户)
 

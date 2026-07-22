@@ -26,13 +26,23 @@ python scripts/recipe_render.py render <菜名或ID>
 2. 把生成的 HTML 文件路径告诉用户
 3. （可选）根据用户偏好直接附图 / 发文件
 
-### 功能二：做菜模式 ⚠️ 暂未支持
+### 功能二：做菜模式 ✅ 已支持(2026-07-23)
 
-`recipe_render.py` 当前只服务「查看」场景。
+`templates/cooking_mode.html` 已上线,AI 调用规范见 `references/cooking_mode.md`。
 
-**做菜模式**（逐步展开 / 计时器 / localStorage / 线性跳转）暂仍由 AI 自己生成 HTML，遵循下方「做菜模式」章节的全部规范（线性 + 不锁 / 等待型 / 计时器 / 断点续做等约束）。
+**关键流程**:
+1. AI 调 `recipe_manager.py show <菜名> --json` 拿 17 表完整数据
+2. AI 打开 `templates/cooking_mode.html` + 注入数据(`<script>window.__RECIPE__ = ...</script>`)
+3. 用户在浏览器里切步骤/计时/评分
+4. 用户回 AI 对话,粘贴反馈记录
+5. AI 加载「私家大厨」技能,调 `history_manager.py add` 写入评分+反馈
 
-等做菜模式专用模板上线后，统一迁移到 render.py。
+**不要**:
+- ❌ AI 自行拼接 HTML 字符串(老规则)
+- ❌ 调用 taste-skill / ui-ux-pro-max-skill(已废弃)
+- ❌ 内联 CSS / JS(已统一在 `templates/cooking_mode.html`)
+
+详细规范看 `references/cooking_mode.md`,模板直接打开 `templates/cooking_mode.html` 用。
 
 ---
 
@@ -83,25 +93,33 @@ python scripts/recipe_render.py render <菜名或ID>
 【返回】把生成的 HTML 文件路径告诉用户
 ```
 
-**禁止**：
-- AI 自行拼接 HTML 字符串
-- 调用 taste-skill / ui-ux-pro-max-skill（已废弃，统一由模板服务）
-- 内联 CSS / JS（已统一在 `templates/recipe_view.html`）
+**禁止**:
+- AI 自行拼接 HTML 字符串(做菜模式时也别自拼 — 用 templates/cooking_mode.html)
+- 调用 taste-skill / ui-ux-pro-max-skill(已废弃,统一由模板服务)
+- 内联 CSS / JS(已统一在 `templates/recipe_view.html` + `templates/cooking_mode.html`)
+
+**做菜模式专用规则**(详见 `references/cooking_mode.md`):
+- 数据获取用 `recipe_manager.py show <菜名> --json` 拿 17 表完整数据
+- HTML 模板位置:`templates/cooking_mode.html`(预置单文件,无外部依赖)
+- 数据注入:`<script>window.__RECIPE__ = {完整 JSON}</script>` 在 `<body>` 开头
+- 用户回 AI 反馈时:粘贴记录,AI 解析 → 调 `history_manager.py add`
 
 ### 功能二：做菜模式
 
 ```
 用户说"做菜模式"或"开始做XX"
     ↓
-【判断】是否有已查数据？
-    有 → 复用已查数据
-    无 → 按命令参考执行查询获取全部数据
+【查数据】recipe_manager.py show <菜名> --json
     ↓
-【设计】AI 自己生成 HTML（模板未上线前的过渡方案）
+【加载规范】references/cooking_mode.md(AI 调用规范)
     ↓
-【生成】生成 HTML
+【用模板】templates/cooking_mode.html + 注入 window.__RECIPE__
     ↓
-【发送】保存到媒体目录，通过 QQBot 发送文件
+【用户操作】浏览器里切步骤/计时/评分
+    ↓
+【接收反馈】用户回 AI 对话,粘贴记录
+    ↓
+【保存评分】history_manager.py add recipe_id --rating N --feedback "..."
 ```
 
 ---

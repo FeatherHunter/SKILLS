@@ -337,6 +337,7 @@ def add_record_full(date, time_start, time_end, duration_minutes, activity, cate
     """
     增加一条作息记录（全部字段校验）
     必须传入全部9个字段，缺一不可
+    category 必须通过白名单校验(2026-07-22 重构后强制)
     """
     # 字段完整性校验
     required_fields = {
@@ -348,6 +349,12 @@ def add_record_full(date, time_start, time_end, duration_minutes, activity, cate
     missing = [k for k, v in required_fields.items() if v is None or v == '']
     if missing:
         raise ValueError(f"缺少必填字段: {', '.join(missing)}")
+
+    # category 白名单校验(2026-07-22 分类系统重构)
+    from validators import validate_category
+    _valid, _err = validate_category(category)
+    if not _valid:
+        raise ValueError(f"category 校验失败: {_err}")
 
     conn = get_connection()
     c = conn.cursor()
@@ -378,6 +385,13 @@ def update_record(record_id, **kwargs):
     updates = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
     if not updates:
         raise ValueError("没有有效的更新字段")
+
+    # category 白名单校验(2026-07-22 分类系统重构)
+    if 'category' in updates:
+        from validators import validate_category
+        _valid, _err = validate_category(updates['category'])
+        if not _valid:
+            raise ValueError(f"category 校验失败: {_err}")
 
     set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
     values = list(updates.values()) + [record_id]
@@ -974,6 +988,15 @@ def upsert_plan_events(date: str, events: list[dict], validate_24h: bool = True)
         if err:
             raise ValueError(f"24 小时覆盖校验失败：{err}")
 
+    # category 白名单校验(2026-07-22 分类系统重构) - 在循环外做一次,提前失败
+    from validators import validate_category as _validate_category
+    for _idx, _e in enumerate(events):
+        _cat = _e.get("category")
+        if _cat:
+            _v, _err = _validate_category(_cat)
+            if not _v:
+                raise ValueError(f"事件[{_idx}] '{_e.get('title', '?')}' category 校验失败: {_err}")
+
     conn = get_connection()
     try:
         _ensure_new_plans_schema(conn)
@@ -1036,6 +1059,12 @@ def update_plan_event(event_id: int, fields: dict) -> bool:
     allowed = {"title", "notes", "category", "time_start", "time_end", "completion", "completion_note"}
     sets = []
     values = []
+    # category 白名单校验(2026-07-22 分类系统重构)
+    if 'category' in fields and fields['category']:
+        from validators import validate_category
+        _v, _err = validate_category(fields['category'])
+        if not _v:
+            raise ValueError(f"category 校验失败: {_err}")
     for k, v in fields.items():
         if k in allowed:
             # 数据规范化:24:00 → 23:59

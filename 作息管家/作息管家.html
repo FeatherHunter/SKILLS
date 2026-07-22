@@ -263,6 +263,49 @@
 </tbody>
 </table>
 <hr />
+<h2 id="分类系统-2026-07-22-重构">分类系统（2026-07-22 重构）</h2>
+<p>作息分类采用 <strong>8 个一级 + 白名单二级</strong> 结构。所有写入路径都强制走 <code>scripts/validators.py</code> 校验。</p>
+<h3>一级（固定 8 个）</h3>
+<table>
+<thead><tr><th>一级</th><th>含义</th></tr></thead>
+<tbody>
+<tr><td>维持</td><td>维持个体生存和基础状态（睡眠/吃饭/洗漱/通勤）</td></tr>
+<tr><td>健康</td><td>改善身体/心理状态（运动/健身/修行/冥想）</td></tr>
+<tr><td>工作</td><td>产出价值/完成任务（与职业相关或不相关）</td></tr>
+<tr><td>学习</td><td>吸收新知/掌握技能</td></tr>
+<tr><td>创作</td><td>输出原创内容</td></tr>
+<tr><td>投入</td><td>与人/动物/社群互动（家人/朋友/伴侣/宠物）</td></tr>
+<tr><td>调整</td><td>主动放松/恢复/娱乐（游戏/追剧/发呆/午睡）</td></tr>
+<tr><td>日常</td><td>无明确主要目的的杂事（代办/收拾/行政）</td></tr>
+</tbody>
+</table>
+<h3>二级（白名单制）</h3>
+<ul>
+<li>初始约 70 个，写在 <code>scripts/validators.py::DEFAULT_WHITELIST</code></li>
+<li>用户/AI 扩展项写到 <code>.db/category_whitelist.yaml</code></li>
+<li>运行时合并两层白名单</li>
+<li><strong>不允许三级</strong>（避免爆炸）</li>
+</ul>
+<h3>心法（5 条）</h3>
+<ol>
+<li>一句话可能暗示 N 件事 → 拆 N 段，每段归类</li>
+<li>模糊兜底：无法拆解时 → 选最相似分类（兜底率 &lt; 15%）</li>
+<li>意图 vs 实际：按当前段已说出的话判，不判打算</li>
+<li>AI 对话不入作息：除非用户明确说“把对话归档”</li>
+<li><strong>遇到白名单外活动 → 主动提议，不要静默兜底</strong>（申请制）</li>
+</ol>
+<h3>申请新分类流程</h3>
+<pre><code>1. AI 录入时遇到未白名单 category → 校验报错
+2. AI 输出“提议新增 X” + 场景说明
+3. 用户口头确认
+4. AI 调 approve-category 写入 YAML
+5. 下一条 add_record 立即可用</code></pre>
+<h3>CLI 命令</h3>
+<pre><code>python scripts/schedule_cli.py list-categories [--level 1|2] [--json]
+python scripts/schedule_cli.py propose-category --code "一级.二级" --hint "场景"
+python scripts/schedule_cli.py approve-category --code "一级.二级"</code></pre>
+<blockquote><p><strong>强制规定</strong>：分类心法变更必须同步更新 <code>作息管家.html</code> 镜像。</p></blockquote>
+
 <h2 id="核心规则-违反即无效-3">核心规则(违反即无效)</h2>
 <ol>
 <li><strong>禁止直连数据库</strong> - 所有操作必须通过 CLI 接口</li>
@@ -906,8 +949,12 @@ python scripts/schedule_cli.py search-plan-event &lt;日期&gt; --time-start HH:
 <td>所有接口参数和调用方式</td>
 </tr>
 <tr>
-<td><code>分类清单.md</code></td>
-<td>建议分类列表(AI自由判定)</td>
+<td><code>分类心法.md</code></td>
+<td>4 条心法 + 默认归类表 + 申请新分类流程(2026-07-22 新版)</td>
+</tr>
+<tr>
+<td><code>category_whitelist.yaml</code></td>
+<td>二级分类白名单(运行时合并 DEFAULT_WHITELIST)</td>
 </tr>
 <tr>
 <td><code>CLI命令.md</code></td>

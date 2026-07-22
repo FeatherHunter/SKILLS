@@ -576,6 +576,15 @@ def main(argv=None):
     elif cmd == "feishu-resync":
         cmd_feishu_resync(args)
 
+    # === 2026-07-22 新增：分类系统管理 ===
+    elif cmd == "list-categories":
+        cmd_list_categories(args)
+    elif cmd == "propose-category":
+        cmd_propose_category(args)
+    elif cmd == "approve-category":
+        cmd_approve_category(args)
+    # === end ===
+
     elif cmd == "help":
         cmd_help()
 
@@ -1334,6 +1343,189 @@ def cmd_feishu_resync(args):
 
 
 # ============================================================
+# 2026-07-22 新增：分类系统管理（基于 validators.py 白名单）
+# ============================================================
+#
+# 三个命令:
+#   list-categories [--level 1|2]              # 查白名单
+#   propose-category --code X --hint Y         # 提议新分类(对话式)
+#   approve-category --code X                  # 批准分类(写入 YAML)
+#
+
+def cmd_list_categories(args):
+    """
+    list-categories [--level 1|2] [--json]
+    列出分类白名单。默认同时显示一级+二级。
+    """
+    import json as _json
+    from validators import list_level1, list_level2
+
+    level = None
+    as_json = False
+    for a in args:
+        if a.startswith("--level="):
+            level = a.split("=", 1)[1]
+        elif a == "--json":
+            as_json = True
+
+    result = {}
+    if level in (None, "1"):
+        result["level1"] = list_level1()
+    if level in (None, "2"):
+        result["level2"] = list_level2()
+
+    if as_json:
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # 人类可读
+    if "level1" in result:
+        print("一级白名单(8 个固定):")
+        for c in result["level1"]:
+            print(f"  - {c}")
+        print()
+    if "level2" in result:
+        print("二级白名单(含 YAML 扩展):")
+        for lv1, lv2_list in result["level2"].items():
+            print(f"  {lv1}: {' / '.join(lv2_list)}")
+    print(f"\n(YAML 路径: {Path(__file__).parent.parent / '.db' / 'category_whitelist.yaml'})")
+
+
+def cmd_propose_category(args):
+    """
+    propose-category --code "一级.二级" --hint "场景说明"
+    AI 发现新分类不在白名单时调用 → 输出"提议",等用户口头确认后
+    再调 approve-category 真正写入。
+    """
+    import json as _json
+    code = None
+    hint = ""
+    i = 0
+    while i < len(args):
+        if args[i] == "--code" and i + 1 < len(args):
+            code = args[i + 1]
+            i += 2
+        elif args[i] == "--hint" and i + 1 < len(args):
+            hint = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    if not code:
+        print(_json.dumps({
+            "status": "error",
+            "message": "--code 必填,格式: '一级.二级' (例: 调整.散步)"
+        }, ensure_ascii=False))
+        return
+
+    from validators import validate_category
+    valid, err = validate_category(code)
+    if valid:
+        print(_json.dumps({
+            "status": "info",
+            "message": f"'{code}' 已在白名单中,无需提议。"
+        }, ensure_ascii=False))
+        return
+
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "proposed": code,
+            "hint": hint,
+            "current_error": err
+        },
+        "message": (
+            f"📝 提议新增分类: '{code}'\n"
+            f"   场景说明: {hint or '(无)'}\n\n"
+            f"   请用户口头确认后,我再调用 approve-category --code '{code}' 写入 YAML。"
+        )
+    }, ensure_ascii=False, indent=2))
+
+
+def cmd_approve_category(args):
+    """
+    approve-category --code "一级.二级"
+    用户确认后,AI 调用此命令写入白名单 YAML。
+    """
+    import json as _json
+    code = None
+    i = 0
+    while i < len(args):
+        if args[i] == "--code" and i + 1 < len(args):
+            code = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    if not code:
+        print(_json.dumps({
+            "status": "error",
+            "message": "--code 必填"
+        }, ensure_ascii=False))
+        return
+
+    from validators import parse_category, LEVEL1_WHITELIST
+    level1, level2 = parse_category(code)
+
+    if not level1 or not level2:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"格式错误,应为 '一级.二级': {code}"
+        }, ensure_ascii=False))
+        return
+
+    if level1 not in LEVEL1_WHITELIST:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"一级 '{level1}' 不在白名单: {sorted(LEVEL1_WHITELIST)}"
+        }, ensure_ascii=False))
+        return
+
+    yaml_path = Path(__file__).parent.parent / ".db" / "category_whitelist.yaml"
+    data = {}
+    if yaml_path.exists():
+        try:
+            import yaml
+            with open(yaml_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception as e:
+            print(_json.dumps({
+                "status": "warn",
+                "message": f"YAML 加载失败,将以空文件开始: {e}"
+            }, ensure_ascii=False))
+            data = {}
+
+    data.setdefault(level1, [])
+    if level2 in data[level1]:
+        result_msg = f"'{code}' 已在 YAML 白名单中,无需重复添加。"
+    else:
+        data[level1].append(level2)
+        data[level1] = sorted(set(data[level1]))
+        yaml_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            import yaml
+            with open(yaml_path, "w", encoding="utf-8") as f:
+                yaml.safe_dump(data, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
+            result_msg = f"✓ '{code}' 已加入 YAML 白名单。下一条 add_record 即可使用。"
+        except Exception as e:
+            print(_json.dumps({
+                "status": "error",
+                "message": f"YAML 写入失败: {e}"
+            }, ensure_ascii=False))
+            return
+
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "code": code,
+            "yaml_path": str(yaml_path),
+            "current_whitelist": data
+        },
+        "message": result_msg
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # help 更新
 # ============================================================
 
@@ -1360,6 +1552,11 @@ def cmd_help():
   search-plan-event <date> --title X      按日期+标题查计划事件（轻量查询，JSON）
   ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  补计划：单条追加，幂等
   feishu-resync <date>                    重同步某天到飞书
+
+分类系统（2026-07-22 新增）:
+  list-categories [--level 1|2] [--json]   列出分类白名单
+  propose-category --code X --hint Y      提议新分类（对话式，AI 用）
+  approve-category --code X               批准分类（写入 YAML）
 
 计划（旧版 24-hour，保留兼容）:
   query-plans <date1,date2,...>            查询计划

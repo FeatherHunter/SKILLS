@@ -6,9 +6,14 @@
 """
 
 import sys
+import os
 import uuid
 # L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
 from db import get_connection
+from cli_formatter import emit, parse_json_flag, error  # L3
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import validators  # L3-tip-bridge: 接 validate_tip_minimum (用户决策 R4)
 
 def add(args):
     """添加小贴士"""
@@ -31,7 +36,20 @@ def add(args):
         print(f"未找到食谱：{recipe_id}")
         conn.close()
         return False
-    
+
+    # L3-tip-bridge: 用户决策 R4 — tips 业务规则校验
+    # 校验 step_id / ingredient_id 缺填,给 CLI 警告(提示 AI 询问用户)
+    tip_data = {
+        "recipe_id": recipe_id,
+        "step_id": args.get("--step_id"),
+        "ingredient_id": args.get("--ingredient_id"),
+    }
+    tip_validation = validators.validate_tip_minimum(tip_data)
+    if tip_validation["status"] == "warning":
+        # warning 不阻断,只输出给用户看
+        print(f"⚠️  提示:{tip_validation['warning_msg']}")
+        print(f"   {tip_validation['user_question']}")
+
     tip_id = str(uuid.uuid4())
     
     cursor.execute("""
@@ -42,9 +60,11 @@ def add(args):
         recipe_id,
         args.get("--step_id"),
         args.get("--ingredient_id"),
-        args.get("--category"),
+        # category 必填(L1 NOT NULL),CLI 默认 "其他" 让用户不必每次都填
+        args.get("--category") or "其他",
         content,
-        args.get("--priority")
+        # priority 必填(L1 NOT NULL),CLI 默认 1(常规优先级)
+        args.get("--priority") if args.get("--priority") is not None else 1
     ))
     
     conn.commit()
@@ -296,6 +316,7 @@ def main():
         return
     
     action = sys.argv[1]
+    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
     
     args = {}
     i = 2
@@ -336,7 +357,7 @@ def main():
     elif action == "update":
         update(args)
     else:
-        print(f"未知操作：{action}")
+        emit(error(f"未知操作:{action}"), json_mode=json_mode)
 
 if __name__ == "__main__":
     main()

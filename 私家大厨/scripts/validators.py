@@ -313,64 +313,6 @@ def validate_tip_minimum(tip_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ====================================================================
-# 1:1 必录校验(L2 阶段新增 · 用户决策 2)
-# ====================================================================
-
-def validate_one_to_one_required(recipe_id: str) -> List[Dict[str, Any]]:
-    """检查 1:1 UNIQUE 表(nutrition_info / background_knowledge)是否已录。
-
-    用户决策:1:1 UNIQUE 表每菜必录 1 行。
-
-    Args:
-        recipe_id: 菜 ID
-
-    Returns:
-        错误列表(空 = 通过)
-    """
-    errors = []
-    if not recipe_id or (isinstance(recipe_id, str) and not recipe_id.strip()):
-        errors.append({
-            "type": "invalid_recipe_id",
-            "field": "recipe_id",
-            "message": "recipe_id 不能为空"
-        })
-        return errors
-
-    try:
-        from db import query
-        # nutrition_info 必录
-        rows = query("SELECT id FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
-        if not rows:
-            errors.append({
-                "type": "missing_one_to_one",
-                "field": "nutrition_info",
-                "recipe_id": recipe_id,
-                "expected": "nutrition_info 表必须有 1 行对应此 recipe_id",
-                "how_to_fix": f"先录入 nutrition_info 子对象(JSON 路径:nutrition),再录入整菜"
-            })
-
-        # background_knowledge 必录
-        rows = query("SELECT id FROM background_knowledge WHERE recipe_id = ?", (recipe_id,))
-        if not rows:
-            errors.append({
-                "type": "missing_one_to_one",
-                "field": "background_knowledge",
-                "recipe_id": recipe_id,
-                "expected": "background_knowledge 表必须有 1 行对应此 recipe_id",
-                "how_to_fix": f"先录入 background 子对象(JSON 路径:background),再录入整菜"
-            })
-    except Exception as e:
-        # 查询失败不阻断(可能是 DB 不存在),让上层处理
-        errors.append({
-            "type": "validation_warning",
-            "field": "1:1_必录校验",
-            "message": f"无法查询 DB 校验 1:1 表:{e}"
-        })
-
-    return errors
-
-
-# ====================================================================
 # 字段值类型校验(枚举强校验)
 # ====================================================================
 

@@ -150,7 +150,7 @@
   .ing-item.checked .checkbox::after{content:"✓";color:#fff;font-size:15px;font-weight:700;line-height:1}
   .ing-item.checked .ing-name{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--text3)}
   .ing-item.checked .ing-qty{background:transparent;color:var(--text3)}
-  .ing-item.checked .src-tag{opacity:0.55}
+  .ing-item.checked .src-pill{opacity:0.55}
 
   .ing-content{flex:1;min-width:0}
   .ing-line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
@@ -162,20 +162,23 @@
   }
   .ing-qty .unit{color:var(--text3);margin-left:1px;font-weight:400}
 
-  /* 来源/替代:inline 文字 + 色条(轻量,不喧宾夺主)── */
-  .ing-sub{font-size:12px;color:var(--text3);line-height:1.5;margin-top:4px}
-  .src-tag{
+  /* 来源/替代:实色 pill(用户喜欢),但紧凑不喧宾 ── */
+  .ing-sub{
+    display:flex;flex-wrap:wrap;gap:5px 6px;align-items:center;
+    font-size:12px;line-height:1.5;margin-top:5px;
+  }
+  .src-pill{
     display:inline-flex;align-items:center;gap:4px;
-    font-size:12px;color:var(--text3);
-    margin-right:10px;
+    padding:3px 8px;border-radius:5px;
+    font-size:11px;font-weight:500;
+    background:var(--r-bg, #F2F2F7);color:var(--r-fg, var(--card));
   }
-  .src-color{
-    width:3px;height:10px;border-radius:2px;flex-shrink:0;
-    background:var(--r-fg, var(--text4));
+  .src-pill .mult{font-weight:700;opacity:0.95}
+  .src-pill.is-sub{
+    background:rgba(255,149,0,0.12);color:var(--warn);
+    font-style:italic;font-weight:500;
   }
-  .src-tag .mult{font-weight:600;color:var(--text2)}
-  .src-tag.sub{font-style:italic}
-  .src-tag .sub-text{color:var(--text3)}
+  .src-pill.is-sub::before{content:"→ ";opacity:0.7;font-style:normal}
 
   .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:600;margin-right:4px}
   .badge-share{background:rgba(0,122,255,0.08);color:var(--blue)}
@@ -310,17 +313,18 @@
               {% if item.merged_count > 1 %}<span class="badge badge-share">{{ item.merged_count }} 菜共用</span>{% endif %}
               {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
             </div>
-            {# 来源 + 替代:inline 一行,色条 + 文字(轻量) ── #}
+            {# 来源 + 替代:实色 pill,强制横排 ── #}
             {% if item.sources and item.sources|length > 0 or item.substitute %}
             <div class="ing-sub">
               {% for src in item.sources %}
-              <span class="src-tag" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" data-mult-idx="{{ loop.index0 }}" style="--r-fg:var(--r{{ src.color_index }})">
-                <span class="src-color"></span>
+              {# 6 色轮(紫/蓝/绿/橙/粉/淡紫)固定同色识别 ── #}
+              <span class="src-pill" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" style="--r-bg:var(--r{{ src.color_index }});background:var(--r{{ src.color_index }});color:#fff">
                 {{ src.recipe_name }} <span class="mult" data-mult-target="{{ src.recipe_id }}">×{{ src.multiplier }}</span>
               </span>
               {% endfor %}
               {% if item.substitute %}
-              <span class="src-tag sub">→ <span class="sub-text">{{ item.substitute }}</span></span>
+              {# 替代品:橙色 pill(独立色,与来源区分) ── #}
+              <span class="src-pill is-sub">{{ item.substitute }}</span>
               {% endif %}
             </div>
             {% endif %}
@@ -425,11 +429,11 @@ function toggleIng(itemEl) {
   saveState();
 }
 
-// F 修复:事件委托,点击 src-tag 不触发勾选(阻止冒泡到 ing-item)
+// F 修复:事件委托,点击 src-pill 不触发勾选(阻止冒泡到 ing-item)
 document.querySelectorAll('.ing-item').forEach(item => {
   item.addEventListener('click', e => {
-    // 防止 stepper / tag / badge 触发误勾
-    if (e.target.closest('.stepper-btn, .src-tag, .badge')) return;
+    // 防止 stepper / pill / badge 触发误勾
+    if (e.target.closest('.stepper-btn, .src-pill, .badge')) return;
     toggleIng(item);
   });
 });
@@ -523,11 +527,11 @@ function recalculateAll() {
     qtyEl.innerHTML = `${formatNum(total)}<span class="unit">${unit}</span>`;
   });
 
-  // K4 修复:同步 src-tag 的 ×N 文字(改份数后 "辣椒炒肉 ×1" → "辣椒炒肉 ×2")
-  document.querySelectorAll('.src-tag').forEach(tag => {
-    const rid = tag.dataset.recipeId;
+  // K4 修复:同步 src-pill 的 ×N 文字(改份数后 "辣椒炒肉 ×1" → "辣椒炒肉 ×2")
+  document.querySelectorAll('.src-pill').forEach(pill => {
+    const rid = pill.dataset.recipeId;
     if (rid && multipliers[rid] !== undefined) {
-      const multEl = tag.querySelector('.mult');
+      const multEl = pill.querySelector('.mult');
       if (multEl) multEl.textContent = multipliers[rid];
     }
   });

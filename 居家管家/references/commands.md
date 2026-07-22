@@ -40,9 +40,9 @@ python home_manager.py add \
 | --price | 否 | - | 单价（元/件） |
 | --purchase-date | 否 | - | 购买日期（YYYY-MM-DD） |
 | --expiration-date | 否 | - | 过期日期（YYYY-MM-DD） |
-| --remark | 否 | "" | 备注 |
-| --tags | 否 | "" | 标签（逗号分隔） |
-| --photo | 否 | "" | 图片绝对路径（必须以 $HOME_PHOTOS_DIR 指定目录开头，脚本会校验前缀并自动裁剪存纯文件名） |
+| --remark | 否 | "" | 备注（add 硬约束要求非空） |
+| --tags | 否 | "" | 标签（逗号分隔；add 硬约束要求 ≥10 个） |
+| --photo | 否 | "" | 图片绝对路径（必须在 $HOME_PHOTOS_DIR 目录下；有图片时在 add 中一次传入，脚本拿到 ID 后复制为 `YYYYMMDD_{ID}_{中文描述}.jpg` 并写入 `item.photo`） |
 | --location-status | 否 | "在家" | 位置状态（在家/备用/借用中等） |
 
 ---

@@ -1,5 +1,6 @@
 # item_ops.py - 物品 CRUD 操作
 import os
+import shutil
 from datetime import datetime
 from .db import get_conn, PHOTOS_DIR
 from . import location_ops
@@ -83,6 +84,32 @@ def _touch_item(conn, item_id):
     """, (item_id,))
 
 
+def _safe_photo_name(name):
+    invalid = '<>:"/\\|?*'
+    safe = ''.join('_' if ch in invalid else ch for ch in name).strip()
+    return safe or "物品"
+
+
+def _prepare_add_photo(photo, item_id, name):
+    if not photo:
+        return ""
+    photos_dir = os.path.abspath(str(PHOTOS_DIR))
+    src = os.path.abspath(photo)
+    if os.path.commonpath([photos_dir, src]) != photos_dir:
+        raise ValueError(
+            f"照片路径必须放在环境变量目录下\n  要求路径以: {photos_dir}\n  当前路径:   {photo}\n  请先将图片复制到 {photos_dir} 后再传入"
+        )
+    ext = os.path.splitext(src)[1] or ".jpg"
+    filename = f"{datetime.now().strftime('%Y%m%d')}_{item_id}_{_safe_photo_name(name)}{ext}"
+    dst = os.path.abspath(os.path.join(photos_dir, filename))
+    try:
+        if src != dst:
+            shutil.copy2(src, dst)
+    except OSError as e:
+        raise ValueError(f"照片复制失败: {e}")
+    return filename
+
+
 def _format_item(row, tags_str=None, locations_str=None):
     """格式化单个物品为文本"""
     tags = tags_str if tags_str is not None else ""
@@ -129,18 +156,16 @@ def add_item(name, category_id, location, owner="使用者", quantity=1,
         print(f"  当前备注: 空（要求非空）")
         return 1
 
-    # ── 照片路径校验 & 裁剪 ─────────────────────────────────────
+    # ── 照片路径先校验，规范命名需等 INSERT 后拿到 item_id ──
     if photo:
-        photos_dir = str(PHOTOS_DIR)
-        if not photo.startswith(photos_dir):
+        photos_dir = os.path.abspath(str(PHOTOS_DIR))
+        photo_path = os.path.abspath(photo)
+        if os.path.commonpath([photos_dir, photo_path]) != photos_dir:
             print(f"✗ 照片路径必须放在环境变量目录下")
             print(f"  要求路径以: {photos_dir}")
             print(f"  当前路径:   {photo}")
             print(f"  请先将图片复制到 {photos_dir} 后再传入")
             return 1
-        # 裁剪掉环境变量前缀，只存相对路径
-        photo = photo[len(photos_dir):].lstrip(os.sep)
-    # ── 校验 & 裁剪结束 ──────────────────────────────────────────
 
     # 最小实现：如果位置路径包含"快递"，则自动设置状态为"快递中"
     if location_status is None:
@@ -163,9 +188,21 @@ def add_item(name, category_id, location, owner="使用者", quantity=1,
     cursor.execute("""
         INSERT INTO items (name, category_id, owner, purchase_price, remark, photo, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (name, category_id, owner, purchase_price, remark, photo, now, now))
+    """, (name, category_id, owner, purchase_price, remark, "", now, now))
 
     item_id = cursor.lastrowid
+
+    try:
+        photo = _prepare_add_photo(photo, item_id, name)
+    except ValueError as e:
+        print(f"✗ {e}")
+        conn.close()
+        return 1
+    if photo:
+        cursor.execute(
+            "UPDATE items SET photo = ?, updated_at = ? WHERE id = ?",
+            (photo, now, item_id)
+        )
 
     # 添加位置（日期记录在位置级别）
     add_location(conn, item_id, location, quantity, reason=None, location_status=location_status,

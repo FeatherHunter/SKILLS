@@ -408,7 +408,7 @@
 </tr>
 <tr>
 <td>拍物品</td>
-<td><code>add</code> → 得到 ID → <code>update --id {ID} --photo "XX" --tags "XX"</code></td>
+<td>先看图并保存到 <code>HOME_PHOTOS_DIR</code> → <code>add --name "XX" --category-id N --location "XX" --tags "...≥10" --remark "..." --photo "XX"</code> 一次写入</td>
 </tr>
 <tr>
 <td>改物品</td>
@@ -553,7 +553,7 @@
 <li><strong>旅游归位</strong>：出门带物+回家归位的完整流程</li>
 <li><strong>频率统计</strong>：区分高频/低频物品，识别长期未用物品</li>
 <li><strong>标签管理</strong>：合并相似标签</li>
-<li><strong>照片管理</strong>：支持配置照片存储路径（环境变量 <code>HOME_PHOTOS_DIR</code>，默认为技能目录/photos）</li>
+<li><strong>照片管理</strong>：支持配置照片存储路径（环境变量 <code>HOME_PHOTOS_DIR</code>，默认为技能目录/photos）；添加物品时可通过 <code>--photo</code> 一次写入图片；<code>add --photo</code> 内部拿到 ID 后复制为 <code>YYYYMMDD_{ID}_{中文描述}.jpg</code> 并写入 <code>item.photo</code></li>
 </ul>
 <h2 id="快速导航-7">快速导航</h2>
 <table>

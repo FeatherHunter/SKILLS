@@ -35,6 +35,12 @@ def add(args):
     max_seq = max_seq_rows[0]["max_seq"] if max_seq_rows and max_seq_rows[0]["max_seq"] is not None else 0
     sequence = args.get("--sequence") or (max_seq + 1)
 
+    # CLI-002 修复类:cooking_steps 多字段 NOT NULL 默认值兜底
+    duration = args.get("--duration") or 1
+    heat_level = args.get("--heat_level") or "中火"
+    temperature = args.get("--temperature") or "常温"
+    expected_result = args.get("--expected_result") or "完成"
+
     execute(
         "INSERT INTO cooking_steps (id, recipe_id, sequence, action, duration_minutes, heat_level, temperature, expected_result) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
@@ -42,10 +48,10 @@ def add(args):
             recipe_id,
             sequence,
             action,
-            args.get("--duration"),
-            args.get("--heat_level"),
-            args.get("--temperature"),
-            args.get("--expected_result")
+            duration,
+            heat_level,
+            temperature,
+            expected_result
         )
     )
 

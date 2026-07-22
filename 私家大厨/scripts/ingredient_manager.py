@@ -2,7 +2,7 @@
 """
 私家大厨 - 食材管理
 管理表:ingredients
-支持:add / list / search / update / disable
+支持:add / list / search / update(只增不删,要废弃食材用 update 把 quantity 改 0 标注不用)
 
 L4 阶段:函数体迁 db.execute/query/transaction
 """
@@ -35,6 +35,22 @@ def add(args):
     max_seq = max_seq_rows[0]["max_seq"] if max_seq_rows and max_seq_rows[0]["max_seq"] is not None else 0
     sequence = args.get("--sequence") or (max_seq + 1)
 
+    # CLI-001 修复:quantity_text 必填,缺时尝试从 quantity+unit 拼接,仍缺则报错
+    quantity_text = args.get("--quantity_text")
+    if not quantity_text:
+        quantity = args.get("--quantity")
+        unit = args.get("--unit")
+        if quantity is not None and unit:
+            quantity_text = f"{quantity}{unit}"
+        elif quantity:
+            quantity_text = str(quantity)
+    if not quantity_text:
+        print("错误:请提供 --quantity_text(如'适量')或同时提供 --quantity 与 --unit")
+        return False
+
+    # CLI-001 类修复:substitute 也是 NOT NULL,未传时默认"无替代品"(同真实数据惯例)
+    substitute = args.get("--substitute") or "无替代品"
+
     execute(
         "INSERT INTO ingredients (id, recipe_id, sequence, name, category, quantity, unit, quantity_text, is_optional, substitute) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
@@ -45,9 +61,9 @@ def add(args):
             args.get("--category"),
             args.get("--quantity"),
             args.get("--unit"),
-            args.get("--quantity_text"),
+            quantity_text,
             1 if args.get("--optional") else 0,
-            args.get("--substitute")
+            substitute
         )
     )
 

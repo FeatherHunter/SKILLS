@@ -125,6 +125,252 @@ def validate_full_coverage(data: Any) -> List[Dict[str, Any]]:
 
 
 # ====================================================================
+# 占位符黑名单(L2 阶段新增)
+# ====================================================================
+
+# 字符串占位符(13 个,L2 用户决策)
+PLACEHOLDER_STRINGS = {
+    "", "未知", "未提供", "不详", "未填",
+    "n/a", "N/A", "null", "None",
+    "暂时不知道", "不知道", "我没数据", "-"
+}
+
+# 数字占位符
+PLACEHOLDER_NUMBERS = {-1}
+
+# 数字字段白名单(7 个,允许传 0)
+LEGITIMATE_ZERO_FIELDS = {
+    "calories", "protein", "fat", "carbs",
+    "fiber", "sodium", "serving_size"
+}
+
+
+def validate_no_placeholder(value: Any, field_name: str) -> Dict[str, Any]:
+    """检查单字段是否含占位符。
+
+    Args:
+        value: 字段值
+        field_name: 字段名(用于错误信息,支持 "nutrition.calories" 这种带前缀路径)
+
+    Returns:
+        {"valid": True/False, "error": "..." / None}
+    """
+    # 提取纯字段名(去掉点前缀,白名单按纯字段名匹配)
+    pure_name = field_name.rsplit(".", 1)[-1] if "." in field_name else field_name
+
+    # 字符串检查
+    if isinstance(value, str):
+        if value.strip() in PLACEHOLDER_STRINGS:
+            return {
+                "valid": False,
+                "error": f"字段 {field_name}='{value}' 是占位符,必须填真实数据(占位符黑名单含 13 种)"
+            }
+        if not value.strip():
+            return {
+                "valid": False,
+                "error": f"字段 {field_name} 是空字符串,必须填值"
+            }
+
+    # 数字检查
+    if isinstance(value, (int, float)):
+        if value in PLACEHOLDER_NUMBERS:
+            return {
+                "valid": False,
+                "error": f"字段 {field_name}={value} 是占位符(-1)"
+            }
+        # 0 值检查按纯字段名匹配(支持 "nutrition.calories" 这类带前缀的)
+        if value == 0 and pure_name not in LEGITIMATE_ZERO_FIELDS:
+            return {
+                "valid": False,
+                "error": f"字段 {field_name}=0 疑似占位符(7 个白名单字段除外:calories/protein/fat/carbs/fiber/sodium/serving_size)"
+            }
+
+    return {"valid": True, "error": None}
+
+
+def validate_full_no_placeholder(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """全字段占位符检查 + 0 值检查。
+
+    应用范围:所有顶层字段 + 子对象字段 + 数组元素字段。
+    """
+    errors = []
+    if not isinstance(data, dict):
+        return errors
+
+    # 1. 顶层字符串字段
+    string_fields = ["name", "description", "difficulty", "status",
+                     "photo_url", "source", "source_url"]
+    for field in string_fields:
+        if field in data:
+            result = validate_no_placeholder(data[field], field)
+            if not result["valid"]:
+                errors.append({
+                    "type": "placeholder",
+                    "field": field,
+                    **result
+                })
+
+    # 2. 数字字段(顶层)
+    if "servings" in data:
+        result = validate_no_placeholder(data["servings"], "servings")
+        if not result["valid"]:
+            errors.append({"type": "placeholder", "field": "servings", **result})
+
+    if "total_time_minutes" in data:
+        result = validate_no_placeholder(data["total_time_minutes"], "total_time_minutes")
+        if not result["valid"]:
+            errors.append({"type": "placeholder", "field": "total_time_minutes", **result})
+
+    # 3. nutrition 子对象字段
+    if "nutrition" in data and isinstance(data["nutrition"], dict):
+        for nf, nv in data["nutrition"].items():
+            result = validate_no_placeholder(nv, f"nutrition.{nf}")
+            if not result["valid"]:
+                errors.append({
+                    "type": "placeholder",
+                    "field": f"nutrition.{nf}",
+                    **result
+                })
+
+    # 4. background 子对象字段
+    if "background" in data and isinstance(data["background"], dict):
+        for bf, bv in data["background"].items():
+            result = validate_no_placeholder(bv, f"background.{bf}")
+            if not result["valid"]:
+                errors.append({
+                    "type": "placeholder",
+                    "field": f"background.{bf}",
+                    **result
+                })
+
+    return errors
+
+
+# ====================================================================
+# tips 业务规则校验(L2 阶段新增 · 用户决策 R4)
+# ====================================================================
+
+def validate_tip_minimum(tip_data: Dict[str, Any]) -> Dict[str, Any]:
+    """tips 表业务校验(CLI 警告版,非强制)。
+
+    用户决策 R4:优先要求 recipe_id + step_id + ingredient_id 都填,迫不得已才允许不全。
+
+    返回:
+    {
+        "status": "pass" / "warning" / "error",
+        "missing": [...],                 # 缺的字段清单
+        "warning_msg": "...",             # 警告文案
+        "user_question": "..."            # 建议 AI 反问用户
+    }
+    """
+    recipe_id = tip_data.get("recipe_id", "")
+    step_id = tip_data.get("step_id", "")
+    ingredient_id = tip_data.get("ingredient_id", "")
+
+    # 1. recipe_id 缺则拒(error,非 warning)
+    if not recipe_id or (isinstance(recipe_id, str) and not recipe_id.strip()):
+        return {
+            "status": "error",
+            "missing": ["recipe_id"],
+            "warning_msg": "recipe_id 必填",
+            "user_question": "recipe_id 是必填的,tip 必须挂在某个菜上。"
+        }
+
+    # 2. step_id 和 ingredient_id 都缺
+    if (not step_id or (isinstance(step_id, str) and not step_id.strip())) \
+       and (not ingredient_id or (isinstance(ingredient_id, str) and not ingredient_id.strip())):
+        return {
+            "status": "warning",
+            "missing": ["step_id", "ingredient_id"],
+            "warning_msg": "step_id 和 ingredient_id 都缺(疑似菜级 tip)",
+            "user_question": (
+                "这条 tip 跟具体的步骤或食材都没关系吗?\n"
+                "如果是,这是「菜级 tip」,validators 默认允许(传入正常)。\n"
+                "如果否,告诉 AI 补一下 step_id 或 ingredient_id。"
+            )
+        }
+
+    # 3. 只缺一个(警告,不阻断)
+    missing = []
+    if not step_id or (isinstance(step_id, str) and not step_id.strip()):
+        missing.append("step_id")
+    if not ingredient_id or (isinstance(ingredient_id, str) and not ingredient_id.strip()):
+        missing.append("ingredient_id")
+
+    if missing:
+        return {
+            "status": "warning",
+            "missing": missing,
+            "warning_msg": f"缺 {', '.join(missing)}",
+            "user_question": (
+                f"tip 没填 {', '.join(missing)}。"
+                f"如确认这是 ingredient 级(仅 ingredient)或 step 级(仅 step)tip,继续通过;"
+                f"否则请 AI 主动询问用户是否要补全。"
+            )
+        }
+
+    return {"status": "pass", "missing": [], "warning_msg": None, "user_question": None}
+
+
+# ====================================================================
+# 1:1 必录校验(L2 阶段新增 · 用户决策 2)
+# ====================================================================
+
+def validate_one_to_one_required(recipe_id: str) -> List[Dict[str, Any]]:
+    """检查 1:1 UNIQUE 表(nutrition_info / background_knowledge)是否已录。
+
+    用户决策:1:1 UNIQUE 表每菜必录 1 行。
+
+    Args:
+        recipe_id: 菜 ID
+
+    Returns:
+        错误列表(空 = 通过)
+    """
+    errors = []
+    if not recipe_id or (isinstance(recipe_id, str) and not recipe_id.strip()):
+        errors.append({
+            "type": "invalid_recipe_id",
+            "field": "recipe_id",
+            "message": "recipe_id 不能为空"
+        })
+        return errors
+
+    try:
+        from db import query
+        # nutrition_info 必录
+        rows = query("SELECT id FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
+        if not rows:
+            errors.append({
+                "type": "missing_one_to_one",
+                "field": "nutrition_info",
+                "recipe_id": recipe_id,
+                "expected": "nutrition_info 表必须有 1 行对应此 recipe_id",
+                "how_to_fix": f"先录入 nutrition_info 子对象(JSON 路径:nutrition),再录入整菜"
+            })
+
+        # background_knowledge 必录
+        rows = query("SELECT id FROM background_knowledge WHERE recipe_id = ?", (recipe_id,))
+        if not rows:
+            errors.append({
+                "type": "missing_one_to_one",
+                "field": "background_knowledge",
+                "recipe_id": recipe_id,
+                "expected": "background_knowledge 表必须有 1 行对应此 recipe_id",
+                "how_to_fix": f"先录入 background 子对象(JSON 路径:background),再录入整菜"
+            })
+    except Exception as e:
+        # 查询失败不阻断(可能是 DB 不存在),让上层处理
+        errors.append({
+            "type": "validation_warning",
+            "field": "1:1_必录校验",
+            "message": f"无法查询 DB 校验 1:1 表:{e}"
+        })
+
+    return errors
+
+
+# ====================================================================
 # 字段值类型校验(枚举强校验)
 # ====================================================================
 
@@ -541,7 +787,7 @@ def build_user_question(missing_field_names: List[str]) -> str:
 # ====================================================================
 
 def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
-    """校验导入用的食谱 JSON,返回 {valid, errors, suggested_user_question}。"""
+    """校验导入用的食谱 JSON,返回 {valid, errors, suggested_user_question, warnings, warnings_for_ai}。"""
     # 1. 全字段必填校验
     coverage_errors = validate_full_coverage(data)
     # 2. 值类型 + 枚举强校验
@@ -552,14 +798,33 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     inventory_errors = validate_step_ingredient_inventory(data) if isinstance(data, dict) else []
     # 5. 食材分类 11 类强校验(v5.2 新增)
     category_errors = validate_ingredient_categories(data) if isinstance(data, dict) else []
+    # 6. 占位符黑名单 + 0 值白名单(L2 新增)
+    placeholder_errors = validate_full_no_placeholder(data) if isinstance(data, dict) else []
 
-    all_errors = coverage_errors + type_errors + step_errors + inventory_errors + category_errors
+    all_errors = coverage_errors + type_errors + step_errors + inventory_errors + category_errors + placeholder_errors
+
+    # 7. tips 业务规则(警告版,L2 新增)—— 不阻断,只警告
+    tips_warnings = []
+    if isinstance(data, dict) and isinstance(data.get("tips"), list):
+        for i, tip in enumerate(data["tips"]):
+            if not isinstance(tip, dict):
+                continue
+            tip_result = validate_tip_minimum(tip)
+            if tip_result["status"] in ("warning", "error"):
+                tips_warnings.append({
+                    "index": i,
+                    "status": tip_result["status"],
+                    "missing": tip_result["missing"],
+                    "warning_msg": tip_result["warning_msg"],
+                    "user_question": tip_result["user_question"]
+                })
 
     if not all_errors:
         return {
             "valid": True,
             "errors": [],
-            "suggested_user_question": None
+            "suggested_user_question": None,
+            "tips_warnings": tips_warnings or None  # None = 没警告
         }
 
     # 5. 收集所有缺失字段名(给 suggested_user_question 用)
@@ -575,7 +840,8 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     return {
         "valid": False,
         "errors": all_errors,
-        "suggested_user_question": suggested_question
+        "suggested_user_question": suggested_question,
+        "tips_warnings": tips_warnings or None
     }
 
 

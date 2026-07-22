@@ -70,8 +70,8 @@ INGREDIENT_CATEGORIES = [
   - 洋葱/西红柿 → 蔬菜
 """
 
-TIP_CATEGORIES = ["火候", "刀工", "调味", "采购", "设备", "保存", "文化"]
-"""贴士分类(tips.category)"""
+TIP_CATEGORIES = ["火候", "刀工", "调味", "采购", "设备", "保存", "文化", "其他"]
+"""贴士分类(tips.category)(CLI-006 修复:加入"其他"兜底分类,对应 tip_manager.add 现有默认)"""
 
 HEAT_LEVELS = ["微火", "小火", "中火", "大火", "猛火"]
 """火候(cooking_steps.heat_level)"""

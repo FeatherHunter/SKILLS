@@ -5,6 +5,85 @@
 
 ---
 
+## 2026-07-23 - 查看食谱 HTML 对抗式审查落地
+
+### 背景
+
+第一批增强后做对抗式审查,发现 BUG 6 项、缺失 8 项、多余 4 项。按第一性原理全部修复。
+
+### BUG 修复
+
+- 复制按钮同步"只看必需/显示全部"状态:复制的清单标题包含"全部食材/只含必需"
+- 复制回退提示始终显示(主路径 / 兜底)
+- 营养提醒卡条件收紧:必须有可读提示内容
+
+### 缺失补齐
+
+- 首屏行动按钮改成主 CTA:`▶ 开始做菜` + `🛒 生成采购清单`(更高价值)
+- 步骤区前插入"🎯 关键成功点"汇总,直接抽出所有 expected_result
+- 食材区前插入"🔪 切配建议",扫描 quantity_text 中含切/片/块/丝/丁/末/段/瓣的食材
+- 调味集中区补全 `quantity_text` 描述
+- html scroll-behavior: smooth
+- 打印 CSS 覆盖 .hero-actions / .action-btn / .copy-feedback
+
+### 多余清理
+
+- insight-grid 删掉"步骤密度 / 备料规模 / 口味定位/热量参考",替换为 口味定位/适合季节/核心技法/适合餐次(避免与下方 info-grid / 步骤区 / 食材区重复)
+
+### 影响面
+
+只改 `templates/recipe_view.html`,不改数据库,无迁移。文件大小 28608 → 31025 bytes。
+
+---
+
+## 2026-07-23 - 查看食谱 HTML 第一批功能增强
+
+### 背景
+
+基于 17 表字段利用率调查,头脑风暴出 7 项增强,先落地前 5 项,落地后文件由 22841 bytes → 28511 bytes。
+
+### 改动清单
+
+- `templates/recipe_view.html`
+  - 首屏行动按钮:看步骤 + 复制食材
+  - 首屏"上次做菜经验"卡:从 history 取最新一条
+  - 基础信息卡下方加 4 格 insight 摘要 + 营养提醒卡
+  - 步骤区域加时间轴:序列/时长/火候横向扫读
+  - 食材区末尾加"调味集中区"和"复制食材清单"按钮
+  - JS 增加 `copyIngredients`,支持顶部和底部两个入口
+
+### 影响面
+
+只改前端模板,不改数据库,无迁移。features/view.md / SKILL.md 不变。
+
+---
+
+## 2026-07-23 - HTML 三类文件命名规范固化
+
+### 背景
+
+用户指出查看食谱预览文件 `recipe_view_辣椒炒肉_current.html` 这类命名不能进入正式 Skill 交付,且命名规则必须同时覆盖查看食谱、做菜模式、采购清单三类 HTML。
+
+### 规则
+
+| 类型 | 输出目录 | 文件名格式 | 示例 |
+|---|---|---|---|
+| 查看食谱 | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | `辣椒炒肉.html` |
+| 做菜模式 | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | `做菜模式_辣椒炒肉_20260723_183000.html` |
+| 采购清单 | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<recipe_slug_or_joined_slugs>_<YYYYMMDD_HHMMSS>.html` | `采购清单_辣椒炒肉_20260723_183000.html` |
+
+### 实现补齐
+
+- 新增 `scripts/cooking_render.py`:做菜模式正式渲染器,自动调用 `recipe_manager.py show <菜名或ID> --json`,注入 `templates/cooking_mode.html`,输出 `$CHEF_OUTPUT_DIR/cooking/做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html`。
+- 做菜模式从"AI 手动注入模板"升级为"脚本化正式生成",与查看食谱 / 采购清单两类 HTML 保持一致。
+- 修复 `scripts/shopping_render.py`:支持传菜名,内部先用 `recipe_manager.py show --json` 解析成稳定 recipe_id,再调用 `shopping_manager.py generate --json`,确保采购清单 HTML 命名验证可直接用菜名。
+
+### 影响面
+
+改动: `scripts/cooking_render.py` / `SKILL.md` / `features/view.md` / `features/shopping.md` / `references/cooking_mode.md` / `私家大厨.html`。不改数据库,无迁移。
+
+---
+
 ## 2026-07-23 - 做菜模式剩余时间显示修复
 
 ### 背景

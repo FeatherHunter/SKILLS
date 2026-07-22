@@ -427,7 +427,15 @@ python scripts/recipe_render.py render &lt;菜名或ID&gt;
 <li><strong>HTML 必发</strong> —— render 成功后,<strong>用 <code>&lt;media&gt;</code> 标签</strong>把生成的 HTML 文件<strong>推给用户</strong>;只告诉路径不算交付</li>
 <li><strong>失败降级</strong> —— render 失败时静默降级,只 stderr 一行"HTML 同步跳过:{原因}",show 文本照常展示</li>
 <li><strong>不调 render 也行</strong> 的例外 —— 同一会话内刚跑过 render(&lt;5 分钟)且没改过菜谱,可跳过第 2 步直接发旧 HTML</li>
+<li><strong>HTML 文件命名固定</strong> —— 三类 HTML 正式交付必须按统一命名表执行,禁止把 <code>recipe_view_辣椒炒肉_current.html</code>、<code>preview.html</code>、<code>test.html</code>、<code>current.html</code>、<code>final.html</code> 这类临时文件名作为正式交付</li>
 </ol>
+<p><strong>HTML 统一命名表</strong>:</p>
+<table>
+<tr><th>类型</th><th>输出目录</th><th>文件名格式</th><th>示例</th></tr>
+<tr><td>查看食谱</td><td><code>$CHEF_OUTPUT_DIR/recipes/</code></td><td><code>&lt;recipe_slug&gt;.html</code></td><td><code>辣椒炒肉.html</code></td></tr>
+<tr><td>做菜模式</td><td><code>$CHEF_OUTPUT_DIR/cooking/</code></td><td><code>做菜模式_&lt;recipe_slug&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code></td><td><code>做菜模式_辣椒炒肉_20260723_183000.html</code></td></tr>
+<tr><td>采购清单</td><td><code>$CHEF_OUTPUT_DIR/shopping/</code></td><td><code>采购清单_&lt;recipe_slug_or_joined_slugs&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code></td><td><code>采购清单_辣椒炒肉_20260723_183000.html</code></td></tr>
+</table>
 <p><strong>禁止事项</strong>:</p>
 <ul>
 <li>自行拼接 HTML 字符串</li>
@@ -435,7 +443,7 @@ python scripts/recipe_render.py render &lt;菜名或ID&gt;
 <li>内联 CSS / JS(已统一在 <code>templates/recipe_view.html</code>)</li>
 <li>只告诉用户 HTML 路径而不发文件(违反"必发"规则)</li>
 </ul>
-<p><strong>「做菜模式」</strong> 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。做饭页右侧&quot;剩余约 N 分钟&quot;必须按 <code>references/cooking_mode.md</code> 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。</p>
+<p><strong>「做菜模式」</strong> 收到时必须调用 <code>python scripts/cooking_render.py render &lt;菜名或ID&gt;</code> 生成正式 HTML;禁止 AI 手动复制模板再临时命名。<code>cooking_render.py</code> 会自动 show --json、注入 <code>templates/cooking_mode.html</code>、输出 <code>$CHEF_OUTPUT_DIR/cooking/做菜模式_&lt;recipe_slug&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code>。做饭页右侧&quot;剩余约 N 分钟&quot;必须按 <code>references/cooking_mode.md</code> 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。</p>
 <h3>采购清单 HTML 强制（v5.2 新增）</h3>
 <p><strong>「生成清单 / 排除可选」</strong> AI 收到时<strong>必须自动</strong>按以下 2 步走:</p>
 <pre><code class="language-bash"># 第 1 步:拿数据(必跑,可省略文本直接给 HTML)

@@ -33,6 +33,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "shopping_view.html"
 SHOPPING_MANAGER = SCRIPT_DIR / "shopping_manager.py"
+RECIPE_MANAGER = SCRIPT_DIR / "recipe_manager.py"
 
 
 # ── 文件名清洗(slugify)──
@@ -50,10 +51,32 @@ def slugify(name: str) -> str:
 
 
 # ── 数据获取(走 shopping_manager 子进程)──
+def resolve_recipe_ids(recipe_ids_or_names: str) -> str:
+    """允许传 recipe_id 或菜名;菜名先走 recipe_manager.py show --json 解析成稳定 ID"""
+    values = [v.strip() for v in recipe_ids_or_names.split(",") if v.strip()]
+    resolved = []
+    for value in values:
+        result = subprocess.run(
+            [sys.executable, str(RECIPE_MANAGER), "show", value, "--json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"recipe_manager 调用失败: {result.stderr.strip()}")
+        data = json.loads(result.stdout)
+        if data.get("status") != "success":
+            raise RuntimeError(data.get("message") or f"未找到食谱:{value}")
+        recipe_id = ((data.get("data") or {}).get("recipe") or {}).get("id")
+        if not recipe_id:
+            raise RuntimeError(f"无法解析 recipe_id:{value}")
+        resolved.append(recipe_id)
+    return ",".join(resolved)
+
+
 def fetch_shopping_json(recipe_ids_str: str, exclude_optional: bool = False) -> dict:
     """调用 shopping_manager.py generate,返回 dict"""
+    stable_ids = resolve_recipe_ids(recipe_ids_str)
     cmd = [
-        sys.executable, str(SHOPPING_MANAGER), "generate", recipe_ids_str
+        sys.executable, str(SHOPPING_MANAGER), "generate", stable_ids, "--json"
     ]
     if exclude_optional:
         cmd.append("--exclude-optional")

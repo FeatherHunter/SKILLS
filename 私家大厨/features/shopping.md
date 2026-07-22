@@ -56,6 +56,9 @@
 # 查询食材数据（返回JSON，支持多ID用逗号分隔）
 python scripts/shopping_manager.py generate <recipe_id>[,<recipe_id2>,...]
 
+# 渲染 HTML（支持传菜名或 recipe_id；菜名会先解析成稳定 recipe_id）
+python scripts/shopping_render.py render <菜名或recipe_id>[,<菜名或recipe_id2>,...]
+
 # 排除可选食材
 python scripts/shopping_manager.py generate <recipe_id> --exclude-optional
 
@@ -168,18 +171,18 @@ python scripts/shopping_manager.py generate "id1,id2"
 
 ### 存储路径
 ```
-$CHEF_OUTPUT_DIR/shopping/（默认 output/shopping/）
+$CHEF_OUTPUT_DIR/shopping/（默认 D:/CookHub/shopping/）
 ```
 
 ### 文件名格式
 ```
-采购清单_{菜名}_{时间戳}.html
+采购清单_<recipe_slug_or_joined_slugs>_<YYYYMMDD_HHMMSS>.html
 ```
 
 | 部分 | 说明 |
 |------|------|
 | 前缀 | 采购清单（固定） |
-| 菜名 | 单菜名；多菜用+连接（如宫保虾球+辣炒虾球） |
+| recipe_slug_or_joined_slugs | 单菜名用 `<recipe_slug>`；多菜用 `+` 连接（如 `宫保虾球+辣炒虾球`） |
 | 时间戳 | YYYYMMDD_HHMMSS |
 
 ### 示例

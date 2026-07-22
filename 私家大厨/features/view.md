@@ -19,7 +19,8 @@ python scripts/recipe_render.py render <菜名或ID>
 执行后：
 - 数据从 `recipe_manager.py export-json` 拿（schema 完整对齐 `recipe_template.json`）
 - 渲染走 Jinja2 + `templates/recipe_view.html`（Apple 风，浅色蓝重点，含 JS 折叠 + 份数切换）
-- 输出到 `$CHEF_OUTPUT_DIR/recipes/<slug>.html`（尊重环境变量，默认 `output/`）
+- 输出到 `$CHEF_OUTPUT_DIR/recipes/<recipe_slug>.html`（尊重环境变量，默认 `D:/CookHub/recipes/`）
+- 正式交付禁止使用 `recipe_view_辣椒炒肉_current.html`、`preview.html`、`test.html` 这类临时语义文件名
 
 **AI 收到「查看食谱」请求的标准动作**：
 1. 执行 `recipe_render.py render <菜名>`（如有冲突先 `recipe_manager.py show` 找菜）
@@ -162,9 +163,19 @@ python scripts/recipe_render.py render <菜名或ID>
 
 ### 文件规范
 
-- **文件命名**：`<slug>.html`（slugify 菜名，自动去除 Windows 非法字符）
-- **存储路径**：`$CHEF_OUTPUT_DIR/recipes/`（默认 `output/recipes/`，尊重环境变量）
-- **示例**：`宫保虾球.html` / `上海排骨年糕.html`
+- **正式文件命名**：`<recipe_slug>.html`（只由菜名 slugify 得到，自动去除 Windows 非法字符）
+- **存储路径**：`$CHEF_OUTPUT_DIR/recipes/`（默认 `D:/CookHub/recipes/`，尊重环境变量）
+- **示例**：`辣椒炒肉.html` / `宫保虾球.html` / `上海排骨年糕.html`
+- **禁止命名**：`recipe_view_辣椒炒肉_current.html`、`辣椒炒肉_preview.html`、`test.html`、`current.html`、`final.html`
+- **调试例外**：仅在 `C:/Users/辰辰洋洋/AppData/Local/Temp/opencode/` 临时预览时允许带 `_debug_YYYYMMDD_HHMMSS` 后缀；不得作为正式交付路径写入 Skill 文档或发给用户
+
+### 三类 HTML 统一命名表
+
+| 类型 | 输出目录 | 文件名格式 | 示例 |
+|---|---|---|---|
+| 查看食谱 | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | `辣椒炒肉.html` |
+| 做菜模式 | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | `做菜模式_辣椒炒肉_20260723_183000.html` |
+| 采购清单 | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<recipe_slug_or_joined_slugs>_<YYYYMMDD_HHMMSS>.html` | `采购清单_辣椒炒肉_20260723_183000.html` |
 
 ---
 

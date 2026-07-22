@@ -323,6 +323,15 @@ python scripts/recipe_render.py render <菜名或ID>
 2. **HTML 必发** —— render 成功后,**用 `<media>` 标签**把生成的 HTML 文件**推给用户**;只告诉路径不算交付
 3. **失败降级** —— render 失败时静默降级,只 stderr 一行"HTML 同步跳过:{原因}",show 文本照常展示
 4. **不调 render 也行** 的例外 —— 同一会话内刚跑过 render(<5 分钟)且没改过菜谱,可跳过第 2 步直接发旧 HTML
+5. **HTML 文件命名固定** —— 三类 HTML 正式交付必须按统一命名表执行,禁止把 `recipe_view_辣椒炒肉_current.html`、`preview.html`、`test.html`、`current.html`、`final.html` 这类临时文件名作为正式交付
+
+**HTML 统一命名表**:
+
+| 类型 | 输出目录 | 文件名格式 | 示例 |
+|---|---|---|---|
+| 查看食谱 | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | `辣椒炒肉.html` |
+| 做菜模式 | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | `做菜模式_辣椒炒肉_20260723_183000.html` |
+| 采购清单 | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<recipe_slug_or_joined_slugs>_<YYYYMMDD_HHMMSS>.html` | `采购清单_辣椒炒肉_20260723_183000.html` |
 
 **禁止事项**:
 - 自行拼接 HTML 字符串
@@ -330,7 +339,7 @@ python scripts/recipe_render.py render <菜名或ID>
 - 内联 CSS / JS(已统一在 `templates/recipe_view.html`)
 - 只告诉用户 HTML 路径而不发文件(违反"必发"规则)
 
-**「做菜模式」** 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。做饭页右侧"剩余约 N 分钟"必须按 `references/cooking_mode.md` 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。
+**「做菜模式」** 收到时必须调用 `python scripts/cooking_render.py render <菜名或ID>` 生成正式 HTML;禁止 AI 手动复制模板再临时命名。`cooking_render.py` 会自动 show --json、注入 `templates/cooking_mode.html`、输出 `$CHEF_OUTPUT_DIR/cooking/做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html`。做饭页右侧"剩余约 N 分钟"必须按 `references/cooking_mode.md` 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。
 
 ### 采购清单 HTML 强制（v5.2 新增）
 

@@ -15,6 +15,7 @@
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
   }
   html{font-size:16px;-webkit-text-size-adjust:100%}
+  html{scroll-behavior:smooth}
   body{
     font-family:var(--font);background:var(--bg);color:var(--text);
     line-height:1.6;min-height:100vh;padding:0 0 60px 0;
@@ -47,6 +48,23 @@
   .section-title .count{
     font-size:13px;font-weight:500;color:var(--text3);margin-left:auto;
   }
+  .hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0}
+  .action-btn{border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;background:var(--blue);color:#fff;text-decoration:none}
+  .action-btn.secondary{background:rgba(0,122,255,0.1);color:var(--blue)}
+  .insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+  .insight-card{background:var(--bg);border-radius:var(--radius-sm);padding:12px}
+  .insight-card .label{font-size:11px;color:var(--text2);margin-bottom:4px}
+  .insight-card .value{font-size:15px;font-weight:700;color:var(--text)}
+  .notice-card{background:rgba(0,122,255,0.08);border-radius:var(--radius-sm);padding:12px 14px;margin-top:12px;font-size:13px;color:var(--text);line-height:1.55}
+  .notice-card b{color:var(--blue)}
+  .timeline{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;margin-bottom:10px}
+  .timeline-item{min-width:92px;background:var(--bg);border-radius:10px;padding:10px;text-align:center}
+  .timeline-item .seq{font-size:12px;color:var(--blue);font-weight:700}
+  .timeline-item .time{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .timeline-item .heat{font-size:11px;color:var(--text2)}
+  .mini-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
+  .mini-item{background:var(--bg);border-radius:9px;padding:10px;font-size:13px;color:var(--text)}
+  .copy-feedback{display:none;color:#1F7A35;font-size:12px;margin-top:8px;text-align:right}
 
   /* ── Info Cards ── */
   .info-grid{
@@ -240,7 +258,7 @@
   @media print{
     body{background:#fff;padding:0}
     .card{box-shadow:none;border:0.5px solid var(--border);page-break-inside:avoid}
-    .servings-control,.toggle-btn,.toggle-row{display:none}
+    .servings-control,.toggle-btn,.toggle-row,.hero-actions,.copy-feedback,.action-btn{display:none !important}
     .ing-item.optional{opacity:1}
   }
 </style>
@@ -269,8 +287,22 @@
     <img src="{{ recipe.photo_url }}" alt="{{ recipe.name }}" style="width:100%;max-height:280px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.style.display='none'" />
   </div>
   {% endif %}
-  <h1>{{ recipe.name }}</h1>
+  <h1 id="recipe-title">{{ recipe.name }}</h1>
   {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
+  <div class="hero-actions">
+    <button type="button" class="action-btn" id="start-cooking-btn">▶ 开始做菜</button>
+    <a class="action-btn secondary" id="generate-shopping-btn" href="#">🛒 生成采购清单</a>
+  </div>
+  <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
+    <button type="button" class="action-btn secondary" id="copy-ingredients-top">📋 复制食材清单</button>
+  </div>
+  {% if recipe.history %}
+  {% set last = recipe.history[0] %}
+  <div class="notice-card">
+    <b>上次做菜经验</b> · {{ last.cook_date }}{% if last.rating %} · {{ last.rating }} 星{% endif %}<br>
+    {{ last.feedback or '上次没有填写反馈' }}
+  </div>
+  {% endif %}
 </div>
 
 <!-- ── Info Cards ── -->
@@ -309,7 +341,36 @@
     {% endif %}
   </div>
 
+  <div class="insight-grid">
+    {% if recipe.flavors %}<div class="insight-card"><div class="label">口味定位</div><div class="value">{{ recipe.flavors | join(' / ') }}</div></div>{% endif %}
+    {% if recipe.seasons %}<div class="insight-card"><div class="label">适合季节</div><div class="value">{{ recipe.seasons | join(' / ') }}季</div></div>{% endif %}
+    {% if recipe.cooking_methods %}<div class="insight-card"><div class="label">核心技法</div><div class="value">{{ recipe.cooking_methods | join(' / ') }}</div></div>{% endif %}
+    {% if recipe.meal_types %}<div class="insight-card"><div class="label">适合餐次</div><div class="value">{{ recipe.meal_types | join(' / ') }}餐</div></div>{% endif %}
+  </div>
+
+  {% if recipe.nutrition and (recipe.nutrition.fat or recipe.nutrition.sodium or recipe.diet_tags) %}
+  <div class="notice-card">
+    <b>营养提醒</b> · {% if recipe.diet_tags %}{{ recipe.diet_tags | join('、') }}{% endif %}{% if recipe.nutrition.fat %} · 脂肪 {{ recipe.nutrition.fat }}g{% endif %}{% if recipe.nutrition.sodium %} · 钠 {{ recipe.nutrition.sodium }}mg{% endif %}
+  </div>
+  {% endif %}
+
   {% if recipe.ingredients %}
+  {% set cut_items = [] %}
+  {% for ing in recipe.ingredients %}
+    {% set qt = ing.quantity_text or '' %}
+    {% if '切' in qt or '片' in qt or '块' in qt or '丝' in qt or '丁' in qt or '末' in qt or '段' in qt or '瓣' in qt %}
+      {% set _ = cut_items.append(ing) %}
+    {% endif %}
+  {% endfor %}
+  {% if cut_items %}
+  <div class="section-title" style="font-size:15px">🔪 切配建议</div>
+  <div class="mini-list">
+    {% for ing in cut_items %}
+    <div class="mini-item"><b>{{ ing.name }}</b><br>{{ ing.quantity_text }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div class="servings-control">
     <label>份数(预览)</label>
     <button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>
@@ -364,16 +425,55 @@
     <button type="button" class="toggle-btn" id="toggle-optional">只看必需</button>
   </div>
   {% endif %}
+
+  {% set seasonings = recipe.ingredients | selectattr('category', 'equalto', '调料') | list %}
+  {% if seasonings %}
+  <div class="section-title" style="font-size:15px;margin-top:18px">🧂 调味集中区</div>
+  <div class="mini-list">
+    {% for s in seasonings %}
+    <div class="mini-item"><b>{{ s.name }}</b>{% if s.quantity %} · {{ s.quantity }}{{ s.unit or '' }}{% endif %}{% if s.quantity_text and s.quantity_text != s.quantity|string ~ (s.unit or '') %} · <span class="muted">{{ s.quantity_text }}</span>{% endif %}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="toggle-row">
+    <button type="button" class="toggle-btn" id="copy-ingredients">📋 复制食材清单</button>
+    <div class="copy-feedback" id="copy-feedback">已复制到剪贴板</div>
+  </div>
 </div>
 {% endif %}
 
 <!-- ── Steps ── -->
 {% if recipe.steps %}
-<div class="card">
+<div class="card" id="steps-section">
   <div class="section-title">
     步骤
     <span class="count">{{ recipe.steps | length }} 步</span>
   </div>
+
+  {% set expected_list = [] %}
+  {% for step in recipe.steps %}
+    {% if step.expected_result %}
+      {% set _ = expected_list.append({'seq': step.sequence, 'result': step.expected_result}) %}
+    {% endif %}
+  {% endfor %}
+  {% if expected_list %}
+  <div class="notice-card">
+    <b>🎯 关键成功点</b>
+    {% for e in expected_list %}<br>第 {{ e.seq }} 步 · {{ e.result }}{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="timeline">
+    {% for step in recipe.steps %}
+    <div class="timeline-item">
+      <div class="seq">第 {{ step.sequence }} 步</div>
+      <div class="time">{% if step.duration %}{{ step.duration }}'{% else %}-{% endif %}</div>
+      <div class="heat">{% if step.heat_level %}{{ step.heat_level }}{% else %}-{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+
   {% for step in recipe.steps %}
   <div class="step">
     <div class="step-num">{{ step.sequence }}</div>
@@ -625,6 +725,81 @@
       toggle.textContent = showingOptional ? '只看必需' : '显示全部';
     });
   }
+
+  // ── Copy ingredients list ──
+  function buildIngredientText(){
+    var lines = [];
+    var cur = parseInt(document.getElementById('serv-value').textContent, 10) || 1;
+    var title = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '食谱';
+    document.querySelectorAll('.ing-item').forEach(function(li){
+      if (li.style.display === 'none') return;
+      var name = li.querySelector('.name') ? li.querySelector('.name').firstChild.textContent.trim() : '';
+      var qtyEl = li.querySelector('.qty-num');
+      var qtyText = li.querySelector('.qty') ? li.querySelector('.qty').textContent.trim() : '';
+      var qty = qtyEl ? qtyEl.textContent.trim() : qtyText;
+      var opt = li.classList.contains('optional') ? ' (可选)' : '';
+      if (name) lines.push('· ' + name + ' ' + qty + opt);
+    });
+    var mode = showingOptional ? '全部食材' : '只含必需';
+    return '【食材清单】' + title + '（' + cur + ' 人份 · ' + mode + '）\n' + lines.join('\n');
+  }
+
+  function copyIngredients(btn){
+    var text = buildIngredientText();
+    var feedback = document.getElementById('copy-feedback');
+    var fallback = function(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch(e) {}
+      document.body.removeChild(ta);
+    };
+    var copied = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function(){ copied = true; }).catch(fallback);
+    } else {
+      fallback();
+      copied = true;
+    }
+    if (feedback) {
+      feedback.textContent = copied ? '已复制到剪贴板' : '已复制(请检查浏览器是否拦截)';
+      feedback.style.display = 'block';
+      setTimeout(function(){ feedback.style.display = 'none'; }, 1800);
+    }
+  }
+
+  ['copy-ingredients', 'copy-ingredients-top'].forEach(function(id){
+    var btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', function(){ copyIngredients(btn); });
+  });
+
+  // ── Start cooking / Shopping CTA ──
+  var recipeName = document.getElementById('recipe-title') ? document.getElementById('recipe-title').textContent.trim() : '';
+  var startBtn = document.getElementById('start-cooking-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', function(){
+      var feedback = document.createElement('div');
+      feedback.style.cssText = 'margin-top:10px;font-size:13px;color:var(--blue);text-align:center';
+      feedback.textContent = '已为你打开做菜模式 —— 返回 AI 对话即可,或在 URL 里手动加 #cooking';
+      startBtn.parentNode.parentNode.appendChild(feedback);
+      setTimeout(function(){ feedback.remove(); }, 4000);
+    });
+  }
+  var shopBtn = document.getElementById('generate-shopping-btn');
+  if (shopBtn) {
+    shopBtn.addEventListener('click', function(e){
+      e.preventDefault();
+      var feedback = document.createElement('div');
+      feedback.style.cssText = 'margin-top:10px;font-size:13px;color:var(--blue);text-align:center';
+      feedback.textContent = '已为你准备采购 —— 返回 AI 对话说「生成清单 ' + recipeName + '」即可';
+      shopBtn.parentNode.parentNode.appendChild(feedback);
+      setTimeout(function(){ feedback.remove(); }, 4000);
+    });
+  }
+})();
 })();
 </script>
 

@@ -286,7 +286,7 @@
   <li><strong>失败降级</strong>：依赖的外部服务挂了，本地照常工作。<em>例：飞书同步失败 → 本地 due 仍生效，只 stderr 记录。</em></li>
   <li><strong>反向同步（双向对账）</strong>：本地和外部服务互相同步。<em>例：备忘录 <code>sync-from-feishu</code> 3 步流程：本地补建 → 反向同步 done → 反向同步 due。</em></li>
   <li><strong>软删除 > 硬删除</strong>：标记 <code>is_deprecated=1</code> 比 DELETE 好。<em>居家管家思想：物品只增不删，"已废弃"是状态不是删除。</em></li>
-  <li><strong>备份机制</strong>：改 schema 前 .bak 一份。<em>例：<code>home.db.bak.20260703_104428</code> 这种命名让恢复点清晰。</em></li>
+  <li><strong>备份机制</strong>：改 schema 前 .bak 一份；如果当前目录是 git 仓库，用 git commit 额外备份本次修改。<em>例：<code>home.db.bak.20260703_104428</code> 这种命名让恢复点清晰；commit 信息应和 changelog 摘要保持一致。</em></li>
   <li><strong>幂等键</strong>：跨系统写操作带 client_request_id，避免重试产生重复。<em>例：训记同步用 <code>{date}_{session_label}_{uuid8}</code> 当幂等键。</em></li>
 </ul>
 
@@ -424,7 +424,7 @@
 
 <h3>5.2 修改 Skill 时</h3>
 <ul class="checklist">
-  <li>改动前 .bak 一份数据库</li>
+  <li>改动前 .bak 一份数据库；如果当前目录是 git 仓库，用 git commit 额外备份本次修改，commit 信息和 changelog 摘要保持一致</li>
   <li>如果改 schema：写 migration 脚本，不直接 ALTER</li>
   <li>如果改 CLI 参数：保留旧参数做兼容层</li>
   <li>如果改硬规则：先评估对存量数据的影响</li>

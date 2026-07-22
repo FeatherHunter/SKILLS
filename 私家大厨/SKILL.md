@@ -20,10 +20,15 @@
 
 ---
 
-> 版本：v5.2
-> 设计：基于17张表，8大功能，35个唤醒词，无删除操作
+> 版本：**v3** (2026-07-22 L1+L2+L3 完整重构)
+> 设计：基于17张表(98 字段全 NOT NULL 兜底)，8大功能，35个唤醒词，无删除操作
 > 食材分类：v5.2 起 **11 类**(原 9 类拆出"葱姜蒜"和"香草"),见 `references/categories.md`
-> 5层架构改造：2026-07-21 完成(v5.0 24/24 + v5.1 30/30 自检通过),见 `CHANGELOG.md` [5.1]
+> 5层架构改造：
+> - v5.0 (2026-07-21) — 24/24 + 30/30 自检通过,见 `CHANGELOG.md` [5.1]
+> - **v3 L1** (2026-07-22) — DB NOT NULL 兜底墙(98 字段),`init_db.py` + `migrations/004_all_fields_not_null.sql`
+> - **v3 L2** (2026-07-22) — validators 占位符黑名单 + 18 manager 改 db.py + orchestrator.py 新建
+> - **v3 L3** (2026-07-22) — CLI 三段式统一 + `--human`/`--json` 开关 + orchestrator 完整迁移
+> 详细变更见 `CHANGELOG.md`
 
 ---
 
@@ -117,6 +122,47 @@
 
 - Python 3.x
 - sqlite3（Python 内置）
+
+## CLI 输出格式(5 层架构:AI 可解析)
+
+> **L3 阶段新增**(2026-07-22)
+
+| 工具 | 默认输出 | 加 `--json` | 加 `--human` |
+|---|---|---|---|
+| 18 个 `*_manager.py` | 中文友好文本 | JSON 三段式 `{status, data, message}` | (默认即人类) |
+| `recipe_import.py import` | **JSON 三段式** | (默认即 JSON) | 中文友好 |
+| `recipe_import.py validate` | JSON 三段式 | (默认) | 中文友好 |
+| `import_orchestrator.py` | JSON 三段式 | (默认) | (暂未支持) |
+
+**JSON 三段式示例**:
+```json
+{
+  "status": "success",
+  "data": {
+    "recipe_id": "abc-123",
+    "name": "测试菜",
+    "child_ids": {
+      "recipes": 1,
+      "ingredients": 11,
+      "cooking_steps": 6
+    }
+  },
+  "message": "成功导入食谱「测试菜」(ID: abc-123...)"
+}
+```
+
+**状态字段约定**:
+- `success` ✅ 操作成功
+- `error` ❌ 操作失败(有 `errors` 字段列明细)
+- `warning` ⚠️ 操作成功但有警告(如 tips 缺字段,`tips_warnings` 字段列出)
+- `dry_run` 🔍 校验通过但未写入
+
+**导入入口统一** —— 所有数据导入都走 `import_orchestrator.py`:
+```bash
+python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
+```
+
+---
 
 ## 配置
 

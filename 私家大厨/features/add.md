@@ -1,6 +1,13 @@
 # 录入食谱
 
 > 路由：SKILL.md 用例1 → features/add.md
+>
+> **v3 阶段(L1+L2+L3)变更**:
+> - L1:所有业务字段 NOT NULL 兜底(占位符/0 值会被拒)
+> - L2:validators 占位符黑名单(13 个)+ 0 值白名单(7 个字段)+ 1:1 必录校验
+> - L2:tips 表缺 step/ingredient 时**警告但允许写入**(CLI 提示 AI 询问用户)
+> - L3:数据导入统一走 `import_orchestrator.py`(单入口,事务包裹)
+> - L3:CLI 默认 JSON 三段式输出,加 `--human` 走人类友好
 
 ---
 

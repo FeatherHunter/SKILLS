@@ -97,10 +97,17 @@
 </ol>
 <hr />
 <blockquote>
-<p>版本：v5.2
-设计：基于17张表，8大功能，35个唤醒词，无删除操作
+<p>版本：<strong>v3</strong> (2026-07-22 L1+L2+L3 完整重构)
+设计：基于17张表(98 字段全 NOT NULL 兜底)，8大功能，35个唤醒词，无删除操作
 食材分类：v5.2 起 <strong>11 类</strong>(原 9 类拆出"葱姜蒜"和"香草"),见 <code>references/categories.md</code>
-5层架构改造：2026-07-21 完成(v5.0 24/24 + v5.1 30/30 自检通过)
+5层架构改造：
+<ul>
+<li>v5.0 (2026-07-21) — 24/24 + 30/30 自检通过,见 <code>CHANGELOG.md</code> [5.1]</li>
+<li><strong>v3 L1</strong> (2026-07-22) — DB NOT NULL 兜底墙(98 字段),<code>init_db.py</code> + <code>migrations/004_all_fields_not_null.sql</code></li>
+<li><strong>v3 L2</strong> (2026-07-22) — validators 占位符黑名单 + 18 manager 改 db.py + <code>orchestrator.py</code> 新建</li>
+<li><strong>v3 L3</strong> (2026-07-22) — CLI 三段式统一 + <code>--human</code>/<code>--json</code> 开关 + orchestrator 完整迁移</li>
+</ul>
+详细变更见 <code>CHANGELOG.md</code>
 路由：唤醒词（动词+名词） + 菜名提取 + 优先级 + 兜底search</p>
 </blockquote>
 <hr />

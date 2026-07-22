@@ -1,4 +1,5 @@
-调整:
-- 散步
-日常:
-- 园艺
+# 作息管家分类白名单（YAML 扩展层）
+# 此文件由 AI 在用户批准新分类后自动维护。
+# 仅记录"在 DEFAULT 之外额外批准"的二级。
+# 运行时合并: scripts/validators.py::DEFAULT_WHITELIST + 本文件
+# 修改后,下一次 schedule_cli.py 启动时自动加载。

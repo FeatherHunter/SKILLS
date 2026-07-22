@@ -54,20 +54,22 @@ def init_db():
     print(f"初始化数据库: {get_db_path()}")
     
     # ========== 表1：recipes（食谱主表）==========
+    # L1-A: 全部业务字段 NOT NULL(用户决策 R2),status 去掉 DEFAULT(用户决策 R3)
+    # created_at/updated_at 保留 DEFAULT CURRENT_TIMESTAMP(系统必需)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recipes (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            description TEXT,
-            difficulty TEXT,
-            servings INTEGER,
-            total_time_minutes INTEGER,
-            status TEXT DEFAULT '未做',
-            photo_url TEXT,
-            source TEXT,
-            source_url TEXT,
-            created_at TEXT,
-            updated_at TEXT
+            description TEXT NOT NULL,
+            difficulty TEXT NOT NULL,
+            servings INTEGER NOT NULL,
+            total_time_minutes INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            photo_url TEXT NOT NULL,
+            source TEXT NOT NULL,
+            source_url TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_recipes_name ON recipes(name)")
@@ -76,13 +78,14 @@ def init_db():
     print("✓ recipes 表创建完成")
     
     # ========== 表2：recipe_categories（分类标签）==========
+    # L1-A: 3 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recipe_categories (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
-            cuisine_type TEXT,
-            region TEXT,
-            country TEXT,
+            cuisine_type TEXT NOT NULL,
+            region TEXT NOT NULL,
+            country TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -151,18 +154,19 @@ def init_db():
     print("✓ recipe_meal_types 表创建完成")
     
     # ========== 表8：ingredients（食材清单）==========
+    # L1-A: 7 业务字段 NOT NULL,is_optional 去掉 DEFAULT 0(用户决策 R3)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS ingredients (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
-            sequence INTEGER,
+            sequence INTEGER NOT NULL,
             name TEXT NOT NULL,
-            category TEXT,
-            quantity REAL,
-            unit TEXT,
-            quantity_text TEXT,
-            is_optional INTEGER DEFAULT 0,
-            substitute TEXT,
+            category TEXT NOT NULL,
+            quantity REAL NOT NULL,
+            unit TEXT NOT NULL,
+            quantity_text TEXT NOT NULL,
+            is_optional INTEGER NOT NULL,
+            substitute TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -171,16 +175,17 @@ def init_db():
     print("✓ ingredients 表创建完成")
     
     # ========== 表9：cooking_steps（烹饪步骤）==========
+    # L1-A: 4 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cooking_steps (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
             sequence INTEGER NOT NULL,
             action TEXT NOT NULL,
-            duration_minutes INTEGER,
-            heat_level TEXT,
-            temperature TEXT,
-            expected_result TEXT,
+            duration_minutes INTEGER NOT NULL,
+            heat_level TEXT NOT NULL,
+            temperature TEXT NOT NULL,
+            expected_result TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -189,13 +194,14 @@ def init_db():
     print("✓ cooking_steps 表创建完成")
     
     # ========== 表10：step_ingredients（步骤×食材关联）==========
+    # L1-A: 2 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS step_ingredients (
             id TEXT PRIMARY KEY,
             step_id TEXT NOT NULL,
             ingredient_id TEXT NOT NULL,
-            quantity_used REAL,
-            introduced_at TEXT,
+            quantity_used REAL NOT NULL,
+            introduced_at TEXT NOT NULL,
             FOREIGN KEY (step_id) REFERENCES cooking_steps(id) ON DELETE CASCADE,
             FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE
         )
@@ -205,14 +211,15 @@ def init_db():
     print("✓ step_ingredients 表创建完成")
     
     # ========== 表11：step_techniques（步骤技法）==========
+    # L1-A: 2 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS step_techniques (
             id TEXT PRIMARY KEY,
             step_id TEXT NOT NULL,
             recipe_id TEXT NOT NULL,
             technique_name TEXT NOT NULL,
-            description TEXT,
-            key_points TEXT,
+            description TEXT NOT NULL,
+            key_points TEXT NOT NULL,
             FOREIGN KEY (step_id) REFERENCES cooking_steps(id) ON DELETE CASCADE,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
@@ -222,15 +229,19 @@ def init_db():
     print("✓ step_techniques 表创建完成")
     
     # ========== 表12：tips（小贴士）==========
+    # L1-A (用户决策 R1/R4 B-1):
+    # - category/priority NOT NULL
+    # - step_id/ingredient_id 改回可空 + SET NULL(允许"菜级 tip")
+    # - 业务校验在 L2 阶段 validators.py 加:优先要求 3 个 ID,迫不得已才允许不全
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS tips (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
             step_id TEXT,
             ingredient_id TEXT,
-            category TEXT,
+            category TEXT NOT NULL,
             content TEXT NOT NULL,
-            priority INTEGER,
+            priority INTEGER NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
             FOREIGN KEY (step_id) REFERENCES cooking_steps(id) ON DELETE SET NULL,
             FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE SET NULL
@@ -242,14 +253,15 @@ def init_db():
     print("✓ tips 表创建完成")
     
     # ========== 表13：recipe_history（烹饪历史）==========
+    # L1-A: 3 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recipe_history (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
             cook_date TEXT NOT NULL,
-            cook_sequence INTEGER,
-            rating REAL,
-            feedback TEXT,
+            cook_sequence INTEGER NOT NULL,
+            rating REAL NOT NULL,
+            feedback TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -258,13 +270,14 @@ def init_db():
     print("✓ recipe_history 表创建完成")
     
     # ========== 表14：background_knowledge（背景知识）==========
+    # L1-A: 1:1 UNIQUE 表,3 字段全 NOT NULL(用户决策:背景知识每菜必录)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS background_knowledge (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL UNIQUE,
-            origin_story TEXT,
-            historical_background TEXT,
-            cultural_significance TEXT,
+            origin_story TEXT NOT NULL,
+            historical_background TEXT NOT NULL,
+            cultural_significance TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -272,13 +285,14 @@ def init_db():
     print("✓ background_knowledge 表创建完成")
     
     # ========== 表15：recipe_relations（食谱关系）==========
+    # L1-A: 2 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recipe_relations (
             id TEXT PRIMARY KEY,
             parent_id TEXT NOT NULL,
             child_id TEXT NOT NULL,
-            relation_type TEXT,
-            change_summary TEXT,
+            relation_type TEXT NOT NULL,
+            change_summary TEXT NOT NULL,
             FOREIGN KEY (parent_id) REFERENCES recipes(id) ON DELETE CASCADE,
             FOREIGN KEY (child_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
@@ -288,12 +302,13 @@ def init_db():
     print("✓ recipe_relations 表创建完成")
     
     # ========== 表16：cookware（炊具设备）==========
+    # L1-A: 1 业务字段 NOT NULL
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS cookware (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL,
             name TEXT NOT NULL,
-            category TEXT,
+            category TEXT NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
@@ -301,18 +316,20 @@ def init_db():
     print("✓ cookware 表创建完成")
     
     # ========== 表17：nutrition_info（营养信息）==========
+    # L1-A: 1:1 UNIQUE 表,8 字段全 NOT NULL(用户决策:营养信息每菜必录)
+    # 白名单 7 个 0 值合法字段(用户决策):calories/protein/fat/carbs/fiber/sodium/serving_size
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS nutrition_info (
             id TEXT PRIMARY KEY,
             recipe_id TEXT NOT NULL UNIQUE,
-            serving_size REAL,
-            serving_unit TEXT,
-            calories INTEGER,
-            protein REAL,
-            fat REAL,
-            carbs REAL,
-            fiber REAL,
-            sodium REAL,
+            serving_size REAL NOT NULL,
+            serving_unit TEXT NOT NULL,
+            calories INTEGER NOT NULL,
+            protein REAL NOT NULL,
+            fat REAL NOT NULL,
+            carbs REAL NOT NULL,
+            fiber REAL NOT NULL,
+            sodium REAL NOT NULL,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)

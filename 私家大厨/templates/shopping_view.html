@@ -171,23 +171,25 @@
     display:flex;flex-wrap:wrap;gap:5px 6px;align-items:center;
     font-size:12px;line-height:1.5;margin-top:5px;
   }
+  /* A 方案(Stripe/Linear 范式):同色 18% 背景 + 同色 100% 文字 */
+  /* 轻背景不喧宾夺主,色相文字保留菜色识别 */
   .src-pill{
     display:inline-flex;align-items:center;gap:4px;
     padding:3px 8px;border-radius:5px;
     font-size:11px;font-weight:500;
-    background:var(--r-bg, #F2F2F7);color:var(--r-fg, var(--card));
+    background:color-mix(in srgb, var(--r) 18%, transparent);
+    color:var(--r);
   }
-  .src-pill .mult{font-weight:700;opacity:0.95}
+  .src-pill .mult{font-weight:700;opacity:0.9}
   .src-pill.is-sub{
-    background:rgba(255,149,0,0.12);color:var(--warn);
+    background:color-mix(in srgb, var(--warn) 14%, transparent);
+    color:var(--warn);
     font-style:italic;font-weight:500;
   }
   .src-pill.is-sub::before{content:"→ ";opacity:0.7;font-style:normal}
 
   .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:600;margin-right:4px}
-  .badge-share{background:rgba(0,122,255,0.08);color:var(--blue)}
   .badge-optional{background:var(--warn-soft);color:var(--warn)}
-  .badge-sub{background:var(--warn-soft);color:var(--warn)}
 
   /* ── Views ── */
   .view{display:none}
@@ -316,11 +318,10 @@
             <div class="ing-line1">
               <span class="ing-name">{{ item.name }}</span>
               <span class="ing-qty" data-base-qty="{{ item.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
-              {% if item.merged_count > 1 %}<span class="badge badge-share">{{ item.merged_count }} 菜共用</span>{% endif %}
               {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
-              {# 来源 pill 与食材名同行(line1) ── #}
+              {# 来源 pill 与食材名同行(line1) ── A 方案:同色 18% 背景 + 同色 100% 文字 ── #}
               {% for src in item.sources %}
-              <span class="src-pill" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" style="--r-bg:var(--r{{ src.color_index }});background:var(--r{{ src.color_index }});color:#fff">
+              <span class="src-pill" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" style="--r:var(--r{{ src.color_index }})">
                 {{ src.recipe_name }} <span class="mult" data-mult-target="{{ src.recipe_id }}">×{{ src.multiplier }}</span>
               </span>
               {% endfor %}

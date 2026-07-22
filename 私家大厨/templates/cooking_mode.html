@@ -29,6 +29,8 @@
   }
 
   .wrap{max-width:780px;margin:0 auto;padding:24px 20px 96px;}
+  @media (min-width:1280px){.wrap{max-width:1400px;}}
+  @media (min-width:1024px) and (max-width:1279px){.wrap{max-width:1000px;}}
   .stage{display:none;}
   .stage.active{display:block;}
 
@@ -41,6 +43,10 @@
   .muted{color:var(--gray);font-size:13px;}
   .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--gray);margin:8px 0;}
   .meta b{color:var(--blue-deep);font-weight:600;}
+
+  /* 份数调整按钮 */
+  .btn-serv{background:#fff;border:1px solid var(--border);color:var(--blue-deep);width:28px;height:28px;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;margin:0 4px;vertical-align:middle;}
+  .btn-serv:active{transform:scale(0.92);background:var(--blue-soft);}
 
   /* 准备页 */
   .prep-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
@@ -144,18 +150,29 @@
   .error-screen p{color:var(--gray);font-size:14px;margin:10px 0;}
 
   /* 平板/桌面 */
-  @media (min-width:768px){
-    .cook-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;}
+  @media (min-width:768px) and (max-width:1023px){
+    .cook-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
     .step-action{font-size:36px;}
+    .step-card{padding:32px;}
   }
   @media (min-width:1024px){
-    .cook-grid{display:grid;grid-template-columns:240px 1fr 280px;gap:16px;}
-    .step-action{font-size:40px;}
+    .cook-grid{display:grid;grid-template-columns:280px 1fr 320px;gap:24px;align-items:start;}
+    .step-action{font-size:42px;}
+    .step-card{padding:36px 40px;}
+    .timer{font-size:64px;}
+    .ingredients-list, .step-tips, .step-expected{max-width:none;}
+  }
+  @media (min-width:1400px){
+    .cook-grid{grid-template-columns:320px 1fr 360px;}
+    .step-action{font-size:48px;}
+    .step-card{padding:48px 60px;}
   }
   @media (max-width:374px){
     .prep-title{font-size:26px;}
     .step-action{font-size:24px;}
     .timer{font-size:42px;padding:18px;}
+    .stars{gap:6px;}
+    .star{font-size:36px;}
   }
 </style>
 </head>
@@ -181,7 +198,7 @@
     <div class="meta">
       <span>⏱ 总时间:<b id="prep-total-time"></b></span>
       <span>📊 难度:<b id="prep-difficulty"></b></span>
-      <span>🍽 份量:<b id="prep-servings"></b> 人份</span>
+      <span>🍽 份量:<button class="btn-serv" onclick="adjustServings(-1)">−</button><b id="prep-servings"></b> 人份<button class="btn-serv" onclick="adjustServings(1)">+</button></span>
     </div>
 
     <div class="card" id="prep-overnight-card" style="display:none;">
@@ -339,6 +356,7 @@ const STATE = {
     hardest: null,
     next: '',
   },
+  servingsMultiplier: 1.0,  // 份数倍数(默认原方 1.0,可调到 0.5/2/3 等)
 };
 
 // ============== 数据注入检查 ==============
@@ -467,7 +485,7 @@ function renderPrep(){
   document.getElementById('prep-desc').textContent = STATE.recipe.description || '';
   document.getElementById('prep-total-time').textContent = `${STATE.recipe.total_time_minutes} 分钟`;
   document.getElementById('prep-difficulty').textContent = STATE.recipe.difficulty || '-';
-  document.getElementById('prep-servings').textContent = STATE.recipe.servings || '-';
+  document.getElementById('prep-servings').textContent = currentServingsDisplay();
 
   // 隔夜准备
   if (STATE.overnightItems.length > 0){
@@ -496,12 +514,14 @@ function renderPrep(){
   cuttingList.innerHTML = ings.map((ing, i) => {
     // 找对应的切配 tip(从 tips[] 取)
     const tip = findCuttingTipForIngredient(ing.name);
+    // 份数调整:quantity × multiplier(智能小数:整数显示整数,小数保留 1 位)
+    const adjQty = formatScaled(ing.quantity);
     return `
       <li>
         <div class="seq">${i + 1}</div>
         <div class="info">
           <div class="name">${escapeHTML(ing.name)}</div>
-          <div class="qty">${ing.quantity} ${escapeHTML(ing.unit || '')} · ${escapeHTML(ing.quantity_text || '')}</div>
+          <div class="qty">${adjQty} ${escapeHTML(ing.unit || '')} · ${escapeHTML(ing.quantity_text || '')}</div>
           ${tip ? `<div class="cut-tip">${escapeHTML(tip)}</div>` : ''}
         </div>
       </li>
@@ -574,7 +594,7 @@ function renderCook(){
   if (step.ingredients_used && step.ingredients_used.length > 0){
     ingEl.style.display = '';
     ingEl.innerHTML = step.ingredients_used.map(i =>
-      `<div>· ${escapeHTML(i.name)} ${i.quantity_used || ''}${i.unit || ''} <span class="muted">(${escapeHTML(i.introduced_at || '')})</span></div>`
+      `<div>· ${escapeHTML(i.name)} ${formatScaled(i.quantity_used)}${escapeHTML(i.unit || '')} <span class="muted">(${escapeHTML(i.introduced_at || '')})</span></div>`
     ).join('');
   } else {
     ingEl.style.display = 'none';
@@ -591,7 +611,7 @@ function renderCook(){
   }
 
   // 计时器(自动启动)
-  STATE.timer.duration = step.duration || 0;
+  STATE.timer.duration = step.duration_minutes || step.duration || 0;
   STATE.timer.remaining = STATE.timer.duration * 60;
   STATE.timer.paused = false;
   STATE.timer.beeped = false;
@@ -912,6 +932,37 @@ function escapeHTML(s){
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+// ============== 份数调整 ==============
+function formatScaled(val){
+  // 缩放显示:整数显示整数,小数保留 1 位,空值返回空
+  if (val === null || val === undefined || val === '') return '';
+  const num = Number(val) * STATE.servingsMultiplier;
+  if (Number.isInteger(num)) return String(num);
+  return num.toFixed(1).replace(/\.0$/, '');
+}
+
+function currentServingsDisplay(){
+  // 原方 default = STATE.recipe.servings,当前 = 原方 × multiplier
+  const base = STATE.recipe.servings || 2;
+  return Math.round(base * STATE.servingsMultiplier);
+}
+
+function adjustServings(delta){
+  // 调整 multiplier(0.5 / 1 / 1.5 / 2 / 2.5 / 3 等,默认 1)
+  // 点击 +/- 时对应 ±0.5(2 人份 = 1 / 4 人份 = 2 / 1 人份 = 0.5)
+  const cur = STATE.servingsMultiplier;
+  let next = cur + delta * 0.5;
+  if (next < 0.5) next = 0.5;
+  if (next > 10) next = 10;
+  STATE.servingsMultiplier = Math.round(next * 2) / 2;  // 保留 0.5 步进
+  // 重新渲染 prep 阶段(只重渲染切配清单数量 + 份数显示)
+  renderPrep();
+  // 做饭页食材也需重渲染(if active)
+  if (document.getElementById('stage-cook').classList.contains('active') && STATE.recipe.steps){
+    renderCook();
+  }
 }
 </script>
 </body>

@@ -325,6 +325,22 @@
 </div>
 
 <script>
+// ============== 状态(必须在前面声明,避免 init() TDZ) ==============
+const STATE = {
+  recipe: null,
+  currentStep: 1,
+  stepTipsMap: {},           // step_sequence -> [tip]
+  usageOrder: [],           // 按使用顺序排的 ingredient 名列表
+  overnightItems: [],       // 隔夜准备项 [{name, qty, action, step}]
+  timer: { duration: 0, remaining: 0, intervalId: null, paused: false, muted: false, beeped: false },
+  rating: 0,
+  reflection: {
+    skipped: new Set(),      // 跳过的 step sequence 列表
+    hardest: null,
+    next: '',
+  },
+};
+
 // ============== 数据注入检查 ==============
 const RECIPE = window.__RECIPE__;
 const RECIPE_ID = window.__RECIPE_ID__;
@@ -333,7 +349,14 @@ if (!RECIPE) {
   document.getElementById('error-screen').classList.add('active');
   document.getElementById('stage-prep').classList.remove('active');
 } else {
-  init();
+  try {
+    init();
+  } catch(e){
+    console.error('init 错误:', e);
+    document.getElementById('stage-prep').innerHTML =
+      `<div style="padding:30px;color:var(--red);"><h2>init 错误</h2><pre>${escapeHTML(String(e) + '\n\n' + (e.stack || ''))}</pre></div>`;
+    document.getElementById('stage-prep').classList.add('active');
+  }
 }
 
 function init(){
@@ -373,22 +396,6 @@ function init(){
   // ⚠ 关键修复:init 后必须激活第一个阶段,否则 .stage{display:none} 让所有内容不显示
   document.getElementById('stage-prep').classList.add('active');
 }
-
-// ============== 状态 ==============
-const STATE = {
-  recipe: null,
-  currentStep: 1,
-  stepTipsMap: {},
-  usageOrder: [],           // 按使用顺序排的 ingredient 名列表
-  overnightItems: [],       // 隔夜准备项 [{name, qty, action, step}]
-  timer: { duration: 0, remaining: 0, intervalId: null, paused: false, muted: false, beeped: false },
-  rating: 0,
-  reflection: {
-    skipped: new Set(),      // 跳过的 step sequence 列表
-    hardest: null,
-    next: '',
-  },
-};
 
 // ============== 工具函数 ==============
 function buildStepTipsMap(){

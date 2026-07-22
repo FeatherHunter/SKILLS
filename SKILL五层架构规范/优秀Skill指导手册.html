@@ -318,9 +318,17 @@
 </ul>
 
 <h3>⑤ 可联动 <span class="pill">Composable</span> <span class="pill">⭐⭐⭐</span></h3>
-<blockquote><p>Skill 之间通过标准接口对话，不互相 import。</p></blockquote>
+<blockquote><p>Skill 与外部系统（其他 skill / 飞书 / 训记 / MCP）通过<strong>操作层（对外部分）</strong>对话，失败不阻塞主流程。</p></blockquote>
 
-<h4>具体设计模式</h4>
+<h4>5.1 本地操作 vs 对外操作</h4>
+<p>"操作层"包含两种：</p>
+<ul>
+  <li><strong>本地操作</strong>：对本地数据库的增删改查（add / update / delete / search / list / summary）</li>
+  <li><strong>对外操作（集成）</strong>：调外部服务（飞书 task / 训记训练 / MCP / 其他 skill）</li>
+</ul>
+<p>两者职责不同，<b>对外操作 ≥ 2 个集成点 → 抽 <code>integrations/</code> 子模块</b>，避免代码散落在本地操作模块里。</p>
+
+<h4>5.2 具体设计模式</h4>
 <ul>
   <li><strong>统一 JSON 输出</strong>：<code>{status, data, message}</code> 三段式。所有 CLI 一致。</li>
   <li><strong>稳定字段名</strong>：返回 <code>id, content, created_at, category_id, ...</code> 不要今天叫 <code>note_id</code> 明天叫 <code>noteId</code>。</li>
@@ -328,6 +336,8 @@
   <li><strong>联动路由</strong>：做完主操作后，AI 自动检查要不要联动。<em>例：记完一笔"山姆买沐浴露" → 询问"要不要录居家管家？"</em></li>
   <li><strong>Skill 间不直连</strong>：Skill A 不 import Skill B 的内部代码。通过字段值 / 外部 ID 通信。</li>
   <li><strong>路由器集中</strong>：联动规则放在 <code>图片路由/SKILL.md</code> 等中央路由，不在每个 Skill 里重复维护。</li>
+  <li><strong>失败降级（对外操作铁律）</strong>：外部服务挂了 → 本地照常工作，只 stderr 记录。<em>例：飞书同步失败 → 本地 due 仍生效。</em></li>
+  <li><strong>幂等键（对外写操作必带）</strong>：<code>client_request_id</code> 避免重试产生重复。<em>例：训记同步用 <code>{date}_{session_label}_{uuid8}</code> 当幂等键。</em></li>
 </ul>
 
 <h3>⑥ 可演进 <span class="pill">Evolve-able</span> <span class="pill">⭐⭐⭐</span></h3>

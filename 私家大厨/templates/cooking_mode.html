@@ -581,7 +581,10 @@ function renderCook(){
   document.getElementById('cook-step-indicator').textContent = `${cur} / ${total}`;
 
   // 右侧面板:进度 + 下一步摘要(1024+ 才显示)
-  const remainingMin = steps.slice(cur).reduce((sum, s) => sum + (s.duration_minutes || s.duration || 0), 0);
+  // 剩余时间 = 当前步骤剩余(分钟,≤0 时按 0 算避免显示负数)+ 后续步骤总时长(下限)
+  const currRemainingMin = Math.max(0, Math.ceil(STATE.timer.remaining / 60));
+  const subsequentMin = steps.slice(cur).reduce((sum, s) => sum + (s.duration_minutes || s.duration || 0), 0);
+  const remainingMin = currRemainingMin + subsequentMin;
   document.getElementById('cook-side-info').innerHTML =
     `第 <b style="color:var(--blue-deep);font-size:18px;">${cur}</b> / ${total} 步<br>` +
     `⏱ 剩余约 ${remainingMin} 分钟`;

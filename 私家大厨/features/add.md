@@ -372,6 +372,33 @@ python scripts/history_manager.py add "<ID>" \
 
 ---
 
+## 录入后 Review 提示(AI 主动思考,非硬规则)
+
+录完一份食谱后,在向用户报告"录入成功"之前,主动 review 一次 `steps[]`,识别需要补充 `tips[]` 的环节,这样日后用户用「做菜模式」时,模板会自动展示这些提示。
+
+### 三大类值得加 tip 的场景
+
+1. **切配粒度**:某步骤涉及切/片/块/丝/丁等刀工,且食材有特别讲究(五花肉切片不要太薄、葱切葱花 vs 葱段)→ 加 step 级 tip(scope=step,关联对应 step),承载"切配粒度建议"。
+
+2. **火候控制**:某步骤涉及"小火煸""中火翻炒""大火收汁"等,且容易翻车 → 加 step 级 tip 说明"怎么判断火候对错"(听到滋滋声 / 看到边缘微焦 / 油烟大小)。
+
+3. **隔夜准备**:某步骤涉及腌/泡/冷藏/解冻,且耗时 ≥ 1 小时 → 加 recipe 级 tip(scope=recipe,关联整道菜),提示用户"今晚腌一下,明天口感更好"。
+
+### 写法建议
+
+- step 级 tip:`scope=step`,关联 `step_id`,`category` 选"刀工"或"火候",`priority` 默认 1(重要)。
+- recipe 级 tip:`scope=recipe`,不关联 `step_id`,`category` 选"保存"或"采购",`priority` 默认 1。
+- content 写一句具体可执行的话,不要写"注意火候"这种空话,要写"听到锅中噼啪声变小,边缘微焦"。
+
+### 注意事项
+
+- 这是**方向引导,不是 checklist**。AI 根据具体食谱自由判断,不必每道菜都覆盖三类。
+- 录入后,**先 show 一下结果**,让用户看 tips 是否合理,再写一次 update 修正。
+- 不要为了凑数加 tip — 空泛的 tip 比没有 tip 更糟。
+- 做菜模式 HTML 模板 `templates/cooking_mode.html` 会自动识别并展示这些 tip。
+
+---
+
 ## 参考
 
 - 分类参考：`references/categories.md`

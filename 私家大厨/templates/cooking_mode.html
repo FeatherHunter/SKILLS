@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>做菜模式 · <span id="recipe-name-title">加载中</span></title>
+<style>
+  :root{
+    --blue:#007AFF;--blue-soft:#EAF3FF;--blue-deep:#003F7F;
+    --gray:#6E6E73;--gray-soft:#8E8E93;
+    --bg:#F5F5F7;--card:#fff;--border:#E5E5EA;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+    --green:#2E7D32;--green-bg:#E8F5E9;
+    --red:#C62828;--red-bg:#FFEBEE;--red-bg-soft:rgba(255,80,80,0.08);
+    --orange:#E65100;--orange-bg:#FFF3E0;
+    --heat-1:#F5F5F7;--heat-2:#93C5FD;--heat-3:#FCD34D;--heat-4:#FB923C;--heat-5:#EF4444;
+  }
+  *{box-sizing:border-box;}html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:#1d1d1f;line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    transition:background 0.3s;
+  }
+  body.over-time{background:var(--red-bg-soft);}
+  body.over-time::after{
+    content:"";position:fixed;inset:0;border:4px solid var(--red);pointer-events:none;z-index:1;
+  }
+
+  .wrap{max-width:780px;margin:0 auto;padding:24px 20px 96px;}
+  .stage{display:none;}
+  .stage.active{display:block;}
+
+  /* 通用 */
+  .card{background:var(--card);border-radius:16px;padding:24px;box-shadow:var(--shadow);margin-bottom:16px;}
+  h1{font-size:28px;font-weight:600;margin:0 0 8px;}
+  h2{font-size:20px;font-weight:600;margin:0 0 12px;}
+  h3{font-size:15px;font-weight:600;margin:20px 0 10px;color:#1d1d1f;}
+  p{margin:6px 0;}
+  .muted{color:var(--gray);font-size:13px;}
+  .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--gray);margin:8px 0;}
+  .meta b{color:var(--blue-deep);font-weight:600;}
+
+  /* 准备页 */
+  .prep-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+  .prep-title{font-size:32px;font-weight:600;line-height:1.2;margin:0 0 8px;}
+  .prep-stats{display:flex;gap:16px;font-size:14px;color:var(--gray);}
+  .prep-stats span{background:#f0f0f3;padding:4px 10px;border-radius:6px;}
+
+  .prep-section{margin-bottom:20px;}
+  .prep-section h2{font-size:17px;color:var(--blue-deep);display:flex;align-items:center;gap:8px;}
+  .prep-section h2 .icon{font-size:20px;}
+
+  .prep-list{list-style:none;padding:0;margin:0;}
+  .prep-list li{display:flex;gap:14px;padding:14px;border-radius:12px;background:#fafafa;margin-bottom:8px;align-items:flex-start;}
+  .prep-list .seq{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;}
+  .prep-list .info{flex:1;min-width:0;}
+  .prep-list .name{font-weight:600;font-size:16px;margin-bottom:4px;}
+  .prep-list .qty{color:var(--gray);font-size:13px;}
+  .prep-list .cut-tip{margin-top:8px;padding:8px 12px;background:var(--orange-bg);border-radius:6px;font-size:13px;color:#5D4037;}
+  .prep-list .cut-tip::before{content:"🔪 ";}
+
+  .prep-tips{list-style:none;padding:0;margin:0;}
+  .prep-tips li{padding:10px 14px;border-radius:8px;background:var(--blue-soft);color:var(--blue-deep);font-size:14px;margin-bottom:6px;}
+
+  .cookware-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .cookware-grid span{background:#f0f0f3;padding:6px 14px;border-radius:999px;font-size:14px;}
+
+  /* 做饭页 */
+  .cook-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--gray);}
+  .cook-progress{height:6px;background:#f0f0f3;border-radius:3px;margin-bottom:16px;overflow:hidden;}
+  .cook-progress-bar{height:100%;background:var(--blue);border-radius:3px;transition:width 0.3s;}
+
+  .step-card{background:var(--card);border-radius:16px;padding:28px;box-shadow:var(--shadow);text-align:center;}
+  .step-action{font-size:30px;font-weight:600;line-height:1.4;margin:18px 0;}
+  .step-meta{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:14px 0;}
+  .step-meta .item{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .step-meta .lbl{font-size:12px;color:var(--gray);}
+  .step-meta .val{font-size:18px;font-weight:600;color:var(--blue-deep);}
+
+  .heat-badge{display:inline-block;padding:6px 14px;border-radius:8px;font-weight:600;color:#fff;font-size:15px;}
+  .heat-微火{background:var(--heat-1);color:var(--gray);}
+  .heat-小火{background:var(--heat-2);}
+  .heat-中火{background:var(--heat-3);}
+  .heat-大火{background:var(--heat-4);}
+  .heat-猛火{background:var(--heat-5);}
+
+  .step-expected{margin:16px auto;max-width:480px;padding:12px 16px;background:var(--green-bg);color:var(--green);border-radius:10px;font-size:14px;text-align:center;}
+  .step-expected::before{content:"✓ 预期效果:";font-weight:600;}
+
+  .ingredients-list{text-align:left;margin:14px auto;max-width:480px;padding:12px 16px;background:#fafafa;border-radius:10px;font-size:14px;}
+  .ingredients-list::before{content:"🥘 用到的食材";display:block;font-weight:600;color:var(--gray);margin-bottom:6px;font-size:12px;}
+  .ingredients-list div{margin:2px 0;}
+
+  .step-tips{text-align:left;margin:14px auto;max-width:480px;padding:10px 14px;background:var(--blue-soft);color:var(--blue-deep);border-radius:10px;font-size:13px;}
+
+  .timer{background:var(--blue-soft);color:var(--blue-deep);border-radius:14px;padding:24px;text-align:center;font-size:54px;font-weight:700;margin:18px auto;max-width:320px;font-variant-numeric:tabular-nums;letter-spacing:0.02em;}
+  .timer-warn{background:#FFE0E0;color:var(--red);animation:pulse 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.7;}}
+  .timer-sub{font-size:13px;font-weight:400;color:var(--red);margin-top:6px;}
+
+  .cook-buttons{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px;}
+  .btn{padding:12px 20px;border-radius:10px;font-size:15px;font-weight:500;border:1px solid var(--border);background:#fff;color:var(--blue-deep);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--blue);color:#fff;border:none;}
+  .btn-warn{background:#FFE0E0;color:var(--red);border-color:var(--red);}
+  .btn-large{flex:1;font-size:16px;padding:14px;}
+
+  /* 完结页 */
+  .done-header{text-align:center;margin-bottom:20px;}
+  .done-emoji{font-size:48px;}
+  .done-title{font-size:28px;font-weight:600;margin:8px 0;}
+  .done-stats{color:var(--gray);font-size:14px;}
+
+  .stars{display:flex;gap:8px;justify-content:center;margin:14px 0;}
+  .star{font-size:44px;color:#d0d0d0;cursor:pointer;transition:transform 0.1s;line-height:1;-webkit-tap-highlight-color:transparent;}
+  .star.active{color:#FFB300;}
+  .star:active{transform:scale(1.2);}
+
+  .feedback-box{width:100%;min-height:80px;padding:12px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;box-sizing:border-box;}
+
+  .reflection{margin-top:18px;}
+  .reflection h3{font-size:14px;color:var(--blue-deep);margin:14px 0 8px;}
+  .reflection-q{background:#fafafa;border-radius:10px;padding:12px;margin-bottom:8px;}
+  .reflection-q .q-title{font-size:14px;font-weight:600;margin-bottom:8px;}
+  .reflection-q .q-hint{font-size:12px;color:var(--gray);margin-bottom:6px;}
+  .check-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .check-list label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .check-list input{margin:0;}
+  .check-list label.checked{background:var(--blue-soft);border-color:var(--blue);color:var(--blue-deep);}
+  .radio-list{display:flex;flex-wrap:wrap;gap:6px;}
+  .radio-list label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;}
+  .radio-list label.checked{background:var(--blue-soft);border-color:var(--blue);color:var(--blue-deep);}
+
+  .copy-block{background:#fafafa;border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);max-height:280px;overflow-y:auto;}
+
+  .copy-feedback{text-align:center;color:var(--green);font-size:13px;margin:8px 0;display:none;}
+
+  /* 错误态 */
+  .error-screen{text-align:center;padding:60px 20px;}
+  .error-screen .emoji{font-size:48px;margin-bottom:14px;}
+  .error-screen h2{color:var(--red);}
+  .error-screen p{color:var(--gray);font-size:14px;margin:10px 0;}
+
+  /* 平板/桌面 */
+  @media (min-width:768px){
+    .cook-grid{display:grid;grid-template-columns:1fr 280px;gap:16px;}
+    .step-action{font-size:36px;}
+  }
+  @media (min-width:1024px){
+    .cook-grid{display:grid;grid-template-columns:240px 1fr 280px;gap:16px;}
+    .step-action{font-size:40px;}
+  }
+  @media (max-width:374px){
+    .prep-title{font-size:26px;}
+    .step-action{font-size:24px;}
+    .timer{font-size:42px;padding:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="error-screen" class="stage">
+  <div class="error-screen">
+    <div class="emoji">⚠️</div>
+    <h2>数据未注入</h2>
+    <p>这个页面需要 AI 注入食谱数据。</p>
+    <p>请让 AI 调用 <code>recipe_manager.py show &lt;菜名&gt; --json</code> 后用 <code>&lt;script&gt;window.__RECIPE__ = {...}&lt;/script&gt;</code> 注入此页面。</p>
+  </div>
+</div>
+
+<div id="stage-prep" class="stage">
+  <div class="wrap">
+    <div class="prep-header">
+      <div>
+        <h1 class="prep-title" id="prep-name"></h1>
+        <p class="muted" id="prep-desc"></p>
+      </div>
+    </div>
+    <div class="meta">
+      <span>⏱ 总时间:<b id="prep-total-time"></b></span>
+      <span>📊 难度:<b id="prep-difficulty"></b></span>
+      <span>🍽 份量:<b id="prep-servings"></b> 人份</span>
+    </div>
+
+    <div class="card" id="prep-overnight-card" style="display:none;">
+      <div class="prep-section">
+        <h2><span class="icon">🌙</span> 隔夜准备(可现在做)</h2>
+        <ul class="prep-list" id="prep-overnight-list"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="prep-section">
+        <h2><span class="icon">🔪</span> 切配清单(按使用顺序)</h2>
+        <ul class="prep-list" id="prep-cutting-list"></ul>
+      </div>
+    </div>
+
+    <div class="card" id="prep-tips-card" style="display:none;">
+      <div class="prep-section">
+        <h2><span class="icon">💡</span> 烹饪贴士</h2>
+        <ul class="prep-tips" id="prep-tips-list"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="prep-section">
+        <h2><span class="icon">🍳</span> 炊具</h2>
+        <div class="cookware-grid" id="prep-cookware"></div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-large" style="width:100%;margin-top:16px;padding:16px;font-size:17px;" onclick="startCooking()">▶ 开始做菜</button>
+  </div>
+</div>
+
+<div id="stage-cook" class="stage">
+  <div class="wrap">
+    <div class="cook-top">
+      <button class="btn" onclick="prevStep()">← 上一步</button>
+      <span id="cook-step-indicator"></span>
+      <button class="btn" onclick="nextStep()">下一步 →</button>
+    </div>
+    <div class="cook-progress"><div class="cook-progress-bar" id="cook-progress-bar"></div></div>
+
+    <div class="cook-grid">
+      <div class="step-card" id="cook-main">
+        <div class="step-action" id="cook-action"></div>
+
+        <div class="step-meta">
+          <div class="item">
+            <span class="lbl">火候</span>
+            <span class="heat-badge" id="cook-heat"></span>
+          </div>
+          <div class="item">
+            <span class="lbl">温度</span>
+            <span class="val" id="cook-temp"></span>
+          </div>
+          <div class="item">
+            <span class="lbl">时长</span>
+            <span class="val" id="cook-duration"></span>
+          </div>
+        </div>
+
+        <div class="ingredients-list" id="cook-ingredients"></div>
+        <div class="step-expected" id="cook-expected"></div>
+        <div class="step-tips" id="cook-tips" style="display:none;"></div>
+
+        <div class="timer" id="cook-timer">--:--</div>
+
+        <div class="cook-buttons">
+          <button class="btn" id="cook-pause" onclick="togglePause()">⏸ 暂停</button>
+          <button class="btn" onclick="toggleMute()" id="cook-mute">🔔 声音</button>
+          <button class="btn btn-primary btn-large" onclick="finishStep()">✓ 完成这步</button>
+        </div>
+      </div>
+
+      <div class="card" style="display:none;" id="cook-side-card">
+        <h3>📍 当前进度</h3>
+        <p class="muted" id="cook-side-info"></p>
+        <h3 style="margin-top:18px;">🎯 下一步提示</h3>
+        <p id="cook-next-hint" class="muted"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="stage-done" class="stage">
+  <div class="wrap">
+    <div class="done-header">
+      <div class="done-emoji">🎉</div>
+      <div class="done-title">做完了!</div>
+      <div class="done-stats" id="done-stats"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="text-align:center;">给这次打个分</h2>
+      <div class="stars" id="stars-row">
+        <span class="star" data-v="1">★</span>
+        <span class="star" data-v="2">★</span>
+        <span class="star" data-v="3">★</span>
+        <span class="star" data-v="4">★</span>
+        <span class="star" data-v="5">★</span>
+      </div>
+
+      <h3>反馈(可选,但下次做得更好)</h3>
+      <textarea class="feedback-box" id="feedback-text" placeholder="例:火候控制得更好,但肉切厚了..."></textarea>
+
+      <div class="reflection">
+        <h3>反思一下,这次做得怎么样?</h3>
+
+        <div class="reflection-q">
+          <div class="q-title">1. 跳过/重做了哪些步骤?(多选)</div>
+          <div class="check-list" id="refl-skipped"></div>
+        </div>
+
+        <div class="reflection-q">
+          <div class="q-title">2. 哪个步骤最难?(单选)</div>
+          <div class="radio-list" id="refl-hardest"></div>
+        </div>
+
+        <div class="reflection-q">
+          <div class="q-title">3. 下次会改什么?(可选)</div>
+          <textarea class="feedback-box" id="refl-next" placeholder="例:肉切薄点,出油会更透"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 一键复制,贴回 AI 即可保存</h2>
+      <p class="muted">点击下面按钮复制记录。粘贴回 AI,AI 会保存到 cooking history(用 history_manager add 命令)。</p>
+      <button class="btn btn-primary btn-large" style="width:100%;padding:14px;" onclick="copyRecord()">📋 一键复制</button>
+      <div class="copy-feedback" id="copy-feedback">✓ 已复制!现在切回 AI 对话,粘贴发送即可。</div>
+
+      <details style="margin-top:14px;">
+        <summary style="cursor:pointer;color:var(--blue);font-size:13px;">📄 查看复制内容(预填好)</summary>
+        <div class="copy-block" id="copy-preview" style="margin-top:8px;"></div>
+      </details>
+    </div>
+
+    <button class="btn" style="width:100%;margin-top:8px;" onclick="skipDone()">跳过,不用保存</button>
+  </div>
+</div>
+
+<script>
+// ============== 数据注入检查 ==============
+const RECIPE = window.__RECIPE__;
+const RECIPE_ID = window.__RECIPE_ID__;
+
+if (!RECIPE) {
+  document.getElementById('error-screen').classList.add('active');
+  document.getElementById('stage-prep').classList.remove('active');
+} else {
+  init();
+}
+
+function init(){
+  // 兼容 show --json 返回的两种格式:
+  // 1) 新版 {data: {recipe: {...}, steps: [...], ...}}
+  // 2) 旧版 平铺 {id, name, steps, ...}
+  let r = RECIPE.data ? RECIPE.data : RECIPE;
+  // 进一步兼容:如果是 {data: {recipe: {...}}} 那 RECIPE.data 里就含 recipe
+  // 但 steps/ingredients 是 RECIPE.data 顶层,不是 recipe 字段内
+  STATE.recipe = {
+    id: r.recipe?.id || r.id,
+    name: r.recipe?.name || r.name,
+    description: r.recipe?.description || r.description,
+    difficulty: r.recipe?.difficulty || r.difficulty,
+    servings: r.recipe?.servings || r.servings,
+    total_time_minutes: r.recipe?.total_time_minutes || r.total_time,
+    status: r.recipe?.status || r.status,
+    category: r.category,
+    seasons: r.seasons,
+    cooking_methods: r.cooking_methods,
+    flavors: r.flavors,
+    ingredients: r.ingredients,
+    steps: r.steps,
+    tips: r.tips,
+    techniques: r.techniques,
+    cookware: r.cookware,
+    nutrition: r.nutrition,
+    background: r.background,
+    history: r.history,
+    relations: r.relations,
+  };
+  // 准备阶段数据
+  STATE.stepTipsMap = buildStepTipsMap();
+  STATE.usageOrder = computeUsageOrder();
+  STATE.overnightItems = detectOvernightPrep();
+  renderAll();
+}
+
+// ============== 状态 ==============
+const STATE = {
+  recipe: null,
+  currentStep: 1,
+  stepTipsMap: {},
+  usageOrder: [],           // 按使用顺序排的 ingredient 名列表
+  overnightItems: [],       // 隔夜准备项 [{name, qty, action, step}]
+  timer: { duration: 0, remaining: 0, intervalId: null, paused: false, muted: false, beeped: false },
+  rating: 0,
+  reflection: {
+    skipped: new Set(),      // 跳过的 step sequence 列表
+    hardest: null,
+    next: '',
+  },
+};
+
+// ============== 工具函数 ==============
+function buildStepTipsMap(){
+  const m = {};  // step_sequence -> [tip]
+  if (!STATE.recipe.tips) return m;
+  for (const t of STATE.recipe.tips){
+    if (t.step_id && STATE.recipe.steps){
+      const step = STATE.recipe.steps.find(s => s.id === t.step_id);
+      if (step) {
+        const seq = step.sequence;
+        if (!m[seq]) m[seq] = [];
+        m[seq].push(t);
+      }
+    }
+  }
+  return m;
+}
+
+// 按使用先后给 ingredient 排序
+function computeUsageOrder(){
+  const order = [];
+  if (!STATE.recipe.steps) return order;
+  for (const step of STATE.recipe.steps){
+    if (step.ingredients_used){
+      for (const iu of step.ingredients_used){
+        if (!order.includes(iu.name)) order.push(iu.name);
+      }
+    }
+  }
+  // 也加上不在任何 step ingredients_used 里但 sequence 存在的(兜底)
+  return order;
+}
+
+// 检测隔夜 prep:扫 tips 和 steps.action 关键词
+function detectOvernightPrep(){
+  const keywords = ['提前', '隔夜', '过夜', '腌', '泡', '冷藏', '解冻', '冰箱'];
+  const items = [];
+  if (STATE.recipe.steps){
+    for (const step of STATE.recipe.steps){
+      if (step.action && keywords.some(k => step.action.includes(k))){
+        const ings = (step.ingredients_used || []).map(i => `${i.name} ${i.quantity_used || ''}${i.unit || ''}`).join(' + ');
+        items.push({
+          step: step.sequence,
+          action: step.action,
+          ingredients: ings,
+        });
+      }
+    }
+  }
+  return items;
+}
+
+// ============== 渲染 ==============
+function renderAll(){
+  renderPrep();
+  // 标题
+  document.title = `做菜模式 · ${STATE.recipe.name}`;
+  document.getElementById('recipe-name-title').textContent = STATE.recipe.name;
+}
+
+function renderPrep(){
+  // 头部
+  document.getElementById('prep-name').textContent = STATE.recipe.name;
+  document.getElementById('prep-desc').textContent = STATE.recipe.description || '';
+  document.getElementById('prep-total-time').textContent = `${STATE.recipe.total_time_minutes} 分钟`;
+  document.getElementById('prep-difficulty').textContent = STATE.recipe.difficulty || '-';
+  document.getElementById('prep-servings').textContent = STATE.recipe.servings || '-';
+
+  // 隔夜准备
+  if (STATE.overnightItems.length > 0){
+    document.getElementById('prep-overnight-card').style.display = '';
+    const list = document.getElementById('prep-overnight-list');
+    list.innerHTML = STATE.overnightItems.map((it, i) => `
+      <li>
+        <div class="seq">${i + 1}</div>
+        <div class="info">
+          <div class="name">${escapeHTML(it.ingredients)}</div>
+          <div class="qty">${escapeHTML(it.action)}</div>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  // 切配清单(按使用顺序)
+  const cuttingList = document.getElementById('prep-cutting-list');
+  const ings = STATE.recipe.ingredients || [];
+  const orderMap = new Map(STATE.usageOrder.map((n, i) => [n, i]));
+  ings.sort((a, b) => {
+    const ai = orderMap.has(a.name) ? orderMap.get(a.name) : 999;
+    const bi = orderMap.has(b.name) ? orderMap.get(b.name) : 999;
+    return ai - bi;
+  });
+  cuttingList.innerHTML = ings.map((ing, i) => {
+    // 找对应的切配 tip(从 tips[] 取)
+    const tip = findCuttingTipForIngredient(ing.name);
+    return `
+      <li>
+        <div class="seq">${i + 1}</div>
+        <div class="info">
+          <div class="name">${escapeHTML(ing.name)}</div>
+          <div class="qty">${ing.quantity} ${escapeHTML(ing.unit || '')} · ${escapeHTML(ing.quantity_text || '')}</div>
+          ${tip ? `<div class="cut-tip">${escapeHTML(tip)}</div>` : ''}
+        </div>
+      </li>
+    `;
+  }).join('');
+
+  // 烹饪贴士(整道菜级 tips,scope=recipe)
+  const recipeTips = (STATE.recipe.tips || []).filter(t => !t.step_id);
+  if (recipeTips.length > 0){
+    document.getElementById('prep-tips-card').style.display = '';
+    document.getElementById('prep-tips-list').innerHTML = recipeTips.map(t =>
+      `<li>${escapeHTML(t.content)}</li>`
+    ).join('');
+  }
+
+  // 炊具
+  const cookware = STATE.recipe.cookware || [];
+  document.getElementById('prep-cookware').innerHTML = cookware.map(c =>
+    `<span>${escapeHTML(c.name)}${c.category ? ' · ' + escapeHTML(c.category) : ''}</span>`
+  ).join('');
+}
+
+function findCuttingTipForIngredient(name){
+  // 找 tips 中内容包含该食材名 且 scope=step 的切配建议
+  if (!STATE.recipe.tips) return null;
+  for (const t of STATE.recipe.tips){
+    if (t.step_id && t.content && t.content.includes(name) &&
+        /切|刀|片|块|丝|丁|末/.test(t.content)){
+      return t.content;
+    }
+  }
+  return null;
+}
+
+// ============== 做饭页 ==============
+function renderCook(){
+  const steps = STATE.recipe.steps || [];
+  const total = steps.length;
+  if (total === 0) return;
+  const cur = Math.min(STATE.currentStep, total);
+  STATE.currentStep = cur;
+  const step = steps[cur - 1];
+
+  // 顶部
+  document.getElementById('cook-step-indicator').textContent = `${cur} / ${total}`;
+  document.getElementById('cook-progress-bar').style.width = `${(cur / total) * 100}%`;
+
+  // 主卡片
+  document.getElementById('cook-action').textContent = step.action || '';
+  document.getElementById('cook-temp').textContent = step.temperature || '-';
+  document.getElementById('cook-duration').textContent = step.duration ? `${step.duration} 分钟` : '-';
+
+  // 火候 badge
+  const heat = step.heat_level || '中火';
+  const heatEl = document.getElementById('cook-heat');
+  heatEl.textContent = heat;
+  heatEl.className = 'heat-badge heat-' + heat;
+
+  // 预期效果
+  const expEl = document.getElementById('cook-expected');
+  if (step.expected_result){
+    expEl.style.display = '';
+    expEl.textContent = step.expected_result;
+  } else {
+    expEl.style.display = 'none';
+  }
+
+  // 食材
+  const ingEl = document.getElementById('cook-ingredients');
+  if (step.ingredients_used && step.ingredients_used.length > 0){
+    ingEl.style.display = '';
+    ingEl.innerHTML = step.ingredients_used.map(i =>
+      `<div>· ${escapeHTML(i.name)} ${i.quantity_used || ''}${i.unit || ''} <span class="muted">(${escapeHTML(i.introduced_at || '')})</span></div>`
+    ).join('');
+  } else {
+    ingEl.style.display = 'none';
+  }
+
+  // 该步骤的 tip(从 STEP_TIPS_MAP)
+  const tips = STATE.stepTipsMap[step.sequence] || [];
+  const tipsEl = document.getElementById('cook-tips');
+  if (tips.length > 0){
+    tipsEl.style.display = '';
+    tipsEl.innerHTML = tips.map(t => `💡 ${escapeHTML(t.content)}`).join('<br>');
+  } else {
+    tipsEl.style.display = 'none';
+  }
+
+  // 计时器(自动启动)
+  STATE.timer.duration = step.duration || 0;
+  STATE.timer.remaining = STATE.timer.duration * 60;
+  STATE.timer.paused = false;
+  STATE.timer.beeped = false;
+  document.getElementById('cook-pause').textContent = '⏸ 暂停';
+  document.body.classList.remove('over-time');
+  startTimer();
+  updateTimerDisplay();
+}
+
+// ============== 计时器 ==============
+function startTimer(){
+  stopTimer();
+  STATE.timer.intervalId = setInterval(() => {
+    if (STATE.timer.paused) return;
+    STATE.timer.remaining--;
+    updateTimerDisplay();
+    if (STATE.timer.remaining <= 0){
+      triggerOverTime();
+    }
+  }, 1000);
+}
+
+function stopTimer(){
+  if (STATE.timer.intervalId){
+    clearInterval(STATE.timer.intervalId);
+    STATE.timer.intervalId = null;
+  }
+}
+
+function updateTimerDisplay(){
+  const t = STATE.timer.remaining;
+  const m = Math.floor(Math.abs(t) / 60);
+  const s = Math.abs(t) % 60;
+  const sign = t < 0 ? '-' : '';
+  const text = `${sign}${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const timerEl = document.getElementById('cook-timer');
+  timerEl.textContent = text;
+  if (t < 0){
+    timerEl.classList.add('timer-warn');
+    const overSec = -t;
+    const om = Math.floor(overSec / 60);
+    const os = overSec % 60;
+    timerEl.innerHTML = `${text} <span class="timer-sub">已超时 ${om}:${String(os).padStart(2,'0')}</span>`;
+  } else {
+    timerEl.classList.remove('timer-warn');
+    timerEl.innerHTML = text;
+  }
+}
+
+function triggerOverTime(){
+  document.body.classList.add('over-time');
+  if (!STATE.timer.beeped){
+    STATE.timer.beeped = true;
+    beep();
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  }
+}
+
+function beep(){
+  if (STATE.timer.muted) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 880;
+    osc.connect(ctx.destination);
+    osc.start();
+    setTimeout(() => { osc.stop(); ctx.close(); }, 250);
+  } catch(e){}
+}
+
+function togglePause(){
+  STATE.timer.paused = !STATE.timer.paused;
+  document.getElementById('cook-pause').textContent = STATE.timer.paused ? '▶ 继续' : '⏸ 暂停';
+}
+
+function toggleMute(){
+  STATE.timer.muted = !STATE.timer.muted;
+  document.getElementById('cook-mute').textContent = STATE.timer.muted ? '🔇 已静音' : '🔔 声音';
+}
+
+function finishStep(){
+  stopTimer();
+  // 记录这一步为"已完成"(反选跳出反射题)
+  STATE.reflection.skipped.delete(STATE.currentStep);
+  nextStep();
+}
+
+function nextStep(){
+  const total = (STATE.recipe.steps || []).length;
+  if (STATE.currentStep >= total){
+    goDone();
+  } else {
+    STATE.currentStep++;
+    renderCook();
+  }
+}
+
+function prevStep(){
+  if (STATE.currentStep > 1){
+    STATE.currentStep--;
+    renderCook();
+  }
+}
+
+function startCooking(){
+  STATE.currentStep = 1;
+  STATE.reflection = { skipped: new Set(), hardest: null, next: '' };
+  switchStage('stage-cook');
+  renderCook();
+}
+
+function switchStage(stageId){
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.getElementById(stageId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ============== 完结页 ==============
+function goDone(){
+  stopTimer();
+  switchStage('stage-done');
+  renderDone();
+}
+
+function renderDone(){
+  const total = (STATE.recipe.steps || []).length;
+  document.getElementById('done-stats').textContent =
+    `${STATE.recipe.name} · 预估 ${STATE.recipe.total_time_minutes} 分钟 · 共 ${total} 步`;
+
+  // 评分
+  document.querySelectorAll('.star').forEach(s => {
+    s.onclick = () => {
+      STATE.rating = parseInt(s.dataset.v);
+      updateStars();
+    };
+  });
+
+  // 反思题 - 跳步列表
+  const skippedList = document.getElementById('refl-skipped');
+  skippedList.innerHTML = (STATE.recipe.steps || []).map(step => {
+    const seq = step.sequence;
+    const tipMap = STATE.stepTipsMap[seq] || [];
+    return `<label data-seq="${seq}">
+      <input type="checkbox" />
+      第 ${seq} 步:${escapeHTML(step.action.slice(0, 18))}...
+    </label>`;
+  }).join('') + `<label data-seq="none">
+    <input type="checkbox" />没跳过
+  </label>`;
+  skippedList.querySelectorAll('label').forEach(label => {
+    label.onclick = e => {
+      if (e.target.tagName !== 'INPUT') label.querySelector('input').checked = !label.querySelector('input').checked;
+      if (label.querySelector('input').checked) label.classList.add('checked');
+      else label.classList.remove('checked');
+    };
+  });
+
+  // 反思题 - 最难步骤
+  const hardestList = document.getElementById('refl-hardest');
+  hardestList.innerHTML = (STATE.recipe.steps || []).map(step =>
+    `<label data-seq="${step.sequence}">第 ${step.sequence} 步:${escapeHTML(step.action.slice(0, 14))}...</label>`
+  ).join('');
+  hardestList.querySelectorAll('label').forEach(label => {
+    label.onclick = () => {
+      hardestList.querySelectorAll('label').forEach(l => l.classList.remove('checked'));
+      label.classList.add('checked');
+    };
+  });
+
+  updateCopyPreview();
+}
+
+function updateStars(){
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.v) <= STATE.rating);
+  });
+  updateCopyPreview();
+}
+
+function updateCopyPreview(){
+  const skipped = Array.from(document.querySelectorAll('#refl-skipped label.checked'))
+    .map(l => l.dataset.seq).filter(s => s !== 'none')
+    .map(s => `第 ${s} 步`).join('、') || '无';
+  const hardest = document.querySelector('#refl-hardest label.checked')?.dataset.seq || '-';
+  const next = document.getElementById('refl-next').value.trim();
+  const feedback = document.getElementById('feedback-text').value.trim();
+
+  STATE.reflection.skipped = new Set(skipped.split('、').filter(s => s.startsWith('第')));
+  STATE.reflection.hardest = hardest;
+  STATE.reflection.next = next;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const lines = [
+    '[做菜记录]',
+    `菜谱:${STATE.recipe.name}`,
+    `菜谱 ID:${STATE.recipe.id}`,
+    `日期:${today}`,
+    `评分:${STATE.rating} / 5`,
+    `反馈:${feedback || '(未填)'}`,
+    '',
+    '[反思]',
+    `跳过/重做:${skipped}`,
+    `最难:第 ${hardest} 步`,
+    `下次改:${next || '(未填)'}`,
+    '',
+    '[给 AI 的指令]',
+    '帮我保存这次做菜记录:',
+    '1. 加载「私家大厨」技能',
+    '2. 用 history_manager 的 add 子命令写入:',
+    `   - recipe_id = ${STATE.recipe.id}`,
+    `   - cook_date = ${today}`,
+    `   - rating = ${STATE.rating}`,
+    `   - feedback = "${feedback}\\n跳过/重做:${skipped}\\n最难:第 ${hardest} 步\\n下次改:${next}"`,
+    '3. 完成后告诉我结果',
+  ];
+  document.getElementById('copy-preview').textContent = lines.join('\n');
+}
+
+// 监听输入变化,实时更新 preview
+document.addEventListener('input', e => {
+  if (['feedback-text', 'refl-next'].includes(e.target.id)) updateCopyPreview();
+});
+
+function copyRecord(){
+  const text = document.getElementById('copy-preview').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const fb = document.getElementById('copy-feedback');
+    fb.style.display = 'block';
+    setTimeout(() => fb.style.display = 'none', 3000);
+  }).catch(() => {
+    // fallback - 让用户手动选
+    const range = document.createRange();
+    range.selectNode(document.getElementById('copy-preview'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    alert('剪贴板失败,请长按下方文本手动复制');
+  });
+}
+
+function skipDone(){
+  if (confirm('确定跳过保存吗?本次做菜记录不会写入 history。')){
+    goCleanUp();
+  }
+}
+
+// ============== localStorage 持久化 ==============
+const STORAGE_KEY = () => `cooking_${STATE.recipe?.id || 'unknown'}_progress`;
+
+function saveProgress(){
+  if (!STATE.recipe) return;
+  try {
+    localStorage.setItem(STORAGE_KEY(), JSON.stringify({
+      step: STATE.currentStep,
+      savedAt: Date.now(),
+    }));
+    // 也写到 URL(可选,跨设备)
+    const url = new URL(window.location);
+    url.searchParams.set('recipe', STATE.recipe.id);
+    url.searchParams.set('step', STATE.currentStep);
+    window.history.replaceState(null, '', url);
+  } catch(e){}
+}
+
+function loadProgress(){
+  if (!STATE.recipe) return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY());
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const age = Date.now() - (data.savedAt || 0);
+    if (age > 24 * 60 * 60 * 1000){
+      localStorage.removeItem(STORAGE_KEY());
+      return null;
+    }
+    return data;
+  } catch(e){ return null; }
+}
+
+function clearProgress(){
+  try {
+    localStorage.removeItem(STORAGE_KEY());
+  } catch(e){}
+}
+
+function goCleanUp(){
+  clearProgress();
+  document.body.classList.remove('over-time');
+  alert('已清理进度。');
+}
+
+// 每步切换保存
+const _origNextStep = nextStep;
+nextStep = function(){
+  _origNextStep();
+  saveProgress();
+};
+const _origPrevStep = prevStep;
+prevStep = function(){
+  _origPrevStep();
+  saveProgress();
+};
+
+// 恢复进度(在 init 后尝试)
+function tryResume(){
+  const data = loadProgress();
+  if (!data || data.step < 2) return;
+  if (confirm(`上次做到第 ${data.step} 步,继续吗?`)){
+    STATE.currentStep = data.step;
+    switchStage('stage-cook');
+    renderCook();
+  }
+}
+setTimeout(tryResume, 500);
+
+// ============== 工具 ==============
+function escapeHTML(s){
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+</script>
+</body>
+</html>

@@ -153,9 +153,10 @@
 
   /* bug C 修复:平板起步就给合理宽度 */
   .cook-grid{display:flex;flex-wrap:wrap;gap:20px;align-items:start;}
-  .cook-grid > .step-card{flex:1 1 auto;min-width:min(560px,100%);box-sizing:border-box;}
+  .cook-grid > .step-card{flex:1 1 auto;min-width:min(560px,100%);box-sizing:border-box;overflow-wrap:break-word;}
   /* cook-side-card 默认隐藏 — 大屏才显示,避免小屏到底部 */
-  .cook-grid > #cook-side-card{display:none;flex:0 0 320px;}
+  .cook-grid > #cook-side-card{display:none;flex:0 0 320px;flex-shrink:0;}
+  .step-action{overflow-wrap:break-word;word-break:break-word;}
 
   /* 平板及以上(≥768px)文本加大 + 步骤卡片更宽 */
   @media (min-width:768px){
@@ -163,11 +164,13 @@
     .step-card{padding:32px 36px;}
     .timer{font-size:60px;}
   }
-  /* 桌面(≥1024px):三列布局真正发挥空间 */
+  /* 桌面(≥1024px):改用 grid 强制 2 列(防 flex-wrap 因 step-action 长文本触发) */
   @media (min-width:1024px){
     .step-action{font-size:44px;}
     .step-card{padding:40px 56px;}
-    .cook-grid > #cook-side-card{display:flex;flex:0 0 320px;flex-direction:column;}
+    .cook-grid{display:grid !important;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start;}
+    .cook-grid > .step-card{min-width:0;}
+    .cook-grid > #cook-side-card{display:flex !important;flex:0 0 320px;flex-direction:column;min-width:320px;}
   }
   /* 大屏(≥1280px):wrap 拓宽,主区更宽裕 */
   @media (min-width:1280px){
@@ -576,6 +579,19 @@ function renderCook(){
 
   // 顶部
   document.getElementById('cook-step-indicator').textContent = `${cur} / ${total}`;
+
+  // 右侧面板:进度 + 下一步摘要(1024+ 才显示)
+  const remainingMin = steps.slice(cur).reduce((sum, s) => sum + (s.duration_minutes || s.duration || 0), 0);
+  document.getElementById('cook-side-info').innerHTML =
+    `第 <b style="color:var(--blue-deep);font-size:18px;">${cur}</b> / ${total} 步<br>` +
+    `⏱ 剩余约 ${remainingMin} 分钟`;
+  const nextStep = steps[cur];  // 当前是 cur,下一步是 steps[cur]
+  const nextHintEl = document.getElementById('cook-next-hint');
+  if (nextStep){
+    nextHintEl.innerHTML = `<b>下一步</b><br>${formatStepAction(nextStep.action.slice(0, 50))}${nextStep.action.length > 50 ? '...' : ''}`;
+  } else {
+    nextHintEl.innerHTML = `<b>🎉 最后一步</b><br>做完进入评分`;
+  }
   document.getElementById('cook-progress-bar').style.width = `${(cur / total) * 100}%`;
 
   // 主卡片

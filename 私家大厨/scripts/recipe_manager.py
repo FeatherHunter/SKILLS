@@ -9,7 +9,8 @@ import sys
 import uuid
 import json
 from datetime import datetime
-from db_config import get_connection
+# L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
+from db import get_connection
 
 def get_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

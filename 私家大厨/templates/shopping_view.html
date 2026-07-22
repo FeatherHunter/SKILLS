@@ -36,7 +36,9 @@
   html{font-size:17px;-webkit-text-size-adjust:100%}
   body{
     font-family:var(--font);background:var(--bg);color:var(--text);
-    line-height:1.5;min-height:100vh;padding:0 0 100px 0;
+    line-height:1.5;min-height:100vh;
+    /* toolbar 高度 ~64px + safe area,留 90px 避免遮挡最后食材 */
+    padding:0 0 90px 0;
     -webkit-font-smoothing:antialiased;
     letter-spacing:-0.01em;
   }
@@ -153,14 +155,16 @@
   .ing-item.checked .src-pill{opacity:0.55}
 
   .ing-content{flex:1;min-width:0}
-  .ing-line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-  .ing-name{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+  .ing-line1{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;margin-bottom:2px}
+  .ing-name{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.01em;flex-shrink:0}
   .ing-qty{
     font-size:14px;color:var(--text2);font-variant-numeric:tabular-nums;
     background:#F2F2F7;padding:2px 8px;border-radius:6px;font-weight:500;
-    transition:all 0.2s;
+    transition:all 0.2s;flex-shrink:0;
   }
   .ing-qty .unit{color:var(--text3);margin-left:1px;font-weight:400}
+  /* 替代品独立行:稍缩进 + 浅灰小字 */
+  .ing-substitute{margin-top:4px;margin-left:4px;display:flex;align-items:center}
 
   /* 来源/替代:实色 pill(用户喜欢),但紧凑不喧宾 ── */
   .ing-sub{
@@ -191,21 +195,23 @@
 
   /* ── Toolbar ── */
   .toolbar{
-    position:sticky;bottom:16px;left:16px;right:16px;
-    background:rgba(255,255,255,0.85);
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(255,255,255,0.92);
     backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
-    border-radius:var(--radius);
-    padding:12px;display:flex;gap:8px;
-    margin:24px 0 0;
-    box-shadow:0 4px 16px rgba(0,0,0,0.08);
-    max-width:680px;margin-left:auto;margin-right:auto;
+    border-top:0.5px solid var(--separator);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    display:flex;gap:8px;
+    box-shadow:0 -2px 12px rgba(0,0,0,0.06);
+    z-index:100;
   }
   .btn{
-    flex:1;padding:11px;border:none;border-radius:var(--radius-sm);
-    font-size:14px;font-weight:500;cursor:pointer;
+    flex:1;padding:10px 6px;border:none;border-radius:var(--radius-sm);
+    font-size:13px;font-weight:500;cursor:pointer;
     font-family:var(--font);
     background:#F2F2F7;color:var(--text);
     transition:background 0.15s;
+    white-space:nowrap;
+    min-width:0;
   }
   .btn:hover{background:#E5E5EA}
   .btn-primary{background:var(--blue);color:#fff}
@@ -219,7 +225,7 @@
     .view{display:block !important}
     .ing-item{cursor:default}
     .ing-item.checked .ing-name{text-decoration:none}
-    .src-tag .src-color{background:#000 !important}
+    .src-pill{border:1px solid currentColor;background:transparent !important}
   }
 
   .footer{text-align:center;font-size:12px;color:var(--text4);margin-top:32px}
@@ -312,20 +318,17 @@
               <span class="ing-qty" data-base-qty="{{ item.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
               {% if item.merged_count > 1 %}<span class="badge badge-share">{{ item.merged_count }} 菜共用</span>{% endif %}
               {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
-            </div>
-            {# 来源 + 替代:实色 pill,强制横排 ── #}
-            {% if item.sources and item.sources|length > 0 or item.substitute %}
-            <div class="ing-sub">
+              {# 来源 pill 与食材名同行(line1) ── #}
               {% for src in item.sources %}
-              {# 6 色轮(紫/蓝/绿/橙/粉/淡紫)固定同色识别 ── #}
               <span class="src-pill" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" style="--r-bg:var(--r{{ src.color_index }});background:var(--r{{ src.color_index }});color:#fff">
                 {{ src.recipe_name }} <span class="mult" data-mult-target="{{ src.recipe_id }}">×{{ src.multiplier }}</span>
               </span>
               {% endfor %}
-              {% if item.substitute %}
-              {# 替代品:橙色 pill(独立色,与来源区分) ── #}
+            </div>
+            {# 替代品独立行(line2) ── #}
+            {% if item.substitute %}
+            <div class="ing-sub ing-substitute">
               <span class="src-pill is-sub">{{ item.substitute }}</span>
-              {% endif %}
             </div>
             {% endif %}
           </div>

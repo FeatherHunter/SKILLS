@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/references")
 from db_config import get_connection
 import validators  # 业务层校验器(5 层架构改造)
+from cli_formatter import emit, parse_json_flag, success, error  # L3
 import enums  # references/enums.py(5 层架构:契约层读 references)
 
 
@@ -630,111 +631,6 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
         return err_result
     finally:
         conn.close()
-    # 1. 加载JSON
-    try:
-        with open(json_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-    except json.JSONDecodeError as e:
-        return {"success": False, "errors": [f"JSON格式错误: {str(e)}"]}
-    except FileNotFoundError:
-        return {"success": False, "errors": [f"文件不存在: {json_file}"]}
-
-    # 2. 验证(L2: 改用 validators 完整链 —— 5 段校验 + 占位符黑名单)
-    validation = validators.validate_recipe_for_import(data)
-    if not validation["valid"]:
-        # 把 validators 的结构化错误转成旧 errors 列表格式(向后兼容)
-        errors = []
-        for err in validation.get("errors", []):
-            field = err.get("field", "?")
-            hint = err.get("hint", err.get("error", ""))
-            errors.append(f"[{field}] {hint}")
-        return {
-            "success": False,
-            "errors": errors,
-            "hint": validation.get("suggested_user_question") or "请修正JSON后重新导入",
-            "raw_validation": validation  # 保留原始结构,供 AI 解析
-        }
-
-    # 3. 检查同名冲突
-    conn = get_connection()
-    try:
-        has_conflict, conflict_result = check_conflict(conn, data["name"], choice, new_name)
-        if has_conflict:
-            conn.close()
-            return conflict_result
-
-        # 4. 处理derive需要new_name的情况
-        if choice == "derive" and new_name:
-            data["name"] = new_name
-
-        # 5. 开启事务导入
-        conn.execute("BEGIN")
-
-        # 创建主记录
-        recipe_id = create_recipe(conn, data)
-
-        # 添加分类
-        add_category(conn, recipe_id, data.get("category"))
-
-        # 添加标签
-        add_seasons(conn, recipe_id, data.get("seasons"))
-        add_cooking_methods(conn, recipe_id, data.get("cooking_methods"))
-        add_flavors(conn, recipe_id, data.get("flavors"))
-        add_diet_tags(conn, recipe_id, data.get("diet_tags"))
-        add_meal_types(conn, recipe_id, data.get("meal_types"))
-
-        # 添加食材（返回name→id映射）
-        name_id_map = add_ingredients(conn, recipe_id, data.get("ingredients"))
-
-        # 添加步骤（返回seq→id映射，同时处理步骤×食材关联）
-        seq_id_map = add_steps(conn, recipe_id, data.get("steps"), name_id_map)
-
-        # 添加可选数据
-        add_tips(conn, recipe_id, data.get("tips"), seq_id_map)
-        add_techniques(conn, recipe_id, data.get("techniques"), seq_id_map)
-        add_cookware(conn, recipe_id, data.get("cookware"))
-        add_nutrition(conn, recipe_id, data.get("nutrition"))
-        add_background(conn, recipe_id, data.get("background"))
-
-        # ── Option A 扩展:history + relations(本菜作为 child)──
-        add_history(conn, recipe_id, data.get("history"))
-        add_relations(conn, recipe_id, data.get("relations"), data["name"])
-
-        # 提交事务
-        conn.execute("COMMIT")
-
-        # 统计
-        stats = {
-            "success": True,
-            "recipe_id": recipe_id,
-            "name": data["name"],
-            "ingredients_count": len(data.get("ingredients", [])),
-            "steps_count": len(data.get("steps", []))
-        }
-
-        # 可选统计
-        if data.get("tips"):
-            stats["tips_count"] = len(data["tips"])
-        if data.get("techniques"):
-            stats["techniques_count"] = len(data["techniques"])
-        if data.get("cookware"):
-            stats["cookware_count"] = len(data["cookware"])
-        if data.get("nutrition"):
-            stats["has_nutrition"] = True
-        if data.get("background"):
-            stats["has_background"] = True
-
-        return stats
-
-    except Exception as e:
-        try:
-            conn.execute("ROLLBACK")
-        except Exception:
-            pass
-        return {"success": False, "error": str(e)}
-    finally:
-        conn.close()
-
 
 def show_template():
     """显示JSON模板路径"""
@@ -751,8 +647,8 @@ def show_template():
 def main():
     if len(sys.argv) < 2:
         print("""用法：
-    python recipe_import.py import <json_file> [--choice <action>] [--new_name <新菜名>] [--merge]
-    python recipe_import.py validate <json_file>
+    python recipe_import.py import <json_file> [--choice <action>] [--new_name <新菜名>] [--merge] [--human]
+    python recipe_import.py validate <json_file> [--human]
     python recipe_import.py template
 
 说明：
@@ -767,11 +663,14 @@ def main():
     cancel   - 取消导入
 
 --merge  : 若同名菜已存在,自动覆盖(保留烹饪历史);无冲突时等同普通 import
+--human  : 用人类友好格式输出(默认 JSON 三段式,AI 可解析)
 数组批量 : JSON 顶层为数组时,逐道导入,失败不影响后续(aggregate result)
 """)
         return
 
     action = sys.argv[1]
+    json_mode = "--json" in sys.argv  # L3: 默认 JSON,加 --human 才人类友好
+    human_mode = "--human" in sys.argv
 
     if action == "template":
         show_template()
@@ -788,25 +687,27 @@ def main():
             try:
                 with open(json_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                # 数组批量校验
+                # 数组批量校验(L2: 用 validators)
                 if isinstance(data, list):
                     total_err = 0
                     for i, item in enumerate(data):
-                        errors = validate_recipe(item)
-                        if errors:
-                            print(f"[{i}] {item.get('name', '?')}: {len(errors)} 错")
-                            for err in errors[:3]:
-                                print(f"  - {err}")
-                            total_err += len(errors)
+                        validation = validators.validate_recipe_for_import(item)
+                        if not validation["valid"]:
+                            errs = validation.get("errors", [])
+                            print(f"[{i}] {item.get('name', '?')}: {len(errs)} 错")
+                            for err in errs[:3]:
+                                print(f"  - [{err.get('field', '?')}] {err.get('hint', err.get('error', ''))}")
+                            total_err += len(errs)
                     print(f"批量校验:{len(data)} 道菜,共 {total_err} 错")
                 else:
-                    errors = validate_recipe(data)
-                    if errors:
-                        print(f"验证失败：")
-                        for err in errors:
-                            print(f"  - {err}")
+                    validation = validators.validate_recipe_for_import(data)
+                    if not validation["valid"]:
+                        errs = validation.get("errors", [])
+                        print(f"验证失败:")
+                        for err in errs:
+                            print(f"  - [{err.get('field', '?')}] {err.get('hint', err.get('error', ''))}")
                     else:
-                        print(f"验证通过！")
+                        print(f"验证通过!")
             except json.JSONDecodeError as e:
                 print(f"JSON格式错误: {e}")
             except FileNotFoundError:
@@ -838,7 +739,8 @@ def main():
             with open(json_file, 'r', encoding='utf-8') as f:
                 peek_data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError) as e:
-            print(json.dumps({"success": False, "error": str(e)}, ensure_ascii=False, indent=2))
+            from cli_formatter import error as fmt_error
+            emit(fmt_error(f"JSON 加载失败: {str(e)}"), json_mode=json_mode)
             return
 
         if isinstance(peek_data, list):
@@ -872,14 +774,14 @@ def main():
                 "failed": fail,
                 "results": results,
             }
-            print(json.dumps(aggregate, ensure_ascii=False, indent=2))
+            emit(aggregate, json_mode=json_mode)
         else:
             # 单菜模式
             result = import_recipe(json_file, choice=choice, new_name=new_name, merge=merge)
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            emit(result, json_mode=json_mode)
         return
 
-    print(f"未知操作：{action}")
+    emit(error(f"未知操作：{action}"), json_mode=json_mode)
 
 
 if __name__ == "__main__":

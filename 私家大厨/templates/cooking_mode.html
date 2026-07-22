@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>做菜模式 · <span id="recipe-name-title">加载中</span></title>
+<title>做菜模式</title>
 <style>
   :root{
     --blue:#007AFF;--blue-soft:#EAF3FF;--blue-deep:#003F7F;
@@ -370,6 +370,8 @@ function init(){
   STATE.usageOrder = computeUsageOrder();
   STATE.overnightItems = detectOvernightPrep();
   renderAll();
+  // ⚠ 关键修复:init 后必须激活第一个阶段,否则 .stage{display:none} 让所有内容不显示
+  document.getElementById('stage-prep').classList.add('active');
 }
 
 // ============== 状态 ==============
@@ -441,10 +443,15 @@ function detectOvernightPrep(){
 
 // ============== 渲染 ==============
 function renderAll(){
-  renderPrep();
-  // 标题
+  try {
+    renderPrep();
+  } catch(e){
+    console.error('renderPrep 错误:', e);
+    document.getElementById('prep-cutting-list').innerHTML =
+      `<li style="color:var(--red)">渲染错误:${escapeHTML(String(e))}</li>`;
+  }
   document.title = `做菜模式 · ${STATE.recipe.name}`;
-  document.getElementById('recipe-name-title').textContent = STATE.recipe.name;
+  // 注:title 已简化,无 span
 }
 
 function renderPrep(){

@@ -83,7 +83,7 @@
 <h4>目录</h4>
 <ol>
   <li><a href="#p1">第一部分 · 第一性原理：Skill 是什么</a></li>
-  <li><a href="#p2">第二部分 · Skill 的 5 层结构</a></li>
+  <li><a href="#p2">第二部分 · Skill 的 5 层结构（骨架）</a></li>
   <li><a href="#p3">第三部分 · 优秀 Skill 的 6 大特性</a></li>
   <li><a href="#p4">第四部分 · 反模式与陷阱</a></li>
   <li><a href="#p5">第五部分 · Self-Audit 自检清单</a></li>
@@ -129,30 +129,111 @@
 <!-- ========== 第二部分 ========== -->
 <h2 id="p2">第二部分 · Skill 的 5 层结构</h2>
 
-<p>每个 Skill 都应该有这 5 层。漏一层，Skill 就不完整：</p>
+<p>第一部分讲了 Skill 该具备什么"<b>品质</b>"（可识别/可验证/可恢复/可约束/可联动/可演进）。但没说这些品质该<b>放在哪个文件里</b>。这一部分讲"<b>骨架</b>"——5 层结构 + 规模伸缩。</p>
+
+<p>不分层的 Skill 短期能跑，分层的 Skill 长期能活。"层"这个概念的作用只有一个：让你写代码时知道往哪放。</p>
+
+<h3>2.1 五层是什么（按领域视角）</h3>
+
+<p>5 层从"<b>领域由什么组成</b>"的角度切：</p>
 
 <div class="property">
   <div class="property-key">① 数据层<br><span class="pill">state</span></div>
-  <div class="property-val">管什么数据。数据库表结构、索引、约束、外键关系。<em>例：居家管家的 <code>items</code> / <code>item_locations</code> / <code>item_tags</code> / <code>categories</code></em></div>
+  <div class="property-val">管什么数据。数据库表结构、索引、约束、外键、事务、迁移、备份。<em>例：居家管家的 <code>items</code> / <code>item_locations</code> / <code>item_tags</code> / <code>categories</code> 表</em></div>
 </div>
 <div class="property">
   <div class="property-key">② 操作层<br><span class="pill">actions</span></div>
-  <div class="property-val">能做什么动作。原子化 CLI 子命令（add / update / delete / search / list / summary）。<em>例：<code>record_bill.py add --amount -49.90 --category 餐饮</code></em></div>
+  <div class="property-val">能做什么动作。<b>本地操作</b>：原子化 CLI 子命令（add / update / delete / search / list / summary）。<b>对外操作（集成）</b>：调外部服务（飞书 / 训记 / MCP / 其他 skill）。<em>例：<code>record_bill.py add --amount -49.90 --category 餐饮</code> 是本地操作；<code>feishu_sync.py push-task</code> 是对外操作</em></div>
 </div>
 <div class="property">
   <div class="property-key">③ 规则层<br><span class="pill">rules</span></div>
-  <div class="property-val">必须遵守什么。硬规则（系统强制，如 tag ≥ 10）+ 软规则（AI 自觉，如分类心法）。</div>
+  <div class="property-val">必须遵守什么。硬规则（系统强制，如 tag ≥ 10）+ 软规则（AI 自觉，如分类心法）。<em>设计位置：硬规则集中在 <code>validators.py</code>，软规则放在 SKILL.md 的 references/ 章节</em></div>
 </div>
 <div class="property">
   <div class="property-key">④ 接口层<br><span class="pill">contract</span></div>
-  <div class="property-val">怎么说话。输入 schema（参数）、输出 schema（JSON）、错误码、退出码。<em>例：所有 CLI 返回 <code>{"status": "ok"|"error", "data": ..., "message": "..."}</code></em></div>
+  <div class="property-val">怎么说话。输入 schema（argparse 参数）+ 输出 schema（JSON）+ 错误码 + 退出码。<em>例：所有 CLI 返回 <code>{"status": "ok"|"error", "data": ..., "message": "..."}</code></em></div>
 </div>
 <div class="property">
   <div class="property-key">⑤ 文档层<br><span class="pill">docs</span></div>
-  <div class="property-val">怎么被理解。SKILL.md（Agent 读）+ HTML 镜像（人读）+ 示例对话 + 术语表。<em>例：<code>居家管家.html</code> 和 <code>SKILL.md</code> 内容必须保持一致</em></div>
+  <div class="property-val">怎么被理解。SKILL.md（Agent 读）+ HTML 镜像（人读）+ 示例对话 + 术语表 + references/ 子文档。<em>例：<code>居家管家.html</code> 和 <code>SKILL.md</code> 内容必须保持一致</em></div>
 </div>
 
 <p>好的 Skill，5 层互相自洽；差的 Skill，往往某一层是空的或糊弄的。</p>
+
+<h3>2.2 关键约束（层间硬规则）</h3>
+
+<ul>
+  <li><b>箭头只能向下</b>：上层可以 import 下层，下层绝不 import 上层。<em>例：操作层可以 import 数据层（通过 db.py），但 db.py 不该知道有 CLI</em></li>
+  <li><b>下层不知道上层存在</b>：<code>db.py</code> 不该知道有 <code>CLI</code>；<code>validators.py</code> 不该知道被哪个 skill 调用</li>
+  <li><b>操作层（对外部分）是"软依赖"</b>：外部服务挂了，本地照常工作，只 stderr 记录。<em>例：飞书同步失败 → 本地 due 仍生效</em></li>
+  <li><b>对外操作 ≥ 2 个集成点</b> → 抽 <code>integrations/</code> 子模块统一管理（避免代码散落业务模块）</li>
+</ul>
+
+<h3>2.3 每层落到什么文件</h3>
+
+<p>5 层是抽象概念，落到目录里是这样的：</p>
+
+<table>
+  <tr><th>层</th><th>对应文件 / 目录</th><th>职责</th></tr>
+  <tr>
+    <td>① 数据层</td>
+    <td><code>db.py</code> + SQLite</td>
+    <td>SQL 封装、事务、迁移、备份</td>
+  </tr>
+  <tr>
+    <td>② 操作层（本地）</td>
+    <td><code>*_ops.py</code>（item_ops / inventory_ops / ...）</td>
+    <td>领域模块、编排、跨模块事务</td>
+  </tr>
+  <tr>
+    <td>② 操作层（对外/集成）</td>
+    <td><code>integrations/feishu_sync.py</code> / <code>xunji_bridge.py</code></td>
+    <td>外部服务调用、失败降级、幂等键</td>
+  </tr>
+  <tr>
+    <td>③ 规则层</td>
+    <td><code>validators.py</code>（硬）+ references/（软）</td>
+    <td>硬规则系统校验、软规则 AI 自觉</td>
+  </tr>
+  <tr>
+    <td>④ 接口层</td>
+    <td>CLI 入口文件（如 <code>home_manager.py</code>）</td>
+    <td>argparse 定义、JSON 输出、错误码、兼容层</td>
+  </tr>
+  <tr>
+    <td>⑤ 文档层</td>
+    <td><code>SKILL.md</code> + <code>&lt;skill&gt;.html</code> + <code>features/</code> + <code>references/</code></td>
+    <td>触发词、操作流程、HTML 镜像、深入文档</td>
+  </tr>
+</table>
+
+<h3>2.4 规模伸缩</h3>
+
+<p>不是所有 Skill 都需要完整 5 层。<b>按规模伸缩</b>，避免过度工程。</p>
+
+<table>
+  <tr><th>规模</th><th>判定标准</th><th>架构方案</th><th>例子</th></tr>
+  <tr>
+    <td><b>微型</b></td>
+    <td>≤1 个 .py，≤200 行</td>
+    <td><b>3 层合并</b>：文档 + 接口 + 操作+数据 写一起</td>
+    <td>饼干记账（单 <code>record_bill.py</code>）</td>
+  </tr>
+  <tr>
+    <td><b>中型</b></td>
+    <td>2-5 个 .py</td>
+    <td><b>5 层完整</b>：每层职责清晰</td>
+    <td>居家管家（<code>db.py + item_ops.py + ...</code>）</td>
+  </tr>
+  <tr>
+    <td><b>大型</b></td>
+    <td>5+ .py，含外部集成</td>
+    <td><b>5 层 + 对外操作独立子模块</b>：每个子模块独立文件</td>
+    <td>卡路里 / 备忘录（业务模块切得最细）</td>
+  </tr>
+</table>
+
+<p><b>判断标准</b>：如果你一个人 1 周内能写完，用微型；如果你一个人 1 个月内写完，用中型；如果多人协作或长期维护，用大型。</p>
 
 <!-- ========== 第三部分 ========== -->
 <h2 id="p3">第三部分 · 优秀 Skill 的 6 大特性</h2>

@@ -9,6 +9,7 @@ import sys
 import uuid
 # L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
 from db import get_connection
+from cli_formatter import emit, parse_json_flag, error  # L3
 
 def add(args):
     """添加用餐类型"""
@@ -128,6 +129,7 @@ def main():
         return
     
     action = sys.argv[1]
+    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
     
     args = {}
     i = 2
@@ -161,7 +163,7 @@ def main():
     elif action == "search":
         search(args)
     else:
-        print(f"未知操作：{action}")
+        emit(error(f"未知操作:{action}"), json_mode=json_mode)
 
 if __name__ == "__main__":
     main()

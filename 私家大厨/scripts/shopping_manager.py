@@ -1,3 +1,4 @@
+from cli_formatter import emit, parse_json_flag, error  # L3
 #!/usr/bin/env python3
 """
 私家大厨 - 采购清单管理(5 层架构版)
@@ -314,6 +315,7 @@ def main():
         return
 
     action = sys.argv[1]
+    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
     args = {}
 
     i = 2

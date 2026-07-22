@@ -11,6 +11,7 @@ import json
 from datetime import datetime
 # L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
 from db import get_connection
+from cli_formatter import emit, parse_json_flag, error  # L3
 
 def get_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -969,6 +970,7 @@ def main():
         return
     
     action = sys.argv[1]
+    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
     
     # 解析参数
     args = {}
@@ -1016,7 +1018,7 @@ def main():
     elif action == "export-json":
         export_json(args)
     else:
-        print(f"未知操作：{action}")
+        emit(error(f"未知操作:{action}"), json_mode=json_mode)
 
 if __name__ == "__main__":
     main()

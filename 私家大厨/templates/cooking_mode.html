@@ -606,21 +606,6 @@ function renderCook(){
   // 顶部
   document.getElementById('cook-step-indicator').textContent = `${cur} / ${total}`;
 
-  // 右侧面板:进度 + 下一步摘要(1024+ 才显示)
-  // 剩余时间 = 当前步骤剩余(分钟,≤0 时按 0 算避免显示负数)+ 后续步骤总时长(下限)
-  const currRemainingMin = Math.max(0, Math.ceil(STATE.timer.remaining / 60));
-  const subsequentMin = steps.slice(cur).reduce((sum, s) => sum + (s.duration_minutes || s.duration || 0), 0);
-  const remainingMin = currRemainingMin + subsequentMin;
-  document.getElementById('cook-side-info').innerHTML =
-    `第 <b style="color:var(--blue-deep);font-size:18px;">${cur}</b> / ${total} 步<br>` +
-    `⏱ 剩余约 ${remainingMin} 分钟`;
-  const nextStep = steps[cur];  // 当前是 cur,下一步是 steps[cur]
-  const nextHintEl = document.getElementById('cook-next-hint');
-  if (nextStep){
-    nextHintEl.innerHTML = `<b>下一步</b><br>${formatStepAction(nextStep.action.slice(0, 50))}${nextStep.action.length > 50 ? '...' : ''}`;
-  } else {
-    nextHintEl.innerHTML = `<b>🎉 最后一步</b><br>做完进入评分`;
-  }
   document.getElementById('cook-progress-bar').style.width = `${(cur / total) * 100}%`;
 
   // 主卡片
@@ -745,6 +730,32 @@ function updateTimerDisplay(){
   } else {
     timerEl.classList.remove('timer-warn');
     timerEl.innerHTML = text;
+  }
+  renderCookSideInfo();
+}
+
+function renderCookSideInfo(){
+  const sideInfoEl = document.getElementById('cook-side-info');
+  const nextHintEl = document.getElementById('cook-next-hint');
+  if (!sideInfoEl || !nextHintEl || !STATE.recipe) return;
+  const steps = STATE.recipe.steps || [];
+  const total = steps.length;
+  if (total === 0) return;
+  const cur = Math.min(STATE.currentStep, total);
+  const currentStep = steps[cur - 1] || {};
+  const plannedCurrentMin = currentStep.duration_minutes || currentStep.duration || 0;
+  const positiveCurrentMin = Math.max(0, Math.ceil(STATE.timer.remaining / 60));
+  const currentDisplayMin = STATE.timer.remaining <= 0 ? plannedCurrentMin : positiveCurrentMin;
+  const subsequentMin = steps.slice(cur).reduce((sum, s) => sum + (s.duration_minutes || s.duration || 0), 0);
+  const remainingMin = currentDisplayMin + subsequentMin;
+  sideInfoEl.innerHTML =
+    `第 <b style="color:var(--blue-deep);font-size:18px;">${cur}</b> / ${total} 步<br>` +
+    `⏱ 剩余约 ${remainingMin} 分钟`;
+  const nextStep = steps[cur];
+  if (nextStep){
+    nextHintEl.innerHTML = `<b>下一步</b><br>${formatStepAction(nextStep.action.slice(0, 50))}${nextStep.action.length > 50 ? '...' : ''}`;
+  } else {
+    nextHintEl.innerHTML = `<b>🎉 最后一步</b><br>做完进入评分`;
   }
 }
 

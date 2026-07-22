@@ -330,7 +330,7 @@ python scripts/recipe_render.py render <菜名或ID>
 - 内联 CSS / JS(已统一在 `templates/recipe_view.html`)
 - 只告诉用户 HTML 路径而不发文件(违反"必发"规则)
 
-**「做菜模式」** 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。
+**「做菜模式」** 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。做饭页右侧"剩余约 N 分钟"必须按 `references/cooking_mode.md` 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。
 
 ### 采购清单 HTML 强制（v5.2 新增）
 

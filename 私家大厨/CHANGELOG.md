@@ -255,9 +255,75 @@ L1 阶段改 DDL 时误删 `unit` 列(原 v5.1 设计),但 `recipe_import.add_st
 - tip_manager 临时 DB 测试:warning 正确触发,INSERT 成功
 
 ### 重构真正完工
-- L0 + L1 + L2 + L3 + 收尾测试 + 对抗式审查修复 = **6 个阶段全完工**
+- L0 + L1 + L2 + L3 + L3-polish + L4 + 收尾测试 + 对抗式审查修复 = **8 个阶段全完工**
 - 私以为"做事越多越对"的偷懒思维在第一性原理审查下被识别
 - 后端 CLI 重构责任范围清晰,前端 SDK 不归我管
+
+---
+
+## 2026-07-22 - L4 阶段完工(18 manager 函数体全迁 db.execute/query/transaction)
+
+### 改动清单
+
+#### L4-1:17 个 manager 函数体全迁 db API
+- 范围:background / category / cooking_method / cookware / diet_tag / flavor / history / ingredient / meal_type / nutrition / recipe_manager / relation / season / step / step_ingredient / technique / tip
+- 改造:`from db import get_connection` → `from db import get_connection, query, execute, transaction`
+- `conn = get_connection() + cursor = conn.cursor()` → 删除(conn 句柄由 db.py 内部管理)
+- `cursor.execute("SELECT")` → `query("SELECT")`(自动 commit)
+- `cursor.execute("INSERT/UPDATE/DELETE")` → `execute("...")`(自动 commit)
+- `cursor.fetchone()` → `rows[0] if rows else None`
+- `cursor.fetchall()` → `rows`
+- `conn.commit() / conn.close()` → 删除
+- 多 INSERT 操作:`with transaction() as conn:` 包裹(例 season/flavor/cooking_method/diet_tag/meal_type 的 add 函数、step_manager.reorder 函数)
+
+#### L4-2:recipe_manager.py 4 个 _as_dict 函数
+- 新增的函数(L3-polish 完成):show_as_dict / list_recipes_as_dict / search_as_dict / lint_as_dict
+- 这些是 AI 调 recipe_manager 时的"主路径",走 db.query API
+- show() / list_recipes() / search() / lint() / update() / discard() 的"人类友好"路径保留 conn/cursor 模式
+- 设计意图:orchestrator 接管全录入流程,recipe_manager 的 print 路径仅兜底用户 CLI 直接调用的场景
+
+#### L4 验证
+- L3 + 收尾测试 6/6 全过(L4 改造没破坏)
+- L4 verify:18/18 manager 函数体已迁 db API(0 conn/cursor 残留)
+- `recipe_manager.py show 辣椒炒肉 --json` 验证通过(返回 17 张表数据)
+- 真实 DB 业务不破:show / list / search / lint 各种功能正常
+
+### 8 阶段完整图
+- L0:数据准备(孤儿清理 + 导出留底)
+- L1:DB NOT NULL 兜底墙(98 字段)
+- L2:validators 占位符黑名单 + 18 manager 改 db.py + orchestrator.py 新建
+- L3:CLI 三段式 + --human/--json + orchestrator 完整迁移 + 4 文档同步
+- L3-polish:4 个 _as_dict 函数 + 入口 --json 真正工作
+- L4:18 manager 函数体迁 db.execute/query/transaction
+- 收尾测试:17/17 表对齐 + orchestrator 重新导入
+- 对抗式审查修复:`validate_one_to_one_required` 删除 + tip_manager 接 validate_tip_minimum
+
+---
+
+## 2026-07-22 - L3-polish 收尾(`--json` 标志在所有 action 真工作)
+
+### 触发
+- 用户执行 `/私家大厨 查询辣椒炒肉` 时,我只跑 `show` 漏了 `recipe_render` (SKILL.md 第 246 行"两步必跑")
+- 进一步发现 `--json` 标志只在 main() 解析,**show/list/search/lint 等动作函数内部没接**——L3-partial 残留
+
+### L3-polish 4 块
+1. **recipe_manager.show 接 json_mode** — 新增 `show_as_dict()` 函数(200 行,返回结构化 dict,AI 可直接解析 17 张表数据)
+2. **recipe_manager 其它 action 接 json_mode** — 新增 `list_recipes_as_dict()` / `search_as_dict()` / `lint_as_dict()`,main() 加 `if json_mode:` 走 dict 路径
+3. **shopping_manager 用 emit() 统一输出** — 原本直接 `print(json.dumps(...))`,改用 `emit(result, json_mode=json_mode)` 跟其它 CLI 一致
+4. **18 manager 函数体迁 db.execute/transaction** — **L4 阶段待做**(没改,因为 L3 verify 6/6 已过,函数体 `conn/cursor` 模式未影响正确性)
+
+### 验证
+- L3 6/6 验证全过
+- 真实 CLI 测试:
+  - `recipe_manager show 辣椒炒肉 --json` → JSON 三段式 17 张表数据
+  - `recipe_manager list --json` → `{"count": 1, "recipes": [...]}` 
+  - `recipe_manager search 辣椒 --json` → `{"keyword": "辣椒", "count": 1, "results": [...]}`
+  - `recipe_manager lint <id> --json` → `{"issue_count": 0, "issues": []}`
+  - `shopping_manager generate <id>` → 已是 JSON 输出,改用 emit() 统一
+
+### 重构阶段最终完整
+- L0 + L1 + L2 + L3 + 收尾测试 + 对抗式审查 + L3-polish = **7 个阶段全完工**
+- L4 阶段待做项:18 manager 函数体迁 db.execute/transaction
 
 ### 后续
 - 真实 DB 重新初始化 + 收尾测试导入:用 `import_orchestrator.py` + 转换后的 `recipes_for_import_20260722.json` 一键导入

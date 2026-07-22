@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 # L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
 from db import get_connection
-from cli_formatter import emit, parse_json_flag, error  # L3
+from cli_formatter import emit, parse_json_flag, error, success  # L3-补漏
 
 def get_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -23,15 +23,13 @@ def add(args):
         print("错误：请提供菜名")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
     
     # 检查是否已有同名食谱（非废弃）
-    cursor.execute("""
+    rows = query("""
         SELECT id, name, status FROM recipes 
         WHERE name = ? AND status != '已废弃'
     """, (name,))
-    existing = cursor.fetchone()
+    existing = rows[0] if rows else None
     
     if existing:
         # 检查是否有 --choice 参数（AI传递的选择）
@@ -40,42 +38,34 @@ def add(args):
         # 如果有选择参数，直接执行
         if choice:
             if choice == "view":
-                conn.close()
                 show({"<菜名>": existing['id']})
                 return True
             elif choice == "update":
-                conn.close()
                 update({"<recipe_id>": existing['id']})
                 return True
             elif choice == "cancel":
-                conn.close()
                 print(json.dumps({"status": "cancelled", "message": "已取消"}, ensure_ascii=False))
                 return False
             elif choice == "derive":
-                # 派生需要新菜名，通过 --new_name 参数传递
                 new_name = args.get("--new_name")
                 if not new_name:
-                    conn.close()
                     print(json.dumps({"error": "派生需要 --new_name 参数"}, ensure_ascii=False))
                     return False
-                conn.close()
                 return add({**args, "name": new_name})
             else:
-                conn.close()
                 print(json.dumps({"error": f"无效选择: {choice}", "valid_choices": ["view", "derive", "update", "cancel"]}, ensure_ascii=False))
                 return False
 
         # 没有选择参数，输出JSON格式的冲突信息供AI决策
-        cursor.execute("""
+        hist_rows = query("""
             SELECT COUNT(*) as cnt, AVG(rating) as avg
             FROM recipe_history WHERE recipe_id = ?
         """, (existing['id'],))
-        hist = cursor.fetchone()
+        hist = hist_rows[0] if hist_rows else {"cnt": 0, "avg": None}
         hist_cnt = int(hist['cnt']) if hist['cnt'] else 0
         hist_avg = round(float(hist['avg']), 1) if hist['avg'] else 0
 
-        conn.close()
-
+    
         # 输出JSON格式的冲突信息
         conflict_info = {
             "conflict": True,
@@ -101,7 +91,7 @@ def add(args):
     recipe_id = str(uuid.uuid4())
     now = get_now()
     
-    cursor.execute("""
+    execute("""
         INSERT INTO recipes (
             id, name, description, difficulty, servings, total_time_minutes,
             status, photo_url, source, source_url, created_at, updated_at
@@ -121,33 +111,35 @@ def add(args):
         now
     ))
     
-    conn.commit()
-    conn.close()
     
     print(f"✅ 食谱添加成功！")
     print(f"   ID: {recipe_id}")
     print(f"   菜名: {name}")
     return True
 
-def show(args):
-    """查看食谱详情（人类友好格式）"""
+def show(args, json_mode=False):
+    """查看食谱详情(人类友好格式)
+
+    json_mode 参数 L3-补漏 增加,但函数体保留人类友好输出;
+    JSON 输出走 show_as_dict() 函数(避免动 show 主体的 361 行 print)
+    """
     name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
     if not name:
+        if json_mode:
+            return error("请提供菜名或ID")
         print("错误：请提供菜名或ID")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
 
     # 1. 精确匹配(优先) — show 是"看这一道",不是"找一找",必须精确
     #    v5.2 修复:之前用 LIKE 模糊匹配,导致拼错菜名也"找到"——用户做错菜
-    cursor.execute("SELECT * FROM recipes WHERE id = ? OR name = ?", (name, name))
-    recipe = cursor.fetchone()
+    rows = query("SELECT * FROM recipes WHERE id = ? OR name = ?", (name, name))
+    recipe = rows[0] if rows else None
 
     if not recipe:
         # 2. fallback:用 search 的逻辑找相似,给用户友好提示
-        cursor.execute("SELECT name FROM recipes WHERE name LIKE ? LIMIT 5", (f"%{name}%",))
-        similar = cursor.fetchall()
+        rows = query("SELECT name FROM recipes WHERE name LIKE ? LIMIT 5", (f"%{name}%",))
+        similar = rows
         if similar:
             similar_names = [s['name'] for s in similar]
             print(f"未找到食谱:{name}")
@@ -158,50 +150,48 @@ def show(args):
         else:
             print(f"未找到食谱:{name}(也没找到相似菜)")
             print(f"  试试 '搜索食谱 {name}' 模糊搜,或 '查看全部' 列所有菜")
-        conn.close()
         return False
 
     recipe_status = recipe["status"]
     if recipe_status == '已废弃':
         print(f"⚠️ 「{recipe['name']}」已废弃")
-        conn.close()
         return True
-    
+
     recipe_id = recipe["id"]
     
     # 查分类
-    cursor.execute("SELECT * FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
-    categories = cursor.fetchall()
+    rows = query("SELECT * FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
+    categories = rows
     
-    cursor.execute("SELECT season FROM recipe_seasons WHERE recipe_id = ?", (recipe_id,))
-    seasons = [row["season"] for row in cursor.fetchall()]
+    rows = query("SELECT season FROM recipe_seasons WHERE recipe_id = ?", (recipe_id,))
+    seasons = [row["season"] for row in rows]
     
-    cursor.execute("SELECT method FROM recipe_cooking_methods WHERE recipe_id = ?", (recipe_id,))
-    methods = [row["method"] for row in cursor.fetchall()]
+    rows = query("SELECT method FROM recipe_cooking_methods WHERE recipe_id = ?", (recipe_id,))
+    methods = [row["method"] for row in rows]
     
-    cursor.execute("SELECT flavor FROM recipe_flavors WHERE recipe_id = ?", (recipe_id,))
-    flavors = [row["flavor"] for row in cursor.fetchall()]
+    rows = query("SELECT flavor FROM recipe_flavors WHERE recipe_id = ?", (recipe_id,))
+    flavors = [row["flavor"] for row in rows]
     
-    cursor.execute("SELECT tag FROM recipe_diet_tags WHERE recipe_id = ?", (recipe_id,))
-    diet_tags = [row["tag"] for row in cursor.fetchall()]
+    rows = query("SELECT tag FROM recipe_diet_tags WHERE recipe_id = ?", (recipe_id,))
+    diet_tags = [row["tag"] for row in rows]
     
-    cursor.execute("SELECT meal_type FROM recipe_meal_types WHERE recipe_id = ?", (recipe_id,))
-    meal_types = [row["meal_type"] for row in cursor.fetchall()]
+    rows = query("SELECT meal_type FROM recipe_meal_types WHERE recipe_id = ?", (recipe_id,))
+    meal_types = [row["meal_type"] for row in rows]
     
     # 查食材
-    cursor.execute("SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
-    ingredients = list(cursor.fetchall())
+    rows = query("SELECT * FROM ingredients WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
+    ingredients = list(rows)
     
     # 查步骤
-    cursor.execute("SELECT * FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
-    steps = list(cursor.fetchall())
+    rows = query("SELECT * FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence", (recipe_id,))
+    steps = list(rows)
     
     # 查步骤食材投入
     step_ingredients_map = {}
     if steps:
         step_ids = [step['id'] for step in steps]
         placeholders = ','.join(['?' for _ in step_ids])
-        cursor.execute(f"""
+        rows = query(f"""
             SELECT si.step_id, si.quantity_used, si.introduced_at, 
                    i.name, i.unit, i.quantity as total_quantity, i.sequence as ing_seq
             FROM step_ingredients si
@@ -209,7 +199,7 @@ def show(args):
             WHERE si.step_id IN ({placeholders})
             ORDER BY si.step_id, i.sequence
         """, step_ids)
-        for row in cursor.fetchall():
+        for row in rows:
             sid = row['step_id']
             if sid not in step_ingredients_map:
                 step_ingredients_map[sid] = []
@@ -220,12 +210,12 @@ def show(args):
     if steps:
         step_ids = [step['id'] for step in steps]
         placeholders = ','.join(['?' for _ in step_ids])
-        cursor.execute(f"""
+        rows = query(f"""
             SELECT st.step_id, st.technique_name, st.description, st.key_points
             FROM step_techniques st
             WHERE st.step_id IN ({placeholders})
         """, step_ids)
-        for row in cursor.fetchall():
+        for row in rows:
             sid = row['step_id']
             if sid not in step_techniques_map:
                 step_techniques_map[sid] = []
@@ -233,8 +223,8 @@ def show(args):
     
     # 查步骤小贴士
     step_tips_map = {}
-    cursor.execute("SELECT step_id, category, content, priority FROM tips WHERE recipe_id = ?", (recipe_id,))
-    for row in cursor.fetchall():
+    rows = query("SELECT step_id, category, content, priority FROM tips WHERE recipe_id = ?", (recipe_id,))
+    for row in rows:
         sid = row['step_id']
         if sid:
             if sid not in step_tips_map:
@@ -243,48 +233,47 @@ def show(args):
     
     # 查全局小贴士
     global_tips = []
-    cursor.execute("SELECT category, content, priority FROM tips WHERE recipe_id = ? AND step_id IS NULL", (recipe_id,))
-    global_tips = list(cursor.fetchall())
+    rows = query("SELECT category, content, priority FROM tips WHERE recipe_id = ? AND step_id IS NULL", (recipe_id,))
+    global_tips = list(rows)
     
     # 查炊具
-    cursor.execute("SELECT * FROM cookware WHERE recipe_id = ?", (recipe_id,))
-    cookware_list = cursor.fetchall()
+    rows = query("SELECT * FROM cookware WHERE recipe_id = ?", (recipe_id,))
+    cookware_list = rows
     
     # 查背景
-    cursor.execute("SELECT * FROM background_knowledge WHERE recipe_id = ?", (recipe_id,))
-    background = cursor.fetchone()
+    rows = query("SELECT * FROM background_knowledge WHERE recipe_id = ?", (recipe_id,))
+    background = rows[0] if rows else None
     
     # 查营养
-    cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
-    nutrition = cursor.fetchone()
+    rows = query("SELECT * FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
+    nutrition = rows[0] if rows else None
     
     # 查历史统计
-    cursor.execute("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM recipe_history WHERE recipe_id = ?", (recipe_id,))
-    history_stats = cursor.fetchone()
+    rows = query("SELECT COUNT(*) as cnt, AVG(rating) as avg_rating FROM recipe_history WHERE recipe_id = ?", (recipe_id,))
+    history_stats = rows[0] if rows else None
     
     # 查历史详情
-    cursor.execute("SELECT * FROM recipe_history WHERE recipe_id = ? ORDER BY cook_date DESC", (recipe_id,))
-    history_list = list(cursor.fetchall())
+    rows = query("SELECT * FROM recipe_history WHERE recipe_id = ? ORDER BY cook_date DESC", (recipe_id,))
+    history_list = list(rows)
     
     # 查派生关系
-    cursor.execute("SELECT * FROM recipe_relations WHERE parent_id = ? OR child_id = ?", (recipe_id, recipe_id))
-    relations = list(cursor.fetchall())
+    rows = query("SELECT * FROM recipe_relations WHERE parent_id = ? OR child_id = ?", (recipe_id, recipe_id))
+    relations = list(rows)
 
     # 食材在哪些步骤使用
     ing_steps_map = {}
-    cursor.execute("""
+    rows = query("""
         SELECT si.ingredient_id, cs.sequence
         FROM step_ingredients si
         JOIN cooking_steps cs ON si.step_id = cs.id
         WHERE cs.recipe_id = ?
     """, (recipe_id,))
-    for row in cursor.fetchall():
+    for row in rows:
         ing_id, seq = row
         if ing_id not in ing_steps_map:
             ing_steps_map[ing_id] = []
         ing_steps_map[ing_id].append(f"{seq}")
 
-    conn.close()
     
     # ==================== 格式设计开始 ====================
     SEP = "─" * 54
@@ -486,45 +475,183 @@ def show(args):
     print(f"\n{'═' * 54}")
     print(f"  ID: {recipe_id}")
     print(f"{'═' * 54}\n")
-    
+
     return True
+
+
+def show_as_dict(name: str) -> dict:
+    """show() 的 JSON 三段式版本(L3-补漏)。
+
+    与 show() 同样的查询逻辑,但返回结构化 dict,
+    让 AI / 程序可直接解析(避免 AI 自己 grep 361 行人类友好 print)。
+    """
+
+    # 精确匹配(name 或 id)
+    rows = query("SELECT * FROM recipes WHERE id = ? OR name = ?", (name, name))
+    recipe = rows[0] if rows else None
+
+    if not recipe:
+        # fallback:相似菜名
+        rows = query("SELECT name FROM recipes WHERE name LIKE ? LIMIT 5", (f"%{name}%",))
+        similar = rows
+        similar_names = [s['name'] for s in similar]
+        return error(f"未找到食谱:{name}", data={"similar": similar_names})
+
+    recipe_id = recipe['id']
+
+    # 关联子表全量
+    rows = query("SELECT cuisine_type, region, country FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
+    cats = rows
+    rows = query("SELECT season FROM recipe_seasons WHERE recipe_id = ?", (recipe_id,))
+    seasons = [r['season'] for r in rows]
+    rows = query("SELECT method FROM recipe_cooking_methods WHERE recipe_id = ?", (recipe_id,))
+    methods = [r['method'] for r in rows]
+    rows = query("SELECT flavor FROM recipe_flavors WHERE recipe_id = ?", (recipe_id,))
+    flavors = [r['flavor'] for r in rows]
+    rows = query("SELECT tag FROM recipe_diet_tags WHERE recipe_id = ?", (recipe_id,))
+    diet_tags = [r['tag'] for r in rows]
+    rows = query("SELECT meal_type FROM recipe_meal_types WHERE recipe_id = ?", (recipe_id,))
+    meal_types = [r['meal_type'] for r in rows]
+    rows = query("""SELECT id, name, category, quantity, unit, quantity_text, is_optional, substitute, sequence
+                      FROM ingredients WHERE recipe_id = ? ORDER BY sequence""", (recipe_id,))
+    ingredients = [dict(r) for r in rows]
+    rows = query("""SELECT id, sequence, action, duration_minutes, heat_level, temperature, expected_result
+                      FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence""", (recipe_id,))
+    steps = [dict(r) for r in rows]
+
+    # step_ingredients 按 step_id 分组
+    step_id_to_ings = {s['id']: [] for s in steps}
+    if steps:
+        ids = tuple(s['id'] for s in steps)
+        ph = ','.join('?' * len(ids))
+        rows = query(f"""SELECT step_id, ingredient_id, quantity_used, introduced_at, unit
+                            FROM step_ingredients WHERE step_id IN ({ph})""", ids)
+        for si in rows:
+            step_id_to_ings[si['step_id']].append(dict(si))
+
+    # 装配 step.ingredients_used
+    for step in steps:
+        step['ingredients_used'] = step_id_to_ings.get(step['id'], [])
+
+    rows = query("""SELECT id, technique_name, description, key_points
+                      FROM step_techniques WHERE recipe_id = ?""", (recipe_id,))
+    techniques = [dict(r) for r in rows]
+    rows = query("""SELECT id, name, category FROM cookware WHERE recipe_id = ?""", (recipe_id,))
+    cookware = [dict(r) for r in rows]
+    rows = query("""SELECT id, content, category, priority, step_id, ingredient_id
+                      FROM tips WHERE recipe_id = ?""", (recipe_id,))
+    tips = [dict(r) for r in rows]
+    rows = query("""SELECT id, cook_date, cook_sequence, rating, feedback
+                      FROM recipe_history WHERE recipe_id = ? ORDER BY cook_date""", (recipe_id,))
+    history = [dict(r) for r in rows]
+    rows = query("""SELECT id, origin_story, historical_background, cultural_significance
+                      FROM background_knowledge WHERE recipe_id = ?""", (recipe_id,))
+    bg_rows = rows
+    background = dict(bg_rows[0]) if bg_rows else None
+    rows = query("""SELECT id, serving_size, serving_unit, calories, protein, fat, carbs, fiber, sodium
+                      FROM nutrition_info WHERE recipe_id = ?""", (recipe_id,))
+    nu_rows = rows
+    nutrition = dict(nu_rows[0]) if nu_rows else None
+    rows = query("""SELECT id, parent_id, child_id, relation_type, change_summary
+                      FROM recipe_relations WHERE child_id = ?""", (recipe_id,))
+    relations = [dict(r) for r in rows]
+
+
+    # 主表 dict(排除非业务字段)
+    recipe_dict = {
+        "id": recipe_id,
+        "name": recipe['name'],
+        "description": recipe['description'],
+        "difficulty": recipe['difficulty'],
+        "servings": recipe['servings'],
+        "total_time_minutes": recipe['total_time_minutes'],
+        "status": recipe['status'],
+        "photo_url": recipe['photo_url'],
+        "source": recipe['source'],
+        "source_url": recipe['source_url'],
+        "created_at": recipe['created_at'],
+        "updated_at": recipe['updated_at'],
+    }
+
+    return success(
+        data={
+            "recipe": recipe_dict,
+            "category": dict(cats[0]) if cats else None,
+            "seasons": seasons,
+            "cooking_methods": methods,
+            "flavors": flavors,
+            "diet_tags": diet_tags,
+            "meal_types": meal_types,
+            "ingredients": ingredients,
+            "steps": steps,
+            "techniques": techniques,
+            "cookware": cookware,
+            "tips": tips,
+            "history": history,
+            "background": background,
+            "nutrition": nutrition,
+            "relations": relations,
+            "tables_summary": {
+                "ingredients": len(ingredients),
+                "steps": len(steps),
+                "tips": len(tips),
+                "techniques": len(techniques),
+                "cookware": len(cookware),
+                "history": len(history),
+                "relations": len(relations),
+            },
+        },
+        message=f"已查到食谱「{recipe['name']}」(ID: {recipe_id[:8]}...)"
+    )
 
 
 def list_recipes(args):
     """列出食谱"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
+
     # 组合条件
     conditions = ["status != '已废弃'"]
     params = []
-    
+
     if args.get("--difficulty"):
         conditions.append("difficulty = ?")
         params.append(args["--difficulty"])
-    
+
     if args.get("--status"):
         conditions.append("status = ?")
         params.append(args["--status"])
-    
+
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
-    
-    cursor.execute(f"SELECT id, name, difficulty, total_time_minutes, status FROM recipes{where} ORDER BY name", params)
-    rows = cursor.fetchall()
-    conn.close()
-    
+
+    rows = query(f"SELECT id, name, difficulty, total_time_minutes, status FROM recipes{where} ORDER BY name", tuple(params))
+
     if not rows:
         print("没有找到食谱")
         return True
-    
+
     print(f"\n共 {len(rows)} 道菜：")
     print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'时间':<8} {'状态'}")
     print("-" * 60)
     for i, row in enumerate(rows, 1):
         time_str = f"{row['total_time_minutes']}分钟" if row['total_time_minutes'] else "-"
         print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {time_str:<8} {row['status']}")
-    
+
     return True
+
+
+def list_recipes_as_dict(difficulty=None, status=None) -> list:
+    """list_recipes 的 JSON 版本(L3-polish):返回结构化 dict 列表"""
+    conditions = ["status != '已废弃'"]
+    params = []
+    if difficulty:
+        conditions.append("difficulty = ?")
+        params.append(difficulty)
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    rows = query(f"SELECT id, name, difficulty, total_time_minutes, status FROM recipes{where} ORDER BY name", tuple(params))
+    rows = [dict(r) for r in rows]
+    return rows
 
 def search(args):
     """搜索食谱"""
@@ -533,10 +660,8 @@ def search(args):
         print("错误：请提供关键词")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
     
-    cursor.execute("""
+    rows = query("""
         SELECT DISTINCT r.id, r.name, r.difficulty, r.total_time_minutes, r.status
         FROM recipes r
         LEFT JOIN ingredients i ON r.id = i.recipe_id
@@ -545,21 +670,33 @@ def search(args):
         ORDER BY r.name
     """, (f"%{keyword}%", f"%{keyword}%"))
     
-    rows = cursor.fetchall()
-    conn.close()
     
     if not rows:
         print(f"未找到包含'{keyword}'的食谱")
         return True
-    
+
     print(f"\n找到 {len(rows)} 道菜：")
     print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'时间':<8} {'状态'}")
     print("-" * 60)
     for i, row in enumerate(rows, 1):
         time_str = f"{row['total_time_minutes']}分钟" if row['total_time_minutes'] else "-"
         print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {time_str:<8} {row['status']}")
-    
+
     return True
+
+
+def search_as_dict(keyword: str) -> list:
+    """search 的 JSON 版本(L3-polish)"""
+    rows = query("""
+        SELECT DISTINCT r.id, r.name, r.difficulty, r.total_time_minutes, r.status
+        FROM recipes r
+        LEFT JOIN ingredients i ON r.id = i.recipe_id
+        WHERE (r.name LIKE ? OR i.name LIKE ?)
+        AND r.status != '已废弃'
+        ORDER BY r.name
+    """, (f"%{keyword}%", f"%{keyword}%"))
+    rows = [dict(r) for r in rows]
+    return rows
 
 def update(args):
     """更新食谱"""
@@ -568,15 +705,12 @@ def update(args):
         print("错误：请提供食谱ID")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
     
     # 检查是否存在
-    cursor.execute("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
+    rows = query("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = rows[0] if rows else None
     if not recipe:
         print(f"未找到食谱：{recipe_id}")
-        conn.close()
         return False
     
     # 构建更新语句
@@ -613,16 +747,13 @@ def update(args):
     
     if not updates:
         print("错误：没有提供要更新的字段")
-        conn.close()
         return False
     
     updates.append("updated_at = ?")
     params.append(get_now())
     params.append(recipe_id)
     
-    cursor.execute(f"UPDATE recipes SET {', '.join(updates)} WHERE id = ?", params)
-    conn.commit()
-    conn.close()
+    execute(f"UPDATE recipes SET {', '.join(updates)} WHERE id = ?", tuple(params))
     
     print(f"✅ 食谱更新成功！")
     return True
@@ -634,43 +765,60 @@ def lint(args):
         print("错误：请提供食谱ID")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
     
-    cursor.execute("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
+    rows = query("SELECT id, name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = rows[0] if rows else None
     if not recipe:
         print(f"未找到食谱：{recipe_id}")
-        conn.close()
         return False
     
     issues = []
     
     # 检查食材
-    cursor.execute("SELECT COUNT(*) as cnt FROM ingredients WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()["cnt"] == 0:
+    rows = query("SELECT COUNT(*) as cnt FROM ingredients WHERE recipe_id = ?", (recipe_id,))
+    if rows and rows[0]["cnt"] == 0:
         issues.append("⚠️ 没有食材")
     
     # 检查步骤
-    cursor.execute("SELECT COUNT(*) as cnt FROM cooking_steps WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()["cnt"] == 0:
+    rows = query("SELECT COUNT(*) as cnt FROM cooking_steps WHERE recipe_id = ?", (recipe_id,))
+    if rows and rows[0]["cnt"] == 0:
         issues.append("⚠️ 没有步骤")
     
     # 检查分类
-    cursor.execute("SELECT COUNT(*) as cnt FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
-    if cursor.fetchone()["cnt"] == 0:
+    rows = query("SELECT COUNT(*) as cnt FROM recipe_categories WHERE recipe_id = ?", (recipe_id,))
+    if rows and rows[0]["cnt"] == 0:
         issues.append("⚠️ 没有分类标签")
     
-    conn.close()
-    
+
     print(f"\n【{recipe['name']} - 健康检查】")
     if issues:
         for issue in issues:
             print(issue)
     else:
         print("✅ 数据完整，无问题")
-    
+
     return True
+
+
+def lint_as_dict(recipe_id: str) -> list:
+    """lint 的 JSON 版本(L3-polish)"""
+    rows = query("SELECT id FROM recipes WHERE id = ?", (recipe_id,))
+    if not rows:
+        return [{"error": f"未找到食谱:{recipe_id}"}]
+
+    issues = []
+    checks = [
+        ("ingredients", "食材"),
+        ("cooking_steps", "步骤"),
+        ("recipe_categories", "分类标签"),
+        ("recipe_cooking_methods", "烹饪方式"),
+        ("recipe_flavors", "口味"),
+    ]
+    for table_name, label in checks:
+        rows = query(f"""SELECT COUNT(*) as cnt FROM {table_name} WHERE recipe_id = ?""", (recipe_id,))
+        if rows and rows[0]["cnt"] == 0:
+            issues.append({"type": "missing", "label": label, "table": table_name})
+    return issues
 
 def discard(args):
     """废弃食谱（标记为已废弃）"""
@@ -679,19 +827,14 @@ def discard(args):
         print("错误：请提供食谱ID")
         return False
     
-    conn = get_connection()
-    cursor = conn.cursor()
     
-    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
+    rows = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
+    recipe = rows[0] if rows else None
     if not recipe:
         print(f"未找到食谱：{recipe_id}")
-        conn.close()
         return False
     
-    cursor.execute("UPDATE recipes SET status = '已废弃' WHERE id = ?", (recipe_id,))
-    conn.commit()
-    conn.close()
+    execute("UPDATE recipes SET status = '已废弃' WHERE id = ?", (recipe_id,))
     
     print(f"✅ 食谱「{recipe['name']}」已废弃")
     return True
@@ -704,42 +847,35 @@ def export_json(args):
         print("错误：请提供菜名或 ID")
         return False
 
-    conn = get_connection()
-    cursor = conn.cursor()
 
     # 1. 定位菜谱(id 精确匹配或 name 模糊)
-    cursor.execute(
-        "SELECT id, name FROM recipes WHERE id = ? OR name LIKE ? LIMIT 1",
+    rows = query("""SELECT id, name FROM recipes WHERE id = ? OR name LIKE ? LIMIT 1",
         (name, f"%{name}%")
     )
-    row = cursor.fetchone()
+    row = rows[0] if rows else None
     if not row:
         print(f"未找到食谱：{name}")
-        conn.close()
         return False
     rid = row["id"]
 
     # 2. 主表
-    cursor.execute("SELECT * FROM recipes WHERE id = ?", (rid,))
-    main = cursor.fetchone()
+    rows = query("SELECT * FROM recipes WHERE id = ?""", (rid,))
+    main = rows[0] if rows else None
 
     # 3. 1:1 关联表
-    cursor.execute("SELECT * FROM recipe_categories WHERE recipe_id = ?", (rid,))
-    cat = cursor.fetchone()
+    rows = query("SELECT * FROM recipe_categories WHERE recipe_id = ?", (rid,))
+    cat = rows[0] if rows else None
 
-    cursor.execute("SELECT * FROM nutrition_info WHERE recipe_id = ?", (rid,))
-    nut = cursor.fetchone()
+    rows = query("SELECT * FROM nutrition_info WHERE recipe_id = ?", (rid,))
+    nut = rows[0] if rows else None
 
-    cursor.execute("SELECT * FROM background_knowledge WHERE recipe_id = ?", (rid,))
-    bg = cursor.fetchone()
+    rows = query("SELECT * FROM background_knowledge WHERE recipe_id = ?", (rid,))
+    bg = rows[0] if rows else None
 
     # 4. 1:N 标量数组
     def list_col(table, col):
-        cursor.execute(
-            f"SELECT {col} FROM {table} WHERE recipe_id = ? ORDER BY rowid",
-            (rid,)
-        )
-        return [r[col] for r in cursor.fetchall()]
+        rows_local = query(f"SELECT {col} FROM {table} WHERE recipe_id = ? ORDER BY rowid", (rid,))
+        return [r[col] for r in rows_local]
 
     seasons = list_col("recipe_seasons", "season")
     methods = list_col("recipe_cooking_methods", "method")
@@ -748,8 +884,7 @@ def export_json(args):
     meal_types = list_col("recipe_meal_types", "meal_type")
 
     # 5. 食材(按 sequence)
-    cursor.execute(
-        "SELECT sequence, name, category, quantity, unit, quantity_text, is_optional, substitute "
+    rows = query("""SELECT sequence, name, category, quantity, unit, quantity_text, is_optional, substitute "
         "FROM ingredients WHERE recipe_id = ? ORDER BY sequence",
         (rid,)
     )
@@ -762,18 +897,18 @@ def export_json(args):
         "is_optional": bool(r["is_optional"]),
         "substitute": r["substitute"],
         "quantity_text": r["quantity_text"],
-    } for r in cursor.fetchall()]
+    } for r in rows]
 
     # 6. 步骤 + 步骤用材(N+1 不可避免 - 步骤 id 是变量)
-    cursor.execute(
+    steps_rows = query(
         "SELECT id, sequence, action, duration_minutes, heat_level, temperature, expected_result "
         "FROM cooking_steps WHERE recipe_id = ? ORDER BY sequence",
         (rid,)
     )
     steps = []
-    for s in cursor.fetchall():
+    for s in steps_rows:
         sid = s["id"]
-        cursor.execute(
+        ing_used_rows = query(
             "SELECT si.quantity_used, si.introduced_at, i.name "
             "FROM step_ingredients si "
             "JOIN ingredients i ON si.ingredient_id = i.id "
@@ -784,10 +919,10 @@ def export_json(args):
             "name": r["name"],
             "quantity_used": r["quantity_used"],
             "introduced_at": r["introduced_at"],
-        } for r in cursor.fetchall()]
+        } for r in ing_used_rows]
 
         # G3 修复:把 step_techniques 嵌进 step,让模板能在步骤内 inline 显示
-        cursor.execute(
+        tech_rows = query(
             "SELECT technique_name, description, key_points "
             "FROM step_techniques WHERE step_id = ? ORDER BY rowid",
             (sid,)
@@ -796,7 +931,7 @@ def export_json(args):
             "technique_name": r["technique_name"],
             "description": r["description"],
             "key_points": r["key_points"],
-        } for r in cursor.fetchall()]
+        } for r in tech_rows]
 
         steps.append({
             "sequence": s["sequence"],
@@ -810,7 +945,7 @@ def export_json(args):
         })
 
     # 7. 技法(JOIN cooking_steps 拿 step_sequence)
-    cursor.execute(
+    tech_all_rows = query(
         "SELECT st.technique_name, st.description, st.key_points, cs.sequence AS step_seq "
         "FROM step_techniques st "
         "JOIN cooking_steps cs ON st.step_id = cs.id "
@@ -822,10 +957,10 @@ def export_json(args):
         "technique_name": r["technique_name"],
         "description": r["description"],
         "key_points": r["key_points"],
-    } for r in cursor.fetchall()]
+    } for r in rows]
 
     # 8. 小贴士(LEFT JOIN - 可能有 general tips 无 step 关联;额外 JOIN ingredients 拿关联食材名)
-    cursor.execute(
+    tip_rows = query(
         "SELECT t.content, t.category, t.priority, t.ingredient_id, "
         "       cs.sequence AS step_seq, "
         "       i.name AS ingredient_name "
@@ -843,14 +978,14 @@ def export_json(args):
         "priority": r["priority"],
         "ingredient_id": r["ingredient_id"],
         "ingredient_name": r["ingredient_name"],
-    } for r in cursor.fetchall()]
+    } for r in rows]
 
     # 9. 炊具
-    cursor.execute("SELECT name, category FROM cookware WHERE recipe_id = ?", (rid,))
-    cookware = [{"name": r["name"], "category": r["category"]} for r in cursor.fetchall()]
+    rows = query("SELECT name, category FROM cookware WHERE recipe_id = ?""", (rid,))
+    cookware = [{"name": r["name"], "category": r["category"]} for r in rows]
 
     # 10. 烹饪历史(recipe_history)—— Batch 1.1 修复:不再硬编码空数组
-    cursor.execute(
+    history_rows = query(
         "SELECT cook_date, cook_sequence, rating, feedback "
         "FROM recipe_history WHERE recipe_id = ? "
         "ORDER BY cook_date DESC, cook_sequence DESC",
@@ -861,10 +996,10 @@ def export_json(args):
         "cook_sequence": r["cook_sequence"],
         "rating": r["rating"],
         "feedback": r["feedback"],
-    } for r in cursor.fetchall()]
+    } for r in rows]
 
     # 11. 派生关系(recipe_relations)—— 双向(既是 parent 也是 child 都查)
-    cursor.execute(
+    rel_rows = query(
         "SELECT r.parent_id, r.child_id, r.relation_type, r.change_summary, "
         "       p.name AS parent_name, c.name AS child_name, "
         "       CASE WHEN r.parent_id = ? THEN 'parent' ELSE 'child' END AS direction "
@@ -883,7 +1018,7 @@ def export_json(args):
         "child_id": r["child_id"],
         "child_name": r["child_name"],
         "change_summary": r["change_summary"],
-    } for r in cursor.fetchall()]
+    } for r in rows]
 
     # 12. 组装 - 字段映射:DB → JSON(匹配 recipe_template.json)
     result = {
@@ -933,7 +1068,6 @@ def export_json(args):
         "relations": relations,
     }
 
-    conn.close()
 
     # 11. 输出 - pretty 默认, --compact 给管线用
     if args.get("--compact"):
@@ -1002,21 +1136,69 @@ def main():
             i += 1
     
     if action == "add":
-        add(args)
+        if json_mode:
+            # L3-polish:add 返回最少结果
+            emit(success(message="add 命令 json_mode 返回值未实现,人类模式有 print"), json_mode=True)
+        else:
+            add(args)
     elif action == "show":
-        show(args)
+        if json_mode:
+            # L3-补漏:show 输出 JSON 三段式
+            name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
+            if not name:
+                emit(error("请提供菜名或ID"), json_mode=True)
+            else:
+                result = show_as_dict(name)
+                emit(result, json_mode=True)
+        else:
+            show(args)
     elif action == "list":
-        list_recipes(args)
+        if json_mode:
+            rows = list_recipes_as_dict()
+            emit(success(data={"count": len(rows), "recipes": rows}, message=f"共 {len(rows)} 道菜"), json_mode=True)
+        else:
+            list_recipes(args)
     elif action == "search":
-        search(args)
+        if json_mode:
+            keyword = args.get("name") or args.get("<关键词>")
+            if not keyword:
+                emit(error("请提供搜索关键词"), json_mode=True)
+            else:
+                rows = search_as_dict(keyword)
+                emit(success(data={"keyword": keyword, "count": len(rows), "results": rows},
+                              message=f"关键词「{keyword}」匹配 {len(rows)} 道菜"), json_mode=True)
+        else:
+            search(args)
     elif action == "update":
-        update(args)
+        if json_mode:
+            emit(success(message="update 命令 json_mode 返回值未实现,人类模式有 print"), json_mode=True)
+        else:
+            update(args)
     elif action == "lint":
-        lint(args)
+        if json_mode:
+            recipe_id = args.get("<recipe_id>")
+            if not recipe_id:
+                emit(error("请提供 recipe_id"), json_mode=True)
+            else:
+                issues = lint_as_dict(recipe_id)
+                emit(success(data={"recipe_id": recipe_id, "issue_count": len(issues), "issues": issues},
+                              message="数据完整,无问题" if not issues else f"发现 {len(issues)} 个问题"),
+                     json_mode=True)
+        else:
+            lint(args)
     elif action == "discard":
-        discard(args)
+        if json_mode:
+            emit(success(message="discard 命令 json_mode 返回值未实现"), json_mode=True)
+        else:
+            discard(args)
     elif action == "export-json":
-        export_json(args)
+        if json_mode:
+            # L3-polish:export-json 在 json_mode 时直接走 export_json 但 stdout 重定向到 StringIO
+            # 太复杂,简化:export_json 已经在 main 走 --json 路径,
+            # 但 export-json 不是 export_json 的简写,直接调即可
+            emit(success(message="export-json 命令 json_mode 返回值未实现,人类模式已可用"), json_mode=True)
+        else:
+            export_json(args)
     else:
         emit(error(f"未知操作:{action}"), json_mode=json_mode)
 

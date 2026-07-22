@@ -1,44 +1,40 @@
 #!/usr/bin/env python3
 """
 私家大厨 - 小贴士管理
-管理表：tips
-支持：add / list / search / update
+管理表:tips
+支持:add / list / search / update
+
+L4 阶段:函数体迁 db.execute/query/transaction
 """
 
 import sys
 import os
 import uuid
-# L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
-from db import get_connection
-from cli_formatter import emit, parse_json_flag, error  # L3
+from db import get_connection, query, execute, transaction
+from cli_formatter import emit, parse_json_flag, error
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import validators  # L3-tip-bridge: 接 validate_tip_minimum (用户决策 R4)
 
+
 def add(args):
-    """添加小贴士"""
+    """添加小贴士(单 INSERT)"""
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误：请提供食谱ID")
+        print("错误:请提供食谱ID")
         return False
-    
+
     content = args.get("--content")
     if not content:
-        print("错误：请提供小贴士内容（--content）")
+        print("错误:请提供小贴士内容(--content)")
         return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
+
+    recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
     if not recipe:
-        print(f"未找到食谱：{recipe_id}")
-        conn.close()
+        print(f"未找到食谱:{recipe_id}")
         return False
 
     # L3-tip-bridge: 用户决策 R4 — tips 业务规则校验
-    # 校验 step_id / ingredient_id 缺填,给 CLI 警告(提示 AI 询问用户)
     tip_data = {
         "recipe_id": recipe_id,
         "step_id": args.get("--step_id"),
@@ -46,55 +42,43 @@ def add(args):
     }
     tip_validation = validators.validate_tip_minimum(tip_data)
     if tip_validation["status"] == "warning":
-        # warning 不阻断,只输出给用户看
         print(f"⚠️  提示:{tip_validation['warning_msg']}")
         print(f"   {tip_validation['user_question']}")
 
-    tip_id = str(uuid.uuid4())
-    
-    cursor.execute("""
-        INSERT INTO tips (id, recipe_id, step_id, ingredient_id, category, content, priority)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-        tip_id,
-        recipe_id,
-        args.get("--step_id"),
-        args.get("--ingredient_id"),
-        # category 必填(L1 NOT NULL),CLI 默认 "其他" 让用户不必每次都填
-        args.get("--category") or "其他",
-        content,
-        # priority 必填(L1 NOT NULL),CLI 默认 1(常规优先级)
-        args.get("--priority") if args.get("--priority") is not None else 1
-    ))
-    
-    conn.commit()
-    conn.close()
-    
-    print(f"✅ 小贴士添加成功！")
-    print(f"   食谱：{recipe['name']}")
-    print(f"   内容：{content}")
+    execute(
+        "INSERT INTO tips (id, recipe_id, step_id, ingredient_id, category, content, priority) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (
+            str(uuid.uuid4()),
+            recipe_id,
+            args.get("--step_id"),
+            args.get("--ingredient_id"),
+            args.get("--category") or "其他",
+            content,
+            args.get("--priority") if args.get("--priority") is not None else 1
+        )
+    )
+
+    print(f"✅ 小贴士添加成功!")
+    print(f"   食谱:{recipe[0]['name']}")
+    print(f"   内容:{content}")
     if args.get("--category"):
-        print(f"   分类：{args['--category']}")
+        print(f"   分类:{args['--category']}")
     return True
+
 
 def list_items(args):
     """查看某食谱的小贴士"""
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误：请提供食谱ID")
+        print("错误:请提供食谱ID")
         return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-    recipe = cursor.fetchone()
+
+    recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
     if not recipe:
-        print(f"未找到食谱：{recipe_id}")
-        conn.close()
+        print(f"未找到食谱:{recipe_id}")
         return False
-    
-    cursor.execute("""
+
+    rows = query("""
         SELECT t.*, cs.sequence as step_seq, i.name as ingredient_name
         FROM tips t
         LEFT JOIN cooking_steps cs ON t.step_id = cs.id
@@ -102,120 +86,100 @@ def list_items(args):
         WHERE t.recipe_id = ?
         ORDER BY t.priority, t.category
     """, (recipe_id,))
-    
-    rows = cursor.fetchall()
-    conn.close()
-    
+
     if not rows:
-        print(f"\n{recipe['name']} - 没有小贴士")
+        print(f"\n{recipe[0]['name']} - 没有小贴士")
         return True
-    
-    print(f"\n{recipe['name']} - 小贴士：")
+
+    print(f"\n{recipe[0]['name']} - 小贴士:")
     for row in rows:
         scope = ""
         if row['step_seq']:
             scope = f"[第{row['step_seq']}步]"
         elif row['ingredient_name']:
             scope = f"[{row['ingredient_name']}]"
-        
-        cat = f"（{row['category']}）" if row['category'] else ""
+
+        cat = f"({row['category']})" if row['category'] else ""
         print(f"  {scope}{cat}{row['content']}")
-    
+
     return True
+
 
 def list_by_step(args):
     """查看某步骤的小贴士"""
     step_id = args.get("<step_id>")
     if not step_id:
-        print("错误：请提供步骤ID")
+        print("错误:请提供步骤ID")
         return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, sequence, action FROM cooking_steps WHERE id = ?", (step_id,))
-    step = cursor.fetchone()
+
+    step = query("SELECT id, sequence, action FROM cooking_steps WHERE id = ?", (step_id,))
     if not step:
-        print(f"未找到步骤：{step_id}")
-        conn.close()
+        print(f"未找到步骤:{step_id}")
         return False
-    
-    cursor.execute("""
-        SELECT * FROM tips WHERE step_id = ? 
+
+    rows = query("""
+        SELECT * FROM tips WHERE step_id = ?
         ORDER BY priority
     """, (step_id,))
-    
-    rows = cursor.fetchall()
-    conn.close()
-    
-    print(f"\n第{step['sequence']}步的小贴士：")
+
+    step = step[0]
+    print(f"\n第{step['sequence']}步的小贴士:")
     if rows:
         for row in rows:
-            cat = f"（{row['category']}）" if row['category'] else ""
+            cat = f"({row['category']})" if row['category'] else ""
             print(f"  {cat}{row['content']}")
     else:
         print(f"  没有小贴士")
-    
+
     return True
+
 
 def list_by_ingredient(args):
     """查看某食材的小贴士"""
     ingredient_id = args.get("<ingredient_id>")
     if not ingredient_id:
-        print("错误：请提供食材ID")
+        print("错误:请提供食材ID")
         return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id, name FROM ingredients WHERE id = ?", (ingredient_id,))
-    ingredient = cursor.fetchone()
+
+    ingredient = query("SELECT id, name FROM ingredients WHERE id = ?", (ingredient_id,))
     if not ingredient:
-        print(f"未找到食材：{ingredient_id}")
-        conn.close()
+        print(f"未找到食材:{ingredient_id}")
         return False
-    
-    cursor.execute("""
+
+    rows = query("""
         SELECT t.*, r.name as recipe_name
         FROM tips t
         JOIN recipes r ON t.recipe_id = r.id
         WHERE t.ingredient_id = ?
         ORDER BY r.name, t.priority
     """, (ingredient_id,))
-    
-    rows = cursor.fetchall()
-    conn.close()
-    
-    print(f"\n食材「{ingredient['name']}」的小贴士：")
+
+    print(f"\n食材「{ingredient[0]['name']}」的小贴士:")
     if rows:
         for row in rows:
-            cat = f"（{row['category']}）" if row['category'] else ""
+            cat = f"({row['category']})" if row['category'] else ""
             print(f"  [{row['recipe_name']}] {cat}{row['content']}")
     else:
         print(f"  没有小贴士")
-    
+
     return True
+
 
 def search(args):
     """搜索小贴士"""
     keyword = args.get("<关键词>")
     if not keyword:
-        print("错误：请提供关键词")
+        print("错误:请提供关键词")
         return False
-    
+
     recipe_id = args.get("--recipe-id")
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
+
     if recipe_id:
-        cursor.execute("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
-        recipe = cursor.fetchone()
+        recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
         if not recipe:
-            print(f"未找到食谱：{recipe_id}")
-            conn.close()
+            print(f"未找到食谱:{recipe_id}")
             return False
-        cursor.execute("""
+        rows = query("""
             SELECT t.*, r.name as recipe_name
             FROM tips t
             JOIN recipes r ON t.recipe_id = r.id
@@ -225,7 +189,7 @@ def search(args):
             ORDER BY t.priority
         """, (f"%{keyword}%", recipe_id))
     else:
-        cursor.execute("""
+        rows = query("""
             SELECT t.*, r.name as recipe_name
             FROM tips t
             JOIN recipes r ON t.recipe_id = r.id
@@ -233,46 +197,38 @@ def search(args):
             AND r.status != '已废弃'
             ORDER BY r.name, t.priority
         """, (f"%{keyword}%",))
-    
-    rows = cursor.fetchall()
-    conn.close()
-    
+
     if not rows:
         scope = f"在食谱 {recipe_id} 中" if recipe_id else ""
         print(f"未找到包含'{keyword}'的小贴士 {scope}")
         return True
-    
-    scope = f"[{recipe['name']}]" if recipe_id else ""
-    print(f"\n找到 {len(rows)} 条小贴士 {scope}：")
+
+    scope = f"[{recipe[0]['name']}]" if recipe_id else ""
+    print(f"\n找到 {len(rows)} 条小贴士 {scope}:")
     for row in rows:
-        cat = f"（{row['category']}）" if row['category'] else ""
+        cat = f"({row['category']})" if row['category'] else ""
         step_info = f"[第{row['step_id']}步]" if row['step_id'] else ""
         ing_info = f"[{row['ingredient_id']}]" if row['ingredient_id'] else ""
         print(f"  {step_info}{ing_info}{cat}{row['content']}")
-    
+
     return True
 
 
 def update(args):
-    """更新小贴士"""
+    """更新小贴士(L4:动态 SQL)"""
     tip_id = args.get("<tip_id>")
     if not tip_id:
-        print("错误：请提供小贴士ID")
+        print("错误:请提供小贴士ID")
         return False
-    
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id FROM tips WHERE id = ?", (tip_id,))
-    tip = cursor.fetchone()
+
+    tip = query("SELECT id FROM tips WHERE id = ?", (tip_id,))
     if not tip:
-        print(f"未找到小贴士：{tip_id}")
-        conn.close()
+        print(f"未找到小贴士:{tip_id}")
         return False
-    
+
     updates = []
     params = []
-    
+
     if args.get("--content"):
         updates.append("content = ?")
         params.append(args["--content"])
@@ -282,23 +238,21 @@ def update(args):
     if args.get("--priority"):
         updates.append("priority = ?")
         params.append(args["--priority"])
-    
+
     if not updates:
         print("没有提供要更新的字段")
-        conn.close()
         return False
-    
+
     params.append(tip_id)
-    cursor.execute(f"UPDATE tips SET {', '.join(updates)} WHERE id = ?", params)
-    conn.commit()
-    conn.close()
-    
-    print(f"✅ 小贴士更新成功！")
+    execute(f"UPDATE tips SET {', '.join(updates)} WHERE id = ?", params)
+
+    print(f"✅ 小贴士更新成功!")
     return True
+
 
 def main():
     if len(sys.argv) < 2:
-        print("""用法：
+        print("""用法:
     python tip_manager.py add <recipe_id> --content <内容> [选项]
     python tip_manager.py list <recipe_id>
     python tip_manager.py list-by-step <step_id>
@@ -306,18 +260,18 @@ def main():
     python tip_manager.py search <关键词> [--recipe-id <食谱ID>]
     python tip_manager.py update <tip_id> [选项]
 
-选项：
+选项:
     --step_id 关联步骤ID
     --ingredient_id 关联食材ID
-    --category 分类（火候/刀工/调味/采购/设备/保存）
+    --category 分类(火候/刀工/调味/采购/设备/保存)
     --content 小贴士内容
     --priority 优先级
 """)
         return
-    
+
     action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
-    
+    json_mode = parse_json_flag(sys.argv[2:])
+
     args = {}
     i = 2
     while i < len(sys.argv):
@@ -343,7 +297,7 @@ def main():
             elif action in ("update", "disable") and "<tip_id>" not in args:
                 args["<tip_id>"] = arg
             i += 1
-    
+
     if action == "add":
         add(args)
     elif action == "list":
@@ -358,6 +312,7 @@ def main():
         update(args)
     else:
         emit(error(f"未知操作:{action}"), json_mode=json_mode)
+
 
 if __name__ == "__main__":
     main()

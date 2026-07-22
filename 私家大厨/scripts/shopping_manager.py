@@ -340,7 +340,8 @@ def main():
     else:
         result = {"status": "error", "message": f"未知操作:{action}"}
 
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    # L3-polish:用 emit 统一输出格式
+    emit(result, json_mode=json_mode)
 
 
 if __name__ == "__main__":

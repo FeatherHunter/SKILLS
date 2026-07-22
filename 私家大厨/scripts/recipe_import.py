@@ -29,70 +29,9 @@ def get_now():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def validate_recipe(data):
-    """验证食谱JSON数据，返回错误列表"""
-    errors = []
-
-    # 1. 必填字段检查
-    if not data.get("name"):
-        errors.append("缺少必填字段: name（菜名）")
-    if not data.get("ingredients"):
-        errors.append("缺少必填字段: ingredients（食材列表）")
-    if not data.get("steps"):
-        errors.append("缺少必填字段: steps（步骤列表）")
-
-    # 2. 数据类型检查
-    if "name" in data and not isinstance(data["name"], str):
-        errors.append("name 必须是字符串")
-    if "servings" in data and data["servings"] is not None:
-        if not isinstance(data["servings"], int):
-            errors.append("servings 必须是整数")
-    if "total_time" in data and data["total_time"] is not None:
-        if not isinstance(data["total_time"], (int, float)):
-            errors.append("total_time 必须是数字")
-    if "difficulty" in data and data["difficulty"] is not None:
-        valid_difficulty = ["快手菜", "简单", "中等", "困难", "大师"]
-        if data["difficulty"] not in valid_difficulty:
-            errors.append(f"difficulty 必须是以下之一: {', '.join(valid_difficulty)}")
-
-    # 3. 食材验证
-    if "ingredients" in data and not isinstance(data["ingredients"], list):
-        errors.append("ingredients 必须是数组")
-    for i, ing in enumerate(data.get("ingredients", [])):
-        if not isinstance(ing, dict):
-            errors.append(f"ingredients[{i}] 必须是对象")
-            continue
-        if not ing.get("name"):
-            errors.append(f"ingredients[{i}] 缺少 name（食材名）")
-        if "quantity" in ing and ing["quantity"] is not None:
-            if not isinstance(ing["quantity"], (int, float)):
-                errors.append(f"ingredients[{i}].quantity 必须是数字")
-
-    # 4. 步骤验证
-    if "steps" in data and not isinstance(data["steps"], list):
-        errors.append("steps 必须是数组")
-    for i, step in enumerate(data.get("steps", [])):
-        if not isinstance(step, dict):
-            errors.append(f"steps[{i}] 必须是对象")
-            continue
-        if not step.get("action"):
-            errors.append(f"steps[{i}] 缺少 action（步骤描述）")
-        if "sequence" in step and step["sequence"] is not None:
-            if not isinstance(step["sequence"], int):
-                errors.append(f"steps[{i}].sequence 必须是整数")
-        if "duration" in step and step["duration"] is not None:
-            if not isinstance(step["duration"], (int, float)):
-                errors.append(f"steps[{i}].duration 必须是数字")
-
-    # 5. 营养信息验证
-    if "nutrition" in data and data["nutrition"]:
-        nutri = data["nutrition"]
-        for field in ["calories", "protein", "fat", "carbs", "fiber", "sodium", "serving_size"]:
-            if field in nutri and nutri[field] is not None:
-                if not isinstance(nutri[field], (int, float)):
-                    errors.append(f"nutrition.{field} 必须是数字")
-
-    return errors
+# L2 重构: 删除简化版 validate_recipe 函数(60 行)
+# 改用 validators.validate_recipe_for_import()(5 段校验链 + 占位符黑名单)
+# 见 L2 patch 草图 + CHANGELOG.md
 
 
 def check_conflict(conn, name, choice=None, new_name=None):
@@ -545,10 +484,21 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
     except FileNotFoundError:
         return {"success": False, "errors": [f"文件不存在: {json_file}"]}
 
-    # 2. 验证
-    errors = validate_recipe(data)
-    if errors:
-        return {"success": False, "errors": errors, "hint": "请修正JSON后重新导入"}
+    # 2. 验证(L2: 改用 validators 完整链 —— 5 段校验 + 占位符黑名单)
+    validation = validators.validate_recipe_for_import(data)
+    if not validation["valid"]:
+        # 把 validators 的结构化错误转成旧 errors 列表格式(向后兼容)
+        errors = []
+        for err in validation.get("errors", []):
+            field = err.get("field", "?")
+            hint = err.get("hint", err.get("error", ""))
+            errors.append(f"[{field}] {hint}")
+        return {
+            "success": False,
+            "errors": errors,
+            "hint": validation.get("suggested_user_question") or "请修正JSON后重新导入",
+            "raw_validation": validation  # 保留原始结构,供 AI 解析
+        }
 
     # 3. 检查同名冲突
     conn = get_connection()
@@ -689,10 +639,21 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
     except FileNotFoundError:
         return {"success": False, "errors": [f"文件不存在: {json_file}"]}
 
-    # 2. 验证
-    errors = validate_recipe(data)
-    if errors:
-        return {"success": False, "errors": errors, "hint": "请修正JSON后重新导入"}
+    # 2. 验证(L2: 改用 validators 完整链 —— 5 段校验 + 占位符黑名单)
+    validation = validators.validate_recipe_for_import(data)
+    if not validation["valid"]:
+        # 把 validators 的结构化错误转成旧 errors 列表格式(向后兼容)
+        errors = []
+        for err in validation.get("errors", []):
+            field = err.get("field", "?")
+            hint = err.get("hint", err.get("error", ""))
+            errors.append(f"[{field}] {hint}")
+        return {
+            "success": False,
+            "errors": errors,
+            "hint": validation.get("suggested_user_question") or "请修正JSON后重新导入",
+            "raw_validation": validation  # 保留原始结构,供 AI 解析
+        }
 
     # 3. 检查同名冲突
     conn = get_connection()

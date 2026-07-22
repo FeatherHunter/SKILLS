@@ -97,16 +97,22 @@
 </ol>
 <hr />
 <blockquote>
-<p>版本：<strong>v3</strong> (2026-07-22 L1+L2+L3 完整重构)
+<p>版本：<strong>v3</strong> (2026-07-22 L1+L2+L3+P1+P2 完整重构)
 设计：基于17张表(98 字段全 NOT NULL 兜底)，8大功能，35个唤醒词，无删除操作
 食材分类：v5.2 起 <strong>11 类</strong>(原 9 类拆出"葱姜蒜"和"香草"),见 <code>references/categories.md</code>
+贴士分类：v3 P1 起 <strong>8 类</strong>(原 7 类增加"其他"兜底)
+火候枚举：5 值(微火/小火/中火/大火/猛火),<code>validators.validate_heat_level</code> 强校验
 5层架构改造：
 <ul>
 <li>v5.0 (2026-07-21) — 24/24 + 30/30 自检通过,见 <code>CHANGELOG.md</code> [5.1]</li>
 <li><strong>v3 L1</strong> (2026-07-22) — DB NOT NULL 兜底墙(98 字段),<code>init_db.py</code> + <code>migrations/004_all_fields_not_null.sql</code></li>
 <li><strong>v3 L2</strong> (2026-07-22) — validators 占位符黑名单 + 18 manager 改 db.py + <code>orchestrator.py</code> 新建</li>
 <li><strong>v3 L3</strong> (2026-07-22) — CLI 三段式统一 + <code>--human</code>/<code>--json</code> 开关 + orchestrator 完整迁移</li>
+<li><strong>v3 L4</strong> (2026-07-22) — 18 manager 函数体真迁 db.execute/query/transaction(0 conn/cursor 残留,17/18 全 db API 化,<code>shopping_manager</code> 只读合规)</li>
+<li><strong>v3 P1</strong> (2026-07-22) — 6 真 CLI bug 修复:<code>CLI-001/002/004/005/006/007</code>(<code>ingredient_manager</code> 移除 disable + 缺字段友好报错 + <code>step_manager</code> 缺字段友好报错 + <code>recipe_manager.export_json</code> 整体重构 + enum 校验下沉)</li>
+<li><strong>v3 P2</strong> (2026-07-22) — <code>L4_verify.py</code> 盲点修复(加正信号 query/execute/transaction 计数 + import 完整性检查)</li>
 </ul>
+<strong>关键设计哲学</strong>(v3 P1 用户拍板):L1 NOT NULL 是故意设计拦截 AI 偷懒不传字段。<strong>AI 必须显式询问用户拿到所有必填字段后才能调 CLI,不允许默认值兜底</strong>。缺字段时 CLI 返友好报错(字段名 + 当前值 + 期望值 + 怎么修),AI 拿错误信息去找用户要值,然后重试。
 详细变更见 <code>CHANGELOG.md</code>
 路由：唤醒词（动词+名词） + 菜名提取 + 优先级 + 兜底search</p>
 </blockquote>

@@ -11,6 +11,7 @@ import sys
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
+import validators  # 决策 3:接入 validate_cookware_category
 
 
 def add(args):
@@ -30,16 +31,29 @@ def add(args):
         print(f"未找到食谱:{recipe_id}")
         return False
 
+    # L1 NOT NULL 兜底(2026-07-22):category 必填 + enum 校验
+    category = args.get("--category")
+    if not category:
+        print("错误:缺少 --category(L1 NOT NULL 兜底,DB 不允许 NULL)")
+        print("   合法值:锅 / 炉 / 刀 / 其他")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿 hint 去问用户,拿到答案后用 --category <值> 重试。")
+        return False
+    cat_validation = validators.validate_cookware_category(category)
+    if not cat_validation["valid"]:
+        print(f"错误:{cat_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认分类后重试。")
+        return False
+
     execute(
         "INSERT INTO cookware (id, recipe_id, name, category) VALUES (?, ?, ?, ?)",
-        (str(uuid.uuid4()), recipe_id, name, args.get("--category"))
+        (str(uuid.uuid4()), recipe_id, name, category)
     )
 
     print(f"✅ 炊具添加成功!")
     print(f"   食谱:{recipe[0]['name']}")
     print(f"   炊具:{name}")
-    if args.get("--category"):
-        print(f"   分类:{args['--category']}")
+    print(f"   分类:{category}")
     return True
 
 

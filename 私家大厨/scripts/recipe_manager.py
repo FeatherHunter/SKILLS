@@ -9,8 +9,7 @@ import sys
 import uuid
 import json
 from datetime import datetime
-# L2: 统一从 db.py 取连接(L3 阶段再把 conn/cursor 改成 db.query/execute/transaction)
-from db import get_connection
+from db import get_connection, query, execute, transaction  # L4: 函数体迁 db API
 from cli_formatter import emit, parse_json_flag, error, success  # L3-补漏
 
 def get_now():
@@ -840,37 +839,43 @@ def discard(args):
     return True
 
 
-def export_json(args):
-    """导出食谱为完整 JSON 文档(供模板渲染 / 数据备份用)"""
-    name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
-    if not name:
-        print("错误：请提供菜名或 ID")
-        return False
+def export_as_dict(name):
+    """组装完整食谱导出 dict(供 json_mode + 模板渲染)。
 
+    CLI-005 + CLI-007 修复(2026-07-22):
+    - 从 export_json 拆出 dict 组装层,允许 main() json_mode 复用
+    - 修复 4 处 `for r in rows` 引用错变量 bug(techniques/tips/history/relations 都误拿了 ingredients)
+
+    Args:
+        name: 菜名或 recipe_id
+
+    Returns:
+        dict - 完整食谱数据(17 张表),或 None(未找到 / name 为空)
+    """
+    if not name:
+        return None
 
     # 1. 定位菜谱(id 精确匹配或 name 模糊)
-    rows = query("""SELECT id, name FROM recipes WHERE id = ? OR name LIKE ? LIMIT 1",
+    find_rows = query("""SELECT id, name FROM recipes WHERE id = ? OR name LIKE ? LIMIT 1""",
         (name, f"%{name}%")
     )
-    row = rows[0] if rows else None
-    if not row:
-        print(f"未找到食谱：{name}")
-        return False
-    rid = row["id"]
+    if not find_rows:
+        return None
+    rid = find_rows[0]["id"]
 
     # 2. 主表
-    rows = query("SELECT * FROM recipes WHERE id = ?""", (rid,))
-    main = rows[0] if rows else None
+    main_rows = query("SELECT * FROM recipes WHERE id = ?", (rid,))
+    main = main_rows[0] if main_rows else None
 
-    # 3. 1:1 关联表
-    rows = query("SELECT * FROM recipe_categories WHERE recipe_id = ?", (rid,))
-    cat = rows[0] if rows else None
+    # 3. 1:1 关联表(改名避免 shadow 上面的 rows)
+    cat_rows = query("SELECT * FROM recipe_categories WHERE recipe_id = ?", (rid,))
+    cat = cat_rows[0] if cat_rows else None
 
-    rows = query("SELECT * FROM nutrition_info WHERE recipe_id = ?", (rid,))
-    nut = rows[0] if rows else None
+    nut_rows = query("SELECT * FROM nutrition_info WHERE recipe_id = ?", (rid,))
+    nut = nut_rows[0] if nut_rows else None
 
-    rows = query("SELECT * FROM background_knowledge WHERE recipe_id = ?", (rid,))
-    bg = rows[0] if rows else None
+    bg_rows = query("SELECT * FROM background_knowledge WHERE recipe_id = ?", (rid,))
+    bg = bg_rows[0] if bg_rows else None
 
     # 4. 1:N 标量数组
     def list_col(table, col):
@@ -884,7 +889,8 @@ def export_json(args):
     meal_types = list_col("recipe_meal_types", "meal_type")
 
     # 5. 食材(按 sequence)
-    rows = query("""SELECT sequence, name, category, quantity, unit, quantity_text, is_optional, substitute "
+    ing_rows = query(
+        "SELECT sequence, name, category, quantity, unit, quantity_text, is_optional, substitute "
         "FROM ingredients WHERE recipe_id = ? ORDER BY sequence",
         (rid,)
     )
@@ -897,7 +903,7 @@ def export_json(args):
         "is_optional": bool(r["is_optional"]),
         "substitute": r["substitute"],
         "quantity_text": r["quantity_text"],
-    } for r in rows]
+    } for r in ing_rows]
 
     # 6. 步骤 + 步骤用材(N+1 不可避免 - 步骤 id 是变量)
     steps_rows = query(
@@ -944,7 +950,7 @@ def export_json(args):
             "techniques": techs_inline,
         })
 
-    # 7. 技法(JOIN cooking_steps 拿 step_sequence)
+    # 7. 技法(修复:迭代 tech_all_rows,不是上面的 rows shadow)
     tech_all_rows = query(
         "SELECT st.technique_name, st.description, st.key_points, cs.sequence AS step_seq "
         "FROM step_techniques st "
@@ -957,9 +963,9 @@ def export_json(args):
         "technique_name": r["technique_name"],
         "description": r["description"],
         "key_points": r["key_points"],
-    } for r in rows]
+    } for r in tech_all_rows]
 
-    # 8. 小贴士(LEFT JOIN - 可能有 general tips 无 step 关联;额外 JOIN ingredients 拿关联食材名)
+    # 8. 小贴士(修复:迭代 tip_rows)
     tip_rows = query(
         "SELECT t.content, t.category, t.priority, t.ingredient_id, "
         "       cs.sequence AS step_seq, "
@@ -978,13 +984,16 @@ def export_json(args):
         "priority": r["priority"],
         "ingredient_id": r["ingredient_id"],
         "ingredient_name": r["ingredient_name"],
-    } for r in rows]
+    } for r in tip_rows]
 
     # 9. 炊具
-    rows = query("SELECT name, category FROM cookware WHERE recipe_id = ?""", (rid,))
-    cookware = [{"name": r["name"], "category": r["category"]} for r in rows]
+    cookware_rows = query(
+        "SELECT name, category FROM cookware WHERE recipe_id = ?",
+        (rid,)
+    )
+    cookware = [{"name": r["name"], "category": r["category"]} for r in cookware_rows]
 
-    # 10. 烹饪历史(recipe_history)—— Batch 1.1 修复:不再硬编码空数组
+    # 10. 烹饪历史(修复:迭代 history_rows)
     history_rows = query(
         "SELECT cook_date, cook_sequence, rating, feedback "
         "FROM recipe_history WHERE recipe_id = ? "
@@ -996,9 +1005,9 @@ def export_json(args):
         "cook_sequence": r["cook_sequence"],
         "rating": r["rating"],
         "feedback": r["feedback"],
-    } for r in rows]
+    } for r in history_rows]
 
-    # 11. 派生关系(recipe_relations)—— 双向(既是 parent 也是 child 都查)
+    # 11. 派生关系(修复:迭代 rel_rows)
     rel_rows = query(
         "SELECT r.parent_id, r.child_id, r.relation_type, r.change_summary, "
         "       p.name AS parent_name, c.name AS child_name, "
@@ -1018,9 +1027,9 @@ def export_json(args):
         "child_id": r["child_id"],
         "child_name": r["child_name"],
         "change_summary": r["change_summary"],
-    } for r in rows]
+    } for r in rel_rows]
 
-    # 12. 组装 - 字段映射:DB → JSON(匹配 recipe_template.json)
+    # 12. 组装(CLI-007 修复:source_url 单次出现,去重)
     result = {
         "name": main["name"],
         "description": main["description"],
@@ -1033,7 +1042,6 @@ def export_json(args):
         "source_url": main["source_url"],
         "created_at": main["created_at"],
         "updated_at": main["updated_at"],
-        "source_url": main["source_url"],
         "category": {
             "cuisine": cat["cuisine_type"] if cat else None,
             "region": cat["region"] if cat else None,
@@ -1068,8 +1076,23 @@ def export_json(args):
         "relations": relations,
     }
 
+    return result
 
-    # 11. 输出 - pretty 默认, --compact 给管线用
+
+def export_json(args):
+    """CLI 入口(人类友好:打印完整 JSON 到 stdout)
+
+    修复(2026-07-22):CLI-005 主要修复 — 让 export_as_dict 复用,本函数只负责打印。
+    """
+    name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
+    if not name:
+        print("错误:请提供菜名或 ID")
+        return False
+    result = export_as_dict(name)
+    if result is None:
+        print(f"未找到食谱:{name}")
+        return False
+    # 输出 - pretty 默认, --compact 给管线用
     if args.get("--compact"):
         print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
     else:
@@ -1193,10 +1216,16 @@ def main():
             discard(args)
     elif action == "export-json":
         if json_mode:
-            # L3-polish:export-json 在 json_mode 时直接走 export_json 但 stdout 重定向到 StringIO
-            # 太复杂,简化:export_json 已经在 main 走 --json 路径,
-            # 但 export-json 不是 export_json 的简写,直接调即可
-            emit(success(message="export-json 命令 json_mode 返回值未实现,人类模式已可用"), json_mode=True)
+            # CLI-005 修复:复用 export_as_dict,emit 三段式
+            name = args.get("name") or args.get("<菜名>") or args.get("<recipe_id>")
+            if not name:
+                emit(error("请提供菜名或 ID"), json_mode=True)
+            else:
+                result = export_as_dict(name)
+                if result is None:
+                    emit(error(f"未找到食谱:{name}"), json_mode=True)
+                else:
+                    emit(success(data=result, message=f"已导出「{result.get('name', name)}」完整 JSON"), json_mode=True)
         else:
             export_json(args)
     else:

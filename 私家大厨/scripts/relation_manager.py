@@ -11,6 +11,7 @@ import sys
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
+import validators  # 决策 3:接入 validate_relation_type
 
 
 def add(args):
@@ -33,22 +34,44 @@ def add(args):
         print(f"未找到子食谱:{child_id}")
         return False
 
+    # L1 NOT NULL 兜底(2026-07-22):relation_type + change_summary 必填 + enum 校验
+    relation_type = args.get("--relation_type")
+    change_summary = args.get("--change_summary")
+    missing = []
+    if not relation_type:
+        missing.append(("--relation_type", "关系类型(派生 / 变体 / 改良)"))
+    if not change_summary:
+        missing.append(("--change_summary", "改动说明(如「用山西陈醋替代米醋,减糖」)"))
+    if missing:
+        print("错误:缺少以下必填字段(L1 NOT NULL 兜底,DB 不允许 NULL):")
+        for flag, hint in missing:
+            print(f"   - {flag}:{hint}")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿这些 hint 去问用户,拿到答案后用 --flag <值> 重试。")
+        return False
+
+    rt_validation = validators.validate_relation_type(relation_type)
+    if not rt_validation["valid"]:
+        print(f"错误:{rt_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认关系类型后重试。")
+        return False
+
     execute(
         "INSERT INTO recipe_relations (id, parent_id, child_id, relation_type, change_summary) VALUES (?, ?, ?, ?, ?)",
         (
             str(uuid.uuid4()),
             parent_id,
             child_id,
-            args.get("--relation_type"),
-            args.get("--change_summary")
+            relation_type,
+            change_summary
         )
     )
 
     print(f"✅ 派生关系创建成功!")
     print(f"   父食谱:{parent[0]['name']}")
     print(f"   子食谱:{child[0]['name']}")
-    if args.get("--relation_type"):
-        print(f"   类型:{args['--relation_type']}")
+    print(f"   类型:{relation_type}")
+    print(f"   改动:{change_summary}")
     return True
 
 

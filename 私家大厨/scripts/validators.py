@@ -313,6 +313,163 @@ def validate_tip_minimum(tip_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ====================================================================
+# 决策 3 · 9 个被忽视字段的 enum / 范围校验(2026-07-22)
+# ====================================================================
+
+def validate_cookware_category(value: Any) -> Dict[str, Any]:
+    """校验炊具分类(cookware.category)
+
+    合法值:锅/铲/其他/刀具/餐具(5 值,从 references/enums.py)
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    valid = enums.get_valid_values("cookware_categories")
+    if value not in valid:
+        return {
+            "valid": False,
+            "error": f"字段 cookware.category='{value}' 不是合法炊具分类。合法值: {', '.join(valid)}"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_relation_type(value: Any) -> Dict[str, Any]:
+    """校验派生关系类型(recipe_relations.relation_type)
+
+    合法值:派生/变体/改良(3 值,从 references/enums.py)
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    valid = enums.get_valid_values("relation_types")
+    if value not in valid:
+        return {
+            "valid": False,
+            "error": f"字段 relation_type='{value}' 不是合法派生关系类型。合法值: {', '.join(valid)}"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_serving_unit(value: Any) -> Dict[str, Any]:
+    """校验营养份量单位(nutrition_info.serving_unit)
+
+    合法值:g/ml/份/杯(4 值,中文烹饪常见单位)
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    valid = ["g", "ml", "份", "杯"]
+    if value not in valid:
+        return {
+            "valid": False,
+            "error": f"字段 serving_unit='{value}' 不是合法份量单位。合法值: {', '.join(valid)}"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_rating_range(value: Any) -> Dict[str, Any]:
+    """校验评分范围(recipe_history.rating)
+
+    合法范围:0-5(含小数,如 3.5)
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    if not isinstance(value, (int, float)):
+        return {
+            "valid": False,
+            "error": f"字段 rating 类型错误(期望数字,实际 {type(value).__name__})"
+        }
+    if not (0 <= value <= 5):
+        return {
+            "valid": False,
+            "error": f"字段 rating={value} 超出范围 [0, 5]"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_positive_int(value: Any, field_name: str = "value") -> Dict[str, Any]:
+    """校验正整数(用于 recipe_history.cook_sequence 等)"""
+    if value is None:
+        return {"valid": True, "error": None}
+    if not isinstance(value, int) or isinstance(value, bool):
+        return {
+            "valid": False,
+            "error": f"字段 {field_name}={value} 不是正整数(期望 int,实际 {type(value).__name__})"
+        }
+    if value <= 0:
+        return {
+            "valid": False,
+            "error": f"字段 {field_name}={value} 不是正整数(必须 > 0)"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_date_format(value: Any, field_name: str = "date") -> Dict[str, Any]:
+    """校验日期格式(recipe_history.cook_date)
+
+    合法格式:YYYY-MM-DD(如 2026-07-22)
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    import re as _re
+    if not isinstance(value, str) or not _re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+        return {
+            "valid": False,
+            "error": f"字段 {field_name}='{value}' 不是 YYYY-MM-DD 格式"
+        }
+    # 进一步验证日期合法性(如 2026-13-45 应拒)
+    try:
+        year, month, day = value.split("-")
+        y, m, d = int(year), int(month), int(day)
+        if not (1 <= m <= 12 and 1 <= d <= 31):
+            return {
+                "valid": False,
+                "error": f"字段 {field_name}='{value}' 月或日超出范围"
+            }
+    except ValueError:
+        return {
+            "valid": False,
+            "error": f"字段 {field_name}='{value}' 不是有效日期"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_array_enum(values: List[Any], enum_name: str, field_name: str) -> Dict[str, Any]:
+    """校验数组里每个值都是合法 enum 值(5 个 tag array 复用)
+
+    Args:
+        values: 待校验的字符串列表
+        enum_name: enums.py 里的枚举名(如 'seasons', 'flavors')
+        field_name: 字段名(用于错误信息)
+
+    Returns:
+        {"valid": True, "error": None} or
+        {"valid": False, "error": "..."}
+    """
+    if values is None:
+        return {"valid": True, "error": None}
+    if not isinstance(values, list):
+        return {
+            "valid": False,
+            "error": f"字段 {field_name} 类型错误(期望 list,实际 {type(values).__name__})"
+        }
+    valid_values = enums.get_valid_values(enum_name)
+    invalid_items = []
+    for i, item in enumerate(values):
+        if not isinstance(item, str):
+            invalid_items.append((i, item, f"类型 {type(item).__name__}"))
+            continue
+        if item not in valid_values:
+            invalid_items.append((i, item, "不在合法值"))
+    if invalid_items:
+        错误s = []
+        for i, val, reason in invalid_items:
+            错误s.append(f"[{i}] '{val}' ({reason})")
+        return {
+            "valid": False,
+            "error": f"字段 {field_name} 含非法值: {'; '.join(错误s)}。合法值: {', '.join(valid_values)}"
+        }
+    return {"valid": True, "error": None}
+
+
+# ====================================================================
 # 字段值类型校验(枚举强校验)
 # ====================================================================
 
@@ -497,6 +654,48 @@ def validate_value_types(data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 })
 
     return errors
+
+
+# ====================================================================
+# Enum 校验(CLI-006 修复 · 2026-07-22)
+# ====================================================================
+
+def validate_heat_level(value: Any) -> Dict[str, Any]:
+    """校验火候枚举值(cooking_steps.heat_level)。
+
+    合法值:微火/小火/中火/大火/猛火(5 值,从 references/enums.py 读)
+
+    Returns:
+        {"valid": True/False, "error": "..."}
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    valid = enums.get_valid_values("heat_levels")
+    if value not in valid:
+        return {
+            "valid": False,
+            "error": f"字段 heat_level='{value}' 不是合法火候枚举值。合法值: {', '.join(valid)}"
+        }
+    return {"valid": True, "error": None}
+
+
+def validate_tip_category(value: Any) -> Dict[str, Any]:
+    """校验贴士分类枚举值(tips.category)。
+
+    合法值:火候/刀工/调味/采购/设备/保存/文化/其他(8 值,含 '其他' 兜底)
+
+    Returns:
+        {"valid": True/False, "error": "..."}
+    """
+    if value is None:
+        return {"valid": True, "error": None}
+    valid = enums.get_valid_values("tip_categories")
+    if value not in valid:
+        return {
+            "valid": False,
+            "error": f"字段 category='{value}' 不是合法贴士分类枚举值。合法值: {', '.join(valid)}"
+        }
+    return {"valid": True, "error": None}
 
 
 # ====================================================================

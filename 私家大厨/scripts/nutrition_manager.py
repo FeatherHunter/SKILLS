@@ -11,6 +11,7 @@ import sys
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
+import validators  # 决策 3:接入 validate_serving_unit
 
 
 def add(args):
@@ -31,13 +32,27 @@ def add(args):
         print(f"警告:{recipe[0]['name']}已有营养信息,使用update命令更新")
         return False
 
+    # 决策 3:serving_unit 必填 + enum 校验
+    serving_unit = args.get("--serving_unit")
+    if not serving_unit:
+        print("错误:缺少 --serving_unit(L1 NOT NULL 兜底,DB 不允许 NULL)")
+        print("   合法值:g / ml / 份 / 杯")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿 hint 去问用户,拿到答案后用 --serving_unit <值> 重试。")
+        return False
+    su_validation = validators.validate_serving_unit(serving_unit)
+    if not su_validation["valid"]:
+        print(f"错误:{su_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认单位后重试。")
+        return False
+
     execute(
         "INSERT INTO nutrition_info (id, recipe_id, serving_size, serving_unit, calories, protein, fat, carbs, fiber, sodium) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             str(uuid.uuid4()),
             recipe_id,
             args.get("--serving_size"),
-            args.get("--serving_unit"),
+            serving_unit,
             args.get("--calories"),
             args.get("--protein"),
             args.get("--fat"),

@@ -27,27 +27,48 @@ def add(args):
         print(f"未找到步骤:{step_id}")
         return False
 
-    ingredient = query("SELECT id, name FROM ingredients WHERE id = ?", (ingredient_id,))
+    ingredient = query("SELECT id, name, unit FROM ingredients WHERE id = ?", (ingredient_id,))
     if not ingredient:
         print(f"未找到食材:{ingredient_id}")
         return False
 
+    # 决策 1 + L1 NOT NULL 兜底(2026-07-22 migration 005):quantity_used / introduced_at / unit 必填
+    quantity_used = args.get("--quantity_used")
+    introduced_at = args.get("--introduced_at")
+    # unit:用户显式传优先,否则从 ingredients 表默认单位兜底
+    unit = args.get("--unit") or ingredient[0].get("unit")
+
+    missing = []
+    if quantity_used is None:
+        missing.append(("--quantity_used", "该步使用量数值(如 250)"))
+    if not introduced_at:
+        missing.append(("--introduced_at", "引入时机(枚举:中途加入/提前准备/最后加入/出锅撒)"))
+    if not unit:
+        missing.append(("--unit", "用量单位(如 g/ml/个/勺)"))
+    if missing:
+        print("错误:缺少以下必填字段(L1 NOT NULL 兜底,DB 不允许 NULL):")
+        for flag, hint in missing:
+            print(f"   - {flag}:{hint}")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿这些 hint 去问用户,拿到答案后用 --flag <值> 重试。")
+        return False
+
     execute(
-        "INSERT INTO step_ingredients (id, step_id, ingredient_id, quantity_used, introduced_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO step_ingredients (id, step_id, ingredient_id, quantity_used, introduced_at, unit) VALUES (?, ?, ?, ?, ?, ?)",
         (
             str(uuid.uuid4()),
             step_id,
             ingredient_id,
-            args.get("--quantity_used"),
-            args.get("--introduced_at")
+            quantity_used,
+            introduced_at,
+            unit
         )
     )
 
     print(f"✅ 步骤×食材关联成功!")
     print(f"   步骤:第{step[0]['sequence']}步")
     print(f"   食材:{ingredient[0]['name']}")
-    if args.get("--quantity_used"):
-        print(f"   用量:{args['--quantity_used']}")
+    print(f"   用量:{quantity_used}{unit} ({introduced_at})")
     return True
 
 
@@ -140,8 +161,9 @@ def main():
     python step_ingredient_manager.py remove <link_id>
 
 选项:
-    --quantity_used 该步使用量
-    --introduced_at 引入时机描述
+    --quantity_used 该步使用量(必填,L1 NOT NULL)
+    --introduced_at 引入时机描述(必填,L1 NOT NULL)
+    --unit 用量单位(必填,L1 NOT NULL;未传则默认 ingredients 表的 unit)
 """)
         return
 

@@ -5,6 +5,93 @@
 
 ---
 
+## 2026-07-22 - P1 阶段完工(6 真 bug 修复 + L4 真 18/18 完工 + 默认值兜底哲学纠正)
+
+### 背景
+
+小膳发现 7 个 CLI bug(CLI-001~007),经小匠对抗式审查后实际:
+- **CLI-001/002/004/005/006/007 是真 bug**(已实测复现)
+- **CLI-003 是误报**(`step_manager search` 实测正常,跳过)
+- **L4 阶段实际情况**(实测后):recipe_manager.py 函数体已迁 db API,只是 export_json() 留有 L3 半成品,无 `--json` 时崩
+
+### 第一性原理纠错(关键决策,用户拍板)
+
+L1 设计哲学:**DB NOT NULL 是故意设计来拦截 AI 偷懒不传字段**。AI 必须在调用 CLI 之前完整询问用户。
+
+小匠最初对 CLI-001/002 的修复是"默认值兜底"(quantity_text 自动拼接 / 中火 1 分钟 / 无替代品),**被用户纠错**:
+- ❌ 默认值兜底 = 让 AI 偷懒填字段,违反 L1 设计意图
+- ✅ 缺字段必须**友好报错**(含字段名 + 当前值 + 期望值 + 怎么修),让 AI 拿错误信息去问用户
+
+**P1.2/P1.3 修复全部 rollback + 重做**为友好报错模式。
+
+### 改动清单
+
+#### P1.1 / CLI-004 修复:ingredient_manager docstring 移除 'disable'
+- **改动**:header 第 5 行 "支持:add / list / search / update / disable" → "支持:add / list / search / update(只增不删,要废弃食材用 update 把 quantity 改 0 标注不用)"
+- **哲学**:私家大厨无物理删除操作,要"废弃"某食材用 update 把 quantity 改 0 标注不用
+
+#### P1.2 / CLI-001 修复:ingredient_manager.add 缺字段友好报错
+- **问题**:L1 NOT NULL 兜底加后,add() 没传 quantity_text / substitute 时直接 IntegrityError 崩
+- **错误方案**(已 rollback):给 quantity_text 自动拼接 quantity+unit / 给 substitute 默认"无替代品"
+- **正确方案**:同 L1 哲学,缺字段直接报错,报错信息含字段名 + 当前值 + 期望值 + 怎么修,迫使 AI 问用户
+
+#### P1.3 / CLI-002 修复:step_manager.add 缺字段友好报错
+- **问题**:cooking_steps 除 PK 外 8 字段全 NOT NULL(L1),add() 没传 heat_level/temperature/expected_result 时崩
+- **错误方案**(已 rollback):给 heat_level="中火" / temperature="常温" / expected_result="完成" / duration=1 默认
+- **正确方案**:同 L1 哲学,4 字段全报错让 AI 问用户
+
+#### P1.5 / CLI-006 修复:enum 校验下沉规则层
+- 加 `validators.validate_heat_level()`(5 值合法:微火/小火/中火/大火/猛火)
+- 加 `validators.validate_tip_category()`(8 值合法:火候/刀工/调味/采购/设备/保存/文化/其他)
+- `enums.py` `TIP_CATEGORIES` 加 "其他"(原有 default 兼容)
+- 接入 `step_manager.add` 和 `tip_manager.add`
+- 顺手:**去除 tip_manager.add 原有 `--category` 默认"其他"** 和 `--priority` 默认 1(同 L1 哲学)
+- **决策**(用户拍板 Q3):不加 DB CHECK 约束,只 validators(避免改 schema)
+
+#### P1.4 + P1.6 / CLI-005 + CLI-007 修复:recipe_manager.export_json 全面重构
+- **CLI-005 主症状**:不带 `--json` 时 NameError(query 未导入);带 `--json` 时返 placeholder message
+- **额外发现**:函数体内 4 处 `for r in rows` 引用了错变量,实际把 ingredients 的数据塞进了 techniques/tips/history/relations(4 个 list 字段全错位,但因为 show 走 show_as_dict 不走 export_json,这个 bug 之前没被发现)
+- **修复方案**:抽 `export_as_dict(name)` 纯函数返回 dict,`export_json(args)` 改为 thin wrapper(走 print);main() 的 json_mode 路径调 `export_as_dict` + emit() 三段式
+- **CLI-007 顺手**:`source_url` key 在 result dict 中出现 3 处(小膳报 2 处,实测 3 处),去重为 1 处
+
+### L4 真实状态(2026-07-22 后)
+
+经 P1.4 修复后,recipe_manager.py 函数体 **真 L4 完工**(用 query/execute/transaction,0 conn/cursor 残留)。
+
+`workspace/L4_verify.py` 改造后跑出来:
+- **18/18 无 L3 残留** ✅
+- **17/18 全 db API 化**(import 包含 query/execute/transaction)
+- **1 个 shopping_manager 只读**(query=4,无 execute/transaction 合理 — HANDOVER 标注"不写数据,跳过")
+- 累计:`query()` 调用 163 次 / `execute()` 37 次 / `with transaction()` 7 次
+
+### 关键决策(用户拍板)
+
+| # | 决策 |
+|---|------|
+| Q1 | P1→P2→P3→P4 顺序,每步后对抗式审查 |
+| Q2 | CLI-004 用 docstring 移除方案(只增不删原则) |
+| Q3 | CLI-006 只加 validators,不加 DB CHECK 约束 |
+| Q4 | 不动 HANDOVER,改 CHANGELOG 统一到真实状态 |
+
+### 文件改动(本阶段)
+
+- `scripts/ingredient_manager.py`(P1.1 + P1.2-rev,~15 行变化)
+- `scripts/step_manager.py`(P1.3-rev,~30 行变化 + 1 行 import validators)
+- `scripts/tip_manager.py`(P1.5 一段,~30 行变化)
+- `scripts/validators.py`(+2 函数,~40 行)
+- `scripts/recipe_manager.py`(P1.4 + P1.6,~100 行变化:新 export_as_dict 函数 + main 路径)
+- `references/enums.py`(+1 值 "其他" 到 TIP_CATEGORIES)
+- `C:\Users\辰辰洋洋\.minimax\workspace\L4_verify.py`(P2 改造,~80 行)
+
+### 数据状态
+
+- L3 验证 6/6 ✅
+- L4 验证 18/18(改造后输出包含正信号)✅
+- 4 条真实 DB 业务命令(show/list/search/lint)全部成功
+- ⚠ 测试期间插入了一些 "测试CLI_*" 食材/步骤/tip 污染数据,在 P4 阶段清理
+
+---
+
 ## 2026-07-22 - L3 阶段完工(CLI 三段式 + --human/--json + orchestrator 完整迁移 + 4 文档同步)
 
 ### 改动清单

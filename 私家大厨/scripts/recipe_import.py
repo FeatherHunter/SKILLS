@@ -175,11 +175,14 @@ def add_ingredients(conn, recipe_id, ingredients):
         return {}
     cursor = conn.cursor()
     name_id_map = {}
+    name_unit_map = {}  # 2026-07-22 P1: 步骤用材 unit 兜底用
 
     for i, ing in enumerate(ingredients):
         ingredient_id = str(uuid.uuid4())
         name = ing["name"]
         name_id_map[name] = ingredient_id
+        if ing.get("unit"):
+            name_unit_map[name] = ing["unit"]
 
         cursor.execute("""
             INSERT INTO ingredients (
@@ -199,11 +202,13 @@ def add_ingredients(conn, recipe_id, ingredients):
             ing.get("substitute")
         ))
 
-    return name_id_map
+    return name_id_map, name_unit_map
 
 
-def add_steps(conn, recipe_id, steps, name_id_map):
-    """添加步骤列表，返回 {sequence: id} 映射"""
+def add_steps(conn, recipe_id, steps, name_id_map, name_unit_map=None):
+    """添加步骤列表，返回 {sequence: id} 映射
+    name_unit_map: 用于步骤用材 unit 缺时兜底(P1 决策,2026-07-22)
+    """
     if not steps:
         return {}
     cursor = conn.cursor()
@@ -230,10 +235,17 @@ def add_steps(conn, recipe_id, steps, name_id_map):
             step.get("expected_result")
         ))
 
-        # 处理步骤×食材关联(v5.1 加 unit 列)
+        # 处理步骤×食材关联(v5.1 加 unit 列,2026-07-22 unit 改 NOT NULL)
         for si in step.get("ingredients_used", []):
             ing_name = si.get("name")
             if ing_name and ing_name in name_id_map:
+                # unit 必填:JSON 显式优先,缺时从 ingredients 表的 unit 字段兜底
+                unit = si.get("unit") or name_unit_map.get(ing_name)
+                if not unit:
+                    print(f"错误:步骤第{step['sequence']}步引用的食材 '{ing_name}' 的 unit 字段为空,且 ingredients 表里也没默认 unit。")
+                    print(f"   L1 NOT NULL 兜底,DB 不允许 NULL。请在 JSON 的 steps[].ingredients_used[] 加 \"unit\":\"g/ml/个\"。")
+                    conn.rollback()
+                    raise ValueError(f"step_ingredients.unit 不能为空(食材 '{ing_name}')")
                 link_id = str(uuid.uuid4())
                 cursor.execute("""
                     INSERT INTO step_ingredients (id, step_id, ingredient_id, quantity_used, introduced_at, unit)
@@ -244,10 +256,10 @@ def add_steps(conn, recipe_id, steps, name_id_map):
                     name_id_map[ing_name],
                     si.get("quantity_used"),
                     si.get("introduced_at", "中途加入"),
-                    si.get("unit")
+                    unit
                 ))
             elif ing_name:
-                print(f"警告：步骤引用的食材 '{ing_name}' 未在食材列表中找到，跳过关联")
+                print(f"警告:步骤引用的食材 '{ing_name}' 未在食材列表中找到,跳过关联")
 
     return seq_id_map
 
@@ -545,10 +557,10 @@ def import_recipe(json_file, choice=None, new_name=None, merge=False):
         add_meal_types(conn, recipe_id, data.get("meal_types"))
 
         # 添加食材(返回name→id映射)
-        name_id_map = add_ingredients(conn, recipe_id, data.get("ingredients"))
+        name_id_map, name_unit_map = add_ingredients(conn, recipe_id, data.get("ingredients"))
 
         # 添加步骤(返回seq→id映射,同时处理步骤×食材关联)
-        seq_id_map = add_steps(conn, recipe_id, data.get("steps"), name_id_map)
+        seq_id_map = add_steps(conn, recipe_id, data.get("steps"), name_id_map, name_unit_map)
 
         # 添加可选数据
         add_tips(conn, recipe_id, data.get("tips"), seq_id_map)

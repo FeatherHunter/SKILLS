@@ -196,6 +196,7 @@ def init_db():
     # ========== 表10：step_ingredients（步骤×食材关联）==========
     # L1-A: 2 业务字段 NOT NULL
     # L3 阶段加回 unit 列(原 v5.1 设计的,被 L1 误删,add_steps 还在用)
+    # 2026-07-22 P1 决策:unit 也 NOT NULL(L1 漏设,实测 12 行全有值,migration 005 已应用)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS step_ingredients (
             id TEXT PRIMARY KEY,
@@ -203,7 +204,7 @@ def init_db():
             ingredient_id TEXT NOT NULL,
             quantity_used REAL NOT NULL,
             introduced_at TEXT NOT NULL,
-            unit TEXT,
+            unit TEXT NOT NULL,
             FOREIGN KEY (step_id) REFERENCES cooking_steps(id) ON DELETE CASCADE,
             FOREIGN KEY (ingredient_id) REFERENCES ingredients(id) ON DELETE CASCADE
         )

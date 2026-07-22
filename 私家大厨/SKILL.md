@@ -20,14 +20,19 @@
 
 ---
 
-> 版本：**v3** (2026-07-22 L1+L2+L3 完整重构)
+> 版本：**v3** (2026-07-22 L1+L2+L3+P1+P2 完整重构)
 > 设计：基于17张表(98 字段全 NOT NULL 兜底)，8大功能，35个唤醒词，无删除操作
 > 食材分类：v5.2 起 **11 类**(原 9 类拆出"葱姜蒜"和"香草"),见 `references/categories.md`
+> 贴士分类：v3 P1 起 **8 类**(原 7 类增加"其他"兜底)
+> 火候枚举：5 值(微火/小火/中火/大火/猛火),`validators.validate_heat_level` 强校验
 > 5层架构改造：
 > - v5.0 (2026-07-21) — 24/24 + 30/30 自检通过,见 `CHANGELOG.md` [5.1]
 > - **v3 L1** (2026-07-22) — DB NOT NULL 兜底墙(98 字段),`init_db.py` + `migrations/004_all_fields_not_null.sql`
 > - **v3 L2** (2026-07-22) — validators 占位符黑名单 + 18 manager 改 db.py + orchestrator.py 新建
 > - **v3 L3** (2026-07-22) — CLI 三段式统一 + `--human`/`--json` 开关 + orchestrator 完整迁移
+> - **v3 L4** (2026-07-22) — 18 manager 函数体真迁 db.execute/query/transaction(`recipe_manager.export_json` 整体重构,4 处隐 bug 顺手修)
+> - **v3 P1** (2026-07-22) — 6 真 CLI bug 修复:`CLI-001/002/004/005/006/007`(`ingredient_manager` remove `disable` + 缺字段友好报错 + `step_manager` 缺字段友好报错 + enum 校验下沉)
+> - **v3 P2** (2026-07-22) — `L4_verify.py` 盲点修复(加正信号 + import 完整性)
 > 详细变更见 `CHANGELOG.md`
 
 ---
@@ -202,6 +207,28 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 5. **错误信息含"字段名 + 当前值 + 期望值 + 怎么修"** — 遵守"可约束"特性,让 AI 知道怎么改
 6. **早失败优于晚失败** — 在校验阶段直接拒,不要等到 SQL 报错
 7. **无 --force / --skip-validation 通道** — AI 偷懒会立刻用上,设计上禁止
+
+### L1 NOT NULL 设计哲学(v3 P1 用户拍板)
+
+**L1 设计意图:DB NOT NULL 是故意拦截 AI 偷懒不传字段的。**
+
+| 场景 | 错误做法 | 正确做法 |
+|---|---|---|
+| CLI add 缺必填字段 | AI 看不到字段 → DB 崩 stacktrace | CLI 友好报错(含字段名 + 当前值 + 期望值 + 怎么修)→ AI 拿错误信息问用户 |
+| 缺字段时 | 给个"中火"/"适量"/"完成"默认值兜底(让 AI 跳过思考) | 让 AI 必须问用户拿到所有字段后再调 |
+| 字段看似可推算(如 quantity_text) | 自动从 quantity+unit 拼接 | 必须显式提供,即使是冗余也要 AI 主动思考 |
+
+**反例**(v3 P1 之前的 fix,被用户纠错):
+- ❌ `step_manager.add` 没传 heat_level/temperature/expected_result 时默认 "中火/常温/完成"
+- ❌ `ingredient_manager.add` 没传 substitute 时默认 "无替代品"
+- ❌ `quantity_text` 自动从 quantity+unit 拼接
+
+**正解**(v3 P1 重做):
+- ✅ 缺字段 → 友好报错,AI 拿错误信息问用户,重试
+- ✅ user 明确说 "用豆腐代替" → `--substitute "豆腐"`
+- ✅ user 明确说 "无替代品" → `--substitute "无替代品"`(显式传,不是默认)
+
+**适用范围**:所有 CLI add path(`ingredient_manager` / `step_manager` / `tip_manager` / `recipe_manager`),不仅限录入食谱;做饭路径不强制(读路径字段可推算)。
 
 ### 字段推算边界(AI 何时推算,何时问用户)
 

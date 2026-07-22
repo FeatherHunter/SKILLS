@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
+import validators  # 决策 3:接入 validate_rating_range / validate_date_format
 
 
 def add(args):
@@ -21,20 +22,36 @@ def add(args):
         print("错误:请提供食谱ID或菜名")
         return False
 
-    # 评分范围验证
+    # 决策 3:rating 范围校验(0-5,含小数)
     rating = args.get("--rating")
-    if rating:
+    if rating is not None:
         try:
             rating_val = float(rating)
-            if rating_val < 1 or rating_val > 5:
-                print("错误:评分必须在1-5之间")
-                return False
-            rating = rating_val
-        except ValueError:
-            print("错误:评分必须是数字")
+        except (ValueError, TypeError):
+            print("错误:--rating 必须是数字")
             return False
+        rt_validation = validators.validate_rating_range(rating_val)
+        if not rt_validation["valid"]:
+            print(f"错误:{rt_validation['error']}")
+            print("   怎么修:请拿 hint 去问用户,确认评分后重试。")
+            return False
+        rating = rating_val
 
+    # 决策 3:cook_date 日期格式校验(YYYY-MM-DD)
     cook_date = args.get("--cook_date") or datetime.now().strftime("%Y-%m-%d")
+    dt_validation = validators.validate_date_format(cook_date, "cook_date")
+    if not dt_validation["valid"]:
+        print(f"错误:{dt_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认日期后用 --cook_date YYYY-MM-DD 重试。")
+        return False
+
+    # L1 NOT NULL 兜底:feedback 必填(2026-07-22)
+    feedback = args.get("--feedback")
+    if not feedback:
+        print("错误:缺少 --feedback(L1 NOT NULL 兜底,DB 不允许 NULL)")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿 hint 去问用户,这次做菜的反馈/改进建议是什么?")
+        return False
 
     # L4: db.query 替代 conn/cursor
     recipes = query("SELECT id, name, status FROM recipes WHERE id = ? OR name LIKE ?", (recipe_id, f"%{recipe_id}%"))
@@ -56,7 +73,7 @@ def add(args):
         with transaction() as conn:
             execute(
                 "INSERT INTO recipe_history (id, recipe_id, cook_date, cook_sequence, rating, feedback) VALUES (?, ?, ?, ?, ?, ?)",
-                (history_id, recipe_id, cook_date, new_seq, rating, args.get("--feedback"))
+                (history_id, recipe_id, cook_date, new_seq, rating, feedback)
             )
 
             # 如果是第一次,更新 recipes 状态
@@ -70,8 +87,9 @@ def add(args):
     print(f"   食谱:{recipe['name']}")
     print(f"   日期:{cook_date}")
     print(f"   第{new_seq}次做")
-    if rating:
+    if rating is not None:
         print(f"   评分:{rating}")
+    print(f"   反馈:{feedback}")
     return True
 
 

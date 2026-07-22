@@ -119,14 +119,15 @@ def orchestrate_import(data: dict, dry_run: bool = False) -> dict:
 
             # 3e. 食材
             name_id_map = {}
+            name_unit_map = {}
             if data.get("ingredients"):
-                name_id_map = recipe_import.add_ingredients(conn, recipe_id, data["ingredients"])
+                name_id_map, name_unit_map = recipe_import.add_ingredients(conn, recipe_id, data["ingredients"])
                 child_ids["ingredients"] = len(name_id_map)
 
             # 3f. 步骤
             seq_id_map = {}
             if data.get("steps"):
-                seq_id_map = recipe_import.add_steps(conn, recipe_id, data["steps"], name_id_map)
+                seq_id_map = recipe_import.add_steps(conn, recipe_id, data["steps"], name_id_map, name_unit_map)
                 child_ids["cooking_steps"] = len(seq_id_map)
                 child_ids["step_ingredients"] = sum(
                     1 for s in data["steps"] for si in s.get("ingredients_used", [])

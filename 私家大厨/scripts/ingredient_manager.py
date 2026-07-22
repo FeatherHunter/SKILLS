@@ -35,21 +35,22 @@ def add(args):
     max_seq = max_seq_rows[0]["max_seq"] if max_seq_rows and max_seq_rows[0]["max_seq"] is not None else 0
     sequence = args.get("--sequence") or (max_seq + 1)
 
-    # CLI-001 修复:quantity_text 必填,缺时尝试从 quantity+unit 拼接,仍缺则报错
+    # CLI-001 修复:L1 NOT NULL 兜底 — quantity_text / substitute 必须显式提供(不静默默认值兜底)
+    # 设计哲学:L1 NOT NULL 是设计意图,要逼 AI 想清楚再调 CLI。
     quantity_text = args.get("--quantity_text")
+    substitute = args.get("--substitute")
+    missing = []
     if not quantity_text:
-        quantity = args.get("--quantity")
-        unit = args.get("--unit")
-        if quantity is not None and unit:
-            quantity_text = f"{quantity}{unit}"
-        elif quantity:
-            quantity_text = str(quantity)
-    if not quantity_text:
-        print("错误:请提供 --quantity_text(如'适量')或同时提供 --quantity 与 --unit")
+        missing.append(("--quantity_text", "用量文字(如 '适量' / '少许' / '100g')"))
+    if not substitute:
+        missing.append(("--substitute", "替代食材(如 '可用豆腐代替' / 写'无替代品'表示无)"))
+    if missing:
+        print("错误:缺少以下必填字段(L1 NOT NULL 兜底,DB 不允许 NULL):")
+        for flag, hint in missing:
+            print(f"   - {flag}:{hint}")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿这些 hint 去问用户,拿到答案后用 --flag <值> 重试。")
         return False
-
-    # CLI-001 类修复:substitute 也是 NOT NULL,未传时默认"无替代品"(同真实数据惯例)
-    substitute = args.get("--substitute") or "无替代品"
 
     execute(
         "INSERT INTO ingredients (id, recipe_id, sequence, name, category, quantity, unit, quantity_text, is_optional, substitute) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",

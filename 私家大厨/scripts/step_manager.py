@@ -11,6 +11,7 @@ import sys
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
+import validators  # CLI-006 接入:enum 校验(heat_level)
 
 
 def add(args):
@@ -35,11 +36,35 @@ def add(args):
     max_seq = max_seq_rows[0]["max_seq"] if max_seq_rows and max_seq_rows[0]["max_seq"] is not None else 0
     sequence = args.get("--sequence") or (max_seq + 1)
 
-    # CLI-002 修复类:cooking_steps 多字段 NOT NULL 默认值兜底
-    duration = args.get("--duration") or 1
-    heat_level = args.get("--heat_level") or "中火"
-    temperature = args.get("--temperature") or "常温"
-    expected_result = args.get("--expected_result") or "完成"
+    # CLI-002 修复:L1 NOT NULL 兜底 — 缺字段直接报错,引导 AI 问用户(不静默默认值兜底)
+    # 设计哲学:L1 NOT NULL 是设计意图,要逼 AI 想清楚再调 CLI。
+    duration = args.get("--duration")
+    heat_level = args.get("--heat_level")
+    temperature = args.get("--temperature")
+    expected_result = args.get("--expected_result")
+    missing = []
+    if duration is None:
+        missing.append(("--duration", "时长(分钟,如 3)"))
+    if not heat_level:
+        missing.append(("--heat_level", "火候(微火/小火/中火/大火/猛火)"))
+    if not temperature:
+        missing.append(("--temperature", "温度(如 '180度' / '常温')"))
+    if not expected_result:
+        missing.append(("--expected_result", "预期效果(如 '表面金黄')"))
+    if missing:
+        print("错误:缺少以下必填字段(L1 NOT NULL 兜底,DB 不允许 NULL):")
+        for flag, hint in missing:
+            print(f"   - {flag}:{hint}")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿这些 hint 去问用户,拿到答案后用 --flag <值> 重试。")
+        return False
+
+    # CLI-006 修复:heat_level enum 校验(拦截拼错/超集值)
+    heat_validation = validators.validate_heat_level(heat_level)
+    if not heat_validation["valid"]:
+        print(f"错误:{heat_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认火候后重试。")
+        return False
 
     execute(
         "INSERT INTO cooking_steps (id, recipe_id, sequence, action, duration_minutes, heat_level, temperature, expected_result) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

@@ -45,6 +45,29 @@ def add(args):
         print(f"⚠️  提示:{tip_validation['warning_msg']}")
         print(f"   {tip_validation['user_question']}")
 
+    # L1 哲学修复(同 P1.2/1.3):category / priority 必须显式提供 — 移除原有的"其他"/1 默认值
+    category = args.get("--category")
+    priority = args.get("--priority")
+    missing = []
+    if not category:
+        missing.append(("--category", "贴士分类(8 值合法:火候/刀工/调味/采购/设备/保存/文化/其他)"))
+    if priority is None:
+        missing.append(("--priority", "优先级整数(如 1=低,2=中,3=高)"))
+    if missing:
+        print("错误:缺少以下必填字段(L1 NOT NULL 兜底,DB 不允许 NULL):")
+        for flag, hint in missing:
+            print(f"   - {flag}:{hint}")
+        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print("   请拿这些 hint 去问用户,拿到答案后用 --flag <值> 重试。")
+        return False
+
+    # CLI-006 修复:category enum 校验(拦截拼错/超集值)
+    cat_validation = validators.validate_tip_category(category)
+    if not cat_validation["valid"]:
+        print(f"错误:{cat_validation['error']}")
+        print("   怎么修:请拿 hint 去问用户,确认分类后重试(8 个合法值)。")
+        return False
+
     execute(
         "INSERT INTO tips (id, recipe_id, step_id, ingredient_id, category, content, priority) VALUES (?, ?, ?, ?, ?, ?, ?)",
         (
@@ -52,9 +75,9 @@ def add(args):
             recipe_id,
             args.get("--step_id"),
             args.get("--ingredient_id"),
-            args.get("--category") or "其他",
+            category,
             content,
-            args.get("--priority") if args.get("--priority") is not None else 1
+            priority
         )
     )
 

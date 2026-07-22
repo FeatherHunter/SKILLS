@@ -421,6 +421,21 @@ python scripts/recipe_render.py render &lt;菜名或ID&gt;
 <li>只告诉用户 HTML 路径而不发文件(违反"必发"规则)</li>
 </ul>
 <p><strong>「做菜模式」</strong> 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。</p>
+<h3>采购清单 HTML 强制（v5.2 新增）</h3>
+<p><strong>「生成清单 / 排除可选」</strong> AI 收到时<strong>必须自动</strong>按以下 2 步走:</p>
+<pre><code class="language-bash"># 第 1 步:拿数据(必跑,可省略文本直接给 HTML)
+python scripts/shopping_manager.py generate &lt;recipe_id1&gt;[,&lt;recipe_id2&gt;,...]
+
+# 第 2 步:渲染 HTML(必跑)
+python scripts/shopping_render.py render &lt;recipe_id1&gt;[,&lt;recipe_id2&gt;,...]
+</code></pre>
+<p><strong>3 条执行规则</strong>:</p>
+<ol>
+<li><strong>跨食谱合并自动跑</strong> —— 用户说"宫保虾球和辣炒虾球的采购清单",AI <strong>自动解析</strong>所有菜名,一次性调 generate + render(逗号分隔)</li>
+<li><strong>HTML 必发</strong> —— render 成功后,<strong>用 <code>&lt;media&gt;</code> 标签</strong>推给用户(同查看食谱规则)</li>
+<li><strong>失败降级</strong> —— render 失败时静默降级,JSON 数据照常展示</li>
+</ol>
+<p><strong>features/shopping.md</strong> 里 14 项 HTML 要求已由 <code>templates/shopping_view.html</code> 实现,AI 无需自写 HTML。</p>
 <hr />
 <h2 id="路由算法-核心-8">路由算法（核心）</h2>
 <h3>匹配流程</h3>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>采购清单 · {{ data.recipe_names | join(' + ') }}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue2:#0A84FF;
+    --bg:#FAFAFA;--card:#FFFFFF;--border:#E5E5EA;
+    --text:#1C1C1E;--text2:#8E8E93;--text3:#AEAEB2;
+    --success:#34C759;--warn:#FF9500;--danger:#FF3B30;
+    --radius:12px;--radius-sm:8px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html{font-size:16px;-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.6;min-height:100vh;padding:0 0 80px 0;
+    -webkit-font-smoothing:antialiased;
+  }
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  /* ── Header ── */
+  .header{padding:24px 0 16px;border-bottom:0.5px solid var(--border);margin-bottom:16px}
+  .header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .header .meta{font-size:13px;color:var(--text2);display:flex;flex-wrap:wrap;gap:12px}
+  .header .meta-item{display:inline-flex;align-items:center;gap:4px}
+
+  /* ── Summary Cards ── */
+  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+  .summary-card{
+    background:var(--card);border-radius:var(--radius);padding:12px 14px;
+    border:1px solid var(--border);
+  }
+  .summary-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+  .summary-value{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+
+  /* ── Allergen Warning ── */
+  .allergen-banner{
+    background:linear-gradient(135deg,#FFF3E0 0%,#FFE0B2 100%);
+    border:1px solid #FFB74D;border-radius:var(--radius);
+    padding:12px 16px;margin-bottom:20px;font-size:13px;color:#8B5A00;
+    display:flex;align-items:center;gap:8px;
+  }
+  .allergen-banner strong{color:var(--danger)}
+
+  /* ── Recipe Pills (涉及菜单) ── */
+  .recipe-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;font-size:13px}
+  .recipe-pill{
+    background:rgba(0,122,255,0.08);color:var(--blue);
+    padding:4px 10px;border-radius:10px;font-weight:500;
+  }
+
+  /* ── Category Section ── */
+  details.cat-section{margin-bottom:12px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+  details.cat-section[open]>summary{border-bottom:0.5px solid var(--border)}
+  details.cat-section > summary{
+    list-style:none;cursor:pointer;
+    padding:14px 16px;display:flex;justify-content:space-between;align-items:center;
+    user-select:none;background:var(--card);
+  }
+  details.cat-section > summary::-webkit-details-marker{display:none}
+  .cat-name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+  .cat-icon{font-size:18px}
+  .cat-progress{
+    font-size:12px;color:var(--text2);
+    background:#F5F5F7;padding:3px 8px;border-radius:8px;
+    font-variant-numeric:tabular-nums;
+  }
+  .cat-progress.done{background:rgba(52,199,89,0.15);color:#1F7A35}
+
+  .cat-body{padding:4px 16px 16px}
+
+  /* ── Ingredient Item ── */
+  .ing-item{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:10px 0;border-bottom:0.5px solid var(--border);
+    cursor:pointer;transition:opacity 0.2s;
+  }
+  .ing-item:last-child{border-bottom:none}
+
+  .checkbox{
+    flex-shrink:0;width:24px;height:24px;margin-top:2px;
+    border:2px solid var(--text3);border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all 0.2s;
+  }
+  .ing-item.checked .checkbox{
+    background:var(--success);border-color:var(--success);
+  }
+  .ing-item.checked .checkbox::after{
+    content:"";width:6px;height:12px;
+    border:solid #fff;border-width:0 2.5px 2.5px 0;
+    transform:rotate(45deg);margin-bottom:2px;
+  }
+  .ing-item.checked .ing-content{opacity:0.45;text-decoration:line-through}
+
+  .ing-content{flex:1;min-width:0}
+  .ing-line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ing-name{font-size:15px;font-weight:600;color:var(--text)}
+  .ing-qty{
+    font-size:14px;color:var(--text);font-variant-numeric:tabular-nums;
+    background:#F5F5F7;padding:2px 8px;border-radius:6px;font-weight:500;
+  }
+  .ing-qty .unit{color:var(--text2);margin-left:1px;font-weight:400}
+  .ing-note{font-size:12px;color:var(--text2);margin-top:2px}
+  .badge{
+    display:inline-block;font-size:10px;padding:1px 6px;border-radius:5px;
+    font-weight:600;margin-left:6px;vertical-align:1px;
+  }
+  .badge-share{background:rgba(0,122,255,0.12);color:var(--blue)}
+  .badge-optional{background:rgba(255,149,0,0.12);color:var(--warn)}
+  .badge-sub{background:rgba(255,149,0,0.08);color:#B86E00;font-style:italic;font-weight:500}
+
+  /* ── Actions ── */
+  .actions{
+    position:sticky;bottom:0;left:0;right:0;
+    background:rgba(250,250,250,0.85);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:0.5px solid var(--border);
+    padding:12px 16px;display:flex;gap:8px;justify-content:center;
+    margin:24px -16px 0;
+  }
+  .btn{
+    background:var(--blue);color:#fff;border:none;
+    padding:10px 18px;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:500;cursor:pointer;
+    font-family:var(--font);
+    transition:opacity 0.15s;
+  }
+  .btn:hover{opacity:0.85}
+  .btn-secondary{background:var(--card);color:var(--blue);border:1px solid var(--border)}
+
+  /* ── Print ── */
+  @media print{
+    body{background:#fff;padding:0}
+    .actions,.checkbox,.toggle-hint{display:none!important}
+    details.cat-section[open]>summary{border-bottom:none}
+    details.cat-section{border:none;page-break-inside:avoid;margin-bottom:8px}
+    .ing-item{cursor:default}
+    .checkbox{border:1px solid #999}
+    .ing-item.checked .checkbox{background:#fff}
+  }
+
+  /* ── Footer ── */
+  .footer{
+    text-align:center;font-size:11px;color:var(--text3);
+    margin-top:32px;padding-top:16px;border-top:0.5px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🛒 采购清单</h1>
+    <div class="meta">
+      <span class="meta-item">📅 {{ data.generated_at[:10] }}</span>
+      <span class="meta-item">🍳 {{ data.recipe_names | join(' + ') }}</span>
+      <span class="meta-item">📊 共 {{ data.summary.ingredient_count }} 项</span>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-card">
+      <div class="summary-label">涉及菜数</div>
+      <div class="summary-value">{{ data.summary.recipe_count }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">食材总数</div>
+      <div class="summary-value" id="total-count">{{ data.summary.ingredient_count }}</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">已勾选</div>
+      <div class="summary-value" id="checked-count">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">预估价格</div>
+      <div class="summary-value">¥{{ data.summary.price_estimate_yuan.low }}-{{ data.summary.price_estimate_yuan.high }}</div>
+    </div>
+  </div>
+
+  <!-- Allergen Warning (选填字段,有数据才显示) -->
+  {% if data.summary.allergens %}
+  <div class="allergen-banner">
+    ⚠️ 检测到常见过敏原:<strong>{{ data.summary.allergens | join(' · ') }}</strong>
+    <span style="color:#B86E00;font-size:12px;margin-left:auto">仅供参考,实际请核对包装</span>
+  </div>
+  {% endif %}
+
+  <!-- Recipe Pills -->
+  <div class="recipe-pills">
+    {% for r in data.recipes %}
+    <span class="recipe-pill">{{ r.name }} · {{ r.ingredient_count }} 项</span>
+    {% endfor %}
+    {% if data.exclude_optional %}
+    <span class="recipe-pill" style="background:rgba(255,149,0,0.1);color:var(--warn)">已排除可选食材</span>
+    {% endif %}
+  </div>
+
+  <!-- Categories -->
+  {% for cat, items in data.ingredients_by_category.items() %}
+  <details class="cat-section" open>
+    <summary>
+      <span class="cat-name">
+        <span class="cat-icon">
+          {% if cat == '肉类' %}🥩{% elif cat == '海鲜' %}🐟{% elif cat == '蛋类' %}🥚
+          {% elif cat == '蔬菜' %}🥬{% elif cat == '豆制品' %}🫘{% elif cat == '主食' %}🍚
+          {% elif cat == '干货' %}🍄{% elif cat == '调料' %}🧂{% else %}📦{% endif %}
+        </span>
+        {{ cat }}
+      </span>
+      <span class="cat-progress" data-total="{{ items|length }}">
+        <span class="cat-checked">0</span>/{{ items|length }}
+      </span>
+    </summary>
+    <div class="cat-body">
+      {% for item in items %}
+      <div class="ing-item" data-ing-name="{{ item.name }}">
+        <div class="checkbox"></div>
+        <div class="ing-content">
+          <div class="ing-line1">
+            <span class="ing-name">{{ item.name }}</span>
+            <span class="ing-qty">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
+            {% if item.merged_count > 1 %}
+            <span class="badge badge-share">🔗 {{ item.merged_count }}菜共用</span>
+            {% endif %}
+            {% if item.is_optional %}
+            <span class="badge badge-optional">可选</span>
+            {% endif %}
+          </div>
+          {% if item.sources %}
+          <div class="ing-note">
+            {% for src in item.sources %}
+            <span style="color:var(--text3)">来自:第{{ loop.index }}份</span>
+            {% if not loop.last %}<span style="color:var(--text3)"> · </span>{% endif %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if item.substitute %}
+          <div class="ing-note"><span class="badge badge-sub">替代:{{ item.substitute }}</span></div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endfor %}
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn" onclick="copyAsText()">📋 复制纯文本</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨️ 打印</button>
+    <button class="btn btn-secondary" onclick="resetAll()">🔄 重置</button>
+  </div>
+
+  <div class="footer">
+    生成于 {{ data.generated_at }} · 私家大厨 v5.2
+  </div>
+
+</div>
+
+<script>
+  // ── Checkbox 交互 ──
+  const items = document.querySelectorAll('.ing-item');
+  const totalCountEl = document.getElementById('total-count');
+  const checkedCountEl = document.getElementById('checked-count');
+
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('checked');
+      updateProgress();
+      saveState();
+    });
+  });
+
+  function updateProgress() {
+    const checked = document.querySelectorAll('.ing-item.checked').length;
+    checkedCountEl.textContent = checked;
+
+    // 每个分类的进度
+    document.querySelectorAll('details.cat-section').forEach(section => {
+      const total = section.querySelectorAll('.ing-item').length;
+      const done = section.querySelectorAll('.ing-item.checked').length;
+      const badge = section.querySelector('.cat-checked');
+      const wrapper = section.querySelector('.cat-progress');
+      if (badge) badge.textContent = done;
+      if (wrapper) wrapper.classList.toggle('done', done === total && total > 0);
+    });
+  }
+
+  // ── LocalStorage 持久化(刷新不丢) ──
+  const STORAGE_KEY = 'shopping_' + '{{ data.generated_at }}';
+
+  function saveState() {
+    const state = {};
+    items.forEach((item, i) => {
+      state[i] = item.classList.contains('checked');
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      items.forEach((item, i) => {
+        if (state[i]) item.classList.add('checked');
+      });
+      updateProgress();
+    } catch (e) {}
+  }
+
+  function resetAll() {
+    if (!confirm('确定清空所有已勾选?')) return;
+    items.forEach(item => item.classList.remove('checked'));
+    updateProgress();
+    saveState();
+  }
+
+  function copyAsText() {
+    const lines = [];
+    lines.push('采购清单 · {{ data.recipe_names | join(" + ") }}');
+    lines.push('共 {{ data.summary.ingredient_count }} 项 · 预估 ¥{{ data.summary.price_estimate_yuan.low }}-{{ data.summary.price_estimate_yuan.high }}');
+    {% if data.summary.allergens %}
+    lines.push('⚠️ 过敏原:{{ data.summary.allergens | join("、") }}');
+    {% endif %}
+    lines.push('');
+    {% for cat, items in data.ingredients_by_category.items() %}
+    lines.push('【{{ cat }}】');
+    {% for item in items %}
+    lines.push('- {{ item.name }} {{ "%g"|format(item.quantity) }}{{ item.unit }}{% if item.merged_count > 1 %} (×{{ item.merged_count }}菜共用){% endif %}{% if item.substitute %} · 替代:{{ item.substitute }}{% endif %}');
+    {% endfor %}
+    lines.push('');
+    {% endfor %}
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = '✅ 已复制';
+      setTimeout(() => btn.textContent = orig, 1500);
+    }).catch(() => alert(text));
+  }
+
+  // 启动时加载状态
+  loadState();
+</script>
+
+</body>
+</html>

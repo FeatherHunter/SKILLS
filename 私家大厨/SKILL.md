@@ -210,6 +210,26 @@ python scripts/recipe_render.py render <菜名或ID>
 
 **「做菜模式」** 的 HTML 暂由 AI 自己生成(等 render.py 第二模板上线后统一)。
 
+### 采购清单 HTML 强制（v5.2 新增）
+
+**「生成清单 / 排除可选」** AI 收到时**必须自动**按以下 2 步走：
+
+```bash
+# 第 1 步:拿数据(必跑,可省略文本直接给 HTML)
+python scripts/shopping_manager.py generate <recipe_id1>[,<recipe_id2>,...]
+
+# 第 2 步:渲染 HTML(必跑)
+python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...]
+```
+
+**3 条执行规则**:
+
+1. **跨食谱合并自动跑** —— 用户说"宫保虾球和辣炒虾球的采购清单",AI **自动解析**所有菜名,一次性调 generate + render(逗号分隔)
+2. **HTML 必发** —— render 成功后,**用 `<media>` 标签**推给用户(同查看食谱规则)
+3. **失败降级** —— render 失败时静默降级,JSON 数据照常展示
+
+**features/shopping.md** 里 14 项 HTML 要求已由 `templates/shopping_view.html` 实现,AI 无需自写 HTML。
+
 ---
 
 ## 路由算法（核心）

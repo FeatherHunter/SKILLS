@@ -698,6 +698,39 @@ def validate_tip_category(value: Any) -> Dict[str, Any]:
     return {"valid": True, "error": None}
 
 
+# 决策 2 · 方案 A+(2026-07-22):tips 加 --scope 值格式 flag
+TIP_SCOPES = ["step", "ingredient", "recipe"]
+
+
+def validate_tip_scope(scope: Any, step_id: Any = None, ingredient_id: Any = None) -> Dict[str, Any]:
+    """校验 tip 的 scope(scope: step|ingredient|recipe)
+
+    规则:
+    - scope='step'        → step_id 必填,ingredient_id 允许空
+    - scope='ingredient'  → ingredient_id 必填,step_id 允许空
+    - scope='recipe'      → step_id 和 ingredient_id 都允许空(菜级 tip)
+
+    Returns:
+        {"valid": True/False, "error": "..."}
+    """
+    if scope not in TIP_SCOPES:
+        return {
+            "valid": False,
+            "error": f"字段 scope='{scope}' 不是合法值。合法值: {', '.join(TIP_SCOPES)}"
+        }
+    if scope == "step" and not step_id:
+        return {
+            "valid": False,
+            "error": "scope=step 时 --step_id 必填"
+        }
+    if scope == "ingredient" and not ingredient_id:
+        return {
+            "valid": False,
+            "error": "scope=ingredient 时 --ingredient_id 必填"
+        }
+    return {"valid": True, "error": None}
+
+
 # ====================================================================
 # 步骤结构校验(新增 v5.1)
 # ====================================================================

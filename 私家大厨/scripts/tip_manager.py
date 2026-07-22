@@ -34,16 +34,36 @@ def add(args):
         print(f"未找到食谱:{recipe_id}")
         return False
 
-    # L3-tip-bridge: 用户决策 R4 — tips 业务规则校验
-    tip_data = {
-        "recipe_id": recipe_id,
-        "step_id": args.get("--step_id"),
-        "ingredient_id": args.get("--ingredient_id"),
-    }
-    tip_validation = validators.validate_tip_minimum(tip_data)
-    if tip_validation["status"] == "warning":
-        print(f"⚠️  提示:{tip_validation['warning_msg']}")
-        print(f"   {tip_validation['user_question']}")
+    # 决策 2 · 方案 A+(2026-07-22):--scope 值格式 flag,必须显式传
+    scope = args.get("--scope")
+    step_id = args.get("--step_id")
+    ingredient_id = args.get("--ingredient_id")
+    if not scope:
+        print("错误:缺少 --scope(决策 2 强制字段)")
+        print("   合法值:step / ingredient / recipe")
+        print("   - --scope step       → 此 tip 关联某个步骤,需 --step_id")
+        print("   - --scope ingredient → 此 tip 关联某个食材,需 --ingredient_id")
+        print("   - --scope recipe     → 此 tip 是整道菜级,step_id/ingredient_id 都可空")
+        print("   怎么修:请拿 hint 去问用户,确认 scope 类型后用 --scope <值> 重试。")
+        return False
+
+    # 决策 2 · 方案 A+:scope 规则校验
+    scope_validation = validators.validate_tip_scope(scope, step_id, ingredient_id)
+    if not scope_validation["valid"]:
+        print(f"错误:{scope_validation['error']}")
+        if scope == "step":
+            print(f"   当前值:--step_id = {step_id}")
+            print(f"   期望:步骤 UUID")
+            print(f"   怎么修:请拿 hint 去问用户,这 tip 是哪个步骤的?拿到 --step_id 后重试,")
+            print(f"   或改 --scope recipe(整道菜级)。")
+        elif scope == "ingredient":
+            print(f"   当前值:--ingredient_id = {ingredient_id}")
+            print(f"   期望:食材 UUID")
+            print(f"   怎么修:请拿 hint 去问用户,这 tip 关联哪个食材?拿到 --ingredient_id 后重试,")
+            print(f"   或改 --scope recipe(整道菜级)。")
+        else:
+            print(f"   怎么修:请拿 hint 去问用户,确认 scope 后重试。")
+        return False
 
     # L1 哲学修复(同 P1.2/1.3):category / priority 必须显式提供 — 移除原有的"其他"/1 默认值
     category = args.get("--category")
@@ -73,8 +93,8 @@ def add(args):
         (
             str(uuid.uuid4()),
             recipe_id,
-            args.get("--step_id"),
-            args.get("--ingredient_id"),
+            step_id,
+            ingredient_id,
             category,
             content,
             priority
@@ -84,8 +104,9 @@ def add(args):
     print(f"✅ 小贴士添加成功!")
     print(f"   食谱:{recipe[0]['name']}")
     print(f"   内容:{content}")
-    if args.get("--category"):
-        print(f"   分类:{args['--category']}")
+    print(f"   scope:{scope}")
+    if category:
+        print(f"   分类:{category}")
     return True
 
 
@@ -276,7 +297,7 @@ def update(args):
 def main():
     if len(sys.argv) < 2:
         print("""用法:
-    python tip_manager.py add <recipe_id> --content <内容> [选项]
+    python tip_manager.py add <recipe_id> --scope <step|ingredient|recipe> --content <内容> [选项]
     python tip_manager.py list <recipe_id>
     python tip_manager.py list-by-step <step_id>
     python tip_manager.py list-by-ingredient <ingredient_id>
@@ -284,9 +305,13 @@ def main():
     python tip_manager.py update <tip_id> [选项]
 
 选项:
-    --step_id 关联步骤ID
-    --ingredient_id 关联食材ID
-    --category 分类(火候/刀工/调味/采购/设备/保存)
+    --scope step|ingredient|recipe(必填,2026-07-22 决策 2)
+        step        → 关联步骤,需 --step_id
+        ingredient  → 关联食材,需 --ingredient_id
+        recipe      → 整道菜级,step_id/ingredient_id 都可空
+    --step_id 关联步骤ID(scope=step 时必填)
+    --ingredient_id 关联食材ID(scope=ingredient 时必填)
+    --category 分类(火候/刀工/调味/采购/设备/保存/文化/其他)
     --content 小贴士内容
     --priority 优先级
 """)

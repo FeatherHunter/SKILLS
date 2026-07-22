@@ -133,20 +133,26 @@ def orchestrate_import(data: dict, dry_run: bool = False) -> dict:
                     1 for s in data["steps"] for si in s.get("ingredients_used", [])
                 )
 
-            # 3g. tips(注意:这里有 L2 业务警告)
+            # 3g. tips(决策 2 · 方案 A+:scope 值格式必填,2026-07-22)
+            # validate_tip_minimum 已被 validate_tip_scope 取代:
+            # - scope=step 强制 step_id → 等价于"只缺 step_id 警告"
+            # - scope=recipe 显式声明 → 等价于"菜级 tip 警告"
             if data.get("tips"):
                 for i, tip in enumerate(data["tips"]):
-                    tip_result = validators.validate_tip_minimum(tip)
-                    if tip_result["status"] == "error":
-                        # recipe_id 必填缺,直接拒绝整个事务
-                        raise ValueError(f"tips[{i}]: {tip_result['warning_msg']}")
-                    if tip_result["status"] == "warning":
-                        tip_warnings.append({
-                            "index": i,
-                            "missing": tip_result["missing"],
-                            "warning_msg": tip_result["warning_msg"],
-                            "user_question": tip_result["user_question"]
-                        })
+                    scope = tip.get("scope")
+                    scope_result = validators.validate_tip_scope(
+                        scope,
+                        step_id=tip.get("step_id"),
+                        ingredient_id=tip.get("ingredient_id"),
+                    )
+                    if not scope_result["valid"]:
+                        raise ValueError(
+                            f"tips[{i}]: {scope_result['error']}\n"
+                            f"   合法 scope 值:step / ingredient / recipe\n"
+                            f"   - scope=step 需 step_id\n"
+                            f"   - scope=ingredient 需 ingredient_id\n"
+                            f"   - scope=recipe 整道菜级,两个 ID 都可空"
+                        )
                 recipe_import.add_tips(conn, recipe_id, data["tips"], seq_id_map)
                 child_ids["tips"] = len(data["tips"])
 

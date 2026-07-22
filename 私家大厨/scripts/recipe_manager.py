@@ -915,7 +915,8 @@ def export_as_dict(name):
     for s in steps_rows:
         sid = s["id"]
         ing_used_rows = query(
-            "SELECT si.quantity_used, si.introduced_at, i.name "
+            "SELECT si.quantity_used, si.introduced_at, si.unit, "
+            "       i.name, i.category, i.quantity_text, i.substitute "
             "FROM step_ingredients si "
             "JOIN ingredients i ON si.ingredient_id = i.id "
             "WHERE si.step_id = ?",
@@ -923,8 +924,12 @@ def export_as_dict(name):
         )
         ing_used = [{
             "name": r["name"],
+            "category": r["category"],
             "quantity_used": r["quantity_used"],
+            "step_unit": r["unit"],
+            "quantity_text": r["quantity_text"],
             "introduced_at": r["introduced_at"],
+            "substitute": r["substitute"],
         } for r in ing_used_rows]
 
         # G3 修复:把 step_techniques 嵌进 step,让模板能在步骤内 inline 显示

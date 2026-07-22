@@ -1,6 +1,6 @@
 # Skill 架构自检清单
 
-> 配套 [《Skill 5 层架构 · 骨架地图》](./Skill_5层架构.html) 使用。
+> 配套 [《优秀 Skill 指导手册》](./优秀Skill指导手册.html) 第二部分"5 层结构"使用。
 > 建议：每个 Skill 的 SKILL.md 末尾贴一份，**改 Skill 前先答一遍**。
 
 ---

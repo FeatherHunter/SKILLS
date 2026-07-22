@@ -149,23 +149,28 @@
   .error-screen h2{color:var(--red);}
   .error-screen p{color:var(--gray);font-size:14px;margin:10px 0;}
 
-  /* 平板/桌面 */
-  @media (min-width:768px) and (max-width:1023px){
-    .cook-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
+  /* bug C 修复:平板起步就给合理宽度 */
+  .cook-grid{display:flex;flex-wrap:wrap;gap:20px;align-items:start;}
+  .cook-grid > .step-card{flex:1 1 auto;min-width:min(560px,100%);box-sizing:border-box;}
+  .cook-grid > #cook-side-card{flex:0 0 320px;}
+
+  /* 平板及以上(≥768px)文本加大 + 步骤卡片更宽 */
+  @media (min-width:768px){
     .step-action{font-size:36px;}
-    .step-card{padding:32px;}
+    .step-card{padding:32px 36px;}
+    .timer{font-size:60px;}
   }
+  /* 桌面(≥1024px):三列布局真正发挥空间 */
   @media (min-width:1024px){
-    .cook-grid{display:grid;grid-template-columns:280px 1fr 320px;gap:24px;align-items:start;}
-    .step-action{font-size:42px;}
-    .step-card{padding:36px 40px;}
-    .timer{font-size:64px;}
-    .ingredients-list, .step-tips, .step-expected{max-width:none;}
+    .step-action{font-size:44px;}
+    .step-card{padding:40px 56px;}
+    .cook-grid > #cook-side-card{display:block !important;flex:0 0 320px;}
   }
-  @media (min-width:1400px){
-    .cook-grid{grid-template-columns:320px 1fr 360px;}
-    .step-action{font-size:48px;}
-    .step-card{padding:48px 60px;}
+  /* 大屏(≥1280px):wrap 拓宽,主区更宽裕 */
+  @media (min-width:1280px){
+    .step-action{font-size:52px;}
+    .step-card{padding:48px 72px;}
+    .ingredients-list, .step-tips, .step-expected{max-width:none;}
   }
   @media (max-width:374px){
     .prep-title{font-size:26px;}
@@ -573,7 +578,7 @@ function renderCook(){
   // 主卡片
   document.getElementById('cook-action').textContent = step.action || '';
   document.getElementById('cook-temp').textContent = step.temperature || '-';
-  document.getElementById('cook-duration').textContent = step.duration ? `${step.duration} 分钟` : '-';
+  document.getElementById('cook-duration').textContent = (step.duration_minutes || step.duration) ? `${step.duration_minutes || step.duration} 分钟` : '-';
 
   // 火候 badge
   const heat = step.heat_level || '中火';
@@ -709,6 +714,8 @@ function resetCurrentStep(){
 
 function nextStep(){
   const total = (STATE.recipe.steps || []).length;
+  // bug B 修复:清掉超时背景(切下一步时应该是新一步,不该带红色)
+  document.body.classList.remove('over-time');
   if (STATE.currentStep >= total){
     goDone();
   } else {
@@ -740,6 +747,8 @@ function switchStage(stageId){
 // ============== 完结页 ==============
 function goDone(){
   stopTimer();
+  // bug B 修复:完结页清超时背景
+  document.body.classList.remove('over-time');
   switchStage('stage-done');
   renderDone();
 }
@@ -749,11 +758,12 @@ function renderDone(){
   document.getElementById('done-stats').textContent =
     `${STATE.recipe.name} · 预估 ${STATE.recipe.total_time_minutes} 分钟 · 共 ${total} 步`;
 
-  // 评分
+  // 评分(bug D 修复:点击后调 updateCopyPreview 实时刷新复制内容)
   document.querySelectorAll('.star').forEach(s => {
     s.onclick = () => {
       STATE.rating = parseInt(s.dataset.v);
       updateStars();
+      updateCopyPreview();
     };
   });
 
@@ -774,6 +784,8 @@ function renderDone(){
       if (e.target.tagName !== 'INPUT') label.querySelector('input').checked = !label.querySelector('input').checked;
       if (label.querySelector('input').checked) label.classList.add('checked');
       else label.classList.remove('checked');
+      // bug D 修复:实时刷新复制预览
+      updateCopyPreview();
     };
   });
 
@@ -786,6 +798,8 @@ function renderDone(){
     label.onclick = () => {
       hardestList.querySelectorAll('label').forEach(l => l.classList.remove('checked'));
       label.classList.add('checked');
+      // bug D 修复:实时刷新复制预览
+      updateCopyPreview();
     };
   });
 
@@ -944,9 +958,13 @@ function escapeHTML(s){
 
 // ============== 份数调整 ==============
 function formatScaled(val){
-  // 缩放显示:整数显示整数,小数保留 1 位,空值返回空
+  // 缩放显示:整数显示整数,小数保留 1 位,空/非数字返回空
   if (val === null || val === undefined || val === '') return '';
-  const num = Number(val) * STATE.servingsMultiplier;
+  const raw = Number(val);
+  if (!Number.isFinite(raw)) return '';  // bug E 修复:防 NaN
+  const num = raw * STATE.servingsMultiplier;
+  if (!Number.isFinite(num)) return '';
+  if (Math.abs(num) < 0.05) return '少量';  // 极小值显示"少量"
   if (Number.isInteger(num)) return String(num);
   return num.toFixed(1).replace(/\.0$/, '');
 }

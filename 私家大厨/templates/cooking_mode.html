@@ -80,6 +80,8 @@
 
   .step-card{background:var(--card);border-radius:16px;padding:28px;box-shadow:var(--shadow);text-align:center;}
   .step-action{font-size:30px;font-weight:600;line-height:1.4;margin:18px 0;}
+  /* 步骤序号视觉化(如 "(④)" → 蓝圈 "步骤 4"),区分食材 vs 步骤引用 */
+  .step-ref{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;border-radius:12px;background:var(--blue-soft);color:var(--blue-deep);font-size:0.65em;font-weight:600;vertical-align:middle;margin:0 2px;line-height:1;}
   .step-meta{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:14px 0;}
   .step-meta .item{display:flex;flex-direction:column;align-items:center;gap:4px;}
   .step-meta .lbl{font-size:12px;color:var(--gray);}
@@ -152,7 +154,8 @@
   /* bug C 修复:平板起步就给合理宽度 */
   .cook-grid{display:flex;flex-wrap:wrap;gap:20px;align-items:start;}
   .cook-grid > .step-card{flex:1 1 auto;min-width:min(560px,100%);box-sizing:border-box;}
-  .cook-grid > #cook-side-card{flex:0 0 320px;}
+  /* cook-side-card 默认隐藏 — 大屏才显示,避免小屏到底部 */
+  .cook-grid > #cook-side-card{display:none;flex:0 0 320px;}
 
   /* 平板及以上(≥768px)文本加大 + 步骤卡片更宽 */
   @media (min-width:768px){
@@ -164,7 +167,7 @@
   @media (min-width:1024px){
     .step-action{font-size:44px;}
     .step-card{padding:40px 56px;}
-    .cook-grid > #cook-side-card{display:block !important;flex:0 0 320px;}
+    .cook-grid > #cook-side-card{display:flex;flex:0 0 320px;flex-direction:column;}
   }
   /* 大屏(≥1280px):wrap 拓宽,主区更宽裕 */
   @media (min-width:1280px){
@@ -280,7 +283,7 @@
         </div>
       </div>
 
-      <div class="card" style="display:none;" id="cook-side-card">
+      <div class="card" id="cook-side-card">
         <h3>📍 当前进度</h3>
         <p class="muted" id="cook-side-info"></p>
         <h3 style="margin-top:18px;">🎯 下一步提示</h3>
@@ -576,7 +579,7 @@ function renderCook(){
   document.getElementById('cook-progress-bar').style.width = `${(cur / total) * 100}%`;
 
   // 主卡片
-  document.getElementById('cook-action').textContent = step.action || '';
+  document.getElementById('cook-action').innerHTML = formatStepAction(step.action || '');
   document.getElementById('cook-temp').textContent = step.temperature || '-';
   document.getElementById('cook-duration').textContent = (step.duration_minutes || step.duration) ? `${step.duration_minutes || step.duration} 分钟` : '-';
 
@@ -954,6 +957,16 @@ function escapeHTML(s){
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+// 把步骤 action 里的 "(④)" "(①②)" 这类步骤序号引用渲染成蓝圈 badge
+// 例:"+姜块+蒜片(④)翻炒出蒜香" → "+姜块+蒜片 [④] 翻炒出蒜香"(④ 变蓝圈)
+// 既保留原文顺序,又视觉区分"这是步骤引用不是食材描述"
+function formatStepAction(action){
+  if (!action) return '';
+  return escapeHTML(action).replace(/[（(](\d+)[)）]/g, (m, num) =>
+    `<span class="step-ref">步骤 ${num}</span>`
+  );
 }
 
 // ============== 份数调整 ==============

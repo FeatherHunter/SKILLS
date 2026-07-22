@@ -270,6 +270,7 @@
         <div class="cook-buttons">
           <button class="btn" id="cook-pause" onclick="togglePause()">⏸ 暂停</button>
           <button class="btn" onclick="toggleMute()" id="cook-mute">🔔 声音</button>
+          <button class="btn" onclick="resetCurrentStep()" title="重做这一步,清计时器">↺ 重做</button>
           <button class="btn btn-primary btn-large" onclick="finishStep()">✓ 完成这步</button>
         </div>
       </div>
@@ -697,6 +698,13 @@ function finishStep(){
   // 记录这一步为"已完成"(反选跳出反射题)
   STATE.reflection.skipped.delete(STATE.currentStep);
   nextStep();
+}
+
+function resetCurrentStep(){
+  // 重做当前步:清计时器 + 重新渲染(用原 duration)
+  stopTimer();
+  document.body.classList.remove('over-time');
+  renderCook();
 }
 
 function nextStep(){

@@ -7,347 +7,664 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    --blue:#007AFF;--blue2:#0A84FF;
-    --bg:#FAFAFA;--card:#FFFFFF;--border:#E5E5EA;
-    --text:#1C1C1E;--text2:#8E8E93;--text3:#AEAEB2;
-    --success:#34C759;--warn:#FF9500;--danger:#FF3B30;
-    --radius:12px;--radius-sm:8px;
+    /* Apple iOS 系统调色板 */
+    --blue:#007AFF;
+    --bg:#F2F2F7;        /* iOS 系统背景 */
+    --card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);  /* iOS 分割线 */
+    --text:#1C1C1E;
+    --text2:#3C3C43;
+    --text3:#8E8E93;
+    --text4:#AEAEB2;
+    --success:#34C759;
+    --success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;
+    --warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;
+    --radius:14px;
+    --radius-sm:10px;
+    --radius-pill:100px;
+    /* 食谱色轮(按菜数量循环分配,最多 6 道菜不重复) */
+    --r1:#5856D6;  /* 紫 */
+    --r2:#007AFF;  /* 蓝 */
+    --r3:#34C759;  /* 绿 */
+    --r4:#FF9500;  /* 橙 */
+    --r5:#FF2D55;  /* 粉 */
+    --r6:#AF52DE;  /* 淡紫 */
     --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
   }
-  html{font-size:16px;-webkit-text-size-adjust:100%}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
   body{
     font-family:var(--font);background:var(--bg);color:var(--text);
-    line-height:1.6;min-height:100vh;padding:0 0 80px 0;
+    line-height:1.5;min-height:100vh;padding:0 0 100px 0;
     -webkit-font-smoothing:antialiased;
+    letter-spacing:-0.01em;
   }
-  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+  .container{max-width:680px;margin:0 auto;padding:24px 16px}
 
-  /* ── Header ── */
-  .header{padding:24px 0 16px;border-bottom:0.5px solid var(--border);margin-bottom:16px}
-  .header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-  .header .meta{font-size:13px;color:var(--text2);display:flex;flex-wrap:wrap;gap:12px}
-  .header .meta-item{display:inline-flex;align-items:center;gap:4px}
+  /* ── Hero(问题 H2):纯白底 + 大标题 ── */
+  .hero{
+    background:var(--card);border-radius:var(--radius);
+    padding:28px 24px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .hero h1{font-size:34px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px;color:var(--text)}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3)}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
 
-  /* ── Summary Cards ── */
-  .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+  /* ── Summary:3 格悬浮卡片 ── */
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
   .summary-card{
-    background:var(--card);border-radius:var(--radius);padding:12px 14px;
-    border:1px solid var(--border);
+    background:var(--card);border-radius:var(--radius);padding:14px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    text-align:center;
   }
-  .summary-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
-  .summary-value{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+  .summary-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;font-weight:500}
+  .summary-value{font-size:22px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.02em}
 
-  /* ── Allergen Warning ── */
+  /* ── Allergen ── */
   .allergen-banner{
-    background:linear-gradient(135deg,#FFF3E0 0%,#FFE0B2 100%);
-    border:1px solid #FFB74D;border-radius:var(--radius);
-    padding:12px 16px;margin-bottom:20px;font-size:13px;color:#8B5A00;
-    display:flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg,#FFF4E5 0%,#FFE8CC 100%);
+    border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;
+    font-size:13px;color:#8B5A00;display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1.4;
   }
-  .allergen-banner strong{color:var(--danger)}
+  .allergen-banner strong{color:var(--danger);font-weight:600}
 
-  /* ── Recipe Pills (涉及菜单) ── */
-  .recipe-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;font-size:13px}
-  .recipe-pill{
-    background:rgba(0,122,255,0.08);color:var(--blue);
-    padding:4px 10px;border-radius:10px;font-weight:500;
+  /* ── Control Card(份数) ── */
+  .control-card{
+    background:var(--card);border-radius:var(--radius);padding:18px;
+    margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .control-title{font-size:13px;color:var(--text2);font-weight:600;margin-bottom:14px;letter-spacing:0.2px}
+  .servings-row{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .servings-row + .servings-row{border-top:1px solid var(--separator)}
+  .servings-recipe-name{flex:1;font-size:15px;font-weight:500;min-width:0}
+  .servings-recipe-name .sub{font-size:12px;color:var(--text3);display:block;font-weight:400;margin-top:1px}
+
+  .stepper{display:inline-flex;align-items:center;background:#F2F2F7;border-radius:var(--radius-pill);padding:3px;height:36px}
+  .stepper-btn{
+    width:36px;height:30px;border-radius:var(--radius-pill);border:none;
+    background:transparent;color:var(--blue);font-size:22px;font-weight:400;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:background 0.15s;line-height:1;
+  }
+  .stepper-btn:hover{background:rgba(0,122,255,0.1)}
+  .stepper-btn:active{background:var(--blue);color:#fff}
+  .stepper-btn:disabled{opacity:0.3;pointer-events:none}
+  .stepper-value{
+    min-width:64px;text-align:center;font-size:15px;font-weight:600;
+    color:var(--text);font-variant-numeric:tabular-nums;padding:0 8px;line-height:30px;
   }
 
-  /* ── Category Section ── */
-  details.cat-section{margin-bottom:12px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
-  details.cat-section[open]>summary{border-bottom:0.5px solid var(--border)}
-  details.cat-section > summary{
-    list-style:none;cursor:pointer;
+  /* ── Tabs(iOS Segmented Control) ── */
+  .tabs-card{
+    background:#E5E5EA;border-radius:10px;padding:2px;margin-bottom:16px;
+    display:flex;max-width:320px;
+  }
+  .tab{
+    flex:1;padding:8px 14px;border:none;background:transparent;
+    font-size:14px;font-weight:500;color:var(--text2);
+    border-radius:8px;cursor:pointer;font-family:var(--font);
+    transition:all 0.2s;text-align:center;
+  }
+  .tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+
+  /* ── Group Card ── */
+  .group-card{
+    background:var(--card);border-radius:var(--radius);
+    margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    overflow:hidden;
+  }
+  .group-header{
     padding:14px 16px;display:flex;justify-content:space-between;align-items:center;
-    user-select:none;background:var(--card);
+    cursor:pointer;user-select:none;background:var(--card);
+    transition:background 0.15s;border-bottom:0.5px solid transparent;
   }
-  details.cat-section > summary::-webkit-details-marker{display:none}
-  .cat-name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
-  .cat-icon{font-size:18px}
-  .cat-progress{
-    font-size:12px;color:var(--text2);
-    background:#F5F5F7;padding:3px 8px;border-radius:8px;
-    font-variant-numeric:tabular-nums;
-  }
-  .cat-progress.done{background:rgba(52,199,89,0.15);color:#1F7A35}
-
-  .cat-body{padding:4px 16px 16px}
+  .group-header:hover{background:#FAFAFC}
+  .group-card.open > .group-header{border-bottom-color:var(--separator)}
+  .group-name{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;letter-spacing:-0.01em}
+  .group-icon{font-size:20px;width:28px;text-align:center;display:inline-flex;align-items:center;justify-content:center}
+  .group-progress{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums;font-weight:500}
+  .group-progress.done{color:var(--success);font-weight:600}
+  .group-body{padding:0 16px 8px}
 
   /* ── Ingredient Item ── */
   .ing-item{
-    display:flex;align-items:flex-start;gap:12px;
-    padding:10px 0;border-bottom:0.5px solid var(--border);
-    cursor:pointer;transition:opacity 0.2s;
-  }
-  .ing-item:last-child{border-bottom:none}
-
-  .checkbox{
-    flex-shrink:0;width:24px;height:24px;margin-top:2px;
-    border:2px solid var(--text3);border-radius:6px;
-    display:flex;align-items:center;justify-content:center;
-    transition:all 0.2s;
-  }
-  .ing-item.checked .checkbox{
-    background:var(--success);border-color:var(--success);
-  }
-  .ing-item.checked .checkbox::after{
-    content:"";width:6px;height:12px;
-    border:solid #fff;border-width:0 2.5px 2.5px 0;
-    transform:rotate(45deg);margin-bottom:2px;
-  }
-  .ing-item.checked .ing-content{opacity:0.45;text-decoration:line-through}
-
-  .ing-content{flex:1;min-width:0}
-  .ing-line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-  .ing-name{font-size:15px;font-weight:600;color:var(--text)}
-  .ing-qty{
-    font-size:14px;color:var(--text);font-variant-numeric:tabular-nums;
-    background:#F5F5F7;padding:2px 8px;border-radius:6px;font-weight:500;
-  }
-  .ing-qty .unit{color:var(--text2);margin-left:1px;font-weight:400}
-  .ing-note{font-size:12px;color:var(--text2);margin-top:2px}
-  .badge{
-    display:inline-block;font-size:10px;padding:1px 6px;border-radius:5px;
-    font-weight:600;margin-left:6px;vertical-align:1px;
-  }
-  .badge-share{background:rgba(0,122,255,0.12);color:var(--blue)}
-  .badge-optional{background:rgba(255,149,0,0.12);color:var(--warn)}
-  .badge-sub{background:rgba(255,149,0,0.08);color:#B86E00;font-style:italic;font-weight:500}
-
-  /* ── Actions ── */
-  .actions{
-    position:sticky;bottom:0;left:0;right:0;
-    background:rgba(250,250,250,0.85);
-    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-    border-top:0.5px solid var(--border);
-    padding:12px 16px;display:flex;gap:8px;justify-content:center;
-    margin:24px -16px 0;
-  }
-  .btn{
-    background:var(--blue);color:#fff;border:none;
-    padding:10px 18px;border-radius:var(--radius-sm);
-    font-size:14px;font-weight:500;cursor:pointer;
-    font-family:var(--font);
+    display:flex;align-items:flex-start;gap:14px;
+    padding:14px 0;cursor:pointer;
+    border-bottom:0.5px solid var(--separator);
     transition:opacity 0.15s;
   }
-  .btn:hover{opacity:0.85}
-  .btn-secondary{background:var(--card);color:var(--blue);border:1px solid var(--border)}
+  .ing-item:last-child{border-bottom:none}
+  .ing-item:not(.checked):hover{opacity:0.85}
+
+  /* iOS 圆形 checkbox */
+  .checkbox{
+    flex-shrink:0;width:24px;height:24px;
+    border:1.5px solid var(--text4);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+    margin-top:2px;
+  }
+  .ing-item.checked .checkbox{background:var(--success);border-color:var(--success)}
+  .ing-item.checked .checkbox::after{content:"✓";color:#fff;font-size:15px;font-weight:700;line-height:1}
+  .ing-item.checked .ing-name{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--text3)}
+  .ing-item.checked .ing-qty{background:transparent;color:var(--text3)}
+  .ing-item.checked .src-tag{opacity:0.55}
+
+  .ing-content{flex:1;min-width:0}
+  .ing-line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .ing-name{font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+  .ing-qty{
+    font-size:14px;color:var(--text2);font-variant-numeric:tabular-nums;
+    background:#F2F2F7;padding:2px 8px;border-radius:6px;font-weight:500;
+    transition:all 0.2s;
+  }
+  .ing-qty .unit{color:var(--text3);margin-left:1px;font-weight:400}
+
+  /* 来源/替代:inline 文字 + 色条(轻量,不喧宾夺主)── */
+  .ing-sub{font-size:12px;color:var(--text3);line-height:1.5;margin-top:4px}
+  .src-tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:12px;color:var(--text3);
+    margin-right:10px;
+  }
+  .src-color{
+    width:3px;height:10px;border-radius:2px;flex-shrink:0;
+    background:var(--r-fg, var(--text4));
+  }
+  .src-tag .mult{font-weight:600;color:var(--text2)}
+  .src-tag.sub{font-style:italic}
+  .src-tag .sub-text{color:var(--text3)}
+
+  .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;font-weight:600;margin-right:4px}
+  .badge-share{background:rgba(0,122,255,0.08);color:var(--blue)}
+  .badge-optional{background:var(--warn-soft);color:var(--warn)}
+  .badge-sub{background:var(--warn-soft);color:var(--warn)}
+
+  /* ── Views ── */
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ── Toolbar ── */
+  .toolbar{
+    position:sticky;bottom:16px;left:16px;right:16px;
+    background:rgba(255,255,255,0.85);
+    backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);
+    border-radius:var(--radius);
+    padding:12px;display:flex;gap:8px;
+    margin:24px 0 0;
+    box-shadow:0 4px 16px rgba(0,0,0,0.08);
+    max-width:680px;margin-left:auto;margin-right:auto;
+  }
+  .btn{
+    flex:1;padding:11px;border:none;border-radius:var(--radius-sm);
+    font-size:14px;font-weight:500;cursor:pointer;
+    font-family:var(--font);
+    background:#F2F2F7;color:var(--text);
+    transition:background 0.15s;
+  }
+  .btn:hover{background:#E5E5EA}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:#0A84FF}
 
   /* ── Print ── */
   @media print{
     body{background:#fff;padding:0}
-    .actions,.checkbox,.toggle-hint{display:none!important}
-    details.cat-section[open]>summary{border-bottom:none}
-    details.cat-section{border:none;page-break-inside:avoid;margin-bottom:8px}
+    .toolbar,.stepper,.checkbox,.tabs-card,.control-card,.hero-meta{display:none!important}
+    .group-card{box-shadow:none;border:1px solid var(--separator);page-break-inside:avoid}
+    .view{display:block !important}
     .ing-item{cursor:default}
-    .checkbox{border:1px solid #999}
-    .ing-item.checked .checkbox{background:#fff}
+    .ing-item.checked .ing-name{text-decoration:none}
+    .src-tag .src-color{background:#000 !important}
   }
 
-  /* ── Footer ── */
-  .footer{
-    text-align:center;font-size:11px;color:var(--text3);
-    margin-top:32px;padding-top:16px;border-top:0.5px solid var(--border);
-  }
+  .footer{text-align:center;font-size:12px;color:var(--text4);margin-top:32px}
 </style>
 </head>
 <body>
 
 <div class="container">
 
-  <!-- Header -->
-  <div class="header">
-    <h1>🛒 采购清单</h1>
-    <div class="meta">
-      <span class="meta-item">📅 {{ data.generated_at[:10] }}</span>
-      <span class="meta-item">🍳 {{ data.recipe_names | join(' + ') }}</span>
-      <span class="meta-item">📊 共 {{ data.summary.ingredient_count }} 项</span>
+  <!-- Hero(H2: 纯白底 + 大标题) -->
+  <div class="hero">
+    <h1>采购清单</h1>
+    <div class="hero-meta">
+      <span>📅 {{ data.generated_at[:10] }}</span>
+      <span>🍳 {{ data.recipe_names | join(' + ') }}</span>
     </div>
   </div>
 
-  <!-- Summary -->
+  <!-- Summary(3 格,H3: "食谱" 不是 "菜数") -->
   <div class="summary">
     <div class="summary-card">
-      <div class="summary-label">涉及菜数</div>
+      <div class="summary-label">食谱</div>
       <div class="summary-value">{{ data.summary.recipe_count }}</div>
     </div>
     <div class="summary-card">
-      <div class="summary-label">食材总数</div>
-      <div class="summary-value" id="total-count">{{ data.summary.ingredient_count }}</div>
+      <div class="summary-label">食材</div>
+      <div class="summary-value">{{ data.summary.ingredient_count }}</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">已勾选</div>
       <div class="summary-value" id="checked-count">0</div>
     </div>
-    <div class="summary-card">
-      <div class="summary-label">预估价格</div>
-      <div class="summary-value">¥{{ data.summary.price_estimate_yuan.low }}-{{ data.summary.price_estimate_yuan.high }}</div>
-    </div>
   </div>
 
-  <!-- Allergen Warning (选填字段,有数据才显示) -->
   {% if data.summary.allergens %}
   <div class="allergen-banner">
-    ⚠️ 检测到常见过敏原:<strong>{{ data.summary.allergens | join(' · ') }}</strong>
-    <span style="color:#B86E00;font-size:12px;margin-left:auto">仅供参考,实际请核对包装</span>
+    ⚠️ 含过敏原:<strong>{{ data.summary.allergens | join(' · ') }}</strong>
+    <span style="margin-left:auto;color:#B86E00;font-size:12px">仅供参考</span>
   </div>
   {% endif %}
 
-  <!-- Recipe Pills -->
-  <div class="recipe-pills">
+  <!-- Servings -->
+  <div class="control-card">
+    <div class="control-title">份数</div>
     {% for r in data.recipes %}
-    <span class="recipe-pill">{{ r.name }} · {{ r.ingredient_count }} 项</span>
-    {% endfor %}
-    {% if data.exclude_optional %}
-    <span class="recipe-pill" style="background:rgba(255,149,0,0.1);color:var(--warn)">已排除可选食材</span>
-    {% endif %}
-  </div>
-
-  <!-- Categories -->
-  {% for cat, items in data.ingredients_by_category.items() %}
-  <details class="cat-section" open>
-    <summary>
-      <span class="cat-name">
-        <span class="cat-icon">
-          {% if cat == '肉类' %}🥩{% elif cat == '海鲜' %}🐟{% elif cat == '蛋类' %}🥚
-          {% elif cat == '蔬菜' %}🥬{% elif cat == '豆制品' %}🫘{% elif cat == '主食' %}🍚
-          {% elif cat == '干货' %}🍄{% elif cat == '调料' %}🧂{% else %}📦{% endif %}
-        </span>
-        {{ cat }}
-      </span>
-      <span class="cat-progress" data-total="{{ items|length }}">
-        <span class="cat-checked">0</span>/{{ items|length }}
-      </span>
-    </summary>
-    <div class="cat-body">
-      {% for item in items %}
-      <div class="ing-item" data-ing-name="{{ item.name }}">
-        <div class="checkbox"></div>
-        <div class="ing-content">
-          <div class="ing-line1">
-            <span class="ing-name">{{ item.name }}</span>
-            <span class="ing-qty">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
-            {% if item.merged_count > 1 %}
-            <span class="badge badge-share">🔗 {{ item.merged_count }}菜共用</span>
-            {% endif %}
-            {% if item.is_optional %}
-            <span class="badge badge-optional">可选</span>
-            {% endif %}
-          </div>
-          {% if item.sources %}
-          <div class="ing-note">
-            {% for src in item.sources %}
-            <span style="color:var(--text3)">来自:第{{ loop.index }}份</span>
-            {% if not loop.last %}<span style="color:var(--text3)"> · </span>{% endif %}
-            {% endfor %}
-          </div>
-          {% endif %}
-          {% if item.substitute %}
-          <div class="ing-note"><span class="badge badge-sub">替代:{{ item.substitute }}</span></div>
-          {% endif %}
-        </div>
+    <div class="servings-row" data-recipe-id="{{ r.id }}" data-base="{{ r.servings_base }}">
+      <div class="servings-recipe-name">
+        {{ r.name }}
+        <span class="sub">原 {{ r.servings_base }} 人份 · 现共 <span class="total-servings">{{ r.servings_actual }}</span> 人份</span>
       </div>
-      {% endfor %}
+      <div class="stepper">
+        <button class="stepper-btn" data-action="dec" data-recipe-id="{{ r.id }}" aria-label="减少份数">−</button>
+        <div class="stepper-value"><span class="mult" data-recipe-id="{{ r.id }}">{{ r.servings_multiplier }}</span> 份</div>
+        <button class="stepper-btn" data-action="inc" data-recipe-id="{{ r.id }}" aria-label="增加份数">+</button>
+      </div>
     </div>
-  </details>
-  {% endfor %}
-
-  <!-- Actions -->
-  <div class="actions">
-    <button class="btn" onclick="copyAsText()">📋 复制纯文本</button>
-    <button class="btn btn-secondary" onclick="window.print()">🖨️ 打印</button>
-    <button class="btn btn-secondary" onclick="resetAll()">🔄 重置</button>
+    {% endfor %}
   </div>
 
-  <div class="footer">
-    生成于 {{ data.generated_at }} · 私家大厨 v5.2
+  <!-- Tabs -->
+  <div class="tabs-card" role="tablist">
+    <button class="tab active" data-view="cat" role="tab">分类</button>
+    <button class="tab" data-view="recipe" role="tab">菜谱</button>
   </div>
+
+  <!-- View: 按分类 -->
+  <div id="view-cat" class="view active" role="tabpanel">
+    {% for cat, items in data.ingredients_by_category.items() %}
+    <div class="group-card open" data-group="cat-{{ loop.index }}">
+      <div class="group-header" data-toggle aria-expanded="true">
+        <div class="group-name">
+          <span class="group-icon">
+            {% if cat == '肉类' %}🥩{% elif cat == '海鲜' %}🐟{% elif cat == '蛋类' %}🥚
+            {% elif cat == '蔬菜' %}🥬{% elif cat == '葱姜蒜' %}🧄
+            {% elif cat == '香草' %}🌿{% elif cat == '调料' %}🧂
+            {% elif cat == '豆制品' %}🫘{% elif cat == '主食' %}🍚
+            {% elif cat == '干货' %}🍄{% else %}📦{% endif %}
+          </span>
+          {{ cat }}
+        </div>
+        <div class="group-progress" data-total="{{ items|length }}"><span class="checked">0</span>/{{ items|length }}</div>
+      </div>
+      <div class="group-body">
+        {% for item in items %}
+        <div class="ing-item" data-ingredient="{{ item.name }}">
+          <div class="checkbox"></div>
+          <div class="ing-content">
+            <div class="ing-line1">
+              <span class="ing-name">{{ item.name }}</span>
+              <span class="ing-qty" data-base-qty="{{ item.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
+              {% if item.merged_count > 1 %}<span class="badge badge-share">{{ item.merged_count }} 菜共用</span>{% endif %}
+              {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
+            </div>
+            {# 来源 + 替代:inline 一行,色条 + 文字(轻量) ── #}
+            {% if item.sources and item.sources|length > 0 or item.substitute %}
+            <div class="ing-sub">
+              {% for src in item.sources %}
+              <span class="src-tag" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" data-mult-idx="{{ loop.index0 }}" style="--r-fg:var(--r{{ src.color_index }})">
+                <span class="src-color"></span>
+                {{ src.recipe_name }} <span class="mult" data-mult-target="{{ src.recipe_id }}">×{{ src.multiplier }}</span>
+              </span>
+              {% endfor %}
+              {% if item.substitute %}
+              <span class="src-tag sub">→ <span class="sub-text">{{ item.substitute }}</span></span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- View: 按菜谱 -->
+  <div id="view-recipe" class="view" role="tabpanel">
+    {% for r in data.recipes %}
+    <div class="group-card open" data-recipe-id="{{ r.id }}">
+      <div class="group-header">
+        <div class="group-name">
+          <span class="group-icon">🍳</span>
+          {{ r.name }}
+        </div>
+        <div class="group-progress">×{{ r.servings_multiplier }} 份 · {{ r.servings_actual }} 人份</div>
+      </div>
+      <div class="group-body">
+        {% for cat, items in data.ingredients_by_category.items() %}
+          {% for item in items %}
+            {% for src in item.sources %}
+              {% if src.recipe_id == r.id %}
+              <div class="ing-item" data-ingredient="{{ item.name }}">
+                <div class="checkbox"></div>
+                <div class="ing-content">
+                  <div class="ing-line1">
+                    <span class="ing-name">{{ item.name }}</span>
+                    <span class="ing-qty" data-base-qty="{{ src.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(src.quantity) }}<span class="unit">{{ item.unit }}</span></span>
+                    {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
+                  </div>
+                  {% if item.substitute %}<div class="ing-sub">→ <span style="color:var(--text3)">{{ item.substitute }}</span></div>{% endif %}
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="btn" data-action="copy">📋 复制清单</button>
+    <button class="btn" data-action="print">🖨️ 打印</button>
+    <button class="btn btn-primary" data-action="reset">🔄 重置勾选</button>
+  </div>
+
+  <div class="footer">v5.2 · 私家大厨</div>
 
 </div>
 
 <script>
-  // ── Checkbox 交互 ──
-  const items = document.querySelectorAll('.ing-item');
-  const totalCountEl = document.getElementById('total-count');
-  const checkedCountEl = document.getElementById('checked-count');
+'use strict';
 
-  items.forEach(item => {
-    item.addEventListener('click', () => {
-      item.classList.toggle('checked');
-      updateProgress();
-      saveState();
+const DATA = {{ data | tojson }};
+
+// 状态:按食材名统一(A/B/F 解决的核心问题)
+let checkedState = {};
+
+// 当前份数倍数
+const multipliers = {};
+DATA.recipes.forEach(r => multipliers[r.id] = r.servings_multiplier);
+
+// ── 1. tab 切换 ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
     });
+    tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+    const v = tab.dataset.view;
+    document.getElementById('view-' + v).classList.add('active');
+  });
+});
+
+// ── 2. group 折叠(I/M 修复:移除 inline onclick,改 addEventListener + aria) ──
+document.querySelectorAll('.group-header[data-toggle]').forEach(header => {
+  header.addEventListener('click', () => {
+    const card = header.parentElement;
+    const opened = card.classList.toggle('open');
+    header.setAttribute('aria-expanded', String(opened));
+  });
+});
+
+// ── 3. 问题 2:checkbox 按食材名统一(全视图同步) ──
+function toggleIng(itemEl) {
+  const name = itemEl.dataset.ingredient;
+  if (!name) return;
+  checkedState[name] = !checkedState[name];
+  applyStateToAll(name);
+  updateProgress();
+  saveState();
+}
+
+// F 修复:事件委托,点击 src-tag 不触发勾选(阻止冒泡到 ing-item)
+document.querySelectorAll('.ing-item').forEach(item => {
+  item.addEventListener('click', e => {
+    // 防止 stepper / tag / badge 触发误勾
+    if (e.target.closest('.stepper-btn, .src-tag, .badge')) return;
+    toggleIng(item);
+  });
+});
+
+function applyStateToAll(name) {
+  const checked = !!checkedState[name];
+  document.querySelectorAll(`.ing-item[data-ingredient="${name}"]`).forEach(el => {
+    el.classList.toggle('checked', checked);
+  });
+}
+
+function updateProgress() {
+  const total = Object.values(checkedState).filter(Boolean).length;
+  const el = document.getElementById('checked-count');
+  if (el) el.textContent = total;
+
+  document.querySelectorAll('[data-total]').forEach(group => {
+    const total = parseInt(group.dataset.total);
+    const groupCard = group.closest('.group-card');
+    if (!groupCard) return;
+    const ingNames = new Set();
+    groupCard.querySelectorAll('.ing-item').forEach(it => ingNames.add(it.dataset.ingredient));
+    const done = [...ingNames].filter(n => checkedState[n]).length;
+    const checkedEl = group.querySelector('.checked');
+    if (checkedEl) checkedEl.textContent = done;
+    group.classList.toggle('done', done === ingNames.size && ingNames.size > 0);
+  });
+}
+
+// ── 4. 问题 3 · 份数加减 ──
+document.querySelectorAll('.stepper-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();  // F 修复:防止冒泡
+    const rid = btn.dataset.recipeId;
+    const action = btn.dataset.action;
+    let mult = multipliers[rid];
+    if (action === 'inc') mult = Math.min(mult + 1, 20);
+    if (action === 'dec') mult = Math.max(mult - 1, 1);
+    multipliers[rid] = mult;
+    document.querySelector(`.mult[data-recipe-id="${rid}"]`).textContent = mult;
+    recalculateAll();
+    saveState();
+  });
+});
+
+function recalculateAll() {
+  // 重算每菜的"共 N 人份"
+  DATA.recipes.forEach(r => {
+    const total = r.servings_base * multipliers[r.id];
+    const el = document.querySelector(`.servings-row[data-recipe-id="${r.id}"] .total-servings`);
+    if (el) el.textContent = total;
+    // 同步按菜视图的份数 meta
+    const metaEl = document.querySelector(`#view-recipe .group-card[data-recipe-id="${r.id}"] .group-progress`);
+    if (metaEl) metaEl.textContent = `×${multipliers[r.id]} 份 · ${total} 人份`;
   });
 
-  function updateProgress() {
-    const checked = document.querySelectorAll('.ing-item.checked').length;
-    checkedCountEl.textContent = checked;
+  // 重算所有 qty(分类视图 + 按菜视图都更新,G 修复)
+  document.querySelectorAll('.ing-qty[data-ingredient]').forEach(qtyEl => {
+    const name = qtyEl.dataset.ingredient;
+    const unit = qtyEl.dataset.baseUnit;
+    const baseQty = parseFloat(qtyEl.dataset.baseQty || 0);
 
-    // 每个分类的进度
-    document.querySelectorAll('details.cat-section').forEach(section => {
-      const total = section.querySelectorAll('.ing-item').length;
-      const done = section.querySelectorAll('.ing-item.checked').length;
-      const badge = section.querySelector('.cat-checked');
-      const wrapper = section.querySelector('.cat-progress');
-      if (badge) badge.textContent = done;
-      if (wrapper) wrapper.classList.toggle('done', done === total && total > 0);
-    });
-  }
+    // 找来源(sources)按 multipliers 重算
+    let total = 0;
+    for (const cat in DATA.ingredients_by_category) {
+      for (const ing of DATA.ingredients_by_category[cat]) {
+        if (ing.name === name) {
+          // 这个 qty 元素可能代表单一来源(按菜视图)或合并(分类视图)
+          // 看 data-base-qty 是不是 ing.quantity(分类)或 src.quantity(按菜)
+          if (Math.abs(baseQty - ing.quantity) < 0.001) {
+            // 分类视图:合并所有 sources
+            for (const src of ing.sources) {
+              const base = src.quantity / src.multiplier;
+              total += base * (multipliers[src.recipe_id] || 1);
+            }
+          } else {
+            // 按菜视图:qty 来自某个 src,按该 src 的 recipe 重算
+            const src = ing.sources.find(s => Math.abs(s.quantity - baseQty) < 0.001);
+            if (src) {
+              const base = src.quantity / src.multiplier;
+              total = base * (multipliers[src.recipe_id] || 1);
+            } else {
+              total = baseQty;  // fallback:保持原值
+            }
+          }
+          break;
+        }
+      }
+    }
 
-  // ── LocalStorage 持久化(刷新不丢) ──
-  const STORAGE_KEY = 'shopping_' + '{{ data.generated_at }}';
+    qtyEl.innerHTML = `${formatNum(total)}<span class="unit">${unit}</span>`;
+  });
 
-  function saveState() {
-    const state = {};
-    items.forEach((item, i) => {
-      state[i] = item.classList.contains('checked');
-    });
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-  }
+  // K4 修复:同步 src-tag 的 ×N 文字(改份数后 "辣椒炒肉 ×1" → "辣椒炒肉 ×2")
+  document.querySelectorAll('.src-tag').forEach(tag => {
+    const rid = tag.dataset.recipeId;
+    if (rid && multipliers[rid] !== undefined) {
+      const multEl = tag.querySelector('.mult');
+      if (multEl) multEl.textContent = multipliers[rid];
+    }
+  });
+}
 
-  function loadState() {
-    try {
-      const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      items.forEach((item, i) => {
-        if (state[i]) item.classList.add('checked');
-      });
+// K 修复:格式化函数边界处理
+function formatNum(n) {
+  const rounded = Math.round(n);
+  if (Math.abs(n - rounded) < 0.05) return rounded;
+  return n.toFixed(1).replace(/\.0$/, '');
+}
+
+// ── 5. D 修复:localStorage key 只用倍数组,去掉 generated_at ──
+function storageKey() {
+  // 不同份数倍数 → 不同 key(同份数复用)
+  // 不含 generated_at,因为同一份清单不同 session 应共享状态
+  const ridSet = DATA.recipes.map(r => r.id).join('-');
+  const multSet = DATA.recipes.map(r => multipliers[r.id]).join('-');
+  return `shopping_${ridSet}_${multSet}`;
+}
+
+function saveState() {
+  try { localStorage.setItem(storageKey(), JSON.stringify(checkedState)); } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(storageKey());
+    if (saved) {
+      checkedState = JSON.parse(saved);
+      Object.keys(checkedState).forEach(applyStateToAll);
       updateProgress();
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
+}
 
-  function resetAll() {
-    if (!confirm('确定清空所有已勾选?')) return;
-    items.forEach(item => item.classList.remove('checked'));
-    updateProgress();
-    saveState();
-  }
+function resetAll() {
+  if (!confirm('清空所有勾选?')) return;
+  checkedState = {};
+  Object.keys(checkedState).forEach(applyStateToAll);
+  document.querySelectorAll('.ing-item.checked').forEach(el => el.classList.remove('checked'));
+  updateProgress();
+  saveState();
+}
 
-  function copyAsText() {
-    const lines = [];
-    lines.push('采购清单 · {{ data.recipe_names | join(" + ") }}');
-    lines.push('共 {{ data.summary.ingredient_count }} 项 · 预估 ¥{{ data.summary.price_estimate_yuan.low }}-{{ data.summary.price_estimate_yuan.high }}');
-    {% if data.summary.allergens %}
-    lines.push('⚠️ 过敏原:{{ data.summary.allergens | join("、") }}');
-    {% endif %}
+// ── 6. C 修复:copyAsText 加份数 + 来源信息 ──
+function copyAsText() {
+  const lines = [];
+  lines.push(`采购清单 · ${DATA.recipe_names.join(' + ')}`);
+
+  // 份数说明
+  const servingsDesc = DATA.recipes.map(r => {
+    const m = multipliers[r.id];
+    return m === 1 ? r.name : `${r.name} ×${m}`;
+  }).join(' · ');
+  lines.push(servingsDesc);
+  lines.push(`共 ${DATA.summary.ingredient_count} 项`);
+
+  if (DATA.summary.allergens) lines.push(`⚠️ 过敏原: ${DATA.summary.allergens.join('、')}`);
+  lines.push('');
+
+  for (const cat in DATA.ingredients_by_category) {
+    lines.push(`【${cat}】`);
+    for (const ing of DATA.ingredients_by_category[cat]) {
+      const mark = checkedState[ing.name] ? '✓' : '☐';
+      // 重算当前数量(考虑倍数)
+      let qty = 0;
+      for (const src of ing.sources) {
+        const base = src.quantity / src.multiplier;
+        qty += base * (multipliers[src.recipe_id] || 1);
+      }
+      // 来源标注
+      let sourceStr = '';
+      if (ing.sources && ing.sources.length > 0) {
+        const srcs = ing.sources.map(s => `${s.recipe_name}×${multipliers[s.recipe_id] || 1}`).join(', ');
+        sourceStr = ` (${srcs})`;
+      }
+      let sub = ing.substitute ? ` · 替代 ${ing.substitute}` : '';
+      let opt = ing.is_optional ? ' · 可选' : '';
+      lines.push(`${mark} ${ing.name} ${formatNum(qty)}${ing.unit}${sourceStr}${sub}${opt}`);
+    }
     lines.push('');
-    {% for cat, items in data.ingredients_by_category.items() %}
-    lines.push('【{{ cat }}】');
-    {% for item in items %}
-    lines.push('- {{ item.name }} {{ "%g"|format(item.quantity) }}{{ item.unit }}{% if item.merged_count > 1 %} (×{{ item.merged_count }}菜共用){% endif %}{% if item.substitute %} · 替代:{{ item.substitute }}{% endif %}');
-    {% endfor %}
-    lines.push('');
-    {% endfor %}
-    const text = lines.join('\n');
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = event.target;
-      const orig = btn.textContent;
-      btn.textContent = '✅ 已复制';
-      setTimeout(() => btn.textContent = orig, 1500);
-    }).catch(() => alert(text));
   }
 
-  // 启动时加载状态
-  loadState();
+  const text = lines.join('\n');
+
+  // J 修复:不用 alert(阻塞),改用临时 toast
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已复制,可贴备忘录');
+  }).catch(() => {
+    // 降级方案:用 textarea 选区 + document.execCommand('copy')
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      showToast('✅ 已复制(降级方案)');
+    } catch (e) {
+      showToast('❌ 复制失败,请手动复制', true);
+    } finally {
+      document.body.removeChild(ta);
+    }
+  });
+}
+
+function showToast(msg, isError) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  t.style.cssText = `
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: ${isError ? '#FF3B30' : '#34C759'}; color: white;
+    padding: 10px 20px; border-radius: 100px; font-size: 14px; font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999;
+    animation: toastIn 0.3s ease;
+  `;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ── 7. toolbar buttons(I 修复:移除 inline onclick) ──
+document.querySelectorAll('.toolbar [data-action]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const a = btn.dataset.action;
+    if (a === 'copy') copyAsText();
+    else if (a === 'print') window.print();
+    else if (a === 'reset') resetAll();
+  });
+});
+
+// ── 启动 ──
+loadState();
 </script>
 
 </body>

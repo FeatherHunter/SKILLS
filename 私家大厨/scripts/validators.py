@@ -35,6 +35,10 @@ sys.path.insert(0, os.path.join(_SKILL_ROOT, "references"))
 
 import enums  # references/enums.py(5 层架构:业务层读 references)
 
+# v5.2:11 类食材分类 + 别名映射
+INGREDIENT_CATEGORIES = enums.INGREDIENT_CATEGORIES
+INGREDIENT_CATEGORY_ALIASES = enums.ALIASES.get("ingredient_categories", {})
+
 
 # ====================================================================
 # 字段中文标签(用于错误信息)
@@ -460,6 +464,58 @@ def validate_step_ingredient_inventory(data: Dict[str, Any]) -> List[Dict[str, A
 
 
 # ====================================================================
+# 食材分类校验(v5.2 新增 · 11 类强校验)
+# ====================================================================
+
+def validate_ingredient_categories(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    校验所有 ingredients[].category 必须是 11 类之一。
+
+    v5.2 起引入 11 类系统(原 9 类拆出"葱姜蒜"和"香草")。
+    录入时 category 必须严格匹配,否则报错。
+
+    Returns:
+        错误列表,每个错误包含 field / current / expected / how_to_fix
+    """
+    errors = []
+    ingredients = data.get("ingredients", [])
+    if not isinstance(ingredients, list):
+        return errors
+
+    valid_categories = set(INGREDIENT_CATEGORIES)
+    invalid_items = []
+    for i, ing in enumerate(ingredients):
+        if not isinstance(ing, dict):
+            continue
+        cat = ing.get("category")
+        if cat is None:
+            invalid_items.append((i, ing.get("name", "?"), None))
+        elif cat not in valid_categories:
+            invalid_items.append((i, ing.get("name", "?"), cat))
+
+    for idx, name, cat in invalid_items:
+        # 给推荐:基于食材名粗略推荐
+        suggested = None
+        for keyword, target in INGREDIENT_CATEGORY_ALIASES.items():
+            if keyword in name:
+                suggested = target
+                break
+        errors.append({
+            "field": f"ingredients[{idx}].category",
+            "ingredient_name": name,
+            "current": cat,
+            "expected": sorted(valid_categories),
+            "suggested": suggested,
+            "how_to_fix": (
+                f"食材「{name}」的 category '{cat}' 不是 11 类标准值。"
+                f"{' 推荐: ' + suggested if suggested else ''} "
+                f"查看 references/categories.md 边界规则。"
+            ),
+        })
+    return errors
+
+
+# ====================================================================
 # 用户问题生成
 # ====================================================================
 
@@ -494,8 +550,10 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     step_errors = validate_step_structure(data) if isinstance(data, dict) else []
     # 4. 步骤食材引用校验(v5.1 新增)
     inventory_errors = validate_step_ingredient_inventory(data) if isinstance(data, dict) else []
+    # 5. 食材分类 11 类强校验(v5.2 新增)
+    category_errors = validate_ingredient_categories(data) if isinstance(data, dict) else []
 
-    all_errors = coverage_errors + type_errors + step_errors + inventory_errors
+    all_errors = coverage_errors + type_errors + step_errors + inventory_errors + category_errors
 
     if not all_errors:
         return {

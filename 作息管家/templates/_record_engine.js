@@ -323,6 +323,140 @@
     document.getElementById("root").innerHTML = html;
   }
 
+  // ===== T6: 详情页（人工智能推理溯源） =====
+  function renderDetail(data, meta){
+    var records = data.records || [];
+    var recordsDetail = data.records_detail || [];
+    var selected = data.selected_record || null;
+    var privacyUnlocked = !!data.privacy_unlocked;
+    var showSourceAvailable = !!data.show_source_available;
+    var aiQs = data.ai_questions || [];
+
+    if (records.length === 0) {
+      document.getElementById("root").innerHTML =
+        '<div class="empty"><h3>' + escapeHTML(meta.date || "这一天") + ' · 无作息记录</h3>' +
+        '<p>该日 schedule_records 表没有记录,无法显示详情</p></div>';
+      return;
+    }
+
+    var html = "";
+
+    // ① 4 卡摘要
+    var totalMin = meta.total_minutes || 0;
+    html += statBlock(totalMin >= 24*60 ? "good" : "warn", fmtMin(totalMin), "总记录时长", "");
+    html += statBlock("", records.length + " 条", "当日记录", "");
+    html += statBlock("", (data.summary_categories_count || 0) + " 类", "活跃分类", "");
+    if (privacyUnlocked) {
+      html += statBlock("good", "🔓 已解锁", "高敏字段", "全部可见");
+    } else {
+      html += statBlock("mute", "🔒 折叠", "高敏字段", "默认不显示");
+    }
+
+    // ② records 列表
+    html += '<div class="card"><h2><span class="icon">📋</span> 记录列表（' + records.length + ' 条）</h2>';
+    records.forEach(function(r){
+      var isSelected = selected && selected.id === r.id;
+      var borderColor = isSelected ? "var(--blue)" : "var(--line)";
+      html += '<div style="border-left:4px solid ' + borderColor + ';padding:10px 14px;margin-bottom:8px;background:var(--soft);border-radius:8px">';
+      html += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
+      html += '<span style="font-weight:600;color:var(--fg);font-size:13px">' + escapeHTML(r.time_start) + ' – ' + escapeHTML(r.time_end) + '</span>';
+      html += '<span style="font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums">' + fmtMin(r.duration_minutes || 0) + '</span>';
+      html += '<span style="margin-left:auto;font-size:11px;color:var(--blue2);background:#eaf2ff;padding:2px 8px;border-radius:6px">' + escapeHTML(r.category) + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:13px;color:var(--fg);margin-bottom:4px">' + escapeHTML(r.activity) + '</div>';
+      html += '<div style="font-size:11px;color:var(--fg3)">id=' + escapeHTML(String(r.id)) + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // ③ selected_record 详情卡（--record-id 时）
+    if (selected) {
+      html += '<div class="card"><h2><span class="icon">🎯</span> 单条详情(id=' + escapeHTML(String(selected.id)) + ')</h2>';
+      html += '<div style="background:var(--card);border:1px solid var(--blue);border-left:6px solid var(--blue);border-radius:10px;padding:14px 16px">';
+      html += '<div style="font-size:12px;color:var(--fg3);margin-bottom:6px">' + escapeHTML(selected.date) + ' · ' + escapeHTML(selected.time_start) + ' – ' + escapeHTML(selected.time_end) + ' · ' + fmtMin(selected.duration_minutes || 0) + '</div>';
+      html += '<div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:8px">' + escapeHTML(selected.activity) + '</div>';
+      html += '<div style="font-size:11px;color:var(--blue2);background:#eaf2ff;padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:8px">' + escapeHTML(selected.category) + '</div>';
+      if (selected.source_contents !== undefined) {
+        html += '<div style="border-top:1px dashed var(--line);padding-top:8px;margin-top:8px">';
+        html += '<div style="font-size:11px;color:var(--warn);font-weight:700;margin-bottom:4px">🔓 高敏字段已解锁</div>';
+        html += '<div style="font-size:12px;color:var(--fg2);margin-bottom:4px"><b>消息原文:</b></div>';
+        html += '<pre style="background:#fffbf0;border:1px solid #ffe89b;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;white-space:pre-wrap;color:#5c3a00">' + escapeHTML(selected.source_contents || "(空)") + '</pre>';
+        html += '<div style="font-size:12px;color:var(--fg2);margin:6px 0 4px"><b>消息时间戳:</b> ' + escapeHTML(selected.source_timestamps || "(空)") + '</div>';
+        html += '<div style="font-size:12px;color:var(--fg2);margin:6px 0 4px"><b>推理链:</b></div>';
+        html += '<pre style="background:#fffbf0;border:1px solid #ffe89b;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;white-space:pre-wrap;color:#5c3a00">' + escapeHTML(selected.analysis_reasoning || "(空)") + '</pre>';
+        html += '</div>';
+      }
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // ④ 隐私可控显示协议入口
+    html += '<div class="card"><h2><span class="icon">🔒</span> 高敏字段可控显示</h2>';
+    html += '<div style="background:#f7fbff;border:1px solid #c8dafa;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--blue2)">';
+    if (privacyUnlocked) {
+      html += '<div style="font-weight:600;margin-bottom:6px">✅ 当前已解锁（服务端已注入高敏字段）</div>';
+      html += '<div style="font-size:11px;color:var(--fg2)">点击下方按钮可清除本地知情标记</div>';
+      html += '<button id="lock-privacy" style="margin-top:10px;background:#fff;border:1px solid var(--blue);color:var(--blue);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">清除本地知情标记</button>';
+    } else {
+      html += '<div style="font-weight:600;margin-bottom:6px">⚠️ 消息原文 / 推理链 默认折叠</div>';
+      html += '<div style="font-size:11px;color:var(--fg2);margin-bottom:8px">知情标记仅保存本地;关闭浏览器后失效。分享网页前请确认对方有权限查看</div>';
+      if (showSourceAvailable) {
+        html += '<button id="unlock-privacy" style="background:#fff;border:1px solid var(--blue);color:var(--blue);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer">🔓 显示人工智能推理原文与消息来源</button>';
+      } else {
+        html += '<div style="font-size:11px;color:var(--warn)">当前服务端未注入高敏字段（默认折叠）。重新生成网页时使用 --show-source 参数：</div>';
+        html += '<div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:#fffbf0;border:1px solid #ffe89b;padding:6px 8px;border-radius:6px;margin-top:6px;color:#5c3a00">schedule_cli.py render-records-detail ' + escapeHTML(meta.date || "日期") + ' --show-source</div>';
+      }
+    }
+    html += '</div>';
+    html += '</div>';
+
+    // ⑤ 人工智能思考钩子卡
+    if (aiQs.length > 0) {
+      html += '<div class="ai-hooks"><h3>💡 人工智能思考钩子（看完可追问用户）</h3><ul>';
+      aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
+      html += '</ul></div>';
+    }
+
+    document.getElementById("root").innerHTML = html;
+
+    // ⑥ 隐私可控显示按钮绑定
+    bindPrivacyToggle(meta.date);
+  }
+
+  // ===== 隐私可控显示协议（评审第二号高危漏洞白名单模式） =====
+  var PRIVACY_STORAGE_KEY = "作息管家.privacy_unlocked";
+  function bindPrivacyToggle(dateStr){
+    var unlockBtn = document.getElementById("unlock-privacy");
+    var lockBtn = document.getElementById("lock-privacy");
+    if (unlockBtn) {
+      unlockBtn.addEventListener("click", function(){
+        var ok = window.confirm(
+          "确认显示高敏字段？\n\n" +
+          "将显示：\n" +
+          "· 消息原文（来自语录数据库）\n" +
+          "· 推理链（人工智能当时的判断）\n" +
+          "· 消息时间戳\n\n" +
+          "知情标记仅保存本地;关闭浏览器后失效\n" +
+          "分享网页前请确认对方有权限查看"
+        );
+        if (ok) {
+          try { localStorage.setItem(PRIVACY_STORAGE_KEY, "1"); } catch(e) {}
+          alert(
+            "本地已标记知情。\n\n" +
+            "下一步：使用 show-source 参数重新生成网页：\n" +
+            "  schedule_cli.py render-records-detail " + (dateStr || "日期") + " --show-source"
+          );
+        }
+      });
+    }
+    if (lockBtn) {
+      lockBtn.addEventListener("click", function(){
+        try { localStorage.removeItem(PRIVACY_STORAGE_KEY); } catch(e) {}
+        alert("已清除本地知情标记。");
+      });
+    }
+  }
+
   // ===== helper: stat 4 卡块 =====
   function statBlock(variant, value, label, delta){
     variant = variant || "";

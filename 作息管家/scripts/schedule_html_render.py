@@ -335,6 +335,9 @@ def default_output_path(meta: dict) -> Path:
         if len(dates) == 1:
             return plan_query / f"plan_query_{dates[0]}.html"
         return plan_query / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
+    if mode == "plan-preview":
+        date = meta.get("date", "unknown")
+        return plan_list / f"plan_preview_{date}.html"
     return base / "view.html"
 
 
@@ -504,6 +507,31 @@ def _fmt_dur_short(mins: int) -> str:
     return f"{m}m"
 
 
+def _build_full_records(records: list) -> list:
+    """
+    100% 字段暴露原则:把 schedule_records 原始行映射为 11 字段 dict 列表。
+    11 字段:id / date / time_start / time_end / duration_minutes / activity /
+    category / source_contents / source_timestamps / analysis_reasoning / created_at。
+    上层(HTML 模板) 自行决定消费哪些、是否折叠、什么样式。
+    """
+    return [
+        {
+            "id": r["id"],
+            "date": r["date"],
+            "time_start": r["time_start"],
+            "time_end": r["time_end"],
+            "duration_minutes": int(r.get("duration_minutes") or 0),
+            "activity": r["activity"],
+            "category": r["category"],
+            "source_contents": r.get("source_contents") or "",
+            "source_timestamps": r.get("source_timestamps") or "",
+            "analysis_reasoning": r.get("analysis_reasoning") or "",
+            "created_at": r.get("created_at") or "",
+        }
+        for r in records
+    ]
+
+
 def render_record_report(date: str) -> dict:
     """兼容旧 CLI render-record-report — 等价于 render_record_day"""
     return render_record_day(date)
@@ -586,6 +614,132 @@ def render_records_detail(date: str, record_id: int = None) -> dict:
     }
 
 
+def render_plans_preview(date: str, plan_events: list, locked_events: list = None) -> dict:
+    """
+    商量计划预览(过程型首批落地,四步契约§3.6 + 手册§原则10 过程型 AI 协同模式).
+
+    数据契约:
+      - plan_events: 候选 24h 事件 list[{time_start, time_end, title, notes, category}, ...]
+      - locked_events: 已有 schedule_plans WHERE date=date AND is_active=1 list[...]
+
+    输出:
+      - status: 'ok' | 'conflict' | 'incomplete'
+      - 4 部分 prompt 字符串(场景/数据/期望/来源) → 用户复制给 AI
+      - 24h 覆盖率 coverage_pct
+      - conflicts: 候选与 locked 时间重叠
+      - copy_prompt: 完整指令文本
+    """
+    from schedule_db import _normalize_date, list_plan_events, validate_24h_coverage
+
+    date = _normalize_date(date)
+    locked_events = locked_events or []
+    if not plan_events:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"plan_events 为空,至少需要 1 条候选事件",
+        }
+
+    # 计算 24h 覆盖率
+    coverage_err = validate_24h_coverage(plan_events)
+    if coverage_err is None:
+        coverage_pct = 100
+        coverage_status = "ok"
+    else:
+        # 24h 不完整,粗略计算已覆盖分钟数
+        covered_minutes = 0
+        for ev in plan_events:
+            try:
+                sh, sm = map(int, ev["time_start"].split(":"))
+                eh, em = map(int, ev["time_end"].split(":"))
+                ev_min = (eh * 60 + em) - (sh * 60 + sm)
+                if ev_min > 0:
+                    covered_minutes += ev_min
+            except (KeyError, ValueError):
+                pass
+        coverage_pct = round(covered_minutes / 1440 * 100, 1)
+        coverage_status = "incomplete"
+
+    # 计算冲突(候选与 locked 时间重叠)
+    def to_min(hhmm):
+        h, m = map(int, hhmm.split(":"))
+        return h * 60 + m
+    conflicts = []
+    for i, cand in enumerate(plan_events):
+        try:
+            cs, ce = to_min(cand["time_start"]), to_min(cand["time_end"])
+        except (KeyError, ValueError):
+            continue
+        for lk in locked_events:
+            try:
+                ls, le = to_min(lk["time_start"]), to_min(lk["time_end"])
+            except (KeyError, ValueError):
+                continue
+            if cs < le and ls < ce:  # 时间区间相交
+                conflicts.append({
+                    "time_range": cand["time_start"] + "–" + cand["time_end"],
+                    "candidate": cand.get("title", "—"),
+                    "locked": lk.get("title", "—"),
+                    "candidate_idx": i,
+                })
+
+    # 整体状态
+    if conflicts:
+        status = "conflict"
+    elif coverage_status == "incomplete":
+        status = "incomplete"
+    else:
+        status = "ok"
+
+    # 4 部分 prompt(手册§原则10)
+    plan_json_str = json.dumps(plan_events, ensure_ascii=False, indent=2)
+    locked_summary = ""
+    if locked_events:
+        locked_summary = "\n⑤ 已锁定事件(写库时锁定时段,会被保护):\n" + \
+            "\n".join([f"  - {e['time_start']}–{e['time_end']} {e.get('title','—')}" for e in locked_events]) + "\n"
+
+    conflicts_summary = ""
+    if conflicts:
+        conflicts_summary = "\n⚠ 检测到 " + str(len(conflicts)) + " 处候选与已锁定事件时间冲突:\n" + \
+            "\n".join([f"  - {c['time_range']}: 候选「{c['candidate']}」与已锁定「{c['locked']}」重叠" for c in conflicts]) + \
+            "\n请调整候选事件时段或更新已锁定事件后重新预览。\n"
+
+    copy_prompt = f"""① 场景: 我和 AI 多轮对话生成了 {date} 的候选计划({len(plan_events)} 段事件覆盖 24h {coverage_pct}%)。{('有 ' + str(len(conflicts)) + ' 处冲突需调整') if conflicts else '无冲突'}
+
+② 数据(候选 24h 时间块):
+{plan_json_str}{locked_summary}{conflicts_summary}
+③ 期望: 请执行 schedule_cli.py upsert-plan-events {date} --json @plan.json 写库;询问飞书同步(Y/n)
+  - 无冲突时直接采纳
+  - 有冲突时先与用户讨论调整再写
+
+④ 来源: plan_preview.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},数据来自多轮对话
+"""
+
+    payload = {
+        "meta": {
+            "mode": "plan-preview",
+            "date": date,
+            "title": f"商量计划预览 · {date}",
+            "subtitle": f"候选 {len(plan_events)} 段事件 · 24h 覆盖率 {coverage_pct}% · {len(conflicts)} 处冲突" + (" · 需调整" if conflicts else ""),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-24",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "plan_events": plan_events,
+        "locked_events": locked_events,
+        "conflicts": conflicts,
+        "coverage_pct": coverage_pct,
+        "status": status,
+        "copy_prompt": copy_prompt,
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {date} 商量计划预览数据已生成(候选 {len(plan_events)} 段,冲突 {len(conflicts)} 处,24h 覆盖率 {coverage_pct}%)",
+    }
+
+
 # ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
 
 def render_record_day(date: str) -> dict:
@@ -655,6 +809,7 @@ def render_record_day(date: str) -> dict:
         "summary_items": summary_items,
         "timeline": timeline,
         "sleep_data": sleep_data,
+        "records": _build_full_records(records),
         "health": {
             "score": compute_health_score(records),
             "label": "充足" if sleep_min >= 7*60 else ("偏短" if sleep_min >= 5*60 else "严重不足"),
@@ -738,6 +893,7 @@ def render_record_range(start: str, end: str) -> dict:
         "summary_items": summary_items,
         "dim_totals": dim_totals,
         "total_records": len(records),
+        "records": _build_full_records(records),
         "trend_chart": trend_chart,
         "health": health,
         "ai_questions": ai_questions_for_range(start, end, dim_totals, health["score"], 0),
@@ -847,6 +1003,7 @@ def render_record_category(category: str, start: str, end: str) -> dict:
         "total_minutes": total,
         "daily_avg": daily_avg,
         "heatmap": matrix,
+        "records": _build_full_records(cat_records),
         "ai_questions": ai_questions_for_category(l1_target, days_count, total, daily_avg),
         "errors": [],
     }
@@ -930,6 +1087,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
     template_map = {
         "list-events":     "schedule_list_events.html",
         "query-plans":     "schedule_list_events.html",
+        "plan-preview":    "schedule_plan_preview.html",  # 商量计划预览(过程型首批落地,2026-07-24)
         "record-report":   "schedule_record_day.html",   # 兼容旧 CLI
         "record-day":      "schedule_record_day.html",
         "record-range":    "schedule_record_range.html",

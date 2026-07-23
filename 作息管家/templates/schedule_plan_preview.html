@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商量计划预览 · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:48px 28px 80px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:40px 42px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .eyebrow .badge-type{background:var(--blue);color:#fff;padding:3px 10px;border-radius:6px;font-size:10.5px;letter-spacing:.04em}
+  h1{font-size:38px;line-height:1.15;letter-spacing:-.03em;margin-bottom:14px}
+  .lead{font-size:17px;color:var(--fg2);max-width:880px;line-height:1.6}
+  .meta{margin-top:20px;color:var(--fg3);font-size:13px;display:flex;flex-wrap:wrap;gap:18px}
+  .meta b{color:var(--fg)}
+
+  /* 状态徽章 */
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-top:14px;display:inline-flex;width:fit-content}
+  .status-badge.ok{background:#e6f7ec;color:#1f8c3d}
+  .status-badge.conflict{background:#fff5e0;color:#a25b00}
+  .status-badge.bad{background:#fff0ee;color:#a83228}
+
+  /* 4 卡摘要 */
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 28px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  /* 核心:复制按钮(过程型第一铁律) */
+  .copy-zone{background:linear-gradient(180deg,#f0f4ff 0%,#fff 100%);border:2px solid var(--blue);border-radius:20px;padding:24px 28px;margin:8px 0 24px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+  .copy-zone .copy-text{flex:1;min-width:0}
+  .copy-zone h3{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em}
+  .copy-zone .copy-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:10px}
+  .copy-zone .copy-preview{background:#fff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--fg2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.55;max-height:80px;overflow:auto;white-space:pre-wrap}
+  .copy-zone .copy-btn{background:var(--blue);color:#fff;border:none;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+  .copy-zone .copy-btn:hover{background:var(--blue2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,122,255,.3)}
+  .copy-zone .copy-btn:active{transform:translateY(0)}
+  .copy-zone .copy-btn.copied{background:var(--good)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 30px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:22px;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.04em;margin-right:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13.5px;margin-bottom:16px;line-height:1.65}
+
+  /* 24h 时间块 */
+  .tl{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;background:var(--line);border-radius:8px;overflow:hidden;margin:10px 0 6px}
+  .tl .seg{background:var(--soft);padding:6px 2px;font-size:9.5px;font-weight:600;color:var(--fg2);text-align:center;line-height:1.1;min-height:40px;display:flex;align-items:center;justify-content:center;cursor:default;position:relative;overflow:hidden}
+  .tl .seg .lbl{writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.04em;display:none}
+  .tl .seg:hover{background:#eaf2ff;color:var(--blue2);z-index:2;transform:scale(1.08)}
+  .tl .seg[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--fg);color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:10;line-height:1.4;max-width:240px;white-space:normal;width:max-content}
+  .tl .seg.filled{background:#007AFF;color:#fff;font-weight:700}
+  .tl .seg.locked{background:#FF9500;color:#fff;font-weight:700}
+  .tl .seg.gap{background:#fff5e0;color:#a25b00}
+  .tl-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;margin-top:4px}
+  .tl-labels span{font-size:9.5px;color:var(--fg3);text-align:center;font-variant-numeric:tabular-nums}
+
+  /* 候选事件列表 */
+  .event-list{margin:14px 0}
+  .event-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:#fafbfc;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;transition:all .15s}
+  .event-item:hover{border-color:var(--blue);background:#fff}
+  .event-item .time{flex-shrink:0;min-width:90px;font-size:13px;font-weight:600;color:var(--blue2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .event-item .info{flex:1;min-width:0}
+  .event-item .info .title{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .event-item .info .cat{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:999px;background:#eaf2ff;color:#0a63ce;margin-right:6px;font-weight:600}
+  .event-item .info .notes{font-size:12px;color:var(--fg2);margin-top:4px;line-height:1.55}
+  .event-item .info .locked-tag{display:inline-block;font-size:10px;background:#fff5e0;color:#a25b00;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600}
+  .event-item .info .conflict-tag{display:inline-block;font-size:10px;background:#fff0ee;color:#a83228;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600}
+
+  /* 冲突区 */
+  .conflict-card{background:#fff5e0;border:1px solid #ffe89b;border-radius:12px;padding:16px 20px;margin:8px 0;display:flex;align-items:flex-start;gap:14px}
+  .conflict-card .icon{font-size:24px;line-height:1}
+  .conflict-card .ctxt h4{font-size:14px;font-weight:700;color:#a25b00;margin-bottom:4px}
+  .conflict-card .ctxt p{font-size:12.5px;color:var(--fg2);line-height:1.6}
+
+  /* 4 步操作指引 */
+  ol.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+  ol.steps > li{counter-increment:step;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 56px;margin-bottom:10px;position:relative;font-size:13.5px;line-height:1.65}
+  ol.steps > li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps > li b{color:var(--fg);font-weight:600}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:var(--code);color:#f5f5f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  @media(max-width:760px){
+    .wrap{padding:32px 14px 60px}
+    .hero{padding:28px 22px;border-radius:22px}
+    h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    section{padding:22px 18px}
+    section h2{font-size:18px}
+    .copy-zone{grid-template-columns:1fr}
+    .copy-zone .copy-btn{justify-self:stretch}
+    .tl .seg{font-size:8px;min-height:32px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">
+    商量计划预览
+    <span class="badge-type">过程型</span>
+  </div>
+  <h1 id="page-title">2026-07-20 · 24h 时间块预览</h1>
+  <p class="lead" id="page-subtitle">候选计划 + 已有事件冲突检测 + 24h 覆盖率检查。本 HTML 是预览,只读,不写库。复制下方指令给 AI 触发写入。</p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">2026-07-20</b></span>
+    <span>🕐 生成于 <b id="meta-generated">2026-07-24</b></span>
+    <span>📊 <b id="meta-counts">—</b></span>
+  </div>
+  <div class="status-badge" id="status-badge">加载中…</div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-candidate">—</div>
+    <div class="l">候选事件数</div>
+    <div class="d">AI 多轮对话产出</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-coverage">—</div>
+    <div class="l">24h 覆盖率</div>
+    <div class="d">需 100% 满</div>
+  </div>
+  <div class="stat danger">
+    <div class="n" id="stat-conflicts">—</div>
+    <div class="l">冲突数</div>
+    <div class="d">候选 vs 已有 locked</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-locked">—</div>
+    <div class="l">已锁定事件数</div>
+    <div class="d">今日已有 schedule_plans</div>
+  </div>
+</div>
+
+<!-- ⭐ 核心:复制 prompt 区(过程型第一铁律) -->
+<div class="copy-zone">
+  <div class="copy-text">
+    <h3>📤 复制 4 部分 prompt 给 AI</h3>
+    <p class="copy-desc">点击右侧按钮复制指令 → 粘贴给 AI → AI 调 <code>upsert-plan-events</code> 写库。本 HTML 仅作预览,写库由 AI 完成。</p>
+    <div class="copy-preview" id="copy-preview">加载中…</div>
+  </div>
+  <button class="copy-btn" id="copy-btn">复制 4 部分 prompt</button>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>24h 时间块预览</h2>
+  <p class="sub">每段 1 小时色块:<b class="filled" style="color:#007AFF">蓝</b> = 候选事件 · <b class="locked" style="color:#ff9500">橙</b> = 已有锁定事件 · <b class="gap" style="color:#a25b00">黄</b> = 24h 缺口。hover 查看详情。</p>
+  <div class="tl" id="timeline"></div>
+  <div class="tl-labels" id="tl-labels"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>候选事件列表</h2>
+  <p class="sub">AI 多轮对话生成的 24h 时间块。每条事件可读 category / notes。🔒 标记 = 已有 locked events 占用时段;⚠ 标记 = 与候选冲突。</p>
+  <div class="event-list" id="event-list"></div>
+</section>
+
+<section id="conflict-section" style="display:none">
+  <h2><span class="sec-num">§3</span>冲突与警告</h2>
+  <p class="sub" id="conflict-summary"></p>
+  <div id="conflict-list"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§4</span>操作指引(4 步流程)</h2>
+  <ol class="steps">
+    <li><b>复制 4 部分 prompt</b> 到剪贴板(顶部按钮)。本 HTML 是单工设备,不能直接写库。</li>
+    <li><b>粘贴给 AI</b> 在对话窗口。AI 收到指令后会调 <code>schedule_cli.py upsert-plan-events &lt;日期&gt; --json @plan.json</code>。</li>
+    <li><b>AI 询问飞书同步</b>(commit 1cca0a9 之后是 --show-source 等价逻辑)。同意 → 飞书日历出现;不同意 → 仅本地写入。</li>
+    <li><b>重新生成 P-list 模板</b> 验证:<code>render-list-events &lt;日期&gt;</code>。事件出现在 24h 时间块上即成功。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="sec-num">§5</span>候选 JSON 折叠区(供高级用户)</h2>
+  <details class="field">
+    <summary>点击查看完整候选 JSON(8 段事件)</summary>
+    <pre id="json-display">加载中…</pre>
+  </details>
+  <details class="field">
+    <summary>点击查看 4 部分 prompt 完整内容</summary>
+    <pre id="prompt-full">加载中…</pre>
+  </details>
+</section>
+
+<div class="footer">
+  <p>本 HTML 由 <code>render-plans-preview</code> 子命令生成 · 模板: <code>schedule_plan_preview.html</code></p>
+  <p class="note">设计原则: 手册《04 §原则 10 过程型 HTML AI 协同模式》— HTML 是单工设备,必须有"复制 prompt"按钮 + 4 部分模板</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.getElementById("root") && (document.getElementById("root").innerHTML =
+      '<div class="error"><h3>❌ 数据解析失败</h3><pre>' + esc(err) + '</pre></div>');
+    return;
+  }
+
+  if (payload.status !== "ok" || !payload.data) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败:' + esc(payload.message || "未知错误") + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var planEvents = data.plan_events || [];
+  var lockedEvents = data.locked_events || [];
+  var conflicts = data.conflicts || [];
+  var copyPrompt = data.copy_prompt || "";
+  var status = data.status || "ok";
+
+  // 1. Hero
+  document.getElementById("page-title").textContent = (meta.date || "") + " · 24h 时间块预览";
+  document.getElementById("page-subtitle").textContent = meta.subtitle || "";
+  document.getElementById("meta-date").textContent = meta.date || "—";
+  document.getElementById("meta-generated").textContent = meta.generated_at || "—";
+  document.getElementById("meta-counts").textContent = planEvents.length + " 候选 + " + lockedEvents.length + " 已有";
+
+  // 2. 状态徽章
+  var badge = document.getElementById("status-badge");
+  if (status === "ok" && conflicts.length === 0) {
+    badge.className = "status-badge ok";
+    badge.textContent = "✅ 候选可写库 · 24h 满 · 无冲突";
+  } else if (conflicts.length > 0) {
+    badge.className = "status-badge conflict";
+    badge.textContent = "⚠️ 有 " + conflicts.length + " 处冲突 · 需调整后再采纳";
+  } else {
+    badge.className = "status-badge bad";
+    badge.textContent = "❌ 候选不完整 · 24h 缺口 · 需补充";
+  }
+
+  // 3. 4 卡摘要
+  document.getElementById("stat-candidate").textContent = planEvents.length;
+  document.getElementById("stat-coverage").textContent = (data.coverage_pct || 0) + "%";
+  document.getElementById("stat-conflicts").textContent = conflicts.length;
+  document.getElementById("stat-locked").textContent = lockedEvents.length;
+
+  var coverageEl = document.getElementById("stat-coverage");
+  if (data.coverage_pct === 100) coverageEl.parentElement.className = "stat good";
+  else if (data.coverage_pct >= 80) coverageEl.parentElement.className = "stat warn";
+  else coverageEl.parentElement.className = "stat danger";
+
+  // 4. 复制 prompt 预览
+  document.getElementById("copy-preview").textContent = copyPrompt;
+
+  // 5. 复制按钮
+  var copyBtn = document.getElementById("copy-btn");
+  copyBtn.addEventListener("click", function(){
+    var text = copyPrompt;
+    var done = function(){
+      copyBtn.textContent = "✅ 已复制 · 粘贴给 AI";
+      copyBtn.classList.add("copied");
+      setTimeout(function(){
+        copyBtn.textContent = "复制 4 部分 prompt";
+        copyBtn.classList.remove("copied");
+      }, 2500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function(){
+        fallbackCopy(text); done();
+      });
+    } else {
+      fallbackCopy(text); done();
+    }
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  // 6. 24h 时间块
+  var tl = document.getElementById("timeline");
+  var tlLabels = document.getElementById("tl-labels");
+  // 初始化 24 段
+  var segsByHour = {};
+  for (var h = 0; h < 24; h++) {
+    segsByHour[h] = { type: "empty", tip: h + ":00" };
+  }
+  // 候选事件(填充,可能有跨小时)
+  planEvents.forEach(function(ev){
+    var sh = parseInt((ev.time_start || "0:0").split(":")[0], 10);
+    var eh = parseInt((ev.time_end || "0:0").split(":")[0], 10);
+    var minStart = parseInt((ev.time_start || "0:0").split(":")[1] || "0", 10);
+    var minEnd = parseInt((ev.time_end || "0:0").split(":")[1] || "0", 10);
+    for (var h = sh; h < eh; h++) {
+      if (h >= 0 && h < 24) {
+        segsByHour[h] = {
+          type: "filled",
+          title: ev.title || "",
+          cat: ev.category || "",
+          tip: ev.time_start + "–" + ev.time_end + " · " + (ev.title || "") + " · " + (ev.category || "")
+        };
+      }
+    }
+  });
+  // 已有事件(锁定)
+  lockedEvents.forEach(function(ev){
+    var sh = parseInt((ev.time_start || "0:0").split(":")[0], 10);
+    var eh = parseInt((ev.time_end || "0:0").split(":")[0], 10);
+    for (var h = sh; h < eh; h++) {
+      if (h >= 0 && h < 24 && segsByHour[h].type === "empty") {
+        segsByHour[h] = {
+          type: "locked",
+          title: ev.title || "",
+          cat: ev.category || "",
+          tip: "🔒 " + ev.time_start + "–" + ev.time_end + " · " + (ev.title || "")
+        };
+      }
+    }
+  });
+  // 渲染
+  for (var h = 0; h < 24; h++) {
+    var seg = segsByHour[h];
+    var tipText = h + ":00 · 空";
+    if (seg.type === "filled") {
+      tipText = h + ":00 · " + seg.tip;
+    } else if (seg.type === "locked") {
+      tipText = h + ":00 · " + seg.tip;
+    }
+    tl.insertAdjacentHTML("beforeend",
+      '<div class="seg ' + seg.type + '" data-tip="' + esc(tipText) + '"></div>');
+  }
+  // 24h 标签
+  for (var h2 = 0; h2 < 24; h2++) {
+    if (h2 % 3 === 0) {
+      tlLabels.insertAdjacentHTML("beforeend", '<span>' + h2 + '</span>');
+    } else {
+      tlLabels.insertAdjacentHTML("beforeend", '<span></span>');
+    }
+  }
+
+  // 7. 候选事件列表
+  var eventList = document.getElementById("event-list");
+  // 标记冲突的 event id 集合
+  var conflictIds = {};
+  conflicts.forEach(function(cf){
+    (cf.candidate_ids || []).forEach(function(id){ conflictIds[id] = true; });
+  });
+  // locked event 时段
+  var lockedRanges = lockedEvents.map(function(ev){
+    return ev.time_start + "–" + ev.time_end;
+  });
+  // 渲染
+  planEvents.forEach(function(ev, i){
+    var isConflict = conflictIds[ev._index !== undefined ? ev._index : i] || conflictIds[i];
+    var inLocked = false;
+    // 检查是否在 locked 范围内
+    lockedEvents.forEach(function(lk){
+      if (lk.time_start <= ev.time_start && ev.time_end <= lk.time_end) inLocked = true;
+    });
+    var html = '<div class="event-item">';
+    html += '<div class="time">' + esc(ev.time_start) + '–' + esc(ev.time_end) + '</div>';
+    html += '<div class="info">';
+    html += '<div class="title">' + esc(ev.title || "(无标题)");
+    if (inLocked) html += '<span class="locked-tag">🔒 与已锁定事件重叠</span>';
+    if (isConflict) html += '<span class="conflict-tag">⚠ 冲突</span>';
+    html += '</div>';
+    if (ev.category) html += '<span class="cat">' + esc(ev.category) + '</span>';
+    if (ev.notes) html += '<div class="notes">' + esc(ev.notes) + '</div>';
+    html += '</div></div>';
+    eventList.insertAdjacentHTML("beforeend", html);
+  });
+
+  // 8. 冲突与警告区
+  var conflictSection = document.getElementById("conflict-section");
+  if (conflicts.length > 0) {
+    conflictSection.style.display = "block";
+    document.getElementById("conflict-summary").textContent =
+      "检测到 " + conflicts.length + " 处候选与已有锁定事件时间冲突。采纳前需调整候选事件时段(或更新已有锁定事件)。";
+    var list = document.getElementById("conflict-list");
+    conflicts.forEach(function(cf){
+      list.insertAdjacentHTML("beforeend",
+        '<div class="conflict-card"><div class="icon">⚠</div><div class="ctxt">' +
+        '<h4>' + esc(cf.time_range || "") + '</h4>' +
+        '<p>候选: ' + esc(cf.candidate || "—") + '</p>' +
+        '<p>已锁定: ' + esc(cf.locked || "—") + '</p>' +
+        '</div></div>');
+    });
+  }
+
+  // 9. 候选 JSON 折叠区
+  document.getElementById("json-display").textContent = JSON.stringify(planEvents, null, 2);
+  document.getElementById("prompt-full").textContent = copyPrompt;
+})();
+</script>
+</body>
+</html>

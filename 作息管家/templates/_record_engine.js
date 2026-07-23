@@ -72,13 +72,14 @@
 
   // ===== T1: 单日 =====
   function renderDay(data, meta){
+    var records = data.records || [];
     var summaryItems = data.summary_items || [];
     var timeline = data.timeline || [];
     var sleepData = data.sleep_data || {};
     var health = data.health || null;
     var aiQs = data.ai_questions || [];
 
-    if (summaryItems.length === 0) {
+    if (records.length === 0) {
       document.getElementById("root").innerHTML =
         '<div class="empty"><h3>' + escapeHTML(meta.date || "这一天") + ' · 无作息记录</h3>' +
         '<p>该日 schedule_records 表没有记录</p></div>';
@@ -146,12 +147,80 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+    html += recordsCollapsible(records);
 
     document.getElementById("root").innerHTML = html;
   }
 
+  // ===== 辅助:记录明细折叠区(11 字段全暴露,苹果风白底卡片) =====
+  function fmtDurShort(mins){
+    var h = Math.floor(mins / 60), m = mins % 60;
+    if (h && m) return h + 'h' + m + 'm';
+    if (h) return h + 'h';
+    return m + 'm';
+  }
+
+  function recordFieldRow(label, value){
+    return '<div><div style="color:var(--fg3);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">' + escapeHTML(label) + '</div>' +
+           '<div style="color:var(--fg);font-weight:500;font-size:12.5px">' + escapeHTML(value || '—') + '</div></div>';
+  }
+
+  function recordsCollapsible(records){
+    if (!records || records.length === 0) return '';
+    var html = '<div class="card">';
+    html += '<h2 style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">';
+    html += '<span><span class="icon">📋</span> 记录明细</span>';
+    html += '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--blue2);background:var(--soft);padding:5px 12px;border-radius:999px">' + records.length + ' 条 · 每条 11 字段</span>';
+    html += '</h2>';
+    records.forEach(function(r, i){
+      var dur = fmtDurShort(r.duration_minutes || 0);
+      html += '<details style="margin-bottom:10px;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden;transition:border-color .15s,box-shadow .15s">';
+      html += '<summary style="list-style:none;cursor:pointer;padding:16px 20px;display:flex;align-items:center;gap:14px;user-select:none;transition:background .15s" onmouseover="this.style.background=\'var(--soft)\'" onmouseout="this.style.background=\'\'">';
+      html += '<span style="flex-shrink:0;width:32px;height:32px;border-radius:10px;background:var(--blue);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;letter-spacing:-.02em">' + (i + 1) + '</span>';
+      html += '<div style="flex:1;min-width:0;line-height:1.45">';
+      html += '<div style="font-size:14.5px;font-weight:600;color:var(--fg);letter-spacing:-.01em">' + escapeHTML(r.time_start) + ' – ' + escapeHTML(r.time_end) + ' · ' + escapeHTML(r.activity) + '</div>';
+      html += '<div style="font-size:12.5px;color:var(--fg3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">';
+      html += '<span style="color:var(--blue2);font-weight:500">' + escapeHTML(r.category) + '</span>';
+      html += '<span>·</span><span>' + dur + '</span>';
+      html += '<span>·</span><span>id=' + r.id + '</span>';
+      html += '</div></div>';
+      html += '<span style="flex-shrink:0;color:var(--fg3);font-size:20px;line-height:1;font-weight:300;transition:transform .2s" class="chevron">›</span>';
+      html += '</summary>';
+
+      html += '<div style="padding:4px 20px 18px;border-top:1px solid var(--line);background:#fafbfd">';
+      html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 24px;margin:14px 0;padding:14px 16px;background:var(--card);border-radius:10px;border:1px solid var(--line);font-size:12.5px">';
+      html += recordFieldRow('ID', String(r.id));
+      html += recordFieldRow('日期', r.date);
+      html += recordFieldRow('时段', r.time_start + '–' + r.time_end);
+      html += recordFieldRow('时长', dur + ' (' + r.duration_minutes + ' 分钟)');
+      html += recordFieldRow('分类', r.category);
+      html += recordFieldRow('创建时间', r.created_at);
+      html += '</div>';
+
+      html += '<div style="margin:14px 0">';
+      html += '<div style="font-size:10.5px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">消息原文</div>';
+      html += '<div style="font-size:13px;line-height:1.7;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">' + escapeHTML(r.source_contents || '（无）') + '</div>';
+      html += '</div>';
+
+      html += '<div style="margin:14px 0">';
+      html += '<div style="font-size:10.5px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">消息时间戳</div>';
+      html += '<div style="font-size:12px;line-height:1.7;color:var(--fg2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">' + escapeHTML(r.source_timestamps || '（无）') + '</div>';
+      html += '</div>';
+
+      html += '<div style="margin:14px 0 6px">';
+      html += '<div style="font-size:10.5px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">人工智能推理链</div>';
+      html += '<div style="font-size:13px;line-height:1.7;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;white-space:pre-wrap">' + escapeHTML(r.analysis_reasoning || '（无）') + '</div>';
+      html += '</div>';
+
+      html += '</div></details>';
+    });
+    html += '</div>';
+    return html;
+  }
+
   // ===== T2: 区间 =====
   function renderRange(data, meta){
+    var records = data.records || [];
     var summaryItems = data.summary_items || [];
     var dimTotals = data.dim_totals || {};
     var health = data.health || null;
@@ -196,6 +265,7 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+    html += recordsCollapsible(data.records || []);
 
     document.getElementById("root").innerHTML = html;
   }
@@ -241,12 +311,14 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+    html += recordsCollapsible(data.records || []);
 
     document.getElementById("root").innerHTML = html;
   }
 
   // ===== T4: 类别深挖 =====
   function renderCategory(data, meta){
+    var records = data.records || [];
     var cat = meta.category || "未知";
     var totalMin = data.total_minutes || 0;
     var days = data.days || [];
@@ -281,6 +353,7 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+    html += recordsCollapsible(data.records || []);
 
     document.getElementById("root").innerHTML = html;
   }
@@ -319,6 +392,7 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+    html += recordsCollapsible(data.records || []);
 
     document.getElementById("root").innerHTML = html;
   }
@@ -327,11 +401,6 @@
   function renderDetail(data, meta){
     var records = data.records || [];
     var selected = data.selected_record || null;
-    var privacyUnlocked = !!data.privacy_unlocked;
-    var aiQs = data.ai_questions || [];
-    var selected = data.selected_record || null;
-    var privacyUnlocked = !!data.privacy_unlocked;
-    var showSourceAvailable = !!data.show_source_available;
     var aiQs = data.ai_questions || [];
 
     if (records.length === 0) {
@@ -356,67 +425,10 @@
     html += statBlock("", catCount + " 类", "活跃分类", "");
     html += statBlock("", rangeText, "时段范围", "");
 
-    // ② records 列表
-    html += '<div class="card"><h2><span class="icon">📋</span> 记录列表（' + records.length + ' 条）</h2>';
-    records.forEach(function(r){
-      var isSelected = selected && selected.id === r.id;
-      var borderColor = isSelected ? "var(--blue)" : "var(--line)";
-      html += '<div style="border-left:4px solid ' + borderColor + ';padding:10px 14px;margin-bottom:8px;background:var(--soft);border-radius:8px">';
-      html += '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">';
-      html += '<span style="font-weight:600;color:var(--fg);font-size:13px">' + escapeHTML(r.time_start) + ' – ' + escapeHTML(r.time_end) + '</span>';
-      html += '<span style="font-size:11px;color:var(--fg3);font-variant-numeric:tabular-nums">' + fmtMin(r.duration_minutes || 0) + '</span>';
-      html += '<span style="margin-left:auto;font-size:11px;color:var(--blue2);background:#eaf2ff;padding:2px 8px;border-radius:6px">' + escapeHTML(r.category) + '</span>';
-      html += '</div>';
-      html += '<div style="font-size:13px;color:var(--fg);margin-bottom:4px">' + escapeHTML(r.activity) + '</div>';
-      html += '<div style="font-size:11px;color:var(--fg3)">id=' + escapeHTML(String(r.id)) + '</div>';
-      html += '</div>';
-    });
-    html += '</div>';
+    // ② records 折叠区(11 字段全暴露,默认折叠,展开看完整字段)
+    html += recordsCollapsible(records);
 
-    // ③ selected_record 详情卡（--record-id 时,仅 --show-source 模式显示完整推理）
-    if (selected) {
-      html += '<div class="card"><h2><span class="icon">🎯</span> 单条详情(id=' + escapeHTML(String(selected.id)) + ')</h2>';
-      html += '<div style="background:var(--card);border:1px solid var(--blue);border-left:6px solid var(--blue);border-radius:10px;padding:14px 16px">';
-      html += '<div style="font-size:12px;color:var(--fg3);margin-bottom:6px">' + escapeHTML(selected.date) + ' · ' + escapeHTML(selected.time_start) + ' – ' + escapeHTML(selected.time_end) + ' · ' + fmtMin(selected.duration_minutes || 0) + '</div>';
-      html += '<div style="font-size:14px;font-weight:600;color:var(--fg);margin-bottom:8px">' + escapeHTML(selected.activity) + '</div>';
-      html += '<div style="font-size:11px;color:var(--blue2);background:#eaf2ff;padding:2px 8px;border-radius:6px;display:inline-block;margin-bottom:8px">' + escapeHTML(selected.category) + '</div>';
-      if (selected.source_contents !== undefined) {
-        html += '<div style="border-top:1px dashed var(--line);padding-top:8px;margin-top:8px">';
-        html += '<div style="font-size:11px;color:var(--warn);font-weight:700;margin-bottom:4px">🔓 高敏字段已解锁（仅 --show-source 模式可见）</div>';
-        html += '<div style="font-size:12px;color:var(--fg2);margin-bottom:4px"><b>消息原文:</b></div>';
-        html += '<pre style="background:#fffbf0;border:1px solid #ffe89b;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;white-space:pre-wrap;color:#5c3a00">' + escapeHTML(selected.source_contents || "(空)") + '</pre>';
-        html += '<div style="font-size:12px;color:var(--fg2);margin:6px 0 4px"><b>消息时间戳:</b> ' + escapeHTML(selected.source_timestamps || "(空)") + '</div>';
-        html += '<div style="font-size:12px;color:var(--fg2);margin:6px 0 4px"><b>推理链:</b></div>';
-        html += '<pre style="background:#fffbf0;border:1px solid #ffe89b;padding:8px 10px;border-radius:6px;font-size:11px;overflow:auto;white-space:pre-wrap;color:#5c3a00">' + escapeHTML(selected.analysis_reasoning || "(空)") + '</pre>';
-        html += '</div>';
-      }
-      html += '</div>';
-      html += '</div>';
-    }
-
-    // ④ 状态引导卡（默认模式：引导回人工智能对话; --show-source 模式：已显示完整）
-    if (privacyUnlocked) {
-      html += '<div class="card"><h2><span class="icon">✅</span> 完整推理已显示</h2>';
-      html += '<div style="background:#e6f7ec;border:1px solid #bce5c8;border-radius:10px;padding:12px 14px;font-size:13px;color:#1f8c3d">';
-      html += '<div style="font-weight:600;margin-bottom:4px">本网页已显示人工智能推理原文与消息来源</div>';
-      html += '<div style="font-size:11px;color:var(--fg2)">分享前请评估对方是否有权限查看;如需撤回显示,重新生成网页时不带 --show-source 参数即可</div>';
-      html += '</div>';
-      html += '</div>';
-    } else {
-      html += '<div class="card"><h2><span class="icon">💬</span> 想看人工智能推理原文？</h2>';
-      html += '<div style="background:#f7fbff;border:1px solid #c8dafa;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--blue2)">';
-      html += '<div style="font-weight:600;margin-bottom:8px">本网页聚焦活动摘要,不含消息原文与人工智能推理链</div>';
-      html += '<div style="font-size:11px;color:var(--fg2);margin-bottom:8px">如需查看,回到人工智能对话,告诉它下面任一句：</div>';
-      html += '<ul style="margin:0 0 0 16px;font-size:12.5px;line-height:1.7;color:var(--fg)">';
-      html += '<li>"显示 ' + escapeHTML(meta.date || "日期") + ' 作息详情的人工智能推理原文"</li>';
-      html += '<li>"展开 id=' + escapeHTML(meta.date || "日期") + ' 记录 id=3 的推理链"</li>';
-      html += '<li>"我想知道人工智能当时怎么判断这条记录的"</li>';
-      html += '</ul>';
-      html += '</div>';
-      html += '</div>';
-    }
-
-    // ⑤ 人工智能思考钩子卡
+    // ③ 人工智能思考钩子卡(苹果风浅黄底,放在末尾)
     if (aiQs.length > 0) {
       html += '<div class="ai-hooks"><h3>💡 人工智能思考钩子（看完可追问用户）</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });

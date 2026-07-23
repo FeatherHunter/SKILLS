@@ -585,6 +585,8 @@ def main(argv=None):
         cmd_render_list_events(args)
     elif cmd == "render-query-plans":
         cmd_render_query_plans(args)
+    elif cmd == "render-plans-preview":
+        cmd_render_plans_preview(args)
     # === end ===
 
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
@@ -1496,6 +1498,168 @@ def cmd_render_query_plans(args):
 
 
 # ============================================================
+# 2026-07-24 新增:商量计划预览(过程型首批落地,手册§原则10 AI 协同)
+# ============================================================
+#
+# 一个命令:render-plans-preview <日期> --json @plan.json
+# 输入:候选 24h 事件 list(不入库)
+# 输出:HTML 含 4 部分 prompt 复制按钮 + 24h 时间块预览 + 冲突警告
+# 流程:AI 多轮对话生成候选 JSON → 调用本命令 → 复制 prompt → 粘贴给 AI
+#       → AI 调 upsert-plan-events 写库(HTML 是单工设备,自己不写)
+
+
+def cmd_render_plans_preview(args):
+    """render-plans-preview <日期> --json @plan.json
+
+    商量计划预览(过程型)。输入候选 24h 事件 list(由 AI 多轮对话生成),
+    输出 HTML 含 4 部分 prompt(场景/数据/期望/来源)供用户复制给 AI。
+    """
+    from schedule_html_render import _record_dir, render_plans_preview, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-plans-preview <日期> --json @plan.json",
+            "example": "render-plans-preview 2026-07-20 --json @plan.json",
+        }, ensure_ascii=False))
+        return
+
+    date = args[0]
+    json_path = None
+    i = 1
+    while i < len(args):
+        if args[i] == "--json" and i + 1 < len(args):
+            json_path = args[i + 1]
+            i += 2
+        else:
+            i += 1
+
+    if not json_path:
+        print(_json.dumps({
+            "status": "error",
+            "message": "必填参数: --json @plan.json(从文件读)或 --json -(从 stdin 读)",
+        }, ensure_ascii=False))
+        return
+
+    # 读 JSON:支持 @file.json 或 stdin(-)
+    try:
+        if json_path == "-":
+            plan_json = sys.stdin.read()
+        elif json_path.startswith("@"):
+            file_path = _P(json_path[1:])
+            if not file_path.exists():
+                print(_json.dumps({
+                    "status": "error",
+                    "message": f"JSON 文件不存在: 字段 json_path,当前值 {file_path},建议: 检查文件路径或用 --json - 从 stdin 读",
+                }, ensure_ascii=False))
+                return
+            plan_json = file_path.read_text(encoding="utf-8")
+        else:
+            print(_json.dumps({
+                "status": "error",
+                "message": f"--json 值格式非法: '{json_path}'(期望 @file.json 或 -),建议: --json @plan.json",
+            }, ensure_ascii=False))
+            return
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"读取 JSON 失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        plan_events = _json.loads(plan_json)
+        if not isinstance(plan_events, list):
+            raise ValueError("plan_events 必须是 list")
+        if len(plan_events) == 0:
+            raise ValueError("plan_events 至少 1 条")
+        for i, ev in enumerate(plan_events):
+            if not isinstance(ev, dict):
+                raise ValueError(f"第 {i+1} 条不是 dict")
+            for k in ("time_start", "time_end", "title"):
+                if k not in ev:
+                    raise ValueError(f"第 {i+1} 条缺字段: {k}")
+    except _json.JSONDecodeError as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"JSON 解析失败: {e.msg}(行 {e.lineno} 列 {e.colno}),建议: 检查 JSON 格式",
+        }, ensure_ascii=False))
+        return
+    except ValueError as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"plan_events 校验失败: {e}",
+        }, ensure_ascii=False))
+        return
+
+    from schedule_db import _normalize_date, list_plan_events
+    try:
+        date = _normalize_date(date)
+    except ValueError:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"date 字段格式非法: '{date}'(期望 YYYY-MM-DD 或 YYYYMMDD),建议: 2026-07-20",
+        }, ensure_ascii=False))
+        return
+
+    # 拉当日已锁定的 schedule_plans
+    try:
+        locked = list_plan_events(date, include_inactive=False)
+    except Exception as e:
+        locked = []
+    # 过滤只保留 is_active=1
+    locked = [e for e in locked if e.get("is_active", 1) == 1]
+
+    # 输出目录检查(plan/list 目录)
+    from schedule_html_render import _html_base_dir
+    plan_list_dir = _html_base_dir() / 'plan' / 'list'
+    if not _html_base_dir().exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()},建议: mkdir -p {_html_base_dir()}",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        payload = render_plans_preview(date, plan_events, locked_events=locked)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    conflicts_count = len(payload["data"].get("conflicts", []))
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "plan-preview",
+            "date": date,
+            "candidate_count": len(plan_events),
+            "locked_count": len(locked),
+            "conflict_count": conflicts_count,
+            "coverage_pct": payload["data"].get("coverage_pct", 0),
+        },
+        "message": f"✓ 商量计划预览已写入: {fp}（{len(plan_events)} 候选 + {len(locked)} 已有 + {conflicts_count} 冲突）",
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # 2026-07-23 新增:作息记录查询 → HTML 单日报告
 # ============================================================
 #
@@ -2319,6 +2483,7 @@ def cmd_help():
 HTML 渲染(可视化查询结果):
   render-list-events <date> [--out PATH]   渲染日程 list-events 为 HTML(摘要+时间轴+事件卡片)
   render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
+  render-plans-preview <日期> --json @plan.json  商量计划预览(过程型,4 部分 prompt 复制给 AI)
   render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
   render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
   render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)

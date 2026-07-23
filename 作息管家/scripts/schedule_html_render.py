@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 schedule_html_render.py — 日程计划查询的 HTML 渲染器（2026-07-23 新增）
 
@@ -369,6 +369,7 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         b = (ranges[1] or {}).get("label", "b") if len(ranges) > 1 else "b"
         return base / "compare" / f"{a}_vs_{b}_record_compare.html"
     if mode == "record-category":
+        # M5:meta.category 已经是用户原值(不映射),文件名拼原值
         cat = meta.get("category", "cat")
         s = meta.get("start", "x")
         e = meta.get("end", "x")
@@ -563,7 +564,6 @@ def render_record_day(date: str) -> dict:
             "weekday": weekdays[dt.weekday()],
             "title": f"作息报告 · {dt.year}年{dt.month}月{dt.day}日({weekdays[dt.weekday()]})",
             "subtitle": f"共 {len(records)} 条记录,总时长 {_fmt_dur(total_minutes)}",
-            "template_name": "schedule_record_day.html",
             "record_count": len(records),
             "total_minutes": int(total_minutes),
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -648,7 +648,6 @@ def render_record_range(start: str, end: str) -> dict:
             "start": start, "end": end, "days": days_count,
             "title": f"作息区间报告 · {start} ~ {end}",
             "subtitle": f"{days_count} 天,{len(records)} 条记录,总时长 {_fmt_dur(total)}",
-            "template_name": "schedule_record_range.html",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "days": days,
@@ -691,7 +690,6 @@ def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, 
             "mode": "record-compare",
             "title": f"作息对比 · {label_a} vs {label_b}",
             "subtitle": f"{label_a}:{start_a}~{end_a} · {label_b}:{start_b}~{end_b}",
-            "template_name": "schedule_record_compare.html",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "ranges": ranges,
@@ -753,11 +751,12 @@ def render_record_category(category: str, start: str, end: str) -> dict:
     payload = {
         "meta": {
             "mode": "record-category",
-            "category": l1_target,
+            # M5:用户原值 (category) + 映射后值 (l1_target) 都写 meta,文件名前缀用原值
+            "category": category,         # 用户原值 "运动" → 文件名 "运动_..."
+            "l1_category": l1_target,    # 映射后值 "健康" → 内部过滤用
             "start": start, "end": end,
             "title": f"类别深挖 · {l1_target} · {start} ~ {end}",
             "subtitle": f"{days_count} 天活跃,日均 {_fmt_dur(daily_avg)}",
-            "template_name": "schedule_record_category.html",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "days": sorted_dates,
@@ -828,7 +827,6 @@ def render_record_anomaly(window_days: int = 7) -> dict:
             "window": window_days,
             "title": f"异常检测 · 最近 {window_days} 天",
             "subtitle": f"对比基线:近 30 天均值,阈值 ±20%",
-            "template_name": "schedule_record_anomaly.html",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "anomalies": anomalies,

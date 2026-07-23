@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息记录 HTML 改造方案 · 对抗式审查</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --danger:#ff3b30;--warn:#ff9500;--good:#34c759;--mute:#9b9ba0;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:48px 24px 96px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:32px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:30px;line-height:1.2;letter-spacing:-.025em;margin-bottom:6px}
+  h2{font-size:19px;margin:32px 0 12px;letter-spacing:-.01em}
+  h3{font-size:15px;margin:18px 0 8px}
+  h4{font-size:13px;margin:12px 0 6px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+  .lead{font-size:15px;color:var(--fg2);max-width:780px}
+  .meta{margin-top:12px;color:var(--fg3);font-size:12px}
+  p{margin:8px 0}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f0f0f2;padding:2px 6px;border-radius:4px;font-size:.92em;color:#1d1d1f}
+  pre{background:#1d1d1f;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12px;overflow:auto;line-height:1.6;margin:10px 0}
+  ul,ol{margin:8px 0 8px 24px}
+  li{margin:4px 0}
+  a{color:var(--blue)}
+
+  /* TOC */
+  .toc{background:var(--card);border-radius:14px;padding:18px 22px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .toc h3{margin-top:0;font-size:13px;color:var(--fg3);text-transform:uppercase;letter-spacing:.08em}
+  .toc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:10px}
+  .toc-col h4{font-size:11px;color:var(--fg3);text-transform:uppercase;margin-bottom:6px}
+  .toc-col ol{margin:0 0 0 20px;font-size:13px}
+  .toc-col a{color:var(--blue2);text-decoration:none}
+
+  /* Section card */
+  section{background:var(--card);border-radius:18px;padding:24px 28px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+
+  /* Severity tag */
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-right:6px;vertical-align:1px}
+  .tag-crit{background:#fff0ee;color:#a83228;border:1px solid #f7c8c1}
+  .tag-high{background:#fff5e0;color:#a25b00;border:1px solid #ffd9a8}
+  .tag-med{background:#eaf2ff;color:#0a63ce;border:1px solid #c8dafa}
+  .tag-low{background:#f0f0f2;color:var(--mute);border:1px solid #d8d8dd}
+
+  /* Finding item */
+  .find{border-left:3px solid var(--line);padding:10px 0 14px 16px;margin:14px 0;border-bottom:1px dashed #ececef}
+  .find:last-child{border-bottom:none}
+  .find-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:6px}
+  .find-id{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--blue2);font-weight:600}
+  .find-loc{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--fg3)}
+  .find-type{font-size:12px;color:var(--fg2);font-style:italic}
+  .find-body{margin-top:4px}
+  .find-body p{margin:6px 0}
+  .find-body strong{color:var(--fg)}
+  .find-actions{background:#fafafa;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px;color:var(--fg2)}
+  .find-actions strong{color:var(--good);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .crit .find{border-left-color:#ff3b30}
+  .crit section{border-left:4px solid #ff3b30}
+  .high .find{border-left-color:#ff9500}
+  .high section{border-left:4px solid #ff9500}
+  .med .find{border-left-color:#007aff}
+  .med section{border-left:4px solid #007aff}
+  .low .find{border-left-color:#9b9ba0}
+
+  .summary-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 8px}
+  .stat{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .stat .n{font-size:22px;font-weight:700}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat.s-crit .n{color:#a83228}
+  .stat.s-high .n{color:#a25b00}
+  .stat.s-med .n{color:#0a63ce}
+  .stat.s-low .n{color:var(--mute)}
+
+  .arch-box{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:14px 0;font-size:13px;color:var(--fg2)}
+  .arch-box strong{color:var(--fg)}
+
+  details{background:#fafafa;border-radius:10px;padding:8px 14px;margin:8px 0;border:1px solid var(--line)}
+  details summary{cursor:pointer;font-weight:600;color:var(--blue2);font-size:13px;outline:none}
+  details[open] summary{margin-bottom:6px}
+  details pre{margin:6px 0 0}
+
+  .footnote{margin-top:24px;padding:18px 22px;background:var(--card);border-radius:14px;font-size:12px;color:var(--fg3);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+
+  .footer{margin-top:32px;text-align:center;color:var(--fg3);font-size:12px}
+
+  @media(max-width:780px){
+    .wrap{padding:24px 12px 64px}
+    .hero{padding:24px 20px;border-radius:18px}
+    h1{font-size:24px}
+    .toc-grid{grid-template-columns:repeat(2,1fr)}
+    .summary-stats{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Adversarial Review · 魔鬼辩护人立场</div>
+  <h1>作息记录 HTML 改造方案 · 对抗式审查</h1>
+  <p class="lead">针对"为作息记录(record)域新增 <code>render-list-records</code> / <code>render-record-summary</code> / <code>render-record-range</code> 三个 CLI 子命令,新建模板 <code>templates/schedule_record_report.html</code>"的方案做不留情面审稿。</p>
+  <div class="meta">审查时间:2026-07-23 · 评审对象:作息管家 · HTML 改造 v1 草案 · 共发现 <strong>28 个漏洞</strong>(5 CRITICAL / 9 HIGH / 9 MEDIUM / 5 LOW)</div>
+</header>
+
+<nav class="toc" id="toc">
+  <h3>目录</h3>
+  <div class="toc-grid">
+    <div class="toc-col">
+      <h4>严重度分布</h4>
+      <ol>
+        <li><a href="#sec-crit">CRITICAL 致命(5)</a></li>
+        <li><a href="#sec-high">HIGH 高危(9)</a></li>
+      </ol>
+    </div>
+    <div class="toc-col">
+      <h4>继续</h4>
+      <ol start="3">
+        <li><a href="#sec-med">MEDIUM 中危(9)</a></li>
+        <li><a href="#sec-low">LOW 低危(5)</a></li>
+      </ol>
+    </div>
+    <div class="toc-col">
+      <h4>专题</h4>
+      <ol>
+        <li><a href="#sec-alternatives">替代方案</a></li>
+        <li><a href="#sec-checklist">落地前自检清单</a></li>
+      </ol>
+    </div>
+    <div class="toc-col">
+      <h4>附录</h4>
+      <ol>
+        <li><a href="#sec-appendix">命名/路径对比矩阵</a></li>
+        <li><a href="#sec-footnote">脚注与未完项</a></li>
+      </ol>
+    </div>
+  </div>
+</nav>
+
+<div class="summary-stats">
+  <div class="stat s-crit"><div class="n">5</div><div class="l">CRITICAL · 致命</div></div>
+  <div class="stat s-high"><div class="n">9</div><div class="l">HIGH · 高危</div></div>
+  <div class="stat s-med"><div class="n">9</div><div class="l">MEDIUM · 中危</div></div>
+  <div class="stat s-low"><div class="n">5</div><div class="l">LOW · 低危</div></div>
+</div>
+
+<!-- ============ CRITICAL ============ -->
+<section id="sec-crit" class="crit">
+<h2><span class="tag tag-crit">CRITICAL</span> 致命漏洞 · 5 条</h2>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">C-01</span>
+    <span class="find-type">实现路径缺失 / 静默失败</span>
+    <span class="find-loc">schedule_html_render.py:337-340</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>render_and_write()</code> 函数里的 <code>template_map</code> 是硬编码字典,只包含 2 个 mode:</p>
+<pre>template_map = {
+    "list-events": "schedule_list_events.html",
+    "query-plans": "schedule_list_events.html",
+}</pre>
+    <p>方案新增的 3 个 mode(<code>record-list</code> / <code>record-summary</code> / <code>record-range</code>)不在映射内 → 直接进 <code>"未知 mode"</code> 错误分支返回 <code>{status:"error"}</code>。CLI 端不会写盘,只输出一行 JSON 错误。AI 拿到这个错误也只会重试 3 次然后放弃。也就是方案"设计"出来了但首跑 <strong>0 文件落盘</strong>。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:把 <code>template_map</code> 改成函数 <code>def _resolve_template(mode) -> str</code>,或至少加入 3 条映射。<strong>且必须为这 3 条各自传不同的 <code>template_name</code></strong>(因为方案说要新建 <code>schedule_record_report.html</code>,不能继续用 plan 模板)。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">C-02</span>
+    <span class="find-type">命名/路径设计反直觉 · 历史断裂</span>
+    <span class="find-loc">SKILL.md §3.1.2 vs. 方案新增 dirs</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>SKILL.md §3.1.2</code> 已明文承诺 <code>reports/record/YYYY-MM-DD.html</code> 是历史作息报告的归宿,且原文是:</p>
+<pre>> 2026-07-23 把 23 个旧 `reports/*.html`(作息报告)迁入 `reports/record/`,文件名不变(YYYY-MM-DD.html)。</pre>
+    <p>方案新增 <code>reports/record/list/record_list_*.html</code> 这条路径,与既有规则冲突。结果是 <code>reports/record/</code> 下同时存在两类文件:</p>
+<pre>reports/record/
+├── 2026-05-30.html              ← 旧 AI 渲染(直存本目录)
+├── 2026-07-02.html              ← 同上
+├── ...
+├── 2026-07-15.html              ← 旧
+├── list/                        ← 新方案:子目录
+│   └── record_list_2026-07-15.html
+├── summary/
+│   └── record_summary_2026-07-15.html
+└── range/
+    └── record_range_2026-07-13_to_2026-07-15.html</pre>
+    <p>用户打开 <code>reports/record/</code> 看到根目录 23 个旧 HTML + 3 个新子目录的奇景。3 个月后没人在意 git blame,命名规则文档与实际盘面互相推翻。<strong>SKILL.md 与方案不一致,先迁还是先改文档?</strong></p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:二选一,且写脚本而不是手撸 ——
+    <ol>
+      <li><strong>统一进子目录</strong>:把 23 个旧 HTML 移到 <code>reports/record/legacy/2026-MM-DD.html</code>(或 <code>_old/</code>),然后 <code>reports/record/{list,summary,range}/</code> 接新 HTML。SKILL.md §3.1.2 改为"旧文件 → legacy,新文件 → 子目录"。</li>
+      <li><strong>不分目录,在文件名上分模式</strong>:新文件仍存 <code>reports/record/</code> 根,但改名 <code>record_list_2026-07-15.html</code>,旧文件保留 <code>2026-07-15.html</code>。然后在 SKILL.md 里加一条"前缀分模式"规则,跟 plan 域对齐 + 双层查找(目录 + 前缀)。</li>
+    </ol>
+    <strong>无论选哪种,迁移脚本必须幂等可重跑</strong>(一次 <code>migrate_records_html.py --dry-run</code>,审完再实跑)。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">C-03</span>
+    <span class="find-type">数据丢失风险 · 映射表过期</span>
+    <span class="find-loc">_render_report_*.py:44-49 → 新模板 emoji_map</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:方案说"emoji 用旧词映射,因为历史 category 是旧词"。但旧的 <code>emoji_map</code> 是 flat 字符串(<code>"睡眠" / "工作" / "学习" / "运动" / ...</code>),不支持 <code>"工作.AI调优"</code> 这类 8.70 字符串。</p>
+    <p>新分类生效后(<code>SKILL.md §分类系统</code>),记录可能会出现 <strong>两类 category 字符串并存</strong>:</p>
+<ul>
+  <li>旧扁平词:<code>"睡眠"、"工作"、"运动"、"通勤"、"计划"</code> 等(~15 个)</li>
+  <li>新二级词:<code>"工作.AI调优"、"维持.睡眠"、"健康.健身"</code> 等(8 一级 × 70 二级)</li>
+</ul>
+    <p>方案把旧 emoji_map 抄过来后,如果某天某条 <code>category="维持.睡眠"</code>:<code>emoji_map.get("维持.睡眠", "📌")</code> → 默认 fallback <strong>📌</strong>。同理 <code>"健康.健身" / "学习.XX" / "创作.XX" / "投入.XX" / "调整.XX" / "日常.XX"</code> 全部 fallback。结果是 <strong>2026-07-22 之后写入的记录,emoji 视觉全灰</strong>,首次跳转就让人觉得"是不是 CSS 挂了"。</p>
+    <p>方案还遗漏一个隐藏分支:旧 map 里有 <code>"休息"、"起居"、"计划"</code> 三个词,<strong>新分类系统里已经没有</strong>(合并到 <code>"调整"</code> 或 <code>"维持"</code>)。这些旧词即使在新表里查到,也找不到对应新分类,后续强制写库会被 validators 拒绝 —— 但旧记录仍存在,会让模板持续渲染陈词。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:废弃"抄旧 emoji_map"思路。改成两段式查找 —
+    <ol>
+      <li><strong>先按整串精确查</strong>(支持 <code>"工作.AI调优"</code> 直查)</li>
+      <li><strong>回退到一级</strong>(<code>category.split(".")[0]</code>,查一级表)</li>
+      <li><strong>再回退到默认</strong></li>
+    </ol>
+    一级 emoji 表按 <code>SKILL.md §飞书 emoji 联动</code> 已定义(🌱/💪/💼/📖/🎨/🤝/😌/📋),这 8 个稳态直接用。二级 emoji 完整 70+ 个从 <code>validators.CATEGORY_EMOJI_LEVEL2</code> 抄过来。<strong>不要再绑死在历史脚本的 17 行 dict 上</strong>,这是技术债。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">C-04</span>
+    <span class="find-type">功能覆盖盲点 · 7 选 3 没解释</span>
+    <span class="find-loc">方案 §3 vs schedule_cli.py:294-358</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:作息记录域现存的文本 CLI 命令有 <strong>7 个</strong>:<code>list / detail / summary / timeline / report / range / status</code>。方案新增 HTML 版<strong>只覆盖 3 个</strong>(list/summary/range),遗漏了 <code>detail / timeline / report / status</code>,且未解释 "选 3 不选 4" 的依据。</p>
+    <p>具体被遗漏的:</p>
+<ul>
+  <li><strong><code>detail</code></strong> → 包含 <code>source_contents</code> / <code>analysis_reasoning</code> 完整原文 + AI 推理链。HTML 化后是"溯源"利器,缺了它用户只能回到 CLI 看原始 JSON。</li>
+  <li><strong><code>timeline</code></strong> → 24h 时间轴可视化已成型(<code>cmd_timeline</code>:316-348)。新模板如果做"list + 时间轴",其实就包含了 timeline。</li>
+  <li><strong><code>report</code></strong> → 完整报告(records + summary + timeline 综合)。当前 <strong>23 个历史 <code>reports/record/*.html</code> 全是这个角色</strong>。方案新增的 3 个命令 + 这个 role 没一个对得上,意味着"完整报告"这个最常见诉求在 HTML 化后 <strong>没出口</strong>(落到 23 个旧 AI 渲染上,但新版用户不知道有这个)。</li>
+  <li><strong><code>status</code></strong> → 元信息(总记录数/天数/日期范围)。可作为页脚/边栏塞进任意模板,不是必须独立命令。</li>
+</ul>
+    <p>最致命的是 <strong><code>report</code></strong>:用户最常说"今天总结" → 应该对应 <strong>HTML 综合报告</strong>。方案只给 list/summary/range,意味着"今天总结"在 HTML 路径里要么拼合 2 个文件(list + summary)、要么召唤 23 个旧 AI 报告——<strong>无一致路径</strong>。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:重新设计映射矩阵。
+    <table style="width:100%;border-collapse:collapse;margin:10px 0;font-size:13px">
+      <tr style="background:#f5f8ff"><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">文本 CLI</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">建议 HTML 命令</th><th style="text-align:left;padding:8px;border-bottom:1px solid var(--line)">理由</th></tr>
+      <tr><td style="padding:8px">list</td><td style="padding:8px">render-records-list</td><td style="padding:8px">单日全字段记录表</td></tr>
+      <tr style="background:#fafafa"><td style="padding:8px">summary</td><td style="padding:8px">render-records-summary</td><td style="padding:8px">按分类总时长汇总</td></tr>
+      <tr><td style="padding:8px">range</td><td style="padding:8px">render-records-range</td><td style="padding:8px">日期范围聚合</td></tr>
+      <tr style="background:#fafafa"><td style="padding:8px">detail</td><td style="padding:8px">render-records-detail</td><td style="padding:8px">含 source_contents 折叠区</td></tr>
+      <tr><td style="padding:8px">timeline</td><td style="padding:8px">(并入 list)</td><td style="padding:8px">list 内嵌 24h 块即可</td></tr>
+      <tr style="background:#fafafa"><td style="padding:8px">report</td><td style="padding:8px">render-records-report</td><td style="padding:8px"><strong>替换 23 个旧 AI 报告</strong>,提供统一入口</td></tr>
+      <tr><td style="padding:8px">status</td><td style="padding:8px">(塞 footer)</td><td style="padding:8px">任意模板的 footer 区域</td></tr>
+    </table>
+    <strong>7 → 5(其中 2 个并入,2 个新加)</strong>,内部一致 + 覆盖所有用户场景。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">C-05</span>
+    <span class="find-type">既有代码两个分支死掉</span>
+    <span class="find-loc">schedule_html_render.py:311-313, 330-331</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>schedule_html_render.py</code> 里已经悄悄预埋了 <code>record-report</code> mode 的两个分支:</p>
+<pre>default_output_path():  if mode == "record-report": return base_dir / "record" / f"{date}.html"
+title_for_mode():       if mode == "record-report": return f"作息报告 · {date}"</pre>
+    <p>但 <strong>没有任何调用者</strong>传 <code>mode="record-report"</code>(grep 全文 0 命中,只有这两个 if 自己)。这是 <strong>死代码</strong>:预埋的 "记录报告" 在 plan 域改造时被遗忘了。</p>
+    <p>方案没指明这两个分支去留,也没说"是否沿用 record-report mode 名"。如果沿用,<strong>会出现 mode 命名冲突</strong>:旧分支用 <code>record-report</code>,方案用 <code>record-list/summary/range</code> —— 不一致,且未来找代码的人迷惑。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:决策树 ——
+    <ol>
+      <li><strong>废弃</strong>两个 <code>record-report</code> 分支(死代码清理,符合 C-04 把 report 重新定义为独立命令)</li>
+      <li>新增 5 条 mode(<code>record-list / record-summary / record-range / record-detail / record-report</code>)分支</li>
+      <li>在 <code>template_map</code> 同步加 5 条映射,5 条都指向 <code>schedule_record_report.html</code> 但靠 <code>meta.mode</code> 切布局</li>
+    </ol>
+  </div>
+</div>
+</section>
+
+<!-- ============ HIGH ============ -->
+<section id="sec-high" class="high">
+<h2><span class="tag tag-high">HIGH</span> 高危漏洞 · 9 条</h2>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-01</span>
+    <span class="find-type">模板设计反复劳动</span>
+    <span class="find-loc">templates/ 目录</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>schedule_list_events.html</code> 已经 ~400 行(含 100 行 CSS),包含:</p>
+<ul>
+      <li>Apple 风浅色样式 + 圆角 + 阴影 token</li>
+      <li>首屏摘要卡 <code>.summary</code></li>
+      <li>工具栏(搜索框 + filter chips)</li>
+      <li>24h 时间轴 <code>.timeline</code></li>
+      <li>卡片网格 <code>.cards-grid</code></li>
+      <li>折叠区 <code>details.notes-block</code></li>
+      <li>空态/错误态</li>
+    </ul>
+    <p>新方案再开 <code>schedule_record_report.html</code> 起步就有 ~300-400 行重复 CSS + 重复 JS 骨架。理由 "24h 流水 vs 事件+未来",但 <strong>视觉壳就一层</strong>,差异只在:</p>
+    <ul>
+      <li>数据字段(activity/source_contents vs title/notes/feishu_event_id)</li>
+      <li>高亮语义(分类占比 vs 完成度/缺口)</li>
+      <li>filter 维度(category 时间 > X vs 已同步/已完成)</li>
+    </ul>
+    <p>这些差异用 mode 分支处理更省事。后续任何样式微调(改主色、统一断点、修阴影值),两个模板都要改一遍,3 个月后必然漂移。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:壳 / 域 分层 ——
+    <ol>
+      <li>抽 <code>templates/_shell.html</code>(Apple CSS + 导航 + 工具栏 + footer + 空错误态),作为 <code>&lt;iframe src="_shell.html?mode=..."&gt;</code> 或 <code>&lt;link rel="import"&gt;</code> 失败,所以改用 <strong>Python 模板继承</strong>(jinja2 简单模板,而不是字符串替换)</li>
+      <li>两个域模板继承,只覆盖差异部分</li>
+      <li>或者:用 jinja2 include 拼装 <code>{% include "_shell_css.html" %}</code></li>
+    </ol>
+    如果你不想引 jinja2(项目目前 0 依赖,只有 stdlib),至少把 shell CSS 抽到 <code>_common.css</code> 然后 <code>&lt;style&gt;{% include "_common.css" %}{% include "domain_overrides.css" %}&lt;/style&gt;</code>,但这要求引入 jinja2。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-02</span>
+    <span class="find-type">payload 注入字段未指定</span>
+    <span class="find-loc">schedule_records schema</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>schedule_records</code> 有 <strong>9 个业务字段</strong>(<code>id / date / time_start / time_end / duration_minutes / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at</code> 实际 11 个)。方案没指明哪几个注入 payload。</p>
+    <p>盲注的风险:</p>
+<ul>
+      <li><strong><code>source_contents</code></strong>:每条记录 100~500 字的原文消息。30 条/天 → 30*300 = ~9KB/天,一年 HTML 累积 3.3MB。</li>
+      <li><strong><code>analysis_reasoning</code></strong>:AI 推理链,可能含用户隐私/情绪原文。直接注入 = 永久磁盘可见,可被截图/分享泄露。</li>
+      <li><strong>整库 across 23 天</strong>:92 个 detail 字段平均 150 字 → 单 HTML 可达 200KB+,手机端打开慢。</li>
+</ul>
+    <p>且 <code>escapeHtml</code> 在 <code>schedule_list_events.html:388-392</code> 只对 <code>renderTimelineEvent</code> 用了,但 <code>compPill</code> / <code>escapeAttr</code> 对 JSON.stringify 后的 attribute 是 <code>'</code> 转义,不是 <code>JSON.parse</code> 时的 <code>\\\"</code> 转义。模板里 <code>data-ev=' + escapeAttr(JSON.stringify(...))</code> 这条路径里 JSON 内引号转义在 <code>JSON.parse</code> 时可能炸 — — 看 <code>applyFilter</code> 走的是 <code>card.getAttribute("data-ev")</code> 用单引号包裹,OK。但 source_contents 含换行符时 <code>data-ev</code> 属性会断,需要 <code>JSON.stringify(...).replace(...)</code> 二次处理。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:payload 字段白名单 ——
+    <ol>
+      <li>默认注入 <code>id, date, time_start, time_end, duration_minutes, activity, category</code> 共 7 个</li>
+      <li><code>source_contents / analysis_reasoning / source_timestamps</code> 三者默认 <strong>不注入</strong>,只在 <code>render-records-detail</code> 命令下注入</li>
+      <li><code>created_at</code> 仅在 list/detail 注入,其余命令省略</li>
+      <li>在 HTML 中如需溯源,提供 <code>&lt;details&gt;</code> 默认折叠 + "查看 AI 推理原文" 按钮,二次 fetch(可用 data URL 内嵌,避免新增 API 端点)</li>
+      <li>隐私约定:文档建议用户在分享 HTML 前 <code>--redact</code> 参数脱敏</li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-03</span>
+    <span class="find-type">跨日记录 / 时区 / DST 处理</span>
+    <span class="find-loc">schedule_db.py:409-435</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>schedule_records</code> 用纯字符串 <code>"23:30"</code> + <code>"00:30"</code> 表示跨日时间段。<code>cmd_timeline</code>:316-348 代码用 <code>range(h_start, min(h_end+1, 24))</code>,会把 <code>h_end=0</code> 时静默跳过次日段。<strong>list</strong> 命令也只按 <code>date</code> 精确匹配,跨日记录只显示在起始日,尾日零记录。</p>
+    <p>新方案的 <code>render-list-records</code> 没说明怎么处理:</p>
+<ul>
+      <li><strong>跨日记录</strong>(<code>date=2026-07-15, 23:00→00:30</code>)在 2026-07-16 的视图里是失踪还是部分显示?</li>
+      <li><strong>24h 视图完整性</strong>:与 plan 域有 <code>_build_gap()</code> 主动检测缺口,record 域是否也需要"24h 应该有几条"?"中间空白时段"是数据缺失还是真的空白?</li>
+      <li><strong>DST 切换日</strong>:<code>date=2026-XX-XX</code> 当天 23h 或 25h,模板要不要自适应?</li>
+      <li><strong>24:00 字符串</strong>:<code>schedule_db.normalize_time()</code> 行 24 把 <code>24:00</code> 自动转 <code>23:59</code>("飞书 ISO 不接受 24:00"),但有些记录可能仍存 <code>23:59</code>,渲染端是否要再次归一?</li>
+    </ul>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:文档化 3 条规则 ——
+    <ol>
+      <li>跨日记录 <strong>只属于起始日</strong>(SQL:WHERE date=?)</li>
+      <li>模板底部加 "次日记录未显示 N 条" 提示(<code>data.cross_day_count</code>)</li>
+      <li>record 域的 <code>gap</code> 概念是<strong>"记录没覆盖到的时段"</strong>(与 plan 域"计划没覆盖到"语义不同),需要重新设计 <code>_build_record_gap()</code>,且 <strong>不加 gap 检测会让模板显得 "数据稀疏 = 空"</strong></li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-04</span>
+    <span class="find-type">飞书探测不必要 + 性能</span>
+    <span class="find-loc">_get_feishu_summary / is_feishu_available()</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:<code>schedule_html_render.py:234-247</code> 的 <code>_get_feishu_summary()</code> 探测飞书,record 域<strong>不涉及飞书</strong>(<code>schedule_records</code> 表无 <code>feishu_event_id</code> 列,grep 0 命中)。但方案没说 record 命令是否跳过这个探测。</p>
+    <p>每个新的 render 子命令都会带 1 次探测。3 个新命令 = 3 次额外 <code>lark-cli auth status</code>。<code>feishu_sync.is_feishu_available()</code> 文档虽说是 "缓存 5 分钟",但每次冷启动还是一次 IO,如果用户没装 lark-cli 还会有 <code>subprocess.CalledProcessError</code> 走 except,日志噪声。</p>
+    <p>更糟糕:AI 在 cron 场景下跑 render 命令,探测失败会在 <code>last_error</code> 留字符串,污染 payload 让 JSON 体积变大。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:在 <code>render_*_record*()</code> 函数里 <strong>不要</strong>调用 <code>_get_feishu_summary()</code>。把该调用降级到 <code>render-*plans*</code> 的 helper。如果以后新增"record ↔ feishu"联动(目前不存在),再加回。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-05</span>
+    <span class="find-type">旧 AI 报告归属未定义</span>
+    <span class="find-loc">reports/record/*.html × 23 + 改造方案</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:23 个 <code>reports/record/YYYY-MM-DD.html</code> 是 <code>_gen_report_*.py</code> + <code>_render_report_*.py</code> 写的,内容是 AI 自评 + 建议 + 亮点卡片(<strong>与新模板的设计语言完全不同</strong>:旧的是进度条+网格卡片,新的是 Apple 风)。改造方案说"不动那批"——意味着:</p>
+<ul>
+      <li><strong>Cron 任务</strong>(7:30 报告推送)在 cron 周期继续生成旧式 HTML</li>
+      <li><strong>用户手动</strong><code>render-list-records</code>生成新式 HTML</li>
+      <li><strong>同一日同时存在两份 HTML</strong>,且视觉完全不同</li>
+    </ul>
+    <p>用户最常说"今天总结" / "查作息报告" → 走哪个?文档/Cron prompt 没说。当用户在 7:31 看到旧的 + 想看新的,先 render 一份,这两份是冲突数据(可能 source data 不一致)。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:三选一 ——
+    <ol>
+      <li><strong>统一到新模板</strong>:把 <code>_gen_report_*.py</code> / <code>_render_report_*.py</code> 重写成调用 <code>render-records-report</code> CLI,旧 23 份迁 <code>reports/record/_legacy/</code></li>
+      <li><strong>保留旧,新模板加 "AI 点评"</strong>:新模板在记录表后追加 AI 分析 section,内容用同样的 14 维度(<code>sleep / leisure / work / commute / ...</code>)渲染器,标注 "AI 点评" 模块。这能让 <code>_gen_report_*.py</code> 部分退役</li>
+      <li><strong>双轨</strong>:在文档里写清楚哪个场景用哪个,SKILL.md 新增 "HTML 报告 v2 路径" 章节</li>
+    </ol>
+    <strong>最差是当前默认 — 双轨无人知晓,1 个月后用户就发现"我今天怎么有两份"</strong>。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-06</span>
+    <span class="find-type">"Mode B" 术语错误</span>
+    <span class="find-loc">方案 §3, vs schedule_list_events.html:136-143</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:方案说"沿用模式 B = 静态 HTML + window.__DATA__ JSON 注入"。但 <code>schedule_list_events.html</code> 实际注入方式是:</p>
+<pre>&lt;script id="payload" type="application/json"&gt;{...JSON...}&lt;/script&gt;
+...
+var raw = document.getElementById("payload");
+var payload = JSON.parse(raw.textContent || "{}");</pre>
+    <p>即 <strong>从 script 元素 textContent 读</strong>,<strong>不是 window 全局变量</strong>。<code>window.__DATA__</code> 是另一种模式(把 JSON 赋值给 window 全局),与现有 plan 模板不一致。新模板如果照"window.__DATA__"写,会出现两个 SKU 不同入口——以后模板维护分裂。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:统一命名 ——
+    <ol>
+      <li>叫它 <strong>"script#payload" 注入模式</strong> 或类似更精确的术语,而不是 "window.__DATA__"</li>
+      <li>新模板的 JS 入口代码 <strong>必须复用</strong> <code>document.getElementById("payload").textContent</code> 这条路径,与 plan 模板 byte-for-byte 一致</li>
+      <li>如果想把 JSON 暴露到 <code>window.__DATA__</code> 给 devtools 调试,在原模板末尾追加 <code>try{window.__DATA__=payload}catch(e){}</code>(不破坏主路径)</li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-07</span>
+    <span class="find-type">参数语义不一致</span>
+    <span class="find-loc">方案 §"render-record-range"</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:plan 域 <code>render-query-plans</code> 接受 <code>"2026-07-13,2026-07-14,2026-07-15"</code>(逗号分隔多日期,顺序影响输出)。文本 <code>range</code> 接受 <code>&lt;开始&gt; &lt;结束&gt;</code>(两个独立参数,start ≤ end 是隐含约定)。方案说的 <code>render-record-range</code> 没说参数形状。</p>
+    <p>且 <code>get_summaries_range(start, end)</code> 返回 list-of-<code>{date, category, total_minutes}</code>,7 天 × 8 类别 = 56 行;但模板怎么呈现?</p>
+<ul>
+      <li>按日聚合:每日的总时长曲线?</li>
+      <li>按类聚合:每类的总量堆叠柱?</li>
+      <li>热力图:7 天 × N 类别?</li>
+      <li>列表:每行 (date, category, total_minutes)?</li>
+    </ul>
+    <p>方案 0 描述。3 个月范围 = 92 天 × 平均 30 条 = 2760 条 record,JSON payload 估算 60-120 KB,模板渲染时间 ~1s(JS parse),用户体感慢。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:明确参数 + 渲染策略 ——
+    <ol>
+      <li><code>render-records-range &lt;开始&gt; &lt;结束&gt; [--group-by day|category] [--limit N]</code></li>
+      <li>默认 <code>--group-by day</code>(按日聚合,每日 1 行含类别分布)</li>
+      <li>支持多日(2016-07-13,2016-07-14,2016-07-15)逗号形态作为别名</li>
+      <li>数据规模 &gt; 30 天时 <strong>截断</strong>:超过只显示汇总 + "前 N 天明细 + 总 N 天"</li>
+      <li>文档示例必须给一个完整调用</li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <span class="tag"></span>
+    <span class="find-id">H-08</span>
+    <span class="find-type">分类系统没断言 · validator 未跑</span>
+    <span class="find-loc">SKILL.md §分类 / records 域</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:SKILL.md §分类系统(行 81-148)明文要求 "所有写入路径都强制走 <code>scripts/validators.py</code> 校验",但这一约束<strong>仅对 <code>add</code> CLI 新写入有效</strong>(行 116-124:写入校验报错 → 提议 → 走 approve 流程)。</p>
+    <p>对于历史已存在的 records(<code>2026-05-30</code> ~ <code>2026-07-02</code>),<strong>它们没经过 validator</strong>:
+      <ul>
+        <li>可能含旧一级词("睡眠"/"工作"/"运动")</li>
+        <li>可能含二级词("通勤")</li>
+        <li>可能含白名单外词("元母意程"在 <code>2026-07-02.html</code> 出现,"起居"/"休息"/"计划"也在旧 map 中)</li>
+      </ul>
+    </p>
+    <p>新模板渲染时遇到 <strong>"元母意程"</strong> 这种旧记录特有的词,在 <code>validators.py</code> 里找不到 emoji,被默认 fallback,但模板不报错 → 用户看到的页面 <strong>存在静默异常渲染</strong>(某些条目全 📌)。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:新增 <code>data.category_unknown[]</code> 数组渲染 ——
+    <ol>
+      <li>渲染器对每条 record 的 category 跑 validators 的查找,缺失的归类到 <code>unknown_categories[]</code></li>
+      <li>模板顶部加 "渲染期异常:发现 N 个未知分类" 提示</li>
+      <li>提议把这 N 个提交 <code>approve-category</code> 流程(下一轮迁移用)</li>
+      <li>同时单独一份报告给 AI:"X 月 X 日渲染时遇到 Y 个未知分类"</li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">H-09</span>
+    <span class="find-type">SKILL.md "强制规定 1" 未涉及</span>
+    <span class="find-loc">SKILL.md 行 26</span>
+  </div>
+  <div class="find-body">
+    <p><strong>问题</strong>:SKILL.md 行 26 "强制规定":</p>
+    <blockquote>所有变动必须体现在 HTML 上 - 本技能的任何优化、变动、脚本的所有变动,都必须同步更新 <code>作息管家.html</code> 页面。</blockquote>
+    <p>方案没说:</p>
+<ul>
+      <li>新增 3 个 CLI 渲染命令是否要更新 <code>作息管家.html</code> 索引?</li>
+      <li>新模板是否要在 <code>作息管家.html</code> 加卡片链接?</li>
+      <li>Cron 任务(7:30 报告)是否要改用新 render 命令?</li>
+    </ul>
+    <p>这三条都是"强制规定 1"范畴。漏一条就是 SKILL.md 违规。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:在 SKILL.md §3.1.2 后(或者新增 §3.2)显式记录:
+    <ol>
+      <li>新增 5 条 render 命令的入口</li>
+      <li>同步更新 <code>作息管家.html</code> 导航 + 模板预览</li>
+      <li>7:30 报告 cron 改用 <code>render-records-report</code></li>
+      <li>每次新增变动 → 写一句 hook 到 <code>作息管家.html</code> 的 changelog 区</li>
+    </ol>
+  </div>
+</div>
+</section>
+
+<!-- ============ MEDIUM ============ -->
+<section id="sec-med" class="med">
+<h2><span class="tag tag-med">MEDIUM</span> 中危漏洞 · 9 条</h2>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-01</span>
+    <span class="find-type">filter 维度未设计</span>
+    <span class="find-loc">新模板 toolbar</span>
+  </div>
+  <div class="find-body">
+    <p><code>schedule_list_events.html</code> 的 7 个 filter chips(<code>all/synced/unsynced/deleted/done/pending/skipped</code>)是 plan 域语义。record 域套用会出现:</p>
+<ul>
+      <li>没有 <code>feishu_event_id</code> → synced/unsynced 永远是"未同步"</li>
+      <li>没有 <code>completion</code> → done/pending/skipped 全为未复盘</li>
+      <li>没有 <code>is_active</code> → deleted 永远空</li>
+    </ul>
+    <p>record 域需要自己的 filter 维度,例如:按一级类别(睡眠/工作/...)、按时段(上午/下午/晚上)、按时长桶、是否有 <code>source_contents</code>。方案 0 描述。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:chip 集合改为 <code>all/一级分类×8/有原文/有 AI 推理/超长(&gt;2h)/跨日</code>,并在 payload 注入 <code>data.cat_l1_set[]</code> 让模板动态出 chip。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-02</span>
+    <span class="find-type">/tmp/report_data_*.json 残留胶水</span>
+    <span class="find-loc">_gen_report_*.py / _render_report_*.py</span>
+  </div>
+  <div class="find-body">
+    <p>旧管线用 <code>/tmp/report_data_*.json</code> 作为 <code>_gen_report_*.py</code> 和 <code>_render_report_*.py</code> 之间的桥。这玩意:</p>
+<ul>
+      <li><code>/tmp</code> 是 Linux/WSL 临时目录,Windows 上是 <code>C:\Users\...\AppData\Local\Temp</code>(但脚本写 <code>/tmp/report_data_...</code> 硬路径)→ <strong>在 Windows 原生 PowerShell 上根本写不进去</strong></li>
+      <li>没有 cleanup 机制,残留 30 份中间文件</li>
+      <li>Cron 并行跑会冲突(<code>/tmp/report_data_2026-07-15.json</code> 同时被读写)</li>
+      <li>新方案不动这批 → 旧管线继续脆弱运行</li>
+    </ul>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:M-05 选择的"统一到新模板"分支会顺手清掉这个胶水。其他分支至少写个 cleanup.py + 把 <code>/tmp</code> 改 <code>Path(__file__).parent / ".tmp/"</code>(技能目录内隔离)。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-03</span>
+    <span class="find-type">deactivate 异类 · soft-delete 缺语义</span>
+    <span class="find-loc">schedule_records vs schedule_plans</span>
+  </div>
+  <div class="find-body">
+    <p><code>schedule_plans</code> 有 <code>is_active</code>(<code>schedule_list_events.html:298</code> 用 "已软删" 徽章)。但 <code>schedule_records</code> 没有 <code>is_active</code> 字段(grep 0 命中)。</p>
+    <p>新模板如果照抄 "已软删" filter chip / badge → 该 chip 永远空。<strong>且 record 域目前没有任何软删机制</strong>(grep "deactivate-record" / "soft-delete record" 0 命中)。如果需求是"误录了一条想软删",今天用户没招。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:要么在 <code>schedule_records</code> 加 <code>is_active INTEGER DEFAULT 1</code> + migration 脚本 + CLI <code>deactivate-record</code>,要么文档化 "record 域无软删,如需删除请直接 UPDATE(by hand only)"。视觉上别给用户"已软删"chip 误导。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-04</span>
+    <span class="find-type">CSS / 视觉语言分裂为 3 套</span>
+    <span class="find-loc">reports/record/2026-*.html × 23, schedule_list_events.html, 新 schedule_record_report.html</span>
+  </div>
+  <div class="find-body">
+    <p>项目现在会有 <strong>3 套视觉语言</strong>:</p>
+<ol>
+      <li>旧 <code>_render_report_*.py</code>:summary-item 网格 + 进度条,720px max-width,sans-serif</li>
+      <li><code>schedule_list_events.html</code>:Apple 风浅色,卡片圆角,1080px max-width,filter toolbar</li>
+      <li>新 <code>schedule_record_report.html</code>(草案):? 待定</li>
+    </ol>
+    <p>同一份数据 3 套外观,用户在不同路径看到的页面风格不一致,信任感下降。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:
+    <ol>
+      <li>H-01 的分层 CSS 顺带解决</li>
+      <li>如果不分层,新模板必须采用方案 §2 已选的 "浅色 Apple 风"(plan 模板样式)而不是旧报告样式,以 <strong>新建模板向后看齐</strong></li>
+      <li>长期:旧 <code>reports/record/*.html</code> 重渲染成新模板后归档为 <code>legacy/</code></li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-05</span>
+    <span class="find-type">缺测试与 dry-run</span>
+    <span class="find-loc">方案整体</span>
+  </div>
+  <div class="find-body">
+    <p>plan 域改造也缺少正式测试。方案至少应该:</p>
+<ul>
+      <li>找一个历史日期(同时有 DB records + 旧 <code>reports/record/*.html</code>),跑新命令,比对 23 个字段的输出</li>
+      <li>对跨日、DST、空 records 边界,各跑 1 个 case</li>
+      <li>payload 体积 sanity check(单日 200KB 上限)</li>
+      <li>CI 角度:是否有任何 lint / typecheck 工具?项目 0 pytest/0 ruff,这次引入时正好加上</li>
+    </ul>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:先写 3-5 个 <code>test_render_records_*.py</code>(断言 payload 字段、断言文件落盘 + 文件 &gt; 0 KB、断言 emoji map 覆盖度),再写主逻辑。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-06</span>
+    <span class="find-type">锁竞争风险</span>
+    <span class="find-loc">SQLite WAL + 渲染大批量读</span>
+  </div>
+  <div class="find-body">
+    <p><code>schedule_db._configure_connection()</code>(<code>schedule_db.py:96-100</code>)开了 WAL + busy_timeout=5000ms。render 命令是<b>长时间读取</b>(可能跑数秒),期间用户/同步任务持续写,SQLite WAL 机制正常但渲染层不应假设 "开始读时的 record 数 = 渲染时 record 数"。</p>
+    <p>更坏情况:Cron 7:30 报告同时跑 render + 旧的 <code>_gen_report_*.py</code>(如果还活着),两条路径同时读,SQLite OK 但磁盘 IO 拥塞。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:渲染器在 <code>render_and_write()</code> 里加 <code>data._snapshot_at = datetime.now()</code> 写入 payload,模板页脚显示 "快照于 ... 期间可能有新 record 写入"。同时避免 render 与 _gen_report 并发(用文件锁 <code>portalocker</code> 或简单的 <code>fcntl.flock</code>;但 stdlib 没 fcntl,Windows 上要换 msvcrt)。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-07</span>
+    <span class="find-type">CLI 帮助文本不更新</span>
+    <span class="find-loc">schedule_cli.py:1826 (grep 命中行)</span>
+  </div>
+  <div class="find-body">
+    <p><code>cmd_help()</code> 行 1826-1827 已经登记了 2 条 render 命令:</p>
+<pre>render-list-events &lt;date&gt; [--out PATH]   渲染 list-events 为 HTML(...)
+render-query-plans &lt;d1,d2,...&gt; [--out PATH]  渲染多日 query-plans 为 HTML</pre>
+    <p>方案新增 3 条(或 5 条)需要在这里补齐。不补齐 <code>help</code> 命令就不准确,AI 协同时会少知道 3 个入口。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:同步更新 help 区块;每个新命令的 docstring 也要带 1 个 usage example。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-08</span>
+    <span class="find-type">HTML 体积无上限</span>
+    <span class="find-loc">render-record-range</span>
+  </div>
+  <div class="find-body">
+    <p>30 天 range × 30 records/天 × ~700 字节/record = ~630 KB。感觉不大,但:</p>
+<ul>
+      <li>用户开 1 年 range → ~7.5 MB HTML</li>
+      <li>用户开全部历史(从 2026-05-30 至今 54 天)→ 4 MB</li>
+      <li>JSON.parse 4 MB 在手机端 ~3-5 秒</li>
+      <li>移动端磁盘缓存会刷掉</li>
+    </ul>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:
+    <ol>
+      <li>加 <code>--limit N</code>(默认 30 天),超过则提示 "数据规模过大,请缩短范围或加 --limit"</li>
+      <li>或:渲染时把 <code>source_contents</code> 等大字段先排除 + 懒加载</li>
+      <li>或:折成分页 HTML(每 7 天 1 文件) + 索引页链接</li>
+    </ol>
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">M-09</span>
+    <span class="find-type">无脑 group by 假设</span>
+    <span class="find-loc">render-record-summary</span>
+  </div>
+  <div class="find-body">
+    <p><code>get_daily_summary(date)</code> 返回 list-of-<code>{category, total_minutes}</code>(<code>schedule_db.py:474-486</code>),来自 <code>daily_summary</code> 表。<strong>该表是哪条命令写入的?</strong> grep "add_summary" 看:</p>
+<ul>
+      <li><code>_gen_report_*.py</code>(cron 7:30 报告时算一次)</li>
+      <li>可能还有 <code>cmd_report()</code>(行 350-356)<code>print_records + print_summary</code> 调 <code>get_daily_summary</code> 但不写入</li>
+    </ul>
+    <p>也就是说 <code>daily_summary</code> 数据可能 <strong>不新鲜</strong>(几天前的旧汇总),<code>render-record-summary</code> 如果直接读这张表会显示陈旧数据。方案没说重算还是直读。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:<code>render-record-summary</code> 默认 <strong>实时重算</strong>(从 <code>schedule_records</code> 聚合,不用 <code>daily_summary</code> 表),保证新鲜。是否回写 <code>daily_summary</code> 给其他命令复用 → 留给后续重构。
+  </div>
+</div>
+</section>
+
+<!-- ============ LOW ============ -->
+<section id="sec-low" class="low">
+<h2><span class="tag tag-low">LOW</span> 低危漏洞 · 5 条</h2>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">L-01</span>
+    <span class="find-type">English list/array 歧义</span>
+    <span class="find-loc">命名 "render-list-records"</span>
+  </div>
+  <div class="find-body">
+    <p><code>render-list-records</code> 可被解析为 "render list of records" 也可被解析为 "render, list-mode of records"。在 plan 域语境下 <code>render-list-events</code> 解决得不算好,但 record 域会让人误以为是 "render-record-list"(动词+宾语)。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:改成 <code>render-records-list</code>(复数 + 名词后置),对应文本命令 <code>list</code>。其他命令同理:<code>render-records-summary / render-records-range / render-records-detail / render-records-report</code>。
+  </div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">L-02</span>
+    <span class="find-type">空 records 状态</span>
+    <span class="find-loc">新模板空态</span>
+  </div>
+  <div class="find-body">
+    <p>新模板的"空态"应该跟 plan 域一致(<code>schedule_list_events.html:177-181</code> 提示"试试用商量计划..."),但 record 域空态文案应该是"该日无作息记录,试试 [补一条作息] / [同步] / [录作息]"。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:模板的 empty-state 文案按域分支,而不是全局统一。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">L-03</span>
+    <span class="find-type">文案 / 时间显示风格</span>
+    <span class="find-loc">报告 header</span>
+  </div>
+  <div class="find-body">
+    <p>旧 <code>_render_report_*.py</code> 输出 <code>date_cn = f"{dt.year}年{dt.month}月{dt.day}日"</code> + weekday chip,plan 模板用 ISO <code>YYYY-MM-DD</code>。<strong>两种视觉</strong>同样存在。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:默认 ISO,weekday 用 chip(类似 plan),统一 vibe。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">L-04</span>
+    <span class="find-type">emoji 在 mobile 上色差</span>
+    <span class="find-loc">CSS emoji rendering</span>
+  </div>
+  <div class="find-body">
+    <p>emoji 用真字符,Windows、Android、iOS 渲染不同(如 🏋️ 在 Windows 是黑白的,在 iOS 是彩色的)。旧报告也是 emoji,问题一致,但新模板应该加 <code>font-family: "Apple Color Emoji", "Segoe UI Emoji", ...</code> fallback 链。</p>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:<code>body { font-family: ..., "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji; }</code>。</div>
+</div>
+
+<div class="find">
+  <div class="find-head">
+    <span class="find-id">L-05</span>
+    <span class="find-type">--out 行为不统一</span>
+    <span class="find-loc">cmd_render_*_events / query_plans 行 1399, 1447</span>
+  </div>
+  <div class="find-body">
+    <p>plan 命令有 <code>--out PATH</code> 走自定义路径(record 默认走 default_output_path)。新 record 命令应该说:</p>
+<ul>
+      <li>如果也支持 <code>--out</code>,用法一致</li>
+      <li>如果不支持,文档说 "只能在 <code>reports/record/</code> 下"</li>
+      <li>对应默认 <code>default_output_path()</code> 行 304 需要新增 3 条 record 分支</li>
+    </ul>
+  </div>
+  <div class="find-actions"><strong>修复</strong>:统一定义 <code>--out PATH</code> 行为:支持,且路径可在任意位置,落地前 <code>mkdir -p</code>。</div>
+</div>
+</section>
+
+<!-- ============ 替代方案 ============ -->
+<section id="sec-alternatives">
+<h2>替代方案 · 三选一</h2>
+
+<div class="arch-box">
+<strong>方案 α:渐进增量(最小改动)</strong> —— <em>可立即执行,但留技术债</em>
+<ol>
+  <li>修 <code>template_map</code> 加 3 条映射,立刻能跑</li>
+  <li>emoji map 改成"二级 + 一级 + 默认"三段式查找</li>
+  <li>新模板复用 <code>schedule_list_events.html</code> 的 CSS,只覆盖 filter chip 和详情区</li>
+  <li>旧的 23 份报告继续跑,但加 changelog 声明 deprecated</li>
+</ol>
+<strong>工作量: 1.5 人日</strong> · 不解决 H-01 / C-02,但能挡住生产事故。
+</div>
+
+<div class="arch-box">
+<strong>方案 β:统一模板,删旧管线(推荐)</strong> —— <em>一次性还清技术债</em>
+<ol>
+  <li>扩 <code>schedule_html_render.py</code> 到 5 个 mode(<code>record-list/summary/range/detail/report</code>)</li>
+  <li>新模板 = plan 模板的 super-set(同一 HTML,靠 mode 切换),或抽 shell + 双 domain overrides</li>
+  <li>删 23 份旧 AI 渲染脚本,把 cron 7:30 改用 <code>render-records-report</code></li>
+  <li>emoji map 同步升级,加迁移脚本 migrate_categories_records.py</li>
+  <li>SKILL.md §3.1.2 重写</li>
+</ol>
+<strong>工作量: 5-7 人日</strong> · 一次彻底搞定,长期 0 维护。
+</div>
+
+<div class="arch-box">
+<strong>方案 γ:hybrid(只加,不改旧)</strong> —— <em>最稳妥,什么都不动</em>
+<ol>
+  <li>新模板完全独立,视觉稍微 drift 也接受</li>
+  <li>旧的 23 份旧 AI 报告保留,日常 cron 仍走旧管线</li>
+  <li>用户手动 <code>render-records-*</code> 只用于"我要看更细的数据"的场景</li>
+  <li>目录与命名按方案原文(接受 23 个旧 HTML 与新子目录混存)</li>
+</ol>
+<strong>工作量: 2 人日</strong> · 最稳但长期分裂,用户迟早问"怎么两份不一样"。
+</div>
+
+<div class="arch-box">
+<strong>我的建议</strong>:走 β。除非历史脚本里有不可复现的特殊算子(比如 14 维度的 <code>sleep_records / meal_records / main_sleep</code> 等特殊筛选,我看 <code>_render_report_*.py</code> 27-35 行确实有 13 个集合派生),那就把这些派生逻辑搬到 <code>render-record-report</code> 里。
+</div>
+</section>
+
+<!-- ============ Checklist ============ -->
+<section id="sec-checklist">
+<h2>落地前自检清单</h2>
+
+<p>以下 12 条全部 ✅ 才能 merge,任一 ❌ 阻塞:</p>
+
+<ol>
+  <li><input type="checkbox" disabled> <code>schedule_html_render.py:337</code> <code>template_map</code> 改为函数,接受 3 个新 mode</li>
+  <li><input type="checkbox" disabled> <code>default_output_path()</code> 行 289 新增 3 条 record-* 分支</li>
+  <li><input type="checkbox" disabled> <code>title_for_mode()</code> 行 317 新增 3 条 record-* 分支</li>
+  <li><input type="checkbox" disabled> emoji lookup 改成 二级 → 一级 → 默认 三段式,不抄旧 dict</li>
+  <li><input type="checkbox" disabled> 新模板不盲目复用 plan 模板,先确认有差异或共用 shell(选定 α / β / γ)</li>
+  <li><input type="checkbox" disabled> 23 份旧 <code>reports/record/*.html</code> 迁移脚本幂等可重跑</li>
+  <li><input type="checkbox" disabled> <code>cmd_help()</code> 行 1826 同步更新</li>
+  <li><input type="checkbox" disabled> SKILL.md §3.1.2 改写,加命名规范修订</li>
+  <li><input type="checkbox" disabled> 跨日 / DST / 空 records 3 个边界 case 测试通过</li>
+  <li><input type="checkbox" disabled> payload 体积 sanity check(单日 &lt; 50KB,30 天 range &lt; 500KB)</li>
+  <li><input type="checkbox" disabled> 飞书探测仅 record-report 命令触发,其他 4 个命令跳过</li>
+  <li><input type="checkbox" disabled> <code>作息管家.html</code> 索引页 / Cron prompt 同步更新</li>
+</ol>
+</section>
+
+<!-- ============ Appendix ============ -->
+<section id="sec-appendix">
+<h2>附录 · 命名 / 路径对比矩阵</h2>
+
+<table style="width:100%;border-collapse:collapse;font-size:13px">
+<thead>
+<tr style="background:#f5f8ff">
+<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line)">维度</th>
+<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line)">plan 域(已实现)</th>
+<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line)">record 域(方案草案)</th>
+<th style="text-align:left;padding:10px;border-bottom:1px solid var(--line)">改进后推荐(record)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="padding:10px">DB 表</td>
+<td style="padding:10px"><code>schedule_plans</code></td>
+<td style="padding:10px"><code>schedule_records</code></td>
+<td style="padding:10px">-</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">域目录</td>
+<td style="padding:10px"><code>reports/plan/</code></td>
+<td style="padding:10px"><code>reports/record/</code></td>
+<td style="padding:10px">-</td>
+</tr>
+<tr>
+<td style="padding:10px">模式子目录</td>
+<td style="padding:10px"><code>plan/list/</code> + <code>plan/query/</code></td>
+<td style="padding:10px"><code>record/list/</code> + <code>record/summary/</code> + <code>record/range/</code></td>
+<td style="padding:10px">保持(γ)或统一改文件名(α/β)</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">单日文件</td>
+<td style="padding:10px"><code>plan_list_YYYY-MM-DD.html</code></td>
+<td style="padding:10px"><code>record_list_YYYY-MM-DD.html</code></td>
+<td style="padding:10px">-</td>
+</tr>
+<tr>
+<td style="padding:10px">多日文件</td>
+<td style="padding:10px"><code>plan_query_YYYY-MM-DD_to_YYYY-MM-DD.html</code></td>
+<td style="padding:10px"><code>record_range_YYYY-MM-DD_to_YYYY-MM-DD.html</code>(推断)</td>
+<td style="padding:10px">-</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">覆盖旧 HTML</td>
+<td style="padding:10px">N/A(plan 域从未有历史 HTML)</td>
+<td style="padding:10px"><strong>23 份历史 <code>YYYY-MM-DD.html</code> 在 <code>reports/record/</code> 根目录</strong></td>
+<td style="padding:10px">✅ 迁移到 <code>reports/record/_legacy/</code> 或重渲染</td>
+</tr>
+<tr>
+<td style="padding:10px">CLI 命令数</td>
+<td style="padding:10px">2(<code>render-list-events</code>/<code>render-query-plans</code>)</td>
+<td style="padding:10px">3(<code>render-list-records</code>/<code>render-record-summary</code>/<code>render-record-range</code>)</td>
+<td style="padding:10px">5(<code>render-records-list/summary/range/detail/report</code>)</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">模板数</td>
+<td style="padding:10px">1(<code>schedule_list_events.html</code> 双 mode)</td>
+<td style="padding:10px">1(<code>schedule_record_report.html</code> 单 mode)</td>
+<td style="padding:10px">2 起步,或 1+overrides(β 推荐)</td>
+</tr>
+<tr>
+<td style="padding:10px">emoji 来源</td>
+<td style="padding:10px">feishu sync helpers</td>
+<td style="padding:10px"><strong>_render_report_*.py:44-49(旧词)</strong></td>
+<td style="padding:10px">三级 fallback(二级 → 一级 → 默认)</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">飞书探测</td>
+<td style="padding:10px">每个命令都跑(<code>_get_feishu_summary()</code>)</td>
+<td style="padding:10px">未指定 → 推断"也跑"</td>
+<td style="padding:10px">仅 <code>render-records-report</code>(如果含飞书联动)跑,其余跳过</td>
+</tr>
+<tr>
+<td style="padding:10px">隐私字段</td>
+<td style="padding:10px">仅 <code>completion_note</code> 风险</td>
+<td style="padding:10px"><strong>3 字段高敏感</strong>(<code>source_contents</code>/<code>analysis_reasoning</code>/<code>source_timestamps</code>)</td>
+<td style="padding:10px">默认不注入,需 detail 命令 + 显式 opt-in</td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">旧管线</td>
+<td style="padding:10px">N/A</td>
+<td style="padding:10px"><code>_gen_report_*.py</code> + <code>_render_report_*.py</code> + <code>/tmp/report_data_*.json</code></td>
+<td style="padding:10px">β 方案完全废弃,迁移到新 render 命令</td>
+</tr>
+<tr>
+<td style="padding:10px">Cron 7:30 报告</td>
+<td style="padding:10px">N/A</td>
+<td style="padding:10px">旧 <code>_gen_report_*.py</code></td>
+<td style="padding:10px">改用 <code>render-records-report</code></td>
+</tr>
+<tr style="background:#fafafa">
+<td style="padding:10px">字段对应表</td>
+<td style="padding:10px">-<code>title</code> / <code>notes</code> / <code>completion</code></td>
+<td style="padding:10px">-<code>activity</code> / <code>source_contents</code> / <code>analysis_reasoning</code></td>
+<td style="padding:10px">schema 层不同但语义可映射</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<!-- ============ Footnote ============ -->
+<aside class="footnote" id="sec-footnote">
+<h3>脚注 · 审查方法说明与未完项</h3>
+<p><strong>本次审查范围</strong>:<code>schedule_html_render.py</code> 全文 · <code>schedule_list_events.html</code> 全文 · <code>schedule_cli.py</code> §render + §record 段 · SKILL.md §3.1.2 / §分类系统 · 23 份 <code>reports/record/*.html</code> 样本 · <code>_render_report_*.py</code> 与 <code>_gen_report_*.py</code> 各 1 份样本。</p>
+<p><strong>未审查</strong>:<code>feishu_sync.py</code> 逻辑(超出范围)· <code>validators.py</code> 实际 emoji 表(grep 可得,未读全)· 飞书侧 schema(超出范围)· <code>.db/category_whitelist.yaml</code> 内容。</p>
+<p><strong>立场</strong>:对抗式 / 魔鬼辩护人 —— 假设方案作者每多写一行都会引入新漏洞,验证后再承认。错杀可接受,漏杀不可接受。</p>
+<p><strong>审后产物</strong>:本文档仅作 review,不动源文件。下一步等用户确认后,在源文件落地修复(M-01 ~ H-09 → α 路径立刻可动 / β 路径需要 spec freeze)。</p>
+</aside>
+
+<div class="footer">
+  对抗式审查报告 · 共 28 漏洞(5 CRITICAL · 9 HIGH · 9 MEDIUM · 5 LOW) · 推荐 <strong>方案 β</strong>(统一模板,删旧管线)
+</div>
+
+</div>
+
+<a href="#toc" style="position:fixed;bottom:24px;right:24px;background:var(--blue);color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:18px;box-shadow:var(--shadow)">↑</a>
+</body>
+</html>

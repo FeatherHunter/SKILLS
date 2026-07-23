@@ -286,32 +286,40 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     return output_path
 
 
+# ===== 路径常量:硬绑 SKILLS_DB_PATH（破坏兼容,plan/list + plan/query 也走这里）=====
+import os
+_DB_DIR = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
+HTML_BASE_DIR = Path(_DB_DIR) / 'schedule_html'
+PLAN_LIST_DIR = HTML_BASE_DIR / 'plan' / 'list'
+PLAN_QUERY_DIR = HTML_BASE_DIR / 'plan' / 'query'
+RECORD_DIR = HTML_BASE_DIR / 'record'
+
+
 def default_output_path(meta: dict) -> Path:
     """
-    根据 meta 决定默认输出路径(按域/模式/日期 命名规范):
+    根据 meta 决定默认输出路径(硬绑 SKILLS_DB_PATH/schedule_html/):
 
-      作息管家/reports/record/YYYY-MM-DD.html           ← 作息记录(已有,历史保留)
-      作息管家/reports/plan/list/plan_list_YYYY-MM-DD.html
-      作息管家/reports/plan/query/plan_query_YYYY-MM-DD[_to_YYYY-MM-DD].html
+      <SKILLS_DB_PATH>/schedule_html/record/<date>_record_report.html
+      <SKILLS_DB_PATH>/schedule_html/plan/list/plan_list_<date>.html
+      <SKILLS_DB_PATH>/schedule_html/plan/query/plan_query_<date>[_to_<date>].html
 
-    规则来源:SKILL.md §3.1.2 HTML 命名规则(2026-07-23 新增)
+    规则来源:SKILL.md §3.x HTML 命名规则(2026-07-23 重构版)
+    上一版本写到 SKILL_DIR/reports/,已被一刀删除,从此统一到 SKILLS_DB_PATH 下。
     """
-    skill_dir = SKILL_DIR
-    base_dir = skill_dir / "reports"
     mode = meta.get("mode", "list-events")
 
     if mode == "list-events":
         date = meta.get("date", "unknown")
-        return base_dir / "plan" / "list" / f"plan_list_{date}.html"
+        return PLAN_LIST_DIR / f"plan_list_{date}.html"
     if mode == "query-plans":
         dates = meta.get("dates", [])
         if len(dates) == 1:
-            return base_dir / "plan" / "query" / f"plan_query_{dates[0]}.html"
-        return base_dir / "plan" / "query" / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
+            return PLAN_QUERY_DIR / f"plan_query_{dates[0]}.html"
+        return PLAN_QUERY_DIR / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
     if mode == "record-report":
         date = meta.get("date", "unknown")
-        return base_dir / "record" / f"{date}.html"
-    return base_dir / "plan" / "view.html"
+        return RECORD_DIR / f"{date}_record_report.html"
+    return HTML_BASE_DIR / "view.html"
 
 
 def title_for_mode(meta: dict) -> str:
@@ -328,15 +336,244 @@ def title_for_mode(meta: dict) -> str:
             return f"日程计划 · {dates[0]} ~ {dates[-1]} ({len(dates)} 日)"
         return "日程计划"
     if mode == "record-report":
-        return f"作息报告 · {meta.get('date', '')}"
+        d = meta.get("date", "")
+        from datetime import date as _dt
+        try:
+            dt = _dt.fromisoformat(d)
+            weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+            return f"作息报告 · {dt.year}年{dt.month}月{dt.day}日（{weekdays[dt.weekday()]}）"
+        except Exception:
+            return f"作息报告 · {d}"
     return "作息管家"
 
 
+# ===== 历史 4 段视觉复刻(沿用 _render_report_2026-07-02.py:38-43)=====
+EMOJI_MAP = {
+    "睡眠": "😴", "工作": "💼", "学习": "📚", "运动": "🏋️",
+    "通勤": "🚴", "餐饮": "🍽️", "娱乐": "🎮", "社交": "💕",
+    "休闲": "🛋️", "健康": "🏥", "洗漱": "🚿", "兴趣爱好": "🎨",
+    "家务": "🧹", "未知": "❓", "休息": "📌", "起居": "🪥", "计划": "📋",
+    "维持": "🌱", "维持.睡眠": "🌱",
+    "饮食记录": "🍽️", "做饭": "🍳", "饮食": "🍽️", "采购": "🛒",
+    "就医": "💊", "护肤": "💆",
+    "修行": "🧘", "冥想": "🧠", "看病": "🩺", "康复": "🩹", "保健": "🛡️", "八段锦": "☯️",
+    "AI调优": "🤖", "开发": "💻", "剪辑": "🎬", "文案": "📝",
+    "运营": "📊", "会议": "🤝", "财务": "💰", "调研": "🔍",
+    "技术": "💻", "语言": "🗣️", "考试": "✏️", "读书": "📕",
+    "研究": "🔬", "AI": "🤖", "阅读": "📰",
+    "文字": "✍️", "视频": "🎥", "音频": "🎵", "设计": "🖌️",
+    "编程": "💻", "菜谱": "🍴", "SOP": "📋", "教学": "👨‍🏫",
+    "家人": "👨‍👩‍👧", "朋友": "🧑‍🤝‍🧑", "同事": "👔", "伴侣": "❤️",
+    "宠物": "🐾", "社交/服务": "👋",
+    "游戏": "🎮", "视频/追剧": "📺", "音乐": "🎧", "手机": "📱",
+    "玩耍": "🎈", "发呆": "💭", "散步": "🚶", "午睡": "😴",
+    "过渡": "⏳", "休息/娱乐": "📰",
+    "代办": "☑️", "决策": "🤔", "杂事": "🔧", "收拾": "🧹",
+    "行政": "📑", "等候": "⏳", "园艺": "🌿",
+    "健身": "🏋️", "通勤/回家": "🚴",
+    "维持/通勤": "🚴", "学习/研究": "🔬",
+}
+
+COLOR_MAP = {
+    "睡眠": "#5E5CE6", "工作": "#007AFF", "学习": "#34C759", "运动": "#FF9500",
+    "通勤": "#64D2FF", "餐饮": "#FF9F0A", "娱乐": "#AF52DE", "社交": "#FF2D55",
+    "休闲": "#30D158", "健康": "#FF3B30", "洗漱": "#5AC8FA", "兴趣爱好": "#BF8F5F",
+    "家务": "#A2845E", "未知": "#8E8E93", "休息": "#8E8E93", "起居": "#8E8E93", "计划": "#FF6B9D",
+    "维持": "#5E5CE6",
+    "做饭": "#FF9F0A", "饮食": "#FF9F0A", "采购": "#FF9F0A",
+    "就医": "#FF3B30", "护肤": "#FF3B30",
+    "出行": "#64D2FF",
+    "健身": "#FF9500", "修行": "#FF9500", "冥想": "#FF9500",
+    "AI调优": "#007AFF", "开发": "#007AFF", "技术": "#007AFF",
+    "散步": "#34C759", "午睡": "#5E5CE6",
+    "游戏": "#AF52DE", "手机": "#AF52DE",
+    "代办": "#A2845E", "杂事": "#A2845E", "收拾": "#A2845E", "行政": "#A2845E",
+}
+
+
+def _cat_emoji(cat: str) -> str:
+    return EMOJI_MAP.get(cat, "📌")
+
+
+def _cat_color(cat: str) -> str:
+    return COLOR_MAP.get(cat, "#8E8E93")
+
+
+def _to_min(hhmm: str) -> int:
+    """HH:MM → 分钟数(24:00 → 24*60,跨日边界;其余正常)"""
+    if not hhmm:
+        return 0
+    if hhmm == "24:00":
+        return 24 * 60
+    h, m = hhmm.split(":")[:2]
+    try:
+        return int(h) * 60 + int(m)
+    except ValueError:
+        return 0
+
+
+def _fmt_dur(mins: int) -> str:
+    if mins <= 0:
+        return "0分钟"
+    h = mins // 60
+    m = mins % 60
+    if h and m:
+        return f"{h}小时{m}分钟"
+    if h:
+        return f"{h}小时"
+    return f"{m}分钟"
+
+
+def _fmt_dur_short(mins: int) -> str:
+    """时间轴 tooltip 用:6h40m 这种短格式"""
+    h = mins // 60
+    m = mins % 60
+    if h and m:
+        return f"{h}h{m}m"
+    if h:
+        return f"{h}h"
+    return f"{m}m"
+
+
+def render_record_report(date: str) -> dict:
+    """
+    作息记录单日 HTML 报告 — 4 段结构(时间分配/24h色带/AI亮点占位/睡眠分析)
+    视觉严格沿用历史 _render_report_2026-07-02.py 的 CSS 与布局
+    数据从 schedule_records 现读 + 实时聚合(替代原 /tmp/report_data.json 中间文件)
+    """
+    from collections import defaultdict
+    from schedule_db import _normalize_date, get_records_by_date
+
+    date = _normalize_date(date)
+
+    # 1. 取该日全部记录
+    records = get_records_by_date(date)
+
+    # 2. 计算 cat_minutes(分类聚合时长)— 沿用 _gen_report 算法
+    cat_minutes: dict[str, int] = defaultdict(int)
+    for r in records:
+        cat_minutes[r["category"]] += r.get("duration_minutes") or 0
+    total_minutes = sum(cat_minutes.values())
+
+    # 3. 24h 时间轴(每条按分钟切片到小时桶,取主导分类)
+    #    沿用 _render_report_2026-07-02.py:79-118 算法
+    hour_minutes = [defaultdict(int) for _ in range(24)]
+    hour_min_count = [0 for _ in range(24)]  # 该小时实际记录数
+    hour_first_cat = [None for _ in range(24)]  # 该小时首条记录的分类
+    for r in records:
+        ts = r["time_start"]
+        te = r["time_end"]
+        if not ts or not te:
+            continue
+        h_start = _to_min(ts) // 60
+        e_min = _to_min(te)
+        if e_min <= _to_min(ts):
+            continue  # 跨日跳过
+        cat = r["category"]
+        # 切片到小时桶
+        cur = _to_min(ts)
+        while cur < e_min:
+            h = cur // 60
+            if 0 <= h < 24:
+                next_hour = (h + 1) * 60
+                covered = min(next_hour, e_min) - cur
+                hour_minutes[h][cat] += covered
+                if hour_first_cat[h] is None:
+                    hour_first_cat[h] = cat
+                hour_min_count[h] += 1
+            cur += 60
+            if covered <= 0:
+                cur = next_hour
+    hour_cats = []
+    for h in range(24):
+        if hour_minutes[h]:
+            dominant = max(hour_minutes[h].items(), key=lambda x: x[1])[0]
+        elif hour_first_cat[h]:
+            dominant = hour_first_cat[h]
+        else:
+            dominant = "休息"
+        hour_cats.append(dominant)
+
+    # 4. 睡眠分析(沿用 _gen_report 算法)— 过滤 category="睡眠"/"睡眠(超时)"
+    sleep_records = [
+        r for r in records
+        if str(r.get("category", "")).startswith("睡眠") or str(r.get("category", "")) in ("午睡",)
+    ]
+    main_sleep = None
+    if sleep_records:
+        # 取时长最长的(原 _gen_report 用 real_duration,这里 duration_minutes 等价)
+        sleep_sorted = sorted(sleep_records, key=lambda r: r.get("duration_minutes") or 0, reverse=True)
+        main_sleep = sleep_sorted[0]
+
+    # 5. 组装 summary_items(按时长倒序,与历史报告一致)
+    sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
+    summary_items = []
+    for cat, mins in sorted_cats:
+        pct = (mins / total_minutes * 100) if total_minutes else 0.0
+        summary_items.append({
+            "category": cat,
+            "emoji": _cat_emoji(cat),
+            "color": _cat_color(cat),
+            "total_minutes": int(mins),
+            "duration_text": _fmt_dur(int(mins)),
+            "pct": round(pct, 1),
+        })
+
+    # 6. timeline[24]
+    timeline = []
+    for h in range(24):
+        timeline.append({
+            "hour": h,
+            "category": hour_cats[h],
+            "color": _cat_color(hour_cats[h]),
+            "tip": f"{h:02d}:00 {hour_cats[h]}",
+        })
+
+    # 7. sleep_data(给模板睡眠分析卡片用)
+    sleep_data = {
+        "total_records": len(sleep_records),
+        "main_sleep": (
+            {
+                "time_start": main_sleep["time_start"],
+                "time_end": main_sleep["time_end"],
+                "duration_minutes": int(main_sleep.get("duration_minutes") or 0),
+                "duration_text": _fmt_dur(int(main_sleep.get("duration_minutes") or 0)),
+                "category": main_sleep.get("category"),
+            }
+            if main_sleep else None
+        ),
+        "is_sufficient": (main_sleep.get("duration_minutes") or 0) >= 7 * 60 if main_sleep else False,
+    }
+
+    # 8. meta
+    payload = {
+        "meta": {
+            "mode": "record-report",
+            "date": date,
+            "record_count": len(records),
+            "total_minutes": int(total_minutes),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "summary_items": summary_items,
+        "timeline": timeline,
+        "sleep_data": sleep_data,
+        "highlights": [],   # 第 ③ 段默认空(本次不做 AI 叙事亮点)
+        "errors": [],
+    }
+
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {date} 作息记录渲染数据已生成({len(records)} 条,共 {total_minutes // 60}h{total_minutes % 60}m)",
+    }
+
+
 def render_and_write(payload: dict, output_path: Path = None) -> dict:
-    """渲染 + 写入文件,返回 {status, data:{file_path, ...}, message}"""
+    """渲染 + 写入文件,返回 {status, data:{file_path, bytes}, message}"""
     template_map = {
         "list-events": "schedule_list_events.html",
         "query-plans": "schedule_list_events.html",
+        "record-report": "schedule_record_report.html",
     }
     mode = payload.get("data", {}).get("meta", {}).get("mode", "list-events")
     template_name = template_map.get(mode)
@@ -373,5 +610,5 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
 
 if __name__ == "__main__":
     print("schedule_html_render.py — 渲染器模块")
-    print("用法: 由 schedule_cli.py 的 render-list-events / render-query-plans 调用")
+    print("用法: 由 schedule_cli.py 的 render-list-events / render-query-plans / render-record-report 调用")
     print("直接运行无副作用")

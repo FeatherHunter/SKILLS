@@ -579,11 +579,16 @@ def main(argv=None):
     elif cmd == "feishu-resync":
         cmd_feishu_resync(args)
 
-    # === 2026-07-23 新增：HTML 渲染模式(查日程/24h 概览 可视化) ===
+    # === 2026-07-23 新增:HTML 渲染模式(日程可视化) ===
     elif cmd == "render-list-events":
         cmd_render_list_events(args)
     elif cmd == "render-query-plans":
         cmd_render_query_plans(args)
+    # === end ===
+
+    # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
+    elif cmd == "render-record-report":
+        cmd_render_record_report(args)
     # === end ===
 
     # === 2026-07-22 新增：分类系统管理 ===

@@ -1,6 +1,6 @@
 ---
 name: 饼干记账
-description: 记账技能。写入类：记支出、记收入、拍账单。查询类：查今天、查日期、查范围、查分类、查最近、搜备注。分析类：看月度、看对比、看分类、看总览。统计类：做统计。
+description: 记账技能。写入类：记支出、记收入、拍账单。查询类：查今天、查日期、查范围、查分类、查最近、搜备注。分析类：看月度、看对比、看分类、看总览。统计类：做统计。**可视化（v2.2）：** 所有查询命令支持 `--json` flag，可通过 `scripts/bill_inject.py` 注入到 `templates/query_view.html` 生成可视化 HTML 页面。
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -323,6 +323,51 @@ python3 scripts/record_bill.py stats
 ✓ 已记录：餐饮 -35.00
 ```
 
+### Step 6：HTML 可视化查询（v2.2 新增）
+
+当用户希望"看更直观的页面"而不是看文字时，AI 可调用 `scripts/bill_inject.py` 把查询结果注入到 `templates/query_view.html`，生成可视化 HTML 文件并交付。
+
+**支持 9 种查询类型：**
+
+| 类型 | CLI 子命令 | 适用场景 |
+|---|---|---|
+| 今日摘要 | `summary` | 看今日收支 |
+| 列表 | `list` / `recent` / `search` | 看记录明细 |
+| 月度汇总 | `monthly` | 看月度分类排行 |
+| 周期对比 | `compare` | 本周 vs 上周 / 本月 vs 上月 |
+| 分类明细 | `breakdown` | 看各类支出占比（SVG 环形图） |
+| 收支总览 | `overview` | 看月度 4 个 KPI |
+| 记账统计 | `stats` | 看总笔数 / 天数 |
+
+**调用流程：**
+
+```bash
+# 1. 直接调 CLI（带 --json，遵循 {status, data, message} 契约）
+python3 scripts/record_bill.py summary --json
+python3 scripts/record_bill.py monthly --month 2026-07 --json
+
+# 2. 或用注入脚本（自动调 CLI + 注入 HTML 模板 + 输出文件）
+python3 scripts/bill_inject.py summary
+python3 scripts/bill_inject.py monthly --month 2026-07
+python3 scripts/bill_inject.py breakdown --from 2026-07-01 --to 2026-07-31
+python3 scripts/bill_inject.py compare --period week
+python3 scripts/bill_inject.py search "咖啡"
+```
+
+**默认输出路径**：`D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html`
+
+**指定输出路径**：`python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html`
+
+**交付给用户**：用 `<media src="..." type="file" />` 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。
+
+**模板特性**：
+- 单文件离线运行（无 CDN / 无 chart.js 依赖）
+- Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）
+- 自适应桌面 + 平板 + 手机
+- 5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线
+- SVG 环形图（breakdown 用）
+- 一键复制 ID 回 AI（每条记录含 ID）
+
 ---
 
 ## 命令行参考
@@ -333,15 +378,17 @@ python3 scripts/record_bill.py stats
 |--------|------|----------|----------|
 | `add` | 添加账单 | `--category`, `--amount` | `--time`, `--account`, `--ledger`, `--currency`, `--note` |
 | `update` | 修改账单 | `--id` (必需) | `--category`, `--amount`, `--time`, `--account`, `--ledger`, `--currency`, `--note`(至少传一个) |
-| `list` | 查询记录 | （无） | `--date`, `--from`+`--to`, `--category` |
-| `search` | 搜索备注 | `keyword`（位置参数） | （无） |
-| `summary` | 今日摘要 | （无） | （无） |
-| `monthly` | 月度汇总 | `--month` | （无） |
-| `compare` | 周期对比 | （无） | `--period` (week/month, 默认 week) |
-| `recent` | 最近N条 | （无） | `--limit` (默认 10) |
-| `breakdown` | 分类明细 | （无） | `--from`, `--to` |
-| `overview` | 收支总览 | （无） | `--month` (默认当月) |
-| `stats` | 记账统计 | （无） | （无） |
+| `list` | 查询记录 | （无） | `--date`, `--from`+`--to`, `--category`, **`--json`** |
+| `search` | 搜索备注 | `keyword`（位置参数） | **`--json`** |
+| `summary` | 今日摘要 | （无） | **`--json`** |
+| `monthly` | 月度汇总 | `--month` | **`--json`** |
+| `compare` | 周期对比 | （无） | `--period` (week/month, 默认 week), **`--json`** |
+| `recent` | 最近N条 | （无） | `--limit` (默认 10), **`--json`** |
+| `breakdown` | 分类明细 | （无） | `--from`, `--to`, **`--json`** |
+| `overview` | 收支总览 | （无） | `--month` (默认当月), **`--json`** |
+| `stats` | 记账统计 | （无） | **`--json`** |
+
+> **JSON 契约**：所有查询命令加 `--json` 后输出 `{status: "ok"|"error", data: {...}, message: "..."}` 三段式。`bill_inject.py` 用此契约注入 HTML 模板。写入类命令（add/update）不支持 `--json`，保持纯文本输出。
 
 ---
 

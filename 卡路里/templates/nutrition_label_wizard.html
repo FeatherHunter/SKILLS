@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>营养成分确认 · 卡路里</title>
+<style>
+/* ============================================================
+   Apple 设计语言 · G2 拍营养表 wizard
+   - 过程型 HTML（AI 协同模式 · 2 个复制按钮）
+   - 风格同 G1 保持一致
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+
+/* HERO */
+.hero{padding:32px 28px 28px;margin-bottom:20px}
+.hero .eyebrow{
+  font-size:13px;font-weight:600;
+  letter-spacing:.5px;color:var(--accent);
+  text-transform:uppercase;margin-bottom:8px;
+}
+.hero h1{
+  font-size:32px;font-weight:700;letter-spacing:-.4px;
+  color:var(--ink);margin-bottom:6px;line-height:1.2;
+}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.hero .pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:999px;
+  font-size:13px;font-weight:600;margin-top:12px;
+}
+.pill.warn{background:var(--orange-soft);color:var(--orange)}
+.pill.good{background:var(--green-soft);color:var(--green)}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* SECTION */
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.section .head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:18px;
+}
+.section .head h2{
+  font-size:17px;font-weight:600;letter-spacing:-.2px;
+}
+.section .head .hint{font-size:12px;color:var(--ink3)}
+
+/* FIELD GROUPS */
+.field-group{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:14px;
+}
+.field-group-single{
+  display:flex;flex-direction:column;gap:14px;
+}
+.field{
+  display:flex;flex-direction:column;gap:6px;
+}
+.field label{
+  font-size:12px;font-weight:600;color:var(--ink2);
+  display:flex;align-items:center;gap:6px;
+}
+.field label .req{
+  color:var(--red);font-size:11px;
+}
+.field label .hint-inline{
+  font-size:11px;color:var(--ink3);font-weight:400;
+}
+.field input[type="text"],.field input[type="number"],.field textarea{
+  width:100%;
+  font-family:inherit;
+  font-size:15px;color:var(--ink);
+  padding:10px 12px;
+  background:var(--bg-soft);
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  outline:none;
+  transition:all .15s ease;
+  -webkit-appearance:none;
+}
+.field input:focus,.field textarea:focus{
+  background:var(--card);
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+.field textarea{
+  resize:vertical;min-height:60px;font-family:inherit;
+}
+.field input.modified{
+  background:#fff7e6;border-color:#ffd591;
+}
+.field .unit{
+  position:absolute;right:12px;top:32px;
+  font-size:12px;color:var(--ink3);pointer-events:none;
+}
+.field-wrapper{position:relative}
+
+/* AI vs HUMAN DIFF */
+.diff-tag{
+  display:inline-block;font-size:10px;font-weight:600;
+  padding:1px 6px;border-radius:4px;margin-left:6px;
+  background:var(--orange-soft);color:var(--orange);
+}
+.diff-tag.ai{background:var(--bg-soft);color:var(--ink3)}
+
+/* AI EXTRACT BUTTON */
+.ai-extract{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent-soft);color:var(--accent);
+  padding:6px 12px;border-radius:999px;
+  font-size:13px;font-weight:600;margin-bottom:14px;
+  text-decoration:none;
+}
+.ai-extract:hover{background:rgba(0,122,255,.15)}
+
+/* COPY SECTION */
+.copy-section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.copy-section h2{
+  font-size:17px;font-weight:600;letter-spacing:-.2px;
+  margin-bottom:4px;
+}
+.copy-section .sub{
+  font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.55;
+}
+.btn-row{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
+}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:11px 18px;
+  border-radius:999px;font-size:14px;font-weight:600;
+  cursor:pointer;border:none;
+  transition:opacity .15s;
+  font-family:inherit;
+}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+
+.copy-preview{
+  background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  padding:14px 16px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono","Menlo",monospace;
+  font-size:12px;line-height:1.6;
+  color:var(--ink2);
+  white-space:pre-wrap;
+  word-break:break-word;
+  max-height:380px;
+  overflow-y:auto;
+  border:1px solid var(--lineS);
+}
+
+footer{
+  text-align:center;color:var(--ink3);
+  font-size:12px;padding-top:20px;
+  border-top:1px solid var(--lineS);margin-top:32px;
+}
+
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+}
+
+/* RESPONSIVE */
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
+  .hero h1{font-size:26px}
+  .section,.copy-section{padding:18px 20px}
+  .field-group{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow">卡路里 · 营养成分确认</div>
+  <h1 id="title">营养成分确认</h1>
+  <div class="sub" id="subtitle">AI 已识别图片 · 请核对字段</div>
+  <div id="statusPill"></div>
+</header>
+
+<!-- AI EXTRACT HINT -->
+<a class="ai-extract" id="aiExtractHint" href="javascript:void(0)">
+  <span>📸</span><span>查看原始 AI 输出 (mmx vision describe)</span>
+</a>
+
+<!-- 字段编辑 (13 个字段 · 分 4 组) -->
+<section class="section">
+  <div class="head">
+    <h2>基本信息</h2>
+    <span class="hint">必填 · 黄色背景表示已修改</span>
+  </div>
+  <div class="field-group">
+    <div class="field"><label>产品名 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="text" id="product_name" data-key="product_name" />
+    </div>
+    <div class="field"><label>品牌 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="text" id="brand" data-key="brand" />
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head">
+    <h2>营养成分 (每 100g)</h2>
+    <span class="hint">前 4 个必填</span>
+  </div>
+  <div class="field-group">
+    <div class="field field-wrapper"><label>热量 (kcal) <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="calories" data-key="calories" /><span class="unit">kcal</span>
+    </div>
+    <div class="field field-wrapper"><label>蛋白质 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="protein" data-key="protein" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>脂肪 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="fat" data-key="fat" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>饱和脂肪 <span class="hint-inline">选填</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="saturated_fat" data-key="saturated_fat" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>碳水 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="carbohydrates" data-key="carbohydrates" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>糖 <span class="hint-inline">选填</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="sugar" data-key="sugar" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>膳食纤维 <span class="hint-inline">选填</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="fiber" data-key="fiber" /><span class="unit">g</span>
+    </div>
+    <div class="field field-wrapper"><label>钠 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
+      <input type="number" step="0.1" id="sodium" data-key="sodium" /><span class="unit">mg</span>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head">
+    <h2>份量与备注</h2>
+    <span class="hint">选填</span>
+  </div>
+  <div class="field-group">
+    <div class="field"><label>每份大小 <span class="diff-tag ai">AI</span></label>
+      <input type="text" id="serving_size" data-key="serving_size" placeholder='如 "100g" 或 "30g 一勺"' />
+    </div>
+    <div class="field"><label>每包装份数 <span class="diff-tag ai">AI</span></label>
+      <input type="number" id="servings_per_container" data-key="servings_per_container" placeholder="如 12" />
+    </div>
+  </div>
+  <div class="field-group-single" style="margin-top:14px">
+    <div class="field"><label>备注 <span class="diff-tag ai">AI</span></label>
+      <textarea id="note" data-key="note" placeholder="数据来源 / 注意事项"></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- 复制区 (核心: 2 个复制按钮) -->
+<section class="copy-section">
+  <h2>确认后操作</h2>
+  <p class="sub">
+    HTML 不能自动与 AI 互动 · 请把下方文本复制后粘到 AI 对话框 · AI 会帮你执行存库命令。
+- <strong>采纳</strong> = 数据无误,接受 AI 提取的全部字段
+- <strong>复制修改</strong> = 你改了字段,让 AI 用修改后版本存
+  </p>
+  <div class="btn-row">
+    <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳保存(无修改)</button>
+    <button class="btn secondary" id="btnModify" onclick="copyModify()">📋 复制修改指令</button>
+    <button class="btn danger" onclick="resetEdits()">↺ 重置所有修改</button>
+  </div>
+  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容 · 编辑字段后此处会实时更新</div>
+</section>
+
+<footer>卡路里 Skill · 营养成分确认 · 2026-07-23 · G2</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+const AI_OUTPUT = (DATA && DATA.data && DATA.data.ai_output) || {};
+const SOURCE = (DATA && DATA.data && DATA.data.image_meta) || {};
+
+// 字段顺序 · 与 calorie_tracker add-product CLI 参数位置严格对应
+const FIELD_ORDER = [
+  'product_name', 'brand',
+  'calories', 'protein', 'fat', 'saturated_fat',
+  'carbohydrates', 'sugar', 'fiber', 'sodium',
+  'serving_size', 'servings_per_container', 'note'
+];
+
+// 必填字段
+const REQUIRED = new Set([
+  'product_name', 'brand', 'calories', 'protein',
+  'fat', 'carbohydrates', 'sodium'
+]);
+
+function renderHeader() {
+  const productName = AI_OUTPUT.product_name || '营养成分确认';
+  document.getElementById('title').textContent = productName;
+  document.getElementById('subtitle').textContent =
+    `AI 已识别图片 · ${SOURCE.filename || ''} · ${SOURCE.described_at || ''}`;
+
+  // 状态 pill
+  const pill = document.getElementById('statusPill');
+  const {filled, total, missing} = validateRequired();
+  if (missing.length === 0) {
+    pill.innerHTML = '<span class="pill good">必填字段已完整 · 可采纳或修改</span>';
+  } else {
+    pill.innerHTML = `<span class="pill warn">${missing.length} 个必填未填: ${missing.join(', ')}</span>`;
+  }
+}
+
+function validateRequired() {
+  const current = readForm();
+  const filled = FIELD_ORDER.filter(k => {
+    const v = current[k];
+    return v !== '' && v !== null && v !== undefined;
+  });
+  const missing = FIELD_ORDER.filter(k =>
+    REQUIRED.has(k) && (current[k] === '' || current[k] === null || current[k] === undefined)
+  );
+  return {filled, total: FIELD_ORDER.length, missing};
+}
+
+function readForm() {
+  const obj = {};
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    const raw = el.value;
+    if (el.type === 'number') {
+      obj[key] = raw === '' ? '' : Number(raw);
+    } else {
+      obj[key] = raw;
+    }
+  });
+  return obj;
+}
+
+function isModified(key) {
+  const current = document.querySelector(`[data-key="${key}"]`).value;
+  const original = AI_OUTPUT[key];
+  if (original === null || original === undefined) return current !== '' && current !== '';
+  return String(current).trim() !== String(original).trim();
+}
+
+function applyInitialValues() {
+  FIELD_ORDER.forEach(k => {
+    const el = document.querySelector(`[data-key="${k}"]`);
+    if (!el) return;
+    const v = AI_OUTPUT[k];
+    if (v !== null && v !== undefined) {
+      el.value = v;
+    }
+    el.addEventListener('input', onFieldChange);
+  });
+  onFieldChange();
+}
+
+function onFieldChange() {
+  // 给修改过的字段加视觉标记
+  FIELD_ORDER.forEach(k => {
+    const el = document.querySelector(`[data-key="${k}"]`);
+    if (!el) return;
+    if (isModified(k)) {
+      el.classList.add('modified');
+    } else {
+      el.classList.remove('modified');
+    }
+  });
+
+  // 更新 copy preview
+  const preview = buildPreviewText();
+  document.getElementById('copyPreview').textContent = preview;
+
+  // 更新状态 pill
+  const pill = document.getElementById('statusPill');
+  const {missing} = validateRequired();
+  if (missing.length === 0) {
+    pill.innerHTML = '<span class="pill good">必填字段已完整 · 可采纳或修改</span>';
+  } else {
+    pill.innerHTML = `<span class="pill warn">${missing.length} 个必填未填: ${missing.join(', ')}</span>`;
+  }
+}
+
+function resetEdits() {
+  FIELD_ORDER.forEach(k => {
+    const el = document.querySelector(`[data-key="${k}"]`);
+    if (!el) return;
+    const v = AI_OUTPUT[k];
+    el.value = (v !== null && v !== undefined) ? v : '';
+  });
+  onFieldChange();
+}
+
+// 构建 "采纳保存" prompt
+function buildAdoptPrompt() {
+  const current = readForm();
+  const fields = FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
+  const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
+  return `我刚用 AI 识别了一张营养成分表图片,数据已核对,无误。请帮我存入食品库:
+
+${fields}
+
+请执行:
+  ${cmd}
+
+数据来源: mmx vision describe(${SOURCE.filename || '?'} · ${SOURCE.described_at || '?'})`;
+}
+
+// 构建 "修改后复制" prompt (包含原值与修改值的 diff)
+function buildModifyPrompt() {
+  const current = readForm();
+  const modifiedKeys = FIELD_ORDER.filter(k => isModified(k));
+
+  if (modifiedKeys.length === 0) {
+    return buildAdoptPrompt() + '\n\n(实际上你没有修改任何字段,建议直接使用"采纳保存"按钮。)';
+  }
+
+  const originalLines = modifiedKeys.map(k =>
+    `原 ${displayLabel(k)}: ${formatVal(AI_OUTPUT[k])}`
+  ).join('\n');
+
+  const modifiedLines = modifiedKeys.map(k =>
+    `改为 ${displayLabel(k)}: ${formatVal(current[k])}`
+  ).join('\n');
+
+  const allFields = FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
+
+  const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
+
+  return `我刚用 AI 识别了一张营养成分表图片,识别有误,已手动修改。以下是修改差异:
+
+【原 AI 识别】(${modifiedKeys.length} 个字段)
+${originalLines}
+
+【已改为】
+${modifiedLines}
+
+【完整数据(以修改后为准)】
+${allFields}
+
+请执行:
+  ${cmd}
+
+数据来源: mmx vision describe(${SOURCE.filename || '?'} · ${SOURCE.described_at || '?'}) + 人工修订`;
+}
+
+// 预览 · 显示当前会复制的内容(采纳 / 修改二选一提示)
+function buildPreviewText() {
+  const current = readForm();
+  const modifiedKeys = FIELD_ORDER.filter(k => isModified(k));
+  if (modifiedKeys.length === 0) {
+    return `[预览 · 点击"采纳保存"复制此内容]\n\n` + buildAdoptPrompt();
+  } else {
+    return `[预览 · 当前已修改 ${modifiedKeys.length} 个字段,点击"复制修改指令"复制完整 diff]\n\n` + buildModifyPrompt();
+  }
+}
+
+function displayLabel(key) {
+  const labels = {
+    product_name: '产品名',
+    brand: '品牌',
+    calories: '热量 (kcal/100g)',
+    protein: '蛋白质 (g/100g)',
+    fat: '脂肪 (g/100g)',
+    saturated_fat: '饱和脂肪 (g/100g)',
+    carbohydrates: '碳水 (g/100g)',
+    sugar: '糖 (g/100g)',
+    fiber: '膳食纤维 (g/100g)',
+    sodium: '钠 (mg/100g)',
+    serving_size: '每份大小',
+    servings_per_container: '每包装份数',
+    note: '备注',
+  };
+  return labels[key] || key;
+}
+
+function formatVal(v) {
+  if (v === '' || v === null || v === undefined) return '(空)';
+  return String(v);
+}
+
+function copyAdopt() {
+  const text = buildAdoptPrompt();
+  doCopy(text, 'btnAdopt', '✓ 已采纳 · 复制成功');
+}
+
+function copyModify() {
+  const text = buildModifyPrompt();
+  doCopy(text, 'btnModify', '✓ 已复制修改指令');
+}
+
+function doCopy(text, btnId, successMsg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, successMsg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flashCopied(btnId, successMsg); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId, msg) {
+  const btn = document.getElementById(btnId);
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.classList.remove('copied');
+  }, 2200);
+}
+
+function render() {
+  if (!DATA) {
+    document.getElementById('title').textContent = '❌ 数据加载失败';
+    document.getElementById('subtitle').textContent = 'window.__DATA__ 缺失';
+    return;
+  }
+  renderHeader();
+  applyInitialValues();
+}
+
+render();
+</script>
+</body>
+</html>

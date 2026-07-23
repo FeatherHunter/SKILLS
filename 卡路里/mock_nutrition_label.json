@@ -1,0 +1,22 @@
+{
+  "image_meta": {
+    "filename": "oats_label.jpg",
+    "source": "mmx vision describe",
+    "described_at": "2026-07-23 20:00"
+  },
+  "ai_output": {
+    "product_name": "某品牌 即食燕麦片",
+    "brand": "某品牌",
+    "calories": 379,
+    "protein": 13.5,
+    "fat": 6.5,
+    "saturated_fat": 1.2,
+    "carbohydrates": 67.5,
+    "sugar": 1.5,
+    "fiber": 10.0,
+    "sodium": 5,
+    "serving_size": "100g",
+    "servings_per_container": null,
+    "note": ""
+  }
+}

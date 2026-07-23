@@ -62,9 +62,16 @@ return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.count)+'</td><td><div class="bar
 }).join('');
 const catRows=categories.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.count||0)+'</td><td>'+esc(c.total_value||'-')+'</td></tr>').join('');
 const itemRows=items.map(it=>'<tr><td>'+esc(it.id)+'</td><td>'+esc(it.name||'')+'</td><td>'+esc(it.category_id||'-')+'</td><td>'+esc(it.access_count||0)+'</td><td>'+esc(it.last_accessed_at||'从未')+'</td></tr>').join('');
+const topItems=items.slice().sort((a,b)=>(b.access_count||0)-(a.access_count||0)).slice(0,10);
+const maxAccess=topItems[0]?(topItems[0].access_count||1):1;
+const topRows=topItems.map(it=>{
+const pct=Math.round((it.access_count||0)*100/maxAccess);
+return '<tr><td>'+esc(it.id)+'</td><td>'+esc(it.name||'')+'</td><td>'+(it.access_count||0)+'</td><td><div class="bar"><span style="width:'+pct+'%"></span></div></td></tr>';
+}).join('');
 app.innerHTML=`
 <section><h2>状态分布</h2>${statuses.length?'<table><thead><tr><th>状态</th><th>数量</th><th>占比</th></tr></thead><tbody>'+statusRows+'</tbody></table>':'<p style="color:#86868b">无状态数据</p>'}</section>
 <section><h2>分类分布</h2>${categories.length?'<table><thead><tr><th>分类</th><th>数量</th><th>总价值</th></tr></thead><tbody>'+catRows+'</tbody></table>':'<p style="color:#86868b">无分类数据</p>'}</section>
+<section><h2>访问频次 TOP 10</h2>${topItems.length?'<table><thead><tr><th>ID</th><th>名称</th><th>访问</th><th>占比</th></tr></thead><tbody>'+topRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
 <section><h2>物品列表</h2>${items.length?'<table><thead><tr><th>ID</th><th>名称</th><th>分类</th><th>访问</th><th>最后访问</th></tr></thead><tbody>'+itemRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
 `;
 }

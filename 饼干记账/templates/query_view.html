@@ -38,7 +38,9 @@
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   .kpi { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
   .kpi .label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
-  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .value.compact { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .kpi .value.tiny { font-size: 14px; font-weight: 600; letter-spacing: 0; }
   .kpi .unit { font-size: 13px; color: var(--fg2); font-weight: 400; margin-left: 4px; }
   .kpi.blue .value { color: var(--blue); }
   .kpi.green .value { color: var(--green); }
@@ -137,7 +139,15 @@
   const fmtMoney = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtPct = (n) => (Math.round((n || 0) * 10) / 10).toFixed(1) + '%';
   const escapeHTML = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const timeShort = (t) => (t || '').replace(/^(\d{4})-(\d{2})-(\d{2})(.*)$/, (_, y, m, d, rest) => `${m}/${d}${rest ? ' ' + rest.trim() : ''}`);
+  const CURRENT_YEAR = new Date().getFullYear();
+  const timeShort = (t) => {
+    const s = t || '';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+    if (!m) return s;
+    const [, y, mo, d, rest] = m;
+    const trim = rest ? ' ' + rest.trim() : '';
+    return (parseInt(y) !== CURRENT_YEAR) ? `${y}/${mo}/${d}${trim}` : `${mo}/${d}${trim}`;
+  };
 
   // 配色（环形图 + 占比条）
   const PALETTE = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5ac8fa', '#ffcc00', '#8e8e93', '#ff2d55', '#5856d6'];
@@ -305,7 +315,7 @@
       <div class="kpi-grid" style="margin-bottom:14px;">
         ${kpiCard('总支出', fmtMoney(total), '元', 'red')}
         ${kpiCard('分类数', cats.length, '个', 'blue')}
-        ${kpiCard('期间', (data.from || '-') + ' ~ ' + (data.to || '-'), '', 'purple')}
+        ${kpiCard('期间', (data.from || '-') + ' ~ ' + (data.to || '-'), '', 'purple', 'compact')}
       </div>
       ${cats.length ? `
         <div class="card">
@@ -351,17 +361,18 @@
       <div class="kpi-grid">
         ${kpiCard('总笔数', data.total_records || 0, '笔', 'blue')}
         ${kpiCard('记账天数', data.total_days || 0, '天', 'purple')}
-        ${kpiCard('首笔时间', data.first_record ? timeShort(data.first_record) : '-', '', 'orange')}
-        ${kpiCard('最近记录', data.last_record ? timeShort(data.last_record) : '-', '', 'green')}
+        ${kpiCard('首笔时间', data.first_record ? timeShort(data.first_record) : '-', '', 'orange', 'tiny')}
+        ${kpiCard('最近记录', data.last_record ? timeShort(data.last_record) : '-', '', 'green', 'tiny')}
       </div>
     `;
   }
 
   // ── 组件：KPI 卡 ─────────────────────────────────────────
-  function kpiCard(label, value, unit, color) {
+  function kpiCard(label, value, unit, color, size) {
+    const sizeClass = (size === 'tiny') ? 'tiny' : (size === 'compact') ? 'compact' : '';
     return `<div class="kpi ${color || ''}">
       <div class="label">${escapeHTML(label)}</div>
-      <div class="value">${escapeHTML(value)}${unit ? `<span class="unit">${escapeHTML(unit)}</span>` : ''}</div>
+      <div class="value ${sizeClass}">${escapeHTML(value)}${unit ? `<span class="unit">${escapeHTML(unit)}</span>` : ''}</div>
     </div>`;
   }
 

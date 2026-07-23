@@ -548,62 +548,74 @@ python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.ht
 | 程序化 JSON 调用 | `list-events` 的 JSON 输出（脚本化） |
 | 单事件精确查重（带标题） | `search-plan-event`（轻量，保留 JSON） |
 
-#### 3.1.2 HTML 输出命名规则（2026-07-23 新增 · 路径规范）
+#### 3.1.2 HTML 输出命名规则（2026-07-23 重写 · SKILLS_DB_PATH 硬绑 · 5 模板 5 子目录）
 
-**核心原则**：按 **域 / 模式 / 日期** 三维度分目录，HTML 不与文本 CLI 输出混存。
+**核心原则**：按 **域 / 模式 / 日期** 三维度分目录，HTML 输出**硬绑 `SKILLS_DB_PATH`**（不传 `--out`），不与文本 CLI 输出混存。
 
 ```
-作息管家/
-└─ reports/
-   ├─ record/                              ← 作息记录域(已有,历史作息报告)
-   │  └─ YYYY-MM-DD.html                  ← 单日报告(历史命名保留)
-   └─ plan/                                ← 日程计划域(新增)
-      ├─ list/
-      │  └─ plan_list_YYYY-MM-DD.html      ← render-list-events 单日输出
-      └─ query/
-         ├─ plan_query_YYYY-MM-DD.html                 ← render-query-plans 单日
-         └─ plan_query_YYYY-MM-DD_to_YYYY-MM-DD.html   ← render-query-plans 多日
+$SKILLS_DB_PATH/schedule_html/
+├─ record/                                ← 作息记录域(record-*)
+│  ├─ day/
+│  │  └─ plan_list_2026-07-15.html
+│  ├─ range/
+│  │  └─ plan_query_2026-07-13_to_2026-07-15.html
+│  ├─ compare/
+│  │  └─ <labelA>_vs_<labelB>_record_compare.html
+│  ├─ category/
+│  │  └─ <cat>_<start>_to_<end>_record_category.html
+│  └─ anomaly/
+│     └─ <today>_w7_record_anomaly.html
+└─ plan/                                  ← 日程计划域(plan-*)
+   ├─ list/
+   │  └─ plan_list_2026-07-15.html
+   └─ query/
+      └─ plan_query_2026-07-13_to_2026-07-15.html
 ```
 
 **命名细则**：
 
 | 路径段 | 取值 | 来源 |
 |---|---|---|
-| `record/` | 域=`record` | `schedule_records` 表(作息记录) |
-| `plan/` | 域=`plan` | `schedule_plans` 表(日程计划) |
-| `list/` 或 `query/` | 模式 | `list-events`(单日完整) / `query-plans`(多日聚合) |
-| `plan_list_/plan_query_` | 文件名前缀 | 强制 `plan_` 前缀,与表名 `schedule_plans` 对齐 |
+| `record/` 或 `plan/` | 域 | `record` 对应 `schedule_records`,`plan` 对应 `schedule_plans` |
+| `day/` `range/` `compare/` `category/` `anomaly/` | 子目录 | record 域 5 个 mode(子目录) |
+| `list/` `query/` | 子目录 | plan 域 2 个 mode(子目录) |
+| `plan_list_/plan_query_/record_day_/...` | 文件名前缀 | 与表名对齐(`plan_` for schedule_plans,无前缀 for schedule_records) |
 | `YYYY-MM-DD[_to_YYYY-MM-DD]` | 日期段 | 单日 / 区间(`_to_` 分隔) |
-| `.html` | 扩展名 | 单文件自包含,无外部依赖 |
+| `.html` | 扩展名 | 单文件自包含 + 共享 CSS/JS 引擎自动复制 |
 
 **互斥规则**：
-- `record/` 域 → 禁止出现 `plan_list_/plan_query_` 前缀（互斥）
-- `plan/list/` 模式 → 禁止出现 `YYYY-MM-DD_to_*` 多日文件名（互斥）
-- `plan/query/` 模式 → 单日与多日文件名都用 `plan_query_` 前缀（不同区间形式区分）
+- `record/` 域 → 禁止出现 `plan_list_/plan_query_` 前缀(互斥)
+- `plan/list/` 模式 → 禁止出现 `YYYY-MM-DD_to_*` 多日文件名(互斥)
+- `record/day/` 模式 → 禁止出现 `YYYY-MM-DD_to_*` 多日文件名(互斥)
+- `record/range/` 模式 → 文件名必须含 `_to_`(单日退化为 `start==end` 形式)
 
-**自动同步历史记录**：2026-07-23 把 23 个旧 `reports/*.html`（作息报告）迁入 `reports/record/`，文件名不变（YYYY-MM-DD.html）。
+**约束**：
+- 输出目录**必须已存在**(子目录 day/range/compare/category/anomaly + plan/list/query),**不静默创建**
+- 错误文案带字段名 + 当前值 + 期望值 + 修复建议
+- 同日期/区间覆盖写(用户主动调就期望刷新)
+- 模板按 `meta.mode` 分发,缺 key 报错清晰(MODE_HANDLERS 字典)
 
-**自定义输出路径**：用户传 `--out PATH` 时，整路径覆盖上述规则（用于 CI/测试场景）。
+**自定义输出路径**：**不支持 `--out` 标志**(commit 5710525 决定)。用户需要把 HTML 落到非默认位置时,自己 `mv` 文件,或在 `SKILLS_DB_PATH` 环境变量里覆盖默认值。
 
 **示例**：
 ```bash
-# 默认路径:reports/plan/list/plan_list_2026-07-15.html
-python scripts/schedule_cli.py render-list-events 2026-07-15
+# 单日 → $SKILLS_DB_PATH/schedule_html/record/day/2026-07-15_record_day.html
+python scripts/schedule_cli.py render-record-day 2026-07-15
 
-# 自定义路径（绕过命名规则,仅测试用）
-python scripts/schedule_cli.py render-list-events 2026-07-15 --out /tmp/test.html
+# 区间 → record/range/2026-07-13_to_2026-07-19_record_range.html
+python scripts/schedule_cli.py render-record-range 2026-07-13 2026-07-19
 
-# 多日 → reports/plan/query/plan_query_2026-07-13_to_2026-07-15.html
-python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15
+# 对比 → record/compare/2026年6月_vs_2026年7月_record_compare.html
+python scripts/schedule_cli.py render-record-compare-months 2026-06 2026-07
+
+# 类别深挖 → record/category/健身_2026-07-01_to_2026-07-31_record_category.html
+python scripts/schedule_cli.py render-record-category-range 2026-07-01 2026-07-31 健身
+
+# 异常检测 → record/anomaly/2026-07-23_w7_record_anomaly.html
+python scripts/schedule_cli.py render-record-anomaly --window 7
 ```
 
-**特点**:
-- 一次看全 DB 状态 + 飞书同步状态
-- `feishu_event_id` 为 `-` → 该事件未同步过飞书
-- `✗` 前缀 = 已软删项
-- 末尾汇总:活跃 N 条 / 停用 N 条
-
-> 备注:本节合并了原"7. 看计划"小节,语义统一在"查询日程"下。
+> 备注:本节于 2026-07-23 重写,合并原 plan 域命名 + record 域 5 模板 5 子目录。上一版本写到 `作息管家/reports/`(用户已主动删除该目录)。
 
 ---
 

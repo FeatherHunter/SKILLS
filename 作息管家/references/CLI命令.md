@@ -204,3 +204,123 @@ $ schedule_cli.py update-event 504 --notes "上午专攻 AQS"
 ```bash
 python3 scripts/schedule_cli.py help
 ```
+
+---
+
+## 九、HTML 渲染命令(2026-07-23 新增 · 5 模板 8 命令)
+
+> **所有命令输出文件硬绑到 `SKILLS_DB_PATH/schedule_html/record/{子目录}/...`,不传 `--out`。**
+> 详细架构设计: `SKILL.md §3.1.2` + `templates/_record_styles.css` + `templates/_record_engine.js`。
+> 触发词路由: `SKILL.md §3.x` 表格。
+
+### 1. `render-record-day <日期>` (T1 单日报告)
+
+```bash
+python3 scripts/schedule_cli.py render-record-day 2026-07-15
+```
+
+**输出**:`$SKILLS_DB_PATH/schedule_html/record/day/2026-07-15_record_day.html`
+
+**4 段视觉**:首屏 4 卡摘要(总时长/分类数/健康分/睡眠) + 分类进度条 + 24h 时间轴 + 睡眠分析 + AI 思考钩子卡。
+
+**触发词**:"查作息 2026-07-15" / "昨天我做了什么" / "今天看看"
+
+### 2. `render-record-range <开始> <结束>` (T2 区间报告)
+
+```bash
+python3 scripts/schedule_cli.py render-record-range 2026-07-13 2026-07-19
+```
+
+**输出**:`record/range/2026-07-13_to_2026-07-19_record_range.html`
+
+**4 段视觉**:首屏 4 卡摘要(区间天数/总记录数/区间健康分/总睡眠) + 分类进度 + **7 维趋势折线 SVG** + AI 钩子。
+
+**触发词**:"这一周怎么样" / "最近 7 天看看"
+
+### 3. `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` (T3 对比)
+
+```bash
+python3 scripts/schedule_cli.py render-record-compare 6月 2026-06-01 2026-06-30 7月 2026-07-01 2026-07-31
+```
+
+**输出**:`record/compare/<labelA>_vs_<labelB>_record_compare.html`
+
+**4 段视觉**:首屏 4 卡对比(标签 A/B + 时长差/总分钟差) + **7 维并排差异柱** + AI 钩子。
+
+### 4. `render-record-compare-months <YYYY-MM> <YYYY-MM>` (T3 简写)
+
+```bash
+python3 scripts/schedule_cli.py render-record-compare-months 2026-06 2026-07
+```
+
+**输出**:`record/compare/2026年6月_vs_2026年7月_record_compare.html`
+
+整月自动展开为 `YYYY-MM-01 ~ YYYY-MM+1-01`,等效 `render-record-compare` 调用。
+
+### 5. `render-record-category <日期> <category>` (T4 单日单类)
+
+```bash
+python3 scripts/schedule_cli.py render-record-category 2026-07-15 健身
+```
+
+**输出**:`record/category/<cat>_<date>_to_<date>_record_category.html`
+
+**触发词**:"7/15 健身什么时候做的"
+
+### 6. `render-record-category-range <开始> <结束> <category>` (T4 区间单类)
+
+```bash
+python3 scripts/schedule_cli.py render-record-category-range 2026-07-01 2026-07-31 健身
+```
+
+**输出**:`record/category/<cat>_<start>_to_<end>_record_category.html`
+
+**核心视觉**:**24h × N 天热力图** — 行为模式感知(如"上午+傍晚双峰健身")。
+
+### 7. `render-record-anomaly [--window N]` (T5 异常检测)
+
+```bash
+# 默认 7 天窗口
+python3 scripts/schedule_cli.py render-record-anomaly
+# 自定义窗口
+python3 scripts/schedule_cli.py render-record-anomaly --window 14
+```
+
+**输出**:`record/anomaly/<today>_w<N>_record_anomaly.html`
+
+**核心视觉**:**7 维雷达 SVG**(蓝=当前 / 灰=基线 30 天) + 红/黄框异常详情 + AI 钩子。
+
+**触发词**:"最近状态" / "有没有异常"
+
+### 8. `render-record-report <日期>` (兼容旧命令)
+
+```bash
+python3 scripts/schedule_cli.py render-record-report 2026-07-15
+```
+
+**等价于** `render-record-day`,保留命令避免破坏现有调用方。**输出**:`record/day/2026-07-15_record_day.html`
+
+### 错误处理
+
+所有命令**目录不存在时报错退出**,错误文案带字段名 + 当前值 + 期望值 + 修复建议:
+
+```json
+{
+  "status": "error",
+  "message": "HTML 输出目录不存在: 字段 record_dir(派生自环境变量 SKILLS_DB_PATH),当前值 D:\\.db\\schedule_html\\record,期望 SKILLS_DB_PATH/schedule_html/record/ 存在,建议: mkdir -p D:\\.db\\schedule_html\\record 或检查 SKILLS_DB_PATH 环境变量"
+}
+```
+
+### 触发词路由表(AI 协同时查此表)
+
+| 用户说 | 调 |
+|---|---|
+| 查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 昨天我做了什么 | `render-record-day <date>` |
+| 这一周 / 最近 7 天 / 7/13~7/19 看看 | `render-record-range <start> <end>` |
+| 6 月 vs 7 月 / 整月对比 | `render-record-compare-months 2026-06 2026-07` |
+| 这周 vs 上周 / 这月 vs 上月 / 两段时间对比 | `render-record-compare <labelA> ... <labelB> ...` |
+| 健身习惯 / 健身什么时候做的 / 健身频次 | `render-record-category-range <start> <end> <category>` |
+| 7/15 健身时段分布(单日) | `render-record-category <date> <category>` |
+| 最近状态 / 有没有异常 / 异常检测 | `render-record-anomaly --window 7` |
+| 兼容旧调用 | `render-record-report <date>` |
+

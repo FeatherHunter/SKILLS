@@ -121,6 +121,73 @@ def fmt_pct(part: int, whole: int) -> float:
     return round(part / whole * 100, 1)
 
 
+# ===== 17 维业务派生(2026-07-23 C2 修复:从历史 _render_report_*.py 抄回)=====
+# 一级业务维度的集合派生(覆盖健康/工作/学习/休闲等所有"维")
+# 用于 5 模板的数据洞察卡(替代原 12 维洞察丢失)
+
+CATEGORY_GROUPS = {
+    "sleep":   ["睡眠"],
+    "meal":    ["餐饮", "做饭", "饮食", "饮食记录"],
+    "work":    ["工作"],
+    "commute": ["通勤"],
+    "study":   ["学习"],
+    "leisure": ["休闲", "休息"],
+    "entertainment": ["娱乐", "游戏", "手机"],
+    "social":  ["社交"],
+    "wash":    ["洗漱", "起居"],
+    "exercise":["健身", "运动", "修行", "八段锦"],
+    "home":    ["家务", "采购", "护肤", "起居"],
+    "hobby":   ["兴趣爱好", "创作", "SOP", "起居", "工作·AI 配置"],
+    "health":  ["健康", "就医", "康复", "保健"],
+    "plan":    ["计划"],
+    "rest":    ["休息", "调整", "过渡"],
+    "routine": ["日常", "起居", "系统"],
+    "creative":["创作", "SOP", "文字", "视频", "音频", "设计", "编程", "菜谱", "教学"],
+}
+
+
+def filter_by_group(records: list[dict], group_name: str) -> list[dict]:
+    """按业务维度 group 过滤记录(cat 或 l1 在组里)"""
+    if group_name not in CATEGORY_GROUPS:
+        return []
+    targets = CATEGORY_GROUPS[group_name]
+    return [r for r in records if r.get("category", "") in targets or l1_of(r.get("category", "")) in targets]
+
+
+def category_insights(records: list[dict]) -> dict[str, dict]:
+    """返回 17 维业务派生的统计(主键/总时长/段数/峰值段)
+    用于模板"分类深挖"卡 / 重点段位提示
+    """
+    out = {}
+    for group_name in CATEGORY_GROUPS:
+        group_recs = filter_by_group(records, group_name)
+        total = sum(r.get("duration_minutes") or 0 for r in group_recs)
+        # 峰值段:同 cat 的最长段
+        peak = max(group_recs, key=lambda r: r.get("duration_minutes") or 0) if group_recs else None
+        out[group_name] = {
+            "count": len(group_recs),
+            "total_minutes": total,
+            "duration_text": fmt_dur(total),
+            "peak": (
+                {
+                    "category": peak["category"],
+                    "time_start": peak["time_start"],
+                    "time_end": peak["time_end"],
+                    "duration_minutes": int(peak.get("duration_minutes") or 0),
+                    "duration_text": fmt_dur(int(peak.get("duration_minutes") or 0)),
+                }
+                if peak else None
+            ),
+        }
+    return out
+
+
+def top_groups(records: list[dict], n: int = 5) -> list[tuple[str, int]]:
+    """返回 top N 业务维度的 (group_name, total_minutes) 元组列表"""
+    ins = category_insights(records)
+    return sorted(ins.items(), key=lambda x: -x[1]["total_minutes"])[:n]
+
+
 def hhmm_to_min(hhmm: str) -> int:
     if not hhmm:
         return 0

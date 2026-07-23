@@ -1,0 +1,171 @@
+{
+  "summary": {
+    "plan_title": "8 周增肌计划",
+    "version": "v14.5",
+    "total_weeks": 8,
+    "total_sessions": 64,
+    "total_sets": 1024,
+    "estimated_hours": 80,
+    "created_at": "2026-07-23"
+  },
+  "preferences": {
+    "weeks": 8,
+    "days_per_week": 4,
+    "sessions_per_day": 3,
+    "session_minutes": 60,
+    "primary_parts": ["胸", "背", "腿", "肩"],
+    "split_type": "推/拉/腿",
+    "equipment": ["哑铃", "杠铃", "龙门架"]
+  },
+  "movements_catalog": {
+    "胸": ["杠铃卧推", "哑铃飞鸟", "上斜哑铃推举", "龙门架夹胸"],
+    "背": ["引体向上", "高位下拉", "杠铃划船", "哑铃单臂划船"],
+    "腿": ["深蹲", "罗马尼亚硬拉", "腿举", "弓步蹲"],
+    "肩": ["哑铃推举", "侧平举", "面拉", "俯身飞鸟"],
+    "臂": ["二头弯举", "三头下压", "锤式弯举"]
+  },
+  "weeks": [
+    {
+      "week_number": 1,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·胸", "time_start": "07:00", "time_end": "08:00", "total_sets": 16,
+           "movements": [
+             {"name": "杠铃卧推", "part": "胸", "sets": 4, "reps": "8-12", "weight": "60kg", "rest": "90s"},
+             {"name": "上斜哑铃推举", "part": "胸", "sets": 4, "reps": "8-12", "weight": "22.5kg", "rest": "90s"},
+             {"name": "龙门架夹胸", "part": "胸", "sets": 4, "reps": "12-15", "weight": "25kg", "rest": "60s"},
+             {"name": "哑铃飞鸟", "part": "胸", "sets": 4, "reps": "12-15", "weight": "10kg", "rest": "60s"}
+           ]},
+          {"session_label": "下午·背", "time_start": "17:00", "time_end": "18:00", "total_sets": 14,
+           "movements": [
+             {"name": "引体向上", "part": "背", "sets": 4, "reps": "8-10", "weight": "自重", "rest": "90s"},
+             {"name": "高位下拉", "part": "背", "sets": 4, "reps": "10-12", "weight": "40kg", "rest": "75s"},
+             {"name": "杠铃划船", "part": "背", "sets": 3, "reps": "10-12", "weight": "40kg", "rest": "75s"},
+             {"name": "哑铃单臂划船", "part": "背", "sets": 3, "reps": "10-12", "weight": "20kg", "rest": "60s"}
+           ]}
+          ]},
+        {"day_of_week": 2, "day_label": "周二", "sessions": [
+          {"session_label": "上午·腿", "time_start": "07:00", "time_end": "08:00", "total_sets": 16,
+           "movements": [
+             {"name": "深蹲", "part": "腿", "sets": 4, "reps": "8-10", "weight": "80kg", "rest": "120s"},
+             {"name": "罗马尼亚硬拉", "part": "腿", "sets": 4, "reps": "10-12", "weight": "60kg", "rest": "90s"},
+             {"name": "腿举", "part": "腿", "sets": 4, "reps": "12-15", "weight": "100kg", "rest": "60s"},
+             {"name": "弓步蹲", "part": "腿", "sets": 4, "reps": "12-15", "weight": "12kg", "rest": "60s"}
+           ]}
+          ]},
+        {"day_of_week": 3, "day_label": "周三", "sessions": []},
+        {"day_of_week": 4, "day_label": "周四", "sessions": [
+          {"session_label": "上午·肩", "time_start": "07:00", "time_end": "08:00", "total_sets": 14,
+           "movements": [
+             {"name": "哑铃推举", "part": "肩", "sets": 4, "reps": "8-12", "weight": "12kg", "rest": "90s"},
+             {"name": "侧平举", "part": "肩", "sets": 4, "reps": "12-15", "weight": "6kg", "rest": "60s"},
+             {"name": "面拉", "part": "肩", "sets": 3, "reps": "12-15", "weight": "20kg", "rest": "60s"},
+             {"name": "俯身飞鸟", "part": "肩", "sets": 3, "reps": "12-15", "weight": "5kg", "rest": "60s"}
+           ]}
+          ]},
+        {"day_of_week": 5, "day_label": "周五", "sessions": []},
+        {"day_of_week": 6, "day_label": "周六", "sessions": []},
+        {"day_of_week": 7, "day_label": "周日", "sessions": []}
+      ]
+    },
+    {
+      "week_number": 2,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·胸(三角度渐进)", "time_start": "07:00", "time_end": "08:00", "total_sets": 16,
+           "movements": [
+             {"name": "杠铃卧推", "part": "胸", "sets": 4, "reps": "8-12", "weight": "62.5kg", "rest": "90s"},
+             {"name": "上斜哑铃推举", "part": "胸", "sets": 4, "reps": "8-12", "weight": "25kg", "rest": "90s"},
+             {"name": "龙门架夹胸", "part": "胸", "sets": 4, "reps": "12-15", "weight": "27.5kg", "rest": "60s"},
+             {"name": "哑铃飞鸟", "part": "胸", "sets": 4, "reps": "12-15", "weight": "10kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 3,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·背+臂 (二头)", "time_start": "07:00", "time_end": "08:00", "total_sets": 16,
+           "movements": [
+             {"name": "引体向上", "part": "背", "sets": 4, "reps": "8-10", "weight": "自重+10kg", "rest": "90s"},
+             {"name": "高位下拉", "part": "背", "sets": 4, "reps": "10-12", "weight": "45kg", "rest": "75s"},
+             {"name": "哑铃弯举", "part": "臂", "sets": 4, "reps": "10-12", "weight": "12kg", "rest": "60s"},
+             {"name": "锤式弯举", "part": "臂", "sets": 4, "reps": "10-12", "weight": "12kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 4,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·胸 (高量)", "time_start": "07:00", "time_end": "08:00", "total_sets": 18,
+           "movements": [
+             {"name": "杠铃卧推", "part": "胸", "sets": 5, "reps": "8-12", "weight": "65kg", "rest": "90s"},
+             {"name": "上斜哑铃推举", "part": "胸", "sets": 5, "reps": "8-12", "weight": "27.5kg", "rest": "90s"},
+             {"name": "龙门架夹胸", "part": "胸", "sets": 4, "reps": "12-15", "weight": "27.5kg", "rest": "60s"},
+             {"name": "哑铃飞鸟", "part": "胸", "sets": 4, "reps": "12-15", "weight": "10kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 5,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·背+臂(三头)", "time_start": "07:00", "time_end": "08:00", "total_sets": 14,
+           "movements": [
+             {"name": "杠铃划船", "part": "背", "sets": 4, "reps": "8-10", "weight": "50kg", "rest": "90s"},
+             {"name": "哑铃单臂划船", "part": "背", "sets": 4, "reps": "10-12", "weight": "22.5kg", "rest": "60s"},
+             {"name": "三头下压", "part": "臂", "sets": 3, "reps": "12-15", "weight": "20kg", "rest": "60s"},
+             {"name": "面拉", "part": "肩", "sets": 3, "reps": "12-15", "weight": "22.5kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 6,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·腿 (Deload)", "time_start": "07:00", "time_end": "08:00", "total_sets": 12,
+           "movements": [
+             {"name": "深蹲", "part": "腿", "sets": 3, "reps": "8-10", "weight": "70kg", "rest": "120s"},
+             {"name": "腿举", "part": "腿", "sets": 3, "reps": "12-15", "weight": "90kg", "rest": "60s"},
+             {"name": "罗马尼亚硬拉", "part": "腿", "sets": 3, "reps": "10-12", "weight": "55kg", "rest": "90s"},
+             {"name": "弓步蹲", "part": "腿", "sets": 3, "reps": "12-15", "weight": "10kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 7,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·胸 (高峰强度)", "time_start": "07:00", "time_end": "08:00", "total_sets": 16,
+           "movements": [
+             {"name": "杠铃卧推", "part": "胸", "sets": 5, "reps": "6-8", "weight": "75kg", "rest": "120s"},
+             {"name": "上斜哑铃推举", "part": "胸", "sets": 4, "reps": "8-10", "weight": "30kg", "rest": "90s"},
+             {"name": "龙门架夹胸", "part": "胸", "sets": 4, "reps": "10-12", "weight": "30kg", "rest": "60s"},
+             {"name": "哑铃飞鸟", "part": "胸", "sets": 3, "reps": "10-12", "weight": "12.5kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    },
+    {
+      "week_number": 8,
+      "days": [
+        {"day_of_week": 1, "day_label": "周一", "sessions": [
+          {"session_label": "上午·综合 (测试周)", "time_start": "07:00", "time_end": "08:00", "total_sets": 14,
+           "movements": [
+             {"name": "杠铃卧推", "part": "胸", "sets": 3, "reps": "5-8", "weight": "70kg", "rest": "120s"},
+             {"name": "深蹲", "part": "腿", "sets": 3, "reps": "5-8", "weight": "85kg", "rest": "120s"},
+             {"name": "引体向上", "part": "背", "sets": 3, "reps": "8-10", "weight": "自重+15kg", "rest": "90s"},
+             {"name": "哑铃推举", "part": "肩", "sets": 3, "reps": "8-10", "weight": "15kg", "rest": "90s"},
+             {"name": "二头弯举", "part": "臂", "sets": 3, "reps": "10-12", "weight": "12.5kg", "rest": "60s"}
+           ]}
+          ]}
+        ]
+    }
+  ]
+}

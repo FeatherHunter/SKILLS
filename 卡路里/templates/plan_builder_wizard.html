@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>健身计划预览 · 卡路里</title>
+<style>
+/* ============================================================
+   Apple 设计语言 · G6 健身计划预览 wizard
+   - 时间线 + 6 信息层级(计划→周→日→时段→动作)
+   - 部位色板(7 色 push/pull/legs 分组,延续 workout_plan)
+   - 过程型 HTML · AI 协同 3 复制按钮
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --gray:#8e8e93;
+  --gray-soft:rgba(142,142,147,.10);
+  /* 部位色板(延续 workout_plan_view) */
+  --p-chest:#c2410c;--p-shoulder:#a16207;--p-arm:#4338ca;
+  --p-back:#047857;--p-leg:#0891b2;--p-core:#7c3aed;--p-aerobic:#6b7280;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.04),0 16px 40px rgba(0,0,0,.06);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+  --r-xl:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+
+/* HERO */
+.hero{
+  background:linear-gradient(135deg,#fff 0%,#f5f8ff 50%,#fff 100%);
+  padding:40px 36px 32px;
+  border-radius:var(--r-xl);
+  margin-bottom:24px;
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;
+  top:-40%;right:-10%;width:300px;height:300px;
+  background:radial-gradient(circle,rgba(0,122,255,.08),transparent 60%);
+  pointer-events:none;
+}
+.hero .eyebrow{
+  font-size:12px;font-weight:700;letter-spacing:1px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.hero .eyebrow::before{
+  content:'';width:6px;height:6px;
+  background:var(--accent);border-radius:50%;
+}
+.hero h1{
+  font-size:38px;font-weight:700;letter-spacing:-1px;
+  color:var(--ink);margin-bottom:6px;line-height:1.15;
+  background:linear-gradient(180deg,#1d1d1d 0%,#3c3c43 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400;margin-bottom:20px}
+.hero .stats{
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.hero-stat{
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--lineS);
+  padding:10px 16px;border-radius:12px;
+  display:flex;flex-direction:column;
+}
+.hero-stat .label{
+  font-size:11px;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.4px;
+  font-weight:500;margin-bottom:4px;
+}
+.hero-stat .value{
+  font-size:22px;font-weight:700;letter-spacing:-.5px;
+  font-feature-settings:"tnum";line-height:1;
+  color:var(--ink);
+}
+.hero-stat .value .unit{
+  font-size:12px;color:var(--ink3);
+  font-weight:400;margin-left:2px;
+}
+
+/* SECTION */
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:18px;
+}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+
+/* PREFERENCES (6 张偏好卡片) */
+.preferences-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:10px;
+}
+.pref{
+  background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  padding:12px 14px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.pref .label{font-size:11px;color:var(--ink3);font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.pref .value{font-size:18px;font-weight:600;letter-spacing:-.3px;color:var(--ink);font-feature-settings:"tnum"}
+.pref .value .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:2px}
+.pref ul{
+  list-style:none;padding:0;margin:4px 0 0;
+  display:flex;flex-wrap:wrap;gap:4px;
+}
+.pref ul li{
+  font-size:11px;background:var(--card);
+  padding:2px 8px;border-radius:6px;color:var(--ink2);
+}
+
+/* VIEW SWITCHER (2 个 view) */
+.view-switcher{
+  display:inline-flex;background:var(--bg-soft);
+  border-radius:999px;padding:3px;
+  margin-bottom:20px;
+}
+.view-switcher button{
+  background:transparent;border:none;
+  padding:7px 16px;border-radius:999px;
+  font-size:13px;font-weight:500;color:var(--ink2);
+  cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.view-switcher button.active{
+  background:var(--ink);color:#fff;
+}
+
+/* WEEK TABS */
+.week-tabs{
+  display:flex;gap:6px;overflow-x:auto;
+  padding-bottom:12px;margin-bottom:20px;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.week-tabs::-webkit-scrollbar{display:none}
+.week-tab{
+  flex-shrink:0;
+  background:var(--card);
+  border:1px solid var(--lineS);
+  padding:8px 14px;border-radius:var(--r);
+  cursor:pointer;font-family:inherit;
+  text-align:center;min-width:60px;
+  transition:all .15s;
+}
+.week-tab.active{
+  background:var(--ink);color:#fff;border-color:var(--ink);
+  box-shadow:var(--shadow);
+}
+.week-tab .num{font-size:11px;opacity:.7;font-weight:500;margin-bottom:2px}
+.week-tab .label{font-size:15px;font-weight:600;letter-spacing:-.2px}
+
+/* WEEK CONTENT (time-line) */
+.week-content{display:flex;flex-direction:column;gap:14px}
+.day-row{
+  display:flex;gap:16px;
+  padding:14px 0;border-top:1px solid var(--lineS);
+  position:relative;
+}
+.day-row:first-child{border-top:none}
+.day-label{
+  width:60px;flex-shrink:0;
+  font-size:13px;font-weight:600;color:var(--ink2);
+  padding-top:8px;
+}
+.day-label .dow{
+  font-size:18px;font-weight:700;letter-spacing:-.5px;
+  display:block;line-height:1;
+}
+.day-label .dot{
+  width:6px;height:6px;border-radius:50%;
+  display:inline-block;margin-right:4px;
+}
+.day-label .dot.workout{background:var(--accent)}
+.day-label .dot.rest{background:var(--gray)}
+
+.sessions{
+  flex:1;display:flex;flex-direction:column;gap:10px;
+}
+.session-card{
+  background:var(--card);
+  border-radius:var(--r);
+  padding:14px 18px;
+  border:1px solid var(--lineS);
+  border-left:3px solid var(--accent);
+  position:relative;
+}
+.session-card .head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.session-card .name{font-size:15px;font-weight:600;color:var(--ink)}
+.session-card .time{
+  font-size:12px;color:var(--ink3);
+  font-family:"SF Mono",monospace;
+}
+.session-card .meta{
+  display:flex;gap:6px;align-items:center;
+  font-size:12px;color:var(--ink3);margin-bottom:8px;
+}
+.session-card .total-sets{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--accent-soft);color:var(--accent);
+  padding:3px 10px;border-radius:99px;
+  font-size:11px;font-weight:600;
+}
+.movement-table{
+  width:100%;border-collapse:collapse;font-size:13px;
+}
+.movement-table th{
+  text-align:left;padding:7px 10px;
+  font-size:11px;color:var(--ink3);font-weight:500;
+  text-transform:uppercase;letter-spacing:.3px;
+  border-bottom:1px solid var(--lineS);
+}
+.movement-table td{
+  padding:10px;
+  border-bottom:1px solid var(--lineS);
+  vertical-align:middle;
+}
+.movement-table tr:last-child td{border-bottom:none}
+.movement-table .name{font-weight:500;color:var(--ink);min-width:120px}
+.movement-table .name-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.movement-table .part-tag{
+  display:inline-block;
+  font-size:10.5px;padding:2px 7px;border-radius:5px;
+  font-weight:600;
+}
+.movement-table .nums{color:var(--ink2);font-feature-settings:"tnum"}
+.movement-table .nums strong{color:var(--ink)}
+.movement-table .rest{color:var(--ink3);font-size:12px}
+
+.empty-day{
+  display:flex;align-items:center;justify-content:center;
+  height:60px;background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  color:var(--ink3);font-size:13px;
+  border:1.5px dashed var(--line);
+}
+
+/* COPY SECTION */
+.copy-section{
+  background:linear-gradient(135deg,var(--card) 0%,#f8fbff 100%);
+  border-radius:var(--r-xl);
+  padding:28px 32px;margin-bottom:14px;
+  box-shadow:var(--shadow);border:1px solid var(--lineS);
+}
+.copy-section h2{
+  font-size:19px;font-weight:600;letter-spacing:-.3px;
+  margin-bottom:6px;color:var(--ink);
+}
+.copy-section .sub{
+  font-size:13.5px;color:var(--ink2);
+  margin-bottom:18px;line-height:1.6;
+}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:11px 20px;border-radius:999px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  border:none;transition:all .15s;font-family:inherit;
+}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.warning{background:var(--orange-soft);color:var(--orange)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.copied{background:var(--green)!important;color:#fff!important}
+
+.copy-preview{
+  background:var(--bg-soft);border-radius:var(--r);
+  padding:16px 18px;font-family:"SF Mono",monospace;
+  font-size:12px;line-height:1.65;color:var(--ink2);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:420px;overflow-y:auto;
+  border:1px solid var(--lineS);
+}
+
+footer{
+  text-align:center;color:var(--ink3);
+  font-size:12px;padding-top:20px;
+  border-top:1px solid var(--lineS);margin-top:36px;
+}
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+}
+
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:28px 22px 24px}
+  .hero h1{font-size:28px}
+  .section,.copy-section{padding:18px 22px}
+  .day-row{flex-direction:column;gap:8px}
+  .day-label{width:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow">健身计划预览</div>
+  <h1 id="title">8 周增肌计划</h1>
+  <div class="sub" id="subtitle">推/拉/腿分化 · 4 天/周 · 3 时段/天 · ~40 小时</div>
+  <div class="stats" id="heroStats"></div>
+</header>
+
+<!-- 偏好 (6 张卡) -->
+<section class="section">
+  <div class="section-title">
+    <h2>计划偏好</h2>
+    <span class="hint">AI 根据这 4 轮回答生成 · 可在下方"修改"中调整</span>
+  </div>
+  <div class="preferences-grid" id="prefs"></div>
+</section>
+
+<!-- VIEW SWITCHER -->
+<section class="section">
+  <div class="section-title">
+    <h2>计划详情</h2>
+    <span class="hint">切换视图</span>
+  </div>
+  <div class="view-switcher">
+    <button class="active" id="viewByWeek" onclick="switchView('week')">按周查看</button>
+    <button id="viewByPart" onclick="switchView('part')">按部位查看</button>
+  </div>
+  <div id="viewContainer"></div>
+</section>
+
+<!-- COPY -->
+<section class="copy-section">
+  <h2>复制确认指令</h2>
+  <p class="sub">
+    HTML 不能直接写入数据库 · 请把下方文本粘到 AI 对话框,AI 会帮你处理。
+- <strong>采纳</strong> = 计划可接受,调 plan_generator.write_plan 写入 workout_plan_config
+- <strong>修改偏好</strong> = 调整 weeks / days / 部位,让 AI 重新生成 plan JSON 后再渲染
+- <strong>换某动作</strong> = 单个动作不喜欢,告诉我换哪个,AI 给替代后再渲染
+  </p>
+  <div class="btn-row">
+    <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳计划</button>
+    <button class="btn secondary" id="btnModify" onclick="copyModifyPrefs()">⚙️ 修改偏好</button>
+    <button class="btn warning" id="btnSwap" onclick="copySwapMove()">↔ 换某动作</button>
+  </div>
+  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+</section>
+
+<footer>卡路里 Skill · 健身计划预览 · 2026-07-23 · G6</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+const SUMMARY = (DATA && DATA.data && DATA.data.summary) || {};
+const PREFS = (DATA && DATA.data && DATA.data.preferences) || {};
+const WEEKS = (DATA && DATA.data && DATA.data.weeks) || [];
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* 部位色板(延续 workout_plan_view) */
+const PART_COLORS = {
+  '胸': '#c2410c', '肩': '#a16207', '臂': '#4338ca',
+  '背': '#047857', '腿': '#0891b2', '腹': '#7c3aed',
+  '有氧': '#6b7280',
+};
+
+function partTag(part) {
+  const color = PART_COLORS[part] || '#6e6e73';
+  return `<span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(part || '?')}</span>`;
+}
+
+const DAY_NAMES = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+let currentView = 'week';
+let currentWeekIdx = 0;
+
+function render() {
+  if (!DATA) {
+    document.getElementById('title').textContent = '❌ 数据加载失败';
+    return;
+  }
+
+  // HERO
+  document.getElementById('title').textContent = SUMMARY.plan_title || '健身计划预览';
+  document.getElementById('subtitle').textContent =
+    `${PREFS.split_type || '推/拉/腿'}分化 · ${PREFS.days_per_week || '?'} 天/周 · ${PREFS.sessions_per_day || '?'} 时段/天 · ~${SUMMARY.estimated_hours || '?'} 小时`;
+
+  // Hero stats
+  document.getElementById('heroStats').innerHTML = `
+    <div class="hero-stat">
+      <div class="label">周数</div>
+      <div class="value">${SUMMARY.total_weeks || '?'}<span class="unit">周</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">总时段</div>
+      <div class="value">${SUMMARY.total_sessions || '?'}<span class="unit">场</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">总组数</div>
+      <div class="value">${SUMMARY.total_sets || '?'}<span class="unit">组</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">预估时间</div>
+      <div class="value">${SUMMARY.estimated_hours || '?'}<span class="unit">小时</span></div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">版本</div>
+      <div class="value">${SUMMARY.version || '?'}</div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">创建</div>
+      <div class="value">${SUMMARY.created_at || '?'}</div>
+    </div>
+  `;
+
+  // 偏好
+  document.getElementById('prefs').innerHTML = `
+    <div class="pref">
+      <div class="label">周数</div>
+      <div class="value">${PREFS.weeks || '?'}<span class="unit">周</span></div>
+    </div>
+    <div class="pref">
+      <div class="label">每周</div>
+      <div class="value">${PREFS.days_per_week || '?'}<span class="unit">天</span></div>
+    </div>
+    <div class="pref">
+      <div class="label">每天</div>
+      <div class="value">${PREFS.sessions_per_day || '?'}<span class="unit">场</span></div>
+    </div>
+    <div class="pref">
+      <div class="label">每场</div>
+      <div class="value">${PREFS.session_minutes || '?'}<span class="unit">分钟</span></div>
+    </div>
+    <div class="pref">
+      <div class="label">分化</div>
+      <div class="value">${PREFS.split_type || '?'}</div>
+    </div>
+    <div class="pref">
+      <div class="label">设备</div>
+      <ul>${(PREFS.equipment || []).map(e => `<li>${escapeHTML(e)}</li>`).join('')}</ul>
+    </div>
+  `;
+
+  switchView('week');
+}
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('viewByWeek').classList.toggle('active', view === 'week');
+  document.getElementById('viewByPart').classList.toggle('active', view === 'part');
+
+  const container = document.getElementById('viewContainer');
+  if (view === 'week') {
+    renderWeekView(container);
+  } else {
+    renderPartView(container);
+  }
+}
+
+function renderWeekView(container) {
+  if (WEEKS.length === 0) {
+    container.innerHTML = '<div class="empty-day">无周数据</div>';
+    return;
+  }
+
+  // 取出唯一周
+  const uniqueWeeks = WEEKS; // 已经在 weeks 数组里
+
+  container.innerHTML = `
+    <div class="week-tabs">
+      ${uniqueWeeks.map((w, i) => `
+        <button class="week-tab ${i === currentWeekIdx ? 'active' : ''}" onclick="showWeek(${i})">
+          <div class="num">第</div>
+          <div class="label">${w.week_number} 周</div>
+        </button>
+      `).join('')}
+    </div>
+    <div class="week-content" id="weekDetail"></div>
+  `;
+
+  showWeek(currentWeekIdx);
+}
+
+function showWeek(idx) {
+  currentWeekIdx = idx;
+  document.querySelectorAll('.week-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  renderWeekDetail(idx);
+}
+
+function renderWeekDetail(idx) {
+  const week = WEEKS[idx];
+  const detailEl = document.getElementById('weekDetail');
+  if (!week || !week.days) {
+    detailEl.innerHTML = '<div class="empty-day">无数据</div>';
+    return;
+  }
+
+  detailEl.innerHTML = week.days.map(d => {
+    const sessions = d.sessions || [];
+    if (sessions.length === 0) {
+      return `
+        <div class="day-row">
+          <div class="day-label">
+            <span class="dot rest"></span>
+            <span class="dow">${DAY_NAMES[d.day_of_week] || '?'}</span>
+          </div>
+          <div class="empty-day" style="flex:1">休息日</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="day-row">
+        <div class="day-label">
+          <span class="dot workout"></span>
+          <span class="dow">${DAY_NAMES[d.day_of_week] || '?'}</span>
+        </div>
+        <div class="sessions">
+          ${sessions.map(s => `
+            <div class="session-card">
+              <div class="head">
+                <div class="name">${escapeHTML(s.session_label || '?')}</div>
+                <div class="time">${escapeHTML(s.time_start || '?')}-${escapeHTML(s.time_end || '?')}</div>
+              </div>
+              <div class="meta">
+                <span class="total-sets">${s.total_sets || 0} 组</span>
+              </div>
+              ${(s.movements || []).length > 0 ? `
+                <table class="movement-table">
+                  <thead>
+                    <tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>组休</th></tr>
+                  </thead>
+                  <tbody>
+                    ${s.movements.map(m => `
+                      <tr>
+                        <td>
+                          <div class="name">${escapeHTML(m.name || '?')}</div>
+                        </td>
+                        <td>${partTag(m.part)}</td>
+                        <td class="nums"><strong>${m.sets || 0}</strong> × ${escapeHTML(String(m.reps || '?'))}</td>
+                        <td class="nums"><strong>${escapeHTML(String(m.weight || '?'))}</strong></td>
+                        <td class="rest">${escapeHTML(m.rest || '-')}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPartView(container) {
+  // 按部位汇总动作
+  const partMap = {};
+  WEEKS.forEach(w => {
+    (w.days || []).forEach(d => {
+      (d.sessions || []).forEach(s => {
+        (s.movements || []).forEach(m => {
+          const part = m.part || '其他';
+          if (!partMap[part]) partMap[part] = {count: 0, sets: 0, examples: new Set()};
+          partMap[part].count++;
+          partMap[part].sets += (m.sets || 0);
+          if (m.name) partMap[part].examples.add(m.name);
+        });
+      });
+    });
+  });
+
+  const order = ['胸', '背', '腿', '肩', '臂', '腹'];
+  const items = order.filter(p => partMap[p]);
+
+  container.innerHTML = `
+    <div class="week-content">
+      ${items.map(p => {
+        const d = partMap[p];
+        const color = PART_COLORS[p];
+        return `
+          <div class="day-row" style="border-left:3px solid ${color};background:${color}05">
+            <div class="day-label">
+              <span class="dot workout" style="background:${color}"></span>
+              <span class="dow" style="color:${color}">${p}</span>
+            </div>
+            <div class="sessions">
+              <div class="session-card" style="border-left-color:${color}">
+                <div class="head">
+                  <div class="name">${p} 部</div>
+                  <div class="total-sets">${d.sets} 组</div>
+                </div>
+                <div style="font-size:13px;color:var(--ink2);line-height:1.6">
+                  出现 <strong>${d.count}</strong> 次 · 常见动作: ${Array.from(d.examples).slice(0, 8).map(escapeHTML).join('、')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// 4 部分 prompt
+function buildAdoptPrompt() {
+  const planSummary = `${SUMMARY.plan_title} (${SUMMARY.version}, ${SUMMARY.total_weeks}周, ${SUMMARY.total_sessions}场, ${SUMMARY.total_sets}组)`;
+
+  return `健身计划我已 review,符合预期,请帮我写入数据库:
+
+计划摘要:
+- ${planSummary}
+- 偏好: ${PREFS.days_per_week}天/周, ${PREFS.sessions_per_day}场/天, ${PREFS.session_minutes}分钟/场
+- 设备: ${(PREFS.equipment || []).join('、')}
+
+执行命令:
+  python scripts/plan_generator.py write-plan --input plan.json
+  # 或交互式确认后:
+  python scripts/plan_generator.py save
+
+数据来源: 4 轮对话(基线/结构/精细/动作) + plan_generator 生成的 JSON · render_plan_builder.py · ${new Date().toISOString().split('T')[0]}`;
+}
+
+function buildModifyPrefsPrompt() {
+  return `健身计划大致 OK,但我想调整以下偏好,请重新生成 plan JSON 后再渲染:
+
+当前偏好:
+- 周数: ${PREFS.weeks}
+- 每周: ${PREFS.days_per_week} 天
+- 每天: ${PREFS.sessions_per_day} 场
+- 每场: ${PREFS.session_minutes} 分钟
+- 设备: ${(PREFS.equipment || []).join('、')}
+- 部位: ${(PREFS.primary_parts || []).join('、')}
+
+我想改成:
+[这里填你想改的内容,例如]:
+- 改成 12 周而不是 8 周
+- 改成每周 3 天 而不是 4 天
+- 改成 60 分钟 每场 而不是 60 分钟
+
+执行:
+  python scripts/plan_generator.py update-preferences --changes '<JSON>'
+  python scripts/plan_generator.py generate-plan --output plan_v2.json
+  python scripts/render_plan_builder.py --input plan_v2.json
+
+数据来源: 健身计划预览 + 用户偏好修改`;
+}
+
+function buildSwapMovePrompt() {
+  return `健身计划里有几个动作想换掉。请帮我找替代,再重新生成 plan JSON:
+
+不喜欢的动作:
+[这里列你想换的动作,例如]:
+- 罗马尼亚硬拉 W1 周二 · 腿(我腰椎间盘突出)
+- 腿举 W1 周二 · 腿(我不喜欢器械腿举)
+
+执行:
+  python scripts/scan_contraindication.py --plan plan.json
+  python scripts/plan_generator.py swap-moves --old "罗马尼亚硬拉" --new "<AI 建议替代>"
+  python scripts/plan_generator.py generate-plan --output plan_v2.json
+  python scripts/render_plan_builder.py --input plan_v2.json
+
+数据来源: 健身计划预览 + 用户动作调换`;
+}
+
+function updatePreview() {
+  document.getElementById('copyPreview').textContent = buildAdoptPrompt();
+}
+
+function copyAdopt() {
+  doCopy(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳 · 复制成功');
+}
+
+function copyModifyPrefs() {
+  doCopy(buildModifyPrefsPrompt(), 'btnModify', '✓ 已复制偏好修改指令');
+}
+
+function copySwapMove() {
+  doCopy(buildSwapMovePrompt(), 'btnSwap', '✓ 已复制动作调换指令');
+}
+
+// BUG #1 修复:所有按钮统一 flashCopied 路径(不再用 null + console.log fallback)
+function doCopy(text, btnId, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId, msg) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
+}
+
+render();
+updatePreview();
+</script>
+</body>
+</html>

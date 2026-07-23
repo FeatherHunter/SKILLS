@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>预置 HTML + 注入数据指导手册</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;
+    --line:#d2d2d7;--soft:#f5f8ff;--blue:#007aff;--blue2:#0a63ce;
+    --code:#1d1d1f;--codefg:#f5f5f7;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:72px 28px 120px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:44px 42px;margin-bottom:28px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+  h1{font-size:44px;line-height:1.12;letter-spacing:-.035em;margin-bottom:16px}
+  .lead{font-size:19px;color:var(--fg2);max-width:760px;line-height:1.6}
+  .meta{margin-top:20px;color:var(--fg3);font-size:13px}
+  .toc{background:var(--card);border-radius:22px;padding:24px 28px;margin:24px 0 36px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .toc h2{font-size:15px;margin:0 0 12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.08em}
+  .toc ol{columns:2;gap:28px;margin-left:20px}
+  .toc li{break-inside:avoid;margin:6px 0;color:var(--fg2)}
+  a{color:var(--blue2);text-decoration:none}a:hover{text-decoration:underline}
+  section{background:var(--card);border-radius:22px;padding:32px;margin:22px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  h2{font-size:28px;letter-spacing:-.025em;margin-bottom:18px}
+  h3{font-size:19px;margin:24px 0 10px;letter-spacing:-.01em}
+  p{margin:10px 0;color:var(--fg)}
+  .muted{color:var(--fg2)}
+  ul,ol{margin:12px 0 12px 24px}li{margin:6px 0}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+  .card{background:var(--soft);border-radius:16px;padding:18px}
+  .card b{color:var(--blue2)}
+  .pill{display:inline-block;background:#eef5ff;color:var(--blue2);padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:2px 4px 2px 0}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin:16px 0;font-size:14px;overflow:hidden;border-radius:14px;border:1px solid var(--line)}
+  th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f5f8ff;color:var(--fg);font-weight:700}tr:last-child td{border-bottom:none}tr:nth-child(even) td{background:#fbfbfd}
+  pre{background:var(--code);color:var(--codefg);border-radius:16px;padding:18px 20px;overflow:auto;margin:16px 0;font-size:13px;line-height:1.65}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+  p code,li code,td code{background:#f0f3f8;color:#c7254e;padding:2px 6px;border-radius:6px}
+  details{background:#fbfbfd;border-radius:14px;padding:14px 16px;margin:12px 0;border:1px solid #ececf1}
+  summary{cursor:pointer;font-weight:700;color:var(--blue2)}
+  .quote{border-left:4px solid var(--blue);padding:12px 16px;background:#f7fbff;border-radius:0 14px 14px 0;color:var(--fg2);margin:14px 0}
+  .checklist li{list-style:none}.checklist li::before{content:"□";color:var(--blue);font-weight:800;margin-right:10px}
+  .top{position:fixed;right:22px;bottom:22px;background:var(--blue);color:#fff;border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);font-size:13px}
+  @media(max-width:760px){.wrap{padding:36px 16px 80px}.hero{padding:32px 24px;border-radius:22px}h1{font-size:34px}.toc ol{columns:1}.grid{grid-template-columns:1fr}section{padding:24px 18px}.top{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="top">
+  <header class="hero">
+    <div class="eyebrow">Universal Pattern</div>
+    <h1>预置 HTML + 注入数据指导手册</h1>
+    <p class="lead">一套适用于任何 Skill 的轻量视觉增强方法：把稳定的交互和视觉预先写进 HTML 模板，把每次变化的数据用 JSON 注入进去，让简单功能快速拥有漂亮、可交互、可复用的页面。</p>
+    <p class="meta">适用：查看详情页、操作向导、做事模式、清单页、报告页、复盘页。原则：模板稳定，数据流动；样式预置，内容注入。</p>
+  </header>
+
+  <nav class="toc">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#why">为什么要这样做</a></li>
+      <li><a href="#principle">第一性原理</a></li>
+      <li><a href="#when">什么时候适合</a></li>
+      <li><a href="#architecture">通用架构</a></li>
+      <li><a href="#modes">三种实现模式</a></li>
+      <li><a href="#contract">数据契约</a></li>
+      <li><a href="#template">模板设计规范</a></li>
+      <li><a href="#inject">注入方式</a></li>
+      <li><a href="#workflow">标准工作流</a></li>
+      <li><a href="#files">推荐文件结构</a></li>
+      <li><a href="#security">安全与容错</a></li>
+      <li><a href="#audit">对抗式审查清单</a></li>
+      <li><a href="#brainstorm">AI 头脑风暴扩展</a></li>
+      <li><a href="#starter">最小可复制骨架</a></li>
+    </ol>
+  </nav>
+
+  <section id="why">
+    <h2>1. 为什么要这样做</h2>
+    <p>很多 Skill 的核心能力已经有 CLI 或脚本，但纯文字输出不适合展示复杂信息：用户要反复扫读、对比、点击、计时、勾选或复盘。预置 HTML + 注入数据的本质，是把“交互体验”从每次回答里抽出来，变成稳定资产。</p>
+    <div class="grid">
+      <div class="card"><b>不再每次临时拼页面</b><br>视觉、布局、JS 交互都沉淀在模板里。</div>
+      <div class="card"><b>数据仍然走 Skill 规则</b><br>数据来自 CLI / JSON，不让 HTML 直连数据库。</div>
+      <div class="card"><b>修改成本低</b><br>改视觉只改模板；改数据只改 JSON 契约。</div>
+      <div class="card"><b>适合快速增强</b><br>不用做完整前端工程，也能有可靠页面。</div>
+    </div>
+  </section>
+
+  <section id="principle">
+    <h2>2. 第一性原理</h2>
+    <div class="quote">HTML 页面不是数据源，也不是业务规则层。它只是用户和数据之间的“可视化操作界面”。</div>
+    <table>
+      <tr><th>问题</th><th>答案</th></tr>
+      <tr><td>谁负责真实数据？</td><td>Skill 的数据层 / CLI / JSON 输出。</td></tr>
+      <tr><td>谁负责业务规则？</td><td>CLI、validators、数据库约束；HTML 只做展示层辅助校验。</td></tr>
+      <tr><td>谁负责体验？</td><td>预置 HTML 模板：布局、样式、交互、空状态、错误态。</td></tr>
+      <tr><td>什么应该变化？</td><td>注入的 JSON 数据。</td></tr>
+      <tr><td>什么应该稳定？</td><td>模板结构、CSS、JS、字段契约、错误处理。</td></tr>
+    </table>
+    <p>所以正确方向是：<span class="pill">先定义数据契约</span><span class="pill">再写稳定模板</span><span class="pill">最后注入 JSON</span>。</p>
+  </section>
+
+  <section id="when">
+    <h2>3. 什么时候适合使用</h2>
+    <table>
+      <tr><th>适合</th><th>不适合</th></tr>
+      <tr><td>详情页：食谱、物品、任务、书籍、训练记录</td><td>需要多人实时协作的复杂 Web App</td></tr>
+      <tr><td>向导页：做菜模式、安装流程、检查流程</td><td>需要后端鉴权、实时数据库写入的页面</td></tr>
+      <tr><td>清单页：采购清单、待办清单、行李清单</td><td>高频数据编辑且需要强一致性的后台管理系统</td></tr>
+      <tr><td>报告页：统计、复盘、审计结果</td><td>大量数据分页检索、权限管理复杂的系统</td></tr>
+    </table>
+  </section>
+
+  <section id="architecture">
+    <h2>4. 通用架构</h2>
+    <pre><code>用户请求
+  ↓
+AI / Skill 路由识别
+  ↓
+CLI 输出 JSON 数据
+  ↓
+渲染器 或 AI 注入器
+  ↓
+预置 HTML 模板
+  ↓
+生成 HTML 文件
+  ↓
+&lt;media src="..." type="file" /&gt; 交付给用户</code></pre>
+    <h3>五层职责映射</h3>
+    <table>
+      <tr><th>层</th><th>放什么</th><th>不要放什么</th></tr>
+      <tr><td>数据层</td><td>数据库、schema、查询封装</td><td>HTML 样式</td></tr>
+      <tr><td>操作层</td><td>CLI 取数、生成 JSON、渲染文件</td><td>临时手写页面逻辑</td></tr>
+      <tr><td>规则层</td><td>字段校验、枚举、必填、错误信息</td><td>只靠浏览器校验</td></tr>
+      <tr><td>接口层</td><td>命令参数、JSON 三段式、输出路径</td><td>不稳定字段名</td></tr>
+      <tr><td>文档层</td><td>触发词、调用流程、模板路径、注入方式</td><td>过期示例</td></tr>
+    </table>
+  </section>
+
+  <section id="modes">
+    <h2>5. 三种实现模式</h2>
+    <h3>模式 A：Jinja2 渲染器</h3>
+    <p>适合详情页、报告页、采购清单这类“生成后基本静态”的页面。</p>
+    <pre><code>CLI JSON → render.py → Jinja2 template.render(data=data) → output.html</code></pre>
+
+    <h3>模式 B：静态 HTML + window 注入</h3>
+    <p>适合做菜模式、步骤向导、离线交互页。模板不依赖 Jinja2，直接读取 <code>window.__DATA__</code>。</p>
+    <pre><code>&lt;script&gt;
+window.__DATA__ = {...完整 JSON...};
+window.__ENTITY_ID__ = "...";
+&lt;/script&gt;</code></pre>
+
+    <h3>模式 C：HTML 内嵌 JSON Script</h3>
+    <p>适合数据很大、想避免全局变量污染的页面。</p>
+    <pre><code>&lt;script id="payload" type="application/json"&gt;
+{"status":"success","data":{}}
+&lt;/script&gt;
+&lt;script&gt;
+const DATA = JSON.parse(document.getElementById('payload').textContent);
+&lt;/script&gt;</code></pre>
+  </section>
+
+  <section id="contract">
+    <h2>6. 数据契约</h2>
+    <p>数据契约是整个模式的核心。模板只认识契约，不应该猜字段。</p>
+    <pre><code>{
+  "status": "success",
+  "data": {
+    "entity": { "id": "...", "name": "..." },
+    "sections": [],
+    "summary": {},
+    "items": []
+  },
+  "message": "已生成"
+}</code></pre>
+    <h3>契约规则</h3>
+    <ul>
+      <li>顶层建议统一为 <code>{status, data, message}</code>。</li>
+      <li>实体主键必须稳定：<code>id</code> 不要用自然语言当 key。</li>
+      <li>数组字段即使为空也返回 <code>[]</code>，不要省略。</li>
+      <li>可空字段显式 <code>null</code>，不要让模板靠 undefined 猜。</li>
+      <li>时间、金额、单位字段要拆开，不要只给一段自然语言。</li>
+    </ul>
+  </section>
+
+  <section id="template">
+    <h2>7. 模板设计规范</h2>
+    <div class="grid">
+      <div class="card"><b>首屏</b><br>标题、摘要、关键状态、主要操作按钮。</div>
+      <div class="card"><b>主体</b><br>卡片化 section，每个数据块有明确标题。</div>
+      <div class="card"><b>交互</b><br>折叠、勾选、计时、筛选、份数调整等轻 JS。</div>
+      <div class="card"><b>尾部</b><br>复制回执、下一步动作、保存提示。</div>
+    </div>
+    <h3>必须有的状态</h3>
+    <ul>
+      <li>正常态：数据完整。</li>
+      <li>空态：列表为空时给解释。</li>
+      <li>缺数据态：关键字段缺失时清晰提示。</li>
+      <li>错误态：没有注入数据、JSON 解析失败。</li>
+      <li>离线态：尽量不依赖外部网络。</li>
+    </ul>
+  </section>
+
+  <section id="inject">
+    <h2>8. 注入方式</h2>
+    <h3>推荐做法：生成临时副本，不改原模板</h3>
+    <pre><code>template = read("templates/view.html")
+payload = json.dumps(data, ensure_ascii=False).replace("&lt;/", "&lt;\\/")
+inject = "&lt;script&gt;window.__DATA__ = " + payload + ";&lt;/script&gt;"
+html = template.replace("&lt;body&gt;", "&lt;body&gt;\n" + inject, 1)
+write("output/view_xxx.html", html)</code></pre>
+    <h3>模板端读取</h3>
+    <pre><code>const PAYLOAD = window.__DATA__;
+if (!PAYLOAD) {
+  showError('数据未注入');
+} else {
+  init(PAYLOAD.data || PAYLOAD);
+}</code></pre>
+    <details>
+      <summary>为什么不建议直接改原模板？</summary>
+      <p>原模板应该是稳定资产。如果每次把数据写进原模板，下一次生成会污染模板，也容易把用户隐私数据提交进仓库。正确做法是：原模板只放结构和逻辑，输出文件才包含注入数据。</p>
+    </details>
+  </section>
+
+  <section id="workflow">
+    <h2>9. 标准工作流</h2>
+    <ol>
+      <li>识别用户意图：这是查看、清单、向导还是报告。</li>
+      <li>调用 Skill CLI 获取 JSON，禁止 HTML 直连数据库。</li>
+      <li>校验 JSON 是否满足模板契约。</li>
+      <li>读取预置 HTML 模板。</li>
+      <li>把 JSON 注入模板，生成输出 HTML 文件。</li>
+      <li>用浏览器或静态检查验证关键字段出现。</li>
+      <li>用 <code>&lt;media src="..." type="file" /&gt;</code> 交付。</li>
+      <li>如果页面会让用户复制结果回来，定义复制文本格式和保存 CLI。</li>
+    </ol>
+  </section>
+
+  <section id="files">
+    <h2>10. 推荐文件结构</h2>
+    <pre><code>某个Skill/
+  SKILL.md
+  templates/
+    xxx_view.html          # 预置模板
+  scripts/
+    xxx_manager.py         # 业务 CLI / JSON 输出
+    xxx_render.py          # 可选：Jinja2 渲染器
+  references/
+    xxx_html_mode.md       # 调用规范、注入方式、错误处理
+  CHANGELOG.md</code></pre>
+    <p>如果功能很小，可以不写 render 脚本，直接采用“静态模板 + AI 注入”。如果会频繁复用，就应该沉淀为 <code>scripts/*_render.py</code>。</p>
+  </section>
+
+  <section id="security">
+    <h2>11. 安全与容错</h2>
+    <table>
+      <tr><th>风险</th><th>处理方式</th></tr>
+      <tr><td>XSS</td><td>Jinja2 开 autoescape；JS 注入时用 JSON 序列化，不拼用户原文；注入到 script 时额外转义 <code>&lt;/script&gt;</code> 断标签风险。</td></tr>
+      <tr><td>模板污染</td><td>只生成副本，不把注入数据写回模板。</td></tr>
+      <tr><td>字段缺失</td><td>模板提供错误页；CLI 提前校验契约。</td></tr>
+      <tr><td>外部资源失效</td><td>优先单文件、系统字体、本地运行。</td></tr>
+      <tr><td>隐私泄露</td><td>输出文件放临时目录或明确输出目录，不自动提交。</td></tr>
+      <tr><td>中文乱码</td><td>全链路 UTF-8；Windows PowerShell 中文参数用 Python subprocess 列表传参。</td></tr>
+    </table>
+  </section>
+
+  <section id="audit">
+    <h2>12. 对抗式审查清单</h2>
+    <ul class="checklist">
+      <li>模板是否能在没有数据时显示明确错误，而不是白屏？</li>
+      <li>数据是否来自 CLI / JSON，而不是 HTML 自己查库？</li>
+      <li>是否污染了原始模板文件？</li>
+      <li>字段名是否稳定，有没有今天叫 total_time 明天叫 totalTime？</li>
+      <li>数组为空时页面是否还能正常显示？</li>
+      <li>用户输入是否通过 JSON 序列化或 autoescape 进入页面？</li>
+      <li>输出路径是否明确，是否尊重环境变量？</li>
+      <li>是否有复制回 AI 的回执格式？</li>
+      <li>SKILL.md、HTML 镜像、references、CHANGELOG 是否同步？</li>
+      <li>手机、平板、桌面是否都能读、能点、不卡？</li>
+    </ul>
+  </section>
+
+  <section id="brainstorm">
+    <h2>13. AI 头脑风暴扩展</h2>
+    <div class="quote">不要只把用户说的字段搬进 HTML。AI 必须先看 CLI 能拿到的全部数据，再从用户真实使用场景出发，提出能让页面更舒服、更强大的功能建议。</div>
+    <h3>核心要求</h3>
+    <ul>
+      <li>先盘点 CLI 可拿到的全量字段：主实体、关联表、历史记录、标签、统计、状态、时间、备注、关系链。</li>
+      <li>再按用户场景思考：用户打开这个页面时，是要看、选、做、买、复盘、决策，还是继续写入？</li>
+      <li>必须提出超出用户原始请求的功能建议，但不能违背 Skill 边界。</li>
+      <li>建议要分级：立刻做、可选增强、未来版本；不要一次把页面堆满。</li>
+      <li>每个建议都要说明使用哪类数据、改善什么体验、是否需要新增 CLI 字段。</li>
+    </ul>
+    <h3>头脑风暴问题清单</h3>
+    <table>
+      <tr><th>问题</th><th>可能产出的 HTML 功能</th></tr>
+      <tr><td>哪些字段用户最常看？</td><td>首屏关键指标、摘要卡、状态徽章。</td></tr>
+      <tr><td>哪些字段用户会对比？</td><td>对比表、排序、筛选、分组视图。</td></tr>
+      <tr><td>哪些动作用户会重复做？</td><td>一键复制、勾选记忆、快捷按钮、批量操作提示。</td></tr>
+      <tr><td>哪些数据能形成提醒？</td><td>过期提示、超时提示、缺字段提示、异常高亮。</td></tr>
+      <tr><td>哪些数据能帮助决策？</td><td>推荐排序、风险提示、历史评分、成本/时间估算。</td></tr>
+      <tr><td>哪些内容适合折叠？</td><td>背景知识、历史记录、调试信息、低频字段。</td></tr>
+      <tr><td>用户完成后要回写什么？</td><td>复制回执、反馈表单、评分、复盘问题。</td></tr>
+    </table>
+    <h3>建议输出格式</h3>
+    <pre><code>基于 CLI 全量数据，我建议这个 HTML 增加：
+1. 首屏摘要卡：用 A/B/C 字段，让用户 3 秒知道当前状态。
+2. 分组/筛选：用 tags/status/category 字段，减少扫读成本。
+3. 一键复制回执：用 id/date/feedback 字段，方便回写到 CLI。
+4. 异常提醒：用 due_at/count/required 字段，提前暴露风险。
+
+本次先做：1、2。
+暂不做：3、4，因为需要新增 CLI 字段或会让页面过重。</code></pre>
+    <h3>边界</h3>
+    <ul>
+      <li>可以主动建议视觉和交互，不可以擅自新增数据库写入路径。</li>
+      <li>可以基于已有 JSON 派生展示字段，不可以伪造数据。</li>
+      <li>可以提出“需要 CLI 增加字段”，但必须标为未来增强。</li>
+      <li>页面功能增强必须服务用户任务，不做炫技动画。</li>
+    </ul>
+  </section>
+
+  <section id="starter">
+    <h2>14. 最小可复制骨架</h2>
+    <h3>模板</h3>
+    <pre><code>&lt;!doctype html&gt;
+&lt;html lang="zh-CN"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;
+  &lt;title&gt;Skill View&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;main id="app"&gt;&lt;/main&gt;
+  &lt;script&gt;
+    const PAYLOAD = window.__DATA__;
+    const app = document.getElementById('app');
+    if (!PAYLOAD) {
+      app.innerHTML = '&lt;h1&gt;数据未注入&lt;/h1&gt;';
+    } else {
+      const data = PAYLOAD.data || PAYLOAD;
+      app.innerHTML = `&lt;h1&gt;${escapeHTML(data.name || '未命名')}&lt;/h1&gt;`;
+    }
+    function escapeHTML(s){return String(s ?? '').replace(/[&amp;&lt;&gt;"']/g,c=>({'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c]));}
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    <h3>注入器伪代码</h3>
+    <pre><code>data = run_cli_json([...])
+template = read_text('templates/view.html')
+payload = json.dumps(data, ensure_ascii=False).replace('&lt;/', '&lt;\\/')
+injected = template.replace('&lt;body&gt;', '&lt;body&gt;\n&lt;script&gt;window.__DATA__ = ' + payload + ';&lt;/script&gt;', 1)
+write_text('output/view.html', injected)</code></pre>
+  </section>
+</div>
+<a class="top" href="#top">回到顶部</a>
+</body>
+</html>

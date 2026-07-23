@@ -1,0 +1,63 @@
+#!/bin/bash
+# .githooks/pre-commit
+# SKILLS/ 多 skill 仓库: 自动检测改动, 跑对应 skill 的测试
+# 失败 → exit 1 阻断 commit
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "⚠️  python3 未找到, 跳过 hook"
+    exit 0
+fi
+
+# 暂存区 + 工作区改动的文件
+CHANGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null)
+if [ -z "$CHANGED" ]; then
+    CHANGED=$(git diff --name-only --diff-filter=ACMR 2>/dev/null)
+fi
+if [ -z "$CHANGED" ]; then
+    exit 0
+fi
+
+# 检测涉及哪些 skill (有 tests/ 目录的)
+declare -A NEED_TEST
+for path in $CHANGED; do
+    case "$path" in
+        居家管家/*)
+            NEED_TEST[居家管家]=1
+            ;;
+        卡路里/*)
+            NEED_TEST[卡路里]=1
+            ;;
+    esac
+done
+
+# 无测试相关 skill 改动
+if [ ${#NEED_TEST[@]} -eq 0 ]; then
+    exit 0
+fi
+
+FAILED=0
+for skill in "${!NEED_TEST[@]}"; do
+    if [ ! -d "$skill/tests" ]; then
+        continue
+    fi
+    echo ""
+    echo "🧪 [pre-commit] 跑 $skill pytest..."
+    if ! (cd "$skill" && python3 -m pytest tests/ --tb=short -q 2>&1); then
+        echo ""
+        echo "❌ [$skill] 测试失败, commit 已拒绝"
+        echo "   禁止用 --no-verify 绕过 (见各 skill 的 SKILL.md 硬规则)"
+        FAILED=1
+    else
+        echo "✓ [$skill] 测试通过"
+    fi
+done
+
+if [ $FAILED -ne 0 ]; then
+    exit 1
+fi
+exit 0

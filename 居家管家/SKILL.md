@@ -30,6 +30,25 @@ metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7" } } }
 
 ---
 
+## ⚠️ Commit 硬规则（强制）
+
+> 优先级与"HTML 同步规范"平级，所有写代码的 AI / 协作者必须遵守。
+
+1. **禁止** `git commit --no-verify` —— 会跳过 pre-commit hook 测试
+2. **禁止** 使用 git 库（`gitpython` / `simple-git` / `libgit2` 等）直接 API 调用 —— 绕过 shell，hook 不触发
+3. **必须** 通过 pre-commit hook 的 49 个 pytest 测试才能 commit
+4. **新机器首次使用本 skill 前**，必须执行 `bash scripts/install_hooks.sh` 配置本地 hook
+
+**hook 工作机制**（SKILLS/ 是单 git 仓库，多 skill 子目录）：
+- git 仓库根：`SKILLS/.githooks/pre-commit`
+- 改动路径含 `居家管家/*` → 自动跑 `居家管家/tests/` 下的 49 个 pytest
+- 改动路径含 `卡路里/*` → 跑 `卡路里/tests/`
+- 其他改动（文档/HTML 手册/架构规范）→ 跳过测试
+
+**为什么需要这层约束**：本地 `.githooks/pre-commit` 跑 pytest 是 CI 的本地替代方案。详见 `git-hooks-security-analysis.html`（已归档于 opencode output 目录）。
+
+---
+
 ## ⚠️ 操作规范（强制）
 
 本技能所有数据操作必须通过 CLI，禁止直连数据库。

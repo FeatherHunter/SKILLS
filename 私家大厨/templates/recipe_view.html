@@ -65,6 +65,8 @@
   .mini-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
   .mini-item{background:var(--bg);border-radius:9px;padding:10px;font-size:13px;color:var(--text)}
   .copy-feedback{display:none;color:#1F7A35;font-size:12px;margin-top:8px;text-align:right}
+  .no-focus-ring:focus, .no-focus-ring:focus-visible{outline:none;box-shadow:none}
+  .no-focus-ring::-moz-focus-inner{border:0}
 
   /* ── Info Cards ── */
   .info-grid{
@@ -382,7 +384,7 @@
     <button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>
     <span class="serv-value" id="serv-value">{{ recipe.servings or 1 }}</span>
     <button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>
-    <span style="font-size:11px;color:var(--text3);margin-left:4px">基础 {{ recipe.servings or 1 }} 人份</span>
+    <span style="font-size:11px;color:var(--text3);margin-left:4px">基础 <span id="serv-base">{{ recipe.servings or 1 }}</span> 人份(当前 {{ recipe.servings or 1 }})</span>
   </div>
 
   {% set ns = namespace(cats={}) %}
@@ -638,11 +640,11 @@
   <div class="section-title">🔗 继续操作</div>
   <p class="muted" style="font-size:13px;margin-bottom:12px">以下按钮只把自然语言指令复制到剪贴板,粘贴给 AI 后由 AI 调用对应脚本生成正式 HTML。</p>
   <div class="hero-actions">
-    <button type="button" class="action-btn" id="copy-cook-prompt">📋 复制「开始做菜」指令</button>
-    <button type="button" class="action-btn secondary" id="copy-shop-prompt">🛒 复制「采购清单」指令</button>
+    <button type="button" class="action-btn no-focus-ring" id="copy-cook-prompt">📋 复制「开始做菜」指令</button>
+    <button type="button" class="action-btn secondary no-focus-ring" id="copy-shop-prompt">🛒 复制「采购清单」指令</button>
   </div>
   <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
-    <button type="button" class="action-btn secondary" id="copy-ingredients-top">🥢 复制食材清单</button>
+    <button type="button" class="action-btn secondary no-focus-ring" id="copy-ingredients-top">🥢 复制食材清单</button>
   </div>
   <div class="copy-feedback" id="copy-feedback-prompt">已复制指令,粘贴给 AI 即可</div>
 </div>
@@ -708,12 +710,16 @@ document.addEventListener('DOMContentLoaded', function(){
     if (curServings <= 1) return;
     curServings--;
     valEl.textContent = curServings;
+    var baseEl = document.getElementById('serv-base');
+    if (baseEl) baseEl.textContent = curServings;
     updateQtys();
   });
   if (inc) inc.addEventListener('click', function(){
     if (curServings >= 20) return;
     curServings++;
     valEl.textContent = curServings;
+    var baseEl = document.getElementById('serv-base');
+    if (baseEl) baseEl.textContent = curServings;
     updateQtys();
   });
 

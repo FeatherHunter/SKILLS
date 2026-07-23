@@ -96,6 +96,28 @@
 
 ---
 
+## 2026-07-23 - photo_url / source_url 字段语义固化
+
+### 背景
+
+用户指出 `recipes.source_url` 可能存网页链接,也可能存源食谱照片 URL,需要兼容。
+
+### 字段分工
+
+| 字段 | 存什么 |
+|---|---|
+| `photo_url` | 本食谱成品照片 URL 或本地路径 |
+| `source` | 食谱来源说明(可读文本) |
+| `source_url` | 源食谱网页链接 **或** 源食谱图片 URL(兼容) |
+
+### 改动
+
+- `references/database_schema.md`:为 `recipes` 主表的 `photo_url` / `source_url` 加语义补充段落
+- `templates/recipe_view.html`:`.footer` 区根据 `source_url` 扩展名 / 图床域名自动切换显示为「查看原食谱图」或「查看原文」,所有外部链接加 `target="_blank" rel="noopener"`
+- 不改数据库 schema,无迁移
+
+---
+
 ## 2026-07-23 - HTML 三类文件命名规范固化
 
 ### 背景

@@ -653,7 +653,15 @@
 <!-- ── Footer ── -->
 <div class="footer">
   {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
-  {% if recipe.source_url %} · <a href="{{ recipe.source_url }}">原文链接</a>{% endif %}
+  {% if recipe.source_url %}
+    {% set su = recipe.source_url %}
+    {% set su_l = su | lower %}
+    {% if '.jpg' in su_l or '.jpeg' in su_l or '.png' in su_l or '.webp' in su_l or '.gif' in su_l or 'picsum' in su_l or 'loremflickr' in su_l or 'imgur' in su_l %}
+      · <a href="{{ su }}" target="_blank" rel="noopener">查看原食谱图</a>
+    {% else %}
+      · <a href="{{ su }}" target="_blank" rel="noopener">查看原文</a>
+    {% endif %}
+  {% endif %}
   {# ── Batch 2.3: created_at / updated_at ── #}
   {% if recipe.created_at %} · 创建于 {{ recipe.created_at }}{% endif %}
   {% if recipe.updated_at and recipe.updated_at != recipe.created_at %} · 更新于 {{ recipe.updated_at }}{% endif %}

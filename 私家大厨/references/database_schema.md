@@ -43,9 +43,9 @@ CREATE TABLE recipes (
     servings INTEGER,
     total_time_minutes INTEGER,
     status TEXT DEFAULT '未做',
-    photo_url TEXT,
-    source TEXT,
-    source_url TEXT,
+    photo_url TEXT,           -- 本食谱的成品照片(用户上传、拍照或占位图)
+    source TEXT,              -- 食谱来源说明,例如"扬帆远航【紫食谱2.0】-214-313"
+    source_url TEXT,          -- 源食谱的网页链接或源食谱的图片 URL(兼容两种)
     created_at TEXT,
     updated_at TEXT
 );
@@ -53,6 +53,11 @@ CREATE INDEX idx_recipes_name ON recipes(name);
 CREATE INDEX idx_recipes_difficulty ON recipes(difficulty);
 CREATE INDEX idx_recipes_status ON recipes(status);
 ```
+
+### 字段语义补充
+
+- **`photo_url`** — **本食谱**的成品照片 URL 或本地路径。AI 自动录入时如果用户没有提供真实照片,可以临时填充 picsum 占位 URL(`https://picsum.photos/seed/<recipe_slug>/<w>/<h>`)作为兜底,但应在 `description` 或 `source` 字段注明,以便后续替换。
+- **`source_url`** — 源食谱的 **网页链接**(如 baike.baidu.com/...、下厨房/小红书详情页) **或** 源食谱的 **图片 URL**(如源菜谱书的扫描页截图、源出版物的内页图)。系统不区分这两种 URL,按用户实际录入内容存放。渲染时如果检测到 URL 为图片扩展名(`.jpg/.png/.webp`)或 picsum/imgur/loreum 等图床域名,则按 `<img>` 显示并加 `查看原图` 链接;否则按 `<a target="_blank">` 显示为外链。
 
 ## 表2：recipe_categories — 分类标签
 

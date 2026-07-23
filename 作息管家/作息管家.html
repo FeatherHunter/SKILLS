@@ -564,6 +564,49 @@ python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.ht
 <tr><td>单事件精确查重(带标题)</td><td><code>search-plan-event</code>(轻量,保留 JSON)</td></tr>
 </tbody>
 </table>
+<h4>3.1.2 HTML 输出命名规则(2026-07-23 新增 · 路径规范)</h4>
+<p><strong>核心原则</strong>:按 <strong>域 / 模式 / 日期</strong> 三维度分目录,HTML 不与文本 CLI 输出混存。</p>
+<pre><code>作息管家/
+└─ reports/
+   ├─ record/                              ← 作息记录域(已有,历史作息报告)
+   │  └─ YYYY-MM-DD.html                  ← 单日报告(历史命名保留)
+   └─ plan/                                ← 日程计划域(新增)
+      ├─ list/
+      │  └─ plan_list_YYYY-MM-DD.html      ← render-list-events 单日输出
+      └─ query/
+         ├─ plan_query_YYYY-MM-DD.html                 ← render-query-plans 单日
+         └─ plan_query_YYYY-MM-DD_to_YYYY-MM-DD.html   ← render-query-plans 多日</code></pre>
+<p><strong>命名细则</strong>:</p>
+<table>
+<thead>
+<tr><th>路径段</th><th>取值</th><th>来源</th></tr>
+</thead>
+<tbody>
+<tr><td><code>record/</code></td><td>域=<code>record</code></td><td><code>schedule_records</code> 表(作息记录)</td></tr>
+<tr><td><code>plan/</code></td><td>域=<code>plan</code></td><td><code>schedule_plans</code> 表(日程计划)</td></tr>
+<tr><td><code>list/</code> 或 <code>query/</code></td><td>模式</td><td><code>list-events</code>(单日完整) / <code>query-plans</code>(多日聚合)</td></tr>
+<tr><td><code>plan_list_/plan_query_</code></td><td>文件名前缀</td><td>强制 <code>plan_</code> 前缀,与表名 <code>schedule_plans</code> 对齐</td></tr>
+<tr><td><code>YYYY-MM-DD[_to_YYYY-MM-DD]</code></td><td>日期段</td><td>单日 / 区间(<code>_to_</code> 分隔)</td></tr>
+<tr><td><code>.html</code></td><td>扩展名</td><td>单文件自包含,无外部依赖</td></tr>
+</tbody>
+</table>
+<p><strong>互斥规则</strong>:</p>
+<ul>
+<li><code>record/</code> 域 → 禁止出现 <code>plan_list_/plan_query_</code> 前缀(互斥)</li>
+<li><code>plan/list/</code> 模式 → 禁止出现 <code>YYYY-MM-DD_to_*</code> 多日文件名(互斥)</li>
+<li><code>plan/query/</code> 模式 → 单日与多日文件名都用 <code>plan_query_</code> 前缀(不同区间形式区分)</li>
+</ul>
+<p><strong>自动同步历史记录</strong>:2026-07-23 把 23 个旧 <code>reports/*.html</code>(作息报告)迁入 <code>reports/record/</code>,文件名不变(YYYY-MM-DD.html)。</p>
+<p><strong>自定义输出路径</strong>:用户传 <code>--out PATH</code> 时,整路径覆盖上述规则(用于 CI/测试场景)。</p>
+<p><strong>示例</strong>:</p>
+<pre><code class="language-bash"># 默认路径:reports/plan/list/plan_list_2026-07-15.html
+python scripts/schedule_cli.py render-list-events 2026-07-15
+
+# 自定义路径(绕过命名规则,仅测试用)
+python scripts/schedule_cli.py render-list-events 2026-07-15 --out /tmp/test.html
+
+# 多日 → reports/plan/query/plan_query_2026-07-13_to_2026-07-15.html
+python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15</code></pre>
 <p><strong>特点</strong>:
 - 一次看全 DB 状态 + 飞书同步状态
 - <code>feishu_event_id</code> 为 <code>-</code> → 该事件未同步过飞书

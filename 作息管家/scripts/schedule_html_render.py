@@ -175,6 +175,7 @@ def render_query_plans(dates_raw: str) -> dict:
         }
 
     days = []
+    all_events_flat = []  # 平铺,让模板可用统一 events 数组渲染
     total_active = 0
     total_inactive = 0
     total_unsynced = 0
@@ -195,6 +196,7 @@ def render_query_plans(dates_raw: str) -> dict:
             "events": all_e,
             "inactive": [e for e in all_e if e.get("is_active") == 0],
         })
+        all_events_flat.extend(all_e)
         total_active += s["total_active"]
         total_inactive += s["total_inactive"]
         total_unsynced += s["unsynced_count"]
@@ -218,6 +220,7 @@ def render_query_plans(dates_raw: str) -> dict:
             "unsynced_count": total_unsynced,
         },
         "days": days,
+        "events": all_events_flat,  # 平铺,模板 events.length 可用
         "feishu": feishu,
         "errors": [],
     }
@@ -274,8 +277,9 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     head = template_text[:start_idx]
     tail = template_text[end_idx:]
     injected = head + anchor + payload_str + close_tag + tail
-    # 替换 {{date}} / {{payload}} 等占位符(若模板里有)
-    injected = injected.replace("{{ DATE }}", str(payload.get("data", {}).get("meta", {}).get("date", "")))
+    # 替换 {{ title }} 占位符
+    title = title_for_mode(payload.get("data", {}).get("meta", {}))
+    injected = injected.replace("{{ title }}", title).replace("{{ TITLE }}", title)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")
@@ -283,19 +287,49 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
 
 
 def default_output_path(meta: dict) -> Path:
-    """根据 meta 决定默认输出文件名"""
+    """
+    根据 meta 决定默认输出路径(按域/模式/日期 命名规范):
+
+      作息管家/reports/record/YYYY-MM-DD.html           ← 作息记录(已有,历史保留)
+      作息管家/reports/plan/list/plan_list_YYYY-MM-DD.html
+      作息管家/reports/plan/query/plan_query_YYYY-MM-DD[_to_YYYY-MM-DD].html
+
+    规则来源:SKILL.md §3.1.2 HTML 命名规则(2026-07-23 新增)
+    """
     skill_dir = SKILL_DIR
-    out_dir = skill_dir / "reports"
+    base_dir = skill_dir / "reports"
     mode = meta.get("mode", "list-events")
+
     if mode == "list-events":
         date = meta.get("date", "unknown")
-        return out_dir / f"schedule_list_{date}.html"
+        return base_dir / "plan" / "list" / f"plan_list_{date}.html"
     if mode == "query-plans":
         dates = meta.get("dates", [])
         if len(dates) == 1:
-            return out_dir / f"schedule_query_{dates[0]}.html"
-        return out_dir / f"schedule_query_{dates[0]}_to_{dates[-1]}.html"
-    return out_dir / "schedule_view.html"
+            return base_dir / "plan" / "query" / f"plan_query_{dates[0]}.html"
+        return base_dir / "plan" / "query" / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
+    if mode == "record-report":
+        date = meta.get("date", "unknown")
+        return base_dir / "record" / f"{date}.html"
+    return base_dir / "plan" / "view.html"
+
+
+def title_for_mode(meta: dict) -> str:
+    """为模板 title 生成对应文案(替换 {{title}} 占位符)"""
+    mode = meta.get("mode", "list-events")
+    if mode == "list-events":
+        d = meta.get("date", "")
+        return f"日程计划 · {d}"
+    if mode == "query-plans":
+        dates = meta.get("dates", [])
+        if len(dates) == 1:
+            return f"日程计划 · {dates[0]}"
+        if len(dates) >= 2:
+            return f"日程计划 · {dates[0]} ~ {dates[-1]} ({len(dates)} 日)"
+        return "日程计划"
+    if mode == "record-report":
+        return f"作息报告 · {meta.get('date', '')}"
+    return "作息管家"
 
 
 def render_and_write(payload: dict, output_path: Path = None) -> dict:

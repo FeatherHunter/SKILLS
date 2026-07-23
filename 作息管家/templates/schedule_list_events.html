@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>日程计划 · {{ date }}</title>
+<title>{{ title }}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -66,6 +66,15 @@
 
   section.cards{margin-bottom:20px}
   section.cards h2{font-size:15px;margin-bottom:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+
+  section.multi-day{margin-bottom:20px}
+  section.multi-day h2{font-size:15px;margin-bottom:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+  .day-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);font-size:14px}
+  .day-table th{background:var(--soft);color:var(--fg2);text-transform:uppercase;letter-spacing:.04em;font-size:11px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-weight:700}
+  .day-table td{padding:10px 12px;border-bottom:1px solid var(--line)}
+  .day-table tr:last-child td{border-bottom:none}
+  .day-table tr:hover td{background:#fafbfc}
+  .day-table .gap-warn{background:#fff5e0;color:#a25b00;padding:2px 8px;border-radius:6px;font-weight:600}
   .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
   .ev-card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:6px;border-left:4px solid var(--blue)}
   .ev-card .time{font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
@@ -202,8 +211,26 @@
     html += '<div class="timeline"><h2>⏰ 24h 时间轴</h2><div class="timeline-grid" id="timeline-grid"></div></div>';
   }
 
+  /* ===== 多日对比摘要表（仅 query-plans 显示） ===== */
+  if (meta.mode === "query-plans" && data.days && data.days.length > 0) {
+    html += '<section class="multi-day"><h2>📅 多日对比</h2><table class="day-table"><thead><tr>';
+    html += '<th>日期</th><th>活跃</th><th>已停用</th><th>已完成</th><th>未复盘</th><th>未同步飞书</th><th>24h 缺口</th></tr></thead><tbody>';
+    data.days.forEach(function(d){
+      html += '<tr>';
+      html += '<td><strong>' + escapeHtml(d.date) + '</strong></td>';
+      html += '<td>' + d.summary.total_active + '</td>';
+      html += '<td>' + d.summary.total_inactive + '</td>';
+      html += '<td>' + d.summary.completed_count + '</td>';
+      html += '<td>' + d.summary.unreviewed_count + '</td>';
+      html += '<td>' + d.summary.unsynced_count + '</td>';
+      html += '<td>' + (d.gap && d.gap.gap_count > 0 ? '<span class="gap-warn">' + d.gap.gap_count + '</span>' : '0') + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></section>';
+  }
+
   /* ===== 事件卡片 ===== */
-  html += '<section class="cards"><h2>📋 事件卡片</h2><div class="cards-grid" id="cards-grid"></div></section>';
+  html += '<section class="cards"><h2>📋 事件卡片（' + events.length + ' 条）</h2><div class="cards-grid" id="cards-grid"></div></section>';
 
   /* ===== 折叠：原始 JSON / 错误明细 ===== */
   if (data.inactive && data.inactive.length > 0) {

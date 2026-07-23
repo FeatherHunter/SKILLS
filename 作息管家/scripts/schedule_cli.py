@@ -1822,6 +1822,10 @@ def cmd_help():
   ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  补计划：单条追加，幂等
   feishu-resync <date>                    重同步某天到飞书
 
+HTML 渲染（2026-07-23 新增，可视化查询结果）:
+  render-list-events <date> [--out PATH]   渲染 list-events 为 HTML(摘要卡 + 时间轴 + 事件卡片)
+  render-query-plans <d1,d2,...> [--out PATH]  渲染多日 query-plans 为 HTML
+
 分类系统（2026-07-22 新增）:
   list-categories [--level 1|2] [--json]   列出分类白名单
   propose-category --code X --hint Y      提议新分类（对话式，AI 用）

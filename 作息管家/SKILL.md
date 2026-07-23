@@ -331,11 +331,103 @@ AI 判断逻辑:
 
 > 详细命令见: `references/CLI命令.md`
 
-#### 3.x 作息记录查询 → HTML 单日报告（2026-07-23 新增 · 4 段结构）
+#### 3.x 作息记录查询 → HTML 多模板报告（2026-07-23 重构 · 5 模板 8 命令）
 
-**触发词**：查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 看看我昨天做了什么 / 那天的作息报告
+**核心语义**：AI 收到"查作息"+日期 → 调对应命令 → 从 `schedule_records` 表现读数据 → 派生 4 段内容 + 健康分 + AI 钩子 → 写一份**单文件离线 HTML**到 `SKILLS_DB_PATH/schedule_html/record/{day|range|compare|category|anomaly}/...` → AI 拿到 `file_path` 后用 `<media>` 交付给用户。
 
-**核心语义**：AI 收到"查作息"+日期 → 调 `render-record-report <date>` → 直接从 `schedule_records` 表现读数据 → 派生 4 段内容 → 写一份单文件 HTML 到 `SKILLS_DB_PATH/schedule_html/record/<date>_record_report.html` → AI 拿到 `file_path` 后用 `<media>` 交付给用户。
+**触发词与命令路由**：
+
+| 触发词（用户问法示例） | 命令 | 模板 | 输出路径 |
+|---|---|---|---|
+| 查作息 2026-07-15 / 昨天我做了什么 | `render-record-day <date>` | T1 单日 | `record/day/<date>_record_day.html` |
+| 这一周怎么样 / 7/13~7/19 看看 | `render-record-range <start> <end>` | T2 区间 | `record/range/<start>_to_<end>_record_range.html` |
+| 6 月 vs 7 月 / 上周 vs 这周 | `render-record-compare-months <YYYY-MM> <YYYY-MM>` | T3 对比 | `record/compare/<labelA>_vs_<labelB>_record_compare.html` |
+| 这 7 天健身什么时候做的 | `render-record-category-range <start> <end> <cat>` | T4 类别深挖 | `record/category/<cat>_<start>_to_<end>_record_category.html` |
+| 最近状态 / 有没有异常 | `render-record-anomaly [--window 7]` | T5 异常 | `record/anomaly/<today>_w7_record_anomaly.html` |
+
+**5 模板设计原则**（基于"让用户感知问题"的第一性原理）：
+
+1. **L1 速读层（5 秒）**：4 张数字卡（活跃分类/总时长/健康分/睡眠），健康分 0-100（红/黄/绿）
+2. **L2 趋势层（30 秒）**：分类进度条 + 24h 时间轴 + 7 维趋势折线 + 24h×N 天热力图 + 雷达
+3. **L3 决策层（3 分钟）**：**AI 思考钩子卡**（黄底）— 模板自带 `data.ai_questions[]` 字段，AI 看后能直接追问用户
+4. **对比基线**：每张报告都嵌 3 个对比维度（时间/目标/理想）让用户看到"差距"
+5. **5 状态**：正常 / 空 / 缺 / 错 / 离线(常驻 banner)，手册 §7 必备
+
+**模板文件结构**（5 模板 + 共享 CSS/JS）：
+
+```
+作息管家/templates/
+├── _record_styles.css      # 5 模板共享样式表(7.0KB)
+├── _record_engine.js       # 5 模板共享 JS 引擎(13.5KB)  模式分发:record-day/range/compare/category/anomaly
+├── schedule_record_day.html       # T1 单日
+├── schedule_record_range.html     # T2 区间
+├── schedule_record_compare.html   # T3 对比
+├── schedule_record_category.html  # T4 类别深挖
+└── schedule_record_anomaly.html   # T5 异常
+```
+
+5 模板 HTML 全部引用共享 CSS/JS 引擎，`render-and-write` 写文件时**自动把 `_record_styles.css` 和 `_record_engine.js` 复制到输出目录**，让 HTML 离线可读。
+
+**输出路径硬绑**：`SKILLS_DB_PATH/schedule_html/record/{子目录}/<file>.html`
+
+- `day/YYYY-MM-DD_record_day.html`
+- `range/YYYY-MM-DD_to_YYYY-MM-DD_record_range.html`
+- `compare/<labelA>_vs_<labelB>_record_compare.html`
+- `category/<category>_YYYY-MM-DD_to_YYYY-MM-DD_record_category.html`
+- `anomaly/YYYY-MM-DD_w<N>_record_anomaly.html`
+
+**约束**：
+
+- 目录 `record/day/` `record/range/` 等必须已存在（**不静默建**）— 报错文案带字段名+当前值+修复建议
+- 同日期/区间覆盖写（用户主动调就期望刷新）
+- HTML 单文件 + 共享 CSS/JS 一起输出（不依赖 CDN）
+- 第 ③ 段"AI 叙事亮点"待 Phase 2（暂用 `data.highlights=[]` 占位）
+
+**5 模板详细技术**（与 plan 域的 1 模板设计对比）：
+
+| 项 | plan 域 | record 域 |
+|---|---|---|
+| 模板数 | 1（多 mode） | 5（每 mode 一模板） |
+| 核心算法 | `cat_minutes / hour_cats` | `cat_minutes / hour_dominant / 7维聚合 / 健康分 / 异常检测 / 热力图` |
+| 共享层 | 1 模板 + 1 JS | 1 CSS + 1 JS + 5 薄壳 HTML |
+| 派生函数 | `render_list_events / render_query_plans` | `render_record_day/range/compare/category/anomaly`（6 个） |
+| 视觉设计语言 | Apple 风浅色 + 摘要+时间轴+卡片 | 同上,额外加：健康分大卡、7 维趋势 SVG、24h×N 天热力图、7 维雷达 SVG、AI 思考钩子卡 |
+
+**实现位置**：
+- 共享算法：`scripts/calculations.py`（新文件,376 行,共享派生函数:健康分/异常检测/AI 钩子生成）
+- 共享样式：`templates/_record_styles.css`
+- 共享 JS：`templates/_record_engine.js`
+- 渲染器：`scripts/schedule_html_render.py`（6 个 `render_record_*` 函数 + `template_map` 5 条 + `default_output_path` 5 条分支）
+- CLI 入口：`scripts/schedule_cli.py` 的 7 个 `cmd_render_record_*` 子命令（+ 1 兼容旧 `render-record-report`）
+- 触发词路由：AI 协同时按上表"触发词"列匹配命令
+
+**与原命令的边界**：
+
+| 场景 | 用哪个 |
+|---|---|
+| 终端查、复制粘贴 | `list / detail / summary / timeline / report / range / status`（文本，7 个原命令保留） |
+| 浏览器看、截图分享、可视化 | `render-record-day / range / compare / category / anomaly`（HTML，5 模板） |
+| Cron 7:30 自动推送 | **已废**（reports/ 目录已删） |
+| 一次性查某月 vs 某月 | `render-record-compare-months 2026-06 2026-07`（快捷） |
+| 单类深挖（健身什么时候做的） | `render-record-category-range 2026-07-01 2026-07-31 健身` |
+| 异常检测（最近 7 天是否有偏差） | `render-record-anomaly --window 7` |
+
+**旧 `render-record-report` 兼容**：保留命令，`mode="record-report"` 在 `template_map` 映射到 `schedule_record_day.html`，调用 `render_record_day()` 函数，输出路径迁移到 `record/day/YYYY-MM-DD_record_day.html`。
+
+**触发词与命令映射路由表**（AI 协同时优先查此表）：
+
+| 用户说 | 调 |
+|---|---|
+| 查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 昨天我做了什么 | `render-record-day <date>` |
+| 这一周 / 最近 7 天 / 7/13~7/19 看看 | `render-record-range <start> <end>` |
+| 6 月 vs 7 月 / 整月对比 | `render-record-compare-months 2026-06 2026-07` |
+| 这周 vs 上周 / 这月 vs 上月 / 两段时间对比 | `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` |
+| 健身习惯 / 健身什么时候做的 / 健身频次 | `render-record-category-range <start> <end> <category>` |
+| 最近状态 / 有没有异常 / 异常检测 | `render-record-anomaly --window 7` |
+
+---
+
+#### 3.x.1 作息记录查询 → HTML 单日报告（2026-07-23 新增 · 4 段结构 · 兼容保留）
 
 **4 段结构**（沿用 2026-06-25.html 等历史报告视觉）：
 

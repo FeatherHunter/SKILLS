@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 作息管家 - 主CLI脚本
 功能:分析语录数据库 → 生成作息记录 → 提供查询接口
@@ -13,6 +13,7 @@
 """
 
 import sys
+import json as _json
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
@@ -589,6 +590,20 @@ def main(argv=None):
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
     elif cmd == "render-record-report":
         cmd_render_record_report(args)
+    elif cmd == "render-record-day":
+        cmd_render_record_day(args)
+    elif cmd == "render-record-range":
+        cmd_render_record_range(args)
+    elif cmd == "render-record-compare":
+        cmd_render_record_compare(args)
+    elif cmd == "render-record-compare-months":
+        cmd_render_record_compare_months(args)
+    elif cmd == "render-record-category":
+        cmd_render_record_category(args)
+    elif cmd == "render-record-category-range":
+        cmd_render_record_category_range(args)
+    elif cmd == "render-record-anomaly":
+        cmd_render_record_anomaly(args)
     # === end ===
 
     # === 2026-07-22 新增：分类系统管理 ===
@@ -1383,7 +1398,6 @@ def cmd_render_list_events(args):
       python scripts/schedule_cli.py render-list-events 2026-07-15
       python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.html
     """
-    import json as _json
     from pathlib import Path as _P
 
     if not args:
@@ -1438,7 +1452,6 @@ def cmd_render_query_plans(args):
       python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15
       python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14 --out reports/wk.html
     """
-    import json as _json
     from pathlib import Path as _P
 
     if not args:
@@ -1505,7 +1518,6 @@ def cmd_render_record_report(args):
     用法:
       python scripts/schedule_cli.py render-record-report 2026-07-15
     """
-    import json as _json
     from schedule_html_render import _record_dir, render_record_report, render_and_write
     from pathlib import Path as _P
 
@@ -1572,6 +1584,194 @@ def cmd_render_record_report(args):
     }, ensure_ascii=False, indent=2))
 
 
+# ===== 7 个新 cmd(2026-07-23 升级:5 模板 8 命令)=====
+# 共享 helper:校验日期 + 调用派生 + 写文件 + 输出 JSON
+def _render_record_cmd(args, render_fn, mode_name, label_fields, output_path_override=None):
+    """
+    render_fn: 一个返回 payload 字典的函数
+    label_fields: 用于 stdout JSON 的额外 meta 字段列表
+    output_path_override: 可选的输出路径(Path 对象,None 用 default_output_path)
+    """
+    from schedule_html_render import render_and_write
+    from pathlib import Path as _P
+    if not args:
+        return {"status": "error", "message": f"用法: 至少需要 1 个参数"}
+
+    try:
+        payload = render_fn(*args)
+    except Exception as e:
+        return {"status": "error", "message": f"派生失败: {type(e).__name__}: {e}"}
+
+    if payload.get("status") != "ok":
+        return payload
+
+    result = render_and_write(payload, output_path_override)
+    if result.get("status") != "ok":
+        return result
+
+    fp = _P(result["data"]["file_path"])
+    data = {
+        "file_path": str(fp),
+        "bytes": fp.stat().st_size,
+        "size_kb": result["data"]["size_kb"],
+        "mode": mode_name,
+    }
+    data.update(label_fields or {})
+    return {
+        "status": "ok",
+        "data": data,
+        "message": f"✓ {mode_name} 已写入: {fp}",
+    }
+
+
+def cmd_render_record_day(args):
+    """render-record-day <日期>"""
+    from schedule_html_render import render_record_day
+    if not args:
+        print(_json.dumps({"status":"error","message":"用法: render-record-day <日期>"}, ensure_ascii=False))
+        return
+    r = _render_record_cmd(args, render_record_day, "record-day",
+                            {"date": args[0], "record_count": None})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_range(args):
+    """render-record-range <开始> <结束>"""
+    from schedule_html_render import render_record_range
+    if len(args) < 2:
+        print(_json.dumps({"status":"error","message":"用法: render-record-range <开始> <结束>"}, ensure_ascii=False))
+        return
+    r = _render_record_cmd(args, render_record_range, "record-range",
+                            {"start": args[0], "end": args[1]})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_compare(args):
+    """render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>"""
+    from schedule_html_render import render_record_compare
+    if len(args) < 6:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>",
+            "example":"render-record-compare 6月 2026-06-01 2026-06-30 7月 2026-07-01 2026-07-31"
+        }, ensure_ascii=False))
+        return
+    r = _render_record_cmd(args, render_record_compare, "record-compare",
+                            {"label_a": args[0], "label_b": args[3]})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_compare_months(args):
+    """render-record-compare-months <YYYY-MM> <YYYY-MM>"""
+    from datetime import date as _d
+    from schedule_html_render import render_record_compare
+
+    if len(args) < 2:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: render-record-compare-months <YYYY-MM> <YYYY-MM>",
+            "example":"render-record-compare-months 2026-06 2026-07"
+        }, ensure_ascii=False))
+        return
+
+    a, b = args[0], args[1]
+    # 解析 YYYY-MM
+    try:
+        ya, ma = map(int, a.split("-"))
+        yb, mb = map(int, b.split("-"))
+    except Exception:
+        print(_json.dumps({"status":"error","message":f"date 格式非法: '{a}' 或 '{b}'(期望 YYYY-MM)"}, ensure_ascii=False))
+        return
+
+    da_start = _d(ya, ma, 1)
+    db_start = _d(yb, mb, 1)
+    # 计算下月第一天
+    if ma == 12:
+        da_end = _d(ya + 1, 1, 1)
+    else:
+        da_end = _d(ya, ma + 1, 1)
+    if mb == 12:
+        db_end = _d(yb + 1, 1, 1)
+    else:
+        db_end = _d(yb, mb + 1, 1)
+
+    sa = da_start.isoformat()
+    ea = da_end.isoformat()
+    sb = db_start.isoformat()
+    eb = db_end.isoformat()
+    label_a = f"{ya}年{ma}月"
+    label_b = f"{yb}年{mb}月"
+    r = _render_record_cmd([label_a, sa, ea, label_b, sb, eb],
+                            render_record_compare, "record-compare",
+                            {"label_a": label_a, "label_b": label_b,
+                             "a_range": f"{sa}~{ea}", "b_range": f"{sb}~{eb}"})
+    # 替换路径:用中文 label 替代 a_vs_b
+    if r.get("status") == "ok":
+        from pathlib import Path as _P
+        new_path = _P(r["data"]["file_path"]).parent / f"{label_a}_vs_{label_b}_record_compare.html"
+        old_path = _P(r["data"]["file_path"])
+        if old_path.exists():
+            old_path.rename(new_path)
+        r["data"]["file_path"] = str(new_path)
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_category(args):
+    """render-record-category <日期> <category>"""
+    from schedule_html_render import render_record_category
+    if len(args) < 2:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: render-record-category <日期> <category>",
+            "example":"render-record-category 2026-07-15 健身"
+        }, ensure_ascii=False))
+        return
+    date, category = args[0], args[1]
+    r = _render_record_cmd([category, date, date], render_record_category, "record-category",
+                            {"date": date, "category": category})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_category_range(args):
+    """render-record-category-range <开始> <结束> <category>"""
+    from schedule_html_render import render_record_category
+    if len(args) < 3:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: render-record-category-range <开始> <结束> <category>",
+            "example":"render-record-category-range 2026-07-01 2026-07-31 健身"
+        }, ensure_ascii=False))
+        return
+    start, end, category = args[0], args[1], args[2]
+    r = _render_record_cmd([category, start, end], render_record_category, "record-category",
+                            {"start": start, "end": end, "category": category})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
+def cmd_render_record_anomaly(args):
+    """render-record-anomaly [--window 7]"""
+    from schedule_html_render import render_record_anomaly
+
+    window = 7  # 默认
+    i = 0
+    while i < len(args):
+        if args[i] == "--window" and i + 1 < len(args):
+            try:
+                window = int(args[i + 1])
+            except ValueError:
+                print(_json.dumps({"status":"error","message":f"--window 值非法: '{args[i+1]}'(期望整数 1-90)"}, ensure_ascii=False))
+                return
+            i += 2
+        else:
+            i += 1
+    if not (1 <= window <= 90):
+        print(_json.dumps({"status":"error","message":f"--window 超出范围: {window}(期望 1-90)"}, ensure_ascii=False))
+        return
+    r = _render_record_cmd([window], render_record_anomaly, "record-anomaly",
+                            {"window_days": window})
+    print(_json.dumps(r, ensure_ascii=False, indent=2))
+
+
 # ============================================================
 # 2026-07-22 新增：分类系统管理（基于 validators.py 白名单）
 # ============================================================
@@ -1587,7 +1787,6 @@ def cmd_list_categories(args):
     list-categories [--level 1|2] [--json]
     列出分类白名单。默认同时显示一级+二级。
     """
-    import json as _json
     from validators import list_level1, list_level2
 
     level = None
@@ -1627,7 +1826,6 @@ def cmd_propose_category(args):
     AI 发现新分类不在白名单时调用 → 输出"提议",等用户口头确认后
     再调 approve-category 真正写入。
     """
-    import json as _json
     code = None
     hint = ""
     i = 0
@@ -1677,7 +1875,6 @@ def cmd_approve_category(args):
     approve-category --code "一级.二级"
     用户确认后,AI 调用此命令写入白名单 YAML。
     """
-    import json as _json
     code = None
     i = 0
     while i < len(args):
@@ -1775,7 +1972,6 @@ def cmd_add_record(args):
     必填 9 字段:date / time_start / time_end / duration_minutes / activity /
                 category / source_contents / source_timestamps / analysis_reasoning
     """
-    import json as _json
 
     # === 1. 解析参数 ===
     parsed = {}
@@ -1926,7 +2122,14 @@ def cmd_help():
 HTML 渲染(可视化查询结果):
   render-list-events <date> [--out PATH]   渲染日程 list-events 为 HTML(摘要+时间轴+事件卡片)
   render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
-  render-record-report <date>              渲染作息记录单日报告 HTML(硬绑 SKILLS_DB_PATH/schedule_html/)
+  render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
+  render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
+  render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)
+  render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>   两段对比报告 HTML(7维差异+AI钩子)
+  render-record-compare-months <YYYY-MM> <YYYY-MM>  整月对比报告 HTML(如 2026-06 vs 2026-07)
+  render-record-category <日期> <category>    单日单类深挖 HTML(24h×1day热力图)
+  render-record-category-range <开始> <结束> <category>  区间单类深挖 HTML(24h×Nday热力图)
+  render-record-anomaly [--window 7]          异常检测 HTML(雷达+红框+AI钩子)
 
 分类系统（2026-07-22 新增）:
   list-categories [--level 1|2] [--json]   列出分类白名单

@@ -379,3 +379,86 @@ def records_in_range(get_records_fn, start: str, end: str) -> list[dict]:
     recs = get_records_fn(start, end)
     recs.sort(key=lambda r: (r.get("date", ""), r.get("time_start", "")))
     return recs
+
+
+# ===== AI 钩子生成(让 AI 看完成绩单后能追问用户)=====
+
+def ai_questions_for_day(date: str, summary: list[dict], sleep_min: int, total_min: int, health_score: int) -> list[str]:
+    qs = []
+    if sleep_min < 5*60:
+        qs.append(f"{date} 主睡眠仅 {fmt_dur(sleep_min)},严重低于 7h 阈值,是否最近身体不适或睡眠习惯恶化?")
+    elif sleep_min < 7*60:
+        qs.append(f"{date} 主睡眠 {fmt_dur(sleep_min)},低于推荐 7h,能否告知 23:00 前入睡的实际阻碍?")
+    if total_min < 24*60:
+        qs.append(f"{date} 记录总时长 {fmt_dur(total_min)},未覆盖 24h,缺失 {fmt_dur(24*60-total_min)} 数据,是记录遗漏还是那天确实没在记录?")
+    if health_score < 60:
+        qs.append(f"{date} 健康分 {health_score}/100 偏低,要不要我对比上周同期看是趋势还是单次波动?")
+    import re
+    sleep_top = next((s for s in summary if re.search(r"睡眠|午睡", s["category"])), None)
+    work_top = next((s for s in summary if re.search(r"工作", s["category"])), None)
+    if work_top and work_top["total_minutes"] > 10*60:
+        qs.append(f"{date} 工作时长 {fmt_dur(work_top['total_minutes'])},超过 10h,可能存在过度工作,需要看周/月趋势吗?")
+    if not qs:
+        qs.append(f"{date} 各项指标健康,要不要对比上周同期看连续性?")
+    return qs
+
+
+def ai_questions_for_range(start: str, end: str, dim_totals: dict, health_score: int, anomalies_count: int) -> list[str]:
+    qs = []
+    if anomalies_count > 0:
+        qs.append(f"{start} ~ {end} 区间检出 {anomalies_count} 项异常,要不要逐项看详情?")
+    if health_score < 60:
+        qs.append(f"区间健康分 {health_score}/100 偏低,是否需要跟前一周期对比找原因?")
+    sleep = dim_totals.get("维持", 0)
+    days = (datetime.fromisoformat(end) - datetime.fromisoformat(start)).days + 1
+    daily_sleep = sleep // days if days else 0
+    if daily_sleep < 5*60:
+        qs.append(f"区间日均睡眠 {fmt_dur(daily_sleep)},严重不足,要不要看具体哪几天最严重?")
+    work = dim_totals.get("工作", 0)
+    daily_work = work // days if days else 0
+    if daily_work > 9*60:
+        qs.append(f"区间日均工作 {fmt_dur(daily_work)},超过 9h,工作强度是否可持续?")
+    if not qs:
+        qs.append(f"区间整体健康,要不要换最近 3 月做长期趋势对比?")
+    return qs
+
+
+def ai_questions_for_compare(ranges: list[dict], diffs: list[dict]) -> list[str]:
+    qs = []
+    big_changes = [d for d in diffs if abs(d.get("delta", 0)) > 4*60]  # > 4h 变化
+    if big_changes:
+        names = "、".join([d["dim"] for d in big_changes[:3]])
+        qs.append(f"两个区间在 {names} 维度变化超过 4h,主要原因是什么?")
+    sleep_diff = next((d for d in diffs if d.get("dim") == "维持"), None)
+    if sleep_diff and abs(sleep_diff.get("delta", 0)) > 60*60:
+        qs.append(f"睡眠时长差 {sleep_diff.get('delta_short','')},这是主动调整还是被动影响?")
+    work_diff = next((d for d in diffs if d.get("dim") == "工作"), None)
+    if work_diff and work_diff.get("delta", 0) > 2*60:
+        qs.append(f"工作时长增 {work_diff.get('delta_short','')},是否伴随效率提升?")
+    if not qs:
+        qs.append("两个区间整体接近,是否有细微但重要的差异想深挖?")
+    return qs
+
+
+def ai_questions_for_category(cat: str, days_count: int, total_min: int, daily_avg: int) -> list[str]:
+    qs = []
+    if daily_avg > 0 and days_count > 0:
+        qs.append(f"{cat} 在 {days_count} 天里平均每天 {fmt_dur(daily_avg)},这个频率符合你的目标吗?")
+    if days_count >= 7:
+        qs.append(f"{cat} 跨度 {days_count} 天,要不要看哪些天没做/为什么没做?")
+    if not qs:
+        qs.append(f"{cat} 暂无明显模式,要不要扩大区间?")
+    return qs
+
+
+def ai_questions_for_anomaly(anomalies: list[dict], window_days: int) -> list[str]:
+    qs = []
+    reds = [a for a in anomalies if a.get("severity") == "red"]
+    if reds:
+        names = "、".join([a["dim"] for a in reds[:3]])
+        qs.append(f"近 {window_days} 天在 {names} 维度出现严重异常,要不要逐项排查原因?")
+    if not qs and anomalies:
+        qs.append(f"近 {window_days} 天有 {len(anomalies)} 项轻微异常,是否要跟上周对比确认趋势?")
+    if not qs:
+        qs.append(f"近 {window_days} 天无异常,作息稳定。是否要拉更长期(30天)趋势看稳定性?")
+    return qs

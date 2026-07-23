@@ -283,6 +283,15 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")
+
+    # 5 模板共享 CSS/JS 引擎: 复制到输出目录(让 HTML 离线可读)
+    if "schedule_record_" in template_name:
+        for aux in ("_record_styles.css", "_record_engine.js"):
+            src = TEMPLATE_DIR / aux
+            if src.exists():
+                import shutil
+                shutil.copy2(src, output_path.parent / aux)
+
     return output_path
 
 
@@ -324,9 +333,72 @@ def default_output_path(meta: dict) -> Path:
             return plan_query / f"plan_query_{dates[0]}.html"
         return plan_query / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
     if mode == "record-report":
+        # 兼容旧 CLI,等价 record-day
         date = meta.get("date", "unknown")
-        return record / f"{date}_record_report.html"
+        return record / "day" / f"{date}_record_day.html"
+    if mode == "record-day":
+        date = meta.get("date", "unknown")
+        return record / "day" / f"{date}_record_day.html"
+    if mode == "record-range":
+        start = meta.get("start", "unknown")
+        end = meta.get("end", "unknown")
+        return record / "range" / f"{start}_to_{end}_record_range.html"
+    if mode == "record-compare":
+        ranges = meta.get("ranges") or []
+        a = (ranges[0] or {}).get("label", "a") if len(ranges) > 0 else "a"
+        b = (ranges[1] or {}).get("label", "b") if len(ranges) > 1 else "b"
+        return record / "compare" / f"{a}_vs_{b}_record_compare.html"
+    if mode == "record-category":
+        cat = meta.get("category", "cat")
+        start = meta.get("start", "x")
+        end = meta.get("end", "x")
+        return record / "category" / f"{cat}_{start}_to_{end}_record_category.html"
+    if mode == "record-anomaly":
+        w = meta.get("window", 7)
+        from datetime import date as _d
+        return record / "anomaly" / f"{_d.today().isoformat()}_w{w}_record_anomaly.html"
     return base / "view.html"
+
+
+# 5 模板目录映射(5 模式对应 5 模板 + 3 子目录)
+_RECORD_TEMPLATE_DIRS = {
+    "record-day":      "day",
+    "record-range":    "range",
+    "record-compare":  "compare",
+    "record-category": "category",
+    "record-anomaly":  "anomaly",
+}
+
+
+def record_output_path(mode: str, *parts: str) -> Path:
+    """
+    5 模板统一路径生成器:
+      record-day     <date>                            → <base>/record/day/<date>_record_day.html
+      record-range   <start> <end>                     → <base>/record/range/<start>_to_<end>_record_range.html
+      record-compare <label1> <label2>                 → <base>/record/compare/<label1>_vs_<label2>_record_compare.html
+      record-category <cat> <start> <end>              → <base>/record/category/<cat>_<start>_to_<end>_record_category.html
+      record-anomaly [window]                          → <base>/record/anomaly/<today>_record_anomaly.html
+    """
+    base = _html_base_dir() / 'record'
+    sub = _RECORD_TEMPLATE_DIRS.get(mode, "")
+    from datetime import date as _dt
+    today = _dt.today().isoformat()
+    if mode == "record-day":
+        d = parts[0] if parts else today
+        return base / "day" / f"{d}_record_day.html"
+    if mode == "record-range":
+        s, e = (parts + (today, today))[:2]
+        return base / "range" / f"{s}_to_{e}_record_range.html"
+    if mode == "record-compare":
+        a, b = (parts + ("a", "b"))[:2]
+        return base / "compare" / f"{a}_vs_{b}_record_compare.html"
+    if mode == "record-category":
+        cat, s, e = (parts + ("cat", today, today))[:3]
+        return base / "category" / f"{cat}_{s}_to_{e}_record_category.html"
+    if mode == "record-anomaly":
+        w = parts[0] if parts else "7"
+        return base / "anomaly" / f"{today}_w{w}_record_anomaly.html"
+    return base / f"unknown_{today}.html"
 
 
 def title_for_mode(meta: dict) -> str:
@@ -443,100 +515,46 @@ def _fmt_dur_short(mins: int) -> str:
 
 
 def render_record_report(date: str) -> dict:
-    """
-    作息记录单日 HTML 报告 — 4 段结构(时间分配/24h色带/AI亮点占位/睡眠分析)
-    视觉严格沿用历史 _render_report_2026-07-02.py 的 CSS 与布局
-    数据从 schedule_records 现读 + 实时聚合(替代原 /tmp/report_data.json 中间文件)
-    """
-    from collections import defaultdict
+    """兼容旧 CLI render-record-report — 等价于 render_record_day"""
+    return render_record_day(date)
+
+
+# ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
+
+def render_record_day(date: str) -> dict:
+    """T1 单日:4 卡摘要 + 24h 时间轴 + 分类进度 + 睡眠分析 + 健康分 + AI 钩子"""
     from schedule_db import _normalize_date, get_records_by_date
+    from calculations import (
+        aggregate_by_category, build_hourly_dominant, compute_health_score,
+        ai_questions_for_day,
+    )
 
     date = _normalize_date(date)
-
-    # 1. 取该日全部记录
     records = get_records_by_date(date)
-
-    # 2. 计算 cat_minutes(分类聚合时长)— 沿用 _gen_report 算法
-    cat_minutes: dict[str, int] = defaultdict(int)
-    for r in records:
-        cat_minutes[r["category"]] += r.get("duration_minutes") or 0
+    cat_minutes = aggregate_by_category(records)
     total_minutes = sum(cat_minutes.values())
 
-    # 3. 24h 时间轴(每条按分钟切片到小时桶,取主导分类)
-    #    沿用 _render_report_2026-07-02.py:79-118 算法
-    hour_minutes = [defaultdict(int) for _ in range(24)]
-    hour_min_count = [0 for _ in range(24)]  # 该小时实际记录数
-    hour_first_cat = [None for _ in range(24)]  # 该小时首条记录的分类
-    for r in records:
-        ts = r["time_start"]
-        te = r["time_end"]
-        if not ts or not te:
-            continue
-        h_start = _to_min(ts) // 60
-        e_min = _to_min(te)
-        if e_min <= _to_min(ts):
-            continue  # 跨日跳过
-        cat = r["category"]
-        # 切片到小时桶
-        cur = _to_min(ts)
-        while cur < e_min:
-            h = cur // 60
-            if 0 <= h < 24:
-                next_hour = (h + 1) * 60
-                covered = min(next_hour, e_min) - cur
-                hour_minutes[h][cat] += covered
-                if hour_first_cat[h] is None:
-                    hour_first_cat[h] = cat
-                hour_min_count[h] += 1
-            cur += 60
-            if covered <= 0:
-                cur = next_hour
-    hour_cats = []
-    for h in range(24):
-        if hour_minutes[h]:
-            dominant = max(hour_minutes[h].items(), key=lambda x: x[1])[0]
-        elif hour_first_cat[h]:
-            dominant = hour_first_cat[h]
-        else:
-            dominant = "休息"
-        hour_cats.append(dominant)
-
-    # 4. 睡眠分析(沿用 _gen_report 算法)— 过滤 category="睡眠"/"睡眠(超时)"
-    sleep_records = [
-        r for r in records
-        if str(r.get("category", "")).startswith("睡眠") or str(r.get("category", "")) in ("午睡",)
-    ]
-    main_sleep = None
-    if sleep_records:
-        # 取时长最长的(原 _gen_report 用 real_duration,这里 duration_minutes 等价)
-        sleep_sorted = sorted(sleep_records, key=lambda r: r.get("duration_minutes") or 0, reverse=True)
-        main_sleep = sleep_sorted[0]
-
-    # 5. 组装 summary_items(按时长倒序,与历史报告一致)
     sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
-    summary_items = []
-    for cat, mins in sorted_cats:
-        pct = (mins / total_minutes * 100) if total_minutes else 0.0
-        summary_items.append({
-            "category": cat,
-            "emoji": _cat_emoji(cat),
-            "color": _cat_color(cat),
-            "total_minutes": int(mins),
-            "duration_text": _fmt_dur(int(mins)),
-            "pct": round(pct, 1),
-        })
+    summary_items = [
+        {
+            "category": cat, "emoji": _cat_emoji(cat), "color": _cat_color(cat),
+            "total_minutes": int(mins), "duration_text": _fmt_dur(int(mins)),
+            "pct": round((mins / total_minutes * 100) if total_minutes else 0.0, 1),
+        }
+        for cat, mins in sorted_cats
+    ]
 
-    # 6. timeline[24]
-    timeline = []
-    for h in range(24):
-        timeline.append({
-            "hour": h,
-            "category": hour_cats[h],
-            "color": _cat_color(hour_cats[h]),
-            "tip": f"{h:02d}:00 {hour_cats[h]}",
-        })
+    hour_dominant = build_hourly_dominant(records)
+    timeline = [
+        {"hour": h["hour"], "category": h["dominant_cat"],
+         "color": _cat_color(h["dominant_cat"]),
+         "tip": f"{h['hour']:02d}:00 {h['dominant_cat']}"}
+        for h in hour_dominant
+    ]
 
-    # 7. sleep_data(给模板睡眠分析卡片用)
+    sleep_records = [r for r in records
+                    if "睡眠" in r.get("category", "") or "午睡" in r.get("category", "")]
+    main_sleep = max(sleep_records, key=lambda r: r.get("duration_minutes") or 0) if sleep_records else None
     sleep_data = {
         "total_records": len(sleep_records),
         "main_sleep": (
@@ -546,17 +564,24 @@ def render_record_report(date: str) -> dict:
                 "duration_minutes": int(main_sleep.get("duration_minutes") or 0),
                 "duration_text": _fmt_dur(int(main_sleep.get("duration_minutes") or 0)),
                 "category": main_sleep.get("category"),
-            }
-            if main_sleep else None
+                "color": _cat_color(main_sleep.get("category", "睡眠")),
+            } if main_sleep else None
         ),
         "is_sufficient": (main_sleep.get("duration_minutes") or 0) >= 7 * 60 if main_sleep else False,
     }
+    sleep_min = main_sleep.get("duration_minutes") or 0 if main_sleep else 0
 
-    # 8. meta
+    dt = datetime.fromisoformat(date)
+    weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
     payload = {
         "meta": {
-            "mode": "record-report",
+            "mode": "record-day",
             "date": date,
+            "weekday": weekdays[dt.weekday()],
+            "title": f"作息报告 · {dt.year}年{dt.month}月{dt.day}日({weekdays[dt.weekday()]})",
+            "subtitle": f"共 {len(records)} 条记录,总时长 {_fmt_dur(total_minutes)}",
+            "template_name": "schedule_record_day.html",
             "record_count": len(records),
             "total_minutes": int(total_minutes),
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -564,23 +589,289 @@ def render_record_report(date: str) -> dict:
         "summary_items": summary_items,
         "timeline": timeline,
         "sleep_data": sleep_data,
-        "highlights": [],   # 第 ③ 段默认空(本次不做 AI 叙事亮点)
+        "health": {
+            "score": compute_health_score(records),
+            "label": "充足" if sleep_min >= 7*60 else ("偏短" if sleep_min >= 5*60 else "严重不足"),
+        },
+        "ai_questions": ai_questions_for_day(date, summary_items, sleep_min, total_minutes, compute_health_score(records)),
         "errors": [],
     }
-
     return {
         "status": "ok",
         "data": payload,
-        "message": f"✓ {date} 作息记录渲染数据已生成({len(records)} 条,共 {total_minutes // 60}h{total_minutes % 60}m)",
+        "message": f"✓ {date} 单日报告数据已生成",
+    }
+
+
+def render_record_range(start: str, end: str) -> dict:
+    """T2 区间:4 卡摘要 + 7 维趋势 SVG + 分类进度 + 健康分 + AI 钩子"""
+    from schedule_db import _normalize_date, get_records_range
+    from calculations import (
+        aggregate_by_category, build_dimension_aggregates, build_trend_series,
+        compute_health_score, ai_questions_for_range,
+    )
+    import math
+
+    start = _normalize_date(start)
+    end = _normalize_date(end)
+    records = get_records_range(start, end)
+    days = sorted({r.get("date", "") for r in records})
+    days_count = len(days)
+
+    dim_totals = build_dimension_aggregates(records)
+    cat_minutes = aggregate_by_category(records)
+    total = sum(dim_totals.values())
+
+    sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
+    summary_items = [
+        {
+            "category": cat, "emoji": _cat_emoji(cat), "color": _cat_color(cat),
+            "total_minutes": int(mins), "duration_text": _fmt_dur(int(mins)),
+            "pct": round((mins / total * 100) if total else 0.0, 1),
+        }
+        for cat, mins in sorted_cats
+    ]
+
+    # 7 维趋势 SVG
+    HEALTH_DIMS = ["维持", "健康", "工作", "学习", "调整", "日常", "投入"]
+    colors = {"维持":"#5E5CE6","健康":"#FF9500","工作":"#007AFF","学习":"#34C759","调整":"#30D158","日常":"#8E8E93","投入":"#FF2D55"}
+    series = {d: build_trend_series(records, d) for d in HEALTH_DIMS}
+    max_y = max((s["mins"] for arr in series.values() for s in arr), default=1) or 1
+    width, height = 640, 130
+    n = max(1, days_count)
+    step_x = (width - 40) / max(1, n - 1) if n > 1 else 0
+    svg_lines = [f'<svg viewBox="0 0 {width} {height}" preserveAspectRatio="none">']
+    for d in HEALTH_DIMS:
+        arr = series[d]
+        if not arr:
+            continue
+        pts = []
+        for i, pt in enumerate(arr):
+            x = 20 + i * step_x
+            y = height - 10 - (pt["mins"] / max_y * (height - 30))
+            pts.append(f"{x:.1f},{y:.1f}")
+        svg_lines.append(f'<polyline class="line" stroke="{colors[d]}" points="{" ".join(pts)}"/>')
+    if days:
+        for i in [0, len(days) - 1]:
+            if 0 <= i < len(days):
+                x = 20 + i * step_x
+                svg_lines.append(f'<text class="axis" x="{x:.1f}" y="{height-2}" text-anchor="{"start" if i==0 else "end"}">{days[i][5:]}</text>')
+    svg_lines.append('</svg>')
+    trend_chart = "".join(svg_lines)
+
+    health = {"score": compute_health_score(records), "label": ""}
+    payload = {
+        "meta": {
+            "mode": "record-range",
+            "start": start, "end": end, "days": days_count,
+            "title": f"作息区间报告 · {start} ~ {end}",
+            "subtitle": f"{days_count} 天,{len(records)} 条记录,总时长 {_fmt_dur(total)}",
+            "template_name": "schedule_record_range.html",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "days": days,
+        "summary_items": summary_items,
+        "dim_totals": dim_totals,
+        "total_records": len(records),
+        "trend_chart": trend_chart,
+        "health": health,
+        "ai_questions": ai_questions_for_range(start, end, dim_totals, health["score"], 0),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {start} ~ {end} 区间报告数据已生成",
+    }
+
+
+def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, start_b: str, end_b: str) -> dict:
+    """T3 对比:2 段 A/B 7 维差异柱"""
+    from schedule_db import _normalize_date, get_records_range
+    from calculations import build_compare_aggregates, build_diff_table, ai_questions_for_compare
+    from datetime import date as _d
+
+    start_a = _normalize_date(start_a)
+    end_a = _normalize_date(end_a)
+    start_b = _normalize_date(start_b)
+    end_b = _normalize_date(end_b)
+    recs_a = get_records_range(start_a, end_a)
+    recs_b = get_records_range(start_b, end_b)
+    days_a = (_d.fromisoformat(end_a) - _d.fromisoformat(start_a)).days + 1
+    days_b = (_d.fromisoformat(end_b) - _d.fromisoformat(start_b)).days + 1
+    ranges = build_compare_aggregates([
+        {"label": label_a, "start": start_a, "end": end_a, "days": days_a, "records": recs_a},
+        {"label": label_b, "start": start_b, "end": end_b, "days": days_b, "records": recs_b},
+    ])
+    diffs = build_diff_table(ranges[0], ranges[1])
+    payload = {
+        "meta": {
+            "mode": "record-compare",
+            "title": f"作息对比 · {label_a} vs {label_b}",
+            "subtitle": f"{label_a}:{start_a}~{end_a} · {label_b}:{start_b}~{end_b}",
+            "template_name": "schedule_record_compare.html",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "ranges": ranges,
+        "diffs": diffs,
+        "ai_questions": ai_questions_for_compare(ranges, diffs),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ 对比 {label_a} vs {label_b} 数据已生成",
+    }
+
+
+def render_record_category(category: str, start: str, end: str) -> dict:
+    """T4 类别深挖:24h × N 天 热力图"""
+    from schedule_db import _normalize_date, get_records_range
+    from calculations import l1_of, ai_questions_for_category
+
+    start = _normalize_date(start)
+    end = _normalize_date(end)
+    records = get_records_range(start, end)
+    l1_target = l1_of(category)
+    cat_records = [r for r in records if l1_of(r.get("category", "")) == l1_target]
+    total = sum(r.get("duration_minutes") or 0 for r in cat_records)
+    days = sorted({r.get("date", "") for r in cat_records})
+    days_count = len(days)
+    daily_avg = total // days_count if days_count else 0
+
+    by_date: dict[str, list[dict]] = {}
+    for r in cat_records:
+        by_date.setdefault(r.get("date", ""), []).append(r)
+    sorted_dates = sorted(by_date.keys())
+    matrix = []
+    for d in sorted_dates:
+        hour_mins = [0] * 24
+        for r in by_date[d]:
+            s_min = _to_min(r.get("time_start", ""))
+            e_min = _to_min(r.get("time_end", ""))
+            if e_min <= s_min:
+                continue
+            cur = s_min
+            while cur < e_min:
+                h = cur // 60
+                if 0 <= h < 24:
+                    nh = (h + 1) * 60
+                    covered = min(nh, e_min) - cur
+                    if covered > 0:
+                        hour_mins[h] += covered
+                cur += 60
+        row = []
+        for h in range(24):
+            if hour_mins[h] > 0:
+                row.append({"cat": l1_target, "mins": hour_mins[h], "color": _cat_color(l1_target)})
+            else:
+                row.append({"cat": None, "mins": 0, "color": "#f5f5f7"})
+        matrix.append(row)
+
+    payload = {
+        "meta": {
+            "mode": "record-category",
+            "category": l1_target,
+            "start": start, "end": end,
+            "title": f"类别深挖 · {l1_target} · {start} ~ {end}",
+            "subtitle": f"{days_count} 天活跃,日均 {_fmt_dur(daily_avg)}",
+            "template_name": "schedule_record_category.html",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "days": sorted_dates,
+        "total_minutes": total,
+        "daily_avg": daily_avg,
+        "heatmap": matrix,
+        "ai_questions": ai_questions_for_category(l1_target, days_count, total, daily_avg),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {l1_target} 类别深挖数据已生成",
+    }
+
+
+def render_record_anomaly(window_days: int = 7) -> dict:
+    """T5 异常:默认 7 天 vs 近 30 天基线 + 7 维雷达 SVG"""
+    from schedule_db import get_records_range
+    from calculations import detect_anomalies, build_dimension_aggregates, ai_questions_for_anomaly
+    from datetime import date as _d, timedelta as _td
+    import math
+
+    today = _d.today()
+    window_start = (today - _td(days=window_days - 1)).isoformat()
+    today_iso = today.isoformat()
+    baseline_start = (today - _td(days=30)).isoformat()
+
+    cur_records = get_records_range(window_start, today_iso)
+    baseline_records = get_records_range(baseline_start, today_iso)
+
+    anomalies = detect_anomalies(cur_records, baseline_records, threshold=0.2)
+
+    HEALTH_DIMS = ["维持", "健康", "工作", "学习", "调整", "日常", "投入"]
+    cur = build_dimension_aggregates(cur_records)
+    base = build_dimension_aggregates(baseline_records)
+    cx, cy, r = 200, 200, 130
+    n = len(HEALTH_DIMS)
+    svg = [f'<svg class="radar-svg" viewBox="0 0 400 420">']
+    for r2 in [0.2, 0.4, 0.6, 0.8, 1.0]:
+        pts = []
+        for i in range(n):
+            a = -math.pi/2 + i * 2*math.pi/n
+            pts.append(f"{cx + r*r2*math.cos(a):.1f},{cy + r*r2*math.sin(a):.1f}")
+        svg.append(f'<polygon points="{" ".join(pts)}" fill="none" stroke="#d2d2d7" stroke-width="0.5"/>')
+    for i, d in enumerate(HEALTH_DIMS):
+        a = -math.pi/2 + i * 2*math.pi/n
+        x2, y2 = cx + r*math.cos(a), cy + r*math.sin(a)
+        svg.append(f'<line x1="{cx}" y1="{cy}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="#d2d2d7" stroke-width="0.5"/>')
+        svg.append(f'<text class="radar-axis" x="{x2:.1f}" y="{y2:.1f}" text-anchor="middle" dy="4">{d}</text>')
+    pts_curr, pts_base = [], []
+    max_v = max(max(cur.values(), default=1), max(base.values(), default=1), 1)
+    for i, d in enumerate(HEALTH_DIMS):
+        a = -math.pi/2 + i * 2*math.pi/n
+        vc = cur.get(d, 0) / max_v
+        vb = base.get(d, 0) / max_v
+        pts_curr.append(f"{cx + r*vc*math.cos(a):.1f},{cy + r*vc*math.sin(a):.1f}")
+        pts_base.append(f"{cx + r*vb*math.cos(a):.1f},{cy + r*vb*math.sin(a):.1f}")
+    svg.append(f'<polygon points="{" ".join(pts_base)}" fill="#8E8E93" fill-opacity="0.2" stroke="#8E8E93" stroke-width="1"/>')
+    svg.append(f'<polygon points="{" ".join(pts_curr)}" fill="#007AFF" fill-opacity="0.3" stroke="#007AFF" stroke-width="2"/>')
+    svg.append('<text x="200" y="395" text-anchor="middle" font-size="11" fill="#6e6e73">蓝=当前 | 灰=基线(30天)</text>')
+    svg.append('</svg>')
+    radar_svg = "".join(svg)
+
+    payload = {
+        "meta": {
+            "mode": "record-anomaly",
+            "window": window_days,
+            "title": f"异常检测 · 最近 {window_days} 天",
+            "subtitle": f"对比基线:近 30 天均值,阈值 ±20%",
+            "template_name": "schedule_record_anomaly.html",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "anomalies": anomalies,
+        "radar_svg": radar_svg,
+        "ai_questions": ai_questions_for_anomaly(anomalies, window_days),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ 异常检测完成,检出 {len(anomalies)} 项",
     }
 
 
 def render_and_write(payload: dict, output_path: Path = None) -> dict:
     """渲染 + 写入文件,返回 {status, data:{file_path, bytes}, message}"""
     template_map = {
-        "list-events": "schedule_list_events.html",
-        "query-plans": "schedule_list_events.html",
-        "record-report": "schedule_record_report.html",
+        "list-events":     "schedule_list_events.html",
+        "query-plans":     "schedule_list_events.html",
+        "record-report":   "schedule_record_day.html",   # 兼容旧 CLI
+        "record-day":      "schedule_record_day.html",
+        "record-range":    "schedule_record_range.html",
+        "record-compare":  "schedule_record_compare.html",
+        "record-category": "schedule_record_category.html",
+        "record-anomaly":  "schedule_record_anomaly.html",
     }
     mode = payload.get("data", {}).get("meta", {}).get("mode", "list-events")
     template_name = template_map.get(mode)

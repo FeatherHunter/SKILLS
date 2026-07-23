@@ -445,7 +445,7 @@
 </tr>
 <tr>
 <td>盘物品</td>
-<td><code>inventory --location "位置"</code></td>
+<td><code>inventory --location "位置" [--output PATH]</code> (--output 走 inventory_check.html)</td>
 </tr>
 <tr>
 <td>盘全部</td>
@@ -477,7 +477,7 @@
 </tr>
 <tr>
 <td>查过期</td>
-<td><code>stats --type expiring [--days 30] [--expired-only] [--category-id N]</code></td>
+<td><code>stats --type expiring [--days 30] [--expired-only] [--category-id N] [--output PATH]</code> (--output 走 expiring_alert.html)</td>
 </tr>
 <tr>
 <td>看标签</td>
@@ -489,7 +489,7 @@
 </tr>
 <tr>
 <td>查快递</td>
-<td><code>search --status "快递中"</code></td>
+<td><code>search --status "快递中" [--output PATH]</code> (auto 走 delivery_check.html)</td>
 </tr>
 <tr>
 <td>推位置</td>

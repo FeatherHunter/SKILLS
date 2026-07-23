@@ -245,6 +245,8 @@
 <td><code>init</code></td>
 <td>-</td>
 </tr>
+<tr><td><b>23</b></td><td>按 ID 查作息记录</td><td><b>命令行单条查询</b>。按作息记录 ID 返回全 11 字段(id / date / time_* / duration / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at)</td><td><code>get-record &lt;id&gt;</code></td><td><b>详见 3. 查询作息</b></td></tr>
+<tr><td><b>24</b></td><td>写作息摘要</td><td><b>命令行写摘要</b>。按 (date, category) 维度 upsert 一条 daily_summary(解决孤儿表问题,该表 2026-07-22 后无任何写入路径)</td><td><code>add-summary --date D --category C --total-minutes M</code></td><td><b>详见 13. 摘要管理(新建)</b></td></tr>
 
 </tbody>
 </table>

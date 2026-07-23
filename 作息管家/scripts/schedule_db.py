@@ -434,6 +434,27 @@ def get_records_range(start_date, end_date):
     conn.close()
     return [dict(zip(RECORD_KEYS, row)) for row in rows]
 
+def get_record_by_id(record_id):
+    """
+    按 ID 查询单条作息记录,返回完整 11 字段 dict;无则返回 None。
+    100% 字段暴露原则:CLI 把全字段提供给上层,上层自己决定如何渲染。
+    """
+    conn = get_connection()
+    try:
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, date, time_start, time_end, duration_minutes, activity,
+                   category, source_contents, source_timestamps,
+                   analysis_reasoning, created_at
+            FROM schedule_records WHERE id = ?
+        ''', (record_id,))
+        row = c.fetchone()
+        if not row:
+            return None
+        return dict(zip(RECORD_KEYS, row))
+    finally:
+        conn.close()
+
 def has_records_for_date(date_str):
     """检查指定日期是否已有记录"""
     conn = get_connection()

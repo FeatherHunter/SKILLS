@@ -61,6 +61,8 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | **20** | **日程管家同步** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 日程管家同步** |
 | 21 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
 | 22 | 初始化数据库 | 创建三张数据表(含 completion 字段) | `init` | - |
+| **23** | **按 ID 查作息记录** | **CLI 单条查询**。按作息记录 ID 返回全 11 字段(id / date / time_* / duration / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at) | `get-record <id>` | **详见 3. 查询作息** |
+| **24** | **写作息摘要** | **CLI 写摘要**。按 (date, category) 维度 upsert 一条 daily_summary(解决孤儿表问题,该表 2026-07-22 后无任何写入路径) | `add-summary --date D --category C --total-minutes M` | **详见 13. 摘要管理(新建)** |
 
 ---
 

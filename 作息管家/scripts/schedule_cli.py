@@ -607,7 +607,10 @@ def main(argv=None):
     elif cmd == "render-records-detail":
         cmd_render_records_detail(args)
     elif cmd == "get-record":
-        cmd_get_record(args)    # === end ===
+        cmd_get_record(args)
+    elif cmd == "add-summary":
+        cmd_add_summary(args)
+    # === end ===
 
     # === 2026-07-22 新增：分类系统管理 ===
     elif cmd == "list-categories":
@@ -1778,8 +1781,107 @@ def cmd_render_record_anomaly(args):
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 
+def cmd_add_summary(args):
+    """add-summary --date <日期> --category <分类> --total-minutes <整数>
+
+    写入一条 daily_summary 记录(每天每分类一条,upsert 语义)。
+    用途:让 daily_summary 表不再是孤儿表(原 _gen_report_*.py 写入路径已删除)。
+    """
+    from schedule_db import add_summary, _normalize_date
+    from validators import validate_category
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: add-summary --date <日期> --category <分类> --total-minutes <整数>",
+            "example": "add-summary --date 2026-07-15 --category 维持.睡眠 --total-minutes 420",
+        }, ensure_ascii=False))
+        return
+
+    date = None
+    category = None
+    total_minutes = None
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--date" and i + 1 < len(args):
+            date = args[i + 1]; i += 2
+        elif a == "--category" and i + 1 < len(args):
+            category = args[i + 1]; i += 2
+        elif a == "--total-minutes" and i + 1 < len(args):
+            try:
+                total_minutes = int(args[i + 1])
+            except ValueError:
+                print(_json.dumps({"status": "error", "message": f"--total-minutes 值非法: '{args[i+1]}'(期望整数)"}, ensure_ascii=False))
+                return
+            i += 2
+        else:
+            i += 1
+
+    missing = []
+    if not date: missing.append("--date")
+    if not category: missing.append("--category")
+    if total_minutes is None: missing.append("--total-minutes")
+    if missing:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"必填字段缺失: {', '.join(missing)}(建议: add-summary --date 2026-07-15 --category 维持.睡眠 --total-minutes 420)",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        date = _normalize_date(date)
+    except ValueError:
+        print(_json.dumps({"status": "error", "message": f"date 格式非法: '{date}'(期望 YYYY-MM-DD 或 YYYYMMDD)"}, ensure_ascii=False))
+        return
+
+    if total_minutes < 0:
+        print(_json.dumps({"status": "error", "message": f"--total-minutes 必须 >= 0: 当前 {total_minutes}"}, ensure_ascii=False))
+        return
+
+    valid, err = validate_category(category)
+    if not valid:
+        print(_json.dumps({"status": "error", "message": f"category 校验失败: {err}"}, ensure_ascii=False))
+        return
+
+    try:
+        result = add_summary(date, category, total_minutes)
+        print(_json.dumps({
+            "status": "ok",
+            "data": result,
+            "message": f"✓ 摘要已写入: {date} {category} = {total_minutes} 分钟",
+        }, ensure_ascii=False, indent=2))
+    except Exception as e:
+        print(_json.dumps({"status": "error", "message": f"写入失败: {type(e).__name__}: {e}"}, ensure_ascii=False))
 
 
+def cmd_get_record(args):
+    """get-record <id>
+
+    按 ID 查询单条作息记录,返回完整 11 字段(100% 暴露原则)。
+    """
+    from schedule_db import get_record_by_id
+    if not args:
+        print(_json.dumps({"status": "error", "message": "用法: get-record <id>(整数)"}, ensure_ascii=False))
+        return
+    try:
+        rid = int(args[0])
+    except ValueError:
+        print(_json.dumps({"status": "error", "message": f"id 格式非法: '{args[0]}'(期望整数)"}, ensure_ascii=False))
+        return
+    rec = get_record_by_id(rid)
+    if not rec:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"未找到 id={rid} 的作息记录",
+            "id": rid,
+        }, ensure_ascii=False))
+        return
+    print(_json.dumps({
+        "status": "ok",
+        "data": rec,
+        "message": f"✓ 查询到 id={rid} 的作息记录(含 11 字段)",
+    }, ensure_ascii=False, indent=2))
 
 
 def cmd_render_records_detail(args):
@@ -2195,7 +2297,9 @@ def cmd_help():
   init                                    初始化数据库
   add <参数> 或 --json                    写入作息记录(规范化入口,2026-07-22 新增)
   prepare-messages [start] [end] [--page N] [--page-size N]   取待同步消息
-  list [date]                             查看某日作息  add-summary --date D --category C --total-minutes M  写一条作息摘要,让 daily_summary 不再孤儿
+  list [date]                             查看某日作息
+  get-record <id>                         按 ID 查询单条作息(含完整 11 字段)
+  add-summary --date D --category C --total-minutes M  写一条作息摘要,让 daily_summary 不再孤儿
   detail [date]                           含 AI 推理的详情
   summary [date]                          每日摘要
   timeline [date]                         时间轴

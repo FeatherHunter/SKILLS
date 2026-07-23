@@ -1,0 +1,48 @@
+{
+  "summary": {
+    "scan_date": "2026-07-23 21:50",
+    "jsonl_plan": "v14.4",
+    "scanned_sessions": 100,
+    "scanned_movements": 264,
+    "safe_skipped": 64,
+    "total_hits": 5,
+    "by_severity": {
+      "error": 2,
+      "warn": 0,
+      "info": 3
+    },
+    "summary_status": "fail"
+  },
+  "hits": [
+    {
+      "movement_name": "杠铃硬拉",
+      "part": "腰",
+      "rule_name": "髋铰链轴向压力",
+      "severity": "error",
+      "reason": "硬拉/罗马尼亚硬拉/早安式弯腰会让腰椎承受巨大轴向压力,突出节段受挤压加重",
+      "used_in": ["W1D1(下午·胸)", "W1D3(晚上·胸)"]
+    },
+    {
+      "movement_name": "罗马尼亚硬拉",
+      "part": "腰",
+      "rule_name": "髋铰链轴向压力",
+      "severity": "error",
+      "reason": "硬拉/罗马尼亚硬拉/早安式弯腰会让腰椎承受巨大轴向压力,突出节段受挤压加重",
+      "used_in": ["W1D3(晚上·胸)"]
+    },
+    {
+      "movement_name": "器械侧平举",
+      "part": "肩",
+      "rule_name": "大幅度侧平举",
+      "severity": "info",
+      "reason": "侧平举超过 90° 时肩峰下空间消失,冈上肌撞击",
+      "used_in": ["W1D2(下午·肩)", "W1D4(下午·肩)", "W1D6(下午·肩)"]
+    }
+  ],
+  "safe_variants": [
+    "支撑式(重力卸力)",
+    "俯卧(身体趴着重力完全卸力)",
+    "仰卧(腰部贴垫重力零)",
+    "高位(高位下拉/夹胸不压腰椎)"
+  ]
+}

@@ -3,231 +3,377 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>禁忌扫描报告 · 卡路里</title>
+<title>禁忌扫描报告 v2 · 卡路里</title>
 <style>
+/* ============================================================
+   Apple 设计语言 · 禁忌扫描报告 v2 (G5 升级)
+   - 从"只读"升级为"可改"——每个 error 旁附 4 个 SAFE_VARIANTS
+   - 过程型 HTML(AI 协同模式 · 原则 10)
+   ============================================================ */
 :root{
-  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
-  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
-  --accent:#0071e3;--accent-soft:#f5f5f7;
-  --ok:#34c759;--warn:#ff9500;--danger:#ff3b30;
-  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --gray:#8e8e93;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-  background:var(--bg);color:var(--fg);
-  line-height:1.7;-webkit-font-smoothing:antialiased;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
 
 /* HERO */
-.hero{
-  background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);
-  padding:40px 36px 32px;border-radius:20px;
-  margin-bottom:28px;box-shadow:var(--shadow);
-}
+.hero{padding:32px 28px 28px;margin-bottom:20px}
 .hero .eyebrow{
-  display:inline-block;font-size:12px;letter-spacing:.8px;
-  color:var(--accent);font-weight:600;
-  margin-bottom:10px;text-transform:uppercase;
+  font-size:13px;font-weight:600;letter-spacing:.5px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:8px;
 }
-.hero h1{font-size:30px;font-weight:700;letter-spacing:-.8px;margin-bottom:6px}
-.hero .sub{font-size:14px;color:var(--fg2)}
-
-/* STATUS BADGE */
-.badge{
+.hero h1{
+  font-size:32px;font-weight:700;letter-spacing:-.4px;
+  color:var(--ink);margin-bottom:6px;line-height:1.2;
+}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.hero .pills{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pill{
   display:inline-flex;align-items:center;gap:6px;
-  padding:6px 14px;border-radius:999px;
+  padding:5px 12px;border-radius:999px;
   font-size:13px;font-weight:600;
 }
-.badge.ok{background:#f0fff4;color:var(--ok);border:1px solid #bbf7d0}
-.badge.warn{background:#fff7e6;color:var(--warn);border:1px solid #ffd591}
-.badge.fail{background:#fff1f0;color:var(--danger);border:1px solid #ffccc7}
-.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
-
-/* KPI GRID */
-.kpi{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px;margin:24px 0;
-}
-.kpi-card{
-  background:var(--card);border-radius:12px;
-  padding:16px 18px;box-shadow:var(--shadow);
-}
-.kpi-card .label{font-size:12px;color:var(--fg3);font-weight:500;margin-bottom:6px}
-.kpi-card .value{font-size:24px;font-weight:700;letter-spacing:-.5px;color:var(--fg)}
-.kpi-card .hint{font-size:11px;color:var(--fg3);margin-top:4px}
+.pill.error{background:var(--red-soft);color:var(--red)}
+.pill.warn{background:var(--orange-soft);color:var(--orange)}
+.pill.ok{background:var(--green-soft);color:var(--green)}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
 
 /* SECTION */
-section{margin-bottom:36px;scroll-margin-top:24px}
-h2.sec{
-  font-size:20px;font-weight:700;
-  padding-bottom:10px;border-bottom:1px solid var(--border);
-  margin-bottom:14px;
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
 }
+.section-title{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:18px;
+}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
 
-/* GROUP (details) */
+/* KPI 6 张 */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.kpi{
+  background:var(--card);border-radius:var(--r);
+  padding:14px 12px;text-align:center;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+  border-top:3px solid;
+}
+.kpi.sessions{border-top-color:var(--accent)}
+.kpi.movements{border-top-color:var(--ink)}
+.kpi.safe{border-top-color:var(--green)}
+.kpi.errors{border-top-color:var(--red)}
+.kpi.warns{border-top-color:var(--orange)}
+.kpi.hits{border-top-color:var(--ink2)}
+.kpi .label{font-size:11px;color:var(--ink3);font-weight:500;margin-bottom:4px}
+.kpi .value{font-size:22px;font-weight:700;letter-spacing:-.7px;line-height:1;font-feature-settings:"tnum"}
+.kpi.errors .value{color:var(--red)}
+.kpi.warns .value{color:var(--orange)}
+.kpi.safe .value{color:var(--green)}
+
+/* HIT CARDS (按 part 分组) */
 .part-group{
-  background:var(--card);border-radius:14px;
-  padding:14px 18px;margin-bottom:10px;
-  box-shadow:var(--shadow);border-left:4px solid var(--fg3);
+  background:var(--card);border-radius:var(--r-lg);
+  padding:0;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
+  overflow:hidden;
 }
-.part-group.error{border-left-color:var(--danger)}
-.part-group.warn{border-left-color:var(--warn)}
-.part-group.info{border-left-color:var(--accent)}
-.part-group.none{opacity:.7}
+.part-header{
+  padding:14px 28px;
+  background:linear-gradient(180deg,#fafafa,transparent);
+  border-bottom:1px solid var(--lineS);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.part-header .name{font-size:15px;font-weight:600}
+.part-header .count{font-size:12px;color:var(--ink3)}
 
-summary{
-  cursor:pointer;font-weight:600;font-size:15px;
-  list-style:none;display:flex;align-items:center;gap:10px;
-  padding:4px 0;
-}
-summary::-webkit-details-marker{display:none}
-summary::before{
-  content:'▸';color:var(--accent);font-size:11px;
-  transition:transform .2s;
-}
-details[open] summary::before{transform:rotate(90deg)}
-.part-tag{
-  font-family:"SF Mono",monospace;font-size:11px;
-  color:var(--fg3);background:var(--bg);
-  padding:2px 8px;border-radius:5px;
-}
-.count{
-  margin-left:auto;font-size:12px;color:var(--fg3);
-  font-weight:500;
-}
-
-/* HIT */
 .hit{
-  border-top:1px solid var(--border);
-  padding:14px 0 14px 8px;
+  padding:18px 28px;border-top:1px solid var(--lineS);
 }
 .hit:first-child{border-top:none}
-.hit .name{font-weight:600;font-size:14px;margin-bottom:4px;display:flex;gap:8px;align-items:center}
-.hit .name code{
-  font-family:"SF Mono",monospace;font-size:12px;
-  background:var(--accent-soft);padding:2px 8px;border-radius:5px;
-  color:var(--fg);
+.hit.error{background:rgba(255,59,48,.025)}
+.hit.warn{background:rgba(255,149,0,.025)}
+.hit.error::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--red);
 }
-.hit .rule{font-size:12px;color:var(--accent);margin-bottom:6px;font-weight:500}
-.hit .reason{
-  font-size:13px;color:var(--fg2);
-  background:var(--bg);padding:10px 12px;border-radius:8px;
-  margin:8px 0;line-height:1.6;
+.hit.warn::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange);
 }
-.hit .used-in{
-  font-size:12px;color:var(--fg3);margin-top:6px;
+.hit-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
+}
+.hit-name{font-size:15px;font-weight:600;color:var(--ink)}
+.hit-tag{
+  font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600;
+}
+.hit-tag.error{background:var(--red-soft);color:var(--red)}
+.hit-tag.warn{background:var(--orange-soft);color:var(--orange)}
+.hit-tag.info{background:var(--bg-soft);color:var(--ink3)}
+.hit-rule{font-size:12px;color:var(--ink3);margin-bottom:8px}
+.hit-reason{
+  font-size:13px;color:var(--ink2);
+  background:var(--bg-soft);padding:8px 12px;
+  border-radius:var(--r-sm);margin-bottom:10px;line-height:1.55;
+}
+.hit-usedin{
+  font-size:12px;color:var(--ink3);margin-bottom:12px;
   display:flex;flex-wrap:wrap;gap:4px;
 }
-.hit .used-in span{
-  background:var(--bg);padding:2px 8px;border-radius:5px;
-  font-family:"SF Mono",monospace;
+.hit-usedin span{background:var(--bg-soft);padding:2px 8px;border-radius:5px;font-family:"SF Mono",monospace}
+
+/* G5 核心:替代选择按钮 */
+.alternatives{
+  margin-top:10px;padding:12px 14px;
+  background:rgba(0,122,255,.04);
+  border-radius:var(--r-sm);
+  border:1px solid rgba(0,122,255,.18);
 }
-.safe-tag{
-  background:#f0fff4;color:var(--ok);
-  padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;
-  border:1px solid #bbf7d0;
+.alternatives-title{
+  font-size:12px;font-weight:600;color:var(--accent);
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
 }
+.alternatives-title::before{content:'🔄';font-size:13px}
+.alts-list{
+  display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0;
+}
+.alt{
+  background:var(--card);
+  border:1.5px solid var(--line);
+  color:var(--ink);
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:13px;cursor:pointer;
+  font-family:inherit;
+  transition:all .15s;
+}
+.alt:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.alt.selected{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+}
+.alt.selected::before{content:'✓ ';font-weight:700}
+
+/* 已选区域 */
+.selected-area{
+  background:var(--card);
+  border-radius:var(--r-lg);
+  padding:0;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
+  display:none;
+}
+.selected-area.active{display:block}
+.selected-area .head{
+  padding:14px 28px;
+  background:linear-gradient(180deg,#f0fff4,transparent);
+  border-bottom:1px solid var(--lineS);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.selected-area .head h2{
+  font-size:17px;font-weight:600;color:var(--ink);
+  display:flex;align-items:center;gap:8px;
+}
+.selected-area .head h2::before{content:'✓';color:var(--green);font-size:18px;font-weight:700}
+.selected-list{
+  padding:8px 0;
+}
+.selected-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 28px;
+  border-top:1px solid var(--lineS);
+}
+.selected-item:first-child{border-top:none}
+.selected-item .arrow{
+  font-size:14px;color:var(--ink3);font-weight:600;
+}
+.selected-item .from{
+  flex:1;font-size:14px;color:var(--red-soft);
+  text-decoration:line-through;
+}
+.selected-item .to{
+  flex:1;font-size:14px;color:var(--green);font-weight:500;
+}
+.selected-item .remove{
+  background:transparent;border:none;color:var(--ink3);
+  font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;
+}
+.selected-item .remove:hover{background:var(--bg-soft);color:var(--red)}
 
 /* COPY SECTION */
 .copy-section{
-  background:var(--card);border-radius:14px;
-  padding:18px 22px;margin-top:24px;
-  box-shadow:var(--shadow);
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
 }
-.copy-section h3{font-size:14px;font-weight:600;margin-bottom:8px}
-.copy-section pre{
-  background:#1d1d1f;color:#f5f5f7;
-  padding:14px 18px;border-radius:10px;
-  font-size:12px;line-height:1.6;
-  overflow-x:auto;margin:8px 0 12px;
-  font-family:"SF Mono",monospace;
-}
+.copy-section h2{font-size:17px;font-weight:600;letter-spacing:-.2px;margin-bottom:4px}
+.copy-section .sub{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.55}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .btn{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--accent);color:#fff;
-  padding:8px 16px;border-radius:8px;
-  font-size:13px;font-weight:600;
-  border:none;cursor:pointer;
-  transition:opacity .2s;
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:11px 18px;border-radius:999px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  border:none;transition:opacity .15s;font-family:inherit;
 }
 .btn:hover{opacity:.85}
-.btn.copied{background:var(--ok)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.copy-preview{
+  background:var(--bg-soft);border-radius:var(--r-sm);
+  padding:14px 16px;font-family:"SF Mono",monospace;
+  font-size:12px;line-height:1.6;color:var(--ink2);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:380px;overflow-y:auto;
+  border:1px solid var(--lineS);
+}
 
-/* EMPTY STATE */
 .empty{
-  text-align:center;padding:60px 20px;
-  background:var(--card);border-radius:14px;
-  box-shadow:var(--shadow);
+  text-align:center;padding:48px 24px;
+  background:var(--card);border-radius:var(--r-lg);
+  border:1px solid var(--lineS);
 }
 .empty .icon{font-size:48px;margin-bottom:12px}
-.empty h3{font-size:18px;margin-bottom:6px;color:var(--ok)}
-.empty p{font-size:13px;color:var(--fg2)}
+.empty h3{font-size:17px;font-weight:600;margin-bottom:6px}
+.empty p{font-size:13px;color:var(--ink3)}
 
-/* FOOTER */
 footer{
-  text-align:center;color:var(--fg3);
-  font-size:12px;padding-top:28px;
-  border-top:1px solid var(--border);margin-top:40px;
+  text-align:center;color:var(--ink3);
+  font-size:12px;padding-top:20px;
+  border-top:1px solid var(--lineS);margin-top:32px;
 }
 #backTop{
   position:fixed;bottom:24px;right:24px;
-  background:var(--card);color:var(--accent);
   width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;
   display:flex;align-items:center;justify-content:center;
-  text-decoration:none;box-shadow:var(--shadow);
-  font-size:18px;border:1px solid var(--border);
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
 }
 
 @media (max-width:640px){
-  .wrap{padding:24px 16px 60px}
-  .hero{padding:28px 20px 22px;border-radius:16px}
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
   .hero h1{font-size:24px}
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .section,.copy-section{padding:18px 20px}
+  .hit{padding:14px 20px}
+  .selected-item{padding:10px 20px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<!-- ============ HERO + STATUS ============ -->
+<!-- HERO -->
 <header class="hero">
-  <div class="eyebrow">禁忌扫描报告</div>
-  <h1>健身计划禁忌检测</h1>
-  <div class="sub" id="sub">扫描部位：加载中...</div>
-  <div style="margin-top:14px">
-    <span id="status-badge" class="badge">加载中</span>
-  </div>
+  <div class="eyebrow">禁忌扫描报告 · v2 可改版</div>
+  <h1 id="title">健身计划禁忌扫描</h1>
+  <div class="sub" id="subtitle">扫描 264 动作 · 2 错误 · 0 警告 · 3 提示</div>
+  <div class="pills" id="pills"></div>
 </header>
 
-<!-- ============ KPI ============ -->
-<div class="kpi" id="kpi"></div>
-
-<!-- ============ HITS BY PART ============ -->
-<section id="hits-section">
-  <h2 class="sec">📋 按部位分组</h2>
-  <div id="groups"></div>
+<!-- KPI -->
+<section class="section">
+  <div class="section-title">
+    <h2>扫描概览</h2>
+    <span class="hint">264 动作 · 白名单豁免 64 个</span>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi sessions">
+      <div class="label">Sessions</div>
+      <div class="value" id="kpiSessions">--</div>
+    </div>
+    <div class="kpi movements">
+      <div class="label">Movements</div>
+      <div class="value" id="kpiMovements">--</div>
+    </div>
+    <div class="kpi safe">
+      <div class="label">安全变体</div>
+      <div class="value" id="kpiSafe">--</div>
+    </div>
+    <div class="kpi errors">
+      <div class="label">🔴 Error</div>
+      <div class="value" id="kpiErrors">--</div>
+    </div>
+    <div class="kpi warns">
+      <div class="label">🟡 Warn</div>
+      <div class="value" id="kpiWarns">--</div>
+    </div>
+    <div class="kpi hits">
+      <div class="label">Total Hits</div>
+      <div class="value" id="kpiHits">--</div>
+    </div>
+  </div>
 </section>
 
-<!-- ============ COPY TO AI ============ -->
-<div class="copy-section">
-  <h3>📤 复制回 AI</h3>
-  <pre id="copy-text">点击下方按钮生成摘要</pre>
-  <button class="btn" onclick="copyToAI()">复制摘要</button>
+<!-- 按 part 分组的 HITS + 替代选择 (G5 核心) -->
+<div id="hitsContainer"></div>
+
+<!-- 已选区域(默认隐藏,有选择时显示) -->
+<div class="selected-area" id="selectedArea">
+  <div class="head">
+    <h2>已选替代 (<span id="selectedCount">0</span>)</h2>
+    <button class="btn secondary" onclick="clearAll()" style="padding:6px 14px;font-size:12px">清空全部</button>
+  </div>
+  <div class="selected-list" id="selectedList"></div>
 </div>
 
-<!-- ============ EMPTY STATE (fallback) ============ -->
-<div id="empty-state" class="empty" style="display:none">
-  <div class="icon">✅</div>
-  <h3>未发现禁忌动作</h3>
-  <p>当前健身计划所有动作都在安全范围内</p>
-</div>
+<!-- COPY SECTION -->
+<section class="copy-section">
+  <h2>复制修改指令</h2>
+  <p class="sub">
+    HTML 不能自动修改 plan · 请把下方文本粘到 AI 对话框,AI 会帮你调用 plan_generator 修改 workout_plan_config。
+- <strong>修改计划</strong> = 已选 N 个替代,让 AI 修改 plan
+- <strong>完整报告</strong> = 全部禁忌清单(无需修改)
+- <strong>清空选择</strong> = 重置已选替代
+  </p>
+  <div class="btn-row">
+    <button class="btn primary" id="btnModify" onclick="copyModify()">📋 复制修改指令</button>
+    <button class="btn secondary" id="btnFull" onclick="copyFull()">📊 完整报告</button>
+    <button class="btn danger" onclick="clearAll()">↺ 清空选择</button>
+  </div>
+  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+</section>
 
-<footer>
-  卡路里 Skill · 禁忌扫描报告 · 数据来源 scan_contraindications.py<br>
-  模板：templates/contraindication_report.html
-</footer>
+<footer>卡路里 Skill · 禁忌扫描 v2 可改版 · 2026-07-23 · G5</footer>
 
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
@@ -240,112 +386,269 @@ const DATA = (() => {
   return window.__DATA__;
 })();
 
+const SUMMARY = (DATA && DATA.data && DATA.data.summary) || {};
+const HITS = (DATA && DATA.data && DATA.data.hits) || [];
+const SAFEVARIANTS = (DATA && DATA.data && DATA.data.safe_variants) || [];
+
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
 
-function copyToAI() {
-  const text = document.getElementById('copy-text').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.btn');
-    btn.textContent = '✅ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '复制摘要'; btn.classList.remove('copied'); }, 2000);
+// 已选替代:[{hitIndex, alternative, originalName, usedIn}, ...]
+const selectedReplacements = [];
+
+// BUG #2 修复:用事件委托 + data-* 属性(替代 inline onclick + escapeHTML entity 问题)
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hitsContainer').addEventListener('click', function(e) {
+    const btn = e.target.closest('button.alt');
+    if (!btn) return;
+    const hitIndex = parseInt(btn.dataset.hitIndex);
+    const alt = btn.dataset.alt;
+    const original = btn.dataset.original;
+    toggleAlt(hitIndex, alt, original);
   });
-}
+});
 
 function render() {
   if (!DATA) {
-    document.querySelector('.hero h1').textContent = '❌ 数据加载失败';
-    document.querySelector('.hero .sub').textContent = 'window.__DATA__ 未注入或格式错误';
+    document.getElementById('title').textContent = '❌ 数据加载失败';
     return;
   }
 
-  const { status, data, message } = DATA;
-  const { summary_status, scanned_parts, scanned_sessions, scanned_movements,
-          safe_skipped, by_severity, by_movement, hits } = data;
+  // HERO
+  document.getElementById('title').textContent = '健身计划禁忌扫描';
+  document.getElementById('subtitle').textContent =
+    `扫描 ${SUMMARY.scanned_movements || 0} 动作 · ${SUMMARY.by_severity?.error || 0} 错误 · ${SUMMARY.by_severity?.warn || 0} 警告 · ${SUMMARY.by_severity?.info || 0} 提示`;
 
-  // Status badge
-  const badge = document.getElementById('status-badge');
-  badge.className = 'badge ' + summary_status;
-  badge.textContent = summary_status === 'ok' ? '✅ OK / 仅 info' :
-                      summary_status === 'warn' ? '⚠️ WARN' : '❌ FAIL';
+  // Pills
+  const pills = document.getElementById('pills');
+  pills.innerHTML = '';
+  if (SUMMARY.summary_status === 'fail') {
+    pills.innerHTML += `<span class="pill error">🔴 必须修复(${SUMMARY.by_severity?.error || 0})</span>`;
+  } else if (SUMMARY.summary_status === 'warn') {
+    pills.innerHTML += `<span class="pill warn">🟡 需关注(${SUMMARY.by_severity?.warn || 0})</span>`;
+  } else if (SUMMARY.summary_status === 'ok') {
+    pills.innerHTML += `<span class="pill ok">✓ 无失败</span>`;
+  }
+  pills.innerHTML += `<span class="pill" style="background:var(--bg-soft);color:var(--ink3)">豁免 ${SUMMARY.safe_skipped || 0} 个</span>`;
 
-  // Sub line
-  document.getElementById('sub').textContent =
-    `扫描部位：${scanned_parts.join('、')}  ·  ${scanned_sessions} sessions / ${scanned_movements} movements  ·  ${message}`;
+  // KPI
+  document.getElementById('kpiSessions').textContent = SUMMARY.scanned_sessions || 0;
+  document.getElementById('kpiMovements').textContent = SUMMARY.scanned_movements || 0;
+  document.getElementById('kpiSafe').textContent = SUMMARY.safe_skipped || 0;
+  document.getElementById('kpiErrors').textContent = SUMMARY.by_severity?.error || 0;
+  document.getElementById('kpiWarns').textContent = SUMMARY.by_severity?.warn || 0;
+  document.getElementById('kpiHits').textContent = SUMMARY.total_hits || 0;
 
-  // KPI cards
-  const kpiHTML = `
-    <div class="kpi-card"><div class="label">Sessions</div><div class="value">${scanned_sessions}</div></div>
-    <div class="kpi-card"><div class="label">Movements</div><div class="value">${scanned_movements}</div></div>
-    <div class="kpi-card"><div class="label">🔴 Error</div><div class="value" style="color:${by_severity.error > 0 ? 'var(--danger)' : 'var(--fg3)'}">${by_severity.error}</div></div>
-    <div class="kpi-card"><div class="label">🟡 Warn</div><div class="value" style="color:${by_severity.warn > 0 ? 'var(--warn)' : 'var(--fg3)'}">${by_severity.warn}</div></div>
-    <div class="kpi-card"><div class="label">🔵 Info</div><div class="value" style="color:${by_severity.info > 0 ? 'var(--accent)' : 'var(--fg3)'}">${by_severity.info}</div></div>
-    <div class="kpi-card"><div class="label">✅ 安全变体</div><div class="value" style="color:var(--ok)">${safe_skipped}</div><div class="hint">白名单豁免</div></div>
-  `;
-  document.getElementById('kpi').innerHTML = kpiHTML;
+  // 按 part 分组 hits
+  renderHits();
+  renderSelected();
+  updatePreview();
+}
 
-  // Groups by part (腰 / 膝 / 肩)
-  const partNames = ['腰', '膝', '肩'];
-  const partEmoji = { '腰': '🦴', '膝': '🦵', '肩': '💪' };
-  let groupsHTML = '';
+function renderHits() {
+  const container = document.getElementById('hitsContainer');
+  if (HITS.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="icon">✅</div><h3>未发现禁忌动作</h3><p>所有动作都在安全范围内</p></div>';
+    return;
+  }
 
-  if (hits.length === 0) {
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('hits-section').style.display = 'none';
-  } else {
-    partNames.forEach(part => {
-      const partHits = hits.filter(h => h.part === part);
-      if (partHits.length === 0) return;
+  // 按 part 分组
+  const byPart = {};
+  HITS.forEach((h, i) => {
+    const part = h.part || '其他';
+    if (!byPart[part]) byPart[part] = [];
+    byPart[part].push({hit: h, originalIndex: i});
+  });
 
-      const topSev = partHits.some(h => h.severity === 'error') ? 'error' :
-                     partHits.some(h => h.severity === 'warn') ? 'warn' : 'info';
+  // 按 part label(按 part 中文排)
+  const partNames = {腰: '腰椎',膝: '膝关节',肩: '肩袖',其他: '其他'};
+  const partOrder = ['腰', '膝', '肩', '其他'];
 
-      const hitsHTML = partHits.map(h => `
-        <div class="hit">
-          <div class="name">
-            <code>${escapeHTML(h.movement_name)}</code>
-            ${h.safe_variant ? '<span class="safe-tag">✅ 安全变体</span>' : ''}
-          </div>
-          <div class="rule">${escapeHTML(h.rule_name)} · ${h.severity.toUpperCase()}</div>
-          <div class="reason">${escapeHTML(h.reason)}</div>
-          <div class="used-in">
-            📍 用于：
-            ${h.used_in.map(u => `<span>${escapeHTML(u)}</span>`).join('')}
-          </div>
+  container.innerHTML = partOrder.filter(p => byPart[p]).map(part => {
+    const items = byPart[part];
+    return `
+      <div class="part-group">
+        <div class="part-header">
+          <span class="name">${partNames[part] || part}</span>
+          <span class="count">${items.length} 条</span>
         </div>
-      `).join('');
+        ${items.map(({hit, originalIndex}) => renderHit(hit, originalIndex)).join('')}
+      </div>
+    `;
+  }).join('');
+}
 
-      groupsHTML += `
-        <details class="part-group ${topSev}" open>
-          <summary>
-            <span class="part-tag">${part}</span>
-            ${partEmoji[part]} ${part === '腰' ? '腰椎' : part === '膝' ? '膝关节' : '肩袖'}
-            <span class="count">${partHits.length} 条</span>
-          </summary>
-          ${hitsHTML}
-        </details>
-      `;
-    });
-    document.getElementById('groups').innerHTML = groupsHTML || '<p>无分组数据</p>';
-  }
+function renderHit(hit, hitIndex) {
+  const usedInHTML = (hit.used_in || [])
+    .map(u => `<span>${escapeHTML(u)}</span>`).join('');
+  // BUG #2 修复:用 data-* 属性传参,避免 inline onclick + escapeHTML entity 问题
+  const safetiesHTML = SAFEVARIANTS.length > 0 ? `
+    <div class="alternatives">
+      <div class="alternatives-title">选一个安全替代(可选)</div>
+      <div class="alts-list">
+        ${SAFEVARIANTS.map(s => {
+          const isSelected = selectedReplacements.some(r => r.hitIndex === hitIndex && r.alternative === s);
+          // 用 data 属性传递参数,避免内联 JS 字符串转义问题
+          return `<button class="alt ${isSelected ? 'selected' : ''}" data-hit-index="${hitIndex}" data-alt="${escapeHTML(s)}" data-original="${escapeHTML(hit.movement_name || '')}">${escapeHTML(s)}</button>`;
+        }).join('')}
+      </div>
+    </div>
+  ` : '';
 
-  // Copy summary
-  let copyText = `禁忌扫描报告\n`;
-  copyText += `状态：${summary_status}\n`;
-  copyText += `扫描：${scanned_sessions} sessions / ${scanned_movements} movements\n`;
-  copyText += `命中：error=${by_severity.error} / warn=${by_severity.warn} / info=${by_severity.info}\n`;
-  copyText += `安全变体：${safe_skipped}\n\n`;
-  if (hits.length > 0) {
-    copyText += `详情：\n`;
-    Object.entries(by_movement).forEach(([name, info]) => {
-      copyText += `  · ${name} [${info.severity}] ${info.reason}\n`;
-    });
+  return `
+    <div class="hit ${hit.severity || 'error'}">
+      <div class="hit-header">
+        <span class="hit-name">${escapeHTML(hit.movement_name || '?')}</span>
+        <span class="hit-tag ${hit.severity || 'error'}">${({error:'🔴 ERROR',warn:'🟡 WARN',info:'🔵 INFO'})[hit.severity] || hit.severity}</span>
+      </div>
+      ${hit.rule_name ? `<div class="hit-rule">${escapeHTML(hit.rule_name)}</div>` : ''}
+      <div class="hit-reason">${escapeHTML(hit.reason || '禁忌原因未填')}</div>
+      ${usedInHTML ? `<div class="hit-usedin">📍 用于: ${usedInHTML}</div>` : ''}
+      ${safetiesHTML}
+    </div>
+  `;
+}
+
+function toggleAlt(hitIndex, alternative, originalName) {
+  const existingIdx = selectedReplacements.findIndex(r => r.hitIndex === hitIndex);
+  if (existingIdx >= 0 && selectedReplacements[existingIdx].alternative === alternative) {
+    // 取消选择
+    selectedReplacements.splice(existingIdx, 1);
+  } else if (existingIdx >= 0) {
+    // 替换为新选择
+    selectedReplacements[existingIdx].alternative = alternative;
+  } else {
+    // 新增选择
+    const hit = HITS[hitIndex];
+    selectedReplacements.push({hitIndex, originalName, alternative, usedIn: hit.used_in || []});
   }
-  document.getElementById('copy-text').textContent = copyText;
+  renderHits();
+  renderSelected();
+  updatePreview();
+}
+
+function clearAll() {
+  selectedReplacements.length = 0;
+  renderHits();
+  renderSelected();
+  updatePreview();
+}
+
+function renderSelected() {
+  const area = document.getElementById('selectedArea');
+  if (selectedReplacements.length === 0) {
+    area.classList.remove('active');
+    return;
+  }
+  area.classList.add('active');
+  document.getElementById('selectedCount').textContent = selectedReplacements.length;
+  document.getElementById('selectedList').innerHTML = selectedReplacements.map((r, i) => `
+    <div class="selected-item">
+      <span class="from">${escapeHTML(r.originalName)}</span>
+      <span class="arrow">→</span>
+      <span class="to">${escapeHTML(r.alternative)}</span>
+      <button class="remove" onclick="removeSelected(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function removeSelected(idx) {
+  selectedReplacements.splice(idx, 1);
+  renderHits();
+  renderSelected();
+  updatePreview();
+}
+
+// 4 部分 prompt
+function buildModifyPrompt() {
+  if (selectedReplacements.length === 0) {
+    return '⚠️ 你还没选任何替代 · 请在每个 ERROR 禁忌动作下方选择至少 1 个安全替代,再点"复制修改指令"。';
+  }
+  const lines = selectedReplacements.map((r, i) => {
+    const usedInStr = r.usedIn && r.usedIn.length > 0 ? ` → 用于: ${r.usedIn.join(', ')}` : '';
+    return `${i + 1}. 原动作: ${r.originalName}${usedInStr}
+   替换为: ${r.alternative}`;
+  }).join('\n\n');
+
+  // BUG #3 修复:用 JSON.stringify() 替代字符串拼接(防特殊字符破坏 JSON)
+  const replacementsJson = JSON.stringify(
+    selectedReplacements.map(r => ({
+      old: r.originalName,
+      new: r.alternative,
+      reason: '用户已确认替换为安全变体',
+    })),
+    null,
+    2
+  );
+
+  return `我刚扫了禁忌,发现以下 ${selectedReplacements.length} 个禁忌动作,已逐一选定安全替代。请帮我修改 workout_plan_config:
+
+${lines}
+
+执行命令:
+  python scripts/plan_generator.py update-actions --replacements '${replacementsJson.replace(/'/g, "'\\''")}'
+
+数据来源: 禁忌扫描 v2 + 用户手动选择 · ${new Date().toISOString().split('T')[0]}`;
+}
+
+function buildFullPrompt() {
+  const lines = HITS.map((h, i) => {
+    const usedInStr = h.used_in && h.used_in.length > 0 ? ` → 用于: ${h.used_in.join(', ')}` : '';
+    return `${i + 1}. [${h.severity || 'error'}] ${h.movement_name}${usedInStr} → ${h.rule_name || '?'}`;
+  }).join('\n');
+
+  return `禁忌扫描完整报告(只读,无修改建议):
+
+统计:
+- Sessions: ${SUMMARY.scanned_sessions || 0}
+- Movements: ${SUMMARY.scanned_movements || 0}
+- 安全变体豁免: ${SUMMARY.safe_skipped || 0}
+- Error: ${SUMMARY.by_severity?.error || 0}, Warn: ${SUMMARY.by_severity?.warn || 0}, Info: ${SUMMARY.by_severity?.info || 0}
+
+完整命中清单:
+${lines}
+
+数据来源: 禁忌扫描 v2 · ${SUMMARY.scan_date || '?'}`;
+}
+
+function updatePreview() {
+  document.getElementById('copyPreview').textContent =
+    selectedReplacements.length > 0 ? buildModifyPrompt() : buildFullPrompt();
+}
+
+function copyModify() {
+  if (selectedReplacements.length === 0) {
+    flashCopied('btnModify', '⚠️ 请先选择替代');
+    setTimeout(() => flashCopied('btnModify', '↩'), 1500);
+    return;
+  }
+  doCopy(buildModifyPrompt(), 'btnModify', '✓ 已复制修改指令');
+}
+
+function copyFull() {
+  doCopy(buildFullPrompt(), 'btnFull', '✓ 已复制完整报告');
+}
+
+function doCopy(text, btnId, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId, msg) {
+  const btn = document.getElementById(btnId);
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
 }
 
 render();

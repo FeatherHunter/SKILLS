@@ -579,6 +579,13 @@ def main(argv=None):
     elif cmd == "feishu-resync":
         cmd_feishu_resync(args)
 
+    # === 2026-07-23 新增：HTML 渲染模式(查日程/24h 概览 可视化) ===
+    elif cmd == "render-list-events":
+        cmd_render_list_events(args)
+    elif cmd == "render-query-plans":
+        cmd_render_query_plans(args)
+    # === end ===
+
     # === 2026-07-22 新增：分类系统管理 ===
     elif cmd == "list-categories":
         cmd_list_categories(args)
@@ -1343,6 +1350,125 @@ def cmd_feishu_resync(args):
         print(f"     错误明细:")
         for eid, err in result["errors"][:5]:
             print(f"       {eid}: {err}")
+
+
+# ============================================================
+# 2026-07-23 新增：HTML 渲染模式（查日程/24h 概览 可视化）
+# ============================================================
+#
+# 两个新命令:
+#   render-list-events <日期> [--out PATH]   # 对应 list-events 的 HTML 版
+#   render-query-plans <日期1,日期2,...>     # 对应 query-plans 多日聚合的 HTML 版
+#
+# 设计原则:
+# - 旧 list-events / query-plans 输出文本(零变动,完全兼容)
+# - HTML 模式只生成文件,不修改数据库
+# - 模板在 templates/, 渲染器在 schedule_html_render.py
+# - 默认输出到作息管家/reports/ 下
+# - AI 拿到路径后用 <media src="..." type="file" /> 交付
+
+def cmd_render_list_events(args):
+    """
+    render-list-events <日期> [--out PATH]
+
+    把 list-events 的数据渲染成 HTML(首屏摘要卡 + 24h 时间轴 + 事件卡片 +
+    完成度筛选 + 飞书同步状态 + 24h 缺口高亮)。
+
+    用法:
+      python scripts/schedule_cli.py render-list-events 2026-07-15
+      python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.html
+    """
+    import json as _json
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-list-events <日期> [--out PATH]",
+            "example": "render-list-events 2026-07-15"
+        }, ensure_ascii=False))
+        return
+
+    from schedule_db import _normalize_date
+    try:
+        date = _normalize_date(args[0])
+    except ValueError as e:
+        print(_json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+        return
+
+    out_path = None
+    i = 1
+    while i < len(args):
+        if args[i] == "--out" and i + 1 < len(args):
+            out_path = _P(args[i + 1]).resolve()
+            i += 2
+        else:
+            i += 1
+
+    try:
+        from schedule_html_render import render_list_events, render_and_write
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"加载渲染器失败: {type(e).__name__}: {e}"
+        }, ensure_ascii=False))
+        return
+
+    payload = render_list_events(date)
+    result = render_and_write(payload, out_path)
+
+    if result["status"] == "ok":
+        result["data"]["json_payload"] = payload
+    print(_json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def cmd_render_query_plans(args):
+    """
+    render-query-plans <日期1,日期2,...> [--out PATH]
+
+    把 query-plans 的多日聚合数据渲染成 HTML(多日对比 + 完成度统计 +
+    缺口检测)。
+
+    用法:
+      python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15
+      python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14 --out reports/wk.html
+    """
+    import json as _json
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-query-plans <日期1,日期2,...> [--out PATH]",
+            "example": "render-query-plans 2026-07-13,2026-07-14,2026-07-15"
+        }, ensure_ascii=False))
+        return
+
+    dates_raw = args[0]
+    out_path = None
+    i = 1
+    while i < len(args):
+        if args[i] == "--out" and i + 1 < len(args):
+            out_path = _P(args[i + 1]).resolve()
+            i += 2
+        else:
+            i += 1
+
+    try:
+        from schedule_html_render import render_query_plans, render_and_write
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"加载渲染器失败: {type(e).__name__}: {e}"
+        }, ensure_ascii=False))
+        return
+
+    payload = render_query_plans(dates_raw)
+    result = render_and_write(payload, out_path)
+
+    if result["status"] == "ok":
+        result["data"]["json_payload"] = payload
+    print(_json.dumps(result, ensure_ascii=False, indent=2))
 
 
 # ============================================================

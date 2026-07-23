@@ -12,10 +12,15 @@ import shlex
 from datetime import datetime
 from pathlib import Path
 
+from ._shared import SHARED_JS
+
 # SKILL_DIR: 从本文件位置向上 3 级 = 居家管家/
 SKILL_DIR = Path(__file__).parent.parent.parent
 TEMPLATES_DIR = SKILL_DIR / "templates"
 OUTPUT_DIR = SKILL_DIR / "output"
+
+DATA_PLACEHOLDER = "<!--INJECT-DATA-->"
+SHARED_PLACEHOLDER = "<!--SHARED-HELPERS-->"
 
 
 def render_page(template_name, payload, output_path=None, message=None):
@@ -33,15 +38,30 @@ def render_page(template_name, payload, output_path=None, message=None):
             "message": f"payload 状态校验失败: {payload.get('message') if isinstance(payload, dict) else '非字典类型'}",
         }
     html = template_path.read_text(encoding="utf-8")
-    placeholder = "<!--INJECT-DATA-->"
-    if html.count(placeholder) != 1:
+
+    # INJECT-DATA 占位符校验: 必须恰好 1 个
+    if html.count(DATA_PLACEHOLDER) != 1:
         return {
             "status": "error",
-            "data": {"template": template_name, "placeholder_count": html.count(placeholder)},
-            "message": f"模板 {template_name} 必须包含恰好 1 个 {placeholder} 占位符，实际 {html.count(placeholder)} 个",
+            "data": {"template": template_name, "placeholder_count": html.count(DATA_PLACEHOLDER)},
+            "message": f"模板 {template_name} 必须包含恰好 1 个 {DATA_PLACEHOLDER} 占位符，实际 {html.count(DATA_PLACEHOLDER)} 个",
         }
+
+    # SHARED-HELPERS 占位符校验: 0 或 1 个
+    shared_count = html.count(SHARED_PLACEHOLDER)
+    if shared_count > 1:
+        return {
+            "status": "error",
+            "data": {"template": template_name, "shared_count": shared_count},
+            "message": f"模板 {template_name} {SHARED_PLACEHOLDER} 最多出现 1 次，实际 {shared_count} 次",
+        }
+
+    # 先注入共享 JS (如有), 再注入数据
+    if shared_count == 1:
+        html = html.replace(SHARED_PLACEHOLDER, SHARED_JS.strip(), 1)
     payload_text = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    html = html.replace(placeholder, payload_text, 1)
+    html = html.replace(DATA_PLACEHOLDER, payload_text, 1)
+
     if output_path:
         out = Path(output_path)
     else:

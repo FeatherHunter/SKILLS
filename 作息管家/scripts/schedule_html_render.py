@@ -381,6 +381,13 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         # 兼容旧 CLI,等价 record-day
         d = meta.get("date", today)
         return base / "day" / f"{d}_record_day.html"
+    if mode == "record-detail":
+        # 详情页(单日 + 可选 record_id)
+        d = meta.get("date", today)
+        rid = meta.get("record_id")
+        if rid:
+            return base / "detail" / f"{d}_id{rid}_record_detail.html"
+        return base / "detail" / f"{d}_record_detail.html"
     return base / f"unknown_{today}.html"
 
 
@@ -500,6 +507,104 @@ def _fmt_dur_short(mins: int) -> str:
 def render_record_report(date: str) -> dict:
     """兼容旧 CLI render-record-report — 等价于 render_record_day"""
     return render_record_day(date)
+
+
+def render_records_detail(date: str, record_id: int = None, show_source: bool = False) -> dict:
+    """
+    作息详情网页数据派生（人工智能推理溯源, 四步契约 §8 落地）.
+
+    数据来源:
+      - schedule_records 表 → get_records_by_date(date)
+      - 高敏字段 (source_contents / source_timestamps / analysis_reasoning)
+        默认不暴露,需 --show-source 才注入 (评审 H-02 隐私白名单模式)
+
+    返回: {status, data: {meta, records, records_detail, selected_record,
+                          privacy_unlocked, ai_questions, errors, ...},
+           message}
+    """
+    from schedule_db import _normalize_date, get_records_by_date
+    from calculations import ai_questions_for_day, aggregate_by_category
+
+    date = _normalize_date(date)
+    records = get_records_by_date(date)
+
+    public_records = [
+        {
+            "id": r["id"],
+            "time_start": r["time_start"],
+            "time_end": r["time_end"],
+            "duration_minutes": int(r.get("duration_minutes") or 0),
+            "activity": r["activity"],
+            "category": r["category"],
+        }
+        for r in records
+    ]
+
+    record_details = []
+    if show_source:
+        for r in records:
+            record_details.append({
+                "id": r["id"],
+                "source_contents": r.get("source_contents") or "",
+                "source_timestamps": r.get("source_timestamps") or "",
+                "analysis_reasoning": r.get("analysis_reasoning") or "",
+            })
+
+    selected = None
+    if record_id is not None:
+        for r in records:
+            if r["id"] == record_id:
+                selected = {
+                    "id": r["id"],
+                    "date": r["date"],
+                    "time_start": r["time_start"],
+                    "time_end": r["time_end"],
+                    "duration_minutes": int(r.get("duration_minutes") or 0),
+                    "activity": r["activity"],
+                    "category": r["category"],
+                }
+                if show_source:
+                    selected["source_contents"] = r.get("source_contents") or ""
+                    selected["source_timestamps"] = r.get("source_timestamps") or ""
+                    selected["analysis_reasoning"] = r.get("analysis_reasoning") or ""
+                break
+
+    cat_minutes = aggregate_by_category(records)
+    total_minutes = sum(cat_minutes.values())
+    sleep_records = [r for r in records if "睡眠" in r.get("category", "") or "午睡" in r.get("category", "")]
+    sleep_min = max((r.get("duration_minutes") or 0 for r in sleep_records), default=0)
+
+    dt = datetime.fromisoformat(date)
+    weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
+    payload = {
+        "meta": {
+            "mode": "record-detail",
+            "date": date,
+            "record_id": record_id,
+            "weekday": weekdays[dt.weekday()],
+            "title": f"作息详情 · {dt.year}年{dt.month}月{dt.day}日({weekdays[dt.weekday()]})",
+            "subtitle": f"共 {len(records)} 条记录 · 高敏字段默认折叠 · 详情溯源",
+            "record_count": len(records),
+            "total_minutes": int(total_minutes),
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-23",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "records": public_records,
+        "records_detail": record_details,
+        "selected_record": selected,
+        "privacy_unlocked": show_source,
+        "show_source_available": True,
+        "summary_categories_count": len(cat_minutes),
+        "ai_questions": ai_questions_for_day(date, [], sleep_min, total_minutes, 0),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {date} 作息详情数据已生成({len(records)} 条记录,隐私字段{'已暴露' if show_source else '已折叠'})",
+    }
 
 
 # ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
@@ -852,6 +957,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "record-compare":  "schedule_record_compare.html",
         "record-category": "schedule_record_category.html",
         "record-anomaly":  "schedule_record_anomaly.html",
+        "record-detail":   "schedule_record_detail.html",  # 详情页(人工智能推理溯源)
     }
     mode = payload.get("data", {}).get("meta", {}).get("mode", "list-events")
     template_name = template_map.get(mode)

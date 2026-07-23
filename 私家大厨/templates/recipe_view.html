@@ -384,7 +384,7 @@
     <button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>
     <span class="serv-value" id="serv-value">{{ recipe.servings or 1 }}</span>
     <button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>
-    <span style="font-size:11px;color:var(--text3);margin-left:4px">基础 <span id="serv-base">{{ recipe.servings or 1 }}</span> 人份(当前 {{ recipe.servings or 1 }})</span>
+    <span style="font-size:11px;color:var(--text3);margin-left:4px">人份(原方 {{ recipe.servings or 1 }})</span>
   </div>
 
   {% set ns = namespace(cats={}) %}

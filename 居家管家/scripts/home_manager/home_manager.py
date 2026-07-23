@@ -271,6 +271,12 @@ def main():
 
     elif args.command == "list":
         from home_manager.html_render import emit
+        from home_manager.inventory_ops import _stats_summary_payload
+        conn = get_conn()
+        try:
+            stats_payload = _stats_summary_payload(conn)
+        finally:
+            conn.close()
         items = list_items_payload(
             location=args.location, status=args.status, category_id=args.category_id,
             owner=args.owner, sort_by=args.sort, limit=args.limit
@@ -278,17 +284,10 @@ def main():
         payload = {
             "status": "ok",
             "data": {
-                "summary": {
-                    "title": "统物品概览",
-                    "subtitle": "居家管家统计概览",
-                    "metrics": [
-                        {"label": "物品总数", "value": len(items)},
-                        {"label": "排序", "value": args.sort},
-                    ],
-                },
+                "summary": stats_payload["summary"],
                 "items": items,
-                "statuses": [],
-                "categories": [],
+                "statuses": stats_payload["statuses"],
+                "categories": stats_payload["categories"],
             },
             "message": "统物品结果已生成",
         }

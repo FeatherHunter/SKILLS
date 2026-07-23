@@ -259,6 +259,83 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
     return 0
 
 
+def _stats_summary_payload(conn):
+    """返回 list_overview.html 需要的结构化统计数据
+
+    与 _stats_summary 镜像查询,但返回 dict 而非打印文本。
+    返回结构:
+      {
+        "summary":   {"title": ..., "subtitle": ..., "metrics": [{label,value}, ...]},
+        "categories": [{"name", "count", "total_value"}, ...],  # 仅顶级 L1
+        "statuses":  [{"name", "count", "pct"}, ...],          # 按 count 降序
+      }
+    """
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) AS n FROM items")
+    total = cursor.fetchone()['n']
+
+    cursor.execute("""
+        SELECT COUNT(*) AS priced_cnt, ROUND(SUM(purchase_price), 2) AS total_value
+        FROM items WHERE purchase_price IS NOT NULL AND purchase_price > 0
+    """)
+    priced = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT location_status, COUNT(DISTINCT item_id) AS cnt
+        FROM item_locations GROUP BY location_status ORDER BY cnt DESC
+    """)
+    status_rows = cursor.fetchall()
+    total_locations = sum(r['cnt'] for r in status_rows) or 1
+
+    statuses = [
+        {
+            "name": r['location_status'] or '(未设置)',
+            "count": r['cnt'],
+            "pct": round(r['cnt'] * 100 / total_locations, 1),
+        }
+        for r in status_rows
+    ]
+
+    cursor.execute("""
+        WITH RECURSIVE cat_path AS (
+          SELECT id, parent_id, name, 1 AS lvl
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, c.name, cp.lvl + 1
+          FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
+        )
+        SELECT cp.id, cp.name,
+               COUNT(i.id) AS cnt,
+               ROUND(SUM(COALESCE(i.purchase_price, 0)), 2) AS total_value
+        FROM cat_path cp
+        LEFT JOIN items i ON i.category_id = cp.id
+        WHERE cp.lvl = 1
+        GROUP BY cp.id, cp.name
+        HAVING cnt > 0
+        ORDER BY cnt DESC
+    """)
+    cat_rows = cursor.fetchall()
+    categories = [
+        {"name": r['name'], "count": r['cnt'], "total_value": r['total_value'] or 0}
+        for r in cat_rows
+    ]
+
+    return {
+        "summary": {
+            "title": "统物品概览",
+            "subtitle": "居家管家统计概览",
+            "metrics": [
+                {"label": "物品总数", "value": f"{total} 件"},
+                {"label": "有价物品", "value": f"{priced['priced_cnt']} 件"},
+                {"label": "总价值", "value": f"¥{priced['total_value'] or 0:.2f}"},
+            ],
+        },
+        "categories": categories,
+        "statuses": statuses,
+    }
+
+
 def _stats_summary(conn):
     """总体统计:总览 + 3 层分类树 + 总价值(items.purchase_price 累加)
 

@@ -21,7 +21,8 @@ def main():
     from home_manager.item_ops import (
         add_item, search_items, update_item,
         list_items, item_detail,
-        search_items_json, item_detail_json, list_items_json
+        search_items_json, item_detail_json, list_items_json,
+        search_items_payload, item_detail_payload, list_items_payload,
     )
     from home_manager.inventory_ops import inventory, stats
     from home_manager.tag_ops import tag_merge, list_tags
@@ -75,6 +76,8 @@ def main():
     p_add.add_argument("--tags", default="", help="标签（逗号分隔）")
     p_add.add_argument("--photo", default="", help="图片路径")
     p_add.add_argument("--location-status", default=None, help="存放状态（默认根据位置推断：位置含\"快递\"则为\"快递中\"，否则为\"在家\"")
+    p_add.add_argument("--preview", action="store_true", help="先输出录入预览 HTML 再写入数据库")
+    p_add.add_argument("--preview-output", default=None, help="预览 HTML 输出路径")
 
     # ── search ──
     p_search = subparsers.add_parser("search", help="搜索物品")
@@ -85,7 +88,7 @@ def main():
     p_search.add_argument("--status", default=None, help="状态")
     p_search.add_argument("--exact", action="store_true", help="名称精确匹配")
     p_search.add_argument("--limit", type=int, default=20, help="返回数量上限")
-    p_search.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
+    p_search.add_argument("--output", default=None, help="HTML 输出路径；不填写到 output/")
 
     # ── update ──
     p_update = subparsers.add_parser("update", help="更新物品")
@@ -126,7 +129,7 @@ def main():
                         choices=["name", "recent", "frequent", "updated", "dormant"],
                         help="排序方式")
     p_list.add_argument("--limit", type=int, default=100, help="返回数量上限")
-    p_list.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
+    p_list.add_argument("--output", default=None, help="HTML 输出路径；不填写到 output/")
 
     # ── inventory ──
     p_inventory = subparsers.add_parser("inventory", help="盘点指定位置")
@@ -164,7 +167,7 @@ def main():
     # ── detail ──
     p_detail = subparsers.add_parser("detail", help="查看物品详情")
     p_detail.add_argument("--id", type=int, required=True, help="物品ID")
-    p_detail.add_argument("--json", action="store_true", help="输出 JSON（供 HTML 生成用）")
+    p_detail.add_argument("--output", default=None, help="HTML 输出路径；不填写到 output/")
 
     # ── account ──
     p_account = subparsers.add_parser("account", help="账号管理（密码加密存储）")
@@ -188,6 +191,54 @@ def main():
         print(f"  图片目录: {PHOTOS_DIR}")
 
     elif args.command == "add":
+        if args.preview:
+            from home_manager.html_render import render_page, build_command, split_tags
+            import json as _json
+            draft = {
+                "name": args.name, "category_id": args.category_id,
+                "category_name": "", "location": args.location,
+                "owner": args.owner, "quantity": args.quantity,
+                "price": args.price, "purchase_date": args.purchase_date,
+                "expiration_date": args.expiration_date,
+                "location_status": args.location_status,
+                "remark": args.remark, "tags": split_tags(args.tags),
+                "photo": args.photo, "similar_items": [],
+            }
+            tags = draft["tags"]
+            checks = {
+                "has_name": bool(draft["name"]),
+                "has_category_id": draft["category_id"] not in (None, ""),
+                "location_depth_ok": "/" in (draft["location"] or "").strip("/"),
+                "tags_ok": len(tags) >= 10,
+                "remark_ok": bool((draft["remark"] or "").strip()),
+            }
+            missing = []
+            if not checks["has_name"]:
+                missing.append("缺少物品名称")
+            if not checks["has_category_id"]:
+                missing.append("缺少 category_id")
+            if not checks["location_depth_ok"]:
+                missing.append("位置必须至少两级")
+            if not checks["tags_ok"]:
+                missing.append(f"tag 数量 {len(tags)} < 10")
+            if not checks["remark_ok"]:
+                missing.append("备注不能为空")
+            checks["ready_score"] = sum(1 for v in checks.values() if v is True) / 5
+            payload = {
+                "status": "ok",
+                "data": {
+                    "draft": draft, "checks": checks, "missing": missing,
+                    "command": build_command(draft),
+                },
+                "message": "录入预览",
+            }
+            result = render_page("add_preview.html", payload, args.preview_output,
+                                 "录入预览 HTML 已生成")
+            print(_json.dumps(result, ensure_ascii=False))
+            if result["status"] != "ok":
+                return 1
+            print("预览已生成，请在 HTML 页面核对后再确认执行 add。")
+            return 0
         return add_item(
             name=args.name, category_id=args.category_id,
             location=args.location,
@@ -199,15 +250,65 @@ def main():
         )
 
     elif args.command == "search":
-        if args.json:
-            return search_items_json(
-                name=args.name, category_id=args.category_id, location=args.location,
-                tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
-            )
-        return search_items(
+        from home_manager.html_render import emit
+        items = search_items_payload(
             name=args.name, category_id=args.category_id, location=args.location,
             tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
         )
+        payload = {
+            "status": "ok",
+            "data": {
+                "summary": {
+                    "title": "查物品结果",
+                    "subtitle": "居家管家查询结果",
+                    "chips": [f"共 {len(items)} 件"] + ([f"名称: {args.name}"] if args.name else []),
+                },
+                "items": items,
+            },
+            "message": "查物品结果已生成",
+        }
+        return emit(payload, "search_results.html", args.output)
+
+    elif args.command == "list":
+        from home_manager.html_render import emit
+        items = list_items_payload(
+            location=args.location, status=args.status, category_id=args.category_id,
+            owner=args.owner, sort_by=args.sort, limit=args.limit
+        )
+        payload = {
+            "status": "ok",
+            "data": {
+                "summary": {
+                    "title": "统物品概览",
+                    "subtitle": "居家管家统计概览",
+                    "metrics": [
+                        {"label": "物品总数", "value": len(items)},
+                        {"label": "排序", "value": args.sort},
+                    ],
+                },
+                "items": items,
+                "statuses": [],
+                "categories": [],
+            },
+            "message": "统物品结果已生成",
+        }
+        return emit(payload, "list_overview.html", args.output)
+
+    elif args.command == "detail":
+        from home_manager.html_render import emit
+        item = item_detail_payload(item_id=args.id)
+        if not item:
+            return emit({
+                "status": "error",
+                "data": {"item": {}},
+                "message": f"未找到 ID={args.id} 的物品",
+            }, "item_detail.html", args.output)
+        payload = {
+            "status": "ok",
+            "data": {"item": item},
+            "message": "物品详情已生成",
+        }
+        return emit(payload, "item_detail.html", args.output)
 
     elif args.command == "update":
         return update_item(
@@ -298,11 +399,6 @@ def main():
 
     elif args.command == "tag-list":
         return list_tags()
-
-    elif args.command == "detail":
-        if args.json:
-            return item_detail_json(item_id=args.id)
-        return item_detail(item_id=args.id)
 
     elif args.command == "account":
         action = args.action

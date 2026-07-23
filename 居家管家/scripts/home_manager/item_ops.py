@@ -758,9 +758,9 @@ def _item_to_dict(row, conn):
     return result
 
 
-def search_items_json(name=None, category_id=None, location=None, tag=None, status=None,
-                     limit=20, exact=False):
-    """搜索物品，返回 JSON 列表（完整字段），供 HTML 生成用"""
+def search_items_payload(name=None, category_id=None, location=None, tag=None, status=None,
+                        limit=20, exact=False):
+    """搜索物品，返回 items 列表（dict）"""
     conn = get_conn()
     cursor = conn.cursor()
     _load_category_cache(conn)
@@ -796,34 +796,28 @@ def search_items_json(name=None, category_id=None, location=None, tag=None, stat
     rows = cursor.fetchall()
     items = [_item_to_dict(dict(r), conn) for r in rows]
     conn.close()
-    import json
-    print(json.dumps(items, ensure_ascii=False))
-    return 0
+    return items
 
 
-def item_detail_json(item_id):
-    """查看物品详情，返回 JSON（完整字段），供 HTML 生成用"""
+def item_detail_payload(item_id):
+    """查看物品详情，返回 dict；不存在返回 None"""
     conn = get_conn()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
     row = cursor.fetchone()
     if not row:
         conn.close()
-        import json
-        print(json.dumps({"error": f"未找到 ID={item_id} 的物品"}, ensure_ascii=False))
-        return 1
+        return None
     item = _item_to_dict(dict(row), conn)
     _touch_item(conn, item_id)
     conn.commit()
     conn.close()
-    import json
-    print(json.dumps(item, ensure_ascii=False))
-    return 0
+    return item
 
 
-def list_items_json(location=None, status=None, category_id=None, owner=None,
-                   sort_by="name", limit=100):
-    """列出物品，返回 JSON 列表（完整字段），供 HTML 生成用"""
+def list_items_payload(location=None, status=None, category_id=None, owner=None,
+                      sort_by="name", limit=100):
+    """列出物品，返回 items 列表（dict）"""
     conn = get_conn()
     cursor = conn.cursor()
     _load_category_cache(conn)
@@ -865,6 +859,31 @@ def list_items_json(location=None, status=None, category_id=None, owner=None,
     rows = cursor.fetchall()
     items = [_item_to_dict(dict(r), conn) for r in rows]
     conn.close()
+    return items
+
+
+def search_items_json(name=None, category_id=None, location=None, tag=None, status=None,
+                     limit=20, exact=False):
+    """搜索物品，输出 JSON 到 stdout"""
     import json
-    print(json.dumps(items, ensure_ascii=False))
+    print(json.dumps(search_items_payload(name, category_id, location, tag, status, limit, exact), ensure_ascii=False))
+    return 0
+
+
+def item_detail_json(item_id):
+    """查看物品详情，输出 JSON 到 stdout"""
+    item = item_detail_payload(item_id)
+    import json
+    if not item:
+        print(json.dumps({"error": f"未找到 ID={item_id} 的物品"}, ensure_ascii=False))
+        return 1
+    print(json.dumps(item, ensure_ascii=False))
+    return 0
+
+
+def list_items_json(location=None, status=None, category_id=None, owner=None,
+                   sort_by="name", limit=100):
+    """列出物品，输出 JSON 到 stdout"""
+    import json
+    print(json.dumps(list_items_payload(location, status, category_id, owner, sort_by, limit), ensure_ascii=False))
     return 0

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 录入预览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:38px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:17px;max-width:760px}
+.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:18px}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.card,section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card b{display:block;font-size:13px;color:var(--fg2);margin-bottom:5px}.card span{font-size:22px;font-weight:750;letter-spacing:-.02em}
+section{margin:18px 0}h2{font-size:22px;letter-spacing:-.02em;margin-bottom:14px}h3{font-size:16px;margin:18px 0 8px;color:var(--fg2)}
+.row{display:grid;grid-template-columns:140px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #ececf1}.row:last-child{border-bottom:none}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:4px 10px;margin:3px;font-size:13px}.ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}
+.tagbox{display:flex;flex-wrap:wrap;margin:8px -3px}.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:5px 10px;margin:4px;font-size:13px;font-weight:650}
+.cmd{background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap}.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin-top:10px}
+.photo{width:100%;min-height:260px;border-radius:18px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover}.list{margin-left:20px}.list li{margin:8px 0}.empty{color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:32px}.bar{height:8px;background:#ececf1;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:var(--green)}
+@media(max-width:820px){.grid,.cards{grid-template-columns:1fr}.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager Add Preview</div>
+<h1 id="title">录入前预览</h1>
+<p class="lead">在真正写入数据库前，把即将录入的物品信息、硬规则校验、相似物品和最终 CLI 命令集中展示，用户确认后再执行。</p>
+</header>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库；真实写入必须走居家管家 CLI。</p>
+</div>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const app=document.getElementById('app');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function val(v){return v===null||v===undefined||v===''?'<span class="empty">未填写</span>':esc(v);}
+function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未通过</span>';}
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2><p>'+esc(e.message)+'</p></section>';return}
+const data=payload.data||payload;
+const d=data.draft||{};
+const checks=data.checks||{};
+const missing=arr(data.missing);
+const tags=arr(d.tags);
+const similar=arr(data.similar_items);
+const command=data.command||'';
+const photo=d.photo_base64?'<img alt="物品图片" src="data:image/jpeg;base64,'+d.photo_base64+'">':(d.photo?esc(d.photo):'未提供图片');
+const score=Math.round(((checks.ready_score??0)*100));
+document.getElementById('title').textContent=(d.name||'未命名物品')+' · 录入前预览';
+app.innerHTML=`
+<div class="cards">
+ <div class="card"><b>录入状态</b><span>${score>=100?'<span class="ok">可写入</span>':'<span class="warn">待补全</span>'}</span><div class="bar"><span style="width:${Math.max(0,Math.min(100,score))}%"></span></div></div>
+ <div class="card"><b>Tag 数量</b><span>${tags.length}/10</span></div>
+ <div class="card"><b>相似物品</b><span>${similar.length} 件</span></div>
+</div>
+<div class="grid">
+<section>
+<h2>核心信息</h2>
+<div class="row"><div class="k">名称</div><div class="v">${val(d.name)}</div></div>
+<div class="row"><div class="k">分类</div><div class="v">${val(d.category_name)} ${d.category_id?'<span class="pill">ID '+esc(d.category_id)+'</span>':''}</div></div>
+<div class="row"><div class="k">位置</div><div class="v">${val(d.location)}</div></div>
+<div class="row"><div class="k">状态</div><div class="v">${val(d.location_status||'在家')}</div></div>
+<div class="row"><div class="k">数量</div><div class="v">${val(d.quantity??1)}</div></div>
+<div class="row"><div class="k">所有者</div><div class="v">${val(d.owner||'使用者')}</div></div>
+<div class="row"><div class="k">价格</div><div class="v">${d.price?('¥'+esc(d.price)):'<span class="empty">未填写</span>'}</div></div>
+<div class="row"><div class="k">购买/过期</div><div class="v">${val(d.purchase_date)} / ${val(d.expiration_date)}</div></div>
+</section>
+<section><h2>图片</h2><div class="photo">${photo}</div></section>
+</div>
+<section><h2>硬规则验收</h2>
+<div class="row"><div class="k">名称</div><div class="v">${yes(checks.has_name)}</div></div>
+<div class="row"><div class="k">分类 ID</div><div class="v">${yes(checks.has_category_id)}</div></div>
+<div class="row"><div class="k">位置层级</div><div class="v">${yes(checks.location_depth_ok)}</div></div>
+<div class="row"><div class="k">Tag ≥ 10</div><div class="v">${yes(checks.tags_ok)}</div></div>
+<div class="row"><div class="k">备注非空</div><div class="v">${yes(checks.remark_ok)}</div></div>
+${missing.length?'<h3>还缺什么</h3><ul class="list">'+missing.map(x=>'<li class="bad">'+esc(x)+'</li>').join('')+'</ul>':'<p class="ok">所有必填项已满足。</p>'}
+</section>
+<section><h2>Tags</h2><div class="tagbox">${tags.length?tags.map(t=>'<span class="tag">'+esc(t)+'</span>').join(''):'<span class="empty">未填写</span>'}</div></section>
+<section><h2>备注</h2><p>${val(d.remark)}</p></section>
+<section><h2>相似物品检查</h2>${similar.length?'<ul class="list">'+similar.map(x=>'<li>ID '+esc(x.id)+' · '+esc(x.name)+' · '+esc(x.category_name||'')+' · '+esc(x.locations||'')+'</li>').join('')+'</ul>':'<p class="ok">未注入相似物品；正式录入前仍需按流程执行 search 查重。</p>'}</section>
+<section><h2>最终 CLI 命令</h2><div class="cmd" id="cmd">${esc(command||'待字段补齐后生成')}</div><button class="copy" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('cmd').textContent)">复制命令</button></section>
+`;
+}
+render();
+</script>
+</body>
+</html>

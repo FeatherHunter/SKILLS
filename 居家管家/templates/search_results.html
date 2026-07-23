@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 查物品</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.summary{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.summary span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:12px;color:var(--fg2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:10px}
+.photo{height:180px;background:#eef1f5;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3)}.photo img{width:100%;height:100%;object-fit:cover}
+h2{font-size:17px;letter-spacing:-.01em}.meta{color:var(--fg3);font-size:12px}
+.tagbox{display:flex;flex-wrap:wrap}.tag{background:#eef5ff;color:#0a63ce;border-radius:99px;padding:4px 9px;margin:3px;font-size:12px;font-weight:650}
+.loc{font-size:12px;color:var(--fg2)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 查物品</div>
+<h1 id="title">查物品结果</h1>
+<p class="lead" id="subtitle">居家管家查询结果</p>
+<div class="summary" id="summary"></div>
+</header>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库；真实数据来自居家管家 CLI。</p>
+</div>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const app=document.getElementById('app');
+const sub=document.getElementById('subtitle');
+const sumEl=document.getElementById('summary');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const data=p.data||p;
+const items=arr(data.items);
+const summary=data.summary||{};
+document.getElementById('title').textContent=summary.title||('查物品结果 · 共 '+items.length+' 件');
+sub.textContent=summary.subtitle||'居家管家查询结果';
+sumEl.innerHTML=arr(summary.chips).map(c=>'<span>'+esc(c)+'</span>').join('');
+if(!items.length){app.innerHTML='<div class="empty">未找到匹配物品。换个关键词，或先录入新物品。</div>';return}
+app.innerHTML='<div class="grid">'+items.map(it=>{
+const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无图';
+const locs=arr(it.locations).map(l=>'<div class="loc">📍 '+esc(l.location)+' ×'+esc(l.quantity)+' ['+esc(l.location_status||'')+']</div>').join('')||'<div class="loc">未设置位置</div>';
+const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span class="meta">无标签</span>';
+return `<article class="card">
+  <div class="photo">${photo}</div>
+  <div>
+    <h2>ID ${esc(it.id)} · ${esc(it.name||'未命名')}</h2>
+    <div class="meta">分类ID ${esc(it.category_id)} · ¥${esc(it.purchase_price||'-')} · 访问 ${esc(it.access_count)}</div>
+    <div class="tagbox">${tags}</div>
+  </div>
+  <div>${locs}</div>
+  <div class="meta">${esc(it.remark||'')}</div>
+</article>`;
+}).join('')+'</div>';
+}
+render();
+</script>
+</body>
+</html>

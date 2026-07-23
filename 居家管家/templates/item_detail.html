@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 看物品</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:30px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+section,article{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+.row{display:grid;grid-template-columns:140px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid #ececf1}.row:last-child{border-bottom:none}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.photo{width:100%;max-height:420px;border-radius:18px;background:#eef1f5;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden;margin-bottom:14px}.photo img{width:100%;height:100%;object-fit:cover}
+.tagbox{display:flex;flex-wrap:wrap}.tag{background:#eef5ff;color:#0a63ce;border-radius:99px;padding:5px 10px;margin:3px;font-size:13px;font-weight:650}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}th{background:#f5f8ff;font-weight:700}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}section{padding:18px 14px}.row{grid-template-columns:1fr}.photo{max-height:280px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 看物品</div>
+<h1 id="title">物品详情</h1>
+<p class="lead" id="subtitle">居家管家物品详情页</p>
+</header>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库。</p>
+</div>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const app=document.getElementById('app');
+const sub=document.getElementById('subtitle');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function val(v){return (v===null||v===undefined||v==='')?'<span style="color:#86868b">未填写</span>':esc(v);}
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const data=p.data||p;
+const it=data.item||{};
+if(!it.id){app.innerHTML='<div class="empty">未找到物品。换个 ID 试试。</div>';return}
+document.getElementById('title').textContent=(it.name||'未命名')+' · ID '+it.id;
+sub.textContent='分类ID '+esc(it.category_id||'-')+' · 所有者 '+esc(it.owner||'使用者');
+const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'未提供图片';
+const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span style="color:#86868b">无标签</span>';
+const locs=arr(it.locations);
+const locsTable=locs.length?`<table><thead><tr><th>位置</th><th>数量</th><th>状态</th><th>购买</th><th>过期</th><th>原因</th></tr></thead><tbody>${locs.map(l=>'<tr><td>'+esc(l.location||'')+'</td><td>'+esc(l.quantity)+'</td><td>'+esc(l.location_status||'')+'</td><td>'+esc(l.purchase_date||'-')+'</td><td>'+esc(l.expiration_date||'-')+'</td><td>'+esc(l.reason||'-')+'</td></tr>').join('')}</tbody></table>`:'<p style="color:#86868b">未设置位置</p>';
+app.innerHTML=`
+<div class="photo">${photo}</div>
+<article><h2>核心信息</h2>
+<div class="row"><div class="k">名称</div><div class="v">${val(it.name)}</div></div>
+<div class="row"><div class="k">分类 ID</div><div class="v">${val(it.category_id)}</div></div>
+<div class="row"><div class="k">所有者</div><div class="v">${val(it.owner)}</div></div>
+<div class="row"><div class="k">购买价</div><div class="v">${it.purchase_price?('¥'+esc(it.purchase_price)):'<span style="color:#86868b">未填写</span>'}</div></div>
+<div class="row"><div class="k">访问次数</div><div class="v">${val(it.access_count)}</div></div>
+<div class="row"><div class="k">最后访问</div><div class="v">${val(it.last_accessed_at)}</div></div>
+<div class="row"><div class="k">创建时间</div><div class="v">${val(it.created_at)}</div></div>
+<div class="row"><div class="k">更新时间</div><div class="v">${val(it.updated_at)}</div></div>
+</article>
+<article><h2>位置分布</h2>${locsTable}</article>
+<article><h2>标签</h2><div class="tagbox">${tags}</div></article>
+<article><h2>备注</h2><p>${val(it.remark)}</p></article>
+`;
+}
+render();
+</script>
+</body>
+</html>

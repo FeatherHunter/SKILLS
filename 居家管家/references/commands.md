@@ -45,6 +45,23 @@ python home_manager.py add \
 | --photo | 否 | "" | 图片绝对路径（必须在 $HOME_PHOTOS_DIR 目录下；有图片时在 add 中一次传入，脚本拿到 ID 后复制为 `YYYYMMDD_{ID}_{中文描述}.jpg` 并写入 `item.photo`） |
 | --location-status | 否 | "在家" | 位置状态（在家/备用/借用中等） |
 
+### 录入流程内置预览 HTML
+
+`add --preview` 先输出录入预览 HTML 再写入数据库；预览模板 `templates/add_preview.html`。
+
+```bash
+python home_manager.py add --name "..." --category-id N --location "..." \
+  --tags "..." --remark "..." --preview \
+  --preview-output "output/add_preview.html"
+```
+
+| 参数 | 说明 |
+|------|------|
+| --preview | 先输出预览 HTML 再 add；不传则直接写入数据库 |
+| --preview-output | 预览 HTML 输出路径，不填则写入 `output/add_preview_YYYYMMDD_HHMMSS.html` |
+
+用户核对预览后再去掉 `--preview`（或二次调用不带预览）执行真正的 `add` 写入。
+
 ---
 
 ## 推荐位置（录物品辅助）

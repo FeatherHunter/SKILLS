@@ -357,25 +357,26 @@
 </tr>
 <tr>
 <td>31</td>
-<td>查物品-html</td>
-<td>物品搜索→HTML</td>
+<td>查物品</td>
+<td>物品搜索（默认输出 HTML）</td>
 <td>features/search.md → Step 4</td>
 <td>可选（无则列全部）</td>
 </tr>
 <tr>
 <td>32</td>
-<td>看物品-html</td>
-<td>物品详情→HTML</td>
+<td>看物品</td>
+<td>物品详情（默认输出 HTML）</td>
 <td>features/search.md → Step 4</td>
 <td>是（多件时先选）</td>
 </tr>
 <tr>
 <td>33</td>
-<td>统物品-html</td>
-<td>总体统计→HTML</td>
+<td>统物品</td>
+<td>总体统计（默认输出 HTML）</td>
 <td>features/search.md → Step 4</td>
 <td>否</td>
 </tr>
+
 </tbody>
 </table>
 <h3>匹配规则</h3>
@@ -515,17 +516,18 @@
 <td>无 CLI，AI 执行 Lint 检查逻辑（见下方）</td>
 </tr>
 <tr>
-<td>查物品-html</td>
-<td><code>search --name "XX" --json</code></td>
+<td>查物品</td>
+<td><code>search --name "XX"</code> 默认输出 HTML</td>
 </tr>
 <tr>
-<td>看物品-html</td>
-<td><code>detail --id {ID} --json</code></td>
+<td>看物品</td>
+<td><code>detail --id {ID}</code> 默认输出 HTML</td>
 </tr>
 <tr>
-<td>统物品-html</td>
-<td><code>list --json</code></td>
+<td>统物品</td>
+<td><code>list</code> 默认输出 HTML</td>
 </tr>
+
 </tbody>
 </table>
 <hr />
@@ -545,7 +547,7 @@
 <hr />
 <h2 id="功能概述-6">功能概述</h2>
 <ul>
-<li><strong>物品录入</strong>：自然语言描述物品，AI 解析后写入数据库</li>
+<li><strong>物品录入</strong>：自然语言描述物品，AI 解析后写入数据库；写入前生成 HTML 预览供用户确认</li>
 <li><strong>物品查找</strong>：按名称/位置/标签/分类/状态搜索</li>
 <li><strong>物品更新</strong>：位置变动、状态变更、数量调整、标签修改</li>
 <li><strong>物品盘点</strong>：按需盘点指定位置的所有物品</li>
@@ -716,20 +718,21 @@
 <td>SKILL.md（Lint 检查）</td>
 </tr>
 <tr>
-<td>查物品-html</td>
+<td>查物品</td>
 <td>物品搜索→HTML</td>
 <td>features/search.md</td>
 </tr>
 <tr>
-<td>看物品-html</td>
+<td>看物品</td>
 <td>物品详情→HTML</td>
 <td>features/search.md</td>
 </tr>
 <tr>
-<td>统物品-html</td>
+<td>统物品</td>
 <td>总体统计→HTML</td>
 <td>features/search.md</td>
 </tr>
+
 </tbody>
 </table>
 <hr />

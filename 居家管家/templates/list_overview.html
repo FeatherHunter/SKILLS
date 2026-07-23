@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 统物品</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1100px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+section{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left}th{background:#f5f8ff;font-weight:700}
+.bar{height:8px;background:#ececf1;border-radius:99px;overflow:hidden}.bar span{display:block;height:100%;background:var(--blue)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 统物品</div>
+<h1 id="title">统物品概览</h1>
+<p class="lead" id="subtitle">居家管家统计概览</p>
+</header>
+<div class="cards" id="cards"></div>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库。</p>
+</div>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const app=document.getElementById('app');
+const sub=document.getElementById('subtitle');
+const cardsEl=document.getElementById('cards');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const data=p.data||p;
+const summary=data.summary||{};
+const items=arr(data.items);
+const categories=arr(data.categories);
+const statuses=arr(data.statuses);
+document.getElementById('title').textContent=summary.title||'统物品概览';
+sub.textContent=summary.subtitle||'居家管家统计概览';
+const metrics=arr(summary.metrics);
+cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
+const statusRows=statuses.map(s=>{
+const pct=s.total?(Math.round(s.count/s.total*100)):0;
+return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.count)+'</td><td><div class="bar"><span style="width:'+pct+'%"></span></div></td></tr>';
+}).join('');
+const catRows=categories.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.count||0)+'</td><td>'+esc(c.total_value||'-')+'</td></tr>').join('');
+const itemRows=items.map(it=>'<tr><td>'+esc(it.id)+'</td><td>'+esc(it.name||'')+'</td><td>'+esc(it.category_id||'-')+'</td><td>'+esc(it.access_count||0)+'</td><td>'+esc(it.last_accessed_at||'从未')+'</td></tr>').join('');
+app.innerHTML=`
+<section><h2>状态分布</h2>${statuses.length?'<table><thead><tr><th>状态</th><th>数量</th><th>占比</th></tr></thead><tbody>'+statusRows+'</tbody></table>':'<p style="color:#86868b">无状态数据</p>'}</section>
+<section><h2>分类分布</h2>${categories.length?'<table><thead><tr><th>分类</th><th>数量</th><th>总价值</th></tr></thead><tbody>'+catRows+'</tbody></table>':'<p style="color:#86868b">无分类数据</p>'}</section>
+<section><h2>物品列表</h2>${items.length?'<table><thead><tr><th>ID</th><th>名称</th><th>分类</th><th>访问</th><th>最后访问</th></tr></thead><tbody>'+itemRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
+`;
+}
+render();
+</script>
+</body>
+</html>

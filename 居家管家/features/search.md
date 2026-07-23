@@ -66,49 +66,37 @@ python home_manager.py detail --id {选中ID}
 
 ---
 
-## Step 4: 生成 HTML 页面（仅当唤醒词含 "-html"）
+## Step 4: 默认输出 HTML
 
-### 触发条件
+`查物品 / 看物品 / 统物品` 一律默认输出 HTML 页面；不保留 `-html` 后缀唤醒词。
 
-用户输入包含查物品/看物品/盘全部-html 等**查询类唤醒词**，且以 `-html` 结尾。
+### CLI 行为
 
-> 匹配规则：最长匹配。`查物品-html` 优先于 `查物品`。
+```bash
+# 查物品 → 走 templates/search_results.html
+python home_manager.py search --name "牛奶" --limit 20
 
-### 数据获取
+# 看物品 → 走 templates/item_detail.html
+python home_manager.py detail --id 631
 
-1. 从 Step 3 解析出物品 ID 列表和搜索条件
-2. 根据条件类型执行对应的 `--json` 命令：
-   - `查物品-html`：`python home_manager.py search --name "XX" --json`（或其他搜索参数组合）
-   - `看物品-html`：`python home_manager.py detail --id {ID} --json`
-   - `盘全部-html`：`python home_manager.py list --json`
-3. `--json` 命令返回 JSON 格式结构化数据（完整字段，含 photo 纯文件名）
+# 统物品 → 走 templates/list_overview.html
+python home_manager.py list --limit 100
+```
 
-### 照片处理
+输出默认路径在技能目录 `output/`，可通过 `--output` 显式指定。
 
-1. 解析 JSON 中每个物品的 `photo` 字段（纯文件名）
-2. 用环境变量 `HOME_PHOTOS_DIR` 拼接完整路径：`PHOTOS_DIR / photo`
-3. 读取图片文件，二进制 → Base64 编码
-4. 嵌入 HTML：`<img src="data:image/jpeg;base64,{base64字符串}">`
-5. 读取失败时：显示占位符（灰色图标 + "图片未找到"）
+### 数据契约
 
-### HTML 生成规则
+页面通过 `<script id="payload" type="application/json">` 注入数据；渲染器统一 `{status, data, message}` 三段式。
 
-1. **风格**：苹果风 / 简约 / 视觉舒适（由 AI 现场发挥，不写死 CSS）
-2. **结构**：所有物品以卡片形式垂直排列在同一 HTML 页面中
-3. **字段**：包含该物品在数据库所有表（items / item_tags / item_locations）的**所有字段**
-4. **位置分布**：每个物品的每个位置单独展示（含数量、状态、购买/过期日期）
-5. **标签**：完整展示 item_tags 表中的所有标签
-6. **自含**：单文件 HTML，无外部依赖
+### 模板与渲染器
 
-### 输出
-
-1. 将 HTML 存入临时文件：`/tmp/home_query_{timestamp}.html`
-2. 告知用户文件路径
+- 模板目录：`templates/`
+- 渲染器：`scripts/home_manager/html_render.py`
+- 输出目录：`output/`
 
 ### 发文件给用户
 
-**QQ 渠道**（channel=qqbot）：通过 QQBot 发文件方式发送路径
+将生成的 HTML 路径通过渠道发给用户；模板只展示数据，不直连数据库。
 
-**微信渠道**（channel=weixin）：通过微信渠道发文件方式发送路径
-
-> 注意：此步骤不改变任何脚本，只在 Skill 层定义行为规范。
+> 注意：不新增 `-html` 后缀唤醒词；如需 JSON 数据，用 `*_items_json` 等辅助函数。

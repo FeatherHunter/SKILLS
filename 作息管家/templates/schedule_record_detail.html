@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ title }}</title>
+<link rel="stylesheet" href="_record_styles.css">
+</head>
+<body>
+<div class="wrap">
+<div class="offline">📡 本页面是作息管家的离线 HTML 报告 — 单文件自包含,无外部依赖,可直接保存或转发</div>
+<header class="hero">
+  <div class="eyebrow" id="eyebrow">作息详情 · 人工智能推理溯源</div>
+  <h1 id="page-title">…</h1>
+  <p class="lead" id="page-subtitle">加载中…</p>
+  <div class="meta" id="page-meta">由作息管家 · schedule_cli render-records-detail 生成</div>
+</header>
+<div id="root"></div>
+<div class="footer">数据源:<code>schedule_records</code> · 模板:<code>{{ template_name }}</code> · 输出:<code>SKILLS_DB_PATH/schedule_html/</code></div>
+</div>
+<script id="payload" type="application/json"></script>
+<script src="_record_engine.js"></script>
+</body>
+</html>

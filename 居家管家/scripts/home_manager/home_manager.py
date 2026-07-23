@@ -163,6 +163,12 @@ def main():
     p_outfit.add_argument("--status", default="在家", help="筛选位置状态，默认'在家'")
     p_outfit.add_argument("--output", required=True, help="HTML 输出路径")
 
+    # ── trip (带物品 / 归物品 HTML 化) ──
+    p_trip = subparsers.add_parser("trip", help="旅行清单（打包/归位）")
+    p_trip.add_argument("--mode", default="pack", choices=["pack", "return"],
+                        help="pack=出门打包, return=回家归位")
+    p_trip.add_argument("--output", required=True, help="HTML 输出路径")
+
     # ── tag-merge ──
     p_merge = subparsers.add_parser("tag-merge", help="合并标签")
     p_merge.add_argument("--from", dest="from_tag", required=True, help="要被合并的标签")
@@ -429,6 +435,21 @@ def main():
             "message": "穿搭选择器 HTML 已生成",
         }
         return emit(payload, "outfit_picker.html", args.output)
+
+    elif args.command == "trip":
+        from render import emit
+        from home_manager.inventory_ops import _trip_payload
+        conn = get_conn()
+        try:
+            payload_data = _trip_payload(conn, mode=args.mode)
+        finally:
+            conn.close()
+        payload = {
+            "status": "ok",
+            "data": payload_data,
+            "message": "旅行清单 HTML 已生成",
+        }
+        return emit(payload, "travel_trip.html", args.output)
 
     elif args.command == "tag-merge":
         return tag_merge(from_tag=args.from_tag, to_tag=args.to_tag)

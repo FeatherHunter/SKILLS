@@ -317,6 +317,72 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
     return 0
 
 
+def _trip_payload(conn, mode="pack"):
+    """返回 travel_trip.html 需要的旅行清单数据
+
+    mode='pack'   (出门前打包): 列出所有'在家'物品, 用户挑选打钩
+    mode='return' (回家后归位): 列出所有'旅游中'物品, 用户标'已归位'
+
+    返回结构:
+      {
+        "summary": {title, subtitle, metrics[]},
+        "mode":    "pack" | "return",
+        "items":   [{id, name, category_name, location, location_status, tags[]}, ...]
+      }
+    """
+    cursor = conn.cursor()
+    if mode == "pack":
+        status = "在家"
+        title = "出门打包清单"
+        subtitle = "挑选要带的物品；完成后点「复制打包回执」发给 AI 标'旅游中'"
+    elif mode == "return":
+        status = "旅游中"
+        title = "回家归位清单"
+        subtitle = "标'已归位'或'换位置'；完成后点「复制归位回执」发给 AI 更新"
+    else:
+        return {
+            "status": "error",
+            "data": {},
+            "message": f"未知 mode: {mode}，可选: pack | return"
+        }
+
+    cursor.execute("""
+        SELECT DISTINCT i.id, i.name, c.name AS category_name,
+               il.location, il.location_status
+        FROM items i
+        JOIN item_locations il ON i.id = il.item_id
+        LEFT JOIN categories c ON i.category_id = c.id
+        WHERE il.location_status = ?
+        ORDER BY c.name, i.name
+    """, (status,))
+    rows = cursor.fetchall()
+
+    items = []
+    for r in rows:
+        tags = get_tags(conn, r['id'])
+        items.append({
+            "id": r['id'],
+            "name": r['name'],
+            "category_name": r['category_name'] or '(未分类)',
+            "location": r['location'],
+            "location_status": r['location_status'],
+            "tags": tags,
+        })
+
+    return {
+        "summary": {
+            "title": title,
+            "subtitle": subtitle,
+            "metrics": [
+                {"label": "待处理", "value": f"{len(items)} 件"},
+                {"label": "模式", "value": "出门打包" if mode == "pack" else "回家归位"},
+            ],
+        },
+        "mode": mode,
+        "items": items,
+    }
+
+
 def _outfit_payload(conn, status_filter="在家"):
     """返回 outfit_picker.html 需要的衣物分类数据
 

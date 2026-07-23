@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 旅行清单</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1d;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.cards{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.cards span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:12px;color:var(--fg2)}
+.filter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.filter input{flex:1;min-width:160px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font:inherit}
+.item{background:var(--card);border-radius:14px;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;border-left:4px solid transparent;cursor:pointer}
+.item:hover{background:#fbfbfd}
+.item.picked{border-left-color:var(--blue);background:#eef5ff}
+.item.returned{border-left-color:var(--green);background:#f5fdf7}
+.checkbox{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;color:transparent;flex-shrink:0}
+.item.picked .checkbox,.item.returned .checkbox{background:var(--blue);border-color:var(--blue);color:#fff}
+.item.returned .checkbox{background:var(--green);border-color:var(--green)}
+.name{font-weight:700;font-size:14px}
+.meta{color:var(--fg2);font-size:12px;margin-top:2px}
+.tags{font-size:11px;color:var(--fg3);margin-top:3px}
+.newloc{border:1px solid var(--line);border-radius:8px;padding:5px 9px;font:inherit;width:140px;display:none}
+.item.returned .newloc{display:block}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:auto 1fr}.newloc{width:100%}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 旅行清单</div>
+<h1 id="title">旅行清单</h1>
+<p class="lead" id="subtitle">居家管家旅行</p>
+<div class="cards" id="summary"></div>
+</header>
+<div class="filter" id="filter" style="display:none"><input id="searchInput" placeholder="按名称或标签筛选..."></div>
+<div id="app"></div>
+<div class="fixed"><button class="copy" id="copyBtn">复制回执</button></div>
+<p class="footer" id="footHint"></p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+const app=document.getElementById('app');
+const sumEl=document.getElementById('summary');
+const titleEl=document.getElementById('title');
+const subEl=document.getElementById('subtitle');
+const copyBtn=document.getElementById('copyBtn');
+const searchInput=document.getElementById('searchInput');
+const filterBar=document.getElementById('filter');
+const footHint=document.getElementById('footHint');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+
+let DATA={items:[],mode:'pack',summary:{}};
+let STATE={};
+let FILTER='';
+
+function rebuildReceipt(){
+  const lines=[DATA.mode==='pack'?'trip_pack_results:':'trip_return_results:'];
+  let count=0;
+  DATA.items.forEach(it=>{
+    const st=STATE[it.id];
+    if(!st||!st.action) return;
+    count++;
+    if(DATA.mode==='pack'){
+      lines.push(`- ID ${it.id}（${esc(it.name)}）：状态 → 旅游中`);
+    }else{
+      if(st.newLoc){lines.push(`- ID ${it.id}（${esc(it.name)}）：状态 → 在家，新位置 ${esc(st.newLoc)}`);}
+      else{lines.push(`- ID ${it.id}（${esc(it.name)}）：状态 → 在家（放回原位 ${esc(it.location||'')}）`);}
+    }
+  });
+  copyBtn.textContent=`复制回执（${count} 项）`;
+  return lines.join('\n');
+}
+
+copyBtn.onclick=function(){
+  const txt=rebuildReceipt();
+  if(txt.endsWith(':')){alert('请先勾选物品');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{
+      const old=copyBtn.textContent;copyBtn.textContent='已复制 ✓';
+      setTimeout(()=>{copyBtn.textContent=old;},1500);
+    });
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+};
+
+function paintAll(){
+  const q=FILTER.toLowerCase();
+  DATA.items.forEach(it=>{
+    const tags=arr(it.tags).join(' ');
+    const match=!q||(it.name||'').toLowerCase().includes(q)||tags.toLowerCase().includes(q);
+    const el=document.getElementById('item-'+it.id);
+    if(el) el.style.display=match?'':'none';
+  });
+}
+
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA={items:arr(data.items),mode:data.mode||'pack',summary:data.summary||{}};
+STATE={};
+titleEl.textContent=DATA.summary.title||'旅行清单';
+subEl.textContent=DATA.summary.subtitle||'';
+sumEl.innerHTML=arr(DATA.summary.metrics).map(m=>'<span>'+esc(m.label)+': '+esc(m.value)+'</span>').join('');
+footHint.textContent=DATA.mode==='pack'
+  ?'复制回执发给 AI 执行 update --id X --location-status "旅游中"。'
+  :'复制回执发给 AI 执行 update --id X --location-status "在家"。';
+filterBar.style.display=DATA.items.length>20?'flex':'none';
+if(!DATA.items.length){app.innerHTML='<div class="empty">'+(DATA.mode==='pack'?'没有可打包的物品。':'没有需要归位的物品。')+'</div>';return}
+app.innerHTML=DATA.items.map(it=>{
+  const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'';
+  const isReturn=DATA.mode==='return';
+  return `<div class="item" id="item-${it.id}">
+<div class="checkbox">✓</div>
+<div><div class="name">ID ${it.id} · ${esc(it.name||'')}</div><div class="meta">📍 ${esc(it.location||'(无位置)')} · ${esc(it.category_name||'')}</div><div class="tags">${tags}</div></div>
+${isReturn?'<input class="newloc" placeholder="新位置（留空=原位）" data-id="'+esc(it.id)+'">':''}
+<div></div>
+</div>`;
+}).join('');
+
+app.querySelectorAll('.item').forEach(el=>{
+  el.onclick=function(e){
+    if(e.target.classList.contains('newloc')) return;
+    const id=this.id.replace('item-','');
+    togglePick(id);
+  };
+});
+app.querySelectorAll('.newloc').forEach(inp=>{
+  inp.oninput=function(){
+    const id=this.getAttribute('data-id');
+    STATE[id]=STATE[id]||{};
+    STATE[id].newLoc=this.value;
+    rebuildReceipt();
+  };
+});
+rebuildReceipt();
+}
+
+function togglePick(id){
+  const it=DATA.items.find(x=>String(x.id)===String(id));
+  if(!it) return;
+  STATE[id]=STATE[id]||{};
+  if(STATE[id].action){delete STATE[id].action;delete STATE[id].newLoc;}
+  else{STATE[id].action=true;}
+  const el=document.getElementById('item-'+id);
+  if(el){
+    const isReturn=DATA.mode==='return';
+    el.classList.toggle('picked',!!STATE[id].action&&!isReturn);
+    el.classList.toggle('returned',!!STATE[id].action&&isReturn);
+    if(isReturn&&!STATE[id].action){
+      const inp=el.querySelector('.newloc');if(inp)inp.value='';
+    }
+  }
+  rebuildReceipt();
+}
+
+searchInput.oninput=function(){FILTER=this.value;paintAll();};
+
+render();
+</script>
+</body>
+</html>

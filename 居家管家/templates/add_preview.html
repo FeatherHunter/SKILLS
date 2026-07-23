@@ -36,7 +36,7 @@ section{margin:18px 0}h2{font-size:22px;letter-spacing:-.02em;margin-bottom:14px
 <div id="app"></div>
 <p class="footer">模板只展示注入数据，不直连数据库；真实写入必须走居家管家 CLI。</p>
 </div>
-<script id="payload" type="application/json">__PAYLOAD__</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
 <script>
 const app=document.getElementById('app');
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

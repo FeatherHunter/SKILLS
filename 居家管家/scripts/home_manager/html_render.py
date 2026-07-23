@@ -18,9 +18,22 @@ def render_page(template_name, payload, output_path=None, message=None):
             "data": {"template": template_name},
             "message": f"模板不存在: {template_path}",
         }
+    if not isinstance(payload, dict) or payload.get("status") != "ok":
+        return {
+            "status": "error",
+            "data": {"template": template_name},
+            "message": f"payload 状态校验失败: {payload.get('message') if isinstance(payload, dict) else '非字典类型'}",
+        }
     html = template_path.read_text(encoding="utf-8")
+    placeholder = "<!--INJECT-DATA-->"
+    if html.count(placeholder) != 1:
+        return {
+            "status": "error",
+            "data": {"template": template_name, "placeholder_count": html.count(placeholder)},
+            "message": f"模板 {template_name} 必须包含恰好 1 个 {placeholder} 占位符，实际 {html.count(placeholder)} 个",
+        }
     payload_text = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    html = html.replace("__PAYLOAD__", payload_text, 1)
+    html = html.replace(placeholder, payload_text, 1)
     if output_path:
         out = Path(output_path)
     else:

@@ -194,7 +194,7 @@ def main():
 
     elif args.command == "add":
         if args.preview:
-            from home_manager.html_render import render_page, build_command, split_tags
+            from render import render_page, build_command, split_tags
             from home_manager.validators import validate_hard_rules
             import json as _json
             draft = {
@@ -234,7 +234,7 @@ def main():
         )
 
     elif args.command == "search":
-        from home_manager.html_render import emit
+        from render import emit
         items = search_items_payload(
             name=args.name, category_id=args.category_id, location=args.location,
             tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
@@ -256,7 +256,7 @@ def main():
         return emit(payload, template_name, args.output)
 
     elif args.command == "list":
-        from home_manager.html_render import emit
+        from render import emit
         from home_manager.inventory_ops import _stats_summary_payload
         conn = get_conn()
         try:
@@ -280,7 +280,7 @@ def main():
         return emit(payload, "list_overview.html", args.output)
 
     elif args.command == "detail":
-        from home_manager.html_render import emit
+        from render import emit
         item = item_detail_payload(item_id=args.id)
         if not item:
             return emit({
@@ -325,7 +325,7 @@ def main():
 
     elif args.command == "inventory":
         if args.output:
-            from home_manager.html_render import emit
+            from render import emit
             from home_manager.inventory_ops import inventory_payload
             conn = get_conn()
             try:
@@ -391,7 +391,7 @@ def main():
 
     elif args.command == "stats":
         if args.output and args.type == "expiring":
-            from home_manager.html_render import emit
+            from render import emit
             from home_manager.inventory_ops import _stats_expiring_payload
             conn = get_conn()
             try:

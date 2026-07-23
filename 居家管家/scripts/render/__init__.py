@@ -1,11 +1,19 @@
+"""渲染器: HTML 模板注入数据 + CLI 命令构造
+
+原 home_manager.html_render.py (Phase 7 挪包)
+提供:
+  - render_page(template_name, payload, output_path, message)
+  - emit(payload, template_name, output_path, message)
+  - build_command(draft, prefix)
+  - split_tags(tags)
+"""
 import json
 import shlex
 from datetime import datetime
 from pathlib import Path
 
-from .db import SKILL_DIR
-
-
+# SKILL_DIR: 从本文件位置向上 3 级 = 居家管家/
+SKILL_DIR = Path(__file__).parent.parent.parent
 TEMPLATES_DIR = SKILL_DIR / "templates"
 OUTPUT_DIR = SKILL_DIR / "output"
 

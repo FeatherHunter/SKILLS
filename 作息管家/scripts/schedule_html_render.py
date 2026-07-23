@@ -509,17 +509,16 @@ def render_record_report(date: str) -> dict:
     return render_record_day(date)
 
 
-def render_records_detail(date: str, record_id: int = None, show_source: bool = False) -> dict:
+def render_records_detail(date: str, record_id: int = None) -> dict:
     """
     作息详情网页数据派生（人工智能推理溯源, 四步契约 §8 落地）.
 
-    数据来源:
-      - schedule_records 表 → get_records_by_date(date)
-      - 高敏字段 (source_contents / source_timestamps / analysis_reasoning)
-        默认不暴露,需 --show-source 才注入 (评审 H-02 隐私白名单模式)
+    100% 字段暴露原则:每条作息记录的全部 11 字段都注入 payload,
+      上层(HTML 模板) 自行决定渲染哪些字段、用什么样式、是否折叠。
+      全部字段:id / date / time_start / time_end / duration_minutes / activity /
+      category / source_contents / source_timestamps / analysis_reasoning / created_at。
 
-    返回: {status, data: {meta, records, records_detail, selected_record,
-                          privacy_unlocked, ai_questions, errors, ...},
+    返回: {status, data: {meta, records, selected_record, ai_questions, errors, ...},
            message}
     """
     from schedule_db import _normalize_date, get_records_by_date
@@ -528,45 +527,28 @@ def render_records_detail(date: str, record_id: int = None, show_source: bool = 
     date = _normalize_date(date)
     records = get_records_by_date(date)
 
-    public_records = [
+    full_records = [
         {
             "id": r["id"],
+            "date": r["date"],
             "time_start": r["time_start"],
             "time_end": r["time_end"],
             "duration_minutes": int(r.get("duration_minutes") or 0),
             "activity": r["activity"],
             "category": r["category"],
+            "source_contents": r.get("source_contents") or "",
+            "source_timestamps": r.get("source_timestamps") or "",
+            "analysis_reasoning": r.get("analysis_reasoning") or "",
+            "created_at": r.get("created_at") or "",
         }
         for r in records
     ]
 
-    record_details = []
-    if show_source:
-        for r in records:
-            record_details.append({
-                "id": r["id"],
-                "source_contents": r.get("source_contents") or "",
-                "source_timestamps": r.get("source_timestamps") or "",
-                "analysis_reasoning": r.get("analysis_reasoning") or "",
-            })
-
     selected = None
     if record_id is not None:
-        for r in records:
-            if r["id"] == record_id:
-                selected = {
-                    "id": r["id"],
-                    "date": r["date"],
-                    "time_start": r["time_start"],
-                    "time_end": r["time_end"],
-                    "duration_minutes": int(r.get("duration_minutes") or 0),
-                    "activity": r["activity"],
-                    "category": r["category"],
-                }
-                if show_source:
-                    selected["source_contents"] = r.get("source_contents") or ""
-                    selected["source_timestamps"] = r.get("source_timestamps") or ""
-                    selected["analysis_reasoning"] = r.get("analysis_reasoning") or ""
+        for fr in full_records:
+            if fr["id"] == record_id:
+                selected = fr
                 break
 
     cat_minutes = aggregate_by_category(records)
@@ -584,18 +566,15 @@ def render_records_detail(date: str, record_id: int = None, show_source: bool = 
             "record_id": record_id,
             "weekday": weekdays[dt.weekday()],
             "title": f"作息详情 · {dt.year}年{dt.month}月{dt.day}日({weekdays[dt.weekday()]})",
-            "subtitle": f"共 {len(records)} 条记录 · 高敏字段默认折叠 · 详情溯源",
+            "subtitle": f"共 {len(records)} 条记录 · 详情溯源 · 每条全 11 字段",
             "record_count": len(records),
             "total_minutes": int(total_minutes),
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "_template_version": "v2026-07-23",
             "_snapshot_at": datetime.now().isoformat(),
         },
-        "records": public_records,
-        "records_detail": record_details,
+        "records": full_records,
         "selected_record": selected,
-        "privacy_unlocked": show_source,
-        "show_source_available": True,
         "summary_categories_count": len(cat_minutes),
         "ai_questions": ai_questions_for_day(date, [], sleep_min, total_minutes, 0),
         "errors": [],
@@ -603,7 +582,7 @@ def render_records_detail(date: str, record_id: int = None, show_source: bool = 
     return {
         "status": "ok",
         "data": payload,
-        "message": f"✓ {date} 作息详情数据已生成({len(records)} 条记录,隐私字段{'已暴露' if show_source else '已折叠'})",
+        "message": f"✓ {date} 作息详情数据已生成({len(records)} 条记录,每条含 11 字段)",
     }
 
 

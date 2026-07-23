@@ -606,7 +606,8 @@ def main(argv=None):
         cmd_render_record_anomaly(args)
     elif cmd == "render-records-detail":
         cmd_render_records_detail(args)
-    # === end ===
+    elif cmd == "get-record":
+        cmd_get_record(args)    # === end ===
 
     # === 2026-07-22 新增：分类系统管理 ===
     elif cmd == "list-categories":
@@ -1777,11 +1778,16 @@ def cmd_render_record_anomaly(args):
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 
-def cmd_render_records_detail(args):
-    """render-records-detail <日期> [--record-id N] [--show-source]
 
-    作息详情网页（人工智能推理溯源, 四步契约 §8 落地）
-    高敏字段 (消息原文 / 推理链) 默认折叠, --show-source 解锁
+
+
+
+def cmd_render_records_detail(args):
+    """render-records-detail <日期> [--record-id N]
+
+    作息详情网页（人工智能推理溯源, 四步契约 §8 落地）。
+    按 100% 字段暴露原则,每条作息记录全 11 字段都注入 payload,
+      上层(HTML 模板) 自行决定消费哪些、是否折叠、什么样式。
     """
     from schedule_html_render import _record_dir, render_records_detail, render_and_write
     from pathlib import Path as _P
@@ -1789,14 +1795,13 @@ def cmd_render_records_detail(args):
     if not args:
         print(_json.dumps({
             "status": "error",
-            "message": "用法: render-records-detail <日期>(YYYY-MM-DD) [--record-id N] [--show-source]",
+            "message": "用法: render-records-detail <日期>(YYYY-MM-DD) [--record-id N]",
             "example": "render-records-detail 2026-07-15",
         }, ensure_ascii=False))
         return
 
     date = args[0]
     record_id = None
-    show_source = False
     i = 1
     while i < len(args):
         if args[i] == "--record-id" and i + 1 < len(args):
@@ -1806,9 +1811,6 @@ def cmd_render_records_detail(args):
                 print(_json.dumps({"status": "error", "message": f"--record-id 值非法: '{args[i+1]}'(期望整数)"}, ensure_ascii=False))
                 return
             i += 2
-        elif args[i] == "--show-source":
-            show_source = True
-            i += 1
         else:
             i += 1
 
@@ -1828,7 +1830,7 @@ def cmd_render_records_detail(args):
         return
 
     try:
-        payload = render_records_detail(date, record_id=record_id, show_source=show_source)
+        payload = render_records_detail(date, record_id=record_id)
     except Exception as e:
         print(_json.dumps({
             "status": "error",
@@ -2193,7 +2195,7 @@ def cmd_help():
   init                                    初始化数据库
   add <参数> 或 --json                    写入作息记录(规范化入口,2026-07-22 新增)
   prepare-messages [start] [end] [--page N] [--page-size N]   取待同步消息
-  list [date]                             查看某日作息
+  list [date]                             查看某日作息  add-summary --date D --category C --total-minutes M  写一条作息摘要,让 daily_summary 不再孤儿
   detail [date]                           含 AI 推理的详情
   summary [date]                          每日摘要
   timeline [date]                         时间轴
@@ -2221,7 +2223,7 @@ HTML 渲染(可视化查询结果):
   render-record-category <日期> <category>    单日单类深挖 HTML(24h×1day热力图)
   render-record-category-range <开始> <结束> <category>  区间单类深挖 HTML(24h×Nday热力图)
   render-record-anomaly [--window 7]          异常检测 HTML(雷达+红框+AI钩子)
-  render-records-detail <日期> [--record-id N] [--show-source]  作息详情 HTML(人工智能推理溯源,高敏字段默认折叠)
+  render-records-detail <日期> [--record-id N]   作息详情 HTML(人工智能推理溯源,每条全 11 字段都注入 payload)
 
 分类系统（2026-07-22 新增）:
   list-categories [--level 1|2] [--json]   列出分类白名单

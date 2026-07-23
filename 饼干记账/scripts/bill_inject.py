@@ -164,9 +164,6 @@ def main():
 
     # 1. 调 CLI 拿 JSON
     cli_json = run_cli_json(args.query_type, extra)
-    if cli_json.get("status") == "error":
-        print(f"✗ {cli_json.get('message')}", file=sys.stderr)
-        sys.exit(1)
 
     # 2. 包 payload
     payload = build_payload(cli_json, args.query_type, extra)
@@ -175,12 +172,17 @@ def main():
     output_path = Path(args.out) if args.out else default_output_path(args.query_type)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # 4. 注入模板
+    # 4. 注入模板（即使 CLI 返回 error 也注入，模板会显示错误卡片）
     try:
         final = inject_to_template(payload, output_path)
     except (FileNotFoundError, RuntimeError) as e:
         print(f"✗ 注入失败：{e}", file=sys.stderr)
         sys.exit(1)
+
+    if cli_json.get("status") == "error":
+        print(f"⚠ 已生成错误页: {final}")
+        print(f"  原因: {cli_json.get('message', '未知错误')}")
+        sys.exit(0)
 
     print(f"✓ 已生成: {final}")
     print(f"  用浏览器打开即可查看。")

@@ -21,6 +21,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 12px;
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
 .footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
 @media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
+.filter{display:flex;gap:10px;align-items:center;margin:14px 0 8px}
+.filter select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:inherit;background:#fff;color:var(--fg)}
+.filter #countText{color:var(--fg2);font-size:13px;margin-left:auto}
 </style>
 </head>
 <body>
@@ -31,6 +34,10 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 12px;
 <p class="lead" id="subtitle">居家管家统计概览</p>
 </header>
 <div class="cards" id="cards"></div>
+<div class="filter" id="filter">
+<select id="categoryFilter"><option value="">全部分类</option></select>
+<span id="countText"></span>
+</div>
 <div id="app"></div>
 <p class="footer">模板只展示注入数据，不直连数据库。</p>
 </div>
@@ -40,6 +47,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:9px 12px;
 const app=document.getElementById('app');
 const sub=document.getElementById('subtitle');
 const cardsEl=document.getElementById('cards');
+const categoryFilter=document.getElementById('categoryFilter');
+const countText=document.getElementById('countText');
+let CAT='';
 function render(){
 let p;
 try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
@@ -59,7 +69,7 @@ const pct=s.total?(Math.round(s.count/s.total*100)):0;
 return '<tr><td>'+esc(s.name)+'</td><td>'+esc(s.count)+'</td><td><div class="bar"><span style="width:'+pct+'%"></span></div></td></tr>';
 }).join('');
 const catRows=categories.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+esc(c.count||0)+'</td><td>'+esc(c.total_value||'-')+'</td></tr>').join('');
-const itemRows=items.map(it=>'<tr><td>'+esc(it.id)+'</td><td>'+esc(it.name||'')+'</td><td>'+esc(it.category_id||'-')+'</td><td>'+esc(it.access_count||0)+'</td><td>'+esc(it.last_accessed_at||'从未')+'</td></tr>').join('');
+const itemRows=items.map(it=>'<tr data-cat="'+esc(it.top_category_id||'')+'"><td>'+esc(it.id)+'</td><td>'+esc(it.name||'')+'</td><td>'+esc(it.category_id||'-')+'</td><td>'+esc(it.access_count||0)+'</td><td>'+esc(it.last_accessed_at||'从未')+'</td></tr>').join('');
 const topItems=items.slice().sort((a,b)=>(b.access_count||0)-(a.access_count||0)).slice(0,10);
 const maxAccess=topItems[0]?(topItems[0].access_count||1):1;
 const topRows=topItems.map(it=>{
@@ -70,9 +80,24 @@ app.innerHTML=`
 <section><h2>状态分布</h2>${statuses.length?'<table><thead><tr><th>状态</th><th>数量</th><th>占比</th></tr></thead><tbody>'+statusRows+'</tbody></table>':'<p style="color:#86868b">无状态数据</p>'}</section>
 <section><h2>分类分布</h2>${categories.length?'<table><thead><tr><th>分类</th><th>数量</th><th>总价值</th></tr></thead><tbody>'+catRows+'</tbody></table>':'<p style="color:#86868b">无分类数据</p>'}</section>
 <section><h2>访问频次 TOP 10</h2>${topItems.length?'<table><thead><tr><th>ID</th><th>名称</th><th>访问</th><th>占比</th></tr></thead><tbody>'+topRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
-<section><h2>物品列表</h2>${items.length?'<table><thead><tr><th>ID</th><th>名称</th><th>分类</th><th>访问</th><th>最后访问</th></tr></thead><tbody>'+itemRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
+<section><h2>物品列表</h2>${items.length?'<table><thead><tr><th>ID</th><th>名称</th><th>分类</th><th>访问</th><th>最后访问</th></tr></thead><tbody id="itemRows">'+itemRows+'</tbody></table>':'<p style="color:#86868b">无物品</p>'}</section>
 `;
+filterItems();
 }
+
+function filterItems(){
+let visible=0;
+const total=document.querySelectorAll('#itemRows tr').length;
+document.querySelectorAll('#itemRows tr').forEach(tr=>{
+const match=!CAT||tr.getAttribute('data-cat')===CAT;
+tr.style.display=match?'':'none';
+if(match) visible++;
+});
+countText.textContent=CAT?`分类 ${CAT}: ${visible}/${total} 件`:`共 ${total} 件`;
+}
+
+categoryFilter.onchange=function(){CAT=this.value;filterItems();};
+
 render();
 </script>
 </body>

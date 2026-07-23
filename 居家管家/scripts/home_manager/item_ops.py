@@ -28,6 +28,29 @@ def _load_category_cache(conn):
     _category_name_cache = {r['id']: r['name'] for r in cursor.fetchall()}
 
 
+_category_top_cache = None
+
+
+def _load_top_category_cache(conn):
+    """加载 (category_id → top_category_id) 缓存"""
+    global _category_top_cache
+    if _category_top_cache is not None:
+        return _category_top_cache
+    cursor = conn.cursor()
+    cursor.execute("""
+        WITH RECURSIVE ancestors AS (
+          SELECT id, parent_id, id AS top_id, 1 AS lvl
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, a.top_id, a.lvl + 1
+          FROM categories c JOIN ancestors a ON c.parent_id = a.id
+        )
+        SELECT id, top_id FROM ancestors
+    """)
+    _category_top_cache = {r['id']: r['top_id'] for r in cursor.fetchall()}
+    return _category_top_cache
+
+
 def _expand_category_ids(conn, cat_id):
     """从 cat_id 出发,递归查所有下级 id(包含自身)
 
@@ -766,6 +789,9 @@ def _item_to_dict(row, conn):
     result["tags"] = tags
     result["locations"] = locations
     result["photo_base64"] = photo_b64
+    top_cache = _load_top_category_cache(conn)
+    cid = row.get("category_id")
+    result["top_category_id"] = top_cache.get(cid) if cid else None
     return result
 
 

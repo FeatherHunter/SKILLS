@@ -368,6 +368,48 @@ AI 判断逻辑:
   共活跃 32 条 / 停用 0 条
 ```
 
+#### 3.1.1 HTML 模式（2026-07-23 新增 · 可视化查询结果）
+
+**触发词**：`查日程 / 看日程`（同 3.1 触发词 → AI 默认走 HTML 版）
+
+**核心语义**：把 `list-events` / `query-plans` 的数据渲染为 HTML，提供摘要卡 + 24h 时间轴 + 事件卡片 + 筛选器 + 24h 缺口高亮。
+
+**调用方式**：
+```bash
+# 单日 HTML（默认 24h 时间轴 + 卡片网格）
+python scripts/schedule_cli.py render-list-events 2026-07-15
+# 输出:作息管家/reports/schedule_list_2026-07-15.html
+
+# 多日 HTML（按日聚合视图）
+python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15
+# 输出:作息管家/reports/schedule_query_2026-07-13_to_2026-07-15.html
+
+# 自定义输出路径
+python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.html
+```
+
+**HTML 包含的派生字段**（由 `scripts/schedule_html_render.py` 计算）：
+- 首屏摘要卡：活跃 / 已完成 / 未复盘 / 未同步飞书 / 24h 缺口
+- 24h 时间轴（list-events 模式）：按小时桶聚合事件
+- 事件卡片网格：含飞书同步状态徽章、completion 徽章、completion_note、notes
+- 筛选器：按 title/notes/category 搜索；按 已同步/未同步/已软删/已完成/未复盘/跳过 筛选
+- 折叠区：已软删事件、飞书侧存在但本地无的事件、错误明细
+- 飞书可用度提示：探测 full/partial/missing 自动展示
+
+**实现位置**：
+- 模板：`templates/schedule_list_events.html`（静态资产，不修改）
+- 渲染器：`scripts/schedule_html_render.py`（数据派生 + JSON 注入）
+- CLI 入口：`scripts/schedule_cli.py` 的 `render-list-events` / `render-query-plans` 子命令
+- 数据来源：调用现有的 `schedule_db.list_plan_events()` / `_read_plan_dict()` 函数，**不动数据库 schema**
+
+**与原命令的边界**：
+| 场景 | 用哪个 |
+|---|---|
+| 终端查、复制粘贴、AI 引用 | `list-events` / `query-plans`（文本） |
+| 浏览器看、截图分享、可视化 | `render-list-events` / `render-query-plans`（HTML） |
+| 程序化 JSON 调用 | `list-events` 的 JSON 输出（脚本化） |
+| 单事件精确查重（带标题） | `search-plan-event`（轻量，保留 JSON） |
+
 **特点**:
 - 一次看全 DB 状态 + 飞书同步状态
 - `feishu_event_id` 为 `-` → 该事件未同步过飞书

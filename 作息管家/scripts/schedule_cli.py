@@ -604,6 +604,8 @@ def main(argv=None):
         cmd_render_record_category_range(args)
     elif cmd == "render-record-anomaly":
         cmd_render_record_anomaly(args)
+    elif cmd == "render-records-detail":
+        cmd_render_records_detail(args)
     # === end ===
 
     # === 2026-07-22 新增：分类系统管理 ===
@@ -1775,6 +1777,92 @@ def cmd_render_record_anomaly(args):
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 
+def cmd_render_records_detail(args):
+    """render-records-detail <日期> [--record-id N] [--show-source]
+
+    作息详情网页（人工智能推理溯源, 四步契约 §8 落地）
+    高敏字段 (消息原文 / 推理链) 默认折叠, --show-source 解锁
+    """
+    from schedule_html_render import _record_dir, render_records_detail, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-records-detail <日期>(YYYY-MM-DD) [--record-id N] [--show-source]",
+            "example": "render-records-detail 2026-07-15",
+        }, ensure_ascii=False))
+        return
+
+    date = args[0]
+    record_id = None
+    show_source = False
+    i = 1
+    while i < len(args):
+        if args[i] == "--record-id" and i + 1 < len(args):
+            try:
+                record_id = int(args[i + 1])
+            except ValueError:
+                print(_json.dumps({"status": "error", "message": f"--record-id 值非法: '{args[i+1]}'(期望整数)"}, ensure_ascii=False))
+                return
+            i += 2
+        elif args[i] == "--show-source":
+            show_source = True
+            i += 1
+        else:
+            i += 1
+
+    from schedule_db import _normalize_date
+    try:
+        date = _normalize_date(date)
+    except ValueError:
+        print(_json.dumps({"status": "error", "message": f"date 字段格式非法: '{date}'(期望 YYYY-MM-DD 或 YYYYMMDD,建议: 2026-07-15)"}, ensure_ascii=False))
+        return
+
+    record_dir = _record_dir()
+    if not record_dir.exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出目录不存在: 字段 record_dir(派生自环境变量 SKILLS_DB_PATH),当前值 {record_dir},建议: mkdir -p {record_dir}",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        payload = render_records_detail(date, record_id=record_id, show_source=show_source)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    extra = {"record_id": record_id} if record_id else {}
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "record-detail",
+            "date": date,
+            "record_count": len(payload["data"].get("records", [])),
+            **extra,
+        },
+        "message": f"✓ 作息详情网页已写入: {fp}",
+    }, ensure_ascii=False, indent=2))
+
+
 # ============================================================
 # 2026-07-22 新增：分类系统管理（基于 validators.py 白名单）
 # ============================================================
@@ -2133,6 +2221,7 @@ HTML 渲染(可视化查询结果):
   render-record-category <日期> <category>    单日单类深挖 HTML(24h×1day热力图)
   render-record-category-range <开始> <结束> <category>  区间单类深挖 HTML(24h×Nday热力图)
   render-record-anomaly [--window 7]          异常检测 HTML(雷达+红框+AI钩子)
+  render-records-detail <日期> [--record-id N] [--show-source]  作息详情 HTML(人工智能推理溯源,高敏字段默认折叠)
 
 分类系统（2026-07-22 新增）:
   list-categories [--level 1|2] [--json]   列出分类白名单

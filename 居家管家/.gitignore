@@ -14,3 +14,6 @@ __pycache__/
 
 # 渲染产物（HTML 预览/搜索结果/详情/统计）
 output/
+
+# outfit_picker 测试 HTML（每次跑都会变）
+outfit_picker_test_*.html

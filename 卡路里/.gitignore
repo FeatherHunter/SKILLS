@@ -1,4 +1,13 @@
 __pycache__/
 *.pyc
 *.py.bak
+*.html.bak.*
 .db/
+
+# 视觉增强：每次跑 render_*.py 都会重新生成,不进 git
+# (按需 git add templates/*_report_*.html 才能进 git)
+*_report_*.html
+
+# 改造方案 review 文档(不进 git)
+改造执行方案.html
+HTML注入改造方案.html

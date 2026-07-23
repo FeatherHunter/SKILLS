@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卡路里复盘报告</title>
+<style>
+:root{
+  --bg:#F2F2F7;--card:#FFFFFF;
+  --fg:#1C1C1E;--fg2:#8E8E93;--fg3:#C7C7CC;
+  --border:rgba(60,60,67,.12);
+  --green:#34C759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --blue:#007AFF;--blue-soft:#E3F2FD;
+  --purple:#AF52DE;--purple-soft:#F3E5F5;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--fg);
+  line-height:1.5;padding:24px 20px 80px;
+  max-width:760px;margin:0 auto;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* HEADER */
+header{text-align:center;padding:32px 0 20px}
+header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.date-range{font-size:13px;color:var(--fg2)}
+.eyebrow{
+  display:inline-block;font-size:11px;letter-spacing:.8px;
+  color:var(--blue);font-weight:600;margin-bottom:8px;
+  text-transform:uppercase;
+}
+
+/* KPI HERO */
+.kpi-hero{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:10px;margin:20px 0;
+}
+.kpi-card{
+  background:var(--card);border-radius:14px;
+  padding:14px 12px;text-align:center;
+  box-shadow:var(--shadow);
+}
+.kpi-card .label{font-size:11px;color:var(--fg2);font-weight:500;margin-bottom:6px}
+.kpi-card .value{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.kpi-card .unit{font-size:11px;color:var(--fg2);font-weight:500;margin-left:2px}
+.kpi-card.green{background:var(--green-soft)}
+.kpi-card.green .value{color:var(--green)}
+.kpi-card.orange{background:var(--orange-soft)}
+.kpi-card.orange .value{color:var(--orange)}
+.kpi-card.red{background:var(--red-soft)}
+.kpi-card.red .value{color:var(--red)}
+.kpi-card.blue{background:var(--blue-soft)}
+.kpi-card.blue .value{color:var(--blue)}
+
+/* DIM GRID (8 dim 卡片) */
+.dim-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:12px;margin:24px 0;
+}
+.dim{
+  background:var(--card);border-radius:14px;
+  padding:16px 18px;box-shadow:var(--shadow);
+  position:relative;
+}
+.dim.p1{
+  grid-column:1/-1;
+  background:linear-gradient(135deg,#E3F2FD,#FFFFFF);
+}
+.dim .dim-head{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+}
+.dim .num{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.dim.p1 .num{background:var(--purple)}
+.dim .dim-title{font-size:15px;font-weight:600}
+.dim .dim-tag{
+  font-size:10px;padding:2px 6px;border-radius:4px;
+  background:var(--purple-soft);color:var(--purple);
+  margin-left:auto;font-weight:600;
+}
+.dim .metric{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.dim .metric .unit{font-size:12px;color:var(--fg2);font-weight:500;margin-left:3px}
+.dim .desc{font-size:12px;color:var(--fg2);line-height:1.5}
+.dim .bar{
+  height:6px;background:var(--bg);border-radius:3px;
+  margin-top:8px;overflow:hidden;
+}
+.dim .bar-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* SVG container */
+.svg-wrap{
+  background:var(--card);border-radius:14px;
+  padding:18px 20px;margin:12px 0;
+  box-shadow:var(--shadow);
+}
+.svg-wrap h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.svg-wrap svg{width:100%;height:auto;display:block}
+.svg-note{font-size:12px;color:var(--fg2);margin-top:6px;line-height:1.5}
+
+/* TOP FOODS */
+.top-list{list-style:none;padding:0;margin:8px 0 0}
+.top-list li{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;padding:6px 0;
+  border-bottom:1px solid var(--border);
+}
+.top-list li:last-child{border-bottom:none}
+.top-list .rank{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--orange-soft);color:var(--orange);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.top-list .name{flex:1;font-weight:500}
+.top-list .val{color:var(--fg2);font-size:12px}
+
+/* ANOMALY */
+.anomaly{
+  background:var(--orange-soft);border-left:3px solid var(--orange);
+  padding:10px 14px;border-radius:0 8px 8px 0;
+  margin:8px 0;font-size:13px;
+}
+.anomaly.warn{background:var(--orange-soft);border-left-color:var(--orange)}
+.anomaly.info{background:var(--blue-soft);border-left-color:var(--blue)}
+.anomaly .date{
+  font-family:"SF Mono",monospace;font-size:11px;
+  color:var(--fg2);margin-right:8px;
+}
+.anomaly .diff{color:var(--orange);font-weight:600;margin-left:6px}
+
+/* COPY SECTION */
+.copy-section{
+  background:var(--card);border-radius:14px;
+  padding:16px 20px;margin-top:20px;
+  box-shadow:var(--shadow);
+}
+.copy-section h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--fg2)}
+.copy-section pre{
+  background:#1C1C1E;color:#F5F5F7;
+  padding:12px 16px;border-radius:10px;
+  font-size:11.5px;line-height:1.55;
+  overflow-x:auto;margin:6px 0 10px;
+  font-family:"SF Mono",monospace;white-space:pre-wrap;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--blue);color:#fff;
+  padding:7px 14px;border-radius:8px;
+  font-size:12px;font-weight:600;
+  border:none;cursor:pointer;
+  transition:opacity .2s;
+}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--green)}
+
+/* FOOTER */
+footer{
+  text-align:center;color:var(--fg3);
+  font-size:11px;padding-top:28px;
+  border-top:1px solid var(--border);margin-top:36px;
+}
+
+@media (max-width:640px){
+  body{padding:16px 12px 60px}
+  .kpi-hero{grid-template-columns:repeat(2,1fr)}
+  .dim-grid{grid-template-columns:1fr}
+  .dim.p1{grid-column:1}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">卡路里复盘</div>
+  <h1 id="hero-title">复盘报告</h1>
+  <div class="date-range" id="date-range">加载中...</div>
+</header>
+
+<!-- KPI HERO 4 卡 -->
+<div class="kpi-hero" id="kpi-hero"></div>
+
+<!-- ANOMALY 异常天 -->
+<div id="anomaly-section" style="display:none">
+  <h2 style="font-size:15px;font-weight:600;margin:20px 0 8px;padding-left:4px">⚠️ 异常天</h2>
+  <div id="anomaly-list"></div>
+</div>
+
+<!-- DIM 8 卡 -->
+<div class="dim-grid" id="dim-grid"></div>
+
+<!-- WEIGHT SVG -->
+<div id="svg-section" class="svg-wrap" style="display:none">
+  <h3 id="svg-title">体重趋势</h3>
+  <div id="svg-container"></div>
+  <div class="svg-note" id="svg-note"></div>
+</div>
+
+<!-- TOP FOODS -->
+<div id="topfood-section" class="svg-wrap" style="display:none">
+  <h3>🍽️ Top 5 食物</h3>
+  <ul class="top-list" id="top-foods"></ul>
+</div>
+
+<!-- COPY TO AI -->
+<div class="copy-section">
+  <h3>📤 复制回 AI（让 AI 帮你解读）</h3>
+  <pre id="copy-text">加载中...</pre>
+  <button class="btn" id="copy-btn" onclick="copyToAI()">复制摘要</button>
+</div>
+
+<footer>
+  卡路里 Skill · 复盘报告 v2 · 数据来源 review_cli.py gen + review_engine.py<br>
+  模板：templates/review_template_v2.html
+</footer>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function copyToAI() {
+  const text = document.getElementById('copy-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制摘要'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    // Fallback for non-HTTPS
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ 已复制';
+  });
+}
+
+function pctColor(pct) {
+  if (pct >= 90 && pct <= 110) return 'var(--green)';
+  if (pct >= 70 && pct <= 130) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function pctColorSoft(pct) {
+  if (pct >= 90 && pct <= 110) return 'var(--green-soft)';
+  if (pct >= 70 && pct <= 130) return 'var(--orange-soft)';
+  return 'var(--red-soft)';
+}
+
+function render() {
+  if (!DATA) {
+    document.getElementById('hero-title').textContent = '❌ 数据加载失败';
+    document.getElementById('date-range').textContent = 'window.__DATA__ 未注入或格式错误';
+    return;
+  }
+
+  const { status, data: e, message } = DATA;
+  if (status !== 'ok' && status !== 'warn') {
+    document.getElementById('hero-title').textContent = '⚠️ ' + message;
+    return;
+  }
+
+  const r = e.range || {};
+  const intake = e.intake_summary || {};
+  const burn = e.burn_summary || {};
+  const macro = e.macro_ratio || {};
+  const nut = e.nutrition_match || {};
+  const tdee = e.tdee || 0;
+  const wd = e.weekly_deficit || 0;
+  const twl = e.theoretical_weight_loss || 0;
+  const cdc = e.complete_days_count || 0;
+  const topFoods = e.top_foods || [];
+  const anomalies = e.anomaly_days || [];
+  const wsvg = e.weight_trend_svg || '';
+  const wmeta = e.weight_trend_meta || {};
+
+  // 头部
+  document.getElementById('hero-title').textContent = r.type === 'day' ? '今日复盘' :
+    r.type === 'week' ? '本周复盘' :
+    r.type === 'month' ? '本月复盘' :
+    r.type === 'year' ? '本年复盘' : '复盘报告';
+  document.getElementById('date-range').textContent =
+    `${r.start || ''} ~ ${r.end || ''}  ·  ${cdc} 完整日`;
+
+  // KPI HERO 4 卡
+  const calPct = intake.avg_calorie ? Math.round(intake.avg_calorie / 1850 * 100) : 0;
+  document.getElementById('kpi-hero').innerHTML = `
+    <div class="kpi-card ${calPct >= 90 && calPct <= 110 ? 'green' : calPct > 130 || calPct < 70 ? 'red' : 'orange'}">
+      <div class="label">日均摄入</div>
+      <div class="value">${Math.round(intake.avg_calorie || 0)}<span class="unit">卡</span></div>
+    </div>
+    <div class="kpi-card ${nut.match_rate_pct >= 80 ? 'green' : nut.match_rate_pct >= 50 ? 'orange' : 'red'}">
+      <div class="label">营养达标</div>
+      <div class="value">${nut.match_rate_pct || 0}<span class="unit">%</span></div>
+    </div>
+    <div class="kpi-card ${wd > 0 ? 'green' : 'orange'}">
+      <div class="label">周缺口</div>
+      <div class="value">${wd > 0 ? '-' : '+'}${Math.abs(wd).toLocaleString()}<span class="unit">卡</span></div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="label">理论减重</div>
+      <div class="value">${twl > 0 ? '-' : '+'}${Math.abs(twl).toFixed(1)}<span class="unit">kg</span></div>
+    </div>
+  `;
+
+  // ANOMALY
+  if (anomalies.length > 0) {
+    document.getElementById('anomaly-section').style.display = 'block';
+    document.getElementById('anomaly-list').innerHTML = anomalies.map(a => `
+      <div class="anomaly ${a.severity}">
+        <span class="date">${a.date || '本周'}</span>
+        <strong>${a.type === 'intake_excess' ? '摄入超标' :
+                  a.type === 'intake_deficit' ? '摄入不足' :
+                  a.type === 'fat_excess' ? '脂肪超标' :
+                  a.type === 'exercise_streak_miss' ? '连续未运动' : a.type}</strong>
+        <span class="diff">${a.diff}</span>
+      </div>
+    `).join('');
+  }
+
+  // DIM 8 卡
+  const dims = [
+    {
+      num: 1, title: '总结', p1: false,
+      metric: cdc + ' 天', desc: `完成 ${cdc} 天完整记录，TDEE ${tdee} 卡/天`
+    },
+    {
+      num: 2, title: '训练 ⭐', p1: true,
+      metric: (e.fitness_plan ? '已制定' : '未制定'), desc: e.fitness_plan ? `总周数 ${e.fitness_plan.total_weeks || '?'}` : '建议先制定健身计划'
+    },
+    {
+      num: 3, title: '饮食', p1: false,
+      metric: Math.round(intake.avg_calorie || 0) + ' 卡/天', desc: `蛋白 ${Math.round(intake.avg_protein || 0)}g / 碳水 ${Math.round(intake.avg_carbs || 0)}g / 脂肪 ${Math.round(intake.avg_fat || 0)}g`
+    },
+    {
+      num: 4, title: '运动', p1: false,
+      metric: Math.round(burn.avg_burned || 0) + ' 卡/天', desc: `${burn.days_count || 0} 天有运动记录`
+    },
+    {
+      num: 5, title: '热量', p1: false,
+      metric: (wd > 0 ? '-' : '+') + Math.abs(Math.round(wd / 7)).toLocaleString() + ' 卡/天',
+      desc: `周缺口 ${wd.toLocaleString()} 卡 · 理论减重 ${twl} kg`
+    },
+    {
+      num: 6, title: '体重', p1: false,
+      metric: (wmeta.title || '体重趋势'), desc: wmeta.range_text || ''
+    },
+    {
+      num: 7, title: '习惯', p1: false,
+      metric: `蛋白 ${macro.protein_pct || 0}% / 碳水 ${macro.carbs_pct || 0}% / 脂肪 ${macro.fat_pct || 0}%`,
+      desc: `Top 食物：${topFoods[0]?.name || '—'}`
+    },
+    {
+      num: 8, title: '目标', p1: false,
+      metric: e.nutrition_targets?.weight_goal ? `目标 ${e.nutrition_targets.weight_goal} kg` : '未设置',
+      desc: e.nutrition_targets?.goal_deadline ? `截止 ${e.nutrition_targets.goal_deadline}` : '建议先设目标'
+    },
+  ];
+  document.getElementById('dim-grid').innerHTML = dims.map(d => `
+    <div class="dim ${d.p1 ? 'p1' : ''}">
+      <div class="dim-head">
+        <span class="num">${d.num}</span>
+        <span class="dim-title">${d.title}</span>
+        ${d.p1 ? '<span class="dim-tag">P1 重点</span>' : ''}
+      </div>
+      <div class="metric">${d.metric}</div>
+      <div class="desc">${d.desc}</div>
+    </div>
+  `).join('');
+
+  // SVG
+  if (wsvg) {
+    document.getElementById('svg-section').style.display = 'block';
+    document.getElementById('svg-container').innerHTML = wsvg;
+    document.getElementById('svg-title').textContent = `📈 体重趋势 · ${wmeta.title || ''}`;
+    document.getElementById('svg-note').textContent =
+      `${wmeta.range_text || ''}  ·  共 ${wmeta.data_count || 0} 个数据点${wmeta.has_goal_line ? '  ·  含目标虚线' : ''}`;
+  }
+
+  // TOP FOODS
+  if (topFoods.length > 0) {
+    document.getElementById('topfood-section').style.display = 'block';
+    document.getElementById('top-foods').innerHTML = topFoods.map((f, i) => `
+      <li>
+        <span class="rank">${i + 1}</span>
+        <span class="name">${escapeHTML(f.name)}</span>
+        <span class="val">${Math.round(f.total_cal)} 卡 · ${f.cnt} 次 · 均 ${Math.round(f.avg_cal_per_meal)}/次</span>
+      </li>
+    `).join('');
+  }
+
+  // COPY TEXT
+  let copyText = `复盘报告（${r.start} ~ ${r.end}）\n`;
+  copyText += `完整日: ${cdc} 天\n`;
+  copyText += `TDEE: ${tdee} 卡/天\n`;
+  copyText += `摄入: 日均 ${Math.round(intake.avg_calorie || 0)} 卡\n`;
+  copyText += `消耗: 日均 ${Math.round(burn.avg_burned || 0)} 卡\n`;
+  copyText += `周缺口: ${wd} 卡 · 理论减重 ${twl} kg\n`;
+  copyText += `营养达标率: ${nut.match_rate_pct || 0}% (${nut.summary || ''})\n`;
+  copyText += `异常天: ${anomalies.length} 条\n`;
+  if (topFoods.length > 0) {
+    copyText += `\nTop 5 食物:\n`;
+    topFoods.forEach((f, i) => {
+      copyText += `  ${i + 1}. ${f.name} - ${Math.round(f.total_cal)} 卡 (${f.cnt} 次)\n`;
+    });
+  }
+  document.getElementById('copy-text').textContent = copyText;
+}
+
+render();
+</script>
+</body>
+</html>

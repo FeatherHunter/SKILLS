@@ -44,6 +44,39 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 
 ---
 
+## 🎨 视觉增强（HTML 模板 + 数据注入）
+
+> 详见《预置HTML+注入数据指导手册》第一性原理。"模板稳定、数据流动、样式预置、内容注入"。
+
+### 已实现模板（2026-07-23）
+
+| 模板 | 唤醒词 | 数据源 | 渲染器 |
+|---|---|---|---|
+| `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
+| `templates/review_template_v2.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
+
+### 模板设计原则（与《手册》第 7 节对齐）
+
+- **占位符唯一**：模板含 `<!--INJECT-DATA-->` 恰好 1 次（注入器会校验）
+- **首屏**：状态徽章 + 关键 KPI 卡片（4-6 个）
+- **主体**：按维度分组（折叠 `details/summary` 让长内容可折叠）
+- **尾部**：复制回 AI 按钮（让用户回填数据）
+- **空态 / 错误态**：明确显示（不要白屏）
+
+### 数据契约
+
+```json
+{
+  "status": "ok" | "warn" | "fail",
+  "data": { ... },
+  "message": "..."
+}
+```
+
+所有 `status` 必须严格用 `"ok" | "warn" | "fail"`（"fail" 对应 error 级禁忌；与《优秀 Skill 指导手册》第④层接口层规范一致）。
+
+---
+
 ## 📦 安装与配置
 
 ### 依赖
@@ -147,7 +180,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练 | `python scripts/xunji_bridge.py overlay-plan --date <DATE>` |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次 | `AI 路由 → python scripts/plan_generator.py` |
 | 复盘训练 | 对指定时间段做 plan vs 实绩对比 | `python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` |
-| 扫禁忌 | 检测 plan/DB 中禁忌动作(腰/膝/肩) | `python scripts/scan_contraindications.py [--part {腰\|膝\|肩\|all}] [--strict]` |
+| 扫禁忌 | 检测 plan/DB 中禁忌动作(腰/膝/肩) · **2026-07-23 起支持 HTML 可视化报告** | `python scripts/scan_contraindications.py [--part {腰\|膝\|肩\|all}] [--strict]` · HTML:`python scripts/render_contraindication.py [--part ...] [--output <path>]` |
 | 审计动作名 | 扫描 plan 里非训记官方动作名(push-plan 前必跑) | `python scripts/audit_plan_names.py [--strict] [--fix-suggestions]` |
 
 ### 📊 分析

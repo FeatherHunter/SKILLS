@@ -408,6 +408,66 @@ def derive(raw_data):
     enriched['weight_trend_svg'] = weight_trend_result['svg']
     enriched['weight_trend_meta'] = weight_trend_result['meta']
 
+    # 8. 异常天检测(2026-07-23 B1 增)—— 让 HTML 模板可以高亮异常
+    #    规则:
+    #      intake_excess  : 日摄入 > 目标 + 300 卡(暴食预警)
+    #      intake_deficit : 日摄入 < 目标 - 500 卡(节食过度预警)
+    #      fat_excess     : 日脂肪 > 目标 * 1.5(结构失衡)
+    #    注:基于 complete_days(排除今日),确保不会污染统计
+    targets = raw_data.get('nutrition_targets', {})
+    cal_goal = targets.get('calorie_goal', 1850)
+    fat_goal = targets.get('fat_goal', 60)
+    anomaly_days = []
+    for d in complete_days_intake:
+        cal = d.get('total_calorie', 0)
+        fat = d.get('total_fat', 0)
+        if cal > cal_goal + 300:
+            anomaly_days.append({
+                'date': d['date'],
+                'type': 'intake_excess',
+                'value': cal,
+                'target': cal_goal,
+                'diff': f'+{cal - cal_goal} 卡',
+                'severity': 'warn',
+            })
+        elif cal < cal_goal - 500:
+            anomaly_days.append({
+                'date': d['date'],
+                'type': 'intake_deficit',
+                'value': cal,
+                'target': cal_goal,
+                'diff': f'{cal - cal_goal} 卡',
+                'severity': 'warn',
+            })
+        if fat > fat_goal * 1.5:
+            anomaly_days.append({
+                'date': d['date'],
+                'type': 'fat_excess',
+                'value': fat,
+                'target': fat_goal,
+                'diff': f'+{fat - fat_goal}g 脂肪',
+                'severity': 'info',
+            })
+    # 运动连续性异常:连续 3+ 天 burn=0
+    consecutive_zero_burn = 0
+    max_consec = 0
+    for d in sorted(complete_days_burn, key=lambda x: x['date']):
+        if d.get('total_burned', 0) == 0:
+            consecutive_zero_burn += 1
+            max_consec = max(max_consec, consecutive_zero_burn)
+        else:
+            consecutive_zero_burn = 0
+    if max_consec >= 3:
+        anomaly_days.append({
+            'date': None,
+            'type': 'exercise_streak_miss',
+            'value': max_consec,
+            'target': 1,
+            'diff': f'连续 {max_consec} 天未运动',
+            'severity': 'warn',
+        })
+    enriched['anomaly_days'] = anomaly_days
+
     return enriched
 
 

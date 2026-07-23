@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 查快递</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.cards{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.cards span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:12px;color:var(--fg2)}
+.item{background:var(--card);border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:grid;grid-template-columns:100px 1fr;gap:14px;border-left:4px solid var(--orange)}
+.item.received{border-left-color:var(--green)}
+.item.abandoned{border-left-color:var(--red);opacity:.65}
+.photo{width:100px;height:100px;border-radius:14px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:12px}
+.photo img{width:100%;height:100%;object-fit:cover}
+.name{font-weight:700;font-size:16px;margin-bottom:4px}
+.meta{color:var(--fg2);font-size:13px;margin-bottom:6px}
+.tagbox{display:flex;flex-wrap:wrap;margin:4px 0}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:99px;padding:3px 9px;margin:2px;font-size:11px;font-weight:650}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.btn{border:none;border-radius:999px;padding:6px 12px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.received{background:var(--green);color:#fff}
+.btn.abandoned{background:var(--red);color:#fff}
+.btn.repair{background:var(--orange);color:#fff}
+.btn.active{box-shadow:0 0 0 2px #fff,0 0 0 4px currentColor}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy:hover{filter:brightness(1.05)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.photo{height:140px}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 查快递</div>
+<h1 id="title">查快递结果</h1>
+<p class="lead" id="subtitle">居家管家快递追踪</p>
+<div class="cards" id="summary"></div>
+</header>
+<div id="app"></div>
+<div class="fixed"><button class="copy" id="copyBtn">复制快递回执</button></div>
+<p class="footer">模板只展示注入数据，不直连数据库；确认后把回执发给 AI 执行 update。</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+const app=document.getElementById('app');
+const sumEl=document.getElementById('summary');
+const titleEl=document.getElementById('title');
+const subEl=document.getElementById('subtitle');
+const copyBtn=document.getElementById('copyBtn');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function daysSince(dateStr){if(!dateStr)return null;const d=new Date(dateStr.replace(' ','T'));if(isNaN(d))return null;const ms=Date.now()-d.getTime();return Math.max(0,Math.floor(ms/86400000));}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+
+let DATA={items:[],summary:{}};
+let STATE={};
+
+function rebuildReceipt(){
+  const lines=['delivery_check_results:'];
+  let received=0,abandoned=0,repair=0;
+  DATA.items.forEach(it=>{
+    const st=STATE[it.id];
+    if(!st) return;
+    if(st.action==='received'){received++;lines.push(`- ID ${it.id}（${esc(it.name)}）：标记已收到，状态 → 在家`);}
+    else if(st.action==='abandoned'){abandoned++;lines.push(`- ID ${it.id}（${esc(it.name)}）：标记废弃`);}
+    else if(st.action==='repair'){repair++;lines.push(`- ID ${it.id}（${esc(it.name)}）：标记维修中`);}
+  });
+  copyBtn.textContent=`复制快递回执（${received} 收 / ${abandoned} 弃 / ${repair} 修）`;
+  return lines.join('\n');
+}
+
+copyBtn.onclick=function(){
+  const txt=rebuildReceipt();
+  if(txt==='delivery_check_results:'){alert('暂未标记任何操作');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{
+      const old=copyBtn.textContent;copyBtn.textContent='已复制 ✓';
+      setTimeout(()=>{copyBtn.textContent=old;},1500);
+    });
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+};
+
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA={items:arr(data.items),summary:data.summary||{}};
+STATE={};
+titleEl.textContent=DATA.summary.title||('查快递结果 · 共 '+DATA.items.length+' 件');
+subEl.textContent=DATA.summary.subtitle||'居家管家快递追踪';
+sumEl.innerHTML=arr(DATA.summary.chips).map(c=>'<span>'+esc(c)+'</span>').join('');
+if(!DATA.items.length){app.innerHTML='<div class="empty">没有在途快递。</div>';return}
+app.innerHTML=DATA.items.map(it=>{
+  const loc=arr(it.locations).find(l=>l.location_status==='快递中')||arr(it.locations)[0]||{};
+  const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span style="color:#86868b">无标签</span>';
+  const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无图';
+  const days=daysSince(loc.created_at||it.created_at);
+  const dayStr=days===null?'':days===0?'今天下单':'已快递 '+days+' 天';
+  const locPath=loc.location?`📦 ${esc(loc.location)}`:'(无位置)';
+  return `<div class="item" id="item-${it.id}">
+<div class="photo">${photo}</div>
+<div>
+<div class="name">ID ${it.id} · ${esc(it.name||'未命名')}</div>
+<div class="meta">${locPath} · ×${esc(loc.quantity||1)} · ${dayStr}${it.purchase_price?' · ¥'+esc(it.purchase_price):''}</div>
+<div class="tagbox">${tags}</div>
+<div class="actions">
+<button class="btn received" data-act="received" data-id="${it.id}">已收到</button>
+<button class="btn abandoned" data-act="abandoned" data-id="${it.id}">废弃</button>
+<button class="btn repair" data-act="repair" data-id="${it.id}">维修</button>
+</div>
+</div>
+</div>`;
+}).join('');
+
+app.querySelectorAll('button[data-act]').forEach(b=>{
+  b.onclick=function(){
+    const id=this.getAttribute('data-id');
+    const act=this.getAttribute('data-act');
+    STATE[id]=STATE[id]||{};
+    if(STATE[id].action===act){delete STATE[id].action;}
+    else{STATE[id].action=act;}
+    paint(id);
+  };
+});
+rebuildReceipt();
+}
+
+function paint(id){
+  const st=STATE[id]||{};
+  const el=document.getElementById('item-'+id);
+  if(!el) return;
+  el.classList.toggle('received',st.action==='received');
+  el.classList.toggle('abandoned',st.action==='abandoned');
+  el.querySelectorAll('button[data-act]').forEach(b=>{
+    b.classList.toggle('active',b.getAttribute('data-act')===st.action);
+  });
+  rebuildReceipt();
+}
+
+render();
+</script>
+</body>
+</html>

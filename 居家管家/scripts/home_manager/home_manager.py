@@ -238,19 +238,21 @@ def main():
             name=args.name, category_id=args.category_id, location=args.location,
             tag=args.tag, status=args.status, limit=args.limit, exact=args.exact
         )
+        # status=快递中 自动用快递专用模板
+        template_name = "delivery_check.html" if args.status == "快递中" else "search_results.html"
         payload = {
             "status": "ok",
             "data": {
                 "summary": {
-                    "title": "查物品结果",
-                    "subtitle": "居家管家查询结果",
+                    "title": "查快递结果" if args.status == "快递中" else "查物品结果",
+                    "subtitle": "在途快递追踪" if args.status == "快递中" else "居家管家查询结果",
                     "chips": [f"共 {len(items)} 件"] + ([f"名称: {args.name}"] if args.name else []),
                 },
                 "items": items,
             },
-            "message": "查物品结果已生成",
+            "message": "查快递结果已生成" if args.status == "快递中" else "查物品结果已生成",
         }
-        return emit(payload, "search_results.html", args.output)
+        return emit(payload, template_name, args.output)
 
     elif args.command == "list":
         from home_manager.html_render import emit

@@ -155,7 +155,7 @@ window.__ENTITY_ID__ = "...";
     <h3>模式 C：HTML 内嵌 JSON Script</h3>
     <p>适合数据很大、想避免全局变量污染的页面。</p>
     <pre><code>&lt;script id="payload" type="application/json"&gt;
-{"status":"success","data":{}}
+{"status":"ok","data":{}}
 &lt;/script&gt;
 &lt;script&gt;
 const DATA = JSON.parse(document.getElementById('payload').textContent);
@@ -165,8 +165,9 @@ const DATA = JSON.parse(document.getElementById('payload').textContent);
   <section id="contract">
     <h2>6. 数据契约</h2>
     <p>数据契约是整个模式的核心。模板只认识契约，不应该猜字段。</p>
+    <blockquote><p>本手册的 <code>status</code> 枚举值以 <a href="../SKILL五层架构规范/优秀Skill指导手册.html#p2">《优秀 Skill 指导手册》</a> 第④层接口层为准，固定为 <code>"ok" | "error"</code>，不再使用 <code>"success"</code>。如出现冲突，规范手册是唯一权威。</p></blockquote>
     <pre><code>{
-  "status": "success",
+  "status": "ok",
   "data": {
     "entity": { "id": "...", "name": "..." },
     "sections": [],
@@ -178,6 +179,7 @@ const DATA = JSON.parse(document.getElementById('payload').textContent);
     <h3>契约规则</h3>
     <ul>
       <li>顶层建议统一为 <code>{status, data, message}</code>。</li>
+      <li><code>status</code> 必须是字符串，枚举值为 <code>"ok" | "error"</code>，禁止 <code>"success"</code>/<code>"fail"</code>/<code>200</code> 等其他写法。</li>
       <li>实体主键必须稳定：<code>id</code> 不要用自然语言当 key。</li>
       <li>数组字段即使为空也返回 <code>[]</code>，不要省略。</li>
       <li>可空字段显式 <code>null</code>，不要让模板靠 undefined 猜。</li>
@@ -206,18 +208,29 @@ const DATA = JSON.parse(document.getElementById('payload').textContent);
   <section id="inject">
     <h2>8. 注入方式</h2>
     <h3>推荐做法：生成临时副本，不改原模板</h3>
+    <blockquote><p>所有受注入模板必须包含唯一占位符 <code>&lt;!--INJECT-DATA--&gt;</code>，且全文件恰好出现 1 次。注入器以占位符为锚点，禁止以 <code>&lt;body&gt;</code> 文本匹配——后者遇 <code>&lt;body class="..."&gt;</code> 会静默失败。</p></blockquote>
     <pre><code>template = read("templates/view.html")
+if template.count("&lt;!--INJECT-DATA--&gt;") != 1:
+    raise TemplateError("模板缺少唯一占位符或重复出现")
 payload = json.dumps(data, ensure_ascii=False).replace("&lt;/", "&lt;\\/")
 inject = "&lt;script&gt;window.__DATA__ = " + payload + ";&lt;/script&gt;"
-html = template.replace("&lt;body&gt;", "&lt;body&gt;\n" + inject, 1)
+html = template.replace("&lt;!--INJECT-DATA--&gt;", inject, 1)
 write("output/view_xxx.html", html)</code></pre>
     <h3>模板端读取</h3>
-    <pre><code>const PAYLOAD = window.__DATA__;
-if (!PAYLOAD) {
-  showError('数据未注入');
+    <blockquote><p>JS 只做"基础类型守卫"（<code>typeof === 'object'</code> / <code>typeof status === 'string'</code>），强校验（status 枚举、必填字段、字段类型完整）由 CLI / 渲染器层完成，遵循"HTML 只做展示层辅助校验"原则。</p></blockquote>
+    <pre><code>function validate(payload) {
+  if (!payload || typeof payload !== 'object') return { ok: false, msg: '数据未注入' };
+  if (payload.status !== 'ok') return { ok: false, msg: payload.message || '数据状态非 ok' };
+  if (!payload.data || typeof payload.data !== 'object') return { ok: false, msg: 'data 缺失' };
+  return { ok: true, data: payload.data };
+}
+const result = validate(window.__DATA__);
+if (!result.ok) {
+  renderErrorPage(result.msg);
 } else {
-  init(PAYLOAD.data || PAYLOAD);
-}</code></pre>
+  init(result.data);
+}
+window.addEventListener('offline', () => showOfflineBanner());</code></pre>
     <details>
       <summary>为什么不建议直接改原模板？</summary>
       <p>原模板应该是稳定资产。如果每次把数据写进原模板，下一次生成会污染模板，也容易把用户隐私数据提交进仓库。正确做法是：原模板只放结构和逻辑，输出文件才包含注入数据。</p>
@@ -333,25 +346,33 @@ if (!PAYLOAD) {
   &lt;title&gt;Skill View&lt;/title&gt;
 &lt;/head&gt;
 &lt;body&gt;
+  &lt;!--INJECT-DATA--&gt;
   &lt;main id="app"&gt;&lt;/main&gt;
   &lt;script&gt;
-    const PAYLOAD = window.__DATA__;
-    const app = document.getElementById('app');
-    if (!PAYLOAD) {
-      app.innerHTML = '&lt;h1&gt;数据未注入&lt;/h1&gt;';
-    } else {
-      const data = PAYLOAD.data || PAYLOAD;
-      app.innerHTML = `&lt;h1&gt;${escapeHTML(data.name || '未命名')}&lt;/h1&gt;`;
+    function validate(p){
+      if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};
+      if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};
+      if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};
+      return{ok:true,data:p.data};
     }
-    function escapeHTML(s){return String(s ?? '').replace(/[&amp;&lt;&gt;"']/g,c=>({'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c]));}
+    function escapeHTML(s){return String(s??'').replace(/[&amp;&lt;&gt;"']/g,c=>({'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'}[c]));}
+    const r=validate(window.__DATA__);
+    const app=document.getElementById('app');
+    if(!r.ok){app.innerHTML='&lt;h1&gt;'+escapeHTML(r.msg)+'&lt;/h1&gt;';}
+    else{app.innerHTML='&lt;h1&gt;'+escapeHTML(r.data.name||'未命名')+'&lt;/h1&gt;';}
+    window.addEventListener('offline',()=&gt;{/* showOfflineBanner() */});
   &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
     <h3>注入器伪代码</h3>
     <pre><code>data = run_cli_json([...])
+if data.get('status') != 'ok':
+    raise ContractError(data.get('message','数据状态非 ok'))
 template = read_text('templates/view.html')
+if template.count('&lt;!--INJECT-DATA--&gt;') != 1:
+    raise TemplateError('模板缺少唯一占位符或重复出现')
 payload = json.dumps(data, ensure_ascii=False).replace('&lt;/', '&lt;\\/')
-injected = template.replace('&lt;body&gt;', '&lt;body&gt;\n&lt;script&gt;window.__DATA__ = ' + payload + ';&lt;/script&gt;', 1)
+injected = template.replace('&lt;!--INJECT-DATA--&gt;', '&lt;script&gt;window.__DATA__ = ' + payload + ';&lt;/script&gt;', 1)
 write_text('output/view.html', injected)</code></pre>
   </section>
 </div>

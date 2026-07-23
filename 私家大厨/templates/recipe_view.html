@@ -289,13 +289,6 @@
   {% endif %}
   <h1 id="recipe-title">{{ recipe.name }}</h1>
   {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
-  <div class="hero-actions">
-    <button type="button" class="action-btn" id="start-cooking-btn">▶ 开始做菜</button>
-    <a class="action-btn secondary" id="generate-shopping-btn" href="#">🛒 生成采购清单</a>
-  </div>
-  <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
-    <button type="button" class="action-btn secondary" id="copy-ingredients-top">📋 复制食材清单</button>
-  </div>
   {% if recipe.history %}
   {% set last = recipe.history[0] %}
   <div class="notice-card">
@@ -353,23 +346,36 @@
     <b>营养提醒</b> · {% if recipe.diet_tags %}{{ recipe.diet_tags | join('、') }}{% endif %}{% if recipe.nutrition.fat %} · 脂肪 {{ recipe.nutrition.fat }}g{% endif %}{% if recipe.nutrition.sodium %} · 钠 {{ recipe.nutrition.sodium }}mg{% endif %}
   </div>
   {% endif %}
+</div>
 
-  {% if recipe.ingredients %}
-  {% set cut_items = [] %}
-  {% for ing in recipe.ingredients %}
-    {% set qt = ing.quantity_text or '' %}
-    {% if '切' in qt or '片' in qt or '块' in qt or '丝' in qt or '丁' in qt or '末' in qt or '段' in qt or '瓣' in qt %}
-      {% set _ = cut_items.append(ing) %}
-    {% endif %}
-  {% endfor %}
-  {% if cut_items %}
-  <div class="section-title" style="font-size:15px">🔪 切配建议</div>
+<!-- ── Cutting plan (extracted from ingredients.quantity_text) ── -->
+{% if recipe.ingredients %}
+{% set cut_items = [] %}
+{% for ing in recipe.ingredients %}
+  {% set qt = ing.quantity_text or '' %}
+  {% if '切' in qt or '片' in qt or '块' in qt or '丝' in qt or '丁' in qt or '末' in qt or '段' in qt or '瓣' in qt %}
+    {% set _ = cut_items.append(ing) %}
+  {% endif %}
+{% endfor %}
+{% if cut_items %}
+<div class="card">
+  <div class="section-title">🔪 切配建议</div>
   <div class="mini-list">
     {% for ing in cut_items %}
     <div class="mini-item"><b>{{ ing.name }}</b><br>{{ ing.quantity_text }}</div>
     {% endfor %}
   </div>
-  {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ── Ingredients (full) with serving switcher ── -->
+{% if recipe.ingredients %}
+<div class="card">
+  <div class="section-title">
+    食材
+    <span class="count">{{ recipe.ingredients | length }} 项</span>
+  </div>
 
   <div class="servings-control">
     <label>份数(预览)</label>
@@ -377,16 +383,6 @@
     <span class="serv-value" id="serv-value">{{ recipe.servings or 1 }}</span>
     <button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>
     <span style="font-size:11px;color:var(--text3);margin-left:4px">基础 {{ recipe.servings or 1 }} 人份</span>
-  </div>
-  {% endif %}
-</div>
-
-<!-- ── Ingredients ── -->
-{% if recipe.ingredients %}
-<div class="card">
-  <div class="section-title">
-    食材
-    <span class="count">{{ recipe.ingredients | length }} 项</span>
   </div>
 
   {% set ns = namespace(cats={}) %}
@@ -435,11 +431,6 @@
     {% endfor %}
   </div>
   {% endif %}
-
-  <div class="toggle-row">
-    <button type="button" class="toggle-btn" id="copy-ingredients">📋 复制食材清单</button>
-    <div class="copy-feedback" id="copy-feedback">已复制到剪贴板</div>
-  </div>
 </div>
 {% endif %}
 
@@ -492,7 +483,7 @@
       {% if step.ingredients_used %}
       <ul class="step-ings">
         {% for iu in step.ingredients_used %}
-        <li>· {{ iu.name }}{% if iu.quantity_used %} {{ iu.quantity_used }}g{% endif %}{% if iu.introduced_at %} ({{ iu.introduced_at }}){% endif %}</li>
+        <li>· {{ iu.name }}{% if iu.quantity_used %} {{ iu.quantity_used }}{{ iu.unit or 'g' }}{% endif %}{% if iu.introduced_at and iu.introduced_at != '中途加入' %} ({{ iu.introduced_at }}){% endif %}</li>
         {% endfor %}
       </ul>
       {% endif %}
@@ -642,6 +633,20 @@
 </div>
 {% endif %}
 
+<!-- ── CTA: 跨 Skill 入口(仅复制 prompt,实际触发由 AI 完成) ── -->
+<div class="card">
+  <div class="section-title">🔗 继续操作</div>
+  <p class="muted" style="font-size:13px;margin-bottom:12px">以下按钮只把自然语言指令复制到剪贴板,粘贴给 AI 后由 AI 调用对应脚本生成正式 HTML。</p>
+  <div class="hero-actions">
+    <button type="button" class="action-btn" id="copy-cook-prompt">📋 复制「开始做菜」指令</button>
+    <button type="button" class="action-btn secondary" id="copy-shop-prompt">🛒 复制「采购清单」指令</button>
+  </div>
+  <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
+    <button type="button" class="action-btn secondary" id="copy-ingredients-top">🥢 复制食材清单</button>
+  </div>
+  <div class="copy-feedback" id="copy-feedback-prompt">已复制指令,粘贴给 AI 即可</div>
+</div>
+
 <!-- ── Footer ── -->
 <div class="footer">
   {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
@@ -655,13 +660,14 @@
 </div>
 
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded', function(){
   // ── Servings switcher (preview only) ──
-  var baseServings = parseInt(document.querySelector('.serv-value').textContent, 10) || 1;
-  var curServings = baseServings;
+  var valEl = document.getElementById('serv-value');
   var dec = document.getElementById('serv-dec');
   var inc = document.getElementById('serv-inc');
-  var valEl = document.getElementById('serv-value');
+  if (!valEl) return;
+  var baseServings = parseInt(valEl.textContent, 10) || 1;
+  var curServings = baseServings;
 
   function updateQtys(){
     var factor = curServings / baseServings;
@@ -726,11 +732,20 @@
     });
   }
 
-  // ── Copy ingredients list ──
+  // ── Copy helpers (ingredients / cook prompt / shopping prompt) ──
+  function currentServings(){
+    var el = document.getElementById('serv-value');
+    return el ? (parseInt(el.textContent, 10) || 1) : 1;
+  }
+  function recipeTitle(){
+    var el = document.getElementById('recipe-title');
+    return el ? el.textContent.trim() : '食谱';
+  }
+
   function buildIngredientText(){
     var lines = [];
-    var cur = parseInt(document.getElementById('serv-value').textContent, 10) || 1;
-    var title = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '食谱';
+    var cur = currentServings();
+    var title = recipeTitle();
     document.querySelectorAll('.ing-item').forEach(function(li){
       if (li.style.display === 'none') return;
       var name = li.querySelector('.name') ? li.querySelector('.name').firstChild.textContent.trim() : '';
@@ -744,9 +759,15 @@
     return '【食材清单】' + title + '（' + cur + ' 人份 · ' + mode + '）\n' + lines.join('\n');
   }
 
-  function copyIngredients(btn){
-    var text = buildIngredientText();
-    var feedback = document.getElementById('copy-feedback');
+  function buildCookPrompt(){
+    return '做菜模式 ' + recipeTitle() + '\n（请直接调 cooking_render.py render 生成正式 HTML）';
+  }
+
+  function buildShopPrompt(){
+    return '生成清单 ' + recipeTitle() + '\n（请直接调 shopping_manager.py generate 和 shopping_render.py render 生成正式 HTML）';
+  }
+
+  function doCopy(text, feedbackEl){
     var fallback = function(){
       var ta = document.createElement('textarea');
       ta.value = text;
@@ -764,43 +785,32 @@
       fallback();
       copied = true;
     }
-    if (feedback) {
-      feedback.textContent = copied ? '已复制到剪贴板' : '已复制(请检查浏览器是否拦截)';
-      feedback.style.display = 'block';
-      setTimeout(function(){ feedback.style.display = 'none'; }, 1800);
+    if (feedbackEl) {
+      feedbackEl.textContent = copied ? '已复制,粘贴给 AI 即可' : '复制完成(请检查浏览器)';
+      feedbackEl.style.display = 'block';
+      setTimeout(function(){ feedbackEl.style.display = 'none'; }, 1800);
     }
   }
 
-  ['copy-ingredients', 'copy-ingredients-top'].forEach(function(id){
-    var btn = document.getElementById(id);
-    if (btn) btn.addEventListener('click', function(){ copyIngredients(btn); });
+  var ingBtnTop = document.getElementById('copy-ingredients-top');
+  if (ingBtnTop) ingBtnTop.addEventListener('click', function(){
+    doCopy(buildIngredientText(), document.getElementById('copy-feedback-prompt'));
+  });
+  var ingBtnBottom = document.getElementById('copy-ingredients');
+  if (ingBtnBottom) ingBtnBottom.addEventListener('click', function(){
+    doCopy(buildIngredientText(), document.getElementById('copy-feedback'));
+  });
+  var cookBtn = document.getElementById('copy-cook-prompt');
+  if (cookBtn) cookBtn.addEventListener('click', function(){
+    doCopy(buildCookPrompt(), document.getElementById('copy-feedback-prompt'));
+  });
+  var shopBtn = document.getElementById('copy-shop-prompt');
+  if (shopBtn) shopBtn.addEventListener('click', function(){
+    doCopy(buildShopPrompt(), document.getElementById('copy-feedback-prompt'));
   });
 
-  // ── Start cooking / Shopping CTA ──
-  var recipeName = document.getElementById('recipe-title') ? document.getElementById('recipe-title').textContent.trim() : '';
-  var startBtn = document.getElementById('start-cooking-btn');
-  if (startBtn) {
-    startBtn.addEventListener('click', function(){
-      var feedback = document.createElement('div');
-      feedback.style.cssText = 'margin-top:10px;font-size:13px;color:var(--blue);text-align:center';
-      feedback.textContent = '已为你打开做菜模式 —— 返回 AI 对话即可,或在 URL 里手动加 #cooking';
-      startBtn.parentNode.parentNode.appendChild(feedback);
-      setTimeout(function(){ feedback.remove(); }, 4000);
-    });
-  }
-  var shopBtn = document.getElementById('generate-shopping-btn');
-  if (shopBtn) {
-    shopBtn.addEventListener('click', function(e){
-      e.preventDefault();
-      var feedback = document.createElement('div');
-      feedback.style.cssText = 'margin-top:10px;font-size:13px;color:var(--blue);text-align:center';
-      feedback.textContent = '已为你准备采购 —— 返回 AI 对话说「生成清单 ' + recipeName + '」即可';
-      shopBtn.parentNode.parentNode.appendChild(feedback);
-      setTimeout(function(){ feedback.remove(); }, 4000);
-    });
-  }
-})();
-})();
+  // ── Start cooking / Shopping CTA removed: 5 层架构不允许查看食谱页承担跨 Skill 跳转 ──
+});
 </script>
 
 </body>

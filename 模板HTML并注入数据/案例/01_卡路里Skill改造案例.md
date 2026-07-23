@@ -69,7 +69,7 @@
 - 4 类异常规则（intake_excess / intake_deficit / fat_excess / exercise_streak_miss）
 - 基于 complete_days 排除今日污染
 
-**B2 · 新建 `templates/review_template_v2.html`**：
+**B2 · 新建 `templates/review_template.html`**：
 - Apple 风 8 dim 卡片网格（P1 训练突出 + 紫色渐变）
 - 体重 SVG 自动嵌入（算法渲染字符串）
 - 一键复制回 AI

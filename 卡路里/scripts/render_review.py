@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_review.py — 渲染复盘 HTML 报告 v2
+"""render_review.py — 渲染复盘 HTML 报告
 
 对应 SKILL.md 唤醒词:`复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围`
 
 设计原则(《预置 HTML + 注入数据指导手册》):
 - 复用 review_cli.py gen 已经生成的 enriched 数据(避免重复 SQL)
 - 占位符唯一:<!--INJECT-DATA--> 恰好 1 次
-- 输出到新文件,原 templates/review_template_v2.html 不变
+- 输出到新文件,原 templates/review_template.html 不变
 
 用法:
     python scripts/render_review.py                                # 默认本周复盘
@@ -24,7 +24,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
-TEMPLATE_PATH = SKILL_DIR / 'templates' / 'review_template_v2.html'
+TEMPLATE_PATH = SKILL_DIR / 'templates' / 'review_template.html'
 
 
 def build_parser():

@@ -7,7 +7,7 @@
 | 模板 | 大小 | 唤醒词 | 数据源 | 渲染器 |
 |---|---|---|---|---|
 | `templates/contraindication_report.html` | 12 KB | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
-| `templates/review_template_v2.html` | 15 KB | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py` |
+| `templates/review_template.html` | 15 KB | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py` |
 | `templates/workout_plan_view.html` | 12 KB | 查健身计划 | DB 直接 query | `scripts/render_workout_plan.py` |
 | `templates/health_dashboard.html` | 15 KB | 查健康报告 | `analysis.dashboard(as_dict=True)` | `scripts/render_health_dashboard.py` |
 | `templates/food_ranking.html` | 13 KB | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking` × 5 | `scripts/render_food_ranking.py` |

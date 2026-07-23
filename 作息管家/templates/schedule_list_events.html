@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日程计划 · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --code:#1d1d1f;--codefg:#f5f5f7;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 24px 96px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:32px 36px;margin-bottom:20px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  h1{font-size:32px;line-height:1.2;letter-spacing:-.025em;margin-bottom:6px}
+  .lead{font-size:15px;color:var(--fg2);max-width:780px}
+  .meta{margin-top:12px;color:var(--fg3);font-size:12px}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:var(--card);border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .stat .label{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  .stat .value{font-size:24px;font-weight:700;color:var(--fg);line-height:1.2}
+  .stat .delta{font-size:12px;color:var(--fg2);margin-top:4px}
+  .stat.good .value{color:var(--good)}
+  .stat.warn .value{color:var(--warn)}
+  .stat.danger .value{color:var(--danger)}
+  .stat.mute .value{color:var(--mute)}
+
+  .toolbar{background:var(--card);border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .toolbar input{flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg);font-family:inherit}
+  .toolbar input:focus{outline:none;border-color:var(--blue);background:var(--card)}
+  .toolbar .filter{display:flex;gap:6px;flex-wrap:wrap}
+  .toolbar .chip{padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:12px;color:var(--fg2);cursor:pointer;user-select:none;background:var(--card)}
+  .toolbar .chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .toolbar .meta-text{font-size:12px;color:var(--fg3);margin-left:auto}
+
+  .timeline{background:var(--card);border-radius:14px;padding:18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .timeline h2{font-size:15px;margin-bottom:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+  .timeline-grid{display:flex;flex-direction:column;gap:4px}
+  .hour-row{display:grid;grid-template-columns:48px 1fr;align-items:start;gap:8px;font-size:13px}
+  .hour-label{color:var(--fg3);font-variant-numeric:tabular-nums;padding-top:4px}
+  .hour-slot{position:relative;min-height:24px;border-left:2px solid var(--line);padding:4px 0 4px 10px;background:#fafafa;border-radius:0 6px 6px 0}
+  .hour-slot.empty{background:transparent;border-left-color:transparent;padding-left:0}
+  .hour-slot.has-event{background:var(--soft);border-left-color:var(--blue)}
+  .hour-slot .ev{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:2px 0}
+  .hour-slot .ev .badge{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--card);border:1px solid var(--line);color:var(--fg2)}
+  .hour-slot .ev .badge.synced{background:#e6f7ec;color:#1f8c3d;border-color:#bce5c8}
+  .hour-slot .ev .badge.unsynced{background:#fff5e0;color:#a25b00;border-color:#ffd9a8}
+  .hour-slot .ev .badge.deleted{background:#f0f0f2;color:var(--mute);border-color:#d8d8dd;text-decoration:line-through}
+  .hour-slot .ev .title{font-weight:600}
+  .hour-slot .ev .notes{color:var(--fg2);font-size:12px}
+  .hour-slot .ev .comp{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+  .hour-slot .ev .comp.done{background:#e6f7ec;color:#1f8c3d}
+  .hour-slot .ev .comp.late{background:#fff5e0;color:#a25b00}
+  .hour-slot .ev .comp.partial{background:#eaf2ff;color:#0a63ce}
+  .hour-slot .ev .comp.skipped{background:#f0f0f2;color:var(--mute)}
+  .hour-slot .ev .comp.unfin{background:#fff0ee;color:#a83228}
+  .hour-slot .ev .comp.unfin-force{background:#fce6e3;color:#7d251d}
+
+  section.cards{margin-bottom:20px}
+  section.cards h2{font-size:15px;margin-bottom:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.06em}
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .ev-card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:6px;border-left:4px solid var(--blue)}
+  .ev-card .time{font-size:12px;color:var(--fg3);font-variant-numeric:tabular-nums}
+  .ev-card .title{font-size:15px;font-weight:600}
+  .ev-card .notes{font-size:13px;color:var(--fg2)}
+  .ev-card .meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--fg3);margin-top:4px}
+  .ev-card .meta .pill{background:var(--soft);padding:2px 8px;border-radius:6px;color:var(--blue2)}
+  .ev-card.synced-yes{border-left-color:var(--good)}
+  .ev-card.synced-no{border-left-color:var(--warn)}
+  .ev-card.deleted{border-left-color:var(--mute);opacity:.65}
+  .ev-card.deleted .title{text-decoration:line-through;color:var(--fg3)}
+  .ev-card.match-hide{display:none}
+
+  details.notes-block{background:var(--card);border-radius:14px;padding:14px 18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  details.notes-block summary{cursor:pointer;font-weight:600;color:var(--blue2);font-size:14px}
+  details.notes-block[open] summary{margin-bottom:8px}
+  details.notes-block pre{background:var(--code);color:var(--codefg);border-radius:10px;padding:12px 16px;font-size:12px;overflow:auto;max-height:320px;line-height:1.55}
+
+  .empty-state{background:var(--card);border-radius:14px;padding:48px 24px;text-align:center;color:var(--fg2);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .empty-state h3{font-size:18px;margin-bottom:8px;color:var(--fg)}
+  .empty-state p{font-size:14px;margin-bottom:4px}
+  .empty-state .hint{font-size:12px;color:var(--fg3);margin-top:12px}
+
+  .error-state{background:#fff5f5;border:1px solid #ffd1d1;border-radius:14px;padding:32px 24px;text-align:center;color:var(--danger)}
+  .error-state h3{font-size:18px;margin-bottom:8px}
+  .error-state pre{background:var(--card);color:var(--fg);border-radius:8px;padding:12px;font-size:12px;text-align:left;margin-top:12px;overflow:auto}
+
+  .footer{margin-top:32px;text-align:center;color:var(--fg3);font-size:12px}
+
+  @media(max-width:760px){
+    .wrap{padding:24px 12px 64px}
+    .hero{padding:24px 20px;border-radius:18px}
+    h1{font-size:24px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .toolbar{padding:10px 12px}
+    .toolbar input{min-width:120px}
+    .cards-grid{grid-template-columns:1fr}
+    .hour-row{grid-template-columns:40px 1fr;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Schedule Query · 日程计划查询</div>
+    <h1 id="page-title">📅 <span id="title-date">…</span></h1>
+    <p class="lead" id="page-subtitle">加载中…</p>
+    <div class="meta" id="page-meta">由作息管家 · schedule_cli render-list-events 生成</div>
+  </header>
+
+  <div id="root"></div>
+
+  <div class="footer">
+    数据源：<code>schedule_plans</code> 内部表 · 模板：<code>templates/schedule_list_events.html</code><br>
+    飞书托管标记「作息管家自动同步」— 决定飞书侧归属判断
+  </div>
+</div>
+
+<script id="payload" type="application/json">{{ PAYLOAD }}</script>
+<script>
+(function(){
+  "use strict";
+
+  var raw = document.getElementById("payload");
+  var payload = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch (e) {
+    document.getElementById("root").innerHTML =
+      '<div class="error-state"><h3>❌ 数据解析失败</h3>' +
+      '<pre>' + (e && e.message ? e.message : e) + '</pre></div>';
+    return;
+  }
+
+  var data = (payload && payload.data) || {};
+  var status = (payload && payload.status) || "ok";
+
+  if (status !== "ok") {
+    document.getElementById("root").innerHTML =
+      '<div class="error-state"><h3>❌ 加载失败</h3>' +
+      '<pre>' + (payload && payload.message ? payload.message : JSON.stringify(payload)) + '</pre></div>';
+    return;
+  }
+
+  var meta = data.meta || {};
+  var events = data.events || [];
+  var summary = data.summary || {};
+  var feishu = data.feishu || {};
+  var gap = data.gap || {};
+
+  document.getElementById("title-date").textContent = meta.date || "";
+  document.getElementById("page-subtitle").textContent =
+    "共 " + summary.total_active + " 条活跃事件 · " +
+    summary.total_inactive + " 条已停用" +
+    (feishu.tier ? " · 飞书：" + feishu.tier : "");
+
+  var root = document.getElementById("root");
+  root.innerHTML = "";
+
+  if (events.length === 0) {
+    root.insertAdjacentHTML("beforeend",
+      '<div class="empty-state"><h3>这一天还没有日程计划</h3>' +
+      '<p>没有任何已规划的日程事件。</p>' +
+      '<p class="hint">试试用「商量计划 / 一起规划 / 规划明天」唤起新计划。</p></div>');
+    return;
+  }
+
+  /* ===== 首屏摘要卡 ===== */
+  var html = '<div class="summary">';
+  html += stat("total", summary.total_active, "活跃事件", "");
+  html += stat("done", summary.completed_count, "已完成", summary.completed_count === summary.total_active && summary.total_active > 0 ? "全部完成 🎉" : "");
+  html += stat("pending", summary.unreviewed_count, "未复盘", summary.unreviewed_count > 0 ? "建议跑一次「复盘」" : "");
+  html += stat("unsync", summary.unsynced_count, "未同步飞书",
+    summary.unsynced_count > 0 ? "⚠️ 飞书侧看不到" : "已全部同步",
+    summary.unsynced_count > 0 ? "danger" : "good");
+  if (gap.has_gap) {
+    html += stat("gap", gap.gap_count || "—", "24h 缺口", gap.first_gap ? "从 " + gap.first_gap + " 起" : "", "warn");
+  }
+  html += '</div>';
+
+  /* ===== 工具栏 ===== */
+  html += '<div class="toolbar">';
+  html += '<input type="search" id="search-box" placeholder="按 title / notes / category 过滤…">';
+  html += '<div class="filter" id="filter-bar">';
+  ['all','synced','unsynced','deleted','done','pending','skipped'].forEach(function(k){
+    var labels = {all:'全部',synced:'已同步',unsynced:'未同步',deleted:'已软删',done:'已完成',pending:'未复盘',skipped:'跳过'};
+    html += '<span class="chip" data-filter="' + k + '">' + labels[k] + '</span>';
+  });
+  html += '</div>';
+  html += '<span class="meta-text" id="result-count"></span>';
+  html += '</div>';
+
+  /* ===== 24h 时间轴（仅当日 list-events 显示） ===== */
+  if (meta.mode === "list-events") {
+    html += '<div class="timeline"><h2>⏰ 24h 时间轴</h2><div class="timeline-grid" id="timeline-grid"></div></div>';
+  }
+
+  /* ===== 事件卡片 ===== */
+  html += '<section class="cards"><h2>📋 事件卡片</h2><div class="cards-grid" id="cards-grid"></div></section>';
+
+  /* ===== 折叠：原始 JSON / 错误明细 ===== */
+  if (data.inactive && data.inactive.length > 0) {
+    html += '<details class="notes-block"><summary>已软删的 ' + data.inactive.length + ' 条历史记录</summary>';
+    html += '<pre>' + escapeHtml(JSON.stringify(data.inactive, null, 2)) + '</pre></details>';
+  }
+  if (feishu.unmatched && feishu.unmatched.length > 0) {
+    html += '<details class="notes-block"><summary>飞书侧存在但本地无的 ' + feishu.unmatched.length + ' 条（不计入删除）</summary>';
+    html += '<pre>' + escapeHtml(JSON.stringify(feishu.unmatched, null, 2)) + '</pre></details>';
+  }
+  if (data.errors && data.errors.length > 0) {
+    html += '<details class="notes-block"><summary>⚠️ ' + data.errors.length + ' 条错误明细</summary>';
+    html += '<pre>' + escapeHtml(JSON.stringify(data.errors, null, 2)) + '</pre></details>';
+  }
+
+  root.innerHTML = html;
+
+  /* ===== 渲染事件数据 ===== */
+  renderTimeline();
+  renderCards();
+
+  /* ===== 工具栏交互 ===== */
+  var currentFilter = "all";
+  document.querySelectorAll(".toolbar .chip").forEach(function(chip){
+    chip.addEventListener("click", function(){
+      document.querySelectorAll(".toolbar .chip").forEach(function(c){ c.classList.remove("active"); });
+      chip.classList.add("active");
+      currentFilter = chip.getAttribute("data-filter");
+      applyFilter();
+    });
+  });
+  chip = document.querySelector('.chip[data-filter="all"]');
+  if (chip) chip.classList.add("active");
+  document.getElementById("search-box").addEventListener("input", applyFilter);
+  applyFilter();
+
+  function renderTimeline(){
+    if (meta.mode !== "list-events") return;
+    var grid = document.getElementById("timeline-grid");
+    if (!grid) return;
+    var hourMap = {};
+    events.forEach(function(ev){
+      var sh = parseInt((ev.time_start || "00:00").split(":")[0], 10);
+      if (!isFinite(sh)) return;
+      (hourMap[sh] = hourMap[sh] || []).push(ev);
+    });
+    var out = "";
+    for (var h = 0; h < 24; h++) {
+      var list = hourMap[h] || [];
+      if (list.length === 0) {
+        out += '<div class="hour-row"><span class="hour-label">' + pad(h) + ':00</span><span class="hour-slot empty"></span></div>';
+      } else {
+        out += '<div class="hour-row"><span class="hour-label">' + pad(h) + ':00</span><div class="hour-slot has-event">';
+        list.forEach(function(ev){
+          out += renderTimelineEvent(ev);
+        });
+        out += '</div></div>';
+      }
+    }
+    grid.innerHTML = out;
+  }
+
+  function renderTimelineEvent(ev){
+    var synced = ev.feishu_event_id ? '<span class="badge synced">已同步飞书</span>' : '<span class="badge unsynced">未同步</span>';
+    var deleted = ev.is_active === 0 ? '<span class="badge deleted">已软删</span>' : '';
+    var compBadge = compPill(ev.completion);
+    var notes = ev.notes ? '<span class="notes">' + escapeHtml(ev.notes) + '</span>' : '';
+    var evId = 'tl-' + ev.id;
+    return '<div class="ev" id="' + evId + '" data-ev="' + escapeAttr(JSON.stringify({
+      id:ev.id, title:ev.title, notes:ev.notes || "", category:ev.category || "",
+      synced:!!ev.feishu_event_id, deleted:ev.is_active === 0,
+      completion:ev.completion || ""
+    })) + '">' +
+      '<span class="title">' + escapeHtml(ev.title) + '</span>' +
+      '<span class="meta" style="font-size:11px;color:var(--fg3)">' +
+        (ev.time_start || "") + ' – ' + (ev.time_end || "") +
+      '</span>' +
+      synced + deleted + compBadge + notes +
+      '</div>';
+  }
+
+  function renderCards(){
+    var grid = document.getElementById("cards-grid");
+    if (!grid) return;
+    var out = "";
+    events.forEach(function(ev){
+      var syncedClass = ev.is_active === 0 ? "deleted" : (ev.feishu_event_id ? "synced-yes" : "synced-no");
+      out += '<div class="ev-card ' + syncedClass + '" id="card-' + ev.id + '" data-ev=\'' + escapeAttr(JSON.stringify({
+        title:(ev.title || "").toLowerCase(),
+        notes:(ev.notes || "").toLowerCase(),
+        category:(ev.category || "").toLowerCase(),
+        synced:!!ev.feishu_event_id,
+        deleted:ev.is_active === 0,
+        completion:ev.completion || ""
+      })) + '\'>';
+      out += '<div class="time">' + (ev.time_start || "") + ' – ' + (ev.time_end || "") + ' · ' + escapeHtml(ev.category || "未分类") + '</div>';
+      out += '<div class="title">' + (ev.is_active === 0 ? '✗ ' : '') + escapeHtml(ev.title || "(无标题)") + '</div>';
+      if (ev.notes) out += '<div class="notes">' + escapeHtml(ev.notes) + '</div>';
+      if (ev.completion_note) out += '<div class="notes">💬 ' + escapeHtml(ev.completion_note) + '</div>';
+      out += '<div class="meta">';
+      out += '<span class="pill">id=' + ev.id + '</span>';
+      if (ev.feishu_event_id) out += '<span class="pill" style="background:#e6f7ec;color:#1f8c3d">飞书 ✓</span>';
+      else out += '<span class="pill" style="background:#fff5e0;color:#a25b00">未同步飞书</span>';
+      if (ev.completion) out += '<span class="pill">' + escapeHtml(ev.completion) + '</span>';
+      if (ev.last_synced_at) out += '<span class="pill" style="background:#fafafa;color:var(--fg3)">' + escapeHtml(ev.last_synced_at) + '</span>';
+      out += '</div>';
+      out += '</div>';
+    });
+    grid.innerHTML = out;
+  }
+
+  function applyFilter(){
+    var q = (document.getElementById("search-box").value || "").trim().toLowerCase();
+    var visible = 0;
+    document.querySelectorAll(".ev-card").forEach(function(card){
+      var d = JSON.parse(card.getAttribute("data-ev") || "{}");
+      var hit = true;
+      if (q) {
+        hit = d.title.indexOf(q) >= 0 || d.notes.indexOf(q) >= 0 || d.category.indexOf(q) >= 0;
+      }
+      if (hit && currentFilter !== "all") {
+        if (currentFilter === "synced") hit = d.synced;
+        else if (currentFilter === "unsynced") hit = !d.synced;
+        else if (currentFilter === "deleted") hit = d.deleted;
+        else if (currentFilter === "done") hit = d.completion === "已完成";
+        else if (currentFilter === "pending") hit = !d.completion;
+        else if (currentFilter === "skipped") hit = d.deleted;
+      }
+      if (hit) { card.classList.remove("match-hide"); visible++; }
+      else card.classList.add("match-hide");
+    });
+    document.getElementById("result-count").textContent = "显示 " + visible + " / " + events.length + " 条";
+  }
+
+  function compPill(c){
+    if (!c) return "";
+    if (c === "已完成") return '<span class="comp done">✓ 已完成</span>';
+    if (c === "已完成(超时)") return '<span class="comp late">✓ 已完成(超时)</span>';
+    if (c === "部分完成") return '<span class="comp partial">◐ 部分完成</span>';
+    if (c === "未完成") return '<span class="comp unfin">✗ 未完成</span>';
+    if (c === "未完成(不可抗力)") return '<span class="comp unfin-force">✗ 未完成(不可抗力)</span>';
+    return '<span class="comp skipped">⊘ ' + escapeHtml(c) + '</span>';
+  }
+
+  function stat(cls, value, label, delta, variant){
+    variant = variant || "";
+    return '<div class="stat ' + variant + '"><div class="label">' + label + '</div>' +
+      '<div class="value">' + escapeHtml(String(value)) + '</div>' +
+      (delta ? '<div class="delta">' + escapeHtml(delta) + '</div>' : '') +
+      '</div>';
+  }
+
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function escapeAttr(s){ return escapeHtml(s).replace(/'/g, "&#39;"); }
+})();
+</script>
+</body>
+</html>

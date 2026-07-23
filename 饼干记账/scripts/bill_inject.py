@@ -22,6 +22,7 @@
 """
 
 import sys
+import os
 import json
 import subprocess
 import argparse
@@ -53,7 +54,9 @@ QUERY_TYPES = {
 def run_cli_json(query_type: str, extra_args: list) -> dict:
     """调用 record_bill.py <query_type> --json <extra_args>...，解析 JSON 输出"""
     cmd = [sys.executable, str(CLI_PATH), query_type, "--json"] + list(extra_args)
-    env = {"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1", "PATH": __import__("os").environ.get("PATH", "")}
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env, timeout=30)
     except subprocess.TimeoutExpired:

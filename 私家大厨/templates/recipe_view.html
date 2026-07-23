@@ -49,8 +49,9 @@
     font-size:13px;font-weight:500;color:var(--text3);margin-left:auto;
   }
   .hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 0}
-  .action-btn{border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;background:var(--blue);color:#fff;text-decoration:none}
+  .action-btn{border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;background:var(--blue);color:#fff;text-decoration:none;-webkit-tap-highlight-color:transparent;outline:none;box-shadow:none}
   .action-btn.secondary{background:rgba(0,122,255,0.1);color:var(--blue)}
+  .action-btn:focus, .action-btn:focus-visible, .action-btn:active{outline:none;box-shadow:none}
   .insight-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
   .insight-card{background:var(--bg);border-radius:var(--radius-sm);padding:12px}
   .insight-card .label{font-size:11px;color:var(--text2);margin-bottom:4px}
@@ -64,7 +65,7 @@
   .timeline-item .heat{font-size:11px;color:var(--text2)}
   .mini-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
   .mini-item{background:var(--bg);border-radius:9px;padding:10px;font-size:13px;color:var(--text)}
-  .copy-feedback{display:none;color:#1F7A35;font-size:12px;margin-top:8px;text-align:right}
+  .copy-feedback{display:none;color:#1F7A35;font-size:13px;font-weight:600;margin-top:10px;text-align:center;background:rgba(52,199,89,0.1);padding:10px;border-radius:8px}
   .no-focus-ring:focus, .no-focus-ring:focus-visible{outline:none;box-shadow:none}
   .no-focus-ring::-moz-focus-inner{border:0}
 
@@ -646,7 +647,7 @@
   <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
     <button type="button" class="action-btn secondary no-focus-ring" id="copy-ingredients-top">🥢 复制食材清单</button>
   </div>
-  <div class="copy-feedback" id="copy-feedback-prompt">已复制指令,粘贴给 AI 即可</div>
+  <div class="copy-feedback" id="copy-feedback-prompt">✓ 已复制,粘贴给 AI 即可</div>
 </div>
 
 <!-- ── Footer ── -->
@@ -792,9 +793,10 @@ document.addEventListener('DOMContentLoaded', function(){
       copied = true;
     }
     if (feedbackEl) {
-      feedbackEl.textContent = copied ? '已复制,粘贴给 AI 即可' : '复制完成(请检查浏览器)';
+      feedbackEl.textContent = copied ? '✓ 已复制,粘贴给 AI 即可' : '⚠️ 浏览器拦截了复制,请用 Ctrl+C';
       feedbackEl.style.display = 'block';
-      setTimeout(function(){ feedbackEl.style.display = 'none'; }, 1800);
+      clearTimeout(feedbackEl._timer);
+      feedbackEl._timer = setTimeout(function(){ feedbackEl.style.display = 'none'; }, 3500);
     }
   }
 

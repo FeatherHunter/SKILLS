@@ -111,9 +111,10 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)
 - 命令:`script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]`
 - **过滤维度**:可同时按顶层分类和子分类过滤(如 `search -c 备忘 -s 学习`)
-- **默认行为**:查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记 / 看提醒 / 查已提醒备忘)默认生成 HTML 页面并通过 `<media src="..." type="file" />` 返回给用户;用户无需主动说"生成 HTML 页面"。需要纯 JSON 时再显式传 `--no-html`
+- **默认行为**:CLI 默认返回结构化 JSON。需要可视化时传 `--html` flag 生成 HTML 查询结果页(模板 `templates/memo_query.html`,通过 `script/memo_render.py` 注入到 `output/memo_query_*.html`)。**当前没有 `--no-html` flag**(2026-07-24 文档对齐修订)。
+- **AI 推荐流程**:9 个查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记)在收到 JSON 后,**主动**调一次 `memo_cli.py <cmd> --html` 生成 HTML 给用户,而不是只展示 JSON 文本。理由:清单类数据"扫读 + chip 筛选 + 复制 ID/回执"在 HTML 里体验远超文字流。**例外**:用户明确说"只要 JSON" → 不传 `--html`。
 - **HTML 模板模式**:CLI 仍先取 JSON 数据,再通过 `script/memo_render.py` 注入 `templates/memo_query.html`,生成 `output/memo_query_*.html`;模板只展示数据,不直连数据库、不污染原模板
-- **HTML 数据契约**:`{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]},"message":"..."}`
+- **HTML 数据契约**:`{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]}","message":"..."}`
 - **页面能力**:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执
 
 ### 更新笔记
@@ -132,14 +133,14 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 ### 查看笔记详情
 - 触发词:看备忘
 - 命令:`script/memo_cli.py get <id> [--html]`
-- **默认行为**:同上,默认生成 HTML 详情页并通过 `<media>` 返回
-- `--html`:生成单条详情 HTML,字段契约同搜索结果页,items 数组只有 1 条
+- **默认行为**:CLI 默认返回单条 JSON。需要 HTML 详情页时传 `--html`(复用 `templates/memo_query.html`,items 数组只有 1 条)。
+- **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `get <id> --html` 生成详情页给用户。
 
 ### 按时间搜索
 - 触发词:按时间搜备忘
 - 命令:`script/memo_cli.py search-date <start> <end> [-c 分类] [--html]`
-- **默认行为**:同上,默认生成 HTML 页面并通过 `<media>` 返回
-- `--html`:生成按时间查询 HTML,复用 `templates/memo_query.html`
+- **默认行为**:CLI 默认返回 JSON。需要 HTML 时传 `--html`(复用 `templates/memo_query.html`)。
+- **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `search-date ... --html` 生成按时间查询页给用户。
 
 ### 编辑笔记顶层分类
 - 触发词:备忘改分类
@@ -217,8 +218,8 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 ### 查看提醒
 - 触发词:看提醒
 - 命令:`script/memo_cli.py reminders [--status active|dismissed] [--html]`
-- **默认行为**:同上,默认生成 HTML 提醒列表页并通过 `<media>` 返回
-- `--html`:生成提醒列表 HTML,复用 `templates/memo_query.html`,按重复类型提供筛选 chip
+- **默认行为**:CLI 默认返回 JSON。需要 HTML 时传 `--html`(复用 `templates/memo_query.html`,按重复类型提供筛选 chip)。
+- **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `reminders --html` 生成提醒列表页给用户。
 
 ### 废弃提醒
 - 命令:`script/memo_cli.py dismiss <id>`
@@ -226,8 +227,8 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 ### 查询已完成提醒
 - 触发词:查已提醒备忘
 - 命令:`script/memo_cli.py completed [--html]`
-- **默认行为**:同上,默认生成 HTML 页面并通过 `<media>` 返回
-- `--html`:生成已完成提醒 HTML,复用 `templates/memo_query.html`,支持复制提醒 ID / 打卡 ID 回执
+- **默认行为**:CLI 默认返回 JSON。需要 HTML 时传 `--html`(复用 `templates/memo_query.html`,支持复制提醒 ID / 打卡 ID 回执)。
+- **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `completed --html` 生成已完成提醒页给用户。
 - **匹配逻辑**:
   - **一次性提醒**:有 `notified_at`(已触发过)+ 关联打卡笔记 → 算已完成
   - **每天重复**:关联打卡笔记 → 算今天已完成
@@ -271,7 +272,15 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
     - `errors[]`
 - **自动检测**:`is_feishu_available()` 检查 lark-cli 是否在 `%APPDATA%\npm\`(Windows)或 `which lark-cli`(WSL/Linux/Mac)
 - **失败降级**:飞书 API 失败不阻塞本地操作(仅 stderr 记录)
-- 命令:`script/memo_cli.py sync-from-feishu` 或 `script/feishu_sync.py sync-from-feishu`
+- 命令:`script/memo_cli.py sync-from-feishu [--html]` 或 `script/feishu_sync.py sync-from-feishu`
+- **HTML 同步报告**(2026-07-24 新增):
+  - 命令:`script/memo_cli.py sync-from-feishu --html`
+  - 模板:`templates/sync_report.html`(独立于 `memo_query.html`)
+  - 渲染器:`script/memo_render.py:render_sync_report`(复用 `_inject` 公共逻辑)
+  - 输出:`output/sync_report_YYYYMMDD_HHMMSS.html`
+  - **页面能力**:首屏徽章总览(完全一致/补建/同步完成/due 变更/错误数)、4 个 KPI 卡(本地补建/扫 done/同步完成/扫 pending)、3 步折叠详情(本地补建/反向同步 done/反向同步 due)、errors 红色高亮、复制同步回执(11 字段结构化文本)
+  - **AI 推荐流程**:跑完 `备忘录同步` 后,**主动**追加一次 `sync-from-feishu --html` 生成报告页给用户,而不是只展示 JSON 文字流。理由:11 个统计字段在卡片化 + 三步折叠视图里阅读体验远超文字
+  - **数据契约**:`{"status":"ok","data":{"title":"...","command":"sync-from-feishu","generated_at":"...","backfilled":N,...,"errors":[]},"message":"..."}`(result 字段平铺到 data 下)
 
 #### 飞书联动环境变量(用户特定,必须自己配置)
 

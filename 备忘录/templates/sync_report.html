@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>备忘录同步报告</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--err-soft:#fff5f5;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.lead{color:var(--fg2);font-size:17px}.meta{margin-top:16px;color:var(--fg3);font-size:13px}
+.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#ecfff2;color:#178a3a}
+.badge.warn{background:#fff7e8;color:#b25b00}
+.badge.err{background:var(--err-soft);color:var(--err)}
+.badge.idle{background:#ececef;color:var(--fg2)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
+.stat,.step,.panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat b{display:block;font-size:30px;letter-spacing:-.02em;margin-bottom:4px}
+.stat span{color:var(--fg2);font-size:13px}
+.step{margin:14px 0}
+.step-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;user-select:none}
+.step-head .num{background:var(--blue);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.step-head h3{font-size:18px;font-weight:700}
+.step-head .arrow{margin-left:auto;color:var(--fg3);transition:transform .2s}
+.step.open .step-head .arrow{transform:rotate(90deg)}
+.step-body{display:none;padding:8px 0 4px 38px;border-top:1px solid var(--line);margin-top:10px}
+.step.open .step-body{display:block}
+.kv{display:grid;grid-template-columns:1fr auto;gap:8px 18px;font-size:14px}
+.kv dt{color:var(--fg2)}.kv dd{font-weight:700;color:var(--fg);text-align:right}
+.errors{padding:14px;background:var(--err-soft);border-radius:14px;margin-top:14px}
+.errors h4{color:var(--err);font-size:14px;margin-bottom:8px}
+.errors ul{margin-left:18px;color:#7a1a14;font-size:13px;line-height:1.7}
+.empty{padding:32px;text-align:center;color:var(--fg2);font-size:14px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;cursor:pointer;font-size:14px}
+button.copy{background:#eef5ff;color:var(--blue2)}
+pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto;font-size:13px;line-height:1.6}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Feishu Sync Report</div>
+<h1 id="title">备忘录同步报告</h1>
+<p class="lead" id="subtitle">数据加载中</p>
+<p class="meta" id="meta"></p>
+<div id="overall"></div>
+</header>
+
+<section class="grid" id="kpis"></section>
+
+<section class="step open" id="step1">
+<div class="step-head" onclick="toggle('step1')">
+<div class="num">1</div>
+<h3>本地补建 (本地 → 飞书)</h3>
+<span class="arrow">▶</span>
+</div>
+<div class="step-body">
+<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">把本地 <code>category='心愿' AND feishu_task_guid IS NULL</code> 的心愿补建到飞书 task,写回 <code>feishu_task_guid</code>。</p>
+<dl class="kv" id="kv1"></dl>
+</div>
+</section>
+
+<section class="step open" id="step2">
+<div class="step-head" onclick="toggle('step2')">
+<div class="num">2</div>
+<h3>反向同步 done (飞书 → 本地)</h3>
+<span class="arrow">▶</span>
+</div>
+<div class="step-body">
+<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">筛飞书 <code>status=done</code> 的 task,反查 <code>notes.feishu_task_guid</code>,本地心愿还在就触发 <code>complete-wish</code>。</p>
+<dl class="kv" id="kv2"></dl>
+</div>
+</section>
+
+<section class="step open" id="step3">
+<div class="step-head" onclick="toggle('step3')">
+<div class="num">3</div>
+<h3>反向同步 due (飞书 → 本地 · 仅 todo)</h3>
+<span class="arrow">▶</span>
+</div>
+<div class="step-body">
+<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">逐个 <code>task tasks get</code> 取 <code>due.timestamp</code>,按飞书优先四象限处理(added/overridden/removed/skipped)。</p>
+<dl class="kv" id="kv3"></dl>
+</div>
+</section>
+
+<section class="panel" id="errorsPanel" style="display:none">
+<div class="errors">
+<h4>⚠️ 错误明细</h4>
+<ul id="errorsList"></ul>
+</div>
+</section>
+
+<section class="panel">
+<strong>回执</strong>
+<div class="toolbar"><button class="copy" onclick="copyReceipt()">复制同步回执</button></div>
+<pre id="receipt"></pre>
+</section>
+</div>
+
+<script>
+const PAYLOAD=window.__DATA__;
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toggle(id){document.getElementById(id).classList.toggle('open')}
+function data(){return (PAYLOAD&&PAYLOAD.data)||{}}
+function init(){
+  if(!PAYLOAD){document.getElementById('subtitle').textContent='数据未注入';return}
+  const d=data();
+  document.getElementById('title').textContent=d.title||'备忘录同步报告';
+  document.getElementById('subtitle').textContent=PAYLOAD.message||'同步完成';
+  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'sync-from-feishu'}`;
+  renderOverall();renderKPIs();renderSteps();renderErrors();renderReceipt();
+}
+function renderOverall(){
+  const d=data();const errs=(d.errors||[]).length;
+  const html=[];
+  if(errs>0) html.push(`<span class="badge err">${errs} 个错误</span>`);
+  const backfill=d.backfilled||0;
+  const synced=d.synced||0;
+  const dueChanged=(d.due_added||0)+(d.due_overridden||0)+(d.due_removed||0);
+  if(backfill+synced+dueChanged===0 && errs===0){
+    html.push('<span class="badge idle">无变更 · 完全一致</span>');
+  } else {
+    if(backfill>0) html.push(`<span class="badge ok">补建 ${backfill}</span>`);
+    if(synced>0) html.push(`<span class="badge ok">同步完成 ${synced}</span>`);
+    if(d.due_added>0) html.push(`<span class="badge warn">新增 due ${d.due_added}</span>`);
+    if(d.due_overridden>0) html.push(`<span class="badge warn">覆盖 due ${d.due_overridden}</span>`);
+    if(d.due_removed>0) html.push(`<span class="badge warn">清除 due ${d.due_removed}</span>`);
+  }
+  document.getElementById('overall').innerHTML=html.join(' ');
+}
+function renderKPIs(){
+  const d=data();
+  const kpis=[
+    ['本地补建',d.backfilled||0,'本地心愿 → 飞书 task'],
+    ['扫 done',d.scanned_done||0,'飞书已完成 task 数'],
+    ['同步完成',d.synced||0,'本地触发的 complete-wish'],
+    ['扫 pending',d.scanned_pending||0,'飞书待办 task 数'],
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(x=>`<div class="stat"><b>${x[1]}</b><span>${esc(x[0])}</span><div style="color:var(--fg3);font-size:12px;margin-top:4px">${esc(x[2])}</div></div>`).join('');
+}
+function kv(target,items){
+  document.getElementById(target).innerHTML=items.map(x=>`<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('');
+}
+function renderSteps(){
+  const d=data();
+  kv('kv1',[
+    ['补建数 (backfilled)',d.backfilled||0],
+  ]);
+  kv('kv2',[
+    ['扫 done 数 (scanned_done)',d.scanned_done||0],
+    ['触发 complete-wish (synced)',d.synced||0],
+    ['跳过:无 memo_id',d.skipped_no_memo_id||0],
+    ['跳过:已处理',d.skipped_already_done||0],
+    ['跳过:本地无 note',d.skipped_no_local_note||0],
+  ]);
+  kv('kv3',[
+    ['扫 pending 数 (scanned_pending)',d.scanned_pending||0],
+    ['新增 (due_added)',d.due_added||0],
+    ['覆盖 (due_overridden)',d.due_overridden||0],
+    ['清除 (due_removed)',d.due_removed||0],
+  ]);
+}
+function renderErrors(){
+  const errs=data().errors||[];
+  if(!errs.length){document.getElementById('errorsPanel').style.display='none';return}
+  document.getElementById('errorsPanel').style.display='block';
+  document.getElementById('errorsList').innerHTML=errs.map(e=>`<li>${esc(e)}</li>`).join('');
+}
+function receiptText(){
+  const d=data();
+  const lines=[
+    '备忘录同步回执',
+    `生成时间：${d.generated_at||''}`,
+    `命令：${d.command||'sync-from-feishu'}`,
+    '',
+    '— 步骤 1:本地补建 —',
+    `backfilled: ${d.backfilled||0}`,
+    '',
+    '— 步骤 2:反向同步 done —',
+    `scanned_done: ${d.scanned_done||0}`,
+    `synced: ${d.synced||0}`,
+    `skipped_no_memo_id: ${d.skipped_no_memo_id||0}`,
+    `skipped_already_done: ${d.skipped_already_done||0}`,
+    `skipped_no_local_note: ${d.skipped_no_local_note||0}`,
+    '',
+    '— 步骤 3:反向同步 due —',
+    `scanned_pending: ${d.scanned_pending||0}`,
+    `due_added: ${d.due_added||0}`,
+    `due_overridden: ${d.due_overridden||0}`,
+    `due_removed: ${d.due_removed||0}`,
+    '',
+    '— errors —',
+    ...(d.errors||[]).map(e=>`  · ${e}`),
+  ];
+  return lines.join('\n');
+}
+function renderReceipt(){document.getElementById('receipt').textContent=receiptText()}
+function copyReceipt(){navigator.clipboard&&navigator.clipboard.writeText(receiptText())}
+init();
+</script>
+</body>
+</html>

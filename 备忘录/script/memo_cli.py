@@ -1314,6 +1314,7 @@ def main():
 
     # sync-from-feishu (反向同步)
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
+    p_sync.add_argument("--html", action="store_true", help="生成 HTML 同步报告页(模板 sync_report.html)")
 
     # reminder add
     p_remind = sub.add_parser("remind")
@@ -1377,7 +1378,25 @@ def main():
             f"due清除={result.get('due_removed', 0)} | "
             f"错误={len(result.get('errors', []))}"
         )
-        output_json(result, message=msg)
+        if getattr(args, 'html', False):
+            try:
+                from memo_render import render_sync_report
+                payload = {
+                    "status": "ok",
+                    "data": {
+                        "title": "备忘录同步报告",
+                        "command": "sync-from-feishu",
+                        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        **result,
+                    },
+                    "message": msg,
+                }
+                path = render_sync_report(payload)
+                output_json({"html_path": path, **result}, message="同步报告 HTML 已生成")
+            except Exception as e:
+                error_json(f"同步报告 HTML 生成失败: {e}")
+        else:
+            output_json(result, message=msg)
     elif args.command == "remind":
         add_reminder(args)
     elif args.command == "due":

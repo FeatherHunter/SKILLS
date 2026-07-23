@@ -32,6 +32,9 @@ for path in $CHANGED; do
         卡路里/*)
             NEED_TEST[卡路里]=1
             ;;
+        备忘录/*)
+            NEED_TEST[备忘录]=1
+            ;;
     esac
 done
 

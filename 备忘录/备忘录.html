@@ -186,7 +186,8 @@
 <li>子唤醒词:查心愿、查打卡、查情绪日记(自动带 <code>-c 顶层分类</code> 过滤)</li>
 <li>命令:<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]</code></li>
 <li><strong>过滤维度</strong>:可同时按顶层分类和子分类过滤(如 <code>search -c 备忘 -s 学习</code>)</li>
-<li><strong>默认行为</strong>:查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记 / 看提醒 / 查已提醒备忘)默认生成 HTML 页面并通过 <code>&lt;media src="..." type="file" /&gt;</code> 返回给用户;用户无需主动说"生成 HTML 页面"。需要纯 JSON 时再显式传 <code>--no-html</code></li>
+<li><strong>默认行为</strong>:CLI 默认返回结构化 JSON。需要可视化时传 <code>--html</code> flag 生成 HTML 查询结果页(模板 <code>templates/memo_query.html</code>,通过 <code>script/memo_render.py</code> 注入到 <code>output/memo_query_*.html</code>)。<strong>当前没有 <code>--no-html</code> flag</strong>(2026-07-24 文档对齐修订)。</li>
+<li><strong>AI 推荐流程</strong>:9 个查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记)在收到 JSON 后,<strong>主动</strong>调一次 <code>memo_cli.py &lt;cmd&gt; --html</code> 生成 HTML 给用户,而不是只展示 JSON 文本。理由:清单类数据"扫读 + chip 筛选 + 复制 ID/回执"在 HTML 里体验远超文字流。<strong>例外</strong>:用户明确说"只要 JSON" → 不传 <code>--html</code>。</li>
 <li><strong>HTML 模板模式</strong>:CLI 仍先取 JSON 数据,再通过 <code>script/memo_render.py</code> 注入 <code>templates/memo_query.html</code>,生成 <code>output/memo_query_*.html</code>;模板只展示数据,不直连数据库、不污染原模板</li>
 <li><strong>HTML 数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]},"message":"..."}</code></li>
 <li><strong>页面能力</strong>:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执</li>
@@ -210,15 +211,15 @@
 <ul>
 <li>触发词:看备忘</li>
 <li>命令:<code>script/memo_cli.py get &lt;id&gt; [--html]</code></li>
-<li><strong>默认行为</strong>:同上,默认生成 HTML 详情页并通过 <code>&lt;media&gt;</code> 返回</li>
-<li><code>--html</code>:生成单条详情 HTML,字段契约同搜索结果页,items 数组只有 1 条</li>
+<li><strong>默认行为</strong>:CLI 默认返回单条 JSON。需要 HTML 详情页时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,items 数组只有 1 条)。</li>
+<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>get &lt;id&gt; --html</code> 生成详情页给用户。</li>
 </ul>
 <h3>按时间搜索</h3>
 <ul>
 <li>触发词:按时间搜备忘</li>
 <li>命令:<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类] [--html]</code></li>
-<li><strong>默认行为</strong>:同上,默认生成 HTML 页面并通过 <code>&lt;media&gt;</code> 返回</li>
-<li><code>--html</code>:生成按时间查询 HTML,复用 <code>templates/memo_query.html</code></li>
+<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>)。</li>
+<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>search-date ... --html</code> 生成按时间查询页给用户。</li>
 </ul>
 <h3>编辑笔记顶层分类</h3>
 <ul>
@@ -306,8 +307,8 @@
 <ul>
 <li>触发词:看提醒</li>
 <li>命令:<code>script/memo_cli.py reminders [--status active|dismissed] [--html]</code></li>
-<li><strong>默认行为</strong>:同上,默认生成 HTML 提醒列表页并通过 <code>&lt;media&gt;</code> 返回</li>
-<li><code>--html</code>:生成提醒列表 HTML,复用 <code>templates/memo_query.html</code>,按重复类型提供筛选 chip</li>
+<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,按重复类型提供筛选 chip)。</li>
+<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>reminders --html</code> 生成提醒列表页给用户。</li>
 </ul>
 <h3>废弃提醒</h3>
 <ul>
@@ -317,8 +318,8 @@
 <ul>
 <li>触发词:查已提醒备忘</li>
 <li>命令:<code>script/memo_cli.py completed [--html]</code></li>
-<li><strong>默认行为</strong>:同上,默认生成 HTML 页面并通过 <code>&lt;media&gt;</code> 返回</li>
-<li><code>--html</code>:生成已完成提醒 HTML,复用 <code>templates/memo_query.html</code>,支持复制提醒 ID / 打卡 ID 回执</li>
+<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,支持复制提醒 ID / 打卡 ID 回执)。</li>
+<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>completed --html</code> 生成已完成提醒页给用户。</li>
 <li><strong>匹配逻辑</strong>:</li>
 <li><strong>一次性提醒</strong>:有 <code>notified_at</code>(已触发过)+ 关联打卡笔记 → 算已完成</li>
 <li><strong>每天重复</strong>:关联打卡笔记 → 算今天已完成</li>
@@ -370,7 +371,17 @@
 </li>
 <li><strong>自动检测</strong>:<code>is_feishu_available()</code> 检查 lark-cli 是否在 <code>%APPDATA%\npm\</code>(Windows)或 <code>which lark-cli</code>(WSL/Linux/Mac)</li>
 <li><strong>失败降级</strong>:飞书 API 失败不阻塞本地操作(仅 stderr 记录)</li>
-<li>命令:<code>script/memo_cli.py sync-from-feishu</code> 或 <code>script/feishu_sync.py sync-from-feishu</code></li>
+<li>命令:<code>script/memo_cli.py sync-from-feishu [--html]</code> 或 <code>script/feishu_sync.py sync-from-feishu</code></li>
+</ul>
+<h4>HTML 同步报告(2026-07-24 新增)</h4>
+<ul>
+<li>命令:<code>script/memo_cli.py sync-from-feishu --html</code></li>
+<li>模板:<code>templates/sync_report.html</code>(独立于 <code>memo_query.html</code>)</li>
+<li>渲染器:<code>script/memo_render.py:render_sync_report</code>(复用 <code>_inject</code> 公共逻辑)</li>
+<li>输出:<code>output/sync_report_YYYYMMDD_HHMMSS.html</code></li>
+<li><strong>页面能力</strong>:首屏徽章总览(完全一致/补建/同步完成/due 变更/错误数)、4 个 KPI 卡(本地补建/扫 done/同步完成/扫 pending)、3 步折叠详情(本地补建/反向同步 done/反向同步 due)、errors 红色高亮、复制同步回执(11 字段结构化文本)</li>
+<li><strong>AI 推荐流程</strong>:跑完 <code>备忘录同步</code> 后,<strong>主动</strong>追加一次 <code>sync-from-feishu --html</code> 生成报告页给用户,而不是只展示 JSON 文字流。理由:11 个统计字段在卡片化 + 三步折叠视图里阅读体验远超文字</li>
+<li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"sync-from-feishu","generated_at":"...","backfilled":N,...,"errors":[]},"message":"..."}</code>(result 字段平铺到 data 下)</li>
 </ul>
 <h4>飞书联动环境变量(用户特定,必须自己配置)</h4>
 <p>⚠️ <strong>不要硬编码用户特定信息到代码里</strong>。所有用户/本机特定配置通过环境变量传入。</p>

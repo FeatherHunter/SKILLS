@@ -1,0 +1,47 @@
+{
+  "summary": {
+    "process_name": "落地健身计划 2026-07-23",
+    "process_type": "落地健身计划",
+    "total_steps": 4,
+    "completed_steps": 2,
+    "failed_steps": 1,
+    "started_at": "2026-07-23 18:00:05",
+    "finished_at": null
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "补计划",
+      "description": "同步 plan 到本地日历",
+      "status": "done",
+      "started_at": "18:00:05",
+      "finished_at": "18:00:08",
+      "result": "成功补 4 条计划到作息管家"
+    },
+    {
+      "step": 2,
+      "name": "记心愿",
+      "description": "在备忘录建训练心愿",
+      "status": "done",
+      "started_at": "18:00:10",
+      "finished_at": "18:00:14",
+      "result": "成功建 3 条心愿(1 条已存在跳过)"
+    },
+    {
+      "step": 3,
+      "name": "训记推送",
+      "description": "推送 plan 到训记 App",
+      "status": "failed",
+      "started_at": "18:00:16",
+      "finished_at": "18:00:25",
+      "error": "xunji push-plan 超时(超过 30s,服务器没响应)",
+      "retry_command": "python scripts/xunji_bridge.py push-plan --date 2026-07-23"
+    },
+    {
+      "step": 4,
+      "name": "回写训记",
+      "description": "拉训记数据回写到 exercise_log",
+      "status": "pending"
+    }
+  ]
+}

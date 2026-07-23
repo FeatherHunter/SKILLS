@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>流程进度 · 卡路里</title>
+<style>
+/* ============================================================
+   Apple 设计语言 · G4 4 步流程进度可视化
+   - 过程型 HTML(AI 协同 · 原则 10 · 复制"从哪步继续" prompt)
+   - 5 段式:Hero · 进度条 · 4 步详情 · 复制区
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --gray:#8e8e93;
+  --gray-soft:rgba(142,142,147,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+
+/* HERO */
+.hero{padding:32px 28px 28px;margin-bottom:20px}
+.hero .eyebrow{
+  font-size:13px;font-weight:600;letter-spacing:.5px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:8px;
+}
+.hero h1{
+  font-size:28px;font-weight:700;letter-spacing:-.4px;
+  color:var(--ink);margin-bottom:6px;line-height:1.2;
+}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.hero .pills{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:999px;
+  font-size:13px;font-weight:600;
+}
+.pill.done{background:var(--green-soft);color:var(--green)}
+.pill.failed{background:var(--red-soft);color:var(--red)}
+.pill.pending{background:var(--gray-soft);color:var(--gray)}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* SECTION */
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:18px;
+}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+
+/* PROGRESS BAR (4 段) */
+.progress-info{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.progress-info .rate{font-size:13px;font-weight:600;color:var(--ink);font-feature-settings:"tnum"}
+.progress-bar{
+  height:10px;background:var(--bg-soft);
+  border-radius:5px;overflow:hidden;display:flex;
+  margin-bottom:6px;
+}
+.progress-seg{height:100%;position:relative}
+.progress-seg.done{background:var(--green)}
+.progress-seg.failed{background:var(--red)}
+.progress-seg.pending{background:var(--gray-soft);position:relative}
+.progress-seg.pending::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    45deg,
+    var(--bg-soft),
+    var(--bg-soft) 4px,
+    rgba(0,0,0,.05) 4px,
+    rgba(0,0,0,.05) 8px
+  );
+}
+.progress-legend{
+  display:flex;justify-content:space-between;
+  font-size:12px;color:var(--ink3);font-feature-settings:"tnum";
+  margin-top:4px;
+}
+
+/* STEP LIST (4 步) */
+.steps{
+  display:flex;flex-direction:column;
+  gap:0;
+}
+.step{
+  display:grid;
+  grid-template-columns:40px 1fr auto;
+  gap:16px;align-items:flex-start;
+  padding:16px 0;border-top:1px solid var(--lineS);
+  position:relative;
+}
+.step:first-child{border-top:none}
+.step .icon{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;flex-shrink:0;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono",monospace;
+}
+.step.done .icon{background:var(--green);color:#fff}
+.step.done .icon::after{content:'✓'}
+.step.failed .icon{background:var(--red);color:#fff}
+.step.failed .icon::after{content:'!'}
+.step.pending .icon{background:var(--bg-soft);color:var(--ink3);border:1.5px dashed var(--line)}
+.step.pending .icon::after{content:counter(step,decimal);font-size:13px}
+.step{counter-increment:step}
+.steps{counter-reset:step}
+.step .body .name{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.step .body .desc{font-size:12px;color:var(--ink3);margin-bottom:6px}
+.step .body .meta{
+  font-size:12px;color:var(--ink2);
+  font-family:"SF Mono",monospace;
+  margin-bottom:6px;
+}
+.step .body .result{
+  font-size:13px;color:var(--green);
+  background:var(--green-soft);
+  padding:6px 10px;border-radius:var(--r-sm);
+  margin-top:6px;
+}
+.step .body .error{
+  font-size:13px;color:var(--red);
+  background:var(--red-soft);
+  padding:8px 10px;border-radius:var(--r-sm);
+  margin-top:6px;line-height:1.5;
+}
+.step .body .error code{
+  display:block;background:rgba(255,255,255,.5);
+  padding:6px 8px;border-radius:4px;
+  font-family:"SF Mono",monospace;font-size:11.5px;
+  margin-top:6px;color:var(--ink2);
+}
+.step .time{
+  font-size:12px;color:var(--ink3);
+  text-align:right;font-feature-settings:"tnum";
+  font-family:"SF Mono",monospace;
+}
+.step .time .duration{font-weight:500;color:var(--ink2);margin-top:2px}
+
+/* COPY SECTION */
+.copy-section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.copy-section h2{font-size:17px;font-weight:600;letter-spacing:-.2px;margin-bottom:4px}
+.copy-section .sub{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.55}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:11px 18px;border-radius:999px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  border:none;transition:opacity .15s;font-family:inherit;
+}
+.btn:hover{opacity:.85}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn.warning{background:var(--orange-soft);color:var(--orange)}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.copy-preview{
+  background:var(--bg-soft);border-radius:var(--r-sm);
+  padding:14px 16px;font-family:"SF Mono",monospace;
+  font-size:12px;line-height:1.6;color:var(--ink2);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:380px;overflow-y:auto;
+  border:1px solid var(--lineS);
+}
+
+footer{
+  text-align:center;color:var(--ink3);
+  font-size:12px;padding-top:20px;
+  border-top:1px solid var(--lineS);margin-top:32px;
+}
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+}
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
+  .hero h1{font-size:22px}
+  .section,.copy-section{padding:18px 20px}
+  .step{grid-template-columns:32px 1fr;gap:10px}
+  .step .time{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow" id="eyebrow">流程进度</div>
+  <h1 id="title">落地健身计划 2026-07-23</h1>
+  <div class="sub" id="subtitle">4 步 · 2 完成 · 1 失败 · 1 待办</div>
+  <div class="pills" id="pills"></div>
+</header>
+
+<!-- PROGRESS BAR -->
+<section class="section">
+  <div class="section-title">
+    <h2>整体进度</h2>
+    <span class="hint">已完成 / 总步骤</span>
+  </div>
+  <div class="progress-info">
+    <span id="progressRate" class="rate">--</span>
+    <span id="progressTime">--</span>
+  </div>
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="progress-legend" id="progressLegend"></div>
+</section>
+
+<!-- STEP DETAIL -->
+<section class="section">
+  <div class="section-title">
+    <h2>步骤详情</h2>
+    <span class="hint">失败步骤突出 · 待办斜线纹</span>
+  </div>
+  <div class="steps" id="steps"></div>
+</section>
+
+<!-- COPY SECTION -->
+<section class="copy-section">
+  <h2>继续操作</h2>
+  <p class="sub">
+    HTML 不能自动继续执行 · 请把下方文本粘到 AI 对话框,AI 会帮你接着跑。
+- <strong>复制继续</strong> = 从失败步骤开始重试
+- <strong>采纳现状</strong> = 当前状态可接受,无需继续
+- <strong>完整日志</strong> = 4 步全部结果一次性给 AI
+  </p>
+  <div class="btn-row">
+    <button class="btn primary" id="btnContinue" onclick="copyContinue()">↻ 复制继续指令</button>
+    <button class="btn secondary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳现状</button>
+    <button class="btn warning" id="btnFullLog" onclick="copyFullLog()">📋 完整日志</button>
+  </div>
+  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+</section>
+
+<footer>卡路里 Skill · 4 步流程进度 · 2026-07-23 · G4</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+const SUMMARY = (DATA && DATA.data && DATA.data.summary) || {};
+const STEPS = (DATA && DATA.data && DATA.data.steps) || [];
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+const STATUS_LABELS = {done: '完成', failed: '失败', pending: '待办'};
+
+function trimTime(s) {
+  // BUG #3 修复:防御空字符串 + BUG #4 修复:截取时间部分(HH:MM:SS)
+  if (!s || typeof s !== 'string') return '';
+  return s.split(' ').pop() || s;
+}
+
+function render() {
+  if (!DATA) {
+    document.getElementById('title').textContent = '❌ 数据加载失败';
+    return;
+  }
+
+  // HERO
+  document.getElementById('title').textContent = SUMMARY.process_name || '流程进度';
+  document.getElementById('subtitle').textContent =
+    `${SUMMARY.total_steps} 步 · ${SUMMARY.completed_steps} 完成 · ${SUMMARY.failed_steps} 失败`;
+
+  // Pills
+  const pills = document.getElementById('pills');
+  pills.innerHTML = '';
+  if (SUMMARY.failed_steps > 0) {
+    pills.innerHTML += `<span class="pill failed">⚠️ ${SUMMARY.failed_steps} 步失败</span>`;
+  }
+  if (SUMMARY.completed_steps > 0) {
+    pills.innerHTML += `<span class="pill done">✓ ${SUMMARY.completed_steps} 步完成</span>`;
+  }
+  if (SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps > 0) {
+    const pending = SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps;
+    pills.innerHTML += `<span class="pill pending">○ ${pending} 步待办</span>`;
+  }
+
+  // PROGRESS BAR
+  const total = SUMMARY.total_steps || 0;
+  const bar = document.getElementById('progressBar');
+  if (total === 0) {
+    bar.innerHTML = '';
+  } else {
+    const donePct = (SUMMARY.completed_steps / total * 100).toFixed(1);
+    const failedPct = (SUMMARY.failed_steps / total * 100).toFixed(1);
+    const pendingPct = ((total - SUMMARY.completed_steps - SUMMARY.failed_steps) / total * 100).toFixed(1);
+    bar.innerHTML = `
+      <div class="progress-seg done" style="width:${donePct}%"></div>
+      <div class="progress-seg failed" style="width:${failedPct}%"></div>
+      <div class="progress-seg pending" style="width:${pendingPct}%"></div>
+    `;
+  }
+  document.getElementById('progressRate').textContent = `${SUMMARY.completed_steps}/${total}`;
+
+  // BUG #4 修复:progressTime 截取时间部分
+  let timeStr = '';
+  if (SUMMARY.started_at) timeStr += `开始 ${trimTime(SUMMARY.started_at)}`;
+  if (SUMMARY.finished_at) timeStr += ` · 完成 ${trimTime(SUMMARY.finished_at)}`;
+  else if (SUMMARY.failed_steps > 0) timeStr += ' · 进行中(失败未重试)';
+  else timeStr += ' · 进行中';
+  document.getElementById('progressTime').textContent = timeStr;
+  document.getElementById('progressLegend').innerHTML = `
+    <span>✓ ${SUMMARY.completed_steps || 0}</span>
+    <span>⚠ ${SUMMARY.failed_steps || 0}</span>
+    <span>○ ${total - (SUMMARY.completed_steps || 0) - (SUMMARY.failed_steps || 0)}</span>
+  `;
+
+  // BUG #1 修复:无失败步骤时,"继续"按钮自动降级为"全完成"提示
+  const continueBtn = document.getElementById('btnContinue');
+  if (SUMMARY.failed_steps === 0) {
+    continueBtn.textContent = '✓ 全部完成 · 无需继续';
+    continueBtn.disabled = true;
+    continueBtn.style.opacity = '0.5';
+    continueBtn.style.cursor = 'not-allowed';
+  } else {
+    continueBtn.textContent = `↻ 复制继续指令(从失败步骤 · ${SUMMARY.failed_steps})`;
+    continueBtn.disabled = false;
+    continueBtn.style.opacity = '';
+    continueBtn.style.cursor = '';
+  }
+
+  // STEPS
+  document.getElementById('steps').innerHTML = STEPS.map(s => {
+    const status = s.status || 'pending';
+    const cls = status === 'done' ? 'done' : status === 'failed' ? 'failed' : 'pending';
+    let bodyHTML = '';
+    if (status === 'done') {
+      bodyHTML = `<div class="result">✓ ${escapeHTML(s.result || '完成')}</div>`;
+    } else if (status === 'failed') {
+      bodyHTML = `
+        <div class="error">
+          <strong>失败:</strong> ${escapeHTML(s.error || '未知错误')}
+          ${s.retry_command ? `<code>${escapeHTML(s.retry_command)}</code>` : ''}
+        </div>
+      `;
+    }
+    const timeHTML = (s.started_at || s.finished_at) ? `
+      <div class="time">
+        ${s.started_at ? `<div>开始 ${escapeHTML(trimTime(s.started_at))}</div>` : ''}
+        ${s.finished_at ? `<div>结束 ${escapeHTML(trimTime(s.finished_at))}</div>` : '<div class="duration">⏳ 待执行</div>'}
+      </div>
+    ` : '';
+    return `
+      <div class="step ${cls}">
+        <div class="icon"></div>
+        <div class="body">
+          <div class="name">第 ${s.step} 步 · ${escapeHTML(s.name || '?')}</div>
+          ${s.description ? `<div class="desc">${escapeHTML(s.description)}</div>` : ''}
+          ${bodyHTML}
+        </div>
+        ${timeHTML}
+      </div>
+    `;
+  }).join('');
+}
+
+function buildContinuePrompt() {
+  const failedSteps = STEPS.filter(s => s.status === 'failed');
+  if (failedSteps.length === 0) {
+    return buildAdoptPrompt();
+  }
+  const sections = failedSteps.map(s => {
+    let cmdLine = s.retry_command
+      ? `重试命令: ${s.retry_command}`
+      : '(无具体重试命令)';
+    return `第 ${s.step} 步 ${s.name}(失败):
+  错误: ${s.error}
+  ${cmdLine}`;
+  }).join('\n\n');
+
+  return `我的 ${SUMMARY.process_name || '4 步流程'} 中间停了,有 ${failedSteps.length} 步失败。请帮我从失败步骤开始重试:
+
+${sections}
+
+上下文:
+- 已完成 ${SUMMARY.completed_steps}/${SUMMARY.total_steps} 步
+- 失败 ${SUMMARY.failed_steps} 步
+- 待办 ${SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps} 步
+
+请执行:
+1. 修复失败步骤
+2. 重跑失败的命令(已在每步下方给出)
+3. 重试成功后,继续执行后续待办步骤
+
+数据来源: 4 步流程进度 · render_process_progress.py · ${new Date().toISOString().split('T')[0]}`;
+}
+
+function buildAdoptPrompt() {
+  return `${SUMMARY.process_name || '4 步流程'} 已结束(${SUMMARY.completed_steps}/${SUMMARY.total_steps} 完成,${SUMMARY.failed_steps} 失败)。
+
+结果汇总:
+- ✓ 完成: ${SUMMARY.completed_steps} 步
+- ⚠ 失败: ${SUMMARY.failed_steps} 步(可接受,不重试)
+- ○ 待办: ${SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps} 步(已跳过)
+
+每步详情:
+${STEPS.map(s => {
+  let detail = '';
+  if (s.status === 'done') detail = `完成(${s.result || '成功'})`;
+  else if (s.status === 'failed') detail = `失败(${s.error || '?'})`;
+  else detail = '待办';
+  return `  ${s.step}. ${s.name} - ${detail}`;
+}).join('\n')}
+
+数据来源: 4 步流程进度`;
+}
+
+function buildFullLogPrompt() {
+  return `${SUMMARY.process_name || '4 步流程'} 完整执行日志:
+
+${STEPS.map(s => {
+  const lines = [];
+  lines.push(`第 ${s.step} 步 ${s.name} [${STATUS_LABELS[s.status] || s.status}]`);
+  if (s.description) lines.push(`  描述: ${s.description}`);
+  if (s.started_at) lines.push(`  开始: ${s.started_at}`);
+  if (s.finished_at) lines.push(`  结束: ${s.finished_at}`);
+  if (s.result) lines.push(`  结果: ${s.result}`);
+  if (s.error) lines.push(`  错误: ${s.error}`);
+  if (s.retry_command) lines.push(`  重试: ${s.retry_command}`);
+  return lines.join('\n');
+}).join('\n\n')}
+
+汇总:
+- 步骤总数: ${SUMMARY.total_steps}
+- 完成: ${SUMMARY.completed_steps}
+- 失败: ${SUMMARY.failed_steps}
+- 待办: ${SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps}
+
+数据来源: 4 步流程进度 · render_process_progress.py · ${new Date().toISOString().split('T')[0]}`;
+}
+
+function copyContinue() { doCopy(buildContinuePrompt(), 'btnContinue', '✓ 已复制继续指令'); }
+function copyAdopt() { doCopy(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳现状'); }
+function copyFullLog() { doCopy(buildFullLogPrompt(), 'btnFullLog', '✓ 已复制完整日志'); }
+
+function doCopy(text, btnId, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId, msg) {
+  const btn = document.getElementById(btnId);
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
+}
+
+render();
+</script>
+</body>
+</html>

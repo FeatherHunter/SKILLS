@@ -39,23 +39,38 @@ def build_parser():
 
 
 def load_data(json_path: Path) -> dict:
-    """加载批量导入结构化数据"""
+    """加载批量导入结构化数据(防御性:类型校验)"""
     if not json_path.exists():
         raise FileNotFoundError(f"输入文件不存在: {json_path}")
     raw = json.loads(json_path.read_text(encoding='utf-8'))
 
+    # BUG #4 修复:防御非 dict 输入(原代码会直接 AttributeError)
+    if not isinstance(raw, dict):
+        raise ValueError(f"JSON 顶层必须是 dict,实际是 {type(raw).__name__}")
+
     # 兼容两种格式:
     # 格式 A: { status, data: {summary, runs}, message }  (我们约定的)
     # 格式 B: {summary, runs}                                  (batch_import 未来输出)
-    if 'data' in raw:
+    if 'data' in raw and isinstance(raw['data'], dict):
         return raw['data']
     return raw
 
 
 def normalize(data: dict) -> dict:
-    """标准化字段:确保 summary/runs 完整"""
+    """标准化字段:确保 summary/runs 完整 + 防御性兜底"""
+    if not isinstance(data, dict):
+        return {'summary': {'total': 0, 'added': 0, 'updated': 0, 'skipped': 0, 'failed': 0, 'jsonl_path': '(空)'}, 'runs': []}
+
     summary = data.get('summary', {})
+    if not isinstance(summary, dict):
+        summary = {}
     runs = data.get('runs', [])
+    if not isinstance(runs, list):
+        runs = []
+
+    # BUG #1 修复:jsonl_path 兜底,避免 prompt 中出现 "undefined"
+    if 'jsonl_path' not in summary:
+        summary['jsonl_path'] = summary.get('jsonl_path', 'foods.jsonl')
 
     # 自动计算缺失字段(防止用户 JSON 不完整)
     if 'total' not in summary:
@@ -68,6 +83,13 @@ def normalize(data: dict) -> dict:
         summary['skipped'] = sum(1 for r in runs if r.get('status') == 'skipped')
     if 'failed' not in summary:
         summary['failed'] = sum(1 for r in runs if r.get('status') == 'failed')
+
+    # BUG #3 修复:total 与 runs 长度不一致时,标注提示
+    summary['_data_consistent'] = (
+        (summary['added'] + summary['updated'] +
+         summary['skipped'] + summary['failed']) == summary['total']
+        and len(runs) == summary['total']
+    )
 
     return {'summary': summary, 'runs': runs}
 

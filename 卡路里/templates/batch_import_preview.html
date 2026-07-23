@@ -221,6 +221,26 @@ body{
   color:var(--red);font-size:12.5px;
 }
 
+/* BUG #2 修复:专属空数据样式,不用 row 类(避免 grid 列冲突) */
+.empty-row{
+  text-align:center;
+  padding:32px 20px;
+  color:var(--ink3);
+  font-size:14px;
+  background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  margin-top:8px;
+}
+
+/* BUG #3 修复:数据一致性警告 */
+.consistency-warn{
+  display:flex;align-items:center;gap:6px;
+  background:var(--orange-soft);color:var(--orange);
+  padding:8px 12px;border-radius:var(--r-sm);
+  font-size:12.5px;margin-bottom:12px;
+  border:1px solid #ffd591;
+}
+
 /* COPY SECTION */
 .copy-section{
   background:var(--card);border-radius:var(--r-lg);
@@ -320,6 +340,7 @@ footer{
     <h2>明细</h2>
     <span class="hint">点击行展开详细 · 失败行标红</span>
   </div>
+  <div id="consistencyWarn"></div>
   <div class="tabs" id="tabs"></div>
   <div class="list" id="list"></div>
 </section>
@@ -373,7 +394,7 @@ function render() {
     return;
   }
 
-  // HERO
+  // HERO(BUG #1 修复:jsonl_path 兜底)
   document.getElementById('title').textContent = SUMMARY.jsonl_path || '批量导入预览';
   document.getElementById('subtitle').textContent =
     `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`;
@@ -422,9 +443,18 @@ function render() {
       <div class="progress-seg failed" style="width:${failed}%"></div>
     `;
   }
+  const countedIn = SUMMARY.added + SUMMARY.updated + SUMMARY.skipped + SUMMARY.failed;
   document.getElementById('progressRate').textContent = `${SUMMARY.added + SUMMARY.updated}/${total}`;
   document.getElementById('progressDetail').textContent =
-    `总数 ${total} 行 · 已计入 ${SUMMARY.added + SUMMARY.updated + SUMMARY.skipped + SUMMARY.failed}`;
+    `总数 ${total} 行 · 已计入 ${countedIn}`;
+
+  // BUG #3 修复:数据不一致警告
+  const warn = document.getElementById('consistencyWarn');
+  if (SUMMARY._data_consistent === false || (countedIn !== total) || (RUNS.length !== total)) {
+    warn.innerHTML = `<div class="consistency-warn">⚠️ 数据不一致:summary 报 ${total} 行但 RUNS 实际有 ${RUNS.length} 行,或各状态相加不等于总数。请检查 mock / batch_import 输出。</div>`;
+  } else {
+    warn.innerHTML = '';
+  }
 
   // Tabs(过滤)
   renderTabs('all');
@@ -451,7 +481,8 @@ function renderTabs(filter) {
 
 function renderList(rows) {
   if (rows.length === 0) {
-    document.getElementById('list').innerHTML = '<div class="row"><div class="name" style="color:var(--ink3)">无数据</div></div>';
+    // BUG #2 修复:用专属 .empty-row 样式,避免 .row grid 列冲突
+    document.getElementById('list').innerHTML = '<div class="empty-row">无匹配数据</div>';
     return;
   }
   document.getElementById('list').innerHTML = rows.map((r, i) => `
@@ -491,9 +522,11 @@ function toggleDetail(btn, rowNum) {
 }
 
 function buildAdoptPrompt() {
+  // BUG #1 防御:jsonl_path 兜底(模板渲染时已兜底,JS 端再确认)
+  const jsonlPath = SUMMARY.jsonl_path || 'foods.jsonl';
   return `我已经核对批量预览,数据无误。请帮我执行实际导入:
 
-  python scripts/batch_import.py import "${SUMMARY.jsonl_path}"
+  python scripts/batch_import.py import "${jsonlPath}"
 
 摘要:
   新增 ${SUMMARY.added} 条 · 更新 ${SUMMARY.updated} 条 · 跳过 ${SUMMARY.skipped} 条 · 失败 ${SUMMARY.failed} 条

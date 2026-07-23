@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复盘报告 · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:48px 28px 80px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:40px 42px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .eyebrow .badge-type{background:var(--blue);color:#fff;padding:3px 10px;border-radius:6px;font-size:10.5px;letter-spacing:.04em}
+  h1{font-size:38px;line-height:1.15;letter-spacing:-.03em;margin-bottom:14px}
+  .lead{font-size:17px;color:var(--fg2);max-width:880px;line-height:1.6}
+  .meta{margin-top:20px;color:var(--fg3);font-size:13px;display:flex;flex-wrap:wrap;gap:18px}
+  .meta b{color:var(--fg)}
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-top:14px;width:fit-content}
+  .status-badge.pending{background:#f5f5f7;color:var(--fg2)}
+  .status-badge.partial{background:#fff5e0;color:#a25b00}
+  .status-badge.done{background:#e6f7ec;color:#1f8c3d}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 28px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  /* 核心:复制按钮(process-html 第一铁律) */
+  .copy-zone{background:linear-gradient(180deg,#f0f4ff 0%,#fff 100%);border:2px solid var(--blue);border-radius:20px;padding:24px 28px;margin:8px 0 24px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+  .copy-zone .copy-text{flex:1;min-width:0}
+  .copy-zone h3{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em}
+  .copy-zone .copy-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:10px}
+  .copy-zone .copy-preview{background:#fff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--fg2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.55;max-height:100px;overflow:auto;white-space:pre-wrap}
+  .copy-zone .copy-btn{background:var(--blue);color:#fff;border:none;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+  .copy-zone .copy-btn:hover{background:var(--blue2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,122,255,.3)}
+  .copy-zone .copy-btn.copied{background:var(--good)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 30px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:22px;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.04em;margin-right:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13.5px;margin-bottom:16px;line-height:1.65}
+
+  /* 复盘事件卡 */
+  .review-list{margin:14px 0}
+  .review-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:14px;transition:all .15s}
+  .review-item:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(0,122,255,.08)}
+  .review-item.reviewed{border-color:var(--good);background:#f7fdf9}
+  .review-item .head{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+  .review-item .time{flex-shrink:0;min-width:90px;font-size:13px;font-weight:700;color:var(--blue2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .review-item .info{flex:1;min-width:0}
+  .review-item .title{font-size:15px;font-weight:600;color:var(--fg);margin-bottom:4px;letter-spacing:-.01em}
+  .review-item .cat{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;background:#eaf2ff;color:#0a63ce;font-weight:600;margin-right:6px}
+  .review-item .existing{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:6px;background:#f5f5f7;color:var(--fg2);margin-left:6px}
+  .review-item .existing.completed{background:#e6f7ec;color:#1f8c3d}
+
+  /* 5 个状态选项(单选) */
+  .status-options{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .status-options .opt{flex:1;min-width:120px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;transition:all .15s;text-align:center;user-select:none}
+  .status-options .opt:hover{border-color:var(--blue);background:#fafbff}
+  .status-options .opt.selected{background:#eaf2ff;border-color:var(--blue);color:var(--blue2);font-weight:600}
+  .status-options .opt .icon{font-size:18px;display:block;margin-bottom:4px}
+  .status-options .opt .label{font-size:12.5px;font-weight:600}
+  .status-options .opt[data-status="done"].selected{background:#e6f7ec;border-color:var(--good);color:#1f8c3d}
+  .status-options .opt[data-status="late"].selected{background:#fff5e0;border-color:var(--warn);color:#a25b00}
+  .status-options .opt[data-status="partial"].selected{background:#eaf2ff;border-color:var(--blue);color:#0a63ce}
+  .status-options .opt[data-status="missed"].selected{background:#fff0ee;border-color:var(--danger);color:#a83228}
+  .status-options .opt[data-status="force"].selected{background:#f0f0f2;border-color:var(--mute);color:var(--mute)}
+
+  /* completion_note 输入区(2/3/4 状态时显示) */
+  .note-area{display:none;margin-top:10px;padding:10px 14px;background:#fffbf0;border:1px solid #ffe89b;border-radius:10px}
+  .note-area.show{display:block}
+  .note-area label{font-size:11px;font-weight:700;color:#a25b00;display:block;margin-bottom:6px;letter-spacing:.04em}
+  .note-area textarea{width:100%;min-height:60px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;line-height:1.55;font-family:inherit;resize:vertical;background:#fff}
+  .note-area textarea:focus{outline:none;border-color:var(--blue)}
+
+  /* 操作指引 4 步 */
+  ol.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+  ol.steps > li{counter-increment:step;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 56px;margin-bottom:10px;position:relative;font-size:13.5px;line-height:1.65}
+  ol.steps > li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps > li b{color:var(--fg);font-weight:600}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:var(--code);color:#f5f5f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  @media(max-width:760px){
+    .wrap{padding:32px 14px 60px}
+    .hero{padding:28px 22px;border-radius:22px}
+    h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    section{padding:22px 18px}
+    section h2{font-size:18px}
+    .copy-zone{grid-template-columns:1fr}
+    .copy-zone .copy-btn{justify-self:stretch}
+    .status-options .opt{min-width:80px;font-size:11px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">
+    复盘报告
+    <span class="badge-type">过程型</span>
+  </div>
+  <h1 id="page-title">2026-07-20 · 复盘报告</h1>
+  <p class="lead" id="page-subtitle">逐条回顾当日计划 → 标记状态 → 写复盘原因 → 复制 4 部分 prompt 给 AI 落地。本 HTML 是单工设备,写库由 AI 调 update-event 完成。</p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">2026-07-20</b></span>
+    <span>🕐 生成于 <b id="meta-generated">2026-07-24</b></span>
+    <span>📊 <b id="meta-counts">—</b></span>
+  </div>
+  <div class="status-badge pending" id="status-badge">⏳ 待复盘 0/0</div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-total">—</div>
+    <div class="l">当日计划事件</div>
+    <div class="d">schedule_plans WHERE date=X</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-reviewed">0</div>
+    <div class="l">已标记</div>
+    <div class="d">用户已选 status</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-pending">—</div>
+    <div class="l">待复盘</div>
+    <div class="d">还未选 status</div>
+  </div>
+  <div class="stat danger">
+    <div class="n" id="stat-progress">0%</div>
+    <div class="l">复盘进度</div>
+    <div class="d">已标记 / 总数</div>
+  </div>
+</div>
+
+<!-- ⭐ 核心:复制 4 部分 prompt 区(process-html 第一铁律) -->
+<div class="copy-zone">
+  <div class="copy-text">
+    <h3>📤 复制 4 部分 prompt 给 AI</h3>
+    <p class="copy-desc">在下方逐条事件标记状态(未完成/部分完成/不可抗力需写原因)→ 点击右侧按钮复制 → 粘贴给 AI → AI 批量调 <code>update-event</code> 写库。</p>
+    <div class="copy-preview" id="copy-preview">加载中…</div>
+  </div>
+  <button class="copy-btn" id="copy-btn">复制 4 部分 prompt</button>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>逐条复盘 · 选择状态 + 写原因</h2>
+  <p class="sub">每条事件标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)"5 选 1。后 4 个状态(超时/部分/未完成/不可抗力)需在 <b>completion_note</b> 写明原因。</p>
+  <div id="review-list" class="review-list"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>操作指引(4 步流程)</h2>
+  <ol class="steps">
+    <li><b>逐条标记状态</b> 上方每条事件选 1 个状态;超时/部分/未完成/不可抗力 4 类必填完成原因。</li>
+    <li><b>复制 4 部分 prompt</b> 顶部按钮。复制内容自动包含你刚才的所有标记 + 原因。</li>
+    <li><b>粘贴给 AI</b> 在对话窗口。AI 收到指令后会批量调 <code>schedule_cli.py update-event &lt;id&gt; --completion X --completion-note "Y"</code>。</li>
+    <li><b>AI 复盘小结</b> 完成后 AI 给你返回"完成率 + 各类占比 + 今日总结",作为复盘闭环。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="sec-num">§3</span>4 部分 prompt 完整内容(供高级用户)</h2>
+  <details class="field">
+    <summary>点击查看完整 4 部分 prompt(场景 / 数据 / 期望 / 来源)</summary>
+    <pre id="prompt-full">加载中…</pre>
+  </details>
+  <details class="field">
+    <summary>点击查看复盘 JSON 数据(每条事件 + 用户标记)</summary>
+    <pre id="review-json">加载中…</pre>
+  </details>
+</section>
+
+<div class="footer">
+  <p>本 HTML 由 <code>render-plans-review</code> 子命令生成 · 模板: <code>schedule_plan_review.html</code></p>
+  <p class="note">设计原则: 手册《04 §原则 10 过程型 HTML AI 协同模式》— HTML 是单工设备,必须有"复制 prompt"按钮 + 4 部分模板</p>
+  <p class="note">process-html 阶段第 2 款(同源: plan_preview 商量计划预览 commit 7e8694d)</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败:' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败:' + esc(payload.message || "未知错误") + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var events = data.plan_events || [];
+  var generatedAt = meta.generated_at || new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  // 用户标记(浏览器内存中跟踪)
+  var userMarks = {};
+  events.forEach(function(ev){
+    var existing = ev.completion || null;
+    userMarks[ev.id] = {
+      status: existing,  // 预填已有 completion
+      note: ev.completion_note || "",
+    };
+  });
+
+  // 1. Hero
+  document.getElementById("page-title").textContent = (meta.date || "") + " · 复盘报告";
+  document.getElementById("page-subtitle").textContent = meta.subtitle || "";
+  document.getElementById("meta-date").textContent = meta.date || "—";
+  document.getElementById("meta-generated").textContent = generatedAt;
+  document.getElementById("meta-counts").textContent = events.length + " 段事件";
+
+  // 2. 复盘事件列表
+  var list = document.getElementById("review-list");
+  var statusOptions = [
+    { status: "done",       icon: "✅", label: "已完成" },
+    { status: "late",       icon: "⏰", label: "已完成(超时)" },
+    { status: "partial",    icon: "◐", label: "部分完成" },
+    { status: "missed",     icon: "❌", label: "未完成" },
+    { status: "force",      icon: "🚫", label: "未完成(不可抗力)" },
+  ];
+  // 需写 note 的状态
+  var NEED_NOTE = { late: true, partial: true, missed: true, force: true };
+
+  events.forEach(function(ev, idx){
+    var existing = ev.completion;
+    var existingNote = ev.completion_note || "";
+    var completedClass = existing ? " reviewed" : "";
+    var existingBadge = existing ? '<span class="existing completed">已有:' + esc(existing) + (existingNote ? " · " + esc(existingNote.slice(0, 12)) : "") + '</span>' : "";
+
+    var html = '<div class="review-item' + completedClass + '" data-event-id="' + esc(String(ev.id)) + '">';
+    html += '<div class="head">';
+    html += '<div class="time">' + esc(ev.time_start) + '–' + esc(ev.time_end) + '</div>';
+    html += '<div class="info">';
+    html += '<div class="title">' + esc(ev.title || "(无标题)") + '</div>';
+    html += '<span class="cat">' + esc(ev.category || "未分类") + '</span>';
+    html += existingBadge;
+    html += '</div></div>';
+    // 5 个状态选项
+    html += '<div class="status-options" data-event-id="' + esc(String(ev.id)) + '">';
+    statusOptions.forEach(function(opt){
+      var isSelected = (userMarks[ev.id].status === opt.status) ? " selected" : "";
+      var dataStatus = opt.status;
+      html += '<div class="opt' + isSelected + '" data-status="' + dataStatus + '" data-event-id="' + esc(String(ev.id)) + '">';
+      html += '<span class="icon">' + opt.icon + '</span>';
+      html += '<span class="label">' + opt.label + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+    // completion_note 输入区
+    var showNote = existing ? NEED_NOTE[existing] : false;
+    html += '<div class="note-area' + (showNote ? " show" : "") + '" data-event-id="' + esc(String(ev.id)) + '">';
+    html += '<label>📝 完成原因 / 反思(超时/部分/未完成/不可抗力 必填)</label>';
+    html += '<textarea placeholder="例: 加班严重 / 推延到明天 / 下雨取消…" data-event-id="' + esc(String(ev.id)) + '">' + esc(existingNote) + '</textarea>';
+    html += '</div>';
+    html += '</div>';
+    list.insertAdjacentHTML("beforeend", html);
+  });
+
+  // 3. 事件点击/输入交互
+  function refreshUI(){
+    var reviewed = 0;
+    Object.keys(userMarks).forEach(function(eid){
+      if (userMarks[eid].status) reviewed++;
+    });
+    var total = events.length;
+    var pending = total - reviewed;
+    var pct = total > 0 ? Math.round(reviewed / total * 100) : 0;
+
+    document.getElementById("stat-reviewed").textContent = reviewed;
+    document.getElementById("stat-pending").textContent = pending;
+    document.getElementById("stat-progress").textContent = pct + "%";
+    var badge = document.getElementById("status-badge");
+    if (pct === 100) {
+      badge.className = "status-badge done";
+      badge.textContent = "✅ 已完成复盘 " + reviewed + "/" + total + " · 可复制 prompt 给 AI";
+    } else if (pct > 0) {
+      badge.className = "status-badge partial";
+      badge.textContent = "⏳ 复盘中 " + reviewed + "/" + total;
+    } else {
+      badge.className = "status-badge pending";
+      badge.textContent = "⏳ 待复盘 0/" + total;
+    }
+  }
+  refreshUI();
+
+  // 4 部分 prompt 生成函数
+  function buildCopyPrompt(){
+    var marked = [];
+    var unmarked = [];
+    events.forEach(function(ev){
+      var m = userMarks[ev.id];
+      if (m.status) {
+        marked.push({
+          id: ev.id,
+          time_start: ev.time_start,
+          time_end: ev.time_end,
+          title: ev.title,
+          status: m.status,
+          completion_note: m.note || ""
+        });
+      } else {
+        unmarked.push({id: ev.id, time_start: ev.time_start, time_end: ev.time_end, title: ev.title});
+      }
+    });
+
+    var lines = [];
+    lines.push("① 场景: 我和 AI 一起复盘 " + (meta.date || "") + " 的当日计划(" + events.length + " 段事件,已标记 " + marked.length + "/" + events.length + ")");
+    lines.push("");
+    lines.push("② 数据(我已标记的复盘):");
+    if (marked.length === 0) {
+      lines.push("(尚未标记任何事件)");
+    } else {
+      marked.forEach(function(m){
+        lines.push("  - id=" + m.id + " " + m.time_start + "–" + m.time_end + " 「" + m.title + "」");
+        lines.push("    status: " + m.status);
+        if (m.completion_note) {
+          lines.push("    completion_note: " + m.completion_note);
+        }
+      });
+    }
+    if (unmarked.length > 0) {
+      lines.push("");
+      lines.push("⚠ 未标记的事件(默认按未完成处理):");
+      unmarked.forEach(function(u){
+        lines.push("  - id=" + u.id + " " + u.time_start + "–" + u.time_end + " 「" + u.title + "」");
+      });
+    }
+    lines.push("");
+    lines.push("③ 期望: 请逐条执行 schedule_cli.py update-event 命令:");
+    if (marked.length === 0) {
+      lines.push("(无已标记项,无需 update-event)");
+    } else {
+      marked.forEach(function(m){
+        var noteArg = m.completion_note ? ' --completion-note "' + m.completion_note.replace(/"/g, '\\"') + '"' : "";
+        lines.push("  schedule_cli.py update-event " + m.id + " --completion " + m.status + noteArg);
+      });
+    }
+    if (unmarked.length > 0) {
+      lines.push("");
+      lines.push("未标记项如需默认按未完成处理:");
+      unmarked.forEach(function(u){
+        lines.push("  schedule_cli.py update-event " + u.id + " --completion 未完成");
+      });
+    }
+    lines.push("");
+    lines.push("完成后给我返回复盘小结:");
+    lines.push("  - 完成率(已完成 / 总数)");
+    lines.push("  - 各类占比(已完成 / 已完成超时 / 部分完成 / 未完成 / 不可抗力)");
+    lines.push("  - 1-2 句今日总结");
+    lines.push("");
+    lines.push("④ 来源: review_" + (meta.date || "DATE") + ".html 生成于 " + generatedAt + ",数据来自 schedule_plans WHERE date=" + (meta.date || "DATE"));
+
+    return lines.join("\n");
+  }
+
+  // 4 部分 prompt 折叠预览(更新)
+  var copyPreview = document.getElementById("copy-preview");
+  function updatePreview(){
+    copyPreview.textContent = buildCopyPrompt();
+  }
+  updatePreview();
+
+  // 完整 prompt / JSON 折叠区
+  document.getElementById("prompt-full").textContent = buildCopyPrompt();
+  document.getElementById("review-json").textContent = JSON.stringify(
+    events.map(function(ev){
+      var m = userMarks[ev.id];
+      return {
+        id: ev.id,
+        time_start: ev.time_start,
+        time_end: ev.time_end,
+        title: ev.title,
+        category: ev.category,
+        user_status: m.status,
+        user_note: m.note || null,
+        existing_completion: ev.completion || null,
+        existing_completion_note: ev.completion_note || null,
+      };
+    }), null, 2
+  );
+
+  // 5. 状态点击
+  document.querySelectorAll(".status-options .opt").forEach(function(opt){
+    opt.addEventListener("click", function(){
+      var eid = opt.getAttribute("data-event-id");
+      var status = opt.getAttribute("data-status");
+      // 清除同组其他 selected
+      var group = opt.parentElement;
+      group.querySelectorAll(".opt").forEach(function(o){ o.classList.remove("selected"); });
+      opt.classList.add("selected");
+      // 更新 userMarks
+      userMarks[eid].status = status;
+      // 显示/隐藏 note
+      var noteArea = document.querySelector('.note-area[data-event-id="' + eid + '"]');
+      if (NEED_NOTE[status]) {
+        noteArea.classList.add("show");
+      } else {
+        noteArea.classList.remove("show");
+        // 已完成类不需要原因,自动清空(保留旧值也不影响)
+      }
+      // 标记该 event 已复盘
+      var item = document.querySelector('.review-item[data-event-id="' + eid + '"]');
+      if (item) item.classList.add("reviewed");
+      // 刷新 UI
+      refreshUI();
+      updatePreview();
+      document.getElementById("review-json").textContent = JSON.stringify(
+        events.map(function(ev){
+          var m = userMarks[ev.id];
+          return { id: ev.id, status: m.status, note: m.note || null };
+        }), null, 2
+      );
+    });
+  });
+
+  // 6. completion_note 输入
+  document.querySelectorAll(".note-area textarea").forEach(function(ta){
+    ta.addEventListener("input", function(){
+      var eid = ta.getAttribute("data-event-id");
+      userMarks[eid].note = ta.value;
+      updatePreview();
+    });
+  });
+
+  // 7. 复制按钮
+  var copyBtn = document.getElementById("copy-btn");
+  copyBtn.addEventListener("click", function(){
+    var text = buildCopyPrompt();
+    var done = function(){
+      copyBtn.textContent = "✅ 已复制 · 粘贴给 AI";
+      copyBtn.classList.add("copied");
+      setTimeout(function(){
+        copyBtn.textContent = "复制 4 部分 prompt";
+        copyBtn.classList.remove("copied");
+      }, 2500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function(){
+        fallbackCopy(text); done();
+      });
+    } else {
+      fallbackCopy(text); done();
+    }
+  });
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+})();
+</script>
+</body>
+</html>

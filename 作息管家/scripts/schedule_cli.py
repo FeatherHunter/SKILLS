@@ -587,6 +587,8 @@ def main(argv=None):
         cmd_render_query_plans(args)
     elif cmd == "render-plans-preview":
         cmd_render_plans_preview(args)
+    elif cmd == "render-plans-review":
+        cmd_render_plans_review(args)
     # === end ===
 
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
@@ -1660,6 +1662,83 @@ def cmd_render_plans_preview(args):
 
 
 # ============================================================
+# 2026-07-24 新增:复盘报告(process-html 第 2 款,复用 plan_preview 模式)
+# ============================================================
+#
+# 一个命令:render-plans-review <日期>
+# 输入:无(直接拉 schedule_plans WHERE date=date)
+# 输出:HTML 含 5 个状态选项 + 复制 4 部分 prompt 按钮
+# 流程:AI 写库后用户复盘 → 选 status + 写 completion_note → 复制 prompt → AI 批量调 update-event
+
+
+def cmd_render_plans_review(args):
+    """render-plans-review <日期>
+
+    复盘报告(过程型)。拉取当日 schedule_plans,展示 5 状态选项(已完成/
+    已完成超时/部分完成/未完成/未完成不可抗力) + completion_note 输入。
+    用户标记后,复制 4 部分 prompt 给 AI 调 update-event 批量写库。
+    """
+    from schedule_html_render import _record_dir, render_plans_review, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-plans-review <日期>(YYYY-MM-DD)",
+            "example": "render-plans-review 2026-07-20",
+        }, ensure_ascii=False))
+        return
+
+    date = args[0]
+    from schedule_db import _normalize_date
+    try:
+        date = _normalize_date(date)
+    except ValueError:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"date 字段格式非法: '{date}'(期望 YYYY-MM-DD 或 YYYYMMDD),建议: 2026-07-20",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        payload = render_plans_review(date)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    reviewed = payload["data"]["meta"].get("reviewed_count", 0)
+    total = payload["data"]["meta"].get("total_count", 0)
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "plan-review",
+            "date": date,
+            "reviewed_count": reviewed,
+            "total_count": total,
+            "progress_pct": payload["data"]["meta"].get("progress_pct", 0),
+        },
+        "message": f"✓ 复盘报告已写入: {fp}（{total} 段事件,{reviewed} 已标记）",
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # 2026-07-23 新增:作息记录查询 → HTML 单日报告
 # ============================================================
 #
@@ -2484,6 +2563,7 @@ HTML 渲染(可视化查询结果):
   render-list-events <date> [--out PATH]   渲染日程 list-events 为 HTML(摘要+时间轴+事件卡片)
   render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
   render-plans-preview <日期> --json @plan.json  商量计划预览(过程型,4 部分 prompt 复制给 AI)
+  render-plans-review <日期>  复盘报告(过程型,5 状态选项 + 复制 prompt 给 AI 调 update-event)
   render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
   render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
   render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)

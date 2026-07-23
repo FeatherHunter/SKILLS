@@ -338,6 +338,9 @@ def default_output_path(meta: dict) -> Path:
     if mode == "plan-preview":
         date = meta.get("date", "unknown")
         return plan_list / f"plan_preview_{date}.html"
+    if mode == "plan-review":
+        date = meta.get("date", "unknown")
+        return plan_list / f"plan_review_{date}.html"
     return base / "view.html"
 
 
@@ -740,6 +743,69 @@ def render_plans_preview(date: str, plan_events: list, locked_events: list = Non
     }
 
 
+def render_plans_review(date: str) -> dict:
+    """
+    复盘报告(process-html 阶段第 2 款,手册§原则10 过程型 AI 协同模式).
+
+    数据契约:拉取 schedule_plans WHERE date=date AND is_active=1
+    输出:每条事件含 id / time_start / time_end / title / category / completion / completion_note
+          + meta(已标记的 completion 预填到 userMarks)
+          + 4 部分 prompt 模板骨架(前端 JS 根据用户标记动态生成)
+
+    与 render_plans_preview 区别:
+      - preview 是"写库前预览"(AI 写库前确认)
+      - review 是"写库后复盘"(AI 写库后用户标 status + note)
+    """
+    from schedule_db import _normalize_date, list_plan_events
+    from calculations import ai_questions_for_day
+
+    date = _normalize_date(date)
+    events = list_plan_events(date, include_inactive=False)  # 仅活跃
+
+    # 标准化为模板消费的字段
+    plan_events = []
+    for ev in events:
+        plan_events.append({
+            "id": ev.get("id"),
+            "date": ev.get("date"),
+            "time_start": ev.get("time_start"),
+            "time_end": ev.get("time_end"),
+            "title": ev.get("title"),
+            "category": ev.get("category"),
+            "notes": ev.get("notes") or "",
+            "completion": ev.get("completion"),  # 已有 completion 预填
+            "completion_note": ev.get("completion_note") or "",
+        })
+
+    # 计算复盘进度
+    reviewed_count = sum(1 for ev in plan_events if ev["completion"])
+    total = len(plan_events)
+    progress_pct = round(reviewed_count / total * 100, 1) if total > 0 else 0
+
+    payload = {
+        "meta": {
+            "mode": "plan-review",
+            "date": date,
+            "title": f"复盘报告 · {date}",
+            "subtitle": f"逐条标记状态 · 复制 4 部分 prompt 给 AI · {reviewed_count}/{total} 已标记",
+            "reviewed_count": reviewed_count,
+            "total_count": total,
+            "progress_pct": progress_pct,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-24",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "plan_events": plan_events,
+        "ai_questions": ai_questions_for_day(date, [], 0, 0, 0),  # 占位
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {date} 复盘报告数据已生成({total} 段事件,{reviewed_count} 已标记)",
+    }
+
+
 # ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
 
 def render_record_day(date: str) -> dict:
@@ -1088,6 +1154,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "list-events":     "schedule_list_events.html",
         "query-plans":     "schedule_list_events.html",
         "plan-preview":    "schedule_plan_preview.html",  # 商量计划预览(过程型首批落地,2026-07-24)
+        "plan-review":     "schedule_plan_review.html",   # 复盘报告(过程型第2款,2026-07-24)
         "record-report":   "schedule_record_day.html",   # 兼容旧 CLI
         "record-day":      "schedule_record_day.html",
         "record-range":    "schedule_record_range.html",

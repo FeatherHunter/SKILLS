@@ -8,6 +8,9 @@ __pycache__/
 # (按需 git add templates/*_report_*.html 才能进 git)
 *_report_*.html
 
+# 临时测试 HTML（v2/v3 test 等中间产物）
+*_v*_test.html
+
 # 改造方案 review 文档(不进 git)
 改造执行方案.html
 HTML注入改造方案.html

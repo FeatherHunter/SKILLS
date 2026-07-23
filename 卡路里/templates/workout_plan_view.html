@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>健身计划</title>
+<style>
+:root{
+  --bg:#fbfbfd;--card:#fff;--ink:#1d1d1f;--ink2:#6e6e73;--ink3:#86868b;
+  --line:#d2d2d7;--lineS:#e8e8ed;--accent:#0071e3;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;
+  background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+
+/* HEADER */
+.header h1{font-size:32px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.header p{color:var(--ink2);font-size:14px;margin-bottom:24px}
+
+/* TABS (week / day) */
+.tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--lineS);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;background:none;border:none;padding:10px 18px;font-family:inherit;font-size:14px;font-weight:500;color:var(--ink2);cursor:pointer;position:relative;border-radius:6px 6px 0 0}
+.tab:hover{color:var(--ink);background:rgba(0,113,227,.06)}
+.tab.active{color:var(--accent)}
+.tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
+.week{display:none;animation:fade .2s ease}
+.week.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* SESSION CARD */
+.session{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.sess-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--lineS);flex-wrap:wrap}
+.sess-tag{font-family:"SF Mono",monospace;font-size:11px;color:var(--ink3);background:var(--bg);padding:3px 8px;border-radius:5px}
+.sess-name{font-size:17px;font-weight:600}
+.sess-time{font-size:12px;color:var(--ink3);margin-left:auto}
+.rest-day{padding:40px;text-align:center;color:var(--ink3)}
+.rest-day h3{font-size:20px;color:var(--ink);margin-bottom:8px}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);padding:8px 12px 8px 0;border-bottom:1px solid var(--lineS)}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--lineS);font-size:13px;color:var(--ink2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{font-weight:500;color:var(--ink);min-width:160px}
+td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
+
+/* PART TAG */
+.part-tag{display:inline-block;font-size:10.5px;padding:2px 6px;border-radius:4px;font-weight:600}
+
+/* DAY TABS */
+.day-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;scrollbar-width:none}
+.day-tabs::-webkit-scrollbar{display:none}
+.day-tab{background:var(--card);border:1px solid var(--lineS);padding:6px 12px;font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink2);cursor:pointer;border-radius:8px;transition:all .15s}
+.day-tab:hover{border-color:var(--accent);color:var(--ink)}
+.day-tab.active{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* REVIEW SECTION */
+.review-section{background:#fff;border:1px solid var(--lineS);border-radius:16px;padding:22px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
+.review-section h2{font-size:18px;font-weight:600;margin-bottom:14px}
+.review-stat{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.stat-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.stat-value{font-size:32px;font-weight:600;color:var(--accent);line-height:1}
+.review-detail{color:var(--ink2);font-size:13px;margin-bottom:10px;line-height:1.6}
+.review-detail p{margin-bottom:3px}
+.review-detail strong{color:var(--ink);font-weight:500}
+.anomalies{list-style:none;padding:0;margin-top:8px}
+.anomalies li{padding:5px 0;color:var(--ink2);font-size:13px}
+.no-review{color:var(--ink3);font-style:italic;font-size:13px}
+
+@media(max-width:640px){
+  .app{padding:20px 12px 48px}
+  .session{padding:16px 14px}
+  .header h1{font-size:26px}
+  td{padding:10px 4px;font-size:12px}
+  td:first-child{min-width:120px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1 id="planTitle">健身计划</h1>
+    <p id="planSubtitle">加载中...</p>
+  </div>
+  <div id="reviewContainer"></div>
+  <div class="tabs" id="weekTabs"></div>
+  <div id="weeksContainer"></div>
+</div>
+
+<!--INJECT-DATA-->
+
+<script>
+/* ====== 部位色板（与原 render_workout_plan.py 一致） ====== */
+const PART_COLORS = {
+  "胸": "#c2410c", "肩": "#a16207", "臂": "#4338ca",
+  "背": "#047857", "腿": "#0891b2", "腹": "#7c3aed",
+  "有氧": "#6b7280",
+};
+const DAY_LABELS = ['', '周一','周二','周三','周四','周五','周六','周日'];
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;','<': '&lt;','>': '&gt;','"': '&quot;',"'": '&#39;'
+  }[c]));
+}
+
+function renderHeader(config) {
+  document.getElementById('planTitle').textContent = config.title || '健身计划';
+  const desc = config.description || '';
+  const total = config.total_weeks || '?';
+  const start = config.start_date || '';
+  document.getElementById('planSubtitle').textContent =
+    `${desc} · ${total} 周循环 · 起始 ${start}`;
+}
+
+function renderReview(review) {
+  const container = document.getElementById('reviewContainer');
+  if (!review || !review.today) {
+    container.innerHTML = '';
+    return;
+  }
+  const t = review.today;
+  const rate = t.completion_rate;
+  const sessions = (t.sessions || []).filter(Boolean);
+  const anomalies = t.anomalies || [];
+  const note = t.note;
+  let html = '<div class="review-section">';
+  html += `<h2>📋 今日复盘 · ${t.date || ''}</h2>`;
+  if (rate != null) {
+    html += `<div class="review-stat"><span class="stat-label">完成率</span>`;
+    html += `<span class="stat-value">${Math.round(rate)}%</span></div>`;
+  }
+  html += '<div class="review-detail">';
+  if (sessions.length) html += `<p><strong>训练:</strong> ${escapeHTML(sessions.join(' / '))}</p>`;
+  if (t.plan_total_sets || t.actual_total_sets) {
+    html += `<p><strong>组数:</strong> 计划 ${t.plan_total_sets || 0} · 实做 ${t.actual_total_sets || 0}</p>`;
+  }
+  if (note) html += `<p><strong>备注:</strong> ${escapeHTML(note)}</p>`;
+  html += '</div>';
+  if (anomalies.length) {
+    html += '<ul class="anomalies">';
+    anomalies.forEach(a => { html += `<li>${escapeHTML(a)}</li>`; });
+    html += '</ul>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderWeekTabs(weeks) {
+  const tabs = document.getElementById('weekTabs');
+  tabs.innerHTML = weeks.map((w, i) =>
+    `<button class="tab ${i === 0 ? 'active' : ''}" data-wk="${w.week_number}">第 ${w.week_number} 周</button>`
+  ).join('');
+}
+
+function renderWeeks(weeks) {
+  const container = document.getElementById('weeksContainer');
+  container.innerHTML = weeks.map((w, wIdx) => {
+    // 按 day_of_week 分组 sessions
+    const dayMap = {};
+    w.days.forEach(d => {
+      dayMap[d.day_of_week] = dayMap[d.day_of_week] || [];
+      dayMap[d.day_of_week].push(d);
+    });
+
+    let html = `<div class="week ${wIdx === 0 ? 'active' : ''}" data-wk="${w.week_number}">`;
+
+    // Day tabs (周一到周日)
+    html += `<div class="day-tabs" id="dayTabs_w${w.week_number}">`;
+    for (let dow = 1; dow <= 7; dow++) {
+      const active = dow === 1 ? ' active' : '';
+      html += `<button class="day-tab${active}" data-day="d${wIdx}_${dow}">${DAY_LABELS[dow]}</button>`;
+    }
+    html += '</div>';
+
+    // 每天的内容
+    for (let dow = 1; dow <= 7; dow++) {
+      const sessions = dayMap[dow] || [];
+      const display = dow === 1 ? '' : ' style="display:none"';
+      html += `<div class="day-content" data-day="d${wIdx}_${dow}"${display}>`;
+
+      if (sessions.length === 1 && sessions[0].is_rest_day) {
+        html += `<div class="session rest-day"><h3>${DAY_LABELS[dow]} · 休息日</h3><p>主动恢复，不练力量</p></div>`;
+        html += '</div>';
+        continue;
+      }
+
+      sessions.forEach(sess => {
+        const ts = sess.time_start || '';
+        const te = sess.time_end || '';
+        const timeStr = ts && te ? `${ts}-${te}` : '';
+        html += '<div class="session">';
+        html += '<div class="sess-head">';
+        html += `<span class="sess-tag">${DAY_LABELS[dow]}</span>`;
+        html += `<span class="sess-name">${escapeHTML(sess.session_label)}</span>`;
+        if (timeStr) html += `<span class="sess-time">${escapeHTML(timeStr)}</span>`;
+        if (sess.total_sets) html += `<span class="sess-time"> 共 ${sess.total_sets} 组</span>`;
+        html += '</div>';
+
+        const movements = sess.movements || [];
+        if (movements.length) {
+          html += '<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>';
+          movements.forEach(m => {
+            const name = m.name || '';
+            const part = m.part || '';
+            const mtype = m.type || '';
+            const note = m.note || '';
+            const rest = m.rest || '';
+            const sets = m.sets || [];
+            const nsets = sets.length;
+            const reps = sets[0] ? sets[0].reps : '?';
+            const weight = sets[0] ? sets[0].weight : '?';
+            const unit = sets[0] ? sets[0].unit : 'kg';
+            const color = PART_COLORS[part] || '#6e6e73';
+            const wt = unit !== '自重' ? `${weight} ${unit}` : '自重';
+            const typeOrNote = mtype ? ` · ${escapeHTML(mtype)}` : '';
+            html += '<tr>';
+            html += `<td><strong>${escapeHTML(name)}</strong><span class="sub">${escapeHTML(note)}${typeOrNote}</span></td>`;
+            html += `<td><span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(part)}</span></td>`;
+            html += `<td><strong>${nsets}</strong> × ${escapeHTML(reps)}</td>`;
+            html += `<td><strong>${escapeHTML(wt)}</strong></td>`;
+            html += `<td>${escapeHTML(rest)}</td>`;
+            html += '</tr>';
+          });
+          html += '</tbody></table>';
+        } else {
+          html += '<p style="color:var(--ink3);padding:12px 0">暂无动作</p>';
+        }
+        html += '</div>';
+      });
+
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }).join('');
+
+  // Tab 切换交互
+  bindWeekTabs();
+  bindDayTabs();
+}
+
+function bindWeekTabs() {
+  document.querySelectorAll('#weekTabs .tab').forEach(t => {
+    t.onclick = function() {
+      document.querySelectorAll('#weekTabs .tab').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('.week').forEach(w => {
+        w.classList.toggle('active', w.dataset.wk === this.dataset.wk);
+      });
+    };
+  });
+}
+
+function bindDayTabs() {
+  document.querySelectorAll('.day-tabs').forEach(dt => {
+    dt.querySelectorAll('.day-tab').forEach(t => {
+      t.onclick = function() {
+        dt.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const week = this.closest('.week');
+        week.querySelectorAll('.day-content').forEach(d => {
+          d.style.display = (d.dataset.day === this.dataset.day) ? '' : 'none';
+        });
+      };
+    });
+  });
+}
+
+/* ====== 主入口 ====== */
+(function() {
+  const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__ !== null)
+    ? window.__DATA__ : null;
+  if (!DATA) {
+    document.getElementById('planSubtitle').textContent = '❌ 数据加载失败';
+    return;
+  }
+
+  const { status, data, message } = DATA;
+  if (status !== 'ok' && status !== 'warn') {
+    document.getElementById('planSubtitle').textContent = '⚠️ ' + (message || '数据错误');
+    return;
+  }
+
+  renderHeader(data.config);
+  renderReview(data.review);
+  renderWeekTabs(data.weeks);
+  renderWeeks(data.weeks);
+})();
+</script>
+
+</body>
+</html>

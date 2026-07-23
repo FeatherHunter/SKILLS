@@ -54,6 +54,7 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 |---|---|---|---|
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/review_template_v2.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
+| `templates/workout_plan_view.html` | 查健身计划 | DB 直接 query workout_plans + workout_plan_config | `python scripts/render_workout_plan.py [--review]`（已规范化，340 → 201 行） |
 
 ### 模板设计原则（与《手册》第 7 节对齐）
 

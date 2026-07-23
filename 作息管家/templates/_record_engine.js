@@ -92,9 +92,10 @@
     html += '<h2><span class="icon">📊</span> 分类时长</h2>';
     html += '<div class="cat-grid">';
     summaryItems.forEach(function(s){
+      var pctNum = parseFloat(s.pct) || 0;  // M6 防御:强制数字
       html += '<div class="cat-row"><span class="emoji">' + escapeHTML(s.emoji) + '</span>' +
               '<div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="name">' + escapeHTML(s.category) + '</span><span class="dur">' + escapeHTML(s.duration_text) + '</span></div>' +
-              '<div class="bar"><div class="bar-fill" style="width:' + s.pct + '%;background:' + escapeHTML(s.color || "#8E8E93") + '"></div></div></div></div>';
+              '<div class="bar"><div class="bar-fill" style="width:' + pctNum + '%;background:' + escapeHTML(s.color || "#8E8E93") + '"></div></div></div></div>';
     });
     html += '</div></div>';
 

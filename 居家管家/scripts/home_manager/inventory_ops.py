@@ -69,6 +69,64 @@ def inventory(location):
     return 0
 
 
+ALL_STATUSES = ["在家", "备用", "穿着中", "旅游中", "洗护中",
+                "借用中", "维修中", "已用完", "快递中", "待处理", "已废弃"]
+
+
+def inventory_payload(conn, location):
+    """盘点指定位置,返回结构化数据供 inventory_check.html 使用
+
+    返回结构:
+      {
+        "summary":   {title, subtitle, metrics[]},
+        "location":  位置字符串,
+        "statuses":  全部可选状态(供下拉框),
+        "items":     [{id, name, category_name, matched_location,
+                       matched_quantity, location_status, tags[]}, ...]
+      }
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT i.id, i.name, c.name AS category_name,
+               il.location as matched_location,
+               il.quantity as matched_quantity,
+               il.location_status
+        FROM items i
+        JOIN item_locations il ON i.id = il.item_id
+        LEFT JOIN categories c ON i.category_id = c.id
+        WHERE il.location LIKE ?
+        ORDER BY c.name, i.name
+    """, (f"%{location}%",))
+    rows = cursor.fetchall()
+
+    items = []
+    for row in rows:
+        tags = get_tags(conn, row['id'])
+        items.append({
+            "id": row['id'],
+            "name": row['name'],
+            "category_name": row['category_name'] or '(未分类)',
+            "matched_location": row['matched_location'],
+            "matched_quantity": row['matched_quantity'],
+            "location_status": row['location_status'] or '在家',
+            "tags": tags,
+        })
+
+    return {
+        "summary": {
+            "title": f"盘点 · {location}",
+            "subtitle": "逐件确认状态；完成后点「复制回执」发给 AI",
+            "metrics": [
+                {"label": "物品数", "value": f"{len(items)} 件"},
+                {"label": "位置", "value": location},
+            ],
+        },
+        "location": location,
+        "statuses": ALL_STATUSES,
+        "items": items,
+    }
+
+
 def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category_id=None):
     """频率统计 + 过期检查
 

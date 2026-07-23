@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 盘点</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.cards{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.cards span{background:#fff;border:1px solid var(--line);border-radius:99px;padding:5px 10px;font-size:12px;color:var(--fg2)}
+.item{background:var(--card);border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:border-color .2s}
+.item.changed{border-left:4px solid var(--orange)}
+.item.confirmed{border-left:4px solid var(--green)}
+.row{display:grid;grid-template-columns:1fr auto auto auto auto;gap:10px;align-items:center}
+.row2{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:12px;color:var(--fg3)}
+.name{font-weight:700;font-size:16px}
+.meta{color:var(--fg2);font-size:13px;margin-top:2px}
+select,input[type=number]{border:1px solid var(--line);border-radius:8px;padding:5px 9px;font:inherit;background:#fff;color:var(--fg)}
+select:focus,input:focus{outline:2px solid var(--blue);outline-offset:-1px}
+.btn{border:none;border-radius:999px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:13px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.confirm{background:var(--green);color:#fff}
+.btn.confirm.active{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--green)}
+.tagbox{display:flex;flex-wrap:wrap}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:99px;padding:3px 9px;margin:2px;font-size:11px;font-weight:650}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy:hover{filter:brightness(1.05)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.row{grid-template-columns:1fr;gap:8px}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 盘点</div>
+<h1 id="title">盘点</h1>
+<p class="lead" id="subtitle">居家管家盘点</p>
+<div class="cards" id="summary"></div>
+</header>
+<div id="app"></div>
+<div class="fixed"><button class="copy" id="copyBtn">复制盘点回执</button></div>
+<p class="footer">模板只展示注入数据，不直连数据库；确认后把回执发给 AI 执行 update。</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+const app=document.getElementById('app');
+const sumEl=document.getElementById('summary');
+const titleEl=document.getElementById('title');
+const subEl=document.getElementById('subtitle');
+const copyBtn=document.getElementById('copyBtn');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+
+let DATA={items:[],statuses:[],location:'',summary:{}};
+let STATE={};
+
+function rebuildReceipt(){
+  const lines=['inventory_check_results:'];
+  let changed=0,confirmed=0;
+  DATA.items.forEach(it=>{
+    const st=STATE[it.id]||{};
+    const curStatus=it.location_status;
+    const curQty=it.matched_quantity;
+    if(st.confirm){
+      confirmed++;
+      lines.push(`- ID ${it.id}（${esc(it.name)}）：确认无变化`);
+      return;
+    }
+    const parts=[];
+    if(st.status&&st.status!==curStatus) parts.push(`状态 → ${st.status}`);
+    if(st.qty!==undefined&&st.qty!==null&&Number(st.qty)!==Number(curQty)){
+      const diff=Number(st.qty)-Number(curQty);
+      if(diff>0) parts.push(`数量 +${diff}（现 ${curQty}→${st.qty}）`);
+      else parts.push(`数量 ${diff}（现 ${curQty}→${st.qty}）`);
+    }
+    if(parts.length===0) return;
+    changed++;
+    lines.push(`- ID ${it.id}（${esc(it.name)}）：${parts.join('；')}`);
+  });
+  copyBtn.textContent=`复制盘点回执（${changed} 项变更 / ${confirmed} 项确认）`;
+  return lines.join('\n');
+}
+
+copyBtn.onclick=function(){
+  const txt=rebuildReceipt();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{
+      const old=copyBtn.textContent;copyBtn.textContent='已复制 ✓';
+      setTimeout(()=>{copyBtn.textContent=old;},1500);
+    });
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+};
+
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA={items:arr(data.items),statuses:arr(data.statuses),location:data.location||'',summary:data.summary||{}};
+STATE={};
+titleEl.textContent=DATA.summary.title||('盘点 · '+DATA.location);
+subEl.textContent=DATA.summary.subtitle||'';
+sumEl.innerHTML=arr(DATA.summary.metrics).map(m=>'<span>'+esc(m.label)+': '+esc(m.value)+'</span>').join('');
+if(!DATA.items.length){app.innerHTML='<div class="empty">该位置下没有物品。</div>';return}
+app.innerHTML=DATA.items.map(it=>{
+  const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span style="color:#86868b">无标签</span>';
+  const opts=DATA.statuses.map(s=>'<option'+(s===it.location_status?' selected':'')+'>'+esc(s)+'</option>').join('');
+  return `<div class="item" id="item-${it.id}">
+<div class="row">
+<div><div class="name">ID ${it.id} · ${esc(it.name)}</div><div class="meta">${esc(it.category_name)} · 📍 ${esc(it.matched_location)} · 现 ×${esc(it.matched_quantity)} [${esc(it.location_status)}]</div></div>
+<select data-id="${it.id}" data-field="status">${opts}</select>
+<input type="number" data-id="${it.id}" data-field="qty" value="${esc(it.matched_quantity)}" min="0" style="width:70px">
+<button class="btn" data-act="plus" data-id="${it.id}">+1</button>
+<button class="btn" data-act="minus" data-id="${it.id}">-1</button>
+<button class="btn confirm" data-act="confirm" data-id="${it.id}">确认无变化</button>
+</div>
+<div class="row2">${tags}</div>
+</div>`;
+}).join('');
+
+app.querySelectorAll('select[data-field=status]').forEach(sel=>{
+  sel.onchange=function(){
+    const id=this.getAttribute('data-id');
+    STATE[id]=STATE[id]||{};
+    STATE[id].status=this.value;
+    paint(id);
+  };
+});
+app.querySelectorAll('input[data-field=qty]').forEach(inp=>{
+  inp.oninput=function(){
+    const id=this.getAttribute('data-id');
+    STATE[id]=STATE[id]||{};
+    STATE[id].qty=this.value;
+    paint(id);
+  };
+});
+app.querySelectorAll('button[data-act]').forEach(b=>{
+  b.onclick=function(){
+    const id=this.getAttribute('data-id');
+    const act=this.getAttribute('data-act');
+    STATE[id]=STATE[id]||{};
+    if(act==='plus'){STATE[id].qty=(Number(STATE[id].qty??arr(DATA.items.find(x=>x.id==id)).matched_quantity))+1;document.querySelector(`input[data-id="${id}"][data-field=qty]`).value=STATE[id].qty;}
+    else if(act==='minus'){STATE[id].qty=Math.max(0,(Number(STATE[id].qty??arr(DATA.items.find(x=>x.id==id)).matched_quantity))-1);document.querySelector(`input[data-id="${id}"][data-field=qty]`).value=STATE[id].qty;}
+    else if(act==='confirm'){STATE[id].confirm=!STATE[id].confirm;}
+    paint(id);
+  };
+});
+rebuildReceipt();
+}
+
+function paint(id){
+  const st=STATE[id]||{};
+  const el=document.getElementById('item-'+id);
+  if(!el) return;
+  el.classList.toggle('confirmed',!!st.confirm);
+  el.classList.toggle('changed',!!st.status||(st.qty!==undefined&&st.qty!==null));
+  const btn=el.querySelector('button[data-act=confirm]');
+  if(btn){btn.classList.toggle('active',!!st.confirm);}
+  rebuildReceipt();
+}
+
+render();
+</script>
+</body>
+</html>

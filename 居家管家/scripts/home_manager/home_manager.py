@@ -134,6 +134,7 @@ def main():
     # ── inventory ──
     p_inventory = subparsers.add_parser("inventory", help="盘点指定位置")
     p_inventory.add_argument("--location", required=True, help="要盘点的位置")
+    p_inventory.add_argument("--output", default=None, help="HTML 输出路径；不填写走 CLI 文本")
 
     # ── suggest-locations（位置推荐，录物品时辅助）──
     p_suggest = subparsers.add_parser("suggest-locations", help="推荐同类物品常用位置（录物品时辅助定位）")
@@ -338,6 +339,20 @@ def main():
         )
 
     elif args.command == "inventory":
+        if args.output:
+            from home_manager.html_render import emit
+            from home_manager.inventory_ops import inventory_payload
+            conn = get_conn()
+            try:
+                payload_data = inventory_payload(conn, args.location)
+            finally:
+                conn.close()
+            payload = {
+                "status": "ok",
+                "data": payload_data,
+                "message": "盘点 HTML 已生成",
+            }
+            return emit(payload, "inventory_check.html", args.output)
         return inventory(location=args.location)
 
     elif args.command == "suggest-locations":

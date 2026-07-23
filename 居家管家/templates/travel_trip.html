@@ -44,7 +44,11 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <p class="lead" id="subtitle">居家管家旅行</p>
 <div class="cards" id="summary"></div>
 </header>
-<div class="filter" id="filter" style="display:none"><input id="searchInput" placeholder="按名称或标签筛选..."></div>
+<div class="filter" id="filter" style="display:none">
+<select id="categoryFilter"><option value="">全部分类</option></select>
+<input id="searchInput" placeholder="按名称/标签筛选...">
+<span id="countText"></span>
+</div>
 <div id="app"></div>
 <div class="fixed"><button class="copy" id="copyBtn">复制回执</button></div>
 <p class="footer" id="footHint"></p>
@@ -61,9 +65,11 @@ const searchInput=document.getElementById('searchInput');
 const filterBar=document.getElementById('filter');
 const footHint=document.getElementById('footHint');
 
-let DATA={items:[],mode:'pack',summary:{}};
+let DATA={items:[],mode:'pack',summary:{},categories:[]};
 let STATE={};
 let FILTER='';
+let CAT='';
+const TOP_CAT_IDS=new Set();
 
 function rebuildReceipt(){
   const lines=[DATA.mode==='pack'?'trip_pack_results:':'trip_return_results:'];
@@ -98,12 +104,17 @@ copyBtn.onclick=function(){
 
 function paintAll(){
   const q=FILTER.toLowerCase();
+  let visible=0;
   DATA.items.forEach(it=>{
     const tags=arr(it.tags).join(' ');
-    const match=!q||(it.name||'').toLowerCase().includes(q)||tags.toLowerCase().includes(q);
+    const matchText=!q||(it.name||'').toLowerCase().includes(q)||tags.toLowerCase().includes(q);
+    const matchCat=!CAT||Number(it.top_category_id)===Number(CAT);
+    const match=matchText&&matchCat;
     const el=document.getElementById('item-'+it.id);
     if(el) el.style.display=match?'':'none';
+    if(match) visible++;
   });
+  countText.textContent=`显示 ${visible}/${DATA.items.length} 件`;
 }
 
 function render(){
@@ -112,7 +123,12 @@ try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){
 const v=validate(payload);
 if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
 const data=payload.data;
-DATA={items:arr(data.items),mode:data.mode||'pack',summary:data.summary||{}};
+DATA={items:arr(data.items),mode:data.mode||'pack',summary:data.summary||{},categories:arr(data.categories)};
+DATA.categories.forEach(c=>{
+  const opt=document.createElement('option');
+  opt.value=String(c.id);opt.textContent=`${c.name} (${c.count})`;
+  categoryFilter.appendChild(opt);
+});
 STATE={};
 titleEl.textContent=DATA.summary.title||'旅行清单';
 subEl.textContent=DATA.summary.subtitle||'';
@@ -170,6 +186,8 @@ function togglePick(id){
 }
 
 searchInput.oninput=function(){FILTER=this.value;paintAll();};
+categoryFilter.onchange=function(){CAT=this.value;paintAll();};
+paintAll();
 
 render();
 </script>

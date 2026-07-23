@@ -355,11 +355,22 @@ def _trip_payload(conn, mode="pack"):
         }
 
     cursor.execute("""
-        SELECT DISTINCT i.id, i.name, c.name AS category_name,
+        WITH RECURSIVE cat_path AS (
+          SELECT id, parent_id, name,
+                 id AS top_id, name AS top_name, 1 AS lvl
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, c.name,
+                 cp.top_id, cp.top_name, cp.lvl + 1
+          FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
+        )
+        SELECT DISTINCT i.id, i.name, i.category_id, c.name AS category_name,
+               cp.top_id AS top_category_id, cp.top_name AS top_category_name,
                il.location, il.location_status
         FROM items i
         JOIN item_locations il ON i.id = il.item_id
         LEFT JOIN categories c ON i.category_id = c.id
+        JOIN cat_path cp ON cp.id = i.category_id
         WHERE il.location_status = ?
         ORDER BY c.name, i.name
     """, (status,))
@@ -371,11 +382,43 @@ def _trip_payload(conn, mode="pack"):
         items.append({
             "id": r['id'],
             "name": r['name'],
+            "category_id": r['category_id'],
             "category_name": r['category_name'] or '(未分类)',
+            "top_category_id": r['top_category_id'],
+            "top_category_name": r['top_category_name'] or '(未分类)',
             "location": r['location'],
             "location_status": r['location_status'],
             "tags": tags,
         })
+
+    # 顶级分类统计 (用于前端下拉过滤)
+    cursor.execute("""
+        WITH RECURSIVE cat_path AS (
+          SELECT id, parent_id, name, 1 AS lvl
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, c.name, cp.lvl + 1
+          FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
+        )
+        SELECT cp_top.id, cp_top.name, COUNT(i.id) AS cnt
+        FROM cat_path cp_top
+        LEFT JOIN items i ON i.category_id IN (
+          WITH RECURSIVE sub AS (
+            SELECT id FROM categories WHERE id = cp_top.id
+            UNION ALL
+            SELECT c.id FROM categories c JOIN sub s ON c.parent_id = s.id
+          )
+          SELECT id FROM sub
+        )
+        WHERE cp_top.lvl = 1
+        GROUP BY cp_top.id, cp_top.name
+        HAVING cnt > 0
+        ORDER BY cnt DESC
+    """)
+    categories = [
+        {"id": r['id'], "name": r['name'], "count": r['cnt']}
+        for r in cursor.fetchall()
+    ]
 
     return {
         "summary": {
@@ -387,6 +430,7 @@ def _trip_payload(conn, mode="pack"):
             ],
         },
         "mode": mode,
+        "categories": categories,
         "items": items,
     }
 

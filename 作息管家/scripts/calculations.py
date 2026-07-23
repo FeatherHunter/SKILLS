@@ -76,10 +76,15 @@ EMOJI_MAP = {
 
 
 def l1_of(category: str) -> str:
-    """'工作.AI调优' -> '工作',  '睡眠' -> '睡眠'"""
+    """'工作.AI调优' -> '工作',  '工作·AI 配置' -> '工作',  '睡眠' -> '睡眠'
+    兼容两种分隔符:英文点 . 与中文间隔号 · (U+00B7)
+    """
     if not category:
         return "未知"
-    return category.split(".")[0]
+    for sep in (".", "·", "・", "•"):
+        if sep in category:
+            return category.split(sep)[0]
+    return category
 
 
 def cat_emoji(cat: str) -> str:

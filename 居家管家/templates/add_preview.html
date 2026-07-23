@@ -43,10 +43,13 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function arr(v){return Array.isArray(v)?v:[];}
 function val(v){return v===null||v===undefined||v===''?'<span class="empty">未填写</span>':esc(v);}
 function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未通过</span>';}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
 function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2><p>'+esc(e.message)+'</p></section>';return}
-const data=payload.data||payload;
+const v=validate(payload);
+if(!v.ok){app.innerHTML='<section><h2 class="bad">数据校验失败</h2><p>'+esc(v.msg)+'</p></section>';return}
+const data=payload.data;
 const d=data.draft||{};
 const checks=data.checks||{};
 const missing=arr(data.missing);

@@ -182,16 +182,15 @@ def stats(stat_type="frequent", limit=20, days=30, expired_only=False, category_
         conn.close()
 
 
-def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
-    """过期预警统计（心愿 ID: 1）
+def _stats_expiring_query(conn, days=30, expired_only=False, category_id=None, limit=20):
+    """过期预警共享查询 (DRY 单一权威源)
 
-    按 expiration_date 升序排列，列出：
-      - 红色标记已过期（剩余天数 < 0）
-      - 黄色标记快过期（剩余天数 0~days）
+    返回:
+      rows:       物品行 (含 days_left)
+      thresholds: 桶分档列表 (例如 days=30 → [3, 7, 30])
     """
     cursor = conn.cursor()
 
-    # 构造查询（参数化，防注入）
     conditions = [
         "il.expiration_date IS NOT NULL",
         "il.expiration_date != ''",
@@ -210,12 +209,7 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
             params.extend(ids)
 
     if expired_only:
-        # 只看已过期
         conditions.append("julianday(il.expiration_date) - julianday('now') < 0")
-    else:
-        # 包括已过期 + N 天内快过期
-        # （条件已在上面加了 <= days）
-        pass
 
     where_clause = " AND ".join(conditions)
     query = f"""
@@ -233,23 +227,37 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
     cursor.execute(query, params)
     rows = cursor.fetchall()
 
+    thresholds = [min(3, days)]
+    if days >= 7:
+        thresholds.append(7)
+    if days > 7:
+        thresholds.append(days)
+    thresholds = sorted(set(thresholds))
+
+    return rows, thresholds
+
+
+def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
+    """过期预警统计（心愿 ID: 1）
+
+    按 expiration_date 升序排列，列出：
+      - 红色标记已过期（剩余天数 < 0）
+      - 黄色标记快过期（剩余天数 0~days）
+    """
+    cursor = conn.cursor()
+
+    rows, thresholds = _stats_expiring_query(
+        conn, days=days, expired_only=expired_only,
+        category_id=category_id, limit=limit
+    )
+
     # 标题
     if expired_only:
         title = f"⛔ 已过期物品 TOP{limit}"
     else:
         title = f"⏰ 快过期物品（{days}天内） TOP{limit}"
 
-    # 概要统计（先取全部，不受 limit 影响）
-    # 动态分档：始终包含 3/7 近期预警档（不超出总窗口 days）；days > 7 时附加 days 档
-    # 这样 --days 参数变化时分档会跟随，不会误导用户
-    thresholds = [min(3, days)]  # 总窗口 < 3 时 clamp
-    if days >= 7:
-        thresholds.append(7)
-    if days > 7:
-        thresholds.append(days)
-    # 去重（days=3 时避免 3 重复）
-    thresholds = sorted(set(thresholds))
-
+    # 概要统计（不受 limit 影响）
     case_clauses = [
         "COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt"
     ]
@@ -572,42 +580,10 @@ def _stats_expiring_payload(conn, limit=50, days=30, expired_only=False, categor
 
     severity 字段: 'danger'(已过期) / 'warn'(≤7天) / 'info'(>7天)
     """
-    cursor = conn.cursor()
-
-    conditions = [
-        "il.expiration_date IS NOT NULL",
-        "il.expiration_date != ''",
-        "julianday(il.expiration_date) - julianday('now') <= ?"
-    ]
-    params = [days]
-    if category_id:
-        ids = _expand_inv(conn, category_id)
-        if len(ids) == 1:
-            conditions.append("i.category_id = ?")
-            params.append(ids[0])
-        else:
-            placeholders = ",".join("?" * len(ids))
-            conditions.append(f"i.category_id IN ({placeholders})")
-            params.extend(ids)
-    if expired_only:
-        conditions.append("julianday(il.expiration_date) - julianday('now') < 0")
-
-    where_clause = " AND ".join(conditions)
-    query = f"""
-        SELECT i.id, i.name, c.name AS category_name,
-               il.location, il.quantity, il.location_status,
-               il.expiration_date,
-               CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) AS days_left
-        FROM item_locations il
-        JOIN items i ON i.id = il.item_id
-        LEFT JOIN categories c ON i.category_id = c.id
-        WHERE {where_clause}
-        ORDER BY days_left ASC
-        LIMIT ?
-    """
-    params.append(limit)
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
+    rows, thresholds = _stats_expiring_query(
+        conn, days=days, expired_only=expired_only,
+        category_id=category_id, limit=limit
+    )
 
     items = []
     for r in rows:
@@ -622,7 +598,7 @@ def _stats_expiring_payload(conn, limit=50, days=30, expired_only=False, categor
         items.append({
             "id": r['id'],
             "name": r['name'],
-            "category_name": r['category_name'] or '(未分类)',
+            "category_name": r['category'] or '(未分类)',
             "location": r['location'],
             "quantity": r['quantity'],
             "location_status": r['location_status'] or '在家',

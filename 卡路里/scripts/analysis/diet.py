@@ -6,8 +6,11 @@
 - diet_macro_ratio      — 营养素占比（蛋白/碳水/脂肪）
 - diet_food_ranking     — 食物 TOP 榜（热量/低卡/频繁/高碳/高蛋白）
 - diet_deficit_analysis — 热量缺口（饮食 vs 运动贡献）
-"""
 
+2026-07-23 D1 重构：所有函数加 as_dict=False 参数
+- as_dict=True  → 返回结构化 dict {status, data, message}
+- as_dict=False → 保持原 print 输出（向后兼容，默认）
+"""
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -20,15 +23,11 @@ if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
 
 
-def diet_calorie_trend(start_date, end_date=None):
+def diet_calorie_trend(start_date, end_date=None, as_dict=False):
     """饮食热量趋势
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期，可选
-
-    Returns:
-        list of Row: (date, total_cal, total_pro, total_carbs, total_fat)
+        as_dict: True 返回 dict；False print（默认）
     """
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
@@ -46,7 +45,10 @@ def diet_calorie_trend(start_date, end_date=None):
     conn.close()
 
     if not rows:
-        print(f"⚠️ 无饮食记录（{start_date} ~ {end_date}）")
+        msg = f"无饮食记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     total_cal = sum(r[1] or 0 for r in rows)
@@ -70,6 +72,27 @@ def diet_calorie_trend(start_date, end_date=None):
     wd_avg = weekday_cal / wd_count if wd_count else 0
     we_avg = weekend_cal / we_count if we_count else 0
 
+    # 2026-07-23 D1 增：组装 dict
+    daily = [
+        {"date": r[0], "total_cal": r[1] or 0, "total_protein": r[2] or 0,
+         "total_carbs": r[3] or 0, "total_fat": r[4] or 0}
+        for r in rows
+    ]
+    data = {
+        "days_count": len(rows),
+        "total_cal": round(total_cal),
+        "avg_cal": round(avg_cal),
+        "cal_goal": cal_goal,
+        "compliance_days": on_target,
+        "weekday_avg": round(wd_avg),
+        "weekend_avg": round(we_avg),
+        "daily": daily,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"热量趋势 {len(rows)} 天，日均 {round(avg_cal)} 卡"}
+
+    # 原 print
     print(f"""🔥 热量趋势（{start_date} ~ {end_date}）
 {'-'*40}
   总摄入：{total_cal:.0f}卡 | 日均：{avg_cal:.0f}卡 | 天数：{len(rows)}""")
@@ -80,11 +103,8 @@ def diet_calorie_trend(start_date, end_date=None):
     return rows
 
 
-def diet_macro_ratio(start_date, end_date=None):
-    """营养素占比分析（蛋白/碳水/脂肪 换算热量占比）
-
-    与目标对比：> 3% 偏高 / < -3% 偏低
-    """
+def diet_macro_ratio(start_date, end_date=None, as_dict=False):
+    """营养素占比分析（蛋白/碳水/脂肪 换算热量占比）"""
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
 
@@ -99,7 +119,10 @@ def diet_macro_ratio(start_date, end_date=None):
     conn.close()
 
     if not row or sum(row) == 0:
-        print(f"⚠️ 无饮食记录（{start_date} ~ {end_date}）")
+        msg = f"无饮食记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     cal_from_pro, cal_from_carb, cal_from_fat = row
@@ -113,19 +136,44 @@ def diet_macro_ratio(start_date, end_date=None):
 
     goal = get_nutrition_goal()
 
-    def eval_pct(pct, macro_name):
-        if pct is None:
-            return "未设目标"
-        if goal:
-            cal_goal = goal[1] or 1800
-            if macro_name == '蛋白':
-                target_pct = (goal[2] or 150) * 4 / cal_goal * 100
-            elif macro_name == '碳':
-                target_pct = (goal[3] or 200) * 4 / cal_goal * 100
-            else:  # 脂肪
-                target_pct = (goal[4] or 60) * 9 / cal_goal * 100
+    def eval_pct_dict(pct, macro_name, goal):
+        if goal is None:
+            return None
+        cal_goal = goal[1] or 1800
+        if macro_name == 'protein':
+            target_pct = (goal[2] or 150) * 4 / cal_goal * 100
+        elif macro_name == 'carb':
+            target_pct = (goal[3] or 200) * 4 / cal_goal * 100
         else:
-            target_pct = 35
+            target_pct = (goal[4] or 60) * 9 / cal_goal * 100
+        diff = pct - target_pct
+        if diff > 3:
+            return {"pct": round(pct), "target_pct": round(target_pct), "diff": round(diff, 1), "status": "high"}
+        elif diff < -3:
+            return {"pct": round(pct), "target_pct": round(target_pct), "diff": round(diff, 1), "status": "low"}
+        return {"pct": round(pct), "target_pct": round(target_pct), "diff": round(diff, 1), "status": "ok"}
+
+    # 2026-07-23 D1 增
+    data = {
+        "protein": eval_pct_dict(pct_pro, 'protein', goal),
+        "carb": eval_pct_dict(pct_carb, 'carb', goal),
+        "fat": eval_pct_dict(pct_fat, 'fat', goal),
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"营养配比 蛋白/碳水/脂肪 = {round(pct_pro)}/{round(pct_carb)}/{round(pct_fat)}"}
+
+    # 原 print
+    def eval_pct(pct, macro_name):
+        if goal is None:
+            return "未设目标"
+        cal_goal = goal[1] or 1800
+        if macro_name == '蛋白':
+            target_pct = (goal[2] or 150) * 4 / cal_goal * 100
+        elif macro_name == '碳':
+            target_pct = (goal[3] or 200) * 4 / cal_goal * 100
+        else:
+            target_pct = (goal[4] or 60) * 9 / cal_goal * 100
         diff = pct - target_pct
         arrow = "↑" if diff > 3 else ("↓" if diff < -3 else "✓")
         status = "偏高" if diff > 3 else ("偏低" if diff < -3 else "正常")
@@ -140,22 +188,12 @@ def diet_macro_ratio(start_date, end_date=None):
     return row
 
 
-def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=5):
+def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=5, as_dict=False):
     """食物 TOP 榜
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期
-        category: 排行类别
-            - 'high_calorie'  热量炸弹榜（按总热量降序）
-            - 'low_calorie'   低热量健康榜（按单次均热量升序）
-            - 'frequent'      频繁吃榜（按出现次数降序）
-            - 'high_carb'     高碳水榜（按总碳水降序）
-            - 'high_protein'  高蛋白榜（按总蛋白降序）
-        top_n: 取前 N 名，默认 5
-
-    Returns:
-        list of Row
+        category: high_calorie | low_calorie | frequent | high_carb | high_protein
+        as_dict: True 返回 dict；False print（默认）
     """
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
@@ -173,47 +211,88 @@ def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=
     conn.close()
 
     if not rows:
-        print(f"⚠️ 无饮食记录（{start_date} ~ {end_date}）")
+        msg = f"无饮食记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
-    if category == 'high_calorie':
-        sorted_rows = sorted(rows, key=lambda x: x[1], reverse=True)[:top_n]
-        title = f"🔥 热量炸弹榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[1]:>6}卡（{r[6]}次）  均{r[1]//max(r[6],1)}卡/次"
-    elif category == 'low_calorie':
-        sorted_rows = sorted(rows, key=lambda x: x[1]/max(x[6],1))[:top_n]
-        title = f"🥬 低热量健康榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[1]:>6}卡（{r[6]}次）  均{r[1]//max(r[6],1)}卡/次"
-    elif category == 'frequent':
-        sorted_rows = sorted(rows, key=lambda x: x[6], reverse=True)[:top_n]
-        title = f"📅 频繁吃榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[6]}次 | 总{r[1]}卡 | 均{r[1]//max(r[6],1)}卡/次"
-    elif category == 'high_carb':
-        sorted_rows = sorted(rows, key=lambda x: x[4] or 0, reverse=True)[:top_n]
-        title = f"🍚 高碳水榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[4] or 0:>6}克碳（{r[6]}次）"
-    elif category == 'high_protein':
-        sorted_rows = sorted(rows, key=lambda x: x[3] or 0, reverse=True)[:top_n]
-        title = f"💪 高蛋白榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[3] or 0:>6}克蛋白（{r[6]}次）"
+    # 排序逻辑（所有 category 共用）
+    sort_keys = {
+        'high_calorie': lambda x: x[1],
+        'low_calorie': lambda x: x[1]/max(x[6],1),
+        'frequent': lambda x: x[6],
+        'high_carb': lambda x: x[4] or 0,
+        'high_protein': lambda x: x[3] or 0,
+    }
+    titles = {
+        'high_calorie': f"🔥 热量炸弹榜（{start_date} ~ {end_date}）",
+        'low_calorie': f"🥬 低热量健康榜（{start_date} ~ {end_date}）",
+        'frequent': f"📅 频繁吃榜（{start_date} ~ {end_date}）",
+        'high_carb': f"🍚 高碳水榜（{start_date} ~ {end_date}）",
+        'high_protein': f"💪 高蛋白榜（{start_date} ~ {end_date}）",
+    }
+
+    if category in sort_keys:
+        sorted_rows = sorted(rows, key=sort_keys[category],
+                             reverse=(category != 'low_calorie'))[:top_n]
     else:
         sorted_rows = rows[:top_n]
-        title = f"📋 食物榜（{start_date} ~ {end_date}）"
-        def line(r): return f"  {r[0]:20} {r[1]}卡"
+    title = titles.get(category, f"📋 食物榜（{start_date} ~ {end_date}）")
 
+    # 2026-07-23 D1 增：组装 dict
+    items = [
+        {
+            "rank": i,
+            "food_name": r[0],
+            "total_cal": r[1] or 0,
+            "total_grams": r[2] or 0,
+            "total_protein": r[3] or 0,
+            "total_carbs": r[4] or 0,
+            "total_fat": r[5] or 0,
+            "cnt": r[6],
+            "avg_cal_per_meal": (r[1] or 0) // max(r[6], 1),
+        }
+        for i, r in enumerate(sorted_rows, 1)
+    ]
+    data = {
+        "category": category,
+        "title": title,
+        "start": start_date,
+        "end": end_date,
+        "top_n": len(items),
+        "items": items,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"{category} 榜单 TOP {len(items)}"}
+
+    # 原 print 输出
     print(f"{title}\n{'-'*50}")
-    for i, r in enumerate(sorted_rows, 1):
-        print(f"  {i}. " + line(r))
+    if category == 'high_calorie':
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[1]:>6}卡（{r[6]}次）  均{r[1]//max(r[6],1)}卡/次")
+    elif category == 'low_calorie':
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[1]:>6}卡（{r[6]}次）  均{r[1]//max(r[6],1)}卡/次")
+    elif category == 'frequent':
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[6]}次 | 总{r[1]}卡 | 均{r[1]//max(r[6],1)}卡/次")
+    elif category == 'high_carb':
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[4] or 0:>6}克碳（{r[6]}次）")
+    elif category == 'high_protein':
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[3] or 0:>6}克蛋白（{r[6]}次）")
+    else:
+        for i, r in enumerate(sorted_rows, 1):
+            print(f"  {i}. {r[0]:20} {r[1]}卡")
     print(f"{'-'*50}")
     return sorted_rows
 
 
-def diet_deficit_analysis(start_date, end_date=None):
-    """热量缺口分析（BMR + 运动 - 饮食）
-
-    BMR = weight_kg × 24 × 1.3
-    1 kg 脂肪 ≈ 7700 kcal
-    """
+def diet_deficit_analysis(start_date, end_date=None, as_dict=False):
+    """热量缺口分析（BMR + 运动 - 饮食）"""
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
 
@@ -235,7 +314,10 @@ def diet_deficit_analysis(start_date, end_date=None):
     conn.close()
 
     if not diet_rows:
-        print(f"⚠️ 无记录（{start_date} ~ {end_date}）")
+        msg = f"无记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     diet_map = {r[0]: r[1] for r in diet_rows}
@@ -264,10 +346,36 @@ def diet_deficit_analysis(start_date, end_date=None):
     diet_contrib = abs(total_deficit - total_ex * days) / abs(total_deficit) * 100 if total_deficit != 0 else 0
     ex_contrib = total_ex / abs(total_deficit) * 100 if total_deficit != 0 else 0
 
+    if 0 < avg_deficit < 300:
+        size_label = "偏小"
+    elif avg_deficit > 700:
+        size_label = "过大"
+    else:
+        size_label = "正常"
+
+    # 2026-07-23 D1 增
+    data = {
+        "days_count": days,
+        "avg_intake": round(avg_intake),
+        "bmr": round(bmr),
+        "current_weight": round(current_weight, 1),
+        "avg_exercise_burn": round(avg_ex),
+        "avg_deficit": round(avg_deficit),
+        "total_deficit": round(total_deficit),
+        "kg_equivalent": round(kg_equivalent, 2),
+        "size_label": size_label,
+        "diet_contrib_pct": round(diet_contrib),
+        "exercise_contrib_pct": round(ex_contrib),
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"日均缺口 {round(avg_deficit)} 卡（{size_label}）"}
+
+    # 原 print
     print(f"""📉 热量缺口分析（{start_date} ~ {end_date}）
 {'-'*40}
   日均摄入：{avg_intake:.0f}卡 | 基础代谢：约{bmr:.0f}卡（{current_weight:.0f}kg）| 运动消耗：日均{avg_ex:.0f}卡
-  日均缺口：{avg_deficit:.0f}卡（{'偏小' if 0 < avg_deficit < 300 else ('过大' if avg_deficit > 700 else '正常')}）
+  日均缺口：{avg_deficit:.0f}卡（{size_label}）
   累计缺口：{total_deficit:.0f}卡 ≈ {kg_equivalent:.2f}kg
   饮食贡献：{diet_contrib:.0f}% | 运动贡献：{ex_contrib:.0f}%
 {'-'*40}""")

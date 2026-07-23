@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""运动分析 — 趋势/类型分布/缺口贡献
+"""运动分析 — 趋势/类型分布/缺口贡献/复盘训练
 
 提供：
-- exercise_trend              — 运动趋势（天数/时长/消耗/最长连续/最长休息）
-- exercise_type_breakdown     — 运动类型分布（消耗/频次/时长占比）
-- exercise_deficit_contribution — 运动对热量缺口的贡献占比
-"""
+- exercise_trend                  — 运动趋势（天数/时长/消耗/最长连续/最长休息）
+- exercise_type_breakdown         — 运动类型分布（消耗/频次/时长占比）
+- exercise_deficit_contribution   — 运动对热量缺口的贡献占比
+- exercise_review                 — 复盘训练（计划 vs 实绩对比）
 
+2026-07-23 D1 重构：所有函数加 as_dict=False 参数
+- as_dict=True  → 返回结构化 dict {status, data, message}
+- as_dict=False → 保持原 print 输出（向后兼容，默认）
+"""
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -18,16 +22,8 @@ if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
 
 
-def exercise_trend(start_date, end_date=None):
-    """运动趋势
-
-    Args:
-        start_date: 开始日期
-        end_date: 结束日期
-
-    Returns:
-        list of Row
-    """
+def exercise_trend(start_date, end_date=None, as_dict=False):
+    """运动趋势"""
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
 
@@ -43,7 +39,10 @@ def exercise_trend(start_date, end_date=None):
     conn.close()
 
     if not rows:
-        print(f"⚠️ 无运动记录（{start_date} ~ {end_date}）")
+        msg = f"无运动记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     span = _days_between(start_date, end_date) + 1
@@ -71,6 +70,24 @@ def exercise_trend(start_date, end_date=None):
     else:
         max_gap = span - 1
 
+    # 2026-07-23 D1 增
+    data = {
+        "days_with_exercise": days_with_ex,
+        "total_days": span,
+        "coverage_pct": round(days_with_ex / span * 100),
+        "total_calories": total_cal,
+        "total_minutes": total_dur,
+        "avg_calories_per_day": round(avg_cal),
+        "avg_minutes_per_day": round(avg_dur),
+        "longest_streak_days": longest_streak,
+        "longest_rest_days": max_gap,
+        "alert": "建议动起来" if max_gap >= 7 else None,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"运动 {days_with_ex}/{span} 天，总消耗 {total_cal} 卡"}
+
+    # 原 print
     print(f"""🏃 运动趋势（{start_date} ~ {end_date}）
 {'-'*40}
   运动天数：{days_with_ex}/{span}天（{days_with_ex/span*100:.0f}%）
@@ -82,12 +99,8 @@ def exercise_trend(start_date, end_date=None):
     return rows
 
 
-def exercise_type_breakdown(start_date, end_date=None):
-    """运动类型分布（按消耗降序）
-
-    Returns:
-        list of Row
-    """
+def exercise_type_breakdown(start_date, end_date=None, as_dict=False):
+    """运动类型分布（按消耗降序）"""
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
 
@@ -104,12 +117,38 @@ def exercise_type_breakdown(start_date, end_date=None):
     conn.close()
 
     if not rows:
-        print(f"⚠️ 无运动记录（{start_date} ~ {end_date}）")
+        msg = f"无运动记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     total_cal = sum(r[1] for r in rows)
     total_cnt = sum(r[2] for r in rows)
     total_dur = sum(r[3] or 0 for r in rows)
+
+    # 2026-07-23 D1 增
+    types = [
+        {
+            "type": r[0],
+            "calories": r[1],
+            "count": r[2],
+            "minutes": r[3] or 0,
+            "cal_pct": round(r[1] / total_cal * 100),
+            "count_pct": round(r[2] / total_cnt * 100) if total_cnt else 0,
+            "minutes_pct": round((r[3] or 0) / total_dur * 100) if total_dur else 0,
+        }
+        for r in rows
+    ]
+    data = {
+        "total_calories": total_cal,
+        "total_count": total_cnt,
+        "total_minutes": total_dur,
+        "types": types,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"{len(types)} 种运动类型"}
 
     print(f"📊 运动类型分布（{start_date} ~ {end_date}）\n{'-'*40}")
     for r in rows:
@@ -121,14 +160,8 @@ def exercise_type_breakdown(start_date, end_date=None):
     return rows
 
 
-def exercise_deficit_contribution(start_date, end_date=None):
-    """运动对热量缺口的贡献占比
-
-    评估：
-    - ex_pct < 15% → 偏低，建议增加运动
-    - ex_pct > 25% → 较高 ✓
-    - 其他 → 适中
-    """
+def exercise_deficit_contribution(start_date, end_date=None, as_dict=False):
+    """运动对热量缺口的贡献占比"""
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
 
@@ -161,16 +194,37 @@ def exercise_deficit_contribution(start_date, end_date=None):
         diet_pct = abs(diet_deficit) / abs(total_deficit) * 100
         ex_pct = total_ex / abs(total_deficit) * 100
 
+    if ex_pct < 15:
+        eval_label = "运动贡献偏低，建议增加运动比例"
+    elif ex_pct > 25:
+        eval_label = "运动贡献较高"
+    else:
+        eval_label = "运动贡献适中"
+
+    # 2026-07-23 D1 增
+    data = {
+        "diet_deficit": round(diet_deficit),
+        "diet_contrib_pct": round(diet_pct),
+        "exercise_deficit": round(total_ex),
+        "exercise_contrib_pct": round(ex_pct),
+        "evaluation": eval_label,
+        "bmr": round(bmr),
+        "current_weight": round(current_weight, 1),
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"运动贡献 {round(ex_pct)}% — {eval_label}"}
+
     print(f"""💪 运动缺口贡献（{start_date} ~ {end_date}）
 {'-'*40}
   饮食缺口：{diet_deficit:.0f}卡（{diet_pct:.0f}%）
   运动缺口：{total_ex:.0f}卡（{ex_pct:.0f}%）
-  评估：{'运动贡献偏低，建议增加运动比例' if ex_pct < 15 else ('运动贡献较高 ✓' if ex_pct > 25 else '运动贡献适中')}
+  评估：{eval_label}{'' if '较低' in eval_label or '较高' in eval_label else ''}
 {'-'*40}""")
     return {'diet_pct': diet_pct, 'ex_pct': ex_pct}
 
 
-def exercise_review(start_date, end_date=None, silent=False):
+def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
     """复盘训练 — 计划 vs 实绩对比
 
     对 [start_date, end_date] 范围内每一天：
@@ -180,15 +234,10 @@ def exercise_review(start_date, end_date=None, silent=False):
     - 标出漏做 / 超额 / 异常
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期（默认同日）
-        silent: True 时不打印报告（仅 return data），供 HTML 渲染器调用避免污染输出
-
-    Returns:
-        dict: {date_str: {plan_week, sessions, plan_total_sets, actual_total_sets,
-                          completion_rate, anomalies, note}}
+        as_dict: True 返回 dict；False print（默认）
+        silent: 兼容旧调用，等同 as_dict=True（不打印）
     """
-    from workout_plan import get_day_plan  # 懒加载,避免循环 import
+    from workout_plan import get_day_plan
 
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
@@ -203,13 +252,11 @@ def exercise_review(start_date, end_date=None, silent=False):
     while cur <= end_dt:
         date_str = cur.strftime('%Y-%m-%d')
 
-        # 1) 拉 plan
         plan = get_day_plan(cur)
         plan_sessions = plan.get('sessions', [])
         plan_total_sets = sum(s.get('total_sets') or 0 for s in plan_sessions)
         session_labels = [s.get('session_label', '') for s in plan_sessions]
 
-        # 2) 拉 exercise_log 当天所有记录
         c.execute('''
             SELECT id, exercise_type, duration_minutes, calories_burned,
                    set_index, reps, load_kg
@@ -219,7 +266,6 @@ def exercise_review(start_date, end_date=None, silent=False):
         ''', (date_str,))
         ex_rows = c.fetchall()
 
-        # 3) 聚合实绩
         actual = {}
         for r in ex_rows:
             etype = r[1]
@@ -233,10 +279,8 @@ def exercise_review(start_date, end_date=None, silent=False):
             actual[etype]['minutes'] += r[2] or 0
         actual_total_sets = sum(v['sets'] for v in actual.values())
 
-        # 4) 对比 + 异常
         anomalies = []
         note = None
-        # 2026-07-13 加:date 早于 plan.start_date 时,plan 返 unstarted=True,独立分支
         if plan.get('unstarted'):
             note = f'计划尚未开始(起始 {plan["config"]["start_date"]})'
             completion_rate = None
@@ -246,19 +290,20 @@ def exercise_review(start_date, end_date=None, silent=False):
         elif plan_total_sets == 0 and actual_total_sets > 0:
             note = f'计划休息但实做了 {actual_total_sets} 组'
             completion_rate = None
-            anomalies.append(f'⚠️ {note}')
+            anomalies.append({'type': 'rest_but_done', 'msg': f'⚠️ {note}'})
         elif plan_total_sets > 0 and actual_total_sets == 0:
             note = '计划有训练但完全未做'
             completion_rate = 0.0
-            anomalies.append(f'❌ {note}')
+            anomalies.append({'type': 'no_actual', 'msg': f'❌ {note}'})
         else:
             completion_rate = actual_total_sets / plan_total_sets * 100
             if completion_rate < 50:
-                anomalies.append(f'⚠️ 完成率仅 {completion_rate:.0f}%')
+                anomalies.append({'type': 'low_completion', 'msg': f'⚠️ 完成率仅 {completion_rate:.0f}%'})
             elif completion_rate > 130:
-                anomalies.append(f'⚠️ 超额完成 ({completion_rate:.0f}%)')
+                anomalies.append({'type': 'over_completion', 'msg': f'⚠️ 超额完成 ({completion_rate:.0f}%)'})
 
         results[date_str] = {
+            'date': date_str,
             'plan_week': plan.get('plan_week'),
             'sessions': session_labels,
             'plan_total_sets': plan_total_sets,
@@ -266,26 +311,28 @@ def exercise_review(start_date, end_date=None, silent=False):
             'completion_rate': completion_rate,
             'anomalies': anomalies,
             'note': note,
+            'is_rest_day': plan_total_sets == 0 and actual_total_sets == 0,
         }
 
         cur += timedelta(days=1)
 
     conn.close()
 
-    # 5) 输出报告（silent=True 时不打印，仅 return）
-    if not silent:
-        print(f"📋 训练复盘（{start_date} ~ {end_date}）\n{'='*50}")
-        for date_str, r in results.items():
-            week_str = f" week {r['plan_week']}" if r['plan_week'] else ''
-            print(f"\n【{date_str}】{week_str}")
-            if r['sessions']:
-                print(f"  计划: {' / '.join(r['sessions'])}")
-            print(f"  计划组数: {r['plan_total_sets']} | 实做组数: {r['actual_total_sets']}")
-            if r['completion_rate'] is not None:
-                print(f"  完成率: {r['completion_rate']:.0f}%")
-            if r['note']:
-                print(f"  {r['note']}")
-            for a in r['anomalies']:
-                print(f"  {a}")
-            print(f"\n{'='*50}")
+    if as_dict or silent:
+        return {"status": "ok", "data": results, "message": f"训练复盘 {len(results)} 天"}
+
+    print(f"📋 训练复盘（{start_date} ~ {end_date}）\n{'='*50}")
+    for date_str, r in results.items():
+        week_str = f" week {r['plan_week']}" if r['plan_week'] else ''
+        print(f"\n【{date_str}】{week_str}")
+        if r['sessions']:
+            print(f"  计划: {' / '.join(r['sessions'])}")
+        print(f"  计划组数: {r['plan_total_sets']} | 实做组数: {r['actual_total_sets']}")
+        if r['completion_rate'] is not None:
+            print(f"  完成率: {r['completion_rate']:.0f}%")
+        if r['note']:
+            print(f"  {r['note']}")
+        for a in r['anomalies']:
+            print(f"  {a['msg']}")
+        print(f"\n{'='*50}")
     return results

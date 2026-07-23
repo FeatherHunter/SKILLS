@@ -6,8 +6,11 @@
 - weight_compare     — 两时段对比
 - weight_milestone   — 目标进度（实际日均变化/预计达成日/状态）
 - weight_volatility  — 波动分析（日间标准差/周间波动/异常记录）
-"""
 
+2026-07-23 D1 重构：所有函数加 as_dict=False 参数
+- as_dict=True  → 返回结构化 dict {status, data, message}（机器可读）
+- as_dict=False → 保持原 print 输出（向后兼容，默认）
+"""
 import sys
 import statistics
 from collections import defaultdict
@@ -22,15 +25,17 @@ if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
 
 
-def weight_trend(start_date, end_date=None):
+def weight_trend(start_date, end_date=None, as_dict=False):
     """体重趋势分析
 
     Args:
         start_date: 开始日期（YYYY-MM-DD 或 YYYYMMDD）
         end_date: 结束日期，可选（默认同日单日查询）
+        as_dict: True 返回 dict {status, data, message}；False print（默认）
 
     Returns:
-        list of Row 或 None
+        as_dict=True  → dict {status, data, message}
+        as_dict=False → list of Row 或 None（向后兼容）
     """
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
@@ -46,7 +51,10 @@ def weight_trend(start_date, end_date=None):
     conn.close()
 
     if not rows:
-        print(f"⚠️ 无体重记录（{start_date} ~ {end_date}）")
+        msg = f"无体重记录（{start_date} ~ {end_date}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     weights = [(r[0], r[1], r[2] or '') for r in rows]
@@ -61,12 +69,40 @@ def weight_trend(start_date, end_date=None):
     daily_rate = (change / span) * 1000  # g/天
 
     if abs(daily_rate) < 10:
-        trend_label = "平稳 ✓"
+        trend_label = "stable"
     elif change > 0:
-        trend_label = "上升 ↑"
+        trend_label = "up"
     else:
-        trend_label = "下降 ✓"
+        trend_label = "down"
 
+    # 2026-07-23 D1 增：组装 dict
+    data = {
+        "record_count": count,
+        "avg_weight": round(avg_w, 1),
+        "max_weight": round(max_w, 1),
+        "min_weight": round(min_w, 1),
+        "first_date": weights[0][0],
+        "first_weight": round(first_w, 1),
+        "last_date": weights[-1][0],
+        "last_weight": round(last_w, 1),
+        "change_kg": round(change, 1),
+        "daily_change_g": round(daily_rate, 0),
+        "trend": trend_label,
+        "logs": [
+            {"date": r[0], "weight_kg": r[1], "note": r[2] or ""}
+            for r in rows
+        ],
+    }
+
+    if as_dict:
+        return {
+            "status": "ok",
+            "data": data,
+            "message": f"体重趋势 {count} 条记录，趋势 {trend_label}",
+        }
+
+    # 原 print 输出（向后兼容）
+    trend_emoji = "✓" if abs(daily_rate) < 10 else ("↑" if change > 0 else "✓")
     print(f"""
 📊 体重趋势（{start_date} ~ {end_date}）
 {'-'*40}
@@ -75,22 +111,19 @@ def weight_trend(start_date, end_date=None):
   首日：{weights[0][0]} {first_w:.1f}kg
   末日：{weights[-1][0]} {last_w:.1f}kg
   变化：{change:+.1f}kg | 日均变化：{daily_rate:+.0f}g/天
-  趋势判断：{trend_label}
+  趋势判断：{trend_label}{trend_emoji}
 {'-'*40}""")
     return rows
 
 
-def weight_compare(start_date, end_date, compare_start, compare_end):
+def weight_compare(start_date, end_date, compare_start, compare_end, as_dict=False):
     """两个时间段体重对比
 
     Args:
-        start_date: 本期开始日期
-        end_date: 本期结束日期
-        compare_start: 对比期开始日期
-        compare_end: 对比期结束日期
-
+        as_dict: True 返回 dict；False print（默认）
     Returns:
-        float: 平均差值（本期 - 对比期）
+        as_dict=True  → dict
+        as_dict=False → float: 平均差值（本期 - 对比期）
     """
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date)
@@ -118,7 +151,10 @@ def weight_compare(start_date, end_date, compare_start, compare_end):
     conn.close()
 
     if avg1 is None or avg2 is None:
-        print("⚠️ 对比时间段内无体重记录，无法对比")
+        msg = "对比时间段内无体重记录，无法对比"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     avg_diff = avg1 - avg2
@@ -137,6 +173,32 @@ def weight_compare(start_date, end_date, compare_start, compare_end):
     else:
         speed_label = "节奏与上期相同"
 
+    # 2026-07-23 D1 增：组装 dict
+    data = {
+        "avg_diff": round(avg_diff, 1),
+        "direction": "down" if avg_diff < 0 else "up",
+        "speed_label": speed_label,
+        "current_period": {
+            "start": start_date, "end": end_date,
+            "avg_weight": round(avg1, 1),
+            "first_weight": round(first_w1, 1) if first_w1 else None,
+            "first_date": first_d1,
+            "last_weight": round(last_w1, 1),
+            "change_kg": round(change1, 1),
+        },
+        "compare_period": {
+            "start": compare_start, "end": compare_end,
+            "avg_weight": round(avg2, 1),
+            "first_weight": round(first_w2, 1) if first_w2 else None,
+            "first_date": first_d2,
+            "last_weight": round(last_w2, 1),
+            "change_kg": round(change2, 1),
+        },
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"本期 vs 对比期: {avg_diff:+.1f}kg"}
+
     print(f"""
 ⚖️ 体重对比
 {'-'*40}
@@ -152,16 +214,22 @@ def weight_compare(start_date, end_date, compare_start, compare_end):
     return avg_diff
 
 
-def weight_milestone():
-    """体重目标进度分析（基于 weight_goal.get_weight_goal()）
+def weight_milestone(as_dict=False):
+    """体重目标进度分析
 
+    Args:
+        as_dict: True 返回 dict；False print（默认）
     Returns:
-        tuple: (weight_goal, deadline, days_left, None, calorie_adjustment)
+        as_dict=True  → dict
+        as_dict=False → tuple(向后兼容)
     """
     from weight_goal import get_weight_goal
     result = get_weight_goal()
     if not result or result[0] is None:
-        print("⚠️ 未设定体重目标，请说「设定体重目标 XXkg」")
+        msg = "未设定体重目标，请说「设定体重目标 XXkg」"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     weight_goal, deadline, days_left, daily_change_rate, calorie_adj = result
@@ -171,14 +239,16 @@ def weight_milestone():
     c.execute('SELECT weight_kg, date FROM weight_log ORDER BY date DESC LIMIT 1')
     row = c.fetchone()
     if not row:
-        print("⚠️ 未记录体重")
         conn.close()
+        msg = "未记录体重"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
     current_weight, current_date = row
 
     gap = current_weight - weight_goal
 
-    # 实际日均变化（近30天，用首尾差值）
     c.execute('''
         SELECT weight_kg, date FROM weight_log
         WHERE date >= date('now', '-30 days')
@@ -195,7 +265,6 @@ def weight_milestone():
         if span_30 > 0:
             actual_daily = (last_w_30 - first_w_30) / span_30
 
-    # 估算剩余时间
     if days_left is not None:
         est_days = days_left
     elif actual_daily and actual_daily != 0:
@@ -206,26 +275,42 @@ def weight_milestone():
     if est_days and est_days > 0:
         est_date = (datetime.strptime(current_date, '%Y-%m-%d') + timedelta(days=est_days)).strftime('%Y-%m-%d')
     else:
-        est_date = "未知"
+        est_date = None
 
-    # 状态判断
     if days_left is not None and actual_daily:
         required = gap / days_left if days_left > 0 else 0
         diff = actual_daily - required
         if abs(diff) < 0.02:
-            status = "进度正常 ✓"
+            status = "进度正常"
         elif diff > 0:
-            status = "进度超前 ✓"
+            status = "进度超前"
         else:
-            status = "进度偏慢 ⚠️"
+            status = "进度偏慢"
     else:
         status = "无法评估"
 
+    # 2026-07-23 D1 增：组装 dict
+    data = {
+        "current_weight": round(current_weight, 1),
+        "current_date": current_date,
+        "weight_goal": round(weight_goal, 1),
+        "deadline": deadline,
+        "gap_kg": round(gap, 1),
+        "actual_daily_change_kg": round(actual_daily, 2) if actual_daily else None,
+        "est_date": est_date,
+        "est_days": round(est_days) if est_days else None,
+        "status": status,
+        "calorie_adjustment": calorie_adj,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"目标进度: {status}"}
+
+    # 原 print 输出
     gap_str = f"{gap:+.1f}kg"
     actual_str = f"{actual_daily:.2f}kg/天" if actual_daily else "数据不足"
     est_date_str = est_date if isinstance(est_date, str) else "未知"
     est_days_str = f"{est_days:.0f}天" if est_days else "未知"
-
     print(f"""🎯 体重目标进度
 {'-'*40}
   当前：{current_weight:.1f}kg（{current_date}）
@@ -237,15 +322,14 @@ def weight_milestone():
     return result
 
 
-def weight_volatility(start_date, end_date=None):
-    """体重波动分析（需至少 3 条记录）
+def weight_volatility(start_date, end_date=None, as_dict=False):
+    """体重波动分析
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期，可选
-
-    标记异常：单日涨跌幅 > 0.5kg
-    评估标准：标准差 < 0.3 正常，< 0.6 中等，>= 0.6 较大
+        as_dict: True 返回 dict；False print（默认）
+    Returns:
+        as_dict=True  → dict
+        as_dict=False → None（向后兼容）
     """
     start_date = _parse_date(start_date)
     end_date = _parse_date(end_date) or start_date
@@ -261,7 +345,10 @@ def weight_volatility(start_date, end_date=None):
     conn.close()
 
     if not rows or len(rows) < 3:
-        print(f"⚠️ 记录不足（{start_date} ~ {end_date}），需要至少3条记录")
+        msg = f"记录不足（{start_date} ~ {end_date}），需要至少3条记录"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
         return None
 
     weights = [r[1] for r in rows]
@@ -269,7 +356,6 @@ def weight_volatility(start_date, end_date=None):
 
     std_dev = statistics.stdev(weights) if len(weights) >= 2 else 0
 
-    # 周间波动
     week_weights = defaultdict(list)
     for d, w in zip(dates, weights):
         week_key = datetime.strptime(d, '%Y-%m-%d').strftime('%Y-W%W')
@@ -278,21 +364,41 @@ def weight_volatility(start_date, end_date=None):
     week_avgs = [sum(v) / len(v) for v in week_weights.values()]
     week_std = statistics.stdev(week_avgs) if len(week_avgs) >= 2 else 0
 
-    # 异常标记
     anomalies = []
     for i in range(1, len(rows)):
         diff = rows[i][1] - rows[i-1][1]
         if abs(diff) > 0.5:
             note = rows[i][2] or ""
-            anomalies.append(f"{rows[i][0]} {diff:+.1f}kg（{note}）")
+            anomalies.append({
+                "date": rows[i][0],
+                "diff_kg": round(diff, 1),
+                "note": note,
+            })
 
     if std_dev < 0.3:
-        vol_label = "波动正常 ✓"
+        vol_label = "波动正常"
+        vol_status = "ok"
     elif std_dev < 0.6:
         vol_label = "波动中等"
+        vol_status = "warn"
     else:
-        vol_label = "波动较大 ⚠️"
+        vol_label = "波动较大"
+        vol_status = "error"
 
+    # 2026-07-23 D1 增：组装 dict
+    data = {
+        "record_count": len(rows),
+        "daily_std_kg": round(std_dev, 2),
+        "weekly_std_kg": round(week_std, 2),
+        "label": vol_label,
+        "status": vol_status,
+        "anomalies": anomalies,
+    }
+
+    if as_dict:
+        return {"status": "ok", "data": data, "message": f"波动: {vol_label}"}
+
+    # 原 print 输出
     print(f"""📉 体重波动分析（{start_date} ~ {end_date}）
 {'-'*40}
   记录数：{len(rows)}条
@@ -301,8 +407,8 @@ def weight_volatility(start_date, end_date=None):
     if anomalies:
         print(f"  异常记录（单日>0.5kg）：")
         for a in anomalies:
-            print(f"    - {a}")
+            print(f"    - {a['date']} {a['diff_kg']:+.1f}kg（{a['note']}）")
     else:
         print(f"  异常记录：无")
-    print(f"  评估：{vol_label}")
+    print(f"  评估：{vol_label}{' ⚠️' if vol_status == 'error' else (' ✓' if vol_status == 'ok' else '')}")
     print(f"{'-'*40}")

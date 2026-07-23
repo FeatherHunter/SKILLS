@@ -42,90 +42,74 @@ from analysis.dashboard import dashboard
 
 
 def weight_analysis(start_date, end_date=None, analysis_type='trend',
-                    compare_start=None, compare_end=None):
+                    compare_start=None, compare_end=None, as_dict=False):
     """体重分析统一入口
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期（可选，默认同 start_date 单日）
-        analysis_type: 分析类型
-            - 'trend'      趋势分析（均重/日均变化/趋势判断）
-            - 'compare'    同期对比（需 compare_start/compare_end，可选默认上一周期）
-            - 'milestone'  目标进度（预计达成日/状态）
-            - 'volatility' 波动分析（标准差/异常记录）
-        compare_start: 对比期开始日期（compare 模式可选）
-        compare_end:   对比期结束日期（compare 模式可选）
+        as_dict: True 返回 dict；False print（默认）
     """
     if analysis_type == 'trend':
-        return weight_trend(start_date, end_date)
+        return weight_trend(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'compare':
         if compare_start and compare_end:
             return weight_compare(start_date, end_date or start_date,
-                                  compare_start, compare_end)
+                                  compare_start, compare_end, as_dict=as_dict)
         else:
-            # 默认与上一个等长周期对比
             span = _days_between(start_date, end_date or start_date)
             end_dt = datetime.strptime(start_date, '%Y-%m-%d') - timedelta(days=1)
             cs = (end_dt - timedelta(days=span)).strftime('%Y-%m-%d')
             ce = end_dt.strftime('%Y-%m-%d')
-            return weight_compare(start_date, end_date or start_date, cs, ce)
+            return weight_compare(start_date, end_date or start_date, cs, ce, as_dict=as_dict)
     elif analysis_type == 'milestone':
-        return weight_milestone()
+        return weight_milestone(as_dict=as_dict)
     elif analysis_type == 'volatility':
-        return weight_volatility(start_date, end_date)
+        return weight_volatility(start_date, end_date, as_dict=as_dict)
     else:
-        print(f"⚠️ 未知分析类型: {analysis_type}，使用趋势分析")
-        return weight_trend(start_date, end_date)
+        if not as_dict:
+            print(f"⚠️ 未知分析类型: {analysis_type}，使用趋势分析")
+        return weight_trend(start_date, end_date, as_dict=as_dict)
 
 
-def diet_analysis(start_date, end_date=None, analysis_type='calorie_trend'):
+def diet_analysis(start_date, end_date=None, analysis_type='calorie_trend', as_dict=False, **kwargs):
     """饮食分析统一入口
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期
-        analysis_type: 分析类型
-            - 'calorie_trend'    热量趋势（工作日 vs 周末 / 合规率）
-            - 'macro_ratio'      营养素占比（蛋白/碳水/脂肪）
-            - 'food_ranking'     食物 TOP 榜（默认 high_calorie）
-            - 'deficit_analysis' 热量缺口（饮食 + 运动贡献）
+        as_dict: True 返回 dict；False print（默认）
+        **kwargs: 传给底层函数（如 food_ranking 的 category / top_n）
     """
     if analysis_type == 'calorie_trend':
-        return diet_calorie_trend(start_date, end_date)
+        return diet_calorie_trend(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'macro_ratio':
-        return diet_macro_ratio(start_date, end_date)
+        return diet_macro_ratio(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'food_ranking':
-        return diet_food_ranking(start_date, end_date, category='high_calorie')
+        return diet_food_ranking(start_date, end_date, as_dict=as_dict, **kwargs)
     elif analysis_type == 'deficit_analysis':
-        return diet_deficit_analysis(start_date, end_date)
+        return diet_deficit_analysis(start_date, end_date, as_dict=as_dict)
     else:
-        print(f"⚠️ 未知分析类型: {analysis_type}，使用热量趋势")
-        return diet_calorie_trend(start_date, end_date)
+        if not as_dict:
+            print(f"⚠️ 未知分析类型: {analysis_type}，使用热量趋势")
+        return diet_calorie_trend(start_date, end_date, as_dict=as_dict)
 
 
-def exercise_analysis(start_date, end_date=None, analysis_type='exercise_trend'):
+def exercise_analysis(start_date, end_date=None, analysis_type='exercise_trend', as_dict=False, silent=False):
     """运动分析统一入口
 
     Args:
-        start_date: 开始日期
-        end_date: 结束日期
-        analysis_type: 分析类型
-            - 'exercise_trend'         运动趋势（天数/时长/消耗/间隔）
-            - 'type_breakdown'         运动类型分布（消耗/频次/时长占比）
-            - 'deficit_contribution'   运动对缺口的贡献占比
-            - 'review'                 复盘训练（计划 vs 实绩对比）
+        as_dict: True 返回 dict；False print（默认）
+        silent: 兼容旧调用，exercise_review 用
     """
     if analysis_type == 'exercise_trend':
-        return exercise_trend(start_date, end_date)
+        return exercise_trend(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'type_breakdown':
-        return exercise_type_breakdown(start_date, end_date)
+        return exercise_type_breakdown(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'deficit_contribution':
-        return exercise_deficit_contribution(start_date, end_date)
+        return exercise_deficit_contribution(start_date, end_date, as_dict=as_dict)
     elif analysis_type == 'review':
-        return exercise_review(start_date, end_date)
+        return exercise_review(start_date, end_date, as_dict=as_dict, silent=silent)
     else:
-        print(f"⚠️ 未知分析类型: {analysis_type}，使用运动趋势")
-        return exercise_trend(start_date, end_date)
+        if not as_dict:
+            print(f"⚠️ 未知分析类型: {analysis_type}，使用运动趋势")
+        return exercise_trend(start_date, end_date, as_dict=as_dict)
 
 
 __all__ = [

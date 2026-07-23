@@ -175,6 +175,7 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 环境变量 | 说明 | 默认值 |
 |---------|------|--------|
 | `CHEF_OUTPUT_DIR` | HTML 输出目录 | `D:/CookHub` |
+| `CHEF_OUTPUT_DIR_PREFIX` | 本地源食谱图片命名空间前缀 | `chef://` |
 
 ## 一键安装
 

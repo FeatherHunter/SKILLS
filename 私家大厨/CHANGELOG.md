@@ -96,6 +96,54 @@
 
 ---
 
+## 2026-07-23 - 本地源食谱照片落地与渲染
+
+### 背景
+
+用户上传本地源食谱图 `D:\辣椒炒肉-菜谱.jpg`,需要按既定命名规则入库并渲染到 HTML。
+
+### 改动
+
+- 复制 `D:\辣椒炒肉-菜谱.jpg` → `$CHEF_OUTPUT_DIR/source_photos/辣椒炒肉__manual__20260723.jpg`(942KB)
+- `recipes.source_url` 更新为 `chef://source_photos/辣椒炒肉__manual__20260723.jpg`
+- `scripts/recipe_render.py`:渲染时传入 `chef_output_dir=os.environ.get('CHEF_OUTPUT_DIR', 'D:/CookHub')`
+- `templates/recipe_view.html`:把 `chef://` 命名空间拼回绝对本地路径(`file:///D:/.../source_photos/...`),浏览器可正常显示
+- DB 实际状态:`source_url` 改为 `chef://...` 命名空间形式,`source` 字段保留 `扬帆远航【紫食谱2.0】-214-313` 文本
+
+---
+
+## 2026-07-23 - 本地源食谱照片存放规范固化
+
+### 背景
+
+用户指出源食谱图片以本地存放为主,需要给出 $CHEF_OUTPUT_DIR 下的子目录、命名、数据库存储、渲染识别全链路规则。
+
+### 规则
+
+- 存放根目录:`$CHEF_OUTPUT_DIR/source_photos/`(默认 `D:/CookHub/source_photos/`)
+- 文件名格式:`<recipe_slug>__<source>__<YYYYMMDD>.<ext>`
+- 数据库存 `source_url` 时填命名空间形式 `chef://<recipe_slug>__<source>__<YYYYMMDD>.<ext>`(不存绝对路径)
+- 新增环境变量 `CHEF_OUTPUT_DIR_PREFIX = "chef://"`(如需自定义前缀时改)
+
+### 改动
+
+- `references/database_schema.md`:增加"源照片本地存放规范"章节
+- `templates/recipe_view.html`:footer 区识别 `chef://` 命名空间 → `<img src="file:///...">` 显示本地图
+- `SKILL.md` / `私家大厨.html`:环境变量表加 `CHEF_OUTPUT_DIR_PREFIX`
+- 不改数据库 schema,无迁移
+
+### AI 标准动作
+
+```bash
+# 1. 复制到本地源照片目录
+cp "<user_file>" "$CHEF_OUTPUT_DIR/source_photos/<recipe_slug>__<source>__$(date +%Y%m%d).<ext>"
+
+# 2. 更新 source_url
+python scripts/recipe_manager.py update <recipe_id> --source_url "chef://<recipe_slug>__<source>__YYYYMMDD.<ext>"
+```
+
+---
+
 ## 2026-07-23 - photo_url / source_url 字段语义固化
 
 ### 背景

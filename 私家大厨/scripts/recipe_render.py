@@ -96,6 +96,7 @@ def render(args):
         html = template.render(
             recipe=recipe,
             now=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            chef_output_dir=os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"),
         )
     except Exception as e:
         print(f"渲染失败:{e}", file=sys.stderr)

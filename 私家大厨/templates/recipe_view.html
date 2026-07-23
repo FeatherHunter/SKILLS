@@ -194,6 +194,12 @@
   }
   .bg-section .body{font-size:14px;color:var(--text);line-height:1.7}
 
+  /* ── Source photo (local) ── */
+  .source-photo{margin-top:12px;padding:10px;background:#fafafa;border-radius:10px}
+  .source-photo-label{font-size:12px;color:var(--fg2);margin-bottom:6px}
+  .source-photo img{max-width:100%;border-radius:8px;display:block}
+  .source-photo-path{font-size:11px;color:var(--fg3);margin-top:6px;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+
   /* ── Footer ── */
   .footer{
     margin-top:32px;padding-top:16px;border-top:0.5px solid var(--border);
@@ -656,7 +662,17 @@
   {% if recipe.source_url %}
     {% set su = recipe.source_url %}
     {% set su_l = su | lower %}
-    {% if '.jpg' in su_l or '.jpeg' in su_l or '.png' in su_l or '.webp' in su_l or '.gif' in su_l or 'picsum' in su_l or 'loremflickr' in su_l or 'imgur' in su_l %}
+    {% if su.startswith('chef://') %}
+      {% set local_rel = su[7:] %}
+      {% set chef_dir = chef_output_dir | trim | replace('\\', '/') %}
+      {% if not chef_dir.endswith('/') %}{% set chef_dir = chef_dir + '/' %}{% endif %}
+      {% set local_path = chef_dir ~ local_rel | replace('\\', '/') %}
+      <div class="source-photo">
+        <div class="source-photo-label">原食谱图(本地)</div>
+        <img src="file:///{{ local_path }}" alt="原食谱图" loading="lazy" />
+        <div class="source-photo-path">{{ local_rel }}</div>
+      </div>
+    {% elif '.jpg' in su_l or '.jpeg' in su_l or '.png' in su_l or '.webp' in su_l or '.gif' in su_l or 'picsum' in su_l or 'loremflickr' in su_l or 'imgur' in su_l or 'unsplash' in su_l %}
       · <a href="{{ su }}" target="_blank" rel="noopener">查看原食谱图</a>
     {% else %}
       · <a href="{{ su }}" target="_blank" rel="noopener">查看原文</a>

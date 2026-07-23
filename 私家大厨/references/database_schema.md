@@ -57,7 +57,26 @@ CREATE INDEX idx_recipes_status ON recipes(status);
 ### 字段语义补充
 
 - **`photo_url`** — **本食谱**的成品照片 URL 或本地路径。AI 自动录入时如果用户没有提供真实照片,可以临时填充 picsum 占位 URL(`https://picsum.photos/seed/<recipe_slug>/<w>/<h>`)作为兜底,但应在 `description` 或 `source` 字段注明,以便后续替换。
-- **`source_url`** — 源食谱的 **网页链接**(如 baike.baidu.com/...、下厨房/小红书详情页) **或** 源食谱的 **图片 URL**(如源菜谱书的扫描页截图、源出版物的内页图)。系统不区分这两种 URL,按用户实际录入内容存放。渲染时如果检测到 URL 为图片扩展名(`.jpg/.png/.webp`)或 picsum/imgur/loreum 等图床域名,则按 `<img>` 显示并加 `查看原图` 链接;否则按 `<a target="_blank">` 显示为外链。
+- **`source_url`** — 源食谱的 **网页链接**(如 baike.baidu.com/...、下厨房/小红书详情页) **或** 源食谱的 **图片 URL**(如源菜谱书的扫描页截图、源出版物的内页图) **或** 本地源食谱图片路径(命名空间形式 `chef://<recipe_slug>__<source>__<YYYYMMDD>.<ext>`,实际路径在 `$CHEF_OUTPUT_DIR/source_photos/`)。系统按用户实际录入内容存放,渲染时根据格式自动选择显示方式:
+  - `chef://...` 命名空间 → 拼回 `$CHEF_OUTPUT_DIR/source_photos/...` 当 `<img>` 显示
+  - `.jpg/.jpeg/.png/.webp/.gif` 扩展名 → 当 `<img>` 显示
+  - `picsum/loremflickr/imgur/unsplash` 等图床域名 → 当 `<img>` 显示
+  - 其他 → 当 `<a target="_blank">` 显示为外链
+
+### 源照片本地存放规范
+
+- 存放根目录:`$CHEF_OUTPUT_DIR/source_photos/`(默认 `D:/CookHub/source_photos/`)
+- 文件名格式:`<recipe_slug>__<source>__<YYYYMMDD>.<ext>`
+  - `recipe_slug`:菜名 slugify(由 `slugify(name)` 生成)
+  - `source`:来源短码,常见值 `baike` / `douyin` / `xiachufang` / `cookbook` / `manual` 等
+  - `YYYYMMDD`:录入日期
+  - `ext`:实际文件扩展名
+- 数据库存什么:`source_url` 字段填 **`chef://<recipe_slug>__<source>__<YYYYMMDD>.<ext>`**(用 `chef://` 命名空间标识,不直接存绝对路径,便于跨设备迁移)
+- 写入路径:AI 收到用户提供的本地源食谱图片后,调用:
+  ```bash
+  cp "<user_file>" "$CHEF_OUTPUT_DIR/source_photos/<recipe_slug>__<source>__$(date +%Y%m%d).<ext>"
+  python scripts/recipe_manager.py update <recipe_id> --source_url "chef://<recipe_slug>__<source>__YYYYMMDD.<ext>"
+  ```
 
 ## 表2：recipe_categories — 分类标签
 

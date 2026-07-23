@@ -16,3 +16,6 @@ __pycache__/
 HTML注入改造方案.html
 # 阶段性重构备份目录
 .bak_phase_*/
+
+# G1+ 模板测试 HTML（render 产物，可重建）
+*_test.html

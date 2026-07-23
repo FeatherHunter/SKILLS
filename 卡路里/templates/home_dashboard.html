@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卡路里</title>
+<style>
+/* ============================================================
+   Apple 设计语言（严格遵循 · 2026-07-23）
+   - 主色: iOS System Blue  #007aff
+   - 灰阶: #f5f5f7 / #e5e5ea / #8e8e93 / #1d1d1d
+   - 字体: 系统字体栈（-apple-system + PingFang SC）
+   - 形状: 圆角 12-18px · 阴影极轻 · 留白充足
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.06);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"tnum","ss01";
+}
+.wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+
+/* ====== HERO ====== */
+.hero{
+  padding:32px 28px 28px;
+  margin-bottom:20px;
+}
+.hero .eyebrow{
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.4px;
+  color:var(--accent);
+  text-transform:uppercase;
+  margin-bottom:8px;
+  letter-spacing:.5px;
+}
+.hero h1{
+  font-size:32px;
+  font-weight:700;
+  letter-spacing:-.4px;
+  line-height:1.2;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.hero .sub{
+  font-size:15px;
+  color:var(--ink3);
+  font-weight:400;
+}
+.hero .status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 12px;
+  border-radius:999px;
+  background:var(--green-soft);
+  color:var(--green);
+  font-size:13px;
+  font-weight:600;
+  margin-top:12px;
+}
+.hero .status-pill.pending{
+  background:var(--orange-soft);
+  color:var(--orange);
+}
+.hero .status-pill::before{
+  content:'';
+  width:6px;height:6px;
+  border-radius:50%;
+  background:currentColor;
+}
+
+/* ====== KPI GRID ====== */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+.kpi{
+  background:var(--card);
+  border-radius:var(--r);
+  padding:20px 18px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+  transition:transform .15s ease;
+}
+.kpi:hover{transform:translateY(-1px)}
+.kpi .label{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:500;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.kpi .icon{
+  width:18px;height:18px;
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  font-size:13px;
+}
+.kpi .main{
+  display:flex;
+  align-items:baseline;
+  gap:3px;
+}
+.kpi .value{
+  font-size:28px;
+  font-weight:700;
+  letter-spacing:-.7px;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  line-height:1;
+}
+.kpi .unit{
+  font-size:14px;
+  color:var(--ink3);
+  font-weight:500;
+}
+.kpi .detail{
+  font-size:12px;
+  color:var(--ink3);
+  margin-top:8px;
+}
+.kpi .badge{
+  display:inline-block;
+  font-size:11px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:6px;
+  margin-left:auto;
+}
+.kpi .badge.good{background:var(--green-soft);color:var(--green)}
+.kpi .badge.ok{background:var(--accent-soft);color:var(--accent)}
+.kpi .badge.warn{background:var(--orange-soft);color:var(--orange)}
+.kpi .badge.bad{background:var(--red-soft);color:var(--red)}
+
+/* ====== SECTION (通用卡片块) ====== */
+.section{
+  background:var(--card);
+  border-radius:var(--r-lg);
+  padding:24px 28px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+.section-title h2{
+  font-size:17px;
+  font-weight:600;
+  letter-spacing:-.2px;
+  color:var(--ink);
+}
+.section-title .hint{
+  font-size:12px;
+  color:var(--ink3);
+}
+
+/* ====== TODO LIST ====== */
+.todo-list{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.todo-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:14px 0;
+  border-top:1px solid var(--lineS);
+}
+.todo-row:first-child{border-top:none}
+.todo-row .check{
+  width:22px;height:22px;
+  border-radius:50%;
+  border:1.5px solid var(--line);
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  flex-shrink:0;
+  color:transparent;
+  font-size:13px;
+  background:var(--bg-soft);
+}
+.todo-row.done .check{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+}
+.todo-row .body{
+  flex:1;
+}
+.todo-row .label{
+  font-size:15px;
+  font-weight:500;
+  color:var(--ink);
+}
+.todo-row.done .label{
+  color:var(--ink3);
+  text-decoration:line-through;
+}
+.todo-row .meta{
+  font-size:12px;
+  color:var(--ink3);
+  margin-top:2px;
+}
+.todo-row .priority{
+  font-size:10.5px;
+  font-weight:600;
+  padding:3px 8px;
+  border-radius:999px;
+}
+.todo-row .priority.high{background:var(--red-soft);color:var(--red)}
+.todo-row .priority.medium{background:var(--orange-soft);color:var(--orange)}
+.todo-row .priority.low{background:var(--bg-soft);color:var(--ink3)}
+.todo-empty{
+  text-align:center;
+  padding:20px;
+  color:var(--ink3);
+  font-size:14px;
+}
+
+/* ====== LOG LIST ====== */
+.log-list{
+  display:flex;
+  flex-direction:column;
+}
+.log-row{
+  display:grid;
+  grid-template-columns:60px 1fr auto auto;
+  gap:14px;
+  align-items:center;
+  padding:12px 0;
+  border-top:1px solid var(--lineS);
+}
+.log-row:first-child{border-top:none}
+.log-row .time{
+  font-size:13px;
+  color:var(--ink3);
+  font-feature-settings:"tnum";
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono",monospace;
+}
+.log-row .name{
+  font-size:15px;
+  color:var(--ink);
+  font-weight:500;
+}
+.log-row .name-nutri{
+  font-size:11.5px;
+  color:var(--ink3);
+  margin-left:6px;
+}
+.log-row .cal{
+  font-size:13px;
+  color:var(--ink2);
+  font-weight:500;
+  font-feature-settings:"tnum";
+}
+.log-row .cal-intake{color:var(--accent)}
+.log-row .cal-burn{color:var(--green)}
+.log-empty{
+  text-align:center;
+  padding:20px;
+  color:var(--ink3);
+  font-size:13px;
+}
+.log-section{margin-bottom:16px}
+.log-section:last-child{margin-bottom:0}
+.log-section-title{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink3);
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  margin:0 0 4px 4px;
+}
+
+/* ====== QUICK ACTIONS ====== */
+.cmd-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.cmd-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono","Menlo",monospace;
+  font-size:12.5px;
+  color:var(--ink2);
+  border:1px solid transparent;
+  transition:all .15s ease;
+}
+.cmd-row:hover{
+  border-color:var(--line);
+  background:var(--card);
+}
+.cmd-row .label{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink);
+  min-width:84px;
+  flex-shrink:0;
+}
+.cmd-row .cmd{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.cmd-row .copy-mini{
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:3px 10px;
+  font-size:11px;
+  color:var(--ink2);
+  cursor:pointer;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  transition:all .15s;
+}
+.cmd-row .copy-mini:hover{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+/* ====== COPY ALL ====== */
+.copy-all{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--ink);
+  color:#fff;
+  border-radius:999px;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  margin-top:8px;
+}
+.copy-all.copied{background:var(--green)}
+
+/* ====== EMPTY / ERROR / FOOTER ====== */
+.empty{
+  text-align:center;
+  padding:48px 20px;
+  background:var(--card);
+  border-radius:var(--r-lg);
+  border:1px solid var(--lineS);
+}
+.empty .icon{font-size:48px;margin-bottom:12px;color:var(--ink3)}
+.empty h3{font-size:17px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.empty p{font-size:13px;color:var(--ink3)}
+
+footer{
+  text-align:center;
+  color:var(--ink3);
+  font-size:12px;
+  margin-top:32px;
+  padding-top:20px;
+  border-top:1px solid var(--lineS);
+}
+
+#backTop{
+  position:fixed;
+  bottom:24px;right:24px;
+  width:42px;height:42px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);
+  text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+}
+
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
+  .hero h1{font-size:26px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .section{padding:18px 20px}
+  .log-row{grid-template-columns:50px 1fr auto;gap:8px}
+  .log-row .cal-nutri{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow" id="eyebrow">卡路里</div>
+  <h1 id="heroTitle">今日概况</h1>
+  <div class="sub" id="heroSub">加载中…</div>
+  <div id="statusPill"></div>
+</header>
+
+<!-- KPI GRID (结果型 · 4 维) -->
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<!-- TODO LIST (过程型 · AI 协同模式) -->
+<section class="section">
+  <div class="section-title">
+    <h2>今日待办</h2>
+    <span class="hint" id="todoHint"></span>
+  </div>
+  <div id="todoContainer"></div>
+</section>
+
+<!-- RECENT LOGS (结果型) -->
+<section class="section">
+  <div class="section-title">
+    <h2>最近记录</h2>
+    <span class="hint">最近 5 条</span>
+  </div>
+  <div class="log-section">
+    <div class="log-section-title">🍽️ 饮食</div>
+    <div id="foodLog"></div>
+  </div>
+  <div class="log-section">
+    <div class="log-section-title">🏃 运动</div>
+    <div id="exerciseLog"></div>
+  </div>
+</section>
+
+<!-- QUICK ACTIONS (辅助) -->
+<section class="section">
+  <div class="section-title">
+    <h2>快捷命令</h2>
+    <span class="hint">点击单条复制 · 点击底部复制全部</span>
+  </div>
+  <div class="cmd-list" id="cmdList"></div>
+  <button class="copy-all" id="copyAllBtn" onclick="copyAllCommands()">复制所有命令</button>
+</section>
+
+<footer>卡路里 Skill · 主面板 · 2026-07-23</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function fmtInt(n) {
+  if (n == null || isNaN(n)) return '—';
+  return new Intl.NumberFormat('en-US').format(Math.round(n));
+}
+
+function pct(num, denom) {
+  if (!denom) return null;
+  return Math.round(num / denom * 100);
+}
+
+function statusBadge(num, denom, reverse) {
+  if (num == null) return ['ok', '—'];
+  const p = pct(num, denom);
+  if (p == null) return ['ok', '—'];
+  if (reverse) {
+    if (p >= 90 && p <= 110) return ['good', `${p}%`];
+    if (p < 70 || p > 130) return ['bad', `${p}%`];
+    return ['warn', `${p}%`];
+  } else {
+    if (p >= 70) return ['good', `${p}%`];
+    if (p >= 40) return ['warn', `${p}%`];
+    return ['bad', `${p}%`];
+  }
+}
+
+function render() {
+  if (!DATA || DATA.status !== 'ok') {
+    document.querySelector('.hero h1').textContent = '数据加载失败';
+    document.querySelector('.hero .sub').textContent = (DATA && DATA.message) || 'window.__DATA__ 缺失';
+    return;
+  }
+
+  const { date, dashboard: D, today_status, recent_logs, quick_actions } = DATA.data;
+
+  // HERO
+  document.getElementById('heroTitle').textContent = `${date} 卡路里`;
+  document.getElementById('heroSub').textContent = '今日概况 · 健康指标 · 待办与最近记录';
+
+  // STATUS PILL
+  const todoCount = today_status.todo.length;
+  const pill = document.getElementById('statusPill');
+  if (todoCount === 0) {
+    pill.className = 'status-pill';
+    pill.textContent = '今日全部完成 ✓';
+  } else {
+    pill.className = 'status-pill pending';
+    pill.textContent = `${todoCount} 项待办`;
+  }
+
+  // 4 KPI GRID
+  const cal = D.calorie || {};
+  const ex = D.exercise || {};
+  const wt = D.weight || {};
+  const df = D.deficit || {};
+
+  const calPct = pct(cal.avg_cal, cal.cal_goal);
+  const exBadge = (ex.coverage_pct != null)
+    ? (ex.coverage_pct >= 70 ? ['good', `${ex.coverage_pct}%`] : ex.coverage_pct >= 40 ? ['warn', `${ex.coverage_pct}%`] : ['bad', `${ex.coverage_pct}%`])
+    : ['ok', '—'];
+  const wtBadge = (() => {
+    if (wt.trend === 'down') return ['good', '↓'];
+    if (wt.trend === 'up') return ['warn', '↑'];
+    return ['ok', '→'];
+  })();
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi">
+      <div class="label"><span class="icon">🔥</span>摄入<span class="badge ${statusBadge(calPct, 100, true)[0]}">${calPct != null ? calPct + '%' : ''}</span></div>
+      <div class="main"><span class="value">${fmtInt(cal.avg_cal)}</span><span class="unit">卡/日</span></div>
+      <div class="detail">目标 ${fmtInt(cal.cal_goal)} · 合规 ${cal.compliance_days || 0}/${cal.days_count || 0} 天</div>
+    </div>
+    <div class="kpi">
+      <div class="label"><span class="icon">🏃</span>运动<span class="badge ${exBadge[0]}">${exBadge[1]}</span></div>
+      <div class="main"><span class="value">${fmtInt(ex.avg_calories_per_day)}</span><span class="unit">卡/日</span></div>
+      <div class="detail">${ex.days_with_exercise || 0}/${ex.total_days || 0} 天 · 连续 ${ex.longest_streak_days || 0} 天</div>
+    </div>
+    <div class="kpi">
+      <div class="label"><span class="icon">⚖️</span>体重<span class="badge ${wtBadge[0]}">${wtBadge[1]}</span></div>
+      <div class="main"><span class="value">${wt.avg_weight != null ? wt.avg_weight.toFixed(1) : '—'}</span><span class="unit">kg</span></div>
+      <div class="detail">${wt.change_kg != null ? (wt.change_kg > 0 ? '+' : '') + wt.change_kg.toFixed(1) + 'kg' : '—'} · 最近 ${wt.last_date || '—'}</div>
+    </div>
+    <div class="kpi">
+      <div class="label"><span class="icon">📉</span>缺口<span class="badge ok">TDEE</span></div>
+      <div class="main"><span class="value">${df.avg_deficit != null ? (df.avg_deficit > 0 ? '−' : '+') : '—'}${df.avg_deficit != null ? fmtInt(Math.abs(df.avg_deficit)) : '—'}</span><span class="unit">卡/日</span></div>
+      <div class="detail">理论 ${df.kg_equivalent != null ? Math.abs(df.kg_equivalent).toFixed(2) + 'kg/周' : '—'}</div>
+    </div>
+  `;
+
+  // TODO LIST
+  const todoContainer = document.getElementById('todoContainer');
+  const todoHint = document.getElementById('todoHint');
+  const todos = today_status.todo;
+  const logs = {
+    food: today_status.food.count,
+    water: today_status.water.count,
+    exercise: today_status.exercise.count,
+    weight: today_status.weight.count,
+  };
+  if (todos.length === 0) {
+    todoContainer.innerHTML = `<div class="todo-empty">今日记录完整 ✓</div>`;
+    todoHint.textContent = '全部记录完成';
+  } else {
+    todoHint.textContent = `${todos.length} 项待完成`;
+    const allKeys = ['food', 'water', 'exercise', 'weight'];
+    const labels = {food: '饮食', water: '饮水', exercise: '运动', weight: '体重'};
+    todoContainer.innerHTML = '<div class="todo-list">' + allKeys.map(k => {
+      const done = logs[k] > 0;
+      const todo = todos.find(t => t.key === k);
+      const label = labels[k];
+      const meta = done
+        ? `已记录 ${logs[k]} 条`
+        : (todo ? '今日未记录' : '今日未记录');
+      return `
+        <div class="todo-row ${done ? 'done' : ''}">
+          <span class="check">✓</span>
+          <div class="body">
+            <div class="label">记录${label}</div>
+            <div class="meta">${escapeHTML(meta)}</div>
+          </div>
+          ${!done && todo ? `<span class="priority ${todo.priority}">${todo.priority === 'high' ? '高' : todo.priority === 'medium' ? '中' : '低'}</span>` : ''}
+        </div>
+      `;
+    }).join('') + '</div>';
+  }
+
+  // RECENT LOGS — Food
+  const foodLog = document.getElementById('foodLog');
+  if (recent_logs.foods && recent_logs.foods.length) {
+    foodLog.innerHTML = '<div class="log-list">' + recent_logs.foods.map(f => `
+      <div class="log-row">
+        <div class="time">${escapeHTML(f.time || '—')}</div>
+        <div class="name">${escapeHTML(f.name)}<span class="name-nutri">蛋白 ${fmtInt(f.protein)}g</span></div>
+        <div class="cal cal-intake">+${fmtInt(f.calories)} 卡</div>
+      </div>
+    `).join('') + '</div>';
+  } else {
+    foodLog.innerHTML = '<div class="log-empty">暂无饮食记录</div>';
+  }
+
+  // RECENT LOGS — Exercise
+  const exerciseLog = document.getElementById('exerciseLog');
+  if (recent_logs.exercises && recent_logs.exercises.length) {
+    exerciseLog.innerHTML = '<div class="log-list">' + recent_logs.exercises.map(e => `
+      <div class="log-row">
+        <div class="time">${escapeHTML(e.time || '—')}</div>
+        <div class="name">${escapeHTML(e.type)}${e.minutes ? `<span class="name-nutri">${e.minutes} 分钟</span>` : ''}</div>
+        <div class="cal cal-burn">−${fmtInt(e.calories)} 卡</div>
+      </div>
+    `).join('') + '</div>';
+  } else {
+    exerciseLog.innerHTML = '<div class="log-empty">暂无运动记录</div>';
+  }
+
+  // QUICK ACTIONS — 完整可复制的命令列表
+  const cmdList = document.getElementById('cmdList');
+  cmdList.innerHTML = quick_actions.map((a, i) => `
+    <div class="cmd-row">
+      <span class="label">${escapeHTML(a.label)}</span>
+      <span class="cmd">${escapeHTML(a.command)}</span>
+      <button class="copy-mini" onclick="copyCmd(${i})">复制</button>
+    </div>
+  `).join('');
+  window.__CMDS__ = quick_actions.map(a => a.command);
+}
+
+function copyCmd(i) {
+  const cmd = window.__CMDS__[i];
+  if (!cmd) return;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btns = document.querySelectorAll('.copy-mini');
+    const btn = btns[i];
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = '已复制';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 1500);
+  });
+}
+
+function copyAllCommands() {
+  const cmds = window.__CMDS__ || [];
+  const text = cmds.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyAllBtn');
+    btn.textContent = '✓ 已复制全部';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '复制所有命令';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+render();
+</script>
+</body>
+</html>

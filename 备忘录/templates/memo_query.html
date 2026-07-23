@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>备忘录查询结果</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.lead{color:var(--fg2);font-size:17px}.meta{margin-top:16px;color:var(--fg3);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.stat,.panel,.item{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat b{display:block;font-size:24px;letter-spacing:-.02em}.stat span{color:var(--fg2);font-size:13px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}.pill.active{background:#eef5ff;color:var(--blue2);border-color:#b8d8ff}
+.item{margin:12px 0}.item-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.id{color:var(--blue2);font-weight:800}.content{font-size:17px;margin:10px 0;white-space:pre-wrap}.muted{color:var(--fg2)}.small{font-size:13px;color:var(--fg3)}.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;margin:3px 5px 3px 0}.badge.warn{background:#fff7e8;color:#b25b00}.badge.ok{background:#ecfff2;color:#178a3a}
+.empty{padding:42px;text-align:center;color:var(--fg2)}button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.copy{background:#eef5ff;color:var(--blue2)}input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.item-head{display:block}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Memo Query</div>
+<h1 id="title">备忘录查询结果</h1>
+<p class="lead" id="subtitle">数据加载中</p>
+<p class="meta" id="meta"></p>
+</header>
+<section class="grid" id="stats"></section>
+<section class="panel">
+<strong>筛选与检索</strong>
+<input id="filter" placeholder="在当前结果内搜索内容、分类、日期、ID">
+<div class="toolbar" id="chips"></div>
+</section>
+<section id="list"></section>
+<section class="panel">
+<strong>回执</strong>
+<div class="toolbar"><button class="copy" onclick="copyReceipt()">复制查询回执</button></div>
+<pre id="receipt"></pre>
+</section>
+</div>
+<script>
+const PAYLOAD=window.__DATA__;
+const appState={category:'全部',q:''};
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dataRows(){const d=PAYLOAD&&PAYLOAD.data?PAYLOAD.data:{};if(Array.isArray(d))return d;if(Array.isArray(d.items))return d.items;if(d.item)return [d.item];return []}
+function init(){if(!PAYLOAD){document.getElementById('list').innerHTML='<div class="panel empty">数据未注入</div>';return}const d=PAYLOAD.data||{};document.getElementById('title').textContent=d.title||'备忘录查询结果';document.getElementById('subtitle').textContent=PAYLOAD.message||d.subtitle||'查询完成';document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||''}`;renderStats();renderChips();renderList();renderReceipt()}
+function rowsFiltered(){let rows=dataRows();if(appState.category!=='全部')rows=rows.filter(x=>(x.category||x.repeat_type||'未分类')===appState.category);if(appState.q){const q=appState.q.toLowerCase();rows=rows.filter(x=>JSON.stringify(x).toLowerCase().includes(q))}return rows}
+function categories(){return ['全部',...Array.from(new Set(dataRows().map(x=>x.category||x.repeat_type||'未分类').filter(Boolean)))]}
+function renderStats(){const rows=dataRows();const due=rows.filter(x=>x.due).length;const media=rows.filter(x=>x.media_path).length;const reminders=rows.filter(x=>x.remind_at||x.reminder_id).length;document.getElementById('stats').innerHTML=[['总数',rows.length],['有排期',due],['有附件',media],['有提醒',reminders]].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span></div>`).join('')}
+function renderChips(){document.getElementById('chips').innerHTML=categories().map(c=>`<span class="pill ${c===appState.category?'active':''}" onclick="setCat('${esc(c)}')">${esc(c)}</span>`).join('')}
+function setCat(c){appState.category=c;renderChips();renderList();renderReceipt()}
+document.getElementById('filter').addEventListener('input',e=>{appState.q=e.target.value;renderList();renderReceipt()});
+function renderList(){const rows=rowsFiltered();const list=document.getElementById('list');if(!rows.length){list.innerHTML='<div class="panel empty">没有匹配结果</div>';return}list.innerHTML=rows.map(renderItem).join('')}
+function renderItem(x){const id=x.id||x.checkin_note_id||x.reminder_id||'';const content=x.content||x.checkin_content||x.reminder_content||x.note_content||'';const badges=[x.category,x.sub_category,x.repeat_type,x.due?`排期 ${x.due}`:'',x.remind_at?`提醒 ${x.remind_at}`:'',x.media_path?'附件':''].filter(Boolean);return `<article class="item"><div class="item-head"><div class="id">#${esc(id)}</div><button class="copy" onclick="copyText('${esc(String(id))}')">复制ID</button></div><div class="content">${esc(content)}</div><div>${badges.map(b=>`<span class="badge ${String(b).includes('排期')||String(b).includes('提醒')?'warn':''}">${esc(b)}</span>`).join('')}</div><p class="small">创建：${esc(x.created_at||x.checkin_at||'')}　更新：${esc(x.updated_at||'')}</p></article>`}
+function receiptText(){const d=PAYLOAD.data||{};return `备忘录查询回执\n命令：${d.command||''}\n结果数：${rowsFiltered().length}/${dataRows().length}\n筛选：${appState.category} ${appState.q||''}\nID：${rowsFiltered().map(x=>x.id||x.checkin_note_id||x.reminder_id).filter(Boolean).join(', ')}`}
+function renderReceipt(){document.getElementById('receipt').textContent=receiptText()}
+function copyText(t){navigator.clipboard&&navigator.clipboard.writeText(t)}
+function copyReceipt(){copyText(receiptText())}
+init();
+</script>
+</body>
+</html>

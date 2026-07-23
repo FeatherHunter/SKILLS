@@ -109,8 +109,12 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 ### 搜索笔记
 - 触发词:搜备忘、查备忘(别名)
 - 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)
-- 命令:`script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类]`
+- 命令:`script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]`
 - **过滤维度**:可同时按顶层分类和子分类过滤(如 `search -c 备忘 -s 学习`)
+- **默认行为**:查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记 / 看提醒 / 查已提醒备忘)默认生成 HTML 页面并通过 `<media src="..." type="file" />` 返回给用户;用户无需主动说"生成 HTML 页面"。需要纯 JSON 时再显式传 `--no-html`
+- **HTML 模板模式**:CLI 仍先取 JSON 数据,再通过 `script/memo_render.py` 注入 `templates/memo_query.html`,生成 `output/memo_query_*.html`;模板只展示数据,不直连数据库、不污染原模板
+- **HTML 数据契约**:`{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]},"message":"..."}`
+- **页面能力**:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执
 
 ### 更新笔记
 - 触发词:改备忘
@@ -127,11 +131,15 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 
 ### 查看笔记详情
 - 触发词:看备忘
-- 命令:`script/memo_cli.py get <id>`
+- 命令:`script/memo_cli.py get <id> [--html]`
+- **默认行为**:同上,默认生成 HTML 详情页并通过 `<media>` 返回
+- `--html`:生成单条详情 HTML,字段契约同搜索结果页,items 数组只有 1 条
 
 ### 按时间搜索
 - 触发词:按时间搜备忘
-- 命令:`script/memo_cli.py search-date <start> <end> [-c 分类]`
+- 命令:`script/memo_cli.py search-date <start> <end> [-c 分类] [--html]`
+- **默认行为**:同上,默认生成 HTML 页面并通过 `<media>` 返回
+- `--html`:生成按时间查询 HTML,复用 `templates/memo_query.html`
 
 ### 编辑笔记顶层分类
 - 触发词:备忘改分类
@@ -208,14 +216,18 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 
 ### 查看提醒
 - 触发词:看提醒
-- 命令:`script/memo_cli.py reminders`
+- 命令:`script/memo_cli.py reminders [--status active|dismissed] [--html]`
+- **默认行为**:同上,默认生成 HTML 提醒列表页并通过 `<media>` 返回
+- `--html`:生成提醒列表 HTML,复用 `templates/memo_query.html`,按重复类型提供筛选 chip
 
 ### 废弃提醒
 - 命令:`script/memo_cli.py dismiss <id>`
 
 ### 查询已完成提醒
 - 触发词:查已提醒备忘
-- 命令:`script/memo_cli.py completed`
+- 命令:`script/memo_cli.py completed [--html]`
+- **默认行为**:同上,默认生成 HTML 页面并通过 `<media>` 返回
+- `--html`:生成已完成提醒 HTML,复用 `templates/memo_query.html`,支持复制提醒 ID / 打卡 ID 回执
 - **匹配逻辑**:
   - **一次性提醒**:有 `notified_at`(已触发过)+ 关联打卡笔记 → 算已完成
   - **每天重复**:关联打卡笔记 → 算今天已完成

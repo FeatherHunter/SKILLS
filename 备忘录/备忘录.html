@@ -184,8 +184,12 @@
 <ul>
 <li>触发词:搜备忘、查备忘(别名)</li>
 <li>子唤醒词:查心愿、查打卡、查情绪日记(自动带 <code>-c 顶层分类</code> 过滤)</li>
-<li>命令:<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类]</code></li>
+<li>命令:<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]</code></li>
 <li><strong>过滤维度</strong>:可同时按顶层分类和子分类过滤(如 <code>search -c 备忘 -s 学习</code>)</li>
+<li><strong>默认行为</strong>:查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记 / 看提醒 / 查已提醒备忘)默认生成 HTML 页面并通过 <code>&lt;media src="..." type="file" /&gt;</code> 返回给用户;用户无需主动说"生成 HTML 页面"。需要纯 JSON 时再显式传 <code>--no-html</code></li>
+<li><strong>HTML 模板模式</strong>:CLI 仍先取 JSON 数据,再通过 <code>script/memo_render.py</code> 注入 <code>templates/memo_query.html</code>,生成 <code>output/memo_query_*.html</code>;模板只展示数据,不直连数据库、不污染原模板</li>
+<li><strong>HTML 数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]},"message":"..."}</code></li>
+<li><strong>页面能力</strong>:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执</li>
 </ul>
 <h3>更新笔记</h3>
 <ul>
@@ -205,12 +209,16 @@
 <h3>查看笔记详情</h3>
 <ul>
 <li>触发词:看备忘</li>
-<li>命令:<code>script/memo_cli.py get &lt;id&gt;</code></li>
+<li>命令:<code>script/memo_cli.py get &lt;id&gt; [--html]</code></li>
+<li><strong>默认行为</strong>:同上,默认生成 HTML 详情页并通过 <code>&lt;media&gt;</code> 返回</li>
+<li><code>--html</code>:生成单条详情 HTML,字段契约同搜索结果页,items 数组只有 1 条</li>
 </ul>
 <h3>按时间搜索</h3>
 <ul>
 <li>触发词:按时间搜备忘</li>
-<li>命令:<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类]</code></li>
+<li>命令:<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类] [--html]</code></li>
+<li><strong>默认行为</strong>:同上,默认生成 HTML 页面并通过 <code>&lt;media&gt;</code> 返回</li>
+<li><code>--html</code>:生成按时间查询 HTML,复用 <code>templates/memo_query.html</code></li>
 </ul>
 <h3>编辑笔记顶层分类</h3>
 <ul>
@@ -297,7 +305,9 @@
 <h3>查看提醒</h3>
 <ul>
 <li>触发词:看提醒</li>
-<li>命令:<code>script/memo_cli.py reminders</code></li>
+<li>命令:<code>script/memo_cli.py reminders [--status active|dismissed] [--html]</code></li>
+<li><strong>默认行为</strong>:同上,默认生成 HTML 提醒列表页并通过 <code>&lt;media&gt;</code> 返回</li>
+<li><code>--html</code>:生成提醒列表 HTML,复用 <code>templates/memo_query.html</code>,按重复类型提供筛选 chip</li>
 </ul>
 <h3>废弃提醒</h3>
 <ul>
@@ -306,7 +316,9 @@
 <h3>查询已完成提醒</h3>
 <ul>
 <li>触发词:查已提醒备忘</li>
-<li>命令:<code>script/memo_cli.py completed</code></li>
+<li>命令:<code>script/memo_cli.py completed [--html]</code></li>
+<li><strong>默认行为</strong>:同上,默认生成 HTML 页面并通过 <code>&lt;media&gt;</code> 返回</li>
+<li><code>--html</code>:生成已完成提醒 HTML,复用 <code>templates/memo_query.html</code>,支持复制提醒 ID / 打卡 ID 回执</li>
 <li><strong>匹配逻辑</strong>:</li>
 <li><strong>一次性提醒</strong>:有 <code>notified_at</code>(已触发过)+ 关联打卡笔记 → 算已完成</li>
 <li><strong>每天重复</strong>:关联打卡笔记 → 算今天已完成</li>

@@ -76,6 +76,24 @@ def error_json(message):
     print(json.dumps({"status": "error", "message": message}, ensure_ascii=False))
     sys.exit(1)
 
+def output_query_html(items, title, command, message):
+    try:
+        from memo_render import render_query
+        payload = {
+            "status": "ok",
+            "data": {
+                "title": title,
+                "command": command,
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "items": items,
+            },
+            "message": message,
+        }
+        path = render_query(payload)
+        output_json({"html_path": path, "count": len(items)}, message="HTML 已生成")
+    except Exception as e:
+        error_json(f"HTML 生成失败: {e}")
+
 # ---- 笔记操作 ----
 
 ALLOWED_CATEGORIES = {"备忘", "心愿", "打卡", "情绪日记"}
@@ -213,7 +231,10 @@ def search_notes(args):
             params.append(limit)
             cur = conn.execute(sql, params)
         rows = [dict(row) for row in cur.fetchall()]
-        output_json(rows, message=f"找到 {len(rows)} 条笔记")
+        message = f"找到 {len(rows)} 条笔记"
+        if getattr(args, 'html', False):
+            output_query_html(rows, "备忘录搜索结果", "search", message)
+        output_json(rows, message=message)
     except Exception as e:
         error_json(str(e))
     finally:
@@ -522,7 +543,10 @@ def get_note(args):
         note = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
         if not note:
             error_json(f"笔记不存在: id={note_id}")
-        output_json(dict(note))
+        item = dict(note)
+        if getattr(args, 'html', False):
+            output_query_html([item], "备忘录详情", "get", "找到 1 条笔记")
+        output_json(item)
     except Exception as e:
         error_json(str(e))
     finally:
@@ -558,7 +582,10 @@ def search_by_date(args):
         params.append(limit)
         cur = conn.execute(sql, params)
         rows = [dict(row) for row in cur.fetchall()]
-        output_json(rows, message=f"找到 {len(rows)} 条笔记")
+        message = f"找到 {len(rows)} 条笔记"
+        if getattr(args, 'html', False):
+            output_query_html(rows, "备忘录按时间搜索结果", "search-date", message)
+        output_json(rows, message=message)
     except Exception as e:
         error_json(str(e))
     finally:
@@ -1174,7 +1201,10 @@ def completed_reminders(args):
                     "repeat_type": repeat_type
                 })
 
-        output_json(completed, message=f"共 {len(completed)} 条已完成提醒")
+        message = f"共 {len(completed)} 条已完成提醒"
+        if getattr(args, 'html', False):
+            output_query_html(completed, "已完成提醒查询结果", "completed", message)
+        output_json(completed, message=message)
     except Exception as e:
         error_json(str(e))
     finally:
@@ -1197,6 +1227,8 @@ def list_reminders(args):
             d = dict(row)
             d["content"] = d.get("content") or d.get("note_content") or ""
             rows.append(d)
+        if getattr(args, 'html', False):
+            output_query_html(rows, "提醒列表", "reminders", f"共 {len(rows)} 条提醒")
         output_json(rows)
     except Exception as e:
         error_json(str(e))
@@ -1225,6 +1257,7 @@ def main():
     p_search.add_argument("--sub-category", "-s", help="子分类过滤")
     p_search.add_argument("--due", help="按 due 精确过滤 YYYY-MM-DD(2026-07-13 健身计划同步新增)")
     p_search.add_argument("--limit", "-l", type=int)
+    p_search.add_argument("--html", action="store_true", help="生成 HTML 查询结果页")
 
     # update
     p_update = sub.add_parser("update")
@@ -1254,6 +1287,7 @@ def main():
     # get note
     p_get = sub.add_parser("get")
     p_get.add_argument("id", type=int)
+    p_get.add_argument("--html", action="store_true", help="生成 HTML 详情页")
 
     # search by date
     p_date = sub.add_parser("search-date")
@@ -1261,6 +1295,7 @@ def main():
     p_date.add_argument("end", help="结束时间 YYYY-MM-DD")
     p_date.add_argument("--category", "-c")
     p_date.add_argument("--limit", "-l", type=int)
+    p_date.add_argument("--html", action="store_true", help="生成 HTML 查询结果页")
 
     # update category
     p_cat = sub.add_parser("update-category")
@@ -1299,9 +1334,11 @@ def main():
     # list reminders
     p_lr = sub.add_parser("reminders")
     p_lr.add_argument("--status", "-s", default="active")
+    p_lr.add_argument("--html", action="store_true", help="生成 HTML 提醒列表页")
 
     # completed reminders
     p_completed = sub.add_parser("completed")
+    p_completed.add_argument("--html", action="store_true", help="生成 HTML 已完成提醒页")
 
     args = parser.parse_args()
 

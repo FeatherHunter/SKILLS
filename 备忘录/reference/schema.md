@@ -54,7 +54,7 @@ sub_category 是**自由文本字段**，AI 智能从用户原话推断：
 | 命令 | 说明 | 示例 |
 |------|------|------|
 | `add <content> [-c <category>] [-s <sub_category>] [-m <media_path>] [--tasklist-guid <guid>]` | 添加笔记（sub_category 是自由文本，AI 智能推断） | `script/memo_cli.py add "明天开会" -c 备忘 -s 工作` |
-| `search [keyword] [-c <category>] [-s <sub_category>] [-l <limit>]` | 搜索笔记 | `script/memo_cli.py search "旅行" -c 心愿` |
+| `search [keyword] [-c <category>] [-s <sub_category>] [-l <limit>] [--html]` | 搜索笔记；`--html` 生成 HTML 查询结果页 | `script/memo_cli.py search "旅行" -c 心愿 --html` |
 | `update <id> [--content] [-c category] [-s sub_category] [-m media_path] [--reminder-id <id>]` | 修改笔记 | `script/memo_cli.py update 12 --content "新内容"` |
 | `delete <id>` | 删除笔记及关联提醒 | `script/memo_cli.py delete 12` |
 | `complete-wish <id> [--content <打卡内容>]` | 完成心愿：原子删除心愿 + 自动建立打卡 + 同步飞书 | `script/memo_cli.py complete-wish 15` |

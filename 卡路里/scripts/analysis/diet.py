@@ -217,6 +217,20 @@ def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=
         print(f"⚠️ {msg}")
         return None
 
+    # B-205 修复：low_calorie/frequent 榜排除"水"（food_name LIKE '%水%' 或 = '💧水'）
+    # 排除理由：水是 0 卡的"基础设施"，排进低热量榜会让榜单毫无意义
+    EXCLUDED_FOODS = ('💧水',)  # 注意：也包括类似"柠檬水"、"蜂蜜水"等会污染排名
+    WATER_PATTERN = lambda name: 'water' in (name or '').lower() or name in EXCLUDED_FOODS
+
+    filtered_rows = [r for r in rows if not WATER_PATTERN(r[0])] if category in ('low_calorie', 'frequent') else rows
+
+    if not filtered_rows:
+        msg = f"过滤后无记录（{category}）"
+        if as_dict:
+            return {"status": "error", "data": None, "message": msg}
+        print(f"⚠️ {msg}")
+        return None
+
     # 排序逻辑（所有 category 共用）
     sort_keys = {
         'high_calorie': lambda x: x[1],
@@ -234,10 +248,10 @@ def diet_food_ranking(start_date, end_date=None, category='high_calorie', top_n=
     }
 
     if category in sort_keys:
-        sorted_rows = sorted(rows, key=sort_keys[category],
+        sorted_rows = sorted(filtered_rows, key=sort_keys[category],
                              reverse=(category != 'low_calorie'))[:top_n]
     else:
-        sorted_rows = rows[:top_n]
+        sorted_rows = filtered_rows[:top_n]
     title = titles.get(category, f"📋 食物榜（{start_date} ~ {end_date}）")
 
     # 2026-07-23 D1 增：组装 dict

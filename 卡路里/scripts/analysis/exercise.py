@@ -12,6 +12,7 @@
 - as_dict=False → 保持原 print 输出（向后兼容，默认）
 """
 import sys
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -52,6 +53,10 @@ def exercise_trend(start_date, end_date=None, as_dict=False):
     avg_cal = total_cal / span
     avg_dur = total_dur / span
 
+    # B-103 修复：duration_minutes 字段在 2026-07-13 之前为 NULL（旧代码未写入）
+    # 检测：如果所有记录都是 NULL，说明是历史数据缺失，标注 is_duration_missing=True
+    duration_missing = all(r[2] is None for r in rows)
+
     dates = sorted(set(r[0] for r in rows))
     longest_streak = 1
     current_streak = 1
@@ -78,10 +83,11 @@ def exercise_trend(start_date, end_date=None, as_dict=False):
         "total_calories": total_cal,
         "total_minutes": total_dur,
         "avg_calories_per_day": round(avg_cal),
-        "avg_minutes_per_day": round(avg_dur),
+        "avg_minutes_per_day": round(avg_dur) if not duration_missing else None,
         "longest_streak_days": longest_streak,
         "longest_rest_days": max_gap,
         "alert": "建议动起来" if max_gap >= 7 else None,
+        "duration_missing": duration_missing,  # B-103：标记时长数据是否缺失
     }
 
     if as_dict:
@@ -296,11 +302,15 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
             completion_rate = 0.0
             anomalies.append({'type': 'no_actual', 'msg': f'❌ {note}'})
         else:
+            # B-305 修复：完成率定义 = 实际组数 / 计划组数 × 100
+            # 之前曾有"按动作名匹配"和"按组数"两种算法混用，2026-07-23 统一为"按组数"
+            # 设计理由：动作级匹配复杂（plan 的动作可能多个变体），组数最直接
             completion_rate = actual_total_sets / plan_total_sets * 100
+            completion_metric = "组数"
             if completion_rate < 50:
-                anomalies.append({'type': 'low_completion', 'msg': f'⚠️ 完成率仅 {completion_rate:.0f}%'})
+                anomalies.append({'type': 'low_completion', 'msg': f'⚠️ 完成率仅 {completion_rate:.0f}%（实做 {actual_total_sets}/{plan_total_sets} {completion_metric}）'})
             elif completion_rate > 130:
-                anomalies.append({'type': 'over_completion', 'msg': f'⚠️ 超额完成 ({completion_rate:.0f}%)'})
+                anomalies.append({'type': 'over_completion', 'msg': f'⚠️ 超额完成 ({completion_rate:.0f}%)（{actual_total_sets}/{plan_total_sets} {completion_metric}）'})
 
         results[date_str] = {
             'date': date_str,
@@ -318,8 +328,29 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
 
     conn.close()
 
+    # B-304 修复：聚合 by_severity（异常严重度统计）
+    # 让 HTML 模板能展示"哪些类型异常最多"
+    by_severity_count = {'low_completion': 0, 'over_completion': 0, 'no_actual': 0, 'rest_but_done': 0}
+    by_severity_by_movement = defaultdict(lambda: defaultdict(int))  # {type: {movement_name: cnt}}
+    for date_str, r in results.items():
+        for a in r.get('anomalies', []):
+            atype = a.get('type')
+            if atype in by_severity_count:
+                by_severity_count[atype] += 1
+
+    enriched_meta = {
+        'by_severity_count': by_severity_count,
+        'total_days': len(results),
+        'train_days': sum(1 for r in results.values() if not r.get('is_rest_day')),
+        'rest_days': sum(1 for r in results.values() if r.get('is_rest_day')),
+    }
+
     if as_dict or silent:
-        return {"status": "ok", "data": results, "message": f"训练复盘 {len(results)} 天"}
+        return {
+            "status": "ok",
+            "data": {**results, "__meta__": enriched_meta},
+            "message": f"训练复盘 {len(results)} 天"
+        }
 
     print(f"📋 训练复盘（{start_date} ~ {end_date}）\n{'='*50}")
     for date_str, r in results.items():

@@ -160,6 +160,25 @@ def scan_plan(
     else:
         status = "ok"
 
+    # B-407 修复：自动生成"替代建议"
+    # 基于 SAFE_VARIANTS 白名单 + 同一动作库的"安全变体"提示
+    suggestions = []
+    seen_actions = set()
+    for hit in hits:
+        if hit.movement_name in seen_actions or hit.safe_variant:
+            continue
+        seen_actions.add(hit.movement_name)
+        # 找白名单里"安全变体"提示
+        from contraindications.soft_rules import SAFE_VARIANTS
+        sug = {
+            "禁忌动作": hit.movement_name,
+            "触发规则": hit.rule_name,
+            "理由": hit.reason,
+            "建议替换": f"用含 {'/'.join(SAFE_VARIANTS[:3])} 等关键字的安全变体",
+            "已安全变体示例": [v for v in SAFE_VARIANTS][:4],
+        }
+        suggestions.append(sug)
+
     return {
         "scanned_sessions": len(plans),
         "scanned_movements": movement_count,
@@ -169,4 +188,5 @@ def scan_plan(
         "by_movement": by_movement_summary,
         "by_severity": by_severity,
         "summary_status": status,
+        "suggestions": suggestions,
     }

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>禁忌扫描报告 · 卡路里</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --ok:#34c759;--warn:#ff9500;--danger:#ff3b30;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--fg);
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+
+/* HERO */
+.hero{
+  background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);
+  padding:40px 36px 32px;border-radius:20px;
+  margin-bottom:28px;box-shadow:var(--shadow);
+}
+.hero .eyebrow{
+  display:inline-block;font-size:12px;letter-spacing:.8px;
+  color:var(--accent);font-weight:600;
+  margin-bottom:10px;text-transform:uppercase;
+}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:-.8px;margin-bottom:6px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+
+/* STATUS BADGE */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:999px;
+  font-size:13px;font-weight:600;
+}
+.badge.ok{background:#f0fff4;color:var(--ok);border:1px solid #bbf7d0}
+.badge.warn{background:#fff7e6;color:var(--warn);border:1px solid #ffd591}
+.badge.fail{background:#fff1f0;color:var(--danger);border:1px solid #ffccc7}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* KPI GRID */
+.kpi{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;margin:24px 0;
+}
+.kpi-card{
+  background:var(--card);border-radius:12px;
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.kpi-card .label{font-size:12px;color:var(--fg3);font-weight:500;margin-bottom:6px}
+.kpi-card .value{font-size:24px;font-weight:700;letter-spacing:-.5px;color:var(--fg)}
+.kpi-card .hint{font-size:11px;color:var(--fg3);margin-top:4px}
+
+/* SECTION */
+section{margin-bottom:36px;scroll-margin-top:24px}
+h2.sec{
+  font-size:20px;font-weight:700;
+  padding-bottom:10px;border-bottom:1px solid var(--border);
+  margin-bottom:14px;
+}
+
+/* GROUP (details) */
+.part-group{
+  background:var(--card);border-radius:14px;
+  padding:14px 18px;margin-bottom:10px;
+  box-shadow:var(--shadow);border-left:4px solid var(--fg3);
+}
+.part-group.error{border-left-color:var(--danger)}
+.part-group.warn{border-left-color:var(--warn)}
+.part-group.info{border-left-color:var(--accent)}
+.part-group.none{opacity:.7}
+
+summary{
+  cursor:pointer;font-weight:600;font-size:15px;
+  list-style:none;display:flex;align-items:center;gap:10px;
+  padding:4px 0;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{
+  content:'▸';color:var(--accent);font-size:11px;
+  transition:transform .2s;
+}
+details[open] summary::before{transform:rotate(90deg)}
+.part-tag{
+  font-family:"SF Mono",monospace;font-size:11px;
+  color:var(--fg3);background:var(--bg);
+  padding:2px 8px;border-radius:5px;
+}
+.count{
+  margin-left:auto;font-size:12px;color:var(--fg3);
+  font-weight:500;
+}
+
+/* HIT */
+.hit{
+  border-top:1px solid var(--border);
+  padding:14px 0 14px 8px;
+}
+.hit:first-child{border-top:none}
+.hit .name{font-weight:600;font-size:14px;margin-bottom:4px;display:flex;gap:8px;align-items:center}
+.hit .name code{
+  font-family:"SF Mono",monospace;font-size:12px;
+  background:var(--accent-soft);padding:2px 8px;border-radius:5px;
+  color:var(--fg);
+}
+.hit .rule{font-size:12px;color:var(--accent);margin-bottom:6px;font-weight:500}
+.hit .reason{
+  font-size:13px;color:var(--fg2);
+  background:var(--bg);padding:10px 12px;border-radius:8px;
+  margin:8px 0;line-height:1.6;
+}
+.hit .used-in{
+  font-size:12px;color:var(--fg3);margin-top:6px;
+  display:flex;flex-wrap:wrap;gap:4px;
+}
+.hit .used-in span{
+  background:var(--bg);padding:2px 8px;border-radius:5px;
+  font-family:"SF Mono",monospace;
+}
+.safe-tag{
+  background:#f0fff4;color:var(--ok);
+  padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600;
+  border:1px solid #bbf7d0;
+}
+
+/* COPY SECTION */
+.copy-section{
+  background:var(--card);border-radius:14px;
+  padding:18px 22px;margin-top:24px;
+  box-shadow:var(--shadow);
+}
+.copy-section h3{font-size:14px;font-weight:600;margin-bottom:8px}
+.copy-section pre{
+  background:#1d1d1f;color:#f5f5f7;
+  padding:14px 18px;border-radius:10px;
+  font-size:12px;line-height:1.6;
+  overflow-x:auto;margin:8px 0 12px;
+  font-family:"SF Mono",monospace;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent);color:#fff;
+  padding:8px 16px;border-radius:8px;
+  font-size:13px;font-weight:600;
+  border:none;cursor:pointer;
+  transition:opacity .2s;
+}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--ok)}
+
+/* EMPTY STATE */
+.empty{
+  text-align:center;padding:60px 20px;
+  background:var(--card);border-radius:14px;
+  box-shadow:var(--shadow);
+}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.empty h3{font-size:18px;margin-bottom:6px;color:var(--ok)}
+.empty p{font-size:13px;color:var(--fg2)}
+
+/* FOOTER */
+footer{
+  text-align:center;color:var(--fg3);
+  font-size:12px;padding-top:28px;
+  border-top:1px solid var(--border);margin-top:40px;
+}
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--card);color:var(--accent);
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;box-shadow:var(--shadow);
+  font-size:18px;border:1px solid var(--border);
+}
+
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:28px 20px 22px;border-radius:16px}
+  .hero h1{font-size:24px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ HERO + STATUS ============ -->
+<header class="hero">
+  <div class="eyebrow">禁忌扫描报告</div>
+  <h1>健身计划禁忌检测</h1>
+  <div class="sub" id="sub">扫描部位：加载中...</div>
+  <div style="margin-top:14px">
+    <span id="status-badge" class="badge">加载中</span>
+  </div>
+</header>
+
+<!-- ============ KPI ============ -->
+<div class="kpi" id="kpi"></div>
+
+<!-- ============ HITS BY PART ============ -->
+<section id="hits-section">
+  <h2 class="sec">📋 按部位分组</h2>
+  <div id="groups"></div>
+</section>
+
+<!-- ============ COPY TO AI ============ -->
+<div class="copy-section">
+  <h3>📤 复制回 AI</h3>
+  <pre id="copy-text">点击下方按钮生成摘要</pre>
+  <button class="btn" onclick="copyToAI()">复制摘要</button>
+</div>
+
+<!-- ============ EMPTY STATE (fallback) ============ -->
+<div id="empty-state" class="empty" style="display:none">
+  <div class="icon">✅</div>
+  <h3>未发现禁忌动作</h3>
+  <p>当前健身计划所有动作都在安全范围内</p>
+</div>
+
+<footer>
+  卡路里 Skill · 禁忌扫描报告 · 数据来源 scan_contraindications.py<br>
+  模板：templates/contraindication_report.html
+</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function copyToAI() {
+  const text = document.getElementById('copy-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn');
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制摘要'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function render() {
+  if (!DATA) {
+    document.querySelector('.hero h1').textContent = '❌ 数据加载失败';
+    document.querySelector('.hero .sub').textContent = 'window.__DATA__ 未注入或格式错误';
+    return;
+  }
+
+  const { status, data, message } = DATA;
+  const { summary_status, scanned_parts, scanned_sessions, scanned_movements,
+          safe_skipped, by_severity, by_movement, hits } = data;
+
+  // Status badge
+  const badge = document.getElementById('status-badge');
+  badge.className = 'badge ' + summary_status;
+  badge.textContent = summary_status === 'ok' ? '✅ OK / 仅 info' :
+                      summary_status === 'warn' ? '⚠️ WARN' : '❌ FAIL';
+
+  // Sub line
+  document.getElementById('sub').textContent =
+    `扫描部位：${scanned_parts.join('、')}  ·  ${scanned_sessions} sessions / ${scanned_movements} movements  ·  ${message}`;
+
+  // KPI cards
+  const kpiHTML = `
+    <div class="kpi-card"><div class="label">Sessions</div><div class="value">${scanned_sessions}</div></div>
+    <div class="kpi-card"><div class="label">Movements</div><div class="value">${scanned_movements}</div></div>
+    <div class="kpi-card"><div class="label">🔴 Error</div><div class="value" style="color:${by_severity.error > 0 ? 'var(--danger)' : 'var(--fg3)'}">${by_severity.error}</div></div>
+    <div class="kpi-card"><div class="label">🟡 Warn</div><div class="value" style="color:${by_severity.warn > 0 ? 'var(--warn)' : 'var(--fg3)'}">${by_severity.warn}</div></div>
+    <div class="kpi-card"><div class="label">🔵 Info</div><div class="value" style="color:${by_severity.info > 0 ? 'var(--accent)' : 'var(--fg3)'}">${by_severity.info}</div></div>
+    <div class="kpi-card"><div class="label">✅ 安全变体</div><div class="value" style="color:var(--ok)">${safe_skipped}</div><div class="hint">白名单豁免</div></div>
+  `;
+  document.getElementById('kpi').innerHTML = kpiHTML;
+
+  // Groups by part (腰 / 膝 / 肩)
+  const partNames = ['腰', '膝', '肩'];
+  const partEmoji = { '腰': '🦴', '膝': '🦵', '肩': '💪' };
+  let groupsHTML = '';
+
+  if (hits.length === 0) {
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('hits-section').style.display = 'none';
+  } else {
+    partNames.forEach(part => {
+      const partHits = hits.filter(h => h.part === part);
+      if (partHits.length === 0) return;
+
+      const topSev = partHits.some(h => h.severity === 'error') ? 'error' :
+                     partHits.some(h => h.severity === 'warn') ? 'warn' : 'info';
+
+      const hitsHTML = partHits.map(h => `
+        <div class="hit">
+          <div class="name">
+            <code>${escapeHTML(h.movement_name)}</code>
+            ${h.safe_variant ? '<span class="safe-tag">✅ 安全变体</span>' : ''}
+          </div>
+          <div class="rule">${escapeHTML(h.rule_name)} · ${h.severity.toUpperCase()}</div>
+          <div class="reason">${escapeHTML(h.reason)}</div>
+          <div class="used-in">
+            📍 用于：
+            ${h.used_in.map(u => `<span>${escapeHTML(u)}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      groupsHTML += `
+        <details class="part-group ${topSev}" open>
+          <summary>
+            <span class="part-tag">${part}</span>
+            ${partEmoji[part]} ${part === '腰' ? '腰椎' : part === '膝' ? '膝关节' : '肩袖'}
+            <span class="count">${partHits.length} 条</span>
+          </summary>
+          ${hitsHTML}
+        </details>
+      `;
+    });
+    document.getElementById('groups').innerHTML = groupsHTML || '<p>无分组数据</p>';
+  }
+
+  // Copy summary
+  let copyText = `禁忌扫描报告\n`;
+  copyText += `状态：${summary_status}\n`;
+  copyText += `扫描：${scanned_sessions} sessions / ${scanned_movements} movements\n`;
+  copyText += `命中：error=${by_severity.error} / warn=${by_severity.warn} / info=${by_severity.info}\n`;
+  copyText += `安全变体：${safe_skipped}\n\n`;
+  if (hits.length > 0) {
+    copyText += `详情：\n`;
+    Object.entries(by_movement).forEach(([name, info]) => {
+      copyText += `  · ${name} [${info.severity}] ${info.reason}\n`;
+    });
+  }
+  document.getElementById('copy-text').textContent = copyText;
+}
+
+render();
+</script>
+</body>
+</html>

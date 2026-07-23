@@ -163,6 +163,7 @@ def scan_plan(
     return {
         "scanned_sessions": len(plans),
         "scanned_movements": movement_count,
+        "scanned_parts": list(parts),
         "safe_skipped": safe_skipped_count,
         "hits": hits,
         "by_movement": by_movement_summary,

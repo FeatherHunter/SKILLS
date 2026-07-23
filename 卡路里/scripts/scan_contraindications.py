@@ -93,12 +93,46 @@ def render_table(data: dict) -> str:
             continue
         lines.append(f"\n{sev_emoji[sev]} {sev.upper()} ({len(items)} 个动作):")
         for name, info in items:
-            lines.append(f"  · {name}  (命中 {info['count']} 次)")
+            safe_tag = "  [✅ 安全变体]" if info.get("safe_variant") else ""
+            lines.append(f"  · {name}{safe_tag}  (命中 {info['count']} 次)")
             lines.append(f"    规则: {', '.join(info['rules'])}")
             lines.append(f"    部位: {', '.join(info['parts'])}")
+            if info.get("reason"):
+                lines.append(f"    理由: {info['reason']}")
             lines.append(f"    使用: {', '.join(info['used_in'][:3])}"
                          + (f" ... +{len(info['used_in'])-3} more" if len(info['used_in']) > 3 else ""))
     return "\n".join(lines)
+
+
+def _hit_to_dict(h) -> dict:
+    """dataclass Hit → dict(JSON 序列化)"""
+    return {
+        "movement_name": h.movement_name,
+        "part": h.part,
+        "rule_name": h.rule_name,
+        "severity": h.severity,
+        "reason": h.reason,
+        "used_in": list(h.used_in),
+        "safe_variant": h.safe_variant,
+    }
+
+
+def _by_movement_with_reason(data: dict) -> dict:
+    """在 by_movement 聚合里补 reason(取第一条 hit 的 reason 作为代表)"""
+    reason_map = {}
+    safe_set = set()
+    for h in data.get("hits", []):
+        if h.movement_name not in reason_map:
+            reason_map[h.movement_name] = h.reason
+        if h.safe_variant:
+            safe_set.add(h.movement_name)
+    enriched = {}
+    for name, info in data["by_movement"].items():
+        new_info = dict(info)
+        new_info["reason"] = reason_map.get(name, "")
+        new_info["safe_variant"] = name in safe_set
+        enriched[name] = new_info
+    return enriched
 
 
 def render_output(args: argparse.Namespace, data: dict) -> str:
@@ -126,10 +160,13 @@ def render_output(args: argparse.Namespace, data: dict) -> str:
         "data": {
             "scanned_sessions": data["scanned_sessions"],
             "scanned_movements": data["scanned_movements"],
+            "scanned_parts": data.get("scanned_parts", ["腰", "膝", "肩"]),
             "safe_skipped": data.get("safe_skipped", 0),
             "by_severity": by_severity,
-            "by_movement": data["by_movement"],
+            "by_movement": _by_movement_with_reason(data),
+            "hits": [_hit_to_dict(h) for h in data["hits"]],
             "hit_count": len(data["hits"]),
+            "summary_status": status,
         },
         "message": message,
     }
@@ -152,12 +189,20 @@ def main(argv: list[str] | None = None) -> int:
             "by_movement": {},
             "by_severity": {"error": 0, "warn": 0, "info": 0},
             "summary_status": "ok",
+            "scanned_parts": [],
         }
         for part in parts:
             r = scan_plan(part=part, db=args.db)  # type: ignore[arg-type]
             merged["scanned_sessions"] = r["scanned_sessions"]
             merged["scanned_movements"] = r["scanned_movements"]
             merged["safe_skipped"] += r.get("safe_skipped", 0)
+            # 2026-07-23 A1 增:记录实际扫描了哪些部位
+            if part == "all":
+                for p in ("腰", "膝", "肩"):
+                    if p not in merged["scanned_parts"]:
+                        merged["scanned_parts"].append(p)
+            elif part not in merged["scanned_parts"]:
+                merged["scanned_parts"].append(part)
             merged["hits"].extend(r["hits"])
             # 合并 by_movement:同名动作的 hits 聚合
             for name, info in r["by_movement"].items():

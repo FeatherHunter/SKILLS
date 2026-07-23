@@ -67,7 +67,8 @@
 <li><a href="#使用流程-6">使用流程</a></li>
 <li><a href="#命令行参考-7">命令行参考</a></li>
 <li><a href="#分类参考-8">分类参考</a></li>
-<li><a href="#错误处理-9">错误处理</a></li></ol></div>
+<li><a href="#错误处理-9">错误处理</a></li>
+<li><a href="#html-可视化查询v22-新增-10">HTML 可视化查询（v2.2 新增）</a></li></ol></div>
 <p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。</p>
 <h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
 <ol>
@@ -706,6 +707,55 @@ python3 scripts/record_bill.py stats
 <h3>Step 5：回复用户</h3>
 <pre><code>✓ 已记录：餐饮 -35.00
 </code></pre>
+<h3 id="html-可视化查询v22-新增-10">Step 6：HTML 可视化查询（v2.2 新增）</h3>
+<p>当用户希望"看更直观的页面"而不是看文字时，AI 可调用 <code>scripts/bill_inject.py</code> 把查询结果注入到 <code>templates/query_view.html</code>，生成可视化 HTML 文件并交付。</p>
+<h4>支持 9 种查询类型</h4>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>CLI 子命令</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>今日摘要</td><td><code>summary</code></td><td>看今日收支</td></tr>
+<tr><td>列表</td><td><code>list</code> / <code>recent</code> / <code>search</code></td><td>看记录明细</td></tr>
+<tr><td>月度汇总</td><td><code>monthly</code></td><td>看月度分类排行</td></tr>
+<tr><td>周期对比</td><td><code>compare</code></td><td>本周 vs 上周 / 本月 vs 上月</td></tr>
+<tr><td>分类明细</td><td><code>breakdown</code></td><td>看各类支出占比（SVG 环形图）</td></tr>
+<tr><td>收支总览</td><td><code>overview</code></td><td>看月度 4 个 KPI</td></tr>
+<tr><td>记账统计</td><td><code>stats</code></td><td>看总笔数 / 天数</td></tr>
+</tbody>
+</table>
+<h4>调用流程</h4>
+<pre><code class="language-bash"># 1. 直接调 CLI（带 --json，遵循 {status, data, message} 契约）
+python3 scripts/record_bill.py summary --json
+python3 scripts/record_bill.py monthly --month 2026-07 --json
+
+# 2. 或用注入脚本（自动调 CLI + 注入 HTML 模板 + 输出文件）
+python3 scripts/bill_inject.py summary
+python3 scripts/bill_inject.py monthly --month 2026-07
+python3 scripts/bill_inject.py breakdown --from 2026-07-01 --to 2026-07-31
+python3 scripts/bill_inject.py compare --period week
+python3 scripts/bill_inject.py search "咖啡"
+</code></pre>
+<h4>输出路径</h4>
+<ul>
+<li>默认：<code>D:/Downloads/饼干记账_查询_&lt;type&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code></li>
+<li>自定义：<code>python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html</code></li>
+</ul>
+<h4>模板特性</h4>
+<ul>
+<li>单文件离线运行（无 CDN / 无 chart.js 依赖）</li>
+<li>Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）</li>
+<li>自适应桌面 + 平板 + 手机</li>
+<li>5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线</li>
+<li>SVG 环形图（breakdown 用）</li>
+<li>单模板 + JS 动态分发 9 种查询类型</li>
+</ul>
+<h4>交付给用户</h4>
+<p>用 <code>&lt;media src="..." type="file" /&gt;</code> 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。</p>
 <hr />
 <h2 id="命令行参考-7">命令行参考</h2>
 <p>共 10 个子命令：</p>
@@ -735,58 +785,61 @@ python3 scripts/record_bill.py stats
 <td><code>list</code></td>
 <td>查询记录</td>
 <td>（无）</td>
-<td><code>--date</code>, <code>--from</code>+<code>--to</code>, <code>--category</code></td>
+<td><code>--date</code>, <code>--from</code>+<code>--to</code>, <code>--category</code>, <strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>search</code></td>
 <td>搜索备注</td>
 <td><code>keyword</code>（位置参数）</td>
-<td>（无）</td>
+<td><strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>summary</code></td>
 <td>今日摘要</td>
 <td>（无）</td>
-<td>（无）</td>
+<td><strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>monthly</code></td>
 <td>月度汇总</td>
 <td><code>--month</code></td>
-<td>（无）</td>
+<td><strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>compare</code></td>
 <td>周期对比</td>
 <td>（无）</td>
-<td><code>--period</code> (week/month, 默认 week)</td>
+<td><code>--period</code> (week/month, 默认 week), <strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>recent</code></td>
 <td>最近N条</td>
 <td>（无）</td>
-<td><code>--limit</code> (默认 10)</td>
+<td><code>--limit</code> (默认 10), <strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>breakdown</code></td>
 <td>分类明细</td>
 <td>（无）</td>
-<td><code>--from</code>, <code>--to</code></td>
+<td><code>--from</code>, <code>--to</code>, <strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>overview</code></td>
 <td>收支总览</td>
 <td>（无）</td>
-<td><code>--month</code> (默认当月)</td>
+<td><code>--month</code> (默认当月), <strong><code>--json</code></strong></td>
 </tr>
 <tr>
 <td><code>stats</code></td>
 <td>记账统计</td>
 <td>（无）</td>
-<td>（无）</td>
+<td><strong><code>--json</code></strong></td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>JSON 契约</strong>：所有查询命令加 <code>--json</code> 后输出 <code>{status: "ok"|"error", data: {...}, message: "..."}</code> 三段式。<code>bill_inject.py</code> 用此契约注入 HTML 模板。写入类命令（<code>add</code>/<code>update</code>）不支持 <code>--json</code>，保持纯文本输出。</p>
+</blockquote>
 <hr />
 <h2 id="分类参考-8">分类参考</h2>
 <p>分类采用 <strong>L1/L2/L3 三级</strong> 结构(支出)/ <strong>L1/L2 二级</strong> 结构(收入),用 <code>/</code> 分隔(如 <code>餐饮/外卖/午餐</code>)。</p>
@@ -825,9 +878,9 @@ python3 scripts/record_bill.py stats
 </tbody>
 </table>
 <footer>
-  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
+  HTML 镜像手动同步于 2026-07-23 &nbsp;·&nbsp;
   源文件: <code>饼干记账/SKILL.md</code><br>
-  工具: <code>html_mirror_generator/generate.py v1</code>
+  新增 v2.2: HTML 可视化查询（CLI <code>--json</code> + <code>bill_inject.py</code> + <code>templates/query_view.html</code>）
 </footer>
 </body>
 </html>

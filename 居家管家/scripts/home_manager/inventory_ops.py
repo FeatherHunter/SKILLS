@@ -317,6 +317,106 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
     return 0
 
 
+def _outfit_payload(conn, status_filter="在家"):
+    """返回 outfit_picker.html 需要的衣物分类数据
+
+    衣物分类结构(居家管家):
+      138 衣物与穿戴 (顶级)
+        144 上装 / 178 外套 (按"上装"组合)
+        145 下装
+      148 鞋类 (二级,直接是顶级域 148 的子)
+      149 帽饰配件
+
+    返回结构:
+      {
+        "summary": {title, subtitle, metrics[]},
+        "groups": [
+          {"key": "top",    "label": "上装",   "items": [...]},
+          {"key": "bottom", "label": "下装",   "items": [...]},
+          {"key": "shoes",  "label": "鞋帽",   "items": [...]},
+        ]
+      }
+    """
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        WITH RECURSIVE cat_path AS (
+          SELECT id, parent_id, name, name AS full_path, 1 AS lvl
+          FROM categories WHERE parent_id IS NULL
+          UNION ALL
+          SELECT c.id, c.parent_id, c.name,
+                 cp.full_path || '/' || c.name, cp.lvl + 1
+          FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
+        )
+        SELECT i.id, i.name, c.name AS category_name, c.id AS category_id,
+               cp.lvl, cp.full_path
+        FROM items i
+        JOIN cat_path cp ON i.category_id = cp.id
+        JOIN categories c ON c.id = cp.id
+        WHERE cp.lvl >= 2
+          AND (
+            cp.full_path LIKE '衣物与穿戴/上装%'
+            OR cp.full_path LIKE '衣物与穿戴/下装%'
+            OR cp.full_path LIKE '衣物与穿戴/帽饰配件%'
+            OR cp.full_path LIKE '鞋类/%'
+          )
+        ORDER BY cp.lvl, c.name, i.name
+    """)
+    rows = cursor.fetchall()
+
+    def _fetch_items_for(items_meta):
+        result = []
+        for r in items_meta:
+            cursor.execute("""
+                SELECT location, quantity, location_status
+                FROM item_locations WHERE item_id = ? ORDER BY updated_at DESC LIMIT 1
+            """, (r['id'],))
+            loc = cursor.fetchone()
+            if loc and loc['location_status'] != status_filter:
+                continue
+            tags = get_tags(conn, r['id'])
+            photo = None
+            cursor.execute("SELECT photo FROM items WHERE id = ?", (r['id'],))
+            prow = cursor.fetchone()
+            photo_name = prow['photo'] if prow else None
+            result.append({
+                "id": r['id'],
+                "name": r['name'],
+                "category_name": r['category_name'],
+                "full_path": r['full_path'],
+                "tags": tags,
+                "photo": photo_name,
+                "location_status": loc['location_status'] if loc else status_filter,
+            })
+        return result
+
+    top_items = [r for r in rows if r['full_path'].startswith('衣物与穿戴/上装')]
+    bottom_items = [r for r in rows if r['full_path'].startswith('衣物与穿戴/下装')]
+    shoes_items = [r for r in rows if r['full_path'].startswith('鞋类/')
+                   or r['full_path'].startswith('衣物与穿戴/帽饰配件')]
+
+    groups = [
+        {"key": "top",    "label": "上装（含外套）", "items": _fetch_items_for(top_items)},
+        {"key": "bottom", "label": "下装",           "items": _fetch_items_for(bottom_items)},
+        {"key": "shoes",  "label": "鞋帽",           "items": _fetch_items_for(shoes_items)},
+    ]
+
+    total = sum(len(g['items']) for g in groups)
+    return {
+        "summary": {
+            "title": "今天穿什么",
+            "subtitle": "从上装/下装/鞋帽各选一件，标\"今天穿\"后 AI 更新状态为\"穿着中\"",
+            "metrics": [
+                {"label": "可选上装", "value": f"{len(groups[0]['items'])} 件"},
+                {"label": "可选下装", "value": f"{len(groups[1]['items'])} 件"},
+                {"label": "可选鞋帽", "value": f"{len(groups[2]['items'])} 件"},
+                {"label": "总可选", "value": f"{total} 件"},
+            ],
+        },
+        "groups": groups,
+    }
+
+
 def _stats_summary_payload(conn):
     """返回 list_overview.html 需要的结构化统计数据
 

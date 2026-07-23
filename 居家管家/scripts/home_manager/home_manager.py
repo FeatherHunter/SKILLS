@@ -158,6 +158,11 @@ def main():
     p_stats.add_argument("--category-id", type=int, default=None, help="（expiring用）按分类 ID 筛选")
     p_stats.add_argument("--output", default=None, help="HTML 输出路径（仅 --type expiring 支持）")
 
+    # ── outfit (穿什么 HTML 化) ──
+    p_outfit = subparsers.add_parser("outfit", help="今日穿搭选择器")
+    p_outfit.add_argument("--status", default="在家", help="筛选位置状态，默认'在家'")
+    p_outfit.add_argument("--output", required=True, help="HTML 输出路径")
+
     # ── tag-merge ──
     p_merge = subparsers.add_parser("tag-merge", help="合并标签")
     p_merge.add_argument("--from", dest="from_tag", required=True, help="要被合并的标签")
@@ -409,6 +414,21 @@ def main():
             return emit(payload, "expiring_alert.html", args.output)
         return stats(stat_type=args.type, limit=args.limit, days=args.days,
                      expired_only=args.expired_only, category_id=args.category_id)
+
+    elif args.command == "outfit":
+        from render import emit
+        from home_manager.inventory_ops import _outfit_payload
+        conn = get_conn()
+        try:
+            payload_data = _outfit_payload(conn, status_filter=args.status)
+        finally:
+            conn.close()
+        payload = {
+            "status": "ok",
+            "data": payload_data,
+            "message": "穿搭选择器 HTML 已生成",
+        }
+        return emit(payload, "outfit_picker.html", args.output)
 
     elif args.command == "tag-merge":
         return tag_merge(from_tag=args.from_tag, to_tag=args.to_tag)

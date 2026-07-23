@@ -66,6 +66,9 @@ def normalize(data: dict) -> dict:
     weeks = data.get('weeks', [])
     if not isinstance(weeks, list):
         weeks = []
+    movements = data.get('movements_catalog', {})
+    if not isinstance(movements, dict):
+        movements = {}
 
     # 兜底计算
     if 'total_sessions' not in summary:
@@ -77,7 +80,8 @@ def normalize(data: dict) -> dict:
             s.get('total_sets', 0) for w in weeks for d in w.get('days', []) for s in d.get('sessions', [])
         )
 
-    return {'summary': summary, 'preferences': prefs, 'weeks': weeks}
+    # BUG 修复:确保 movements_catalog 始终传递(即使为空)
+    return {'summary': summary, 'preferences': prefs, 'weeks': weeks, 'movements_catalog': movements}
 
 
 def default_plan() -> dict:

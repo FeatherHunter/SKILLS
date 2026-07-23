@@ -194,6 +194,7 @@ def main():
     elif args.command == "add":
         if args.preview:
             from home_manager.html_render import render_page, build_command, split_tags
+            from home_manager.validators import validate_hard_rules
             import json as _json
             draft = {
                 "name": args.name, "category_id": args.category_id,
@@ -205,26 +206,7 @@ def main():
                 "remark": args.remark, "tags": split_tags(args.tags),
                 "photo": args.photo, "similar_items": [],
             }
-            tags = draft["tags"]
-            checks = {
-                "has_name": bool(draft["name"]),
-                "has_category_id": draft["category_id"] not in (None, ""),
-                "location_depth_ok": "/" in (draft["location"] or "").strip("/"),
-                "tags_ok": len(tags) >= 10,
-                "remark_ok": bool((draft["remark"] or "").strip()),
-            }
-            missing = []
-            if not checks["has_name"]:
-                missing.append("缺少物品名称")
-            if not checks["has_category_id"]:
-                missing.append("缺少 category_id")
-            if not checks["location_depth_ok"]:
-                missing.append("位置必须至少两级")
-            if not checks["tags_ok"]:
-                missing.append(f"tag 数量 {len(tags)} < 10")
-            if not checks["remark_ok"]:
-                missing.append("备注不能为空")
-            checks["ready_score"] = sum(1 for v in checks.values() if v is True) / 5
+            checks, missing = validate_hard_rules(draft)
             payload = {
                 "status": "ok",
                 "data": {

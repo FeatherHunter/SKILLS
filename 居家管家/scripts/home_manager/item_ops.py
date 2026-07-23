@@ -143,7 +143,18 @@ def add_item(name, category_id, location, owner="使用者", quantity=1,
 
     新分类体系(A.8):--category-id 必选,内部 derive category 字符串写入老字段(向后兼容)
     """
-    # ── 硬约束：标签和备注必填检查（无跳过通道，AI 偷懒无退路）──
+    # ── 硬约束：与 preview 共用 validators, 保证口径一致 ──
+    from .validators import validate_hard_rules
+    _, missing = validate_hard_rules({
+        'name': name, 'category_id': category_id, 'location': location,
+        'tags': tags, 'remark': remark,
+    })
+    location_depth_ok = '/' in (location or '').strip('/')
+    if not location_depth_ok:
+        print(f"✗ 录入失败：位置必须至少两级（含'/'分隔）")
+        print(f"  当前位置: {location or '(空)'}")
+        return 1
+
     tag_list = [t.strip() for t in (tags or "").split(",") if t.strip()]
     if len(tag_list) < 10:
         print(f"✗ 录入失败：需要 tag 最少十个，备注不能为空且要全面")

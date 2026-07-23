@@ -55,6 +55,9 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/review_template_v2.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/workout_plan_view.html` | 查健身计划 | DB 直接 query workout_plans + workout_plan_config | `python scripts/render_workout_plan.py [--review]`（已规范化，340 → 201 行） |
+| `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `python scripts/render_health_dashboard.py [--range / --days]` |
+| `templates/food_ranking.html` | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `python scripts/render_food_ranking.py --category / --all` |
+| `templates/exercise_review.html` | 复盘训练 | `exercise_review.py --format json` | `python scripts/render_exercise_review_html.py [--days]` |
 
 ### 模板设计原则（与《手册》第 7 节对齐）
 

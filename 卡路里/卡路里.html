@@ -63,7 +63,8 @@
 <strong>🎨 2026-07-23 视觉增强新增：</strong>禁忌扫描现已支持 HTML 可视化报告。<br>
 运行 <code style="background:#fff;padding:2px 6px;border-radius:4px">python scripts/render_contraindication.py</code> 即可生成 Apple 风报告页面，含状态徽章、6 KPI 卡、按部位分组的禁忌详情、一键复制回 AI。详见 SKILL.md <strong>🎨 视觉增强</strong>章节。<br>
 <strong>📊 同日新增：</strong>复盘报告 v2 HTML。运行 <code style="background:#fff;padding:2px 6px;border-radius:4px">python scripts/render_review.py --range 2026-07-13:2026-07-19</code>（或 <code>--type week/month/year/day</code>）生成 Apple 风 8 dim 卡片网格 + 体重 SVG 趋势 + 异常天高亮 + 一键复制回 AI。<br>
-<strong>🏋️ 同日新增（Phase C）：</strong>健身计划 HTML 已规范化。运行 <code style="background:#fff;padding:2px 6px;border-radius:4px">python scripts/render_workout_plan.py</code> 输出"模板+注入"模式 HTML（340 行 → 201 行 Python，299 行模板稳定）。
+<strong>🏋️ 同日新增（Phase C）：</strong>健身计划 HTML 已规范化。运行 <code style="background:#fff;padding:2px 6px;border-radius:4px">python scripts/render_workout_plan.py</code> 输出"模板+注入"模式 HTML（340 行 → 201 行 Python，299 行模板稳定）。<br>
+<strong>📊 同日新增（Phase D）：</strong>3 个新 HTML 模板（健康仪表盘 / 5 食物排行 / 训练复盘），CLI 重构 + 9 函数支持 <code>as_dict=True</code>（JSON 化）。渲染器：<code>render_health_dashboard.py / render_food_ranking.py --all / render_exercise_review_html.py</code>。
 </div>
 <div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-最高优先级-1">⚠️ 强制性规定(最高优先级)</a></li>
 <li><a href="#操作规范-强制-2">⚠️ 操作规范(强制)</a></li>

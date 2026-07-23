@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>训练复盘 · 卡路里</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --gray:#8E8E93;--gray-soft:#F2F2F7;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--fg);
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+
+.hero{
+  background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);
+  padding:32px 32px 28px;border-radius:20px;
+  margin-bottom:24px;box-shadow:var(--shadow);
+  text-align:center;
+}
+.hero h1{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+
+/* SUMMARY STATS */
+.stats{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:12px;margin-bottom:24px;
+}
+.stat{
+  background:var(--card);border-radius:14px;
+  padding:16px 18px;text-align:center;
+  box-shadow:var(--shadow);
+}
+.stat .label{font-size:11px;color:var(--fg2);font-weight:500;margin-bottom:6px}
+.stat .value{font-size:24px;font-weight:700;letter-spacing:-.5px}
+.stat .value.good{color:var(--green)}
+.stat .value.warn{color:var(--orange)}
+.stat .value.bad{color:var(--red)}
+.stat .hint{font-size:11px;color:var(--fg3);margin-top:4px}
+
+/* HEATMAP */
+.section{
+  background:var(--card);border-radius:16px;
+  padding:20px 24px;margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.section h2{
+  font-size:16px;font-weight:600;margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+.section h2::before{
+  content:'';width:4px;height:16px;
+  background:var(--accent);border-radius:2px;
+}
+.heatmap{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  gap:6px;
+}
+.day-cell{
+  aspect-ratio:1;border-radius:10px;
+  background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:8px;font-size:11px;color:var(--fg3);
+  border:1px solid var(--border);
+}
+.day-cell.r100{background:var(--green);color:#fff;border-color:var(--green)}
+.day-cell.r50-99{background:var(--orange);color:#fff;border-color:var(--orange)}
+.day-cell.r0-49{background:var(--red);color:#fff;border-color:var(--red)}
+.day-cell.rest{background:var(--gray-soft);color:var(--gray)}
+.day-cell.weekend{font-weight:600}
+.day-cell .date{font-size:10px;opacity:.85;margin-bottom:2px}
+.day-cell .pct{font-size:14px;font-weight:700}
+.day-cell .note{font-size:9px;opacity:.75;margin-top:2px}
+
+.legend{
+  display:flex;gap:14px;justify-content:center;
+  margin-top:14px;font-size:11px;color:var(--fg2);
+}
+.legend .item{display:flex;align-items:center;gap:4px}
+.legend .dot{width:10px;height:10px;border-radius:3px}
+
+/* TABLE */
+table{
+  width:100%;border-collapse:collapse;
+  background:var(--card);border-radius:14px;
+  overflow:hidden;box-shadow:var(--shadow);
+  margin-bottom:20px;
+}
+thead{background:var(--accent-soft)}
+th{
+  text-align:left;padding:12px 14px;font-size:12px;
+  font-weight:600;color:var(--fg);border-bottom:1px solid var(--border);
+}
+td{
+  padding:12px 14px;border-bottom:1px solid #ececec;
+  font-size:13.5px;vertical-align:middle;
+}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--accent-soft)}
+.rate-cell{font-weight:700}
+.rate-cell.good{color:var(--green)}
+.rate-cell.warn{color:var(--orange)}
+.rate-cell.bad{color:var(--red)}
+.rate-cell.rest{color:var(--gray)}
+.anomaly{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:11px;font-weight:600;margin:2px 4px 2px 0;
+}
+.anomaly.warn{background:var(--orange-soft);color:var(--orange)}
+.anomaly.bad{background:var(--red-soft);color:var(--red)}
+
+/* COPY */
+.copy-section{
+  background:var(--card);border-radius:14px;
+  padding:16px 20px;margin-top:20px;
+  box-shadow:var(--shadow);
+}
+.copy-section h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--fg2)}
+.copy-section pre{
+  background:#1d1d1f;color:#f5f5f7;
+  padding:12px 16px;border-radius:10px;
+  font-size:11.5px;line-height:1.55;
+  overflow-x:auto;margin:6px 0 10px;
+  font-family:"SF Mono",monospace;white-space:pre-wrap;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent);color:#fff;
+  padding:7px 14px;border-radius:8px;
+  font-size:12px;font-weight:600;
+  border:none;cursor:pointer;
+}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--green)}
+
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--card);color:var(--accent);
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;box-shadow:var(--shadow);
+  font-size:18px;border:1px solid var(--border);
+}
+
+footer{
+  text-align:center;color:var(--fg3);
+  font-size:12px;padding-top:28px;
+  border-top:1px solid var(--border);margin-top:36px;
+}
+
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:22px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  th,td{padding:8px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>🏋️ 训练复盘</h1>
+  <div class="sub" id="subtitle">加载中...</div>
+</header>
+
+<div class="stats" id="stats"></div>
+
+<div class="section">
+  <h2>📅 每日完成率热力图</h2>
+  <div class="heatmap" id="heatmap"></div>
+  <div class="legend">
+    <div class="item"><span class="dot" style="background:var(--green)"></span>100%</div>
+    <div class="item"><span class="dot" style="background:var(--orange)"></span>50-99%</div>
+    <div class="item"><span class="dot" style="background:var(--red)"></span><50%</div>
+    <div class="item"><span class="dot" style="background:var(--gray-soft);border:1px solid var(--border)"></span>休息日</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📋 每日明细</h2>
+</div>
+<table>
+  <thead>
+    <tr><th>日期</th><th>周次</th><th>计划</th><th>计划组数</th><th>实做组数</th><th>完成率</th><th>异常</th></tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<div class="copy-section">
+  <h3>📤 复制回 AI</h3>
+  <pre id="copyText">加载中...</pre>
+  <button class="btn" id="copyBtn" onclick="copyToAI()">复制摘要</button>
+</div>
+
+<footer>
+  卡路里 Skill · 训练复盘 · 数据来源 exercise_review.py --format json<br>
+  模板：templates/exercise_review.html
+</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function copyToAI() {
+  const text = document.getElementById('copyText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制摘要'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+function classifyDay(rate) {
+  if (rate === null || rate === undefined) return 'rest';
+  if (rate >= 100) return 'r100';
+  if (rate >= 50) return 'r50-99';
+  return 'r0-49';
+}
+
+function rateClass(rate) {
+  if (rate === null || rate === undefined) return 'rest';
+  if (rate >= 100) return 'good';
+  if (rate >= 50) return 'warn';
+  return 'bad';
+}
+
+function render() {
+  if (!DATA) {
+    document.querySelector('.hero h1').textContent = '❌ 数据加载失败';
+    return;
+  }
+
+  const days = Object.values(DATA);
+  const dates = Object.keys(DATA).sort();
+  if (dates.length === 0) {
+    document.getElementById('subtitle').textContent = '暂无数据';
+    return;
+  }
+  document.getElementById('subtitle').textContent =
+    `${dates[0]} ~ ${dates[dates.length - 1]}  ·  ${dates.length} 天`;
+
+  // STATS
+  const validDays = days.filter(d => d.completion_rate !== null && !d.is_rest_day);
+  const totalDays = days.length;
+  const trainDays = validDays.length;
+  const restDays = totalDays - trainDays;
+  const avgRate = validDays.length > 0
+    ? Math.round(validDays.reduce((s, d) => s + d.completion_rate, 0) / validDays.length)
+    : 0;
+  const anomaliesCount = days.reduce((s, d) => s + (d.anomalies ? d.anomalies.length : 0), 0);
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">
+      <div class="label">训练天数</div>
+      <div class="value">${trainDays}<span style="font-size:14px;color:var(--fg2);margin-left:4px">/ ${totalDays}</span></div>
+      <div class="hint">${restDays} 天休息</div>
+    </div>
+    <div class="stat">
+      <div class="label">平均完成率</div>
+      <div class="value ${avgRate >= 100 ? 'good' : avgRate >= 50 ? 'warn' : 'bad'}">${avgRate}<span style="font-size:14px;color:var(--fg2);margin-left:4px">%</span></div>
+      <div class="hint">${avgRate >= 80 ? '✓ 稳定' : avgRate >= 50 ? '需加强' : '需调整'}</div>
+    </div>
+    <div class="stat">
+      <div class="label">异常天</div>
+      <div class="value ${anomaliesCount === 0 ? 'good' : anomaliesCount > 2 ? 'bad' : 'warn'}">${anomaliesCount}</div>
+      <div class="hint">漏做 / 超额</div>
+    </div>
+    <div class="stat">
+      <div class="label">实做总组数</div>
+      <div class="value">${days.reduce((s, d) => s + (d.actual_total_sets || 0), 0)}</div>
+      <div class="hint">计划 ${days.reduce((s, d) => s + (d.plan_total_sets || 0), 0)} 组</div>
+    </div>
+  `;
+
+  // HEATMAP
+  const heatmap = document.getElementById('heatmap');
+  heatmap.innerHTML = dates.map((d, i) => {
+    const data = DATA[d];
+    const dateObj = new Date(d);
+    const dayOfWeek = dateObj.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const dowLabel = ['日', '一', '二', '三', '四', '五', '六'][dayOfWeek];
+    const monthDay = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+    const cls = classifyDay(data.completion_rate);
+    const finalCls = isWeekend ? `${cls} weekend` : cls;
+    const pctStr = data.completion_rate !== null ? `${Math.round(data.completion_rate)}%` :
+                   data.is_rest_day ? '休' : '—';
+    const note = data.note ? `<div class="note">${escapeHTML(data.note)}</div>` : '';
+    return `<div class="day-cell ${finalCls}">
+      <div class="date">${monthDay} 周${dowLabel}</div>
+      <div class="pct">${pctStr}</div>
+      ${note}
+    </div>`;
+  }).join('');
+
+  // TABLE
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = dates.map(d => {
+    const data = DATA[d];
+    const rate = data.completion_rate;
+    const rateStr = rate !== null ? `${Math.round(rate)}%` : '休';
+    const rateCls = rateClass(rate);
+    const sessions = (data.sessions || []).filter(Boolean);
+    const sessionsStr = sessions.length ? sessions.join(' / ') : '—';
+    const anomaliesHTML = (data.anomalies || []).map(a => {
+      const type = a.type || '';
+      const cls = (type === 'low_completion' || type === 'over_completion') ? 'warn' : 'bad';
+      return `<span class="anomaly ${cls}">${escapeHTML(a.msg)}</span>`;
+    }).join('');
+    return `<tr>
+      <td><strong>${d}</strong></td>
+      <td>W${data.plan_week || '?'}</td>
+      <td style="font-size:12px;color:var(--fg2)">${escapeHTML(sessionsStr)}</td>
+      <td>${data.plan_total_sets}</td>
+      <td>${data.actual_total_sets}</td>
+      <td class="rate-cell ${rateCls}">${rateStr}</td>
+      <td>${anomaliesHTML}</td>
+    </tr>`;
+  }).join('');
+
+  // COPY
+  let txt = `训练复盘 (${dates[0]} ~ ${dates[dates.length-1]})\n`;
+  txt += `训练 ${trainDays}/${totalDays} 天，平均完成率 ${avgRate}%\n`;
+  txt += `异常: ${anomaliesCount} 条\n\n`;
+  dates.forEach(d => {
+    const data = DATA[d];
+    const r = data.completion_rate;
+    const rStr = r !== null ? `${Math.round(r)}%` : '休';
+    txt += `  ${d}: ${rStr} (${data.actual_total_sets}/${data.plan_total_sets})${data.note ? ' - ' + data.note : ''}\n`;
+  });
+  document.getElementById('copyText').textContent = txt;
+}
+
+render();
+</script>
+</body>
+</html>

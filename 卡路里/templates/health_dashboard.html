@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>健康仪表盘 · 卡路里</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--fg);
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+  padding:0;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:40px 24px 80px}
+
+/* HERO */
+.hero{
+  background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);
+  padding:40px 36px 32px;border-radius:20px;
+  margin-bottom:24px;box-shadow:var(--shadow);
+}
+.hero .eyebrow{
+  display:inline-block;font-size:12px;letter-spacing:.8px;
+  color:var(--accent);font-weight:600;
+  margin-bottom:10px;text-transform:uppercase;
+}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:-.8px;margin-bottom:6px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.hero .status{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;margin-top:12px;
+}
+.status.ok{background:var(--green-soft);color:var(--green)}
+.status.warn{background:var(--orange-soft);color:var(--orange)}
+
+/* 4 DIM CARDS */
+.dim-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:14px;margin-bottom:24px;
+}
+.dim{
+  background:var(--card);border-radius:16px;
+  padding:18px 20px;box-shadow:var(--shadow);
+}
+.dim .head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;
+}
+.dim h3{font-size:14px;font-weight:600;color:var(--fg2)}
+.dim .badge{
+  font-size:11px;padding:3px 8px;border-radius:6px;
+  font-weight:600;
+}
+.badge.good{background:var(--green-soft);color:var(--green)}
+.badge.warn{background:var(--orange-soft);color:var(--orange)}
+.badge.bad{background:var(--red-soft);color:var(--red)}
+.dim .main{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.dim .main .unit{font-size:14px;color:var(--fg2);font-weight:500;margin-left:4px}
+.dim .detail{font-size:13px;color:var(--fg2);line-height:1.5}
+
+/* Macro bar */
+.macro-bar{
+  display:flex;height:8px;border-radius:4px;
+  overflow:hidden;margin:8px 0 6px;
+}
+.macro-bar .seg{height:100%}
+.macro-bar .p-protein{background:var(--accent)}
+.macro-bar .p-carb{background:var(--green)}
+.macro-bar .p-fat{background:var(--orange)}
+.macro-row{
+  display:flex;justify-content:space-between;
+  font-size:12px;color:var(--fg2);margin-top:4px;
+}
+.macro-row span strong{color:var(--fg);font-weight:600}
+
+/* ACTION ITEMS */
+.section{
+  background:var(--card);border-radius:16px;
+  padding:20px 24px;margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.section h2{
+  font-size:16px;font-weight:600;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section h2::before{
+  content:'';width:4px;height:16px;
+  background:var(--accent);border-radius:2px;
+}
+.action{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 0;font-size:14px;border-bottom:1px solid var(--border);
+}
+.action:last-child{border-bottom:none}
+.action .icon{
+  width:24px;height:24px;border-radius:6px;
+  background:var(--accent-soft);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.action .text{flex:1}
+.action .text strong{display:block;font-weight:600;margin-bottom:2px}
+.action .text small{color:var(--fg3);font-size:12px}
+
+/* COPY */
+.copy-section{
+  background:var(--card);border-radius:14px;
+  padding:16px 20px;margin-top:20px;
+  box-shadow:var(--shadow);
+}
+.copy-section h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--fg2)}
+.copy-section pre{
+  background:#1d1d1f;color:#f5f5f7;
+  padding:12px 16px;border-radius:10px;
+  font-size:11.5px;line-height:1.55;
+  overflow-x:auto;margin:6px 0 10px;
+  font-family:"SF Mono",monospace;white-space:pre-wrap;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent);color:#fff;
+  padding:7px 14px;border-radius:8px;
+  font-size:12px;font-weight:600;
+  border:none;cursor:pointer;
+}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--green)}
+
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--card);color:var(--accent);
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;box-shadow:var(--shadow);
+  font-size:18px;border:1px solid var(--border);
+}
+
+footer{
+  text-align:center;color:var(--fg3);
+  font-size:12px;padding-top:28px;
+  border-top:1px solid var(--border);margin-top:36px;
+}
+
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:28px 20px 22px;border-radius:16px}
+  .hero h1{font-size:24px}
+  .dim-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">健康仪表盘 · D3</div>
+  <h1 id="title">综合健康报告</h1>
+  <div class="sub" id="subtitle">加载中...</div>
+  <div id="statusArea"></div>
+</header>
+
+<div class="dim-grid" id="dimGrid"></div>
+
+<div class="section">
+  <h2>🎯 今日该做什么</h2>
+  <div id="actionList"></div>
+</div>
+
+<div class="copy-section">
+  <h3>📤 复制回 AI（让 AI 帮你规划）</h3>
+  <pre id="copyText">加载中...</pre>
+  <button class="btn" id="copyBtn" onclick="copyToAI()">复制摘要</button>
+</div>
+
+<footer>
+  卡路里 Skill · 健康仪表盘 · 数据来源 analysis.dashboard(as_dict=True)<br>
+  模板：templates/health_dashboard.html
+</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function copyToAI() {
+  const text = document.getElementById('copyText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制摘要'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+function getBadge(ratio, goodRange=[0.9, 1.1]) {
+  if (ratio >= goodRange[0] && ratio <= goodRange[1]) return ['good', '达标'];
+  if (ratio < goodRange[0] - 0.3 || ratio > goodRange[1] + 0.3) return ['bad', '偏差大'];
+  return ['warn', '接近'];
+}
+
+function render() {
+  if (!DATA) {
+    document.getElementById('title').textContent = '❌ 数据加载失败';
+    document.getElementById('subtitle').textContent = 'window.__DATA__ 未注入';
+    return;
+  }
+
+  const { status, data, message } = DATA;
+  if (status !== 'ok' && status !== 'warn') {
+    document.getElementById('title').textContent = '⚠️ ' + (message || '数据错误');
+    return;
+  }
+
+  document.getElementById('title').textContent = '综合健康报告';
+  document.getElementById('subtitle').textContent =
+    `${data.start} ~ ${data.end}  ·  ${message}`;
+
+  // Status
+  const statusArea = document.getElementById('statusArea');
+  statusArea.innerHTML = `<span class="status ${status}">${
+    status === 'ok' ? '✅ OK' : '⚠️ 部分数据异常'
+  }</span>`;
+
+  const w = data.weight || {};
+  const c = data.calorie || {};
+  const e = data.exercise || {};
+  const d = data.deficit || {};
+
+  // 4 DIM CARDS
+  const calRatio = c.cal_goal ? (c.avg_cal / c.cal_goal) : null;
+  const calBadge = calRatio ? getBadge(calRatio) : ['good', '无目标'];
+
+  const deficitRatio = d.avg_deficit ? (d.avg_deficit / 500) : null;
+  const deficitBadge = deficitRatio ? getBadge(deficitRatio, [0.6, 1.4]) : ['good', '正常'];
+
+  document.getElementById('dimGrid').innerHTML = `
+    <div class="dim">
+      <div class="head"><h3>🔥 摄入</h3><span class="badge ${calBadge[0]}">${calBadge[1]}</span></div>
+      <div class="main">${c.avg_cal || 0}<span class="unit">卡/天</span></div>
+      <div class="detail">
+        ${c.days_count || 0} 天 · 目标 ${c.cal_goal || '未设'} 卡<br>
+        合规 ${c.compliance_days || 0}/${c.days_count || 0} 天 ·
+        工作日 ${c.weekday_avg || 0} / 周末 ${c.weekend_avg || 0}
+      </div>
+    </div>
+    <div class="dim">
+      <div class="head"><h3>🏃 运动</h3><span class="badge ${(e.coverage_pct >= 70 ? 'good' : e.coverage_pct >= 40 ? 'warn' : 'bad')}">${e.coverage_pct || 0}%</span></div>
+      <div class="main">${e.avg_calories_per_day || 0}<span class="unit">卡/天</span></div>
+      <div class="detail">
+        ${e.days_with_exercise || 0}/${e.total_days || 0} 天 · 连续 ${e.longest_streak_days || 0} 天<br>
+        ${e.alert ? '⚠️ ' + e.alert : '最长休息 ' + (e.longest_rest_days || 0) + ' 天'}
+      </div>
+    </div>
+    <div class="dim">
+      <div class="head"><h3>⚖️ 体重</h3><span class="badge ${w.trend === 'up' ? 'warn' : w.trend === 'down' ? 'good' : 'good'}">${w.trend_label || w.trend || '—'}</span></div>
+      <div class="main">${w.avg_weight || '—'}<span class="unit">kg</span></div>
+      <div class="detail">
+        变化 <strong>${w.change_kg > 0 ? '+' : ''}${w.change_kg || 0}kg</strong> ·
+        日均 ${w.daily_change_g || 0}g/天<br>
+        ${w.record_count || 0} 条记录 · ${w.first_date || ''} → ${w.last_date || ''}
+      </div>
+    </div>
+    <div class="dim">
+      <div class="head"><h3>📉 缺口</h3><span class="badge ${deficitBadge[0]}">${deficitBadge[1]}</span></div>
+      <div class="main">${d.avg_deficit > 0 ? '-' : '+'}${Math.abs(d.avg_deficit || 0)}<span class="unit">卡/天</span></div>
+      <div class="detail">
+        BMR ${d.bmr || 0} 卡（${d.current_weight || '—'}kg）<br>
+        累计 ${Math.abs(d.total_deficit || 0)} 卡 ≈ ${d.kg_equivalent || 0} kg<br>
+        运动贡献 ${d.exercise_contrib_pct || 0}%
+      </div>
+    </div>
+  `;
+
+  // ACTION LIST
+  const actions = [];
+  if (calRatio && calRatio > 1.1) actions.push({ icon: '!', title: '摄入超标', desc: `日均 ${c.avg_cal} 卡 vs 目标 ${c.cal_goal} 卡，建议清淡晚餐` });
+  if (calRatio && calRatio < 0.7) actions.push({ icon: '!', title: '摄入不足', desc: `日均仅 ${c.avg_cal} 卡，长期可能影响代谢` });
+  if (e.coverage_pct < 50) actions.push({ icon: '🏃', title: '运动不足', desc: `本周运动天数仅 ${e.coverage_pct}%，建议每周 ≥3 次` });
+  if (e.longest_rest_days >= 7) actions.push({ icon: '⚠️', title: '连续未运动', desc: `最长连续 ${e.longest_rest_days} 天未运动，建议起来动一动` });
+  if (w.trend === 'up') actions.push({ icon: '📈', title: '体重上升', desc: `+${w.change_kg}kg，确认是肌肉还是脂肪` });
+  if (d.avg_deficit > 700) actions.push({ icon: '🔥', title: '缺口过大', desc: `日均缺口 ${d.avg_deficit} 卡，超过 700 不健康` });
+  if (d.avg_deficit < 0) actions.push({ icon: '🍔', title: '热量盈余', desc: `日均 ${Math.abs(d.avg_deficit)} 卡盈余，可能在增重` });
+  if (actions.length === 0) actions.push({ icon: '✓', title: '一切正常', desc: '本周健康指标都在合理范围内' });
+
+  document.getElementById('actionList').innerHTML = actions.map(a => `
+    <div class="action">
+      <div class="icon">${a.icon}</div>
+      <div class="text">
+        <strong>${a.title}</strong>
+        <small>${a.desc}</small>
+      </div>
+    </div>
+  `).join('');
+
+  // COPY
+  let txt = `健康报告 (${data.start} ~ ${data.end})\n`;
+  txt += `摄入: 日均 ${c.avg_cal} 卡 (目标 ${c.cal_goal})\n`;
+  txt += `运动: ${e.days_with_exercise} 天 / 共 ${e.total_calories} 卡\n`;
+  txt += `体重: ${w.avg_weight} kg (${w.change_kg > 0 ? '+' : ''}${w.change_kg})\n`;
+  txt += `缺口: 日均 ${d.avg_deficit} 卡\n\n`;
+  txt += `建议:\n`;
+  actions.forEach((a, i) => { txt += `  ${i+1}. ${a.title} - ${a.desc}\n`; });
+  document.getElementById('copyText').textContent = txt;
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""复盘训练 CLI — 计划 vs 实绩对比
+"""复盘训练 CLI — 计划 vs 实绩对比（2026-07-23 D2 重构：加 --format json）
 
 使用方法：
     python3 exercise_review.py --today
     python3 exercise_review.py --yesterday
-    python3 exercise_review.py --day-before-yesterday
     python3 exercise_review.py --days 7
-    python3 exercise_review.py --start 2026-07-13 --end 2026-07-13
-    python3 exercise_review.py --start 2026-07-07 --end 2026-07-13
+    python3 exercise_review.py --start 2026-07-13 --end 2026-07-19
+    python3 exercise_review.py --days 7 --format json    # 机器可读
 """
-
 import sys
 import argparse
+import json
 from datetime import date, timedelta
 
 if sys.platform == 'win32':
@@ -29,6 +28,8 @@ def parse_args():
     parser.add_argument('--yesterday', action='store_true', help='昨日 (start=end=yesterday)')
     parser.add_argument('--day-before-yesterday', action='store_true', help='前日 (start=end=today-2)')
     parser.add_argument('--days', type=int, help='最近 N 天 (start=today-N+1, end=today)')
+    parser.add_argument('--format', choices=['text', 'json'], default='text',
+                        help='输出格式:text(默认·人类可读) / json(机器可读)')
     return parser.parse_args()
 
 
@@ -50,13 +51,20 @@ def resolve_range(args):
         return args.start, args.end
     if args.start:
         return args.start, args.start
-    # 默认今天
     return today.strftime('%Y-%m-%d'), today.strftime('%Y-%m-%d')
 
 
 def main():
     args = parse_args()
     start, end = resolve_range(args)
+
+    if args.format == 'json':
+        # 2026-07-23 D2：调 analysis 函数 + as_dict=True
+        result = exercise_analysis(start, end, 'review', as_dict=True, silent=True)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    # text 模式（默认）
     print(f"📅 复盘范围: {start} ~ {end}\n")
     try:
         exercise_analysis(start, end, 'review')

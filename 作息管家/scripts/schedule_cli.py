@@ -104,7 +104,7 @@ def cmd_prepare_messages(args):
     if use_db_cursor:
         cursor_record = get_last_record_full()
         if not cursor_record:
-            print("错误: 作息表为空,请先初始化或手动添加一条记录")
+            print("错误: 作息记录为空,请先初始化或手动添加一条记录")
             return
         cursor_datetime = f"{cursor_record['date']} {cursor_record['time_end']}:00"
         cursor_activity = cursor_record['activity']
@@ -202,8 +202,8 @@ def cmd_help():
     python schedule_cli.py report [日期]     # 完整报告
     python schedule_cli.py range <开始> <结束>  # 日期范围统计
     python schedule_cli.py status            # 数据库状态
-    python schedule_cli.py query-plans <日期>   # 查询计划作息
-    python schedule_cli.py upsert-plan <日期> --json '{...}'  # 新增/更新计划作息
+    python schedule_cli.py query-plans <日期>   # 查询日程
+    python schedule_cli.py upsert-plan <日期> --json '{...}'  # 新增/更新旧版日程
 """)
 
 def fmt_time(t):
@@ -383,7 +383,7 @@ def cmd_status():
 
 def cmd_query_plans(args):
     """
-    查询计划作息
+    查询日程聚合视图
     用法: python schedule_cli.py query-plans <日期1,日期2,...>
     示例: python schedule_cli.py query-plans 2026-05-22
           python schedule_cli.py query-plans 2026-05-20,2026-05-21,2026-05-22
@@ -406,12 +406,12 @@ def cmd_query_plans(args):
     plans = get_plans(dates_str)
 
     if not plans:
-        print(f"未找到以下日期的计划: {dates_str}")
+        print(f"未找到以下日期的日程: {dates_str}")
         return
 
     for plan in plans:
         print(f"\n{'='*60}")
-        print(f"📅 {plan['date']} 计划作息")
+        print(f"📅 {plan['date']} 日程（24h 聚合视图）")
         print(f"{'='*60}")
 
         for h in range(24):
@@ -427,7 +427,7 @@ def cmd_query_plans(args):
 
 def cmd_upsert_plan(args):
     """
-    新增或更新计划作息
+    新增或更新旧版日程
     用法: python schedule_cli.py upsert-plan <日期> <hour_0_planned> <hour_1_planned> ...
     简化用法: python schedule_cli.py upsert-plan <日期> --json '{"hour_0": "睡觉", "hour_8": "工作"}'
     """
@@ -482,7 +482,7 @@ def cmd_upsert_plan(args):
     try:
         result = upsert_plan(date, hour_plans)
         action = '新增' if result['action'] == 'insert' else '更新'
-        print(f"✓ {date} 计划作息{action}成功")
+        print(f"✓ {date} 日程{action}成功")
         print(f"  已记录 24 个小时")
     except Exception as e:
         print(f"错误: {e}")
@@ -595,7 +595,7 @@ def main(argv=None):
         print(f"未知命令: {cmd}")
         cmd_help()
 # ============================================================
-# 2026-06-29 新增：事件型计划（schedule_plans 新版）+ 飞书日历同步
+# 2026-06-29 新增：事件型日程（schedule_plans 新版）+ 飞书日历同步
 # ============================================================
 #
 # 五个新命令：
@@ -1087,13 +1087,13 @@ def cmd_list_events(args):
     inactive_ids = {e["id"] for e in inactive if e["is_active"] == 0}
 
     if not inactive and not active:
-        print(f"  {date} 无任何计划事件")
+        print(f"  {date} 无任何日程事件")
         return
 
     # 飞书能力
     status = is_feishu_available()
     feishu_tier = status.tier
-    print(f"\n📅 {date} 计划事件列表")
+    print(f"\n📅 {date} 日程列表")
     print(f"  飞书能力: {feishu_tier} （{'CLI 可用' if status.cli_installed else '未安装'} / {'已授权' if status.authenticated else '未授权'} / {'可写' if status.calendar_writable else '无写权限'}）")
     print("=" * 90)
     print(f"  {'ID':>5} {'时段':<11} {'title':<20} {'notes':<25} 飞书ID / 同步状态        完成")
@@ -1114,7 +1114,7 @@ def cmd_list_events(args):
 
 def cmd_search_plan_event(args):
     """
-    轻量查询：按日期+标题查找计划事件
+    轻量查询：按日期+标题查找日程事件
     用法:
       python schedule_cli.py search-plan-event <日期> --title <标题>
     输出 JSON: {"found": true/false, "id": N, "time_start": "...", ...}
@@ -1148,7 +1148,7 @@ def cmd_search_plan_event(args):
 
 def cmd_ensure_plan_event(args):
     """
-    缺则建：查日期+标题是否存在，不存在则 INSERT
+    缺则建：查日期+时段是否存在，不存在则 INSERT
     用法:
       python schedule_cli.py ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y]
     输出 JSON: {"action": "found"/"created", "id": N}
@@ -1687,12 +1687,12 @@ def cmd_help():
   range <start> <end>                     日期范围统计
   status                                  数据库状态
 
-计划（新版事件型，2026-06-29）:
+日程（新版事件型，2026-06-29）:
   upsert-plan-events <date> --json '[]'   整日 upsert（24h 录满硬约束）
   update-event <id> [--title X ...]       单条精细修改（含 --completion --completion-note）
   deactivate-event <id>                   单条软删
-   list-events <date>                      当天事件 + 飞书同步状态 + 完成情况
-  search-plan-event <date> --title X      按日期+标题查计划事件（轻量查询，JSON）
+  list-events <date>                      当天日程 + 飞书同步状态 + 完成情况
+  search-plan-event <date> --title X      按日期+标题查日程事件（轻量查询，JSON）
   ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  补计划：单条追加，幂等
   feishu-resync <date>                    重同步某天到飞书
 
@@ -1701,8 +1701,8 @@ def cmd_help():
   propose-category --code X --hint Y      提议新分类（对话式，AI 用）
   approve-category --code X               批准分类（写入 YAML）
 
-计划（旧版 24-hour，保留兼容）:
-  query-plans <date1,date2,...>            查询计划
+日程（旧版 24-hour，保留兼容）:
+  query-plans <date1,date2,...>            查询日程（24h 聚合视图）
   upsert-plan <date> ...                  旧版 upsert
 
 说明:

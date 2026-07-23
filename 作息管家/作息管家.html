@@ -178,22 +178,22 @@
 </tr>
 <tr>
 <td><strong>12</strong></td>
-<td><strong>查计划 / 看计划(默认)</strong></td>
+<td><strong>查日程 / 看日程(默认)</strong></td>
 <td>查单日完整事件 + 飞书同步状态(id / notes / category / feishu_event_id / completion)。<strong>带具体标题时</strong>(如"今天有健身吗")→ <code>search-plan-event</code> 精确匹配(2026-07-15 起可选 <code>--time-start/--time-end</code> 按三元组查重)</td>
 <td><code>list-events &lt;日期&gt;</code> 或 <code>search-plan-event &lt;日期&gt; --title X [--time-start HH:MM --time-end HH:MM]</code></td>
-<td><strong>详见 3. 查询作息</strong></td>
+<td><strong>详见 3.1 查询日程</strong></td>
 </tr>
 <tr>
 <td><strong>13</strong></td>
 <td><strong>补计划</strong></td>
-<td>单条追加计划事件。<strong>幂等(2026-07-15 修复):按 (date+time_start+time_end) 三元组查重,title 不参与(title 是展示标签不是身份)</strong>。与商量计划的区别:补 = 增量一条,商量 = 完整24h规划</td>
+<td>单条追加日程事件。<strong>幂等(2026-07-15 修复):按 (date+time_start+time_end) 三元组查重,title 不参与(title 是展示标签不是身份)</strong>。与商量计划的区别:补 = 增量一条,商量 = 完整24h规划</td>
 <td><code>ensure-plan-event &lt;日期&gt; --time-start HH:MM --time-end HH:MM --title X</code></td>
 <td><strong>详见 10. 补计划与程序化接口</strong></td>
 </tr>
 <tr>
 <td><strong>14</strong></td>
 <td><strong>复盘</strong></td>
-<td>对当天计划逐条回顾:哪些做了、哪些没做、为什么 → 写入 completion 字段</td>
+<td>对当天日程逐条回顾:哪些做了、哪些没做、为什么 → 写入 completion 字段</td>
 <td><code>list-events</code> → 逐条 <code>update-event --completion</code></td>
 <td><strong>详见 11. 复盘</strong></td>
 </tr>
@@ -202,14 +202,14 @@
 <td>24h 概览</td>
 <td>24h 时间表聚合视图(同小时用 + 合并)</td>
 <td><code>query-plans &lt;日期&gt;</code></td>
-<td>详见 3. 查询作息</td>
+<td>详见 3.1 查询日程</td>
 </tr>
 <tr>
 <td>16</td>
 <td>查多日计划</td>
 <td>多日简版视图(不含 notes/completion/飞书状态)</td>
 <td><code>query-plans &lt;日期1,日期2,...&gt;</code></td>
-<td>详见 3. 查询作息</td>
+<td>详见 3.1 查询日程</td>
 </tr>
 <tr>
 <td><strong>17</strong></td>
@@ -234,10 +234,10 @@
 </tr>
 <tr>
 <td><strong>20</strong></td>
-<td><strong>作息管家同步</strong></td>
+<td><strong>日程管家同步</strong></td>
 <td>Phase 0 反向对账 + diff 询问 create/update/delete</td>
 <td><code>feishu-resync &lt;日期&gt;</code></td>
-<td><strong>详见 8. 作息管家同步</strong></td>
+<td><strong>详见 8. 日程管家同步</strong></td>
 </tr>
 <tr>
 <td>21</td>
@@ -472,11 +472,11 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 <p>详细命令见: <code>references/CLI命令.md</code></p>
 </blockquote>
 <hr />
-<h3>3.1 查询计划(默认 <code>list-events</code>)</h3>
-<p><strong>核心规则</strong>:用户说"查计划/看计划"时,AI <strong>必须默认走 <code>list-events</code></strong>,<strong>不是</strong> <code>query-plans</code>。</p>
+<h3>3.1 查询日程(默认 <code>list-events</code>)</h3>
+<p><strong>核心规则</strong>:用户说"查日程/看日程"时,AI <strong>必须默认走 <code>list-events</code></strong>,<strong>不是</strong> <code>query-plans</code>。</p>
 <p><strong>上下文路由</strong>:
 - 用户说"今天有XX计划吗?""后天安排了XX吗?"(带具体标题)→ 调 <code>search-plan-event &lt;日期&gt; --title XX</code>
-- 用户说"查计划""看计划""今天的安排"(无具体标题)→ 调 <code>list-events &lt;日期&gt;</code></p>
+- 用户说"查日程""看日程""今天的安排"(无具体标题)→ 调 <code>list-events &lt;日期&gt;</code></p>
 <p><strong>为什么</strong>:
 - <code>list-events</code> 返回完整字段(id / time_start-end / title / <strong>notes</strong> / category / <strong>feishu_event_id</strong> / last_synced_at / <strong>completion</strong>)
 - <code>query-plans</code> 是 24h 聚合视图,同小时内的多条事件用 <code>+</code> 合并,丢失 notes / 飞书同步状态 / ID
@@ -491,7 +491,7 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 </thead>
 <tbody>
 <tr>
-<td>"查计划" / "看计划" / "今天的安排"(<strong>默认</strong>)</td>
+<td>"查日程" / "看日程" / "今天的安排"(<strong>默认</strong>)</td>
 <td><code>list-events &lt;日期&gt;</code></td>
 </tr>
 <tr>
@@ -513,7 +513,7 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 </tbody>
 </table>
 <p><strong><code>list-events</code> 输出样例</strong>:</p>
-<pre><code>📅 2026-07-01 计划事件列表
+<pre><code>📅 2026-07-01 日程列表
   飞书能力: full (CLI 可用 / 已授权 / 可写)
      ID 时段          title           notes                  飞书ID / 同步状态        完成
    544 00:00-09:00 睡眠                                   1743f09d-... / 2026-06-30 17:14:18  -
@@ -528,7 +528,7 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 - <code>✗</code> 前缀 = 已软删项
 - 末尾汇总:活跃 N 条 / 停用 N 条</p>
 <blockquote>
-<p>备注:本节合并了原"7. 看计划"小节,语义统一在"查询计划"下。</p>
+<p>备注:本节合并了原"7. 看计划"小节,语义统一在"查询日程"下。</p>
 </blockquote>
 <hr />
 <h3>4. 商量计划(核心入口)</h3>
@@ -638,13 +638,13 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 - 软删不在 list-events 默认查询结果里(要查 include_inactive=True)
 - list-events 显示 ✗ 前缀的项</p>
 <hr />
-<h3>7. (已合并到 3.1 查询计划)</h3>
+<h3>7. (已合并到 3.1 查询日程)</h3>
 <blockquote>
-<p>原"看计划"小节已合并到 <code>3.1 查询计划</code>,触发词"看计划 / 列出今日计划 / 看一天的计划"统一指向 <code>list-events</code>。</p>
+<p>原"看计划"小节已合并到 <code>3.1 查询日程</code>,触发词"看日程 / 列出今日日程 / 看一天的安排"统一指向 <code>list-events</code>。</p>
 </blockquote>
 <hr />
-<h3>8. 作息管家同步</h3>
-<p><strong>触发词</strong>:作息管家同步</p>
+<h3>8. 日程管家同步</h3>
+<p><strong>触发词</strong>:日程管家同步</p>
 <p><strong>执行流程</strong>:
 1. <strong>能力探测</strong>:调 <code>is_feishu_available()</code>(缓存 5 分钟)
    - 不全可用 → 报错退出,告诉用户安装/授权方法
@@ -720,7 +720,7 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 <h3>同步任务 Prompt(夜间/午间共用)</h3>
 <pre><code>请完整加载「作息管家」技能(读取 SKILL.md + references/同步流程.md + references/分类清单.md)。
 
-本 Cron 任务执行模块:「定时同步作息表」
+本 Cron 任务执行模块:「定时同步作息记录」
 
 执行流程:
 1. 调用 prepare-messages 获取游标到现在的全部消息(分页处理,直到 has_next=false)
@@ -805,7 +805,7 @@ python scripts/schedule_cli.py search-plan-event &lt;日期&gt; --time-start HH:
 <li>只查 <code>is_active=1</code> 的活跃事件</li>
 <li><strong>2026-07-15 升级</strong>:精确匹配 title(兼容路径);同时支持可选的 time_start/time_end 参数触发三元组查重</li>
 <li>匹配到多条时返回第一条</li>
-<li>此接口也由"查计划"上下文路由自动触发(用户说"今天有XX计划吗?")</li>
+<li>此接口也由"查日程"上下文路由自动触发(用户说"今天有XX计划吗?")</li>
 </ul>
 <h4>幂等性语义(2026-07-15 升级 · 修复"按 (date+time) 查重"bug)</h4>
 <p><strong>第一性原理</strong>:身份 = <code>(date, time_start, time_end)</code>,title 是展示标签(不是身份)。</p>

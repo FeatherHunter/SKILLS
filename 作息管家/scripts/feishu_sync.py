@@ -614,7 +614,7 @@ def _get_event_detail(event_id: str, calendar_id: str = "primary") -> Optional[F
 @dataclass
 class PlanEvent:
     """
-    一条计划事件（用于 DB 与飞书 diff 的中性结构）。
+    一条日程事件（用于 DB 与飞书 diff 的中性结构）。
     不持有 DB/飞书特定字段，由 schedule_db.py 在 CRUD 时构造。
     """
     time_start: str      # "HH:MM"（DB 存储形式）

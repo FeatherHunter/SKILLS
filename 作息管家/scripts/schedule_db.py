@@ -147,7 +147,7 @@ def init_db():
         )
     ''')
 
-    # 计划作息表（每天24小时，每小时一个计划描述）
+    # 旧版日程计划表（每天24小时，每小时一个计划描述，2026-06-29 已被事件型 schema 取代）
     c.execute('''
         CREATE TABLE IF NOT EXISTS schedule_plans (
             date TEXT PRIMARY KEY,
@@ -499,10 +499,10 @@ def get_summaries_range(start_date, end_date):
     conn.close()
     return [{'date': row[0], 'category': row[1], 'total_minutes': row[2]} for row in rows]
 
-# ============ 计划作息操作 ============
+# ============ 旧版日程计划操作（2026-06-29 之前的小时格模型）===========
 def upsert_plan(date, hour_plans):
     """
-    新增或更新计划作息（upsert）
+    新增或更新旧版日程（upsert，2026-06-29 之前的小时格模型）
     date: 日期（YYYY-MM-DD）
     hour_plans: dict，key 为 hour_0 ~ hour_23，value 为计划描述
     例如: {'hour_0': '睡觉', 'hour_8': '30min通勤+30min工作'}
@@ -621,7 +621,7 @@ def _read_plan_dict(date: str) -> dict | None:
 
 def get_plan(date):
     """
-    获取指定日期的计划作息（向旧接口兼容：从新事件表聚合，按 hour 0..23 组织）
+    获取指定日期的日程聚合视图（向旧接口兼容：从新事件表聚合，按 hour 0..23 组织）
     date: 日期（YYYY-MM-DD）
     返回: dict 或 None — 含 date / hour_0..hour_23 / created_at / updated_at
     """
@@ -631,7 +631,7 @@ def get_plan(date):
 
 def get_plans(dates):
     """
-    获取多个日期的计划作息（向旧接口兼容）
+    获取多个日期的日程聚合视图（向旧接口兼容）
     dates: list of date strings 或 逗号分隔的字符串
     返回: list of dict
     """
@@ -769,7 +769,7 @@ def last_minute(minutes: int) -> str:
 
 
 def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
-    """查询某日计划事件，按 time_start ASC。
+    """查询某日日程事件，按 time_start ASC。
     include_inactive=True 时同时返回 is_active=0 的记录（用于 diff_and_sync）。"""
     date = _normalize_date(date)  # 容错：同上
     conn = get_connection()
@@ -804,7 +804,7 @@ def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
 def search_plan_event(date: str, title: str,
                        time_start: str | None = None,
                        time_end: str | None = None) -> dict | None:
-    """按日期[+时间[+标题]]查找活跃计划事件。返回匹配的第一条或 None。
+    """按日期[+时间[+标题]]查找活跃日程事件。返回匹配的第一条或 None。
 
     2026-07-12 新增：轻量查询接口，供 ensure-plan-event 和 AI 诊断使用。
     2026-07-15 升级：补计划幂等性修复 - 支持按 (date+time) 三元组精确查重。
@@ -867,7 +867,7 @@ def search_plan_event(date: str, title: str,
 
 def ensure_plan_event(date: str, time_start: str, time_end: str,
                       title: str, notes: str = None, category: str = None) -> dict:
-    """确保某计划事件存在（幂等）。
+    """确保某日程事件存在（幂等）。
 
     语义：确保本地 DB 和飞书日历两边都有该事件。缺哪边建哪边。
 

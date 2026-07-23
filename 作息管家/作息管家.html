@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -64,8 +64,7 @@
 <li><a href="#核心规则-违反即无效-3">核心规则(违反即无效)</a></li>
 <li><a href="#安装与配置-4">📦 安装与配置</a></li>
 <li><a href="#功能详细说明-5">功能详细说明</a></li>
-<li><a href="#推荐-cron-任务-6">推荐 Cron 任务</a></li>
-<li><a href="#references-目录-7">references/ 目录</a></li></ol></div>
+<li><a href="#references-目录-6">references/ 目录</a></li></ol></div>
 <h2 id="强制规定-最高优先级-1">强制规定(最高优先级)</h2>
 <ol>
 <li><strong>所有变动必须体现在 HTML 上</strong> - 本技能的任何优化、变动、脚本的所有变动,都必须同步更新 <code>作息管家.html</code> 页面。</li>
@@ -101,23 +100,23 @@
 </tr>
 <tr>
 <td>1</td>
-<td>准备消息(废弃)</td>
-<td>获取待同步消息供AI分析</td>
-<td><code>prepare-messages</code></td>
+<td>准备消息(游标分页)</td>
+<td>从 daily_recorder 拉消息供 AI 分析(默认 200 条/页)</td>
+<td><code>prepare-messages [&lt;开始&gt; [&lt;结束&gt;]] [--page N] [--page-size N]</code></td>
 <td>详见 1. 同步作息</td>
 </tr>
 <tr>
 <td>2</td>
-<td>同步作息(废弃)</td>
-<td>完整同步流程(获取→分析→写入)</td>
-<td><code>prepare-messages</code> → AI → <code>add_record_full</code></td>
+<td>同步作息</td>
+<td>完整同步流程(准备消息→AI 分析→逐条 add)</td>
+<td><code>prepare-messages</code> → AI → <code>add</code></td>
 <td>详见 1. 同步作息</td>
 </tr>
 <tr>
 <td>3</td>
-<td>增量同步(废弃)</td>
-<td>从游标位置继续同步</td>
-<td><code>prepare-messages</code>(自动取游标)</td>
+<td>增量同步</td>
+<td>从游标位置继续同步(自动读取 get_last_record_full 拿游标)</td>
+<td><code>prepare-messages</code></td>
 <td>详见 1. 同步作息</td>
 </tr>
 <tr>
@@ -160,13 +159,6 @@
 <td>查作息范围</td>
 <td>日期范围统计</td>
 <td><code>range &lt;开始&gt; &lt;结束&gt;</code></td>
-<td>详见 3. 查询作息</td>
-</tr>
-<tr>
-<td>10</td>
-<td>查作息游标</td>
-<td>查看同步游标位置</td>
-<td><code>get_last_record_full</code></td>
 <td>详见 3. 查询作息</td>
 </tr>
 <tr>
@@ -253,20 +245,7 @@
 <td><code>init</code></td>
 <td>-</td>
 </tr>
-<tr>
-<td>23</td>
-<td>配置定时同步(废弃)</td>
-<td>设置每3小时自动同步</td>
-<td>Cron: <code>0 */3 * * *</code></td>
-<td>-</td>
-</tr>
-<tr>
-<td>24</td>
-<td>配置每日报告</td>
-<td>设置每日07:30推送报告</td>
-<td>Cron: <code>30 7 * * *</code></td>
-<td>-</td>
-</tr>
+
 </tbody>
 </table>
 <hr />
@@ -831,280 +810,6 @@ python scripts/schedule_cli.py render-record-anomaly --window 7</code></pre>
 - <code>full</code> → 询问"是否同步飞书?"
 - <code>partial</code> → 跳过,提示"lark-cli auth login"
 - <code>missing</code> → 跳过,提示安装价值(<strong>不主动帮装</strong>,给一行 <code>npm i -g lark-cli</code> 用户自决)</p>
-<hr />
-<h2 id="推荐-cron-任务-6">推荐 Cron 任务</h2>
-<table>
-<thead>
-<tr>
-<th>任务</th>
-<th>调度</th>
-<th>超时</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>夜间同步</td>
-<td><code>5 2 * * *</code>(凌晨2:05)</td>
-<td>1200s</td>
-<td>静默同步,不推送,<strong>session=isolated</strong></td>
-</tr>
-<tr>
-<td>午间同步</td>
-<td><code>20 12 * * *</code>(中午12:20)</td>
-<td>1200s</td>
-<td>静默同步,不推送,<strong>session=isolated</strong></td>
-</tr>
-<tr>
-<td>每日报告</td>
-<td><code>30 7 * * *</code></td>
-<td>600s</td>
-<td>验证满24h → 生成摘要 → 推送报告,<strong>session=isolated</strong></td>
-</tr>
-</tbody>
-</table>
-<h3>同步任务 Prompt(夜间/午间共用)</h3>
-<pre><code>请完整加载「作息管家」技能(读取 SKILL.md + references/同步流程.md + references/分类清单.md)。
-
-本 Cron 任务执行模块:「定时同步作息记录」
-
-执行流程:
-1. 调用 prepare-messages 获取游标到现在的全部消息(分页处理,直到 has_next=false)
-2. 读取 scripts/block_count.py 了解 block 数量校验机制
-3. 前置:调用 get_required_block_count() 获取最少 block 数量
-4. 用滑动窗口逐条分析消息,严格按活动切换点切割 block
-5. 调用 add_record_full() 逐条写入
-6. 后置:调用 validate_record_count() 校验 block 数量是否达标
-7. 若校验失败(返回字符串提示),必须根据提示重新拆分,直到校验通过(返回 True)
-
-切割规则(最高优先级):
-- 每次活动类型变化必须切割,禁止合并不同活动
-- 穿插不同活动必须拆成独立 block(如玩游戏中间讨论技术 → 游戏、技术两条)
-- 时间间隔超过20分钟且活动变化 → 切割
-- 宁可多条记录,不要漏记活动切换点
-
-静默执行,不需要推送任何消息。
-</code></pre>
-<h3>关键配置说明</h3>
-<ul>
-<li><strong>session=isolated</strong>:每次执行独立 session,不污染主会话</li>
-<li><strong>超时 1200s</strong>:消息量大时需足够时间,600s 曾导致超时失败</li>
-<li><strong>block 数量校验</strong>:前置获取最少 block 数 → 后置验证是否达标,不达标必须重做</li>
-</ul>
-<blockquote>
-<p>详细设计见: <code>references/Cron任务.md</code></p>
-</blockquote>
-<hr />
-<h3>10. 补计划与程序化接口(2026-07-12 新增)</h3>
-<h4>补计划(用户侧唤醒词)</h4>
-<p><strong>触发词</strong>:补计划 / 加一条计划</p>
-<p><strong>语义</strong>:单条追加计划事件,不触动其他已有事件。与 <code>商量计划</code> 的边界:</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>补计划</th>
-<th>商量计划</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>范围</td>
-<td>单条增量</td>
-<td>完整 24h 规划</td>
-</tr>
-<tr>
-<td>流程</td>
-<td>直接写入</td>
-<td>多轮讨论 → 心愿拉取 → 大块节奏 → 24h 校验</td>
-</tr>
-<tr>
-<td>触发的接口</td>
-<td><code>ensure-plan-event</code></td>
-<td><code>upsert-plan-events</code></td>
-</tr>
-<tr>
-<td>对已有事件</td>
-<td>不动</td>
-<td>覆盖(不匹配即软删)</td>
-</tr>
-</tbody>
-</table>
-<p>用户说"帮我补一条健身计划到后天"、AI 直接调 <code>ensure-plan-event</code>,不进入商量计划的多轮流程。</p>
-<h4>程序化接口(其他技能调用)</h4>
-<p><code>ensure-plan-event</code> 和 <code>search-plan-event</code> 底层是 JSON 输入输出的 CLI 接口,供其他技能程序化调用:</p>
-<pre><code class="language-bash"># 其他技能 AI 直接调,不走唤醒词路由
-python scripts/schedule_cli.py ensure-plan-event &lt;日期&gt; \
-  --time-start HH:MM --time-end HH:MM --title &lt;标题&gt; [--notes X] [--category Y]
-</code></pre>
-<h4>轻量查询</h4>
-<pre><code class="language-bash">python scripts/schedule_cli.py search-plan-event &lt;日期&gt; --title &lt;标题&gt;
-# 2026-07-15 新增:可选按 (date+time) 精确查重(title 不参与)
-python scripts/schedule_cli.py search-plan-event &lt;日期&gt; --time-start HH:MM --time-end HH:MM
-# 标题+时间 一起传 → 三元组查重
-</code></pre>
-<p>返回:</p>
-<pre><code class="language-json">{&quot;found&quot;: true, &quot;id&quot;: 562, &quot;time_start&quot;: &quot;17:00&quot;, &quot;time_end&quot;: &quot;18:00&quot;, &quot;title&quot;: &quot;健身&quot;, ...}
-{&quot;found&quot;: false, &quot;date&quot;: &quot;2026-07-12&quot;, &quot;title&quot;: &quot;健身&quot;}
-</code></pre>
-<ul>
-<li>只查 <code>is_active=1</code> 的活跃事件</li>
-<li><strong>2026-07-15 升级</strong>:精确匹配 title(兼容路径);同时支持可选的 time_start/time_end 参数触发三元组查重</li>
-<li>匹配到多条时返回第一条</li>
-<li>此接口也由"查日程"上下文路由自动触发(用户说"今天有XX计划吗?")</li>
-</ul>
-<h4>幂等性语义(2026-07-15 升级 · 修复"按 (date+time) 查重"bug)</h4>
-<p><strong>第一性原理</strong>:身份 = <code>(date, time_start, time_end)</code>,title 是展示标签(不是身份)。</p>
-<p><strong>查重维度优先级</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>调用方式</th>
-<th>查重维度</th>
-<th>title 参与?</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>ensure-plan-event</code> 传 time_start + time_end</td>
-<td><code>(date, time_start, time_end)</code> 三元组</td>
-<td>❌ 否</td>
-</tr>
-<tr>
-<td><code>search-plan-event</code> 传 time_start + time_end</td>
-<td><code>(date, time_start, time_end)</code> 三元组</td>
-<td>❌ 否</td>
-</tr>
-<tr>
-<td><code>search-plan-event</code> 只传 title(旧路径)</td>
-<td><code>(date, title)</code> 二元组</td>
-<td>✅ 是</td>
-</tr>
-</tbody>
-</table>
-<p><strong>title 语义规则</strong>:
-- 同 <code>(date, time_start, time_end)</code> + 不同 <code>title</code> → <strong>视为同一条</strong>(返回 found,不建新)
-- 同 <code>date</code> + 不同 <code>time</code> + 同 <code>title</code> → 视为不同事件(新建)
-- <code>title</code> 是给人看的"标签",不影响"是不是同一条计划"</p>
-<p><strong>飞书侧查重</strong>(<code>_sync_one_feishu</code> 内部):
-- 飞书 API 不支持 time 过滤 → 先按 <code>title</code> 拉候选 → 再按 <code>time_start + time_end</code> 精确比对
-- 命中 (date+time+title) → 回写现有 <code>event_id</code>(飞书侧幂等,不重创建)
-- 未命中 → <code>create_event</code> 新建 + 回写 <code>event_id</code></p>
-<p><strong>修复前 vs 修复后</strong>:
-- <strong>修复前 bug</strong>(2026-07-15 修):<code>ensure-plan-event(date, 10:00, 11:30, "健身 上午·臂")</code> 调一次 + <code>ensure-plan-event(date, 10:00, 11:30, "健身·上午·臂 10:00")</code> 调一次 → DB 出现 2 条 7/15 10:00-11:30 计划(不幂等)
-- <strong>修复后</strong>:同样的 2 次调用 → DB 仍是 1 条(幂等)</p>
-<p><strong>为什么这个修复必要</strong>:
-- 网络抖动重试是常态--不幂等会导致数据重复
-- AI 可能因为上下文混乱或自查而重复发同一命令
-- 跨技能联动时(卡路里/备忘录→作息),多源调用需要幂等保护</p>
-<hr />
-<h3>11. 复盘(2026-07-12 新增 · 2026-07-13 升级 · 打卡联动版)</h3>
-<p><strong>触发词</strong>:复盘 / 回顾今天 / 今天做得怎么样 / 复盘一下</p>
-<p><strong>定位</strong>:对标 <code>商量计划</code> 的流程级操作。商量 = 事前规划,复盘 = 事后回顾。completion 字段是复盘的<strong>产出</strong>,不是独立操作。</p>
-<p><strong>前置 · 状态机快判</strong>(2026-07-13 新增 · 在执行流程前先判):</p>
-<ol>
-<li>调 <code>list-events &lt;日期&gt;</code> 拉取当日活跃事件</li>
-<li><strong>IF 活跃事件数 == 0</strong>:
-   → 提示"X 月 X 日没有计划,无法复盘",退出流程</li>
-<li><strong>IF 所有事件 <code>completion IS NOT NULL</code></strong>:
-   → 告知"今天的计划已全部复盘过,我们直接进入讨论" → <strong>跳过 Step 0-5,直接进 Step 6 复盘讨论模式</strong></li>
-<li>否则按下面的执行流程走</li>
-</ol>
-<p><strong>Step 0:提示同步</strong>(2026-07-13 新增 · 仅当有未复盘事件时走):</p>
-<p>进复盘前,AI 第一句话:</p>
-<blockquote>
-<p>进复盘之前先对一下今天的打卡数据。
-请确认:你今天有没有执行过 "/备忘录 备忘录同步"?</p>
-</blockquote>
-<p><strong>用户回复分支</strong>:</p>
-<ul>
-<li>"已同步" / "OK 了" / "好了" → 默认已同步,进 Step 1</li>
-<li>"没同步" / "忘了" → 引导执行 <code>/备忘录 备忘录同步</code>,等用户说"好了"再进 Step 1</li>
-<li>"不连飞书" / "没装" → 跳过,告知"只用本地打卡记录,可能不全",直接进 Step 1</li>
-<li>任意步骤用户说"算了" / "不做了" / "等会再说" / "先到这" → 退出流程(已复盘过的保留,未复盘的留 NULL)</li>
-</ul>
-<p><strong>降级路径</strong>(备忘录技能不可用时):</p>
-<ul>
-<li>AI 探测不到 <code>memo_cli.py</code> → 跳过 Step 0 + Step 2 的打卡拉取,直接走原版 Step 1-6</li>
-<li>告知用户"备忘录技能不可用,本次复盘不读打卡,只走用户自报"</li>
-</ul>
-<p><strong>执行流程</strong>:</p>
-<ol>
-<li><strong>确认日期</strong>:问用户"复盘哪天?"(默认今天,也支持昨天/指定日期)</li>
-<li><strong>拉取计划 + 拉取打卡</strong>(2026-07-13 升级):
-   - 调 <code>list-events &lt;日期&gt;</code> 拉当日活跃事件
-   - 调 <code>memo_cli.py search-date &lt;今日&gt; &lt;今日&gt; -c 打卡</code> 拉今日打卡(仅 Step 0 通过后)
-   - 拿到 JSON 后,AI 提取字段:<code>content</code>(主关键词来源)/ <code>created_at</code>(辅助)/ <code>sub_category</code>(过滤用,见 Step 3)
-   - <strong>不向用户展示打卡原文</strong>(留到 Step 3 配对展示)</li>
-<li><strong>逐条回顾 + 打卡匹配预填</strong>(2026-07-13 升级):
-   - 对 completion 为 NULL 的事件,逐条问用户:
-     <code>📋 17:00-18:00 健身
-       参考打卡:
-         ✓ 晚上健身房健身60分钟(20:46)
-         ✓ 晚上健腹轮15分钟(20:46)
-       这条完成得怎么样?
-         1. 已完成    2. 已完成(超时)  3. 部分完成
-         4. 未完成    5. 未完成(不可抗力)  6. 跳过</code>
-   - <strong>AI 匹配分级</strong>(基于 title + notes 与打卡 content 的语义相似度):<ul>
-<li>★★★ 强匹配(&gt;0.7)→ 建议"已完成",等用户确认</li>
-<li>★★ 弱匹配(0.4-0.7)→ 展示打卡,询问"是不是做了?"</li>
-<li>★ 不确定(0.2-0.4)→ 不展示打卡,直接问用户</li>
-<li>0 无匹配 → 询问"是没做,还是做了但忘了打卡?"</li>
-<li><strong>打卡过滤规则</strong>(避免情绪/状态打卡乱入):</li>
-<li>IF <code>sub_category</code> 是"家务/厨房/学习/工作/健身/阅读"等明确活动分类 → 入选</li>
-<li>IF <code>sub_category</code> 是 None → 用关键词兜底:动词 + 对象 + 时长 模式才入选</li>
-<li>IF <code>sub_category</code> 是"情绪/心情"等 → <strong>不参与匹配</strong>,留到 Step 6 讨论时引用</li>
-</ul>
-</li>
-<li><strong>追问原因</strong>:选了 2/3/4/5 时追问 "为什么?"(→ 写入 <code>completion_note</code>)</li>
-<li><strong>写入</strong>:逐条调 <code>update-event &lt;id&gt; --completion X --completion-note Y</code></li>
-<li><strong>复盘小结 + 关联打卡统计</strong>(2026-07-13 升级):全部过完后,汇总输出:
-   <code>📊 2026-07-12 复盘
-     已完成 12 条  |  已完成(超时)2 条  |  部分完成 1 条
-     未完成 3 条  |  未完成(不可抗力)1 条  |  未复盘 0 条
-     关联打卡:今日 8 条(5 条匹配到计划 / 3 条未匹配)</code>
-   - 关联打卡统计(新增):今日打卡总数 / 匹配到计划的数量 / 未匹配数量
-   - 未匹配打卡:留作"明天可以挑几条进计划"的输入</li>
-</ol>
-<p><strong>completion 值清单</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>值</th>
-<th>含义</th>
-<th>怎么选</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>已完成</code></td>
-<td>按时完成</td>
-<td>用户说"做了""完成了"</td>
-</tr>
-<tr>
-<td><code>已完成(超时)</code></td>
-<td>做了但拖延了</td>
-<td>用户说"做了但晚了"</td>
-</tr>
-<tr>
-<td><code>部分完成</code></td>
-<td>做了一部分</td>
-<td>用户说"做了一半"</td>
-</tr>
-<tr>
-<td><code>未完成</code></td>
-<td>没做,原因在己</td>
-<td>用户说"没做,懒了"</td>
-</tr>
-<tr>
-<td><code>未完成(不可抗力)</code></td>
-<td>没做,外部原因</td>
-<td>用户说"临时加班""下雨"</td>
-</tr>
-</tbody>
-</table>
-<p><strong>与改计划的关系</strong>:复盘本质上是批量调 <code>update-event --completion</code>。如果用户只改一条的完成状态,也可以直接走"改计划"。复盘的价值在于<strong>逐条过、不遗漏、出小结</strong>。</p>
-<p><strong>找不到匹配计划时</strong>:提示"XX这条计划在系统里不存在,要先补吗?"→ 用户确认后调 <code>补计划</code>,再走复盘流程。</p>
 <hr />
 <h2 id="references-目录-7">references/ 目录</h2>
 <table>

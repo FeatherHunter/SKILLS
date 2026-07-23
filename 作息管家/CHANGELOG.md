@@ -73,3 +73,36 @@
 4. **H4 更新 references/CLI命令.md** 加 8 个新命令
 5. **M6 XSS `</script>` 转义修复**
 6. M1-M12 + L1-L10 剩余次要缺陷
+
+---
+
+## [2026-07-23] · 第二轮清理 · 文档对齐 + 死章节 + 真废命令
+
+**真实清理**(对抗式审查后重新评估,区分"docs 误标为废弃 vs 真的废弃"):
+
+### docs 误标为废弃(实际在用)— 修正标签
+- SKILL.md / 作息管家.html 功能速查表 #1 #2 #3 删"(废弃)"标签
+  - `prepare-messages` 在 schedule_cli.py:510 实现,在 references/同步流程.md:390、references/Cron任务.md、references/CLI命令.md:40、SKILL.md §1 同步流程、__pycache__ 都被引用 — 实际**当前生效**命令
+  - 修正后 #1 改"准备消息(游标分页)",#2 改"同步作息",#3 改"增量同步"
+
+### 真废弃 — 删除
+- SKILL.md 功能速查表 #10 "查作息游标" 整行 — `get_last_record_full` 是内部 Python helper,不是 CLI 命令
+- SKILL.md 功能速查表 #23 #24 整行 — `Cron 0 */3 * * *`(配置定时同步) + `Cron 30 7 * * *`(配置每日报告)
+  - 7:30 报告产物写 `作息管家/reports/`,目录已删 → CRON 跑必 FileNotFoundError
+  - 旧 sync 脚本 (`_gen_report_*.py` / `_render_report_*.py`) 全部已删 → CRON 跑也必失败
+- SKILL.md §"推荐 Cron 任务" 整章节(40 行) + references/Cron任务.md 文件 — 同上,3 个 cron 任务全部失效
+- 作息管家.html 镜像同步删(目录锚 + 章节内容)
+
+### 改动前 → 改动后对比
+- SKILL.md: 1049 → 985 行(删 64 行)
+- 作息管家.html: 1158 → 864 行(删 294 行)
+- references/Cron任务.md: 63 行 → 删除
+
+### 清理边界
+**不删**:
+- `prepare-messages` 速查表行(改标签,不删) — 命令在用
+- `get_last_record_full` Python 函数 — schedule_cli.py:22 引用
+- `references/同步流程.md` 流程文档 — 描述 prepare-messages + add 流程,真文档
+- `references/CLI命令.md` — CLI 命令文档,真文档
+
+**不重写 SKILL.md 触发词路由表** — 上轮 5 commits 已含完整 §3.x(5 模板 8 命令),与本次清理无冲突

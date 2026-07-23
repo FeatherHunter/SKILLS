@@ -1,4 +1,4 @@
----
+﻿---
 name: 作息管家
 description: >
   作息记录与日程计划管理技能。当用户使用以下指令时触发:
@@ -40,16 +40,15 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | # | 唤醒词 | 功能 | CLI 命令 | 详见 |
 |---|--------|------|----------|------|
 | **0** | **记作息 / 补一条作息 / 录作息** | **单条记录写入(规范化入口,所有 9 字段强校验)** | **`add <9 字段> 或 --json @file`** | **详见 0. 记作息(add)** |
-| 1 | 准备消息(废弃) | 获取待同步消息供AI分析 | `prepare-messages` | 详见 1. 同步作息 |
-| 2 | 同步作息(废弃) | 完整同步流程(获取→分析→写入) | `prepare-messages` → AI → `add` | 详见 1. 同步作息 |
-| 3 | 增量同步(废弃) | 从游标位置继续同步 | `prepare-messages`(自动取游标) | 详见 1. 同步作息 |
+| 1 | 准备消息(游标分页) | 从 daily_recorder 拉消息供 AI 分析(默认 200 条/页) | `prepare-messages [<开始> [<结束>]] [--page N] [--page-size N]` | 详见 1. 同步作息 |
+| 2 | 同步作息 | 完整同步流程(准备消息→AI 分析→逐条 add) | `prepare-messages` → AI → `add` | 详见 1. 同步作息 |
+| 3 | 增量同步 | 从游标位置继续同步(自动读取 get_last_record_full 拿游标) | `prepare-messages` | 详见 1. 同步作息 |
 | 4 | 今天总结 | 按分类汇总当日时间(满24h出综合报告,不满出摘要) | `report <日期>` 或 `summary <日期>` | 详见 2. 生成摘要 |
 | 5 | 汇总作息 | 日期范围汇总统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
 | 6 | 查作息 | 查看指定日期作息列表 | `list [日期]` | 详见 3. 查询作息 |
 | 7 | 查作息详情 | 含AI推理过程的详细展示 | `detail [日期]` | 详见 3. 查询作息 |
 | 8 | 查作息时间轴 | 24小时时间轴展示 | `timeline [日期]` | 详见 3. 查询作息 |
 | 9 | 查作息范围 | 日期范围统计 | `range <开始> <结束>` | 详见 3. 查询作息 |
-| 10 | 查作息游标 | 查看同步游标位置 | `get_last_record_full` | 详见 3. 查询作息 |
 | 11 | 查作息状态 | 记录数/天数/日期范围 | `status` | 详见 3. 查询作息 |
 | **12** | **查日程 / 看日程(默认)** | 查单日完整事件 + 飞书同步状态(id / notes / category / feishu_event_id / completion)。**带具体标题时**(如"今天有健身吗")→ `search-plan-event` 精确匹配(2026-07-15 起可选 `--time-start/--time-end` 按三元组查重) | `list-events <日期>` 或 `search-plan-event <日期> --title X [--time-start HH:MM --time-end HH:MM]` | **详见 3.1 查询日程** |
 | **13** | **补计划** | 单条追加日程事件。**幂等(2026-07-15 修复):按 (date+time_start+time_end) 三元组查重,title 不参与(title 是展示标签不是身份)**。与商量计划的区别:补 = 增量一条,商量 = 完整24h规划 | `ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title X` | **详见 10. 补计划与程序化接口** |
@@ -62,8 +61,6 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | **20** | **日程管家同步** | Phase 0 反向对账 + diff 询问 create/update/delete | `feishu-resync <日期>` | **详见 8. 日程管家同步** |
 | 21 | 飞书探测 | 三档探测 cli 安装 / auth 授权 / 日历写入权限 | `python scripts/feishu_sync.py` | 详见 9. 飞书探测 |
 | 22 | 初始化数据库 | 创建三张数据表(含 completion 字段) | `init` | - |
-| 23 | 配置定时同步(废弃) | 设置每3小时自动同步 | Cron: `0 */3 * * *` | — |
-| 24 | 配置每日报告 | 设置每日07:30推送报告 | Cron: `30 7 * * *` | - |
 
 ---
 
@@ -823,49 +820,6 @@ python3 scripts/feishu_sync.py  # self-check 模式
 
 ---
 
-## 推荐 Cron 任务
-
-| 任务 | 调度 | 超时 | 说明 |
-|------|------|------|------|
-| 夜间同步 | `5 2 * * *`(凌晨2:05) | 1200s | 静默同步,不推送,**session=isolated** |
-| 午间同步 | `20 12 * * *`(中午12:20) | 1200s | 静默同步,不推送,**session=isolated** |
-| 每日报告 | `30 7 * * *` | 600s | 验证满24h → 生成摘要 → 推送报告,**session=isolated** |
-
-### 同步任务 Prompt(夜间/午间共用)
-
-```
-请完整加载「作息管家」技能(读取 SKILL.md + references/同步流程.md + references/分类清单.md)。
-
-本 Cron 任务执行模块:「定时同步作息记录」
-
-执行流程:
-1. 调用 prepare-messages 获取游标到现在的全部消息(分页处理,直到 has_next=false)
-2. 读取 scripts/block_count.py 了解 block 数量校验机制
-3. 前置:调用 get_required_block_count() 获取最少 block 数量
-4. 用滑动窗口逐条分析消息,严格按活动切换点切割 block
-5. 调用 add_record_full() 逐条写入
-6. 后置:调用 validate_record_count() 校验 block 数量是否达标
-7. 若校验失败(返回字符串提示),必须根据提示重新拆分,直到校验通过(返回 True)
-
-切割规则(最高优先级):
-- 每次活动类型变化必须切割,禁止合并不同活动
-- 穿插不同活动必须拆成独立 block(如玩游戏中间讨论技术 → 游戏、技术两条)
-- 时间间隔超过20分钟且活动变化 → 切割
-- 宁可多条记录,不要漏记活动切换点
-
-静默执行,不需要推送任何消息。
-```
-
-### 关键配置说明
-
-- **session=isolated**:每次执行独立 session,不污染主会话
-- **超时 1200s**:消息量大时需足够时间,600s 曾导致超时失败
-- **block 数量校验**:前置获取最少 block 数 → 后置验证是否达标,不达标必须重做
-
-> 详细设计见: `references/Cron任务.md`
-
----
-
 ### 10. 补计划与程序化接口(2026-07-12 新增)
 
 #### 补计划(用户侧唤醒词)
@@ -1047,3 +1001,4 @@ python scripts/schedule_cli.py search-plan-event <日期> --time-start HH:MM --t
 | `分类清单.md` | 建议分类列表(AI自由判定) |
 | `CLI命令.md` | 所有CLI命令用法 |
 | `Cron任务.md` | 定时任务详细设计 |
+

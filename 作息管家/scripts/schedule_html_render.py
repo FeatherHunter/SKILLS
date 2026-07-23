@@ -65,34 +65,41 @@ def _build_summary(events: list[dict], inactive_ids: set) -> dict:
     }
 
 
+def _hhmm_to_minutes(t: str) -> int:
+    """HH:MM → 分钟数(24:00 → 24*60, 跨日边界;其余正常)"""
+    if not t:
+        return 0
+    if t == "24:00":
+        return 24 * 60
+    h, m = t.split(":")[:2]
+    try:
+        return int(h) * 60 + int(m)
+    except ValueError:
+        return 0
+
+
 def _build_gap(events: list[dict]) -> dict:
     """检测 24h 联合覆盖;只对 active 事件"""
     active = sorted(
         [e for e in events if e.get("is_active") != 0],
-        key=lambda e: _to_minutes(e["time_start"]),
+        key=lambda e: _hhmm_to_minutes(e.get("time_start") or "00:00"),
     )
     if not active:
         return {"has_gap": False, "gap_count": 0, "first_gap": None}
 
-    def _norm(t: str) -> str:
-        return "23:59" if t == "24:00" else t
-
-    def _to_min(t: str) -> int:
-        h, m = _norm(t).split(":")[:2]
-        return int(h) * 60 + int(m)
-
     gaps = []
-    if _to_min(active[0]["time_start"]) > 0:
-        gaps.append(("00:00", active[0]["time_start"]))
+    first_start = _hhmm_to_minutes(active[0].get("time_start") or "00:00")
+    if first_start > 0:
+        gaps.append(("00:00", active[0].get("time_start")))
     for i in range(len(active) - 1):
-        prev_end = _to_min(active[i]["time_end"])
-        next_start = _to_min(active[i + 1]["time_start"])
+        prev_end = _hhmm_to_minutes(active[i].get("time_end") or "00:00")
+        next_start = _hhmm_to_minutes(active[i + 1].get("time_start") or "00:00")
         if next_start > prev_end:
-            gaps.append((active[i]["time_end"], active[i + 1]["time_start"]))
+            gaps.append((active[i].get("time_end"), active[i + 1].get("time_start")))
 
-    last_end = _to_min(active[-1]["time_end"])
+    last_end = _hhmm_to_minutes(active[-1].get("time_end") or "00:00")
     if last_end < 24 * 60:
-        gaps.append((active[-1]["time_end"], "24:00"))
+        gaps.append((active[-1].get("time_end"), "24:00"))
 
     return {
         "has_gap": len(gaps) > 0,

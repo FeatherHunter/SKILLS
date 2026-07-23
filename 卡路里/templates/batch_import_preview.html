@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>批量导入预览 · 卡路里</title>
+<style>
+/* ============================================================
+   Apple 设计语言 · G3 批量导入 preview
+   - 过程型 HTML(AI 协同模式 · 原则 10 继承 G2 模式)
+   - 5 种状态色(added/updated/skipped/failed/默认)
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --gray:#8e8e93;
+  --gray-soft:rgba(142,142,147,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+
+/* HERO */
+.hero{padding:32px 28px 28px;margin-bottom:20px}
+.hero .eyebrow{
+  font-size:13px;font-weight:600;letter-spacing:.5px;
+  color:var(--accent);text-transform:uppercase;
+  margin-bottom:8px;
+}
+.hero h1{
+  font-size:32px;font-weight:700;letter-spacing:-.4px;
+  color:var(--ink);margin-bottom:6px;line-height:1.2;
+}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.hero .pills{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:999px;
+  font-size:13px;font-weight:600;
+}
+.pill.added{background:var(--green-soft);color:var(--green)}
+.pill.updated{background:var(--accent-soft);color:var(--accent)}
+.pill.skipped{background:var(--gray-soft);color:var(--gray)}
+.pill.failed{background:var(--red-soft);color:var(--red)}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* SECTION */
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:18px;
+}
+.section-title h2{
+  font-size:17px;font-weight:600;letter-spacing:-.2px;
+}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+
+/* SUMMARY 5 KPI */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);
+  gap:10px;margin-bottom:16px;
+}
+.kpi{
+  background:var(--card);border-radius:var(--r);
+  padding:16px 14px;text-align:center;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+  border-top:3px solid;
+}
+.kpi.added{border-top-color:var(--green)}
+.kpi.updated{border-top-color:var(--accent)}
+.kpi.skipped{border-top-color:var(--gray)}
+.kpi.failed{border-top-color:var(--red)}
+.kpi.total{border-top-color:var(--ink)}
+.kpi .label{
+  font-size:12px;color:var(--ink3);font-weight:500;
+  margin-bottom:6px;
+}
+.kpi .value{
+  font-size:26px;font-weight:700;letter-spacing:-.7px;
+  line-height:1;font-feature-settings:"tnum";
+}
+.kpi.added .value{color:var(--green)}
+.kpi.updated .value{color:var(--accent)}
+.kpi.skipped .value{color:var(--gray)}
+.kpi.failed .value{color:var(--red)}
+.kpi.total .value{color:var(--ink)}
+
+/* PROGRESS BAR */
+.progress{
+  margin-bottom:8px;
+}
+.progress-bar{
+  height:8px;background:var(--bg-soft);
+  border-radius:4px;overflow:hidden;display:flex;
+}
+.progress-seg{height:100%}
+.progress-seg.added{background:var(--green)}
+.progress-seg.updated{background:var(--accent)}
+.progress-seg.skipped{background:var(--gray)}
+.progress-seg.failed{background:var(--red)}
+.progress-legend{
+  display:flex;justify-content:space-between;
+  font-size:12px;color:var(--ink3);
+  font-feature-settings:"tnum";
+}
+.progress-info{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;
+}
+.progress-info .rate{
+  font-size:13px;font-weight:600;color:var(--ink);
+  font-feature-settings:"tnum";
+}
+
+/* FILTER TABS */
+.tabs{
+  display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;
+}
+.tab{
+  background:var(--bg-soft);
+  border:1px solid transparent;
+  padding:6px 12px;border-radius:999px;
+  font-size:13px;font-weight:500;color:var(--ink2);
+  cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.tab:hover{border-color:var(--line)}
+.tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tab .count{
+  display:inline-block;background:rgba(0,0,0,.1);
+  border-radius:99px;padding:0 6px;
+  font-size:11px;margin-left:4px;
+}
+.tab.active .count{background:rgba(255,255,255,.2)}
+
+/* ROW TABLE */
+.list{
+  display:flex;flex-direction:column;
+}
+.row{
+  display:grid;
+  grid-template-columns:48px 80px 1fr auto auto;
+  gap:12px;align-items:center;
+  padding:12px 0;border-top:1px solid var(--lineS);
+}
+.row:first-child{border-top:none}
+.row .num{
+  font-size:11px;font-weight:600;color:var(--ink3);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono",monospace;
+  text-align:right;
+}
+.row .status{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:6px;
+  justify-content:center;
+}
+.status-tag.added{background:var(--green-soft);color:var(--green)}
+.status-tag.updated{background:var(--accent-soft);color:var(--accent)}
+.status-tag.skipped{background:var(--gray-soft);color:var(--gray)}
+.status-tag.failed{background:var(--red-soft);color:var(--red)}
+.row .name{
+  font-size:14px;font-weight:500;color:var(--ink);
+}
+.row .name .brand{color:var(--ink3);font-weight:400;font-size:12px;margin-right:6px}
+.row .cal{font-size:13px;color:var(--ink3);font-feature-settings:"tnum"}
+.row .expand{
+  background:transparent;border:none;color:var(--accent);
+  font-size:13px;cursor:pointer;padding:4px 8px;
+  border-radius:6px;font-family:inherit;
+}
+.row .expand:hover{background:var(--accent-soft)}
+.row.expanded .expand::after{content:' ▲'}
+.row .expand::after{content:' ▼'}
+.row-detail{
+  grid-column:1/-1;
+  padding:10px 14px;background:var(--bg-soft);
+  border-radius:var(--r-sm);margin-top:8px;
+  font-size:13px;color:var(--ink2);line-height:1.6;
+}
+.row-detail .key{
+  font-family:"SF Mono",monospace;color:var(--ink3);
+  font-size:12px;
+}
+.row-detail .val{color:var(--ink);font-weight:500}
+.row-detail .reason{
+  margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);
+  color:var(--red);font-size:12.5px;
+}
+
+/* COPY SECTION */
+.copy-section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:24px 28px;margin-bottom:14px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.copy-section h2{font-size:17px;font-weight:600;letter-spacing:-.2px;margin-bottom:4px}
+.copy-section .sub{font-size:13px;color:var(--ink3);margin-bottom:16px;line-height:1.55}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:6px;padding:11px 18px;border-radius:999px;
+  font-size:14px;font-weight:600;cursor:pointer;
+  border:none;transition:opacity .15s;font-family:inherit;
+}
+.btn:hover{opacity:.85}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.copy-preview{
+  background:var(--bg-soft);border-radius:var(--r-sm);
+  padding:14px 16px;font-family:"SF Mono",monospace;
+  font-size:12px;line-height:1.6;color:var(--ink2);
+  white-space:pre-wrap;word-break:break-word;
+  max-height:380px;overflow-y:auto;
+  border:1px solid var(--lineS);
+}
+
+footer{
+  text-align:center;color:var(--ink3);
+  font-size:12px;padding-top:20px;
+  border-top:1px solid var(--lineS);margin-top:32px;
+}
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+}
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
+  .hero h1{font-size:26px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .row{grid-template-columns:36px 70px 1fr auto;gap:8px}
+  .row .cal{display:none}
+  .section,.copy-section{padding:18px 20px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow" id="eyebrow">批量导入预览</div>
+  <h1 id="title">foods_2026-07.jsonl</h1>
+  <div class="sub" id="subtitle">50 条 · 3 条失败 · 请核对</div>
+  <div class="pills" id="pills"></div>
+</header>
+
+<!-- KPI 5 张 -->
+<section class="section">
+  <div class="section-title">
+    <h2>导入概览</h2>
+    <span class="hint">实时反映数据</span>
+  </div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+</section>
+
+<!-- 进度条 -->
+<section class="section">
+  <div class="section-title">
+    <h2>处理进度</h2>
+    <span class="hint">进度条按状态分段</span>
+  </div>
+  <div class="progress-info">
+    <span id="progressRate" class="rate">--</span>
+    <span id="progressDetail">--</span>
+  </div>
+  <div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+</section>
+
+<!-- 详情 -->
+<section class="section">
+  <div class="section-title">
+    <h2>明细</h2>
+    <span class="hint">点击行展开详细 · 失败行标红</span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="list" id="list"></div>
+</section>
+
+<!-- 复制区(2 大按钮 · 过程型 B 必有) -->
+<section class="copy-section">
+  <h2>确认后操作</h2>
+  <p class="sub">
+    HTML 不能自动写入 DB · 请把下方文本粘到 AI 对话框,AI 会帮你执行批量导入 CLI。
+- <strong>采纳</strong> = 失败行已修复,无修改,直接执行
+- <strong>复制修改</strong> = 想修复失败行 / 调整跳过策略,让 AI 用修复版执行
+- <strong>跳过失败</strong> = 只导入成功的行,失败行人工后再处理
+  </p>
+  <div class="btn-row">
+    <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳(全部导入)</button>
+    <button class="btn secondary" id="btnModify" onclick="copyModify()">📋 复制修改指令</button>
+    <button class="btn danger" id="btnSkipFailed" onclick="copySkipFailed()">⚠️ 跳过失败行导入</button>
+  </div>
+  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+</section>
+
+<footer>卡路里 Skill · 批量导入预览 · 2026-07-23 · G3</footer>
+
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = (() => {
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
+  return window.__DATA__;
+})();
+
+const SUMMARY = (DATA && DATA.data && DATA.data.summary) || {};
+const RUNS = (DATA && DATA.data && DATA.data.runs) || [];
+
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+const STATUS_LABELS = {
+  added: '新增', updated: '更新', skipped: '跳过', failed: '失败'
+};
+
+function render() {
+  if (!DATA) {
+    document.getElementById('title').textContent = '❌ 数据加载失败';
+    return;
+  }
+
+  // HERO
+  document.getElementById('title').textContent = SUMMARY.jsonl_path || '批量导入预览';
+  document.getElementById('subtitle').textContent =
+    `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`;
+
+  // Pills(失败高优先级)
+  const pills = document.getElementById('pills');
+  pills.innerHTML = '';
+  if (SUMMARY.failed > 0) {
+    pills.innerHTML += `<span class="pill failed">⚠️ ${SUMMARY.failed} 条失败</span>`;
+  } else {
+    pills.innerHTML += `<span class="pill added">✓ 无失败</span>`;
+  }
+  if (SUMMARY.skipped > 0) {
+    pills.innerHTML += `<span class="pill skipped">↩ ${SUMMARY.skipped} 跳过</span>`;
+  }
+  if (SUMMARY.updated > 0) {
+    pills.innerHTML += `<span class="pill updated">↻ ${SUMMARY.updated} 更新</span>`;
+  }
+  if (SUMMARY.added > 0) {
+    pills.innerHTML += `<span class="pill added">+ ${SUMMARY.added} 新增</span>`;
+  }
+
+  // KPI 5 张
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi total"><div class="label">总数</div><div class="value">${SUMMARY.total || 0}</div></div>
+    <div class="kpi added"><div class="label">新增</div><div class="value">${SUMMARY.added || 0}</div></div>
+    <div class="kpi updated"><div class="label">更新</div><div class="value">${SUMMARY.updated || 0}</div></div>
+    <div class="kpi skipped"><div class="label">跳过</div><div class="value">${SUMMARY.skipped || 0}</div></div>
+    <div class="kpi failed"><div class="label">失败</div><div class="value">${SUMMARY.failed || 0}</div></div>
+  `;
+
+  // 进度条
+  const total = SUMMARY.total || 0;
+  const bar = document.getElementById('progressBar');
+  if (total === 0) {
+    bar.innerHTML = '<div class="progress-seg" style="width:100%;background:var(--bg-soft)"></div>';
+  } else {
+    const added = (SUMMARY.added / total * 100).toFixed(1);
+    const updated = (SUMMARY.updated / total * 100).toFixed(1);
+    const skipped = (SUMMARY.skipped / total * 100).toFixed(1);
+    const failed = (SUMMARY.failed / total * 100).toFixed(1);
+    bar.innerHTML = `
+      <div class="progress-seg added" style="width:${added}%"></div>
+      <div class="progress-seg updated" style="width:${updated}%"></div>
+      <div class="progress-seg skipped" style="width:${skipped}%"></div>
+      <div class="progress-seg failed" style="width:${failed}%"></div>
+    `;
+  }
+  document.getElementById('progressRate').textContent = `${SUMMARY.added + SUMMARY.updated}/${total}`;
+  document.getElementById('progressDetail').textContent =
+    `总数 ${total} 行 · 已计入 ${SUMMARY.added + SUMMARY.updated + SUMMARY.skipped + SUMMARY.failed}`;
+
+  // Tabs(过滤)
+  renderTabs('all');
+}
+
+function renderTabs(filter) {
+  const tabs = ['all', 'failed', 'added', 'updated', 'skipped'];
+  const counts = {
+    all: RUNS.length,
+    failed: RUNS.filter(r => r.status === 'failed').length,
+    added: RUNS.filter(r => r.status === 'added').length,
+    updated: RUNS.filter(r => r.status === 'updated').length,
+    skipped: RUNS.filter(r => r.status === 'skipped').length,
+  };
+  document.getElementById('tabs').innerHTML = tabs.map(t => {
+    const label = t === 'all' ? '全部' : STATUS_LABELS[t] || t;
+    const active = t === filter ? ' active' : '';
+    return `<button class="tab${active}" onclick="renderTabs('${t}')">${label}<span class="count">${counts[t]}</span></button>`;
+  }).join('');
+
+  const filtered = filter === 'all' ? RUNS : RUNS.filter(r => r.status === filter);
+  renderList(filtered);
+}
+
+function renderList(rows) {
+  if (rows.length === 0) {
+    document.getElementById('list').innerHTML = '<div class="row"><div class="name" style="color:var(--ink3)">无数据</div></div>';
+    return;
+  }
+  document.getElementById('list').innerHTML = rows.map((r, i) => `
+    <div class="row" data-row="${r.row}">
+      <div class="num">#${r.row}</div>
+      <span class="status status-tag ${r.status}">${STATUS_LABELS[r.status] || r.status}</span>
+      <div class="name">${r.brand ? `<span class="brand">${escapeHTML(r.brand)}</span>` : ''}${escapeHTML(r.product_name || '(无名)')}</div>
+      <div class="cal">${r.calories != null ? r.calories + ' 卡' : '—'}</div>
+      <button class="expand" onclick="toggleDetail(this, ${r.row})"></button>
+    </div>
+  `).join('');
+}
+
+function toggleDetail(btn, rowNum) {
+  const row = btn.closest('.row');
+  const existing = row.nextElementSibling;
+  if (existing && existing.classList.contains('row-detail-wrap')) {
+    existing.remove();
+    row.classList.remove('expanded');
+    return;
+  }
+  const data = RUNS.find(r => r.row === rowNum);
+  if (!data) return;
+
+  const detail = `
+    <div class="row-detail-wrap">
+      <div class="row-detail">
+        ${Object.entries(data).filter(([k]) => !['row','status','reason'].includes(k)).map(([k, v]) =>
+          `<div><span class="key">${escapeHTML(k)}:</span> <span class="val">${escapeHTML(String(v ?? '(空)'))}</span></div>`
+        ).join('')}
+        ${data.reason ? `<div class="reason"><strong>${STATUS_LABELS[data.status]}原因:</strong> ${escapeHTML(data.reason)}</div>` : ''}
+      </div>
+    </div>
+  `;
+  row.insertAdjacentHTML('afterend', detail);
+  row.classList.add('expanded');
+}
+
+function buildAdoptPrompt() {
+  return `我已经核对批量预览,数据无误。请帮我执行实际导入:
+
+  python scripts/batch_import.py import "${SUMMARY.jsonl_path}"
+
+摘要:
+  新增 ${SUMMARY.added} 条 · 更新 ${SUMMARY.updated} 条 · 跳过 ${SUMMARY.skipped} 条 · 失败 ${SUMMARY.failed} 条
+  失败详情请看预览 HTML
+
+数据来源: 批量导入预览(render_batch_import.py · ${new Date().toISOString().split('T')[0]})`;
+}
+
+function buildModifyPrompt() {
+  const failedRows = RUNS.filter(r => r.status === 'failed');
+  const skippedRows = RUNS.filter(r => r.status === 'skipped');
+
+  const failedSection = failedRows.length > 0
+    ? `【需修复的失败行】(${failedRows.length} 条)\n${failedRows.map(r =>
+        `  row ${r.row}: ${r.product_name || '(无名)'} → ${r.reason}\n` +
+        `    建议: ${suggestFix(r)}`
+      ).join('\n')}`
+    : '';
+
+  const skippedSection = skippedRows.length > 0
+    ? `【可考虑保留的跳过行】(${skippedRows.length} 条,与现有数据重复)\n${skippedRows.map(r =>
+        `  row ${r.row}: ${r.product_name} → ${r.reason}`
+      ).join('\n')}`
+    : '';
+
+  return `批量预览有 ${failedRows.length} 条失败和 ${skippedRows.length} 条跳过,请帮我处理:
+
+${failedSection}
+
+${skippedSection}
+
+${failedRows.length > 0 ? `处理建议:\n  1. 修复失败行的缺字段值\n  2. 标记 fix 后,保存为 ${SUMMARY.jsonl_path.replace('.jsonl', '_fixed.jsonl')}\n  3. 调 batch_import.py import 修复版文件` : ''}
+
+原始数据来源: 批量导入预览(render_batch_import.py)
+共 ${SUMMARY.total} 行数据 · 成功 ${SUMMARY.added + SUMMARY.updated} / 失败 ${failedRows.length} / 跳过 ${skippedRows.length}`;
+}
+
+function buildSkipFailedPrompt() {
+  return `批量预览有 ${SUMMARY.failed} 条失败,但我想跳过失败行,只导入成功的行:
+
+  python scripts/batch_import.py import "${SUMMARY.jsonl_path}" --skip-failed
+
+摘要:
+  将导入: 新增 ${SUMMARY.added} · 更新 ${SUMMARY.updated} · 跳过 ${SUMMARY.skipped}
+  将跳过: 失败 ${SUMMARY.failed} 条(人工后续处理)
+
+失败行清单(跳过):
+${RUNS.filter(r => r.status === 'failed').map(r =>
+  `  row ${r.row}: ${r.product_name || '(无名)'} → ${r.reason}`
+).join('\n')}
+
+数据来源: 批量导入预览`;
+}
+
+function suggestFix(r) {
+  if (r.reason.includes('缺少 calories')) return '补充 calories 数值(查包装或估算)';
+  if (r.reason.includes('saturated_fat')) return '将 saturated_fat 改为数字(当前是字符串)';
+  if (r.reason.includes('缺少 carbs')) return '补充 carbs 数值';
+  if (r.reason.includes('缺少 sodium')) return '补充 sodium 数值';
+  return '检查缺字段并补充';
+}
+
+function copyAdopt() { doCopy(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳 · 复制成功'); }
+function copyModify() { doCopy(buildModifyPrompt(), 'btnModify', '✓ 已复制修改指令'); }
+function copySkipFailed() { doCopy(buildSkipFailedPrompt(), 'btnSkipFailed', '✓ 已复制跳过指令'); }
+
+function doCopy(text, btnId, msg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId, msg) {
+  const btn = document.getElementById(btnId);
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
+}
+
+render();
+</script>
+</body>
+</html>

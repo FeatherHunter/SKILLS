@@ -1,0 +1,27 @@
+{
+  "summary": {
+    "jsonl_path": "foods_2026-07.jsonl",
+    "total": 50,
+    "added": 38,
+    "updated": 5,
+    "skipped": 4,
+    "failed": 3
+  },
+  "runs": [
+    {"row": 1, "status": "added", "product_name": "某品牌 燕麦片", "brand": "某品牌", "calories": 379, "protein": 13.5, "carbs": 67.5, "reason": ""},
+    {"row": 2, "status": "added", "product_name": "某品牌 牛奶 (1L)", "brand": "某品牌", "calories": 60, "protein": 3.0, "carbs": 4.8, "reason": ""},
+    {"row": 3, "status": "skipped", "product_name": "某品牌 燕麦片", "brand": "某品牌", "calories": 379, "reason": "与 row 1 重复（同 product_name + brand）"},
+    {"row": 4, "status": "failed", "product_name": "某品牌 酸奶", "calories": null, "reason": "缺少 calories 字段"},
+    {"row": 5, "status": "added", "product_name": "某品牌 全麦面包", "brand": "某品牌", "calories": 247, "protein": 13.0, "carbs": 41.0, "reason": ""},
+    {"row": 6, "status": "updated", "product_name": "某品牌 牛奶 (1L)", "brand": "某品牌", "calories": 65, "protein": 3.2, "carbs": 4.8, "reason": "已存在 · 数值更新"},
+    {"row": 7, "status": "added", "product_name": "某品牌 希腊酸奶 0 脂", "brand": "某品牌", "calories": 59, "protein": 10.0, "carbs": 3.6, "reason": ""},
+    {"row": 8, "status": "added", "product_name": "某品牌 鸡胸肉", "brand": "某品牌", "calories": 165, "protein": 31.0, "carbs": 0, "reason": ""},
+    {"row": 9, "status": "failed", "product_name": "某品牌 燕麦奶", "saturated_fat": "abc", "reason": "saturated_fat 类型错误（应是数字）"},
+    {"row": 10, "status": "skipped", "product_name": "某品牌 希腊酸奶 0 脂", "reason": "与 row 7 重复"},
+    {"row": 11, "status": "added", "product_name": "某品牌 牛肉干", "brand": "某品牌", "calories": 410, "protein": 60.0, "carbs": 12.0, "reason": ""},
+    {"row": 12, "status": "added", "product_name": "某品牌 三文鱼 (冷冻)", "brand": "某品牌", "calories": 208, "protein": 20.0, "carbs": 0, "reason": ""},
+    {"row": 13, "status": "updated", "product_name": "某品牌 牛奶 (1L)", "brand": "某品牌", "calories": 62, "protein": 3.1, "reason": "已存在 · 同一商品二次更新"},
+    {"row": 14, "status": "added", "product_name": "某品牌 黑巧克力 70%", "brand": "某品牌", "calories": 598, "protein": 7.8, "carbs": 45.0, "reason": ""},
+    {"row": 15, "status": "failed", "product_name": "某品牌 杏仁", "carbs": null, "reason": "缺少 carbs 字段 + sodium 也缺"}
+  ]
+}

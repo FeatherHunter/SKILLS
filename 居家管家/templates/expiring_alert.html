@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 过期预警</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--red);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.danger{border-left-color:var(--red)}
+.card.warn{border-left-color:var(--orange)}
+.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.item{background:var(--card);border-radius:18px;padding:16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:grid;grid-template-columns:90px 1fr auto;gap:14px;align-items:center;border-left:4px solid var(--blue)}
+.item.danger{border-left-color:var(--red);background:#fff8f8}
+.item.warn{border-left-color:var(--orange)}
+.item.info{border-left-color:var(--blue)}
+.item.done{opacity:.5;border-left-color:var(--green)}
+.photo{width:90px;height:90px;border-radius:14px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:11px}
+.photo img{width:100%;height:100%;object-fit:cover}
+.name{font-weight:700;font-size:15px;margin-bottom:3px}
+.meta{color:var(--fg2);font-size:12px;margin-bottom:4px}
+.badge{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;margin-right:6px}
+.badge.danger{background:#ffe5e5;color:var(--red)}
+.badge.warn{background:#fff0d9;color:var(--orange)}
+.badge.info{background:#eef5ff;color:var(--blue)}
+.tagbox{display:flex;flex-wrap:wrap;margin:4px 0}
+.tag{background:#f0f3f8;color:var(--fg2);border-radius:99px;padding:2px 8px;margin:2px;font-size:11px}
+.actions{display:flex;flex-direction:column;gap:6px}
+.btn{border:none;border-radius:999px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);white-space:nowrap}
+.btn:hover{background:#e5e9ef}
+.btn.done{background:var(--green);color:#fff}
+.btn.skip{background:var(--red);color:#fff}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.photo{height:140px;width:100%}.actions{flex-direction:row}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 过期预警</div>
+<h1 id="title">过期预警</h1>
+<p class="lead" id="subtitle">居家管家过期预警</p>
+</header>
+<div class="cards" id="cards"></div>
+<div id="app"></div>
+<div class="fixed"><button class="copy" id="copyBtn">复制过期处理回执</button></div>
+<p class="footer">模板只展示注入数据，不直连数据库；标"已处理/废弃"后把回执发给 AI 执行 update。</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+const app=document.getElementById('app');
+const cardsEl=document.getElementById('cards');
+const titleEl=document.getElementById('title');
+const subEl=document.getElementById('subtitle');
+const copyBtn=document.getElementById('copyBtn');
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+
+let DATA={items:[],summary:{}};
+let STATE={};
+
+function rebuildReceipt(){
+  const lines=['expiring_alert_results:'];
+  let done=0,skip=0;
+  DATA.items.forEach(it=>{
+    const st=STATE[it.id];
+    if(!st||!st.action) return;
+    if(st.action==='done'){done++;lines.push(`- ID ${it.id}（${esc(it.name)}）：已处理（已用完），数量 → 0`);}
+    else if(st.action==='skip'){skip++;lines.push(`- ID ${it.id}（${esc(it.name)}）：已废弃`);}
+  });
+  copyBtn.textContent=`复制过期处理回执（${done} 处理 / ${skip} 废弃）`;
+  return lines.join('\n');
+}
+
+copyBtn.onclick=function(){
+  const txt=rebuildReceipt();
+  if(txt==='expiring_alert_results:'){alert('暂未标记任何处理');return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>{
+      const old=copyBtn.textContent;copyBtn.textContent='已复制 ✓';
+      setTimeout(()=>{copyBtn.textContent=old;},1500);
+    });
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }
+};
+
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA={items:arr(data.items),summary:data.summary||{}};
+STATE={};
+titleEl.textContent=DATA.summary.title||'过期预警';
+subEl.textContent=DATA.summary.subtitle||'';
+const metrics=arr(DATA.summary.metrics);
+cardsEl.innerHTML=metrics.map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+if(!DATA.items.length){app.innerHTML='<div class="empty">没有过期物品，太棒了 ✨</div>';return}
+app.innerHTML=DATA.items.map(it=>{
+  const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span class="tag">无标签</span>';
+  const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无图';
+  const dl=it.days_left;
+  let badge='';
+  if(dl<0) badge='<span class="badge danger">已过期 '+(-dl)+' 天</span>';
+  else if(dl===0) badge='<span class="badge warn">今天到期</span>';
+  else if(dl<=3) badge='<span class="badge warn">'+dl+' 天后到期</span>';
+  else if(dl<=7) badge='<span class="badge warn">'+dl+' 天</span>';
+  else badge='<span class="badge info">'+dl+' 天</span>';
+  return `<div class="item ${esc(it.severity)}" id="item-${it.id}">
+<div class="photo">${photo}</div>
+<div>
+<div class="name">ID ${it.id} · ${esc(it.name||'未命名')}</div>
+<div class="meta">📍 ${esc(it.location||'(无位置)')} · ×${esc(it.quantity||1)} · 到期 ${esc(it.expiration_date||'-')}</div>
+<div>${badge}</div>
+<div class="tagbox">${tags}</div>
+</div>
+<div class="actions">
+<button class="btn done" data-act="done" data-id="${it.id}">已处理</button>
+<button class="btn skip" data-act="skip" data-id="${it.id}">废弃</button>
+</div>
+</div>`;
+}).join('');
+
+app.querySelectorAll('button[data-act]').forEach(b=>{
+  b.onclick=function(){
+    const id=this.getAttribute('data-id');
+    const act=this.getAttribute('data-act');
+    STATE[id]=STATE[id]||{};
+    if(STATE[id].action===act){delete STATE[id].action;}
+    else{STATE[id].action=act;}
+    paint(id);
+  };
+});
+rebuildReceipt();
+}
+
+function paint(id){
+  const st=STATE[id]||{};
+  const el=document.getElementById('item-'+id);
+  if(!el) return;
+  el.classList.toggle('done',!!st.action);
+  el.querySelectorAll('button[data-act]').forEach(b=>{
+    b.classList.toggle('active',b.getAttribute('data-act')===st.action);
+  });
+  rebuildReceipt();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -156,6 +156,7 @@ def main():
     p_stats.add_argument("--days", type=int, default=30, help="（expiring用）天数窗口，默认30")
     p_stats.add_argument("--expired-only", action="store_true", help="（expiring用）只看已过期")
     p_stats.add_argument("--category-id", type=int, default=None, help="（expiring用）按分类 ID 筛选")
+    p_stats.add_argument("--output", default=None, help="HTML 输出路径（仅 --type expiring 支持）")
 
     # ── tag-merge ──
     p_merge = subparsers.add_parser("tag-merge", help="合并标签")
@@ -389,6 +390,23 @@ def main():
         return 0
 
     elif args.command == "stats":
+        if args.output and args.type == "expiring":
+            from home_manager.html_render import emit
+            from home_manager.inventory_ops import _stats_expiring_payload
+            conn = get_conn()
+            try:
+                payload_data = _stats_expiring_payload(
+                    conn, limit=args.limit, days=args.days,
+                    expired_only=args.expired_only, category_id=args.category_id
+                )
+            finally:
+                conn.close()
+            payload = {
+                "status": "ok",
+                "data": payload_data,
+                "message": "过期预警 HTML 已生成",
+            }
+            return emit(payload, "expiring_alert.html", args.output)
         return stats(stat_type=args.type, limit=args.limit, days=args.days,
                      expired_only=args.expired_only, category_id=args.category_id)
 

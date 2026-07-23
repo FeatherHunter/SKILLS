@@ -394,6 +394,98 @@ def _stats_summary_payload(conn):
     }
 
 
+def _stats_expiring_payload(conn, limit=50, days=30, expired_only=False, category_id=None):
+    """返回 expiring_alert.html 需要的结构化过期预警数据
+
+    返回结构:
+      {
+        "summary": {title, subtitle, metrics[{label,value,severity}]},
+        "items":   [{id, name, category_name, location, quantity,
+                     location_status, expiration_date, days_left, tags[]}, ...]
+      }
+
+    severity 字段: 'danger'(已过期) / 'warn'(≤7天) / 'info'(>7天)
+    """
+    cursor = conn.cursor()
+
+    conditions = [
+        "il.expiration_date IS NOT NULL",
+        "il.expiration_date != ''",
+        "julianday(il.expiration_date) - julianday('now') <= ?"
+    ]
+    params = [days]
+    if category_id:
+        ids = _expand_inv(conn, category_id)
+        if len(ids) == 1:
+            conditions.append("i.category_id = ?")
+            params.append(ids[0])
+        else:
+            placeholders = ",".join("?" * len(ids))
+            conditions.append(f"i.category_id IN ({placeholders})")
+            params.extend(ids)
+    if expired_only:
+        conditions.append("julianday(il.expiration_date) - julianday('now') < 0")
+
+    where_clause = " AND ".join(conditions)
+    query = f"""
+        SELECT i.id, i.name, c.name AS category_name,
+               il.location, il.quantity, il.location_status,
+               il.expiration_date,
+               CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) AS days_left
+        FROM item_locations il
+        JOIN items i ON i.id = il.item_id
+        LEFT JOIN categories c ON i.category_id = c.id
+        WHERE {where_clause}
+        ORDER BY days_left ASC
+        LIMIT ?
+    """
+    params.append(limit)
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+
+    items = []
+    for r in rows:
+        days_left = r['days_left']
+        if days_left < 0:
+            severity = 'danger'
+        elif days_left <= 7:
+            severity = 'warn'
+        else:
+            severity = 'info'
+        tags = get_tags(conn, r['id'])
+        items.append({
+            "id": r['id'],
+            "name": r['name'],
+            "category_name": r['category_name'] or '(未分类)',
+            "location": r['location'],
+            "quantity": r['quantity'],
+            "location_status": r['location_status'] or '在家',
+            "expiration_date": r['expiration_date'],
+            "days_left": days_left,
+            "severity": severity,
+            "tags": tags,
+        })
+
+    expired = sum(1 for it in items if it['days_left'] < 0)
+    in_3 = sum(1 for it in items if 0 <= it['days_left'] <= 3)
+    in_7 = sum(1 for it in items if 0 <= it['days_left'] <= 7)
+    in_days = sum(1 for it in items if it['days_left'] <= days)
+
+    return {
+        "summary": {
+            "title": f"过期预警 · {days}天内",
+            "subtitle": "按紧急度排序；标\"已处理\"后 AI 执行 update",
+            "metrics": [
+                {"label": "已过期", "value": f"{expired} 件", "severity": "danger"},
+                {"label": "3天内", "value": f"{in_3} 件", "severity": "warn"},
+                {"label": "7天内", "value": f"{in_7} 件", "severity": "warn"},
+                {"label": f"{days}天内", "value": f"{in_days} 件", "severity": "info"},
+            ],
+        },
+        "items": items,
+    }
+
+
 def _stats_summary(conn):
     """总体统计:总览 + 3 层分类树 + 总价值(items.purchase_price 累加)
 

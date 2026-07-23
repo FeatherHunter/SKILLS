@@ -14,3 +14,5 @@ __pycache__/
 # 改造方案 review 文档(不进 git)
 改造执行方案.html
 HTML注入改造方案.html
+# 阶段性重构备份目录
+.bak_phase_*/

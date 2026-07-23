@@ -331,6 +331,52 @@ AI 判断逻辑:
 
 > 详细命令见: `references/CLI命令.md`
 
+#### 3.x 作息记录查询 → HTML 单日报告（2026-07-23 新增 · 4 段结构）
+
+**触发词**：查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 看看我昨天做了什么 / 那天的作息报告
+
+**核心语义**：AI 收到"查作息"+日期 → 调 `render-record-report <date>` → 直接从 `schedule_records` 表现读数据 → 派生 4 段内容 → 写一份单文件 HTML 到 `SKILLS_DB_PATH/schedule_html/record/<date>_record_report.html` → AI 拿到 `file_path` 后用 `<media>` 交付给用户。
+
+**4 段结构**（沿用 2026-06-25.html 等历史报告视觉）：
+
+| 段 | 内容 | 数据来源 |
+|---|---|---|
+| ① 时间分配 | 12 个分类卡片（emoji + 时长 + 横向进度条 + 占比%）+ 总计 | `cat_minutes`（按 category 聚合 `duration_minutes`） |
+| ② 24h 时间轴 | 24 段色块（每段 dominant category 颜色）+ hover tooltip + 图例 | `hour_cats[24]`（每条按分钟切片到小时桶，取主导分类） |
+| ③ 当日亮点 | **当前为占位**（`data.highlights[]` 默认空），后续 Phase 2 可支持 AI 叙事 | 暂不派生 |
+| ④ 睡眠分析 | 主睡眠段（最长睡眠段）+ 总睡眠段数 + 充足判断（≥7h） | `sleep_records`（按 `duration_minutes` 排序） |
+
+**调用方式**：
+
+```bash
+# 标准用法（最常用）
+python scripts/schedule_cli.py render-record-report 2026-07-15
+# → stdout:
+# {"status":"ok","data":{"file_path":"D:\\2Study\\StudyNotes\\.db\\schedule_html\\record\\2026-07-15_record_report.html","bytes":16717,...},"message":"✓ ..."}
+# AI 用 <media src="D:\\...\\2026-07-15_record_report.html" type="file" /> 把文件交付给用户
+```
+
+**约束**：
+
+- 输出文件路径**硬绑** `SKILLS_DB_PATH/schedule_html/record/<date>_record_report.html`，**不传 `--out`**（破坏兼容 — 旧 `作息管家/reports/` 已被一刀删除）
+- 目录不存在 → 报错退出（**不静默创建**），错误文案带字段名+期望值+修复建议
+- 同日期覆盖写（用户主动调就期望刷新）
+- 模板：`templates/schedule_record_report.html`（沿用历史 CSS + 4 段布局；含 5 大状态：正常 / 空 / 缺 / 错 / 离线）
+
+**实现位置**：
+- 模板：`templates/schedule_record_report.html`
+- 渲染器：`scripts/schedule_html_render.py`（`render_record_report()` 函数 + 4 段算法；`COLOR_MAP`/`EMOJI_MAP`/`_fmt_dur` 复用历史脚本）
+- CLI 入口：`scripts/schedule_cli.py` 的 `cmd_render_record_report()` 子命令
+- 数据来源：调用 `schedule_db.get_records_by_date()` 现读（**不依赖任何中间文件或 `/tmp` JSON**）
+
+**与原命令的边界**：
+
+| 场景 | 用哪个 |
+|---|---|
+| 终端查、复制粘贴、AI 引用 | `list / detail / summary / timeline / report / range / status`（文本） |
+| 浏览器看、截图分享、可视化 | `render-record-report <日期>`（HTML） |
+| Cron 7:30 自动推送 | **已废** — `reports/` 目录被删，cron 7:30 报告链路不再工作。如需恢复，需用 `render-record-report` 重写 |
+
 ---
 
 ### 3.1 查询日程(默认 `list-events`)

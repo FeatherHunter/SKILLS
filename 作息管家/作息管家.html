@@ -471,6 +471,52 @@ python scripts/schedule_cli.py add --json @record.json</code></pre>
 <blockquote>
 <p>详细命令见: <code>references/CLI命令.md</code></p>
 </blockquote>
+<h3>3.x 作息记录查询 → HTML 单日报告(2026-07-23 新增 · 4 段结构)</h3>
+<p><strong>触发词</strong>:查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 看看我昨天做了什么 / 那天的作息报告</p>
+<p><strong>核心语义</strong>:AI 收到"查作息"+日期 → 调 <code>render-record-report &lt;date&gt;</code> → 直接从 <code>schedule_records</code> 表现读数据 → 派生 4 段内容 → 写一份单文件 HTML 到 <code>SKILLS_DB_PATH/schedule_html/record/&lt;date&gt;_record_report.html</code> → AI 拿到 <code>file_path</code> 后用 <code>&lt;media&gt;</code> 交付给用户。</p>
+<p><strong>4 段结构</strong>(沿用 2026-06-25.html 等历史报告视觉):</p>
+<table>
+<thead>
+<tr><th>段</th><th>内容</th><th>数据来源</th></tr>
+</thead>
+<tbody>
+<tr><td>① 时间分配</td><td>12 个分类卡片(emoji + 时长 + 横向进度条 + 占比%)+ 总计</td><td><code>cat_minutes</code>(按 category 聚合 <code>duration_minutes</code>)</td></tr>
+<tr><td>② 24h 时间轴</td><td>24 段色块(每段 dominant category 颜色)+ hover tooltip + 图例</td><td><code>hour_cats[24]</code>(每条按分钟切片到小时桶,取主导分类)</td></tr>
+<tr><td>③ 当日亮点</td><td><strong>当前为占位</strong>(<code>data.highlights[]</code> 默认空),后续 Phase 2 可支持 AI 叙事</td><td>暂不派生</td></tr>
+<tr><td>④ 睡眠分析</td><td>主睡眠段(最长睡眠段)+ 总睡眠段数 + 充足判断(≥7h)</td><td><code>sleep_records</code>(按 <code>duration_minutes</code> 排序)</td></tr>
+</tbody>
+</table>
+<p><strong>调用方式</strong>:</p>
+<pre><code class="language-bash"># 标准用法(最常用)
+python scripts/schedule_cli.py render-record-report 2026-07-15
+# → stdout:
+# {"status":"ok","data":{"file_path":"D:\\2Study\\StudyNotes\\.db\\schedule_html\\record\\2026-07-15_record_report.html","bytes":16717,...},"message":"✓ ..."}
+# AI 用 &lt;media src="D:\\...\\2026-07-15_record_report.html" type="file" /&gt; 把文件交付给用户</code></pre>
+<p><strong>约束</strong>:</p>
+<ul>
+<li>输出文件路径<strong>硬绑</strong> <code>SKILLS_DB_PATH/schedule_html/record/&lt;date&gt;_record_report.html</code>,<strong>不传 <code>--out</code></strong>(破坏兼容 — 旧 <code>作息管家/reports/</code> 已被一刀删除)</li>
+<li>目录不存在 → 报错退出(<strong>不静默创建</strong>),错误文案带字段名+期望值+修复建议</li>
+<li>同日期覆盖写(用户主动调就期望刷新)</li>
+<li>模板:<code>templates/schedule_record_report.html</code>(沿用历史 CSS + 4 段布局;含 5 大状态:正常 / 空 / 缺 / 错 / 离线)</li>
+</ul>
+<p><strong>实现位置</strong>:</p>
+<ul>
+<li>模板:<code>templates/schedule_record_report.html</code></li>
+<li>渲染器:<code>scripts/schedule_html_render.py</code>(<code>render_record_report()</code> 函数 + 4 段算法;<code>COLOR_MAP</code>/<code>EMOJI_MAP</code>/<code>_fmt_dur</code> 复用历史脚本)</li>
+<li>CLI 入口:<code>scripts/schedule_cli.py</code> 的 <code>cmd_render_record_report()</code> 子命令</li>
+<li>数据来源:调用 <code>schedule_db.get_records_by_date()</code> 现读(<strong>不依赖任何中间文件或 <code>/tmp</code> JSON</strong>)</li>
+</ul>
+<p><strong>与原命令的边界</strong>:</p>
+<table>
+<thead>
+<tr><th>场景</th><th>用哪个</th></tr>
+</thead>
+<tbody>
+<tr><td>终端查、复制粘贴、AI 引用</td><td><code>list / detail / summary / timeline / report / range / status</code>(文本)</td></tr>
+<tr><td>浏览器看、截图分享、可视化</td><td><code>render-record-report &lt;日期&gt;</code>(HTML)</td></tr>
+<tr><td>Cron 7:30 自动推送</td><td><strong>已废</strong> — <code>reports/</code> 目录被删,cron 7:30 报告链路不再工作。如需恢复,需用 <code>render-record-report</code> 重写</td></tr>
+</tbody>
+</table>
 <hr />
 <h3>3.1 查询日程(默认 <code>list-events</code>)</h3>
 <p><strong>核心规则</strong>:用户说"查日程/看日程"时,AI <strong>必须默认走 <code>list-events</code></strong>,<strong>不是</strong> <code>query-plans</code>。</p>

@@ -286,13 +286,16 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     return output_path
 
 
-# ===== 路径常量:硬绑 SKILLS_DB_PATH（破坏兼容,plan/list + plan/query 也走这里）=====
+# ===== 路径常量:硬绑 SKILLS_DB_PATH(破坏兼容,plan/list + plan/query 也走这里)=====
 import os
-_DB_DIR = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
-HTML_BASE_DIR = Path(_DB_DIR) / 'schedule_html'
-PLAN_LIST_DIR = HTML_BASE_DIR / 'plan' / 'list'
-PLAN_QUERY_DIR = HTML_BASE_DIR / 'plan' / 'query'
-RECORD_DIR = HTML_BASE_DIR / 'record'
+
+def _html_base_dir() -> Path:
+    """延迟求值,避免模块加载时 SKILLS_DB_PATH/schedule_html 还不存在导致 RECORD_DIR 永久冻结为空"""
+    db_dir = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
+    return Path(db_dir) / 'schedule_html'
+
+def _record_dir() -> Path:
+    return _html_base_dir() / 'record'
 
 
 def default_output_path(meta: dict) -> Path:
@@ -307,19 +310,23 @@ def default_output_path(meta: dict) -> Path:
     上一版本写到 SKILL_DIR/reports/,已被一刀删除,从此统一到 SKILLS_DB_PATH 下。
     """
     mode = meta.get("mode", "list-events")
+    base = _html_base_dir()
+    plan_list = base / 'plan' / 'list'
+    plan_query = base / 'plan' / 'query'
+    record = base / 'record'
 
     if mode == "list-events":
         date = meta.get("date", "unknown")
-        return PLAN_LIST_DIR / f"plan_list_{date}.html"
+        return plan_list / f"plan_list_{date}.html"
     if mode == "query-plans":
         dates = meta.get("dates", [])
         if len(dates) == 1:
-            return PLAN_QUERY_DIR / f"plan_query_{dates[0]}.html"
-        return PLAN_QUERY_DIR / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
+            return plan_query / f"plan_query_{dates[0]}.html"
+        return plan_query / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
     if mode == "record-report":
         date = meta.get("date", "unknown")
-        return RECORD_DIR / f"{date}_record_report.html"
-    return HTML_BASE_DIR / "view.html"
+        return record / f"{date}_record_report.html"
+    return base / "view.html"
 
 
 def title_for_mode(meta: dict) -> str:

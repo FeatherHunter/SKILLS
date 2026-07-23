@@ -1477,6 +1477,102 @@ def cmd_render_query_plans(args):
 
 
 # ============================================================
+# 2026-07-23 新增:作息记录查询 → HTML 单日报告
+# ============================================================
+#
+# 一个命令:render-record-report <日期>
+# 行为:
+#   1. 从 schedule_records 现读(无中间文件,无 /tmp JSON)
+#   2. 派生 4 段数据(时间分配/24h 色带/AI 亮点占位/睡眠分析)
+#   3. 注入 templates/schedule_record_report.html
+#   4. 写到 SKILLS_DB_PATH/schedule_html/<date>_record_report.html(目录必须已存在)
+#   5. stdout 一行 JSON:status/data.file_path/data.bytes/message
+#
+# 设计约束(来自 SKILL五层 + 预置 HTML 指导手册):
+#   - 不查 schedule_db.py 之外的 DB(数据层 §1)
+#   - 输出文件 = SKILLS_DB_PATH/schedule_html/<date>_record_report.html
+#   - 不传 --out(目录硬绑,只有 SKILLS_DB_PATH 环境变量决定)
+#   - 目录不存在 → 报错(不静默建)
+#   - 同日期覆盖写(用户主动调就期望刷新)
+#   - 第 ③ 段 AI 亮点默认空(本次不做 AI 叙事)
+def cmd_render_record_report(args):
+    """
+    render-record-report <日期>
+
+    把该日 schedule_records 表的全部记录 → 4 段 HTML 报告 →
+    写到 SKILLS_DB_PATH/schedule_html/<date>_record_report.html → stdout JSON。
+
+    用法:
+      python scripts/schedule_cli.py render-record-report 2026-07-15
+    """
+    import json as _json
+    from schedule_html_render import _record_dir, render_record_report, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-record-report <日期>(YYYY-MM-DD)",
+            "example": "render-record-report 2026-07-15"
+        }, ensure_ascii=False))
+        return
+
+    date = args[0]
+
+    # 校验日期(字段名 + 当前值 + 期望值 + 怎么修 — 接口层硬规则)
+    from schedule_db import _normalize_date
+    try:
+        date = _normalize_date(date)
+    except ValueError as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"date 字段格式非法: '{args[0]}'(期望 YYYY-MM-DD 或 YYYYMMDD,建议: 2026-07-15)"
+        }, ensure_ascii=False))
+        return
+
+    # 校验输出目录(硬绑 SKILLS_DB_PATH,不存在 → 报错不静默建)
+    record_dir = _record_dir()
+    if not record_dir.exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出目录不存在: 字段 --out_dir,期望值 {record_dir},"
+                       f"建议: mkdir -p {record_dir} 或设置环境变量 SKILLS_DB_PATH 指向含 schedule_html/ 子目录的位置"
+        }, ensure_ascii=False))
+        return
+
+    # 派生数据
+    try:
+        payload = render_record_report(date)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生渲染数据失败: {type(e).__name__}: {e}"
+        }, ensure_ascii=False))
+        return
+
+    # 写文件(覆盖写,同日期刷新)
+    result = render_and_write(payload, None)
+    if result["status"] != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "record-report",
+            "date": date,
+            "record_count": payload["data"]["meta"]["record_count"],
+        },
+        "message": f"✓ 作息记录报告已写入: {fp}"
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # 2026-07-22 新增：分类系统管理（基于 validators.py 白名单）
 # ============================================================
 #
@@ -1827,9 +1923,10 @@ def cmd_help():
   ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X [--notes Y] [--category Z]  补计划：单条追加，幂等
   feishu-resync <date>                    重同步某天到飞书
 
-HTML 渲染（2026-07-23 新增，可视化查询结果）:
-  render-list-events <date> [--out PATH]   渲染 list-events 为 HTML(摘要卡 + 时间轴 + 事件卡片)
-  render-query-plans <d1,d2,...> [--out PATH]  渲染多日 query-plans 为 HTML
+HTML 渲染(可视化查询结果):
+  render-list-events <date> [--out PATH]   渲染日程 list-events 为 HTML(摘要+时间轴+事件卡片)
+  render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
+  render-record-report <date>              渲染作息记录单日报告 HTML(硬绑 SKILLS_DB_PATH/schedule_html/)
 
 分类系统（2026-07-22 新增）:
   list-categories [--level 1|2] [--json]   列出分类白名单

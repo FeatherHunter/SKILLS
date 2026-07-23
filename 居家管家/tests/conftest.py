@@ -32,3 +32,27 @@ def sample_ok_payload():
         },
         "message": "测试",
     }
+
+
+@pytest.fixture
+def cleanup_test_items(conn):
+    """自动清理本次测试新增的所有 TEST_ 前缀物品
+
+    用法:
+        def test_xxx(conn, cleanup_test_items):
+            # 测试逻辑
+            cleanup_test_items.append(item_id)  # 测试结束后自动 DELETE
+
+    同时也会清理本次可能漏 append 的 TEST_ 前缀物品（双重防护）
+    """
+    test_ids: list[int] = []
+    yield test_ids
+    if test_ids:
+        for item_id in test_ids:
+            try:
+                conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
+            except Exception:
+                pass
+    # 兜底: 清理所有 TEST_ 前缀物品 (防漏)
+    conn.execute("DELETE FROM items WHERE name LIKE 'TEST\\_%' ESCAPE '\\'")
+    conn.commit()

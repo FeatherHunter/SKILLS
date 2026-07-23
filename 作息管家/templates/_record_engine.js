@@ -10,7 +10,8 @@
     "record-range":   "作息记录 · 区间报告",
     "record-compare": "作息记录 · 区间对比",
     "record-category":"作息记录 · 类别深挖",
-    "record-anomaly": "作息记录 · 异常检测"
+    "record-anomaly": "作息记录 · 异常检测",
+    "record-detail":  "作息记录 · 详情溯源"
   };
 
   function escapeHTML(s){
@@ -55,7 +56,8 @@
     "record-range":    renderRange,
     "record-compare":  renderCompare,
     "record-category": renderCategory,
-    "record-anomaly":  renderAnomaly
+    "record-anomaly":  renderAnomaly,
+    "record-detail":   renderDetail
   };
   var handler = MODE_HANDLERS[meta.mode];
   if (handler) return handler(data, meta);

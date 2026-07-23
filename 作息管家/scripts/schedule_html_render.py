@@ -257,18 +257,23 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     payload_str = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     payload_str = payload_str.replace("</", "<\\/")
 
-    if "<script id=\"payload\" type=\"application/json\">" not in template_text:
+    anchor = '<script id="payload" type="application/json">'
+    if anchor not in template_text:
         raise RuntimeError(
-            f"模板 {template_name} 缺少 <script id=\"payload\" type=\"application/json\"></script> 锚点"
+            f"模板 {template_name} 缺少 {anchor} 锚点"
         )
 
-    injected = template_text.replace(
-        "<script id=\"payload\" type=\"application/json\"></script>",
-        '<script id="payload" type="application/json">'
-        + payload_str
-        + "</script>",
-        1,
-    )
+    # 找到锚点位置,把锚点开始到 </script> 结束 整段替换为「锚点 + payload + </script>」
+    close_tag = "</script>"
+    start_idx = template_text.find(anchor)
+    end_idx = template_text.find(close_tag, start_idx)
+    if end_idx < 0:
+        raise RuntimeError(f"模板 {template_name} 缺少 {close_tag} 闭合")
+    end_idx += len(close_tag)  # 包含 </script>
+
+    head = template_text[:start_idx]
+    tail = template_text[end_idx:]
+    injected = head + anchor + payload_str + close_tag + tail
     # 替换 {{date}} / {{payload}} 等占位符(若模板里有)
     injected = injected.replace("{{ DATE }}", str(payload.get("data", {}).get("meta", {}).get("date", "")))
 

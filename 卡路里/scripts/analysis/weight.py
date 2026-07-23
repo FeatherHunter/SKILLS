@@ -69,11 +69,14 @@ def weight_trend(start_date, end_date=None, as_dict=False):
     daily_rate = (change / span) * 1000  # g/天
 
     if abs(daily_rate) < 10:
-        trend_label = "stable"
+        trend_label_cn = "平稳"
+        trend_label_en = "stable"
     elif change > 0:
-        trend_label = "up"
+        trend_label_cn = "上升"
+        trend_label_en = "up"
     else:
-        trend_label = "down"
+        trend_label_cn = "下降"
+        trend_label_en = "down"
 
     # 2026-07-23 D1 增：组装 dict
     data = {
@@ -87,7 +90,7 @@ def weight_trend(start_date, end_date=None, as_dict=False):
         "last_weight": round(last_w, 1),
         "change_kg": round(change, 1),
         "daily_change_g": round(daily_rate, 0),
-        "trend": trend_label,
+        "trend": trend_label_en,
         "logs": [
             {"date": r[0], "weight_kg": r[1], "note": r[2] or ""}
             for r in rows
@@ -98,10 +101,10 @@ def weight_trend(start_date, end_date=None, as_dict=False):
         return {
             "status": "ok",
             "data": data,
-            "message": f"体重趋势 {count} 条记录，趋势 {trend_label}",
+            "message": f"体重趋势 {count} 条记录，趋势 {trend_label_cn}",
         }
 
-    # 原 print 输出（向后兼容）
+    # 原 print 输出（向后兼容）—— 用中文 label + emoji
     trend_emoji = "✓" if abs(daily_rate) < 10 else ("↑" if change > 0 else "✓")
     print(f"""
 📊 体重趋势（{start_date} ~ {end_date}）
@@ -111,7 +114,7 @@ def weight_trend(start_date, end_date=None, as_dict=False):
   首日：{weights[0][0]} {first_w:.1f}kg
   末日：{weights[-1][0]} {last_w:.1f}kg
   变化：{change:+.1f}kg | 日均变化：{daily_rate:+.0f}g/天
-  趋势判断：{trend_label}{trend_emoji}
+  趋势判断：{trend_label_cn}{trend_emoji}
 {'-'*40}""")
     return rows
 

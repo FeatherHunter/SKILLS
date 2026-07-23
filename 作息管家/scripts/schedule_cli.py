@@ -1711,7 +1711,10 @@ def cmd_render_record_compare_months(args):
         new_path = _P(r["data"]["file_path"]).parent / f"{label_a}_vs_{label_b}_record_compare.html"
         old_path = _P(r["data"]["file_path"])
         if old_path.exists():
+            if new_path.exists():
+                new_path.unlink()  # H9 修复:目标存在先删,避免 Windows 抛 FileExistsError
             old_path.rename(new_path)
+        r["data"]["file_path"] = str(new_path)
         r["data"]["file_path"] = str(new_path)
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
@@ -1728,7 +1731,7 @@ def cmd_render_record_category(args):
         return
     date, category = args[0], args[1]
     r = _render_record_cmd([category, date, date], render_record_category, "record-category",
-                            {"date": date, "category": category})
+                            {"date": date, "start": date, "end": date, "category": category})
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 

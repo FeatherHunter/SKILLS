@@ -49,14 +49,24 @@
   document.getElementById("page-meta").innerHTML =
     "由作息管家 · schedule_cli render-record-* 生成 · " + (meta.generated_at || "");
 
-  if (meta.mode === "record-day")      return renderDay(data, meta);
-  if (meta.mode === "record-range")    return renderRange(data, meta);
-  if (meta.mode === "record-compare")  return renderCompare(data, meta);
-  if (meta.mode === "record-category") return renderCategory(data, meta);
-  if (meta.mode === "record-anomaly")  return renderAnomaly(data, meta);
+  // M3: 字典分发,缺 key 报错清晰(替代原 5 个 if 链)
+  var MODE_HANDLERS = {
+    "record-day":      renderDay,
+    "record-range":    renderRange,
+    "record-compare":  renderCompare,
+    "record-category": renderCategory,
+    "record-anomaly":  renderAnomaly
+  };
+  var handler = MODE_HANDLERS[meta.mode];
+  if (handler) return handler(data, meta);
 
+  // 列出所有支持的 mode 帮用户排查
+  var supportedModes = Object.keys(MODE_HANDLERS).join(", ");
   document.getElementById("root").innerHTML =
-    '<div class="error"><h3>❌ 未知 mode: ' + escapeHTML(meta.mode || "") + '</h3></div>';
+    '<div class="error"><h3>❌ 未知 mode: ' + escapeHTML(meta.mode || "(空)") + '</h3>' +
+    '<div class="highlight-row" style="background:#fff0f0;color:#a83228;margin-top:8px">' +
+    '<span class="h-emoji">💡</span><div class="h-text">支持的 mode: ' + escapeHTML(supportedModes) +
+    '<br/>字段 --mode 由 schedule_html_render.py render_record_* 设置,可能版本不匹配。</div></div></div>';
 
   // ===== T1: 单日 =====
   function renderDay(data, meta){

@@ -425,6 +425,14 @@ AI 判断逻辑:
 | 健身习惯 / 健身什么时候做的 / 健身频次 | `render-record-category-range <start> <end> <category>` |
 | 最近状态 / 有没有异常 / 异常检测 | `render-record-anomaly --window 7` |
 
+**完整 AI 操作流程**（M12:用户操作闭环）：
+
+1. **校验日期/参数** — 命令入口先校验输入合法性（日期格式 / window 1-90 / 类别名已知 / 起止日期 start ≤ end）。失败时 `{"status":"error","message":"...字段名+当前值+期望值+怎么修"}` 不写盘。
+2. **派生数据 + 写文件** — `render-record-*` 命令调 `calculations.py` 派生函数（健康分 / 异常检测 / AI 钩子 / 17 维业务洞察），再 `inject_into_template` 写 HTML 到 `SKILLS_DB_PATH/schedule_html/record/<sub>/<file>.html`。同时把共享 CSS/JS 引擎复制到输出目录。
+3. **AI 交付给用户** — 命令 stdout 输出 `{status, data:{file_path, bytes, mode, date/range/category}, message}` 三段式 JSON。AI 用 `<media src="file_path" type="file" />` 把 HTML 推给用户，让用户在浏览器看完整可视化报告。
+
+> 常见错误：如果 `<media>` 后用户说"打开是空白"，说明 `record/<sub>/` 目录不存在 — 文档第 3.1.2 节"约束"明确不静默建目录,需用户自己 `mkdir -p`。
+
 ---
 
 #### 3.x.1 作息记录查询 → HTML 单日报告（2026-07-23 新增 · 4 段结构 · 兼容保留）

@@ -311,9 +311,9 @@ def default_output_path(meta: dict) -> Path:
     """
     根据 meta 决定默认输出路径(硬绑 SKILLS_DB_PATH/schedule_html/):
 
-      <SKILLS_DB_PATH>/schedule_html/record/<date>_record_report.html
-      <SKILLS_DB_PATH>/schedule_html/plan/list/plan_list_<date>.html
-      <SKILLS_DB_PATH>/schedule_html/plan/query/plan_query_<date>[_to_<date>].html
+      record/ 子目录: 5 个 record-* 模式  → 走 record_output_path 分发
+      plan/ 子目录: 2 个 plan-* 模式(list-events / query-plans)→ 本函数直接 inline
+      fallback: SKILLS_DB_PATH/schedule_html/view.html
 
     规则来源:SKILL.md §3.x HTML 命名规则(2026-07-23 重构版)
     上一版本写到 SKILL_DIR/reports/,已被一刀删除,从此统一到 SKILLS_DB_PATH 下。
@@ -322,7 +322,10 @@ def default_output_path(meta: dict) -> Path:
     base = _html_base_dir()
     plan_list = base / 'plan' / 'list'
     plan_query = base / 'plan' / 'query'
-    record = base / 'record'
+
+    # M10: record-* 模式走 record_output_path 分发(消除死代码)
+    if mode.startswith("record-"):
+        return record_output_path(mode, meta)
 
     if mode == "list-events":
         date = meta.get("date", "unknown")
@@ -332,72 +335,51 @@ def default_output_path(meta: dict) -> Path:
         if len(dates) == 1:
             return plan_query / f"plan_query_{dates[0]}.html"
         return plan_query / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
-    if mode == "record-report":
-        # 兼容旧 CLI,等价 record-day
-        date = meta.get("date", "unknown")
-        return record / "day" / f"{date}_record_day.html"
+    return base / "view.html"
+
+
+# 5 模板目录映射 — M10 改用 record_output_path(meta) 自动派生,不再需要独立字典
+# (旧 _RECORD_TEMPLATE_DIRS 已删除)
+
+
+def record_output_path(mode: str, meta: dict = None) -> Path:
+    """
+    5 模板统一路径生成器(从 meta dict 派生):
+      record-day     meta.date                              → <base>/record/day/<date>_record_day.html
+      record-range   meta.start / meta.end                  → <base>/record/range/<start>_to_<end>_record_range.html
+      record-compare meta.ranges[0].label / [1].label     → <base>/record/compare/<labelA>_vs_<labelB>_record_compare.html
+      record-category meta.category / start / end          → <base>/record/category/<cat>_<start>_to_<end>_record_category.html
+      record-anomaly  meta.window                          → <base>/record/anomaly/<today>_w<window>_record_anomaly.html
+    """
+    base = _html_base_dir() / 'record'
+    from datetime import date as _dt
+    today = _dt.today().isoformat()
+    meta = meta or {}
+
     if mode == "record-day":
-        date = meta.get("date", "unknown")
-        return record / "day" / f"{date}_record_day.html"
+        d = meta.get("date", today)
+        return base / "day" / f"{d}_record_day.html"
     if mode == "record-range":
-        start = meta.get("start", "unknown")
-        end = meta.get("end", "unknown")
-        return record / "range" / f"{start}_to_{end}_record_range.html"
+        s = meta.get("start", today)
+        e = meta.get("end", today)
+        return base / "range" / f"{s}_to_{e}_record_range.html"
     if mode == "record-compare":
         ranges = meta.get("ranges") or []
         a = (ranges[0] or {}).get("label", "a") if len(ranges) > 0 else "a"
         b = (ranges[1] or {}).get("label", "b") if len(ranges) > 1 else "b"
-        return record / "compare" / f"{a}_vs_{b}_record_compare.html"
-    if mode == "record-category":
-        cat = meta.get("category", "cat")
-        start = meta.get("start", "x")
-        end = meta.get("end", "x")
-        return record / "category" / f"{cat}_{start}_to_{end}_record_category.html"
-    if mode == "record-anomaly":
-        w = meta.get("window", 7)
-        from datetime import date as _d
-        return record / "anomaly" / f"{_d.today().isoformat()}_w{w}_record_anomaly.html"
-    return base / "view.html"
-
-
-# 5 模板目录映射(5 模式对应 5 模板 + 3 子目录)
-_RECORD_TEMPLATE_DIRS = {
-    "record-day":      "day",
-    "record-range":    "range",
-    "record-compare":  "compare",
-    "record-category": "category",
-    "record-anomaly":  "anomaly",
-}
-
-
-def record_output_path(mode: str, *parts: str) -> Path:
-    """
-    5 模板统一路径生成器:
-      record-day     <date>                            → <base>/record/day/<date>_record_day.html
-      record-range   <start> <end>                     → <base>/record/range/<start>_to_<end>_record_range.html
-      record-compare <label1> <label2>                 → <base>/record/compare/<label1>_vs_<label2>_record_compare.html
-      record-category <cat> <start> <end>              → <base>/record/category/<cat>_<start>_to_<end>_record_category.html
-      record-anomaly [window]                          → <base>/record/anomaly/<today>_record_anomaly.html
-    """
-    base = _html_base_dir() / 'record'
-    sub = _RECORD_TEMPLATE_DIRS.get(mode, "")
-    from datetime import date as _dt
-    today = _dt.today().isoformat()
-    if mode == "record-day":
-        d = parts[0] if parts else today
-        return base / "day" / f"{d}_record_day.html"
-    if mode == "record-range":
-        s, e = (parts + (today, today))[:2]
-        return base / "range" / f"{s}_to_{e}_record_range.html"
-    if mode == "record-compare":
-        a, b = (parts + ("a", "b"))[:2]
         return base / "compare" / f"{a}_vs_{b}_record_compare.html"
     if mode == "record-category":
-        cat, s, e = (parts + ("cat", today, today))[:3]
+        cat = meta.get("category", "cat")
+        s = meta.get("start", "x")
+        e = meta.get("end", "x")
         return base / "category" / f"{cat}_{s}_to_{e}_record_category.html"
     if mode == "record-anomaly":
-        w = parts[0] if parts else "7"
+        w = meta.get("window", 7)
         return base / "anomaly" / f"{today}_w{w}_record_anomaly.html"
+    if mode == "record-report":
+        # 兼容旧 CLI,等价 record-day
+        d = meta.get("date", today)
+        return base / "day" / f"{d}_record_day.html"
     return base / f"unknown_{today}.html"
 
 
@@ -737,7 +719,7 @@ def render_record_category(category: str, start: str, end: str) -> dict:
     total = sum(r.get("duration_minutes") or 0 for r in cat_records)
     days = sorted({r.get("date", "") for r in cat_records})
     days_count = len(days)
-    daily_avg = total // days_count if days_count else 0
+    daily_avg = round(total / days_count, 1) if days_count else 0  # L8 修复:整数除法丢精度
 
     by_date: dict[str, list[dict]] = {}
     for r in cat_records:

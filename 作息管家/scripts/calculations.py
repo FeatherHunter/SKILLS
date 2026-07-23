@@ -95,7 +95,14 @@ def cat_color(cat: str) -> str:
     return COLOR_MAP.get(cat, COLOR_MAP.get(l1_of(cat), "#8E8E93"))
 
 
+# ===== L5: fmt_dur 双版本用途(2026-07-23 文档化)=====
+# fmt_dur    长版本 "1小时30分钟" — 模板主卡片(分类时长)、睡眠分析主卡
+# fmt_dur_short 短版本 "1h30m"   — 模板副卡(stat_block)、对比柱内文字
+# 选哪个看视觉密度:主卡用长版可读,副卡用短版节省空间
+
+
 def fmt_dur(mins: int) -> str:
+    """长版本: 90 → "1小时30分钟", 60 → "1小时", 30 → "30分钟" — 主卡用"""
     if mins <= 0:
         return "0分钟"
     h, m = mins // 60, mins % 60
@@ -107,6 +114,7 @@ def fmt_dur(mins: int) -> str:
 
 
 def fmt_dur_short(mins: int) -> str:
+    """短版本: 90 → "1h30m", 60 → "1h", 30 → "30m" — 副卡/对比柱用"""
     h, m = mins // 60, mins % 60
     if h and m:
         return f"{h}h{m}m"
@@ -351,7 +359,7 @@ def build_compare_aggregates(ranges: list[dict]) -> list[dict]:
             "days": days,
             "total": total,
             "by_l1": by_l1,
-            "by_day_avg": total // days,
+            "by_day_avg": round(total / days, 1) if days > 0 else 0,  # L8 修复:整数除法丢精度,改浮点保留 1 位小数
         })
     return out
 

@@ -19,6 +19,7 @@
 """
 
 import sys
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -107,18 +108,34 @@ def cmd_update(args):
 def cmd_list(args):
     """查询记录"""
     records = []
+    filter_desc = {}
 
     if args.date:
         records = list_date(args.date)
+        filter_desc = {"date": args.date}
     elif args.from_date and args.to_date:
         records = list_date_range(args.from_date, args.to_date)
+        filter_desc = {"from": args.from_date, "to": args.to_date}
     elif args.from_date or args.to_date:
-        print("错误：--from 和 --to 必须同时指定")
+        if getattr(args, 'json', False):
+            print(json.dumps({"status": "error", "data": None, "message": "--from 和 --to 必须同时指定"}, ensure_ascii=False, indent=2))
+        else:
+            print("错误：--from 和 --to 必须同时指定")
         return
     elif args.category:
         records = list_by_category(args.category)
+        filter_desc = {"category": args.category}
     else:
         records = list_today()
+        filter_desc = {"date": "today"}
+
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": {"filter": filter_desc, "count": len(records), "records": records},
+            "message": f"查询结果 {len(records)} 条"
+        }, ensure_ascii=False, indent=2))
+        return records
 
     if not records:
         print("(无记录)")
@@ -126,32 +143,56 @@ def cmd_list(args):
 
     for r in records:
         print(_format_record(r))
+    return records
 
 
 def cmd_search(args):
     """搜索备注关键词"""
     records = search_keyword(args.keyword)
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": {"keyword": args.keyword, "count": len(records), "records": records},
+            "message": f"搜索结果: {args.keyword}"
+        }, ensure_ascii=False, indent=2))
+        return records
     if not records:
         print(f"(无匹配 '{args.keyword}' 的记录)")
         return
     print(f"=== 搜索结果: '{args.keyword}' ({len(records)}条) ===")
     for r in records:
         print(_format_record(r))
+    return records
 
 
 def cmd_summary(args):
     """今日摘要"""
     result = get_today_summary()
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": result,
+            "message": "今日摘要"
+        }, ensure_ascii=False, indent=2))
+        return result
     print(f"今日 {result.get('date', 'N/A')}")
     print(f"记录数: {result.get('count', 0)}")
     print(f"支出: {result.get('expense', 0):.2f}")
     print(f"收入: {result.get('income', 0):.2f}")
     print(f"净额: {result.get('net', 0):.2f}")
+    return result
 
 
 def cmd_monthly(args):
     """月度汇总"""
     result = monthly_summary(args.month)
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": result,
+            "message": f"{args.month} 月度汇总"
+        }, ensure_ascii=False, indent=2))
+        return result
     print(f"=== {args.month} 月度汇总 ===")
     print(f"支出: {result.get('expense', 0):.2f}")
     print(f"收入: {result.get('income', 0):.2f}")
@@ -161,6 +202,7 @@ def cmd_monthly(args):
         print("\n分类明细:")
         for c in categories:
             print(f"  {c.get('category', 'N/A')}: {c.get('total', 0):.2f} ({c.get('count', 0)}笔)")
+    return result
 
 
 def cmd_compare(args):
@@ -169,8 +211,19 @@ def cmd_compare(args):
     result = compare_periods(period)
 
     if "error" in result:
-        print(result["error"])
+        if getattr(args, 'json', False):
+            print(json.dumps({"status": "error", "data": None, "message": result["error"]}, ensure_ascii=False, indent=2))
+        else:
+            print(result["error"])
         return
+
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": result,
+            "message": f"{'周' if period == 'week' else '月'}度对比"
+        }, ensure_ascii=False, indent=2))
+        return result
 
     label = "周" if period == "week" else "月"
     print(f"=== {label}度对比 ===\n")
@@ -190,18 +243,27 @@ def cmd_compare(args):
     pct = change.get('expense_pct', 0)
     direction = "↑" if diff > 0 else "↓" if diff < 0 else "→"
     print(f"  支出 {direction} {abs(diff):.2f} ({abs(pct):.1f}%)")
+    return result
 
 
 def cmd_recent(args):
     """最近N条"""
     limit = args.limit or 10
     records = list_recent(limit)
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": {"count": len(records), "limit": limit, "records": records},
+            "message": f"最近 {len(records)} 条"
+        }, ensure_ascii=False, indent=2))
+        return records
     if not records:
         print("(无记录)")
         return
     print(f"=== 最近 {len(records)} 条 ===")
     for r in records:
         print(_format_record(r))
+    return records
 
 
 def cmd_breakdown(args):
@@ -210,6 +272,14 @@ def cmd_breakdown(args):
     to_date = args.to_date
     result = get_category_breakdown(from_date, to_date)
 
+    if getattr(args, 'json', False):
+        print(json.dumps({
+            "status": "ok",
+            "data": result,
+            "message": "分类支出明细"
+        }, ensure_ascii=False, indent=2))
+        return result
+
     print(f"=== 分类支出明细 ===")
     if from_date or to_date:
         print(f"期间: {result.get('from', 'N/A')} ~ {result.get('to', 'N/A')}")
@@ -217,6 +287,7 @@ def cmd_breakdown(args):
 
     for c in result.get('category_pct', []):
         print(f"  {c.get('category', 'N/A')}: {c.get('total', 0):.2f} ({c.get('pct', 0):.1f}%) [{c.get('count', 0)}笔, 均{c.get('avg', 0):.1f}]")
+    return result
 
 
 def cmd_overview(args):
@@ -246,11 +317,26 @@ def cmd_overview(args):
             WHERE time >= ? AND time < ?
         """, (start_str, next_month_start))
         row = cursor.fetchone()
+        data = {
+            "month": month,
+            "count": row['count'] or 0,
+            "expense": row['expense'] or 0,
+            "income": row['income'] or 0,
+            "net": row['net'] or 0
+        }
+        if getattr(args, 'json', False):
+            print(json.dumps({
+                "status": "ok",
+                "data": data,
+                "message": f"{month} 收支总览"
+            }, ensure_ascii=False, indent=2))
+            return data
         print(f"=== {month} 收支总览 ===")
-        print(f"笔数: {row['count'] or 0}")
-        print(f"支出: {row['expense'] or 0:.2f}")
-        print(f"收入: {row['income'] or 0:.2f}")
-        print(f"净额: {row['net'] or 0:.2f}")
+        print(f"笔数: {data['count']}")
+        print(f"支出: {data['expense']:.2f}")
+        print(f"收入: {data['income']:.2f}")
+        print(f"净额: {data['net']:.2f}")
+        return data
     finally:
         conn.close()
 
@@ -272,11 +358,25 @@ def cmd_stats(args):
             FROM {TABLE_NAME}
         """)
         row = cursor.fetchone()
+        data = {
+            "total_records": row['total_records'],
+            "total_days": row['total_days'],
+            "first_record": row['first_record'] or None,
+            "last_record": row['last_record'] or None
+        }
+        if getattr(args, 'json', False):
+            print(json.dumps({
+                "status": "ok",
+                "data": data,
+                "message": "记账统计"
+            }, ensure_ascii=False, indent=2))
+            return data
         print("=== 记账统计 ===")
-        print(f"总笔数: {row['total_records']}")
-        print(f"记账天数: {row['total_days']}")
-        print(f"首笔时间: {row['first_record'] or 'N/A'}")
-        print(f"最近记录: {row['last_record'] or 'N/A'}")
+        print(f"总笔数: {data['total_records']}")
+        print(f"记账天数: {data['total_days']}")
+        print(f"首笔时间: {data['first_record'] or 'N/A'}")
+        print(f"最近记录: {data['last_record'] or 'N/A'}")
+        return data
     finally:
         conn.close()
 
@@ -314,37 +414,46 @@ def main():
     p.add_argument('--from', dest='from_date', default=None, help='开始日期 YYYY-MM-DD')
     p.add_argument('--to', dest='to_date', default=None, help='结束日期 YYYY-MM-DD')
     p.add_argument('--category', default=None, help='按分类筛选')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式（{status,data,message}）')
 
     # search
     p = subparsers.add_parser('search', help='搜索备注关键词')
     p.add_argument('keyword', help='关键词')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # summary
-    subparsers.add_parser('summary', help='今日摘要')
+    p = subparsers.add_parser('summary', help='今日摘要')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # monthly
     p = subparsers.add_parser('monthly', help='月度汇总')
     p.add_argument('--month', required=True, help='月份 YYYY-MM')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # compare
     p = subparsers.add_parser('compare', help='周期对比')
     p.add_argument('--period', default='week', choices=['week', 'month'], help='对比周期 (week/month)')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # recent
     p = subparsers.add_parser('recent', help='最近N条')
     p.add_argument('--limit', type=int, default=10, help='条数')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # breakdown
     p = subparsers.add_parser('breakdown', help='分类明细')
     p.add_argument('--from', dest='from_date', default=None, help='开始日期 YYYY-MM-DD')
     p.add_argument('--to', dest='to_date', default=None, help='结束日期 YYYY-MM-DD')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # overview
     p = subparsers.add_parser('overview', help='收支总览')
     p.add_argument('--month', default=None, help='月份 YYYY-MM（默认当月）')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     # stats
-    subparsers.add_parser('stats', help='记账统计')
+    p = subparsers.add_parser('stats', help='记账统计')
+    p.add_argument('--json', action='store_true', help='输出 JSON 格式')
 
     args = parser.parse_args()
 
@@ -371,13 +480,25 @@ def main():
         try:
             cmd(args)
         except ValueError as e:
-            print(f"参数错误：{e}")
+            if getattr(args, 'json', False):
+                print(json.dumps({"status": "error", "data": None, "message": f"参数错误：{e}"}, ensure_ascii=False))
+            else:
+                print(f"参数错误：{e}")
         except FileNotFoundError as e:
-            print(f"文件未找到：{e}")
+            if getattr(args, 'json', False):
+                print(json.dumps({"status": "error", "data": None, "message": f"文件未找到：{e}"}, ensure_ascii=False))
+            else:
+                print(f"文件未找到：{e}")
         except PermissionError as e:
-            print(f"权限不足：{e}")
+            if getattr(args, 'json', False):
+                print(json.dumps({"status": "error", "data": None, "message": f"权限不足：{e}"}, ensure_ascii=False))
+            else:
+                print(f"权限不足：{e}")
         except Exception as e:
-            print(f"执行出错：{e}")
+            if getattr(args, 'json', False):
+                print(json.dumps({"status": "error", "data": None, "message": f"执行出错：{e}"}, ensure_ascii=False))
+            else:
+                print(f"执行出错：{e}")
     else:
         parser.print_help()
 

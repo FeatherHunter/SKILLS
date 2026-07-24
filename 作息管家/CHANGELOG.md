@@ -1,6 +1,6 @@
 # 作息管家 CHANGELOG
 
-> 记录对用户有感知的变更。遵守《优秀Skill指导手册》§5.2"改完代码 → 改 SKILL.md → 改 HTML → 改 changelog(顺序不能乱)"。
+> 记录对用户有感知的变更。遵守 SKILL开发总纲V1.0/05-工程仪式.md 的 commit 与同步规范。
 
 ---
 

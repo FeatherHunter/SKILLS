@@ -8,7 +8,7 @@
   - 模型下载（Whisper / face_landmarker / ffprobe）
 
 规范依据：
-  《SKILL五层架构规范》② 操作层（对外部分）"≥2 集成点必须抽 integrations/"
+  SKILL开发总纲V1.0/02-5层骨架.md §② 操作层(对外部分)
 
 设计原则：
   1. 箭头向下：integrations/* 只 import lib/common.py，不 import scripts/*

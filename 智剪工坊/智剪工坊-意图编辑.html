@@ -2734,15 +2734,15 @@
       anchorRail.appendChild(band);
 
       // 2) section 锚点
-      // v1.24.5 fix:按用户期望 visual 顺序
-      //   项目 → 素材 → #1 → ... → #6 → 封面 → 结尾
-      // sections 默认 DOM 顺序是 [项目, 素材, 封面, 结尾]
-      // 预期 visual 是 [head='项目'|'素材', ..., videoCards, tail='封面'|'结尾']
-      const sectionsSorted = sections.slice();
+      // v1.24.6 fix:v1.24.5 我犯的错是按 head+tail 合并 sections 再推 → videoCards 也单独推
+      //   实际 anchorItems 变成 [head, tail, videos],不是期望的 [head, videos, tail]
+      // 正确做法:把视频 cards 跟 sections **交叉** push,严格按 visual 顺序:
+      //   headSections (项目|素材) → videoCards (#1-#N) → tailSections (封面|结尾)
+      const sectionsForBuild = sections.slice();
       const headNames = ['项目', '素材'];
       const headSec = [];
       const tailSec = [];
-      sectionsSorted.forEach((sec, idx) => {
+      sectionsForBuild.forEach(sec => {
         const h2Text = sec.querySelector('h2')?.textContent?.trim() || '';
         if (headNames.some(n => h2Text.startsWith(n))) {
           headSec.push(sec);
@@ -2750,8 +2750,9 @@
           tailSec.push(sec);
         }
       });
-      const orderedSections = [...headSec, ...tailSec];
-      orderedSections.forEach(sec => {
+
+      // 头部 sections anchor (项目 / 素材)
+      headSec.forEach(sec => {
         const h2 = sec.querySelector('h2');
         if (!h2) return;
         const label = h2.textContent.trim();
@@ -2768,6 +2769,7 @@
         anchorItems.push({el: sec, label, dot});
       });
 
+      // 视频卡 anchor(紧跟 head 之后 = visual 第 3-N 位)
       // 3) video-card 锚点 (按需延迟,因为视频列表可能异步加载)
       videoCards.forEach((card, i) => {
         const name = card.dataset.cardName || (card.querySelector('.video-name')?.textContent || '').trim();
@@ -2792,6 +2794,24 @@
         });
         anchorRail.appendChild(dot);
         anchorItems.push({el: card, label, dot});
+      });
+
+      // 尾部 sections anchor (封面 / 结尾)
+      tailSec.forEach(sec => {
+        const h2 = sec.querySelector('h2');
+        if (!h2) return;
+        const label = h2.textContent.trim();
+        if (!label) return;
+        const dot = document.createElement('div');
+        dot.className = 'anchor';
+        dot.dataset.label = label;
+        dot.addEventListener('click', () => {
+          const rect = sec.getBoundingClientRect();
+          const targetY = window.scrollY + rect.top - 44;
+          window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
+        });
+        anchorRail.appendChild(dot);
+        anchorItems.push({el: sec, label, dot});
       });
 
       updateAnchorRailPositions();

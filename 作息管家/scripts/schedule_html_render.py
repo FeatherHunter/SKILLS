@@ -341,6 +341,12 @@ def default_output_path(meta: dict) -> Path:
     if mode == "plan-review":
         date = meta.get("date", "unknown")
         return plan_list / f"plan_review_{date}.html"
+    if mode == "plan-receipt":
+        # 改/删计划回执(回执型第2款,2026-07-24)
+        pid = meta.get("plan_id", "unknown")
+        date = meta.get("date", "unknown")
+        action = meta.get("action", "update")
+        return base / 'plan' / 'receipt' / f"plan_receipt_id{pid}_{date}_{action}.html"
     return base / "view.html"
 
 
@@ -391,6 +397,12 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         # 漂亮回执(回执型首款,2026-07-24)
         rid = meta.get("record_id", "unknown")
         return base / "receipt" / f"receipt_id{rid}.html"
+    if mode == "plan-receipt":
+        # 改/删计划回执(回执型第2款,2026-07-24)
+        pid = meta.get("plan_id", "unknown")
+        date = meta.get("date", today)
+        action = meta.get("action", "update")
+        return base / 'plan' / 'receipt' / f"plan_receipt_id{pid}_{date}_{action}.html"
     if mode == "record-detail":
         # 详情页(单日 + 可选 record_id)
         d = meta.get("date", today)
@@ -929,6 +941,137 @@ def render_receipt(record_id: int) -> dict:
     }
 
 
+def _calc_plan_minutes(p):
+    """计算 plan_event 的时段分钟数(无效返回 0)"""
+    try:
+        ts = p.get("time_start") or "0:0"
+        te = p.get("time_end") or "0:0"
+        sh, sm = map(int, ts.split(":"))
+        eh, em = map(int, te.split(":"))
+        m = (eh * 60 + em) - (sh * 60 + sm)
+        if m > 0:
+            return m
+    except Exception:
+        pass
+    return 0
+
+
+def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
+    """
+    改/删计划回执(回执型第 2 款,2026-07-24,复用 #0 漂亮回执模式).
+
+    输入 plan_id + action(update / deactivate),输出:
+    - 计划 6 核心字段(id/date/time/title/category/completion/completion_note/notes/is_active)
+    - 4 卡摘要(今日计划数/完成率/飞书同步/24h 覆盖率)
+    - 3 种操作 prompt(调整/看全貌/复盘) = 3 个按钮复制动作
+    """
+    from schedule_db import get_plan_event, _normalize_date, list_plan_events, list_plan_events as _all_for_date, get_records_by_date
+    from datetime import timedelta
+
+    if action not in ("update", "deactivate"):
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"action 参数非法: '{action}'(期望 update | deactivate)",
+        }
+
+    plan = get_plan_event(plan_id)
+    if not plan:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"未找到 id={plan_id} 的计划事件",
+        }
+
+    date = plan.get("date")
+
+    # 今日计划统计
+    if date:
+        today_plans = list_plan_events(date, include_inactive=(action == "deactivate"))
+    else:
+        today_plans = []
+    today_count = len(today_plans)
+    completed_count = sum(1 for p in today_plans if p.get("completion") and p["completion"] != "未完成")
+    completion_rate = round(completed_count / today_count * 100) if today_count > 0 else 0
+    feishu_synced = sum(1 for p in today_plans if p.get("feishu_event_id"))
+    coverage_minutes = sum(_calc_plan_minutes(p) for p in today_plans if p.get("is_active", 1) == 1)
+    coverage_hours = round(coverage_minutes / 60, 1)
+
+    plan_json = json.dumps({
+        "id": plan.get("id"),
+        "date": plan.get("date"),
+        "time_start": plan.get("time_start"),
+        "time_end": plan.get("time_end"),
+        "title": plan.get("title"),
+        "notes": plan.get("notes") or "",
+        "category": plan.get("category") or "",
+        "feishu_event_id": plan.get("feishu_event_id"),
+        "last_synced_at": plan.get("last_synced_at"),
+        "is_active": plan.get("is_active", 1),
+        "completion": plan.get("completion"),
+        "completion_note": plan.get("completion_note") or "",
+    }, ensure_ascii=False, indent=2)
+
+    base_prompt = f"""① 场景: 我刚"{"修改" if action == "update" else "软删"}"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
+
+② 数据(今日计划概况):
+  - 今日共 {today_count} 条计划(完成 {completed_count} 条,完成率 {completion_rate}%)
+  - 飞书已同步 {feishu_synced} 条
+  - 24h 覆盖率 {coverage_hours} 小时
+  - 刚"{"修改" if action == "update" else "软删"}":
+{plan_json}
+
+④ 来源: plan_receipt_id{plan_id}_{date}_{action}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action={action}
+"""
+
+    prompt_adjust = base_prompt + f"""
+③ 期望: 用户即将告诉你修改内容(改时间/改标题/补备注/改分类)。
+请调 schedule_cli.py update-event {plan_id} <字段> <值> 写库。
+不要做其他事,等用户输入。"""
+
+    prompt_overview = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-list-events {date} 生成今日所有计划 HTML,
+让我扫读今日全部计划(包含所有状态 + 飞书同步状态)。
+不要做复盘,纯展示。"""
+
+    prompt_review = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
+让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
+完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+
+    payload = {
+        "meta": {
+            "mode": "plan-receipt",
+            "title": "已" + ("修改" if action == "update" else "删除"),
+            "action": action,
+            "plan_id": plan_id,
+            "date": date,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-24",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "plan": plan,
+        "stats": {
+            "today_count": today_count,
+            "completed_count": completed_count,
+            "completion_rate": completion_rate,
+            "feishu_synced": feishu_synced,
+            "coverage_hours": coverage_hours,
+        },
+        "prompts": {
+            "adjust":  prompt_adjust,
+            "overview": prompt_overview,
+            "review":   prompt_review,
+        },
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ id={plan_id} 计划 {('修改' if action == 'update' else '删除')}回执已生成(今日 {today_count} 条计划,完成率 {completion_rate}%)",
+    }
+
+
 # ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
 
 def render_record_day(date: str) -> dict:
@@ -1279,6 +1422,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "plan-preview":    "schedule_plan_preview.html",  # 商量计划预览(过程型首批落地,2026-07-24)
         "plan-review":     "schedule_plan_review.html",   # 复盘报告(过程型第2款,2026-07-24)
         "record-receipt":  "schedule_record_receipt.html", # 漂亮回执(回执型首款,2026-07-24)
+        "plan-receipt":     "schedule_plan_receipt.html",   # 改/删计划回执(回执型第2款,2026-07-24)
         "record-report":   "schedule_record_day.html",   # 兼容旧 CLI
         "record-day":      "schedule_record_day.html",
         "record-range":    "schedule_record_range.html",

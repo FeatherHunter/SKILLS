@@ -2722,7 +2722,14 @@
 
     function buildAnchorRail() {
       if (!anchorRail) return;
-      const sections = Array.from(document.querySelectorAll('#form-screen > section'));
+      // v1.24.19 fix:跳过"素材"section 锚点(其他 section + 视频锚点保留)
+      //   原因:用户报告素材 section 锚点干扰视觉顺序(#1...#6 之间穿插素材)
+      //   修复:用 filter 在 sections 数组构建时直接跳过 h2 文本以"素材"开头的 section
+      const sections = Array.from(document.querySelectorAll('#form-screen > section'))
+        .filter(sec => {
+          const h2Text = sec.querySelector('h2')?.textContent?.trim() || '';
+          return !h2Text.startsWith('素材');
+        });
       const videoCards = Array.from(document.querySelectorAll('#video-list .video-card'));
 
       anchorItems = [];

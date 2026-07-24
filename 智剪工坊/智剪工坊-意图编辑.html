@@ -2914,17 +2914,23 @@
       }, 2000);
     }
 
-    // 滚动节流 + 自动显示/隐藏 + active 跟 scroll(Apple Music 风格)
+    // v1.24.13:active 在 scroll 中不更新(连续跳变)
+    //   active 用 debounce:scroll 停 200ms 后才更新一次
+    //   band 跟 scroll 一直实时跟随(用户要的是 band 平滑,active step-by-step)
     window.addEventListener('scroll', () => {
       showAnchorRail();
       hideAnchorRail();
       if (railScrollRaf) return;
       railScrollRaf = requestAnimationFrame(() => {
         updateAnchorRailPositions();
-        if (typeof updateActiveFromScroll === 'function') updateActiveFromScroll();
         if (typeof updateActiveBand === 'function') updateActiveBand();
         railScrollRaf = null;
       });
+      // active debounce:scroll 停 200ms 才更新(防跳变)
+      if (window._activeUpdateTimer) clearTimeout(window._activeUpdateTimer);
+      window._activeUpdateTimer = setTimeout(() => {
+        if (typeof updateActiveFromScroll === 'function') updateActiveFromScroll();
+      }, 200);
     }, { passive: true });
 
     window.addEventListener('resize', () => updateAnchorRailPositions());

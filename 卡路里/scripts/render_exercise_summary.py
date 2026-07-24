@@ -87,8 +87,8 @@ def empty_data(start, end, days, mode):
 
 
 def build_records_summary(items):
-    total = sum(i['calorie'] for i in items)
-    total_min = sum(i['minutes'] for i in items)
+    total = round(sum((i.get('calorie') or 0) for i in items), 1)
+    total_min = sum((i.get('minutes') or 0) for i in items)
     return {
         'subtitle': f'近 {len(items)} 条运动记录',
         'k1': {'label': '总记录数', 'value': str(len(items)), 'extra': f'共 {len(items)} 条'},
@@ -102,13 +102,13 @@ def build_records_summary(items):
 
 def build_summary_summary(items, days):
     active_days = len(set(i['date'] for i in items))
-    total_cal = sum(i['calorie'] for i in items)
-    total_min = sum(i['minutes'] for i in items)
+    total_cal = round(sum((i.get('calorie') or 0) for i in items), 1)
+    total_min = sum((i.get('minutes') or 0) for i in items)
     avg_cal = round(total_cal / max(1, len(items)))
     return {
         'subtitle': f'{days} 天内 {active_days} 天运动',
         'k1': {'label': '运动天数', 'value': str(active_days), 'extra': f'占 {days} 天的 {round(active_days/days*100)}%'},
-        'k2': {'label': '总热量', 'value': f'{total_cal:,}', 'extra': f'日均 {round(total_cal/days)}'},
+        'k2': {'label': '总热量', 'value': f'{total_cal:,.1f}', 'extra': f'日均 {round(total_cal/days)}'},
         'k3': {'label': '总时长', 'value': f'{total_min} 分钟', 'extra': f'平均 {round(total_min/max(1,active_days))} 分/天'},
         'k4': {'label': '平均每次', 'value': f'{avg_cal} 卡', 'extra': f'{round(total_min/max(1,len(items)), 1)} 分钟'},
         'table_header': "<tr><th>日期</th><th>时间</th><th>类型</th><th class='num'>时长</th><th class='num'>热量</th><th class='num'>组数</th></tr>",
@@ -124,9 +124,9 @@ def build_stats_summary(items):
     for i in items:
         c = by_cat[i['category']]
         c['count'] += 1
-        c['calorie'] += i['calorie']
-        c['minutes'] += i['minutes']
-        c['sets'] += i['sets']
+        c['calorie'] += (i.get('calorie') or 0)
+        c['minutes'] += (i.get('minutes') or 0)
+        c['sets'] += (i.get('sets') or 0)
     total_cal = sum(c['calorie'] for c in by_cat.values())
     total_cnt = sum(c['count'] for c in by_cat.values())
     total_min = sum(c['minutes'] for c in by_cat.values())
@@ -134,7 +134,7 @@ def build_stats_summary(items):
     return {
         'subtitle': f'按 4 分类(力量/有氧/柔韧/日常)统计',
         'k1': {'label':'总次数', 'value':str(total_cnt), 'extra':'全部运动'},
-        'k2': {'label':'总热量', 'value':f'{total_cal:,}', 'extra':'4 类合计'},
+        'k2': {'label':'总热量', 'value':f'{total_cal:,.1f}', 'extra':'4 类合计'},
         'k3': {'label':'总时长', 'value':f'{total_min} 分钟', 'extra':f'平均 {round(total_min/max(1,total_cnt))} 分/次'},
         'k4': {'label':'总组数', 'value':str(total_set), 'extra':'含力量训练的组数'},
         'table_header': "<tr><th>类型</th><th class='num'>次数</th><th class='num'>热量</th><th>占比</th><th class='num'>时长</th><th class='num'>组数</th></tr>",
@@ -154,16 +154,16 @@ def build_trend_summary(items, days):
     for i in items:
         d = i['date']
         if d not in by_date: by_date[d] = 0
-        by_date[d] += i['calorie']
+        by_date[d] += (i.get('calorie') or 0)
     series = [{'date': d, 'calorie': c} for d, c in sorted(by_date.items())]
     total = sum(s['calorie'] for s in series)
     return {
-        'subtitle': f'{len(series)} 个有运动日 · 总 {total} 卡 · 日均 {round(total/max(1,days))}',
+        'subtitle': f'{len(series)} 个有运动日 · 总 {round(total,1)} 卡 · 日均 {round(total/max(1,days),1)}',
         'k1': {'label':'运动天数', 'value':str(len(series)), 'extra':f'占 {days} 天'},
-        'k2': {'label':'总热量', 'value':f'{total:,}', 'extra':f'日均 {round(total/max(1,len(series)))}/运动日'},
-        'k3': {'label':'峰值', 'value':f'{max(s["calorie"] for s in series) if series else 0}', 'extra':'单日最高'},
+        'k2': {'label':'总热量', 'value':f'{round(total,1):,}', 'extra':f'日均 {round(total/max(1,len(series)),1)}/运动日'},
+        'k3': {'label':'峰值', 'value':f'{round(max(s["calorie"] for s in series), 1) if series else 0:,}', 'extra':'单日最高'},
         'k4': {'label':'趋势', 'value':'↑/↓', 'extra':f'对比 {days//2 if days > 1 else 1} 天前'},
-        'table_header': "<tr><th>日期</th><th class='num'>当天热量</th></tr>",
+        'table_header': "<tr><th>日期</th><th>时间</th><th>类型</th><th class='num'>时长</th><th class='num'>热量</th><th class='num'>组数</th></tr>",
         'table_title': '每日运动热量',
         '_stats_obj': None
     }

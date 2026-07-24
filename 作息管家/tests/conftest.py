@@ -24,7 +24,9 @@ SCHEMA_SQL = """
             source_contents TEXT,
             source_timestamps TEXT,
             analysis_reasoning TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            edit_count INTEGER NOT NULL DEFAULT 0
         );
         CREATE TABLE IF NOT EXISTS daily_summary (
             date TEXT NOT NULL,

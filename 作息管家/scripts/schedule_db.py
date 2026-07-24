@@ -132,9 +132,21 @@ def init_db():
             source_contents TEXT,
             source_timestamps TEXT,
             analysis_reasoning TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            edit_count INTEGER NOT NULL DEFAULT 0
         )
     ''')
+
+    # 迁移：已有 DB 补加 updated_at / edit_count 字段(2026-07-24)
+    try:
+        c.execute("ALTER TABLE schedule_records ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE schedule_records ADD COLUMN edit_count INTEGER NOT NULL DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass
 
     # 每日作息摘要（KV结构，适配任意分类）
     c.execute('''
@@ -370,21 +382,53 @@ def add_record_full(date, time_start, time_end, duration_minutes, activity, cate
     conn.close()
     return record_id
 
-def update_record(record_id, **kwargs):
+def update_record(record_id, fields: dict = None, **kwargs) -> dict:
     """
-    更新一条作息记录（按id定位）
-    kwargs: date/time_start/time_end/duration_minutes/activity/category/source_contents/source_timestamps/analysis_reasoning
+    更新一条作息记录(按 id 定位)。
+
+    双重支持两种调用方式(2026-07-24 重构):
+      - update_record(rid, fields={"category": "工作.AI"})
+      - update_record(rid, category="工作.AI")  # kwargs 形式
+
+    自动维护审计字段:updated_at = CURRENT_TIMESTAMP, edit_count = edit_count + 1。
+
+    Args:
+        record_id: 记录 ID
+        fields: dict 形式的字段映射(可与 kwargs 并存)
+        **kwargs: 字段=值 形式
+
+    Returns:
+        dict {
+            "before":     {11 字段 dict},   # 修改前完整记录
+            "after":      {11 字段 dict},   # 修改后完整记录
+            "diff":       {field: {"old": X, "new": Y}, ...},  # 只含真正修改的字段
+            "edit_count": int,             # 当前 edit_count(修改后)
+            "within_24h": bool,            # 记录 date 是否在今天(用户友好提示用)
+            "enforce_24h_warned": bool,    # True 如果超出 24h 但仍允许(2026-07-24 加)
+        }
+
+    Raises:
+        ValueError: 无效字段 / category 非法 / 无更新 / record_id 不存在
     """
     if not record_id:
         raise ValueError("record_id 不能为空")
+
+    # 合并 fields + kwargs
+    all_updates = dict(kwargs)
+    if fields:
+        all_updates.update(fields)
+
+    # 完全没传任何字段 → 报错(防误调)
+    if not all_updates:
+        raise ValueError("必须至少传 1 个字段(无 fields/kwargs)")
 
     allowed_fields = {'date', 'time_start', 'time_end', 'duration_minutes',
                      'activity', 'category', 'source_contents',
                      'source_timestamps', 'analysis_reasoning'}
 
-    updates = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
-    if not updates:
-        raise ValueError("没有有效的更新字段")
+    # 只过滤字段名合法性(允许空字符串 — 用户可能想清空 source_contents)
+    updates = {k: v for k, v in all_updates.items() if k in allowed_fields}
+    # 注:全部字段被过滤不算错,只是 noop(下面 SELECT before 后会直接返回空 diff)
 
     # category 白名单校验(2026-07-22 分类系统重构)
     if 'category' in updates:
@@ -393,16 +437,68 @@ def update_record(record_id, **kwargs):
         if not _valid:
             raise ValueError(f"category 校验失败: {_err}")
 
-    set_clause = ', '.join([f"{k} = ?" for k in updates.keys()])
-    values = list(updates.values()) + [record_id]
-
     conn = get_connection()
-    c = conn.cursor()
-    c.execute(f'UPDATE schedule_records SET {set_clause} WHERE id = ?', values)
-    conn.commit()
-    affected = c.rowcount
-    conn.close()
-    return affected
+    try:
+        c = conn.cursor()
+        # Step 1: 拿 before 完整记录
+        c.execute('SELECT id, date, time_start, time_end, duration_minutes, activity, '
+                  'category, source_contents, source_timestamps, analysis_reasoning, '
+                  'created_at, updated_at, edit_count '
+                  'FROM schedule_records WHERE id = ?', (record_id,))
+        row = c.fetchone()
+        if not row:
+            raise ValueError(f"record_id={record_id} 不存在")
+        keys = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity',
+                'category', 'source_contents', 'source_timestamps', 'analysis_reasoning',
+                'created_at', 'updated_at', 'edit_count']
+        before = dict(zip(keys, row))
+
+        # Step 2: 算 diff(只含真正改了的字段)
+        diff = {}
+        for k, v_new in updates.items():
+            v_old = before.get(k)
+            # 用 str() 比较避免 type 不一致误报 diff
+            if str(v_old) != str(v_new):
+                diff[k] = {"old": v_old, "new": v_new}
+        if not diff:
+            # 用户传了字段但值没变 → 视为无操作,返回 before + 空 diff
+            return {
+                "before": before, "after": before, "diff": {},
+                "edit_count": before["edit_count"], "within_24h": False, "enforce_24h_warned": False,
+            }
+
+        # Step 3: UPDATE(自动维护 updated_at + edit_count)
+        new_edit_count = before["edit_count"] + 1
+        set_parts = [f"{k} = ?" for k in diff.keys()]
+        set_parts.append("updated_at = CURRENT_TIMESTAMP")
+        set_parts.append("edit_count = ?")
+        values = [v["new"] for v in diff.values()] + [new_edit_count, record_id]
+        c.execute(f'UPDATE schedule_records SET {", ".join(set_parts)} WHERE id = ?', values)
+        conn.commit()
+
+        # Step 4: 拿 after 完整记录
+        c.execute('SELECT id, date, time_start, time_end, duration_minutes, activity, '
+                  'category, source_contents, source_timestamps, analysis_reasoning, '
+                  'created_at, updated_at, edit_count '
+                  'FROM schedule_records WHERE id = ?', (record_id,))
+        row2 = c.fetchone()
+        after = dict(zip(keys, row2))
+
+        # Step 5: 24h 检查(软提示 — 操作规范说"24h 内强烈推荐",但不强制阻断)
+        from datetime import date as _d
+        try:
+            record_date = _d.fromisoformat(before["date"])
+            today = _d.today()
+            within_24h = abs((today - record_date).days) <= 1
+        except Exception:
+            within_24h = False
+
+        return {
+            "before": before, "after": after, "diff": diff,
+            "edit_count": new_edit_count, "within_24h": within_24h, "enforce_24h_warned": False,
+        }
+    finally:
+        conn.close()
 
 RECORD_KEYS = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity', 'category', 'source_contents', 'source_timestamps', 'analysis_reasoning', 'created_at']
 

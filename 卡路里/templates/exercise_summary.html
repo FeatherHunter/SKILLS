@@ -135,10 +135,13 @@
     const svg = document.getElementById('chart');
     const W = 800, H = 220, PAD = 30;
     const cals = items.map(i => i.calorie);
-    const maxC = Math.max(...cals, 300);
+    const dataMax = Math.max(...cals, 0);
+    // Y 轴自适应: 数据最大值的 1.15 倍,向上取整到合适刻度
+    const step = dataMax > 1000 ? 200 : dataMax > 500 ? 100 : dataMax > 100 ? 50 : 20;
+    const maxC = Math.max(Math.ceil(dataMax * 1.15 / step) * step, step);
     const x = i => PAD + i * (W - 2*PAD) / Math.max(1, items.length - 1);
     const y = v => H - PAD - (v / maxC) * (H - 2*PAD);
-    for (let v = 0; v <= maxC; v += Math.max(100, Math.round(maxC / 4))) {
+    for (let v = 0; v <= maxC; v += step) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
         `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}</text>`);

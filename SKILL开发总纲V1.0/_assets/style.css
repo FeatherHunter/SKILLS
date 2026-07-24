@@ -174,7 +174,13 @@ pre {
 pre code { background: none; padding: 0; color: inherit; }
 
 /* ---------- 按钮 ---------- */
+/* 基础重置:裸 button 只继承字体 + pointer cursor */
 button {
+  font-family: inherit;
+  cursor: pointer;
+}
+/* 样式按钮:opt-in via .btn class(A3 修复,避免污染 form submit 等) */
+.btn {
   background: var(--accent);
   color: white;
   border: 1px solid var(--accent);
@@ -182,17 +188,15 @@ button {
   border-radius: var(--r-sm);
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
   transition: opacity 0.15s;
 }
-button:hover { opacity: 0.85; }
-button.ghost {
+.btn:hover { opacity: 0.85; }
+.btn.ghost {
   background: transparent;
   color: var(--fg2);
   border-color: var(--border);
 }
-button.copy-prompt {
+.btn.copy-prompt {
   background: var(--accent);
   padding: 10px 20px;
   font-size: 14px;

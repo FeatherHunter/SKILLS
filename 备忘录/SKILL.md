@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.7**(2026-07-24 发布 · 16 个 commit · git tag `v1.0.7`)
+> **当前版本:1.0.8**(2026-07-24 发布 · 17 个 commit · git tag `v1.0.8`)
+> v1.0.8:HTML 镜像设计原则 + 触发词段可展开底层原理
 > v1.0.7:触发词 → HTML 生成对照表 + 文档裂缝守护
 > v1.0.6:命名 + 输出目录规则同步到通用手册(跨 Skill)
 > v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)
@@ -15,6 +16,37 @@
 1. **HTML 同步**:该技能的所有优化和变动、脚本的所有变动都必须体现在 `备忘录.html` 上。
 2. **优先级**:本规定优先级最高,高于所有其他规范。
 3. **用户确认**:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。
+
+## HTML 镜像设计原则(v1.0.8 · 最高优先级 · 用户认知转变)
+
+**备忘录.html 的真实定位**:**用户手册**(用户视角) + **可展开底层原理**(技术视角) · **不是日志/改动记录**
+
+| 内容 | 在哪看 |
+|---|---|
+| 用户视角:唤醒词 + 使用方法 + 注意事项 | `备忘录.html`(默认展开) |
+| 技术视角:CLI 命令 / SQL / Python 代码 / 流程 | `备忘录.html` `<details>` 折叠区 |
+| 改动日志 / 版本历史 / 变更明细 | `CHANGELOG.md`(不要混到 HTML) |
+| AI 阅读的统一权威源 | `SKILL.md`(HTML 镜像源) |
+
+**可展开详情语法**(每个触发词段下方):
+
+```markdown
+<details>
+<summary>🔍 查看底层原理</summary>
+
+**CLI**: `...`
+**SQL**: `...`
+**返回 JSON**: `...`
+**失败路径**: `...`
+**原子性 / 副作用**: `...`
+</details>
+```
+
+**为什么这样设计**:
+- 用户看 HTML 找"我能用什么 / 怎么用",不需要看 SQL
+- 探究层原理时,点开 `<details>` 看到 CLI/SQL/代码,**渐进式信息披露**
+- 改动日志在 CHANGELOG.md(独立文件),不污染用户手册
+- HTML 仍是 SKILL.md 镜像(AI 阅读统一权威源)
 
 ## HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)
 
@@ -234,6 +266,16 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
   - **例外**:使用子唤醒词(记心愿/记打卡/记情绪)时,顶层分类已确定,跳过确认直接写入
   - **子分类默认行为**:用户说"记备忘"但没说子分类时 → sub_category 可为 NULL,AI 不必追问
 
+<details>
+<summary>🔍 记备忘(add)</summary>
+
+- - CLI: memo_cli.py add "内容" [-c 备忘|心愿|打卡|情绪日记] [-s 子分类] [--due YYYY-MM-DD]
+- - SQL: INSERT INTO notes (content, category, sub_category, ...) VALUES (...)
+- - 飞书 hook: category == "心愿" 自动建飞书 task(失败降级)
+- - 失败: 空内容 / 无效分类 / DB 异常 → status: error + 自动 rollback
+
+</details>
+
 ### sub_category 原则
 
 sub_category 是**自由文本字段**,AI 智能从用户原话推断:
@@ -254,6 +296,16 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 ### 搜索笔记
 - 触发词:搜备忘、查备忘(别名)
 - 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)
+
+<details>
+<summary>🔍 搜备忘/查备忘(search)</summary>
+
+- CLI: `memo_cli.py search "关键词" [-c 分类] [-s 子分类] [--html]`
+- 底层: FTS5 全文搜索(`notes_fts MATCH ?`),无关键字时按分类列
+- SQL: `SELECT n.* FROM notes n JOIN notes_fts f ON n.id = f.rowid WHERE notes_fts MATCH ? ...`
+- HTML: 加 `--html` 触发 `memo_query.html` 渲染(`<media>` 交付)
+</details>
+- 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)
 - 命令:`script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]`
 - **过滤维度**:可同时按顶层分类和子分类过滤(如 `search -c 备忘 -s 学习`)
 - **默认行为**:CLI 默认返回结构化 JSON。需要可视化时传 `--html` flag 生成 HTML 查询结果页(模板 `templates/memo_query.html`,通过 `script/memo_render.py` 注入到 `output/memo_query_*.html`)。**当前没有 `--no-html` flag**(2026-07-24 文档对齐修订)。
@@ -269,11 +321,29 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 命令:`script/memo_cli.py update <id> [--content "新内容"] [-c 顶层分类] [-s 子分类]`
 - **子分类规则**:sub_category 是自由文本字段,适用于所有 category(详见上方"sub_category 原则")
 
+<details>
+<summary>🔍 改备忘(update)</summary>
+
+- - CLI: memo_cli.py update <id> [--content 新内容] [-c 分类] [-s 子分类]
+- - SQL: UPDATE notes SET ..., updated_at = datetime('now','localtime') WHERE id = ?
+- - 飞书 hook: category == 心愿 + 内容变 → 同步飞书 task 标题
+
+</details>
+
 ### 删除笔记
 - 触发词:删备忘
 - 子唤醒词:删心愿、删打卡、删情绪日记(先按顶层分类搜索,再删除)
 - 先搜索找到笔记 ID,再删除
 - 命令:`script/memo_cli.py delete <id> [--with-reminders]`
+
+<details>
+<summary>🔍 删备忘(delete)</summary>
+
+- - CLI: memo_cli.py delete <id> [--with-reminders]
+- - SQL: DELETE FROM reminders WHERE note_id = ? → DELETE FROM notes WHERE id = ?(避开 FK)
+- - 原子性: 事务包裹
+
+</details>
 
 ### 查看笔记详情
 - 触发词:看备忘
@@ -281,11 +351,29 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - **默认行为**:CLI 默认返回单条 JSON。需要 HTML 详情页时传 `--html`(复用 `templates/memo_query.html`,items 数组只有 1 条)。
 - **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `get <id> --html` 生成详情页给用户。
 
+<details>
+<summary>🔍 看备忘(get)</summary>
+
+- - CLI: memo_cli.py get <id> [--html]
+- - SQL: SELECT * FROM notes WHERE id = ?
+- - HTML: items 数组 1 条,复用 memo_query.html
+
+</details>
+
 ### 按时间搜索
 - 触发词:按时间搜备忘
 - 命令:`script/memo_cli.py search-date <start> <end> [-c 分类] [--html]`
 - **默认行为**:CLI 默认返回 JSON。需要 HTML 时传 `--html`(复用 `templates/memo_query.html`)。
 - **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `search-date ... --html` 生成按时间查询页给用户。
+
+<details>
+<summary>🔍 按时间搜备忘(search-date)</summary>
+
+- - CLI: memo_cli.py search-date <start> <end> [-c 分类] [--html]
+- - SQL: SELECT * FROM notes WHERE created_at BETWEEN ? AND ?
+- - 日期格式: YYYY-MM-DD(start ≤ end 校验)
+
+</details>
 
 ### 编辑笔记顶层分类
 - 触发词:备忘改分类
@@ -293,11 +381,31 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 命令:`script/memo_cli.py update-category <id> <顶层分类>`
 - **副作用**:改顶层分类时**不会**清空 `sub_category`(sub_category 是内容维度的二阶属性,与顶层分类独立)
 
+<details>
+<summary>🔍 备忘改分类(单条 update-category / 批量 batch-update-category)</summary>
+
+- - 单条 CLI: memo_cli.py update-category <id> <新分类>
+- - 批量: batch-update-category --from-category X --html(过程型,见路由规则)
+- - SQL: UPDATE notes SET category = ?, updated_at = ... WHERE id = ?
+- - 副作用: 不动 sub_category
+
+</details>
+
 ### 编辑笔记子分类
 - 触发词:备忘改子分类
 - 先搜索找到笔记 ID,再更新子分类
 - 命令:`script/memo_cli.py update-sub-category <id> <子分类 | null>`
 - **规则**:适用于所有 category(sub_category 是自由文本字段);传 `null` 表示清除子分类
+
+<details>
+<summary>🔍 备忘改子分类(update-sub-category)</summary>
+
+- - CLI: memo_cli.py update-sub-category <id> <子分类 | null>
+- - SQL: UPDATE notes SET sub_category = ?, updated_at = ... WHERE id = ?
+- - null 处理: "null"/"" 传 → 清除
+- - 适用于所有 category
+
+</details>
 
 ### 触发词路由(避免与「批量改分类向导」歧义 · 2026-07-24 加)
 **触发词 `备忘改分类` 同时对应两个命令,AI 必须按以下规则二选一**:
@@ -349,6 +457,17 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}`
   - **AI 推荐流程**:跑到 `add 心愿` 批量场景 → **不直接**批量 `set-due` → 先调 `wish-batch-plan --suggest-due <识别到的锚点> --html` → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 `set-due` 命令
 
+<details>
+<summary>🔍 心愿排期(wish-batch-plan)</summary>
+
+- - CLI: memo_cli.py wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] [--html]
+- - 批量执行: set-due <id1> <id2> ... --due X(批量 SQL UPDATE)
+- - HTML: 过程型 wish_plan.html(默认未勾 + 全局建议日期)
+- - 飞书: 同步飞书 task due(UTC ms → 北京日期)
+- - 副作用: 心愿无 feishu_task_guid → 需先备忘录同步 补建
+
+</details>
+
 ### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复 · v1.0.4 默认未勾)
 - 触发词:完成心愿(**别名:完成打卡 · 2026-07-24 加**)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」
 - 命令:`script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]`
@@ -392,6 +511,18 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 模板:`templates/change_category.html`(独立)
 - 渲染器:`script/memo_render.py:render_change_category`
 - **4 部分 prompt**(采纳按钮复制):
+
+<details>
+<summary>🔍 查看底层原理</summary>
+
+- **CLI**: `memo_cli.py batch-update-category --from-category <原> [--to-category <新>] [--html]`
+- **触发路由**: 原话含"都/全部/这 N 条"或多个 id → 批量(否则走单条 `update-category`)
+- **SQL**: 单条 update-category `UPDATE notes SET category = ?, updated_at = ... WHERE id = ?`
+- **HTML**: 过程型 `change_category.html`(用户勾选 + 选目标分类)
+- **硬规则**: `--from-category ≠ --to-category`
+- **副作用**: 不动 sub_category
+</details>
+
   ① 场景: 我用批量改分类向导把 N 条<原分类>笔记改到<新分类>(sub_category 不动)
   ② 数据(采纳后): 表格列出 #id + content + from → to
   ③ 期望: 按 update-category 命令列表(每条 id 单独调,sub_category 字段不动)
@@ -437,6 +568,16 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 流程:直接创建提醒,无需先有笔记(提醒内容存 reminders.content)
 - 命令:`script/memo_cli.py remind <note_id> --at "YYYY-MM-DD HH:MM" --content "提醒内容" --repeat-type 每天 --rule "09:00"`
 
+<details>
+<summary>🔍 设提醒(remind)</summary>
+
+- - CLI: memo_cli.py remind <note_id> [--at YYYY-MM-DD HH:MM] [--content 提醒内容] [--repeat-type 每天|每周|每月|每年] [--rule HH:MM]
+- - SQL: INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, ...) VALUES (...)
+- - FK: note_id → notes(id) ON DELETE NO ACTION
+- - 重复规则格式: HH:MM / W HH:MM / D HH:MM / MM-DD HH:MM
+
+</details>
+
 ### 记提醒(添笔记 + 设提醒)
 - 触发词:记提醒
 - 时间识别:明天、后天、今天 + 时间
@@ -444,11 +585,28 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 流程:先添加笔记,再设置提醒(笔记内容 + 提醒内容分别存储)
 - 命令示例:`script/memo_cli.py add "我要健身" -c 心愿 && script/memo_cli.py remind <id> --at "09:00" --content "跑步10分钟" --repeat-type 每天`
 
+<details>
+<summary>🔍 记提醒(add + remind)</summary>
+
+- - 两步: add 笔记 → remind 加提醒
+- - 等价: 笔记与提醒分别存储,关联通过 note_id
+
+</details>
+
 ### 查看提醒
 - 触发词:看提醒
 - 命令:`script/memo_cli.py reminders [--status active|dismissed] [--html]`
 - **默认行为**:CLI 默认返回 JSON。需要 HTML 时传 `--html`(复用 `templates/memo_query.html`,按重复类型提供筛选 chip)。
 - **AI 推荐流程**:与"搜索笔记"段对齐——收到 JSON 后主动调一次 `reminders --html` 生成提醒列表页给用户。
+
+<details>
+<summary>🔍 看提醒(reminders)</summary>
+
+- - CLI: memo_cli.py reminders [--status active|dismissed] [--html]
+- - SQL: SELECT * FROM reminders WHERE status = ?
+- - HTML: 复用 memo_query.html
+
+</details>
 
 ### 废弃提醒
 - 命令:`script/memo_cli.py dismiss <id>`
@@ -465,6 +623,15 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - **每月重复**:打卡日期在当月 + 对应日期符合规则 → 算本月已完成
   - **每年重复**:打卡日期在年内 + 对应月日符合规则 → 算今年已完成
 - **返回字段**:提醒内容、打卡笔记、打卡时间、周期描述、类型
+
+<details>
+<summary>🔍 查已提醒备忘(completed)</summary>
+
+- - CLI: memo_cli.py completed [--html]
+- - 匹配: 一次性已通知+关联打卡 / 重复型有关联打卡
+- - HTML: 复用 memo_query.html
+
+</details>
 
 ### 备忘录同步(自动 + 反向)
 本技能可在**飞书 CLI 已安装**时与飞书任务双向联动:
@@ -561,10 +728,30 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
    - 用户说"这个心愿进 🧹" → AI 传 `--tasklist-guid <guid>`
    - 不存环境变量,每次 add 显式传
 
+<details>
+<summary>🔍 备忘录同步(sync-from-feishu)</summary>
+
+- - CLI: memo_cli.py sync-from-feishu [--html]
+- - 3 步对账:
+-   1. 本地补建: 心愿无 feishu_task_guid → add_wish_sync 建飞书 task
+-   2. 反向同步 done: 飞书 status=done → complete-wish
+-   3. 反向同步 due: 飞书 todo task.due → 本地 notes.due(飞书优先 4 象限)
+- - HTML: 结果型 sync_report.html(11 统计字段 · 3 步折叠 · errors 高亮)
+- - 失败降级: 飞书 API 失败不阻塞本地
+
+</details>
+
 ### 完成心愿:流式工作流
 心愿完成是一个**原子操作**:删除原心愿 + 新建打卡 note,两步必须同时成功或同时回滚。
 - 触发词:完成心愿
 - 命令:`script/memo_cli.py complete-wish <心愿id> [--content "打卡内容"]`
+- 行为:
+  1. 校验 `id` 存在于 `notes`,且 `category='心愿'`(不是心愿分类报错)
+  2. 决定打卡 content:用户提供 → 用用户的;没提供 → 拷贝原心愿 `notes.content`
+  3. 事务原子执行(兼容 NO ACTION / CASCADE 两种 FK 行为):
+     - `DELETE FROM reminders WHERE note_id = ?`(先删提醒,避开 FK 约束)
+     - `DELETE FROM notes WHERE id = ?`
+     - `INSERT INTO notes (content, category='打卡', created_at, updated_at)`
 - 行为:
   1. 校验 `id` 存在于 `notes`,且 `category='心愿'`(不是心愿分类报错)
   2. 决定打卡 content:用户提供 → 用用户的;没提供 → 拷贝原心愿 `notes.content`
@@ -579,6 +766,17 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
   - 旧流程:add → remind → 关联 → 打卡追加(手动 4 步)
   - 新流程:complete-wish(一步原子,自动完成删心愿 + 建打卡)
   - 推荐用新流程
+
+<details>
+<summary>🔍 完成心愿(complete-wish / wish-complete)</summary>
+
+- - 直接 CLI: memo_cli.py complete-wish <id> [--content 打卡内容](原子操作)
+- - 批量过程型 HTML: wish-complete --ids 1 2 3 [--only-overdue] --html(推荐批量场景)
+- - 原子操作: DELETE reminders → DELETE notes → INSERT notes(category=打卡) 事务包裹
+- - HTML: 过程型 wish_complete.html(默认未勾,用户主动勾)
+- - 飞书: 心愿有 feishu_task_guid → 标飞书 task 完成
+
+</details>
 
 ### 完成提醒:提醒与打卡的完整流程(旧流程,推荐用「完成心愿」替换)
 提醒完成后,可以追加打卡记录,形成完整的"计划→提醒→完成"链路:

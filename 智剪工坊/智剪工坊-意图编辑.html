@@ -2814,6 +2814,12 @@
         anchorItems.push({el: sec, label, dot});
       });
 
+      // v1.24.8:统一给 anchorItems 已建立的 dot 全部加 active class 切换 click
+      // 此时 sections + videos + tail 都已经 push 进 anchorItems
+      anchorItems.forEach((item, i) => {
+        item.dot.addEventListener('click', () => setActiveDotIndex(i));
+      });
+
       updateAnchorRailPositions();
       setupAnchorObserver();
       showAnchorRail();
@@ -2845,33 +2851,26 @@
 
     function setupAnchorObserver() {
       if (!anchorItems.length) return;
-      // v1.24.7 fix:不用 IntersectionObserver(只在 item 进入/离开时 trigger,不平滑跟随 scroll)
-      // 改用 scroll listener + rAF → 同步调 updateActiveHighlight
-      if (typeof updateActiveHighlight === 'function') updateActiveHighlight();
+      // v1.24.8:active-band 初始化(visual)
+      // active dot 不初始化 → 由 click 触发 setActiveDotIndex 决定
+      if (typeof updateActiveBand === 'function') updateActiveBand();
     }
 
-    function updateActiveHighlight() {
+    function setActiveDotIndex(idx) {
+      // v1.24.8 fix:active dot 只跟 click 切换,不被 scroll 改变
+      anchorItems.forEach((item, i) => {
+        item.dot.classList.toggle('active', i === idx);
+      });
+    }
+
+    function updateActiveBand() {
       if (!anchorItems.length) return;
       const railH = anchorRail.getBoundingClientRect().height;
       const count = anchorItems.length;
-      const viewportCenterY = window.scrollY + window.innerHeight / 2;
       const viewportTopY = window.scrollY;
       const viewportBottomY = window.scrollY + window.innerHeight;
 
-      // 1) active dot = 视口中央 Y 最接近的 anchor item
-      let activeIdx = 0;
-      let activeDist = Infinity;
-      anchorItems.forEach((item, i) => {
-        const rect = item.el.getBoundingClientRect();
-        const elCenter = rect.top + window.scrollY + rect.height / 2;
-        const dist = Math.abs(elCenter - viewportCenterY);
-        if (dist < activeDist) { activeDist = dist; activeIdx = i; }
-      });
-      anchorItems.forEach((item, i) => {
-        item.dot.classList.toggle('active', i === activeIdx);
-      });
-
-      // 2) active-band = 视口实际可见 anchor items 范围(按 array index 视觉位置)
+      // active-band = 视口实际可见 anchor items 范围(按 array index 视觉位置)
       let firstVisible = -1, lastVisible = -1;
       anchorItems.forEach((item, i) => {
         const rect = item.el.getBoundingClientRect();
@@ -2905,14 +2904,14 @@
       }, 2000);
     }
 
-    // 滚动节流 + 自动显示/隐藏 + active 同步 (Apple:不打扰,只在用户有滚动意图时显示)
+    // 滚动节流 + 自动显示/隐藏 + active-band 同步(active dot 不跟 scroll,只跟 click)
     window.addEventListener('scroll', () => {
       showAnchorRail();
       hideAnchorRail();
       if (railScrollRaf) return;
       railScrollRaf = requestAnimationFrame(() => {
         updateAnchorRailPositions();
-        if (typeof updateActiveHighlight === 'function') updateActiveHighlight();
+        if (typeof updateActiveBand === 'function') updateActiveBand();
         railScrollRaf = null;
       });
     }, { passive: true });

@@ -1,0 +1,35 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "avg": 1823,
+      "target": 1800,
+      "trend": "down",
+      "trend_value": -124,
+      "start_avg": 1947,
+      "end_avg": 1823,
+      "weekday_avg": 1905,
+      "weekend_avg": 2156,
+      "weekend_diff": 251,
+      "compliance_rate": 0.86,
+      "compliant_days": 6
+    },
+    "series": [
+      {"date": "2026-07-18", "weekday": "周六", "type": "周末", "calorie": 1920},
+      {"date": "2026-07-19", "weekday": "周日", "type": "周末", "calorie": 1950},
+      {"date": "2026-07-20", "weekday": "周一", "type": "工作日", "calorie": 1890},
+      {"date": "2026-07-21", "weekday": "周二", "type": "工作日", "calorie": 1810},
+      {"date": "2026-07-22", "weekday": "周三", "type": "工作日", "calorie": 1820},
+      {"date": "2026-07-23", "weekday": "周四", "type": "工作日", "calorie": 2016},
+      {"date": "2026-07-24", "weekday": "周五", "type": "工作日", "calorie": 1656}
+    ],
+    "meta": {
+      "start": "2026-07-18",
+      "end": "2026-07-24",
+      "today": "2026-07-24",
+      "weekday_count": 5,
+      "weekend_count": 2
+    }
+  },
+  "message": "已生成 2026-07-18 ~ 2026-07-24 热量趋势(7 天)"
+}

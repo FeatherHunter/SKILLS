@@ -840,6 +840,89 @@ def wish_batch_plan(args):
         conn.close()
 
 
+def wish_complete(args):
+    """心愿完成向导(过程型 HTML 前置数据收集)
+
+    设计: 原子转换(删除心愿 + 建打卡)· 用户在 HTML 选要完成的 + 填打卡内容
+    命令:`memo_cli.py complete-wish <id> [--content <打卡内容>]`
+          (每次只 1 个,无 batch subcommand)
+
+    参数:
+      --ids: 显式指定心愿望完成列表(与 --all 互斥,硬规则)
+      --all: 含所有心愿(默认仅未完成的;排期已过期的心愿优先)
+      --content: 默认打卡内容(应用到所有勾选,可在 HTML 逐条覆盖)
+      --html: 生成过程型 HTML
+    """
+    ids = getattr(args, "ids", None)
+    include_all = getattr(args, "all", False)
+    if ids is not None and include_all:
+        error_json("--ids 与 --all 互斥,只可选其一")
+    default_content = getattr(args, "content", None) or None
+
+    conn = get_conn()
+    try:
+        if ids:
+            placeholders = ",".join("?" * len(ids))
+            sql = f"SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes WHERE id IN ({placeholders}) AND category='心愿' ORDER BY updated_at DESC"
+            cur = conn.execute(sql, ids)
+            rows = cur.fetchall()
+            missing = [i for i in ids if i not in [r["id"] for r in rows]]
+            if missing:
+                error_json(f"这些 id 不是心愿或不存在: {missing}")
+        else:
+            # 默认:未排期 + 已过期排期的(提醒用户想完成)
+            sql = """
+                SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes
+                WHERE category='心愿'
+                  AND id NOT IN (SELECT note_id FROM reminders)
+            """
+            if not include_all:
+                # 仅 due IS NULL 或 due < today (过期)
+                sql += " AND (due IS NULL OR due < date('now','localtime'))"
+            sql += " ORDER BY updated_at DESC LIMIT 50"
+            cur = conn.execute(sql)
+            rows = cur.fetchall()
+
+        items = [{
+            "id": r["id"],
+            "content": r["content"],
+            "category": r["category"],
+            "sub_category": r["sub_category"],
+            "due": r["due"],
+            "feishu_task_guid": r["feishu_task_guid"],
+            "selected": True,
+        } for r in rows]
+
+        payload = {
+            "status": "ok",
+            "data": {
+                "title": "心愿完成向导",
+                "command": "wish-complete",
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "default_content": default_content,
+                "items": items,
+            },
+            "message": f"找到 {len(items)} 个可完成的心愿{'(含全部)' if include_all else '(优先未排期+已过期)'}",
+        }
+
+        if getattr(args, "html", False):
+            try:
+                from memo_render import render_wish_complete
+                path = render_wish_complete(payload)
+                output_json({
+                    "html_path": path,
+                    "count": len(items),
+                }, message="心愿完成向导 HTML 已生成")
+            except Exception as e:
+                error_json(f"心愿完成向导 HTML 生成失败: {e}")
+        else:
+            output_json(items, message=f"找到 {len(items)} 个心愿")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+
 # ---- 提醒操作 ----
 
 def _validate_remind_at(at_str):
@@ -1414,6 +1497,13 @@ def main():
     p_wp.add_argument("--suggest-due", default=None, help="全局建议排期日期 YYYY-MM-DD(HTML 默认填充)")
     p_wp.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_plan.html)")
 
+    # wish-complete (心愿完成向导·过程型 HTML 前置)
+    p_wc = sub.add_parser("wish-complete", help="心愿完成向导:收集可完成的心愿列表(过程型 HTML 前置数据)")
+    p_wc.add_argument("--ids", nargs="*", type=int, default=None, help="显式指定心愿 id 列表(与 --all 互斥)")
+    p_wc.add_argument("--all", action="store_true", help="含所有心愿(默认仅未排期+已过期)")
+    p_wc.add_argument("--content", default=None, help="默认打卡内容(HTML 可逐条覆盖;留空=原心愿 content)")
+    p_wc.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_complete.html)")
+
     # sync-from-feishu (反向同步)
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
     p_sync.add_argument("--html", action="store_true", help="生成 HTML 同步报告页(模板 sync_report.html)")
@@ -1467,6 +1557,8 @@ def main():
         set_due(args)
     elif args.command == "wish-batch-plan":
         wish_batch_plan(args)
+    elif args.command == "wish-complete":
+        wish_complete(args)
     elif args.command == "sync-from-feishu":
         # 双向对账：本地补建 + 飞书 done 反向 + 飞书 due 反向
         from feishu_sync import sync_from_feishu

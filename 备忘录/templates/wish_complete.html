@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>心愿完成向导</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--err-soft:#fff5f5;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:36px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
+.lead{color:var(--fg2);font-size:17px}
+.meta{margin-top:14px;color:var(--fg3);font-size:13px}
+.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#ecfff2;color:#178a3a}
+.panel{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center}
+button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600}
+button.ghost{background:transparent;color:var(--blue2);border:1px solid var(--line)}
+button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px}
+input[type=text],textarea{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit;width:100%}
+textarea{min-height:64px;resize:vertical}
+.wish{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
+.wish.off{opacity:.5}
+.wish.off .content{text-decoration:line-through;color:var(--fg3)}
+.wish-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.wish-id{color:var(--blue2);font-weight:800;font-size:15px;min-width:48px}
+.wish-content{font-size:16px;flex:1}
+.wish-meta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;color:var(--fg2);font-size:13px;margin:8px 0}
+.wish-content-input{margin-top:8px}
+.kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.kpi .stat{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi b{display:block;font-size:26px;letter-spacing:-.02em;margin-bottom:4px}
+.kpi span{color:var(--fg2);font-size:13px}
+pre{white-space:pre-wrap;background:#1d1d1d;color:#f5f5f5;border-radius:16px;padding:18px;overflow:auto;font-size:13px;line-height:1.65;max-height:340px}
+.notice{padding:12px 16px;border-radius:14px;margin:10px 0;font-size:14px}
+.notice.warn{background:#fff7e8;color:#b25b00}
+.notice.err{background:var(--err-soft);color:var(--err)}
+.empty{padding:42px;text-align:center;color:var(--fg2)}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.kpi{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Wish Complete</div>
+<h1 id="title">心愿完成向导</h1>
+<p class="lead" id="subtitle">数据加载中</p>
+<p class="meta" id="meta"></p>
+</header>
+
+<section class="kpi" id="kpis"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:10px">✏️ 默认打卡内容(可选)</div>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">填了 → 默认应用到所有勾选(可逐条覆盖);留空 → 用原心愿 content 当打卡内容。</p>
+<input type="text" id="globalContent" placeholder="如:今天完成了 / 2026-07-03 已打卡" />
+<div class="toolbar" style="margin-top:14px">
+<button class="ghost" onclick="applyGlobalContent()">应用到所有勾选</button>
+<button class="ghost" onclick="selectAll(true)">全选</button>
+<button class="ghost" onclick="selectAll(false)">全不选</button>
+</div>
+</section>
+
+<section id="wishList"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:8px">📋 采纳(复制修改指令)</div>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:12px">点击后,把内容粘贴给 AI,AI 会按指令批量调 <code>complete-wish</code>(删除心愿 + 建打卡,原子)。</p>
+<div class="toolbar">
+<button class="primary" onclick="adopt()">📋 采纳并复制</button>
+<button class="ghost" onclick="copyPrompt()">仅复制</button>
+</div>
+<div id="warnArea"></div>
+<pre id="promptOut">尚未采纳(无内容)</pre>
+</section>
+
+<footer style="margin-top:40px;text-align:center;color:var(--fg3);font-size:12px">
+<p>过程型 HTML · 心愿 → 打卡 原子转换 · 不调任何后端</p>
+</footer>
+</div>
+
+<script>
+const PAYLOAD=window.__DATA__;
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function data(){return (PAYLOAD&&PAYLOAD.data)||{}}
+function items(){return data().items||[]}
+
+function init(){
+  if(!PAYLOAD){document.getElementById('wishList').innerHTML='<div class="empty">数据未注入</div>';return}
+  const d=data();
+  document.getElementById('title').textContent=d.title||'心愿完成向导';
+  document.getElementById('subtitle').textContent=PAYLOAD.message||'勾选要完成的心愿';
+  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'wish-complete'} · 来源：${d.source||''}`;
+  if(d.default_content){document.getElementById('globalContent').value=d.default_content}
+  renderKPIs();renderList();
+}
+
+function renderKPIs(){
+  const all=items();
+  const withFeishu=all.filter(w=>w.feishu_task_guid).length;
+  document.getElementById('kpis').innerHTML=[
+    ['待完成',all.length,'勾选后转打卡'],
+    ['已同步飞书',withFeishu,'complete 后自动标飞书 task 完成'],
+    ['其他',all.length-withFeishu,'无飞书 task,跳过同步'],
+  ].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span><div style="color:var(--fg3);font-size:12px;margin-top:4px">${esc(x[2])}</div></div>`).join('');
+}
+
+function renderList(){
+  const list=document.getElementById('wishList');
+  if(!items().length){list.innerHTML='<div class="panel empty">没有心愿可选</div>';return}
+  list.innerHTML=items().map(renderWish).join('');
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb) cb.addEventListener('change',e=>{document.getElementById('wish_'+w.id).classList.toggle('off',!e.target.checked)});
+  });
+}
+
+function renderWish(w){
+  const cls=w.selected?'':'off';
+  const checked=w.selected?'checked':'';
+  return `<article class="wish ${cls}" id="wish_${w.id}">
+<div class="wish-head">
+<input type="checkbox" id="cb_${w.id}" class="wish-check" ${checked} data-id="${w.id}" />
+<span class="wish-id">#${esc(w.id)}</span>
+<span class="wish-content">${esc(w.content)}</span>
+</div>
+<div class="wish-meta">
+${w.category?`<span class="badge">${esc(w.category)}</span>`:''}
+${w.sub_category?`<span class="badge">${esc(w.sub_category)}</span>`:''}
+${w.feishu_task_guid?`<span class="badge ok">已同步飞书</span>`:'<span class="badge">未同步飞书</span>'}
+${w.due?`<span class="badge warn">原排期：${esc(w.due)}</span>`:''}
+</div>
+<div class="wish-content-input">
+<label style="color:var(--fg2);font-size:13px;display:block;margin-bottom:6px">打卡内容(覆盖)</label>
+<textarea id="content_${w.id}" placeholder="留空 = 用原心愿内容 '${esc(w.content).slice(0,30)}${w.content.length>30?'…':''}'"></textarea>
+</div>
+</article>`;
+}
+
+function applyGlobalContent(){
+  const gv=document.getElementById('globalContent').value;
+  if(!gv){alert('请先填默认打卡内容');return}
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb&&cb.checked){
+      const ti=document.getElementById('content_'+w.id);
+      if(ti) ti.value=gv;
+    }
+  });
+}
+
+function selectAll(on){
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb){cb.checked=on;document.getElementById('wish_'+w.id).classList.toggle('off',!on)}
+  });
+}
+
+function selectedRows(){
+  const rows=[];
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    const ti=document.getElementById('content_'+w.id);
+    if(cb&&cb.checked){
+      rows.push({id:w.id,content:w.content,override:(ti&&ti.value.trim())||'',has_feishu:!!w.feishu_task_guid});
+    }
+  });
+  return rows;
+}
+
+function buildPrompt(rows,ctx){
+  if(!rows.length) return '未选择任何心愿';
+  const src=ctx.source||(data().command||'wish-complete')+(ctx.default_content?' --content "'+ctx.default_content+'"':'');
+  // 全部走单独命令(complete-wish 无批量子命令)
+  const cmds=rows.map(r=>`memo_cli.py complete-wish ${r.id}${r.override?' --content "'+r.override+'"':''}${r.has_feishu?'  # 同步飞书 task 完成':''}`);
+  return [
+    '① 场景: 我用心愿完成向导标记 '+rows.length+' 个心愿为已完成(原子转换心愿→打卡)',
+    '',
+    '② 数据(采纳后):',
+    ...rows.map(r=>`   · 心愿 #${r.id} "${r.content}" → 打卡内容: "${r.override||r.content}"${r.has_feishu?' (同步飞书 task 完成)':''}`),
+    '',
+    '③ 期望: 请按以下顺序执行 '+cmds.length+' 步 complete-wish(每步:删心愿+建打卡 原子):',
+    ...cmds.map(c=>'   '+c),
+    '',
+    '④ 来源: '+src+' / '+ctx.generated_at,
+  ].join('\n');
+}
+
+function warnIfAny(rows){
+  const nofb=rows.filter(r=>!r.has_feishu);
+  if(nofb.length){
+    document.getElementById('warnArea').innerHTML=`<div class="notice warn">ℹ️ ${nofb.length} 条心愿未同步飞书,完成时不会触发飞书联动</div>`;
+  } else {
+    document.getElementById('warnArea').innerHTML='';
+  }
+}
+
+function adopt(){
+  const rows=selectedRows();
+  if(!rows.length){alert('未选择任何心愿');return}
+  warnIfAny(rows);
+  const ctx={
+    default_content:document.getElementById('globalContent').value||'',
+    generated_at:data().generated_at||'',
+    source:data().command||'wish-complete',
+  };
+  const text=buildPrompt(rows,ctx);
+  document.getElementById('promptOut').textContent=text;
+  copyToClipboard(text);
+}
+
+function copyPrompt(){
+  const rows=selectedRows();
+  const ctx={
+    default_content:'',
+    generated_at:data().generated_at||'',
+    source:data().command||'wish-complete',
+  };
+  copyToClipboard(buildPrompt(rows,ctx));
+}
+
+function copyToClipboard(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>{
+      const btn=document.querySelector('button.primary');
+      const old=btn.textContent;
+      btn.textContent='✅ 已复制 · 粘贴给 AI';
+      setTimeout(()=>btn.textContent=old,2500);
+    }).catch(()=>alert('复制失败,请手动复制下方文本'));
+  } else {
+    alert('浏览器不支持剪贴板 API,请手动复制下方文本');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

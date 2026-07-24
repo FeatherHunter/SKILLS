@@ -185,6 +185,26 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}`
   - **AI 推荐流程**:跑到 `add 心愿` 批量场景 → **不直接**批量 `set-due` → 先调 `wish-batch-plan --suggest-due <识别到的锚点> --html` → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 `set-due` 命令
 
+### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML)
+- 触发词:完成心愿(批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」)
+- 命令:`script/memo_cli.py wish-complete [--ids 1 2 3] [--all] [--content "打卡内容"] [--html]`
+- **类型**:过程型 HTML(同 wish-batch-plan 模式)
+- **第一性**:complete-wish 是原子操作(删心愿 + 建打卡),用户先在 HTML 选要完成的 + 填打卡内容,采纳后给 AI 批量调
+- **默认(无 --all)**:仅未排期 + 已过期排期的心愿(优先用户想完成的)
+- **--all**:含全部心愿
+- **--ids**:显式指定(与 --all 互斥,硬规则)
+- **--content**:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)
+- 模板:`templates/wish_complete.html`(独立,不与 wish_plan 复用)
+- 渲染器:`script/memo_render.py:render_wish_complete`
+- **4 部分 prompt**(采纳按钮复制):
+  ① 场景: 我用心愿完成向导标记 N 个心愿为已完成(原子转换心愿→打卡)
+  ② 数据(采纳后): 表格列出 #id + content + 打卡内容(覆盖默认/用原内容)
+  ③ 期望: 按 complete-wish 命令列表(每步:删心愿+建打卡 原子;有飞书 task 的同步标完成)
+  ④ 来源: wish-complete / 2026-07-24 14:00
+- **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-complete","generated_at":"...","default_content":"..."|null,"items":[{id,content,category,sub_category,due,feishu_task_guid,selected}, ...]},"message":"..."}`
+- **AI 推荐流程**:用户说"这些心愿都完成了" → AI 调 `wish-complete --ids 1 2 3 --html`(或先 search 取 ids) → 用户在 HTML 里勾选 + 填打卡内容 → 采纳复制 → 粘贴给 AI → AI 按 complete-wish 命令逐条执行(原子转换)
+- **与 wish-batch-plan 的协同**:用户可先排期后完成;两个向导是心愿生命周期的两端工具
+
 #### 排期日期的用户-facing 表达(中文)
 - 对用户说的时候,**不要用 "due" 这个英文术语**,用以下中文之一:
   - "排期日期"

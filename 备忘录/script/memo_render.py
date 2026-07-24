@@ -8,6 +8,7 @@ SKILL_DIR = Path(__file__).parent.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_query.html"
 SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
 WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
+WISH_COMPLETE_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_complete.html"
 OUTPUT_DIR = SKILL_DIR / "output"
 
 
@@ -59,6 +60,22 @@ def render_wish_plan(payload, name="wish_plan"):
       }, ...]
     """
     template = WISH_PLAN_TEMPLATE_PATH.read_text(encoding="utf-8")
+    injected = _inject(template, payload)
+    return _write_output(name, injected)
+
+
+def render_wish_complete(payload, name="wish_complete"):
+    """渲染心愿完成向导页(模板 wish_complete.html),过程型 HTML
+
+    payload.data 期望字段:
+      title / command / generated_at
+      default_content: str|None(默认打卡内容)
+      items: [{
+        id, content, category, sub_category, due, feishu_task_guid,
+        selected: bool
+      }, ...]
+    """
+    template = WISH_COMPLETE_TEMPLATE_PATH.read_text(encoding="utf-8")
     injected = _inject(template, payload)
     return _write_output(name, injected)
 

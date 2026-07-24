@@ -1307,8 +1307,7 @@
       if (typeof buildAnchorRail === 'function') {
         // 延迟一帧,等所有 card 完成布局后再算位置
         requestAnimationFrame(buildAnchorRail);
-        }
-        });
+      }
         // 绑定折叠：点 ▶ 按钮，或点 video-head 非按钮/非缩略图区域
         document.querySelectorAll('[data-card-toggle]').forEach(btn => {
           btn.addEventListener('click', (e) => {

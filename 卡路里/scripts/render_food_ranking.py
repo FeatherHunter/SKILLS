@@ -16,6 +16,7 @@
 """
 import argparse
 import json
+from html_paths import html_path
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -96,9 +97,9 @@ def main():
     if args.output:
         out_path = Path(args.output)
     elif args.all:
-        out_path = Path(f'/tmp/food_ranking_all_{start}_{end}.html')
+        out_path = html_path(SKILL_DIR, 'food_ranking_all')
     else:
-        out_path = Path(f'/tmp/food_ranking_{args.category}_{start}_{end}.html')
+        out_path = html_path(SKILL_DIR, f'food_ranking_{args.category}')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')

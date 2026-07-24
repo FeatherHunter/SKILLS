@@ -24,6 +24,7 @@
 """
 import argparse
 import json
+from html_paths import html_path
 import sys
 from pathlib import Path
 
@@ -125,8 +126,7 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    default_name = f'nutrition_label_wizard_{ai_json_path.stem}.html'
-    out_path = Path(args.output) if args.output else Path('/tmp') / default_name
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'nutrition_label_wizard_{ai_json_path.stem}')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 

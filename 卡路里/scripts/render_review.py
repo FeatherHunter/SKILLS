@@ -17,6 +17,7 @@
 """
 import argparse
 import json
+from html_paths import html_path
 import subprocess
 import sys
 from datetime import date
@@ -106,9 +107,7 @@ def main():
     if args.output:
         out_path = Path(args.output)
     else:
-        start = gen_result['data']['start']
-        end = gen_result['data']['end']
-        out_path = Path(f'/tmp/review_{start}_{end}.html')
+        out_path = html_path(SKILL_DIR, 'review')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')

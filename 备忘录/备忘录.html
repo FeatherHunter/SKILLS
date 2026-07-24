@@ -71,7 +71,8 @@
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
 <blockquote>
-<p><strong>当前版本:1.0.6</strong>(2026-07-24 发布 · 15 个 commit · git tag <code>v1.0.6</code>)<br>v1.0.6:命名 + 输出目录规则同步到通用手册(跨 Skill)<br>
+<p><strong>当前版本:1.0.7</strong>(2026-07-24 发布 · 16 个 commit · git tag <code>v1.0.7</code>)<br>v1.0.7:触发词 → HTML 生成对照表 + 文档裂缝守护<br>
+v1.0.6:命名 + 输出目录规则同步到通用手册(跨 Skill)<br>
 v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)<br>
 v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)<br>
 v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
@@ -143,6 +144,61 @@ v1.0.1:wish-complete 第一性修复<br>
 </ul>
 </li>
 </ol>
+<h2 id="触发词-html-生成对照表-2026-07-24-加-v1-0-7-最高优先级">触发词 → HTML 生成对照表(2026-07-24 加 · v1.0.7 · 最高优先级)</h2>
+<p><strong>目的</strong>:消除"AGENT 是否要生成 HTML"的歧义。28 个触发词明确分类,AI 不再从叙述中"凑"出完整图。</p>
+<p><strong>图例</strong>:</p>
+<ul>
+<li>✅ <strong>必须生成 HTML</strong>(AI 收到 JSON 后<strong>主动</strong>调 <code>--html</code>,再 <code>&lt;media&gt;</code> 交付)</li>
+<li>❌ <strong>不生成 HTML</strong>(只返回 JSON 三段式简短回执,文字流展示)</li>
+<li>🟡 <strong>过程型 HTML</strong>(必须生成,用户在 HTML 里勾选+复制+粘贴)</li>
+</ul>
+<table>
+<tr><th>#</th><th>触发词</th><th>HTML?</th><th>命令</th><th>模板 / 备注</th></tr>
+<tr><td>1</td><td>记备忘</td><td>❌</td><td><code>add</code></td><td>单条回执</td></tr>
+<tr><td>2</td><td>搜备忘</td><td>✅</td><td><code>search --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>3</td><td>查备忘(搜备忘别名)</td><td>✅</td><td>同上</td><td>同上</td></tr>
+<tr><td>4</td><td>改备忘</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
+<tr><td>5</td><td>删备忘</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
+<tr><td>6</td><td>看备忘</td><td>✅</td><td><code>get --html</code></td><td><code>memo_query.html</code>(items 1 条)</td></tr>
+<tr><td>7</td><td>按时间搜备忘</td><td>✅</td><td><code>search-date --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>8</td><td>备忘改分类(单条)</td><td>❌</td><td><code>update-category &lt;id&gt; &lt;cat&gt;</code></td><td>单条回执</td></tr>
+<tr><td>9</td><td>备忘改子分类</td><td>❌</td><td><code>update-sub-category</code></td><td>单条回执</td></tr>
+<tr><td>10</td><td>记提醒</td><td>❌</td><td><code>add</code> + <code>remind</code></td><td>双步骤简短回执</td></tr>
+<tr><td>11</td><td>设提醒</td><td>❌</td><td><code>remind</code></td><td>单条回执</td></tr>
+<tr><td>12</td><td>看提醒</td><td>✅</td><td><code>reminders --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>13</td><td>查已提醒备忘</td><td>✅</td><td><code>completed --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>14</td><td>记心愿(子唤醒词)</td><td>❌</td><td><code>add -c 心愿</code></td><td>单条回执</td></tr>
+<tr><td>15</td><td>删心愿</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
+<tr><td>16</td><td>改心愿</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
+<tr><td>17</td><td>查心愿</td><td>✅</td><td><code>search -c 心愿 --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>18</td><td>记打卡(子唤醒词)</td><td>❌</td><td><code>add -c 打卡</code></td><td>单条回执</td></tr>
+<tr><td>19</td><td>删打卡</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
+<tr><td>20</td><td>改打卡</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
+<tr><td>21</td><td>查打卡</td><td>✅</td><td><code>search -c 打卡 --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>22</td><td>记情绪(子唤醒词)</td><td>❌</td><td><code>add -c 情绪日记</code></td><td>单条回执</td></tr>
+<tr><td>23</td><td>删情绪</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
+<tr><td>24</td><td>改情绪</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
+<tr><td>25</td><td>查情绪</td><td>✅</td><td><code>search -c 情绪日记 --html</code></td><td><code>memo_query.html</code></td></tr>
+<tr><td>26</td><td>完成心愿(别名:完成打卡)</td><td>🟡</td><td><code>wish-complete --html</code></td><td><code>wish_complete.html</code>(过程型)</td></tr>
+<tr><td>27</td><td>心愿排期</td><td>🟡</td><td><code>wish-batch-plan --html</code></td><td><code>wish_plan.html</code>(过程型)</td></tr>
+<tr><td>28</td><td>备忘录同步</td><td>✅</td><td><code>sync-from-feishu --html</code></td><td><code>sync_report.html</code></td></tr>
+<tr><td>-</td><td><strong>备忘改分类(批量)</strong>(由"备忘改分类" + "都/全部/多 id" 触发)</td><td>🟡</td><td><code>batch-update-category --from-category X --html</code></td><td><code>change_category.html</code>(过程型)</td></tr>
+</table>
+<h3>统计</h3>
+<table>
+<tr><th>HTML?</th><th>数量</th><th>触发词</th></tr>
+<tr><td>✅ 必须生成 HTML</td><td>9</td><td>搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪</td></tr>
+<tr><td>🟡 过程型 HTML</td><td>4</td><td>完成心愿(完成打卡)/心愿排期/备忘改分类(批量)/(批量场景)</td></tr>
+<tr><td>❌ 不生成 HTML</td><td>15</td><td>记备忘/改备忘/删备忘/备忘改分类(单条)/备忘改子分类/记提醒/设提醒/记心愿/删心愿/改心愿/记打卡/删打卡/改打卡/记情绪/删情绪/改情绪</td></tr>
+<tr><td><strong>合计</strong></td><td><strong>28</strong></td><td>(含 12 个子唤醒词)</td></tr>
+</table>
+<h3>AGENT 决策流程</h3>
+<pre><code>收到用户原话 → 路由到触发词 → 查本表
+  ├─ ✅ → CLI 命令 + 调 --html → &lt;media&gt; 交付
+  ├─ 🟡 → CLI 命令 + --html(过程型) → &lt;media&gt; 交付 + 用户采纳复制 → 调精确命令
+  └─ ❌ → CLI 命令 → 返回 JSON 三段式 → 文字流回执</code></pre>
+<p><strong>优先级</strong>:本对照表与"HTML 同步"+"HTML 交付规范"同级(最高优先级)。</p>
+<p><strong>防文档裂缝守护</strong>:<code>tests/test_html_trigger_coverage.py</code> 扫描 SKILL.md + 本表,确保所有 28 个触发词在本表出现。</p>
 <h2 id="描述-2">描述</h2>
 <p>私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。</p>
 <p><strong>触发词</strong>:记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿(<strong>别名:完成打卡 · 2026-07-24 加</strong>)、心愿排期、备忘录同步</p>

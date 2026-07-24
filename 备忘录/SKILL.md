@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.6**(2026-07-24 发布 · 15 个 commit · git tag `v1.0.6`)
+> **当前版本:1.0.7**(2026-07-24 发布 · 16 个 commit · git tag `v1.0.7`)
+> v1.0.7:触发词 → HTML 生成对照表 + 文档裂缝守护
 > v1.0.6:命名 + 输出目录规则同步到通用手册(跨 Skill)
 > v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)
 > v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)
@@ -79,6 +80,76 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
    - v1.0.2(2026-07-24):最初版,误写"绝对禁止 AI 主动唤起浏览器"
    - v1.0.3(2026-07-24):纠正 — 用户确认 `<media>` 与浏览器打开应并行,**非互斥**
 
+---
+
+## 触发词 → HTML 生成对照表(2026-07-24 加 · v1.0.7 · 最高优先级)
+
+**目的**:消除"AGENT 是否要生成 HTML"的歧义。28 个触发词明确分类,AI 不再从叙述中"凑"出完整图。
+
+**图例**:
+- ✅ **必须生成 HTML**(AI 收到 JSON 后**主动**调 `--html`,再 `<media>` 交付)
+- ❌ **不生成 HTML**(只返回 JSON 三段式简短回执,文字流展示)
+- 🟡 **过程型 HTML**(必须生成,用户在 HTML 里勾选+复制+粘贴)
+
+| # | 触发词 | HTML? | 命令 | 模板 / 备注 |
+|---|---|---|---|---|
+| 1 | 记备忘 | ❌ | `add` | 单条回执 |
+| 2 | 搜备忘 | ✅ | `search --html` | `memo_query.html` |
+| 3 | 查备忘(搜备忘别名) | ✅ | 同上 | 同上 |
+| 4 | 改备忘 | ❌ | `update` | 单条回执 |
+| 5 | 删备忘 | ❌ | `delete` | 单条回执 |
+| 6 | 看备忘 | ✅ | `get --html` | `memo_query.html`(items 1 条) |
+| 7 | 按时间搜备忘 | ✅ | `search-date --html` | `memo_query.html` |
+| 8 | 备忘改分类(单条) | ❌ | `update-category <id> <cat>` | 单条回执 |
+| 9 | 备忘改子分类 | ❌ | `update-sub-category` | 单条回执 |
+| 10 | 记提醒 | ❌ | `add` + `remind` | 双步骤简短回执 |
+| 11 | 设提醒 | ❌ | `remind` | 单条回执 |
+| 12 | 看提醒 | ✅ | `reminders --html` | `memo_query.html` |
+| 13 | 查已提醒备忘 | ✅ | `completed --html` | `memo_query.html` |
+| 14 | 记心愿(子唤醒词) | ❌ | `add -c 心愿` | 单条回执 |
+| 15 | 删心愿 | ❌ | `delete` | 单条回执 |
+| 16 | 改心愿 | ❌ | `update` | 单条回执 |
+| 17 | 查心愿 | ✅ | `search -c 心愿 --html` | `memo_query.html` |
+| 18 | 记打卡(子唤醒词) | ❌ | `add -c 打卡` | 单条回执 |
+| 19 | 删打卡 | ❌ | `delete` | 单条回执 |
+| 20 | 改打卡 | ❌ | `update` | 单条回执 |
+| 21 | 查打卡 | ✅ | `search -c 打卡 --html` | `memo_query.html` |
+| 22 | 记情绪(子唤醒词) | ❌ | `add -c 情绪日记` | 单条回执 |
+| 23 | 删情绪 | ❌ | `delete` | 单条回执 |
+| 24 | 改情绪 | ❌ | `update` | 单条回执 |
+| 25 | 查情绪 | ✅ | `search -c 情绪日记 --html` | `memo_query.html` |
+| 26 | 完成心愿(别名:完成打卡) | 🟡 | `wish-complete --html` | `wish_complete.html`(过程型) |
+| 27 | 心愿排期 | 🟡 | `wish-batch-plan --html` | `wish_plan.html`(过程型) |
+| 28 | 备忘录同步 | ✅ | `sync-from-feishu --html` | `sync_report.html` |
+| - | **备忘改分类(批量)**(由"备忘改分类" + "都/全部/多 id" 触发) | 🟡 | `batch-update-category --from-category X --html` | `change_category.html`(过程型) |
+
+### 统计
+
+| HTML? | 数量 | 触发词 |
+|---|---|---|
+| ✅ 必须生成 HTML | 9 | 搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪 |
+| 🟡 过程型 HTML | 4 | 完成心愿(完成打卡)/心愿排期/备忘改分类(批量)/(批量场景) |
+| ❌ 不生成 HTML | 15 | 记备忘/改备忘/删备忘/备忘改分类(单条)/备忘改子分类/记提醒/设提醒/记心愿/删心愿/改心愿/记打卡/删打卡/改打卡/记情绪/删情绪/改情绪 |
+| **合计** | **28** | (含 12 个子唤醒词) |
+
+### AGENT 决策流程
+
+```
+收到用户原话 → 路由到触发词 → 查本表
+  ├─ ✅ → CLI 命令 + 调 --html → <media> 交付
+  ├─ 🟡 → CLI 命令 + --html(过程型) → <media> 交付 + 用户采纳复制 → 调精确命令
+  └─ ❌ → CLI 命令 → 返回 JSON 三段式 → 文字流回执
+```
+
+### 优先级
+
+本对照表与"HTML 同步"+"HTML 交付规范"同级(最高优先级)。任何 AGENT 处理备忘录相关触发词必须先查本表。
+
+### 防文档裂缝守护
+
+`tests/test_html_trigger_coverage.py` 扫描 SKILL.md + 本表,确保所有 28 个触发词在本表出现。改 SKILL.md 时自动验证。
+
+---
 
 ## 描述
 

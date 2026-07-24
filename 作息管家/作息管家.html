@@ -3,357 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作息管家 - Skill HTML 镜像</title>
+<title>作息管家 · 用户手册</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
-    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
-    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
   }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    line-height: 1.75; color: var(--fg); background: var(--bg);
-    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
-    -webkit-font-smoothing: antialiased;
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,#e8f0ff 0%,#d6e5ff 100%);border-radius:24px;padding:40px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .hero .eyebrow{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .hero h1{font-size:34px;line-height:1.15;letter-spacing:-.025em;margin-bottom:8px}
+  .hero .lead{font-size:15px;color:var(--fg2);max-width:720px;margin-bottom:14px}
+  .hero .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
+  .hero .stats b{color:var(--blue2);font-variant-numeric:tabular-nums}
+
+  /* TOC */
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;margin:0 0 28px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .toc h2{font-size:14px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;font-weight:700}
+  .toc .group{margin-bottom:14px}
+  .toc .group:last-child{margin-bottom:0}
+  .toc .group-title{font-size:12px;font-weight:700;color:var(--blue2);margin-bottom:6px}
+  .toc ol{list-style:none;padding:0;margin:0;columns:2;column-gap:32px}
+  .toc li{margin-bottom:4px;font-size:13px;line-height:1.5;break-inside:avoid}
+  .toc a{color:var(--fg);text-decoration:none;border-bottom:1px dashed transparent;transition:border-color .15s}
+  .toc a:hover{border-bottom-color:var(--blue);color:var(--blue2)}
+
+  /* Section:每条唤醒词 */
+  section.skill{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:0;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+  section.skill > summary{cursor:pointer;list-style:none;padding:20px 26px;user-select:none;display:flex;align-items:center;gap:14px;transition:background .15s}
+  section.skill > summary::-webkit-details-marker{display:none}
+  section.skill > summary:hover{background:#fafbff}
+  section.skill > summary .num{width:36px;height:36px;border-radius:10px;background:var(--soft);color:var(--blue2);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section.skill > summary .main{flex:1;min-width:0}
+  section.skill > summary .name{font-size:16px;font-weight:600;color:var(--fg);margin-bottom:2px;letter-spacing:-.01em}
+  section.skill > summary .desc{font-size:13px;color:var(--fg2);line-height:1.5}
+  section.skill > summary .cli{font-size:12px;color:var(--blue2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--soft);padding:4px 10px;border-radius:6px;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+  section.skill > summary .toggle{margin-left:8px;font-size:11px;color:var(--fg3);background:#f0f0f2;padding:4px 10px;border-radius:6px;font-weight:600;flex-shrink:0}
+  section.skill[open] > summary .toggle{background:var(--blue);color:#fff}
+  section.skill > summary .arrow{font-size:14px;color:var(--fg3);transition:transform .2s;flex-shrink:0}
+  section.skill[open] > summary .arrow{transform:rotate(90deg);color:var(--blue)}
+
+  /* Section body (展开后) */
+  section.skill .body{padding:0 26px 22px;border-top:1px solid var(--line);background:#fafbff}
+  section.skill .body h4{font-size:12px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 6px}
+  section.skill .body h4:first-child{margin-top:18px}
+  section.skill .body p{font-size:13.5px;color:var(--fg);line-height:1.7;margin-bottom:8px}
+  section.skill .body ul,section.skill .body ol{margin:6px 0 10px 22px;font-size:13.5px;line-height:1.7}
+  section.skill .body li{margin-bottom:3px}
+  section.skill .body code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#eef0f3;padding:1px 6px;border-radius:4px;font-size:.9em;color:#1d1d1f}
+  section.skill .body pre{background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12px;line-height:1.6;overflow:auto;margin:8px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section.skill .body pre code{background:none;color:inherit;padding:0}
+  section.skill .body .meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+  section.skill .body .meta span{font-size:11px;background:#eef0f3;color:var(--fg2);padding:3px 8px;border-radius:6px;font-weight:500}
+
+  /* Footer */
+  .footer{margin-top:40px;padding:24px 0;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line)}
+  .footer a{color:var(--blue2);text-decoration:none;border-bottom:1px dashed var(--blue)}
+  .footer a:hover{border-bottom-style:solid}
+
+  @media(max-width:720px){
+    .wrap{padding:32px 16px 60px}
+    .hero{padding:28px 22px;border-radius:18px}
+    .hero h1{font-size:26px}
+    .toc ol{columns:1}
+    section.skill > summary{flex-wrap:wrap}
+    section.skill > summary .cli{max-width:100%;margin-top:6px}
   }
-  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
-  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
-        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
-  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
-  p { font-size: 15px; margin-bottom: 14px; }
-  strong { font-weight: 600; }
-  em { color: var(--fg2); font-style: normal; }
-  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
-         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
-         color: #c7254e; border: 1px solid var(--border); }
-  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
-         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
-         line-height: 1.65; }
-  pre code { background: none; padding: 0; color: inherit; border: none; }
-  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { background: var(--card); font-weight: 600; }
-  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
-               margin: 16px 0; color: var(--fg2); }
-  blockquote p { color: var(--fg2); margin-bottom: 0; }
-  ul, ol { margin: 14px 0 14px 28px; }
-  li { margin-bottom: 4px; font-size: 15px; }
-  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
-  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
-          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-  .toc { background: var(--card); border: 1px solid var(--border);
-         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
-  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
-            text-transform: uppercase; letter-spacing: 0.08em; }
-  .toc ol { margin-left: 22px; }
-  .toc a { color: var(--fg); text-decoration: none; }
-  .toc a:hover { color: var(--accent); }
-  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-  .pill { display: inline-block; background: var(--card); color: var(--fg2);
-           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
-           border: 1px solid var(--border); }
-  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
-             color: var(--fg3); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
-<div class="toc"><h4>目录</h4><ol><li><a href="#强制规定-最高优先级-1">强制规定(最高优先级)</a></li>
-<li><a href="#功能速查-2">功能速查</a></li>
-<li><a href="#核心规则-违反即无效-3">核心规则(违反即无效)</a></li>
-<li><a href="#安装与配置-4">📦 安装与配置</a></li>
-<li><a href="#功能详细说明-5">功能详细说明</a></li>
-<li><a href="#references-目录-6">references/ 目录</a></li></ol></div>
-<h2 id="强制规定-最高优先级-1">强制规定(最高优先级)</h2>
-<ol>
-<li><strong>所有变动必须体现在 HTML 上</strong> - 本技能的任何优化、变动、脚本的所有变动,都必须同步更新 <code>作息管家.html</code> 页面。</li>
-<li><strong>此规定优先级最高</strong> - 优先级高于所有其他规则和流程。</li>
-<li><strong>任何修改需用户确认</strong> - 对本技能所有文件、脚本的任何一行修改,都必须明确得到用户的 1 次确认后才能执行。</li>
-</ol>
-<hr />
-<blockquote>
-<p><strong>版本</strong>: 2026-06-29 重构版(新增:事件型计划 + 飞书日历联动)</p>
-</blockquote>
-<hr />
-<h2 id="功能速查-2">功能速查</h2>
-<blockquote>
-<p><strong>AI 使用约定</strong>:用户说任何唤醒词后,先读"详见"列跳到"功能详细说明"对应章节,不要只看本表。本表只列功能 + CLI,详细执行流程、约束、飞书同步策略都在对应章节里。</p>
-</blockquote>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>唤醒词</th>
-<th>功能</th>
-<th>CLI 命令</th>
-<th>详见</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>0</strong></td>
-<td><strong>记作息 / 补一条作息 / 录作息</strong></td>
-<td><strong>单条记录写入(规范化入口,9 字段强校验)</strong></td>
-<td><strong><code>add &lt;9 字段&gt; 或 --json @file</code></strong></td>
-<td><strong>详见 0. 记作息</strong></td>
-</tr>
-<tr>
-<td>1</td>
-<td>准备消息(游标分页)</td>
-<td>从 daily_recorder 拉消息供 AI 分析(默认 200 条/页)</td>
-<td><code>prepare-messages [&lt;开始&gt; [&lt;结束&gt;]] [--page N] [--page-size N]</code></td>
-<td>详见 1. 同步作息</td>
-</tr>
-<tr>
-<td>2</td>
-<td>同步作息</td>
-<td>完整同步流程(准备消息→AI 分析→逐条 add)</td>
-<td><code>prepare-messages</code> → AI → <code>add</code></td>
-<td>详见 1. 同步作息</td>
-</tr>
-<tr>
-<td>3</td>
-<td>增量同步</td>
-<td>从游标位置继续同步(自动读取 get_last_record_full 拿游标)</td>
-<td><code>prepare-messages</code></td>
-<td>详见 1. 同步作息</td>
-</tr>
-<tr>
-<td>4</td>
-<td>今天总结</td>
-<td>按分类汇总当日时间(满24h出综合报告,不满出摘要)</td>
-<td><code>report &lt;日期&gt;</code> 或 <code>summary &lt;日期&gt;</code></td>
-<td>详见 2. 生成摘要</td>
-</tr>
-<tr>
-<td>5</td>
-<td>汇总作息</td>
-<td>日期范围汇总统计</td>
-<td><code>range &lt;开始&gt; &lt;结束&gt;</code></td>
-<td>详见 2. 生成摘要</td>
-</tr>
-<tr>
-<td>6</td>
-<td>查作息</td>
-<td>查看指定日期作息列表</td>
-<td><code>list [日期]</code></td>
-<td>详见 3. 查询作息</td>
-</tr>
-<tr>
-<td><b>7</b></td>
-<td>查作息详情</td>
-<td><b>文本版</b><code>detail [日期]</code> 含消息原文与人工智能推理链。<b>网页版</b>(2026-07-23 新增)<code>render-records-detail &lt;日期&gt; [--record-id N] [--show-source]</code> 每条记录全 11 字段都注入 payload(含消息原文与人工智能推理链),上层模板自主决定渲染样式与折叠</td>
-<td><code>detail [日期]</code> 或 <code>render-records-detail &lt;日期&gt; [--record-id N] [--show-source]</code></td>
-<td><b>详见 3. 查询作息(详情页子章节)</b></td>
-</tr>
-<tr>
-<td>8</td>
-<td>查作息时间轴</td>
-<td>24小时时间轴展示</td>
-<td><code>timeline [日期]</code></td>
-<td>详见 3. 查询作息</td>
-</tr>
-<tr>
-<td>9</td>
-<td>查作息范围</td>
-<td>日期范围统计</td>
-<td><code>range &lt;开始&gt; &lt;结束&gt;</code></td>
-<td>详见 3. 查询作息</td>
-</tr>
-<tr>
-<td>11</td>
-<td>查作息状态</td>
-<td>记录数/天数/日期范围</td>
-<td><code>status</code></td>
-<td>详见 3. 查询作息</td>
-</tr>
-<tr>
-<td><strong>12</strong></td>
-<td><strong>查日程 / 看日程(默认)</strong></td>
-<td>查单日完整事件 + 飞书同步状态(id / notes / category / feishu_event_id / completion)。<strong>带具体标题时</strong>(如"今天有健身吗")→ <code>search-plan-event</code> 精确匹配(2026-07-15 起可选 <code>--time-start/--time-end</code> 按三元组查重)</td>
-<td><code>list-events &lt;日期&gt;</code> 或 <code>search-plan-event &lt;日期&gt; --title X [--time-start HH:MM --time-end HH:MM]</code></td>
-<td><strong>详见 3.1 查询日程</strong></td>
-</tr>
-<tr>
-<td><strong>13</strong></td>
-<td><strong>补计划</strong></td>
-<td>单条追加日程事件。<strong>幂等(2026-07-15 修复):按 (date+time_start+time_end) 三元组查重,title 不参与(title 是展示标签不是身份)</strong>。与商量计划的区别:补 = 增量一条,商量 = 完整24h规划</td>
-<td><code>ensure-plan-event &lt;日期&gt; --time-start HH:MM --time-end HH:MM --title X</code></td>
-<td><strong>详见 10. 补计划与程序化接口</strong></td>
-</tr>
-<tr>
-<td><strong>14</strong></td>
-<td><strong>复盘</strong></td>
-<td>对当天日程逐条回顾:哪些做了、哪些没做、为什么 → 写入 completion 字段</td>
-<td><code>list-events</code> → 逐条 <code>update-event --completion</code></td>
-<td><strong>详见 11. 复盘</strong></td>
-</tr>
-<tr>
-<td>15</td>
-<td>24h 概览</td>
-<td>24h 时间表聚合视图(同小时用 + 合并)</td>
-<td><code>query-plans &lt;日期&gt;</code></td>
-<td>详见 3.1 查询日程</td>
-</tr>
-<tr>
-<td>16</td>
-<td>查多日计划</td>
-<td>多日简版视图(不含 notes/completion/飞书状态)</td>
-<td><code>query-plans &lt;日期1,日期2,...&gt;</code></td>
-<td>详见 3.1 查询日程</td>
-</tr>
-<tr>
-<td><strong>17</strong></td>
-<td><strong>商量计划</strong></td>
-<td>AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步</td>
-<td><code>upsert-plan-events &lt;日期&gt; --json @plan.json</code></td>
-<td><strong>详见 4. 商量计划(核心入口)</strong></td>
-</tr>
-<tr>
-<td><strong>18</strong></td>
-<td><strong>改计划</strong></td>
-<td>单条精细修改(含 completion 标记)</td>
-<td><code>update-event &lt;id&gt; [--title/--completion/...]</code></td>
-<td><strong>详见 5. 改计划</strong></td>
-</tr>
-<tr>
-<td><strong>19</strong></td>
-<td><strong>删计划</strong></td>
-<td>单条软删(is_active=0),询问飞书同步删除</td>
-<td><code>deactivate-event &lt;id&gt;</code></td>
-<td><strong>详见 6. 删计划</strong></td>
-</tr>
-<tr>
-<td><strong>20</strong></td>
-<td><strong>日程管家同步</strong></td>
-<td>Phase 0 反向对账 + diff 询问 create/update/delete</td>
-<td><code>feishu-resync &lt;日期&gt;</code></td>
-<td><strong>详见 8. 日程管家同步</strong></td>
-</tr>
-<tr>
-<td>21</td>
-<td>飞书探测</td>
-<td>三档探测 cli 安装 / auth 授权 / 日历写入权限</td>
-<td><code>python scripts/feishu_sync.py</code></td>
-<td>详见 9. 飞书探测</td>
-</tr>
-<tr>
-<td>22</td>
-<td>初始化数据库</td>
-<td>创建三张数据表(含 completion 字段)</td>
-<td><code>init</code></td>
-<td>-</td>
-</tr>
-<tr><td><b>23</b></td><td>按 ID 查作息记录</td><td><b>命令行单条查询</b>。按作息记录 ID 返回全 11 字段(id / date / time_* / duration / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at)</td><td><code>get-record &lt;id&gt;</code></td><td><b>详见 3. 查询作息</b></td></tr>
-<tr><td><b>24</b></td><td>写作息摘要</td><td><b>命令行写摘要</b>。按 (date, category) 维度 upsert 一条 daily_summary(解决孤儿表问题,该表 2026-07-22 后无任何写入路径)</td><td><code>add-summary --date D --category C --total-minutes M</code></td><td><b>详见 13. 摘要管理(新建)</b></td></tr>
+<div class="wrap">
 
-</tbody>
-</table>
-<hr />
-<h2 id="分类系统-2026-07-22-重构">分类系统（2026-07-22 重构）</h2>
-<p>作息分类采用 <strong>8 个一级 + 白名单二级</strong> 结构。所有写入路径都强制走 <code>scripts/validators.py</code> 校验。</p>
-<h3>一级（固定 8 个）</h3>
-<table>
-<thead><tr><th>一级</th><th>含义</th></tr></thead>
-<tbody>
-<tr><td>维持</td><td>维持个体生存和基础状态（睡眠/吃饭/洗漱/通勤）</td></tr>
-<tr><td>健康</td><td>改善身体/心理状态（运动/健身/修行/冥想）</td></tr>
-<tr><td>工作</td><td>产出价值/完成任务（与职业相关或不相关）</td></tr>
-<tr><td>学习</td><td>吸收新知/掌握技能</td></tr>
-<tr><td>创作</td><td>输出原创内容</td></tr>
-<tr><td>投入</td><td>与人/动物/社群互动（家人/朋友/伴侣/宠物）</td></tr>
-<tr><td>调整</td><td>主动放松/恢复/娱乐（游戏/追剧/发呆/午睡）</td></tr>
-<tr><td>日常</td><td>无明确主要目的的杂事（代办/收拾/行政）</td></tr>
-</tbody>
-</table>
-<h3>二级（白名单制）</h3>
-<ul>
-<li>初始约 70 个，写在 <code>scripts/validators.py::DEFAULT_WHITELIST</code></li>
-<li>用户/AI 扩展项写到 <code>.db/category_whitelist.yaml</code></li>
-<li>运行时合并两层白名单</li>
-<li><strong>不允许三级</strong>（避免爆炸）</li>
-</ul>
-<h3>心法（5 条）</h3>
-<ol>
-<li>一句话可能暗示 N 件事 → 拆 N 段，每段归类</li>
-<li>模糊兜底：无法拆解时 → 选最相似分类（兜底率 &lt; 15%）</li>
-<li>意图 vs 实际：按当前段已说出的话判，不判打算</li>
-<li>AI 对话不入作息：除非用户明确说“把对话归档”</li>
-<li><strong>遇到白名单外活动 → 主动提议，不要静默兜底</strong>（申请制）</li>
-</ol>
-<h3>申请新分类流程</h3>
-<pre><code>1. AI 录入时遇到未白名单 category → 校验报错
-2. AI 输出“提议新增 X” + 场景说明
-3. 用户口头确认
-4. AI 调 approve-category 写入 YAML
-5. 下一条 add_record 立即可用</code></pre>
-<h3>CLI 命令</h3>
-<pre><code>python scripts/schedule_cli.py list-categories [--level 1|2] [--json]
-python scripts/schedule_cli.py propose-category --code "一级.二级" --hint "场景"
-python scripts/schedule_cli.py approve-category --code "一级.二级"</code></pre>
-<h3>飞书 emoji 联动（2026-07-22）</h3>
-<p>每个 category 同步到飞书时，会在飞书事件 <strong>description 头部</strong> 自动加 emoji 前缀。</p>
-<table>
-<thead><tr><th>一级</th><th>emoji</th><th>一级</th><th>emoji</th></tr></thead>
-<tbody>
-<tr><td>维持</td><td>🌱</td><td>创作</td><td>🎨</td></tr>
-<tr><td>健康</td><td>💪</td><td>投入</td><td>🤝</td></tr>
-<tr><td>工作</td><td>💼</td><td>调整</td><td>😌</td></tr>
-<tr><td>学习</td><td>📖</td><td>日常</td><td>📋</td></tr>
-</tbody>
-</table>
-<p>二级 emoji 完整 70+ 个见 <code>scripts/validators.py::CATEGORY_EMOJI_LEVEL2</code>。</p>
-<p><strong>示例</strong>：<code>category=健康.健身</code> → 飞书 description = <code>[💪🏋️ 健康.健身] | 练背+有氧 | 作息管家自动同步</code></p>
-<blockquote><p><strong>强制规定</strong>：分类心法变更必须同步更新 <code>作息管家.html</code> 镜像。</p></blockquote>
+<header class="hero">
+  <div class="eyebrow">Skill Manual · 用户手册</div>
+  <h1>作息管家</h1>
+  <p class="lead">作息记录与日程计划管理工具。AI Agent 通过 24 个唤醒词驱动 CLI 完成记录、查询、计划、回执。底层数据存 SQLite,可视化通过 13 个预置 HTML 模板输出。</p>
+  <div class="stats">
+    <span>📊 <b>24</b> 唤醒词</span>
+    <span>🎨 <b>13</b> HTML 模板</span>
+    <span>🛠 <b>11</b> CLI 命令</span>
+    <span>💾 <b>SQLite</b> 本地存储</span>
+  </div>
+</header>
 
-<h2 id="核心规则-违反即无效-3">核心规则(违反即无效)</h2>
-<ol>
-<li><strong>禁止直连数据库</strong> - 所有操作必须通过 CLI 接口</li>
-<li><strong>禁止 DELETE</strong> - 只允许 INSERT / UPDATE</li>
-<li><strong>source_contents 必须是消息原文</strong> - 一字不差,不得总结或臆造</li>
-<li><strong>时间必须连续</strong> - 每条 time_start = 上一条 time_end,末尾处理规则:
-   - 过去日期:最后一个 block 的 time_end 可补到 23:59
-   - 当天:time_end 不得超过当前时刻</li>
-<li><strong>粒度最大化</strong> - 能独立成一件事的不要合并:
-   - 每次活动切换即切割 block,不为省记录数而合并
-   - 示例1:07:58出门→08:03到公司→08:05开会
-     应拆为:07:58~08:03(通勤)、08:03~08:05(到达后休息)、08:05~(会议)
-     而不是:07:58~08:05(通勤+会议合并为一个block)
-   - 示例2:连续消息讨论同一主题(如连续5条消息讨论同一工作问题)→合并为一个block
-   - 宁可多条记录,不要漏记活动切换点</li>
-</ol>
-<blockquote>
-<p>详细规范见: <code>references/操作规范.md</code></p>
-</blockquote>
-<hr />
-<h2 id="安装与配置-4">📦 安装与配置</h2>
-<h3>依赖</h3>
-<ul>
-<li>Python &gt;= 3.7</li>
-<li>无第三方依赖(仅用标准库 sqlite3、argparse、datetime)</li>
-</ul>
-<h3>配置项</h3>
-<p>| 环境变量 | 说明 |
-|---------|------|--------|
-| <code>SKILLS_DB_PATH</code> | 数据库文件所在目录 |</p>
-<p>DB 查找顺序:<code>SKILLS_DB_PATH</code> 环境变量 → 技能目录 → 父目录 <code>.db/</code> 文件夹 → 自动创建 <code>.db/</code> 目录。</p>
-<h3>一键安装 prompt</h3>
-<p>将以下内容发送给 AI 即可安装本技能:</p>
-<pre><code>请帮我安装作息管家技能:
-1. 检查 Python 环境
-2. 引导我配置环境变量
-3. 显示当前环境变量配置
-4. 告诉我如何更改数据目录
-</code></pre>
-<hr />
-<h2 id="功能详细说明-5">功能详细说明</h2>
-<h3>0. 记作息（add · 2026-07-22 新增规范化入口）</h3>
-<p><strong>触发词</strong>:记作息 / 补一条作息 / 录作息</p>
-<p><strong>核心语义</strong>:把 1 条作息记录<strong>规范化写入</strong> schedule_records。所有写入路径都走这一入口,绕过 <code>add</code> 直接调 <code>add_record_full</code> 函数属于违规。</p>
-<p><strong>必填 9 字段</strong>:<code>date / time_start / time_end / duration_minutes / activity / category / source_contents / source_timestamps / analysis_reasoning</code></p>
-<p><strong>调用方式</strong>:</p>
-<pre><code># 方式 A: 命令行参数(适合 1 条)
+<nav class="toc">
+  <h2>目录</h2>
+
+  <div class="group">
+    <div class="group-title">📊 记录类(13)</div>
+    <ol>
+      <li><a href="#cmd-0">#0 记作息</a></li>
+      <li><a href="#cmd-1">#1 准备消息</a></li>
+      <li><a href="#cmd-2">#2 同步作息</a></li>
+      <li><a href="#cmd-3">#3 增量同步</a></li>
+      <li><a href="#cmd-4">#4 今天总结</a></li>
+      <li><a href="#cmd-5">#5 汇总作息</a></li>
+      <li><a href="#cmd-6">#6 查作息</a></li>
+      <li><a href="#cmd-7">#7 查作息详情</a></li>
+      <li><a href="#cmd-8">#8 查作息时间轴</a></li>
+      <li><a href="#cmd-9">#9 查作息范围</a></li>
+      <li><a href="#cmd-11">#11 查作息状态</a></li>
+      <li><a href="#cmd-23">#23 按 ID 查记录</a></li>
+      <li><a href="#cmd-24">#24 写作息摘要</a></li>
+    </ol>
+  </div>
+
+  <div class="group">
+    <div class="group-title">📅 日程类(9)</div>
+    <ol>
+      <li><a href="#cmd-12">#12 查日程/看日程</a></li>
+      <li><a href="#cmd-15">#15 24h 概览</a></li>
+      <li><a href="#cmd-16">#16 查多日计划</a></li>
+      <li><a href="#cmd-17">#17 商量计划</a></li>
+      <li><a href="#cmd-18">#18 改计划</a></li>
+      <li><a href="#cmd-19">#19 删计划</a></li>
+      <li><a href="#cmd-13">#13 补计划</a></li>
+      <li><a href="#cmd-14">#14 复盘</a></li>
+      <li><a href="#cmd-20">#20 日程管家同步</a></li>
+    </ol>
+  </div>
+
+  <div class="group">
+    <div class="group-title">⚙️ 管理类(2)</div>
+    <ol>
+      <li><a href="#cmd-21">#21 飞书探测</a></li>
+      <li><a href="#cmd-22">#22 初始化数据库</a></li>
+    </ol>
+  </div>
+</nav>
+
+<main id="main">
+<!-- ==================== 记录类 ==================== -->
+
+<details class="skill" id="cmd-0">
+  <summary>
+    <span class="num">0</span>
+    <div class="main">
+      <div class="name">记作息 / 补一条作息 / 录作息</div>
+      <div class="desc">单条作息记录规范化写入(9 字段强校验,所有写入路径都走这一入口)</div>
+    </div>
+    <span class="cli">add &lt;9 字段&gt; 或 --json @file</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_receipt.html(回执)</span>
+      <span>必填字段: 9 个</span>
+    </div>
+    <h4>用法示例</h4>
+    <pre><code># 方式 A: 命令行参数(适合 1 条)
 python scripts/schedule_cli.py add \
   --date 2026-07-22 --time-start 10:00 --time-end 11:00 \
   --duration-minutes 60 --activity "写小帅相关代码" \
@@ -363,503 +170,621 @@ python scripts/schedule_cli.py add \
 
 # 方式 B: JSON 文件(适合批量)
 python scripts/schedule_cli.py add --json @record.json</code></pre>
-<p><strong>一级 category 警告</strong>(Q2=C 决策):传 <code>category="创作"</code>(纯一级)会写入成功但附加 warning 提示"建议细化到二级"。</p>
-<p><strong>为什么是规范化入口</strong>:之前版本只有 Python 函数,AI 调用时容易绕过校验;现在 CLI 入口强制走校验 + JSON 三段式输出,无法"偷懒"。</p>
-<h3>1. 同步作息(废弃)</h3>
-<p>将语录消息分析为细粒度作息记录。</p>
-<p><strong>执行流程</strong>:
-1. 调用 <code>prepare-messages</code> 获取消息(始终分页,默认每页200条)
-   - 检查返回 JSON 中的 <code>pagination.has_next</code>:若为 <code>true</code>,处理完当前页后用 <code>--page N</code> 获取下一页
-   - 消息量少时只有1页,无需额外操作
-2. <strong>前置:获取最少 block 数量</strong>
-   ```python
-   from block_count import get_required_block_count</p>
-<p># 获取该时间区间最少需要的 block 数量
-   # messages_per_block: 每个 block 最多承载的消息数(默认5)
-   required_min = get_required_block_count(start_ts, end_ts, messages_per_block=5)
-   <code>3. AI 用滑动窗口(前5后5)判断活动边界
-4. 逐条调用 `add_record_full()` 写入(9字段全填)
-5. 前5后5窗口推断:
-   - 以block「开始时间点」为中心,取前5条消息推断该时间段起点前的活动
-   - 以block「结束时间点」为中心,取后5条消息推断该时间段终点后的活动
-   - 日期边界:首条消息无法说明00:00~首条时间点;末条消息无法说明末条时间点~23:59
-     → 用「前一天末尾5条+当天开头5条」推断开头时段
-     → 用「当天末尾5条+下一天开头5条」推断结尾时段
-6. **后置:验证 block 数量是否达标**</code>python
-   from block_count import validate_record_count</p>
-<p>result = validate_record_count(start_ts, end_ts, messages_per_block=5)
-   # result == True: 验证通过
-   # result is str: 验证失败,提示词会告诉 AI 哪里不足、如何修正
-   if result is not True:
-       # AI 必须根据提示词重新拆分,直到验证通过
-       ...
-   ```
-7. 保证首尾相接</p>
-<p><strong>粒度原则</strong>:按活动切换点细分,宁可多条不要合并。</p>
-<blockquote>
-<p>执行同步操作必须读取: <code>references/同步流程.md</code></p>
-</blockquote>
-<hr />
-<h3>2. 今天总结</h3>
-<p>按分类汇总当日作息时间(自动选择输出等级)。</p>
-<p><strong>触发词</strong>:今天总结 / 生成摘要 / 查作息报告</p>
-<p>AI 判断逻辑:
-- <strong>records 已满 24h</strong> → 调 <code>report &lt;日期&gt;</code>(list + summary + timeline 综合报告)
-- <strong>records 未满 24h</strong> → 调 <code>summary &lt;日期&gt;</code>(仅按分类汇总,并提示补全记录后再看完整报告)</p>
-<p><strong>输出格式</strong>:</p>
-<pre><code>📊 2026-05-22 作息摘要
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收 9 字段,进入 <code>add_record_full()</code></li>
+      <li>字段完整性校验:9 个字段全填,空字符串视为缺失</li>
+      <li><code>category</code> 白名单校验(8 一级 + 70 二级,纯一级给 warning)</li>
+      <li>INSERT INTO schedule_records</li>
+      <li>返回 JSON 三段式 <code>{status, data, message}</code></li>
+      <li>AI 用返回的 <code>id</code> 调 <code>render-record-receipt &lt;id&gt;</code> 生成回执 HTML</li>
+    </ol>
+    <h4>失败处理</h4>
+    <ul>
+      <li>缺字段 → <code>{"status": "error", "missing": [...]}</code></li>
+      <li>非法 category → 返回"字段名+当前值+期望值+怎么修"</li>
+      <li>字段类型错 → 返回具体错误信息</li>
+    </ul>
+    <p><b>强约束</b>:任何 AI/星火录入流程都应走 <code>add</code> CLI,<b>禁止直调函数</b>绕过校验。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-1">
+  <summary>
+    <span class="num">1</span>
+    <div class="main">
+      <div class="name">准备消息(游标分页)</div>
+      <div class="desc">从 daily_recorder 拉消息供 AI 分析(默认 200 条/页)</div>
+    </div>
+    <span class="cli">prepare-messages [&lt;开始&gt; [&lt;结束&gt;]]</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 无(数据准备阶段)</span>
+      <span>必填字段: 无</span>
+    </div>
+    <h4>用法示例</h4>
+    <pre><code>python scripts/schedule_cli.py prepare-messages
+python scripts/schedule_cli.py prepare-messages --page 2
+python scripts/schedule_cli.py prepare-messages --page-size 100</code></pre>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收分页参数(默认 page=1, page_size=200)</li>
+      <li>从 daily_recorder 库拉消息(按 cursor 续读)</li>
+      <li>返回 JSON 含 <code>pagination.has_next</code> 标识是否还有下一页</li>
+      <li>AI 处理完当前页后用 <code>--page N</code> 续读</li>
+    </ol>
+    <h4>注意</h4>
+    <p>消息量少时只有 1 页,无需额外操作。这是 <b>同步作息</b>(#2) 的数据准备阶段。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-2">
+  <summary>
+    <span class="num">2</span>
+    <div class="main">
+      <div class="name">同步作息</div>
+      <div class="desc">完整同步流程(准备消息→AI 分析→逐条 add),<b>AI 内部循环</b></div>
+    </div>
+    <span class="cli">prepare-messages → AI → add</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 每条记录 1 个 record_receipt.html</span>
+      <span>粒度: 按活动切换点细分</span>
+    </div>
+    <h4>完整执行流程</h4>
+    <ol>
+      <li>调 <code>prepare-messages</code> 获取消息(始终分页)</li>
+      <li>前置: <code>get_required_block_count(start, end, messages_per_block=5)</code> 拿最少 block 数</li>
+      <li>AI 用滑动窗口(前 5 后 5)判断活动边界</li>
+      <li>逐条调 <code>add</code> CLI 写入(9 字段全填)</li>
+      <li>日期边界:首条无法说明 00:00~首条,末条无法说明末条~23:59 → 用「前一天末尾 5 条+当天开头 5 条」推断</li>
+      <li>后置: <code>validate_record_count(start, end)</code> 校验 block 数量达标</li>
+      <li>保证首尾相接(24h 完整覆盖)</li>
+    </ol>
+    <h4>粒度原则</h4>
+    <p>按活动切换点细分,<b>宁可多条不要合并</b>。详见 <code>references/同步流程.md</code>。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-3">
+  <summary>
+    <span class="num">3</span>
+    <div class="main">
+      <div class="name">增量同步</div>
+      <div class="desc">从游标位置继续同步(自动读取 <code>get_last_record_full</code> 拿游标)</div>
+    </div>
+    <span class="cli">prepare-messages(自动续游标)</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 每条记录 1 个 record_receipt.html</span>
+    </div>
+    <h4>与"同步作息"区别</h4>
+    <p>增量同步 = 同步作息的子集,只处理上次游标之后的新消息。流程同 #2,只是 <code>prepare-messages</code> 自动读取游标无需指定时间区间。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-4">
+  <summary>
+    <span class="num">4</span>
+    <div class="main">
+      <div class="name">今天总结 / 生成摘要 / 查作息报告</div>
+      <div class="desc">按分类汇总当日时间(满 24h 出综合报告,不满出摘要)</div>
+    </div>
+    <span class="cli">report &lt;日期&gt; 或 summary &lt;日期&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_day.html(24h 完整)或 record_range.html(不满)</span>
+    </div>
+    <h4>AI 判断逻辑</h4>
+    <ul>
+      <li><b>records 已满 24h</b> → 调 <code>report &lt;日期&gt;</code>(list + summary + timeline 综合)</li>
+      <li><b>records 未满 24h</b> → 调 <code>summary &lt;日期&gt;</code>(仅按分类汇总,提示补全记录后再看完整报告)</li>
+    </ul>
+    <h4>输出格式</h4>
+    <pre><code>📊 2026-05-22 作息摘要
   😴 睡眠: 7h0m
   💼 工作: 4h0m
   🚴 通勤: 0h36m
-  总计: 24h ✓
-</code></pre>
-<hr />
-<h3>3. 查询作息</h3>
-<table>
-<thead>
-<tr>
-<th>命令</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>list [日期]</code></td>
-<td>查看指定日期作息</td>
-</tr>
-<tr>
-<td><code>detail [日期]</code></td>
-<td>详细展示(含AI推理)</td>
-</tr>
-<tr>
-<td><code>summary [日期]</code></td>
-<td>查看每日摘要</td>
-</tr>
-<tr>
-<td><code>timeline [日期]</code></td>
-<td>时间轴展示</td>
-</tr>
-<tr>
-<td><code>report [日期]</code></td>
-<td>完整报告</td>
-</tr>
-<tr>
-<td><code>range &lt;开始&gt; &lt;结束&gt;</code></td>
-<td>日期范围统计</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>详细命令见: <code>references/CLI命令.md</code></p>
-</blockquote>
-<h3>3.x 作息记录查询 → HTML 多模板报告(2026-07-23 重构 · 5 模板 8 命令)</h3>
-<p><strong>触发词</strong>:查作息 / 查作息报告 / 查作息 YYYY-MM-DD / 看看我昨天做了什么 / 那天的作息报告</p>
-<p><strong>核心语义</strong>:AI 收到"查作息"+日期 → 调 <code>render-record-report &lt;date&gt;</code> → 直接从 <code>schedule_records</code> 表现读数据 → 派生 4 段内容 → 写一份单文件 HTML 到 <code>SKILLS_DB_PATH/schedule_html/record/&lt;date&gt;_record_report.html</code> → AI 拿到 <code>file_path</code> 后用 <code>&lt;media&gt;</code> 交付给用户。</p>
-<p><strong>4 段结构</strong>(沿用 2026-06-25.html 等历史报告视觉):</p>
-<table>
-<thead>
-<tr><th>段</th><th>内容</th><th>数据来源</th></tr>
-</thead>
-<tbody>
-<tr><td>① 时间分配</td><td>12 个分类卡片(emoji + 时长 + 横向进度条 + 占比%)+ 总计</td><td><code>cat_minutes</code>(按 category 聚合 <code>duration_minutes</code>)</td></tr>
-<tr><td>② 24h 时间轴</td><td>24 段色块(每段 dominant category 颜色)+ hover tooltip + 图例</td><td><code>hour_cats[24]</code>(每条按分钟切片到小时桶,取主导分类)</td></tr>
-<tr><td>③ 当日亮点</td><td><strong>当前为占位</strong>(<code>data.highlights[]</code> 默认空),后续 Phase 2 可支持 AI 叙事</td><td>暂不派生</td></tr>
-<tr><td>④ 睡眠分析</td><td>主睡眠段(最长睡眠段)+ 总睡眠段数 + 充足判断(≥7h)</td><td><code>sleep_records</code>(按 <code>duration_minutes</code> 排序)</td></tr>
-</tbody>
-</table>
-<p><strong>调用方式</strong>:</p>
-<pre><code class="language-bash"># 标准用法(最常用)
-python scripts/schedule_cli.py render-record-report 2026-07-15
-# → stdout:
-# {"status":"ok","data":{"file_path":"D:\\2Study\\StudyNotes\\.db\\schedule_html\\record\\2026-07-15_record_report.html","bytes":16717,...},"message":"✓ ..."}
-# AI 用 &lt;media src="D:\\...\\2026-07-15_record_report.html" type="file" /&gt; 把文件交付给用户</code></pre>
-<p><strong>约束</strong>:</p>
-<ul>
-<li>输出文件路径<strong>硬绑</strong> <code>SKILLS_DB_PATH/schedule_html/record/&lt;date&gt;_record_report.html</code>,<strong>不传 <code>--out</code></strong>(破坏兼容 — 旧 <code>作息管家/reports/</code> 已被一刀删除)</li>
-<li>目录不存在 → 报错退出(<strong>不静默创建</strong>),错误文案带字段名+期望值+修复建议</li>
-<li>同日期覆盖写(用户主动调就期望刷新)</li>
-<li>模板:<code>templates/schedule_record_report.html</code>(沿用历史 CSS + 4 段布局;含 5 大状态:正常 / 空 / 缺 / 错 / 离线)</li>
-</ul>
-<p><strong>实现位置</strong>:</p>
-<ul>
-<li>模板:<code>templates/schedule_record_report.html</code></li>
-<li>渲染器:<code>scripts/schedule_html_render.py</code>(<code>render_record_report()</code> 函数 + 4 段算法;<code>COLOR_MAP</code>/<code>EMOJI_MAP</code>/<code>_fmt_dur</code> 复用历史脚本)</li>
-<li>CLI 入口:<code>scripts/schedule_cli.py</code> 的 <code>cmd_render_record_report()</code> 子命令</li>
-<li>数据来源:调用 <code>schedule_db.get_records_by_date()</code> 现读(<strong>不依赖任何中间文件或 <code>/tmp</code> JSON</strong>)</li>
-</ul>
-<p><strong>与原命令的边界</strong>:</p>
-<table>
-<thead>
-<tr><th>场景</th><th>用哪个</th></tr>
-</thead>
-<tbody>
-<tr><td>终端查、复制粘贴、AI 引用</td><td><code>list / detail / summary / timeline / report / range / status</code>(文本)</td></tr>
-<tr><td>浏览器看、截图分享、可视化</td><td><code>render-record-report &lt;日期&gt;</code>(HTML)</td></tr>
-<tr><td>Cron 7:30 自动推送</td><td><strong>已废</strong> — <code>reports/</code> 目录被删,cron 7:30 报告链路不再工作。如需恢复,需用 <code>render-record-report</code> 重写</td></tr>
-</tbody>
-</table>
-<hr />
-<h3>3.1 查询日程(默认 <code>list-events</code>)</h3>
-<p><strong>核心规则</strong>:用户说"查日程/看日程"时,AI <strong>必须默认走 <code>list-events</code></strong>,<strong>不是</strong> <code>query-plans</code>。</p>
-<p><strong>上下文路由</strong>:
-- 用户说"今天有XX计划吗?""后天安排了XX吗?"(带具体标题)→ 调 <code>search-plan-event &lt;日期&gt; --title XX</code>
-- 用户说"查日程""看日程""今天的安排"(无具体标题)→ 调 <code>list-events &lt;日期&gt;</code></p>
-<p><strong>为什么</strong>:
-- <code>list-events</code> 返回完整字段(id / time_start-end / title / <strong>notes</strong> / category / <strong>feishu_event_id</strong> / last_synced_at / <strong>completion</strong>)
-- <code>query-plans</code> 是 24h 聚合视图,同小时内的多条事件用 <code>+</code> 合并,丢失 notes / 飞书同步状态 / ID
-- <strong>从信息论角度,list-events 是上位集合,query-plans 是下位聚合</strong>--默认应给上位</p>
-<p><strong>两个命令的适用边界</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>用户场景</th>
-<th>用哪个</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"查日程" / "看日程" / "今天的安排"(<strong>默认</strong>)</td>
-<td><code>list-events &lt;日期&gt;</code></td>
-</tr>
-<tr>
-<td>"给我看 24h 时间表" / "今天都干啥了"</td>
-<td><code>query-plans &lt;日期&gt;</code></td>
-</tr>
-<tr>
-<td>检查 24h 是否有空缺(看 <code>(未规划)</code> 标记)</td>
-<td><code>query-plans &lt;日期&gt;</code></td>
-</tr>
-<tr>
-<td>多日查询(list-events <strong>不支持</strong>多日)</td>
-<td><code>query-plans &lt;日期1,日期2,...&gt;</code></td>
-</tr>
-<tr>
-<td>改某条 / 删某条 / 诊断飞书同步</td>
-<td><code>list-events &lt;日期&gt;</code></td>
-</tr>
-</tbody>
-</table>
-<p><strong><code>list-events</code> 输出样例</strong>:</p>
-<pre><code>📅 2026-07-01 日程列表
-  飞书能力: full (CLI 可用 / 已授权 / 可写)
-     ID 时段          title           notes                  飞书ID / 同步状态        完成
-   544 00:00-09:00 睡眠                                   1743f09d-... / 2026-06-30 17:14:18  -
-   564 17:45-18:30 健身          练背+有氧                  - / -                  已完成
-   565 19:00-20:00 读书          《人类简史》第3章           - / -                  未完成
-   ...
-  共活跃 32 条 / 停用 0 条
-</code></pre>
-<h4>3.1.1 HTML 模式（2026-07-23 新增 · 可视化查询结果）</h4>
-<p><strong>触发词</strong>:<code>查日程 / 看日程</code>(同 3.1 触发词 → AI 默认走 HTML 版)</p>
-<p><strong>核心语义</strong>:把 <code>list-events</code> / <code>query-plans</code> 的数据渲染为 HTML,提供摘要卡 + 24h 时间轴 + 事件卡片 + 筛选器 + 24h 缺口高亮。</p>
-<p><strong>调用方式</strong>:</p>
-<pre><code class="language-bash"># 单日 HTML(默认 24h 时间轴 + 卡片网格)
-python scripts/schedule_cli.py render-list-events 2026-07-15
-# 输出:作息管家/reports/schedule_list_2026-07-15.html
+  总计: 24h ✓</code></pre>
+  </div>
+</details>
 
-# 多日 HTML(按日聚合视图)
-python scripts/schedule_cli.py render-query-plans 2026-07-13,2026-07-14,2026-07-15
-# 输出:作息管家/reports/schedule_query_2026-07-13_to_2026-07-15.html
+<details class="skill" id="cmd-5">
+  <summary>
+    <span class="num">5</span>
+    <div class="main">
+      <div class="name">汇总作息</div>
+      <div class="desc">日期范围汇总统计(分类占比 + 每日时长)</div>
+    </div>
+    <span class="cli">range &lt;开始&gt; &lt;结束&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_range.html</span>
+    </div>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收日期范围 <code>start_date end_date</code></li>
+      <li>调 <code>get_records_range(start, end)</code> 拉该范围所有记录</li>
+      <li>按分类聚合 <code>aggregate_by_category()</code></li>
+      <li>渲染 <code>record_range.html</code>(分类卡片 + 每日时长柱状图)</li>
+    </ol>
+  </div>
+</details>
 
-# 自定义输出路径
-python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.html</code></pre>
-<p><strong>HTML 包含的派生字段</strong>(由 <code>scripts/schedule_html_render.py</code> 计算):</p>
-<ul>
-<li>首屏摘要卡:活跃 / 已完成 / 未复盘 / 未同步飞书 / 24h 缺口</li>
-<li>24h 时间轴(list-events 模式):按小时桶聚合事件</li>
-<li>事件卡片网格:含飞书同步状态徽章、completion 徽章、completion_note、notes</li>
-<li>筛选器:按 title/notes/category 搜索;按 已同步/未同步/已软删/已完成/未复盘/跳过 筛选</li>
-<li>折叠区:已软删事件、飞书侧存在但本地无的事件、错误明细</li>
-<li>飞书可用度提示:探测 full/partial/missing 自动展示</li>
-</ul>
-<p><strong>实现位置</strong>:</p>
-<ul>
-<li>模板:<code>templates/schedule_list_events.html</code>(静态资产,不修改)</li>
-<li>渲染器:<code>scripts/schedule_html_render.py</code>(数据派生 + JSON 注入)</li>
-<li>CLI 入口:<code>scripts/schedule_cli.py</code> 的 <code>render-list-events</code> / <code>render-query-plans</code> 子命令</li>
-<li>数据来源:调用现有的 <code>schedule_db.list_plan_events()</code> / <code>_read_plan_dict()</code> 函数,<strong>不动数据库 schema</strong></li>
-</ul>
-<p><strong>与原命令的边界</strong>:</p>
-<table>
-<thead>
-<tr><th>场景</th><th>用哪个</th></tr>
-</thead>
-<tbody>
-<tr><td>终端查、复制粘贴、AI 引用</td><td><code>list-events</code> / <code>query-plans</code>(文本)</td></tr>
-<tr><td>浏览器看、截图分享、可视化</td><td><code>render-list-events</code> / <code>render-query-plans</code>(HTML)</td></tr>
-<tr><td>程序化 JSON 调用</td><td><code>list-events</code> 的 JSON 输出(脚本化)</td></tr>
-<tr><td>单事件精确查重(带标题)</td><td><code>search-plan-event</code>(轻量,保留 JSON)</td></tr>
-</tbody>
-</table>
-<h4>3.1.2 HTML 输出命名规则(2026-07-23 重写 · SKILLS_DB_PATH 硬绑 · 5 模板 5 子目录)</h4>
-<p><strong>核心原则</strong>:按 <strong>域 / 模式 / 日期</strong> 三维度分目录,HTML 输出<strong>硬绑 <code>SKILLS_DB_PATH</code></strong>(不传 <code>--out</code>),不与文本 CLI 输出混存。</p>
-<pre><code>$SKILLS_DB_PATH/schedule_html/
-├─ record/                                ← 作息记录域(record-*)
-│  ├─ day/
-│  │  └─ plan_list_2026-07-15.html
-│  ├─ range/
-│  │  └─ plan_query_2026-07-13_to_2026-07-15.html
-│  ├─ compare/
-│  │  └─ &lt;labelA&gt;_vs_&lt;labelB&gt;_record_compare.html
-│  ├─ category/
-│  │  └─ &lt;cat&gt;_&lt;start&gt;_to_&lt;end&gt;_record_category.html
-│  └─ anomaly/
-│     └─ &lt;today&gt;_w7_record_anomaly.html
-└─ plan/                                  ← 日程计划域(plan-*)
-   ├─ list/
-   │  └─ plan_list_2026-07-15.html
-   └─ query/
-      └─ plan_query_2026-07-13_to_2026-07-15.html</code></pre>
-<p><strong>命名细则</strong>:</p>
-<table>
-<thead>
-<tr><th>路径段</th><th>取值</th><th>来源</th></tr>
-</thead>
-<tbody>
-<tr><td><code>record/</code> 或 <code>plan/</code></td><td>域</td><td><code>record</code> 对应 <code>schedule_records</code>,<code>plan</code> 对应 <code>schedule_plans</code></td></tr>
-<tr><td><code>day/</code> <code>range/</code> <code>compare/</code> <code>category/</code> <code>anomaly/</code></td><td>子目录</td><td>record 域 5 个 mode(子目录)</td></tr>
-<tr><td><code>list/</code> <code>query/</code></td><td>子目录</td><td>plan 域 2 个 mode(子目录)</td></tr>
-<tr><td><code>plan_list_/plan_query_/record_day_/...</code></td><td>文件名前缀</td><td>与表名对齐(<code>plan_</code> for schedule_plans,无前缀 for schedule_records)</td></tr>
-<tr><td><code>YYYY-MM-DD[_to_YYYY-MM-DD]</code></td><td>日期段</td><td>单日 / 区间(<code>_to_</code> 分隔)</td></tr>
-<tr><td><code>.html</code></td><td>扩展名</td><td>单文件自包含 + 共享 CSS/JS 引擎自动复制</td></tr>
-</tbody>
-</table>
-<p><strong>互斥规则</strong>:</p>
-<ul>
-<li><code>record/</code> 域 → 禁止出现 <code>plan_list_/plan_query_</code> 前缀(互斥)</li>
-<li><code>plan/list/</code> 模式 → 禁止出现 <code>YYYY-MM-DD_to_*</code> 多日文件名(互斥)</li>
-<li><code>record/day/</code> 模式 → 禁止出现 <code>YYYY-MM-DD_to_*</code> 多日文件名(互斥)</li>
-<li><code>record/range/</code> 模式 → 文件名必须含 <code>_to_</code>(单日退化为 <code>start==end</code> 形式)</li>
-</ul>
-<p><strong>约束</strong>:</p>
-<ul>
-<li>输出目录<strong>必须已存在</strong>(子目录 day/range/compare/category/anomaly + plan/list/query),<strong>不静默创建</strong></li>
-<li>错误文案带字段名 + 当前值 + 期望值 + 修复建议</li>
-<li>同日期/区间覆盖写(用户主动调就期望刷新)</li>
-<li>模板按 <code>meta.mode</code> 分发,缺 key 报错清晰(MODE_HANDLERS 字典)</li>
-</ul>
-<p><strong>自定义输出路径</strong>:<strong>不支持 <code>--out</code> 标志</strong>(commit 5710525 决定)。用户需要把 HTML 落到非默认位置时,自己 <code>mv</code> 文件,或在 <code>SKILLS_DB_PATH</code> 环境变量里覆盖默认值。</p>
-<p><strong>示例</strong>:</p>
-<pre><code class="language-bash"># 单日 → $SKILLS_DB_PATH/schedule_html/record/day/2026-07-15_record_day.html
-python scripts/schedule_cli.py render-record-day 2026-07-15
+<details class="skill" id="cmd-6">
+  <summary>
+    <span class="num">6</span>
+    <div class="main">
+      <div class="name">查作息</div>
+      <div class="desc">查看指定日期作息列表</div>
+    </div>
+    <span class="cli">list [日期]</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_detail.html</span>
+    </div>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 默认取今天日期(可指定日期参数)</li>
+      <li>调 <code>get_records_by_date(date)</code> 拉该日所有记录</li>
+      <li>渲染 <code>record_detail.html</code>(所有 11 字段都注入 payload,模板自主决定折叠)</li>
+    </ol>
+  </div>
+</details>
 
-# 区间 → record/range/2026-07-13_to_2026-07-19_record_range.html
-python scripts/schedule_cli.py render-record-range 2026-07-13 2026-07-19
+<details class="skill" id="cmd-7">
+  <summary>
+    <span class="num">7</span>
+    <div class="main">
+      <div class="name">查作息详情</div>
+      <div class="desc">文本版 / 网页版(每条记录全 11 字段都注入,模板自主决定折叠显示)</div>
+    </div>
+    <span class="cli">render-records-detail &lt;日期&gt; [--record-id N]</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_detail.html</span>
+      <span>100% 字段暴露: id/date/time/duration/activity/category/source_contents/source_timestamps/analysis_reasoning/created_at</span>
+    </div>
+    <h4>两种调用方式</h4>
+    <ul>
+      <li>文本版: <code>detail &lt;日期&gt;</code> 含消息原文与人工智能推理链</li>
+      <li>网页版: <code>render-records-detail &lt;日期&gt; [--record-id N]</code> 生成 HTML 详情页</li>
+    </ul>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收日期 + 可选 record_id</li>
+      <li>调 <code>get_records_by_date()</code> 拉该日所有记录</li>
+      <li>100% 字段暴露给 payload(11 字段全注入)</li>
+      <li>渲染 <code>record_detail.html</code>(消息原文默认折叠,可点击展开看 AI 推理链)</li>
+    </ol>
+  </div>
+</details>
 
-# 对比 → record/compare/2026年6月_vs_2026年7月_record_compare.html
-python scripts/schedule_cli.py render-record-compare-months 2026-06 2026-07
+<details class="skill" id="cmd-8">
+  <summary>
+    <span class="num">8</span>
+    <div class="main">
+      <div class="name">查作息时间轴</div>
+      <div class="desc">24 小时时间轴展示(同小时合并)</div>
+    </div>
+    <span class="cli">timeline [日期]</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_detail.html(共用,带时间轴视图)</span>
+    </div>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收日期(默认今天)</li>
+      <li>调 <code>get_records_by_date()</code> + 按 hour 聚合</li>
+      <li>渲染 <code>record_detail.html</code> 的 timeline 视图(00:00-23:59 横向轴,每条记录占对应时间块)</li>
+    </ol>
+  </div>
+</details>
 
-# 类别深挖 → record/category/健身_2026-07-01_to_2026-07-31_record_category.html
-python scripts/schedule_cli.py render-record-category-range 2026-07-01 2026-07-31 健身
+<details class="skill" id="cmd-9">
+  <summary>
+    <span class="num">9</span>
+    <div class="main">
+      <div class="name">查作息范围</div>
+      <div class="desc">日期范围统计(分类占比 + 每日时长)</div>
+    </div>
+    <span class="cli">range &lt;开始&gt; &lt;结束&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_range.html</span>
+    </div>
+    <p>同 <a href="#cmd-5">#5 汇总作息</a>(共用同一 CLI 命令,渲染同一模板)。</p>
+  </div>
+</details>
 
-# 异常检测 → record/anomaly/2026-07-23_w7_record_anomaly.html
-python scripts/schedule_cli.py render-record-anomaly --window 7</code></pre>
-<blockquote>
-<p>备注:本节于 2026-07-23 重写,合并原 plan 域命名 + record 域 5 模板 5 子目录。上一版本写到 <code>作息管家/reports/</code>(用户已主动删除该目录)。</p>
-</blockquote>
-<hr />
-<h3>4. 商量计划(核心入口)</h3>
-<p><strong>触发词</strong>:商量计划 / 一起规划 / 规划明天 / 规划一天 / 规划后天 / 讨论计划</p>
-<p><strong>核心语义</strong>:AI <strong>必须先跟用户多轮对话</strong>细化分钟级细节,<strong>不能直接调 CLI 写库</strong>。</p>
-<p><strong>执行流程</strong>:
-1. <strong>确认日期</strong>:问用户"哪一天?"(明天 / 后天 / 具体日期)
-2. <strong>拉取已固定事件</strong>(2026-07-13 新增 - 保护其他技能预插的计划):
-   - 调 <code>list-events &lt;日期&gt;</code>
-   - <strong>如无已有事件 → 跳过此步</strong>,直接进入 Step 3
-   - 如有事件,原样展示给用户:
-     <code>🔒 7月13日 已有事件(共 4 条):
-       10:00-11:30 健身 上午·臂
-       15:00-17:00 健身 下午·胸
-       20:00-21:30 健身 晚上·肩+腿
-       22:00-22:30 健身 居家·腹</code>
-   - <strong>询问保留策略</strong>:「以上事件哪些必须保留不可改?」[全保留 / 选几项保留 / 全部可调整]
-     - 用户选"全保留" → 这些时段被锁定
-     - 用户选"全部可调整" → 参与后续流程,可被覆盖
-   - <strong>锁定规则(关键)</strong>:被保留的事件,其整个 <code>[time_start, time_end]</code> 区间不可被新事件占据。
-     后续大块节奏围绕这些区间填空隙。AI 在 Step 7 生成 JSON 时,锁定事件的 time_start 不得出现在新事件列表中。写入时 upsert 按 <code>(date, time_start)</code> 匹配 → 锁定事件命中 UPDATE(原样保留),新事件 INSERT。
-3. <strong>拉取心愿清单</strong>(仅当「备忘录」技能已加载时执行)
-   - 调用备忘录技能的"查心愿"唤醒词 → 拉到心愿列表
-   - 呈现给用户:
-     <code>📌 你心愿里有:
-      1. 减肥(#234,2026-06-01 建)
-      2. 读完《X》(#189,2026-05-15 建)
-      3. 学 Python(#201,2026-05-22 建)</code>
-    - <strong>询问已完成的</strong>:用户可能某些心愿已经做完了(不是"明天的计划",是"已经完成")
-      - 例:「以上有已经完成的吗?完成的帮我删掉 + 触发一次打卡」
-      - 用户标 1 条已完成 → AI 调用备忘录的"删心愿"+"记打卡"两个唤醒词
-    - <strong>询问本次要推进的</strong>:「本次计划要推进哪几条?」[编号 / 全选 / 跳过]
-     - 用户选 0-N 条 → 带入 Step 4
-     - <strong>临时新增心愿</strong>(B 阶段新增):
-      - 询问:「除了清单里这些,还要临时新增几个心愿吗?」[新增 / 跳过]
-      - 用户说"新增 N 个" → 跟用户确认每条心愿内容
-      - 每条调备忘录的 <strong><code>记心愿</code></strong> 唤醒词(不是"新增心愿")→ 拿新 memo_id
-      - 加入到"已选清单"统一列表(跟用户挑的 id 平等处理)
-      - 第一性:复用备忘录现有唤醒词,不引入"商量加心愿"等新概念
-4. <strong>大块节奏</strong>:问"上午/中午/下午/晚上大概做啥?"(4-5 段即可)
-   - 若用户从心愿里挑了 N 条 → AI 主动建议:"心愿 X 安排在哪个时段?"
-   - <strong>已固定事件时段视为已占用</strong>:跳过这些时段,围绕它们填空
-5. <strong>追问细节</strong>:对每段追问具体时间 + 活动名
-   - 例:用户说"上午工作"→ AI 问"几点开始?几点结束?做什么?中途休息吗?"
-   - 例:用户说"中午吃饭"→ AI 问"几点?在家做饭还是外面吃?"
-6. <strong>覆盖校验</strong>:合并已固定事件 + 新规划事件,确认覆盖 00:00~24:00(首段 00:00 起,末段 24:00 止,相邻事件 time_end = 下一条 time_start)
-7. <strong>AI 整理为结构化 JSON 数组</strong>,每条含:
-   <code>json
-   {"time_start":"HH:MM","time_end":"HH:MM","title":"事件名","notes":"细节","category":"分类"}</code>
-   分类参考:分类清单.md
-8. <strong>展示给用户确认</strong>:"我整理了 N 条事件(含 M 条已固定),请确认/调整"
-9. <strong>写入 DB</strong>:
-   <code>bash
-   # 推荐:从文件读(AI 写 plan.json 后调)
-   python3 scripts/schedule_cli.py upsert-plan-events &lt;日期&gt; --json @plan.json
-   # 或 stdin
-   cat plan.json | python3 scripts/schedule_cli.py upsert-plan-events &lt;日期&gt; --json -</code>
-10. <strong>飞书询问</strong>:CLI 自动检测本机 lark-cli:
-    - <strong>已安装 + 已授权</strong> → 询问"是否同步飞书日历?[Y/n]"
-    - <strong>未安装 / 未授权</strong> → 跳过,告知用户"装了飞书后能解锁:1 计划同步 2 拆分钟级事件 3 双向 CRUD"
-11. 用户同意飞书同步 → 飞书侧 create/update/delete 自动跑(diff_and_sync 算法),feishu_event_id 回写 schedule_plans
-12. <strong>心愿排期联动</strong>(B 阶段新增):
-    - 收集"已选清单"所有心愿 id(用户挑的 + 临时新增的)
-    - 调备忘录技能的 <strong><code>心愿排期</code></strong> 唤醒词
-    - 命令:<code>memo_cli.py set-due &lt;id1&gt; &lt;id2&gt; ... --due &lt;YYYY-MM-DD&gt;</code>(YYYY-MM-DD = 步骤 1 确认的日期)
-    - 飞书侧:被选中的心愿 task 自动 due = 那天,飞书日历"待办"区可见
-    - <strong>第一性</strong>:作息 = "什么时候做什么"(飞书日历事件 time_start/end),备忘录 = "哪天做这个心愿"(飞书 task due),两个独立维度
-    - <strong>跳过条件</strong>:用户没挑任何心愿("已选清单"为空)→ 跳过此步</p>
-<p><strong>硬约束</strong>:
-- 联合区间必须 ⊇ [00:00, 23:59](首段 time_start == "00:00",末段 time_end == "23:59",相邻衔接无重叠无空隙)
-- <strong>time_end 禁止使用 24:00</strong>:飞书 ISO 8601 不接受 24:00(会转次日 00:00),写入时 DB 端自动规范化 <code>24:00 → 23:59</code>(见 <code>normalize_time()</code>)
-- 历史数据已批量回填 24:00 → 23:59(一次性脚本 <code>backfill_24h_to_23h59.py</code>)</p>
-<p><strong>失败处理</strong>:
-- 24h 覆盖校验失败 → 提示具体哪条不连续/越界 → 重新生成
-- 飞书同步失败 → DB 写入不回滚 → 飞书侧 list-events 可看到没同步的项
-- <strong>B 阶段新增失败处理</strong>:
-  - 临时新增心愿失败(记心愿返回 error) → 跳过该条,告知用户,建议手动加
-  - 心愿排期失败(备忘录 set-due 返回 error) → DB 写入已成功,飞书侧 due 可能没同步;提示用户跑 <code>备忘录同步</code> 或 <code>心愿排期</code> 重试</p>
-<hr />
-<h3>5. 改计划</h3>
-<p><strong>触发词</strong>:改计划 / 修改一个日程 / 改这个</p>
-<p><strong>执行流程</strong>:
-1. <strong>定位事件</strong>:先调 <code>list-events &lt;日期&gt;</code> 或 <code>query-plans &lt;日期&gt;</code> 列出当日事件 + ID
-2. <strong>问用户改哪条</strong> + 改什么字段(title / notes / category / time_start / time_end / completion / completion_note)
-3. <strong>DB 写入</strong>:
-   <code>bash
-   python3 scripts/schedule_cli.py update-event &lt;id&gt; [--title X] [--notes Y] [--category Z] [--time-start HH:MM] [--time-end HH:MM] [--completion 已完成] [--completion-note "拖延了1h"]</code>
-4. <strong>飞书同步判断</strong>(关键):
-   - 若该事件<strong>未绑飞书</strong>(<code>feishu_event_id</code> 为 NULL)→ 询问"要同步创建飞书事件吗?"
-   - 若该事件<strong>已绑飞书</strong> → 询问"飞书那边也要改吗?"
-5. <strong>改时段的特殊处理</strong>:time_start / time_end 改了 → 飞书日历"无改时间按钮" → 拆为<strong>删旧 event_id + 建新 event_id</strong>,<strong>回写新 feishu_event_id</strong> 到 schedule_plans</p>
-<p><strong>约束</strong>:
-- 单次只能改一个事件(要改多个 → 多次 update-event)
-- 改时段 = 飞书必删旧建新(不是 update),CLI 自动处理
-- completion 字段也可通过"改计划"单独修改,但批量的复盘流程请用"<strong>复盘</strong>"</p>
-<hr />
-<h3>6. 删计划</h3>
-<p><strong>触发词</strong>:删计划 / 不要这条了 / 这条不要</p>
-<p><strong>执行流程</strong>:
-1. <strong>定位事件</strong>:先 <code>list-events &lt;日期&gt;</code> 让用户确认要删哪条
-2. <strong>DB 软删</strong>(is_active=0,不物理删除):
-   <code>bash
-   python3 scripts/schedule_cli.py deactivate-event &lt;id&gt;</code>
-3. <strong>飞书询问</strong>:若该事件已绑飞书 event_id → 询问"飞书那边也删吗?",yes → 调 <code>feishu_delete_event</code> 并清空本地 feishu_event_id
-4. <strong>恢复</strong>:操作规范禁止 DELETE。如需恢复,手动 <code>UPDATE schedule_plans SET is_active=1</code></p>
-<p><strong>约束</strong>:
-- 软删不在 list-events 默认查询结果里(要查 include_inactive=True)
-- list-events 显示 ✗ 前缀的项</p>
-<hr />
-<h3>7. (已合并到 3.1 查询日程)</h3>
-<blockquote>
-<p>原"看计划"小节已合并到 <code>3.1 查询日程</code>,触发词"看日程 / 列出今日日程 / 看一天的安排"统一指向 <code>list-events</code>。</p>
-</blockquote>
-<hr />
-<h3>8. 日程管家同步</h3>
-<p><strong>触发词</strong>:日程管家同步</p>
-<p><strong>执行流程</strong>:
-1. <strong>能力探测</strong>:调 <code>is_feishu_available()</code>(缓存 5 分钟)
-   - 不全可用 → 报错退出,告诉用户安装/授权方法
-2. <strong>Phase 0:反向对账</strong>(2026-07-03 新增)
-   - 拉飞书当日 events(用 <code>+search-event --query "作息管家自动同步"</code>)
-   - 对 DB 端 <code>feishu_event_id</code> 为空的事件做严格匹配:<code>time_start + time_end + title</code> 三项精确匹配
-   - <strong>跨日边界规则</strong>:飞书 end_time "次日 00:00" 等价于 DB "23:59"
-   - 找到唯一匹配 → 询问是否回填 <code>feishu_event_id</code>(默认 Y)→ 写回
-   - 找不到 / 多候选 → 跳过(标 ⚠️)
-3. <strong>拉两侧数据</strong>:
-   - DB 端:当日活跃 events(对账后可能新增了 ID)
-   - 飞书端:<code>+search-event --start &lt;日期&gt; --end &lt;日期&gt; --query "作息管家自动同步"</code>
-4. <strong>diff</strong>:按 (time_start, time_end) 配对
-   - DB 有 + 飞书无 → create
-   - DB 有 + 飞书有 + title/description 变了 → update
-   - DB 无 + 飞书有 → delete
-5. <strong>逐个询问</strong>(决策 C):每条 create/update/delete 单独 [Y/n]
-6. <strong>执行 + 回写</strong>:yes → 调对应飞书 API,feishu_event_id + last_synced_at 回写</p>
-<p><strong>触发场景</strong>:
-- 之前跳过同步想补
-- 飞书手改了想重新对齐
-- 同步失败后重试
-- DB 端 feishu_event_id 缺失需要回填(Phase 0 自动处理)</p>
-<pre><code class="language-bash">python3 scripts/schedule_cli.py feishu-resync &lt;日期&gt;
-</code></pre>
-<hr />
-<h3>9. 飞书探测</h3>
-<p><strong>触发词</strong>:飞书探测 / 飞书能力探测 / 检查飞书</p>
-<p><strong>执行流程</strong>:</p>
-<pre><code class="language-bash">python3 scripts/feishu_sync.py  # self-check 模式
-</code></pre>
-<p><strong>三档探测</strong>:
-1. <strong>lark-cli 安装</strong>:PATH 查找 + 候选路径回退
-2. <strong>已认证</strong>:<code>lark-cli auth status</code> 看 user/bot 至少一个 status=ready
-3. <strong>日历可写</strong>:<code>+agenda</code> 拉到今日议程视为至少有读权限</p>
-<p><strong>返回</strong>:<code>FeishuStatus</code> 对象,含 <code>cli_installed / authenticated / calendar_writable / tier</code>(full/partial/missing)</p>
-<p><strong>体验</strong>:
-- <code>full</code> → 询问"是否同步飞书?"
-- <code>partial</code> → 跳过,提示"lark-cli auth login"
-- <code>missing</code> → 跳过,提示安装价值(<strong>不主动帮装</strong>,给一行 <code>npm i -g lark-cli</code> 用户自决)</p>
-<hr />
-<h2 id="references-目录-7">references/ 目录</h2>
-<table>
-<thead>
-<tr>
-<th>文件</th>
-<th>内容</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>操作规范.md</code></td>
-<td>禁止直连DB、禁止DELETE、全字段校验</td>
-</tr>
-<tr>
-<td><code>同步流程.md</code></td>
-<td>滑动窗口规则、逐条处理、原文写入</td>
-</tr>
-<tr>
-<td><code>数据库结构.md</code></td>
-<td>三表结构、字段说明</td>
-</tr>
-<tr>
-<td><code>接口清单.md</code></td>
-<td>所有接口参数和调用方式</td>
-</tr>
-<tr>
-<td><code>分类心法.md</code></td>
-<td>4 条心法 + 默认归类表 + 申请新分类流程(2026-07-22 新版)</td>
-</tr>
-<tr>
-<td><code>category_whitelist.yaml</code></td>
-<td>二级分类白名单(运行时合并 DEFAULT_WHITELIST)</td>
-</tr>
-<tr>
-<td><code>CLI命令.md</code></td>
-<td>所有CLI命令用法</td>
-</tr>
-<tr>
-<td><code>Cron任务.md</code></td>
-<td>定时任务详细设计</td>
-</tr>
-</tbody>
-</table>
-<footer>
-  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
-  源文件: <code>作息管家/SKILL.md</code><br>
-  工具: <code>html_mirror_generator/generate.py v1</code>
+<details class="skill" id="cmd-11">
+  <summary>
+    <span class="num">11</span>
+    <div class="main">
+      <div class="name">查作息状态</div>
+      <div class="desc">记录数 / 天数 / 日期范围(DB 全局统计)</div>
+    </div>
+    <span class="cli">status</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 无(5 行纯文本,不适合做 HTML 页面)</span>
+    </div>
+    <h4>输出格式</h4>
+    <pre><code>作息管家 数据库状态
+==================================================
+  数据库: /mnt/d/.db/schedule.db
+  总记录数: 1234
+  已记录天数: 89
+  日期范围: 2026-01-01 ~ 2026-07-24
+  最后记录: 2026-07-24 11:00 测试活动</code></pre>
+  </div>
+</details>
+
+<details class="skill" id="cmd-23">
+  <summary>
+    <span class="num">23</span>
+    <div class="main">
+      <div class="name">按 ID 查作息记录</div>
+      <div class="desc">CLI 单条查询。按作息记录 ID 返回全 11 字段</div>
+    </div>
+    <span class="cli">get-record &lt;id&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_detail.html(共用)</span>
+    </div>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收 <code>record_id</code> 整数参数</li>
+      <li>调 <code>get_record_by_id(id)</code> 单条查询</li>
+      <li>返回全 11 字段(id/date/time_*/duration/activity/category/source_contents/source_timestamps/analysis_reasoning/created_at)</li>
+    </ol>
+  </div>
+</details>
+
+<details class="skill" id="cmd-24">
+  <summary>
+    <span class="num">24</span>
+    <div class="main">
+      <div class="name">写作息摘要</div>
+      <div class="desc">CLI 写摘要。按 (date, category) 维度 upsert 一条 daily_summary</div>
+    </div>
+    <span class="cli">add-summary --date D --category C --total-minutes M</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 无(纯写库)</span>
+    </div>
+    <h4>用途</h4>
+    <p>解决孤儿表问题(2026-07-22 后该表原本无任何写入路径)。AI 可在汇总 #4 #5 时主动调此命令把摘要预存到 daily_summary 表,避免每次重算。</p>
+  </div>
+</details>
+
+<!-- ==================== 日程类 ==================== -->
+
+<details class="skill" id="cmd-12">
+  <summary>
+    <span class="num">12</span>
+    <div class="main">
+      <div class="name">查日程 / 看日程</div>
+      <div class="desc">查单日完整事件 + 飞书同步状态(默认)。带具体标题时精确匹配</div>
+    </div>
+    <span class="cli">list-events &lt;日期&gt; 或 search-plan-event --title X</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_list_events.html</span>
+    </div>
+    <h4>两种模式</h4>
+    <ul>
+      <li><b>默认</b>:<code>list-events &lt;日期&gt;</code> 查单日所有事件</li>
+      <li><b>带标题</b>(如"今天有健身吗"):<code>search-plan-event &lt;日期&gt; --title X [--time-start HH:MM --time-end HH:MM]</code> 精确匹配(2026-07-15 起可选按 (date+time+title) 四元组查重)</li>
+    </ul>
+    <h4>返回字段</h4>
+    <p>id / notes / category / feishu_event_id / completion / 飞书同步状态</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-15">
+  <summary>
+    <span class="num">15</span>
+    <div class="main">
+      <div class="name">24h 概览</div>
+      <div class="desc">24h 时间表聚合视图(同小时用 + 合并)</div>
+    </div>
+    <span class="cli">query-plans &lt;日期&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_list_events.html(共用)</span>
+    </div>
+    <p>同 #12 list-events,只是渲染时按小时合并展示。24h 覆盖率一目了然。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-16">
+  <summary>
+    <span class="num">16</span>
+    <div class="main">
+      <div class="name">查多日计划</div>
+      <div class="desc">多日简版视图(不含 notes/completion/飞书状态)</div>
+    </div>
+    <span class="cli">query-plans &lt;日期1,日期2,...&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_list_events.html(共用)</span>
+    </div>
+    <h4>与单日 list-events 区别</h4>
+    <ul>
+      <li>查询多日(逗号分隔)</li>
+      <li>简版输出(不展示 notes / completion / 飞书状态字段,只看时间表)</li>
+      <li>适合周计划 / 月度扫读</li>
+    </ul>
+  </div>
+</details>
+
+<details class="skill" id="cmd-17">
+  <summary>
+    <span class="num">17</span>
+    <div class="main">
+      <div class="name">商量计划</div>
+      <div class="desc">AI + 用户多轮讨论 → 结构化事件 → 24h 录满写入 + 询问飞书同步</div>
+    </div>
+    <span class="cli">upsert-plan-events &lt;日期&gt; --json @plan.json</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_preview.html(预览)→ plan_receipt.html(写入回执)</span>
+    </div>
+    <h4>完整流程</h4>
+    <ol>
+      <li>AI 与用户多轮对话,收集每时段活动</li>
+      <li>AI 整理为 plan.json(events 数组,每条含 time_start/time_end/title/category)</li>
+      <li>渲染 <code>plan_preview.html</code> 让用户确认</li>
+      <li>用户确认后,调 <code>upsert-plan-events</code> 写入(24h 严格衔接,自动校验)</li>
+      <li>写完后渲染 <code>plan_receipt.html</code> 漂亮回执</li>
+      <li>询问是否同步到飞书日历(本机装 lark-cli 时)</li>
+    </ol>
+    <h4>plan.json 示例</h4>
+    <pre><code>{
+  "date": "2026-07-25",
+  "events": [
+    {"time_start": "07:00", "time_end": "08:00", "title": "晨间冥想", "category": "健康.修行"},
+    {"time_start": "08:00", "time_end": "12:00", "title": "写代码", "category": "工作.AI调优"},
+    ...
+  ]
+}</code></pre>
+    <p>详见 <code>templates/plan_preview.html</code> 预览样式。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-18">
+  <summary>
+    <span class="num">18</span>
+    <div class="main">
+      <div class="name">改计划</div>
+      <div class="desc">单条精细修改(含 completion 标记)</div>
+    </div>
+    <span class="cli">update-event &lt;id&gt; [--title/--completion/...]</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_receipt.html(回执,紫色调)</span>
+    </div>
+    <h4>可改字段</h4>
+    <p>title / notes / category / time_start / time_end / completion / completion_note</p>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收 event_id + 要改的字段</li>
+      <li>category 白名单校验(若改 category)</li>
+      <li>UPDATE schedule_plans SET ... + updated_at=CURRENT_TIMESTAMP</li>
+      <li>返回 success + 渲染 <code>plan_receipt.html</code> 紫色调回执</li>
+    </ol>
+  </div>
+</details>
+
+<details class="skill" id="cmd-19">
+  <summary>
+    <span class="num">19</span>
+    <div class="main">
+      <div class="name">删计划</div>
+      <div class="desc">单条软删(is_active=0),询问飞书同步删除</div>
+    </div>
+    <span class="cli">deactivate-event &lt;id&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_receipt.html(共用,action=deactivate)</span>
+    </div>
+    <h4>软删机制</h4>
+    <p>不物理删除,只设 <code>is_active=0</code>。<code>list-events</code> 默认不显示软删项,<code>--include-inactive</code> 可看历史。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-13">
+  <summary>
+    <span class="num">13</span>
+    <div class="main">
+      <div class="name">补计划</div>
+      <div class="desc">单条追加日程事件。<b>幂等</b>(2026-07-15 修复):按 (date+time_start+time_end) 三元组查重</div>
+    </div>
+    <span class="cli">ensure-plan-event &lt;日期&gt; --time-start HH:MM --time-end HH:MM --title X</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_receipt_add.html(回执,绿色调)</span>
+    </div>
+    <h4>与"商量计划"区别</h4>
+    <ul>
+      <li><b>补</b> = 增量 1 条(本命令)</li>
+      <li><b>商量</b> = 完整 24h 规划(#17)</li>
+    </ul>
+    <h4>幂等性(2026-07-15 修复)</h4>
+    <p>按 (date+time_start+time_end) 三元组查重,title 不参与(title 是展示标签不是身份)。同 (date, time) 多次"落地健身计划"只 INSERT 1 条。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-14">
+  <summary>
+    <span class="num">14</span>
+    <div class="main">
+      <div class="name">复盘</div>
+      <div class="desc">对当天日程逐条回顾:哪些做了、哪些没做、为什么 → 写入 completion 字段</div>
+    </div>
+    <span class="cli">list-events → 逐条 update-event --completion</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_review.html(当日复盘视图)</span>
+    </div>
+    <h4>完整流程</h4>
+    <ol>
+      <li>调 <code>list-events &lt;今天&gt;</code> 拉当日所有事件</li>
+      <li>AI 逐条问用户:这条做了吗?(已完成/已完成(超时)/部分完成/未完成/未完成(不可抗力))</li>
+      <li>逐条调 <code>update-event &lt;id&gt; --completion X [--completion-note Y]</code></li>
+      <li>渲染 <code>plan_review.html</code> 当日复盘视图(完成度进度条 + 分类统计)</li>
+    </ol>
+  </div>
+</details>
+
+<details class="skill" id="cmd-20">
+  <summary>
+    <span class="num">20</span>
+    <div class="main">
+      <div class="name">日程管家同步</div>
+      <div class="desc">Phase 0 反向对账 + diff 询问 create/update/delete</div>
+    </div>
+    <span class="cli">feishu-resync &lt;日期&gt;</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: plan_receipt.html(共用)</span>
+    </div>
+    <h4>完整流程</h4>
+    <ol>
+      <li>Phase 0: 拉飞书日历当日事件 vs 本地 DB 事件,做 diff</li>
+      <li>对每条差异询问用户:本地创建 / 本地更新 / 本地软删 / 飞书同步 / 跳过</li>
+      <li>批量执行用户确认的操作</li>
+      <li>渲染 <code>plan_receipt.html</code> 同步结果回执</li>
+    </ol>
+    <h4>前提</h4>
+    <p>本机装了 <code>lark-cli</code> 且已授权(#21 飞书探测可验证)。</p>
+  </div>
+</details>
+
+<!-- ==================== 管理类 ==================== -->
+
+<details class="skill" id="cmd-21">
+  <summary>
+    <span class="num">21</span>
+    <div class="main">
+      <div class="name">飞书探测</div>
+      <div class="desc">三档探测 cli 安装 / auth 授权 / 日历写入权限</div>
+    </div>
+    <span class="cli">python scripts/feishu_sync.py</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 无(CLI 探测工具)</span>
+    </div>
+    <h4>三档探测</h4>
+    <ol>
+      <li><b>cli 安装</b>:本机是否有 <code>lark-cli</code> 可执行</li>
+      <li><b>auth 授权</b>:<code>lark-cli auth</code> 是否已登录</li>
+      <li><b>日历写入权限</b>:能否调 create_event API</li>
+    </ol>
+    <p>三档全通过才能用 #13 #17 #20 的飞书同步能力。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-22">
+  <summary>
+    <span class="num">22</span>
+    <div class="main">
+      <div class="name">初始化数据库</div>
+      <div class="desc">创建三张数据表(records / daily_summary / plans,含 completion 字段)</div>
+    </div>
+    <span class="cli">init</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: 无(一次性建表)</span>
+    </div>
+    <h4>建表清单</h4>
+    <ul>
+      <li><code>schedule_records</code> (11 列:id/date/time_*/duration/activity/category/source_*/analysis_reasoning/created_at)</li>
+      <li><code>daily_summary</code> (4 列:date/category/total_minutes/generated_at)</li>
+      <li><code>schedule_plans</code> (13 列:含 completion / completion_note / is_active / feishu_event_id)</li>
+    </ul>
+    <p>幂等:CREATE TABLE IF NOT EXISTS,可重复执行。</p>
+  </div>
+</details>
+
+</main>
+
+<footer class="footer">
+  <p>本手册按 <a href="../../SKILLS/模板HTML并注入数据/预置HTML并注入数据指导手册.html" target="_blank">《预置 HTML+注入数据指导手册》</a> 设计</p>
+  <p style="margin-top:4px">作息管家 · 24 唤醒词 · 13 HTML 模板 · 11 CLI 命令 · 改动日志见 <a href="CHANGELOG.md">CHANGELOG.md</a></p>
+  <p style="margin-top:4px;color:var(--mute)">手册不是日志,代码变动请提交 <code>CHANGELOG.md</code></p>
 </footer>
+
+</div>
 </body>
 </html>

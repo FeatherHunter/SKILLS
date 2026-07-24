@@ -532,7 +532,8 @@ def get_records_range(start_date, end_date):
 
 def get_record_by_id(record_id):
     """
-    按 ID 查询单条作息记录,返回完整 11 字段 dict;无则返回 None。
+    按 ID 查询单条作息记录,返回完整 13 字段 dict(含 updated_at + edit_count,2026-07-24);
+    无则返回 None。
     100% 字段暴露原则:CLI 把全字段提供给上层,上层自己决定如何渲染。
     """
     conn = get_connection()
@@ -541,13 +542,17 @@ def get_record_by_id(record_id):
         c.execute('''
             SELECT id, date, time_start, time_end, duration_minutes, activity,
                    category, source_contents, source_timestamps,
-                   analysis_reasoning, created_at
+                   analysis_reasoning, created_at, updated_at, edit_count
             FROM schedule_records WHERE id = ?
         ''', (record_id,))
         row = c.fetchone()
         if not row:
             return None
-        return dict(zip(RECORD_KEYS, row))
+        # 13 字段(2026-07-24 加 updated_at + edit_count)
+        _KEYS_13 = ['id', 'date', 'time_start', 'time_end', 'duration_minutes', 'activity',
+                    'category', 'source_contents', 'source_timestamps', 'analysis_reasoning',
+                    'created_at', 'updated_at', 'edit_count']
+        return dict(zip(_KEYS_13, row))
     finally:
         conn.close()
 

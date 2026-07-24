@@ -20,7 +20,7 @@ def _run(args, db_path):
     """跑 CLI + 拿 JSON 输出"""
     env = os.environ.copy()
     env["SKILLS_DB_PATH"] = str(db_path)
-    cwd = str(SCRIPTS_DIR.parent)  # 作息管家目录
+    cwd = str(SCRIPTS_DIR.parent)
     result = subprocess.run(
         [sys.executable, CLI] + args,
         capture_output=True, text=True, env=env, timeout=30, cwd=cwd,
@@ -62,9 +62,9 @@ def test_correct_record_single_field(tmp_path):
     """改 1 个字段 → 返回 diff 含 1 条"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, err, rc = _run(["correct-record", str(rid),
+    out, _, _ = _run(["correct-record", str(rid),
                        "--category", "工作.开发"], db)
-    assert out, f"err={err} rc={rc}"
+    assert out is not None
     assert out["status"] == "ok"
     assert "category" in out["data"]["diff"]
     assert out["data"]["diff"]["category"]["old"] == "工作.AI调优"
@@ -144,7 +144,7 @@ def test_correct_record_no_args_shows_usage(tmp_path):
 
 
 def test_correct_record_nonexistent_id(tmp_path):
-    """不存在 id 报错(不抛栈)"""
+    """不存在 id 报错"""
     db = tmp_path / "test.db"
     _setup_with_one_record(db)
     out, _, _ = _run(["correct-record", "999", "--category", "工作.开发"], db)
@@ -197,32 +197,28 @@ def test_correct_record_json_parse_error(tmp_path):
     assert "json" in out["message"].lower() or "JSON" in out["message"]
 
 
-def test_correct_record_unknown_arg(tmp_path):
-    """未知参数报错"""
+def test_correct_record_unknown_field(tmp_path):
+    """不认识的字段名报错(提示合法字段列表)"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
     out, _, _ = _run(["correct-record", str(rid), "--unknown", "x"], db)
     assert out and out["status"] == "error"
-    assert "未知参数" in out["message"]
+    assert "非法字段" in out["message"]
+    assert "category" in out["message"]  # 应展示合法字段列表
 
 
 # ===== main 分发 =====
 
-def test_correct_command_registered():
+def test_correct_command_registered(tmp_path):
     """'correct-record' 命令已注册到 main 分发"""
-    db = Path("/tmp/test_register.db")
-    if db.exists():
-        db.unlink()
-    db.parent.mkdir(parents=True, exist_ok=True)
+    db = tmp_path / "test.db"
     env = os.environ.copy()
     env["SKILLS_DB_PATH"] = str(db)
     cwd = str(SCRIPTS_DIR.parent)
-    # 跑 init 让 main 识别到 init 命令
     r = subprocess.run(
         [sys.executable, CLI, "correct-record"],
         capture_output=True, text=True, env=env, timeout=30, cwd=cwd,
     )
-    # 应该返回 status=error + 用法提示(不是"未知命令")
     out = r.stdout
-    assert "未知命令" not in out, f"correct-record 未注册到 main: {out}"
+    assert "未知命令" not in out, f"correct-record 未注册到 main: {out[:200]}"
     assert "用法" in out

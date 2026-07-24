@@ -209,13 +209,13 @@ def _stats_expiring_query(conn, days=30, expired_only=False, category_id=None, l
             params.extend(ids)
 
     if expired_only:
-        conditions.append("julianday(il.expiration_date) - julianday('now') < 0")
+        conditions.append("date(il.expiration_date) < date('now')")
 
     where_clause = " AND ".join(conditions)
     query = f"""
         SELECT i.id, i.name, c.name as category, il.location, il.quantity,
                il.location_status, il.expiration_date,
-               CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) as days_left
+               CAST(julianday(date(il.expiration_date)) - julianday(date('now')) AS INTEGER) as days_left
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
         LEFT JOIN categories c ON i.category_id = c.id

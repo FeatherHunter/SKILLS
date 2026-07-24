@@ -2926,9 +2926,7 @@
       }, 2000);
     }
 
-    // v1.24.13:active 在 scroll 中不更新(连续跳变)
-    //   active 用 debounce:scroll 停 200ms 后才更新一次
-    //   band 跟 scroll 一直实时跟随(用户要的是 band 平滑,active step-by-step)
+    // 滚动节流 + active 实时跟 scroll(v1.24.14 array 等份映射天然不'跳变')
     window.addEventListener('scroll', () => {
       showAnchorRail();
       hideAnchorRail();
@@ -2936,13 +2934,9 @@
       railScrollRaf = requestAnimationFrame(() => {
         updateAnchorRailPositions();
         if (typeof updateActiveBand === 'function') updateActiveBand();
+        if (typeof updateActiveFromScroll === 'function') updateActiveFromScroll();
         railScrollRaf = null;
       });
-      // active debounce:scroll 停 200ms 才更新(防跳变)
-      if (window._activeUpdateTimer) clearTimeout(window._activeUpdateTimer);
-      window._activeUpdateTimer = setTimeout(() => {
-        if (typeof updateActiveFromScroll === 'function') updateActiveFromScroll();
-      }, 200);
     }, { passive: true });
 
     window.addEventListener('resize', () => updateAnchorRailPositions());

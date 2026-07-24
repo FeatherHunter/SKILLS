@@ -1,6 +1,6 @@
 ---
 name: SKILL开发总纲V1.0
-description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式。不提供完整代码示例,只给原则 + 可加载资产。"
+description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式。不提供完整 Skill 代码示例(避免硬编码影响 AI 自由),只给原则 + 可加载的工具资产(_assets/)。SKILL 实例代码由各 skill 自己维护。"
 ---
 
 # SKILL 开发总纲 V1.0
@@ -25,6 +25,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | [03-触发词设计v2.md](./03-触发词设计v2.md) | 设计 SKILL.md 触发词 |
 | [04-可视化与注入v2.md](./04-可视化与注入v2.md) | 设计 / 改造 HTML 模板 |
 | [05-工程仪式.md](./05-工程仪式.md) | 动手前最后一道防线 |
+| [06-附录.md](./06-附录.md) | 演化规则(RULE Forms)| 改造前评估 |
 | [README.md](./README.md) | 人类阅读版目录 |
 | [_assets/style.css](./_assets/style.css) | HTML 模板设计令牌 |
 | [_assets/injector.py](./_assets/injector.py) | 占位符注入函数 |

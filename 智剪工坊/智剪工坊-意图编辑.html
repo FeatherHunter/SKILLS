@@ -2844,43 +2844,51 @@
     }
 
     function setupAnchorObserver() {
-      if (anchorObserver) { anchorObserver.disconnect(); anchorObserver = null; }
       if (!anchorItems.length) return;
-      anchorObserver = new IntersectionObserver(() => {
-        const centerY = window.scrollY + window.innerHeight / 2;
-        let closest = null;
-        let closestDist = Infinity;
-        anchorItems.forEach(item => {
-          const rect = item.el.getBoundingClientRect();
-          const elCenter = rect.top + window.scrollY + rect.height / 2;
-          const dist = Math.abs(elCenter - centerY);
-          if (dist < closestDist) { closestDist = dist; closest = item; }
-        });
-        if (closest) {
-          anchorItems.forEach(item => item.dot.classList.remove('active'));
-          closest.dot.classList.add('active');
+      // v1.24.7 fix:不用 IntersectionObserver(只在 item 进入/离开时 trigger,不平滑跟随 scroll)
+      // 改用 scroll listener + rAF → 同步调 updateActiveHighlight
+      if (typeof updateActiveHighlight === 'function') updateActiveHighlight();
+    }
+
+    function updateActiveHighlight() {
+      if (!anchorItems.length) return;
+      const railH = anchorRail.getBoundingClientRect().height;
+      const count = anchorItems.length;
+      const viewportCenterY = window.scrollY + window.innerHeight / 2;
+      const viewportTopY = window.scrollY;
+      const viewportBottomY = window.scrollY + window.innerHeight;
+
+      // 1) active dot = 视口中央 Y 最接近的 anchor item
+      let activeIdx = 0;
+      let activeDist = Infinity;
+      anchorItems.forEach((item, i) => {
+        const rect = item.el.getBoundingClientRect();
+        const elCenter = rect.top + window.scrollY + rect.height / 2;
+        const dist = Math.abs(elCenter - viewportCenterY);
+        if (dist < activeDist) { activeDist = dist; activeIdx = i; }
+      });
+      anchorItems.forEach((item, i) => {
+        item.dot.classList.toggle('active', i === activeIdx);
+      });
+
+      // 2) active-band = 视口实际可见 anchor items 范围(按 array index 视觉位置)
+      let firstVisible = -1, lastVisible = -1;
+      anchorItems.forEach((item, i) => {
+        const rect = item.el.getBoundingClientRect();
+        const elTop = rect.top + window.scrollY;
+        const elBottom = elTop + rect.height;
+        if (elBottom > viewportTopY && elTop < viewportBottomY) {
+          if (firstVisible === -1) firstVisible = i;
+          lastVisible = i;
         }
-        // v1.23:active-band 用"第一个→最后一个锚点"范围映射视口
-        // 跟圆点同坐标系,不再用 scrollY/scrollHeight (会跟圆点分裂)
-        const band = anchorRail.querySelector('.active-band');
-        if (band && anchorItems.length) {
-          // 重算 first/last center (因为视频展开/折叠会让范围变化)
-          const centers = anchorItems.map(item => {
-            const rect = item.el.getBoundingClientRect();
-            return rect.top + window.scrollY + rect.height / 2;
-          });
-          const firstCenter = centers[0];
-          const lastCenter = centers[centers.length - 1];
-          const range = Math.max(1, lastCenter - firstCenter);
-          const railH = anchorRail.getBoundingClientRect().height;
-          // 视口范围 [scrollY, scrollY+innerHeight] 映射到 first/last 比例
-          const topRatio = Math.max(0, Math.min(1, (window.scrollY - firstCenter) / range));
-          const bottomRatio = Math.max(0, Math.min(1, (window.scrollY + window.innerHeight - firstCenter) / range));
-          band.style.top = (topRatio * railH) + 'px';
-          band.style.height = Math.max(20, (bottomRatio - topRatio) * railH) + 'px';
-        }
-      }, { root: null, rootMargin: '-30% 0px -30% 0px', threshold: 0 });
-      anchorItems.forEach(item => anchorObserver.observe(item.el));
+      });
+      const band = anchorRail.querySelector('.active-band');
+      if (band && firstVisible !== -1) {
+        const top = (firstVisible + 0.5) / count * railH;
+        const bottom = (lastVisible + 0.5) / count * railH;
+        band.style.top = Math.max(0, top) + 'px';
+        band.style.height = Math.max(20, bottom - top) + 'px';
+      }
     }
 
     function showAnchorRail() {
@@ -2897,13 +2905,14 @@
       }, 2000);
     }
 
-    // 滚动节流 + 自动显示/隐藏 (Apple:不打扰,只在用户有滚动意图时显示)
+    // 滚动节流 + 自动显示/隐藏 + active 同步 (Apple:不打扰,只在用户有滚动意图时显示)
     window.addEventListener('scroll', () => {
       showAnchorRail();
       hideAnchorRail();
       if (railScrollRaf) return;
       railScrollRaf = requestAnimationFrame(() => {
         updateAnchorRailPositions();
+        if (typeof updateActiveHighlight === 'function') updateActiveHighlight();
         railScrollRaf = null;
       });
     }, { passive: true });

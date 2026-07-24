@@ -1,0 +1,43 @@
+{
+  "status": "ok",
+  "data": {
+    "entity": {
+      "type": "定时复盘",
+      "title": "⏰ 查定时复盘",
+      "subtitle": "mavis cron 状态 + 定时任务配置",
+      "section_title": "定时任务配置"
+    },
+    "kpis": [
+      {"label":"任务状态", "value":"运行中", "extra":"ACTIVE"},
+      {"label":"执行频率", "value":"每天 23:00", "extra":"时区 UTC+8"},
+      {"label":"已运行", "value":"15 天", "extra":"无失败"},
+      {"label":"下次执行", "value":"今晚 23:00", "extra":"约 4h 后"}
+    ],
+    "fields": [
+      {"key":"任务 ID", "value":"cron-caloriereview-001"},
+      {"key":"命令", "value":"python3 scripts/calorie_tracker.py review --full"},
+      {"key":"Schedule", "value":"0 23 * * *"},
+      {"key":"时区", "value":"Asia/Shanghai"},
+      {"key":"创建时间", "value":"2026-07-10 09:15:00"},
+      {"key":"最后执行", "value":"2026-07-23 23:00:12"},
+      {"key":"最后状态", "value":"✓ 成功 (8.2s)"},
+      {"key":"下次执行", "value":"2026-07-24 23:00:00"}
+    ],
+    "raw": {
+      "id": "cron-caloriereview-001",
+      "name": "卡路里复盘",
+      "schedule": "0 23 * * *",
+      "timezone": "Asia/Shanghai",
+      "command": "python3 scripts/calorie_tracker.py review --full",
+      "last_run": "2026-07-23T23:00:12+08:00",
+      "last_status": "success",
+      "next_run": "2026-07-24T23:00:00+08:00",
+      "active": true
+    },
+    "meta": {
+      "fetched_at": "2026-07-24 18:30:00",
+      "source": "mavis cron list"
+    }
+  },
+  "message": "已生成查定时复盘 报告"
+}

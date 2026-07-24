@@ -2862,30 +2862,26 @@
     }
 
     function updateActiveFromScroll() {
-      // v1.24.14:按 array 顺序等份映射(scrollProgress / count * index)
+      // v1.24.20:active = 当前 viewport 可见最顶的 anchor item
       //
-      // 旧 v1.24.11/13 用 viewportCenterY 找最近 anchor item,
-      //   因为素材section 包含视频列表(高 ~580px),素材section 中心 = 视频列表中心,
-      //   scroll 一开始 viewportCenterY 已经到视频列表中段 → active 直接跳到 #1 而非'素材'
+      // 算法:找第一个 anchor item 的 rect.top >= 50(topbar 高度 + 6px 缓冲)
+      //   rect.top = anchor 顶部在 viewport 中的 Y
+      //   rect.top >= 50 → anchor 顶部在视口上方 50px 之下(可见)
+      //   第一个满足的就是"当前可见最顶"
       //
-      // 改:ratio = scrollY / totalScroll(0-1),idx = floor(ratio * count)
-      //   scroll 0% → idx 0 (项目)
-      //   scroll 25% → idx 2 (#1)
-      //   scroll 100% → idx count-1 (结尾)
-      // 视频展开/折叠不影响比例计算
+      // 为什么不用 v1.24.14/15 等份或 v1.24.11 viewportCenterY:
+      //   - 等份:scroll 一点 → ratio ≈ 0.05 → closest = 项目,不精准
+      //   - viewportCenterY:scroll 一点 → 中央 ≈ 视频 #1(最近),不精准
+      //   - 新算法:scroll 一点 → 找第一个 rect.top >= 50 → 素材 ✓
       if (!anchorItems.length) return;
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalScroll <= 0) return;
-      const ratio = window.scrollY / totalScroll;
-      const count = anchorItems.length;
-      // anchor item i 的 target ratio = (i + 0.5) / count
-      // 找 ratio 最接近哪个 item
-      let activeIdx = 0;
-      let activeDist = Infinity;
-      for (let i = 0; i < count; i++) {
-        const targetRatio = (i + 0.5) / count;
-        const dist = Math.abs(targetRatio - ratio);
-        if (dist < activeDist) { activeDist = dist; activeIdx = i; }
+      const topbarOffset = 50;  // 跳过 iOS topbar 44px,留 6px 缓冲
+      let activeIdx = anchorItems.length - 1;  // 默认最后(滚到底时)
+      for (let i = 0; i < anchorItems.length; i++) {
+        const rect = anchorItems[i].el.getBoundingClientRect();
+        if (rect.top >= topbarOffset) {
+          activeIdx = i;
+          break;
+        }
       }
       anchorItems.forEach((item, i) => {
         item.dot.classList.toggle('active', i === activeIdx);

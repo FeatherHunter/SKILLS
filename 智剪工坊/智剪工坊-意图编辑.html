@@ -2717,7 +2717,6 @@
     const anchorRail = document.getElementById('anchor-rail');
     let anchorItems = [];  // [{el, label, dot}]
     let anchorObserver = null;
-    let anchorStuckByClick = false;  // v1.24.10:click 后设置,aside 永久 visible 不被 hide
     let railScrollRaf = null;
     let railHideTimer = null;
 
@@ -2815,11 +2814,10 @@
         anchorItems.push({el: sec, label, dot});
       });
 
-      // v1.24.8:统一给 anchorItems 已建立的 dot 全部加 active class 切换 click
-      // 此时 sections + videos + tail 都已经 push 进 anchorItems
-      anchorItems.forEach((item, i) => {
-        item.dot.addEventListener('click', () => setActiveDotIndex(i));
-      });
+      // v1.24.11:click 不再单独 setActiveDotIndex
+      //   → scrollTo 触发的 scroll listener 会自动调 updateActiveFromScroll,
+      //     scroll 后 active 自然移动到 viewport 中央对应的 anchor
+      // 这样:active 永远反映'现在 viewport 看到哪儿',点击也是同一行为
 
       updateAnchorRailPositions();
       setupAnchorObserver();
@@ -2856,14 +2854,23 @@
       if (typeof updateActiveBand === 'function') updateActiveBand();
     }
 
-    function setActiveDotIndex(idx) {
-      // v1.24.8 fix:active dot 只跟 click 切换,不被 scroll 改变
+    function updateActiveFromScroll() {
+      // v1.24.11:active 跟 viewport 中央(Apple Music 风格)
+      // 视口中央 Y = window.scrollY + window.innerHeight / 2
+      // 找 anchor item 中心 Y 最接近视口中央的那个 → active class
+      if (!anchorItems.length) return;
+      const viewportCenterY = window.scrollY + window.innerHeight / 2;
+      let activeIdx = 0;
+      let activeDist = Infinity;
       anchorItems.forEach((item, i) => {
-        item.dot.classList.toggle('active', i === idx);
+        const rect = item.el.getBoundingClientRect();
+        const elCenter = rect.top + window.scrollY + rect.height / 2;
+        const dist = Math.abs(elCenter - viewportCenterY);
+        if (dist < activeDist) { activeDist = dist; activeIdx = i; }
       });
-      // v1.24.10:click 后 anchorStuckByClick=true,aside 永久可见不隐
-      // 这样 active dot 不被 2 秒 hide 机制擦掉
-      anchorStuckByClick = true;
+      anchorItems.forEach((item, i) => {
+        item.dot.classList.toggle('active', i === activeIdx);
+      });
     }
 
     function updateActiveBand() {
@@ -2900,8 +2907,6 @@
     }
     function hideAnchorRail() {
       if (!anchorRail) return;
-      // v1.24.10:click 锁定后永久显示,不进 hide 定时器
-      if (anchorStuckByClick) return;
       if (railHideTimer) clearTimeout(railHideTimer);
       railHideTimer = setTimeout(() => {
         if (anchorRail.matches(':hover')) return;
@@ -2909,13 +2914,14 @@
       }, 2000);
     }
 
-    // 滚动节流 + 自动显示/隐藏 + active-band 同步(active dot 不跟 scroll,只跟 click)
+    // 滚动节流 + 自动显示/隐藏 + active 跟 scroll(Apple Music 风格)
     window.addEventListener('scroll', () => {
       showAnchorRail();
       hideAnchorRail();
       if (railScrollRaf) return;
       railScrollRaf = requestAnimationFrame(() => {
         updateAnchorRailPositions();
+        if (typeof updateActiveFromScroll === 'function') updateActiveFromScroll();
         if (typeof updateActiveBand === 'function') updateActiveBand();
         railScrollRaf = null;
       });

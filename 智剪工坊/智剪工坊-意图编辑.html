@@ -500,7 +500,7 @@
     button.exclude-btn:hover { background: var(--gray-fill); }
     button.exclude-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
     .actions {
-      position: sticky; bottom: 0; padding: 12px 0; margin-top: 20px;
+      position: sticky; bottom: 0; padding: 12px 20px; margin-top: 20px;
       background: rgba(255, 255, 255, 0.72);
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1298,10 +1298,15 @@
           const card = document.createElement('div');
           card.innerHTML = renderVideoCard(entry, i);
           videoListEl.appendChild(card);
-        // v1.22 构建/重建锚点导航条 (每次视频列表刷新后调用)
-        if (typeof buildAnchorRail === 'function') {
-          // 延迟一帧,等所有 card 完成布局后再算位置
-          requestAnimationFrame(buildAnchorRail);
+        });
+        // v1.24.1 fix:buildAnchorRail 挪出 forEach 体外,无条件 schedule 一次
+        // (原 BUG:写在 forEach 体内 → 每个 entry 都 schedule 一次,浪费 + 状态不一致;
+        //          0 个视频时根本不调 → aside 永远 opacity:0 不可见)
+      }
+      // v1.22 构建/重建锚点导航条 (每次视频列表刷新后调用)
+      if (typeof buildAnchorRail === 'function') {
+        // 延迟一帧,等所有 card 完成布局后再算位置
+        requestAnimationFrame(buildAnchorRail);
         }
         });
         // 绑定折叠：点 ▶ 按钮，或点 video-head 非按钮/非缩略图区域

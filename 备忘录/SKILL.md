@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.0**(2026-07-24 发布 · 9 个 commit 闭环 · git tag `v1.0.0`)
+> **当前版本:1.0.1**(2026-07-24 发布 · 10 个 commit · git tag `v1.0.1`)
+> v1.0.1 修复 wish-complete 默认筛条件过严的 bug(详见 CHANGELOG.md)
 > 详见 `CHANGELOG.md`
 
 ## 强制性规定(最高优先级)
@@ -207,15 +208,22 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}`
   - **AI 推荐流程**:跑到 `add 心愿` 批量场景 → **不直接**批量 `set-due` → 先调 `wish-batch-plan --suggest-due <识别到的锚点> --html` → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 `set-due` 命令
 
-### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML)
+### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复)
 - 触发词:完成心愿(**别名:完成打卡 · 2026-07-24 加**)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」
-- 命令:`script/memo_cli.py wish-complete [--ids 1 2 3] [--all] [--content "打卡内容"] [--html]`
+- 命令:`script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]`
 - **类型**:过程型 HTML(同 wish-batch-plan 模式)
 - **第一性**:complete-wish 是原子操作(删心愿 + 建打卡),用户先在 HTML 选要完成的 + 填打卡内容,采纳后给 AI 批量调
-- **默认(无 --all)**:仅未排期 + 已过期排期的心愿(优先用户想完成的)
-- **--all**:含全部心愿
-- **--ids**:显式指定(与 --all 互斥,硬规则)
-- **--content**:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)
+- **v1.0.1 修复**(默认语义回归第一性):
+  - 旧默认 = `NOT IN reminders AND due IS NULL OR due < today` → 用户"我加的 20 条心愿,wish-complete 给 0 条"
+  - 新默认 = 所有 `category='心愿'` 的 · 让用户在 HTML 里勾(过程型 HTML 的本职)
+  - 真理:**CLI 不应该替用户预设决策,该预设归 UI**
+- **v1.0.1 命令选项**:
+  - 默认(不加 flag):全部心愿 · 让用户在 HTML 里勾
+  - **`--only-overdue`**:仅未排期+已过期排期(v1.0.0 默认行为迁至此显式 flag)
+  - `--all`:**deprecated** · 等同不加 flag · 仅保留向后兼容
+  - `--ids N M ...`:显式指定(与 `--only-overdue`/`--all` 互斥)
+  - `--content X`:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)
+  - `--html`:生成过程型 HTML
 - 模板:`templates/wish_complete.html`(独立,不与 wish_plan 复用)
 - 渲染器:`script/memo_render.py:render_wish_complete`
 - **4 部分 prompt**(采纳按钮复制):

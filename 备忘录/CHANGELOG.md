@@ -77,6 +77,42 @@
 
 ---
 
+## [1.0.1] · 2026-07-24
+
+> **bug fix**(语义化版本规则):向下兼容,修 wish-complete 默认筛条件过严的回归第一性 bug
+> 来源:实际用户场景触发(AGENT 调用 wish-complete 返回 0 条,但 search -c 心愿 有 20 条)
+
+### Fixed
+- **`wish-complete` 默认筛条件过严**(过程型 HTML 第一性回归)· `script/memo_cli.py:wish_complete`
+  - 旧 SQL(过严):
+    ```sql
+    WHERE category='心愿'
+      AND id NOT IN (SELECT note_id FROM reminders)   -- 排除有提醒的心愿
+      AND (due IS NULL OR due < date('now','localtime'))   -- 排除未来排期
+    ```
+  - 新 SQL(回归第一性):
+    ```sql
+    WHERE category='心愿'   -- 只按分类,余下让用户在 HTML 里勾选
+    ```
+  - **第一性**:**过程型 HTML 的核心价值就是让用户在 UI 决定,CLI 不应该预设决策**。
+  - 影响:用户有 20 条心愿 → 旧默认推 0 条 → 新默认推 20 条
+  - 加 `--only-overdue` flag(显式 opt-in):保留 v1.0.0 默认行为,但需要用户显式选
+  - `--all` 标记 deprecated(等同默认):仅保留向后兼容
+
+### Deprecated
+- `--all` flag(等同默认行为,保留仅作向后兼容提示)
+
+### Tests
+- `tests/test_wish_complete.py` 13 用例 → 关键回归测试:
+  - `test_default_lists_all_wishes` 默认列 3 条(覆盖未来/未排期/过期)
+  - `test_only_overdue_lists_unset_and_overdue` 显式 flag 只列 2 条(未排期+过期)
+  - `test_wish_with_reminder_still_listed` ⭐ 关键:心愿绑提醒后默认仍列出
+  - `test_only_overdue_with_reminder` `--only-overdue` 也不排除有提醒的心愿
+  - `test_ids_and_only_overdue_mutually_exclusive` 新互斥规则
+- 全量回归:72/72 pytest 通过(原 68 + 新增 4)
+
+---
+
 ## [Unreleased]
 
 ### Added

@@ -53,18 +53,25 @@ def seeded_db(env_with_tmp_db):
 
 
 class TestWishCompleteContract:
-    def test_default_lists_unset_and_overdue(self, seeded_db):
-        """默认:未排期 + 已过期排期(2 条);不含未来排期"""
+    def test_default_lists_all_wishes(self, seeded_db):
+        """v1.0.1:默认列出所有心愿(3 条)· 过程型 HTML 在 UI 决定勾哪些"""
         rc, out, _ = _run_cli("wish-complete", env=seeded_db)
         assert rc == 0
         data = json.loads(out)
         assert data["status"] == "ok"
-        items_data = data["data"]
-        contents = {x["content"] for x in items_data}
-        assert contents == {"未排期心愿", "过期心愿"}
+        contents = {x["content"] for x in data["data"]}
+        assert contents == {"未来心愿", "未排期心愿", "过期心愿"},             f"v1.0.1 默认应列所有心愿,实际: {contents}"
 
-    def test_all_includes_future_wish(self, seeded_db):
-        """--all:含全部 3 个心愿"""
+    def test_only_overdue_lists_unset_and_overdue(self, seeded_db):
+        """--only-overdue:仅未排期+已过期(2 条)· v1.0.0 默认行为迁至此 flag"""
+        rc, out, _ = _run_cli("wish-complete", "--only-overdue", env=seeded_db)
+        assert rc == 0
+        data = json.loads(out)
+        contents = {x["content"] for x in data["data"]}
+        assert contents == {"未排期心愿", "过期心愿"},             f"--only-overdue 期望 2 条,实际: {contents}"
+
+    def test_all_deprecated_equals_default(self, seeded_db):
+        """--all:deprecated · 等同默认(3 条心愿)"""
         rc, out, _ = _run_cli("wish-complete", "--all", env=seeded_db)
         assert rc == 0
         data = json.loads(out)
@@ -95,9 +102,46 @@ class TestWishCompleteContract:
         assert rc == 1
         assert "互斥" in json.loads(out)["message"]
 
+    def test_ids_and_only_overdue_mutually_exclusive(self, seeded_db):
+        """v1.0.1:新增 --ids 与 --only-overdue 互斥"""
+        rc, out, _ = _run_cli("wish-complete", "--ids", "1", "--only-overdue", env=seeded_db)
+        assert rc == 1
+        assert "互斥" in json.loads(out)["message"]
+
+    def test_wish_with_reminder_still_listed(self, seeded_db):
+        """v1.0.1 关键回归测试:心愿 + 已设提醒 → 默认列出(不再被 NOT IN reminders 排除)
+
+        真实场景触发的 bug:用户过去用 set-due 或 remind 让部分心愿进了 reminders 表,
+        旧默认 NOT IN reminders 把这些都过滤掉,导致 wish-complete 推 0 条推荐。
+        v1.0.1 第一性:让用户在 HTML 里自己勾。
+        """
+        # 给"未排期心愿"加一个提醒
+        rc, out, _ = _run_cli("wish-complete", env=seeded_db)
+        wish_id = next(x["id"] for x in json.loads(out)["data"] if x["content"] == "未排期心愿")
+        rc, _, _ = _run_cli("remind", str(wish_id), "--at", "2027-01-01 09:00",
+                            "--content", "测一下", env=seeded_db)
+        assert rc == 0
+        # 此时 3 条心愿里"未排期心愿"已绑提醒
+        # 默认 wish-complete 必须仍列 3 条(不能因为有提醒就排除)
+        rc, out, _ = _run_cli("wish-complete", env=seeded_db)
+        data = json.loads(out)
+        contents = {x["content"] for x in data["data"]}
+        assert contents == {"未来心愿", "未排期心愿", "过期心愿"},             f"v1.0.1 关键回归失败:有提醒的心愿被默认排除 → {contents}"
+
+    def test_only_overdue_with_reminder(self, seeded_db):
+        """--only-overdue 也需要列出有提醒的心愿(v1.0.1 修复同时改)"""
+        rc, out, _ = _run_cli("wish-complete", "--only-overdue", env=seeded_db)
+        wish_id = next(x["id"] for x in json.loads(out)["data"] if x["content"] == "未排期心愿")
+        rc, _, _ = _run_cli("remind", str(wish_id), "--at", "2027-01-01 09:00",
+                            "--content", "测一下", env=seeded_db)
+        assert rc == 0
+        rc, out, _ = _run_cli("wish-complete", "--only-overdue", env=seeded_db)
+        contents = {x["content"] for x in json.loads(out)["data"]}
+        assert "未排期心愿" in contents, "--only-overdue 也应该列有提醒的未排期心愿"
+
     def test_content_default_echo(self, seeded_db):
         """--content 默认值应在 data.default_content 出现"""
-        rc, out, _ = _run_cli("wish-complete", "--all", "--content", "今天完成了", env=seeded_db)
+        rc, out, _ = _run_cli("wish-complete", "--content", "今天完成了", env=seeded_db)
         assert rc == 0
 
 

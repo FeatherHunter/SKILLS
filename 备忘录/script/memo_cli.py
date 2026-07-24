@@ -841,20 +841,34 @@ def wish_batch_plan(args):
 
 
 def wish_complete(args):
-    """心愿完成向导(过程型 HTML 前置数据收集)
+    """心愿完成向导(过程型 HTML 前置数据收集) · v1.0.1 修复第一性
 
     设计: 原子转换(删除心愿 + 建打卡)· 用户在 HTML 选要完成的 + 填打卡内容
     命令:`memo_cli.py complete-wish <id> [--content <打卡内容>]`
           (每次只 1 个,无 batch subcommand)
 
     参数:
-      --ids: 显式指定心愿望完成列表(与 --all 互斥,硬规则)
-      --all: 含所有心愿(默认仅未完成的;排期已过期的心愿优先)
+      --ids: 显式指定心愿望完成列表(与 --only-overdue 互斥,硬规则)
+      --only-overdue: 仅列未排期+已过期排期的心愿(v1.0.1 默认行为迁至此 flag)
+      --all: **deprecated** · 等同于不加 flag(所有心愿),保留向后兼容
       --content: 默认打卡内容(应用到所有勾选,可在 HTML 逐条覆盖)
       --html: 生成过程型 HTML
+
+    v1.0.1 修复:
+      旧默认行为 = (NOT IN reminders) AND (due IS NULL OR due < today)
+        → 用户视角:'我加的 20 条心愿,wish-complete 给我 0 条推荐'
+      新默认行为 = 所有 category='心愿' 的备注
+        → 用户视角:'打开 HTML 我看到所有 20 条心愿,自己勾要完成的'
+      第一性:过程型 HTML 的价值就是让用户在 HTML 里勾选,
+        不应该让 CLI 替他预设。
     """
     ids = getattr(args, "ids", None)
+    only_overdue = getattr(args, "only_overdue", False)
     include_all = getattr(args, "all", False)
+
+    # 互斥规则: --ids 不能与 --only-overdue 同时,也不与 --all 同时
+    if ids is not None and only_overdue:
+        error_json("--ids 与 --only-overdue 互斥,只可选其一")
     if ids is not None and include_all:
         error_json("--ids 与 --all 互斥,只可选其一")
     default_content = getattr(args, "content", None) or None
@@ -869,17 +883,23 @@ def wish_complete(args):
             missing = [i for i in ids if i not in [r["id"] for r in rows]]
             if missing:
                 error_json(f"这些 id 不是心愿或不存在: {missing}")
-        else:
-            # 默认:未排期 + 已过期排期的(提醒用户想完成)
+        elif only_overdue:
+            # 仅未排期 + 已过期排期(迁自旧默认行为)
             sql = """
                 SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes
                 WHERE category='心愿'
-                  AND id NOT IN (SELECT note_id FROM reminders)
+                  AND (due IS NULL OR due < date('now','localtime'))
+                ORDER BY updated_at DESC LIMIT 200
             """
-            if not include_all:
-                # 仅 due IS NULL 或 due < today (过期)
-                sql += " AND (due IS NULL OR due < date('now','localtime'))"
-            sql += " ORDER BY updated_at DESC LIMIT 50"
+            cur = conn.execute(sql)
+            rows = cur.fetchall()
+        else:
+            # v1.0.1 新默认:列出所有心愿(过程型 HTML 由用户在 UI 内决定)
+            sql = """
+                SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes
+                WHERE category='心愿'
+                ORDER BY updated_at DESC LIMIT 200
+            """
             cur = conn.execute(sql)
             rows = cur.fetchall()
 
@@ -893,6 +913,12 @@ def wish_complete(args):
             "selected": True,
         } for r in rows]
 
+        # message 描述当前过滤模式
+        if only_overdue:
+            mode_desc = "(仅未排期+已过期)"
+        else:
+            mode_desc = "(全部 · 过程型 HTML 让用户在 UI 决定)"
+
         payload = {
             "status": "ok",
             "data": {
@@ -902,7 +928,7 @@ def wish_complete(args):
                 "default_content": default_content,
                 "items": items,
             },
-            "message": f"找到 {len(items)} 个可完成的心愿{'(含全部)' if include_all else '(优先未排期+已过期)'}",
+            "message": f"找到 {len(items)} 个心愿{mode_desc}",
         }
 
         if getattr(args, "html", False):
@@ -1576,12 +1602,18 @@ def main():
     p_wp.add_argument("--suggest-due", default=None, help="全局建议排期日期 YYYY-MM-DD(HTML 默认填充)")
     p_wp.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_plan.html)")
 
-    # wish-complete (心愿完成向导·过程型 HTML 前置)
+    # wish-complete (心愿完成向导·过程型 HTML 前置) · v1.0.1
     p_wc = sub.add_parser("wish-complete", help="心愿完成向导:收集可完成的心愿列表(过程型 HTML 前置数据)")
-    p_wc.add_argument("--ids", nargs="*", type=int, default=None, help="显式指定心愿 id 列表(与 --all 互斥)")
-    p_wc.add_argument("--all", action="store_true", help="含所有心愿(默认仅未排期+已过期)")
-    p_wc.add_argument("--content", default=None, help="默认打卡内容(HTML 可逐条覆盖;留空=原心愿 content)")
-    p_wc.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_complete.html)")
+    p_wc.add_argument("--ids", nargs="*", type=int, default=None,
+                      help="显式指定心愿 id 列表(与 --only-overdue / --all 互斥)")
+    p_wc.add_argument("--only-overdue", action="store_true",
+                      help="(v1.0.1+) 仅列未排期+已过期排期的心愿(显式 opt-in · v1.0.0 默认行为迁至此)")
+    p_wc.add_argument("--all", action="store_true",
+                      help="(deprecated · 等同不加 flag · 仅所有 200 条)保留向后兼容")
+    p_wc.add_argument("--content", default=None,
+                      help="默认打卡内容(HTML 可逐条覆盖;留空=原心愿 content)")
+    p_wc.add_argument("--html", action="store_true",
+                      help="生成过程型 HTML 向导页(模板 wish_complete.html)")
 
     # batch-update-category (批量改分类向导·过程型 HTML)
     p_buc = sub.add_parser("batch-update-category", help="批量改分类向导:按原分类收集笔记(过程型 HTML 前置)")

@@ -71,7 +71,7 @@
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
 <blockquote>
-<p><strong>当前版本:1.0.0</strong>(2026-07-24 发布 · 9 个 commit 闭环 · git tag <code>v1.0.0</code>)<br>
+<p><strong>当前版本:1.0.1</strong>(2026-07-24 发布 · 10 个 commit · git tag <code>v1.0.1</code>)<br>v1.0.1 修复 wish-complete 默认筛条件过严的 bug(详见 CHANGELOG.md)<br>
 详见 <code>CHANGELOG.md</code></p>
 </blockquote>
 <h2 id="强制性规定-最高优先级-1">强制性规定(最高优先级)</h2>
@@ -301,16 +301,27 @@
 <li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}</code></li>
 <li><strong>AI 推荐流程</strong>:跑到 <code>add 心愿</code> 批量场景 → <strong>不直接</strong>批量 <code>set-due</code> → 先调 <code>wish-batch-plan --suggest-due &lt;识别到的锚点&gt; --html</code> → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 <code>set-due</code> 命令</li>
 </ul>
-<h3>完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML)</h3>
+<h3>完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复)</h3>
 <ul>
 <li>触发词:完成心愿(<strong>别名:完成打卡 · 2026-07-24 加</strong>)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」</li>
-<li>命令:<code>script/memo_cli.py wish-complete [--ids 1 2 3] [--all] [--content "打卡内容"] [--html]</code></li>
+<li>命令:<code>script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]</code></li>
 <li><strong>类型</strong>:过程型 HTML(同 wish-batch-plan 模式)</li>
 <li><strong>第一性</strong>:complete-wish 是原子操作(删心愿 + 建打卡),用户先在 HTML 选要完成的 + 填打卡内容,采纳后给 AI 批量调</li>
-<li><strong>默认(无 --all)</strong>:仅未排期 + 已过期排期的心愿(优先用户想完成的)</li>
-<li><strong>--all</strong>:含全部心愿</li>
-<li><strong>--ids</strong>:显式指定(与 --all 互斥,硬规则)</li>
-<li><strong>--content</strong>:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)</li>
+<li><strong>v1.0.1 修复</strong>(默认语义回归第一性):<ul>
+<li>旧默认 = <code>NOT IN reminders AND due IS NULL OR due &lt; today</code> → 用户"我加的 20 条心愿,wish-complete 给 0 条"</li>
+<li>新默认 = 所有 <code>category='心愿'</code> 的 · 让用户在 HTML 里勾(过程型 HTML 的本职)</li>
+<li>真理:CLI 不应该替用户预设决策,该预设归 UI</li>
+</ul>
+</li>
+<li><strong>v1.0.1 命令选项</strong>:<ul>
+<li>默认(不加 flag):全部心愿 · 让用户在 HTML 里勾</li>
+<li><strong>--only-overdue</strong>:仅未排期+已过期排期(v1.0.0 默认行为迁至此显式 flag)</li>
+<li><code>--all</code>:<strong>deprecated</strong> · 等同不加 flag · 仅保留向后兼容</li>
+<li><code>--ids N M ...</code>:显式指定(与 <code>--only-overdue</code>/<code>--all</code> 互斥)</li>
+<li><code>--content X</code>:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)</li>
+<li><code>--html</code>:生成过程型 HTML</li>
+</ul>
+</li>
 <li>模板:<code>templates/wish_complete.html</code>(独立,不与 wish_plan 复用)</li>
 <li>渲染器:<code>script/memo_render.py:render_wish_complete</code></li>
 <li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>

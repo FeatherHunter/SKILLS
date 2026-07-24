@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# pytest 缓存
+.pytest_cache/
+
 # 环境变量文件
 .env
 

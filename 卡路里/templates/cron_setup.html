@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 开启/关闭定时复盘</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:780px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:30px; font-weight:700; letter-spacing:-.025em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-bad { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px 28px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  /* 当前状态卡 */
+  .status-card { display:flex; align-items:center; justify-content:space-between;
+                 background:linear-gradient(135deg,#e8f5e8,#f0f8ff); border:1px solid var(--good);
+                 border-radius:12px; padding:16px 20px; margin-bottom:16px; }
+  .status-card.inactive { background:linear-gradient(135deg,#fff5f5,#fffaf0); border-color:var(--bad); }
+  .status-info { display:flex; align-items:center; gap:12px; }
+  .status-icon { font-size:24px; }
+  .status-text .label { font-size:12px; color:var(--fg2); }
+  .status-text .value { font-size:18px; font-weight:700; }
+  .action-btn { border:none; padding:10px 20px; border-radius:8px; cursor:pointer;
+                font-size:14px; font-weight:600; }
+  .action-btn.create { background:var(--good); color:#fff; }
+  .action-btn.delete { background:var(--bad); color:#fff; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:12px; color:var(--fg2); margin-bottom:6px; font-weight:500; }
+  .form-group input, .form-group select {
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#fff;
+  }
+  .form-group input:focus, .form-group select:focus { outline:none; border-color:var(--accent); }
+  .form-group .hint { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .prompt-box { background:#1d1d1f; color:#f5f5f7; padding:18px 22px; border-radius:12px;
+               font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px;
+               line-height:1.65; white-space:pre-wrap; word-break:break-word; min-height:60px; }
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px;
+           display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
+         cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .actions { display:flex; gap:8px; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">配置型 · 定时复盘</div>
+</div>
+
+<h1>⏰ 开启/关闭定时复盘</h1>
+<p class="sub" id="sub">--</p>
+
+<!-- 当前状态卡 -->
+<div class="status-card" id="statusCard">
+  <div class="status-info">
+    <div class="status-icon" id="statusIcon">⏰</div>
+    <div class="status-text">
+      <div class="label">定时复盘状态</div>
+      <div class="value" id="statusValue">--</div>
+    </div>
+  </div>
+  <button class="action-btn" id="actionBtn">--</button>
+</div>
+
+<!-- 表单(创建模式)-->
+<div class="section" id="formSection" style="display:none">
+  <h2>⚙️ 创建定时任务</h2>
+  <form id="configForm"></form>
+  <div style="margin-top:14px;display:flex;gap:8px">
+    <button class="btn btn-primary" id="genBtn">🔄 生成 prompt</button>
+    <button class="btn" id="copyBtn">📋 复制 prompt</button>
+  </div>
+</div>
+
+<!-- prompt 显示 -->
+<div class="section" id="promptSection" style="display:none">
+  <h2>📋 复制 prompt 给 AI</h2>
+  <div class="prompt-box" id="promptBox">// 先点击"生成 prompt"</div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">⏰ 定时复盘 · v2.1.3</div>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') return;
+  const { status, fields, defaults, exec_cmd_template, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent = meta.fetched_at;
+  document.getElementById('sub').textContent = meta.subtitle;
+
+  // 状态卡
+  const card = document.getElementById('statusCard');
+  const icon = document.getElementById('statusIcon');
+  const val = document.getElementById('statusValue');
+  const btn = document.getElementById('actionBtn');
+
+  if (status.active) {
+    icon.textContent = '✅';
+    val.innerHTML = `<span class="pill pill-good">已开启</span> ${status.task_name || ''} (${status.schedule || ''})`;
+    btn.textContent = '🗑 关闭';
+    btn.className = 'action-btn delete';
+    btn.onclick = () => showPrompt('delete');
+  } else {
+    card.classList.add('inactive');
+    icon.textContent = '⏸';
+    val.innerHTML = `<span class="pill pill-bad">未开启</span>`;
+    btn.textContent = '➕ 开启';
+    btn.className = 'action-btn create';
+    btn.onclick = () => showForm();
+  }
+
+  // 创建模式:显示表单
+  function showForm() {
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('promptSection').style.display = 'none';
+    const form = document.getElementById('configForm');
+    form.innerHTML = '';
+    fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = f.row ? 'form-row' : '';
+      const col = document.createElement('div');
+      col.className = 'form-group';
+      col.innerHTML = `
+        <label for="f_${f.key}">${f.label}${f.required ? ' <span style="color:#ff3b30">*</span>' : ''}</label>
+        ${f.type === 'select'
+          ? `<select id="f_${f.key}">${f.options.map(o => `<option value="${o.value}" ${defaults[f.key]===o.value?'selected':''}>${o.label}</option>`).join('')}</select>`
+          : `<input type="${f.type}" id="f_${f.key}" value="${defaults[f.key]||''}" placeholder="${f.placeholder||''}" ${f.required?'required':''}>`
+        }
+        ${f.hint ? `<div class="hint">${f.hint}</div>` : ''}
+      `;
+      wrap.appendChild(col);
+      form.appendChild(wrap);
+    });
+    document.getElementById('formSection').scrollIntoView({behavior:'smooth'});
+  }
+
+  // 删除模式:显示 prompt
+  function showPrompt(action) {
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('promptSection').style.display = 'block';
+    const prompt = action === 'delete'
+      ? `请关闭定时复盘任务:\\n执行命令: mavis cron delete ${status.task_id || '卡路里复盘'}`
+      : '';
+    document.getElementById('promptBox').textContent = prompt;
+    document.getElementById('promptSection').scrollIntoView({behavior:'smooth'});
+    bindCopy(prompt);
+  }
+
+  // 生成创建 prompt
+  document.getElementById('genBtn').onclick = () => {
+    const vals = {};
+    fields.forEach(f => {
+      const el = document.getElementById('f_' + f.key);
+      vals[f.key] = el ? el.value : '';
+    });
+    const lines = ['请按以下参数帮我创建定时复盘任务', ''];
+    fields.forEach(f => lines.push('  ' + f.label + ': ' + (vals[f.key] || '(空)')));
+    lines.push('');
+    let cmd = exec_cmd_template.replace(/\\{(\\w+)\\}/g, (m, k) => vals[k] !== undefined ? vals[k] : m);
+    lines.push('执行命令: ' + cmd);
+    const prompt = lines.join('\\n');
+    document.getElementById('promptBox').textContent = prompt;
+    document.getElementById('promptSection').style.display = 'block';
+    bindCopy(prompt);
+  };
+
+  // 绑定复制
+  function bindCopy(text) {
+    const copyBtn = document.getElementById('copyBtn');
+    copyBtn.onclick = function() {
+      navigator.clipboard.writeText(text).then(() => {
+        this.textContent = '✓ 已复制';
+        setTimeout(() => this.textContent = '📋 复制 prompt', 2000);
+      });
+    };
+  }
+})();
+</script>
+
+</body>
+</html>

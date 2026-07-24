@@ -1,0 +1,58 @@
+{
+  "status": "ok",
+  "data": {
+    "fields": [
+      {
+        "key": "age",
+        "label": "年龄",
+        "type": "number",
+        "required": true,
+        "placeholder": "30",
+        "hint": "用于 BMR 计算"
+      },
+      {
+        "key": "gender",
+        "label": "性别",
+        "type": "select",
+        "required": true,
+        "options": [
+          {
+            "value": "male",
+            "label": "男"
+          },
+          {
+            "value": "female",
+            "label": "女"
+          }
+        ]
+      },
+      {
+        "key": "height",
+        "label": "身高(cm)",
+        "type": "number",
+        "required": true,
+        "placeholder": "177",
+        "hint": "用于 BMI"
+      },
+      {
+        "key": "note",
+        "label": "备注",
+        "type": "textarea",
+        "hint": "可选"
+      }
+    ],
+    "defaults": {
+      "age": 30,
+      "gender": "male",
+      "height": 177,
+      "note": ""
+    },
+    "exec_cmd_template": "calorie_tracker.py profile set {age} {gender} --height {height} # optional: --note {note}",
+    "exec_cmd_optional": "note",
+    "meta": {
+      "fetched_at": "2026-07-24 18:30:00",
+      "subtitle": "设置年龄/性别/身高,系统用 Mifflin-St Jeor 公式计算 BMR 和 TDEE"
+    }
+  },
+  "message": "已生成设置档案 配置"
+}

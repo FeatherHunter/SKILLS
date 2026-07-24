@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 设置档案</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:780px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:30px; font-weight:700; letter-spacing:-.025em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px 28px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { display:block; font-size:12px; color:var(--fg2); margin-bottom:6px; font-weight:500; }
+  .form-group input, .form-group select, .form-group textarea {
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#fff;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,113,227,.15);
+  }
+  .form-group .hint { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .prompt-box { background:#1d1d1f; color:#f5f5f7; padding:18px 22px; border-radius:12px;
+               font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12.5px;
+               line-height:1.65; white-space:pre-wrap; word-break:break-word;
+               min-height:80px; margin-bottom:14px; }
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px;
+           display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
+         cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary:hover { background:#005bb0; }
+  .actions { display:flex; gap:8px; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">配置型 · 设置档案</div>
+</div>
+
+<h1>👤 设置档案</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="section">
+  <h2>用户基础信息</h2>
+  <form id="configForm"></form>
+</div>
+
+<div class="section">
+  <h2>📋 复制 prompt 给 AI</h2>
+  <p style="font-size:12.5px;color:var(--fg2);margin-bottom:10px;">填好参数,点击「生成 prompt」,把以下内容贴给 AI 执行:</p>
+  <div class="prompt-box" id="promptBox">// 先填写参数 → 点击"生成 prompt"</div>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn" id="genBtn">🔄 生成 prompt</button>
+    <button class="btn btn-primary" id="copyBtn">📋 复制 prompt</button>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">⚙️ 设置档案 · v2.1.3</div>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') return;
+  const { fields, defaults, exec_cmd_template, exec_cmd_optional, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent = meta.fetched_at;
+  document.getElementById('sub').textContent = meta.subtitle;
+
+  // 渲染表单
+  const form = document.getElementById('configForm');
+  fields.forEach(f => {
+    const wrap = document.createElement('div');
+    wrap.className = f.row ? 'form-row' : '';
+    const col = document.createElement('div');
+    col.className = 'form-group';
+
+    col.innerHTML = `
+      <label for="f_${f.key}">${f.label}${f.required ? ' <span style="color:#ff3b30">*</span>' : ''}</label>
+      ${f.type === 'select'
+        ? `<select id="f_${f.key}">${f.options.map(o => `<option value="${o.value}" ${defaults[f.key]===o.value?'selected':''}>${o.label}</option>`).join('')}</select>`
+        : f.type === 'textarea'
+        ? `<textarea id="f_${f.key}" rows="3" placeholder="${f.placeholder||''}">${defaults[f.key]||''}</textarea>`
+        : `<input type="${f.type}" id="f_${f.key}" value="${defaults[f.key]||''}" placeholder="${f.placeholder||''}" ${f.required?'required':''}>`
+      }
+      ${f.hint ? `<div class="hint">${f.hint}</div>` : ''}
+    `;
+    wrap.appendChild(col);
+    form.appendChild(wrap);
+  });
+
+  document.getElementById('genBtn').onclick = () => {
+    const vals = {};
+    fields.forEach(f => {
+      const el = document.getElementById('f_' + f.key);
+      vals[f.key] = el ? el.value : '';
+    });
+    const lines = ['请按以下参数帮我设置用户档案', ''];
+    fields.forEach(f => {
+      lines.push('  ' + f.label + ': ' + (vals[f.key] || '(空)'));
+    });
+    lines.push('');
+    let cmd = exec_cmd_template.replace(/\\{(\\w+)\\}/g, (m, k) => vals[k] !== undefined ? vals[k] : m);
+    if (exec_cmd_optional && vals[exec_cmd_optional]) {
+      cmd = cmd.replace(' + ' + exec_cmd_optional + ' + ', vals[exec_cmd_optional]);
+    }
+    lines.push('执行命令: ' + cmd);
+    document.getElementById('promptBox').textContent = lines.join('\n');
+  };
+
+  document.getElementById('copyBtn').onclick = function() {
+    const text = document.getElementById('promptBox').textContent;
+    if (text.startsWith('//')) {
+      alert('请先生成 prompt');
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制 prompt', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

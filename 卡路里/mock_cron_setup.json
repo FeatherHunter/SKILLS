@@ -1,0 +1,63 @@
+{
+  "status": "ok",
+  "data": {
+    "status": {
+      "active": false,
+      "task_id": "cron-caloriereview-001",
+      "task_name": "卡路里复盘",
+      "schedule": "0 23 * * *"
+    },
+    "fields": [
+      {
+        "key": "task_name",
+        "label": "任务名称",
+        "type": "text",
+        "required": true,
+        "placeholder": "卡路里复盘"
+      },
+      {
+        "key": "schedule",
+        "label": "Schedule(cron 表达式)",
+        "type": "text",
+        "required": true,
+        "placeholder": "0 23 * * *",
+        "hint": "每天 23:00"
+      },
+      {
+        "key": "timezone",
+        "label": "时区",
+        "type": "select",
+        "required": true,
+        "options": [
+          {
+            "value": "Asia/Shanghai",
+            "label": "Asia/Shanghai (UTC+8)"
+          },
+          {
+            "value": "UTC",
+            "label": "UTC"
+          }
+        ]
+      },
+      {
+        "key": "command",
+        "label": "执行命令",
+        "type": "text",
+        "required": true,
+        "placeholder": "python3 scripts/calorie_tracker.py review --full"
+      }
+    ],
+    "defaults": {
+      "task_name": "卡路里复盘",
+      "schedule": "0 23 * * *",
+      "timezone": "Asia/Shanghai",
+      "command": "python3 scripts/calorie_tracker.py review --full"
+    },
+    "exec_cmd_template": "mavis cron create --name \"{task_name}\" --schedule \"{schedule}\" --tz \"{timezone}\" --command \"{command}\"",
+    "meta": {
+      "fetched_at": "2026-07-24 18:30:00",
+      "subtitle": "mavis cron 创建/管理每日 23:00 自动复盘任务"
+    }
+  },
+  "message": "已生成定时复盘 配置"
+}

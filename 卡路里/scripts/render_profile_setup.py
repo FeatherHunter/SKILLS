@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_crud_wizard.py — 通用配置向导 HTML 渲染器(配置型)
+"""render_profile_setup.py — 设置档案 HTML 渲染器(配置型)
 
-对应 SKILL.md 唤醒词(2 个):
-  - 设置档案   → mode='profile'
-  - 开启定时复盘 → mode='cron'
-对应模板: templates/crud_wizard.html
+对应 SKILL.md 唤醒词: 设置档案
+对应模板: templates/profile_setup.html
 """
 import argparse, json, sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
-TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_wizard.html'
+TEMPLATE_PATH = SKILL_DIR / 'templates' / 'profile_setup.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa
@@ -34,8 +32,8 @@ def render_html(data):
 
 
 def main():
-    p = argparse.ArgumentParser(description='渲染配置向导 HTML(设置档案/开启定时复盘)')
-    p.add_argument('--mock', required=True, help='mock JSON(配置向导 schemas)')
+    p = argparse.ArgumentParser(description='渲染设置档案 HTML')
+    p.add_argument('--mock', required=True)
     p.add_argument('--output')
     args = p.parse_args()
     try:
@@ -44,11 +42,10 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'crud_wizard')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'profile_setup')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')
-    print(f'   模式: {data["data"]["current_mode"]} (含 2 schemas: profile + cron)')
     return 0
 
 

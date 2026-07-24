@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 热量趋势</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:56px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:30px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:28px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px 28px; margin-bottom:18px; }
+  .section h2 { font-size:18px; font-weight:600; margin-bottom:16px; }
+  svg { width:100%; height:220px; display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:14px; }
+  .legend .a { background:var(--accent); height:2px; }
+  .legend .b { background:transparent; border-top:2px dashed var(--warn); height:0; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { color:var(--fg2); font-weight:500; font-size:12px; }
+  th.num { text-align:right; }
+  td:nth-child(3), td:nth-child(4), td:nth-child(5) { text-align:right; }
+  th:nth-child(3), th:nth-child(4), th:nth-child(5) { text-align:right; }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  .delta-up   { color:var(--bad); font-size:11px; }
+  .delta-down { color:var(--good); font-size:11px; }
+  .delta-ok   { color:var(--fg3); font-size:11px; }
+  .footer { margin-top:28px; padding:16px 20px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .today-row { background:rgba(0,113,227,.04); font-weight:600; }
+</style>
+</head>
+<body>
+
+<script>window.__DATA__ = {"status": "ok", "data": {"summary": {"avg": 1823, "target": 1800, "trend": "down", "trend_value": -124, "start_avg": 1947, "end_avg": 1823, "weekday_avg": 1905, "weekend_avg": 2156, "weekend_diff": 251, "compliance_rate": 0.86, "compliant_days": 6}, "series": [{"date": "2026-07-18", "weekday": "周六", "type": "周末", "calorie": 1920}, {"date": "2026-07-19", "weekday": "周日", "type": "周末", "calorie": 1950}, {"date": "2026-07-20", "weekday": "周一", "type": "工作日", "calorie": 1890}, {"date": "2026-07-21", "weekday": "周二", "type": "工作日", "calorie": 1810}, {"date": "2026-07-22", "weekday": "周三", "type": "工作日", "calorie": 1820}, {"date": "2026-07-23", "weekday": "周四", "type": "工作日", "calorie": 2016}, {"date": "2026-07-24", "weekday": "周五", "type": "工作日", "calorie": 1656}], "meta": {"start": "2026-07-18", "end": "2026-07-24", "today": "2026-07-24", "weekday_count": 5, "weekend_count": 2}}, "message": "已生成 2026-07-18 ~ 2026-07-24 热量趋势(7 天)"};</script>
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">报告型 · 7 dim</div>
+</div>
+
+<h1>🔥 热量趋势</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">日均热量</div><div class="value" id="kpiAvg">--</div><div class="extra" id="kpiAvgExtra">--</div></div>
+  <div class="kpi"><div class="label">7 天变化</div><div class="value" id="kpiTrend">--</div><div class="extra" id="kpiTrendExtra">--</div></div>
+  <div class="kpi"><div class="label">工作日 vs 周末</div><div class="value" id="kpiDiff">--</div><div class="extra" id="kpiDiffExtra">--</div></div>
+  <div class="kpi"><div class="label">合规率</div><div class="value" id="kpiCompliance">--</div><div class="extra" id="kpiComplianceExtra">--</div></div>
+</div>
+
+<div class="section">
+  <h2>每日热量 (含目标线)</h2>
+  <svg id="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+  <div class="legend">
+    <span><i class="a"></i> 日热量</span>
+    <span><i class="b"></i> <span id="targetLine">目标 --</span></span>
+    <span style="color:var(--warn);" id="warnSpan">⚠ --</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>每日明细</h2>
+  <table>
+    <thead><tr><th>日期</th><th>类型</th><th>实际</th><th>目标</th><th>偏差</th><th>状态</th></tr></thead>
+    <tbody id="dailyTable"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, series, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent =
+    `${meta.start} ~ ${meta.end} · 共 ${series.length} 天`;
+  document.getElementById('sub').innerHTML =
+    `查热量趋势 · ${meta.start} → ${meta.end} · ` +
+    (summary.trend === 'down' ? '<span class="pill pill-good">↓ 下降 ▼</span>'
+     : summary.trend === 'up' ? '<span class="pill pill-bad">↑ 上升 ▲</span>'
+     : '<span class="pill pill-info">→ 持平</span>');
+
+  // 4 KPI
+  document.getElementById('kpiAvg').textContent = summary.avg.toLocaleString();
+  const dAvg = summary.avg - summary.target;
+  const dAvgPct = (dAvg / summary.target * 100).toFixed(1);
+  document.getElementById('kpiAvgExtra').innerHTML =
+    `vs 目标 ${summary.target.toLocaleString()} · ${dAvg >= 0 ? '+' : ''}${dAvgPct}%`;
+  document.getElementById('kpiAvgExtra').style.color = dAvg > summary.target * 0.05 ? 'var(--bad)' : 'var(--good)';
+
+  document.getElementById('kpiTrend').textContent = (summary.trend_value >= 0 ? '+' : '') + summary.trend_value;
+  document.getElementById('kpiTrend').style.color = summary.trend_value <= 0 ? 'var(--good)' : 'var(--bad)';
+  document.getElementById('kpiTrendExtra').textContent =
+    `从 ${summary.start_avg} → ${summary.end_avg} · ${(summary.trend_value / summary.start_avg * 100).toFixed(1)}%`;
+
+  document.getElementById('kpiDiff').textContent = '+' + summary.weekend_diff;
+  document.getElementById('kpiDiffExtra').textContent =
+    `${summary.weekday_avg} vs ${summary.weekend_avg} 卡/天`;
+
+  document.getElementById('kpiCompliance').textContent = Math.round(summary.compliance_rate * 100) + '%';
+  document.getElementById('kpiComplianceExtra').textContent =
+    `${summary.compliant_days}/${series.length} 天 ≤ 目标+5%`;
+
+  // SVG 折线 (动态生成)
+  const svg = document.getElementById('chart');
+  const W = 800, H = 220, PAD = 30;
+  const yMax = 2400, yMin = 1200;
+  function x(i) { return PAD + i * (W - 2*PAD) / Math.max(1, series.length - 1); }
+  function y(v) { return H - PAD - (v - yMin) / (yMax - yMin) * (H - 2*PAD); }
+  // 网格
+  for (let v = yMin; v <= yMax; v += 300) {
+    const yy = y(v);
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="#e5e5ea"/>` +
+      `<text x="4" y="${yy - 3}" font-size="10" fill="#86868b">${v}</text>`);
+  }
+  // 目标线
+  svg.insertAdjacentHTML('beforeend',
+    `<line x1="0" y1="${y(summary.target)}" x2="${W}" y2="${y(summary.target)}" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.6"/>` +
+    `<text x="4" y="${y(summary.target) - 3}" font-size="10" fill="#86868b">${summary.target} 目标</text>`);
+  // 折线 area
+  let area = `M ${x(0)},${y(series[0].calorie)}`;
+  series.forEach((p, i) => { if (i > 0) area += ` L ${x(i)},${y(p.calorie)}`; });
+  area += ` L ${x(series.length - 1)},${H - PAD} L ${x(0)},${H - PAD} Z`;
+  svg.insertAdjacentHTML('beforeend', `<path d="${area}" fill="rgba(0,113,227,0.08)"/>`);
+  // 折线
+  let line = `M ${x(0)},${y(series[0].calorie)}`;
+  series.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.calorie)}`; });
+  svg.insertAdjacentHTML('beforeend',
+    `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="2.5" stroke-linejoin="round"/>`);
+  // 数据点
+  series.forEach((p, i) => {
+    const over = p.calorie > summary.target * 1.05;
+    const c = over ? '#ff9500' : '#0071e3';
+    const isToday = p.date === meta.today;
+    svg.insertAdjacentHTML('beforeend',
+      `<circle cx="${x(i)}" cy="${y(p.calorie)}" r="${isToday ? 7 : 5}" fill="${c}" stroke="#fff" stroke-width="2"/>`);
+    if (isToday) {
+      svg.insertAdjacentHTML('beforeend',
+        `<text x="${x(i) + 10}" y="${y(p.calorie) - 8}" font-size="10" fill="${c}" font-weight="600">今天 ${p.calorie}</text>`);
+    }
+    // X 轴日期
+    svg.insertAdjacentHTML('beforeend',
+      `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#86868b" text-anchor="middle">${p.date.slice(5)}</text>`);
+  });
+  // 警告
+  const overDays = series.filter(p => p.calorie > summary.target * 1.10);
+  if (overDays.length) {
+    const w = overDays[0];
+    document.getElementById('warnSpan').textContent =
+      `⚠ ${w.date.slice(5)} 严重超标 +${Math.round((w.calorie - summary.target) / summary.target * 100)}%(${w.calorie.toLocaleString()} 卡)`;
+  }
+  document.getElementById('targetLine').textContent = `目标 ${summary.target}`;
+
+  // 每日表格
+  const tb = document.getElementById('dailyTable');
+  series.forEach(p => {
+    const d = p.calorie - summary.target;
+    const dPct = (d / summary.target * 100).toFixed(1);
+    let status;
+    if (p.date === meta.today) {
+      status = '<span class="pill pill-info">◐ 进行中</span>';
+    } else if (d > summary.target * 0.10) {
+      status = '<span class="pill pill-bad">✗ 严重超</span>';
+    } else if (d > summary.target * 0.05) {
+      status = '<span class="pill pill-warn">⚠ 超</span>';
+    } else if (d < -summary.target * 0.05) {
+      status = '<span class="pill pill-info">◐ 偏低</span>';
+    } else {
+      status = '<span class="pill pill-good">✓ 达标</span>';
+    }
+    const deltaCls = d > 0 ? 'delta-up' : (d < 0 ? 'delta-down' : 'delta-ok');
+    const todayCls = p.date === meta.today ? ' class="today-row"' : '';
+    tb.insertAdjacentHTML('beforeend',
+      `<tr${todayCls}><td>${p.date}</td><td>${p.weekday}</td>` +
+      `<td class="num">${p.calorie.toLocaleString()}</td>` +
+      `<td class="num">${summary.target.toLocaleString()}</td>` +
+      `<td class="num ${deltaCls}">${d >= 0 ? '+' : ''}${d} (${d >= 0 ? '+' : ''}${dPct}%)</td>` +
+      `<td>${status}</td></tr>`);
+  });
+
+  // Footer
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源:diet_analysis · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${series.length} 天`;
+  document.getElementById('copyBtn').onclick = function() {
+    const report =
+      `热量趋势 · ${meta.start} ~ ${meta.end}\n` +
+      `日均 ${summary.avg.toLocaleString()} 卡 · 目标 ${summary.target.toLocaleString()} · 偏差 ${dAvgPct}%\n` +
+      `7 天变化 ${summary.trend_value} 卡 · 工作日 ${summary.weekday_avg} / 周末 ${summary.weekend_avg} · 合规率 ${Math.round(summary.compliance_rate * 100)}%\n` +
+      `超标天: ${overDays.map(d => `${d.date.slice(5)} (+${d.calorie - summary.target})`).join(', ') || '无'}`;
+    navigator.clipboard.writeText(report).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

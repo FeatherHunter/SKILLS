@@ -563,7 +563,6 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...]
 | 分类参考 | - | `references/categories.md` | - |
 | CLI命令 | - | `references/commands.md` | - |
 | 做菜模式(2026-07-23 新) | - | `references/cooking_mode.md` + `templates/cooking_mode.html` | - |
-| SkillBoard配置 | - | config-chef-cookbook.ts | - |
 
 ---
 

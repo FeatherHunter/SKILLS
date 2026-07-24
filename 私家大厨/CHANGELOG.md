@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-07-24 - 目录清理 + 手册重构
+
+### 背景
+
+经审查,目录中存在三类冗余/过期文件:
+1. **115 个 `.bak.*` 备份文件**(2026-07-21 ~ 2026-07-22 各次重构的中间快照),`.gitignore` 已配置 `*.bak` 自动忽略,实际从未进 git
+2. **2 个 `__pycache__/` 目录**(`scripts/` 和 `references/`),Python 字节码缓存,可自动重建
+3. **`config-chef-cookbook.ts`**(2026-05-19,35K):v3 重构前的 SkillBoard 前端 SDK 配置文件,Python 化后已无人维护,SKILL.md 仅一行表项引用,CHANGELOG.md 早已标注"非 CLI 重构责任"
+
+### 改动
+
+- 删除全部 `.bak.*` 文件(115 个)
+- 删除 `scripts/__pycache__/` 和 `references/__pycache__/`
+- 删除孤儿 `config-chef-cookbook.ts`
+- 同步 `SKILL.md` 文件结构表:移除「SkillBoard配置」一行
+- 重构 `私家大厨.html`:从 SKILL.md 镜像改为用户视角手册(Tab + 搜索 + 两级 details 展开)
+
+### 回滚
+
+- `.bak.*` 已无可逆副本;若需历史快照,从 git 历史恢复对应文件即可
+- `config-chef-cookbook.ts` 已删除但未进 git(`.gitignore` 包含 `*.bak` 之外的非核心文件);若需复活,内容可在 v3 重构前的 git commit 中找回
+
+---
+
 ## 2026-07-23 - 查看食谱 HTML 反馈修复 + 重复数据清理
 
 ### 背景

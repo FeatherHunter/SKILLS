@@ -77,6 +77,31 @@
 
 ---
 
+## [1.0.4] · 2026-07-24
+
+> **bug fix**(语义化版本规则):过程型 HTML 默认未勾选(正向操作第一性)
+> 来源:用户反馈"心愿完成 HTML 默认未选中,用户选中哪个就完成哪个"
+
+### Changed
+- **`wish-complete` HTML 默认未勾选**(过程型 HTML 正向操作)
+  - 旧:`items[].selected = True`(全勾) → 用户被迫反向操作(在已勾清单里删勾),反直觉且易误完成
+  - 新:`items[].selected = False`(全未勾) → 用户主动勾要完成的(正向表达意图),精准
+  - **第一性**:过程型 HTML 的价值是让用户主动表达意图
+- **HTML 模板 `templates/wish_complete.html`** 调整
+  - `renderWish(w)`:删除 `const cls=w.selected?'':'off'`
+  - `<article>` 不再根据 selected 加 .off class(默认 normal 样式)
+  - 用户切换 checkbox 时,JS event handler 仍动态加 .off(opacity:.5)
+  - 原因:默认未勾的卡片若加 .off 会视觉误导(看起来"已禁用")
+
+### Tests
+- `tests/test_wish_complete.py` 加 3 个用例:
+  - `test_default_selected_false_v1_0_4` 默认 selected=False
+  - `test_html_default_unchecked_v1_0_4` HTML 注入数据验证
+  - `test_html_renderwish_template_no_checked_default` 模板代码层验证
+- 全量回归:75/75 pytest 通过(原 72 + 新增 3)
+
+---
+
 ## [1.0.3] · 2026-07-24
 
 > **bug fix**(语义化版本规则):纠正 v1.0.2 过度禁止 — 用户确认 `<media>` 与浏览器打开应并行

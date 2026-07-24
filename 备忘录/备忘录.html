@@ -71,7 +71,8 @@
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
 <blockquote>
-<p><strong>当前版本:1.0.3</strong>(2026-07-24 发布 · 12 个 commit · git tag <code>v1.0.3</code>)<br>v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
+<p><strong>当前版本:1.0.4</strong>(2026-07-24 发布 · 13 个 commit · git tag <code>v1.0.4</code>)<br>v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)<br>
+v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
 v1.0.2:HTML 交付规范初版(过度禁止已纠正)<br>
 v1.0.1:wish-complete 第一性修复<br>
 详见 <code>CHANGELOG.md</code></p>
@@ -344,7 +345,7 @@ v1.0.1:wish-complete 第一性修复<br>
 <li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}</code></li>
 <li><strong>AI 推荐流程</strong>:跑到 <code>add 心愿</code> 批量场景 → <strong>不直接</strong>批量 <code>set-due</code> → 先调 <code>wish-batch-plan --suggest-due &lt;识别到的锚点&gt; --html</code> → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 <code>set-due</code> 命令</li>
 </ul>
-<h3>完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复)</h3>
+<h3>完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复 · v1.0.4 默认未勾)</h3>
 <ul>
 <li>触发词:完成心愿(<strong>别名:完成打卡 · 2026-07-24 加</strong>)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」</li>
 <li>命令:<code>script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]</code></li>
@@ -363,6 +364,13 @@ v1.0.1:wish-complete 第一性修复<br>
 <li><code>--ids N M ...</code>:显式指定(与 <code>--only-overdue</code>/<code>--all</code> 互斥)</li>
 <li><code>--content X</code>:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)</li>
 <li><code>--html</code>:生成过程型 HTML</li>
+</ul>
+</li>
+<li><strong>v1.0.4 HTML 默认未勾选</strong>(过程型 HTML 正向操作):<ul>
+<li><code>items[].selected = False</code> · 用户主动勾选要完成的(不是反向删勾)</li>
+<li>模板渲染:<code>&lt;article class="wish"&gt;</code> 始终 normal(不依赖 selected 加 .off)</li>
+<li>用户切换 checkbox 时才动态加 .off class(opacity:.5)</li>
+<li>第一性:过程型 HTML 的价值是让用户主动表达意图(正向 &gt; 反向)</li>
 </ul>
 </li>
 <li>模板:<code>templates/wish_complete.html</code>(独立,不与 wish_plan 复用)</li>

@@ -201,3 +201,65 @@ class TestWishCompleteHtml:
         assert memo_query_path.read_text(encoding="utf-8") == before_q, "memo_query.html 被污染"
         assert wish_plan_path.read_text(encoding="utf-8") == before_p, "wish_plan.html 被污染"
         assert sync_path.read_text(encoding="utf-8") == before_s, "sync_report.html 被污染"
+
+    def test_default_selected_false_v1_0_4(self, seeded_db):
+        """v1.0.4:items 默认 selected=False(用户主动勾选要完成的)
+
+        第一性:过程型 HTML 的价值是让用户主动表达意图。
+        旧默认全勾选 = 用户被迫反向操作(在已勾清单里删勾),反直觉且易误完成。
+        新默认全未勾选 = 用户主动勾要完成的(正向),精准。
+        """
+        rc, out, _ = _run_cli("wish-complete", env=seeded_db)
+        data = json.loads(out)
+        items = data["data"]
+        assert len(items) == 3, "v1.0.1 默认列全部心愿行为保留"
+        # 关键断言:每条都 selected=False
+        for it in items:
+            assert it["selected"] is False,                 f"v1.0.4 默认应未勾,实际 {it['content']!r}.selected={it['selected']!r}"
+
+    def test_html_default_unchecked_v1_0_4(self, seeded_db):
+        """v1.0.4:HTML 注入的 window.__DATA__ 里 items[].selected = False
+
+        验证端到端:CLI 返回的 JSON 经 memo_render.render_wish_complete 注入后,
+        window.__DATA__ 中每条 item 的 selected 都是 False。
+
+        注意:JS 渲染发生在浏览器端(运行时),HTML 文件中只有模板字面量。
+        所以测试要检查 PAYLOAD 数据,不是 HTML DOM 结构。
+        """
+        rc, out, _ = _run_cli("wish-complete", "--html", env=seeded_db)
+        assert rc == 0
+        html_path = json.loads(out)["data"]["html_path"]
+        text = Path(html_path).read_text(encoding="utf-8")
+        # 从注入的 window.__DATA__ 中解析 items
+        import re
+        m = re.search(r"window\.__DATA__\s*=\s*({.*?});</script>", text, re.DOTALL)
+        assert m, "找不到 window.__DATA__ 注入"
+        data = json.loads(m.group(1))
+        items = data["data"]["items"]
+        assert len(items) == 3
+        for it in items:
+            assert it["selected"] is False, \
+                f"v1.0.4 默认未勾,实际 {it['content']!r}.selected={it['selected']!r}"
+
+    def test_html_renderwish_template_no_checked_default(self):
+        """v1.0.4:HTML 模板的 renderWish 函数对 selected=False 输出空 checked
+
+        验证模板代码层面:renderWish 里 ${checked} 在 selected=False 时
+        是空字符串(不是 'checked')。article 不应再依赖 selected 渲染 .off class。
+        """
+        import re
+        template = Path(__file__).parent.parent / "templates" / "wish_complete.html"
+        text = template.read_text(encoding="utf-8")
+        # 找 renderWish 函数体
+        m = re.search(r"function renderWish\(w\)\{(.*?)return", text, re.DOTALL)
+        assert m, "找不到 renderWish 函数"
+        body = m.group(1)
+        # 检查 const checked=w.selected?'checked':'' 这一行保留
+        assert "w.selected?'checked':''" in body, \
+            "v1.0.4 renderWish 仍应有 selected 三元(默认空字符串)"
+        # 关键:article class 不再依赖 selected(否则默认未勾的卡片会被 opacity:.5 灰掉)
+        assert 'class="wish ${cls}"' not in body, \
+            "v1.0.4 article 不应再依赖 selected 渲染 .off class"
+        # 但 event handler 应保留:用户切换 checkbox 时才动态加 .off
+        assert "classList.toggle('off'" in text, \
+            "用户切换 checkbox 时 .off class 切换逻辑应保留"

@@ -120,9 +120,11 @@ function renderList(){
 }
 
 function renderWish(w){
-  const cls=w.selected?'':'off';
+  // v1.0.4:默认所有卡片 normal 样式,无论 selected 状态
+  // checkbox 渲染根据 selected 决定(默认 False → 未勾)
+  // opacity:.5 (.off class) 仅在用户切换 checkbox 时由 event handler 动态加
   const checked=w.selected?'checked':'';
-  return `<article class="wish ${cls}" id="wish_${w.id}">
+  return `<article class="wish" id="wish_${w.id}">
 <div class="wish-head">
 <input type="checkbox" id="cb_${w.id}" class="wish-check" ${checked} data-id="${w.id}" />
 <span class="wish-id">#${esc(w.id)}</span>

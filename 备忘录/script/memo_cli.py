@@ -910,7 +910,9 @@ def wish_complete(args):
             "sub_category": r["sub_category"],
             "due": r["due"],
             "feishu_task_guid": r["feishu_task_guid"],
-            "selected": True,
+            # v1.0.4:默认未勾选 — 过程型 HTML 第一性
+            # 用户主动勾选要完成的(正向表达意图,不是反向操作)
+            "selected": False,
         } for r in rows]
 
         # message 描述当前过滤模式

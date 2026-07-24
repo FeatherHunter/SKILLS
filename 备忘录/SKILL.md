@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.3**(2026-07-24 发布 · 12 个 commit · git tag `v1.0.3`)
+> **当前版本:1.0.4**(2026-07-24 发布 · 13 个 commit · git tag `v1.0.4`)
+> v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)
 > v1.0.3:HTML 交付规范纠正(`<media>` + 浏览器并行)
 > v1.0.2:HTML 交付规范初版(过度禁止已纠正)
 > v1.0.1:wish-complete 第一性修复
@@ -251,7 +252,7 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}`
   - **AI 推荐流程**:跑到 `add 心愿` 批量场景 → **不直接**批量 `set-due` → 先调 `wish-batch-plan --suggest-due <识别到的锚点> --html` → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 `set-due` 命令
 
-### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复)
+### 完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复 · v1.0.4 默认未勾)
 - 触发词:完成心愿(**别名:完成打卡 · 2026-07-24 加**)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」
 - 命令:`script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]`
 - **类型**:过程型 HTML(同 wish-batch-plan 模式)
@@ -267,6 +268,11 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - `--ids N M ...`:显式指定(与 `--only-overdue`/`--all` 互斥)
   - `--content X`:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)
   - `--html`:生成过程型 HTML
+- **v1.0.4 HTML 默认未勾选**(过程型 HTML 正向操作):
+  - `items[].selected = False` · 用户主动勾选要完成的(不是反向删勾)
+  - 模板渲染:`<article class="wish">` 始终 normal(不依赖 selected 加 .off)
+  - 用户切换 checkbox 时才动态加 .off class(opacity:.5)
+  - 第一性:过程型 HTML 的价值是让用户主动表达意图(正向 > 反向)
 - 模板:`templates/wish_complete.html`(独立,不与 wish_plan 复用)
 - 渲染器:`script/memo_render.py:render_wish_complete`
 - **4 部分 prompt**(采纳按钮复制):

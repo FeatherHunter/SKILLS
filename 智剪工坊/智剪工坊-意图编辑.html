@@ -577,7 +577,7 @@
       position: fixed;
       right: 0;
       top: 50%;
-      transform: translate(40px, -50%);
+      transform: translate(0, -50%);  /* v1.24.1 fix:从 translate(40px) 改回 translate(0),aside 不再推出视口外 */
       width: 40px; height: 72vh;
       z-index: 40;
       /* v1.24.0 fix:撤掉 align-self(只 flex 容器有效)+ pointer-events: none。

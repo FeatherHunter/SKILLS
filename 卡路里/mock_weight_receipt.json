@@ -1,0 +1,36 @@
+{
+  "summary": {
+    "new_record": {
+      "weight_id": 25,
+      "date": "2026-07-23",
+      "time": "21:30",
+      "weight_kg": 70.3,
+      "bmi": 22.5,
+      "note": "早上空腹"
+    },
+    "weight_goal": {
+      "target": 65.0,
+      "deadline": "2026-12-31",
+      "days_left": 161,
+      "current": 70.3,
+      "diff": 5.3
+    }
+  },
+  "history": [
+    {"date": "2026-07-23", "time": "21:30", "weight_kg": 70.3, "bmi": 22.5, "note": "早上空腹"},
+    {"date": "2026-07-22", "time": "08:00", "weight_kg": 70.5, "bmi": 22.6, "note": ""},
+    {"date": "2026-07-20", "time": "08:15", "weight_kg": 70.7, "bmi": 22.6, "note": ""},
+    {"date": "2026-07-18", "time": "07:50", "weight_kg": 70.9, "bmi": 22.7, "note": ""},
+    {"date": "2026-07-16", "time": "08:00", "weight_kg": 71.0, "bmi": 22.7, "note": "周末"},
+    {"date": "2026-07-14", "time": "08:10", "weight_kg": 71.2, "bmi": 22.8, "note": ""},
+    {"date": "2026-07-12", "time": "07:45", "weight_kg": 71.3, "bmi": 22.8, "note": ""},
+    {"date": "2026-07-10", "time": "08:00", "weight_kg": 71.5, "bmi": 22.9, "note": ""},
+    {"date": "2026-07-08", "time": "08:20", "weight_kg": 71.4, "bmi": 22.9, "note": ""},
+    {"date": "2026-07-06", "time": "08:00", "weight_kg": 71.6, "bmi": 23.0, "note": ""},
+    {"date": "2026-07-04", "time": "07:50", "weight_kg": 71.7, "bmi": 23.0, "note": ""},
+    {"date": "2026-07-02", "time": "08:00", "weight_kg": 71.9, "bmi": 23.1, "note": ""},
+    {"date": "2026-06-30", "time": "08:10", "weight_kg": 72.0, "bmi": 23.1, "note": ""},
+    {"date": "2026-06-28", "time": "07:45", "weight_kg": 72.1, "bmi": 23.1, "note": ""},
+    {"date": "2026-06-26", "time": "08:00", "weight_kg": 72.2, "bmi": 23.2, "note": ""}
+  ]
+}

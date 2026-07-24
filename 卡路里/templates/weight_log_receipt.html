@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>记体重回执 · 卡路里</title>
+<style>
+:root{
+  --bg:#fff;--bg-soft:#f5f5f7;--card:#fff;
+  --ink:#1d1d1d;--ink2:#3c3c43;--ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);--lineS:rgba(60,60,67,.06);
+  --accent:#007aff;--accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;--green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;--orange-soft:rgba(255,149,0,.10);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;--r:14px;--r-lg:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+.receipt{background:linear-gradient(135deg,var(--card),var(--green-soft));border-radius:24px;padding:40px 36px 32px;margin-bottom:20px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden}
+.receipt::before{content:"";position:absolute;top:-50%;right:-15%;width:280px;height:280px;background:radial-gradient(circle,rgba(52,199,89,.15),transparent 60%);pointer-events:none}
+.receipt .check{width:64px;height:64px;margin:0 auto 14px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(52,199,89,.3);position:relative;z-index:1}
+.receipt .check::after{content:"✓";color:#fff;font-size:36px;font-weight:700;line-height:1}
+.receipt .label{font-size:13px;color:var(--ink3);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;position:relative;z-index:1}
+.receipt .weight{font-size:64px;font-weight:700;letter-spacing:-1.5px;line-height:1;font-feature-settings:"tnum";color:var(--ink);position:relative;z-index:1}
+.receipt .weight .unit{font-size:24px;font-weight:500;color:var(--ink3);margin-left:6px}
+.receipt .meta{font-size:13px;color:var(--ink2);margin-top:10px;position:relative;z-index:1}
+.receipt .bmi{display:inline-block;background:var(--card);padding:3px 10px;border-radius:99px;font-size:12px;margin-left:8px;color:var(--ink2)}
+.section{background:var(--card);border-radius:20px;padding:24px 28px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+.trend-svg{width:100%;height:200px;display:block;background:linear-gradient(180deg,rgba(0,122,255,.02),transparent);border-radius:12px}
+.trend-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.trend-stat{padding:12px 14px;background:var(--bg-soft);border-radius:10px}
+.trend-stat .label{font-size:11px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.trend-stat .value{font-size:18px;font-weight:700;font-feature-settings:"tnum"}
+.trend-stat .value.good{color:var(--green)}
+.trend-stat .value.warn{color:var(--orange)}
+.copy-section{background:linear-gradient(135deg,var(--card),#f8fbff);border-radius:20px;padding:28px 32px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.copy-section h2{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
+.copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
+.copy-section code{background:var(--bg-soft);padding:1px 6px;border-radius:4px;font-size:12px;font-family:"SF Mono",monospace}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn.primary{background:var(--green);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.copied{background:var(--ink)!important;color:#fff!important}
+.copy-preview{background:var(--bg-soft);border-radius:12px;padding:16px 18px;font-family:"SF Mono",monospace;font-size:12px;line-height:1.65;color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;border:1px solid var(--lineS)}
+.note-row{background:var(--card);border-radius:12px;padding:14px 18px;margin-top:12px;border:1px solid var(--lineS);font-size:13px;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.note-row .lbl{color:var(--ink3);font-size:12px}
+footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
+@keyframes pulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,.7)}70%{transform:scale(1.15);box-shadow:0 0 0 12px rgba(255,149,0,0)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,0)}}
+.pulse{animation:pulse 1.5s ease-out}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.receipt{padding:32px 20px 24px}.receipt .weight{font-size:48px}.trend-stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="receipt" id="receipt">
+<div class="check"></div>
+<div class="label">已记录体重</div>
+<div class="weight" id="weightBig">?<span class="unit">kg</span></div>
+<div class="meta" id="meta">加载中…</div>
+</div>
+<section class="section">
+<div class="section-title">
+<h2>近 30 天趋势</h2>
+<span class="hint">橙色圆点 = 最新记录 · 共 <span id="historyCount">0</span> 条</span>
+</div>
+<svg class="trend-svg" id="trendSvg" viewBox="0 0 800 200" preserveAspectRatio="none">
+<line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>
+</svg>
+<div class="trend-stats">
+<div class="trend-stat"><div class="label">距目标</div><div class="value" id="statDiff">--</div></div>
+<div class="trend-stat"><div class="label">平均</div><div class="value" id="statAvg">--</div></div>
+<div class="trend-stat"><div class="label">趋势</div><div class="value" id="statTrend">--</div></div>
+</div>
+<div class="note-row" id="noteRow" style="display:none">
+<span class="lbl">备注:</span><span id="noteText"></span>
+</div>
+</section>
+<section class="copy-section">
+<h2>复制确认</h2>
+<p class="sub">
+回执型 — 不需要 AI 执行命令(数据已写入)。复制下方简短回执(可选)给 AI 让它继续后续操作(如 "你记的体重不错,根据这个调整计划…")。
+</p>
+<div class="btn-row">
+<button class="btn primary" id="btnCopy" onclick="copyReceipt()">📋 复制回执</button>
+</div>
+<div class="copy-preview" id="copyPreview">回执预览</div>
+</section>
+<footer>卡路里 Skill · 记体重回执 · 2026-07-23 · G7</footer>
+</div>
+<!--INJECT-DATA-->
+<script>
+const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const SUMMARY=DATA&&DATA.data&&DATA.data.summary?DATA.data.summary:{};
+const HISTORY=DATA&&DATA.data&&Array.isArray(DATA.data.history)?DATA.data.history:[];
+
+function renderReceipt(){
+  const r=SUMMARY.new_record||{};
+  document.getElementById('weightBig').innerHTML=(r.weight_kg||'?')+'<span class="unit">kg</span>';
+  const metaParts=[];
+  metaParts.push((r.date||'?')+' '+(r.time||''));
+  if(r.bmi)metaParts.push('<span class="bmi">BMI '+(r.bmi||'?')+'</span>');
+  document.getElementById('meta').innerHTML=metaParts.join(' &nbsp;·&nbsp; ');
+  if(r.note){
+    document.getElementById('noteRow').style.display='flex';
+    document.getElementById('noteText').textContent=r.note;
+  }
+  const receipt=document.getElementById('receipt');
+  if(receipt){receipt.classList.add('pulse');setTimeout(()=>receipt.classList.remove('pulse'),2000);}
+  updatePreview();
+}
+
+function renderTrend(){
+  if(HISTORY.length===0)return;
+  document.getElementById('historyCount').textContent=HISTORY.length;
+  const W=800,H=200,PAD=30;
+  const weights=HISTORY.map(h=>h.weight_kg);
+  const minW=Math.min.apply(null,weights);
+  const maxW=Math.max.apply(null,weights);
+  const range=maxW-minW||1;
+  const xStep=(W-2*PAD)/(Math.max(1,HISTORY.length-1));
+  function x(i){return PAD+i*xStep;}
+  function y(w){return H-PAD-((w-minW)/range)*(H-2*PAD);}
+  let path='';
+  HISTORY.slice().reverse().forEach((h,i)=>{
+    const px=x(i),py=y(h.weight_kg);
+    path+=(i===0?'M':'L')+px+','+py+' ';
+  });
+  const svg=document.getElementById('trendSvg');
+  svg.innerHTML='<line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>';
+  const pathEl=document.createElementNS('http://www.w3.org/2000/svg','path');
+  pathEl.setAttribute('d',path);
+  pathEl.setAttribute('fill','none');
+  pathEl.setAttribute('stroke','rgba(0,122,255,.4)');
+  pathEl.setAttribute('stroke-width','2');
+  svg.appendChild(pathEl);
+  const areaPath=path+'L'+x(HISTORY.length-1)+','+(H-PAD)+'L'+x(0)+','+(H-PAD)+'Z';
+  const areaEl=document.createElementNS('http://www.w3.org/2000/svg','path');
+  areaEl.setAttribute('d',areaPath);
+  areaEl.setAttribute('fill','rgba(0,122,255,.06)');
+  svg.appendChild(areaEl);
+  HISTORY.slice().reverse().forEach((h,i)=>{
+    const px=x(i),py=y(h.weight_kg);
+    const isLatest=i===HISTORY.length-1;
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',px);c.setAttribute('cy',py);
+    c.setAttribute('r',isLatest?7:4);
+    c.setAttribute('fill',isLatest?'#ff9500':'rgba(0,122,255,.7)');
+    c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','2');
+    svg.appendChild(c);
+    if(isLatest){
+      const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x',px+10);lbl.setAttribute('y',py-8);
+      lbl.setAttribute('fill','#ff9500');lbl.setAttribute('font-size','12');lbl.setAttribute('font-weight','600');
+      lbl.setAttribute('font-family','-apple-system,sans-serif');
+      lbl.textContent=(h.weight_kg||'')+'kg';
+      svg.appendChild(lbl);
+    }
+  });
+  const avg=(weights.reduce((a,b)=>a+b,0)/weights.length).toFixed(1);
+  const firstW=HISTORY[HISTORY.length-1].weight_kg;
+  const lastW=HISTORY[0].weight_kg;
+  const trend=lastW<firstW?'下降 ▼':lastW>firstW?'上升 ▲':'持平';
+  const trendCls=lastW<firstW?'good':lastW>firstW?'warn':'';
+  document.getElementById('statAvg').textContent=avg+'kg';
+  const goal=SUMMARY.weight_goal||{};
+  if(goal.target){
+    const diff=(lastW-goal.target).toFixed(1);
+    document.getElementById('statDiff').textContent=diff+'kg';
+    document.getElementById('statDiff').className='value '+(diff<=0?'good':'warn');
+  }
+  document.getElementById('statTrend').textContent=trend;
+  document.getElementById('statTrend').className='value '+(trendCls||'');
+}
+
+function updatePreview(){
+  const r=SUMMARY.new_record||{};
+  const g=SUMMARY.weight_goal||{};
+  let p='已记录体重(回执):\n\n';
+  p+='  '+r.date+' '+r.time+' | '+r.weight_kg+'kg | BMI '+(r.bmi||'?')+'\n';
+  if(r.note)p+='  备注: '+r.note+'\n';
+  if(g.target){
+    p+='\n  体重目标: '+g.target+'kg (距今 '+(g.days_left||'?')+'天)\n';
+    p+='  距离: '+(r.weight_kg-g.target).toFixed(1)+'kg\n';
+  }
+  p+='\n数据来源: 记体重回执 v1 · render_weight_receipt.py · '+new Date().toISOString().split('T')[0];
+  document.getElementById('copyPreview').textContent=p;
+}
+
+function copyReceipt(){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(document.getElementById('copyPreview').textContent).then(()=>flashCopied('btnCopy','✓ 已复制'));
+  }else{
+    const ta=document.createElement('textarea');
+    ta.value=document.getElementById('copyPreview').textContent;
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');flashCopied('btnCopy','✓ 已复制');}catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+function flashCopied(btnId,msg){
+  const btn=document.getElementById(btnId);
+  if(!btn)return;
+  const orig=btn.textContent;
+  btn.textContent=msg;btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2200);
+}
+
+renderReceipt();
+renderTrend();
+</script>
+</body>
+</html>

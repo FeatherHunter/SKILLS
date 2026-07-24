@@ -286,3 +286,4 @@ python tools/download_whisper_model.py large-v3 --force-curl
 - **v1.20**:新增 §7.1 Whisper 模型选择与下载小节(5 种模型对比 + `tools/download_whisper_model.py` 无坑脚本);**主流程 Step 9.2.1 强制 AI 加载 SRT 自检错别字**(Whisper 同音字问题实测)
 - **v1.20.1**:修"直接调 ASR 不走粗加工"的设计漏洞 — 把"AI 加载 SRT 自检错别字"契约从主流程 9.2.1 提升为 op 级,在本文件 §7.2 独立存在,任何 ASR 调用都触发(2026-07-20)
 - **v1.20.2**:修 SRT 文件名 bug — 加硬规则 #11"文件名 = 视频同名(只改后缀)",原 `*-large-v3.srt` 后缀导致播放器不加载字幕。实测接色/解色 → 戒色 改 21 处(用户拍板 ground truth)
+- **v1.22** (2026-07-24)：仓库工程清理大版本,无功能变更 — 见 `SKILL.md` §v1.22 变更说明

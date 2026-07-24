@@ -129,7 +129,7 @@ triggers:
   - 复盘
   - audit
   - log
-metadata: { "openclaw": { "emoji": "🎬", "requires": { "python": ">=3.10" } } }
+metadata: { "openclaw": { "emoji": "🎬", "version": "v1.22", "released": "2026-07-24", "requires": { "python": ">=3.10" } } }
 ---
 
 # 智剪工坊 - 代码视频剪辑工作台
@@ -1131,5 +1131,59 @@ MIT(智剪工坊 © 2024-2026 帅猎羽)
     ├── CHANGELOG.md
     └── ...
 ```
+
+---
+
+## 🏷 v1.22 变更说明 (2026-07-24 · 工程清理大版本)
+
+> **变更类型**:仓库瘦身 + 资产规范化(无功能变更)
+> **新版本号**:`metadata.openclaw.version = "v1.22"`
+> **兼容性**:100% 向后兼容(`scripts/{audio,asr,video,ai,batch}/`、`lib/*`、`references/*` 全部保留)
+
+### 删除的文件/目录(共 **~3.5 GB** 释放)
+
+| 类型 | 内容 | 释放 |
+|---|---|---|
+| `.archive/` 整目录 | 旧 CHANGELOG/HANDOFF/README/SKILL_xxxxxx.md + 11 个临时 cover_compose 空目录 + day15/16/17 过程产物(~127 MB mp4)+ 11 个 HTML 备份(~50 MB) | 166 MB |
+| 5 个 `.bak-v1.20*/` 版本快照目录 | 当天迭代临时快照 | ~500 KB |
+| 4 个 `智剪工坊-意图编辑.html.bak-v1.{17,18,18.2,19}-*` | 主 HTML v1.17-v1.19 备份 | ~18 MB |
+| 20 个 `*.bak` 旧脚本/文档 | scripts/audio/asr/video/ + references/ 全备份 | ~70 KB |
+| 6 个 `.html/` 审计 HTML | v1.6-v1.10 历史审计报告 | ~116 KB |
+| 7 个 `docs/superpowers/{plans,specs}` | v1.11-v1.14 规划档 | ~174 KB |
+| 11 个 zero-引用单文件 | `changelog.md`(0 字节) / `_cdp.js` / `智剪工坊.html` / `智剪工坊LOGO.png` / `debug_mp4.py` / `claudecode-prompt-timeline-demo.md` / `智剪工坊弱项详解.html` / `tools/fix_safe_run.py` / `package.json` / `package-lock.json` / `.worktrees/` 空目录 | ~1.4 MB |
+| 2 个 stub/被取代文件 | `strip_rotation.py`(已被 `lib/video/patch_mp4_rotation.py` 覆盖) / `scripts/video/subtitle.py`(只剩 23 行 backward-compat 重导出) | ~5 KB |
+| 18 个 `素材/` 测试临时文件(误删后**已 git 恢复**) | alarm_bell 测试 mp3 × 6、bgm_demo × 3、bgm_ext × 4、_request.json × 5 | ~30 MB(已恢复) |
+
+> ⚠️ **事故记录**:清理执行中曾误把 git-tracked 的 16 首 mp3 + 5 个 prompt json 当成"测试残留"删除,**通过 `git checkout 素材/` 100% 救回**,随即整体规范化命名 + 加 `素材/README.md` 索引。教训见下方。
+
+### 新增/调整
+
+- **`素材/` 重组**(按用途分 5 子目录 + 规范化命名 + 索引)
+
+  | 子目录 | 内容 |
+  |---|---|
+  | `alarm_v1_electronic/` | v1 electronic + v2 natural 唤醒铃声(共 6 首) |
+  | `bgm_demo_style/` | 3 风格试听 A/B/C(自然/都市/电影) |
+  | `bgm_lofi_extended/` | Lo-Fi 长版变体(4 段) |
+  | `bgm_fitness/` | 健身主题 8 首(保留原命名) |
+  | `requests_4scenes/` | 4 场景 BGM 请求存档(未产 mp3,带 STATUS.md) |
+
+  **命名规范**:`{category}_{variant}_{style}_{bpm}[_{modifier}].mp3`
+  例:`bgm_alarm_v2_natural_110bpm_loop_4s.mp3`
+
+- **`references/字幕文字-Whisper烧字幕片头变声.md`** 修复 2 处过期引用:`scripts/video/subtitle.py` → `scripts/asr/burn_subtitle.py`
+
+### 教训(下次清理避免再误删)
+
+| 误判 | 正确做法 |
+|---|---|
+| "git ls-files 不显示的文件就是临时" | 大文件常被 git tracked 后工作区就会被忽略,但 `git ls-files` 不显示 — 应该 `git status` 看 working tree 是否有 deleted |
+| "中文 mp3 文件名很乱就是临时" | 真实资产也可能是早期不规范命名,看 mtime + git history |
+| "prompt json 文件放在素材根目录是临时" | prompt 是矩阵 MCP 资产,跟对应 mp3 放同目录才是规范 |
+
+**操作前必须做的检查清单**:
+1. `git status -s` — 看是否有 `D`(deleted in working tree)状态的 file,这些是**真** tracked 文件,**绝对不删**
+2. `git ls-files | grep -E "<pattern>"` — 看 git 是否还认
+3. 不在 git tracked + 不被 SKILL.md/references/scripts 引用 → 才确认可删
 
 ---

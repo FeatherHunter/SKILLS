@@ -1,6 +1,6 @@
 # 字幕文字 - Whisper烧字幕片头变声
 
-> **对应脚本**: `scripts/video/subtitle.py` + `scripts/video/opening.py` + `scripts/audio/voice.py` + `scripts/ai/translate.py`
+> **对应脚本**: `scripts/asr/burn_subtitle.py` + `scripts/video/opening.py` + `scripts/audio/voice.py` + `scripts/ai/translate.py`
 > **触发词**: "字幕"、"烧字幕"、"字幕动效"、"打字机"、"打字效果"、"淡入"、"弹跳"、"跑马灯"、"标题"、"文字"
 > **实测状态**: ✅ 验证通过
 
@@ -12,7 +12,7 @@
 
 ```bash
 # 自动字幕(Whisper 转录 + 烧录)
-python scripts/video/subtitle.py --input v.mp4 --srt v.srt --burn --output v_subtitled.mp4
+python scripts/asr/burn_subtitle.py --video v.mp4 --srt v.srt --output v_subtitled.mp4
 
 # 片头说明文字（v1.0 新增, 9 宫格简写 + 淡入淡出 + 自动中文字体）
 python scripts/video/opening.py add --input v.mp4 --output v_with_text.mp4 \

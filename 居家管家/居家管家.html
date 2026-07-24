@@ -3,834 +3,1067 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>居家管家 — Skill HTML 镜像</title>
+<title>居家管家 · 用户手册</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
     --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --accent-soft: #e8f1fd;
+    --warn: #ff9500; --warn-soft: #fff4e5;
+    --danger: #ff3b30; --danger-soft: #ffeae8;
     --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+    --green: #34c759;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     line-height: 1.75; color: var(--fg); background: var(--bg);
-    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
+    max-width: 920px; margin: 0 auto; padding: 64px 32px 120px;
     -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
-  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
-        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
-  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
-  p { font-size: 15px; margin-bottom: 14px; }
+  h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 6px; }
+  h2 { font-size: 28px; font-weight: 600; margin-top: 64px; margin-bottom: 20px;
+       letter-spacing: -0.02em; padding-bottom: 10px; border-bottom: 1px solid var(--border); scroll-margin-top: 24px; }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 24px; margin-bottom: 10px; }
+  h4 { font-size: 15px; font-weight: 600; margin-top: 18px; margin-bottom: 6px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 12px; }
   strong { font-weight: 600; }
-  em { color: var(--fg2); font-style: normal; }
-  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+  code { background: #f5f5f7; padding: 2px 7px; border-radius: 5px;
          font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
-         color: #c7254e; border: 1px solid var(--border); }
-  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
-         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
-         line-height: 1.65; }
+         color: #c7254e; border: 1px solid #e5e5ea; }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 16px 20px;
+        border-radius: 12px; overflow-x: auto; margin: 14px 0; font-size: 13px;
+        line-height: 1.6; }
   pre code { background: none; padding: 0; color: inherit; border: none; }
-  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { background: var(--card); font-weight: 600; }
-  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
-               margin: 16px 0; color: var(--fg2); }
-  blockquote p { color: var(--fg2); margin-bottom: 0; }
-  ul, ol { margin: 14px 0 14px 28px; }
+  ul, ol { margin: 10px 0 14px 26px; }
   li { margin-bottom: 4px; font-size: 15px; }
-  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
-  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
-          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* Header */
+  .lead { font-size: 19px; color: var(--fg2); margin-top: 8px; margin-bottom: 18px; line-height: 1.5; }
+  .meta { font-size: 13px; color: var(--fg3); padding-bottom: 14px;
+          border-bottom: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
+  .meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+  /* TOC */
   .toc { background: var(--card); border: 1px solid var(--border);
-         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
-  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
-            text-transform: uppercase; letter-spacing: 0.08em; }
-  .toc ol { margin-left: 22px; }
+         border-radius: 14px; padding: 20px 24px; margin: 32px 0 40px; }
+  .toc h4 { margin-top: 0; margin-bottom: 12px; color: var(--fg2); font-size: 12px;
+            text-transform: uppercase; letter-spacing: 0.1em; }
+  .toc-group { margin-bottom: 14px; }
+  .toc-group:last-child { margin-bottom: 0; }
+  .toc-group-title { font-size: 12.5px; color: var(--fg3); font-weight: 600;
+                     margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .toc-group ol { margin: 0 0 0 22px; }
+  .toc-group li { margin-bottom: 2px; font-size: 14px; }
   .toc a { color: var(--fg); text-decoration: none; }
   .toc a:hover { color: var(--accent); }
-  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-  .pill { display: inline-block; background: var(--card); color: var(--fg2);
-           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
-           border: 1px solid var(--border); }
-  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
-             color: var(--fg3); font-size: 12px; text-align: center; }
+
+  /* Wake word card */
+  .wake-card { background: var(--card); border: 1px solid var(--border);
+               border-radius: 14px; padding: 24px 28px; margin: 16px 0; }
+  .wake-name { font-size: 22px; font-weight: 700; color: var(--accent);
+               margin-bottom: 4px; letter-spacing: -0.01em; }
+  .wake-trigger { font-size: 14px; color: var(--fg2); margin-bottom: 16px; }
+  .wake-trigger code { font-size: 14px; }
+  .wake-trigger-label { display: inline-block; background: var(--accent-soft);
+                        color: var(--accent); padding: 1px 8px; border-radius: 4px;
+                        font-size: 12px; font-weight: 600; margin-right: 6px; }
+
+  /* Example box */
+  .example { background: #f9f9fb; border-left: 3px solid var(--accent);
+             padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+  .example-title { font-size: 12px; font-weight: 700; color: var(--accent);
+                   text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .example p { margin-bottom: 6px; font-size: 14.5px; }
+  .example p:last-child { margin-bottom: 0; }
+
+  /* Notes */
+  .note { padding: 12px 16px; border-radius: 8px; margin: 14px 0; font-size: 14px; }
+  .note-info { background: var(--accent-soft); color: #003c75; }
+  .note-warn { background: var(--warn-soft); color: #8a4d00; }
+  .note-danger { background: var(--danger-soft); color: #8b1a14; }
+  .note strong { display: block; margin-bottom: 4px; }
+
+  /* Details / collapsible workflow */
+  details { margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 14px; }
+  details summary {
+    cursor: pointer; font-size: 13.5px; font-weight: 600;
+    color: var(--fg2); padding: 6px 12px; background: #f5f5f7;
+    border-radius: 6px; display: inline-block; user-select: none;
+    transition: background 0.15s; list-style: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "▸ "; color: var(--accent); }
+  details[open] summary::before { content: "▾ "; }
+  details summary:hover { background: #ebebed; color: var(--fg); }
+  details[open] summary { background: var(--accent-soft); color: var(--accent); margin-bottom: 12px; }
+  details > div { padding: 0 4px; }
+  details h5 { font-size: 13px; font-weight: 700; color: var(--fg2);
+               margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  details ol, details ul { font-size: 14px; }
+  details li { margin-bottom: 6px; }
+
+  /* Announcements */
+  .announce { background: var(--warn-soft); border: 1px solid #ffd9a8;
+              border-radius: 10px; padding: 14px 18px; margin: 16px 0; }
+  .announce h4 { margin: 0 0 6px; color: #8a4d00; font-size: 13px;
+                 text-transform: uppercase; letter-spacing: 0.06em; }
+  .announce p { margin: 0; font-size: 14px; color: #5a3700; }
+
+  /* Footer */
+  .footer { margin-top: 80px; padding-top: 28px; border-top: 1px solid var(--border);
+            color: var(--fg3); font-size: 13px; }
+  .footer p { margin-bottom: 6px; font-size: 13px; }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    body { padding: 32px 18px 80px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 22px; }
+    .wake-card { padding: 18px 18px; }
+    pre { font-size: 12px; padding: 14px 16px; }
+  }
 </style>
 </head>
 <body>
-<div class="toc"><h4>目录</h4><ol><li><a href="#html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</a></li>
-<li><a href="#操作规范-强制-2">⚠️ 操作规范（强制）</a></li>
-<li><a href="#分类命名规范-强制-3">⚠️ 分类命名规范（强制）</a></li>
-<li><a href="#路由表-4">路由表</a></li>
-<li><a href="#安装与配置-5">安装与配置</a></li>
-<li><a href="#功能概述-6">功能概述</a></li>
-<li><a href="#快速导航-7">快速导航</a></li>
-<li><a href="#核心使用原则-8">⚠️ 核心使用原则</a></li>
-<li><a href="#联动说明-9">联动说明</a></li>
-<li><a href="#lint-检查-数据健康检查-10">Lint 检查（数据健康检查）</a></li>
-<li><a href="#错误处理-11">错误处理</a></li></ol></div>
-<p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到物品价格→询问是否记录支出；物品是食品/饮料→询问是否记录卡路里）。详见路由器的联动规则表。</p>
-<h2 id="html-同步规范-最高优先级-1">⚠️ HTML 同步规范（最高优先级）</h2>
-<blockquote>
-<p><strong>此规范优先级高于本文件中所有其他规定。</strong></p>
-</blockquote>
-<ol>
-<li><strong>全量同步</strong>：该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>居家管家.html</code> 上。任何功能模块的新增、修改、删除，任何唤醒词的调整，任何 CLI 命令的变化，任何脚本逻辑的改动——都必须同步更新 HTML 页面中对应的内容。</li>
-<li><strong>最高优先级</strong>：本条规定在所有规范中优先级最高。当其他流程或习惯与本条冲突时，以本条为准。</li>
-<li><strong>逐行确认</strong>：对该技能的所有文件、脚本的任何一行修改，都需要明确得到用户的 1 次确认后方可执行。不得批量静默修改，不得跳过确认步骤。</li>
-</ol>
-<hr />
-<h2 id="操作规范-强制-2">⚠️ 操作规范（强制）</h2>
-<p>本技能所有数据操作必须通过 CLI，禁止直连数据库。</p>
-<hr />
-<h2 id="分类命名规范-强制-3">⚠️ 分类命名规范（强制）</h2>
-<p><strong>所有写入 categories 表的 name 字段必须满足以下规则。违规会被 <code>category_manager.py</code> 拒收，不入库。</strong></p>
-<h3>规则</h3>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>规则</th>
-<th>违规示例</th>
-<th>原因</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>非空,strip 后 1-30 字</td>
-<td><code>""</code> / <code>"   "</code></td>
-<td>占位/空白无意义</td>
-</tr>
-<tr>
-<td>2</td>
-<td><strong>禁数字前缀</strong></td>
-<td><code>3. 家居</code> / <code>2 衣物</code> / <code>[1]数码</code> / <code>(2)图书</code></td>
-<td>DB id 137/138/205-210 已是天然编号,name 再加 = 双重编号 = 装饰</td>
-</tr>
-<tr>
-<td>3</td>
-<td>禁 emoji</td>
-<td><code>🎉 食物</code></td>
-<td>装饰,破坏纯文本</td>
-</tr>
-<tr>
-<td>4</td>
-<td>同 parent 下 name 唯一</td>
-<td>两个同名二级</td>
-<td>防止 merge 漏掉产生歧义</td>
-</tr>
-</tbody>
-</table>
-<h3>第一性</h3>
-<ul>
-<li>数字编号是 <strong>DB id 的事</strong>,name 负责语义</li>
-<li>8 顶级 name <strong>统一不带前缀</strong>:<code>食物与饮品</code> / <code>衣物与穿戴</code> / <code>家居与陈设</code> / <code>工具与器材</code> / <code>数码与电子</code> / <code>健康与医药</code> / <code>文体与娱乐</code> / <code>资产与凭证</code></li>
-<li>跨次加节点时,先看现有 name 风格,跟齐</li>
-</ul>
-<h3>实现位置</h3>
-<p><code>scripts/category_manager.py</code> 的 <code>_validate_name(name, parent_name, conn)</code> 函数,被 <code>cmd_import</code> / 未来 <code>cmd_add</code> 调用。</p>
-<hr />
-<h2 id="路由表-4">路由表</h2>
-<p>AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应功能。</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>唤醒词</th>
-<th>功能</th>
-<th>加载文件</th>
-<th>需要物品名？</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>查物品</td>
-<td>物品搜索</td>
-<td>features/search.md</td>
-<td>可选（无则列全部）</td>
-</tr>
-<tr>
-<td>2</td>
-<td>看物品</td>
-<td>物品详情</td>
-<td>features/search.md → detail</td>
-<td>是（多件时让用户选）</td>
-</tr>
-<tr>
-<td>3</td>
-<td>录物品</td>
-<td>文字录入</td>
-<td>features/add.md</td>
-<td>否（AI 解析描述）</td>
-</tr>
-<tr>
-<td>4</td>
-<td>拍物品</td>
-<td>拍照录入</td>
-<td>features/add.md → 图片子流程</td>
-<td>否（从图片提取）</td>
-</tr>
-<tr>
-<td>5</td>
-<td>改物品</td>
-<td>通用更新</td>
-<td>features/update.md</td>
-<td>是</td>
-</tr>
-<tr>
-<td>6</td>
-<td>移物品</td>
-<td>位置移动</td>
-<td>features/update.md → 位置移动</td>
-<td>是</td>
-</tr>
-<tr>
-<td>7</td>
-<td>补物品</td>
-<td>数量增加</td>
-<td>features/update.md → 数量变更</td>
-<td>是</td>
-</tr>
-<tr>
-<td>8</td>
-<td>减物品</td>
-<td>数量减少</td>
-<td>features/update.md → 数量变更</td>
-<td>是</td>
-</tr>
-<tr>
-<td>9</td>
-<td>标物品</td>
-<td>标签更新</td>
-<td>features/update.md → 标签更新</td>
-<td>是</td>
-</tr>
-<tr>
-<td>10</td>
-<td>废物品</td>
-<td>标记废弃</td>
-<td>features/update.md → 状态变更</td>
-<td>是</td>
-</tr>
-<tr>
-<td>11</td>
-<td>借物品</td>
-<td>标记借出</td>
-<td>features/update.md → 状态变更</td>
-<td>是</td>
-</tr>
-<tr>
-<td>12</td>
-<td>修物品</td>
-<td>标记维修</td>
-<td>features/update.md → 状态变更</td>
-<td>是</td>
-</tr>
-<tr>
-<td>13</td>
-<td>盘物品</td>
-<td>按位置盘点</td>
-<td>features/inventory.md</td>
-<td>是（位置）</td>
-</tr>
-<tr>
-<td>14</td>
-<td>盘全部</td>
-<td>全屋盘点</td>
-<td>features/inventory.md</td>
-<td>否</td>
-</tr>
-<tr>
-<td>15</td>
-<td>穿什么</td>
-<td>穿搭推荐</td>
-<td>features/fashion.md</td>
-<td>否</td>
-</tr>
-<tr>
-<td>16</td>
-<td>带物品</td>
-<td>出门标记</td>
-<td>features/travel.md → 出门前</td>
-<td>是</td>
-</tr>
-<tr>
-<td>17</td>
-<td>归物品</td>
-<td>回家归位</td>
-<td>features/travel.md → 回家后</td>
-<td>否（查所有旅游中）</td>
-</tr>
-<tr>
-<td>18</td>
-<td>统物品</td>
-<td>总体统计</td>
-<td>features/stats.md → summary</td>
-<td>否</td>
-</tr>
-<tr>
-<td>19</td>
-<td>查高频</td>
-<td>高频物品</td>
-<td>features/stats.md → frequent</td>
-<td>否</td>
-</tr>
-<tr>
-<td>20</td>
-<td>查低频</td>
-<td>低频物品</td>
-<td>features/stats.md → dormant</td>
-<td>否</td>
-</tr>
-<tr>
-<td>21</td>
-<td>查过期</td>
-<td>过期检查</td>
-<td>features/stats.md → expiring</td>
-<td>否</td>
-</tr>
-<tr>
-<td>22</td>
-<td>看标签</td>
-<td>列出标签</td>
-<td>features/tags.md → 列表</td>
-<td>否</td>
-</tr>
-<tr>
-<td>23</td>
-<td>合标签</td>
-<td>合并标签</td>
-<td>features/tags.md → 合并</td>
-<td>是（from/to）</td>
-</tr>
-<tr>
-<td>24</td>
-<td>查快递</td>
-<td>快递查询</td>
-<td>features/search.md → 快递</td>
-<td>否</td>
-</tr>
-<tr>
-<td>25</td>
-<td>推位置</td>
-<td>位置推荐</td>
-<td>features/add.md → Step 2.5</td>
-<td>是（category-id 整数）</td>
-</tr>
-<tr>
-<td>26</td>
-<td>找位置</td>
-<td>参考锚定</td>
-<td>features/add.md → Step 2.6</td>
-<td>是（reference）</td>
-</tr>
-<tr>
-<td>27</td>
-<td>查账号</td>
-<td>查看账号</td>
-<td>accounts.py → show/list</td>
-<td>是（平台名，无则列全部）</td>
-</tr>
-<tr>
-<td>28</td>
-<td>存账号</td>
-<td>新增账号</td>
-<td>accounts.py → add</td>
-<td>是</td>
-</tr>
-<tr>
-<td>29</td>
-<td>改账号</td>
-<td>更新账号</td>
-<td>accounts.py → show</td>
-<td>是（平台名）</td>
-</tr>
-<tr>
-<td>30</td>
-<td>查异常</td>
-<td>数据健康检查</td>
-<td>SKILL.md → Lint 检查</td>
-<td>否</td>
-</tr>
-<tr>
-<td>31</td>
-<td>查物品</td>
-<td>物品搜索（默认输出 HTML）</td>
-<td>features/search.md → Step 4</td>
-<td>可选（无则列全部）</td>
-</tr>
-<tr>
-<td>32</td>
-<td>看物品</td>
-<td>物品详情（默认输出 HTML）</td>
-<td>features/search.md → Step 4</td>
-<td>是（多件时先选）</td>
-</tr>
-<tr>
-<td>33</td>
-<td>统物品</td>
-<td>总体统计（默认输出 HTML）</td>
-<td>features/search.md → Step 4</td>
-<td>否</td>
-</tr>
 
-</tbody>
-</table>
-<h3>匹配规则</h3>
-<ol>
-<li><strong>精确匹配</strong>：用户输入包含表中唤醒词即命中</li>
-<li><strong>最长匹配</strong>：同时命中多个时，取最长的（如"查高频"优先于"查"）</li>
-<li><strong>物品名提取</strong>：唤醒词前后的文字作为物品名/参数</li>
-<li><strong>缺失物品名</strong>：需要物品名但用户未提供时，追问</li>
-</ol>
-<h3>唤醒词 CLI 映射</h3>
-<table>
-<thead>
-<tr>
-<th>唤醒词</th>
-<th>CLI 命令</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>查物品</td>
-<td><code>search --name "XX"</code> 或 <code>search --location "XX"</code> 或 <code>search --tag "XX"</code></td>
-</tr>
-<tr>
-<td>看物品</td>
-<td><code>detail --id {ID}</code></td>
-</tr>
-<tr>
-<td>录物品</td>
-<td><code>add --name "XX" --category-id N --location "XX"</code> (category-id 必填,从 categories 表查)</td>
-</tr>
-<tr>
-<td>拍物品</td>
-<td>先看图并保存到 <code>HOME_PHOTOS_DIR</code> → <code>add --name "XX" --category-id N --location "XX" --tags "...≥10" --remark "..." --photo "XX"</code> 一次写入</td>
-</tr>
-<tr>
-<td>改物品</td>
-<td><code>update --id {ID}</code> + 对应参数</td>
-</tr>
-<tr>
-<td>移物品</td>
-<td><code>update --id {ID} --new-location "新位置" --location "原位置"</code></td>
-</tr>
-<tr>
-<td>补物品</td>
-<td><code>update --id {ID} --plus N</code></td>
-</tr>
-<tr>
-<td>减物品</td>
-<td><code>update --id {ID} --minus N</code></td>
-</tr>
-<tr>
-<td>标物品</td>
-<td><code>update --id {ID} --tags "新标签"</code></td>
-</tr>
-<tr>
-<td>废物品</td>
-<td><code>update --id {ID} --location-status "已废弃"</code></td>
-</tr>
-<tr>
-<td>借物品</td>
-<td><code>update --id {ID} --location-status "借用中"</code></td>
-</tr>
-<tr>
-<td>修物品</td>
-<td><code>update --id {ID} --location-status "维修中"</code></td>
-</tr>
-<tr>
-<td>盘物品</td>
-<td><code>inventory --location "位置" [--output PATH]</code> (--output 走 inventory_check.html)</td>
-</tr>
-<tr>
-<td>盘全部</td>
-<td><code>list</code>（无筛选条件）</td>
-</tr>
-<tr>
-<td>穿什么</td>
-<td><code>list --category-id 138 --status "在家"</code> (衣物顶级) + <code>list --category-id 148 --status "在家"</code> (鞋类二级)</td>
-</tr>
-<tr>
-<td>带物品</td>
-<td><code>update --id {ID} --location-status "旅游中"</code></td>
-</tr>
-<tr>
-<td>归物品</td>
-<td><code>search --status "旅游中"</code> → 逐个 <code>update --id {ID} --location-status "在家"</code></td>
-</tr>
-<tr>
-<td>统物品</td>
-<td><code>stats --type summary</code></td>
-</tr>
-<tr>
-<td>查高频</td>
-<td><code>stats --type frequent --limit 20</code></td>
-</tr>
-<tr>
-<td>查低频</td>
-<td><code>stats --type dormant --limit 20</code></td>
-</tr>
-<tr>
-<td>查过期</td>
-<td><code>stats --type expiring [--days 30] [--expired-only] [--category-id N] [--output PATH]</code> (--output 走 expiring_alert.html)</td>
-</tr>
-<tr>
-<td>看标签</td>
-<td><code>tag-list</code></td>
-</tr>
-<tr>
-<td>合标签</td>
-<td><code>tag-merge --from "旧" --to "新"</code></td>
-</tr>
-<tr>
-<td>查快递</td>
-<td><code>search --status "快递中" [--output PATH]</code> (auto 走 delivery_check.html)</td>
-</tr>
-<tr>
-<td>推位置</td>
-<td><code>suggest-locations --category-id N [--with-examples]</code></td>
-</tr>
-<tr>
-<td>找位置</td>
-<td><code>find-location --reference "XX"</code></td>
-</tr>
-<tr>
-<td>查账号</td>
-<td><code>account --action list</code> 或 <code>account --action show --platform "XX" --master-key "XX"</code></td>
-</tr>
-<tr>
-<td>存账号</td>
-<td><code>account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"</code></td>
-</tr>
-<tr>
-<td>改账号</td>
-<td><code>account --action show --platform "XX" --master-key "XX"</code>（查看后重新录入）</td>
-</tr>
-<tr>
-<td>查异常</td>
-<td>无 CLI，AI 执行 Lint 检查逻辑（见下方）</td>
-</tr>
-<tr>
-<td>查物品</td>
-<td><code>search --name "XX"</code> 默认输出 HTML</td>
-</tr>
-<tr>
-<td>看物品</td>
-<td><code>detail --id {ID}</code> 默认输出 HTML</td>
-</tr>
-<tr>
-<td>统物品</td>
-<td><code>list</code> 默认输出 HTML</td>
-</tr>
+<header>
+  <h1>居家管家</h1>
+  <p class="lead">家庭物品全生命周期管理 —— 你说一句话，AI 帮你查、录、改、盘、算。</p>
+  <p class="meta">
+    <span>📖 用户手册</span>
+    <span>🏷 v1.0</span>
+    <span>📅 2026-07-24 重写</span>
+    <span>🎯 30 个唤醒词 · 10 类场景</span>
+  </p>
+</header>
 
-</tbody>
-</table>
-<hr />
-<h2 id="安装与配置-5">安装与配置</h2>
-<p><strong>依赖</strong>：Python 3.x</p>
-<p><strong>环境变量</strong>（可选）：
-- <code>SKILLS_DB_PATH</code>：数据库目录
-- <code>HOME_PHOTOS_DIR</code>：照片目录</p>
-<p><strong>网页版</strong>：<a href="https://featherhunter.github.io/StudyNotes/skillboard/">SkillBoard</a> - 通过浏览器使用本系统，支持电脑和手机。使用时选择 <code>home.db</code> 文件即可。</p>
-<p><strong>一键安装</strong>：复制以下 prompt 给 AI：</p>
-<pre><code>帮我安装&quot;居家管家&quot;技能：
-1. 检查 Python 环境
-2. 引导我配置环境变量
-3. 显示当前环境变量配置
-4. 告诉我如何更改数据目录
-</code></pre>
-<hr />
-<h2 id="功能概述-6">功能概述</h2>
-<ul>
-<li><strong>物品录入</strong>：自然语言描述物品，AI 解析后写入数据库；写入前生成 HTML 预览供用户确认</li>
-<li><strong>物品查找</strong>：按名称/位置/标签/分类/状态搜索</li>
-<li><strong>物品更新</strong>：位置变动、状态变更、数量调整、标签修改</li>
-<li><strong>物品盘点</strong>：按需盘点指定位置的所有物品</li>
-<li><strong>穿搭推荐</strong>：根据天气+标签推荐今日穿搭</li>
-<li><strong>旅游归位</strong>：出门带物+回家归位的完整流程</li>
-<li><strong>频率统计</strong>：区分高频/低频物品，识别长期未用物品</li>
-<li><strong>标签管理</strong>：合并相似标签</li>
-<li><strong>照片管理</strong>：支持配置照片存储路径（环境变量 <code>HOME_PHOTOS_DIR</code>，默认为技能目录/photos）；添加物品时可通过 <code>--photo</code> 一次写入图片；<code>add --photo</code> 内部拿到 ID 后复制为 <code>YYYYMMDD_{ID}_{中文描述}.jpg</code> 并写入 <code>item.photo</code></li>
-</ul>
-<h2 id="快速导航-7">快速导航</h2>
-<table>
-<thead>
-<tr>
-<th>唤醒词</th>
-<th>功能</th>
-<th>参考文档</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>查物品</td>
-<td>物品搜索</td>
-<td>features/search.md</td>
-</tr>
-<tr>
-<td>看物品</td>
-<td>物品详情</td>
-<td>features/search.md</td>
-</tr>
-<tr>
-<td>录物品</td>
-<td>物品录入</td>
-<td>features/add.md</td>
-</tr>
-<tr>
-<td>拍物品</td>
-<td>拍照录入</td>
-<td>features/add.md</td>
-</tr>
-<tr>
-<td>改物品</td>
-<td>通用更新</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>移物品</td>
-<td>位置移动</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>补物品</td>
-<td>数量增加</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>减物品</td>
-<td>数量减少</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>标物品</td>
-<td>标签更新</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>废物品</td>
-<td>标记废弃</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>借物品</td>
-<td>标记借出</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>修物品</td>
-<td>标记维修</td>
-<td>features/update.md</td>
-</tr>
-<tr>
-<td>盘物品</td>
-<td>按位置盘点</td>
-<td>features/inventory.md</td>
-</tr>
-<tr>
-<td>盘全部</td>
-<td>全屋盘点</td>
-<td>features/inventory.md</td>
-</tr>
-<tr>
-<td>穿什么</td>
-<td>穿搭推荐</td>
-<td>features/fashion.md</td>
-</tr>
-<tr>
-<td>带物品</td>
-<td>出门标记</td>
-<td>features/travel.md</td>
-</tr>
-<tr>
-<td>归物品</td>
-<td>回家归位</td>
-<td>features/travel.md</td>
-</tr>
-<tr>
-<td>统物品</td>
-<td>总体统计</td>
-<td>features/stats.md</td>
-</tr>
-<tr>
-<td>查高频</td>
-<td>高频物品</td>
-<td>features/stats.md</td>
-</tr>
-<tr>
-<td>查低频</td>
-<td>低频物品</td>
-<td>features/stats.md</td>
-</tr>
-<tr>
-<td>查过期</td>
-<td>过期检查</td>
-<td>features/stats.md</td>
-</tr>
-<tr>
-<td>看标签</td>
-<td>列出标签</td>
-<td>features/tags.md</td>
-</tr>
-<tr>
-<td>合标签</td>
-<td>合并标签</td>
-<td>features/tags.md</td>
-</tr>
-<tr>
-<td>查快递</td>
-<td>快递查询</td>
-<td>features/search.md</td>
-</tr>
-<tr>
-<td>推位置</td>
-<td>位置推荐</td>
-<td>features/add.md</td>
-</tr>
-<tr>
-<td>找位置</td>
-<td>参考锚定</td>
-<td>features/add.md</td>
-</tr>
-<tr>
-<td>查账号</td>
-<td>查看账号</td>
-<td>accounts.py</td>
-</tr>
-<tr>
-<td>存账号</td>
-<td>新增账号</td>
-<td>accounts.py</td>
-</tr>
-<tr>
-<td>改账号</td>
-<td>更新账号</td>
-<td>accounts.py</td>
-</tr>
-<tr>
-<td>查异常</td>
-<td>数据健康检查</td>
-<td>SKILL.md（Lint 检查）</td>
-</tr>
-<tr>
-<td>查物品</td>
-<td>物品搜索→HTML</td>
-<td>features/search.md</td>
-</tr>
-<tr>
-<td>看物品</td>
-<td>物品详情→HTML</td>
-<td>features/search.md</td>
-</tr>
-<tr>
-<td>统物品</td>
-<td>总体统计→HTML</td>
-<td>features/search.md</td>
-</tr>
+<nav class="toc">
+  <h4>目录</h4>
+  <div class="toc-group">
+    <div class="toc-group-title">快速上手</div>
+    <ol>
+      <li><a href="#quickstart">3 分钟入门</a></li>
+      <li><a href="#announcements">重要变更</a></li>
+    </ol>
+  </div>
+  <div class="toc-group">
+    <div class="toc-group-title">唤醒词</div>
+    <ol>
+      <li><a href="#cat-search">查找类</a> · 查物品 / 看物品 / 查快递 / 推位置 / 找位置</li>
+      <li><a href="#cat-add">录入类</a> · 录物品 / 拍物品</li>
+      <li><a href="#cat-update">更新类</a> · 改物品 / 移物品 / 补物品 / 减物品 / 标物品 / 废物品 / 借物品 / 修物品</li>
+      <li><a href="#cat-inventory">盘点类</a> · 盘物品 / 盘全部</li>
+      <li><a href="#cat-fashion">穿搭</a> · 穿什么</li>
+      <li><a href="#cat-travel">出行</a> · 带物品 / 归物品</li>
+      <li><a href="#cat-stats">统计</a> · 统物品 / 查高频 / 查低频 / 查过期</li>
+      <li><a href="#cat-tags">标签</a> · 看标签 / 合标签</li>
+      <li><a href="#cat-account">账号</a> · 查账号 / 存账号 / 改账号</li>
+      <li><a href="#cat-health">健康检查</a> · 查异常</li>
+    </ol>
+  </div>
+  <div class="toc-group">
+    <div class="toc-group-title">附录</div>
+    <ol>
+      <li><a href="#faq">常见问题</a></li>
+      <li><a href="#changelog">修订记录</a></li>
+    </ol>
+  </div>
+</nav>
 
-</tbody>
-</table>
-<hr />
-<h2 id="核心使用原则-8">⚠️ 核心使用原则</h2>
-<ol>
-<li><strong>任何写操作前必须交互确认</strong>：AI 先展示将要执行的操作，用户说"对"才执行</li>
-<li><strong>多物品冲突时让用户选</strong>：搜到多个同名物品，列出来让用户选，不默认选任何一个</li>
-<li><strong>物品只增不删，可修改</strong>：物品不会物理删除。item_locations 中 quantity=0 时自动删除该位置记录；位置状态为"已用完"或"已废弃"时需用户明确表态</li>
-<li><strong>AI 不得自行推断</strong>：当用户意图存在多种可能时，AI 必须询问确认，不得私自选择</li>
-<li><strong>库存补充必须问</strong>：搜索到名称相同的"已用完"或"已废弃"物品时，AI 必须询问用户是"补充到现有记录"还是"新建记录"，用户确认前不得写入数据库</li>
-</ol>
-<hr />
-<h2 id="联动说明-9">联动说明</h2>
-<p>联动逻辑已集中到技能路由器（<code>图片路由/SKILL.md</code>），本技能不再单独维护联动规则。完成主操作后请检查路由器的联动规则表。</p>
-<hr />
-<h2 id="lint-检查-数据健康检查-10">Lint 检查（数据健康检查）</h2>
-<p><strong>唤醒词</strong>：<code>查异常</code></p>
-<h3>检查项</h3>
-<p><strong>1. 标签完整性</strong>
-- 物品是否缺少标签？标签太少（如少于2个）？
-- 重要属性是否遗漏（如品牌、颜色、型号）？</p>
-<p><strong>2. 表利用率</strong>
-- items 表：所有物品是否都有合理的分类、位置、状态？
-- item_tags 表：是否有物品完全没有标签？
-- item_locations 表：是否有相似位置路径未合并？（如 <code>卧室/东南角/小冰箱上/眼镜装扮抽屉</code> vs <code>卧室东南角/小冰箱上/眼镜装扮抽屉</code>）</p>
-<p><strong>3. 状态时效性</strong>
-- <code>快递中</code> 的物品是否超过合理时限未收到？是否忘了更新状态？
-- <code>旅游中</code> 的物品是否长期未归位？
-- <code>洗护中</code>、<code>维修中</code> 的物品是否处理完毕未更新？</p>
-<p><strong>4. 位置规范性</strong>
-- 位置路径是否至少两级（如 <code>客厅/电视柜</code>）？
-- 是否存在单级位置（如只有"客厅"）？</p>
-<h3>处理原则</h3>
-<ul>
-<li>发现问题后列出清单，让用户确认是否需要处理</li>
-<li>不要自动修改，只能建议</li>
-<li>用户说"检查一下"时执行，不主动触发</li>
-</ul>
-<hr />
-<h2 id="错误处理-11">错误处理</h2>
-<table>
+<!-- ============ 快速上手 ============ -->
+<section id="quickstart">
+<h2>3 分钟入门</h2>
+<p>本技能让你用<strong>自然语言</strong>管理家里所有物品。AI 负责理解、确认、执行；你只需要说清楚<strong>想做什么</strong>。</p>
+
+<h3>三类核心动作</h3>
+<div class="wake-card">
+  <div class="wake-name">① 查 —— "东西在哪？"</div>
+  <div class="wake-trigger"><span class="wake-trigger-label">说</span><code>查物品 黑色T恤</code> / <code>找冰箱里的牛奶</code></div>
+  <div class="example">
+    <div class="example-title">典型对话</div>
+    <p>👤 「找一下卧室里白色的T恤」</p>
+    <p>🤖 （搜索后弹出 HTML 页面，列出所有匹配物品）</p>
+    <p>👤 「我要看第二件的详情」</p>
+    <p>🤖 （打开详情页：标签、位置、购买日期、照片）</p>
+  </div>
+</div>
+
+<div class="wake-card">
+  <div class="wake-name">② 录 —— "家里新买了"</div>
+  <div class="wake-trigger"><span class="wake-trigger-label">说</span><code>录物品 一箱牛奶 放冰箱里</code> / 拍照发给 AI</div>
+  <div class="example">
+    <div class="example-title">典型流程</div>
+    <p>👤 「录物品 一箱牛奶 放在厨房冰箱」</p>
+    <p>🤖 「同类物品一般放在：① 厨房/冰箱 [12件] ② 厨房/储物柜 [3件]，放哪个？」</p>
+    <p>👤 「放厨房/冰箱」</p>
+    <p>🤖 「将写入：名称=牛奶 / 分类=食物与饮品 / 位置=厨房/冰箱 / 数量=1 / 状态=在家，对吗？」</p>
+    <p>👤 「对」</p>
+    <p>🤖 （写入成功，回读展示）</p>
+  </div>
+</div>
+
+<div class="wake-card">
+  <div class="wake-name">③ 算 —— "数据怎么看？"</div>
+  <div class="wake-trigger"><span class="wake-trigger-label">说</span><code>统物品</code> / <code>查过期</code> / <code>查低频</code></div>
+  <div class="example">
+    <div class="example-title">典型场景</div>
+    <p>👤 「查过期」</p>
+    <p>🤖 「未来 30 天内过期 5 件，已过期 2 件 —— [列表]」</p>
+  </div>
+</div>
+
+<div class="note note-info">
+  <strong>💡 关键原则</strong>
+  所有 <strong>写操作</strong>（录、改、移、删）AI 都会先展示"将执行什么"，你说"对"才会真动手。放心试，错了不写库。
+</div>
+</section>
+
+<!-- ============ 重要变更 ============ -->
+<section id="announcements">
+<h2>📢 重要变更</h2>
+<p>只展示<strong>你需要知道的变化</strong>。底层修改、bug 修复等不打扰你的事不会出现在这里。</p>
+
+<div class="announce">
+  <h4>2026-07-24 · 手册重写</h4>
+  <p>原 <code>居家管家.html</code> 是给 AI 看的技术文档，本版本改为<strong>用户手册</strong>。新增"3 分钟入门"、"常见问题"、"按场景分组"。唤醒词下方点 <strong>▸ 展开</strong> 可看 AI 内部工作流（好奇/排错时用）。</p>
+</div>
+</section>
+
+<!-- ============ 查找类 ============ -->
+<section id="cat-search">
+<h2>① 查找类</h2>
+<p>找东西的 5 个唤醒词。涵盖按名称、位置、标签、状态、参考物品定位。</p>
+
+<!-- 查物品 -->
+<div class="wake-card">
+  <div class="wake-name">查物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查物品 [关键词]</code> · <code>找 [关键词]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查物品 黑色T恤</strong>」</p>
+    <p>🤖 （打开 HTML 搜索结果页，列出所有匹配物品）</p>
+  </div>
+  <div class="example">
+    <p>👤 「<strong>找冰箱里的牛奶</strong>」</p>
+    <p>🤖 （按位置 + 名称搜索，结果按位置分组）</p>
+  </div>
+  <div class="example">
+    <p>👤 「<strong>看看有哪些食品</strong>」</p>
+    <p>🤖 （按顶级分类"食物与饮品"搜索，包含所有子类）</p>
+  </div>
+  <h3>可组合的搜索维度</h3>
+  <ul>
+    <li><strong>名称</strong>：模糊匹配，如"杯子"会匹配"水杯"、"马克杯"</li>
+    <li><strong>位置</strong>：模糊匹配路径片段，如"冰箱"会匹配所有含"冰箱"的位置</li>
+    <li><strong>标签</strong>：精确匹配，如"白色"</li>
+    <li><strong>分类</strong>：按顶级或二级 ID 筛选</li>
+    <li><strong>状态</strong>：在家 / 备用 / 快递中 / 旅游中 / 借用中 / 维修中 / 已用完 / 已废弃</li>
+  </ul>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <h5>Step 1 · 解析搜索条件</h5>
+      <p>AI 从你的输入里识别出 5 个维度（名称/位置/标签/分类/状态）的取值。</p>
+      <h5>Step 2 · 执行搜索</h5>
+      <pre><code>python home_manager.py search --name "T恤" --tag "黑色" --limit 20</code></pre>
+      <h5>Step 3 · 处理结果</h5>
+      <ul>
+        <li><strong>0 条</strong>：告诉你没找到，询问是否换个关键词或新建物品</li>
+        <li><strong>1 条</strong>：直接展示</li>
+        <li><strong>多条</strong>：列出来让你选（不默认选任何一个）</li>
+      </ul>
+      <h5>Step 4 · 输出</h5>
+      <p>默认生成 <code>templates/search_results.html</code> 在浏览器打开。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 看物品 -->
+<div class="wake-card">
+  <div class="wake-name">看物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>看物品 [名称]</code> · <code>查看 [名称] 的详情</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>看物品 黑色连帽卫衣</strong>」</p>
+    <p>🤖 （如只有 1 件 → 直接展示详情；如有多件 → 列出让选）</p>
+  </div>
+  <div class="example">
+    <p>👤 「<strong>查物品 牛奶</strong>，看第 2 件」</p>
+    <p>🤖 （打开第 2 件的详情 HTML 页）</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>先搜索 → 选 ID → 调 <code>detail --id {ID}</code> → 输出 <code>templates/item_detail.html</code>。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 查快递 -->
+<div class="wake-card">
+  <div class="wake-name">查快递</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查快递</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查快递</strong>」</p>
+    <p>🤖 （列出所有状态为"快递中"的物品，附自动生成的 <code>delivery_check.html</code>）</p>
+  </div>
+  <div class="note note-warn">
+    <strong>⏰ 何时该用</strong>
+    快递状态超过 7 天未更新？AI 会提示你检查是否需要改成"在家"。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>search --status "快递中"</code> → 输出 <code>templates/delivery_check.html</code>。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 推位置 -->
+<div class="wake-card">
+  <div class="wake-name">推位置</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>推位置 [分类]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>推位置 衣物</strong>」</p>
+    <p>🤖 「同类物品位置推荐（衣物）—— 共 3 个位置：① 卧室/衣柜/上层 [2件] 代表：黑色连帽卫衣、白色长袖T恤 ② 卧室/抽屉 [1件] 代表：深蓝牛仔裤 ③ 其他位置（请告诉我新位置）」</p>
+  </div>
+  <div class="note note-info">
+    <strong>💡 怎么用</strong>
+    通常在「录物品」流程中 AI 自动调用，无需你主动唤醒。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>suggest-locations --category-id 138 --with-examples</code> → 按同类物品数量排序位置，每个位置列代表物品。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 找位置 -->
+<div class="wake-card">
+  <div class="wake-name">找位置</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>找位置 和XX放一起</code> · <code>找位置 参考XX</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>录物品 一副新眼镜，<span style="color:var(--accent)">找位置 和旧眼镜放一起</span></strong>」</p>
+    <p>🤖 （先搜索"旧眼镜" → 用其位置作为新眼镜的默认位置）</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>find-location --reference "旧眼镜"</code> → 返回旧眼镜所在位置，作为新物品的建议位置。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 录入类 ============ -->
+<section id="cat-add">
+<h2>② 录入类</h2>
+<p>家里新买了什么？两种方式：文字描述 或 拍照。</p>
+
+<!-- 录物品 -->
+<div class="wake-card">
+  <div class="wake-name">录物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>录物品 [描述]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>录物品 一箱特仑苏牛奶 保质期 6 个月 放厨房冰箱</strong>」</p>
+    <p>🤖 「将写入：名称=特仑苏牛奶 / 分类=食物与饮品/乳制品 / 位置=厨房/冰箱 / 数量=1 / 状态=在家 / 过期日期=2027-01-24，对吗？」</p>
+    <p>👤 「对」</p>
+  </div>
+
+  <h3>完整流程（AI 内部走的 6 步）</h3>
+  <ol>
+    <li><strong>解析描述</strong>：提取名称、数量、位置、标签、备注、购买日期、过期日期</li>
+    <li><strong>位置推荐</strong>（必走）：自动调"推位置"，展示同类物品所在位置</li>
+    <li><strong>补全字段</strong>：缺失的字段问你确认</li>
+    <li><strong>查相似</strong>（必走）：先搜索库内是否有同名/相似物品，避免重复</li>
+    <li><strong>确认并写入</strong>：展示预览，你说"对"才写库</li>
+    <li><strong>回读确认</strong>：写入后再读一遍给你看</li>
+  </ol>
+
+  <div class="note note-danger">
+    <strong>⚠️ 防重复机制</strong>
+    搜索到名称相同的"已用完"或"已废弃"物品时，AI <strong>必须</strong>问你是"补充到现有记录"还是"新建记录"。不会自动决定。
+  </div>
+
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <h5>前置校验</h5>
+      <ul>
+        <li>分类必须先从 <code>categories</code> 表查，不硬编码</li>
+        <li>位置路径自动建议 ≥ 2 级（如 <code>厨房/冰箱</code>）</li>
+        <li>状态默认"在家"，路径含"快递"时自动改"快递中"</li>
+      </ul>
+      <h5>CLI 调用</h5>
+      <pre><code>python home_manager.py add \
+  --name "特仑苏牛奶" \
+  --category-id 145 \
+  --location "厨房/冰箱" \
+  --quantity 1 \
+  --expiration-date "2027-01-24" \
+  --tags "乳制品,白色,1L"</code></pre>
+    </div>
+  </details>
+</div>
+
+<!-- 拍物品 -->
+<div class="wake-card">
+  <div class="wake-name">拍物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>拍物品</code> + 发送照片
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>拍物品</strong>」（发送一张洗衣液的照片）</p>
+    <p>🤖 「图中识别：蓝色塑料瓶、约 2L、品牌'蓝月亮'、瓶身文字'亮彩增艳洗衣液'。建议分类=家居与陈设/清洁用品。位置？」</p>
+  </div>
+
+  <h3>AI 会从图片里自动提取的标签</h3>
+  <ul>
+    <li><strong>颜色</strong>：白/黑/蓝/红/...</li>
+    <li><strong>品牌</strong>：海天、可口可乐、优衣库...</li>
+    <li><strong>规格</strong>：500ml / 2L / 大瓶 / 小瓶</li>
+    <li><strong>材质</strong>：纯棉 / 羊毛 / 塑料</li>
+    <li><strong>口味/香型</strong>：橙味 / 原味 / 薄荷</li>
+    <li><strong>场景</strong>：运动 / 职场 / 户外 / 居家</li>
+    <li><strong>季节</strong>：春夏 / 秋冬 / 四季</li>
+    <li><strong>新旧</strong>：全新 / 九成新</li>
+  </ul>
+
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>图片理解 → 提取结构化信息 → 走"录物品"流程的 Step 1-6。<code>add --photo</code> 内部拿到 ID 后把图片复制为 <code>YYYYMMDD_{ID}_{描述}.jpg</code> 并写入 <code>item.photo</code>。</p>
+      <p>图片保存位置：环境变量 <code>HOME_PHOTOS_DIR</code>，默认为技能目录下 <code>photos/</code>。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 更新类 ============ -->
+<section id="cat-update">
+<h2>③ 更新类</h2>
+<p>8 个唤醒词，覆盖物品的常见变更场景。"改物品"是通用入口，其他是常用快捷方式。</p>
+
+<!-- 改物品 -->
+<div class="wake-card">
+  <div class="wake-name">改物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>改物品 [名称] [变更]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>改物品 黑色马克杯 把备注改成'老婆送的'</strong>」</p>
+    <p>🤖 「将更新：remark='老婆送的'，对吗？」</p>
+  </div>
+  <h3>支持修改的字段</h3>
+  <ul>
+    <li>名称 / 分类 / 备注 / 所有者</li>
+    <li>标签（覆盖式 / 追加式）</li>
+    <li>数量 / 位置 / 状态</li>
+    <li>购买日期 / 过期日期</li>
+  </ul>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>搜索 → 推断变更内容 → 展示预览 → 确认 → <code>update --id {ID} --field value</code>。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 移物品 -->
+<div class="wake-card">
+  <div class="wake-name">移物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>移物品 [名称] 到 [新位置]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>移物品 黑色马克杯 从客厅茶几到厨房橱柜</strong>」</p>
+    <p>🤖 「将：黑色马克杯 位置从「客厅/茶几」→「厨房/橱柜」，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --new-location "厨房/橱柜" --location "客厅/茶几"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 补物品 -->
+<div class="wake-card">
+  <div class="wake-name">补物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>补物品 [名称] [数量]</code> · <code>[名称] 买了 N 个</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>补物品 特仑苏牛奶 3 箱 放厨房冰箱</strong>」</p>
+    <p>🤖 「数量 +3，位置「厨房/冰箱」，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --plus 3 --location "厨房/冰箱"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 减物品 -->
+<div class="wake-card">
+  <div class="wake-name">减物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>减物品 [名称] [数量]</code> · <code>[名称] 用了/吃了/喝了 N 个</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>减物品 特仑苏牛奶 1 箱</strong>」</p>
+    <p>🤖 「数量 -1，对吗？」</p>
+  </div>
+  <div class="note note-warn">
+    <strong>注意</strong>
+    数量减到 0 时，该位置记录自动删除；物品本身不删除（"只增不删"原则）。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --minus 1 --location "厨房/冰箱"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 标物品 -->
+<div class="wake-card">
+  <div class="wake-name">标物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>标物品 [名称] [新标签]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>标物品 黑色T恤 加标签'秋冬'</strong>」</p>
+    <p>🤖 「追加标签'秋冬'，当前标签：黑色、长袖、全棉、秋冬，对吗？」</p>
+  </div>
+  <div class="note note-info">
+    <strong>💡 追加 vs 覆盖</strong>
+    默认<strong>追加</strong>。想替换全部标签？说"标物品 XX 替换标签为 A,B,C"。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>追加：<code>update --id {ID} --add-tags "秋冬"</code><br>覆盖：<code>update --id {ID} --tags "黑色,长袖,全棉,秋冬"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 废物品 -->
+<div class="wake-card">
+  <div class="wake-name">废物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>废物品 [名称]</code> · <code>[名称] 扔了/不要了</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>废物品 旧牙刷</strong>」</p>
+    <p>🤖 「标记状态为"已废弃"，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --location-status "已废弃"</code></p>
+      <p>物品本身不删除，标记状态即可。"查低频"会看到它。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 借物品 -->
+<div class="wake-card">
+  <div class="wake-name">借物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>借物品 [名称] 给 [谁]</code> · <code>[名称] 借给XX了</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>借物品 充电器 给老王</strong>」</p>
+    <p>🤖 「状态改为"借用中"，备注追加"借给老王"，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --location-status "借用中" --remark "借给老王"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 修物品 -->
+<div class="wake-card">
+  <div class="wake-name">修物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>修物品 [名称]</code> · <code>[名称] 坏了/拿去修了</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>修物品 吹风机</strong>」</p>
+    <p>🤖 「状态改为"维修中"，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>update --id {ID} --location-status "维修中"</code></p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 盘点类 ============ -->
+<section id="cat-inventory">
+<h2>④ 盘点类</h2>
+<p>核对指定位置 / 全屋的物品清单。出差回来、季度整理时用。</p>
+
+<!-- 盘物品 -->
+<div class="wake-card">
+  <div class="wake-name">盘物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>盘物品 [位置]</code> · <code>盘点 [位置]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>盘物品 卧室衣柜</strong>」</p>
+    <p>🤖 「卧室/衣柜 共 23 件：① 黑色连帽卫衣 ② 白色长袖T恤 ... 请逐个确认状态是否正确」</p>
+  </div>
+  <h3>盘点中可说的话</h3>
+  <ul>
+    <li>「都对」→ 结束盘点</li>
+    <li>「第 3 件数量改成 2」→ 自动进入"改物品"流程</li>
+    <li>「第 5 件状态改成废弃」→ 同上</li>
+    <li>中途退出 → 已确认的写入，未确认的保持原样</li>
+  </ul>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>inventory --location "卧室/衣柜" --output inventory_check.html</code> → 逐项确认 → 增量 <code>update</code>。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 盘全部 -->
+<div class="wake-card">
+  <div class="wake-name">盘全部</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>盘全部</code> · <code>全屋盘点</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>盘全部</strong>」</p>
+    <p>🤖 「共 857 件，按分类树展开：① 家居与陈设 215 件 ... 是否逐项确认？」</p>
+  </div>
+  <div class="note note-warn">
+    <strong>⏰ 何时该用</strong>
+    全屋盘点耗时较长（数百件）。建议只在搬家、季度大整理时使用。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>list</code>（无筛选）→ 按分类树分组展示。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 穿搭 ============ -->
+<section id="cat-fashion">
+<h2>⑤ 穿搭</h2>
+
+<!-- 穿什么 -->
+<div class="wake-card">
+  <div class="wake-name">穿什么</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>穿什么</code> · <code>今天穿啥</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>今天穿什么？</strong>」</p>
+    <p>🤖 「今天 22°C，多云。建议：上装=白色长袖T恤（标签：四季、薄） / 下装=深蓝牛仔裤 / 鞋=白色运动鞋。需要标记某件为"穿着中"吗？」</p>
+  </div>
+  <h3>AI 如何选</h3>
+  <ul>
+    <li><strong>第一步</strong>：查今日天气（天气获取失败则用纯标签筛选）</li>
+    <li><strong>第二步</strong>：列出所有"在家"的衣物 + 鞋类</li>
+    <li><strong>第三步</strong>：按温度匹配季节标签（春夏/秋冬/四季）、材质（薄/厚）、场景（运动/职场/居家）</li>
+  </ul>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>list --category-id 138 --status "在家"</code>（衣物顶级）+ <code>list --category-id 148 --status "在家"</code>（鞋类二级）→ 按 tags 筛选 → 推荐组合。</p>
+      <p><strong>注意</strong>：AI 不会自动改状态，你决定穿哪件。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 出行 ============ -->
+<section id="cat-travel">
+<h2>⑥ 出行</h2>
+<p>出门前标记携带物品，回家后一键归位。</p>
+
+<!-- 带物品 -->
+<div class="wake-card">
+  <div class="wake-name">带物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>带物品 [名称]</code> · <code>我要带XX出门</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>带物品 充电器、剃须刀、身份证</strong>」</p>
+    <p>🤖 「将标记 3 件为"旅游中"，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>每件 → <code>update --id {ID} --location-status "旅游中"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 归物品 -->
+<div class="wake-card">
+  <div class="wake-name">归物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>归物品</code> · <code>回来了</code> · <code>把东西放回去</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>归物品</strong>」</p>
+    <p>🤖 「当前"旅游中"3 件：充电器 / 剃须刀 / 身份证。请逐个告诉我：放回原位 / 换新位置」</p>
+    <p>👤 「充电器放回卧室抽屉，剃须刀也放回卧室抽屉，身份证放回客厅抽屉」</p>
+    <p>🤖 （批量更新位置和状态为"在家"）</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>search --status "旅游中"</code> → 逐件 → <code>update --id {ID} --location-status "在家" --new-location "..."</code></p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 统计 ============ -->
+<section id="cat-stats">
+<h2>⑦ 统计</h2>
+<p>4 个统计维度，了解你的物品全貌。</p>
+
+<!-- 统物品 -->
+<div class="wake-card">
+  <div class="wake-name">统物品</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>统物品</code> · <code>总览</code>
+  </div>
+  <h3>会看到什么</h3>
+  <ul>
+    <li>总数、有价物品数、总价值</li>
+    <li>各状态分布（在家的有多少、废弃的有多少...）</li>
+    <li>3 层分类树（顶级 → 二级 → 三级）+ 各分类数量与价值</li>
+  </ul>
+  <div class="example">
+    <p>👤 「<strong>统物品</strong>」</p>
+    <p>🤖 （打开 HTML 总览页，按分类树展示）</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>stats --type summary</code> → 按分类树聚合 + 状态分布。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 查高频 -->
+<div class="wake-card">
+  <div class="wake-name">查高频</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查高频</code> · <code>最常用的</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查高频</strong>」</p>
+    <p>🤖 「访问次数 Top 20：① 特仑苏牛奶 (89次) ② 黑色马克杯 (76次) ...」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>stats --type frequent --limit 20</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 查低频 -->
+<div class="wake-card">
+  <div class="wake-name">查低频</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查低频</code> · <code>长期没用的</code> · <code>该扔的</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查低频</strong>」</p>
+    <p>🤖 「超过 180 天未访问 Top 20：① 旧耳机 (740天) ② 旅行转换插头 (520天) ...」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>stats --type dormant --limit 20</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 查过期 -->
+<div class="wake-card">
+  <div class="wake-name">查过期</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查过期</code> · <code>哪些快过期了</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查过期</strong>」</p>
+    <p>🤖 「未来 30 天内过期 5 件，已过期 2 件 —— [HTML 列表]」</p>
+  </div>
+  <h3>可选参数</h3>
+  <ul>
+    <li><code>查过期 7 天</code>：缩小窗口</li>
+    <li><code>查过期 只看已过期</code>：只看已过期项</li>
+    <li><code>查过期 食物</code>：按分类筛选（顶级 ID=137）</li>
+    <li><code>查过期 医药 60 天</code>：分类 + 窗口组合</li>
+  </ul>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>stats --type expiring [--days 30] [--expired-only] [--category-id N] --output expiring_alert.html</code></p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 标签 ============ -->
+<section id="cat-tags">
+<h2>⑧ 标签</h2>
+
+<!-- 看标签 -->
+<div class="wake-card">
+  <div class="wake-name">看标签</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>看标签</code> · <code>列出标签</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>看标签</strong>」</p>
+    <p>🤖 「共 247 个标签，前 20：黑色(89)、白色(76)、纯棉(54)、...</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>tag-list</code> → 按使用频次降序列出。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 合标签 -->
+<div class="wake-card">
+  <div class="wake-name">合标签</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>合标签 [旧标签] 到 [新标签]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>合标签 白 到 白色</strong>」</p>
+    <p>🤖 「将所有"白"标签合并到"白色"，影响 12 件物品。对吗？」</p>
+  </div>
+  <div class="note note-warn">
+    <strong>什么时候该合并</strong>
+    AI 会在「看标签」后提示字面高度重叠的标签对（如"白"vs"白色"、"T桖"vs"T恤"）。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>tag-merge --from "白" --to "白色"</code> → 原标签的所有物品自动更新为新标签。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 账号 ============ -->
+<section id="cat-account">
+<h2>⑨ 账号</h2>
+<p>管理账号密码。密码用主密钥加密存储，<strong>查看时必须输入主密钥</strong>。</p>
+
+<!-- 查账号 -->
+<div class="wake-card">
+  <div class="wake-name">查账号</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查账号 [平台]</code> · <code>查所有账号</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>查账号</strong>」</p>
+    <p>🤖 「已存 8 个账号：① 微信(138****1234) ② 支付宝(yes****@qq.com) ③ ... 输入主密钥查看详情」</p>
+    <p>👤 「主密钥：xxxxxx」</p>
+    <p>🤖 「微信：用户名=xxx / 密码=xxx」</p>
+  </div>
+  <div class="example">
+    <p>👤 「<strong>查账号 支付宝</strong>」</p>
+    <p>🤖 「请输入主密钥」→ ...</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>列表：<code>account --action list</code><br>详情：<code>account --action show --platform "微信" --master-key "xxx"</code></p>
+    </div>
+  </details>
+</div>
+
+<!-- 存账号 -->
+<div class="wake-card">
+  <div class="wake-name">存账号</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>存账号 [平台] 用户名 [用户名] 密码 [密码]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>存账号 京东 用户名 zhangsan 密码 JDpass123 主密钥 xxx</strong>」</p>
+    <p>🤖 「将加密存储：京东 / zhangsan / JDpass123，对吗？」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p><code>account --action add --platform "京东" --user "zhangsan" --pass "JDpass123" --master-key "xxx"</code></p>
+      <p>密码用主密钥派生密钥加密，不明文存储。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 改账号 -->
+<div class="wake-card">
+  <div class="wake-name">改账号</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>改账号 [平台]</code>
+  </div>
+  <h3>使用示例</h3>
+  <div class="example">
+    <p>👤 「<strong>改账号 京东</strong>」</p>
+    <p>🤖 「请输入主密钥查看现有账号 → 重新录入新值」</p>
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>不支持原地修改。先 <code>show</code> 查看 → 再 <code>add</code> 重新录入（覆盖旧值）。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 健康检查 ============ -->
+<section id="cat-health">
+<h2>⑩ 健康检查</h2>
+
+<!-- 查异常 -->
+<div class="wake-card">
+  <div class="wake-name">查异常</div>
+  <div class="wake-trigger">
+    <span class="wake-trigger-label">说</span><code>查异常</code> · <code>检查一下数据</code>
+  </div>
+  <h3>会检查什么</h3>
+  <ul>
+    <li><strong>标签完整性</strong>：缺标签、标签太少、重要属性遗漏</li>
+    <li><strong>表利用率</strong>：物品是否都有分类/位置/状态；位置路径是否重复（如 "卧室/东南角/..." vs "卧室东南角/..."）</li>
+    <li><strong>状态时效性</strong>："快递中"超过 7 天？"旅游中"长期未归位？</li>
+    <li><strong>位置规范性</strong>：位置路径是否 ≥ 2 级（如"客厅"vs"客厅/电视柜"）</li>
+  </ul>
+  <div class="example">
+    <p>👤 「<strong>查异常</strong>」</p>
+    <p>🤖 「发现 3 类问题：① 5 件物品标签数 < 2 ② 位置路径重复 2 处（合并建议附后）③ 快递中超过 14 天 1 件。是否逐项处理？」</p>
+  </div>
+  <div class="note note-warn">
+    <strong>注意</strong>
+    AI 只<strong>列出</strong>问题，<strong>不自动修改</strong>。所有修复都要你点头。
+  </div>
+  <details>
+    <summary>底层工作流</summary>
+    <div>
+      <p>无 CLI，纯 AI 逻辑：扫描 <code>items</code> / <code>item_tags</code> / <code>item_locations</code> 三表 → 输出问题清单 → 等用户确认 → 走"改物品/标物品/合标签"等流程修复。</p>
+    </div>
+  </details>
+</div>
+</section>
+
+<!-- ============ 常见问题 ============ -->
+<section id="faq">
+<h2>常见问题</h2>
+
+<h3>Q1：AI 能不能帮我自动录物品，不用每次都确认？</h3>
+<p>不能。所有写操作必须你点头。这是<strong>防误操作</strong>的核心机制。</p>
+
+<h3>Q2：录错了能删除吗？</h3>
+<p>不能物理删除物品，但可以改状态为"已废弃"。历史记录会保留，方便追溯。</p>
+
+<h3>Q3：同名物品怎么区分？</h3>
+<p>AI 会列出所有同名物品让你选，不默认选任何一个。你也可以用<strong>位置/标签/分类</strong>组合精确指定。</p>
+
+<h3>Q4：补充库存时遇到"已用完"的同名物品？</h3>
+<p>AI 会问你："补充到现有记录"还是"新建记录"。不会自动决定。</p>
+
+<h3>Q5：分类找不到想要的怎么办？</h3>
+<p>告诉 AI 想要什么分类，AI 会先查 <code>categories</code> 表确认；如不存在，会先建议创建（需你确认）。</p>
+
+<h3>Q6：照片存哪里？</h3>
+<p>环境变量 <code>HOME_PHOTOS_DIR</code> 配置，默认为技能目录下 <code>photos/</code>。文件名格式 <code>YYYYMMDD_{物品ID}_{描述}.jpg</code>。</p>
+
+<h3>Q7：怎么备份数据？</h3>
+<p>复制整个技能目录即可。核心数据在 <code>.db/home.db</code>（SQLite 单文件），照片在 <code>photos/</code>。</p>
+
+<h3>Q8：手机能用吗？</h3>
+<p>可以。用 <a href="https://featherhunter.github.io/StudyNotes/skillboard/">SkillBoard</a> 网页版，选 <code>home.db</code> 文件即可。</p>
+</section>
+
+<!-- ============ 修订记录 ============ -->
+<section id="changelog">
+<h2>修订记录</h2>
+<p>只列<strong>影响用户</strong>的变化。内部重构、bug 修复、性能优化等不打扰你的事不会列在这里。</p>
+
+<table style="width:100%; border-collapse:collapse; margin:16px 0; font-size:14px;">
 <thead>
-<tr>
-<th>场景</th>
-<th>AI 处理方式</th>
+<tr style="background:#f5f5f7; border-bottom:1px solid var(--border);">
+<th style="text-align:left; padding:10px 13px; width:140px;">版本</th>
+<th style="text-align:left; padding:10px 13px;">变更</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>搜不到物品</td>
-<td>告知用户，询问是否换个关键词或新建物品</td>
-</tr>
-<tr>
-<td>搜到多个同名物品</td>
-<td>列出让用户选择，不默认选任何一个</td>
-</tr>
-<tr>
-<td>录入时发现同名"已用完/已废弃"物品</td>
-<td>列出选项让用户选择，不能自动决定</td>
-</tr>
-<tr>
-<td>补充库存时原物品状态为"已用完/已废弃"</td>
-<td>询问用户新状态是什么（在家/备用/快递中/其他）</td>
-</tr>
-<tr>
-<td>用户输入模糊无法解析</td>
-<td>追问确认</td>
-</tr>
-<tr>
-<td>数据库写入失败</td>
-<td>告知用户失败原因，询问重试</td>
-</tr>
-<tr>
-<td>首次使用（无数据库）</td>
-<td>脚本自动建表，无需手动操作</td>
-</tr>
-<tr>
-<td>盘点中途退出</td>
-<td>已确认的已写入，未确认的保持原样</td>
-</tr>
-<tr>
-<td>穿搭推荐无匹配</td>
-<td>告知无匹配衣物，建议扩展标签或录入</td>
-</tr>
-<tr>
-<td>天气数据获取失败</td>
-<td>告知无法获取天气，改用纯标签筛选</td>
-</tr>
-<tr>
-<td>标签合并不存在</td>
-<td>脚本输出"标签不存在"，AI 告知用户</td>
+<tr style="border-bottom:1px solid var(--border);">
+<td style="padding:10px 13px;">v1.0 · 2026-07-24</td>
+<td style="padding:10px 13px;">首次以<strong>用户手册</strong>形态重写。新增"3 分钟入门"、"常见问题"、"按场景分组"。每个唤醒词下方新增 <code>▸ 展开底层工作流</code> 折叠区。</td>
 </tr>
 </tbody>
 </table>
-<footer>
-  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
-  源文件: <code>居家管家/SKILL.md</code><br>
-  工具: <code>html_mirror_generator/generate.py v1</code>
+</section>
+
+<footer class="footer">
+<p>📖 这是用户手册。AI 行为规范、CLI 命令、脚本实现见 <code>SKILL.md</code>。</p>
+<p>若手册与你的实际使用体验不一致，请告诉 AI 让它更新本文档。</p>
 </footer>
+
 </body>
 </html>

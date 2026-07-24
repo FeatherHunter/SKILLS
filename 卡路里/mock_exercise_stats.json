@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "subtitle": "近 7 天运动按类型分布统计",
+      "k1": {"label":"总次数", "value":"20", "extra":"7 天内"},
+      "k2": {"label":"总热量", "value":"1,860", "extra":"平均 93/次"},
+      "k3": {"label":"总时长", "value":"320 分钟", "extra":"平均 16 分/次"},
+      "k4": {"label":"类型数", "value":"4 类", "extra":"全覆盖"},
+      "table_header": "<tr><th>类型</th><th class='num'>次数</th><th class='num'>热量</th><th>占比</th><th class='num'>时长</th><th class='num'>组数</th></tr>",
+      "table_title": "按类型统计"
+    },
+    "items": [],
+    "stats": {
+      "by_category": {
+        "strength": {"count": 16, "calorie": 480, "minutes": 90, "sets": 32},
+        "cardio":   {"count": 4,  "calorie": 880, "minutes": 140, "sets": 0},
+        "flex":     {"count": 6,  "calorie": 240, "minutes": 60, "sets": 0},
+        "daily":    {"count": 5,  "calorie": 260, "minutes": 30, "sets": 0}
+      },
+      "total_count": 31,
+      "total_calorie": 1860,
+      "total_minutes": 320,
+      "total_sets": 32
+    },
+    "mode": "stats",
+    "meta": {"start": "2026-07-18", "end": "2026-07-24", "days": 7, "today": "2026-07-24"}
+  },
+  "message": "已生成运动类型统计"
+}

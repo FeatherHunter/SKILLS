@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 运动报表</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --strength:#5856d6; --cardio:#0071e3; --flex:#34c759; --daily:#ff9500;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  svg { width:100%; height:220px; display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:14px; height:8px; border-radius:2px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .cat-strength { color:var(--strength); font-weight:600; }
+  .cat-cardio   { color:var(--cardio);   font-weight:600; }
+  .cat-flex     { color:var(--flex);     font-weight:600; }
+  .cat-daily    { color:var(--daily);    font-weight:600; }
+  .bar-wrap { width:100%; height:6px; background:var(--soft); border-radius:3px; overflow:hidden; margin-top:4px; }
+  .bar { height:100%; border-radius:3px; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .mode-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="mode-badge" id="modeBadge">--</div>
+</div>
+
+<h1 id="h1Title">🏃 运动报表</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label" id="k1L">--</div><div class="value" id="k1">--</div><div class="extra" id="k1E">--</div></div>
+  <div class="kpi"><div class="label" id="k2L">--</div><div class="value" id="k2">--</div><div class="extra" id="k2E">--</div></div>
+  <div class="kpi"><div class="label" id="k3L">--</div><div class="value" id="k3">--</div><div class="extra" id="k3E">--</div></div>
+  <div class="kpi"><div class="label" id="k4L">--</div><div class="value" id="k4">--</div><div class="extra" id="k4E">--</div></div>
+</div>
+
+<div class="section" id="chartSection" style="display:none">
+  <h2 id="chartTitle"></h2>
+  <svg id="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="section">
+  <h2 id="tableTitle">明细</h2>
+  <table>
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, items, stats, mode, meta } = D.data;
+  const m = mode || 'records';
+
+  document.getElementById('metaLeft').textContent = `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;
+  document.getElementById('modeBadge').textContent = m.toUpperCase();
+
+  const titles = {
+    records: '🏃 运动记录',
+    summary: '📊 运动汇总',
+    stats: '📋 运动类型统计',
+    trend: '📈 运动趋势'
+  };
+  document.getElementById('h1Title').textContent = titles[m] || titles.records;
+  document.getElementById('sub').textContent = summary.subtitle;
+
+  document.getElementById('k1L').textContent = summary.k1.label;
+  document.getElementById('k1').textContent = summary.k1.value;
+  document.getElementById('k1E').innerHTML = summary.k1.extra;
+  document.getElementById('k2L').textContent = summary.k2.label;
+  document.getElementById('k2').textContent = summary.k2.value;
+  document.getElementById('k2E').innerHTML = summary.k2.extra;
+  document.getElementById('k3L').textContent = summary.k3.label;
+  document.getElementById('k3').textContent = summary.k3.value;
+  document.getElementById('k3E').innerHTML = summary.k3.extra;
+  document.getElementById('k4L').textContent = summary.k4.label;
+  document.getElementById('k4').textContent = summary.k4.value;
+  document.getElementById('k4E').innerHTML = summary.k4.extra;
+
+  // 趋势图(只在 trend mode)
+  if (m === 'trend' && items.length > 0) {
+    const sec = document.getElementById('chartSection');
+    sec.style.display = 'block';
+    document.getElementById('chartTitle').textContent = '每日运动热量';
+    const svg = document.getElementById('chart');
+    const W = 800, H = 220, PAD = 30;
+    const cals = items.map(i => i.calorie);
+    const maxC = Math.max(...cals, 300);
+    const x = i => PAD + i * (W - 2*PAD) / Math.max(1, items.length - 1);
+    const y = v => H - PAD - (v / maxC) * (H - 2*PAD);
+    for (let v = 0; v <= maxC; v += Math.max(100, Math.round(maxC / 4))) {
+      svg.insertAdjacentHTML('beforeend',
+        `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
+        `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}</text>`);
+    }
+    let bar = `M ${x(0)},${H-PAD}`;
+    items.forEach((p, i) => { bar += ` L ${x(i)},${y(p.calorie)} L ${x(i)},${H-PAD}`; });
+    bar += ' Z';
+    svg.insertAdjacentHTML('beforeend', `<path d="${bar}" fill="rgba(0,113,227,0.3)" stroke="rgba(0,113,227,0.6)" stroke-width="0.5"/>`);
+    let line = `M ${x(0)},${y(items[0].calorie)}`;
+    items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.calorie)}`; });
+    svg.insertAdjacentHTML('beforeend', `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
+    items.forEach((p, i) => {
+      svg.insertAdjacentHTML('beforeend',
+        `<circle cx="${x(i)}" cy="${y(p.calorie)}" r="4" fill="#0071e3" stroke="#fff" stroke-width="1.5"/>`);
+    });
+    document.getElementById('legend').innerHTML = `<span><i style="background:#0071e3"></i> 每日热量</span>`;
+  } else if (m === 'stats' && stats && stats.by_category) {
+    const sec = document.getElementById('chartSection');
+    sec.style.display = 'block';
+    document.getElementById('chartTitle').textContent = '按类型热量分布';
+    const svg = document.getElementById('chart');
+    // 4 类水平柱
+    const cats = ['strength','cardio','flex','daily'];
+    const labels = {'strength':'力量','cardio':'有氧','flex':'柔韧','daily':'日常'};
+    const colors = {'strength':'var(--strength)','cardio':'var(--cardio)','flex':'var(--flex)','daily':'var(--daily)'};
+    const maxVal = Math.max(...cats.map(c => (stats.by_category[c] || 0).calorie || 0), 1);
+    cats.forEach((c, i) => {
+      const data = stats.by_category[c] || {calorie:0, count:0, minutes:0};
+      const barH = Math.max(2, (data.calorie / maxVal) * 150);
+      const cx = 100 + i * 200;
+      svg.insertAdjacentHTML('beforeend',
+        `<rect x="${cx-40}" y="${180-barH}" width="80" height="${barH}" fill="${colors[c]}" rx="4"/>` +
+        `<text x="${cx}" y="${195}" text-anchor="middle" font-size="13" font-weight="700">${labels[c]}</text>` +
+        `<text x="${cx}" y="${170-barH}" text-anchor="middle" font-size="14" font-weight="700" fill="#1d1d1f">${data.calorie}</text>` +
+        `<text x="${cx}" y="${208}" text-anchor="middle" font-size="11" fill="#86868b">${data.count} 次 · ${data.minutes} 分钟</text>`);
+    });
+    document.getElementById('legend').innerHTML =
+      `<span><i style="background:var(--strength)"></i> 力量</span>` +
+      `<span><i style="background:var(--cardio)"></i> 有氧</span>` +
+      `<span><i style="background:var(--flex)"></i> 柔韧</span>` +
+      `<span><i style="background:var(--daily)"></i> 日常</span>`;
+  }
+
+  // 表格
+  document.getElementById('tableHead').innerHTML = summary.table_header;
+  document.getElementById('tableTitle').textContent = summary.table_title || '明细';
+
+  const tb = document.getElementById('tableBody');
+  if (m === 'stats' && stats && stats.by_category) {
+    // 类别统计
+    [['strength','力量','cat-strength'],['cardio','有氧','cat-cardio'],['flex','柔韧','cat-flex'],['daily','日常','cat-daily']].forEach(([k, lbl, cls]) => {
+      const c = stats.by_category[k] || {count:0, calorie:0, minutes:0, sets:0};
+      const pct = stats.total_calorie > 0 ? Math.round(c.calorie / stats.total_calorie * 100) : 0;
+      tb.insertAdjacentHTML('beforeend',
+        `<tr><td><span class="${cls}">${lbl}</span></td>` +
+        `<td class="num">${c.count} 次</td>` +
+        `<td class="num">${c.calorie.toLocaleString()} 卡</td>` +
+        `<td class="num">${pct}%<div class="bar-wrap"><div class="bar" style="width:${pct}%;background:var(--${k === 'strength' ? 'strength' : k === 'cardio' ? 'cardio' : k === 'flex' ? 'flex' : 'daily'})"></div></div></td>` +
+        `<td class="num">${c.minutes} 分钟</td>` +
+        `<td class="num">${c.sets || 0}</td></tr>`);
+    });
+    // 合计
+    tb.insertAdjacentHTML('beforeend',
+      `<tr style="background:var(--soft);font-weight:600;"><td>合计</td>` +
+      `<td class="num">${stats.total_count} 次</td>` +
+      `<td class="num">${stats.total_calorie.toLocaleString()} 卡</td>` +
+      `<td>100%</td>` +
+      `<td class="num">${stats.total_minutes} 分钟</td>` +
+      `<td class="num">${stats.total_sets || 0}</td></tr>`);
+  } else {
+    // 记录列表
+    items.slice(0, 50).forEach(p => {
+      const catClass = ['cat-strength','cat-cardio','cat-flex','cat-daily'][['strength','cardio','flex','daily'].indexOf(p.category)] || '';
+      tb.insertAdjacentHTML('beforeend',
+        `<tr><td>${p.date}</td><td>${p.time || '-'}</td>` +
+        `<td><span class="${catClass}">${p.exercise_type}</span></td>` +
+        `<td class="num">${p.minutes} 分钟</td>` +
+        `<td class="num">${p.calorie}</td>` +
+        `<td class="num">${p.sets || '-'}</td></tr>`);
+    });
+  }
+
+  document.getElementById('srcLine').textContent = `📊 数据来源:exercise_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
+  document.getElementById('copyBtn').onclick = function() {
+    let r = `运动报表(模式 ${m}) ${meta.start} → ${meta.end}\n`;
+    if (m === 'stats') {
+      r += `总次数 ${stats.total_count} · 总卡 ${stats.total_calorie} · 总时长 ${stats.total_minutes} 分钟\n`;
+      for (const k of ['strength','cardio','flex','daily']) {
+        const c = stats.by_category[k] || {};
+        r += `  ${k}: ${c.calorie || 0}卡 (${c.count || 0}次)\n`;
+      }
+    } else {
+      items.forEach(p => { r += `  ${p.date} ${p.exercise_type} ${p.minutes}min ${p.calorie}卡\n`; });
+    }
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

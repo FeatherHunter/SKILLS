@@ -118,7 +118,6 @@ function renderReceipt(){
 
 function renderTrend(){
   if(HISTORY.length===0)return;
-  // BUG 修复:1 条历史时折线无意义,跳过 SVG 渲染(只显示数字)
   if(HISTORY.length<2){
     document.getElementById('historyCount').textContent='1 (折线需 ≥2 条)';
     return;
@@ -169,7 +168,6 @@ function renderTrend(){
     }
   });
   const avg=(weights.reduce((a,b)=>a+b,0)/weights.length).toFixed(1);
-  // BUG 修复:rename firstW/lastW — firstW 是最旧值(数组倒序),lastW 是最新值
   const oldestW=HISTORY[HISTORY.length-1].weight_kg;
   const newestW=HISTORY[0].weight_kg;
   const trend=newestW<oldestW?'下降 ▼':newestW>oldestW?'上升 ▲':'持平';

@@ -595,6 +595,8 @@ def main(argv=None):
         cmd_render_plan_receipt(args)
     elif cmd == "render-plan-receipt-add":
         cmd_render_plan_receipt_add(args)
+    elif cmd == "render-plan-receipt-write":
+        cmd_render_plan_receipt_write(args)
     # === end ===
 
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
@@ -2000,6 +2002,85 @@ def cmd_render_plan_receipt_add(args):
 
 
 # ============================================================
+# 2026-07-24 新增:写摘要回执(回执型第4款,紫色调)
+# ============================================================
+#
+# 一个命令:render-plan-receipt-write <id>
+# 流程:AI 调 update-event --completion --completion-note 写库 → 拿到 id → 调本命令生成回执
+# 3 操作按钮 = 3 种 prompt(继续写其他/看今日复盘/看全貌)
+
+
+def cmd_render_plan_receipt_write(args):
+    """render-plan-receipt-write <id>
+
+    写摘要回执(回执型第4款,紫色调,与 update/deactivate 同源)。
+    """
+    from schedule_html_render import _html_base_dir, render_plan_receipt_write, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-plan-receipt-write <id>(整数)",
+            "example": "render-plan-receipt-write 1066",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        plan_id = int(args[0])
+    except ValueError:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"id 格式非法: '{args[0]}'(期望整数)",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        payload = render_plan_receipt_write(plan_id)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    if not _html_base_dir().exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()}",
+        }, ensure_ascii=False))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    stats = payload["data"].get("stats", {})
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "plan-receipt-write",
+            "plan_id": plan_id,
+            "today_count": stats.get("today_count", 0),
+            "completed_count": stats.get("completed_count", 0),
+            "note_count": stats.get("note_count", 0),
+            "completion_rate": stats.get("completion_rate", 0),
+        },
+        "message": f"✓ id={plan_id} 计划 已写摘要回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条计划,完成率 {stats.get('completion_rate', 0)}%,已写反思 {stats.get('note_count', 0)} 条)",
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # 2026-07-23 新增:作息记录查询 → HTML 单日报告
 # ============================================================
 #
@@ -2828,6 +2909,7 @@ HTML 渲染(可视化查询结果):
   render-receipt <record_id>  漂亮回执(回执型首款,新记录 id 后的视觉反馈 + 复制今日进度)
   render-plan-receipt <id> [--action update|deactivate]  改/删计划回执(回执型第2款,3 操作按钮复制专属 prompt)
   render-plan-receipt-add <id>  补计划回执(回执型第3款,绿色调,3 操作按钮复制专属 prompt)
+  render-plan-receipt-write <id>  写摘要回执(回执型第4款,紫色调,3 操作按钮复制专属 prompt)
   render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
   render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
   render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)

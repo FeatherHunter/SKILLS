@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 热量趋势</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #fff; --border: #d2d2d7; --accent: #0071e3;
+    --good: #34c759; --warn: #ff9500; --bad: #ff3b30; --soft: #f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 920px; margin: 0 auto; padding: 56px 24px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 28px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+  .pill-good { background: rgba(52,199,89,.15); color: var(--good); }
+  .pill-warn { background: rgba(255,149,0,.15); color: var(--warn); }
+  .pill-bad { background: rgba(255,59,48,.15); color: var(--bad); }
+  .pill-info { background: rgba(0,113,227,.15); color: var(--accent); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .kpi .label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; }
+  .kpi .value { font-size: 24px; font-weight: 700; }
+  .kpi .extra { font-size: 11px; color: var(--fg3); margin-top: 4px; }
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin-bottom: 18px; }
+  .section h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+  svg { width: 100%; height: 220px; display: block; }
+  .legend { font-size: 12px; color: var(--fg2); margin-top: 10px; display: flex; gap: 18px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 14px; }
+  .legend .a { background: var(--accent); height: 2px; }
+  .legend .b { background: transparent; border-top: 2px dashed var(--warn); height: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--fg2); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+  .delta-up { color: var(--bad); font-size: 11px; }
+  .delta-down { color: var(--good); font-size: 11px; }
+  .delta-ok { color: var(--fg3); font-size: 11px; }
+  .footer { margin-top: 28px; padding: 16px 20px; background: var(--soft); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .footer .src { font-size: 12px; color: var(--fg3); }
+  .btn { border: 1px solid var(--border); background: var(--card); padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--fg); }
+  .btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .meta-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .meta-bar .left { font-size: 12px; color: var(--fg2); }
+  .meta-bar .type-badge { font-size: 11px; padding: 3px 10px; border-radius: 6px; background: var(--soft); color: var(--fg2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="meta-bar">
+  <div class="left">2026-07-18 ~ 2026-07-24 · 共 7 天 · 工作日 5 / 周末 2</div>
+  <div class="type-badge">报告型 · 7 dim</div>
+</div>
+
+<h1>🔥 热量趋势</h1>
+<p class="sub">查热量趋势 · 2026-07-18 → 2026-07-24 · <span class="pill pill-good">↓ 下降 ▼</span></p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">日均热量</div><div class="value">1,823</div><div class="extra" style="color:var(--good);">vs 目标 1,800 · +1.3%</div></div>
+  <div class="kpi"><div class="label">7 天变化</div><div class="value" style="color:var(--good);">-124</div><div class="extra">从 1,947 → 1,823 · -6.4%</div></div>
+  <div class="kpi"><div class="label">工作日 vs 周末</div><div class="value">+251</div><div class="extra">1,905 vs 2,156 卡/天</div></div>
+  <div class="kpi"><div class="label">合规率</div><div class="value">86%</div><div class="extra">6/7 天 ≤ 目标+5%</div></div>
+</div>
+
+<div class="section">
+  <h2>每日热量 (含目标线)</h2>
+  <svg viewBox="0 0 800 220" preserveAspectRatio="none">
+    <line x1="0" y1="20" x2="800" y2="20" stroke="#e5e5ea" stroke-width="1"/>
+    <line x1="0" y1="60" x2="800" y2="60" stroke="#e5e5ea" stroke-width="1"/>
+    <line x1="0" y1="100" x2="800" y2="100" stroke="#e5e5ea" stroke-width="1"/>
+    <line x1="0" y1="140" x2="800" y2="140" stroke="#e5e5ea" stroke-width="1"/>
+    <line x1="0" y1="180" x2="800" y2="180" stroke="#e5e5ea" stroke-width="1"/>
+    <text x="4" y="18" font-size="10" fill="#86868b">2200</text>
+    <text x="4" y="58" font-size="10" fill="#86868b">2000</text>
+    <text x="4" y="98" font-size="10" fill="#86868b">1800 目标</text>
+    <text x="4" y="138" font-size="10" fill="#86868b">1600</text>
+    <text x="4" y="178" font-size="10" fill="#86868b">1400</text>
+    <line x1="0" y1="100" x2="800" y2="100" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.6"/>
+    <path d="M 60,82 L 170,75 L 280,90 L 390,68 L 500,72 L 610,118 L 720,108 L 720,180 L 60,180 Z" fill="rgba(0,113,227,0.08)"/>
+    <path d="M 60,82 L 170,75 L 280,90 L 390,68 L 500,72 L 610,118 L 720,108" fill="none" stroke="#0071e3" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="60" cy="82" r="5" fill="#0071e3"/>
+    <circle cx="170" cy="75" r="5" fill="#0071e3"/>
+    <circle cx="170" cy="75" r="9" fill="none" stroke="#0071e3" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="280" cy="90" r="5" fill="#0071e3"/>
+    <circle cx="390" cy="68" r="5" fill="#0071e3"/>
+    <circle cx="500" cy="72" r="5" fill="#0071e3"/>
+    <circle cx="610" cy="118" r="5" fill="#ff9500"/>
+    <circle cx="610" cy="118" r="9" fill="none" stroke="#ff9500" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="720" cy="108" r="5" fill="#0071e3"/>
+    <text x="60" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/18</text>
+    <text x="170" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/19</text>
+    <text x="280" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/20</text>
+    <text x="390" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/21</text>
+    <text x="500" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/22</text>
+    <text x="610" y="200" font-size="10" fill="#ff9500" text-anchor="middle" font-weight="600">7/23 ⚠</text>
+    <text x="720" y="200" font-size="10" fill="#86868b" text-anchor="middle">7/24</text>
+  </svg>
+  <div class="legend">
+    <span><i class="a"></i> 日热量</span>
+    <span><i class="b"></i> 目标 1800</span>
+    <span style="color:var(--warn);">⚠ 7/23 超标 +12%(2,016 卡)</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>每日明细</h2>
+  <table>
+    <thead><tr><th>日期</th><th>类型</th><th>实际</th><th>目标</th><th>偏差</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>2026-07-18</td><td>周六</td><td class="num">1,920</td><td class="num">1,800</td><td class="num delta-up">+120 (+6.7%)</td><td><span class="pill pill-warn">⚠ 超</span></td></tr>
+      <tr><td>2026-07-19</td><td>周日</td><td class="num">1,950</td><td class="num">1,800</td><td class="num delta-up">+150 (+8.3%)</td><td><span class="pill pill-warn">⚠ 超</span></td></tr>
+      <tr><td>2026-07-20</td><td>周一</td><td class="num">1,890</td><td class="num">1,800</td><td class="num delta-up">+90 (+5.0%)</td><td><span class="pill pill-good">✓ 达标</span></td></tr>
+      <tr><td>2026-07-21</td><td>周二</td><td class="num">1,810</td><td class="num">1,800</td><td class="num delta-up">+10 (+0.6%)</td><td><span class="pill pill-good">✓ 达标</span></td></tr>
+      <tr><td>2026-07-22</td><td>周三</td><td class="num">1,820</td><td class="num">1,800</td><td class="num delta-up">+20 (+1.1%)</td><td><span class="pill pill-good">✓ 达标</span></td></tr>
+      <tr><td>2026-07-23</td><td>周四</td><td class="num">2,016</td><td class="num">1,800</td><td class="num delta-up">+216 (+12.0%)</td><td><span class="pill pill-bad">✗ 严重超</span></td></tr>
+      <tr style="background:rgba(0,113,227,.04);font-weight:600;"><td>2026-07-24</td><td>今天</td><td class="num">1,656</td><td class="num">1,800</td><td class="num delta-down">-144 (-8.0%)</td><td><span class="pill pill-info">◐ 进行中</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src">📊 数据来源:diet_analysis · 2026-07-24 12:14 · 7 天</div>
+  <button class="btn" onclick="copyReport()">📋 复制数据</button>
+</div>
+
+<script>
+function copyReport(){
+  const report = '热量趋势 · 2026-07-18 ~ 2026-07-24\n日均 1,823 卡 · 目标 1,800 · 偏差 +1.3%\n7 天变化 -124 卡 · 工作日 1,905 / 周末 2,156 · 合规率 86%\n超标天: 7/23 (+216 / +12%)';
+  navigator.clipboard.writeText(report).then(()=>{
+    const btn = event.target;
+    btn.textContent = '✓ 已复制';
+    setTimeout(()=>btn.textContent = '📋 复制数据', 2000);
+  });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 唤醒词 × HTML 覆盖矩阵</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --report:#6e6e73; --diagnose:#ff9500; --preview:#5856d6;
+    --configure:#34c759; --receipt:#ff3b30;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:980px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:30px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  h2 { font-size:20px; font-weight:600; margin-top:36px; margin-bottom:14px;
+       padding-bottom:6px; border-bottom:1px solid var(--border); }
+  h3 { font-size:15px; font-weight:600; margin-top:18px; margin-bottom:8px; color:var(--fg2); }
+
+  /* 类型徽章 */
+  .badge { display:inline-block; padding:2px 8px; border-radius:6px;
+           font-size:11px; font-weight:600; color:#fff; margin-right:4px; }
+  .b-report { background:var(--report); }
+  .b-diagnose { background:var(--diagnose); }
+  .b-preview { background:var(--preview); }
+  .b-configure { background:var(--configure); }
+  .b-receipt { background:var(--receipt); }
+  .badge-prio { background:#ff3b30; color:#fff; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+  .badge-mid { background:#ff9500; color:#fff; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+  .badge-low { background:#86868b; color:#fff; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+  .badge-ok { background:#34c759; color:#fff; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+
+  /* KPI */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+
+  /* 类型分布条 */
+  .dist-bar { display:flex; height:28px; border-radius:14px; overflow:hidden;
+              background:var(--soft); margin:12px 0 6px; }
+  .dist-seg { display:flex; align-items:center; justify-content:center;
+              color:#fff; font-size:11px; font-weight:600; }
+
+  /* 表格 */
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:12px 0; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:600; color:var(--fg2); font-size:11px; }
+  tr:last-child td { border-bottom:none; }
+  code { background:var(--soft); padding:1px 5px; border-radius:4px;
+         font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px; color:#c7254e; }
+
+  /* 缺口清单 */
+  .gap-card { background:var(--card); border:1px solid var(--border); border-radius:12px;
+              padding:14px 18px; margin:8px 0; border-left:4px solid var(--warn); }
+  .gap-card.crit { border-left-color:var(--bad); }
+  .gap-card.opt  { border-left-color:var(--accent); }
+  .gap-card.no   { border-left-color:var(--fg3); }
+  .gap-title { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .gap-name { font-weight:600; font-size:14px; }
+  .gap-desc { font-size:12.5px; color:var(--fg2); }
+</style>
+</head>
+<body>
+
+<h1>📊 卡路里 · 唤醒词 × HTML 覆盖矩阵</h1>
+<p class="sub">13 个 HTML 模板 / 79 个唤醒词 · 覆盖率 ~30% · 分析类 6/11 缺失</p>
+
+<!-- ====== 顶部 KPI ====== -->
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">唤醒词总数</div><div class="value">79</div><div class="extra">跨 9 个功能组</div></div>
+  <div class="kpi"><div class="label">HTML 模板</div><div class="value">13</div><div class="extra">报告型 6 / 配置型 3 / 预览型 2 / 诊断型 1 / 回执型 1</div></div>
+  <div class="kpi"><div class="label">有 HTML 覆盖</div><div class="value" style="color:var(--good);">~24</div><div class="extra">覆盖 30% 唤醒词</div></div>
+  <div class="kpi"><div class="label">应补(P0)</div><div class="value" style="color:var(--bad);">6</div><div class="extra">全是分析类</div></div>
+</div>
+
+<!-- ====== 类型分布 ====== -->
+<h2>① 13 模板的类型分布</h2>
+<div class="dist-bar">
+  <div class="dist-seg b-report"   style="flex:6">报告型 6</div>
+  <div class="dist-seg b-configure" style="flex:3">配置 3</div>
+  <div class="dist-seg b-preview"  style="flex:2">预览 2</div>
+  <div class="dist-seg b-diagnose" style="flex:1">诊断 1</div>
+  <div class="dist-seg b-receipt"  style="flex:1">回执 1</div>
+</div>
+<p style="font-size:12px;color:var(--fg3);">报告型最常见(6 个) · 配置型 3 个 · 预览/诊断/回执各 1-2 个</p>
+
+<!-- ====== 已覆盖的 13 模板 ====== -->
+<h2>② 已覆盖的 13 个模板</h2>
+<table>
+<thead><tr><th style="width:60%;">模板</th><th style="width:18%;">类型</th><th>覆盖的唤醒词</th></tr></thead>
+<tbody>
+  <tr><td><code>home_dashboard.html</code></td><td><span class="badge b-report">报告型</span></td><td>(主页)</td></tr>
+  <tr><td><code>food_ranking.html</code></td><td><span class="badge b-report">报告型</span></td><td>查食物排行 / 查高热量榜 / 查低热量榜 / 查频繁吃榜 / 查高碳水榜 / 查高蛋白榜</td></tr>
+  <tr><td><code>health_dashboard.html</code></td><td><span class="badge b-report">报告型</span></td><td>查健康报告</td></tr>
+  <tr><td><code>review_template.html</code></td><td><span class="badge b-report">报告型</span></td><td>复盘 / 复盘今日 / 本周复盘 / 本月复盘 / 本年复盘 / 复盘日期范围</td></tr>
+  <tr><td><code>workout_plan_view.html</code></td><td><span class="badge b-report">报告型</span></td><td>查健身计划</td></tr>
+  <tr><td><code>exercise_review.html</code></td><td><span class="badge b-report">报告型</span></td><td>复盘训练</td></tr>
+  <tr><td><code>contraindication_report.html</code></td><td><span class="badge b-diagnose">诊断型</span></td><td>扫禁忌</td></tr>
+  <tr><td><code>batch_import_preview.html</code></td><td><span class="badge b-preview">预览型</span></td><td>批量导入 / 校验批量</td></tr>
+  <tr><td><code>process_progress.html</code></td><td><span class="badge b-preview">预览型</span></td><td>(流程进度可视化)</td></tr>
+  <tr><td><code>goal_config.html</code></td><td><span class="badge b-configure">配置型</span></td><td>设营养目标</td></tr>
+  <tr><td><code>plan_builder_wizard.html</code></td><td><span class="badge b-configure">配置型</span></td><td>制定健身计划 / 改健身计划</td></tr>
+  <tr><td><code>nutrition_label_wizard.html</code></td><td><span class="badge b-configure">配置型</span></td><td>拍营养表</td></tr>
+  <tr><td><code>weight_log_receipt.html</code></td><td><span class="badge b-receipt">回执型</span></td><td>记体重</td></tr>
+</tbody>
+</table>
+
+<!-- ====== P0 缺口 ====== -->
+<h2>③ <span class="badge-prio">P0</span> 应该补但没有(6 个分析类)</h2>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查今天吃</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">当前只输出文本摘要 → 应有"今日饮食报告"页面(餐次分布 + 营养饼图 + 6 餐列表)</div>
+</div>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查热量趋势</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">分析类高频 → 应有"7 天折线图 + 工作日 vs 周末 + 合规率"(样板已写好,见 calorie_trend_demo.html)</div>
+</div>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查营养配比</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">→ 应有"3 维饼图(蛋白/碳水/脂肪)+ 缺口标注 vs 目标"</div>
+</div>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查热量缺口</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">→ 应有"摄入 vs 消耗双柱对比 + 周缺口累计 + 理论减重"</div>
+</div>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查运动分布 / 查运动贡献</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">→ 应有"运动类型饼图 + 贡献占比"(2 个唤醒词共享 1 模板)</div>
+</div>
+
+<div class="gap-card crit">
+  <div class="gap-title"><code>查卡路里数据</code> <span class="badge b-report">报告型</span> <span class="badge-prio">缺</span></div>
+  <div class="gap-desc">→ 应有"5 项 Lint 报告"(数据新鲜度 + 目标进度 + 热量预警 + 缺口 + 运动连续性)</div>
+</div>
+
+<p style="font-size:12px;color:var(--fg3);margin-top:8px;">⚠ P0 6 个全部是报告型,工作模式相同(参照 calorie_trend_demo.html),工作量约 1 天</p>
+
+<!-- ====== P1 缺口 ====== -->
+<h2>④ <span class="badge-mid">P1</span> 可选补(趋势/历史类)</h2>
+
+<div class="gap-card opt">
+  <div class="gap-title"><code>查体重历史 / 查体重趋势</code> <span class="badge b-report">报告型</span> <span class="badge-mid">缺</span></div>
+  <div class="gap-desc">→ 应有"体重折线图 + BMI 趋势 + 目标对比线"</div>
+</div>
+
+<div class="gap-card opt">
+  <div class="gap-title"><code>查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势</code> <span class="badge b-report">报告型</span> <span class="badge-mid">缺</span></div>
+  <div class="gap-desc">→ 应有"运动报表(4 维汇总 + 趋势)"(4 个唤醒词共享 1 模板)</div>
+</div>
+
+<div class="gap-card opt">
+  <div class="gap-title"><code>查吃的记录</code> <span class="badge b-report">报告型</span> <span class="badge-mid">缺</span></div>
+  <div class="gap-desc">→ 应有"今日逐条表格"(餐次/克数/营养/时间排序)</div>
+</div>
+
+<div class="gap-card opt">
+  <div class="gap-title"><code>查体重波动</code> <span class="badge b-report">报告型</span> <span class="badge-mid">缺</span></div>
+  <div class="gap-desc">→ 应有"波动图 + 异常高亮"</div>
+</div>
+
+<!-- ====== P2 不需要补 ====== -->
+<h2>⑤ <span class="badge-low">P2</span> 不需要补(纯 CRUD 无视觉价值)</h2>
+
+<div class="gap-card no">
+  <div class="gap-desc">
+    <strong>删吃的 / 改吃的 / 改食品 / 删身材照 / 改照片标签 / 改运动记录 / 改体重记录</strong>
+    · 单行文本"已删 X / 已改 Y" 即可,不需要 HTML
+  </div>
+</div>
+
+<div class="gap-card no">
+  <div class="gap-desc">
+    <strong>落地健身计划 / 卡路里同步</strong>
+    · 复杂流程,走 <code>process_progress.html</code> 进度可视化已够
+  </div>
+</div>
+
+<div class="gap-card no">
+  <div class="gap-desc">
+    <strong>查定时复盘 / 开启定时复盘 / 关闭定时复盘</strong>
+    · 单行 cron 状态即可
+  </div>
+</div>
+
+<div class="gap-card no">
+  <div class="gap-desc">
+    <strong>设置档案 / 查档案</strong>
+    · 5 字段文本足够,无视觉价值
+  </div>
+</div>
+
+<div class="gap-card no">
+  <div class="gap-desc">
+    <strong>回写训记 / 训记-覆盖X日</strong>
+    · 走训记 CLI 反馈即可,不属于用户决策
+  </div>
+</div>
+
+<!-- ====== 推进优先级 ====== -->
+<h2>⑥ 我的推进建议</h2>
+
+<table>
+<thead><tr><th>阶段</th><th>内容</th><th>工作量</th><th>价值</th></tr></thead>
+<tbody>
+  <tr><td><strong>Phase I</strong></td><td>补 6 个 P0 分析类(查热量趋势样板已就绪)</td><td>~1 天</td><td>★★★ 高频分析查询</td></tr>
+  <tr><td><strong>Phase II</strong></td><td>补 4 个 P1 趋势类</td><td>~0.5 天</td><td>★★ 中频历史查询</td></tr>
+  <tr><td><strong>Phase III</strong></td><td>P2 不补(纯 CLI)</td><td>0</td><td>—</td></tr>
+</tbody>
+</table>
+
+<p style="font-size:12px;color:var(--fg3);margin-top:24px;">
+调研稿 v0.1 · 2026-07-24 · 卡路里 13 模板 × 79 唤醒词
+</p>
+
+</body>
+</html>

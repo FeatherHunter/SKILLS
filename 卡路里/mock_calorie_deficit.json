@@ -1,0 +1,37 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "avg_intake": 1823,
+      "avg_burn": 1980,
+      "avg_exercise_burn": 280,
+      "avg_deficit": 157,
+      "weekly_deficit": 1099,
+      "predicted_loss_kg": 0.14,
+      "trend": "loss"
+    },
+    "target": {
+      "intake": 1800,
+      "tdee": 1700,
+      "weekly_deficit_per_day": 300
+    },
+    "series": [
+      {"date": "2026-07-18", "intake": 1920, "burn": 2050, "deficit": -130},
+      {"date": "2026-07-19", "intake": 1950, "burn": 1900, "deficit": 50},
+      {"date": "2026-07-20", "intake": 1890, "burn": 1980, "deficit": -90},
+      {"date": "2026-07-21", "intake": 1810, "burn": 2050, "deficit": -240},
+      {"date": "2026-07-22", "intake": 1820, "burn": 1950, "deficit": -130},
+      {"date": "2026-07-23", "intake": 2016, "burn": 1900, "deficit": 116},
+      {"date": "2026-07-24", "intake": 1656, "burn": 2030, "deficit": -374}
+    ],
+    "meta": {
+      "start": "2026-07-18",
+      "end": "2026-07-24",
+      "days": 7,
+      "today": "2026-07-24",
+      "weekday_count": 5,
+      "weekend_count": 2
+    }
+  },
+  "message": "已生成 2026-07-18 ~ 2026-07-24 热量缺口分析(7 天)"
+}

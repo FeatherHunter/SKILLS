@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 热量缺口</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --intake:#5856d6; --burn:#34c759;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .kpi .extra.good { color:var(--good); }
+  .kpi .extra.warn { color:var(--warn); }
+  .kpi .extra.bad  { color:var(--bad); }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  svg { width:100%; height:240px; display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:14px; }
+  .legend .a { background:var(--intake); height:2px; }
+  .legend .b { background:var(--burn); height:2px; }
+  .legend .c { background:var(--warn); border-top:2px dashed; height:0; }
+  .legend .d { background:rgba(255,59,48,.3); height:8px; opacity:0.4; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .deficit-pos { color:var(--good); font-weight:600; }
+  .deficit-neg { color:var(--bad); font-weight:600; }
+  .deficit-zero { color:var(--fg3); }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">报告型 · 摄入 vs 消耗</div>
+</div>
+
+<h1>⚖️ 热量缺口</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">日均摄入</div><div class="value" id="kIntake">--</div><div class="extra" id="kIntakeE">--</div></div>
+  <div class="kpi"><div class="label">日均消耗</div><div class="value" id="kBurn">--</div><div class="extra" id="kBurnE">--</div></div>
+  <div class="kpi"><div class="label">日均缺口</div><div class="value" id="kDef">--</div><div class="extra" id="kDefE">--</div></div>
+  <div class="kpi"><div class="label">理论减重</div><div class="value" id="kLoss">--</div><div class="extra" id="kLossE">--</div></div>
+</div>
+
+<div class="section">
+  <h2>每日摄入 vs 消耗</h2>
+  <svg id="chart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div class="legend">
+    <span><i class="a"></i> 摄入</span>
+    <span><i class="b"></i> 消耗</span>
+    <span><i class="c"></i> 零线</span>
+    <span><i class="d"></i> 缺口(摄入-消耗)</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>缺口明细</h2>
+  <table>
+    <thead><tr><th>日期</th><th class="num">摄入</th><th class="num">消耗</th><th class="num">缺口</th><th class="num">目标</th><th>状态</th></tr></thead>
+    <tbody id="table"></tbody>
+    <tfoot id="tfoot"></tfoot>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, series, target, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent =
+    `${meta.start} ~ ${meta.end} · 共 ${series.length} 天 · ${meta.weekday_count} 工作日 / ${meta.weekend_count} 周末`;
+  document.getElementById('sub').innerHTML =
+    `查热量缺口 · ${meta.start} → ${meta.end} · ` +
+    (summary.trend === 'loss' ? '<span class="pill pill-good">↓ 减重方向 ✓</span>'
+     : summary.trend === 'gain' ? '<span class="pill pill-bad">↑ 增重方向</span>'
+     : '<span class="pill pill-info">→ 持平</span>');
+
+  // 4 KPI
+  document.getElementById('kIntake').textContent = summary.avg_intake.toLocaleString();
+  document.getElementById('kIntakeE').textContent = `目标 ${target.intake.toLocaleString()} 卡/天`;
+  document.getElementById('kBurn').textContent = summary.avg_burn.toLocaleString();
+  document.getElementById('kBurnE').textContent = `TDEE ${target.tdee.toLocaleString()} · 运动 ${summary.avg_exercise_burn}`;
+  const def = summary.avg_deficit;
+  document.getElementById('kDef').textContent = (def >= 0 ? '+' : '') + def.toLocaleString();
+  document.getElementById('kDefE').textContent = def >= 0 ? '摄入 > 消耗 → 减重方向' : '摄入 < 消耗 → 增重方向';
+  document.getElementById('kDefE').className = 'extra ' + (def > 0 ? 'good' : 'bad');
+  document.getElementById('kLoss').textContent = (summary.predicted_loss_kg >= 0 ? '+' : '') + summary.predicted_loss_kg.toFixed(2) + ' kg';
+  document.getElementById('kLossE').textContent = `7 天累计 · ${summary.weekly_deficit >= 0 ? '+' : ''}${summary.weekly_deficit} 卡`;
+  document.getElementById('kLossE').className = 'extra ' + (summary.predicted_loss_kg > 0 ? 'good' : 'bad');
+
+  // SVG 双线 + 缺口 area
+  const svg = document.getElementById('chart');
+  const W = 800, H = 240, PAD = 30;
+  const yMin = 1000, yMax = 3000;
+  function x(i) { return PAD + i * (W - 2*PAD) / Math.max(1, series.length - 1); }
+  function y(v) { return H - PAD - (v - yMin) / (yMax - yMin) * (H - 2*PAD); }
+  for (let v = yMin; v <= yMax; v += 500) {
+    const yy = y(v);
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="#e5e5ea"/>` +
+      `<text x="4" y="${yy - 3}" font-size="10" fill="#86868b">${v}</text>`);
+  }
+  // 零摄入参考线(1500 卡)
+  if (target.intake > yMin && target.intake < yMax) {
+    const yy = y(target.intake);
+    svg.insertAdjacentHTML('beforeend',
+      `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="#ff9500" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>` +
+      `<text x="${W - 4}" y="${yy - 3}" font-size="10" fill="#ff9500" text-anchor="end">摄入目标 ${target.intake}</text>`);
+  }
+  // 缺口 area (between intake & burn)
+  let area = '';
+  series.forEach((p, i) => {
+    if (i === 0) area = `M ${x(i)},${y(p.intake)}`;
+    else area += ` L ${x(i)},${y(p.intake)}`;
+  });
+  series.slice().reverse().forEach((p, idx) => {
+    const i = series.length - 1 - idx;
+    area += ` L ${x(i)},${y(p.burn)}`;
+  });
+  area += ' Z';
+  svg.insertAdjacentHTML('beforeend',
+    `<path d="${area}" fill="rgba(255,59,48,0.18)"/>`);
+  // 摄入线
+  let li = `M ${x(0)},${y(series[0].intake)}`;
+  series.forEach((p, i) => { if (i > 0) li += ` L ${x(i)},${y(p.intake)}`; });
+  svg.insertAdjacentHTML('beforeend',
+    `<path d="${li}" fill="none" stroke="var(--intake)" stroke-width="2.5"/>`);
+  // 消耗线
+  let lb = `M ${x(0)},${y(series[0].burn)}`;
+  series.forEach((p, i) => { if (i > 0) lb += ` L ${x(i)},${y(p.burn)}`; });
+  svg.insertAdjacentHTML('beforeend',
+    `<path d="${lb}" fill="none" stroke="var(--burn)" stroke-width="2.5" stroke-dasharray="5,3"/>`);
+  // 数据点 + 日期
+  series.forEach((p, i) => {
+    svg.insertAdjacentHTML('beforeend',
+      `<circle cx="${x(i)}" cy="${y(p.intake)}" r="4" fill="var(--intake)" stroke="#fff" stroke-width="1.5"/>` +
+      `<circle cx="${x(i)}" cy="${y(p.burn)}" r="3" fill="var(--burn)" stroke="#fff" stroke-width="1.5"/>` +
+      `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#86868b" text-anchor="middle">${p.date.slice(5)}</text>`);
+  });
+
+  // 表格
+  const tb = document.getElementById('table');
+  let totIn = 0, totBurn = 0, totDef = 0;
+  series.forEach(p => {
+    totIn += p.intake; totBurn += p.burn; totDef += p.deficit;
+    const targetDef = target.weekly_deficit_per_day;
+    const cls = p.deficit > 0 ? 'deficit-pos' : p.deficit < 0 ? 'deficit-neg' : 'deficit-zero';
+    const status = p.deficit >= targetDef
+      ? '<span class="pill pill-good">✓ 达标</span>'
+      : p.deficit > 0
+        ? '<span class="pill pill-warn">⚠ 偏低</span>'
+        : '<span class="pill pill-bad">✗ 超量</span>';
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${p.date}</td>` +
+      `<td class="num" style="color:var(--intake)">${p.intake.toLocaleString()}</td>` +
+      `<td class="num" style="color:var(--burn)">${p.burn.toLocaleString()}</td>` +
+      `<td class="num ${cls}">${p.deficit >= 0 ? '+' : ''}${p.deficit.toLocaleString()}</td>` +
+      `<td class="num">${targetDef >= 0 ? '+' : ''}${targetDef.toLocaleString()}</td>` +
+      `<td>${status}</td></tr>`);
+  });
+  document.getElementById('tfoot').innerHTML =
+    `<tr style="background:var(--soft);font-weight:600;"><td>合计</td>` +
+    `<td class="num" style="color:var(--intake)">${totIn.toLocaleString()}</td>` +
+    `<td class="num" style="color:var(--burn)">${totBurn.toLocaleString()}</td>` +
+    `<td class="num ${totDef >= 0 ? 'deficit-pos' : 'deficit-neg'}">${totDef >= 0 ? '+' : ''}${totDef.toLocaleString()}</td>` +
+    `<td colspan="2"></td></tr>`;
+
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源:diet_deficit_analysis · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${series.length} 天`;
+  document.getElementById('copyBtn').onclick = function() {
+    const r = `热量缺口 ${meta.start} → ${meta.end} (${series.length} 天)\n` +
+              `日均摄入 ${summary.avg_intake} 卡 · 日均消耗 ${summary.avg_burn} 卡 · 日均缺口 ${summary.avg_deficit >= 0 ? '+' : ''}${summary.avg_deficit} 卡\n` +
+              `7 天累计缺口 ${summary.weekly_deficit >= 0 ? '+' : ''}${summary.weekly_deficit} 卡 · 理论减重 ${summary.predicted_loss_kg.toFixed(2)} kg`;
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

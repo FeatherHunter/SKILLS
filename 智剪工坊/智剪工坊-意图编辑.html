@@ -570,18 +570,17 @@
     /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
     /* ========================================================== */
     .anchor-rail {
-      /* v1.24.0 fix:sticky + right:-40px 是矛盾 CSS spec。
-         sticky 模式下 horizontal 由 DOM 流决定,left/right 被忽略。
-         改为 position: fixed 相对 viewport,稳定可靠 + form-screen 滚出不影响。
-         凸出感用 transform: translate(40px, -50%) 实现(原 right: -40px 视觉效果)。 */
-      position: fixed;
-      right: 0;
+      /* v1.24.2 fix:用户在右侧贴 .container,不要贴 viewport。
+         - 改回 position: sticky(只在垂直方向 sticky)
+         - margin-left: auto 让 block aside 推到 form-screen 最右
+         - 当 viewport 宽: aside 贴 .container 右外缘(1000px 容器右侧)
+         - 当 viewport 窄: aside 贴 viewport 右(容器宽度=viewport) */
+      position: sticky;
       top: 50%;
-      transform: translate(0, -50%);  /* v1.24.1 fix:从 translate(40px) 改回 translate(0),aside 不再推出视口外 */
       width: 40px; height: 72vh;
+      margin-left: auto;          /* block 推右,sticky 模式下 horizontal 由 DOM 流决定 */
+      transform: translateY(-50%); /* vertical 居中 */
       z-index: 40;
-      /* v1.24.0 fix:撤掉 align-self(只 flex 容器有效)+ pointer-events: none。
-         pointer-events: none 让 CSS :hover 不触发 → hideAnchorRail 2 秒自动隐藏机制形同虚设。 */
       opacity: 0;
       transition: opacity 0.4s ease;
     }
@@ -611,29 +610,32 @@
       pointer-events: none;
     }
 
-    /* 锚点圆点 (默认 5px 灰 50% 透明) */
+    /* v1.24.2 fix:圆点更大更亮(用户要求"大些,不要灰色")
+       - 默认 7→11px,蓝更显
+       - active 10→16px,亮蓝 + 白色光环 */
     .anchor-rail .anchor {
       position: absolute;
       left: 50%; transform: translate(-50%, -50%);
-      width: 7px; height: 7px;  /* v1.23:5px→7px 更易点 */
-      background: var(--secondary);
+      width: 11px; height: 11px;                 /* v1.24.2:7→11,更大更点得中 */
+      background: rgba(0, 122, 255, 0.55);       /* v1.24.2:亮蓝透明,默认态可见 */
+      box-shadow: 0 0 0 2px #fff;               /* v1.24.2:白色 outline 让点跟轨道区分 */
       border-radius: 50%;
-      opacity: 0.5;
       pointer-events: auto;
       cursor: pointer;
       transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
     }
     .anchor-rail .anchor:hover {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1.5);  /* v1.23:1.8→1.5 (有 40px 宽容器兜底) */
-      background: var(--label);
+      transform: translate(-50%, -50%) scale(1.35);   /* v1.24.2:hover 放大更明显 */
+      background: rgba(0, 122, 255, 0.85);
+      box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(0, 122, 255, 0.25);   /* hover 加光环 */
     }
     .anchor-rail .anchor.active {
-      opacity: 1;
-      width: 10px; height: 10px;  /* v1.23:7px→10px 更醒目 */
-      background: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.18);
+      width: 16px; height: 16px;               /* v1.24.2:10→16,active 更壮观 */
+      background: var(--blue);                 /* 实色亮蓝 */
+      box-shadow: 0 0 0 3px #fff, 0 0 12px rgba(0, 122, 255, 0.55);  /* 白环 + 强外发光 */
     }
+    /* v1.24.2:删 dimmed(没人用,而且灰色跟新配色不一致) */
+
     .anchor-rail .anchor.dimmed { opacity: 0.15; }
 
     /* 锚点 tooltip (hover 滑出,Apple 风格毛玻璃) */

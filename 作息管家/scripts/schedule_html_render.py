@@ -303,60 +303,79 @@ def _html_base_dir() -> Path:
     db_dir = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
     return Path(db_dir) / 'schedule_html'
 
+
+def _naming_path(command: str, subdir: str = "") -> Path:
+    """按《预置 HTML+注入数据指导手册》§4.1 生成命名合规路径。
+
+    格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+    子目录(如 "record/day", "plan/receipt")会自动 mkdir -p。
+    冲突保护:文件已存在时自动追加 _2/_3/...(同秒多次生成不覆盖)。
+
+    命名合规动机:避免同一天 receipt 多次生成覆盖前一份(数据丢失风险);
+    跨 SKILL 一致(手册里 memo_query_20260724_103045.html 也是这个格式)。
+
+    Args:
+        command: 命令名,如 "record_receipt" / "plan_list"
+        subdir: 在 _html_base_dir() 下的子目录,可空(用 "/")分隔多级。
+                pid/rid/action/date 等语义信息不再放 filename 里(避免暴露隐私);
+                这些信息保留在 payload data.meta 里。
+
+    Returns:
+        完整的绝对路径,且保证父目录存在。
+    """
+    base = _html_base_dir()
+    if subdir:
+        base = base.joinpath(*subdir.split("/"))
+    base.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    target = base / f"{command}_{stamp}.html"
+    if not target.exists():
+        return target
+    # 冲突保护:追加 _2/_3/...
+    n = 2
+    while n < 1000:
+        candidate = base / f"{command}_{stamp}_{n}.html"
+        if not candidate.exists():
+            return candidate
+        n += 1
+    raise RuntimeError(f"冲突保护超过 1000 次:{command}_{stamp}")
+
 def _record_dir() -> Path:
     return _html_base_dir() / 'record'
 
 
 def default_output_path(meta: dict) -> Path:
     """
-    根据 meta 决定默认输出路径(硬绑 SKILLS_DB_PATH/schedule_html/):
+    按手册 §4.1 命名合规生成默认输出路径。
+    命名格式:<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
 
-      record/ 子目录: 5 个 record-* 模式  → 走 record_output_path 分发
-      plan/ 子目录: 2 个 plan-* 模式(list-events / query-plans)→ 本函数直接 inline
-      fallback: SKILLS_DB_PATH/schedule_html/view.html
+    子目录:
+      record-* 模式  → record/day|range|compare|category|anomaly|receipt|detail
+      plan-* 模式    → plan/list | plan/receipt | plan/query
 
-    规则来源:SKILL.md §3.x HTML 命名规则(2026-07-23 重构版)
-    上一版本写到 SKILL_DIR/reports/,已被一刀删除,从此统一到 SKILLS_DB_PATH 下。
+    pid/rid/action/date 等语义信息保留在 payload data.meta 里,
+    filename 的唯一职责是跨 SKILL 一致 + 同秒冲突保护。
     """
     mode = meta.get("mode", "list-events")
-    base = _html_base_dir()
-    plan_list = base / 'plan' / 'list'
-    plan_query = base / 'plan' / 'query'
 
-    # M10: record-* 模式走 record_output_path 分发(消除死代码)
     if mode.startswith("record-"):
         return record_output_path(mode, meta)
 
     if mode == "list-events":
-        date = meta.get("date", "unknown")
-        return plan_list / f"plan_list_{date}.html"
+        return _naming_path("plan_list", "plan/list")
     if mode == "query-plans":
-        dates = meta.get("dates", [])
-        if len(dates) == 1:
-            return plan_query / f"plan_query_{dates[0]}.html"
-        return plan_query / f"plan_query_{dates[0]}_to_{dates[-1]}.html"
+        return _naming_path("plan_query", "plan/query")
     if mode == "plan-preview":
-        date = meta.get("date", "unknown")
-        return plan_list / f"plan_preview_{date}.html"
+        return _naming_path("plan_preview", "plan/list")
     if mode == "plan-review":
-        date = meta.get("date", "unknown")
-        return plan_list / f"plan_review_{date}.html"
+        return _naming_path("plan_review", "plan/list")
     if mode == "plan-receipt":
-        # 改/删计划回执(回执型第2款,2026-07-24)
-        pid = meta.get("plan_id", "unknown")
-        date = meta.get("date", "unknown")
-        action = meta.get("action", "update")
-        return base / 'plan' / 'receipt' / f"plan_receipt_id{pid}_{date}_{action}.html"
+        return _naming_path("plan_receipt", "plan/receipt")
     if mode == "plan-receipt-add":
-        # 补计划回执(回执型第3款,2026-07-24)
-        pid = meta.get("plan_id", "unknown")
-        date = meta.get("date", "unknown")
-        return base / 'plan' / 'receipt' / f"plan_receipt_add_id{pid}_{date}.html"
+        return _naming_path("plan_receipt_add", "plan/receipt")
     if mode == "plan-receipt-write":
-        # 写摘要回执(回执型第4款,2026-07-24)
-        pid = meta.get("plan_id", "unknown")
-        date = meta.get("date", "unknown")
-        return base / 'plan' / 'receipt' / f"plan_receipt_write_id{pid}_{date}.html"
+        return _naming_path("plan_receipt_write", "plan/receipt")
+    return _naming_path("unknown")
     return base / "view.html"
 
 
@@ -365,62 +384,34 @@ def default_output_path(meta: dict) -> Path:
 
 
 def record_output_path(mode: str, meta: dict = None) -> Path:
+    """按手册 §4.1 命名合规(<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html)生成路径。
+
+    pid/rid/action/date 等语义信息不再放 filename(避免暴露隐私 +
+    避免信息冗余),这些信息保留在 payload data.meta 里。
+    filename 的唯一职责是跨 SKILL 一致的命名 + 同秒冲突保护。
     """
-    5 模板统一路径生成器(从 meta dict 派生):
-      record-day     meta.date                              → <base>/record/day/<date>_record_day.html
-      record-range   meta.start / meta.end                  → <base>/record/range/<start>_to_<end>_record_range.html
-      record-compare meta.ranges[0].label / [1].label     → <base>/record/compare/<labelA>_vs_<labelB>_record_compare.html
-      record-category meta.category / start / end          → <base>/record/category/<cat>_<start>_to_<end>_record_category.html
-      record-anomaly  meta.window                          → <base>/record/anomaly/<today>_w<window>_record_anomaly.html
-    """
-    base = _html_base_dir() / 'record'
-    from datetime import date as _dt
-    today = _dt.today().isoformat()
-    meta = meta or {}
+    meta = meta or {}  # noqa  # 保留参数以便未来 meta 路径命名复用
 
     if mode == "record-day":
-        d = meta.get("date", today)
-        return base / "day" / f"{d}_record_day.html"
+        return _naming_path("record_day", "record/day")
     if mode == "record-range":
-        s = meta.get("start", today)
-        e = meta.get("end", today)
-        return base / "range" / f"{s}_to_{e}_record_range.html"
+        return _naming_path("record_range", "record/range")
     if mode == "record-compare":
-        ranges = meta.get("ranges") or []
-        a = (ranges[0] or {}).get("label", "a") if len(ranges) > 0 else "a"
-        b = (ranges[1] or {}).get("label", "b") if len(ranges) > 1 else "b"
-        return base / "compare" / f"{a}_vs_{b}_record_compare.html"
+        return _naming_path("record_compare", "record/compare")
     if mode == "record-category":
-        # M5:meta.category 已经是用户原值(不映射),文件名拼原值
-        cat = meta.get("category", "cat")
-        s = meta.get("start", "x")
-        e = meta.get("end", "x")
-        return base / "category" / f"{cat}_{s}_to_{e}_record_category.html"
+        return _naming_path("record_category", "record/category")
     if mode == "record-anomaly":
-        w = meta.get("window", 7)
-        return base / "anomaly" / f"{today}_w{w}_record_anomaly.html"
+        return _naming_path("record_anomaly", "record/anomaly")
     if mode == "record-report":
         # 兼容旧 CLI,等价 record-day
-        d = meta.get("date", today)
-        return base / "day" / f"{d}_record_day.html"
+        return _naming_path("record_day", "record/day")
     if mode == "record-receipt":
-        # 漂亮回执(回执型首款,2026-07-24)
-        rid = meta.get("record_id", "unknown")
-        return base / "receipt" / f"receipt_id{rid}.html"
+        return _naming_path("record_receipt", "record/receipt")
     if mode == "plan-receipt":
-        # 改/删计划回执(回执型第2款,2026-07-24)
-        pid = meta.get("plan_id", "unknown")
-        date = meta.get("date", today)
-        action = meta.get("action", "update")
-        return base / 'plan' / 'receipt' / f"plan_receipt_id{pid}_{date}_{action}.html"
+        return _naming_path("plan_receipt", "plan/receipt")
     if mode == "record-detail":
-        # 详情页(单日 + 可选 record_id)
-        d = meta.get("date", today)
-        rid = meta.get("record_id")
-        if rid:
-            return base / "detail" / f"{d}_id{rid}_record_detail.html"
-        return base / "detail" / f"{d}_record_detail.html"
-    return base / f"unknown_{today}.html"
+        return _naming_path("record_detail", "record/detail")
+    return _naming_path("unknown")
 
 
 def title_for_mode(meta: dict) -> str:

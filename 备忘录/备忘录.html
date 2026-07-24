@@ -3,889 +3,474 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>备忘录 - Skill HTML 镜像</title>
+<title>备忘录 · 使用手册</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
-    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
-    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
-  }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    line-height: 1.75; color: var(--fg); background: var(--bg);
-    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
-    -webkit-font-smoothing: antialiased;
-  }
-  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
-  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
-        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
-  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
-  p { font-size: 15px; margin-bottom: 14px; }
-  strong { font-weight: 600; }
-  em { color: var(--fg2); font-style: normal; }
-  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
-         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
-         color: #c7254e; border: 1px solid var(--border); }
-  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
-         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
-         line-height: 1.65; }
-  pre code { background: none; padding: 0; color: inherit; border: none; }
-  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { background: var(--card); font-weight: 600; }
-  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
-               margin: 16px 0; color: var(--fg2); }
-  blockquote p { color: var(--fg2); margin-bottom: 0; }
-  ul, ol { margin: 14px 0 14px 28px; }
-  li { margin-bottom: 4px; font-size: 15px; }
-  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
-  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
-          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-  .toc { background: var(--card); border: 1px solid var(--border);
-         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
-  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
-            text-transform: uppercase; letter-spacing: 0.08em; }
-  .toc ol { margin-left: 22px; }
-  .toc a { color: var(--fg); text-decoration: none; }
-  .toc a:hover { color: var(--accent); }
-  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-  .pill { display: inline-block; background: var(--card); color: var(--fg2);
-           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
-           border: 1px solid var(--border); }
-  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
-             color: var(--fg3); font-size: 12px; text-align: center; }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;--card:#fff;--border:#d2d2d7;--accent:#007aff;--accent-soft:#f0f7ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--code-bg:#1d1d1f;--code-fg:#f5f5f7;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.75;color:var(--fg);background:var(--bg);max-width:920px;margin:0 auto;padding:80px 32px 120px;-webkit-font-smoothing:antialiased}
+h1{font-size:44px;font-weight:700;letter-spacing:-0.025em;margin-bottom:12px}
+h2{font-size:28px;font-weight:600;margin-top:56px;margin-bottom:20px;letter-spacing:-0.02em;padding-bottom:10px;border-bottom:1px solid var(--border)}
+h3{font-size:21px;font-weight:600;margin-top:36px;margin-bottom:14px;letter-spacing:-0.01em;color:var(--accent)}
+h4{font-size:17px;font-weight:600;margin-top:24px;margin-bottom:10px;padding:8px 14px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:6px}
+p{font-size:15px;margin-bottom:12px}
+.lead{font-size:18px;color:var(--fg2);margin-bottom:32px;line-height:1.55}
+strong{font-weight:600}
+em{color:var(--fg2);font-style:normal}
+code{background:#f5f5f7;padding:2px 7px;border-radius:4px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;color:#c7254e;border:1px solid var(--border)}
+pre{background:var(--code-bg);color:var(--code-fg);padding:18px 22px;border-radius:12px;overflow-x:auto;margin:14px 0;font-size:13px;line-height:1.65}
+pre code{background:none;padding:0;color:inherit;border:none}
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--card);font-weight:600;color:var(--fg2);font-size:13px}
+blockquote{border-left:3px solid var(--accent);padding:8px 0 8px 18px;margin:14px 0;color:var(--fg2);background:var(--accent-soft);border-radius:0 8px 8px 0}
+blockquote p{color:var(--fg2);margin-bottom:0;font-size:14.5px}
+ul,ol{margin:12px 0 14px 26px}
+li{margin-bottom:6px;font-size:15px}
+.usage{background:#fafafa;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin:12px 0;font-size:14px}
+.usage strong{color:var(--accent);font-weight:600}
+details{margin:14px 0;border:1px solid var(--border);border-radius:10px;background:#fafbfc;overflow:hidden}
+details summary{padding:12px 18px;cursor:pointer;font-weight:600;font-size:14px;color:var(--fg2);user-select:none;background:linear-gradient(180deg,#f5f5f7 0%,#ebebed 100%);border-bottom:1px solid transparent;transition:all .15s}
+details summary:hover{background:linear-gradient(180deg,#ebebed 0%,#e0e0e2 100%);color:var(--accent)}
+details[open] summary{border-bottom:1px solid var(--border);color:var(--accent);background:linear-gradient(180deg,#f0f7ff 0%,#e3efff 100%)}
+details summary::before{content:"▶";display:inline-block;margin-right:8px;font-size:10px;color:var(--fg3);transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg);color:var(--accent)}
+details[open] summary::after{content:"收起";float:right;font-size:12px;color:var(--fg3);font-weight:400}
+details[open] summary::after{content:"已展开 · 点击收起"}
+details > *:not(summary){padding:8px 18px}
+details ul{padding-left:20px}
+details li{font-size:13.5px;color:var(--fg2);margin-bottom:4px}
+details code{font-size:12.5px}
+.toc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:24px 0 36px}
+.toc h4{margin:0 0 10px;color:var(--fg2);font-size:13px;text-transform:uppercase;letter-spacing:0.08em;background:none;border:none;padding:0}
+.toc ol{margin-left:22px}
+.toc a{color:var(--fg);text-decoration:none;transition:color .15s}
+.toc a:hover{color:var(--accent)}
+.kbd{background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:1px 6px;font-family:ui-monospace,monospace;font-size:12px;color:var(--fg2)}
+hr{border:none;border-top:1px solid var(--border);margin:48px 0}
+.footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--border);color:var(--fg3);font-size:13px}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+.pill{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;margin-right:4px}
+.pill-warn{background:#fff7e8;color:#b25b00}
+.pill-ok{background:#e8f7ed;color:#178a3a}
+@media(max-width:600px){body{padding:40px 18px 80px}h1{font-size:32px}h2{font-size:22px}h3{font-size:18px}}
 </style>
 </head>
 <body>
-<div class="toc"><h4>目录</h4><ol><li><a href="#备忘录-memorandum-1">备忘录 (Memorandum)</a></li>
-<li><a href="#强制性规定-最高优先级-1">强制性规定(最高优先级)</a></li>
-<li><a href="#描述-2">描述</a></li>
-<li><a href="#快速开始-3">快速开始</a></li>
-<li><a href="#环境变量-4">环境变量</a></li>
-<li><a href="#操作规范-5">操作规范</a></li>
-<li><a href="#重要约定-提醒路由-6">⚠️ 重要约定:提醒路由</a></li>
-<li><a href="#功能与触发词-7">功能与触发词</a></li>
-<li><a href="#定时提醒机制-8">定时提醒机制</a></li>
-<li><a href="#参考文档-9">参考文档</a></li></ol></div>
-<h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
-<blockquote>
-<p><strong>当前版本:1.0.8</strong>(2026-07-24 发布 · 17 个 commit · git tag <code>v1.0.8</code>)<br>v1.0.8:HTML 镜像设计原则 + 触发词段可展开底层原理<br>
-v1.0.7:触发词 → HTML 生成对照表 + 文档裂缝守护<br>
-v1.0.6:命名 + 输出目录规则同步到通用手册(跨 Skill)<br>
-v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)<br>
-v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)<br>
-v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
-v1.0.2:HTML 交付规范初版(过度禁止已纠正)<br>
-v1.0.1:wish-complete 第一性修复<br>
-详见 <code>CHANGELOG.md</code></p>
-</blockquote>
-<h2 id="强制性规定-最高优先级-1">强制性规定(最高优先级)</h2>
+
+<h1>📝 备忘录 (Memorandum)</h1>
+<p class="lead">私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒、打卡追踪、心愿管理、飞书任务同步。</p>
+
+<details style="background:var(--card)">
+<summary>📖 这是什么 / 不是什么</summary>
+<ul>
+<li><strong>这是</strong>:用户使用手册。告诉你<strong>怎么用</strong>:有哪些唤醒词、每个怎么调、有什么注意事项。</li>
+<li><strong>不是</strong>:版本日志。改动记录在 <a href="CHANGELOG.md">CHANGELOG.md</a>。</li>
+<li><strong>不是</strong>:开发者文档。AI / 维护者看的完整规范在 <a href="SKILL.md">SKILL.md</a>。</li>
+<li><strong>想要探究底层</strong>:每个唤醒词下方都有 <span class="kbd">🔍 查看底层原理</span> 按钮,点开看 CLI / SQL / 代码细节。</li>
+</ul>
+</details>
+
+<nav class="toc">
+<h4>📑 目录</h4>
 <ol>
-<li><strong>HTML 同步</strong>:该技能的所有优化和变动、脚本的所有变动都必须体现在 <code>备忘录.html</code> 上。</li>
-<li><strong>优先级</strong>:本规定优先级最高,高于所有其他规范。</li>
-<li><strong>用户确认</strong>:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。</li>
+<li><a href="#快速开始">快速开始</a></li>
+<li><a href="#环境变量">环境变量</a></li>
+<li><a href="#操作规范">操作规范</a></li>
+<li><a href="#提醒路由">⚠️ 提醒路由(防用错工具)</a></li>
+<li><a href="#触发词速查表">触发词速查表(28 个)</a></li>
+<li><a href="#记录类">触发词详细 · 记录类</a></li>
+<li><a href="#查找类">触发词详细 · 查找类</a></li>
+<li><a href="#提醒类">触发词详细 · 提醒类</a></li>
+<li><a href="#心愿类">触发词详细 · 心愿类</a></li>
+<li><a href="#批量类">触发词详细 · 批量类</a></li>
+<li><a href="#跨-skill">触发词详细 · 跨 Skill</a></li>
+<li><a href="#子唤醒词">子唤醒词(12 个)</a></li>
+<li><a href="#定时提醒">定时提醒(Cron)</a></li>
 </ol>
-<h2 id="html-交付规范-2026-07-24-加-最高优先级">HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)</h2>
-<p><strong>HTML 输出目录规则</strong>(v1.0.5):</p>
-<pre><code>HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"</code></pre>
-<ul>
-<li>HTML 是 DB 的快照视图 → 与 DB 在同一目录</li>
-<li><code>SKILLS_DB_PATH</code> 环境变量 / fallback 都生效(<code>D:/.db/</code> 或 <code>/mnt/d/.db/</code>)</li>
-<li>备忘录的 <code>SKILL_HTML_NAME = "memo"</code> → 例子:<code>/mnt/d/.db/memo_html/</code></li>
-<li>多 skill 共用 SKILLS_DB_PATH 时,按 skill 子目录隔离</li>
-<li>同秒内多次生成同一文件,自动追加 <code>_2</code> / <code>_3</code> 后缀(冲突保护)</li>
-</ul>
-<p><strong>命名规则</strong>(v1.0.5 明确化):</p>
-<pre><code>&lt;command_name&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_&lt;N&gt;].html</code></pre>
-<ul>
-<li><code>command_name</code>:CLI 子命令名(5 个模板对应 5 个命令)</li>
-<li><code>YYYYMMDD_HHMMSS</code>:本地时间</li>
-<li><code>_&lt;N&gt;</code>:冲突保护(可选,如 <code>_2</code> / <code>_3</code>)</li>
-</ul>
-<hr>
-<p>这是 5 个 HTML 模板(<code>memo_query.html</code>/<code>sync_report.html</code>/<code>wish_plan.html</code>/<code>wish_complete.html</code>/<code>change_category.html</code>)生成后,<strong>AI 代理必须遵守的交付协议</strong>:</p>
+</nav>
+
+<h2 id="快速开始">快速开始</h2>
 <ol>
-<li><strong>必须用 <code>&lt;media src="..." type="file" /&gt;</code> 标签交付</strong>(基础动作)。<ul>
-<li>出处:《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)</li>
-<li>HTML 内嵌 JS + clipboard + textarea,有交互,<strong>内联展示会丢失交互</strong>(所以内联禁止)</li>
-</ul>
-</li>
-<li><strong>强烈推荐:与 <code>&lt;media&gt;</code> 并行,同时用 Chrome 等系统默认浏览器打开</strong>。<ul>
-<li>用户场景:用户在 IDE 里用 <code>&lt;media&gt;</code> 预览的同时,Chrome 窗口也打开了</li>
-<li>好处:Chrome 渲染 JS / 持久化窗口 / 多窗口并存 / 移动设备同步</li>
-<li>实现方式:AI 可调用 IDE/平台提供的 open file 工具或 subprocess + 系统默认应用</li>
-<li><strong>不冲突</strong>:<code>&lt;media&gt;</code>(IDE 内嵌)与 Chrome(系统浏览器)是<strong>两个独立通道</strong>,并行不冲突</li>
-</ul>
-</li>
-<li><strong>禁止</strong>:<ul>
-<li>❌ 只输出文件路径文字让用户"自己去打开"(用户必须去 bash terminal 复制粘贴,体验差)</li>
-<li>❌ 内联读 HTML 全部内容塞进对话(交互丢失 + 上下文中毒)</li>
-<li>❌ 备注 "AI 建议你用 Chrome 打开"等绕过 <code>&lt;media&gt;</code> 的指引(应该直接做,不要"建议")</li>
-</ul>
-</li>
-<li><strong>正确做法</strong>(并行交付,举例):<pre><code>找到 3 条心愿。
-[html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
-&lt;media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" /&gt;
-+ AI 同步:用系统默认浏览器(Chrome 等)打开同一文件</code></pre>
-</li>
-<li><strong>触发词场景对应交付协议</strong>(每个都 <code>&lt;media&gt;</code> + 浏览器并行):<ul>
-<li>5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 <code>--html</code> 后并行</li>
-<li>备忘录同步(sync-from-feishu <code>--html</code>):同上</li>
-<li>心愿排期向导(wish-batch-plan <code>--html</code>):用户勾选 + 复制 + 粘贴回 AI,<strong>第一步并行</strong></li>
-<li>心愿完成向导(wish-complete <code>--html</code>):同上</li>
-<li>批量改分类向导(batch-update-category <code>--html</code>):同上</li>
-</ul>
-</li>
-<li><strong>优先级</strong>:本规范与"HTML 同步"同级(最高优先级)。</li>
-<li><strong>历史修订</strong>:<ul>
-<li>v1.0.2(2026-07-24):最初版,误写"绝对禁止 AI 主动唤起浏览器"</li>
-<li>v1.0.3(2026-07-24):纠正 — 用户确认 <code>&lt;media&gt;</code> 与浏览器打开应并行,<strong>非互斥</strong></li>
-</ul>
-</li>
+<li>读 <a href="SKILL.md">SKILL.md</a> 了解功能(AI 会按这个文件路由)</li>
+<li>检查环境变量,交互式帮你配置 <code>SKILLS_DB_PATH</code> / <code>MEMO_MEDIA_DIR</code></li>
+<li>运行 <code>script/init.sql</code> 初始化数据库</li>
+<li>设置 cron 任务:每分钟检查提醒,QQ 渠道推送(详见 <a href="#定时提醒">定时提醒</a>)</li>
+<li>验证:<code>python3 script/memo_cli.py --help</code></li>
 </ol>
-<h2 id="触发词-html-生成对照表-2026-07-24-加-v1-0-7-最高优先级">触发词 → HTML 生成对照表(2026-07-24 加 · v1.0.7 · 最高优先级)</h2>
-<p><strong>目的</strong>:消除"AGENT 是否要生成 HTML"的歧义。28 个触发词明确分类,AI 不再从叙述中"凑"出完整图。</p>
-<p><strong>图例</strong>:</p>
-<ul>
-<li>✅ <strong>必须生成 HTML</strong>(AI 收到 JSON 后<strong>主动</strong>调 <code>--html</code>,再 <code>&lt;media&gt;</code> 交付)</li>
-<li>❌ <strong>不生成 HTML</strong>(只返回 JSON 三段式简短回执,文字流展示)</li>
-<li>🟡 <strong>过程型 HTML</strong>(必须生成,用户在 HTML 里勾选+复制+粘贴)</li>
-</ul>
+<p><strong>第一个示例</strong>(添加一条笔记):</p>
+<pre><code>python3 script/memo_cli.py add "今天开了个会" -c 备忘 -s 工作</code></pre>
+
+<h2 id="环境变量">环境变量</h2>
 <table>
-<tr><th>#</th><th>触发词</th><th>HTML?</th><th>命令</th><th>模板 / 备注</th></tr>
-<tr><td>1</td><td>记备忘</td><td>❌</td><td><code>add</code></td><td>单条回执</td></tr>
-<tr><td>2</td><td>搜备忘</td><td>✅</td><td><code>search --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>3</td><td>查备忘(搜备忘别名)</td><td>✅</td><td>同上</td><td>同上</td></tr>
-<tr><td>4</td><td>改备忘</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
-<tr><td>5</td><td>删备忘</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
-<tr><td>6</td><td>看备忘</td><td>✅</td><td><code>get --html</code></td><td><code>memo_query.html</code>(items 1 条)</td></tr>
-<tr><td>7</td><td>按时间搜备忘</td><td>✅</td><td><code>search-date --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>8</td><td>备忘改分类(单条)</td><td>❌</td><td><code>update-category &lt;id&gt; &lt;cat&gt;</code></td><td>单条回执</td></tr>
-<tr><td>9</td><td>备忘改子分类</td><td>❌</td><td><code>update-sub-category</code></td><td>单条回执</td></tr>
-<tr><td>10</td><td>记提醒</td><td>❌</td><td><code>add</code> + <code>remind</code></td><td>双步骤简短回执</td></tr>
-<tr><td>11</td><td>设提醒</td><td>❌</td><td><code>remind</code></td><td>单条回执</td></tr>
-<tr><td>12</td><td>看提醒</td><td>✅</td><td><code>reminders --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>13</td><td>查已提醒备忘</td><td>✅</td><td><code>completed --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>14</td><td>记心愿(子唤醒词)</td><td>❌</td><td><code>add -c 心愿</code></td><td>单条回执</td></tr>
-<tr><td>15</td><td>删心愿</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
-<tr><td>16</td><td>改心愿</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
-<tr><td>17</td><td>查心愿</td><td>✅</td><td><code>search -c 心愿 --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>18</td><td>记打卡(子唤醒词)</td><td>❌</td><td><code>add -c 打卡</code></td><td>单条回执</td></tr>
-<tr><td>19</td><td>删打卡</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
-<tr><td>20</td><td>改打卡</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
-<tr><td>21</td><td>查打卡</td><td>✅</td><td><code>search -c 打卡 --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>22</td><td>记情绪(子唤醒词)</td><td>❌</td><td><code>add -c 情绪日记</code></td><td>单条回执</td></tr>
-<tr><td>23</td><td>删情绪</td><td>❌</td><td><code>delete</code></td><td>单条回执</td></tr>
-<tr><td>24</td><td>改情绪</td><td>❌</td><td><code>update</code></td><td>单条回执</td></tr>
-<tr><td>25</td><td>查情绪</td><td>✅</td><td><code>search -c 情绪日记 --html</code></td><td><code>memo_query.html</code></td></tr>
-<tr><td>26</td><td>完成心愿(别名:完成打卡)</td><td>🟡</td><td><code>wish-complete --html</code></td><td><code>wish_complete.html</code>(过程型)</td></tr>
-<tr><td>27</td><td>心愿排期</td><td>🟡</td><td><code>wish-batch-plan --html</code></td><td><code>wish_plan.html</code>(过程型)</td></tr>
-<tr><td>28</td><td>备忘录同步</td><td>✅</td><td><code>sync-from-feishu --html</code></td><td><code>sync_report.html</code></td></tr>
-<tr><td>-</td><td><strong>备忘改分类(批量)</strong>(由"备忘改分类" + "都/全部/多 id" 触发)</td><td>🟡</td><td><code>batch-update-category --from-category X --html</code></td><td><code>change_category.html</code>(过程型)</td></tr>
+<tr><th>变量</th><th>必填</th><th>说明</th><th>默认</th></tr>
+<tr><td><code>SKILLS_DB_PATH</code></td><td>否</td><td>数据库根目录(统一配置)</td><td>父目录 <code>.db/</code> 层层找 / <code>D:/.db/</code>(Win) / <code>/mnt/d/.db/</code>(WSL)</td></tr>
+<tr><td><code>MEMO_MEDIA_DIR</code></td><td>否</td><td>媒体文件目录</td><td><code>media</code></td></tr>
 </table>
-<h3>统计</h3>
-<table>
-<tr><th>HTML?</th><th>数量</th><th>触发词</th></tr>
-<tr><td>✅ 必须生成 HTML</td><td>9</td><td>搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪</td></tr>
-<tr><td>🟡 过程型 HTML</td><td>4</td><td>完成心愿(完成打卡)/心愿排期/备忘改分类(批量)/(批量场景)</td></tr>
-<tr><td>❌ 不生成 HTML</td><td>15</td><td>记备忘/改备忘/删备忘/备忘改分类(单条)/备忘改子分类/记提醒/设提醒/记心愿/删心愿/改心愿/记打卡/删打卡/改打卡/记情绪/删情绪/改情绪</td></tr>
-<tr><td><strong>合计</strong></td><td><strong>28</strong></td><td>(含 12 个子唤醒词)</td></tr>
-</table>
-<h3>AGENT 决策流程</h3>
-<pre><code>收到用户原话 → 路由到触发词 → 查本表
-  ├─ ✅ → CLI 命令 + 调 --html → &lt;media&gt; 交付
-  ├─ 🟡 → CLI 命令 + --html(过程型) → &lt;media&gt; 交付 + 用户采纳复制 → 调精确命令
-  └─ ❌ → CLI 命令 → 返回 JSON 三段式 → 文字流回执</code></pre>
-<p><strong>优先级</strong>:本对照表与"HTML 同步"+"HTML 交付规范"同级(最高优先级)。</p>
-<p><strong>防文档裂缝守护</strong>:<code>tests/test_html_trigger_coverage.py</code> 扫描 SKILL.md + 本表,确保所有 28 个触发词在本表出现。</p>
-<h2 id="描述-2">描述</h2>
-<p>私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。</p>
-<p><strong>触发词</strong>:记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿(<strong>别名:完成打卡 · 2026-07-24 加</strong>)、心愿排期、备忘录同步</p>
-<p><strong>分类子唤醒词</strong>(心愿/打卡/情绪日记,自带顶层分类,操作同上):
-- 记心愿、删心愿、改心愿、查心愿
-- 记打卡、删打卡、改打卡、查打卡
-- 记情绪、删情绪、改情绪、查情绪(情绪日记的子唤醒词)</p>
-<h2 id="快速开始-3">快速开始</h2>
-<p>复制以下 prompt 给 AI 安装技能:</p>
-<pre><code>请帮我安装备忘录技能:
-1. 读取 SKILL.md 了解功能
-2. 检查环境变量,交互式帮助用户配置,强烈建议用户配置属于自己专属的环境变量
-3. 运行 script/init.sql 初始化数据库
-4. 设置 cron 任务:每分钟检查提醒,通过 QQ 渠道推送消息
-5. 验证:运行 python3 script/memo_cli.py --help
-</code></pre>
-<p><strong>⚠️ Cron 任务特性</strong>:
-- 当有待提醒事项时 → 通过 message 工具发送到 QQ
-- 当无提醒事项时 → 输出「NO_REPLY」静默,不发送任何消息
-- 提醒检查由 SKILL 内部逻辑决定,cron payload 只触发执行,不描述判断结果</p>
-<h2 id="环境变量-4">环境变量</h2>
-<table>
-<thead>
-<tr>
-<th>变量名</th>
-<th>必填</th>
-<th>说明</th>
-<th>默认</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>SKILLS_DB_PATH</code></td>
-<td>否</td>
-<td>数据库根目录(统一配置)</td>
-<td>父目录 .db/ 层层找</td>
-</tr>
-<tr>
-<td><code>MEMO_MEDIA_DIR</code></td>
-<td>否</td>
-<td>媒体文件目录</td>
-<td><code>media</code></td>
-</tr>
-</tbody>
-</table>
-<p><strong>注</strong>:
-- 没有 <code>MEMO_FEISHU_USER_OPEN_ID</code> -- 飞书 task assignee 自动从 <code>lark-cli auth status</code> 读取(lark-cli 已登录的用户就是 assignee)
-- 没有 tasklist 环境变量 -- tasklist 由 <code>add --tasklist-guid &lt;guid&gt;</code> 每次显式传入(少用场景)</p>
-<h2 id="操作规范-5">操作规范</h2>
+
+<h2 id="操作规范">操作规范</h2>
 <ul>
 <li>所有操作通过 <code>script/memo_cli.py</code> 执行</li>
 <li>提醒必须关联笔记,不可独立存在</li>
 <li>媒体文件路径使用相对路径存储</li>
 <li>CLI 返回 JSON:<code>{"status": "ok/error", "data": ..., "message": "..."}</code></li>
 </ul>
-<h3>媒体附件</h3>
+
+<h3 id="媒体附件">媒体附件</h3>
 <ul>
 <li>参数:<code>--media &lt;文件名&gt;</code></li>
 <li>支持类型:图片(jpg/png/gif)、音频、视频</li>
 <li>存储路径:<code>MEMO_MEDIA_DIR/</code> 目录下</li>
 <li>示例:<code>script/memo_cli.py add "购物小票" -c 记账 --media slip_20260522.jpg</code></li>
 </ul>
-<h2 id="重要约定-提醒路由-6">⚠️ 重要约定:提醒路由</h2>
-<p>所有「提醒」类请求(无论是否以「备忘录」开头):
-- <strong>必须</strong>走备忘录 CLI(先 add → 再 remind)
-- <strong>禁止</strong>使用 qqbot_remind 或其他提醒工具
-- 这是技能内置的强制路由规则</p>
-<hr />
-<h2 id="功能与触发词-7">功能与触发词</h2>
-<h3>添加笔记</h3>
-<ul>
-<li>触发词:记备忘</li>
-<li>子唤醒词:记心愿、记打卡、记情绪日记(自带顶层分类,跳过分类确认)</li>
-<li>命令:<code>script/memo_cli.py add "内容" [-c 顶层分类] [-s 子分类] [--due YYYY-MM-DD]</code></li>
-<details>
-<summary>🔍 记备忘(add)</summary>
 
-- CLI: `memo_cli.py add "内容" [-c 备忘|心愿|打卡|情绪日记] [-s 子分类] [--due YYYY-MM-DD]`
-- SQL: `INSERT INTO notes (content, category, sub_category, media_path, due, ...) VALUES (...)`
-- 飞书 hook: `category == "心愿"` 自动建飞书 task(失败降级,本地写入不受影响)
-- 失败: 空内容 / 无效分类 / due 格式错 / DB 异常 → `status: error` + 自动 rollback
-</details>
-<li><strong>顶层分类</strong>(4 种):备忘(默认)/ 心愿 / 打卡 / 情绪日记</li>
-<li><strong>子分类</strong>:自由文本字段,AI 智能从用户原话推断 → 见下方"sub_category 原则"</li>
-<li><strong><code>--due</code></strong>(仅心愿生效,2026-07-13 改):</li>
-<li>add 心愿时传 <code>--due YYYY-MM-DD</code> → 本地 note + 飞书 task + 飞书 task.due <strong>1 次原子建好</strong></li>
-<li>与 title 同属"创建时即带"的核心字段,无需后续 <code>set-due</code> 补救</li>
-<li>不传/非心愿 → 静默忽略,无回归</li>
-<li><strong>AI交互规范</strong>:添加前必须先问用户一个问题确认分类(如下示例),不得直接使用默认分类写入</li>
-<li>示例1:用户说「去医院」→ AI问「这个是工作相关还是心愿?」→ 用户选心愿 → 写入 <code>-c 心愿</code></li>
-<li>示例2:用户说「今天运动」→ AI问「这是打卡还是心愿?」→ 用户选打卡 → 写入 <code>-c 打卡</code></li>
-<li>示例3:用户说「今天心情很差」→ AI问「这是情绪日记还是心愿?」→ 用户选情绪日记 → 写入 <code>-c 情绪日记</code></li>
-<li>示例4:用户说「张三生日10月3号」→ AI问「这是社交类的备忘吗?」→ 写 <code>-c 备忘 -s 社交</code></li>
-<li>示例5:用户已明确指定分类 → 直接写入</li>
-<li><strong>例外</strong>:使用子唤醒词(记心愿/记打卡/记情绪)时,顶层分类已确定,跳过确认直接写入</li>
-<li><strong>子分类默认行为</strong>:用户说"记备忘"但没说子分类时 → sub_category 可为 NULL,AI 不必追问</li>
+<h2 id="提醒路由">⚠️ 提醒路由(防用错工具)</h2>
+<blockquote>
+<p>所有「提醒」类请求(无论是否以「备忘录」开头):</p>
+<ul>
+<li><strong>必须</strong>走备忘录 CLI(先 <code>add</code> → 再 <code>remind</code>)</li>
+<li><strong>禁止</strong>使用 <code>qqbot_remind</code> 或其他提醒工具</li>
 </ul>
-<h3>sub_category 原则</h3>
-<p>sub_category 是<strong>自由文本字段</strong>,AI 智能从用户原话推断:</p>
+</blockquote>
+
+<h2 id="触发词速查表">触发词速查表(28 个)</h2>
+<table>
+<tr><th>#</th><th>触发词</th><th>类别</th><th>一句话用法</th></tr>
+<tr><td>1</td><td><span class="pill">记备忘</span></td><td>记录</td><td>添加一条笔记</td></tr>
+<tr><td>2</td><td><span class="pill">改备忘</span></td><td>记录</td><td>修改已有笔记</td></tr>
+<tr><td>3</td><td><span class="pill">删备忘</span></td><td>记录</td><td>删除一条笔记</td></tr>
+<tr><td>4</td><td><span class="pill">备忘改分类</span></td><td>记录</td><td>改单条笔记的顶层分类</td></tr>
+<tr><td>5</td><td><span class="pill">备忘改子分类</span></td><td>记录</td><td>改单条笔记的子分类</td></tr>
+<tr><td>6</td><td><span class="pill pill-warn">搜备忘</span></td><td>查找</td><td>按关键词搜索</td></tr>
+<tr><td>7</td><td><span class="pill pill-warn">查备忘</span></td><td>查找</td><td>搜备忘的别名</td></tr>
+<tr><td>8</td><td><span class="pill pill-warn">看备忘</span></td><td>查找</td><td>查看某条详情</td></tr>
+<tr><td>9</td><td><span class="pill pill-warn">按时间搜备忘</span></td><td>查找</td><td>按日期范围搜索</td></tr>
+<tr><td>10</td><td><span class="pill">记提醒</span></td><td>提醒</td><td>添加笔记 + 设提醒(两步合一)</td></tr>
+<tr><td>11</td><td><span class="pill">设提醒</span></td><td>提醒</td><td>给已有笔记加提醒</td></tr>
+<tr><td>12</td><td><span class="pill pill-warn">看提醒</span></td><td>提醒</td><td>看所有提醒</td></tr>
+<tr><td>13</td><td><span class="pill pill-warn">查已提醒备忘</span></td><td>提醒</td><td>看已完成/已通知的提醒</td></tr>
+<tr><td>14</td><td><span class="pill">心愿排期</span></td><td>心愿</td><td>给多个心愿设排期</td></tr>
+<tr><td>15</td><td><span class="pill">完成心愿</span></td><td>心愿</td><td>标记心愿已完成(原子转打卡)</td></tr>
+<tr><td>16</td><td><span class="pill">完成打卡</span></td><td>心愿</td><td><strong>完成心愿</strong>的别名</td></tr>
+<tr><td>17</td><td><span class="pill pill-warn">备忘录同步</span></td><td>跨 Skill</td><td>本地心愿 ↔ 飞书任务对账</td></tr>
+<tr><td>18</td><td><span class="pill">记心愿</span></td><td>子唤醒</td><td>添加心愿(自带 category=心愿)</td></tr>
+<tr><td>19</td><td><span class="pill">删心愿</span></td><td>子唤醒</td><td>删除心愿</td></tr>
+<tr><td>20</td><td><span class="pill">改心愿</span></td><td>子唤醒</td><td>修改心愿</td></tr>
+<tr><td>21</td><td><span class="pill pill-warn">查心愿</span></td><td>子唤醒</td><td>搜 category=心愿</td></tr>
+<tr><td>22</td><td><span class="pill">记打卡</span></td><td>子唤醒</td><td>添加打卡记录</td></tr>
+<tr><td>23</td><td><span class="pill">删打卡</span></td><td>子唤醒</td><td>删除打卡</td></tr>
+<tr><td>24</td><td><span class="pill">改打卡</span></td><td>子唤醒</td><td>修改打卡</td></tr>
+<tr><td>25</td><td><span class="pill pill-warn">查打卡</span></td><td>子唤醒</td><td>搜 category=打卡</td></tr>
+<tr><td>26</td><td><span class="pill">记情绪</span></td><td>子唤醒</td><td>添加情绪日记</td></tr>
+<tr><td>27</td><td><span class="pill">删情绪 / 改情绪</span></td><td>子唤醒</td><td>删除 / 修改情绪日记</td></tr>
+<tr><td>28</td><td><span class="pill pill-warn">查情绪</span></td><td>子唤醒</td><td>搜 category=情绪日记</td></tr>
+</table>
+<p><span class="pill">基础</span> 单条 / 简短回执 · <span class="pill pill-warn">带 HTML</span> AI 收到 JSON 后会主动调 <code>--html</code> 渲染网页(自动交付)</p>
+
+<h2 id="记录类">触发词详细 · 记录类</h2>
+
+<h4 id="记备忘">记备忘</h4>
+<div class="usage"><strong>用法</strong>: <code>add "内容" [-c 备忘|心愿|打卡|情绪日记] [-s 子分类] [--due YYYY-MM-DD]</code></div>
+<p>添加前 AI 会问"是工作相关还是心愿?"(除非你已明确指定分类或用子唤醒词)。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>CLI</strong>: <code>memo_cli.py add "内容" [-c 备忘|心愿|打卡|情绪日记] [-s 子分类] [--due YYYY-MM-DD]</code></li>
+<li><strong>SQL</strong>: <code>INSERT INTO notes (content, category, sub_category, media_path, due, ...) VALUES (...)</code></li>
+<li><strong>飞书 hook</strong>: <code>category == "心愿"</code> 时自动建飞书 task(失败降级)</li>
+<li><strong>失败</strong>: 空内容 / 无效分类 / due 格式错 → <code>status: error</code> + 自动 rollback</li>
+</ul>
+</details>
+
+<h4 id="改备忘">改备忘</h4>
+<div class="usage"><strong>用法</strong>: 先搜 → 找到 ID → <code>update &lt;id&gt; [--content "新内容"] [-c 分类] [-s 子分类]</code></div>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>UPDATE notes SET ..., updated_at = datetime('now','localtime') WHERE id = ?</code></li>
+<li><strong>飞书 hook</strong>: category=心愿 + 内容变 → 同步飞书 task 标题</li>
+</ul>
+</details>
+
+<h4 id="删备忘">删备忘</h4>
+<div class="usage"><strong>用法</strong>: 先搜 → 找到 ID → <code>delete &lt;id&gt; [--with-reminders]</code></div>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: 先 <code>DELETE FROM reminders WHERE note_id = ?</code> → 再 <code>DELETE FROM notes WHERE id = ?</code>(避开 FK 约束)</li>
+<li><strong>原子性</strong>: 事务包裹,失败回滚</li>
+<li><strong>飞书 task</strong>: 不会被删除(飞书无 delete 概念)</li>
+</ul>
+</details>
+
+<h4 id="备忘改分类">备忘改分类</h4>
+<div class="usage">
+<strong>单条</strong>: <code>update-category &lt;id&gt; &lt;新分类&gt;</code><br>
+<strong>批量</strong>(说"都/全部/多 id"): AI 调 <code>batch-update-category --from-category X --html</code>,在 HTML 里勾选 + 选目标分类
+</div>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>UPDATE notes SET category = ?, updated_at = ... WHERE id = ?</code></li>
+<li><strong>副作用</strong>: <strong>不动 sub_category</strong>(二阶属性独立)</li>
+<li><strong>硬规则</strong>: <code>--from-category ≠ --to-category</code></li>
+</ul>
+</details>
+
+<h4 id="备忘改子分类">备忘改子分类</h4>
+<div class="usage"><strong>用法</strong>: <code>update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</code></div>
+<p>传 <code>null</code> 表示清除子分类。适用于所有 category。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>UPDATE notes SET sub_category = ?, updated_at = ... WHERE id = ?</code></li>
+<li><strong>null 处理</strong>: 传 <code>"null"</code> / <code>""</code> → 清除</li>
+</ul>
+</details>
+
+<h4 id="sub_category">sub_category 原则</h4>
+<p><code>sub_category</code> 是<strong>自由文本字段</strong>,AI 智能从用户原话推断 1 个 2 字(推断不出则 NULL):</p>
 <ul>
 <li><strong>1 个,2 字</strong>(简短但比 1 字精确)</li>
-<li><strong>AI 智能推断</strong>:从用户原话提取内容维度</li>
-<li><strong>推断不出 → NULL</strong>:AI 不乱猜、不强制追问、不预设列表</li>
-<li><strong>适用于所有 category</strong>:不限于 <code>备忘</code>,任何顶层分类下的笔记都可以有 sub_category</li>
-<li><strong>不预设任何白名单</strong>:任何有意义的 2 字都可以(如"工作"/"学习"/"跑步"/"社交"等)</li>
+<li><strong>不预设白名单</strong>:任何有意义的 2 字都可以(如"工作"/"学习"/"跑步"/"社交")</li>
+<li><strong>适用于所有 category</strong>:不限于"备忘",心愿/打卡/情绪日记都能有 sub_category</li>
 </ul>
-<p><strong>例子</strong>:
-- "今天跑了 5 公里" → 写入 <code>-c 打卡 -s 跑步</code>(顶层分类=打卡,AI 推断 sub_category=跑步)
-- "今天学 Python" → 写入 <code>-c 备忘 -s 学习</code>
-- "张三生日 10/3" → 写入 <code>-c 备忘 -s 社交</code>
-- "今天去医院" → 写入 <code>-c 备忘</code>,<code>sub_category=NULL</code>(AI 推断不出维度)
-- "看到一只猫" → 写入 <code>-c 备忘</code>,<code>sub_category=NULL</code>(AI 推断不出维度)</p>
-<h3>搜索笔记</h3>
+<p><strong>例子</strong>:</p>
 <ul>
-<li>触发词:搜备忘、查备忘(别名)</li>
-<li>子唤醒词:查心愿、查打卡、查情绪日记(自动带 <code>-c 顶层分类</code> 过滤)</li>
-<li>命令:<code>script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]</code></li>
-<li><strong>过滤维度</strong>:可同时按顶层分类和子分类过滤(如 <code>search -c 备忘 -s 学习</code>)</li>
-<li><strong>默认行为</strong>:CLI 默认返回结构化 JSON。需要可视化时传 <code>--html</code> flag 生成 HTML 查询结果页(模板 <code>templates/memo_query.html</code>,通过 <code>script/memo_render.py</code> 注入到 <code>output/memo_query_*.html</code>)。<strong>当前没有 <code>--no-html</code> flag</strong>(2026-07-24 文档对齐修订)。</li>
-<li><strong>AI 推荐流程</strong>:9 个查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记)在收到 JSON 后,<strong>主动</strong>调一次 <code>memo_cli.py &lt;cmd&gt; --html</code> 生成 HTML 给用户,而不是只展示 JSON 文本。理由:清单类数据"扫读 + chip 筛选 + 复制 ID/回执"在 HTML 里体验远超文字流。<strong>例外</strong>:用户明确说"只要 JSON" → 不传 <code>--html</code>。</li>
-<li><strong>HTML 模板模式</strong>:CLI 仍先取 JSON 数据,再通过 <code>script/memo_render.py</code> 注入 <code>templates/memo_query.html</code>,生成 <code>output/memo_query_*.html</code>;模板只展示数据,不直连数据库、不污染原模板</li>
-<li><strong>HTML 数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]},"message":"..."}</code></li>
-<li><strong>页面能力</strong>:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执</li>
+<li>"今天跑了 5 公里" → <code>-c 打卡 -s 跑步</code></li>
+<li>"今天学 Python" → <code>-c 备忘 -s 学习</code></li>
+<li>"张三生日 10/3" → <code>-c 备忘 -s 社交</code></li>
+<li>"今天去医院" → <code>-c 备忘</code>,<code>sub_category=NULL</code></li>
+</ul>
+
+<h2 id="查找类">触发词详细 · 查找类</h2>
+
+<h4 id="搜备忘查备忘">搜备忘 / 查备忘(别名)</h4>
+<div class="usage"><strong>用法</strong>: <code>search "关键词" [-c 分类] [-s 子分类]</code></div>
+<p>AI 会<strong>自动</strong>调 <code>--html</code> 渲染网页给你,带 chip 筛选 + 复制 ID。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>底层</strong>: FTS5 全文搜索(<code>notes_fts MATCH ?</code>),无关键字时按分类列</li>
+<li><strong>SQL</strong>: <code>SELECT n.* FROM notes n JOIN notes_fts f ON n.id = f.rowid WHERE notes_fts MATCH ? ...</code></li>
+<li><strong>返回</strong>: <code>{status: "ok", data: [items], message: "找到 N 条"}</code></li>
+</ul>
+</details>
+
+<h4 id="看备忘">看备忘</h4>
+<div class="usage"><strong>用法</strong>: 搜索找到 ID → <code>get &lt;id&gt;</code></div>
+<p>AI 会<strong>自动</strong>调 <code>--html</code> 渲染详情页。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>SELECT * FROM notes WHERE id = ?</code></li>
+</ul>
+</details>
+
+<h4 id="按时间搜备忘">按时间搜备忘</h4>
+<div class="usage"><strong>用法</strong>: <code>search-date &lt;start&gt; &lt;end&gt; [-c 分类]</code></div>
+<p>日期格式 YYYY-MM-DD,start ≤ end。AI 自动调 <code>--html</code>。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>SELECT * FROM notes WHERE created_at BETWEEN ? AND ? [AND category = ?]</code></li>
+</ul>
+</details>
+
+<h2 id="提醒类">触发词详细 · 提醒类</h2>
+
+<h4 id="记提醒">记提醒(添笔记 + 设提醒)</h4>
+<div class="usage"><strong>用法</strong>: <code>add "内容" -c 备忘</code> → 拿到 id → <code>remind &lt;id&gt; --at "时间" --content "提醒内容"</code></div>
+<p>AI 通常自动完成两步。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>两步</strong>: add 笔记 → remind 加提醒</li>
+<li>笔记与提醒分别存储,关联通过 <code>note_id</code></li>
+</ul>
+</details>
+
+<h4 id="设提醒">设提醒</h4>
+<div class="usage"><strong>用法</strong>: <code>remind &lt;note_id&gt; [--at "YYYY-MM-DD HH:MM"] [--content "提醒内容"] [--repeat-type 每天|每周|每月|每年] [--rule "HH:MM"]</code></div>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, ...) VALUES (...)</code></li>
+<li><strong>FK</strong>: <code>note_id</code> → <code>notes(id)</code> ON DELETE NO ACTION</li>
+<li><strong>重复规则格式</strong>: <code>"HH:MM"</code>(每天)/<code>"W HH:MM"</code>(每周)/<code>"D HH:MM"</code>(每月)/<code>"MM-DD HH:MM"</code>(每年)</li>
+</ul>
+</details>
+
+<h4 id="看提醒">看提醒</h4>
+<div class="usage"><strong>用法</strong>: <code>reminders [--status active|dismissed]</code></div>
+<p>AI 自动调 <code>--html</code>,按重复类型提供筛选 chip。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>SQL</strong>: <code>SELECT * FROM reminders WHERE status = ?</code></li>
+</ul>
+</details>
+
+<h4 id="查已提醒备忘">查已提醒备忘</h4>
+<div class="usage"><strong>用法</strong>: <code>completed</code></div>
+<p>AI 自动调 <code>--html</code>,支持复制提醒 ID / 打卡 ID。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>匹配逻辑</strong>: 一次性已通知+关联打卡 / 重复型有关联打卡</li>
+</ul>
+</details>
+
+<h4 id="废弃提醒">废弃提醒</h4>
+<div class="usage"><strong>用法</strong>: <code>dismiss &lt;reminder_id&gt;</code></div>
+
+<h2 id="心愿类">触发词详细 · 心愿类</h2>
+
+<h4 id="心愿排期">心愿排期(过程型 HTML)</h4>
+<div class="usage"><strong>用法</strong>: <code>wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] --html</code></div>
+<p>说"这 3 个都排到 7/3" / "心愿 #36 #48 安排到 6/30" → AI 调此命令生成过程型 HTML 给你在网页里调 → 采纳复制 → AI 调 <code>set-due</code>。</p>
+<p><strong>第一性</strong>:不在对话中逐条报 ID,先在 HTML 里看清全部、勾选、确认。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>底层命令</strong>: <code>set-due &lt;id1&gt; &lt;id2&gt; ... --due X</code>(批量 SQL UPDATE)</li>
+<li><strong>HTML</strong>: 过程型 <code>wish_plan.html</code>(默认<strong>未勾选</strong>,你主动勾要排期的)</li>
+<li><strong>飞书</strong>: 同步飞书 task <code>due</code>(UTC ms → 北京日期)</li>
+<li><strong>失败</strong>: 心愿无 <code>feishu_task_guid</code> → 需先跑"备忘录同步"补建</li>
+</ul>
+</details>
+
+<h4 id="完成心愿完成打卡">完成心愿 / 完成打卡(别名 · 过程型 HTML)</h4>
+<div class="usage"><strong>用法</strong>: <code>wish-complete [--ids 1 2 3] [--only-overdue] [--content "打卡内容"] --html</code></div>
+<p>说"这些心愿都完成了" / "完成打卡 #36 #48" → AI 调此命令。你在 HTML 里勾要完成的 + 填打卡内容 → 采纳复制 → AI 调 <code>complete-wish</code> 原子转打卡。</p>
+<p><strong>第一性</strong>:过程型 HTML 的价值是让你主动表达"完成哪些",默认未勾选(不是反向删勾)。</p>
+<details>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>底层</strong>: <code>complete-wish &lt;id&gt; [--content "打卡内容"]</code>(每次 1 条原子操作)</li>
+<li><strong>原子操作</strong>: DELETE reminders → DELETE notes → INSERT notes(category=打卡) 事务包裹</li>
+<li><strong>HTML</strong>: 过程型 <code>wish_complete.html</code>(默认<strong>未勾选</strong>)</li>
+<li><strong>飞书</strong>: 心愿有 <code>feishu_task_guid</code> → 标飞书 task 完成</li>
+</ul>
+</details>
+
+<h2 id="批量类">触发词详细 · 批量类</h2>
+
+<h4 id="批量改分类">备忘改分类(批量 · 过程型 HTML)</h4>
+<div class="usage"><strong>用法</strong>: <code>batch-update-category --from-category X [--to-category Y] --html</code></div>
+<p>说"把 X 分类下这 10 条都改到 Y 分类" → AI 调此命令。你在 HTML 里勾选 + 选目标分类 → 采纳复制 → AI 调多条 <code>update-category</code>。</p>
+<p><strong>触发词路由</strong>:</p>
+<ul>
+<li>原话<strong>只含 1 个具体 ID</strong>(如 #15 / 笔记 A)→ 单条 <code>update-category</code></li>
+<li>原话<strong>含"都/全部/这 N 条"或多个 ID</strong> → 批量向导</li>
+<li>原话<strong>没有 ID 也没有"都/全部"</strong> → AI 反问用户"是想单条还是批量?"</li>
 </ul>
 <details>
-<summary>🔍 搜备忘/查备忘(search)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- CLI: `memo_cli.py search "关键词" [-c 分类] [-s 子分类] [--html]`
-- 底层: FTS5 全文搜索(`notes_fts MATCH ?`),无关键字时按分类列
-- SQL: `SELECT n.* FROM notes n JOIN notes_fts f ON n.id = f.rowid WHERE notes_fts MATCH ? ...`
-- HTML: 加 `--html` 触发 `memo_query.html` 渲染(`<media>` 交付)</pre>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>触发路由</strong>: 含"都/全部/多 id" → 批量(否则走单条 <code>update-category</code>)</li>
+<li><strong>SQL</strong>: 单条 <code>UPDATE notes SET category = ?, updated_at = ... WHERE id = ?</code></li>
+<li><strong>HTML</strong>: 过程型 <code>change_category.html</code></li>
+<li><strong>硬规则</strong>: <code>--from-category ≠ --to-category</code></li>
+<li><strong>副作用</strong>: <strong>不动 sub_category</strong></li>
+</ul>
 </details>
-<h3>更新笔记</h3>
-<ul>
-<li>触发词:改备忘</li>
-<li>子唤醒词:改心愿、改打卡、改情绪日记(先按顶层分类搜索,再更新)</li>
-<li>先搜索找到笔记 ID,再更新</li>
-<li>命令:<code>script/memo_cli.py update &lt;id&gt; [--content "新内容"] [-c 顶层分类] [-s 子分类]</code></li>
-<li><strong>子分类规则</strong>:sub_category 是自由文本字段,适用于所有 category(详见上方"sub_category 原则")</li>
-</ul>
-<details>
-<summary>🔍 改备忘(update)</summary>
 
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py update <id> [--content 新内容] [-c 分类] [-s 子分类]
-- - SQL: UPDATE notes SET ..., updated_at = datetime('now','localtime') WHERE id = ?
-- - 飞书 hook: category == 心愿 + 内容变 → 同步飞书 task 标题</pre>
-</details>
-<h3>删除笔记</h3>
-<ul>
-<li>触发词:删备忘</li>
-<li>子唤醒词:删心愿、删打卡、删情绪日记(先按顶层分类搜索,再删除)</li>
-<li>先搜索找到笔记 ID,再删除</li>
-<li>命令:<code>script/memo_cli.py delete &lt;id&gt; [--with-reminders]</code></li>
-</ul>
-<details>
-<summary>🔍 删备忘(delete)</summary>
+<h2 id="跨-skill">触发词详细 · 跨 Skill</h2>
 
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py delete <id> [--with-reminders]
-- - SQL: DELETE FROM reminders WHERE note_id = ? → DELETE FROM notes WHERE id = ?(避开 FK)
-- - 原子性: 事务包裹</pre>
-</details>
-<h3>查看笔记详情</h3>
-<ul>
-<li>触发词:看备忘</li>
-<li>命令:<code>script/memo_cli.py get &lt;id&gt; [--html]</code></li>
-<li><strong>默认行为</strong>:CLI 默认返回单条 JSON。需要 HTML 详情页时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,items 数组只有 1 条)。</li>
-<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>get &lt;id&gt; --html</code> 生成详情页给用户。</li>
-</ul>
-<details>
-<summary>🔍 看备忘(get)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py get <id> [--html]
-- - SQL: SELECT * FROM notes WHERE id = ?
-- - HTML: items 数组 1 条,复用 memo_query.html</pre>
-</details>
-<h3>按时间搜索</h3>
-<ul>
-<li>触发词:按时间搜备忘</li>
-<li>命令:<code>script/memo_cli.py search-date &lt;start&gt; &lt;end&gt; [-c 分类] [--html]</code></li>
-<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>)。</li>
-<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>search-date ... --html</code> 生成按时间查询页给用户。</li>
-</ul>
-<details>
-<summary>🔍 按时间搜备忘(search-date)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py search-date <start> <end> [-c 分类] [--html]
-- - SQL: SELECT * FROM notes WHERE created_at BETWEEN ? AND ?
-- - 日期格式: YYYY-MM-DD(start ≤ end 校验)</pre>
-</details>
-<h3>编辑笔记顶层分类</h3>
-<ul>
-<li>触发词:备忘改分类</li>
-<li>先搜索找到笔记 ID,再更新顶层分类</li>
-<li>命令:<code>script/memo_cli.py update-category &lt;id&gt; &lt;顶层分类&gt;</code></li>
-<li><strong>副作用</strong>:改顶层分类时<strong>不会</strong>清空 <code>sub_category</code>(sub_category 是内容维度的二阶属性,与顶层分类独立)</li>
-</ul>
-<details>
-<summary>🔍 备忘改分类(单条 update-category / 批量 batch-update-category)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - 单条 CLI: memo_cli.py update-category <id> <新分类>
-- - 批量: batch-update-category --from-category X --html(过程型,见路由规则)
-- - SQL: UPDATE notes SET category = ?, updated_at = ... WHERE id = ?
-- - 副作用: 不动 sub_category</pre>
-</details>
-<h3>编辑笔记子分类</h3>
-<ul>
-<li>触发词:备忘改子分类</li>
-<li>先搜索找到笔记 ID,再更新子分类</li>
-<li>命令:<code>script/memo_cli.py update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</code></li>
-<li><strong>规则</strong>:适用于所有 category(sub_category 是自由文本字段);传 <code>null</code> 表示清除子分类</li>
-</ul>
-<details>
-<summary>🔍 备忘改子分类(update-sub-category)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py update-sub-category <id> <子分类 | null>
-- - SQL: UPDATE notes SET sub_category = ?, updated_at = ... WHERE id = ?
-- - null 处理: "null"/"" 传 → 清除
-- - 适用于所有 category</pre>
-</details>
-<h3>触发词路由(避免与「批量改分类向导」歧义 · 2026-07-24 加)</h3>
-<p><strong>触发词 <code>备忘改分类</code> 同时对应两个命令,AI 必须按以下规则二选一</strong>:</p>
-<ul>
-<li><strong>单条改分类</strong>(默认):<ul>
-<li>触发语:「改 #15 的分类」「把 #15 备忘改成心愿」「这条改成打卡」</li>
-<li>命令:<code>memo_cli.py update-category &lt;id&gt; &lt;category&gt;</code></li>
-<li>路径:搜索找 id → 单条 update-category</li>
-</ul>
-</li>
-<li><strong>批量改分类</strong>(多 id 或带"都/全部")· 过程型 HTML:<ul>
-<li>触发语:「把所有 X 分类都改到 Y」「X 这几条都改 Y」「把 X 分类下所有笔记改到 Y」</li>
-<li>命令:<code>memo_cli.py batch-update-category --from-category X [--to-category Y] --html</code></li>
-<li>路径:用户在 HTML 里勾选 + 选目标分类 → 采纳复制 → AI 调多条 <code>update-category</code></li>
-</ul>
-</li>
-<li><strong>判定启发</strong>(按优先级):<ol>
-<li>原话<strong>只含一个具体 id</strong>(如 #15 / 笔记 A) → 单条</li>
-<li>原话<strong>含"都/全部/这 N 条"或多个 id</strong> → 批量</li>
-<li>原话<strong>没有 id 也没有"都/全部"</strong> → 反问用户:「是想单条还是批量?」</li>
-</ol>
-</li>
-<li><strong>不冲突场景</strong>(永远单条,不走批量):改 sub_category、调单个提醒、心愿排期/完成、所有写入类(add/update/delete)</li>
-<li><strong>反例</strong>(误判示例):<ul>
-<li>❌ "把 #15 #20 #25 都改心愿" → 错走单条;应走批量</li>
-<li>❌ "把备忘分类所有都改心愿" → 错走反问;应走批量</li>
-</ul>
-</li>
-<ul>
-<li>触发词:心愿排期</li>
-<li>给心愿设置期望完成日期(due),<strong>自动同步到飞书 task due</strong></li>
-<li>第一性:备忘录 <code>notes.due</code> 是 source of truth,飞书 <code>task.due</code> 是镜像</li>
-<li><strong>单条</strong>:<code>script/memo_cli.py set-due &lt;id&gt; --due &lt;YYYY-MM-DD&gt;</code></li>
-<li><strong>批量</strong>:<code>script/memo_cli.py set-due &lt;id1&gt; &lt;id2&gt; &lt;id3&gt; ... --due &lt;YYYY-MM-DD&gt;</code></li>
-<li><strong>清除</strong>:<code>script/memo_cli.py set-due &lt;id&gt; --due null</code></li>
-<li>飞书侧:飞书 task 自动出现 <code>is_all_day=true</code> 的 due,飞书日历"待办"区可见</li>
-<li><strong>使用场景</strong>:</li>
-<li>单独使用:用户说"心愿 #36 #48 安排在 6/30" → AI 调批量 set-due</li>
-<li>cross-skill 联动:作息"商量计划"流程最后一步(待 B 阶段实现),统一调"心愿排期"批量设 due = 那天</li>
-<li><strong>失败降级</strong>:</li>
-<li>飞书同步失败 → 本地 due 仍生效,errors 累积</li>
-<li>心愿无 feishu_task_guid → 提示用户跑 <code>备忘录同步</code> 补建后重试</li>
-</ul>
-<h4>心愿排期向导(2026-07-24 新增 · 过程型 HTML)</h4>
-<details>
-<summary>🔍 心愿排期(wish-batch-plan)</summary>
-
-- CLI: `memo_cli.py wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] [--html]`
-- 批量执行: `set-due <id1> <id2> ... --due X`(批量 SQL UPDATE)
-- HTML: 过程型 `wish_plan.html`(默认未勾 + 全局建议日期)
-- 飞书: 同步飞书 task `due`(UTC ms → 北京日期)
-- 副作用: 心愿无 `feishu_task_guid` → 需先 `备忘录同步` 补建
-</details>
-<ul>
-<li>命令:<code>script/memo_cli.py wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] [--html]</code></li>
-<li><strong>触发场景</strong>:用户原话含多个心愿 + 时间锚点(如「这 3 个都排到 7/3」「心愿 #36 #48 安排到 6/30」),AI 识别后<strong>主动</strong>调 <code>wish-batch-plan --suggest-due X --html</code> 生成向导页给用户在 HTML 里调,而不是逐条 ID 往返</li>
-<li><strong>默认(无 --all)</strong>:搜 <code>category='心愿' AND due IS NULL</code> 最近 50 条</li>
-<li><strong>--all</strong>:含已排期心愿(用于微调)</li>
-<li><strong>--ids</strong>:精确指定(与 --all 互斥,硬规则)</li>
-<li>模板:<code>templates/wish_plan.html</code>(独立,过程型 HTML,不复用 memo_query.html)</li>
-<li>渲染器:<code>script/memo_render.py:render_wish_plan</code>(复用 <code>_inject</code> 公共逻辑)</li>
-<li><strong>类型</strong>:过程型 HTML · 按 04_架构师原则 §10 设计 · 含"采纳并复制"按钮 + 4 部分 prompt</li>
-<li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>
-<li>① 场景: 我用心愿排期向导给 N 个心愿设了排期(原建议 X)</li>
-<li>② 数据(采纳后): 表格列出心愿 id + 排期日期(含"原排期"列,帮助审计覆盖)</li>
-<li>③ 期望: 按 set-due 命令列表(日期相同 → 一次批量;日期不同 → 每条单独;feishu task 自动同步)</li>
-<li>④ 来源: wish-batch-plan --suggest-due X / 2026-07-24 14:00</li>
-</ul>
-</li>
-<li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}</code></li>
-<li><strong>AI 推荐流程</strong>:跑到 <code>add 心愿</code> 批量场景 → <strong>不直接</strong>批量 <code>set-due</code> → 先调 <code>wish-batch-plan --suggest-due &lt;识别到的锚点&gt; --html</code> → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 <code>set-due</code> 命令</li>
-</ul>
-<h3>完成心愿向导(2026-07-24 新增 · Step 5A · 过程型 HTML · v1.0.1 第一性修复 · v1.0.4 默认未勾)</h3>
-<ul>
-<li>触发词:完成心愿(<strong>别名:完成打卡 · 2026-07-24 加</strong>)· 批量场景:「这些心愿我都完成了」「心愿 #36 #48 完成」「完成打卡 #36 #48」</li>
-<li>命令:<code>script/memo_cli.py wish-complete [--ids 1 2 3] [--only-overdue] [--all(已弃用)] [--content "打卡内容"] [--html]</code></li>
-<li><strong>类型</strong>:过程型 HTML(同 wish-batch-plan 模式)</li>
-<li><strong>第一性</strong>:complete-wish 是原子操作(删心愿 + 建打卡),用户先在 HTML 选要完成的 + 填打卡内容,采纳后给 AI 批量调</li>
-<li><strong>v1.0.1 修复</strong>(默认语义回归第一性):<ul>
-<li>旧默认 = <code>NOT IN reminders AND due IS NULL OR due &lt; today</code> → 用户"我加的 20 条心愿,wish-complete 给 0 条"</li>
-<li>新默认 = 所有 <code>category='心愿'</code> 的 · 让用户在 HTML 里勾(过程型 HTML 的本职)</li>
-<li>真理:CLI 不应该替用户预设决策,该预设归 UI</li>
-</ul>
-</li>
-<li><strong>v1.0.1 命令选项</strong>:<ul>
-<li>默认(不加 flag):全部心愿 · 让用户在 HTML 里勾</li>
-<li><strong>--only-overdue</strong>:仅未排期+已过期排期(v1.0.0 默认行为迁至此显式 flag)</li>
-<li><code>--all</code>:<strong>deprecated</strong> · 等同不加 flag · 仅保留向后兼容</li>
-<li><code>--ids N M ...</code>:显式指定(与 <code>--only-overdue</code>/<code>--all</code> 互斥)</li>
-<li><code>--content X</code>:默认打卡内容(HTML 可逐条覆盖;留空用原心愿 content)</li>
-<li><code>--html</code>:生成过程型 HTML</li>
-</ul>
-</li>
-<li><strong>v1.0.4 HTML 默认未勾选</strong>(过程型 HTML 正向操作):<ul>
-<li><code>items[].selected = False</code> · 用户主动勾选要完成的(不是反向删勾)</li>
-<li>模板渲染:<code>&lt;article class="wish"&gt;</code> 始终 normal(不依赖 selected 加 .off)</li>
-<li>用户切换 checkbox 时才动态加 .off class(opacity:.5)</li>
-<li>第一性:过程型 HTML 的价值是让用户主动表达意图(正向 &gt; 反向)</li>
-</ul>
-</li>
-<li>模板:<code>templates/wish_complete.html</code>(独立,不与 wish_plan 复用)</li>
-<li>渲染器:<code>script/memo_render.py:render_wish_complete</code></li>
-<li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>
-<li>① 场景: 我用心愿完成向导标记 N 个心愿为已完成(原子转换心愿→打卡)</li>
-<li>② 数据(采纳后): 表格列出 #id + content + 打卡内容(覆盖默认/用原内容)</li>
-<li>③ 期望: 按 complete-wish 命令列表(每步:删心愿+建打卡 原子;有飞书 task 的同步标完成)</li>
-<li>④ 来源: wish-complete / 2026-07-24 14:00</li>
-</ul>
-</li>
-<li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"wish-complete","generated_at":"...","default_content":"..."|null,"items":[{id,content,category,sub_category,due,feishu_task_guid,selected}, ...]},"message":"..."}</code></li>
-<li><strong>AI 推荐流程</strong>:用户说"这些心愿都完成了" → AI 调 <code>wish-complete --ids 1 2 3 --html</code>(或先 search 取 ids) → 用户在 HTML 里勾选 + 填打卡内容 → 采纳复制 → 粘贴给 AI → AI 按 complete-wish 命令逐条执行(原子转换)</li>
-<li><strong>与 wish-batch-plan 的协同</strong>:用户可先排期后完成;两个向导是心愿生命周期的两端工具</li>
-</ul>
-<h3>批量改分类向导(2026-07-24 新增 · Step 5B · 过程型 HTML)</h3>
-<ul>
-<li>触发词:备忘改分类(批量场景,如「把 X 分类下这 10 条都改到 Y 分类」)</li>
-<li>命令:<code>script/memo_cli.py batch-update-category --from-category &lt;原&gt; [--to-category &lt;新&gt;] [--html]</code></li>
-<li><strong>类型</strong>:过程型 HTML(同 wish-batch-plan/wish-complete 模式)</li>
-<li><strong>第一性</strong>:update-category 是单 id 命令(<code>update-category &lt;id&gt; &lt;category&gt;</code>),批量场景用户在 HTML 选要改的 + 选目标分类</li>
-<li><strong>--from-category</strong>:原分类(白名单:备忘/心愿/打卡/情绪日记)</li>
-<li><strong>--to-category</strong>:建议目标分类(HTML 可改;硬规则:不与 --from-category 相同)</li>
-<li><strong>副作用</strong>:只改 <code>category</code>,<strong>不动 <code>sub_category</code></strong>(sub_category 是内容维度的二阶属性)</li>
-<li>模板:<code>templates/change_category.html</code>(独立)</li>
-<li>渲染器:<code>script/memo_render.py:render_change_category</code></li>
-<li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>
-<li>① 场景: 我用批量改分类向导把 N 条&lt;原分类&gt;笔记改到&lt;新分类&gt;(sub_category 不动)</li>
-<li>② 数据(采纳后): 表格列出 #id + content + from → to</li>
-<li>③ 期望: 按 update-category 命令列表(每条 id 单独调,sub_category 字段不动)</li>
-<li>④ 来源: batch-update-category --from-category X --to-category Y / 2026-07-24</li>
-</ul>
-</li>
-<li><strong>AI 推荐流程</strong>:用户说"把 X 分类这些都改了" → AI 调 <code>batch-update-category --from-category X --html</code> → 用户在 HTML 选要改的 + 选目标分类 → 采纳复制 → 粘贴给 AI → AI 按 update-category 命令逐条执行</li>
-</ul>
-<h4>排期日期的用户-facing 表达(中文)</h4>
-<ul>
-<li>对用户说的时候,<strong>不要用 "due" 这个英文术语</strong>,用以下中文之一:</li>
-<li>"排期日期"</li>
-<li>"放到 X 日完成"</li>
-<li>"哪天想做"</li>
-<li>表述转换示例:</li>
-<li>❌ "给这条心愿 due 到 7/3"</li>
-<li>✅ "给这条心愿设个排期日期 = 7/3" / "放到 7/3 完成"</li>
-<li>❌ "due 已同步到飞书"</li>
-<li>✅ "飞书 task 也带上日期了"</li>
-<li>技术字段名不动:<code>notes.due</code> 字段、CLI 参数 <code>--due</code>、飞书 <code>task.due</code> 仍是英文(这层是数据/接口,不是 UI)</li>
-</ul>
-<h4>心愿 add 时的时间锚点识别(B 方案 / 2026-07-02 定稿)</h4>
-<ul>
-<li><strong>触发条件</strong>:<code>add 心愿</code> 时,AI 检测原话里的明确时间锚点</li>
-<li><strong>识别</strong>:<code>明天</code> / <code>后天</code> / <code>今天</code> / 具体日期("7/3"、"7 月 3 日")/ 周 X(周一、周二...)</li>
-<li><strong>不触发</strong>:原话没有时间词(如"想学 Python")-- 强加排期 = 污染</li>
-<li><strong>批量优先</strong>:同一段话多个心愿 + 同一锚点 → 收成 <strong>1 次询问</strong>,不逐条烦人</li>
-<li><strong>多日期智能识别</strong>:原话含多个不同日期锚点 → AI 内部智能拆分不同组,<strong>一次询问里列出所有组</strong>,不让用户多轮交互</li>
-<li><strong>询问模板(标准版)</strong>:<blockquote>
-<p>刚才那 N 条全部进了心愿库。看时间提到了 [锚点],
-默认安排到 [日期](本地存"排期日期",飞书 task 也会带上)。
-要不要都给 [日期]?还是有几条要换日子?</p>
-</blockquote>
-</li>
-<li><strong>选项维度</strong>:用户可回应</li>
-<li>"都 X 日" → AI 批量 set-due</li>
-<li>"X/Y/Z 几条不要"(保留无排期日期)→ AI 仅对剩下的 set-due</li>
-<li>"X 条改 Y 日" → AI 分组批量 set-due</li>
-<li><strong>精度</strong>:仅日期级(YYYY-MM-DD),不精确到时分(飞书日历只挂日期)</li>
-<li><strong>飞书缺失优雅降级</strong>:未装飞书 CLI 或未登录时本地排期日期照常生效,飞书同步步骤跳过,流程不阻断;本地 <code>notes.due</code> 是 source of truth,飞书是 best-effort 镜像</li>
-<li><strong>回执</strong>:每次批量 set-due 后列回执(如"10088-10095 → 7/3"),透明优先</li>
-<li><strong>changelog</strong>:</li>
-<li>2026-07-02 B 方案首次定稿。下次有疑问或新增场景先翻这一节</li>
-</ul>
-<h3>设置提醒</h3>
-<ul>
-<li>触发词:设提醒</li>
-<li>时间识别:明天、后天、今天 + 时间</li>
-<li>重复规则:每天,每天→每天,每周→每周,每月→每月,每年→每年</li>
-<li>流程:直接创建提醒,无需先有笔记(提醒内容存 reminders.content)</li>
-<li>命令:<code>script/memo_cli.py remind &lt;note_id&gt; --at "YYYY-MM-DD HH:MM" --content "提醒内容" --repeat-type 每天 --rule "09:00"</code></li>
-</ul>
-<details>
-<summary>🔍 设提醒(remind)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py remind <note_id> [--at YYYY-MM-DD HH:MM] [--content 提醒内容] [--repeat-type 每天|每周|每月|每年] [--rule HH:MM]
-- - SQL: INSERT INTO reminders (note_id, remind_at, repeat_type, repeat_rule, ...) VALUES (...)
-- - FK: note_id → notes(id) ON DELETE NO ACTION
-- - 重复规则格式: HH:MM / W HH:MM / D HH:MM / MM-DD HH:MM</pre>
-</details>
-<h3>记提醒(添笔记 + 设提醒)</h3>
-<ul>
-<li>触发词:记提醒</li>
-<li>时间识别:明天、后天、今天 + 时间</li>
-<li>重复规则:每天,每天→每天,每周→每周,每月→每月,每年→每年</li>
-<li>流程:先添加笔记,再设置提醒(笔记内容 + 提醒内容分别存储)</li>
-<li>命令示例:<code>script/memo_cli.py add "我要健身" -c 心愿 &amp;&amp; script/memo_cli.py remind &lt;id&gt; --at "09:00" --content "跑步10分钟" --repeat-type 每天</code></li>
-</ul>
-<details>
-<summary>🔍 记提醒(add + remind)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - 两步: add 笔记 → remind 加提醒
-- - 等价: 笔记与提醒分别存储,关联通过 note_id</pre>
-</details>
-<h3>查看提醒</h3>
-<ul>
-<li>触发词:看提醒</li>
-<li>命令:<code>script/memo_cli.py reminders [--status active|dismissed] [--html]</code></li>
-<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,按重复类型提供筛选 chip)。</li>
-<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>reminders --html</code> 生成提醒列表页给用户。</li>
-</ul>
-<details>
-<summary>🔍 看提醒(reminders)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py reminders [--status active|dismissed] [--html]
-- - SQL: SELECT * FROM reminders WHERE status = ?
-- - HTML: 复用 memo_query.html</pre>
-</details>
-<h3>废弃提醒</h3>
-<ul>
-<li>命令:<code>script/memo_cli.py dismiss &lt;id&gt;</code></li>
-</ul>
-<h3>查询已完成提醒</h3>
-<ul>
-<li>触发词:查已提醒备忘</li>
-<li>命令:<code>script/memo_cli.py completed [--html]</code></li>
-<li><strong>默认行为</strong>:CLI 默认返回 JSON。需要 HTML 时传 <code>--html</code>(复用 <code>templates/memo_query.html</code>,支持复制提醒 ID / 打卡 ID 回执)。</li>
-<li><strong>AI 推荐流程</strong>:与"搜索笔记"段对齐——收到 JSON 后主动调一次 <code>completed --html</code> 生成已完成提醒页给用户。</li>
-<li><strong>匹配逻辑</strong>:</li>
-<li><strong>一次性提醒</strong>:有 <code>notified_at</code>(已触发过)+ 关联打卡笔记 → 算已完成</li>
-<li><strong>每天重复</strong>:关联打卡笔记 → 算今天已完成</li>
-<li><strong>每周重复</strong>:打卡日期在当周 + 对应星期符合规则 → 算本周已完成</li>
-<li><strong>每月重复</strong>:打卡日期在当月 + 对应日期符合规则 → 算本月已完成</li>
-<li><strong>每年重复</strong>:打卡日期在年内 + 对应月日符合规则 → 算今年已完成</li>
-<li><strong>返回字段</strong>:提醒内容、打卡笔记、打卡时间、周期描述、类型</li>
-</ul>
-<details>
-<summary>🔍 查已提醒备忘(completed)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py completed [--html]
-- - 匹配: 一次性已通知+关联打卡 / 重复型有关联打卡
-- - HTML: 复用 memo_query.html</pre>
-</details>
-<h3>备忘录同步(自动 + 反向)</h3>
-<p>本技能可在<strong>飞书 CLI 已安装</strong>时与飞书任务双向联动:</p>
-<details>
-<summary>🔍 备忘录同步(sync-from-feishu)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - CLI: memo_cli.py sync-from-feishu [--html]
-- - 3 步对账:
--   1. 本地补建: 心愿无 feishu_task_guid → add_wish_sync 建飞书 task
--   2. 反向同步 done: 飞书 status=done → complete-wish
--   3. 反向同步 due: 飞书 todo task.due → 本地 notes.due(飞书优先 4 象限)
-- - HTML: 结果型 sync_report.html(11 统计字段 · 3 步折叠 · errors 高亮)
-- - 失败降级: 飞书 API 失败不阻塞本地</pre>
-</details>
-<ul>
-<li><strong>触发词</strong>:备忘录同步</li>
-<li><strong>自动联动</strong>(无需触发词):</li>
-<li><code>add 心愿</code>:自动建飞书 task,写回 <code>notes.feishu_task_guid</code></li>
-<li><code>update 心愿</code>:自动同步更新飞书 task 标题</li>
-<li><code>delete 心愿</code>:自动标飞书 task 完成(飞书无 delete 概念)</li>
-<li><code>complete-wish 心愿</code>:自动标飞书 task 完成</li>
-<li><strong>双向对账</strong>(触发词触发):<code>备忘录同步</code></li>
-<li><strong>第一步:本地补建</strong>(本地 → 飞书)<ul>
-<li>查 <code>notes WHERE category='心愿' AND feishu_task_guid IS NULL</code></li>
-<li>对每个 note 调 <code>add_wish_sync</code> 建飞书 task,写回 <code>feishu_task_guid</code></li>
-<li>处理历史心愿 / 旧 demo 残留 / 之前同步失败的心愿</li>
-</ul>
-</li>
-<li><strong>第二步:反向同步 done</strong>(飞书 → 本地)<ul>
-<li>筛飞书 <code>status=done</code> 的 task,反查 <code>notes.feishu_task_guid</code></li>
-<li>对本地还在的心愿触发 <code>complete-wish</code></li>
-</ul>
-</li>
-<li><strong>第三步:反向同步 due</strong>(飞书 → 本地 · 仅 <code>status=todo</code>)<ul>
-<li>用户在飞书 App 改/清 due 后,本地 <code>notes.due</code> 不会自动跟上 → 跑这里反向同步</li>
-<li>list 接口 <code>task +get-related-tasks</code> <strong>不带 due 字段</strong>,所以步骤 3 对每个 todo task 单独调 <code>task tasks get</code> 取 <code>due.timestamp</code></li>
-<li>时间戳换算:UTC ms → 北京日期(UTC +8h)→ <code>YYYY-MM-DD</code> 字符串</li>
-<li><strong>飞书优先</strong>四象限处理(用户决策:飞书说了算):</li>
-<li>飞书有 due / 本地无 → 写本地(<code>due_added</code>)</li>
-<li>飞书有 due / 本地有但不同 → 覆盖本地(<code>due_overridden</code>)</li>
-<li>飞书无 due / 本地有 → 清本地(<code>due_removed</code>,飞书清 → 本地也清)</li>
-<li>一致 → 跳过(不计入 <code>due_*</code> 字段)</li>
-<li>性能:N 个 todo wish 需 N 次 <code>task tasks get</code> API call(串行,单次 &lt;1s)。N≤50 时通常 &lt;10s 完成</li>
-</ul>
-</li>
-<li><strong>报告字段</strong>:<ul>
-<li><code>backfilled</code>(步骤 1 本地补建数)</li>
-<li><code>scanned_done</code> / <code>synced</code>(步骤 2 done 反向同步数)</li>
-<li><code>scanned_pending</code> / <code>due_added</code> / <code>due_overridden</code> / <code>due_removed</code>(步骤 3 due 反向同步)</li>
-<li><code>skipped_no_memo_id</code> / <code>skipped_already_done</code> / <code>skipped_no_local_note</code></li>
-<li><code>errors[]</code></li>
-</ul>
-</li>
-<li><strong>自动检测</strong>:<code>is_feishu_available()</code> 检查 lark-cli 是否在 <code>%APPDATA%\npm\</code>(Windows)或 <code>which lark-cli</code>(WSL/Linux/Mac)</li>
-<li><strong>失败降级</strong>:飞书 API 失败不阻塞本地操作(仅 stderr 记录)</li>
-<li>命令:<code>script/memo_cli.py sync-from-feishu [--html]</code> 或 <code>script/feishu_sync.py sync-from-feishu</code></li>
-</ul>
-<h4>HTML 同步报告(2026-07-24 新增)</h4>
-<ul>
-<li>命令:<code>script/memo_cli.py sync-from-feishu --html</code></li>
-<li>模板:<code>templates/sync_report.html</code>(独立于 <code>memo_query.html</code>)</li>
-<li>渲染器:<code>script/memo_render.py:render_sync_report</code>(复用 <code>_inject</code> 公共逻辑)</li>
-<li>输出:<code>output/sync_report_YYYYMMDD_HHMMSS.html</code></li>
-<li><strong>页面能力</strong>:首屏徽章总览(完全一致/补建/同步完成/due 变更/错误数)、4 个 KPI 卡(本地补建/扫 done/同步完成/扫 pending)、3 步折叠详情(本地补建/反向同步 done/反向同步 due)、errors 红色高亮、复制同步回执(11 字段结构化文本)</li>
-<li><strong>AI 推荐流程</strong>:跑完 <code>备忘录同步</code> 后,<strong>主动</strong>追加一次 <code>sync-from-feishu --html</code> 生成报告页给用户,而不是只展示 JSON 文字流。理由:11 个统计字段在卡片化 + 三步折叠视图里阅读体验远超文字</li>
-<li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"sync-from-feishu","generated_at":"...","backfilled":N,...,"errors":[]},"message":"..."}</code>(result 字段平铺到 data 下)</li>
-</ul>
-<h4>飞书联动环境变量(用户特定,必须自己配置)</h4>
-<p>⚠️ <strong>不要硬编码用户特定信息到代码里</strong>。所有用户/本机特定配置通过环境变量传入。</p>
-<p><strong>默认行为</strong>:飞书 task <strong>不指定 tasklist</strong>(建在飞书"我的任务"主页)。零配置即可使用飞书联动。</p>
-<p><strong>tasklist 怎么传</strong>:每次 <code>add</code> 心愿时<strong>显式传</strong> <code>--tasklist-guid &lt;guid&gt;</code>。<strong>没有环境变量预配置</strong>--用户完全控制。</p>
-<table>
-<thead>
-<tr>
-<th>环境变量</th>
-<th>必填</th>
-<th>说明</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>~~<code>MEMO_FEISHU_USER_OPEN_ID</code>~~</td>
-<td><strong>已删除</strong></td>
-<td>不再需要 -- assignee 自动从 <code>lark-cli auth status</code> 读取</td>
-<td>--</td>
-</tr>
-</tbody>
-</table>
-<p><strong>未设置时行为</strong>:
-- 不存在 -- <strong>lark-cli auth login 之后自动可用</strong>(<code>lark-cli auth status</code> 返回 identities.user.openId 作为 assignee)
-- 飞书同步失败原因只会是:lark-cli 未安装 / 未登录 / 提取失败</p>
-<h4>tasklist 显式传入流程(少用场景)</h4>
-<p>用户偶尔想把心愿放进特定 tasklist:</p>
+<h4 id="备忘录同步">备忘录同步</h4>
+<div class="usage"><strong>用法</strong>: <code>sync-from-feishu [--html]</code></div>
+<p>本地心愿 ↔ 飞书任务双向对账(3 步)。AI 会自动加 <code>--html</code> 渲染对账报告给你看(11 个统计字段、3 步折叠、错误高亮)。</p>
+<p><strong>3 步对账</strong>:</p>
 <ol>
-<li><strong>AI 跑 <code>feishu_sync.py list-tasklists</code></strong> → 列飞书侧所有 tasklist(含 name 和 guid)</li>
-<li><strong>AI 给用户看</strong>:列出如 <code>📋 备忘录心愿 (guid=xxx)</code>, <code>🛒 购物 (guid=yyy)</code></li>
-<li><strong>用户说"进 备忘录心愿"</strong></li>
-<li><strong>AI 传 <code>--tasklist-guid xxx</code></strong> → 飞书 task 进指定 tasklist</li>
+<li><strong>本地补建</strong>(本地 → 飞书):本地心愿无 <code>feishu_task_guid</code> → 调 <code>add_wish_sync</code> 建飞书 task</li>
+<li><strong>反向同步 done</strong>(飞书 → 本地):飞书 <code>status=done</code> → 本地 <code>complete-wish</code></li>
+<li><strong>反向同步 due</strong>(飞书 → 本地 · 仅 <code>status=todo</code>):飞书 task.due → 本地 <code>notes.due</code>(飞书优先 4 象限)</li>
 </ol>
-<p><strong>CLI 用法</strong>:</p>
-<pre><code class="language-bash"># 默认(不指定 tasklist)→ 飞书主页
-memo_cli.py add &quot;今天买咖啡&quot; -c 心愿
-
-# 显式指定 tasklist → 飞书指定清单
-memo_cli.py add &quot;今天买咖啡&quot; -c 心愿 --tasklist-guid &lt;xxx-xxx-xxx&gt;
-</code></pre>
-<h4>AI 首次引导(用户首次使用飞书联动时)</h4>
-<p>当用户第一次说"我想让心愿同步到飞书"或类似意图时:</p>
-<ol>
-<li><strong>检测 lark-cli</strong>(运行 <code>python script/feishu_sync.py check</code> 看可用性)</li>
-<li><strong>如果 lark-cli 不可用</strong>:
-   - 提示用户先 <code>lark-cli auth login</code>(标准飞书开发者授权)</li>
-<li><strong>否则零配置直接生效</strong>:
-   - 自动从 <code>lark-cli auth status</code> 读 user open_id
-   - 创建的飞书 task 自动指派给当前 lark-cli 登录的用户</li>
-<li><strong>如果用户想要分到 tasklist</strong>:
-   - 引导用户在飞书 App 手动建 tasklist
-   - AI 跑 <code>list-tasklists</code> 列出飞书侧 tasklist
-   - 用户说"这个心愿进 🧹" → AI 传 <code>--tasklist-guid &lt;guid&gt;</code>
-   - 不存环境变量,每次 add 显式传</li>
-</ol>
-<h3>完成心愿:流式工作流</h3>
-<p>心愿完成是一个<strong>原子操作</strong>:删除原心愿 + 新建打卡 note,两步必须同时成功或同时回滚。
 <details>
-<summary>🔍 完成心愿(complete-wish / wish-complete)</summary>
-
-<pre style="background:#f5f5f7;padding:14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-x:auto">- - 直接 CLI: memo_cli.py complete-wish <id> [--content 打卡内容](原子操作)
-- - 批量过程型 HTML: wish-complete --ids 1 2 3 [--only-overdue] --html(推荐批量场景)
-- - 原子操作: DELETE reminders → DELETE notes → INSERT notes(category=打卡) 事务包裹
-- - HTML: 过程型 wish_complete.html(默认未勾,用户主动勾)
-- - 飞书: 心愿有 feishu_task_guid → 标飞书 task 完成</pre>
+<summary>🔍 查看底层原理</summary>
+<ul>
+<li><strong>自动检测</strong>: <code>is_feishu_available()</code> 检查 lark-cli</li>
+<li><strong>失败降级</strong>: 飞书 API 失败不阻塞本地(本地写入照常)</li>
+<li><strong>报告字段</strong>: <code>backfilled</code> / <code>scanned_done</code> / <code>synced</code> / <code>scanned_pending</code> / <code>due_added/overridden/removed</code> / <code>skipped_*</code> / <code>errors[]</code></li>
+</ul>
 </details>
-- 触发词:完成心愿
-- 命令:<code>script/memo_cli.py complete-wish &lt;心愿id&gt; [--content "打卡内容"]</code>
-- 行为:
-  1. 校验 <code>id</code> 存在于 <code>notes</code>,且 <code>category='心愿'</code>(不是心愿分类报错)
-  2. 决定打卡 content:用户提供 → 用用户的;没提供 → 拷贝原心愿 <code>notes.content</code>
-  3. 事务原子执行(兼容 NO ACTION / CASCADE 两种 FK 行为):
-     - <code>DELETE FROM reminders WHERE note_id = ?</code>(先删提醒,避开 FK 约束)
-     - <code>DELETE FROM notes WHERE id = ?</code>
-     - <code>INSERT INTO notes (content, category='打卡', created_at, updated_at)</code>
-- 设计取舍:
-  - <strong>不写 <code>reminder_id</code></strong>:CASCADE 删 reminders 后该字段会悬空,留 NULL 更干净
-  - <strong>硬删除</strong>:流式工作流意味着心愿生命终结于"完成"那一刻
-- 与「完成提醒:提醒与打卡的完整流程」的关系:
-  - 旧流程:add → remind → 关联 → 打卡追加(手动 4 步)
-  - 新流程:complete-wish(一步原子,自动完成删心愿 + 建打卡)
-  - 推荐用新流程</p>
-<h3>完成提醒:提醒与打卡的完整流程(旧流程,推荐用「完成心愿」替换)</h3>
-<p>提醒完成后,可以追加打卡记录,形成完整的"计划→提醒→完成"链路:</p>
+
+<h2 id="子唤醒词">子唤醒词(12 个)</h2>
+<p>子唤醒词<strong>继承主唤醒词</strong>的 CLI 调用,只在以下 3 处差异化:</p>
 <table>
-<thead>
+<tr><th>维度</th><th>差异</th></tr>
 <tr>
-<th>步骤</th>
-<th>操作</th>
-<th>字段关联</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1. 添加笔记</td>
-<td><code>add "晒衣服"</code> → 获得 <code>notes.id=12</code></td>
-<td></td>
+<td>命令参数</td>
+<td>必加 <code>-c &lt;顶层分类&gt;</code>(记心愿=心愿 / 记打卡=打卡 / 记情绪=情绪日记)</td>
 </tr>
 <tr>
-<td>2. 设置提醒</td>
-<td><code>remind 12 --at "19:30"</code> → <code>reminders.note_id=12, reminders.id=5</code></td>
-<td></td>
+<td>飞书 hook</td>
+<td>仅 <code>category == "心愿"</code> 触发飞书 task 同步(打卡/情绪日记不触发)</td>
 </tr>
 <tr>
-<td>3. 笔记关联提醒</td>
-<td><code>notes.reminder_id=5</code>(自动或手动)</td>
-<td></td>
+<td>子分类</td>
+<td>自由文本 2 字(AI 智能推断)</td>
 </tr>
-<tr>
-<td>4. 提醒触发后打卡</td>
-<td><code>add "晒衣服" -c 打卡</code> → 获得 <code>notes.id=20</code>,并设置 <code>notes.reminder_id=5</code></td>
-<td></td>
-</tr>
-</tbody>
 </table>
-<p><strong>通过 <code>reminder_id</code> 可以追溯</strong>:
-- 这条打卡记录源自哪个提醒
-- 提醒什么时候触发过
-- 原笔记内容是什么</p>
-<h2 id="定时提醒机制-8">定时提醒机制</h2>
-<h3>Cron 配置</h3>
+
+<h4 id="记心愿">记心愿 / 删心愿 / 改心愿 / 查心愿</h4>
+<p>等价于"记备忘/删备忘/改备忘/搜备忘"+ 必加 <code>-c 心愿</code>。<code>查心愿</code> AI 自动 <code>--html</code>。</p>
+<details>
+<summary>🔍 记心愿底层</summary>
 <ul>
-<li><strong>触发频率</strong>:每 {CRON_INTERVAL_MINUTES} 分钟检查一次(可配置 <code>MEMO_CRON_INTERVAL</code> 环境变量)</li>
-<li><strong>无提醒时</strong>:静默处理,输出「NO_REPLY」,不发送任何消息</li>
-<li><strong>有待提醒时</strong>:通过 message 工具发送到 QQ,target 由 cron job 的 delivery 配置决定(禁止在 SKILL 中硬编码)</li>
+<li>等价于"记备忘"+ <code>-c 心愿</code></li>
+<li>飞书: <code>add_wish_sync</code> 自动建飞书 task(失败降级)</li>
 </ul>
-<h3>提醒逻辑</h3>
+</details>
+<details>
+<summary>🔍 查心愿底层</summary>
 <ul>
-<li><strong>提前a分钟</strong>:提前a分钟的时间点精确触发(可配置 <code>MEMO_ADVANCE_MINUTES</code>,默认10;如 8:50 触发 9:00 的提醒)</li>
-<li><strong>准点触发</strong>:提醒时间 T ~ T+窗口分钟内任意一次检查都会触发(窗口 = cron间隔 × <code>MEMO_GRACE_MULTIPLIER</code>,默认 T~T+4)</li>
-<li>一次性提醒:触发后记录 notified_at,避免重复通知</li>
-<li>重复提醒(每天/每周/每月/每年):正常触发,下次周期重置 notified_at</li>
+<li>CLI: <code>search -c 心愿 "关键词" --html</code></li>
+<li>等价于"搜备忘" + <code>category='心愿'</code> 过滤</li>
 </ul>
-<h3>提醒输出格式(SKILL 内部执行时使用)</h3>
-<pre><code>🔔 {内容}
-⏰ {时间} · {重复类型}
-</code></pre>
-<p><strong>示例</strong>:</p>
-<pre><code>🔔 检查烤箱状态
-⏰ 19:08 · 一次性
-</code></pre>
-<p><strong>设计原则</strong>:
-- 内容在第一行,换行不影响核心信息
-- 时间+重复在第二行,跟内容保持关联
-- 用 <code>·</code> 分隔,视觉清晰
-- <code>{重复类型}</code> 可选值:一次性 / 每天 / 每周 / 每月 / 每年</p>
-<p><strong>SKILL 执行提醒时的行为</strong>:
-1. 执行 reminder_scheduler.py 检查到期提醒
-2. 有提醒 → 按上述格式输出 → 通过 message 工具发送
-3. 无提醒 → 输出 NO_REPLY</p>
+</details>
+
+<h4 id="记打卡">记打卡 / 删打卡 / 改打卡 / 查打卡</h4>
+<p>等价于"记备忘/删备忘/改备忘/搜备忘"+ 必加 <code>-c 打卡</code>。子分类 AI 智能推断(如"跑步")。<code>查打卡</code> AI 自动 <code>--html</code>。</p>
+<details>
+<summary>🔍 查打卡底层</summary>
+<ul>
+<li>CLI: <code>search -c 打卡 "关键词" --html</code></li>
+</ul>
+</details>
+
+<h4 id="记情绪">记情绪 / 删情绪 / 改情绪 / 查情绪</h4>
+<p>等价于"记备忘/删备忘/改备忘/搜备忘"+ 必加 <code>-c 情绪日记</code>。<code>查情绪</code> AI 自动 <code>--html</code>。</p>
+<details>
+<summary>🔍 查情绪底层</summary>
+<ul>
+<li>CLI: <code>search -c 情绪日记 "关键词" --html</code></li>
+</ul>
+</details>
+
+<h2 id="定时提醒">定时提醒(Cron)</h2>
+<p>备忘录技能需要设置 cron 任务,每 {MEMO_CRON_INTERVAL} 分钟检查一次到期提醒,推送到 QQ(或其他已配置的消息渠道)。</p>
+<ul>
+<li>执行命令:<code>python3 ${SKILL_DIR}/script/reminder_scheduler.py</code></li>
+<li>无提醒时:静默处理,输出 <code>NO_REPLY</code>,不发送任何消息</li>
+<li>有待提醒时:按格式 <code>🔔 {内容}\n⏰ {时间} · {重复类型}</code> 输出,通过 message 工具发送</li>
+</ul>
+
+<h3>Cron 配置示例</h3>
+<pre><code># 每分钟检查提醒
+* * * * * python3 /mnt/d/2Study/StudyNotes/SKILLS/备忘录/script/reminder_scheduler.py</code></pre>
+
 <h3>Cron Payload 示例</h3>
-<pre><code>请读取 ${SKILL_DIR}/SKILL.md 并执行提醒检查流程
-</code></pre>
-<p><strong>说明</strong>:<code>${SKILL_DIR}</code> 是占位符,部署时替换为技能实际目录的绝对路径(如 <code>/mnt/d/2Study/StudyNotes/SKILLS/备忘录</code> 或 <code>D:\2Study\StudyNotes\SKILLS\备忘录</code>)。Payload 只负责触发 skill 执行,不描述"有提醒/无提醒"的判断逻辑,该逻辑由 SKILL 内部决定。</p>
-<h2 id="参考文档-9">参考文档</h2>
-<ul>
-<li>数据库结构:<code>reference/schema.md</code></li>
-<li>对话示例:<code>reference/examples.md</code></li>
-<li>Cron 配置:<code>reference/cron.md</code></li>
-</ul>
-<footer>
-  HTML 镜像自动生成于 2026-07-17 20:04 &nbsp;·&nbsp;
-  源文件: <code>备忘录/SKILL.md</code><br>
-  工具: <code>html_mirror_generator/generate.py v1</code>
-</footer>
+<pre><code>请读取 ${SKILL_DIR}/SKILL.md 并执行提醒检查流程</code></pre>
+<p>占位符 <code>${SKILL_DIR}</code> 部署时替换为技能目录绝对路径。Payload 只触发执行,不描述判断结果。</p>
+
+<hr>
+
+<div class="footer">
+<p>📌 改动日志: <a href="CHANGELOG.md">CHANGELOG.md</a> · 🤖 开发者/AI 文档: <a href="SKILL.md">SKILL.md</a></p>
+<p>想看完整规范(AI 决策用)?看 <a href="SKILL.md">SKILL.md</a> · 看版本历史?看 <a href="CHANGELOG.md">CHANGELOG.md</a></p>
+</div>
+
 </body>
 </html>

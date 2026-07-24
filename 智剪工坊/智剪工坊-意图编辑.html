@@ -500,7 +500,8 @@
     button.exclude-btn:hover { background: var(--gray-fill); }
     button.exclude-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
     .actions {
-      position: sticky; bottom: 0; padding: 12px 0; margin-top: 20px;
+      /* v1.24.0 fix:padding 12px 0 左右 0 → 12px 24px(跟 body padding: 24px 对齐) */
+      position: sticky; bottom: 0; padding: 12px 24px; margin-top: 20px;
       background: rgba(255, 255, 255, 0.72);
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -569,14 +570,18 @@
     /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
     /* ========================================================== */
     .anchor-rail {
-      position: sticky;  /* v1.23 fix:absolute 在 form-screen 高度=文档时,滚动会移出视口;sticky 永远在视口中央 */
-      top: 50%;  /* sticky 元素 top:50% = 视口高度 50% = 屏幕中央 */
-      right: -40px;  /* 凸出 .container 40px,贴中间操作区右侧外缘 */
-      transform: translateY(-50%);  /* 相对自身高度居中 */
-      width: 40px; height: 72vh;  /* v1.23:22px→40px 加宽,56vh→72vh 加高 */
+      /* v1.24.0 fix:sticky + right:-40px 是矛盾 CSS spec。
+         sticky 模式下 horizontal 由 DOM 流决定,left/right 被忽略。
+         改为 position: fixed 相对 viewport,稳定可靠 + form-screen 滚出不影响。
+         凸出感用 transform: translate(40px, -50%) 实现(原 right: -40px 视觉效果)。 */
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translate(40px, -50%);
+      width: 40px; height: 72vh;
       z-index: 40;
-      align-self: flex-start;  /* 防止 flex/grid 拉伸,sticky 正常工作 */
-      pointer-events: none;  /* 默认透传,只锚点本身接收事件 */
+      /* v1.24.0 fix:撤掉 align-self(只 flex 容器有效)+ pointer-events: none。
+         pointer-events: none 让 CSS :hover 不触发 → hideAnchorRail 2 秒自动隐藏机制形同虚设。 */
       opacity: 0;
       transition: opacity 0.4s ease;
     }

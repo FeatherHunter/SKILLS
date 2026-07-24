@@ -623,7 +623,7 @@
       border-radius: 50%;
       pointer-events: auto;
       cursor: pointer;
-      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
+      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease, width 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .anchor-rail .anchor:hover {
       transform: translate(-50%, -50%) scale(1.35);   /* v1.24.2:hover 放大更明显 */
@@ -2762,7 +2762,7 @@
         dot.dataset.label = label;
         dot.addEventListener('click', () => {
           const rect = sec.getBoundingClientRect();
-          const targetY = window.scrollY + rect.top - 44;
+          const targetY = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;  // v1.24.12:card 中央对齐 viewport 中央,让 active = clicked 自动成立
           window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
         });
         anchorRail.appendChild(dot);
@@ -2789,7 +2789,7 @@
           //   高度 > viewport 时只部分滚(不滚到 card 顶部),准头不对。
           // 改用 scrollTo 算绝对 Y,让 card 顶部对齐 viewport 顶部 44px(.ios-topbar)。
           const rect = card.getBoundingClientRect();
-          const targetY = window.scrollY + rect.top - 44;
+          const targetY = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;  // v1.24.12:card 中央对齐 viewport 中央,让 active = clicked 自动成立
           window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
         });
         anchorRail.appendChild(dot);
@@ -2807,7 +2807,7 @@
         dot.dataset.label = label;
         dot.addEventListener('click', () => {
           const rect = sec.getBoundingClientRect();
-          const targetY = window.scrollY + rect.top - 44;
+          const targetY = window.scrollY + rect.top + rect.height / 2 - window.innerHeight / 2;  // v1.24.12:card 中央对齐 viewport 中央,让 active = clicked 自动成立
           window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
         });
         anchorRail.appendChild(dot);

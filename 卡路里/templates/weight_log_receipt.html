@@ -118,6 +118,11 @@ function renderReceipt(){
 
 function renderTrend(){
   if(HISTORY.length===0)return;
+  // BUG 修复:1 条历史时折线无意义,跳过 SVG 渲染(只显示数字)
+  if(HISTORY.length<2){
+    document.getElementById('historyCount').textContent='1 (折线需 ≥2 条)';
+    return;
+  }
   document.getElementById('historyCount').textContent=HISTORY.length;
   const W=800,H=200,PAD=30;
   const weights=HISTORY.map(h=>h.weight_kg);
@@ -164,14 +169,15 @@ function renderTrend(){
     }
   });
   const avg=(weights.reduce((a,b)=>a+b,0)/weights.length).toFixed(1);
-  const firstW=HISTORY[HISTORY.length-1].weight_kg;
-  const lastW=HISTORY[0].weight_kg;
-  const trend=lastW<firstW?'下降 ▼':lastW>firstW?'上升 ▲':'持平';
-  const trendCls=lastW<firstW?'good':lastW>firstW?'warn':'';
+  // BUG 修复:rename firstW/lastW — firstW 是最旧值(数组倒序),lastW 是最新值
+  const oldestW=HISTORY[HISTORY.length-1].weight_kg;
+  const newestW=HISTORY[0].weight_kg;
+  const trend=newestW<oldestW?'下降 ▼':newestW>oldestW?'上升 ▲':'持平';
+  const trendCls=newestW<oldestW?'good':newestW>oldestW?'warn':'';
   document.getElementById('statAvg').textContent=avg+'kg';
   const goal=SUMMARY.weight_goal||{};
   if(goal.target){
-    const diff=(lastW-goal.target).toFixed(1);
+    const diff=(newestW-goal.target).toFixed(1);
     document.getElementById('statDiff').textContent=diff+'kg';
     document.getElementById('statDiff').className='value '+(diff<=0?'good':'warn');
   }

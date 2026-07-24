@@ -114,6 +114,7 @@
       <li><a href="#cmd-11">#11 查作息状态</a></li>
       <li><a href="#cmd-23">#23 按 ID 查记录</a></li>
       <li><a href="#cmd-24">#24 写作息摘要</a></li>
+      <li><a href="#cmd-25">#25 对比两个月</a></li>
     </ol>
   </div>
 
@@ -492,6 +493,52 @@ python scripts/schedule_cli.py prepare-messages --page-size 100</code></pre>
     </div>
     <h4>用途</h4>
     <p>解决孤儿表问题(2026-07-22 后该表原本无任何写入路径)。AI 可在汇总 #4 #5 时主动调此命令把摘要预存到 daily_summary 表,避免每次重算。</p>
+  </div>
+</details>
+
+<details class="skill" id="cmd-25">
+  <summary>
+    <span class="num">25</span>
+    <div class="main">
+      <div class="name">对比两个月 / 月份对比 / 跨月对比</div>
+      <div class="desc">任意两个范围放在一起对比,看分类占比变化 / 时长增减 / 健康分差异</div>
+    </div>
+    <span class="cli">render-record-compare-months YYYY-MM YYYY-MM</span>
+    <span class="arrow">▸</span>
+    <span class="toggle">展开</span>
+  </summary>
+  <div class="body">
+    <div class="meta">
+      <span>HTML 输出: record_compare.html</span>
+      <span>两种模式: 整月对比 / 任意范围对比</span>
+    </div>
+    <h4>用法示例</h4>
+    <pre><code># 模式 A: 整月对比(最常用)
+python scripts/schedule_cli.py render-record-compare-months 2026-06 2026-07
+
+# 模式 B: 任意范围对比(灵活)
+python scripts/schedule_cli.py render-record-compare \
+  "6月" 2026-06-01 2026-06-30 \
+  "7月" 2026-07-01 2026-07-31</code></pre>
+    <h4>底层工作流程</h4>
+    <ol>
+      <li>CLI 接收两个范围(labelA/startA/endA + labelB/startB/endB)</li>
+      <li>分别调 <code>get_records_range(start, end)</code> 拉两侧数据</li>
+      <li>调 <code>aggregate_by_category()</code> 计算两侧分类占比</li>
+      <li>调 <code>compute_health_score()</code> 计算两侧健康分</li>
+      <li>组装 payload (含 4 卡摘要 + 对比数据 + 7 维雷达 + 热力图)</li>
+      <li>渲染 <code>record_compare.html</code>(对比 HTML,左侧 A 范围 / 右侧 B 范围 / 中间差异高亮)</li>
+    </ol>
+    <h4>与 #5 汇总作息 / #9 查作息范围 的区别</h4>
+    <p><b>#5 #9 汇总作息</b> = 看 1 个范围(分类占比 + 时长)<br>
+       <b>#25 对比两个月</b> = 看 2 个范围(差异 + 变化趋势 + 健康分对比)</p>
+    <h4>使用场景</h4>
+    <ul>
+      <li>"7 月份相比 6 月份整体情况如何"</li>
+      <li>"上周 vs 这周"</li>
+      <li>"节前 vs 节后"</li>
+      <li>"新策略生效前 vs 生效后"</li>
+    </ul>
   </div>
 </details>
 

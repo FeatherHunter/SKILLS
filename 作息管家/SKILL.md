@@ -4,6 +4,7 @@ description: >
   作息记录与日程计划管理技能。当用户使用以下指令时触发:
    准备消息(废弃)、同步作息(废弃)、增量同步(废弃)、(同步类)、
    今天总结、汇总作息(摘要类)、
+   对比两个月、月份对比、跨月对比(对比类,把两个范围放在一起看分类/时长/健康分变化)、
    查作息、查作息详情、查作息时间轴、查作息范围、查作息游标、查作息状态(查询作息记录)、
    查日程、看日程、24h 概览、查多日计划(查询日程计划)、
    商量计划、一起规划、规划明天、规划一天、讨论计划(新版事件型日程计划 + 飞书日历联动)、
@@ -66,6 +67,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | 22 | 初始化数据库 | 创建三张数据表(含 completion 字段) | `init` | - |
 | **23** | **按 ID 查作息记录** | **CLI 单条查询**。按作息记录 ID 返回全 11 字段(id / date / time_* / duration / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at) | `get-record <id>` | **详见 3. 查询作息** |
 | **24** | **写作息摘要** | **CLI 写摘要**。按 (date, category) 维度 upsert 一条 daily_summary(解决孤儿表问题,该表 2026-07-22 后无任何写入路径) | `add-summary --date D --category C --total-minutes M` | **详见 13. 摘要管理(新建)** |
+| **25** | **对比两个月 / 月份对比 / 跨月对比** | **任意两个范围对比**。整月对比走 `render-record-compare-months YYYY-MM YYYY-MM`;任意范围对比走 `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>`。看分类占比变化、时长增减、健康分差异。**与 #5 汇总作息区别**:汇总 = 1 个范围,对比 = 2 个范围 | `render-record-compare-months YYYY-MM YYYY-MM` 或 `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | **详见 3.x HTML 模式(对比)** |
 
 ---
 

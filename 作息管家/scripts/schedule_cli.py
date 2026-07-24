@@ -488,6 +488,156 @@ def cmd_upsert_plan(args):
     except Exception as e:
         print(f"错误: {e}")
 
+
+# ============ correct-record 命令(2026-07-24 新增,见 schedule_html_render.py:cmd_correct_record 注册) ============
+def cmd_correct_record(args):
+    """
+    correct-record <id> [--field value ...] | --json '{...}'
+
+    纠正一条作息记录(回顾性数据修正,2026-07-24 新增)。
+
+    第一性:作息数据是 AI/星火回顾性输入的,常出现字段拼错/时间误记/漏原文
+    等情况。本命令专门处理"我之前记错了,现在纠正"场景 — 与 plan 域的
+    update-event(改日程)区分,命名"correct"(纠正)更贴切用户心智。
+
+    自动维护审计:
+      - updated_at 自动更新
+      - edit_count 自增
+
+    改完建议:接 cmd_render_record_receipt_edit <id> 生成"已纠正"蓝调回执
+    (含 before/after diff,用户能审计改了什么)。
+
+    24h 软提示:不阻断,操作规范说"24h 内强烈推荐"。
+    """
+    if not args:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: correct-record <id> [--field value ...] | --json '{...}'",
+            "example":"correct-record 123 --category '工作.AI调优' --activity '新活动名'",
+            "available_fields":["date","time_start","time_end","duration_minutes",
+                              "activity","category","source_contents",
+                              "source_timestamps","analysis_reasoning"],
+            "note":"作息记录不可 DELETE(操作规范规则 3);只可 UPDATE"
+        }, ensure_ascii=False))
+        return
+
+    try:
+        record_id = int(args[0])
+    except ValueError:
+        print(_json.dumps({
+            "status":"error",
+            "message":f"id 必须是整数,得到 {args[0]!r}"
+        }, ensure_ascii=False))
+        return
+
+    # 解析参数
+    updates = {}
+    json_payload = None
+    i = 1
+    while i < len(args):
+        a = args[i]
+        if a == "--json":
+            json_payload = args[i+1] if i+1 < len(args) else ""
+            i += 2
+            continue
+        if a.startswith("--"):
+            key = a[2:].replace("-", "_")  # --source-contents → source_contents
+            if key not in {"date","time_start","time_end","duration_minutes",
+                          "activity","category","source_contents",
+                          "source_timestamps","analysis_reasoning"}:
+                print(_json.dumps({
+                    "status":"error",
+                    "message":f"非法字段: {a}(合法:{sorted(['date','time_start','time_end','duration_minutes','activity','category','source_contents','source_timestamps','analysis_reasoning'])})"
+                }, ensure_ascii=False))
+                return
+            if i + 1 >= len(args):
+                print(_json.dumps({
+                    "status":"error",
+                    "message":f"{a} 需要 1 个参数值"
+                }, ensure_ascii=False))
+                return
+            updates[key] = args[i+1]
+            i += 2
+            continue
+        print(_json.dumps({
+            "status":"error",
+            "message":f"未知参数: {a}"
+        }, ensure_ascii=False))
+        return
+
+    if json_payload:
+        try:
+            if json_payload.startswith("@"):
+                with open(json_payload[1:], 'r', encoding='utf-8') as f:
+                    updates = _json.loads(f.read())
+            else:
+                updates = _json.loads(json_payload)
+        except Exception as e:
+            print(_json.dumps({
+                "status":"error",
+                "message":f"--json 解析失败: {type(e).__name__}: {e}"
+            }, ensure_ascii=False))
+            return
+
+    if not updates:
+        print(_json.dumps({
+            "status":"error",
+            "message":"必须至少传 1 个字段(--field value 或 --json)"
+        }, ensure_ascii=False))
+        return
+
+    try:
+        from schedule_db import update_record
+        result = update_record(record_id, fields=updates)
+    except ValueError as e:
+        print(_json.dumps({
+            "status":"error",
+            "message":str(e)
+        }, ensure_ascii=False))
+        return
+
+    # 成功 — 输出 diff + 审计信息
+    diff = result["diff"]
+    if not diff:
+        print(_json.dumps({
+            "status":"ok",
+            "data":{
+                "record_id": record_id,
+                "diff": {},
+                "edit_count": result["edit_count"],
+                "message": "字段值未变,无实际操作"
+            },
+            "message":f"✓ id={record_id} 字段值未变,edit_count 不增"
+        }, ensure_ascii=False))
+        return
+
+    # 构造 diff_lines 让用户能审计改了什么
+    diff_lines = []
+    for k, v in diff.items():
+        old = v["old"] if v["old"] is not None else "(空)"
+        new = v["new"] if v["new"] is not None else "(空)"
+        diff_lines.append(f"  {k}: {old} → {new}")
+
+    response = {
+        "status":"ok",
+        "data":{
+            "record_id": record_id,
+            "diff": diff,
+            "edit_count": result["edit_count"],
+            "within_24h": result["within_24h"],
+            "updated_at": result["after"]["updated_at"],
+        },
+        "message": (
+            f"✓ id={record_id} 已纠正 {len(diff)} 个字段 "
+            f"(edit_count={result['edit_count']})\n"
+            + "\n".join(diff_lines)
+            + ("" if result["within_24h"] else
+               "\n⚠ 记录日期已超过 1 天(操作规范建议 24h 内修改)")
+        )
+    }
+    print(_json.dumps(response, ensure_ascii=False, indent=2))
+
+
 # ============ 主入口 ============
 def main(argv=None):
     """CLI 主入口：分发命令。2026-06-29 重构为函数，让所有 cmd_X 在调用前完成定义。"""
@@ -506,6 +656,8 @@ def main(argv=None):
 
     elif cmd == "add":
         cmd_add_record(args)
+    elif cmd == "correct-record":
+        cmd_correct_record(args)
 
     elif cmd == "prepare-messages":
         cmd_prepare_messages(args)

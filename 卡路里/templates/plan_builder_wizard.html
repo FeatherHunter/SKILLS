@@ -826,48 +826,55 @@ function renderWeekDetail(idx) {
           <span class="dow">${DAY_NAMES[d.day_of_week] || '?'}</span>
         </div>
         <div class="sessions">
-          ${sessions.map(s => `
-            <div class="session-card">
-              <div class="head">
-                <div class="name">${escapeHTML(s.session_label || '?')}</div>
-                <div class="time">${escapeHTML(s.time_start || '?')}-${escapeHTML(s.time_end || '?')}</div>
-              </div>
-              <div class="meta">
-                <span class="total-sets">${s.total_sets || 0} 组</span>
-              </div>
-              ${(s.movements || []).length > 0 ? `
-                <table class="movement-table">
-                  <thead>
-                    <tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>组休</th><th></th></tr>
-                  </thead>
-                  <tbody>
-                    ${s.movements.map((m, mIdx) => {
-                      // BUG 修复:wk 在 sessions.map 内层不在作用域,改用外层的 week 和 d
-                      const swapKey = `${week.week_number}_${d.day_of_week}_${sIdx}_${mIdx}`;
-                      const isSwapped = userEdits.swaps.some(s => s.week === week.week_number && s.dayOfWeek === d.day_of_week && s.oldName === m.name);
-                      const alternatives = (MOVEMENTS[m.part] || []).filter(a => a !== m.name).slice(0, 4);
-                      // BUG 修复:把嵌套模板字符串提取到变量,避免 acorn parser 错位
-                      const swapTag = isSwapped
-                        ? '<span style="font-size:10px;color:var(--orange);font-weight:600">↻</span>'
-                        : '';
-                      // BUG 修复:alt 已是 escapeHTML 转义后的安全字符串
-                      // onclick 字符串里 alt 用 " 包围(HTML entity),浏览器自动转 "
-                      const swapBtn = alternatives.length > 0
-                        ? `<button class="move-swap" onclick="toggleSwapMenu('${swapKey}', event)"><span class="arrow">⇄</span> 换</button><div class="move-swap-menu" id="menu-${swapKey}">${alternatives.map(alt => `<button onclick="doSwap(${idx}, ${dayIdx}, ${sIdx}, ${mIdx}, &quot;${escapeHTML(alt)}&quot;)">${escapeHTML(alt)}</button>`).join('')}</div>`
-                        : '';
-                      const altBg = isSwapped ? 'style="background:rgba(255,149,0,.06)"' : '';
-                      return `
-                      <tr ${altBg}>
-                        <td>
-                          <div class="name">${escapeHTML(m.name || '?')}${swapTag}</div>
-                        </td>
-                        <td>${partTag(m.part)}</td>
-                        <td class="nums"><strong>${m.sets || 0}</strong> × ${escapeHTML(String(m.reps || '?'))}</td>
-                        <td class="nums"><strong>${escapeHTML(String(m.weight || '?'))}</strong></td>
-                        <td class="rest">${escapeHTML(m.rest || '-')}</td>
-                        <td>${swapBtn}</td>
-                      </tr>
-                      `}).join('')}
+          ${sessions.map(s => {
+            // BUG 修复:避免深度嵌套模板字符串(acorn parser 错位)
+            // 整个 session-card 改用普通字符串拼接 + 单层模板字符串
+            const movements = s.movements || [];
+            const movementRows = movements.map((m, mIdx) => {
+              const swapKey = week.week_number + '_' + d.day_of_week + '_' + sIdx + '_' + mIdx;
+              const isSwapped = userEdits.swaps.some(x =>
+                x.week === week.week_number && x.dayOfWeek === d.day_of_week && x.oldName === m.name
+              );
+              const partList = (MOVEMENTS[m.part] || []).filter(a => a !== m.name).slice(0, 4);
+              const swapTag = isSwapped
+                ? '<span style="font-size:10px;color:var(--orange);font-weight:600">↻</span>'
+                : '';
+              const altBtns = partList.map(alt =>
+                '<button onclick="doSwap(' + idx + ', ' + dayIdx + ', ' + sIdx + ', ' + mIdx + ', &quot;' + escapeHTML(alt) + '&quot;)">' + escapeHTML(alt) + '</button>'
+              ).join('');
+              const swapBtn = partList.length > 0
+                ? '<button class="move-swap" onclick="toggleSwapMenu(&quot;' + swapKey + '&quot;, event)"><span class="arrow">⇄</span> 换</button><div class="move-swap-menu" id="menu-' + swapKey + '">' + altBtns + '</div>'
+                : '';
+              const altBg = isSwapped ? 'style="background:rgba(255,149,0,.06)"' : '';
+              return (
+                '<tr ' + altBg + '>' +
+                '<td><div class="name">' + escapeHTML(m.name || '?') + swapTag + '</div></td>' +
+                '<td>' + partTag(m.part) + '</td>' +
+                '<td class="nums"><strong>' + (m.sets || 0) + '</strong> × ' + escapeHTML(String(m.reps || '?')) + '</td>' +
+                '<td class="nums"><strong>' + escapeHTML(String(m.weight || '?')) + '</strong></td>' +
+                '<td class="rest">' + escapeHTML(m.rest || '-') + '</td>' +
+                '<td>' + swapBtn + '</td>' +
+                '</tr>'
+              );
+            }).join('');
+            const movementTable = movements.length > 0
+              ? '<table class="movement-table"><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>组休</th><th></th></tr></thead><tbody>' + movementRows + '</tbody></table>'
+              : '';
+            return (
+              '<div class="session-card">' +
+              '<div class="head">' +
+              '<div class="name">' + escapeHTML(s.session_label || '?') + '</div>' +
+              '<div class="time">' + escapeHTML(s.time_start || '?') + '-' + escapeHTML(s.time_end || '?') + '</div>' +
+              '</div>' +
+              '<div class="meta"><span class="total-sets">' + (s.total_sets || 0) + ' 组</span></div>' +
+              movementTable +
+              '</div>'
+            );
+          }).join('')}
+        </div>
+      </div>
+    `;
+}
 
 
 function renderPartView(container) {

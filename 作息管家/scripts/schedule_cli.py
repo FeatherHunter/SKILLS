@@ -752,6 +752,8 @@ def main(argv=None):
     # === end ===
 
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
+    elif cmd == "render-record-receipt-edit":
+        cmd_render_record_receipt_edit(args)
     elif cmd == "render-record-report":
         cmd_render_record_report(args)
     elif cmd == "render-record-day":
@@ -2154,6 +2156,69 @@ def cmd_render_plan_receipt_write(args):
 #   - 目录不存在 → 报错(不静默建)
 #   - 同日期覆盖写(用户主动调就期望刷新)
 #   - 第 ③ 段 AI 亮点默认空(本次不做 AI 叙事)
+def cmd_render_record_receipt_edit(args):
+    """
+    render-record-receipt-edit <id> [--diff '{...}']
+
+    纠正记录后漂亮回执(回执型第 2 款,蓝调,2026-07-24)。
+    用于 correct-record 调完 DB 后生成回执 HTML(让用户审计改了什么)。
+
+    第一性:用户说"correct-record" 纠正了记录,需要 1 份能审计改了什么 +
+    改对没对的回执。核心是 diff 视图(before/after 三列)。
+
+    用法:
+      python scripts/schedule_cli.py render-record-receipt-edit 42
+      # 或带 diff(从 update_record() 返回值传):
+      python scripts/schedule_cli.py render-record-receipt-edit 42 \
+        --diff '{"category": {"old": "工作.AI", "new": "工作.AI调优"}}'
+    """
+    from schedule_html_render import render_record_receipt_edit, render_and_write
+    if not args:
+        print(_json.dumps({
+            "status":"error",
+            "message":"用法: render-record-receipt-edit <id> [--diff JSON]"
+        }, ensure_ascii=False))
+        return
+    try:
+        record_id = int(args[0])
+    except ValueError:
+        print(_json.dumps({
+            "status":"error",
+            "message":f"id 必须是整数,得到 {args[0]!r}"
+        }, ensure_ascii=False))
+        return
+
+    diff = None
+    if "--diff" in args:
+        diff_str = args[args.index("--diff") + 1]
+        try:
+            diff = _json.loads(diff_str)
+        except Exception as e:
+            print(_json.dumps({
+                "status":"error",
+                "message":f"--diff 解析失败: {type(e).__name__}: {e}"
+            }, ensure_ascii=False))
+            return
+
+    payload = render_record_receipt_edit(record_id, diff=diff)
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    result = render_and_write(payload)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    out = dict(result)
+    out["data"].update({
+        "mode": "record-receipt-edit",
+        "edit_count": payload["data"]["stats"]["edit_count"],
+        "diff_count": payload["data"]["stats"]["diff_count"],
+    })
+    print(_json.dumps(out, ensure_ascii=False, indent=2))
+
+
 def cmd_render_record_report(args):
     """
     render-record-report <日期>

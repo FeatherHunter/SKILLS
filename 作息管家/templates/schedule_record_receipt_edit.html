@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已纠正 · {{ title }} · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f0f4ff;
+    --blue:#007aff;--blue2:#0a63ce;--blue-soft:#e8f0ff;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+    --diff-old:#fee;--diff-new:#e6f7ec;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:linear-gradient(180deg,#f0f5ff 0%,#fafafa 100%);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:64px 28px 80px}
+  .hero{background:linear-gradient(135deg,#d6e5ff 0%,#b8d4ff 100%);border-radius:28px;padding:48px 42px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+  .hero .check{width:80px;height:80px;border-radius:50%;background:var(--blue);color:#fff;font-size:48px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 4px 16px rgba(0,122,255,.3);animation:popIn .6s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  .hero h1{font-size:36px;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#0a3d8c;font-weight:700}
+  .hero .sub{font-size:16px;color:#1a4d9c;margin-bottom:8px}
+  .hero .meta{font-size:13px;color:#3a5a8c;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+  .hero .meta b{color:#0a3d8c}
+  .hero .badge{display:inline-block;background:var(--blue);color:#fff;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-top:10px;letter-spacing:.02em}
+  .hero .badge .edit-num{font-size:15px;font-weight:700;margin:0 2px}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 24px}
+  .stat{background:var(--card);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px;border:1px solid var(--line)}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  /* ⭐ 核心:diff 视图(纠正回执的灵魂) */
+  .diff-section{background:var(--card);border:2px solid var(--blue);border-radius:20px;padding:0;margin:14px 0 24px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
+  .diff-header{background:linear-gradient(180deg,var(--blue-soft) 0%,#fff 100%);padding:20px 26px 14px;border-bottom:1px solid var(--line)}
+  .diff-header h2{font-size:18px;font-weight:700;color:var(--blue2);margin-bottom:4px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .diff-header h2::before{content:"🔧";font-size:20px}
+  .diff-header .desc{font-size:13px;color:var(--fg2);line-height:1.6}
+  .diff-body{padding:0 26px 22px}
+  .diff-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+  .diff-table th{text-align:left;padding:10px 12px;background:#f5f7fa;color:var(--fg3);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--line)}
+  .diff-table td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+  .diff-table tr:last-child td{border-bottom:none}
+  .diff-field{color:var(--blue2);font-weight:600}
+  .diff-old{background:var(--diff-old);color:#a83228;text-decoration:line-through;opacity:.85;border-radius:6px;padding:2px 6px;display:inline-block;word-break:break-all}
+  .diff-new{background:var(--diff-new);color:#1f8c3d;font-weight:600;border-radius:6px;padding:2px 6px;display:inline-block;word-break:break-all}
+  .diff-arrow{color:var(--fg3);padding:0 6px}
+  .diff-empty{color:var(--mute);font-style:italic}
+
+  /* 记录卡片 */
+  .record-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 28px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .record-card .row-hero{display:flex;align-items:center;gap:18px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .record-card .time-big{font-size:22px;font-weight:700;color:var(--blue2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .record-card .activity-big{flex:1;font-size:22px;font-weight:700;color:var(--fg);letter-spacing:-.01em}
+  .record-card .cat-big{font-size:13px;padding:4px 12px;border-radius:999px;background:var(--blue-soft);color:#0a3d8c;font-weight:600}
+  .record-card .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;font-size:12.5px}
+  .record-card .field{padding:6px 0;border-bottom:1px dashed var(--line)}
+  .record-card .field:last-child{border-bottom:none}
+  .record-card .field .lbl{color:var(--fg3);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .record-card .field .val{color:var(--fg);font-weight:500}
+  .record-card .field .val.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+  .record-card .audit{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:14px;flex-wrap:wrap}
+  .record-card .audit .chip{font-size:11px;background:var(--soft);color:var(--blue2);padding:5px 12px;border-radius:999px;font-weight:600;letter-spacing:.02em}
+  .record-card .audit .chip b{color:var(--blue2);font-size:13px}
+
+  /* 3 操作按钮 */
+  .actions{background:linear-gradient(180deg,var(--blue-soft) 0%,#fff 100%);border:2px solid var(--blue);border-radius:20px;padding:24px 28px;margin:8px 0 24px}
+  .actions h2-act{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .actions h2-act::before{content:"📤";font-size:20px}
+  .actions .act-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:18px}
+  .actions .act-list{display:flex;flex-direction:column;gap:10px}
+  .actions .act-btn{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);text-align:left;cursor:pointer;transition:all .15s;font-family:inherit;width:100%;position:relative;overflow:hidden}
+  .actions .act-btn:hover{border-color:var(--blue);background:#fafbff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,122,255,.08)}
+  .actions .act-btn.copied{border-color:var(--good);background:#e6f7ec}
+  .actions .act-btn .icon{font-size:28px;flex-shrink:0;width:48px;height:48px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center}
+  .actions .act-btn.copied .icon{background:#e6f7ec}
+  .actions .act-btn .info{flex:1;min-width:0}
+  .actions .act-btn .label{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .actions .act-btn .desc{font-size:12px;color:var(--fg3);line-height:1.5}
+  .actions .act-btn .copied-badge{position:absolute;top:8px;right:12px;font-size:11px;color:var(--good);font-weight:600;display:none}
+  .actions .act-btn.copied .copied-badge{display:block}
+
+  ol.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+  ol.steps > li{counter-increment:step;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 56px;margin-bottom:10px;position:relative;font-size:13.5px;line-height:1.65}
+  ol.steps > li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps > li b{color:var(--fg);font-weight:600}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:var(--code);color:#f5f5f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line);padding-top:24px}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  @media(max-width:760px){
+    .wrap{padding:40px 14px 60px}
+    .hero{padding:32px 22px;border-radius:22px}
+    .hero h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .diff-table{font-size:12px}
+    .diff-table th,.diff-table td{padding:8px}
+    .record-card .row-hero{flex-direction:column;align-items:flex-start;gap:8px}
+    .record-card .grid{grid-template-columns:1fr}
+    .actions .act-btn{flex-direction:column;text-align:center;align-items:flex-start;gap:8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="check">✓</div>
+  <h1 id="page-title">已纠正</h1>
+  <p class="sub" id="page-subtitle">id=<span id="hero-id">—</span> · <span id="hero-time">—</span> · <span id="hero-cat">—</span></p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">—</b></span>
+    <span>🆔 id=<b id="meta-id">—</b></span>
+    <span>🕐 最后修改 <b id="meta-updated">—</b></span>
+  </div>
+  <div class="badge">✏️ 本次纠正 <span class="edit-num" id="edit-count">—</span> 个字段 · edit_count = <span class="edit-num" id="edit-count-total">—</span></div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-today-count">—</div>
+    <div class="l">今日已记录</div>
+    <div class="d">schedule_records</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-today-mins">—</div>
+    <div class="l">今日总时长</div>
+    <div class="d">累计分钟数</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-week-count">—</div>
+    <div class="l">本周累计</div>
+    <div class="d">最近 7 天</div>
+  </div>
+  <div class="stat danger">
+    <div class="n" id="stat-rank">—</div>
+    <div class="l">分类排名</div>
+    <div class="d">在同分类中</div>
+  </div>
+</div>
+
+<!-- ⭐ 核心:diff 视图(让用户审计改了什么) -->
+<div class="diff-section" id="diff-section">
+  <div class="diff-header">
+    <h2 id="diff-title">纠正 diff</h2>
+    <p class="desc" id="diff-desc">—</p>
+  </div>
+  <div class="diff-body">
+    <table class="diff-table">
+      <thead>
+        <tr>
+          <th style="width:25%">字段</th>
+          <th style="width:35%">修改前 (old)</th>
+          <th style="width:5%"></th>
+          <th style="width:35%">修改后 (new)</th>
+        </tr>
+      </thead>
+      <tbody id="diff-tbody">
+        <!-- JS 动态填充 -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="record-card" id="record-card">
+  <div class="row-hero">
+    <div class="time-big" id="rc-time">—</div>
+    <div class="activity-big" id="rc-activity">—</div>
+    <div class="cat-big" id="rc-category">—</div>
+  </div>
+  <div class="grid">
+    <div class="field"><div class="lbl">id</div><div class="val code" id="rc-id">—</div></div>
+    <div class="field"><div class="lbl">date</div><div class="val code" id="rc-date">—</div></div>
+    <div class="field"><div class="lbl">时段时间</div><div class="val" id="rc-duration">—</div></div>
+    <div class="field"><div class="lbl">duration_minutes</div><div class="val code" id="rc-duration-min">—</div></div>
+    <div class="field"><div class="lbl">category</div><div class="val" id="rc-cat-val">—</div></div>
+    <div class="field"><div class="lbl">created_at</div><div class="val code" id="rc-created">—</div></div>
+  </div>
+  <details class="fold">
+    <summary>查看消息原文 + 时间戳 + 推理链(默认折叠)</summary>
+    <pre id="rc-source">—</pre>
+  </details>
+  <div class="audit">
+    <span class="chip">📅 创建于 <b id="audit-created">—</b></span>
+    <span class="chip">✏️ 最后修改 <b id="audit-updated">—</b></span>
+    <span class="chip">🔁 已编辑 <b id="audit-edit-count">—</b> 次</span>
+  </div>
+</div>
+
+<!-- ⭐ 核心:3 个操作按钮(每个 = 1 个"我决定了下一步"动作) -->
+<div class="actions">
+  <h2 class="h2-act">选一个操作 · 复制完整 prompt 给 AI</h2>
+  <p class="act-desc">每个按钮 = 1 次"我决定了下一步 + 已发 AI"的动作。点击 → 复制该操作专属的完整 4 部分 prompt(含纠正 diff 上下文) → 粘贴给 AI → AI 收到纠正后状态 + 具体指令,自主执行。</p>
+  <div class="act-list">
+    <button class="act-btn" id="act-continue" data-prompt-key="continue">
+      <span class="icon">➕</span>
+      <div class="info">
+        <div class="label">继续记 / 继续纠正</div>
+        <div class="desc">AI 调 add 写库 + 生成下一份回执,或继续纠正另一条。等我输入。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" id="act-overview" data-prompt-key="overview">
+      <span class="icon">📊</span>
+      <div class="info">
+        <div class="label">看今日全貌</div>
+        <div class="desc">AI 调 render-record-day,生成今日 24h 报告 HTML,让我扫读全部记录。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" id="act-review" data-prompt-key="review">
+      <span class="icon">🔄</span>
+      <div class="info">
+        <div class="label">复盘今日</div>
+        <div class="desc">AI 调 render-plans-review 生成复盘报告,让我标完成情况 + 写完成原因。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>📅 纠正时间:<b id="footer-generated">—</b> · 📊 模板:<code>{{ template_name }}</code> · 📁 输出:<code>SKILLS_DB_PATH/schedule_html/</code></p>
+  <p class="note">作息管家 · 纠正记录回执(回执型第 2 款,蓝调,2026-07-24) · 改动日志见 <code>CHANGELOG.md</code></p>
+  <p class="note" style="margin-top:4px;color:var(--mute)">手册不是日志,代码变动请提交 <code>CHANGELOG.md</code></p>
+</footer>
+
+</div>
+<script id="payload" type="application/json"></script>
+<script src="_record_styles.css"></script>
+<script src="_record_engine.js"></script>
+<script>
+// 纠正回执专用逻辑:渲染 diff 视图(2026-07-24)
+(function(){
+  "use strict";
+  var raw = document.getElementById("payload");
+  var payload = JSON.parse(raw.textContent || "{}");
+  var data = (payload && payload.data) || {};
+  var meta = data.meta || {};
+  var record = data.record || {};
+  var diff = data.diff || {};
+  var diffList = data.diff_list || [];
+  var stats = data.stats || {};
+  var prompts = data.prompts || {};
+
+  // Hero
+  document.getElementById("hero-id").textContent = meta.record_id || "—";
+  document.getElementById("hero-time").textContent = (record.time_start || "—") + "–" + (record.time_end || "—");
+  document.getElementById("hero-cat").textContent = record.category || "—";
+  document.getElementById("meta-date").textContent = record.date || "—";
+  document.getElementById("meta-id").textContent = meta.record_id || "—";
+  document.getElementById("meta-updated").textContent = meta.updated_at || "—";
+  document.getElementById("edit-count").textContent = stats.diff_count != null ? stats.diff_count : "—";
+  document.getElementById("edit-count-total").textContent = meta.edit_count != null ? meta.edit_count : "—";
+
+  // 4 stat
+  document.getElementById("stat-today-count").textContent = stats.today_count != null ? stats.today_count : "—";
+  document.getElementById("stat-today-mins").textContent = stats.today_mins != null ? Math.floor(stats.today_mins/60) + "h" + (stats.today_mins%60) + "m" : "—";
+  document.getElementById("stat-week-count").textContent = stats.week_count != null ? stats.week_count : "—";
+  document.getElementById("stat-rank").textContent = (stats.category_rank || "—");
+
+  // Diff 渲染(核心:纠正前→纠正后)
+  var tbody = document.getElementById("diff-tbody");
+  var diffDesc = document.getElementById("diff-desc");
+  if (diffList.length === 0) {
+    diffDesc.textContent = "本次未传 diff(可能 diff 已提交或独立渲染)";
+    document.getElementById("diff-title").textContent = "纠正 diff (无)";
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--mute);padding:20px">无 diff 数据(独立查看模式)</td></tr>';
+  } else {
+    diffDesc.textContent = "本次纠正了 " + diffList.length + " 个字段 — 红色 = 修改前,绿色 = 修改后";
+    var html = "";
+    diffList.forEach(function(d){
+      var oldEsc = escapeHTML(d.old);
+      var newEsc = escapeHTML(d.new);
+      html += '<tr>' +
+              '<td class="diff-field">' + escapeHTML(d.field) + '</td>' +
+              '<td><span class="diff-old">' + oldEsc + '</span></td>' +
+              '<td><span class="diff-arrow">→</span></td>' +
+              '<td><span class="diff-new">' + newEsc + '</span></td>' +
+              '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  // 记录卡片
+  document.getElementById("rc-time").textContent = (record.time_start || "—") + "–" + (record.time_end || "—");
+  document.getElementById("rc-activity").textContent = record.activity || "—";
+  document.getElementById("rc-category").textContent = record.category || "—";
+  document.getElementById("rc-id").textContent = record.id || "—";
+  document.getElementById("rc-date").textContent = record.date || "—";
+  var durMin = parseInt(record.duration_minutes) || 0;
+  var h = Math.floor(durMin/60), m = durMin % 60;
+  document.getElementById("rc-duration").textContent = h + "h" + m + "m";
+  document.getElementById("rc-duration-min").textContent = durMin + " 分钟";
+  document.getElementById("rc-cat-val").textContent = record.category || "—";
+  document.getElementById("rc-created").textContent = record.created_at || "—";
+
+  // 消息原文
+  var src = (record.source_contents || "—") + "\n\n--- 时间戳 ---\n" +
+            (record.source_timestamps || "—") + "\n\n--- 推理链 ---\n" +
+            (record.analysis_reasoning || "—");
+  document.getElementById("rc-source").textContent = src;
+
+  // 审计 chips
+  document.getElementById("audit-created").textContent = record.created_at || "—";
+  document.getElementById("audit-updated").textContent = record.updated_at || "—";
+  document.getElementById("audit-edit-count").textContent = meta.edit_count != null ? meta.edit_count : "—";
+
+  // Footer
+  document.getElementById("footer-generated").textContent = meta.generated_at || "—";
+
+  // 3 操作按钮(复制 prompt)
+  function escapeHTML(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  document.querySelectorAll(".act-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var key = btn.getAttribute("data-prompt-key");
+      var text = prompts[key] || "";
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function(){
+          btn.classList.add("copied");
+          setTimeout(function(){ btn.classList.remove("copied"); }, 1500);
+        });
+      } else {
+        // Fallback: select + exec
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch(e) {}
+        document.body.removeChild(ta);
+        btn.classList.add("copied");
+        setTimeout(function(){ btn.classList.remove("copied"); }, 1500);
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

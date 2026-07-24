@@ -409,6 +409,8 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         return _naming_path("record_day", "record/day")
     if mode == "record-receipt":
         return _naming_path("record_receipt", "record/receipt")
+    if mode == "record-receipt-edit":
+        return _naming_path("record_receipt_edit", "record/receipt")
     if mode == "plan-receipt":
         return _naming_path("plan_receipt", "plan/receipt")
     if mode == "record-detail":
@@ -958,6 +960,160 @@ def render_receipt(record_id: int) -> dict:
         "status": "ok",
         "data": payload,
         "message": f"✓ id={record_id} 漂亮回执已生成(今日 {today_count} 条,本周 {week_count} 条)",
+    }
+
+
+def render_record_receipt_edit(record_id: int, diff: dict = None) -> dict:
+    """
+    纠正记录后漂亮回执(回执型第 2 款,蓝调,"已纠正"标识,2026-07-24)。
+
+    第一性:用户说"correct-record" 纠正了记录后,需要一份能审计改了什么 +
+    改对没对的回执。核心是 **diff 视图**(before/after 三列)。
+
+    Args:
+        record_id: 记录 ID
+        diff: 修正内容 dict 格式 {field: {"old": X, "new": Y}, ...}
+              从 schedule_db.update_record() 返回值传入。
+              不传则 diff={}(只展示当前记录,无 diff 区块)。
+
+    Returns:
+        完整 payload 注入 record-receipt-edit 模板,含:
+          - meta: mode + title + record_id + date + edit_count + updated_at
+          - record: 完整 13 字段
+          - diff: {field: {old, new}} (空 dict if 无 diff)
+          - stats: 4 张摘要卡
+          - prompts: 3 操作按钮
+    """
+    from schedule_db import get_record_by_id, get_records_by_date, get_records_range
+
+    record = get_record_by_id(record_id)
+    if not record:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"未找到 id={record_id} 的作息记录",
+        }
+
+    date = record.get("date")
+    duration = int(record.get("duration_minutes") or 0)
+    category = record.get("category") or ""
+    edit_count = int(record.get("edit_count") or 0)
+    updated_at = record.get("updated_at") or ""
+
+    # 4 张 stat 卡所需数据
+    today_records = get_records_by_date(date) if date else []
+    today_count = len(today_records)
+    today_mins = sum(int(r.get("duration_minutes") or 0) for r in today_records)
+
+    try:
+        end_dt = datetime.fromisoformat(date)
+        start_dt = end_dt - timedelta(days=6)
+        week_records = get_records_range(start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d"))
+        week_count = len(week_records)
+    except Exception:
+        week_count = today_count
+
+    diff = diff or {}  # 缺省空 dict(防止 None)
+
+    diff_count = len(diff)
+    diff_lines = []
+    for k, v in diff.items():
+        old = v.get("old") if isinstance(v, dict) else None
+        new = v.get("new") if isinstance(v, dict) else None
+        diff_lines.append({
+            "field": k,
+            "old": old if old is not None else "(空)",
+            "new": new if new is not None else "(空)",
+        })
+
+    record_json = json.dumps({
+        "id": record.get("id"),
+        "date": record.get("date"),
+        "time_start": record.get("time_start"),
+        "time_end": record.get("time_end"),
+        "duration_minutes": duration,
+        "activity": record.get("activity"),
+        "category": category,
+        "source_contents": record.get("source_contents") or "",
+        "source_timestamps": record.get("source_timestamps") or "",
+        "analysis_reasoning": record.get("analysis_reasoning") or "",
+        "created_at": record.get("created_at"),
+        "updated_at": updated_at,
+        "edit_count": edit_count,
+    }, ensure_ascii=False, indent=2)
+
+    # 3 操作按钮 prompt(蓝调回执版,2026-07-24 设计:强调"已纠正"+ diff 让用户审计)
+    base_prompt = f"""① 场景: 我刚纠正了一条作息(id={record_id} · {record.get('date')} {record.get('time_start')}–{record.get('time_end')} {category})
+本次纠正了 {diff_count} 个字段(edit_count={edit_count})。
+
+② 数据(纠正后状态):
+  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+  - 本周累计 {week_count} 条(最近 7 天)
+  - 纠正后记录(已含 updated_at + edit_count):
+{record_json}
+"""
+
+    if diff_count > 0:
+        base_prompt += f"""
+②.5 纠正 diff({diff_count} 个字段):
+"""
+        for d in diff_lines:
+            base_prompt += f"  - {d['field']}: {d['old']!r} → {d['new']!r}\n"
+
+    base_prompt += f"""
+④ 来源: record_receipt_edit_id{record_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},record_id={record_id},edit_count={edit_count}
+"""
+
+    prompt_continue = base_prompt + """
+③ 期望: 用户即将告诉你"我接下来在做 X"(可能是继续记下一条,或接着纠正另一条)。
+请调 schedule_cli.py add 写库 + 调 render-record-receipt <新 id> 生成回执;或调 correct-record <其他 id> 继续纠正。
+不要做其他事,等用户输入。"""
+
+    prompt_overview = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-record-day {record.get('date')} 生成今日报告 HTML,
+让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
+纯展示,不做复盘。"""
+
+    prompt_review = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-plans-review {record.get('date')} 生成复盘报告 HTML,
+让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
+完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+
+    payload = {
+        "meta": {
+            "mode": "record-receipt-edit",
+            "title": "已纠正",
+            "subtitle": f"id={record_id} · 纠正 {diff_count} 个字段",
+            "record_id": record_id,
+            "date": date,
+            "edit_count": edit_count,
+            "updated_at": updated_at,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-24",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "record": record,
+        "diff": diff,        # 原始 diff dict {field: {old, new}}
+        "diff_list": diff_lines,  # 列表形式方便模板渲染
+        "stats": {
+            "today_count": today_count,
+            "today_mins": today_mins,
+            "week_count": week_count,
+            "category": category,
+            "diff_count": diff_count,
+            "edit_count": edit_count,
+        },
+        "prompts": {
+            "continue": prompt_continue,  # 继续记 / 继续纠正
+            "overview": prompt_overview,  # 看今日全貌
+            "review":   prompt_review,     # 复盘今日
+        },
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ id={record_id} 已纠正回执已生成(纠正 {diff_count} 个字段,edit_count={edit_count})",
     }
 
 
@@ -1533,6 +1689,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "plan-preview":    "schedule_plan_preview.html",  # 商量计划预览(过程型首批落地,2026-07-24)
         "plan-review":     "schedule_plan_review.html",   # 复盘报告(过程型第2款,2026-07-24)
         "record-receipt":  "schedule_record_receipt.html", # 漂亮回执(回执型首款,2026-07-24)
+        "record-receipt-edit":  "schedule_record_receipt_edit.html", # 纠正记录回执(回执型第2款,蓝调,diff 视图,2026-07-24)
         "plan-receipt":     "schedule_plan_receipt.html",   # 改/删计划回执(回执型第2款,2026-07-24)
         "plan-receipt-add": "schedule_plan_receipt_add.html", # 补计划回执(回执型第3款,2026-07-24)
         "plan-receipt-write": "schedule_plan_receipt_write.html", # 写摘要回执(回执型第4款,2026-07-24)

@@ -285,6 +285,103 @@ webbrowser.open(f"file://{html_path}")  # 跨平台
 
 ---
 
+## 路由规则 · 用户表达 → 唤醒词 → CLI(2026-07-24 补 · AI 必读)
+
+**第一性**:用户说自然语言(中文/口语/模糊),AI 必须能 1 步映射到正确的 CLI 命令 + 参数。本节是 AI 看到任何"作息/计划/查询/对比"类需求时的**总入口**。
+
+### 总路由表(覆盖 20 个支持时间参数的 CLI)
+
+| 用户表达示例 | 唤醒词 | CLI 命令 | 输出形式 |
+|---|---|---|---|
+| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段> 或 --json @file` | record_receipt.html |
+| "今天我做了什么 / 查作息" | #6 查作息 | `list [date]` | record_detail.html |
+| "昨天 / 前天 / 某天做了什么" | #6 查作息 | `list <date>` | record_detail.html |
+| "今天总结 / 给我个报告" | #4 今天总结 | `report <date>` 或 `summary <date>` | record_day.html |
+| "这一周 / 这周 / 7/13~7/19 看看" | #5 汇总作息 | `range <start> <end>` 或 `render-record-range <start> <end>` | record_range.html |
+| "详情 / 含原文 / AI 推理链" | #7 查作息详情 | `render-records-detail <date> [--record-id N]` | record_detail.html |
+| "时间轴 / 24h" | #8 查作息时间轴 | `timeline <date>` 或 `render-record-day <date>` | record_detail.html |
+| "6 月 vs 7 月 / 上周 vs 这周" | #25 对比两个月 | `render-record-compare-months YYYY-MM YYYY-MM` | record_compare.html |
+| "A 段时间 vs B 段时间" | #25 对比两个月 | `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | record_compare.html |
+| "这 7 天健身什么时候做的" | (T4 类别深挖) | `render-record-category-range <start> <end> <category>` | record_category.html |
+| "最近状态 / 有没有异常" | (T5 异常检测) | `render-record-anomaly [--window 7]` | record_anomaly.html |
+| "准备消息 / 拉消息" | #1 准备消息 | `prepare-messages [<start> [<end>]] [--page N]` | (无 HTML,数据准备) |
+| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add` × N | (多条 record_receipt.html) |
+| "看日程 / 查日程" | #12 查日程 | `list-events <date>` 或 `render-list-events <date>` | plan_list_events.html |
+| "24h 概览 / 查多日计划" | #15 #16 | `query-plans <日期列表>` 或 `render-query-plans <日期列表>` | plan_list_events.html |
+| "商量计划 / 规划明天" | #17 商量计划 | `upsert-plan-events <date> --json @plan.json` | plan_preview.html → plan_receipt.html |
+| "补一条计划" | #13 补计划 | `ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X` | plan_receipt_add.html |
+| "改计划 / 改这条" | #18 改计划 | `update-event <id> [--title/...]` | plan_receipt.html |
+| "删计划 / 不要了" | #19 删计划 | `deactivate-event <id>` | plan_receipt.html |
+| "复盘 / 回顾今天" | #14 复盘 | `list-events <date>` → 逐条 `update-event --completion` | plan_review.html |
+| "今天有 XX 吗" | #12 + 标题 | `search-plan-event <date> --title X` 或 `--time-start` `--time-end` | (无 HTML,JSON) |
+| "按 ID 查记录" | #23 按 ID 查 | `get-record <id>` | (无 HTML,JSON) |
+| "作息状态 / 统计" | #11 查作息状态 | `status` | (无 HTML,5 行文本) |
+
+### 相对时间映射(高频表达 → 具体日期)
+
+**第一性**:这 5 个是用户最常用的相对表达,AI 必须能精确换算。
+
+| 用户表达 | 换算规则 | 例(今天=2026-07-24) |
+|---|---|---|
+| **今天** | `datetime.now().date()` | 2026-07-24 |
+| **昨天** | `date - timedelta(days=1)` | 2026-07-23 |
+| **前天** | `date - timedelta(days=2)` | 2026-07-22 |
+| **本周 / 这周** | 周一到周日,`date - timedelta(days=weekday)` 到 `date + timedelta(days=6-weekday)` | 2026-07-20 ~ 2026-07-26 |
+| **上周** | 本周一减 7 天 到 +6 天 | 2026-07-13 ~ 2026-07-19 |
+| **本月 / 这个月** | 月初到月末 | 2026-07-01 ~ 2026-07-31 |
+| **上个月 / 上月** | 上月月初到月末 | 2026-06-01 ~ 2026-06-30 |
+| **最近 7 天** | `date - timedelta(days=6)` 到 `date` | 2026-07-18 ~ 2026-07-24 |
+| **最近 N 天** | `date - timedelta(days=N-1)` 到 `date` | N=14: 2026-07-11 ~ 2026-07-24 |
+| **明天 / 后天** | `date + timedelta(days=1/2)` | 2026-07-25 / 2026-07-26 |
+| **大前天** | `date - timedelta(days=3)` | 2026-07-21 |
+| **上上周** | 本周一减 14 天 到 +6 天 | 2026-07-06 ~ 2026-07-12 |
+
+**注意**:
+- 跨月/跨年时(如 7/1 问"上个月")需正确处理 `month=1 → year-1`
+- "本周"在周一日历(Monday start)与中国习惯(周一/周日)不一致,默认 **周一为周首日**
+- "这个月" vs "本月" 同义,"上个月" vs "上月" 同义
+
+### 组合场景(典型多步查询)
+
+**第一性**:用户场景常是组合查询,AI 一次回答需要串行多个 CLI。
+
+| 用户表达 | 串行步骤 |
+|---|---|
+| "今天工作和健康分别多少时间" | `render-record-day <今日>` + 看 stats.工作/健康 字段 |
+| "上周和这周对比" | `render-record-compare "上周" <上周一> <上周日> "本周" <本周一> <本周日>` |
+| "今天做了哪些事 / 今天时间都花哪了" | `list <今日>`(清单) + `summary <今日>`(分类占比) |
+| "这周健身什么时候做的" | `render-record-category-range <本周一> <本周日> 健康.健身` |
+| "对比 6 月和 7 月" | `render-record-compare-months 2026-06 2026-07` |
+| "复盘今天 + 看全貌" | `update-event --completion` × N + `render-list-events <今日>` |
+
+### 歧义消解原则
+
+**第一性**:AI 反问 1 句的成本远低于跑错命令的成本,但反问 ≤ 3 句会激怒用户。
+
+| 模糊表达 | 歧义点 | 消解策略 |
+|---|---|---|
+| "我想看 7 月" | ① 7 月 1 日 ② 7 月整月 ③ 7 月对比 | **反问 1 句**:"您是想看 ① 7 月 1 日的单日报告、② 7 月整月汇总、还是 ③ 7 月对比 6 月?" |
+| "最近怎么样" | ① 今日 ② 最近 7 天 ③ 整体状态 | **反问 1 句**:"您是想看最近 7 天区间报告,还是今日报告?" |
+| "看下这周" | ① 本周一~周日 ② 最近 7 天 ③ 本月 | **默认按本周一~周日**(中国习惯),不需要反问 |
+| "看下 7 月 1 号" | ① 7 月 1 日 ② 7 月 1 周(7/1~7/7) | **默认按单日 7 月 1 日**,不需要反问 |
+| "健身做得怎么样" | ① record 域"健康.健身"分类 ② plan 域"健身"计划复盘 | **按上下文判断**:若用户刚说"作息"→ record;若刚说"日程"→ plan |
+
+**反问格式**:`您是想看 A 还是 B?(我推荐 A 因为...)`
+
+### 路由失败处理
+
+**AI 调 CLI 后 `status != "ok"`**:
+1. **CLI exit code != 0** → 不告诉用户"失败",直接展示 `message` 字段
+2. **`status == "error"` 缺字段** → 问用户补字段(不猜测)
+3. **`status == "error"` 非法 category** → 展示错误 + 列出可选 category
+4. **date 格式错** → 提示"YYYY-MM-DD 格式" + 给示例
+
+**AI 拿不到 CLI 输出**(网络/超时):
+1. 重试 1 次(同命令)
+2. 仍失败 → 报告"暂时连不上数据库,稍后再试" + 不假装成功
+
+---
+
 ## 功能详细说明
 
 ### 0. 记作息（add · 2026-07-22 新增规范化入口）

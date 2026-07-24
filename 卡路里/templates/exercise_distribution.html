@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 运动分析</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --strength:#5856d6; --cardio:#0071e3; --flex:#34c759; --daily:#ff9500;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  /* 双饼图布局 */
+  .pie-pair { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+  .pie-half { display:flex; flex-direction:column; align-items:center; }
+  .pie-half h3 { font-size:14px; margin-bottom:8px; color:var(--fg2); }
+  svg.pie { width:220px; height:220px; flex-shrink:0; }
+  .pie-legend { width:100%; font-size:13px; margin-top:14px; }
+  .pie-legend .row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .pie-legend .row:last-child { border-bottom:none; }
+  .pie-legend .dot { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .pie-legend .name { flex:1; }
+  .pie-legend .val { font-weight:600; font-variant-numeric:tabular-nums; color:var(--fg); }
+  /* 表格 */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .cat-strength { color:var(--strength); font-weight:600; }
+  .cat-cardio   { color:var(--cardio);   font-weight:600; }
+  .cat-flex     { color:var(--flex);     font-weight:600; }
+  .cat-daily    { color:var(--daily);    font-weight:600; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .mode-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+  .meta-bar .mode-badge.contrib { background:var(--good); }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="mode-badge" id="modeBadge">--</div>
+</div>
+
+<h1 id="h1Title">🏃 运动分布</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label" id="k1L">运动天数</div><div class="value" id="k1">--</div><div class="extra" id="k1E">--</div></div>
+  <div class="kpi"><div class="label" id="k2L">总热量消耗</div><div class="value" id="k2">--</div><div class="extra" id="k2E">--</div></div>
+  <div class="kpi"><div class="label" id="k3L">平均时长</div><div class="value" id="k3">--</div><div class="extra" id="k3E">--</div></div>
+  <div class="kpi"><div class="label" id="k4L" style="font-weight:700;font-size:12px">--</div><div class="value" id="k4">--</div><div class="extra" id="k4E">--</div></div>
+</div>
+
+<div class="section">
+  <h2 id="h2Title">运动分类占比</h2>
+  <div class="pie-pair">
+    <div class="pie-half">
+      <h3 id="pie1L">按类型占比</h3>
+      <svg class="pie" id="pie1" viewBox="0 0 220 220"></svg>
+      <div class="pie-legend" id="legend1"></div>
+    </div>
+    <div class="pie-half">
+      <h3 id="pie2L">按热量分布</h3>
+      <svg class="pie" id="pie2" viewBox="0 0 220 220"></svg>
+      <div class="pie-legend" id="legend2"></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2 id="tableTitle">运动明细</h2>
+  <table>
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, breakdown, contrib, series, meta, mode } = D.data;
+  const isContrib = mode === 'contribution';
+
+  document.getElementById('metaLeft').textContent =
+    `${meta.start} ~ ${meta.end} · 共 ${series.length} 天`;
+  document.getElementById('modeBadge').textContent = isContrib ? '贡献' : '分布';
+  document.getElementById('modeBadge').className = 'mode-badge' + (isContrib ? ' contrib' : '');
+
+  document.getElementById('h1Title').textContent = isContrib ? '🔥 运动贡献' : '🏃 运动分布';
+  document.getElementById('sub').textContent = isContrib
+    ? `${meta.start} → ${meta.end} · 运动对总热量缺口的贡献占比`
+    : `${meta.start} → ${meta.end} · 按类型/热量分析`;
+
+  // 4 KPI
+  document.getElementById('k1').textContent = summary.active_days;
+  document.getElementById('k1E').textContent = `${series.length} 天内`;
+
+  document.getElementById('k2').textContent = summary.total_calorie.toLocaleString();
+  document.getElementById('k2E').textContent = `日均 ${summary.avg_calorie}`;
+
+  document.getElementById('k3').textContent = summary.avg_minutes + '分钟';
+  document.getElementById('k3E').textContent = `总计 ${summary.total_minutes} 分钟`;
+
+  if (isContrib) {
+    document.getElementById('k4L').textContent = '运动贡献';
+    document.getElementById('k4').textContent = summary.contribution_pct + '%';
+    document.getElementById('k4E').textContent = `缺口 ${summary.weekly_deficit} 卡`;
+    document.getElementById('h2Title').textContent = '运动对缺口的贡献占比';
+    document.getElementById('pie1L').textContent = '缺口结构';
+    document.getElementById('pie2L').textContent = '运动 vs 摄入';
+  } else {
+    document.getElementById('k4L').textContent = '总组数';
+    document.getElementById('k4').textContent = summary.total_sets;
+    document.getElementById('k4E').textContent = `日均 ${summary.avg_sets}`;
+  }
+
+  // 双饼图绘制函数
+  function drawPie(svgId, legendId, items, labelKey, valueKey, colorKey) {
+    const svg = document.getElementById(svgId);
+    const cx = 110, cy = 110, r = 88;
+    const total = items.reduce((a, b) => a + b[valueKey], 0) || 1;
+    let start = -Math.PI / 2;
+    items.forEach(it => {
+      if (it[valueKey] <= 0) return;
+      const ang = (it[valueKey] / total) * Math.PI * 2;
+      const end = start + ang;
+      const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+      const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
+      const large = ang > Math.PI ? 1 : 0;
+      svg.insertAdjacentHTML('beforeend',
+        `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${it[colorKey]}"/>`);
+      start = end;
+    });
+    // 中心圆环
+    svg.insertAdjacentHTML('beforeend',
+      `<circle cx="${cx}" cy="${cy}" r="50" fill="#fff"/>` +
+      `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="10" fill="#86868b">总</text>` +
+      `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="16" font-weight="700" fill="#1d1d1f">${total}</text>`);
+
+    const lg = document.getElementById(legendId);
+    items.forEach(it => {
+      const pct = Math.round(it[valueKey] / total * 100);
+      const cls = it.cat_class || '';
+      lg.insertAdjacentHTML('beforeend',
+        `<div class="row">` +
+        `<div class="dot" style="background:${it[colorKey]}"></div>` +
+        `<div class="name">${it[labelKey]}</div>` +
+        `<div class="val ${cls}">${pct}%</div>` +
+        `</div>`);
+    });
+  }
+
+  // 模式 1: 分布 — 按类型 + 按热量
+  if (!isContrib) {
+    // 按类型(运动次数)
+    const byCount = [
+      {label:'力量', cat_class:'cat-strength', cal:0, n:breakdown.strength.count, color:'var(--strength)'},
+      {label:'有氧', cat_class:'cat-cardio',   cal:0, n:breakdown.cardio.count,   color:'var(--cardio)'},
+      {label:'柔韧', cat_class:'cat-flex',     cal:0, n:breakdown.flex.count,     color:'var(--flex)'},
+      {label:'日常', cat_class:'cat-daily',    cal:0, n:breakdown.daily.count,    color:'var(--daily)'},
+    ];
+    byCount.forEach(it => { it.cal = it.n; });  // n → valueKey 复用
+    drawPie('pie1', 'legend1', byCount.filter(it => it.cal > 0), 'label', 'cal', 'color');
+    // 按热量(实际消耗)
+    const byCalorie = [
+      {label:'力量', cat_class:'cat-strength', val:breakdown.strength.calorie,  color:'var(--strength)'},
+      {label:'有氧', cat_class:'cat-cardio',   val:breakdown.cardio.calorie,    color:'var(--cardio)'},
+      {label:'柔韧', cat_class:'cat-flex',     val:breakdown.flex.calorie,      color:'var(--flex)'},
+      {label:'日常', cat_class:'cat-daily',    val:breakdown.daily.calorie,     color:'var(--daily)'},
+    ];
+    drawPie('pie2', 'legend2', byCalorie.filter(it => it.val > 0), 'label', 'val', 'color');
+  } else {
+    // 模式 2: 贡献 — 缺口结构 + 运动 vs 摄入
+    drawPie('pie1', 'legend1', [
+      {label:'运动消耗', cat_class:'cat-daily', val: contrib.exercise, color:'var(--good)'},
+      {label:'基础代谢+TDEE', cat_class:'cat-flex', val: contrib.tdee, color:'var(--accent)'},
+      {label:'摄入热量', cat_class:'cat-cardio', val: contrib.intake, color:'var(--intake)'},
+    ], 'label', 'val', 'color');
+    drawPie('pie2', 'legend2', [
+      {label:'运动贡献', cat_class:'cat-daily', val: contrib.exercise_pct, color:'var(--good)'},
+      {label:'摄入占比', cat_class:'cat-cardio', val: contrib.intake_pct, color:'var(--intake)'},
+    ], 'label', 'val', 'color');
+  }
+
+  // 表格头 + 行
+  if (!isContrib) {
+    document.getElementById('tableHead').innerHTML =
+      `<tr><th>类型</th><th>次数</th><th class="num">总热量</th><th class="num">总时长</th></tr>`;
+    document.getElementById('tableTitle').textContent = '运动类型明细';
+    [['strength','力量','cat-strength'],['cardio','有氧','cat-cardio'],['flex','柔韧','cat-flex'],['daily','日常','cat-daily']].forEach(([k, lbl, cls]) => {
+      const b = breakdown[k];
+      document.getElementById('tableBody').insertAdjacentHTML('beforeend',
+        `<tr><td><span class="${cls}" style="font-weight:600">${lbl}</span></td>` +
+        `<td>${b.count} 次</td>` +
+        `<td class="num">${b.calorie.toLocaleString()} 卡</td>` +
+        `<td class="num">${b.minutes} 分钟</td></tr>`);
+    });
+  } else {
+    document.getElementById('tableHead').innerHTML =
+      `<tr><th>项目</th><th>数值</th><th>占比</th></tr>`;
+    document.getElementById('tableTitle').textContent = '缺口构成明细';
+    [
+      ['摄入热量', contrib.intake, '100%'],
+      ['基础代谢(TDEE)', contrib.tdee, Math.round(contrib.tdee / contrib.intake * 100) + '%'],
+      ['运动消耗', contrib.exercise, Math.round(contrib.exercise / contrib.intake * 100) + '%'],
+      ['总消耗', contrib.exercise + contrib.tdee, Math.round((contrib.exercise + contrib.tdee) / contrib.intake * 100) + '%'],
+      ['总缺口', contrib.exercise + contrib.tdee - contrib.intake, '—'],
+    ].forEach(([k, v, p]) => {
+      document.getElementById('tableBody').insertAdjacentHTML('beforeend',
+        `<tr><td>${k}</td><td class="num">${v.toLocaleString()} 卡</td><td>${p}</td></tr>`);
+    });
+  }
+
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源:exercise_analysis · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${series.length} 天`;
+
+  document.getElementById('copyBtn').onclick = function() {
+    const r = isContrib
+      ? `运动贡献 ${meta.start} → ${meta.end}\n运动消耗 ${contrib.exercise} 卡 · 占比 ${summary.contribution_pct}%\n缺口 ${summary.weekly_deficit} 卡`
+      : `运动分布 ${meta.start} → ${meta.end}\n` +
+        `总热量 ${summary.total_calorie} 卡 · 运动天数 ${summary.active_days} · 总时长 ${summary.total_minutes} 分钟\n` +
+        `力量 ${breakdown.strength.count}次/${breakdown.strength.calorie}卡\n` +
+        `有氧 ${breakdown.cardio.count}次/${breakdown.cardio.calorie}卡\n` +
+        `柔韧 ${breakdown.flex.count}次/${breakdown.flex.calorie}卡\n` +
+        `日常 ${breakdown.daily.count}次/${breakdown.daily.calorie}卡`;
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

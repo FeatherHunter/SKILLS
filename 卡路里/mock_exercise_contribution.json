@@ -1,0 +1,25 @@
+{
+  "status": "ok",
+  "data": {
+    "mode": "contribution",
+    "summary": {
+      "active_days": 5,
+      "total_calorie": 1860,
+      "avg_calorie": 372,
+      "total_minutes": 320,
+      "avg_minutes": 64,
+      "contribution_pct": 15,
+      "weekly_deficit": -1099
+    },
+    "breakdown": {
+      "strength": {"count": 16, "calorie": 480, "minutes": 90},
+      "cardio":   {"count": 4,  "calorie": 880, "minutes": 140},
+      "flex":     {"count": 6,  "calorie": 240, "minutes": 60},
+      "daily":    {"count": 5,  "calorie": 260, "minutes": 30}
+    },
+    "contrib": {"exercise":1860,"tdee":11900,"intake":12760,"exercise_pct":15,"intake_pct":100,"weekly_deficit":-1099,"contribution_pct":15},
+    "series": [],
+    "meta": {"start": "2026-07-18", "end": "2026-07-24", "days": 7, "today": "2026-07-24"}
+  },
+  "message": "已生成 2026-07-18 ~ 2026-07-24 运动贡献(7 天)"
+}

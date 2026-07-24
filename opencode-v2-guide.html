@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>opencode V1 vs V2 差异 & V2 实用特性</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1d1d1f;
+    --fg-2: #424245;
+    --fg-3: #6e6e73;
+    --line: #e5e5ea;
+    --line-2: #f2f2f5;
+    --accent: #007aff;
+    --accent-2: #0a84ff;
+    --accent-soft: #e8f1ff;
+    --code-bg: #f5f5f7;
+    --warn: #ff9500;
+    --danger: #ff3b30;
+    --success: #34c759;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 顶栏 */
+  header.hero {
+    padding: 64px 24px 48px;
+    text-align: center;
+    border-bottom: 1px solid var(--line-2);
+  }
+  header.hero h1 {
+    margin: 0 0 12px;
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  header.hero p.lede {
+    margin: 0 auto;
+    max-width: 720px;
+    color: var(--fg-2);
+    font-size: 18px;
+  }
+  .pill-row {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* 布局 */
+  main {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 48px;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    nav.toc { position: static !important; }
+  }
+
+  /* 目录 */
+  nav.toc {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  nav.toc h4 {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  nav.toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: toc;
+  }
+  nav.toc li {
+    counter-increment: toc;
+    margin: 4px 0;
+  }
+  nav.toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    color: var(--fg-3);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    margin-right: 8px;
+  }
+  nav.toc a {
+    color: var(--fg-2);
+    text-decoration: none;
+    font-size: 13.5px;
+    display: block;
+    padding: 4px 0;
+    border-radius: 4px;
+  }
+  nav.toc a:hover { color: var(--accent); }
+
+  /* 文章 */
+  article h2 {
+    margin: 56px 0 20px;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding-top: 16px;
+  }
+  article h2:first-child { margin-top: 0; padding-top: 0; }
+  article h3 {
+    margin: 32px 0 12px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  article p { margin: 0 0 14px; color: var(--fg-2); }
+  article ul, article ol { color: var(--fg-2); padding-left: 22px; }
+  article li { margin: 6px 0; }
+  article a { color: var(--accent); text-decoration: none; }
+  article a:hover { text-decoration: underline; }
+
+  /* 表格 */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0 28px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background: #fff;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--line-2);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--fg);
+    border-bottom: 1px solid var(--line);
+  }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+    color: var(--fg-2);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td { background: #fafafc; }
+  tbody tr:hover td { background: var(--accent-soft); }
+  tbody tr:last-child td { border-bottom: none; }
+  td code, th code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--fg);
+  }
+
+  /* 代码块 */
+  pre {
+    background: #0f1115;
+    color: #e8e8ea;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    margin: 16px 0 24px;
+  }
+  pre code { color: inherit; }
+  .code-lang {
+    display: inline-block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    font-weight: 600;
+  }
+
+  /* 卡片 */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 16px 0 28px;
+  }
+  .card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line-2);
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .card p { margin: 0; font-size: 13.5px; color: var(--fg-2); }
+
+  /* 徽章 */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+  .badge-warn { background: #fff5e6; color: var(--warn); }
+  .badge-danger { background: #ffeaea; color: var(--danger); }
+  .badge-ok { background: #e8f8ee; color: var(--success); }
+  .badge-info { background: var(--accent-soft); color: var(--accent); }
+
+  /* 提示块 */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin: 16px 0;
+    color: var(--fg);
+  }
+  .note.warn { border-left-color: var(--warn); background: #fff7e6; }
+  .note p:last-child { margin-bottom: 0; }
+
+  /* details/summary */
+  details {
+    background: #fafafc;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--fg);
+    list-style: none;
+  }
+  details summary::marker { display: none; }
+  details summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--accent);
+    transition: transform .15s;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details > *:not(summary) { margin-top: 8px; color: var(--fg-2); }
+
+  /* 回到顶部 */
+  .back-to-top {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    box-shadow: 0 8px 20px rgba(0,122,255,.3);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity .2s, transform .2s;
+    font-size: 18px;
+  }
+  .back-to-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .back-to-top:hover { background: var(--accent-2); }
+
+  /* 内联代码 */
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.92em;
+    color: var(--fg);
+  }
+
+  /* 响应式 */
+  @media (max-width: 600px) {
+    header.hero { padding: 48px 16px 32px; }
+    header.hero h1 { font-size: 28px; }
+    header.hero p.lede { font-size: 15px; }
+    main { padding: 32px 16px 64px; gap: 24px; }
+    article h2 { font-size: 22px; }
+    pre { font-size: 12px; padding: 14px 16px; }
+  }
+
+  /* 小节标识 */
+  .anchor-target { scroll-margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>opencode V1 vs V2 差异 &amp; V2 实用特性</h1>
+  <p class="lede">基于 OpenCode V2 官方文档（v2.opencode.ai）。一份写给"只用 V2 打字的"开发者的迁移与特性速查手册。</p>
+  <div class="pill-row">
+    <span class="pill">opencode2</span>
+    <span class="pill">Skills 优化</span>
+    <span class="pill">Agent &amp; Command</span>
+    <span class="pill">权限系统</span>
+    <span class="pill">实战清单</span>
+  </div>
+</header>
+
+<main>
+  <nav class="toc">
+    <h4>目录</h4>
+    <ol>
+      <li><a href="#breaking">V1 vs V2 核心差异</a></li>
+      <li><a href="#rename">字段重命名速查</a></li>
+      <li><a href="#skill-v2">V2 优化 SKILL 特性</a></li>
+      <li><a href="#dev-v2">V2 代码开发特性</a></li>
+      <li><a href="#commands">立即可用的命令</a></li>
+      <li><a href="#checklist">最小行动清单</a></li>
+    </ol>
+  </nav>
+
+  <article>
+
+    <h2 id="breaking" class="anchor-target">一、V1 vs V2 核心差异</h2>
+
+    <h3>1. 三大破坏性变更</h3>
+    <p>其余功能保持兼容——V1 的配置文件会被 V2 在内存中自动翻译，无需强制迁移。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>维度</th><th>V1</th><th>V2</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>可执行文件</td><td><code>opencode</code></td><td><code>opencode2</code> <span class="badge badge-info">并存，V1 仍可用</span></td></tr>
+          <tr><td>插件 API</td><td>旧 API</td><td>新 Effect 插件 API <span class="badge badge-warn">必须重写</span></td></tr>
+          <tr><td>服务端 API</td><td>旧契约</td><td>新契约 <span class="badge badge-warn">必须迁移</span></td></tr>
+          <tr><td>TUI 配置</td><td><code>tui.json(c)</code> 分层多文件</td><td>单一全局 <code>~/.config/opencode/cli.json</code>，首次启动自动迁移</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p><strong>兼容策略：</strong> V1 的 <code>opencode.json(c)</code> / <code>.opencode/</code> 配置会被 V2 在内存中翻译，不强制迁移。如果你只想"先试试"，直接装 <code>opencode2</code> 就能跑。</p>
+    </div>
+
+    <h2 id="rename" class="anchor-target">二、字段重命名速查</h2>
+
+    <p>下面这些是你在迁移或写新配置时最容易踩坑的字段对照。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>V1</th><th>V2</th><th>备注</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>permission</code></td><td><code>permissions</code></td><td>改为数组，<strong>last-match-wins</strong></td></tr>
+          <tr><td><code>bash</code> / <code>task</code> / <code>write</code> / <code>patch</code></td><td><code>shell</code> / <code>subagent</code> / <code>edit</code></td><td>权限动作名变化</td></tr>
+          <tr><td><code>prompt</code></td><td><code>system</code></td><td>Agent 的系统提示字段</td></tr>
+          <tr><td><code>disable</code></td><td><code>disabled</code></td><td>布尔字段</td></tr>
+          <tr><td><code>maxSteps</code></td><td><code>steps</code></td><td>Agent 最大步数</td></tr>
+          <tr><td><code>enabled: true</code></td><td><code>disabled: false</code></td><td><span class="badge badge-warn">语义反转</span></td></tr>
+          <tr><td><code>autoshare: true</code></td><td><code>share: "auto"</code></td><td>值域 <code>auto/manual/disabled</code></td></tr>
+          <tr><td><code>snapshot</code> / <code>attachment</code> / <code>reference</code> / <code>plugin</code> / <code>provider</code></td><td>全部加 <code>s</code></td><td><code>snapshots</code> <code>attachments</code> <code>references</code> <code>plugins</code> <code>providers</code></td></tr>
+          <tr><td><code>npm</code></td><td><code>package</code></td><td>AI SDK 包加 <code>aisdk:</code> 前缀</td></tr>
+          <tr><td><code>api</code> / <code>options</code></td><td><code>settings.baseURL</code> / <code>settings,headers,body</code></td><td>Provider 配置拆分</td></tr>
+          <tr><td><code>variant</code></td><td>合并到 model 引用后</td><td>例：<code>anthropic/claude-sonnet-4-5#high</code></td></tr>
+          <tr><td><code>mode</code> map</td><td><code>agents</code> 主代理</td><td>默认 <code>mode: primary</code></td></tr>
+          <tr><td><code>tools: { websearch: false }</code></td><td><code>permissions</code> 内 <code>{ action, effect: deny }</code></td><td>统一权限数组</td></tr>
+          <tr><td><code>small_model</code></td><td>无对应字段</td><td>V2 内部选择</td></tr>
+          <tr><td><code>logLevel</code></td><td><code>OPENCODE_LOG_LEVEL</code></td><td>环境变量</td></tr>
+          <tr><td><code>layout</code></td><td>无</td><td>V1 已废弃</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>新 V2 权限写法示例（合并到一个数组里）：</p>
+    <span class="code-lang">json</span>
+<pre><code>{
+  "permissions": [
+    { "action": "shell",     "resource": "git push *", "effect": "ask"   },
+    { "action": "edit",      "resource": "*",          "effect": "allow" },
+    { "action": "websearch", "resource": "*",          "effect": "deny"  }
+  ]
+}</code></pre>
+
+    <h2 id="skill-v2" class="anchor-target">三、V2 优化 SKILL 可利用的特性</h2>
+
+    <div class="cards">
+      <div class="card">
+        <h4>description 控制曝光</h4>
+        <p>frontmatter 写清 <code>description</code>，没描述的 skill <strong>不会被广告给模型</strong>，等于隐身。</p>
+      </div>
+      <div class="card">
+        <h4>autoinvoke 屏蔽</h4>
+        <p><code>metadata.opencode/autoinvoke: false</code> 从模型可选列表移除，但 ID 仍可显式激活。</p>
+      </div>
+      <div class="card">
+        <h4>slash 控制</h4>
+        <p><code>slash: false</code> 不出现在 <code>/</code> 命令面板，但模型仍可见。</p>
+      </div>
+      <div class="card">
+        <h4>HTTP 远程目录</h4>
+        <p>配置 <code>skills: ["https://..."]</code> 提供 <code>index.json</code>，<code>version</code> 字段触发缓存刷新。</p>
+      </div>
+      <div class="card">
+        <h4>优先级覆盖</h4>
+        <p>项目级 <code>.opencode/skills</code> &gt; <code>~/.config/opencode/skills</code> &gt; 全局 compat，后注册同名 skill 覆盖前者。</p>
+      </div>
+      <div class="card">
+        <h4>skill 权限门</h4>
+        <p><code>{ action: "skill", resource: "internal-*", effect: "deny" }</code>，按 ID 精细控制谁能加载。</p>
+      </div>
+      <div class="card">
+        <h4>自动挂载为 <code>/&lt;id&gt;</code></h4>
+        <p>CLI 中 <code>/&lt;id&gt;</code> 直接激活——调试 skill 极方便。</p>
+      </div>
+      <div class="card">
+        <h4>目录式布局</h4>
+        <p><code>.opencode/skills/&lt;id&gt;/SKILL.md</code> + <code>scripts/</code> + <code>references/</code>，路径相对 SKILL.md。</p>
+      </div>
+      <div class="card">
+        <h4>支持文件不自动加载</h4>
+        <p>skill 必须显式指示 agent 去 <code>read references/*.md</code>，否则它们只是装饰。</p>
+      </div>
+    </div>
+
+    <h3>优化 SKILL 实战清单</h3>
+    <ol>
+      <li><strong>ID 命名</strong>：kebab-case 1–64 字符，与目录名一致；ID 来自路径，不是 frontmatter <code>name</code></li>
+      <li><strong>description 是关键</strong>：用一句话写清"何时调用"，否则模型永远不会用</li>
+      <li><strong>保护内部 skill</strong>：用 <code>action: skill</code> + <code>deny</code> 防止主代理误触发</li>
+      <li><strong>调试优先级冲突</strong>：用 <code>/skills</code> 列表查重复 ID</li>
+    </ol>
+
+    <h2 id="dev-v2" class="anchor-target">四、V2 代码开发可利用的特性</h2>
+
+    <h3>1. 内置代理（按 <code>Tab</code> 切换）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Agent</th><th>Mode</th><th>用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>build</code></td><td><code>primary</code></td><td>默认编码代理，工具默认允许</td></tr>
+          <tr><td><code>plan</code></td><td><code>primary</code></td><td>只读计划代理，编辑仅允许 plan 文件</td></tr>
+          <tr><td><code>general</code></td><td><code>subagent</code></td><td>多步研究/通用任务，<strong>不能再启子代理</strong></td></tr>
+          <tr><td><code>explore</code></td><td><code>subagent</code></td><td>只读探索（read/glob/grep/webfetch/websearch）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>TUI 切换方式：<kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> 循环，或 <code>/agents</code> 选择。<code>compaction</code>/<code>title</code>/<code>summary</code> 是隐藏的系统维护代理。</p>
+
+    <h3>2. 自定义代理（项目级 Markdown）</h3>
+    <p>放 <code>.opencode/agents/&lt;name&gt;.md</code>，frontmatter 支持 <code>description / mode / model / system / permissions / steps / color / hidden</code>。</p>
+
+    <span class="code-lang">markdown</span>
+<pre><code>---
+description: 审查改动，不修改文件
+mode: subagent
+model: anthropic/claude-sonnet-4-5#high
+color: warning
+steps: 8
+permissions:
+  - { action: edit,  resource: "*", effect: deny }
+  - { action: shell, resource: "*", effect: deny }
+---
+按严重性列出 bug、安全、回归、缺测，含 file:line 引用。</code></pre>
+
+    <p><strong>子代理调用方式：</strong></p>
+    <ul>
+      <li>工具调用 <code>subagent</code>（foreground / background）</li>
+      <li>对话中 <code>@explore 找认证错误处理位置</code> 触发 <code>@</code> 提及</li>
+      <li>父代理通过 <code>subagent</code> 权限决定可启哪些子代理</li>
+    </ul>
+
+    <h3>3. 自定义斜杠命令（极强大）</h3>
+    <p>放 <code>.opencode/commands/&lt;name&gt;.md</code>：</p>
+
+    <span class="code-lang">markdown</span>
+<pre><code>---
+description: 审查指定代码
+agent: plan
+model: anthropic/claude-sonnet-4-5#high
+---
+审查 $ARGUMENTS：先报 bug，再列缺测。</code></pre>
+
+    <div class="cards">
+      <div class="card">
+        <h4><code>$ARGUMENTS</code></h4>
+        <p>全量参数。</p>
+      </div>
+      <div class="card">
+        <h4><code>$1</code> / <code>$2</code></h4>
+        <p>位置参数，引号合并空格。</p>
+      </div>
+      <div class="card">
+        <h4>Shell 插值</h4>
+        <p>`` !`git diff` `` 在 prompt 提交前替换为命令输出，<span class="badge badge-warn">绕开工具权限</span>，慎用。</p>
+      </div>
+      <div class="card">
+        <h4>嵌套目录</h4>
+        <p><code>.opencode/commands/team/review.md</code> → <code>/team/review</code>。</p>
+      </div>
+    </div>
+
+    <h3>4. 权限系统（必须掌握）</h3>
+    <p>ordered 数组，<strong>最后匹配规则胜出</strong>：</p>
+
+    <span class="code-lang">json</span>
+<pre><code>{
+  "permissions": [
+    { "action": "subagent", "resource": "*",       "effect": "deny"  },
+    { "action": "subagent", "resource": "explore", "effect": "allow" },
+    { "action": "shell",    "resource": "git *",   "effect": "ask"   }
+  ]
+}</code></pre>
+
+    <p>必看的动作名变化：</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>V1</th><th>V2</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>bash</code></td><td><code>shell</code></td></tr>
+          <tr><td><code>task</code></td><td><code>subagent</code></td></tr>
+          <tr><td><code>write</code> / <code>patch</code></td><td><code>edit</code>（合并）</td></tr>
+          <tr><td><code>read</code> / <code>webfetch</code> / <code>skill</code> …</td><td>同名保留</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5. 其他开发利器</h3>
+    <div class="cards">
+      <div class="card">
+        <h4>Snapshots / Undo</h4>
+        <p><code>snapshots: false</code> 关闭。试错回滚。</p>
+      </div>
+      <div class="card">
+        <h4>LSP + Formatters</h4>
+        <p>配置 <code>formatter</code> / <code>lsp</code>。实时类型检查 + 自动格式化。</p>
+      </div>
+      <div class="card">
+        <h4>AGENTS.md</h4>
+        <p>项目级系统指令，<code>instructions</code>，支持全局+项目多级。</p>
+      </div>
+      <div class="card">
+        <h4>References</h4>
+        <p>按需挂载上下文目录，避免污染主 prompt。</p>
+      </div>
+      <div class="card">
+        <h4>MCP servers</h4>
+        <p><code>mcp.servers</code> 接 Playwright 等外部工具。</p>
+      </div>
+      <div class="card">
+        <h4>Compaction</h4>
+        <p><code>compaction.keep.tokens</code> / <code>buffer</code> 长会话自动压缩。</p>
+      </div>
+      <div class="card">
+        <h4>Attachments</h4>
+        <p>会话中上传文件。</p>
+      </div>
+      <div class="card">
+        <h4>Session warming</h4>
+        <p>保持模型连接热度。</p>
+      </div>
+      <div class="card">
+        <h4>Session sharing</h4>
+        <p><code>share: auto/manual/disabled</code> 分享会话链接。</p>
+      </div>
+    </div>
+
+    <h2 id="commands" class="anchor-target">五、立即可用的命令</h2>
+
+    <p>你已经会 <code>/sessions</code> 和 <code>/rename</code> 了，下面这些大概率没用过：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>命令</th><th>作用</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>opencode2 service status</code></td><td>查看后台服务健康</td></tr>
+          <tr><td><code>opencode2 service restart</code></td><td>重启后台服务</td></tr>
+          <tr><td><code>opencode2 api get /api/health</code></td><td>验证服务健康</td></tr>
+          <tr><td><code>opencode2 --standalone</code></td><td>不用共享服务，隔离调试</td></tr>
+          <tr><td><code>OPENCODE_LOG_LEVEL=DEBUG opencode2</code></td><td>调高日志</td></tr>
+          <tr><td><code>opencode2 api get /api/skill/v2-skill-list</code></td><td>列出所有已发现 skill</td></tr>
+          <tr><td><code>opencode2 api get /api/agent/v2-agent-list</code></td><td>列出所有 agent</td></tr>
+          <tr><td><code>opencode2 api get /api/command/v2-command-list</code></td><td>列出所有命令</td></tr>
+          <tr><td>TUI 中 <code>/agents</code> <code>/skills</code> <code>/commands</code> <code>/compact</code> <code>/share</code> <code>/undo</code> <code>/fork</code></td><td>会话内快捷操作</td></tr>
+          <tr><td>TUI 中 <kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>切换主代理</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="checklist" class="anchor-target">六、最小行动清单</h2>
+
+    <div class="note">
+      <p><strong>优化 SKILL：</strong></p>
+      <ol>
+        <li>每个 SKILL.md 必写 <code>description</code></li>
+        <li>内部 skill 加 <code>autoinvoke: false</code> + <code>skill</code> 权限 deny</li>
+      </ol>
+    </div>
+
+    <div class="note warn">
+      <p><strong>代码工作流：</strong></p>
+      <ol>
+        <li><code>plan</code> 用于设计，<code>explore</code> 用于调研，<code>build</code> 用于实现——三者切换比单代理高效得多</li>
+        <li>所有项目起手写 ordered <code>permissions</code>，把 <code>git push</code> / <code>webfetch</code> / <code>shell</code> 默认 <code>ask</code></li>
+      </ol>
+    </div>
+
+    <div class="note">
+      <p><strong>效率提升：</strong></p>
+      <ol>
+        <li>高频工作流做成 <code>.opencode/commands/*.md</code>，用 <code>$ARGUMENTS</code> + shell 插值串起来</li>
+        <li>开 <code>snapshots</code> 默认值；用 <code>/undo</code> 快速回滚；LSP/Formatter 接进 <code>opencode.jsonc</code></li>
+      </ol>
+    </div>
+
+    <div class="note">
+      <p><strong>调试顺序：</strong> 配置不生效时，依次查 <code>~/.config/opencode/cli.json</code> → <code>.opencode/</code> 优先级 → <code>description</code> 是否写了 → <code>autoinvoke</code> 是否被关 → agent 的 <code>skill</code> 权限 → 用 <code>opencode2 api</code> 列已发现项。</p>
+    </div>
+
+    <hr style="margin:48px 0;border:none;border-top:1px solid var(--line);" />
+    <p style="color:var(--fg-3);font-size:13px;">需要深入哪个方向（写 SKILL 模板 / 配多代理协作 / 权限策略模板 / 接 MCP），告诉我具体场景。</p>
+
+  </article>
+</main>
+
+<button class="back-to-top" id="backToTop" aria-label="回到顶部">↑</button>
+
+<script>
+  // 回到顶部
+  const btn = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+
+</body>
+</html>

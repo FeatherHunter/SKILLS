@@ -966,48 +966,28 @@ def _calc_plan_minutes(p):
     return 0
 
 
-def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
-    """
-    改/删计划回执(回执型第 2 款,2026-07-24,复用 #0 漂亮回执模式).
-
-    输入 plan_id + action(update / deactivate),输出:
-    - 计划 6 核心字段(id/date/time/title/category/completion/completion_note/notes/is_active)
-    - 4 卡摘要(今日计划数/完成率/飞书同步/24h 覆盖率)
-    - 3 种操作 prompt(调整/看全貌/复盘) = 3 个按钮复制动作
-    """
-    from schedule_db import get_plan_event, _normalize_date, list_plan_events, list_plan_events as _all_for_date, get_records_by_date
-    from datetime import timedelta
-
-    if action not in ("update", "deactivate"):
-        return {
-            "status": "error",
-            "data": None,
-            "message": f"action 参数非法: '{action}'(期望 update | deactivate)",
-        }
-
-    plan = get_plan_event(plan_id)
-    if not plan:
-        return {
-            "status": "error",
-            "data": None,
-            "message": f"未找到 id={plan_id} 的计划事件",
-        }
-
-    date = plan.get("date")
-
-    # 今日计划统计
-    if date:
-        today_plans = list_plan_events(date, include_inactive=(action == "deactivate"))
-    else:
-        today_plans = []
+def _calc_plan_receipt_stats(plan, today_plans):
+    """render_plan_receipt 4 款公共 stats 派生(2026-07-24 提取)"""
     today_count = len(today_plans)
     completed_count = sum(1 for p in today_plans if p.get("completion") and p["completion"] != "未完成")
+    note_count = sum(1 for p in today_plans if p.get("completion_note"))
     completion_rate = round(completed_count / today_count * 100) if today_count > 0 else 0
     feishu_synced = sum(1 for p in today_plans if p.get("feishu_event_id"))
     coverage_minutes = sum(_calc_plan_minutes(p) for p in today_plans if p.get("is_active", 1) == 1)
     coverage_hours = round(coverage_minutes / 60, 1)
+    return {
+        "today_count": today_count,
+        "completed_count": completed_count,
+        "note_count": note_count,
+        "completion_rate": completion_rate,
+        "feishu_synced": feishu_synced,
+        "coverage_hours": coverage_hours,
+    }
 
-    plan_json = json.dumps({
+
+def _build_plan_json(plan):
+    """render_plan_receipt 4 款公共 plan_json 拼装(13 字段)"""
+    return json.dumps({
         "id": plan.get("id"),
         "date": plan.get("date"),
         "time_start": plan.get("time_start"),
@@ -1022,17 +1002,41 @@ def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
         "completion_note": plan.get("completion_note") or "",
     }, ensure_ascii=False, indent=2)
 
-    base_prompt = f"""① 场景: 我刚"{"修改" if action == "update" else "软删"}"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
+
+def _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, action_verb_zh, action_label_zh, file_action):
+    """render_plan_receipt 4 款公共 base_prompt 构造"""
+    date = plan.get("date", "")
+    return f"""① 场景: 我刚"{action_verb_zh}"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
 
 ② 数据(今日计划概况):
-  - 今日共 {today_count} 条计划(完成 {completed_count} 条,完成率 {completion_rate}%)
-  - 飞书已同步 {feishu_synced} 条
-  - 24h 覆盖率 {coverage_hours} 小时
-  - 刚"{"修改" if action == "update" else "软删"}":
+  - 今日共 {stats["today_count"]} 条计划(完成 {stats["completed_count"]} 条,完成率 {stats["completion_rate"]}%)
+  - 飞书已同步 {stats["feishu_synced"]} 条
+  - 24h 覆盖率 {stats["coverage_hours"]} 小时
+  - 刚"{action_label_zh}":
 {plan_json}
 
-④ 来源: plan_receipt_id{plan_id}_{date}_{action}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action={action}
+④ 来源: plan_receipt_{file_action}_id{plan_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action={file_action}
 """
+
+
+
+
+
+def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
+    """改/删计划回执(回执型第2款,2026-07-24,复用 #0 漂亮回执模式)."""
+    from schedule_db import get_plan_event, list_plan_events
+
+    plan = get_plan_event(plan_id)
+    if not plan:
+        return {"status": "error", "data": None, "message": f"未找到 id={plan_id} 的计划事件"}
+
+    date = plan.get("date")
+    today_plans = list_plan_events(date, include_inactive=(action == "deactivate"))
+    stats = _calc_plan_receipt_stats(plan, today_plans)
+    plan_json = _build_plan_json(plan)
+
+    action_verb_zh = "修改" if action == "update" else "软删"
+    base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, action_verb_zh, action_verb_zh, action)
 
     prompt_adjust = base_prompt + f"""
 ③ 期望: 用户即将告诉你修改内容(改时间/改标题/补备注/改分类)。
@@ -1054,91 +1058,34 @@ def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
             "mode": "plan-receipt",
             "title": "已" + ("修改" if action == "update" else "删除"),
             "action": action,
-            "plan_id": plan_id,
-            "date": date,
+            "plan_id": plan_id, "date": date,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "_template_version": "v2026-07-24",
             "_snapshot_at": datetime.now().isoformat(),
         },
-        "plan": plan,
-        "stats": {
-            "today_count": today_count,
-            "completed_count": completed_count,
-            "completion_rate": completion_rate,
-            "feishu_synced": feishu_synced,
-            "coverage_hours": coverage_hours,
-        },
-        "prompts": {
-            "adjust":  prompt_adjust,
-            "overview": prompt_overview,
-            "review":   prompt_review,
-        },
+        "plan": plan, "stats": stats,
+        "prompts": {"adjust": prompt_adjust, "overview": prompt_overview, "review": prompt_review},
         "errors": [],
     }
     return {
-        "status": "ok",
-        "data": payload,
-        "message": f"✓ id={plan_id} 计划 {('修改' if action == 'update' else '删除')}回执已生成(今日 {today_count} 条计划,完成率 {completion_rate}%)",
+        "status": "ok", "data": payload,
+        "message": f"✓ id={plan_id} 计划 {action_verb_zh}回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%)",
     }
 
 
 def render_plan_receipt_add(plan_id: int) -> dict:
-    """补计划回执(回执型第 3 款,2026-07-24).
-
-    与 render_plan_receipt(update/deactivate) 同源但绿色调("新增"是常规操作).
-    输入 plan_id,生成含:
-    - 计划 6 核心字段(id/date/time/title/category/completion/notes/is_active)
-    - 4 卡摘要(今日计划数/完成率/飞书同步/24h 覆盖率)
-    - 3 种操作 prompt(继续补/看全貌/复盘) = 3 个按钮复制动作
-    """
-    from schedule_db import get_plan_event, list_plan_events, get_records_by_date
+    """补计划回执(回执型第 3 款,2026-07-24,绿色调)."""
+    from schedule_db import get_plan_event, list_plan_events
 
     plan = get_plan_event(plan_id)
     if not plan:
-        return {
-            "status": "error",
-            "data": None,
-            "message": f"未找到 id={plan_id} 的计划事件",
-        }
+        return {"status": "error", "data": None, "message": f"未找到 id={plan_id} 的计划事件"}
 
     date = plan.get("date")
-    if date:
-        today_plans = list_plan_events(date, include_inactive=True)
-    else:
-        today_plans = []
-    today_count = len(today_plans)
-    completed_count = sum(1 for p in today_plans if p.get("completion") and p["completion"] != "未完成")
-    completion_rate = round(completed_count / today_count * 100) if today_count > 0 else 0
-    feishu_synced = sum(1 for p in today_plans if p.get("feishu_event_id"))
-    coverage_minutes = sum(_calc_plan_minutes(p) for p in today_plans if p.get("is_active", 1) == 1)
-    coverage_hours = round(coverage_minutes / 60, 1)
-
-    plan_json = json.dumps({
-        "id": plan.get("id"),
-        "date": plan.get("date"),
-        "time_start": plan.get("time_start"),
-        "time_end": plan.get("time_end"),
-        "title": plan.get("title"),
-        "notes": plan.get("notes") or "",
-        "category": plan.get("category") or "",
-        "feishu_event_id": plan.get("feishu_event_id"),
-        "last_synced_at": plan.get("last_synced_at"),
-        "is_active": plan.get("is_active", 1),
-        "completion": plan.get("completion"),
-        "completion_note": plan.get("completion_note") or "",
-    }, ensure_ascii=False, indent=2)
-
-    base_prompt = f"""① 场景: 我刚"补"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
-
-② 数据(今日计划概况):
-  - 今日共 {today_count} 条计划(完成 {completed_count} 条,完成率 {completion_rate}%)
-  - 飞书已同步 {feishu_synced} 条
-  - 24h 覆盖率 {coverage_hours} 小时
-  - 刚补:
-{plan_json}
-
-④ 来源: plan_receipt_add_id{plan_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action=add
-"""
+    today_plans = list_plan_events(date, include_inactive=True) if date else []
+    stats = _calc_plan_receipt_stats(plan, today_plans)
+    plan_json = _build_plan_json(plan)
+    base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, "补", "补", "add")
 
     prompt_continue = base_prompt + """
 ③ 期望: 用户即将告诉你"继续补下一条"。
@@ -1157,95 +1104,35 @@ def render_plan_receipt_add(plan_id: int) -> dict:
 
     payload = {
         "meta": {
-            "mode": "plan-receipt-add",
-            "title": "已补计划",
-            "plan_id": plan_id,
-            "date": date,
+            "mode": "plan-receipt-add", "title": "已补计划",
+            "plan_id": plan_id, "date": date,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "_template_version": "v2026-07-24",
             "_snapshot_at": datetime.now().isoformat(),
         },
-        "plan": plan,
-        "stats": {
-            "today_count": today_count,
-            "completed_count": completed_count,
-            "completion_rate": completion_rate,
-            "feishu_synced": feishu_synced,
-            "coverage_hours": coverage_hours,
-        },
-        "prompts": {
-            "continue": prompt_continue,
-            "overview": prompt_overview,
-            "review":   prompt_review,
-        },
+        "plan": plan, "stats": stats,
+        "prompts": {"continue": prompt_continue, "overview": prompt_overview, "review": prompt_review},
         "errors": [],
     }
     return {
-        "status": "ok",
-        "data": payload,
-        "message": f"✓ id={plan_id} 计划 已补回执已生成(今日 {today_count} 条计划,完成率 {completion_rate}%)",
+        "status": "ok", "data": payload,
+        "message": f"✓ id={plan_id} 计划 已补回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%)",
     }
 
 
 def render_plan_receipt_write(plan_id: int) -> dict:
-    """写摘要回执(回执型第 4 款,2026-07-24).
-
-    与 render_plan_receipt(update/deactivate/add) 同源但紫色调("写"是 update 的子操作).
-    输入 plan_id,生成含:
-    - 计划 6 核心字段(id/date/time/title/category/completion/notes/is_active)
-    - 4 卡摘要(今日已复盘/完成率/飞书/24h 覆盖率)
-    - 3 种操作 prompt(继续写其他/看今日复盘/看全貌) = 3 个按钮复制动作
-    """
-    from schedule_db import get_plan_event, list_plan_events, get_records_by_date
+    """写摘要回执(回执型第 4 款,2026-07-24,紫色调,与 update 同源)."""
+    from schedule_db import get_plan_event, list_plan_events
 
     plan = get_plan_event(plan_id)
     if not plan:
-        return {
-            "status": "error",
-            "data": None,
-            "message": f"未找到 id={plan_id} 的计划事件",
-        }
+        return {"status": "error", "data": None, "message": f"未找到 id={plan_id} 的计划事件"}
 
     date = plan.get("date")
-    if date:
-        today_plans = list_plan_events(date, include_inactive=True)
-    else:
-        today_plans = []
-    today_count = len(today_plans)
-    completed_count = sum(1 for p in today_plans if p.get("completion") and p["completion"] != "未完成")
-    note_count = sum(1 for p in today_plans if p.get("completion_note"))
-    completion_rate = round(completed_count / today_count * 100) if today_count > 0 else 0
-    feishu_synced = sum(1 for p in today_plans if p.get("feishu_event_id"))
-    coverage_minutes = sum(_calc_plan_minutes(p) for p in today_plans if p.get("is_active", 1) == 1)
-    coverage_hours = round(coverage_minutes / 60, 1)
-
-    plan_json = json.dumps({
-        "id": plan.get("id"),
-        "date": plan.get("date"),
-        "time_start": plan.get("time_start"),
-        "time_end": plan.get("time_end"),
-        "title": plan.get("title"),
-        "notes": plan.get("notes") or "",
-        "category": plan.get("category") or "",
-        "feishu_event_id": plan.get("feishu_event_id"),
-        "last_synced_at": plan.get("last_synced_at"),
-        "is_active": plan.get("is_active", 1),
-        "completion": plan.get("completion"),
-        "completion_note": plan.get("completion_note") or "",
-    }, ensure_ascii=False, indent=2)
-
-    base_prompt = f"""① 场景: 我刚"写摘要"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
-
-② 数据(今日复盘概况):
-  - 今日共 {today_count} 条计划(完成 {completed_count} 条,完成率 {completion_rate}%)
-  - 今日已写反思 {note_count} 条(含 completion_note)
-  - 飞书已同步 {feishu_synced} 条
-  - 24h 覆盖率 {coverage_hours} 小时
-  - 刚写摘要:
-{plan_json}
-
-④ 来源: plan_receipt_write_id{plan_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action=write
-"""
+    today_plans = list_plan_events(date, include_inactive=True) if date else []
+    stats = _calc_plan_receipt_stats(plan, today_plans)
+    plan_json = _build_plan_json(plan)
+    base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, "写摘要", "写摘要", "write")
 
     prompt_continue = base_prompt + """
 ③ 期望: 用户即将告诉你"继续写另一条摘要"。
@@ -1264,34 +1151,19 @@ def render_plan_receipt_write(plan_id: int) -> dict:
 
     payload = {
         "meta": {
-            "mode": "plan-receipt-write",
-            "title": "已写摘要",
-            "plan_id": plan_id,
-            "date": date,
+            "mode": "plan-receipt-write", "title": "已写摘要",
+            "plan_id": plan_id, "date": date,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "_template_version": "v2026-07-24",
             "_snapshot_at": datetime.now().isoformat(),
         },
-        "plan": plan,
-        "stats": {
-            "today_count": today_count,
-            "completed_count": completed_count,
-            "note_count": note_count,
-            "completion_rate": completion_rate,
-            "feishu_synced": feishu_synced,
-            "coverage_hours": coverage_hours,
-        },
-        "prompts": {
-            "continue": prompt_continue,
-            "overview": prompt_overview,
-            "look_all": prompt_look_all,
-        },
+        "plan": plan, "stats": stats,
+        "prompts": {"continue": prompt_continue, "overview": prompt_overview, "look_all": prompt_look_all},
         "errors": [],
     }
     return {
-        "status": "ok",
-        "data": payload,
-        "message": f"✓ id={plan_id} 计划 已写摘要回执已生成(今日 {today_count} 条计划,完成率 {completion_rate}%,已写反思 {note_count} 条)",
+        "status": "ok", "data": payload,
+        "message": f"✓ id={plan_id} 计划 已写摘要回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%,已写反思 {stats['note_count']} 条)",
     }
 
 

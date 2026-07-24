@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL HTML 类型分类 · 5 类型 2 维网格</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
+    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
+    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+    --report: #6e6e73;       /* 灰:报告型 */
+    --diagnose: #ff9500;     /* 橙:诊断型 */
+    --preview: #5856d6;      /* 紫:预览型 */
+    --configure: #34c759;    /* 绿:配置/决策型 */
+    --receipt: #ff3b30;      /* 红:回执型 */
+    --edge: #d2d2d7;         /* 灰:边角 */
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; color: var(--fg); background: var(--bg);
+    max-width: 980px; margin: 0 auto; padding: 64px 32px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 42px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 64px; margin-bottom: 18px;
+        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 28px; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 14px; }
+  strong { font-weight: 600; }
+  em { color: var(--fg2); font-style: normal; }
+  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
+         color: #c7254e; border: 1px solid var(--border); }
+  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
+         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
+         line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; border: none; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--card); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
+               margin: 16px 0; color: var(--fg2); }
+  blockquote p { color: var(--fg2); margin-bottom: 0; }
+  ul, ol { margin: 14px 0 14px 28px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 32px; line-height: 1.55; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 32px;
+          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+
+  /* === 2 维网格核心 === */
+  .grid-2d {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    grid-template-rows: 50px auto auto auto;
+    gap: 10px;
+    margin: 24px 0;
+  }
+  .grid-2d .axis-y {
+    grid-row: 2 / span 3;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: var(--fg2); letter-spacing: 0.06em;
+    border-right: 1px solid var(--border);
+  }
+  .grid-2d .axis-x {
+    grid-column: 2 / span 2;
+    display: flex; justify-content: space-around; align-items: center;
+    font-size: 13px; font-weight: 700; color: var(--fg2); letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid-2d .corner { background: var(--bg); }
+  .grid-cell {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; min-height: 130px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .grid-cell:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+  .grid-cell.empty { background: var(--bg); border-style: dashed; opacity: 0.4; }
+  .grid-cell h4 { margin: 0 0 4px; font-size: 16px; color: var(--fg); }
+  .grid-cell .formula { font-size: 12px; color: var(--fg3); margin: 4px 0 8px; line-height: 1.5; }
+  .grid-cell .examples { font-size: 12.5px; color: var(--fg2); line-height: 1.6; }
+  .grid-cell .examples code { font-size: 11.5px; padding: 1px 5px; }
+
+  /* 类型配色 */
+  .grid-cell.report { border-top: 3px solid var(--report); }
+  .grid-cell.diagnose { border-top: 3px solid var(--diagnose); }
+  .grid-cell.preview { border-top: 3px solid var(--preview); }
+  .grid-cell.configure { border-top: 3px solid var(--configure); }
+  .grid-cell.receipt { border-top: 3px solid var(--receipt); }
+  .badge-report { background: var(--report); }
+  .badge-diagnose { background: var(--diagnose); }
+  .badge-preview { background: var(--preview); }
+  .badge-configure { background: var(--configure); }
+  .badge-receipt { background: var(--receipt); }
+  .badge {
+    display: inline-block; color: #fff; font-size: 11px;
+    padding: 2px 8px; border-radius: 6px; font-weight: 700;
+    letter-spacing: 0.04em; margin-right: 6px;
+  }
+
+  /* 类型卡片 */
+  .type-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px 28px; margin: 16px 0;
+  }
+  .type-card.report { border-left: 4px solid var(--report); }
+  .type-card.diagnose { border-left: 4px solid var(--diagnose); }
+  .type-card.preview { border-left: 4px solid var(--preview); }
+  .type-card.configure { border-left: 4px solid var(--configure); }
+  .type-card.receipt { border-left: 4px solid var(--receipt); }
+  .type-card h3 { margin-top: 0; }
+
+  /* 模板映射表 */
+  .map-table tr td:nth-child(2) { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; }
+
+  /* 对照 */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; }
+
+  details { background: #fbfbfd; border-radius: 10px; padding: 12px 16px; margin: 12px 0; border: 1px solid #ececf1; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  details[open] { background: #fff; }
+
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+             color: var(--fg3); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>🍎 SKILL HTML 类型分类</h1>
+<p class="lead">5 类型 × 2 维网格 · 基于"用户意图"的最全面分类</p>
+<p class="meta">讨论稿 v0.1 · 2026-07-24 · 准备加入《预置HTML+注入数据指导手册》§5.1</p>
+
+<blockquote>
+<p><strong>核心观点</strong>:HTML 类型分类应基于<strong>用户打开页面时的意图</strong>(看 / 做 / 确认),而不是<strong>技术实现</strong>(Jinja2 / window / JSON Script)。后者是<strong>注入模式</strong>(手册 §5),前者是<strong>业务类型</strong>(本草案)。两者正交。</p>
+</blockquote>
+
+<!-- ==================== 2 维网格 ==================== -->
+<h2>① 一张图看懂 5 类型</h2>
+
+<p><strong>横轴</strong>= 用户角色(被动 / 主动) · <strong>纵轴</strong>= 数据写入阶段(无写入 / 写入前 / 写入后) · 2 维 × 3 阶段 = 6 格(5 类 + 1 边角)</p>
+
+<div class="grid-2d">
+  <div class="corner"></div>
+  <div class="axis-x">
+    <span>被动 (Role=View)</span>
+    <span>主动 (Role=Act)</span>
+  </div>
+  <div class="axis-y">数据写入阶段 (Phase)</div>
+
+  <!-- Row 1: 无写入 -->
+  <div class="grid-cell report">
+    <h4><span class="badge badge-report">报告型</span>① 报告型 Report</h4>
+    <div class="formula">"用户来 <strong>看</strong> 已有数据"</div>
+    <div class="examples">
+      <code>home_dashboard</code> <code>food_ranking</code> <code>health_dashboard</code><br>
+      <code>review_template</code> <code>workout_plan_view</code> <code>exercise_review</code>
+    </div>
+  </div>
+  <div class="grid-cell diagnose">
+    <h4><span class="badge badge-diagnose">诊断型</span>② 诊断型 Diagnose</h4>
+    <div class="formula">"系统发现 <strong>问题</strong>,用户应 <strong>行动</strong>"</div>
+    <div class="examples">
+      <code>contraindication_report</code><br>
+      (警告 + 安全替代动作)
+    </div>
+  </div>
+
+  <!-- Row 2: 写入前 -->
+  <div class="grid-cell preview">
+    <h4><span class="badge badge-preview">预览型</span>③ 预览型 Preview</h4>
+    <div class="formula">"用户 <strong>准备做</strong>,先看 <strong>预演</strong>"</div>
+    <div class="examples">
+      <code>batch_import_preview</code> <code>process_progress</code><br>
+      (写前确认 + 进度可视化)
+    </div>
+  </div>
+  <div class="grid-cell configure">
+    <h4><span class="badge badge-configure">配置型</span>④ 配置/决策型 Configure/Decide</h4>
+    <div class="formula">"用户 <strong>配置 / 决策</strong> → <strong>复制 prompt</strong> 给 AI"</div>
+    <div class="examples">
+      <code>goal_config</code> <code>plan_builder_wizard</code><br>
+      <code>nutrition_label_wizard</code> <code>plan_review</code>(作息管家)
+    </div>
+  </div>
+
+  <!-- Row 3: 写入后 -->
+  <div class="grid-cell receipt">
+    <h4><span class="badge badge-receipt">回执型</span>⑤ 回执型 Receipt</h4>
+    <div class="formula">"用户刚 <strong>写完</strong>,看 <strong>确认</strong>"</div>
+    <div class="examples">
+      <code>weight_log_receipt</code> <code>record_receipt</code>(作息)<br>
+      <code>plan_receipt</code> <code>plan_receipt_add</code>(作息)
+    </div>
+  </div>
+  <div class="grid-cell empty">
+    <h4>边角(罕见)</h4>
+    <div class="formula">"写后主动操作"理论上可加"二次确认型",实际工程几乎不存在</div>
+  </div>
+</div>
+
+<p style="text-align:center;font-size:13px;color:var(--fg3);margin-top:8px;">
+  ← 横轴 (Role) → 用户角色 &nbsp;|&nbsp; 纵轴 (Phase) ↓ 数据写入阶段
+</p>
+
+<hr/>
+
+<!-- ==================== 5 类型详解 ==================== -->
+<h2>② 5 类型详解 + 判定公式</h2>
+
+<div class="type-card report">
+<h3>① 报告型 Report <span class="badge badge-report">最常见</span></h3>
+<p><strong>典型场景</strong>:用户说"查 X / 看 X" → 打开 → 看 → 关</p>
+<p><strong>判定公式</strong>:<code>IF 数据已存在 AND 用户无动作 THEN 报告型</code></p>
+<p><strong>设计要点</strong>:</p>
+<ul>
+  <li>首屏 KPI 卡 + 数据可视化</li>
+  <li>无"复制"按钮(用户看完就走)</li>
+  <li>空态/错误态/缺数据态必须明确</li>
+</ul>
+<p><strong>卡路里映射</strong>:<code>home_dashboard</code> · <code>food_ranking</code> · <code>health_dashboard</code> · <code>review_template</code> · <code>workout_plan_view</code> · <code>exercise_review</code></p>
+</div>
+
+<div class="type-card diagnose">
+<h3>② 诊断型 Diagnose <span class="badge badge-diagnose">易被混为报告</span></h3>
+<p><strong>典型场景</strong>:用户刚做 X → 系统发现潜在问题 → 用户看到警告 + 安全替代</p>
+<p><strong>判定公式</strong>:<code>IF 数据已存在 AND 但有"立即行动"建议 THEN 诊断型</code></p>
+<p><strong>关键差异 vs 报告型</strong>:诊断型虽然也是"展示",但<strong>有"立即行动"的暗示</strong>——用户看完应能"复制修复指令"。</p>
+<p><strong>设计要点</strong>:</p>
+<ul>
+  <li>顶部 KPI 必含警告数量</li>
+  <li>每条警告必须有<strong>安全替代动作</strong>(让用户知道"该怎么办")</li>
+  <li><strong>推荐</strong>提供"复制修复指令"按钮(从报告型升级为过程型特性)</li>
+</ul>
+<p><strong>卡路里映射</strong>:<code>contraindication_report</code>(腰/膝/肩禁忌 + 安全替代动作)</p>
+</div>
+
+<div class="type-card preview">
+<h3>③ 预览型 Preview <span class="badge badge-preview">易被混为报告/过程</span></h3>
+<p><strong>典型场景</strong>:用户准备批量导入 / 提交大批修改 → 先看预演 → 确认才真做</p>
+<p><strong>判定公式</strong>:<code>IF 数据未提交 AND 用户看完需决定 THEN 预览型</code></p>
+<p><strong>关键差异 vs 报告型</strong>:预览型<strong>有"即将发生"的张力</strong>——用户看完会决定要不要继续。</p>
+<p><strong>关键差异 vs 配置型</strong>:预览型是"看 + 可选确认",配置型是"调整 + 必须复制 prompt"。</p>
+<p><strong>设计要点</strong>:</p>
+<ul>
+  <li>预演 N 条数据(用户能看到每条)</li>
+  <li><strong>推荐</strong>提供"确认执行"复制按钮(从纯报告升级)</li>
+  <li>失败行高亮 + 跳过策略提示</li>
+</ul>
+<p><strong>卡路里映射</strong>:<code>batch_import_preview</code> · <code>process_progress</code></p>
+</div>
+
+<div class="type-card configure">
+<h3>④ 配置/决策型 Configure/Decide <span class="badge badge-configure">必须有复制按钮</span></h3>
+<p><strong>典型场景</strong>:用户要做某事 → 在 HTML 里勾选/调整 → 复制 prompt 给 AI → AI 写入 DB</p>
+<p><strong>判定公式</strong>:<code>IF 必须有"复制 prompt 按钮" + 4 部分 prompt 模板 THEN 配置型</code></p>
+<p><strong>设计要点</strong>(来自 04_架构师原则 §原则 10):</p>
+<ul>
+  <li><strong>必须有"复制 prompt"按钮</strong>——HTML 是单工设备,复制是"用户→AI"的唯一通路</li>
+  <li><strong>必须有"采纳"按钮</strong>——一致性</li>
+  <li><strong>复制内容 4 部分</strong>:① 场景 ② 数据 ③ 期望(CLI 命令) ④ 来源</li>
+  <li><strong>禁止</strong>:"一键保存"、HTML fetch AI、隐藏复制按钮</li>
+</ul>
+<p><strong>卡路里映射</strong>:<code>goal_config</code>(5 slider) · <code>plan_builder_wizard</code>(4 轮对话) · <code>nutrition_label_wizard</code>(识别后校验)</p>
+<p><strong>作息管家映射</strong>:<code>plan_review</code>(每条事件 5 状态选项)</p>
+</div>
+
+<div class="type-card receipt">
+<h3>⑤ 回执型 Receipt <span class="badge badge-receipt">写后漂亮确认</span></h3>
+<p><strong>典型场景</strong>:用户刚记/改/删 X → CLI 已写 → 漂亮确认页</p>
+<p><strong>判定公式</strong>:<code>IF 紧跟 CRUD 之后 AND 无需用户决策 THEN 回执型</code></p>
+<p><strong>设计要点</strong>:</p>
+<ul>
+  <li>无"用户选择"(强迫 A/B/C 决定是反模式)</li>
+  <li><strong>上下文展示</strong>:刚记的 ID + 当日累计 + 7 天累计 + 同类排名</li>
+  <li>可选"一键复制今日进度"(给 AI 自主决定下一步的输入)</li>
+  <li>AI 收到上下文<strong>自主回复</strong>:继续记 / 看全貌 / 复盘 / 补漏</li>
+</ul>
+<p><strong>卡路里映射</strong>:<code>weight_log_receipt</code>(记体重 → 新 ID + BMI + 趋势)</p>
+<p><strong>作息管家映射</strong>:<code>record_receipt</code>(记作息 → 新 ID + 当日累计) · <code>plan_receipt</code>(改/删计划 → 旧→新对比) · <code>plan_receipt_add</code>(补计划,绿色调) · <code>plan_receipt_write</code>(写摘要,紫色调)</p>
+</div>
+
+<hr/>
+
+<!-- ==================== 模板映射表 ==================== -->
+<h2>③ 卡路里 13 模板归属</h2>
+
+<table class="map-table">
+<thead>
+<tr><th>模板</th><th>类型</th><th>依据</th></tr>
+</thead>
+<tbody>
+<tr><td><code>home_dashboard.html</code></td><td><span class="badge badge-report">报告型</span></td><td>查今日状态,无操作</td></tr>
+<tr><td><code>food_ranking.html</code></td><td><span class="badge badge-report">报告型</span></td><td>查食物排行,无操作</td></tr>
+<tr><td><code>health_dashboard.html</code></td><td><span class="badge badge-report">报告型</span></td><td>查健康报告,无操作</td></tr>
+<tr><td><code>review_template.html</code></td><td><span class="badge badge-report">报告型</span></td><td>复盘,8 dim 展示</td></tr>
+<tr><td><code>workout_plan_view.html</code></td><td><span class="badge badge-report">报告型</span></td><td>查健身计划,展示</td></tr>
+<tr><td><code>exercise_review.html</code></td><td><span class="badge badge-report">报告型</span></td><td>训练复盘,plan vs 实际</td></tr>
+<tr><td><code>contraindication_report.html</code></td><td><span class="badge badge-diagnose">诊断型</span></td><td>禁忌 + 安全替代动作</td></tr>
+<tr><td><code>batch_import_preview.html</code></td><td><span class="badge badge-preview">预览型</span></td><td>批量预演 + 确认执行</td></tr>
+<tr><td><code>process_progress.html</code></td><td><span class="badge badge-preview">预览型</span></td><td>多步进度可视化</td></tr>
+<tr><td><code>nutrition_label_wizard.html</code></td><td><span class="badge badge-configure">配置型</span></td><td>用户校验 + 复制 prompt</td></tr>
+<tr><td><code>plan_builder_wizard.html</code></td><td><span class="badge badge-configure">配置型</span></td><td>4 轮对话 + 复制 prompt</td></tr>
+<tr><td><code>goal_config.html</code></td><td><span class="badge badge-configure">配置型</span></td><td>5 slider + 复制 prompt</td></tr>
+<tr><td><code>weight_log_receipt.html</code></td><td><span class="badge badge-receipt">回执型</span></td><td>记体重后,新 ID + BMI</td></tr>
+</tbody>
+</table>
+
+<p><strong>分布</strong>:报告型 6 个 · 诊断型 1 个 · 预览型 2 个 · 配置型 3 个 · 回执型 1 个</p>
+
+<hr/>
+
+<!-- ==================== 与 3 类型对比 ==================== -->
+<h2>④ 与现有 3 类型分类对比</h2>
+
+<p>作息管家/卡路里 现有注释里常用"结果型/过程型/回执型"3 类型。这套 5 类型是 3 类型的<strong>细化</strong>:</p>
+
+<div class="compare">
+<div class="compare-card">
+<h4>3 类型(已有)</h4>
+<ul>
+<li><strong>结果型</strong> = 报告型 + 诊断型 + 部分预览型</li>
+<li><strong>过程型</strong> = 配置型 + 部分预览型</li>
+<li><strong>回执型</strong> = 回执型 ✓</li>
+</ul>
+<p style="color:var(--fg2);font-size:13px;">问题:边界案例(contraindication_report / batch_import_preview)归类不清</p>
+</div>
+<div class="compare-card">
+<h4>5 类型(本草案)</h4>
+<ul>
+<li><strong>报告型</strong>:纯展示,无操作</li>
+<li><strong>诊断型</strong>:警告 + 行动建议</li>
+<li><strong>预览型</strong>:写前预演 + 可选确认</li>
+<li><strong>配置型</strong>:必须复制 prompt 给 AI</li>
+<li><strong>回执型</strong>:写后漂亮确认</li>
+</ul>
+<p style="color:var(--fg2);font-size:13px;">优势:每类型边界清晰,可逐个判定</p>
+</div>
+</div>
+
+<hr/>
+
+<!-- ==================== 判定速查 ==================== -->
+<h2>⑤ 判定速查表</h2>
+
+<details>
+<summary><strong>新模板归属判定流程</strong>(点击展开)</summary>
+
+<pre><code>Step 1: 数据是否已存在?
+  ├─ YES → 用户有操作吗?
+  │         ├─ NO  → 报告型
+  │         └─ YES → 诊断型(有"行动"建议)
+  └─ NO → 用户看完需决定吗?
+            ├─ NO  → 预览型(可选"确认执行"复制)
+            └─ YES → 配置型(必须有"复制 prompt"按钮)
+
+Step 2: 这是写后确认吗?
+  ├─ YES → 回执型
+  └─ NO  → 回到 Step 1
+</code></pre>
+
+</details>
+
+<details>
+<summary><strong>反模式清单</strong>(每类型 3 条)</summary>
+
+<h4>报告型 反模式</h4>
+<ul>
+<li>❌ 加"复制"按钮但没复制内容</li>
+<li>❌ 报告页里塞交互表单</li>
+<li>❌ 报告页加"编辑"入口(应跳转到配置型)</li>
+</ul>
+
+<h4>诊断型 反模式</h4>
+<ul>
+<li>❌ 只警告不给出替代动作</li>
+<li>❌ 把所有警告塞进 1 个段落(应分组)</li>
+<li>❌ 没有"复制修复指令"按钮</li>
+</ul>
+
+<h4>预览型 反模式</h4>
+<ul>
+<li>❌ 预览页没有"确认"或"取消"出口</li>
+<li>❌ 预演数据超过 100 行不分页</li>
+<li>❌ 用户点了"确认"但页面无响应(没有 prompt 复制)</li>
+</ul>
+
+<h4>配置型 反模式</h4>
+<ul>
+<li>❌ 缺"复制 prompt"按钮</li>
+<li>❌ 缺"采纳"按钮(不一致)</li>
+<li>❌ 复制内容缺 4 部分之一</li>
+</ul>
+
+<h4>回执型 反模式</h4>
+<ul>
+<li>❌ 强迫用户做 A/B/C 决定</li>
+<li>❌ 没有上下文展示(只有 ID,无累计)</li>
+<li>❌ 没有"一键复制今日进度"快捷</li>
+</ul>
+
+</details>
+
+<hr/>
+
+<!-- ==================== 落地 ==================== -->
+<h2>⑥ 落地建议(草案 → 手册)</h2>
+
+<ol>
+<li><strong>新增手册章节</strong>:§5.1 业务类型三类(或五类),含判定公式 + 设计要点</li>
+<li><strong>同步 04_架构师原则.md</strong>:§原则 10 升级为 §原则 10/11/12(配置/诊断/预览 各占一节)</li>
+<li><strong>模板 HTML 顶部加 metadata</strong>:<code>&lt;!-- HTML_TYPE: 配置型 --&gt;</code> 注释(可选,给 AI 索引用)</li>
+<li><strong>SKILL.md 加归属表</strong>:每个 HTML 模板标注所属类型</li>
+<li><strong>跨 Skill 推广</strong>:作息管家/备忘录/居家管家 现有模板重新归类</li>
+</ol>
+
+<div class="footer">
+讨论稿 v0.1 · 2026-07-24 · 准备入手册<br>
+位置:<code>D:\2Study\StudyNotes\SKILLS\html\SKILL.html</code>
+</div>
+
+</body>
+</html>

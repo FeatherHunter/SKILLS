@@ -2734,7 +2734,24 @@
       anchorRail.appendChild(band);
 
       // 2) section 锚点
-      sections.forEach(sec => {
+      // v1.24.5 fix:按用户期望 visual 顺序
+      //   项目 → 素材 → #1 → ... → #6 → 封面 → 结尾
+      // sections 默认 DOM 顺序是 [项目, 素材, 封面, 结尾]
+      // 预期 visual 是 [head='项目'|'素材', ..., videoCards, tail='封面'|'结尾']
+      const sectionsSorted = sections.slice();
+      const headNames = ['项目', '素材'];
+      const headSec = [];
+      const tailSec = [];
+      sectionsSorted.forEach((sec, idx) => {
+        const h2Text = sec.querySelector('h2')?.textContent?.trim() || '';
+        if (headNames.some(n => h2Text.startsWith(n))) {
+          headSec.push(sec);
+        } else {
+          tailSec.push(sec);
+        }
+      });
+      const orderedSections = [...headSec, ...tailSec];
+      orderedSections.forEach(sec => {
         const h2 = sec.querySelector('h2');
         if (!h2) return;
         const label = h2.textContent.trim();
@@ -2743,7 +2760,9 @@
         dot.className = 'anchor';
         dot.dataset.label = label;
         dot.addEventListener('click', () => {
-          sec.scrollIntoView({behavior: 'smooth', block: 'start'});
+          const rect = sec.getBoundingClientRect();
+          const targetY = window.scrollY + rect.top - 44;
+          window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
         });
         anchorRail.appendChild(dot);
         anchorItems.push({el: sec, label, dot});
@@ -2790,19 +2809,18 @@
       }
       anchorRail.classList.remove('no-content');
       const railHeight = anchorRail.getBoundingClientRect().height;
-      // v1.23:比例基准改为"第一个锚点→最后一个锚点"范围,不再用整个文档
-      // 解决视频展开/折叠后圆点位置和真实位置视觉不对应的问题
-      const centers = anchorItems.map(item => {
-        const rect = item.el.getBoundingClientRect();
-        return rect.top + window.scrollY + rect.height / 2;
-      });
-      const firstCenter = centers[0];
-      const lastCenter = centers[centers.length - 1];
-      const range = Math.max(1, lastCenter - firstCenter);  // 防止除 0
-      anchorItems.forEach((item, i) => {
-        const ratio = Math.max(0, Math.min(1, (centers[i] - firstCenter) / range));
-        item.dot.style.top = (ratio * railHeight) + 'px';
-      });
+      // v1.24.5 fix:不再用文档 Y ratio,改用 array index 均匀分布
+      //   → visual 顺序严格等于 array 顺序 = 用户期望顺序(项目→素材→#1...→#6→封面→结尾)
+      //   → 视频展开/折叠不会改变 dots 顺序(以前 ratio 会错位)
+      //   → 跟 anchorItems.push 顺序 1:1 映射,确定性强
+      const count = anchorItems.length;
+      if (count > 0) {
+        anchorItems.forEach((item, i) => {
+          // (i + 0.5) / count 让每个 dot 居中于其 1/N 区间
+          const ratio = (i + 0.5) / count;
+          item.dot.style.top = Math.max(0, Math.min(railHeight - 12, ratio * railHeight - 6)) + 'px';
+        });
+      }
     }
 
     function setupAnchorObserver() {

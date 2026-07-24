@@ -168,6 +168,22 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - **失败降级**:
   - 飞书同步失败 → 本地 due 仍生效,errors 累积
   - 心愿无 feishu_task_guid → 提示用户跑 `备忘录同步` 补建后重试
+- **心愿排期向导**(2026-07-24 新增 · 过程型 HTML):
+  - 命令:`script/memo_cli.py wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] [--html]`
+  - **触发场景**:用户原话含多个心愿 + 时间锚点(「这 3 个都排到 7/3」「心愿 #36 #48 安排到 6/30」),AI 识别后**主动**调 `wish-batch-plan --suggest-due X --html` 生成向导页给用户在 HTML 里调,而不是逐条 ID 往返
+  - **默认(无 --all)**:搜 `category='心愿' AND due IS NULL` 最近 50 条
+  - **--all**:含已排期心愿(用于微调)
+  - **--ids**:精确指定(与 --all 互斥,硬规则)
+  - **模板**:`templates/wish_plan.html`(独立,过程型 HTML,不复用 memo_query.html)
+  - **渲染器**:`script/memo_render.py:render_wish_plan`(复用 `_inject` 公共逻辑)
+  - **类型**:过程型 HTML · 按 04_架构师原则 §10 设计 · 含"采纳并复制"按钮 + 4 部分 prompt
+  - **4 部分 prompt**(采纳按钮复制):
+    ① 场景: 我用心愿排期向导给 N 个心愿设了排期(原建议 X)
+    ② 数据(采纳后): 表格列出心愿 id + 排期日期(含"原排期"列,帮助审计覆盖)
+    ③ 期望: 按 set-due 命令列表(日期相同 → 一次批量;日期不同 → 每条单独;feishu task 自动同步)
+    ④ 来源: wish-batch-plan --suggest-due X / 2026-07-24 14:00
+  - **数据契约**:`{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}`
+  - **AI 推荐流程**:跑到 `add 心愿` 批量场景 → **不直接**批量 `set-due` → 先调 `wish-batch-plan --suggest-due <识别到的锚点> --html` → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 `set-due` 命令
 
 #### 排期日期的用户-facing 表达(中文)
 - 对用户说的时候,**不要用 "due" 这个英文术语**,用以下中文之一:

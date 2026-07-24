@@ -7,6 +7,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).parent.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_query.html"
 SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
+WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
 OUTPUT_DIR = SKILL_DIR / "output"
 
 
@@ -41,6 +42,23 @@ def render_sync_report(payload, name="sync_report"):
       errors: [str]
     """
     template = SYNC_REPORT_TEMPLATE_PATH.read_text(encoding="utf-8")
+    injected = _inject(template, payload)
+    return _write_output(name, injected)
+
+
+def render_wish_plan(payload, name="wish_plan"):
+    """渲染心愿排期向导页(模板 wish_plan.html),过程型 HTML
+
+    payload.data 期望字段:
+      title / command / generated_at
+      suggest_due: str|None(全局建议排期)
+      all: bool(是否含已排期心愿)
+      items: [{
+        id, content, category, sub_category, current_due, feishu_task_guid,
+        selected: bool, suggested_due: str|None
+      }, ...]
+    """
+    template = WISH_PLAN_TEMPLATE_PATH.read_text(encoding="utf-8")
     injected = _inject(template, payload)
     return _write_output(name, injected)
 

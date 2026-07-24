@@ -251,6 +251,26 @@
 <li>飞书同步失败 → 本地 due 仍生效,errors 累积</li>
 <li>心愿无 feishu_task_guid → 提示用户跑 <code>备忘录同步</code> 补建后重试</li>
 </ul>
+<h4>心愿排期向导(2026-07-24 新增 · 过程型 HTML)</h4>
+<ul>
+<li>命令:<code>script/memo_cli.py wish-batch-plan [--ids 1 2 3] [--all] [--suggest-due YYYY-MM-DD] [--html]</code></li>
+<li><strong>触发场景</strong>:用户原话含多个心愿 + 时间锚点(如「这 3 个都排到 7/3」「心愿 #36 #48 安排到 6/30」),AI 识别后<strong>主动</strong>调 <code>wish-batch-plan --suggest-due X --html</code> 生成向导页给用户在 HTML 里调,而不是逐条 ID 往返</li>
+<li><strong>默认(无 --all)</strong>:搜 <code>category='心愿' AND due IS NULL</code> 最近 50 条</li>
+<li><strong>--all</strong>:含已排期心愿(用于微调)</li>
+<li><strong>--ids</strong>:精确指定(与 --all 互斥,硬规则)</li>
+<li>模板:<code>templates/wish_plan.html</code>(独立,过程型 HTML,不复用 memo_query.html)</li>
+<li>渲染器:<code>script/memo_render.py:render_wish_plan</code>(复用 <code>_inject</code> 公共逻辑)</li>
+<li><strong>类型</strong>:过程型 HTML · 按 04_架构师原则 §10 设计 · 含"采纳并复制"按钮 + 4 部分 prompt</li>
+<li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>
+<li>① 场景: 我用心愿排期向导给 N 个心愿设了排期(原建议 X)</li>
+<li>② 数据(采纳后): 表格列出心愿 id + 排期日期(含"原排期"列,帮助审计覆盖)</li>
+<li>③ 期望: 按 set-due 命令列表(日期相同 → 一次批量;日期不同 → 每条单独;feishu task 自动同步)</li>
+<li>④ 来源: wish-batch-plan --suggest-due X / 2026-07-24 14:00</li>
+</ul>
+</li>
+<li><strong>数据契约</strong>:<code>{"status":"ok","data":{"title":"...","command":"wish-batch-plan","generated_at":"...","suggest_due":"YYYY-MM-DD"|null,"all":bool,"items":[{id,content,category,sub_category,current_due,feishu_task_guid,selected,suggested_due}, ...]},"message":"找到 N 个心愿"}</code></li>
+<li><strong>AI 推荐流程</strong>:跑到 <code>add 心愿</code> 批量场景 → <strong>不直接</strong>批量 <code>set-due</code> → 先调 <code>wish-batch-plan --suggest-due &lt;识别到的锚点&gt; --html</code> → 用户在 HTML 里微调 → 采纳复制 → 粘贴给 AI → AI 调精确 <code>set-due</code> 命令</li>
+</ul>
 <h4>排期日期的用户-facing 表达(中文)</h4>
 <ul>
 <li>对用户说的时候,<strong>不要用 "due" 这个英文术语</strong>,用以下中文之一:</li>

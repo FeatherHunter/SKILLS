@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>心愿排期向导</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--err-soft:#fff5f5;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:36px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
+.lead{color:var(--fg2);font-size:17px}
+.meta{margin-top:14px;color:var(--fg3);font-size:13px}
+.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#ecfff2;color:#178a3a}
+.badge.warn{background:#fff7e8;color:#b25b00}
+.panel{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center}
+button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600}
+button.ghost{background:transparent;color:var(--blue2);border:1px solid var(--line)}
+button.danger{background:var(--err);color:#fff}
+button.copy{background:#eef5ff;color:var(--blue2)}
+button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px}
+input[type=date]{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:15px;font-family:inherit}
+.wish{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
+.wish.off{opacity:.5}
+.wish.off .content{text-decoration:line-through;color:var(--fg3)}
+.wish-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.wish-id{color:var(--blue2);font-weight:800;font-size:15px;min-width:48px}
+.wish-check{flex:none}
+.wish-content{font-size:16px;flex:1}
+.wish-meta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;color:var(--fg2);font-size:13px;margin:8px 0 4px}
+.wish-due-input{display:flex;gap:10px;align-items:center}
+.wish-due-input label{color:var(--fg2);font-size:13px}
+.empty{padding:42px;text-align:center;color:var(--fg2)}
+.kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.kpi .stat{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi b{display:block;font-size:26px;letter-spacing:-.02em;margin-bottom:4px}
+.kpi span{color:var(--fg2);font-size:13px}
+pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:18px;overflow:auto;font-size:13px;line-height:1.65;max-height:340px}
+.notice{padding:12px 16px;border-radius:14px;margin:10px 0;font-size:14px}
+.notice.warn{background:#fff7e8;color:#b25b00}
+.notice.err{background:var(--err-soft);color:var(--err)}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.kpi{grid-template-columns:1fr}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Wish Batch Plan</div>
+<h1 id="title">心愿排期向导</h1>
+<p class="lead" id="subtitle">数据加载中</p>
+<p class="meta" id="meta"></p>
+</header>
+
+<section class="kpi" id="kpis"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:10px">📅 全局建议排期日期</div>
+<div class="wish-due-input">
+<input type="date" id="globalDue" />
+<button class="ghost" onclick="applyGlobalToSelected()">应用到所有勾选</button>
+</div>
+<div class="toolbar" style="margin-top:14px">
+<button class="ghost" onclick="selectAll(true)">全选</button>
+<button class="ghost" onclick="selectAll(false)">全不选</button>
+<button class="ghost" onclick="onlyUnset()">只显未排期</button>
+</div>
+</section>
+
+<section id="wishList"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:8px">📋 采纳(复制修改指令)</div>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:12px">点击后,把内容粘贴给 AI,AI 会按指令批量执行 <code>set-due</code>(日期相同 → 一次批量;日期不同 → 每条单独)。</p>
+<div class="toolbar">
+<button class="primary" onclick="adopt()">📋 采纳并复制</button>
+<button class="ghost" onclick="copyPrompt()">仅复制</button>
+</div>
+<div id="warnArea"></div>
+<pre id="promptOut">尚未采纳(无内容)</pre>
+</section>
+
+<footer style="margin-top:40px;text-align:center;color:var(--fg3);font-size:12px">
+<p>过程型 HTML · 用户 = 桥梁 · 不会自动执行任何 CLI</p>
+<p>设计原则: 04_架构师原则 §10 · 4 部分 prompt 模板</p>
+</footer>
+</div>
+
+<script>
+const PAYLOAD=window.__DATA__;
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function data(){return (PAYLOAD&&PAYLOAD.data)||{}}
+function items(){return data().items||[]}
+
+function init(){
+  if(!PAYLOAD){document.getElementById('wishList').innerHTML='<div class="empty">数据未注入</div>';return}
+  const d=data();
+  document.getElementById('title').textContent=d.title||'心愿排期向导';
+  document.getElementById('subtitle').textContent=PAYLOAD.message||'请勾选并调整排期日期';
+  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'wish-batch-plan'} · 来源：${d.source||'wish-batch-plan'}`;
+  if(d.suggest_due){
+    const g=document.getElementById('globalDue');
+    g.value=d.suggest_due;
+  }
+  renderKPIs();
+  renderList();
+}
+
+function renderKPIs(){
+  const all=items();
+  const unset=all.filter(w=>!w.current_due).length;
+  const set=all.filter(w=>w.current_due).length;
+  document.getElementById('kpis').innerHTML=[
+    ['总数',all.length,'所有心愿'],
+    ['未排期',unset,'current_due 为空'],
+    ['已排期',set,'current_due 非空'],
+  ].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span><div style="color:var(--fg3);font-size:12px;margin-top:4px">${esc(x[2])}</div></div>`).join('');
+}
+
+function renderList(){
+  const list=document.getElementById('wishList');
+  if(!items().length){list.innerHTML='<div class="panel empty">没有心愿可选</div>';return}
+  list.innerHTML=items().map(renderWish).join('');
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb) cb.addEventListener('change',e=>{document.getElementById('wish_'+w.id).classList.toggle('off',!e.target.checked)});
+  });
+}
+
+function renderWish(w){
+  const due=(w.suggested_due||w.current_due||'').slice(0,10);
+  const cls=w.selected?'':'off';
+  const checked=w.selected?'checked':'';
+  return `<article class="wish ${cls}" id="wish_${w.id}">
+<div class="wish-head">
+<input type="checkbox" id="cb_${w.id}" class="wish-check" ${checked} data-id="${w.id}" />
+<span class="wish-id">#${esc(w.id)}</span>
+<span class="wish-content">${esc(w.content)}</span>
+</div>
+<div class="wish-meta">
+${w.category?`<span class="badge">${esc(w.category)}</span>`:''}
+${w.sub_category?`<span class="badge">${esc(w.sub_category)}</span>`:''}
+${w.current_due?`<span class="badge warn">当前排期：${esc(w.current_due)}</span>`:'<span class="badge">未排期</span>'}
+${w.feishu_task_guid?`<span class="badge ok">已同步飞书</span>`:''}
+</div>
+<div class="wish-due-input">
+<label>排期日期</label>
+<input type="date" id="due_${w.id}" value="${esc(due)}" data-id="${w.id}" />
+</div>
+</article>`;
+}
+
+function applyGlobalToSelected(){
+  const gv=document.getElementById('globalDue').value;
+  if(!gv){alert('请先填全局建议日期');return}
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb&&cb.checked){
+      const di=document.getElementById('due_'+w.id);
+      if(di) di.value=gv;
+    }
+  });
+}
+
+function selectAll(on){
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb){cb.checked=on;document.getElementById('wish_'+w.id).classList.toggle('off',!on)}
+  });
+}
+
+function onlyUnset(){
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb){
+      const on=!w.current_due;
+      cb.checked=on;
+      document.getElementById('wish_'+w.id).classList.toggle('off',!on);
+    }
+  });
+}
+
+function selectedRows(){
+  const rows=[];
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    const di=document.getElementById('due_'+w.id);
+    if(cb&&cb.checked){
+      rows.push({id:w.id,content:w.content,due:(di&&di.value)||'',current_due:w.current_due});
+    }
+  });
+  return rows;
+}
+
+function buildPrompt(rows,ctx){
+  if(!rows.length) return '未选择任何心愿';
+  const missing=rows.filter(r=>!r.due);
+  if(missing.length){
+    return `⚠️ 以下 ${missing.length} 条被勾选但未填排期日期:\n${missing.map(r=>`  · #${r.id} ${r.content}`).join('\n')}\n\n请补全后再采纳`;
+  }
+  const src=ctx.source||(data().command||'wish-batch-plan')+(ctx.suggest_due?' --suggest-due '+ctx.suggest_due:'')+(ctx.all?' --all':'');
+  // 按日期分组 — 相同日期合并为一次批量命令
+  const groups={};
+  rows.forEach(r=>{
+    (groups[r.due]=groups[r.due]||[]).push(r);
+  });
+  const dates=Object.keys(groups).sort();
+  const cmds=dates.map(d=>{
+    const ids=groups[d].map(r=>r.id);
+    const note=groups[d].some(r=>r.current_due&&r.current_due!==d)?'(部分覆盖原排期)':'';
+    return ids.length>1
+      ? `memo_cli.py set-due ${ids.join(' ')} --due ${d}  # 批量 ${ids.length} 条${note}`
+      : `memo_cli.py set-due ${ids[0]} --due ${d}${groups[d][0].current_due&&groups[d][0].current_due!==d?'  # 覆盖原排期':''}`;
+  });
+  return [
+    '① 场景: 我用心愿排期向导给 '+rows.length+' 个心愿设了排期(原建议 '+ctx.suggest_due+')',
+    '',
+    '② 数据(采纳后):',
+    ...rows.map(r=>`   · 心愿 #${r.id} "${r.content}" → 排期 ${r.due}${r.current_due?`  (原排期 ${r.current_due})`:''}`),
+    '',
+    '③ 期望: 请按以下命令顺序执行 '+cmds.length+' 步 set-due(feishu task 自动同步):',
+    ...cmds.map(c=>'   '+c),
+    '',
+    '④ 来源: '+src+' / '+ctx.generated_at,
+  ].join('\n');
+}
+
+function warnIfAny(rows){
+  const notes=[];
+  const overwrites=rows.filter(r=>r.current_due&&r.current_due!==r.due);
+  if(overwrites.length){
+    notes.push(`<div class="notice warn">⚠️ ${overwrites.length} 条心愿将被覆盖原排期:${overwrites.map(r=>`#${r.id}(${r.current_due}→${r.due})`).join(', ')}</div>`);
+  }
+  const nofb=items().filter(w=>!w.feishu_task_guid);
+  const selNoFb=rows.filter(r=>nofb.some(n=>n.id===r.id));
+  if(selNoFb.length){
+    notes.push(`<div class="notice warn">ℹ️ ${selNoFb.length} 条心愿未同步飞书,可能需先跑 <code>备忘录同步</code> 补建</div>`);
+  }
+  document.getElementById('warnArea').innerHTML=notes.join('');
+}
+
+function adopt(){
+  const rows=selectedRows();
+  const miss=rows.filter(r=>!r.due);
+  if(miss.length){
+    alert(`有 ${miss.length} 条已勾选但未填排期日期,请补全或取消勾选`);
+    return;
+  }
+  warnIfAny(rows);
+  const ctx={
+    suggest_due:document.getElementById('globalDue').value||'(未填)',
+    generated_at:data().generated_at||'',
+    source:(data().command||'wish-batch-plan')+(data().suggest_due?' --suggest-due '+data().suggest_due:'')+(data().all?' --all':''),
+    all:data().all||false,
+  };
+  const text=buildPrompt(rows,ctx);
+  document.getElementById('promptOut').textContent=text;
+  copyToClipboard(text);
+}
+
+function copyPrompt(){
+  const rows=selectedRows();
+  const ctx={
+    suggest_due:document.getElementById('globalDue').value||'(未填)',
+    generated_at:data().generated_at||'',
+    source:(data().command||'wish-batch-plan'),
+    all:false,
+  };
+  copyToClipboard(buildPrompt(rows,ctx));
+}
+
+function copyToClipboard(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>{
+      const btn=document.querySelector('button.primary');
+      const old=btn.textContent;
+      btn.textContent='✅ 已复制 · 粘贴给 AI';
+      setTimeout(()=>btn.textContent=old,2500);
+    }).catch(()=>alert('复制失败,请手动复制下方文本'));
+  } else {
+    alert('浏览器不支持剪贴板 API,请手动复制下方文本');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

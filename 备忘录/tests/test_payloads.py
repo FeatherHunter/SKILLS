@@ -24,21 +24,6 @@ def _run_cli(*args, env=None):
     return proc.returncode, proc.stdout, proc.stderr
 
 
-@pytest.fixture
-def env_with_tmp_db(tmp_path, monkeypatch):
-    """用 tmp 目录建库,环境变量隔离不污染真实 D:/.db"""
-    db_dir = tmp_path
-    db_path = db_dir / "memo.db"
-    init_sql = (SCRIPT_DIR / "init.sql").read_text(encoding="utf-8")
-    import sqlite3
-    conn = sqlite3.connect(db_path)
-    conn.executescript(init_sql)
-    conn.commit()
-    conn.close()
-    env = {"SKILLS_DB_PATH": str(db_dir), "PATH": "/usr/bin:/bin"}
-    return env
-
-
 class TestAddNoteContract:
     def test_add_minimal(self, env_with_tmp_db):
         rc, out, err = _run_cli("add", "测试内容", env=env_with_tmp_db)

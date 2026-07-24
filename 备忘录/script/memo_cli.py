@@ -745,6 +745,101 @@ def set_due(args):
     finally:
         conn.close()
 
+
+def wish_batch_plan(args):
+    """心愿排期向导(过程型 HTML 前置数据收集)
+
+    设计:
+      - 默认(无 --ids):搜索 category='心愿' AND due IS NULL 的最近 50 条
+      - --all:含已排期心愿(用于微调场景)
+      - --ids:精确指定 id 列表
+      - --suggest-due:全局建议排期(用于 HTML 默认填充)
+      - --html:生成过程型向导页(templates/wish_plan.html)
+
+    数据契约(payload.data):
+      title / command / generated_at
+      suggest_due: str|None
+      all: bool
+      items: [{
+        id, content, category, sub_category, current_due, feishu_task_guid,
+        selected: bool, suggested_due: str|None
+      }]
+    """
+    suggest_due = getattr(args, "suggest_due", None)
+    if suggest_due:
+        try:
+            datetime.strptime(suggest_due, "%Y-%m-%d")
+        except ValueError:
+            error_json(f"suggest-due 格式错误,需 YYYY-MM-DD: {suggest_due}")
+
+    ids = getattr(args, "ids", None)
+    include_all = getattr(args, "all", False)
+    if ids is not None and include_all:
+        error_json("--ids 与 --all 互斥,只可选其一")
+
+    conn = get_conn()
+    try:
+        if ids:
+            # 显式指定:按 id 顺序,但只取 category='心愿'
+            placeholders = ",".join("?" * len(ids))
+            sql = f"SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes WHERE id IN ({placeholders}) AND category='心愿' ORDER BY updated_at DESC"
+            cur = conn.execute(sql, ids)
+            rows = cur.fetchall()
+            missing = [i for i in ids if i not in [r["id"] for r in rows]]
+            if missing:
+                error_json(f"这些 id 不是心愿或不存在: {missing}")
+        else:
+            # 默认(无 --all)只列 due IS NULL
+            sql = "SELECT id, content, category, sub_category, due, feishu_task_guid FROM notes WHERE category='心愿'"
+            if not include_all:
+                sql += " AND due IS NULL"
+            sql += " ORDER BY updated_at DESC LIMIT 50"
+            cur = conn.execute(sql)
+            rows = cur.fetchall()
+
+        items = [{
+            "id": r["id"],
+            "content": r["content"],
+            "category": r["category"],
+            "sub_category": r["sub_category"],
+            "current_due": r["due"],
+            "feishu_task_guid": r["feishu_task_guid"],
+            "selected": True,  # 默认全勾选(用户用 uncheck 表达"不改")
+            "suggested_due": suggest_due,
+        } for r in rows]
+
+        payload = {
+            "status": "ok",
+            "data": {
+                "title": "心愿排期向导",
+                "command": "wish-batch-plan",
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "suggest_due": suggest_due,
+                "all": include_all,
+                "items": items,
+            },
+            "message": f"找到 {len(items)} 个心愿{'(含已排期)' if include_all else '(仅未排期)'}",
+        }
+
+        if getattr(args, "html", False):
+            try:
+                from memo_render import render_wish_plan
+                path = render_wish_plan(payload)
+                output_json({
+                    "html_path": path,
+                    "count": len(items),
+                    "include_all": include_all,
+                }, message="心愿排期向导 HTML 已生成")
+            except Exception as e:
+                error_json(f"心愿排期向导 HTML 生成失败: {e}")
+        else:
+            output_json(items, message=f"找到 {len(items)} 个心愿")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+
 # ---- 提醒操作 ----
 
 def _validate_remind_at(at_str):
@@ -1312,6 +1407,13 @@ def main():
     p_setdue.add_argument("ids", nargs="+", type=int, help="心愿 note id 列表(可多个)")
     p_setdue.add_argument("--due", required=True, help="期望完成日期 (YYYY-MM-DD) 或 null 清除")
 
+    # wish-batch-plan (心愿排期向导·过程型 HTML 前置)
+    p_wp = sub.add_parser("wish-batch-plan", help="心愿排期向导:收集心愿列表(过程型 HTML 前置数据)")
+    p_wp.add_argument("--ids", nargs="*", type=int, default=None, help="显式指定心愿 id 列表(与 --all 互斥)")
+    p_wp.add_argument("--all", action="store_true", help="含已排期心愿(默认仅 due IS NULL)")
+    p_wp.add_argument("--suggest-due", default=None, help="全局建议排期日期 YYYY-MM-DD(HTML 默认填充)")
+    p_wp.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_plan.html)")
+
     # sync-from-feishu (反向同步)
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
     p_sync.add_argument("--html", action="store_true", help="生成 HTML 同步报告页(模板 sync_report.html)")
@@ -1363,6 +1465,8 @@ def main():
         update_sub_category(args)
     elif args.command == "set-due":
         set_due(args)
+    elif args.command == "wish-batch-plan":
+        wish_batch_plan(args)
     elif args.command == "sync-from-feishu":
         # 双向对账：本地补建 + 飞书 done 反向 + 飞书 due 反向
         from feishu_sync import sync_from_feishu

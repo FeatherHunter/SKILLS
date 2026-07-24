@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL 开发总纲 V1.0 · 整体架构</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --green-soft: #e8f5e9;
+    --orange: #ff9500; --orange-soft: #fff7e6;
+    --purple: #af52de; --purple-soft: #f3e8fd;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 980px; margin: 0 auto;
+    padding: 80px 32px 120px;
+  }
+  h1 { font-size: 44px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
+  h2 { font-size: 30px; font-weight: 600; margin-top: 72px; margin-bottom: 24px; letter-spacing: -0.02em; }
+  h3 { font-size: 21px; font-weight: 600; margin-top: 36px; margin-bottom: 14px; }
+  h4 { font-size: 17px; font-weight: 600; margin-top: 24px; margin-bottom: 10px; color: var(--fg2); }
+  p { font-size: 16px; margin-bottom: 16px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 7px; border-radius: 5px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 13.5px; line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14.5px; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  ul, ol { margin: 16px 0 16px 28px; }
+  li { margin-bottom: 8px; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px; margin: 20px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  .lead { font-size: 19px; color: var(--fg2); margin-bottom: 40px; line-height: 1.55; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 48px; }
+
+  /* TOC */
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+
+  /* Architecture diagram */
+  .arch-diagram { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin: 24px 0; }
+  .arch-level { display: flex; justify-content: center; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .arch-arrow { text-align: center; color: var(--fg3); font-size: 18px; margin: 4px 0; }
+  .arch-box {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; min-width: 140px; max-width: 200px; text-align: center; font-weight: 600;
+    font-size: 14px; line-height: 1.4;
+  }
+  .arch-box small { display: block; font-weight: 400; color: var(--fg2); font-size: 12px; margin-top: 2px; }
+  .arch-box.entry { border-color: var(--accent); background: var(--accent-soft); }
+  .arch-box.star { border-color: var(--orange); background: var(--orange-soft); }
+  .arch-box.asset { border-color: var(--green); background: var(--green-soft); }
+  .arch-box.purple { border-color: var(--purple); background: var(--purple-soft); }
+  .arch-legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 20px; font-size: 12px; color: var(--fg2); }
+  .arch-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .arch-legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; }
+
+  /* File cards */
+  .file-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 24px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 60px 1fr; gap: 16px;
+  }
+  .file-num {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; flex-shrink: 0;
+  }
+  .file-num.asset-num { background: var(--green); }
+  .file-num.ref-num { background: var(--purple); }
+  .file-name { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 600; font-size: 15px; color: var(--fg); }
+  .file-meta { font-size: 13px; color: var(--fg2); margin-top: 4px; }
+  .file-desc { margin-top: 8px; font-size: 14px; color: var(--fg); }
+
+  /* Scenarios */
+  .scenario {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 24px; margin-bottom: 14px;
+  }
+  .scenario-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .scenario-tag { background: var(--accent-soft); color: var(--fg2); padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .scenario-flow { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .scenario-flow .step { background: var(--accent-soft); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 13px; font-family: ui-monospace, monospace; }
+
+  /* Hook mapping */
+  .hook-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .hook-row:last-child { border-bottom: none; }
+  .hook-key { font-weight: 600; color: var(--fg); }
+  .hook-key .star { color: var(--orange); }
+  .hook-val { color: var(--fg2); font-size: 14px; }
+
+  /* Timeline */
+  .timeline { margin: 20px 0; }
+  .tl-row { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .tl-row:last-child { border-bottom: none; }
+  .tl-hash { font-family: ui-monospace, monospace; color: var(--accent); font-size: 13px; }
+  .tl-msg { font-size: 14px; }
+
+  /* Philosophy */
+  .philosophy { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; }
+  .philosophy b { color: var(--accent); font-size: 15px; }
+  .philosophy p { font-size: 14px; margin-top: 6px; }
+
+  /* Footer */
+  footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>整体架构 · SKILL 开发总纲 V1.0</h1>
+<p class="lead">不是讲"做什么"，而是讲"手册本身是怎么组织的"。写给想深入理解总纲结构的人。</p>
+<p class="meta">初版 2026-07-24 · 与总纲 V1.0 同步 · 这是一份"读手册的说明书"</p>
+
+<div class="toc">
+<h4>目录</h4>
+<ol>
+  <li><a href="#s1">一图总览</a></li>
+  <li><a href="#s2">9 文件 + 3 资产 · 每个的角色</a></li>
+  <li><a href="#s3">AI 阅读路径 · 3 种场景</a></li>
+  <li><a href="#s4">5 钩子映射 · 详细在哪</a></li>
+  <li><a href="#s5">设计令牌流动 · 从哪来到哪去</a></li>
+  <li><a href="#s6">演化时间线 · 7 个 commit</a></li>
+  <li><a href="#s7">设计哲学 · 总纲遵守的 5 条</a></li>
+</ol>
+</div>
+
+<!-- ========== §1 一图总览 ========== -->
+<h2 id="s1">一图总览</h2>
+
+<p>总纲 V1.0 由 <b>1 入口 + 6 正文 + 3 资产 + 1 HTML 镜像</b> 共 11 个文件组成。按重要性 + 阅读顺序分 4 层：</p>
+
+<div class="arch-diagram">
+
+  <div class="arch-level">
+    <div class="arch-box entry">SKILL.md<br><small>入口 · description 30秒回答</small></div>
+  </div>
+  <div class="arch-arrow">↓</div>
+
+  <div class="arch-level">
+    <div class="arch-box">01-第一性原理<br><small>概念 · 短</small></div>
+    <div class="arch-box star">02-5层骨架<br><small>★ 权威 · 最常读</small></div>
+  </div>
+  <div class="arch-arrow">↓ ↓</div>
+
+  <div class="arch-level">
+    <div class="arch-box purple">03-触发词v2<br><small>设计</small></div>
+    <div class="arch-box purple">04-可视化与注入v2<br><small>★ 模式词典</small></div>
+    <div class="arch-box purple">05-工程仪式<br><small>SOP</small></div>
+  </div>
+  <div class="arch-arrow">↓ ↓ ↓</div>
+
+  <div class="arch-level">
+    <div class="arch-box">06-附录·RULE<br><small>实战沉淀</small></div>
+  </div>
+
+  <div style="margin-top: 32px; border-top: 1px dashed var(--border); padding-top: 20px;">
+    <div style="font-size: 13px; color: var(--fg2); margin-bottom: 12px; text-align: center;">━━ 被 §04 §05 引用的可加载资产 ━━</div>
+    <div class="arch-level">
+      <div class="arch-box asset">_assets/style.css<br><small>设计令牌</small></div>
+      <div class="arch-box asset">_assets/injector.py<br><small>注入函数</small></div>
+      <div class="arch-box asset">_assets/template_skeleton.html<br><small>4段式骨架</small></div>
+    </div>
+  </div>
+
+  <div class="arch-legend">
+    <span><i style="background: var(--accent-soft); border: 1px solid var(--accent);"></i> 入口</span>
+    <span><i style="background: var(--orange-soft); border: 1px solid var(--orange);"></i> ★ 权威</span>
+    <span><i style="background: var(--purple-soft); border: 1px solid var(--purple);"></i> 设计</span>
+    <span><i style="background: var(--green-soft); border: 1px solid var(--green);"></i> 可加载资产</span>
+  </div>
+
+</div>
+
+<p><b>关键观察</b>:§02 是<b>唯一权威</b>(所有规则/反模式/自检都源自它),§04 是<b>新增价值</b>(模式词典 + 单工铁律)。其他章节是它们的展开或实操。</p>
+
+<!-- ========== §2 文件角色 ========== -->
+<h2 id="s2">9 文件 + 3 资产 · 每个的角色</h2>
+
+<h3>入口 (1)</h3>
+<div class="file-card">
+  <div class="file-num">E</div>
+  <div>
+    <div class="file-name">SKILL.md</div>
+    <div class="file-meta">2.5 KB · YAML frontmatter + 30秒回答 + 文件清单 + 5 钩子</div>
+    <div class="file-desc"><b>作用</b>:AI 主入口。description 决定 AI 何时加载总纲。<b>何时读</b>:首次接触 + 任何 Skill 任务开始前。</div>
+  </div>
+</div>
+
+<h3>正文 (6)</h3>
+<div class="file-card">
+  <div class="file-num">01</div>
+  <div>
+    <div class="file-name">01-第一性原理.md</div>
+    <div class="file-meta">~2 KB · 1 段话 + 5 层图</div>
+    <div class="file-desc"><b>作用</b>:讲清"Skill 是什么" + 为什么分层。<b>何时读</b>:第一次接触总纲 + 给非开发者讲清概念。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num" style="background: var(--orange);">02</div>
+  <div>
+    <div class="file-name">02-5层骨架.md</div>
+    <div class="file-meta">~8.5 KB · 5 层 + 6 特性 + 8 反模式 + 自检清单 + 改动 3 问 · <b>★ 最长最权威</b></div>
+    <div class="file-desc"><b>作用</b>:Skill 设计的唯一权威。<b>何时读</b>:任何 Skill 设计/改造的起点,5 层自检必跑。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num ref-num">03</div>
+  <div>
+    <div class="file-name">03-触发词设计v2.md</div>
+    <div class="file-meta">~4 KB · 4 元组结构 + 8≤N + 3 去重铁律</div>
+    <div class="file-desc"><b>作用</b>:设计 SKILL.md 触发词表。<b>何时读</b>:写新 Skill 触发词 / 改 Skill 触发词时。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num ref-num">04</div>
+  <div>
+    <div class="file-name">04-可视化与注入v2.md</div>
+    <div class="file-meta">~10 KB · 10 原则 + 决策矩阵 + <b>模式词典</b> + 错配警报</div>
+    <div class="file-desc"><b>作用</b>:HTML 模板 + 数据注入的全部规则。<b>何时读</b>:设计/改造 HTML 模板时;头脑风暴 HTML 模式时。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num ref-num">05</div>
+  <div>
+    <div class="file-name">05-工程仪式.md</div>
+    <div class="file-meta">~4.5 KB · 改动 3 问 + SOP + Commit 规范 + Hooks + 测试模板</div>
+    <div class="file-desc"><b>作用</b>:动手前的最后一道防线。<b>何时读</b>:任何 commit 前;评审他人改动时。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num ref-num">06</div>
+  <div>
+    <div class="file-name">06-附录.md</div>
+    <div class="file-meta">~3 KB · 3 维度评估 + 4 Phase 模式 + 通用顺序 + 不做的情形 + BUG 优先级</div>
+    <div class="file-desc"><b>作用</b>:从历史案例抽出的 RULE Forms(不是案例本身)。<b>何时读</b>:改造 Skill 前评估 + 不知道下一步怎么办时。</div>
+  </div>
+</div>
+
+<h3>可加载资产 (3)</h3>
+<div class="file-card">
+  <div class="file-num asset-num">CSS</div>
+  <div>
+    <div class="file-name">_assets/style.css</div>
+    <div class="file-meta">~6 KB · 设计令牌(色板 / 字体 / 圆角 / 4 段式 / 5 状态)</div>
+    <div class="file-desc"><b>作用</b>:HTML 模板共享的视觉系统。<b>何时用</b>:任何 HTML 模板的 <code>&lt;link rel="stylesheet"&gt;</code>。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num asset-num">PY</div>
+  <div>
+    <div class="file-name">_assets/injector.py</div>
+    <div class="file-meta">~3 KB · <code>inject()</code> + <code>render_4step()</code> + 30s timeout</div>
+    <div class="file-desc"><b>作用</b>:占位符注入函数(防转义断标签 + 占位符校验)。<b>何时用</b>:任何渲染器复用 2 行调用。</div>
+  </div>
+</div>
+<div class="file-card">
+  <div class="file-num asset-num">HTML</div>
+  <div>
+    <div class="file-name">_assets/template_skeleton.html</div>
+    <div class="file-meta">~5 KB · 首屏 + 主体 + 交互 + 尾部 + 5 状态 fallback + 复制 prompt 按钮</div>
+    <div class="file-desc"><b>作用</b>:HTML 模板通用起点(壳)。<b>何时用</b>:复制 → 改具体字段 → 上线。<b>注意</b>:骨架是壳,模式(§04 模式词典)是肉。</div>
+  </div>
+</div>
+
+<!-- ========== §3 AI 阅读路径 ========== -->
+<h2 id="s3">AI 阅读路径 · 3 种场景</h2>
+
+<p>AI 接到 Skill 任务时,根据场景读不同文件。<b>不一定要读完全部</b>,按需加载:</p>
+
+<h3>场景 A · 写新 Skill(从 0 到 1)</h3>
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="scenario-tag">新建</span>
+    <span style="color: var(--fg2); font-size: 14px;">用户说"帮我写个 XXX skill"</span>
+  </div>
+  <div class="scenario-flow">
+    <span class="step">SKILL.md</span>
+    <span>→</span>
+    <span class="step">01 概念</span>
+    <span>→</span>
+    <span class="step">★ 02 5 层</span>
+    <span>→</span>
+    <span class="step">03 触发词</span>
+    <span>→</span>
+    <span class="step">04 模式词典</span>
+    <span>→</span>
+    <span class="step">05 SOP</span>
+    <span>→</span>
+    <span>06 附录</span>
+  </div>
+  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:先画领域边界(§02)→ 列触发词(§03)→ 设计 schema → 写硬规则 → 写 CLI。<b>§05 SOP 给完整 8 步顺序</b>。</p>
+</div>
+
+<h3>场景 B · 改造现有 Skill(1 → 1.1)</h3>
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="scenario-tag">改造</span>
+    <span style="color: var(--fg2); font-size: 14px;">用户说"改一下 XXX skill" / "重构"</span>
+  </div>
+  <div class="scenario-flow">
+    <span class="step">SKILL.md</span>
+    <span>→</span>
+    <span class="step">06 附录 A 3维度</span>
+    <span>→</span>
+    <span class="step">06 附录 B 4 Phase</span>
+    <span>→</span>
+    <span class="step">★ 02 5 层</span>
+    <span>→</span>
+    <span class="step">05 改动 3 问</span>
+  </div>
+  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:先做 3 维度评估(S/A/B/不做),再选 Phase 顺序(A→B→C→D 不跳)。每 Phase 一个 commit。</p>
+</div>
+
+<h3>场景 C · 评审他人改动</h3>
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="scenario-tag">评审</span>
+    <span style="color: var(--fg2); font-size: 14px;">用户说"看看这个改动 OK 吗" / Code Review</span>
+  </div>
+  <div class="scenario-flow">
+    <span class="step">SKILL.md 5 钩子</span>
+    <span>→</span>
+    <span class="step">★ 02 5 层自检</span>
+    <span>→</span>
+    <span class="step">04 模式对照</span>
+    <span>→</span>
+    <span class="step">05 Commit 规范</span>
+  </div>
+  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:用 5 钩子逐条勾;用 §02 5 层自检清单;用 §04 模式对照看 HTML 是否错配。</p>
+</div>
+
+<!-- ========== §4 5 钩子映射 ========== -->
+<h2 id="s4">5 钩子映射 · 详细在哪</h2>
+
+<p>SKILL.md 列出的 5 个<b>不可违背的钩子</b>。每条钩子详细规则散落在不同章节:</p>
+
+<div class="hook-row">
+  <div class="hook-key">① HTML 同步硬规则</div>
+  <div class="hook-val">§02 §⑤ 文档层 + §02 8 反模式 · §04 6 可演进 · §05 Commit 规范</div>
+</div>
+<div class="hook-row">
+  <div class="hook-key">② 改动前 3 问</div>
+  <div class="hook-val">§02 末节"改动前必答 3 问" · §04 原则 6 · §05 工程仪式开头</div>
+</div>
+<div class="hook-row">
+  <div class="hook-key">③ 触发词设计 v2</div>
+  <div class="hook-val">§03 全部 · 4 元组 + 8≤N + 3 去重铁律 + 变体管理</div>
+</div>
+<div class="hook-row">
+  <div class="hook-key">④ CLI 阻塞判定</div>
+  <div class="hook-val">§04 原则 1 · §04 决策矩阵 · §04 原则 8(8 反模式第 8)</div>
+</div>
+<div class="hook-row">
+  <div class="hook-key"><span class="star">★</span> ⑤ HTML 单工铁律(最高)</div>
+  <div class="hook-val">§04 原则 10(完整推导) · §04 模式词典"与原则 10 联动" · _assets/style.css .copy-prompt 样式</div>
+</div>
+
+<p><b>观察</b>:钩子 ⑤ 在 3 个地方有相关说明(原则 10 详细、模式词典联动、_assets 样式),体现它是<b>最常被违反</b>所以需要多重提醒。</p>
+
+<!-- ========== §5 设计令牌流动 ========== -->
+<h2 id="s5">设计令牌流动 · 从哪来到哪去</h2>
+
+<p>总纲 v2 的关键是把"原则"变成"可加载资产"。设计令牌流向如下:</p>
+
+<pre><code>HTML 唤醒词开发 prompt (2026-05-31)
+  ├─ Apple 风格描述(白底/留白/克制/SF Pro)
+  ├─ Notion 风格描述(米白/圆角卡片/胶囊)
+  └─ 4 段式 + 5 状态样式需求(从模板实践抽出)
+        ↓
+  _assets/style.css (6KB · 总纲提炼的设计令牌)
+        ↓ 被以下引用
+  ├─ 主 HTML (SKILL开发总纲V1.0.html)
+  ├─ 每个 skill 的 HTML 模板
+  └─ _assets/template_skeleton.html (同目录 link)</code></pre>
+
+<p><b>关键事实</b>:</p>
+<ul>
+  <li><b>总纲不强制每 skill 复用 style.css</b>——只作为"已验证的设计模板"参考</li>
+  <li><b>风格令牌(色板/字体/圆角)应保持一致</b>——避免 50+ skill 各搞一套</li>
+  <li><b>style.css 与 _shared/injector.py 解耦</b>——前者管视觉,后者管数据</li>
+</ul>
+
+<!-- ========== §6 演化时间线 ========== -->
+<h2 id="s6">演化时间线 · 7 个 commit</h2>
+
+<p>总纲 V1.0 不是一蹴而就,而是 7 个 commit 逐步沉淀的:</p>
+
+<div class="timeline">
+  <div class="tl-row">
+    <div class="tl-hash">ce13d1a</div>
+    <div class="tl-msg"><b>重构</b>:SKILL 开发规范重构(五层架构 → V1.0 总纲)· 把 4 份历史材料合并</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">baee7d4</div>
+    <div class="tl-msg"><b>文档</b>:新增 SKILL HTML 类型分类可视化草案</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">f304e4f</div>
+    <div class="tl-msg"><b>文档</b>:SKILL开发总纲新增06-附录 + 清理已沉淀的旧模板目录</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">bc80c11</div>
+    <div class="tl-msg"><b>修复</b>:注入器增加30秒超时防护 + 模板骨架CSS路径修正</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">94687bf</div>
+    <div class="tl-msg"><b>杂务</b>:各 Skill 规范引用统一指向 SKILL开发总纲V1.0(智剪工坊 3 处 + 作息管家 1 处)</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">087b069</div>
+    <div class="tl-msg"><b>功能</b>:html 目录新增卡路里趋势与覆盖矩阵 2 个可视化 demo 模板</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">1a1142f</div>
+    <div class="tl-msg"><b>fixup</b>:总纲 V1.0 清理硬编码案例名 + 严格 Q8(居家管家/卡路里 → generic)</div>
+  </div>
+  <div class="tl-row">
+    <div class="tl-hash">ba7e685</div>
+    <div class="tl-msg"><b>本 commit</b>:§04 新增设计模式全景 · 头脑风暴触发器</div>
+  </div>
+</div>
+
+<p><b>演化模式</b>:ce13d1a 是"基础重构"(大爆炸),之后都是"小幅增量"。每个 commit 都有 涉及文件 / 核心变动 / 影响范围 / 向后兼容 四段式(按 §05 commit 规范)。</p>
+
+<!-- ========== §7 设计哲学 ========== -->
+<h2 id="s7">设计哲学 · 总纲遵守的 5 条</h2>
+
+<p>总纲本身也是按某些原则设计的。这些原则**也适用于其他文档/工具的设计**。</p>
+
+<div class="philosophy">
+  <b>① 不写硬编码案例</b>
+  <p>总纲不写"居家管家怎么改"、"卡路里 Phase D 怎么写"。写"<b>原则</b>"(怎么改)和"<b>模式</b>"(可能怎么写),让 AI 自己实例化。用户 Q8 偏好。</p>
+</div>
+<div class="philosophy">
+  <b>② 模式词典 > 模板库</b>
+  <p>给 18 个 HTML 设计模式(布局 6 + 可视化 6 + 交互 6),不给 18 个完整模板。让 AI <b>头脑风暴</b>挑 + <b>从零设计</b>,而不是抄骨架。</p>
+</div>
+<div class="philosophy">
+  <b>③ 可加载资产 > 描述性规则</b>
+  <p>10 条原则 → 1 个 CSS + 1 个 Python + 1 个 HTML 骨架。AI 复用而非重设计,稳定输出而非每次重新综合。</p>
+</div>
+<div class="philosophy">
+  <b>④ 单一权威 + 显式出处</b>
+  <p>§02 是 5 层权威,§04 是 HTML 权威。其他章节引用它们,避免规则散落重复。智剪工坊/作息管家 broken refs 已统一指向总纲。</p>
+</div>
+<div class="philosophy">
+  <b>⑤ 软约束为主 · 钩子 5 个硬约束</b>
+  <p>大部分规则靠 AI 自约束(soft);只有 5 个钩子是硬规则,且其中 1 个(HTML 单工铁律)是最高优先级。其他地方用"软建议"+ checklist 形式。</p>
+</div>
+
+<footer>
+  写于 2026-07-24 · 与总纲 V1.0 同步 · 这是一份"读手册的说明书"<br>
+  如有更新,改架构图本身即可,不需要改总纲
+</footer>
+
+</body>
+</html>

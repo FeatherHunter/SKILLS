@@ -1,0 +1,121 @@
+{
+  "status": "ok",
+  "data": {
+    "current_mode": "profile",
+    "schemas": {
+      "profile": {
+        "title": "👤 设置档案",
+        "subtitle": "设置年龄/性别/身高,系统用 Mifflin-St Jeor 公式计算 BMR 和 TDEE",
+        "entity_type": "用户档案",
+        "form_title": "用户基础信息",
+        "fields": [
+          {
+            "key": "age",
+            "label": "年龄",
+            "type": "number",
+            "required": true,
+            "placeholder": "30",
+            "hint": "用于 BMR 计算"
+          },
+          {
+            "key": "gender",
+            "label": "性别",
+            "type": "select",
+            "required": true,
+            "options": [
+              {
+                "value": "male",
+                "label": "男"
+              },
+              {
+                "value": "female",
+                "label": "女"
+              }
+            ]
+          },
+          {
+            "key": "height",
+            "label": "身高(cm)",
+            "type": "number",
+            "required": true,
+            "placeholder": "177",
+            "hint": "用于 BMI"
+          },
+          {
+            "key": "note",
+            "label": "备注",
+            "type": "textarea",
+            "hint": "可选"
+          }
+        ],
+        "exec_cmd_template": "calorie_tracker.py profile set {age} {gender} --height {height}{note? --note \" + note + \"}",
+        "exec_cmd_optional": "note"
+      },
+      "cron": {
+        "title": "⏰ 开启定时复盘",
+        "subtitle": "mavis cron 创建每日 23:00 自动复盘任务(过去 7 天)",
+        "entity_type": "定时任务",
+        "form_title": "定时任务配置",
+        "fields": [
+          {
+            "key": "task_name",
+            "label": "任务名称",
+            "type": "text",
+            "required": true,
+            "placeholder": "卡路里复盘",
+            "hint": "便于识别"
+          },
+          {
+            "key": "schedule",
+            "label": "Schedule(cron 表达式)",
+            "type": "text",
+            "required": true,
+            "placeholder": "0 23 * * *",
+            "hint": "每天 23:00"
+          },
+          {
+            "key": "timezone",
+            "label": "时区",
+            "type": "select",
+            "required": true,
+            "options": [
+              {
+                "value": "Asia/Shanghai",
+                "label": "Asia/Shanghai (UTC+8)"
+              },
+              {
+                "value": "UTC",
+                "label": "UTC"
+              }
+            ]
+          },
+          {
+            "key": "command",
+            "label": "执行命令",
+            "type": "text",
+            "required": true,
+            "placeholder": "python3 calorie_tracker.py review --full",
+            "hint": "默认 review --full 过去 7 天"
+          }
+        ],
+        "exec_cmd_template": "mavis cron create --name \"{task_name}\" --schedule \"{schedule}\" --tz \"{timezone}\" --command \"{command}\"",
+        "exec_cmd_template_simple": true
+      }
+    },
+    "defaults": {
+      "profile": {
+        "age": 30,
+        "gender": "male",
+        "height": 177,
+        "note": ""
+      },
+      "cron": {
+        "task_name": "卡路里复盘",
+        "schedule": "0 23 * * *",
+        "timezone": "Asia/Shanghai",
+        "command": "python3 scripts/calorie_tracker.py review --full"
+      }
+    }
+  },
+  "message": "已生成配置向导"
+}

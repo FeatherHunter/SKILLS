@@ -1,7 +1,9 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.1**(2026-07-24 发布 · 10 个 commit · git tag `v1.0.1`)
-> v1.0.1 修复 wish-complete 默认筛条件过严的 bug(详见 CHANGELOG.md)
+> **当前版本:1.0.3**(2026-07-24 发布 · 12 个 commit · git tag `v1.0.3`)
+> v1.0.3:HTML 交付规范纠正(`<media>` + 浏览器并行)
+> v1.0.2:HTML 交付规范初版(过度禁止已纠正)
+> v1.0.1:wish-complete 第一性修复
 > 详见 `CHANGELOG.md`
 
 ## 强制性规定(最高优先级)
@@ -10,35 +12,45 @@
 2. **优先级**:本规定优先级最高,高于所有其他规范。
 3. **用户确认**:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。
 
-## HTML 交付规范(2026-07-24 加 · 最高优先级)
+## HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)
 
 这是 5 个 HTML 模板(`memo_query.html`/`sync_report.html`/`wish_plan.html`/`wish_complete.html`/`change_category.html`)生成后,**AI 代理必须遵守的交付协议**:
 
-1. **必须用 `<media src="..." type="file" />` 标签交付**。
-   - 不是简单"告诉用户路径",不是"自动打开 Chrome",不是"内容内联展示"
-   - 出处:《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)
-   - HTML 内嵌 JS + clipboard + textarea,有交互,内联展示会丢失交互
+1. **必须用 `<media src="..." type="file" />` 标签交付**(基础动作)。
+   - 这是《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)规定的标准交付方式
+   - HTML 内嵌 JS + clipboard + textarea,有交互,**内联展示会丢失交互**(所以内联禁止)
 
-2. **绝对禁止**:
-   - ❌ AI 主动 `subprocess` / `webbrowser` 模块尝试唤起浏览器(跨平台/隐私/不可控)
+2. **强烈推荐:与 `<media>` 并行,同时用 Chrome 等系统默认浏览器打开**。
+   - 用户场景:用户在 IDE 里用 `<media>` 预览的同时,Chrome 窗口也打开了
+   - 好处:Chrome 渲染 JS / 持久化窗口 / 多窗口并存 / 移动设备同步
+   - 实现方式:AI 可调用 IDE/平台提供的 open file 工具或 subprocess + 系统默认应用
+   - **不冲突**:`<media>`(IDE 内嵌)与 Chrome(系统浏览器)是**两个独立通道**,并行不冲突
+
+3. **禁止**:
    - ❌ 只输出文件路径文字让用户"自己去打开"(用户必须去 bash terminal 复制粘贴,体验差)
    - ❌ 内联读 HTML 全部内容塞进对话(交互丢失 + 上下文中毒)
-   - ❌ 备注 "AI 建议你用 Chrome 打开"等绕过 `<media>` 的指引
+   - ❌ 备注 "AI 建议你用 Chrome 打开"等绕过 `<media>` 的指引(应该直接做,不要"建议")
 
-3. **正确做法**(举例):
+4. **正确做法**(并行交付,举例):
    ```
-   找到 3 条心愿。[html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
+   找到 3 条心愿。
+   [html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
    <media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" />
+   + AI 同步:用系统默认浏览器(Chrome 等)打开同一文件
    ```
 
-4. **触发词场景对应交付协议**:
-   - 5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 `--html` 后必须 `<media>` 交付
+5. **触发词场景对应交付协议**(每个都 `<media>` + 浏览器并行):
+   - 5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 `--html` 后并行
    - 备忘录同步(sync-from-feishu `--html`):同上
-   - 心愿排期向导(wish-batch-plan `--html`):用户勾选 + 复制 + 粘贴回 AI,**第一步必须 `<media>` 交付**
+   - 心愿排期向导(wish-batch-plan `--html`):用户勾选 + 复制 + 粘贴回 AI,**第一步并行**
    - 心愿完成向导(wish-complete `--html`):同上
    - 批量改分类向导(batch-update-category `--html`):同上
 
-5. **优先级**:本规范与"HTML 同步"同级(最高优先级),违反 = 与 Step 1-3 修复时 L114-228 默认行为错位同类问题。
+6. **优先级**:本规范与"HTML 同步"同级(最高优先级)。
+
+7. **历史修订**:
+   - v1.0.2(2026-07-24):最初版,误写"绝对禁止 AI 主动唤起浏览器"
+   - v1.0.3(2026-07-24):纠正 — 用户确认 `<media>` 与浏览器打开应并行,**非互斥**
 
 
 ## 描述

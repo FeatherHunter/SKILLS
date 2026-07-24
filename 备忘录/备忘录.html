@@ -71,7 +71,9 @@
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
 <blockquote>
-<p><strong>当前版本:1.0.1</strong>(2026-07-24 发布 · 10 个 commit · git tag <code>v1.0.1</code>)<br>v1.0.1 修复 wish-complete 默认筛条件过严的 bug(详见 CHANGELOG.md)<br>
+<p><strong>当前版本:1.0.3</strong>(2026-07-24 发布 · 12 个 commit · git tag <code>v1.0.3</code>)<br>v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
+v1.0.2:HTML 交付规范初版(过度禁止已纠正)<br>
+v1.0.1:wish-complete 第一性修复<br>
 详见 <code>CHANGELOG.md</code></p>
 </blockquote>
 <h2 id="强制性规定-最高优先级-1">强制性规定(最高优先级)</h2>
@@ -80,34 +82,46 @@
 <li><strong>优先级</strong>:本规定优先级最高,高于所有其他规范。</li>
 <li><strong>用户确认</strong>:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。</li>
 </ol>
-<h2 id="html-交付规范-2026-07-24-加-最高优先级">HTML 交付规范(2026-07-24 加 · 最高优先级)</h2>
+<h2 id="html-交付规范-2026-07-24-加-最高优先级">HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)</h2>
 <p>这是 5 个 HTML 模板(<code>memo_query.html</code>/<code>sync_report.html</code>/<code>wish_plan.html</code>/<code>wish_complete.html</code>/<code>change_category.html</code>)生成后,<strong>AI 代理必须遵守的交付协议</strong>:</p>
 <ol>
-<li><strong>必须用 <code>&lt;media src="..." type="file" /&gt;</code> 标签交付</strong>。<ul>
-<li>不是简单"告诉用户路径",不是"自动打开 Chrome",不是"内容内联展示"</li>
+<li><strong>必须用 <code>&lt;media src="..." type="file" /&gt;</code> 标签交付</strong>(基础动作)。<ul>
 <li>出处:《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)</li>
-<li>HTML 内嵌 JS + clipboard + textarea,有交互,内联展示会丢失交互</li>
+<li>HTML 内嵌 JS + clipboard + textarea,有交互,<strong>内联展示会丢失交互</strong>(所以内联禁止)</li>
 </ul>
 </li>
-<li><strong>绝对禁止</strong>:<ul>
-<li>❌ AI 主动 <code>subprocess</code> / <code>webbrowser</code> 模块尝试唤起浏览器(跨平台/隐私/不可控)</li>
+<li><strong>强烈推荐:与 <code>&lt;media&gt;</code> 并行,同时用 Chrome 等系统默认浏览器打开</strong>。<ul>
+<li>用户场景:用户在 IDE 里用 <code>&lt;media&gt;</code> 预览的同时,Chrome 窗口也打开了</li>
+<li>好处:Chrome 渲染 JS / 持久化窗口 / 多窗口并存 / 移动设备同步</li>
+<li>实现方式:AI 可调用 IDE/平台提供的 open file 工具或 subprocess + 系统默认应用</li>
+<li><strong>不冲突</strong>:<code>&lt;media&gt;</code>(IDE 内嵌)与 Chrome(系统浏览器)是<strong>两个独立通道</strong>,并行不冲突</li>
+</ul>
+</li>
+<li><strong>禁止</strong>:<ul>
 <li>❌ 只输出文件路径文字让用户"自己去打开"(用户必须去 bash terminal 复制粘贴,体验差)</li>
 <li>❌ 内联读 HTML 全部内容塞进对话(交互丢失 + 上下文中毒)</li>
-<li>❌ 备注 "AI 建议你用 Chrome 打开"等绕过 <code>&lt;media&gt;</code> 的指引</li>
+<li>❌ 备注 "AI 建议你用 Chrome 打开"等绕过 <code>&lt;media&gt;</code> 的指引(应该直接做,不要"建议")</li>
 </ul>
 </li>
-<li><strong>正确做法</strong>(举例):<pre><code>找到 3 条心愿。[html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
-&lt;media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" /&gt;</code></pre>
+<li><strong>正确做法</strong>(并行交付,举例):<pre><code>找到 3 条心愿。
+[html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
+&lt;media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" /&gt;
++ AI 同步:用系统默认浏览器(Chrome 等)打开同一文件</code></pre>
 </li>
-<li><strong>触发词场景对应交付协议</strong>:<ul>
-<li>5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 <code>--html</code> 后必须 <code>&lt;media&gt;</code> 交付</li>
+<li><strong>触发词场景对应交付协议</strong>(每个都 <code>&lt;media&gt;</code> + 浏览器并行):<ul>
+<li>5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 <code>--html</code> 后并行</li>
 <li>备忘录同步(sync-from-feishu <code>--html</code>):同上</li>
-<li>心愿排期向导(wish-batch-plan <code>--html</code>):用户勾选 + 复制 + 粘贴回 AI,<strong>第一步必须 <code>&lt;media&gt;</code> 交付</strong></li>
+<li>心愿排期向导(wish-batch-plan <code>--html</code>):用户勾选 + 复制 + 粘贴回 AI,<strong>第一步并行</strong></li>
 <li>心愿完成向导(wish-complete <code>--html</code>):同上</li>
 <li>批量改分类向导(batch-update-category <code>--html</code>):同上</li>
 </ul>
 </li>
-<li><strong>优先级</strong>:本规范与"HTML 同步"同级(最高优先级),违反 = 与 Step 1-3 修复时 L114-228 默认行为错位同类问题。</li>
+<li><strong>优先级</strong>:本规范与"HTML 同步"同级(最高优先级)。</li>
+<li><strong>历史修订</strong>:<ul>
+<li>v1.0.2(2026-07-24):最初版,误写"绝对禁止 AI 主动唤起浏览器"</li>
+<li>v1.0.3(2026-07-24):纠正 — 用户确认 <code>&lt;media&gt;</code> 与浏览器打开应并行,<strong>非互斥</strong></li>
+</ul>
+</li>
 </ol>
 <h2 id="描述-2">描述</h2>
 <p>私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。</p>

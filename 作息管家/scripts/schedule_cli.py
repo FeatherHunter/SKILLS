@@ -1829,28 +1829,16 @@ def cmd_render_receipt(args):
 # 2026-07-24 新增:改/删计划回执(回执型第2款,复用 #0 漂亮回执模式)
 # ============================================================
 #
-# 一个命令:render-plan-receipt <plan_id> [--action update|deactivate]
-# 流程:AI 调 update-event / deactivate-event → 拿到 id → 调本命令生成回执
-# 3 操作按钮 = 3 种 prompt(调整/看全貌/复盘) = 用户决策 + AI 指令合一
-
-
-def cmd_render_plan_receipt(args):
-    """render-plan-receipt <id> [--action update|deactivate]
-
-    改/删计划回执(回执型第2款,复用 #0 漂亮回执模式)。
-    输入 plan_id + action(默认 update),输出:
-    - 计划 6 核心字段(id/date/time/title/category/completion)
-    - 4 卡摘要(今日计划数/完成率/飞书同步/24h 覆盖率)
-    - 3 种操作 prompt(调整/看全貌/复盘) → 各自复制按钮
-    """
-    from schedule_html_render import _html_base_dir, render_plan_receipt, render_and_write
+def _render_plan_receipt_cli(args, render_fn, plan_mode, plan_purpose_label, success_msg_extra=""):
+    """plan_receipt 4 款公共 CLI 包装(2026-07-24 重构提取)"""
+    from schedule_html_render import _html_base_dir, render_and_write
     from pathlib import Path as _P
 
     if not args:
         print(_json.dumps({
             "status": "error",
-            "message": "用法: render-plan-receipt <id> [--action update|deactivate]",
-            "example": "render-plan-receipt 1066 --action update",
+            "message": "用法: <cmd> <plan_id>(整数)",
+            "example": "<cmd> 1066",
         }, ensure_ascii=False))
         return
 
@@ -1863,6 +1851,67 @@ def cmd_render_plan_receipt(args):
         }, ensure_ascii=False))
         return
 
+    try:
+        payload = render_fn(plan_id)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    if not _html_base_dir().exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()}",
+        }, ensure_ascii=False))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    stats = payload["data"].get("stats", {})
+    data_out = {
+        "file_path": str(fp),
+        "bytes": size_bytes,
+        "size_kb": result["data"]["size_kb"],
+        "mode": plan_mode,
+        "plan_id": plan_id,
+        "today_count": stats.get("today_count", 0),
+        "completion_rate": stats.get("completion_rate", 0),
+        "feishu_synced": stats.get("feishu_synced", 0),
+    }
+    if "note_count" in stats:
+        data_out["note_count"] = stats["note_count"]
+    if "completed_count" in stats:
+        data_out["completed_count"] = stats["completed_count"]
+
+    print(_json.dumps({
+        "status": "ok",
+        "data": data_out,
+        "message": f"✓ id={plan_id} 计划 {plan_purpose_label}回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条计划,完成率 {stats.get('completion_rate', 0)}%{success_msg_extra}）",
+    }, ensure_ascii=False, indent=2))
+
+
+# 一个命令:render-plan-receipt <plan_id> [--action update|deactivate]
+# 流程:AI 调 update-event / deactivate-event → 拿到 id → 调本命令生成回执
+# 3 操作按钮 = 3 种 prompt(调整/看全貌/复盘) = 用户决策 + AI 指令合一
+
+
+def cmd_render_plan_receipt(args):
+    """render-plan-receipt <id> [--action update|deactivate]
+
+    改/删计划回执(回执型第2款)。
+    --action 参数支持 update(默认) / deactivate。
+    """
     action = "update"
     i = 1
     while i < len(args):
@@ -1878,49 +1927,14 @@ def cmd_render_plan_receipt(args):
         else:
             i += 1
 
-    try:
-        payload = render_plan_receipt(plan_id, action=action)
-    except Exception as e:
-        print(_json.dumps({
-            "status": "error",
-            "message": f"派生失败: {type(e).__name__}: {e}",
-        }, ensure_ascii=False))
-        return
-
-    if payload.get("status") != "ok":
-        print(_json.dumps(payload, ensure_ascii=False, indent=2))
-        return
-
-    if not _html_base_dir().exists():
-        print(_json.dumps({
-            "status": "error",
-            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()}",
-        }, ensure_ascii=False))
-        return
-
-    result = render_and_write(payload, None)
-    if result.get("status") != "ok":
-        print(_json.dumps(result, ensure_ascii=False, indent=2))
-        return
-
-    fp = _P(result["data"]["file_path"])
-    size_bytes = fp.stat().st_size
-    stats = payload["data"].get("stats", {})
-    print(_json.dumps({
-        "status": "ok",
-        "data": {
-            "file_path": str(fp),
-            "bytes": size_bytes,
-            "size_kb": result["data"]["size_kb"],
-            "mode": "plan-receipt",
-            "plan_id": plan_id,
-            "action": action,
-            "today_count": stats.get("today_count", 0),
-            "completion_rate": stats.get("completion_rate", 0),
-            "feishu_synced": stats.get("feishu_synced", 0),
-        },
-        "message": f"✓ id={plan_id} 计划 {('修改' if action == 'update' else '删除')}回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条计划,完成率 {stats.get('completion_rate', 0)}%）",
-    }, ensure_ascii=False, indent=2))
+    from schedule_html_render import render_plan_receipt
+    purpose = "修改" if action == "update" else "删除"
+    _render_plan_receipt_cli(
+        args, render_fn=lambda pid: render_plan_receipt(pid, action=action),
+        plan_mode="plan-receipt",
+        plan_purpose_label=purpose,
+        success_msg_extra=""
+    )
 
 
 # ============================================================
@@ -1935,70 +1949,15 @@ def cmd_render_plan_receipt(args):
 def cmd_render_plan_receipt_add(args):
     """render-plan-receipt-add <id>
 
-    补计划回执(回执型第3款)。输入 plan_id,输出绿色调(新增是常规操作)回执 HTML。
+    补计划回执(回执型第3款,绿色调)。
     """
-    from schedule_html_render import _html_base_dir, render_plan_receipt_add, render_and_write
-    from pathlib import Path as _P
-
-    if not args:
-        print(_json.dumps({
-            "status": "error",
-            "message": "用法: render-plan-receipt-add <id>(整数)",
-            "example": "render-plan-receipt-add 1066",
-        }, ensure_ascii=False))
-        return
-
-    try:
-        plan_id = int(args[0])
-    except ValueError:
-        print(_json.dumps({
-            "status": "error",
-            "message": f"id 格式非法: '{args[0]}'(期望整数)",
-        }, ensure_ascii=False))
-        return
-
-    try:
-        payload = render_plan_receipt_add(plan_id)
-    except Exception as e:
-        print(_json.dumps({
-            "status": "error",
-            "message": f"派生失败: {type(e).__name__}: {e}",
-        }, ensure_ascii=False))
-        return
-
-    if payload.get("status") != "ok":
-        print(_json.dumps(payload, ensure_ascii=False, indent=2))
-        return
-
-    if not _html_base_dir().exists():
-        print(_json.dumps({
-            "status": "error",
-            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()}",
-        }, ensure_ascii=False))
-        return
-
-    result = render_and_write(payload, None)
-    if result.get("status") != "ok":
-        print(_json.dumps(result, ensure_ascii=False, indent=2))
-        return
-
-    fp = _P(result["data"]["file_path"])
-    size_bytes = fp.stat().st_size
-    stats = payload["data"].get("stats", {})
-    print(_json.dumps({
-        "status": "ok",
-        "data": {
-            "file_path": str(fp),
-            "bytes": size_bytes,
-            "size_kb": result["data"]["size_kb"],
-            "mode": "plan-receipt-add",
-            "plan_id": plan_id,
-            "today_count": stats.get("today_count", 0),
-            "completion_rate": stats.get("completion_rate", 0),
-            "feishu_synced": stats.get("feishu_synced", 0),
-        },
-        "message": f"✓ id={plan_id} 计划 已补回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条计划,完成率 {stats.get('completion_rate', 0)}%）",
-    }, ensure_ascii=False, indent=2))
+    from schedule_html_render import render_plan_receipt_add
+    _render_plan_receipt_cli(
+        args, render_fn=render_plan_receipt_add,
+        plan_mode="plan-receipt-add",
+        plan_purpose_label="补",
+        success_msg_extra=""
+    )
 
 
 # ============================================================
@@ -2013,71 +1972,15 @@ def cmd_render_plan_receipt_add(args):
 def cmd_render_plan_receipt_write(args):
     """render-plan-receipt-write <id>
 
-    写摘要回执(回执型第4款,紫色调,与 update/deactivate 同源)。
+    写摘要回执(回执型第4款,紫色调)。
     """
-    from schedule_html_render import _html_base_dir, render_plan_receipt_write, render_and_write
-    from pathlib import Path as _P
-
-    if not args:
-        print(_json.dumps({
-            "status": "error",
-            "message": "用法: render-plan-receipt-write <id>(整数)",
-            "example": "render-plan-receipt-write 1066",
-        }, ensure_ascii=False))
-        return
-
-    try:
-        plan_id = int(args[0])
-    except ValueError:
-        print(_json.dumps({
-            "status": "error",
-            "message": f"id 格式非法: '{args[0]}'(期望整数)",
-        }, ensure_ascii=False))
-        return
-
-    try:
-        payload = render_plan_receipt_write(plan_id)
-    except Exception as e:
-        print(_json.dumps({
-            "status": "error",
-            "message": f"派生失败: {type(e).__name__}: {e}",
-        }, ensure_ascii=False))
-        return
-
-    if payload.get("status") != "ok":
-        print(_json.dumps(payload, ensure_ascii=False, indent=2))
-        return
-
-    if not _html_base_dir().exists():
-        print(_json.dumps({
-            "status": "error",
-            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()}",
-        }, ensure_ascii=False))
-        return
-
-    result = render_and_write(payload, None)
-    if result.get("status") != "ok":
-        print(_json.dumps(result, ensure_ascii=False, indent=2))
-        return
-
-    fp = _P(result["data"]["file_path"])
-    size_bytes = fp.stat().st_size
-    stats = payload["data"].get("stats", {})
-    print(_json.dumps({
-        "status": "ok",
-        "data": {
-            "file_path": str(fp),
-            "bytes": size_bytes,
-            "size_kb": result["data"]["size_kb"],
-            "mode": "plan-receipt-write",
-            "plan_id": plan_id,
-            "today_count": stats.get("today_count", 0),
-            "completed_count": stats.get("completed_count", 0),
-            "note_count": stats.get("note_count", 0),
-            "completion_rate": stats.get("completion_rate", 0),
-        },
-        "message": f"✓ id={plan_id} 计划 已写摘要回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条计划,完成率 {stats.get('completion_rate', 0)}%,已写反思 {stats.get('note_count', 0)} 条)",
-    }, ensure_ascii=False, indent=2))
+    from schedule_html_render import render_plan_receipt_write
+    _render_plan_receipt_cli(
+        args, render_fn=render_plan_receipt_write,
+        plan_mode="plan-receipt-write",
+        plan_purpose_label="写摘要",
+        success_msg_extra=""
+    )
 
 
 # ============================================================

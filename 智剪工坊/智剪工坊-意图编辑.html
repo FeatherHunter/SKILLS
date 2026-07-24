@@ -2752,14 +2752,20 @@
       // 3) video-card 锚点 (按需延迟,因为视频列表可能异步加载)
       videoCards.forEach((card, i) => {
         const name = card.dataset.cardName || (card.querySelector('.video-name')?.textContent || '').trim();
-        const idx = card.dataset.cardIdx || (i + 1);
+        // v1.24.4 fix:dataset.cardIdx 是 0-based 的字符串,要 +1 才能跟视频编号对齐(1-based)
+        const idx = (parseInt(card.dataset.cardIdx, 10) || (i + 1)) + 1;
         const shortName = name.length > 14 ? name.slice(0, 13) + '…' : name;
         const label = `#${idx}${shortName ? ' ' + shortName : ''}`;
         const dot = document.createElement('div');
         dot.className = 'anchor';
         dot.dataset.label = label;
         dot.addEventListener('click', () => {
-          card.scrollIntoView({behavior: 'smooth', block: 'center'});
+          // v1.24.4 fix:scrollIntoView({block: 'center'}) 在 video-card 展开后
+          //   高度 > viewport 时只部分滚(不滚到 card 顶部),准头不对。
+          // 改用 scrollTo 算绝对 Y,让 card 顶部对齐 viewport 顶部 44px(.ios-topbar)。
+          const rect = card.getBoundingClientRect();
+          const targetY = window.scrollY + rect.top - 44;
+          window.scrollTo({top: Math.max(0, targetY), behavior: 'smooth'});
         });
         anchorRail.appendChild(dot);
         anchorItems.push({el: card, label, dot});

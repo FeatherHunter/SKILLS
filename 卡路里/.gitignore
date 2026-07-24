@@ -23,3 +23,15 @@ HTML注入改造方案.html
 # 一次性 ad-hoc 调试脚本(不进 git,内容已合并入 calorie_tracker.py / db.py)
 _ad_hoc/
 _ad_hoc/*
+
+# H 阶段演示 HTML (chrome 渲染用)
+html/tm_*.html
+html/ed_*.html
+html/ec_*.html
+html/lh_*.html
+html/wt_*.html
+html/wh_*.html
+html/er_*.html
+html/et_*.html
+html/cd_*.html
+html/cr_*.html

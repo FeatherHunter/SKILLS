@@ -101,7 +101,7 @@
 <div class="footer">
   <div class="src" id="srcLine">📊 操作于 --</div>
   <div>
-    <button class="btn" id="undoBtn">↩ 撤销(10秒)</button>
+    <button class="btn" id="undoBtn">↩ 撤销(复制指令)</button>
     <button class="btn btn-primary" id="copyBtn">📋 复制回执</button>
   </div>
 </div>
@@ -183,30 +183,21 @@
 
   document.getElementById('srcLine').textContent = `📊 操作于 ${meta.action_at} · 实体 #${record_id}`;
 
-  // 撤销按钮 10 秒倒计时
-  let left = 10;
+  // 撤销按钮:点击 → 复制撤销 prompt → 禁用(无倒计时,撤销由用户手动给 AI 执行)
   const undoBtn = document.getElementById('undoBtn');
-  const timer = setInterval(() => {
-    left--;
-    if (left > 0) {
-      undoBtn.textContent = `↩ 撤销(${left}秒)`;
-    } else {
-      clearInterval(timer);
-      undoBtn.textContent = '↩ 撤销(已过期)';
-      undoBtn.disabled = true;
-      undoBtn.style.opacity = '0.4';
-      undoBtn.style.cursor = 'not-allowed';
-    }
-  }, 1000);
   undoBtn.onclick = () => {
-    if (left > 0) {
-      alert('撤销指令已发送(模拟)\n操作:#' + record_id + ' 撤销逻辑由 ' + meta.undo_cli + ' 处理');
-    }
+    if (undoBtn.disabled) return;
+    const undoCmd = `请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})\n执行: ${meta.undo_cli}`;
+    navigator.clipboard.writeText(undoCmd).then(() => {
+      undoBtn.textContent = '✓ 撤销指令已复制';
+      undoBtn.classList.add('btn-primary');
+      undoBtn.disabled = true;
+    });
   };
 
   // 复制
   document.getElementById('copyBtn').onclick = function() {
-    const r = `${opLabel}成功 · ${meta.entity_type} #${record_id} (${meta.action_at})\n`;
+    let r = `${opLabel}成功 · ${meta.entity_type} #${record_id} (${meta.action_at})\n`;
     if (old_record && new_record) {
       Object.keys(new_record).forEach(k => {
         if (old_record[k] !== new_record[k] && k !== 'created_at' && k !== 'updated_at') {

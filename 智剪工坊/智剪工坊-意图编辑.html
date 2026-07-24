@@ -500,7 +500,7 @@
     button.exclude-btn:hover { background: var(--gray-fill); }
     button.exclude-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
     .actions {
-      position: sticky; bottom: 0; padding: 12px 24px; margin-top: 20px;
+      position: sticky; bottom: 0; padding: 12px 0; margin-top: 20px;
       background: rgba(255, 255, 255, 0.72);
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -569,16 +569,13 @@
     /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
     /* ========================================================== */
     .anchor-rail {
-      /* v1.24.1 fix:position: sticky + right:-40px 是矛盾的!
-         sticky 元素的 horizontal 由 DOM 流决定,left/right 在 sticky 模式下被忽略。
-         原 v1.23 fix 改 sticky 后,right: -40px 实际没生效,aside 仍按 DOM 流位置 = 左上角。
-         改为 position: fixed 直接相对 viewport,稳定可靠,form-screen 滚走也不影响。*/
-      position: fixed;
-      right: 0;            /* 视口右边缘内侧 0px(凸出感通过 transform 实现) */
-      top: 50%;
-      transform: translate(40px, -50%);  /* X +40 凸出视口右边 40px(原 right:-40px 视觉) */
-      width: 40px; height: 72vh;
+      position: sticky;  /* v1.23 fix:absolute 在 form-screen 高度=文档时,滚动会移出视口;sticky 永远在视口中央 */
+      top: 50%;  /* sticky 元素 top:50% = 视口高度 50% = 屏幕中央 */
+      right: -40px;  /* 凸出 .container 40px,贴中间操作区右侧外缘 */
+      transform: translateY(-50%);  /* 相对自身高度居中 */
+      width: 40px; height: 72vh;  /* v1.23:22px→40px 加宽,56vh→72vh 加高 */
       z-index: 40;
+      align-self: flex-start;  /* 防止 flex/grid 拉伸,sticky 正常工作 */
       /* v1.23 fix:撤掉 pointer-events: none。
          原设计意图是"只锚点接收事件",但 CSS :hover 状态需要元素自身能接收 pointer。
          没有 pointer-events: auto,:hover 不触发 → hideAnchorRail 里的
@@ -590,12 +587,13 @@
     .anchor-rail.visible { opacity: 1; }
     .anchor-rail.no-content { display: none; }
 
-    /* v1.24 fix:小屏(right:0 + translate(40px) 在窄视口凸出会被切)→ 缩进 */
+    /* v1.24 fix:小屏(right:-40px 凸出 viewport,被浏览器切掉)→ 缩进容器内,
+       桌面保持原样(贴中间操作区右侧外缘 = 视觉更突出) */
     @media (max-width: 1080px) {
-      .anchor-rail { transform: translate(0, -50%); }  /* 贴视口右边 0px,不凸出 */
+      .anchor-rail { right: 12px; }
     }
     @media (max-width: 720px) {
-      .anchor-rail { transform: translate(0, -50%); width: 28px; }
+      .anchor-rail { right: 6px; width: 28px; }
     }
 
     /* 轨道细线 (1.5px 半透明灰) */
@@ -878,6 +876,9 @@
     </div>
 
     <div id="form-screen" style="display:none; position: relative;">
+      <!-- v1.23 fix:anchor-rail 提到 form-screen 流顶部,确保短 form-screen 时
+           sticky 能正确触发(原放底部时,form-screen 不滚动,sticky 不工作,aside 卡在 DOM 末尾=视口下半部) -->
+      <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
       <!-- iOS HIG 顶部导航栏 (3 段式: 返回 / 标题 / 进度) -->
       <div class="ios-topbar">
         <div class="ios-topbar-left">
@@ -988,8 +989,6 @@
             placeholder="如：'今天就到这里，明天见'"></textarea>
         </div>
       </section>
-      <!-- v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 当前可视区高亮 -->
-      <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
 
       <div class="actions">
         <div class="save-row">
@@ -1298,16 +1297,12 @@
           const card = document.createElement('div');
           card.innerHTML = renderVideoCard(entry, i);
           videoListEl.appendChild(card);
+        // v1.22 构建/重建锚点导航条 (每次视频列表刷新后调用)
+        if (typeof buildAnchorRail === 'function') {
+          // 延迟一帧,等所有 card 完成布局后再算位置
+          requestAnimationFrame(buildAnchorRail);
+        }
         });
-        // v1.24.1 fix:buildAnchorRail 挪出 forEach 体外,无条件 schedule 一次
-        // (原 BUG:写在 forEach 体内 → 每个 entry 都 schedule 一次,浪费 + 状态不一致;
-        //          0 个视频时根本不调 → aside 永远 opacity:0 不可见)
-      }
-      // v1.22 构建/重建锚点导航条 (每次视频列表刷新后调用)
-      if (typeof buildAnchorRail === 'function') {
-        // 延迟一帧,等所有 card 完成布局后再算位置
-        requestAnimationFrame(buildAnchorRail);
-      }
         // 绑定折叠：点 ▶ 按钮，或点 video-head 非按钮/非缩略图区域
         document.querySelectorAll('[data-card-toggle]').forEach(btn => {
           btn.addEventListener('click', (e) => {
@@ -2853,10 +2848,6 @@
     function showAnchorRail() {
       if (!anchorRail) return;
       anchorRail.classList.add('visible');
-      // v1.24.2 fix:同时移除 no-content。原 BUG:back-btn 加 no-content (display:none) 后
-      // 没有任何路径移除,showAnchorRail 只加 visible 不够 — CSS 优先级 .no-content { display:none }
-      // 永远生效,aside 即使 opacity:1 也显示不出来。
-      anchorRail.classList.remove('no-content');
       if (railHideTimer) { clearTimeout(railHideTimer); railHideTimer = null; }
     }
     function hideAnchorRail() {

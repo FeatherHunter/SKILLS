@@ -570,19 +570,20 @@
     /* v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 蓝色高亮段 */
     /* ========================================================== */
     .anchor-rail {
-      /* v1.24.2 fix:用户在右侧贴 .container,不要贴 viewport。
-         - 改回 position: sticky(只在垂直方向 sticky)
-         - margin-left: auto 让 block aside 推到 form-screen 最右
-         - 当 viewport 宽: aside 贴 .container 右外缘(1000px 容器右侧)
-         - 当 viewport 窄: aside 贴 viewport 右(容器宽度=viewport) */
-      position: sticky;
+      /* v1.24.2 fixed:sticky 失败(form-screen 短时 sticky 不触发,aside 卡右下),
+         改回 fixed + JS 动态 left = container.right + 8:
+         - viewport > container(>1000px):aside 贴 .container 右外 8px
+         - viewport ≤ container:clamp 到 viewport.width - 48(不溢出)
+         - vertical: top: 50% + translateY(-50%) viewport 中央
+         - height 40vh 而非 72vh:不拉很长 */
+      position: fixed;
+      left: 0;       /* JS 动态设 */
       top: 50%;
-      width: 40px; height: 72vh;
-      margin-left: auto;          /* block 推右,sticky 模式下 horizontal 由 DOM 流决定 */
-      transform: translateY(-50%); /* vertical 居中 */
+      transform: translateY(-50%);
+      width: 40px; height: 40vh;
       z-index: 40;
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.4s ease, left 0.1s ease;
     }
     .anchor-rail.visible { opacity: 1; }
     .anchor-rail.no-content { display: none; }
@@ -2761,6 +2762,7 @@
       updateAnchorRailPositions();
       setupAnchorObserver();
       showAnchorRail();
+      if (typeof syncAnchorRailPosition === 'function') syncAnchorRailPosition();
     }
 
     function updateAnchorRailPositions() {
@@ -2853,6 +2855,22 @@
     }, { passive: true });
 
     window.addEventListener('resize', () => updateAnchorRailPositions());
+
+    // v1.24.2 fixed:动态同步 aside 位置到 .container 右侧
+    function syncAnchorRailPosition() {
+      if (!anchorRail) return;
+      const container = document.querySelector('.container');
+      if (!container) return;
+      const cRect = container.getBoundingClientRect();
+      const ideal = cRect.right + 8;
+      const max = window.innerWidth - anchorRail.offsetWidth - 8;
+      const left = Math.max(8, Math.min(ideal, max));
+      anchorRail.style.left = left + 'px';
+    }
+    window.addEventListener('resize', syncAnchorRailPosition);
+    window.addEventListener('scroll', syncAnchorRailPosition);
+    document.addEventListener('DOMContentLoaded', syncAnchorRailPosition);
+    if (document.readyState !== 'loading') syncAnchorRailPosition();
 
     // 视频列表高度变化时重算 (展开/折叠)
     if (window.ResizeObserver) {

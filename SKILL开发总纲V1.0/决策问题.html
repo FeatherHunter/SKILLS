@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>总纲合并 · 8 个决策问题 · V1</title>
+<style>
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --orange: #ff9500; --red: #ff3b30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.7; -webkit-font-smoothing: antialiased;
+    display: grid; grid-template-columns: 240px 1fr;
+    max-width: 1200px; margin: 0 auto; padding: 40px 0 80px;
+    gap: 24px;
+  }
+  aside {
+    position: sticky; top: 40px; align-self: start;
+    padding: 24px; height: fit-content; font-size: 14px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  aside h3 {
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--fg3);
+    margin-bottom: 14px;
+  }
+  aside ol { list-style: none; }
+  aside li {
+    padding: 6px 0; color: var(--fg2);
+    cursor: pointer; transition: color 0.15s;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+  }
+  aside li:hover { color: var(--accent); }
+  aside li.answered { color: var(--green); font-weight: 500; }
+  aside li::before { content: "○"; font-size: 12px; }
+  aside li.answered::before { content: "●"; }
+  main { padding: 0 24px; min-width: 0; }
+  h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
+  .lead { font-size: 17px; color: var(--fg2); margin-bottom: 8px; max-width: 720px; line-height: 1.6; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 48px; }
+  .question {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 32px; margin-bottom: 20px;
+    scroll-margin-top: 24px;
+  }
+  .question-head {
+    display: flex; justify-content: space-between;
+    align-items: baseline; margin-bottom: 14px;
+  }
+  .q-num {
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--fg3); font-weight: 600;
+  }
+  .q-tag {
+    font-size: 11px; padding: 3px 10px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--fg2);
+  }
+  .question h2 { font-size: 22px; margin-bottom: 12px; font-weight: 600; }
+  .why { color: var(--fg2); font-size: 14.5px; margin-bottom: 18px; line-height: 1.6; }
+  .options { display: grid; gap: 10px; }
+  .option {
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; cursor: pointer;
+    transition: all 0.15s ease; background: var(--card);
+  }
+  .option:hover { border-color: var(--accent); }
+  .option.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .option-head {
+    display: flex; align-items: center;
+    gap: 10px; margin-bottom: 6px;
+  }
+  .opt-letter {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-weight: 700; font-size: 13px;
+    background: var(--accent); color: white;
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .opt-letter.alt { background: var(--fg3); }
+  .recommend {
+    background: var(--green); color: white;
+    font-size: 10px; padding: 2px 8px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+  }
+  .opt-title { font-weight: 600; font-size: 15px; color: var(--fg); }
+  .opt-body { color: var(--fg2); font-size: 13.5px; line-height: 1.6; margin-top: 4px; }
+  .opt-body code, .why code, .skip-hint {
+    background: var(--accent-soft); padding: 1px 6px;
+    border-radius: 4px; font-size: 12.5px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .skip-hint { color: var(--fg3); }
+  .checkboxes { display: grid; gap: 8px; }
+  .checkbox {
+    border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--card);
+  }
+  .checkbox.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .checkbox .box {
+    width: 20px; height: 20px;
+    border: 1.5px solid var(--border); border-radius: 5px;
+    flex-shrink: 0; margin-top: 2px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: white; font-size: 13px; font-weight: 700;
+  }
+  .checkbox.selected .box { background: var(--accent); border-color: var(--accent); }
+  .checkbox.selected .box::after { content: "✓"; }
+  .footer-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px 32px; margin: 32px 0 16px;
+  }
+  .footer-card h3 { font-size: 18px; margin-bottom: 8px; }
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  button {
+    border: 1px solid var(--accent); background: var(--accent);
+    color: white; padding: 10px 18px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    font-family: inherit; transition: all 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button.ghost {
+    background: transparent; color: var(--fg2);
+    border-color: var(--border);
+  }
+  pre.summary {
+    background: #1d1d1f; color: #f5f5f7;
+    padding: 16px; border-radius: 8px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px; line-height: 1.6;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    margin-top: 12px; white-space: pre-wrap;
+  }
+  pre.summary.show { max-height: 600px; padding: 16px; }
+  .toast {
+    position: fixed; bottom: 32px; right: 32px;
+    background: var(--fg); color: white;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 14px; opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s; pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; }
+    aside { position: relative; top: 0; margin: 0 24px; }
+    main { padding: 0 24px; }
+    h1 { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <h3>决策进度</h3>
+  <ol id="nav">
+    <li data-target="q1">Q1 · description 文案</li>
+    <li data-target="q2">Q2 · 目录位置</li>
+    <li data-target="q3">Q3 · 与 5 层关系</li>
+    <li data-target="q4">Q4 · _shared 归宿</li>
+    <li data-target="q5">Q5 · HTML 镜像</li>
+    <li data-target="q6">Q6 · 触发词阈值</li>
+    <li data-target="q7">Q7 · 总纲调性</li>
+    <li data-target="q8">Q8 · 附录案例(多选)</li>
+  </ol>
+  <p style="margin-top:20px; font-size:12px; color:var(--fg3);">已答 <b id="count">0</b> / 8</p>
+  <p style="margin-top:8px; font-size:11px; color:var(--fg3);">选择本地保存 · 可随时改</p>
+</aside>
+
+<main>
+  <h1>总纲合并 · 8 个决策问题</h1>
+  <p class="lead">动手写 8 个文件前必须先回答。每个问题都影响总纲结构、未来 AI 的行为方式、以及它与现有 SKILL五层架构规范/ 的关系。</p>
+  <p class="meta">点选项立刻选中 · localStorage 自动保存 · 全部完成后点底部"复制我的回答"粘贴到 AI</p>
+
+  <!-- Q1 -->
+  <section class="question" id="q1">
+    <div class="question-head">
+      <span class="q-num">Q1 · 必须答</span>
+      <span class="q-tag">影响 AI 加载行为</span>
+    </div>
+    <h2>主入口 SKILL.md 的 description 怎么写？</h2>
+    <p class="why">这是 AI 决定"何时加载总纲"的唯一依据。写得太宽 → 过度参考；太窄 → 找不到。description 应该显式说明边界。</p>
+    <div class="options">
+      <div class="option" data-q="1" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">显式排除 cookbook</span>
+        </div>
+        <div class="opt-body">"SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式。<b>不提供</b>完整代码示例,只给原则 + 可加载资产。"</div>
+      </div>
+      <div class="option" data-q="1" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">简洁宽泛</span>
+        </div>
+        <div class="opt-body">"SKILL 开发手册。任何对 Skill 的改动从这里开始。"<br><span class="skip-hint">→ 易被 AI 过度参考;缺乏边界</span></div>
+      </div>
+      <div class="option" data-q="1" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">强约束字眼</span>
+        </div>
+        <div class="opt-body">"在用户要求'新建/改造/重构 Skill'时强制加载,作为唯一权威。先读后做。"<br><span class="skip-hint">→ "强制"字眼对 AI 无实际约束力,但显得权威</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q2 -->
+  <section class="question" id="q2">
+    <div class="question-head">
+      <span class="q-num">Q2 · 必须答</span>
+      <span class="q-tag">影响目录结构</span>
+    </div>
+    <h2>总纲目录放哪里？</h2>
+    <p class="why">未来所有 skill 设计师会在这个目录下找东西。位置决定它和现有 <code>SKILL五层架构规范/</code> 的关系（见 Q3）。</p>
+    <div class="options">
+      <div class="option" data-q="2" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">SKILLS/ 平级新目录</span>
+        </div>
+        <div class="opt-body"><code>SKILLS/SKILL开发总纲V1.0/</code> · 和 <code>SKILL五层架构规范/</code> 平级 · 独立<br>→ 之后可挂多个版本 (V1.0 → V2.0)</div>
+      </div>
+      <div class="option" data-q="2" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">嵌入 5 层规范目录</span>
+        </div>
+        <div class="opt-body"><code>SKILLS/SKILL五层架构规范/v1.0.0/</code> 作为子目录<br>→ 集中管理但绑定版本号,破坏现有 commit</div>
+      </div>
+      <div class="option" data-q="2" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">并入 HTML 模板项目</span>
+        </div>
+        <div class="opt-body"><code>SKILLS/模板HTML并注入数据/</code> 同级 · 总纲作为其上位文档<br>→ 紧密耦合 HTML 注入功能,但远离 5 层架构</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q3 -->
+  <section class="question" id="q3">
+    <div class="question-head">
+      <span class="q-num">Q3 · 必须答</span>
+      <span class="q-tag">影响向后兼容</span>
+    </div>
+    <h2>总纲和现有 SKILL五层架构规范/ 什么关系？</h2>
+    <p class="why">这是破坏性决策。现有 <code>SKILL五层架构规范/</code> 已经被很多 skill 引为"宪法"。改错了会破坏 commit 链。</p>
+    <div class="options">
+      <div class="option" data-q="3" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">共存 + 引用</span>
+        </div>
+        <div class="opt-body">总纲 = <b>元规范</b> (8 章),引用 5 层规范作为 §02 的内容源 · 不动原文件<br>→ 现有 commit 链和 README 完全不动,最安全</div>
+      </div>
+      <div class="option" data-q="3" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">取代 + 归档</span>
+        </div>
+        <div class="opt-body">原 5 层目录改名为 <code>_archive_v1.0/</code>,5 层内容并入总纲 §02<br>→ 单一权威,但破坏现有引用路径</div>
+      </div>
+      <div class="option" data-q="3" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">局部合并</span>
+        </div>
+        <div class="opt-body">5 层骨架迁入总纲 · 触发词 + HTML 注入原位保留 · 建立交叉引用<br>→ 中间路线,但需手动维护双向链接</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q4 -->
+  <section class="question" id="q4">
+    <div class="question-head">
+      <span class="q-num">Q4 · 必须答</span>
+      <span class="q-tag">影响资产复用</span>
+    </div>
+    <h2>_shared 可加载资产放哪里？</h2>
+    <p class="why">v2 的关键改造是把"原则"变成"可加载资产"。这些资产未来会被所有 skill 引用 — 放哪里决定复用难度和责任边界。</p>
+    <div class="options">
+      <div class="option" data-q="4" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">总纲目录内 _assets/</span>
+        </div>
+        <div class="opt-body"><code>SKILL开发总纲V1.0/_assets/</code> 沉淀 <code>style.css</code> + <code>injector.py</code> + <code>template_skeleton.html</code><br>→ 与总纲同生死;路径短 (<code>../_assets/style.css</code>)</div>
+      </div>
+      <div class="option" data-q="4" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">复用 + 补缺</span>
+        </div>
+        <div class="opt-body">复用 <code>模板HTML并注入数据/_shared/injector.py</code>,在总纲目录补 <code>style.css</code> 和 <code>skeleton.html</code><br>→ 减少重复,但分散两处</div>
+      </div>
+      <div class="option" data-q="4" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">提升到 SKILLS/_shared/</span>
+        </div>
+        <div class="opt-body">建 <code>SKILLS/_shared/</code> 顶层目录,所有 skill 共享<br>→ 工程化最强,但需现有 skill 跟随迁移</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q5 -->
+  <section class="question" id="q5">
+    <div class="question-head">
+      <span class="q-num">Q5 · 必须答</span>
+      <span class="q-tag">影响书写工作量</span>
+    </div>
+    <h2>HTML 镜像（SKILL.md ⇔ HTML）策略？</h2>
+    <p class="why">HTML prompt 要求"SKILL.md 改 → HTML 必同步"。这个铁律怎么执行，决定写总纲的工作量。</p>
+    <div class="options">
+      <div class="option" data-q="5" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">主入口 + §02 必配</span>
+        </div>
+        <div class="opt-body"><code>SKILL.md</code> 和 <code>02-5层骨架.md</code> 各配 1 个 .html(最常被读的两份)<br>→ 工作量可控,覆盖最高频用例</div>
+      </div>
+      <div class="option" data-q="5" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">8 .md 8 .html 全配</span>
+        </div>
+        <div class="opt-body">严格执行"改文档必改 HTML" - 每个 .md 一份镜像<br>→ 工作量 ×2,维护成本高,但最完整</div>
+      </div>
+      <div class="option" data-q="5" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">仅主入口</span>
+        </div>
+        <div class="opt-body">只有 <code>SKILL.md</code> 配 .html,其余 .md 用 markdown 直接读<br>→ 工作量最小,但违反 HTML prompt 硬规则</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q6 -->
+  <section class="question" id="q6">
+    <div class="question-head">
+      <span class="q-num">Q6 · 必须答</span>
+      <span class="q-tag">影响触发词 v2 设计</span>
+    </div>
+    <h2>触发词数量上下限？</h2>
+    <p class="why">老 prompt 只说"动词+名词 + 广度×深度",没有量化。v2 必须给硬区间。</p>
+    <div class="options">
+      <div class="option" data-q="6" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">8 ≤ N ≤ 30</span>
+        </div>
+        <div class="opt-body">基于现有 60+ skill 分布:8 是质量底线(覆盖核心 CRUD + 统计 + 导出),30 是认知上限(人脑可记)<br>→ 中位数 ~16,大多数 skill 的健康范围</div>
+      </div>
+      <div class="option" data-q="6" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">5 ≤ N ≤ 20 · 严格聚焦</span>
+        </div>
+        <div class="opt-body">强迫 skill 收缩 - 每个触发词必须高频且不可去重<br>→ 适合"小型 skill"标准;老 skill 可能需要大删</div>
+      </div>
+      <div class="option" data-q="6" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">10 ≤ N ≤ 50 · 宁滥勿缺</span>
+        </div>
+        <div class="opt-body">覆盖优先 - 触发词越多 AI 命中率越高<br>→ 适合复杂领域(如医药/法律);治理成本高</div>
+      </div>
+      <div class="option" data-q="6" data-opt="D">
+        <div class="option-head">
+          <span class="opt-letter alt">D</span>
+          <span class="opt-title">取消上下限</span>
+        </div>
+        <div class="opt-body">完全靠"广度×深度矩阵"自约束,不给硬区间<br>→ 最自由,但 AI 可能写 50+ 触发词或 3 个就放弃</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q7 -->
+  <section class="question" id="q7">
+    <div class="question-head">
+      <span class="q-num">Q7 · 必须答</span>
+      <span class="q-tag">影响全文语气</span>
+    </div>
+    <h2>总纲调性（口吻）？</h2>
+    <p class="why">调性决定总纲怎么说话 — 决定了 AI 模仿的语气。错配会很怪。</p>
+    <div class="options">
+      <div class="option" data-q="7" data-opt="A">
+        <div class="option-head">
+          <span class="opt-letter">A</span>
+          <span class="recommend">推荐</span>
+          <span class="opt-title">指南 · 原则 + 落地</span>
+        </div>
+        <div class="opt-body">每条原则 → "为什么" + "怎么用" + "什么时候不适用"<br>→ 中性,最通用,AI 模仿最稳</div>
+      </div>
+      <div class="option" data-q="7" data-opt="B">
+        <div class="option-head">
+          <span class="opt-letter alt">B</span>
+          <span class="opt-title">宪法 · 不可违背</span>
+        </div>
+        <div class="opt-body">每条都是"硬规则",违反即 fail<br>→ 权威感强,但容易僵化;开发者抵触情绪大</div>
+      </div>
+      <div class="option" data-q="7" data-opt="C">
+        <div class="option-head">
+          <span class="opt-letter alt">C</span>
+          <span class="opt-title">课程 · 从零到熟练</span>
+        </div>
+        <div class="opt-body">循序渐进 + 大量类比 + 反复举例<br>→ 教学友好,但难以维护</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Q8 (multi-select) -->
+  <section class="question" id="q8">
+    <div class="question-head">
+      <span class="q-num">Q8 · 必须答</span>
+      <span class="q-tag">影响附录长度</span>
+    </div>
+    <h2>附录收哪些实战印记？（多选，可 0 选）</h2>
+    <p class="why">你说过"不喜欢硬编码案例",所以默认全不收。但有些案例承载<b>演化教训</b>而非"案例本身",值得留痕。</p>
+    <div class="checkboxes">
+      <div class="checkbox" data-q="8" data-opt="卡路里4Phase">
+        <span class="box"></span>
+        <div>
+          <b>卡路里 4 Phase 改造</b><br>
+          <span style="color:var(--fg2); font-size:13px;">最完整的真实案例 — 4 Phase / 6 模板 / 17 BUG 的<b>结构</b>(已压缩,不含具体代码)</span>
+        </div>
+      </div>
+      <div class="checkbox" data-q="8" data-opt="唤醒词演化">
+        <span class="box"></span>
+        <div>
+          <b>唤醒词演化史</b><br>
+          <span style="color:var(--fg2); font-size:13px;">老 prompt (单维动词+名词) → v2 (矩阵) — 让后人知道"为什么变了"</span>
+        </div>
+      </div>
+      <div class="checkbox" data-q="8" data-opt="跨Skill优先级">
+        <span class="box"></span>
+        <div>
+          <b>跨 Skill 优先级 S/A/B</b><br>
+          <span style="color:var(--fg2); font-size:13px;">50+ skill 改造排序决策树 — 是未来大量使用的工作清单</span>
+        </div>
+      </div>
+      <div class="checkbox" data-q="8" data-opt="架构师原则">
+        <span class="box"></span>
+        <div>
+          <b>架构师 10 原则原文</b><br>
+          <span style="color:var(--fg2); font-size:13px;">已被 §04 吸收,但 #10 "HTML 单工铁律"原文值得保留</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer card -->
+  <div class="footer-card">
+    <h3>导出我的回答</h3>
+    <p style="color:var(--fg2); font-size:14px;">点下方按钮把回答复制到剪贴板,然后粘贴到 AI 对话即可。</p>
+    <div class="actions">
+      <button id="copyBtn">📋 复制我的回答</button>
+      <button id="resetBtn" class="ghost">清空所有选择</button>
+    </div>
+    <pre class="summary" id="summaryPre"></pre>
+  </div>
+
+</main>
+
+<div class="toast" id="toast">已复制 ✓</div>
+
+<script>
+const STORE_KEY = 'skill_dev_v1_decisions';
+let state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+
+document.addEventListener('DOMContentLoaded', () => {
+  Object.entries(state).forEach(([q, val]) => {
+    if (Array.isArray(val)) {
+      val.forEach(opt => {
+        const el = document.querySelector('[data-q="' + q + '"][data-opt="' + opt + '"]');
+        if (el) el.classList.add('selected');
+      });
+    } else if (val) {
+      const el = document.querySelector('[data-q="' + q + '"][data-opt="' + val + '"]');
+      if (el) el.classList.add('selected');
+    }
+  });
+  updateProgress();
+
+  document.querySelectorAll('.option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const q = opt.dataset.q;
+      document.querySelectorAll('.option[data-q="' + q + '"]').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      state[q] = opt.dataset.opt;
+      save();
+    });
+  });
+
+  document.querySelectorAll('.checkbox').forEach(cb => {
+    cb.addEventListener('click', () => {
+      const q = cb.dataset.q;
+      cb.classList.toggle('selected');
+      const sel = Array.from(document.querySelectorAll('.checkbox[data-q="' + q + '"].selected')).map(el => el.dataset.opt);
+      state[q] = sel;
+      save();
+    });
+  });
+
+  document.querySelectorAll('#nav li').forEach(li => {
+    li.addEventListener('click', () => {
+      const target = document.getElementById(li.dataset.target);
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', copyAnswers);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('确定清空所有选择？')) {
+      localStorage.removeItem(STORE_KEY);
+      location.reload();
+    }
+  });
+});
+
+function save() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = Object.keys(state).filter(k => {
+    const v = state[k];
+    return v && (typeof v !== 'object' || v.length > 0);
+  }).length;
+  document.getElementById('count').textContent = answered;
+  document.querySelectorAll('#nav li').forEach(li => {
+    const qNum = li.dataset.target.replace('q', '');
+    const v = state[qNum];
+    const has = v && (typeof v !== 'object' || v.length > 0);
+    li.classList.toggle('answered', !!has);
+  });
+}
+
+function copyAnswers() {
+  const titles = {
+    '1': 'Q1 description',
+    '2': 'Q2 目录位置',
+    '3': 'Q3 与 5 层关系',
+    '4': 'Q4 _shared 归宿',
+    '5': 'Q5 HTML 镜像',
+    '6': 'Q6 触发词阈值',
+    '7': 'Q7 总纲调性',
+    '8': 'Q8 附录案例'
+  };
+  const lines = ['## 我的总纲合并决策', ''];
+  Object.keys(titles).forEach(k => {
+    const v = state[k];
+    if (!v || (Array.isArray(v) && v.length === 0)) {
+      lines.push('**' + titles[k] + '**: (未选 — 用默认)');
+    } else if (Array.isArray(v)) {
+      lines.push('**' + titles[k] + '**: ' + v.join(' / '));
+    } else {
+      lines.push('**' + titles[k] + '**: ' + v);
+    }
+  });
+  lines.push('', '---', '*提交时间: ' + new Date().toLocaleString('zh-CN') + '*');
+  const text = lines.join('\n');
+  const pre = document.getElementById('summaryPre');
+  pre.textContent = text;
+  pre.classList.add('show');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('已复制到剪贴板 ✓ 粘贴到 AI 对话即可');
+    }).catch(() => {
+      showToast('复制失败 — 请手动从下方框复制');
+    });
+  } else {
+    showToast('浏览器不支持自动复制 — 请手动从下方框复制');
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+</script>
+
+</body>
+</html>

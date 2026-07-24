@@ -1,0 +1,151 @@
+<!--
+  ============================================================
+  SKILL开发总纲V1.0 · _assets/template_skeleton.html
+  ============================================================
+  4 段式骨架(首屏 / 主体 / 交互 / 尾部) + 5 状态 fallback
+  + 复制回 AI 按钮(原则 10 · HTML 单工铁律)
+  ============================================================
+  使用:
+    1. 复制此文件
+    2. 改 hero 标题、KPI、body 内容
+    3. 在 <script> 里读 window.__DATA__ 渲染 DOM
+  ============================================================
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{TITLE}</title>
+<link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body>
+
+<!-- ===== 首屏 (HERO) ===== -->
+<section class="hero">
+  <span class="status ok">正常</span>
+  <h1>{TITLE}</h1>
+  <p>{SUBTITLE}</p>
+  <div class="kpi-grid" id="kpiGrid"><!-- 由 JS 渲染 --></div>
+</section>
+
+<!-- ===== 5 状态 banner ===== -->
+<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无数据</div>
+<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 数据不完整</div>
+<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
+<div id="stateOffline" class="state-banner offline" style="display:none;">📡 离线模式,展示可能过期</div>
+
+<!-- ===== 主体 (BODY) ===== -->
+<main id="bodyContent">
+  <!-- 由 JS 渲染按维度分组的折叠块 -->
+</main>
+
+<!-- ===== 尾部 (TAIL) - 含复制回 AI 按钮(原则 10) ===== -->
+<aside class="tail">
+  <div class="actions">
+    <button class="copy-prompt" onclick="copyToAI()">📤 复制修改指令给 AI</button>
+    <button class="ghost" onclick="window.scrollTo({top:0, behavior:'smooth'})">↑ 回到顶部</button>
+  </div>
+  <pre id="copyText" style="display:none;">{PROMPT_TEMPLATE}</pre>
+</aside>
+
+<!-- ===== 占位符 - 由 injector 替换为 window.__DATA__ ===== -->
+<!--INJECT-DATA-->
+
+<script>
+// ===== 5 守卫(原则 4) =====
+if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+  document.getElementById('stateError').style.display = 'block';
+  throw new Error('数据未注入');
+}
+
+const data = window.__DATA__;
+const payload = data.data || {};
+
+// ===== 状态路由 =====
+function showState(name) {
+  ['Empty', 'Missing', 'Error', 'Offline'].forEach(s => {
+    const el = document.getElementById('state' + s);
+    if (el) el.style.display = 'none';
+  });
+  if (name && name !== 'ok') {
+    const el = document.getElementById('state' + name);
+    if (el) el.style.display = 'block';
+  }
+}
+
+// ===== 数据完整性检查 =====
+if (payload === null || (Array.isArray(payload) && payload.length === 0)) {
+  showState('Empty');
+} else {
+  try {
+    // 渲染 KPI(若提供)
+    const kpiGrid = document.getElementById('kpiGrid');
+    (payload.kpis || []).forEach(kpi => {
+      const div = document.createElement('div');
+      div.className = 'kpi';
+      div.innerHTML =
+        '<div class="label">' + escapeHTML(kpi.label) + '</div>' +
+        '<div class="value">' + escapeHTML(String(kpi.value)) + '</div>' +
+        (kpi.delta ? '<div class="delta' + (kpi.deltaDown ? ' down' : '') + '">' +
+          escapeHTML(kpi.delta) + '</div>' : '');
+      kpiGrid.appendChild(div);
+    });
+
+    // 渲染主体(由调用方实现)
+    if (typeof window.renderBody === 'function') {
+      window.renderBody(payload);
+    } else {
+      // 默认行为:把 data 当字符串显示
+      const main = document.getElementById('bodyContent');
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(payload, null, 2);
+      main.appendChild(pre);
+    }
+  } catch (err) {
+    console.error('渲染失败:', err);
+    showState('Error');
+  }
+}
+
+// ===== 复制回 AI(原则 10) =====
+function copyToAI() {
+  const text = document.getElementById('copyText').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.copy-prompt');
+      const orig = btn.textContent;
+      btn.textContent = '✅ 已复制';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    }).catch(() => { fallbackCopy(text); });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+  alert('已复制到剪贴板');
+}
+
+// ===== XSS 防护 =====
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// ===== 离线检测 =====
+window.addEventListener('offline', () => showState('Offline'));
+window.addEventListener('online',  () => {
+  document.getElementById('stateOffline').style.display = 'none';
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL 开发总纲 V1.0</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --orange: #ff9500; --red: #ff3b30;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 880px; margin: 0 auto;
+    padding: 80px 32px 120px;
+  }
+  h1 { font-size: 48px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
+  h2 { font-size: 32px; font-weight: 600; margin-top: 72px; margin-bottom: 24px; letter-spacing: -0.02em; }
+  h3 { font-size: 22px; font-weight: 600; margin-top: 40px; margin-bottom: 16px; }
+  h4 { font-size: 18px; font-weight: 600; margin-top: 28px; margin-bottom: 12px; color: var(--fg2); }
+  p { font-size: 16px; margin-bottom: 16px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 7px; border-radius: 5px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px; overflow-x: auto; margin: 20px 0; font-size: 13.5px; line-height: 1.65; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14.5px; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px; margin: 20px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  ul, ol { margin: 16px 0 16px 28px; }
+  li { margin-bottom: 8px; }
+  .lead { font-size: 19px; color: var(--fg2); margin-bottom: 40px; line-height: 1.55; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 48px; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 15px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 22px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .checklist { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px 26px; margin: 20px 0; }
+  .checklist li { list-style: none; margin-bottom: 6px; }
+  .checklist li:before { content: "☐"; color: var(--accent); font-weight: bold; margin-right: 12px; font-size: 17px; }
+  .pill { display: inline-block; background: var(--accent-soft); color: var(--fg2); padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px; }
+  .star { color: var(--orange); font-weight: 600; }
+  .hooks-list { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin: 20px 0; }
+  .hooks-list ol { margin-left: 22px; }
+  .hooks-list li { margin-bottom: 12px; line-height: 1.6; }
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+  a.md-link { color: var(--accent); text-decoration: none; }
+  a.md-link:hover { text-decoration: underline; }
+  .note { background: #fff7e6; border-left: 3px solid var(--orange); padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 14px; }
+  .note p { margin: 0; color: var(--fg2); }
+</style>
+</head>
+<body>
+
+<h1>SKILL 开发总纲 V1.0</h1>
+<p class="lead">Skill 设计的元规范 · 开发新 Skill 或改造现有 Skill 之前必读 · 一份"原则 + 可加载资产"手册</p>
+<p class="meta">初版 2026-07-24 · 由 4 份历史材料合并而成 · 旧 SKILL五层架构规范/ 已删除(git 历史完整)</p>
+
+<div class="toc">
+<h4>目录</h4>
+<ol>
+  <li><a href="#p1">第一部分 · 第一性原理</a></li>
+  <li><a href="#p2">第二部分 · 5 层骨架</a></li>
+  <li><a href="#p3">第三部分 · 触发词设计 v2</a></li>
+  <li><a href="#p4">第四部分 · 可视化与注入 v2</a></li>
+  <li><a href="#p5">第五部分 · 工程仪式</a></li>
+  <li><a href="#p6">第六部分 · 5 个不可违背的钩子</a></li>
+  <li><a href="#p7">第七部分 · 3 个可加载资产</a></li>
+  <li><a href="#p8">第八部分 · 自我检查(动手前)</a></li>
+</ol>
+</div>
+
+<!-- ========== P1 ========== -->
+<h2 id="p1">第一部分 · 第一性原理</h2>
+
+<p><strong>Skill 是什么?</strong>Skill = 领域 + 工具 + 文档 + 规则。一个 Skill 定义一整个领域(如"居家管家"= 家庭物品领域),包含该领域的所有:</p>
+<ul>
+  <li>实体(物品 / 分类 / 位置 / 标签)</li>
+  <li>操作(增删改查 / 统计 / 联动)</li>
+  <li>规则(硬规则系统校验 + 软规则 AI 自觉)</li>
+  <li>接口(CLI / JSON / 错误码)</li>
+  <li>文档(SKILL.md / HTML 镜像 / references)</li>
+</ul>
+
+<blockquote><p>没有 Skill 的 Agent = 空有厨艺没有工具的厨师。</p></blockquote>
+
+<p><strong>为什么分层?</strong>5 层让写代码时知道往哪放。不分层的 Skill 短期能跑,分层的 Skill 长期能活。</p>
+
+<p>→ 详见 <a class="md-link" href="01-第一性原理.md">01-第一性原理.md</a></p>
+
+<!-- ========== P2 ========== -->
+<h2 id="p2">第二部分 · 5 层骨架</h2>
+
+<p>Skill 设计的<strong>唯一权威</strong>。新写 / 改任何 Skill,先读这章。</p>
+
+<h3>5 层速览</h3>
+<table>
+<tr><th>层</th><th>职责</th><th>落点</th></tr>
+<tr><td>① 数据层</td><td>表 / 索引 / 约束 / 事务 / 迁移 / 备份</td><td><code>db.py</code></td></tr>
+<tr><td>② 操作层(本地)</td><td>原子化 CLI 子命令</td><td><code>*_ops.py</code></td></tr>
+<tr><td>② 操作层(对外)</td><td>外部服务调用</td><td><code>integrations/</code></td></tr>
+<tr><td>③ 规则层</td><td>硬规则 + 软规则</td><td><code>validators.py</code> + <code>references/</code></td></tr>
+<tr><td>④ 接口层</td><td>argparse + <code>{status, data, message}</code></td><td>CLI 入口</td></tr>
+<tr><td>⑤ 文档层</td><td>SKILL.md + HTML + references/</td><td><code>.md</code> + <code>.html</code></td></tr>
+</table>
+
+<h3>6 大特性</h3>
+<p>按重要性:可识别 / 可验证 / 可恢复 / 可约束 / 可联动 / 可演进。完整规则、8 反模式、5 层自检清单、改动前 3 问 →</p>
+<p>→ 详见 <a class="md-link" href="02-5层骨架.md">02-5层骨架.md</a></p>
+
+<!-- ========== P3 ========== -->
+<h2 id="p3">第三部分 · 触发词设计 v2</h2>
+
+<p><span class="pill">v2 重写</span> v1(老 prompt)= 单维"动作+对象",只服务 1 个 skill。v2 服务 50+ skill。</p>
+
+<h3>核心:4 元组结构</h3>
+<pre><code>触发词 = 动作 + 对象 + 维度(可选) + 类型(可选)
+
+例: 查饮食-高热量排行
+   = 查(动作) 饮食(对象) -高热量(类型) 排行(维度)</code></pre>
+
+<h3>3 个硬规则</h3>
+<ul>
+  <li><strong>数量</strong>:<span class="pill">8 ≤ N</span> <span class="pill">无上限</span>(覆盖核心 CRUD + 统计 + 导出)</li>
+  <li><strong>变体</strong>:每个核心触发词配 2-3 个自然语言变体,写在 references/</li>
+  <li><strong>去重</strong>:3 条铁律 — 精度优先 / 同义合并 / 跨 Skill 路由声明</li>
+</ul>
+
+<p>→ 详见 <a class="md-link" href="03-触发词设计v2.md">03-触发词设计v2.md</a></p>
+
+<!-- ========== P4 ========== -->
+<h2 id="p4">第四部分 · 可视化与注入 v2</h2>
+
+<p><span class="pill">v2 资产化</span> v1 = 原则 + 案例,AI 每次重新设计 → 反复返工。v2 = <strong>可加载资产 + 决策树</strong>。</p>
+
+<h3>10 原则(速览)</h3>
+<table>
+<tr><th>#</th><th>原则</th><th>要点</th></tr>
+<tr><td>0</td><td>何时不做</td><td>单条 CRUD / 后台管理 / 数据采集 — 不做</td></tr>
+<tr><td>1</td><td><strong>CLI 阻塞</strong></td><td>CLI 不支持 <code>as_dict=True</code> → 模板做不出来</td></tr>
+<tr><td>2</td><td>1 模板多参数</td><td>N 个数据 schema 相同的唤醒词 → 1 模板 + N 参数</td></tr>
+<tr><td>3</td><td>模板四段式</td><td>首屏 / 主体 / 交互 / 尾部</td></tr>
+<tr><td>4</td><td>占位符 + 注入(5 个必须)</td><td>占位符唯一 + <code>&lt;/</code> 转义 + 5 状态 + XSS 防护</td></tr>
+<tr><td>5</td><td>渲染器 4 步</td><td>subprocess → 读模板 → inject → 写副本</td></tr>
+<tr><td>6</td><td>改动前 3 问</td><td>影响文件 / 数据迁移 / 回滚方案</td></tr>
+<tr><td>7</td><td>Commit 与检索</td><td>每 Phase 一个 commit + <code>[技能名]</code> 前缀</td></tr>
+<tr><td>8</td><td>8 反模式</td><td>--force / except:pass / 魔法字符串 / 紧耦合…</td></tr>
+<tr><td>9</td><td>命名不带版本</td><td><code>review_report.html</code> ✅ <code>review_v2.html</code> ❌</td></tr>
+<tr><td>10</td><td><span class="star">⭐ HTML 单工铁律(最高)</span></td><td>HTML 无反通 LLM 路径,过程型必须设计"复制 prompt"</td></tr>
+</table>
+
+<p>→ 详见 <a class="md-link" href="04-可视化与注入v2.md">04-可视化与注入v2.md</a></p>
+
+<!-- ========== P5 ========== -->
+<h2 id="p5">第五部分 · 工程仪式</h2>
+
+<p>动手前的最后一道防线。<strong>这章是自动检查清单,不是原则解释</strong>。</p>
+
+<h3>3 个核心 SOP</h3>
+<ul>
+  <li><strong>改 Skill SOP</strong>:画领域边界 → 列触发词 → 设计 schema → 写硬规则 → 写 CLI → 写集成 → 跑自检</li>
+  <li><strong>写 HTML 模板 SOP</strong>:判定值得做 → 检查 CLI → 选模式 → 复制骨架 → 引用 CSS → 渲染器 → 测试 → 同步</li>
+  <li><strong>Commit 规范</strong>:每 Phase 一个 commit + <code>[技能名]</code> 前缀 + 信息含 文件清单 + 行为变化 + 向后兼容</li>
+</ul>
+
+<p>→ 详见 <a class="md-link" href="05-工程仪式.md">05-工程仪式.md</a></p>
+
+<!-- ========== P6: 5 钩子 ========== -->
+<h2 id="p6">第六部分 · 5 个不可违背的钩子</h2>
+
+<p>这 5 条是总纲的<strong>硬规则</strong>。违反即视为改动未准备好。</p>
+
+<div class="hooks-list">
+<ol>
+<li><strong>HTML 同步硬规则</strong> — SKILL.md 任何改动,<code>&lt;skill&gt;.html</code> 必须同 commit 同步</li>
+<li><strong>改动前 3 问</strong> — 影响哪些文件 / 数据迁移 / 回滚方案</li>
+<li><strong>触发词设计 v2</strong> — 8 ≤ N,无上限;4 元组(动作+对象+维度+类型)</li>
+<li><strong>CLI 阻塞判定</strong> — CLI 不支持 JSON → 模板做不出来</li>
+<li><strong>HTML 单工铁律(⭐ 最高)</strong> — HTML 是单工设备,过程型 HTML 必须设计"复制 prompt"</li>
+</ol>
+</div>
+
+<!-- ========== P7: 3 资产 ========== -->
+<h2 id="p7">第七部分 · 3 个可加载资产</h2>
+
+<p>总纲 v2 的关键:<strong>从"原则 + 案例" → "可加载资产 + 决策树"</strong>。所有 HTML 模板复用这套资产,无需重设计。</p>
+
+<table>
+<tr><th>资产</th><th>作用</th><th>何时用</th></tr>
+<tr>
+  <td><a class="md-link" href="_assets/style.css">_assets/style.css</a></td>
+  <td>设计令牌(色板 / 字体 / 圆角 / 阴影 / 5 状态)</td>
+  <td>任何 HTML 模板的 <code>&lt;link rel="stylesheet"&gt;</code></td>
+</tr>
+<tr>
+  <td><a class="md-link" href="_assets/injector.py">_assets/injector.py</a></td>
+  <td>占位符注入(<code>inject()</code> + <code>render_4step()</code>)</td>
+  <td>渲染器复用,2 行代码完成 4 步流程</td>
+</tr>
+<tr>
+  <td><a class="md-link" href="_assets/template_skeleton.html">_assets/template_skeleton.html</a></td>
+  <td>4 段式骨架(首屏 / 主体 / 交互 / 尾部)+ 5 状态 fallback</td>
+  <td>复制 → 改具体字段 → 上线</td>
+</tr>
+</table>
+
+<p><strong>样式来源声明</strong>:<code>style.css</code> 的设计令牌源自 HTML 唤醒词开发 prompt 描述的 Apple 风格 + 5 层架构手册的 CSS 调色板 + 4 段式样式需求。</p>
+
+<!-- ========== P8: 自我检查 ========== -->
+<h2 id="p8">第八部分 · 自我检查(动手前)</h2>
+
+<p>新写 / 改造一个 Skill 前,逐条勾选:</p>
+
+<ul class="checklist">
+  <li>触发词 ≥ 8 个,用 4 元组结构?</li>
+  <li>SKILL.md 第一段能 30 秒回答"管什么、不管什么"?</li>
+  <li>5 层划分清晰,规模匹配(微 / 中 / 大)?</li>
+  <li>硬规则集中在 validators.py,无跳过通道?</li>
+  <li>CLI 都返回 <code>{status, data, message}</code> 三段式 JSON?</li>
+  <li>HTML 模板(如有)有"复制 prompt"按钮?</li>
+  <li>改动前 3 问答得上来?</li>
+  <li>每 Phase 一个 commit + <code>[技能名]</code> 前缀?</li>
+</ul>
+
+<p><strong>6/8 通过才能动手</strong>。低于 6 个 = 改动未准备好,回去补。</p>
+
+<div class="note">
+<p><strong>来源声明</strong>:本总纲合并自 4 份历史材料 — 优秀 Skill 指导手册(§02)、Skill 架构自检清单(§02)、工程实践·测试与钩子(§05)、HTML 唤醒词开发 prompt(_assets/style.css 设计令牌来源)。老唤醒词 prompt 整个推倒为 §03 v2 矩阵。旧 <code>SKILL五层架构规范/</code> 已删除,git 历史完整保留。</p>
+</div>
+
+<div class="footer">
+写于 2026-07-24 · 由 4 份历史材料合并而成 · 本版本:V1.0<br>
+反馈 / 修订:提交 issue 或 PR 到 <code>SKILLS/SKILL开发总纲V1.0/</code>
+</div>
+
+</body>
+</html>

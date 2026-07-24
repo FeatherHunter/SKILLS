@@ -1,0 +1,231 @@
+/* ============================================================
+   SKILL开发总纲V1.0 · _assets/style.css
+   ============================================================
+   设计令牌源:
+   - HTML 唤醒词开发 prompt 描述的 Apple 风格
+   - 5 层架构手册(原优秀Skill指导手册.html)的 CSS 调色板
+   - 4 段式 + 5 状态的样式需求
+   ============================================================
+   使用:在 HTML 模板的 <head> 加
+     <link rel="stylesheet" href="../_assets/style.css">
+   ============================================================ */
+
+:root {
+  /* 中性色 */
+  --bg: #fafafa;
+  --card: #ffffff;
+  --fg: #1d1d1f;
+  --fg2: #6e6e73;
+  --fg3: #86868b;
+  --border: #d2d2d7;
+
+  /* 主色 - Apple 蓝 */
+  --accent: #0071e3;
+  --accent-soft: #f5f5f7;
+
+  /* 状态色 */
+  --green: #34c759;  --green-soft: #e8f5e9;
+  --orange: #ff9500; --orange-soft: #fff7e6;
+  --red: #ff3b30;    --red-soft: #ffebee;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  /* 圆角 */
+  --r-sm: 6px;
+  --r: 12px;
+  --r-lg: 16px;
+
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC",
+               "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ---------- 首屏 (HERO) ---------- */
+.hero {
+  background: linear-gradient(135deg, var(--accent-soft), var(--card));
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px;
+  margin-bottom: 24px;
+}
+.hero h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+.hero p { color: var(--fg2); margin-top: 8px; }
+.hero .status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.hero .status.ok    { background: var(--green-soft);  color: var(--green); }
+.hero .status.warn  { background: var(--orange-soft); color: var(--orange); }
+.hero .status.error { background: var(--red-soft);    color: var(--red); }
+
+/* ---------- KPI 卡 ---------- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+}
+.kpi .label { font-size: 13px; color: var(--fg3); }
+.kpi .value { font-size: 24px; font-weight: 600; color: var(--fg); margin-top: 4px; }
+.kpi .delta { font-size: 12px; color: var(--green); margin-top: 2px; }
+.kpi .delta.down { color: var(--red); }
+
+/* ---------- 主体 (BODY) - 折叠 ---------- */
+details.group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  margin-bottom: 12px;
+}
+details.group > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--fg);
+  list-style: none;
+}
+details.group > summary::-webkit-details-marker { display: none; }
+details.group > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s;
+  color: var(--fg3);
+}
+details.group[open] > summary::before { transform: rotate(90deg); }
+details.group > .body { margin-top: 12px; }
+
+/* ---------- 5 状态 banner ---------- */
+.state-banner {
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.state-banner.empty   { background: var(--accent-soft); color: var(--fg2); }
+.state-banner.missing { background: var(--orange-soft); color: var(--orange); }
+.state-banner.error   { background: var(--red-soft);    color: var(--red); }
+.state-banner.offline { background: var(--fg2);         color: var(--card); }
+
+/* ---------- 表格 ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+th, td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+th { background: var(--accent-soft); font-weight: 600; }
+tr:hover td { background: var(--accent-soft); }
+
+/* ---------- 代码 ---------- */
+code {
+  background: var(--accent-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: #c7254e;
+}
+pre {
+  background: #1d1d1f;
+  color: #f5f5f7;
+  padding: 16px;
+  border-radius: var(--r);
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+pre code { background: none; padding: 0; color: inherit; }
+
+/* ---------- 按钮 ---------- */
+button {
+  background: var(--accent);
+  color: white;
+  border: 1px solid var(--accent);
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+button:hover { opacity: 0.85; }
+button.ghost {
+  background: transparent;
+  color: var(--fg2);
+  border-color: var(--border);
+}
+button.copy-prompt {
+  background: var(--accent);
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+/* ---------- 尾部 (TAIL) ---------- */
+.tail {
+  position: sticky;
+  bottom: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-top: 24px;
+  box-shadow: var(--shadow);
+}
+.tail .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- 引用块 ---------- */
+blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 8px 0 8px 16px;
+  margin: 16px 0;
+  color: var(--fg2);
+  background: var(--accent-soft);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+blockquote p { color: var(--fg2); margin-bottom: 0; }
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 640px) {
+  body { padding: 20px 16px 60px; }
+  .hero { padding: 20px; }
+  .hero h1 { font-size: 24px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}

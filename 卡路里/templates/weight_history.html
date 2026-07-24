@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 体重分析</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .kpi .extra.good { color:var(--good); }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  svg { width:100%; height:260px; display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:14px; }
+  .legend .a { background:var(--accent); height:2px; }
+  .legend .b { background:transparent; border-top:2px dashed var(--warn); height:0; }
+  .legend .c { background:transparent; border-top:2px dashed var(--good); height:0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .delta-down { color:var(--good); }
+  .delta-up   { color:var(--bad); }
+  .delta-flat { color:var(--fg3); }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .mode-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="mode-badge" id="modeBadge">--</div>
+</div>
+
+<h1 id="h1Title">⚖️ 体重历史</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid" id="kpis">
+  <div class="kpi"><div class="label" id="k1L">--</div><div class="value" id="k1">--</div><div class="extra" id="k1E">--</div></div>
+  <div class="kpi"><div class="label" id="k2L">--</div><div class="value" id="k2">--</div><div class="extra" id="k2E">--</div></div>
+  <div class="kpi"><div class="label" id="k3L">--</div><div class="value" id="k3">--</div><div class="extra" id="k3E">--</div></div>
+  <div class="kpi"><div class="label" id="k4L">--</div><div class="value" id="k4">--</div><div class="extra" id="k4E">--</div></div>
+</div>
+
+<div class="section" id="chartSection">
+  <h2 id="chartTitle">体重曲线</h2>
+  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="section" id="tableSection">
+  <h2>明细</h2>
+  <table>
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, items, target, meta, mode } = D.data;
+  const m = mode || 'history';
+
+  document.getElementById('metaLeft').textContent =
+    `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;
+  document.getElementById('modeBadge').textContent = m.toUpperCase();
+  document.getElementById('modeBadge').className = 'mode-badge';
+
+  // 标题
+  const titles = {
+    history: '⚖️ 体重历史',
+    trend: '📉 体重趋势',
+    volatility: '📊 体重波动',
+    compare: '🔄 对比体重'
+  };
+  document.getElementById('h1Title').textContent = titles[m] || titles.history;
+  document.getElementById('sub').textContent = summary.subtitle;
+
+  // 4 KPI
+  document.getElementById('k1L').textContent = summary.k1.label;
+  document.getElementById('k1').textContent = summary.k1.value;
+  document.getElementById('k1E').innerHTML = summary.k1.extra;
+
+  document.getElementById('k2L').textContent = summary.k2.label;
+  document.getElementById('k2').textContent = summary.k2.value;
+  document.getElementById('k2E').innerHTML = summary.k2.extra;
+
+  document.getElementById('k3L').textContent = summary.k3.label;
+  document.getElementById('k3').textContent = summary.k3.value;
+  document.getElementById('k3E').innerHTML = summary.k3.extra;
+
+  document.getElementById('k4L').textContent = summary.k4.label;
+  document.getElementById('k4').textContent = summary.k4.value;
+  document.getElementById('k4E').innerHTML = summary.k4.extra;
+
+  // 折线图(适用于 trend/history/volatility)
+  if (m !== 'compare' && items.length > 0) {
+    const svg = document.getElementById('chart');
+    const W = 800, H = 260, PAD = 30;
+    const weights = items.map(i => i.kg);
+    const minW = Math.min(...weights), maxW = Math.max(...weights);
+    const range = (maxW - minW) || 1;
+    const minY = Math.floor(minW - range * 0.2);
+    const maxY = Math.ceil(maxW + range * 0.2);
+    const xStep = (W - 2*PAD) / Math.max(1, items.length - 1);
+    const x = i => PAD + i * xStep;
+    const y = v => H - PAD - (v - minY) / (maxY - minY) * (H - 2*PAD);
+
+    for (let v = minY; v <= maxY; v += Math.max(1, Math.round((maxY - minY) / 5))) {
+      svg.insertAdjacentHTML('beforeend',
+        `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
+        `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}kg</text>`);
+    }
+    if (target && target > minY && target < maxY) {
+      svg.insertAdjacentHTML('beforeend',
+        `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
+        `<text x="${W - 4}" y="${y(target) - 3}" font-size="10" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
+    }
+    let line = `M ${x(0)},${y(items[0].kg)}`;
+    items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.kg)}`; });
+    svg.insertAdjacentHTML('beforeend',
+      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="2.5"/>`);
+    items.forEach((p, i) => {
+      const isAnomaly = p.anomaly === true;
+      svg.insertAdjacentHTML('beforeend',
+        `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}"/>`);
+      if (i === items.length - 1) {
+        svg.insertAdjacentHTML('beforeend',
+          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="10" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
+      }
+    });
+
+    document.getElementById('legend').innerHTML =
+      `<span><i class="a"></i> 体重</span>` +
+      (target ? `<span><i class="c"></i> 目标 ${target}kg</span>` : '');
+
+    document.getElementById('chartTitle').textContent =
+      m === 'trend' ? '体重趋势曲线' : m === 'volatility' ? '体重波动曲线' : '体重历史曲线';
+  } else {
+    document.getElementById('chartSection').style.display = 'none';
+  }
+
+  // 表格头
+  document.getElementById('tableHead').innerHTML = summary.table_header;
+
+  // 表格行
+  const tb = document.getElementById('tableBody');
+  items.forEach(p => {
+    const deltaCls = p.delta > 0 ? 'delta-up' : p.delta < 0 ? 'delta-down' : 'delta-flat';
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${p.date}</td>` +
+      (p.bmi !== undefined ? `<td class="num">${p.bmi}</td>` : '') +
+      `<td class="num">${p.kg} kg</td>` +
+      (p.delta !== undefined ? `<td class="num ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</td>` : '') +
+      (p.note ? `<td>${p.note}</td>` : '') +
+      `</tr>`);
+  });
+
+  document.getElementById('srcLine').textContent = `📊 数据来源:weight_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
+  document.getElementById('copyBtn').onclick = function() {
+    let r = `体重分析 ${meta.start} → ${meta.end} (${items.length} 条)\n`;
+    items.forEach(p => { r += `  ${p.date}  ${p.kg} kg\n`; });
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

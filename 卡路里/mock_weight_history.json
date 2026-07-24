@@ -1,0 +1,26 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "subtitle": "近 7 天每日体重记录列表",
+      "k1": {"label": "记录数", "value": "7", "extra": "本周 7/7 天"},
+      "k2": {"label": "平均体重", "value": "70.5 kg", "extra": "最低 70.4 · 最高 70.7"},
+      "k3": {"label": "波动", "value": "0.3 kg", "extra": "极小波动"},
+      "k4": {"label": "BMR 估算", "value": "1660 卡", "extra": "<span style='color:#34c759'>标准</span>"},
+      "table_header": "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+    },
+    "items": [
+      {"date": "2026-07-18", "kg": 70.7, "bmi": 22.6, "delta": 0},
+      {"date": "2026-07-19", "kg": 70.5, "bmi": 22.5, "delta": -0.2},
+      {"date": "2026-07-20", "kg": 70.4, "bmi": 22.4, "delta": -0.1},
+      {"date": "2026-07-21", "kg": 70.5, "bmi": 22.5, "delta": 0.1},
+      {"date": "2026-07-22", "kg": 70.6, "bmi": 22.5, "delta": 0.1},
+      {"date": "2026-07-23", "kg": 70.8, "bmi": 22.6, "delta": 0.2, "anomaly": true},
+      {"date": "2026-07-24", "kg": 70.5, "bmi": 22.5, "delta": -0.3}
+    ],
+    "target": null,
+    "meta": {"start": "2026-07-18", "end": "2026-07-24", "days": 7, "today": "2026-07-24"},
+    "mode": "history"
+  },
+  "message": "已生成 7 天体重历史"
+}

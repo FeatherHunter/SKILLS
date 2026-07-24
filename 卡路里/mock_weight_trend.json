@@ -1,0 +1,29 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "subtitle": "近 30 天体重数据,趋势分析",
+      "k1": {"label": "当前体重", "value": "70.5 kg", "extra": "今日 <span style='color:#34c759'>↓ 0.3</span> vs 昨日"},
+      "k2": {"label": "30 天变化", "value": "-1.2 kg", "extra": "从 71.7 → 70.5 kg · -1.7%"},
+      "k3": {"label": "日均减重", "value": "0.040 kg/天", "extra": "低于目标速率 0.034 kg/天 ✓"},
+      "k4": {"label": "当前 BMI", "value": "22.5", "extra": "正常范围(18.5-24)"},
+      "table_header": "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+    },
+    "items": [
+      {"date": "2026-06-25", "kg": 71.7, "bmi": 22.9, "delta": 0},
+      {"date": "2026-06-28", "kg": 71.5, "bmi": 22.8, "delta": -0.2},
+      {"date": "2026-07-01", "kg": 71.2, "bmi": 22.7, "delta": -0.3},
+      {"date": "2026-07-04", "kg": 71.0, "bmi": 22.7, "delta": -0.2},
+      {"date": "2026-07-08", "kg": 70.9, "bmi": 22.6, "delta": -0.1},
+      {"date": "2026-07-12", "kg": 70.7, "bmi": 22.6, "delta": -0.2},
+      {"date": "2026-07-15", "kg": 70.5, "bmi": 22.5, "delta": -0.2},
+      {"date": "2026-07-19", "kg": 70.8, "bmi": 22.6, "delta": 0.3, "anomaly": true},
+      {"date": "2026-07-22", "kg": 70.6, "bmi": 22.5, "delta": -0.2},
+      {"date": "2026-07-24", "kg": 70.5, "bmi": 22.5, "delta": -0.1}
+    ],
+    "target": 65.0,
+    "meta": {"start": "2026-06-25", "end": "2026-07-24", "days": 30, "today": "2026-07-24"},
+    "mode": "trend"
+  },
+  "message": "已生成 30 天体重趋势"
+}

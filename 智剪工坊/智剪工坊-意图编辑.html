@@ -2855,19 +2855,31 @@
     }
 
     function updateActiveFromScroll() {
-      // v1.24.11:active 跟 viewport 中央(Apple Music 风格)
-      // 视口中央 Y = window.scrollY + window.innerHeight / 2
-      // 找 anchor item 中心 Y 最接近视口中央的那个 → active class
+      // v1.24.14:按 array 顺序等份映射(scrollProgress / count * index)
+      //
+      // 旧 v1.24.11/13 用 viewportCenterY 找最近 anchor item,
+      //   因为素材section 包含视频列表(高 ~580px),素材section 中心 = 视频列表中心,
+      //   scroll 一开始 viewportCenterY 已经到视频列表中段 → active 直接跳到 #1 而非'素材'
+      //
+      // 改:ratio = scrollY / totalScroll(0-1),idx = floor(ratio * count)
+      //   scroll 0% → idx 0 (项目)
+      //   scroll 25% → idx 2 (#1)
+      //   scroll 100% → idx count-1 (结尾)
+      // 视频展开/折叠不影响比例计算
       if (!anchorItems.length) return;
-      const viewportCenterY = window.scrollY + window.innerHeight / 2;
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScroll <= 0) return;
+      const ratio = window.scrollY / totalScroll;
+      const count = anchorItems.length;
+      // anchor item i 的 target ratio = (i + 0.5) / count
+      // 找 ratio 最接近哪个 item
       let activeIdx = 0;
       let activeDist = Infinity;
-      anchorItems.forEach((item, i) => {
-        const rect = item.el.getBoundingClientRect();
-        const elCenter = rect.top + window.scrollY + rect.height / 2;
-        const dist = Math.abs(elCenter - viewportCenterY);
+      for (let i = 0; i < count; i++) {
+        const targetRatio = (i + 0.5) / count;
+        const dist = Math.abs(targetRatio - ratio);
         if (dist < activeDist) { activeDist = dist; activeIdx = i; }
-      });
+      }
       anchorItems.forEach((item, i) => {
         item.dot.classList.toggle('active', i === activeIdx);
       });

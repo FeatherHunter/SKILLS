@@ -1,12 +1,6 @@
 {
   "status": "ok",
   "data": {
-    "status": {
-      "active": false,
-      "task_id": "cron-caloriereview-001",
-      "task_name": "卡路里复盘",
-      "schedule": "0 23 * * *"
-    },
     "fields": [
       {
         "key": "task_name",
@@ -56,7 +50,7 @@
     "exec_cmd_template": "mavis cron create --name \"{task_name}\" --schedule \"{schedule}\" --tz \"{timezone}\" --command \"{command}\"",
     "meta": {
       "fetched_at": "2026-07-24 18:30:00",
-      "subtitle": "mavis cron 创建/管理每日 23:00 自动复盘任务"
+      "subtitle": "mavis cron 创建/更新\"卡路里复盘\"任务(AI 会自动查现有状态)"
     }
   },
   "message": "已生成定时复盘 配置"

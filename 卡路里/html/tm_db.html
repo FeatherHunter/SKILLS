@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 吃的记录</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:24px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .meal-tag { display:inline-block; padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--soft); color:var(--fg2); }
+  .meal-tag.breakfast { background:rgba(255,149,0,.12); color:var(--warn); }
+  .meal-tag.lunch     { background:rgba(0,113,227,.12); color:var(--accent); }
+  .meal-tag.dinner    { background:rgba(88,86,214,.12); color:#5856d6; }
+  .meal-tag.snack     { background:rgba(52,199,89,.12); color:var(--good); }
+  .filter-bar { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--soft); border-radius:10px; margin-bottom:10px; }
+  .filter-bar label { font-size:12px; color:var(--fg2); }
+  .filter-bar select { font-size:13px; padding:4px 10px; border:1px solid var(--border); border-radius:6px; background:#fff; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+</style>
+</head>
+<body>
+
+<script>window.__DATA__ = {"status": "ok", "data": {"summary": {"total_calorie": 6227.0, "avg_calorie": 2075.7, "total_protein": 203.071, "protein_target": 120, "total_water": 6000.0, "avg_water": 2000.0}, "items": [{"date": "2026-07-24", "time": "13:25:22", "food_name": "喜茶海盐厚抹轻乳茶", "meal_type": "lunch", "grams": 350.0, "calorie": 194.1, "protein": 7.0, "carb": 24.9, "fat": 7.4}, {"date": "2026-07-24", "time": "13:24:54", "food_name": "猪肉(奶面,硬五花)", "meal_type": "lunch", "grams": 250.0, "calorie": 847.5, "protein": 34.0, "carb": 5.5, "fat": 76.5}, {"date": "2026-07-24", "time": "13:04:50", "food_name": "甜玉米粒(鲜,AI估算)", "meal_type": "lunch", "grams": 289.0, "calorie": 248.5, "protein": 9.2, "carb": 57.5, "fat": 3.5}, {"date": "2026-07-24", "time": "12:56:30", "food_name": "胡萝卜(生)", "meal_type": "lunch", "grams": 289.0, "calorie": 118.5, "protein": 2.6, "carb": 27.7, "fat": 0.6}, {"date": "2026-07-23", "time": "23:41:08", "food_name": "💧水", "meal_type": "snack", "grams": 2000.0, "calorie": 0, "protein": 0, "carb": 0, "fat": 0}, {"date": "2026-07-23", "time": "20:12", "food_name": "LOMO 醇萃可可威化", "meal_type": "dinner", "grams": 18.0, "calorie": 95.4, "protein": 1.1, "carb": 10.8, "fat": 5.4}, {"date": "2026-07-23", "time": "15:51:01", "food_name": "瑞幸百香果C美式(大杯冰·不另外加糖)", "meal_type": "snack", "grams": 450.0, "calorie": 100.0, "protein": 0.5, "carb": 25.0, "fat": 0}, {"date": "2026-07-23", "time": "12:39:14", "food_name": "金枪鱼芥末饼干(MM黄油芥末味)", "meal_type": "lunch", "grams": 22.0, "calorie": 113.1, "protein": 2.024, "carb": 13.398, "fat": 5.698}, {"date": "2026-07-23", "time": "12:35:24", "food_name": "毛毛虫小面包(多乐之日近似)", "meal_type": "lunch", "grams": 42.0, "calorie": 168.4, "protein": 3.528, "carb": 19.194, "fat": 8.61}, {"date": "2026-07-23", "time": "12:14:40", "food_name": "凉菜(凉拌菜代表值)", "meal_type": "lunch", "grams": 73.0, "calorie": 58.4, "protein": 2.19, "carb": 5.84, "fat": 2.92}, {"date": "2026-07-23", "time": "12:14:40", "food_name": "烤鸭(北京烤鸭·剔骨)", "meal_type": "lunch", "grams": 138.0, "calorie": 601.7, "protein": 22.91, "carb": 8.28, "fat": 52.99}, {"date": "2026-07-23", "time": "11:12:18", "food_name": "红烧排骨(酱排骨近似)", "meal_type": "lunch", "grams": 65.0, "calorie": 237.9, "protein": 14.105, "carb": 6.24, "fat": 17.355}, {"date": "2026-07-23", "time": "11:12:18", "food_name": "米饭(白米,蒸熟)", "meal_type": "lunch", "grams": 100.0, "calorie": 116.0, "protein": 2.6, "carb": 25.6, "fat": 0.3}, {"date": "2026-07-23", "time": "11:06:05", "food_name": "💧水", "meal_type": "lunch", "grams": 2000.0, "calorie": 0, "protein": 0, "carb": 0, "fat": 0}, {"date": "2026-07-23", "time": "00:07", "food_name": "肉粽子", "meal_type": "snack", "grams": 202.0, "calorie": 422.2, "protein": 10.5, "carb": 83.6, "fat": 4.4}, {"date": "2026-07-22", "time": "20:12:14", "food_name": "米饭(白米,蒸熟)", "meal_type": "dinner", "grams": 250.0, "calorie": 290.0, "protein": 6.5, "carb": 64.0, "fat": 0.75}, {"date": "2026-07-22", "time": "20:12:14", "food_name": "烤鸭(北京烤鸭)", "meal_type": "dinner", "grams": 200.0, "calorie": 872.0, "protein": 33.2, "carb": 12.0, "fat": 76.8}, {"date": "2026-07-22", "time": "18:07:08", "food_name": "💧水", "meal_type": "dinner", "grams": 2000.0, "calorie": 0, "protein": 0, "carb": 0, "fat": 0}, {"date": "2026-07-22", "time": "18:01:33", "food_name": "米饭(白米,蒸熟)", "meal_type": "dinner", "grams": 161.0, "calorie": 186.8, "protein": 4.186, "carb": 41.216, "fat": 0.483}, {"date": "2026-07-22", "time": "11:35:21", "food_name": "喜茶海盐厚抹轻乳茶", "meal_type": "lunch", "grams": 350.0, "calorie": 194.1, "protein": 7.0, "carb": 24.85, "fat": 7.35}, {"date": "2026-07-22", "time": "11:24:33", "food_name": "辣椒炒肉(1/2份)", "meal_type": "lunch", "grams": 610.0, "calorie": 1194.0, "protein": 36.4, "carb": 31.0, "fat": 102.0}, {"date": "2026-07-22", "time": "11:12:22", "food_name": "毛毛虫小面包(多乐之日近似)", "meal_type": "lunch", "grams": 42.0, "calorie": 168.4, "protein": 3.528, "carb": 19.194, "fat": 8.61}], "meta": {"start": "2026-07-22", "end": "2026-07-24", "days": 3, "today": "2026-07-24"}}, "message": "已生成吃的记录 (2026-07-22 ~ 2026-07-24, 22 条)"};</script>
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">报告型 · 详细列表</div>
+</div>
+
+<h1>🍱 吃的记录</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">记录数</div><div class="value" id="kCnt">--</div><div class="extra" id="kCntE">--</div></div>
+  <div class="kpi"><div class="label">总热量</div><div class="value" id="kCal">--</div><div class="extra" id="kCalE">--</div></div>
+  <div class="kpi"><div class="label">总蛋白</div><div class="value" id="kProt">--</div><div class="extra" id="kProtE">--</div></div>
+  <div class="kpi"><div class="label">总饮水</div><div class="value" id="kWater">--</div><div class="extra" id="kWaterE">--</div></div>
+</div>
+
+<div class="section">
+  <h2>每日明细</h2>
+  <div class="filter-bar">
+    <label>查看日期:</label>
+    <select id="dateFilter"></select>
+  </div>
+  <table>
+    <thead>
+      <tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num">碳水</th><th class="num">脂肪</th></tr>
+    </thead>
+    <tbody id="mealTable"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, items, meta } = D.data;
+  const MEAL_LABELS = {breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐'};
+
+  document.getElementById('metaLeft').textContent =
+    `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;
+  document.getElementById('sub').textContent = `查吃的记录 · 共 ${items.length} 条食物明细`;
+
+  // 4 KPI
+  document.getElementById('kCnt').textContent = items.length;
+  document.getElementById('kCntE').textContent = `跨 ${meta.days} 天`;
+  document.getElementById('kCal').textContent = summary.total_calorie.toLocaleString();
+  document.getElementById('kCalE').textContent = `日均 ${summary.avg_calorie}`;
+  document.getElementById('kProt').textContent = summary.total_protein.toFixed(1) + 'g';
+  document.getElementById('kProtE').textContent = `目标 ${summary.protein_target}g`;
+  document.getElementById('kWater').textContent = summary.total_water + 'ml';
+  document.getElementById('kWaterE').textContent = `日均 ${summary.avg_water}ml`;
+
+  // 日期筛选
+  const uniqueDates = [...new Set(items.map(i => i.date))].sort().reverse();
+  const sel = document.getElementById('dateFilter');
+  uniqueDates.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    sel.appendChild(opt);
+  });
+  const lastOpt = document.createElement('option');
+  lastOpt.value = '__all__'; lastOpt.textContent = `全部 (${items.length} 条)`;
+  sel.insertBefore(lastOpt, sel.firstChild);
+  sel.value = '__all__';
+
+  function renderRows(filterDate) {
+    const filtered = filterDate === '__all__' ? items : items.filter(i => i.date === filterDate);
+    const tb = document.getElementById('mealTable');
+    tb.innerHTML = '';
+    const sorted = filtered.slice().sort((a, b) => (b.date + (b.time||'')).localeCompare(a.date + (a.time||'')));
+    sorted.forEach(p => {
+      const tag = p.meal_type;
+      const tagClass = ['breakfast','lunch','dinner','snack'].includes(tag) ? tag : '';
+      const time = p.time || '—';
+      const prot = p.protein != null ? p.protein.toFixed(1) : '—';
+      const carb = p.carb != null ? p.carb.toFixed(1) : '—';
+      const fat  = p.fat != null ? p.fat.toFixed(1) : '—';
+      tb.insertAdjacentHTML('beforeend',
+        `<tr><td>${p.date} ${time}</td>` +
+        `<td><span class="meal-tag ${tagClass}">${MEAL_LABELS[tag] || tag}</span></td>` +
+        `<td>${p.food_name || p.food || '—'}</td>` +
+        `<td class="num">${p.grams}g</td>` +
+        `<td class="num">${p.calorie}</td>` +
+        `<td class="num">${prot}</td>` +
+        `<td class="num">${carb}</td>` +
+        `<td class="num">${fat}</td></tr>`);
+    });
+  }
+  renderRows('__all__');
+  sel.onchange = () => renderRows(sel.value);
+
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源:calorie_data.db · food_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
+  document.getElementById('copyBtn').onclick = function() {
+    let r = `吃的记录 ${meta.start} ~ ${meta.end}\n` +
+            `总热量 ${summary.total_calorie} 卡 · 蛋白 ${summary.total_protein}g · 饮水 ${summary.total_water}ml\n\n`;
+    items.forEach(p => {
+      r += `${p.date} ${p.time || '??:??'}  ${MEAL_LABELS[p.meal_type] || p.meal_type}  ${p.food_name || '?'} ${p.grams}g = ${p.calorie}卡\n`;
+    });
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

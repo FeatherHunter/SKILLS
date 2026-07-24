@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 今日饮食</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --prot:#5856d6; --carb:#34c759; --fat:#ff9500;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
+  .kpi .value { font-size:20px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  .kpi .extra.good { color:var(--good); }
+  .kpi .extra.warn { color:var(--warn); }
+  .kpi .extra.bad  { color:var(--bad); }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  .meal-row { display:flex; align-items:center; gap:14px; padding:10px 0; border-bottom:1px solid var(--border); }
+  .meal-row:last-child { border-bottom:none; }
+  .meal-label { width:62px; font-weight:600; font-size:13px; flex-shrink:0; }
+  .meal-bar-wrap { flex:1; height:14px; background:var(--soft); border-radius:7px; overflow:hidden; position:relative; }
+  .meal-bar { height:100%; background:var(--accent); border-radius:7px; transition:width 0.3s; }
+  .meal-bar.over { background:var(--warn); }
+  .meal-stats { width:130px; text-align:right; font-size:12px; color:var(--fg2); flex-shrink:0; }
+  .meal-stats strong { color:var(--fg); font-weight:600; font-variant-numeric:tabular-nums; font-size:13px; }
+  .pie-wrap { display:flex; align-items:center; gap:24px; }
+  .pie-legend { flex:1; font-size:13px; }
+  .pie-legend .row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); }
+  .pie-legend .row:last-child { border-bottom:none; }
+  .pie-legend .dot { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .pie-legend .name { flex:1; }
+  .pie-legend .val { font-weight:600; font-variant-numeric:tabular-nums; color:var(--fg); }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  th.num, td.num { text-align:right; }
+  .meal-tag { display:inline-block; padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--soft); color:var(--fg2); }
+  .meal-tag.breakfast { background:rgba(255,149,0,.12); color:var(--warn); }
+  .meal-tag.lunch     { background:rgba(0,113,227,.12); color:var(--accent); }
+  .meal-tag.dinner    { background:rgba(88,86,214,.12); color:var(--prot); }
+  .meal-tag.snack     { background:rgba(52,199,89,.12); color:var(--good); }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">报告型 · 单日 4 餐</div>
+</div>
+
+<h1>🍽️ 今日饮食</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">总热量</div><div class="value" id="kCal">--</div><div class="extra" id="kCalE">--</div></div>
+  <div class="kpi"><div class="label">蛋白</div><div class="value" id="kProt">--</div><div class="extra" id="kProtE">--</div></div>
+  <div class="kpi"><div class="label">碳水</div><div class="value" id="kCarb">--</div><div class="extra" id="kCarbE">--</div></div>
+  <div class="kpi"><div class="label">脂肪</div><div class="value" id="kFat">--</div><div class="extra" id="kFatE">--</div></div>
+  <div class="kpi"><div class="label">饮水</div><div class="value" id="kWater">--</div><div class="extra" id="kWaterE">--</div></div>
+</div>
+
+<div class="section">
+  <h2>餐次进度</h2>
+  <div id="mealBars"></div>
+</div>
+
+<div class="section">
+  <h2>营养配比</h2>
+  <div class="pie-wrap">
+    <svg id="pie" width="180" height="180" viewBox="0 0 180 180"></svg>
+    <div class="pie-legend" id="pieLegend"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>今日明细</h2>
+  <table>
+    <thead><tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num">碳水</th><th class="num">脂肪</th></tr></thead>
+    <tbody id="mealTable"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, meals, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent = `${meta.date} · 共 ${meals.length} 条记录`;
+  const remain = summary.target - summary.calorie;
+  document.getElementById('sub').innerHTML = remain > 0
+    ? `查今天吃 · ${meta.date} · 距离目标还剩 <span class="pill pill-good">${remain} 卡</span>`
+    : `查今天吃 · ${meta.date} · 已超目标 <span class="pill pill-bad">${-remain} 卡</span>`;
+
+  document.getElementById('kCal').textContent = summary.calorie.toLocaleString();
+  const dC = summary.calorie - summary.target;
+  document.getElementById('kCalE').textContent = `目标 ${summary.target} · ${dC >= 0 ? '+' : ''}${dC}`;
+  document.getElementById('kCalE').className = 'extra ' + (dC > summary.target * 0.05 ? 'warn' : dC < -summary.target * 0.10 ? 'bad' : 'good');
+
+  function setKpi(id, v, e, cls) {
+    document.getElementById(id).textContent = v.toLocaleString();
+    const el = document.getElementById(id + 'E');
+    el.textContent = e;
+    el.className = 'extra ' + cls;
+  }
+  setKpi('kProt', summary.protein_g, `目标 ${summary.protein_target}g · ${summary.protein_pct}%`, summary.protein_pct >= 95 ? 'good' : summary.protein_pct < 70 ? 'bad' : 'warn');
+  setKpi('kCarb', summary.carb_g,     `目标 ${summary.carb_target}g · ${summary.carb_pct}%`,     summary.carb_pct     >= 95 ? 'good' : summary.carb_pct     < 70 ? 'bad' : 'warn');
+  setKpi('kFat',  summary.fat_g,      `目标 ${summary.fat_target}g · ${summary.fat_pct}%`,      summary.fat_pct      >= 95 ? 'good' : summary.fat_pct      < 70 ? 'bad' : 'warn');
+  setKpi('kWater', summary.water_ml,  `目标 ${summary.water_target}ml · ${Math.round(summary.water_ml / summary.water_target * 100)}%`, summary.water_ml >= summary.water_target ? 'good' : 'warn');
+
+  const mealLabels = {breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐'};
+  const bars = document.getElementById('mealBars');
+  ['breakfast','lunch','dinner','snack'].forEach(k => {
+    const m = summary.meals[k];
+    if (!m) return;
+    const pct = Math.min(100, m.calorie / m.target * 100);
+    const over = m.calorie > m.target * 1.10;
+    bars.insertAdjacentHTML('beforeend',
+      `<div class="meal-row">` +
+      `<div class="meal-label">${mealLabels[k]}</div>` +
+      `<div class="meal-bar-wrap"><div class="meal-bar ${over?'over':''}" style="width:${pct}%"></div></div>` +
+      `<div class="meal-stats"><strong>${m.calorie}</strong> / ${m.target} 卡${over?' ⚠':''}</div>` +
+      `</div>`);
+  });
+
+  const svg = document.getElementById('pie');
+  const cx = 90, cy = 90, r = 70;
+  const items = [
+    {name:'蛋白', val: summary.protein_g * 4, color:'var(--prot)', key:'prot'},
+    {name:'碳水', val: summary.carb_g * 4,   color:'var(--carb)', key:'carb'},
+    {name:'脂肪', val: summary.fat_g * 9,    color:'var(--fat)',  key:'fat'},
+  ];
+  const totalCal = items.reduce((a,b)=>a+b.val, 0) || 1;
+  let start = -Math.PI / 2;
+  items.forEach(it => {
+    const ang = (it.val / totalCal) * Math.PI * 2;
+    const end = start + ang;
+    const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+    const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
+    const large = ang > Math.PI ? 1 : 0;
+    svg.insertAdjacentHTML('beforeend',
+      `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${it.color}"/>`);
+    start = end;
+  });
+  svg.insertAdjacentHTML('beforeend',
+    `<circle cx="${cx}" cy="${cy}" r="40" fill="#fff"/>` +
+    `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="11" fill="#86868b">总热量</text>` +
+    `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="16" font-weight="700" fill="#1d1d1f">${summary.calorie}</text>`);
+
+  const legend = document.getElementById('pieLegend');
+  items.forEach(it => {
+    const pct = Math.round(it.val / totalCal * 100);
+    const g = summary[it.key + '_g'];
+    legend.insertAdjacentHTML('beforeend',
+      `<div class="row">` +
+      `<div class="dot" style="background:${it.color}"></div>` +
+      `<div class="name">${it.name} <span style="color:#86868b;font-size:11px">${g}g</span></div>` +
+      `<div class="val">${pct}%</div>` +
+      `</div>`);
+  });
+
+  const tb = document.getElementById('mealTable');
+  meals.forEach(m => {
+    const tag = m.meal_type;
+    const tagClass = ['breakfast','lunch','dinner','snack'].includes(tag) ? tag : '';
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${m.time}</td>` +
+      `<td><span class="meal-tag ${tagClass}">${mealLabels[tag] || tag}</span></td>` +
+      `<td>${m.food_name}</td>` +
+      `<td class="num">${m.grams}</td>` +
+      `<td class="num">${m.calorie}</td>` +
+      `<td class="num">${m.protein}</td>` +
+      `<td class="num">${m.carb}</td>` +
+      `<td class="num">${m.fat}</td></tr>`);
+  });
+
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源: calorie_data.db · ${meta.date} · ${meals.length} 条记录`;
+  document.getElementById('copyBtn').onclick = function() {
+    const lines = meals.map(m =>
+      `${m.time} ${mealLabels[m.meal_type]||m.meal_type} ${m.food_name} ${m.grams}g = ${m.calorie}卡`);
+    const r = `今日饮食 ${meta.date}\n总热量 ${summary.calorie} / ${summary.target} 卡\n` +
+              `蛋白 ${summary.protein_g}g · 碳水 ${summary.carb_g}g · 脂肪 ${summary.fat_g}g\n` +
+              `饮水 ${summary.water_ml}ml\n` + lines.join('\n');
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

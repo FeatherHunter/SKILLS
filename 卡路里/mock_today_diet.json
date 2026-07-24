@@ -1,0 +1,42 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "calorie": 1456,
+      "target": 1800,
+      "protein_g": 78,
+      "protein_target": 120,
+      "protein_pct": 65,
+      "carb_g": 168,
+      "carb_target": 200,
+      "carb_pct": 84,
+      "fat_g": 42,
+      "fat_target": 60,
+      "fat_pct": 70,
+      "water_ml": 1200,
+      "water_target": 2000,
+      "meals": {
+        "breakfast": {"calorie": 420, "target": 450},
+        "lunch":     {"calorie": 580, "target": 650},
+        "snack":     {"calorie": 180, "target": 150}
+      }
+    },
+    "meals": [
+      {"time": "08:30", "meal_type": "breakfast", "food_name": "燕麦粥", "grams": 200, "calorie": 280, "protein": 12, "carb": 48, "fat": 5},
+      {"time": "08:45", "meal_type": "breakfast", "food_name": "鸡蛋", "grams": 100, "calorie": 140, "protein": 13, "carb": 1, "fat": 10},
+      {"time": "12:30", "meal_type": "lunch", "food_name": "米饭", "grams": 200, "calorie": 232, "protein": 4, "carb": 50, "fat": 1},
+      {"time": "12:40", "meal_type": "lunch", "food_name": "鸡胸肉", "grams": 150, "calorie": 248, "protein": 47, "carb": 0, "fat": 6},
+      {"time": "12:45", "meal_type": "lunch", "food_name": "蔬菜沙拉", "grams": 100, "calorie": 100, "protein": 3, "carb": 12, "fat": 4},
+      {"time": "15:30", "meal_type": "snack", "food_name": "苹果", "grams": 180, "calorie": 95, "protein": 1, "carb": 25, "fat": 0},
+      {"time": "15:35", "meal_type": "snack", "food_name": "坚果", "grams": 25, "calorie": 85, "protein": 6, "carb": 3, "fat": 7},
+      {"time": "10:00", "meal_type": "snack", "food_name": "💧水", "grams": 300, "calorie": 0, "protein": 0, "carb": 0, "fat": 0},
+      {"time": "14:00", "meal_type": "snack", "food_name": "💧水", "grams": 400, "calorie": 0, "protein": 0, "carb": 0, "fat": 0},
+      {"time": "16:00", "meal_type": "snack", "food_name": "💧水", "grams": 500, "calorie": 0, "protein": 0, "carb": 0, "fat": 0}
+    ],
+    "meta": {
+      "date": "2026-07-24",
+      "today": "2026-07-24"
+    }
+  },
+  "message": "已生成 2026-07-24 今日饮食(10 条)"
+}

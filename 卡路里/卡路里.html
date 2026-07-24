@@ -257,7 +257,7 @@
 <h3>📊 分析</h3>
 <table><thead><tr><th>唤醒词</th><th>功能</th><th>CLI</th></tr></thead><tbody>
 <tr><td>查热量趋势</td><td>热量摄入趋势</td><td><code>AI 路由(Python API)</code></td></tr>
-<tr><td>查营养配比</td><td>营养素占比分析</td><td><code>AI 路由(Python API)</code></td></tr>
+<tr><td>查营养结构</td><td>营养素占比分析</td><td><code>AI 路由(Python API)</code></td></tr>
 <tr><td>查热量缺口</td><td>热量缺口分析</td><td><code>AI 路由(Python API)</code></td></tr>
 <tr><td>查食物排行</td><td>食物排行榜(默认高热量榜)</td><td><code>AI 路由(Python API)</code></td></tr>
 <tr><td>查高热量榜</td><td>热量炸弹 TOP5</td><td><code>AI 路由(Python API)</code></td></tr>
@@ -600,7 +600,7 @@
   </div>
 </details>
 <details>
-  <summary>查营养配比<code>python scripts/diet_analysis(start, end, "macro_ratio")</code></summary>
+  <summary>查营养结构<code>python scripts/diet_analysis(start, end, "macro_ratio")</code></summary>
   <div>
     <p><span class="workflow-label cli">CLI</span><code>diet_analysis(start, end, "macro_ratio")</code></p>
     <p><span class="workflow-label flow">工作流</span>protein/carbs/fat 日均克数 + 占比 → vs 目标缺口 → 输出饼图数据</p>
@@ -1247,15 +1247,122 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 </tbody>
 </table>
 
-<h3>📊 分析:查热量趋势 / 查营养配比 / 查热量缺口 / 查食物排行 / 查运动分布 / 查运动贡献</h3>
+<h3>📊 分析:查热量趋势 / 查营养结构 / 查热量缺口 / 查食物排行 / 查运动分布 / 查运动贡献</h3>
 <ul>
 <li><strong>查热量趋势</strong>:<code>diet_analysis(start, end, 'calorie_trend')</code></li>
-<li><strong>查营养配比</strong>:<code>diet_analysis(start, end, 'macro_ratio')</code></li>
+<li><strong>查营养结构</strong>:<code>diet_analysis(start, end, 'macro_ratio')</code></li>
 <li><strong>查热量缺口</strong>:<code>diet_analysis(start, end, 'deficit_analysis')</code></li>
 <li><strong>查食物排行</strong>:<code>diet_food_ranking(start, end, category)</code> — category: high_calorie / low_calorie / frequent / high_carb / high_protein</li>
 <li><strong>查运动分布</strong>:<code>exercise_analysis(start, end, 'type_breakdown')</code></li>
 <li><strong>查运动贡献</strong>:<code>exercise_analysis(start, end, 'deficit_contribution')</code></li>
-</ul>
+</ul><h3>📌 时间区间类 trigger · 用户说法 → CLI 参数映射</h3>
+<p>下列 trigger 支持任意日期区间(单日 / 区间 / 相对 / 整月 / 整年)。AI 收到用户说法后,先看本表,再选择 CLI 参数。</p>
+<p><strong>通用日期格式</strong>:ISO <code>2026-07-17</code> · 简写 <code>7/17</code> · 相对 <code>今天/昨天/上周/过去N天</code> · 整月 <code>2026-07</code> · 范围 <code>7/1到7/14</code></p>
+
+<details>
+<summary>查热量趋势(已实现 · render_calorie_trend.py)</summary>
+<div>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>查热量趋势</code></td><td><code>--days 7</code>(默认)</td></tr>
+<tr><td><code>查热量趋势 上周</code></td><td><code>--days 7</code>(已过去)</td></tr>
+<tr><td><code>查热量趋势 7/1 到 7/14</code></td><td><code>--start 2026-07-01 --end 2026-07-14</code></td></tr>
+<tr><td><code>查热量趋势 7 月</code></td><td><code>--start 2026-07-01 --end 2026-07-31</code></td></tr>
+<tr><td><code>查热量趋势 最近 30 天</code></td><td><code>--days 30</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>查营养结构(已实现 · render_nutrition_ratio.py)</summary>
+<div>
+<p><strong>改名历史</strong>:曾用名"查营养配比",2026-07-24 改为"查营养结构"(语义更准:查的是"我的饮食结构",非单品)。</p>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>查营养结构</code></td><td><code>--days 7</code>(默认)</td></tr>
+<tr><td><code>查营养结构 7/1 到 7/14</code></td><td><code>--start 2026-07-01 --end 2026-07-14</code></td></tr>
+<tr><td><code>查营养结构 7 月</code></td><td><code>--start 2026-07-01 --end 2026-07-31</code></td></tr>
+<tr><td><code>查营养结构 最近 30 天</code></td><td><code>--days 30</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>查热量缺口 / 查运动分布 / 查运动贡献(⏳ 待 Phase H.4-H.6)</summary>
+<div>
+<p>3 个 trigger 的 renderer 待 Phase H.4-H.6 实现。AI 路由表里已标注支持任意日期区间,但 CLI 层 renderer 尚未交付。当前用户询问时 AI 应回答"该功能正在开发,完成后可支持任意区间"。</p>
+</div>
+</details>
+
+<details>
+<summary>查健康报告(已实现 · render_health_dashboard.py)</summary>
+<div>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>查健康报告</code></td><td><code>--days 7</code>(默认)</td></tr>
+<tr><td><code>查健康报告 本月</code></td><td><code>--start 本月1 --end 今天</code></td></tr>
+<tr><td><code>查健康报告 2026 上半年</code></td><td><code>--start 2026-01-01 --end 2026-06-30</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>查食物排行 + 5 榜单(已实现 · render_food_ranking.py)</summary>
+<div>
+<p>6 个 trigger 共用同一模板,只是 <code>--category</code> 不同。</p>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>查食物排行 / 查高热量榜</code></td><td><code>--days 7 --category high_calorie</code>(默认)</td></tr>
+<tr><td><code>查低热量榜</code></td><td><code>--days 7 --category low_calorie</code></td></tr>
+<tr><td><code>查频繁吃榜</code></td><td><code>--days 7 --category frequent</code></td></tr>
+<tr><td><code>查高碳水榜</code></td><td><code>--days 7 --category high_carb</code></td></tr>
+<tr><td><code>查高蛋白榜</code></td><td><code>--days 7 --category high_protein</code></td></tr>
+<tr><td><code>查食物排行 7 月</code></td><td><code>--start 2026-07-01 --end 2026-07-31</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>复盘训练(已实现 · render_exercise_review_html.py)</summary>
+<div>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>复盘训练</code></td><td><code>--days 7</code>(默认)</td></tr>
+<tr><td><code>复盘训练 今天</code></td><td><code>--start 今天 --end 今天</code></td></tr>
+<tr><td><code>复盘训练 昨天</code></td><td><code>--start 昨天 --end 昨天</code></td></tr>
+<tr><td><code>复盘训练 前天</code></td><td><code>--start 前天 --end 前天</code></td></tr>
+<tr><td><code>复盘训练 7/1 到 7/14</code></td><td><code>--start 2026-07-01 --end 2026-07-14</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+<details>
+<summary>单日类 trigger(--date 参数)</summary>
+<div>
+<table>
+<thead><tr><th>用户说法</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>查今天吃</code></td><td><code>--date 今天</code>(默认)</td></tr>
+<tr><td><code>查今天吃 昨天</code></td><td><code>--date 昨天</code></td></tr>
+<tr><td><code>查今天吃 2026-07-15</code></td><td><code>--date 2026-07-15</code></td></tr>
+<tr><td>主页</td><td><code>--date 今天</code></td></tr>
+<tr><td><code>记体重</code></td><td><code>--date 今天</code></td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
+
 
 <h3>📋 综合:设营养目标 / 查营养目标 / 查健康报告 / 查卡路里数据</h3>
 <ul>

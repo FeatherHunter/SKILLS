@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已补计划 · {{ title }} · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:linear-gradient(180deg,#f7fdf9 0%,#fafafa 100%);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:64px 28px 80px}
+  .hero{background:linear-gradient(135deg,#d6f5e0 0%,#a8e6b8 100%);border-radius:28px;padding:48px 42px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+  .hero .check{width:80px;height:80px;border-radius:50%;background:var(--good);color:#fff;font-size:48px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 4px 16px rgba(52,199,89,.3);animation:popIn .6s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  .hero h1{font-size:36px;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#1f8c3d;font-weight:700}
+  .hero .sub{font-size:16px;color:#3a8c4f;margin-bottom:14px}
+  .hero .meta{font-size:13px;color:#5a8c6f;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+  .hero .meta b{color:#1f8c3d}
+  .hero .action-badge{display:inline-block;background:#e6f7ec;color:#1f8c3d;padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;margin-top:8px}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 24px}
+  .stat{background:var(--card);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px;border:1px solid var(--line)}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 32px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:22px;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.04em;margin-right:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13.5px;margin-bottom:16px;line-height:1.65}
+
+  .plan-card{background:linear-gradient(180deg,#f7fdf9 0%,#fff 100%);border:2px solid var(--good);border-radius:18px;padding:24px 28px;margin:8px 0}
+  .plan-card .row-hero{display:flex;align-items:center;gap:18px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .plan-card .time-big{font-size:22px;font-weight:700;color:#1f8c3d;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .plan-card .title-big{flex:1;font-size:24px;font-weight:700;color:var(--fg);letter-spacing:-.01em}
+  .plan-card .cat-big{font-size:13px;padding:4px 12px;border-radius:999px;background:#e6f7ec;color:#1f8c3d;font-weight:600}
+  .plan-card .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;font-size:12.5px}
+  .plan-card .field{padding:6px 0;border-bottom:1px dashed var(--line)}
+  .plan-card .field:last-child{border-bottom:none}
+  .plan-card .field .lbl{color:var(--fg3);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .plan-card .field .val{color:var(--fg);font-weight:500}
+  .plan-card .field .val.code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+
+  .actions{background:linear-gradient(180deg,#e6f7ec 0%,#fff 100%);border:2px solid var(--good);border-radius:20px;padding:24px 28px;margin:8px 0 24px}
+  .actions h2-act{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .actions h2-act::before{content:"📤";font-size:20px}
+  .actions .act-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:18px}
+  .actions .act-list{display:flex;flex-direction:column;gap:10px}
+  .actions .act-btn{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);text-align:left;cursor:pointer;transition:all .15s;font-family:inherit;width:100%;position:relative;overflow:hidden}
+  .actions .act-btn:hover{border-color:var(--good);background:#f7fdf9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(52,199,89,.08)}
+  .actions .act-btn.copied{border-color:var(--good);background:#e6f7ec}
+  .actions .act-btn .icon{font-size:28px;flex-shrink:0;width:48px;height:48px;border-radius:12px;background:#e6f7ec;display:flex;align-items:center;justify-content:center}
+  .actions .act-btn.copied .icon{background:#d6f5e0}
+  .actions .act-btn .info{flex:1;min-width:0}
+  .actions .act-btn .label{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .actions .act-btn .desc{font-size:12px;color:var(--fg3);line-height:1.5}
+  .actions .act-btn .copied-badge{position:absolute;top:8px;right:12px;font-size:11px;color:var(--good);font-weight:600;display:none}
+  .actions .act-btn.copied .copied-badge{display:block}
+
+  ol.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+  ol.steps > li{counter-increment:step;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 56px;margin-bottom:10px;position:relative;font-size:13.5px;line-height:1.65}
+  ol.steps > li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps > li b{color:var(--fg);font-weight:600}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:var(--code);color:#f5f5f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  @media(max-width:760px){
+    .wrap{padding:40px 14px 60px}
+    .hero{padding:32px 22px;border-radius:22px}
+    h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    section{padding:22px 18px}
+    section h2{font-size:18px}
+    .plan-card .row-hero{flex-direction:column;align-items:flex-start;gap:8px}
+    .plan-card .grid{grid-template-columns:1fr}
+    .actions .act-btn{flex-direction:column;text-align:center;align-items:flex-start;gap:8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="check">✓</div>
+  <h1 id="page-title">已补计划</h1>
+  <p class="sub" id="page-subtitle">「<span id="plan-title">—</span>」 · <span id="plan-time">—</span></p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">—</b></span>
+    <span>🆔 id=<b id="meta-id">—</b></span>
+    <span>🕐 <b id="meta-time">—</b></span>
+  </div>
+  <div class="action-badge" id="action-badge">已补计划</div>
+</header>
+
+<div class="summary">
+  <div class="stat good">
+    <div class="n" id="stat-today-count">—</div>
+    <div class="l">今日已记录计划</div>
+    <div class="d">schedule_plans</div>
+  </div>
+  <div class="stat blue">
+    <div class="n" id="stat-completion-rate">—</div>
+    <div class="l">完成率</div>
+    <div class="d">已完成 / 总数</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-feishu">—</div>
+    <div class="l">飞书已同步</div>
+    <div class="d">feishu_event_id 非空</div>
+  </div>
+  <div class="stat blue">
+    <div class="n" id="stat-coverage">—</div>
+    <div class="l">24h 覆盖率</div>
+    <div class="d">已规划小时</div>
+  </div>
+</div>
+
+<div class="plan-card" id="plan-card">
+  <div class="row-hero">
+    <div class="time-big" id="pc-time">—</div>
+    <div class="title-big" id="pc-title">—</div>
+    <div class="cat-big" id="pc-category">—</div>
+  </div>
+  <div class="grid">
+    <div class="field"><div class="lbl">id</div><div class="val code" id="pc-id">—</div></div>
+    <div class="field"><div class="lbl">date</div><div class="val code" id="pc-date">—</div></div>
+    <div class="field"><div class="lbl">completion</div><div class="val code" id="pc-completion">—</div></div>
+    <div class="field"><div class="lbl">completion_note</div><div class="val code" id="pc-completion-note">—</div></div>
+    <div class="field"><div class="lbl">notes</div><div class="val" id="pc-notes">—</div></div>
+    <div class="field"><div class="lbl">is_active</div><div class="val code" id="pc-is-active">—</div></div>
+  </div>
+</div>
+
+<div class="actions" id="actions-block">
+  <h2 class="h2-act">选一个操作 · 复制完整 prompt 给 AI</h2>
+  <p class="act-desc">每个按钮 = 1 次"我决定了下一步 + 已发 AI"的动作。点击 → 复制该操作专属的完整 4 部分 prompt → 粘贴给 AI → AI 自主执行。</p>
+  <div class="act-list" id="act-list">
+    <button class="act-btn" data-prompt-key="continue" id="act-continue">
+      <span class="icon">➕</span>
+      <div class="info">
+        <div class="label">继续补下一条</div>
+        <div class="desc">AI 调 ensure-plan-event 写库,继续追加其他时间/类别/备注</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" data-prompt-key="overview" id="act-overview">
+      <span class="icon">📅</span>
+      <div class="info">
+        <div class="label">看今日计划全貌</div>
+        <div class="desc">AI 调 render-list-events <date> 生成今日所有计划 HTML</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" data-prompt-key="review" id="act-review">
+      <span class="icon">🔄</span>
+      <div class="info">
+        <div class="label">晚点复盘</div>
+        <div class="desc">AI 调 render-plans-review <date> 生成复盘报告 HTML</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+  </div>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>操作指引(简化流程)</h2>
+  <ol class="steps">
+    <li><b>看一眼计划</b> 确认补对了 → 4 卡摘要给上下文(今日计划数/完成率/飞书/24h)。</li>
+    <li><b>选 1 个按钮</b> §"选一个操作"区 3 选 1 → 复制完整 prompt → 粘贴给 AI。</li>
+    <li><b>AI 自主执行</b> 收到"今日计划 + 具体指令" → 不反问 → 直接调对应 CLI → 生成 HTML。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>3 个操作 prompt 完整内容(供高级用户)</h2>
+  <details class="field">
+    <summary>点击查看 3 个操作 prompt 完整文本</summary>
+    <pre id="prompts-full">加载中…</pre>
+  </details>
+</section>
+
+<div class="footer">
+  <p>本 HTML 由 <code>render-plan-receipt-add &lt;id&gt;</code> 命令生成 · 模板: <code>schedule_plan_receipt_add.html</code></p>
+  <p class="note">回执型第 3 款(补计划,2026-07-24) · 绿色调(新增,vs 紫色调改/删)</p>
+  <p class="note">3 个操作按钮 = 各自复制专属 prompt(继续补 / 看全貌 / 复盘)</p>
+  <p class="note">③ 期望: AI 自主决定 · 不让用户选 A/B/C</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败:' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败:' + esc(payload.message || "未知错误") + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var plan = data.plan || {};
+  var stats = data.stats || {};
+  var prompts = data.prompts || {};
+
+  document.getElementById("page-title").textContent = "已补计划";
+  document.getElementById("plan-title").textContent = plan.title || "—";
+  document.getElementById("plan-time").textContent = (plan.time_start || "—") + " – " + (plan.time_end || "—");
+  document.getElementById("meta-date").textContent = plan.date || "—";
+  document.getElementById("meta-id").textContent = plan.id || "—";
+  document.getElementById("meta-time").textContent = meta.generated_at || "—";
+
+  document.getElementById("stat-today-count").textContent = stats.today_count ?? "—";
+  document.getElementById("stat-completion-rate").textContent = (stats.completion_rate || 0) + "%";
+  document.getElementById("stat-feishu").textContent = (stats.feishu_synced || 0) + "/" + (stats.today_count || 0);
+  document.getElementById("stat-coverage").textContent = (stats.coverage_hours || 0) + "h";
+
+  document.getElementById("pc-time").textContent = (plan.time_start || "—") + " – " + (plan.time_end || "—");
+  document.getElementById("pc-title").textContent = plan.title || "—";
+  document.getElementById("pc-category").textContent = plan.category || "未分类";
+  document.getElementById("pc-id").textContent = plan.id || "—";
+  document.getElementById("pc-date").textContent = plan.date || "—";
+  document.getElementById("pc-completion").textContent = plan.completion || "（未复盘）";
+  document.getElementById("pc-completion-note").textContent = plan.completion_note || "（无）";
+  document.getElementById("pc-notes").textContent = plan.notes || "（无）";
+  document.getElementById("pc-is-active").textContent = (plan.is_active === 0 ? "0 (已软删)" : "1");
+
+  var fullText = "";
+  if (prompts.continue) fullText += "【1. 继续补下一条】\n" + prompts.continue + "\n\n";
+  if (prompts.overview) fullText += "【2. 看今日计划全貌】\n" + prompts.overview + "\n\n";
+  if (prompts.review) fullText += "【3. 晚点复盘】\n" + prompts.review + "\n";
+  document.getElementById("prompts-full").textContent = fullText.trim();
+
+  function copyToClipboard(text, onSuccess){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(function(){
+        fallbackCopy(text); onSuccess();
+      });
+    } else {
+      fallbackCopy(text); onSuccess();
+    }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll(".act-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var key = btn.getAttribute("data-prompt-key");
+      var prompt = prompts[key];
+      if (!prompt) return;
+      copyToClipboard(prompt, function(){
+        btn.classList.add("copied");
+        setTimeout(function(){
+          btn.classList.remove("copied");
+        }, 2500);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

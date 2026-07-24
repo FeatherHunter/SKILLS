@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>目标配置 · 卡路里</title>
+<style>
+:root{
+  --bg:#fff;--bg-soft:#f5f5f7;--card:#fff;
+  --ink:#1d1d1d;--ink2:#3c3c43;--ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);--lineS:rgba(60,60,67,.06);
+  --accent:#007aff;--accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;--green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;--orange-soft:rgba(255,149,0,.10);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;--r:14px;--r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+.hero{padding:32px 28px 28px;margin-bottom:20px;background:linear-gradient(135deg,#fff,#f5f8ff);border-radius:20px;box-shadow:var(--shadow)}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.section{background:var(--card);border-radius:20px;padding:24px 28px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+.slider-row{display:grid;grid-template-columns:140px 1fr 90px;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--lineS)}
+.slider-row:first-child{border-top:none}
+.slider-row .name{font-size:14px;font-weight:600}
+.slider-row .name .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:4px}
+.slider-row input[type="range"]{width:100%;accent-color:var(--accent)}
+.slider-row .value{font-size:18px;font-weight:600;text-align:right;font-feature-settings:"tnum";color:var(--ink)}
+.slider-row .value .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:2px}
+.mini-chart{margin:18px 0;padding:16px;background:var(--bg-soft);border-radius:12px}
+.mini-chart h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--ink2)}
+.mini-row{display:grid;grid-template-columns:100px 1fr 110px;align-items:center;gap:10px;padding:6px 0}
+.mini-label{font-size:13px;font-weight:500}
+.mini-bar-bg{height:10px;background:#e5e5ea;border-radius:5px;overflow:hidden;position:relative}
+.mini-bar-fg{position:absolute;top:0;left:0;height:100%;background:var(--accent);border-radius:5px;transition:width .3s}
+.mini-bar-actual{position:absolute;top:0;left:0;height:100%;border-right:2px solid var(--orange);border-radius:5px 0 0 5px;transition:width .3s;background:transparent}
+.mini-num{font-size:12px;color:var(--ink2);text-align:right;font-feature-settings:"tnum"}
+.copy-section{background:linear-gradient(135deg,var(--card),#f8fbff);border-radius:20px;padding:28px 32px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.copy-section h2{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
+.copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
+.copy-section code{background:var(--bg-soft);padding:1px 6px;border-radius:4px;font-size:12px;font-family:"SF Mono",monospace}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
+.btn:hover{opacity:.85}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.warning{background:var(--orange-soft);color:var(--orange)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.copy-preview{background:var(--bg-soft);border-radius:12px;padding:16px 18px;font-family:"SF Mono",monospace;font-size:12px;line-height:1.65;color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:420px;overflow-y:auto;border:1px solid var(--lineS)}
+.weight-progress{padding:18px 22px;background:linear-gradient(135deg,var(--accent-soft),#fff);border-radius:14px;margin-top:14px}
+.weight-progress h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--accent)}
+.weight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+.weight-stat{padding:10px 14px;background:var(--card);border-radius:10px}
+.weight-stat .label{font-size:11px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.weight-stat .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
+footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
+#backTop{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--line);color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;box-shadow:var(--shadow)}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.slider-row{grid-template-columns:1fr;gap:8px}.weight-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow">卡路里 · 目标配置</div>
+<h1 id="title">营养/体重目标</h1>
+<div class="sub" id="subtitle">加载中…</div>
+</header>
+<section class="section">
+<div class="section-title">
+<h2>每日营养目标 (5 项)</h2>
+<span class="hint">拖动 slider 调整 · 实时显示昨日 vs 新目标</span>
+</div>
+<div id="sliders"></div>
+<div class="mini-chart" id="miniChart" style="display:none">
+<h3>📊 昨日 vs 新目标 (mini chart)</h3>
+<div id="chartRows"></div>
+</div>
+</section>
+<section class="section" id="weightSection" style="display:none">
+<div class="section-title">
+<h2>体重目标进度</h2>
+<span class="hint" id="weightHint"></span>
+</div>
+<div class="weight-progress">
+<h3>当前 → 目标</h3>
+<div class="weight-grid" id="weightGrid"></div>
+</div>
+</section>
+<section class="copy-section">
+<h2>复制配置指令</h2>
+<p class="sub">
+HTML 不能直接修改数据库 · 请把下方文本粘到 AI 对话框,AI 会调用 <code>nutrition_goal.set_nutrition_goal</code> / <code>weight_goal.set_weight_goal</code> 写入 daily_goal 表。
+- <strong>采纳配置</strong> = 数据无误,调 CLI 写入
+- <strong>仅营养</strong> = 只改 5 项营养,保留体重目标
+- <strong>仅体重</strong> = 只改体重目标
+</p>
+<div class="btn-row">
+<button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳全部配置</button>
+<button class="btn secondary" id="btnNutrition" onclick="copyNutrition()">🥗 仅营养</button>
+<button class="btn warning" id="btnWeight" onclick="copyWeight()">⚖️ 仅体重</button>
+</div>
+<div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+</section>
+<footer>卡路里 Skill · 目标配置 · 2026-07-23 · G6</footer>
+</div>
+<a id="backTop" href="#top" title="回到顶部">↑</a>
+<!--INJECT-DATA-->
+<script>
+const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};
+const YESTERDAY=DATA&&DATA.data&&DATA.data.yesterday_actual?DATA.data.yesterday_actual:{};
+const WEIGHT=DATA&&DATA.data&&DATA.data.weight_progress?DATA.data.weight_progress:null;
+const FIELDS=[
+  {key:'calorie_goal',label:'卡路里',unit:'卡',min:1000,max:3500,step:50,yesterdayKey:'calorie'},
+  {key:'protein_goal',label:'蛋白',unit:'g',min:50,max:300,step:5,yesterdayKey:'protein'},
+  {key:'carbs_goal',label:'碳水',unit:'g',min:50,max:500,step:10,yesterdayKey:'carbs'},
+  {key:'fat_goal',label:'脂肪',unit:'g',min:20,max:150,step:5,yesterdayKey:'fat'},
+  {key:'water_goal',label:'饮水',unit:'ml',min:500,max:4000,step:100,yesterdayKey:'water'}
+];
+const state={};
+FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
+function renderHeader(){
+  document.getElementById('title').textContent='营养/体重目标';
+  document.getElementById('subtitle').textContent=
+    `目标日 ${CURRENT.calorie_goal||'?'} 卡 · 蛋白 ${CURRENT.protein_goal||'?'}g · 碳水 ${CURRENT.carbs_goal||'?'}g · 脂肪 ${CURRENT.fat_goal||'?'}g · 饮水 ${CURRENT.water_goal||'?'}ml`;
+}
+function renderSliders(){
+  const html=FIELDS.map(f=>{
+    return `<div class="slider-row">
+      <div class="name">${f.label}<span class="unit">${f.unit}</span></div>
+      <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${state[f.key]}" data-key="${f.key}" oninput="onSlider(this)">
+      <div class="value">${state[f.key]}<span class="unit">${f.unit}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('sliders').innerHTML=html;
+}
+function onSlider(el){
+  const key=el.dataset.key;
+  state[key]=parseInt(el.value,10);
+  // BUG 修复:input 是 void element 无 nextElementSibling,改用 parentElement.querySelector('.value')
+  const valueCell = el.parentElement.querySelector('.value');
+  if (valueCell) {
+    valueCell.innerHTML = el.value + '<span class="unit">' + FIELDS.find(f => f.key === key).unit + '</span>';
+  }
+  updateMiniChart();
+  updatePreview();
+}
+function updateMiniChart(){
+  if(!YESTERDAY||Object.keys(YESTERDAY).length===0)return;
+  document.getElementById('miniChart').style.display='block';
+  const rows=FIELDS.map(f=>{
+    const actual=YESTERDAY[f.yesterdayKey]||0;
+    const target=state[f.key];
+    const maxVal=Math.max(actual,target,1)*1.2;
+    const targetPct=target/maxVal*100;
+    const actualPct=actual/maxVal*100;
+    const diff=actual-target;
+    const diffText=diff>0?'+'+diff:''+diff;
+    const diffColor=diff>0?'var(--orange)':'var(--green)';
+    return `<div class="mini-row">
+      <div class="mini-label">${f.label}</div>
+      <div class="mini-bar-bg">
+        <div class="mini-bar-fg" style="width:${targetPct}%"></div>
+        <div class="mini-bar-actual" style="width:${actualPct}%" title="昨日实际: ${actual}"></div>
+      </div>
+      <div class="mini-num" style="color:${diffColor}">${actual}/${target} (${diffText})</div>
+    </div>`;
+  }).join('');
+  document.getElementById('chartRows').innerHTML=rows;
+}
+function renderWeight(){
+  if(!WEIGHT)return;
+  document.getElementById('weightSection').style.display='block';
+  document.getElementById('weightHint').textContent=
+    '目标 '+WEIGHT.target+'kg · '+WEIGHT.days_left+'天剩余';
+  const diff=(WEIGHT.current-WEIGHT.target).toFixed(1);
+  document.getElementById('weightGrid').innerHTML=
+    '<div class="weight-stat"><div class="label">当前</div><div class="value">'+WEIGHT.current+' kg</div></div>'+
+    '<div class="weight-stat"><div class="label">目标</div><div class="value">'+WEIGHT.target+' kg</div></div>'+
+    '<div class="weight-stat"><div class="label">距离</div><div class="value">'+diff+' kg</div></div>';
+}
+function buildAdoptPrompt(){
+  let p='我已调整营养和体重目标,请帮我写入数据库。\n\n';
+  p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
+  p+='  --calorie_goal '+state.calorie_goal+'\n';
+  p+='  --protein_goal '+state.protein_goal+'\n';
+  p+='  --carbs_goal '+state.carbs_goal+'\n';
+  p+='  --fat_goal '+state.fat_goal+'\n';
+  p+='  --water_goal '+state.water_goal+'\n\n';
+  if(WEIGHT){
+    p+='体重目标 (调用 weight_goal.set_weight_goal):\n';
+    p+='  --weight_goal '+WEIGHT.target+'\n';
+    p+='  --deadline '+(CURRENT.goal_deadline||'未设置')+'\n\n';
+  }
+  p+='当前值 vs 昨日实际:\n';
+  FIELDS.forEach(f=>{
+    const actual=YESTERDAY[f.yesterdayKey]||0;
+    const diff=actual-state[f.key];
+    p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+actual+f.unit+' · 差 '+(diff>0?'+':'')+diff+f.unit+'\n';
+  });
+  p+='\n数据来源: 目标配置 v1 · render_goal_config.py · '+new Date().toISOString().split('T')[0];
+  return p;
+}
+function buildNutritionPrompt(){
+  let p='我只想调整营养目标,体重目标保持不变。\n\n';
+  p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
+  p+='  --calorie_goal '+state.calorie_goal+'\n';
+  p+='  --protein_goal '+state.protein_goal+'\n';
+  p+='  --carbs_goal '+state.carbs_goal+'\n';
+  p+='  --fat_goal '+state.fat_goal+'\n';
+  p+='  --water_goal '+state.water_goal+'\n\n';
+  p+='体重目标保持现状: weight_goal='+(WEIGHT?WEIGHT.target:CURRENT.weight_goal||'?')+'kg, deadline='+(CURRENT.goal_deadline||'未设置')+'\n\n';
+  p+='数据来源: 目标配置 v1 · render_goal_config.py';
+  return p;
+}
+function buildWeightPrompt(){
+  if(!WEIGHT)return buildAdoptPrompt();
+  let p='我只想调整体重目标,营养目标保持不变。\n\n';
+  p+='体重目标 (调用 weight_goal.set_weight_goal):\n';
+  p+='  --weight_goal '+WEIGHT.target+'\n';
+  p+='  --deadline '+(CURRENT.goal_deadline||'未设置')+'\n\n';
+  p+='营养目标保持现状: 热量 '+state.calorie_goal+'卡 · 蛋白 '+state.protein_goal+'g · 碳水 '+state.carbs_goal+'g · 脂肪 '+state.fat_goal+'g · 水 '+state.water_goal+'ml\n\n';
+  p+='数据来源: 目标配置 v1 · render_goal_config.py';
+  return p;
+}
+function updatePreview(){
+  const btnWeight=document.getElementById('btnWeight');
+  if(WEIGHT){btnWeight.disabled=false;btnWeight.textContent='⚖️ 仅体重 ('+WEIGHT.target+'kg)';}
+  else{btnWeight.disabled=true;btnWeight.textContent='⚖️ 仅体重 (无数据)';}
+  document.getElementById('copyPreview').textContent=WEIGHT?buildAdoptPrompt():buildNutritionPrompt();
+  document.getElementById('btnAdopt').textContent=WEIGHT?'✓ 采纳全部配置 (营养+体重)':'✓ 采纳全部配置 (仅营养)';
+}
+function copyAdopt(){doCopy(WEIGHT?buildAdoptPrompt():buildNutritionPrompt(),'btnAdopt','✓ 已复制全部配置');}
+function copyNutrition(){doCopy(buildNutritionPrompt(),'btnNutrition','✓ 已复制营养配置');}
+function copyWeight(){if(WEIGHT)doCopy(buildWeightPrompt(),'btnWeight','✓ 已复制体重配置');else flashMsg('btnWeight','⚠️ 无体重数据');}
+function doCopy(text,btnId,msg){
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>flashCopied(btnId,msg));}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');flashCopied(btnId,msg);}catch(e){}document.body.removeChild(ta);}
+}
+function flashCopied(btnId,msg){
+  const btn=document.getElementById(btnId);
+  if(!btn)return;
+  const orig=btn.textContent;
+  btn.textContent=msg;btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2200);
+}
+function flashMsg(btnId,msg){flashCopied(btnId,msg);}
+renderHeader();
+renderSliders();
+renderWeight();
+updateMiniChart();
+updatePreview();
+</script>
+</body>
+</html>

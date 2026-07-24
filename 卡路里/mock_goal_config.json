@@ -1,0 +1,26 @@
+{
+  "current_goal": {
+    "calorie_goal": 1800,
+    "protein_goal": 120,
+    "carbs_goal": 200,
+    "fat_goal": 60,
+    "water_goal": 2000,
+    "weight_goal": 65.0,
+    "goal_deadline": "2026-12-31",
+    "days_left": 161
+  },
+  "yesterday_actual": {
+    "date": "2026-07-22",
+    "calorie": 1850,
+    "protein": 110,
+    "carbs": 220,
+    "fat": 70,
+    "water": 1800
+  },
+  "weight_progress": {
+    "current": 70.5,
+    "target": 65.0,
+    "days_left": 161,
+    "calorie_adjustment": -300
+  }
+}

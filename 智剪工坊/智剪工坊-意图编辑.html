@@ -2830,6 +2830,8 @@
       setupAnchorObserver();
       showAnchorRail();
       if (typeof syncAnchorRailPosition === 'function') syncAnchorRailPosition();
+      // v1.24.22:初始 active = item 0(最上面 anchor),作为开始状态
+      setActiveDotIndex(0);
     }
 
     function updateAnchorRailPositions() {

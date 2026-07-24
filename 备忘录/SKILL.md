@@ -10,6 +10,37 @@
 2. **优先级**:本规定优先级最高,高于所有其他规范。
 3. **用户确认**:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。
 
+## HTML 交付规范(2026-07-24 加 · 最高优先级)
+
+这是 5 个 HTML 模板(`memo_query.html`/`sync_report.html`/`wish_plan.html`/`wish_complete.html`/`change_category.html`)生成后,**AI 代理必须遵守的交付协议**:
+
+1. **必须用 `<media src="..." type="file" />` 标签交付**。
+   - 不是简单"告诉用户路径",不是"自动打开 Chrome",不是"内容内联展示"
+   - 出处:《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)
+   - HTML 内嵌 JS + clipboard + textarea,有交互,内联展示会丢失交互
+
+2. **绝对禁止**:
+   - ❌ AI 主动 `subprocess` / `webbrowser` 模块尝试唤起浏览器(跨平台/隐私/不可控)
+   - ❌ 只输出文件路径文字让用户"自己去打开"(用户必须去 bash terminal 复制粘贴,体验差)
+   - ❌ 内联读 HTML 全部内容塞进对话(交互丢失 + 上下文中毒)
+   - ❌ 备注 "AI 建议你用 Chrome 打开"等绕过 `<media>` 的指引
+
+3. **正确做法**(举例):
+   ```
+   找到 3 条心愿。[html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
+   <media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" />
+   ```
+
+4. **触发词场景对应交付协议**:
+   - 5 个查询触发词(搜备忘/查备忘/看备忘/按时间搜备忘/查已提醒备忘 + 子唤醒词查心愿/查打卡/查情绪):AI 推荐 `--html` 后必须 `<media>` 交付
+   - 备忘录同步(sync-from-feishu `--html`):同上
+   - 心愿排期向导(wish-batch-plan `--html`):用户勾选 + 复制 + 粘贴回 AI,**第一步必须 `<media>` 交付**
+   - 心愿完成向导(wish-complete `--html`):同上
+   - 批量改分类向导(batch-update-category `--html`):同上
+
+5. **优先级**:本规范与"HTML 同步"同级(最高优先级),违反 = 与 Step 1-3 修复时 L114-228 默认行为错位同类问题。
+
+
 ## 描述
 
 私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。

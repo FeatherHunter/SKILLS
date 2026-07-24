@@ -32,28 +32,38 @@ def build_data(start, end):
     conn = sqlite3.connect(str(db_path))
     cur = conn.cursor()
     cur.execute('''
-        SELECT date, time, meal_type, food_name, grams, calorie, protein, carbohydrates, fat
+        SELECT date, time, food_name, grams, calories, protein, carbs, fat,
+          CASE
+            WHEN time IS NOT NULL AND CAST(strftime('%H', time) AS INT) BETWEEN 5 AND 10 THEN 'breakfast'
+            WHEN time IS NOT NULL AND CAST(strftime('%H', time) AS INT) BETWEEN 11 AND 14 THEN 'lunch'
+            WHEN time IS NOT NULL AND CAST(strftime('%H', time) AS INT) BETWEEN 17 AND 21 THEN 'dinner'
+            ELSE 'snack'
+          END AS meal_type
         FROM food_log
         WHERE date BETWEEN ? AND ?
         ORDER BY date DESC, time DESC
     ''', (start, end))
     items = []
-    for d, t, mt, fn, g, c, p, cb, f in cur.fetchall():
+    for row in cur.fetchall():
+        d, t, fn, g, c, p, cb, f, mt = row
         items.append({
-            'date': d, 'time': t, 'meal_type': mt,
-            'food_name': fn, 'grams': g if g else 0,
-            'calorie': round(c or 0, 1),
+            'date': d, 'time': t or '—',
+            'food_name': fn or '—',
             'meal_type': mt,
-            'protein': p or 0, 'carb': cb or 0, 'fat': f or 0,
+            'grams': float(g) if g else 0,
+            'calorie': round(float(c) if c else 0, 1),
+            'protein': float(p) if p else 0,
+            'carb':  float(cb) if cb else 0,
+            'fat':   float(f) if f else 0,
         })
     conn.close()
 
     days = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
-    total_cal = sum(round(i['calorie'], 1) for i in items)
-    total_prot = round(sum(i['protein'] or 0 for i in items), 1)
-    total_carb = round(sum(i['carb'] or 0 for i in items), 1)
-    total_fat = round(sum(i['fat'] or 0 for i in items), 1)
-    water = sum(i['grams'] for i in items if '水' in (i['food_name'] or ''))
+    total_cal = round(sum(float(i['calorie'] or 0) for i in items), 1)
+    total_prot = sum(float(i['protein'] or 0) for i in items)
+    total_carb = sum(float(i['carb'] or 0) for i in items)
+    total_fat = sum(float(i['fat'] or 0) for i in items)
+    water = sum(float(i['grams'] or 0) for i in items if '💧' in (i['food_name'] or ''))
     avg_cal = round(total_cal / max(1, days), 1)
     avg_water = round(water / max(1, days), 0)
 

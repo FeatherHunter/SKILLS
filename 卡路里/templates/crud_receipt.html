@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 操作回执</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:780px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--good); color:#fff; font-weight:700; }
+  h1 { font-size:32px; font-weight:700; letter-spacing:-.025em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  /* 顶部 ID 卡 */
+  .id-card { background:linear-gradient(135deg,#e8f5e8,#f0f8ff); border:1px solid var(--good);
+             border-radius:16px; padding:32px; text-align:center; margin-bottom:20px; }
+  .id-card.delete { background:linear-gradient(135deg,#ffeaea,#fff5f5); border-color:var(--bad); }
+  .id-card.update { background:linear-gradient(135deg,#fff5e5,#fffaf0); border-color:var(--warn); }
+  .id-card .icon { font-size:48px; margin-bottom:8px; }
+  .id-card .title { font-size:18px; font-weight:700; margin-bottom:4px; }
+  .id-card .id { font-size:42px; font-weight:800; color:var(--fg); font-variant-numeric:tabular-nums; margin:8px 0; }
+  .id-card .meta { font-size:13px; color:var(--fg2); }
+  /* KPI 4 卡 */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
+  .kpi .value { font-size:18px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  /* 字段对比卡(改/删时显示)*/
+  .diff-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .diff-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  .diff-row { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); align-items:center; }
+  .diff-row:last-child { border-bottom:none; }
+  .diff-label { font-size:12px; color:var(--fg2); }
+  .diff-old { padding:8px 12px; background:#ffeaea; border-radius:8px; font-size:13px; color:#c7254e; font-weight:500; text-decoration:line-through; }
+  .diff-new { padding:8px 12px; background:rgba(52,199,89,.15); border-radius:8px; font-size:13px; color:var(--good); font-weight:600; }
+  .diff-arrow { font-size:18px; color:var(--fg3); }
+  /* 上下文卡(增/改时显示今日累计)*/
+  .ctx-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .ctx-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  .ctx-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .ctx-row:last-child { border-bottom:none; }
+  .ctx-row .label { color:var(--fg2); }
+  .ctx-row .value { font-weight:600; font-variant-numeric:tabular-nums; }
+  .ctx-row .pct { font-size:11px; color:var(--fg3); margin-left:6px; }
+  /* Footer 按钮 */
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
+         cursor:pointer; font-size:13px; color:var(--fg); margin-left:6px; }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary:hover { background:#005bb0; }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">回执型 · 通用 CRUD</div>
+</div>
+
+<h1 id="h1Title">✅ 操作回执</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="id-card" id="idCard">
+  <div class="icon" id="icon">✓</div>
+  <div class="title" id="opTitle">--</div>
+  <div class="id" id="recordId">--</div>
+  <div class="meta" id="recordMeta">--</div>
+</div>
+
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<div class="diff-card" id="diffCard" style="display:none">
+  <h2>📋 字段变更</h2>
+  <div id="diffList"></div>
+</div>
+
+<div class="ctx-card" id="ctxCard">
+  <h2>📊 今日累计</h2>
+  <div id="ctxList"></div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 操作于 --</div>
+  <div>
+    <button class="btn" id="undoBtn">↩ 撤销(10秒)</button>
+    <button class="btn btn-primary" id="copyBtn">📋 复制回执</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { op, record_id, old_record, new_record, context, meta } = D.data;
+
+  document.getElementById('metaLeft').textContent = meta.action_at;
+  const opLabels = {add:'新增', update:'修改', delete:'删除'};
+  const opColors = {add:'good', update:'warn', delete:'bad'};
+  const opIcons  = {add:'✓', update:'✎', delete:'✕'};
+  const opLabel = opLabels[op] || op;
+  const opClass = opColors[op] || 'good';
+  const opIcon  = opIcons[op]  || '✓';
+
+  // 顶部 ID 卡
+  const idCard = document.getElementById('idCard');
+  idCard.className = 'id-card ' + (op === 'delete' ? 'delete' : op === 'update' ? 'update' : '');
+  document.getElementById('icon').textContent = opIcon;
+  document.getElementById('opTitle').textContent = opLabel + '成功';
+  document.getElementById('recordId').textContent = '#' + record_id;
+  document.getElementById('recordMeta').textContent = meta.action_at + ' · ' + meta.entity_type;
+
+  document.getElementById('sub').innerHTML =
+    `<span class="pill pill-${opClass}">${opLabel}</span> ${meta.entity_type} #${record_id} ${opLabel}成功`;
+
+  // 4 KPI(从 context 选前 4)
+  const kpiGrid = document.getElementById('kpiGrid');
+  if (context && context.kpis) {
+    context.kpis.forEach(k => {
+      kpiGrid.insertAdjacentHTML('beforeend',
+        `<div class="kpi"><div class="label">${k.label}</div>` +
+        `<div class="value">${k.value}</div>` +
+        (k.extra ? `<div class="extra">${k.extra}</div>` : '') +
+        `</div>`);
+    });
+  }
+
+  // diff 卡(只 update 模式)
+  if (op === 'update' && old_record && new_record) {
+    const diffCard = document.getElementById('diffCard');
+    diffCard.style.display = 'block';
+    const diffList = document.getElementById('diffList');
+    const keys = Object.keys(new_record);
+    keys.forEach(k => {
+      if (k === 'id' || k === 'note' || k === 'created_at' || k === 'updated_at') return;
+      const oldV = old_record[k];
+      const newV = new_record[k];
+      if (oldV === newV) return;
+      diffList.insertAdjacentHTML('beforeend',
+        `<div class="diff-row">` +
+        `<div><div class="diff-label">${k}</div><div class="diff-old">${oldV === null || oldV === undefined ? '—' : oldV}</div></div>` +
+        `<div class="diff-arrow">→</div>` +
+        `<div><div class="diff-label">新值</div><div class="diff-new">${newV === null || newV === undefined ? '—' : newV}</div></div>` +
+        `</div>`);
+    });
+  }
+
+  // context 卡(今日累计)
+  if (context && context.totals) {
+    const ctxList = document.getElementById('ctxList');
+    context.totals.forEach(t => {
+      const pct = t.target ? `<span class="pct">/ ${t.target} (${Math.round(t.value / t.target * 100)}%)</span>` : '';
+      ctxList.insertAdjacentHTML('beforeend',
+        `<div class="ctx-row">` +
+        `<div class="label">${t.label}</div>` +
+        `<div><span class="value">${t.value} ${t.unit || ''}</span>${pct}</div>` +
+        `</div>`);
+    });
+  } else {
+    document.getElementById('ctxCard').style.display = 'none';
+  }
+
+  document.getElementById('srcLine').textContent = `📊 操作于 ${meta.action_at} · 实体 #${record_id}`;
+
+  // 撤销按钮 10 秒倒计时
+  let left = 10;
+  const undoBtn = document.getElementById('undoBtn');
+  const timer = setInterval(() => {
+    left--;
+    if (left > 0) {
+      undoBtn.textContent = `↩ 撤销(${left}秒)`;
+    } else {
+      clearInterval(timer);
+      undoBtn.textContent = '↩ 撤销(已过期)';
+      undoBtn.disabled = true;
+      undoBtn.style.opacity = '0.4';
+      undoBtn.style.cursor = 'not-allowed';
+    }
+  }, 1000);
+  undoBtn.onclick = () => {
+    if (left > 0) {
+      alert('撤销指令已发送(模拟)\n操作:#' + record_id + ' 撤销逻辑由 ' + meta.undo_cli + ' 处理');
+    }
+  };
+
+  // 复制
+  document.getElementById('copyBtn').onclick = function() {
+    const r = `${opLabel}成功 · ${meta.entity_type} #${record_id} (${meta.action_at})\n`;
+    if (old_record && new_record) {
+      Object.keys(new_record).forEach(k => {
+        if (old_record[k] !== new_record[k] && k !== 'created_at' && k !== 'updated_at') {
+          r += `  ${k}: ${old_record[k] ?? '—'} → ${new_record[k]}\n`;
+        }
+      });
+    }
+    if (context && context.totals) {
+      r += '\n今日累计:\n';
+      context.totals.forEach(t => { r += `  ${t.label}: ${t.value} ${t.unit || ''}\n`; });
+    }
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制回执', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

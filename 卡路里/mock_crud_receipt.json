@@ -1,0 +1,35 @@
+{
+  "status": "ok",
+  "data": {
+    "op": "update",
+    "record_id": 182,
+    "old_record": {
+      "id": 182, "date": "2026-07-24", "time": "12:30", "meal_type": "lunch",
+      "food_name": "米饭", "grams": 200, "calorie": 232, "protein": 4, "carb": 50, "fat": 0.5
+    },
+    "new_record": {
+      "id": 182, "date": "2026-07-24", "time": "12:30", "meal_type": "lunch",
+      "food_name": "糙米饭", "grams": 180, "calorie": 234, "protein": 5, "carb": 49, "fat": 1.2
+    },
+    "context": {
+      "kpis": [
+        {"label":"总热量", "value":"1,234 卡", "extra":"+2 vs 改前"},
+        {"label":"蛋白", "value":"65g", "extra":"目标 120g · 54%"},
+        {"label":"碳水", "value":"149g", "extra":"目标 200g · 75%"},
+        {"label":"脂肪", "value":"19.7g", "extra":"目标 60g · 33%"}
+      ],
+      "totals": [
+        {"label":"今日总热量", "value":"1,234", "unit":"卡", "target":1800},
+        {"label":"今日总蛋白", "value":"65", "unit":"g", "target":120},
+        {"label":"今日总碳水", "value":"149", "unit":"g", "target":200},
+        {"label":"今日总脂肪", "value":"19.7", "unit":"g", "target":60}
+      ]
+    },
+    "meta": {
+      "action_at": "2026-07-24 18:42:15",
+      "entity_type": "饮食记录",
+      "undo_cli": "calorie_tracker.py undo-record 182"
+    }
+  },
+  "message": "已生成 update #182 操作回执"
+}

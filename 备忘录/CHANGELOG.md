@@ -77,6 +77,39 @@
 
 ---
 
+## [1.0.5] · 2026-07-24
+
+> **改进**(语义化版本规则):HTML 输出目录与 DB 同级 + 命名规则明确化
+> 来源:用户提问"目录规则和命名规则是什么?手册里有没有?"→ 发现手册未规定,做第一性改造
+
+### Changed
+- **HTML 输出目录**(承袭第一性:HTML 是 DB 的快照视图)
+  - 旧:`<skill_dir>/output/`(写死,与 DB 分离)
+  - 新:`DB_PATH.parent / f"{SKILL_HTML_NAME}_html"`(与 DB 同级)
+  - 例子:`/mnt/d/.db/memo_html/` · `D:/.db/memo_html/` · `自定义路径/memo_html/`
+  - 好处:HTML 跟着 DB 走 · 跨平台 fallback 一致 · 多 skill 共用 SKILLS_DB_PATH 时自动隔离
+- **删除旧 `备忘录/output/` 目录**(用户主动要求)· 119 个旧 HTML 文件清空
+- **命名规则明确化**(写入 `_shared/injector.py` docstring + 《预置HTML并注入数据指导手册》§7)
+  - 格式:`<command_name>_<YYYYMMDD>_<HHMMSS>[_<N>].html`
+  - `<N>` = 冲突保护(同秒多次生成自动 `_2` / `_3` 后缀)
+- **SKILL.md + 备忘录.html "HTML 交付规范"段加目录 + 命名规则子段**
+
+### Added
+- **冲突保护**(`write_output` 写文件前 `Path.exists()` 检查,自动 `_2` / `_3`)
+- **`SKILL_HTML_NAME = "memo"`**(`memo_render.py` 顶部常量,避免中文路径跨平台编码问题)
+- **`_get_html_output_dir()` 函数**(动态计算输出目录,与 DB_PATH 同步)
+- **`.gitignore` 加 `memo_html/`**(防 SKILLS_DB_PATH 设到仓库内误跟踪)
+
+### Tests
+- `tests/test_shared_injector.py` 加 5 个用例:
+  - `TestWriteOutputCollisionProtection` 3 个(冲突保护 / 3 次 / 不同 ts)
+  - `TestNamingRuleContract` 2 个(格式 / 5 个命令名匹配)
+- `tests/test_shared_injector.py` 加 2 个 `TestMemoHtmlOutputDir`(目录在 DB_PATH.parent / 自动 mkdir)
+- `tests/test_render.py` 修复 `OUTPUT_DIR` 引用改为 `_get_html_output_dir()`
+- 全量回归:82/82 pytest 通过(75 → 82 · +7)
+
+---
+
 ## [1.0.4] · 2026-07-24
 
 > **bug fix**(语义化版本规则):过程型 HTML 默认未勾选(正向操作第一性)

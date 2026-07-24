@@ -5,6 +5,11 @@
   - _inject → injector.inject_html(用 <body> 锚点,代替原 <!--INJECT-DATA--> 占位符)
   - _write_output → injector.write_output
   - 4 个 render 函数 + 1 个 main
+
+2026-07-24 v1.0.5 · 输出目录与 DB 路径对齐(承袭第一性:HTML 是 DB 的快照视图)
+  - OUTPUT_DIR 改为 _get_html_output_dir() 动态计算
+  - HTML 输出 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
+  - SKILLS_DB_PATH 环境变量 / fallback 都生效
 """
 import json
 import sys
@@ -15,6 +20,10 @@ _SHARED_DIR = Path(__file__).parent.parent.parent / "模板HTML并注入数据" 
 sys.path.insert(0, str(_SHARED_DIR))
 
 from injector import inject_html, write_output  # noqa: E402
+from memo_cli import DB_PATH  # noqa: E402  · 复用 memo_cli 的 DB_PATH 计算逻辑
+
+# v1.0.5:skill ASCII 短码(避免中文路径跨平台编码问题)
+SKILL_HTML_NAME = "memo"
 
 SKILL_DIR = Path(__file__).parent.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_query.html"
@@ -22,7 +31,18 @@ SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
 WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
 WISH_COMPLETE_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_complete.html"
 CHANGE_CATEGORY_TEMPLATE_PATH = SKILL_DIR / "templates" / "change_category.html"
-OUTPUT_DIR = SKILL_DIR / "output"
+
+
+def _get_html_output_dir():
+    """HTML 输出目录 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
+
+    v1.0.5 设计(第一性):
+      - HTML 是 DB 的快照视图 → 与 DB 在同一目录
+      - DB_PATH 复用 memo_cli._find_db_path() 逻辑(SKILLS_DB_PATH 环境变量优先)
+      - skill 子目录(SKILL_HTML_NAME)隔离多 skill 共用 SKILLS_DB_PATH 时文件名冲突
+      - fallback:D:/.db/ (Windows) 或 /mnt/d/.db/ (WSL/Linux)
+    """
+    return DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 
 def _inject_body(template: str, payload: dict) -> str:
@@ -35,7 +55,8 @@ def _inject_body(template: str, payload: dict) -> str:
 
 
 def _write(name: str, html: str) -> str:
-    return write_output(OUTPUT_DIR, name, html)
+    """v1.0.5:HTML 输出到与 DB 同级目录的 skill 子目录"""
+    return write_output(_get_html_output_dir(), name, html)
 
 
 def render_query(payload, name="memo_query"):

@@ -71,7 +71,8 @@
 <li><a href="#参考文档-9">参考文档</a></li></ol></div>
 <h1 id="备忘录-memorandum-1">备忘录 (Memorandum)</h1>
 <blockquote>
-<p><strong>当前版本:1.0.4</strong>(2026-07-24 发布 · 13 个 commit · git tag <code>v1.0.4</code>)<br>v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)<br>
+<p><strong>当前版本:1.0.5</strong>(2026-07-24 发布 · 14 个 commit · git tag <code>v1.0.5</code>)<br>v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)<br>
+v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)<br>
 v1.0.3:HTML 交付规范纠正(<code>&lt;media&gt;</code> + 浏览器并行)<br>
 v1.0.2:HTML 交付规范初版(过度禁止已纠正)<br>
 v1.0.1:wish-complete 第一性修复<br>
@@ -84,6 +85,23 @@ v1.0.1:wish-complete 第一性修复<br>
 <li><strong>用户确认</strong>:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。</li>
 </ol>
 <h2 id="html-交付规范-2026-07-24-加-最高优先级">HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)</h2>
+<p><strong>HTML 输出目录规则</strong>(v1.0.5):</p>
+<pre><code>HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"</code></pre>
+<ul>
+<li>HTML 是 DB 的快照视图 → 与 DB 在同一目录</li>
+<li><code>SKILLS_DB_PATH</code> 环境变量 / fallback 都生效(<code>D:/.db/</code> 或 <code>/mnt/d/.db/</code>)</li>
+<li>备忘录的 <code>SKILL_HTML_NAME = "memo"</code> → 例子:<code>/mnt/d/.db/memo_html/</code></li>
+<li>多 skill 共用 SKILLS_DB_PATH 时,按 skill 子目录隔离</li>
+<li>同秒内多次生成同一文件,自动追加 <code>_2</code> / <code>_3</code> 后缀(冲突保护)</li>
+</ul>
+<p><strong>命名规则</strong>(v1.0.5 明确化):</p>
+<pre><code>&lt;command_name&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_&lt;N&gt;].html</code></pre>
+<ul>
+<li><code>command_name</code>:CLI 子命令名(5 个模板对应 5 个命令)</li>
+<li><code>YYYYMMDD_HHMMSS</code>:本地时间</li>
+<li><code>_&lt;N&gt;</code>:冲突保护(可选,如 <code>_2</code> / <code>_3</code>)</li>
+</ul>
+<hr>
 <p>这是 5 个 HTML 模板(<code>memo_query.html</code>/<code>sync_report.html</code>/<code>wish_plan.html</code>/<code>wish_complete.html</code>/<code>change_category.html</code>)生成后,<strong>AI 代理必须遵守的交付协议</strong>:</p>
 <ol>
 <li><strong>必须用 <code>&lt;media src="..." type="file" /&gt;</code> 标签交付</strong>(基础动作)。<ul>

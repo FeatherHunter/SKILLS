@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 import pytest
 
-from memo_render import render_query, render_sync_report, TEMPLATE_PATH, OUTPUT_DIR
+from memo_render import render_query, render_sync_report, TEMPLATE_PATH, _get_html_output_dir
 
 
 class TestTemplatePlaceholder:
@@ -44,7 +44,8 @@ class TestInjection:
         path = render_query(self._payload())
         assert path.endswith(".html")
         assert "memo_query_" in path
-        assert str(OUTPUT_DIR) in path
+        output_dir = _get_html_output_dir()
+        assert str(output_dir) in path
 
     def test_render_injects_window_data(self):
         path = render_query(self._payload())
@@ -120,9 +121,10 @@ class TestSyncReportRender:
 
     def test_renders_to_sync_report_html(self):
         path = render_sync_report(self._payload())
+        output_dir = _get_html_output_dir()
         assert "sync_report_" in path
         assert path.endswith(".html")
-        assert str(OUTPUT_DIR) in path
+        assert str(output_dir) in path
 
     def test_injects_window_data(self):
         path = render_sync_report(self._payload())

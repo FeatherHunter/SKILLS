@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.0.4**(2026-07-24 发布 · 13 个 commit · git tag `v1.0.4`)
+> **当前版本:1.0.5**(2026-07-24 发布 · 14 个 commit · git tag `v1.0.5`)
+> v1.0.5:HTML 输出目录 = DB_PATH.parent / memo_html/(与 DB 同级)
 > v1.0.4:心愿完成 HTML 默认未勾选(正向操作第一性)
 > v1.0.3:HTML 交付规范纠正(`<media>` + 浏览器并行)
 > v1.0.2:HTML 交付规范初版(过度禁止已纠正)
@@ -15,7 +16,31 @@
 
 ## HTML 交付规范(2026-07-24 加 · 最高优先级 · v1.0.3 修订)
 
-这是 5 个 HTML 模板(`memo_query.html`/`sync_report.html`/`wish_plan.html`/`wish_complete.html`/`change_category.html`)生成后,**AI 代理必须遵守的交付协议**:
+**HTML 输出目录规则**(v1.0.5):
+
+```
+HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
+```
+
+- HTML 是 DB 的快照视图 → 与 DB 在同一目录
+- `SKILLS_DB_PATH` 环境变量 / fallback 都生效(`D:/.db/` 或 `/mnt/d/.db/`)
+- 备忘录的 `SKILL_HTML_NAME = "memo"` → 例子:`/mnt/d/.db/memo_html/`
+- 多 skill 共用 SKILLS_DB_PATH 时,按 skill 子目录隔离
+- 同秒内多次生成同一文件,自动追加 `_2` / `_3` 后缀(冲突保护)
+
+**命名规则**(v1.0.5 明确化):
+
+```
+<command_name>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+```
+
+- `command_name`:CLI 子命令名(5 个模板对应 5 个命令)
+- `YYYYMMDD_HHMMSS`:本地时间
+- `_<N>`:冲突保护(可选,如 `_2` / `_3`)
+
+---
+
+下面是 5 个 HTML 模板(`memo_query.html`/`sync_report.html`/`wish_plan.html`/`wish_complete.html`/`change_category.html`)生成后,**AI 代理必须遵守的交付协议**:
 
 1. **必须用 `<media src="..." type="file" />` 标签交付**(基础动作)。
    - 这是《预置HTML并注入数据指导手册》§4 + §9(标准工作流最后一步)规定的标准交付方式

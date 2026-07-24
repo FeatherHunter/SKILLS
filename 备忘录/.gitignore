@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .db/
 output/
+# v1.0.5:HTML 输出目录(由 SKILLS_DB_PATH 计算,如 /mnt/d/.db/memo_html/)
+# 排除以防用户把 SKILLS_DB_PATH 设到仓库内
+memo_html/

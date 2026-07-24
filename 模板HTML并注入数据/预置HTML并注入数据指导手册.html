@@ -137,6 +137,40 @@ CLI 输出 JSON 数据
       <tr><td>接口层</td><td>命令参数、JSON 三段式、输出路径</td><td>不稳定字段名</td></tr>
       <tr><td>文档层</td><td>触发词、调用流程、模板路径、注入方式</td><td>过期示例</td></tr>
     </table>
+    <h3>4.1 输出目录与命名规范(2026-07-24 加 · 跨 Skill 通用)</h3>
+    <p><strong>第一性</strong>:HTML 是数据(DB / JSON / 实时查询)的快照视图,应与数据在同一目录,跟随环境变量(fallback)配置。</p>
+    <h4>输出目录规则</h4>
+    <pre><code>HTML_DIR = DATA_DIR / f"{SKILL_HTML_NAME}_html"</code></pre>
+    <ul>
+      <li><code>DATA_DIR</code>:数据所在目录(SQLite DB 父目录 / JSON 数据目录)</li>
+      <li><code>SKILL_HTML_NAME</code>:Skill ASCII 短码(避免中文路径跨平台编码问题)</li>
+      <li>多 Skill 共用同一 DATA_DIR 时,按 Skill 子目录自动隔离</li>
+    </ul>
+    <p>例子(数据库型 Skill):</p>
+    <table>
+      <tr><th>DATA_DIR</th><th>SKILL_HTML_NAME</th><th>HTML_DIR</th></tr>
+      <tr><td><code>/mnt/d/.db/</code>(WSL fallback)</td><td><code>memo</code></td><td><code>/mnt/d/.db/memo_html/</code></td></tr>
+      <tr><td><code>D:/.db/</code>(Windows fallback)</td><td><code>memo</code></td><td><code>D:/.db/memo_html/</code></td></tr>
+      <tr><td><code>/work/db/</code>(自定义 <code>SKILLS_DB_PATH</code>)</td><td><code>memo</code></td><td><code>/work/db/memo_html/</code></td></tr>
+    </table>
+    <h4>文件命名规则</h4>
+    <pre><code>&lt;command_name&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_&lt;N&gt;].html</code></pre>
+    <ul>
+      <li><code>command_name</code>:CLI 子命令名(如 <code>memo_query</code> / <code>sync_report</code> / <code>wish_plan</code>)</li>
+      <li><code>YYYYMMDD_HHMMSS</code>:本地时间</li>
+      <li><code>_&lt;N&gt;</code>:冲突保护(同秒内多次生成同一文件,自动追加 <code>_2</code> / <code>_3</code>)</li>
+    </ul>
+    <p>完整路径示例:</p>
+    <pre><code>/mnt/d/.db/memo_html/wish_plan_20260724_103045.html
+/mnt/d/.db/memo_html/wish_plan_20260724_103045_2.html  (同秒第 2 次)
+/mnt/d/.db/memo_html/memo_query_20260724_103046.html      (下 1 秒)</code></pre>
+    <h4>3 个 Skill ASCII 短码示例(备忘录 0.1.0 实践)</h4>
+    <table>
+      <tr><th>Skill</th><th>目录名</th><th>ASCII 短码</th><th>HTML 子目录</th></tr>
+      <tr><td>备忘录</td><td><code>备忘录/</code></td><td><code>memo</code></td><td><code>memo_html/</code></td></tr>
+      <tr><td>卡路里</td><td><code>卡路里/</code></td><td><code>calorie</code></td><td><code>calorie_html/</code></td></tr>
+      <tr><td>居家管家</td><td><code>居家管家/</code></td><td><code>home</code></td><td><code>home_html/</code></td></tr>
+    </table>
   </section>
 
   <section id="modes">

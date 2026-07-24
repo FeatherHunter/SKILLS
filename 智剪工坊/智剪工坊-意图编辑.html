@@ -2828,12 +2828,11 @@
 
     function updateAnchorRailPositions() {
       if (!anchorRail || !anchorItems.length) return;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight <= 100) {
-        anchorRail.classList.add('no-content');
-        return;
-      }
-      anchorRail.classList.remove('no-content');
+      // v1.24.9 fix:删掉 docHeight <= 100 早返回 + no-content 隐藏。
+      // 用户 BUG:'滚上下走的 锚点焦点没了'
+      // 根因:滚到文档最底/最顶时 scrollHeight - innerHeight = 0 → 早返回触发
+      //   → aside 加 no-content → display:none → 整个锚点条看不见
+      // 现在:始终渲染位置(就算文档很短也显示轨道)
       const railHeight = anchorRail.getBoundingClientRect().height;
       // v1.24.5 fix:不再用文档 Y ratio,改用 array index 均匀分布
       //   → visual 顺序严格等于 array 顺序 = 用户期望顺序(项目→素材→#1...→#6→封面→结尾)

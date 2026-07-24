@@ -7,9 +7,16 @@
 
 ---
 
-## [Unreleased] · 2026-07-24 (Step 5A/5B · 过程型 HTML 系列)
+## [1.0.0] · 2026-07-24
+
+> **首个正式版本**。9 个 commit 闭环,5 个 HTML 模板(2 结果型 + 3 过程型),68 个 pytest 用例全过。
+> 6 大特性(可识别/可验证/可恢复/可约束/可联动/可演进)全部具备。
 
 ### Added
+- **`wish-batch-plan` 子命令**(过程型 HTML 第 1 个)· `memo_cli.py wish-batch-plan [--ids] [--all] [--suggest-due X] [--html]`
+  - 模板 `templates/wish_plan.html` · 4 部分 prompt(场景/数据/期望/来源)
+  - 9 个新 pytest 用例
+  - commit `e6d5d89`
 - **`wish-complete` 子命令**(过程型 HTML 第 2 个)· `memo_cli.py wish-complete [--ids] [--all] [--content] [--html]`
   - 默认搜未排期+已过期心愿(50 条)
   - `--all` 含全部心愿
@@ -25,14 +32,75 @@
   - 模板 `templates/change_category.html` · 渲染器 `memo_render.py:render_change_category`
   - 7 个新 pytest 用例
   - commit `7a4e37f`
+- **`sync-from-feishu --html`** · 结果型 HTML 报告页
+  - 11 个统计字段(backfilled/scanned_done/synced/scanned_pending/due_added/...)
+  - 3 步折叠详情 · errors 红色高亮 · 复制同步回执
+  - 模板 `templates/sync_report.html` · 渲染器 `memo_render.py:render_sync_report`
+  - commit `b1193c0`
+- **`模板HTML并注入数据/_shared/injector.py`** · 跨 Skill 共享 HTML 注入器
+  - 3 个公共函数:`inject_html` / `write_output` / `render`
+  - 占位符唯一性校验(数量 ≠ 1 → raise ValueError)
+  - `</` 转义防 `<script>` 提前闭合
+  - 出处引用《预置HTML并注入数据指导手册》§8
+  - 10 个新 pytest 用例(占位符/转义/UTF-8/进程间 import)
+  - commit `5378005`
+- **触发词别名 "完成打卡" → "完成心愿"**(Step 9)· 解决用户口语化 vs 内部术语 gap
+  - commit `5a78779`
+- **触发词路由规则**(Step 8)· `update-category` vs `batch-update-category` 二选一
+  - 判定启发:含 1 个 id → 单条;含"都/全部/多 id" → 批量;无 id 无都 → 反问
+  - commit `c667ef2`
+- **tests/ 目录建立** · `conftest.py` + 4 测试模块,68 个用例覆盖 validators/render/payloads/wish_plan/wish_complete/change_category/shared_injector
+- **`.githooks/pre-commit` 加 `备忘录/*` 路由** · 改备忘录自动跑 pytest
 
 ### Changed
-- 5 个过程型 HTML 向导(wish-plan/wish-complete/change-category 等)统一按 04_架构师原则 §10 设计
-- 4 部分 prompt 模板(场景/数据/期望/来源)成为向导标配
+- **SKILL.md 与代码裂缝修复**(L114-L228 · 5 处"默认行为")
+  - 旧:「默认生成 HTML」「需要纯 JSON 时再显式传 `--no-html`」
+  - 新:「默认返回 JSON · 传 `--html` 生成 HTML · 当前没有 `--no-html` flag」
+  - commit `b1193c0`
+- **备忘录.html HTML 镜像同步**(强制规定 1 条 · 5 阶段都同步修订)
+- **`memo_render.py` 重构** · 抽 `_inject` + `_write_output` 公共函数 → 后被 `_shared/injector.py` 取代
+- **5 模板统一设计** · 首屏 KIPI 卡 + 主体分组 + 尾部"采纳/复制"按钮(过程型);3 步折叠(结果型 sync_report)
+- **4 部分 prompt 成为向导标配** · 采纳按钮一键复制(场景/数据/期望/来源)
+
+### Deprecated
+- 无
+
+### Removed
+- 无
+
+### Fixed
+- **SKILL.md / 代码裂缝**(Step 1)· 5 处"默认行为"与 CLI 不一致,文档对齐
+- **3 个测试脚本错误**(对抗式审查发现)· `</script>` 转义误判 / fixture 路径不一致等
+
+### Security
+- 无
 
 ---
 
-## [Unreleased] · 2026-07-24 (Step 6 · DRY 共享抽取)
+## [Unreleased]
+
+### Added
+- (暂无)
+
+### Changed
+- (暂无)
+
+### Deprecated
+- (暂无)
+
+### Removed
+- (暂无)
+
+### Fixed
+- (暂无)
+
+### Security
+- (暂无)
+
+---
+
+## 2026-07-23 之前 · 历史变更
+
 
 ### Added
 - **`模板HTML并注入数据/_shared/injector.py`** · 跨 Skill 共享 HTML 注入器
@@ -51,34 +119,6 @@
 
 ---
 
-## [Unreleased] · 2026-07-24 (Step 1-4 · 文档对齐 + sync_report + wish_plan)
-
-### Added
-- **`sync-from-feishu --html`** · 结果型 HTML 报告页
-  - 11 个统计字段(backfilled/scanned_done/synced/scanned_pending/due_added/...)
-  - 3 步折叠详情 · errors 红色高亮 · 复制同步回执
-  - 模板 `templates/sync_report.html` · 渲染器 `memo_render.py:render_sync_report`
-  - commit `b1193c0`
-- **`wish-batch-plan` 子命令**(过程型 HTML 第 1 个)
-  - `memo_cli.py wish-batch-plan [--ids] [--all] [--suggest-due X] [--html]`
-  - 模板 `templates/wish_plan.html` · 4 部分 prompt
-  - commit `e6d5d89`
-
-### Fixed
-- **SKILL.md 与代码裂缝**(L114-L228 · 5 处"默认行为"+ "AI 推荐流程")
-  - 旧文档:「默认生成 HTML 页面」「需要纯 JSON 时再显式传 `--no-html`」
-  - 代码实际:默认 JSON · `--html` 生成 HTML · 无 `--no-html` flag
-  - 文档对齐 + 显式标注「当前没有 `--no-html` flag」
-  - HTML 镜像 `备忘录.html` 同步修订(强制性规定第 1 条)
-
-### Changed
-- 工程实践:`tests/` 目录建立 · 49 → 59 → 68 用例(逐步加)
-- `.githooks/pre-commit` 加 `备忘录/*` 路由 → 改备忘录自动跑 pytest
-- `memo_render.py` 重构:抽 `_inject` + `_write_output` 公共函数
-- `conftest.py` 提升 `env_with_tmp_db` 让所有 subprocess 测试复用
-
----
-
 ## 2026-07-23 之前 · 历史变更
 
 详见 `git log -- 备忘录/`:
@@ -94,9 +134,12 @@
 
 ### 归档周期
 
-- **当前**:所有 2026-07-24 累积变更都标 `[Unreleased]`
-- **下一阶段**:发布稳定版时(若有)将 `[Unreleased]` → `[1.x.y - YYYY-MM-DD]`
-- **孤立 1.0.0**:待 Step 5A/5B/6/7 全部稳定后定版
+- **[1.0.0 - 2026-07-24]** 已发布(本次 9 个 commit 闭环)
+- 后续变更累积到 `[Unreleased]`,再次稳定时升 `[1.x.y]`
+- 语义化版本:
+  - 1.0.1 = bug fix(向下兼容)
+  - 1.1.0 = 新功能(向下兼容)
+  - 2.0.0 = 破坏性 CLI 改动(签名/参数/JSON 三段式)
 
 ### 引用规则
 

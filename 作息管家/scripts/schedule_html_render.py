@@ -967,7 +967,7 @@ def render_record_receipt_edit(record_id: int, diff: dict = None) -> dict:
     """
     纠正记录后漂亮回执(回执型第 2 款,蓝调,"已纠正"标识,2026-07-24)。
 
-    第一性:用户说"correct-record" 纠正了记录后,需要一份能审计改了什么 +
+    第一性:用户说"amend-record" 纠正了记录后,需要一份能审计改了什么 +
     改对没对的回执。核心是 **diff 视图**(before/after 三列)。
 
     Args:
@@ -1066,7 +1066,7 @@ def render_record_receipt_edit(record_id: int, diff: dict = None) -> dict:
 
     prompt_continue = base_prompt + """
 ③ 期望: 用户即将告诉你"我接下来在做 X"(可能是继续记下一条,或接着纠正另一条)。
-请调 schedule_cli.py add 写库 + 调 render-record-receipt <新 id> 生成回执;或调 correct-record <其他 id> 继续纠正。
+请调 schedule_cli.py add 写库 + 调 render-record-receipt <新 id> 生成回执;或调 amend-record <其他 id> 继续修正。
 不要做其他事,等用户输入。"""
 
     prompt_overview = base_prompt + f"""

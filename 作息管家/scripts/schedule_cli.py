@@ -489,10 +489,10 @@ def cmd_upsert_plan(args):
         print(f"错误: {e}")
 
 
-# ============ correct-record 命令(2026-07-24 新增,见 schedule_html_render.py:cmd_correct_record 注册) ============
-def cmd_correct_record(args):
+# ============ amend-record 命令(2026-07-24 新增,见 schedule_html_render.py:cmd_amend_record 注册) ============
+def cmd_amend_record(args):
     """
-    correct-record <id> [--field value ...] | --json '{...}'
+    amend-record <id> [--field value ...] | --json '{...}'
 
     纠正一条作息记录(回顾性数据修正,2026-07-24 新增)。
 
@@ -512,8 +512,8 @@ def cmd_correct_record(args):
     if not args:
         print(_json.dumps({
             "status":"error",
-            "message":"用法: correct-record <id> [--field value ...] | --json '{...}'",
-            "example":"correct-record 123 --category '工作.AI调优' --activity '新活动名'",
+            "message":"用法: amend-record <id> [--field value ...] | --json '{...}'",
+            "example":"amend-record 123 --category '工作.AI调优' --activity '新活动名'",
             "available_fields":["date","time_start","time_end","duration_minutes",
                               "activity","category","source_contents",
                               "source_timestamps","analysis_reasoning"],
@@ -656,8 +656,8 @@ def main(argv=None):
 
     elif cmd == "add":
         cmd_add_record(args)
-    elif cmd == "correct-record":
-        cmd_correct_record(args)
+    elif cmd == "amend-record":
+        cmd_amend_record(args)
 
     elif cmd == "prepare-messages":
         cmd_prepare_messages(args)
@@ -2161,9 +2161,9 @@ def cmd_render_record_receipt_edit(args):
     render-record-receipt-edit <id> [--diff '{...}']
 
     纠正记录后漂亮回执(回执型第 2 款,蓝调,2026-07-24)。
-    用于 correct-record 调完 DB 后生成回执 HTML(让用户审计改了什么)。
+    用于 amend-record 调完 DB 后生成回执 HTML(让用户审计改了什么)。
 
-    第一性:用户说"correct-record" 纠正了记录,需要 1 份能审计改了什么 +
+    第一性:用户说"amend-record" 修正了记录,需要 1 份能审计改了什么 +
     改对没对的回执。核心是 diff 视图(before/after 三列)。
 
     用法:

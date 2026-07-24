@@ -1,4 +1,4 @@
-"""correct-record CLI 集成测试(2026-07-24 闭环 Phase 2)
+"""amend-record CLI 集成测试(2026-07-24 闭环 Phase 2)
 
 锁住 CLI 子命令:
 - 参数解析(--field value / --json 形式)
@@ -58,11 +58,11 @@ def _setup_with_one_record(db_path):
 
 # ===== 正常场景 =====
 
-def test_correct_record_single_field(tmp_path):
+def test_amend_record_single_field(tmp_path):
     """改 1 个字段 → 返回 diff 含 1 条"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid),
+    out, _, _ = _run(["amend-record", str(rid),
                        "--category", "工作.开发"], db)
     assert out is not None
     assert out["status"] == "ok"
@@ -73,11 +73,11 @@ def test_correct_record_single_field(tmp_path):
     assert "已纠正 1 个字段" in out["message"]
 
 
-def test_correct_record_multiple_fields(tmp_path):
+def test_amend_record_multiple_fields(tmp_path):
     """改多个字段 → diff 含多条"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid),
+    out, _, _ = _run(["amend-record", str(rid),
                        "--category", "工作.调研",
                        "--activity", "新活动",
                        "--source-contents", "新原文"], db)
@@ -86,122 +86,122 @@ def test_correct_record_multiple_fields(tmp_path):
     assert out["data"]["edit_count"] == 1
 
 
-def test_correct_record_json_form(tmp_path):
+def test_amend_record_json_form(tmp_path):
     """--json 形式传入"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid),
+    out, _, _ = _run(["amend-record", str(rid),
                        "--json", '{"category":"工作.开发","activity":"JSON活动"}'], db)
     assert out and out["status"] == "ok"
     assert len(out["data"]["diff"]) == 2
     assert out["data"]["diff"]["category"]["new"] == "工作.开发"
 
 
-def test_correct_record_json_at_form(tmp_path):
+def test_amend_record_json_at_form(tmp_path):
     """--json @file.json 形式"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
     json_file = tmp_path / "correction.json"
     json_file.write_text('{"activity":"@file活动"}', encoding="utf-8")
-    out, _, _ = _run(["correct-record", str(rid), "--json", f"@{json_file}"], db)
+    out, _, _ = _run(["amend-record", str(rid), "--json", f"@{json_file}"], db)
     assert out and out["status"] == "ok"
     assert out["data"]["diff"]["activity"]["new"] == "@file活动"
 
 
-def test_correct_record_no_change(tmp_path):
+def test_amend_record_no_change(tmp_path):
     """字段值未变 → diff 空 + edit_count 不增"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid),
+    out, _, _ = _run(["amend-record", str(rid),
                        "--category", "工作.AI调优"], db)
     assert out and out["status"] == "ok"
     assert out["data"]["diff"] == {}
     assert out["data"]["edit_count"] == 0
 
 
-def test_correct_record_increments_edit_count(tmp_path):
+def test_amend_record_increments_edit_count(tmp_path):
     """多次纠正 → edit_count 自增"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    _run(["correct-record", str(rid), "--category", "工作.开发"], db)
-    _run(["correct-record", str(rid), "--category", "工作.调研"], db)
-    _run(["correct-record", str(rid), "--activity", "第3次"], db)
+    _run(["amend-record", str(rid), "--category", "工作.开发"], db)
+    _run(["amend-record", str(rid), "--category", "工作.调研"], db)
+    _run(["amend-record", str(rid), "--activity", "第3次"], db)
     out, _, _ = _run(["get-record", str(rid)], db)
     assert out["data"]["edit_count"] == 3
 
 
 # ===== 错误场景 =====
 
-def test_correct_record_no_args_shows_usage(tmp_path):
+def test_amend_record_no_args_shows_usage(tmp_path):
     """无参 → 显示用法(不抛栈)"""
     db = tmp_path / "test.db"
     _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record"], db)
+    out, _, _ = _run(["amend-record"], db)
     assert out and out["status"] == "error"
     assert "用法" in out["message"]
     assert "available_fields" in out
     assert "category" in out["available_fields"]
 
 
-def test_correct_record_nonexistent_id(tmp_path):
+def test_amend_record_nonexistent_id(tmp_path):
     """不存在 id 报错"""
     db = tmp_path / "test.db"
     _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", "999", "--category", "工作.开发"], db)
+    out, _, _ = _run(["amend-record", "999", "--category", "工作.开发"], db)
     assert out and out["status"] == "error"
     assert "不存在" in out["message"]
 
 
-def test_correct_record_invalid_id_format(tmp_path):
+def test_amend_record_invalid_id_format(tmp_path):
     """id 非整数报错"""
     db = tmp_path / "test.db"
     _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", "abc", "--category", "工作.开发"], db)
+    out, _, _ = _run(["amend-record", "abc", "--category", "工作.开发"], db)
     assert out and out["status"] == "error"
     assert "整数" in out["message"]
 
 
-def test_correct_record_no_fields(tmp_path):
+def test_amend_record_no_fields(tmp_path):
     """不传任何字段报错"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid)], db)
+    out, _, _ = _run(["amend-record", str(rid)], db)
     assert out and out["status"] == "error"
     assert "至少传 1 个字段" in out["message"]
 
 
-def test_correct_record_invalid_category(tmp_path):
+def test_amend_record_invalid_category(tmp_path):
     """非法 category 报错(白名单校验生效)"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid), "--category", "非法.非法"], db)
+    out, _, _ = _run(["amend-record", str(rid), "--category", "非法.非法"], db)
     assert out and out["status"] == "error"
     assert "category 校验失败" in out["message"]
 
 
-def test_correct_record_invalid_field_name(tmp_path):
+def test_amend_record_invalid_field_name(tmp_path):
     """非法字段名报错(不在白名单)"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid), "--id", "999"], db)
+    out, _, _ = _run(["amend-record", str(rid), "--id", "999"], db)
     assert out and out["status"] == "error"
     assert "非法字段" in out["message"]
 
 
-def test_correct_record_json_parse_error(tmp_path):
+def test_amend_record_json_parse_error(tmp_path):
     """--json 解析失败报错"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid), "--json", "{not json}"], db)
+    out, _, _ = _run(["amend-record", str(rid), "--json", "{not json}"], db)
     assert out and out["status"] == "error"
     assert "json" in out["message"].lower() or "JSON" in out["message"]
 
 
-def test_correct_record_unknown_field(tmp_path):
+def test_amend_record_unknown_field(tmp_path):
     """不认识的字段名报错(提示合法字段列表)"""
     db = tmp_path / "test.db"
     rid = _setup_with_one_record(db)
-    out, _, _ = _run(["correct-record", str(rid), "--unknown", "x"], db)
+    out, _, _ = _run(["amend-record", str(rid), "--unknown", "x"], db)
     assert out and out["status"] == "error"
     assert "非法字段" in out["message"]
     assert "category" in out["message"]  # 应展示合法字段列表
@@ -210,15 +210,15 @@ def test_correct_record_unknown_field(tmp_path):
 # ===== main 分发 =====
 
 def test_correct_command_registered(tmp_path):
-    """'correct-record' 命令已注册到 main 分发"""
+    """'amend-record' 命令已注册到 main 分发"""
     db = tmp_path / "test.db"
     env = os.environ.copy()
     env["SKILLS_DB_PATH"] = str(db)
     cwd = str(SCRIPTS_DIR.parent)
     r = subprocess.run(
-        [sys.executable, CLI, "correct-record"],
+        [sys.executable, CLI, "amend-record"],
         capture_output=True, text=True, env=env, timeout=30, cwd=cwd,
     )
     out = r.stdout
-    assert "未知命令" not in out, f"correct-record 未注册到 main: {out[:200]}"
+    assert "未知命令" not in out, f"amend-record 未注册到 main: {out[:200]}"
     assert "用法" in out

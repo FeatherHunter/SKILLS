@@ -4,6 +4,7 @@ description: >
   作息记录与日程计划管理技能。当用户使用以下指令时触发:
    准备消息(废弃)、同步作息(废弃)、增量同步(废弃)、(同步类)、
    今天总结、汇总作息(摘要类)、
+   修正作息 / 改作息 / 这条记错了(修正类,2026-07-24 新增,1 次操作改 1 条作息记录多字段 + 生成蓝调 diff 回执),
    对比两个月、月份对比、跨月对比(对比类,把两个范围放在一起看分类/时长/健康分变化)、
    查作息、查作息详情、查作息时间轴、查作息范围、查作息游标、查作息状态(查询作息记录)、
    查日程、看日程、24h 概览、查多日计划(查询日程计划)、
@@ -33,7 +34,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 
 ---
 
-> **版本**: 2026-06-29 重构版(新增:事件型计划 + 飞书日历联动)
+> **版本**: v1.1.2 (2026-07-24) · 修正作息(amend-record) + 蓝调 diff 回执 + 87 → 95 测试 + v1.1.0~v1.1.2 tag
 
 ---
 
@@ -68,6 +69,7 @@ metadata: { "openclaw": { "emoji": "🌙", "requires": { "python": ">=3.7", "opt
 | **23** | **按 ID 查作息记录** | **CLI 单条查询**。按作息记录 ID 返回全 11 字段(id / date / time_* / duration / activity / category / source_contents / source_timestamps / analysis_reasoning / created_at) | `get-record <id>` | **详见 3. 查询作息** |
 | **24** | **写作息摘要** | **CLI 写摘要**。按 (date, category) 维度 upsert 一条 daily_summary(解决孤儿表问题,该表 2026-07-22 后无任何写入路径) | `add-summary --date D --category C --total-minutes M` | **详见 13. 摘要管理(新建)** |
 | **25** | **对比两个月 / 月份对比 / 跨月对比** | **任意两个范围对比**。整月对比走 `render-record-compare-months YYYY-MM YYYY-MM`;任意范围对比走 `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>`。看分类占比变化、时长增减、健康分差异。**与 #5 汇总作息区别**:汇总 = 1 个范围,对比 = 2 个范围 | `render-record-compare-months YYYY-MM YYYY-MM` 或 `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | **详见 3.x HTML 模式(对比)** |
+| **26** | **修正作息 / 改作息 / 这条记错了** | **1 条作息记录多字段修正**(2026-07-24 新增,回执型第 2 款)。第一性:作息数据是回顾性输入,常拼错字段/时间误记/漏原文,本命令专门处理"我之前记错了,现在改对"场景 — 与 plan 域 `update-event` 区分(本命令是改 record,不是 plan)。自动维护审计:edit_count 自增 + updated_at 更新,生成蓝调 diff 回执(用户能审计改了什么)。24h 内强烈推荐(操作规范),不阻断 | `amend-record <id> [--field value ...]` 或 `amend-record <id> --json '{...}'` → 自动调 `render-record-receipt-edit <id>` 生成蓝调回执 | **详见 12. 修正作息** |
 
 ---
 
@@ -1174,6 +1176,93 @@ python scripts/schedule_cli.py search-plan-event <日期> --time-start HH:MM --t
 **与改计划的关系**:复盘本质上是批量调 `update-event --completion`。如果用户只改一条的完成状态,也可以直接走"改计划"。复盘的价值在于**逐条过、不遗漏、出小结**。
 
 **找不到匹配计划时**:提示"XX这条计划在系统里不存在,要先补吗?"→ 用户确认后调 `补计划`,再走复盘流程。
+
+---
+
+### 12. 修正作息（amend-record · 2026-07-24 新增 · 回执型第 2 款）
+
+**触发词**:修正作息 / 改作息 / 这条记错了
+
+**核心语义**:把 1 条作息记录的**多个字段**一次性改对,生成蓝调 diff 回执让用户审计改了什么。
+
+**第一性**:作息数据是 AI/星火回顾性输入的,常出现字段拼错/时间误记/漏原文等情况。本命令专门处理"我之前记错了,现在改对"场景 — 与 plan 域 `update-event`(改日程)区分(本命令改的是 record,不是 plan)。
+
+**支持 9 个字段**(同 `add-record` 强校验):
+- `date` / `time_start` / `time_end` / `duration_minutes` / `activity`
+- `category`(白名单校验)
+- `source_contents` / `source_timestamps` / `analysis_reasoning`(原文必填)
+
+**调用方式**:
+
+```bash
+# 方式 A: 命令行参数(适合 1-3 字段)
+python scripts/schedule_cli.py amend-record 123 \
+  --category "工作.AI调优" --activity "新活动名"
+
+# 方式 B: JSON 文件(适合复杂改动)
+python scripts/schedule_cli.py amend-record 123 --json @correction.json
+
+# 方式 C: JSON 内联(适合嵌入对话)
+python scripts/schedule_cli.py amend-record 123 --json '{"category":"工作.AI调优","activity":"新活动名"}'
+```
+
+**自动维护审计**:
+- `edit_count` 自增(每次 amend-record +1)
+- `updated_at` 自动更新
+- `get_record_by_id()` 返回完整 13 字段(含 updated_at + edit_count)
+
+**24h 软提示**:操作规范说"24h 内强烈推荐" — 不阻断,只在返回里加 warning 字段。
+
+**自动生成回执**:
+- 调完 `amend-record` 后,AI 应调 `render-record-receipt-edit <id> --diff '<diff>'` 生成蓝调回执
+- 回执核心:**diff 视图**(4 列表格: 字段 / 修改前红删 / → / 修改后绿加)
+- 让用户能 1 眼看到"我刚才改了什么",不需要 grep 日志
+
+**返回**:
+
+```json
+{
+  "status": "ok",
+  "data": {
+    "record_id": 123,
+    "diff": {
+      "category": {"old": "工作.AI", "new": "工作.AI调优"},
+      "activity": {"old": "原活动", "new": "新活动名"}
+    },
+    "edit_count": 1,
+    "within_24h": false,
+    "updated_at": "2026-07-24 19:30:00"
+  },
+  "message": "✓ id=123 已纠正 2 个字段 (edit_count=1)\n  category: 工作.AI → 工作.AI调优\n  activity: 原活动 → 新活动名\n⚠ 记录日期已超过 1 天(操作规范建议 24h 内修改)"
+}
+```
+
+**失败处理**:
+- 缺字段 → `{"status": "error", "message": "必须至少传 1 个字段(--field value 或 --json)"}`
+- 非法 category → 返回详细错误(字段名+当前值+合法列表+怎么修)
+- 不存在 record_id → `{"status": "error", "message": "record_id=999 不存在"}`
+- id 非整数 → `{"status": "error", "message": "id 必须是整数,得到 'abc'"}`
+- 非法字段名 → `{"status": "error", "message": "非法字段: --unknown(合法:[...])"}`
+- --json 解析失败 → `{"status": "error", "message": "--json 解析失败: <type>: <msg>"}`
+
+**约束**:
+- 单次只能改 1 条记录(要改多条 → 多次 amend-record)
+- 操作规范禁止 DELETE 本表(规则 3),只可 UPDATE
+- 字段值未变 → 不计入 diff,不增加 edit_count
+
+**为什么不用 `update-event`**(plan 域的修改命令)?
+- `update-event` 是改 `schedule_plans` 表(日程计划)
+- `amend-record` 是改 `schedule_records` 表(作息记录)
+- 两表 schema 完全不同(12 字段 vs 13 字段),不能混用
+- 命名 `amend-record` 明确标识"改的是 record"而非"plan"
+
+**完整工作流(AI 协同时)**:
+1. 用户说"这条记错了,改成 10:30-11:30,活动是 写代码"
+2. AI 解析 → `amend-record 123 --time-start 10:30 --time-end 11:30 --activity "写代码"`
+3. CLI 调底层 `update_record()` → DB UPDATE + audit
+4. CLI 调 `render_record_receipt_edit(123, diff)` → 蓝调 HTML
+5. AI 拿 file_path → `<media src="..." type="file" />` 给用户
+6. 浏览器自动打开 → 用户看 diff 视图确认改对了
 
 ---
 

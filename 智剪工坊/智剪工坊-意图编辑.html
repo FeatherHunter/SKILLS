@@ -500,7 +500,7 @@
     button.exclude-btn:hover { background: var(--gray-fill); }
     button.exclude-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
     .actions {
-      position: sticky; bottom: 0; padding: 12px 20px; margin-top: 20px;
+      position: sticky; bottom: 0; padding: 12px 24px; margin-top: 20px;
       background: rgba(255, 255, 255, 0.72);
       backdrop-filter: saturate(180%) blur(20px);
       -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -2854,6 +2854,10 @@
     function showAnchorRail() {
       if (!anchorRail) return;
       anchorRail.classList.add('visible');
+      // v1.24.2 fix:同时移除 no-content。原 BUG:back-btn 加 no-content (display:none) 后
+      // 没有任何路径移除,showAnchorRail 只加 visible 不够 — CSS 优先级 .no-content { display:none }
+      // 永远生效,aside 即使 opacity:1 也显示不出来。
+      anchorRail.classList.remove('no-content');
       if (railHideTimer) { clearTimeout(railHideTimer); railHideTimer = null; }
     }
     function hideAnchorRail() {

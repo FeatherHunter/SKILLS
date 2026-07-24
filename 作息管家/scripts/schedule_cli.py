@@ -589,6 +589,8 @@ def main(argv=None):
         cmd_render_plans_preview(args)
     elif cmd == "render-plans-review":
         cmd_render_plans_review(args)
+    elif cmd == "render-receipt":
+        cmd_render_receipt(args)
     # === end ===
 
     # === 2026-07-23 改造:作息记录查询 → HTML 报告(单文件,硬绑 SKILLS_DB_PATH/schedule_html/) ===
@@ -1739,6 +1741,85 @@ def cmd_render_plans_review(args):
 
 
 # ============================================================
+# 2026-07-24 新增:单条 CRUD 漂亮回执(回执型首款)
+# ============================================================
+# 流程:AI 调 add 写入 → 拿到 id → 调 render-receipt 生成漂亮回执
+# ③ 期望:让 AI 自主决定(2026-07-24 改进,不让用户选 A/B/C)
+
+
+def cmd_render_receipt(args):
+    """render-receipt <record_id>
+
+    单条 CRUD 漂亮回执(回执型首款)。输入 record_id,生成包含:
+    - 新记录 11 字段展开(主卡,高敏字段折叠)
+    - 4 卡摘要(今日已记录/今日总时长/本周累计/分类排名)
+    - 4 部分 prompt(场景/今日进度/AI 自主决定建议/来源) → 复制给 AI
+    """
+    from schedule_html_render import _html_base_dir, render_receipt, render_and_write
+    from pathlib import Path as _P
+
+    if not args:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-receipt <record_id>(整数)",
+            "example": "render-receipt 3582",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        record_id = int(args[0])
+    except ValueError:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"record_id 格式非法: '{args[0]}'(期望整数),建议: render-receipt 3582",
+        }, ensure_ascii=False))
+        return
+
+    try:
+        payload = render_receipt(record_id)
+    except Exception as e:
+        print(_json.dumps({
+            "status": "error",
+            "message": f"派生失败: {type(e).__name__}: {e}",
+        }, ensure_ascii=False))
+        return
+
+    if payload.get("status") != "ok":
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    if not _html_base_dir().exists():
+        print(_json.dumps({
+            "status": "error",
+            "message": f"HTML 输出根目录不存在: 字段 _html_base_dir,当前值 {_html_base_dir()},建议: mkdir -p {_html_base_dir()}",
+        }, ensure_ascii=False))
+        return
+
+    result = render_and_write(payload, None)
+    if result.get("status") != "ok":
+        print(_json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    fp = _P(result["data"]["file_path"])
+    size_bytes = fp.stat().st_size
+    stats = payload["data"].get("stats", {})
+    print(_json.dumps({
+        "status": "ok",
+        "data": {
+            "file_path": str(fp),
+            "bytes": size_bytes,
+            "size_kb": result["data"]["size_kb"],
+            "mode": "record-receipt",
+            "record_id": record_id,
+            "today_count": stats.get("today_count", 0),
+            "week_count": stats.get("week_count", 0),
+            "category_rank": f"{stats.get('category_rank', '?')}/{stats.get('category_total', '?')}",
+        },
+        "message": f"✓ 漂亮回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条,本周 {stats.get('week_count', 0)} 条）",
+    }, ensure_ascii=False, indent=2))
+
+
+# ============================================================
 # 2026-07-23 新增:作息记录查询 → HTML 单日报告
 # ============================================================
 #
@@ -2564,6 +2645,7 @@ HTML 渲染(可视化查询结果):
   render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
   render-plans-preview <日期> --json @plan.json  商量计划预览(过程型,4 部分 prompt 复制给 AI)
   render-plans-review <日期>  复盘报告(过程型,5 状态选项 + 复制 prompt 给 AI 调 update-event)
+  render-receipt <record_id>  漂亮回执(回执型首款,新记录 id 后的视觉反馈 + 复制今日进度)
   render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
   render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
   render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)

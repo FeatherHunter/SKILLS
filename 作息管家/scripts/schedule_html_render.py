@@ -387,6 +387,10 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         # 兼容旧 CLI,等价 record-day
         d = meta.get("date", today)
         return base / "day" / f"{d}_record_day.html"
+    if mode == "record-receipt":
+        # 漂亮回执(回执型首款,2026-07-24)
+        rid = meta.get("record_id", "unknown")
+        return base / "receipt" / f"receipt_id{rid}.html"
     if mode == "record-detail":
         # 详情页(单日 + 可选 record_id)
         d = meta.get("date", today)
@@ -806,6 +810,125 @@ def render_plans_review(date: str) -> dict:
     }
 
 
+def render_receipt(record_id: int) -> dict:
+    """
+    单条 CRUD 后漂亮回执(回执型首款,用户 2026-07-23 提出 3 类型分类中的"回执型"首批落地).
+
+    ③ 期望: AI 自主决定,不让用户选 A/B/C(2026-07-24 改进)
+      - 用户复制粘贴 = 一次性动作
+      - AI 收到上下文 → 自主回复(继续记/看全貌/复盘/补漏)
+      - 不让用户做"选方案"决定
+    """
+    from schedule_db import get_record_by_id, get_records_by_date, get_records_range
+    from datetime import timedelta
+
+    record = get_record_by_id(record_id)
+    if not record:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"未找到 id={record_id} 的作息记录",
+        }
+
+    date = record.get("date")
+    duration = int(record.get("duration_minutes") or 0)
+    category = record.get("category") or ""
+
+    today_records = get_records_by_date(date) if date else []
+    today_count = len(today_records)
+    today_mins = sum(int(r.get("duration_minutes") or 0) for r in today_records)
+
+    try:
+        end_dt = datetime.fromisoformat(date)
+        start_dt = end_dt - timedelta(days=6)
+        week_records = get_records_range(start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d"))
+        week_count = len(week_records)
+    except Exception:
+        week_count = today_count
+
+    category_records = [r for r in today_records if r.get("category") == category]
+    category_total = len(category_records)
+    try:
+        sorted_cats = sorted(category_records, key=lambda r: r.get("time_start", ""))
+        category_rank = next((i + 1 for i, r in enumerate(sorted_cats) if r.get("id") == record_id), category_total)
+    except Exception:
+        category_rank = category_total
+
+    record_json = json.dumps({
+        "id": record.get("id"),
+        "date": record.get("date"),
+        "time_start": record.get("time_start"),
+        "time_end": record.get("time_end"),
+        "duration_minutes": duration,
+        "activity": record.get("activity"),
+        "category": category,
+        "source_contents": record.get("source_contents") or "",
+        "source_timestamps": record.get("source_timestamps") or "",
+        "analysis_reasoning": record.get("analysis_reasoning") or "",
+        "created_at": record.get("created_at"),
+    }, ensure_ascii=False, indent=2)
+
+    # 3 种"复制动作"prompt(2026-07-24 设计改进:取消独立"复制今日进度"按钮,
+    # §1 三个操作按钮 = 3 种具体 prompt。每个按钮 = 用户决策 + AI 指令合一。)
+    base_prompt = f"""① 场景: 我刚记录了一条作息(id={record_id} · {record.get('date')} {record.get('time_start')}–{record.get('time_end')} {category})
+
+② 数据(今日进度):
+  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+  - 本周累计 {week_count} 条(最近 7 天)
+  - 在「{category}」分类中,本条排第 {category_rank} / 共 {category_total} 条
+  - 刚记录:
+{record_json}
+
+④ 来源: receipt_id{record_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},新记录 id={record_id}
+"""
+
+    prompt_continue = base_prompt + """
+③ 期望: 用户即将告诉你"我刚才在做 X"。
+请调 schedule_cli.py add 写库 + 调 render-receipt <新 id> 生成下一份回执。
+不要做其他事,等用户输入。"""
+
+    prompt_overview = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-record-day {record.get('date')} 生成今日报告 HTML,
+让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
+不要做复盘,纯展示。"""
+
+    prompt_review = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-plans-review {record.get('date')} 生成复盘报告 HTML,
+让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
+完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+
+    payload = {
+        "meta": {
+            "mode": "record-receipt",
+            "title": "已记录",
+            "record_id": record_id,
+            "date": date,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-07-24",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "record": record,
+        "stats": {
+            "today_count": today_count,
+            "today_mins": today_mins,
+            "week_count": week_count,
+            "category": category,
+            "category_rank": category_rank,
+            "category_total": category_total,
+        },
+        "prompts": {
+            "continue": prompt_continue,  # §1 按钮 1:继续记
+            "overview": prompt_overview,  # §1 按钮 2:看今日全貌
+            "review":   prompt_review,     # §1 按钮 3:晚点复盘
+        },        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ id={record_id} 漂亮回执已生成(今日 {today_count} 条,本周 {week_count} 条)",
+    }
+
+
 # ===== 5 模板数据派生函数(T1~T5,2026-07-23 升级)=====
 
 def render_record_day(date: str) -> dict:
@@ -1155,6 +1278,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "query-plans":     "schedule_list_events.html",
         "plan-preview":    "schedule_plan_preview.html",  # 商量计划预览(过程型首批落地,2026-07-24)
         "plan-review":     "schedule_plan_review.html",   # 复盘报告(过程型第2款,2026-07-24)
+        "record-receipt":  "schedule_record_receipt.html", # 漂亮回执(回执型首款,2026-07-24)
         "record-report":   "schedule_record_day.html",   # 兼容旧 CLI
         "record-day":      "schedule_record_day.html",
         "record-range":    "schedule_record_range.html",

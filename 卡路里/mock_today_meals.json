@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "total_calorie": 9560,
+      "avg_calorie": 1365.7,
+      "total_protein": 482.5,
+      "protein_target": 120,
+      "total_water": 9800,
+      "avg_water": 1400
+    },
+    "items": [
+      {"date": "2026-07-24", "time": "08:30", "meal_type": "breakfast", "food_name": "燕麦粥", "grams": 200, "calorie": 280, "protein": 12.0, "carb": 48, "fat": 5},
+      {"date": "2026-07-24", "time": "08:45", "meal_type": "breakfast", "food_name": "鸡蛋", "grams": 100, "calorie": 140, "protein": 13.0, "carb": 1, "fat": 10},
+      {"date": "2026-07-24", "time": "12:30", "meal_type": "lunch", "food_name": "米饭", "grams": 200, "calorie": 232, "protein": 4.0, "carb": 50, "fat": 1},
+      {"date": "2026-07-24", "time": "12:40", "meal_type": "lunch", "food_name": "鸡胸肉", "grams": 150, "calorie": 248, "protein": 47.0, "carb": 0, "fat": 6},
+      {"date": "2026-07-24", "time": "12:45", "meal_type": "lunch", "food_name": "蔬菜沙拉", "grams": 100, "calorie": 100, "protein": 3.0, "carb": 12, "fat": 4},
+      {"date": "2026-07-24", "time": "15:30", "meal_type": "snack", "food_name": "苹果", "grams": 180, "calorie": 95, "protein": 1.0, "carb": 25, "fat": 0},
+      {"date": "2026-07-24", "time": "10:00", "meal_type": "snack", "food_name": "💧水", "grams": 300, "calorie": 0, "protein": 0, "carb": 0, "fat": 0},
+      {"date": "2026-07-23", "time": "19:00", "meal_type": "dinner", "food_name": "红烧肉", "grams": 200, "calorie": 680, "protein": 32.0, "carb": 8, "fat": 56},
+      {"date": "2026-07-23", "time": "12:30", "meal_type": "lunch", "food_name": "牛肉面", "grams": 500, "calorie": 720, "protein": 38.0, "carb": 96, "fat": 22},
+      {"date": "2026-07-23", "time": "08:00", "meal_type": "breakfast", "food_name": "豆浆", "grams": 300, "calorie": 60, "protein": 6.0, "carb": 6, "fat": 3},
+      {"date": "2026-07-22", "time": "18:30", "meal_type": "dinner", "food_name": "三文鱼", "grams": 200, "calorie": 416, "protein": 42.0, "carb": 0, "fat": 28}
+    ],
+    "meta": {
+      "start": "2026-07-22",
+      "end": "2026-07-24",
+      "days": 3,
+      "today": "2026-07-24"
+    }
+  },
+  "message": "已生成吃的记录(3 天 11 条)"
+}

@@ -205,6 +205,23 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - **AI 推荐流程**:用户说"这些心愿都完成了" → AI 调 `wish-complete --ids 1 2 3 --html`(或先 search 取 ids) → 用户在 HTML 里勾选 + 填打卡内容 → 采纳复制 → 粘贴给 AI → AI 按 complete-wish 命令逐条执行(原子转换)
 - **与 wish-batch-plan 的协同**:用户可先排期后完成;两个向导是心愿生命周期的两端工具
 
+### 批量改分类向导(2026-07-24 新增 · Step 5B · 过程型 HTML)
+- 触发词:备忘改分类(批量场景,如「把 X 分类下这 10 条都改到 Y 分类」)
+- 命令:`script/memo_cli.py batch-update-category --from-category <原> [--to-category <新>] [--html]`
+- **类型**:过程型 HTML(同 wish-batch-plan/wish-complete 模式)
+- **第一性**:update-category 是单 id 命令(`update-category <id> <category>`),批量场景用户在 HTML 选要改的 + 选目标分类
+- **--from-category**:原分类(白名单:备忘/心愿/打卡/情绪日记)
+- **--to-category**:建议目标分类(HTML 可改;硬规则:不与 --from-category 相同)
+- **副作用**:只改 `category`,**不动 `sub_category`**(sub_category 是内容维度的二阶属性)
+- 模板:`templates/change_category.html`(独立)
+- 渲染器:`script/memo_render.py:render_change_category`
+- **4 部分 prompt**(采纳按钮复制):
+  ① 场景: 我用批量改分类向导把 N 条<原分类>笔记改到<新分类>(sub_category 不动)
+  ② 数据(采纳后): 表格列出 #id + content + from → to
+  ③ 期望: 按 update-category 命令列表(每条 id 单独调,sub_category 字段不动)
+  ④ 来源: batch-update-category --from-category X --to-category Y / 2026-07-24
+- **AI 推荐流程**:用户说"把 X 分类这些都改了" → AI 调 `batch-update-category --from-category X --html` → 用户在 HTML 选要改的 + 选目标分类 → 采纳复制 → 粘贴给 AI → AI 按 update-category 命令逐条执行
+
 #### 排期日期的用户-facing 表达(中文)
 - 对用户说的时候,**不要用 "due" 这个英文术语**,用以下中文之一:
   - "排期日期"

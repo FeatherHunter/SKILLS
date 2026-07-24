@@ -923,6 +923,85 @@ def wish_complete(args):
         conn.close()
 
 
+def batch_update_category(args):
+    """批量改分类向导(过程型 HTML)
+
+    命令:`memo_cli.py update-category <id> <category>`(单 id 命令)
+    此处一次性收集同分类笔记,给用户在 HTML 选要改的 + 选目标分类。
+    """
+    from_cat = getattr(args, "from_category", None)
+    to_cat = getattr(args, "to_category", None)
+    if from_cat and from_cat not in ALLOWED_CATEGORIES:
+        error_json(f"无效原分类: {from_cat}，允许: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    if to_cat and to_cat not in ALLOWED_CATEGORIES:
+        error_json(f"无效目标分类: {to_cat}，允许: {', '.join(sorted(ALLOWED_CATEGORIES))}")
+    if from_cat and to_cat and from_cat == to_cat:
+        error_json(f"原分类与目标分类相同: {from_cat}")
+
+    conn = get_conn()
+    try:
+        sql = "SELECT id, content, sub_category, media_path, due FROM notes WHERE 1=1"
+        params = []
+        if from_cat:
+            sql += " AND category = ?"
+            params.append(from_cat)
+        sql += " ORDER BY updated_at DESC LIMIT 200"
+        cur = conn.execute(sql, params)
+        rows = cur.fetchall()
+
+        items = [{
+            "id": r["id"],
+            "content": r["content"],
+            "sub_category": r["sub_category"],
+            "media_path": r["media_path"],
+            "due": r["due"],
+            "selected": True,
+        } for r in rows]
+
+        # 计算目标分类下同名笔记数(用于警告)
+        target_conflict_count = 0
+        if to_cat:
+            conn2 = get_conn()
+            try:
+                tc = conn2.execute("SELECT COUNT(*) FROM notes WHERE category=?", (to_cat,)).fetchone()
+                target_conflict_count = tc[0] or 0
+            finally:
+                conn2.close()
+
+        payload = {
+            "status": "ok",
+            "data": {
+                "title": "批量改分类向导",
+                "command": "batch-update-category",
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "from_category": from_cat,
+                "to_category": to_cat,
+                "target_conflict_count": target_conflict_count,
+                "items": items,
+            },
+            "message": f"原分类 '{from_cat or '<全部>'}' 下 {len(items)} 条笔记",
+        }
+
+        if getattr(args, "html", False):
+            try:
+                from memo_render import render_change_category
+                path = render_change_category(payload)
+                output_json({
+                    "html_path": path,
+                    "count": len(items),
+                    "from": from_cat,
+                    "to": to_cat,
+                }, message="批量改分类向导 HTML 已生成")
+            except Exception as e:
+                error_json(f"批量改分类向导 HTML 生成失败: {e}")
+        else:
+            output_json(items, message=f"原分类 '{from_cat or '<全部>'}' 下 {len(items)} 条笔记")
+    except Exception as e:
+        error_json(str(e))
+    finally:
+        conn.close()
+
+
 # ---- 提醒操作 ----
 
 def _validate_remind_at(at_str):
@@ -1504,6 +1583,12 @@ def main():
     p_wc.add_argument("--content", default=None, help="默认打卡内容(HTML 可逐条覆盖;留空=原心愿 content)")
     p_wc.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 wish_complete.html)")
 
+    # batch-update-category (批量改分类向导·过程型 HTML)
+    p_buc = sub.add_parser("batch-update-category", help="批量改分类向导:按原分类收集笔记(过程型 HTML 前置)")
+    p_buc.add_argument("--from-category", default=None, help="原分类(默认查全部)")
+    p_buc.add_argument("--to-category", default=None, help="建议目标分类(HTML 可改;需 ALLOWED_CATEGORIES)")
+    p_buc.add_argument("--html", action="store_true", help="生成过程型 HTML 向导页(模板 change_category.html)")
+
     # sync-from-feishu (反向同步)
     p_sync = sub.add_parser("sync-from-feishu", help="反向同步：飞书已完成 task → 本地 complete-wish")
     p_sync.add_argument("--html", action="store_true", help="生成 HTML 同步报告页(模板 sync_report.html)")
@@ -1559,6 +1644,8 @@ def main():
         wish_batch_plan(args)
     elif args.command == "wish-complete":
         wish_complete(args)
+    elif args.command == "batch-update-category":
+        batch_update_category(args)
     elif args.command == "sync-from-feishu":
         # 双向对账：本地补建 + 飞书 done 反向 + 飞书 due 反向
         from feishu_sync import sync_from_feishu

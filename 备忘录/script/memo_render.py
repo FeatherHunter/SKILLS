@@ -9,6 +9,7 @@ TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_query.html"
 SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
 WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
 WISH_COMPLETE_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_complete.html"
+CHANGE_CATEGORY_TEMPLATE_PATH = SKILL_DIR / "templates" / "change_category.html"
 OUTPUT_DIR = SKILL_DIR / "output"
 
 
@@ -76,6 +77,23 @@ def render_wish_complete(payload, name="wish_complete"):
       }, ...]
     """
     template = WISH_COMPLETE_TEMPLATE_PATH.read_text(encoding="utf-8")
+    injected = _inject(template, payload)
+    return _write_output(name, injected)
+
+
+def render_change_category(payload, name="change_category"):
+    """渲染批量改分类向导页(模板 change_category.html),过程型 HTML
+
+    payload.data 期望字段:
+      title / command / generated_at
+      from_category: str(原分类)
+      to_category: str|None(建议目标分类,HTML 可改)
+      items: [{
+        id, content, sub_category, media_path, due,
+        selected: bool
+      }, ...]
+    """
+    template = CHANGE_CATEGORY_TEMPLATE_PATH.read_text(encoding="utf-8")
     injected = _inject(template, payload)
     return _write_output(name, injected)
 

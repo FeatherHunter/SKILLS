@@ -294,6 +294,26 @@
 <li><strong>AI 推荐流程</strong>:用户说"这些心愿都完成了" → AI 调 <code>wish-complete --ids 1 2 3 --html</code>(或先 search 取 ids) → 用户在 HTML 里勾选 + 填打卡内容 → 采纳复制 → 粘贴给 AI → AI 按 complete-wish 命令逐条执行(原子转换)</li>
 <li><strong>与 wish-batch-plan 的协同</strong>:用户可先排期后完成;两个向导是心愿生命周期的两端工具</li>
 </ul>
+<h3>批量改分类向导(2026-07-24 新增 · Step 5B · 过程型 HTML)</h3>
+<ul>
+<li>触发词:备忘改分类(批量场景,如「把 X 分类下这 10 条都改到 Y 分类」)</li>
+<li>命令:<code>script/memo_cli.py batch-update-category --from-category &lt;原&gt; [--to-category &lt;新&gt;] [--html]</code></li>
+<li><strong>类型</strong>:过程型 HTML(同 wish-batch-plan/wish-complete 模式)</li>
+<li><strong>第一性</strong>:update-category 是单 id 命令(<code>update-category &lt;id&gt; &lt;category&gt;</code>),批量场景用户在 HTML 选要改的 + 选目标分类</li>
+<li><strong>--from-category</strong>:原分类(白名单:备忘/心愿/打卡/情绪日记)</li>
+<li><strong>--to-category</strong>:建议目标分类(HTML 可改;硬规则:不与 --from-category 相同)</li>
+<li><strong>副作用</strong>:只改 <code>category</code>,<strong>不动 <code>sub_category</code></strong>(sub_category 是内容维度的二阶属性)</li>
+<li>模板:<code>templates/change_category.html</code>(独立)</li>
+<li>渲染器:<code>script/memo_render.py:render_change_category</code></li>
+<li><strong>4 部分 prompt</strong>(采纳按钮复制):<ul>
+<li>① 场景: 我用批量改分类向导把 N 条&lt;原分类&gt;笔记改到&lt;新分类&gt;(sub_category 不动)</li>
+<li>② 数据(采纳后): 表格列出 #id + content + from → to</li>
+<li>③ 期望: 按 update-category 命令列表(每条 id 单独调,sub_category 字段不动)</li>
+<li>④ 来源: batch-update-category --from-category X --to-category Y / 2026-07-24</li>
+</ul>
+</li>
+<li><strong>AI 推荐流程</strong>:用户说"把 X 分类这些都改了" → AI 调 <code>batch-update-category --from-category X --html</code> → 用户在 HTML 选要改的 + 选目标分类 → 采纳复制 → 粘贴给 AI → AI 按 update-category 命令逐条执行</li>
+</ul>
 <h4>排期日期的用户-facing 表达(中文)</h4>
 <ul>
 <li>对用户说的时候,<strong>不要用 "due" 这个英文术语</strong>,用以下中文之一:</li>

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>批量改分类向导</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--err-soft:#fff5f5;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+h1{font-size:36px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
+.lead{color:var(--fg2);font-size:17px}
+.meta{margin-top:14px;color:var(--fg3);font-size:13px}
+.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
+.panel{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center}
+button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600}
+button.ghost{background:transparent;color:var(--blue2);border:1px solid var(--line)}
+button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px}
+input[type=text]{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit}
+.note{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
+.note.off{opacity:.5}
+.note.off .content{text-decoration:line-through;color:var(--fg3)}
+.note-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.note-id{color:var(--blue2);font-weight:800;font-size:15px;min-width:48px}
+.note-content{font-size:16px;flex:1}
+.note-meta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;color:var(--fg2);font-size:13px;margin:8px 0}
+.flow{display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0;font-size:17px;font-weight:600}
+.flow .from{background:var(--err-soft);color:var(--err);padding:8px 16px;border-radius:14px}
+.flow .to{background:#ecfff2;color:#178a3a;padding:8px 16px;border-radius:14px}
+.flow .arrow{font-size:24px;color:var(--fg3)}
+.kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.kpi .stat{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi b{display:block;font-size:26px;letter-spacing:-.02em;margin-bottom:4px}
+.kpi span{color:var(--fg2);font-size:13px}
+pre{white-space:pre-wrap;background:#1d1d1d;color:#f5f5f5;border-radius:16px;padding:18px;overflow:auto;font-size:13px;line-height:1.65;max-height:340px}
+.notice{padding:12px 16px;border-radius:14px;margin:10px 0;font-size:14px}
+.notice.warn{background:#fff7e8;color:#b25b00}
+.notice.err{background:var(--err-soft);color:var(--err)}
+.empty{padding:42px;text-align:center;color:var(--fg2)}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.kpi{grid-template-columns:1fr}h1{font-size:30px}.flow{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Batch Update Category</div>
+<h1 id="title">批量改分类向导</h1>
+<p class="lead" id="subtitle">数据加载中</p>
+<p class="meta" id="meta"></p>
+</header>
+
+<div class="flow">
+<span class="from" id="fromCat">原分类</span>
+<span class="arrow">→</span>
+<span class="to" id="toCat">新分类</span>
+</div>
+
+<section class="kpi" id="kpis"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:10px">🔧 新目标分类(可在下方调整)</div>
+<div class="toolbar">
+<label style="color:var(--fg2);font-size:14px">目标分类:</label>
+<select id="toCatSelect" style="padding:9px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px">
+<option value="备忘">备忘</option>
+<option value="心愿">心愿</option>
+<option value="打卡">打卡</option>
+<option value="情绪日记">情绪日记</option>
+</select>
+<div class="toolbar" style="margin-left:auto">
+<button class="ghost" onclick="selectAll(true)">全选</button>
+<button class="ghost" onclick="selectAll(false)">全不选</button>
+</div>
+</div>
+</section>
+
+<section id="noteList"></section>
+
+<section class="panel">
+<div style="font-weight:700;margin-bottom:8px">📋 采纳(复制修改指令)</div>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:12px">点击后,把内容粘贴给 AI,AI 会按指令批量调 <code>update-category</code>(改顶层分类,sub_category 不动)。</p>
+<div class="toolbar">
+<button class="primary" onclick="adopt()">📋 采纳并复制</button>
+<button class="ghost" onclick="copyPrompt()">仅复制</button>
+</div>
+<div id="warnArea"></div>
+<pre id="promptOut">尚未采纳(无内容)</pre>
+</section>
+</div>
+
+<script>
+const PAYLOAD=window.__DATA__;
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function data(){return (PAYLOAD&&PAYLOAD.data)||{}}
+function items(){return data().items||[]}
+
+function init(){
+  if(!PAYLOAD){document.getElementById('noteList').innerHTML='<div class="empty">数据未注入</div>';return}
+  const d=data();
+  document.getElementById('title').textContent=d.title||'批量改分类向导';
+  document.getElementById('subtitle').textContent=PAYLOAD.message||'勾选要改分类的笔记';
+  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'batch-update-category'} · 来源：${d.source||''}`;
+  document.getElementById('fromCat').textContent=d.from_category||'原分类';
+  document.getElementById('toCat').textContent=d.to_category||'新分类';
+  if(d.to_category){
+    const sel=document.getElementById('toCatSelect');
+    sel.value=d.to_category;
+  }
+  renderKPIs();renderList();
+}
+
+function renderKPIs(){
+  const all=items();
+  const withSub=all.filter(w=>w.sub_category).length;
+  document.getElementById('kpis').innerHTML=[
+    ['候选笔记',all.length,`来源 category=${esc(data().from_category||'')}`],
+    ['带 sub_category',withSub,'改顶层分类不动 sub_category'],
+  ].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span><div style="color:var(--fg3);font-size:12px;margin-top:4px">${x[2]}</div></div>`).join('');
+}
+
+function renderList(){
+  const list=document.getElementById('noteList');
+  if(!items().length){list.innerHTML='<div class="panel empty">原分类下没有笔记</div>';return}
+  list.innerHTML=items().map(renderNote).join('');
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb) cb.addEventListener('change',e=>{document.getElementById('note_'+w.id).classList.toggle('off',!e.target.checked)});
+  });
+}
+
+function renderNote(w){
+  const cls=w.selected?'':'off';
+  const checked=w.selected?'checked':'';
+  return `<article class="note ${cls}" id="note_${w.id}">
+<div class="note-head">
+<input type="checkbox" id="cb_${w.id}" ${checked} data-id="${w.id}" />
+<span class="note-id">#${esc(w.id)}</span>
+<span class="note-content">${esc(w.content)}</span>
+</div>
+<div class="note-meta">
+${w.sub_category?`<span class="badge">sub: ${esc(w.sub_category)}</span>`:''}
+${w.media_path?`<span class="badge ok">有附件</span>`:''}
+${w.due?`<span class="badge warn">排期 ${esc(w.due)}</span>`:''}
+</div>
+</article>`;
+}
+
+function selectAll(on){
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb){cb.checked=on;document.getElementById('note_'+w.id).classList.toggle('off',!on)}
+  });
+}
+
+function selectedRows(){
+  const targetCat=document.getElementById('toCatSelect').value;
+  const rows=[];
+  items().forEach(w=>{
+    const cb=document.getElementById('cb_'+w.id);
+    if(cb&&cb.checked){
+      rows.push({id:w.id,content:w.content,from:data().from_category,to:targetCat});
+    }
+  });
+  return {rows,target:targetCat};
+}
+
+function buildPrompt(rows,target,ctx){
+  if(!rows.length) return '未选择任何笔记';
+  const src=ctx.source||(data().command||'batch-update-category')+` --from-cat "${ctx.from_cat||''}" --to-cat "${ctx.to_cat||target}"`;
+  // 全部走单独命令(update-category 是单 id 命令)
+  const cmds=rows.map(r=>`memo_cli.py update-category ${r.id} ${target}`);
+  return [
+    '① 场景: 我用批量改分类向导把 '+rows.length+' 条 '+ctx.from_cat+' 笔记改到 '+target+' (sub_category 不动)',
+    '',
+    '② 数据(采纳后):',
+    ...rows.map(r=>`   · 笔记 #${r.id} "${r.content}" : ${r.from} → ${target}`),
+    '',
+    '③ 期望: 请按以下顺序执行 '+cmds.length+' 步 update-category(sub_category 字段不动):',
+    ...cmds.map(c=>'   '+c),
+    '',
+    '④ 来源: '+src+' / '+ctx.generated_at,
+  ].join('\n');
+}
+
+function warnIfAny(rows){
+  const notes=[];
+  if(rows.length>=10){
+    notes.push(`<div class="notice warn">⚠️ 批量改 ${rows.length} 条分类,请确认都是预期操作</div>`);
+  }
+  const dup=data().target_conflict_count||0;
+  if(dup>0){
+    notes.push(`<div class="notice warn">ℹ️ ${dup} 条目标分类(${document.getElementById('toCatSelect').value})下已有同名笔记</div>`);
+  }
+  document.getElementById('warnArea').innerHTML=notes.join('');
+}
+
+function adopt(){
+  const {rows,target}=selectedRows();
+  if(!rows.length){alert('未选择任何笔记');return}
+  warnIfAny(rows);
+  const ctx={
+    from_cat:data().from_category||'',
+    to_cat:target,
+    generated_at:data().generated_at||'',
+    source:data().command||'batch-update-category',
+  };
+  const text=buildPrompt(rows,target,ctx);
+  document.getElementById('promptOut').textContent=text;
+  copyToClipboard(text);
+}
+
+function copyPrompt(){
+  const {rows,target}=selectedRows();
+  const ctx={
+    from_cat:data().from_category||'',
+    to_cat:target,
+    generated_at:data().generated_at||'',
+    source:data().command||'batch-update-category',
+  };
+  copyToClipboard(buildPrompt(rows,target,ctx));
+}
+
+function copyToClipboard(t){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>{
+      const btn=document.querySelector('button.primary');
+      const old=btn.textContent;
+      btn.textContent='✅ 已复制 · 粘贴给 AI';
+      setTimeout(()=>btn.textContent=old,2500);
+    }).catch(()=>alert('复制失败,请手动复制下方文本'));
+  } else {
+    alert('浏览器不支持剪贴板 API,请手动复制下方文本');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

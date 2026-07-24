@@ -19,3 +19,7 @@ HTML注入改造方案.html
 
 # G1+ 模板测试 HTML（render 产物，可重建）
 *_test.html
+
+# 一次性 ad-hoc 调试脚本(不进 git,内容已合并入 calorie_tracker.py / db.py)
+_ad_hoc/
+_ad_hoc/*

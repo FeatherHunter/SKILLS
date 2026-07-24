@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "data": {
+    "summary": {
+      "total_calorie": 12760,
+      "protein_g": 580,
+      "carb_g": 1450,
+      "fat_g": 380,
+      "protein_pct": 18,
+      "carb_pct": 45,
+      "fat_pct": 27,
+      "balance": "good"
+    },
+    "target": {
+      "protein_g": 840,
+      "carb_g": 1400,
+      "fat_g": 420
+    },
+    "range": {
+      "protein": {"min": 10, "max": 20, "label": "10-20%"},
+      "carb":    {"min": 45, "max": 65, "label": "45-65%"},
+      "fat":     {"min": 20, "max": 35, "label": "20-35%"}
+    },
+    "meta": {
+      "start": "2026-07-18",
+      "end": "2026-07-24",
+      "days": 7,
+      "today": "2026-07-24"
+    }
+  },
+  "message": "已生成 2026-07-18 ~ 2026-07-24 营养配比(7 天)"
+}

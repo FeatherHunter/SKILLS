@@ -48,6 +48,19 @@ metadata: { "openclaw": { "emoji": "🍎", "requires": { "python": ">=3.7" } } }
 
 > 详见《预置HTML+注入数据指导手册》第一性原理。"模板稳定、数据流动、样式预置、内容注入"。
 
+### 📌 输出位置(2026-07-24 起 · 手册 §4.1 跨 Skill 通用)
+
+所有 `render_*.py` 默认输出到 **`calorie_html/`** 子目录(与 `calorie_data.db` 同级,跟随 `$SKILLS_DB_PATH` 环境变量,fallback `D:/.db/`)。
+
+| 旧规则(已下线) | 新规则(手册 §4.1) |
+|---|---|
+| `/tmp/<feature>_<range>.html` | `<DATA_DIR>/calorie_html/<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html` |
+| 覆盖式写入 `卡路里/健身计划.html` | 同秒冲突自动追加 `_2` / `_3` 后缀 |
+| 无冲突保护 | `--output <path>` 仍可显式覆盖到任意路径 |
+
+完整规范 + 实际示例见 [`references/html_templates.md`](references/html_templates.md) §"输出目录与命名规范"。
+
+
 ### 已实现模板（2026-07-23）
 
 | 模板 | 唤醒词 | 数据源 | 渲染器 |

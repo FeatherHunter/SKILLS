@@ -21,10 +21,39 @@ python3 analysis/dashboard.py 2026-07-13 2026-07-19  # 或带 --format json
 
 # 2. 调渲染器（subprocess 调 CLI + 注入模板）
 python3 scripts/render_<feature>.py [--range X:Y | --days N] [--output <path>]
-
-# 3. 默认输出到 /tmp/<feature>_<range>.html
-#    也可加 --output 指定路径（如同步到 D 盘）
 ```
+
+## 📌 输出目录与命名规范(2026-07-24 起 · 手册 §4.1)
+
+依据《预置HTML+注入数据指导手册》§4.1(2026-07-24 加,跨Skill通用):
+
+| 项 | 规则 |
+|---|---|
+| 输出目录 | `HTML_DIR = DATA_DIR / calorie_html/`<br>(与 `calorie_data.db` 同级,跟随 `$SKILLS_DB_PATH`,fallback `D:/.db/`) |
+| 文件名 | `<command_name>_<YYYYMMDD>_<HHMMSS>[_<N>].html`<br>同秒冲突自动追加 `_2` / `_3` |
+| ASCII 短码 | `calorie` |
+| 工具模块 | `scripts/html_paths.py`:`html_dir()` / `html_name()` / `html_path()` |
+| `--output` | 可显式覆盖到任意路径(共享磁盘 / 飞书云盘等) |
+
+### 不再使用的旧规则
+- ❌ `/tmp/<feature>_<range>.html` — 目录不属于数据所在,跨平台不一致
+- ❌ 覆盖式写入 `卡路里/健身计划.html` — 不留历史快照
+- ❌ `_<range>` / `_<part>` / `_<input>.html` 中缀 — 无 _N 冲突保护
+
+### 实际输出示例(WSL)
+
+```
+/mnt/d/2Study/StudyNotes/.db/calorie_html/home_dashboard_20260724_115038.html
+/mnt/d/2Study/StudyNotes/.db/calorie_html/weight_log_receipt_mock_weight_receipt_20260724_115123.html
+/mnt/d/2Study/StudyNotes/.db/calorie_html/goal_config_mock_goal_config_20260724_115123.html
+/mnt/d/2Study/StudyNotes/.db/calorie_html/contradiction_report_腰_20260724_120000_2.html  (同秒第 2 次)
+```
+
+### 历史快照保留
+
+- `卡路里/健身计划.html` (2026-07-20 末次内容,118 KB)— render_workout_plan.py 旧默认输出
+  B 阶段(commit `292c552`)后已改为 calorie_html/<command>_<TS>.html
+  本快照仅作历史参考,后续用 `python scripts/render_workout_plan.py` 生成新 HTML 在 `calorie_html/`
 
 ## 模板设计原则（与《手册》第 7 节对齐）
 

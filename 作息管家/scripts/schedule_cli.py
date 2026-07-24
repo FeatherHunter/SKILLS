@@ -2199,17 +2199,9 @@ def cmd_render_record_compare_months(args):
                             render_record_compare, "record-compare",
                             {"label_a": label_a, "label_b": label_b,
                              "a_range": f"{sa}~{ea}", "b_range": f"{sb}~{eb}"})
-    # 替换路径:用中文 label 替代 a_vs_b
-    if r.get("status") == "ok":
-        from pathlib import Path as _P
-        new_path = _P(r["data"]["file_path"]).parent / f"{label_a}_vs_{label_b}_record_compare.html"
-        old_path = _P(r["data"]["file_path"])
-        if old_path.exists():
-            if new_path.exists():
-                new_path.unlink()  # H9 修复:目标存在先删,避免 Windows 抛 FileExistsError
-            old_path.rename(new_path)
-        r["data"]["file_path"] = str(new_path)
-        r["data"]["file_path"] = str(new_path)
+    # 2026-07-24 修复:移除手动 rename (原:{label_a}_vs_{label_b}_record_compare.html)
+    # 之前绕过了手册 §4.1 命名合规(commit 5a8c008)。
+    # 现在 file_path 已经是 record_compare_<YYYYMMDD>_<HHMMSS>.html 合规格式。
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 

@@ -280,6 +280,8 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     # 替换 {{ title }} 占位符
     title = title_for_mode(payload.get("data", {}).get("meta", {}))
     injected = injected.replace("{{ title }}", title).replace("{{ TITLE }}", title)
+    # 替换 {{ template_name }} 占位符(脚注用,2026-07-24 补:之前未替换会留下字面量)
+    injected = injected.replace("{{ template_name }}", template_name)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")
@@ -436,6 +438,23 @@ def title_for_mode(meta: dict) -> str:
             return f"作息报告 · {dt.year}年{dt.month}月{dt.day}日（{weekdays[dt.weekday()]}）"
         except Exception:
             return f"作息报告 · {d}"
+    # record 域 5 mode(2026-07-24 补:之前全部 fallback 到"作息管家",用户看不到 mode 标识)
+    if mode == "record-day":
+        d = meta.get("date", "")
+        return f"作息记录 · 单日报告 · {d}" if d else "作息记录 · 单日报告"
+    if mode == "record-range":
+        s, e = meta.get("start", ""), meta.get("end", "")
+        return f"作息记录 · 区间报告 · {s}~{e}" if s and e else "作息记录 · 区间报告"
+    if mode == "record-compare":
+        la = meta.get("label_a", "A")
+        lb = meta.get("label_b", "B")
+        return f"作息对比 · {la} vs {lb}"
+    if mode == "record-category":
+        cat = meta.get("category", "")
+        s, e = meta.get("start", ""), meta.get("end", "")
+        return f"作息深挖 · {cat} · {s}~{e}" if s and e else f"作息深挖 · {cat}"
+    if mode == "record-anomaly":
+        return f"作息异常检测 · 最近 {meta.get('window', 7)} 天"
     return "作息管家"
 
 
@@ -1348,6 +1367,12 @@ def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, 
             "mode": "record-compare",
             "title": f"作息对比 · {label_a} vs {label_b}",
             "subtitle": f"{label_a}:{start_a}~{end_a} · {label_b}:{start_b}~{end_b}",
+            "label_a": label_a,   # 2026-07-24 补:title_for_mode 用此生成 title
+            "label_b": label_b,   # 2026-07-24 补:title_for_mode 用此生成 title
+            "start_a": start_a,
+            "end_a": end_a,
+            "start_b": start_b,
+            "end_b": end_b,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "ranges": ranges,

@@ -7,8 +7,19 @@
   ============================================================
   使用:
     1. 复制此文件
-    2. 改 hero 标题、KPI、body 内容
+    2. 改 {TITLE} / {SUBTITLE} / {PROMPT_TEMPLATE} 占位符
     3. 在 <script> 里读 window.__DATA__ 渲染 DOM
+
+  renderBody 契约(B3 · 调用方必须实现):
+    window.renderBody = function(data) {
+      // data === window.__DATA__.data
+      //    (去掉 status / message 信封后的核心数据)
+      // 职责:把 data 渲染到 #bodyContent 容器
+      // 推荐:用 escapeHTML() 转义所有用户输入,防 XSS
+      // 可选:渲染 KPI / 表格 / 列表 / 图表 任意组合
+    };
+
+  不实现 renderBody:模板会自动 JSON.stringify(data) 显示原始数据(开发期可接受)
   ============================================================
 -->
 <!DOCTYPE html>

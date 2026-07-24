@@ -38,6 +38,17 @@ def inject(template: str, data: Any, placeholder: str = '<!--INJECT-DATA-->') ->
     # JSON 序列化 + 转义 </ 防提前闭合 script 标签
     payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
 
+    # 数据大小警告(B4):HTML 过大浏览器会卡顿
+    size_mb = len(payload.encode('utf-8')) / 1024 / 1024
+    if size_mb > 5:
+        import warnings
+        warnings.warn(
+            f"注入数据 {size_mb:.1f}MB 超过 5MB 阈值,"
+            f"渲染出的 HTML 可能导致浏览器卡顿。"
+            f"建议:分页 / 只传核心字段 / 用 ID 引用延迟加载。",
+            stacklevel=2,
+        )
+
     inject_str = f'<script>window.__DATA__ = {payload};</script>'
     return template.replace(placeholder, inject_str, 1)
 

@@ -202,6 +202,25 @@ button {
   font-size: 14px;
 }
 
+/* ---------- a11y · 可访问性(B1 + B2) ---------- */
+/* 键盘焦点可见(B1):Apple 重视 keyboard nav */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 减少动画(B2):尊重用户系统设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ---------- 尾部 (TAIL) ---------- */
 .tail {
   position: sticky;

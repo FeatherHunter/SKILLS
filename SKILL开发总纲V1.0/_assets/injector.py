@@ -68,11 +68,12 @@ def render_4step(
     template_path = Path(template_path)
     output_path = Path(output_path)
 
-    # 1. 拿 JSON
+    # 1. 拿 JSON(默认 30s timeout,避免卡死的 CLI 永久 hang)
     result = subprocess.run(
         ['python', str(cli_path)] + list(args),
         capture_output=True,
         text=True,
+        timeout=30,
     )
     if result.returncode != 0:
         raise RuntimeError(

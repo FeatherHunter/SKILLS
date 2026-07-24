@@ -129,7 +129,7 @@ triggers:
   - 复盘
   - audit
   - log
-metadata: { "openclaw": { "emoji": "🎬", "version": "v1.22", "released": "2026-07-24", "requires": { "python": ">=3.10" } } }
+metadata: { "openclaw": { "emoji": "🎬", "version": "v1.24.22", "released": "2026-07-24", "skill_tag": "智剪工坊-意图编辑", "requires": { "python": ">=3.10" } } }
 ---
 
 # 智剪工坊 - 代码视频剪辑工作台

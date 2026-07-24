@@ -235,7 +235,33 @@
 <li>命令:<code>script/memo_cli.py update-sub-category &lt;id&gt; &lt;子分类 | null&gt;</code></li>
 <li><strong>规则</strong>:适用于所有 category(sub_category 是自由文本字段);传 <code>null</code> 表示清除子分类</li>
 </ul>
-<h3>心愿排期</h3>
+<h3>触发词路由(避免与「批量改分类向导」歧义 · 2026-07-24 加)</h3>
+<p><strong>触发词 <code>备忘改分类</code> 同时对应两个命令,AI 必须按以下规则二选一</strong>:</p>
+<ul>
+<li><strong>单条改分类</strong>(默认):<ul>
+<li>触发语:「改 #15 的分类」「把 #15 备忘改成心愿」「这条改成打卡」</li>
+<li>命令:<code>memo_cli.py update-category &lt;id&gt; &lt;category&gt;</code></li>
+<li>路径:搜索找 id → 单条 update-category</li>
+</ul>
+</li>
+<li><strong>批量改分类</strong>(多 id 或带"都/全部")· 过程型 HTML:<ul>
+<li>触发语:「把所有 X 分类都改到 Y」「X 这几条都改 Y」「把 X 分类下所有笔记改到 Y」</li>
+<li>命令:<code>memo_cli.py batch-update-category --from-category X [--to-category Y] --html</code></li>
+<li>路径:用户在 HTML 里勾选 + 选目标分类 → 采纳复制 → AI 调多条 <code>update-category</code></li>
+</ul>
+</li>
+<li><strong>判定启发</strong>(按优先级):<ol>
+<li>原话<strong>只含一个具体 id</strong>(如 #15 / 笔记 A) → 单条</li>
+<li>原话<strong>含"都/全部/这 N 条"或多个 id</strong> → 批量</li>
+<li>原话<strong>没有 id 也没有"都/全部"</strong> → 反问用户:「是想单条还是批量?」</li>
+</ol>
+</li>
+<li><strong>不冲突场景</strong>(永远单条,不走批量):改 sub_category、调单个提醒、心愿排期/完成、所有写入类(add/update/delete)</li>
+<li><strong>反例</strong>(误判示例):<ul>
+<li>❌ "把 #15 #20 #25 都改心愿" → 错走单条;应走批量</li>
+<li>❌ "把备忘分类所有都改心愿" → 错走反问;应走批量</li>
+</ul>
+</li>
 <ul>
 <li>触发词:心愿排期</li>
 <li>给心愿设置期望完成日期(due),<strong>自动同步到飞书 task due</strong></li>

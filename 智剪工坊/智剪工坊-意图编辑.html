@@ -576,12 +576,25 @@
       width: 40px; height: 72vh;  /* v1.23:22px→40px 加宽,56vh→72vh 加高 */
       z-index: 40;
       align-self: flex-start;  /* 防止 flex/grid 拉伸,sticky 正常工作 */
-      pointer-events: none;  /* 默认透传,只锚点本身接收事件 */
+      /* v1.23 fix:撤掉 pointer-events: none。
+         原设计意图是"只锚点接收事件",但 CSS :hover 状态需要元素自身能接收 pointer。
+         没有 pointer-events: auto,:hover 不触发 → hideAnchorRail 里的
+         matches(':hover') 永远 false → 2 秒自动隐藏机制形同虚设。
+         现在整个 aside 都收事件,tooltip hover 半径稍大但更可靠。*/
       opacity: 0;
       transition: opacity 0.4s ease;
     }
     .anchor-rail.visible { opacity: 1; }
     .anchor-rail.no-content { display: none; }
+
+    /* v1.24 fix:小屏(right:-40px 凸出 viewport,被浏览器切掉)→ 缩进容器内,
+       桌面保持原样(贴中间操作区右侧外缘 = 视觉更突出) */
+    @media (max-width: 1080px) {
+      .anchor-rail { right: 12px; }
+    }
+    @media (max-width: 720px) {
+      .anchor-rail { right: 6px; width: 28px; }
+    }
 
     /* 轨道细线 (1.5px 半透明灰) */
     .anchor-rail::before {
@@ -863,6 +876,9 @@
     </div>
 
     <div id="form-screen" style="display:none; position: relative;">
+      <!-- v1.23 fix:anchor-rail 提到 form-screen 流顶部,确保短 form-screen 时
+           sticky 能正确触发(原放底部时,form-screen 不滚动,sticky 不工作,aside 卡在 DOM 末尾=视口下半部) -->
+      <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
       <!-- iOS HIG 顶部导航栏 (3 段式: 返回 / 标题 / 进度) -->
       <div class="ios-topbar">
         <div class="ios-topbar-left">
@@ -973,8 +989,6 @@
             placeholder="如：'今天就到这里，明天见'"></textarea>
         </div>
       </section>
-      <!-- v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 当前可视区高亮 -->
-      <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
 
       <div class="actions">
         <div class="save-row">
@@ -2685,7 +2699,13 @@
     document.getElementById('topbar-progress-btn')?.addEventListener('click', () => {
       const current = parseInt(document.getElementById('ring-label')?.textContent || '2', 10);
       if (current >= 3) {
-        alert('已经到了第 3 步\n复制 intent.json 内容发给 AI 即可');
+        // v1.24 fix:用 toast 替 alert,不阻断用户操作
+        const toast = document.getElementById('toast');
+        if (toast) {
+          toast.textContent = '已经到了第 3 步:复制 intent.json 内容发给 AI';
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 2200);
+        }
       } else if (current === 2) {
         // 已经在 form,触发 back
         document.getElementById('topbar-back-btn').click();
@@ -2759,11 +2779,11 @@
     function updateAnchorRailPositions() {
       if (!anchorRail || !anchorItems.length) return;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight <= 100) {
-        anchorRail.classList.add('no-content');
-        return;
-      }
-      anchorRail.classList.remove('no-content');
+      // v1.24 fix:删掉 "docHeight <= 100 早返回 + no-content 隐藏" 逻辑。
+      // 原 BUG:首屏文档很短(只有 4 个 section 但视频还没加载)→ 立刻隐藏
+      //        等视频异步加载完,这个函数没被自动重调 → 永远消失
+      // 改为:始终尝试渲染位置;文档真的很短时显示空进度条也比消失好,
+      //        视频加载完后 MutationObserver 触发 rebuild,自然恢复。
       const railHeight = anchorRail.getBoundingClientRect().height;
       // v1.23:比例基准改为"第一个锚点→最后一个锚点"范围,不再用整个文档
       // 解决视频展开/折叠后圆点位置和真实位置视觉不对应的问题
@@ -2797,24 +2817,29 @@
           anchorItems.forEach(item => item.dot.classList.remove('active'));
           closest.dot.classList.add('active');
         }
-        // v1.23:active-band 用"第一个→最后一个锚点"范围映射视口
-        // 跟圆点同坐标系,不再用 scrollY/scrollHeight (会跟圆点分裂)
+        // v1.24 fix:active-band 改用"视口实际覆盖的锚点 range"映射,不裁断 [0,1]
+        // 原 v1.23 实现的 BUG:scrollY > lastCenter 时 topRatio=1, bottomRatio=1,
+        // → height = max(20, 0) = 20px → band 缩小钉死在轨道最底部
+        // 改:band 永远反映"当前视口实际覆盖的锚点范围",溢出时 band 仍可移动超出 first/last 范围
         const band = anchorRail.querySelector('.active-band');
         if (band && anchorItems.length) {
-          // 重算 first/last center (因为视频展开/折叠会让范围变化)
+          const railH = anchorRail.getBoundingClientRect().height;
           const centers = anchorItems.map(item => {
             const rect = item.el.getBoundingClientRect();
-            return rect.top + window.scrollY + rect.height / 2;
+            return rect.top + rect.height / 2;  // v1.24:相对视口,不再用 scrollY(相对视口)
           });
           const firstCenter = centers[0];
           const lastCenter = centers[centers.length - 1];
           const range = Math.max(1, lastCenter - firstCenter);
-          const railH = anchorRail.getBoundingClientRect().height;
-          // 视口范围 [scrollY, scrollY+innerHeight] 映射到 first/last 比例
-          const topRatio = Math.max(0, Math.min(1, (window.scrollY - firstCenter) / range));
-          const bottomRatio = Math.max(0, Math.min(1, (window.scrollY + window.innerHeight - firstCenter) / range));
-          band.style.top = (topRatio * railH) + 'px';
-          band.style.height = Math.max(20, (bottomRatio - topRatio) * railH) + 'px';
+          const railTopAbs = anchorRail.getBoundingClientRect().top + window.scrollY;  // 锚点条在文档中的绝对 Y
+          const railBottomAbs = railTopAbs + railH;
+          // 视口绝对范围 [scrollY, scrollY+innerHeight] ∩ 锚点条范围 [railTopAbs, railBottomAbs]
+          const visTopAbs = Math.max(window.scrollY, railTopAbs);
+          const visBottomAbs = Math.min(window.scrollY + window.innerHeight, railBottomAbs);
+          const topRatio = (visTopAbs - railTopAbs) / railH;
+          const bottomRatio = (visBottomAbs - railTopAbs) / railH;
+          band.style.top = Math.max(0, Math.min(railH, topRatio * railH)) + 'px';
+          band.style.height = Math.max(20, Math.min(railH - topRatio * railH, (bottomRatio - topRatio) * railH)) + 'px';
         }
       }, { root: null, rootMargin: '-30% 0px -30% 0px', threshold: 0 });
       anchorItems.forEach(item => anchorObserver.observe(item.el));
@@ -2853,13 +2878,32 @@
       if (videoList) new ResizeObserver(() => updateAnchorRailPositions()).observe(videoList);
     }
 
+    // v1.24 fix:videoCards 异步加载(分批扫文件夹),原 requestAnimationFrame(buildAnchorRail) 只跑一次。
+    // 用 MutationObserver 监听 #video-list 的子节点变化,debounce 后重 buildAnchorRail,
+    // 否则后续扫描到的视频不会出现在右侧锚点列表里。
+    if (window.MutationObserver) {
+      const videoList = document.getElementById('video-list');
+      if (videoList) {
+        let railRebuildTimer = null;
+        new MutationObserver(() => {
+          if (railRebuildTimer) clearTimeout(railRebuildTimer);
+          railRebuildTimer = setTimeout(() => {
+            if (typeof buildAnchorRail === 'function') buildAnchorRail();
+          }, 250);
+        }).observe(videoList, { childList: true, subtree: false });
+      }
+    }
+
     // hover 锚点条本身保持可见
     anchorRail?.addEventListener('mouseenter', () => {
       if (railHideTimer) { clearTimeout(railHideTimer); railHideTimer = null; }
     });
 
     updateProgressRing(2, 3);
-    updateSaveStatus('saved', '已加载现有 intent.json');
+    // v1.24 fix:初始状态用 idle + 文案"已加载现有 intent.json (v3),修改后会变 dirty",
+    // 之前用 'saved' + '已加载...' 是文字混淆(saved 暗示刚保存过,实际只是加载)
+    const initialRev = document.getElementById('save-rev-label')?.textContent || 'v1';
+    updateSaveStatus('idle', '已加载现有 intent.json (' + initialRev + '),修改后变 dirty');
     // v1.18.1:删 v1.17 旧 Set.add 逻辑(原 L2068-2092),由 attrToPath + changeMap 取代
     // 全局监听:change(blur 后)+ input(实时)
     document.addEventListener('change', (e) => markChanged(e.target));

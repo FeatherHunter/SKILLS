@@ -2752,8 +2752,12 @@
       // 3) video-card 锚点 (按需延迟,因为视频列表可能异步加载)
       videoCards.forEach((card, i) => {
         const name = card.dataset.cardName || (card.querySelector('.video-name')?.textContent || '').trim();
-        // v1.24.4 fix:dataset.cardIdx 是 0-based 的字符串,要 +1 才能跟视频编号对齐(1-based)
-        const idx = (parseInt(card.dataset.cardIdx, 10) || (i + 1)) + 1;
+        // v1.24.4 fix:dataset.cardIdx 是 0-based 数字字符串,要 +1 才能跟视频编号对齐(1-based)
+        // 注意:dataset.cardIdx 是 DOM string attribute,空时是 ''
+        //   '0' 解析成 0 但 || 会把 0 当 falsy → fallback 路径触发,BUG。
+        //   用 isNaN 判断而非 ||。
+        const cardIdxNum = parseInt(card.dataset.cardIdx, 10);
+        const idx = (Number.isNaN(cardIdxNum) ? (i + 1) : cardIdxNum) + 1;
         const shortName = name.length > 14 ? name.slice(0, 13) + '…' : name;
         const label = `#${idx}${shortName ? ' ' + shortName : ''}`;
         const dot = document.createElement('div');

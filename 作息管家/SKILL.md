@@ -197,6 +197,89 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 ---
 
+## 工程实践 · AI Agent 工作流程与浏览器打开(2026-07-24)
+
+### 完整 HTML 渲染工作流程(给全新 Agent)
+
+作息管家所有 HTML 渲染命令(回执/报告/预览/复盘等)共用同一 7 步流程,全新 Agent 看到"用户说 X 报告/回执"时按此执行:
+
+#### 触发唤醒词(以 render- 开头)
+- render-record-day / render-record-range / render-record-compare / render-record-compare-months / render-record-category / render-record-category-range / render-record-anomaly(§3.x)
+- render-list-events / render-query-plans(§3.1.1)
+- render-plans-preview / render-plans-review(§4 / §11)
+- render-receipt / render-plan-receipt [--action update|deactivate] / render-plan-receipt-add / render-plan-receipt-write(回执型族)
+
+#### 7 步工作流程
+
+**Step 1 · 解析用户意图**
+- 识别触发唤醒词(以 render- 开头),根据路由表(§3.x / §4 / §11)选择 CLI
+- 例:用户说"看 7/15 作息" → render-record-day 2026-07-15
+- 例:用户说"复盘今天" → render-plans-review 2026-07-24
+
+**Step 2 · 确认 CLI 命令 + 参数**
+- 必填参数(如日期、记录 ID)
+- 可选参数(如 --output / --action)
+
+**Step 3 · 执行 CLI 拿 JSON 输出**
+```bash
+python3 scripts/schedule_cli.py <command> [args] 2>&1
+```
+- 抓 stdout 的 JSON 部分,提取 `data.file_path` 字段(Html 绝对路径)
+- 检查 `status == "ok"`
+
+**Step 4 · 验证 HTML 文件存在**
+```bash
+ls -la "<file_path>" || 提示用户重跑
+```
+
+**Step 5 · 浏览器自动打开**(见下一节"## 浏览器自动打开")
+- 主动用默认浏览器打开,不等用户
+- **不要**只输出 `<media src="..." />`(那是被动,等用户在 IDE 看到)
+
+**Step 6 · 给用户文本反馈**
+- 简短确认:"已生成 X 报告,已在默认浏览器打开"
+- 附 HTML 路径(供后续参考)
+
+**Step 7 · 错误处理**
+- CLI exit code != 0 → 不打开浏览器,展示错误消息
+- HTML 文件不存在 → 不打开,提示用户重跑
+- 浏览器启动失败 → 仍展示路径,提示手动打开
+
+### 浏览器自动打开 HTML 报告(跨平台,不硬编码 Chrome)
+
+Agent 在 Step 5 调用**用户系统默认浏览器**打开,非只输出 `<media src="..." />`(那是被动)。
+
+#### 优先方案:Python `webbrowser` 模块
+
+```python
+import webbrowser
+webbrowser.open(f"file://{html_path}")  # 跨平台
+```
+
+`webbrowser` 内部按 OS 自动选择默认浏览器:
+- Linux: `xdg-open`(用户默认浏览器,可能是 Firefox/Chrome/Edge)
+- macOS: `open`
+- Windows: `os.startfile`
+
+#### 特殊情况(WSL / 无 GUI 容器)
+
+`webbrowser` 在 WSL 无 GUI / Docker 内不可用,fallback:
+- WSL: `subprocess.run(["explorer.exe", html_path])`(调 Windows 资源管理器)
+- WSL: `wslview <file>`(WSLg 工具,需安装)
+- Docker: 不打开(无 GUI),只输出路径
+
+#### ❌ 拒绝的反模式(硬编码 Chrome)
+
+- ❌ `subprocess.run(["chrome", file_path])`(硬编码 Chrome 路径)
+- ❌ `os.system("open -a Google Chrome " + file_path)`(仅 macOS + 硬编码 Chrome)
+- ❌ `subprocess.run(["google-chrome", ...])`(假设 Linux 用户装 Chrome)
+- ❌ `subprocess.run(["xdg-open", ...])`(仅 Linux,macOS 失败)
+- ❌ 假设用户机器装 Chrome
+
+**原因**:用户可能用 Safari / Edge / Firefox,SKILL 需跨平台/跨用户通用,Chrome 不一定安装。用用户**默认浏览器**才是用户期望行为。
+
+---
+
 ## 功能详细说明
 
 ### 0. 记作息（add · 2026-07-22 新增规范化入口）

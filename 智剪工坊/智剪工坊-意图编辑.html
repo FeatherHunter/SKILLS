@@ -4470,7 +4470,7 @@
 
       // 段级 note 同步
       const segNote = panel.querySelector('.seg-note-input');
-      if (segNote) segNoteInput.addEventListener('input', e => { seg.note = e.target.value; });
+      if (segNote) segNote.addEventListener('input', e => { seg.note = e.target.value; });
 
       // voice 模式
       const voiceSel = panel.querySelector('.seg-voice-select');

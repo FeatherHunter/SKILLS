@@ -258,31 +258,23 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); }
-    /* v2.102 timeline 上下分区 */
-    .timeline-segments {
-      position: relative;
-    }
-    .timeline-progress {
-      position: relative;
-      height: 14px;
-      background: #f5f5f7;
-      border-top: 1px solid var(--border);
-      margin-top: 4px;
-    }
+    /* v2.103 timeline 同一容器:段条 + 进度条(stripe in same block) */
     .timeline-progress-bar {
       position: relative;
-      width: 100%;
-      height: 100%;
+      height: 6px;
+      background: #f5f5f7;
+      border-bottom: 1px solid var(--border);
+      margin: 2px 0;
       cursor: pointer;
     }
     .timeline-progress-cursor {
       position: absolute;
-      top: 0;
-      bottom: 0;
+      top: -4px;
+      bottom: -4px;
       width: 2px;
       background: #ff3b30;
       pointer-events: none;
-      box-shadow: 0 0 4px rgba(255, 59, 48, 0.6);
+      box-shadow: 0 0 4px rgba(255, 59, 48, 0.7);
     }
     .tl-seg-excluded {
       background: #d1d1d6 !important;
@@ -2213,19 +2205,14 @@
               <!-- v1.20+timeline: 自定义 timeline, 类剪映(单击跳转 + Ctrl+滚轮缩放) -->
               <div class="timeline" data-timeline>
                 <div class="timeline-ruler" data-timeline-ruler></div>
-                <!-- v2.102 上部分:段条(可勾选段) -->
-                <div class="timeline-segments" data-timeline-segments>
-                  <div class="timeline-track" data-timeline-track>
-                    <div class="timeline-track-inner">
-                      <div class="timeline-playhead" data-timeline-playhead></div>
-                    </div>
+                <div class="timeline-track" data-timeline-track>
+                  <div class="timeline-track-inner">
+                    <div class="timeline-playhead" data-timeline-playhead></div>
                   </div>
                 </div>
-                <!-- v2.102 下部分:进度条 + 鼠标停留红线 -->
-                <div class="timeline-progress" data-timeline-progress>
-                  <div class="timeline-progress-bar">
-                    <div class="timeline-progress-cursor" data-timeline-cursor></div>
-                  </div>
+                <!-- v2.103 进度条在同一 timeline 内(段条下方,鼠标停留红线) -->
+                <div class="timeline-progress-bar" data-timeline-progress>
+                  <div class="timeline-progress-cursor" data-timeline-cursor></div>
                 </div>
                 <div class="timeline-info">
                   <button type="button" class="timeline-play-btn" data-timeline-play title="播放/暂停 (空格)">▶</button>
@@ -3140,10 +3127,12 @@
         pixelsPerSecond = newPps;
         window.__tlPps = newPps;
         render();
-        // v2.102 修正:scrollLeft 让 tAtMouse 永远在 inner 内的 mouseInTrack 位置
-        const innerRect = inner.getBoundingClientRect();
-        const newInnerXTotal = tAtMouse * newPps;
-        track.scrollLeft = Math.max(0, newInnerXTotal - (mouseInTrack - track.scrollLeft + inner.scrollLeft));
+        // v2.103 修:用 v1.20 简单算法 newMouseXTotal - mouseInTrack
+        // mouseInTrack 是鼠标在 track 内的相对 X
+        // newMouseXTotal 是缩放后该时间点对应的 inner 内绝对 X
+        // 滚动后 inner.offsetX 不变(锚点保留在 mouseInTrack 位置)
+        const newMouseXTotal = tAtMouse * newPps;
+        track.scrollLeft = Math.max(0, newMouseXTotal - mouseInTrack);
         updatePlayhead();
       }, { passive: false });
 
@@ -3239,7 +3228,7 @@
       });
 
       // v2.102 进度条交互(下部分 timeline-progress)
-      const progressBar = previewEl.querySelector('[data-timeline-progress] .timeline-progress-bar');
+      const progressBar = previewEl.querySelector('.timeline-progress-bar');
       const cursorEl = previewEl.querySelector('[data-timeline-cursor]');
       if (progressBar && cursorEl) {
         const ppsNow = () => (window.__tlPps > 0 ? window.__tlPps : (duration > 0 && trackWidth > 0 ? trackWidth / duration : 0));
@@ -4754,24 +4743,24 @@
       const opsListHtml = Object.entries(window.SEGMENT_OPS_SCHEMA).map(([opKey, opDef]) => {
         const cur = segOps[opKey];
         const isOn = cur && cur.on;
-        // 参数表单
+        // v2.103:参数表单总显示(不依赖勾选),isOn 影响视觉(disabled + 灰)
         let paramHtml = '';
-        if (isOn && opDef.params) {
-          paramHtml = '<div class="seg-op-params">';
+        if (opDef.params) {
+          paramHtml = '<div class="seg-op-params' + (isOn ? '' : ' disabled') + '">';
           for (const [pKey, pDef] of Object.entries(opDef.params)) {
             const curVal = cur[pKey] !== undefined ? cur[pKey] : pDef.default;
             if (pDef.type === 'number') {
-              paramHtml += `<label>${pDef.label}:<input type="number" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}"></label>`;
+              paramHtml += `<label>${pDef.label}:<input type="number" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}" ${isOn ? '' : 'disabled'}></label>`;
             } else if (pDef.type === 'select') {
               const opts = pDef.options.map(o => `<option value="${o}" ${o === curVal ? 'selected' : ''}>${o}</option>`).join('');
-              paramHtml += `<label>${pDef.label}:<select data-param="${pKey}"><option value="">---</option>${opts}</select></label>`;
+              paramHtml += `<label>${pDef.label}:<select data-param="${pKey}" ${isOn ? '' : 'disabled'}><option value="">---</option>${opts}</select></label>`;
             }
           }
           paramHtml += '</div>';
         }
-        // note 输入(每 op 自带)
+        // note 输入总显示(不依赖勾选)
         const noteVal = cur && cur.note ? cur.note : '';
-        const noteHtml = isOn ? `<textarea class="seg-op-note" data-op-note="${opKey}" rows="1" placeholder="本 op 说明(LLM 讨论用)">${escapeHtml(noteVal)}</textarea>` : '';
+        const noteHtml = `<textarea class="seg-op-note${isOn ? '' : ' disabled'}" data-op-note="${opKey}" rows="1" placeholder="本 op 说明(LLM 讨论用)" ${isOn ? '' : 'disabled'}>${escapeHtml(noteVal)}</textarea>`;
         return `
           <div class="seg-op-row" data-op-key="${opKey}">
             <input type="checkbox" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''} title="勾选启用">

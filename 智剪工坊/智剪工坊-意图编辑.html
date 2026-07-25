@@ -2164,10 +2164,8 @@
 
 
 
-    // v1.15 新增:内嵌预览 - 点缩略图后,在 ops-group 上方展开播放区
-    // 单播放互斥(切到新视频时停 + 释放旧 blob URL,避免内存泄漏)
-    let currentPreviewIdx = -1;  // 当前正在预览的卡片 index
-
+    // v1.25 多预览并存:每张卡片独立 previewEl,不再使用全局 currentPreviewIdx 互斥。
+    // 播放互斥改由 play 事件冒泡(同一函数内绑定,见末尾)。
     function previewVideoInline(i) {
       const entry = videoEntries[i];
       // 防御:理论上入口只在 data-play,不会传图片;但加保险
@@ -2192,26 +2190,8 @@
         opsGroup.classList.add('open');
       }
 
-      // 2. 互斥 + 释放旧 blob URL(修复:DOM 重建泄漏 + 切视频泄漏)
-      if (currentPreviewIdx !== -1 && currentPreviewIdx !== i) {
-        const prevEl = document.getElementById(`inline-preview-${currentPreviewIdx}`);
-        if (prevEl) {
-          const prevVideo = prevEl.querySelector('video');
-          if (prevVideo) {
-            prevVideo.pause();
-            // 释放上一个的 blob URL(用户已切走,不再需要)
-            const prevEntry = videoEntries[currentPreviewIdx];
-            if (prevEntry && prevEntry._blobUrl) {
-              URL.revokeObjectURL(prevEntry._blobUrl);
-              prevEntry._blobUrl = null;
-            }
-          }
-          prevEl.hidden = true;
-        }
-      }
-
-      // 3. 加载并展示当前播放区(D2 决策:不自动播放,只加载)
-      // blob URL 缓存到 entry 上(数据对象生命周期稳定),DOM 重建后引用仍在
+      // 2. 加载并展示当前播放区(D2 决策:不自动播放,只加载)
+      //    Blob URL 缓存在 entry._blobUrl;折叠时由 toggleCard 主动 revoke。
       const previewEl = document.getElementById(`inline-preview-${i}`);
       const video = previewEl.querySelector('video');
       if (!entry._blobUrl) {
@@ -2222,17 +2202,27 @@
         video.load();
       }
       previewEl.hidden = false;
-      currentPreviewIdx = i;
 
-      // 4. 只在"之前是折叠的"时滚动(避免抢视觉焦点)
+      // 3. 只在"之前是折叠的"时滚动(避免抢视觉焦点)
       if (wasCollapsed) {
         previewEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      // 5. v1.20+timeline: 挂自定义 timeline(单击跳转 + Ctrl+滚轮缩放)
+      // 4. v1.20+timeline: 挂自定义 timeline(单击跳转 + Ctrl+滚轮缩放)
       if (!previewEl.dataset.timelineInited) {
         setupTimeline(previewEl, video);
         previewEl.dataset.timelineInited = '1';
+      }
+
+      // 5. v1.25 多视频播放互斥:一次性绑定 play 事件,除当前 video 外全部 pause。
+      if (!videoListEl.dataset.playExclusivityInited) {
+        videoListEl.addEventListener('play', (e) => {
+          const active = e.target;
+          videoListEl.querySelectorAll('video').forEach(v => {
+            if (v !== active && !v.paused) v.pause();
+          });
+        }, true);
+        videoListEl.dataset.playExclusivityInited = '1';
       }
     }
 
@@ -2242,8 +2232,7 @@
       const video = previewEl.querySelector('video');
       if (video) video.pause();
       previewEl.hidden = true;
-      if (currentPreviewIdx === i) currentPreviewIdx = -1;
-      // 注意:不 revokeObjectURL,保留 entry._blobUrl 以便用户重开
+      // v1.25:不再维护 currentPreviewIdx,资源回收交由 toggleCard 折叠分支。
     }
 
     // v1.20+timeline: 自定义 timeline 类剪映

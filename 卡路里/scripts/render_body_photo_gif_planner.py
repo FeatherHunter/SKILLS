@@ -39,6 +39,50 @@ def check_photos_exist(photos: list, photos_dir: Path) -> tuple:
     return existing, missing
 
 
+def embed_photo_as_base64(photo: dict, photos_dir: Path, max_dim: int = 800) -> dict:
+    """读取图片 → 缩放(保持比例) → 转 base64 JPEG → 写回 photo
+
+    为何需要:Flybook / IM / 任何外部环境打开 HTML 时,相对路径的 <img> 会 broken。
+    嵌入 base64 后 HTML 完全自包含。
+    """
+    try:
+        from PIL import Image
+        import base64
+        import io
+    except ImportError:
+        return photo  # 没 PIL 时静默跳过,fallback 到 photo_path
+
+    fp = photos_dir / photo['photo_path']
+    if not fp.exists():
+        return photo
+    try:
+        img = Image.open(fp)
+        # 转 RGB(避免 PNG/RGBA 不能 JPEG)
+        if img.mode in ('RGBA', 'P', 'LA'):
+            img = img.convert('RGB')
+        # 等比缩放:长边 ≤ max_dim
+        w, h = img.size
+        if max(w, h) > max_dim:
+            if w >= h:
+                new_w = max_dim
+                new_h = int(h * max_dim / w)
+            else:
+                new_h = max_dim
+                new_w = int(w * max_dim / h)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        # 转 JPEG base64
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=85, optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+        photo = dict(photo)  # copy
+        photo['photo_data_base64'] = f"data:image/jpeg;base64,{b64}"
+        photo['photo_embedded_size'] = (img.size[0], img.size[1])
+        return photo
+    except Exception as e:
+        print(f"  ⚠ 无法嵌入 {fp}: {e}")
+        return photo
+
+
 def get_photos_by_ids(ids: list) -> list:
     if not ids:
         return []
@@ -89,22 +133,27 @@ def render(ids: list, output_path: Path, validate_files: bool = True) -> Path:
         # selected 用 existing(去掉缺失的)
         selected_for_display = existing
     else:
-        selected_for_display = selected
-
-    # 2026-07-25 修:把 photo_path 转成 file:// 绝对 URL,避免模板用相对路径
-    # 时浏览器按 HTML 位置找图片找不到(图片在 D:\.db\CalorieHub\,不在 HTML 同级)
-    def to_file_url(photo):
-        abs_path = (photos_dir / photo['photo_path']).resolve()
-        # Windows: D:\foo\bar.jpg → file:///D:/foo/bar.jpg
-        return {**photo, 'photo_path': abs_path.as_uri()}
-
-    if validate_files:
-        selected_for_display = [to_file_url(p) for p in selected_for_display]
-        all_photos_for_display = [to_file_url(p) for p in all_photos if (photos_dir / p['photo_path']).exists()]
-    else:
-        # 未走 validate_files 也要拼绝对路径
+        # 未走 validate_files 也要拿 photos_dir 用于 file_url 转换
         from body_photo_tracker import get_photos_dir
         photos_dir = get_photos_dir()
+        selected_for_display = selected
+
+    def to_file_url(photo):
+        """file:// 绝对 URL(电脑本地 Chrome 能直接打开)"""
+        abs_path = (photos_dir / photo['photo_path']).resolve()
+        return {**photo, 'photo_path': abs_path.as_uri()}
+
+    # v2.3.3:base64 嵌图(默认开)— 飞书 / IM / 任意环境打开都能看
+    # 本地电脑 Chrome 用户可加 --no-embed-images 走 file://
+    embed = True  # 默认开,符合 V1.3 + 用户跨设备需求
+    if embed:
+        selected_for_display = [embed_photo_as_base64(p, photos_dir) for p in selected_for_display]
+        all_photos_for_display = []
+        for p in all_photos:
+            if (photos_dir / p['photo_path']).exists():
+                all_photos_for_display.append(embed_photo_as_base64(p, photos_dir))
+    else:
+        # fallback:转 file:// URL
         selected_for_display = [to_file_url(p) for p in selected_for_display]
         all_photos_for_display = [to_file_url(p) for p in all_photos if (photos_dir / p['photo_path']).exists()]
 
@@ -117,8 +166,9 @@ def render(ids: list, output_path: Path, validate_files: bool = True) -> Path:
             "all_photos": all_photos_for_display,
             "missing_ids": missing_ids,
             "missing_count": len(missing_ids),
+            "embedded": embed,
         },
-        "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失",
+        "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64(飞书友好)" if embed else ""),
     }
 
     template = TEMPLATE_PATH.read_text(encoding='utf-8')

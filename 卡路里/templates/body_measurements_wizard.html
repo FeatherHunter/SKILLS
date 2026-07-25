@@ -9,41 +9,72 @@
   :root {
     --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
     --bg: #fafafa; --card: #fff; --border: #d2d2d7;
-    --accent: #0071e3; --red: #ff3b30; --soft: #f5f5f7;
-    --green: #34c759;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759; --orange: #ff9500;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     line-height: 1.6; color: var(--fg); background: var(--bg);
-    max-width: 800px; margin: 0 auto; padding: 32px 20px 80px;
+    max-width: 760px; margin: 0 auto; padding: 32px 20px 100px;
     -webkit-font-smoothing: antialiased;
   }
   h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
-  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 20px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
 
   .tip {
-    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 6px;
-    padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--fg2); line-height: 1.7;
+    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--fg2); line-height: 1.7;
   }
   .tip strong { color: var(--accent); }
+  .tip code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
-  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
-  .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  /* details/summary — 飞书 webview 兼容(spec Q6 决策 · v2.3.5 教训) */
+  details {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  details > summary {
+    list-style: none; cursor: pointer; padding: 16px 22px; font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; user-select: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after {
+    content: '›'; font-size: 20px; color: var(--fg3); font-weight: 400;
+    transition: transform .2s; display: inline-block;
+  }
+  details[open] > summary::after { transform: rotate(90deg); }
+  details > summary .pill {
+    background: var(--accent-soft); color: var(--accent); font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600;
+  }
+  details > summary .badge {
+    background: var(--soft); color: var(--fg3); font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 500;
+  }
+  details > summary .count {
+    background: var(--accent-soft); color: var(--accent); font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; margin-right: 8px; font-weight: 600;
+  }
+  .details-body { padding: 4px 22px 20px; }
 
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+  .form-group { margin-bottom: 12px; }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 5px; font-weight: 500; }
   .form-group label .required { color: var(--red); }
+  .form-group label .en { color: var(--fg3); font-weight: 400; margin-left: 4px; font-size: 11.5px; }
   .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
     font-size: 14px; font-family: inherit; background: #fff; color: var(--fg);
+    transition: border-color .15s, box-shadow .15s;
   }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.1);
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.12);
   }
   .form-group textarea { min-height: 60px; resize: vertical; font-family: inherit; }
   .form-group .hint { font-size: 11px; color: var(--fg3); margin-top: 4px; line-height: 1.5; }
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
 
   .tag-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
   .tag-chip {
@@ -53,14 +84,20 @@
   .tag-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .tag-chip:hover:not(.active) { background: var(--soft); }
 
+  .sum-box {
+    background: var(--soft); padding: 10px 14px; border-radius: 8px;
+    font-size: 12.5px; color: var(--fg2); margin-top: 12px; line-height: 1.6;
+  }
+  .sum-box strong { color: var(--fg); font-weight: 600; }
+
   .prompt-box {
     background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
     line-height: 1.7; white-space: pre-wrap; word-break: break-word;
-    min-height: 120px; margin-bottom: 12px;
+    min-height: 140px; margin-bottom: 12px;
   }
 
-  .footer { margin-top: 24px; padding: 16px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); }
+  .footer { margin-top: 24px; padding: 14px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
 
   .btn-copy {
     width: 100%; padding: 14px; border: none; background: var(--accent);
@@ -74,146 +111,170 @@
 <body>
 
 <h1>📏 记围度</h1>
-<p class="sub">配置型向导 · 填好围度后复制 prompt 给 AI 执行</p>
+<p class="sub">配置型向导 · 13 部位围度分 3 组折叠(飞书 webview 兼容)· 填好至少 1 项后复制 prompt 给 AI</p>
 
 <div class="tip">
-  <strong>ℹ️ 工作流</strong>:填日期 → 填至少 1 个围度(cm) → 加备注 → 点下方"📋 复制 prompt 给 AI" → AI 收到后调 <code>body_measurements.py add</code> 写入数据库。
+  <strong>ℹ️ 工作流</strong>:选 tag → 填日期 → 展开各组填围度(cm)→ 至少 1 项必填(记录级)→ 加备注 → 点底部"📋 复制 prompt 给 AI" → AI 调 <code>body_measurements.py add</code>。
+  <br><br>
+  <strong>ℹ️ 分组</strong>:上身围度(胸/腰/腹/臀/肩) · 下身围度(左/右大腿+小腿) · 手臂围度(左/右上臂+前臂)。
+  <br>
+  <strong>ℹ️ 不会算坐标?</strong>直接说"帮我裁左上 1/4 区域",AI 用 PIL crop。
 </div>
 
-<div class="section">
-  <h2>1️⃣ 日期</h2>
-  <div class="form-group">
-    <label>测量日期<span class="required"> *</span></label>
-    <input type="date" id="measureDate">
-    <div class="hint">默认今天,可在改写</div>
-  </div>
-  <div class="form-group">
-    <label>场景标签(tag)</label>
-    <div class="tag-chips" id="tagChips">
-      <span class="tag-chip" data-tag="围度测">围度测</span>
-      <span class="tag-chip" data-tag="减脂期">减脂期</span>
-      <span class="tag-chip" data-tag="增肌期">增肌期</span>
-      <span class="tag-chip" data-tag="晨起空腹">晨起空腹</span>
-      <span class="tag-chip" data-tag="训练前">训练前</span>
-      <span class="tag-chip" data-tag="训练后">训练后</span>
-    </div>
-    <input type="text" id="customTag" placeholder="或自定义 tag" maxlength="20" style="margin-top:6px">
-  </div>
-</div>
-
-<div class="section">
-  <h2>2️⃣ 围度(cm,至少填 1 项)</h2>
-
-  <div class="form-row">
+<!-- ============== 1. 基本信息 ============== -->
+<details open>
+  <summary>1️⃣ 基本信息 <span class="badge">日期 / tag</span></summary>
+  <div class="details-body">
     <div class="form-group">
-      <label>胸围 chest</label>
-      <input type="number" id="chest_cm" step="0.1" min="20" max="200" placeholder="如 95.0">
+      <label>测量日期<span class="required"> *</span><span class="en">date</span></label>
+      <input type="date" id="measureDate">
+      <div class="hint">默认今天</div>
     </div>
     <div class="form-group">
-      <label>腰围 waist</label>
-      <input type="number" id="waist_cm" step="0.1" min="20" max="200" placeholder="如 75.0">
+      <label>场景标签 tag</label>
+      <div class="tag-chips" id="tagChips">
+        <span class="tag-chip" data-tag="围度测">围度测</span>
+        <span class="tag-chip" data-tag="减脂期">减脂期</span>
+        <span class="tag-chip" data-tag="增肌期">增肌期</span>
+        <span class="tag-chip" data-tag="晨起空腹">晨起空腹</span>
+        <span class="tag-chip" data-tag="训练前">训练前</span>
+        <span class="tag-chip" data-tag="训练后">训练后</span>
+      </div>
+      <input type="text" id="customTag" placeholder="或自定义 tag (≤ 20 字符)" maxlength="20" style="margin-top:6px">
     </div>
   </div>
+</details>
 
-  <div class="form-row">
-    <div class="form-group">
-      <label>腹围 abdomen</label>
-      <input type="number" id="abdomen_cm" step="0.1" min="20" max="200" placeholder="如 78.0">
+<!-- ============== 2. 上身围度 ============== -->
+<details>
+  <summary>2️⃣ 上身围度(5 项)<span class="count" id="upperCount">0/5</span></summary>
+  <div class="details-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>胸围<span class="en">chest_cm · 20–200</span></label>
+        <input type="number" id="chest_cm" step="0.1" min="20" max="200" placeholder="如 95.0">
+      </div>
+      <div class="form-group">
+        <label>腰围<span class="en">waist_cm · 20–200</span></label>
+        <input type="number" id="waist_cm" step="0.1" min="20" max="200" placeholder="如 75.0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>腹围<span class="en">abdomen_cm · 20–200</span></label>
+        <input type="number" id="abdomen_cm" step="0.1" min="20" max="200" placeholder="如 78.0">
+      </div>
+      <div class="form-group">
+        <label>臀围<span class="en">hip_cm · 20–200</span></label>
+        <input type="number" id="hip_cm" step="0.1" min="20" max="200" placeholder="如 92.0">
+      </div>
     </div>
     <div class="form-group">
-      <label>臀围 hip</label>
-      <input type="number" id="hip_cm" step="0.1" min="20" max="200" placeholder="如 92.0">
+      <label>肩宽<span class="en">shoulder_cm · 20–200</span></label>
+      <input type="number" id="shoulder_cm" step="0.1" min="20" max="200" placeholder="如 45.0">
     </div>
   </div>
+</details>
 
-  <div class="form-row">
-    <div class="form-group">
-      <label>左大腿 left_thigh</label>
-      <input type="number" id="left_thigh_cm" step="0.1" min="10" max="100" placeholder="如 55.0">
+<!-- ============== 3. 下身围度 ============== -->
+<details>
+  <summary>3️⃣ 下身围度(4 项)<span class="count" id="lowerCount">0/4</span></summary>
+  <div class="details-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>左大腿<span class="en">left_thigh_cm · 10–100</span></label>
+        <input type="number" id="left_thigh_cm" step="0.1" min="10" max="100" placeholder="如 55.0">
+      </div>
+      <div class="form-group">
+        <label>右大腿<span class="en">right_thigh_cm · 10–100</span></label>
+        <input type="number" id="right_thigh_cm" step="0.1" min="10" max="100" placeholder="如 55.0">
+      </div>
     </div>
-    <div class="form-group">
-      <label>右大腿 right_thigh</label>
-      <input type="number" id="right_thigh_cm" step="0.1" min="10" max="100" placeholder="如 55.0">
-    </div>
-  </div>
-
-  <div class="form-row">
-    <div class="form-group">
-      <label>左小腿 left_calf</label>
-      <input type="number" id="left_calf_cm" step="0.1" min="10" max="80" placeholder="如 36.0">
-    </div>
-    <div class="form-group">
-      <label>右小腿 right_calf</label>
-      <input type="number" id="right_calf_cm" step="0.1" min="10" max="80" placeholder="如 36.0">
-    </div>
-  </div>
-
-  <div class="form-row">
-    <div class="form-group">
-      <label>左臂 left_arm</label>
-      <input type="number" id="left_arm_cm" step="0.1" min="10" max="60" placeholder="如 32.0">
-    </div>
-    <div class="form-group">
-      <label>右臂 right_arm</label>
-      <input type="number" id="right_arm_cm" step="0.1" min="10" max="60" placeholder="如 32.0">
+    <div class="form-row">
+      <div class="form-group">
+        <label>左小腿<span class="en">left_calf_cm · 10–80</span></label>
+        <input type="number" id="left_calf_cm" step="0.1" min="10" max="80" placeholder="如 36.0">
+      </div>
+      <div class="form-group">
+        <label>右小腿<span class="en">right_calf_cm · 10–80</span></label>
+        <input type="number" id="right_calf_cm" step="0.1" min="10" max="80" placeholder="如 36.0">
+      </div>
     </div>
   </div>
+</details>
 
-  <div class="form-row">
-    <div class="form-group">
-      <label>左前臂 left_forearm</label>
-      <input type="number" id="left_forearm_cm" step="0.1" min="10" max="50" placeholder="如 26.0">
+<!-- ============== 4. 手臂围度 ============== -->
+<details>
+  <summary>4️⃣ 手臂围度(4 项)<span class="count" id="armCount">0/4</span></summary>
+  <div class="details-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>左上臂<span class="en">left_arm_cm · 10–60</span></label>
+        <input type="number" id="left_arm_cm" step="0.1" min="10" max="60" placeholder="如 32.0">
+      </div>
+      <div class="form-group">
+        <label>右上臂<span class="en">right_arm_cm · 10–60</span></label>
+        <input type="number" id="right_arm_cm" step="0.1" min="10" max="60" placeholder="如 32.0">
+      </div>
     </div>
-    <div class="form-group">
-      <label>右前臂 right_forearm</label>
-      <input type="number" id="right_forearm_cm" step="0.1" min="10" max="50" placeholder="如 26.0">
+    <div class="form-row">
+      <div class="form-group">
+        <label>左前臂<span class="en">left_forearm_cm · 10–50</span></label>
+        <input type="number" id="left_forearm_cm" step="0.1" min="10" max="50" placeholder="如 26.0">
+      </div>
+      <div class="form-group">
+        <label>右前臂<span class="en">right_forearm_cm · 10–50</span></label>
+        <input type="number" id="right_forearm_cm" step="0.1" min="10" max="50" placeholder="如 26.0">
+      </div>
     </div>
   </div>
+</details>
 
-  <div class="form-group">
-    <label>肩宽 shoulder</label>
-    <input type="number" id="shoulder_cm" step="0.1" min="20" max="200" placeholder="如 45.0">
+<!-- ============== 5. 备注 ============== -->
+<details>
+  <summary>5️⃣ 备注 <span class="badge">可选</span></summary>
+  <div class="details-body">
+    <div class="form-group">
+      <textarea id="note" placeholder="例:7/1 早上空腹 / 减脂期第 30 天 / 训练后 / 体脂钳测同日"></textarea>
+    </div>
   </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>3️⃣ 备注(可选)</h2>
-  <div class="form-group">
-    <textarea id="note" placeholder="例:7/1 早上空腹 / 减脂期第 30 天 / 体脂钳测同日"></textarea>
+<!-- ============== 6. 复制 prompt ============== -->
+<details open>
+  <summary>📋 复制 prompt 给 AI <span class="pill">必走</span> <span class="count" id="totalCount">0/13</span></summary>
+  <div class="details-body">
+    <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
+    <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
   </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>📋 复制 prompt 给 AI</h2>
-  <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
-  <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
-</div>
+<div class="footer">卡路里 · body_measurements_wizard v1.0 · 飞书 webview 兼容(<code>&lt;details&gt;</code> 分组)</div>
 
-<div class="footer">卡路里 · body_measurements_wizard v1.0</div>
+<!--INJECT-DATA-->
 
 <script>
 (function(){
-  const measureDate = document.getElementById('measureDate');
-  const tagChips = document.getElementById('tagChips');
-  const customTag = document.getElementById('customTag');
-  const noteEl = document.getElementById('note');
-  const promptBox = document.getElementById('promptBox');
-  const copyBtn = document.getElementById('copyBtn');
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const measureDate = $('measureDate');
+  const tagChips = $('tagChips');
+  const customTag = $('customTag');
+  const noteEl = $('note');
+  const promptBox = $('promptBox');
+  const copyBtn = $('copyBtn');
 
-  const FIELDS = [
-    'chest_cm','waist_cm','abdomen_cm','hip_cm',
-    'left_thigh_cm','right_thigh_cm',
-    'left_calf_cm','right_calf_cm',
-    'left_arm_cm','right_arm_cm',
-    'left_forearm_cm','right_forearm_cm',
-    'shoulder_cm',
-  ];
+  const UPPER = ['chest_cm','waist_cm','abdomen_cm','hip_cm','shoulder_cm'];
+  const LOWER = ['left_thigh_cm','right_thigh_cm','left_calf_cm','right_calf_cm'];
+  const ARM = ['left_arm_cm','right_arm_cm','left_forearm_cm','right_forearm_cm'];
+  const ALL = UPPER.concat(LOWER).concat(ARM);
 
   let activeTag = '';
 
   // 默认今天
   measureDate.value = new Date().toISOString().slice(0, 10);
 
+  // tag chips
   tagChips.querySelectorAll('.tag-chip').forEach(chip => {
     chip.onclick = () => {
       tagChips.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
@@ -238,11 +299,15 @@
 
   function getFilledMetrics() {
     const out = {};
-    FIELDS.forEach(f => {
-      const v = document.getElementById(f).value.trim();
+    ALL.forEach(f => {
+      const v = $(f).value.trim();
       if (v !== '') out[f] = v;
     });
     return out;
+  }
+
+  function countFilled(group) {
+    return group.filter(f => $(f).value.trim() !== '').length;
   }
 
   function buildPrompt() {
@@ -253,22 +318,31 @@
     const filledKeys = Object.keys(metrics);
 
     if (!date) return '// 请填日期(上方第 1 步)';
-    if (filledKeys.length === 0) return '// 请至少填 1 个围度(上方第 2 步)';
+    if (filledKeys.length === 0) return '// 请至少填 1 个围度(展开 2/3/4 组填至少 1 项)';
 
     const argsList = [`--date ${date}`];
-    if (tag) argsList.push(`--tag "${tag}"`);
+    if (tag) argsList.push(`--tag "${tag.replace(/"/g, '\\"')}"`);
     filledKeys.forEach(k => argsList.push(`--${k} ${metrics[k]}`));
     if (note) argsList.push(`--note "${note.replace(/"/g, '\\"')}"`);
 
-    const metricsText = filledKeys.map(k => `  - ${k}: ${metrics[k]} cm`).join('\n');
+    const byGroup = (group, label) => {
+      const items = group.filter(k => filledKeys.includes(k));
+      if (!items.length) return '';
+      return `  ${label}: ` + items.map(k => `${k.replace(/_cm$/, '')} = ${metrics[k]} cm`).join(', ');
+    };
+    const groupsText = [
+      byGroup(UPPER, '上身'),
+      byGroup(LOWER, '下身'),
+      byGroup(ARM, '手臂'),
+    ].filter(Boolean).join('\n');
 
     return `请帮我记录围度到卡路里
 
 参数:
 - 日期:${date}
 ${tag ? `- tag:${tag}` : ''}
-- 围度(${filledKeys.length} 项):
-${metricsText}
+- 围度(${filledKeys.length} 项 / 共 13):
+${groupsText}
 ${note ? `- 备注:${note}` : ''}
 
 命令:
@@ -281,37 +355,58 @@ python scripts/body_measurements.py add ${argsList.join(' ')}
 
   function updatePrompt() {
     promptBox.textContent = buildPrompt();
+    $('upperCount').textContent = `${countFilled(UPPER)}/${UPPER.length}`;
+    $('lowerCount').textContent = `${countFilled(LOWER)}/${LOWER.length}`;
+    $('armCount').textContent = `${countFilled(ARM)}/${ARM.length}`;
+    $('totalCount').textContent = `${countFilled(ALL)}/${ALL.length}`;
   }
 
   // 监听所有变化
   measureDate.oninput = updatePrompt;
   noteEl.oninput = updatePrompt;
-  FIELDS.forEach(f => {
-    document.getElementById(f).addEventListener('input', updatePrompt);
+  ALL.forEach(f => {
+    $(f).addEventListener('input', updatePrompt);
   });
 
   copyBtn.onclick = function() {
     const text = promptBox.textContent;
     if (text.startsWith('// 请')) {
-      alert('请先填好所有必填项');
+      alert('请先填好必填项');
       return;
     }
-    navigator.clipboard.writeText(text).then(() => {
-      this.textContent = '✓ 已复制';
-      this.classList.add('copied');
-      setTimeout(() => {
-        this.textContent = '📋 复制 prompt 给 AI';
-        this.classList.remove('copied');
-      }, 2000);
-    });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.textContent = '✓ 已复制';
+        this.classList.add('copied');
+        setTimeout(() => {
+          this.textContent = '📋 复制 prompt 给 AI';
+          this.classList.remove('copied');
+        }, 2000);
+      }, () => fallbackCopy(this, text));
+    } else fallbackCopy(this, text);
   };
+
+  function fallbackCopy(btn, text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try {
+      document.execCommand('copy');
+      btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 复制 prompt 给 AI'; btn.classList.remove('copied'); }, 2000);
+    } catch(e) { alert('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  // 注入数据(从 __DATA__ 渲染)
+  const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+  if (DATA && DATA.status === 'ok' && DATA.data && DATA.data.recent_date) {
+    // 未来扩展:显示最近一次围度作对照
+  }
 
   // 初始
   updatePrompt();
 })();
 </script>
-
-<!--INJECT-DATA-->
 
 </body>
 </html>

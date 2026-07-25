@@ -1901,10 +1901,13 @@
       await new Promise(r => setTimeout(r, 300));
       // 2. override duration
       try {
-        Object.defineProperty(HTMLMediaElement.prototype, 'duration', {
-          configurable: true,
-          get() { return 120; }  // 2 分钟
-        });
+        // v2.117:在 instance 上 define(覆盖 prototype + native bind)
+        const videoEl = document.querySelector('video');
+        if (videoEl) {
+          Object.defineProperty(videoEl, 'duration', {
+            configurable: true, get() { return 120; }
+          });
+        }
       } catch (e) {}
       const v = document.querySelector('video');
       if (v) v.dispatchEvent(new Event('loadedmetadata'));

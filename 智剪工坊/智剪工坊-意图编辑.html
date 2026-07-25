@@ -385,11 +385,38 @@
     }
     .seg-restore-btn:hover { background: #2a9149; }
 
+    /* v2.121:<dialog> tooltip — 浏览器 top-layer 浮在 <video> 之上 */
+    .tl-tip-dialog {
+      position: fixed;
+      transform: translate(-50%, -100%);
+      background: rgba(29,29,31,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      border: none;
+      max-width: 280px;
+      max-height: 280px;
+      overflow: visible;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .tl-tip-dialog::backdrop { background: transparent; }  /* 隐藏 modal 半透明背景 */
+    .tl-tip-dialog > * { color: #fff; }
+
     /* v2.113:scroll-wrap,Z1:overflow-x: hidden 去掉丑 scrollbar
-       v2.118:改 overflow-x: clip + overflow-y: visible(让 .tl-tip 向上不被裁) */
+       v2.118:改 overflow-x: clip + overflow-y: visible(让 .tl-tip 向上不被裁)
+       v2.123:改 overflow-x: auto + scrollbar-width: none(允许 wheel 锚点 scrollLeft 生效)
+         clip 让 track.scrollLeft = X 无效,导致 Ctrl+wheel zoom 锚点丢失 */
     .timeline-track {
       position: relative;
-      overflow-x: clip;
+      overflow-x: auto;
+      overflow-y: visible;
+      scrollbar-width: none;             /* Firefox */
+      scrollbar-color: transparent;
+    }
+    .timeline-track::-webkit-scrollbar { display: none; }  /* Webkit */
       overflow-y: visible;
       cursor: pointer;
     }
@@ -1599,11 +1626,12 @@
       justify-content: center;
       z-index: 100;
     }
+    /* v2.123:modal 缩窄到 380 + padding 调紧凑 */
     .modal-content {
       background: var(--card);
       border-radius: 10px;
-      padding: 24px;
-      max-width: 480px;
+      padding: 18px 22px;
+      max-width: 380px;
       max-height: 80vh;
       width: 90vw;
       overflow-y: auto;
@@ -5142,22 +5170,34 @@
           openSegmentPanel(videoIndex, segId);
         });
 
-        // v2.121:Chrome <video> 元素 stacking 行为特殊(z-index / transform 都压不住)
-        //   唯一可靠方法:把 tooltip 移到 document.body 下,position: fixed
-        //   移出 .inline-preview stacking context 后,tip 处于 viewport root 级别
-        //   而 video 是 inline-preview 子,跟 tip 在不同 SC 内互不影响
-        const tip = seg.querySelector('.tl-tip');
-        if (tip) {
-          // 第一次 hover 时移到 body(只做一次,避免重复)
-          if (tip.parentElement !== document.body) {
-            document.body.appendChild(tip);
+        // v2.121:Chrome <video> 是 replaced element,即使 z-index max + position: fixed 也压不住
+        //   唯一可靠方案:<dialog> 元素 + showModal() 进浏览器 top-layer
+        //   不用原 .tl-tip(它是 .tl-seg 子,在 .inline-preview SC 内)
+        //   改用动态创建 <dialog>,每次 hover 都新建 + showModal
+        seg.addEventListener('mouseenter', () => {
+          if (seg._tipDialog) return;  // 已存在
+          const dlg = document.createElement('dialog');
+          dlg.className = 'tl-tip-dialog';
+          // 复制原 .tl-tip 内容
+          const original = seg.querySelector('.tl-tip');
+          if (original) dlg.innerHTML = original.innerHTML;
+          // 位置
+          const r = seg.getBoundingClientRect();
+          dlg.style.left = (r.left + r.width / 2) + 'px';
+          dlg.style.top = (r.top - 8) + 'px';
+          document.body.appendChild(dlg);
+          seg._tipDialog = dlg;
+          // v2.124:showModal() 进 top-layer(覆盖 <video>);show() 仅显示不入 top-layer
+          if (typeof dlg.showModal === 'function') dlg.showModal();
+          else dlg.show();
+        });
+        seg.addEventListener('mouseleave', () => {
+          if (seg._tipDialog) {
+            seg._tipDialog.close();
+            seg._tipDialog.remove();
+            seg._tipDialog = null;
           }
-          seg.addEventListener('mouseenter', () => {
-            const r = seg.getBoundingClientRect();
-            tip.style.left = (r.left + r.width / 2) + 'px';
-            tip.style.top = (r.top - 8) + 'px';
-          });
-        }
+        });
       });
 
       // v2.117:trim handle 拖动 — DOM 查询实时值(不依赖 setupTimeline 闭包变量)
@@ -5212,23 +5252,21 @@
     }
 
     // v2.126 拆分对话框辅助函数
-    function formatTimeForModal(sec) {
-      const m = Math.floor(sec / 60);
-      const s = Math.floor(sec % 60);
-      const ms = Math.round((sec - Math.floor(sec)) * 1000);
-      return `${m}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
-    }
+    // v2.123:用 formatTime(mm:ss 简洁),不再用带 ms 的 formatTimeForModal
+    function formatTimeForModal(sec) { return formatTime(sec); }
     function renderSplitRow(seg, role, accent) {
       const totalSec = seg.end_sec - seg.start_sec;
       const min = Math.floor(totalSec / 60);
       const sec = (totalSec - min * 60).toFixed(1);
       const durStr = min > 0 ? `${min}m${sec}s` : `${sec}s`;
+      // label 单独一行,不重复时间码(已有 .split-time 显示)
+      const labelText = seg.label ? escapeHtml(seg.label) : '';
       return `
         <div class="split-row" style="--accent:${accent}">
           <div class="split-role">${escapeHtml(role)}</div>
-          <div class="split-time">${formatTimeForModal(seg.start_sec)} → ${formatTimeForModal(seg.end_sec)}</div>
-          <div class="split-label">${escapeHtml(seg.label || `(${formatTimeForModal(seg.start_sec)} - ${formatTimeForModal(seg.end_sec)})`)}</div>
-          <div class="split-dur">时长 ${durStr}</div>
+          <div class="split-time">${formatTime(seg.start_sec)} → ${formatTime(seg.end_sec)}</div>
+          ${labelText ? `<div class="split-label">${labelText}</div>` : ''}
+          <div class="split-dur">${durStr}</div>
         </div>
       `;
     }
@@ -5257,7 +5295,7 @@
         <div class="split-preview">
           <div class="split-original">
             <div class="split-label">原段:</div>
-            <div class="split-bar original">${formatTimeForModal(startSec)} ~ ${formatTimeForModal(endSec)}</div>
+            <div class="split-bar original">${formatTime(startSec)} ~ ${formatTime(endSec)}</div>
             <div class="split-arrows">↓  拆分为以下 3 段</div>
           </div>
           <div class="split-results">
@@ -5269,7 +5307,7 @@
       `;
       // 备份当前(已被 addOrSplit 修改的)状态,等用户 confirm
       const newBackup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
-      const originalInfo = `原段 [${formatTimeForModal(startSec)} ~ ${formatTimeForModal(endSec)}] →`;
+      const originalInfo = `原段 [${formatTime(startSec)} ~ ${formatTime(endSec)}] →`;
       // modal 的取消/确认逻辑
       showInformDialog(`${originalInfo} 拆分为 3 段`, segHtml, {
         onConfirm: () => {
@@ -5516,13 +5554,14 @@
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
       const panel = card?.querySelector('.segment-panel');
       if (panel) panel.remove();
-      const segmentsArea = card?.querySelector('[data-timeline-segments]');
-      if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
-      // v2.115:删 confirm 弹窗,改 toast
+      // v2.123:先在 state 抓 label(段还在),再 delete,最后 re-render timeline + panel
+      //   之前 renderTimelineSegments 调在 delete 之前 → 用了旧 state → timeline 不更新
       const state = SegmentState.states[videoIndex];
       const seg = state?.segments?.find(s => s.id === segId);
       const label = seg?.label || (state && seg ? formatTimeRange(seg.start_sec, seg.end_sec) : segId);
       SegmentState.delete(videoIndex, segId);
+      const segmentsArea = card?.querySelector('[data-timeline-segments]');
+      if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
       showToast(`已删除: ${label}`);
     }

@@ -14,6 +14,10 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 
+# V1.0 §02 第 ⑧ 反模式"魔法字符串"消除:body_composition.source 用集中常量
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from source_constants import SOURCE_HOME_CALIPER, SOURCE_HOSPITAL
+
 
 DB_FILENAME = "calorie_data.db"
 
@@ -351,11 +355,11 @@ def init_db(db_path):
 
     # body_composition — 体脂钳测（2026-07-25，V1.0 §02 第 ① 数据层）
     # 7 皮钳 NOT NULL + CHECK，source 白名单，body_fat_pct [0, 60]
-    c.execute('''
+    c.execute(f'''
         CREATE TABLE IF NOT EXISTS body_composition (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
-            source TEXT NOT NULL CHECK (source IN ('home_caliper', 'hospital')),
+            source TEXT NOT NULL CHECK (source IN ({SOURCE_HOME_CALIPER!r}, {SOURCE_HOSPITAL!r})),
             age INTEGER,
             sex TEXT CHECK (sex IN ('male', 'female')),
             caliper_chest_mm REAL NOT NULL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),

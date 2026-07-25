@@ -411,8 +411,11 @@
   }
 
   function renderThumb(p) {
-    // selected_photos 里都是已验证可用的;这里 image 直接用 photo_path
-    // 完整路径由 render 脚本注入到 photoMap 时已是相对路径
+    // V1.3 §HTML 交付协议 + 用户跨设备:v2.3.3 base64 优先(飞书友好)
+    // priority: photo_data_base64 (任意环境) > photo_path file:// (本地 Chrome) > photo_path 相对(无效)
+    if (p.photo_data_base64) {
+      return `<img src="${p.photo_data_base64}" alt="${p.tag}" loading="lazy">`;
+    }
     return `<img src="${p.photo_path}" alt="${p.tag}" loading="lazy" onerror="this.outerHTML='<div class=\\'broken\\'>📷<br>图片加载失败</div>'">`;
   }
 
@@ -450,7 +453,7 @@
     if (!p) return;
     currentCroppingId = id;
     document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag} ${p.date})`;
-    cropperImg.src = p.photo_path;
+    cropperImg.src = p.photo_data_base64 || p.photo_path;
     modal.classList.add('show');
 
     cropperImg.onload = () => {

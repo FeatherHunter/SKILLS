@@ -192,6 +192,8 @@ def main():
     p.add_argument('--tags', help='逗号分隔的 tag(用于输出文件名)')
     p.add_argument('--no-validate-files', action='store_true',
                    help='不跳过 DB 有但文件不存在的照片(默认跳过,validate_files=True)')
+    p.add_argument('--no-embed-images', action='store_true',
+                   help='不嵌图片为 base64(默认嵌)— 不嵌时走 file:// 路径,只能本地 Chrome 看')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
@@ -210,7 +212,9 @@ def main():
         conn.close()
         suffix = f"tag{args.tag}_n{len(ids)}"
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_gif_planner_{suffix}')
-    result = render(ids, out_path, validate_files=not args.no_validate_files)
+    result = render(ids, out_path,
+                    validate_files=not args.no_validate_files,
+                    embed_images=not args.no_embed_images)
     n_avail = len(ids) - (1 if not args.no_validate_files else 0)  # 简化,实际数据可从 render 返回
     print(f"✓ 已生成: {result}")
     # V1.3 §HTML 交付协议:stdout 末行强制 send 协议

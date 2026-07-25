@@ -2907,8 +2907,8 @@
       video.addEventListener('loadedmetadata', () => {
         if (isFinite(video.duration) && video.duration > 0) {
           duration = video.duration;
-          // 切视频时重置缩放
           pixelsPerSecond = 0;
+          window.__tlPps = 0;
           init();
         }
       });
@@ -2933,7 +2933,7 @@
           measure();
           if (Math.abs(trackWidth - oldTrackWidth) > 1 && duration > 0) {
             // 缩到最小时随窗口变化
-            if (pixelsPerSecond === 0) render();
+            if (pixelsPerSecond === 0) { render(); window.__tlPps = 0; }
             else updatePlayhead();
           }
         }, 100);
@@ -4155,6 +4155,10 @@
       }
     };
     window.__segmentState = SegmentState;
+    // v2.73:timeline 像素/秒 暴露给 renderTimelineSegments 用
+    //   setupTimeline 内部改动 pixelsPerSecond 时,同步到此
+    //   pps=0 表示"全宽铺满"模式(未缩放)
+    window.__tlPps = 0;
 
     // ============ v2.0 段渲染 / UI 操作函数 ============
     function getSegOpBadgeText(ops) {
@@ -4229,11 +4233,20 @@
         const totalSec = st.segments.reduce((sum, sg) => sum + (sg.end_sec - sg.start_sec), 0);
         const widthPct = (segLen / totalSec * 100).toFixed(2);
 
-        // v2.72:段绝对不留 label 文字(纯色块 + tooltip)
-        // 段宽度改为像素:1px/s × segLen,确保视觉 1 秒 = 1 像素
-        // 假设 pps = 50px/s(1s = 50px 视觉合理,1min 视频 = 3000px, 可横向滚动)
-        const pixelsPerSecond = 50;
-        const segWidthPx = (segLen * pixelsPerSecond).toFixed(1);
+        // v2.73:段宽度 = segLen × pixelsPerSecond,与时间轴 1:1 对应
+        // pixelsPerSecond 来自 setupTimeline(实时同步到 window.__tlPps)
+        //   pps > 0:用户已 Ctrl+滚轮缩放,精确按像素
+        //   pps = 0:全宽铺满模式,按 inner 宽度比例 fallback
+        const innerWidth = trackInner.clientWidth || 600;
+        const totalSecFallback = st.segments.reduce(
+          (sum, sg) => sum + (sg.end_sec - sg.start_sec), 0
+        ) || 1;
+        let segWidthPx;
+        if (window.__tlPps > 0) {
+          segWidthPx = segLen * window.__tlPps;
+        } else {
+          segWidthPx = (segLen / totalSecFallback) * innerWidth;
+        }
 
         html += `
           <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}"

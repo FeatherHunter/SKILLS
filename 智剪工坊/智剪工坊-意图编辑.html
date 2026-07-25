@@ -307,7 +307,7 @@
       font-weight: 600;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
-    .timeline-hover-tooltip.show { display: block; }
+    /* v2.127:cursor 已显示时间,气泡多余,彻底关闭 */
     /* v2.120:段条序号角标 */
     .tl-seg-num {
       position: absolute;
@@ -1310,6 +1310,7 @@
     }
     .segments-panel > details[open] > summary::before { transform: rotate(90deg); }
     .seg-list, .del-list { padding-left: 8px; }
+    /* v2.128:行背景用对应色 12% alpha,所有段都有淡淡色彩(包括默认段) */
     .seg-item {
       display: flex;
       justify-content: space-between;
@@ -1318,7 +1319,7 @@
       padding: 6px 8px;
       margin-bottom: 4px;
       border-radius: 4px;
-      background: var(--seg-bg, #f5f5f7);
+      background: color-mix(in srgb, var(--seg-color, #888) 12%, white);
       border-left: 4px solid var(--seg-color, #888);
       font-size: 12px;
     }
@@ -1346,6 +1347,12 @@
       white-space: nowrap;
     }
     .seg-item .seg-label-text:hover { color: #0071e3; text-decoration: underline; }
+    /* v2.128 删除按钮(红色,与其他按钮区分) */
+    .seg-item .seg-act-delete {
+      background: #ff3b30;
+      color: white;
+    }
+    .seg-item .seg-act-delete:hover { background: #d70015; }
     .seg-item button {
       background: #0071e3;
       color: white;
@@ -1601,10 +1608,60 @@
       cursor: pointer;
       font-size: 13px;
     }
-    .modal-content .seg-list-in-modal {
+    /* v2.126 拆分对话框 */
+    .split-preview {
+      font-size: 13px;
+    }
+    .split-original {
+      padding: 8px 12px;
       background: #f5f5f7;
-      padding: 8px;
       border-radius: 6px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .split-label { color: var(--secondary); font-weight: 500; }
+    .split-bar.original {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-weight: 600;
+      padding: 2px 8px;
+      background: #e5e5ea;
+      border-radius: 4px;
+    }
+    .split-arrows { color: var(--secondary); font-size: 12px; margin-left: auto; }
+    .split-results { display: flex; flex-direction: column; gap: 6px; }
+    .split-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border-left: 3px solid var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, white);
+    }
+    .split-role {
+      flex: 0 0 auto;
+      color: var(--accent);
+      font-weight: 600;
+      min-width: 80px;
+    }
+    .split-time {
+      flex: 1;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-weight: 500;
+      color: var(--label);
+    }
+    .split-dur {
+      flex: 0 0 auto;
+      color: var(--secondary);
+      font-size: 11px;
+    }
+    .modal-content .seg-list-in-modal {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
       margin-bottom: 16px;
       font-size: 12px;
       font-family: ui-monospace, monospace;
@@ -3399,24 +3456,15 @@
         const ms = Math.round(sec * 1000) % 1000;
         return `${min}:${String(wholeSec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
       }
-      // v2.120:tooltip 固定定位在鼠标上方,脱离 timeline overflow
-      function showHoverAt(clientX, clientY) {
-        if (duration <= 0 || !hoverCursor || !hoverTooltip) return;
+      // v2.127:cursor 已带时间显示,不再重复 tooltip
+      function showHoverAt(clientX) {
+        if (duration <= 0 || !hoverCursor) return;
         const rect = track.getBoundingClientRect();
         const offsetX = clientX - rect.left;
         if (offsetX < 0 || offsetX > rect.width) return;
-        const pps = getPps();
-        const sec = Math.max(0, Math.min(duration, offsetX / pps));
-        // cursor 仍在 inner 内(跟 inner scroll 联动)
         const innerOffsetX = offsetX + track.scrollLeft;
         hoverCursor.style.left = innerOffsetX + 'px';
         hoverCursor.classList.add('show');
-        // tooltip 固定定位:跟随鼠标,在鼠标上方(让视频区域也可见)
-        hoverTooltip.style.left = clientX + 'px';
-        hoverTooltip.style.top = (clientY - 10) + 'px';
-        hoverTooltip.style.transform = 'translate(-50%, -100%)';
-        hoverTooltip.textContent = formatTimeWithMs(sec);
-        hoverTooltip.classList.add('show');
       }
       function hideHover() {
         if (hoverCursor) hoverCursor.classList.remove('show');
@@ -3424,9 +3472,8 @@
       }
       track.addEventListener('mousemove', (e) => {
         if (e.target.closest('.tl-seg-trim')) { hideHover(); return; }
-        // 段条上不显示 hover(已有 click 行为)
         if (e.target.closest('.tl-seg')) { hideHover(); return; }
-        showHoverAt(e.clientX, e.clientY);
+        showHoverAt(e.clientX);
       });
       track.addEventListener('mouseleave', hideHover);
 
@@ -5094,6 +5141,26 @@
       });
     }
 
+    // v2.126 拆分对话框辅助函数
+    function formatTimeForModal(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      const ms = Math.round((sec - Math.floor(sec)) * 1000);
+      return `${m}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+    }
+    function renderSplitRow(seg, role, accent) {
+      const totalSec = seg.end_sec - seg.start_sec;
+      const min = Math.floor(totalSec / 60);
+      const sec = (totalSec - min * 60).toFixed(1);
+      const durStr = min > 0 ? `${min}m${sec}s` : `${sec}s`;
+      return `
+        <div class="split-row" style="--accent:${accent}">
+          <div class="split-role">${escapeHtml(role)}</div>
+          <div class="split-time">${formatTimeForModal(seg.start_sec)} → ${formatTimeForModal(seg.end_sec)}</div>
+          <div class="split-dur">时长 ${durStr}</div>
+        </div>
+      `;
+    }
     function onTrackSelect(videoIndex, startSec, endSec) {
       // v2.99 真正的二次确认:用深拷贝,修 cancel 不真恢复 bug
       const st = SegmentState.getAll(videoIndex);
@@ -5109,13 +5176,31 @@
         if (result && result.modified === 'noop') showToast('区间与已有段完全重合');
         return;
       }
+      // 找出新生成的 3 个段 (left + mid + right)
+      // mid 是 addOrSplit 返回的 newId,left/right 是它前后相邻的段
+      const midIdx = st.segments.findIndex(s => s.id === result.newId);
+      const leftSeg = midIdx > 0 ? st.segments[midIdx - 1] : null;
+      const midSeg = st.segments[midIdx];
+      const rightSeg = midIdx < st.segments.length - 1 ? st.segments[midIdx + 1] : null;
+      const segHtml = `
+        <div class="split-preview">
+          <div class="split-original">
+            <div class="split-label">原段:</div>
+            <div class="split-bar original">${formatTimeForModal(startSec)} ~ ${formatTimeForModal(endSec)}</div>
+            <div class="split-arrows">↓  拆分为以下 3 段</div>
+          </div>
+          <div class="split-results">
+            ${leftSeg ? renderSplitRow(leftSeg, '保留前段', '#6b7280') : ''}
+            ${renderSplitRow(midSeg, '新增段(默认保留)', '#FF3B30')}
+            ${rightSeg ? renderSplitRow(rightSeg, '保留后段', '#6b7280') : ''}
+          </div>
+        </div>
+      `;
       // 备份当前(已被 addOrSplit 修改的)状态,等用户 confirm
       const newBackup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
-      const segHtml = result.segments.map(s =>
-        `<div>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${escapeHtml(s.label||`${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)}</div>`
-      ).join('');
+      const originalInfo = `原段 [${formatTimeForModal(startSec)} ~ ${formatTimeForModal(endSec)}] →`;
       // modal 的取消/确认逻辑
-      showInformDialog(`本次操作将产生 ${result.length} 个时间段(预览)`, segHtml, {
+      showInformDialog(`${originalInfo} 拆分为 3 段`, segHtml, {
         onConfirm: () => {
           // 确认:state 保持新状态(已是 newBackup)
           const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] [data-timeline-segments]`);
@@ -5399,11 +5484,13 @@
         // v2.125:列表项也按 idx%8 循环彩色,默认整段保留是红色
         const color = colors[idx % 8];
         // muted = 无 op 段:背景浅灰,不抢眼
+        // v2.128:行背景由 CSS 用 color-mix 自动生成(不需要内联)
         return `
-        <div class="seg-item" style="--seg-color:${color};--seg-bg: ${hasOp ? `${color}15` : '#f5f5f7'}">
+        <div class="seg-item" style="--seg-color:${color}">
           <span class="seg-num">${idx + 1}</span>
           <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || `${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
           <div style="display:flex;gap:4px">
+            <button class="seg-act-delete" data-act="delete" data-seg-id="${s.id}">删除</button>
             <button data-act="jump" data-seg-id="${s.id}">跳转</button>
             <button data-act="edit" data-seg-id="${s.id}">编辑</button>
           </div>
@@ -5442,6 +5529,7 @@
         if (act === 'edit') openSegmentPanel(videoIndex, sid);
         else if (act === 'jump') jumpToSegment(videoIndex, sid);
         else if (act === 'restore') restoreSegment(videoIndex, sid);
+        else if (act === 'delete') deleteSegment(videoIndex, sid);
       });
     }
   </script>

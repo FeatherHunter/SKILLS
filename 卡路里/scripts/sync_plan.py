@@ -41,6 +41,7 @@
 import argparse
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from datetime import date, timedelta
@@ -53,7 +54,7 @@ SKILLS_ROOT = SKILL_DIR.parent
 
 SCHEDULE_CLI = SKILLS_ROOT / "作息管家" / "scripts" / "schedule_cli.py"
 MEMO_CLI = SKILLS_ROOT / "备忘录" / "script" / "memo_cli.py"
-XUNJI_BRIDGE_DIR = SKILL_DIR  # xunji_bridge 在卡路里/scripts/
+XUNJI_BRIDGE_DIR = SCRIPT_DIR  # xunji_bridge 在卡路里/scripts/(SCRIPT_DIR=卡路里/scripts)
 
 # lark-cli 路径(Windows)
 LARK_CLI_CANDIDATES = [
@@ -71,6 +72,27 @@ def find_lark_cli() -> str | None:
     # 兜底 1:PATH 里有 "lark-cli"
     from shutil import which
     return which("lark-cli")
+
+
+def _check_wish_exists_direct(content: str, due: str) -> bool:
+    """直接 sqlite3 查 memo.db 看心愿是否存在(绕过 FTS5 search CLI)。
+
+    2026-07-25 发现:content 里的"15:00"会被 FTS5 当 column filter 解析失败,
+    search CLI 静默返空 → 重复建. 这里用 LIKE 严格匹配 content + due。
+    """
+    from db import find_db_path
+    memo_db = find_db_path(SKILL_DIR, "memo.db")
+    if not memo_db.exists():
+        return False
+    conn = sqlite3.connect(str(memo_db))
+    try:
+        cur = conn.execute(
+            "SELECT 1 FROM notes WHERE content = ? AND due = ? LIMIT 1",
+            (content, due),
+        )
+        return cur.fetchone() is not None
+    finally:
+        conn.close()
 
 
 def run(cmd: list[str], timeout: int = 60) -> dict:
@@ -188,13 +210,9 @@ def step2_wishes(plans: list[dict], dry_run: bool) -> dict:
             content = f"健身 {label} {ts}-{te}"
 
             # 三步查重 (SKILL.md Step 3.1/3.2/3.3)
-            sr = run([sys.executable, str(MEMO_CLI), "search", content,
-                      "--category", "心愿", "--due", p["date"]])
-            try:
-                local_items = json.loads(sr["stdout"]).get("data", []) or []
-            except json.JSONDecodeError:
-                local_items = []
-            in_local = len(local_items) > 0
+            # 2026-07-25 修:FTS5 会把 content 里的 "15:00" 当 column 解析失败
+            #   → search CLI 静默返空 → 重复建. 改用直接 sqlite3 LIKE 查询
+            in_local = _check_wish_exists_direct(content, p["date"])
 
             in_feishu = False
             if not in_local and lark:

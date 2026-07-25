@@ -269,11 +269,11 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
-    /* v2.121:tick-last sticky 贴 ruler right edge,即使 ruler width 大于视口也可见 */
+    /* v2.122:右 14px 留缓冲,sticky 在 overflow-x: hidden scroll-wrap 内贴右边界 */
     .timeline-ruler .tick.tick-last {
       position: sticky;
       left: auto !important;
-      right: 4px;
+      right: 14px;
       transform: none;
     }
     /* v2.113 U1:hover 时半透明红 cursor + 时间 tooltip */
@@ -1200,12 +1200,12 @@
       font-weight: 600;
       text-shadow: none;
     }
-    /* v2.114 T5b:tooltip 改成 top:100%(向 segments-area 下方),不被 video 遮挡 */
+    /* v2.123:tooltip 改回上方(bottom:100%+offset)+ 高 z-index 穿透 video */
     .seg-tip,
     .tl-tip {
       position: absolute;
-      top: calc(100% + 8px);
-      bottom: auto;
+      bottom: calc(100% + 8px);
+      top: auto;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(29,29,31,0.96);
@@ -1218,7 +1218,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.15s;
-      z-index: 30;
+      z-index: 9999;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       min-width: 100px;
       max-width: 240px;
@@ -3200,9 +3200,22 @@
         if (duration - lastStepT > 0.001) {
           const tick = document.createElement('div');
           tick.className = 'tick tick-last';
-          // 不设 inline left — CSS .tick-last { right:4px } 负责右对齐
+          // 不设 inline left — CSS .tick-last { right:14px } 负责右对齐
           tick.textContent = formatTickLabel(duration, step);
           frag.appendChild(tick);
+        } else if (Math.abs(duration - lastStepT) < 0.001 && lastStepT > 0) {
+          // v2.122:即使 duration 是 step 整数倍(没 tick-last 分支),也给最后一个 tick 加 class
+          // CSS .tick-last 让 ruler right 14px 留缓冲不被 clip
+          const last = frag.lastChild;
+          if (last) {
+            // 重写最后 tick
+            const newTick = document.createElement('div');
+            newTick.className = 'tick tick-last';
+            // 不设 inline left — CSS 负责 right:14px
+            newTick.textContent = last.textContent;
+            frag.insertBefore(newTick, last);
+            frag.removeChild(last);
+          }
         }
         ruler.innerHTML = '';
         ruler.appendChild(frag);

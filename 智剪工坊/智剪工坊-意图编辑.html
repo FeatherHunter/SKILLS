@@ -3181,10 +3181,10 @@
     function formatTime(sec) {
       if (!isFinite(sec) || sec < 0) sec = 0;
       const h = Math.floor(sec / 3600);
-      const m = Math.floor((sec % 3600) / 60);
-      const s = sec - h * 3600 - m * 60;
-      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
-      if (m > 0) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+      const m = Math.floor(sec / 60);  // 总分钟(支持 0:40 这种 < 1min 仍然 mm:ss)
+      const s = sec - m * 60;
+      if (h > 0) return `${h}:${String(m % 60).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+      if (sec >= 60) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;  // v2.131 ≥60s 总是 mm:ss
       return `${s.toFixed(1)}s`;
     }
     function formatTimeRange(s, e) {

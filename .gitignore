@@ -10,6 +10,12 @@
 卡路里/scripts/calories.db-wal
 卡路里/scripts/calories.db-journal
 # 卡路里主数据库文件 db.py DB_FILENAME,运行时本地数据,不入版本控制
+# 注:历史上 db.py 既可能把 DB 放在 scripts/ 下,也可能放在卡路里/ 根目录,
+#     两处路径都加进来兼容(2026-07-25 新增根目录 fallback)
+卡路里/calorie_data.db
+卡路里/calorie_data.db-shm
+卡路里/calorie_data.db-wal
+卡路里/calorie_data.db-journal
 卡路里/scripts/calorie_data.db
 卡路里/scripts/calorie_data.db-shm
 卡路里/scripts/calorie_data.db-wal
@@ -46,6 +52,9 @@ Thumbs.db
 
 # 智剪工坊工作流临时产物(edit 子技能原子操作中间文件)
 智剪工坊/__edit_tmp_*.mp4
+
+# 智剪工坊 brainstorming 工具运行时数据(本地 brainstorming server pid/events/state,不入库)
+智剪工坊/.superpowers/
 
 # 智剪工坊 CDP 本地调试脚本(连接 Chrome DevTools Protocol 检查页面状态,不入库)
 智剪工坊/_cdp.js

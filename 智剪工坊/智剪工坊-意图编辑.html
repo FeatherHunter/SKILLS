@@ -2835,15 +2835,18 @@
       let pressTimer = null;
       let pressStartX = 0;
       let pressOverlay = null;
+      let longPressActive = false;  // v2.78:长按 200ms 后 = true,段 click 跳过
       const removeOverlay = () => {
         if (pressOverlay) { pressOverlay.remove(); pressOverlay = null; }
       };
       const onPressStart = (e) => {
+        longPressActive = false;
         // v2.67:允许在段上拖框(只要按住 200ms 就进入 selecting)
         // 单击段走的是 click 事件(用户短按 = 单击 = 操作面板)
         // 长按 200ms 后一定是拖框意图
         pressStartX = e.clientX;
         pressTimer = setTimeout(() => {
+          longPressActive = true;
           // 进入 selecting:创建 overlay div
           pressOverlay = document.createElement('div');
           pressOverlay.className = 'tl-select-overlay';
@@ -4303,12 +4306,25 @@
 
       trackInner.innerHTML = html;
 
-      // 3. 给每个段绑定点击 → 打开面板
+      // 3. 给每个段绑定点击 → 跳到 start_sec + 打开面板
       const segs = trackInner.querySelectorAll('.tl-seg:not(.tl-seg-empty)');
       segs.forEach(seg => {
         const segId = seg.dataset.segId;
         seg.addEventListener('click', (e) => {
           e.stopPropagation();
+          // v2.78:长按拖框后松手会触发 click,标记时跳过
+          if (longPressActive) { longPressActive = false; return; }
+          // 跳到该段开始时间
+          const st = window.__segmentState?.states?.[videoIndex];
+          if (st) {
+            const targetSeg = st.segments.find(s => s.id === segId);
+            if (targetSeg && targetSeg.start_sec !== undefined) {
+              if (isFinite(video.duration) && video.duration > 0) {
+                video.currentTime = Math.min(targetSeg.start_sec, video.duration);
+                updatePlayhead();
+              }
+            }
+          }
           openSegmentPanel(videoIndex, segId);
         });
       });

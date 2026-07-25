@@ -1083,6 +1083,23 @@
       border-radius: 4px;
       font-size: 12px;
     }
+    .seg-note-input {
+      width: 100%;
+      min-height: 36px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: vertical;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    .seg-note-input:focus {
+      outline: 2px solid #0071e3;
+      outline-offset: 1px;
+      border-color: transparent;
+    }
     .seg-op-buttons {
       display: flex;
       gap: 6px;
@@ -3794,6 +3811,89 @@
         data.videos.push(v);
       });
 
+      // v2.0:辅助函数定义(临时,因为 Task 3 误删,在这里补回)
+      function collectVideoOpsForVideo(i) {
+        const card = videoListEl.querySelector(`[data-video-index="${i+1}"]`);
+        if (!card) return {};
+        const ops = {};
+
+        // voice select
+        const voiceSel = card.querySelector(`[data-video="${i}.voice"]`);
+        if (voiceSel && voiceSel.value) ops.voice = { on: true, mode: voiceSel.value };
+        const voiceNoteEl = card.querySelector(`[data-video="${i}.voice_note"]`);
+        if (voiceNoteEl && voiceNoteEl.value.trim()) ops.voice_note = voiceNoteEl.value.trim();
+        const notesEl = card.querySelector(`[data-video="${i}.notes"]`);
+        if (notesEl && notesEl.value.trim()) ops.notes = notesEl.value.trim();
+
+        const legacyOps = ['trim-head','trim-tail','cut-middle','pin-range','target-duration',
+          'speed-up','slow-down','reverse','mute','fade-in','fade-out','color',
+          'add-bgm','replace-audio','opening-text','insert-image',
+          'asr-transcribe','asr-burn','asr-speaker',
+          'audio-denoise','audio-separate','audio-diarize','voice-filler-removed'];
+        legacyOps.forEach(op => {
+          const cb = card.querySelector(`[data-op="${op}"]`);
+          if (!cb || !cb.checked) return;
+          const cfg = { on: true };
+          if (['trim-head','trim-tail','fade-in','fade-out','target-duration'].includes(op)) {
+            const v = parseFloat(card.querySelector(`[data-op-val="${op}"]`)?.value);
+            if (!isNaN(v)) cfg.sec = v;
+          } else if (['speed-up','slow-down'].includes(op)) {
+            const v = parseFloat(card.querySelector(`[data-op-val="${op}"]`)?.value);
+            if (!isNaN(v)) cfg.factor = v;
+          } else if (op === 'color') {
+            cfg.style = card.querySelector('[data-op-val="color"]')?.value || '';
+          } else if (op === 'add-bgm') {
+            const disp = card.querySelector(`[data-bgm-display="${i}"]`);
+            cfg.file = disp?.dataset?.filename || disp?.textContent || '';
+            const v = parseFloat(card.querySelector('[data-op-val="bgm-volume"]')?.value);
+            if (!isNaN(v)) cfg.volume = v;
+          } else if (op === 'replace-audio') {
+            const disp = card.querySelector(`[data-replace-display="${i}"]`);
+            cfg.file = disp?.dataset?.filename || disp?.textContent || '';
+          } else if (op === 'opening-text') {
+            const textEl = card.querySelector('[data-op-val="opening-text-content"]');
+            if (textEl?.value) cfg.text = textEl.value;
+            const durEl = card.querySelector('[data-op-val="opening-text-duration"]');
+            const dur = parseFloat(durEl?.value);
+            if (!isNaN(dur)) cfg.duration = dur;
+          } else if (op === 'insert-image') {
+            const disp = card.querySelector(`[data-insert-img-display="${i}"]`);
+            cfg.file = disp?.dataset?.filename || disp?.textContent || '';
+            const atEl = card.querySelector('[data-op-val="insert-at"]');
+            if (atEl?.value) cfg.at = atEl.value;
+            const durEl = card.querySelector('[data-op-val="insert-duration"]');
+            const dur = parseFloat(durEl?.value);
+            if (!isNaN(dur)) cfg.duration = dur;
+          } else if (op === 'asr-transcribe') {
+            const sel = card.querySelector('[data-op-val="asr-transcribe"]');
+            if (sel?.value) cfg.model = sel.value;
+          } else if (op === 'asr-burn') {
+            const v = parseFloat(card.querySelector('[data-op-val="asr-burn"]')?.value);
+            if (!isNaN(v)) cfg.font_size = v;
+          } else if (op === 'audio-separate') {
+            const sel = card.querySelector('[data-op-val="audio-separate"]');
+            if (sel?.value) cfg.model = sel.value;
+          }
+          // v2.0:每个 op 都支持 note 字段(用户自由文本,可用于 LLM 讨论)
+          const noteEl = card.querySelector(`[data-op-note="${op}"]`);
+          if (noteEl && noteEl.value.trim()) cfg.note = noteEl.value.trim();
+          ops[op] = cfg;
+        });
+        return ops;
+      }
+
+      function collectTimeSegmentsForVideo(i) {
+        const card = videoListEl.querySelector(`[data-video-index="${i+1}"]`);
+        if (!card) return [];
+        const inlineState = window.__segmentState?.states?.[i] || { segments: [] };
+        return inlineState.segments.map(s => ({
+          id: s.id, label: s.label || '',
+          start_sec: s.start_sec, end_sec: s.end_sec,
+          ...(s.ops && Object.keys(s.ops).length ? { ops: s.ops } : {}),
+          ...(s.note ? { note: s.note } : {})
+        }));
+      }
+
       // v2.0:校验提交前数据
       const errors = validateIntent(data);
       if (errors.length > 0) {
@@ -4093,6 +4193,7 @@
       panel.innerHTML = `
         <div class="segment-panel-inner">
           <label>label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名"></label>
+          <textarea class="seg-note-input" placeholder="本段补充说明(可选)" rows="2">${escapeHtml(seg.note || '')}</textarea>
           <div class="seg-op-buttons">
             <button data-op="mute">🔇 静音</button>
             <button data-op="speed-up">⏩ 倍速</button>
@@ -4114,6 +4215,8 @@
         const trackInner = card.querySelector('.timeline-track-inner');
         if (trackInner) renderTimelineSegments(trackInner, videoIndex);
       });
+      const segNoteInput = panel.querySelector('.seg-note-input');
+      if (segNoteInput) segNoteInput.addEventListener('input', e => { seg.note = e.target.value; });
 
       panel.querySelectorAll('.seg-op-buttons button').forEach(btn => {
         btn.addEventListener('click', () => {

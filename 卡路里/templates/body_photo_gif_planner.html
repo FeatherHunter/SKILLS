@@ -254,21 +254,30 @@
 
 <script>
 (function(){
-  // 从 URL 读已选 IDs
+  // 从 URL 读已选 IDs 或 tag(v2.3.0+)
   const params = new URLSearchParams(location.search);
   const idsStr = params.get('ids') || '';
   const tagsStr = params.get('tags') || '';
-  const selIds = idsStr.split(',').filter(Boolean).map(Number);
-  const selTags = tagsStr ? tagsStr.split(',') : [];
+  const tagFromUrl = params.get('tag') || '';
+  let selIds = idsStr.split(',').filter(Boolean).map(Number);
+  let selTags = tagsStr ? tagsStr.split(',') : (tagFromUrl ? [tagFromUrl] : []);
 
   // 从 mock 数据读(实际由 render 注入)
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
-    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请从 body_photo_gallery.html 勾选后进入。</em>';
+    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请重新生成 GIF planner。</em>';
     return;
   }
   const photoMap = {};
   D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
+
+  // 若无 ids 但有 tag,自动用该 tag 的所有照片(独立运行模式)
+  if (selIds.length === 0 && selTags.length > 0) {
+    selIds = D.data.all_photos
+      .filter(p => selTags.includes(p.tag))
+      .map(p => p.id);
+  }
+
   const photos = selIds.map(id => photoMap[id]).filter(Boolean);
   document.getElementById('selCount').textContent = photos.length;
 
@@ -478,6 +487,8 @@
   updatePrompt();
 })();
 </script>
+
+<!--INJECT-DATA-->
 
 </body>
 </html>

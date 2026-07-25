@@ -89,13 +89,26 @@ def render(ids: list, output_path: Path) -> Path:
 
 def main():
     p = argparse.ArgumentParser(description='渲染身材照 GIF planner HTML')
-    p.add_argument('--ids', required=True, help='逗号分隔的照片 ID(从 gallery 多选带入)')
+    p.add_argument('--ids', help='逗号分隔的照片 ID(从 gallery 多选带入)。与 --tag 二选一')
+    p.add_argument('--tag', help='按 tag 拉所有照片(独立运行模式,无需先经 gallery)')
     p.add_argument('--tags', help='逗号分隔的 tag(用于输出文件名)')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
-    ids = [int(x) for x in args.ids.split(',') if x.strip()]
-    suffix = f"ids{'_'.join(str(i) for i in ids)}"
+    if not args.ids and not args.tag:
+        p.error('必须提供 --ids 或 --tag 之一')
+
+    if args.ids:
+        ids = [int(x) for x in args.ids.split(',') if x.strip()]
+        suffix = f"ids{'_'.join(str(i) for i in ids)}"
+    else:
+        # 按 tag 拉所有照片
+        conn = get_db(find_db_path(SKILL_DIR, DB_FILENAME))
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM body_photos WHERE tag = ? ORDER BY date ASC, time ASC", (args.tag,))
+        ids = [r[0] for r in cur.fetchall()]
+        conn.close()
+        suffix = f"tag{args.tag}_n{len(ids)}"
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_gif_planner_{suffix}')
     result = render(ids, out_path)
     print(f"✓ 已生成: {result} (已选 {len(ids)} 张)")

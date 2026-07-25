@@ -303,7 +303,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 设营养目标 | 设置每日营养目标 | `python scripts/calorie_tracker.py goal` |
 | 查营养目标 | 查看当前每日营养目标 | `python scripts/calorie_tracker.py get-goal` |
 | 查健康报告 | 四维度综合健康仪表盘 | `AI 路由(Python API)` |
-| 查卡路里数据 | 数据健康检查 | `AI 路由(无 CLI)` |
+| 查卡路里数据 | 数据健康检查 | `AI 路由(无 CLI)` → **HTML:`lint_health.html`(强制,V1.3 原则 11)** |
 
 ### 📋 复盘(2026-07-15 新增)
 
@@ -757,6 +757,38 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 | 删身材照 | 删除照片 | `python scripts/body_photo_tracker.py delete` → **HTML:`crud_receipt.html`** |
 | 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` → **HTML:`crud_receipt.html`** |
 | 生成身材照GIF | 生成身材变化 GIF(框选裁剪 + 速度/水印/过渡)| `python scripts/body_photo_tracker.py gif --tag X --photo-id ... --crops '...'` → **HTML:`body_photo_gif_planner.html`** |
+
+#### 身材照 GIF `--crops` JSON schema(v2.3.0)
+
+`--crops` 接收 JSON dict,**key 是照片 ID**,**value 是 `[x1, y1, x2, y2]` 矩形坐标**(像素,左上原点):
+
+```json
+{
+  "12": [120, 240, 400, 600],
+  "15": [100, 200, 380, 600],
+  "22": [150, 260, 420, 600]
+}
+```
+
+- `x1 < x2`, `y1 < y2`(若不满足,会被边界 clamp)
+- 不传 `--crops` = 全部用原图
+- 坐标来自 `body_photo_gif_planner.html` 的 cropper.js 框选(用户手动调整)
+
+#### 打开 HTML 协议(v1.3 §📌 输出位置)
+
+所有 `render_*.py` 默认输出到 `<DATA_DIR>/calorie_html/`(`$SKILLS_DB_PATH/calorie_html/`)。
+
+AI 执行流程:
+```bash
+# 1. 跑 render → 拿到输出路径(stdout 末行)
+python scripts/render_photo_X.py [--id N] 2>&1 | tail -1
+
+# 2. AI 把 HTML 通过用户当前可用工具发送出去(主动发送是核心)
+#    Chrome 打开是加分项
+```
+
+**禁止**:只跑 render 不告知用户(违背 v1.3 主动发送原则)。
+
 | 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` |
 
 ---

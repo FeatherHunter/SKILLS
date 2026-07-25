@@ -1446,13 +1446,23 @@
       padding: 6px 0;
     }
 
-    /* v2.98 段操作面板(对齐整段视频操作风格) */
+    /* v2.134 段操作面板(仿整段视频操作风格) */
     .segment-panel {
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: var(--card);
+      /* v2.134:整 panel 背景 = 段颜色 12% tint(淡淡关联) */
+      background: color-mix(in srgb, var(--seg-color, #888) 14%, var(--card));
       padding: 0;
-      margin: 8px 0;
+      margin: 6px 0 6px 32px;     /* 缩进到该段下方 */
+      position: relative;
+    }
+    .segment-panel::before {
+      content: '';
+      position: absolute;
+      left: -1px; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--seg-color, #888);
+      border-radius: 3px 0 0 3px;
     }
     .segment-panel-header {
       display: flex;
@@ -1464,19 +1474,48 @@
       font-size: 13px;
       font-weight: 500;
     }
-    .segment-panel-header:hover { background: var(--gray-fill); }
+    .segment-panel-header:hover { background: rgba(0,0,0,0.03); }
+    .segment-panel-title {
+      flex: 1;
+      font-weight: 600;
+      color: var(--label);
+    }
+    .segment-panel-count {
+      font-size: 11px;
+      color: var(--secondary);
+      padding: 1px 6px;
+      background: var(--seg-color, #888);
+      border-radius: 3px;
+      color: white;
+      font-weight: 500;
+    }
+    .segment-panel-jump {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--label);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+      font-family: inherit;
+    }
+    .segment-panel-jump:hover { background: var(--seg-color, #888); color: white; border-color: var(--seg-color, #888); }
+    .segment-panel-hint { font-size: 11px; color: var(--secondary); }
     .segment-panel-header .disclosure {
       display: inline-block;
       width: 12px;
       transition: transform 0.15s;
       color: var(--secondary);
     }
+    .segment-panel.open .disclosure { transform: rotate(90deg); }
     .segment-panel.collapsed .disclosure { transform: rotate(0deg); }
-    .segment-panel:not(.collapsed) .disclosure { transform: rotate(90deg); }
+    .segment-panel.collapsed .segment-panel-body { display: none; }
     .segment-panel-body {
       padding: 0 14px 12px;
     }
-    .segment-panel.collapsed .segment-panel-body { display: none; }
     .segment-panel-inner label {
       display: flex;
       gap: 8px;
@@ -1642,99 +1681,175 @@
       z-index: 100;
     }
     /* v2.123:modal 缩窄到 380 + padding 调紧凑 */
+    /* v2.130:苹果风 modal — 大圆角、柔和阴影、SF 字体、纯文字按钮 */
     .modal-content {
-      background: var(--card);
-      border-radius: 10px;
-      padding: 18px 22px;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-radius: 16px;
+      padding: 0;
       max-width: 380px;
       max-height: 80vh;
       width: 90vw;
-      overflow-y: auto;
+      overflow: hidden;
       box-sizing: border-box;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.04);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
     }
-    .modal-content h3 { margin-bottom: 12px; }
-    .modal-content p { color: var(--fg2); margin-bottom: 16px; font-size: 13px; }
+    .modal-content h3 {
+      margin: 0;
+      padding: 20px 24px 16px;
+      font-size: 17px;
+      font-weight: 600;
+      color: #1c1c1e;
+      letter-spacing: -0.01em;
+      text-align: center;
+    }
+    .modal-content p { color: #8e8e93; margin: 0; font-size: 13px; }
     .modal-content .btn {
-      background: #0071e3;
+      background: #007aff;
       color: white;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 9px 22px;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      transition: background 0.15s, transform 0.15s;
     }
-    /* v2.126 拆分对话框 */
+    .modal-content .btn:hover { background: #0066d6; }
+    .modal-content .btn:active { transform: scale(0.97); }
+    .modal-content .btn.btn-secondary {
+      background: transparent;
+      color: #007aff;
+    }
+    .modal-content .btn.btn-secondary:hover { background: rgba(0, 122, 255, 0.08); }
+
+    /* v2.130:苹果风 split 弹窗内容 */
     .split-preview {
-      font-size: 13px;
+      font-size: 14px;
+      color: #1c1c1e;
+      padding: 8px 24px 20px;
     }
+    /* 原段小卡 */
     .split-original {
-      padding: 8px 12px;
-      background: #f5f5f7;
-      border-radius: 6px;
-      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 12px;
-      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: #f2f2f7;
+      border-radius: 10px;
+      margin-bottom: 14px;
     }
-    .split-label {
-      color: var(--secondary);
+    .split-original-label {
+      font-size: 11px;
       font-weight: 500;
+      color: #8e8e93;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      min-width: 60px;
+    }
+    .split-original-time {
       flex: 1;
-      min-width: 0;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      font-size: 17px;
+      font-weight: 500;
+      color: #1c1c1e;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
     }
-    .split-bar.original {
-      font-family: ui-monospace, "SF Mono", Menlo, monospace;
-      font-weight: 600;
-      padding: 2px 8px;
+    .split-arrow {
+      color: #c7c7cc;
+      margin: 0 6px;
+      font-weight: 400;
+    }
+    .split-original-dur {
+      font-size: 12px;
+      color: #8e8e93;
+      font-variant-numeric: tabular-nums;
+    }
+    /* 分割线 */
+    .split-divider {
+      height: 1px;
       background: #e5e5ea;
-      border-radius: 4px;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      margin: 4px 0 14px;
     }
-    .split-arrows { color: var(--secondary); font-size: 12px; margin-left: auto; }
-    .split-results { display: flex; flex-direction: column; gap: 6px; }
+    /* 3 段分组标签 */
+    .split-results-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: #8e8e93;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .split-results { display: flex; flex-direction: column; gap: 8px; }
     .split-row {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border-left: 3px solid var(--accent);
-      background: color-mix(in srgb, var(--accent) 8%, white);
+      align-items: stretch;
+      gap: 0;
       min-width: 0;
     }
-    .split-time, .split-role, .split-dur { white-space: nowrap; flex-shrink: 0; }
-    .split-role {
-      flex: 0 0 auto;
-      color: var(--accent);
-      font-weight: 600;
-      min-width: 80px;
+    .split-row-bar {
+      width: 4px;
+      border-radius: 2px;
+      background: var(--accent, #8e8e93);
+      flex-shrink: 0;
     }
-    .split-time {
+    .split-row-body {
       flex: 1;
-      font-family: ui-monospace, "SF Mono", Menlo, monospace;
-      font-weight: 500;
-      color: var(--label);
+      padding: 4px 0 4px 12px;
+      min-width: 0;
+    }
+    .split-row-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .split-role {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent, #1c1c1e);
+      letter-spacing: -0.01em;
     }
     .split-dur {
-      flex: 0 0 auto;
-      color: var(--secondary);
-      font-size: 11px;
+      font-size: 12px;
+      color: #8e8e93;
+      font-variant-numeric: tabular-nums;
+    }
+    .split-time {
+      font-size: 15px;
+      font-weight: 400;
+      color: #3a3a3c;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+    .split-label {
+      font-size: 12px;
+      color: #8e8e93;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      margin-top: 2px;
+    }
+    /* modal footer(取消/确定) */
+    .modal-content .modal-body {
+      max-height: 60vh;
+      overflow-y: auto;
     }
     .modal-content .seg-list-in-modal {
       background: transparent;
       padding: 0;
       border-radius: 0;
-      margin-bottom: 16px;
-      font-size: 12px;
-      font-family: ui-monospace, monospace;
     }
-    .modal-content .seg-list-in-modal div {
-      padding: 2px 0;
+    .modal-content .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 20px;
+      background: rgba(248, 248, 250, 0.7);
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
     }
   </style>
 </head>
@@ -3246,15 +3361,14 @@
 
     // v2.132:formatTime 总是 mm:ss (≥ 1s),小数秒用 .x
     //   5s → '0:05' / 30s → '0:30' / 90s → '1:30' / 3600s+ → 'h:mm:ss'
+    // v2.133:≥1s 时秒数永远补 0 到 2 位(0:5 → 0:05)
     function formatTime(sec) {
       if (!isFinite(sec) || sec < 0) sec = 0;
       const h = Math.floor(sec / 3600);
       const m = Math.floor(sec / 60);
       const s = sec - m * 60;
-      const sStr = sec < 10 ? `${s.toFixed(1)}` : `${s.toFixed(0)}`;
-      const sPad = m > 0 ? String(s.toFixed(0)).padStart(2, '0') : sStr;
       if (h > 0) return `${h}:${String(m % 60).padStart(2,'0')}:${String(s.toFixed(0)).padStart(2,'0')}`;
-      if (sec >= 1) return `${m}:${sPad}`;
+      if (sec >= 1) return `${m}:${String(s.toFixed(0)).padStart(2,'0')}`;
       return `${s.toFixed(1)}s`;
     }
     function formatTimeRange(s, e) {
@@ -5261,21 +5375,30 @@
     }
 
     // v2.126 拆分对话框辅助函数
-    // v2.123:用 formatTime(mm:ss 简洁),不再用带 ms 的 formatTimeForModal
+    // v2.130:formatTime 简化为 mm:ss
     function formatTimeForModal(sec) { return formatTime(sec); }
+    // v2.130:苹果风 formatDur — 0:00 / 1:23 形式
+    function formatDurForModal(sec) {
+      sec = Math.max(0, sec);
+      const m = Math.floor(sec / 60);
+      const s = Math.round(sec - m * 60);
+      return `${m}:${String(s).padStart(2,'0')}`;
+    }
+    // v2.130:苹果风 split-row — 左侧 4px 色条,大留白,行级 flex,无边框
     function renderSplitRow(seg, role, accent) {
-      const totalSec = seg.end_sec - seg.start_sec;
-      const min = Math.floor(totalSec / 60);
-      const sec = (totalSec - min * 60).toFixed(1);
-      const durStr = min > 0 ? `${min}m${sec}s` : `${sec}s`;
-      // label 单独一行,不重复时间码(已有 .split-time 显示)
+      const durStr = formatDurForModal(seg.end_sec - seg.start_sec);
       const labelText = seg.label ? escapeHtml(seg.label) : '';
       return `
         <div class="split-row" style="--accent:${accent}">
-          <div class="split-role">${escapeHtml(role)}</div>
-          <div class="split-time">${formatTime(seg.start_sec)} → ${formatTime(seg.end_sec)}</div>
-          ${labelText ? `<div class="split-label">${labelText}</div>` : ''}
-          <div class="split-dur">${durStr}</div>
+          <div class="split-row-bar"></div>
+          <div class="split-row-body">
+            <div class="split-row-head">
+              <span class="split-role">${escapeHtml(role)}</span>
+              <span class="split-dur">${durStr}</span>
+            </div>
+            <div class="split-time">${formatTime(seg.start_sec)} <span class="split-arrow">→</span> ${formatTime(seg.end_sec)}</div>
+            ${labelText ? `<div class="split-label">${labelText}</div>` : ''}
+          </div>
         </div>
       `;
     }
@@ -5300,25 +5423,29 @@
       const leftSeg = midIdx > 0 ? st.segments[midIdx - 1] : null;
       const midSeg = st.segments[midIdx];
       const rightSeg = midIdx < st.segments.length - 1 ? st.segments[midIdx + 1] : null;
+      // v2.130:苹果风 modal — 标题简短,内容按"原段"和"结果 3 段"分组
       const segHtml = `
         <div class="split-preview">
           <div class="split-original">
-            <div class="split-label">原段:</div>
-            <div class="split-bar original">${formatTime(startSec)} ~ ${formatTime(endSec)}</div>
-            <div class="split-arrows">↓  拆分为以下 3 段</div>
+            <div class="split-original-label">原段时间</div>
+            <div class="split-original-time">${formatTime(startSec)} <span class="split-arrow">→</span> ${formatTime(endSec)}</div>
+            <div class="split-original-dur">${formatDurForModal(endSec - startSec)}</div>
           </div>
+          <div class="split-divider"></div>
+          <div class="split-results-label">拆分为 3 段</div>
           <div class="split-results">
-            ${leftSeg ? renderSplitRow(leftSeg, '保留前段', '#6b7280') : ''}
+            ${leftSeg ? renderSplitRow(leftSeg, '保留前段', '#8e8e93') : ''}
             ${renderSplitRow(midSeg, '新增段(默认保留)', '#FF3B30')}
-            ${rightSeg ? renderSplitRow(rightSeg, '保留后段', '#6b7280') : ''}
+            ${rightSeg ? renderSplitRow(rightSeg, '保留后段', '#8e8e93') : ''}
           </div>
         </div>
       `;
       // 备份当前(已被 addOrSplit 修改的)状态,等用户 confirm
       const newBackup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
-      const originalInfo = `原段 [${formatTime(startSec)} ~ ${formatTime(endSec)}] →`;
+      // v2.130:标题简化 — "原段 3:19 ~ 3:47" 一行简洁
+      const dialogTitle = `原段 ${formatTime(startSec)} – ${formatTime(endSec)}`;
       // modal 的取消/确认逻辑
-      showInformDialog(`${originalInfo} 拆分为 3 段`, segHtml, {
+      showInformDialog(dialogTitle, segHtml, {
         onConfirm: () => {
           // 确认:state 保持新状态(已是 newBackup)
           const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] [data-timeline-segments]`);
@@ -5345,7 +5472,9 @@
       modal.innerHTML = `
         <div class="modal-content">
           <h3>${escapeHtml(title)}</h3>
-          <div class="seg-list-in-modal">${bodyHTML}</div>
+          <div class="modal-body">
+            <div class="seg-list-in-modal">${bodyHTML}</div>
+          </div>
           <div class="modal-actions">
             <button class="btn btn-secondary" data-modal-act="cancel">取消</button>
             <button class="btn" data-modal-act="confirm">确定</button>
@@ -5432,12 +5561,25 @@
         `<option value="${k}" ${k === voiceVal ? 'selected' : ''}>${v}</option>`
       ).join('');
 
-      // v2.98 段 panel UI 对齐整段视频操作(.ops-subgroup 风格:边框 + 圆角 + 折叠 summary)
+      // v2.134:重写 段操作 panel 仿 整段视频操作 风格
+      //   - 标题含段号 N + 时间范围 "段 N — 1:10~1:35"
+      //   - 整 panel 背景 = 段颜色 12% tint(淡淡关联)
+      //   - 顶部加"跳转到 timeline"按钮
+      //   - 插入到对应 seg-item 行后面
+      //   - 默认展开(不折叠)
+      //   - 主动打开后 scroll 到 panel
+      const segIdx = state.segments.findIndex(s => s.id === segId);
+      const segNum = segIdx >= 0 ? (segIdx + 1) : '?';
+      const segColor = (state.segments[segIdx]?.start_sec != null) ? `colors[${segIdx % 8}]` : '#888';
+      panel.className = 'segment-panel segment-panel-tinted';
+      panel.style.setProperty('--seg-color', state.segments[segIdx]?.excluded ? '#8e8e93' : ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'][segIdx % 8] || '#888');
       panel.innerHTML = `
         <div class="segment-panel-header" data-act="toggle-panel">
           <span class="disclosure">▶</span>
-          <span style="flex:1">📋 段操作 (${Object.keys(seg.ops || {}).length} 个已配置)</span>
-          <span style="color:var(--secondary);font-size:11px">点击折叠/展开</span>
+          <span class="segment-panel-title">段 ${segNum} — ${formatTime(seg.start_sec)} ~ ${formatTime(seg.end_sec)}</span>
+          <span class="segment-panel-count">${Object.keys(seg.ops || {}).length} 个已配置</span>
+          <button class="segment-panel-jump" data-act="jump-to-tl" title="跳转到 timeline">↗</button>
+          <span class="segment-panel-hint">点击折叠/展开</span>
         </div>
         <div class="segment-panel-body">
           <div class="segment-panel-inner">
@@ -5458,12 +5600,25 @@
           </div>
         </div>
       `;
+      panel.querySelector('.segment-panel-header').classList.add('open');
 
-      const opsGroup = card.querySelector('.ops-group');
-      if (opsGroup) opsGroup.before(panel);
-      else card.appendChild(panel);
+      // 插入位置:对应 seg-item 行后面(在 segments-panel 的 seg-list 里)
+      const segItem = card.querySelector(`.segments-panel .seg-item[data-seg-id="${segId}"]`);
+      let insertTarget = null;
+      if (segItem) {
+        // 段操作区放段行后面
+        insertTarget = segItem;
+      }
+      if (insertTarget) {
+        insertTarget.insertAdjacentElement('afterend', panel);
+      } else {
+        // fallback:放在 ops-group 之前
+        const opsGroup = card.querySelector('.ops-group');
+        if (opsGroup) opsGroup.before(panel);
+        else card.appendChild(panel);
+      }
 
-      // v2.114 T3:主动打开后 scroll 到 panel,让用户看到
+      // 主动打开后 scroll 到 panel,让用户看到
       setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 
       // label 实时同步
@@ -5547,9 +5702,21 @@
         });
       }
 
+      // v2.134:跳转到 timeline 段色块(滚到对应 .tl-seg)
+      const jumpBtn = panel.querySelector('[data-act="jump-to-tl"]');
+      if (jumpBtn) {
+        jumpBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const segDom = document.querySelector(`.tl-seg[data-seg-id="${segId}"]`);
+          if (segDom) segDom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+
       // 关闭按钮
       // v2.98 panel header 折叠
-      panel.querySelector('[data-act="toggle-panel"]').addEventListener('click', () => {
+      panel.querySelector('[data-act="toggle-panel"]').addEventListener('click', (e) => {
+        // 跳转到 timeline 按钮不触发折叠
+        if (e.target.closest('[data-act="jump-to-tl"]')) return;
         panel.classList.toggle('collapsed');
         // 折叠时 close 面板(避免遗留空内容)
         if (panel.classList.contains('collapsed')) {
@@ -5619,7 +5786,7 @@
         const btnAct = isExcluded ? 'restore' : 'delete';
         const btnClass = isExcluded ? 'seg-act-restore' : 'seg-act-delete';
         return `
-        <div class="${rowClass}" style="--seg-color:${color}">
+        <div class="${rowClass}" style="--seg-color:${color}" data-seg-id="${s.id}">
           <span class="seg-num">${idx + 1}</span>
           <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || formatTimeRange(s.start_sec, s.end_sec))} <span style="color:var(--secondary)">[${formatTime(s.start_sec)} ~ ${formatTime(s.end_sec)}]</span></span>
           <div style="display:flex;gap:4px">
@@ -5630,7 +5797,8 @@
         </div>`;
       }).join('') || '<p class="empty-hint">暂无段(在 timeline 长按拖动创建)</p>';
 
-      panel.innerHTML = `
+      // v2.134:给 seg-item 加 data-seg-id 让 openSegmentPanel 找位置用
+      panel.innerHTML = `;
         <details open>
           <summary>📋 时间段(${state.segments.length})</summary>
           <div class="seg-list">${segHtml}</div>

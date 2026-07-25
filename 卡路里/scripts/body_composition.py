@@ -16,7 +16,7 @@ DB_PATH = SKILL_DIR / 'calorie_data.db'
 
 sys.path.insert(0, str(SKILL_DIR))
 from db import find_db_path, init_db as _init_db
-from source_constants import SOURCE_CHOICES
+from source_constants import SOURCE_CHOICES, SOURCE_HOME_CALIPER
 from validators import validate_composition_input
 
 
@@ -153,7 +153,7 @@ def build_parser():
     pd.set_defaults(func=cmd_delete)
 
     pt = sub.add_parser('trend', help='体脂趋势')
-    pt.add_argument('--source', default='home_caliper', choices=SOURCE_CHOICES)
+    pt.add_argument('--source', default=SOURCE_HOME_CALIPER, choices=SOURCE_CHOICES)
     pt.add_argument('--days', type=int, default=30)
     pt.set_defaults(func=cmd_trend)
     return p

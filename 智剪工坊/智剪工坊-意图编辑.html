@@ -857,14 +857,15 @@
     }
     /* ============ v2.0 视觉系统 ============ */
     :root {
-      --seg-color-0: #ff3b30;
-      --seg-color-1: #ff9500;
-      --seg-color-2: #ffcc00;
-      --seg-color-3: #34c759;
-      --seg-color-4: #00b4d8;
-      --seg-color-5: #5e5ce6;
-      --seg-color-6: #af52de;
-      --seg-color-7: #ff2d92;
+      /* Apple HIG 系统语义色板(8 色,iOS / macOS 标准) */
+      --seg-color-0: #FF3B30;  /* systemRed */
+      --seg-color-1: #FF9500;  /* systemOrange */
+      --seg-color-2: #FFCC00;  /* systemYellow */
+      --seg-color-3: #34C759;  /* systemGreen */
+      --seg-color-4: #00C7BE;  /* systemTeal */
+      --seg-color-5: #007AFF;  /* systemBlue */
+      --seg-color-6: #AF52DE;  /* systemPurple */
+      --seg-color-7: #FF2D55;  /* systemPink */
     }
     .tl-seg {
       position: relative;
@@ -878,10 +879,19 @@
       z-index: -1;
     }
     .tl-seg-empty {
-      background: linear-gradient(180deg, #ececef, #e5e5ea);
+      background: #e5e5ea;
       cursor: default;
       pointer-events: none;
       border-radius: 4px;
+    }
+    .tl-seg-empty::after {
+      content: '·';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #aeaeb2;
+      font-size: 18px;
+      font-weight: 700;
     }
     .tl-seg-empty:hover { transform: none; box-shadow: none; }
     /* 框选实时高亮层 */
@@ -898,10 +908,11 @@
     .timeline-track-inner {
       position: relative;
     }
-    /* 段单击激活高亮 */
+    /* 段单击激活高亮(Apple HIG:outline 而非 scale) */
     .tl-seg.tl-active {
-      outline: 2px solid #0071e3;
-      outline-offset: 1px;
+      outline: 2.5px solid #1d1d1f;
+      outline-offset: 1.5px;
+      opacity: 1 !important;  /* 选中态强制 100% 透明 */
     }
     /* 原 .tl-seg 样式(无上述属性) */
     .tl-seg.legacy-original {
@@ -950,10 +961,12 @@
       bottom: calc(100% + 12px);
       left: 50%;
       transform: translateX(-50%);
-      background: #1d1d1f;
+      background: rgba(29,29,31,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       color: #fff;
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
       font-size: 12px;
       white-space: nowrap;
       opacity: 0;
@@ -961,15 +974,41 @@
       transition: opacity 0.15s;
       z-index: 30;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      min-width: 160px;
     }
     .seg-tip::after {
       content: '';
       position: absolute;
-      top: 100%;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 100%; left: 50%; transform: translateX(-50%);
       border: 6px solid transparent;
-      border-top-color: #1d1d1f;
+      border-top-color: rgba(29,29,31,0.96);
+    }
+    .seg-tip .tip-title { font-weight: 600; font-size: 13px; }
+    .seg-tip .tip-time {
+      color: #86868b;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .seg-tip .tip-ops { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .seg-tip .tip-op-tag {
+      background: rgba(255,255,255,0.15);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .seg-tip .tip-op-tag.empty {
+      background: transparent;
+      color: #86868b;
+      font-style: italic;
+    }
+    .seg-tip .tip-note {
+      margin-top: 6px; padding-top: 6px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      color: #aeaeb2;
+      font-size: 11px;
+      max-width: 240px;
+      white-space: normal;
     }
     .tl-seg:hover .seg-tip { opacity: 1; }
 
@@ -4127,13 +4166,30 @@
           seg.appendChild(badge);
         }
 
+        // Apple HIG:有 op 段 = 100% 透明(主操作),无 op 段 = 65% 透明(次要)
+        if (s.ops && Object.keys(s.ops).length > 0) {
+          seg.style.opacity = '1';
+        } else {
+          seg.style.opacity = '0.65';
+        }
+
         const tip = document.createElement('div');
         tip.className = 'seg-tip';
-        const opSummary = s.ops && Object.keys(s.ops).length > 0
-          ? Object.keys(s.ops).map(k => k === 'speed-up' ? `加速 ${s.ops[k].factor||2}x`
-            : k === 'slow-down' ? `减速 ${s.ops[k].factor||0.5}x` : k).join(' + ')
-          : '(无 op)';
-        tip.innerHTML = `<div><b>${escapeHtml(s.label || '(未命名)')}</b> [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${segLen.toFixed(1)}s</div><div style="opacity:0.7;margin-top:2px">${escapeHtml(opSummary)}</div>`;
+        const opBadges = (s.ops && Object.keys(s.ops).length > 0)
+          ? Object.keys(s.ops).map(k => `<span class="tip-op-tag">${
+              k === 'mute' ? '🎤 静音' :
+              k === 'speed-up' ? `⏩ ${s.ops[k].factor || 2}x` :
+              k === 'slow-down' ? `🐌 ${s.ops[k].factor || 0.5}x` :
+              k === 'reverse' ? '🔄 反转' :
+              k === 'color-grade' ? '🎨 调色' : k
+            }</span>`).join('')
+          : '<span class="tip-op-tag empty">无操作</span>';
+        tip.innerHTML = `
+          <div class="tip-title">${escapeHtml(s.label || '(未命名)')}</div>
+          <div class="tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
+          <div class="tip-ops">${opBadges}</div>
+          ${s.note ? `<div class="tip-note">📝 ${escapeHtml(s.note)}</div>` : ''}
+        `;
         seg.appendChild(tip);
 
         seg.addEventListener('click', (e) => {

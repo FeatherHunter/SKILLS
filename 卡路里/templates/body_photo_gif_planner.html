@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>身材照 GIF planner · 卡路里</title>
+
+<!-- cropper.js v2.1.1 CDN(2026-04-06 · Active · 158 万周下载) -->
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@2.1.1/dist/cropper.min.css">
+<script src="https://unpkg.com/cropperjs@2.1.1/dist/cropper.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
+    --accent: #0071e3; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759; --orange: #ff9500;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 960px; margin: 0 auto; padding: 32px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 20px; }
+
+  .tip {
+    background: rgba(255,149,0,.08); border-left: 3px solid var(--orange); border-radius: 6px;
+    padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--fg2); line-height: 1.7;
+  }
+  .tip strong { color: var(--orange); }
+  .tip.info { background: rgba(0,113,227,.06); border-left-color: var(--accent); }
+  .tip.info strong { color: var(--accent); }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; background: var(--accent); color: #fff;
+    border-radius: 50%; font-size: 13px; font-weight: 700;
+  }
+
+  /* 照片列表 */
+  .photo-list { display: flex; flex-direction: column; gap: 10px; }
+  .photo-item {
+    display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center;
+    padding: 10px; background: var(--soft); border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .photo-item .thumb {
+    width: 90px; height: 120px; background: #000; border-radius: 6px;
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .photo-item .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-item .info { font-size: 13px; }
+  .photo-item .info .meta { font-size: 12px; color: var(--fg3); margin-top: 2px; }
+  .photo-item .info .crop-info {
+    margin-top: 6px; font-size: 12px; color: var(--green); font-family: ui-monospace, monospace;
+  }
+  .photo-item .info .crop-info.none { color: var(--fg3); }
+  .photo-item .actions { display: flex; gap: 6px; flex-direction: column; }
+  .photo-item .actions button {
+    padding: 6px 12px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .photo-item .actions button:hover { background: var(--soft); }
+  .photo-item .actions .crop-btn { color: var(--accent); border-color: var(--accent); }
+
+  /* GIF 细节 */
+  .param-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .param-grid .form-group { margin: 0; }
+  .param-grid label { font-size: 12px; color: var(--fg2); margin-bottom: 5px; display: block; font-weight: 500; }
+  .param-grid input, .param-grid select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: #fff;
+  }
+  .param-grid input:focus, .param-grid select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .transition-chips { display: flex; gap: 6px; }
+  .transition-chip {
+    flex: 1; padding: 8px 10px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 6px; font-size: 12px; cursor: pointer; text-align: center;
+    user-select: none;
+  }
+  .transition-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Prompt + 复制 */
+  .prompt-box {
+    background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+    line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+    min-height: 200px; margin-bottom: 12px;
+  }
+
+  .btn-copy {
+    width: 100%; padding: 16px; border: none; background: var(--accent);
+    color: #fff; border-radius: 10px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-copy:hover { background: #005bb5; }
+  .btn-copy.copied { background: var(--green); }
+
+  .footer { margin-top: 24px; padding: 16px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); }
+
+  /* Cropper modal */
+  .cropper-modal {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.7); z-index: 9999; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .cropper-modal.show { display: flex; }
+  .cropper-modal .modal-box {
+    background: var(--card); border-radius: 16px; max-width: 900px; width: 100%;
+    max-height: 90vh; display: flex; flex-direction: column;
+  }
+  .cropper-modal .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .cropper-modal .modal-head h3 { font-size: 16px; font-weight: 600; }
+  .cropper-modal .modal-head .close { cursor: pointer; font-size: 24px; color: var(--fg3); background: none; border: none; }
+  .cropper-modal .modal-body {
+    flex: 1; padding: 16px 20px; overflow: auto; display: flex; flex-direction: column;
+  }
+  .cropper-modal .img-stage {
+    flex: 1; min-height: 400px; max-height: 60vh; background: #000; border-radius: 8px; overflow: hidden;
+  }
+  .cropper-modal .img-stage img { max-width: 100%; display: block; }
+  .cropper-modal .crop-info {
+    margin-top: 12px; padding: 10px 12px; background: var(--soft); border-radius: 6px;
+    font-size: 13px; font-family: ui-monospace, monospace; color: var(--fg);
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .cropper-modal .crop-info .lbl { color: var(--fg3); font-size: 11px; }
+  .cropper-modal .modal-foot {
+    padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .cropper-modal .modal-foot button {
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card);
+  }
+  .cropper-modal .modal-foot .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cropper-modal .modal-foot .danger { color: var(--red); border-color: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>🎬 身材照 GIF planner</h1>
+<p class="sub">过程型向导(cropper.js v2.1.1)· 选顺序 + 裁剪 + 商讨细节 → 复制 prompt 给 AI</p>
+
+<div class="tip info">
+  <strong>ℹ️ 工作流</strong>:
+  <ol style="margin-top: 4px; padding-left: 20px;">
+    <li>从 <code>body_photo_gallery.html</code> 勾选照片 → 进入本页面(URL 带 <code>?ids=12,15,22</code>)</li>
+    <li>在下方"1️⃣ 照片列表"用 ↑↓ 调顺序 + ✂️ 框选裁剪(可选,推荐)</li>
+    <li>在"2️⃣ GIF 细节"商讨速度/尺寸/水印/过渡</li>
+    <li>点"📋 复制 prompt 给 AI" → AI 收到 prompt 与你商定 → 调 <code>body_photo_tracker.py gif</code> 生成</li>
+  </ol>
+</div>
+
+<div class="tip">
+  <strong>💡 为什么需要 cropper</strong>:你拍的照片人物位置不一定对应,框选后 GIF 中人物位置才稳定。<strong>不裁剪</strong>也能生成,但 GIF 会忽上忽下。
+</div>
+
+<!-- 1️⃣ 照片列表 -->
+<div class="section">
+  <h2><span class="step-num">1</span> 照片列表(已选 <span id="selCount">0</span> 张)</h2>
+  <div class="photo-list" id="photoList">
+    <!-- 动态生成 -->
+  </div>
+</div>
+
+<!-- 2️⃣ GIF 细节 -->
+<div class="section">
+  <h2><span class="step-num">2</span> GIF 细节(待与 AI 商定)</h2>
+  <div class="param-grid">
+    <div class="form-group">
+      <label>速度(单帧 ms)</label>
+      <input type="number" id="paramDuration" value="500" min="50" max="5000" step="50">
+    </div>
+    <div class="form-group">
+      <label>循环</label>
+      <select id="paramLoop">
+        <option value="0" selected>无限循环</option>
+        <option value="1">1 次</option>
+        <option value="3">3 次</option>
+        <option value="5">5 次</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>宽度(像素)</label>
+      <input type="number" id="paramWidth" value="400" min="100" max="2000" step="50">
+    </div>
+    <div class="form-group">
+      <label>高度(像素)</label>
+      <input type="number" id="paramHeight" value="600" min="100" max="2000" step="50">
+    </div>
+    <div class="form-group" style="grid-column: 1 / -1;">
+      <label>水印文字(右下角,可选)</label>
+      <input type="text" id="paramWatermark" placeholder="如:减脂 30 天 / before vs after">
+    </div>
+    <div class="form-group" style="grid-column: 1 / -1;">
+      <label>过渡效果</label>
+      <div class="transition-chips">
+        <div class="transition-chip active" data-trans="cut">cut 直接切</div>
+        <div class="transition-chip" data-trans="fade">fade 渐变</div>
+        <div class="transition-chip" data-trans="dissolve">dissolve 溶解</div>
+      </div>
+    </div>
+    <div class="form-group" style="grid-column: 1 / -1;">
+      <label>输出文件名(.gif)</label>
+      <input type="text" id="paramOutput" placeholder="如:front_30days.gif">
+    </div>
+  </div>
+</div>
+
+<!-- 3️⃣ Prompt -->
+<div class="section">
+  <h2><span class="step-num">3</span> Prompt(自动生成)</h2>
+  <div class="prompt-box" id="promptBox">// 完成上方配置后,prompt 自动生成</div>
+  <button class="btn-copy" id="copyBtn">📋 复制并发送给 AI</button>
+</div>
+
+<div class="footer">卡路里 · body_photo_gif_planner v1.0 · 用 cropper.js v2.1.1</div>
+
+<!-- Cropper Modal -->
+<div class="cropper-modal" id="cropperModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>✂️ 框选裁剪 <span id="croppingPhotoId"></span></h3>
+      <button class="close" id="closeModal">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="img-stage">
+        <img id="cropperImg" src="" alt="原图">
+      </div>
+      <div class="crop-info">
+        <div><div class="lbl">x</div><span id="ciX">-</span></div>
+        <div><div class="lbl">y</div><span id="ciY">-</span></div>
+        <div><div class="lbl">width</div><span id="ciW">-</span></div>
+        <div><div class="lbl">height</div><span id="ciH">-</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="danger" id="resetCropBtn">↺ 重置裁剪</button>
+      <button id="cancelCropBtn">取消</button>
+      <button class="primary" id="confirmCropBtn">✓ 确认裁剪</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // 从 URL 读已选 IDs
+  const params = new URLSearchParams(location.search);
+  const idsStr = params.get('ids') || '';
+  const tagsStr = params.get('tags') || '';
+  const selIds = idsStr.split(',').filter(Boolean).map(Number);
+  const selTags = tagsStr ? tagsStr.split(',') : [];
+
+  // 从 mock 数据读(实际由 render 注入)
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请从 body_photo_gallery.html 勾选后进入。</em>';
+    return;
+  }
+  const photoMap = {};
+  D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
+  const photos = selIds.map(id => photoMap[id]).filter(Boolean);
+  document.getElementById('selCount').textContent = photos.length;
+
+  // 状态
+  const crops = {}; // {id: {x,y,w,h}}
+  const order = [...selIds]; // 当前顺序(可调)
+  let transition = 'cut';
+
+  function renderList() {
+    const list = document.getElementById('photoList');
+    if (photos.length === 0) {
+      list.innerHTML = '<em style="color:var(--fg3)">未选照片。请回到 gallery 勾选。</em>';
+      return;
+    }
+    list.innerHTML = order.map((id, idx) => {
+      const p = photoMap[id];
+      const crop = crops[id];
+      return `
+        <div class="photo-item" data-id="${id}">
+          <div class="thumb"><img src="${p.photo_url || p.photo_path}" alt="${p.tag}"></div>
+          <div class="info">
+            <div><strong>${idx + 1}.</strong> ${p.tag} · ${p.date}</div>
+            <div class="meta">#${p.id} · ${p.time || ''}</div>
+            <div class="crop-info ${crop ? '' : 'none'}">
+              ${crop ? `✂️ 已裁剪: (${crop.x}, ${crop.y}) ${crop.width}×${crop.height}` : '未裁剪'}
+            </div>
+          </div>
+          <div class="actions">
+            <button class="move-up" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>↑ 上移</button>
+            <button class="move-down" ${idx === order.length - 1 ? 'disabled style="opacity:.3"' : ''}>↓ 下移</button>
+            <button class="crop-btn" data-id="${id}">✂️ 框选裁剪</button>
+            <button class="remove-btn" data-id="${id}" style="color:var(--red)">✕ 移除</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.move-up').forEach(el => el.onclick = () => {
+      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
+      if (i > 0) { [order[i-1], order[i]] = [order[i], order[i-1]]; renderList(); updatePrompt(); }
+    });
+    list.querySelectorAll('.move-down').forEach(el => el.onclick = () => {
+      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
+      if (i < order.length - 1) { [order[i+1], order[i]] = [order[i], order[i+1]]; renderList(); updatePrompt(); }
+    });
+    list.querySelectorAll('.crop-btn').forEach(el => el.onclick = () => openCropper(parseInt(el.dataset.id)));
+    list.querySelectorAll('.remove-btn').forEach(el => el.onclick = () => {
+      const id = parseInt(el.dataset.id);
+      const i = order.indexOf(id);
+      if (i >= 0) { order.splice(i, 1); delete crops[id]; renderList(); updatePrompt(); }
+    });
+  }
+
+  // Cropper modal
+  let cropperInstance = null;
+  const modal = document.getElementById('cropperModal');
+  const cropperImg = document.getElementById('cropperImg');
+  const ciX = document.getElementById('ciX');
+  const ciY = document.getElementById('ciY');
+  const ciW = document.getElementById('ciW');
+  const ciH = document.getElementById('ciH');
+  let currentCroppingId = null;
+
+  function openCropper(id) {
+    const p = photoMap[id];
+    if (!p) return;
+    currentCroppingId = id;
+    document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag} ${p.date})`;
+    cropperImg.src = p.photo_url || p.photo_path;
+    modal.classList.add('show');
+
+    cropperImg.onload = () => {
+      if (cropperInstance) cropperInstance.destroy();
+      cropperInstance = new Cropper(cropperImg, {
+        aspectRatio: NaN,
+        viewMode: 1,
+        autoCropArea: 0.7,
+        responsive: true,
+        background: false,
+        crop(event) {
+          const d = event.detail;
+          ciX.textContent = Math.round(d.x);
+          ciY.textContent = Math.round(d.y);
+          ciW.textContent = Math.round(d.width);
+          ciH.textContent = Math.round(d.height);
+        },
+      });
+    };
+  }
+
+  function closeCropper() {
+    modal.classList.remove('show');
+    if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+    currentCroppingId = null;
+  }
+
+  document.getElementById('closeModal').onclick = closeCropper;
+  document.getElementById('cancelCropBtn').onclick = closeCropper;
+  document.getElementById('confirmCropBtn').onclick = () => {
+    if (cropperInstance && currentCroppingId !== null) {
+      const data = cropperInstance.getData();
+      crops[currentCroppingId] = { x: Math.round(data.x), y: Math.round(data.y), width: Math.round(data.width), height: Math.round(data.height) };
+    }
+    closeCropper();
+    renderList();
+    updatePrompt();
+  };
+  document.getElementById('resetCropBtn').onclick = () => {
+    if (cropperInstance) cropperInstance.reset();
+  };
+
+  // transition chips
+  document.querySelectorAll('.transition-chip').forEach(chip => {
+    chip.onclick = () => {
+      document.querySelectorAll('.transition-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      transition = chip.dataset.trans;
+      updatePrompt();
+    };
+  });
+
+  // 其他参数变化 → 更新 prompt
+  ['paramDuration', 'paramLoop', 'paramWidth', 'paramHeight', 'paramWatermark', 'paramOutput'].forEach(id => {
+    document.getElementById(id).oninput = updatePrompt;
+    document.getElementById(id).onchange = updatePrompt;
+  });
+
+  // 默认输出文件名
+  if (selTags.length === 1 && photos.length) {
+    const tag = selTags[0];
+    const dates = [...new Set(photos.map(p => p.date))].sort();
+    document.getElementById('paramOutput').value = `${tag}_${dates[0]}_${dates[dates.length-1]}.gif`;
+    updatePrompt();
+  }
+
+  function generatePrompt() {
+    if (photos.length === 0) return '// 请先选照片';
+    const tag = selTags.join(',') || photos[0].tag;
+    const ids = order.join(' ');
+    const cropsJson = Object.keys(crops).length > 0
+      ? JSON.stringify(Object.fromEntries(
+          Object.entries(crops).map(([id, c]) => [id, [c.x, c.y, c.width + c.x, c.height + c.y]])
+        ))
+      : '';
+
+    const duration = document.getElementById('paramDuration').value;
+    const loop = document.getElementById('paramLoop').value;
+    const width = document.getElementById('paramWidth').value;
+    const height = document.getElementById('paramHeight').value;
+    const watermark = document.getElementById('paramWatermark').value.trim();
+    const output = document.getElementById('paramOutput').value.trim();
+
+    const lines = [];
+    lines.push(`请帮我生成身材变化 GIF`);
+    lines.push('');
+    lines.push(`参数:`);
+    lines.push(`- 已选 ${photos.length} 张(按顺序):ID = ${ids}`);
+    if (Object.keys(crops).length > 0) {
+      lines.push(`- 裁剪(每张单独):`);
+      Object.entries(crops).forEach(([id, c]) => {
+        lines.push(`    ${id}: (${c.x}, ${c.y}) ${c.width}×${c.height} → 即 (${c.x}, ${c.y}, ${c.x + c.width}, ${c.y + c.height})`);
+      });
+    } else {
+      lines.push(`- 裁剪:无(整图)`);
+    }
+    lines.push(`- 速度:${duration}ms/帧`);
+    lines.push(`- 循环:${loop === '0' ? '无限' : loop + ' 次'}`);
+    lines.push(`- 尺寸:${width}×${height}`);
+    if (watermark) lines.push(`- 水印:"${watermark}"`);
+    lines.push(`- 过渡:${transition}`);
+    if (output) lines.push(`- 输出:${output}`);
+    lines.push('');
+    lines.push(`命令:`);
+    lines.push('```bash');
+    let cmd = `python scripts/body_photo_tracker.py gif \\\n  --tag "${tag}" \\\n  --photo-id ${order.map(id => `${id}`).join(' --photo-id ')}`;
+    if (cropsJson) cmd += ` \\\n  --crops '${cropsJson}'`;
+    cmd += ` \\\n  --width ${width} --height ${height} \\\n  --duration ${duration} --loop ${loop}`;
+    if (watermark) cmd += ` \\\n  --watermark "${watermark}"`;
+    cmd += ` \\\n  --transition ${transition}`;
+    if (output) cmd += ` \\\n  --output "${output}"`;
+    lines.push(cmd);
+    lines.push('```');
+    lines.push('');
+    lines.push(`完成后用浏览器打开生成的 GIF 文件让用户确认。`);
+    return lines.join('\n');
+  }
+
+  function updatePrompt() {
+    document.getElementById('promptBox').textContent = generatePrompt();
+  }
+
+  // 复制
+  document.getElementById('copyBtn').onclick = function() {
+    const text = document.getElementById('promptBox').textContent;
+    if (text.startsWith('//')) { alert('请先完成配置'); return; }
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = '✓ 已复制';
+      this.classList.add('copied');
+      setTimeout(() => {
+        this.textContent = '📋 复制并发送给 AI';
+        this.classList.remove('copied');
+      }, 2000);
+    });
+  };
+
+  renderList();
+  updatePrompt();
+})();
+</script>
+
+</body>
+</html>

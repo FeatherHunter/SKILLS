@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>记身材照 · 卡路里</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
+    --accent: #0071e3; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 800px; margin: 0 auto; padding: 32px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 20px; }
+
+  .tip {
+    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 6px;
+    padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--fg2); line-height: 1.7;
+  }
+  .tip strong { color: var(--accent); }
+
+  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+  .form-group label .required { color: var(--red); }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--fg);
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.1);
+  }
+  .form-group textarea { min-height: 60px; resize: vertical; font-family: inherit; }
+  .form-group .hint { font-size: 11px; color: var(--fg3); margin-top: 4px; line-height: 1.5; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .tag-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .tag-chip {
+    padding: 5px 12px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none;
+  }
+  .tag-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tag-chip:hover:not(.active) { background: var(--soft); }
+
+  .prompt-box {
+    background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+    line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+    min-height: 120px; margin-bottom: 12px;
+  }
+
+  .footer { margin-top: 24px; padding: 16px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); }
+
+  .btn-copy {
+    width: 100%; padding: 14px; border: none; background: var(--accent);
+    color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-copy:hover { background: #005bb5; }
+  .btn-copy.copied { background: var(--green); }
+
+  .file-drop {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 24px;
+    text-align: center; cursor: pointer; transition: all .15s;
+    background: var(--soft);
+  }
+  .file-drop:hover, .file-drop.dragover { border-color: var(--accent); background: rgba(0,113,227,.04); }
+  .file-drop .icon { font-size: 32px; margin-bottom: 6px; }
+  .file-drop .text { font-size: 13px; color: var(--fg2); }
+  .file-list { margin-top: 12px; font-size: 13px; color: var(--fg); }
+  .file-list .file-item { padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+  .file-list .file-item .remove { color: var(--red); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>📸 记身材照</h1>
+<p class="sub">配置型向导 · 填好参数后复制 prompt 给 AI 执行</p>
+
+<div class="tip">
+  <strong>ℹ️ 工作流</strong>:选本地照片文件 → 选 tag → 加备注 → 点下方"📋 复制 prompt 给 AI" → AI 收到后调 <code>body_photo_tracker.py add</code> 写入数据库。
+</div>
+
+<div class="section">
+  <h2>1️⃣ 选择照片文件</h2>
+  <div class="file-drop" id="fileDrop">
+    <div class="icon">📁</div>
+    <div class="text">点此选文件,或拖拽到此<br><small style="color:var(--fg3)">支持多选(jpg/png/webp)</small></div>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  <div class="file-list" id="fileList"></div>
+</div>
+
+<div class="section">
+  <h2>2️⃣ 标签(tag)</h2>
+  <div class="form-group">
+    <label>选择常用 tag<span class="required"> *</span></label>
+    <div class="tag-chips" id="tagChips">
+      <span class="tag-chip" data-tag="正面">正面</span>
+      <span class="tag-chip" data-tag="背面">背面</span>
+      <span class="tag-chip" data-tag="侧面">侧面</span>
+      <span class="tag-chip" data-tag="正面自然光">正面自然光</span>
+      <span class="tag-chip" data-tag="正面灯光">正面灯光</span>
+      <span class="tag-chip" data-tag="手臂">手臂</span>
+      <span class="tag-chip" data-tag="腹部">腹部</span>
+      <span class="tag-chip" data-tag="腿部">腿部</span>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>或自定义 tag(≤ 20 字符)<span class="required"> *</span></label>
+    <input type="text" id="customTag" placeholder="如:正面减脂30天" maxlength="20">
+    <div class="hint">建议同一类用同一 tag(如"正面"),后续查/GIF 才连贯</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>3️⃣ 备注(可选,推荐填)</h2>
+  <div class="form-group">
+    <textarea id="note" placeholder="例:7/1 早上空腹 / 减脂期第 30 天 / 体脂钳测前"></textarea>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📋 复制 prompt 给 AI</h2>
+  <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
+  <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
+</div>
+
+<div class="footer">卡路里 · body_photo_log_wizard v1.0</div>
+
+<script>
+(function(){
+  let selectedFiles = [];
+
+  // 文件选择
+  const fileDrop = document.getElementById('fileDrop');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+
+  fileDrop.onclick = () => fileInput.click();
+  fileDrop.ondragover = (e) => { e.preventDefault(); fileDrop.classList.add('dragover'); };
+  fileDrop.ondragleave = () => fileDrop.classList.remove('dragover');
+  fileDrop.ondrop = (e) => {
+    e.preventDefault(); fileDrop.classList.remove('dragover');
+    addFiles(e.dataTransfer.files);
+  };
+  fileInput.onchange = (e) => addFiles(e.target.files);
+
+  function addFiles(files) {
+    Array.from(files).forEach(f => {
+      if (!f.type.startsWith('image/')) return;
+      if (selectedFiles.some(s => s.name === f.name && s.size === f.size)) return;
+      selectedFiles.push(f);
+    });
+    renderFiles();
+    updatePrompt();
+  }
+
+  function renderFiles() {
+    fileList.innerHTML = selectedFiles.length === 0
+      ? '<em style="color:var(--fg3)">未选文件</em>'
+      : selectedFiles.map((f, i) => `
+        <div class="file-item">
+          <span>📷</span>
+          <span>${f.name} <small style="color:var(--fg3)">(${(f.size/1024).toFixed(1)} KB)</small></span>
+          <span class="remove" data-idx="${i}">✕ 移除</span>
+        </div>
+      `).join('');
+    fileList.querySelectorAll('.remove').forEach(el => {
+      el.onclick = () => {
+        selectedFiles.splice(parseInt(el.dataset.idx), 1);
+        renderFiles();
+        updatePrompt();
+      };
+    });
+  }
+
+  // Tag 选择
+  const tagChips = document.getElementById('tagChips');
+  const customTag = document.getElementById('customTag');
+  let activeTag = '';
+
+  tagChips.querySelectorAll('.tag-chip').forEach(chip => {
+    chip.onclick = () => {
+      tagChips.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeTag = chip.dataset.tag;
+      customTag.value = '';
+      updatePrompt();
+    };
+  });
+
+  customTag.oninput = () => {
+    if (customTag.value) {
+      tagChips.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+      activeTag = customTag.value;
+      updatePrompt();
+    }
+  };
+
+  // 备注
+  document.getElementById('note').oninput = updatePrompt;
+
+  function getCurrentTag() {
+    return (customTag.value || activeTag || '').trim();
+  }
+
+  function updatePrompt() {
+    const tag = getCurrentTag();
+    const note = document.getElementById('note').value.trim();
+    const prompt = generatePrompt(tag, note);
+    document.getElementById('promptBox').textContent = prompt;
+  }
+
+  function generatePrompt(tag, note) {
+    if (selectedFiles.length === 0) {
+      return '// 请先选照片文件(上方第 1 步)';
+    }
+    if (!tag) {
+      return '// 请填 tag(上方第 2 步)';
+    }
+
+    const fileNames = selectedFiles.map(f => `"${f.name}"`).join(' ');
+    const noteArg = note ? ` --note "${note.replace(/"/g, '\\"')}"` : '';
+
+    return `请帮我记录 ${selectedFiles.length} 张身材照到卡路里
+
+参数:
+- 照片文件:${fileNames}
+- tag:${tag}
+${note ? `- 备注:${note}` : ''}
+
+命令:
+\`\`\`bash
+python scripts/body_photo_tracker.py add ${fileNames} --tag "${tag}"${noteArg}
+\`\`\`
+
+完成后用 crud_receipt.html 返回回执。`;
+  }
+
+  // 初始
+  renderFiles();
+
+  // 复制
+  document.getElementById('copyBtn').onclick = function() {
+    const text = document.getElementById('promptBox').textContent;
+    if (text.startsWith('// 请先')) {
+      alert('请先填好所有必填项');
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = '✓ 已复制';
+      this.classList.add('copied');
+      setTimeout(() => {
+        this.textContent = '📋 复制 prompt 给 AI';
+        this.classList.remove('copied');
+      }, 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

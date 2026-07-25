@@ -14,6 +14,21 @@
     "record-detail":  "作息记录 · 详情溯源"
   };
 
+  // 2026-07-25 mode-specific AI 钩子 emoji(第一性:6 个 mode 不再共用同一 💡,
+  // 每个 mode 加 1 个副标识 emoji 用户一眼能分辨)
+  var MODE_HOOK_EMOJI = {
+    "record-day":      "💡📌",     // 📌 每日重点
+    "record-range":    "💡📈",     // 📈 区间趋势
+    "record-compare":  "💡⚖️",     // ⚖️ 对比权衡
+    "record-category": "💡🎯",     // 🎯 类别聚焦
+    "record-anomaly":  "💡🩺",    // 🩺 异常诊断
+    "record-detail":   "💡🔬"     // 🔬 详情溯源
+  };
+
+  function hookEmoji(mode){
+    return MODE_HOOK_EMOJI[mode] || "💡";
+  }
+
   function escapeHTML(s){
     return String(s ?? "").replace(/[&<>"']/g, function(c){
       return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
@@ -143,7 +158,7 @@
     }
 
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 AI 思考钩子(看完可追问用户)</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子(看完可追问用户)</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
@@ -261,7 +276,7 @@
     }
 
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 AI 思考钩子</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
@@ -307,7 +322,7 @@
     html += '</div></div>';
 
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 AI 思考钩子</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
@@ -349,7 +364,7 @@
     }
 
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 AI 思考钩子</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
@@ -388,7 +403,7 @@
     }
 
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 AI 思考钩子</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
@@ -430,7 +445,7 @@
 
     // ③ 人工智能思考钩子卡(苹果风浅黄底,放在末尾)
     if (aiQs.length > 0) {
-      html += '<div class="ai-hooks"><h3>💡 人工智能思考钩子（看完可追问用户）</h3><ul>';
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' 人工智能思考钩子（看完可追问用户）</h3><ul>';
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }

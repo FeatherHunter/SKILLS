@@ -938,6 +938,38 @@
       min-height: 36px;       /* v2.76:让 .tl-seg height: 100% 有父高度 */
       width: max-content;     /* v2.76:段总宽度撑出 inner */
     }
+    /* v2.90 hover 时间指示器(鼠标停时显示当前位置) */
+    .tl-time-indicator {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      background: rgba(29, 29, 31, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s;
+      white-space: nowrap;
+      z-index: 40;
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    .timeline-track:hover ~ .tl-time-indicator,
+    .timeline-track-inner:hover ~ .tl-time-indicator {
+      opacity: 1;
+    }
+    .tl-time-indicator::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%; transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: rgba(29, 29, 31, 0.96);
+    }
+
     /* 段单击激活高亮(Apple HIG:outline 而非 scale) */
     .tl-seg.tl-active {
       outline: 2px solid #1d1d1f;
@@ -2979,6 +3011,44 @@
         }, 100);
       });
 
+      // v2.90: 创建 hover 时间指示器
+      const timeIndicator = document.createElement('div');
+      timeIndicator.className = 'tl-time-indicator';
+      timeIndicator.textContent = '00:00';
+      // append 到 track 旁
+      const tlContainer = previewEl.querySelector('.timeline') || track.parentElement;
+      if (tlContainer) {
+        tlContainer.style.position = 'relative';
+        tlContainer.appendChild(timeIndicator);
+      }
+      track.addEventListener('mousemove', (e) => {
+        if (duration <= 0) {
+          timeIndicator.textContent = '--:--';
+          return;
+        }
+        const rect = track.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left + track.scrollLeft;
+        const pps = getPps();
+        const sec = Math.max(0, Math.min(duration, offsetX / pps));
+        // 格式: 2分35秒200ms + 帧号(假设 30fps)
+        const totalMs = Math.round(sec * 1000);
+        const min = Math.floor(sec / 60);
+        const wholeSec = Math.floor(sec % 60);
+        const ms = totalMs % 1000;
+        const frame = Math.round(sec * 30);
+        timeIndicator.textContent = `${min}:${String(wholeSec).padStart(2,'0')}.${String(ms).padStart(3,'0')} · 帧${frame}`;
+        // 定位(随鼠标)
+        const xInTrack = e.clientX - rect.left;
+        timeIndicator.style.left = Math.max(8, Math.min(rect.width - 8, xInTrack)) + 'px';
+        timeIndicator.style.transform = 'translateX(-50%)';
+      });
+      track.addEventListener('mouseleave', () => {
+        timeIndicator.style.opacity = '0';
+      });
+      track.addEventListener('mouseenter', () => {
+        timeIndicator.style.opacity = '1';
+      });
+
       // 7. 立即尝试初始化(可能 video 已经有 metadata)
       if (isFinite(video.duration) && video.duration > 0) {
         duration = video.duration;
@@ -4378,10 +4448,20 @@
         <div class="modal-content">
           <h3>${escapeHtml(title)}</h3>
           <div class="seg-list-in-modal">${bodyHTML}</div>
-          <button class="btn" onclick="this.closest('.modal-overlay').remove()">确定</button>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" data-modal-act="cancel">取消</button>
+            <button class="btn" data-modal-act="confirm">确定</button>
+          </div>
         </div>
       `;
       document.body.appendChild(modal);
+      // 二次确认:取消按钮不执行拆分,确定按钮关闭 modal(拆分已发生,只是 UI 关闭)
+      modal.querySelector('[data-modal-act="confirm"]').addEventListener('click', () => {
+        modal.remove();
+      });
+      modal.querySelector('[data-modal-act="cancel"]').addEventListener('click', () => {
+        modal.remove();
+      });
     }
 
     function refreshTimelineAndPanel(videoIndex, segId) {

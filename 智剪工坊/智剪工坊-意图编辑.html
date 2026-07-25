@@ -401,6 +401,8 @@
       max-height: 280px;
       overflow: visible;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      /* v2.135 关键:让 mouse events 穿透 dialog 到 .tl-seg(否则 dialog 覆盖会触发 seg mouseleave) */
+      pointer-events: none;
     }
     .tl-tip-dialog::backdrop { background: transparent; }  /* 隐藏 modal 半透明背景 */
     .tl-tip-dialog > * { color: #fff; }
@@ -5311,8 +5313,9 @@
           document.body.appendChild(dlg);
           seg._tipDialog = dlg;
           // v2.124:showModal() 进 top-layer(覆盖 <video>);show() 仅显示不入 top-layer
-          if (typeof dlg.showModal === 'function') dlg.showModal();
-          else dlg.show();
+          // v2.135:用 show() 不用 showModal() — 避免 ::backdrop 拦截事件(modal backdrop 会阻断 hover)
+          if (typeof dlg.show === 'function') dlg.show();
+          else dlg.setAttribute('open', '');
         });
         seg.addEventListener('mouseleave', () => {
           if (seg._tipDialog) {

@@ -259,12 +259,12 @@
     .timeline-ruler .tick.tick-first { transform: translateX(0); }
     .timeline-track {
       position: relative;
-      min-height: 56px;
-      background: #fafafa;
+      min-height: 48px;
+      background: #f5f5f7;
       border: 1px solid #e5e5ea;
       border-radius: 8px;
       cursor: pointer;
-      overflow: hidden;
+      overflow: visible;  /* 允许 hover 段上浮可见 */
     }
     /* 隐藏横向滚动条(防止被误读为播放进度条) */
     .timeline-track-inner {
@@ -872,7 +872,8 @@
       font-size: 11px;
       font-weight: 600;
       color: white;
-      transition: opacity 0.15s, transform 0.15s;
+      border-radius: 6px;
+      transition: opacity 0.15s, transform 0.2s, box-shadow 0.2s;
     }
     /* 短段点击 hit slop 延伸(让 < 20px 的段可点) */
     .tl-seg::before {
@@ -941,18 +942,20 @@
     .tl-seg { opacity: 0.55; transition: opacity 0.15s, transform 0.15s; }
     .tl-seg.tl-seg-has-op { opacity: 1; }
     .tl-seg.tl-seg-active { opacity: 1 !important; }
-    .tl-seg-label-bg {
-      background: rgba(0,0,0,0.35);
-      padding: 2px 8px;
-      border-radius: 4px;
+    .tl-seg-label {
       font-size: 11px;
       font-weight: 600;
       color: white;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+      pointer-events: none;
       max-width: calc(100% - 8px);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      padding: 0 8px;
+    }
+    .tl-seg-label-bg {
+      /* v2.62 别名:留兼容,但不再独立使用 */
     }
     .tl-seg:hover {
       transform: translateY(-2px);
@@ -2817,9 +2820,9 @@
       track.addEventListener('mousemove', onMove);
 
       document.addEventListener('mouseup', (e) => {
-        if (!pressOverlay && !pressTimer) return;
+        const wasSelecting = track.classList.contains('selecting');
         onPressCancel();
-        if (!pressOverlay) return;  // 短按,不算框选
+        if (!wasSelecting) return;  // 短按,不算框选
         const r = track.getBoundingClientRect();
         const startRatio = Math.max(0, (pressStartX - r.left) / r.width);
         const endRatio = Math.min(1, (e.clientX - r.left) / r.width);

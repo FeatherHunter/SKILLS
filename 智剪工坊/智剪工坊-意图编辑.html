@@ -903,13 +903,14 @@
     /* 框选实时高亮层 */
     .tl-select-overlay {
       position: absolute;
-      top: 2px;
-      bottom: 2px;
-      background: rgba(0, 113, 227, 0.25);
-      border: 1px solid #0071e3;
-      border-radius: 3px;
+      top: 0;
+      bottom: 0;
+      background: rgba(0, 113, 227, 0.35);
+      border: 2px solid #0071e3;
+      border-radius: 4px;
       pointer-events: none;
-      z-index: 5;
+      z-index: 999;
+      box-shadow: 0 0 0 1px #fff, 0 4px 12px rgba(0, 113, 227, 0.5);
     }
     .timeline-track-inner {
       position: relative;
@@ -958,13 +959,8 @@
       /* v2.62 别名:留兼容,但不再独立使用 */
     }
     .tl-seg:hover {
-      transform: translateY(-2px);
-      z-index: 10;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    }
-    .tl-seg.op-seg:hover {
-      transform: translateY(-2px);
-      z-index: 10;
+      filter: brightness(1.08);  /* 不创建新 stacking context */
+      z-index: 1;
     }
     .tl-seg-op-badge {
       position: absolute;
@@ -2792,11 +2788,11 @@
           // 进入 selecting:创建 overlay div
           pressOverlay = document.createElement('div');
           pressOverlay.className = 'tl-select-overlay';
-          const r = track.getBoundingClientRect();
+          const r = inner.getBoundingClientRect();
           const x = Math.max(0, pressStartX - r.left);
           pressOverlay.style.left = x + 'px';
           pressOverlay.style.width = '0px';
-          track.appendChild(pressOverlay);
+          inner.appendChild(pressOverlay);
           track.classList.add('selecting');
         }, 200);
       };
@@ -2811,7 +2807,7 @@
       // 实时更新 overlay 宽度
       const onMove = (e) => {
         if (!pressOverlay) return;
-        const r = track.getBoundingClientRect();
+        const r = inner.getBoundingClientRect();
         const x = Math.max(0, pressStartX - r.left);
         const width = Math.max(0, Math.min(r.width, e.clientX - r.left) - x);
         pressOverlay.style.left = x + 'px';
@@ -2822,6 +2818,7 @@
       document.addEventListener('mouseup', (e) => {
         const wasSelecting = track.classList.contains('selecting');
         onPressCancel();
+        console.log('[v2.66] mouseup: wasSelecting=', wasSelecting);
         if (!wasSelecting) return;
         const r = inner.getBoundingClientRect();
         const startRatio = Math.max(0, (pressStartX - r.left) / r.width);
@@ -2829,6 +2826,7 @@
         if (Math.abs(endRatio - startRatio) < 0.005) return;
         const startSec = Math.min(startRatio, endRatio) * duration;
         const endSec = Math.max(startRatio, endRatio) * duration;
+        console.log('[v2.66] onTrackSelect called: startSec=', startSec.toFixed(2), 'endSec=', endSec.toFixed(2));
         if (typeof onTrackSelect === 'function') onTrackSelect(videoIndex, startSec, endSec);
       });
 

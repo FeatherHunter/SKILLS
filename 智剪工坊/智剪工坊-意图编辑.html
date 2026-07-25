@@ -233,25 +233,25 @@
     }
 
     /* ============ v1.20+timeline: 自定义 timeline(类剪映) ============ */
-    /* v2.107:timeline 紧贴 video,共享 inline-preview 容器,padding 给 ruler/track 左右 */
+    /* v2.109:timeline 紧贴 video,padding/border 给容器 */
     .timeline {
       width: 100%;
       margin-top: 0;
-      padding: 8px 12px 10px;
+      padding: 8px 0 10px;        /* 上下 padding,左右 0(inner 自己控制) */
       user-select: none;
       -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
+    /* ruler 在 inner 内,跟着 inner.style.width 一起滚,内容对齐到 inner 0 和 width 处 */
     .timeline-ruler {
       position: relative;
       height: 18px;
       font-size: 10px;
       color: var(--secondary);
+      font-variant-numeric: tabular-nums;
       overflow: hidden;
       border-bottom: 1px solid var(--border);
-      font-variant-numeric: tabular-nums;
-      padding: 0 12px;       /* v2.107:左右 12px,tick 不贴边 */
-      box-sizing: border-box;
+      pointer-events: none;
     }
     .timeline-ruler .tick {
       position: absolute;
@@ -262,30 +262,8 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
-    /* v2.108:进度条不再独立,改用 track 底部 4px 嵌入 stripe */
-    .timeline-progress-bar {
-      position: absolute;
-      left: 12px;
-      right: 12px;
-      bottom: 0;
-      height: 4px;
-      background: rgba(0, 0, 0, 0.06);
-      border-radius: 2px;
-      cursor: pointer;
-      pointer-events: auto;
-      margin: 0;
-      border: none;
-      padding: 0;
-    }
-    .timeline-progress-cursor {
-      position: absolute;
-      top: -3px;
-      bottom: -3px;
-      width: 2px;
-      background: #ff3b30;
-      pointer-events: none;
-      box-shadow: 0 0 4px rgba(255, 59, 48, 0.7);
-    }
+
+
     .tl-seg-excluded {
       background: #d1d1d6 !important;
       opacity: 0.4;
@@ -312,50 +290,50 @@
     }
     .seg-restore-btn:hover { background: #2a9149; }
 
+    /* v2.109:.timeline-track 现在是 scroll-wrap,只负责横向溢出 */
     .timeline-track {
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      cursor: pointer;
+    }
+    /* 内容容器(JS 控制 width = pps * duration) */
+    .timeline-inner {
+      position: relative;
+      width: 100%;
+      min-width: 100%;
+    }
+    /* v2.109:.timeline-segments-area 接管 segments,装在 inner 内 */
+    .timeline-segments-area {
       position: relative;
       min-height: 48px;
       background: #f5f5f7;
       border: 1px solid #e5e5ea;
       border-radius: 8px;
       cursor: pointer;
-      overflow: hidden;
+      padding: 6px 0;            /* 顶部底部各 6px,让段条不贴上下边框 */
       display: flex;
       flex-direction: row;
       align-items: stretch;
-      padding: 0 12px 8px;   /* v2.108:底 8px 给 progress stripe */
       box-sizing: border-box;
-    }
-    /* 隐藏横向滚动条(防止被误读为播放进度条) */
-    .timeline-track-inner {
-      position: relative;
-      height: 100%;
-      min-width: 100%;
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
       gap: 2px;
-      width: 100%;              /* v2.106 默认占满父容器,让 inline style.width 生效 */
-      min-height: 36px;
     }
-    .timeline-track {
-      overflow-x: auto;          /* inner 撑出后,允许外层横向滚动 */
-    }
+
     .timeline-playhead {
       position: absolute;
-      top: 0;
+      top: 0;                   /* v2.109:从 ruler 顶部开始 */
+      bottom: 0;                /* 到 segments 底部,跨整个 timeline */
       left: 0;
       width: 2px;
-      height: 100%;
       background: #ff3b30;
       pointer-events: none;
-      z-index: 2;
+      z-index: 3;
       box-shadow: 0 0 4px rgba(255, 59, 48, 0.7);
     }
     .timeline-playhead::before {
       content: "";
       position: absolute;
-      top: -3px;
+      top: -2px;                /* 三角形在 ruler 上方 */
       left: -4px;
       width: 10px;
       height: 6px;
@@ -985,15 +963,7 @@
       z-index: 999;
       box-shadow: 0 0 0 1px #fff, 0 4px 12px rgba(0, 113, 227, 0.5);
     }
-    .timeline-track-inner {
-      position: relative;
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      gap: 2px;
-      min-height: 36px;
-      width: 100%;            /* v2.106 默认占满父容器 */
-    }
+
     /* v2.90 hover 时间指示器(鼠标停时显示当前位置) */
     .tl-time-indicator {
       position: absolute;
@@ -1015,7 +985,7 @@
       font-family: ui-monospace, "SF Mono", Menlo, monospace;
     }
     .timeline-track:hover ~ .tl-time-indicator,
-    .timeline-track-inner:hover ~ .tl-time-indicator {
+    .timeline-segments-area:hover ~ .tl-time-indicator {
       opacity: 1;
     }
     .tl-time-indicator::after {
@@ -2214,17 +2184,14 @@
                 <button class="inline-preview-close" type="button" data-inline-preview-close="${i}" title="收起预览">✕</button>
               </div>
               <video class="inline-preview-video" preload="metadata" playsinline></video>
-              <!-- v1.20+timeline: 自定义 timeline, 类剪映(单击跳转 + Ctrl+滚轮缩放) -->
+              <!-- v2.109 timeline 结构:ruler/segments/playhead 共享 inner,统一缩放 -->
               <div class="timeline" data-timeline>
-                <div class="timeline-ruler" data-timeline-ruler></div>
                 <div class="timeline-track" data-timeline-track>
-                  <div class="timeline-track-inner">
+                  <div class="timeline-inner" data-timeline-inner>
+                    <div class="timeline-ruler" data-timeline-ruler></div>
+                    <div class="timeline-segments-area" data-timeline-segments></div>
                     <div class="timeline-playhead" data-timeline-playhead></div>
                   </div>
-                </div>
-                <!-- v2.103 进度条在同一 timeline 内(段条下方,鼠标停留红线) -->
-                <div class="timeline-progress-bar" data-timeline-progress>
-                  <div class="timeline-progress-cursor" data-timeline-cursor></div>
                 </div>
                 <div class="timeline-info">
                   <button type="button" class="timeline-play-btn" data-timeline-play title="播放/暂停 (空格)">▶</button>
@@ -2889,8 +2856,8 @@
       }
 
       // v2.0:渲染彩虹段 + 折叠区(单源真相)
-      const trackInner = previewEl.querySelector('.timeline-track-inner');
-      if (trackInner) renderTimelineSegments(trackInner, i);
+      const segmentsArea = previewEl.querySelector('[data-timeline-segments]');
+      if (segmentsArea) renderTimelineSegments(segmentsArea, i);
       renderSegmentsPanel(i);
 
       // 5. v1.25 多视频播放互斥:一次性绑定 play 事件,除当前 video 外全部 pause。
@@ -2929,11 +2896,12 @@
         ? parseInt(previewEl.closest('.video-card').dataset.cardIdx, 10) : 0);
       const ruler = previewEl.querySelector('[data-timeline-ruler]');
       const track = previewEl.querySelector('[data-timeline-track]');
-      const inner = track.querySelector('.timeline-track-inner');
+      const inner = previewEl.querySelector('[data-timeline-inner]');
+      const segmentsArea = previewEl.querySelector('[data-timeline-segments]');
       const playhead = previewEl.querySelector('[data-timeline-playhead]');
       const timeLabel = previewEl.querySelector('[data-timeline-time]');
       const playBtn = previewEl.querySelector('[data-timeline-play]');
-      if (!track || !inner || !playhead || !timeLabel) return;
+      if (!track || !inner || !segmentsArea || !playhead || !timeLabel) return;
 
       // 状态
       let duration = 0;
@@ -3184,9 +3152,9 @@
           window.__tlPps = 0;
           syncSegmentsToVideoDuration();
           init();
-          const innerEl = previewEl.querySelector('.timeline-track-inner');
-          if (innerEl && typeof renderTimelineSegments === 'function') {
-            renderTimelineSegments(innerEl, videoIndex);
+          const segmentsAreaEl = previewEl.querySelector('[data-timeline-segments]');
+          if (segmentsAreaEl && typeof renderTimelineSegments === 'function') {
+            renderTimelineSegments(segmentsAreaEl, videoIndex);
           }
           if (typeof renderSegmentsPanel === 'function') {
             renderSegmentsPanel(videoIndex);
@@ -3201,9 +3169,9 @@
           window.__tlPps = 0;
           syncSegmentsToVideoDuration();
           init();
-          const innerEl = previewEl.querySelector('.timeline-track-inner');
-          if (innerEl && typeof renderTimelineSegments === 'function') {
-            renderTimelineSegments(innerEl, videoIndex);
+          const segmentsAreaEl = previewEl.querySelector('[data-timeline-segments]');
+          if (segmentsAreaEl && typeof renderTimelineSegments === 'function') {
+            renderTimelineSegments(segmentsAreaEl, videoIndex);
           }
           if (typeof renderSegmentsPanel === 'function') {
             renderSegmentsPanel(videoIndex);
@@ -4592,14 +4560,14 @@
       return keys[0] || '';
     }
 
-    function renderTimelineSegments(trackInner, videoIndex) {
+    function renderTimelineSegments(segmentsArea, videoIndex) {
       // v2.6 重写:从零构建,清空 + DOM 字符串拼接,确保一定渲染
-      trackInner.innerHTML = '';
+      segmentsArea.innerHTML = '';
       const st = SegmentState.getAll(videoIndex);
 
       // 1. 空 segments → 一条浅灰虚线占位段
       if (!st.segments || st.segments.length === 0) {
-        trackInner.innerHTML = `
+        segmentsArea.innerHTML = `
           <div class="tl-seg tl-seg-empty" style="flex:1"></div>
         `;
         return;
@@ -4651,7 +4619,7 @@
         // pixelsPerSecond 来自 setupTimeline(实时同步到 window.__tlPps)
         //   pps > 0:用户已 Ctrl+滚轮缩放,精确按像素
         //   pps = 0:全宽铺满模式,按 inner 宽度比例 fallback
-        const innerWidth = trackInner.clientWidth || 600;
+        const innerWidth = segmentsArea.parentElement.clientWidth || 600;
         const totalSecFallback = st.segments.reduce(
           (sum, sg) => sum + (sg.end_sec - sg.start_sec), 0
         ) || 1;
@@ -4678,10 +4646,10 @@
         `;
       });
 
-      trackInner.innerHTML = html;
+      segmentsArea.innerHTML = html;
 
       // 3. 给每个段绑定点击 → 跳到 start_sec + 打开面板
-      const segs = trackInner.querySelectorAll('.tl-seg:not(.tl-seg-empty)');
+      const segs = segmentsArea.querySelectorAll('.tl-seg:not(.tl-seg-empty)');
       segs.forEach(seg => {
         const segId = seg.dataset.segId;
         seg.addEventListener('click', (e) => {
@@ -4728,15 +4696,15 @@
       showInformDialog(`本次操作将产生 ${result.length} 个时间段(预览)`, segHtml, {
         onConfirm: () => {
           // 确认:state 保持新状态(已是 newBackup)
-          const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
-          if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+          if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
           renderSegmentsPanel(videoIndex);
         },
         onCancel: () => {
           // 取消:restore backup(state 回到拖框前)
           st.segments = backup.segments; st.excluded = backup.excluded;
-          const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
-          if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+          if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
           renderSegmentsPanel(videoIndex);
         }
       });
@@ -4773,8 +4741,8 @@
 
     function refreshTimelineAndPanel(videoIndex, segId) {
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
-      const trackInner = card?.querySelector('.timeline-track-inner');
-      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      const segmentsArea = card?.querySelector('.timeline-track-inner');
+      if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
       if (segId) {
         setTimeout(() => openSegmentPanel(videoIndex, segId), 0);
@@ -4873,8 +4841,8 @@
       panel.querySelector('.seg-label-input').addEventListener('input', e => {
         seg.label = e.target.value;
         renderSegmentsPanel(videoIndex);
-        const trackInner = card.querySelector('.timeline-track-inner');
-        if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+        const segmentsArea = card.querySelector('.timeline-track-inner');
+        if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       });
 
       // 段级 note 同步
@@ -4968,15 +4936,15 @@
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
       const panel = card?.querySelector('.segment-panel');
       if (panel) panel.remove();
-      const trackInner = card?.querySelector('.timeline-track-inner');
-      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      const segmentsArea = card?.querySelector('.timeline-track-inner');
+      if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
     }
 
     function restoreSegment(videoIndex, segId) {
       SegmentState.restore(videoIndex, segId);
-      const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
-      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+      if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
     }
 

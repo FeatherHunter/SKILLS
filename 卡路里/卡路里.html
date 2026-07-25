@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡路里 - Skill 手册 v2.1.0</title>
-<meta name="skill-version" content="2.4.3">
+<meta name="skill-version" content="2.4.4">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -836,6 +836,7 @@
     <p><span class="workflow-label cli">CLI</span><code>body_composition.py add --date 2026-07-25 --source home_caliper --caliper-chest 5 --caliper-abdominal 10 --caliper-thigh 15 --caliper-tricep 8 --caliper-subscapular 10 --caliper-suprailiac 8 --caliper-midaxillary 7 --body-fat-pct 18</code></p>
     <p><span class="workflow-label flow">工作流</span>7 皮褶钳测点(mm,严格 (0, 100)) + 来源 + 年龄 + 性别 → CLI 验 7 点必填 + 范围 → JSON Pollock 7 点法自动算(男/女公式不同) → 写 body_composition 表 → 输出 <code>{status: ok, data: {id}, message: ...}</code></p>
     <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_composition_wizard.html</code></strong>(单页 + <code>&lt;details&gt;</code> 分组 · 飞书 webview 兼容 · playwright 验证 4 details + 10 inputs)</p>
+    <p><span class="workflow-label warn">⚠️ AI 决策</span><strong>场景 1(用户没给数据)</strong>:不传预填 args,空 wizard 给你填 · <strong>场景 2(用户给数据如"腹 100 胸 105")</strong>:传 16 个预填 args,wizard 已填好,verify 后复制 prompt。详见 <code>SKILL.md §⚠️ 强制性规定 第 5 条</code>。</p>
   </div>
 </details>
 <details>
@@ -878,6 +879,7 @@
     <p><span class="workflow-label cli">CLI</span><code>body_measurements.py add --date 2026-07-25 [--chest-cm 95 --waist-cm 75 --abdomen-cm 78 --hip-cm 92 --shoulder-cm 45 --left-thigh-cm 55 --right-thigh-cm 55 --left-calf-cm 36 --right-calf-cm 36 --left-arm-cm 32 --right-arm-cm 32 --left-forearm-cm 26 --right-forearm-cm 26] [--tag X] [--note Y]</code></p>
     <p><span class="workflow-label flow">工作流</span>13 围度分 3 组(上身/下身/手臂)· CLI 验 ≥1 项必填 + 各列范围 → 写 body_measurements → 输出 <code>{status: ok, data: {id}, message: ...}</code></p>
     <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_measurements_wizard.html</code></strong>(单页 + <code>&lt;details&gt;</code> 3 分组 · 飞书 webview 兼容 · playwright 验证 6 details + 15 inputs)</p>
+    <p><span class="workflow-label warn">⚠️ AI 决策</span><strong>场景 1(用户没给数据)</strong>:不传预填 args,空 wizard 给你填 · <strong>场景 2(用户给数据如"腹 100 胸 105 臀 105...")</strong>:传 16 个预填 args,wizard 已填好,verify 后复制 prompt。详见 <code>SKILL.md §⚠️ 强制性规定 第 5 条</code>。</p>
   </div>
 </details>
 <details>

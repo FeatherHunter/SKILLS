@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
   触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、改吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、批量导入、校验批量、查食品库去重、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、生成身材照GIF、记体脂、查体脂、删体脂、查体脂趋势、记围度、查围度、删围度、查围度趋势、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、扫禁忌、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.3", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.4", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -14,6 +14,15 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.3", "requires": { "py
 2. **优先级**:本强制性规定优先级最高,高于下方所有操作规范和功能说明。
 3. **变更确认**:对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认,未经确认不得执行写入操作。
 4. ⭐ **HTML-First 铁则(V1.3 原则 11)**:唤醒词命中 SKILL 后,**只要 §已实现模板表 列出对应 HTML 模板,AI 必须 invoke HTML 工作流(渲染 → 打开)**。**严禁文字答**。trigger 无对应 HTML 模板时可文字答(但默认推荐 §输出位置 生成 HTML)。违反 = 协议 fail mode,改 SKILL.md 不改正,循环 ≤ 3 次。详见 §AI 行为:HTML-First 表。
+5. ⭐ **Wizard Verify 决策铁则(v2.4.3 增,用户实测反馈)**:对 `记围度` / `记体脂` 等**配置型 wizard** 的 trigger,AI **必须**根据用户输入决定走哪条流程:
+
+   | 场景 | 触发 | AI 行为 | 命令模板 |
+   |---|---|---|---|
+   | **场景 1**(主动填) | 用户说 "记围度" / "记体脂" 但**没给数据** | render 脚本**不传预填 args**(空 wizard)→ 用户手动填 → 复制 prompt → AI 调 CLI | `python scripts/render_body_measurements_wizard.py` |
+   | **场景 2**(预填 verify) ⭐ | 用户说 "记围度 胸 95 腰 80 臀 100..." **给数据** | render 脚本**传预填 args**(wizard 已填好)→ 用户打开 verify → 复制 prompt → AI 调 CLI | `python scripts/render_body_measurements_wizard.py --date 2026-07-26 --chest-cm 95 --waist-cm 80 ...` |
+   | 场景 3(信任) | 用户**明确说** "直接录" / "我信你" | 跳过 wizard,直接调 `body_measurements.py add` 写库 + 返回 crud_receipt.html 回执 | `python scripts/body_measurements.py add ...` |
+
+   **禁止**:**不**判断用户场景就**直接调 CLI** 写库(跳过 verify)— 即使数据看起来对。这是 v2.4.2 → v2.4.3 修复的根因:用户实测反馈 "我的维度 XXXXXXX" 后 AI 应走场景 2(预填 verify)而不是直接 CLI。违反 = 协议 fail mode。
 
 ---
 
@@ -754,7 +763,7 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 | 唤醒词 | 功能 | CLI |
 |---|---|---|
-| 记体脂 | 皮褶钳测 7 点(自动算体脂率 Jackson-Pollock)| `python scripts/body_composition.py add ...` → **HTML:`body_composition_wizard.html`** |
+| 记体脂 | 皮褶钳测 7 点(自动算体脂率 Jackson-Pollock)| `python scripts/body_composition.py add ...` → **HTML:`body_composition_wizard.html`** · **场景 1/2 决策见 §⚠️ 强制性规定 第 5 条** |
 | 查体脂 | 历史 | `python scripts/body_composition.py list ...` → **HTML:`body_composition_wizard.html`** |
 | 查体脂趋势 | 时间线 | `python scripts/body_composition.py trend` → **HTML:`body_composition_wizard.html`** |
 | 改体脂 | 修改记录(待实现) | `python scripts/body_composition.py update(待实现)` |
@@ -778,7 +787,7 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 | 唤醒词 | 功能 | CLI |
 |---|---|---|
-| 记围度 | 13 部位(至少 1 项必填)| `python scripts/body_measurements.py add ...` → **HTML:`body_measurements_wizard.html`** |
+| 记围度 | 13 部位(至少 1 项必填)| `python scripts/body_measurements.py add ...` → **HTML:`body_measurements_wizard.html`** · **场景 1/2 决策见 §⚠️ 强制性规定 第 5 条** |
 | 查围度 | 历史 | `python scripts/body_measurements.py list ...` → **HTML:`body_measurements_wizard.html`** |
 | 查围度趋势 | 时间线 | `python scripts/body_measurements.py trend --metric waist_cm` → **HTML:`body_measurements_wizard.html`** |
 | 改围度 | 修改记录(待实现) | `python scripts/body_measurements.py update(待实现)` |

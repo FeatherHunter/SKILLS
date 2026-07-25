@@ -3931,6 +3931,256 @@
       }
     };
     window.__segmentState = SegmentState;
+
+    // ============ v2.0 段渲染 / UI 操作函数 ============
+    function getSegOpBadgeText(ops) {
+      if (!ops) return '';
+      const keys = Object.keys(ops);
+      if (keys.includes('mute')) return '🎤';
+      if (keys.includes('speed-up')) {
+        const f = ops['speed-up'].factor || 2;
+        return `${f}x`;
+      }
+      if (keys.includes('slow-down')) {
+        const f = ops['slow-down'].factor || 0.5;
+        return `${f}x`;
+      }
+      if (keys.includes('reverse')) return '🔄';
+      if (keys.includes('color-grade')) return '🎨';
+      return keys[0] || '';
+    }
+
+    function renderTimelineSegments(trackInner, videoIndex) {
+      trackInner.innerHTML = '';
+      const st = SegmentState.getAll(videoIndex);
+      const totalDuration = st.duration || 60;
+
+      if (!st.segments || st.segments.length === 0) {
+        const seg = document.createElement('div');
+        seg.className = 'tl-seg';
+        seg.style.flex = '1';
+        seg.style.background = '#5a8fd0';
+        seg.innerHTML = '<span>整段保留</span>';
+        trackInner.appendChild(seg);
+        return;
+      }
+
+      st.segments.forEach((s, idx) => {
+        const seg = document.createElement('div');
+        seg.className = 'tl-seg';
+        if (s.ops && Object.keys(s.ops).length > 0) seg.classList.add('op-seg');
+        const segLen = Math.max(0.1, s.end_sec - s.start_sec);
+        seg.style.flex = String(segLen);
+        const colorVar = `--seg-color-${idx % 8}`;
+        seg.style.background = `var(${colorVar})`;
+        seg.dataset.segId = s.id;
+        seg.dataset.segIdx = idx;
+
+        const labelText = (s.label || `[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]`);
+        const txt = document.createElement('span');
+        txt.textContent = segLen >= 2 ? labelText : '';
+        txt.style.padding = '0 4px';
+        txt.style.overflow = 'hidden';
+        txt.style.textOverflow = 'ellipsis';
+        txt.style.whiteSpace = 'nowrap';
+        seg.appendChild(txt);
+
+        if (s.ops && Object.keys(s.ops).length > 0) {
+          const badge = document.createElement('div');
+          badge.className = 'tl-seg-op-badge';
+          badge.textContent = getSegOpBadgeText(s.ops);
+          seg.appendChild(badge);
+        }
+
+        const tip = document.createElement('div');
+        tip.className = 'seg-tip';
+        const opSummary = s.ops && Object.keys(s.ops).length > 0
+          ? Object.keys(s.ops).map(k => k === 'speed-up' ? `加速 ${s.ops[k].factor||2}x`
+            : k === 'slow-down' ? `减速 ${s.ops[k].factor||0.5}x` : k).join(' + ')
+          : '(无 op)';
+        tip.innerHTML = `<div><b>${escapeHtml(s.label || '(未命名)')}</b> [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${segLen.toFixed(1)}s</div><div style="opacity:0.7;margin-top:2px">${escapeHtml(opSummary)}</div>`;
+        seg.appendChild(tip);
+
+        seg.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openSegmentPanel(videoIndex, s.id);
+        });
+
+        trackInner.appendChild(seg);
+      });
+    }
+
+    function onTrackSelect(videoIndex, startSec, endSec) {
+      const result = SegmentState.addOrSplit(videoIndex, startSec, endSec);
+      if (!result || result.modified === 'noop') {
+        if (result && result.modified === 'noop') showToast('区间与已有段完全重合');
+        return;
+      }
+      const segHtml = result.segments.map(s =>
+        `<div>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${escapeHtml(s.label||'(未命名)')}</div>`
+      ).join('');
+      showInformDialog(`本次操作产生 ${result.length} 个时间段`, segHtml);
+      const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      renderSegmentsPanel(videoIndex);
+    }
+
+    function showInformDialog(title, bodyHTML) {
+      const old = document.querySelector('.modal-overlay');
+      if (old) old.remove();
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h3>${escapeHtml(title)}</h3>
+          <div class="seg-list-in-modal">${bodyHTML}</div>
+          <button class="btn" onclick="this.closest('.modal-overlay').remove()">确定</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function openSegmentPanel(videoIndex, segId) {
+      const state = SegmentState.getAll(videoIndex);
+      const seg = state.segments.find(s => s.id === segId);
+      if (!seg) return;
+
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
+      if (!card) return;
+
+      const old = card.querySelector('.segment-panel');
+      if (old) old.remove();
+
+      const panel = document.createElement('div');
+      panel.className = 'segment-panel';
+      panel.dataset.videoIndex = String(videoIndex);
+      panel.dataset.segId = segId;
+      panel.innerHTML = `
+        <div class="segment-panel-inner">
+          <label>label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名"></label>
+          <div class="seg-op-buttons">
+            <button data-op="mute">🔇 静音</button>
+            <button data-op="speed-up">⏩ 倍速</button>
+            <button data-op="slow-down">🐌 减速</button>
+            <button data-op="reverse">🔄 反转</button>
+            <button data-op="del" class="del-btn">🗑️ 删掉</button>
+          </div>
+          <button class="close-btn" data-act="close">✕ 关闭</button>
+        </div>
+      `;
+      // ops-group 之前插入
+      const opsGroup = card.querySelector('.ops-group');
+      if (opsGroup) opsGroup.before(panel);
+      else card.appendChild(panel);
+
+      panel.querySelector('.seg-label-input').addEventListener('input', e => {
+        seg.label = e.target.value;
+        renderSegmentsPanel(videoIndex);
+        const trackInner = card.querySelector('.timeline-track-inner');
+        if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      });
+
+      panel.querySelectorAll('.seg-op-buttons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const op = btn.dataset.op;
+          if (op === 'del') { deleteSegment(videoIndex, segId); return; }
+          if (op === 'speed-up' || op === 'slow-down') {
+            const def = op === 'speed-up' ? '1.5' : '0.5';
+            const raw = prompt(`${op === 'speed-up' ? '加速' : '减速'}倍数 (默认 ${def})`, def);
+            const factor = parseFloat(raw);
+            if (isNaN(factor) || factor <= 0) return;
+            seg.ops = seg.ops || {};
+            seg.ops[op] = { on: true, factor };
+          } else {
+            seg.ops = seg.ops || {};
+            seg.ops[op] = { on: true };
+          }
+          const trackInner = card.querySelector('.timeline-track-inner');
+          if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+          renderSegmentsPanel(videoIndex);
+        });
+      });
+
+      panel.querySelector('[data-act="close"]').addEventListener('click', () => panel.remove());
+    }
+
+    function deleteSegment(videoIndex, segId) {
+      if (!confirm('删掉这段?可从折叠区"已删段"恢复。')) return;
+      SegmentState.delete(videoIndex, segId);
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
+      const panel = card?.querySelector('.segment-panel');
+      if (panel) panel.remove();
+      const trackInner = card?.querySelector('.timeline-track-inner');
+      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      renderSegmentsPanel(videoIndex);
+    }
+
+    function restoreSegment(videoIndex, segId) {
+      SegmentState.restore(videoIndex, segId);
+      const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      renderSegmentsPanel(videoIndex);
+    }
+
+    function jumpToSegment(videoIndex, segId) {
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
+      const segEl = card?.querySelector(`.tl-seg[data-seg-id="${segId}"]`);
+      if (!segEl) return;
+      segEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      segEl.classList.add('flash');
+      setTimeout(() => segEl.classList.remove('flash'), 2000);
+    }
+
+    function renderSegmentsPanel(videoIndex) {
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
+      if (!card) return;
+      let panel = card.querySelector('.segments-panel');
+      if (panel) panel.remove();
+      panel = document.createElement('div');
+      panel.className = 'segments-panel';
+      const state = SegmentState.getAll(videoIndex);
+
+      const segHtml = state.segments.map(s => `
+        <div class="seg-item">
+          <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || '(未命名)')} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
+          <div style="display:flex;gap:4px">
+            <button data-act="jump" data-seg-id="${s.id}">跳转</button>
+            <button data-act="edit" data-seg-id="${s.id}">编辑</button>
+          </div>
+        </div>
+      `).join('') || '<p class="empty-hint">暂无段(在 timeline 长按拖动创建)</p>';
+
+      const delHtml = state.excluded.map(s => `
+        <div class="deleted-seg-item">
+          <span>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
+          <button class="seg-restore" data-act="restore" data-seg-id="${s.id}">♻️ 恢复</button>
+        </div>
+      `).join('') || '<p class="empty-hint">无</p>';
+
+      panel.innerHTML = `
+        <details open>
+          <summary>📋 时间段(${state.segments.length})</summary>
+          <div class="seg-list">${segHtml}</div>
+        </details>
+        <details>
+          <summary>🗑️ 已删段(${state.excluded.length})</summary>
+          <div class="del-list">${delHtml}</div>
+        </details>
+      `;
+
+      const opsGroup = card.querySelector('.ops-group');
+      if (opsGroup) opsGroup.before(panel);
+      else card.appendChild(panel);
+
+      panel.addEventListener('click', e => {
+        const act = e.target.dataset.act;
+        const sid = e.target.dataset.segId;
+        if (!act || !sid) return;
+        if (act === 'edit') openSegmentPanel(videoIndex, sid);
+        else if (act === 'jump') jumpToSegment(videoIndex, sid);
+        else if (act === 'restore') restoreSegment(videoIndex, sid);
+      });
+    }
   </script>
 </body>
 </html>

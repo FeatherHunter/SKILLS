@@ -32,13 +32,14 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | [_assets/template_skeleton.html](./_assets/template_skeleton.html) | 4 段式骨架 |
 | [SKILL开发总纲V1.0.html](./SKILL开发总纲V1.0.html) | 可视化镜像(主入口 HTML) |
 
-## 5 个不可违背的钩子
+## 6 个不可违背的钩子
 
 1. **HTML 同步硬规则** — SKILL.md 任何改动,`<skill>.html` 必须同 commit 同步
 2. **改动前 3 问** — 影响哪些文件 / 数据迁移 / 回滚方案
 3. **触发词设计 v2** — 8 ≤ N,无上限;4 元组(动作+对象+维度+类型)
 4. **CLI 阻塞判定** — CLI 不支持 JSON → 模板做不出来
 5. **HTML 单工铁律(⭐ 最高)** — HTML 是单工设备,过程型 HTML 必须设计"复制 prompt"
+6. **Fresh Agent 验证(新)** — commit 前必须由**零上下文 agent**执行唤醒词通过;失败改 SKILL.md 不改正,循环 ≤ 3 次
 
 ## 来源声明
 

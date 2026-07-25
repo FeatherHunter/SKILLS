@@ -71,7 +71,7 @@
   <li><a href="#p3">第三部分 · 触发词设计 v2</a></li>
   <li><a href="#p4">第四部分 · 可视化与注入 v2</a></li>
   <li><a href="#p5">第五部分 · 工程仪式</a></li>
-  <li><a href="#p6">第六部分 · 5 个不可违背的钩子</a></li>
+  <li><a href="#p6">第六部分 · 6 个不可违背的钩子</a></li>
   <li><a href="#p7">第七部分 · 3 个可加载资产</a></li>
   <li><a href="#p8">第八部分 · 自我检查(动手前)</a></li>
   <li><a href="#p9">第九部分 · 附录 · 演化规则(RULE Forms)</a></li>
@@ -178,10 +178,10 @@
 
 <p>→ 详见 <a class="md-link" href="05-工程仪式.md">05-工程仪式.md</a></p>
 
-<!-- ========== P6: 5 钩子 ========== -->
-<h2 id="p6">第六部分 · 5 个不可违背的钩子</h2>
+<!-- ========== P6: 6 钩子 ========== -->
+<h2 id="p6">第六部分 · 6 个不可违背的钩子</h2>
 
-<p>这 5 条是总纲的<strong>硬规则</strong>。违反即视为改动未准备好。</p>
+<p>这 6 条是总纲的<strong>硬规则</strong>。违反即视为改动未准备好。</p>
 
 <div class="hooks-list">
 <ol>
@@ -190,6 +190,7 @@
 <li><strong>触发词设计 v2</strong> — 8 ≤ N,无上限;4 元组(动作+对象+维度+类型)</li>
 <li><strong>CLI 阻塞判定</strong> — CLI 不支持 JSON → 模板做不出来</li>
 <li><strong>HTML 单工铁律(⭐ 最高)</strong> — HTML 是单工设备,过程型 HTML 必须设计"复制 prompt"</li>
+<li><strong>Fresh Agent 验证(⭐ 新)</strong> — commit 前必须由<b>零上下文 agent</b>执行唤醒词通过;失败改 SKILL.md 不改正,循环 ≤ 3 次</li>
 </ol>
 </div>
 

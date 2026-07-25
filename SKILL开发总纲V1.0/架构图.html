@@ -128,7 +128,7 @@
   <li><a href="#s1">一图总览</a></li>
   <li><a href="#s2">9 文件 + 3 资产 · 每个的角色</a></li>
   <li><a href="#s3">AI 阅读路径 · 3 种场景</a></li>
-  <li><a href="#s4">5 钩子映射 · 详细在哪</a></li>
+  <li><a href="#s4">6 钩子映射 · 详细在哪</a></li>
   <li><a href="#s5">设计令牌流动 · 从哪来到哪去</a></li>
   <li><a href="#s6">演化时间线 · 7 个 commit</a></li>
   <li><a href="#s7">设计哲学 · 总纲遵守的 5 条</a></li>
@@ -192,7 +192,7 @@
   <div class="file-num">E</div>
   <div>
     <div class="file-name">SKILL.md</div>
-    <div class="file-meta">2.5 KB · YAML frontmatter + 30秒回答 + 文件清单 + 5 钩子</div>
+    <div class="file-meta">2.5 KB · YAML frontmatter + 30秒回答 + 文件清单 + 6 钩子</div>
     <div class="file-desc"><b>作用</b>:AI 主入口。description 决定 AI 何时加载总纲。<b>何时读</b>:首次接触 + 任何 Skill 任务开始前。</div>
   </div>
 </div>
@@ -329,7 +329,7 @@
     <span style="color: var(--fg2); font-size: 14px;">用户说"看看这个改动 OK 吗" / Code Review</span>
   </div>
   <div class="scenario-flow">
-    <span class="step">SKILL.md 5 钩子</span>
+    <span class="step">SKILL.md 6 钩子</span>
     <span>→</span>
     <span class="step">★ 02 5 层自检</span>
     <span>→</span>
@@ -337,13 +337,13 @@
     <span>→</span>
     <span class="step">05 Commit 规范</span>
   </div>
-  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:用 5 钩子逐条勾;用 §02 5 层自检清单;用 §04 模式对照看 HTML 是否错配。</p>
+  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:用 6 钩子逐条勾(尤其钩子 ⑥ Fresh Agent 验证);用 §02 5 层自检清单;用 §04 模式对照看 HTML 是否错配。</p>
 </div>
 
-<!-- ========== §4 5 钩子映射 ========== -->
-<h2 id="s4">5 钩子映射 · 详细在哪</h2>
+<!-- ========== §4 6 钩子映射 ========== -->
+<h2 id="s4">6 钩子映射 · 详细在哪</h2>
 
-<p>SKILL.md 列出的 5 个<b>不可违背的钩子</b>。每条钩子详细规则散落在不同章节:</p>
+<p>SKILL.md 列出的 6 个<b>不可违背的钩子</b>。每条钩子详细规则散落在不同章节:</p>
 
 <div class="hook-row">
   <div class="hook-key">① HTML 同步硬规则</div>
@@ -365,8 +365,12 @@
   <div class="hook-key"><span class="star">★</span> ⑤ HTML 单工铁律(最高)</div>
   <div class="hook-val">§04 原则 10(完整推导) · §04 模式词典"与原则 10 联动" · _assets/style.css .copy-prompt 样式</div>
 </div>
+<div class="hook-row">
+  <div class="hook-key"><span class="star">★</span> ⑥ Fresh Agent 验证(新 · 商用级关卡)</div>
+  <div class="hook-val">§05 "Fresh Agent 黑盒测试协议"(完整 9 步) · §05 Commit 规范(Tested-By 字段) · §06 附录 F · §02 ⑤ 文档层自检</div>
+</div>
 
-<p><b>观察</b>:钩子 ⑤ 在 3 个地方有相关说明(原则 10 详细、模式词典联动、_assets 样式),体现它是<b>最常被违反</b>所以需要多重提醒。</p>
+<p><b>观察</b>:钩子 ⑤ 和 ⑥ 都在多处有相关说明(分别 3 处和 4 处),体现它们是<b>最常被违反且最重要</b>的规则,所以需要多重提醒。</p>
 
 <!-- ========== §5 设计令牌流动 ========== -->
 <h2 id="s5">设计令牌流动 · 从哪来到哪去</h2>

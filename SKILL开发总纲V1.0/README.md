@@ -28,7 +28,7 @@
 | [_assets/injector.py](./_assets/injector.py) | 占位符注入函数 |
 | [_assets/template_skeleton.html](./_assets/template_skeleton.html) | 4 段式骨架 + 5 状态 |
 
-## 5 个不可违背的钩子
+## 6 个不可违背的钩子
 
 见 [SKILL.md](./SKILL.md) 底部。
 

@@ -3177,14 +3177,17 @@
     //   - 播放头用 absolute 定位 + 红色三角标记顶部
     //   - 点击 video 也切换播放/暂停(因为移除了 controls)
 
-    // v2.130:把时间格式化函数提到顶层(原来是 setupTimeline 闭包内 — renderTimelineSegments 不可见 → ReferenceError)
+    // v2.132:formatTime 总是 mm:ss (≥ 1s),小数秒用 .x
+    //   5s → '0:05' / 30s → '0:30' / 90s → '1:30' / 3600s+ → 'h:mm:ss'
     function formatTime(sec) {
       if (!isFinite(sec) || sec < 0) sec = 0;
       const h = Math.floor(sec / 3600);
-      const m = Math.floor(sec / 60);  // 总分钟(支持 0:40 这种 < 1min 仍然 mm:ss)
+      const m = Math.floor(sec / 60);
       const s = sec - m * 60;
-      if (h > 0) return `${h}:${String(m % 60).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
-      if (sec >= 60) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;  // v2.131 ≥60s 总是 mm:ss
+      const sStr = sec < 10 ? `${s.toFixed(1)}` : `${s.toFixed(0)}`;
+      const sPad = m > 0 ? String(s.toFixed(0)).padStart(2, '0') : sStr;
+      if (h > 0) return `${h}:${String(m % 60).padStart(2,'0')}:${String(s.toFixed(0)).padStart(2,'0')}`;
+      if (sec >= 1) return `${m}:${sPad}`;
       return `${s.toFixed(1)}s`;
     }
     function formatTimeRange(s, e) {

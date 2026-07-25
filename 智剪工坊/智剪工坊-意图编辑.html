@@ -1553,7 +1553,7 @@
     }
 
     async function loadWorkspaceFromDirHandle() {
-      wsPathEl.textContent = dirHandle.name || '(未命名)';
+      wsPathEl.textContent = dirHandle.name || `${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`;
       // v1.15 新增:释放旧 entry 的 blob URL(避免重选文件夹时泄漏)
       videoEntries.forEach(e => { if (e._blobUrl) { URL.revokeObjectURL(e._blobUrl); e._blobUrl = null; } });
       videoEntries = [];
@@ -2931,25 +2931,30 @@
         if (typeof onTrackSelect === 'function') onTrackSelect(videoIndex, startSec, endSec);
       });
 
-      // 2. Ctrl+滚轮缩放(锚点=鼠标位置)
+      // 2. Ctrl+滚轮缩放(锚点=鼠标停留时间)— v2.93 修 pps=0 边界
       track.addEventListener('wheel', (e) => {
-        if (!e.ctrlKey && !e.metaKey) return;  // Ctrl(Mac/Win) 或 Cmd(Mac)
+        if (!e.ctrlKey && !e.metaKey) return;
         e.preventDefault();
         if (duration <= 0 || trackWidth <= 0) return;
         const rect = track.getBoundingClientRect();
         const mouseInTrack = e.clientX - rect.left;
         const mouseXTotal = mouseInTrack + track.scrollLeft;
-        const tAtMouse = mouseXTotal / getPps();  // 鼠标指着的时间
+        // pps=0(全宽铺满模式) → 临时按 minPps 算,让滚轮永远能触发
+        const isFull = pixelsPerSecond === 0;
+        const curPps = isFull ? getMinPps() : getPps();
+        const tAtMouse = mouseXTotal / curPps;
 
         const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
-        const oldPps = getPps();
         const minPps = getMinPps();
-        let newPps = oldPps * factor;
+        const basePps = isFull ? minPps : pixelsPerSecond;
+        let newPps = basePps * factor;
         if (newPps < minPps) newPps = minPps;
         if (newPps > MAX_PPS) newPps = MAX_PPS;
-        if (Math.abs(newPps - oldPps) < 0.0001) return;
+        if (isFull && e.deltaY > 0) return;  // 全宽模式滚轮向下已是最小,no-op
+        if (!isFull && Math.abs(newPps - pixelsPerSecond) < 0.0001) return;
 
         pixelsPerSecond = newPps;
+        if (window.__timelinePpsProvider) window.__timelinePpsProvider.set(pixelsPerSecond);
         render();
 
         // 保持鼠标位置的时间不变:缩放后鼠标应该还在 tAtMouse 那个点
@@ -4357,7 +4362,7 @@
         const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
         const bgColor = colors[idx % 8];
 
-        // 之前的 label fallback 去掉(不要再出现"未命名"、"整段保留"等)
+        // 之前的 label fallback 去掉(不要再出现${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s、"整段保留"等)
         // 空 label 直接显示时间码,避免无意义默认名
         const labelText = s.label && s.label.trim()
           ? s.label
@@ -4431,7 +4436,7 @@
         return;
       }
       const segHtml = result.segments.map(s =>
-        `<div>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${escapeHtml(s.label||'(未命名)')}</div>`
+        `<div>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${escapeHtml(s.label||`${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)}</div>`
       ).join('');
       showInformDialog(`本次操作产生 ${result.length} 个时间段`, segHtml);
       const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
@@ -4673,7 +4678,7 @@
 
       const segHtml = state.segments.map(s => `
         <div class="seg-item">
-          <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || '(未命名)')} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
+          <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || `${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
           <div style="display:flex;gap:4px">
             <button data-act="jump" data-seg-id="${s.id}">跳转</button>
             <button data-act="edit" data-seg-id="${s.id}">编辑</button>

@@ -258,6 +258,58 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); }
+    /* v2.102 timeline 上下分区 */
+    .timeline-segments {
+      position: relative;
+    }
+    .timeline-progress {
+      position: relative;
+      height: 14px;
+      background: #f5f5f7;
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .timeline-progress-bar {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .timeline-progress-cursor {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ff3b30;
+      pointer-events: none;
+      box-shadow: 0 0 4px rgba(255, 59, 48, 0.6);
+    }
+    .tl-seg-excluded {
+      background: #d1d1d6 !important;
+      opacity: 0.4;
+    }
+    .seg-delete-btn {
+      background: #ff3b30;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .seg-delete-btn:hover { background: #d70015; }
+    .seg-restore-btn {
+      background: #34c759;
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .seg-restore-btn:hover { background: #2a9149; }
+
     .timeline-track {
       position: relative;
       min-height: 48px;
@@ -2161,9 +2213,18 @@
               <!-- v1.20+timeline: 自定义 timeline, 类剪映(单击跳转 + Ctrl+滚轮缩放) -->
               <div class="timeline" data-timeline>
                 <div class="timeline-ruler" data-timeline-ruler></div>
-                <div class="timeline-track" data-timeline-track>
-                  <div class="timeline-track-inner">
-                    <div class="timeline-playhead" data-timeline-playhead></div>
+                <!-- v2.102 上部分:段条(可勾选段) -->
+                <div class="timeline-segments" data-timeline-segments>
+                  <div class="timeline-track" data-timeline-track>
+                    <div class="timeline-track-inner">
+                      <div class="timeline-playhead" data-timeline-playhead></div>
+                    </div>
+                  </div>
+                </div>
+                <!-- v2.102 下部分:进度条 + 鼠标停留红线 -->
+                <div class="timeline-progress" data-timeline-progress>
+                  <div class="timeline-progress-bar">
+                    <div class="timeline-progress-cursor" data-timeline-cursor></div>
                   </div>
                 </div>
                 <div class="timeline-info">
@@ -3077,12 +3138,12 @@
         if (!isFull && Math.abs(newPps - pixelsPerSecond) < 0.0001) return;
 
         pixelsPerSecond = newPps;
-        window.__tlPps = newPps;  // v2.94 直接同步,不用 provider(避免 undefined)
+        window.__tlPps = newPps;
         render();
-
-        // 保持鼠标位置的时间不变:缩放后鼠标应该还在 tAtMouse 那个点
-        const newMouseXTotal = tAtMouse * newPps;
-        track.scrollLeft = Math.max(0, newMouseXTotal - mouseInTrack);
+        // v2.102 修正:scrollLeft 让 tAtMouse 永远在 inner 内的 mouseInTrack 位置
+        const innerRect = inner.getBoundingClientRect();
+        const newInnerXTotal = tAtMouse * newPps;
+        track.scrollLeft = Math.max(0, newInnerXTotal - (mouseInTrack - track.scrollLeft + inner.scrollLeft));
         updatePlayhead();
       }, { passive: false });
 
@@ -3176,6 +3237,49 @@
       track.addEventListener('mouseenter', () => {
         timeIndicator.style.opacity = '1';
       });
+
+      // v2.102 进度条交互(下部分 timeline-progress)
+      const progressBar = previewEl.querySelector('[data-timeline-progress] .timeline-progress-bar');
+      const cursorEl = previewEl.querySelector('[data-timeline-cursor]');
+      if (progressBar && cursorEl) {
+        const ppsNow = () => (window.__tlPps > 0 ? window.__tlPps : (duration > 0 && trackWidth > 0 ? trackWidth / duration : 0));
+        // 鼠标移动 → 红竖线跟随
+        progressBar.addEventListener('mousemove', (e) => {
+          if (duration <= 0) return;
+          const rect = progressBar.getBoundingClientRect();
+          const pps = ppsNow();
+          if (pps <= 0) return;
+          const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          const sec = ratio * duration;
+          cursorEl.style.left = (ratio * rect.width) + 'px';
+          cursorEl.dataset.hoverSec = String(sec);
+        });
+        // 鼠标离开 → 红竖线隐藏
+        progressBar.addEventListener('mouseleave', () => {
+          cursorEl.style.opacity = '0';
+        });
+        progressBar.addEventListener('mouseenter', () => {
+          cursorEl.style.opacity = '1';
+        });
+        // 单击 → 跳转视频
+        progressBar.addEventListener('click', (e) => {
+          if (duration <= 0) return;
+          const rect = progressBar.getBoundingClientRect();
+          const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          if (isFinite(video.duration) && video.duration > 0) {
+            video.currentTime = ratio * video.duration;
+            updatePlayhead();
+          }
+        });
+        // 更新 cursor 位置跟随视频播放
+        const updateCursorFromVideo = () => {
+          if (duration <= 0) return;
+          const pps = ppsNow();
+          if (pps <= 0) return;
+          cursorEl.style.left = (video.currentTime * pps) + 'px';
+        };
+        video.addEventListener('timeupdate', updateCursorFromVideo);
+      }
 
       // 7. 立即尝试初始化(可能 video 已经有 metadata)
       if (isFinite(video.duration) && video.duration > 0) {
@@ -4670,11 +4774,9 @@
         const noteHtml = isOn ? `<textarea class="seg-op-note" data-op-note="${opKey}" rows="1" placeholder="本 op 说明(LLM 讨论用)">${escapeHtml(noteVal)}</textarea>` : '';
         return `
           <div class="seg-op-row" data-op-key="${opKey}">
-            <label class="seg-op-toggle">
-              <input type="checkbox" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''}>
-              <span class="seg-op-icon">${opDef.icon}</span>
-              <span class="seg-op-label">${opDef.label}</span>
-            </label>
+            <input type="checkbox" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''} title="勾选启用">
+            <span class="seg-op-icon">${opDef.icon}</span>
+            <span class="seg-op-label">${opDef.label}</span>
             ${paramHtml}
             ${noteHtml}
             <button class="seg-op-help" data-op-help="${opKey}" title="查看说明">?</button>
@@ -4708,7 +4810,7 @@
             </div>
             <div class="seg-op-list">${opsListHtml}</div>
             <div class="seg-actions-bar">
-              <button class="seg-exclude-btn" data-act="exclude">⛔ 排除该段(剪辑时不输出)</button>
+              <button class="seg-delete-btn" data-act="exclude">🗑️ 删除该段</button>
               <button class="seg-close-btn" data-act="close">✕ 关闭</button>
             </div>
           </div>

@@ -323,7 +323,7 @@
       flex-direction: row;
       align-items: stretch;
       gap: 2px;
-      width: max-content;       /* 让段总宽撑出 inner,触发外层滚动 */
+      width: 100%;              /* v2.106 默认占满父容器,让 inline style.width 生效 */
       min-height: 36px;
     }
     .timeline-track {
@@ -979,8 +979,8 @@
       flex-direction: row;
       align-items: stretch;
       gap: 2px;
-      min-height: 36px;       /* v2.76:让 .tl-seg height: 100% 有父高度 */
-      width: max-content;     /* v2.76:段总宽度撑出 inner */
+      min-height: 36px;
+      width: 100%;            /* v2.106 默认占满父容器 */
     }
     /* v2.90 hover 时间指示器(鼠标停时显示当前位置) */
     .tl-time-indicator {
@@ -3126,10 +3126,12 @@
 
         pixelsPerSecond = newPps;
         window.__tlPps = newPps;
-        // v2.104 真修:显式设 inner.style.width = newPps * duration
-        // (绕过 getContentWidth 缓存旧 trackWidth 的问题)
+        // v2.106 真修:用 setProperty + !important 强制覆盖 .timeline-track-inner { width: 100% }
         const targetInnerWidth = newPps * duration;
-        if (targetInnerWidth > 0) inner.style.width = targetInnerWidth + 'px';
+        if (targetInnerWidth > 0) {
+          inner.style.setProperty('width', targetInnerWidth + 'px', 'important');
+          inner.style.setProperty('min-width', targetInnerWidth + 'px', 'important');
+        }
         render();
         // 真修:scrollLeft 让 tAtMouse 时间点在 mouseInTrack 位置
         //   newMouseXTotal = tAtMouse * newPps 是 inner 内的绝对 X

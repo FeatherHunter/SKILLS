@@ -124,7 +124,8 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.0", "requires": { "py
 | `templates/body_photo_log_wizard.html` | 记身材照 | 纯配置型(无需 DB,用户填 → 生成 prompt) | `scripts/render_body_photo_log_wizard.py` |
 | `templates/body_photo_gif_planner.html` | 查身材照 / 生成身材照GIF(报告型 + 过程型 · v2.3.1 兼任 gallery + cropper.js 框选)
 | `templates/body_composition_wizard.html` | 记体脂 / 查体脂 / 查体脂趋势(配置型 · 单页 + `<details>` 分组 · 飞书 webview 兼容 v2.3.5 教训)| `validators.validate_composition_input` | `scripts/render_body_composition_wizard.py` |
-| `templates/body_measurements_wizard.html` | 记围度 / 查围度 / 查围度趋势(同上 · 13 围度 3 分组)| `validators.validate_measurement_input` | `scripts/render_body_measurements_wizard.py` | | `body_photo_tracker.get_photos_by_ids([id1,id2,...])` + `validate_files` 自动跳过丢失 | `scripts/render_body_photo_gif_planner.py --tag 正面 (推荐)\|--ids id1,id2,... [--no-validate-files]` |
+| `templates/body_measurements_wizard.html` | 记围度 / 查围度 / 查围度趋势(同上 · 13 围度 3 分组)| `validators.validate_measurement_input` | `scripts/render_body_measurements_wizard.py` |
+| `templates/body_photo_gif_planner.html` | 查身材照 / 生成身材照GIF(报告型 + 过程型 · v2.3.5 cropper.js 移除 + 4 数字裁剪输入 · 飞书 webview 兼容)| `body_photo_tracker.get_photos_by_ids([id1,id2,...])` + `validate_files` 自动跳过丢失 | `scripts/render_body_photo_gif_planner.py --tag 正面 (推荐)\|--ids id1,id2,... [--no-validate-files]` |
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
@@ -755,9 +756,23 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 |---|---|---|
 | 记体脂 | 皮褶钳测 7 点(自动算体脂率 Jackson-Pollock)| `python scripts/body_composition.py add ...` → **HTML:`body_composition_wizard.html`** |
 | 查体脂 | 历史 | `python scripts/body_composition.py list ...` → **HTML:`body_composition_wizard.html`** |
-| 查体脂趋势 | 时间线 | `python scripts/body_composition.py trend` |
-| 改体脂 | 修改记录 | `python scripts/body_composition.py update(待实现)` → **HTML:`crud_receipt.html`** |
+| 查体脂趋势 | 时间线 | `python scripts/body_composition.py trend` → **HTML:`body_composition_wizard.html`** |
+| 改体脂 | 修改记录(待实现) | `python scripts/body_composition.py update(待实现)` |
 | 删体脂 | 软删除 | `python scripts/body_composition.py delete` → **HTML:`crud_receipt.html`** |
+
+**7 皮褶字段**(单位 mm,严格 (0, 100) exclusive,必填 7 项):
+- `caliper_chest_mm`(胸皮褶 / pectoral)
+- `caliper_abdominal_mm`(腹皮褶 / abdominal,脐旁 2cm)
+- `caliper_thigh_mm`(大腿前中线)
+- `caliper_tricep_mm`(肱三头肌 / 上臂后中线,肩峰-鹰嘴中点)
+- `caliper_subscapular_mm`(肩胛下角下方)
+- `caliper_suprailiac_mm`(髂嵴上方,腋前线)
+- `caliper_midaxillary_mm`(腋中线,胸骨柄水平)
+
+**Jackson-Pollock 7 点法自动算**(男/女公式不同):
+- 男:BD = 1.112 - 0.00043499×Σ + 0.00000055×Σ² - 0.00028826×年龄
+- 女:BD = 1.097 - 0.00046971×Σ + 0.00000056×Σ² - 0.00012828×年龄
+- 体脂率 % = (495 / BD) − 450(范围 (0, 60) exclusive)
 
 ### 📐 围度
 
@@ -765,8 +780,14 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 |---|---|---|
 | 记围度 | 13 部位(至少 1 项必填)| `python scripts/body_measurements.py add ...` → **HTML:`body_measurements_wizard.html`** |
 | 查围度 | 历史 | `python scripts/body_measurements.py list ...` → **HTML:`body_measurements_wizard.html`** |
-| 查围度趋势 | 时间线 | `python scripts/body_measurements.py trend --metric waist_cm` |
-| 改围度 | 修改记录 | `python scripts/body_measurements.py update(待实现)` → **HTML:`crud_receipt.html`** |
+| 查围度趋势 | 时间线 | `python scripts/body_measurements.py trend --metric waist_cm` → **HTML:`body_measurements_wizard.html`** |
+| 改围度 | 修改记录(待实现) | `python scripts/body_measurements.py update(待实现)` |
+| 删围度 | 软删除 | `python scripts/body_measurements.py delete` → **HTML:`crud_receipt.html`** |
+
+**13 围度字段**(单位 cm,记录级必填 ≥1 项,列级可 NULL,范围见括号):
+- **上身(5 项)**:`chest_cm`(胸, 20–200)、`waist_cm`(腰, 20–200)、`abdomen_cm`(腹, 20–200)、`hip_cm`(臀, 20–200)、`shoulder_cm`(肩, 20–200)
+- **下身(4 项)**:`left_thigh_cm`(左大腿, 10–100)、`right_thigh_cm`(右大腿, 10–100)、`left_calf_cm`(左小腿, 10–80)、`right_calf_cm`(右小腿, 10–80)
+- **手臂(4 项)**:`left_arm_cm`(左上臂, 10–60)、`right_arm_cm`(右上臂, 10–60)、`left_forearm_cm`(左前臂, 10–50)、`right_forearm_cm`(右前臂, 10–50)
 | 删围度 | 软删除 | `python scripts/body_measurements.py delete` → **HTML:`crud_receipt.html`** |
 
 ### 📸 身材照片
@@ -1053,6 +1074,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "设营养目标" vs "设体重目标" | 营养=calorie/protein/carbs/fat/water_goal 5 字段;体重=weight_goal+deadline 2 字段 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量,后者显式指定 |
 | "记身材照" vs "查身材照" | "记"=新增,"查"=查询 |
+| "我的身材照" | 默认 → 查身材照(浏览);若用户说"记我的身材照"则 记身材照 |
 
 ---
 

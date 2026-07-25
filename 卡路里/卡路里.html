@@ -829,6 +829,90 @@
   </div>
 </details>
 
+<h3 id="manual-body-composition">📏 身体成分(5 触发词 · v2.4.0 新增)</h3>
+<details>
+  <summary>记体脂 <code>python scripts/body_composition.py add ...</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_composition.py add --date 2026-07-25 --source home_caliper --caliper-chest 5 --caliper-abdominal 10 --caliper-thigh 15 --caliper-tricep 8 --caliper-subscapular 10 --caliper-suprailiac 8 --caliper-midaxillary 7 --body-fat-pct 18</code></p>
+    <p><span class="workflow-label flow">工作流</span>7 皮褶钳测点(mm,严格 (0, 100)) + 来源 + 年龄 + 性别 → CLI 验 7 点必填 + 范围 → JSON Pollock 7 点法自动算(男/女公式不同) → 写 body_composition 表 → 输出 <code>{status: ok, data: {id}, message: ...}</code></p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_composition_wizard.html</code></strong>(单页 + <code>&lt;details&gt;</code> 分组 · 飞书 webview 兼容 · playwright 验证 4 details + 10 inputs)</p>
+  </div>
+</details>
+<details>
+  <summary>查体脂 <code>python scripts/body_composition.py list</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_composition.py list [--days N] [--date-from X] [--date-to Y]</code></p>
+    <p><span class="workflow-label flow">工作流</span>查 body_composition(默认 30 天)+ 输出最近 1-N 条</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_composition_wizard.html</code></strong>(同上)</p>
+  </div>
+</details>
+<details>
+  <summary>查体脂趋势 <code>python scripts/body_composition.py trend</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_composition.py trend [--days 30] [--source home_caliper/hospital]</code></p>
+    <p><span class="workflow-label flow">工作流</span>查 body_composition 趋势 → 按 date + source 分组</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_composition_wizard.html</code></strong>(同上)</p>
+  </div>
+</details>
+<details>
+  <summary>改体脂(待实现)<code>python scripts/body_composition.py update(待实现)</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_composition.py update --id N [...](待实现)</code></p>
+    <p><span class="workflow-label flow">工作流</span>UPDATE body_composition WHERE id=?(待实现)</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>crud_receipt.html</code></strong>(通用 CRUD 回执,update 实现后可用)</p>
+  </div>
+</details>
+<details>
+  <summary>删体脂 <code>python scripts/body_composition.py delete --id N</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_composition.py delete --id N</code></p>
+    <p><span class="workflow-label flow">工作流</span>软删除:UPDATE body_composition SET is_deprecated=1, updated_at=CURRENT_TIMESTAMP</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>crud_receipt.html</code></strong></p>
+  </div>
+</details>
+
+<h3 id="manual-body-measurements">📐 围度(5 触发词 · v2.4.0 新增 · 13 围度 3 分组)</h3>
+<details>
+  <summary>记围度 <code>python scripts/body_measurements.py add ...</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_measurements.py add --date 2026-07-25 [--chest-cm 95 --waist-cm 75 --abdomen-cm 78 --hip-cm 92 --shoulder-cm 45 --left-thigh-cm 55 --right-thigh-cm 55 --left-calf-cm 36 --right-calf-cm 36 --left-arm-cm 32 --right-arm-cm 32 --left-forearm-cm 26 --right-forearm-cm 26] [--tag X] [--note Y]</code></p>
+    <p><span class="workflow-label flow">工作流</span>13 围度分 3 组(上身/下身/手臂)· CLI 验 ≥1 项必填 + 各列范围 → 写 body_measurements → 输出 <code>{status: ok, data: {id}, message: ...}</code></p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_measurements_wizard.html</code></strong>(单页 + <code>&lt;details&gt;</code> 3 分组 · 飞书 webview 兼容 · playwright 验证 6 details + 15 inputs)</p>
+  </div>
+</details>
+<details>
+  <summary>查围度 <code>python scripts/body_measurements.py list</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_measurements.py list [--days N] [--date-from X] [--date-to Y]</code></p>
+    <p><span class="workflow-label flow">工作流</span>查 body_measurements(默认 30 天)+ 输出最近 1-N 条</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_measurements_wizard.html</code></strong></p>
+  </div>
+</details>
+<details>
+  <summary>查围度趋势 <code>python scripts/body_measurements.py trend --metric waist_cm</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_measurements.py trend --metric <one-of-13> [--days 30]</code></p>
+    <p><span class="workflow-label flow">工作流</span>按 metric + date 分组 AVG(metric),WHERE metric IS NOT NULL</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>body_measurements_wizard.html</code></strong></p>
+  </div>
+</details>
+<details>
+  <summary>改围度(待实现)<code>python scripts/body_measurements.py update(待实现)</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_measurements.py update --id N [...](待实现)</code></p>
+    <p><span class="workflow-label flow">工作流</span>UPDATE body_measurements WHERE id=?(待实现)</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>crud_receipt.html</code></strong>(通用 CRUD 回执,update 实现后可用)</p>
+  </div>
+</details>
+<details>
+  <summary>删围度 <code>python scripts/body_measurements.py delete --id N</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>body_measurements.py delete --id N</code></p>
+    <p><span class="workflow-label flow">工作流</span>软删除:UPDATE body_measurements SET is_deprecated=1, updated_at=CURRENT_TIMESTAMP</p>
+    <p><span class="workflow-label ui">UI</span>→ <strong>HTML:<code>crud_receipt.html</code></strong></p>
+  </div>
+</details>
+
 <h3 id="manual-body-photo">📸 身材照片(4 触发词)</h3>
 <details>
   <summary>记身材照<code>python scripts/body_photo_tracker.py add</code></summary>

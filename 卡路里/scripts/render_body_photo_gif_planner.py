@@ -120,7 +120,7 @@ def list_all_photos(days: int = 90) -> list:
     return [dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note'], r)) for r in rows]
 
 
-def render(ids: list, output_path: Path, validate_files: bool = True) -> Path:
+def render(ids: list, output_path: Path, validate_files: bool = True, embed_images: bool = True) -> Path:
     selected = get_photos_by_ids(ids)
     all_photos = list_all_photos()
 

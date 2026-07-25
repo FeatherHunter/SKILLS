@@ -807,6 +807,10 @@ python scripts/render_body_photo_gif_planner.py --tag 正面 2>&1 | tail -1
 
 **禁止**:只跑 render 不主动 send(违背 V1.3 主动交付原则)。
 
+**图片预置(v2.3.3)**:HTML 默认 base64 嵌图(PIL 缩放到 800x1200 · q85),
+飞书 / IM / 任意环境打开都能看照片,不被本地路径限制。
+不嵌:加 (本地 Chrome 可选)。
+
 | 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` |
 
 ---

@@ -3214,11 +3214,20 @@
         return Math.max(trackWidth, pps * duration);
       }
 
+      /* v2.129:统一时间格式 — h:mm:ss / m:ss / 秒.x
+         例:720s→12:00 | 90s→1:30 | 5.5s→5.5s */
       function formatTime(sec) {
         if (!isFinite(sec) || sec < 0) sec = 0;
-        const m = Math.floor(sec / 60);
-        const s = Math.floor(sec % 60);
-        return m > 0 ? `${m}:${s.toString().padStart(2, '0')}` : `${s}`;
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec - h * 3600 - m * 60;
+        if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+        if (m > 0) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+        return `${s.toFixed(1)}s`;
+      }
+      /* 时间范围快捷 — "0:00 ~ 5:30" */
+      function formatTimeRange(s, e) {
+        return `${formatTime(s)} ~ ${formatTime(e)}`;
       }
 
       function formatTickLabel(sec, step) {
@@ -5027,7 +5036,7 @@
         // 空 label 直接显示时间码,避免无意义默认名
         const labelText = s.label && s.label.trim()
           ? s.label
-          : `${s.start_sec.toFixed(0)}–${s.end_sec.toFixed(0)}s`;
+          : formatTimeRange(s.start_sec, s.end_sec);
 
         // 百分比计算
         const totalSec = st.segments.reduce((sum, sg) => sum + (sg.end_sec - sg.start_sec), 0);
@@ -5061,12 +5070,12 @@
                data-seg-id="${s.id}"
                data-seg-idx="${idx}"
                style="width:${segWidthPx}px; min-width:24px; background:${bgColor};"
-               title="${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s (${segLen.toFixed(1)}s)">
+               title="${formatTimeRange(s.start_sec, s.end_sec)} (时长 ${formatTime(segLen)})">
             ${segNum}
             ${trimHandles}
             <div class="tl-tip">
-              <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : `${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s`)}</div>
-              <div class="tl-tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
+              <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : formatTimeRange(s.start_sec, s.end_sec))}</div>
+              <div class="tl-tip-time">${formatTime(s.start_sec)} → ${formatTime(s.end_sec)} · 时长 ${formatTime(segLen)}</div>
               <div class="tl-tip-ops">${opTags}</div>
               ${s.note ? `<div class="tl-tip-note">📝 ${escapeHtml(s.note)}</div>` : ''}
             </div>
@@ -5488,7 +5497,7 @@
         return `
         <div class="seg-item" style="--seg-color:${color}">
           <span class="seg-num">${idx + 1}</span>
-          <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || `${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
+          <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || formatTimeRange(s.start_sec, s.end_sec))} <span style="color:var(--secondary)">[${formatTime(s.start_sec)} ~ ${formatTime(s.end_sec)}]</span></span>
           <div style="display:flex;gap:4px">
             <button class="seg-act-delete" data-act="delete" data-seg-id="${s.id}">删除</button>
             <button data-act="jump" data-seg-id="${s.id}">跳转</button>
@@ -5499,7 +5508,7 @@
 
       const delHtml = state.excluded.map(s => `
         <div class="deleted-seg-item">
-          <span>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
+          <span>[${formatTime(s.start_sec)} ~ ${formatTime(s.end_sec)}]</span>
           <button class="seg-restore" data-act="restore" data-seg-id="${s.id}">♻️ 恢复</button>
         </div>
       `).join('') || '<p class="empty-hint">无</p>';

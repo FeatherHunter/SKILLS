@@ -2463,17 +2463,7 @@
       updatePlayBtn();
     }
 
-    function previewVideo(entry) {
-      const url = URL.createObjectURL(entry.file);
-      const w = window.open('', '_blank');
-      if (!w) { showToast('请允许弹窗预览'); return; }
-      w.document.write(`
-        <title>${escapeHtml(entry.name)}</title>
-        <style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh}video{max-width:100%;max-height:100%}</style>
-        <video src="${url}" controls autoplay></video>
-      `);
-      w.document.close();
-    }
+    // v1.25 清理:旧 previewVideo 弹窗函数已无调用点(全部走内嵌预览),删除避免误导。
 
     saveBtn.addEventListener('click', async () => {
       const data = collectFormData();

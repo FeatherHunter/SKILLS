@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词:记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
+  触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
 metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.1", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -123,9 +123,8 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.1", "requires": { "py
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
-| **孤儿模板(内部工具,无 trigger)** ||||
-| `templates/process_progress.html` | (内部 4 步流程进度可视化,无对应 trigger) | mock_process_progress.json | `scripts/render_process_progress.py` |
-| `templates/home_dashboard.html` | (主页 dashboard,触发场景待定义) | home 数据 | `scripts/render_home.py` |
+| `templates/process_progress.html` | 落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度) | 流程结构化 JSON(mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
+| `templates/home_dashboard.html` | 开卡路里 / 卡路里面板 / 今日卡路里(主页 dashboard) | `analysis.dashboard(as_dict=True)` + 今日检测 | `scripts/render_home.py [--date YYYY-MM-DD]` |
 
 **强制规则**:表中"强制 trigger"列出的所有 trigger 词命中后,**AI 必须** invoke 对应 HTML(渲染 → 打开),**严禁文字答**。
 
@@ -164,6 +163,8 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 > 用户说"卡路里 help"时显示本表。全部唤醒词为动词+名词结构。
 
+**HTML 强制度(V1.3 原则 11)**:有 HTML 模板的 trigger 强制走 HTML(详见 §完整 HTML 模板清单 + §⚠️ 强制性规定 第 4 条)。
+
 **CLI 列规则(最严格标准 · 2026-07-13 修)**:
 - **原子 trigger**(暴露 CLI): `python scripts/<file>.py <subcommand> [args]`
 - **组合 trigger**(跨 skill): `组合:<trigger1> + <trigger2> + ...`(不写 Python 函数)
@@ -171,6 +172,14 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 - **纯 AI 路由**(无 CLI): `AI 路由(无 CLI)`
 
 **参数占位符**:统一用 `<X>` 尖括号(如 `<DATE>`、`<N>`),不写裸 `X` 或大括号 `{X}`
+
+### 🏠 主页
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 开卡路里 | 打开主页 dashboard(今日 KPI + 待办 + 最近日志) | `python scripts/render_home.py [--date YYYY-MM-DD]` |
+| 卡路里面板 | 同"开卡路里" | `python scripts/render_home.py [--date YYYY-MM-DD]` |
+| 今日卡路里 | 同"开卡路里",默认今日 | `python scripts/render_home.py` |
 
 ### 🍚 饮食记录
 
@@ -228,10 +237,10 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 |--------|------|-----|
 | 查健身计划 | 查看训练计划 HTML 页面(DB 数据驱动,含今日复盘 section) | `python scripts/render_workout_plan.py` |
 | 制定健身计划 | AI 采访式对话 → 校验 → 写入 | `AI 路由(无 CLI)` |
-| 落地健身计划 | 将某天计划执行(补计划 + 记心愿 + 训记推送) | `组合:补计划 + 记心愿 + 训记推送` |
-| 卡路里同步 | 批量落地 3 天 + 调「回写训记」 | `组合:落地健身计划 × 3 + 回写训记` |
-| 回写训记 | 拉训记数据回写 exercise_log(幂等) | `python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` |
-| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练 | `python scripts/xunji_bridge.py overlay-plan --date <DATE>` |
+| 落地健身计划 | 将某天计划执行(补计划 + 记心愿 + 训记推送) | `组合:补计划 + 记心愿 + 训记推送` → **HTML:`process_progress.html`** |
+| 卡路里同步 | 批量落地 3 天 + 调「回写训记」 | `组合:落地健身计划 × 3 + 回写训记` → **HTML:`process_progress.html`** |
+| 回写训记 | 拉训记数据回写 exercise_log(幂等) | `python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` → **HTML:`process_progress.html`** |
+| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练 | `python scripts/xunji_bridge.py overlay-plan --date <DATE>` → **HTML:`process_progress.html`** |
 | 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次 | `AI 路由 → python scripts/plan_generator.py` |
 | 复盘训练 | 对指定时间段做 plan vs 实绩对比 | `python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` |
 | 扫禁忌 | 检测 plan/DB 中禁忌动作(腰/膝/肩) · **2026-07-23 起支持 HTML 可视化报告** | `python scripts/scan_contraindications.py [--part {腰\|膝\|肩\|all}] [--strict]` · HTML:`python scripts/render_contraindication.py [--part ...] [--output <path>]` |

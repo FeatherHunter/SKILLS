@@ -1445,22 +1445,19 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
         <tr><td><code>batch_import_preview.html</code></td><td>批量导入 / 校验批量</td></tr>
         <tr><td><code>review_template.html</code></td><td>复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围</td></tr>
         <tr><td><code>contraindication_report.html</code></td><td>扫禁忌</td></tr>
+        <tr><td><code>process_progress.html</code></td><td>落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度)</td></tr>
+        <tr><td><code>home_dashboard.html</code></td><td>开卡路里 / 卡路里面板 / 今日卡路里(主页 dashboard)</td></tr>
       </tbody>
     </table>
 
-    <h3>12 个无 HTML 的 trigger(可文字答)</h3>
+    <h3>9 个无 HTML 的 trigger(可文字答)</h3>
     <p>以下 trigger <strong>无对应 HTML 模板</strong>,AI 可文字答(默认推荐用 §输出位置 生成):</p>
     <ul>
       <li><strong>记录类</strong>:记吃了 / 记喝水 / 记运动 / 记身材照</li>
       <li><strong>单条查询</strong>:查热量(单条搜索) / 查食品库 / 查今天喝水 / 查热量历史 / 查身材照</li>
-      <li><strong>组合 trigger</strong>:卡路里同步 / 训记-覆盖X日的训练计划 / 回写训记</li>
     </ul>
 
-    <h3>2 个孤儿模板(内部工具,无 trigger)</h3>
-    <ul>
-      <li><code>process_progress.html</code> — 内部 4 步流程进度可视化(无 trigger,纯工具)</li>
-      <li><code>home_dashboard.html</code> — 主页 dashboard(触发场景待定义)</li>
-    </ul>
+    <p><span class="workflow-label note">v2.2.1 amend</span>v2.2.1 初次提交误标 2 模板为孤儿:<code>process_progress.html</code> 对应 4 个流程 trigger,<code>home_dashboard.html</code> 对应 3 个主页 trigger,均已迁入"强制 trigger"表。</p>
 
     <p><span class="workflow-label fail-mode">fail mode</span>AI 收到强制 trigger 却文字答 = V1.3 协议违规,改 SKILL.md 不改正,循环 ≤ 3 次(详见 §⚠️ 强制性规定 第 4 条)。</p>
   </div>

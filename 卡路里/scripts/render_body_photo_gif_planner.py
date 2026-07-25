@@ -184,6 +184,27 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
     html = template.replace('<!--INJECT-DATA-->', inject_data)
     html = html.replace('<!--PHOTO_LIST-->', photo_list_html)
 
+    # v2.3.5(2026-07-25 fix):inline cropper.js + .css 到 HTML,避免飞书 webview 相对路径 JS 加载失败
+    # 飞书 IM 加载 HTML 时 base URL 是 content://com.ss.android...,无法解析相对路径 cropperjs/cropper.min.js
+    # 把 JS/CSS 源码直接拼到 HTML(增加约 60KB,但 100% 离线可用)
+    cropper_js_path = SKILL_DIR / 'templates' / 'cropperjs' / 'cropper.min.js'
+    cropper_css_path = SKILL_DIR / 'templates' / 'cropperjs' / 'cropper.min.css'
+    if cropper_js_path.exists() and cropper_css_path.exists():
+        cropper_js = cropper_js_path.read_text(encoding='utf-8')
+        cropper_css = cropper_css_path.read_text(encoding='utf-8')
+        # 替换 <link href="cropperjs/cropper.min.css"> 为 inline <style>
+        html = html.replace(
+            '<link rel="stylesheet" href="cropperjs/cropper.min.css">',
+            f'<style>{cropper_css}</style>'
+        )
+        # 替换 <script src="cropperjs/cropper.min.js"></script> 为 inline <script>
+        html = html.replace(
+            '<script src="cropperjs/cropper.min.js"></script>',
+            f'<script>{cropper_js}</script>'
+        )
+        # 同时把 cropper 目录挪到 templates 之外(防止用户从 Chrome 打开时回退路径找不到)
+        # 注:相对路径已被 inline 替换,本地 Chrome 也走 inline,目录可保留也可删
+
     output_path.write_text(html, encoding='utf-8')
     return output_path
 

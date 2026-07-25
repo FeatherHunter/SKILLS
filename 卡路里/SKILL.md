@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
   触发词:记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.0", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.1", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -13,6 +13,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.0", "requires": { "py
 1. **HTML 同步**:本技能的所有优化和变动、脚本的所有变动都必须体现在相应的 HTML 页面上。HTML 是技能功能的可视化镜像,任何功能变更若未同步到 HTML 视为未完成。
 2. **优先级**:本强制性规定优先级最高,高于下方所有操作规范和功能说明。
 3. **变更确认**:对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认,未经确认不得执行写入操作。
+4. ⭐ **HTML-First 铁则(V1.3 原则 11)**:唤醒词命中 SKILL 后,**只要 §已实现模板表 列出对应 HTML 模板,AI 必须 invoke HTML 工作流(渲染 → 打开)**。**严禁文字答**。trigger 无对应 HTML 模板时可文字答(但默认推荐 §输出位置 生成 HTML)。违反 = 协议 fail mode,改 SKILL.md 不改正,循环 ≤ 3 次。详见 §AI 行为:HTML-First 表。
 
 ---
 
@@ -27,6 +28,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.0", "requires": { "py
 - **Path C 参考数据不存库**:外部搜索到的营养数据仅用于本次记录,不写入 nutrition_products
 - **起床确认不提卡路里**:唤醒词场景的确认语中不出现"卡路里"三字,直接问"要不要记录"
 - **只建议不自动修改**:Lint 检查发现问题后列出清单,让用户决定
+- ⭐ **HTML-First(V1.3 原则 11)**:AI 收到 trigger 词后,先查 §已实现模板表 是否有对应 HTML。有则**强制 invoke HTML**(渲染 → 打开),无则可文字答。详见 §⚠️ 强制性规定 第 4 条 + §已实现模板表 强制 trigger 列。
 
 ### 📚 nutrition_products 数据治理原则(2026-06-30 共识)
 
@@ -91,6 +93,41 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.0", "requires": { "py
 ```
 
 所有 `status` 必须严格用 `"ok" | "warn" | "fail"`（"fail" 对应 error 级禁忌；与《优秀 Skill 指导手册》第④层接口层规范一致）。
+
+### 完整 HTML 模板清单(V1.3 原则 11 · 2026-07-25 扩)
+
+> 26 个 HTML 模板中 **24 个**有对应 trigger 词(强制走 HTML);**2 个**为内部工具(无 trigger)。
+
+| 模板 | 强制 trigger(走 HTML) | 数据源 | 渲染器 |
+|---|---|---|---|
+| `templates/nutrition_label_wizard.html` | 拍营养表 | `mmx vision describe` → `add` | `scripts/render_nutrition_label.py` |
+| `templates/today_diet.html` / `today_meals.html` | 查今天吃 / 查吃的记录 | `diet.list_meals()` | `scripts/render_today_meals.py` |
+| `templates/calorie_trend.html` | 查热量趋势 | `analysis.diet_calorie_trend(as_dict=True)` | `scripts/render_calorie_trend.py` |
+| `templates/nutrition_ratio.html` | 查营养结构 | `analysis.diet_nutrition_ratio(as_dict=True)` | `scripts/render_nutrition_ratio.py` |
+| `templates/calorie_deficit.html` | 查热量缺口 | `analysis.diet_deficit_analysis(as_dict=True)` | `scripts/render_calorie_deficit.py` |
+| `templates/food_ranking.html` | 查食物排行 / 查高热量榜 / 查低热量榜 / 查频繁吃榜 / 查高碳水榜 / 查高蛋白榜 | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
+| `templates/weight_history.html` | 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 (4 mode) | `analysis.weight_*` 系列 | `scripts/render_weight_history.py [--mode]` |
+| `templates/exercise_summary.html` | 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势 (4 mode) | `exercise_tracker.py summary/stats/trend/list` | `scripts/render_exercise_summary.py` |
+| `templates/exercise_distribution.html` | 查运动分布 / 查运动贡献 | `analysis.exercise_*` | `scripts/render_exercise_distribution.py` |
+| `templates/exercise_review.html` | 复盘训练 | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
+| `templates/workout_plan_view.html` | 查健身计划 / 查询健身计划 | DB 直接 query workout_plans | `python scripts/render_workout_plan.py [--review]` |
+| `templates/plan_builder_wizard.html` | 制定健身计划 / 改健身计划 / 落地健身计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
+| `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `scripts/render_health_dashboard.py [--range / --days]` |
+| `templates/lint_health.html` | 查卡路里数据 | `lint_health()` | `scripts/render_lint_health.py` |
+| `templates/goal_config.html` | 设营养目标 / 查营养目标 / 设体重目标 / 查体重目标 | `nutrition_goal.get/set` + `weight_goal.get/set` | `scripts/render_goal_config.py` |
+| `templates/profile_setup.html` | 设置档案 | `profile.get/set` | `scripts/render_profile_setup.py` |
+| `templates/cron_setup.html` | 开启定时复盘 / 关闭定时复盘 | `mavis cron list/create/delete` (AI 自动查状态) | `scripts/render_cron_setup.py` |
+| `templates/crud_view.html` | 查档案 / 查定时复盘 | `profile.get` / `mavis cron list` | `scripts/render_crud_view.py` |
+| `templates/crud_receipt.html` | 删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 改照片标签 / 删身材照 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py` |
+| `templates/weight_log_receipt.html` | 记体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py` |
+| `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
+| `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
+| `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
+| **孤儿模板(内部工具,无 trigger)** ||||
+| `templates/process_progress.html` | (内部 4 步流程进度可视化,无对应 trigger) | mock_process_progress.json | `scripts/render_process_progress.py` |
+| `templates/home_dashboard.html` | (主页 dashboard,触发场景待定义) | home 数据 | `scripts/render_home.py` |
+
+**强制规则**:表中"强制 trigger"列出的所有 trigger 词命中后,**AI 必须** invoke 对应 HTML(渲染 → 打开),**严禁文字答**。
 
 ---
 

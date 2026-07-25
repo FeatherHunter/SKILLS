@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡路里 - Skill 手册 v2.1.0</title>
-<meta name="skill-version" content="2.2.0">
+<meta name="skill-version" content="2.2.1">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1408,6 +1408,61 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     </ul>
     <p><span class="workflow-label warn">不支持</span><code>--meal-type</code>(从 time 推断,不存 DB)</p>
     <p><span class="workflow-label test">测试</span><code>tests/diet_update_meal.py</code> 7 个 case / 24 assertions 全过</p>
+  </div>
+</details>
+
+<hr />
+<h2 id="html-first-v13">⭐ v2.2.1 HTML-First(V1.3 原则 11)· 24 模板强制走</h2>
+<details>
+  <summary><strong>HTML-First 铁则</strong>(V1.3):有 HTML 必走,无 HTML 才可文字答</summary>
+  <div>
+    <p><span class="workflow-label rule">硬规则</span>§⚠️ 强制性规定 第 4 条:唤醒词命中 SKILL 后,<strong>只要 §已实现模板表 列出对应 HTML 模板,AI 必须 invoke HTML 工作流(渲染 → 打开),严禁文字答</strong>。trigger 无对应 HTML 模板时可文字答(默认推荐 §输出位置 生成 HTML)。</p>
+
+    <h3>24 个有 trigger 的模板(强制走 HTML)</h3>
+    <table>
+      <thead><tr><th>HTML 模板</th><th>强制 trigger(命中必走 HTML)</th></tr></thead>
+      <tbody>
+        <tr><td><code>nutrition_label_wizard.html</code></td><td>拍营养表</td></tr>
+        <tr><td><code>today_diet.html</code> / <code>today_meals.html</code></td><td>查今天吃 / 查吃的记录</td></tr>
+        <tr><td><code>calorie_trend.html</code></td><td>查热量趋势</td></tr>
+        <tr><td><code>nutrition_ratio.html</code></td><td>查营养结构</td></tr>
+        <tr><td><code>calorie_deficit.html</code></td><td>查热量缺口</td></tr>
+        <tr><td><code>food_ranking.html</code></td><td>查食物排行 + 5 分榜(查高热量榜/查低热量榜/查频繁吃榜/查高碳水榜/查高蛋白榜)</td></tr>
+        <tr><td><code>weight_history.html</code></td><td>查体重历史 / 查体重趋势 / 对比体重 / 查体重波动</td></tr>
+        <tr><td><code>exercise_summary.html</code></td><td>查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势</td></tr>
+        <tr><td><code>exercise_distribution.html</code></td><td>查运动分布 / 查运动贡献</td></tr>
+        <tr><td><code>exercise_review.html</code></td><td>复盘训练</td></tr>
+        <tr><td><code>workout_plan_view.html</code></td><td>查健身计划 / 查询健身计划</td></tr>
+        <tr><td><code>plan_builder_wizard.html</code></td><td>制定健身计划 / 改健身计划 / 落地健身计划</td></tr>
+        <tr><td><code>health_dashboard.html</code></td><td>查健康报告</td></tr>
+        <tr><td><code>lint_health.html</code></td><td>查卡路里数据</td></tr>
+        <tr><td><code>goal_config.html</code></td><td>设营养目标 / 查营养目标 / 设体重目标 / 查体重目标</td></tr>
+        <tr><td><code>profile_setup.html</code></td><td>设置档案</td></tr>
+        <tr><td><code>cron_setup.html</code></td><td>开启定时复盘 / 关闭定时复盘</td></tr>
+        <tr><td><code>crud_view.html</code></td><td>查档案 / 查定时复盘</td></tr>
+        <tr><td><code>crud_receipt.html</code></td><td>删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 改照片标签 / 删身材照</td></tr>
+        <tr><td><code>weight_log_receipt.html</code></td><td>记体重</td></tr>
+        <tr><td><code>batch_import_preview.html</code></td><td>批量导入 / 校验批量</td></tr>
+        <tr><td><code>review_template.html</code></td><td>复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围</td></tr>
+        <tr><td><code>contraindication_report.html</code></td><td>扫禁忌</td></tr>
+      </tbody>
+    </table>
+
+    <h3>12 个无 HTML 的 trigger(可文字答)</h3>
+    <p>以下 trigger <strong>无对应 HTML 模板</strong>,AI 可文字答(默认推荐用 §输出位置 生成):</p>
+    <ul>
+      <li><strong>记录类</strong>:记吃了 / 记喝水 / 记运动 / 记身材照</li>
+      <li><strong>单条查询</strong>:查热量(单条搜索) / 查食品库 / 查今天喝水 / 查热量历史 / 查身材照</li>
+      <li><strong>组合 trigger</strong>:卡路里同步 / 训记-覆盖X日的训练计划 / 回写训记</li>
+    </ul>
+
+    <h3>2 个孤儿模板(内部工具,无 trigger)</h3>
+    <ul>
+      <li><code>process_progress.html</code> — 内部 4 步流程进度可视化(无 trigger,纯工具)</li>
+      <li><code>home_dashboard.html</code> — 主页 dashboard(触发场景待定义)</li>
+    </ul>
+
+    <p><span class="workflow-label fail-mode">fail mode</span>AI 收到强制 trigger 却文字答 = V1.3 协议违规,改 SKILL.md 不改正,循环 ≤ 3 次(详见 §⚠️ 强制性规定 第 4 条)。</p>
   </div>
 </details>
 

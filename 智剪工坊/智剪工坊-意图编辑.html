@@ -1005,13 +1005,14 @@
       padding: 10px 14px;
       border-radius: 10px;
       font-size: 12px;
-      white-space: nowrap;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.15s;
       z-index: 30;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-      min-width: 160px;
+      min-width: 140px;
+      max-width: 280px;        /* 防超出屏幕 */
+      white-space: normal;     /* 顶层 normal,允许内部自然换行 */
     }
     .seg-tip::after {
       content: '';
@@ -1020,12 +1021,19 @@
       border: 6px solid transparent;
       border-top-color: rgba(29,29,31,0.96);
     }
-    .seg-tip .tip-title { font-weight: 600; font-size: 13px; }
+    .seg-tip .tip-title {
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;     /* label 单行 */
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .seg-tip .tip-time {
       color: #86868b;
       font-family: ui-monospace, monospace;
       font-size: 11px;
       margin-top: 2px;
+      white-space: nowrap;     /* 时间单行 */
     }
     .seg-tip .tip-ops { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
     .seg-tip .tip-op-tag {
@@ -1033,6 +1041,7 @@
       padding: 2px 7px;
       border-radius: 4px;
       font-size: 10px;
+      white-space: nowrap;     /* 单 op 标签不换行 */
     }
     .seg-tip .tip-op-tag.empty {
       background: transparent;
@@ -1040,12 +1049,15 @@
       font-style: italic;
     }
     .seg-tip .tip-note {
-      margin-top: 6px; padding-top: 6px;
+      margin-top: 6px;
+      padding-top: 6px;
       border-top: 1px solid rgba(255,255,255,0.15);
       color: #aeaeb2;
       font-size: 11px;
-      max-width: 240px;
+      max-width: 260px;        /* 跟随 tooltip 280px 上限 */
       white-space: normal;
+      overflow-wrap: break-word;  /* 长 note 词内换行 */
+      word-break: break-word;
     }
     .tl-seg:hover .seg-tip { opacity: 1; }
 

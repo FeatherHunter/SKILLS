@@ -241,7 +241,8 @@
       border-radius: 10px;
       background: white;
       padding: 0;
-      overflow: hidden;
+      overflow: visible;   /* v2.114:让 tooltip 跳出 timeline 边界 */
+      position: relative;
       user-select: none;
       -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -1168,26 +1169,28 @@
       font-weight: 600;
       text-shadow: none;
     }
+    /* v2.114 T5b:tooltip 改成 top:100%(向 segments-area 下方),不被 video 遮挡 */
     .seg-tip,
     .tl-tip {
       position: absolute;
-      bottom: calc(100% + 12px);
+      top: calc(100% + 8px);
+      bottom: auto;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(29,29,31,0.96);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       color: #fff;
-      padding: 10px 14px;
-      border-radius: 10px;
-      font-size: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.15s;
       z-index: 30;
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-      min-width: 140px;
-      max-width: 280px;
+      min-width: 100px;
+      max-width: 240px;
       white-space: normal;
     }
     .seg-tip::after,
@@ -4881,6 +4884,8 @@
           segWidthPx = (segLen / totalSecFallback) * innerWidth;
         }
 
+        // v2.114 T1:段条序号角标(只对 user segment 显示)
+        const segNum = hasOp ? `<span class="tl-seg-num">${idx + 1}</span>` : '';
         // v2.113 N10:每段加左右 trim handle(只对 user segment 显示)
         const trimHandles = hasOp ? `
               <div class="tl-seg-trim left" data-seg-id="${s.id}" data-trim-side="left" title="拖动调整起始时间"></div>
@@ -4892,6 +4897,7 @@
                data-seg-idx="${idx}"
                style="width:${segWidthPx}px; min-width:24px; background:${bgColor};"
                title="${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s (${segLen.toFixed(1)}s)">
+            ${segNum}
             ${trimHandles}
             <div class="tl-tip">
               <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : `${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s`)}</div>
@@ -5135,6 +5141,9 @@
       if (opsGroup) opsGroup.before(panel);
       else card.appendChild(panel);
 
+      // v2.114 T3:主动打开后 scroll 到 panel,让用户看到
+      setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
       // label 实时同步
       panel.querySelector('.seg-label-input').addEventListener('input', e => {
         seg.label = e.target.value;
@@ -5264,15 +5273,21 @@
       panel.className = 'segments-panel';
       const state = SegmentState.getAll(videoIndex);
 
-      const segHtml = state.segments.map(s => `
-        <div class="seg-item">
+      const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
+      const segHtml = state.segments.map((s, idx) => {
+        const hasOp = s.ops && Object.keys(s.ops).length > 0;
+        const color = hasOp ? colors[idx % 8] : '#c8c8cc';
+        // muted = 无 op 段:背景浅灰,不抢眼
+        return `
+        <div class="seg-item" style="--seg-color:${color};--seg-bg: ${hasOp ? `${color}15` : '#f5f5f7'}">
+          <span class="seg-num">${idx + 1}</span>
           <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || `${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)} [${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]</span>
           <div style="display:flex;gap:4px">
             <button data-act="jump" data-seg-id="${s.id}">跳转</button>
             <button data-act="edit" data-seg-id="${s.id}">编辑</button>
           </div>
-        </div>
-      `).join('') || '<p class="empty-hint">暂无段(在 timeline 长按拖动创建)</p>';
+        </div>`;
+      }).join('') || '<p class="empty-hint">暂无段(在 timeline 长按拖动创建)</p>';
 
       const delHtml = state.excluded.map(s => `
         <div class="deleted-seg-item">
@@ -5296,9 +5311,12 @@
       if (opsGroup) opsGroup.before(panel);
       else card.appendChild(panel);
 
+      // v2.114 T4:用 closest 找带 data-act 的祖先 button
       panel.addEventListener('click', e => {
-        const act = e.target.dataset.act;
-        const sid = e.target.dataset.segId;
+        const btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        const act = btn.dataset.act;
+        const sid = btn.dataset.segId;
         if (!act || !sid) return;
         if (act === 'edit') openSegmentPanel(videoIndex, sid);
         else if (act === 'jump') jumpToSegment(videoIndex, sid);

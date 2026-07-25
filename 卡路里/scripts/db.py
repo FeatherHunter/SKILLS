@@ -400,6 +400,22 @@ def init_db(db_path):
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # 记录级必填：date + 至少 1 个围度（SQLite 不支持跨列 NULL 比较 CHECK，用 trigger 实现）
+    c.execute('''
+        CREATE TRIGGER IF NOT EXISTS body_measurements_require_metric
+        BEFORE INSERT ON body_measurements
+        WHEN (
+            NEW.chest_cm IS NULL AND NEW.waist_cm IS NULL AND NEW.abdomen_cm IS NULL
+            AND NEW.hip_cm IS NULL AND NEW.left_thigh_cm IS NULL AND NEW.right_thigh_cm IS NULL
+            AND NEW.left_calf_cm IS NULL AND NEW.right_calf_cm IS NULL
+            AND NEW.left_arm_cm IS NULL AND NEW.right_arm_cm IS NULL
+            AND NEW.left_forearm_cm IS NULL AND NEW.right_forearm_cm IS NULL
+            AND NEW.shoulder_cm IS NULL
+        )
+        BEGIN
+            SELECT RAISE(ABORT, 'body_measurements 需要 date + 至少 1 个围度');
+        END;
+    ''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_body_measurements_date ON body_measurements(date)')
 
     conn.commit()

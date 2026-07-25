@@ -64,3 +64,53 @@ def test_body_measurements_table_exists():
         assert required in cols
     conn.close()
     os.unlink(path)
+
+
+def test_body_composition_caliper_out_of_range():
+    """caliper 超 100mm 应该被 CHECK 拒"""
+    fd, path = tempfile.mkstemp(suffix='.db'); os.close(fd)
+    init_db(path)
+    conn = sqlite3.connect(path); c = conn.cursor()
+    with __import__('pytest').raises(sqlite3.IntegrityError):
+        c.execute("""INSERT INTO body_composition (date, source, caliper_chest_mm, caliper_abdominal_mm,
+                    caliper_thigh_mm, caliper_tricep_mm, caliper_subscapular_mm,
+                    caliper_suprailiac_mm, caliper_midaxillary_mm, body_fat_pct)
+                    VALUES ('2026-07-25', 'home_caliper', 150, 10, 15, 8, 10, 8, 7, 20)""")
+        conn.commit()
+    os.unlink(path)
+
+
+def test_body_composition_body_fat_out_of_range():
+    """体脂率超 60 应该被拒"""
+    fd, path = tempfile.mkstemp(suffix='.db'); os.close(fd)
+    init_db(path)
+    conn = sqlite3.connect(path); c = conn.cursor()
+    with __import__('pytest').raises(sqlite3.IntegrityError):
+        c.execute("""INSERT INTO body_composition (date, source, caliper_chest_mm, caliper_abdominal_mm,
+                    caliper_thigh_mm, caliper_tricep_mm, caliper_subscapular_mm,
+                    caliper_suprailiac_mm, caliper_midaxillary_mm, body_fat_pct)
+                    VALUES ('2026-07-25', 'home_caliper', 5, 10, 15, 8, 10, 8, 7, 80)""")
+        conn.commit()
+    os.unlink(path)
+
+
+def test_body_measurements_require_at_least_one_metric():
+    """记录级必填:全部 NULL 围度应该被 trigger 拒"""
+    fd, path = tempfile.mkstemp(suffix='.db'); os.close(fd)
+    init_db(path)
+    conn = sqlite3.connect(path); c = conn.cursor()
+    with __import__('pytest').raises(sqlite3.IntegrityError):
+        c.execute("INSERT INTO body_measurements (date) VALUES ('2026-07-25')")
+        conn.commit()
+    os.unlink(path)
+
+
+def test_body_measurements_one_metric_passes():
+    """记录级必填:至少 1 个围度 OK"""
+    fd, path = tempfile.mkstemp(suffix='.db'); os.close(fd)
+    init_db(path)
+    conn = sqlite3.connect(path); c = conn.cursor()
+    c.execute("INSERT INTO body_measurements (date, waist_cm) VALUES ('2026-07-25', 85)")
+    conn.commit()
+    assert c.execute("SELECT COUNT(*) FROM body_measurements").fetchone()[0] == 1
+    os.unlink(path)

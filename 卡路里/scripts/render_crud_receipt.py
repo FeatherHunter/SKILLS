@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """render_crud_receipt.py — 通用 CRUD 操作回执 HTML 渲染器(回执型)
 
-对应 SKILL.md 唤醒词(7 个):
+对应 SKILL.md 唤醒词(8 个):
   - 删吃的/改吃的   → mode=update/delete
-  - 改食品         → mode=update
+  - 存食品/改食品   → mode=update/create
   - 删身材照       → mode=delete
   - 改照片标签     → mode=update
   - 改运动记录     → mode=update

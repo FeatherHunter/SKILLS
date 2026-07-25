@@ -1459,6 +1459,35 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
     <p><span class="workflow-label note">v2.2.1 amend</span>v2.2.1 初次提交误标 2 模板为孤儿:<code>process_progress.html</code> 对应 4 个流程 trigger,<code>home_dashboard.html</code> 对应 3 个主页 trigger,均已迁入"强制 trigger"表。</p>
 
+<hr />
+<h2 id="check-trigger-consistency-v222">🔍 v2.2.2 trigger 一致性检查脚本(V1.3 硬要求)</h2>
+<details>
+  <summary><strong>scripts/check_trigger_consistency.py</strong> — 机械化验证 SKILL.md ↔ render docstring 一致性</summary>
+  <div>
+    <p><span class="workflow-label rule">硬要求</span>V1.3 协议要求 commit 前确保 trigger 列表三边一致,避免 drift(如 v2.2.1 误标 2 模板为孤儿)。</p>
+    <p><span class="workflow-label check">检查范围</span>3 边单向对照:</p>
+    <ol>
+      <li>SKILL.md §完整 HTML 模板清单 的"强制 trigger"列  ⊆  frontmatter 触发词</li>
+      <li><code>scripts/render_*.py</code> docstring 声明的 trigger  ⊆  frontmatter 触发词</li>
+    </ol>
+    <p><span class="workflow-label usage">用法</span><code>python scripts/check_trigger_consistency.py</code> · exit 0 = 一致,1 = drift</p>
+    <p><span class="workflow-label status">v2.2.2 状态</span></p>
+    <ul>
+      <li>frontmatter trigger: <strong>73</strong></li>
+      <li>HTML 模板表 trigger: <strong>63</strong>(强制走 HTML)</li>
+      <li>render docstring trigger: <strong>64</strong></li>
+      <li>可文字答 trigger(frontmatter 有但 HTML 表无):<strong>10 个</strong> — 查今天喝水 / 查热量 / 查热量历史 / 查身材照 / 查食品库 / 查食品库去重 / 记吃了 / 记喝水 / 记身材照 / 记运动</li>
+      <li>✅ 三边一致</li>
+    </ul>
+    <p><span class="workflow-label fix">v2.2.2 修复的 drift</span></p>
+    <ul>
+      <li>frontmatter 缺 4 个 trigger:扫禁忌 / 批量导入 / 改吃的 / 校验批量 / 查食品库去重</li>
+      <li>render docstring 注释错误:render_nutrition_ratio.py "查营养配比"(旧名)→ 查营养结构;render_process_progress.py "训记-覆盖X日"(简写)→ 训记-覆盖X日的训练计划</li>
+      <li>render docstring 缺声明:render_crud_receipt.py 加"存食品";render_workout_plan.py 加"查健身计划 / 查询健身计划"</li>
+    </ul>
+  </div>
+</details>
+
     <p><span class="workflow-label fail-mode">fail mode</span>AI 收到强制 trigger 却文字答 = V1.3 协议违规,改 SKILL.md 不改正,循环 ≤ 3 次(详见 §⚠️ 强制性规定 第 4 条)。</p>
   </div>
 </details>

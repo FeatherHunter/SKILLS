@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_nutrition_ratio.py — 营养配比 HTML 渲染器(报告型 · 3 维配比)
 
-对应 SKILL.md 唤醒词: 查营养配比
+对应 SKILL.md 唤醒词: 查营养结构
 对应模板: templates/nutrition_ratio.html
 """
 import argparse, json, sys

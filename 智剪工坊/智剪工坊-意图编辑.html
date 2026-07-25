@@ -3192,30 +3192,33 @@
       });
       inner.addEventListener('mouseleave', onPressCancel);
 
-      // 实时更新 overlay 宽度
+      // v2.113 U2:实时更新 overlay 宽度(支持右→左)
       const onMove = (e) => {
         if (!pressOverlay) return;
         const r = inner.getBoundingClientRect();
-        const x = Math.max(0, pressStartX - r.left);
-        const width = Math.max(0, Math.min(r.width, e.clientX - r.left) - x);
+        const aX = Math.max(0, Math.min(r.width, pressStartX - r.left));
+        const bX = Math.max(0, Math.min(r.width, e.clientX - r.left));
+        const x = Math.min(aX, bX);
+        const width = Math.abs(bX - aX);
         pressOverlay.style.left = x + 'px';
         pressOverlay.style.width = width + 'px';
       };
       // v2.67:把 mousemove 挂到 document,鼠标移出 track 也能继续拖
       document.addEventListener('mousemove', onMove);
 
+      // v2.113 U2:mouseup 也支持右→左
       document.addEventListener('mouseup', (e) => {
         const wasSelecting = track.classList.contains('selecting');
         onPressCancel();
-        console.log('[v2.66] mouseup: wasSelecting=', wasSelecting);
         if (!wasSelecting) return;
         const r = inner.getBoundingClientRect();
-        const startRatio = Math.max(0, (pressStartX - r.left) / r.width);
-        const endRatio = Math.min(1, (e.clientX - r.left) / r.width);
+        const aX = Math.max(0, Math.min(r.width, pressStartX - r.left));
+        const bX = Math.max(0, Math.min(r.width, e.clientX - r.left));
+        const startRatio = Math.min(aX, bX) / r.width;
+        const endRatio = Math.max(aX, bX) / r.width;
         if (Math.abs(endRatio - startRatio) < 0.005) return;
-        const startSec = Math.min(startRatio, endRatio) * duration;
-        const endSec = Math.max(startRatio, endRatio) * duration;
-        console.log('[v2.66] onTrackSelect called: startSec=', startSec.toFixed(2), 'endSec=', endSec.toFixed(2));
+        const startSec = startRatio * duration;
+        const endSec = endRatio * duration;
         if (typeof onTrackSelect === 'function') onTrackSelect(videoIndex, startSec, endSec);
       });
 
@@ -4878,12 +4881,18 @@
           segWidthPx = (segLen / totalSecFallback) * innerWidth;
         }
 
+        // v2.113 N10:每段加左右 trim handle(只对 user segment 显示)
+        const trimHandles = hasOp ? `
+              <div class="tl-seg-trim left" data-seg-id="${s.id}" data-trim-side="left" title="拖动调整起始时间"></div>
+              <div class="tl-seg-trim right" data-seg-id="${s.id}" data-trim-side="right" title="拖动调整结束时间"></div>
+            ` : '';
         html += `
           <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}"
                data-seg-id="${s.id}"
                data-seg-idx="${idx}"
                style="width:${segWidthPx}px; min-width:24px; background:${bgColor};"
                title="${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s (${segLen.toFixed(1)}s)">
+            ${trimHandles}
             <div class="tl-tip">
               <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : `${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s`)}</div>
               <div class="tl-tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
@@ -4916,6 +4925,47 @@
             }
           }
           openSegmentPanel(videoIndex, segId);
+        });
+      });
+
+      // v2.113 N10:trim handle 拖动 — 改 start_sec / end_sec
+      segmentsArea.querySelectorAll('.tl-seg-trim').forEach(handle => {
+        handle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const segId = handle.dataset.segId;
+          const side = handle.dataset.trimSide;
+          const st = window.__segmentState?.states?.[videoIndex];
+          if (!st) return;
+          const seg = st.segments.find(s => s.id === segId);
+          if (!seg) return;
+          const moveH = (mv) => {
+            const pps = (typeof window.__tlPps === 'number' && window.__tlPps > 0)
+              ? window.__tlPps
+              : (duration > 0 && trackWidth > 0 ? trackWidth / duration : 0);
+            if (pps <= 0) return;
+            const trackRect = track.getBoundingClientRect();
+            const innerOffsetX = mv.clientX - trackRect.left + track.scrollLeft;
+            const t = Math.max(0, Math.min(duration, innerOffsetX / pps));
+            if (side === 'left') {
+              seg.start_sec = Math.min(seg.end_sec - 0.1, t);
+            } else {
+              seg.end_sec = Math.max(seg.start_sec + 0.1, t);
+            }
+            // 局部更新这条段(避免全 re-render 闪烁)
+            const theSeg = segmentsArea.querySelector(`.tl-seg[data-seg-id="${segId}"]`);
+            if (theSeg) {
+              const w = (seg.end_sec - seg.start_sec) * pps;
+              theSeg.style.width = Math.max(24, w) + 'px';
+            }
+          };
+          const upH = () => {
+            document.removeEventListener('mousemove', moveH);
+            document.removeEventListener('mouseup', upH);
+            renderSegmentsPanel(videoIndex);
+          };
+          document.addEventListener('mousemove', moveH);
+          document.addEventListener('mouseup', upH);
         });
       });
     }

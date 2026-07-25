@@ -4384,6 +4384,16 @@
       document.body.appendChild(modal);
     }
 
+    function refreshTimelineAndPanel(videoIndex, segId) {
+      const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
+      const trackInner = card?.querySelector('.timeline-track-inner');
+      if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+      renderSegmentsPanel(videoIndex);
+      if (segId) {
+        setTimeout(() => openSegmentPanel(videoIndex, segId), 0);
+      }
+    }
+
     function openSegmentPanel(videoIndex, segId) {
       const state = SegmentState.getAll(videoIndex);
       const seg = state.segments.find(s => s.id === segId);

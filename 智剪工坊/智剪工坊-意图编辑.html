@@ -2782,7 +2782,9 @@
         if (pressOverlay) { pressOverlay.remove(); pressOverlay = null; }
       };
       const onPressStart = (e) => {
-        if (e.target.classList.contains('tl-seg') || e.target.closest('.tl-seg')) return;
+        // v2.67:允许在段上拖框(只要按住 200ms 就进入 selecting)
+        // 单击段走的是 click 事件(用户短按 = 单击 = 操作面板)
+        // 长按 200ms 后一定是拖框意图
         pressStartX = e.clientX;
         pressTimer = setTimeout(() => {
           // 进入 selecting:创建 overlay div
@@ -2801,8 +2803,14 @@
         removeOverlay();
         track.classList.remove('selecting');
       };
-      track.addEventListener('mousedown', onPressStart);
-      track.addEventListener('mouseleave', onPressCancel);
+      track.addEventListener('mousedown', (e) => {
+        // v2.67:阻止默认,避免长按拖框时浏览器选中文字
+        // 同时设置 setCapture 让 mouseup 即使鼠标移到外部也能捕获到
+        if (e.button !== 0) return;  // 只处理左键
+        e.preventDefault();
+        onPressStart(e);
+      });
+      inner.addEventListener('mouseleave', onPressCancel);
 
       // 实时更新 overlay 宽度
       const onMove = (e) => {
@@ -2813,7 +2821,8 @@
         pressOverlay.style.left = x + 'px';
         pressOverlay.style.width = width + 'px';
       };
-      track.addEventListener('mousemove', onMove);
+      // v2.67:把 mousemove 挂到 document,鼠标移出 track 也能继续拖
+      document.addEventListener('mousemove', onMove);
 
       document.addEventListener('mouseup', (e) => {
         const wasSelecting = track.classList.contains('selecting');

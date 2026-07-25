@@ -56,13 +56,15 @@ COLOR_MAP = {
 }
 
 EMOJI_MAP = {
-    "维持": "🌱", "健康": "💪", "工作": "💼",
+    "维持": "🌱", "工作": "💼",
     "学习": "📚", "创作": "🎨", "投入": "🤝",
     "调整": "😌", "日常": "📋",
-    # 兼容旧词
+    # 注:"健康" 之前重复定义(💪+🏥),dict 后写赢导致 🏥 错显示
+    # 改用 validators.CATEGORY_EMOJI_LEVEL2 拿全 8 级 + 69 二级
+    # 兼容旧词(老无"."分隔的 1 级词,保留映射)
     "睡眠": "😴", "运动": "🏋️", "通勤": "🚴",
     "餐饮": "🍽️", "娱乐": "🎮", "社交": "💕",
-    "休闲": "🛋️", "健康": "🏥", "洗漱": "🚿",
+    "休闲": "🛋️", "洗漱": "🚿",
     "兴趣爱好": "🎨", "家务": "🧹", "未知": "❓",
     "休息": "📌", "起居": "🪥", "计划": "📋",
     "做饭": "🍳", "饮食": "🍽️", "采购": "🛒",
@@ -72,6 +74,7 @@ EMOJI_MAP = {
     "散步": "🚶", "午睡": "😴",
     "游戏": "🎮", "手机": "📱",
     "代办": "☑️", "杂事": "🔧", "收拾": "🧹", "行政": "📑",
+    "健康": "💪",  # 单一,不再冲突(冲突见上 commit 历史)
 }
 
 
@@ -124,7 +127,36 @@ def l1_of(category: str) -> str:
 
 
 def cat_emoji(cat: str) -> str:
-    return EMOJI_MAP.get(cat, EMOJI_MAP.get(l1_of(cat), "📌"))
+    """返回分类对应的 emoji(2026-07-25 重构 · 用户报告触发)。
+
+    优先级(第一性):
+      1. 二级:从 validators.CATEGORY_EMOJI_LEVEL2 拿(8 级 × 8-12 二级 = 69 条)
+      2. 一级 fallback:validators.CATEGORY_EMOJI_MAP(8 级)
+      3. 兜底:"📌"
+
+    历史 bug:原版用本地 EMOJI_MAP(42 条 + 1 级有"健康"重复 key 后写赢 → 显示 🏥
+    而非 💪)。新版直接复用 validators 已有的全 LEVEL2 数据源。
+    """
+    if not cat:
+        return "📌"
+    # import 在函数内避免循环引用
+    from validators import CATEGORY_EMOJI_MAP as _L1, CATEGORY_EMOJI_LEVEL2 as _L2
+
+    l1 = l1_of(cat)  # "工作.AI调优" → "工作"
+    l1_emoji = _L1.get(l1)
+    if not l1_emoji:
+        return "📌"
+
+    # 取二级:兼容 "." / "·" / "・" / "•" 4 种分隔符
+    l2 = ""
+    for sep in (".", "·", "・", "•"):
+        if sep in cat:
+            l2 = cat.split(sep, 1)[1]
+            break
+
+    l2_emoji = _L2.get(l1, {}).get(l2, "") if l2 else ""
+    # 1+2 组合,无 2 则只 1
+    return (l1_emoji + l2_emoji) if l2_emoji else l1_emoji
 
 
 def cat_color(cat: str) -> str:

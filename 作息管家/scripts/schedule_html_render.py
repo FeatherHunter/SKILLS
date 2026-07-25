@@ -526,7 +526,9 @@ COLOR_MAP = {
 
 
 def _cat_emoji(cat: str) -> str:
-    return EMOJI_MAP.get(cat, "📌")
+    """返回分类 emoji — 委托 calculations.cat_emoji(共享 validators LEVEL2 全 69 二级,2026-07-25 重构)。"""
+    from calculations import cat_emoji as _ce
+    return _ce(cat)
 
 
 def _cat_color(cat: str) -> str:

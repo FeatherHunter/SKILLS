@@ -4430,44 +4430,39 @@
     }
 
     function onTrackSelect(videoIndex, startSec, endSec) {
-      // v2.95 二次确认:先 preview,用户点确定才真的 addOrSplit
-      // 计算若真添加后的 segments 状态(虚拟 addOrSplit 用于 preview)
-      // 简化:用 current state 模拟加 1 段(用 addOrSplit 计算预览,但不真改)
-      // 注:SegmentState.addOrSplit 会真改 state,所以我们 backup + restore
+      // v2.97 真正的二次确认:
+      // 1. backup 当前 state
+      // 2. addOrSplit 真加(改了 state)
+      // 3. 显示 modal preview(显示当前 state,已经是新状态)
+      // 4. confirm → 保留(不操作)
+      // 5. cancel → restore backup
       const st = SegmentState.getAll(videoIndex);
       const backup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
       const result = SegmentState.addOrSplit(videoIndex, startSec, endSec);
       if (!result || result.modified === 'noop') {
-        // 恢复 state(没改)
-        st.segments = backup.segments; st.excluded = backup.excluded;
+        // addOrSplit 没改 state(noop 情况),直接 return
         if (result && result.modified === 'noop') showToast('区间与已有段完全重合');
         return;
       }
-      // 备份当前,等用户 confirm 才真留
+      // 备份当前(已被 addOrSplit 修改的)状态,等用户 confirm
+      const newBackup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
       const segHtml = result.segments.map(s =>
         `<div>[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}] ${escapeHtml(s.label||`${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s`)}</div>`
       ).join('');
-      const newSegIds = new Set(result.segments.map(s => s.id));
-      const newSegs = result.segments.filter(s => newSegIds.has(s.id));
-      // v2.95 preview 模式:临时换回 backup(给用户"回到原状"看预览)
-      st.segments = backup.segments; st.excluded = backup.excluded;
-      // 显示 preview
-      showInformDialog(`本次操作将产生 ${newSegs.length} 个时间段(预览)`, segHtml, {
+      // modal 的取消/确认逻辑
+      showInformDialog(`本次操作将产生 ${result.length} 个时间段(预览)`, segHtml, {
         onConfirm: () => {
-          // v2.96 真正 addOrSplit:先清 state(因 backup restore 后 state 是 addOrSplit 前的状态)
-          // 现在 state 应为 backup.segments(original), 直接调 addOrSplit 即可
-          // (因 backup 时刻 state 已经过 addOrSplit 但被 restore 干净了)
-          const stNow = SegmentState.getAll(videoIndex);
-          // 安全起见,看是否已是 backup 内容(可能 重复 addOrSplit):
-          if (JSON.stringify(stNow.segments) === JSON.stringify(backup.segments)) {
-            SegmentState.addOrSplit(videoIndex, startSec, endSec);
-          }
+          // 确认:state 保持新状态(已是 newBackup)
           const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
           if (trackInner) renderTimelineSegments(trackInner, videoIndex);
           renderSegmentsPanel(videoIndex);
         },
         onCancel: () => {
-          // 取消 → state 已恢复,不需操作
+          // 取消:restore backup(state 回到拖框前)
+          st.segments = backup.segments; st.excluded = backup.excluded;
+          const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+          if (trackInner) renderTimelineSegments(trackInner, videoIndex);
+          renderSegmentsPanel(videoIndex);
         }
       });
     }

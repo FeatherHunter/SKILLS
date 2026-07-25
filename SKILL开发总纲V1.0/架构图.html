@@ -129,6 +129,7 @@
   <li><a href="#s2">9 文件 + 3 资产 · 每个的角色</a></li>
   <li><a href="#s3">AI 阅读路径 · 3 种场景</a></li>
   <li><a href="#s4">6 钩子映射 · 详细在哪</a></li>
+    <li><a href="#s8">11 原则 · 原则 11 HTML-First(新)</a></li>
   <li><a href="#s5">设计令牌流动 · 从哪来到哪去</a></li>
   <li><a href="#s6">演化时间线 · 7 个 commit</a></li>
   <li><a href="#s7">设计哲学 · 总纲遵守的 5 条</a></li>
@@ -226,7 +227,7 @@
   <div class="file-num ref-num">04</div>
   <div>
     <div class="file-name">04-可视化与注入v2.md</div>
-    <div class="file-meta">~10 KB · 10 原则 + 决策矩阵 + <b>模式词典</b> + 错配警报</div>
+    <div class="file-meta">~10 KB · 11 原则 + 决策矩阵 + <b>模式词典</b> + 错配警报</div>
     <div class="file-desc"><b>作用</b>:HTML 模板 + 数据注入的全部规则。<b>何时读</b>:设计/改造 HTML 模板时;头脑风暴 HTML 模式时。</div>
   </div>
 </div>
@@ -371,6 +372,38 @@
 </div>
 
 <p><b>观察</b>:钩子 ⑤ 和 ⑥ 都在多处有相关说明(分别 3 处和 4 处),体现它们是<b>最常被违反且最重要</b>的规则,所以需要多重提醒。</p>
+
+<!-- ========== §8 原则 11 HTML-First ========== -->
+<h2 id="s8">11 原则 · 原则 11 HTML-First(新)</h2>
+
+<blockquote><p><b>唤醒词命中 SKILL 后,若 SKILL 声明有 HTML 输出路径,默认行为 = invoke HTML 工作流。文字答是 fail mode,不是 fallback。</b></p></blockquote>
+
+<h3>与原则 10 的对比</h3>
+<table>
+<tr><th>原则</th><th>关注点</th></tr>
+<tr><td>原则 10 · HTML 单工铁律</td><td>HTML <b>本身</b>的设计:不能反通 LLM</td></tr>
+<tr><td>原则 11 · HTML-First</td><td>AI <b>执行</b> SKILL 时:不要降级到文字答</td></tr>
+</table>
+
+<h3>判定流程</h3>
+<pre><code>IF 唤醒词命中 SKILL
+  AND 该 SKILL 声明有 HTML 输出
+  THEN 必须 invoke HTML 工作流
+  ELSE(无 HTML 声明 OR invoke 失败)
+  → 才允许文字答</code></pre>
+
+<h3>反模式(AI 偷懒路径)</h3>
+<ul>
+<li>"意思不太对/有偏差,先文字答"</li>
+<li>"用户没说要 HTML,默认文字"</li>
+<li>"invoke 失败 → 文字答"</li>
+<li>"看着简单,文字就够了"</li>
+</ul>
+
+<h3>与 03 触发词 + 钩子 ⑥ 协同</h3>
+<p><b>03 触发词设计</b>:每个核心词配 2-3 个变体(如"查健身计划"+"查询健身计划"+"给我看健身计划")</p>
+<p><b>原则 11</b>:变体是"等价调用",不是"需要确认的请求"</p>
+<p><b>钩子 ⑥ FAT 协议</b>:测试矩阵每行 = 核心词 × 2-3 变体,任一变体被文字答 = fail mode</p>
 
 <!-- ========== §5 设计令牌流动 ========== -->
 <h2 id="s5">设计令牌流动 · 从哪来到哪去</h2>

@@ -90,14 +90,24 @@
 
 <script>
 (function(){
+  // v2.3.4(2026-07-25 fix):<img id="mainPhoto"> 已在 Python 渲染时填好 base64 src
+  // JS 只负责元数据填充和交互,不重设 src
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') return;
-  const { photo, prev_id, next_id } = D.data;
+  const { photo_meta: photo, prev_id, next_id } = D.data;
 
   document.getElementById('metaLeft').textContent = `生成于 ${D.data.fetched_at || new Date().toISOString()}`;
   document.getElementById('sub').textContent = `${photo.date} · ${photo.tag} · #${photo.id}`;
-  document.getElementById('mainPhoto').src = photo.photo_data_base64 || photo.photo_url || photo.photo_path;
-  document.getElementById('mainPhoto').alt = `${photo.date} ${photo.tag}`;
+  // 不再覆盖 src(已经是 base64)
+  const mainImg = document.getElementById('mainPhoto');
+  if (mainImg) {
+    if (!mainImg.src || mainImg.src === window.location.href) {
+      // 兜底:如果 mainPhoto 还没 src,显示 broken
+      mainImg.alt = `${photo.date} ${photo.tag} (图加载失败)`;
+    } else {
+      mainImg.alt = `${photo.date} ${photo.tag}`;
+    }
+  }
   document.getElementById('photoDate').textContent = photo.date + ' ' + (photo.time || '');
   document.getElementById('photoTag').textContent = photo.tag;
   document.getElementById('photoId').textContent = '#' + photo.id;
@@ -129,9 +139,15 @@
   document.getElementById('deleteBtn').onclick = function() {
     if (!confirm(`确认删除照片 #${photo.id} (${photo.date} ${photo.tag})?\n将返回 crud_receipt.html 回执。`)) return;
     const prompt = `删除身材照 #${photo.id} (${photo.date} ${photo.tag})`;
-    navigator.clipboard.writeText(prompt).then(() => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(prompt).then(() => {
+        window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
+      }).catch(() => {
+        window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
+      });
+    } else {
       window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
-    });
+    }
   };
 })();
 </script>

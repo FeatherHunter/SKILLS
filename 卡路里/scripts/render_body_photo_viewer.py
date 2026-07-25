@@ -41,8 +41,13 @@ def get_photo(photo_id: int) -> dict:
     return dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note'], row))
 
 
-def embed_photo_as_base64(photo: dict, photos_dir, max_dim: int = 1200) -> dict:
-    """读取图片 → 缩放 → 转 base64(飞书友好,viewer 单图要大一些 1200px)"""
+def embed_photo_as_base64(photo: dict, photos_dir, max_dim: int = 800) -> dict:
+    """读取图片 → 缩放 → 转 base64(飞书友好)
+
+    2026-07-25 减体积:max_dim 1200→800, quality 88→75(单图也压)。
+    为何需要:Flybook / IM / 任何外部环境打开 HTML 时,相对路径的 <img> 会 broken。
+    嵌入 base64 后 HTML 完全自包含。
+    """
     try:
         from PIL import Image
         import base64, io
@@ -63,10 +68,11 @@ def embed_photo_as_base64(photo: dict, photos_dir, max_dim: int = 1200) -> dict:
                 new_h = max_dim; new_w = int(w * max_dim / h)
             img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
         buf = io.BytesIO()
-        img.save(buf, format='JPEG', quality=88, optimize=True)
+        img.save(buf, format='JPEG', quality=75, optimize=True)
         b64 = base64.b64encode(buf.getvalue()).decode('ascii')
         photo = dict(photo)
         photo['photo_data_base64'] = f"data:image/jpeg;base64,{b64}"
+        photo['photo_embedded_size'] = (img.size[0], img.size[1])
         return photo
     except Exception as e:
         print(f"  ⚠ 无法嵌入 {fp}: {e}")
@@ -103,11 +109,19 @@ def render(photo_id: int, output_path: Path, embed_images: bool = True) -> Path:
 
     prev_id, next_id = get_neighbor_ids(photo_id, photo['tag'])
 
+    # v2.3.4(2026-07-25 fix):__DATA__ 只带 metadata,base64 渲染到 HTML 静态 <img>
     payload = {
         "status": "ok",
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
-            "photo": photo,
+            "photo_meta": {
+                'id': photo['id'],
+                'date': photo['date'],
+                'time': photo.get('time', ''),
+                'tag': photo['tag'],
+                'note': photo.get('note', ''),
+                'photo_path': photo['photo_path'],
+            },
             "prev_id": prev_id,
             "next_id": next_id,
             "embedded": embed_images,
@@ -118,6 +132,15 @@ def render(photo_id: int, output_path: Path, embed_images: bool = True) -> Path:
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
     html = template.replace('<!--INJECT-DATA-->', inject_data)
+
+    # Python 渲染时直接给 <img id="mainPhoto"> 填好 base64 src
+    main_b64 = photo.get('photo_data_base64', '')
+    if main_b64:
+        # 替换 <img id="mainPhoto" src="" ...>  →  src="data:..."
+        html = html.replace(
+            '<img id="mainPhoto" src="" alt="身材照">',
+            f'<img id="mainPhoto" src="{main_b64}" alt="身材照">'
+        )
 
     output_path.write_text(html, encoding='utf-8')
     return output_path

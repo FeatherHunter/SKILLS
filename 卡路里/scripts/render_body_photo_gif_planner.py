@@ -39,11 +39,16 @@ def check_photos_exist(photos: list, photos_dir: Path) -> tuple:
     return existing, missing
 
 
-def embed_photo_as_base64(photo: dict, photos_dir: Path, max_dim: int = 800) -> dict:
+def embed_photo_as_base64(photo: dict, photos_dir: Path, max_dim: int = 500) -> dict:
     """读取图片 → 缩放(保持比例) → 转 base64 JPEG → 写回 photo
 
+    2026-07-25 减体积:max_dim 800→500, quality 85→75。
     为何需要:Flybook / IM / 任何外部环境打开 HTML 时,相对路径的 <img> 会 broken。
     嵌入 base64 后 HTML 完全自包含。
+
+    关键设计:base64 **只**用于静态 <img src="data:..."> 渲染,
+    不放进 window.__DATA__(避免飞书 webview 审查 <script> 段截断 base64)。
+    即使 JS 失败,HTML 解析阶段的 <img> 已经能显示图。
     """
     try:
         from PIL import Image
@@ -70,9 +75,9 @@ def embed_photo_as_base64(photo: dict, photos_dir: Path, max_dim: int = 800) -> 
                 new_h = max_dim
                 new_w = int(w * max_dim / h)
             img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-        # 转 JPEG base64
+        # 转 JPEG base64(q75, 体积比 q85 小 ~30%)
         buf = io.BytesIO()
-        img.save(buf, format='JPEG', quality=85, optimize=True)
+        img.save(buf, format='JPEG', quality=75, optimize=True)
         b64 = base64.b64encode(buf.getvalue()).decode('ascii')
         photo = dict(photo)  # copy
         photo['photo_data_base64'] = f"data:image/jpeg;base64,{b64}"
@@ -138,14 +143,12 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
         photos_dir = get_photos_dir()
         selected_for_display = selected
 
-    def to_file_url(photo):
-        """file:// 绝对 URL(电脑本地 Chrome 能直接打开)"""
-        abs_path = (photos_dir / photo['photo_path']).resolve()
-        return {**photo, 'photo_path': abs_path.as_uri()}
-
-    # v2.3.3:base64 嵌图(默认开)— 飞书 / IM / 任意环境打开都能看
-    # 本地电脑 Chrome 用户可加 --no-embed-images 走 file://
-    embed = True  # 默认开,符合 V1.3 + 用户跨设备需求
+    # v2.3.4(2026-07-25 fix):base64 嵌到 HTML 静态 <img> 标签,不放进 __DATA__。
+    # 飞书 webview 处理 HTML 时会审查/截断 <script> 段内的 base64 长字符串,
+    # 之前 __DATA__ 在 <script> 里被截断 → JS 早 return → 看不到图。
+    # 现在:Python 渲染时直接拼 <img src="data:..."> 到模板占位符,
+    # 即使 __DATA__ 损坏,浏览器解析阶段 <img> 已能正常显示。
+    embed = embed_images  # 默认开
     if embed:
         selected_for_display = [embed_photo_as_base64(p, photos_dir) for p in selected_for_display]
         all_photos_for_display = []
@@ -153,17 +156,18 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
             if (photos_dir / p['photo_path']).exists():
                 all_photos_for_display.append(embed_photo_as_base64(p, photos_dir))
     else:
-        # fallback:转 file:// URL
-        selected_for_display = [to_file_url(p) for p in selected_for_display]
-        all_photos_for_display = [to_file_url(p) for p in all_photos if (photos_dir / p['photo_path']).exists()]
+        # fallback:不嵌图,仅用 photo_path(本地 Chrome 打开 file:// 还能用,飞书不能)
+        selected_for_display = list(selected_for_display)
+        all_photos_for_display = [p for p in all_photos if (photos_dir / p['photo_path']).exists()]
 
+    # __DATA__ 只带 metadata(无 base64),减小体积 + 飞书审查不踩
     payload = {
         "status": "ok",
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
-            "selected_ids": ids,
-            "selected_photos": selected_for_display,
-            "all_photos": all_photos_for_display,
+            "selected_ids": [p['id'] for p in selected_for_display],
+            "selected_meta": [_meta_only(p) for p in selected_for_display],
+            "all_meta": [_meta_only(p) for p in all_photos_for_display],
             "missing_ids": missing_ids,
             "missing_count": len(missing_ids),
             "embedded": embed,
@@ -172,12 +176,68 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
         "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64(飞书友好)" if embed else ""),
     }
 
+    # Python 渲染时直接拼 photo-list HTML(带 base64)到模板占位符
+    photo_list_html = _render_photo_list_html(selected_for_display)
+
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
     html = template.replace('<!--INJECT-DATA-->', inject_data)
+    html = html.replace('<!--PHOTO_LIST-->', photo_list_html)
 
     output_path.write_text(html, encoding='utf-8')
     return output_path
+
+
+def _meta_only(photo: dict) -> dict:
+    """从 photo dict 抽 metadata,去掉 photo_data_base64(减小 __DATA__ 体积)"""
+    return {
+        'id': photo['id'],
+        'date': photo['date'],
+        'time': photo.get('time', ''),
+        'tag': photo['tag'],
+        'note': photo.get('note', ''),
+        'photo_path': photo['photo_path'],
+    }
+
+
+def _render_photo_list_html(photos: list) -> str:
+    """生成 photo-list 的静态 HTML(每项含 <img src="data:...">)
+
+    关键:即使 __DATA__ 被飞书 webview 截断,这段 HTML 是浏览器解析阶段就渲染的,
+    <img> 标签的 base64 src 不会被 JS 模板字符串拼接,直接用浏览器原生支持。
+    """
+    import html as html_mod
+    items = []
+    for idx, p in enumerate(photos, 1):
+        b64 = p.get('photo_data_base64', '')
+        # 无 base64 时降级:不渲染 <img>(避免 broken 图标,改成占位)
+        if b64:
+            img_tag = f'<img src="{b64}" alt="{html_mod.escape(p["tag"])}" loading="lazy">'
+        else:
+            img_tag = f'<div class="broken">📷<br>无图</div>'
+        info_meta = f'#{p["id"]} · {p.get("time", "")}'
+        note_safe = html_mod.escape(p.get('note', '') or '(无备注)')
+        items.append(f'''
+        <div class="photo-item" data-id="{p['id']}">
+          <div class="sel-check">
+            <input type="checkbox" class="sel-cb" data-id="{p['id']}" checked>
+          </div>
+          <div class="thumb">{img_tag}</div>
+          <div class="info">
+            <div><strong>{idx}.</strong> {html_mod.escape(p["tag"])} · {p["date"]}</div>
+            <div class="meta">{info_meta}</div>
+            <div class="crop-info none">未裁剪</div>
+            <div class="note-line" style="font-size:11px; color:var(--fg3); margin-top:4px;">{note_safe}</div>
+          </div>
+          <div class="actions">
+            <button class="move-up">↑ 上移</button>
+            <button class="move-down">↓ 下移</button>
+            <button class="crop-btn" data-id="{p['id']}">✂️ 框选裁剪</button>
+            <button class="remove-btn" data-id="{p['id']}">✕ 移除</button>
+          </div>
+        </div>
+        ''')
+    return '\n'.join(items)
 
 
 def emit_send_protocol(output_path: Path, extra: str = ''):

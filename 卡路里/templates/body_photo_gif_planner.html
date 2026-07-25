@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>身材照 GIF planner · 卡路里</title>
 
-<!-- cropper.js v2.1.1 CDN(2026-04-06 · Active · 158 万周下载) -->
-<link rel="stylesheet" href="https://unpkg.com/cropperjs@2.1.1/dist/cropper.min.css">
-<script src="https://unpkg.com/cropperjs@2.1.1/dist/cropper.min.js"></script>
+<!-- cropper.js v1.6.2 本地化(2026-07-25 · 解决飞书 webview 加载 CDN 失败) -->
+<link rel="stylesheet" href="cropperjs/cropper.min.css">
+<script src="cropperjs/cropper.min.js"></script>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -220,7 +220,8 @@
 <div class="section">
   <h2><span class="step-num">1</span> 照片列表(已选 <span id="selCount">0</span> 张)</h2>
   <div class="photo-list" id="photoList">
-    <!-- 动态生成 -->
+    <!-- 静态预填(Python 渲染时直接拼 <img src="data:...">),即使 JS 失败也能看图 -->
+    <!--PHOTO_LIST-->
   </div>
 </div>
 
@@ -313,33 +314,38 @@
   let order = idsStr.split(',').filter(Boolean).map(Number);
   let tagList = tagsStr ? tagsStr.split(',') : (tagFromUrl ? [tagFromUrl] : []);
 
-  // 数据
+  // 数据(v2.3.4:__DATA__ 只带 metadata,base64 已在 HTML 静态 <img> 里)
   const D = window.__DATA__;
-  if (!D || D.status !== 'ok') {
-    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请重新生成 GIF planner。</em>';
-    return;
-  }
   const photoMap = {};
-  D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
+  if (D && D.status === 'ok') {
+    (D.data.all_meta || []).forEach(p => { photoMap[p.id] = p; });
+  }
 
-  // 若无 order 但有 tag,自动用该 tag 的所有照片(独立运行模式)
-  // v2.3.4 修:不仅依赖 URL tag,fallback 用 selected_photos(嵌入的 current_tag 也行)
-  if (order.length === 0) {
+  // v2.3.4 关键修复:order 优先从 DOM 静态 <img> 读(已经渲染好的)
+  // 即使 __DATA__ 损坏,DOM 里有 photo-item,order 也能正确
+  const domItems = Array.from(document.querySelectorAll('.photo-item'));
+  if (order.length === 0 && domItems.length > 0) {
+    order = domItems.map(el => parseInt(el.dataset.id));
+  } else if (order.length === 0 && D && D.status === 'ok') {
     if (tagList.length > 0) {
-      order = D.data.selected_photos.map(p => p.id);
+      order = (D.data.selected_meta || []).map(p => p.id);
     } else if (D.data.current_tag) {
-      order = D.data.selected_photos
+      order = (D.data.selected_meta || [])
         .filter(p => p.tag === D.data.current_tag)
         .map(p => p.id);
     } else {
-      // 终极 fallback:URL 完全没参数时,直接用 selected_photos(嵌入的 current_tag 不知道就用全部)
-      order = D.data.selected_photos.map(p => p.id);
+      order = (D.data.selected_meta || []).map(p => p.id);
     }
   }
 
+  // 状态
+  const selectedSet = new Set(order); // 默认全选
+  const crops = {}; // {id: {x,y,w,h}}
+  let transition = 'cut';
+
   // 统计
-  const totalAvail = D.data.selected_photos.length;
-  const missingCount = D.data.missing_count || 0;
+  const totalAvail = domItems.length;
+  const missingCount = (D && D.data.missing_count) || 0;
   document.getElementById('statTotal').textContent = totalAvail;
   document.getElementById('statSelected').textContent = order.length;
   document.getElementById('selCount').textContent = order.length;
@@ -348,102 +354,97 @@
     document.getElementById('statMissingWrap').style.display = 'flex';
   }
 
-  // 状态
-  const selectedSet = new Set(order); // 勾选状态
-  const crops = {}; // {id: {x,y,w,h}}
-  let transition = 'cut';
-
-  function renderList() {
-    const list = document.getElementById('photoList');
-    if (order.length === 0 && totalAvail === 0) {
-      list.innerHTML = '<em style="color:var(--fg3)">该 tag 下没有可用照片。</em>';
-      return;
-    }
-    if (order.length === 0) {
-      list.innerHTML = '<em style="color:var(--fg3)">已全不选。点上方"全选"恢复。</em>';
-      updateStats();
-      updatePrompt();
-      return;
-    }
-    list.innerHTML = order.map((id, idx) => {
-      const p = photoMap[id];
-      if (!p) return '';
-      const crop = crops[id];
-      const sel = selectedSet.has(id);
-      return `
-        <div class="photo-item ${sel ? '' : 'deselected'}" data-id="${id}">
-          <div class="sel-check">
-            <input type="checkbox" class="sel-cb" data-id="${id}" ${sel ? 'checked' : ''}>
-          </div>
-          <div class="thumb">${renderThumb(p)}</div>
-          <div class="info">
-            <div><strong>${idx + 1}.</strong> ${p.tag} · ${p.date}</div>
-            <div class="meta">#${p.id} · ${p.time || ''}</div>
-            <div class="crop-info ${crop ? '' : 'none'}">
-              ${crop ? `✂️ 已裁剪: (${crop.x}, ${crop.y}) ${crop.width}×${crop.height}` : '未裁剪'}
-            </div>
-          </div>
-          <div class="actions">
-            <button class="move-up" ${idx === 0 ? 'disabled' : ''}>↑ 上移</button>
-            <button class="move-down" ${idx === order.length - 1 ? 'disabled' : ''}>↓ 下移</button>
-            <button class="crop-btn" data-id="${id}">✂️ 框选裁剪</button>
-            <button class="remove-btn" data-id="${id}">✕ 移除</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    list.querySelectorAll('.sel-cb').forEach(cb => {
-      cb.onchange = (e) => {
-        const id = parseInt(cb.dataset.id);
-        if (e.target.checked) selectedSet.add(id);
-        else selectedSet.delete(id);
-        // 标记 deselected
-        cb.closest('.photo-item').classList.toggle('deselected', !e.target.checked);
-        updateStats();
-        updatePrompt();
-      };
-    });
-    list.querySelectorAll('.move-up').forEach(el => el.onclick = () => {
-      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
-      if (i > 0) { [order[i-1], order[i]] = [order[i], order[i-1]]; renderList(); updatePrompt(); }
-    });
-    list.querySelectorAll('.move-down').forEach(el => el.onclick = () => {
-      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
-      if (i < order.length - 1) { [order[i+1], order[i]] = [order[i], order[i+1]]; renderList(); updatePrompt(); }
-    });
-    list.querySelectorAll('.crop-btn').forEach(el => el.onclick = () => openCropper(parseInt(el.dataset.id)));
-    list.querySelectorAll('.remove-btn').forEach(el => el.onclick = () => {
-      const id = parseInt(el.dataset.id);
-      const i = order.indexOf(id);
-      if (i >= 0) { order.splice(i, 1); selectedSet.delete(id); delete crops[id]; renderList(); updateStats(); updatePrompt(); }
-    });
-  }
-
-  function renderThumb(p) {
-    // V1.3 §HTML 交付协议 + 用户跨设备:v2.3.3 base64 优先(飞书友好)
-    // priority: photo_data_base64 (任意环境) > photo_path file:// (本地 Chrome) > photo_path 相对(无效)
-    if (p.photo_data_base64) {
-      return `<img src="${p.photo_data_base64}" alt="${p.tag}" loading="lazy">`;
-    }
-    return `<img src="${p.photo_path}" alt="${p.tag}" loading="lazy" onerror="this.outerHTML='<div class=\\'broken\\'>📷<br>图片加载失败</div>'">`;
-  }
-
   function updateStats() {
     const cnt = order.filter(id => selectedSet.has(id)).length;
     document.getElementById('statSelected').textContent = cnt;
     document.getElementById('selCount').textContent = cnt;
   }
 
+  // 给已有的 photo-item DOM 绑定事件(不重写 innerHTML,保留静态 <img>)
+  function bindEvents() {
+    document.querySelectorAll('.photo-item').forEach(el => {
+      const id = parseInt(el.dataset.id);
+      const cb = el.querySelector('.sel-cb');
+      if (cb) cb.onchange = (e) => {
+        if (e.target.checked) selectedSet.add(id);
+        else selectedSet.delete(id);
+        el.classList.toggle('deselected', !e.target.checked);
+        updateStats();
+        updatePrompt();
+      };
+      const up = el.querySelector('.move-up');
+      if (up) up.onclick = () => moveItem(id, -1);
+      const down = el.querySelector('.move-down');
+      if (down) down.onclick = () => moveItem(id, +1);
+      const cropBtn = el.querySelector('.crop-btn');
+      if (cropBtn) cropBtn.onclick = () => openCropper(id);
+      const rm = el.querySelector('.remove-btn');
+      if (rm) rm.onclick = () => removeItem(id);
+    });
+  }
+
+  function moveItem(id, delta) {
+    const i = order.indexOf(id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    reorderDom();
+    updatePrompt();
+  }
+
+  function removeItem(id) {
+    const i = order.indexOf(id);
+    if (i < 0) return;
+    order.splice(i, 1);
+    selectedSet.delete(id);
+    delete crops[id];
+    const el = document.querySelector(`.photo-item[data-id="${id}"]`);
+    if (el) el.remove();
+    updateStats();
+    updatePrompt();
+  }
+
+  function reorderDom() {
+    const list = document.getElementById('photoList');
+    order.forEach(id => {
+      const el = list.querySelector(`.photo-item[data-id="${id}"]`);
+      if (el) list.appendChild(el);
+    });
+  }
+
   // 全选/反选
-  window.selectAll = () => { order.forEach(id => selectedSet.add(id)); renderList(); updateStats(); updatePrompt(); };
-  window.selectNone = () => { selectedSet.clear(); renderList(); updateStats(); updatePrompt(); };
+  window.selectAll = () => {
+    order.forEach(id => selectedSet.add(id));
+    document.querySelectorAll('.photo-item').forEach(el => {
+      el.classList.remove('deselected');
+      const cb = el.querySelector('.sel-cb');
+      if (cb) cb.checked = true;
+    });
+    updateStats();
+    updatePrompt();
+  };
+  window.selectNone = () => {
+    selectedSet.clear();
+    document.querySelectorAll('.photo-item').forEach(el => {
+      el.classList.add('deselected');
+      const cb = el.querySelector('.sel-cb');
+      if (cb) cb.checked = false;
+    });
+    updateStats();
+    updatePrompt();
+  };
   window.selectInvert = () => {
     order.forEach(id => {
       if (selectedSet.has(id)) selectedSet.delete(id);
       else selectedSet.add(id);
     });
-    renderList();
+    document.querySelectorAll('.photo-item').forEach(el => {
+      const id = parseInt(el.dataset.id);
+      const sel = selectedSet.has(id);
+      el.classList.toggle('deselected', !sel);
+      const cb = el.querySelector('.sel-cb');
+      if (cb) cb.checked = sel;
+    });
     updateStats();
     updatePrompt();
   };
@@ -459,29 +460,45 @@
   let currentCroppingId = null;
 
   function openCropper(id) {
-    const p = photoMap[id];
-    if (!p) return;
+    // v2.3.4:从 DOM 静态 <img> 拿 src(已含 base64),不读 __DATA__
+    const photoItem = document.querySelector(`.photo-item[data-id="${id}"]`);
+    if (!photoItem) return;
+    const imgInList = photoItem.querySelector('.thumb img');
+    if (!imgInList || !imgInList.src) {
+      alert('该照片没有可用的图片数据(可能 base64 嵌图失败)。\n请在 Chrome 打开重生成。');
+      return;
+    }
     currentCroppingId = id;
-    document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag} ${p.date})`;
-    cropperImg.src = p.photo_data_base64 || p.photo_path;
+    const p = photoMap[id] || {};
+    document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag || ''} ${p.date || ''})`;
+    cropperImg.src = imgInList.src;
     modal.classList.add('show');
 
     cropperImg.onload = () => {
-      if (cropperInstance) cropperInstance.destroy();
-      cropperInstance = new Cropper(cropperImg, {
-        aspectRatio: NaN,
-        viewMode: 1,
-        autoCropArea: 0.7,
-        responsive: true,
-        background: false,
-        crop(event) {
-          const d = event.detail;
-          ciX.textContent = Math.round(d.x);
-          ciY.textContent = Math.round(d.y);
-          ciW.textContent = Math.round(d.width);
-          ciH.textContent = Math.round(d.height);
-        },
-      });
+      try {
+        if (cropperInstance) cropperInstance.destroy();
+        cropperInstance = new Cropper(cropperImg, {
+          aspectRatio: NaN,
+          viewMode: 1,
+          autoCropArea: 0.7,
+          responsive: true,
+          background: false,
+          crop(event) {
+            const d = event.detail;
+            ciX.textContent = Math.round(d.x);
+            ciY.textContent = Math.round(d.y);
+            ciW.textContent = Math.round(d.width);
+            ciH.textContent = Math.round(d.height);
+          },
+        });
+      } catch (e) {
+        alert('裁剪初始化失败(可能 cropper.js 加载失败)。请在 Chrome 打开重试。\n' + e.message);
+        closeCropper();
+      }
+    };
+    cropperImg.onerror = () => {
+      alert('裁剪图加载失败。');
+      closeCropper();
     };
   }
 
@@ -497,9 +514,14 @@
     if (cropperInstance && currentCroppingId !== null) {
       const data = cropperInstance.getData();
       crops[currentCroppingId] = { x: Math.round(data.x), y: Math.round(data.y), width: Math.round(data.width), height: Math.round(data.height) };
+      const c = crops[currentCroppingId];
+      const el = document.querySelector(`.photo-item[data-id="${currentCroppingId}"] .crop-info`);
+      if (el) {
+        el.classList.remove('none');
+        el.innerHTML = `✂️ 已裁剪: (${c.x}, ${c.y}) ${c.width}×${c.height}`;
+      }
     }
     closeCropper();
-    renderList();
     updatePrompt();
   };
   document.getElementById('resetCropBtn').onclick = () => {
@@ -517,8 +539,11 @@
   });
 
   ['paramDuration', 'paramLoop', 'paramWidth', 'paramHeight', 'paramWatermark', 'paramOutput'].forEach(id => {
-    document.getElementById(id).oninput = updatePrompt;
-    document.getElementById(id).onchange = updatePrompt;
+    const el = document.getElementById(id);
+    if (el) {
+      el.oninput = updatePrompt;
+      el.onchange = updatePrompt;
+    }
   });
 
   // 默认输出文件名
@@ -591,21 +616,44 @@
     document.getElementById('promptBox').textContent = generatePrompt();
   }
 
-  // 复制
+  // 复制(支持 fallback,飞书 webview 可能没 navigator.clipboard)
   document.getElementById('copyBtn').onclick = function() {
     const text = document.getElementById('promptBox').textContent;
     if (text.startsWith('//')) { alert('请先选至少 1 张照片'); return; }
-    navigator.clipboard.writeText(text).then(() => {
-      this.textContent = '✓ 已复制';
-      this.classList.add('copied');
-      setTimeout(() => {
-        this.textContent = '📋 复制并发送给 AI';
-        this.classList.remove('copied');
-      }, 2000);
-    });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.textContent = '✓ 已复制';
+        this.classList.add('copied');
+        setTimeout(() => {
+          this.textContent = '📋 复制并发送给 AI';
+          this.classList.remove('copied');
+        }, 2000);
+      }).catch(() => fallbackCopy(text, this));
+    } else {
+      fallbackCopy(text, this);
+    }
   };
 
-  renderList();
+  function fallbackCopy(text, btn) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 复制并发送给 AI';
+      btn.classList.remove('copied');
+    }, 2000);
+  }
+
+  // 初始化(不再 renderList — DOM 已经预填好)
+  bindEvents();
+  updateStats();
   updatePrompt();
 })();
 </script>

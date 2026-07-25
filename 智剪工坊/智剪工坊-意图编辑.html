@@ -4198,9 +4198,33 @@
     // v2.73:timeline 像素/秒 暴露给 renderTimelineSegments 用
     //   setupTimeline 内部改动 pixelsPerSecond 时,同步到此
     //   pps=0 表示"全宽铺满"模式(未缩放)
-    window.__tlPps = 0;
 
-    // ============ v2.0 段渲染 / UI 操作函数 ============
+        window.__tlPps = 0;
+
+        // ============ v2.0 段级 op schema(单一真相源) ============
+        // 每个 op 含 label/icon/params;每个 op 自带 note 字段
+        const SEGMENT_OPS_SCHEMA = {
+          speed_up:        { label: "加速",       icon: "⏩",  params: { factor:    { type: "number", default: 2,   min: 1.1, max: 10, step: 0.1, label: "倍数" } } },
+          slow_down:       { label: "减速",       icon: "🐌", params: { factor:    { type: "number", default: 0.5, min: 0.1, max: 0.9, step: 0.1, label: "倍数" } } },
+          reverse:         { label: "倒放",       icon: "🔄",  params: { } },
+          mute:            { label: "静音",       icon: "🔇",  params: { } },
+          fade_in:         { label: "淡入",       icon: "↗",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
+          fade_out:        { label: "淡出",       icon: "↘",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
+          color:           { label: "调色",       icon: "🎨",  params: { preset:    { type: "select", default: "warm", options: ["warm","cool","cinematic","vintage","bw","high-contrast","noir","comic","sketch","faded","punchy","vhs","dream"], label: "预设" } } },
+          asr_transcribe:  { label: "语音转录",   icon: "🎙️", params: { model:     { type: "select", default: "medium", options: ["tiny","base","small","medium","large-v3"], label: "模型" }, lang: { type: "select", default: "zh", options: ["zh","en","auto"], label: "语言" } } },
+          asr_burn:        { label: "烧字幕",     icon: "📝",  params: { font_size: { type: "number", default: 22, min: 12, max: 48, step: 1, label: "字号" } } },
+          asr_speaker:     { label: "说话人标签", icon: "👥",  params: { } },
+          audio_denoise:   { label: "降噪",       icon: "🔉",  params: { } },
+          audio_separate:  { label: "声源分离",   icon: "🎵",  params: { model:     { type: "select", default: "htdemucs_ft", options: ["htdemucs","htdemucs_ft","mdx_q"], label: "模型" } } },
+          audio_diarize:   { label: "说话人分离", icon: "🗣️",  params: { } },
+          voice_filler_removed: { label: "去水词", icon: "✂️", params: { } }
+        };
+        const VOICE_MODE_LABELS = { keep: "保留", "keep-with-filler-removed": "保留+去水词", mute: "静音", "bgm-only": "只留 BGM", "original-with-bgm": "原声+BGM" };
+        window.SEGMENT_OPS_SCHEMA = SEGMENT_OPS_SCHEMA;
+        window.VOICE_MODE_LABELS = VOICE_MODE_LABELS;
+
+        // ============ v2.0 段渲染 / UI 操作函数 ============
+
     function getSegOpBadgeText(ops) {
       if (!ops) return '';
       const keys = Object.keys(ops);
@@ -4375,55 +4399,149 @@
       panel.className = 'segment-panel';
       panel.dataset.videoIndex = String(videoIndex);
       panel.dataset.segId = segId;
+
+      // 动态生成 ops 列表(从 SEGMENT_OPS_SCHEMA 读取)
+      const segOps = seg.ops || {};
+      const opsListHtml = Object.entries(window.SEGMENT_OPS_SCHEMA).map(([opKey, opDef]) => {
+        const cur = segOps[opKey];
+        const isOn = cur && cur.on;
+        // 参数表单
+        let paramHtml = '';
+        if (isOn && opDef.params) {
+          paramHtml = '<div class="seg-op-params">';
+          for (const [pKey, pDef] of Object.entries(opDef.params)) {
+            const curVal = cur[pKey] !== undefined ? cur[pKey] : pDef.default;
+            if (pDef.type === 'number') {
+              paramHtml += `<label>${pDef.label}:<input type="number" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}"></label>`;
+            } else if (pDef.type === 'select') {
+              const opts = pDef.options.map(o => `<option value="${o}" ${o === curVal ? 'selected' : ''}>${o}</option>`).join('');
+              paramHtml += `<label>${pDef.label}:<select data-param="${pKey}"><option value="">---</option>${opts}</select></label>`;
+            }
+          }
+          paramHtml += '</div>';
+        }
+        // note 输入(每 op 自带)
+        const noteVal = cur && cur.note ? cur.note : '';
+        const noteHtml = isOn ? `<textarea class="seg-op-note" data-op-note="${opKey}" rows="1" placeholder="本 op 说明(LLM 讨论用)">${escapeHtml(noteVal)}</textarea>` : '';
+        return `
+          <div class="seg-op-row" data-op-key="${opKey}">
+            <label class="seg-op-toggle">
+              <input type="checkbox" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''}>
+              <span class="seg-op-icon">${opDef.icon}</span>
+              <span class="seg-op-label">${opDef.label}</span>
+            </label>
+            ${paramHtml}
+            ${noteHtml}
+            <button class="seg-op-help" data-op-help="${opKey}" title="查看说明">?</button>
+          </div>
+        `;
+      }).join('');
+
+      // 音频策略 voice mode 选择
+      const voiceVal = segOps.voice && segOps.voice.mode ? segOps.voice.mode : '';
+      const voiceOptions = Object.entries(window.VOICE_MODE_LABELS).map(([k, v]) =>
+        `<option value="${k}" ${k === voiceVal ? 'selected' : ''}>${v}</option>`
+      ).join('');
+
       panel.innerHTML = `
         <div class="segment-panel-inner">
-          <label>label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名"></label>
-          <textarea class="seg-note-input" placeholder="本段补充说明(可选)" rows="2">${escapeHtml(seg.note || '')}</textarea>
-          <div class="seg-op-buttons">
-            <button data-op="mute">🔇 静音</button>
-            <button data-op="speed-up">⏩ 倍速</button>
-            <button data-op="slow-down">🐌 减速</button>
-            <button data-op="reverse">🔄 反转</button>
-            <button data-op="del" class="del-btn">🗑️ 删掉</button>
+          <label class="seg-label-row">label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名"></label>
+          <label class="seg-label-row">🎙️ 音频策略:<select class="seg-voice-select"><option value="">— 继承 video_ops —</option>${voiceOptions}</select></label>
+          <textarea class="seg-note-input" placeholder="本段整体补充说明(LLM 讨论用)" rows="2">${escapeHtml(seg.note || '')}</textarea>
+          <div class="seg-op-list">${opsListHtml}</div>
+          <div class="seg-actions">
+            <button class="seg-exclude-btn" data-act="exclude">⛔ 排除该段</button>
+            <button class="close-btn" data-act="close">✕ 关闭</button>
           </div>
-          <button class="close-btn" data-act="close">✕ 关闭</button>
         </div>
       `;
-      // ops-group 之前插入
+
       const opsGroup = card.querySelector('.ops-group');
       if (opsGroup) opsGroup.before(panel);
       else card.appendChild(panel);
 
+      // label 实时同步
       panel.querySelector('.seg-label-input').addEventListener('input', e => {
         seg.label = e.target.value;
         renderSegmentsPanel(videoIndex);
         const trackInner = card.querySelector('.timeline-track-inner');
         if (trackInner) renderTimelineSegments(trackInner, videoIndex);
       });
-      const segNoteInput = panel.querySelector('.seg-note-input');
-      if (segNoteInput) segNoteInput.addEventListener('input', e => { seg.note = e.target.value; });
 
-      panel.querySelectorAll('.seg-op-buttons button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const op = btn.dataset.op;
-          if (op === 'del') { deleteSegment(videoIndex, segId); return; }
-          if (op === 'speed-up' || op === 'slow-down') {
-            const def = op === 'speed-up' ? '1.5' : '0.5';
-            const raw = prompt(`${op === 'speed-up' ? '加速' : '减速'}倍数 (默认 ${def})`, def);
-            const factor = parseFloat(raw);
-            if (isNaN(factor) || factor <= 0) return;
-            seg.ops = seg.ops || {};
-            seg.ops[op] = { on: true, factor };
+      // 段级 note 同步
+      const segNote = panel.querySelector('.seg-note-input');
+      if (segNote) segNoteInput.addEventListener('input', e => { seg.note = e.target.value; });
+
+      // voice 模式
+      const voiceSel = panel.querySelector('.seg-voice-select');
+      if (voiceSel) voiceSel.addEventListener('change', e => {
+        seg.ops = seg.ops || {};
+        if (e.target.value) {
+          seg.ops.voice = { mode: e.target.value, on: true };
+        } else {
+          delete seg.ops.voice;
+        }
+        refreshTimelineAndPanel(videoIndex, segId);
+      });
+
+      // 每个 op 的 checkbox 切换
+      panel.querySelectorAll('[data-op-toggle]').forEach(cb => {
+        cb.addEventListener('change', e => {
+          const opKey = e.target.dataset.opToggle;
+          const opDef = window.SEGMENT_OPS_SCHEMA[opKey];
+          seg.ops = seg.ops || {};
+          if (e.target.checked) {
+            // 创建默认 cfg
+            const cfg = { on: true };
+            if (opDef && opDef.params) {
+              for (const [pKey, pDef] of Object.entries(opDef.params)) {
+                cfg[pKey] = pDef.default;
+              }
+            }
+            seg.ops[opKey] = cfg;
           } else {
-            seg.ops = seg.ops || {};
-            seg.ops[op] = { on: true };
+            delete seg.ops[opKey];
           }
-          const trackInner = card.querySelector('.timeline-track-inner');
-          if (trackInner) renderTimelineSegments(trackInner, videoIndex);
-          renderSegmentsPanel(videoIndex);
+          refreshTimelineAndPanel(videoIndex, segId);
         });
       });
 
+      // 每个 op 的参数 input 变化
+      panel.querySelectorAll('[data-param]').forEach(input => {
+        input.addEventListener('change', e => {
+          const row = e.target.closest('.seg-op-row');
+          const opKey = row.dataset.opKey;
+          const pKey = e.target.dataset.param;
+          if (seg.ops && seg.ops[opKey]) {
+            const v = e.target.value;
+            seg.ops[opKey][pKey] = (e.target.type === 'number') ? parseFloat(v) : v;
+          }
+          refreshTimelineAndPanel(videoIndex, segId);
+        });
+      });
+
+      // 每个 op 的 note 同步
+      panel.querySelectorAll('.seg-op-note').forEach(ta => {
+        ta.addEventListener('input', e => {
+          const opKey = e.target.dataset.opNote;
+          if (seg.ops && seg.ops[opKey]) {
+            seg.ops[opKey].note = e.target.value;
+          }
+        });
+      });
+
+      // 排除该段(切换 seg.excluded)
+      const excludeBtn = panel.querySelector('[data-act="exclude"]');
+      if (excludeBtn) {
+        excludeBtn.textContent = seg.excluded ? '✅ 取消排除(恢复输出)' : '⛔ 排除该段(剪辑时不输出)';
+        excludeBtn.addEventListener('click', () => {
+          seg.excluded = !seg.excluded;
+          panel.remove();
+          refreshTimelineAndPanel(videoIndex, segId);
+        });
+      }
+
+      // 关闭按钮
       panel.querySelector('[data-act="close"]').addEventListener('click', () => panel.remove());
     }
 

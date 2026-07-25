@@ -38,6 +38,11 @@ def render(output_path: Path) -> Path:
     return output_path
 
 
+def emit_send_protocol(output_path: Path):
+    """stdout 末行:V1.3 §HTML 交付协议 - Agent 必须 send 给用户"""
+    print(f"⚠️ ACTION=SEND_TO_USER | HTML={output_path.absolute()}")
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染记身材照 wizard HTML')
     p.add_argument('--output', help='输出文件路径')
@@ -46,6 +51,7 @@ def main():
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'body_photo_log_wizard')
     result = render(out_path)
     print(f"✓ 已生成: {result}")
+    emit_send_protocol(result)
 
 
 if __name__ == '__main__':

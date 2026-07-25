@@ -2822,11 +2822,11 @@
       document.addEventListener('mouseup', (e) => {
         const wasSelecting = track.classList.contains('selecting');
         onPressCancel();
-        if (!wasSelecting) return;  // 短按,不算框选
-        const r = track.getBoundingClientRect();
+        if (!wasSelecting) return;
+        const r = inner.getBoundingClientRect();
         const startRatio = Math.max(0, (pressStartX - r.left) / r.width);
         const endRatio = Math.min(1, (e.clientX - r.left) / r.width);
-        if (Math.abs(endRatio - startRatio) < 0.02) return;
+        if (Math.abs(endRatio - startRatio) < 0.005) return;
         const startSec = Math.min(startRatio, endRatio) * duration;
         const endSec = Math.max(startRatio, endRatio) * duration;
         if (typeof onTrackSelect === 'function') onTrackSelect(videoIndex, startSec, endSec);

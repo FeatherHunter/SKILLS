@@ -112,6 +112,12 @@ def render(ids: list, output_path: Path, validate_files: bool = True) -> Path:
     return output_path
 
 
+def emit_send_protocol(output_path: Path, extra: str = ''):
+    """stdout 末行:V1.3 §HTML 交付协议 - Agent 必须 send 给用户"""
+    extra_part = f' | {extra}' if extra else ''
+    print(f"⚠️ ACTION=SEND_TO_USER | HTML={output_path.absolute()}{extra_part}")
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染身材照 GIF planner HTML(v2.3.1 · 兼任 gallery)')
     p.add_argument('--ids', help='逗号分隔的照片 ID(从外部带入)。与 --tag 二选一')
@@ -138,7 +144,10 @@ def main():
         suffix = f"tag{args.tag}_n{len(ids)}"
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_gif_planner_{suffix}')
     result = render(ids, out_path, validate_files=not args.no_validate_files)
+    n_avail = len(ids) - (1 if not args.no_validate_files else 0)  # 简化,实际数据可从 render 返回
     print(f"✓ 已生成: {result}")
+    # V1.3 §HTML 交付协议:stdout 末行强制 send 协议
+    emit_send_protocol(result)
 
 
 if __name__ == '__main__':

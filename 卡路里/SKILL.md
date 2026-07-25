@@ -773,20 +773,39 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 - 不传 `--crops` = 全部用原图
 - 坐标来自 `body_photo_gif_planner.html` 的 cropper.js 框选(用户手动调整)
 
-#### 打开 HTML 协议(v1.3 §📌 输出位置)
+#### HTML 交付协议(V1.3 · 必须 send · 2026-07-25 强化)
 
-所有 `render_*.py` 默认输出到 `<DATA_DIR>/calorie_html/`(`$SKILLS_DB_PATH/calorie_html/`)。
+> **Agent 铁律**:跑完 render 后,**必须主动 send HTML 给用户**,不是告诉路径让用户自己找。
 
-AI 执行流程:
+**完整流程**:
+
 ```bash
-# 1. 跑 render → 拿到输出路径(stdout 末行)
-python scripts/render_photo_X.py [--id N] 2>&1 | tail -1
+# 1. 跑 render → stdout 末行是 HTML 路径
+python scripts/render_body_photo_gif_planner.py --tag 正面 2>&1 | tail -1
+# 典型输出: ⚠️ ACTION=SEND_TO_USER | HTML=/path/body_photo_gif_planner_xxx.html
 
-# 2. AI 把 HTML 通过用户当前可用工具发送出去(主动发送是核心)
-#    Chrome 打开是加分项
+# 2. Agent 必须:
+#    a) 解析 stdout 末行的 HTML 路径
+#    b) 调飞书 send(默认) 或 Chrome 打开(用户不在飞书时)
+#    c) **不只是告诉用户路径**,必须 send 文件
 ```
 
-**禁止**:只跑 render 不告知用户(违背 v1.3 主动发送原则)。
+**send 优先级**(按用户实际可用工具):
+1. **飞书**(默认 · 用户主要通讯工具 · 用 `send_file_to_feishu` 或 `feishu_im_file`)
+2. 微信/QQ(若有 MCP)
+3. Chrome 打开(用户在电脑前 · 仅 fallback)
+4. 仅告诉路径(**禁止** · 违背协议)
+
+**render stdout 协议**(v2.3.1 加):
+- stdout 末行固定格式:`⚠️ ACTION=SEND_TO_USER | HTML=<绝对路径>`
+- Agent 解析后**主动 send**,不是单纯 echo 给用户
+
+**常见 fail mode**(agent 自检):
+- ❌ "HTML 已生成在 /tmp/xxx.html"(只给路径,无 send) → fail
+- ❌ "请打开 /tmp/xxx.html"(让用户自己找) → fail
+- ✅ "HTML 已发到你飞书([链接])"(主动 send) → pass
+
+**禁止**:只跑 render 不主动 send(违背 V1.3 主动交付原则)。
 
 | 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` |
 

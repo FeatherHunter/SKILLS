@@ -84,6 +84,11 @@ def render(photo_id: int, output_path: Path) -> Path:
     return output_path
 
 
+def emit_send_protocol(output_path: Path):
+    """stdout 末行:V1.3 §HTML 交付协议 - Agent 必须 send 给用户"""
+    print(f"⚠️ ACTION=SEND_TO_USER | HTML={output_path.absolute()}")
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染身材照单图查看 HTML')
     p.add_argument('--id', type=int, required=True, help='照片 ID')
@@ -93,6 +98,7 @@ def main():
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_viewer_id{args.id}')
     result = render(args.id, out_path)
     print(f"✓ 已生成: {result}")
+    emit_send_protocol(result)
 
 
 if __name__ == '__main__':

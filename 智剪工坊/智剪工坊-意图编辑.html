@@ -1890,6 +1890,56 @@
     }
 
     // [Playwright test helper]绕过 getVideoMeta,直接 push
+    // v2.116 ?demo=1 自动装载 demo 数据,免去手动选文件夹
+    window.__demoLoaded = false;
+    window.__demoBootstrap = async function() {
+      if (window.__demoLoaded) return;
+      window.__demoLoaded = true;
+      // 1. fake file
+      const fakeFile = new File([new Uint8Array([0,1,2,3,4,5,6,7,8,9])], 'demo.mp4', {type:'video/mp4'});
+      await window.__testLoadFiles([fakeFile]);
+      await new Promise(r => setTimeout(r, 300));
+      // 2. override duration
+      try {
+        Object.defineProperty(HTMLMediaElement.prototype, 'duration', {
+          configurable: true,
+          get() { return 120; }  // 2 分钟
+        });
+      } catch (e) {}
+      const v = document.querySelector('video');
+      if (v) v.dispatchEvent(new Event('loadedmetadata'));
+      await new Promise(r => setTimeout(r, 300));
+      // 3. 点 thumb 展开 inline-preview
+      const thumb = document.querySelector('.video-thumb[data-play]');
+      if (thumb) thumb.click();
+      await new Promise(r => setTimeout(r, 1200));
+      // 4. 加 5 段:1 user + 1 default + 1 user + 1 default + 1 user
+      const s = window.__segmentState;
+      if (!s || !s.states[0]) return;
+      s.init(0, 120);
+      s.addOrSplit(0, 10, 25);
+      s.addOrSplit(0, 40, 55);
+      s.addOrSplit(0, 70, 80);
+      s.addOrSplit(0, 95, 110);
+      // 5. 给 user segments 加 op(让颜色块有颜色)
+      const st = s.states[0];
+      st.segments.forEach((seg, i) => {
+        if (seg.ops && Object.keys(seg.ops).length > 0) {
+          seg.ops = { ...seg.ops, user: { on: true, note: `段 ${i+1} demo op` } };
+        }
+      });
+      // 6. render
+      const segArea = document.querySelector('[data-timeline-segments]');
+      if (segArea && typeof renderTimelineSegments === 'function') {
+        renderTimelineSegments(segArea, 0);
+      }
+      if (typeof renderSegmentsPanel === 'function') renderSegmentsPanel(0);
+    };
+    if (location.search.includes('demo=1')) {
+      // 1s 后自动跑 demo bootstrap(等 SegmentState 等定义好)
+      setTimeout(() => window.__demoBootstrap(), 1000);
+    }
+
     window.__testLoadFiles = async function(files) {
       videoEntries.forEach(e => { if (e._blobUrl) URL.revokeObjectURL(e._blobUrl); });
       videoEntries = [];

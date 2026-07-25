@@ -1895,43 +1895,43 @@
     window.__demoBootstrap = async function() {
       if (window.__demoLoaded) return;
       window.__demoLoaded = true;
-      // 1. fake file
+      // 1. fake file + renderForm + cards
       const fakeFile = new File([new Uint8Array([0,1,2,3,4,5,6,7,8,9])], 'demo.mp4', {type:'video/mp4'});
       await window.__testLoadFiles([fakeFile]);
-      await new Promise(r => setTimeout(r, 300));
-      // 2. override duration
-      try {
-        // v2.117:在 instance 上 define(覆盖 prototype + native bind)
-        const videoEl = document.querySelector('video');
-        if (videoEl) {
-          Object.defineProperty(videoEl, 'duration', {
-            configurable: true, get() { return 120; }
-          });
-        }
-      } catch (e) {}
-      const v = document.querySelector('video');
-      if (v) v.dispatchEvent(new Event('loadedmetadata'));
-      await new Promise(r => setTimeout(r, 300));
-      // 3. 点 thumb 展开 inline-preview
+      await new Promise(r => setTimeout(r, 400));
+      // 2. 点 thumb 展开 inline-preview(setupTimeline 注入 listener,video.load() 触发 loadedmetadata)
       const thumb = document.querySelector('.video-thumb[data-play]');
       if (thumb) thumb.click();
-      await new Promise(r => setTimeout(r, 1200));
-      // 4. 加 5 段:1 user + 1 default + 1 user + 1 default + 1 user
+      await new Promise(r => setTimeout(r, 1800));
+      // 3. v2.118:在 instance 上 defineProperty 强制 duration=120
+      //    (prototype defineProperty 被 native bind 覆盖,instance 上的优先)
+      const videoEl = document.querySelector('video');
+      if (videoEl) {
+        Object.defineProperty(videoEl, 'duration', {
+          configurable: true, get() { return 120; }
+        });
+        // 重新 fire loadedmetadata → syncSegmentsToVideoDuration 用 duration=120
+        videoEl.dispatchEvent(new Event('loadedmetadata'));
+      }
+      await new Promise(r => setTimeout(r, 400));
+      // 4. 现在 state.duration=120 + 1 段 [{0,120}](auto-fill)
       const s = window.__segmentState;
-      if (!s || !s.states[0]) return;
-      s.init(0, 120);
+      if (!s) return;
+      s.states[0] = s.states[0] || {segments: [], excluded: [], duration: 120};
+      // 5. 强制 segments 干净:reset + 加段
+      s.states[0].segments = [];
       s.addOrSplit(0, 10, 25);
       s.addOrSplit(0, 40, 55);
       s.addOrSplit(0, 70, 80);
       s.addOrSplit(0, 95, 110);
-      // 5. 给 user segments 加 op(让颜色块有颜色)
+      // 6. 给 4 个 user segments 加 user op(让 N3 muted 判定为彩色)
       const st = s.states[0];
       st.segments.forEach((seg, i) => {
         if (seg.ops && Object.keys(seg.ops).length > 0) {
-          seg.ops = { ...seg.ops, user: { on: true, note: `段 ${i+1} demo op` } };
+          seg.ops = { ...seg.ops, user: { on: true, note: `段 ${i+1} demo` } };
         }
       });
-      // 6. render
+      // 7. render timeline + panel
       const segArea = document.querySelector('[data-timeline-segments]');
       if (segArea && typeof renderTimelineSegments === 'function') {
         renderTimelineSegments(segArea, 0);

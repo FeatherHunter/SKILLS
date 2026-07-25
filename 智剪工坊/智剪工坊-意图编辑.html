@@ -4553,14 +4553,14 @@
     }
 
     function onTrackSelect(videoIndex, startSec, endSec) {
-      // v2.97 真正的二次确认:
-      // 1. backup 当前 state
-      // 2. addOrSplit 真加(改了 state)
-      // 3. 显示 modal preview(显示当前 state,已经是新状态)
-      // 4. confirm → 保留(不操作)
-      // 5. cancel → restore backup
+      // v2.99 真正的二次确认:用深拷贝,修 cancel 不真恢复 bug
       const st = SegmentState.getAll(videoIndex);
-      const backup = JSON.parse(JSON.stringify({segments: st.segments, excluded: st.excluded}));
+      const backupSegments = st.segments.slice();  // 浅拷贝数组(对象是引用)
+      // 深拷贝每个 segment(避免引用同一对象)
+      const backup = {
+        segments: backupSegments.map(s => Object.assign({}, s, {ops: Object.assign({}, s.ops || {})})),
+        excluded: st.excluded.slice()
+      };
       const result = SegmentState.addOrSplit(videoIndex, startSec, endSec);
       if (!result || result.modified === 'noop') {
         // addOrSplit 没改 state(noop 情况),直接 return

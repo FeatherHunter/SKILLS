@@ -2,8 +2,8 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、改吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、批量导入、校验批量、查食品库去重、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、生成身材照GIF、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、扫禁忌、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.3.5", "requires": { "python": ">=3.7" } } }
+  触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、改吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、批量导入、校验批量、查食品库去重、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、生成身材照GIF、记体脂、查体脂、删体脂、查体脂趋势、记围度、查围度、删围度、查围度趋势、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、扫禁忌、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.0", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -122,7 +122,9 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.3.5", "requires": { "py
 | `templates/weight_log_receipt.html` | 记体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py` |
 | `templates/body_photo_viewer.html` | (查身材照 · 子页)| `body_photo_tracker.get_photo(id)` | `scripts/render_body_photo_viewer.py --id N` |
 | `templates/body_photo_log_wizard.html` | 记身材照 | 纯配置型(无需 DB,用户填 → 生成 prompt) | `scripts/render_body_photo_log_wizard.py` |
-| `templates/body_photo_gif_planner.html` | 查身材照 / 生成身材照GIF(报告型 + 过程型 · v2.3.1 兼任 gallery + cropper.js 框选) | `body_photo_tracker.get_photos_by_ids([id1,id2,...])` + `validate_files` 自动跳过丢失 | `scripts/render_body_photo_gif_planner.py --tag 正面 (推荐)\|--ids id1,id2,... [--no-validate-files]` |
+| `templates/body_photo_gif_planner.html` | 查身材照 / 生成身材照GIF(报告型 + 过程型 · v2.3.1 兼任 gallery + cropper.js 框选)
+| `templates/body_composition_wizard.html` | 记体脂 / 查体脂 / 查体脂趋势(配置型 · 单页 + `<details>` 分组 · 飞书 webview 兼容 v2.3.5 教训)| `validators.validate_composition_input` | `scripts/render_body_composition_wizard.py` |
+| `templates/body_measurements_wizard.html` | 记围度 / 查围度 / 查围度趋势(同上 · 13 围度 3 分组)| `validators.validate_measurement_input` | `scripts/render_body_measurements_wizard.py` | | `body_photo_tracker.get_photos_by_ids([id1,id2,...])` + `validate_files` 自动跳过丢失 | `scripts/render_body_photo_gif_planner.py --tag 正面 (推荐)\|--ids id1,id2,... [--no-validate-files]` |
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
@@ -746,6 +748,26 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 | A5 | 复盘 7/17(简写) | `--range 7/17` | 7/17-7/17 | OK |
 | A6 | 复盘 7/11:7/16 | `--range 7/11:7/16` | 7/11-7/16 | OK |
 | A7 | 本月复盘 | `--type month` | 7/1-7/17 | OK |
+
+### 📏 身体成分
+
+| 唤醒词 | 功能 | CLI |
+|---|---|---|
+| 记体脂 | 皮褶钳测 7 点(自动算体脂率 Jackson-Pollock)| `python scripts/body_composition.py add ...` → **HTML:`body_composition_wizard.html`** |
+| 查体脂 | 历史 | `python scripts/body_composition.py list ...` → **HTML:`body_composition_wizard.html`** |
+| 查体脂趋势 | 时间线 | `python scripts/body_composition.py trend` |
+| 改体脂 | 修改记录 | `python scripts/body_composition.py update(待实现)` → **HTML:`crud_receipt.html`** |
+| 删体脂 | 软删除 | `python scripts/body_composition.py delete` → **HTML:`crud_receipt.html`** |
+
+### 📐 围度
+
+| 唤醒词 | 功能 | CLI |
+|---|---|---|
+| 记围度 | 13 部位(至少 1 项必填)| `python scripts/body_measurements.py add ...` → **HTML:`body_measurements_wizard.html`** |
+| 查围度 | 历史 | `python scripts/body_measurements.py list ...` → **HTML:`body_measurements_wizard.html`** |
+| 查围度趋势 | 时间线 | `python scripts/body_measurements.py trend --metric waist_cm` |
+| 改围度 | 修改记录 | `python scripts/body_measurements.py update(待实现)` → **HTML:`crud_receipt.html`** |
+| 删围度 | 软删除 | `python scripts/body_measurements.py delete` → **HTML:`crud_receipt.html`** |
 
 ### 📸 身材照片
 

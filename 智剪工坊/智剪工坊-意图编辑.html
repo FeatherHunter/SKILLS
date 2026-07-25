@@ -269,6 +269,13 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
+    /* v2.121:tick-last sticky 贴 ruler right edge,即使 ruler width 大于视口也可见 */
+    .timeline-ruler .tick.tick-last {
+      position: sticky;
+      left: auto !important;
+      right: 4px;
+      transform: none;
+    }
     /* v2.113 U1:hover 时半透明红 cursor + 时间 tooltip */
     .timeline-hover-cursor {
       position: absolute;
@@ -5378,7 +5385,8 @@
       const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
       const segHtml = state.segments.map((s, idx) => {
         const hasOp = s.ops && Object.keys(s.ops).length > 0;
-        const color = hasOp ? colors[idx % 8] : '#c8c8cc';
+        // v2.121:muted 段用 #6b7280 深灰,列表色块明确可见
+        const color = hasOp ? colors[idx % 8] : '#6b7280';
         // muted = 无 op 段:背景浅灰,不抢眼
         return `
         <div class="seg-item" style="--seg-color:${color};--seg-bg: ${hasOp ? `${color}15` : '#f5f5f7'}">

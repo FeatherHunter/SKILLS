@@ -4454,8 +4454,14 @@
       // 显示 preview
       showInformDialog(`本次操作将产生 ${newSegs.length} 个时间段(预览)`, segHtml, {
         onConfirm: () => {
-          // 用户点确定 → 真的 addOrSplit
-          SegmentState.addOrSplit(videoIndex, startSec, endSec);
+          // v2.96 真正 addOrSplit:先清 state(因 backup restore 后 state 是 addOrSplit 前的状态)
+          // 现在 state 应为 backup.segments(original), 直接调 addOrSplit 即可
+          // (因 backup 时刻 state 已经过 addOrSplit 但被 restore 干净了)
+          const stNow = SegmentState.getAll(videoIndex);
+          // 安全起见,看是否已是 backup 内容(可能 重复 addOrSplit):
+          if (JSON.stringify(stNow.segments) === JSON.stringify(backup.segments)) {
+            SegmentState.addOrSplit(videoIndex, startSec, endSec);
+          }
           const trackInner = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
           if (trackInner) renderTimelineSegments(trackInner, videoIndex);
           renderSegmentsPanel(videoIndex);

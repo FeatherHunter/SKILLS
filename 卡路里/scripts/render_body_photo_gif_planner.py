@@ -91,13 +91,30 @@ def render(ids: list, output_path: Path, validate_files: bool = True) -> Path:
     else:
         selected_for_display = selected
 
+    # 2026-07-25 修:把 photo_path 转成 file:// 绝对 URL,避免模板用相对路径
+    # 时浏览器按 HTML 位置找图片找不到(图片在 D:\.db\CalorieHub\,不在 HTML 同级)
+    def to_file_url(photo):
+        abs_path = (photos_dir / photo['photo_path']).resolve()
+        # Windows: D:\foo\bar.jpg → file:///D:/foo/bar.jpg
+        return {**photo, 'photo_path': abs_path.as_uri()}
+
+    if validate_files:
+        selected_for_display = [to_file_url(p) for p in selected_for_display]
+        all_photos_for_display = [to_file_url(p) for p in all_photos if (photos_dir / p['photo_path']).exists()]
+    else:
+        # 未走 validate_files 也要拼绝对路径
+        from body_photo_tracker import get_photos_dir
+        photos_dir = get_photos_dir()
+        selected_for_display = [to_file_url(p) for p in selected_for_display]
+        all_photos_for_display = [to_file_url(p) for p in all_photos if (photos_dir / p['photo_path']).exists()]
+
     payload = {
         "status": "ok",
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
             "selected_ids": ids,
             "selected_photos": selected_for_display,
-            "all_photos": all_photos,
+            "all_photos": all_photos_for_display,
             "missing_ids": missing_ids,
             "missing_count": len(missing_ids),
         },

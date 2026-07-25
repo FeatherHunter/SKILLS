@@ -3495,6 +3495,149 @@
       clearTimeout(showToast._t);
       showToast._t = setTimeout(() => t.classList.remove('show'), 2500);
     }
+
+    // ============ v2.0 数据模型工具 ============
+    function validateIntent(data) {
+      const errors = [];
+      data?.videos?.forEach(v => {
+        const segs = v.time_segments || [];
+        const ids = new Set();
+        segs.forEach(s => {
+          if (ids.has(s.id)) errors.push(`#${v.index}: id "${s.id}" 重复`);
+          ids.add(s.id);
+        });
+        segs.forEach(s => {
+          if (s.start_sec < 0 || s.end_sec > (v.duration_sec || 0) || s.start_sec >= s.end_sec) {
+            errors.push(`#${v.index} ${s.id}: 区间 [${s.start_sec}, ${s.end_sec}] 非法,视频时长 ${v.duration_sec}s`);
+          }
+        });
+        const sorted = [...segs].sort((a, b) => a.start_sec - b.start_sec);
+        for (let i = 0; i < sorted.length - 1; i++) {
+          if (sorted[i].end_sec > sorted[i + 1].start_sec) {
+            errors.push(`#${v.index}: 段 ${sorted[i].id} 与 ${sorted[i+1].id} 重叠`);
+          }
+        }
+        const validSegmentOps = ['mute', 'speed-up', 'slow-down', 'reverse', 'color-grade'];
+        segs.forEach(s => {
+          if (!s.ops) return;
+          Object.entries(s.ops).forEach(([opName, opCfg]) => {
+            if (!validSegmentOps.includes(opName)) {
+              errors.push(`#${v.index} ${s.id}: 不支持的段内 op "${opName}"`);
+            }
+            if ((opName === 'speed-up' || opName === 'slow-down') && (typeof opCfg.factor !== 'number' || opCfg.factor <= 0)) {
+              errors.push(`#${v.index} ${s.id}: ${opName} 必须有 factor > 0`);
+            }
+          });
+        });
+        if (v.video_ops?.voice?.on) {
+          const validModes = ['keep', 'keep-with-filler-removed', 'mute', 'bgm-only'];
+          if (!validModes.includes(v.video_ops.voice.mode)) {
+            errors.push(`#${v.index} video_ops.voice.mode "${v.video_ops.voice.mode}" 非法`);
+          }
+        }
+      });
+      return errors;
+    }
+
+    function migrateLegacyIntent(data) {
+      if (!data || data._meta?.schema_version === '3.0') return data;
+      data.videos?.forEach(v => {
+        if (!v.time_segments) {
+          v.time_segments = [{
+            id: `seg_${v.index}_1`,
+            label: '整段保留',
+            start_sec: 0,
+            end_sec: v.duration_sec || 60,
+            ops: {}
+          }];
+        }
+        const rangeSensitiveOps = ['mute-region', 'reverse-region', 'speed-region'];
+        const legacyOps = v.ops || {};
+        Object.entries(legacyOps).forEach(([opName, opCfg]) => {
+          if (rangeSensitiveOps.includes(opName)) {
+            v.time_segments[0].ops = v.time_segments[0].ops || {};
+            v.time_segments[0].ops[opName.replace('-region','')] = opCfg;
+          } else {
+            v.video_ops = v.video_ops || {};
+            v.video_ops[opName] = opCfg;
+          }
+        });
+        delete v.ops;
+      });
+      data._meta = data._meta || {};
+      data._meta.schema_version = '3.0';
+      return data;
+    }
+
+    // ============ v2.0 段状态管理(单源真相) ============
+    const SegmentState = {
+      states: {},
+      init(videoIndex, duration) {
+        if (!this.states[videoIndex]) {
+          this.states[videoIndex] = { segments: [], excluded: [], duration };
+        }
+        return this.states[videoIndex];
+      },
+      addOrSplit(videoIndex, start, end) {
+        const st = this.states[videoIndex];
+        if (!st) return null;
+        for (let i = 0; i < st.segments.length; i++) {
+          const s = st.segments[i];
+          if (start >= s.start_sec && end <= s.end_sec) {
+            if (s.start_sec === start && s.end_sec === end) {
+              return { segments: st.segments, modified: 'noop' };
+            }
+            const baseId = `seg_${videoIndex + 1}_`;
+            const left = { ...s, end_sec: start, id: `${s.id}_L`, ops: { ...(s.ops||{}) } };
+            const mid = { id: `${baseId}new_${Date.now()}`, label: '', start_sec: start, end_sec: end, ops: {} };
+            const right = { ...s, start_sec: end, id: `${s.id}_R`, ops: { ...(s.ops||{}) } };
+            const newSegs = [];
+            if (left.end_sec > left.start_sec) newSegs.push(left);
+            newSegs.push(mid);
+            if (right.end_sec > right.start_sec) newSegs.push(right);
+            st.segments = st.segments.flatMap((seg, idx) => idx !== i ? [seg] : newSegs);
+            return { segments: st.segments, modified: 'split', newId: mid.id, length: newSegs.length };
+          }
+        }
+        const newId = `seg_${videoIndex + 1}_${st.segments.length + st.excluded.length + 1}`;
+        const newSeg = { id: newId, label: '', start_sec: start, end_sec: end, ops: {} };
+        const before = start > 0 ? [{ id: `seg_${videoIndex + 1}_auto_${Date.now()}_a`, label: '', start_sec: 0, end_sec: start, ops: {} }] : [];
+        const after = end < st.duration ? [{ id: `seg_${videoIndex + 1}_auto_${Date.now()}_b`, label: '', start_sec: end, end_sec: st.duration, ops: {} }] : [];
+        st.segments = [...before, newSeg, ...after].sort((a, b) => a.start_sec - b.start_sec);
+        return { segments: st.segments, modified: 'new', newId, length: st.segments.length };
+      },
+      delete(videoIndex, segId) {
+        const st = this.states[videoIndex];
+        if (!st) return;
+        const idx = st.segments.findIndex(s => s.id === segId);
+        if (idx >= 0) {
+          const seg = st.segments.splice(idx, 1)[0];
+          st.excluded.push({ ...seg });
+        }
+      },
+      restore(videoIndex, segId) {
+        const st = this.states[videoIndex];
+        if (!st) return;
+        const idx = st.excluded.findIndex(s => s.id === segId);
+        if (idx >= 0) {
+          const seg = st.excluded.splice(idx, 1)[0];
+          st.segments.push(seg);
+          st.segments.sort((a, b) => a.start_sec - b.start_sec);
+        }
+      },
+      getAll(videoIndex) {
+        return this.states[videoIndex] || { segments: [], excluded: [] };
+      },
+      restoreAll(videoIndex) {
+        const st = this.states[videoIndex];
+        if (!st) return;
+        const restored = [...st.excluded];
+        st.excluded = [];
+        st.segments.push(...restored);
+        st.segments.sort((a, b) => a.start_sec - b.start_sec);
+      }
+    };
+    window.__segmentState = SegmentState;
   </script>
 </body>
 </html>

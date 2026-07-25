@@ -4885,7 +4885,8 @@
         }
 
         // v2.114 T1:段条序号角标(只对 user segment 显示)
-        const segNum = hasOp ? `<span class="tl-seg-num">${idx + 1}</span>` : '';
+        // v2.115:所有段都加序号(包括 muted 填充段)— 让 1,2,3,4,5 连续对齐
+        const segNum = `<span class="tl-seg-num">${idx + 1}</span>`;
         // v2.113 N10:每段加左右 trim handle(只对 user segment 显示)
         const trimHandles = hasOp ? `
               <div class="tl-seg-trim left" data-seg-id="${s.id}" data-trim-side="left" title="拖动调整起始时间"></div>

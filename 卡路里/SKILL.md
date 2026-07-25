@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
   触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、改吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、批量导入、校验批量、查食品库去重、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、生成身材照GIF、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、扫禁忌、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.3.0", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.3.1", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -120,10 +120,9 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.3.0", "requires": { "py
 | `templates/crud_view.html` | 查档案 / 查定时复盘 | `profile.get` / `mavis cron list` | `scripts/render_crud_view.py` |
 | `templates/crud_receipt.html` | 删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 改照片标签 / 删身材照 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py` |
 | `templates/weight_log_receipt.html` | 记体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py` |
-| `templates/body_photo_gallery.html` | 查身材照 | `body_photo_tracker.list_photos()` (按 tag + 日期筛选) | `scripts/render_body_photo_gallery.py --days N [--tag X]` |
 | `templates/body_photo_viewer.html` | (查身材照 · 子页)| `body_photo_tracker.get_photo(id)` | `scripts/render_body_photo_viewer.py --id N` |
 | `templates/body_photo_log_wizard.html` | 记身材照 | 纯配置型(无需 DB,用户填 → 生成 prompt) | `scripts/render_body_photo_log_wizard.py` |
-| `templates/body_photo_gif_planner.html` | 生成身材照GIF(过程型 · cropper.js 框选) | `body_photo_tracker.get_photos_by_ids([id1,id2,...])` | `scripts/render_body_photo_gif_planner.py --ids id1,id2,...` |
+| `templates/body_photo_gif_planner.html` | 查身材照 / 生成身材照GIF(报告型 + 过程型 · v2.3.1 兼任 gallery + cropper.js 框选) | `body_photo_tracker.get_photos_by_ids([id1,id2,...])` + `validate_files` 自动跳过丢失 | `scripts/render_body_photo_gif_planner.py --tag 正面 (推荐)\|--ids id1,id2,... [--no-validate-files]` |
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
@@ -753,7 +752,7 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
 | 记身材照 | 记录身材照片 | `python scripts/body_photo_tracker.py add` → **HTML:`body_photo_log_wizard.html`** |
-| 查身材照 | 查看照片历史 | `python scripts/body_photo_tracker.py list` → **HTML:`body_photo_gallery.html`(单图 → `body_photo_viewer.html`)** |
+| 查身材照 | 查看照片历史(浏览 + 选 + 裁剪 + 调细节 一站式)| `python scripts/body_photo_tracker.py list` → **HTML:`body_photo_gif_planner.html`(v2.3.1 兼任 gallery,单图 → `body_photo_viewer.html`)** |
 | 删身材照 | 删除照片 | `python scripts/body_photo_tracker.py delete` → **HTML:`crud_receipt.html`** |
 | 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` → **HTML:`crud_receipt.html`** |
 | 生成身材照GIF | 生成身材变化 GIF(框选裁剪 + 速度/水印/过渡)| `python scripts/body_photo_tracker.py gif --tag X --photo-id ... --crops '...'` → **HTML:`body_photo_gif_planner.html`** |

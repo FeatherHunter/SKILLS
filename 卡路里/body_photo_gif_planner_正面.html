@@ -15,7 +15,7 @@
     --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
     --bg: #fafafa; --card: #fff; --border: #d2d2d7;
     --accent: #0071e3; --red: #ff3b30; --soft: #f5f5f7;
-    --green: #34c759; --orange: #ff9500; --gray: #8e8e93;
+    --green: #34c759; --orange: #ff9500;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
@@ -42,48 +42,18 @@
     border-radius: 50%; font-size: 13px; font-weight: 700;
   }
 
-  /* 顶部统计 + 全选/反选 */
-  .summary-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 18px; background: linear-gradient(135deg, rgba(0,113,227,.04), rgba(0,113,227,.08));
-    border: 1px solid var(--accent); border-radius: 12px; margin-bottom: 16px;
-    flex-wrap: wrap; gap: 10px;
-  }
-  .summary-bar .stats { display: flex; gap: 14px; font-size: 13px; }
-  .summary-bar .stats .stat { display: flex; align-items: center; gap: 4px; }
-  .summary-bar .stats .stat .num { font-size: 18px; font-weight: 700; color: var(--accent); }
-  .summary-bar .stats .stat .lbl { color: var(--fg2); font-size: 12px; }
-  .summary-bar .stats .stat.warn .num { color: var(--orange); }
-  .summary-bar .stats .stat.good .num { color: var(--green); }
-  .summary-bar .actions { display: flex; gap: 6px; }
-  .summary-bar .actions button {
-    padding: 6px 14px; border: 1px solid var(--border); background: var(--card);
-    border-radius: 6px; font-size: 12px; cursor: pointer;
-  }
-  .summary-bar .actions button:hover { background: var(--soft); }
-  .summary-bar .actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-
   /* 照片列表 */
   .photo-list { display: flex; flex-direction: column; gap: 10px; }
   .photo-item {
-    display: grid; grid-template-columns: 30px 90px 1fr auto; gap: 12px; align-items: center;
+    display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: center;
     padding: 10px; background: var(--soft); border-radius: 10px;
-    border: 1px solid var(--border); transition: all .15s;
+    border: 1px solid var(--border);
   }
-  .photo-item.deselected { opacity: .45; }
-  .photo-item.deselected .thumb img { filter: grayscale(.8); }
-  .photo-item .sel-check { display: flex; align-items: center; justify-content: center; }
-  .photo-item .sel-check input { width: 18px; height: 18px; cursor: pointer; }
   .photo-item .thumb {
     width: 90px; height: 120px; background: #000; border-radius: 6px;
     overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
   .photo-item .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-item .thumb .broken {
-    width: 100%; height: 100%; background: #1d1d1f; color: var(--orange);
-    display: flex; align-items: center; justify-content: center; font-size: 11px;
-    text-align: center; padding: 4px;
-  }
   .photo-item .info { font-size: 13px; }
   .photo-item .info .meta { font-size: 12px; color: var(--fg3); margin-top: 2px; }
   .photo-item .info .crop-info {
@@ -93,12 +63,10 @@
   .photo-item .actions { display: flex; gap: 6px; flex-direction: column; }
   .photo-item .actions button {
     padding: 6px 12px; border: 1px solid var(--border); background: var(--card);
-    border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;
+    border-radius: 6px; font-size: 12px; cursor: pointer;
   }
-  .photo-item .actions button:hover:not(:disabled) { background: var(--soft); }
-  .photo-item .actions button:disabled { opacity: .3; cursor: not-allowed; }
+  .photo-item .actions button:hover { background: var(--soft); }
   .photo-item .actions .crop-btn { color: var(--accent); border-color: var(--accent); }
-  .photo-item .actions .remove-btn { color: var(--red); border-color: var(--red); }
 
   /* GIF 细节 */
   .param-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
@@ -181,39 +149,20 @@
 <body>
 
 <h1>🎬 身材照 GIF planner</h1>
-<p class="sub">过程型向导(cropper.js v2.1.1)· 浏览 → 选 → 框选裁剪 → 调细节 → 复制 prompt 给 AI</p>
+<p class="sub">过程型向导(cropper.js v2.1.1)· 选顺序 + 裁剪 + 商讨细节 → 复制 prompt 给 AI</p>
 
 <div class="tip info">
   <strong>ℹ️ 工作流</strong>:
   <ol style="margin-top: 4px; padding-left: 20px;">
-    <li>下方"1️⃣ 照片列表"列出该 tag 所有照片(默认全选,跳过文件丢失)</li>
-    <li>取消勾选不要的 · ↑↓ 调顺序 · ✂️ 框选裁剪</li>
-    <li>"2️⃣ GIF 细节"商讨速度/尺寸/水印/过渡</li>
-    <li>点"📋 复制并发送给 AI" → AI 跑 <code>body_photo_tracker.py gif</code></li>
+    <li>从 <code>body_photo_gallery.html</code> 勾选照片 → 进入本页面(URL 带 <code>?ids=12,15,22</code>)</li>
+    <li>在下方"1️⃣ 照片列表"用 ↑↓ 调顺序 + ✂️ 框选裁剪(可选,推荐)</li>
+    <li>在"2️⃣ GIF 细节"商讨速度/尺寸/水印/过渡</li>
+    <li>点"📋 复制 prompt 给 AI" → AI 收到 prompt 与你商定 → 调 <code>body_photo_tracker.py gif</code> 生成</li>
   </ol>
 </div>
 
-<!-- 顶部统计 + 全选/反选 -->
-<div class="summary-bar">
-  <div class="stats">
-    <div class="stat good">
-      <span class="num" id="statSelected">0</span>
-      <span class="lbl">已选</span>
-    </div>
-    <div class="stat">
-      <span class="num" id="statTotal">0</span>
-      <span class="lbl">总可用</span>
-    </div>
-    <div class="stat warn" id="statMissingWrap" style="display:none">
-      <span class="num" id="statMissing">0</span>
-      <span class="lbl">文件丢失(已跳过)</span>
-    </div>
-  </div>
-  <div class="actions">
-    <button onclick="selectAll()">☑ 全选</button>
-    <button onclick="selectNone()">☐ 全不选</button>
-    <button onclick="selectInvert()">⇅ 反选</button>
-  </div>
+<div class="tip">
+  <strong>💡 为什么需要 cropper</strong>:你拍的照片人物位置不一定对应,框选后 GIF 中人物位置才稳定。<strong>不裁剪</strong>也能生成,但 GIF 会忽上忽下。
 </div>
 
 <!-- 1️⃣ 照片列表 -->
@@ -270,12 +219,12 @@
 
 <!-- 3️⃣ Prompt -->
 <div class="section">
-  <h2><span class="step-num">3</span> Prompt(自动生成,基于已选)</h2>
-  <div class="prompt-box" id="promptBox">// 完成后,prompt 自动生成</div>
+  <h2><span class="step-num">3</span> Prompt(自动生成)</h2>
+  <div class="prompt-box" id="promptBox">// 完成上方配置后,prompt 自动生成</div>
   <button class="btn-copy" id="copyBtn">📋 复制并发送给 AI</button>
 </div>
 
-<div class="footer">卡路里 · body_photo_gif_planner v2.3.1(兼任 gallery)· cropper.js v2.1.1</div>
+<div class="footer">卡路里 · body_photo_gif_planner v1.0 · 用 cropper.js v2.1.1</div>
 
 <!-- Cropper Modal -->
 <div class="cropper-modal" id="cropperModal">
@@ -305,67 +254,41 @@
 
 <script>
 (function(){
-  // 从 URL 读 tag 或 ids(v2.3.0+ 独立运行)
+  // 从 URL 读已选 IDs
   const params = new URLSearchParams(location.search);
   const idsStr = params.get('ids') || '';
   const tagsStr = params.get('tags') || '';
-  const tagFromUrl = params.get('tag') || '';
-  let order = idsStr.split(',').filter(Boolean).map(Number);
-  let tagList = tagsStr ? tagsStr.split(',') : (tagFromUrl ? [tagFromUrl] : []);
+  const selIds = idsStr.split(',').filter(Boolean).map(Number);
+  const selTags = tagsStr ? tagsStr.split(',') : [];
 
-  // 数据
+  // 从 mock 数据读(实际由 render 注入)
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
-    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请重新生成 GIF planner。</em>';
+    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请从 body_photo_gallery.html 勾选后进入。</em>';
     return;
   }
   const photoMap = {};
   D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
-
-  // 若无 order 但有 tag,自动用该 tag 的所有照片(独立运行模式)
-  if (order.length === 0 && tagList.length > 0) {
-    order = D.data.selected_photos.map(p => p.id);
-  }
-
-  // 统计
-  const totalAvail = D.data.selected_photos.length;
-  const missingCount = D.data.missing_count || 0;
-  document.getElementById('statTotal').textContent = totalAvail;
-  document.getElementById('statSelected').textContent = order.length;
-  document.getElementById('selCount').textContent = order.length;
-  if (missingCount > 0) {
-    document.getElementById('statMissing').textContent = missingCount;
-    document.getElementById('statMissingWrap').style.display = 'flex';
-  }
+  const photos = selIds.map(id => photoMap[id]).filter(Boolean);
+  document.getElementById('selCount').textContent = photos.length;
 
   // 状态
-  const selectedSet = new Set(order); // 勾选状态
   const crops = {}; // {id: {x,y,w,h}}
+  const order = [...selIds]; // 当前顺序(可调)
   let transition = 'cut';
 
   function renderList() {
     const list = document.getElementById('photoList');
-    if (order.length === 0 && totalAvail === 0) {
-      list.innerHTML = '<em style="color:var(--fg3)">该 tag 下没有可用照片。</em>';
-      return;
-    }
-    if (order.length === 0) {
-      list.innerHTML = '<em style="color:var(--fg3)">已全不选。点上方"全选"恢复。</em>';
-      updateStats();
-      updatePrompt();
+    if (photos.length === 0) {
+      list.innerHTML = '<em style="color:var(--fg3)">未选照片。请回到 gallery 勾选。</em>';
       return;
     }
     list.innerHTML = order.map((id, idx) => {
       const p = photoMap[id];
-      if (!p) return '';
       const crop = crops[id];
-      const sel = selectedSet.has(id);
       return `
-        <div class="photo-item ${sel ? '' : 'deselected'}" data-id="${id}">
-          <div class="sel-check">
-            <input type="checkbox" class="sel-cb" data-id="${id}" ${sel ? 'checked' : ''}>
-          </div>
-          <div class="thumb">${renderThumb(p)}</div>
+        <div class="photo-item" data-id="${id}">
+          <div class="thumb"><img src="${p.photo_url || p.photo_path}" alt="${p.tag}"></div>
           <div class="info">
             <div><strong>${idx + 1}.</strong> ${p.tag} · ${p.date}</div>
             <div class="meta">#${p.id} · ${p.time || ''}</div>
@@ -374,26 +297,15 @@
             </div>
           </div>
           <div class="actions">
-            <button class="move-up" ${idx === 0 ? 'disabled' : ''}>↑ 上移</button>
-            <button class="move-down" ${idx === order.length - 1 ? 'disabled' : ''}>↓ 下移</button>
+            <button class="move-up" ${idx === 0 ? 'disabled style="opacity:.3"' : ''}>↑ 上移</button>
+            <button class="move-down" ${idx === order.length - 1 ? 'disabled style="opacity:.3"' : ''}>↓ 下移</button>
             <button class="crop-btn" data-id="${id}">✂️ 框选裁剪</button>
-            <button class="remove-btn" data-id="${id}">✕ 移除</button>
+            <button class="remove-btn" data-id="${id}" style="color:var(--red)">✕ 移除</button>
           </div>
         </div>
       `;
     }).join('');
 
-    list.querySelectorAll('.sel-cb').forEach(cb => {
-      cb.onchange = (e) => {
-        const id = parseInt(cb.dataset.id);
-        if (e.target.checked) selectedSet.add(id);
-        else selectedSet.delete(id);
-        // 标记 deselected
-        cb.closest('.photo-item').classList.toggle('deselected', !e.target.checked);
-        updateStats();
-        updatePrompt();
-      };
-    });
     list.querySelectorAll('.move-up').forEach(el => el.onclick = () => {
       const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
       if (i > 0) { [order[i-1], order[i]] = [order[i], order[i-1]]; renderList(); updatePrompt(); }
@@ -406,34 +318,9 @@
     list.querySelectorAll('.remove-btn').forEach(el => el.onclick = () => {
       const id = parseInt(el.dataset.id);
       const i = order.indexOf(id);
-      if (i >= 0) { order.splice(i, 1); selectedSet.delete(id); delete crops[id]; renderList(); updateStats(); updatePrompt(); }
+      if (i >= 0) { order.splice(i, 1); delete crops[id]; renderList(); updatePrompt(); }
     });
   }
-
-  function renderThumb(p) {
-    // selected_photos 里都是已验证可用的;这里 image 直接用 photo_path
-    // 完整路径由 render 脚本注入到 photoMap 时已是相对路径
-    return `<img src="${p.photo_path}" alt="${p.tag}" loading="lazy" onerror="this.outerHTML='<div class=\\'broken\\'>📷<br>图片加载失败</div>'">`;
-  }
-
-  function updateStats() {
-    const cnt = order.filter(id => selectedSet.has(id)).length;
-    document.getElementById('statSelected').textContent = cnt;
-    document.getElementById('selCount').textContent = cnt;
-  }
-
-  // 全选/反选
-  window.selectAll = () => { order.forEach(id => selectedSet.add(id)); renderList(); updateStats(); updatePrompt(); };
-  window.selectNone = () => { selectedSet.clear(); renderList(); updateStats(); updatePrompt(); };
-  window.selectInvert = () => {
-    order.forEach(id => {
-      if (selectedSet.has(id)) selectedSet.delete(id);
-      else selectedSet.add(id);
-    });
-    renderList();
-    updateStats();
-    updatePrompt();
-  };
 
   // Cropper modal
   let cropperInstance = null;
@@ -450,7 +337,7 @@
     if (!p) return;
     currentCroppingId = id;
     document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag} ${p.date})`;
-    cropperImg.src = p.photo_path;
+    cropperImg.src = p.photo_url || p.photo_path;
     modal.classList.add('show');
 
     cropperImg.onload = () => {
@@ -503,29 +390,27 @@
     };
   });
 
+  // 其他参数变化 → 更新 prompt
   ['paramDuration', 'paramLoop', 'paramWidth', 'paramHeight', 'paramWatermark', 'paramOutput'].forEach(id => {
     document.getElementById(id).oninput = updatePrompt;
     document.getElementById(id).onchange = updatePrompt;
   });
 
   // 默认输出文件名
-  if (tagList.length === 1 && order.length) {
-    const tag = tagList[0];
-    const dates = order.map(id => photoMap[id]?.date).filter(Boolean).sort();
-    if (dates.length) {
-      document.getElementById('paramOutput').value = `${tag}_${dates[0]}_${dates[dates.length-1]}.gif`;
-    }
+  if (selTags.length === 1 && photos.length) {
+    const tag = selTags[0];
+    const dates = [...new Set(photos.map(p => p.date))].sort();
+    document.getElementById('paramOutput').value = `${tag}_${dates[0]}_${dates[dates.length-1]}.gif`;
+    updatePrompt();
   }
 
   function generatePrompt() {
-    const selectedIds = order.filter(id => selectedSet.has(id));
-    if (selectedIds.length === 0) return '// 已不选任何照片,无法生成 GIF';
-
-    const tag = tagList.length === 1 ? tagList[0] : (photoMap[selectedIds[0]]?.tag || 'multi');
+    if (photos.length === 0) return '// 请先选照片';
+    const tag = selTags.join(',') || photos[0].tag;
+    const ids = order.join(' ');
     const cropsJson = Object.keys(crops).length > 0
       ? JSON.stringify(Object.fromEntries(
-          Object.entries(crops).filter(([id]) => selectedSet.has(parseInt(id))).map(([id, c]) =>
-            [id, [c.x, c.y, c.x + c.width, c.y + c.height]])
+          Object.entries(crops).map(([id, c]) => [id, [c.x, c.y, c.width + c.x, c.height + c.y]])
         ))
       : '';
 
@@ -540,14 +425,11 @@
     lines.push(`请帮我生成身材变化 GIF`);
     lines.push('');
     lines.push(`参数:`);
-    lines.push(`- 已选 ${selectedIds.length} 张(按顺序):ID = ${selectedIds.join(' ')}`);
-    if (cropsJson && cropsJson !== '{}') {
+    lines.push(`- 已选 ${photos.length} 张(按顺序):ID = ${ids}`);
+    if (Object.keys(crops).length > 0) {
       lines.push(`- 裁剪(每张单独):`);
-      selectedIds.forEach(id => {
-        if (crops[id]) {
-          const c = crops[id];
-          lines.push(`    ${id}: (${c.x}, ${c.y}) ${c.width}×${c.height} → 即 (${c.x}, ${c.y}, ${c.x + c.width}, ${c.y + c.height})`);
-        }
+      Object.entries(crops).forEach(([id, c]) => {
+        lines.push(`    ${id}: (${c.x}, ${c.y}) ${c.width}×${c.height} → 即 (${c.x}, ${c.y}, ${c.x + c.width}, ${c.y + c.height})`);
       });
     } else {
       lines.push(`- 裁剪:无(整图)`);
@@ -561,8 +443,8 @@
     lines.push('');
     lines.push(`命令:`);
     lines.push('```bash');
-    let cmd = `python scripts/body_photo_tracker.py gif \\\n  --tag "${tag}" \\\n  --photo-id ${selectedIds.join(' --photo-id ')}`;
-    if (cropsJson && cropsJson !== '{}') cmd += ` \\\n  --crops '${cropsJson}'`;
+    let cmd = `python scripts/body_photo_tracker.py gif \\\n  --tag "${tag}" \\\n  --photo-id ${order.map(id => `${id}`).join(' --photo-id ')}`;
+    if (cropsJson) cmd += ` \\\n  --crops '${cropsJson}'`;
     cmd += ` \\\n  --width ${width} --height ${height} \\\n  --duration ${duration} --loop ${loop}`;
     if (watermark) cmd += ` \\\n  --watermark "${watermark}"`;
     cmd += ` \\\n  --transition ${transition}`;
@@ -581,7 +463,7 @@
   // 复制
   document.getElementById('copyBtn').onclick = function() {
     const text = document.getElementById('promptBox').textContent;
-    if (text.startsWith('//')) { alert('请先选至少 1 张照片'); return; }
+    if (text.startsWith('//')) { alert('请先完成配置'); return; }
     navigator.clipboard.writeText(text).then(() => {
       this.textContent = '✓ 已复制';
       this.classList.add('copied');
@@ -597,7 +479,7 @@
 })();
 </script>
 
-<!--INJECT-DATA-->
+<script>window.__DATA__ = {"status": "ok", "data": {"fetched_at": "2026-07-25T15:31:58", "selected_ids": [19, 23, 27, 31], "selected_photos": [{"id": 19, "date": "2026-05-30", "time": "17:44:45", "photo_path": "2026-05-30_011.jpg", "tag": "正面", "note": "微胖型，腹部隆起，游泳圈明显，体脂约25-30%，2026-05-30四张记录组"}, {"id": 23, "date": "2026-06-01", "time": "08:06:59", "photo_path": "2026-06-01_003.jpg", "tag": "正面", "note": "2026-06-01 体重93.6kg"}, {"id": 27, "date": "2026-06-09", "time": "18:32:44", "photo_path": "2026-06-09_001.jpg", "tag": "正面", "note": "2026-06-09 体重93.2kg"}, {"id": 31, "date": "2026-07-17", "time": "15:17:54", "photo_path": "2026-07-17_001.png", "tag": "正面", "note": "2026-07-17 体重待补/对比6/9(93.2kg)→当前更瘦"}], "all_photos": [{"id": 35, "date": "2026-07-17", "time": "23:20:42", "photo_path": "2026-07-17_005.jpg", "tag": "test_v1_1", "note": "单元测试"}, {"id": 34, "date": "2026-07-17", "time": "23:18:17", "photo_path": "2026-07-17_004.jpg", "tag": "test_v1_1", "note": "单元测试"}, {"id": 33, "date": "2026-07-17", "time": "23:12:06", "photo_path": "2026-07-17_003.jpg", "tag": "test_v1_1", "note": "单元测试"}, {"id": 32, "date": "2026-07-17", "time": "15:19:24", "photo_path": "2026-07-17_002.png", "tag": "侧面", "note": "2026-07-17 站立侧面/对比6/9"}, {"id": 31, "date": "2026-07-17", "time": "15:17:54", "photo_path": "2026-07-17_001.png", "tag": "正面", "note": "2026-07-17 体重待补/对比6/9(93.2kg)→当前更瘦"}, {"id": 30, "date": "2026-06-09", "time": "18:33:28", "photo_path": "2026-06-09_004.jpg", "tag": "二头肌", "note": "2026-06-09 体重93.2kg"}, {"id": 29, "date": "2026-06-09", "time": "18:33:14", "photo_path": "2026-06-09_003.jpg", "tag": "侧面", "note": "2026-06-09 体重93.2kg"}, {"id": 28, "date": "2026-06-09", "time": "18:32:58", "photo_path": "2026-06-09_002.jpg", "tag": "侧身", "note": "2026-06-09 体重93.2kg"}, {"id": 27, "date": "2026-06-09", "time": "18:32:44", "photo_path": "2026-06-09_001.jpg", "tag": "正面", "note": "2026-06-09 体重93.2kg"}, {"id": 24, "date": "2026-06-01", "time": "08:07:06", "photo_path": "2026-06-01_004.jpg", "tag": "侧面", "note": "2026-06-01 体重93.6kg"}, {"id": 23, "date": "2026-06-01", "time": "08:06:59", "photo_path": "2026-06-01_003.jpg", "tag": "正面", "note": "2026-06-01 体重93.6kg"}, {"id": 22, "date": "2026-06-01", "time": "08:03:09", "photo_path": "2026-06-01_002.jpg", "tag": "二头肌", "note": "2026-06-01 体重93.6kg"}, {"id": 21, "date": "2026-06-01", "time": "08:03:02", "photo_path": "2026-06-01_001.jpg", "tag": "侧身", "note": "2026-06-01 体重93.6kg"}, {"id": 20, "date": "2026-05-30", "time": "17:44:48", "photo_path": "2026-05-30_012.jpg", "tag": "正面弯腰手臂", "note": "大体型但缺线条感，弯举展示有一定肌肉基础，体脂约25-30%，2026-05-30四张记录组"}, {"id": 19, "date": "2026-05-30", "time": "17:44:45", "photo_path": "2026-05-30_011.jpg", "tag": "正面", "note": "微胖型，腹部隆起，游泳圈明显，体脂约25-30%，2026-05-30四张记录组"}, {"id": 18, "date": "2026-05-30", "time": "17:27:05", "photo_path": "2026-05-30_010.jpg", "tag": "右侧", "note": "内胚型体型，体脂偏高(约28%-35%)，腹部脂肪堆积明显，核心区域无肌肉轮廓，胸部松弛，大腿较粗。拍摄于室内镜前自拍照。"}, {"id": 17, "date": "2026-05-30", "time": "17:26:58", "photo_path": "2026-05-30_009.jpg", "tag": "左侧", "note": "腹部肥胖体型，有一定运动基础，体脂率较高，2026-05-30"}, {"id": 16, "date": "2026-05-30", "time": "13:22:40", "photo_path": "2026-05-30_008.jpg", "tag": "正面", "note": "GIF测试4"}, {"id": 15, "date": "2026-05-30", "time": "13:22:39", "photo_path": "2026-05-30_007.jpg", "tag": "正面", "note": "GIF测试3"}, {"id": 14, "date": "2026-05-30", "time": "13:22:39", "photo_path": "2026-05-30_006.jpg", "tag": "正面", "note": "GIF测试2"}, {"id": 13, "date": "2026-05-30", "time": "13:22:39", "photo_path": "2026-05-30_005.jpg", "tag": "正面", "note": "GIF测试1"}, {"id": 12, "date": "2026-05-30", "time": "13:22:28", "photo_path": "2026-05-30_004.jpg", "tag": "正面", "note": "GIF测试1"}, {"id": 11, "date": "2026-05-30", "time": "13:22:18", "photo_path": "2026-05-30_003.jpg", "tag": "正面", "note": "GIF测试1"}, {"id": 8, "date": "2026-05-30", "time": "12:46:12", "photo_path": "2026-05-30_002.jpg", "tag": "正面", "note": ""}, {"id": 7, "date": "2026-05-30", "time": "12:46:12", "photo_path": "2026-05-30_001.jpg", "tag": "正面", "note": ""}]}, "message": "身材照 GIF planner · 已选 4 张"};</script>
 
 </body>
 </html>

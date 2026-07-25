@@ -2094,6 +2094,13 @@
             entry._blobUrl = null;
           }
         }
+      } else {
+        // v1.25 展开即预览:卡片从折叠变为展开,自动显示并加载首帧,
+        // 免去用户再点一次缩略图。视频默认暂停,等待用户主动播放。
+        const entry = videoEntries[i];
+        if (entry && !entry.isImage && entry.file) {
+          previewVideoInline(i);
+        }
       }
       // v1.24.3 fix:卡片展开/折叠后,卡片高度变化需要重算锚点位置
       // (ResizeObserver 理论上能触发,但不 100%,手动 requestAnimationFrame 保险)

@@ -5,10 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>身材照 GIF planner · 卡路里</title>
 
-<!-- cropper.js v1.6.2 本地化(2026-07-25 · 解决飞书 webview 加载 CDN 失败) -->
-<link rel="stylesheet" href="cropperjs/cropper.min.css">
-<script src="cropperjs/cropper.min.js"></script>
-
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -42,7 +38,7 @@
     border-radius: 50%; font-size: 13px; font-weight: 700;
   }
 
-  /* 顶部统计 + 全选/反选 */
+  /* 顶部统计 */
   .summary-bar {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 18px; background: linear-gradient(135deg, rgba(0,113,227,.04), rgba(0,113,227,.08));
@@ -64,41 +60,68 @@
   .summary-bar .actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   /* 照片列表 */
-  .photo-list { display: flex; flex-direction: column; gap: 10px; }
+  .photo-list { display: flex; flex-direction: column; gap: 12px; }
   .photo-item {
-    display: grid; grid-template-columns: 30px 90px 1fr auto; gap: 12px; align-items: center;
-    padding: 10px; background: var(--soft); border-radius: 10px;
+    display: grid; grid-template-columns: 30px 90px 1fr; gap: 12px; align-items: flex-start;
+    padding: 12px; background: var(--soft); border-radius: 10px;
     border: 1px solid var(--border); transition: all .15s;
   }
   .photo-item.deselected { opacity: .45; }
   .photo-item.deselected .thumb img { filter: grayscale(.8); }
-  .photo-item .sel-check { display: flex; align-items: center; justify-content: center; }
+  .photo-item .sel-check { display: flex; align-items: center; justify-content: center; padding-top: 24px; }
   .photo-item .sel-check input { width: 18px; height: 18px; cursor: pointer; }
   .photo-item .thumb {
     width: 90px; height: 120px; background: #000; border-radius: 6px;
     overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
   .photo-item .thumb img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-item .thumb .broken {
-    width: 100%; height: 100%; background: #1d1d1f; color: var(--orange);
-    display: flex; align-items: center; justify-content: center; font-size: 11px;
-    text-align: center; padding: 4px;
-  }
   .photo-item .info { font-size: 13px; }
   .photo-item .info .meta { font-size: 12px; color: var(--fg3); margin-top: 2px; }
-  .photo-item .info .crop-info {
-    margin-top: 6px; font-size: 12px; color: var(--green); font-family: ui-monospace, monospace;
+  .photo-item .info .crop-status {
+    margin-top: 6px; font-size: 12px;
   }
-  .photo-item .info .crop-info.none { color: var(--fg3); }
-  .photo-item .actions { display: flex; gap: 6px; flex-direction: column; }
-  .photo-item .actions button {
-    padding: 6px 12px; border: 1px solid var(--border); background: var(--card);
-    border-radius: 6px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  .photo-item .info .crop-status.active { color: var(--green); font-family: ui-monospace, monospace; }
+  .photo-item .info .crop-status.none { color: var(--fg3); }
+  .photo-item .crop-panel {
+    margin-top: 8px; padding: 10px; background: #fff; border: 1px solid var(--border);
+    border-radius: 8px;
   }
-  .photo-item .actions button:hover:not(:disabled) { background: var(--soft); }
-  .photo-item .actions button:disabled { opacity: .3; cursor: not-allowed; }
-  .photo-item .actions .crop-btn { color: var(--accent); border-color: var(--accent); }
-  .photo-item .actions .remove-btn { color: var(--red); border-color: var(--red); }
+  .photo-item .crop-panel.collapsed { display: none; }
+  .photo-item .crop-panel .row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 6px;
+  }
+  .photo-item .crop-panel label {
+    font-size: 11px; color: var(--fg3); margin-bottom: 2px; display: block;
+  }
+  .photo-item .crop-panel input {
+    width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 5px;
+    font-size: 13px; font-family: ui-monospace, monospace; text-align: center;
+  }
+  .photo-item .crop-panel input:focus { outline: none; border-color: var(--accent); }
+  .photo-item .crop-panel .hint {
+    font-size: 11px; color: var(--fg3); line-height: 1.5;
+  }
+  .photo-item .crop-panel .actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .photo-item .crop-panel .actions button {
+    padding: 4px 10px; border: 1px solid var(--border); background: #fff;
+    border-radius: 5px; font-size: 12px; cursor: pointer;
+  }
+  .photo-item .crop-panel .actions button:hover { background: var(--soft); }
+  .photo-item .crop-panel .actions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .photo-item .info .btns {
+    display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .photo-item .info .btns button {
+    padding: 5px 12px; border: 1px solid var(--border); background: #fff;
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .photo-item .info .btns button:hover:not(:disabled) { background: var(--soft); }
+  .photo-item .info .btns button:disabled { opacity: .3; cursor: not-allowed; }
+  .photo-item .info .btns .move-up { color: var(--accent); border-color: var(--accent); }
+  .photo-item .info .btns .crop-btn { color: var(--green); border-color: var(--green); }
+  .photo-item .info .btns .remove-btn { color: var(--red); border-color: var(--red); }
 
   /* GIF 细节 */
   .param-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
@@ -136,64 +159,31 @@
   .btn-copy.copied { background: var(--green); }
 
   .footer { margin-top: 24px; padding: 16px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); }
-
-  /* Cropper modal */
-  .cropper-modal {
-    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,.7); z-index: 9999; align-items: center; justify-content: center;
-    padding: 20px;
-  }
-  .cropper-modal.show { display: flex; }
-  .cropper-modal .modal-box {
-    background: var(--card); border-radius: 16px; max-width: 900px; width: 100%;
-    max-height: 90vh; display: flex; flex-direction: column;
-  }
-  .cropper-modal .modal-head {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-  }
-  .cropper-modal .modal-head h3 { font-size: 16px; font-weight: 600; }
-  .cropper-modal .modal-head .close { cursor: pointer; font-size: 24px; color: var(--fg3); background: none; border: none; }
-  .cropper-modal .modal-body {
-    flex: 1; padding: 16px 20px; overflow: auto; display: flex; flex-direction: column;
-  }
-  .cropper-modal .img-stage {
-    flex: 1; min-height: 400px; max-height: 60vh; background: #000; border-radius: 8px; overflow: hidden;
-  }
-  .cropper-modal .img-stage img { max-width: 100%; display: block; }
-  .cropper-modal .crop-info {
-    margin-top: 12px; padding: 10px 12px; background: var(--soft); border-radius: 6px;
-    font-size: 13px; font-family: ui-monospace, monospace; color: var(--fg);
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-  }
-  .cropper-modal .crop-info .lbl { color: var(--fg3); font-size: 11px; }
-  .cropper-modal .modal-foot {
-    padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end;
-  }
-  .cropper-modal .modal-foot button {
-    padding: 9px 18px; border-radius: 8px; font-size: 13px; cursor: pointer;
-    border: 1px solid var(--border); background: var(--card);
-  }
-  .cropper-modal .modal-foot .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .cropper-modal .modal-foot .danger { color: var(--red); border-color: var(--red); }
 </style>
 </head>
 <body>
 
 <h1>🎬 身材照 GIF planner</h1>
-<p class="sub">过程型向导(cropper.js v2.1.1)· 浏览 → 选 → 框选裁剪 → 调细节 → 复制 prompt 给 AI</p>
+<p class="sub">v2.3.5 · 浏览 → 选 → 输裁剪坐标 → 调细节 → 复制 prompt 给 AI</p>
 
 <div class="tip info">
   <strong>ℹ️ 工作流</strong>:
   <ol style="margin-top: 4px; padding-left: 20px;">
     <li>下方"1️⃣ 照片列表"列出该 tag 所有照片(默认全选,跳过文件丢失)</li>
-    <li>取消勾选不要的 · ↑↓ 调顺序 · ✂️ 框选裁剪</li>
+    <li>取消勾选不要的 · ↑↓ 调顺序 · 点 <strong>✂️ 裁剪坐标</strong> 输入 x/y/w/h</li>
     <li>"2️⃣ GIF 细节"商讨速度/尺寸/水印/过渡</li>
     <li>点"📋 复制并发送给 AI" → AI 跑 <code>body_photo_tracker.py gif</code></li>
   </ol>
 </div>
 
-<!-- 顶部统计 + 全选/反选 -->
+<div class="tip">
+  <strong>ℹ️ v2.3.5 变更</strong>:
+  去掉 cropper.js(飞书 webview 无法加载复杂 JS 库)。
+  <strong>改用手动输入 4 个数字</strong>(x/y/w/h,像素,左上原点)— 与裁剪工具一致。
+  若不会算坐标,<strong>直接说"帮我裁左上 1/4 区域"</strong> 让 AI 帮裁(PIL crop + 自动计算)。
+</div>
+
+<!-- 顶部统计 -->
 <div class="summary-bar">
   <div class="stats">
     <div class="stat good">
@@ -220,8 +210,7 @@
 <div class="section">
   <h2><span class="step-num">1</span> 照片列表(已选 <span id="selCount">0</span> 张)</h2>
   <div class="photo-list" id="photoList">
-    <!-- 静态预填(Python 渲染时直接拼 <img src="data:...">),即使 JS 失败也能看图 -->
-    <!--PHOTO_LIST-->
+    <!-- 动态生成 -->
   </div>
 </div>
 
@@ -276,37 +265,11 @@
   <button class="btn-copy" id="copyBtn">📋 复制并发送给 AI</button>
 </div>
 
-<div class="footer">卡路里 · body_photo_gif_planner v2.3.1(兼任 gallery)· cropper.js v2.1.1</div>
-
-<!-- Cropper Modal -->
-<div class="cropper-modal" id="cropperModal">
-  <div class="modal-box">
-    <div class="modal-head">
-      <h3>✂️ 框选裁剪 <span id="croppingPhotoId"></span></h3>
-      <button class="close" id="closeModal">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="img-stage">
-        <img id="cropperImg" src="" alt="原图">
-      </div>
-      <div class="crop-info">
-        <div><div class="lbl">x</div><span id="ciX">-</span></div>
-        <div><div class="lbl">y</div><span id="ciY">-</span></div>
-        <div><div class="lbl">width</div><span id="ciW">-</span></div>
-        <div><div class="lbl">height</div><span id="ciH">-</span></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="danger" id="resetCropBtn">↺ 重置裁剪</button>
-      <button id="cancelCropBtn">取消</button>
-      <button class="primary" id="confirmCropBtn">✓ 确认裁剪</button>
-    </div>
-  </div>
-</div>
+<div class="footer">卡路里 · body_photo_gif_planner v2.3.5(无 cropper.js · 飞书 webview 兼容 · 手动输入 4 数字坐标)</div>
 
 <script>
 (function(){
-  // 从 URL 读 tag 或 ids(v2.3.0+ 独立运行)
+  // 从 URL 读 tag 或 ids
   const params = new URLSearchParams(location.search);
   const idsStr = params.get('ids') || '';
   const tagsStr = params.get('tags') || '';
@@ -314,38 +277,29 @@
   let order = idsStr.split(',').filter(Boolean).map(Number);
   let tagList = tagsStr ? tagsStr.split(',') : (tagFromUrl ? [tagFromUrl] : []);
 
-  // 数据(v2.3.4:__DATA__ 只带 metadata,base64 已在 HTML 静态 <img> 里)
   const D = window.__DATA__;
-  const photoMap = {};
-  if (D && D.status === 'ok') {
-    (D.data.all_meta || []).forEach(p => { photoMap[p.id] = p; });
+  if (!D || D.status !== 'ok') {
+    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请重新生成 GIF planner。</em>';
+    return;
   }
+  const photoMap = {};
+  D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
 
-  // v2.3.4 关键修复:order 优先从 DOM 静态 <img> 读(已经渲染好的)
-  // 即使 __DATA__ 损坏,DOM 里有 photo-item,order 也能正确
-  const domItems = Array.from(document.querySelectorAll('.photo-item'));
-  if (order.length === 0 && domItems.length > 0) {
-    order = domItems.map(el => parseInt(el.dataset.id));
-  } else if (order.length === 0 && D && D.status === 'ok') {
+  // fallback 链:URL ?tag= → payload current_tag → selected_photos 全选
+  if (order.length === 0) {
     if (tagList.length > 0) {
-      order = (D.data.selected_meta || []).map(p => p.id);
+      order = D.data.selected_photos.map(p => p.id);
     } else if (D.data.current_tag) {
-      order = (D.data.selected_meta || [])
+      order = D.data.selected_photos
         .filter(p => p.tag === D.data.current_tag)
         .map(p => p.id);
     } else {
-      order = (D.data.selected_meta || []).map(p => p.id);
+      order = D.data.selected_photos.map(p => p.id);
     }
   }
 
-  // 状态
-  const selectedSet = new Set(order); // 默认全选
-  const crops = {}; // {id: {x,y,w,h}}
-  let transition = 'cut';
-
-  // 统计
-  const totalAvail = domItems.length;
-  const missingCount = (D && D.data.missing_count) || 0;
+  const totalAvail = D.data.selected_photos.length;
+  const missingCount = D.data.missing_count || 0;
   document.getElementById('statTotal').textContent = totalAvail;
   document.getElementById('statSelected').textContent = order.length;
   document.getElementById('selCount').textContent = order.length;
@@ -354,178 +308,164 @@
     document.getElementById('statMissingWrap').style.display = 'flex';
   }
 
+  // 状态
+  const selectedSet = new Set(order);
+  const crops = {}; // {id: {x, y, w, h}}
+  let transition = 'cut';
+
+  function renderList() {
+    const list = document.getElementById('photoList');
+    if (order.length === 0 && totalAvail === 0) {
+      list.innerHTML = '<em style="color:var(--fg3)">该 tag 下没有可用照片。</em>';
+      return;
+    }
+    if (order.length === 0) {
+      list.innerHTML = '<em style="color:var(--fg3)">已全不选。点上方"全选"恢复。</em>';
+      updateStats();
+      updatePrompt();
+      return;
+    }
+    list.innerHTML = order.map((id, idx) => {
+      const p = photoMap[id];
+      if (!p) return '';
+      const crop = crops[id];
+      const sel = selectedSet.has(id);
+      const src = p.photo_data_base64 || p.photo_path || '';
+      return `
+        <div class="photo-item ${sel ? '' : 'deselected'}" data-id="${id}">
+          <div class="sel-check">
+            <input type="checkbox" class="sel-cb" data-id="${id}" ${sel ? 'checked' : ''}>
+          </div>
+          <div class="thumb"><img src="${src}" alt="${p.tag}" loading="lazy"></div>
+          <div class="info">
+            <div><strong>${idx + 1}.</strong> ${p.tag} · ${p.date}</div>
+            <div class="meta">#${p.id} · ${p.time || ''}</div>
+            <div class="crop-status ${crop ? 'active' : 'none'}">
+              ${crop ? `✂️ 已裁剪:(${crop.x}, ${crop.y}) ${crop.w}×${crop.h}` : '未裁剪'}
+            </div>
+            <div class="crop-panel collapsed" id="crop-panel-${id}">
+              <div class="row">
+                <div><label>x</label><input type="number" class="crop-x" min="0" placeholder="左"></div>
+                <div><label>y</label><input type="number" class="crop-y" min="0" placeholder="上"></div>
+                <div><label>width</label><input type="number" class="crop-w" min="1" placeholder="宽"></div>
+                <div><label>height</label><input type="number" class="crop-h" min="1" placeholder="高"></div>
+              </div>
+              <div class="hint">
+                像素坐标,左上原点。例:(120, 240, 280, 360) = 左 120 上 240 起,宽 280 高 360。
+                图片原尺寸约 ${p.photo_embedded_size ? p.photo_embedded_size.join('×') : '?'}。
+                不会算?直接说"帮我裁左上 1/4 区域",AI 用 PIL crop。
+              </div>
+              <div class="actions">
+                <button class="primary" data-act="apply" data-id="${id}">✓ 应用</button>
+                <button data-act="clear" data-id="${id}">✎ 清除</button>
+                <button data-act="full" data-id="${id}">↺ 全图</button>
+              </div>
+            </div>
+            <div class="btns">
+              <button class="move-up" ${idx === 0 ? 'disabled' : ''}>↑ 上移</button>
+              <button class="move-down" ${idx === order.length - 1 ? 'disabled' : ''}>↓ 下移</button>
+              <button class="crop-btn" data-id="${id}">✂️ 裁剪坐标</button>
+              <button class="remove-btn" data-id="${id}">✕ 移除</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // 复选框
+    list.querySelectorAll('.sel-cb').forEach(cb => {
+      cb.onchange = (e) => {
+        const id = parseInt(cb.dataset.id);
+        if (e.target.checked) selectedSet.add(id);
+        else selectedSet.delete(id);
+        cb.closest('.photo-item').classList.toggle('deselected', !e.target.checked);
+        updateStats();
+        updatePrompt();
+      };
+    });
+    // 上下移
+    list.querySelectorAll('.move-up').forEach(el => el.onclick = () => {
+      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
+      if (i > 0) { [order[i-1], order[i]] = [order[i], order[i-1]]; renderList(); updatePrompt(); }
+    });
+    list.querySelectorAll('.move-down').forEach(el => el.onclick = () => {
+      const i = order.indexOf(parseInt(el.closest('.photo-item').dataset.id));
+      if (i < order.length - 1) { [order[i+1], order[i]] = [order[i], order[i+1]]; renderList(); updatePrompt(); }
+    });
+    // 移除
+    list.querySelectorAll('.remove-btn').forEach(el => el.onclick = () => {
+      const id = parseInt(el.dataset.id);
+      const i = order.indexOf(id);
+      if (i >= 0) { order.splice(i, 1); selectedSet.delete(id); delete crops[id]; renderList(); updateStats(); updatePrompt(); }
+    });
+    // 裁剪切换(展开 panel)
+    list.querySelectorAll('.crop-btn').forEach(el => el.onclick = () => {
+      const id = parseInt(el.dataset.id);
+      const panel = document.getElementById(`crop-panel-${id}`);
+      if (!panel) return;
+      panel.classList.toggle('collapsed');
+      // 如果之前已填过,自动填回
+      if (crops[id]) {
+        panel.querySelector('.crop-x').value = crops[id].x;
+        panel.querySelector('.crop-y').value = crops[id].y;
+        panel.querySelector('.crop-w').value = crops[id].w;
+        panel.querySelector('.crop-h').value = crops[id].h;
+      }
+    });
+    // 裁剪 panel 操作
+    list.querySelectorAll('[data-act]').forEach(el => {
+      const id = parseInt(el.dataset.id);
+      const act = el.dataset.act;
+      el.onclick = () => {
+        const panel = document.getElementById(`crop-panel-${id}`);
+        if (act === 'apply') {
+          const x = parseInt(panel.querySelector('.crop-x').value);
+          const y = parseInt(panel.querySelector('.crop-y').value);
+          const w = parseInt(panel.querySelector('.crop-w').value);
+          const h = parseInt(panel.querySelector('.crop-h').value);
+          if ([x, y, w, h].some(v => isNaN(v))) {
+            alert('请填齐 4 个数字');
+            return;
+          }
+          crops[id] = { x, y, w, h };
+          panel.classList.add('collapsed');
+        } else if (act === 'clear') {
+          panel.querySelector('.crop-x').value = '';
+          panel.querySelector('.crop-y').value = '';
+          panel.querySelector('.crop-w').value = '';
+          panel.querySelector('.crop-h').value = '';
+          delete crops[id];
+        } else if (act === 'full') {
+          // 全图(无裁剪)
+          const p = photoMap[id];
+          const size = p.photo_embedded_size || [p.photo_data_base64 ? 800 : 400, p.photo_data_base64 ? 1200 : 600];
+          panel.querySelector('.crop-x').value = 0;
+          panel.querySelector('.crop-y').value = 0;
+          panel.querySelector('.crop-w').value = size[0];
+          panel.querySelector('.crop-h').value = size[1];
+        }
+        renderList();
+        updatePrompt();
+      };
+    });
+  }
+
   function updateStats() {
     const cnt = order.filter(id => selectedSet.has(id)).length;
     document.getElementById('statSelected').textContent = cnt;
     document.getElementById('selCount').textContent = cnt;
   }
 
-  // 给已有的 photo-item DOM 绑定事件(不重写 innerHTML,保留静态 <img>)
-  function bindEvents() {
-    document.querySelectorAll('.photo-item').forEach(el => {
-      const id = parseInt(el.dataset.id);
-      const cb = el.querySelector('.sel-cb');
-      if (cb) cb.onchange = (e) => {
-        if (e.target.checked) selectedSet.add(id);
-        else selectedSet.delete(id);
-        el.classList.toggle('deselected', !e.target.checked);
-        updateStats();
-        updatePrompt();
-      };
-      const up = el.querySelector('.move-up');
-      if (up) up.onclick = () => moveItem(id, -1);
-      const down = el.querySelector('.move-down');
-      if (down) down.onclick = () => moveItem(id, +1);
-      const cropBtn = el.querySelector('.crop-btn');
-      if (cropBtn) cropBtn.onclick = () => openCropper(id);
-      const rm = el.querySelector('.remove-btn');
-      if (rm) rm.onclick = () => removeItem(id);
-    });
-  }
-
-  function moveItem(id, delta) {
-    const i = order.indexOf(id);
-    const j = i + delta;
-    if (i < 0 || j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
-    reorderDom();
-    updatePrompt();
-  }
-
-  function removeItem(id) {
-    const i = order.indexOf(id);
-    if (i < 0) return;
-    order.splice(i, 1);
-    selectedSet.delete(id);
-    delete crops[id];
-    const el = document.querySelector(`.photo-item[data-id="${id}"]`);
-    if (el) el.remove();
-    updateStats();
-    updatePrompt();
-  }
-
-  function reorderDom() {
-    const list = document.getElementById('photoList');
-    order.forEach(id => {
-      const el = list.querySelector(`.photo-item[data-id="${id}"]`);
-      if (el) list.appendChild(el);
-    });
-  }
-
-  // 全选/反选
-  window.selectAll = () => {
-    order.forEach(id => selectedSet.add(id));
-    document.querySelectorAll('.photo-item').forEach(el => {
-      el.classList.remove('deselected');
-      const cb = el.querySelector('.sel-cb');
-      if (cb) cb.checked = true;
-    });
-    updateStats();
-    updatePrompt();
-  };
-  window.selectNone = () => {
-    selectedSet.clear();
-    document.querySelectorAll('.photo-item').forEach(el => {
-      el.classList.add('deselected');
-      const cb = el.querySelector('.sel-cb');
-      if (cb) cb.checked = false;
-    });
-    updateStats();
-    updatePrompt();
-  };
+  window.selectAll = () => { order.forEach(id => selectedSet.add(id)); renderList(); updateStats(); updatePrompt(); };
+  window.selectNone = () => { selectedSet.clear(); renderList(); updateStats(); updatePrompt(); };
   window.selectInvert = () => {
     order.forEach(id => {
       if (selectedSet.has(id)) selectedSet.delete(id);
       else selectedSet.add(id);
     });
-    document.querySelectorAll('.photo-item').forEach(el => {
-      const id = parseInt(el.dataset.id);
-      const sel = selectedSet.has(id);
-      el.classList.toggle('deselected', !sel);
-      const cb = el.querySelector('.sel-cb');
-      if (cb) cb.checked = sel;
-    });
+    renderList();
     updateStats();
     updatePrompt();
-  };
-
-  // Cropper modal
-  let cropperInstance = null;
-  const modal = document.getElementById('cropperModal');
-  const cropperImg = document.getElementById('cropperImg');
-  const ciX = document.getElementById('ciX');
-  const ciY = document.getElementById('ciY');
-  const ciW = document.getElementById('ciW');
-  const ciH = document.getElementById('ciH');
-  let currentCroppingId = null;
-
-  function openCropper(id) {
-    // v2.3.4:从 DOM 静态 <img> 拿 src(已含 base64),不读 __DATA__
-    const photoItem = document.querySelector(`.photo-item[data-id="${id}"]`);
-    if (!photoItem) return;
-    const imgInList = photoItem.querySelector('.thumb img');
-    if (!imgInList || !imgInList.src) {
-      alert('该照片没有可用的图片数据(可能 base64 嵌图失败)。\n请在 Chrome 打开重生成。');
-      return;
-    }
-    currentCroppingId = id;
-    const p = photoMap[id] || {};
-    document.getElementById('croppingPhotoId').textContent = `#${id} (${p.tag || ''} ${p.date || ''})`;
-    cropperImg.src = imgInList.src;
-    modal.classList.add('show');
-
-    cropperImg.onload = () => {
-      try {
-        if (cropperInstance) cropperInstance.destroy();
-        cropperInstance = new Cropper(cropperImg, {
-          aspectRatio: NaN,
-          viewMode: 1,
-          autoCropArea: 0.7,
-          responsive: true,
-          background: false,
-          crop(event) {
-            const d = event.detail;
-            ciX.textContent = Math.round(d.x);
-            ciY.textContent = Math.round(d.y);
-            ciW.textContent = Math.round(d.width);
-            ciH.textContent = Math.round(d.height);
-          },
-        });
-      } catch (e) {
-        alert('裁剪初始化失败(可能 cropper.js 加载失败)。请在 Chrome 打开重试。\n' + e.message);
-        closeCropper();
-      }
-    };
-    cropperImg.onerror = () => {
-      alert('裁剪图加载失败。');
-      closeCropper();
-    };
-  }
-
-  function closeCropper() {
-    modal.classList.remove('show');
-    if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
-    currentCroppingId = null;
-  }
-
-  document.getElementById('closeModal').onclick = closeCropper;
-  document.getElementById('cancelCropBtn').onclick = closeCropper;
-  document.getElementById('confirmCropBtn').onclick = () => {
-    if (cropperInstance && currentCroppingId !== null) {
-      const data = cropperInstance.getData();
-      crops[currentCroppingId] = { x: Math.round(data.x), y: Math.round(data.y), width: Math.round(data.width), height: Math.round(data.height) };
-      const c = crops[currentCroppingId];
-      const el = document.querySelector(`.photo-item[data-id="${currentCroppingId}"] .crop-info`);
-      if (el) {
-        el.classList.remove('none');
-        el.innerHTML = `✂️ 已裁剪: (${c.x}, ${c.y}) ${c.width}×${c.height}`;
-      }
-    }
-    closeCropper();
-    updatePrompt();
-  };
-  document.getElementById('resetCropBtn').onclick = () => {
-    if (cropperInstance) cropperInstance.reset();
   };
 
   // transition chips
@@ -539,11 +479,8 @@
   });
 
   ['paramDuration', 'paramLoop', 'paramWidth', 'paramHeight', 'paramWatermark', 'paramOutput'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.oninput = updatePrompt;
-      el.onchange = updatePrompt;
-    }
+    document.getElementById(id).oninput = updatePrompt;
+    document.getElementById(id).onchange = updatePrompt;
   });
 
   // 默认输出文件名
@@ -560,10 +497,15 @@
     if (selectedIds.length === 0) return '// 已不选任何照片,无法生成 GIF';
 
     const tag = tagList.length === 1 ? tagList[0] : (photoMap[selectedIds[0]]?.tag || 'multi');
-    const cropsJson = Object.keys(crops).length > 0
+    // 收集裁剪数据,仅含已选照片
+    const validCrops = {};
+    selectedIds.forEach(id => {
+      if (crops[id]) validCrops[id] = crops[id];
+    });
+    // 转换为 CLI 期望的 [x1,y1,x2,y2] 格式
+    const cropsJson = Object.keys(validCrops).length > 0
       ? JSON.stringify(Object.fromEntries(
-          Object.entries(crops).filter(([id]) => selectedSet.has(parseInt(id))).map(([id, c]) =>
-            [id, [c.x, c.y, c.x + c.width, c.y + c.height]])
+          Object.entries(validCrops).map(([id, c]) => [id, [c.x, c.y, c.x + c.w, c.y + c.h]])
         ))
       : '';
 
@@ -582,9 +524,9 @@
     if (cropsJson && cropsJson !== '{}') {
       lines.push(`- 裁剪(每张单独):`);
       selectedIds.forEach(id => {
-        if (crops[id]) {
-          const c = crops[id];
-          lines.push(`    ${id}: (${c.x}, ${c.y}) ${c.width}×${c.height} → 即 (${c.x}, ${c.y}, ${c.x + c.width}, ${c.y + c.height})`);
+        if (validCrops[id]) {
+          const c = validCrops[id];
+          lines.push(`    ${id}: (${c.x}, ${c.y}) ${c.w}×${c.h} → 即 (${c.x}, ${c.y}, ${c.x + c.w}, ${c.y + c.h})`);
         }
       });
     } else {
@@ -616,44 +558,23 @@
     document.getElementById('promptBox').textContent = generatePrompt();
   }
 
-  // 复制(支持 fallback,飞书 webview 可能没 navigator.clipboard)
   document.getElementById('copyBtn').onclick = function() {
     const text = document.getElementById('promptBox').textContent;
     if (text.startsWith('//')) { alert('请先选至少 1 张照片'); return; }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        this.textContent = '✓ 已复制';
-        this.classList.add('copied');
-        setTimeout(() => {
-          this.textContent = '📋 复制并发送给 AI';
-          this.classList.remove('copied');
-        }, 2000);
-      }).catch(() => fallbackCopy(text, this));
-    } else {
-      fallbackCopy(text, this);
-    }
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = '✓ 已复制';
+      this.classList.add('copied');
+      setTimeout(() => {
+        this.textContent = '📋 复制并发送给 AI';
+        this.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      // 飞书 webview 可能不支持 clipboard API
+      alert('复制失败(飞书 webview 限制)。请长按上方 prompt 框手动选中文本复制。');
+    });
   };
 
-  function fallbackCopy(text, btn) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-    btn.textContent = '✓ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '📋 复制并发送给 AI';
-      btn.classList.remove('copied');
-    }, 2000);
-  }
-
-  // 初始化(不再 renderList — DOM 已经预填好)
-  bindEvents();
-  updateStats();
+  renderList();
   updatePrompt();
 })();
 </script>

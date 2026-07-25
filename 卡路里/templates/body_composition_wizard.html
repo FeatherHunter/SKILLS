@@ -9,205 +9,339 @@
   :root {
     --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
     --bg: #fafafa; --card: #fff; --border: #d2d2d7;
-    --accent: #0071e3; --red: #ff3b30; --soft: #f5f5f7;
-    --green: #34c759;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759; --orange: #ff9500;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     line-height: 1.6; color: var(--fg); background: var(--bg);
-    max-width: 800px; margin: 0 auto; padding: 32px 20px 80px;
+    max-width: 760px; margin: 0 auto; padding: 32px 20px 100px;
     -webkit-font-smoothing: antialiased;
   }
   h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
-  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 20px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
 
   .tip {
-    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 6px;
-    padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--fg2); line-height: 1.7;
+    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--fg2); line-height: 1.7;
   }
   .tip strong { color: var(--accent); }
+  .tip code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 
-  .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
-  .section h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+  /* details/summary — 飞书 webview 兼容(spec Q6 决策) */
+  details {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  details > summary {
+    list-style: none; cursor: pointer; padding: 16px 22px; font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; user-select: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after {
+    content: '›'; font-size: 20px; color: var(--fg3); font-weight: 400;
+    transition: transform .2s; display: inline-block;
+  }
+  details[open] > summary::after { transform: rotate(90deg); }
+  details > summary .pill {
+    background: var(--accent-soft); color: var(--accent); font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600;
+  }
+  details > summary .badge {
+    background: var(--soft); color: var(--fg3); font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 500;
+  }
+  .body { padding: 4px 22px 20px; }
 
   .form-group { margin-bottom: 14px; }
+  .form-group:last-child { margin-bottom: 0; }
   .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
   .form-group label .required { color: var(--red); }
+  .form-group label .en { color: var(--fg3); font-weight: 400; margin-left: 4px; font-size: 11.5px; }
   .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
     font-size: 14px; font-family: inherit; background: #fff; color: var(--fg);
+    transition: border-color .15s, box-shadow .15s;
   }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.1);
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.12);
   }
   .form-group textarea { min-height: 60px; resize: vertical; font-family: inherit; }
   .form-group .hint { font-size: 11px; color: var(--fg3); margin-top: 4px; line-height: 1.5; }
 
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+  .auto-fill {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+    padding: 6px 12px; background: var(--accent-soft); color: var(--accent);
+    border: none; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+  }
+  .auto-fill:hover { background: #d3e7ff; }
+  .auto-fill:disabled { background: var(--soft); color: var(--fg3); cursor: not-allowed; }
+
+  .sum-box {
+    background: var(--soft); padding: 10px 14px; border-radius: 8px;
+    font-size: 12.5px; color: var(--fg2); margin-top: 12px; line-height: 1.6;
+  }
+  .sum-box strong { color: var(--fg); font-weight: 600; }
 
   .prompt-box {
     background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
     line-height: 1.7; white-space: pre-wrap; word-break: break-word;
-    min-height: 120px; margin-bottom: 12px;
+    min-height: 140px; margin-bottom: 12px;
   }
 
-  .footer { margin-top: 24px; padding: 16px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); }
+  .footer { margin-top: 24px; padding: 14px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
 
   .btn-copy {
     width: 100%; padding: 14px; border: none; background: var(--accent);
     color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: all .15s;
+    cursor: pointer; transition: background .15s;
   }
   .btn-copy:hover { background: #005bb5; }
   .btn-copy.copied { background: var(--green); }
+
+  /* status badge (从注入数据读取最近一次记录供对照) */
+  .recent-bar {
+    background: linear-gradient(135deg, #e3f0ff, #f5f9ff); border: 1px solid #c2dafa;
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 18px;
+    font-size: 12.5px; color: var(--fg2); display: flex; align-items: center; gap: 8px;
+  }
+  .recent-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 </style>
 </head>
 <body>
 
 <h1>📏 记体脂</h1>
-<p class="sub">配置型向导 · 填好 7 处皮褶厚度 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
+<p class="sub">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
+
+<div id="recentBar" class="recent-bar" style="display:none">
+  <span class="dot"></span>
+  <span>最近一次:<strong id="recentDate">—</strong> · 体脂率 <strong id="recentBf">—</strong>% · 来源 <strong id="recentSrc">—</strong></span>
+</div>
 
 <div class="tip">
-  <strong>ℹ️ 工作流</strong>:量 7 处皮褶(胸/腹/大腿/三头肌/肩胛下/髂上/腋中线,单位 mm)→ 算体脂率 → 填上 → 点"📋 复制 prompt 给 AI" → AI 调 <code>body_composition.py add</code>。
+  <strong>ℹ️ 工作流</strong>:填日期 / 来源 → 量 7 处皮褶(胸/腹/大腿/三头肌/肩胛下/髂上/腋中线,单位 mm)→ 点"自动算"得体脂率(Jackson-Pollock 7 点法)或直接填设备值 → 加备注 → 点底部"📋 复制 prompt 给 AI" → AI 调 <code>body_composition.py add</code>。
 </div>
 
-<div class="section">
-  <h2>1️⃣ 日期 & 来源</h2>
-  <div class="form-row">
-    <div class="form-group">
-      <label>日期<span class="required"> *</span></label>
-      <input type="date" id="date" required>
+<!-- ============== 1. 基本信息 ============== -->
+<details open>
+  <summary>1️⃣ 基本信息 <span class="badge">日期 / 来源 / 年龄 / 性别</span></summary>
+  <div class="body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>日期<span class="required"> *</span><span class="en">date</span></label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="form-group">
+        <label>来源<span class="required"> *</span><span class="en">source</span></label>
+        <select id="source">
+          <option value="体脂钳测" selected>体脂钳测</option>
+          <option value="inbody">inbody</option>
+          <option value="omron">omron</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
     </div>
-    <div class="form-group">
-      <label>来源 source<span class="required"> *</span></label>
-      <select id="source">
-        <option value="体脂钳测" selected>体脂钳测</option>
-        <option value="inbody">inbody</option>
-        <option value="omron">omron</option>
-        <option value="其他">其他</option>
-      </select>
+    <div class="form-row">
+      <div class="form-group">
+        <label>年龄 <span class="en">age · 体脂率公式需要</span></label>
+        <input type="number" id="age" min="1" max="120" placeholder="例:30">
+      </div>
+      <div class="form-group">
+        <label>性别 <span class="en">sex · 体脂率公式需要</span></label>
+        <select id="sex">
+          <option value="">不填</option>
+          <option value="male">男</option>
+          <option value="female">女</option>
+        </select>
+      </div>
     </div>
   </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>年龄</label>
-      <input type="number" id="age" min="1" max="120" placeholder="例:30">
-    </div>
-    <div class="form-group">
-      <label>性别</label>
-      <select id="sex">
-        <option value="">不填</option>
-        <option value="male">男</option>
-        <option value="female">女</option>
-      </select>
-    </div>
-  </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>2️⃣ 7 处皮褶厚度(mm)<span class="required"> *</span></h2>
-  <div class="form-row">
-    <div class="form-group">
-      <label>胸部 chest</label>
-      <input type="number" id="chest" step="0.1" min="0">
+<!-- ============== 2. 7 皮褶 ============== -->
+<details>
+  <summary>2️⃣ 7 处皮褶厚度(mm)<span class="required" style="color:var(--red);margin-left:6px">*</span> <span class="badge">必填 7 项</span></summary>
+  <div class="body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>胸部<span class="required"> *</span><span class="en">chest</span></label>
+        <input type="number" id="caliper-chest" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label>腹部<span class="required"> *</span><span class="en">abdominal</span></label>
+        <input type="number" id="caliper-abdominal" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>大腿<span class="required"> *</span><span class="en">thigh</span></label>
+        <input type="number" id="caliper-thigh" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label>三头肌<span class="required"> *</span><span class="en">tricep</span></label>
+        <input type="number" id="caliper-tricep" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>肩胛下<span class="required"> *</span><span class="en">subscapular</span></label>
+        <input type="number" id="caliper-subscapular" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
+      <div class="form-group">
+        <label>髂上<span class="required"> *</span><span class="en">suprailiac</span></label>
+        <input type="number" id="caliper-suprailiac" step="0.1" min="0" max="100" placeholder="mm">
+      </div>
     </div>
     <div class="form-group">
-      <label>腹部 abdominal</label>
-      <input type="number" id="abdominal" step="0.1" min="0">
+      <label>腋中线<span class="required"> *</span><span class="en">midaxillary</span></label>
+      <input type="number" id="caliper-midaxillary" step="0.1" min="0" max="100" placeholder="mm">
+      <div class="hint">每项范围 (0, 100) mm · 总和 7 处建议 40–250</div>
     </div>
   </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>大腿 thigh</label>
-      <input type="number" id="thigh" step="0.1" min="0">
-    </div>
-    <div class="form-group">
-      <label>三头肌 tricep</label>
-      <input type="number" id="tricep" step="0.1" min="0">
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>肩胛下 subscapular</label>
-      <input type="number" id="subscapular" step="0.1" min="0">
-    </div>
-    <div class="form-group">
-      <label>髂上 suprailiac</label>
-      <input type="number" id="suprailiac" step="0.1" min="0">
-    </div>
-  </div>
-  <div class="form-group">
-    <label>腋中线 midaxillary</label>
-    <input type="number" id="midaxillary" step="0.1" min="0">
-    <div class="hint">范围 0–80 mm;总和(7 处)建议 40–250。详见 validators.composition 范围。</div>
-  </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>3️⃣ 体脂率 %<span class="required"> *</span></h2>
-  <div class="form-group">
-    <label>由皮褶厚度用公式算出(或直接填设备值)</label>
-    <input type="number" id="bodyFatPct" step="0.01" min="0" max="80" placeholder="例:18.5">
-    <div class="hint">范围 0–80;填错 validators 会拒。</div>
+<!-- ============== 3. 备注 / 体脂率 ============== -->
+<details>
+  <summary>3️⃣ 体脂率 & 备注 <span class="badge">可填 1 项或自动算</span></summary>
+  <div class="body">
+    <div class="form-group">
+      <label>体脂率 %<span class="required"> *</span><span class="en">body_fat_pct</span></label>
+      <input type="number" id="body-fat-pct" step="0.01" min="0" max="60" placeholder="自动算 或 手动填">
+      <button type="button" class="auto-fill" id="autoCalcBtn">🧮 自动算(Jackson-Pollock 7 点法)</button>
+      <div class="sum-box" id="sumBox">
+        <strong>7 处总和:</strong> <span id="sumVal">—</span> mm ·
+        <strong>公式:</strong> BD = 1.112 - 0.00043499×Σ + 0.00000055×Σ² - 0.00028826×年龄(男) · 体脂率 = (495 / BD) − 450
+      </div>
+    </div>
+    <div class="form-group">
+      <label>备注 <span class="en">note · 可选</span></label>
+      <textarea id="note" placeholder="例:周一早上空腹 / Jackson-Pollock 7 点法 / 训练后"></textarea>
+    </div>
   </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>4️⃣ 备注(可选)</h2>
-  <div class="form-group">
-    <textarea id="note" placeholder="例:周一早上空腹 / Jackson-Pollock 7 点法"></textarea>
+<!-- ============== 4. 复制 prompt ============== -->
+<details open>
+  <summary>📋 复制 prompt 给 AI <span class="pill">必走</span></summary>
+  <div class="body">
+    <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
+    <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
   </div>
-</div>
+</details>
 
-<div class="section">
-  <h2>📋 复制 prompt 给 AI</h2>
-  <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
-  <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
-</div>
+<div class="footer">卡路里 · body_composition_wizard v1.0 · 飞书 webview 兼容</div>
 
-<div class="footer">卡路里 · body_composition_wizard v1.0</div>
+<!--INJECT-DATA-->
 
 <script>
 (function(){
-  function val(id) { const v = document.getElementById(id).value.trim(); return v; }
-  function num(id) { const v = parseFloat(val(id)); return isNaN(v) ? null : v; }
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const FIELDS = ['caliper-chest','caliper-abdominal','caliper-thigh','caliper-tricep',
+                  'caliper-subscapular','caliper-suprailiac','caliper-midaxillary'];
+
+  // ---------- 注入数据(从 __DATA__ 渲染,放在本 IIFE 之前确保 window.__DATA__ 已注入) ----------
+  const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+  if (DATA && DATA.status === 'ok' && DATA.data) {
+    const bar = $('recentBar');
+    const d = DATA.data;
+    if (d.recent_date || d.fetched_at) {
+      $('recentDate').textContent = d.recent_date || '—';
+      $('recentBf').textContent = (d.recent_body_fat_pct != null) ? d.recent_body_fat_pct : '—';
+      $('recentSrc').textContent = d.recent_source || '—';
+      bar.style.display = 'flex';
+    }
+  }
+
+  // ---------- Jackson-Pollock 7 点法 ----------
+  // 男:BD = 1.112 - 0.00043499*sum + 0.00000055*sum^2 - 0.00028826*age
+  // 女:BD = 1.097 - 0.00046971*sum + 0.00000056*sum^2 - 0.00012828*age
+  // %fat = (495 / BD) - 450
+  function jp7(sumMm, age, sex) {
+    if (!age || !sex) return null;
+    const sum = +sumMm, a = +age;
+    let bd;
+    if (sex === 'male') {
+      bd = 1.112 - 0.00043499 * sum + 0.00000055 * sum * sum - 0.00028826 * a;
+    } else if (sex === 'female') {
+      bd = 1.097 - 0.00046971 * sum + 0.00000056 * sum * sum - 0.00012828 * a;
+    } else return null;
+    if (!(bd > 0)) return null;
+    const pct = (495 / bd) - 450;
+    return Math.round(pct * 100) / 100;
+  }
+
+  function calcSum() {
+    let sum = 0; let cnt = 0;
+    FIELDS.forEach(f => {
+      const v = parseFloat($(f).value);
+      if (!isNaN(v)) { sum += v; cnt++; }
+    });
+    $('sumVal').textContent = cnt === 7 ? sum.toFixed(1) + `(${cnt}/7)` : `${sum.toFixed(1) || 0} (${cnt}/7)`;
+    return { sum, cnt };
+  }
+
+  $('autoCalcBtn').onclick = function() {
+    const { sum, cnt } = calcSum();
+    if (cnt !== 7) { alert(`需 7 项全填,当前 ${cnt}/7`); return; }
+    const age = $('age').value.trim();
+    const sex = $('sex').value;
+    if (!age || !sex) { alert('自动算需要"年龄"和"性别"(见上方第 1 步)'); return; }
+    const pct = jp7(sum, age, sex);
+    if (pct == null) { alert('公式无效,请检查输入'); return; }
+    $('body-fat-pct').value = pct;
+    updatePrompt();
+  };
+
+  // ---------- prompt 构建 ----------
+  function v(id) { return $(id).value.trim(); }
+  function n(id) { const x = parseFloat(v(id)); return isNaN(x) ? null : x; }
 
   function buildPrompt() {
-    if (!val('date')) return '// 请先填日期(上方第 1 步)';
-    if (!val('source')) return '// 请选来源(上方第 1 步)';
-    const c=num('chest'), a=num('abdominal'), t=num('thigh'), tr=num('tricep'),
-          sb=num('subscapular'), si=num('suprailiac'), mx=num('midaxillary');
-    if (c==null||a==null||t==null||tr==null||sb==null||si==null||mx==null) {
-      return '// 请填 7 处皮褶厚度(上方第 2 步)';
-    }
-    const bf = num('bodyFatPct');
-    if (bf==null) return '// 请填体脂率(上方第 3 步)';
+    if (!v('date')) return '// 请先填日期(上方第 1 步)';
+    if (!v('source')) return '// 请选来源(上方第 1 步)';
+    const vals = {}; let missing = [];
+    FIELDS.forEach(f => {
+      const x = n(f);
+      if (x == null) missing.push(f); else vals[f] = x;
+    });
+    if (missing.length) return `// 还差 ${missing.length} 项皮褶:${missing.join(', ')}`;
+    const bf = n('body-fat-pct');
+    if (bf == null) return '// 请填体脂率(上方第 3 步)或点"🧮 自动算"';
 
-    const age = val('age'); const sex = val('sex'); const note = val('note');
     const parts = [
-      `--date ${val('date')}`,
-      `--source ${val('source')}`,
-      `--caliper-chest ${c}`,
-      `--caliper-abdominal ${a}`,
-      `--caliper-thigh ${t}`,
-      `--caliper-tricep ${tr}`,
-      `--caliper-subscapular ${sb}`,
-      `--caliper-suprailiac ${si}`,
-      `--caliper-midaxillary ${mx}`,
+      `--date ${v('date')}`,
+      `--source ${v('source')}`,
+      `--caliper-chest ${vals['caliper-chest']}`,
+      `--caliper-abdominal ${vals['caliper-abdominal']}`,
+      `--caliper-thigh ${vals['caliper-thigh']}`,
+      `--caliper-tricep ${vals['caliper-tricep']}`,
+      `--caliper-subscapular ${vals['caliper-subscapular']}`,
+      `--caliper-suprailiac ${vals['caliper-suprailiac']}`,
+      `--caliper-midaxillary ${vals['caliper-midaxillary']}`,
       `--body-fat-pct ${bf}`,
     ];
-    if (age) parts.push(`--age ${age}`);
-    if (sex) parts.push(`--sex ${sex}`);
-    if (note) parts.push(`--note "${note.replace(/"/g,'\\"')}"`);
+    if (v('age')) parts.push(`--age ${v('age')}`);
+    if (v('sex')) parts.push(`--sex ${v('sex')}`);
+    if (v('note')) parts.push(`--note "${v('note').replace(/"/g, '\\"')}"`);
+
+    const sum7 = (vals['caliper-chest'] + vals['caliper-abdominal'] + vals['caliper-thigh'] +
+                  vals['caliper-tricep'] + vals['caliper-subscapular'] + vals['caliper-suprailiac'] +
+                  vals['caliper-midaxillary']).toFixed(1);
 
     return `请帮我记一条体脂钳测结果到卡路里
 
 参数:
-- 日期:${val('date')}
-- 来源:${val('source')}${age?`\n- 年龄:${age}`:''}${sex?`\n- 性别:${sex==='male'?'男':'女'}`:''}
-- 7 处皮褶(mm):胸 ${c} / 腹 ${a} / 大腿 ${t} / 三头肌 ${tr} / 肩胛下 ${sb} / 髂上 ${si} / 腋中线 ${mx}
-- 体脂率:${bf}%${note?`\n- 备注:${note}`:''}
+- 日期:${v('date')}
+- 来源:${v('source')}${v('age')?`\n- 年龄:${v('age')}`:''}${v('sex')?`\n- 性别:${v('sex')==='male'?'男':'女'}`:''}
+- 7 处皮褶(mm):胸 ${vals['caliper-chest']} / 腹 ${vals['caliper-abdominal']} / 大腿 ${vals['caliper-thigh']} / 三头肌 ${vals['caliper-tricep']} / 肩胛下 ${vals['caliper-subscapular']} / 髂上 ${vals['caliper-suprailiac']} / 腋中线 ${vals['caliper-midaxillary']}
+- 7 处总和:${sum7} mm
+- 体脂率:${bf}%${v('note')?`\n- 备注:${v('note')}`:''}
 
 命令:
 \`\`\`bash
@@ -217,35 +351,47 @@ python scripts/body_composition.py add ${parts.join(' ')}
 完成后用 crud_receipt.html 返回回执。`;
   }
 
-  ['date','source','age','sex','chest','abdominal','thigh','tricep',
-   'subscapular','suprailiac','midaxillary','bodyFatPct','note'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.oninput = el.onchange = () => {
-      document.getElementById('promptBox').textContent = buildPrompt();
-    };
-  });
+  function updatePrompt() {
+    calcSum();
+    $('promptBox').textContent = buildPrompt();
+  }
 
   // 预填日期为今天
-  const d = new Date();
-  document.getElementById('date').value = d.toISOString().slice(0,10);
-  document.getElementById('promptBox').textContent = buildPrompt();
+  $('date').value = new Date().toISOString().slice(0, 10);
 
-  document.getElementById('copyBtn').onclick = function() {
-    const text = document.getElementById('promptBox').textContent;
-    if (text.startsWith('// 请')) { alert('请先填好所有必填项'); return; }
-    navigator.clipboard.writeText(text).then(() => {
-      this.textContent = '✓ 已复制';
-      this.classList.add('copied');
-      setTimeout(() => {
-        this.textContent = '📋 复制 prompt 给 AI';
-        this.classList.remove('copied');
-      }, 2000);
-    });
+  // 监听
+  ['date','source','age','sex','body-fat-pct','note',
+   ...FIELDS].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('input', updatePrompt);
+    el.addEventListener('change', updatePrompt);
+  });
+
+  updatePrompt();
+
+  // 复制按钮
+  $('copyBtn').onclick = function() {
+    const text = $('promptBox').textContent;
+    if (text.startsWith('//')) { alert('请先填好所有必填项'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.textContent = '✓ 已复制'; this.classList.add('copied');
+        setTimeout(() => { this.textContent = '📋 复制 prompt 给 AI'; this.classList.remove('copied'); }, 2000);
+      }, () => fallbackCopy(this, text));
+    } else fallbackCopy(this, text);
   };
+
+  function fallbackCopy(btn, text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 复制 prompt 给 AI'; btn.classList.remove('copied'); }, 2000);
+    } catch(e) { alert('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
 })();
 </script>
-
-<!--INJECT-DATA-->
 
 </body>
 </html>

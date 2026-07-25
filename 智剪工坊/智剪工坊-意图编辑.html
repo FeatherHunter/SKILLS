@@ -1574,6 +1574,27 @@
       } catch (e) { existingIntent = null; snapshotBaseline(existingIntent); /* v1.18:null 也安全 */ }
     }
 
+    // [Playwright test helper]绕过 getVideoMeta,直接 push
+    window.__testLoadFiles = async function(files) {
+      videoEntries.forEach(e => { if (e._blobUrl) URL.revokeObjectURL(e._blobUrl); });
+      videoEntries = [];
+      for (const file of files) {
+        if (!/\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(file.name)) continue;
+        videoEntries.push({
+          name: file.name, file, handle: null,
+          thumbDataUrl: URL.createObjectURL(file),
+          isImage: false, durationSec: 60, videoWidth: 1920, videoHeight: 1080,
+          _blobUrl: URL.createObjectURL(file)
+        });
+      }
+      videoEntries.sort((a, b) => a.name.localeCompare(b.name));
+      videoEntries.forEach((e, i) => e.index = i + 1);
+      videoEntries.forEach((e, i) => SegmentState.init(i, e.durationSec || 60));
+      existingIntent = null;
+      renderForm();
+      return videoEntries.length;
+    };
+
     async function loadWorkspaceFromInput(files) {
       const firstPath = files[0]?.webkitRelativePath || '';
       const rootName = firstPath.split('/')[0] || '已选文件夹';

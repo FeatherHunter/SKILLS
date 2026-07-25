@@ -143,12 +143,12 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
         photos_dir = get_photos_dir()
         selected_for_display = selected
 
-    # v2.3.4(2026-07-25 fix):base64 嵌到 HTML 静态 <img> 标签,不放进 __DATA__。
-    # 飞书 webview 处理 HTML 时会审查/截断 <script> 段内的 base64 长字符串,
-    # 之前 __DATA__ 在 <script> 里被截断 → JS 早 return → 看不到图。
-    # 现在:Python 渲染时直接拼 <img src="data:..."> 到模板占位符,
-    # 即使 __DATA__ 损坏,浏览器解析阶段 <img> 已能正常显示。
-    embed = embed_images  # 默认开
+    # v2.3.5(2026-07-25 适配用户新模板):
+    # 用户重写模板后 JS 用 D.data.all_photos / p.photo_data_base64(原 v1.0 模式),
+    # 这里恢复字段名,base64 放进 __DATA__。
+    # 飞书 webview 审查会截断 <script> 段里的 base64 → JS 早 return 清空 photoList,
+    # 飞书里看不到图(只 Chrome 正常)。这是用户明确接受的降级。
+    embed = embed_images
     if embed:
         selected_for_display = [embed_photo_as_base64(p, photos_dir) for p in selected_for_display]
         all_photos_for_display = []
@@ -156,54 +156,41 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
             if (photos_dir / p['photo_path']).exists():
                 all_photos_for_display.append(embed_photo_as_base64(p, photos_dir))
     else:
-        # fallback:不嵌图,仅用 photo_path(本地 Chrome 打开 file:// 还能用,飞书不能)
         selected_for_display = list(selected_for_display)
         all_photos_for_display = [p for p in all_photos if (photos_dir / p['photo_path']).exists()]
 
-    # __DATA__ 只带 metadata(无 base64),减小体积 + 飞书审查不踩
+    # v2.3.5:字段名改回 v1.0 风格(适配用户重写的 JS .all_photos / .selected_photos)
+    # 但 all_photos 去掉 base64 字段(只 metadata,12 张全列但不嵌图,减小体积)
+    # selected_photos 保留 base64(用户 JS 读 photo_data_base64 渲染 <img>)
     payload = {
         "status": "ok",
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
             "selected_ids": [p['id'] for p in selected_for_display],
-            "selected_meta": [_meta_only(p) for p in selected_for_display],
-            "all_meta": [_meta_only(p) for p in all_photos_for_display],
+            "selected_photos": selected_for_display,  # 含 base64(用户 JS 渲染 <img>)
+            "all_photos": [_meta_only(p) for p in all_photos_for_display],  # 仅 metadata,体积小
             "missing_ids": missing_ids,
             "missing_count": len(missing_ids),
             "embedded": embed,
             "current_tag": tag_from_args or '',
         },
-        "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64(飞书友好)" if embed else ""),
+        "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64" if embed else ""),
     }
-
-    # Python 渲染时直接拼 photo-list HTML(带 base64)到模板占位符
-    photo_list_html = _render_photo_list_html(selected_for_display)
 
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
     html = template.replace('<!--INJECT-DATA-->', inject_data)
-    html = html.replace('<!--PHOTO_LIST-->', photo_list_html)
 
-    # v2.3.5(2026-07-25 fix):inline cropper.js + .css 到 HTML,避免飞书 webview 相对路径 JS 加载失败
-    # 飞书 IM 加载 HTML 时 base URL 是 content://com.ss.android...,无法解析相对路径 cropperjs/cropper.min.js
-    # 把 JS/CSS 源码直接拼到 HTML(增加约 60KB,但 100% 离线可用)
-    cropper_js_path = SKILL_DIR / 'templates' / 'cropperjs' / 'cropper.min.js'
-    cropper_css_path = SKILL_DIR / 'templates' / 'cropperjs' / 'cropper.min.css'
-    if cropper_js_path.exists() and cropper_css_path.exists():
-        cropper_js = cropper_js_path.read_text(encoding='utf-8')
-        cropper_css = cropper_css_path.read_text(encoding='utf-8')
-        # 替换 <link href="cropperjs/cropper.min.css"> 为 inline <style>
-        html = html.replace(
-            '<link rel="stylesheet" href="cropperjs/cropper.min.css">',
-            f'<style>{cropper_css}</style>'
-        )
-        # 替换 <script src="cropperjs/cropper.min.js"></script> 为 inline <script>
-        html = html.replace(
-            '<script src="cropperjs/cropper.min.js"></script>',
-            f'<script>{cropper_js}</script>'
-        )
-        # 同时把 cropper 目录挪到 templates 之外(防止用户从 Chrome 打开时回退路径找不到)
-        # 注:相对路径已被 inline 替换,本地 Chrome 也走 inline,目录可保留也可删
+    # v2.3.6(2026-07-25):预填 <!-- 动态生成 --> 为带 base64 <img> 的 photo-item HTML
+    # 飞书 webview 审查会截断 <script>__DATA__</script> 段,用户 JS 早 return 但不清空 photoList
+    # 浏览器解析阶段 <img> 已经渲染好,飞书里能看图
+    # Chrome 里 JS 成功时,renderList() 整段 innerHTML 覆盖,会清空预填但用 __DATA__ 里的 base64 重画(正常)
+    photo_list_html = _render_photo_list_html(selected_for_display)
+    if '<!-- 动态生成 -->' in html:
+        html = html.replace('<!-- 动态生成 -->', photo_list_html)
+    else:
+        # 兼容旧版占位符
+        html = html.replace('<!--PHOTO_LIST-->', photo_list_html)
 
     output_path.write_text(html, encoding='utf-8')
     return output_path

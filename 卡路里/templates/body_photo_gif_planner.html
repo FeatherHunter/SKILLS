@@ -279,7 +279,10 @@
 
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
-    document.getElementById('photoList').innerHTML = '<em style="color:var(--red)">无照片数据。请重新生成 GIF planner。</em>';
+    // v2.3.6 fix(2026-07-25):不清空 photoList,保留 Python 预填的 <img src="data:..."> 静态图
+    // 飞书 webview 审查会截断 <script>__DATA__</script> 段,这里不改 photoList 就能让用户看到预填图
+    // Chrome 里 __DATA__ 没被截断,JS 会继续走 renderList() 整段覆盖(正常)
+    console.warn('__DATA__ 加载失败,可能飞书 webview 审查截断。请在 Chrome 打开重试以获得完整功能。');
     return;
   }
   const photoMap = {};

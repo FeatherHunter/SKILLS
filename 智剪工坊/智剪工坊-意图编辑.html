@@ -4204,19 +4204,19 @@
         // ============ v2.0 段级 op schema(单一真相源) ============
         // 每个 op 含 label/icon/params;每个 op 自带 note 字段
         const SEGMENT_OPS_SCHEMA = {
-          speed_up:        { label: "加速",       icon: "⏩",  params: { factor:    { type: "number", default: 2,   min: 1.1, max: 10, step: 0.1, label: "倍数" } } },
-          slow_down:       { label: "减速",       icon: "🐌", params: { factor:    { type: "number", default: 0.5, min: 0.1, max: 0.9, step: 0.1, label: "倍数" } } },
+          'speed-up':        { label: "加速",       icon: "⏩",  params: { factor:    { type: "number", default: 2,   min: 1.1, max: 10, step: 0.1, label: "倍数" } } },
+          'slow-down':       { label: "减速",       icon: "🐌", params: { factor:    { type: "number", default: 0.5, min: 0.1, max: 0.9, step: 0.1, label: "倍数" } } },
           reverse:         { label: "倒放",       icon: "🔄",  params: { } },
           mute:            { label: "静音",       icon: "🔇",  params: { } },
-          fade_in:         { label: "淡入",       icon: "↗",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
-          fade_out:        { label: "淡出",       icon: "↘",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
+          'fade-in':         { label: "淡入",       icon: "↗",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
+          'fade-out':        { label: "淡出",       icon: "↘",   params: { sec:       { type: "number", default: 1, min: 0.1, max: 5, step: 0.1, label: "秒数" } } },
           color:           { label: "调色",       icon: "🎨",  params: { preset:    { type: "select", default: "warm", options: ["warm","cool","cinematic","vintage","bw","high-contrast","noir","comic","sketch","faded","punchy","vhs","dream"], label: "预设" } } },
-          asr_transcribe:  { label: "语音转录",   icon: "🎙️", params: { model:     { type: "select", default: "medium", options: ["tiny","base","small","medium","large-v3"], label: "模型" }, lang: { type: "select", default: "zh", options: ["zh","en","auto"], label: "语言" } } },
-          asr_burn:        { label: "烧字幕",     icon: "📝",  params: { font_size: { type: "number", default: 22, min: 12, max: 48, step: 1, label: "字号" } } },
-          asr_speaker:     { label: "说话人标签", icon: "👥",  params: { } },
-          audio_denoise:   { label: "降噪",       icon: "🔉",  params: { } },
-          audio_separate:  { label: "声源分离",   icon: "🎵",  params: { model:     { type: "select", default: "htdemucs_ft", options: ["htdemucs","htdemucs_ft","mdx_q"], label: "模型" } } },
-          audio_diarize:   { label: "说话人分离", icon: "🗣️",  params: { } },
+          'asr-transcribe':  { label: "语音转录",   icon: "🎙️", params: { model:     { type: "select", default: "medium", options: ["tiny","base","small","medium","large-v3"], label: "模型" }, lang: { type: "select", default: "zh", options: ["zh","en","auto"], label: "语言" } } },
+          'asr-burn':        { label: "烧字幕",     icon: "📝",  params: { font_size: { type: "number", default: 22, min: 12, max: 48, step: 1, label: "字号" } } },
+          'asr-speaker':     { label: "说话人标签", icon: "👥",  params: { } },
+          'audio-denoise':   { label: "降噪",       icon: "🔉",  params: { } },
+          'audio-separate':  { label: "声源分离",   icon: "🎵",  params: { model:     { type: "select", default: "htdemucs_ft", options: ["htdemucs","htdemucs_ft","mdx_q"], label: "模型" } } },
+          'audio-diarize':   { label: "说话人分离", icon: "🗣️",  params: { } },
           voice_filler_removed: { label: "去水词", icon: "✂️", params: { } }
         };
         const VOICE_MODE_LABELS = { keep: "保留", "keep-with-filler-removed": "保留+去水词", mute: "静音", "bgm-only": "只留 BGM", "original-with-bgm": "原声+BGM" };

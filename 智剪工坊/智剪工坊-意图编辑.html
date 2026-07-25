@@ -264,13 +264,20 @@
       border: 1px solid #e5e5ea;
       border-radius: 8px;
       cursor: pointer;
-      overflow: visible;  /* 允许 hover 段上浮可见 */
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
     }
     /* 隐藏横向滚动条(防止被误读为播放进度条) */
     .timeline-track-inner {
       position: relative;
       height: 100%;
       min-width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 2px;
     }
     .timeline-playhead {
       position: absolute;
@@ -873,6 +880,9 @@
       font-weight: 600;
       color: white;
       border-radius: 6px;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
       transition: opacity 0.15s, transform 0.2s, box-shadow 0.2s;
     }
     /* 短段点击 hit slop 延伸(让 < 20px 的段可点) */
@@ -914,6 +924,10 @@
     }
     .timeline-track-inner {
       position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      gap: 2px;
     }
     /* 段单击激活高亮(Apple HIG:outline 而非 scale) */
     .tl-seg.tl-active {

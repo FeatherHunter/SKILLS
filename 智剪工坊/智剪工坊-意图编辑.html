@@ -3176,6 +3176,30 @@
     //   - 缩放通过改 inner 宽度 + scrollLeft 实现(track overflow-x: auto)
     //   - 播放头用 absolute 定位 + 红色三角标记顶部
     //   - 点击 video 也切换播放/暂停(因为移除了 controls)
+
+    // v2.130:把时间格式化函数提到顶层(原来是 setupTimeline 闭包内 — renderTimelineSegments 不可见 → ReferenceError)
+    function formatTime(sec) {
+      if (!isFinite(sec) || sec < 0) sec = 0;
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec - h * 3600 - m * 60;
+      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+      if (m > 0) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
+      return `${s.toFixed(1)}s`;
+    }
+    function formatTimeRange(s, e) {
+      if (!isFinite(s) || s < 0) s = 0;
+      if (!isFinite(e) || e < 0) e = 0;
+      return `${formatTime(s)} ~ ${formatTime(e)}`;
+    }
+    function formatTimeWithMs(sec) {
+      if (!isFinite(sec) || sec < 0) sec = 0;
+      const m = Math.floor(sec / 60);
+      const wholeSec = Math.floor(sec % 60);
+      const ms = Math.round(sec * 1000) % 1000;
+      return `${m}:${String(wholeSec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+    }
+
     function setupTimeline(previewEl, video, videoIndex) {
       videoIndex = videoIndex ?? (previewEl.closest('.video-card')?.dataset.cardIdx
         ? parseInt(previewEl.closest('.video-card').dataset.cardIdx, 10) : 0);
@@ -3212,22 +3236,6 @@
         const pps = getPps();
         if (pps <= 0) return trackWidth;
         return Math.max(trackWidth, pps * duration);
-      }
-
-      /* v2.129:统一时间格式 — h:mm:ss / m:ss / 秒.x
-         例:720s→12:00 | 90s→1:30 | 5.5s→5.5s */
-      function formatTime(sec) {
-        if (!isFinite(sec) || sec < 0) sec = 0;
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec - h * 3600 - m * 60;
-        if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
-        if (m > 0) return `${m}:${s < 10 ? '0' : ''}${s.toFixed(0)}`;
-        return `${s.toFixed(1)}s`;
-      }
-      /* 时间范围快捷 — "0:00 ~ 5:30" */
-      function formatTimeRange(s, e) {
-        return `${formatTime(s)} ~ ${formatTime(e)}`;
       }
 
       function formatTickLabel(sec, step) {

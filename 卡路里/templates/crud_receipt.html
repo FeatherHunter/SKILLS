@@ -183,17 +183,22 @@
 
   document.getElementById('srcLine').textContent = `📊 操作于 ${meta.action_at} · 实体 #${record_id}`;
 
-  // 撤销按钮:点击 → 复制撤销 prompt → 禁用(无倒计时,撤销由用户手动给 AI 执行)
+  // 撤销按钮:只在 meta.undo_cli 存在时启用(围度/体脂/记吃场景不传 undo_cli → 自动隐藏)
   const undoBtn = document.getElementById('undoBtn');
-  undoBtn.onclick = () => {
-    if (undoBtn.disabled) return;
-    const undoCmd = `请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})\n执行: ${meta.undo_cli}`;
-    navigator.clipboard.writeText(undoCmd).then(() => {
-      undoBtn.textContent = '✓ 撤销指令已复制';
-      undoBtn.classList.add('btn-primary');
-      undoBtn.disabled = true;
-    });
-  };
+  if (meta.undo_cli) {
+    undoBtn.style.display = 'inline-block';
+    undoBtn.onclick = () => {
+      if (undoBtn.disabled) return;
+      const undoCmd = `请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})\n执行: ${meta.undo_cli}`;
+      navigator.clipboard.writeText(undoCmd).then(() => {
+        undoBtn.textContent = '✓ 撤销指令已复制';
+        undoBtn.classList.add('btn-primary');
+        undoBtn.disabled = true;
+      });
+    };
+  } else {
+    undoBtn.style.display = 'none';
+  }
 
   // 复制
   document.getElementById('copyBtn').onclick = function() {

@@ -212,10 +212,41 @@ def main():
                 sys.exit(1)
 
         elif command == "list":
-            diet.list_meals()
+            # v2.4.6:接通 render_today_meals.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
+            # 默认 list 是"查今天吃" → 生成 HTML;render 失败 fallback 纯文本
+            from pathlib import Path as _P
+            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'today_meals_live.html'
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+            render_proc = subprocess.run(
+                [sys.executable, 'scripts/render_today_meals.py', '--output', str(tmp)],
+                capture_output=True, text=True, timeout=15,
+            )
+            if render_proc.returncode == 0 and tmp.exists():
+                print(f"\n✅ HTML 已生成(查今天吃): {tmp}")
+                print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
+            else:
+                print(f"⚠️ render 失败,回退纯文本(fallback):")
+                if render_proc.stderr:
+                    print(f"  stderr: {render_proc.stderr.strip()[:200]}")
+            diet.list_meals()  # 始终 print 纯文本(向后兼容)
 
         elif command == "summary":
-            diet.get_daily_summary()
+            # v2.4.6:接通 render_today_diet.py(查今日摘要)
+            from pathlib import Path as _P
+            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'today_diet_live.html'
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+            render_proc = subprocess.run(
+                [sys.executable, 'scripts/render_today_diet.py', '--output', str(tmp)],
+                capture_output=True, text=True, timeout=15,
+            )
+            if render_proc.returncode == 0 and tmp.exists():
+                print(f"\n✅ HTML 已生成(查今日摘要): {tmp}")
+                print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
+            else:
+                print(f"⚠️ render 失败,回退纯文本(fallback):")
+                if render_proc.stderr:
+                    print(f"  stderr: {render_proc.stderr.strip()[:200]}")
+            diet.get_daily_summary()  # fallback 纯文本
 
         elif command == "water":
             if len(sys.argv) < 3:
@@ -290,8 +321,23 @@ def main():
             )
 
         elif command == "weight-history":
+            # v2.4.6:接通 render_weight_history.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-            weight.get_weight_history(days)
+            from pathlib import Path as _P
+            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'weight_history_live.html'
+            tmp.parent.mkdir(parents=True, exist_ok=True)
+            render_proc = subprocess.run(
+                [sys.executable, 'scripts/render_weight_history.py', '--days', str(days), '--output', str(tmp)],
+                capture_output=True, text=True, timeout=15,
+            )
+            if render_proc.returncode == 0 and tmp.exists():
+                print(f"\n✅ HTML 已生成(体重历史): {tmp}")
+                print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
+            else:
+                print(f"⚠️ render 失败,回退纯文本(fallback):")
+                if render_proc.stderr:
+                    print(f"  stderr: {render_proc.stderr.strip()[:200]}")
+            weight.get_weight_history(days)  # fallback 纯文本
 
         elif command == "weight-goal":
             if len(sys.argv) < 3:

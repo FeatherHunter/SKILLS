@@ -2954,7 +2954,7 @@
         if (!isFull && Math.abs(newPps - pixelsPerSecond) < 0.0001) return;
 
         pixelsPerSecond = newPps;
-        if (window.__timelinePpsProvider) window.__timelinePpsProvider.set(pixelsPerSecond);
+        window.__tlPps = newPps;  // v2.94 直接同步,不用 provider(避免 undefined)
         render();
 
         // 保持鼠标位置的时间不变:缩放后鼠标应该还在 tAtMouse 那个点

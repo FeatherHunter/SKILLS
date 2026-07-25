@@ -86,3 +86,41 @@ def test_measurement_one_metric_passes():
         'left_forearm_cm': None, 'right_forearm_cm': None,
     })()
     validate_measurement_input(args)
+
+
+def _comp(overrides=None):
+    base = {
+        'date': '2026-07-25', 'source': 'home_caliper',
+        'caliper_chest_mm': 5, 'caliper_abdominal_mm': 10,
+        'caliper_thigh_mm': 15, 'caliper_tricep_mm': 8,
+        'caliper_subscapular_mm': 10, 'caliper_suprailiac_mm': 8,
+        'caliper_midaxillary_mm': 7, 'body_fat_pct': 18.0,
+    }
+    if overrides:
+        base.update(overrides)
+    return type('A', (), base)()
+
+
+def test_composition_caliper_boundary_exclusive():
+    """0 和 100 边界被拒(exclusive),对齐 DB CHECK > 0 AND < 100"""
+    with pytest.raises(ValidationError):
+        validate_composition_input(_comp({'caliper_chest_mm': 0}))
+    with pytest.raises(ValidationError):
+        validate_composition_input(_comp({'caliper_chest_mm': 100}))
+
+
+def test_composition_caliper_just_inside_passes():
+    validate_composition_input(_comp({'caliper_chest_mm': 0.001}))
+    validate_composition_input(_comp({'caliper_chest_mm': 99.999}))
+
+
+def test_composition_body_fat_boundary_exclusive():
+    with pytest.raises(ValidationError):
+        validate_composition_input(_comp({'body_fat_pct': 0}))
+    with pytest.raises(ValidationError):
+        validate_composition_input(_comp({'body_fat_pct': 60}))
+
+
+def test_composition_body_fat_just_inside_passes():
+    validate_composition_input(_comp({'body_fat_pct': 0.001}))
+    validate_composition_input(_comp({'body_fat_pct': 59.999}))

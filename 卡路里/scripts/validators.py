@@ -66,13 +66,13 @@ def validate_composition_input(args) -> None:
         v = getattr(args, f, None)
         if v is None:
             _fail(f, v, f'(0, 100)mm · 7 个皮褶必填', f'fix: --{_caliper_cli_name(f)} 5')
-        if not (CALIPER_MIN_MM <= v <= CALIPER_MAX_MM):
-            _fail(f, v, f'({CALIPER_MIN_MM}, {CALIPER_MAX_MM})mm', f'fix: --{_caliper_cli_name(f)} 5')
+        if not (CALIPER_MIN_MM < v < CALIPER_MAX_MM):
+            _fail(f, v, f'({CALIPER_MIN_MM}, {CALIPER_MAX_MM})mm (exclusive)', f'fix: --{_caliper_cli_name(f)} 5')
     bf = getattr(args, 'body_fat_pct', None)
     if bf is None:
         _fail('body_fat_pct', bf, f'[{BODY_FAT_PCT_MIN}, {BODY_FAT_PCT_MAX}]', 'fix: 自动算或 --body-fat-pct 18')
-    if not (BODY_FAT_PCT_MIN <= bf <= BODY_FAT_PCT_MAX):
-        _fail('body_fat_pct', bf, f'[{BODY_FAT_PCT_MIN}, {BODY_FAT_PCT_MAX}]', 'fix: --body-fat-pct 18')
+    if not (BODY_FAT_PCT_MIN < bf < BODY_FAT_PCT_MAX):
+        _fail('body_fat_pct', bf, f'[{BODY_FAT_PCT_MIN}, {BODY_FAT_PCT_MAX}] (exclusive)', 'fix: --body-fat-pct 18')
 
 
 def validate_measurement_input(args) -> None:

@@ -4143,74 +4143,82 @@
     }
 
     function renderTimelineSegments(trackInner, videoIndex) {
+      // v2.6 重写:从零构建,清空 + DOM 字符串拼接,确保一定渲染
       trackInner.innerHTML = '';
       const st = SegmentState.getAll(videoIndex);
-      const totalDuration = st.duration || 60;
 
+      // 1. 空 segments → 一条浅灰虚线占位段
       if (!st.segments || st.segments.length === 0) {
-        // 无 segments 时:浅灰虚线轨道,不响应 click,不显示文字
-        // (整段保留是 implicit 默认 → 空 segments = 整段输出)
-        // 注意:JSON 不再自动添加"整段保留"占位段
-        const empty = document.createElement('div');
-        empty.className = 'tl-seg tl-seg-empty';
-        empty.style.flex = '1';
-        trackInner.appendChild(empty);
+        trackInner.innerHTML = `
+          <div class="tl-seg tl-seg-empty" style="flex:1"></div>
+        `;
         return;
       }
 
+      // 2. 渲染所有段
+      const totalDuration = st.duration || 60;
+      let html = '';
+
       st.segments.forEach((s, idx) => {
-        const seg = document.createElement('div');
-        seg.className = 'tl-seg';
-        if (s.ops && Object.keys(s.ops).length > 0) seg.classList.add('op-seg');
         const segLen = Math.max(0.1, s.end_sec - s.start_sec);
-        seg.style.flex = String(segLen);
-        const colorVar = `--seg-color-${idx % 8}`;
-        seg.style.background = `var(${colorVar})`;
-        seg.dataset.segId = s.id;
-        seg.dataset.segIdx = idx;
-
-        // v2.5 label:用 .tl-seg-label-bg 容器(即使 55% 透明也能看清)
-        const labelText = (s.label || `[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]`);
-        const labelBg = document.createElement('span');
-        labelBg.className = 'tl-seg-label-bg';
-        labelBg.textContent = segLen >= 2 ? labelText : '';
-        seg.appendChild(labelBg);
-
-        // v2.5 方案 B 透明度:通过 CSS class,不用 inline opacity
-        // (有 op → 100% 满色突出,无 op → 55% 透明降权)
         const hasOp = s.ops && Object.keys(s.ops).length > 0;
-        if (hasOp) seg.classList.add('tl-seg-has-op');
-        // 注意:inline op 徽章已删除(op 信息只走 tooltip)
+        const opsText = hasOp
+          ? Object.keys(s.ops).map(k => {
+              if (k === 'mute') return '🎤 静音';
+              if (k === 'speed-up') return `⏩ ${s.ops[k].factor || 2}x`;
+              if (k === 'slow-down') return `🐌 ${s.ops[k].factor || 0.5}x`;
+              if (k === 'reverse') return '🔄 反转';
+              if (k === 'color-grade') return '🎨 调色';
+              return k;
+            }).join('  ')
+          : '无操作';
+        const opTags = hasOp
+          ? Object.keys(s.ops).map(k => {
+              if (k === 'mute') return '🎤 静音';
+              if (k === 'speed-up') return `⏩ ${s.ops[k].factor || 2}x`;
+              if (k === 'slow-down') return `🐌 ${s.ops[k].factor || 0.5}x`;
+              if (k === 'reverse') return '🔄 反转';
+              if (k === 'color-grade') return '🎨 调色';
+              return k;
+            }).map(t => `<span class="tl-tip-op-tag">${t}</span>`).join('')
+          : '<span class="tl-tip-op-tag tl-tip-empty">无操作</span>';
 
-        const tip = document.createElement('div');
-        tip.className = 'seg-tip';
-        const opBadges = (s.ops && Object.keys(s.ops).length > 0)
-          ? Object.keys(s.ops).map(k => `<span class="tip-op-tag">${
-              k === 'mute' ? '🎤 静音' :
-              k === 'speed-up' ? `⏩ ${s.ops[k].factor || 2}x` :
-              k === 'slow-down' ? `🐌 ${s.ops[k].factor || 0.5}x` :
-              k === 'reverse' ? '🔄 反转' :
-              k === 'color-grade' ? '🎨 调色' : k
-            }</span>`).join('')
-          : '<span class="tip-op-tag empty">无操作</span>';
-        tip.innerHTML = `
-          <div class="tip-title">${escapeHtml(s.label || '(未命名)')}</div>
-          <div class="tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
-          <div class="tip-ops">${opBadges}</div>
-          ${s.note ? `<div class="tip-note">📝 ${escapeHtml(s.note)}</div>` : ''}
+        // 段背景色按 Apple HIG 8 色循环(用 inline style 确保渲染)
+        const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
+        const bgColor = colors[idx % 8];
+
+        const labelText = s.label || `[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]`;
+
+        html += `
+          <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}"
+               data-seg-id="${s.id}"
+               data-seg-idx="${idx}"
+               style="flex:${segLen}; background:${bgColor};">
+            <span class="tl-seg-label">${escapeHtml(labelText)}</span>
+            <div class="tl-tip">
+              <div class="tl-tip-title">${escapeHtml(s.label || '(未命名)')}</div>
+              <div class="tl-tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
+              <div class="tl-tip-ops">${opTags}</div>
+              ${s.note ? `<div class="tl-tip-note">📝 ${escapeHtml(s.note)}</div>` : ''}
+            </div>
+          </div>
         `;
-        seg.appendChild(tip);
+      });
 
+      trackInner.innerHTML = html;
+
+      // 3. 给每个段绑定点击 → 打开面板
+      const segs = trackInner.querySelectorAll('.tl-seg:not(.tl-seg-empty)');
+      segs.forEach(seg => {
+        const segId = seg.dataset.segId;
         seg.addEventListener('click', (e) => {
           e.stopPropagation();
-          openSegmentPanel(videoIndex, s.id);
+          openSegmentPanel(videoIndex, segId);
         });
-
-        trackInner.appendChild(seg);
       });
     }
 
-    function onTrackSelect(videoIndex, startSec, endSec) {
+    function onTrackSelect(videoIndex, startSec, endSec) {    function onTrackSelect(videoIndex, startSec, endSec) {
       const result = SegmentState.addOrSplit(videoIndex, startSec, endSec);
       if (!result || result.modified === 'noop') {
         if (result && result.modified === 'noop') showToast('区间与已有段完全重合');

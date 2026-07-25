@@ -269,12 +269,13 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
-    /* v2.122:右 14px 留缓冲,sticky 在 overflow-x: hidden scroll-wrap 内贴右边界 */
+    /* v2.124:用 absolute 让 tick-last content-width(不撑满 ruler),right:14 留缓冲 */
     .timeline-ruler .tick.tick-last {
-      position: sticky;
+      position: absolute;
       left: auto !important;
       right: 14px;
       transform: none;
+      width: max-content;
     }
     /* v2.113 U1:hover 时半透明红 cursor + 时间 tooltip */
     .timeline-hover-cursor {
@@ -1042,7 +1043,8 @@
       --seg-color-6: #AF52DE;  /* systemPurple */
       --seg-color-7: #FF2D55;  /* systemPink */
     }
-    /* v2.113 N3:无 op 段 muted 颜色(默认填充背景,不抢眼) */
+    /* v2.125:取消 muted 默认段(灰斜纹)— 改为按 idx%8 循环彩色
+       默认整段保留 = colors[0]=红色(op 为空也保留"保留"语义) */
     .tl-seg {
       position: relative;
       cursor: pointer;
@@ -1055,12 +1057,6 @@
       border-radius: 6px;
       height: 100%;
       min-height: 32px;
-    }
-    .tl-seg:not(.tl-seg-has-op):not(.tl-seg-empty) {
-      background: linear-gradient(135deg, #d8d8dc 25%, #c8c8cc 25%, #c8c8cc 50%, #d8d8dc 50%, #d8d8dc 75%, #c8c8cc 75%) !important;
-      background-size: 12px 12px !important;
-      opacity: 0.85;
-      color: transparent;
     }
       min-width: 0;
       overflow: hidden;
@@ -4977,7 +4973,8 @@
         // 段宽度按百分比(总时长比例)— 视觉宽度 = 时间长度
         // v2.113 N3:只有 hasOp 才用彩色,默认段留给 CSS 斜纹处理
         const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
-        const bgColor = hasOp ? colors[idx % 8] : 'transparent';
+        // v2.125:全段都按 idx%8 循环彩色,默认整段保留也是红色
+        const bgColor = colors[idx % 8];
 
         // 之前的 label fallback 去掉(不要再出现${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s、"整段保留"等)
         // 空 label 直接显示时间码,避免无意义默认名
@@ -5399,7 +5396,8 @@
       const segHtml = state.segments.map((s, idx) => {
         const hasOp = s.ops && Object.keys(s.ops).length > 0;
         // v2.121:muted 段用 #6b7280 深灰,列表色块明确可见
-        const color = hasOp ? colors[idx % 8] : '#6b7280';
+        // v2.125:列表项也按 idx%8 循环彩色,默认整段保留是红色
+        const color = colors[idx % 8];
         // muted = 无 op 段:背景浅灰,不抢眼
         return `
         <div class="seg-item" style="--seg-color:${color};--seg-bg: ${hasOp ? `${color}15` : '#f5f5f7'}">

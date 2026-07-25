@@ -211,7 +211,8 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
-    }
+      overflow: visible !important;
+}
     .inline-preview[hidden] { display: none; }
     .inline-preview-head {
       display: flex; align-items: center; gap: 10px;
@@ -278,6 +279,11 @@
       flex-direction: row;
       align-items: stretch;
       gap: 2px;
+      width: max-content;       /* 让段总宽撑出 inner,触发外层滚动 */
+      min-height: 36px;
+    }
+    .timeline-track {
+      overflow-x: auto;          /* inner 撑出后,允许外层横向滚动 */
     }
     .timeline-playhead {
       position: absolute;
@@ -957,18 +963,7 @@
     .tl-seg { opacity: 0.55; transition: opacity 0.15s, transform 0.15s; }
     .tl-seg.tl-seg-has-op { opacity: 1; }
     .tl-seg.tl-seg-active { opacity: 1 !important; }
-    .tl-seg-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
-      pointer-events: none;
-      max-width: calc(100% - 8px);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding: 0 8px;
-    }
+    /* .tl-seg-label 已废弃(v2.72:段上不再有文字) */
     .tl-seg-label-bg {
       /* v2.62 别名:留兼容,但不再独立使用 */
     }
@@ -4234,13 +4229,18 @@
         const totalSec = st.segments.reduce((sum, sg) => sum + (sg.end_sec - sg.start_sec), 0);
         const widthPct = (segLen / totalSec * 100).toFixed(2);
 
+        // v2.72:段绝对不留 label 文字(纯色块 + tooltip)
+        // 段宽度改为像素:1px/s × segLen,确保视觉 1 秒 = 1 像素
+        // 假设 pps = 50px/s(1s = 50px 视觉合理,1min 视频 = 3000px, 可横向滚动)
+        const pixelsPerSecond = 50;
+        const segWidthPx = (segLen * pixelsPerSecond).toFixed(1);
+
         html += `
           <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}"
                data-seg-id="${s.id}"
                data-seg-idx="${idx}"
-               style="flex:${widthPct}; min-width:${Math.max(20, segLen * 0.5)}px; background:${bgColor};"
+               style="width:${segWidthPx}px; min-width:24px; background:${bgColor};"
                title="${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s (${segLen.toFixed(1)}s)">
-            <span class="tl-seg-label">${escapeHtml(labelText)}</span>
             <div class="tl-tip">
               <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : `${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s`)}</div>
               <div class="tl-tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>

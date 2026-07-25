@@ -228,14 +228,16 @@
     .inline-preview-close:hover { border-color: var(--blue); color: var(--blue); }
     .inline-preview-video {
       width: 100%; max-height: 360px;
-      background: #000; border-radius: 6px; display: block;
+      background: #000; border-radius: 10px 10px 0 0; display: block;
       cursor: pointer;
     }
 
-    /* ============ v1.20+timeline: 自定义 timeline（类剪映） ============ */
+    /* ============ v1.20+timeline: 自定义 timeline(类剪映) ============ */
+    /* v2.107:timeline 紧贴 video,共享 inline-preview 容器,padding 给 ruler/track 左右 */
     .timeline {
       width: 100%;
-      margin-top: 8px;
+      margin-top: 0;
+      padding: 8px 12px 10px;
       user-select: none;
       -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -248,6 +250,8 @@
       overflow: hidden;
       border-bottom: 1px solid var(--border);
       font-variant-numeric: tabular-nums;
+      padding: 0 12px;       /* v2.107:左右 12px,tick 不贴边 */
+      box-sizing: border-box;
     }
     .timeline-ruler .tick {
       position: absolute;
@@ -266,6 +270,8 @@
       border-bottom: 1px solid var(--border);
       margin: 2px 0;
       cursor: pointer;
+      padding: 0 12px;       /* v2.107:对齐 ruler */
+      box-sizing: border-box;
     }
     .timeline-progress-cursor {
       position: absolute;
@@ -313,6 +319,8 @@
       display: flex;
       flex-direction: row;
       align-items: stretch;
+      padding: 0 12px;       /* v2.107:左右 12px,段条不贴边 */
+      box-sizing: border-box;
     }
     /* 隐藏横向滚动条(防止被误读为播放进度条) */
     .timeline-track-inner {
@@ -3158,12 +3166,27 @@
       });
 
       // 5. 视频事件
+      // v2.107:同步 video.duration 到 SegmentState(强制覆盖旧 intent.json 残留 60)
+      function syncSegmentsToVideoDuration() {
+        if (!isFinite(video.duration) || video.duration <= 0) return;
+        if (window.__segmentState && typeof window.__segmentState.init === 'function') {
+          window.__segmentState.init(videoIndex, video.duration, true);
+        }
+      }
       video.addEventListener('loadedmetadata', () => {
         if (isFinite(video.duration) && video.duration > 0) {
           duration = video.duration;
           pixelsPerSecond = 0;
           window.__tlPps = 0;
+          syncSegmentsToVideoDuration();
           init();
+          const innerEl = previewEl.querySelector('.timeline-track-inner');
+          if (innerEl && typeof renderTimelineSegments === 'function') {
+            renderTimelineSegments(innerEl, videoIndex);
+          }
+          if (typeof renderSegmentsPanel === 'function') {
+            renderSegmentsPanel(videoIndex);
+          }
         }
       });
       video.addEventListener('durationchange', () => {
@@ -3172,7 +3195,15 @@
           pixelsPerSecond = 0;
 
           window.__tlPps = 0;
+          syncSegmentsToVideoDuration();
           init();
+          const innerEl = previewEl.querySelector('.timeline-track-inner');
+          if (innerEl && typeof renderTimelineSegments === 'function') {
+            renderTimelineSegments(innerEl, videoIndex);
+          }
+          if (typeof renderSegmentsPanel === 'function') {
+            renderSegmentsPanel(videoIndex);
+          }
         }
       });
       video.addEventListener('timeupdate', updatePlayhead);
@@ -4426,9 +4457,27 @@
     // ============ v2.0 段状态管理(单源真相) ============
     const SegmentState = {
       states: {},
-      init(videoIndex, duration) {
+      init(videoIndex, duration, forceSync = false) {
         if (!this.states[videoIndex]) {
           this.states[videoIndex] = { segments: [], excluded: [], duration };
+        } else if (forceSync) {
+          // v2.107:允许用真实 video.duration 覆盖旧 intent.json 残留的 60
+          this.states[videoIndex].duration = duration;
+          const st = this.states[videoIndex];
+          if (st.segments.length === 0) {
+            st.segments.push({
+              id: `seg_${videoIndex + 1}_auto_${Date.now()}`,
+              label: '',
+              start_sec: 0,
+              end_sec: duration,
+              ops: {}
+            });
+          } else {
+            const last = st.segments[st.segments.length - 1];
+            if (last && last.end_sec < duration) {
+              last.end_sec = duration;
+            }
+          }
         }
         return this.states[videoIndex];
       },

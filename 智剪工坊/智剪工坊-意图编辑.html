@@ -1059,7 +1059,8 @@
       overflow-wrap: break-word;  /* 长 note 词内换行 */
       word-break: break-word;
     }
-    .tl-seg:hover .seg-tip { opacity: 1; }
+    .tl-seg:hover .seg-tip,
+    .tl-seg:hover .tl-tip { opacity: 1; }
 
     /* 段闪烁高亮(折叠区→timeline 跳转) */
     @keyframes segFlash {
@@ -4241,7 +4242,7 @@
                title="${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s (${segLen.toFixed(1)}s)">
             <span class="tl-seg-label">${escapeHtml(labelText)}</span>
             <div class="tl-tip">
-              <div class="tl-tip-title">${escapeHtml(s.label || '(未命名)')}</div>
+              <div class="tl-tip-title">${escapeHtml(s.label && s.label.trim() ? s.label : `${s.start_sec.toFixed(1)}s – ${s.end_sec.toFixed(1)}s`)}</div>
               <div class="tl-tip-time">${s.start_sec.toFixed(1)}s → ${s.end_sec.toFixed(1)}s · ${segLen.toFixed(1)}s</div>
               <div class="tl-tip-ops">${opTags}</div>
               ${s.note ? `<div class="tl-tip-note">📝 ${escapeHtml(s.note)}</div>` : ''}

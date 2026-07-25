@@ -77,6 +77,74 @@
 
 ---
 
+## [1.1.3] · 2026-07-25
+
+> **patch**(语义化版本规则):复制按钮改造 — 文案简化 + 富内容 + 视觉反馈
+> 来源:用户反馈"复制的内容不是单纯 ID,是里面的相关信息,这样复制错了能看到"
+
+### Changed (templates/memo_query.html)
+- **每条 item 的"复制 ID"按钮改造**:
+  - 按钮文案 `复制ID` → `复制` (简化 · 用户明确要求)
+  - 复制内容从纯 ID 数字 → 含完整信息的可读文本:
+    ```
+    备忘录 #42
+    分类: 备忘 / 工作
+    创建: 2026-07-24 10:00
+    内容: 今天开了个会
+    排期: 2026-07-30(如有)
+    提醒: ...(如有)
+    ```
+  - 用户点击 → 剪贴板得到富文本 → 可看到内容确认是否复制错误
+- **新函数 `copyInfo(btn)`**:从按钮 `data-item` 属性反序列化 item,构造富文本,调用 `navigator.clipboard.writeText`
+- **视觉反馈**:点击后按钮文字临时 `✓ 已复制`,2 秒后还原 → 用户知道是否成功
+- **降级**:`navigator.clipboard` 不可用 / 抛出异常时按钮显 `✗ 复制失败`,不静默失败
+- **底部"复制查询回执"按钮改造**:
+  - 复制内容从纯 ID 列表 → 含每条详情:
+    ```
+    备忘录查询回执
+    命令: search
+    结果数: 5/20
+    筛选: 全部
+
+    【5 条详情】
+
+    #42 · [备忘/工作] · 2026-07-24 10:00
+        今天开了个会
+    #43 · [备忘/生活] · 2026-07-23 09:15
+        买菜
+    ...
+    ```
+  - 用户看到每条的全部信息(分类/时间/内容),能确认复制正确
+
+### Tests (tests/test_copy_button.py 新增 10 用例守护)
+1. `test_copy_button_label_simplified` — 按钮文案是"复制"(不是"复制ID")
+2. `test_no_old_copy_id_label` — 防回退(不应有'复制 ID' 字样)
+3. `test_copy_button_exists_per_item` — renderItem 内有 class='copy' 按钮
+4. `test_copy_info_function_exists` — copyInfo 函数存在
+5. `test_copy_info_includes_id_with_hash` — 含 #+id 形式(AI 可解析)
+6. `test_copy_info_includes_content` — 含 content 字段引用(用户关键诉求)
+7. `test_copy_info_includes_category` — 含 category 字段引用
+8. `test_copy_info_includes_created_at` — 含 created_at 字段引用
+9. `test_copy_feedback_label_exists` — "✓ 已复制"反馈文案存在
+10. `test_copy_receipt_includes_item_details` — receiptText 含每条详情
+
+边界声明:
+- 这些测试守护**文档层回归**(字面/字段/函数存在)
+- **不**守护运行时行为(JS 语法错、按钮点击无反应、clipboard API 改动)
+- 防的回退:文案回退、函数删除、字段缺失、反馈消失、详情降级
+
+### 范围
+- 只改 templates/memo_query.html(1 个模板)
+- 其他 4 个模板(wish_plan / wish_complete / sync_report / change_category)的"复制"是 `<pre>` 文本,用户自己手动复制,不需要改造
+
+### 测试
+- 全量:136/136 pytest 通过(126 → 136 · +10 来自新测试)
+- 端到端跑 `search -c 打卡 --html`:实际生成的 HTML 含完整 copyInfo / receiptText 函数
+  - 单条复制:`备忘录 #1\n分类: 打卡 / 咖啡\n...`(富内容)
+  - 整批复制:含【N 条详情】 + 每条 #ID + 分类 + 时间 + 内容预览
+
+---
+
 ## [1.1.2] · 2026-07-25
 
 > **patch**(语义化版本规则):HTML 交付 checklist 化 — 把 v1.1.1 的"陈述"转"checkbox + 回复模板"

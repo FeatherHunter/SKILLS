@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.1.2**(2026-07-25 发布 · 21 个 commit · git tag `v1.1.2`)
+> **当前版本:1.1.3**(2026-07-25 发布 · 22 个 commit · git tag `v1.1.3`)
+> v1.1.3:复制按钮改造(文案简化 + 富内容 + 视觉反馈)
 > v1.1.2:HTML 交付 checklist 化(checkbox + 回复模板)
 > v1.1.1:HTML 交付规范加强(主动发送是核心,Chrome 打开是加分)
 > v1.1.0:修复 _shared/injector.py 被清理后 --html 跑不动的真实运行时 bug

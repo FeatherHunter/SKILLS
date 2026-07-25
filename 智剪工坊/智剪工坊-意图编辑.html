@@ -3126,11 +3126,15 @@
 
         pixelsPerSecond = newPps;
         window.__tlPps = newPps;
+        // v2.104 真修:显式设 inner.style.width = newPps * duration
+        // (绕过 getContentWidth 缓存旧 trackWidth 的问题)
+        const targetInnerWidth = newPps * duration;
+        if (targetInnerWidth > 0) inner.style.width = targetInnerWidth + 'px';
         render();
-        // v2.103 修:用 v1.20 简单算法 newMouseXTotal - mouseInTrack
-        // mouseInTrack 是鼠标在 track 内的相对 X
-        // newMouseXTotal 是缩放后该时间点对应的 inner 内绝对 X
-        // 滚动后 inner.offsetX 不变(锚点保留在 mouseInTrack 位置)
+        // 真修:scrollLeft 让 tAtMouse 时间点在 mouseInTrack 位置
+        //   newMouseXTotal = tAtMouse * newPps 是 inner 内的绝对 X
+        //   mouseInTrack = 鼠标在 track 内的相对 X
+        //   scrollLeft = newMouseXTotal - mouseInTrack
         const newMouseXTotal = tAtMouse * newPps;
         track.scrollLeft = Math.max(0, newMouseXTotal - mouseInTrack);
         updatePlayhead();

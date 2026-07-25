@@ -113,6 +113,29 @@
 <h1>📏 记围度</h1>
 <p class="sub">配置型向导 · 13 部位围度分 3 组折叠(飞书 webview 兼容)· 填好至少 1 项后复制 prompt 给 AI</p>
 
+<div id="recentBar" class="recent-bar" style="display:none">
+  <div class="row1">
+    <span class="dot"></span>
+    <span>最近一次:<strong id="recentDate">—</strong></span>
+    <button type="button" class="copy-prev-btn" id="copyPrevBtn">📋 复制上次 13 围度</button>
+  </div>
+  <div class="row2" id="recentMeasureRow" style="display:none">
+    <span>胸 <strong id="rcChest">—</strong></span>
+    <span>腰 <strong id="rcWaist">—</strong></span>
+    <span>腹 <strong id="rcAbdomen">—</strong></span>
+    <span>臀 <strong id="rcHip">—</strong></span>
+    <span>肩 <strong id="rcShoulder">—</strong></span>
+    <span>L 大腿 <strong id="rcLeftThigh">—</strong></span>
+    <span>R 大腿 <strong id="rcRightThigh">—</strong></span>
+    <span>L 小腿 <strong id="rcLeftCalf">—</strong></span>
+    <span>R 小腿 <strong id="rcRightCalf">—</strong></span>
+    <span>L 上臂 <strong id="rcLeftArm">—</strong></span>
+    <span>R 上臂 <strong id="rcRightArm">—</strong></span>
+    <span>L 前臂 <strong id="rcLeftForearm">—</strong></span>
+    <span>R 前臂 <strong id="rcRightForearm">—</strong></span>
+  </div>
+</div>
+
 <div class="tip">
   <strong>ℹ️ 工作流</strong>:选 tag → 填日期 → 展开各组填围度(cm)→ 至少 1 项必填(记录级)→ 加备注 → 点底部"📋 复制 prompt 给 AI" → AI 调 <code>body_measurements.py add</code>。
   <br><br>
@@ -397,10 +420,61 @@ python scripts/body_measurements.py add ${argsList.join(' ')}
     document.body.removeChild(ta);
   }
 
-  // 注入数据(从 __DATA__ 渲染)
+  // 注入数据(从 __DATA__ 渲染 — 顶部"上次"摘要 + 一键复制)
   const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+  // (key, summary_id, label, input_id)
+  const MEASURE_FIELDS = [
+    ['recent_chest_cm',        'rcChest',        '胸',     'chest_cm'],
+    ['recent_waist_cm',        'rcWaist',        '腰',     'waist_cm'],
+    ['recent_abdomen_cm',      'rcAbdomen',      '腹',     'abdomen_cm'],
+    ['recent_hip_cm',          'rcHip',          '臀',     'hip_cm'],
+    ['recent_shoulder_cm',     'rcShoulder',     '肩',     'shoulder_cm'],
+    ['recent_left_thigh_cm',   'rcLeftThigh',    'L 大腿', 'left_thigh_cm'],
+    ['recent_right_thigh_cm',  'rcRightThigh',   'R 大腿', 'right_thigh_cm'],
+    ['recent_left_calf_cm',    'rcLeftCalf',     'L 小腿', 'left_calf_cm'],
+    ['recent_right_calf_cm',   'rcRightCalf',    'R 小腿', 'right_calf_cm'],
+    ['recent_left_arm_cm',     'rcLeftArm',      'L 上臂', 'left_arm_cm'],
+    ['recent_right_arm_cm',    'rcRightArm',     'R 上臂', 'right_arm_cm'],
+    ['recent_left_forearm_cm', 'rcLeftForearm',  'L 前臂', 'left_forearm_cm'],
+    ['recent_right_forearm_cm','rcRightForearm', 'R 前臂', 'right_forearm_cm'],
+  ];
   if (DATA && DATA.status === 'ok' && DATA.data && DATA.data.recent_date) {
-    // 未来扩展:显示最近一次围度作对照
+    const bar = $('recentBar');
+    const d = DATA.data;
+    $('recentDate').textContent = d.recent_date;
+
+    // 填充 13 围度详情(有数据时)
+    const anyMeasure = MEASURE_FIELDS.some(([key]) => d[key] != null);
+    if (anyMeasure) {
+      let allSet = true;
+      MEASURE_FIELDS.forEach(([key, id]) => {
+        const v = d[key];
+        $(id).textContent = (v != null) ? v : '—';
+        if (v == null) allSet = false;
+      });
+      $('recentMeasureRow').style.display = allSet ? 'flex' : 'none';
+    }
+
+    // "📋 复制上次 13 围度" 按钮
+    const btn = $('copyPrevBtn');
+    if (anyMeasure) {
+      btn.disabled = false;
+      btn.onclick = () => {
+        MEASURE_FIELDS.forEach(([key, , , inputId]) => {
+          const v = d[key];
+          if (v == null) return;
+          const inp = document.getElementById(inputId);
+          if (inp) {
+            inp.value = v;
+            inp.dispatchEvent(new Event('input'));
+          }
+        });
+        updatePrompt();
+      };
+    } else {
+      btn.disabled = true;
+    }
+    bar.style.display = 'flex';
   }
 
   // 初始

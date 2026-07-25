@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_body_composition_wizard.py — 记体脂 wizard HTML 渲染器(v1.0)
+"""render_body_composition_wizard.py — 记体脂 wizard HTML 渲染器(v2.4.2)
 
-对应 SKILL.md 唤醒词:记体脂
+对应 SKILL.md 唤醒词:记体脂 / 查体脂 / 查体脂趋势
 
-数据源:无(纯配置型,wizard 不需要查 DB,用户填好后生成 prompt)
+数据源:body_composition 表最近 1 条(注入 wizard 顶部"上次"摘要,
+不自动填 input — 避免混淆"新/旧"值,用户主动点"复制上次"按钮)
 用法:
     python scripts/render_body_composition_wizard.py
     python scripts/render_body_composition_wizard.py --output /path/out.html
@@ -12,6 +13,8 @@
 
 import argparse
 import json
+import sqlite3
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -20,14 +23,58 @@ from html_paths import html_path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'body_composition_wizard.html'
+DB_PATH = SKILL_DIR / 'calorie_data.db'
+
+sys.path.insert(0, str(SKILL_DIR))
+from db import find_db_path
+
+
+def fetch_recent_composition(limit: int = 1) -> list:
+    """查 body_composition 最近 N 条(不软删除的)"""
+    p = find_db_path(SKILL_DIR, 'calorie_data.db')
+    if not p.exists():
+        return []
+    conn = sqlite3.connect(str(p))
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, date, source, body_fat_pct, caliper_chest_mm,
+                   caliper_abdominal_mm, caliper_thigh_mm, caliper_tricep_mm,
+                   caliper_subscapular_mm, caliper_suprailiac_mm, caliper_midaxillary_mm,
+                   age, sex, note
+            FROM body_composition
+            WHERE is_deprecated = 0
+            ORDER BY date DESC, id DESC
+            LIMIT ?
+        """, (limit,))
+        cols = [d[0] for d in cur.description]
+        return [dict(zip(cols, r)) for r in cur.fetchall()]
+    finally:
+        conn.close()
 
 
 def render(output_path: Path) -> Path:
+    recent = fetch_recent_composition(1)
+    recent_dict = recent[0] if recent else {}
+
     payload = {
         "status": "ok",
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
             "current_tag": "体脂钳测",
+            "recent_date": recent_dict.get("date"),
+            "recent_body_fat_pct": recent_dict.get("body_fat_pct"),
+            "recent_source": recent_dict.get("source"),
+            "recent_caliper_chest_mm": recent_dict.get("caliper_chest_mm"),
+            "recent_caliper_abdominal_mm": recent_dict.get("caliper_abdominal_mm"),
+            "recent_caliper_thigh_mm": recent_dict.get("caliper_thigh_mm"),
+            "recent_caliper_tricep_mm": recent_dict.get("caliper_tricep_mm"),
+            "recent_caliper_subscapular_mm": recent_dict.get("caliper_subscapular_mm"),
+            "recent_caliper_suprailiac_mm": recent_dict.get("caliper_suprailiac_mm"),
+            "recent_caliper_midaxillary_mm": recent_dict.get("caliper_midaxillary_mm"),
+            "recent_age": recent_dict.get("age"),
+            "recent_sex": recent_dict.get("sex"),
+            "recent_note": recent_dict.get("note"),
         },
         "message": "记体脂 wizard — 填好参数后复制 prompt 给 AI",
     }

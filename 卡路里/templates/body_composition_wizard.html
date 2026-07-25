@@ -108,9 +108,18 @@
   .recent-bar {
     background: linear-gradient(135deg, #e3f0ff, #f5f9ff); border: 1px solid #c2dafa;
     border-radius: 10px; padding: 10px 14px; margin-bottom: 18px;
-    font-size: 12.5px; color: var(--fg2); display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--fg2); display: flex; flex-direction: column; gap: 8px;
   }
+  .recent-bar .row1 { display: flex; align-items: center; gap: 8px; }
+  .recent-bar .row2 { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--fg3); }
   .recent-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .recent-bar .copy-prev-btn {
+    margin-left: auto; padding: 5px 12px; background: var(--accent-soft);
+    color: var(--accent); border: 1px solid var(--accent); border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .recent-bar .copy-prev-btn:hover { background: #d3e7ff; }
+  .recent-bar .copy-prev-btn:disabled { opacity: .4; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -119,8 +128,20 @@
 <p class="sub">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
 
 <div id="recentBar" class="recent-bar" style="display:none">
-  <span class="dot"></span>
-  <span>最近一次:<strong id="recentDate">—</strong> · 体脂率 <strong id="recentBf">—</strong>% · 来源 <strong id="recentSrc">—</strong></span>
+  <div class="row1">
+    <span class="dot"></span>
+    <span>最近一次:<strong id="recentDate">—</strong> · 体脂率 <strong id="recentBf">—</strong>% · 来源 <strong id="recentSrc">—</strong></span>
+    <button type="button" class="copy-prev-btn" id="copyPrevBtn">📋 复制上次 7 皮褶</button>
+  </div>
+  <div class="row2" id="recentCaliperRow" style="display:none">
+    <span>胸 <strong id="rcChest">—</strong></span>
+    <span>腹 <strong id="rcAbdominal">—</strong></span>
+    <span>大腿 <strong id="rcThigh">—</strong></span>
+    <span>三头肌 <strong id="rcTricep">—</strong></span>
+    <span>肩胛下 <strong id="rcSubscapular">—</strong></span>
+    <span>髂上 <strong id="rcSuprailiac">—</strong></span>
+    <span>腋中线 <strong id="rcMidaxillary">—</strong></span>
+  </div>
 </div>
 
 <div class="tip">
@@ -247,13 +268,58 @@
 
   // ---------- 注入数据(从 __DATA__ 渲染,放在本 IIFE 之前确保 window.__DATA__ 已注入) ----------
   const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+  // (key, summary_id, label, input_id)
+  const CALIPER_FIELDS = [
+    ['recent_caliper_chest_mm',       'rcChest',       '胸',       'caliper-chest'],
+    ['recent_caliper_abdominal_mm',   'rcAbdominal',   '腹',       'caliper-abdominal'],
+    ['recent_caliper_thigh_mm',       'rcThigh',       '大腿',     'caliper-thigh'],
+    ['recent_caliper_tricep_mm',      'rcTricep',      '三头肌',   'caliper-tricep'],
+    ['recent_caliper_subscapular_mm', 'rcSubscapular', '肩胛下',   'caliper-subscapular'],
+    ['recent_caliper_suprailiac_mm',  'rcSuprailiac',  '髂上',     'caliper-suprailiac'],
+    ['recent_caliper_midaxillary_mm', 'rcMidaxillary', '腋中线',   'caliper-midaxillary'],
+  ];
   if (DATA && DATA.status === 'ok' && DATA.data) {
     const bar = $('recentBar');
     const d = DATA.data;
-    if (d.recent_date || d.fetched_at) {
-      $('recentDate').textContent = d.recent_date || '—';
+    if (d.recent_date) {
+      $('recentDate').textContent = d.recent_date;
       $('recentBf').textContent = (d.recent_body_fat_pct != null) ? d.recent_body_fat_pct : '—';
       $('recentSrc').textContent = d.recent_source || '—';
+
+      // 填充 7 皮褶详情(只有当所有 7 字段都有值时)
+      const anyCaliper = CALIPER_FIELDS.some(([key]) => d[key] != null);
+      if (anyCaliper) {
+        let allSet = true;
+        CALIPER_FIELDS.forEach(([key, id]) => {
+          const v = d[key];
+          $(id).textContent = (v != null) ? v : '—';
+          if (v == null) allSet = false;
+        });
+        $('recentCaliperRow').style.display = allSet ? 'flex' : 'none';
+      }
+
+      // "📋 复制上次 7 皮褶" 按钮:有数据时启用
+      const btn = $('copyPrevBtn');
+      if (anyCaliper) {
+        btn.disabled = false;
+        btn.onclick = () => {
+          CALIPER_FIELDS.forEach(([key, , , inputId]) => {
+            const v = d[key];
+            if (v == null) return;
+            const inp = document.getElementById(inputId);
+            if (inp) {
+              inp.value = v;
+              inp.dispatchEvent(new Event('input'));
+            }
+          });
+          // 顺便填 age/sex 如果有
+          if (d.recent_age && $('age')) { $('age').value = d.recent_age; $('age').dispatchEvent(new Event('input')); }
+          if (d.recent_sex && $('sex')) { $('sex').value = d.recent_sex; $('sex').dispatchEvent(new Event('input')); }
+          updatePrompt();
+        };
+      } else {
+        btn.disabled = true;
+      }
       bar.style.display = 'flex';
     }
   }

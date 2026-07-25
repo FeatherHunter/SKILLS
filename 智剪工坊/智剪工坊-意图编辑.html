@@ -5119,7 +5119,7 @@
         });
       });
 
-      // v2.113 N10:trim handle 拖动 — 改 start_sec / end_sec
+      // v2.114:trim handle 拖动 — 用当前 DOM 求 pps(不依赖闭包变量,避免 setupTimeline 闭包泄漏)
       segmentsArea.querySelectorAll('.tl-seg-trim').forEach(handle => {
         handle.addEventListener('mousedown', (e) => {
           e.stopPropagation();
@@ -5130,14 +5130,20 @@
           if (!st) return;
           const seg = st.segments.find(s => s.id === segId);
           if (!seg) return;
+
+          // 实时从 DOM/state 取最新值(避免引用不存在的闭包变量)
+          const inner = segmentsArea.closest('.timeline-inner');
+          const trackEl = segmentsArea.closest('.timeline-track');
           const moveH = (mv) => {
-            const pps = (typeof window.__tlPps === 'number' && window.__tlPps > 0)
-              ? window.__tlPps
-              : (duration > 0 && trackWidth > 0 ? trackWidth / duration : 0);
+            const dur = st.duration || 0;
+            if (dur <= 0) return;
+            // pps = inner.style.width / duration(用户 zoom 后 width 变,实时算)
+            const innerW = parseFloat(inner?.style.width) || 0;
+            const pps = innerW / dur;
             if (pps <= 0) return;
-            const trackRect = track.getBoundingClientRect();
-            const innerOffsetX = mv.clientX - trackRect.left + track.scrollLeft;
-            const t = Math.max(0, Math.min(duration, innerOffsetX / pps));
+            const trackRect = trackEl.getBoundingClientRect();
+            const innerOffsetX = mv.clientX - trackRect.left + (trackEl.scrollLeft || 0);
+            const t = Math.max(0, Math.min(dur, innerOffsetX / pps));
             if (side === 'left') {
               seg.start_sec = Math.min(seg.end_sec - 0.1, t);
             } else {
@@ -5153,6 +5159,8 @@
           const upH = () => {
             document.removeEventListener('mousemove', moveH);
             document.removeEventListener('mouseup', upH);
+            // mouseup 后整体 re-render(让其他段位置/编号/trim 句柄重新对齐)
+            renderTimelineSegments(segmentsArea, videoIndex);
             renderSegmentsPanel(videoIndex);
           };
           document.addEventListener('mousemove', moveH);

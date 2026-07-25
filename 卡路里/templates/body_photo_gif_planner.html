@@ -323,8 +323,18 @@
   D.data.all_photos.forEach(p => { photoMap[p.id] = p; });
 
   // 若无 order 但有 tag,自动用该 tag 的所有照片(独立运行模式)
-  if (order.length === 0 && tagList.length > 0) {
-    order = D.data.selected_photos.map(p => p.id);
+  // v2.3.4 修:不仅依赖 URL tag,fallback 用 selected_photos(嵌入的 current_tag 也行)
+  if (order.length === 0) {
+    if (tagList.length > 0) {
+      order = D.data.selected_photos.map(p => p.id);
+    } else if (D.data.current_tag) {
+      order = D.data.selected_photos
+        .filter(p => p.tag === D.data.current_tag)
+        .map(p => p.id);
+    } else {
+      // 终极 fallback:URL 完全没参数时,直接用 selected_photos(嵌入的 current_tag 不知道就用全部)
+      order = D.data.selected_photos.map(p => p.id);
+    }
   }
 
   // 统计

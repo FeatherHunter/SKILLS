@@ -120,7 +120,7 @@ def list_all_photos(days: int = 90) -> list:
     return [dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note'], r)) for r in rows]
 
 
-def render(ids: list, output_path: Path, validate_files: bool = True, embed_images: bool = True) -> Path:
+def render(ids: list, output_path: Path, validate_files: bool = True, embed_images: bool = True, tag_from_args: str = '') -> Path:
     selected = get_photos_by_ids(ids)
     all_photos = list_all_photos()
 
@@ -167,6 +167,7 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
             "missing_ids": missing_ids,
             "missing_count": len(missing_ids),
             "embedded": embed,
+            "current_tag": tag_from_args or '',
         },
         "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64(飞书友好)" if embed else ""),
     }
@@ -214,7 +215,8 @@ def main():
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_gif_planner_{suffix}')
     result = render(ids, out_path,
                     validate_files=not args.no_validate_files,
-                    embed_images=not args.no_embed_images)
+                    embed_images=not args.no_embed_images,
+                    tag_from_args=args.tag or '')
     n_avail = len(ids) - (1 if not args.no_validate_files else 0)  # 简化,实际数据可从 render 返回
     print(f"✓ 已生成: {result}")
     # V1.3 §HTML 交付协议:stdout 末行强制 send 协议

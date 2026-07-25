@@ -261,22 +261,26 @@
       padding-bottom: 2px;
       pointer-events: none;
     }
-    .timeline-ruler .tick.tick-first { transform: translateX(0); }
-    /* v2.103 timeline 同一容器:段条 + 进度条(stripe in same block) */
+    .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
+    /* v2.108:进度条不再独立,改用 track 底部 4px 嵌入 stripe */
     .timeline-progress-bar {
-      position: relative;
-      height: 6px;
-      background: #f5f5f7;
-      border-bottom: 1px solid var(--border);
-      margin: 2px 0;
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 0;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 2px;
       cursor: pointer;
-      padding: 0 12px;       /* v2.107:对齐 ruler */
-      box-sizing: border-box;
+      pointer-events: auto;
+      margin: 0;
+      border: none;
+      padding: 0;
     }
     .timeline-progress-cursor {
       position: absolute;
-      top: -4px;
-      bottom: -4px;
+      top: -3px;
+      bottom: -3px;
       width: 2px;
       background: #ff3b30;
       pointer-events: none;
@@ -319,7 +323,7 @@
       display: flex;
       flex-direction: row;
       align-items: stretch;
-      padding: 0 12px;       /* v2.107:左右 12px,段条不贴边 */
+      padding: 0 12px 8px;   /* v2.108:底 8px 给 progress stripe */
       box-sizing: border-box;
     }
     /* 隐藏横向滚动条(防止被误读为播放进度条) */

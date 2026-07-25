@@ -866,8 +866,15 @@
     .tl-seg {
       position: relative;
       cursor: pointer;
-      /* 短段点击 hit slop 延伸(让 < 20px 的段可点) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      transition: opacity 0.15s, transform 0.15s;
     }
+    /* 短段点击 hit slop 延伸(让 < 20px 的段可点) */
     .tl-seg::before {
       content: '';
       position: absolute;
@@ -875,10 +882,12 @@
       z-index: -1;
     }
     .tl-seg-empty {
-      background: #e5e5ea;
+      background: #fafafa;
+      border: 1px dashed #d2d2d7;
       cursor: default;
       pointer-events: none;
       border-radius: 4px;
+      opacity: 0.4;
     }
     .tl-seg-empty::after {
       content: '·';
@@ -925,6 +934,25 @@
       font-size: 10px;
       color: #fff;
       text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+
+    /* ============ v2.5 timeline 段视觉系统重构 ============ */
+    /* (方案 B:透明度表达操作重要性) */
+    .tl-seg { opacity: 0.55; transition: opacity 0.15s, transform 0.15s; }
+    .tl-seg.tl-seg-has-op { opacity: 1; }
+    .tl-seg.tl-seg-active { opacity: 1 !important; }
+    .tl-seg-label-bg {
+      background: rgba(0,0,0,0.35);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      max-width: calc(100% - 8px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .tl-seg:hover {
       transform: translateY(-2px);
@@ -4120,8 +4148,9 @@
       const totalDuration = st.duration || 60;
 
       if (!st.segments || st.segments.length === 0) {
-        // 无 segments 时:浅灰渐变轨道(透明 + 提示文案),
-        //   不响应 click,不显示文字(整段保留是 implicit 默认,不需要文字)
+        // 无 segments 时:浅灰虚线轨道,不响应 click,不显示文字
+        // (整段保留是 implicit 默认 → 空 segments = 整段输出)
+        // 注意:JSON 不再自动添加"整段保留"占位段
         const empty = document.createElement('div');
         empty.className = 'tl-seg tl-seg-empty';
         empty.style.flex = '1';
@@ -4140,28 +4169,18 @@
         seg.dataset.segId = s.id;
         seg.dataset.segIdx = idx;
 
+        // v2.5 label:用 .tl-seg-label-bg 容器(即使 55% 透明也能看清)
         const labelText = (s.label || `[${s.start_sec.toFixed(1)}~${s.end_sec.toFixed(1)}]`);
-        const txt = document.createElement('span');
-        txt.textContent = segLen >= 2 ? labelText : '';
-        txt.style.padding = '0 4px';
-        txt.style.overflow = 'hidden';
-        txt.style.textOverflow = 'ellipsis';
-        txt.style.whiteSpace = 'nowrap';
-        seg.appendChild(txt);
+        const labelBg = document.createElement('span');
+        labelBg.className = 'tl-seg-label-bg';
+        labelBg.textContent = segLen >= 2 ? labelText : '';
+        seg.appendChild(labelBg);
 
-        if (s.ops && Object.keys(s.ops).length > 0) {
-          const badge = document.createElement('div');
-          badge.className = 'tl-seg-op-badge';
-          badge.textContent = getSegOpBadgeText(s.ops);
-          seg.appendChild(badge);
-        }
-
-        // Apple HIG:有 op 段 = 100% 透明(主操作),无 op 段 = 65% 透明(次要)
-        if (s.ops && Object.keys(s.ops).length > 0) {
-          seg.style.opacity = '1';
-        } else {
-          seg.style.opacity = '0.65';
-        }
+        // v2.5 方案 B 透明度:通过 CSS class,不用 inline opacity
+        // (有 op → 100% 满色突出,无 op → 55% 透明降权)
+        const hasOp = s.ops && Object.keys(s.ops).length > 0;
+        if (hasOp) seg.classList.add('tl-seg-has-op');
+        // 注意:inline op 徽章已删除(op 信息只走 tooltip)
 
         const tip = document.createElement('div');
         tip.className = 'seg-tip';

@@ -869,6 +869,54 @@
     .tl-seg {
       position: relative;
       cursor: pointer;
+      /* 短段点击 hit slop 延伸(让 < 20px 的段可点) */
+    }
+    .tl-seg::before {
+      content: '';
+      position: absolute;
+      inset: -6px -8px;
+      z-index: -1;
+    }
+    .tl-seg-empty {
+      background: linear-gradient(180deg, #ececef, #e5e5ea);
+      cursor: default;
+      pointer-events: none;
+      border-radius: 4px;
+    }
+    .tl-seg-empty:hover { transform: none; box-shadow: none; }
+    .tl-seg-empty::after {
+      content: '拖动框选生成时间段';
+      font-size: 10px;
+      color: #86868b;
+      font-weight: 400;
+      text-shadow: none;
+      pointer-events: none;
+    }
+    /* 框选实时高亮层 */
+    .tl-select-overlay {
+      position: absolute;
+      top: 2px;
+      bottom: 2px;
+      background: rgba(0, 113, 227, 0.25);
+      border: 1px solid #0071e3;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .timeline-track-inner {
+      position: relative;
+    }
+    /* 段单击激活高亮 */
+    .tl-seg.tl-active {
+      outline: 2px solid #0071e3;
+      outline-offset: 1px;
+    }
+    /* 原 .tl-seg 样式(无上述属性) */
+    .tl-seg.legacy-original {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s;
+      min-width: 0;
       transition: transform 0.15s;
       min-width: 0;
       overflow: hidden;
@@ -2655,30 +2703,54 @@
         updatePlayhead();
       });
 
-      // v2.0:长按拖动框选(Task 9 - 简化版)
+      // v2.0:长按拖动框选(实时绘制高亮)
       let pressTimer = null;
       let pressStartX = 0;
+      let pressOverlay = null;
+      const removeOverlay = () => {
+        if (pressOverlay) { pressOverlay.remove(); pressOverlay = null; }
+      };
       const onPressStart = (e) => {
         if (e.target.classList.contains('tl-seg') || e.target.closest('.tl-seg')) return;
         pressStartX = e.clientX;
         pressTimer = setTimeout(() => {
-          track.style.cursor = 'crosshair';
+          // 进入 selecting:创建 overlay div
+          pressOverlay = document.createElement('div');
+          pressOverlay.className = 'tl-select-overlay';
+          const r = track.getBoundingClientRect();
+          const x = Math.max(0, pressStartX - r.left);
+          pressOverlay.style.left = x + 'px';
+          pressOverlay.style.width = '0px';
+          track.appendChild(pressOverlay);
           track.classList.add('selecting');
         }, 200);
       };
       const onPressCancel = () => {
         if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-        track.style.cursor = '';
+        removeOverlay();
         track.classList.remove('selecting');
       };
       track.addEventListener('mousedown', onPressStart);
       track.addEventListener('mouseleave', onPressCancel);
+
+      // 实时更新 overlay 宽度
+      const onMove = (e) => {
+        if (!pressOverlay) return;
+        const r = track.getBoundingClientRect();
+        const x = Math.max(0, pressStartX - r.left);
+        const width = Math.max(0, Math.min(r.width, e.clientX - r.left) - x);
+        pressOverlay.style.left = x + 'px';
+        pressOverlay.style.width = width + 'px';
+      };
+      track.addEventListener('mousemove', onMove);
+
       document.addEventListener('mouseup', (e) => {
-        if (!pressTimer) return;
+        if (!pressOverlay && !pressTimer) return;
         onPressCancel();
-        const rect = track.getBoundingClientRect();
-        const startRatio = Math.max(0, (pressStartX - rect.left) / rect.width);
-        const endRatio = Math.min(1, (e.clientX - rect.left) / rect.width);
+        if (!pressOverlay) return;  // 短按,不算框选
+        const r = track.getBoundingClientRect();
+        const startRatio = Math.max(0, (pressStartX - r.left) / r.width);
+        const endRatio = Math.min(1, (e.clientX - r.left) / r.width);
         if (Math.abs(endRatio - startRatio) < 0.02) return;
         const startSec = Math.min(startRatio, endRatio) * duration;
         const endSec = Math.max(startRatio, endRatio) * duration;
@@ -3927,12 +3999,12 @@
       const totalDuration = st.duration || 60;
 
       if (!st.segments || st.segments.length === 0) {
-        const seg = document.createElement('div');
-        seg.className = 'tl-seg';
-        seg.style.flex = '1';
-        seg.style.background = '#5a8fd0';
-        seg.innerHTML = '<span>整段保留</span>';
-        trackInner.appendChild(seg);
+        // 无 segments 时:浅灰渐变轨道(透明 + 提示文案),
+        //   不响应 click,不显示文字(整段保留是 implicit 默认,不需要文字)
+        const empty = document.createElement('div');
+        empty.className = 'tl-seg tl-seg-empty';
+        empty.style.flex = '1';
+        trackInner.appendChild(empty);
         return;
       }
 

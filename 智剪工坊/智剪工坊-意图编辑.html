@@ -4710,14 +4710,14 @@
       showInformDialog(`本次操作将产生 ${result.length} 个时间段(预览)`, segHtml, {
         onConfirm: () => {
           // 确认:state 保持新状态(已是 newBackup)
-          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] [data-timeline-segments]`);
           if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
           renderSegmentsPanel(videoIndex);
         },
         onCancel: () => {
           // 取消:restore backup(state 回到拖框前)
           st.segments = backup.segments; st.excluded = backup.excluded;
-          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+          const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] [data-timeline-segments]`);
           if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
           renderSegmentsPanel(videoIndex);
         }
@@ -4755,7 +4755,7 @@
 
     function refreshTimelineAndPanel(videoIndex, segId) {
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
-      const segmentsArea = card?.querySelector('.timeline-track-inner');
+      const segmentsArea = card?.querySelector('[data-timeline-segments]');
       if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
       if (segId) {
@@ -4855,7 +4855,7 @@
       panel.querySelector('.seg-label-input').addEventListener('input', e => {
         seg.label = e.target.value;
         renderSegmentsPanel(videoIndex);
-        const segmentsArea = card.querySelector('.timeline-track-inner');
+        const segmentsArea = card.querySelector('[data-timeline-segments]');
         if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       });
 
@@ -4950,14 +4950,14 @@
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
       const panel = card?.querySelector('.segment-panel');
       if (panel) panel.remove();
-      const segmentsArea = card?.querySelector('.timeline-track-inner');
+      const segmentsArea = card?.querySelector('[data-timeline-segments]');
       if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
     }
 
     function restoreSegment(videoIndex, segId) {
       SegmentState.restore(videoIndex, segId);
-      const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] .timeline-track-inner`);
+      const segmentsArea = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"] [data-timeline-segments]`);
       if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
     }

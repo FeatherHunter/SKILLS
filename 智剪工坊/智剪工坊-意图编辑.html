@@ -2962,6 +2962,16 @@
           tick.textContent = formatTickLabel(t, step);
           frag.appendChild(tick);
         }
+        // v2.110:duration 不是 step 整数倍时,补一个最后 tick at duration
+        //   让 11:58 永远可见(即使 step=60 时不落在整数倍)
+        const lastStepT = Math.floor(duration / step) * step;
+        if (duration - lastStepT > 0.001) {
+          const tick = document.createElement('div');
+          tick.className = 'tick tick-last';
+          tick.style.left = (duration * pps) + 'px';
+          tick.textContent = formatTickLabel(duration, step);
+          frag.appendChild(tick);
+        }
         ruler.innerHTML = '';
         ruler.appendChild(frag);
       }

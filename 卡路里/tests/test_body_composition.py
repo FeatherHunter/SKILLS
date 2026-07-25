@@ -1,0 +1,77 @@
+import os, sys, sqlite3, tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import body_composition as bc
+from db import init_db
+import pytest
+
+
+@pytest.fixture
+def tmp_db(monkeypatch):
+    fd, path = tempfile.mkstemp(suffix='.db'); os.close(fd)
+    init_db(path)
+    monkeypatch.setattr(bc, 'DB_PATH', path)
+    yield path
+    os.unlink(path)
+
+
+def _valid_args(**overrides):
+    base = dict(
+        date='2026-07-25', source='home_caliper',
+        age=30, sex='male',
+        caliper_chest_mm=5, caliper_abdominal_mm=10,
+        caliper_thigh_mm=15, caliper_tricep_mm=8,
+        caliper_subscapular_mm=10, caliper_suprailiac_mm=8,
+        caliper_midaxillary_mm=7, body_fat_pct=18.0,
+        calculated_at=None, note='', as_dict=False,
+    )
+    base.update(overrides)
+    return bc.parse_args(_args_to_list(base))
+
+
+def _args_to_list(d):
+    """{'date': 'X', 'source': 'Y'} → ['--date', 'X', '--source', 'Y', ...]"""
+    out = []
+    for k, v in d.items():
+        if v is None: continue
+        cli = k.replace('_', '-')
+        out.append(f'--{cli}')
+        if not isinstance(v, bool):
+            out.append(str(v))
+    return out
+
+
+def test_add_with_7_points_succeeds(tmp_db):
+    result = bc.cmd_add(_valid_args())
+    assert result['status'] == 'ok'
+    assert result['data']['id'] >= 1
+
+
+def test_add_missing_caliper_fails(tmp_db):
+    args = _valid_args()
+    args.caliper_chest_mm = None
+    from validators import ValidationError
+    with pytest.raises(ValidationError):
+        bc.cmd_add(args)
+
+
+def test_list_returns_recent(tmp_db):
+    bc.cmd_add(_valid_args())
+    args = bc.parse_args(['--days', '30'])
+    result = bc.cmd_list(args)
+    assert result['status'] == 'ok'
+    assert len(result['data']) >= 1
+
+
+def test_delete_soft_deletes(tmp_db):
+    bc.cmd_add(_valid_args())
+    rid = bc.cmd_list(bc.parse_args(['--days', '30']))['data'][0]['id']
+    result = bc.cmd_delete(bc.parse_args(['--id', str(rid)]))
+    assert result['status'] == 'ok'
+    conn = sqlite3.connect(tmp_db); c = conn.cursor()
+    row = c.execute('SELECT is_deprecated FROM body_composition WHERE id=?', (rid,)).fetchone()
+    assert row[0] == 1
+
+
+def test_as_dict_flag_works():
+    args = bc.parse_args(['--as-dict'])
+    assert args.as_dict is True

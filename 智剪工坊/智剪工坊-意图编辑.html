@@ -5080,7 +5080,8 @@
         if (opDef.params) {
           paramHtml = '<div class="seg-op-params' + (isOn ? '' : ' disabled') + '">';
           for (const [pKey, pDef] of Object.entries(opDef.params)) {
-            const curVal = cur[pKey] !== undefined ? cur[pKey] : pDef.default;
+            // v2.115 修:cur 可能 undefined,加 guard
+            const curVal = (cur && cur[pKey] !== undefined) ? cur[pKey] : pDef.default;
             if (pDef.type === 'number') {
               paramHtml += `<label>${pDef.label}:<input type="number" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}" ${isOn ? '' : 'disabled'}></label>`;
             } else if (pDef.type === 'select') {

@@ -1196,7 +1196,37 @@
       padding: 6px 0;
     }
 
-    /* 操作面板(inline) */
+    /* v2.98 段操作面板(对齐整段视频操作风格) */
+    .segment-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      padding: 0;
+      margin: 8px 0;
+    }
+    .segment-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .segment-panel-header:hover { background: var(--gray-fill); }
+    .segment-panel-header .disclosure {
+      display: inline-block;
+      width: 12px;
+      transition: transform 0.15s;
+      color: var(--secondary);
+    }
+    .segment-panel.collapsed .disclosure { transform: rotate(0deg); }
+    .segment-panel:not(.collapsed) .disclosure { transform: rotate(90deg); }
+    .segment-panel-body {
+      padding: 0 14px 12px;
+    }
+    .segment-panel.collapsed .segment-panel-body { display: none; }
     .segment-panel-inner label {
       display: flex;
       gap: 8px;
@@ -1228,6 +1258,99 @@
       outline-offset: 1px;
       border-color: transparent;
     }
+
+    /* v2.98 段 op-row(对齐整段视频操作的 op-row 样式) */
+    .seg-op-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .seg-op-row:last-child { border-bottom: none; }
+    .seg-op-row .seg-op-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      min-width: 100px;
+    }
+    .seg-op-row .seg-op-toggle input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: var(--blue);
+    }
+    .seg-op-row .seg-op-icon { font-size: 16px; }
+    .seg-op-row .seg-op-label { font-weight: 500; }
+    .seg-op-row .seg-op-params {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+    }
+    .seg-op-row .seg-op-params label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--secondary);
+    }
+    .seg-op-row .seg-op-params input,
+    .seg-op-row .seg-op-params select {
+      padding: 3px 6px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 12px;
+      background: white;
+      min-width: 60px;
+    }
+    .seg-op-row .seg-op-note {
+      width: 100%;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 22px;
+      margin-top: 4px;
+    }
+    .seg-op-row .seg-op-help {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--secondary);
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      cursor: help;
+      font-size: 11px;
+    }
+    .seg-op-row .seg-op-help:hover { background: var(--gray-fill); }
+    .seg-voice-row, .seg-label-edit, .seg-note-main {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .seg-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 0;
+    }
+    .seg-exclude-btn, .seg-close-btn {
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+    }
+    .seg-exclude-btn { background: #ff9500; color: white; border-color: #ff9500; }
+    .seg-exclude-btn:hover { background: #d97a00; }
+    .seg-close-btn { background: white; color: var(--label); }
+    .seg-close-btn:hover { background: var(--gray-fill); }
+
     .seg-op-buttons {
       display: flex;
       gap: 6px;
@@ -4561,15 +4684,29 @@
         `<option value="${k}" ${k === voiceVal ? 'selected' : ''}>${v}</option>`
       ).join('');
 
+      // v2.98 段 panel UI 对齐整段视频操作(.ops-subgroup 风格:边框 + 圆角 + 折叠 summary)
       panel.innerHTML = `
-        <div class="segment-panel-inner">
-          <label class="seg-label-row">label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名"></label>
-          <label class="seg-label-row">🎙️ 音频策略:<select class="seg-voice-select"><option value="">— 继承 video_ops —</option>${voiceOptions}</select></label>
-          <textarea class="seg-note-input" placeholder="本段整体补充说明(LLM 讨论用)" rows="2">${escapeHtml(seg.note || '')}</textarea>
-          <div class="seg-op-list">${opsListHtml}</div>
-          <div class="seg-actions">
-            <button class="seg-exclude-btn" data-act="exclude">⛔ 排除该段</button>
-            <button class="close-btn" data-act="close">✕ 关闭</button>
+        <div class="segment-panel-header" data-act="toggle-panel">
+          <span class="disclosure">▶</span>
+          <span style="flex:1">📋 段操作 (${Object.keys(seg.ops || {}).length} 个已配置)</span>
+          <span style="color:var(--secondary);font-size:11px">点击折叠/展开</span>
+        </div>
+        <div class="segment-panel-body">
+          <div class="segment-panel-inner">
+            <div class="seg-label-edit">
+              <label>label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名(留空显示时间码)"></label>
+            </div>
+            <div class="seg-voice-row">
+              <label>🎙️ 音频策略:<select class="seg-voice-select"><option value="">— 继承 video_ops —</option>${voiceOptions}</select></label>
+            </div>
+            <div class="seg-note-main">
+              <textarea class="seg-note-input" placeholder="本段整体补充说明(LLM 讨论用)" rows="2">${escapeHtml(seg.note || '')}</textarea>
+            </div>
+            <div class="seg-op-list">${opsListHtml}</div>
+            <div class="seg-actions-bar">
+              <button class="seg-exclude-btn" data-act="exclude">⛔ 排除该段(剪辑时不输出)</button>
+              <button class="seg-close-btn" data-act="close">✕ 关闭</button>
+            </div>
           </div>
         </div>
       `;
@@ -4660,6 +4797,14 @@
       }
 
       // 关闭按钮
+      // v2.98 panel header 折叠
+      panel.querySelector('[data-act="toggle-panel"]').addEventListener('click', () => {
+        panel.classList.toggle('collapsed');
+        // 折叠时 close 面板(避免遗留空内容)
+        if (panel.classList.contains('collapsed')) {
+          setTimeout(() => panel.remove(), 200);
+        }
+      });
       panel.querySelector('[data-act="close"]').addEventListener('click', () => panel.remove());
     }
 

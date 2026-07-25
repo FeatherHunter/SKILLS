@@ -855,6 +855,263 @@
       background: #FFF5E6; border: 1px solid #F5D790; padding: 12px 16px;
       border-radius: 10px; margin-bottom: 14px; font-size: 13px; color: #8A5A00;
     }
+    /* ============ v2.0 视觉系统 ============ */
+    :root {
+      --seg-color-0: #ff3b30;
+      --seg-color-1: #ff9500;
+      --seg-color-2: #ffcc00;
+      --seg-color-3: #34c759;
+      --seg-color-4: #00b4d8;
+      --seg-color-5: #5e5ce6;
+      --seg-color-6: #af52de;
+      --seg-color-7: #ff2d92;
+    }
+    .tl-seg {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+    .tl-seg:hover {
+      transform: translateY(-2px);
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .tl-seg.op-seg:hover {
+      transform: translateY(-2px);
+      z-index: 10;
+    }
+    .tl-seg-op-badge {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      min-width: 16px;
+      height: 14px;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      border-radius: 3px;
+      font-size: 9px;
+      padding: 0 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      text-shadow: none;
+    }
+    .seg-tip {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1d1d1f;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+      z-index: 30;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .seg-tip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1d1d1f;
+    }
+    .tl-seg:hover .seg-tip { opacity: 1; }
+
+    /* 段闪烁高亮(折叠区→timeline 跳转) */
+    @keyframes segFlash {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 0 3px #0071e3, 0 0 12px rgba(0,113,227,0.6); }
+    }
+    .tl-seg.flash {
+      animation: segFlash 0.5s 4;
+    }
+
+    /* 段操作面板 + 折叠区列表 */
+    .segments-panel, .segment-panel {
+      margin-top: 10px;
+      background: var(--card, #ffffff);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .segments-panel > details { margin-bottom: 8px; }
+    .segments-panel > details > summary {
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 4px 0;
+      list-style: none;
+    }
+    .segments-panel > details > summary::-webkit-details-marker { display: none; }
+    .segments-panel > details > summary::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 6px;
+      transition: transform 0.15s;
+    }
+    .segments-panel > details[open] > summary::before { transform: rotate(90deg); }
+    .seg-list, .del-list { padding-left: 8px; }
+    .seg-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      background: #f5f5f7;
+      font-size: 12px;
+    }
+    .seg-item .seg-label-text {
+      flex: 1;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .seg-item .seg-label-text:hover { color: #0071e3; text-decoration: underline; }
+    .seg-item button {
+      background: #0071e3;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .seg-item button:hover { opacity: 0.85; }
+    .seg-item button.del-btn, .seg-item .seg-restore { background: #ff3b30; }
+    .seg-item button.del-btn:hover, .seg-item .seg-restore:hover { background: #d70015; }
+    .deleted-seg-item {
+      background: #c7c7cc;
+      color: #6e6e73;
+      text-decoration: line-through;
+      opacity: 0.7;
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .seg-restore {
+      background: #ff3b30;
+      color: white;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      text-decoration: none;
+    }
+    .empty-hint {
+      color: #86868b;
+      font-size: 12px;
+      font-style: italic;
+      padding: 6px 0;
+    }
+
+    /* 操作面板(inline) */
+    .segment-panel-inner label {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .segment-panel-inner label input {
+      flex: 1;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .seg-op-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .seg-op-buttons button {
+      background: white;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .seg-op-buttons button:hover { border-color: #0071e3; }
+    .seg-op-buttons .del-btn {
+      background: #ff3b30;
+      color: white;
+      border-color: #ff3b30;
+    }
+    .close-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .close-btn:hover { background: #f5f5f7; }
+
+    /* 告知弹窗 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 360px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .modal-content h3 { margin-bottom: 12px; }
+    .modal-content p { color: var(--fg2); margin-bottom: 16px; font-size: 13px; }
+    .modal-content .btn {
+      background: #0071e3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .modal-content .seg-list-in-modal {
+      background: #f5f5f7;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      font-family: ui-monospace, monospace;
+    }
+    .modal-content .seg-list-in-modal div {
+      padding: 2px 0;
+    }
   </style>
 </head>
 <body>
@@ -1574,7 +1831,7 @@
               <button class="ops-header" type="button" data-toggle-ops>
                 <div class="ops-header-left">
                   <span class="disclosure">▶</span>
-                  <span>基础剪辑操作</span>
+                  <span>整段视频操作</span>
                 </div>
                 <span class="ops-summary" data-ops-summary></span>
               </button>

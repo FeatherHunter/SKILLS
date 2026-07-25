@@ -2780,6 +2780,8 @@
         if (duration > 0 && trackWidth > 0) {
           // 全宽铺满
           pixelsPerSecond = 0;
+
+          window.__tlPps = 0;
           render();
         }
       }
@@ -2916,6 +2918,8 @@
         if (isFinite(video.duration) && video.duration > 0 && Math.abs(video.duration - duration) > 0.001) {
           duration = video.duration;
           pixelsPerSecond = 0;
+
+          window.__tlPps = 0;
           init();
         }
       });

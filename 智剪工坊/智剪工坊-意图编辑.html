@@ -3130,6 +3130,10 @@
         const newMouseXTotal = tAtMouse * newPps;
         track.scrollLeft = Math.max(0, newMouseXTotal - mouseInTrack);
         updatePlayhead();
+        // v2.111 真修:zoom 后重画 segments(否则 width 还停在旧 pps)
+        if (typeof renderTimelineSegments === 'function' && segmentsArea) {
+          renderTimelineSegments(segmentsArea, videoIndex);
+        }
       }, { passive: false });
 
       // 3. 播放/暂停按钮

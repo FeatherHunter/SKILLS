@@ -4218,7 +4218,7 @@
       });
     }
 
-    function onTrackSelect(videoIndex, startSec, endSec) {    function onTrackSelect(videoIndex, startSec, endSec) {
+    function onTrackSelect(videoIndex, startSec, endSec) {
       const result = SegmentState.addOrSplit(videoIndex, startSec, endSec);
       if (!result || result.modified === 'noop') {
         if (result && result.modified === 'noop') showToast('区间与已有段完全重合');

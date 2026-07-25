@@ -477,6 +477,32 @@ python scripts/body_measurements.py add ${argsList.join(' ')}
     bar.style.display = 'flex';
   }
 
+  // 预填:场景 2(用户已告诉 AI 维度数字,AI 调 render 时传 args)
+  // wizard 打开时 input 已自动填好,用户只需 verify + 复制 prompt
+  if (DATA && DATA.status === 'ok' && DATA.data) {
+    const d = DATA.data;
+    // date input
+    if (d.prefill_date && $('measureDate')) {
+      $('measureDate').value = d.prefill_date;
+    }
+    // tag — 优先 customTag,否则激活 chip
+    if (d.prefill_note && $('note')) {
+      $('note').value = d.prefill_note;
+    }
+    // 13 围度 input
+    MEASURE_FIELDS.forEach(([recentKey, , , inputId]) => {
+      const prefillKey = recentKey.replace('recent_', 'prefill_');
+      const v = d[prefillKey];
+      if (v != null) {
+        const inp = document.getElementById(inputId);
+        if (inp) {
+          inp.value = v;
+          inp.dispatchEvent(new Event('input'));
+        }
+      }
+    });
+  }
+
   // 初始
   updatePrompt();
 })();

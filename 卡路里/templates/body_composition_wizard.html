@@ -434,6 +434,40 @@ python scripts/body_composition.py add ${parts.join(' ')}
     el.addEventListener('change', updatePrompt);
   });
 
+  // 预填:场景 2(用户已告诉 AI 体脂数字,AI 调 render 时传 args)
+  // wizard 打开时 input 已自动填好,用户只需 verify + 复制 prompt
+  if (DATA && DATA.status === 'ok' && DATA.data) {
+    const d = DATA.data;
+    if (d.prefill_date && $('date')) $('date').value = d.prefill_date;
+    if (d.prefill_source && $('source')) $('source').value = d.prefill_source;
+    if (d.prefill_age && $('age')) $('age').value = d.prefill_age;
+    if (d.prefill_sex && $('sex')) $('sex').value = d.prefill_sex;
+    if (d.prefill_body_fat_pct && $('body-fat-pct')) $('body-fat-pct').value = d.prefill_body_fat_pct;
+    if (d.prefill_note && $('note')) $('note').value = d.prefill_note;
+    // 7 皮褶:prefill_xxx → input id 同名(去掉 prefill_ 前缀)
+    const prefillMap = {
+      'prefill_caliper_chest_mm': 'caliper-chest',
+      'prefill_caliper_abdominal_mm': 'caliper-abdominal',
+      'prefill_caliper_thigh_mm': 'caliper-thigh',
+      'prefill_caliper_tricep_mm': 'caliper-tricep',
+      'prefill_caliper_subscapular_mm': 'caliper-subscapular',
+      'prefill_caliper_suprailiac_mm': 'caliper-suprailiac',
+      'prefill_caliper_midaxillary_mm': 'caliper-midaxillary',
+    };
+    Object.entries(prefillMap).forEach(([prefillKey, inputId]) => {
+      const v = d[prefillKey];
+      if (v != null) {
+        const inp = document.getElementById(inputId);
+        if (inp) {
+          inp.value = v;
+          inp.dispatchEvent(new Event('input'));
+        }
+      }
+    });
+    // 触发一次 autoCalc(如果 7 皮褶都填了)
+    if (d.prefill_caliper_chest_mm && $('autoCalcBtn')) $('autoCalcBtn').click();
+  }
+
   updatePrompt();
 
   // 复制按钮

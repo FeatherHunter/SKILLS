@@ -230,6 +230,8 @@
       width: 100%; max-height: 360px;
       background: #000; border-radius: 10px 10px 0 0; display: block;
       cursor: pointer;
+      position: relative;     /* v2.118:创建 stacking context */
+      z-index: 1;            /* v2.118:压在 .timeline(z-index:10) 之下 */
     }
 
     /* ============ v1.20+timeline: 自定义 timeline(类剪映) ============ */
@@ -243,6 +245,7 @@
       padding: 0;
       overflow: visible;   /* v2.114:让 tooltip 跳出 timeline 边界 */
       position: relative;
+      z-index: 10;          /* v2.118:抬到 .inline-preview-video 之上 */
       user-select: none;
       -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -382,11 +385,12 @@
     }
     .seg-restore-btn:hover { background: #2a9149; }
 
-    /* v2.113:.timeline-track scroll-wrap,Z1:overflow-x: hidden 去掉丑 scrollbar */
+    /* v2.113:scroll-wrap,Z1:overflow-x: hidden 去掉丑 scrollbar
+       v2.118:改 overflow-x: clip + overflow-y: visible(让 .tl-tip 向上不被裁) */
     .timeline-track {
       position: relative;
-      overflow-x: hidden;
-      overflow-y: hidden;
+      overflow-x: clip;
+      overflow-y: visible;
       cursor: pointer;
     }
     /* 内容容器(JS 控制 width = pps * duration) */
@@ -1196,14 +1200,19 @@
       font-weight: 600;
       text-shadow: none;
     }
-    /* v2.123:tooltip 改回上方(bottom:100%+offset)+ 高 z-index 穿透 video */
+    /* v2.123:tooltip 改回上方(bottom:100%+offset)+ 高 z-index 穿透 video
+       v2.119:position: fixed — 脱离 .timeline / .video-card stacking context
+         (Chrome <video> 是 replaced element, 自带 paint layer,
+         即使 z-index 100 也覆盖普通定位元素;
+         fixed 定位把 tooltip 提到 viewport root, 绕过 video 自身层)
+       JS 在 hover 时设 top/left/transform 显示在 segment 上方 */
     .seg-tip,
     .tl-tip {
-      position: absolute;
-      bottom: calc(100% + 8px);
+      position: fixed;
+      bottom: auto;
       top: auto;
-      left: 50%;
-      transform: translateX(-50%);
+      left: 0;
+      transform: translate(-50%, -100%);
       background: rgba(29,29,31,0.96);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -1214,7 +1223,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.15s;
-      z-index: 9999;
+      z-index: 2147483647;        /* max — 不与任何元素竞争 */
       box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       min-width: 100px;
       max-width: 240px;
@@ -5132,6 +5141,23 @@
           }
           openSegmentPanel(videoIndex, segId);
         });
+
+        // v2.121:Chrome <video> 元素 stacking 行为特殊(z-index / transform 都压不住)
+        //   唯一可靠方法:把 tooltip 移到 document.body 下,position: fixed
+        //   移出 .inline-preview stacking context 后,tip 处于 viewport root 级别
+        //   而 video 是 inline-preview 子,跟 tip 在不同 SC 内互不影响
+        const tip = seg.querySelector('.tl-tip');
+        if (tip) {
+          // 第一次 hover 时移到 body(只做一次,避免重复)
+          if (tip.parentElement !== document.body) {
+            document.body.appendChild(tip);
+          }
+          seg.addEventListener('mouseenter', () => {
+            const r = seg.getBoundingClientRect();
+            tip.style.left = (r.left + r.width / 2) + 'px';
+            tip.style.top = (r.top - 8) + 'px';
+          });
+        }
       });
 
       // v2.117:trim handle 拖动 — DOM 查询实时值(不依赖 setupTimeline 闭包变量)

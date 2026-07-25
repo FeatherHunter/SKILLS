@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
   触发词:记吃了、拍营养表、删吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.1.5", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.2.0", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -142,7 +142,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 记吃了 | 记录饮食(库匹配/图片识别/外部搜索统一入口) | `python scripts/calorie_tracker.py add` |
 | 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `python scripts/calorie_tracker.py add` |
 | 删吃的 | 删除饮食记录 | `python scripts/calorie_tracker.py delete` |
-| 改吃的 | 修改已记录饮食 | `python scripts/calorie_tracker.py update-meal` |
+| 改吃的 | 修改已记录饮食(8 字段) | `python scripts/calorie_tracker.py update-meal <id> [--grams] [--food] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note]` |
 | 查今天吃 | 今日饮食摘要 | `python scripts/calorie_tracker.py summary` |
 | 查吃的记录 | 今日逐条饮食记录 | `python scripts/calorie_tracker.py list` |
 | 查热量历史 | 最近 N 天热量摄入历史 | `python scripts/calorie_tracker.py history` |
@@ -605,6 +605,42 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 回执含:**操作类型 ID + 字段对比(旧→新)+ 撤销指令复制 + 10 秒后失效**。
 
+#### 改吃的(已实现 · `calorie_tracker.py update-meal`,v2.2.0 接口对齐)
+
+**v2.2.0 重大变更**:`update-meal` 从 3 字段扩展到 **8 字段**,与 `add-meal` 接口完全对称。
+
+**支持字段**(`**kwargs`):
+| 字段 | CLI 参数 | 类型 | 场景 |
+|---|---|---|---|
+| `food_name` | `--food` | str | 改名 |
+| `grams` | `--grams` | float | 改克数 |
+| `note` | `--note` | str | 改备注 |
+| `date` | `--date` | YYYY-MM-DD | 补录场景改日期 |
+| `time` | `--time` | HH:MM[:SS] | 补录场景改时间 |
+| `calories` | `--calories` | float | AI 估错热量,只改热量 |
+| `protein` | `--protein` | float | 只改蛋白 |
+| `carbs` | `--carbs` | float | 只改碳水 |
+| `fat` | `--fat` | float | 只改脂肪 |
+
+**不支持**:`meal_type`(从 `time` 自动推断,不存 DB)
+
+**关键设计**:
+- `**kwargs` 风格:任意字段可单独或组合改
+- 返回 `before/after/changed` diff:对接 H.10 `crud_receipt.html` 回执 UI
+- 校验:负值拒绝、非法字段名明确报错、空调用报错
+
+**用户说法 → CLI 映射**:
+| 用户说法 | CLI 命令 |
+|---|---|
+| `改吃的 5 克数改成 180` | `update-meal 5 --grams 180` |
+| `改吃的 5 热量改成 180 卡` | `update-meal 5 --calories 180` |
+| `改吃的 5 错了,实际是 200/15/30/8` | `update-meal 5 --calories 200 --protein 15 --carbs 30 --fat 8` |
+| `改吃的 5 补录成昨天 18:30 晚饭` | `update-meal 5 --date 2026-07-19 --time 18:30` |
+| `改吃的 5 改名鸡胸(去皮)` | `update-meal 5 --food "鸡胸(去皮)"` |
+| `改吃的 5 加备注"妈妈做的"` | `update-meal 5 --note "妈妈做的"` |
+
+**测试套**:`tests/diet_update_meal.py` 7 个 case(24 assertions 全过)
+
 
 ##### 单日类 trigger · `--date` 参数
 
@@ -747,7 +783,10 @@ analysis/__init__.py
 ### 食物记录
 ```bash
 python scripts/calorie_tracker.py add "鸡胸肉" 165 31 0 3 150   # 食物名 热量 蛋白 碳水 脂肪 克数
-python scripts/calorie_tracker.py update-meal 5 --grams 180      # 修改记录5的克数为180g
+python scripts/calorie_tracker.py update-meal 5 --grams 180                    # 修改记录5的克数为180g
+python scripts/calorie_tracker.py update-meal 5 --calories 180                  # 只改热量
+python scripts/calorie_tracker.py update-meal 5 --calories 200 --protein 15 --carbs 30 --fat 8  # 改 4 营养(同源)
+python scripts/calorie_tracker.py update-meal 5 --date 2026-07-20 --time 18:30   # 补录场景改日期/时间
 python scripts/calorie_tracker.py summary                        # 今日摘要(含饮水)
 python scripts/calorie_tracker.py history 7                      # 最近7天历史
 python scripts/calorie_tracker.py goal 1800 150 200 60 2000      # 设置目标:热量 蛋白 碳水 脂肪 饮水ml

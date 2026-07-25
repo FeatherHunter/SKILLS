@@ -127,59 +127,84 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
     return True
 
 
-def update_meal(entry_id, grams=None, food_name=None, note=None):
-    """更新一条食物记录
+# 可更新的字段白名单(v2.2.0 对齐 add_meal 接口)
+# 注意: meal_type 不存 DB(从 time 推断),所以不在支持列表
+_MEAL_UPDATABLE = {
+    'food_name', 'grams', 'note',
+    'date', 'time',
+    'calories', 'protein', 'carbs', 'fat',
+}
 
-    Args:
-        entry_id: 记录 ID
-        grams: 克数（可选）
-        food_name: 食物名称（可选）
-        note: 备注（可选）
+
+def update_meal(entry_id, **kwargs):
+    """更新一条食物记录的任意可改字段(v2.2.0 接口对齐 add_meal)
+
+    支持 8 个字段(与 add_meal 对称):
+      - 标签: food_name, grams, note
+      - 时间: date, time(meal_type 从 time 推断,不存 DB)
+      - 营养: calories, protein, carbs, fat
+
+    返回 dict{"ok": bool, "before": {...}, "after": {...}, "changed": [字段]}
+    失败时 {"ok": False, "error": str}。
     """
     try:
         entry_id = int(entry_id)
-    except ValueError:
-        print("Error: Entry ID must be a number")
-        return False
+    except (ValueError, TypeError):
+        return {"ok": False, "error": "Entry ID must be a number"}
+
+    bad = set(kwargs) - _MEAL_UPDATABLE
+    if bad:
+        return {"ok": False, "error": f"不支持字段: {sorted(bad)}; 支持: {sorted(_MEAL_UPDATABLE)}"}
+    if not kwargs:
+        return {"ok": False, "error": "至少传 1 个字段"}
 
     conn = _get_db()
     c = conn.cursor()
 
-    c.execute('SELECT food_name, grams, calories FROM food_log WHERE id = ?', (entry_id,))
+    # 改前全字段快照(回执 UI 用)
+    c.execute('''
+        SELECT id, date, time, food_name, grams, calories, protein, carbs, fat, note
+        FROM food_log WHERE id = ?
+    ''', (entry_id,))
     row = c.fetchone()
-
     if not row:
-        print(f"Error: Entry ID {entry_id} not found")
         conn.close()
-        return False
+        return {"ok": False, "error": f"Entry ID {entry_id} not found"}
 
-    old_food, old_grams, old_cal = row
-    updates = []
-    params = []
-    if grams is not None:
-        updates.append('grams = ?')
-        params.append(float(grams))
-    if food_name is not None:
-        updates.append('food_name = ?')
-        params.append(food_name)
-    if note is not None:
-        updates.append('note = ?')
-        params.append(note)
+    keys = ('id', 'date', 'time', 'food_name', 'grams', 'calories', 'protein', 'carbs', 'fat', 'note')
+    before = dict(zip(keys, row))
 
-    if not updates:
-        print("Error: No fields to update")
-        conn.close()
-        return False
+    # 类型转换 + 负值校验
+    typed = {}
+    for k, v in kwargs.items():
+        if k in ('grams', 'calories', 'protein', 'carbs', 'fat'):
+            try:
+                v = float(v)
+            except (ValueError, TypeError):
+                conn.close()
+                return {"ok": False, "error": f"{k} 必须是数字: {v}"}
+            if v < 0:
+                conn.close()
+                return {"ok": False, "error": f"{k} 不能为负: {v}"}
+        typed[k] = v
 
-    params.append(entry_id)
-    c.execute(f"UPDATE food_log SET {', '.join(updates)} WHERE id = ?", params)
+    updates = ', '.join(f"{k} = ?" for k in typed)
+    params = list(typed.values()) + [entry_id]
+    c.execute(f"UPDATE food_log SET {updates} WHERE id = ?", params)
     conn.commit()
+
+    # 改后快照(给回执 UI 用)
+    c.execute('''
+        SELECT id, date, time, food_name, grams, calories, protein, carbs, fat, note
+        FROM food_log WHERE id = ?
+    ''', (entry_id,))
+    after = dict(zip(keys, c.fetchone()))
     conn.close()
 
-    new_grams = grams if grams is not None else old_grams
-    new_food = food_name if food_name is not None else old_food
-    print(f"✓ Updated entry {entry_id}: {new_food} ({new_grams}克)")
-    return True
+    changed = [k for k in typed if before.get(k) != after.get(k)]
+    print(f"✓ Updated entry {entry_id}: {after['food_name']} ({after['grams']}克, {after['calories']}卡)")
+    print(f"  改动字段: {changed}")
+    return {"ok": True, "before": before, "after": after, "changed": changed}
 
 
 def delete_meal(entry_id):

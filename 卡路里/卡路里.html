@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡路里 - Skill 手册 v2.1.0</title>
-<meta name="skill-version" content="2.1.5">
+<meta name="skill-version" content="2.2.0">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1390,6 +1390,26 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
 <p><strong>用户</strong>:查体重趋势<br>
 <strong>AI</strong>:📊 体重趋势(2026-04-28 ~ 2026-05-28)均重 70.2kg | 变化 -1.3kg | 趋势下降 ✓</p>
+
+<hr />
+<h2 id="manual-update-meal-v220">✏️ v2.2.0 新增:改吃的(接口对齐)</h2>
+<details>
+  <summary>改吃的 <code>python scripts/calorie_tracker.py update-meal &lt;id&gt; [8 个可选字段]</code></summary>
+  <div>
+    <p><span class="workflow-label cli">CLI</span><code>update-meal &lt;id&gt; [--grams|--food|--calories|--protein|--carbs|--fat|--date|--time|--note]</code>(至少 1 个)</p>
+    <p><span class="workflow-label flow">工作流</span>v2.2.0: 从 3 字段扩展到 8 字段,与 add-meal 接口对称。返回 before/after diff 给 H.10 crud_receipt.html 回执 UI。</p>
+    <p><span class="workflow-label key">关键场景</span></p>
+    <ul>
+      <li>AI 估错热量 → <code>--calories 180</code></li>
+      <li>4 营养同源改 → <code>--calories 200 --protein 15 --carbs 30 --fat 8</code></li>
+      <li>补录改日期 → <code>--date 2026-07-19 --time 18:30</code></li>
+      <li>改名/克数/备注 → <code>--food ... --grams ... --note ...</code></li>
+      <li>补备注 → <code>--note "妈妈做的"</code>(<a href="#manual-update-meal-v220">§改吃的</a>)</li>
+    </ul>
+    <p><span class="workflow-label warn">不支持</span><code>--meal-type</code>(从 time 推断,不存 DB)</p>
+    <p><span class="workflow-label test">测试</span><code>tests/diet_update_meal.py</code> 7 个 case / 24 assertions 全过</p>
+  </div>
+</details>
 
 <hr />
 <h2 id="connection">联动说明</h2>

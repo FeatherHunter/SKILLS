@@ -170,15 +170,46 @@ def main():
 
         elif command == "update-meal":
             if len(sys.argv) < 3:
-                print("Error: update-meal requires <id> [--grams <克数>] [--food <食物名>] [--note <备注>]")
+                print("Error: update-meal requires <id> [+可选字段]")
+                print("  支持(至少传 1 个):")
+                print("    --grams N           克数")
+                print("    --food NAME         食物名")
+                print("    --calories N        热量(卡)")
+                print("    --protein N         蛋白(克)")
+                print("    --carbs N           碳水(克)")
+                print("    --fat N             脂肪(克)")
+                print("    --date YYYY-MM-DD   日期")
+                print("    --time HH:MM        时间")
+                print("    --note X            备注")
+                print("  (餐次 meal_type 从 time 自动推断,不需传)")
+                print("  示例:")
+                print("    update-meal 5 --calories 180")
+                print("    update-meal 5 --calories 180 --protein 15 --carbs 30 --fat 8")
+                print("    update-meal 5 --date 2026-07-20 --time 18:30")
                 sys.exit(1)
-            kwargs = _parse_kw_args(sys.argv[3:])
-            diet.update_meal(
-                sys.argv[2],
-                grams=kwargs.get('grams'),
-                food_name=kwargs.get('food'),
-                note=kwargs.get('note'),
-            )
+            parsed = _parse_kw_args(sys.argv[3:])
+            field_map = {
+                'grams': 'grams',
+                'food': 'food_name',
+                'calories': 'calories',
+                'protein': 'protein',
+                'carbs': 'carbs',
+                'fat': 'fat',
+                'date': 'date',
+                'time': 'time',
+                'note': 'note',
+            }
+            # 检测非法 CLI 参数 → 明确报错(v2.2.0 改进)
+            unknown = set(parsed) - set(field_map)
+            if unknown:
+                print(f"Error: 不识别的字段: {sorted(unknown)}")
+                print(f"  支持: {sorted(field_map)}")
+                sys.exit(1)
+            kwargs = {field_map[k]: v for k, v in parsed.items() if k in field_map}
+            result = diet.update_meal(sys.argv[2], **kwargs)
+            if not result["ok"]:
+                print(f"Error: {result['error']}")
+                sys.exit(1)
 
         elif command == "list":
             diet.list_meals()

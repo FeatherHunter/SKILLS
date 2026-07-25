@@ -1416,6 +1416,18 @@
         const fileHandle = await dirHandle.getFileHandle('intent.json');
         const file = await fileHandle.getFile();
         existingIntent = JSON.parse(await file.text());
+        // v2.0:数据迁移 + 校验
+        existingIntent = migrateLegacyIntent(existingIntent);
+        const loadErrors = validateIntent(existingIntent);
+        if (loadErrors.length > 0) {
+          console.warn('intent.json 校验失败:', loadErrors);
+          showToast(`intent.json 校验失败 ${loadErrors.length} 项,见 console`);
+        }
+        // 把 segments 恢复到 SegmentState
+        existingIntent.videos?.forEach((v, vi) => {
+          const st = SegmentState.init(vi, v.duration_sec || 60);
+          st.segments = (v.time_segments || []).map(s => ({ ...s }));
+        });
         snapshotBaseline(existingIntent);  // v1.18:加载即建基线
         showToast('已加载现有 intent.json');
       } catch (e) { existingIntent = null; snapshotBaseline(existingIntent); /* v1.18:null 也安全 */ }

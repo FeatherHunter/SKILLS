@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡路里 - Skill 手册 v2.1.0</title>
-<meta name="skill-version" content="2.2.1">
+<meta name="skill-version" content="2.3.0">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -1516,6 +1516,52 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 <h2 id="typescript">TypeScript 配置生成</h2>
 <p>触发场景:表结构变了、表数量变了、数据库路径变了、SkillBoard 报错缺字段。</p>
 <p>运行 <code>python scripts/generate_ts_config.py</code> 重新生成 <code>config-calorie.ts</code>。</p>
+
+<hr />
+<h2 id="body-photo-v230">📸 v2.3.0 身材照 HTML 化(cropper.js 框选裁剪)</h2>
+<details>
+  <summary><strong>4 个身材照 HTML 模板</strong>(gallery / viewer / log_wizard / gif_planner)</summary>
+  <div>
+    <p><span class="workflow-label rule">V1.3 原则 11</span>身材照 trigger 全部 HTML 化(报告型 + 配置型 + 过程型三类齐全)。</p>
+
+    <h3>4 个新模板(2026-07-25 加)</h3>
+    <table>
+      <thead><tr><th>HTML 模板</th><th>trigger</th><th>类型</th></tr></thead>
+      <tbody>
+        <tr><td><code>body_photo_gallery.html</code></td><td>查身材照</td><td>报告型(照片网格 + tag/日期筛选 + 多选 GIF)</td></tr>
+        <tr><td><code>body_photo_viewer.html</code></td><td>查身材照(子页)</td><td>报告型(单图 + 前后导航 + 删除)</td></tr>
+        <tr><td><code>body_photo_log_wizard.html</code></td><td>记身材照</td><td>配置型(选文件 + 选 tag + 备注 → prompt)</td></tr>
+        <tr><td><code>body_photo_gif_planner.html</code></td><td>生成身材照GIF</td><td><strong>过程型</strong>(cropper.js 框选 + 调顺序 + 速度/水印/过渡 → prompt)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>GIF planner 核心工作流(cropper.js 框选)</h3>
+    <ol>
+      <li>用户在 <code>body_photo_gallery.html</code> 勾选 N 张 + 点"生成 GIF"</li>
+      <li>跳到 <code>body_photo_gif_planner.html?ids=12,15,22</code>(URL 带已选 ID)</li>
+      <li>每张卡片可点 <strong>✂️ 框选裁剪</strong> → 弹 cropper.js modal → 鼠标拖动框选区域</li>
+      <li>↑↓ 调顺序</li>
+      <li>下方"2️⃣ GIF 细节"调速度/尺寸/水印/过渡</li>
+      <li>点"📋 复制并发送给 AI" → 拿到完整 prompt(含 CLI 命令骨架)</li>
+      <li>AI 收到后与用户商定 → 调 <code>body_photo_tracker.py gif</code></li>
+    </ol>
+
+    <h3>CLI 增强(7 新参数)</h3>
+    <p><code>body_photo_tracker.py gif</code> 新增:</p>
+    <ul>
+      <li><code>--photo-id N</code>(可重复,顺序)</li>
+      <li><code>--crops '{"id": [x1,y1,x2,y2]}'</code>(JSON 单张裁剪)</li>
+      <li><code>--width/--height</code>(默认 400×600)</li>
+      <li><code>--duration</code>(默认 500ms)</li>
+      <li><code>--loop</code>(默认 0=无限)</li>
+      <li><code>--watermark</code>(右下角文字)</li>
+      <li><code>--transition {cut,fade,dissolve}</code>(默认 cut)</li>
+    </ul>
+
+    <p><span class="workflow-label test">测试</span><code>tests/test_body_photo_gif.py</code> 8 个 case · 全过</p>
+    <p><span class="workflow-label dep">依赖</span>cropper.js v2.1.1 CDN(<code>unpkg.com/cropperjs@2.1.1</code> · 无 npm 依赖)</p>
+  </div>
+</details>
 
 <footer>
   本手册 v1 · 基于 <code>卡路里/SKILL.md</code> 重写为"按需展开"结构 · 删除 5 条日志 box · 新增 71 条 details

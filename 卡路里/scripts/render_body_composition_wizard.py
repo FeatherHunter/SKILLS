@@ -53,9 +53,11 @@ def fetch_recent_composition(limit: int = 1) -> list:
         conn.close()
 
 
-def render(output_path: Path) -> Path:
+def render(output_path: Path, prefill: dict = None) -> Path:
+    """prefill: dict of 7 caliper + age + sex + body_fat_pct + source + note(用户已告诉 AI 的值)"""
     recent = fetch_recent_composition(1)
     recent_dict = recent[0] if recent else {}
+    prefill = prefill or {}
 
     payload = {
         "status": "ok",
@@ -75,6 +77,20 @@ def render(output_path: Path) -> Path:
             "recent_age": recent_dict.get("age"),
             "recent_sex": recent_dict.get("sex"),
             "recent_note": recent_dict.get("note"),
+            # 用户已告诉 AI 的值(预填)
+            "prefill_date": prefill.get("date"),
+            "prefill_source": prefill.get("source"),
+            "prefill_caliper_chest_mm": prefill.get("caliper_chest_mm"),
+            "prefill_caliper_abdominal_mm": prefill.get("caliper_abdominal_mm"),
+            "prefill_caliper_thigh_mm": prefill.get("caliper_thigh_mm"),
+            "prefill_caliper_tricep_mm": prefill.get("caliper_tricep_mm"),
+            "prefill_caliper_subscapular_mm": prefill.get("caliper_subscapular_mm"),
+            "prefill_caliper_suprailiac_mm": prefill.get("caliper_suprailiac_mm"),
+            "prefill_caliper_midaxillary_mm": prefill.get("caliper_midaxillary_mm"),
+            "prefill_body_fat_pct": prefill.get("body_fat_pct"),
+            "prefill_age": prefill.get("age"),
+            "prefill_sex": prefill.get("sex"),
+            "prefill_note": prefill.get("note"),
         },
         "message": "记体脂 wizard — 填好参数后复制 prompt 给 AI",
     }
@@ -95,11 +111,34 @@ def emit_send_protocol(output_path: Path):
 def main():
     p = argparse.ArgumentParser(description='渲染记体脂 wizard HTML')
     p.add_argument('--output', help='输出文件路径')
+    # 预填 args(场景 2:用户已给体脂数字,AI 帮预填)
+    p.add_argument('--date', help='预填日期(YYYY-MM-DD)')
+    p.add_argument('--source', help='预填 source(家测/医院测)')
+    for f in ['caliper_chest_mm','caliper_abdominal_mm','caliper_thigh_mm',
+              'caliper_tricep_mm','caliper_subscapular_mm','caliper_suprailiac_mm',
+              'caliper_midaxillary_mm']:
+        p.add_argument(f'--{f.replace("_","-")}', dest=f, type=float,
+                       help=f'预填 {f}(mm)')
+    p.add_argument('--body-fat-pct', dest='body_fat_pct', type=float, help='预填体脂率(医院测时直接报)')
+    p.add_argument('--age', type=int, help='预填年龄')
+    p.add_argument('--sex', choices=['male','female'], help='预填性别')
+    p.add_argument('--note', help='预填 note')
     args = p.parse_args()
 
+    prefill = {}
+    for f in ['date','source','caliper_chest_mm','caliper_abdominal_mm',
+              'caliper_thigh_mm','caliper_tricep_mm','caliper_subscapular_mm',
+              'caliper_suprailiac_mm','caliper_midaxillary_mm','body_fat_pct',
+              'age','sex','note']:
+        v = getattr(args, f, None)
+        if v is not None:
+            prefill[f] = v
+
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'body_composition_wizard')
-    result = render(out_path)
+    result = render(out_path, prefill=prefill if prefill else None)
     print(f"✓ 已生成: {result}")
+    if prefill:
+        print(f"  📋 已预填 {len(prefill)} 个字段(用户已告诉 AI 的值)")
     emit_send_protocol(result)
 
 

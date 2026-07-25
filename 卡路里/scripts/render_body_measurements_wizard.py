@@ -52,9 +52,15 @@ def fetch_recent_measurements(limit: int = 1) -> list:
         conn.close()
 
 
-def render(output_path: Path) -> Path:
+def render(output_path: Path, prefill: dict = None) -> Path:
+    """prefill: dict of 13 围度 field → value(用户已告诉 AI 的值)
+
+    AI 调用时,如果有用户提供的围度值,传 prefill 进来,
+    wizard input 会自动预填,用户打开即可 verify + 复制 prompt。
+    """
     recent = fetch_recent_measurements(1)
     recent_dict = recent[0] if recent else {}
+    prefill = prefill or {}
 
     payload = {
         "status": "ok",
@@ -76,6 +82,22 @@ def render(output_path: Path) -> Path:
             "recent_right_forearm_cm": recent_dict.get("right_forearm_cm"),
             "recent_shoulder_cm": recent_dict.get("shoulder_cm"),
             "recent_note": recent_dict.get("note"),
+            # 用户已告诉 AI 的值(直接渲染为 input value)
+            "prefill_date": prefill.get("date"),
+            "prefill_chest_cm": prefill.get("chest_cm"),
+            "prefill_waist_cm": prefill.get("waist_cm"),
+            "prefill_abdomen_cm": prefill.get("abdomen_cm"),
+            "prefill_hip_cm": prefill.get("hip_cm"),
+            "prefill_shoulder_cm": prefill.get("shoulder_cm"),
+            "prefill_left_thigh_cm": prefill.get("left_thigh_cm"),
+            "prefill_right_thigh_cm": prefill.get("right_thigh_cm"),
+            "prefill_left_calf_cm": prefill.get("left_calf_cm"),
+            "prefill_right_calf_cm": prefill.get("right_calf_cm"),
+            "prefill_left_arm_cm": prefill.get("left_arm_cm"),
+            "prefill_right_arm_cm": prefill.get("right_arm_cm"),
+            "prefill_left_forearm_cm": prefill.get("left_forearm_cm"),
+            "prefill_right_forearm_cm": prefill.get("right_forearm_cm"),
+            "prefill_note": prefill.get("note"),
         },
         "message": "记围度 wizard — 填好参数后复制 prompt 给 AI",
     }
@@ -96,11 +118,30 @@ def emit_send_protocol(output_path: Path):
 def main():
     p = argparse.ArgumentParser(description='渲染记围度 wizard HTML')
     p.add_argument('--output', help='输出文件路径')
+    # 预填 args(场景 2:用户已给维度数字,AI 帮预填到 input)
+    p.add_argument('--date', help='预填日期(YYYY-MM-DD)')
+    p.add_argument('--tag', help='预填 tag')
+    for f in ['chest_cm','waist_cm','abdomen_cm','hip_cm','shoulder_cm',
+              'left_thigh_cm','right_thigh_cm','left_calf_cm','right_calf_cm',
+              'left_arm_cm','right_arm_cm','left_forearm_cm','right_forearm_cm']:
+        p.add_argument(f'--{f.replace("_","-")}', dest=f, type=float,
+                       help=f'预填 {f}(cm)')
+    p.add_argument('--note', help='预填 note')
     args = p.parse_args()
 
+    prefill = {}
+    for f in ['date','tag','chest_cm','waist_cm','abdomen_cm','hip_cm','shoulder_cm',
+              'left_thigh_cm','right_thigh_cm','left_calf_cm','right_calf_cm',
+              'left_arm_cm','right_arm_cm','left_forearm_cm','right_forearm_cm','note']:
+        v = getattr(args, f, None)
+        if v is not None:
+            prefill[f] = v
+
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'body_measurements_wizard')
-    result = render(out_path)
+    result = render(out_path, prefill=prefill if prefill else None)
     print(f"✓ 已生成: {result}")
+    if prefill:
+        print(f"  📋 已预填 {len(prefill)} 个字段(用户已告诉 AI 的值)")
     emit_send_protocol(result)
 
 

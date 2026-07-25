@@ -233,25 +233,30 @@
     }
 
     /* ============ v1.20+timeline: 自定义 timeline(类剪映) ============ */
-    /* v2.109:timeline 紧贴 video,padding/border 给容器 */
+    /* v2.113 N1+N2:timeline 容器化 + 与 video 之间 border 连接 */
     .timeline {
       width: 100%;
-      margin-top: 0;
-      padding: 8px 0 10px;        /* 上下 padding,左右 0(inner 自己控制) */
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      padding: 0;
+      overflow: hidden;
       user-select: none;
       -webkit-user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    /* ruler 在 inner 内,跟着 inner.style.width 一起滚,内容对齐到 inner 0 和 width 处 */
+    /* v2.113 ruler 在 inner 内,U3:去掉 border-bottom 让 ruler/track 一体 */
     .timeline-ruler {
       position: relative;
-      height: 18px;
+      height: 20px;
       font-size: 10px;
-      color: var(--secondary);
+      color: var(--label);
+      font-weight: 500;
       font-variant-numeric: tabular-nums;
       overflow: hidden;
-      border-bottom: 1px solid var(--border);
       pointer-events: none;
+      padding-bottom: 2px;
     }
     .timeline-ruler .tick {
       position: absolute;
@@ -262,6 +267,60 @@
       pointer-events: none;
     }
     .timeline-ruler .tick.tick-first { transform: translateX(0); left: 0; }
+    /* v2.113 U1:hover 时半透明红 cursor + 时间 tooltip */
+    .timeline-hover-cursor {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 59, 48, 0.55);
+      pointer-events: none;
+      z-index: 4;
+      display: none;
+    }
+    .timeline-hover-cursor.show { display: block; }
+    .timeline-hover-tooltip {
+      position: absolute;
+      top: 2px;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 5;
+      display: none;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .timeline-hover-tooltip.show { display: block; }
+    /* v2.113 N10:段条左右 trim handle */
+    .tl-seg-trim {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: ew-resize;
+      z-index: 2;
+    }
+    .tl-seg-trim.left { left: 0; }
+    .tl-seg-trim.right { right: 0; }
+    .tl-seg-trim:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .tl-seg-trim::after {
+      content: '';
+      position: absolute;
+      top: 25%;
+      bottom: 25%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 1px;
+    }
 
 
     .tl-seg-excluded {
@@ -290,10 +349,10 @@
     }
     .seg-restore-btn:hover { background: #2a9149; }
 
-    /* v2.109:.timeline-track 现在是 scroll-wrap,只负责横向溢出 */
+    /* v2.113:.timeline-track scroll-wrap,Z1:overflow-x: hidden 去掉丑 scrollbar */
     .timeline-track {
       position: relative;
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: hidden;
       cursor: pointer;
     }
@@ -303,15 +362,13 @@
       width: 100%;
       min-width: 100%;
     }
-    /* v2.109:.timeline-segments-area 接管 segments,装在 inner 内 */
+    /* v2.113 M2:padding 加大到 10px 让段条有喘息 */
     .timeline-segments-area {
       position: relative;
-      min-height: 48px;
+      min-height: 56px;
       background: #f5f5f7;
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
       cursor: pointer;
-      padding: 6px 0;            /* 顶部底部各 6px,让段条不贴上下边框 */
+      padding: 10px 0;
       display: flex;
       flex-direction: row;
       align-items: stretch;
@@ -340,11 +397,14 @@
       background: #ff3b30;
       border-radius: 2px 2px 0 0;
     }
+    /* v2.113 N5:info 行 margin 收紧,合并到 timeline 容器内的工具栏 */
     .timeline-info {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-top: 4px;
+      gap: 8px;
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      background: #fafafa;
       font-size: 11px;
       color: var(--secondary);
     }
@@ -352,18 +412,58 @@
       background: transparent;
       border: 1px solid var(--border);
       color: var(--label);
-      width: 22px;
-      height: 22px;
-      border-radius: 4px;
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 10px;
+      font-size: 12px;
       line-height: 1;
       padding: 0;
       font-family: inherit;
       transition: all 0.15s;
     }
-    .timeline-play-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .timeline-play-btn:hover {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+    .timeline-play-btn:active {
+      transform: scale(0.92);
+    }
     .timeline-time { font-variant-numeric: tabular-nums; margin-left: auto; }
+    .timeline-zoom-level {
+      font-variant-numeric: tabular-nums;
+      min-width: 50px;
+      text-align: center;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.04);
+      color: var(--label);
+      font-weight: 500;
+    }
+    .timeline-zoom-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--label);
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+      font-family: inherit;
+    }
+    .timeline-zoom-btn:hover {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+    .timeline-zoom-reset {
+      padding: 2px 8px;
+      width: auto;
+      font-size: 11px;
+    }
 
     /* ============ 转场区(每个卡片底部)============ */
     .seq-section {
@@ -910,6 +1010,7 @@
       --seg-color-6: #AF52DE;  /* systemPurple */
       --seg-color-7: #FF2D55;  /* systemPink */
     }
+    /* v2.113 N3:无 op 段 muted 颜色(默认填充背景,不抢眼) */
     .tl-seg {
       position: relative;
       cursor: pointer;
@@ -922,6 +1023,13 @@
       border-radius: 6px;
       height: 100%;
       min-height: 32px;
+    }
+    .tl-seg:not(.tl-seg-has-op):not(.tl-seg-empty) {
+      background: linear-gradient(135deg, #d8d8dc 25%, #c8c8cc 25%, #c8c8cc 50%, #d8d8dc 50%, #d8d8dc 75%, #c8c8cc 75%) !important;
+      background-size: 12px 12px !important;
+      opacity: 0.85;
+      color: transparent;
+    }
       min-width: 0;
       overflow: hidden;
       transition: opacity 0.15s, transform 0.2s, box-shadow 0.2s;
@@ -1021,7 +1129,18 @@
 
     /* ============ v2.5 timeline 段视觉系统重构 ============ */
     /* (方案 B:透明度表达操作重要性) */
-    .tl-seg { opacity: 0.55; transition: opacity 0.15s, transform 0.15s; }
+    /* v2.113 N11:段条 hover 高亮 + grab cursor */
+    .tl-seg {
+      opacity: 0.95;
+      transition: opacity 0.15s, transform 0.15s, filter 0.15s;
+      cursor: grab;
+    }
+    .tl-seg:hover { opacity: 1; filter: brightness(1.08); }
+    .tl-seg:active { cursor: grabbing; filter: brightness(0.95); }
+    .tl-seg.tl-seg-selected {
+      outline: 2px solid var(--blue);
+      outline-offset: -2px;
+    }
     .tl-seg.tl-seg-has-op { opacity: 1; }
     .tl-seg.tl-seg-active { opacity: 1 !important; }
     /* .tl-seg-label 已废弃(v2.72:段上不再有文字) */
@@ -2191,11 +2310,19 @@
                     <div class="timeline-ruler" data-timeline-ruler></div>
                     <div class="timeline-segments-area" data-timeline-segments></div>
                     <div class="timeline-playhead" data-timeline-playhead></div>
+                    <!-- v2.113 U1:hover 半透明红 cursor + 时间 tooltip -->
+                    <div class="timeline-hover-cursor" data-timeline-hover-cursor></div>
+                    <div class="timeline-hover-tooltip" data-timeline-hover-tooltip>0:00</div>
                   </div>
                 </div>
                 <div class="timeline-info">
                   <button type="button" class="timeline-play-btn" data-timeline-play title="播放/暂停 (空格)">▶</button>
                   <span class="timeline-time" data-timeline-time>0:00 / 0:00</span>
+                  <!-- v2.113 N7+N8:zoom toolbar -->
+                  <button type="button" class="timeline-zoom-btn" data-timeline-zoom-out title="缩小 (-)">−</button>
+                  <span class="timeline-zoom-level" data-timeline-zoom-level>1.0x</span>
+                  <button type="button" class="timeline-zoom-btn" data-timeline-zoom-in title="放大 (+)">+</button>
+                  <button type="button" class="timeline-zoom-btn timeline-zoom-reset" data-timeline-zoom-reset title="重置缩放">⤢</button>
                 </div>
               </div>
             </div>
@@ -2968,7 +3095,7 @@
         if (duration - lastStepT > 0.001) {
           const tick = document.createElement('div');
           tick.className = 'tick tick-last';
-          tick.style.left = (duration * pps) + 'px';
+          // 不设 inline left — CSS .tick-last { right:4px } 负责右对齐
           tick.textContent = formatTickLabel(duration, step);
           frag.appendChild(tick);
         }
@@ -3144,6 +3271,112 @@
           else video.pause();
         });
       }
+
+      // v2.113 U1: hover 半透明红 cursor + 时间 tooltip
+      const hoverCursor = previewEl.querySelector('[data-timeline-hover-cursor]');
+      const hoverTooltip = previewEl.querySelector('[data-timeline-hover-tooltip]');
+      function formatTimeWithMs(sec) {
+        if (!isFinite(sec) || sec < 0) sec = 0;
+        const min = Math.floor(sec / 60);
+        const wholeSec = Math.floor(sec % 60);
+        const ms = Math.round(sec * 1000) % 1000;
+        return `${min}:${String(wholeSec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+      }
+      function showHoverAt(clientX) {
+        if (duration <= 0 || !hoverCursor || !hoverTooltip) return;
+        const rect = track.getBoundingClientRect();
+        const offsetX = clientX - rect.left;
+        if (offsetX < 0 || offsetX > rect.width) return;
+        const pps = getPps();
+        const sec = Math.max(0, Math.min(duration, offsetX / pps));
+        // cursor/tooltip 放在 inner 内的 inner coord
+        const innerOffsetX = offsetX + track.scrollLeft;
+        hoverCursor.style.left = innerOffsetX + 'px';
+        hoverTooltip.style.left = innerOffsetX + 'px';
+        hoverTooltip.textContent = formatTimeWithMs(sec);
+        hoverCursor.classList.add('show');
+        hoverTooltip.classList.add('show');
+      }
+      function hideHover() {
+        if (hoverCursor) hoverCursor.classList.remove('show');
+        if (hoverTooltip) hoverTooltip.classList.remove('show');
+      }
+      track.addEventListener('mousemove', (e) => {
+        if (e.target.closest('.tl-seg-trim')) { hideHover(); return; }
+        // 段条上不显示 hover(已有 click 行为)
+        if (e.target.closest('.tl-seg')) { hideHover(); return; }
+        showHoverAt(e.clientX);
+      });
+      track.addEventListener('mouseleave', hideHover);
+
+      // v2.113 N7+N8:zoom ±按钮 + 重置
+      function setZoom(newPps, anchorSec) {
+        if (duration <= 0 || trackWidth <= 0) return;
+        const minPps = getMinPps();
+        newPps = Math.max(minPps, Math.min(MAX_PPS, newPps));
+        if (Math.abs(newPps - pixelsPerSecond) < 0.0001) return;
+        const oldPps = pixelsPerSecond || minPps;
+        // 默认锚点 = 当前 playhead 时间(避免视图跳)
+        const tAtAnchor = anchorSec != null ? anchorSec : video.currentTime;
+        const pps = newPps;
+        pixelsPerSecond = pps;
+        window.__tlPps = pps;
+        const targetInnerWidth = pps * duration;
+        if (targetInnerWidth > 0) {
+          inner.style.setProperty('width', targetInnerWidth + 'px', 'important');
+          inner.style.setProperty('min-width', targetInnerWidth + 'px', 'important');
+        }
+        render();
+        // 锚点保持:tAtAnchor 时间点保持在屏幕原 anchor 位置
+        // 简化:让 anchor 时间点是上次 hover X(没 hover 时用 playhead)
+        const rect = track.getBoundingClientRect();
+        const newMouseXTotal = tAtAnchor * pps;
+        // 用 anchor X = 当前 playhead 视觉位置
+        const oldPlayheadX = oldPps * tAtAnchor;
+        const desiredScrollLeft = Math.max(0, oldPlayheadX - (oldPlayheadX - track.scrollLeft));
+        track.scrollLeft = Math.max(0, newMouseXTotal - (oldPlayheadX - track.scrollLeft));
+        updatePlayhead();
+        if (typeof renderTimelineSegments === 'function' && segmentsArea) {
+          renderTimelineSegments(segmentsArea, videoIndex);
+        }
+        updateZoomLevel();
+      }
+      function updateZoomLevel() {
+        const el = previewEl.querySelector('[data-timeline-zoom-level]');
+        if (!el) return;
+        const minPps = getMinPps();
+        const curPps = getPps();
+        const ratio = minPps > 0 ? (curPps / minPps) : 1;
+        el.textContent = ratio.toFixed(2) + 'x';
+      }
+      const zoomInBtn = previewEl.querySelector('[data-timeline-zoom-in]');
+      const zoomOutBtn = previewEl.querySelector('[data-timeline-zoom-out]');
+      const zoomResetBtn = previewEl.querySelector('[data-timeline-zoom-reset]');
+      if (zoomInBtn) zoomInBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = getPps();
+        const minP = getMinPps();
+        setZoom(cur * 1.5, video.currentTime);
+      });
+      if (zoomOutBtn) zoomOutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cur = getPps();
+        const minP = getMinPps();
+        setZoom(cur / 1.5, video.currentTime);
+      });
+      if (zoomResetBtn) zoomResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        pixelsPerSecond = 0;
+        window.__tlPps = 0;
+        render();
+        updatePlayhead();
+        if (typeof renderTimelineSegments === 'function' && segmentsArea) {
+          renderTimelineSegments(segmentsArea, videoIndex);
+        }
+        updateZoomLevel();
+        track.scrollLeft = 0;
+      });
+      updateZoomLevel();
 
       // 4. 点击 video 切换播放/暂停(替代原 controls)
       video.addEventListener('click', () => {
@@ -4616,8 +4849,9 @@
           : '<span class="tl-tip-op-tag tl-tip-empty">无操作</span>';
 
         // 段宽度按百分比(总时长比例)— 视觉宽度 = 时间长度
+        // v2.113 N3:只有 hasOp 才用彩色,默认段留给 CSS 斜纹处理
         const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
-        const bgColor = colors[idx % 8];
+        const bgColor = hasOp ? colors[idx % 8] : 'transparent';
 
         // 之前的 label fallback 去掉(不要再出现${s.start_sec.toFixed(0)}-${s.end_sec.toFixed(0)}s、"整段保留"等)
         // 空 label 直接显示时间码,避免无意义默认名

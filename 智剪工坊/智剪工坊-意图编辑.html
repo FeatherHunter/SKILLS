@@ -248,6 +248,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     /* v2.113 ruler 在 inner 内,U3:去掉 border-bottom 让 ruler/track 一体 */
+    /* v2.120:ruler overflow visible — 让最后 tick text 不被裁 */
     .timeline-ruler {
       position: relative;
       height: 20px;
@@ -255,7 +256,7 @@
       color: var(--label);
       font-weight: 500;
       font-variant-numeric: tabular-nums;
-      overflow: hidden;
+      overflow: visible;
       pointer-events: none;
       padding-bottom: 2px;
     }
@@ -280,21 +281,23 @@
       display: none;
     }
     .timeline-hover-cursor.show { display: block; }
+    /* v2.120:tooltip 固定定位 + 显示在鼠标上方(z 高于视频)
+       但 cursor 仍在 inner 内 (因为还要跟 inner scroll 联动) */
     .timeline-hover-tooltip {
-      position: absolute;
-      top: 2px;
+      position: fixed;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.92);
       color: white;
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 3px;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
       white-space: nowrap;
       pointer-events: none;
-      z-index: 5;
+      z-index: 10000;             /* 浮在最上层,不被 video/timeline 遮挡 */
       display: none;
       font-variant-numeric: tabular-nums;
-      font-weight: 500;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
     }
     .timeline-hover-tooltip.show { display: block; }
     /* v2.113 N10:段条左右 trim handle */
@@ -2363,9 +2366,10 @@
               <div class="timeline" data-timeline>
                 <div class="timeline-track" data-timeline-track>
                   <div class="timeline-inner" data-timeline-inner>
-                    <div class="timeline-ruler" data-timeline-ruler></div>
+                    <!-- v2.120:段条在上, ruler 在下(用户偏好:留出段条上空间方便点击) -->
                     <div class="timeline-segments-area" data-timeline-segments></div>
                     <div class="timeline-playhead" data-timeline-playhead></div>
+                    <div class="timeline-ruler" data-timeline-ruler></div>
                     <!-- v2.113 U1:hover 半透明红 cursor + 时间 tooltip -->
                     <div class="timeline-hover-cursor" data-timeline-hover-cursor></div>
                     <div class="timeline-hover-tooltip" data-timeline-hover-tooltip>0:00</div>
@@ -3341,19 +3345,23 @@
         const ms = Math.round(sec * 1000) % 1000;
         return `${min}:${String(wholeSec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
       }
-      function showHoverAt(clientX) {
+      // v2.120:tooltip 固定定位在鼠标上方,脱离 timeline overflow
+      function showHoverAt(clientX, clientY) {
         if (duration <= 0 || !hoverCursor || !hoverTooltip) return;
         const rect = track.getBoundingClientRect();
         const offsetX = clientX - rect.left;
         if (offsetX < 0 || offsetX > rect.width) return;
         const pps = getPps();
         const sec = Math.max(0, Math.min(duration, offsetX / pps));
-        // cursor/tooltip 放在 inner 内的 inner coord
+        // cursor 仍在 inner 内(跟 inner scroll 联动)
         const innerOffsetX = offsetX + track.scrollLeft;
         hoverCursor.style.left = innerOffsetX + 'px';
-        hoverTooltip.style.left = innerOffsetX + 'px';
-        hoverTooltip.textContent = formatTimeWithMs(sec);
         hoverCursor.classList.add('show');
+        // tooltip 固定定位:跟随鼠标,在鼠标上方(让视频区域也可见)
+        hoverTooltip.style.left = clientX + 'px';
+        hoverTooltip.style.top = (clientY - 10) + 'px';
+        hoverTooltip.style.transform = 'translate(-50%, -100%)';
+        hoverTooltip.textContent = formatTimeWithMs(sec);
         hoverTooltip.classList.add('show');
       }
       function hideHover() {
@@ -3364,7 +3372,7 @@
         if (e.target.closest('.tl-seg-trim')) { hideHover(); return; }
         // 段条上不显示 hover(已有 click 行为)
         if (e.target.closest('.tl-seg')) { hideHover(); return; }
-        showHoverAt(e.clientX);
+        showHoverAt(e.clientX, e.clientY);
       });
       track.addEventListener('mouseleave', hideHover);
 

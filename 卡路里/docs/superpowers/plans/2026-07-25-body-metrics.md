@@ -13,7 +13,7 @@
 ## Task 1: 数据层 — `body_composition` + `body_measurements` 表(用 DB CHECK 沉淀硬规则)
 
 **Files:**
-- Modify: `scripts/db.py`(在 `_init_db` 里加 CREATE TABLE)
+- Modify: `scripts/db.py`(在 `init_db` 里加 CREATE TABLE)
 - Test: `tests/test_db_schema.py`(新增)
 
 - [ ] **Step 1: 写失败测试**
@@ -67,7 +67,7 @@ Expected: `NameError: No module named 'test_db_schema'`
 
 - [ ] **Step 3: 在 `scripts/db.py` 加 2 张表**
 
-在 `_init_db` 函数末尾、CHECK INDEX 之前的 `c.execute('''CREATE TABLE IF NOT EXISTS food_log''')` 段后加:
+在 `init_db` 函数末尾、CHECK INDEX 之前的 `c.execute('''CREATE TABLE IF NOT EXISTS food_log''')` 段后加:
 
 ```python
 c.execute('''

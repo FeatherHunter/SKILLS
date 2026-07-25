@@ -4770,7 +4770,8 @@
             }
             const baseId = `seg_${videoIndex + 1}_`;
             const left = { ...s, end_sec: start, id: `${s.id}_L`, ops: { ...(s.ops||{}) } };
-            const mid = { id: `${baseId}new_${Date.now()}`, label: '', start_sec: start, end_sec: end, ops: {} };
+            // v2.119:mid 默认加 user op 标记为用户段(N3 判定有彩色,不会 muted 灰色)
+            const mid = { id: `${baseId}new_${Date.now()}`, label: '', start_sec: start, end_sec: end, ops: { user: { on: true, note: '' } } };
             const right = { ...s, start_sec: end, id: `${s.id}_R`, ops: { ...(s.ops||{}) } };
             const newSegs = [];
             if (left.end_sec > left.start_sec) newSegs.push(left);

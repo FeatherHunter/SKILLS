@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>2026-07-25-video-time-segment-model</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  max-width: 920px;
+  margin: 40px auto;
+  padding: 0 24px 80px;
+  line-height: 1.7;
+  color: #1d1d1f;
+  background: #fafafa;
+}
+h1 { font-size: 32px; border-bottom: 2px solid #d2d2d7; padding-bottom: 12px; }
+h2 { font-size: 24px; margin-top: 40px; border-bottom: 1px solid #d2d2d7; padding-bottom: 8px; }
+h3 { font-size: 20px; margin-top: 28px; color: #1d1d1f; }
+pre {
+  background: #1d1d1f;
+  color: #f5f5f7;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.5;
+}
+code { background: #f5f5f7; padding: 2px 6px; border-radius: 4px; }
+pre code { background: transparent; color: inherit; }
+li { margin-bottom: 4px; }
+hr { border: none; border-top: 1px dashed #d2d2d7; margin: 24px 0; }
+p { margin-bottom: 12px; }
+blockquote {
+  border-left: 3px solid #0071e3;
+  background: #f5f5f7;
+  padding: 8px 16px;
+  margin: 16px 0;
+}
+</style>
+</head>
+<body>
+<h1>视频时间段模型重构 Spec</h1>
+<p><strong>作者:</strong> AI(经多轮对抗式审查收敛)<br>
+<strong>创建日期:</strong> 2026-07-25<br>
+<strong>对应 Skill:</strong> 智剪工坊-意图编辑<br>
+<strong>版本:</strong> v2.0(数据) + v3.0(HTML 行为)<br>
+<strong>状态:</strong> 待用户最终审阅</p>
+<hr>
+<h2>1. 背景与动机</h2>
+<p>当前 `智剪工坊-意图编辑.html` 输出的 `intent.json` 把"基础剪辑操作"统一平铺在 `videos[].ops` 下(22 个 op),存在以下问题:</p>
+<p>1. <strong>op 命名错位</strong>:`cut-middle` / `pin-range` / `trim-head` / `trim-tail` 是"用户对某段时间的想法",但被设计成"对整段视频的 op",<strong>语义与位置不匹配</strong>。<br>
+2. <strong>用户认知负担</strong>:用户必须先理解每个 op 的时间窗语义,才能正确选择;但用户实际想说"我要这段 / 我要这段静音 / 我要这段加速",这些应直接表达。<br>
+3. <strong>JSON 不支持"保留多段"</strong>:用户实际是"我要保留 [2,55] 但跳过 [31,33]",现行 schema 只能通过 4 个 op 组合表达,语义模糊。<br>
+4. <strong>op 数量过多</strong>:22 个 op 让 AI 工作流 switch-case 复杂度指数级上升,误用概率高。</p>
+<h2>1.5 设计决策记录(2026-07-25 多轮审查收敛)</h2>
+<p>经过 6 轮对抗式审查 + 用户多次明确选择,以下决策已定版:</p>
+<p>1. <strong>JSON 字段收敛到 2 类</strong>:`video_ops`(整段) + `time_segments`(片段;带可选 `ops`)。`range_ops.events` 字段被<strong>删除</strong>(段 op 直接挂在段内)。<br>
+2. <strong>三分类被否决</strong>:`video_ops` / `video_events` / `time_segments` 三分被第二轮对抗审查推翻,因为 op 跨界难以归类。最终统一为 2 类。<br>
+3. <strong>UI 流程定版</strong>:<br>
+   - 框选(timeline 上长按拖动)→ 弹窗<strong>只告知</strong>(显示拆分结果,只有 [确定] 按钮)<br>
+   - 单击段 → 弹出操作面板(改 label / 加 op / 删)<br>
+   - 删除后,段从 timeline 消失,折叠区"已删段"可恢复<br>
+4. <strong>timeline 视觉</strong>:<br>
+   - 保留段 = <strong>彩虹 8 色循环</strong>(红/橙/黄/绿/青/蓝/紫/粉),9 段以上循环复用第一色<br>
+   - 删除段 = 灰色 + 删除线 + 半透明<br>
+   - op 信息不染色(避免视觉密度过大),<strong>hover 气泡</strong>显示完整 op 摘要<br>
+5. <strong>段 ≤ 8 时颜色最优</strong>,超过 8 时循环但不报错(用户实际操作中极少超过 8 段)。</p>
+<h2>2. 设计目标</h2>
+<p>1. 让用户<strong>用几何方式表达"我要保留哪些片段"</strong> —— 拖框、命名、删段。<br>
+2. 让用户<strong>用效果方式表达"我对某区间做什么"</strong> —— 选静音/加速/反转。<br>
+3. 让用户<strong>用音频策略表达"声音怎么处理"</strong> —— 枚举(keep/mute/bgm-only) + 文本备注。<br>
+4. JSON schema <strong>简化</strong>:从 22 op 降到 14 op(video_ops) + N 个区间事件 + N 个片段。<br>
+5. AI 工作流解析代码 <strong>简化</strong>:从 switch-case 改为单源字段遍历。</p>
+<h2>3. 核心抽象</h2>
+<h3>3.1 三类表达</h3>
+<p>| 类别 | JSON 字段 | 表达 | 用户心智 | 例子 |<br>
+|---|---|---|---|---|<br>
+| <strong>整段操作</strong> | `videos[].video_ops` | 对整段视频生效,与时间窗无关 | "整个视频加个暖色调" | `color: warm`、`add-bgm: ...` |<br>
+| <strong>区间操作</strong> | `videos[].range_ops.events[]` | 在某时间窗内做什么 | "[20,30] 静音" | `mute-region`、`speed-region` |<br>
+| <strong>片段保留</strong> | `videos[].time_segments[]` | 我要保留哪些片段(取并集) | "保留 [2,55] 和 [33,55]" | 空 = 整段保留 |</p>
+<h3>3.2 设计原则</h3>
+<p>1. <strong>op 数量上限</strong>:每个类别内 op ≤ 15 个,避免 switch-case 失控。<br>
+2. <strong>正交性</strong>:三类表达物理隔离(不同字段),AI 解析无需判断"这条 op 是不是时间窗敏感"。<br>
+3. <strong>可空 = 默认</strong>:任意字段缺失 = 该类未启用;不写 = 等价于空数组/空对象。<br>
+4. <strong>取并集语义</strong>:`time_segments` 多个段取并集;空数组 = 整段保留;未列出的区间 = 隐式删除。<br>
+5. <strong>区间事件基于原视频时间</strong>:`range_ops.events[].time_window` 用原视频时间(0 ~ duration_sec),用户与 AI 共享同一标准。</p>
+<h2>4. JSON Schema(v3.0)</h2>
+<pre><code class="lang-jsonc">{
+  "$schema": "智剪工坊 intent v3.0",
+  "$comment": "JSON schema 由 HTML 校验;以下为示例结构",
+<p>  "_meta": {<br>
+    "tool": "智剪工坊",<br>
+    "schema_version": "3.0",<br>
+    "revision": 1,<br>
+    "created": "&lt;ISO 8601&gt;",<br>
+    "updated": "&lt;ISO 8601&gt;",<br>
+    "workspace": "&lt;folder name&gt;"<br>
+  },</p>
+<p>  // ── 项目级配置(与视频条目平行) ──<br>
+  "project": {<br>
+    "name": "&lt;项目代号,可选&gt;",<br>
+    "title": "&lt;视频标题,可选&gt;",<br>
+    "overall_intent": "&lt;总调性描述,可选&gt;"<br>
+  },<br>
+  "output": {<br>
+    "aspect_ratio": "&lt;如 9:16 或 16:9,可选&gt;",<br>
+    "aspect_handling": "&lt;aspect-fit | aspect-fill,可选&gt;"<br>
+  },<br>
+  "cover":  { "type": "ai|text|image", "prompt": "&lt;封面描述&gt;" },<br>
+  "ending": { "type": "fade|freeze|text|&lt;6 种之一&gt;", "prompt": "&lt;结尾描述&gt;" },</p>
+<p>  // ── 视频间拼接顺序 ──<br>
+  "sequences": [<br>
+    {<br>
+      "title": "&lt;链标题,可选&gt;",<br>
+      "videos": [1, 2, 3],   // entry.index 序列<br>
+      "transitions": [<br>
+        { "after": 1, "type": "fade|none|&lt;6 种之一&gt;", "duration": 0.5 }<br>
+      ]<br>
+    }<br>
+  ],</p>
+<p>  // ── 视频清单 ──<br>
+  "videos": [<br>
+    {<br>
+      "file": "&lt;filename&gt;.mp4",<br>
+      "index": 1,                                    // 1-based,稳定 ID<br>
+      "duration_sec": 60,                            // 由 HTML 在加载时算出<br>
+      "exclude": false,<br>
+      "summary": "&lt;一句话简介&gt;",<br>
+      "intent": "&lt;剪辑意图&gt;",</p>
+<p>      // ── 整段视频的操作(全局默认) ──<br>
+      "video_ops": {<br>
+        // 视觉/听觉效果类(整段生效,与时间窗无关)<br>
+        "color":            { "on": true, "style": "warm" },<br>
+        "add-bgm":          { "on": true, "file": "...", "volume": 0.4 },<br>
+        "replace-audio":    { "on": true, "file": "..." },<br>
+        "speed-up":         { "on": true, "factor": 1.5 },     // 整段倍速<br>
+        "slow-down":        { "on": true, "factor": 0.7 },<br>
+        "mute":             { "on": true },                    // 整段静音<br>
+        "reverse":          { "on": true },                    // 整段倒放</p>
+<p>        // 音频处理<br>
+        "audio-denoise":    { "on": true },<br>
+        "audio-separate":   { "on": true, "model": "htdemucs_ft" },<br>
+        "audio-diarize":    { "on": true },<br>
+        "voice-filler-removed": { "on": true },</p>
+<p>        // 字幕/ASR<br>
+        "asr-transcribe":   { "on": true, "model": "medium" },<br>
+        "asr-burn":         { "on": true, "font_size": 24 },<br>
+        "asr-speaker":      { "on": true },</p>
+<p>        // 音频策略(从原 HTML select 字段映射)<br>
+        "voice":            { "on": true, "mode": "keep|keep-with-filler-removed|mute|bgm-only" },<br>
+        "voice_note":       "&lt;自由文本,如'原声音量小,放大 1.5x'&gt;",</p>
+<p>        // 视频级备注<br>
+        "notes":            "&lt;自由文本,视频整体备注&gt;",</p>
+<p>        // 图片专属<br>
+        "duration":         { "on": true, "sec": 3 }<br>
+      },</p>
+<p>      // ── 片段保留(可空 = 整段输出;多个 = 取并集) ──<br>
+      //    段级 op 直接挂在 ops 里(op 是段的属性,不是独立数组)<br>
+      //    删除的区间不存:JS 计算 time_segments 的并集补集 = 已删段(折叠区显示)<br>
+      "time_segments": [<br>
+        {<br>
+          "id": "seg_1_1",                                // seg_${videoIdx}_${n}<br>
+          "label": "&lt;用户可改,如'主体内容'&gt;",<br>
+          "start_sec": 2.0,<br>
+          "end_sec": 31.0,<br>
+          "ops": {                                        // 可空;只在用户添加 op 时存在<br>
+            "mute":     { "on": true },<br>
+            "speed-up": { "on": true, "factor": 2.0 }<br>
+          },<br>
+          "note":        "&lt;段级备注&gt;"<br>
+        }<br>
+      ]<br>
+    }<br>
+  ]<br>
+}<br>
+</code></pre></p>
+<h2>5. 字段对照表(原 schema → 新 schema)</h2>
+<p>> 经多轮审查,<strong>`range_ops.events` 字段已被删除</strong>(段 op 直接挂 `time_segments[].ops`)。op 跨界归类困难,所以"段上的 op"和"段本身"合并存储。</p>
+<p>| 原字段 | 新字段 | 迁移路径 |<br>
+|---|---|---|<br>
+| `videos[].ops` (平铺 22 op) | <strong>删除</strong> | 按语义拆分到 `video_ops` / `time_segments[].ops` / 消失 |<br>
+| `videos[].summary` / `intent` / `voice` (原 select) | `videos[].summary` / `intent` / `video_ops.voice` | 描述字段保留;`voice` 进 video_ops |<br>
+| `videos[].voice_note` | `video_ops.voice_note` | 进 video_ops |<br>
+| `videos[].notes` | `video_ops.notes` | 进 video_ops |<br>
+| `videos[].ops["trim-head"]` | <strong>消失</strong> | 由 `time_segments[0].start_sec = sec` 等价表达 |<br>
+| `videos[].ops["trim-tail"]` | <strong>消失</strong> | 由 `time_segments[last].end_sec = duration - sec` 等价表达 |<br>
+| `videos[].ops["cut-middle"]` | <strong>消失</strong> | 由创建两个相邻 time_segments 等价表达 |<br>
+| `videos[].ops["pin-range"]` | <strong>消失</strong> | 由单个 time_segment 等价表达 |<br>
+| `videos[].ops["target-duration"]` | <strong>消失</strong> | 拼接后时长 = 各段相加,无需声明 |<br>
+| `videos[].ops["fade-in/out"]`(段内) | <strong>消失</strong> | 视频首尾淡入淡出归 `video_ops.fade-in/out`(整段型) |<br>
+| `videos[].ops["mute"]`(整段) | `video_ops.mute` 或 `time_segments[].ops.mute` | 取决于作用范围 |<br>
+| `videos[].ops["reverse"]`(整段) | `video_ops.reverse` 或 `time_segments[].ops.reverse` | 取决于作用范围 |<br>
+| `videos[].ops["speed-up"]` | `video_ops.speed-up` 或 `time_segments[].ops.speed-up` | 取决于作用范围 |<br>
+| `videos[].ops["color"]` | `video_ops.color` | 进 video_ops |<br>
+| `videos[].ops["opening-text"]` | `video_ops.opening-text`(待实现) | 进 video_ops + duration 子字段 |<br>
+| `videos[].ops["insert-image"]` | `video_ops.insert-image`(待实现) | 进 video_ops + at_sec 子字段 |<br>
+| `videos[].ops["add-bgm"]` | `video_ops.add-bgm` | 不变(进 video_ops) |<br>
+| `videos[].ops["replace-audio"]` | `video_ops.replace-audio` | 不变 |<br>
+| `videos[].ops["audio-denoise"]` 等 | `video_ops.*` | 不变 |<br>
+| `videos[].ops["asr-*"]` | `video_ops.*` | 不变 |<br>
+| `videos[].ops[xxx].note` | 移到 `time_segments[].note`(段内)或 `video_ops.notes`(整段) | 按语义归位 |<br>
+| `cut-middle.from/to`(字符串 `"0:12"`) | `time_segments` 边界值(数值秒) | 强制转秒 |<br>
+| `pin-range.from/to`(字符串) | 同上 | 强制转秒 |</p>
+<h2>6. UI 操作流程(基于场景)</h2>
+<h3>6.1 场景定义</h3>
+<p>> 1 分钟视频:删前 2s、删后 5s、删 [31,33]、[20,30] 静音、[40,50] 加速 2x</p>
+<h3>6.2 流程图(定版)</h3>
+<pre><code class="lang-">═══════════════════════════════════════════════════
+阶段 A · 进入视频
+═══════════════════════════════════════════════════
+用户点视频 #1 展开
+↓
+看到:
+  - 顶部:播放窗口 + timeline(全宽轨道,默认整段保留)
+  - ▼ 整段视频操作(默认折叠,内含 voice/notes/color 等)
+  - ▼ 时间段区(默认展开)─保留区间列表(初始 0 个)
+  - ▼ 已删段区(默认折叠)─已删除区间可恢复
+<p>═══════════════════════════════════════════════════<br>
+阶段 B · 首次框选产生新段(timeline 空白时)<br>
+═══════════════════════════════════════════════════<br>
+用户长按拖动 [2, 55]<br>
+  timeline 上半透明蓝色高亮覆盖 [2, 55]<br>
+  松开弹出"告知弹窗"(只显示,不要求决策):<br>
+    ┌─────────────────────────────────────┐<br>
+    │ 本次操作产生 1 个新段               │<br>
+    │                                       │<br>
+    │  [2.0~55.0] ← 你选的                 │<br>
+    │  [0.0~2.0][55.0~60.0] ← 自动补全两端 │<br>
+    │                                       │<br>
+    │              [确定]                   │<br>
+    └─────────────────────────────────────┘<br>
+  &gt; 第一次拖框时 timeline 是"整段保留"(无 segments)。<br>
+  &gt; 拖动产生 1 个用户段 + 自动补全前后两个用户没动的部分(默认保留)。<br>
+  &gt; 弹窗告知拆分结果,用户点[确定]应用。</p>
+<p>  用户点 [确定] → timeline 上出现 3 段<strong>全部彩色</strong>(默认全部保留):<br>
+    ┌─[0~2]─┬──────[2~55]──────┬──[55~60]──┐<br>
+    │  红   │       橙          │    黄     │<br>
+    │(补全)│  (本次拖·新段)   │  (补全)   │<br>
+    └───────────────────────────────────────┘<br>
+  ▼ 时间段区:<br>
+    #1  [0.0~2.0]  2.0s    [改名][加 op][删除]<br>
+    #2  [2.0~55.0] 53.0s   [改名][加 op][删除]<br>
+    #3  [55.0~60.0] 5.0s   [改名][加 op][删除]</p>
+<p>  &gt; <strong>关键设计原则</strong>:框选不知道用户意图,系统不应预设删除。<br>
+  &gt; 删除是用户单独的"单击 + 删按钮"操作,与框选解耦。</p>
+<p>═══════════════════════════════════════════════════<br>
+阶段 C · 用户主动标删除(单独的单击操作)<br>
+═══════════════════════════════════════════════════<br>
+用户单击 #1 [0.0~2.0] → 弹出操作面板 → [🗑️ 删掉]<br>
+  → #1 从 timeline 消失<br>
+  → 折叠区"已删段"出现该项:[♻️ 恢复](显示样式 = 灰色 + 删除线 + 时长)</p>
+<p>用户单击 #3 [55.0~60.0] → 弹出操作面板 → [🗑️ 删掉]<br>
+  → #3 也从 timeline 消失<br>
+  → timeline 只剩 #2 [2.0~55.0] 一段</p>
+<p>═══════════════════════════════════════════════════<br>
+阶段 D · 落入已有段内拖动 = 拆段<br>
+═══════════════════════════════════════════════════<br>
+用户长按拖动 [31, 33] —— 这段完全落在 #2 [2, 55] 内<br>
+  → 自动拆段:#2 切成 [2, 31] + [31, 33] + [33, 55]<br>
+  → 告知弹窗"产生 3 个时间段"<br>
+  → 用户点 [确定]</p>
+<p>用户单击新段 [31, 33] → 弹出操作面板 → [🗑️ 删掉]<br>
+  → 该段删除</p>
+<p>═══════════════════════════════════════════════════<br>
+阶段 E · 落入已有段内拖动 = 拆段 + 加 op<br>
+═══════════════════════════════════════════════════<br>
+用户长按拖动 [20, 30] —— 落在 #2 [2, 31] 内<br>
+  → 自动拆段:[2, 31] 切成 [2, 20] + [20, 30] + [30, 31]<br>
+  → 告知弹窗"产生 3 个时间段"</p>
+<p>用户单击 [20, 30] → 弹出操作面板 → [🔇 静音]<br>
+  → 段加静音 op<br>
+  → 该段<strong>显示小图标徽章</strong>(左上角静音喇叭图标,代替色彩区分)<br>
+  → tooltip 显示:"[20.0~30.0] · 10s / 🎤 静音"</p>
+<p>用户长按拖动 [40, 50] —— 落在 [33, 55] 内<br>
+  → 自动拆段:[33, 55] 切成 [33, 40] + [40, 50] + [50, 55]</p>
+<p>用户单击 [40, 50] → 弹出操作面板 → [⏩ 倍速]<br>
+  → 弹因子 slider(0.25x ~ 4x),默认 1.5x<br>
+  → 选 2x → 段加速 op + 显示小徽章"2x"</p>
+<p>═══════════════════════════════════════════════════<br>
+阶段 F · 折叠区双向跳转<br>
+═══════════════════════════════════════════════════<br>
+用户点击折叠区"#3 [20.0~30.0]"段项<br>
+  → timeline 自动 scrollIntoView 到该段位置<br>
+  → 该段闪烁 蓝色高亮 2s 后恢复</p>
+<p>═══════════════════════════════════════════════════<br>
+阶段 G · 保存<br>
+═══════════════════════════════════════════════════<br>
+用户点 [保存]<br>
+  → collectFormData() <strong>直接序列化</strong> time_segments(单源真相,不含已删段)<br>
+  → 已删段由 JS 实时算 [0, duration] - segments 并集 = 已删补集<br>
+  → 已删段不入 JSON;折叠区"已删段"列表从内存计算<br>
+  → 写 intent.json (schema_version=3.0)<br>
+  → 弹 toast<br>
+</code></pre></p>
+<h3>6.3 UI 元素清单</h3>
+<p>| 元素 | 位置 | 行为 |<br>
+|---|---|---|<br>
+| 视频卡头部 | 卡片顶部 | 显示 `index / file / duration` + 折叠按钮 |<br>
+| 播放窗口 + timeline | 卡片主体 | timeline 可长按拖动框选(段本体<strong>不可拖动</strong>) |<br>
+| timeline 段(彩虹色) | timeline 上 | 8 色循环 |<br>
+| timeline 段(op 徽章) | 段左上 | 小图标:🎤静音 / ⏩2x 加速 / 🔄反转;hover tooltip 显示完整 op 文本 |<br>
+| timeline 段(空白区) | 段与段之间 | 长按拖动 = 拆段 / 新建段 |<br>
+| 已删段 | <strong>不显示在 timeline</strong>(折叠区"已删段"列表) |<br>
+| 框选告知弹窗 | 全局 modal | 只显示拆分结果 + [确定](无取消) |<br>
+| 段单击 → 操作面板 | 段下方 inline | 改 label / 加 op / 删除 |<br>
+| 段 ↔ 折叠区双向跳转 | 折叠区段项点击 → timeline scrollIntoView + 2s 高亮 |<br>
+| 段悬停 → tooltip | 段上方 | 显示 [start~end 时长 + op 摘要] |<br>
+| 已删段项 | 折叠区 | 灰底 + 删除线 + [♻️ 恢复] |</p>
+<h3>6.3.1 拖动语义规范(纠错要点)</h3>
+<p>| 拖动起点 | 拖动落点 | 行为 |<br>
+|---|---|---|<br>
+| 段间空白区 | 段间空白区 | 新建段(首次) / 落入已有段内 = 拆段 |<br>
+| 段本体 | 任何位置 | ❌ <strong>不响应拖动</strong>(段不可拖动) |<br>
+| 段边界 | — | ❌ <strong>不响应拖动</strong>(本期不做边界调整,留 Phase M) |<br>
+| timeline 轨道两端的空白([0, duration]外) | — | ❌ 不响应拖动 |</p>
+<p><strong>注意</strong>:<strong>长按拖动(threshold = 200ms)与单击分离</strong>;用户短按段 = 单击 = 操作面板;用户长按(>= 200ms)拖动 = 框选。</p>
+<h3>6.4 timeline 视觉规范(定版 · 彩虹 8 色)</h3>
+<pre><code class="lang-css">/* 删除段 */
+.del-seg {
+  background: #c7c7cc;
+  color: #6e6e73;
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+<p>/* 保留段颜色循环(8 色) */<br>
+:root {<br>
+  --seg-color-0: #ff3b30;  /* 红 */<br>
+  --seg-color-1: #ff9500;  /* 橙 */<br>
+  --seg-color-2: #ffcc00;  /* 黄 */<br>
+  --seg-color-3: #34c759;  /* 绿 */<br>
+  --seg-color-4: #00b4d8;  /* 青 */<br>
+  --seg-color-5: #5e5ce6;  /* 蓝 */<br>
+  --seg-color-6: #af52de;  /* 紫 */<br>
+  --seg-color-7: #ff2d92;  /* 粉 */<br>
+}<br>
+</code></pre></p>
+<p>| 段索引 | 颜色 |<br>
+|---|---|<br>
+| 0 | 红 #ff3b30 |<br>
+| 1 | 橙 #ff9500 |<br>
+| 2 | 黄 #ffcc00 |<br>
+| 3 | 绿 #34c759 |<br>
+| 4 | 青 #00b4d8 |<br>
+| 5 | 蓝 #5e5ce6 |<br>
+| 6 | 紫 #af52de |<br>
+| 7 | 粉 #ff2d92 |<br>
+| 8 (循环回 0) | 红 ... |</p>
+<p>段与段之间 1px 白色分隔线。  <br>
+hover 整段上浮 2px + 显示 tooltip(op 摘要)。  <br>
+op 信息<strong>不染色</strong>(避免视觉密度过大)。</p>
+<h2>7. 校验规则</h2>
+<pre><code class="lang-js">function validateIntent(data) {
+  const errors = [];
+<p>  data.videos?.forEach((v, vi) =&gt; {<br>
+    const segs = v.time_segments || [];<br>
+    const ids = new Set();</p>
+<p>    // 规则 1:time_segments.id 全 video 内唯一<br>
+    segs.forEach(s =&gt; {<br>
+      if (ids.has(s.id)) errors.push(`#${v.index}: id "${s.id}" 重复`);<br>
+      ids.add(s.id);<br>
+    });</p>
+<p>    // 规则 2:每个段区间合法<br>
+    segs.forEach(s =&gt; {<br>
+      if (s.start_sec &lt; 0 || s.end_sec &gt; v.duration_sec || s.start_sec &gt;= s.end_sec) {<br>
+        errors.push(`#${v.index} ${s.id}: 区间 [${s.start_sec}, ${s.end_sec}] 非法,视频时长 ${v.duration_sec}s`);<br>
+      }<br>
+    });</p>
+<p>    // 规则 3:段之间不重叠(允许 end_a == start_b 衔接)<br>
+    const sorted = [...segs].sort((a, b) =&gt; a.start_sec - b.start_sec);<br>
+    for (let i = 0; i &lt; sorted.length - 1; i++) {<br>
+      if (sorted[i].end_sec &gt; sorted[i + 1].start_sec) {<br>
+        errors.push(`#${v.index}: 段 ${sorted[i].id} 与 ${sorted[i+1].id} 重叠`);<br>
+      }<br>
+    }</p>
+<p>    // 规则 4:段内 ops 合法性(若有 ops)<br>
+    const validSegmentOps = ['mute', 'speed-up', 'slow-down', 'reverse', 'color-grade'];<br>
+    segs.forEach(s =&gt; {<br>
+      if (!s.ops) return;<br>
+      Object.entries(s.ops).forEach(([opName, opCfg]) =&gt; {<br>
+        if (!validSegmentOps.includes(opName)) {<br>
+          errors.push(`#${v.index} ${s.id}: 不支持的段内 op "${opName}"`);<br>
+        }<br>
+        if ((opName === 'speed-up' || opName === 'slow-down') && (typeof opCfg.factor !== 'number' || opCfg.factor &lt;= 0)) {<br>
+          errors.push(`#${v.index} ${s.id}: ${opName} 必须有 factor &gt; 0`);<br>
+        }<br>
+      });<br>
+    });</p>
+<p>    // 规则 5:video_ops.voice.mode 合法<br>
+    if (v.video_ops?.voice?.on) {<br>
+      const validModes = ['keep', 'keep-with-filler-removed', 'mute', 'bgm-only'];<br>
+      if (!validModes.includes(v.video_ops.voice.mode)) {<br>
+        errors.push(`#${v.index} video_ops.voice.mode "${v.video_ops.voice.mode}" 非法`);<br>
+      }<br>
+    }<br>
+  });</p>
+<p>  return errors;<br>
+}<br>
+</code></pre></p>
+<h2>8. AI 工作流解析示例</h2>
+<pre><code class="lang-python">def execute_intent(intent):
+    # 1. 处理视频间拼接(sequences)
+    sequence_clips = []
+    for seq in intent.sequences:
+        chain = []
+        for video_index in seq.videos:
+            video = next(v for v in intent.videos if v.index == video_index)
+            clip = process_single_video(video)
+            chain.append(clip)
+        # 应用视频间转场
+        final = apply_transitions(chain, seq.transitions)
+        sequence_clips.append(final)
+<p>    # 2. 加封面、结尾、调性<br>
+    return assemble(sequence_clips, intent.cover, intent.ending, intent.project.overall_intent)</p>
+<p><br>
+def process_single_video(video):<br>
+    # 1. 加载原视频<br>
+    raw = load(video.file)</p>
+<p>    # 2. 应用 video_ops(整段)<br>
+    processed = apply_video_ops(raw, video.video_ops)</p>
+<p>    # 3. 按 time_segments 取并集(空 = 整段)<br>
+    if not video.time_segments:<br>
+        kept = processed<br>
+    else:<br>
+        clips = [trim(processed, s.start_sec, s.end_sec) for s in video.time_segments]<br>
+        kept = concat(clips)</p>
+<p>    # 4. 应用段内 ops(v1.x 新:op 直接挂在段里)<br>
+    for seg in video.time_segments:<br>
+        if seg.ops:<br>
+            kept = apply_segment_ops(kept, seg.ops)</p>
+<p>    # 5. 已删段不进入 kept(取并集时已自然排除)</p>
+<p>    return kept<br>
+</code></pre></p>
+<h2>9. 实施分 Phase</h2>
+<h3>Phase A · 数据模型与校验(优先)</h3>
+<ul><li>引入 `video_ops` / `time_segments[].ops`(段内 op)两类字段</li>
+<li>旧 `videos[].ops` 平铺结构<strong>保留为兼容层</strong>(同时存在),新提交走新结构</li>
+<li>加载时优先读新结构,缺失则回退解析旧结构</li>
+<li>提交校验按 §7 规则</li>
+<li>验证:`validateIntent` 通过单元测试(覆盖正常 / 重叠 / 区间非法 / id 重复)</li></ul>
+<h3>Phase B · HTML UI · 整段操作区重命名</h3>
+<ul><li>`▶ 基础剪辑操作` → `▶ 整段视频操作`</li>
+<li>视觉上区分"整段型 op"与"段内型 op"(后者移到段的 inline 操作面板)</li>
+<li>voice select + voice_note textarea 保留在整段操作区</li>
+<li>验证:用户展开视频卡,看到 ops 重新分组</li></ul>
+<h3>Phase C · HTML UI · 时间段区 + 彩虹色块</h3>
+<ul><li>新增 `▼ 时间段` 折叠区,显示 `time_segments[]` 列表</li>
+<li>timeline 上每段按彩虹 8 色循环染色</li>
+<li>段 < 40px 宽时不显示文字标签(只显示颜色块)</li>
+<li>段与段之间 1px 白色分隔</li>
+<li>hover 段 → 上浮 2px + 显示 tooltip(op 摘要)</li>
+<li>验证:用户展开 + 添加段 + 看到彩虹色</li></ul>
+<h3>Phase D · Timeline 框选交互</h3>
+<ul><li>timeline 上长按拖动 → 实时绘制半透明高亮</li>
+<li>松开 → 弹出"告知弹窗"(只显示拆分结果)</li>
+<li>提交后,自动按拆分逻辑更新 segments(算法替代二次弹窗)</li>
+<li>验证:用户拖框 → 弹窗告知 → 确定 → timeline 自动更新</li></ul>
+<h3>Phase E · 段单击 → 操作面板(inline)</h3>
+<ul><li>段单击 → 在段下方 inline 展开操作面板</li>
+<li>面板含 label 输入 + op 按钮(静音/倍速/反转)+ 删除按钮</li>
+<li>删除后的段移到折叠区"已删段"(可恢复)</li>
+<li>验证:用户点击段 → 看到面板 → 改 label / 加 op / 删除 → 折叠区同步</li></ul>
+<h3>Phase F · JSON 提交 + 加载兼容</h3>
+<ul><li>`collectFormData()` 重写:序列化 `video_ops` + `time_segments`(含段内 ops)</li>
+<li>加载逻辑:有 `time_segments` → 新结构;否则回退解析 `ops` 平铺</li>
+<li>验证:提交 → 重新加载 → 数据完整保留</li></ul>
+<h3>Phase G · 文档与 tag</h3>
+<ul><li>SKILL.md 增 v2.0 变更摘要</li>
+<li>tag `v2.0`(从 v1.25 升级)</li>
+<li>changelog 写明本次重构范围</li></ul>
+<h3>Phase F · JSON 提交 + 加载兼容</h3>
+<ul><li>`collectFormData()` 重写:序列化三类字段</li>
+<li>加载逻辑:`if data.videos[].time_segments` → 新结构,否则回退解析旧 `ops`</li>
+<li>验证:提交 → 重新加载 → 数据完整保留</li></ul>
+<h3>Phase G · 文档与 tag</h3>
+<ul><li>SKILL.md 增 v2.0 变更摘要</li>
+<li>tag `v2.0`(从 v1.25 升级)</li>
+<li>changelog 写明本次重构范围</li></ul>
+<h2>10. 风险与边界</h2>
+<p>| 风险 | 缓解 |<br>
+|---|---|<br>
+| 旧 `intent.json` 加载失败 | 保留兼容层,旧文件自动迁移为新结构(自动备份原文件) |<br>
+| 用户已熟练旧 UI 流程 | 整段操作区只重命名 + 微调,核心 op 名称不变 |<br>
+| 段内 ops 嵌套导致复杂度 | op 是 flat 集合(类似原 `ops`),非数组嵌套 |<br>
+| timeline 框选与现有单击跳转冲突 | 区分单击(< 200ms) vs 长按拖拽(>= 200ms + 移动) |<br>
+| 性能:多卡片同时展开时 timeline 绘制开销 | 仅可见卡片绘制色块;折叠卡片 lazy render |<br>
+| 段超过 8 个颜色循环 | 用户极少遇到;超过时反复第一色 + 提示用户合并 |</p>
+<h2>11. 验收清单</h2>
+<ul><li>[ ] JSON schema 与 §4 一致</li>
+<li>[ ] 校验规则与 §7 一致</li>
+<li>[ ] AI 工作流示例可运行</li>
+<li>[ ] UI 流程 §6 场景完整演示</li>
+<li>[ ] 旧 intent.json 可加载(兼容层工作)</li>
+<li>[ ] 新 intent.json 可加载并保留所有用户数据</li>
+<li>[ ] timeline 框选 + 自动拆段正确</li>
+<li>[ ] 段改名 / 删除正确</li>
+<li>[ ] 段单击 → 操作面板 / 加 op / 删除交互正确</li>
+<li>[ ] 彩虹 8 色 + 删除灰色视觉规范生效</li>
+<li>[ ] hover 段 tooltip 显示 op 摘要</li>
+<li>[ ] 已删段可恢复</li>
+<li>[ ] 保存 → 加载往返零数据丢失</li></ul>
+<h2>12. 不做(明确范围)</h2>
+<ul><li>✗ <strong>不引入</strong> `mode: keep/exclude`(空 segments 即整段;取并集天然表达)</li>
+<li>✗ <strong>不引入</strong> `video_events` 数组(归宿 video_ops,见 §1.5 决策记录)</li>
+<li>✗ <strong>不引入</strong> `range_ops.events` 数组(段 op 直接挂 `time_segments[].ops`,见 §1.5)</li>
+<li>✗ <strong>不引入</strong> `segment_transitions`(视频内段间转场 YAGNI)</li>
+<li>✗ <strong>不引入</strong> `cut-middle` / `pin-range` / `trim-head` / `trim-tail`(被新结构替代)</li>
+<li>✗ <strong>不引入</strong> 段内 `voice_note`(归 `time_segments[].voice_note`)</li>
+<li>✗ <strong>不引入</strong> `opening-text` / `insert-image` 的 event 表达(留待 Phase H)</li>
+<li>✗ <strong>不向后兼容</strong> 旧 v1.x intent.json 的视觉布局(只保证数据兼容)</li></ul>
+<h2>13. 未来 Phase(本次不做)</h2>
+<ul><li>Phase H · opening-text / insert-image 等事件型 op 接入 video_ops 或 time_segments[].ops</li>
+<li>Phase I · 段级 thumbnail 缩略图(timeline 上显示视频帧缩略条)</li>
+<li>Phase J · 段级 transcript(ASR 结果标注段内文字)</li>
+<li>Phase K · 多语言字段(英文 UI 适配)</li>
+<li>Phase L · 段拖拽合并(相邻同 op 段可拖到一起,op 提示清除)</li></ul>
+<h2>14. 自检</h2>
+<ul><li>[x] 无 TBD / TODO / 占位符</li>
+<li>[x] 内部一致性:schema / UI / 校验 / AI 工作流 互相对齐</li>
+<li>[x] 范围聚焦:2 类字段(video_ops + time_segments)</li>
+<li>[x] 模糊消除:每个 op 的语义在 §5 / §8 都明确</li>
+<li>[x] 决策记录完整(§1.5 列出 6 轮对抗审查的最终结论)</li></ul>
+<hr>
+<p><strong>Spec 完成(2026-07-25 · v3 视觉规范定版)。请用户审阅本文件,确认后进入 writing-plans 阶段制定详细实施计划。</strong></p>
+</body>
+</html>

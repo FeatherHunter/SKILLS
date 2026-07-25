@@ -349,5 +349,58 @@ def init_db(db_path):
     if 'fitness_goals' in _existing_tables:
         c.execute('DROP TABLE IF EXISTS fitness_goals')
 
+    # body_composition — 体脂钳测（2026-07-25，V1.0 §02 第 ① 数据层）
+    # 7 皮钳 NOT NULL + CHECK，source 白名单，body_fat_pct [0, 60]
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS body_composition (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            source TEXT NOT NULL CHECK (source IN ('home_caliper', 'hospital')),
+            age INTEGER,
+            sex TEXT CHECK (sex IN ('male', 'female')),
+            caliper_chest_mm REAL NOT NULL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),
+            caliper_abdominal_mm REAL NOT NULL CHECK (caliper_abdominal_mm > 0 AND caliper_abdominal_mm < 100),
+            caliper_thigh_mm REAL NOT NULL CHECK (caliper_thigh_mm > 0 AND caliper_thigh_mm < 100),
+            caliper_tricep_mm REAL NOT NULL CHECK (caliper_tricep_mm > 0 AND caliper_tricep_mm < 100),
+            caliper_subscapular_mm REAL NOT NULL CHECK (caliper_subscapular_mm > 0 AND caliper_subscapular_mm < 100),
+            caliper_suprailiac_mm REAL NOT NULL CHECK (caliper_suprailiac_mm > 0 AND caliper_suprailiac_mm < 100),
+            caliper_midaxillary_mm REAL NOT NULL CHECK (caliper_midaxillary_mm > 0 AND caliper_midaxillary_mm < 100),
+            body_fat_pct REAL NOT NULL CHECK (body_fat_pct >= 0 AND body_fat_pct <= 60),
+            calculated_at TEXT,
+            note TEXT DEFAULT '',
+            is_deprecated INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_date ON body_composition(date)')
+
+    # body_measurements — 围度（2026-07-25，V1.0 §02 第 ① 数据层）
+    # 13 围度记录级必填(date + ≥1 围度)，列级 NULL OK + 条件 CHECK
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS body_measurements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            chest_cm REAL CHECK (chest_cm IS NULL OR (chest_cm > 20 AND chest_cm < 200)),
+            waist_cm REAL CHECK (waist_cm IS NULL OR (waist_cm > 20 AND waist_cm < 200)),
+            abdomen_cm REAL CHECK (abdomen_cm IS NULL OR (abdomen_cm > 20 AND abdomen_cm < 200)),
+            hip_cm REAL CHECK (hip_cm IS NULL OR (hip_cm > 20 AND hip_cm < 200)),
+            left_thigh_cm REAL CHECK (left_thigh_cm IS NULL OR (left_thigh_cm > 10 AND left_thigh_cm < 100)),
+            right_thigh_cm REAL CHECK (right_thigh_cm IS NULL OR (right_thigh_cm > 10 AND right_thigh_cm < 100)),
+            left_calf_cm REAL CHECK (left_calf_cm IS NULL OR (left_calf_cm > 10 AND left_calf_cm < 80)),
+            right_calf_cm REAL CHECK (right_calf_cm IS NULL OR (right_calf_cm > 10 AND right_calf_cm < 80)),
+            left_arm_cm REAL CHECK (left_arm_cm IS NULL OR (left_arm_cm > 10 AND left_arm_cm < 60)),
+            right_arm_cm REAL CHECK (right_arm_cm IS NULL OR (right_arm_cm > 10 AND right_arm_cm < 60)),
+            left_forearm_cm REAL CHECK (left_forearm_cm IS NULL OR (left_forearm_cm > 10 AND left_forearm_cm < 50)),
+            right_forearm_cm REAL CHECK (right_forearm_cm IS NULL OR (right_forearm_cm > 10 AND right_forearm_cm < 50)),
+            shoulder_cm REAL CHECK (shoulder_cm IS NULL OR (shoulder_cm > 20 AND shoulder_cm < 200)),
+            note TEXT DEFAULT '',
+            is_deprecated INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_body_measurements_date ON body_measurements(date)')
+
     conn.commit()
     conn.close()

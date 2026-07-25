@@ -29,7 +29,12 @@
 **修复**:
 - 删 `confirm()` 调用,改为直接执行删除
 - 调用 `showToast('已删除: 「' + label + '」')` 通知用户
+- `showToast` 函数已存在(Line 4783),无需新增
 - 已删段仍归入 `excluded` 列表(可恢复),行为不变
+
+**删除按钮调用链路**(确保 toast 后用户知道怎么恢复):
+- list 删除 → deleteSegment → state.segments 移除该 seg + 加入 state.excluded → renderSegmentsPanel 重画 → list 显示更新 → 已删段折叠区出现该 entry
+- 用户打开"已删段"折叠区,看到「♻️ 恢复」按钮可恢复
 
 **风险**:
 - 误删无法撤销(已通过"已删段"面板恢复,保留这条路径)
@@ -39,20 +44,24 @@
 
 ### 2.2 拆分弹窗长文本换行 + 美感(Issue #2)
 
-**现状**:`onTrackSelect` 弹窗用 `showInformDialog` + `segHtml`,内容是简单 `<div>[start~end] label</div>` 列表段 3 段。CSS 已加 `.split-preview` / `.split-row`(v2.126),但内容里只有 `seg-start~end role` 字段,无 overflow 处理。
+**现状**:`onTrackSelect` 弹窗(Line 5098)渲染的 `segHtml` 包含:
+- `.split-original`:1 个 `.split-bar.original` 显示原段时间码(短)
+- `.split-results`:3 个 `.split-row`,每行有 `.split-role`(角色标签)/ `.split-time`(时间码)/ `.split-dur`(时长)
 
-**修复 CSS**:
-```css
-.split-row { word-break: break-word; overflow-wrap: anywhere; }
-.split-time, .split-role { white-space: nowrap; }  /* 时间 / 角色保持单行 */
-.split-bar.original { white-space: nowrap; }  /* 标签也单行 */
-.modal-content { max-width: 480px; max-height: 80vh; overflow-y: auto; }
-```
+**当前无 segment label 字段**。label 实际出现在"段落列表"的 label input,而非拆分预览弹窗。如果未来要在弹窗显示段 label(供用户编辑用),再加 renderSplitRow 多一个字段 `<div class="split-label">...</div>`。
 
-即:时间码 / role / 标题不换(短),长 label 才换行。
+**修改点(纯 CSS,不修改 JS data 渲染)**:
+- `.split-row` 容器:`word-break: break-word; overflow-wrap: anywhere; min-width: 0`(允许 flex child 收缩)
+- `.split-time` / `.split-role`:`white-space: nowrap`(短字段不换行)
+- `.split-bar.original`:`white-space: nowrap; max-width: 100%`(段段时间码保持单行)
+- `.modal-content`:`max-width: 480px`(从现有 360 提到 480);`max-height: 80vh; overflow-y: auto`(高度长时滚动);`box-sizing: border-box`(padding 不溢出)
+
+**Modal 现有样式**:
+- 当前 `.modal-content { max-width: 360px; padding: 24px }`(Line ~1596 area)
+- max-width 360 → 480 改 modal 默认宽度(visual 上更宽松)— 这是有意的提升,因为现在 modal 显示 3 行 split-row
 
 **风险**:
-- 短段无变化,长段现在换行美观
+- 短段无视觉变化;长 segment label 在未来加进弹窗时自动换行;modal 在窄视口(<480)下不被裁(fallback 到 viewport)
 
 ### 2.3 trim handle 拖拽(Issue #3 — 根因已查明)
 
@@ -76,9 +85,25 @@ const moveH = (mv) => {
 };
 ```
 
-不依赖 setupTimeline 闭包变量,全部 DOM/state 实时取。
+**坐标系正确性论证**:
+- `inner.style.width` = pps × duration(直接对应 viewport 到 timeline 的秒坐标 scale)
+- `trackEl.getBoundingClientRect().left` = track 可见区域左边界在屏幕的 x 坐标
+- `mv.clientX - rect.left` = 鼠标在 track 可见区内的偏移
+- + `trackEl.scrollLeft` = 加上已滚动的量,得到鼠标在 **inner 完整内容** 内的 x 坐标 = "绝对" 内坐标
+- 除以 pps = 时间秒
 
-**mouseup 后**:增加 `renderTimelineSegments(segmentsArea, videoIndex)` 让 trim handles 重新对应(原代码只 render panel)
+各坐标系在 timeline 横向滚动 / zoom / padding 各种情况下都一致:
+- 无 zoom、无滚动:`innerW == trackWidth`,scrollLeft=0,直接 clientX - rect.left 就是 inner x
+- zoom 后:`innerW > trackWidth`,但 pp 和 scrollLeft 同时调整,公式仍准
+- 横向滚动后:`trackEl.scrollLeft > 0`,加上即校正
+
+**State invariants(trim 后必满足)**:
+- `seg.start_sec < seg.end_sec`(永远)
+- `seg.start_sec >= 0`、`seg.end_sec <= st.duration`(clamp 到 video 范围)
+- 两个连续段:`A.end_sec === B.start_sec`(addOrSplit 保证,但 trim 也要保持 — 必须 clamp:left 拖动不能越过右边 - 0.1,right 同理)
+- 不修改相邻段(trim 只动自己的边界)
+
+**mouseup 后**:`renderTimelineSegments(segmentsArea, videoIndex)` 让 trim handles 重新对应 + `renderSegmentsPanel(videoIndex)` 同步 list panel(原代码只 render panel,**bug**)
 
 ### 2.4 tooltip 部分遮挡(Issue #4 — B)
 
@@ -86,32 +111,49 @@ const moveH = (mv) => {
 - `.tl-tip` 在 v2.123 改回 `bottom: calc(100% + 8px)`(段条上方),`z-index: 9999`
 - 复现:被遮区域是 tooltip 上半部分(超出 video area 边界)
 
-**根因**:
-- `.timeline` 容器 `overflow: visible`(v2.120),不 clip — 不是这个原因
-- `.timeline-track`(scroll-wrap)是 `overflow-x: hidden` 但 tooltip 是 `.timeline-inner` 内的 absolute 元素 — clip 来自这里!
-- `overflow-x: hidden` 也会 clip `overflow-y`,导致 tooltip 上下方向超出后被隐藏
-- 加上 z-index battle: video 是 inline-preview 子(sibling of timeline),后渲染 → 在 stacking 顺序更高。`.tl-tip` z-index 9999 不够,因为 stacking context 的边界问题
+**根因(hypothesis,需先最小复现验证)**:
+- `.timeline` 容器 `overflow: visible`(v2.120),不 clip — 不是它
+- `.timeline-track`(scroll-wrap)是 `overflow-x: hidden`(line 296),CSS 规范 `overflow-x: hidden` 等价 `overflow-y: auto`,会同时 clip y — tooltip 向上超出被隐
+- z-index battle 候选:video 是 inline-preview-child(sibling of timeline-track),后渲染 → stacking 顺序更高。`.tl-tip` 的 z-index 9999 仍在 timeline-track stacking context 内,比不上同级 video
 
-**修复两步**:
-1. `.timeline-track { overflow-x: clip }`(只 clip x,不 clip y)— 或者 `overflow: clip`(明确 clip)
-2. `.tl-tip { position: fixed }` 改 fixed 定位,脱离 `.timeline` stacking context;JS 计算位置 = clientX, top = segmentRect.top - tooltipHeight - 8
+**审查员指出**:B1 + B2 跨浏览器行为未验证、未最小复现。**采用新路径**:先写最小 DOM repro(只用 HTML/CSS),验证遮挡原因,再选方案。
 
-固定定位方案成本高(re-render 时 segment DOM 变化需重计算)。轻量方案:
-- **B1**:**只 clip x 不 clip y**:`.timeline-track { overflow-x: clip; overflow-y: visible; }`(或 `overflow: clip`,Chrome 90+ 支持)— 简单
-- **B2**:z-index fight:给 video 设 `z-index: 1` 给 `.timeline` 设 `z-index: 10`,tooltip 自动在新 stacking context 中最高
+**Plan**:
+1. **Phase A**:写最小 repro(伪 `.timeline-track { overflow-x: hidden }` + 上下溢出的 absolute 子),在 Chrome / Firefox / Safari 最新稳定版测试,确认是 overflow clip 还是 z-index
+2. **Phase B**:基于 repro 结果选方案。两种候选:
+   - **C1**:`.timeline-track { overflow-x: clip; overflow-y: visible }`(Chrome 90+、`overflow: clip` 在 Chrome 90+/Firefox 81+/Safari 16+)— 只 clip x,不 clip y
+   - **C2**:`.timeline { z-index: 10 }; .inline-preview-video { z-index: 1 }` — 抬高 timeline stacking,z-index 9999 才能跨级生效
+3. **采用 C1 + C2 组合**(改动小,两层防御):
+   - C1 是主修复(overflow 是确认的 clip 原因)
+   - C2 是辅助(让未来其他 absolute 子元素更容易 escape video)
+4. **回退**:如果任一方案验证失败,只保留 C1(更简单的修复)
 
-**采用方案**:B1 + B2 组合(改动小,两层防御)
-- B1:`.timeline-track { overflow-x: clip; overflow-y: visible }`(关键修复)
-- B2:`.timeline { z-index: 10 }` + `.inline-preview-video { z-index: 1 }`(进一步防御)
-
----
+**不在本次范围**:
+- tooltip 在 timeline 顶部空间不足时的翻转(`bottom` 改 `top`)— 简单语义,后续补
+- tooltip 不得导致 timeline-track 横向滚动区域改变(tooltip 用 `left: 50%; transform: translateX(-50%)`,对内宽无影响;但修复查时手动 mousedown/mousemove 不得改 scrollLeft)
 
 ## 3. 测试策略
 
-- issue 1:手动点击 list 删除按钮 → 应立即看到 toast,无 confirm 模态
-- issue 2:label 设超长字符串(50 字符),触发拆分 → 弹窗正常换行,无溢出
-- issue 3:鼠标拖动中间段左 trim handle 向左 50px → state 改变,segment 宽度更新
-- issue 4:hover 较长 label 段 → tooltip 完整显示,不被 video 遮挡
+### 3.1 自动化(Playwright 测,必须)
+
+| Issue | 测试 | 验证 |
+|-------|------|------|
+| 1 | `await page.click('seg-item 删除按钮')` | 无 confirm 模态,2 秒内 toast 出现 + state.excluded 增 1 |
+| 2 | 注入超长 label 段 + 模拟 drag-to-split | 弹窗 `.modal-content` 高度 ≤ 80vh,不出现水平滚动条,长 label 换行可见 |
+| 3 | `await page.locator('.tl-seg.tl-seg-has-op').nth(N).locator('.tl-seg-trim.left').dragTo(...)` | state.start_sec 改变 + width 更新;反向拖回再测 |
+| 4 | `await page.hover('.tl-seg.tl-seg-has-op')` | `.tl-tip` 完全显示(top 不被裁,bottom 不被 video 遮挡) |
+
+### 3.2 边界 case(Playwright)
+
+- zoom 后 pps != minPps:trim 拖动仍正确(验证坐标系)
+- 横向滚动后 trim 拖动仍正确
+- 拖动到边界(segment 接近 0 或 duration):不崩、不越界
+- tooltip 在第一段(第一个 segment) hover:不被 timeline 顶部 clip
+- tooltip 在最后段 hover:不被 segments-area 底部 clip
+
+### 3.3 视觉验证
+
+- 三个浏览器的最新版:Chrome / Firefox / Safari(都支持 `overflow-x: clip` 和 `z-index` 简单语义)
 
 ---
 
@@ -121,3 +163,6 @@ const moveH = (mv) => {
 - 段条 click 编辑面板重新设计
 - 段条拖动 reorder
 - zoom 锚点保持的边界 case
+- tooltip 顶部空间不足时的翻转(`bottom` → `top`)— 后续补
+- tooltip 不得导致 timeline-track 横向滚动改变(已确认不影响)
+- modal 在窄视口(<480) 的具体行为(由 modal-content `max-width:480 + box-sizing: border-box` 自动 fallback)

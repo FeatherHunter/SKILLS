@@ -1591,10 +1591,14 @@
       z-index: 100;
     }
     .modal-content {
-      background: white;
-      border-radius: 12px;
+      background: var(--card);
+      border-radius: 10px;
       padding: 24px;
-      max-width: 360px;
+      max-width: 480px;
+      max-height: 80vh;
+      width: 90vw;
+      overflow-y: auto;
+      box-sizing: border-box;
       box-shadow: 0 12px 40px rgba(0,0,0,0.3);
     }
     .modal-content h3 { margin-bottom: 12px; }
@@ -1622,13 +1626,22 @@
       gap: 12px;
       flex-wrap: wrap;
     }
-    .split-label { color: var(--secondary); font-weight: 500; }
+    .split-label {
+      color: var(--secondary);
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
     .split-bar.original {
       font-family: ui-monospace, "SF Mono", Menlo, monospace;
       font-weight: 600;
       padding: 2px 8px;
       background: #e5e5ea;
       border-radius: 4px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
     .split-arrows { color: var(--secondary); font-size: 12px; margin-left: auto; }
     .split-results { display: flex; flex-direction: column; gap: 6px; }
@@ -1640,7 +1653,9 @@
       border-radius: 6px;
       border-left: 3px solid var(--accent);
       background: color-mix(in srgb, var(--accent) 8%, white);
+      min-width: 0;
     }
+    .split-time, .split-role, .split-dur { white-space: nowrap; flex-shrink: 0; }
     .split-role {
       flex: 0 0 auto;
       color: var(--accent);
@@ -5177,6 +5192,7 @@
         <div class="split-row" style="--accent:${accent}">
           <div class="split-role">${escapeHtml(role)}</div>
           <div class="split-time">${formatTimeForModal(seg.start_sec)} → ${formatTimeForModal(seg.end_sec)}</div>
+          <div class="split-label">${escapeHtml(seg.label || `(${formatTimeForModal(seg.start_sec)} - ${formatTimeForModal(seg.end_sec)})`)}</div>
           <div class="split-dur">时长 ${durStr}</div>
         </div>
       `;

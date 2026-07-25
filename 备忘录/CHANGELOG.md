@@ -77,6 +77,70 @@
 
 ---
 
+## [1.1.0] · 2026-07-25
+
+> **bug fix**(语义化版本规则 · 不兼容修复升 1 级):修复 `_shared/injector.py` 被清理后 `备忘录.html` 实际跑不动
+> 来源:其他 AGENT 跑 "查打卡 --html" 报 ImportError,根因诊断
+> 注:**本 commit 在 v1.0.9 之前(2026-07-24 09:28)的 commit 里,**因为 v1.0.9 commit "重写 备忘录.html" 之后其他 session 跑了 SKILL开发总纲V1.0 的清理 commit(f304e4f 2026-07-24 16:56)删了 _shared/injector.py
+
+### Fixed (真实运行 bug)
+
+**问题**:`备忘录/script/memo_render.py` 的 `from injector import inject_html, write_output` 引用了**已被清理的 `_shared/injector.py`**
+
+| 时间 | 事件 |
+|---|---|
+| 2026-07-24 09:28 | v1.0.9 commit"备忘录.html 转为纯用户手册" |
+| 2026-07-24 16:56 | f304e4f commit"清理已沉淀的旧模板目录"删了 `_shared/` |
+| 2026-07-25 之后 | 跑 `--html` 命令 → `ImportError: cannot import name 'inject_html'` |
+
+**根因**:
+1. v1.0.6 我设计了"跨 Skill 共享 `_shared/injector.py`"
+2. f304e4f 清理者认为内容已沉淀到 `SKILL开发总纲V1.0/_assets/` → 删整个目录
+3. **没人通知备忘录**(依赖此文件的 Skill)
+4. 测试也"假阳性 PASS" —— `tests/test_shared_injector.py` 用 `sys.path.insert` 加路径,但路径指向不存在的目录,实际找到的是 `备忘录/script/injector.py`(另一个**占位**脚本,导出 `inject` 不导出 `inject_html`)。import 应该 ImportError 但 pytest 把它当 `ERROR` 不是 `FAILURE`,CI 漏报
+
+### Changed
+
+**修复方案 A + 保护补丁**(备忘录私有化):
+1. **`备忘录/script/injector.py` 重新创建**(私有 · 不再依赖外部共享模块):
+   - 3 个公共 API:`inject_html` / `write_output` / `render`
+   - 保留所有 v1.0.6/v1.0.7 增强:占位符唯一性校验 / `</` 转义 / 同秒冲突保护(_2/_3)
+   - 详细 docstring 解释从 shared → private 的原因
+2. **删除 `memo_render.py` 的 `sys.path.insert` 操作 + 引 _shared 的代码** → 改用本地 `from injector import`(同目录)
+3. **`tests/test_injector_local.py`**(新)24 个用例守护:
+   - `TestInjectorModuleExists`:module path 真实在 备忘录/script/,不在 _shared/
+   - `TestInjectHtml`:占位符/转义/自定义占位符/`</` 转义
+   - `TestWriteOutput`:mkdir/UTF-8/冲突保护(_2/_3)/不同 ts 不冲突
+   - `TestRenderIntegration`:一站式
+   - `TestMemoRenderCanUseInjector`:子进程验证 5 个 render 函数可 import
+4. **删除 `tests/test_shared_injector.py`**(测试目标已删,且自身不可信)
+
+**关系重定义**:
+- 之前:备忘录 → `_shared/injector.py`(跨 Skill,易被误清理)
+- 现在:备忘录 → `script/injector.py`(私有,自包含)
+- DRY 共享仍需做,但应在 git submodule / 独立 package / 显式版本管理 · 不是简单目录
+
+### 设计认知(本 bug 的根本教训)
+
+跨 session / 跨 commit 的"简单目录"共享不可靠:
+- 谁负责记录依赖?
+- 谁负责通知 cleanup?
+- 测试如何守护"被删的外部依赖"?
+
+答案:**测试 module 顶部 `from xxx import yyy` 失败时,pytest 应该报 ERROR(模块加载失败),这是真信号**。
+但**只要 sys.path 让模块加载能继续,导入仍可能假阳性 PASS**(因为可能被映射到本地的"占位版本")。
+**测试守护关键路径**:
+- `assert Path(injector.__file__).resolve()` 必须在期望路径
+- `assert inject_html is not None` 必须真实存在
+- 否则**测试假设的"导入成功"是真信号还是假信号?不确定**
+
+下一阶段v1.1.x 可做:把"跨 Skill 共享"提到 git submodule 或 README 显式声明。
+
+### Tests
+- 全量:106/106 pytest 通过(105 → 106 · +1 是 TestMemoRenderCanUseInjector)
+
+---
+
 ## [1.0.9] · 2026-07-24
 
 > **设计转变**(语义化版本规则):备忘录.html 从"SKILL.md 镜像"转为"纯用户手册"

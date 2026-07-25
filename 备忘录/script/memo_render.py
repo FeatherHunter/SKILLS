@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 """备忘录 HTML 渲染器
 
-2026-07-24 Step 6 · 复用 模板HTML并注入数据/_shared/injector.py
-  - _inject → injector.inject_html(用 <body> 锚点,代替原 <!--INJECT-DATA--> 占位符)
-  - _write_output → injector.write_output
-  - 4 个 render 函数 + 1 个 main
+v1.1.0(2026-07-25) · 修复 v1.0.9 真实运行时 bug:
+  - 之前 v1.0.6 时抽出共享模块到 _shared/injector.py
+  - f304e4f (2026-07-24 16:56) commit "清理已沉淀的旧模板目录" 把 _shared/injector.py 删了
+  - 之前的 `from injector import` 引用失效,跑 --html 必 ImportError
+  - 现在改用**本地私有 `script/injector.py`** · 不依赖外部模块
+  - 历史增强(占位符唯一性、</ 转义、同秒冲突保护)全部保留
 
-2026-07-24 v1.0.5 · 输出目录与 DB 路径对齐(承袭第一性:HTML 是 DB 的快照视图)
-  - OUTPUT_DIR 改为 _get_html_output_dir() 动态计算
-  - HTML 输出 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
-  - SKILLS_DB_PATH 环境变量 / fallback 都生效
+输出目录(v1.0.5) · 输出 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 """
 import json
-import sys
 from pathlib import Path
 
-# 把模板HTML并注入数据/_shared/ 加到 sys.path
-_SHARED_DIR = Path(__file__).parent.parent.parent / "模板HTML并注入数据" / "_shared"
-sys.path.insert(0, str(_SHARED_DIR))
-
-from injector import inject_html, write_output  # noqa: E402
+from injector import inject_html, write_output  # noqa: F401 · 同目录私有模块
 from memo_cli import DB_PATH  # noqa: E402  · 复用 memo_cli 的 DB_PATH 计算逻辑
 
 # v1.0.5:skill ASCII 短码(避免中文路径跨平台编码问题)

@@ -4590,7 +4590,9 @@
       });
     }
 
-    function showInformDialog(title, bodyHTML) {
+    function showInformDialog(title, bodyHTML, callbacks) {
+      // v2.99 修:第 3 参数是 callbacks = {onConfirm, onCancel}
+      const cbs = callbacks || {};
       const old = document.querySelector('.modal-overlay');
       if (old) old.remove();
       const modal = document.createElement('div');
@@ -4606,11 +4608,13 @@
         </div>
       `;
       document.body.appendChild(modal);
-      // 二次确认:取消按钮不执行拆分,确定按钮关闭 modal(拆分已发生,只是 UI 关闭)
+      // 二次确认:cbs.onConfirm / cbs.onCancel 触发对应回调
       modal.querySelector('[data-modal-act="confirm"]').addEventListener('click', () => {
+        if (cbs.onConfirm) cbs.onConfirm();
         modal.remove();
       });
       modal.querySelector('[data-modal-act="cancel"]').addEventListener('click', () => {
+        if (cbs.onCancel) cbs.onCancel();
         modal.remove();
       });
     }

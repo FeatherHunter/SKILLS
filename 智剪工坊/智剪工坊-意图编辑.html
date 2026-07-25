@@ -1410,6 +1410,8 @@
       }
       videoEntries.sort((a, b) => a.name.localeCompare(b.name));
       videoEntries.forEach((e, i) => e.index = i + 1);
+      // v2.0:每张视频卡初始化段状态
+      videoEntries.forEach((e, i) => SegmentState.init(i, e.durationSec || 60));
       try {
         const fileHandle = await dirHandle.getFileHandle('intent.json');
         const file = await fileHandle.getFile();
@@ -1461,6 +1463,8 @@
       }
       videoEntries.sort((a, b) => a.name.localeCompare(b.name));
       videoEntries.forEach((e, i) => e.index = i + 1);
+      // v2.0:每张视频卡初始化段状态
+      videoEntries.forEach((e, i) => SegmentState.init(i, e.durationSec || 60));
       existingIntent = null;
       snapshotBaseline(existingIntent);  // v1.18:下载模式也建基线(null 安全)
     }
@@ -2514,7 +2518,9 @@
     //   - 缩放通过改 inner 宽度 + scrollLeft 实现(track overflow-x: auto)
     //   - 播放头用 absolute 定位 + 红色三角标记顶部
     //   - 点击 video 也切换播放/暂停(因为移除了 controls)
-    function setupTimeline(previewEl, video) {
+    function setupTimeline(previewEl, video, videoIndex) {
+      videoIndex = videoIndex ?? (previewEl.closest('.video-card')?.dataset.cardIdx
+        ? parseInt(previewEl.closest('.video-card').dataset.cardIdx, 10) : 0);
       const ruler = previewEl.querySelector('[data-timeline-ruler]');
       const track = previewEl.querySelector('[data-timeline-track]');
       const inner = track.querySelector('.timeline-track-inner');
@@ -2630,6 +2636,36 @@
         const target = Math.max(0, Math.min(duration, offsetX / pps));
         video.currentTime = target;
         updatePlayhead();
+      });
+
+      // v2.0:长按拖动框选(Task 9 - 简化版)
+      let pressTimer = null;
+      let pressStartX = 0;
+      const onPressStart = (e) => {
+        if (e.target.classList.contains('tl-seg') || e.target.closest('.tl-seg')) return;
+        pressStartX = e.clientX;
+        pressTimer = setTimeout(() => {
+          track.style.cursor = 'crosshair';
+          track.classList.add('selecting');
+        }, 200);
+      };
+      const onPressCancel = () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        track.style.cursor = '';
+        track.classList.remove('selecting');
+      };
+      track.addEventListener('mousedown', onPressStart);
+      track.addEventListener('mouseleave', onPressCancel);
+      document.addEventListener('mouseup', (e) => {
+        if (!pressTimer) return;
+        onPressCancel();
+        const rect = track.getBoundingClientRect();
+        const startRatio = Math.max(0, (pressStartX - rect.left) / rect.width);
+        const endRatio = Math.min(1, (e.clientX - rect.left) / rect.width);
+        if (Math.abs(endRatio - startRatio) < 0.02) return;
+        const startSec = Math.min(startRatio, endRatio) * duration;
+        const endSec = Math.max(startRatio, endRatio) * duration;
+        if (typeof onTrackSelect === 'function') onTrackSelect(videoIndex, startSec, endSec);
       });
 
       // 2. Ctrl+滚轮缩放(锚点=鼠标位置)

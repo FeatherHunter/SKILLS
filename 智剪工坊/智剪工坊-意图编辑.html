@@ -1375,6 +1375,21 @@
       font-variant-numeric: tabular-nums;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
     }
+    /* v2.125:excluded 段行整行淡灰 + 恢复按钮(绿) */
+    .seg-item.seg-item-excluded {
+      opacity: 0.5;
+    }
+    .seg-item.seg-item-excluded .seg-num {
+      background: #6b7280;
+    }
+    .seg-item.seg-item-excluded .seg-label-text {
+      color: var(--secondary);
+    }
+    .seg-item button.seg-act-restore {
+      background: #34c759;
+      color: white;
+    }
+    .seg-item button.seg-act-restore:hover { background: #2a9149; }
     .seg-item .seg-label-text {
       flex: 1;
       cursor: pointer;
@@ -4969,24 +4984,18 @@
         st.segments = [...before, newSeg, ...after].sort((a, b) => a.start_sec - b.start_sec);
         return { segments: st.segments, modified: 'new', newId, length: st.segments.length };
       },
+      // v2.125:改用 seg.excluded 字段(不再 splice) — 段在 timeline 仍占位置变淡灰,列表仍可见
       delete(videoIndex, segId) {
         const st = this.states[videoIndex];
         if (!st) return;
-        const idx = st.segments.findIndex(s => s.id === segId);
-        if (idx >= 0) {
-          const seg = st.segments.splice(idx, 1)[0];
-          st.excluded.push({ ...seg });
-        }
+        const seg = st.segments.find(s => s.id === segId);
+        if (seg) seg.excluded = true;
       },
       restore(videoIndex, segId) {
         const st = this.states[videoIndex];
         if (!st) return;
-        const idx = st.excluded.findIndex(s => s.id === segId);
-        if (idx >= 0) {
-          const seg = st.excluded.splice(idx, 1)[0];
-          st.segments.push(seg);
-          st.segments.sort((a, b) => a.start_sec - b.start_sec);
-        }
+        const seg = st.segments.find(s => s.id === segId);
+        if (seg) seg.excluded = false;
       },
       getAll(videoIndex) {
         return this.states[videoIndex] || { segments: [], excluded: [] };
@@ -5129,11 +5138,11 @@
               <div class="tl-seg-trim right" data-seg-id="${s.id}" data-trim-side="right" title="拖动调整结束时间"></div>
             ` : '';
         html += `
-          <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}"
+          <div class="tl-seg ${hasOp ? 'tl-seg-has-op' : ''}${s.excluded ? ' tl-seg-excluded' : ''}"
                data-seg-id="${s.id}"
                data-seg-idx="${idx}"
                style="width:${segWidthPx}px; min-width:24px; background:${bgColor};"
-               title="${formatTimeRange(s.start_sec, s.end_sec)} (时长 ${formatTime(segLen)})">
+               title="${formatTimeRange(s.start_sec, s.end_sec)} (时长 ${formatTime(segLen)})${s.excluded ? ' (已删除)' : ''}">
             ${segNum}
             ${trimHandles}
             <div class="tl-tip">
@@ -5550,20 +5559,27 @@
       panel.querySelector('[data-act="close"]').addEventListener('click', () => panel.remove());
     }
 
+    // v2.125:deleteSegment 改为 toggle — 根据当前 seg.excluded 切到 delete 或 restore
     function deleteSegment(videoIndex, segId) {
       const card = videoListEl.querySelector(`.video-card[data-card-idx="${videoIndex}"]`);
-      const panel = card?.querySelector('.segment-panel');
-      if (panel) panel.remove();
-      // v2.123:先在 state 抓 label(段还在),再 delete,最后 re-render timeline + panel
-      //   之前 renderTimelineSegments 调在 delete 之前 → 用了旧 state → timeline 不更新
+      const segPanel = card?.querySelector('.segment-panel');
+      if (segPanel) segPanel.remove();
       const state = SegmentState.states[videoIndex];
       const seg = state?.segments?.find(s => s.id === segId);
-      const label = seg?.label || (state && seg ? formatTimeRange(seg.start_sec, seg.end_sec) : segId);
-      SegmentState.delete(videoIndex, segId);
+      if (!seg) return;
+      const label = seg.label || formatTimeRange(seg.start_sec, seg.end_sec);
+      if (seg.excluded) {
+        // 恢复
+        SegmentState.restore(videoIndex, segId);
+        showToast(`已恢复: ${label}`);
+      } else {
+        // 删除
+        SegmentState.delete(videoIndex, segId);
+        showToast(`已删除: ${label}`);
+      }
       const segmentsArea = card?.querySelector('[data-timeline-segments]');
       if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
       renderSegmentsPanel(videoIndex);
-      showToast(`已删除: ${label}`);
     }
 
     function restoreSegment(videoIndex, segId) {
@@ -5592,40 +5608,32 @@
       const state = SegmentState.getAll(videoIndex);
 
       const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
+      // v2.125:只渲染"时间段列表",excluded 段在 list 中以淡灰 + 恢复按钮展示,不再单独折叠区
       const segHtml = state.segments.map((s, idx) => {
         const hasOp = s.ops && Object.keys(s.ops).length > 0;
-        // v2.121:muted 段用 #6b7280 深灰,列表色块明确可见
-        // v2.125:列表项也按 idx%8 循环彩色,默认整段保留是红色
         const color = colors[idx % 8];
-        // muted = 无 op 段:背景浅灰,不抢眼
-        // v2.128:行背景由 CSS 用 color-mix 自动生成(不需要内联)
+        const isExcluded = s.excluded === true;
+        // excluded 行整体淡灰背景 + 按钮文字/颜色 切换
+        const rowClass = isExcluded ? 'seg-item seg-item-excluded' : 'seg-item';
+        const btnText = isExcluded ? '恢复' : '删除';
+        const btnAct = isExcluded ? 'restore' : 'delete';
+        const btnClass = isExcluded ? 'seg-act-restore' : 'seg-act-delete';
         return `
-        <div class="seg-item" style="--seg-color:${color}">
+        <div class="${rowClass}" style="--seg-color:${color}">
           <span class="seg-num">${idx + 1}</span>
           <span class="seg-label-text" data-act="jump" data-seg-id="${s.id}">${escapeHtml(s.label || formatTimeRange(s.start_sec, s.end_sec))} <span style="color:var(--secondary)">[${formatTime(s.start_sec)} ~ ${formatTime(s.end_sec)}]</span></span>
           <div style="display:flex;gap:4px">
-            <button class="seg-act-delete" data-act="delete" data-seg-id="${s.id}">删除</button>
+            <button class="${btnClass}" data-act="${btnAct}" data-seg-id="${s.id}">${btnText}</button>
             <button data-act="jump" data-seg-id="${s.id}">跳转</button>
             <button data-act="edit" data-seg-id="${s.id}">编辑</button>
           </div>
         </div>`;
       }).join('') || '<p class="empty-hint">暂无段(在 timeline 长按拖动创建)</p>';
 
-      const delHtml = state.excluded.map(s => `
-        <div class="deleted-seg-item">
-          <span>[${formatTime(s.start_sec)} ~ ${formatTime(s.end_sec)}]</span>
-          <button class="seg-restore" data-act="restore" data-seg-id="${s.id}">♻️ 恢复</button>
-        </div>
-      `).join('') || '<p class="empty-hint">无</p>';
-
       panel.innerHTML = `
         <details open>
           <summary>📋 时间段(${state.segments.length})</summary>
           <div class="seg-list">${segHtml}</div>
-        </details>
-        <details>
-          <summary>🗑️ 已删段(${state.excluded.length})</summary>
-          <div class="del-list">${delHtml}</div>
         </details>
       `;
 

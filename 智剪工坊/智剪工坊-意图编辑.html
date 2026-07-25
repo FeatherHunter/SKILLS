@@ -5134,7 +5134,7 @@
         });
       });
 
-      // v2.113 N10:trim handle 拖动 — 改 start_sec / end_sec
+      // v2.117:trim handle 拖动 — DOM 查询实时值(不依赖 setupTimeline 闭包变量)
       segmentsArea.querySelectorAll('.tl-seg-trim').forEach(handle => {
         handle.addEventListener('mousedown', (e) => {
           e.stopPropagation();
@@ -5145,14 +5145,21 @@
           if (!st) return;
           const seg = st.segments.find(s => s.id === segId);
           if (!seg) return;
+
+          const inner = segmentsArea.closest('.timeline-inner');
+          const trackEl = segmentsArea.closest('.timeline-track');
+
           const moveH = (mv) => {
-            const pps = (typeof window.__tlPps === 'number' && window.__tlPps > 0)
-              ? window.__tlPps
-              : (duration > 0 && trackWidth > 0 ? trackWidth / duration : 0);
+            const dur = st.duration || 0;
+            if (dur <= 0) return;
+            // pps 从 inner.style.width 实时算(zoom 后宽度变)
+            const innerW = parseFloat(inner?.style.width) || 0;
+            const pps = innerW / dur;
             if (pps <= 0) return;
-            const trackRect = track.getBoundingClientRect();
-            const innerOffsetX = mv.clientX - trackRect.left + track.scrollLeft;
-            const t = Math.max(0, Math.min(duration, innerOffsetX / pps));
+            const trackRect = trackEl.getBoundingClientRect();
+            // 坐标系:clientX - rect.left = 鼠标在 track 可见区偏移;+ scrollLeft = 在 inner 内的绝对 x;÷ pps = 时间秒
+            const innerOffsetX = mv.clientX - trackRect.left + (trackEl.scrollLeft || 0);
+            const t = Math.max(0, Math.min(dur, innerOffsetX / pps));
             if (side === 'left') {
               seg.start_sec = Math.min(seg.end_sec - 0.1, t);
             } else {
@@ -5168,6 +5175,8 @@
           const upH = () => {
             document.removeEventListener('mousemove', moveH);
             document.removeEventListener('mouseup', upH);
+            // v2.117:同步 timeline(让 trim handles 重新对应) + panel
+            renderTimelineSegments(segmentsArea, videoIndex);
             renderSegmentsPanel(videoIndex);
           };
           document.addEventListener('mousemove', moveH);

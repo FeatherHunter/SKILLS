@@ -249,7 +249,15 @@ def _get_feishu_summary() -> dict:
 
 def inject_into_template(template_name: str, payload: dict, output_path: Path) -> Path:
     """
-    读模板 → JSON 注入 → 写副本。
+    读模板 → JSON 注入 → CSS/JS inline → 写单文件副本。
+
+    第一性:HTML 自称"单文件自包含,无外部依赖"(offline banner 文案)。
+    旧实现把 _record_styles.css / _record_engine.js 复制到输出目录 —
+    在 Chrome 本地 file:// 协议下能用,但飞书/邮件消息预览/移动浏览器拿到
+    的 HTML 没有伴随 CSS/JS 文件 → JS 失败 → "加载中..." + 空白页面。
+
+    新实现:inline CSS/JS 进 HTML,真正做到单文件可分享。
+
     严格遵循手册 §8:生成副本,不污染原模板。
     """
     template_path = TEMPLATE_DIR / template_name
@@ -277,22 +285,35 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     head = template_text[:start_idx]
     tail = template_text[end_idx:]
     injected = head + anchor + payload_str + close_tag + tail
-    # 替换 {{ title }} 占位符
+
+    # {{ 占位符替换
     title = title_for_mode(payload.get("data", {}).get("meta", {}))
     injected = injected.replace("{{ title }}", title).replace("{{ TITLE }}", title)
-    # 替换 {{ template_name }} 占位符(脚注用,2026-07-24 补:之前未替换会留下字面量)
     injected = injected.replace("{{ template_name }}", template_name)
+
+    # === v1.2.0 第一性 inline CSS/JS ===
+    # 模板里 <link rel="stylesheet" href="_record_styles.css"> →
+    # 内联 CSS 进 <style> 块
+    css_link = '<link rel="stylesheet" href="_record_styles.css">'
+    if css_link in injected:
+        css_text = (TEMPLATE_DIR / "_record_styles.css").read_text(encoding="utf-8")
+        injected = injected.replace(
+            css_link,
+            "<style>\n" + css_text + "\n</style>"
+        )
+
+    # 模板里 <script src="_record_engine.js"></script> →
+    # 内联 JS 进 <script> 块
+    js_src = '<script src="_record_engine.js"></script>'
+    if js_src in injected:
+        js_text = (TEMPLATE_DIR / "_record_engine.js").read_text(encoding="utf-8")
+        injected = injected.replace(
+            js_src,
+            "<script>\n" + js_text + "\n</script>"
+        )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")
-
-    # 5 模板共享 CSS/JS 引擎: 复制到输出目录(让 HTML 离线可读)
-    if "schedule_record_" in template_name:
-        for aux in ("_record_styles.css", "_record_engine.js"):
-            src = TEMPLATE_DIR / aux
-            if src.exists():
-                import shutil
-                shutil.copy2(src, output_path.parent / aux)
 
     return output_path
 

@@ -96,7 +96,7 @@
 
   document.getElementById('metaLeft').textContent = `生成于 ${D.data.fetched_at || new Date().toISOString()}`;
   document.getElementById('sub').textContent = `${photo.date} · ${photo.tag} · #${photo.id}`;
-  document.getElementById('mainPhoto').src = photo.photo_url || photo.photo_path;
+  document.getElementById('mainPhoto').src = photo.photo_data_base64 || photo.photo_url || photo.photo_path;
   document.getElementById('mainPhoto').alt = `${photo.date} ${photo.tag}`;
   document.getElementById('photoDate').textContent = photo.date + ' ' + (photo.time || '');
   document.getElementById('photoTag').textContent = photo.tag;

@@ -41,6 +41,38 @@ def get_photo(photo_id: int) -> dict:
     return dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note'], row))
 
 
+def embed_photo_as_base64(photo: dict, photos_dir, max_dim: int = 1200) -> dict:
+    """读取图片 → 缩放 → 转 base64(飞书友好,viewer 单图要大一些 1200px)"""
+    try:
+        from PIL import Image
+        import base64, io
+    except ImportError:
+        return photo
+    fp = photos_dir / photo['photo_path']
+    if not fp.exists():
+        return photo
+    try:
+        img = Image.open(fp)
+        if img.mode in ('RGBA', 'P', 'LA'):
+            img = img.convert('RGB')
+        w, h = img.size
+        if max(w, h) > max_dim:
+            if w >= h:
+                new_w = max_dim; new_h = int(h * max_dim / w)
+            else:
+                new_h = max_dim; new_w = int(w * max_dim / h)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=88, optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+        photo = dict(photo)
+        photo['photo_data_base64'] = f"data:image/jpeg;base64,{b64}"
+        return photo
+    except Exception as e:
+        print(f"  ⚠ 无法嵌入 {fp}: {e}")
+        return photo
+
+
 def get_neighbor_ids(photo_id: int, tag: str) -> tuple:
     """返回同 tag 下 prev / next 照片 ID(按日期排序)"""
     conn = get_db(find_db_path(SKILL_DIR, DB_FILENAME))
@@ -58,10 +90,16 @@ def get_neighbor_ids(photo_id: int, tag: str) -> tuple:
     return prev_id, next_id
 
 
-def render(photo_id: int, output_path: Path) -> Path:
+def render(photo_id: int, output_path: Path, embed_images: bool = True) -> Path:
     photo = get_photo(photo_id)
     if not photo:
         raise ValueError(f"照片 ID={photo_id} 不存在")
+
+    # V1.3 §HTML 交付协议:base64 嵌图(飞书友好)
+    if embed_images:
+        from body_photo_tracker import get_photos_dir
+        photos_dir = get_photos_dir()
+        photo = embed_photo_as_base64(photo, photos_dir)
 
     prev_id, next_id = get_neighbor_ids(photo_id, photo['tag'])
 
@@ -72,6 +110,7 @@ def render(photo_id: int, output_path: Path) -> Path:
             "photo": photo,
             "prev_id": prev_id,
             "next_id": next_id,
+            "embedded": embed_images,
         },
         "message": "身材照单图查看",
     }

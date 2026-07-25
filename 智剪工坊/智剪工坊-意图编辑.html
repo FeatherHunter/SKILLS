@@ -2483,9 +2483,14 @@
 
       // 4. v1.20+timeline: 挂自定义 timeline(单击跳转 + Ctrl+滚轮缩放)
       if (!previewEl.dataset.timelineInited) {
-        setupTimeline(previewEl, video);
+        setupTimeline(previewEl, video, i);
         previewEl.dataset.timelineInited = '1';
       }
+
+      // v2.0:渲染彩虹段 + 折叠区(单源真相)
+      const trackInner = previewEl.querySelector('.timeline-track-inner');
+      if (trackInner) renderTimelineSegments(trackInner, i);
+      renderSegmentsPanel(i);
 
       // 5. v1.25 多视频播放互斥:一次性绑定 play 事件,除当前 video 外全部 pause。
       if (!videoListEl.dataset.playExclusivityInited) {

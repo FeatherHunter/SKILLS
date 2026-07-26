@@ -124,6 +124,26 @@
       .video-grid { grid-template-columns: 1fr; }
       .video-thumb { width: 80px; height: 80px; }
     }
+    .video-info-details {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .video-info-details > summary {
+      padding: 12px 14px; cursor: pointer; list-style: none;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500; color: var(--label);
+      transition: background 0.15s;
+    }
+    .video-info-details > summary:hover { background: var(--gray-fill); }
+    .video-info-details > summary::-webkit-details-marker { display: none; }
+    .video-info-details > summary::before {
+      content: "▶"; display: inline-block; font-size: 9px;
+      color: var(--secondary); width: 12px; text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .video-info-details[open] > summary::before { transform: rotate(90deg); }
+    .video-info-details > .video-grid { padding: 0 14px; }
+    .video-info-details > .seq-section { padding: 0 14px 12px; }
     .ops-group {
       background: var(--card); border: 1px solid var(--border); border-radius: 10px;
       margin-bottom: 12px; overflow: hidden;
@@ -219,13 +239,6 @@
       margin-bottom: 8px; font-size: 13px; color: var(--secondary);
     }
     .inline-preview-title { color: var(--label); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .inline-preview-close {
-      background: transparent; border: 1px solid var(--border);
-      color: var(--secondary); cursor: pointer;
-      padding: 2px 10px; border-radius: 4px; font-size: 14px;
-      transition: all 0.15s; font-family: inherit;
-    }
-    .inline-preview-close:hover { border-color: var(--blue); color: var(--blue); }
     .inline-preview-video {
       width: 100%; max-height: 360px;
       background: #000; border-radius: 10px 10px 0 0; display: block;
@@ -2524,13 +2537,6 @@
         videoListEl.querySelectorAll('[data-play]').forEach(el => {
           el.addEventListener('click', () => previewVideoInline(parseInt(el.dataset.play, 10)));
         });
-        // v1.15 新增:内嵌预览区 ✕ 关闭按钮
-        videoListEl.querySelectorAll('[data-inline-preview-close]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closeInlinePreview(parseInt(btn.dataset.inlinePreviewClose, 10));
-          });
-        });
 
         // v1.3: 图片放大预览（点击 data-zoom 元素）
         videoListEl.querySelectorAll('[data-zoom]').forEach(el => {
@@ -2738,7 +2744,6 @@
               <div class="inline-preview-head">
                 <span class="inline-preview-title">▶ 预览 · #${entry.index} ${escapeHtml(entry.name)}</span>
                 <span class="inline-preview-meta">${isImage ? '🖼️ 图片' : `${formatDuration(entry.durationSec)} · ${(entry.file.size/1024/1024).toFixed(1)} MB`}</span>
-                <button class="inline-preview-close" type="button" data-inline-preview-close="${i}" title="收起预览">✕</button>
               </div>
               <video class="inline-preview-video" preload="metadata" playsinline></video>
               <!-- v2.109 timeline 结构:ruler/segments/playhead 共享 inner,统一缩放 -->
@@ -3447,15 +3452,6 @@
         }, true);
         videoListEl.dataset.playExclusivityInited = '1';
       }
-    }
-
-    function closeInlinePreview(i) {
-      const previewEl = document.getElementById(`inline-preview-${i}`);
-      if (!previewEl) return;
-      const video = previewEl.querySelector('video');
-      if (video) video.pause();
-      previewEl.hidden = true;
-      // v1.25:不再维护 currentPreviewIdx,资源回收交由 toggleCard 折叠分支。
     }
 
     // v1.20+timeline: 自定义 timeline 类剪映

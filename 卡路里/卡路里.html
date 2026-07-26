@@ -187,7 +187,15 @@
 
 <hr />
 <h2 id="speed-table">🤝 触发词速查表</h2>
-<blockquote><p>用户说"卡路里 help"时显示本表。全部唤醒词为动词+名词结构。</p></blockquote>
+<blockquote><p>用户说"卡路里 help"(v2.4.10 起注册为正式唤醒词"卡路里HELP")时显示本表 + 一键复制 prompt 给 AI。全部唤醒词为动词+名词结构。</p></blockquote>
+
+<h3 id="help-center">📚 速查台(v2.4.10 起)</h3>
+<table>
+<thead><tr><th>唤醒词</th><th>功能</th><th>CLI</th></tr></thead>
+<tbody>
+<tr><td><code>卡路里HELP</code></td><td>打开唤醒词速查台(80 唤醒词 / 109 prompt / 3 层折叠 + 搜索 + 一键复制)</td><td><code>python scripts/render_help_center.py</code></td></tr>
+</tbody>
+</table>
 
 <p><strong>CLI 列规则(最严格标准 · 2026-07-13 修)</strong>:</p>
 <ul>
@@ -1538,6 +1546,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
         <tr><td><code>contraindication_report.html</code></td><td>扫禁忌</td></tr>
         <tr><td><code>process_progress.html</code></td><td>落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度)</td></tr>
         <tr><td><code>home_dashboard.html</code></td><td>开卡路里 / 卡路里面板 / 今日卡路里(主页 dashboard)</td></tr>
+        <tr><td><code>help_center.html</code></td><td>卡路里HELP(唤醒词速查台·80 词·109 prompt·3 层折叠 + 搜索 + 一键复制)</td></tr>
       </tbody>
     </table>
 

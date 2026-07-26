@@ -2,7 +2,7 @@
 
 > 2026-07-23 起，按《预置 HTML + 注入数据指导手册》第一性原理实现："模板稳定、数据流动、样式预置、内容注入"。
 
-## 已实现模板（6 个）
+## 已实现模板(7 个)
 
 | 模板 | 大小 | 唤醒词 | 数据源 | 渲染器 |
 |---|---|---|---|---|
@@ -12,6 +12,7 @@
 | `templates/health_dashboard.html` | 15 KB | 查健康报告 | `analysis.dashboard(as_dict=True)` | `scripts/render_health_dashboard.py` |
 | `templates/food_ranking.html` | 13 KB | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking` × 5 | `scripts/render_food_ranking.py` |
 | `templates/exercise_review.html` | 15 KB | 复盘训练 | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
+| `templates/help_center.html` | 14 KB | 卡路里HELP(唤醒词速查台 · 80 词 / 109 prompt / 3 层折叠 + 搜索 + 一键复制) | `scripts/_triggers.py` 静态表 | `scripts/render_help_center.py` |
 
 ## 通用调用方式
 

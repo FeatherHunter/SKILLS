@@ -2680,6 +2680,8 @@
             </div>
           </div>
           <div class="card-body">
+            <details class="video-info-details">
+              <summary>📝 视频信息(简介 / 用途 / 备注 / Sequence) — 默认折叠</summary>
             <div class="video-grid">
               <div class="field">
                 <label>内容简介 <span class="hint">这段${isImage ? '图片' : '视频'}拍的是啥</span></label>
@@ -2688,18 +2690,6 @@
               <div class="field">
                 <label>使用意图 <span class="hint">为啥用这条</span></label>
                 <textarea data-video="${i}.intent" rows="1"></textarea>
-              </div>
-              <div class="field">
-                <label>声音 <span class="hint">原声音轨怎么处理</span></label>
-                <select data-video="${i}.voice">
-                  <option value="">—</option>
-                  <option value="keep">保留</option>
-                  <option value="keep-with-filler-removed">保留+去水词</option>
-                  <option value="mute">静音</option>
-                  <option value="bgm-only">只留 BGM</option>
-                </select>
-                <textarea data-video="${i}.voice_note" rows="1" placeholder="补充说明（可选）— 例：原声音量小，需放大 1.5x"
-                          style="margin-top:6px;font-size:12px;min-height:32px"></textarea>
               </div>
               <div class="field">
                 <label>备注 <span class="hint">没归类的想法都写这</span></label>
@@ -2742,6 +2732,7 @@
               </details>
               <div class="seq-error" id="seq-error-${i}"></div>
             </div>
+            </details>
             <!-- v1.15 新增:内嵌预览区(点缩略图后展开,位于 ops-group 上方) -->
             <div class="inline-preview" id="inline-preview-${i}" hidden>
               <div class="inline-preview-head">
@@ -2784,7 +2775,18 @@
               </button>
               <div class="ops-body${isImage ? ' image-ops' : ''}">
                 ${isImage ? '<div class="image-ops-hint">🖼️ 图片素材:时间类/音频类/字幕类 op 不可用 — 只保留调色、插入图片、片头文字</div>' : ''}
-                <details class="ops-subgroup" open>
+                <div class="op-row">
+                  <span class="op-label">声音</span><span class="op-key">voice</span>
+                  <select data-video="${i}.voice">
+                    <option value="">— 不设置 —</option>
+                    <option value="keep">保留</option>
+                    <option value="keep-with-filler-removed">保留+去水词</option>
+                    <option value="mute">静音</option>
+                    <option value="bgm-only">只留 BGM</option>
+                  </select>
+                  <input type="text" class="op-note" data-video="${i}.voice_note" placeholder="补充说明（可选）— 例：原声音量小，需放大 1.5x">
+                </div>
+                <details class="ops-subgroup">
                   <summary>📐 基础剪辑 (7)</summary>
                   ${renderOpRow('trim-head', '剪头', 'trim_head', 'number', '秒', '去掉前 N 秒', '', i)}
                   ${renderOpRow('trim-tail', '剪尾', 'trim_tail', 'number', '秒', '去掉后 N 秒', '', i)}
@@ -2794,7 +2796,7 @@
                   ${renderOpRow('reverse', '倒放', 'reverse', null, '', '从尾到头播', '', i)}
                   ${renderOpRow('mute', '静音', 'mute', null, '', '原声 + 加的音频全静', '', i)}
                 </details>
-                <details class="ops-subgroup" open>
+                <details class="ops-subgroup">
                   <summary>🎨 画面调节 (5)</summary>
                   ${renderOpRow('speed-up', '加速', 'speed_up', 'number', 'x', '高倍速用于缩时（如 60x 冥想缩到秒级）', 2, i, '100x 已很快')}
                   ${renderOpRow('slow-down', '减速', 'slow_down', 'number', 'x', '', 0.5, i)}
@@ -5721,7 +5723,7 @@
         const rowsHtml = opsInGroup.map(renderSegOpRow).join('');
         const activeCount = opsInGroup.filter(k => segOps[k]?.on).length;
         return `
-          <details class="seg-ops-group" open>
+          <details class="seg-ops-group">
             <summary>
               <span class="seg-ops-icon">${group.icon}</span>
               <span class="seg-ops-name">${group.name}</span>

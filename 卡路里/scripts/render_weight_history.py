@@ -55,7 +55,8 @@ def _fetch_logs(conn, start, end):
 
 def _fetch_target(conn):
     cur = conn.cursor()
-    cur.execute('SELECT weight_kg FROM weight_goal ORDER BY id DESC LIMIT 1')
+    # v2.4.7 修:weight_goal 不是表,是 daily_goal 表的 1 列(daily_goal 是单行表 id=1)
+    cur.execute('SELECT weight_goal FROM daily_goal WHERE id = 1')
     g = cur.fetchone()
     return g[0] if g else None
 

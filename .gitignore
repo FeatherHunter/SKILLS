@@ -81,3 +81,6 @@ Thumbs.db
 
 # 居家管家加密密钥目录(Fernet master key 等敏感数据,不入库)
 居家管家/.db/
+
+# Local git worktrees
+.worktrees/

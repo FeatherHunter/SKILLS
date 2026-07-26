@@ -1551,76 +1551,147 @@
     }
 
     /* v2.98 段 op-row(对齐整段视频操作的 op-row 样式) */
+    /* v2.136 段操作 panel — 仿整段视频 op-row 单行布局 */
     .seg-op-row {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
-      padding: 8px 0;
+      gap: 8px;
+      padding: 6px 0;
       border-bottom: 1px solid var(--border);
       font-size: 12px;
     }
     .seg-op-row:last-child { border-bottom: none; }
-    .seg-op-row .seg-op-toggle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      min-width: 100px;
-    }
-    .seg-op-row .seg-op-toggle input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
+    .seg-op-row .seg-op-check {
+      width: 16px;
+      height: 16px;
       cursor: pointer;
       accent-color: var(--blue);
+      flex-shrink: 0;
     }
-    .seg-op-row .seg-op-icon { font-size: 16px; }
-    .seg-op-row .seg-op-label { font-weight: 500; }
+    .seg-op-row .seg-op-icon { font-size: 14px; flex-shrink: 0; }
+    .seg-op-row .seg-op-label {
+      font-weight: 500;
+      min-width: 48px;
+      flex-shrink: 0;
+    }
+    .seg-op-row .seg-op-key {
+      color: var(--secondary);
+      font-size: 10px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      flex-shrink: 0;
+    }
     .seg-op-row .seg-op-params {
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      flex: 1;
-    }
-    .seg-op-row .seg-op-params label {
-      display: inline-flex;
-      align-items: center;
       gap: 4px;
-      font-size: 11px;
-      color: var(--secondary);
+      flex: 0 1 auto;
     }
-    .seg-op-row .seg-op-params input,
-    .seg-op-row .seg-op-params select {
-      padding: 3px 6px;
+    .seg-op-row .seg-op-input {
+      padding: 2px 5px;
       border: 1px solid var(--border);
       border-radius: 3px;
-      font-size: 12px;
+      font-size: 11px;
       background: white;
-      min-width: 60px;
+      width: 56px;
     }
+    .seg-op-row .seg-op-input:disabled { background: #f5f5f7; color: var(--secondary); }
     .seg-op-row .seg-op-note {
-      width: 100%;
-      padding: 4px 6px;
+      flex: 1 1 auto;
+      min-width: 80px;
+      max-width: 200px;
+      padding: 2px 6px;
       border: 1px solid var(--border);
       border-radius: 3px;
       font-size: 11px;
       font-family: inherit;
       resize: vertical;
       min-height: 22px;
-      margin-top: 4px;
     }
     .seg-op-row .seg-op-help {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--secondary);
-      width: 22px; height: 22px;
+      width: 20px; height: 20px;
       border-radius: 50%;
       cursor: help;
-      font-size: 11px;
+      font-size: 10px;
+      flex-shrink: 0;
     }
     .seg-op-row .seg-op-help:hover { background: var(--gray-fill); }
-    .seg-voice-row, .seg-label-edit, .seg-note-main {
-      padding: 8px 0;
+
+    /* v2.136:分段折叠 details */
+    .seg-ops-list { padding: 4px 0 0 0; }
+    .seg-ops-group { margin: 8px 0; }
+    .seg-ops-group > summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.03);
+      border-radius: 6px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .seg-ops-group > summary::marker,
+    .seg-ops-group > summary::-webkit-details-marker { display: none; }
+    .seg-ops-group > summary:hover { background: rgba(0,0,0,0.05); }
+    .seg-ops-icon { color: var(--seg-color, #888); font-size: 13px; }
+    .seg-ops-name { flex: 1; color: var(--label); }
+    .seg-ops-count { color: var(--secondary); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .seg-ops-body { padding: 4px 8px 0 8px; }
+
+    /* v2.136 段信息行 — label + 音频策略 一行紧凑 */
+    .seg-info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 6px 0;
+    }
+    .seg-info-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--secondary);
+      flex: 1 1 auto;
+    }
+    .seg-info-row input[type="text"] {
+      flex: 1;
+      min-width: 120px;
+      padding: 4px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .seg-info-row select {
+      padding: 3px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .seg-note-main {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 36px;
+      margin: 4px 0;
+    }
+    .seg-voice-row, .seg-label-edit {
+      padding: 0;
+    }
+    .seg-actions-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 8px 0 0 0;
+    }
       border-bottom: 1px solid var(--border);
     }
     .seg-actions-bar {
@@ -5522,40 +5593,62 @@
       panel.dataset.videoIndex = String(videoIndex);
       panel.dataset.segId = segId;
 
-      // 动态生成 ops 列表(从 SEGMENT_OPS_SCHEMA 读取)
+      // v2.136:重构段操作 panel — 仿整段视频 op-row 单行 + 按类别分组折叠
       const segOps = seg.ops || {};
-      const opsListHtml = Object.entries(window.SEGMENT_OPS_SCHEMA).map(([opKey, opDef]) => {
+
+      // 按类别分组 ops(学习整段视频的"基础剪辑/画面调节/音频处理"分组)
+      const OP_GROUPS = [
+        { name: '播放/画面调节',  icon: '✏', keys: ['speed-up','slow-down','reverse','mute','fade-in','fade-out','color'] },
+        { name: '音频/字幕处理',    icon: '🎙', keys: ['asr-transcribe','asr-burn','asr-speaker','audio-denoise','audio-separate','audio-diarize','voice_filler_removed'] },
+      ];
+
+      // 单行 op-row 生成(类整段视频 op-row)
+      const renderSegOpRow = (opKey) => {
+        const opDef = window.SEGMENT_OPS_SCHEMA[opKey];
+        if (!opDef) return '';
         const cur = segOps[opKey];
         const isOn = cur && cur.on;
-        // v2.103:参数表单总显示(不依赖勾选),isOn 影响视觉(disabled + 灰)
+        // 参数 input(单行排,无独立 label)
         let paramHtml = '';
         if (opDef.params) {
-          paramHtml = '<div class="seg-op-params' + (isOn ? '' : ' disabled') + '">';
           for (const [pKey, pDef] of Object.entries(opDef.params)) {
-            // v2.115 修:cur 可能 undefined,加 guard
             const curVal = (cur && cur[pKey] !== undefined) ? cur[pKey] : pDef.default;
             if (pDef.type === 'number') {
-              paramHtml += `<label>${pDef.label}:<input type="number" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}" ${isOn ? '' : 'disabled'}></label>`;
+              paramHtml += `<input type="number" class="seg-op-input" min="${pDef.min}" max="${pDef.max}" step="${pDef.step}" value="${curVal}" data-param="${pKey}" ${isOn ? '' : 'disabled'} title="${pDef.label}">`;
             } else if (pDef.type === 'select') {
               const opts = pDef.options.map(o => `<option value="${o}" ${o === curVal ? 'selected' : ''}>${o}</option>`).join('');
-              paramHtml += `<label>${pDef.label}:<select data-param="${pKey}" ${isOn ? '' : 'disabled'}><option value="">---</option>${opts}</select></label>`;
+              paramHtml += `<select class="seg-op-input" data-param="${pKey}" ${isOn ? '' : 'disabled'} title="${pDef.label}"><option value="">---</option>${opts}</select>`;
             }
           }
-          paramHtml += '</div>';
         }
-        // note 输入总显示(不依赖勾选)
+        // 单行 op-row:☐ + 图标 + 中文名 + op_key(等宽) + 参数 input + 补充说明 textarea(右对齐)+ ?帮助
         const noteVal = cur && cur.note ? cur.note : '';
-        const noteHtml = `<textarea class="seg-op-note${isOn ? '' : ' disabled'}" data-op-note="${opKey}" rows="1" placeholder="本 op 说明(LLM 讨论用)" ${isOn ? '' : 'disabled'}>${escapeHtml(noteVal)}</textarea>`;
         return `
           <div class="seg-op-row" data-op-key="${opKey}">
-            <input type="checkbox" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''} title="勾选启用">
+            <input type="checkbox" class="seg-op-check" data-op-toggle="${opKey}" ${isOn ? 'checked' : ''} title="勾选启用">
             <span class="seg-op-icon">${opDef.icon}</span>
             <span class="seg-op-label">${opDef.label}</span>
-            ${paramHtml}
-            ${noteHtml}
+            <span class="seg-op-key">${opKey}</span>
+            <div class="seg-op-params">${paramHtml}</div>
+            <textarea class="seg-op-note" data-op-note="${opKey}" rows="1" placeholder="补充说明" ${isOn ? '' : 'disabled'}>${escapeHtml(noteVal)}</textarea>
             <button class="seg-op-help" data-op-help="${opKey}" title="查看说明">?</button>
-          </div>
-        `;
+          </div>`;
+      };
+
+      // 分组 details(summary 带折叠图标 + 名称 + 数量)
+      const groupsHtml = OP_GROUPS.map(group => {
+        const opsInGroup = group.keys.filter(k => k in window.SEGMENT_OPS_SCHEMA);
+        const rowsHtml = opsInGroup.map(renderSegOpRow).join('');
+        const activeCount = opsInGroup.filter(k => segOps[k]?.on).length;
+        return `
+          <details class="seg-ops-group" open>
+            <summary>
+              <span class="seg-ops-icon">${group.icon}</span>
+              <span class="seg-ops-name">${group.name}</span>
+              <span class="seg-ops-count">(${activeCount}/${opsInGroup.length})</span>
+            </summary>
+            <div class="seg-ops-body">${rowsHtml}</div>
+          </details>`;
       }).join('');
 
       // 音频策略 voice mode 选择
@@ -5564,18 +5657,15 @@
         `<option value="${k}" ${k === voiceVal ? 'selected' : ''}>${v}</option>`
       ).join('');
 
-      // v2.134:重写 段操作 panel 仿 整段视频操作 风格
-      //   - 标题含段号 N + 时间范围 "段 N — 1:10~1:35"
-      //   - 整 panel 背景 = 段颜色 12% tint(淡淡关联)
-      //   - 顶部加"跳转到 timeline"按钮
-      //   - 插入到对应 seg-item 行后面
-      //   - 默认展开(不折叠)
-      //   - 主动打开后 scroll 到 panel
       const segIdx = state.segments.findIndex(s => s.id === segId);
       const segNum = segIdx >= 0 ? (segIdx + 1) : '?';
-      const segColor = (state.segments[segIdx]?.start_sec != null) ? `colors[${segIdx % 8}]` : '#888';
+      const COLORS = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
+      const segColor = state.segments[segIdx]?.excluded
+        ? '#8e8e93'
+        : (COLORS[segIdx % 8] || '#888');
+
       panel.className = 'segment-panel segment-panel-tinted';
-      panel.style.setProperty('--seg-color', state.segments[segIdx]?.excluded ? '#8e8e93' : ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'][segIdx % 8] || '#888');
+      panel.style.setProperty('--seg-color', segColor);
       panel.innerHTML = `
         <div class="segment-panel-header" data-act="toggle-panel">
           <span class="disclosure">▶</span>
@@ -5586,16 +5676,12 @@
         </div>
         <div class="segment-panel-body">
           <div class="segment-panel-inner">
-            <div class="seg-label-edit">
-              <label>label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名(留空显示时间码)"></label>
+            <div class="seg-info-row">
+              <label class="seg-label-edit">label:<input type="text" class="seg-label-input" value="${escapeHtml(seg.label || '')}" placeholder="段名(留空显示时间码)"></label>
+              <label class="seg-voice-edit">🎙️ 音频策略:<select class="seg-voice-select"><option value="">— 继承 video_ops —</option>${voiceOptions}</select></label>
             </div>
-            <div class="seg-voice-row">
-              <label>🎙️ 音频策略:<select class="seg-voice-select"><option value="">— 继承 video_ops —</option>${voiceOptions}</select></label>
-            </div>
-            <div class="seg-note-main">
-              <textarea class="seg-note-input" placeholder="本段整体补充说明(LLM 讨论用)" rows="2">${escapeHtml(seg.note || '')}</textarea>
-            </div>
-            <div class="seg-op-list">${opsListHtml}</div>
+            <textarea class="seg-note-main" placeholder="本段整体补充说明(LLM 讨论用)" rows="2">${escapeHtml(seg.note || '')}</textarea>
+            <div class="seg-ops-list">${groupsHtml}</div>
             <div class="seg-actions-bar">
               <button class="seg-delete-btn" data-act="exclude">🗑️ 删除该段</button>
               <button class="seg-close-btn" data-act="close">✕ 关闭</button>

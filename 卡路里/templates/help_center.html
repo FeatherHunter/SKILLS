@@ -48,28 +48,41 @@ body {
 }
 .cat-block:first-of-type { margin-top: 0; }
 .cat-block:last-of-type { margin-bottom: 0; }
-.cat-block > summary {
-  padding: 7px 12px; font-size: 13px; font-weight: 600;
+.cat-block > summary,
+.word-card > summary,
+.variant-block > summary {
   cursor: pointer; list-style: none;
   display: flex; align-items: center; gap: 6px;
-  background: #fafbfc;
-  /* === 移动端点击硬化(v2.4.10 抗审查修) === */
+  /* === 移动端点击硬化(v2.4.10 抗审查修 · L1+L2+L3 全覆盖) === */
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
-  touch-action: manipulation;        /* 杀 300ms 双击延迟 */
-  -webkit-user-select: none;          /* 杀长按文字选择 */
+  touch-action: manipulation;
+  -webkit-user-select: none;
   user-select: none;
-  min-height: 36px;                   /* 加大点击区(iOS HIG 44px / Material 48px) */
 }
-.cat-block > summary::-webkit-details-marker { display: none; }
+.cat-block > summary::-webkit-details-marker,
+.word-card > summary::-webkit-details-marker,
+.variant-block > summary::-webkit-details-marker { display: none; }
+.cat-block > summary::before,
+.word-card > summary::before,
+.variant-block > summary::before {
+  pointer-events: none;
+}
+.cat-block > summary > *,
+.word-card > summary > *,
+.variant-block > summary > * { pointer-events: none; }
+
+/* === L1 cat-block 专属样式 === */
+.cat-block > summary {
+  padding: 7px 12px; font-size: 13px; font-weight: 600;
+  background: #fafbfc;
+  min-height: 36px;
+}
 .cat-block > summary::before {
   content: '▸'; font-size: 10px; color: var(--sub);
   transition: transform .12s;
-  pointer-events: none;               /* 伪元素不吞噬点击 */
 }
 .cat-block[open] > summary::before { transform: rotate(90deg); }
-/* 关键:summary 的子 span 不吞噬点击,所有 tap 100% 命中 summary 本身 */
-.cat-block > summary > * { pointer-events: none; }
 .cat-block > summary .count-pill {
   margin-left: auto; font-size: 10px; font-weight: 500;
   color: var(--sub); background: #e5e5e7;
@@ -264,18 +277,20 @@ function render() {
   bindCatFallbackToggle();   /* v2.4.10 · 移动端 L1 展开兜底 */
 }
 
-/* === 移动端 L1 展开兜底(v2.4.10 抗审查修) ===
+/* === 移动端 L1+L2+L3 展开兜底(v2.4.10 抗审查修) ===
    背景:某些 Android WebView / 旧 iOS Safari 上 native <details> toggle
    会因 tap-highlight / 子元素吞噬 / 300ms 延迟 而偶发不响应。
-   这里监听 summary 的 click,如果 50ms 后状态没翻,就强制翻。 */
+   这里监听 summary 的 click,如果 50ms 后状态没翻,就强制翻。
+   v2.4.10 扩展:从 L1 扩到 L1+L2+L3。 */
 function bindCatFallbackToggle() {
-  document.querySelectorAll('.cat-block > summary').forEach(sum => {
+  const sums = document.querySelectorAll(
+    '.cat-block > summary, .word-card > summary, .variant-block > summary');
+  sums.forEach(sum => {
     if (sum.__bound_fb) return;
     sum.__bound_fb = true;
     sum.addEventListener('click', () => {
       const det = sum.parentElement;
       const wasOpen = det.open;
-      // native <details> 应同步处理;若 50ms 后状态没变 → 强制 toggle
       setTimeout(() => {
         if (det.open === wasOpen) {
           det.open = !wasOpen;

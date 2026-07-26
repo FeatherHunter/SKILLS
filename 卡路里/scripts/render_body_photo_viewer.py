@@ -157,7 +157,7 @@ def main():
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_viewer_id{args.id}')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'身材照查看_id{args.id}')
     result = render(args.id, out_path)
     print(f"✓ 已生成: {result}")
     emit_send_protocol(result)

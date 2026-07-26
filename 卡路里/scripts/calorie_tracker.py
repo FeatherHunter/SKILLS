@@ -61,6 +61,22 @@ def _parse_kw_args(args):
     return kwargs
 
 
+def _parse_render_path(stdout_text):
+    """从 render_*.py 脚本 stdout 中解析出 HTML 输出路径
+
+    render 脚本固定输出首行为 `✅ <path>`,本函数提取该路径;
+    找不到则返回 None,调用方走 fallback 纯文本。
+    """
+    if not stdout_text:
+        return None
+    for line in stdout_text.splitlines():
+        line = line.strip()
+        if line.startswith('✅ '):
+            # ✅ D:/.db/calorie_html/今日饮食_20260726_123000.html
+            return Path(line[2:].strip())
+    return None
+
+
 def usage():
     """Print usage information"""
     print("""
@@ -213,15 +229,14 @@ def main():
 
         elif command == "list":
             # v2.4.6:接通 render_today_meals.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
+            # v2.4.8:不传 --output,由 render 走 html_path() 新规范(中文 + 时间戳)
             # 默认 list 是"查今天吃" → 生成 HTML;render 失败 fallback 纯文本
-            from pathlib import Path as _P
-            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'today_meals_live.html'
-            tmp.parent.mkdir(parents=True, exist_ok=True)
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_today_meals.py', '--output', str(tmp)],
-                capture_output=True, text=True, timeout=15,
+                [sys.executable, 'scripts/render_today_meals.py'],
+                capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
-            if render_proc.returncode == 0 and tmp.exists():
+            tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None
+            if tmp and tmp.exists():
                 print(f"\n✅ HTML 已生成(查今天吃): {tmp}")
                 print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
             else:
@@ -232,14 +247,13 @@ def main():
 
         elif command == "summary":
             # v2.4.6:接通 render_today_diet.py(查今日摘要)
-            from pathlib import Path as _P
-            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'today_diet_live.html'
-            tmp.parent.mkdir(parents=True, exist_ok=True)
+            # v2.4.8:不传 --output,由 render 走 html_path() 新规范
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_today_diet.py', '--output', str(tmp)],
-                capture_output=True, text=True, timeout=15,
+                [sys.executable, 'scripts/render_today_diet.py'],
+                capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
-            if render_proc.returncode == 0 and tmp.exists():
+            tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None
+            if tmp and tmp.exists():
                 print(f"\n✅ HTML 已生成(查今日摘要): {tmp}")
                 print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
             else:
@@ -322,15 +336,14 @@ def main():
 
         elif command == "weight-history":
             # v2.4.6:接通 render_weight_history.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
+            # v2.4.8:不传 --output,由 render 走 html_path() 新规范(中文 + 时间戳)
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
-            from pathlib import Path as _P
-            tmp = _P(__file__).resolve().parent.parent / 'calorie_html' / 'weight_history_live.html'
-            tmp.parent.mkdir(parents=True, exist_ok=True)
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_weight_history.py', '--days', str(days), '--output', str(tmp)],
-                capture_output=True, text=True, timeout=15,
+                [sys.executable, 'scripts/render_weight_history.py', '--days', str(days)],
+                capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
-            if render_proc.returncode == 0 and tmp.exists():
+            tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None
+            if tmp and tmp.exists():
                 print(f"\n✅ HTML 已生成(体重历史): {tmp}")
                 print(f"⚠️ ACTION=SEND_TO_USER | HTML={tmp.absolute()}")
             else:

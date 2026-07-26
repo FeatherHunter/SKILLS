@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
   触发词:开卡路里、卡路里面板、今日卡路里、记吃了、拍营养表、删吃的、改吃的、查今天吃、查吃的记录、查热量历史、记喝水、查今天喝水、查热量、存食品、改食品、查食品库、批量导入、校验批量、查食品库去重、记体重、改体重记录、查体重历史、查体重趋势、对比体重、查体重波动、设体重目标、查体重目标、记运动、改运动记录、查运动记录、查运动汇总、查运动类型、查运动趋势、查健身计划、查询健身计划、制定健身计划、改健身计划、落地健身计划、卡路里同步、训记-覆盖X日的训练计划、回写训记、复盘训练、查热量趋势、查营养结构、查热量缺口、查食物排行、查高热量榜、查低热量榜、查频繁吃榜、查高碳水榜、查高蛋白榜、查运动分布、查运动贡献、设营养目标、查营养目标、查健康报告、查卡路里数据、记身材照、查身材照、删身材照、改照片标签、生成身材照GIF、记体脂、查体脂、删体脂、查体脂趋势、记围度、查围度、删围度、查围度趋势、复盘、复盘今日、复盘本周、复盘本月、复盘本年、复盘日期范围、扫禁忌、开启定时复盘、关闭定时复盘、查定时复盘、设置档案、查档案
-metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.7", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.8", "requires": { "python": ">=3.7" } } }
 ---
 
 **🔗 联动提示:** 完成本技能主操作后,检查技能路由器(`图片路由/SKILL.md`)的联动规则,判断是否需要联动其他技能(如用户提到食物花费→询问是否记录支出;用户提到买了新食品→询问是否存入食品库)。详见路由器的联动规则表。
@@ -59,15 +59,28 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.7", "requires": { "py
 
 > 详见《预置HTML+注入数据指导手册》第一性原理。"模板稳定、数据流动、样式预置、内容注入"。
 
-### 📌 输出位置(2026-07-24 起 · 手册 §4.1 跨 Skill 通用)
+### 📌 输出位置(2026-07-24 起 · 手册 §4.1 跨 Skill 通用 · v2.4.8 中文化)
 
 所有 `render_*.py` 默认输出到 **`calorie_html/`** 子目录(与 `calorie_data.db` 同级,跟随 `$SKILLS_DB_PATH` 环境变量,fallback `D:/.db/`)。
 
-| 旧规则(已下线) | 新规则(手册 §4.1) |
+**v2.4.8 起 · `<command>` 字段全量中文化**(静态部分 + 动态拼接部分):
+
+| 旧规则(已下线) | 新规则(手册 §4.1 · 中文化) |
 |---|---|
-| `/tmp/<feature>_<range>.html` | `<DATA_DIR>/calorie_html/<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html` |
+| `/tmp/<feature>_<range>.html` | `<DATA_DIR>/calorie_html/<中文command>_<YYYYMMDD>_<HHMMSS>[_<N>].html` |
+| `calorie_html/home_dashboard_*.html` | `calorie_html/主页仪表盘_*.html` |
+| `calorie_html/weight_history_live.html` (无时间戳) | `calorie_html/体重_历史_*.html` (mode → 中文) |
+| `calorie_html/exercise_summary_*.html` | `calorie_html/运动_汇总_*.html` (mode → 中文) |
+| `calorie_html/food_ranking_high_calorie_*.html` | `calorie_html/食物排行_高热量_*.html` (category → 中文) |
 | 覆盖式写入 `卡路里/健身计划.html` | 同秒冲突自动追加 `_2` / `_3` 后缀 |
 | 无冲突保护 | `--output <path>` 仍可显式覆盖到任意路径 |
+
+**动态映射表**(scripts/_cmd_maps.py · 维护在 4 张字典):
+- `WEIGHT_MODE_MAP` — 查体重历史/趋势/对比/波动
+- `EXERCISE_SUMMARY_MODE_MAP` — 查运动记录/汇总/类型/趋势
+- `EXERCISE_DISTRIBUTION_MODE_MAP` — 查运动分布/贡献
+- `FOOD_RANKING_CATEGORY_MAP` — 查食物排行 5 榜单
+- `CONTRAINDICATION_PART_MAP` — 扫禁忌 · 部位
 
 完整规范 + 实际示例见 [`references/html_templates.md`](references/html_templates.md) §"输出目录与命名规范"。
 

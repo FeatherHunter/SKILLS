@@ -179,7 +179,7 @@ def render(output_path=None, target_week=None, include_review=False):
         return output_path
 
     # 默认输出到技能目录
-    default_path = html_path(SKILL_DIR, 'workout_plan')
+    default_path = html_path(SKILL_DIR, '健身计划')
     default_path.write_text(html, encoding='utf-8')
     return str(default_path)
 

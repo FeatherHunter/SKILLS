@@ -160,12 +160,16 @@
 
 <p>DB 查找顺序:<code>SKILLS_DB_PATH</code> 环境变量 → 技能目录 → 父目录 <code>.db/</code> 文件夹 → 自动创建 <code>.db/</code> 目录。</p>
 
-<h4>📌 HTML 输出位置(手册 §4.1 跨 Skill 通用)</h4>
+<h4>📌 HTML 输出位置(手册 §4.1 跨 Skill 通用 · v2.4.8 中文化)</h4>
 <p>所有 <code>render_*.py</code> 默认输出到 <code>calorie_html/</code> 子目录(与 <code>calorie_data.db</code> 同级,跟随 <code>$SKILLS_DB_PATH</code> 环境变量,fallback <code>D:/.db/</code>)。</p>
+<p><strong>v2.4.8 起 · <code>&lt;command&gt;</code> 字段全量中文化</strong>(静态部分 + 动态拼接部分),动态映射见 <code>scripts/_cmd_maps.py</code> 4 张字典。</p>
 <table>
-<thead><tr><th>旧规则(已下线)</th><th>新规则(手册 §4.1)</th></tr></thead>
+<thead><tr><th>旧规则(已下线)</th><th>新规则(手册 §4.1 · 中文化)</th></tr></thead>
 <tbody>
-<tr><td><code>/tmp/&lt;feature&gt;_&lt;range&gt;.html</code></td><td><code>&lt;DATA_DIR&gt;/calorie_html/&lt;command&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_&lt;N&gt;].html</code></td></tr>
+<tr><td><code>/tmp/&lt;feature&gt;_&lt;range&gt;.html</code></td><td><code>&lt;DATA_DIR&gt;/calorie_html/&lt;中文command&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_&lt;N&gt;].html</code></td></tr>
+<tr><td><code>calorie_html/home_dashboard_*.html</code></td><td><code>calorie_html/主页仪表盘_*.html</code></td></tr>
+<tr><td><code>calorie_html/weight_history_live.html</code>(无时间戳)</td><td><code>calorie_html/体重_历史_*.html</code>(mode → 中文)</td></tr>
+<tr><td><code>calorie_html/food_ranking_high_calorie_*.html</code></td><td><code>calorie_html/食物排行_高热量_*.html</code>(category → 中文)</td></tr>
 <tr><td>覆盖式写入 <code>卡路里/健身计划.html</code></td><td>同秒冲突自动追加 <code>_2</code> / <code>_3</code></td></tr>
 <tr><td>无冲突保护</td><td><code>--output &lt;path&gt;</code> 仍可显式覆盖到任意路径</td></tr>
 </tbody>
@@ -1027,7 +1031,8 @@
 <tr><td><code>adapters/xunji_adapter.py</code></td><td>训记 API ↔ exercise_log 纯函数适配器</td></tr>
 <tr><td><code>xunji_bridge/</code></td><td>训记训练拓展功能 CLI 入口包(verify/fetch/upsert/push-plan/overlay-plan/backfill/key/run-sync 8 子命令)</td></tr>
 <tr><td><code>generate_ts_config.py</code></td><td>从数据库生成 <code>config-calorie.ts</code></td></tr>
-<tr><td><code>html_paths.py</code></td><td>HTML 输出路径工具(手册 §4.1 合规:calorie_html/&lt;command&gt;_&lt;TS&gt;[_N].html)</td></tr>
+<tr><td><code>html_paths.py</code></td><td>HTML 输出路径工具(手册 §4.1 合规:v2.4.8 起 <code>&lt;command&gt;</code> 字段中文化,如 <code>主页仪表盘_&lt;TS&gt;[_N].html</code>)</td></tr>
+<tr><td><code>_cmd_maps.py</code></td><td>command 动态参数中文化映射表(WEIGHT/EXERCISE/FOOD/CONTRAINDICATION 4 张字典,v2.4.8 起)</td></tr>
 </tbody>
 </table>
 

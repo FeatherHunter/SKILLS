@@ -4,7 +4,7 @@
 
 对应 SKILL.md 唤醒词: 查今天吃 / 查吃的记录
 对应模板: templates/today_diet.html
-- 输出目录: $DATA_DIR/calorie_html/today_diet_<TS>.html (手册 §4.1)
+- 输出目录: $DATA_DIR/calorie_html/今日饮食总览_<TS>.html (手册 §4.1 · v2.4.8 中文化)
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
 """
 import argparse, json, sys
@@ -118,7 +118,7 @@ def main():
     p = argparse.ArgumentParser(description='渲染今日饮食 HTML(报告型 · 单日 4 餐)')
     p.add_argument('--date', help='日期 YYYY-MM-DD(默认今天)')
     p.add_argument('--mock', help='从 mock JSON 文件加载(代替 DB 查询)')
-    p.add_argument('--output', help='输出文件路径(默认 calorie_html/today_diet_<TS>.html)')
+    p.add_argument('--output', help='输出文件路径(默认 calorie_html/今日饮食总览_<TS>.html)')
     args = p.parse_args()
 
     day = args.date or date.today().isoformat()
@@ -135,7 +135,7 @@ def main():
     if args.output:
         out_path = Path(args.output)
     else:
-        out_path = html_path(SKILL_DIR, 'today_diet')
+        out_path = html_path(SKILL_DIR, '今日饮食总览')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 

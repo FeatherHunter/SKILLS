@@ -107,7 +107,7 @@ def main():
     if args.output:
         out_path = Path(args.output)
     else:
-        out_path = html_path(SKILL_DIR, 'review')
+        out_path = html_path(SKILL_DIR, '复盘')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')

@@ -280,7 +280,7 @@ def main():
         ids = [r[0] for r in cur.fetchall()]
         conn.close()
         suffix = f"tag{args.tag}_n{len(ids)}"
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'body_photo_gif_planner_{suffix}')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'身材照GIF规划器_{suffix}')
     result = render(ids, out_path,
                     validate_files=not args.no_validate_files,
                     embed_images=not args.no_embed_images,

@@ -7,6 +7,12 @@
 
 DATA_DIR 与 calorie_data.db 同级,跟随 SKILLS_DB_PATH 环境变量(fallback D:/.db/)。
 HTML 子目录命名:卡路里 = "calorie" → "/.../calorie_html/"
+
+<command_name> 命名约定(v2.4.8 起 · 中文化):
+  - 静态 command(如 render_home.py 的 '主页仪表盘'):直接传中文
+  - 动态 command(如 food_ranking_{category}):拼接用中文(category 映射见 scripts/_cmd_maps.py)
+  - 中文示例:主页仪表盘_20260726_123000.html / 热量趋势_20260726_123000.html
+  - 同秒冲突自动追加 _2 / _3 后缀
 """
 
 import glob
@@ -43,12 +49,12 @@ def html_name(command, html_dir=None):
     冲突保护:同秒内已有 N 个同名文件 → 追加 _(N+1)
 
     Args:
-        command: CLI 子命令名(如 home_dashboard / weight_log_receipt)
+        command: CLI 子命令名(中文化后,例 "主页仪表盘" / "体重记录回执_mock")
         html_dir: 用于检测冲突的目录;默认 cwd
                   (建议显式传 html_dir(skill_dir) 以避免跨进程误判)
 
     Returns:
-        Path: 仅文件名(不含目录),例如 Path("home_dashboard_20260724_103045.html")
+        Path: 仅文件名(不含目录),例如 Path("主页仪表盘_20260726_103045.html")
     """
     search_dir = Path(html_dir) if html_dir else Path.cwd()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -68,10 +74,10 @@ def html_path(skill_dir, command):
 
     Args:
         skill_dir: Skill 根目录
-        command: CLI 子命令名
+        command: CLI 子命令名(中文化,如 "主页仪表盘" / "热量趋势")
 
     Returns:
-        Path: 完整输出路径(目录保证存在)
+        Path: 完整输出路径(目录保证存在),如 .../calorie_html/主页仪表盘_20260726_103045.html
     """
     hd = html_dir(skill_dir, mkdir=True)
     nm = html_name(command, html_dir=hd)

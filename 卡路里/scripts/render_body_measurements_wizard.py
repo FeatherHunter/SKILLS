@@ -137,7 +137,7 @@ def main():
         if v is not None:
             prefill[f] = v
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'body_measurements_wizard')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '围度向导')
     result = render(out_path, prefill=prefill if prefill else None)
     print(f"✓ 已生成: {result}")
     if prefill:

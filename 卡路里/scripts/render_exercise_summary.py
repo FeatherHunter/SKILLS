@@ -19,6 +19,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'exercise_summary.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa
+from _cmd_maps import EXERCISE_SUMMARY_MODE_MAP  # noqa
 
 
 _CAT_LABELS = {'力量':'strength', '有氧':'cardio', '柔韧':'flex', '日常':'daily'}
@@ -199,7 +200,7 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'exercise_{args.mode}')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'运动_{EXERCISE_SUMMARY_MODE_MAP[args.mode]}')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     n = len(data['data']['items'])

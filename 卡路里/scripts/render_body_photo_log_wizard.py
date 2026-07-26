@@ -48,7 +48,7 @@ def main():
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, 'body_photo_log_wizard')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '身材照记录向导')
     result = render(out_path)
     print(f"✓ 已生成: {result}")
     emit_send_protocol(result)

@@ -17,6 +17,7 @@
 import argparse
 import json
 from html_paths import html_path
+from _cmd_maps import FOOD_RANKING_CATEGORY_MAP
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -97,9 +98,9 @@ def main():
     if args.output:
         out_path = Path(args.output)
     elif args.all:
-        out_path = html_path(SKILL_DIR, 'food_ranking_all')
+        out_path = html_path(SKILL_DIR, '食物排行_全部')
     else:
-        out_path = html_path(SKILL_DIR, f'food_ranking_{args.category}')
+        out_path = html_path(SKILL_DIR, f'食物排行_{FOOD_RANKING_CATEGORY_MAP[args.category]}')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')

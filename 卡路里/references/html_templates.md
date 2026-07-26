@@ -23,15 +23,16 @@ python3 analysis/dashboard.py 2026-07-13 2026-07-19  # 或带 --format json
 python3 scripts/render_<feature>.py [--range X:Y | --days N] [--output <path>]
 ```
 
-## 📌 输出目录与命名规范(2026-07-24 起 · 手册 §4.1)
+## 📌 输出目录与命名规范(2026-07-24 起 · 手册 §4.1 · v2.4.8 中文化)
 
-依据《预置HTML+注入数据指导手册》§4.1(2026-07-24 加,跨Skill通用):
+依据《预置HTML+注入数据指导手册》§4.1(2026-07-24 加,跨Skill通用,2026-07-26 中文化):
 
 | 项 | 规则 |
 |---|---|
 | 输出目录 | `HTML_DIR = DATA_DIR / calorie_html/`<br>(与 `calorie_data.db` 同级,跟随 `$SKILLS_DB_PATH`,fallback `D:/.db/`) |
-| 文件名 | `<command_name>_<YYYYMMDD>_<HHMMSS>[_<N>].html`<br>同秒冲突自动追加 `_2` / `_3` |
-| ASCII 短码 | `calorie` |
+| 文件名 | **`<中文command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`**<br>同秒冲突自动追加 `_2` / `_3` |
+| command 字段 | v2.4.8 起**全量中文化**(静态部分 + 动态拼接部分) |
+| 动态映射 | `scripts/_cmd_maps.py` · WEIGHT/EXERCISE/FOOD/CONTRAINDICATION 4 张映射表 |
 | 工具模块 | `scripts/html_paths.py`:`html_dir()` / `html_name()` / `html_path()` |
 | `--output` | 可显式覆盖到任意路径(共享磁盘 / 飞书云盘等) |
 
@@ -39,21 +40,31 @@ python3 scripts/render_<feature>.py [--range X:Y | --days N] [--output <path>]
 - ❌ `/tmp/<feature>_<range>.html` — 目录不属于数据所在,跨平台不一致
 - ❌ 覆盖式写入 `卡路里/健身计划.html` — 不留历史快照
 - ❌ `_<range>` / `_<part>` / `_<input>.html` 中缀 — 无 _N 冲突保护
+- ❌ `*_live.html`(无时间戳,会被覆盖) — v2.4.8 删除
 
-### 实际输出示例(WSL)
+### 实际输出示例(v2.4.8 起 · 中文 command)
 
 ```
-/mnt/d/2Study/StudyNotes/.db/calorie_html/home_dashboard_20260724_115038.html
-/mnt/d/2Study/StudyNotes/.db/calorie_html/weight_log_receipt_mock_weight_receipt_20260724_115123.html
-/mnt/d/2Study/StudyNotes/.db/calorie_html/goal_config_mock_goal_config_20260724_115123.html
-/mnt/d/2Study/StudyNotes/.db/calorie_html/contradiction_report_腰_20260724_120000_2.html  (同秒第 2 次)
+D:/.db/calorie_html/主页仪表盘_20260726_123000.html
+D:/.db/calorie_html/今日饮食_20260726_123000.html
+D:/.db/calorie_html/热量趋势_20260726_123000.html
+D:/.db/calorie_html/体重_趋势_20260726_123000.html       (体重历史 4 mode 之一)
+D:/.db/calorie_html/运动_汇总_20260726_123000.html       (运动 4 mode 之一)
+D:/.db/calorie_html/运动分布_分布_20260726_123000.html   (分布/贡献 2 mode 之一)
+D:/.db/calorie_html/食物排行_高热量_20260726_123000.html (5 category 之一)
+D:/.db/calorie_html/食物排行_全部_20260726_123000.html   (--all 时)
+D:/.db/calorie_html/禁忌报告_腰_20260726_123000.html     (扫禁忌 · 部位)
+D:/.db/calorie_html/禁忌报告_全部_20260726_120000_2.html (同秒第 2 次)
+D:/.db/calorie_html/体重记录回执_mock_20260726_123000.html  (input 文件名拼接)
 ```
 
 ### 历史快照保留
 
 - `卡路里/健身计划.html` (2026-07-20 末次内容,118 KB)— render_workout_plan.py 旧默认输出
-  B 阶段(commit `292c552`)后已改为 calorie_html/<command>_<TS>.html
+  B 阶段(commit `292c552`)后已改为 calorie_html/健身计划_<TS>.html
   本快照仅作历史参考,后续用 `python scripts/render_workout_plan.py` 生成新 HTML 在 `calorie_html/`
+- `卡路里/calorie_html/today_meals_live.html` + `weight_history_live.html`
+  (2026-07-26 v2.4.8 已删除 — 不符合 §4.1 规范 + 无时间戳 + 英文命名)
 
 ## 模板设计原则（与《手册》第 7 节对齐）
 

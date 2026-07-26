@@ -118,7 +118,7 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'plan_builder_{input_path.stem}')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'计划生成器_{input_path.stem}')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 

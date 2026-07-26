@@ -1,11 +1,11 @@
 ---
 name: SKILL开发总纲V1.0
-description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式。不提供完整 Skill 代码示例(避免硬编码影响 AI 自由),只给原则 + 可加载的工具资产(_assets/)。SKILL 实例代码由各 skill 自己维护。"
+description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式,以及 HELP 唤醒词 + 场景完备性。不提供完整 Skill 代码示例(避免硬编码影响 AI 自由),只给原则 + 可加载的工具资产(_assets/)。SKILL 实例代码由各 skill 自己维护。"
 ---
 
 # SKILL 开发总纲 V1.0
 
-> AI 主读本 · 8 个文件 + 3 个可加载资产 · 一份 HTML 镜像
+> AI 主读本 · 9 个文件 + 3 个可加载资产 · 一份 HTML 镜像
 
 ## ⭐ AI 核心行为规则(第一优先级)
 
@@ -14,6 +14,8 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 > 用户说"查询健身计划"(变体)= 用户说"查健身计划"(核心)= 都要 invoke HTML。AI 不要凭"似不似"主观降级为文字答。
 >
 > 详细推导见 [04-可视化与注入v2.md §原则 11](./04-可视化与注入v2.md)。
+>
+> **HELP 唤醒词与场景契约(原则 12):** 每个 Skill 必须登记至少 1 个 HELP 唤醒词；HELP 自身不在其生成的 HTML 中展示；HELP 命中后必须 invoke HELP HTML，未就绪属于违规/待开发，可用简短文字告知状态而非伪装。业务唤醒词可执行性由场景资产的 `status` 决定；`【待开发】` 时 AI 必须停止业务执行并明确告知，不绕过 / 假装 / 降级。详细规则见 [07-HELP与场景完备性.md](./07-HELP与场景完备性.md)。
 
 ## 30 秒回答
 
@@ -24,7 +26,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | 何时不读 | 单条 CRUD / 简单脚本 / 不写 Skill 的工作 |
 | 不做什么 | **不提供**完整代码示例(避免硬编码影响 AI 自由) |
 
-## 8 个文件 + 3 资产 + 1 HTML 镜像
+## 9 个文件 + 3 资产 + 1 HTML 镜像
 
 | 文件 | 何时读 |
 |---|---|
@@ -34,6 +36,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | [04-可视化与注入v2.md](./04-可视化与注入v2.md) | 设计 / 改造 HTML 模板 |
 | [05-工程仪式.md](./05-工程仪式.md) | 动手前最后一道防线 |
 | [06-附录.md](./06-附录.md) | 演化规则(RULE Forms)| 改造前评估 |
+| [07-HELP与场景完备性.md](./07-HELP与场景完备性.md) | HELP 唤醒词 + 场景资产 + HELP HTML 契约 |
 | [README.md](./README.md) | 人类阅读版目录 |
 | [_assets/style.css](./_assets/style.css) | HTML 模板设计令牌 |
 | [_assets/injector.py](./_assets/injector.py) | 占位符注入函数 |
@@ -48,6 +51,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 4. **CLI 阻塞判定** — CLI 不支持 JSON → 模板做不出来
 5. **HTML 单工铁律(⭐ 最高)** — HTML 是单工设备,过程型 HTML 必须设计"复制 prompt"
 6. **Fresh Agent 验证(新)** — commit 前必须由**零上下文 agent**执行唤醒词通过;失败改 SKILL.md 不改正,循环 ≤ 3 次
+7. **HELP 唤醒词契约(新)** — 每个 Skill 必须登记 HELP 唤醒词 + 场景资产 + HELP HTML；HELP 自身不展示；未实现能力显式标 `【待开发】`，AI 必须停止业务执行 (详见 §07)
 
 ## 来源声明
 

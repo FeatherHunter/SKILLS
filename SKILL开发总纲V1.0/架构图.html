@@ -126,7 +126,7 @@
 <h4>目录</h4>
 <ol>
   <li><a href="#s1">一图总览</a></li>
-  <li><a href="#s2">9 文件 + 3 资产 · 每个的角色</a></li>
+  <li><a href="#s2">10 文件 + 3 资产 · 每个的角色</a></li>
   <li><a href="#s3">AI 阅读路径 · 3 种场景</a></li>
   <li><a href="#s4">6 钩子映射 · 详细在哪</a></li>
     <li><a href="#s8">11 原则 · 原则 11 HTML-First(新)</a></li>
@@ -139,7 +139,7 @@
 <!-- ========== §1 一图总览 ========== -->
 <h2 id="s1">一图总览</h2>
 
-<p>总纲 V1.0 由 <b>1 入口 + 6 正文 + 3 资产 + 1 HTML 镜像</b> 共 11 个文件组成。按重要性 + 阅读顺序分 4 层：</p>
+<p>总纲 V1.0 由 <b>1 入口 + 7 正文 + 3 资产 + 1 HTML 镜像</b> 共 12 个文件组成。按重要性 + 阅读顺序分 4 层：</p>
 
 <div class="arch-diagram">
 
@@ -163,6 +163,7 @@
 
   <div class="arch-level">
     <div class="arch-box">06-附录·RULE<br><small>实战沉淀</small></div>
+    <div class="arch-box star">07-HELP与场景完备性<br><small>★ 新契约权威</small></div>
   </div>
 
   <div style="margin-top: 32px; border-top: 1px dashed var(--border); padding-top: 20px;">
@@ -186,7 +187,7 @@
 <p><b>关键观察</b>:§02 是<b>唯一权威</b>(所有规则/反模式/自检都源自它),§04 是<b>新增价值</b>(模式词典 + 单工铁律)。其他章节是它们的展开或实操。</p>
 
 <!-- ========== §2 文件角色 ========== -->
-<h2 id="s2">9 文件 + 3 资产 · 每个的角色</h2>
+<h2 id="s2">10 文件 + 3 资产 · 每个的角色</h2>
 
 <h3>入口 (1)</h3>
 <div class="file-card">
@@ -198,7 +199,7 @@
   </div>
 </div>
 
-<h3>正文 (6)</h3>
+<h3>正文 (7)</h3>
 <div class="file-card">
   <div class="file-num">01</div>
   <div>
@@ -245,6 +246,15 @@
     <div class="file-name">06-附录.md</div>
     <div class="file-meta">~3 KB · 3 维度评估 + 4 Phase 模式 + 通用顺序 + 不做的情形 + BUG 优先级</div>
     <div class="file-desc"><b>作用</b>:从历史案例抽出的 RULE Forms(不是案例本身)。<b>何时读</b>:改造 Skill 前评估 + 不知道下一步怎么办时。</div>
+  </div>
+</div>
+
+<div class="file-card">
+  <div class="file-num" style="background: var(--orange);">07</div>
+  <div>
+    <div class="file-name">07-HELP与场景完备性.md</div>
+    <div class="file-meta">~10 KB · HELP 唤醒词 + 场景资产 + 稳定 prompt + 二态状态 + HELP HTML 契约</div>
+    <div class="file-desc"><b>作用</b>:HELP 唤醒词、场景完备性、`【待开发】` 状态和 HELP HTML 交付的唯一权威。<b>何时读</b>:设计 / 评审 / 验收 Skill 时必读。</div>
   </div>
 </div>
 
@@ -330,7 +340,7 @@
     <span style="color: var(--fg2); font-size: 14px;">用户说"看看这个改动 OK 吗" / Code Review</span>
   </div>
   <div class="scenario-flow">
-    <span class="step">SKILL.md 6 钩子</span>
+    <span class="step">SKILL.md 7 钩子(含 ⑦ HELP)</span>
     <span>→</span>
     <span class="step">★ 02 5 层自检</span>
     <span>→</span>
@@ -338,13 +348,13 @@
     <span>→</span>
     <span class="step">05 Commit 规范</span>
   </div>
-  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:用 6 钩子逐条勾(尤其钩子 ⑥ Fresh Agent 验证);用 §02 5 层自检清单;用 §04 模式对照看 HTML 是否错配。</p>
+  <p style="font-size: 14px; color: var(--fg2); margin-top: 12px;"><b>关键</b>:用 6+1 钩子逐条勾(尤其钩子 ⑥ Fresh Agent 验证 与 ⑦ HELP 唤醒词契约);用 §02 5 层自检清单;用 §04 模式对照看 HTML 是否错配;用 §07 验证场景完备性。</p>
 </div>
 
 <!-- ========== §4 6 钩子映射 ========== -->
-<h2 id="s4">6 钩子映射 · 详细在哪</h2>
+<h2 id="s4">7 钩子映射 · 详细在哪</h2>
 
-<p>SKILL.md 列出的 6 个<b>不可违背的钩子</b>。每条钩子详细规则散落在不同章节:</p>
+<p>SKILL.md 列出的 <b>6+1</b> 个<b>不可违背的钩子</b>。每条钩子详细规则散落在不同章节:</p>
 
 <div class="hook-row">
   <div class="hook-key">① HTML 同步硬规则</div>
@@ -370,8 +380,12 @@
   <div class="hook-key"><span class="star">★</span> ⑥ Fresh Agent 验证(新 · 商用级关卡)</div>
   <div class="hook-val">§05 "Fresh Agent 黑盒测试协议"(完整 9 步) · §05 Commit 规范(Tested-By 字段) · §06 附录 F · §02 ⑤ 文档层自检</div>
 </div>
+<div class="hook-row">
+  <div class="hook-key"><span class="star">★</span> ⑦ HELP 唤醒词契约(新)</div>
+  <div class="hook-val">§07 全章 · §05 HTML 模板 SOP 引用 §07 · §03 触发词设计引用 §07 场景完备性 · §02 ⑤ 文档层自检引用 §07</div>
+</div>
 
-<p><b>观察</b>:钩子 ⑤ 和 ⑥ 都在多处有相关说明(分别 3 处和 4 处),体现它们是<b>最常被违反且最重要</b>的规则,所以需要多重提醒。</p>
+<p><b>观察</b>:钩子 ⑤、⑥、⑦ 都在多处有相关说明,体现它们是<b>最常被违反且最重要</b>的规则,所以需要多重提醒。</p>
 
 <!-- ========== §8 原则 11 HTML-First ========== -->
 <h2 id="s8">11 原则 · 原则 11 HTML-First(新)</h2>

@@ -61,7 +61,7 @@
 
 <h1>SKILL 开发总纲 V1.0</h1>
 <p class="lead">Skill 设计的元规范 · 开发新 Skill 或改造现有 Skill 之前必读 · 一份"原则 + 可加载资产"手册</p>
-<p class="meta">初版 2026-07-24 · 由 4 份历史材料合并而成 · 旧 SKILL五层架构规范/ 已删除(git 历史完整)</p>
+<p class="meta">初版 2026-07-24 · v1.1 新增第十部分 · 由 4 份历史材料合并而成 · 旧 SKILL五层架构规范/ 已删除(git 历史完整)</p>
 
 <div class="toc">
 <h4>目录</h4>
@@ -71,10 +71,11 @@
   <li><a href="#p3">第三部分 · 触发词设计 v2</a></li>
   <li><a href="#p4">第四部分 · 可视化与注入 v2</a></li>
   <li><a href="#p5">第五部分 · 工程仪式</a></li>
-  <li><a href="#p6">第六部分 · 6 个不可违背的钩子</a></li>
+  <li><a href="#p6">第六部分 · 6+1 个不可违背的钩子</a></li>
   <li><a href="#p7">第七部分 · 3 个可加载资产</a></li>
   <li><a href="#p8">第八部分 · 自我检查(动手前)</a></li>
   <li><a href="#p9">第九部分 · 附录 · 演化规则(RULE Forms)</a></li>
+  <li><a href="#p10">第十部分 · HELP 唤醒词与场景完备性</a></li>
 </ol>
 </div>
 
@@ -192,6 +193,7 @@
 <li><strong>CLI 阻塞判定</strong> — CLI 不支持 JSON → 模板做不出来</li>
 <li><strong>HTML 单工铁律(⭐ 最高)</strong> — HTML 是单工设备,过程型 HTML 必须设计"复制 prompt"</li>
 <li><strong>Fresh Agent 验证(⭐ 新)</strong> — commit 前必须由<b>零上下文 agent</b>执行唤醒词通过;失败改 SKILL.md 不改正,循环 ≤ 3 次</li>
+<li><strong>HELP 唤醒词契约(⭐ 新)</strong> — 每个 Skill 必须登记 HELP 唤醒词 + 场景资产 + HELP HTML；HELP 自身不展示；未实现能力显式标 <code>【待开发】</code>,AI 必须停止业务执行。详见 <a class="md-link" href="07-HELP与场景完备性.md">07-HELP与场景完备性.md</a>。</li>
 </ol>
 </div>
 
@@ -235,6 +237,8 @@
   <li>HTML 模板(如有)有"复制 prompt"按钮?</li>
   <li>改动前 3 问答得上来?</li>
   <li>每 Phase 一个 commit + <code>[技能名]</code> 前缀?</li>
+  <li>HELP 唤醒词已登记,且 HELP 自身不在其 HTML 中展示?</li>
+  <li>场景资产是唯一事实源,与 HTML 镜像一致?</li>
 </ul>
 
 <p><strong>6/8 通过才能动手</strong>。低于 6 个 = 改动未准备好,回去补。</p>
@@ -292,11 +296,55 @@
 </table>
 
 <div class="note">
-<p><strong>来源声明</strong>:本总纲合并自 4 份历史材料 — 优秀 Skill 指导手册(§02)、Skill 架构自检清单(§02)、工程实践·测试与钩子(§05)、HTML 唤醒词开发 prompt(_assets/style.css 设计令牌来源)。老唤醒词 prompt 整个推倒为 §03 v2 矩阵。案例 01/02 中的 RULE 沉淀在本附录。旧 <code>SKILL五层架构规范/</code> 和 <code>模板HTML并注入数据/</code> 已删除(2026-07-24),git 历史完整保留。</p>
+<p><strong>来源声明</strong>:本总纲合并自 4 份历史材料 — 优秀 Skill 指导手册(§02)、Skill 架构自检清单(§02)、工程实践·测试与钩子(§05)、HTML 唤醒词开发 prompt(_assets/style.css 设计令牌来源)。老唤醒词 prompt 整个推倒为 §03 v2 矩阵。案例 01/02 中的 RULE 沉淀在本附录。旧 <code>SKILL五层架构规范/</code> 和 <code>模板HTML并注入数据/</code> 已删除(2026-07-24),git 历史完整保留。<strong>v1.1 新增</strong>: <a class="md-link" href="07-HELP与场景完备性.md">§07-HELP 与场景完备性</a> 作为 HELP 唤醒词、场景资产、稳定 prompt、二态状态和 HELP HTML 的新契约权威。</p>
 </div>
 
+<!-- ========== P10: HELP 与场景完备性 ========== -->
+<h2 id="p10">第十部分 · HELP 唤醒词与场景完备性</h2>
+<p><b>新增契约权威</b>。HELP 唤醒词 + 场景资产 + HELP HTML 三者必须一致,确保每个 Skill 都能把自己完整交给用户。详细规则见 <a class="md-link" href="07-HELP与场景完备性.md">07-HELP与场景完备性.md</a>。本总纲只摘要核心:</p>
+
+<h3>HELP 唤醒词</h3>
+<ul>
+<li>每个 Skill 至少 1 个 HELP 唤醒词(命名 / 变体 / 位置由 Skill 自定),登记但不充当普通业务唤醒词。</li>
+<li>HELP 自身不出现在它生成的 HTML 中,避免死循环。</li>
+<li>HELP 命中必须 invoke HELP HTML;未就绪属于违规/待开发,只能用简短文字告知状态,不得用文字替代 HELP HTML。</li>
+</ul>
+
+<h3>场景完备性</h3>
+<ul>
+<li>每个业务唤醒词必须穷举全部合法场景,场景数量和维度数量都不设上限。</li>
+<li>每场景至少包含 <code>wake_word / scenario_id / scenario_title / dimensions / prompt / status / result</code> 7 个字段。</li>
+<li>场景资产是唯一规范事实源;人类视图、机读视图、HELP HTML 都是派生物,不准手工维护独立副本。</li>
+</ul>
+
+<h3>稳定 prompt</h3>
+<ul>
+<li>表达稳定用户意图和预期结果,不暴露 CLI、数据库字段、Python 文件、模板路径、易变调用步骤。</li>
+<li>底层实现细节放在 Skill 内部,实现变化不需要改 HELP prompt。</li>
+</ul>
+
+<h3>二态状态</h3>
+<ul>
+<li>空字符串 = 可用;<code>【待开发】</code> = 不可执行。</li>
+<li>待开发场景仍展示完整 prompt;AI 必须先加载 Skill 并以场景资产 <code>status</code> 为准,停止业务执行并明确告知。</li>
+<li>不准绕过 / 假装 / 降级。</li>
+</ul>
+
+<h3>HELP HTML 交付</h3>
+<ul>
+<li>展示全部业务唤醒词和全部合法场景;每场景独立复制按钮 + Toast;大规模支持折叠 / 搜索 / 定位。</li>
+<li>正常 / 空 / 缺失 / 错误 fallback 必须覆盖;离线态按页面外部依赖判定。</li>
+<li>适配手机和 PC 视口、横竖屏、触摸输入、长 prompt 换行、剪贴板降级。</li>
+<li>不论场景多少都不准删减;默认始终显示唤醒词、标题、状态与复制按钮。</li>
+</ul>
+
+<h3>五者对应关系</h3>
+<p>SKILL.md 唤醒词声明 ↔ 场景资产 ↔ 稳定 prompt ↔ 底层工作流 ↔ HELP HTML 必须一一对应。开发期间任何一项未完成,该场景在 HELP HTML 中显式标 <code>【待开发】</code>;不得把未完成能力伪装成可用。</p>
+
+<p><strong>来源</strong>:本部分是对 <a class="md-link" href="07-HELP与场景完备性.md">07-HELP与场景完备性.md</a> 的摘要。所有强制与例外条款详见该章原文。</p>
+
 <div class="footer">
-写于 2026-07-24 · 由 4 份历史材料合并而成 · 本版本:V1.0<br>
+写于 2026-07-24 · v1.1 新增 §07 · 由 4 份历史材料合并而成 · 本版本:V1.1<br>
 反馈 / 修订:提交 issue 或 PR 到 <code>SKILLS/SKILL开发总纲V1.0/</code>
 </div>
 

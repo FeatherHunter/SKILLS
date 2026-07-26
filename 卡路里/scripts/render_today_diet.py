@@ -6,6 +6,12 @@
 对应模板: templates/today_diet.html
 - 输出目录: $DATA_DIR/calorie_html/今日饮食总览_<TS>.html (手册 §4.1 · v2.4.8 中文化)
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
+- v2.4.8 修:列名对齐 db.py schema(daily_goal/food_log 2026-07-12 重构后)
+  · daily_goal: calorie → calorie_goal, protein → protein_goal,
+                carbohydrates → carbs_goal, fat → fat_goal, water_ml → water_goal
+  · food_log: meal_type 不存在(按 time 用 diet.infer_meal_type 推断 → 英文 key),
+              calorie → calories, carbohydrates → carbs, water_ml 不存在
+              (饮水以 food_name='💧水' 标记,sum(grams) 替代)
 """
 import argparse, json, sys
 from datetime import date, datetime, timedelta
@@ -19,8 +25,25 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
 
 
+# 模板 today_diet.html 用英文 key(.meal-tag.breakfast/lunch/dinner/snack + JS mealLabels)
 MEAL_TYPE_LABELS = {'breakfast':'早餐', 'lunch':'午餐', 'dinner':'晚餐', 'snack':'加餐'}
 MEAL_TARGETS = {'breakfast':450, 'lunch':650, 'dinner':550, 'snack':150}
+
+# diet.infer_meal_type 返回中文 → 模板需要的英文 key 映射
+_MEAL_CN_TO_KEY = {
+    '早餐':   'breakfast',
+    '午餐':   'lunch',
+    '下午茶': 'snack',     # 模板只有 4 类,下午茶 → 加餐
+    '晚餐':   'dinner',
+    '夜宵':   'snack',
+    '其他':   'snack',
+}
+
+
+def _meal_key(time_str):
+    """time_str → 模板英文 key(breakfast/lunch/dinner/snack)"""
+    cn = infer_meal_type(time_str)
+    return _MEAL_CN_TO_KEY.get(cn, 'snack')
 
 
 def _load_data(input_path):
@@ -40,26 +63,47 @@ def build_data(day):
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT calorie, protein, carbohydrates, fat, water_ml FROM daily_goal ORDER BY id DESC LIMIT 1")
-    goal = cur.fetchone() or {'calorie':1800, 'protein':120, 'carbohydrates':200, 'fat':60, 'water_ml':2000}
-
+    # daily_goal:列名按 db.py:117-125
     cur.execute("""
-        SELECT time, meal_type, food_name, grams, calorie, protein, carbohydrates, fat
+        SELECT calorie_goal, protein_goal, carbs_goal, fat_goal, water_goal
+        FROM daily_goal ORDER BY id DESC LIMIT 1
+    """)
+    goal = cur.fetchone() or {
+        'calorie_goal': 1800, 'protein_goal': 120,
+        'carbs_goal':   200,  'fat_goal':     60,
+        'water_goal':   2000,
+    }
+
+    # food_log:列名按 db.py:107-117,meal_type 列不存在(由 time 推断)
+    cur.execute("""
+        SELECT time, food_name, grams, calories, protein, carbs, fat
         FROM food_log
         WHERE date = ?
         ORDER BY time
     """, (day,))
     rows = cur.fetchall()
+
+    # 饮水聚合:water 用 food_name='💧水' 标记,sum(grams) 作为 ml
+    cur.execute("""
+        SELECT COALESCE(SUM(grams), 0) FROM food_log
+        WHERE date = ? AND food_name = '💧水'
+    """, (day,))
+    water_row = cur.fetchone()
+    water = water_row[0] if water_row else 0
+
     conn.close()
 
-    meals = [dict(r) for r in rows]
-    for m in meals:
-        m['protein'] = m.get('protein', 0) or 0
-        m['carb'] = m.get('carbohydrates', 0) or 0
-        m['fat'] = m.get('fat', 0) or 0
-        m.pop('carbohydrates', None)
+    meals = []
+    for r in rows:
+        m = dict(r)
+        m['meal_type'] = _meal_key(m.get('time') or '')  # 注入 meal_type 给模板
+        m['calorie']   = m.get('calories', 0) or 0       # 模板用 calorie key
+        m['carb']      = m.get('carbs', 0) or 0
+        m['protein']   = m.get('protein', 0) or 0
+        m['fat']       = m.get('fat', 0) or 0
+        meals.append(m)
 
-    # 餐次汇总
+    # 餐次汇总(用模板英文 key)
     summary_meals = {}
     for m in meals:
         k = m['meal_type']
@@ -67,11 +111,10 @@ def build_data(day):
             summary_meals[k] = {'calorie': 0, 'target': MEAL_TARGETS.get(k, 200)}
         summary_meals[k]['calorie'] += m['calorie']
 
-    total_cal = sum(m['calorie'] for m in meals)
-    total_prot = sum(m['protein'] for m in meals)
-    total_carb = sum(m['carb'] for m in meals)
-    total_fat = sum(m['fat'] for m in meals)
-    water = sum(m.get('water_ml', 0) for m in meals if m.get('food_name') == '💧水')
+    total_cal   = sum(m['calorie'] for m in meals)
+    total_prot  = sum(m['protein'] for m in meals)
+    total_carb  = sum(m['carb'] for m in meals)
+    total_fat   = sum(m['fat'] for m in meals)
 
     def pct(v, t):
         return round(v / t * 100) if t else 0
@@ -80,29 +123,33 @@ def build_data(day):
         'status': 'ok',
         'data': {
             'summary': {
-                'calorie': total_cal,
-                'target': goal['calorie'],
-                'protein_g': total_prot,
-                'protein_target': goal['protein'],
-                'protein_pct': pct(total_prot, goal['protein']),
-                'carb_g': total_carb,
-                'carb_target': goal['carbohydrates'],
-                'carb_pct': pct(total_carb, goal['carbohydrates']),
-                'fat_g': total_fat,
-                'fat_target': goal['fat'],
-                'fat_pct': pct(total_fat, goal['fat']),
-                'water_ml': water,
-                'water_target': goal['water_ml'],
-                'meals': summary_meals,
+                'calorie':        total_cal,
+                'target':         goal['calorie_goal'],
+                'protein_g':      total_prot,
+                'protein_target': goal['protein_goal'],
+                'protein_pct':    pct(total_prot, goal['protein_goal']),
+                'carb_g':         total_carb,
+                'carb_target':    goal['carbs_goal'],
+                'carb_pct':       pct(total_carb, goal['carbs_goal']),
+                'fat_g':          total_fat,
+                'fat_target':     goal['fat_goal'],
+                'fat_pct':        pct(total_fat, goal['fat_goal']),
+                'water_ml':       water,
+                'water_target':   goal['water_goal'],
+                'meals':          summary_meals,
             },
             'meals': meals,
             'meta': {
-                'date': day,
+                'date':  day,
                 'today': date.today().isoformat(),
             },
         },
         'message': f'已生成 {day} 今日饮食({len(meals)} 条)',
     }
+
+
+# 复用 diet.infer_meal_type(已在 diet.py:32 导出)
+from diet import infer_meal_type  # noqa: E402
 
 
 def render_html(data):

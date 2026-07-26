@@ -6,6 +6,11 @@
   - 查运动分布 → mode='distribution' (默认)
   - 查运动贡献 → mode='contribution'
 对应模板: templates/exercise_distribution.html
+
+v2.4.8 修:列名对齐 db.py schema(exercise_log/food_log 2026-07-12 重构后)
+  · exercise_log: type → exercise_type, calories → calories_burned,
+                   minutes → duration_minutes, sets → set_index
+  · food_log: calorie → calories
 """
 import argparse, json, sys
 from datetime import date, timedelta
@@ -33,16 +38,17 @@ def build_data(start, end, mode='distribution', tdee=1700):
     db_path = find_db_path(SKILL_DIR)
     conn = sqlite3.connect(str(db_path))
     cur = conn.cursor()
-    # 取每日运动 + 摄入
+    # 取每日运动(列名按 db.py:135-145)
     cur.execute("""
-        SELECT date, type, category, calories, minutes, sets, count(*)
+        SELECT date, exercise_type, category, calories_burned, duration_minutes, set_index, count(*)
         FROM exercise_log
         WHERE date BETWEEN ? AND ?
-        GROUP BY date, type, category ORDER BY date
+        GROUP BY date, exercise_type, category ORDER BY date
     """, (start, end))
     rows = cur.fetchall()
+    # 取每日摄入(food_log 列名按 db.py:107-117)
     cur.execute("""
-        SELECT date, COALESCE(SUM(calorie), 0)
+        SELECT date, COALESCE(SUM(calories), 0)
         FROM food_log WHERE date BETWEEN ? AND ?
         GROUP BY date
     """, (start, end))

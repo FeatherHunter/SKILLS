@@ -19,22 +19,31 @@ body {
 }
 .container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
 
-/* === HERO (紧凑) === */
+/* === HERO (紧凑 · v2.4.10 终版) === */
 .hero {
   background: linear-gradient(135deg, #fafbfc, #f0f4f8);
-  padding: 8px 0 4px;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 0 2px;
+  border-bottom: 0;       /* ★ 干掉 hairline,hero 与首类别直接相连 */
 }
 .hero h1 {
-  font-size: 16px; font-weight: 700; letter-spacing: -.3px;
-  line-height: 1.2;
+  /* ★ 百分比相对 body 13px → 150% = 19.5px */
+  font-size: 150%; font-weight: 700; letter-spacing: -.3px;
+  line-height: 1.15;
   display: flex; align-items: center; gap: 6px;
-  margin-bottom: 2px;
+  margin: 0 0 1px;        /* 紧贴 sub */
 }
-.hero .sub { color: var(--sub); font-size: 11px; margin-top: 0; line-height: 1.3; }
+.hero .sub {
+  /* ★ 苹果蓝 · 指导性文字 · 相对 body 100% = 13px */
+  color: var(--accent);
+  font-size: 100%; font-weight: 500;
+  margin: 0 0 4px;
+  line-height: 1.4;
+}
 .hero .stats {
-  margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap;
-  font-size: 11px; color: var(--sub);
+  /* ★ 相对 body 100% = 13px */
+  margin: 2px 0 0;
+  display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 100%; color: var(--sub);
   line-height: 1.3;
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
@@ -46,7 +55,7 @@ body {
   background: var(--card); border-radius: 8px;
   margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
 }
-.cat-block:first-of-type { margin-top: 0; }
+.cat-block:first-of-type { margin-top: 2px; }   /* ★ 与 hero 留 2px 视觉缓冲 */
 .cat-block:last-of-type { margin-bottom: 0; }
 .cat-block > summary,
 .word-card > summary,
@@ -203,14 +212,13 @@ footer {
 
 <div class="hero"><div class="container">
   <h1>📚 卡路里 · 唤醒词速查台</h1>
-  <div class="sub">v2.4.10 · 80 唤醒词 / 109 prompt · 一键复制粘贴给 AI</div>
+  <div class="sub">💡 点 ▸ 类别 → 选唤醒词 → 复制 prompt → 贴给 AI</div>
   <div class="stats" id="heroStats"></div>
 </div></div>
 
 <div class="container">
 <main id="mainContent"><div class="empty">加载中…</div></main>
-<footer>卡路里技能 · 唤醒词速查台 · v2.4.10 · 2026-07-26<br>
-用:展开 ▸ 类别 → 展开 ▸ 唤醒词 → 展开 ▸ 变体 → 📋 复制 → 粘贴给 AI</footer>
+<footer>卡路里技能 · 唤醒词速查台 · v2.4.10 · 2026-07-26</footer>
 </div>
 
 <!--INJECT-DATA-->

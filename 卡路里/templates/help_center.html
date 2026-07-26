@@ -22,17 +22,20 @@ body {
 /* === HERO (紧凑) === */
 .hero {
   background: linear-gradient(135deg, #fafbfc, #f0f4f8);
-  padding: 12px 0 8px;
+  padding: 8px 0 4px;
   border-bottom: 1px solid var(--border);
 }
 .hero h1 {
-  font-size: 18px; font-weight: 700; letter-spacing: -.3px;
+  font-size: 16px; font-weight: 700; letter-spacing: -.3px;
+  line-height: 1.2;
   display: flex; align-items: center; gap: 6px;
+  margin-bottom: 2px;
 }
-.hero .sub { color: var(--sub); font-size: 11px; margin-top: 2px; }
+.hero .sub { color: var(--sub); font-size: 11px; margin-top: 0; line-height: 1.3; }
 .hero .stats {
-  margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap;
   font-size: 11px; color: var(--sub);
+  line-height: 1.3;
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
 
@@ -42,12 +45,12 @@ body {
   background: rgba(255,255,255,.97);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding: 6px 0;
-  margin: 6px -12px 8px;
+  padding: 4px 0 2px;
+  margin: 0 -12px 2px;
   padding-left: 12px; padding-right: 12px;
 }
 .controls .row1 {
-  display: flex; gap: 5px; margin-bottom: 6px;
+  display: flex; gap: 5px; margin-bottom: 4px;
 }
 .controls input[type="search"] {
   flex: 1; min-width: 0; font: inherit; font-size: 13px;
@@ -66,7 +69,7 @@ body {
   display: flex; overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none; -ms-overflow-style: none;
-  gap: 5px; padding-bottom: 2px;
+  gap: 5px;
 }
 .chips-wrap::-webkit-scrollbar { display: none; }
 .chip {
@@ -82,8 +85,10 @@ body {
 /* === CATEGORY (L1) === */
 .cat-block {
   background: var(--card); border-radius: 8px;
-  margin: 5px 0; box-shadow: var(--shadow); overflow: hidden;
+  margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
 }
+.cat-block:first-of-type { margin-top: 0; }
+.cat-block:last-of-type { margin-bottom: 0; }
 .cat-block > summary {
   padding: 7px 12px; font-size: 13px; font-weight: 600;
   cursor: pointer; list-style: none;

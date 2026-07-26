@@ -5612,6 +5612,51 @@
       }
     }
 
+    // v2.138:A 方案 — 定向 DOM 更新(无 rebuild,无 flicker)
+    // 仅修与当前段相关的 DOM,不重画整个 timeline/list/panel
+    function updateSegDependentUI(videoIndex, segId) {
+      const seg = window.__segmentState.states[videoIndex]?.segments.find(s => s.id === segId);
+      if (!seg) return;
+      const segs = window.__segmentState.states[videoIndex].segments;
+      const idx = segs.indexOf(seg);
+      const COLORS = ['#FF3B30','#FF9500','#FFCC00','#34C759','#00C7BE','#007AFF','#AF52DE','#FF2D55'];
+      const hasOp = !!(seg.ops && Object.keys(seg.ops).length > 0);
+      const opCount = Object.values(seg.ops || {}).filter(o => o && o.on).length;
+      // 1. timeline .tl-seg — 颜色 + hasOp class
+      const tlSeg = document.querySelector(`.tl-seg[data-seg-id="${segId}"]`);
+      if (tlSeg) {
+        const bgColor = hasOp ? COLORS[idx % 8] : '';
+        tlSeg.style.setProperty('background', bgColor, 'important');
+        tlSeg.classList.toggle('tl-seg-has-op', hasOp);
+      }
+      // 2. list .seg-item — label 文字(若改变)+ 操作数状态
+      const item = document.querySelector(`.seg-item[data-seg-id="${segId}"]`);
+      if (item) {
+        const labelText = item.querySelector('.seg-label-text');
+        if (labelText && (seg.label || labelText.dataset.labelChecked)) {
+          labelText.innerHTML = seg.label
+            ? `${escapeHtml(seg.label)} <span style="color:var(--secondary)">[${formatTime(seg.start_sec)} ~ ${formatTime(seg.end_sec)}]</span>`
+            : `<span style="color:var(--secondary)">[${formatTime(seg.start_sec)} ~ ${formatTime(seg.end_sec)}]</span>`;
+          labelText.dataset.labelChecked = '1';
+        }
+      }
+      // 3. panel 头部 "N 个已配置" 计数
+      const segCountEl = panel.querySelector('.segment-panel-count');
+      if (segCountEl) segCountEl.textContent = `${opCount} 个已配置`;
+      // 4. panel 分组折叠 (active/total) 计数
+      document.querySelectorAll('.seg-ops-group').forEach(g => {
+        const rows = g.querySelectorAll('.seg-op-row');
+        const total = rows.length;
+        let active = 0;
+        rows.forEach(r => {
+          const opKey = r.dataset.opKey;
+          if (seg.ops?.[opKey]?.on) active++;
+        });
+        const countEl = g.querySelector('.seg-ops-count');
+        if (countEl) countEl.textContent = `(${active}/${total})`;
+      });
+    }
+
     function openSegmentPanel(videoIndex, segId) {
       const state = SegmentState.getAll(videoIndex);
       const seg = state.segments.find(s => s.id === segId);
@@ -5745,19 +5790,17 @@
       // 主动打开后 scroll 到 panel,让用户看到
       setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 
-      // label 实时同步
+      // v2.138:A 方案 — label 改 state 后只定向更新(无 rebuild)
       panel.querySelector('.seg-label-input').addEventListener('input', e => {
         seg.label = e.target.value;
-        renderSegmentsPanel(videoIndex);
-        const segmentsArea = card.querySelector('[data-timeline-segments]');
-        if (segmentsArea) renderTimelineSegments(segmentsArea, videoIndex);
+        updateSegDependentUI(videoIndex, segId);
       });
 
-      // 段级 note 同步
+      // v2.138:A 方案 — 段级 note 同步(只改 state,无 DOM 更新)
       const segNote = panel.querySelector('.seg-note-input');
       if (segNote) segNote.addEventListener('input', e => { seg.note = e.target.value; });
 
-      // voice 模式
+      // v2.138:A 方案 — voice 模式改 state 后只定向更新(无 rebuild)
       const voiceSel = panel.querySelector('.seg-voice-select');
       if (voiceSel) voiceSel.addEventListener('change', e => {
         seg.ops = seg.ops || {};
@@ -5766,10 +5809,10 @@
         } else {
           delete seg.ops.voice;
         }
-        refreshTimelineAndPanel(videoIndex, segId);
+        updateSegDependentUI(videoIndex, segId);
       });
 
-      // 每个 op 的 checkbox 切换
+      // v2.138:A 方案 — 每个 op 的 checkbox 切换:改 state + 定向更新(无 rebuild)
       panel.querySelectorAll('[data-op-toggle]').forEach(cb => {
         cb.addEventListener('change', e => {
           const opKey = e.target.dataset.opToggle;
@@ -5787,11 +5830,18 @@
           } else {
             delete seg.ops[opKey];
           }
-          refreshTimelineAndPanel(videoIndex, segId);
+          // 定向更新 row 内 inputs.disabled(checkbox toggle 后启用/禁用)
+          const row = e.target.closest('.seg-op-row');
+          if (row) {
+            row.querySelectorAll('.seg-op-input, .seg-op-note').forEach(el => {
+              el.disabled = !e.target.checked;
+            });
+          }
+          updateSegDependentUI(videoIndex, segId);
         });
       });
 
-      // 每个 op 的参数 input 变化
+      // v2.138:A 方案 — 每个 op 的参数 input 变化:改 state 后定向更新
       panel.querySelectorAll('[data-param]').forEach(input => {
         input.addEventListener('change', e => {
           const row = e.target.closest('.seg-op-row');
@@ -5801,7 +5851,7 @@
             const v = e.target.value;
             seg.ops[opKey][pKey] = (e.target.type === 'number') ? parseFloat(v) : v;
           }
-          refreshTimelineAndPanel(videoIndex, segId);
+          updateSegDependentUI(videoIndex, segId);
         });
       });
 

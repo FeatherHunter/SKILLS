@@ -1700,6 +1700,41 @@
       gap: 8px;
       padding: 10px 0;
     }
+    /* v2.137:? 帮助弹窗内的 op 说明样式 */
+    .op-help-content { font-size: 13px; color: #1c1c1e; }
+    .op-help-line { padding: 4px 0; }
+    .op-help-line code {
+      background: #f2f2f7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+    }
+    .op-help-line.hint { color: #8e8e93; font-size: 12px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f2f2f7; }
+    .op-help-row {
+      padding: 4px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .op-help-row code {
+      background: #f2f2f7;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+    }
+    .op-help-label { font-weight: 500; min-width: 48px; }
+    .op-help-type {
+      color: #8e8e93;
+      font-size: 11px;
+      padding: 1px 6px;
+      background: #f2f2f7;
+      border-radius: 3px;
+    }
+    .op-help-row.empty { color: #8e8e93; font-style: italic; }
     .seg-exclude-btn, .seg-close-btn {
       padding: 6px 12px;
       border-radius: 4px;
@@ -5777,6 +5812,30 @@
           if (seg.ops && seg.ops[opKey]) {
             seg.ops[opKey].note = e.target.value;
           }
+        });
+      });
+
+      // v2.137:? 按钮 → 弹 op 说明(从 schema 生成)
+      panel.querySelectorAll('.seg-op-help').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const opKey = btn.dataset.opHelp;
+          const opDef = window.SEGMENT_OPS_SCHEMA[opKey];
+          if (!opDef) return;
+          const paramsHtml = opDef.params
+            ? Object.entries(opDef.params).map(([k, d]) =>
+                `<div class="op-help-row"><span class="op-help-label">${escapeHtml(d.label || k)}</span> <span class="op-help-type">${d.type}</span> 默认 <code>${d.default}</code>` +
+                (d.min !== undefined ? ` 范围 <code>${d.min} ~ ${d.max}</code>` : '') +
+                (d.step ? ` 步进 <code>${d.step}</code>` : '') +
+                `</div>`
+              ).join('')
+            : '<div class="op-help-row empty">无参数</div>';
+          const bodyHtml = `<div class="op-help-content">
+            <div class="op-help-line">op_key: <code>${opKey}</code></div>
+            ${paramsHtml}
+            <div class="op-help-line hint">提示:勾选启用 → 调默认参数 → 按需修改</div>
+          </div>`;
+          showInformDialog(`${opDef.icon} ${opDef.label} — 说明`, bodyHtml, {});
         });
       });
 

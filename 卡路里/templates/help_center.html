@@ -3,584 +3,405 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📚 卡路里技能 · 唤醒词速查台</title>
+<title>📚 卡路里 · 唤醒词速查台</title>
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:        #f8f9fa;
-  --card:      #ffffff;
-  --text:      #1c1c1e;
-  --sub:       #6b6b6f;
-  --accent:    #0071e3;
-  --green:     #34c759;
-  --warn:      #ff9500;
-  --bad:       #ff3b30;
-  --border:    #e5e5e7;
-  --code-bg:   #f4f4f6;
-  --shadow:    0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --bg:#f5f6f7; --card:#fff; --text:#1c1c1e; --sub:#6b6b6f;
+  --accent:#0071e3; --green:#34c759; --border:#e5e5e7;
+  --code-bg:#f0f0f2; --shadow:0 1px 2px rgba(0,0,0,.04);
 }
-* { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg); color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-  font-size: 14px;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
+  font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased;
 }
-.container { max-width: 960px; margin: 0 auto; padding: 0 16px 80px; }
+.container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
 
-/* === HERO === */
+/* === HERO (紧凑) === */
 .hero {
   background: linear-gradient(135deg, #fafbfc, #f0f4f8);
-  padding: 32px 0 24px;
+  padding: 12px 0 8px;
   border-bottom: 1px solid var(--border);
 }
 .hero h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -.3px;
+  font-size: 18px; font-weight: 700; letter-spacing: -.3px;
+  display: flex; align-items: center; gap: 6px;
 }
-.hero .sub { color: var(--sub); font-size: 13px; }
+.hero .sub { color: var(--sub); font-size: 11px; margin-top: 2px; }
 .hero .stats {
-  margin-top: 12px;
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: var(--sub);
+  margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap;
+  font-size: 11px; color: var(--sub);
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
 
-/* === CONTROLS === */
+/* === STICKY CONTROLS === */
 .controls {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(255,255,255,.96);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
-  padding: 12px 0;
-  margin-bottom: 16px;
+  padding: 6px 0;
+  margin: 6px -12px 8px;
+  padding-left: 12px; padding-right: 12px;
 }
 .controls .row1 {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  display: flex; gap: 5px; margin-bottom: 6px;
 }
 .controls input[type="search"] {
-  flex: 1;
-  font: inherit;
-  font-size: 14px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
-  outline: none;
-  transition: border-color .15s;
+  flex: 1; min-width: 0; font: inherit; font-size: 13px;
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; background: #fff; outline: none;
 }
 .controls input[type="search"]:focus { border-color: var(--accent); }
 .controls button {
-  font: inherit;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #fff;
-  cursor: pointer;
-  transition: all .15s;
+  font: inherit; font-size: 12px; padding: 6px 8px;
+  border-radius: 6px; border: 1px solid var(--border);
+  background: #fff; cursor: pointer; white-space: nowrap;
 }
 .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.controls .row2 {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.chip {
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all .15s;
-  white-space: nowrap;
-}
-.chip:hover { background: #f4f4f6; }
-.chip.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-.chip .count { opacity: .65; margin-left: 4px; font-size: 11px; }
 
-/* === CATEGORY BLOCK (L1) === */
+.chips-wrap {
+  display: flex; overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; -ms-overflow-style: none;
+  gap: 5px; padding-bottom: 2px;
+}
+.chips-wrap::-webkit-scrollbar { display: none; }
+.chip {
+  font-size: 11.5px; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: #fff; color: var(--text);
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.chip:hover { background: #f0f0f2; }
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip .count { opacity: .65; margin-left: 3px; font-size: 10px; }
+
+/* === CATEGORY (L1) === */
 .cat-block {
-  background: var(--card);
-  border-radius: 12px;
-  margin: 12px 0;
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  background: var(--card); border-radius: 8px;
+  margin: 5px 0; box-shadow: var(--shadow); overflow: hidden;
 }
 .cat-block > summary {
-  padding: 14px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  padding: 7px 12px; font-size: 13px; font-weight: 600;
+  cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 6px;
   background: #fafbfc;
 }
 .cat-block > summary::-webkit-details-marker { display: none; }
 .cat-block > summary::before {
-  content: '▸';
-  font-size: 12px;
-  color: var(--sub);
-  transition: transform .15s;
+  content: '▸'; font-size: 10px; color: var(--sub);
+  transition: transform .12s;
 }
 .cat-block[open] > summary::before { transform: rotate(90deg); }
 .cat-block > summary .count-pill {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--sub);
-  background: #e5e5e7;
-  padding: 2px 8px;
-  border-radius: 999px;
+  margin-left: auto; font-size: 10px; font-weight: 500;
+  color: var(--sub); background: #e5e5e7;
+  padding: 1px 6px; border-radius: 999px;
 }
-.cat-content { padding: 6px 18px 18px; }
+.cat-content { padding: 4px 12px 10px; }
 
-/* === WAKE WORD CARD (L2) === */
+/* === WAKE WORD (L2) === */
 .word-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  margin: 10px 0;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 6px; margin: 4px 0;
 }
 .word-card > summary {
-  padding: 12px 14px;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  padding: 6px 10px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
 }
 .word-card > summary::-webkit-details-marker { display: none; }
 .word-card > summary::before {
-  content: '▸';
-  font-size: 11px;
-  color: var(--sub);
-  transition: transform .15s;
+  content: '▸'; font-size: 9px; color: var(--sub);
+  transition: transform .12s;
 }
 .word-card[open] > summary::before { transform: rotate(90deg); }
-.ww-name { font-weight: 600; font-size: 15px; color: var(--text); }
-.ww-aliases { font-size: 12px; color: var(--sub); }
-.ww-aliases span { background: #f4f4f6; padding: 1px 6px; border-radius: 4px; margin-right: 4px; }
-.ww-count {
-  margin-left: auto;
-  font-size: 11px;
-  color: var(--sub);
-}
-.word-content { padding: 0 14px 14px; }
-.ww-desc { color: var(--sub); font-size: 13px; margin: 6px 0 10px; }
+.ww-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.ww-aliases { font-size: 11px; color: var(--sub); }
+.ww-aliases span { background: #f0f0f2; padding: 0 4px; border-radius: 3px; margin-right: 3px; }
+.ww-count { margin-left: auto; font-size: 10px; color: var(--sub); }
+.word-content { padding: 0 10px 8px; }
+.ww-desc { color: var(--sub); font-size: 11.5px; margin: 3px 0 5px; }
 
-/* === MAIN PROMPT BLOCK === */
+/* === MAIN PROMPT === */
 .prompt-main {
-  background: #f0f7ff;
-  border-left: 3px solid var(--accent);
-  padding: 10px 12px;
-  border-radius: 6px;
-  margin: 8px 0;
-  font-family: "SF Mono", Consolas, "Monaco", monospace;
-  font-size: 12.5px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  background: #f0f7ff; border-left: 2px solid var(--accent);
+  padding: 6px 8px; border-radius: 4px; margin: 4px 0;
+  font-family: "SF Mono", Consolas, monospace; font-size: 11.5px;
+  white-space: pre-wrap; word-break: break-word; line-height: 1.35;
 }
 .prompt-cli {
-  background: var(--code-bg);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: "SF Mono", Consolas, "Monaco", monospace;
-  font-size: 12px;
-  display: inline-block;
-  margin: 4px 0;
-  word-break: break-all;
+  background: var(--code-bg); padding: 3px 6px;
+  border-radius: 4px; font-family: "SF Mono", Consolas, monospace;
+  font-size: 11px; display: inline-block;
+  margin: 2px 0; word-break: break-all; line-height: 1.3;
 }
 
 /* === VARIANTS (L3) === */
 .variants-section {
-  margin-top: 12px;
-  border-top: 1px dashed var(--border);
-  padding-top: 10px;
+  margin-top: 6px; border-top: 1px dashed var(--border); padding-top: 5px;
 }
 .variants-header {
-  font-size: 12px;
-  color: var(--sub);
-  font-weight: 600;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: .4px;
+  font-size: 10px; color: var(--sub); font-weight: 600;
+  margin-bottom: 4px; text-transform: uppercase; letter-spacing: .3px;
 }
 .variant-block {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin: 6px 0;
-  background: #fcfcfd;
+  border: 1px solid var(--border); border-radius: 5px;
+  margin: 3px 0; background: #fcfcfd;
 }
 .variant-block > summary {
-  padding: 8px 12px;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  padding: 4px 8px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 5px; font-size: 12px;
 }
 .variant-block > summary::-webkit-details-marker { display: none; }
 .variant-block > summary::before {
-  content: '▸';
-  font-size: 10px;
-  color: var(--sub);
-  transition: transform .15s;
+  content: '▸'; font-size: 9px; color: var(--sub); transition: transform .12s;
 }
 .variant-block[open] > summary::before { transform: rotate(90deg); }
-.v-label { font-weight: 500; color: var(--accent); }
-.v-content { padding: 0 12px 10px; }
-.v-content .prompt-cli { font-size: 11px; padding: 3px 6px; }
+.v-label { font-weight: 500; color: var(--accent); font-size: 12px; }
+.v-content { padding: 0 8px 6px; }
 
 /* === COPY BUTTON === */
 .copy-btn {
-  font: inherit;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--accent);
-  background: #fff;
-  color: var(--accent);
-  cursor: pointer;
-  margin: 4px 4px 4px 0;
-  transition: all .15s;
+  font: inherit; font-size: 11px; padding: 4px 8px;
+  border-radius: 5px; border: 1px solid var(--accent);
+  background: #fff; color: var(--accent);
+  cursor: pointer; margin: 3px 0; transition: all .12s;
   white-space: nowrap;
 }
 .copy-btn:hover { background: var(--accent); color: #fff; }
-.copy-btn.copied {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
-}
+.copy-btn.copied { background: var(--green); border-color: var(--green); color: #fff; }
 .copy-main { margin-left: auto; }
 
-/* === EMPTY STATE === */
+/* === EMPTY / FOOTER === */
 .empty {
-  text-align: center;
-  padding: 40px;
-  color: var(--sub);
-  font-size: 14px;
+  text-align: center; padding: 24px; color: var(--sub); font-size: 13px;
 }
-
-/* === FOOTER === */
 footer {
-  text-align: center;
-  color: var(--sub);
-  font-size: 12px;
-  padding: 24px 0 0;
-  margin-top: 40px;
+  text-align: center; color: var(--sub); font-size: 10px;
+  padding: 12px 0 0; margin-top: 16px;
 }
 
-/* === Responsive === */
+/* === MOBILE (≤600px) === */
 @media (max-width: 600px) {
-  .hero h1 { font-size: 20px; }
-  .controls .row1 { flex-wrap: wrap; }
-  .controls input[type="search"] { width: 100%; }
-  .ww-aliases { width: 100%; }
+  body { font-size: 12.5px; }
+  .container { padding: 0 8px 60px; }
+  .hero { padding: 10px 0 6px; }
+  .hero h1 { font-size: 16px; }
+  .hero .sub { font-size: 10.5px; }
+  .hero .stats { gap: 8px; font-size: 10.5px; }
+  .controls { margin: 6px -8px 8px; padding-left: 8px; padding-right: 8px; }
+  .controls input[type="search"] { font-size: 12.5px; padding: 7px 10px; }
+  .controls button { font-size: 11px; padding: 7px 8px; }
+  .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
+  .cat-content { padding: 4px 10px 8px; }
+  .word-card > summary { padding: 7px 9px; }
+  .word-content { padding: 0 9px 7px; }
+  .ww-aliases span { display: inline-block; margin-bottom: 2px; }
+  .variant-block > summary { padding: 6px 8px; }
+  .copy-btn { padding: 5px 9px; font-size: 11.5px; }
+  /* iOS Safari 安全区 */
+  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+}
+
+/* === TABLET (601-900px) === */
+@media (min-width: 601px) and (max-width: 900px) {
+  .container { max-width: 720px; }
 }
 </style>
 </head>
 <body>
 
+<div class="hero"><div class="container">
+  <h1>📚 卡路里 · 唤醒词速查台</h1>
+  <div class="sub">v2.4.10 · 80 唤醒词 / 109 prompt · 一键复制粘贴给 AI</div>
+  <div class="stats" id="heroStats"></div>
+</div></div>
+
+<div class="controls"><div class="container">
+  <div class="row1">
+    <input type="search" id="searchBox" placeholder="🔍 搜索 唤醒词 / 描述 / CLI">
+    <button id="expandAllBtn" title="全部展开">📂</button>
+    <button id="collapseAllBtn" title="全部折叠">🔽</button>
+    <button id="copyAllBtn" title="复制全部 109 prompt">📋</button>
+  </div>
+  <div class="chips-wrap" id="catNav"></div>
+</div></div>
+
 <div class="container">
-
-<!-- ============ HERO ============ -->
-<section class="hero">
-  <div class="container">
-    <h1>📚 卡路里技能 · 唤醒词速查台</h1>
-    <div class="sub">v2.4.10 · 80 唤醒词 · 109 prompt · 一键复制粘贴给 AI 即可触发对应查询</div>
-    <div class="stats" id="heroStats"></div>
-  </div>
-</section>
-
-<!-- ============ CONTROLS ============ -->
-<div class="controls">
-  <div class="container">
-    <div class="row1">
-      <input type="search" id="searchBox" placeholder="🔍 搜索 唤醒词 / 描述 / CLI(如 '体重趋势 7月')">
-      <button id="expandAllBtn">📂 全部展开</button>
-      <button id="collapseAllBtn">🔽 全部折叠</button>
-      <button id="copyAllBtn">📋 复制全部</button>
-    </div>
-    <div class="row2" id="catNav"></div>
-  </div>
-</div>
-
-<!-- ============ MAIN ============ -->
-<main id="mainContent">
-  <div class="empty">加载中…</div>
-</main>
-
-<footer>
-  卡路里技能 · 唤醒词速查台 · v2.4.10 · 2026-07-26
-  <br>
-  使用提示:点 <b>展开类别</b> → 点 <b>展开唤醒词</b> → 点 <b>变体</b> → 点 <b>📋 复制 prompt</b> → 粘贴给 AI
-</footer>
-
+<main id="mainContent"><div class="empty">加载中…</div></main>
+<footer>卡路里技能 · 唤醒词速查台 · v2.4.10 · 2026-07-26<br>
+用:展开类别 → 展开唤醒词 → 展开变体 → 📋 复制 → 粘贴给 AI</footer>
 </div>
 
 <!--INJECT-DATA-->
 
 <script>
-// ============ DATA ============
-const DATA = (() => {
-  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
-  return window.__DATA__;
-})();
+const DATA = window.__DATA__ && window.__DATA__.status === 'ok' ? window.__DATA__ : null;
 
-// ============ UTILS ============
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
 
-function escapeAttr(s) {
-  return escapeHTML(s);
-}
-
 function copyText(text, btn) {
   const after = () => {
     if (!btn) return;
     const orig = btn.textContent;
-    btn.textContent = '✓ 已复制';
+    btn.textContent = '✓';
     btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = orig;
-      btn.classList.remove('copied');
-    }, 1500);
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
   };
-  // 优先用 clipboard API(失败降级 execCommand — 飞书 webview 兼容)
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(after).catch(() => {
-      fallback(text); after();
-    });
-  } else {
-    fallback(text); after();
-  }
+    navigator.clipboard.writeText(text).then(after).catch(() => { fallback(text); after(); });
+  } else { fallback(text); after(); }
 }
 function fallback(text) {
   const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus(); ta.select();
-  try { document.execCommand('copy'); } catch (e) {}
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
   document.body.removeChild(ta);
 }
 
-// ============ RENDER ============
 function render() {
-  if (!DATA || DATA.status !== 'ok') {
+  if (!DATA) {
     document.getElementById('mainContent').innerHTML =
-      '<div class="empty">❌ 数据加载失败(window.__DATA__ 缺失或 status != ok)</div>';
+      '<div class="empty">❌ 数据加载失败</div>';
     return;
   }
-
   const { summary, categories, triggers } = DATA.data;
 
-  // HERO STATS
-  document.getElementById('heroStats').innerHTML = `
-    <span><b>${summary.total_categories}</b> 类别</span>
-    <span><b>${summary.total_wake_words}</b> 唤醒词</span>
-    <span><b>${summary.total_prompts}</b> 可复制 prompt</span>
-  `;
+  // hero stats
+  document.getElementById('heroStats').innerHTML =
+    `<span><b>${summary.total_categories}</b> 类别</span>` +
+    `<span><b>${summary.total_wake_words}</b> 唤醒词</span>` +
+    `<span><b>${summary.total_prompts}</b> prompt</span>`;
 
-  // CATEGORY NAV (sticky chips)
+  // category chips
   const navEl = document.getElementById('catNav');
-  navEl.innerHTML = categories.map(c => `
-    <a class="chip" data-cat="${escapeAttr(c.key)}" href="#cat-${escapeAttr(c.key)}">
-      ${c.icon} ${escapeHTML(c.name)} <span class="count">${summary.by_category[c.name] || 0}</span>
-    </a>
-  `).join('');
-  navEl.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      navEl.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-    });
-  });
+  navEl.innerHTML = categories.map(c =>
+    `<a class="chip" data-cat="${escapeHTML(c.key)}" href="#cat-${escapeHTML(c.key)}">` +
+    `${c.icon} ${escapeHTML(c.name)} <span class="count">${summary.by_category[c.name] || 0}</span></a>`
+  ).join('');
+  navEl.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+    navEl.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  }));
 
-  // CATEGORY BLOCKS · L1 · default closed
-  const mainEl = document.getElementById('mainContent');
+  // group by category
   const byCat = {};
-  triggers.forEach(t => {
-    if (!byCat[t.category]) byCat[t.category] = [];
-    byCat[t.category].push(t);
-  });
+  triggers.forEach(t => { (byCat[t.category] = byCat[t.category] || []).push(t); });
 
+  // main
+  const mainEl = document.getElementById('mainContent');
   mainEl.innerHTML = categories.map(cat => {
     const items = byCat[cat.name] || [];
-    if (items.length === 0) return '';
-    return `
-      <details class="cat-block" id="cat-${escapeAttr(cat.key)}" data-cat-name="${escapeAttr(cat.name)}">
-        <summary>
-          <span>${cat.icon}</span>
-          <span>${escapeHTML(cat.name)}</span>
-          <span class="count-pill">${items.length} 唤醒词</span>
-        </summary>
-        <div class="cat-content">
-          ${items.map((t, i) => renderWordCard(t, cat.key, i)).join('')}
-        </div>
-      </details>
-    `;
+    if (!items.length) return '';
+    return `<details class="cat-block" id="cat-${escapeHTML(cat.key)}" data-cat-name="${escapeHTML(cat.name)}">` +
+      `<summary><span>${cat.icon}</span><span>${escapeHTML(cat.name)}</span>` +
+      `<span class="count-pill">${items.length}</span></summary>` +
+      `<div class="cat-content">${items.map(renderWordCard).join('')}</div></details>`;
   }).join('');
 
-  // BIND COPY BUTTONS
   bindCopyButtons();
 }
 
-// ============ L2 WAKE WORD CARD ============
-function renderWordCard(t, catKey, idx) {
-  const aliases = (t.aliases || [])
-    .map(a => `<span>${escapeHTML(a)}</span>`).join('');
+function renderWordCard(t) {
+  const aliases = (t.aliases || []).map(a =>
+    `<span>${escapeHTML(a)}</span>`).join('');
   const variants = t.variants || [];
-  const promptMain = t.main_prompt || {cli: '', text: ''};
-  return `
-    <details class="word-card" data-search-key="${escapeAttr((t.wake_word + ' ' + (t.aliases||[]).join(' ') + ' ' + (t.desc||'') + ' ' + (promptMain.cli||'')).toLowerCase())}">
-      <summary>
-        <span class="ww-name">${escapeHTML(t.wake_word)}</span>
-        ${aliases ? `<span class="ww-aliases">${aliases}</span>` : ''}
-        <span class="ww-count">${variants.length} 变体</span>
-      </summary>
-      <div class="word-content">
-        ${t.desc ? `<div class="ww-desc">${escapeHTML(t.desc)}</div>` : ''}
-        ${promptMain.cli ? `<div class="prompt-cli">${escapeHTML(promptMain.cli)}</div>` : ''}
-        <div class="prompt-main">${escapeHTML(promptMain.text)}</div>
-        <button class="copy-btn copy-main" data-prompt="${escapeAttr(promptMain.text)}">
-          📋 复制主 prompt
-        </button>
-        ${variants.length ? `
-          <div class="variants-section">
-            <div class="variants-header">▼ 变体用法 (${variants.length})</div>
-            ${variants.map((v, j) => renderVariant(v, catKey, idx, j)).join('')}
-          </div>
-        ` : ''}
-      </div>
-    </details>
-  `;
+  const pm = t.main_prompt || {cli:'', text:''};
+  const searchKey = (t.wake_word + ' ' + (t.aliases||[]).join(' ') + ' ' +
+    (t.desc||'') + ' ' + (pm.cli||'')).toLowerCase();
+  return `<details class="word-card" data-search-key="${escapeHTML(searchKey)}"><summary>` +
+    `<span class="ww-name">${escapeHTML(t.wake_word)}</span>` +
+    `${aliases ? `<span class="ww-aliases">${aliases}</span>` : ''}` +
+    `<span class="ww-count">${variants.length ? variants.length + '变体' : ''}</span>` +
+    `</summary><div class="word-content">` +
+    `${t.desc ? `<div class="ww-desc">${escapeHTML(t.desc)}</div>` : ''}` +
+    `${pm.cli ? `<div class="prompt-cli">${escapeHTML(pm.cli)}</div>` : ''}` +
+    `<div class="prompt-main">${escapeHTML(pm.text)}</div>` +
+    `<button class="copy-btn copy-main" data-prompt="${escapeHTML(pm.text)}">📋 复制 prompt</button>` +
+    (variants.length ? `<div class="variants-section"><div class="variants-header">变体 (${variants.length})</div>` +
+      variants.map(renderVariant).join('') + `</div>` : '') +
+    `</div></details>`;
 }
 
-// ============ L3 VARIANT ============
-function renderVariant(v, catKey, wi, vi) {
-  return `
-    <details class="variant-block" data-search-key="${escapeAttr((v.label + ' ' + (v.cli||'')).toLowerCase())}">
-      <summary>
-        <span class="v-label">${escapeHTML(v.label)}</span>
-      </summary>
-      <div class="v-content">
-        ${v.cli ? `<div class="prompt-cli">${escapeHTML(v.cli)}</div>` : ''}
-        <div class="prompt-main">${escapeHTML(v.prompt)}</div>
-        <button class="copy-btn" data-prompt="${escapeAttr(v.prompt)}">
-          📋 复制此变体 prompt
-        </button>
-      </div>
-    </details>
-  `;
+function renderVariant(v) {
+  const searchKey = (v.label + ' ' + (v.cli||'')).toLowerCase();
+  return `<details class="variant-block" data-search-key="${escapeHTML(searchKey)}">` +
+    `<summary><span class="v-label">${escapeHTML(v.label)}</span></summary>` +
+    `<div class="v-content">` +
+    `${v.cli ? `<div class="prompt-cli">${escapeHTML(v.cli)}</div>` : ''}` +
+    `<div class="prompt-main">${escapeHTML(v.prompt)}</div>` +
+    `<button class="copy-btn" data-prompt="${escapeHTML(v.prompt)}">📋 复制此变体 prompt</button>` +
+    `</div></details>`;
 }
 
-// ============ EVENT BIND ============
 function bindCopyButtons() {
   document.querySelectorAll('.copy-btn').forEach(btn => {
     if (btn.__bound) return;
     btn.__bound = true;
-    btn.addEventListener('click', () => {
-      const text = btn.dataset.prompt || '';
-      copyText(text, btn);
-    });
+    btn.addEventListener('click', () => copyText(btn.dataset.prompt || '', btn));
   });
 }
 
-// ============ SEARCH ============
+// search
 document.getElementById('searchBox').addEventListener('input', e => {
   const q = e.target.value.trim().toLowerCase();
   const cards = document.querySelectorAll('.word-card');
-  let visibleCount = 0;
+  let n = 0;
   cards.forEach(card => {
-    const text = card.dataset.searchKey || '';
-    const match = !q || text.includes(q);
-    // 显隐(连同父 cat + 自身 details)
-    const cat = card.closest('.cat-block');
-    if (match) {
-      card.style.display = '';
-      // 自动展开匹配项的父级(用户可改)
-      const variantMatches = !!q && Array.from(card.querySelectorAll('.variant-block'))
-        .some(v => (v.dataset.searchKey||'').includes(q));
-      if (variantMatches) {
+    const match = !q || (card.dataset.searchKey || '').includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match && q) {
+      card.closest('.cat-block').open = true;
+      // 命中变体所在卡也展开
+      if (Array.from(card.querySelectorAll('.variant-block'))
+        .some(v => (v.dataset.searchKey||'').includes(q))) {
         card.open = true;
         card.querySelectorAll('.variant-block').forEach(v => {
           if ((v.dataset.searchKey||'').includes(q)) v.open = true;
         });
       }
-      if (q) cat.open = true;
-      visibleCount++;
-    } else {
-      card.style.display = 'none';
+      n++;
     }
   });
-  // 空结果
   const empty = document.getElementById('emptySearch');
-  if (visibleCount === 0 && q) {
+  if (!n && q) {
     if (!empty) {
-      const div = document.createElement('div');
-      div.id = 'emptySearch';
-      div.className = 'empty';
-      div.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
-      document.getElementById('mainContent').appendChild(div);
-    } else {
-      empty.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
-    }
+      const d = document.createElement('div');
+      d.id = 'emptySearch'; d.className = 'empty';
+      d.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
+      document.getElementById('mainContent').appendChild(d);
+    } else empty.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
   } else if (empty) empty.remove();
 });
 
-// ============ EXPAND/COLLAPSE ALL ============
 function setAll(open) {
-  document.querySelectorAll('.cat-block, .word-card, .variant-block').forEach(el => {
-    el.open = open;
-  });
+  document.querySelectorAll('.cat-block, .word-card, .variant-block')
+    .forEach(el => el.open = open);
 }
 document.getElementById('expandAllBtn').addEventListener('click', () => setAll(true));
 document.getElementById('collapseAllBtn').addEventListener('click', () => setAll(false));
 
-// ============ COPY ALL ============
 document.getElementById('copyAllBtn').addEventListener('click', () => {
   const parts = [];
   DATA.data.triggers.forEach(t => {
-    parts.push(`【${escapeHTML(t.category)}】${escapeHTML(t.wake_word)}`);
+    parts.push(`【${t.category}】${t.wake_word}`);
     parts.push(t.main_prompt.text);
     (t.variants || []).forEach(v => {
-      parts.push(`  ↳ ${escapeHTML(v.label)}: ${v.prompt}`);
+      parts.push(`  ↳ ${v.label}: ${v.prompt}`);
     });
     parts.push('');
   });
   copyText(parts.join('\n'), document.getElementById('copyAllBtn'));
 });
 
-// ============ BOOT ============
 render();
 </script>
 </body>

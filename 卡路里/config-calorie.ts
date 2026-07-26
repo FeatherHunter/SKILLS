@@ -1,5 +1,5 @@
 // 自动生成 by generate_ts_config.py
-// 生成时间: 2026-05-23 12:51:58
+// 生成时间: 2026-07-26 12:11:26
 // 表结构从数据库动态读取（方案三）
 // queries/actions/views 由 AI 根据表能力设计
 
@@ -16,7 +16,7 @@
   "schema": {
     "tables": [
       {
-        "name": "entries",
+        "name": "food_log",
         "fields": [
           {
             "name": "id",
@@ -163,6 +163,13 @@
             "name": "goal_deadline",
             "type": "string",
             "label": "Goal deadline",
+            "editable": true
+          },
+          {
+            "name": "water_goal",
+            "type": "number",
+            "label": "Water goal",
+            "default": "2000",
             "editable": true
           }
         ]
@@ -328,6 +335,20 @@
             "default": "CURRENT_TIMESTAMP",
             "format": "date",
             "editable": false
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "label": "Source",
+            "default": "'未知'",
+            "editable": true
+          },
+          {
+            "name": "is_deprecated",
+            "type": "number",
+            "label": "Is deprecated",
+            "default": "0",
+            "editable": true
           }
         ]
       },
@@ -398,149 +419,65 @@
             "label": "Reps",
             "unit": "个",
             "editable": true
-          }
-        ]
-      },
-      {
-        "name": "fitness_goals",
-        "fields": [
+          },
           {
-            "name": "id",
+            "name": "category",
+            "type": "string",
+            "label": "Category",
+            "editable": true
+          },
+          {
+            "name": "intensity",
+            "type": "string",
+            "label": "Intensity",
+            "editable": true
+          },
+          {
+            "name": "distance_km",
             "type": "number",
-            "label": "Id",
-            "primaryKey": true,
-            "editable": false
-          },
-          {
-            "name": "name",
-            "type": "string",
-            "label": "Name",
+            "label": "Distance km",
             "editable": true
           },
           {
-            "name": "goal_type",
-            "type": "string",
-            "label": "Goal type",
-            "editable": true
-          },
-          {
-            "name": "exercise_type",
-            "type": "string",
-            "label": "Exercise type",
-            "editable": true
-          },
-          {
-            "name": "target_unit",
-            "type": "string",
-            "label": "Target unit",
-            "editable": true
-          },
-          {
-            "name": "target_value",
+            "name": "avg_heart_rate",
             "type": "number",
-            "label": "Target value",
+            "label": "Avg heart rate",
             "editable": true
           },
           {
-            "name": "start_date",
-            "type": "string",
-            "label": "Start date",
-            "format": "date",
-            "editable": true
-          },
-          {
-            "name": "end_date",
-            "type": "string",
-            "label": "End date",
-            "format": "date",
-            "editable": true
-          },
-          {
-            "name": "status",
-            "type": "string",
-            "label": "Status",
-            "default": "'active'",
-            "editable": true
-          },
-          {
-            "name": "note",
-            "type": "string",
-            "label": "Note",
-            "editable": true
-          },
-          {
-            "name": "created_at",
+            "name": "set_index",
             "type": "number",
-            "label": "Created at",
-            "format": "datetime",
-            "visible": false,
-            "editable": false
+            "label": "Set index",
+            "editable": true
+          },
+          {
+            "name": "load_kg",
+            "type": "number",
+            "label": "Load kg",
+            "editable": true
+          },
+          {
+            "name": "difficulty",
+            "type": "string",
+            "label": "Difficulty",
+            "editable": true
+          },
+          {
+            "name": "xunji_localid",
+            "type": "string",
+            "label": "Xunji localid",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "xunji_title",
+            "type": "string",
+            "label": "Xunji title",
+            "editable": true
           },
           {
             "name": "updated_at",
-            "type": "number",
-            "label": "Updated at",
-            "format": "date",
-            "editable": false
-          }
-        ]
-      },
-      {
-        "name": "sleep_records",
-        "fields": [
-          {
-            "name": "id",
-            "type": "number",
-            "label": "Id",
-            "primaryKey": true,
-            "editable": false
-          },
-          {
-            "name": "date",
             "type": "string",
-            "label": "Date",
-            "format": "date",
-            "editable": true
-          },
-          {
-            "name": "sleep_hours",
-            "type": "number",
-            "label": "Sleep hours",
-            "editable": true
-          },
-          {
-            "name": "bedtime",
-            "type": "string",
-            "label": "Bedtime",
-            "format": "time",
-            "visible": true,
-            "editable": true
-          },
-          {
-            "name": "wake_time",
-            "type": "string",
-            "label": "Wake time",
-            "format": "time",
-            "visible": true,
-            "editable": true
-          },
-          {
-            "name": "note",
-            "type": "string",
-            "label": "Note",
-            "editable": true
-          },
-          {
-            "name": "created_at",
-            "type": "number",
-            "label": "Created at",
-            "format": "datetime",
-            "visible": false,
-            "editable": false
-          },
-          {
-            "name": "updated_at",
-            "type": "number",
             "label": "Updated at",
             "format": "date",
             "editable": false
@@ -568,7 +505,8 @@
             "name": "time",
             "type": "string",
             "label": "Time",
-            "format": "time",
+            "format": "datetime",
+            "visible": false,
             "editable": true
           },
           {
@@ -599,14 +537,480 @@
             "editable": false
           }
         ]
+      },
+      {
+        "name": "workout_plan_config",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "label": "Title",
+            "editable": true
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "label": "Version",
+            "editable": true
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "label": "Description",
+            "editable": true
+          },
+          {
+            "name": "total_weeks",
+            "type": "number",
+            "label": "Total weeks",
+            "editable": true
+          },
+          {
+            "name": "start_date",
+            "type": "string",
+            "label": "Start date",
+            "format": "date",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "label": "Updated at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "date",
+            "editable": false
+          }
+        ]
+      },
+      {
+        "name": "workout_plans",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "week_number",
+            "type": "number",
+            "label": "Week number",
+            "editable": true
+          },
+          {
+            "name": "day_of_week",
+            "type": "number",
+            "label": "Day of week",
+            "editable": true
+          },
+          {
+            "name": "session_index",
+            "type": "number",
+            "label": "Session index",
+            "default": "1",
+            "editable": true
+          },
+          {
+            "name": "session_label",
+            "type": "string",
+            "label": "Session label",
+            "editable": true
+          },
+          {
+            "name": "time_start",
+            "type": "string",
+            "label": "Time start",
+            "format": "datetime",
+            "visible": false,
+            "editable": true
+          },
+          {
+            "name": "time_end",
+            "type": "string",
+            "label": "Time end",
+            "format": "datetime",
+            "visible": false,
+            "editable": true
+          },
+          {
+            "name": "is_rest_day",
+            "type": "number",
+            "label": "Is rest day",
+            "default": "0",
+            "editable": true
+          },
+          {
+            "name": "total_sets",
+            "type": "number",
+            "label": "Total sets",
+            "editable": true
+          },
+          {
+            "name": "movements",
+            "type": "string",
+            "label": "Movements",
+            "default": "'[]'",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "label": "Updated at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "date",
+            "editable": false
+          }
+        ]
+      },
+      {
+        "name": "user_profile",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "age",
+            "type": "number",
+            "label": "Age",
+            "editable": true
+          },
+          {
+            "name": "gender",
+            "type": "string",
+            "label": "Gender",
+            "editable": true
+          },
+          {
+            "name": "height_cm",
+            "type": "number",
+            "label": "Height cm",
+            "unit": "厘米",
+            "editable": true
+          },
+          {
+            "name": "note",
+            "type": "string",
+            "label": "Note",
+            "default": "''",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "label": "Updated at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "date",
+            "editable": false
+          }
+        ]
+      },
+      {
+        "name": "body_composition",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "date",
+            "type": "string",
+            "label": "Date",
+            "format": "date",
+            "editable": true
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "label": "Source",
+            "editable": true
+          },
+          {
+            "name": "age",
+            "type": "number",
+            "label": "Age",
+            "editable": true
+          },
+          {
+            "name": "sex",
+            "type": "string",
+            "label": "Sex",
+            "editable": true
+          },
+          {
+            "name": "caliper_chest_mm",
+            "type": "number",
+            "label": "Caliper chest mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_abdominal_mm",
+            "type": "number",
+            "label": "Caliper abdominal mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_thigh_mm",
+            "type": "number",
+            "label": "Caliper thigh mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_tricep_mm",
+            "type": "number",
+            "label": "Caliper tricep mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_subscapular_mm",
+            "type": "number",
+            "label": "Caliper subscapular mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_suprailiac_mm",
+            "type": "number",
+            "label": "Caliper suprailiac mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "caliper_midaxillary_mm",
+            "type": "number",
+            "label": "Caliper midaxillary mm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "body_fat_pct",
+            "type": "number",
+            "label": "Body fat pct",
+            "unit": "克",
+            "editable": true
+          },
+          {
+            "name": "calculated_at",
+            "type": "string",
+            "label": "Calculated at",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "note",
+            "type": "string",
+            "label": "Note",
+            "default": "''",
+            "editable": true
+          },
+          {
+            "name": "is_deprecated",
+            "type": "number",
+            "label": "Is deprecated",
+            "default": "0",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "label": "Updated at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "date",
+            "editable": false
+          }
+        ]
+      },
+      {
+        "name": "body_measurements",
+        "fields": [
+          {
+            "name": "id",
+            "type": "number",
+            "label": "Id",
+            "primaryKey": true,
+            "editable": false
+          },
+          {
+            "name": "date",
+            "type": "string",
+            "label": "Date",
+            "format": "date",
+            "editable": true
+          },
+          {
+            "name": "chest_cm",
+            "type": "number",
+            "label": "Chest cm",
+            "editable": true
+          },
+          {
+            "name": "waist_cm",
+            "type": "number",
+            "label": "Waist cm",
+            "editable": true
+          },
+          {
+            "name": "abdomen_cm",
+            "type": "number",
+            "label": "Abdomen cm",
+            "editable": true
+          },
+          {
+            "name": "hip_cm",
+            "type": "number",
+            "label": "Hip cm",
+            "editable": true
+          },
+          {
+            "name": "left_thigh_cm",
+            "type": "number",
+            "label": "Left thigh cm",
+            "editable": true
+          },
+          {
+            "name": "right_thigh_cm",
+            "type": "number",
+            "label": "Right thigh cm",
+            "editable": true
+          },
+          {
+            "name": "left_calf_cm",
+            "type": "number",
+            "label": "Left calf cm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "right_calf_cm",
+            "type": "number",
+            "label": "Right calf cm",
+            "unit": "千卡",
+            "editable": true
+          },
+          {
+            "name": "left_arm_cm",
+            "type": "number",
+            "label": "Left arm cm",
+            "editable": true
+          },
+          {
+            "name": "right_arm_cm",
+            "type": "number",
+            "label": "Right arm cm",
+            "editable": true
+          },
+          {
+            "name": "left_forearm_cm",
+            "type": "number",
+            "label": "Left forearm cm",
+            "editable": true
+          },
+          {
+            "name": "right_forearm_cm",
+            "type": "number",
+            "label": "Right forearm cm",
+            "editable": true
+          },
+          {
+            "name": "shoulder_cm",
+            "type": "number",
+            "label": "Shoulder cm",
+            "editable": true
+          },
+          {
+            "name": "note",
+            "type": "string",
+            "label": "Note",
+            "default": "''",
+            "editable": true
+          },
+          {
+            "name": "is_deprecated",
+            "type": "number",
+            "label": "Is deprecated",
+            "default": "0",
+            "editable": true
+          },
+          {
+            "name": "created_at",
+            "type": "string",
+            "label": "Created at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "datetime",
+            "visible": false,
+            "editable": false
+          },
+          {
+            "name": "updated_at",
+            "type": "string",
+            "label": "Updated at",
+            "default": "CURRENT_TIMESTAMP",
+            "format": "date",
+            "editable": false
+          }
+        ]
       }
     ]
   },
   "queries": [
     {
-      "id": "entries-daily",
-      "label": "今日饮食记录",
-      "sql": "SELECT * FROM entries WHERE date = '{date}' ORDER BY time",
+      "id": "food_log-daily",
+      "label": "今日food_log",
+      "sql": "SELECT * FROM food_log WHERE date = '{date}' ORDER BY time",
       "params": [
         {
           "name": "date",
@@ -617,9 +1021,9 @@
       ]
     },
     {
-      "id": "entries-history",
-      "label": "饮食记录历史",
-      "sql": "SELECT * FROM entries ORDER BY date DESC, time DESC LIMIT 100",
+      "id": "food_log-history",
+      "label": "food_log历史",
+      "sql": "SELECT * FROM food_log ORDER BY date DESC, time DESC LIMIT 100",
       "params": []
     },
     {
@@ -673,33 +1077,8 @@
       "params": []
     },
     {
-      "id": "fitness_goals-all",
-      "label": "全部健身目标",
-      "sql": "SELECT * FROM fitness_goals ORDER BY id DESC",
-      "params": []
-    },
-    {
-      "id": "sleep_records-daily",
-      "label": "今日睡眠记录",
-      "sql": "SELECT * FROM sleep_records WHERE date = '{date}' ORDER BY time",
-      "params": [
-        {
-          "name": "date",
-          "type": "date",
-          "label": "日期",
-          "default": "TODAY"
-        }
-      ]
-    },
-    {
-      "id": "sleep_records-history",
-      "label": "睡眠记录历史",
-      "sql": "SELECT * FROM sleep_records ORDER BY date DESC, time DESC LIMIT 100",
-      "params": []
-    },
-    {
       "id": "body_photos-daily",
-      "label": "今日身材照片",
+      "label": "今日body_photos",
       "sql": "SELECT * FROM body_photos WHERE date = '{date}' ORDER BY time",
       "params": [
         {
@@ -712,17 +1091,73 @@
     },
     {
       "id": "body_photos-history",
-      "label": "身材照片历史",
+      "label": "body_photos历史",
       "sql": "SELECT * FROM body_photos ORDER BY date DESC, time DESC LIMIT 100",
+      "params": []
+    },
+    {
+      "id": "workout_plan_config-all",
+      "label": "全部workout_plan_config",
+      "sql": "SELECT * FROM workout_plan_config ORDER BY id DESC",
+      "params": []
+    },
+    {
+      "id": "workout_plans-all",
+      "label": "全部workout_plans",
+      "sql": "SELECT * FROM workout_plans ORDER BY id DESC",
+      "params": []
+    },
+    {
+      "id": "user_profile-all",
+      "label": "全部user_profile",
+      "sql": "SELECT * FROM user_profile ORDER BY id DESC",
+      "params": []
+    },
+    {
+      "id": "body_composition-daily",
+      "label": "今日body_composition",
+      "sql": "SELECT * FROM body_composition WHERE date = '{date}' ORDER BY time",
+      "params": [
+        {
+          "name": "date",
+          "type": "date",
+          "label": "日期",
+          "default": "TODAY"
+        }
+      ]
+    },
+    {
+      "id": "body_composition-history",
+      "label": "body_composition历史",
+      "sql": "SELECT * FROM body_composition ORDER BY date DESC, time DESC LIMIT 100",
+      "params": []
+    },
+    {
+      "id": "body_measurements-daily",
+      "label": "今日body_measurements",
+      "sql": "SELECT * FROM body_measurements WHERE date = '{date}' ORDER BY time",
+      "params": [
+        {
+          "name": "date",
+          "type": "date",
+          "label": "日期",
+          "default": "TODAY"
+        }
+      ]
+    },
+    {
+      "id": "body_measurements-history",
+      "label": "body_measurements历史",
+      "sql": "SELECT * FROM body_measurements ORDER BY date DESC, time DESC LIMIT 100",
       "params": []
     }
   ],
   "actions": [
     {
-      "id": "add-entries",
-      "label": "添加饮食记录",
+      "id": "add-food_log",
+      "label": "添加food_log",
       "type": "insert",
-      "targetTable": "entries",
+      "targetTable": "food_log",
       "fields": [
         {
           "field": "date",
@@ -821,6 +1256,12 @@
           "required": false,
           "source": "user-input",
           "prompt": "Goal deadline"
+        },
+        {
+          "field": "water_goal",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Water goal"
         }
       ]
     },
@@ -939,6 +1380,18 @@
           "required": false,
           "source": "user-input",
           "prompt": "Note"
+        },
+        {
+          "field": "source",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Source"
+        },
+        {
+          "field": "is_deprecated",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Is deprecated"
         }
       ]
     },
@@ -989,112 +1442,66 @@
           "required": false,
           "source": "user-input",
           "prompt": "Reps"
-        }
-      ]
-    },
-    {
-      "id": "add-fitness_goals",
-      "label": "添加健身目标",
-      "type": "insert",
-      "targetTable": "fitness_goals",
-      "fields": [
-        {
-          "field": "name",
-          "required": false,
-          "source": "user-input",
-          "prompt": "Name"
         },
         {
-          "field": "goal_type",
+          "field": "category",
           "required": false,
           "source": "user-input",
-          "prompt": "Goal type"
+          "prompt": "Category"
         },
         {
-          "field": "exercise_type",
+          "field": "intensity",
           "required": false,
           "source": "user-input",
-          "prompt": "Exercise type"
+          "prompt": "Intensity"
         },
         {
-          "field": "target_unit",
+          "field": "distance_km",
           "required": false,
           "source": "user-input",
-          "prompt": "Target unit"
+          "prompt": "Distance km"
         },
         {
-          "field": "target_value",
+          "field": "avg_heart_rate",
           "required": false,
           "source": "user-input",
-          "prompt": "Target value"
+          "prompt": "Avg heart rate"
         },
         {
-          "field": "start_date",
+          "field": "set_index",
           "required": false,
           "source": "user-input",
-          "prompt": "Start date"
+          "prompt": "Set index"
         },
         {
-          "field": "end_date",
+          "field": "load_kg",
           "required": false,
           "source": "user-input",
-          "prompt": "End date"
+          "prompt": "Load kg"
         },
         {
-          "field": "status",
+          "field": "difficulty",
           "required": false,
           "source": "user-input",
-          "prompt": "Status"
+          "prompt": "Difficulty"
         },
         {
-          "field": "note",
+          "field": "xunji_localid",
           "required": false,
           "source": "user-input",
-          "prompt": "Note"
-        }
-      ]
-    },
-    {
-      "id": "add-sleep_records",
-      "label": "添加睡眠记录",
-      "type": "insert",
-      "targetTable": "sleep_records",
-      "fields": [
-        {
-          "field": "date",
-          "required": true,
-          "source": "user-input",
-          "prompt": "Date"
+          "prompt": "Xunji localid"
         },
         {
-          "field": "sleep_hours",
+          "field": "xunji_title",
           "required": false,
           "source": "user-input",
-          "prompt": "Sleep hours"
-        },
-        {
-          "field": "bedtime",
-          "required": false,
-          "source": "user-input",
-          "prompt": "Bedtime"
-        },
-        {
-          "field": "wake_time",
-          "required": false,
-          "source": "user-input",
-          "prompt": "Wake time"
-        },
-        {
-          "field": "note",
-          "required": false,
-          "source": "user-input",
-          "prompt": "Note"
+          "prompt": "Xunji title"
         }
       ]
     },
     {
       "id": "add-body_photos",
-      "label": "添加身材照片",
+      "label": "添加body_photos",
       "type": "insert",
       "targetTable": "body_photos",
       "fields": [
@@ -1106,43 +1513,377 @@
         },
         {
           "field": "time",
-          "required": true,
+          "required": false,
           "source": "user-input",
           "prompt": "Time"
         },
         {
           "field": "photo_path",
-          "required": true,
+          "required": false,
           "source": "user-input",
           "prompt": "Photo path"
         },
         {
           "field": "tag",
-          "required": true,
+          "required": false,
           "source": "user-input",
           "prompt": "Tag"
         },
         {
           "field": "note",
-          "required": true,
+          "required": false,
           "source": "user-input",
           "prompt": "Note"
+        }
+      ]
+    },
+    {
+      "id": "add-workout_plan_config",
+      "label": "添加workout_plan_config",
+      "type": "insert",
+      "targetTable": "workout_plan_config",
+      "fields": [
+        {
+          "field": "title",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Title"
+        },
+        {
+          "field": "version",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Version"
+        },
+        {
+          "field": "description",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Description"
+        },
+        {
+          "field": "total_weeks",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Total weeks"
+        },
+        {
+          "field": "start_date",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Start date"
+        }
+      ]
+    },
+    {
+      "id": "add-workout_plans",
+      "label": "添加workout_plans",
+      "type": "insert",
+      "targetTable": "workout_plans",
+      "fields": [
+        {
+          "field": "week_number",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Week number"
+        },
+        {
+          "field": "day_of_week",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Day of week"
+        },
+        {
+          "field": "session_index",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Session index"
+        },
+        {
+          "field": "session_label",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Session label"
+        },
+        {
+          "field": "time_start",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Time start"
+        },
+        {
+          "field": "time_end",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Time end"
+        },
+        {
+          "field": "is_rest_day",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Is rest day"
+        },
+        {
+          "field": "total_sets",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Total sets"
+        },
+        {
+          "field": "movements",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Movements"
+        }
+      ]
+    },
+    {
+      "id": "add-user_profile",
+      "label": "添加user_profile",
+      "type": "insert",
+      "targetTable": "user_profile",
+      "fields": [
+        {
+          "field": "age",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Age"
+        },
+        {
+          "field": "gender",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Gender"
+        },
+        {
+          "field": "height_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Height cm"
+        },
+        {
+          "field": "note",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Note"
+        }
+      ]
+    },
+    {
+      "id": "add-body_composition",
+      "label": "添加body_composition",
+      "type": "insert",
+      "targetTable": "body_composition",
+      "fields": [
+        {
+          "field": "date",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Date"
+        },
+        {
+          "field": "source",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Source"
+        },
+        {
+          "field": "age",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Age"
+        },
+        {
+          "field": "sex",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Sex"
+        },
+        {
+          "field": "caliper_chest_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper chest mm"
+        },
+        {
+          "field": "caliper_abdominal_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper abdominal mm"
+        },
+        {
+          "field": "caliper_thigh_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper thigh mm"
+        },
+        {
+          "field": "caliper_tricep_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper tricep mm"
+        },
+        {
+          "field": "caliper_subscapular_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper subscapular mm"
+        },
+        {
+          "field": "caliper_suprailiac_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper suprailiac mm"
+        },
+        {
+          "field": "caliper_midaxillary_mm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Caliper midaxillary mm"
+        },
+        {
+          "field": "body_fat_pct",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Body fat pct"
+        },
+        {
+          "field": "calculated_at",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Calculated at"
+        },
+        {
+          "field": "note",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Note"
+        },
+        {
+          "field": "is_deprecated",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Is deprecated"
+        }
+      ]
+    },
+    {
+      "id": "add-body_measurements",
+      "label": "添加body_measurements",
+      "type": "insert",
+      "targetTable": "body_measurements",
+      "fields": [
+        {
+          "field": "date",
+          "required": true,
+          "source": "user-input",
+          "prompt": "Date"
+        },
+        {
+          "field": "chest_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Chest cm"
+        },
+        {
+          "field": "waist_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Waist cm"
+        },
+        {
+          "field": "abdomen_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Abdomen cm"
+        },
+        {
+          "field": "hip_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Hip cm"
+        },
+        {
+          "field": "left_thigh_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Left thigh cm"
+        },
+        {
+          "field": "right_thigh_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Right thigh cm"
+        },
+        {
+          "field": "left_calf_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Left calf cm"
+        },
+        {
+          "field": "right_calf_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Right calf cm"
+        },
+        {
+          "field": "left_arm_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Left arm cm"
+        },
+        {
+          "field": "right_arm_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Right arm cm"
+        },
+        {
+          "field": "left_forearm_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Left forearm cm"
+        },
+        {
+          "field": "right_forearm_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Right forearm cm"
+        },
+        {
+          "field": "shoulder_cm",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Shoulder cm"
+        },
+        {
+          "field": "note",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Note"
+        },
+        {
+          "field": "is_deprecated",
+          "required": false,
+          "source": "user-input",
+          "prompt": "Is deprecated"
         }
       ]
     }
   ],
   "views": [
     {
-      "id": "entries",
-      "label": "饮食记录",
+      "id": "food_log",
+      "label": "food_log",
       "components": {
         "table": {
-          "queryId": "entries-daily",
+          "queryId": "food_log-daily",
           "sortable": true,
           "pageSize": 20
         },
         "form": {
-          "actionId": "add-entries"
+          "actionId": "add-food_log"
         }
       }
     },
@@ -1203,36 +1944,8 @@
       }
     },
     {
-      "id": "fitness_goals",
-      "label": "健身目标",
-      "components": {
-        "table": {
-          "queryId": "fitness_goals-all",
-          "sortable": true,
-          "pageSize": 20
-        },
-        "form": {
-          "actionId": "add-fitness_goals"
-        }
-      }
-    },
-    {
-      "id": "sleep_records",
-      "label": "睡眠记录",
-      "components": {
-        "table": {
-          "queryId": "sleep_records-daily",
-          "sortable": true,
-          "pageSize": 20
-        },
-        "form": {
-          "actionId": "add-sleep_records"
-        }
-      }
-    },
-    {
       "id": "body_photos",
-      "label": "身材照片",
+      "label": "body_photos",
       "components": {
         "table": {
           "queryId": "body_photos-daily",
@@ -1241,6 +1954,76 @@
         },
         "form": {
           "actionId": "add-body_photos"
+        }
+      }
+    },
+    {
+      "id": "workout_plan_config",
+      "label": "workout_plan_config",
+      "components": {
+        "table": {
+          "queryId": "workout_plan_config-all",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-workout_plan_config"
+        }
+      }
+    },
+    {
+      "id": "workout_plans",
+      "label": "workout_plans",
+      "components": {
+        "table": {
+          "queryId": "workout_plans-all",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-workout_plans"
+        }
+      }
+    },
+    {
+      "id": "user_profile",
+      "label": "user_profile",
+      "components": {
+        "table": {
+          "queryId": "user_profile-all",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-user_profile"
+        }
+      }
+    },
+    {
+      "id": "body_composition",
+      "label": "body_composition",
+      "components": {
+        "table": {
+          "queryId": "body_composition-daily",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-body_composition"
+        }
+      }
+    },
+    {
+      "id": "body_measurements",
+      "label": "body_measurements",
+      "components": {
+        "table": {
+          "queryId": "body_measurements-daily",
+          "sortable": true,
+          "pageSize": 20
+        },
+        "form": {
+          "actionId": "add-body_measurements"
         }
       }
     }

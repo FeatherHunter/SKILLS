@@ -49,9 +49,9 @@ def build_data(start, end):
     conn = sqlite3.connect(str(db_path))
     cur = conn.cursor()
 
-    # 取每日的 calorie 总和 + 目标(取 daily_goal.calorie)
+    # 取每日的 calories 总和 + 目标(取 daily_goal.calorie_goal)
     cur.execute("""
-        SELECT date, COALESCE(SUM(calorie), 0)
+        SELECT date, COALESCE(SUM(calories), 0)
         FROM food_log
         WHERE date BETWEEN ? AND ?
         GROUP BY date
@@ -59,7 +59,7 @@ def build_data(start, end):
     """, (start, end))
     daily = dict(cur.fetchall())
 
-    cur.execute("SELECT calorie FROM daily_goal ORDER BY id DESC LIMIT 1")
+    cur.execute("SELECT calorie_goal FROM daily_goal ORDER BY id DESC LIMIT 1")
     row = cur.fetchone()
     target = row[0] if row else 1800
     conn.close()
@@ -184,7 +184,7 @@ def main():
 
     s = data['data']['summary']
     print(f'✅ {out_path}')
-    print(f'   范围: {start} ~ {end} | 日均: {s["avg"]:,} 卡 | 趋势: {s["trend"]} ({s["trend_value"]:+d}) | 合规: {int(s["compliance_rate"]*100)}%')
+    print(f'   范围: {start} ~ {end} | 日均: {s["avg"]:,} 卡 | 趋势: {s["trend"]} ({s["trend_value"]:+.0f}) | 合规: {int(s["compliance_rate"]*100)}%')
     return 0
 
 

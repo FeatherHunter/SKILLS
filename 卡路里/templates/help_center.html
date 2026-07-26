@@ -39,48 +39,7 @@ body {
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
 
-/* === STICKY CONTROLS === */
-.controls {
-  position: sticky; top: 0; z-index: 20;
-  background: rgba(255,255,255,.97);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
-  padding: 4px 0 2px;
-  margin: 0 -12px 2px;
-  padding-left: 12px; padding-right: 12px;
-}
-.controls .row1 {
-  display: flex; gap: 5px; margin-bottom: 4px;
-}
-.controls input[type="search"] {
-  flex: 1; min-width: 0; font: inherit; font-size: 13px;
-  padding: 6px 10px; border: 1px solid var(--border);
-  border-radius: 6px; background: #fff; outline: none;
-}
-.controls input[type="search"]:focus { border-color: var(--accent); }
-.controls button {
-  font: inherit; font-size: 12px; padding: 6px 8px;
-  border-radius: 6px; border: 1px solid var(--border);
-  background: #fff; cursor: pointer; white-space: nowrap;
-}
-.controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-.chips-wrap {
-  display: flex; overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; -ms-overflow-style: none;
-  gap: 5px;
-}
-.chips-wrap::-webkit-scrollbar { display: none; }
-.chip {
-  font-size: 11.5px; padding: 4px 8px;
-  border-radius: 999px; border: 1px solid var(--border);
-  background: #fff; color: var(--text);
-  text-decoration: none; cursor: pointer; white-space: nowrap;
-}
-.chip:hover { background: #f0f0f2; }
-.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.chip .count { opacity: .65; margin-left: 3px; font-size: 10px; }
+/* === STICKY CONTROLS 已删除(v2.4.10) === */
 
 /* === CATEGORY (L1) === */
 .cat-block {
@@ -225,20 +184,10 @@ footer {
   <div class="stats" id="heroStats"></div>
 </div></div>
 
-<div class="controls"><div class="container">
-  <div class="row1">
-    <input type="search" id="searchBox" placeholder="🔍 搜索 唤醒词 / 描述 / CLI">
-    <button id="expandAllBtn" title="全部展开">📂</button>
-    <button id="collapseAllBtn" title="全部折叠">🔽</button>
-    <button id="copyAllBtn" title="复制全部 109 prompt">📋</button>
-  </div>
-  <div class="chips-wrap" id="catNav"></div>
-</div></div>
-
 <div class="container">
 <main id="mainContent"><div class="empty">加载中…</div></main>
 <footer>卡路里技能 · 唤醒词速查台 · v2.4.10 · 2026-07-26<br>
-用:展开类别 → 展开唤醒词 → 展开变体 → 📋 复制 → 粘贴给 AI</footer>
+用:展开 ▸ 类别 → 展开 ▸ 唤醒词 → 展开 ▸ 变体 → 📋 复制 → 粘贴给 AI</footer>
 </div>
 
 <!--INJECT-DATA-->
@@ -286,17 +235,6 @@ function render() {
     `<span><b>${summary.total_wake_words}</b> 唤醒词</span>` +
     `<span><b>${summary.total_prompts}</b> prompt</span>`;
 
-  // category chips
-  const navEl = document.getElementById('catNav');
-  navEl.innerHTML = categories.map(c =>
-    `<a class="chip" data-cat="${escapeHTML(c.key)}" href="#cat-${escapeHTML(c.key)}">` +
-    `${c.icon} ${escapeHTML(c.name)} <span class="count">${summary.by_category[c.name] || 0}</span></a>`
-  ).join('');
-  navEl.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
-    navEl.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-  }));
-
   // group by category
   const byCat = {};
   triggers.forEach(t => { (byCat[t.category] = byCat[t.category] || []).push(t); });
@@ -320,9 +258,7 @@ function renderWordCard(t) {
     `<span>${escapeHTML(a)}</span>`).join('');
   const variants = t.variants || [];
   const pm = t.main_prompt || {cli:'', text:''};
-  const searchKey = (t.wake_word + ' ' + (t.aliases||[]).join(' ') + ' ' +
-    (t.desc||'') + ' ' + (pm.cli||'')).toLowerCase();
-  return `<details class="word-card" data-search-key="${escapeHTML(searchKey)}"><summary>` +
+  return `<details class="word-card"><summary>` +
     `<span class="ww-name">${escapeHTML(t.wake_word)}</span>` +
     `${aliases ? `<span class="ww-aliases">${aliases}</span>` : ''}` +
     `<span class="ww-count">${variants.length ? variants.length + '变体' : ''}</span>` +
@@ -337,8 +273,7 @@ function renderWordCard(t) {
 }
 
 function renderVariant(v) {
-  const searchKey = (v.label + ' ' + (v.cli||'')).toLowerCase();
-  return `<details class="variant-block" data-search-key="${escapeHTML(searchKey)}">` +
+  return `<details class="variant-block">` +
     `<summary><span class="v-label">${escapeHTML(v.label)}</span></summary>` +
     `<div class="v-content">` +
     `${v.cli ? `<div class="prompt-cli">${escapeHTML(v.cli)}</div>` : ''}` +
@@ -355,57 +290,7 @@ function bindCopyButtons() {
   });
 }
 
-// search
-document.getElementById('searchBox').addEventListener('input', e => {
-  const q = e.target.value.trim().toLowerCase();
-  const cards = document.querySelectorAll('.word-card');
-  let n = 0;
-  cards.forEach(card => {
-    const match = !q || (card.dataset.searchKey || '').includes(q);
-    card.style.display = match ? '' : 'none';
-    if (match && q) {
-      card.closest('.cat-block').open = true;
-      // 命中变体所在卡也展开
-      if (Array.from(card.querySelectorAll('.variant-block'))
-        .some(v => (v.dataset.searchKey||'').includes(q))) {
-        card.open = true;
-        card.querySelectorAll('.variant-block').forEach(v => {
-          if ((v.dataset.searchKey||'').includes(q)) v.open = true;
-        });
-      }
-      n++;
-    }
-  });
-  const empty = document.getElementById('emptySearch');
-  if (!n && q) {
-    if (!empty) {
-      const d = document.createElement('div');
-      d.id = 'emptySearch'; d.className = 'empty';
-      d.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
-      document.getElementById('mainContent').appendChild(d);
-    } else empty.textContent = `未找到包含 "${e.target.value}" 的唤醒词`;
-  } else if (empty) empty.remove();
-});
-
-function setAll(open) {
-  document.querySelectorAll('.cat-block, .word-card, .variant-block')
-    .forEach(el => el.open = open);
-}
-document.getElementById('expandAllBtn').addEventListener('click', () => setAll(true));
-document.getElementById('collapseAllBtn').addEventListener('click', () => setAll(false));
-
-document.getElementById('copyAllBtn').addEventListener('click', () => {
-  const parts = [];
-  DATA.data.triggers.forEach(t => {
-    parts.push(`【${t.category}】${t.wake_word}`);
-    parts.push(t.main_prompt.text);
-    (t.variants || []).forEach(v => {
-      parts.push(`  ↳ ${v.label}: ${v.prompt}`);
-    });
-    parts.push('');
-  });
-  copyText(parts.join('\n'), document.getElementById('copyAllBtn'));
-});
+// search / expandAll / collapseAll / copyAll 已删除(v2.4.10)
 
 render();
 </script>

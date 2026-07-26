@@ -28,10 +28,24 @@ RENDER_DIR = SKILL_DIR / "scripts"
 
 
 def parse_frontmatter_triggers(text: str) -> set:
+    """提取 frontmatter 触发词
+
+    v2.4.13 起:支持"主词(口语变体)"形式(如 `记吃了(刚吃了 / 刚才吃了 ...)`),内部用 `、` 分隔各主词,
+    主词后括号内是口语变体注释,提取主词时跳过括号内容做规范化。
+    """
     m = re.search(r'触发词:([^\n]+)', text)
     if not m:
         return set()
-    return {t.strip() for t in m.group(1).split('、') if t.strip()}
+    out = set()
+    for t in m.group(1).split('、'):
+        t = t.strip()
+        if not t:
+            continue
+        # 去括号(口语变体)
+        t = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
+        if t:
+            out.add(t)
+    return out
 
 
 def parse_html_template_triggers(text: str) -> set:

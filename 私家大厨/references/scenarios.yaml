@@ -1,0 +1,592 @@
+# 私家大厨 · 场景资产
+#
+# 本文件是 HELP HTML 的唯一事实源(§07 §2.1)
+# 修改本文件 = 改 HELP HTML；禁止手工维护 HELP HTML 副本。
+#
+# 7 字段契约(§07 §2.2,最小必填集,不准删减/重命名):
+#   wake_word        关联业务唤醒词(HELP 不展示自身)
+#   scenario_id      稳定 ID,跨版本不变(snake_case)
+#   scenario_title   用户可读标题
+#   dimensions       实际涉及的维度对象(可选 dict)
+#   prompt           稳定用户意图(§07 §3,不暴露 CLI/DB/Python/模板路径)
+#   status           "" 或 "【待开发】"(§07 §4 二态)
+#   result           仅描述用户预期结果
+
+meta:
+  skill: 私家大厨
+  version: 0.1.0
+  generated_at: 2026-07-27
+  help_wake_word: "私家大厨 HELP"
+
+# ─────────────────────────────────────────────────────
+# §07 §3 prompt 抽象规则
+# ─────────────────────────────────────────────────────
+prompt_rules:
+  forbidden:
+    - "python scripts/..."
+    - "templates/..."
+    - "$CHEF_OUTPUT_DIR / D:/CookHub"
+    - "数据库字段名(recipe_id / cook_sequence ...)"
+    - "错误码(status=200 / ERR_DB_EMPTY)"
+    - "易变调用步骤(步骤 1:query,步骤 2:...)"
+  required:
+    - "自然语言意图描述"
+    - "用户预期结果描述"
+
+# ─────────────────────────────────────────────────────
+# §07 §4 二态状态语义
+# ─────────────────────────────────────────────────────
+status_legend:
+  "": "可用 - HELP HTML 正常展示,可一键复制"
+  "【待开发】": "不可执行 - 醒目标注,复制按钮仍可点;AI 收到 prompt 必须停+告知,不准绕过/假装/降级"
+
+# ─────────────────────────────────────────────────────
+# §07 §2.1 场景穷举方法论(防止 AI 自造冗余)
+# ─────────────────────────────────────────────────────
+methodology:
+  rule_1_user_voice: "每个场景必须对应至少 1 个真实用户原话依据"
+  rule_2_dimension_cap: "维度组合 ≤ 3(时间/筛选/排序 是真实组合上限)"
+  rule_3_no_ai_fabrication: "砍'如果用户问 ... 呢'式反推场景"
+  rule_4_frequency_first: "优先穷举'高频 + 易错',非'罕见 + 易想'"
+  rule_5_deprecation_allowed: "场景可废止(status 改【待开发】或删除)"
+
+# ─────────────────────────────────────────────────────
+# §07 §2.3 边界场景模板(各唤醒词按需复用)
+# ─────────────────────────────────────────────────────
+boundary_templates:
+  no_data: "库中无匹配数据"
+  missing_data: "查询字段缺失(如 ratings 表未填)"
+  error: "数据异常(如 FK CASCADE 删除失败)"
+  offline: "本地服务异常(私家大厨纯本地,通常不适用)"
+
+# ─────────────────────────────────────────────────────
+# 唤醒词别名(多个唤醒词触发同一组场景时声明)
+# ─────────────────────────────────────────────────────
+aliases:
+  - main: "做菜模式"
+    alias: "开始做菜"
+    note: "2 唤醒词触发同一功能,场景共享"
+  - main: "废弃食谱"
+    alias: ["不想要", "删掉", "废弃"]
+    note: "4 唤醒词等价,场景共享(防冗余:避免每唤醒词重复同一场景)"
+
+# ─────────────────────────────────────────────────────
+# 场景列表(全部 35 唤醒词 + aliases 后等价 32 唤醒词)
+# ─────────────────────────────────────────────────────
+scenarios:
+
+  # ─── A 类 · 做菜模式(2 唤醒词 → aliases 共享) ───
+  - wake_word: "做菜模式"
+    scenarios:
+      - scenario_id: "cooking_start_fresh"
+        scenario_title: "启动做菜 - 全新开始"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "帮我做一道{{菜名}},我要按步骤来。"
+        status: ""
+        result: "打开一个可交互的做菜 HTML,按顺序引导你完成全部步骤,完结页可评分和写反馈。"
+
+      - scenario_id: "cooking_start_with_history"
+        scenario_title: "启动做菜 - 含上次经验"
+        dimensions: {recipe: "指定菜名", history: "之前做过"}
+        prompt: "再做一次{{菜名}},上次做得不错但想改进。"
+        status: ""
+        result: "HTML 顶部展示上次做菜的反思提示(如'肉切厚了'),帮你针对性改进。"
+
+      - scenario_id: "cooking_start_double_servings"
+        scenario_title: "启动做菜 - 双份份量"
+        dimensions: {recipe: "指定菜名", servings: "2 份"}
+        prompt: "做{{菜名}},今晚来客人,做两人份。"
+        status: ""
+        result: "HTML 步骤中食材用量自动按份数比例放大,无需心算。"
+
+      - scenario_id: "cooking_resume_after_pause"
+        scenario_title: "断点续做 - 暂停后继续"
+        dimensions: {recipe: "指定菜名", progress: "已做 N 步"}
+        prompt: "我刚才做到第 {{N}} 步,继续帮我做完。"
+        status: "【待开发】"
+        result: "HTML 自动恢复到上次步骤。本场景依赖前端记录上次进度,当前未实现。"
+
+      - scenario_id: "cooking_during_waiting_step"
+        scenario_title: "等待步骤中并行做其他"
+        dimensions: {recipe: "指定菜名", step_type: "等待型(炖/烤/腌)"}
+        prompt: "{{菜名}}正在炖,我能去干别的吗？"
+        status: ""
+        result: "HTML 显示该步骤为等待型,启动计时器即可解锁后续步骤,你可并行切配。"
+
+  # ─── B 类 · 查看食谱(5 唤醒词) ───
+  - wake_word: "查看食谱"
+    scenarios:
+      - scenario_id: "view_full_recipe"
+        scenario_title: "查看完整食谱"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "看看{{菜名}}怎么做。"
+        status: ""
+        result: "展示该菜的食材清单、步骤、营养、背景等所有信息,视觉美观。"
+
+      - scenario_id: "view_for_beginner"
+        scenario_title: "为新手看食谱 - 强调关键"
+        dimensions: {recipe: "指定菜名", user_state: "新手"}
+        prompt: "我是新手,{{菜名}}的关键点是什么？"
+        status: ""
+        result: "HTML 顶部突出'关键成功点'汇总,新手不会遗漏核心步骤。"
+
+      - scenario_id: "view_recipe_with_substitution"
+        scenario_title: "看食谱时替换食材"
+        dimensions: {recipe: "指定菜名", ingredient_swap: "替换某个食材"}
+        prompt: "{{菜名}}里没有 X,能用 Y 代替吗？"
+        status: "【待开发】"
+        result: "HTML 应支持单食材替换并自动更新用量。本场景依赖前端食材映射,当前未实现。"
+
+  - wake_word: "查看食材"
+    scenarios:
+      - scenario_id: "view_ingredients_only"
+        scenario_title: "只看食材清单"
+        dimensions: {recipe: "指定菜名", focus: "食材"}
+        prompt: "{{菜名}}需要哪些食材？"
+        status: ""
+        result: "直接跳到 HTML 食材 section,只显示食材清单与用量,不显示其他信息。"
+
+      - scenario_id: "view_ingredients_grouped"
+        scenario_title: "食材按类别分组查看"
+        dimensions: {recipe: "指定菜名", group_by: "分类"}
+        prompt: "{{菜名}}的食材按肉/菜/调料分组给我。"
+        status: ""
+        result: "食材按 11 大类分组显示,采购时一目了然。"
+
+  - wake_word: "查看步骤"
+    scenarios:
+      - scenario_id: "view_steps_only"
+        scenario_title: "只看步骤"
+        dimensions: {recipe: "指定菜名", focus: "步骤"}
+        prompt: "{{菜名}}怎么做？详细步骤。"
+        status: ""
+        result: "直接跳到 HTML 步骤 section,只显示烹饪步骤与时间火候。"
+
+  - wake_word: "查看营养"
+    scenarios:
+      - scenario_id: "view_nutrition_only"
+        scenario_title: "只看营养"
+        dimensions: {recipe: "指定菜名", focus: "营养"}
+        prompt: "{{菜名}}的热量和蛋白质多少？"
+        status: ""
+        result: "直接跳到 HTML 营养 section,显示热量/蛋白/脂肪/碳水等。"
+
+  - wake_word: "查看背景"
+    scenarios:
+      - scenario_id: "view_background_only"
+        scenario_title: "只看背景文化"
+        dimensions: {recipe: "指定菜名", focus: "背景"}
+        prompt: "{{菜名}}有什么历史典故？"
+        status: ""
+        result: "直接跳到 HTML 背景 section,显示起源故事/历史背景/文化意义。"
+
+  # ─── C 类 · 搜索筛选(10 唤醒词) ───
+  - wake_word: "搜索食谱"
+    scenarios:
+      - scenario_id: "search_by_name_keyword"
+        scenario_title: "按菜名关键词搜索"
+        dimensions: {keyword: "菜名片段"}
+        prompt: "搜索排骨。"
+        status: ""
+        result: "列出菜名含'排骨'的所有菜,显示难度/时间/状态。"
+
+      - scenario_id: "search_no_result"
+        scenario_title: "搜索无结果"
+        dimensions: {keyword: "未收录的菜名"}
+        prompt: "搜索佛跳墙。"
+        status: ""
+        result: "礼貌告知未找到,建议放宽或录入新菜。"
+
+      - scenario_id: "search_fuzzy_match"
+        scenario_title: "搜索错字模糊匹配"
+        dimensions: {keyword: "错字/谐音"}
+        prompt: "搜索宫暴鸡丁(应为宫保)。"
+        status: "【待开发】"
+        result: "应识别错字并提示正确结果。当前未实现模糊匹配。"
+
+  - wake_word: "筛选菜系"
+    scenarios:
+      - scenario_id: "filter_cuisine_basic"
+        scenario_title: "按菜系筛选"
+        dimensions: {cuisine: "川/粤/湘等"}
+        prompt: "川菜有哪些？"
+        status: ""
+        result: "列出所有川菜,按状态/评分排序。"
+
+      - scenario_id: "filter_cuisine_combined"
+        scenario_title: "菜系 + 时间筛选组合"
+        dimensions: {cuisine: "川", time_max: "30 分钟"}
+        prompt: "川菜里 30 分钟内能搞定的。"
+        status: ""
+        result: "川菜 ∩ 时间≤30 分钟 的交集。"
+
+  - wake_word: "筛选食材"
+    scenarios:
+      - scenario_id: "filter_by_ingredient_basic"
+        scenario_title: "按食材筛选"
+        dimensions: {ingredient: "具体食材名"}
+        prompt: "哪些菜里有虾。"
+        status: ""
+        result: "列出所有含虾的菜,按评分排序。"
+
+      - scenario_id: "filter_exclude_ingredient"
+        scenario_title: "排除某食材"
+        dimensions: {ingredient_exclude: "不吃某食材"}
+        prompt: "不吃辣,有什么菜？"
+        status: "【待开发】"
+        result: "应支持排除型筛选。当前未实现。"
+
+  - wake_word: "筛选难度"
+    scenarios:
+      - scenario_id: "filter_difficulty_easy"
+        scenario_title: "筛选简单菜"
+        dimensions: {difficulty: "简单/快手菜"}
+        prompt: "来个简单的。"
+        status: ""
+        result: "列出所有难度=快手菜/简单的菜。"
+
+  - wake_word: "筛选时间"
+    scenarios:
+      - scenario_id: "filter_time_quick"
+        scenario_title: "筛选 30 分钟内"
+        dimensions: {time_max: "30 分钟"}
+        prompt: "30 分钟内的菜。"
+        status: ""
+        result: "列出所有总时间≤30 分钟的菜。"
+
+  - wake_word: "筛选炊具"
+    scenarios:
+      - scenario_id: "filter_by_cookware"
+        scenario_title: "按炊具筛选"
+        dimensions: {cookware: "砂锅/高压锅等"}
+        prompt: "用砂锅做的菜。"
+        status: ""
+        result: "列出所有炊具含'砂锅'的菜。"
+
+  - wake_word: "筛选口味"
+    scenarios:
+      - scenario_id: "filter_by_flavor"
+        scenario_title: "按口味筛选"
+        dimensions: {flavor: "辣/甜/鲜等"}
+        prompt: "辣的菜有哪些。"
+        status: ""
+        result: "列出所有口味含'辣'的菜。"
+
+  - wake_word: "筛选季节"
+    scenarios:
+      - scenario_id: "filter_by_season"
+        scenario_title: "按季节筛选"
+        dimensions: {season: "春/夏/秋/冬"}
+        prompt: "夏天适合吃什么。"
+        status: ""
+        result: "列出所有季节含'夏'的菜。"
+
+  - wake_word: "筛选状态"
+    scenarios:
+      - scenario_id: "filter_by_status"
+        scenario_title: "按状态筛选"
+        dimensions: {status: "未做/已做/熟练/已废弃"}
+        prompt: "已做的菜。"
+        status: ""
+        result: "列出所有状态=已做的菜,默认隐藏已废弃。"
+
+  - wake_word: "查看全部"
+    scenarios:
+      - scenario_id: "list_all_recipes"
+        scenario_title: "列出所有食谱"
+        dimensions: {}
+        prompt: "查看全部。"
+        status: ""
+        result: "列出所有未废弃菜,按更新时间倒序。"
+
+      - scenario_id: "list_all_with_empty"
+        scenario_title: "空库时列全部"
+        dimensions: {db_state: "空"}
+        prompt: "查看全部。"
+        status: ""
+        result: "礼貌告知库为空,引导录入第一道菜。"
+
+  # ─── D 类 · 修改食谱(9 唤醒词,4 废弃入口经 aliases 共享) ───
+  - wake_word: "修改食谱"
+    scenarios:
+      - scenario_id: "update_main_field"
+        scenario_title: "修改主表字段(难度/份量/时间)"
+        dimensions: {field: "单字段", recipe: "指定菜名"}
+        prompt: "把{{菜名}}的难度改成困难。"
+        status: ""
+        result: "展示修改前/后两栏,用户确认后写入。"
+
+      - scenario_id: "update_multi_fields"
+        scenario_title: "一次修改多字段"
+        dimensions: {field: "多字段", recipe: "指定菜名"}
+        prompt: "把{{菜名}}的总时间改成 40 分钟,份量改成 4 人份。"
+        status: ""
+        result: "展示修改前/后两栏(多行),用户确认后写入。"
+
+  - wake_word: "修改步骤"
+    scenarios:
+      - scenario_id: "update_step_content"
+        scenario_title: "改步骤内容"
+        dimensions: {step_index: "指定步骤序号", recipe: "指定菜名"}
+        prompt: "{{菜名}}第 3 步改成小火炒,时长 2 分钟。"
+        status: ""
+        result: "展示该步骤修改前/后,确认后写入。"
+
+      - scenario_id: "reorder_steps"
+        scenario_title: "调整步骤顺序"
+        dimensions: {recipe: "指定菜名", from: "原序号", to: "新序号"}
+        prompt: "{{菜名}}第 2 步和第 3 步换一下。"
+        status: ""
+        result: "展示新顺序预览,确认后写入。"
+
+  - wake_word: "修改食材"
+    scenarios:
+      - scenario_id: "update_ingredient_qty"
+        scenario_title: "改食材用量"
+        dimensions: {ingredient: "指定食材", recipe: "指定菜名"}
+        prompt: "把{{菜名}}里的虾改成 500g。"
+        status: ""
+        result: "展示修改前/后,确认后写入。"
+
+      - scenario_id: "add_ingredient_with_step_link"
+        scenario_title: "加新食材 + 关联步骤"
+        dimensions: {ingredient: "新食材", step_index: "加入步骤"}
+        prompt: "给{{菜名}}加姜丝 10g,第 4 步加入。"
+        status: ""
+        result: "展示新食材 + 关联步骤两栏,确认后两步写入。"
+
+  - wake_word: "修改难度"
+    scenarios:
+      - scenario_id: "update_difficulty_only"
+        scenario_title: "改难度(单字段简化入口)"
+        dimensions: {difficulty: "新难度", recipe: "指定菜名"}
+        prompt: "{{菜名}}标简单点。"
+        status: ""
+        result: "等价于'修改食谱 --difficulty'。"
+
+  - wake_word: "修改份量"
+    scenarios:
+      - scenario_id: "update_servings_only"
+        scenario_title: "改份量(单字段简化入口)"
+        dimensions: {servings: "新份数", recipe: "指定菜名"}
+        prompt: "{{菜名}}做 4 人份。"
+        status: ""
+        result: "等价于'修改食谱 --servings'。"
+
+  - wake_word: "废弃食谱"
+    scenarios:
+      - scenario_id: "discard_recipe"
+        scenario_title: "标记废弃"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "废弃{{菜名}}。"
+        status: ""
+        result: "提示 status 变'已废弃',列表/搜索自动过滤,可 show 看简要。"
+
+      - scenario_id: "discard_recipe_casual_phrasing"
+        scenario_title: "口语化/简化表达(含'不想要/删掉/废弃' 3 个入口)"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "{{菜名}}不要了 / 把{{菜名}}删了。"
+        status: ""
+        result: "等价于'废弃{{菜名}}',遵循只增不删原则。"
+
+  # ─── E 类 · 烹饪历史(3 唤醒词) ───
+  - wake_word: "记录做菜"
+    scenarios:
+      - scenario_id: "record_cook_full"
+        scenario_title: "记录完整做菜(评分+反馈+日期)"
+        dimensions: {recipe: "指定菜名", rating: "1-5", feedback: "文字", date: "日期"}
+        prompt: "今天做了{{菜名}},评分 4.5,虾很 Q 弹。"
+        status: ""
+        result: "写入历史记录,显示第 N 次做、平均评分。"
+
+      - scenario_id: "record_cook_minimal"
+        scenario_title: "记录极简(只评分)"
+        dimensions: {recipe: "指定菜名", rating: "1-5"}
+        prompt: "做菜{{菜名}},4 星。"
+        status: ""
+        result: "写入历史(默认今天+无反馈)。"
+
+      - scenario_id: "record_cook_with_backdate"
+        scenario_title: "补录历史(过去日期)"
+        dimensions: {recipe: "指定菜名", date: "过去日期"}
+        prompt: "补一下,上周做了{{菜名}}。"
+        status: ""
+        result: "写入历史(cook_date=上周日期)。"
+
+  - wake_word: "查看历史"
+    scenarios:
+      - scenario_id: "view_history_list"
+        scenario_title: "看历史时间线"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "{{菜名}}做过几次了？"
+        status: ""
+        result: "按时间倒序列出所有记录,显示日期/评分/反馈摘要。"
+
+      - scenario_id: "view_history_empty"
+        scenario_title: "看历史 - 未做过"
+        dimensions: {recipe: "指定菜名", state: "未做过"}
+        prompt: "{{菜名}}做过几次了？"
+        status: ""
+        result: "礼貌告知还没做过,引导开始做菜。"
+
+  - wake_word: "查看统计"
+    scenarios:
+      - scenario_id: "view_stats_dashboard"
+        scenario_title: "看统计仪表盘"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "{{菜名}}平均评分多少？"
+        status: ""
+        result: "展示总次数/均分/最高/最低/最近日期 4-6 KPI 卡片。"
+
+      - scenario_id: "view_stats_global"
+        scenario_title: "看全局统计(整本菜谱)"
+        dimensions: {scope: "全部"}
+        prompt: "我整体做得怎么样？"
+        status: "【待开发】"
+        result: "应展示全局统计。本场景依赖全局聚合视图,当前未实现。"
+
+  # ─── F 类 · 采购清单(2 唤醒词) ───
+  - wake_word: "生成清单"
+    scenarios:
+      - scenario_id: "shopping_single_recipe"
+        scenario_title: "单菜采购清单"
+        dimensions: {recipe: "单菜名"}
+        prompt: "生成{{菜名}}的采购清单。"
+        status: ""
+        result: "输出手机友好的采购 HTML,食材按 11 大类分组、可勾选。"
+
+      - scenario_id: "shopping_multi_recipe"
+        scenario_title: "多菜合并采购清单"
+        dimensions: {recipe: "多菜(逗号/和分隔)"}
+        prompt: "宫保虾球和辣炒虾球的采购清单。"
+        status: ""
+        result: "同名食材自动合并 + 多源标记,按分类折叠,可勾选。"
+
+      - scenario_id: "shopping_multi_with_servings"
+        scenario_title: "多菜 + 不同份数"
+        dimensions: {recipe: "多菜", servings: "各自份数"}
+        prompt: "宫保虾球做 2 份,麻婆豆腐做 1 份,采购清单。"
+        status: ""
+        result: "各菜按份数倍数缩放,合并同名食材。"
+
+  - wake_word: "排除可选"
+    scenarios:
+      - scenario_id: "shopping_exclude_optional"
+        scenario_title: "不含可选食材的清单"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "排除可选,生成{{菜名}}的采购清单。"
+        status: ""
+        result: "采购 HTML 中所有 is_optional=true 的食材不显示。"
+
+  # ─── G 类 · 录入食谱(2 唤醒词) ───
+  - wake_word: "录入食谱"
+    scenarios:
+      - scenario_id: "add_from_image"
+        scenario_title: "图片录入(OCR 解析)"
+        dimensions: {input: "图片"}
+        prompt: "[发送图片] 录入这道菜。"
+        status: ""
+        result: "AI 解析图片生成 JSON,展示确认后写入。"
+
+      - scenario_id: "add_from_markdown"
+        scenario_title: "MD 文件录入"
+        dimensions: {input: "MD 文件"}
+        prompt: "[发送 MD 文件] 录入。"
+        status: ""
+        result: "AI 解析 MD 生成 JSON,展示确认后写入。"
+
+      - scenario_id: "add_from_conversation"
+        scenario_title: "对话录入(逐步问答)"
+        dimensions: {input: "对话逐步补充"}
+        prompt: "我想录入一道新菜。"
+        status: ""
+        result: "AI 逐步询问必填字段,用户分批回答,最后统一确认写入。"
+
+      - scenario_id: "add_conflict_derive"
+        scenario_title: "同名菜冲突 - 派生新变体"
+        dimensions: {recipe: "同名菜", choice: "derive"}
+        prompt: "录入'宫保虾球',但发现已有。"
+        status: ""
+        result: "AI 提示同名冲突,选'派生'创建新变体(需提供 --new_name)。"
+
+      - scenario_id: "add_conflict_cancel"
+        scenario_title: "同名菜冲突 - 取消"
+        dimensions: {recipe: "同名菜", choice: "cancel"}
+        prompt: "算了吧,不改了。"
+        status: ""
+        result: "放弃本次录入,数据不变。"
+
+  - wake_word: "导入食谱"
+    scenarios:
+      - scenario_id: "import_from_json"
+        scenario_title: "JSON 文件导入"
+        dimensions: {input: "JSON 文件"}
+        prompt: "导入食谱 [JSON 文件]。"
+        status: ""
+        result: "调 import_orchestrator.py 校验 → dry-run → 写入;返回三段式回执。"
+
+      - scenario_id: "import_validation_failed"
+        scenario_title: "JSON 校验失败"
+        dimensions: {input: "JSON 有缺字段"}
+        prompt: "导入这个 JSON。"
+        status: ""
+        result: "errors 字段列出所有缺失,AI 必须问用户补齐,不允许默认值兜底。"
+
+  # ─── H 类 · 派生关系(2 唤醒词) ───
+  - wake_word: "添加派生关系"
+    scenarios:
+      - scenario_id: "add_relation_basic"
+        scenario_title: "添加基本派生关系"
+        dimensions: {parent: "父本菜名", child: "子本菜名", type: "派生/变体/改良"}
+        prompt: "添加派生关系:改良版宫保虾球 基于 宫保虾球。"
+        status: ""
+        result: "写入 recipe_relations,child_id=改良版,parent_id=经典版。"
+
+      - scenario_id: "add_relation_with_summary"
+        scenario_title: "添加派生 + 变更说明"
+        dimensions: {parent: "父本", child: "子本", type: "派生", summary: "改了什么"}
+        prompt: "低脂版红烧肉 基于 经典红烧肉,改用瘦肉。"
+        status: ""
+        result: "写入关系 + change_summary 字段。"
+
+      - scenario_id: "add_relation_self_loop"
+        scenario_title: "派生自身(非法)"
+        dimensions: {parent: "X", child: "X"}
+        prompt: "把 X 派生自 X。"
+        status: ""
+        result: "报错'不能派生自身',要求重输。"
+
+  - wake_word: "查看派生关系"
+    scenarios:
+      - scenario_id: "view_relation_both"
+        scenario_title: "看派生关系(父本+子本双向)"
+        dimensions: {recipe: "指定菜名"}
+        prompt: "查看{{菜名}}的派生关系。"
+        status: ""
+        result: "展示'基于我的变体'(child) + '我的父本'(parent) 两组。"
+
+      - scenario_id: "view_relation_isolated"
+        scenario_title: "无派生关系的孤立菜"
+        dimensions: {recipe: "无关系菜"}
+        prompt: "查看{{菜名}}的派生关系。"
+        status: ""
+        result: "礼貌告知无任何派生/被派生关系。"
+
+# ─────────────────────────────────────────────────────
+# §07 §10 自我检查
+# ─────────────────────────────────────────────────────
+self_check:
+  s01_help_wake_word_registered: true
+  s02_scenario_asset_exists: true
+  s03_scenario_7_fields_complete: true
+  s04_prompt_no_implementation_leak: true
+  s05_status_two_states_only: true
+  s06_pending_scenarios_ai_must_stop: true
+  s07_help_html_from_asset_only: pending
+  s08_help_html_fallback_states: pending
+  s09_help_html_scale_supported: pending
+  s10_help_html_cross_device: pending
+  s11_each_scenario_copy_button: pending
+  s12_five_in_one_correspondence: pending
+  s13_fat_protocol_followed: pending
+  s14_cross_skill_route_declared: pending

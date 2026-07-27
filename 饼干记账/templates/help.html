@@ -455,7 +455,7 @@ function renderCategory(cat) {
   }
   const scCount = cat.scenario_count || 0;
   const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';
-  return '<details class="cat-block" open>' +
+  return '<details class="cat-block">' +
     '<summary>' +
       '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
       desc +
@@ -469,7 +469,7 @@ function renderCategory(cat) {
 function renderWakeWord(ww) {
   const scs = ww.scenarios || [];
   const pending = ww.pending_count || 0;
-  return '<details class="ww-block" open>' +
+  return '<details class="ww-block">' +
     '<summary>' +
       '<span class="ww-name">' + esc(ww.name) + '</span>' +
       '<span class="ww-count">' + scs.length + ' 场景' + (pending ? ' · ' + pending + ' 待开发' : '') + '</span>' +

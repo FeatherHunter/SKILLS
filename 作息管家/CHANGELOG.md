@@ -257,6 +257,61 @@ $ python3 scripts/help_render.py --out /tmp/test.html
 
 ---
 
+### 🔧 Phase C.2c · 修复 HELP 路径不符合命名规则(FAT 暴露)
+
+**动机**:Phase C.2b 落地后,FAT 测试暴露 2 个路径问题:
+1. 输出路径 `$SKILLS_DB_PATH/help/help_center.html` 不符合作息管家既有 `schedule_html/` 子目录约定
+2. 文件名 `help_center.html` 缺少 timestamp,违反作息管家 `_naming_path` 命名规范(`<command>_<YYYYMMDD>_<HHMMSS>.html`)
+
+### 修复内容
+
+**`scripts/help_render.py`**:
+- ❌ 删 `get_db_path()`(多余 — `schedule_html/` 基目录可派生)
+- ✅ 新增 `get_html_base_dir()`(同 `schedule_html_render.py::_html_base_dir`)
+- ✅ 新增 `help_naming_path()`(作息管家 `_naming_path` 同款:`help_center_<TIMESTAMP>.html` + 子目录 `schedule_html/help/`)
+- ✅ 新增同秒冲突保护 `_2/_3/...`(同 `schedule_html_render.py`)
+- ✅ `main()` 默认输出路径改为 `help_naming_path()`(替代 `get_db_path() / "help" / "help_center.html"`)
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述改为 `$SKILLS_DB_PATH/schedule_html/help/help_center_<YYYYMMDD>_<HHMMSS>.html`
+- ✅ 路由表 HELP 行的"输出形式"列同步
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/schedule_html/help/help_center_20260727_095124.html",
+    "size_kb": 37,
+    "wakeword_count": 28,
+    "scenario_count": 73,
+    "pending_count": 1
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` 重构输出路径函数
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式变化(从 `/help/help_center.html` 到 `/schedule_html/help/help_center_<TIMESTAMP>.html`),AI 拿到 file_path 后应照原样交付
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 验证项: 1) AI 拿到路径后是否照原样交付(不简化 /help/ 为空)
+           2) 路径是否符合作息管家既有 schedule_html/ + _naming_path 约定
+           3) 同秒多次运行是否冲突保护 _2/_3
+  - 验证方法: 跑 help_render.py 多次,检查 file_path + 实际文件存在
+```
+
+---
+
 ### 📋 Phase D.1 · 域边界声明 + 跨 Skill 路由(替代拆 Skill 方案)
 
 **动机**:Phase D 原计划是拆作息管家为 2 个 Skill(record/plan),用户决策后改为"宽 Skill + 描述清晰化"。理由:1)端到端闭环(商量→复盘)跨域,拆分会破坏流程;2)宽 Skill 内嵌紧模块是合理设计;3)风险最低,无破坏性。

@@ -391,7 +391,7 @@ python3 scripts/render_help.py --check
 **HELP HTML 契约（§07）：**
 - 来源：`references/scenarios.json`（唯一事实源，含 `_categories` 元数据）+ `templates/help.html`（模板）
 - 展示 **5 类别**（📝 写入类 / 🔍 查询类 / 📊 分析类 / 📈 统计类 / ❓ HELP）× **15 唤醒词** × **91 个合法场景**
-- **3 层折叠**（类别 → 唤醒词 → 场景，全部 `<details>` 默认可点击折叠）
+- **3 层折叠**（类别 → 唤醒词 → 场景，**默认全部折叠**，点击 `<summary>` 展开）
 - 每场景独立「📋 复制 prompt」按钮 + **iOS 风格 Toast 通知**（4.5s 自动消失）
 - 粘性搜索栏 + 「全部展开 / 全部折叠」快捷键
 - 移动端 fallback toggle（部分 Android WebView 兼容）

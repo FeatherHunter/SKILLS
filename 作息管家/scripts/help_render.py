@@ -41,13 +41,31 @@ SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "help_center.html"
 
 
-def get_db_path() -> Path:
-    """解析 SKILLS_DB_PATH(同 schedule_db 优先级),失败则用技能本地 .db"""
-    env = os.environ.get("SKILLS_DB_PATH")
-    if env:
-        return Path(env)
-    # fallback: 技能本地 .db
-    return SKILL_DIR / ".db"
+def get_html_base_dir() -> Path:
+    """作息管家 HTML 输出基目录(同 schedule_html_render.py::_html_base_dir)"""
+    db_dir = os.environ.get("SKILLS_DB_PATH") or str(SKILL_DIR / ".db")
+    return Path(db_dir) / "schedule_html"
+
+
+def help_naming_path() -> Path:
+    """作息管家命名规范:<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+
+    与 schedule_html_render.py::_naming_path 同款。
+    command = "help_center",subdir = "help"
+    """
+    base = get_html_base_dir() / "help"
+    base.mkdir(parents=True, exist_ok=True)
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    target = base / f"help_center_{stamp}.html"
+    if not target.exists():
+        return target
+    n = 2
+    while n < 1000:
+        candidate = base / f"help_center_{stamp}_{n}.html"
+        if not candidate.exists():
+            return candidate
+        n += 1
+    raise RuntimeError(f"冲突保护超过 1000 次:help_center_{stamp}")
 
 
 def load_scenarios() -> tuple[list[dict], str | None]:
@@ -234,14 +252,17 @@ def main():
         "--out",
         type=str,
         default=None,
-        help="输出路径(默认: $SKILLS_DB_PATH/help/help_center.html)",
+        help=(
+            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/"
+            "help_center_<YYYYMMDD>_<HHMMSS>.html,与作息管家 _naming_path 同款)"
+        ),
     )
     args = parser.parse_args()
 
     if args.out:
         out_path = Path(args.out)
     else:
-        out_path = get_db_path() / "help" / "help_center.html"
+        out_path = help_naming_path()
 
     result = render(out_path)
     print(json.dumps(result, ensure_ascii=False, indent=2))

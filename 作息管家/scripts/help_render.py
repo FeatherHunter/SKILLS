@@ -7,12 +7,12 @@
 
 用法:
     python scripts/help_render.py [--out <path>]
-    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/help_center.html(覆盖写)
+    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/帮助中心_<TIMESTAMP>.html
 
-输出路径(总纲 §04 原则 9 · 命名不带版本 · 一个功能 = 一个文件):
-    SKILLS_DB_PATH/schedule_html/help/help_center.html
-    不带时间戳:HELP 是场景资产的一次性渲染,场景资产更新即重新 generate 覆盖,
-    不需要历史快照归档(与 record 域 _naming_path 带时间戳不同)
+输出路径(作息管家内部一致性 · 沿用 schedule_html_render.py::_naming_path · 中文命名):
+    SKILLS_DB_PATH/schedule_html/help/帮助中心_<YYYYMMDD>_<HHMMSS>.html
+    命名格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
+    command 用中文"帮助中心"(用户面向,对标卡路里主页仪表盘的中文命名)
     子目录: schedule_html/help/(与 record/day, plan/list 等同级)
 
 约束(§07 §5):
@@ -50,18 +50,38 @@ def get_html_base_dir() -> Path:
     return Path(db_dir) / "schedule_html"
 
 
-def help_output_path() -> Path:
-    """HELP HTML 输出路径(总纲 §04 原则 9 · 命名不带版本)
+def help_naming_path() -> Path:
+    """HELP HTML 输出路径(作息管家内部一致性 · 沿用 _naming_path 约定 · 中文命名)
 
-    一个功能 = 一个文件,覆盖写(场景资产更新时重新渲染)。
-    不带时间戳的原因:HELP 是场景资产的一次性渲染快照,
-    用户不需要查历史版本(场景资产本身就是最新事实)。
-    与作息管家 record 域 `_naming_path`(带时间戳,数据快照)的差异,
-    因为 HELP 不存在"历史快照归档"需求。
+    命名:<command>_<YYYYMMDD>_<HHMMSS>[_<N>>.html
+    与 schedule_html_render.py::_naming_path 同款:
+    - command = "帮助中心"(中文命名 — 用户面向,文件发给用户看)
+    - subdir = "help"(schedule_html/help/)
+    - 同秒冲突保护 _2/_3/...
+
+    为什么中文命名(对标卡路里):
+    - HELP HTML 是发给用户的最终交付物,文件名可读性比内部一致性更重要
+    - 卡路里已用中文命名(主页仪表盘_20260726.html),跨 Skill 用户体验一致
+
+    为什么不是覆盖写:
+    - 作息管家 record/plan 域已统一用 _naming_path(带 timestamp)
+    - 跨模板一致性优先于总纲 §04 原则 9 的"一个功能 = 一个文件"(原则 9 针对模板文件)
+    - HELP 场景资产每次更新都生成新快照(类似数据快照),需要历史归档
     """
     base = get_html_base_dir() / "help"
     base.mkdir(parents=True, exist_ok=True)
-    return base / "help_center.html"
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    command = "帮助中心"
+    target = base / f"{command}_{stamp}.html"
+    if not target.exists():
+        return target
+    n = 2
+    while n < 1000:
+        candidate = base / f"{command}_{stamp}_{n}.html"
+        if not candidate.exists():
+            return candidate
+        n += 1
+    raise RuntimeError(f"冲突保护超过 1000 次:{command}_{stamp}")
 
 
 def load_scenarios() -> tuple[list[dict], str | None]:
@@ -249,8 +269,8 @@ def main():
         type=str,
         default=None,
         help=(
-            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/help_center.html,"
-            "总纲 §04 原则 9 命名不带版本)"
+            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/"
+            "帮助中心_<YYYYMMDD>_<HHMMSS>.html,与作息管家 _naming_path 同款 · 中文命名)"
         ),
     )
     args = parser.parse_args()
@@ -258,7 +278,7 @@ def main():
     if args.out:
         out_path = Path(args.out)
     else:
-        out_path = help_output_path()
+        out_path = help_naming_path()
 
     result = render(out_path)
     print(json.dumps(result, ensure_ascii=False, indent=2))

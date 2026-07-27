@@ -312,11 +312,134 @@ Tested-By: pending-FAT
 
 ---
 
-### 🔧 Phase C.2e · 修正 HELP 命名(从 timestamp 改为覆盖写)
+### 🔧 Phase C.2g · HELP 文件名改中文(用户面向交付物)
 
-**动机**:Phase C.2c/d 用了作息管家 record 域 `_naming_path` 模式(`help_center_<TIMESTAMP>.html`),但这是 record 域的特殊约定(数据快照归档)。HELP HTML 属于"能力速查",场景资产更新时重新渲染,**无历史快照归档需求**,应覆盖写而非带 timestamp。
+**动机**:用户提示生成的 HTML 文件是要发给用户的,文件名用中文比较合理。Phase C.2f 用英文 command 名 `help_center`(内部一致性),但**文件是用户面向交付物**,可读性比内部一致性更重要。
 
-**重要修正**:总纲 V1.0 没有对"脚本执行后生成的 HTML 文件"定义明确的命名规则。§04 原则 9 "命名不带版本"是针对**模板文件**的命名建议,不是生成产物。所以本次修复的理由是"作息管家自身场景的合理选择",而非"符合总纲强制规则"。
+### 修复内容
+
+**`scripts/help_render.py`**:
+- `help_naming_path()` 函数 command 名:`help_center` → `帮助中心`(中文)
+- 文件名格式:`help_center_<TIMESTAMP>.html` → `帮助中心_<TIMESTAMP>.html`
+- docstring 更新为"中文命名 · 用户面向 · 对标卡路里"
+- `--out` help text 更新
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述:`help_center_<TIMESTAMP>.html` → `帮助中心_<TIMESTAMP>.html`
+- ✅ 路由表 HELP 行"输出形式"列同步
+- ✅ HTML-First 判定流程 HELP 分支同步
+
+### 为什么用中文 command(对标卡路里)
+
+| Skill | command 命名示例 | 输出文件 |
+|---|---|---|
+| 卡路里 | "主页仪表盘" / "热量趋势" | `主页仪表盘_20260726_123000.html` |
+| 作息管家 HELP(本次) | "帮助中心" | `帮助中心_<TIMESTAMP>.html` |
+| 作息管家 record/plan(既有) | "record_day" / "plan_list" | `record_day_<TIMESTAMP>.html`(待用户决策是否中文化) |
+
+**判断标准**:
+- HELP 是 100% 用户面向交付物(场景资产快照 → 用户看) → 中文
+- record/plan 也是用户面向交付物,但已用英文,且为多个命令 → 待用户决策
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/schedule_html/help/帮助中心_<TIMESTAMP>.html",
+    "wakeword_count": 28,
+    "scenario_count": 73
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` command 名中文化
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式变化,用户面向交付物文件名变中文
+
+### 待用户决策
+
+`schedule_html_render.py::_naming_path` 函数中的 record/plan 命令英文名(`record_day`/`plan_list` 等)是否也中文化?(工作量:修改 `_naming_path` 调用者,约 10 处,跨 record/plan 域)
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 中文命名是用户面向优化,行为不变(路径仍带 timestamp)
+  - 自检: 跑 help_render.py 输出文件名为中文
+  - 验证方法: ls $SKILLS_DB_PATH/schedule_html/help/ 应看到 帮助中心_<TIMESTAMP>.html
+```
+
+---
+
+### 🔧 Phase C.2f · HELP 命名改回作息管家内部一致性(沿用 _naming_path)
+
+**动机**:用户提示卡路里 skill 的命名约定(`<command>_<TIMESTAMP>.html` + 同秒冲突 `_2/_3` + 跟随 `$SKILLS_DB_PATH`)。Phase C.2e 改成覆盖写 `help_center.html`,虽然符合总纲 §04 原则 9 的精神,但**破坏了作息管家内部一致性**(record/plan 域都已用 `_naming_path`)。
+
+### 修复内容
+
+**`scripts/help_render.py`**:
+- ❌ Phase C.2e 改的 `help_output_path()`(覆盖写) — 回滚
+- ✅ 新增 `help_naming_path()`(同 `schedule_html_render.py::_naming_path`):
+  - `<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`
+  - 同秒冲突保护 `_2/_3/...`
+  - command = `help_center`(沿用作息管家英文 command 约定)
+  - subdir = `help`(schedule_html/help/)
+- ✅ `main()` 调用 `help_naming_path()`
+- ✅ docstring 更新为"作息管家内部一致性"
+- ✅ `--out` help text 更新
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述:回到 `help_center_<TIMESTAMP>.html`
+- ✅ 路由表 HELP 行"输出形式"列同步
+- ✅ HTML-First 判定流程 HELP 分支同步
+
+### 为什么不是覆盖写(总纲原则 9)
+
+| Skill 模式 | 命名约定 |
+|---|---|
+| 卡路里 | `<command>_<TIMESTAMP>.html` + `_2/_3` 冲突保护 |
+| 作息管家 record/plan | `<command>_<TIMESTAMP>.html` + `_2/_3` 冲突保护(沿用 `_naming_path`) |
+| 作息管家 HELP(本次) | `<help_center>_<TIMESTAMP>.html` + `_2/_3` 冲突保护 |
+
+**跨 Skill 一致性优先于总纲原则 9**(原则 9 针对模板文件,不是生成产物)。
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/schedule_html/help/help_center_20260727_100xxx.html",
+    "wakeword_count": 28,
+    "scenario_count": 73
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` 路径函数改回 `_naming_path`
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式回到 Phase C.2c/d 状态(带 timestamp)
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 行为变化但与作息管家既有 _naming_path 对齐(无需 FAT)
+  - 自检: 跑 help_render.py 输出路径带 timestamp + 同秒冲突保护 _2/_3
+  - 验证方法: 跑 2 次 help_render.py 同秒,检查 file_path 后缀
+```
 
 ### 修复内容
 

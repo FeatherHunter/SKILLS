@@ -1052,6 +1052,33 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 
 </div>
 
+
+<!-- ============== §📌 输出位置 · 4 类榜单机制(2026-07-27 P1-2) ============== -->
+<div class="tab-panel" id="tab-output-pos">
+<h2>§📌 输出位置 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(V1.0 原则 12.A / 12.B · 2026-07-27 P1-2 更新)</span></h2>
+<p><b>总纲原则 12 V3 拆分:</b>HTML 输出分两类 — <b>A · 数据/过程</b>(每次触发产生新数据)+ <b>B · HELP</b>(Skill 自描述能力目录)。</p>
+
+<table class="flow-table">
+<tr><th>类型</th><th>渲染器</th><th>输出路径</th><th>V3 分类</th></tr>
+<tr><td>查看食谱</td><td><code>recipe_render.py</code></td><td><code>$CHEF_OUTPUT_DIR/recipes/&lt;slug&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>做菜模式</td><td><code>cooking_render.py</code></td><td><code>$CHEF_OUTPUT_DIR/cooking/做菜模式_&lt;slug&gt;_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>采购清单</td><td><code>shopping_render.py</code></td><td><code>$CHEF_OUTPUT_DIR/shopping/采购清单_&lt;slug&gt;_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>搜索/筛选/查看全部</td><td><code>render_data.py search</code></td><td><code>$CHEF_OUTPUT_DIR/list/数据视图_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>查看历史</td><td><code>render_data.py history</code></td><td><code>$CHEF_OUTPUT_DIR/timeline/数据视图_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>查看统计</td><td><code>render_data.py stats</code></td><td><code>$CHEF_OUTPUT_DIR/dashboard/数据视图_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>查看派生关系</td><td><code>render_data.py relations</code></td><td><code>$CHEF_OUTPUT_DIR/list/数据视图_&lt;TS&gt;.html</code></td><td>12.A</td></tr>
+<tr><td>HELP 能力速查</td><td><code>render_help.py</code></td><td><code>$CHEF_OUTPUT_DIR/help/私家大厨_HELP_&lt;TS&gt;.html</code></td><td>12.B</td></tr>
+</table>
+
+<h3 style="font-size:15px;margin:18px 0 8px;color:var(--fg)">4 类榜单 HTML 机制(P1-2 落地)</h3>
+<p>C 类(搜索/筛选/查看全部 11 唤醒词)+ E 类(查看历史/查看统计 2 唤醒词)+ H 类(查看派生关系 1 唤醒词)统一走 <code>render_data.py</code>。</p>
+<ul style="margin:6px 0 0 16px;font-size:13px;line-height:1.7">
+<li>统一模板 <code>templates/data_view.html</code>(3 type: list/timeline/dashboard)</li>
+<li>统一渲染器 <code>scripts/render_data.py</code></li>
+<li>底层 CLI:全部走 <code>recipe_manager.py</code> / <code>history_manager.py</code> / <code>relation_manager.py</code> 的 <code>--json</code></li>
+</ul>
+</div>
+
 <div class="footer">
   私家大厨 · 使用手册 · 同步基线 SKILL.md v3 · 9 大功能 / 36 个唤醒词 / 17 张表<br>
   详细变更见 SKILL.md 和 CHANGELOG.md · 跨 Skill 路由见 §J

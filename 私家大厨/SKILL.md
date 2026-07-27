@@ -242,11 +242,34 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 查看食谱 | `recipe_render.py` | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | **12.A** 数据/过程 |
 | 做菜模式 | `cooking_render.py` | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 采购清单 | `shopping_render.py` | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<slug_or_joined>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 搜索/筛选/查看全部 | `render_data.py search` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_search_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 查看历史 | `render_data.py history` | `$CHEF_OUTPUT_DIR/timeline/` | `数据视图_history_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 查看统计 | `render_data.py stats` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_stats_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 查看派生关系 | `render_data.py relations` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_relations_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | HELP 能力速查 | `render_help.py` | `$CHEF_OUTPUT_DIR/help/` | `私家大厨_HELP_<YYYYMMDD_HHMMSS>.html` | **12.B** HELP |
 
 > **冲突解决**：12.X 共同基础规定 `_N` 自动后缀(N=1 起步,绝不覆盖)。`render_help.py` 当前实现是单次覆盖(因 HELP 渲染幂等),不符合 12.X 严格规定——**Phase 1.7 待优化**(改用 `_N` 后缀)。
 >
 > **env 优先级**：`$SKILLS_DATA_DIR` > `$SKILLS_DB_PATH` > Skill 自带 fallback。**当前 `$CHEF_OUTPUT_DIR` 是 legacy 命名**,与 V3 不一致——**Phase 1.7 待对齐**(迁移到 `$SKILLS_DATA_DIR`)。
+
+### 4 类榜单 HTML 机制(2026-07-27 · P1-2 增)
+
+> C 类(搜索/筛选/查看全部)+ E 类(查看历史/查看统计)+ H 类(查看派生关系) 共 **11 唤醒词** 统一走 `render_data.py`(§04 原则 2 · 1 模板 3 type)。
+
+| 唤醒词类别 | 唤醒词数 | render_data.py 子命令 | 输出 type |
+|------------|---------|---------------------|-----------|
+| 搜索食谱/筛选 X/查看全部 | 11 | `search <关键词>` | `list`(网格卡片) |
+| 查看历史 | 1 | `history <菜名或ID>` | `timeline`(垂直时间线) |
+| 查看统计 | 1 | `stats <菜名或ID>` | `dashboard`(4-6 KPI 卡片) |
+| 查看派生关系 | 1 | `relations <菜名或ID>` | `list`(parent+child 两组) |
+
+**统一模板**:`templates/data_view.html`(3 type 切换 layout)· **统一渲染器**:`scripts/render_data.py`。
+**底层 CLI**:全部走 `recipe_manager.py` / `history_manager.py` / `relation_manager.py` 的 `--json` 返回结构化数据(§02 L3 三段式)。
+
+**AI 收到 C/E/H 类唤醒词时**:
+1. 调 `python scripts/render_data.py <子命令> <keyword>`
+2. 用 `<media>` 标签推生成的 HTML 文件
+3. **禁止文字答**(原则 11 HTML-First)
 
 ## 一键安装
 

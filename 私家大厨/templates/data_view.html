@@ -1,0 +1,272 @@
+<!--
+私家大厨 · 通用数据视图模板(§04 原则 2 · 1 模板多 type)
+由 scripts/render_data.py 注入数据,支持 3 type:
+  - list:搜索/筛选/派生关系(网格卡片)
+  - timeline:烹饪历史(垂直时间线)
+  - dashboard:烹饪统计(4-6 KPI 卡片)
+渲染器写入:
+  <script>window.__DATA__ = {type, title, items, summary, ...};</script>
+占位符 INJECT-DATA 唯一 1 次(实际占位符在下面 body 末尾)。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_data.py · 2026-07-27">
+<title>私家大厨 · 数据视图</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 80px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  /* Hero */
+  .hero{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin-bottom:14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+
+  /* 5 状态 fallback */
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  /* List type · 网格卡片 */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .card-item{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-decoration:none;color:inherit;display:block;transition:transform 0.15s}
+  .card-item:hover{transform:translateY(-2px)}
+  .card-item .title{font-size:16px;font-weight:600;margin-bottom:6px}
+  .card-item .sub{font-size:12px;color:var(--text3);margin-bottom:8px}
+  .card-item .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:600;padding:2px 6px;border-radius:var(--radius-pill)}
+  .rating{background:var(--warn-soft);color:var(--warn);font-size:10px;font-weight:600;padding:2px 6px;border-radius:var(--radius-pill)}
+
+  /* Timeline type · 垂直时间线 */
+  .timeline{position:relative;padding:0 0 0 24px}
+  .timeline::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--separator)}
+  .tl-item{position:relative;background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .tl-item::before{content:"";position:absolute;left:-20px;top:18px;width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid var(--bg)}
+  .tl-date{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+  .tl-content{font-size:14px;color:var(--text2)}
+  .tl-rating{display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);margin-right:6px}
+
+  /* Dashboard type · KPI 网格 */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .kpi .num{font-size:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}
+  .kpi .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+  .kpi.primary .num{color:var(--blue)}
+  .kpi.success .num{color:var(--success)}
+  .kpi.warn .num{color:var(--warn)}
+  .kpi.danger .num{color:var(--danger)}
+  .kpi .delta{font-size:11px;margin-top:6px;font-weight:600}
+  .kpi .delta.up{color:var(--success)}
+  .kpi .delta.down{color:var(--danger)}
+
+  /* 通用 */
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  details.sub{border-top:0.5px solid var(--separator);padding:12px 0}
+  details.sub:first-child{border-top:none}
+  details.sub>summary{font-size:14px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  details.sub>summary::-webkit-details-marker{display:none}
+  details.sub>summary::after{content:"▼";font-size:10px;color:var(--text4);transition:transform 0.2s}
+  details.sub[open]>summary::after{transform:rotate(180deg)}
+  details.sub>.body{padding-top:8px;color:var(--text2);font-size:13px;line-height:1.6}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    .kpi .num{font-size:24px}
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- 5 状态 fallback -->
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+<div id="state-empty" class="state hidden">
+  <div class="icon">📭</div>
+  <div id="empty-msg">暂无数据</div>
+</div>
+
+<!-- 主内容(由 JS 根据 type 渲染) -->
+<div id="main-content" class="hidden">
+
+  <!-- 首屏 Hero -->
+  <section class="hero">
+    <h1 id="page-title">数据视图</h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🔖 类型:<span id="data-type"></span></span>
+    </div>
+  </section>
+
+  <!-- 主体:3 type 之一 -->
+  <div id="body-content"></div>
+</div>
+
+<!-- 尾部 -->
+<footer class="footer" id="footer-msg">
+  数据来自 recipes / history / relations 表 · CLI: <code>recipe_manager.py</code> / <code>history_manager.py</code> / <code>relation_manager.py</code> --json
+</footer>
+
+</div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  // §04 原则 4 #3:数据守卫
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_data.py 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  // §04 原则 4 #5:XSS 防护
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showState(type, msg) {
+    document.getElementById('main-content').classList.add('hidden');
+    ['error', 'empty'].forEach(s => {
+      document.getElementById('state-' + s).classList.add('hidden');
+    });
+    const el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) {
+        const msgEl = el.querySelector('#' + (type === 'error' ? 'error-msg' : 'empty-msg'));
+        if (msgEl) msgEl.textContent = msg;
+      }
+    }
+  }
+
+  // ── type=list 渲染(搜索/筛选/派生)──
+  function renderList() {
+    const items = D.items || [];
+    if (items.length === 0) {
+      showState('empty', D.empty_msg || '搜索/筛选无结果');
+      return;
+    }
+    document.getElementById('page-title').textContent = D.title || '搜索结果';
+    document.getElementById('data-type').textContent = 'list';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    items.forEach(item => {
+      const card = document.createElement('a');
+      card.className = 'card-item';
+      card.href = '#';
+      const meta = (item.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+      const rating = item.rating ? `<span class="rating">★ ${esc(item.rating.toFixed(1))}</span>` : '';
+      card.innerHTML = `
+        <div class="title">${esc(item.name || item.title || '?')}</div>
+        <div class="sub">${esc(item.subtitle || '')}</div>
+        <div class="meta">${meta}${rating}</div>
+        ${item.description ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.4">${esc(item.description)}</div>` : ''}
+      `;
+      grid.appendChild(card);
+    });
+    document.getElementById('body-content').appendChild(grid);
+  }
+
+  // ── type=timeline 渲染(烹饪历史)──
+  function renderTimeline() {
+    const items = D.items || [];
+    if (items.length === 0) {
+      showState('empty', D.empty_msg || '暂无烹饪历史');
+      return;
+    }
+    document.getElementById('page-title').textContent = D.title || '烹饪历史';
+    document.getElementById('data-type').textContent = 'timeline';
+    const tl = document.createElement('div');
+    tl.className = 'timeline';
+    items.forEach(it => {
+      const item = document.createElement('div');
+      item.className = 'tl-item';
+      const rating = it.rating ? `<span class="tl-rating">★ ${esc(it.rating.toFixed(1))}</span>` : '';
+      item.innerHTML = `
+        <div class="tl-date">${esc(it.date || '')}${it.sequence ? ' · 第 ' + esc(it.sequence) + ' 次' : ''}</div>
+        <div class="tl-content">${rating}${esc(it.content || it.feedback || '')}</div>
+      `;
+      tl.appendChild(item);
+    });
+    document.getElementById('body-content').appendChild(tl);
+  }
+
+  // ── type=dashboard 渲染(烹饪统计)──
+  function renderDashboard() {
+    const kpis = D.kpis || [];
+    if (kpis.length === 0) {
+      showState('empty', D.empty_msg || '暂无统计数据');
+      return;
+    }
+    document.getElementById('page-title').textContent = D.title || '烹饪统计';
+    document.getElementById('data-type').textContent = 'dashboard';
+    const grid = document.createElement('div');
+    grid.className = 'kpi-grid';
+    kpis.forEach(k => {
+      const card = document.createElement('div');
+      card.className = 'kpi ' + (k.style || 'primary');
+      const delta = k.delta ? `<div class="delta ${k.delta > 0 ? 'up' : 'down'}">${k.delta > 0 ? '↑' : '↓'} ${Math.abs(k.delta).toFixed(1)}</div>` : '';
+      card.innerHTML = `
+        <div class="num">${esc(k.value)}${k.unit ? '<span style="font-size:16px;color:var(--text3)"> ' + esc(k.unit) + '</span>' : ''}</div>
+        <div class="lbl">${esc(k.label)}</div>
+        ${delta}
+      `;
+      grid.appendChild(card);
+    });
+    document.getElementById('body-content').appendChild(grid);
+  }
+
+  // ── 主入口 ──
+  try {
+    document.getElementById('generated-at').textContent = D.generated_at || '未知';
+    if (D.items_count === 0 && D.type !== 'dashboard') {
+      showState('empty', D.empty_msg || '暂无数据');
+      return;
+    }
+    if (D.type === 'list') renderList();
+    else if (D.type === 'timeline') renderTimeline();
+    else if (D.type === 'dashboard') renderDashboard();
+    else {
+      showState('error', '未知 type: ' + esc(D.type) + ' · 期望 list/timeline/dashboard');
+      return;
+    }
+    document.getElementById('main-content').classList.remove('hidden');
+  } catch (err) {
+    showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
+    console.error('data_view render error:', err);
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -95,14 +95,23 @@ def add(args):
 
 def list_items(args):
     """查看烹饪历史"""
+    from cli_formatter import emit
+    json_mode = args.get("_json_mode", False)
+
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误:请提供食谱ID或菜名")
+        if json_mode:
+            emit({"status": "error", "error": "missing_recipe_id", "message": "请提供食谱ID或菜名"}, json_mode=True)
+        else:
+            print("错误:请提供食谱ID或菜名")
         return False
 
     recipes = query("SELECT id, name FROM recipes WHERE id = ? OR name LIKE ?", (recipe_id, f"%{recipe_id}%"))
     if not recipes:
-        print(f"未找到食谱:{recipe_id}")
+        if json_mode:
+            emit({"status": "error", "error": "recipe_not_found", "message": f"未找到食谱:{recipe_id}"}, json_mode=True)
+        else:
+            print(f"未找到食谱:{recipe_id}")
         return False
 
     recipe_id = recipes[0]["id"]
@@ -112,29 +121,50 @@ def list_items(args):
         ORDER BY cook_date DESC
     """, (recipe_id,))
 
-    if not rows:
-        print(f"\n{recipes[0]['name']} - 没有烹饪记录")
-        return True
+    if json_mode:
+        emit({
+            "status": "success",
+            "data": {
+                "recipe_id": recipe_id,
+                "recipe_name": recipes[0]['name'],
+                "history": [dict(r) for r in rows],
+                "history_count": len(rows)
+            },
+            "message": f"历史查询成功:{recipes[0]['name']} ({len(rows)} 条)"
+        }, json_mode=True)
+    else:
+        if not rows:
+            print(f"\n{recipes[0]['name']} - 没有烹饪记录")
+            return True
 
-    print(f"\n{recipes[0]['name']} - 烹饪历史:")
-    for row in rows:
-        rating_str = f"评分{row['rating']}" if row['rating'] else ""
-        feedback_str = f"「{row['feedback']}」" if row['feedback'] else ""
-        print(f"  {row['cook_date']} 第{row['cook_sequence']}次 {rating_str} {feedback_str}")
+        print(f"\n{recipes[0]['name']} - 烹饪历史:")
+        for row in rows:
+            rating_str = f"评分{row['rating']}" if row['rating'] else ""
+            feedback_str = f"「{row['feedback']}」" if row['feedback'] else ""
+            print(f"  {row['cook_date']} 第{row['cook_sequence']}次 {rating_str} {feedback_str}")
 
     return True
 
 
 def stats(args):
     """查看统计(L4:db.query)"""
+    from cli_formatter import emit
+    json_mode = args.get("_json_mode", False)
+
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误:请提供食谱ID或菜名")
+        if json_mode:
+            emit({"status": "error", "error": "missing_recipe_id", "message": "请提供食谱ID或菜名"}, json_mode=True)
+        else:
+            print("错误:请提供食谱ID或菜名")
         return False
 
     recipes = query("SELECT id, name FROM recipes WHERE id = ? OR name LIKE ?", (recipe_id, f"%{recipe_id}%"))
     if not recipes:
-        print(f"未找到食谱:{recipe_id}")
+        if json_mode:
+            emit({"status": "error", "error": "recipe_not_found", "message": f"未找到食谱:{recipe_id}"}, json_mode=True)
+        else:
+            print(f"未找到食谱:{recipe_id}")
         return False
 
     recipe_id = recipes[0]["id"]
@@ -163,13 +193,30 @@ def stats(args):
     min_rating = float(stats['min_rating']) if stats.get('min_rating') is not None else None
     last_date = last['cook_date'] if last else None
 
-    print(f"\n{recipes[0]['name']} - 烹饪统计:")
-    print(f"  总次数:{times}")
-    print(f"  平均评分:{avg_rating:.2f}" if avg_rating else "  平均评分:-")
-    if max_rating is not None:
-        print(f"  最高评分:{max_rating:.1f}")
-        print(f"  最低评分:{min_rating:.1f}")
-    print(f"  最后做菜:{last_date if last_date else '-'}")
+    if json_mode:
+        emit({
+            "status": "success",
+            "data": {
+                "recipe_id": recipe_id,
+                "recipe_name": recipes[0]['name'],
+                "stats": {
+                    "total_cooks": times,
+                    "avg_rating": avg_rating,
+                    "max_rating": max_rating,
+                    "min_rating": min_rating,
+                    "last_date": last_date,
+                }
+            },
+            "message": f"统计查询成功:{recipes[0]['name']}"
+        }, json_mode=True)
+    else:
+        print(f"\n{recipes[0]['name']} - 烹饪统计:")
+        print(f"  总次数:{times}")
+        print(f"  平均评分:{avg_rating:.2f}" if avg_rating else "  平均评分:-")
+        if max_rating is not None:
+            print(f"  最高评分:{max_rating:.1f}")
+            print(f"  最低评分:{min_rating:.1f}")
+        print(f"  最后做菜:{last_date if last_date else '-'}")
 
     return True
 
@@ -228,7 +275,7 @@ def main():
     action = sys.argv[1]
     json_mode = parse_json_flag(sys.argv[2:])
 
-    args = {}
+    args = {"_json_mode": json_mode}
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]

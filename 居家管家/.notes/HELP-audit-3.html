@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<title>HELP 代码审计 #3 · shared.js vs 本地 esc 重复定义</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--red:#ff3b30;--amber:#ff9f0a;--line:#e6e6eb;--green:#34c759}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px;color:var(--ink)}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.b{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.ok{background:#eaf7ec;border-left:3px solid var(--green);padding:8px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+.no{background:#ffebee;border-left:3px solid var(--red);padding:8px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;margin-left:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:#fafafc;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HELP 代码审计 #3 · 你贴的代码 vs 实际代码</h1>
+<p>你贴的代码看起来所有映射都"对不上":</p>
+<pre>function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&',  ← 字面 '&'
+   '&lt;':'&lt;','&gt;':'&gt;',                              ← 字面 '&lt;' '&gt;'
+   '&quot;':'&quot;',                                      ← 字面
+   "'":'''}[c]));}                                          ← 单引号转义</pre>
+
+<p>实测源码 vs 运行时注入:</p>
+
+<h2>1. 源码真实值(_shared.py)</h2>
+<pre>function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({
+    '&':'&amp;',       ← HTML 实体(正确!)
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+}[c]));}</pre>
+
+<h2>2. 运行时 HTML 注入值(实测)</h2>
+<table>
+<thead><tr><th>检查项</th><th>结果</th></tr></thead>
+<tbody>
+<tr><td>SHARED-HELPERS 占位符在最终 HTML</td><td>0(已被替换 ✓)</td></tr>
+<tr><td><code>function esc</code> 出现次数</td><td>2(shared + 本地)</td></tr>
+<tr><td><code>function arr</code> 出现次数</td><td>2(shared + 本地)</td></tr>
+<tr><td><code>function val</code> 出现次数</td><td>1(仅 shared)</td></tr>
+<tr><td><code>function yes</code> 出现次数</td><td>1(仅 shared)</td></tr>
+<tr><td><code>function validate</code> 出现次数</td><td>1(仅 shared)</td></tr>
+</tbody>
+</table>
+
+<p><b>5 个函数全在</b>。SHARED-HELPERS 注入机制工作。</p>
+
+<h2>3. 你贴的代码为啥看起来错?</h2>
+<div class="b">
+<h3>可能原因 1:Chrome DevTools 自动转义显示</h3>
+<p>Chrome DevTools "Elements" 面板会把 <code>&amp;</code> 显示为 <code>&amp;</code>(不带分号)——它是 HTML entity,但浏览器渲染时人眼看到一个"裸" &。</p>
+
+<h3>可能原因 2:你的浏览器实际"破"</h3>
+<p>测试方法:打开 DevTools → Console → 执行 <code>esc('&lt;script&gt;alert(1)&lt;/script&gt;')</code> 应当返回 <code>'&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;'</code>。</p>
+
+<h3>可能原因 3:某个扩展/缓存错误</h3>
+<p>Ctrl+Shift+R 强制刷新,清浏览器缓存。</p>
+</div>
+
+<h2>4. 我看到 2 个真问题</h2>
+
+<div class="b">
+<h3>问题 A · 本地 esc/arr 重复定义<span class="sev">P2</span></h3>
+<p><code>help_center.html</code> 末尾有自己的 <code>function esc()</code> 和 <code>function arr()</code>。renderer 注入 shared.js 后,两个同名函数共存——后者覆盖前者(后定义的赢)。</p>
+<p>当前 work(实现一致),但违反 DRY(R9 单一权威源)。</p>
+<div class="ok"><b>修复</b>:删除 <code>help_center.html</code> 末尾的本地 esc/arr(只用 shared 的)。</div>
+</div>
+
+<div class="b">
+<h3>问题 B · 我没在 IIFE 里用 shared 的 yes/validate/val<span class="sev">P2</span></h3>
+<p>shared 有 5 个函数,help_center 只用 2 个(esc/arr)。yes/validate/val 是死代码在这个文件里。</p>
+<div class="ok"><b>说明</b>:不是 bug,是预期(其他模板用);保留 shared JS 完整注入。</div>
+</div>
+
+<h2>5. 验证你的浏览器实际行为</h2>
+<p>请帮我验证:<b>打开 Chrome DevTools → Console → 跑这一行:</b></p>
+<pre>esc('&lt;script&gt;alert(1)&lt;/script&gt;')</pre>
+
+<p>三种可能结果:</p>
+<ul>
+<li>返回 <code>"&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;"</code> → 一切正常,你看到的"错"是 DevTools 渲染</li>
+<li>返回 <code>"&lt;script&gt;alert(1)&lt;/script&gt;"</code>(未转义)→ XSS bug,需立即修</li>
+<li>报错 <code>esc is not defined</code> → JS 执行失败,需修</li>
+</ul>
+
+<p>你看到的是哪种?</p>
+
+</div>
+</body>
+</html>

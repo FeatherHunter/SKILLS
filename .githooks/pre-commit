@@ -35,6 +35,9 @@ for path in $CHANGED; do
         备忘录/*)
             NEED_TEST[备忘录]=1
             ;;
+        私家大厨/*)
+            NEED_TEST[私家大厨]=1
+            ;;
     esac
 done
 

@@ -1,0 +1,209 @@
+# 私家大厨 · FAT 测试矩阵(2026-07-27)
+#
+# 本文件 = FAT 协议测试语料 + 自洽性预演结论
+# 来源: SKILL开发总纲V1.0/05-工程仪式.md §FAT 协议 9 步
+# 选词: 高频 + 复杂 + 易错
+# 变体: 同义 / 口语 / 模糊(3 方向)
+# 数量: 5 核心词 × 3 变体 = 15 prompt
+#
+# 使用方法:
+#   真 FAT 跑:开新会话(fresh context)+ 加载本文件 + 跑 9 步
+#   本会话预演:见 references/fat_preview.md
+
+meta:
+  skill: 私家大厨
+  version: 0.1.0
+  generated_at: 2026-07-27
+  protocol: "总纲 §05 9 步协议"
+  scope: "5 核心词 × 3 变体 = 15 prompt"
+  status: "预演完成 · 待 fresh agent 真跑验证"
+
+selection_criteria:
+  core_words_rule: "高频 + 复杂 + 易错"
+  variant_dimensions:
+    - "同义(换说法)"
+    - "口语(加'帮我/给我看下/呢/哈/一下')"
+    - "模糊(缺主语/语法略错/同音字)"
+
+test_matrix:
+
+  # ──── 核心词 1 · 开始做菜 ────
+  - core_word: "开始做菜"
+    expected_path: "cooking_render.py render <菜名> + 推 HTML"
+    prompts:
+      - variant: "同义"
+        user_input: "开火做宫保虾球"
+        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        skill_md_clear: false
+        gap_analysis: "SKILL.md 唤醒词表只列'做菜模式'和'开始做菜'。'开火做'未收录,无最长匹配命中。fresh agent 走兜底 search.md,行为错误。"
+
+      - variant: "口语"
+        user_input: "帮我下个厨,做宫保虾球哈"
+        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        skill_md_clear: false
+        gap_analysis: "'下个厨'是'做菜'的口语,但 SKILL.md 未收录。'哈'语气词也无明确指引。fresh agent 走兜底 search.md。"
+
+      - variant: "模糊"
+        user_input: "宫保虾球 走起"
+        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        skill_md_clear: false
+        gap_analysis: "'走起'= 启动/开干,但无唤醒词命中。fresh agent 走兜底 search.md → 列出菜,不会调 cooking_render。"
+
+  # ──── 核心词 2 · 查看食谱 ────
+  - core_word: "查看食谱"
+    expected_path: "recipe_render.py render <菜名> + 推 HTML"
+    prompts:
+      - variant: "同义"
+        user_input: "搜下宫保虾球做法"
+        expected_workflow: "调 recipe_render.py render 宫保虾球 → 推 HTML"
+        skill_md_clear: false
+        gap_analysis: "'搜下...做法'含两个唤醒词候选('搜索食谱'和'查看食谱')。SKILL.md R2 同长度时细分词优先,但'搜下'是'搜索'语义,易误命中。"
+
+      - variant: "口语"
+        user_input: "那宫保虾球怎么做呢,给我看下"
+        expected_workflow: "调 recipe_render.py render 宫保虾球 → 推 HTML"
+        skill_md_clear: true
+        gap_analysis: "'怎么做' + '给我看下' → '查看食谱'语义清晰。最长匹配无歧义。"
+
+      - variant: "模糊"
+        user_input: "宫暴鸡丁(错字,应为宫保)"
+        expected_workflow: "调 recipe_render.py render 宫保鸡丁(错字容忍)→ 推 HTML"
+        skill_md_clear: false
+        gap_analysis: "SKILL.md 未说明错字如何处理。fresh agent 走 search.md '宫暴鸡丁' → 找不到 → 报错。"
+
+  # ──── 核心词 3 · 搜索食谱 ────
+  - core_word: "搜索食谱"
+    expected_path: "recipe_manager.py search <关键词> + 文字列表"
+    prompts:
+      - variant: "同义"
+        user_input: "找一下排骨"
+        expected_workflow: "调 recipe_manager.py search 排骨 → 文字列表"
+        skill_md_clear: true
+        gap_analysis: "'找一下' ≈ '搜索'。'搜索食谱'4字命中。"
+
+      - variant: "口语"
+        user_input: "帮我找排骨哈"
+        expected_workflow: "调 recipe_manager.py search 排骨 → 文字列表"
+        skill_md_clear: true
+        gap_analysis: "'帮我' + '哈' 是口语包装。'找' ≈ '搜索'。命中。"
+
+      - variant: "模糊"
+        user_input: "排骨的菜有?"
+        expected_workflow: "调 recipe_manager.py search 排骨 → 文字列表"
+        skill_md_clear: true
+        gap_analysis: "无明确唤醒词,兜底 search.md(R5)。'排骨的菜有?' = 搜索意图。"
+
+  # ──── 核心词 4 · 生成清单 ────
+  - core_word: "生成清单"
+    expected_path: "shopping_render.py render <菜名> + 推 HTML"
+    prompts:
+      - variant: "同义"
+        user_input: "宫保虾球要买啥"
+        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        skill_md_clear: false
+        gap_analysis: "'要买啥'≈ 采购意图,但 SKILL.md 唤醒词只列'生成清单'和'排除可选'。'要买啥'未收录,无最长匹配,走兜底 search.md → 行为错误。"
+
+      - variant: "口语"
+        user_input: "帮我整下宫保虾球的购物单子"
+        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        skill_md_clear: false
+        gap_analysis: "'整下' + '购物单子'都是口语变体,SKILL.md 未收录。走兜底 search.md → 行为错误。"
+
+      - variant: "模糊"
+        user_input: "宫保虾球 采购"
+        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        skill_md_clear: false
+        gap_analysis: "'采购'是核心语义词,但 SKILL.md 唤醒词表里没有'采购'。无最长匹配命中,走兜底 search.md。"
+
+  # ──── 核心词 5 · 记录做菜 ────
+  - core_word: "记录做菜"
+    expected_path: "history_manager.py add <菜名> + 评分/反馈"
+    prompts:
+      - variant: "同义"
+        user_input: "今天做了宫保虾球,4.5 星,虾很 Q"
+        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 4.5 --feedback '虾很 Q' --date today"
+        skill_md_clear: true
+        gap_analysis: "'记录做菜'4字命中。字段解析清晰。"
+
+      - variant: "口语"
+        user_input: "哈,刚做完了宫保虾球,5 分,完美"
+        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 5.0 --feedback '完美' --date today"
+        skill_md_clear: false
+        gap_analysis: "'哈'语气词 + '刚做完'完整时间短语。唤醒词'记录做菜'4字仍在,但 fresh agent 解析时可能把'哈'误为 feedback。"
+
+      - variant: "模糊"
+        user_input: "录下宫保虾球 4"
+        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 4 --date today"
+        skill_md_clear: false
+        gap_analysis: "'录下'≈ 记录,但 SKILL.md 未收录。'4'是评分但无'星/分'上下文。fresh agent 可能把'4'误为数量或次数。"
+
+# ─────────────────────────────────────────────────────
+# 自洽性预演汇总
+# ─────────────────────────────────────────────────────
+preview_summary:
+  total_prompts: 15
+  pass_count: 6
+  fail_count: 9
+  fail_patterns:
+    - pattern: "唤醒词变体未收录"
+      count: 7
+      examples:
+        - "开火做宫保虾球('开火做'未收录)"
+        - "帮我下个厨,做宫保虾球哈('下个厨'未收录)"
+        - "宫保虾球 走起('走起'未收录)"
+        - "宫保虾球要买啥('要买啥'未收录)"
+        - "帮我整下宫保虾球的购物单子('整下'/'购物单子'未收录)"
+        - "宫保虾球 采购('采购'未收录)"
+        - "录下宫保虾球 4('录下'未收录)"
+    - pattern: "错字处理未说明"
+      count: 1
+      examples:
+        - "宫暴鸡丁(错字)→ SKILL.md 无错字处理"
+    - pattern: "口语化 token 解析歧义"
+      count: 1
+      examples:
+        - "'哈'语气词可能被误为 feedback"
+
+# ─────────────────────────────────────────────────────
+# SKILL.md 改进建议(不直接改,留给后续 commit)
+# ─────────────────────────────────────────────────────
+improvement_suggestions:
+  - priority: "P1(对应 P1-1 F3 变体管理)"
+    issue: "35 唤醒词中 26 个无变体标注"
+    suggestion: "为每个核心词加 2-3 个变体(同义/口语/模糊)。优先补:开始做菜/查看食谱/生成清单/记录做菜 这 4 个高频核心词。"
+
+  - priority: "P1(文档级)"
+    issue: "错字/同音字处理未说明"
+    suggestion: "SKILL.md 加段:'当用户输入含错字(如'宫暴鸡丁'→'宫保鸡丁'),AI 主动识别错字并提示正确结果。'"
+
+  - priority: "P2(文档级)"
+    issue: "口语化 token 解析歧义"
+    suggestion: "SKILL.md 加段:'语气词(哈/呢/吧/哦)不参与字段解析,仅作为风格化标识。'"
+
+# ─────────────────────────────────────────────────────
+# 真 FAT 跑指南(新会话执行)
+# ─────────────────────────────────────────────────────
+fat_execution_guide:
+  prerequisites:
+    - "全新会话窗口(fresh context)"
+    - "仅加载 SKILL.md + 必要 scripts/templates"
+    - "不告诉 agent 任何前置信息"
+  
+  steps:
+    - step: 1
+      action: "选 3-5 个核心唤醒词"
+      done: "已选 5 个(开始做菜/查看食谱/搜索食谱/生成清单/记录做菜)"
+    - step: 2
+      action: "执行 15 prompt,每个 prompt 跑 1 次"
+    - step: 3
+      action: "捕获执行证据(命令 + 数据 + 输出)"
+    - step: 4
+      action: "对比本文件 expected_workflow,判定 pass/fail"
+    - step: 5
+      action: "fail → 改 SKILL.md(不改代码),循环 ≤ 3 次"
+    - step: 6
+      action: "最终 commit 加 Tested-By: fresh-agent-v1 段"
+
+  expected_outcome:
+    based_on_preview: "9/15 prompt 会 fail,主要因为唤醒词变体未收录"
+    fix_path: "P1-1 F3 变体管理 待办,补完后 FAT 应全 pass"

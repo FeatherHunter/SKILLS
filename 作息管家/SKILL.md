@@ -11,7 +11,7 @@ description: >
    - "作息管家能做什么"
    - "作息管家使用说明"
 
-  HELP 命中后 invoke `scripts/help_render.py`,输出 `$SKILLS_DB_PATH/schedule_html/help/帮助中心_<YYYYMMDD>_<HHMMSS>.html`(作息管家 `_naming_path` 命名规范 · 中文命名)。
+  HELP 命中后 invoke `scripts/help_render.py`,输出 `$SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html`(对标饼干记账 HELP 命名约定)。
   HELP 不在自身生成的 HTML 中展示(避免死循环,§07 §1)。
   场景资产唯一事实源:`references/scenarios.yaml`(73 场景 / 27 唤醒词,Phase C.1 落地)。
 
@@ -372,7 +372,7 @@ webbrowser.open(f"file://{html_path}")  # 跨平台
 **判定流程**(AI 命中任何唤醒词时):
 ```
 IF 唤醒词是 "作息管家 HELP" 类(§07 契约)
-   THEN invoke help_render.py(输出 `$SKILLS_DB_PATH/schedule_html/help/帮助中心_<TIMESTAMP>.html`)
+   THEN invoke help_render.py(输出 `$SKILLS_DB_PATH/作息管家_HELP_<TIMESTAMP>.html`)
 ELIF "输出形式"列含 .html
    THEN 必须 invoke 对应的 render-* CLI(默认行为)
    ELSE(无 HTML 路径)→ 才允许走文字 / JSON / CLI
@@ -388,7 +388,7 @@ ELIF "输出形式"列含 .html
 
 | 用户表达示例 | 唤醒词 | CLI 命令(默认 HTML · 文字答降级路径) | 输出形式 |
 |---|---|---|---|
-| "作息管家 HELP / 帮助 / 能做什么 / 使用说明" | (HELP 唤醒词,§07 契约) | `python scripts/help_render.py` | `$SKILLS_DB_PATH/schedule_html/help/帮助中心_<YYYYMMDD>_<HHMMSS>.html` |
+| "作息管家 HELP / 帮助 / 能做什么 / 使用说明" | (HELP 唤醒词,§07 契约) | `python scripts/help_render.py` | `$SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html` |
 | "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | record_receipt.html |
 | "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
 | "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |

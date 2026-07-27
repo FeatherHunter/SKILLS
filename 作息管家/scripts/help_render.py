@@ -7,13 +7,16 @@
 
 用法:
     python scripts/help_render.py [--out <path>]
-    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/帮助中心_<TIMESTAMP>.html
+    # 默认写到 $SKILLS_DB_PATH/作息管家_HELP_<TIMESTAMP>.html
 
-输出路径(作息管家内部一致性 · 沿用 schedule_html_render.py::_naming_path · 中文命名):
-    SKILLS_DB_PATH/schedule_html/help/帮助中心_<YYYYMMDD>_<HHMMSS>.html
-    命名格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
-    command 用中文"帮助中心"(用户面向,对标卡路里主页仪表盘的中文命名)
-    子目录: schedule_html/help/(与 record/day, plan/list 等同级)
+输出路径(对标饼干记账 HELP 命名约定):
+    SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html
+    命名格式: {Skill名}_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
+    对标: 饼干记账_HELP_<YYYYMMDD>_<HHMMSS>.html(饼干记账 scripts/render_help.py:133)
+    路径: $SKILLS_DB_PATH 根目录,不带 schedule_html/ 子目录
+    与作息管家 record/plan 域(<command>_<TIMESTAMP>.html)的区别:
+      record/plan 是数据快照,在 schedule_html/<domain>/<mode>/ 子目录
+      HELP 是用户面向交付物,在 SKILLS_DB_PATH 根,与饼干记账对齐
 
 约束(§07 §5):
 - 展示全部业务唤醒词 + 全部合法场景
@@ -51,33 +54,27 @@ def get_html_base_dir() -> Path:
 
 
 def help_naming_path() -> Path:
-    """HELP HTML 输出路径(作息管家内部一致性 · 沿用 _naming_path 约定 · 中文命名)
+    """HELP HTML 输出路径(作息管家 · 对标饼干记账 HELP 命名约定)
 
-    命名:<command>_<YYYYMMDD>_<HHMMSS>[_<N>>.html
-    与 schedule_html_render.py::_naming_path 同款:
-    - command = "帮助中心"(中文命名 — 用户面向,文件发给用户看)
-    - subdir = "help"(schedule_html/help/)
-    - 同秒冲突保护 _2/_3/...
+    命名:{Skill名}_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html
+    对标饼干记账:`饼干记账_HELP_<YYYYMMDD>_<HHMMSS>.html`(scripts/render_help.py:133)
 
-    为什么中文命名(对标卡路里):
-    - HELP HTML 是发给用户的最终交付物,文件名可读性比内部一致性更重要
-    - 卡路里已用中文命名(主页仪表盘_20260726.html),跨 Skill 用户体验一致
+    与作息管家 record/plan 域(<command>_<TIMESTAMP>.html)的差异:
+    - record/plan 用 schedule_html/<domain>/<mode>/ 子目录
+    - HELP 用 SKILLS_DB_PATH 根目录(不带子目录),与饼干记账一致
+    - 命令 HTML(<command>_<TIMESTAMP>.html)是数据快照
+    - HELP 是用户面向交付物,跨 Skill 一致命名 {Skill名}_HELP_<TIMESTAMP>
 
-    为什么不是覆盖写:
-    - 作息管家 record/plan 域已统一用 _naming_path(带 timestamp)
-    - 跨模板一致性优先于总纲 §04 原则 9 的"一个功能 = 一个文件"(原则 9 针对模板文件)
-    - HELP 场景资产每次更新都生成新快照(类似数据快照),需要历史归档
+    同秒冲突保护 _2/_3/...
     """
-    base = get_html_base_dir() / "help"
-    base.mkdir(parents=True, exist_ok=True)
+    command = "作息管家_HELP"
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    command = "帮助中心"
-    target = base / f"{command}_{stamp}.html"
+    target = get_html_base_dir().parent / f"{command}_{stamp}.html"
     if not target.exists():
         return target
     n = 2
     while n < 1000:
-        candidate = base / f"{command}_{stamp}_{n}.html"
+        candidate = get_html_base_dir().parent / f"{command}_{stamp}_{n}.html"
         if not candidate.exists():
             return candidate
         n += 1
@@ -269,8 +266,8 @@ def main():
         type=str,
         default=None,
         help=(
-            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/"
-            "帮助中心_<YYYYMMDD>_<HHMMSS>.html,与作息管家 _naming_path 同款 · 中文命名)"
+            "输出路径(默认: $SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html,"
+            "对标饼干记账 HELP 命名约定)"
         ),
     )
     args = parser.parse_args()

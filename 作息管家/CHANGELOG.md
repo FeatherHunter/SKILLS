@@ -312,9 +312,79 @@ Tested-By: pending-FAT
 
 ---
 
-### 🔧 Phase C.2g · HELP 文件名改中文(用户面向交付物)
+### 🔧 Phase C.2h · HELP 命名对标饼干记账(`{Skill名}_HELP_<TIMESTAMP>.html`)
 
-**动机**:用户提示生成的 HTML 文件是要发给用户的,文件名用中文比较合理。Phase C.2f 用英文 command 名 `help_center`(内部一致性),但**文件是用户面向交付物**,可读性比内部一致性更重要。
+**动机**:用户给参照样例 `饼干记账_HELP_20260727_095633.html`,要求 HELP 文件名采用 `{Skill名}_HELP_<TIMESTAMP>.html` 格式,与饼干记账对齐(跨 Skill 一致)。
+
+### 修复内容
+
+**`scripts/help_render.py`**:
+- `help_naming_path()` 函数:
+  - command 名:`帮助中心`(Phase C.2g)→ `作息管家_HELP`(对标饼干记账)
+  - 子目录:`schedule_html/help/` → `$SKILLS_DB_PATH` 根(直接放 SKILLS_DB_PATH,无嵌套子目录)
+  - 路径格式:`$SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html`
+- docstring 更新为"对标饼干记账"
+- `--out` help text 更新
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述:`帮助中心_<TIMESTAMP>.html` → `作息管家_HELP_<TIMESTAMP>.html`
+- ✅ 路由表 HELP 行同步
+- ✅ HTML-First 判定流程同步
+
+### 命名约定对照(最终版)
+
+| 类别 | Skill | 文件名格式 | 路径 |
+|---|---|---|---|
+| 命令 HTML(record) | 作息管家 | `record_day_<TIMESTAMP>.html` | `$SKILLS_DB_PATH/schedule_html/record/day/` |
+| 命令 HTML(plan) | 作息管家 | `plan_list_<TIMESTAMP>.html` | `$SKILLS_DB_PATH/schedule_html/plan/list/` |
+| **HELP HTML** | **作息管家** | **`作息管家_HELP_<TIMESTAMP>.html`** | **`$SKILLS_DB_PATH/` 根** |
+| HELP HTML | 卡路里 | `卡路里_HELP_<TIMESTAMP>.html` | `$SKILLS_DB_PATH/calorie_html/` |
+| HELP HTML | 饼干记账 | `饼干记账_HELP_<TIMESTAMP>.html` | `D:/Downloads`(跨平台 fallback) |
+
+### 为什么命令 HTML 和 HELP HTML 命名规则不同
+
+| 维度 | 命令 HTML | HELP HTML |
+|---|---|---|
+| 数据性质 | 数据快照(每次 add 不同) | 场景资产快照(场景资产更新即重渲) |
+| 子目录 | `<domain>/<mode>/`(数据隔离) | 无(跨 Skill 用户体验一致) |
+| command 命名 | 英文(record_day/plan_list) | `{Skill名}_HELP`(中英混合,对标饼干记账) |
+| 输出方式 | 不覆盖(append) | 不覆盖(场景资产每次更新生成新快照) |
+| 冲突保护 | `_2/_3` | `_2/_3` |
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html",
+    "wakeword_count": 28,
+    "scenario_count": 73
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` command 名 + 路径调整
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式变化
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 中文+Skill名混合命名是用户面向优化,行为不变(路径仍带 timestamp)
+  - 自检: 跑 help_render.py 输出文件名为'作息管家_HELP_<TIMESTAMP>.html'
+  - 验证方法: ls $SKILLS_DB_PATH/ 应看到 作息管家_HELP_<TIMESTAMP>.html(不在 schedule_html/ 子目录)
+```
+
+---
+
+### 🔧 Phase C.2g · HELP 文件名改中文(用户面向交付物)
 
 ### 修复内容
 

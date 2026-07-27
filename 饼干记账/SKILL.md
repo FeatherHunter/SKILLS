@@ -358,7 +358,7 @@ python3 scripts/bill_inject.py search "咖啡"
 - ❌ **禁止**降级为文字答（这是 fail mode,不是 fallback）
 - 用户明确要文字 → 才走 `python3 scripts/record_bill.py summary`（无 --json）
 
-**默认输出路径**：`D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html`
+**默认输出路径**：`D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html`（跨平台 fallback：`~/Downloads` → 当前目录）
 
 **指定输出路径**：`python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html`
 
@@ -379,7 +379,7 @@ python3 scripts/bill_inject.py search "咖啡"
 ```bash
 # 默认输出
 python3 scripts/render_help.py
-# 输出路径：D:/Downloads/饼干记账_HELP_<YYYYMMDD_HHMMSS>.html
+# 输出路径：D:/Downloads/饼干记账_HELP_<YYYYMMDD_HHMMSS>.html（跨平台 fallback：~/Downloads → 当前目录）
 
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html

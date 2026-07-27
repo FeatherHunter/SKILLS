@@ -128,11 +128,15 @@ def inject_to_template(payload: dict, output_path: Path) -> Path:
 
 
 def default_output_path(query_type: str) -> Path:
-    """默认输出路径：D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html"""
+    """默认输出路径：跨平台 fallback 链
+    1. D:/Downloads (Windows 原生)
+    2. ~/Downloads (Linux/macOS 标准)
+    3. cwd (最后兜底)
+    """
     fname = f"饼干记账_查询_{query_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    downloads = Path("D:/Downloads")
-    if downloads.exists():
-        return downloads / fname
+    for candidate in (Path("D:/Downloads"), Path.home() / "Downloads"):
+        if candidate.exists():
+            return candidate / fname
     return Path.cwd() / fname
 
 

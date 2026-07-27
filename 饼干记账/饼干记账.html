@@ -773,7 +773,7 @@ python3 scripts/bill_inject.py search "咖啡"
 </ul>
 <h4>输出路径</h4>
 <ul>
-<li>默认：<code>D:/Downloads/饼干记账_查询_&lt;type&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code></li>
+<li>默认：<code>D:/Downloads/饼干记账_查询_&lt;type&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code>（跨平台 fallback：<code>~/Downloads</code> → 当前目录）</li>
 <li>自定义：<code>python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html</code></li>
 </ul>
 <h4>模板特性（<code>query_view.html</code>）</h4>
@@ -793,7 +793,7 @@ python3 scripts/bill_inject.py search "咖啡"
 <h4>调用流程</h4>
 <pre><code class="language-bash"># 默认输出
 python3 scripts/render_help.py
-# → D:/Downloads/饼干记账_HELP_&lt;YYYYMMDD_HHMMSS&gt;.html
+# → D:/Downloads/饼干记账_HELP_&lt;YYYYMMDD_HHMMSS&gt;.html（跨平台 fallback：~/Downloads → 当前目录）
 
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html

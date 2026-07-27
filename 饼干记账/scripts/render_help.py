@@ -83,11 +83,15 @@ def inject_payload(template: str, payload: dict) -> str:
 
 
 def default_output_path() -> Path:
-    """默认输出路径"""
+    """默认输出路径:跨平台 fallback 链
+    1. D:/Downloads (Windows 原生)
+    2. ~/Downloads (Linux/macOS 标准)
+    3. cwd (最后兜底)
+    """
     fname = f"饼干记账_HELP_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    downloads = Path("D:/Downloads")
-    if downloads.exists():
-        return downloads / fname
+    for candidate in (Path("D:/Downloads"), Path.home() / "Downloads"):
+        if candidate.exists():
+            return candidate / fname
     return Path.cwd() / fname
 
 

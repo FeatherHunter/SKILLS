@@ -51,6 +51,24 @@ for skill in "${!NEED_TEST[@]}"; do
     if [ ! -d "$skill/tests" ]; then
         continue
     fi
+
+    # 总纲 04 §原则 4(本 skill 改造版):HELP 镜像自动同步
+    # 如果 diff 含 references/scenarios.yaml / templates/help_center.html
+    # → 自动跑 scripts/build_manual.py, 把更新后的 {技能名}.html 一起入 commit
+    if [ "$skill" = "居家管家" ] && echo "$CHANGED" | grep -qE '居家管家/(references/scenarios\.yaml|templates/help_center\.html)'; then
+        echo ""
+        echo "🔄 [pre-commit] 检测到 HELP 源变更,自动跑 build_manual.py 同步 居家管家.html..."
+        if ! (cd "$skill" && python3 scripts/build_manual.py 2>&1); then
+            echo ""
+            echo "❌ [居家管家] build_manual.py 失败, commit 已拒绝"
+            FAILED=1
+            continue
+        fi
+        # 把同步后的 HTML 加入本次 commit
+        git add "$skill/居家管家.html"
+        echo "✓ [居家管家] HELP HTML 已同步并加入 commit"
+    fi
+
     echo ""
     echo "🧪 [pre-commit] 跑 $skill pytest..."
     if ! (cd "$skill" && python3 -m pytest tests/ --tb=short -q 2>&1); then

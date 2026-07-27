@@ -27,9 +27,11 @@ def _find_db_path(skill_dir, db_filename):
     """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
     env_path = os.environ.get("SKILLS_DB_PATH")
     if env_path:
+        # env 优先:无论是否已存在,都用 env 指定的路径
+        # (修复:原版 "if exists 提前 return" 导致生产库存在时 env 失效)
         p = Path(env_path) / db_filename
-        if p.exists():
-            return p
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
     # fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
     db_dir = _fallback_db_dir()
     db_dir.mkdir(parents=True, exist_ok=True)
@@ -123,6 +125,76 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_item_id ON item_locations(item_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_locations_location ON item_locations(location)")
+
+    # ── P0-1 补丁:建齐 5 张表 + items.category 放宽 nullable ──────
+    # categories 表(总纲要求建表幂等;Phase 1 前装机需手跑 category_manager init)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            parent_id INTEGER,
+            name TEXT NOT NULL,
+            description TEXT,
+            sort_order INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE RESTRICT
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name)")
+
+    # accounts 表(原本靠 accounts.py lazy init,新机器直接崩)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT UNIQUE NOT NULL,
+            username TEXT NOT NULL DEFAULT '',
+            encrypted_password TEXT NOT NULL DEFAULT '',
+            tags TEXT NOT NULL DEFAULT '',
+            note TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+
+    # items.category 老字段:若仍 NOT NULL 则放宽(新 add_item 不写 category 字符串)
+    cursor.execute("PRAGMA table_info(items)")
+    items_cols_meta = {row[1]: row for row in cursor.fetchall()}
+    if "category" in items_cols_meta and items_cols_meta["category"][3] == 1:
+        # notnull=1 → 重建 items 表,category 改 nullable
+        # 老 items 表可能还没 category_id 列(新装机),先补上避免 SELECT 失败
+        if "category_id" not in items_cols_meta:
+            cursor.execute("ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id)")
+        cursor.execute("""
+            CREATE TABLE items_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                category TEXT,
+                owner TEXT DEFAULT '使用者',
+                purchase_price REAL,
+                remark TEXT,
+                photo TEXT,
+                access_count INTEGER DEFAULT 0,
+                last_accessed_at TIMESTAMP,
+                category_id INTEGER REFERENCES categories(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("""
+            INSERT INTO items_new (id, name, category, owner, purchase_price, remark,
+                photo, access_count, last_accessed_at, category_id, created_at, updated_at)
+            SELECT id, name, category, owner, purchase_price, remark,
+                photo, access_count, last_accessed_at, category_id, created_at, updated_at
+            FROM items
+        """)
+        cursor.execute("DROP TABLE items")
+        cursor.execute("ALTER TABLE items_new RENAME TO items")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_name ON items(name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_access_count ON items(access_count)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category_id ON items(category_id)")
+
     migrate_add_date_columns(conn)
     migrate_add_category_id_column(conn)
 

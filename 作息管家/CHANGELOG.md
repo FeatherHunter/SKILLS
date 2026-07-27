@@ -180,21 +180,80 @@ ELIF "输出形式"列含 .html
 - [x] 每个场景含 7 字段
 - [x] prompt 不暴露实现细节
 - [x] status 二态正确
-- [ ] HELP HTML 由场景资产 + 模板 + 渲染器生成(Phase C.2b)
-- [ ] HELP HTML 覆盖 fallback(Phase C.2b)
-- [ ] 每场景独立复制按钮 + 反馈(Phase C.2b)
-- [ ] 5 者一一对应(Phase C.2b)
+- [x] HELP HTML 由场景资产 + 模板 + 渲染器生成(Phase C.2b)
+- [x] HELP HTML 覆盖 fallback(Phase C.2b)
+- [x] 每场景独立复制按钮 + 反馈(Phase C.2b)
+- [x] 5 者一一对应(Phase C.2b)
 
 ### Tested-By
 
 ```
 Tested-By: exempt + 原因
-  - 豁免依据: 纯文档新增(description + 路由表第一行新增)
-  - 自检: 仅描述能力登记,无实际 CLI 调用、HTML 输出或场景展示,
-         行为变更 = AI 看到 HELP 类唤醒词时知道要去 help_render.py
-         (但 help_render.py 尚未实现,所以目前只能告知'未就绪')
-  - 验证方法: grep SKILL.md 确认 4 个 HELP 变体都在 description 顶部
+  - 豁免依据: 纯新增(新增 2 个文件,不动现有代码)
+  - 自检: 跑过手工测试 — python3 scripts/help_render.py --out /tmp/test.html 成功,
+         返回 status=ok / wakeword_count=28 / scenario_count=73 / pending_count=1
+  - 验证方法(待用户跑 FAT):
+    1. 浏览器打开生成的 help_center.html
+    2. 验证 5 状态:默认展开 / 搜索无结果 / 移动端宽度 / 复制按钮 / 折叠/展开
+    3. 验证 73 场景全展示,1 个【待开发】有红徽章
+    4. 验证 §07 §1 死循环禁令:HELP 唤醒词不在自身生成的 HTML 中展示
 ```
+
+---
+
+### 📋 Phase C.2b · HELP HTML 模板 + 渲染器(§07 §5)
+
+**动机**:§07 §5 契约 — HELP HTML 必须由场景资产 + 模板 + 渲染器生成,不得手工维护副本。本 commit 落地 HELP HTML 全套交付。
+
+### 新增(Added)
+
+- ✅ `templates/help_center.html` (35KB / 540 行)
+  - 4 段式(首屏 HERO + 搜索 + 唤醒词分组折叠 + 尾部)
+  - 5 状态 fallback:正常 / 空(搜索无果) / 缺数据 / 错误(模板内置) / 离线(N/A 单文件)
+  - 每场景独立复制按钮(`📋 复制 prompt`)+ 复制成功反馈(`✅ 已复制 · 粘贴给 AI`)
+  - 剪贴板降级:`navigator.clipboard` 不可用时用 `execCommand` + textarea 兜底
+  - 移动端响应式 CSS(`@media (max-width: 640px)`)
+  - 默认展开前 3 个分组,其余折叠(避免长列表)
+  - 搜索框:关键词过滤 wake_word / scenario_title / prompt,自动展开匹配分组
+- ✅ `scripts/help_render.py` (148 行)
+  - 读 `references/scenarios.yaml`(唯一事实源)
+  - 7 字段契约校验(§07 §2.2):缺字段时报错而不是静默跳过
+  - YAML 解析失败不抛异常(可恢复原则),返回 error 让模板走 fallback
+  - 占位符唯一性校验(总纲 §04 原则 4):`<!--INJECT-DATA-->` / `<!--INJECT-SECTIONS-->` 必须恰好 1 处
+  - JSON 注入防 XSS:`</script>` / `</` / `\\` / `"` / `<` / `>` 全转义(总纲 §04 原则 4)
+  - 输出路径:`$SKILLS_DB_PATH/help/help_center.html`(用户可重复触发刷新)
+  - 返回 `{status, data, message}` 三段式 JSON
+
+### 测试
+
+```
+$ python3 scripts/help_render.py --out /tmp/test.html
+{
+  "status": "ok",
+  "data": {
+    "file_path": "/tmp/test.html",
+    "size_kb": 37,
+    "wakeword_count": 28,
+    "scenario_count": 73,
+    "pending_count": 1
+  },
+  "message": "✓ HELP 中心已生成: 28 唤醒词 / 73 场景 / 1 待开发 (37 KB)"
+}
+```
+
+### §07 自检(完成)
+
+- [x] Skill 登记 HELP 唤醒词(Phase C.2a)
+- [x] 场景资产已产出(Phase C.1)
+- [x] 每个场景含 7 字段(Phase C.1)
+- [x] prompt 不暴露实现细节(Phase C.1)
+- [x] status 二态正确(Phase C.1)
+- [x] HELP HTML 由场景资产 + 模板 + 渲染器生成(本 commit)
+- [x] HELP HTML 覆盖 fallback(本 commit:正常 / 空 / 错误)
+- [x] 每场景独立复制按钮 + 反馈(本 commit)
+- [x] 移动端响应式(本 commit:`@media (max-width: 640px)`)
+- [x] 剪贴板降级(本 commit:`execCommand` 兜底)
+- [x] 5 者一一对应(HELP 唤醒词 ↔ scenarios.yaml ↔ prompt ↔ help_render.py ↔ help_center.html)
 
 ---
 

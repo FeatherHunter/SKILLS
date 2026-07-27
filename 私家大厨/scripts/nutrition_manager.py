@@ -10,40 +10,41 @@ L4 阶段:函数体迁 db.execute/query/transaction
 import sys
 import uuid
 from db import get_connection, query, execute, transaction
-from cli_formatter import emit, parse_json_flag, error
+from cli_formatter import emit, parse_json_flag, error, print_or_emit
 import validators  # 决策 3:接入 validate_serving_unit
 
 
 def add(args):
     """添加营养信息(单 INSERT)"""
+    json_mode = args.get("_json_mode", False)
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误:请提供食谱ID")
+        print_or_emit(json_mode, "错误:请提供食谱ID")
         return False
 
     recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
     if not recipe:
-        print(f"未找到食谱:{recipe_id}")
+        print_or_emit(json_mode, f"未找到食谱:{recipe_id}")
         return False
 
     # 检查是否已有营养信息
     existing = query("SELECT id FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
     if existing:
-        print(f"警告:{recipe[0]['name']}已有营养信息,使用update命令更新")
+        print_or_emit(json_mode, f"警告:{recipe[0]['name']}已有营养信息,使用update命令更新")
         return False
 
     # 决策 3:serving_unit 必填 + enum 校验
     serving_unit = args.get("--serving_unit")
     if not serving_unit:
-        print("错误:缺少 --serving_unit(L1 NOT NULL 兜底,DB 不允许 NULL)")
-        print("   合法值:g / ml / 份 / 杯")
-        print("   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
-        print("   请拿 hint 去问用户,拿到答案后用 --serving_unit <值> 重试。")
+        print_or_emit(json_mode, "错误:缺少 --serving_unit(L1 NOT NULL 兜底,DB 不允许 NULL)")
+        print_or_emit(json_mode, "   合法值:g / ml / 份 / 杯")
+        print_or_emit(json_mode, "   怎么修:这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。")
+        print_or_emit(json_mode, "   请拿 hint 去问用户,拿到答案后用 --serving_unit <值> 重试。")
         return False
     su_validation = validators.validate_serving_unit(serving_unit)
     if not su_validation["valid"]:
-        print(f"错误:{su_validation['error']}")
-        print("   怎么修:请拿 hint 去问用户,确认单位后重试。")
+        print_or_emit(json_mode, f"错误:{su_validation['error']}")
+        print_or_emit(json_mode, "   怎么修:请拿 hint 去问用户,确认单位后重试。")
         return False
 
     execute(
@@ -62,52 +63,54 @@ def add(args):
         )
     )
 
-    print(f"✅ 营养信息添加成功!")
-    print(f"   食谱:{recipe[0]['name']}")
+    print_or_emit(json_mode, f"✅ 营养信息添加成功!")
+    print_or_emit(json_mode, f"   食谱:{recipe[0]['name']}")
     if args.get("--calories"):
-        print(f"   热量:{args['--calories']}kcal/份")
+        print_or_emit(json_mode, f"   热量:{args['--calories']}kcal/份")
     return True
 
 
 def get(args):
     """查看营养信息"""
+    json_mode = args.get("_json_mode", False)
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误:请提供食谱ID")
+        print_or_emit(json_mode, "错误:请提供食谱ID")
         return False
 
     recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
     if not recipe:
-        print(f"未找到食谱:{recipe_id}")
+        print_or_emit(json_mode, f"未找到食谱:{recipe_id}")
         return False
 
     nutrition_rows = query("SELECT * FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
     if not nutrition_rows:
-        print(f"\n{recipe[0]['name']} - 没有营养信息")
+        print_or_emit(json_mode, f"\n{recipe[0]['name']} - 没有营养信息")
         return True
 
     nutrition = nutrition_rows[0]
     serving = f"{nutrition['serving_size'] or ''}{nutrition['serving_unit'] or '份'}"
 
-    print(f"\n{recipe[0]['name']} - 营养信息(每{serving}):")
+    print_or_emit(json_mode, f"\n{recipe[0]['name']} - 营养信息(每{serving}):")
     if nutrition['calories']:
-        print(f"  热量:{nutrition['calories']}kcal")
+        print_or_emit(json_mode, f"  热量:{nutrition['calories']}kcal")
     if nutrition['protein']:
-        print(f"  蛋白质:{nutrition['protein']}g")
+        print_or_emit(json_mode, f"  蛋白质:{nutrition['protein']}g")
     if nutrition['fat']:
-        print(f"  脂肪:{nutrition['fat']}g")
+        print_or_emit(json_mode, f"  脂肪:{nutrition['fat']}g")
     if nutrition['carbs']:
-        print(f"  碳水:{nutrition['carbs']}g")
+        print_or_emit(json_mode, f"  碳水:{nutrition['carbs']}g")
     if nutrition['fiber']:
-        print(f"  膳食纤维:{nutrition['fiber']}g")
+        print_or_emit(json_mode, f"  膳食纤维:{nutrition['fiber']}g")
     if nutrition['sodium']:
-        print(f"  钠:{nutrition['sodium']}mg")
+        print_or_emit(json_mode, f"  钠:{nutrition['sodium']}mg")
 
     return True
 
 
 def list_items(args):
     """列出有营养信息的食谱"""
+    json_mode = args.get("_json_mode", False)
     sort_by = args.get("--sort") or "calories"
 
     if sort_by == "calories":
@@ -132,24 +135,25 @@ def list_items(args):
     """)
 
     if not rows:
-        print("没有营养信息记录")
+        print_or_emit(json_mode, "没有营养信息记录")
         return True
 
-    print(f"\n有营养信息的食谱(共{len(rows)}道):")
-    print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'热量':<8} {'蛋白':<8} {'脂肪':<8} {'碳水'}")
-    print("-" * 80)
+    print_or_emit(json_mode, f"\n有营养信息的食谱(共{len(rows)}道):")
+    print_or_emit(json_mode, f"{'序号':<4} {'菜名':<20} {'难度':<8} {'热量':<8} {'蛋白':<8} {'脂肪':<8} {'碳水'}")
+    print_or_emit(json_mode, "-" * 80)
     for i, row in enumerate(rows, 1):
         cal = f"{row['calories']}kcal" if row['calories'] else "-"
         pro = f"{row['protein']}g" if row['protein'] else "-"
         fat = f"{row['fat']}g" if row['fat'] else "-"
         carb = f"{row['carbs']}g" if row['carbs'] else "-"
-        print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {cal:<8} {pro:<8} {fat:<8} {carb}")
+        print_or_emit(json_mode, f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {cal:<8} {pro:<8} {fat:<8} {carb}")
 
     return True
 
 
 def search_high_protein(args):
     """搜索高蛋白食谱"""
+    json_mode = args.get("_json_mode", False)
     threshold = int(args.get("--threshold") or 20)
 
     rows = query("""
@@ -161,30 +165,31 @@ def search_high_protein(args):
     """, (threshold,))
 
     if not rows:
-        print(f"没有蛋白质含量>= {threshold}g的食谱")
+        print_or_emit(json_mode, f"没有蛋白质含量>= {threshold}g的食谱")
         return True
 
-    print(f"\n高蛋白食谱(蛋白质 >= {threshold}g,共{len(rows)}道):")
-    print(f"{'序号':<4} {'菜名':<20} {'难度':<8} {'蛋白':<8} {'热量'}")
-    print("-" * 60)
+    print_or_emit(json_mode, f"\n高蛋白食谱(蛋白质 >= {threshold}g,共{len(rows)}道):")
+    print_or_emit(json_mode, f"{'序号':<4} {'菜名':<20} {'难度':<8} {'蛋白':<8} {'热量'}")
+    print_or_emit(json_mode, "-" * 60)
     for i, row in enumerate(rows, 1):
         pro = f"{row['protein']}g" if row['protein'] else "-"
         cal = f"{row['calories']}kcal" if row['calories'] else "-"
-        print(f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {pro:<8} {cal}")
+        print_or_emit(json_mode, f"{i:<4} {row['name']:<20} {row['difficulty'] or '-':<8} {pro:<8} {cal}")
 
     return True
 
 
 def update(args):
     """更新营养信息(L4:动态 SQL)"""
+    json_mode = args.get("_json_mode", False)
     recipe_id = args.get("<recipe_id>")
     if not recipe_id:
-        print("错误:请提供食谱ID")
+        print_or_emit(json_mode, "错误:请提供食谱ID")
         return False
 
     recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))
     if not recipe:
-        print(f"未找到食谱:{recipe_id}")
+        print_or_emit(json_mode, f"未找到食谱:{recipe_id}")
         return False
 
     existing = query("SELECT id FROM nutrition_info WHERE recipe_id = ?", (recipe_id,))
@@ -218,13 +223,13 @@ def update(args):
         params.append(args["--sodium"])
 
     if not updates:
-        print("没有提供要更新的字段")
+        print_or_emit(json_mode, "没有提供要更新的字段")
         return False
 
     if existing:
         params.append(recipe_id)
         execute(f"UPDATE nutrition_info SET {', '.join(updates)} WHERE recipe_id = ?", params)
-        print(f"✅ 营养信息更新成功!")
+        print_or_emit(json_mode, f"✅ 营养信息更新成功!")
     else:
         # 创建新的
         execute(
@@ -242,7 +247,7 @@ def update(args):
                 args.get("--sodium")
             )
         )
-        print(f"✅ 营养信息添加成功!")
+        print_or_emit(json_mode, f"✅ 营养信息添加成功!")
 
     return True
 
@@ -271,7 +276,7 @@ def main():
     action = sys.argv[1]
     json_mode = parse_json_flag(sys.argv[2:])
 
-    args = {}
+    args = {"_json_mode": json_mode}
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]

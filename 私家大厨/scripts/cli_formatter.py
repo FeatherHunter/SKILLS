@@ -218,3 +218,26 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ====================================================================
+# 第一性原理辅助:print_or_emit(用于老代码批量补漏)
+# ====================================================================
+def print_or_emit(json_mode: bool, message: str, status: str = "info",
+                 data: dict = None, **kwargs):
+    """统一 emit/print helper:json_mode 走 JSON emit,否则走 print(人类友好)。
+
+    用法:
+        print_or_emit(json_mode, "✅ 操作成功", status="success")
+        print_or_emit(json_mode, f"未找到食谱:{name}", status="error", error="recipe_not_found")
+
+    L3 补漏设计:替代裸 print,所有 manager 改用此函数即可获得 --json 能力。
+    """
+    if json_mode:
+        result = {"status": status, "message": message}
+        if data is not None:
+            result["data"] = data
+        if kwargs:
+            result.update(kwargs)
+        emit(result, json_mode=True)
+    else:
+        print(message)

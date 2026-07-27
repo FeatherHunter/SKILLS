@@ -197,7 +197,7 @@
 | 工具 | 默认输出 | 加 `--json` | 加 `--human` |
 |---|---|---|---|
 | 4 个 `*_manager.py`(recipe / history / shopping / relation) | 中文友好文本 | JSON 三段式 `{status, data, message}` | (默认即人类) |
-| 14 个 `*_manager.py`(background / category / cooking_method / cookware / diet_tag / flavor / ingredient / meal_type / nutrition / season / step / step_ingredient / technique / tip) | 中文友好文本 | **❌ 暂不支持** | (默认即人类) |
+| 14 个 `*_manager.py`(background / category / cooking_method / cookware / diet_tag / flavor / ingredient / meal_type / **(nutrition · 本 commit 修复)** / season / step / step_ingredient / technique / tip) | 中文友好文本 | JSON 三段式(本 commit 修复后)/ ❌ 暂不支持 | (默认即人类) |
 | `recipe_import.py import` | **JSON 三段式** | (默认即 JSON) | 中文友好 |
 | `recipe_import.py validate` | JSON 三段式 | (默认) | 中文友好 |
 | `import_orchestrator.py` | JSON 三段式 | (默认) | (暂未支持) |

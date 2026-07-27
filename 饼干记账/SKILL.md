@@ -390,7 +390,7 @@ python3 scripts/render_help.py --check
 
 **HELP HTML 契约（§07）：**
 - 来源：`references/scenarios.json`（唯一事实源）+ `templates/help.html`（模板）
-- 展示 15 个业务唤醒词 × 57 个合法场景
+- 展示 15 个业务唤醒词 × 91 个合法场景
 - 每场景独立「📋 复制 prompt」按钮（一键复制给 AI）
 - 粘性搜索栏（按唤醒词 / 标题 / prompt 即时过滤）
 - 5 状态 fallback + 移动端适配

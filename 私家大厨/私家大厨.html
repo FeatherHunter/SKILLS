@@ -147,6 +147,7 @@
   <button class="tab-btn" data-tab="F">采购清单<span class="tab-count">2</span></button>
   <button class="tab-btn" data-tab="G">录入食谱<span class="tab-count">2</span></button>
   <button class="tab-btn" data-tab="H">派生关系<span class="tab-count">2</span></button>
+  <button class="tab-btn" data-tab="I">帮助<span class="tab-count">1</span></button>
 </div>
 
 <!-- ============== A. 做菜模式 ============== -->
@@ -962,8 +963,48 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 </details>
 </div>
 
+<!-- ============== I. 帮助 ============== -->
+<div class="tab-panel" id="tab-I">
+<h2>I. 帮助 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(1 个 · §07 HELP 契约)</span></h2>
+<p><b>HELP 唤醒词</b>展示本技能全部 35 个业务唤醒词 + 61 个合法场景(总纲 §07 强制契约)。HELP 自身不出现在该 HTML 中(防死循环)。</p>
+
+<details class="ww" data-keywords="HELP 帮助 能力速查 场景">
+  <summary class="ww-head">
+    <span class="ww-title"><span class="ww-tag">私家大厨 HELP</span><span class="ww-desc">能力速查入口(§07 §1 强制契约)</span></span>
+    <span class="ww-arrow">▼</span>
+  </summary>
+  <div class="ww-body">
+    <details class="cli">
+      <summary><span class="cli-name">scripts/render_help.py</span><span style="color:var(--fg3);font-size:11.5px;margin-left:8px">渲染 HELP HTML</span></summary>
+      <div class="cli-body">
+        <table class="flow-table">
+          <tr><th>数据源</th><td><code>references/scenarios.yaml</code>(§07 §2.1 唯一事实源)</td></tr>
+          <tr><th>模板</th><td><code>templates/help.html</code>(4 段式 + 5 状态 fallback)</td></tr>
+          <tr><th>输出</th><td><code>$CHEF_OUTPUT_DIR/help/私家大厨_HELP_&lt;YYYYMMDD_HHMMSS&gt;.html</code></td></tr>
+          <tr><th>语义</th><td>渲染 HELP HTML,展示 35 业务唤醒词 + 61 场景,每场景独立复制 prompt 按钮</td></tr>
+          <tr><th>副作用</th><td>无(只读场景资产 → 写 HTML 副本)</td></tr>
+        </table>
+      </div>
+    </details>
+    <div class="ww-section"><div class="ww-section-title">触发示例</div>
+      <p>「私家大厨 HELP」「菜谱 HELP」「这个本子能做什么」</p>
+      <p><b>AI 收到 HELP 后必须 invoke HTML</b>(原则 11),禁止文字答。</p>
+    </div>
+    <div class="ww-section"><div class="ww-section-title">HELP HTML 特性</div>
+      <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7;color:var(--fg2)">
+        <li>首屏统计:35 唤醒词 / 61 场景 / X 待开发</li>
+        <li>每场景独立复制 prompt 按钮 + 反馈 toast(§07 §10 s11)</li>
+        <li>实时搜索过滤(§07 §10 s09 大规模可用)</li>
+        <li>二态状态视觉区分:✓ 可用(蓝)/【待开发】(橙,§07 §4)</li>
+        <li>响应式 480px 断点(§07 §10 s10 跨设备)</li>
+      </ul>
+    </div>
+  </div>
+</details>
+</div>
+
 <div class="footer">
-  私家大厨 · 使用手册 · 同步基线 SKILL.md v3 · 8 大功能 / 35 个唤醒词 / 17 张表<br>
+  私家大厨 · 使用手册 · 同步基线 SKILL.md v3 · 8 大功能 / 36 个唤醒词 / 17 张表<br>
   详细变更见 SKILL.md 和 CHANGELOG.md
 </div>
 

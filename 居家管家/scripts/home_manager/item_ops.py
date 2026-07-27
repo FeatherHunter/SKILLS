@@ -347,6 +347,27 @@ def update_item(item_id, name=None, category_id=None, owner=None,
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # ── P0-2 补丁:update 硬规则统一校验 ─────────────────────
+    errs = []
+    if quantity is not None and quantity < 0:
+        errs.append(f"quantity 必须 ≥ 0 (当前 {quantity})")
+    for _dn, _dv in (("purchase_date", purchase_date), ("expiration_date", expiration_date)):
+        if _dv is None or _dv == "":
+            continue
+        from datetime import date as _date
+        try:
+            _date.fromisoformat(_dv)
+        except (TypeError, ValueError):
+            errs.append(f"{_dn} 必须是 YYYY-MM-DD (当前 {_dv!r})")
+    for _ln, _lv in (("new_location", new_location), ("add_location", add_location)):
+        if _lv and "/" not in _lv.strip("/"):
+            errs.append(f"{_ln} 位置必须至少两级(含 '/', 当前 {_lv!r})")
+    if errs:
+        for _e in errs:
+            print(f"✗ {_e}")
+        conn.close()
+        return 1
+
     cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
     row = cursor.fetchone()
     if not row:

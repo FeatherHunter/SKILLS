@@ -312,6 +312,108 @@ Tested-By: pending-FAT
 
 ---
 
+### 🎨 Phase C.2l · HELP HTML 苹果风重设计:布局修复 + 唤醒词编号 + 大气简约
+
+**动机**:用户反馈 3 个问题:
+1. **兼容性 + 布局 bug**:`.cat-block > summary` 缺少 `display: flex`,导致"写入与同步"等模块名垂直排列
+2. **#1 #2 等丑**:`#0 记作息` 中井号+数字+空格的唤醒词标识视觉粗糙
+3. **整体不够苹果风**:需要更大字号、更大圆角、更大留白、微妙阴影
+
+### 变更内容
+
+**布局 bug 修复**:
+- ✅ `.cat-block > summary` 加 `display: flex; align-items: center`(默认是 `block`,子元素垂直堆叠)
+- ✅ `.ww-block > summary` 同上
+- ✅ `.sc-block > summary` 同上
+- ✅ 所有 3 层 `<details>` 摘要用 flex 横向布局
+
+**唤醒词编号去丑化**(模板 JS 函数):
+- ❌ 显示 `#0 记作息` / `#1 准备消息`(丑)
+- ✅ 显示 `00` 灰色胶囊 + `记作息`(优雅)
+- 实现:模板 JS 的 `wakeNum("#0 记作息")` → `"00"`,`wakeName("#0 记作息")` → `"记作息"`
+- 样式:`.ww-num` 等宽数字 + 灰色背景 + 圆角 6px(类似系统设置中的序号)
+
+**苹果风重设计**(对照 `_assets/style.css` 设计令牌):
+- 设计令牌统一:var(--fg) #1d1d1f / var(--bg) #fbfbfd / var(--blue) #007aff
+- 字体:SF Pro Text 优先,PingFang SC 中文 fallback
+- 字号:hero h1 40px → 28px(mobile) / cat name 20px / ww name 16px / sc title 15px
+- 圆角:cat card 20px / sc block 12px / button 12px(从 8px 增大)
+- 阴影:cat card 0 2px 8px rgba(0,0,0,.06)(微妙,不再是重阴影)
+- 留白:cat summary padding 24px 28px(从 11px 14px 增大)
+- 大图标:L1 模块 48px × 48px 圆角方块(从无图标背景升级)
+- 大箭头:`›` 字符 22px / 14px(从 `▸` 升级,旋转 90° 后水平向右)
+- 工具栏 sticky:top: 0 + `backdrop-filter: blur(20px)`(苹果毛玻璃效果)
+- 全部展开 / 折叠 按钮:苹果风 button 风格(白底 + 细边 + hover 灰色)
+- Toast:苹果风(深色圆角 + 阴影 + 弹性动画)
+- 状态徽章:`可用` / `待开发` 去掉方括号(更简洁)
+
+**兼容性增强**:
+- ✅ `@supports not (backdrop-filter: blur(1px))` 降级:不支持 blur 的浏览器用纯色背景
+- ✅ `@media (max-width: 640px)` 移动端响应式优化
+- ✅ 浏览器原生 `<details>` 标签(W3C 标准,无 JS 也能展开)
+- ✅ `navigator.clipboard` API + `execCommand` 双 fallback(老浏览器降级)
+- ✅ CSS 变量定义 :root(现代浏览器优先,旧浏览器忽略)
+
+### 验证
+
+模拟 JS 渲染(因为实际渲染在浏览器):
+
+```
+=== 5 模块分类预览 ===
+category_count: 5
+wakeword_count: 28
+scenario_count: 73
+pending_count: 1
+
+📝 写入与同步 |  4 唤醒词 | 13 场景 | 待开发 1
+    00 记作息 (5 场景)
+    01 准备消息 (4 场景)
+    02 同步作息 (2 场景)
+🔍 查询与浏览 | 11 唤醒词 | 27 场景
+    04 今天总结 (4 场景)
+    05 汇总作息 (2 场景)
+    06 查作息 (4 场景)
+📅 日程与计划 |  6 唤醒词 | 19 场景
+    13 补计划 (3 场景)
+    14 复盘 (4 场景)
+    17 商量计划 (5 场景)
+🔬 分析与洞察 |  5 唤醒词 | 12 场景
+    24 写作息摘要 (2 场景)
+    25 对比两个月 (3 场景)
+    26 修正作息 (3 场景)
+⚙️ 辅助与管理 |  2 唤醒词 |  2 场景
+    21 飞书探测 (1 场景)
+    22 初始化数据库 (1 场景)
+
+汇总: 28 唤醒词, 73 场景 ✓
+```
+
+### 影响范围
+
+- 代码:`templates/help_center.html` 完整重写(39KB)
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 数据结构 `categories/wake_words/scenarios` 不变,只改渲染层
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 验证项: 1) 模块名横向排列(非垂直)
+           2) 唤醒词编号 01 02 显示优雅
+           3) 苹果风大圆角 + 大留白视觉效果
+           4) 工具栏 sticky + 毛玻璃背景
+           5) 大图标 48px 显示正确
+           6) Toast 弹性动画
+           7) 移动端宽度适配
+           8) 老浏览器降级(无 backdrop-filter 仍可用)
+           9) Chrome / Safari / Firefox 跨浏览器渲染一致
+  - 验证方法: 浏览器打开 + DevTools + 多浏览器测试
+```
+
+---
+
 ### 🎨 Phase C.2k · HELP HTML 重构:5 模块分类 + 3 层折叠 + 默认折叠(对标饼干记账)
 
 **动机**:用户要求作息管家 HELP HTML 模仿饼干记账的 HELP HTML,做到:

@@ -312,6 +312,67 @@ Tested-By: pending-FAT
 
 ---
 
+### 🔧 Phase C.2i · HELP 路径移入 schedule_html/help/ 子目录(作息管家内部一致性)
+
+**动机**:用户建议 HELP HTML 也放到 `schedule_html/help/` 子目录,与作息管家既有 record/plan 域(`schedule_html/<domain>/<mode>/`)同级。Phase C.2h 放在 `$SKILLS_DB_PATH` 根(对标饼干记账 v2.4),但与作息管家内部约定不一致。本次同时满足作息管家内部一致性 + 跨 Skill 命名一致性。
+
+### 修复内容
+
+**`scripts/help_render.py`**:
+- `help_naming_path()` 函数:
+  - 路径:`$SKILLS_DB_PATH/` 根 → `$SKILLS_DB_PATH/schedule_html/help/`(新子目录)
+  - command 名保持:`作息管家_HELP`(Phase C.2h 的对标饼干记账命名)
+  - mkdir -p 自动创建子目录
+- docstring 更新为"作息管家内部一致性 + 对标饼干记账命名"
+- `--out` help text 更新
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述:`$SKILLS_DB_PATH/作息管家_HELP_<TIMESTAMP>.html` → `$SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<TIMESTAMP>.html`
+- ✅ 路由表 HELP 行同步
+- ✅ HTML-First 判定流程同步
+
+### 最终路径对照
+
+| Skill | 命令 HTML | HELP HTML |
+|---|---|---|
+| 作息管家(本次) | `schedule_html/record/day/<record_day_<TIMESTAMP>.html` | **`schedule_html/help/作息管家_HELP_<TIMESTAMP>.html`** |
+| 作息管家既有 plan | `schedule_html/plan/list/<plan_list_<TIMESTAMP>.html` | 同上 |
+| 卡路里 v2.4 | `calorie_html/主页仪表盘_<TIMESTAMP>.html` | `卡路里_HELP_<TIMESTAMP>.html`(calorie_html/ 子目录) |
+| 饼干记账 v2.5 | `biscuit_accountant_html/<command_zh>_<TIMESTAMP>.html` | `biscuit_accountant_html/能力速查_<TIMESTAMP>.html` |
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html",
+    "wakeword_count": 28,
+    "scenario_count": 73
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` 路径调整
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式变化
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 路径调整是用户建议,行为不变
+  - 自检: 跑 help_render.py 输出 schedule_html/help/ 子目录
+  - 验证方法: ls $SKILLS_DB_PATH/schedule_html/help/ 应看到 作息管家_HELP_<TIMESTAMP>.html
+```
+
+---
+
 ### 🔧 Phase C.2h · HELP 命名对标饼干记账(`{Skill名}_HELP_<TIMESTAMP>.html`)
 
 **动机**:用户给参照样例 `饼干记账_HELP_20260727_095633.html`,要求 HELP 文件名采用 `{Skill名}_HELP_<TIMESTAMP>.html` 格式,与饼干记账对齐(跨 Skill 一致)。

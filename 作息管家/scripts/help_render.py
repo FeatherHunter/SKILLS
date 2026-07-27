@@ -7,16 +7,14 @@
 
 用法:
     python scripts/help_render.py [--out <path>]
-    # 默认写到 $SKILLS_DB_PATH/作息管家_HELP_<TIMESTAMP>.html
+    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<TIMESTAMP>.html
 
-输出路径(对标饼干记账 HELP 命名约定):
-    SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html
+输出路径(作息管家内部一致性 + 对标饼干记账命名):
+    SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html
     命名格式: {Skill名}_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
-    对标: 饼干记账_HELP_<YYYYMMDD>_<HHMMSS>.html(饼干记账 scripts/render_help.py:133)
-    路径: $SKILLS_DB_PATH 根目录,不带 schedule_html/ 子目录
-    与作息管家 record/plan 域(<command>_<TIMESTAMP>.html)的区别:
-      record/plan 是数据快照,在 schedule_html/<domain>/<mode>/ 子目录
-      HELP 是用户面向交付物,在 SKILLS_DB_PATH 根,与饼干记账对齐
+    对标: 饼干记账_HELP_<YYYYMMDD>_<HHMMSS>.html(命名格式)
+    路径: schedule_html/help/ 子目录,与 record/day, plan/list 等同级
+    兼具作息管家内部一致性(schedule_html/ 约定) + 跨 Skill 命名一致性({Skill名}_HELP_)
 
 约束(§07 §5):
 - 展示全部业务唤醒词 + 全部合法场景
@@ -54,27 +52,31 @@ def get_html_base_dir() -> Path:
 
 
 def help_naming_path() -> Path:
-    """HELP HTML 输出路径(作息管家 · 对标饼干记账 HELP 命名约定)
+    """HELP HTML 输出路径(作息管家 · schedule_html/help/ 子目录 · 对标饼干记账命名)
 
     命名:{Skill名}_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html
     对标饼干记账:`饼干记账_HELP_<YYYYMMDD>_<HHMMSS>.html`(scripts/render_help.py:133)
 
-    与作息管家 record/plan 域(<command>_<TIMESTAMP>.html)的差异:
-    - record/plan 用 schedule_html/<domain>/<mode>/ 子目录
-    - HELP 用 SKILLS_DB_PATH 根目录(不带子目录),与饼干记账一致
-    - 命令 HTML(<command>_<TIMESTAMP>.html)是数据快照
-    - HELP 是用户面向交付物,跨 Skill 一致命名 {Skill名}_HELP_<TIMESTAMP>
+    路径:$SKILLS_DB_PATH/schedule_html/help/<command>_<TIMESTAMP>.html
+    - 与作息管家 record/plan 域同级(schedule_html/record/day/, schedule_html/plan/list/)
+    - 命名风格对标饼干记账({Skill名}_HELP_<TIMESTAMP>.html)
+    - 同秒冲突保护 _2/_3/...
 
-    同秒冲突保护 _2/_3/...
+    为什么放 schedule_html/help/(作息管家内部一致性)而非 SKILLS_DB_PATH 根:
+    - 作息管家既有约定:所有 HTML 输出在 schedule_html/<domain>/<mode>/
+    - HELP 是作息管家内部一种 HTML 类型,应遵循该约定
+    - 命名风格仍对标饼干记账({Skill名}_HELP_<TIMESTAMP>.html),与饼干记账 v2.4 一致
     """
     command = "作息管家_HELP"
     stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    target = get_html_base_dir().parent / f"{command}_{stamp}.html"
+    base = get_html_base_dir() / "help"
+    base.mkdir(parents=True, exist_ok=True)
+    target = base / f"{command}_{stamp}.html"
     if not target.exists():
         return target
     n = 2
     while n < 1000:
-        candidate = get_html_base_dir().parent / f"{command}_{stamp}_{n}.html"
+        candidate = base / f"{command}_{stamp}_{n}.html"
         if not candidate.exists():
             return candidate
         n += 1
@@ -266,8 +268,9 @@ def main():
         type=str,
         default=None,
         help=(
-            "输出路径(默认: $SKILLS_DB_PATH/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html,"
-            "对标饼干记账 HELP 命名约定)"
+            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/"
+            "作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html,"
+            "作息管家内部一致性 + 对标饼干记账命名)"
         ),
     )
     args = parser.parse_args()

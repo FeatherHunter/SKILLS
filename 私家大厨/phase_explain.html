@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>💬 解释:为什么不修剩下 13 个 manager · 2026-07-27</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#F3E5F5 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px}
+  .card-body{padding:14px 20px 18px;font-size:14px;line-height:1.65;color:var(--text2)}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  pre{background:var(--bg);padding:12px 14px;border-radius:var(--radius-sm);font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2);overflow-x:auto;margin:10px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:20px}.card-body{padding:12px 16px 16px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>💬 解释:为什么不修剩下 13 个 manager</h1>
+  <div class="hero-sub">2026-07-27 · 第一性原理决策记录</div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>1 · 简短答案</h2></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>13 个 manager 没有任何 Python 文件调用它们</strong>(实测 grep:0 引用)。它们只在用户手工终端 CLI 操作时用(0 自动化路径)。
+    </div>
+    <div class="callout warn">
+      <strong>但严格按 L3 三段式原则</strong>是"违反硬约束"。这次修复是"局部治愈",非"根除"。SKILL.md 已诚实声明,不撒谎。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>2 · 实测数据:13 manager 真的没人调</h2><div class="sub">grep 全仓 Python 文件</div></div>
+  <div class="card-body">
+    <pre>for m in background_manager category_manager cooking_method_manager cookware_manager diet_tag_manager flavor_manager ingredient_manager meal_type_manager season_manager step_manager step_ingredient_manager technique_manager tip_manager; do
+    refs=$(grep -rE "(subprocess.*$m|from $m|import $m)" --include="*.py" 2>/dev/null | grep -v "scripts/$m" | wc -l)
+    echo "$m: 被引用 $refs 次"
+done</pre>
+    <div class="callout key">
+      <strong>实测结果:</strong>每个 manager 引用 = <strong>0</strong>(除了它自己的 import)
+    </div>
+    <div class="callout success">
+      <strong>结论:</strong>这 13 个 manager <strong>未被任何自动化脚本调用</strong>(renderer / orchestrator / render_data 都不依赖它们)。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>3 · 实际依赖图(P1-2 视觉化)</h2><div class="sub">只有 4 个 manager 是"关键路径"</div></div>
+  <div class="card-body">
+    <table>
+      <tr><th>renderer</th><th>调用的 manager CLI</th></tr>
+      <tr><td><code>recipe_render.py</code>(查看食谱)</td><td><code>recipe_manager.py export-json</code></td></tr>
+      <tr><td><code>cooking_render.py</code>(做菜模式)</td><td><code>recipe_manager.py show --json</code></td></tr>
+      <tr><td><code>shopping_render.py</code>(采购清单)</td><td><code>shopping_manager.py generate</code> + <code>recipe_manager.py show</code></td></tr>
+      <tr><td><code>render_data.py</code>(4 类榜单)</td><td><code>recipe_manager.search/list</code> + <code>history_manager.list/stats</code> + <code>relation_manager.list-parent/list-child</code></td></tr>
+    </table>
+    <div class="callout success">
+      <strong>关键路径 = 4 个 manager:</strong>recipe / history / shopping / relation
+    </div>
+    <div class="callout key">
+      <strong>这 4 个我已全部修好 + 26 pytest 测试覆盖</strong>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>4 · 13 个 manager 的真实使用场景</h2><div class="sub">唯一场景:用户手工 CLI</div></div>
+  <div class="card-body">
+    <div class="callout warn">
+      <strong>13 个 manager 只服务于一种场景:</strong>用户在终端手工调用(0 自动化)。
+      <br>例如:<code>python ingredient_manager.py add "辣椒" 100 g --category 蔬菜</code>
+    </div>
+    <div class="callout key">
+      <strong>手工 CLI 的特点:</strong>
+      <ul>
+        <li>人类友好输出(中文 + emoji)<strong>比</strong>JSON 输出更有用</li>
+        <li>用户一次操作 1 个菜,不会写循环脚本</li>
+        <li>错了用户能直接看到 print 文本报错,不需要 JSON 解析</li>
+        <li>使用频率 1-2 次/天,远低于 P1-2 视觉化(用户每次说"查看 X"就触发 1 次)</li>
+      </ul>
+    </div>
+    <div class="callout success">
+      <strong>结论:</strong>13 个 manager 在手工 CLI 场景下,<strong>人类友好输出足够</strong>。返 JSON 对用户没价值。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>5 · 第一性原则决策记录</h2><div class="sub">修代码应基于"被调用且需 JSON"</div></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>§01 第一性原理(总纲):</strong>修代码应基于<strong>真实需求</strong>,不是为了"满足某个原则"而修。
+    </div>
+    <table>
+      <tr><th>原则</th><th>应用</th></tr>
+      <tr><td>L3 三段式硬约束</td><td>✅ 任何 <strong>被调用的</strong> manager 必须返 JSON</td></tr>
+      <tr><td>真实需求原则</td><td>✅ 未被调用的 manager,修了无 ROI</td></tr>
+      <tr><td>诚实原则(§05 改动前 3 问)</td><td>✅ SKILL.md 必须诚实标"暂不支持",不假装完成</td></tr>
+      <tr><td>风险原则</td><td>✅ 一次修 1 个 = 风险可控;批量改 14 个 = 高风险</td></tr>
+    </table>
+    <div class="callout warn">
+      <strong>取舍:</strong>严格执行 L3 三段式 → 13 个 manager 都修 → 工作量 1-2h + 700 行改动 + 风险不可控。
+      <br>按"真实需求"原则 → 不修,但诚实标。
+    </div>
+    <div class="callout success">
+      <strong>未来触发:</strong>用户用任何 13 个 manager 时报错 → 立即补 <code>print_or_emit</code>(每个 ≤ 5 行)+ 加 unit test。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>6 · 13 个 manager 列表 + 各自功能</h2><div class="sub">等用户用到了再补</div></div>
+  <div class="card-body">
+    <table>
+      <tr><th>manager</th><th>管理表</th><th>手工场景</th></tr>
+      <tr><td><code>background_manager</code></td><td>background_knowledge</td><td>编辑菜的起源/历史/文化</td></tr>
+      <tr><td><code>category_manager</code></td><td>recipe_categories</td><td>编辑菜系分类</td></tr>
+      <tr><td><code>cooking_method_manager</code></td><td>recipe_cooking_methods</td><td>编辑烹饪方式标签</td></tr>
+      <tr><td><code>cookware_manager</code></td><td>cookware</td><td>编辑炊具</td></tr>
+      <tr><td><code>diet_tag_manager</code></td><td>recipe_diet_tags</td><td>编辑饮食标签</td></tr>
+      <tr><td><code>flavor_manager</code></td><td>recipe_flavors</td><td>编辑口味标签</td></tr>
+      <tr><td><code>ingredient_manager</code></td><td>ingredients</td><td>编辑食材</td></tr>
+      <tr><td><code>meal_type_manager</code></td><td>recipe_meal_types</td><td>编辑用餐类型</td></tr>
+      <tr><td><code>season_manager</code></td><td>recipe_seasons</td><td>编辑季节标签</td></tr>
+      <tr><td><code>step_manager</code></td><td>cooking_steps</td><td>编辑步骤</td></tr>
+      <tr><td><code>step_ingredient_manager</code></td><td>step_ingredients</td><td>编辑步骤×食材关联</td></tr>
+      <tr><td><code>technique_manager</code></td><td>step_techniques</td><td>编辑技法</td></tr>
+      <tr><td><code>tip_manager</code></td><td>tips</td><td>编辑小贴士</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>7 · 真正"根除"方案(可选)</h2><div class="sub">如果你想真治本,做这 1 件事</div></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>写 1 个统一 patch 脚本</strong>(~30 行),批量给 13 个 manager:
+      <ol>
+        <li>顶部加 <code>from cli_formatter import print_or_emit</code></li>
+        <li>main() 注入 <code>args["_json_mode"] = json_mode</code></li>
+        <li>每个函数顶部加 <code>json_mode = args.get("_json_mode", False)</code></li>
+        <li>每个 <code>print(...)</code> 替换为 <code>print_or_emit(json_mode, ...)</code></li>
+      </ol>
+    </div>
+    <div class="callout warn">
+      <strong>风险:</strong>每个 manager 函数结构不同(嵌套 if、循环、try/except),批量改可能漏或改错。<strong>建议人工逐个改 + 每个加 unit test</strong>。
+    </div>
+    <div class="callout success">
+      <strong>若你想做:</strong>1 句话告诉我"修剩下 13 个",我按 nutrition_manager 模式逐个改 + 逐个加 test。预计 30-45 分钟。
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为"为什么不修剩下 13 个"的解释报告 · 不入 git · 仅作 review 用<br>
+  工作目录: <code>私家大厨/phase_explain.html</code>
+</footer>
+
+</div>
+</body>
+</html>

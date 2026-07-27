@@ -1,0 +1,505 @@
+<!--
+私家大厨 · HELP HTML 模板(§07 §5 交付规则)
+由 scripts/render_help.py 注入数据(window.__HELP__),不直接手工编辑。
+本模板 = 渲染后的副本,view-source 应包含 <script>window.__HELP__ = {...}</script>。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_help.py · 2026-07-27">
+<title>私家大厨 HELP · 能力速查</title>
+<style>
+  /* ── Apple 风设计令牌(与 recipe_view.html / shopping_view.html / cooking_mode.html 统一) ── */
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;
+    --blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;
+    --card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;
+    --text2:#3C3C43;
+    --text3:#8E8E93;
+    --text4:#AEAEB2;
+    --success:#34C759;
+    --warn:#FF9500;
+    --warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;
+    --radius:14px;
+    --radius-sm:10px;
+    --radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.5;min-height:100vh;
+    -webkit-font-smoothing:antialiased;letter-spacing:-0.01em;
+    padding:0 0 80px 0;
+  }
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  /* ── Hero(首屏 · 5 秒定位) ── */
+  .hero{
+    background:var(--card);border-radius:var(--radius);
+    padding:28px 24px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .hero h1{font-size:32px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin-bottom:14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+  .hero-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+  .summary-cell{
+    background:var(--bg);border-radius:var(--radius-sm);
+    padding:10px;text-align:center;
+  }
+  .summary-cell .num{font-size:22px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+  .summary-cell .lbl{font-size:11px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px}
+
+  /* ── 搜索框(交互 · §07 §10 s09 大规模可用) ── */
+  .search-card{
+    background:var(--card);border-radius:var(--radius);
+    padding:14px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .search-input{
+    width:100%;border:none;background:var(--bg);
+    border-radius:var(--radius-pill);padding:10px 16px;
+    font-size:15px;font-family:var(--font);color:var(--text);
+    outline:none;
+  }
+  .search-input::placeholder{color:var(--text3)}
+
+  /* ── 唤醒词分组卡(主体 · 按 wake_word 折叠) ── */
+  .ww-card{
+    background:var(--card);border-radius:var(--radius);
+    margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    overflow:hidden;
+  }
+  .ww-header{
+    padding:16px 18px;display:flex;justify-content:space-between;align-items:center;
+    cursor:pointer;user-select:none;background:var(--card);
+    transition:background 0.15s;
+  }
+  .ww-header:hover{background:#FAFAFC}
+  .ww-name{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:-0.01em}
+  .ww-count{font-size:12px;color:var(--text3);font-variant-numeric:tabular-nums}
+  .ww-toggle{font-size:14px;color:var(--blue);transition:transform 0.2s}
+  .ww-card.open .ww-toggle{transform:rotate(180deg)}
+
+  /* ── 场景项(每场景独立卡) ── */
+  .scenarios{padding:0 8px 12px}
+  .scenario{
+    border-top:0.5px solid var(--separator);
+    padding:14px 12px;cursor:default;
+  }
+  .scenario:first-child{border-top:none}
+  .scenario-title{
+    font-size:15px;font-weight:600;color:var(--text);
+    margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .scenario-title .scenario-id{
+    font-size:11px;color:var(--text4);font-weight:400;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  /* 待开发状态徽章(§07 §4 二态) */
+  .badge-pending{
+    background:var(--warn-soft);color:var(--warn);
+    font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);
+    letter-spacing:0.3px;
+  }
+  .badge-available{
+    background:var(--blue-soft);color:var(--blue);
+    font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);
+    letter-spacing:0.3px;
+  }
+  .scenario-dimensions{
+    font-size:12px;color:var(--text3);margin-bottom:8px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .scenario-prompt{
+    background:var(--bg);border-radius:var(--radius-sm);
+    padding:10px 12px;font-size:14px;color:var(--text2);
+    margin-bottom:8px;line-height:1.5;
+    border-left:3px solid var(--blue);
+  }
+  .scenario-prompt.pending{border-left-color:var(--warn);background:rgba(255,149,0,0.05)}
+  .scenario-result{
+    font-size:13px;color:var(--text3);margin-bottom:10px;line-height:1.5;
+  }
+  .scenario-result::before{content:"→ ";color:var(--text4)}
+
+  /* ── 复制按钮(每场景独立 · §07 §10 s11) ── */
+  .copy-btn{
+    background:var(--blue);color:#fff;border:none;
+    border-radius:var(--radius-pill);padding:8px 16px;
+    font-size:13px;font-weight:500;cursor:pointer;
+    font-family:var(--font);transition:all 0.15s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .copy-btn:hover{background:#0064D2}
+  .copy-btn:active{transform:scale(0.97)}
+  .copy-btn.copied{background:var(--success)}
+  .copy-btn.failed{background:var(--danger)}
+
+  /* ── 5 状态 fallback(§04 原则 3) ── */
+  .state-empty,.state-error,.state-missing,.state-offline{
+    background:var(--card);border-radius:var(--radius);
+    padding:48px 24px;text-align:center;color:var(--text3);
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom:16px;
+  }
+  .state-empty .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state-error{color:var(--danger)}
+  .state-error .icon{font-size:48px;margin-bottom:12px}
+
+  /* ── 底部(尾部 · §07 §5 用户主动切回对话) ── */
+  .footer{
+    background:var(--card);border-radius:var(--radius);
+    padding:18px;text-align:center;margin-top:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .footer-meta{font-size:12px;color:var(--text3);margin-bottom:10px}
+  .footer-back{
+    background:var(--bg);color:var(--blue);
+    border:none;border-radius:var(--radius-pill);
+    padding:10px 20px;font-size:14px;font-weight:500;
+    font-family:var(--font);cursor:pointer;
+  }
+  .footer-back:hover{background:var(--blue-soft)}
+
+  /* ── Toast(复制反馈 · §04 原则 10 复制成功反馈) ── */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--text);color:#fff;
+    padding:12px 20px;border-radius:var(--radius);
+    font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);
+    opacity:0;pointer-events:none;transition:opacity 0.2s;
+    z-index:1000;max-width:80%;text-align:center;
+  }
+  .toast.show{opacity:1}
+  .toast.success{background:var(--success)}
+  .toast.error{background:var(--danger)}
+
+  /* ── 响应式(§07 §10 s10 跨设备) ── */
+  @media (max-width:480px){
+    .hero{padding:20px 18px}
+    .hero h1{font-size:26px}
+    .hero-summary{grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .summary-cell .num{font-size:18px}
+    .ww-header{padding:14px 14px}
+    .scenario{padding:12px 8px}
+    .scenario-prompt{font-size:13px}
+  }
+
+  /* ── 隐藏类(搜索过滤) ── */
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ──────── 首屏 Hero ──────── -->
+  <section class="hero">
+    <h1>🍳 私家大厨 HELP</h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🔖 v<span id="version"></span></span>
+    </div>
+    <div class="hero-summary">
+      <div class="summary-cell"><div class="num" id="stat-ww">0</div><div class="lbl">唤醒词</div></div>
+      <div class="summary-cell"><div class="num" id="stat-sc">0</div><div class="lbl">场景</div></div>
+      <div class="summary-cell"><div class="num" id="stat-pending">0</div><div class="lbl">待开发</div></div>
+    </div>
+  </section>
+
+  <!-- ──────── 5 状态 fallback 容器(由 JS 切换显示) ──────── -->
+  <div id="state-empty" class="state-empty hidden">
+    <div class="icon">📭</div>
+    <div>场景资产为空</div>
+    <div style="font-size:12px;margin-top:8px">检查 references/scenarios.yaml 是否存在</div>
+  </div>
+  <div id="state-error" class="state-error hidden">
+    <div class="icon">⚠️</div>
+    <div id="error-msg">数据加载失败</div>
+  </div>
+  <div id="state-missing" class="state-empty hidden">
+    <div class="icon">🔍</div>
+    <div>未找到匹配的场景</div>
+    <div style="font-size:12px;margin-top:8px">试试其他关键词,或检查拼写</div>
+  </div>
+
+  <!-- ──────── 主体 · 唤醒词分组 ──────── -->
+  <div id="main-content">
+
+    <!-- 搜索框(§07 §10 s09 大规模可用 · 60+ 场景必须能定位) -->
+    <div class="search-card">
+      <input id="search-input" class="search-input"
+             type="search" inputmode="search"
+             placeholder="搜索唤醒词/场景标题/prompt 关键词…"
+             autocomplete="off">
+    </div>
+
+    <!-- 唤醒词卡片容器(由 JS 动态生成) -->
+    <div id="ww-list"></div>
+  </div>
+
+  <!-- ──────── 尾部 Footer ──────── -->
+  <footer class="footer">
+    <div class="footer-meta">
+      复制任意场景的 prompt → 切回 AI 对话 → 粘贴 → AI 自动执行<br>
+      待开发场景(<span style="color:var(--warn);font-weight:600">【待开发】</span>)的 prompt 仍可复制,但 AI 必须明确告知该能力未实现
+    </div>
+    <button class="footer-back" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      ↑ 回到顶部
+    </button>
+  </footer>
+
+</div>
+
+<!-- 复制反馈 toast -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ──────── 占位符 · 渲染器注入点(§04 原则 4 唯一) ──────── -->
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  // ── 数据守卫(§04 原则 4 #3 防未注入白屏) ──
+  if (typeof window.__HELP__ !== 'object' || window.__HELP__ === null) {
+    showState('error', '数据未注入(window.__HELP__ 缺失)。这是模板,不是最终交付。请用 scripts/render_help.py 生成。');
+    return;
+  }
+  const DATA = window.__HELP__;
+
+  // ── XSS 防护(§04 原则 4 #5 escapeHTML) ──
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // ── 状态显示(5 状态 fallback) ──
+  function showState(state, msg) {
+    document.getElementById('main-content').classList.add('hidden');
+    ['empty', 'error', 'missing'].forEach(s => {
+      document.getElementById('state-' + s).classList.add('hidden');
+    });
+    const el = document.getElementById('state-' + state);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg && state === 'error') {
+        document.getElementById('error-msg').textContent = msg;
+      }
+    }
+  }
+
+  // ── 主渲染 ──
+  function render() {
+    // 头部统计
+    document.getElementById('generated-at').textContent = DATA.generated_at || '未知';
+    document.getElementById('version').textContent = DATA.meta?.version || '?';
+    document.getElementById('stat-ww').textContent = DATA.aliases_expanded_count || DATA.wake_words?.length || 0;
+    document.getElementById('stat-sc').textContent = DATA.scenarios?.length || 0;
+    document.getElementById('stat-pending').textContent = (DATA.scenarios || []).filter(s => s.status === '【待开发】').length;
+
+    // 空状态
+    if (!DATA.wake_words || DATA.wake_words.length === 0) {
+      showState('empty');
+      return;
+    }
+
+    // 主体渲染(按 wake_word 分组,聚合该词下所有场景)
+    const list = document.getElementById('ww-list');
+    list.innerHTML = '';
+
+    DATA.wake_words.forEach(ww => {
+      const card = document.createElement('div');
+      card.className = 'ww-card';
+      card.dataset.ww = esc(ww.name);
+
+      // 头部(可点击折叠)
+      const header = document.createElement('div');
+      header.className = 'ww-header';
+      header.innerHTML = `
+        <div class="ww-name">
+          <span>📌</span>
+          <span>${esc(ww.name)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="ww-count">${ww.scenarios.length} 场景${ww.pending_count > 0 ? ' · <span style="color:var(--warn)">' + ww.pending_count + ' 待开发</span>' : ''}</span>
+          <span class="ww-toggle">▼</span>
+        </div>
+      `;
+      header.addEventListener('click', () => {
+        card.classList.toggle('open');
+      });
+      card.appendChild(header);
+
+      // 场景列表
+      const scenariosDiv = document.createElement('div');
+      scenariosDiv.className = 'scenarios';
+      scenariosDiv.style.display = 'none';  // 默认折叠(60+ 场景全展开太冗长)
+
+      ww.scenarios.forEach(sc => {
+        const item = document.createElement('div');
+        item.className = 'scenario';
+        item.dataset.searchText = (sc.scenario_title + ' ' + sc.prompt + ' ' + sc.result + ' ' + sc.wake_word).toLowerCase();
+        const isPending = sc.status === '【待开发】';
+        item.innerHTML = `
+          <div class="scenario-title">
+            <span class="${isPending ? 'badge-pending' : 'badge-available'}">${isPending ? '【待开发】' : '✓ 可用'}</span>
+            <span>${esc(sc.scenario_title)}</span>
+            <span class="scenario-id">${esc(sc.scenario_id)}</span>
+          </div>
+          ${sc.dimensions && Object.keys(sc.dimensions).length > 0
+            ? `<div class="scenario-dimensions">维度: ${esc(Object.entries(sc.dimensions).map(([k,v]) => k + '=' + v).join(', '))}</div>`
+            : ''}
+          <div class="scenario-prompt${isPending ? ' pending' : ''}">${esc(sc.prompt)}</div>
+          <div class="scenario-result">${esc(sc.result)}</div>
+          <button class="copy-btn" data-scenario-id="${esc(sc.scenario_id)}" data-prompt="${esc(sc.prompt)}">
+            📋 复制 prompt
+          </button>
+        `;
+        scenariosDiv.appendChild(item);
+      });
+
+      card.appendChild(scenariosDiv);
+      list.appendChild(card);
+
+      // 头部点击切换场景显示
+      header.addEventListener('click', () => {
+        scenariosDiv.style.display = card.classList.contains('open') ? 'block' : 'none';
+      });
+    });
+  }
+
+  // ── 复制按钮(每场景独立 · §07 §10 s11) ──
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.copy-btn');
+    if (!btn) return;
+    const prompt = btn.dataset.prompt || '';
+    const id = btn.dataset.scenarioId || '';
+
+    try {
+      // 优先用 Clipboard API(现代浏览器)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(prompt);
+      } else {
+        // 降级方案:execCommand(老浏览器 + 权限被拒时)
+        const ta = document.createElement('textarea');
+        ta.value = prompt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (!ok) throw new Error('execCommand 失败');
+      }
+
+      // 视觉反馈
+      btn.classList.add('copied');
+      btn.textContent = '✓ 已复制';
+      showToast('✓ 已复制,粘贴给 AI 即可', 'success');
+
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '📋 复制 prompt';
+      }, 2500);
+    } catch (err) {
+      btn.classList.add('failed');
+      btn.textContent = '⚠️ 复制失败';
+      showToast('⚠️ 复制失败,请用 Ctrl+C 手动复制', 'error');
+      setTimeout(() => {
+        btn.classList.remove('failed');
+        btn.innerHTML = '📋 复制 prompt';
+      }, 3500);
+    }
+  });
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+      t.className = 'toast';
+    }, 2500);
+  }
+
+  // ── 搜索过滤(§07 §10 s09) ──
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.ww-card');
+
+    if (!q) {
+      // 清空搜索:恢复全部
+      cards.forEach(c => c.classList.remove('hidden'));
+      document.querySelectorAll('.scenario').forEach(s => s.classList.remove('hidden'));
+      document.getElementById('state-missing').classList.add('hidden');
+      return;
+    }
+
+    let totalMatch = 0;
+    cards.forEach(card => {
+      const wwName = card.dataset.ww.toLowerCase();
+      const scenarios = card.querySelectorAll('.scenario');
+      let cardMatch = wwName.includes(q) ? 1 : 0;
+      scenarios.forEach(sc => {
+        const text = sc.dataset.searchText || '';
+        if (text.includes(q)) {
+          sc.classList.remove('hidden');
+          cardMatch++;
+          totalMatch++;
+        } else {
+          sc.classList.add('hidden');
+        }
+      });
+      if (cardMatch > 0) {
+        card.classList.remove('hidden');
+        card.classList.add('open');
+        // 折叠时显示场景
+        const scDiv = card.querySelector('.scenarios');
+        if (scDiv) scDiv.style.display = 'block';
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    // 全部不匹配提示
+    if (totalMatch === 0 && !wwNameHasMatch(cards, q)) {
+      showState('missing');
+    } else {
+      document.getElementById('state-missing').classList.add('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+    }
+  });
+
+  function wwNameHasMatch(cards, q) {
+    for (const c of cards) {
+      if (c.dataset.ww.toLowerCase().includes(q)) return true;
+    }
+    return false;
+  }
+
+  // ── 启动 ──
+  try {
+    render();
+  } catch (err) {
+    showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
+    console.error('HELP render error:', err);
+  }
+})();
+</script>
+
+</body>
+</html>

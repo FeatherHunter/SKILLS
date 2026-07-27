@@ -204,11 +204,24 @@ function esc(s) {
 // ===== 主流程 =====
 try {
   // 5 守卫(§04 原则 4):数据未注入
-  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
-    throw new Error('数据未注入');
+  // 优先读 window.__DATA__(§04 渲染器标准模式),回退到 <script id="payload"> 元素 (本 skill 注入器模式)
+  let data = window.__DATA__;
+  if (typeof data !== 'object' || data === null) {
+    const payloadEl = document.getElementById('payload');
+    if (payloadEl && payloadEl.textContent) {
+      try {
+        data = JSON.parse(payloadEl.textContent);
+      } catch (parseErr) {
+        throw new Error('payload JSON 解析失败: ' + parseErr.message);
+      }
+    } else {
+      throw new Error('数据未注入（既无 window.__DATA__ 也无 #payload 元素）');
+    }
   }
 
-  const data = window.__DATA__;
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('数据未注入');
+  }
   if (data.status === 'error' || !data.data || !data.data.wake_words) {
     showState('Error');
     throw new Error(data.message || '数据不完整');

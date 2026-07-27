@@ -18,6 +18,18 @@ description: >
 metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7", "pip": ["cryptography"] } } }
 ---
 
+## 📘 关于 `居家管家.html`(总纲 04 §原则 4 · 镜像)
+
+**本 HTML 文件就是 `python3 scripts/home_manager.py help` 输出的精确副本。**
+
+- 修改唤醒词/场景 → 改 `references/scenarios.yaml` → 跑 `python3 scripts/build_manual.py` 同步。
+- 不要手动编辑 `居家管家.html`(脚本会覆盖)。
+- 测试 `tests/test_manual_sync.py` 用 SHA256 哈希断言字节一致,**若有人忘了同步,测试失败报警**(不阻断 commit,只报警)。
+- 同步脚本自动注入 `HELP_FIXED_TIMESTAMP="0000-00-00 00:00 (快照)"`,确保可重现生成(不被 `datetime.now()` 干扰)。
+
+> **总纲 04 §原则 4(本 skill 改造版,2026-07-27)**: 每个技能目录都需要有 `{技能名}.html` 文件,**该文件就是技能 HELP HTML 最新版本的复制品**。
+
+
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到物品价格→询问是否记录支出；物品是食品/饮料→询问是否记录卡路里）。详见路由器的联动规则表。
 
 ## ⚠️ HTML 同步规范（最高优先级）

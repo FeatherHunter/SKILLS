@@ -34,12 +34,15 @@ def build_help_payload() -> dict:
             seen.add(ww)
             groups.append({"wake_word": ww, "scenarios": grouped[ww]})
 
+    # 时间戳: 支持环境变量固定(构建时 / 测试时一致),默认当前时间
+    import os
+    ts = os.environ.get("HELP_FIXED_TIMESTAMP") or datetime.now().strftime('%Y-%m-%d %H:%M')
     return {
         "status": "ok",
         "data": {
             "summary": {
                 "title": "居家管家 · 能力速查",
-                "subtitle": f"由 references/scenarios.yaml 渲染(总纲 07 §唯一事实源) · {datetime.now().strftime('%Y-%m-%d %H:%M')} 更新",
+                "subtitle": f"由 references/scenarios.yaml 渲染(总纲 07 §唯一事实源) · {ts} 更新",
                 "metrics": [
                     {"label": "唤醒词", "value": str(len(groups))},
                     {"label": "场景", "value": str(len(scenarios))},

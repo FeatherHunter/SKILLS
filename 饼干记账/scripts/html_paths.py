@@ -37,7 +37,7 @@ COMMAND_NAMES = {
     "breakdown": "分类明细",
     "overview":  "收支总览",
     "stats":     "记账统计",
-    "help":      "能力速查",
+    "help":      "饼干记账_HELP",  # v2.5.1: 保留旧命名(skill 前缀),避免与卡路里 HELP 撞名
 }
 
 

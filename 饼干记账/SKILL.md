@@ -382,7 +382,7 @@ python3 scripts/bill_inject.py search "咖啡"
 ```bash
 # 默认输出
 python3 scripts/render_help.py
-# 输出路径（v2.5 同步卡路里 §4.1）：$DATA_DIR/biscuit_accountant_html/能力速查_<YYYYMMDD>_<HHMMSS>[_N].html
+# 输出路径（v2.5.1）：$DATA_DIR/biscuit_accountant_html/饼干记账_HELP_<YYYYMMDD>_<HHMMSS>[_N].html
 
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html

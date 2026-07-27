@@ -115,8 +115,12 @@ def load_scenarios() -> tuple[list[dict], str | None]:
     return data, None
 
 
+# === group_by_wake_word 已弃用 · 改用 group_by_category(下方)===
+# group_by_wake_word 保留仅用于向后兼容占位,新代码请用 group_by_category。
 def group_by_wake_word(scenarios: list[dict]) -> list[dict]:
-    """按 wake_word 分组,生成 sections"""
+    """[已弃用] 按 wake_word 分组,生成 sections。
+    新代码请用 group_by_category(categories/wake_words/scenarios 三层结构)。
+    """
     groups = OrderedDict()
     for sc in scenarios:
         wake = sc["wake_word"]
@@ -163,17 +167,93 @@ def escape_for_js(s: str) -> str:
     )
 
 
-def build_payload(scenarios: list[dict], sections: list[dict]) -> dict:
-    """构造注入 payload"""
-    return {
-        "wakeword_count": len(sections),
-        "scenario_count": len(scenarios),
-        "pending_count": sum(1 for s in scenarios if s.get("status") == "【待开发】"),
-        "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "sections": [
-            {
-                "wake_word": sec["wake_word"],
-                "pending_count": sec["pending_count"],
+# === 模块分类映射(作息管家 · 5 大模块 · 对标饼干记账 5 类)===
+# 每个唤醒词归类到一个模块(category)。硬编码而不修改 scenarios.yaml(不破坏 §07 契约)。
+CATEGORY_MAP = [
+    {
+        "key": "write",
+        "name": "写入与同步",
+        "icon": "📝",
+        "desc": "记录作息 / 同步消息 / 增量同步",
+        "wake_words": ["#0 记作息", "#1 准备消息", "#2 同步作息", "#3 增量同步"],
+    },
+    {
+        "key": "query",
+        "name": "查询与浏览",
+        "icon": "🔍",
+        "desc": "查作息 / 查日程 / 查状态 / 时间轴 / 范围",
+        "wake_words": [
+            "#4 今天总结", "#5 汇总作息", "#6 查作息", "#7 查作息详情",
+            "#8 查作息时间轴", "#9 查作息范围", "#11 查作息状态",
+            "#12 查日程", "#15 24h 概览", "#16 查多日计划", "#23 按 ID 查记录",
+        ],
+    },
+    {
+        "key": "plan",
+        "name": "日程与计划",
+        "icon": "📅",
+        "desc": "计划 CRUD / 商量 / 复盘 / 飞书同步",
+        "wake_words": [
+            "#13 补计划", "#14 复盘", "#17 商量计划",
+            "#18 改计划", "#19 删计划", "#20 日程管家同步",
+        ],
+    },
+    {
+        "key": "analyze",
+        "name": "分析与洞察",
+        "icon": "🔬",
+        "desc": "对比 / 修正 / 类别深挖 / 异常检测 / 摘要",
+        "wake_words": [
+            "#24 写作息摘要", "#25 对比两个月", "#26 修正作息",
+            "T4 类别深挖", "T5 异常检测",
+        ],
+    },
+    {
+        "key": "admin",
+        "name": "辅助与管理",
+        "icon": "⚙️",
+        "desc": "飞书探测 / 初始化数据库",
+        "wake_words": ["#21 飞书探测", "#22 初始化数据库"],
+    },
+]
+
+# 反向索引:wake_word → category_key
+WAKE_WORD_TO_CATEGORY = {}
+for _cat in CATEGORY_MAP:
+    for _ww in _cat["wake_words"]:
+        WAKE_WORD_TO_CATEGORY[_ww] = _cat["key"]
+
+
+def group_by_category(scenarios: list[dict]) -> list[dict]:
+    """按 category → wake_word 二级分组,生成 categories 列表
+
+    第一性:category 硬编码在 CATEGORY_MAP(对标饼干记账的 _categories 字段),
+    scenarios.yaml 不变(§07 契约不动)。未在 CATEGORY_MAP 里的 wake_word
+    自动归到 "_uncategorized" 类别(防御性兜底)。
+    """
+    # 第一步:category → wake_word → scenarios
+    bucket: dict[str, dict[str, list[dict]]] = {}
+    for s in scenarios:
+        wake = s["wake_word"]
+        cat_key = WAKE_WORD_TO_CATEGORY.get(wake, "_uncategorized")
+        if cat_key not in bucket:
+            bucket[cat_key] = {}
+        if wake not in bucket[cat_key]:
+            bucket[cat_key][wake] = []
+        bucket[cat_key][wake].append(s)
+
+    # 第二步:按 CATEGORY_MAP 顺序组装 categories
+    categories = []
+    for cat in CATEGORY_MAP:
+        cat_key = cat["key"]
+        if cat_key not in bucket:
+            continue
+        wws = []
+        for wake, scs in bucket[cat_key].items():
+            pending = sum(1 for s in scs if s.get("status") == "【待开发】")
+            wws.append({
+                "wake_word": wake,
+                "pending_count": pending,
                 "scenarios": [
                     {
                         "wake_word": s["wake_word"],
@@ -184,11 +264,62 @@ def build_payload(scenarios: list[dict], sections: list[dict]) -> dict:
                         "status": s.get("status") or "",
                         "result": s.get("result") or "",
                     }
-                    for s in sec["scenarios"]
+                    for s in scs
                 ],
-            }
-            for sec in sections
-        ],
+            })
+        pending_count = sum(ww["pending_count"] for ww in wws)
+        categories.append({
+            "key": cat_key,
+            "name": cat["name"],
+            "icon": cat["icon"],
+            "desc": cat.get("desc", ""),
+            "wake_words": wws,
+            "pending_count": pending_count,
+        })
+
+    # 兜底:未在 CATEGORY_MAP 的 wake_word 放到 _uncategorized 类别
+    if "_uncategorized" in bucket:
+        wws = []
+        for wake, scs in bucket["_uncategorized"].items():
+            pending = sum(1 for s in scs if s.get("status") == "【待开发】")
+            wws.append({
+                "wake_word": wake,
+                "pending_count": pending,
+                "scenarios": [
+                    {
+                        "wake_word": s["wake_word"],
+                        "scenario_id": s["scenario_id"],
+                        "scenario_title": s["scenario_title"],
+                        "dimensions": s.get("dimensions") or {},
+                        "prompt": s.get("prompt") or "",
+                        "status": s.get("status") or "",
+                        "result": s.get("result") or "",
+                    }
+                    for s in scs
+                ],
+            })
+        pending_count = sum(ww["pending_count"] for ww in wws)
+        categories.append({
+            "key": "_uncategorized",
+            "name": "未分类(防御性兜底)",
+            "icon": "❓",
+            "desc": "未在 CATEGORY_MAP 中登记的唤醒词",
+            "wake_words": wws,
+            "pending_count": pending_count,
+        })
+
+    return categories
+
+
+def build_payload(scenarios: list[dict], categories: list[dict]) -> dict:
+    """构造注入 payload(3 层折叠:category → wake_word → scenario)"""
+    return {
+        "category_count": len(categories),
+        "wakeword_count": sum(len(c["wake_words"]) for c in categories),
+        "scenario_count": len(scenarios),
+        "pending_count": sum(1 for s in scenarios if s.get("status") == "【待开发】"),
+        "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "categories": categories,
     }
 
 
@@ -197,8 +328,6 @@ def inject_data(template: str, payload: dict) -> str:
     # 1. 占位符唯一性校验
     if template.count("<!--INJECT-DATA-->") != 1:
         raise ValueError(f"模板占位符 <!--INJECT-DATA--> 必须唯一(实际 {template.count('<!--INJECT-DATA-->')} 处)")
-    if template.count("<!--INJECT-SECTIONS-->") != 1:
-        raise ValueError(f"模板占位符 <!--INJECT-SECTIONS--> 必须唯一")
 
     # 2. JSON 序列化 + 防 XSS 转义
     json_str = json.dumps(payload, ensure_ascii=False)
@@ -222,17 +351,18 @@ def render(out_path: Path) -> dict:
     if error:
         # 失败仍生成 HTML(走 5 状态 fallback:错)
         payload = {
+            "category_count": 0,
             "wakeword_count": 0,
             "scenario_count": 0,
             "pending_count": 0,
             "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "sections": [],
+            "categories": [],
             "error": error,
         }
-        sections = []
+        categories = []
     else:
-        sections = group_by_wake_word(scenarios)
-        payload = build_payload(scenarios, sections)
+        categories = group_by_category(scenarios)
+        payload = build_payload(scenarios, categories)
 
     # 2. 读模板
     if not TEMPLATE_PATH.exists():

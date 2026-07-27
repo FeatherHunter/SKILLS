@@ -2,209 +2,314 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作息管家 · HELP 中心 · §07 契约</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>📚 作息管家 · 唤醒词速查台</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
-    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
-    --blue:#007aff;--blue2:#0a63ce;
-    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
-    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f6f7; --card: #fff; --text: #1c1c1e; --sub: #6b6b6f;
+    --accent: #0071e3; --green: #34c759; --orange: #ff9500; --red: #ff3b30;
+    --code-bg: #f0f0f2; --border: #e5e5e7; --warn-bg: #fff7e6;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --r: 8px; --r-sm: 6px; --r-lg: 14px;
   }
-  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:960px;margin:0 auto;padding:48px 24px 96px}
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 0 16px 40px; }
 
-  /* Hero */
-  .hero{background:linear-gradient(135deg,#e8f0ff 0%,#d6e5ff 100%);border-radius:24px;padding:40px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
-  .hero .eyebrow{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
-  .hero h1{font-size:34px;line-height:1.15;letter-spacing:-.025em;margin-bottom:12px}
-  .hero .lead{font-size:15px;color:var(--fg2);max-width:720px;margin-bottom:18px}
-  .hero .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
-  .hero .stats b{color:var(--blue2);font-variant-numeric:tabular-nums}
+  /* ===== HERO ===== */
+  .hero { background: linear-gradient(135deg, #fafbfc, #f0f4f8); padding: 16px 0 12px; }
+  .hero h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; line-height: 1.15; margin: 0 0 2px; }
+  .hero .sub { color: var(--accent); font-size: 13px; font-weight: 500; margin: 0 0 6px; }
+  .hero .stats { margin: 4px 0 0; display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--sub); }
+  .hero .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
 
-  /* Search */
-  .search{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-  .search input{flex:1;border:none;outline:none;font-size:15px;background:transparent;color:var(--fg);font-family:inherit}
-  .search input::placeholder{color:var(--fg3)}
-  .search .icon{color:var(--fg3);font-size:16px}
+  /* ===== 搜索 + 折叠控制 ===== */
+  .controls {
+    display: flex; gap: 8px; align-items: center;
+    padding: 10px 0; position: sticky; top: 0; z-index: 10;
+    background: rgba(245, 246, 247, 0.92);
+    backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px);
+  }
+  .controls input {
+    flex: 1; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r-sm);
+    background: var(--card); font-size: 13px; outline: none;
+    transition: border-color .15s;
+  }
+  .controls input:focus { border-color: var(--accent); }
+  .controls button {
+    padding: 6px 12px; border: 1px solid var(--border); background: var(--card);
+    border-radius: var(--r-sm); font-size: 12px; cursor: pointer;
+    color: var(--text); font-weight: 500; transition: all .15s;
+  }
+  .controls button:hover { background: #fafbfc; border-color: var(--accent); color: var(--accent); }
 
-  /* Wake word section */
-  .wake-section{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);overflow:hidden}
-  .wake-section > .wake-header{padding:18px 22px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:12px;transition:background .15s;border-bottom:1px solid transparent}
-  .wake-section > .wake-header:hover{background:#fafbff}
-  .wake-section.open > .wake-header{border-bottom-color:var(--line)}
-  .wake-section > .wake-header .toggle{font-size:18px;color:var(--fg3);width:18px;text-align:center;transition:transform .2s}
-  .wake-section.open > .wake-header .toggle{transform:rotate(90deg);color:var(--blue2)}
-  .wake-section > .wake-header .name{font-size:16px;font-weight:600;color:var(--fg);letter-spacing:-.01em}
-  .wake-section > .wake-header .count{font-size:12px;color:var(--fg3);background:#f0f0f2;padding:3px 10px;border-radius:6px;font-weight:600}
-  .wake-section > .wake-header .pending{font-size:12px;color:var(--danger);background:#ffe5e0;padding:3px 10px;border-radius:6px;font-weight:600;display:none}
-  .wake-section.has-pending > .wake-header .pending{display:inline-block}
+  /* ===== 3 层折叠 details ===== */
+  .cat-block { margin-bottom: 12px; border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow); background: var(--card); }
+  .cat-block > summary {
+    list-style: none; cursor: pointer; user-select: none;
+    padding: 11px 14px; display: flex; align-items: center; gap: 8px;
+    font-weight: 600; font-size: 14px;
+    transition: background .15s;
+  }
+  .cat-block > summary:hover { background: #fafbfc; }
+  .cat-block > summary::-webkit-details-marker { display: none; }
+  .cat-block > summary::before {
+    content: '▸'; font-size: 12px; color: var(--sub);
+    transition: transform .2s; width: 14px; display: inline-block;
+  }
+  .cat-block[open] > summary::before { transform: rotate(90deg); color: var(--accent); }
+  .cat-block > summary > * { pointer-events: none; }
+  .cat-block .cat-icon { font-size: 16px; }
+  .cat-block .cat-name { flex: 1; }
+  .cat-block .cat-count { font-size: 11px; color: var(--sub); background: var(--code-bg); padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .cat-block .cat-pending { font-size: 11px; color: var(--orange); background: var(--warn-bg); padding: 2px 8px; border-radius: 4px; font-weight: 500; display: none; }
+  .cat-block.has-pending .cat-pending { display: inline-block; }
+  .cat-block .cat-desc { font-size: 11px; color: var(--sub); font-weight: 400; margin-top: 2px; flex-basis: 100%; }
+  .cat-block > .cat-content { padding: 0 14px 12px; }
 
-  .wake-section > .scenarios{display:none;padding:0 22px 18px}
-  .wake-section.open > .scenarios{display:block}
+  .ww-block { margin-top: 8px; border-left: 2px solid var(--code-bg); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: #fafbfc; }
+  .ww-block > summary {
+    list-style: none; cursor: pointer; user-select: none;
+    padding: 7px 12px; display: flex; align-items: center; gap: 6px;
+    font-weight: 500; font-size: 13px; color: var(--text);
+    transition: background .15s;
+  }
+  .ww-block > summary:hover { background: #f5f6f7; }
+  .ww-block > summary::-webkit-details-marker { display: none; }
+  .ww-block > summary::before {
+    content: '▸'; font-size: 11px; color: var(--sub);
+    transition: transform .2s; width: 12px; display: inline-block;
+  }
+  .ww-block[open] > summary::before { transform: rotate(90deg); color: var(--accent); }
+  .ww-block > summary > * { pointer-events: none; }
+  .ww-block .ww-name { flex: 1; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .ww-block .ww-count { font-size: 11px; color: var(--sub); background: var(--card); padding: 1px 7px; border-radius: 3px; }
+  .ww-block .ww-pending { font-size: 11px; color: var(--orange); background: var(--warn-bg); padding: 1px 7px; border-radius: 3px; margin-left: 4px; display: none; }
+  .ww-block.has-pending .ww-pending { display: inline-block; }
+  .ww-block > .ww-content { padding: 0 12px 8px 18px; }
 
-  /* Scenario card */
-  .scenario{padding:14px 0;border-bottom:1px dashed var(--line)}
-  .scenario:last-child{border-bottom:none}
-  .scenario .title{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .scenario .badge{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.02em}
-  .scenario .badge.avail{background:#e3f9e5;color:#1f8c3d}
-  .scenario .badge.pending{background:#ffe5e0;color:#d63a1a}
-  .scenario .id{font-size:11px;color:var(--fg3);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-bottom:8px;display:block}
-  .scenario .dimensions{font-size:12px;color:var(--fg3);margin-bottom:8px}
-  .scenario .dimensions b{color:var(--fg2);font-weight:600}
-  .scenario .prompt{background:var(--soft);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--fg);margin-bottom:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
-  .scenario .result{font-size:12px;color:var(--fg2);margin-bottom:10px}
-  .scenario .result b{color:var(--fg);font-weight:600}
-  .scenario .copy-btn{font-size:12px;color:var(--blue);background:#e8f0ff;border:1px solid #c5d9f5;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600;font-family:inherit;transition:all .15s}
-  .scenario .copy-btn:hover{background:var(--blue);color:#fff}
-  .scenario .copy-btn.copied{background:var(--good);color:#fff;border-color:var(--good)}
-  .scenario .copy-btn.failed{background:var(--danger);color:#fff;border-color:var(--danger)}
+  .sc-block {
+    margin-top: 6px; padding: 8px 10px;
+    background: var(--card); border-radius: var(--r-sm); border: 1px solid var(--border);
+  }
+  .sc-block.pending { border-left: 3px solid var(--orange); }
+  .sc-block > summary {
+    list-style: none; cursor: pointer; user-select: none;
+    padding: 0; display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 500; color: var(--text);
+  }
+  .sc-block > summary::-webkit-details-marker { display: none; }
+  .sc-block > summary::before {
+    content: '▸'; font-size: 10px; color: var(--sub);
+    transition: transform .2s; width: 10px; display: inline-block;
+  }
+  .sc-block[open] > summary::before { transform: rotate(90deg); color: var(--accent); }
+  .sc-block > summary > * { pointer-events: none; }
+  .sc-block .sc-id { font-size: 10px; color: var(--sub); font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .sc-block .sc-status { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; margin-left: auto; }
+  .sc-block .sc-status.avail { background: #e8f5e9; color: #2e7d32; }
+  .sc-block .sc-status.pending { background: var(--warn-bg); color: var(--orange); }
+  .sc-block > .sc-content { padding: 8px 0 0 16px; }
+  .sc-dim-list { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+  .sc-dim { font-size: 10px; color: var(--sub); background: var(--code-bg); padding: 2px 7px; border-radius: 3px; }
+  .sc-prompt {
+    background: var(--code-bg); border-radius: var(--r-sm); padding: 8px 12px;
+    font-size: 12px; color: var(--text); margin: 6px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word; line-height: 1.45;
+  }
+  .sc-result { font-size: 11px; color: var(--sub); margin-bottom: 8px; }
+  .sc-result b { color: var(--text); font-weight: 500; }
+  .copy-btn {
+    padding: 5px 10px; border: 1px solid var(--border); background: var(--card);
+    border-radius: var(--r-sm); font-size: 11px; cursor: pointer;
+    color: var(--accent); font-weight: 500; transition: all .15s;
+  }
+  .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+  .copy-btn.failed { background: var(--red); color: #fff; border-color: var(--red); }
 
-  /* Footer */
-  .footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);font-size:12px;color:var(--fg3);text-align:center}
+  /* ===== Empty / 隐藏 ===== */
+  .empty { text-align: center; padding: 40px 20px; color: var(--sub); font-size: 13px; }
+  .cat-block.hidden, .ww-block.hidden, .sc-block.hidden { display: none; }
 
-  /* Empty state */
-  .empty{text-align:center;padding:60px 24px;color:var(--fg3);font-size:14px}
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(28, 28, 30, 0.92); color: #fff; padding: 9px 16px;
+    border-radius: var(--r); font-size: 13px; z-index: 100;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .toast.show { opacity: 1; }
 
-  /* Mobile */
+  /* ===== Footer ===== */
+  .footer { text-align: center; color: var(--sub); font-size: 11px; padding: 16px 0; }
+
+  /* ===== Mobile ===== */
   @media (max-width: 640px) {
-    .wrap{padding:24px 16px 64px}
-    .hero{padding:28px 22px;border-radius:18px}
-    .hero h1{font-size:24px}
-    .hero .stats{gap:12px;font-size:12px}
-    .wake-section > .wake-header{padding:14px 16px}
-    .wake-section > .scenarios{padding:0 16px 14px}
-    .scenario .prompt{font-size:12px}
+    .container { padding: 0 12px 32px; }
+    .hero h1 { font-size: 18px; }
+    .cat-block > summary { padding: 9px 12px; font-size: 13px; }
+    .ww-block > summary { padding: 7px 10px; font-size: 12px; }
+    .sc-block > summary { font-size: 12px; }
+    .controls button { padding: 5px 10px; font-size: 11px; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <!-- ============ HERO ============ -->
-  <div class="hero">
-    <div class="eyebrow">§07 HELP · 场景完备性契约</div>
-    <h1>作息管家 · 能力速查</h1>
-    <div class="lead">所有业务唤醒词的合法场景清单 + 稳定 prompt(可直接复制给 AI)。prompt 不暴露 CLI / 数据库 / 模板路径,只描述用户意图与预期结果。</div>
+<div class="hero">
+  <div class="container">
+    <h1>📚 作息管家 · 唤醒词速查台</h1>
+    <div class="sub">▸ 模块 → 唤醒词 → 场景 → 复制 prompt → 贴给 AI</div>
     <div class="stats">
+      <span><b id="stat-categories">—</b> 模块</span>
       <span><b id="stat-wakewords">—</b> 唤醒词</span>
       <span><b id="stat-scenarios">—</b> 场景</span>
-      <span><b id="stat-pending" style="color:var(--danger)">—</b> 待开发</span>
+      <span><b id="stat-pending" style="color:var(--orange)">—</b> 待开发</span>
       <span>生成于 <b id="stat-generated">—</b></span>
     </div>
   </div>
-
-  <!-- ============ SEARCH ============ -->
-  <div class="search">
-    <span class="icon">🔍</span>
-    <input id="search" type="text" placeholder="搜索唤醒词 / 场景标题 / prompt 关键词..." autocomplete="off">
-  </div>
-
-  <!-- ============ WAKE WORD SECTIONS ============ -->
-  <div id="sections">
-    <!--INJECT-SECTIONS-->
-  </div>
-
-  <!-- ============ EMPTY STATE ============ -->
-  <div class="empty" id="empty" style="display:none">没有匹配的场景</div>
-
-  <!-- ============ FOOTER ============ -->
-  <div class="footer">
-    作息管家 HELP 中心 · 由 <code>scripts/help_render.py</code> 生成 · 数据源 <code>references/scenarios.yaml</code><br>
-    遵循总纲 V1.0 §07 HELP 与场景完备性契约 · 不展示 HELP 唤醒词自身
-  </div>
-
 </div>
+
+<div class="container">
+  <div class="controls">
+    <input id="search" type="search" placeholder="🔍 搜索唤醒词 / 场景 / prompt..." autocomplete="off">
+    <button id="expandAll" type="button">📂 全部展开</button>
+    <button id="collapseAll" type="button">📁 全部折叠</button>
+  </div>
+
+  <div id="mainContent"></div>
+
+  <div class="footer">
+    作息管家 · <code>scripts/help_render.py</code> 渲染 · 数据源 <code>references/scenarios.yaml</code><br>
+    遵循总纲 V1.0 §07 HELP 与场景完备性契约 · 3 层折叠 · 默认折叠
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
 
 <script>
 window.__SCENARIOS__ = <!--INJECT-DATA-->;
 
 (function(){
+  // === 工具函数 ===
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+
   // === 1. 渲染统计 ===
-  var data = window.__SCENARIOS__;
+  const data = window.__SCENARIOS__;
+  if (!data) {
+    document.getElementById('mainContent').innerHTML = '<div class="empty">⚠ 数据加载失败</div>';
+    return;
+  }
+  document.getElementById('stat-categories').textContent = data.category_count;
   document.getElementById('stat-wakewords').textContent = data.wakeword_count;
   document.getElementById('stat-scenarios').textContent = data.scenario_count;
   document.getElementById('stat-pending').textContent = data.pending_count;
   document.getElementById('stat-generated').textContent = data.generated_at;
 
-  // === 2. 渲染 sections (按 wake_word 分组) ===
-  var sectionsEl = document.getElementById('sections');
-  data.sections.forEach(function(sec){
-    var el = document.createElement('div');
-    el.className = 'wake-section';
-    if (sec.pending_count > 0) el.classList.add('has-pending');
-    el.setAttribute('data-wake', sec.wake_word.toLowerCase());
-    el.innerHTML =
-      '<div class="wake-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
-        '<span class="toggle">▸</span>' +
-        '<span class="name">' + escapeHTML(sec.wake_word) + '</span>' +
-        '<span class="count">' + sec.scenarios.length + ' 场景</span>' +
-        '<span class="pending">' + sec.pending_count + ' 待开发</span>' +
+  // === 2. 渲染 3 层折叠(默认折叠)===
+  const mainEl = document.getElementById('mainContent');
+
+  function renderCategory(cat) {
+    const wws = cat.wake_words || [];
+    const pendingCount = cat.pending_count || 0;
+    const allWw = wws.map(renderWakeWord).join('');
+    return '<details class="cat-block' + (pendingCount > 0 ? ' has-pending' : '') + '">' +
+      '<summary>' +
+        '<span class="cat-icon">' + esc(cat.icon) + '</span>' +
+        '<span class="cat-name">' + esc(cat.name) + '</span>' +
+        '<span class="cat-count">' + esc(wws.length) + ' 唤醒词</span>' +
+        (pendingCount > 0 ? '<span class="cat-pending">' + pendingCount + ' 待开发</span>' : '') +
+        (cat.desc ? '<div class="cat-desc">' + esc(cat.desc) + '</div>' : '') +
+      '</summary>' +
+      '<div class="cat-content">' + allWw + '</div>' +
+    '</details>';
+  }
+
+  function renderWakeWord(ww) {
+    const scs = ww.scenarios || [];
+    const pending = ww.pending_count || 0;
+    return '<details class="ww-block' + (pending > 0 ? ' has-pending' : '') + '">' +
+      '<summary>' +
+        '<span class="ww-name">' + esc(ww.wake_word) + '</span>' +
+        '<span class="ww-count">' + scs.length + ' 场景</span>' +
+        (pending > 0 ? '<span class="ww-pending">' + pending + ' 待开发</span>' : '') +
+      '</summary>' +
+      '<div class="ww-content">' + scs.map(renderScenario).join('') + '</div>' +
+    '</details>';
+  }
+
+  function renderScenario(sc) {
+    const isPending = sc.status === '【待开发】';
+    const dims = sc.dimensions || {};
+    const dimBadges = Object.entries(dims).map(function(e){
+      return '<span class="sc-dim">' + esc(e[0]) + ': ' + esc(String(e[1])) + '</span>';
+    }).join('');
+    const statusBadge = isPending
+      ? '<span class="sc-status pending">【待开发】</span>'
+      : '<span class="sc-status avail">✓ 可用</span>';
+    const dataSearch = (sc.wake_word + ' ' + sc.scenario_title + ' ' + sc.prompt + ' ' + (sc.result || '')).toLowerCase();
+    return '<details class="sc-block' + (isPending ? ' pending' : '') + '" data-search="' + esc(dataSearch) + '">' +
+      '<summary>' +
+        '<span class="sc-id">' + esc(sc.scenario_id) + '</span>' +
+        esc(sc.scenario_title) +
+        statusBadge +
+      '</summary>' +
+      '<div class="sc-content">' +
+        (dimBadges ? '<div class="sc-dim-list">' + dimBadges + '</div>' : '') +
+        '<div class="sc-prompt">' + esc(sc.prompt) + '</div>' +
+        (sc.result ? '<div class="sc-result"><b>预期结果:</b> ' + esc(sc.result) + '</div>' : '') +
+        '<button class="copy-btn" data-prompt="' + esc(sc.prompt) + '">📋 复制 prompt</button>' +
       '</div>' +
-      '<div class="scenarios">' +
-        sec.scenarios.map(renderScenario).join('') +
-      '</div>';
-    sectionsEl.appendChild(el);
-  });
-
-  function renderScenario(s){
-    var badge = s.status === '【待开发】'
-      ? '<span class="badge pending">【待开发】</span>'
-      : '<span class="badge avail">✓ 可用</span>';
-    var dims = Object.keys(s.dimensions || {}).length
-      ? Object.keys(s.dimensions).map(function(k){return '<b>' + escapeHTML(k) + '</b>: ' + escapeHTML(String(s.dimensions[k]))}).join(' · ')
-      : '—';
-    return '<div class="scenario" data-search="' + (escapeHTML(s.wake_word) + ' ' + escapeHTML(s.scenario_title) + ' ' + escapeHTML(s.prompt)).toLowerCase() + '">' +
-      '<div class="title">' + escapeHTML(s.scenario_title) + badge + '</div>' +
-      '<div class="id">scenario_id: <code>' + escapeHTML(s.scenario_id) + '</code></div>' +
-      '<div class="dimensions">维度: ' + dims + '</div>' +
-      '<div class="prompt">' + escapeHTML(s.prompt) + '</div>' +
-      '<div class="result"><b>预期结果:</b> ' + escapeHTML(s.result || '—') + '</div>' +
-      '<button class="copy-btn" data-prompt="' + escapeHTML(s.prompt) + '">📋 复制 prompt</button>' +
-    '</div>';
+    '</details>';
   }
 
-  function escapeHTML(s){
-    return String(s).replace(/[&<>"']/g, function(c){
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-    });
+  if (!data.categories || !data.categories.length) {
+    mainEl.innerHTML = '<div class="empty">📭 暂无模块数据</div>';
+  } else {
+    mainEl.innerHTML = data.categories.map(renderCategory).join('');
   }
 
-  // === 3. 默认打开前 3 个 ===
-  var allSections = sectionsEl.querySelectorAll('.wake-section');
-  for (var i = 0; i < Math.min(3, allSections.length); i++) allSections[i].classList.add('open');
+  // === 3. 默认折叠(全部 details 都不带 open 属性)===
+  // (CSS 端无 [open] 即折叠,HTML 端我们也不加 open,默认就是折叠的)
 
   // === 4. 复制按钮 ===
-  sectionsEl.addEventListener('click', function(e){
-    if (!e.target.classList.contains('copy-btn')) return;
-    var btn = e.target;
-    var text = btn.getAttribute('data-prompt');
-    var done = function(){
-      btn.textContent = '✅ 已复制 · 粘贴给 AI';
+  mainEl.addEventListener('click', function(e){
+    const btn = e.target.closest('.copy-btn');
+    if (!btn) return;
+    const text = btn.getAttribute('data-prompt') || '';
+    const done = function(){
+      btn.textContent = '✅ 已复制';
       btn.classList.add('copied');
+      showToast('已复制 prompt · 粘贴给 AI');
       setTimeout(function(){
         btn.textContent = '📋 复制 prompt';
         btn.classList.remove('copied');
-      }, 2000);
+      }, 1800);
     };
-    var fallback = function(){
-      // 降级:选中文本让用户手动复制
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        done();
-      } catch (err) {
-        btn.textContent = '❌ 复制失败 · 请手动选择';
-        btn.classList.add('failed');
-      }
+    const fallback = function(){
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch(e) { btn.textContent = '❌ 复制失败'; btn.classList.add('failed'); }
       document.body.removeChild(ta);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -214,32 +319,53 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
     }
   });
 
-  // === 5. 搜索 ===
-  document.getElementById('search').addEventListener('input', function(e){
-    var q = e.target.value.toLowerCase().trim();
-    var any = false;
-    allSections.forEach(function(sec){
-      var matched = 0;
-      sec.querySelectorAll('.scenario').forEach(function(sc){
-        var text = sc.getAttribute('data-search');
-        var hit = q === '' || text.indexOf(q) >= 0 || sec.getAttribute('data-wake').indexOf(q) >= 0;
-        sc.style.display = hit ? '' : 'none';
-        if (hit) matched++;
-      });
-      if (q !== '' && matched > 0) sec.classList.add('open');
-      sec.style.display = (q === '' || matched > 0) ? '' : 'none';
-      if (sec.style.display !== 'none') any = true;
-    });
-    document.getElementById('empty').style.display = any ? 'none' : '';
-  });
-
-  // === 6. 5 状态 fallback ===
-  if (data.error) {
-    sectionsEl.innerHTML = '<div class="empty" style="color:var(--danger)">' +
-      '⚠ 加载失败: ' + escapeHTML(data.error) + '<br>请检查 references/scenarios.yaml 是否存在且合法' +
-      '</div>';
+  // === 5. 全部展开 / 全部折叠 ===
+  function setAll(open) {
+    mainEl.querySelectorAll('details').forEach(function(d){ d.open = open; });
   }
+  document.getElementById('expandAll').addEventListener('click', function(){ setAll(true); });
+  document.getElementById('collapseAll').addEventListener('click', function(){ setAll(false); });
+
+  // === 6. 搜索(自动展开匹配项)===
+  document.getElementById('search').addEventListener('input', function(e){
+    const q = e.target.value.toLowerCase().trim();
+    const allCats = mainEl.querySelectorAll('.cat-block');
+    let anyVisible = false;
+    allCats.forEach(function(cat){
+      let catHasMatch = false;
+      const wws = cat.querySelectorAll('.ww-block');
+      wws.forEach(function(ww){
+        let wwHasMatch = false;
+        const scs = ww.querySelectorAll('.sc-block');
+        scs.forEach(function(sc){
+          const hit = q === '' || (sc.getAttribute('data-search') || '').indexOf(q) >= 0;
+          sc.classList.toggle('hidden', !hit);
+          if (hit) wwHasMatch = true;
+        });
+        ww.classList.toggle('hidden', !wwHasMatch);
+        if (wwHasMatch) {
+          ww.open = true;
+          catHasMatch = true;
+        }
+      });
+      cat.classList.toggle('hidden', !catHasMatch);
+      if (catHasMatch) {
+        cat.open = true;
+        anyVisible = true;
+      } else if (q === '') {
+        anyVisible = true;
+        cat.open = false;
+      }
+    });
+    if (q !== '' && !anyVisible) {
+      mainEl.insertAdjacentHTML('beforeend', '<div class="empty">🔍 无匹配场景</div>');
+    } else {
+      const e = mainEl.querySelector('.empty');
+      if (e && e.textContent.indexOf('无匹配') >= 0) e.remove();
+    }
+  });
 })();
 </script>
+
 </body>
 </html>

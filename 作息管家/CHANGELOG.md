@@ -312,6 +312,92 @@ Tested-By: pending-FAT
 
 ---
 
+### 🎨 Phase C.2k · HELP HTML 重构:5 模块分类 + 3 层折叠 + 默认折叠(对标饼干记账)
+
+**动机**:用户要求作息管家 HELP HTML 模仿饼干记账的 HELP HTML,做到:
+1. 按模块功能分类(L1)
+2. 每级目录可折叠/展开(L1 → L2 → L3)
+3. 默认折叠(用户主动展开才显示细节)
+
+### 变更内容
+
+**作息管家模块分类**(硬编码,不改 scenarios.yaml,保持 §07 契约):
+
+| key | 图标 | 模块 | 唤醒词数 |
+|---|---|---|---|
+| `write` | 📝 | 写入与同步 | 4 (#0 #1 #2 #3) |
+| `query` | 🔍 | 查询与浏览 | 11 (#4 #5 #6 #7 #8 #9 #11 #12 #15 #16 #23) |
+| `plan` | 📅 | 日程与计划 | 6 (#13 #14 #17 #18 #19 #20) |
+| `analyze` | 🔬 | 分析与洞察 | 5 (#24 #25 #26 T4 T5) |
+| `admin` | ⚙️ | 辅助与管理 | 2 (#21 #22) |
+
+**`templates/help_center.html` 完整重写**(对标饼干记账 v2.4):
+- 3 层 `<details>` 折叠:`.cat-block`(模块) → `.ww-block`(唤醒词) → `.sc-block`(场景)
+- 默认折叠(HTML 端无 `open` 属性,纯 CSS 控制)
+- "📂 全部展开 / 📁 全部折叠" 顶部按钮
+- 搜索框输入时自动展开匹配项
+- Toast 反馈(复制成功 / 无匹配)
+- 移动端响应式(`@media max-width: 640px`)
+- 复制按钮带 fallback(`execCommand` + textarea)
+- 状态徽章:✓ 可用 / 【待开发】(橙底警示)
+
+**`scripts/help_render.py` 数据结构改造**:
+- ❌ 删 `group_by_wake_word()` 内的 sections 数组(2 层结构)
+- ✅ 新增 `CATEGORY_MAP`(5 模块 + 图标 + 描述 + 唤醒词列表)
+- ✅ 新增 `WAKE_WORD_TO_CATEGORY`(反向索引,快速查 wake_word → category_key)
+- ✅ 新增 `group_by_category()`:category → wake_word → scenarios 三层分组
+- ✅ 重构 `build_payload()`:返回 `{category_count, wakeword_count, scenario_count, pending_count, generated_at, categories}`
+- ⚠️ `group_by_wake_word()` 标记为已弃用,保留作向后兼容占位
+- ❌ 删 `<!--INJECT-SECTIONS-->` 占位符校验(模板已统一用 `<!--INJECT-DATA-->`)
+
+**兜底机制**:未在 CATEGORY_MAP 登记的 wake_word 自动归到 `_uncategorized` 类别(❓ 图标),防御性兜底防止新增唤醒词时分类缺失。
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "wakeword_count": 28,
+    "scenario_count": 73,
+    "pending_count": 1
+  }
+}
+
+# 模块分布:
+📝 写入与同步: 4 唤醒词, 13 场景
+🔍 查询与浏览: 11 唤醒词, 27 场景
+📅 日程与计划: 6 唤醒词, 19 场景
+🔬 分析与洞察: 5 唤醒词, 12 场景
+⚙️ 辅助与管理: 2 唤醒词, 2 场景
+```
+
+### 影响范围
+
+- 代码:`templates/help_center.html` 完整重写 + `scripts/help_render.py` 数据结构改造
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动(测试覆盖范围未变)
+- 向后兼容:✅ `group_by_wake_word` 标记已弃用但保留函数体
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 验证项: 1) 浏览器打开 HELP HTML 默认全部折叠
+           2) 点击模块展开 → 显示唤醒词列表
+           3) 点击唤醒词展开 → 显示场景列表
+           4) "全部展开" / "全部折叠" 按钮正常工作
+           5) 搜索框输入关键词自动展开匹配项
+           6) 复制按钮 fallback 正常
+           7) 移动端宽度适配
+           8) ✓ 可用 / 【待开发】状态徽章可见
+  - 验证方法: 浏览器打开 + F12 console + Chrome DevTools
+```
+
+---
+
 ### 🔧 Phase C.2j · 修复 escape_for_js 过度 escape JSON 结构双引号(FAT 暴露"没有任何数据")
 
 **动机**:用户报告 `作息管家_HELP_20260727_103334.html` 没有任何数据。诊断:`escape_for_js` 函数把所有 `"` 都转义成 `\"`,包括 JSON 的结构双引号(`{`, `:`, `,` 周围),导致 JSON.parse 失败,浏览器端 sections 数组为空。

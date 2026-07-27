@@ -125,7 +125,7 @@ def _write_master_key(master_key: str) -> dict:
 # ── 数据库初始化 ─────────────────────────────────────────────────────────────
 
 def _init_db():
-    """初始化账号表"""
+    """初始化账号表(P1-6 加 is_deleted / deleted_at 字段供软删除)"""
     SKILL_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
@@ -138,9 +138,18 @@ def _init_db():
             tags TEXT NOT NULL DEFAULT '',
             note TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            is_deleted INTEGER DEFAULT 0,
+            deleted_at TEXT
         )
     """)
+    # P1-6 兼容老库:补充字段
+    cursor.execute(f"PRAGMA table_info({TABLE_NAME})")
+    cols = {r[1] for r in cursor.fetchall()}
+    if "is_deleted" not in cols:
+        cursor.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN is_deleted INTEGER DEFAULT 0")
+    if "deleted_at" not in cols:
+        cursor.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN deleted_at TEXT")
     conn.commit()
     return conn
 
@@ -177,25 +186,31 @@ def account_add(platform: str, username: str, password: str,
 
 
 def account_list() -> list:
-    """列出所有账号（密码隐藏）"""
+    """列出所有账号(密码隐藏,P1-6 软删除:排除已删除)"""
     conn = _init_db()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute(f"SELECT id, platform, username, tags, note, created_at FROM {TABLE_NAME} ORDER BY platform")
+    cursor.execute(
+        f"SELECT id, platform, username, tags, note, created_at FROM {TABLE_NAME} "
+        f"WHERE is_deleted IS NULL OR is_deleted = 0 ORDER BY platform"
+    )
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
 
 
 def account_show(platform: str, master_key: str) -> dict:
-    """查看账号密码（需验证 master key）"""
+    """查看账号密码(需验证 master key,P1-6 排除已删除)"""
     if not verify_master_key(master_key):
         return {"success": False, "message": "Master key 错误"}
 
     conn = _init_db()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {TABLE_NAME} WHERE platform = ?", (platform,))
+    cursor.execute(
+        f"SELECT * FROM {TABLE_NAME} WHERE platform = ? AND (is_deleted IS NULL OR is_deleted = 0)",
+        (platform,),
+    )
     row = cursor.fetchone()
     conn.close()
 
@@ -217,24 +232,28 @@ def account_show(platform: str, master_key: str) -> dict:
     }
 
 
-def account_del(platform: str) -> dict:
-    """删除账号"""
+def account_del(platform: str, master_key: str = None) -> dict:
+    """删除账号(P1-6 补丁:加 master-key 强制校验 + 软删除)"""
+    if not master_key:
+        return {"success": False, "message": "删除账号必须提供 master key(防误删)"}
+    if not verify_master_key(master_key):
+        return {"success": False, "message": "Master key 错误"}
+
     conn = _init_db()
     cursor = conn.cursor()
-    cursor.execute(f"SELECT id FROM {TABLE_NAME} WHERE platform = ?", (platform,))
-    row = cursor.fetchone()
-    if not row:
-        conn.close()
-        return {"success": False, "message": f"账号 '{platform}' 不存在"}
-
-    cursor.execute(f"DELETE FROM {TABLE_NAME} WHERE platform = ?", (platform,))
+    # 软删除:标记 is_deleted + deleted_at,而非 DELETE
+    now = datetime.now().isoformat()
+    cursor.execute(
+        f"UPDATE {TABLE_NAME} SET is_deleted = 1, deleted_at = ? WHERE platform = ? AND (is_deleted IS NULL OR is_deleted = 0)",
+        (now, platform),
+    )
     affected = cursor.rowcount
     conn.commit()
     conn.close()
 
     if affected > 0:
-        return {"success": True, "message": f"已删除账号 '{platform}'"}
-    return {"success": False, "message": f"删除失败"}
+        return {"success": True, "message": f"已软删除账号 '{platform}'(可恢复,7 天后清理)"}
+    return {"success": False, "message": f"账号 '{platform}' 不存在或已删除"}
 
 
 def account_set_master(old_master_key: str, new_master_key: str) -> dict:

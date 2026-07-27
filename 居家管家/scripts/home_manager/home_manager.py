@@ -526,7 +526,10 @@ def main():
             if not args.platform:
                 print("错误：--platform 是必填的")
                 return 1
-            result = account_del(args.platform)
+            if not args.master_key:
+                print("错误：--master-key 是必填的(防误删)")
+                return 1
+            result = account_del(args.platform, args.master_key)
             if result["success"]:
                 print("✓ " + result["message"])
             else:

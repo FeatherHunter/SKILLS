@@ -17,3 +17,9 @@ output/
 
 # outfit_picker 测试 HTML（每次跑都会变）
 outfit_picker_test_*.html
+
+# A-1 清理(A.notes): 死目录/废弃 dev 脚本永不进库
+# 居家管家/.db/                  (历史 init 残留,实际生产用 /mnt/d/.db/home.db)
+# scripts/check_photo*.py         (Windows 路径硬编码的 debug 脚本)
+# scripts/cleanup_test_items.py    (fixture 兜底,不进库,已靠 .gitignore)
+# (cleanup_test_items.py 本可加 ignore, 但它是 fixture 兜底, 用到还要, 暂保留)

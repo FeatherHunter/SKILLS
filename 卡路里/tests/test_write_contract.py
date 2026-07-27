@@ -111,25 +111,40 @@ def tmp_db_empty(tmp_db_dir):
 # ============= 测试 =============
 
 # 写库类子命令的 stdout 必须包含 3 个契约标记
-# tuple 3 元: (cmd_args, label, known_violation_reason)
+# tuple 4 元: (cmd_args, label, known_violation_reason, seed_cmds)
 #   - reason=None → 必须 pass(V1.0 §02 第②特性合规)
 #   - reason=str  → xfail:已知违反,等后续 commit 修(strict=True)
+#   - seed_cmds=list → 跑 cmd_args 前先跑这些种子命令(例:update-meal 需要先有 add 的 id)
+#                      None/[] = 无前置
 WRITE_CONTRACTS = [
-    # weight (v2.4.14 修)
-    (["weight", "70.5", "--note", "test"],  "weight",  None),
-    # water (v2.4.16 修)
-    (["water", "500"],                      "water",   None),
-    # add 饮食 (v2.4.16 修)
-    (["add", "鸡胸肉", "165", "31"],        "add",     None),
+    # ===== v2.4.16 已修 =====
+    (["weight", "70.5", "--note", "test"],  "weight",         None,        None),
+    (["water", "500"],                      "water",          None,        None),
+    (["add", "鸡胸肉", "165", "31"],        "add",            None,        None),
+
+    # ===== v2.4.17 扩展:其余写库子命令 =====
+    # 单行 upsert / 单值写,可能合规/可能缺 ID
+    (["weight-update", "1", "--weight", "71"],     "weight-update",  "v2.4.17 扩 P3 时发现: weight-update print 'ID 1' 但格式不匹配契约(没 'id=' 没 YYYY-MM-DD 没 '影响')",  [["weight", "70.5", "--note", "test"]]),
+    (["delete", "1"],                              "delete",         "v2.4.17 扩 P3 时发现: calorie_tracker.py delete 子命令 print 缺 id/时间/影响行数",  [["add", "test", "100", "10"]]),
+    (["update-meal", "1", "--calories", "200"],    "update-meal",    "v2.4.17 扩 P3 时发现: calorie_tracker.py update-meal 子命令 print 缺 id/时间/影响行数",  [["add", "test", "100", "10"]]),
+    (["goal", "2000", "150", "200", "60", "2000"], "goal",           "v2.4.17 扩 P3 时发现: calorie_tracker.py goal 子命令 print 缺 id/时间/影响行数",  None),
+    (["add-product", "x", "x", "0", "0", "0", "0", "0", "0", "0", "0"], "add-product", "v2.4.17 扩 P3 时发现: calorie_tracker.py add-product 子命令 print 缺 id/时间/影响行数",  None),
+    (["update-product", "1", "--calories", "45"],  "update-product", "v2.4.17 扩 P3 时发现: calorie_tracker.py update-product 子命令 print 缺 id/时间/影响行数",  None),
+    (["exercise-add", "跑步", "300", "--minutes", "30"], "exercise-add", "v2.4.17 扩 P3 时发现: calorie_tracker.py exercise-add 子命令 print 缺 id/时间/影响行数",  None),
 ]
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation", WRITE_CONTRACTS)
-def test_write_contract_id_marker(cmd_args, label, known_violation, tmp_db, request):
+@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
+def test_write_contract_id_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
     """V1.0 §02 第②特性:写库回执必须含 'id=' 标记"""
     if known_violation:
+        # 已知违反 — strict=True → 修好后会从 xfail 变 fail 强制再去掉 xfail
         request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
     db_dir = tmp_db
+    # 前置种子命令(例:update-meal 需要先有 add 的 id)
+    if seed_cmds:
+        for seed in seed_cmds:
+            _run_cli(*seed, db_dir=db_dir)
     rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
     assert 'id=' in out, (
         f"❌ {label} 写库回执缺 'id=' 标记\n"
@@ -139,12 +154,15 @@ def test_write_contract_id_marker(cmd_args, label, known_violation, tmp_db, requ
     )
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation", WRITE_CONTRACTS)
-def test_write_contract_timestamp_marker(cmd_args, label, known_violation, tmp_db, request):
+@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
+def test_write_contract_timestamp_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
     """V1.0 §02 第②特性:写库回执必须含 YYYY-MM-DD 时间戳"""
     if known_violation:
         request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
     db_dir = tmp_db
+    if seed_cmds:
+        for seed in seed_cmds:
+            _run_cli(*seed, db_dir=db_dir)
     rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
     assert re.search(r'\d{4}-\d{2}-\d{2}', out), (
         f"❌ {label} 写库回执缺 YYYY-MM-DD 日期\n"
@@ -153,12 +171,15 @@ def test_write_contract_timestamp_marker(cmd_args, label, known_violation, tmp_d
     )
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation", WRITE_CONTRACTS)
-def test_write_contract_rows_affected_marker(cmd_args, label, known_violation, tmp_db, request):
+@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
+def test_write_contract_rows_affected_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
     """V1.0 §02 第②特性:写库回执必须含 '影响' 标记(影响行数)"""
     if known_violation:
         request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
     db_dir = tmp_db
+    if seed_cmds:
+        for seed in seed_cmds:
+            _run_cli(*seed, db_dir=db_dir)
     rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
     assert '影响' in out, (
         f"❌ {label} 写库回执缺 '影响' 标记\n"

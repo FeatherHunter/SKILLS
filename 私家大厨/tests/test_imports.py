@@ -79,7 +79,11 @@ class TestRenderHelp:
         tpl = SCRIPT_DIR.parent / "templates" / "help.html"
         content = tpl.read_text(encoding="utf-8")
         # 模板注释或渲染器应有 </ 转义说明
-        assert "</script>" in content or "&lt;\\/script&gt;" in content or "</" in content
+        # (修复 #9:之前的 OR 永远为 True,测试无效)
+        assert "</script>" in content or "&lt;\\/script&gt;" in content, (
+            "模板应包含 </script> 字面(用于文档说明) "
+            "或 &lt;\\/script&gt; HTML escape 形式"
+        )
 
     def test_render_help_module_exists(self):
         """render_help.py 模块存在且能 import"""

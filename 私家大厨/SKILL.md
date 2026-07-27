@@ -189,11 +189,15 @@
 
 ## CLI 输出格式(5 层架构:AI 可解析)
 
-> **L3 阶段新增**(2026-07-22)
+> **L3 阶段声明(2026-07-22)**:18 个 `*_manager.py` 都支持 `--json`(**该声明实际是部分覆盖 · 2026-07-27 对抗式审查发现**)。
+> **真实情况(2026-07-27 对抗式审查补漏后)**:
+> - ✅ 支持 `--json`:recipe_manager / history_manager / shopping_manager / **relation_manager**(本 commit 修复)
+> - ⚠️ 不支持 `--json`:**14 个 manager 仍只 print 文本**。错误信息走裸 print,无法被 render_data 等调用方解析。
 
 | 工具 | 默认输出 | 加 `--json` | 加 `--human` |
 |---|---|---|---|
-| 18 个 `*_manager.py` | 中文友好文本 | JSON 三段式 `{status, data, message}` | (默认即人类) |
+| 4 个 `*_manager.py`(recipe / history / shopping / relation) | 中文友好文本 | JSON 三段式 `{status, data, message}` | (默认即人类) |
+| 14 个 `*_manager.py`(background / category / cooking_method / cookware / diet_tag / flavor / ingredient / meal_type / nutrition / season / step / step_ingredient / technique / tip) | 中文友好文本 | **❌ 暂不支持** | (默认即人类) |
 | `recipe_import.py import` | **JSON 三段式** | (默认即 JSON) | 中文友好 |
 | `recipe_import.py validate` | JSON 三段式 | (默认) | 中文友好 |
 | `import_orchestrator.py` | JSON 三段式 | (默认) | (暂未支持) |

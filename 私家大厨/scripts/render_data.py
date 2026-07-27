@@ -62,7 +62,8 @@ def call_cli(manager_script: str, *args) -> dict:
 # ── 4 个 type 适配器:CLI 输出 → 模板 payload ──
 def adapt_search(keyword: str, cli_data: dict) -> dict:
     """search/筛选 → type=list"""
-    recipes = cli_data.get("recipes") or cli_data.get("items") or []
+    # 兼容 3 个字段名:recipe_manager.search 返 'results',list 返 'recipes'
+    recipes = cli_data.get("recipes") or cli_data.get("items") or cli_data.get("results") or []
     items = []
     for r in recipes:
         tags = []

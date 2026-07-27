@@ -187,11 +187,20 @@ def list_parent(args):
 def list_child(args):
     """查看某食谱的子级"""
     json_mode = args.get("_json_mode", False)
-    recipe_id = args.get("<recipe_id>")
-    if not recipe_id:
-        _out(json_mode, "error", message="请提供食谱ID", error="missing_recipe_id")
+    name_or_id = args.get("<recipe_id>")
+    if not name_or_id:
+        _out(json_mode, "error", message="请提供食谱ID或菜名", error="missing_recipe_id")
         if not json_mode:
             print("错误:请提供食谱ID")
+        return False
+
+    # 接受菜名或 recipe_id
+    recipe_id = _resolve_recipe_id(name_or_id)
+    if not recipe_id:
+        _out(json_mode, "error", message=f"未找到食谱:{name_or_id}",
+             error="recipe_not_found", query=name_or_id)
+        if not json_mode:
+            print(f"未找到食谱:{name_or_id}")
         return False
 
     recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))

@@ -23,7 +23,7 @@ from pathlib import Path
 
 # 复用 home_manager.db 的 get_conn 和 DB_PATH
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from home_manager.db import get_conn, DB_PATH
+from home_manager.db import get_conn, DB_PATH, SKILL_DIR
 
 
 # ── 命名规范校验 ──────────────────────────────────────────────────────
@@ -182,11 +182,41 @@ def cmd_import(args):
         return 1
 
     if args.force and existing > 0:
-        # --force:临时关闭 FK,一次清空
+        # P0-3 补丁:--force 前自动 backup categories 表到 .bak/
+        # 方案 C:不破老调用,自动防误删
+        from datetime import datetime as _dt
+        bak_dir = SKILL_DIR / ".bak"
+        bak_dir.mkdir(parents=True, exist_ok=True)
+        bak_file = bak_dir / f"categories_{_dt.now().strftime('%Y%m%d_%H%M%S')}.sql"
+        with open(bak_file, "w", encoding="utf-8") as f:
+            f.write(f"-- categories 表自动备份 (执行 --force 前)\n")
+            f.write(f"-- 原 {existing} 条记录,可手动重导入恢复\n")
+            f.write("BEGIN;\n")
+            for row in cursor.execute(
+                "SELECT id,parent_id,name,description,sort_order,is_active,created_at,updated_at FROM categories"
+            ):
+                cols = [row['id'], row['parent_id'], row['name'],
+                        row['description'] or '', row['sort_order'],
+                        row['is_active'], row['created_at'], row['updated_at']]
+                vals = []
+                for v in cols:
+                    if v is None:
+                        vals.append("NULL")
+                    elif isinstance(v, (int, float)):
+                        vals.append(str(v))
+                    else:
+                        vals.append("'" + str(v).replace("'", "''") + "'")
+                f.write(f"INSERT INTO categories VALUES({','.join(vals)});\n")
+            f.write("COMMIT;\n")
+        print(f"  💾 已备份 {existing} 条 → {bak_file.name}")
+
+        # 清空 + FK SET NULL(items.category_id 自动解绑而非悬空)
         cursor.execute("PRAGMA foreign_keys = OFF")
         cursor.execute("DELETE FROM categories")
+        cursor.execute("UPDATE items SET category_id = NULL WHERE category_id IS NOT NULL")
         cursor.execute("PRAGMA foreign_keys = ON")
-        print(f"  (清空 {existing} 条旧记录)")
+        unlinked = cursor.execute("SELECT changes()").fetchone()[0]
+        print(f"  (清空 {existing} 条 categories + 解绑 {unlinked} 件 items → NULL)")
     elif args.merge:
         print(f"  (合并模式:已有 {existing} 条,同名节点将跳过)")
 

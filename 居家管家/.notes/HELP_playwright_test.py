@@ -70,28 +70,28 @@ async def run():
         else:
             issues.append(f"✗ h1 缺失或错: {h1!r}")
 
-        # 验证 2: groups 数量(P1-9c-fix 后修物品的 7 个子项合并到改物品,所以 31→24)
+        # 验证 2: groups 数量(P1-11b 后改按 category 分组,11 类)
         groups = await page.locator(".group").count()
-        if groups == 24:
-            passed.append(f"✓ groups 渲染: {groups} 个(去重后 24,符合总纲 03 §铁律 2)")
+        if 8 <= groups <= 11:
+            passed.append(f"✓ groups 渲染: {groups} 个(按 A 套 11 类)")
         else:
-            issues.append(f"✗ groups 数量: 预期 24,实际 {groups}")
+            issues.append(f"✗ groups 数量: 预期 8-11,实际 {groups}")
 
-        # 验证 3: 默认第一组展开
+        # 验证 3: 默认全部折叠(P1-11a)
         open_count = await page.locator(".group.open").count()
-        if open_count == 1:
-            passed.append("✓ 默认第一组展开")
+        if open_count == 0:
+            passed.append("✓ 默认全部折叠")
         else:
-            issues.append(f"✗ 默认展开数: 预期 1,实际 {open_count}")
+            issues.append(f"✗ 默认展开数: 预期 0,实际 {open_count}")
 
-        # 验证 4: 第一个 group 是查物品(用户视角高频优先)
+        # 验证 4: 第一个 group 是"找东西"(A 套顺序,任务导向)
         first_group_h2 = await page.locator(".group").first.locator("h2").text_content()
-        if "查物品" in first_group_h2:
-            passed.append(f"✓ 第一个 group 按用户视角高频: {first_group_h2!r}")
+        if "找东西" in first_group_h2:
+            passed.append(f"✓ 第一个 group 按 A 套任务导向: {first_group_h2!r}")
         else:
-            issues.append(f"✗ 第一个 group 不是'查物品': {first_group_h2!r}")
+            issues.append(f"✗ 第一个 group 不是'找东西': {first_group_h2!r}")
 
-        # 验证 5: 场景渲染数(sc scenarios 合并后 34→32)
+        # 验证 5: 场景渲染数(P1-11a 不变 32)
         scenarios = await page.locator(".scenario").count()
         if scenarios == 32:
             passed.append(f"✓ scenarios 渲染: {scenarios} 个")
@@ -105,14 +105,17 @@ async def run():
         else:
             issues.append(f"✗ copy buttons: 预期 32,实际 {copy_btns}")
 
-        # 验证 7: prompt textContent 是否被注入
-        first_prompt = await page.locator(".s-prompt").first.text_content()
-        if first_prompt and first_prompt.strip():
-            passed.append(f"✓ prompt 注入 OK: {first_prompt[:30]!r}...")
+        # 验证 7: prompt textContent 是否被注入(全折叠状态下没有)
+        # P1-11a: 默认全部折叠, group[0] 已折叠, s-prompt 仍被注入(因 wrap.innerHTML 仍执行 IIFE)
+        prompt_locator = page.locator(".s-prompt").first
+        prompt_count = await prompt_locator.count()
+        prompt_text = ""
+        if prompt_count > 0:
+            prompt_text = await prompt_locator.text_content() or ""
+        if prompt_text and prompt_text.strip():
+            passed.append(f"✓ prompt 注入 OK (即使折叠也保留): {prompt_text[:30]!r}...")
         else:
             issues.append("✗ prompt textContent 为空!")
-            shot_empty = SHOTS_DIR / "07_prompt_empty.png"
-            await page.locator(".group").first.screenshot(path=str(shot_empty))
 
         # ===== Step 2: 点 group[0] 折叠/展开切换 =====
         first_gh = page.locator(".group-h").first

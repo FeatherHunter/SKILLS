@@ -1,0 +1,182 @@
+<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8"><title>PLAN-A 最终映射</title>
+<style>
+body{background:#f5f5f7;color:#1d1d1f;font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:24px 0 8px;padding-bottom:6px;border-bottom:1px solid #e6e6eb}
+.c{background:#fff;border:1px solid #e6e6eb;border-radius:10px;padding:14px 18px;margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}th,td{border-bottom:1px solid #e6e6eb;padding:8px 6px;text-align:left}th{background:#fafafc;font-weight:600}
+.tag{display:inline-block;padding:2px 6px;background:#eef;border-radius:4px;font-size:11px;margin:1px}
+pre{background:#f2f2f7;border:1px solid #e6e6eb;border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,monospace;line-height:1.5}
+</style></head><body><div class="wrap">
+
+<h1>A 套最终 · 32 场景 → 11 类别 映射</h1>
+
+<h2>分类映射</h2>
+<table>
+<thead><tr><th>一级 group(类别)</th><th>下属场景数</th><th>具体场景</th></tr></thead>
+<tbody>
+<tr><td><b>找东西</b></td><td>10</td>
+  <td>
+    <span class="tag">查物品:按名称搜</span>
+    <span class="tag">查物品:按位置搜</span>
+    <span class="tag">查物品:按标签搜</span>
+    <span class="tag">查物品:按状态搜</span>
+    <span class="tag">看物品:按 ID 看详情</span>
+    <span class="tag">查快递</span>
+    <span class="tag">查过期</span>
+    <span class="tag">看标签</span>
+  </td></tr>
+<tr><td><b>存东西</b></td><td>2</td>
+  <td>
+    <span class="tag">录物品</span>
+    <span class="tag">拍物品</span>
+  </td></tr>
+<tr><td><b>改东西</b></td><td>6</td>
+  <td>
+    <span class="tag">改物品:通用</span>
+    <span class="tag">改物品:移物品</span>
+    <span class="tag">改物品:补物品</span>
+    <span class="tag">改物品:减物品</span>
+    <span class="tag">改物品:改标签</span>
+    <span class="tag">改物品:改状态</span>
+  </td></tr>
+<tr><td><b>盘点</b></td><td>2</td>
+  <td>
+    <span class="tag">盘物品</span>
+    <span class="tag">盘全部</span>
+  </td></tr>
+<tr><td><b>出门</b></td><td>2</td>
+  <td>
+    <span class="tag">带物品</span>
+    <span class="tag">推位置</span>(录入子流程)
+  </td></tr>
+<tr><td><b>回家</b></td><td>2</td>
+  <td>
+    <span class="tag">归物品</span>
+    <span class="tag">找位置</span>(录入子流程)
+  </td></tr>
+<tr><td><b>看统计</b></td><td>3</td>
+  <td>
+    <span class="tag">统物品</span>
+    <span class="tag">查高频</span>
+    <span class="tag">查低频</span>
+  </td></tr>
+<tr><td><b>账号</b></td><td>3</td>
+  <td>
+    <span class="tag">查账号</span>
+    <span class="tag">存账号</span>
+    <span class="tag">改账号</span>
+  </td></tr>
+<tr><td><b>检查</b></td><td>1</td>
+  <td>
+    <span class="tag">查异常</span>
+  </td></tr>
+<tr><td><b>标签</b></td><td>1</td>
+  <td>
+    <span class="tag">合标签</span>
+  </td></tr>
+<tr><td><b>帮助</b></td><td>1</td>
+  <td>
+    <span class="tag">居家管家 帮助</span>
+  </td></tr>
+<tr><td><b>合计</b></td><td><b>33</b></td><td>(查物品合并 4 变体 + 1 看物品)</td></tr>
+</tbody>
+</table>
+
+<p>注:实际 yaml 32 场景(查物品 4 个合并到 1 group,改物品 6 个合并到 1 group)→ A 套 11 类 32 场景。</p>
+
+<h2>改动 1 · 默认折叠(1 行 JS)</h2>
+<div class="c">
+<pre>// templates/help_center.html IIFE 内循环
+const isOpen = '';  // 全部折叠(原: '(i === 0) ? " open" : ""')</pre>
+</div>
+
+<h2>改动 2 · A 套分类落地</h2>
+
+<h3>(1) <code>references/scenarios.yaml</code> 每条加 category 字段</h3>
+<div class="c">
+<pre>- wake_word: 查物品
+  scenario_id: search_default
+  scenario_title: 按名称搜物品
+  category: 找东西           # ← 新增
+  dimensions: { name_match: ["模糊","精确"] }
+  prompt: |
+    ...</pre>
+<p>类别白名单(11 个,与 A 套对应):<code>找东西 / 存东西 / 改东西 / 盘点 / 出门 / 回家 / 看统计 / 账号 / 检查 / 标签 / 帮助</code></p>
+</div>
+
+<h3>(2) <code>scripts/help_center.py</code> 改渲染</h3>
+<div class="c">
+<pre>def build_help_payload() -> dict:
+    ...
+    CATEGORY_ORDER = [
+        "找东西","存东西","改东西","盘点","出门","回家",
+        "看统计","账号","检查","标签","帮助"
+    ]
+    # 按 category 顺序 group,每个 category 内按 wake_word 分二级 group
+    groups = []
+    for cat in CATEGORY_ORDER:
+        in_cat = [s for s in scenarios if s.get("category") == cat]
+        if not in_cat:
+            continue
+        # 二级: 该 category 下的 wake_word 列表
+        wake_words = []
+        seen = set()
+        for s in in_cat:
+            if s["wake_word"] not in seen:
+                seen.add(s["wake_word"])
+                wake_words.append(s["wake_word"])
+        groups.append({
+            "category": cat,
+            "wake_words": wake_words,
+            "scenarios": in_cat,
+        })
+    return { ... "groups": groups ... }</pre>
+</div>
+
+<h3>(3) <code>templates/help_center.html</code> 二级 group 渲染</h3>
+<div class="c">
+<pre>// 一级 group: category 大卡片
+&lt;div class="group category" data-cat="找东西"&gt;
+  &lt;div class="group-h"&gt;🔍 找东西(8 个场景 · 唤醒词:查物品/看物品/查快递/查过期/看标签)&lt;/div&gt;
+  &lt;div class="scenarios"&gt;
+    // 每个场景独立卡片,显示 wake_word / scenario_title / prompt / copy
+    ...
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+
+<h3>(4) <code>tests/test_help_center.py</code> 加字段校验</h3>
+<div class="c">
+<pre>def test_all_scenarios_have_category():
+    valid = {"找东西","存东西","改东西","盘点","出门","回家",
+             "看统计","账号","检查","标签","帮助"}
+    for s in scenarios:
+        assert s.get("category") in valid, f"{s['scenario_id']} 缺 category"
+    # 7 字段契约(总纲 07 §2.2)
+    for s in scenarios:
+        for f in ["wake_word","scenario_id","scenario_title",
+                  "category","dimensions","prompt","status","result"]:
+            assert f in s, f"{s.get('scenario_id','?')} 缺 {f}"</pre>
+</div>
+
+<h2>工作量</h2>
+<table>
+<thead><tr><th>文件</th><th>改动</th></tr></thead>
+<tbody>
+<tr><td><code>templates/help_center.html</code></td><td>JS 1 行改 + 渲染逻辑 ~50 行</td></tr>
+<tr><td><code>scripts/help_center.py</code></td><td>改 group 逻辑 ~40 行</td></tr>
+<tr><td><code>references/scenarios.yaml</code></td><td>32 条加 category 字段</td></tr>
+<tr><td><code>tests/test_help_center.py</code></td><td>加 ~20 行断言</td></tr>
+</tbody>
+</table>
+
+<h2>commit 计划</h2>
+<ol>
+<li>commit: <b>改进 1 默认折叠</b>(help_center.html 1 行)<br>→ 加 Playwright 截图</li>
+<li>commit: <b>改进 2 A 套分类</b>(yaml + 渲染器 + 测试)<br>→ 加 Playwright 截图</li>
+</ol>
+
+<p>预计总耗时:15 分钟(含 2 次截图 + 测试)。我直接动手。</p>
+
+</div></body></html>

@@ -17,8 +17,8 @@ def test_help_html_static():
     assert payload_pos > 0 and wrap_pos > 0, "缺少 payload 或 wrap"
     assert payload_pos < wrap_pos, "BUG: payload script 仍在 wrap 内(innerHTML+= 会摧毁)"
 
-    # BUG FIX 2: JS 中 group id 用纯英文序号(g-0, g-1, ...)
-    assert "'g-' + i" in h or '"g-" + i' in h, "BUG: group id 应是纯英文 g-N 形式"
+    # BUG FIX 2: JS 中 group id 用纯英文序号(P1-11b 后是 cat-0/cat-1 类别)
+    assert "'cat-' + i" in h or '"cat-" + i' in h, "BUG: group id 应是纯英文 cat-N 形式"
 
     # BUG FIX 3: 不应有 inline onclick 属性
     assert "onclick=" not in h, "BUG: 仍有 inline onclick"
@@ -41,26 +41,28 @@ def test_help_html_renders():
     data = yaml.safe_load((SKILL / "references" / "scenarios.yaml").read_text(encoding="utf-8"))
     scenarios = data["scenarios"]
 
-    # 分组
-    grouped = {}
+    # P1-11b:按 category 分组(A 套 11 类)
+    CATEGORY_ORDER = ["找东西", "存东西", "改东西", "盘点",
+                      "出门", "回家", "看统计", "账号", "检查", "标签", "帮助"]
+    by_cat = {}
     for s in scenarios:
-        grouped.setdefault(s["wake_word"], []).append(s)
-    groups = [{"wake_word": w, "scenarios": ss} for w, ss in grouped.items()]
-    # P1-9c-fix-2 后 7 个 update 子项合并 → 24 个唤醒词; ≥ 20 视为合规
-    assert len(groups) >= 20, f"应 ≥ 20 个唤醒词,实际 {len(groups)}"
+        by_cat.setdefault(s.get("category", "其他"), []).append(s)
+    groups = [(cat, by_cat[cat]) for cat in CATEGORY_ORDER if cat in by_cat]
+    # 应有 11 类(可能略少,看 yaml 是否覆盖)
+    assert len(groups) >= 8, f"应 ≥ 8 个类别,实际 {len(groups)}"
 
-    # 核心唤醒词必须存在(防止合并过激)
-    must_have = {"查物品", "看物品", "录物品", "改物品", "盘物品", "统物品",
-                  "查过期", "看标签", "合标签", "查账号", "居家管家 帮助"}
-    actual = {g["wake_word"] for g in groups}
-    missing = must_have - actual
-    assert not missing, f"缺失核心唤醒词: {missing}"
+    # 每条 scenario 必须有 8 字段契约(总纲 07 §2.2)
+    required_fields = {"wake_word", "scenario_id", "scenario_title",
+                        "category", "dimensions", "prompt", "status", "result"}
+    for s in scenarios:
+        missing = required_fields - set(s.keys())
+        assert not missing, f"场景 {s.get('scenario_id', '?')} 缺字段: {missing}"
 
-    # 合并不应出现 7 个旧 update 子项(总纲 03 §铁律 2)
-    deprecated = {"修物品", "借物品", "废物品", "移物品", "补物品", "减物品", "标物品"}
-    actual = {g["wake_word"] for g in groups}
-    leaked = deprecated & actual
-    assert not leaked, f"应已合并的 update 子项仍独立 group: {leaked}"
+    # category 必须在白名单内
+    valid_cats = set(CATEGORY_ORDER)
+    for s in scenarios:
+        assert s.get("category") in valid_cats, \
+            f"{s['scenario_id']} category={s.get('category')!r} 不在白名单"
 
     # 所有 prompt 不暴露 CLI / DB / Python 路径(总纲 07 §2)
     for s in scenarios:

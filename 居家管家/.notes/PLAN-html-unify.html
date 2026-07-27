@@ -1,0 +1,143 @@
+<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8"><title>PLAN · 居家管家.html vs HELP HTML 合一方案</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--blue:#0071e3;--amber:#ff9f0a;--green:#34c759;--red:#ff3b30;--line:#e6e6eb}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:24px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.ok{background:#eaf7ec;border-left:3px solid #34c759;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+.bad{background:#ffebee;border-left:3px solid #ff3b30;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+.pe{background:#fff8e6;border-left:3px solid #ff9f0a;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,monospace;line-height:1.5}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}th{background:#fafafc;font-weight:600}
+.opt{display:inline-block;padding:4px 10px;background:#eef;color:#444;border-radius:4px;font-weight:600;font-size:12px;margin-right:6px}
+</style></head><body><div class="wrap">
+
+<h1>PLAN · 居家管家.html 是否仍需保留</h1>
+<p>你问的本质:现有 2 份 HTML(居家管家.html 用户手册 + help 命令生成的 HELP HTML)功能重叠。</p>
+
+<h2>现状对比</h2>
+<table>
+<thead><tr><th>维度</th><th>居家管家.html(用户手册版)</th><th>HELP HTML(scenarios.yaml 渲染)</th></tr></thead>
+<tbody>
+<tr><td>数据源</td><td>70KB+ 手写,与 SKILL.md 不同步</td><td>references/scenarios.yaml(机器可读,总纲 07 §唯一事实源)</td></tr>
+<tr><td>内容</td><td>11 个唤醒词 + 流程详解 + 错误处理 + 用例</td><td>24 个唤醒词 × 32 场景的速查表</td></tr>
+<tr><td>用户视角</td><td>"我先看后学"</td><td>"我快速找 X 该怎么说"</td></tr>
+<tr><td>自动化</td><td>手工维护,与代码漂移</td><td><code>python home_manager.py help</code> 一键生成</td></tr>
+<tr><td>总纲符合度</td><td>违反 04 §4.2(无 SKILL.md 镜像源)</td><td>符合 07 §(契约落地)</td></tr>
+</tbody>
+</table>
+
+<h2>三个方案对比</h2>
+
+<div class="c">
+<h3><span class="opt">方案 A</span> 干脆删除 居家管家.html</h3>
+<ul>
+<li>SKILL.md 删 <code>居家管家.html</code> 引用</li>
+<li>用户改去 <code>python home_manager.py help --output ~/manual.html</code> 自助生成</li>
+</ul>
+<p style="color:red">问题:破坏总纲 04 §原则 4"SKILL.md 改→HTML 必同步"的字面意思(SKILL.md 没有 HTML 镜像)</p>
+</div>
+
+<div class="c">
+<h3><span class="opt" style="background:#cde">方案 B</span> 居家管家.html 严格 = HELP HTML 的快照副本</h3>
+<ul>
+<li>build script 把 HELP HTML 复制成 居家管家.html</li>
+<li>加测试断言两个文件哈希一致</li>
+<li>SKILL.md 顶部加注释说明</li>
+</ul>
+<p><b>满足总纲 04 §4.2(HTML 镜像)</b></p>
+<p><b>避免双维护(scenarios.yaml 是唯一事实源)</b></p>
+<p><b>切换 HELP HTML 也就切换了 居家管家.html,不需要两处改</b></p>
+</div>
+
+<div class="c">
+<h3><span class="opt">方案 C</span> 把"详细操作指南"另开文件 <code>MANUAL.md</code></h3>
+<ul>
+<li>居家管家.html = HELP HTML 镜像</li>
+<li>MANUAL.md(新增)= 错误处理 / 用例 / 安装步骤 / 三阶段录入详解</li>
+<li>SKILL.md 加 MANUAL.md 链接</li>
+</ul>
+<p><b>工作量大,你可能不需要 MANUAL.md</b></p>
+</div>
+
+<h2>我推荐方案 B</h2>
+<div class="ok">
+<b>为什么</b>:你说"二选一 + 居家管家.html 就是 HELP HTML 副本"——方案 B 完全符合,且不需要新增 MANUAL.md 这个文档泛滥。<br>
+<b>好处</b>:
+<ul>
+<li>总纲 04 §4.2 字面满足(SKILL.md 有 HTML 镜像)</li>
+<li>scenarios.yaml 是唯一定义源,改一处就同步</li>
+<li>测试断言保证不会有人手动改 居家管家.html 后忘了同步</li>
+<li>SKILL.md 加注释 ≈ 30 行,符合 04 §4.2"改 SKILL.md 必须同步 HTML"</li>
+</ul>
+</div>
+
+<h2>实施方案(方案 B 具体步骤)</h2>
+
+<div class="c">
+<h3>1. <code>scripts/build_manual.py</code> — 同步脚本</h3>
+<pre>"""把 HELP HTML 复制成 居家管家.html(总纲 04 §4.2 镜像源保证一致)
+
+用法:
+  python3 scripts/build_manual.py
+  # 等价于:
+  #   python3 scripts/home_manager.py help --output /tmp/help.html
+  #   cp /tmp/help.html 居家管家.html
+"""
+import shutil, subprocess, sys
+HELP_TMP = "/tmp/居家管家_help_generated.html"
+r = subprocess.run([sys.executable, "scripts/home_manager.py",
+                   "help", "--output", HELP_TMP],
+                  capture_output=True, text=True)
+if r.returncode != 0:
+    sys.exit(r.returncode)
+shutil.copy2(HELP_TMP, "居家管家.html")
+print(f"✓ 居家管家.html 与 HELP HTML 同步完成")</pre>
+</div>
+
+<div class="c">
+<h3>2. <code>tests/test_manual_sync.py</code> — 同步断言</h3>
+<pre>def test_manual_html_matches_help():
+    """居家管家.html 必须与 HELP HTML 字节一致(scripts/build_manual.py 同步)"""
+    import subprocess, hashlib, pathlib
+    skill = pathlib.Path(__file__).parent.parent
+    help_html = skill / "output" / "help_generated.html"
+    manual = skill / "居家管家.html"
+    # 生成 HELP HTML
+    subprocess.run(["python3", str(skill/"scripts"/"home_manager.py"),
+                    "help", "--output", str(help_html)], check=True)
+    h1 = hashlib.sha256(help_html.read_bytes()).hexdigest()
+    h2 = hashlib.sha256(manual.read_bytes()).hexdigest()
+    # 容忍首行 banner 差异(可选:跳过 banner diff)
+    assert h1 == h2, f"居家管家.html 与 HELP HTML 不一致:\\n{sha hint}"</pre>
+</div>
+
+<div class="c">
+<h3>3. <code>SKILL.md</code> 顶部加注释</h3>
+<pre>## 📘 居家管家.html 是 HELP HTML 的副本
+本 HTML 的内容 == <code>python3 scripts/home_manager.py help --output 居家管家.html</code> 生成的结果。
+- 修改唤醒词/场景 → 改 <code>references/scenarios.yaml</code> → 跑 <code>make sync-html</code> 同步
+- 不要手动编辑 居家管家.html(scripts/build_manual.py 会覆盖)
+- 测试 <code>tests/test_manual_sync.py</code> 断言字节一致</pre>
+</div>
+
+<h2>我推荐 B 的整理 commit</h2>
+<table>
+<thead><tr><th>commit</th><th>内容</th><th>工作量</th></tr></thead>
+<tbody>
+<tr><td>1. <code>scripts/build_manual.py</code></td><td>同步脚本</td><td>30 行</td></tr>
+<tr><td>2. <code>tests/test_manual_sync.py</code></td><td>字节断言</td><td>20 行</td></tr>
+<tr><td>3. <code>居家管家.html</code></td><td>用 build_manual.py 重新生成(覆盖 70KB+ 手写)</td><td>1 行</td></tr>
+<tr><td>4. <code>SKILL.md</code></td><td>顶部加 banner + 路由表加注释</td><td>10 行</td></tr>
+<tr><td>5. Phase 1 两个文档 commit 保留</td><td>database.md + 原 SKILL.md 重写</td><td>(做过的)</td></tr>
+</tbody>
+</table>
+
+<h2>请你选</h2>
+<div class="c">
+<p><b>B</b>(推荐) / A / C</p>
+<p>选 B 我就开干 4 个 commit,完成后给 Chrome demo。</p>
+</div>
+
+</div></body></html>

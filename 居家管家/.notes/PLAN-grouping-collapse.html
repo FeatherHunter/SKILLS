@@ -1,0 +1,149 @@
+<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8"><title>PLAN · HELP HTML 默认折叠 + 人类语言分类</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--blue:#0071e3;--amber:#ff9f0a;--green:#34c759;--line:#e6e6eb}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:24px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.ok{background:#eaf7ec;border-left:3px solid #34c759;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+.pe{background:#fff8e6;border-left:3px solid #ff9f0a;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,monospace}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}th{background:#fafafc;font-weight:600}
+.opt{display:inline-block;padding:4px 10px;background:#eef;color:#444;border-radius:4px;font-weight:600;font-size:12px;margin-right:6px}
+</style></head><body><div class="wrap">
+
+<h1>PLAN · HELP 两条改进</h1>
+
+<h2>改进 1 · 默认全部折叠</h2>
+<div class="c">
+<p><b>现状</b>:HTML 渲染时第一个 group 带 <code>open</code> 类,其余折叠。</p>
+<p><b>改动</b>:<code>templates/help_center.html</code> 的 IIFE 里"<code>const isOpen = (i === 0) ? ' open' : '';</code>"改为空字符串。</p>
+<pre>// 改前:
+const isOpen = (i === 0) ? ' open' : '';
+
+// 改后:
+const isOpen = '';  // 默认全部折叠</pre>
+<p><b>用户流程</b>:进 HELP → TOC 列表可见 → 点想用的 group 展开 → copy prompt → 折叠其他</p>
+<p><b>风险</b>:用户看不到"首屏默认有什么";但有 TOC + 64 byte 大小,top of page 就有完整索引。</p>
+<p><b>工作量</b>:1 行 JS。极低风险。</p>
+</div>
+
+<h2>改进 2 · 按人类语言分类</h2>
+
+<div class="c">
+<h3>你想要的"分类"可能有 3 种理解</h3>
+
+<table>
+<thead><tr><th>方案</th><th>一级 group</th><th>粒度</th><th>工作量</th></tr></thead>
+<tbody>
+<tr><td><span class="opt">B1</span> 大类 8 个</td><td>查询 / 录入 / 更新 / 盘点 / 穿搭 / 旅游 / 统计 / 设置</td><td>粗分类</td><td>改 yaml + 渲染器分层</td></tr>
+<tr><td><span class="opt">B2</span> 任务导向</td><td>找东西 / 存东西 / 改东西 / 看统计 / 出门 / 回家 / 账号密码</td><td>用户思维</td><td>同 B1</td></tr>
+<tr><td><span class="opt">B3</span> 双视图切换</td><td>Tab 切换:「按动作」/「按唤醒词」</td><td>细</td><td>需 UI + 2 套渲染</td></tr>
+</tbody>
+</table>
+
+<h3>我的推荐:B2(任务导向)</h3>
+<div class="ok">
+理由:
+<ul>
+<li>「找东西 / 存东西 / 改东西 / 看统计 / 出门回家 / 账号密码」直接对接用户大脑的"我现在要干什么"</li>
+<li>比 wake_word 维度更粗,降低 TOC 视觉压力</li>
+<li>每个 action 下挂所有相关 wake_word + 场景</li>
+</ul>
+</div>
+
+<h3>B2 实施方案预览</h3>
+
+<table>
+<thead><tr><th>任务类别</th><th>下属场景</th></tr></thead>
+<tbody>
+<tr><td><b>🔍 找东西</b></td><td>查物品(按名/位置/标签/状态)/ 看物品 / 查快递 / 看标签 / 查过期 / 查高频 / 查低频</td></tr>
+<tr><td><b>📦 存东西</b></td><td>录物品 / 拍物品(录入子流程:推位置、找位置)</td></tr>
+<tr><td><b>✏️ 改东西</b></td><td>改物品(6 变体:通用/移/补/减/改标签/状态)</td></tr>
+<tr><td><b>📋 盘点</b></td><td>盘物品 / 盘全部 / 看标签 / 合标签</td></tr>
+<tr><td><b>👕 穿搭</b></td><td>穿什么</td></tr>
+<tr><td><b>✈️ 出门回家</b></td><td>带物品 / 归物品</td></tr>
+<tr><td><b>📊 看统计</b></td><td>统物品</td></tr>
+<tr><td><b>🔐 账号密码</b></td><td>查账号 / 存账号 / 改账号</td></tr>
+<tr><td><b>🔧 数据检查</b></td><td>查异常</td></tr>
+<tr><td><b>❓ 帮助</b></td><td>居家管家 帮助</td></tr>
+</tbody>
+</table>
+
+<h3>实施细节</h3>
+
+<h4>(1) <code>references/scenarios.yaml</code> 加 category 字段</h4>
+<pre>- wake_word: 查物品
+  scenario_id: search_default
+  scenario_title: 按名称搜物品
+  category: 找东西  # ← 新增 7 字段之一
+  dimensions: { name_match: ["模糊","精确"] }
+  prompt: |</pre>
+
+<h4>(2) <code>scripts/help_center.py</code> 改 group 逻辑</h4>
+<pre># 现状: 按 wake_word group
+# 改进: 按 scenario.category group,wake_word 移入子标题
+
+CATEGORY_ORDER = ["🔍 找东西","📦 存东西","✏️ 改东西",
+                  "📋 盘点","👕 穿搭","✈️ 出门回家",
+                  "📊 看统计","🔐 账号密码","🔧 数据检查","❓ 帮助"]
+
+groups = []
+for cat in CATEGORY_ORDER:
+    in_cat = [s for s in scenarios if s.get("category") == cat.replace("🔍 ","").replace("📦 ","")...]
+    if in_cat:
+        # 按 wake_word 二级 group
+        ...
+groups.append({"category": cat, "scenarios": in_cat})</pre>
+
+<h4>(3) <code>templates/help_center.html</code> 改渲染</h4>
+<pre>// 一级: category(整个卡片)
+// 二级: 该 category 下的 wake_word group
+// 每场景: 卡片显示 wake_word + category(单色徽章)+ prompt + 复制按钮</pre>
+
+<h4>(4) 兼容性</h4>
+<ul>
+<li>旧 <code>build_help_payload</code> 返回 <code>groups: [{wake_word, scenarios}]</code> → 改 <code>groups: [{category, scenarios, sub_groups}]</code></li>
+<li><code>tests/test_help_center.py</code> 加 category 字段断言</li>
+</ul>
+</div>
+
+<h2>风险</h2>
+<div class="pe">
+<b>B1/B2 都改 schema/渲染</b>:测试要改,YAML 32 字段要批量加 category。一致性靠 test 兜底。
+</div>
+
+<h2>工作量对比</h2>
+<table>
+<thead><tr><th>项目</th><th>改动 1 折叠</th><th>改动 2 B2 分类</th></tr></thead>
+<tbody>
+<tr><td>templates/help_center.html</td><td>1 行</td><td>~80 行</td></tr>
+<tr><td>scripts/help_center.py</td><td>—</td><td>~40 行</td></tr>
+<tr><td>references/scenarios.yaml</td><td>—</td><td>~32 处加 category 字段</td></tr>
+<tr><td>tests/test_help_center.py</td><td>—</td><td>~20 行</td></tr>
+<tr><td>Playwright re-shoot</td><td>—</td><td>1 张图</td></tr>
+<tr><td>commit 数</td><td>1</td><td>2(代码 + 数据)</td></tr>
+<tr><td><b>总工作量</b></td><td><b>5 分钟</b></td><td><b>30 分钟</b></td></tr>
+</tbody>
+</table>
+
+<h2>请你选</h2>
+
+<div class="c">
+<p><b>改进 1</b>:✅ 做(1 行 JS,极低风险)</p>
+</div>
+
+<div class="c">
+<p><b>改进 2</b>:
+<ul>
+<li><b>B2 任务导向</b>(推荐)— 找东西 / 存东西 / 改东西 / 看统计 / 账号密码 / ...</li>
+<li>B1 大类 8 个 — 查询 / 录入 / 更新 / 盘点 / ...</li>
+<li>B3 双视图切换(tab)— 复杂,跳过</li>
+<li>不要做</li>
+</ul>
+</p>
+</div>
+
+<p>回我"1+2-B2" 或"1+2-B1" 或"只 1"我开干。</p>
+
+</div></body></html>

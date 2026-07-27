@@ -70,24 +70,25 @@ h1{font-size:24px;margin:0 0 4px}
 
   html += '<div class="toc"><strong>跳到</strong> ';
   for (let i = 0; i < groups.length; i++) {
-    html += '<a href="#g-' + i + '">' + esc(groups[i].wake_word) + '</a>';
+    html += '<a href="#cat-' + i + '">' + esc(groups[i].category) + '</a>';
   }
   html += '</div>';
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
-    const isOpen = '';  // 默认全部折叠(用户主动展开想用的类别)
-    html += '<div class="group' + isOpen + '" id="g-' + i + '" data-idx="' + i + '">';
-    html += '<div class="group-h" data-idx="' + i + '">';
-    html += '<h2>' + esc(g.wake_word) + '</h2>';
-    html += '<span class="badge">' + g.scenarios.length + ' 个场景</span>';
+    const isOpen = '';  // 默认全部折叠(P1-11a)
+    const wwStr = arr(g.wake_words).join(' / ');
+    html += '<div class="group' + isOpen + '" id="cat-' + i + '" data-idx="' + i + '">';
+    html += '<div class="group-h" data-ww="' + esc(wwStr) + '" data-idx="' + i + '">';
+    html += '<h2>' + esc(g.category) + '</h2>';
+    html += '<span class="badge">' + g.scenarios.length + ' 个场景 · ' + arr(g.wake_words).length + ' 个唤醒词</span>';
     html += '</div>';
     html += '<div class="scenarios">';
     for (const s of g.scenarios) {
-      // BUG FIX: prompt 存到 <script type='application/json'> 子元素,避免属性值转义
       html += '<div class="scenario">';
       html += '<button class="copy-btn" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">复制 prompt</button>';
       html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
+      html += '<div class="s-ww">唤醒词: <code>' + esc(s.wake_word || '') + '</code></div>';
       const dims = arr(s.dimensions);
       const dimKeys = Object.keys(dims);
       if (dimKeys.length) {
@@ -109,7 +110,7 @@ h1{font-size:24px;margin:0 0 4px}
   // 用 JSON 子脚本存数据 + textContent 注入文本节点
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
-    const groupEl = document.getElementById('g-' + i);
+    const groupEl = document.getElementById('cat-' + i);
     if (!groupEl) continue;
     const scenarioEls = groupEl.querySelectorAll('.scenario');
     for (let j = 0; j < g.scenarios.length && j < scenarioEls.length; j++) {

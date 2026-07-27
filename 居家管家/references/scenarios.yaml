@@ -9,6 +9,7 @@ scenarios:
   prompt: "我要查物品:\n\n请填入:\n  - 物品名: ___"
   status: ''
   result: 会列出名称匹配的物品(HTML 页面)。
+  category: 找东西
 - wake_word: 查物品
   scenario_id: search_by_location
   scenario_title: 按位置搜物品
@@ -17,6 +18,7 @@ scenarios:
   prompt: "我要查这个位置上的物品:\n\n请填入:\n  - 位置(客厅/冰箱 等): ___"
   status: ''
   result: 会列出该位置上的所有物品(HTML)。
+  category: 找东西
 - wake_word: 查物品
   scenario_id: search_by_tag
   scenario_title: 按标签搜
@@ -25,6 +27,7 @@ scenarios:
   prompt: "我要按标签查:\n\n请填入:\n  - 标签: ___"
   status: ''
   result: 列出有这个标签的物品。
+  category: 找东西
 - wake_word: 查物品
   scenario_id: search_by_status
   scenario_title: 按位置状态搜
@@ -33,6 +36,7 @@ scenarios:
   prompt: "我要查当前状态是 X 的物品:\n\n请填入:\n  - 状态(在家/备用/旅游中等): ___"
   status: ''
   result: 列出该状态的所有物品。
+  category: 找东西
 - wake_word: 看物品
   scenario_id: detail_by_id
   scenario_title: 按 ID 看详情
@@ -40,6 +44,7 @@ scenarios:
   prompt: "我要看这个物品的详情:\n\n请填入:\n  - ID: ___"
   status: ''
   result: 展示该物品全部字段(分类/位置/标签/购买日/过期日/备注等)。
+  category: 找东西
 - wake_word: 录物品
   scenario_id: add_text
   scenario_title: 文字录入物品
@@ -49,6 +54,7 @@ scenarios:
     \ ___\n  - 标签(逗号分隔,至少 10 个): ___\n  - 数量(默认 1): ___\n  - 备注: ___"
   status: ''
   result: AI 走 7 步录入流程,生成预览 HTML 让用户确认,确认后写入。
+  category: 存东西
 - wake_word: 拍物品
   scenario_id: add_photo
   scenario_title: 拍照录入物品
@@ -59,6 +65,7 @@ scenarios:
     \  - 位置(客厅/冰箱 等): ___\n  - 标签(从图片识别,至少 10 个): ___"
   status: ''
   result: AI 视觉识别标签 → 走规范化录入流程 → 一次 add 写入。
+  category: 存东西
 - wake_word: 改物品
   scenario_id: update_generic
   scenario_title: 改物品(通用入口,涵盖以下变体)
@@ -66,6 +73,7 @@ scenarios:
   prompt: "我要修改物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 要改的字段: ___\n  - 新值: ___"
   status: ''
   result: 通用 update;具体场景走下方变体。
+  category: 改东西
 - wake_word: 改物品
   scenario_id: move_variant
   scenario_title: 变体:移物品(移动到新位置)
@@ -73,6 +81,7 @@ scenarios:
   prompt: "我要移动物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 旧位置: ___\n  - 新位置: ___"
   status: ''
   result: 更新 item_locations 表的位置记录。
+  category: 改东西
 - wake_word: 改物品
   scenario_id: plus_variant
   scenario_title: 变体:补物品(增加数量)
@@ -80,6 +89,7 @@ scenarios:
   prompt: "我要补充物品库存:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 数量: ___\n  - 位置: ___"
   status: ''
   result: 对应 item_locations 行的 quantity +N。
+  category: 改东西
 - wake_word: 改物品
   scenario_id: minus_variant
   scenario_title: 变体:减物品(减少数量)
@@ -87,6 +97,7 @@ scenarios:
   prompt: "我要减少物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 数量: ___"
   status: ''
   result: 对应 item_locations 行的 quantity -N;归零自动删该行。
+  category: 改东西
 - wake_word: 改物品
   scenario_id: tags_variant
   scenario_title: 变体:标物品(更新标签)
@@ -100,6 +111,7 @@ scenarios:
     \ ___"
   status: ''
   result: 更新 item_tags 表。
+  category: 改东西
 - wake_word: 改物品
   scenario_id: status_variant
   scenario_title: 变体:状态变更(废/借/修/穿着中/快递中等)
@@ -109,6 +121,7 @@ scenarios:
     \ 等): ___"
   status: ''
   result: location_status='[新状态]'。
+  category: 改东西
 - wake_word: 盘物品
   scenario_id: inventory_location
   scenario_title: 盘点指定位置
@@ -116,6 +129,7 @@ scenarios:
   prompt: "我要盘点这个位置的物品:\n\n请填入:\n  - 位置: ___"
   status: ''
   result: 生成盘点 HTML,逐件确认状态/数量。
+  category: 盘点
 - wake_word: 盘全部
   scenario_id: inventory_all
   scenario_title: 全屋盘点
@@ -123,6 +137,7 @@ scenarios:
   prompt: '我要全屋盘点:'
   status: ''
   result: 生成全屋列表概览 HTML。
+  category: 盘点
 - wake_word: 穿什么
   scenario_id: outfit_pick
   scenario_title: 今日穿搭选择
@@ -131,6 +146,7 @@ scenarios:
   prompt: 今天穿什么?(请同时告诉我当地天气,或让 AI 自己获取)
   status: ''
   result: 基于天气 + 衣物的季节/材质标签,推荐上装/下装/鞋帽组合(HTML)。
+  category: 找东西
 - wake_word: 带物品
   scenario_id: travel_pack
   scenario_title: 出门打包
@@ -138,6 +154,7 @@ scenarios:
   prompt: "我要出门,标记这些物品为'旅游中':\n\n请填入:\n  - 物品清单(逗号或换行分隔): ___"
   status: ''
   result: location_status='旅游中',生成打包回执可发给 AI 执行 update。
+  category: 出门
 - wake_word: 归物品
   scenario_id: travel_return
   scenario_title: 回家归位
@@ -145,6 +162,7 @@ scenarios:
   prompt: '我回家了,把旅游中的物品标回''在家'':'
   status: ''
   result: 列出所有旅游中物品,逐项确认归位。
+  category: 回家
 - wake_word: 统物品
   scenario_id: stats_summary
   scenario_title: 总览统计
@@ -152,6 +170,7 @@ scenarios:
   prompt: '我要看家里物品总览:'
   status: ''
   result: 总数 / 有价件数 / 总价值 / 状态分布 / 分类分布(HTML)。
+  category: 看统计
 - wake_word: 查高频
   scenario_id: stats_frequent
   scenario_title: 高频物品
@@ -160,6 +179,7 @@ scenarios:
   prompt: "我要看最常用的物品 TOP:\n\n请填入:\n  - 数量(默认 20): ___"
   status: ''
   result: 按 access_count 降序 TOP N。
+  category: 看统计
 - wake_word: 查低频
   scenario_id: stats_dormant
   scenario_title: 长期未碰
@@ -168,6 +188,7 @@ scenarios:
   prompt: "我要看长期没碰的物品:\n\n请填入:\n  - 数量(默认 20): ___"
   status: ''
   result: 按 last_accessed_at 升序 TOP N。
+  category: 看统计
 - wake_word: 查过期
   scenario_id: stats_expiring
   scenario_title: 过期预警
@@ -179,6 +200,7 @@ scenarios:
     \  - (可选)分类 ID: ___"
   status: ''
   result: 按 expiration_date 升序列出 + 紧急度颜色标识(HTML)。
+  category: 找东西
 - wake_word: 看标签
   scenario_id: tag_list
   scenario_title: 列出所有标签
@@ -186,6 +208,7 @@ scenarios:
   prompt: '我要看所有标签:'
   status: ''
   result: 按使用次数降序。
+  category: 找东西
 - wake_word: 合标签
   scenario_id: tag_merge
   scenario_title: 合并标签
@@ -193,6 +216,7 @@ scenarios:
   prompt: "我要合并标签:\n\n请填入:\n  - 旧标签: ___\n  - 新标签: ___"
   status: ''
   result: UPDATE 所有 item_tags,旧标签自动消失。
+  category: 标签
 - wake_word: 查快递
   scenario_id: search_express
   scenario_title: 在途快递
@@ -200,6 +224,7 @@ scenarios:
   prompt: '我要看在途快递:'
   status: ''
   result: 列出 location_status='快递中' 的物品(HTML,带'收到/废弃/维修'按钮)。
+  category: 找东西
 - wake_word: 查账号
   scenario_id: account_list
   scenario_title: 列出所有账号
@@ -207,6 +232,7 @@ scenarios:
   prompt: '我要看所有账号:'
   status: ''
   result: 列出平台 + 用户名(密码隐藏)。
+  category: 账号
 - wake_word: 存账号
   scenario_id: account_add
   scenario_title: 新增账号
@@ -215,6 +241,7 @@ scenarios:
     \ 8 字符): ___"
   status: ''
   result: 密码用主密钥 Fernet 加密后存。
+  category: 账号
 - wake_word: 改账号
   scenario_id: account_show
   scenario_title: 查看账号(需主密钥)
@@ -222,6 +249,7 @@ scenarios:
   prompt: "我要查看账号密码:\n\n请填入:\n  - 平台: ___\n  - 主密钥: ___"
   status: ''
   result: 解密并展示。
+  category: 账号
 - wake_word: 查异常
   scenario_id: lint_health
   scenario_title: 数据健康检查(Lint)
@@ -229,6 +257,7 @@ scenarios:
   prompt: '我要做数据健康检查:'
   status: ''
   result: 检查标签完整性/位置规范性/状态时效性,列出问题。
+  category: 检查
 - wake_word: 推位置
   scenario_id: suggest_location
   scenario_title: 同类物品位置推荐(录物品子流程)
@@ -236,6 +265,7 @@ scenarios:
   prompt: "[录物品子流程] 帮我推荐这个分类的常用位置:\n\n请填入:\n  - 分类(衣物/食品 等): ___"
   status: ''
   result: 列出同类物品所在位置 + 代表物品名。
+  category: 出门
 - wake_word: 找位置
   scenario_id: find_location
   scenario_title: 参考锚定(录物品子流程)
@@ -243,6 +273,7 @@ scenarios:
   prompt: "[录物品子流程] 把新物品放在和这个参考物品相同位置:\n\n请填入:\n  - 参考物品名: ___"
   status: ''
   result: 通过参考物品 ID 定位到它的位置,然后复用。
+  category: 回家
 - wake_word: 居家管家 帮助
   scenario_id: help_center
   scenario_title: 居家管家能力速查表
@@ -250,3 +281,4 @@ scenarios:
   prompt: '我要看居家管家能做什么:'
   status: ''
   result: 会看到唤醒词 × 场景的清单,可一键复制 prompt 发送给 AI
+  category: 帮助

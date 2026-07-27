@@ -126,9 +126,9 @@ WRITE_CONTRACTS = [
     # 3 字段独立标记: id_缺 / timestamp_缺 / rows_缺 各自的 xfail reason
     (["weight-update", "1", "--weight", "71"],
      "weight-update",
-     "v2.4.17 扩 P3: weight-update print 'ID 1' 但格式不匹配(id= 缺)",
-     "v2.4.17 扩 P3: weight-update stdout 缺 YYYY-MM-DD(只有 '已更新' 无明确写入时间)",
-     "v2.4.17 扩 P3: weight-update 没 '影响' 字样",
+     None,  # v2.4.18a 修:id= 标记
+     None,  # v2.4.18a 修:YYYY-MM-DD 时间戳
+     None,  # v2.4.18a 修:"影响" 字样
      [["weight", "70.5", "--note", "test"]]),
     (["delete", "1"],
      "delete",

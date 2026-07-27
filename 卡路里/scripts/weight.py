@@ -101,8 +101,9 @@ def update_weight(weight_id, weight_kg=None, note=None):
         weight_kg: 新体重(公斤),可选
         note: 新备注,可选
 
-    Returns:
-        bool: 是否更新成功
+    Returns(v2.4.18a 改):
+        成功:dict 含 id/date/time/old_kg/new_kg/bmi/note/rows_affected (V1.0 §02 第②特性)
+        失败:None
 
     注意:
         - 至少需要传入 --weight / --note 中的一个
@@ -112,11 +113,11 @@ def update_weight(weight_id, weight_kg=None, note=None):
         weight_id = int(weight_id)
     except ValueError:
         print("Error: 体重记录 ID 必须是数字")
-        return False
+        return None
 
     if weight_kg is None and note is None:
         print("Error: 至少需要传入 --weight 或 --note 中的一个")
-        return False
+        return None
 
     # 2026-07-20 改:身高从 user_profile 读
     from profile import get_profile as _get_user_profile
@@ -125,19 +126,19 @@ def update_weight(weight_id, weight_kg=None, note=None):
     if profile_height is None or profile_height <= 0:
         print("Error: user_profile 未设身高,无法重算 BMI")
         print("  请先跑:calorie_tracker.py profile set 30 male --height 177")
-        return False
+        return None
 
     conn = _get_db()
     c = conn.cursor()
 
-    c.execute('SELECT id, weight_kg FROM weight_log WHERE id = ?', (weight_id,))
+    c.execute('SELECT id, weight_kg, date, time FROM weight_log WHERE id = ?', (weight_id,))
     row = c.fetchone()
     if not row:
         print(f"Error: 体重记录 ID {weight_id} 不存在")
         conn.close()
-        return False
+        return None
 
-    old_weight = row[1]
+    old_id, old_weight, old_date, old_time = row
 
     new_weight = float(weight_kg) if weight_kg is not None else old_weight
 
@@ -156,14 +157,21 @@ def update_weight(weight_id, weight_kg=None, note=None):
     set_clause = ", ".join(set_parts)
 
     c.execute(f'UPDATE weight_log SET {set_clause} WHERE id = ?', values)
+    rows = c.rowcount
     conn.commit()
     conn.close()
 
-    print(f"✓ 已更新体重记录 ID {weight_id}")
-    print(f"  体重：{old_weight} → {new_weight} kg | BMI：{bmi}")
-    if note is not None:
-        print(f"  备注：{note}")
-    return True
+    # v2.4.18a:CLI 端负责打印回执(契约格式)
+    return {
+        'id': old_id,
+        'date': old_date,
+        'time': old_time,
+        'old_weight': old_weight,
+        'new_weight': new_weight,
+        'bmi': bmi,
+        'note': note,
+        'rows_affected': rows,
+    }
 
 
 def get_weight_history(days=30, start_date=None, end_date=None):

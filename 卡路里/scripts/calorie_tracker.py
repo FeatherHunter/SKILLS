@@ -354,11 +354,19 @@ def main():
                 print("Error: --height 参数已删除(2026-07-20)")
                 print("  身高从 user_profile 读,请用:profile set 30 male --height <cm>")
                 sys.exit(1)
-            weight.update_weight(
+            # v2.4.18a 改:符合 V1.0 §02 第②特性"回执 = ID + 时间戳 + 影响行数"
+            receipt = weight.update_weight(
                 sys.argv[2],
                 weight_kg=kwargs.get('weight'),
                 note=kwargs.get('note'),
             )
+            if receipt is None:
+                sys.exit(1)
+            print(f"✓ 体重记录已更新 (id={receipt['id']}, 影响 {receipt['rows_affected']} 行)")
+            print(f"  日期: {receipt['date']} {receipt['time']}")
+            print(f"  体重: {receipt['old_weight']} → {receipt['new_weight']} kg | BMI: {receipt['bmi']}")
+            if receipt['note']:
+                print(f"  备注: {receipt['note']}")
 
         elif command == "weight-history":
             # v2.4.6:接通 render_weight_history.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)

@@ -734,8 +734,12 @@ def _stats_summary(conn):
         r1['total_value'] += sum(s['total_value'] for s in sub)
 
     cursor.execute("""
-        SELECT COUNT(*) AS priced_cnt, ROUND(SUM(purchase_price), 2) AS total_value
-        FROM items WHERE purchase_price IS NOT NULL AND purchase_price > 0
+        SELECT COUNT(*) AS priced_cnt,
+               ROUND(SUM(COALESCE(i.purchase_price, 0) * COALESCE(q.qty, 0)), 2) AS total_value
+        FROM items i
+        LEFT JOIN (SELECT item_id, SUM(quantity) AS qty FROM item_locations GROUP BY item_id) q
+          ON q.item_id = i.id
+        WHERE i.purchase_price IS NOT NULL AND i.purchase_price > 0
     """)
     priced = cursor.fetchone()
 

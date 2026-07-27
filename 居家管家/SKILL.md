@@ -116,9 +116,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 28 | 存账号 | 新增账号 | accounts.py → add | 是 |
 | 29 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
 | 30 | 查异常 | 数据健康检查 | SKILL.md → Lint 检查 | 否 |
-| 31 | 查物品 | 物品搜索（默认输出 HTML） | features/search.md → Step 4 | 可选（无则列全部） |
-| 32 | 看物品 | 物品详情（默认输出 HTML） | features/search.md → Step 4 | 是（多件时先选） |
-| 33 | 统物品 | 总体统计（默认输出 HTML） | features/search.md → Step 4 | 否 |
+| 31 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
+| 32 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
+| 33 | 统物品(HTML) | 总体统计(默认输出 HTML) | features/search.md → Step 4 | 否 |
 
 ### 匹配规则
 

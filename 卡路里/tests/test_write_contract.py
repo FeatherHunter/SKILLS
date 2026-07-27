@@ -118,34 +118,96 @@ def tmp_db_empty(tmp_db_dir):
 #                      None/[] = 无前置
 WRITE_CONTRACTS = [
     # ===== v2.4.16 已修 =====
-    (["weight", "70.5", "--note", "test"],  "weight",         None,        None),
-    (["water", "500"],                      "water",          None,        None),
-    (["add", "鸡胸肉", "165", "31"],        "add",            None,        None),
+    (["weight", "70.5", "--note", "test"],  "weight",   None, None, None, None),
+    (["water", "500"],                      "water",    None, None, None, None),
+    (["add", "鸡胸肉", "165", "31"],        "add",      None, None, None, None),
 
     # ===== v2.4.17 扩展:其余写库子命令 =====
-    # 单行 upsert / 单值写,可能合规/可能缺 ID
-    (["weight-update", "1", "--weight", "71"],     "weight-update",  "v2.4.17 扩 P3 时发现: weight-update print 'ID 1' 但格式不匹配契约(没 'id=' 没 YYYY-MM-DD 没 '影响')",  [["weight", "70.5", "--note", "test"]]),
-    (["delete", "1"],                              "delete",         "v2.4.17 扩 P3 时发现: calorie_tracker.py delete 子命令 print 缺 id/时间/影响行数",  [["add", "test", "100", "10"]]),
-    (["update-meal", "1", "--calories", "200"],    "update-meal",    "v2.4.17 扩 P3 时发现: calorie_tracker.py update-meal 子命令 print 缺 id/时间/影响行数",  [["add", "test", "100", "10"]]),
-    (["goal", "2000", "150", "200", "60", "2000"], "goal",           "v2.4.17 扩 P3 时发现: calorie_tracker.py goal 子命令 print 缺 id/时间/影响行数",  None),
-    (["add-product", "x", "x", "0", "0", "0", "0", "0", "0", "0", "0"], "add-product", "v2.4.17 扩 P3 时发现: calorie_tracker.py add-product 子命令 print 缺 id/时间/影响行数",  None),
-    (["update-product", "1", "--calories", "45"],  "update-product", "v2.4.17 扩 P3 时发现: calorie_tracker.py update-product 子命令 print 缺 id/时间/影响行数",  None),
-    (["exercise-add", "跑步", "300", "--minutes", "30"], "exercise-add", "v2.4.17 扩 P3 时发现: calorie_tracker.py exercise-add 子命令 print 缺 id/时间/影响行数",  None),
+    # 3 字段独立标记: id_缺 / timestamp_缺 / rows_缺 各自的 xfail reason
+    (["weight-update", "1", "--weight", "71"],
+     "weight-update",
+     "v2.4.17 扩 P3: weight-update print 'ID 1' 但格式不匹配(id= 缺)",
+     "v2.4.17 扩 P3: weight-update stdout 缺 YYYY-MM-DD(只有 '已更新' 无明确写入时间)",
+     "v2.4.17 扩 P3: weight-update 没 '影响' 字样",
+     [["weight", "70.5", "--note", "test"]]),
+    (["delete", "1"],
+     "delete",
+     "v2.4.17 扩 P3: delete print 'Deleted entry 1' 缺 id=",
+     "v2.4.17 扩 P3: delete stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: delete 缺 '影响' 字样",
+     [["add", "test", "100", "10"]]),
+    (["update-meal", "1", "--calories", "200"],
+     "update-meal",
+     "v2.4.17 扩 P3: update-meal stdout 缺 id=",
+     "v2.4.17 扩 P3: update-meal stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: update-meal stdout 缺 '影响' 字样",
+     [["add", "test", "100", "10"]]),
+    (["goal", "2000", "150", "200", "60", "2000"],
+     "goal",
+     "v2.4.17 扩 P3: goal stdout 缺 id=",
+     "v2.4.17 扩 P3: goal stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: goal stdout 缺 '影响' 字样",
+     None),
+    (["weight-goal", "75", "2026-12-31"],
+     "weight-goal",
+     "v2.4.17 扩 P3: weight-goal stdout 缺 id=",
+     None,  # '目标日期：2026-12-31' 命中 YYYY-MM-DD → 合规
+     "v2.4.17 扩 P3: weight-goal stdout 缺 '影响' 字样",
+     None),
+    (["add-product", "x", "x", "0", "0", "0", "0", "0", "0", "0", "0"],
+     "add-product",
+     "v2.4.17 扩 P3: add-product stdout 缺 id=/时间/影响",
+     "v2.4.17 扩 P3: add-product stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: add-product stdout 缺 '影响' 字样",
+     None),
+    (["update-product", "1", "--calories", "45"],
+     "update-product",
+     "v2.4.17 扩 P3: update-product stdout 缺 id=",
+     "v2.4.17 扩 P3: update-product stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: update-product stdout 缺 '影响' 字样",
+     [["add-product", "x", "x", "0", "0", "0", "0", "0", "0", "0", "0"]]),
+    (["exercise-add", "跑步", "300", "--minutes", "30"],
+     "exercise-add",
+     "v2.4.17 扩 P3: exercise-add stdout 缺 id=",
+     "v2.4.17 扩 P3: exercise-add stdout 缺 YYYY-MM-DD",
+     "v2.4.17 扩 P3: exercise-add stdout 缺 '影响' 字样",
+     None),
+    (["profile", "set", "30", "male", "--height", "180"],
+     "profile",
+     "v2.4.17 扩 P3: profile set stdout 缺 id=",
+     None,  # '更新时间: 2026-xx-xxTxx:xx:xx' 命中 YYYY-MM-DD → 合规
+     "v2.4.17 扩 P3: profile set stdout 缺 '影响' 字样",
+     None),
 ]
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
-def test_write_contract_id_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
-    """V1.0 §02 第②特性:写库回执必须含 'id=' 标记"""
-    if known_violation:
-        # 已知违反 — strict=True → 修好后会从 xfail 变 fail 强制再去掉 xfail
-        request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
-    db_dir = tmp_db
-    # 前置种子命令(例:update-meal 需要先有 add 的 id)
+def _maybe_xfail_violation(request, violation, marker):
+    """如果 violation 是 str,对该测试加 xfail;否则不加"""
+    if violation:
+        request.applymarker(pytest.mark.xfail(reason=violation, strict=True))
+
+
+def _run_with_seed(cmd_args, seed_cmds, db_dir):
+    """先跑 seed (如有),再跑 cmd_args"""
     if seed_cmds:
         for seed in seed_cmds:
             _run_cli(*seed, db_dir=db_dir)
-    rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
+    return _run_cli(*cmd_args, db_dir=db_dir)
+
+
+
+
+@pytest.mark.parametrize(
+    "cmd_args,label,k_id,k_ts,k_rows,seed_cmds",
+    WRITE_CONTRACTS,
+)
+def test_write_contract_id_marker(
+    cmd_args, label, k_id, k_ts, k_rows, seed_cmds, tmp_db, request,
+):
+    """V1.0 §02 第②特性:写库回执必须含 'id=' 标记"""
+    _maybe_xfail_violation(request, k_id, "id")
+    db_dir = tmp_db
+    rc, out, err = _run_with_seed(cmd_args, seed_cmds, db_dir)
     assert 'id=' in out, (
         f"❌ {label} 写库回执缺 'id=' 标记\n"
         f"  违反 V1.0 §02 第②特性 '写入后回执 = ID + 时间戳 + 影响行数'\n"
@@ -154,16 +216,17 @@ def test_write_contract_id_marker(cmd_args, label, known_violation, seed_cmds, t
     )
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
-def test_write_contract_timestamp_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
+@pytest.mark.parametrize(
+    "cmd_args,label,k_id,k_ts,k_rows,seed_cmds",
+    WRITE_CONTRACTS,
+)
+def test_write_contract_timestamp_marker(
+    cmd_args, label, k_id, k_ts, k_rows, seed_cmds, tmp_db, request,
+):
     """V1.0 §02 第②特性:写库回执必须含 YYYY-MM-DD 时间戳"""
-    if known_violation:
-        request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
+    _maybe_xfail_violation(request, k_ts, "timestamp")
     db_dir = tmp_db
-    if seed_cmds:
-        for seed in seed_cmds:
-            _run_cli(*seed, db_dir=db_dir)
-    rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
+    rc, out, err = _run_with_seed(cmd_args, seed_cmds, db_dir)
     assert re.search(r'\d{4}-\d{2}-\d{2}', out), (
         f"❌ {label} 写库回执缺 YYYY-MM-DD 日期\n"
         f"  违反 V1.0 §02 第②特性 '时间戳'\n"
@@ -171,16 +234,17 @@ def test_write_contract_timestamp_marker(cmd_args, label, known_violation, seed_
     )
 
 
-@pytest.mark.parametrize("cmd_args,label,known_violation,seed_cmds", WRITE_CONTRACTS)
-def test_write_contract_rows_affected_marker(cmd_args, label, known_violation, seed_cmds, tmp_db, request):
+@pytest.mark.parametrize(
+    "cmd_args,label,k_id,k_ts,k_rows,seed_cmds",
+    WRITE_CONTRACTS,
+)
+def test_write_contract_rows_affected_marker(
+    cmd_args, label, k_id, k_ts, k_rows, seed_cmds, tmp_db, request,
+):
     """V1.0 §02 第②特性:写库回执必须含 '影响' 标记(影响行数)"""
-    if known_violation:
-        request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
+    _maybe_xfail_violation(request, k_rows, "rows")
     db_dir = tmp_db
-    if seed_cmds:
-        for seed in seed_cmds:
-            _run_cli(*seed, db_dir=db_dir)
-    rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)
+    rc, out, err = _run_with_seed(cmd_args, seed_cmds, db_dir)
     assert '影响' in out, (
         f"❌ {label} 写库回执缺 '影响' 标记\n"
         f"  违反 V1.0 §02 第②特性 '影响行数'\n"

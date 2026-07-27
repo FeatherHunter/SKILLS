@@ -5,6 +5,99 @@
 
 ---
 
+## 2026-07-27 - HELP 契约落地(§07 · 总纲 v1.0 新契约)
+
+### 背景
+
+按 2026-07-27 第一性原理审查,F1(无 HELP 唤醒词)被列为 🔴 P0。本版本按总纲 SKILL开发总纲V1.0/07-HELP与场景完备性.md 落地 HELP 契约。
+
+### 改动清单
+
+#### Phase 1.1 · 场景资产(唯一事实源)
+
+- `references/scenarios.yaml`(新建 · 592 行)
+  - 31 主类 + 4 aliases(做菜模式 ↔ 开始做菜;废弃食谱 ↔ 不想要/删掉/废弃)= 35 唤醒词全覆盖
+  - 61 场景(56 可用 + 5 【待开发】)
+  - 7 字段契约最小必填集(wake_word/scenario_id/scenario_title/dimensions/prompt/status/result)
+  - 防冗余方法论 5 条:用户原话依据/维度 ≤3/不 AI 自造/高频优先/可废止
+  - §07 §10 自我检查 14 项元数据
+
+#### Phase 1.2 · HELP HTML 模板(§07 §5)
+
+- `templates/help.html`(新建 · 505 行)
+  - 4 段式骨架(首屏/主体/交互/尾部)
+  - 5 状态 fallback(empty/error/missing/normal/offline)
+  - 每场景独立复制按钮 + 反馈 toast(§07 §10 s11)
+  - 实时搜索过滤(§07 §10 s09 大规模可用)
+  - 二态状态视觉区分(可用=蓝/待开发=橙)
+  - 响应式 480px 断点 + 触摸目标 ≥44px
+  - 占位符 `<!--INJECT-DATA-->` 唯一 1 次(§04 原则 4)
+
+#### Phase 1.3 · HELP HTML 渲染器(§04 原则 5)
+
+- `scripts/render_help.py`(新建 · 249 行)
+  - 读 scenarios.yaml + 注入 templates/help.html + 输出 HTML 副本
+  - aliases 展开(wake_words 31 → 35)
+  - 占位符唯一性 assert(防手工编辑破坏契约)
+  - `</` 转义防 script 提前闭合
+  - `default=str` 处理 YAML date 对象
+  - 输出 `$CHEF_OUTPUT_DIR/help/私家大厨_HELP_<YYYYMMDD_HHMMSS>.html`
+  - 支持 `--out` / `--output-dir` / `--no-clobber`
+
+#### Phase 1.4 · SKILL.md + 镜像同步
+
+- `SKILL.md`:
+  - 唤醒词清单 35 → 36
+  - 新增 `I. 帮助` 类(§07 §1 强制契约)
+  - 路由表 35 → 36,新增 I 段
+  - HELP 自身不出现在生成的 HTML 中(防死循环)
+- `私家大厨.html`(HTML 镜像同步 · §05 硬规则):
+  - tab 按钮 +1(I. 帮助)
+  - 新增 I 段内容(render_help.py 数据流/触发示例/HELP HTML 特性)
+  - footer 唤醒词数 35 → 36
+
+### 五者一一对应(§07 §5 完成判定)
+
+```
+① SKILL.md 唤醒词声明        → 私家大厨 HELP ✅
+② 场景资产(唯一事实源)       → references/scenarios.yaml ✅
+③ 稳定 prompt(场景资产内)   → 7 字段契约的 prompt ✅
+④ 底层工作流(渲染器)        → scripts/render_help.py ✅
+⑤ HELP HTML(用户手中真相)   → templates/help.html + 渲染生成 ✅
+```
+
+### §07 §10 自我检查 14 项状态
+
+| # | 项 | 状态 |
+|---|----|------|
+| 1 | HELP 唤醒词登记 | ✅ |
+| 2 | 场景资产已产出 | ✅ |
+| 3 | 每个场景含 7 字段 | ✅ |
+| 4 | prompt 不暴露实现细节 | ✅ |
+| 5 | status 二态正确 | ✅ |
+| 6 | 【待开发】场景 AI 必须停 | ✅ |
+| 7 | HELP HTML 由资产生成(无副本) | ✅ |
+| 8 | 5 状态 fallback | ✅ |
+| 9 | 大规模场景可定位(搜索+折叠) | ✅ |
+| 10 | 跨设备验证 | ⚠️ 待真机验证 |
+| 11 | 每场景独立复制按钮+反馈 | ✅ |
+| 12 | 五者一一对应 | ✅ |
+| 13 | FAT 协议 | ⏳ 见 P0-4 |
+| 14 | 跨 Skill 路由声明 | ⏳ 见 P0-3 |
+
+### 影响面
+
+- 纯文档/契约/渲染器新增,**无 DB schema 改动、无数据迁移**
+- 6 个 commit(Phase 0 路线图 + Phase 1.1-1.4)
+- 改动文件:PLAN.md(规划) / scenarios.yaml(资产) / help.html(模板) / render_help.py(渲染器) / SKILL.md(契约) / 私家大厨.html(镜像) / CHANGELOG.md(本条)
+
+### 下一步
+
+- P0-3 跨 Skill 路由声明(独立任务)
+- P0-4 FAT 黑盒测试(独立任务)
+
+---
+
 ## 2026-07-24 - 目录清理 + 手册重构
 
 ### 背景

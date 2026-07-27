@@ -206,7 +206,7 @@
 <div class="tab-panel" id="tab-B">
 <h2>B. 查看食谱 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(5 个)</span></h2>
 <p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
-<p>展示食谱数据。「查看食材/步骤/营养/背景」4 个细分唤醒词是给 AI 的<strong>路由提示</strong>:AI 调 <code>recipe_render.py render &lt;菜名&gt;</code> 渲染完整 HTML(包含所有 section),用 <code>&lt;media&gt;</code> 标签推文件给用户。<strong>禁止 AI 文字截取</strong>(违反原则 11 HTML-First)。</p>
+<p>展示食谱数据。「查看食材/步骤/营养/背景」4 个细分唤醒词是给 AI 的<strong>路由提示</strong>:AI 调 <code>recipe_render.py render &lt;菜名&gt;</code> 渲染完整 HTML(包含所有 section),用 <code>&lt;media src="...html#section-{ingredients|steps|nutrition|background}"></code> 标签推文件给用户(浏览器自动跳到指定 section)。<strong>禁止 AI 文字截取</strong>(违反原则 11 HTML-First)。</p>
 
 <details class="ww" data-keywords="查看食谱 show render">
   <summary class="ww-head">
@@ -246,7 +246,7 @@
 
 <details class="ww" data-keywords="查看食材">
   <summary class="ww-head">
-    <span class="ww-title"><span class="ww-tag">查看食材</span><span class="ww-desc">推完整 HTML(食材 section)</span></span>
+    <span class="ww-title"><span class="ww-tag">查看食材</span><span class="ww-desc">推 HTML + URL #section-ingredients 锚点</span></span>
     <span class="ww-arrow">▼</span>
   </summary>
   <div class="ww-body">
@@ -269,7 +269,7 @@
 
 <details class="ww" data-keywords="查看步骤">
   <summary class="ww-head">
-    <span class="ww-title"><span class="ww-tag">查看步骤</span><span class="ww-desc">推完整 HTML(步骤 section)</span></span>
+    <span class="ww-title"><span class="ww-tag">查看步骤</span><span class="ww-desc">推 HTML + URL #section-steps 锚点</span></span>
     <span class="ww-arrow">▼</span>
   </summary>
   <div class="ww-body">
@@ -288,7 +288,7 @@
 
 <details class="ww" data-keywords="查看营养">
   <summary class="ww-head">
-    <span class="ww-title"><span class="ww-tag">查看营养</span><span class="ww-desc">推完整 HTML(营养 section)</span></span>
+    <span class="ww-title"><span class="ww-tag">查看营养</span><span class="ww-desc">推 HTML + URL #section-nutrition 锚点</span></span>
     <span class="ww-arrow">▼</span>
   </summary>
   <div class="ww-body">
@@ -307,7 +307,7 @@
 
 <details class="ww" data-keywords="查看背景">
   <summary class="ww-head">
-    <span class="ww-title"><span class="ww-tag">查看背景</span><span class="ww-desc">推完整 HTML(背景 section)</span></span>
+    <span class="ww-title"><span class="ww-tag">查看背景</span><span class="ww-desc">推 HTML + URL #section-background 锚点</span></span>
     <span class="ww-arrow">▼</span>
   </summary>
   <div class="ww-body">

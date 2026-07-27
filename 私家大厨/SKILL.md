@@ -99,17 +99,19 @@
 
 ### B. 查看食谱（5个）
 
-> **机制说明**：「查看食材 / 步骤 / 营养 / 背景」这 4 个细分唤醒词,是**给 AI 中介的路由提示**——AI 调 `recipe_render.py render <菜名>` 渲染完整 HTML(包含食材/步骤/营养/背景所有 section),用 `<media>` 标签推文件给用户。**禁止 AI 文字截取**(违反原则 11 HTML-First)。用户在 HTML 里自行定位 section。
+> **机制说明**：「查看食材 / 步骤 / 营养 / 背景」这 4 个细分唤醒词,是**给 AI 中介的路由提示**——AI 调 `recipe_render.py render <菜名>` 渲染完整 HTML(包含食材/步骤/营养/背景所有 section),用 `<media src="...html#section-{ingredients|steps|nutrition|background}">` 标签推文件给用户。**禁止 AI 文字截取**(违反原则 11 HTML-First)。浏览器自动跳到指定 section。
 >
-> 这避免"查看食材"和"查看食谱"在用户感受上有差别,实际上**全量 HTML 已包含**所有 section,只需一份渲染。
+> 这避免"查看食材"和"查看食谱"在用户感受上有差别,实际上**全量 HTML 已包含**所有 section,只需一份渲染 + URL 锚点跳转。
 
 | 唤醒词 | 说明 | 同义(S) | 口语(O) | 模糊(F) |
 |--------|------|--------|--------|--------|
 | 查看食谱 | 调 recipe_render.py render 推完整 HTML | ✓ 搜下做法/怎么弄/查配方 | ✓ 给我看下呢/怎么做呢 | ✓ 错字(宫暴→宫保) |
-| 查看食材 | 推完整 HTML,定位食材 section | ✓ X 用啥料/要买啥 | ✓ 食材给我看下 | ✓ X 的料 |
-| 查看步骤 | 推完整 HTML,定位步骤 section | ✓ X 怎么做/咋做 | ✓ 步骤给我看下哈 | ✓ 怎么个流程 |
-| 查看营养 | 推完整 HTML,定位营养 section | ✓ X 多少卡/热量 | ✓ 营养给我看下 | ✓ 卡路里多少(注意:个人→卡路里) |
-| 查看背景 | 推完整 HTML,定位背景 section | ✓ X 的来历/典故 | ✓ 背景说下呗 | ✓ X 是哪里的 |
+| 查看食材 | 推 HTML + URL `#section-ingredients` 锚点 | ✓ X 用啥料/要买啥 | ✓ 食材给我看下 | ✓ X 的料 |
+| 查看步骤 | 推 HTML + URL `#section-steps` 锚点 | ✓ X 怎么做/咋做 | ✓ 步骤给我看下哈 | ✓ 怎么个流程 |
+| 查看营养 | 推 HTML + URL `#section-nutrition` 锚点 | ✓ X 多少卡/热量 | ✓ 营养给我看下 | ✓ 卡路里多少(注意:个人→卡路里) |
+| 查看背景 | 推 HTML + URL `#section-background` 锚点 | ✓ X 的来历/典故 | ✓ 背景说下呗 | ✓ X 是哪里的 |
+
+> **HTML 锚点协议(2026-07-27 修):** `recipe_view.html` 4 段各加 `id="section-*"`,浏览器自动跳到该 section。AI 收到"查看 X 菜"时,推 `<media src="...html#section-ingredients">`,**禁止只推 HTML 文件不拼锚点**(用户打开找不到 section)。
 
 ### C. 搜索筛选（10个）
 

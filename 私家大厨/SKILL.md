@@ -186,6 +186,21 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | `CHEF_OUTPUT_DIR` | HTML 输出目录 | `D:/CookHub` |
 | `CHEF_OUTPUT_DIR_PREFIX` | 本地源食谱图片命名空间前缀 | `chef://` |
 
+## 📌 输出位置(遵守 V1.0 原则 12.A / 12.B)
+
+> **总纲原则 12 V3 拆分**(2026-07-27):HTML 输出分两类,**A · 数据/过程**(每次触发产生新数据)+ **B · HELP**(Skill 自描述能力目录)。
+
+| 类型 | 渲染器 | 输出路径 | 文件名格式 | V3 分类 |
+|------|--------|---------|-----------|---------|
+| 查看食谱 | `recipe_render.py` | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | **12.A** 数据/过程 |
+| 做菜模式 | `cooking_render.py` | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 采购清单 | `shopping_render.py` | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<slug_or_joined>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| HELP 能力速查 | `render_help.py` | `$CHEF_OUTPUT_DIR/help/` | `私家大厨_HELP_<YYYYMMDD_HHMMSS>.html` | **12.B** HELP |
+
+> **冲突解决**：12.X 共同基础规定 `_N` 自动后缀(N=1 起步,绝不覆盖)。`render_help.py` 当前实现是单次覆盖(因 HELP 渲染幂等),不符合 12.X 严格规定——**Phase 1.7 待优化**(改用 `_N` 后缀)。
+>
+> **env 优先级**：`$SKILLS_DATA_DIR` > `$SKILLS_DB_PATH` > Skill 自带 fallback。**当前 `$CHEF_OUTPUT_DIR` 是 legacy 命名**,与 V3 不一致——**Phase 1.7 待对齐**(迁移到 `$SKILLS_DATA_DIR`)。
+
 ## 一键安装
 
 复制以下内容发送给 AI：

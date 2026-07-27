@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>❓ Q5 场景 2 澄清 · 编辑模式怎么运作 · 2026-07-27</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AAF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#FFF8E1 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:22px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  pre{background:var(--bg);padding:12px 14px;border-radius:var(--radius-sm);font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2);overflow-x:auto;margin:10px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:17px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px}
+  .card-body{padding:14px 20px 18px;font-size:14px;line-height:1.65;color:var(--text2)}
+  ol, ul{padding-left:22px;margin-top:8px}
+  ol li, ul li{margin-bottom:8px}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  .reject{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2);padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.6}
+  .accept{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2);padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.6}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:18px}.card-body{padding:12px 16px 16px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>❓ Q5 场景 2 澄清 · "HTML 编辑模式"怎么运作</h1>
+  <div class="hero-sub">2026-07-27 · 你问:"是不是 复制 prompt 给 AI 的模式?"</div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>1 · 直接回答</h2></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>你的猜测是对的!</strong>场景 2 = <strong>"复制 prompt 给 AI"模式</strong>(沿用 P1-2 单工铁律)。
+    </div>
+    <div class="callout warn">
+      <strong>不是</strong> form 自动提交 · <strong>不是</strong> fetch 调本地 proxy · <strong>不是</strong>浏览器的"应用"按钮。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>2 · 为什么不能 "form 自动提交"?</h2></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>§04 原则 10 · HTML 单工铁律(总纲)</strong>:
+      <pre>Layer 0 事实:
+  ① LLM = HTTP API(远程服务)
+  ② HTML = 浏览器渲染的文件(无服务端能力)
+  ③ 当前架构 = 没有服务端中转 + 只有 IDE 进程内 agent
+推导链:
+  ① + ② + ③ → HTML 与 LLM 之间没有通路
+  唯一路径: 用户手动承上启下
+            HTML → 复制 → 粘贴 → AI 执行
+设计约束: 所有"过程型"HTML 必须设计为"复制模板"</pre>
+    </div>
+    <div class="callout danger">
+      <strong>HTML file:// 协议不能:</strong>
+      <ul>
+        <li>❌ fetch() 跨域(浏览器同源策略)</li>
+        <li>❌ POST 表单(file:// 不能 POST)</li>
+        <li>❌ 调本地 CLI(用户机器配置不可控)</li>
+        <li>❌ 暴露 API key(用户端 vs 服务端)</li>
+      </ul>
+      <strong>→ HTML 永远只能 "复制 prompt 给 AI"</strong>,不能直接提交。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>3 · 场景 2 · 实际工作流设计</h2></div>
+  <div class="card-body">
+
+    <h4 style="font-size:14px;color:var(--blue);margin-top:6px">Step 1 · 用户打开批量编辑页</h4>
+    <div class="callout success">
+      <p>打开 <code>batch_edit.html</code> · 3 个 tab:</p>
+      <ul>
+        <li><strong>Tab A · 食材列表</strong> — 调用 ingredient_manager.search "X" 列出某菜的所有食材</li>
+        <li><strong>Tab B · 步骤编辑</strong> — 调用 step_manager.list "X" 列出所有步骤</li>
+        <li><strong>Tab C · 标签管理</strong> — 调用 season/flavor/category manager 列某菜的标签</li>
+      </ul>
+      <p>每个 tab 显示<strong>当前 DB 状态</strong>(只读视图)。</p>
+    </div>
+
+    <h4 style="font-size:14px;color:var(--blue);margin-top:14px">Step 2 · 用户编辑表单(具体数据)</h4>
+    <div class="callout key">
+      <p>用户在 HTML 内编辑字段值。例如:</p>
+      <pre>&lt;tr data-id="ing-uuid-xxx"&gt;
+  &lt;td&gt;&lt;input value="五花肉" /&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;input value="300" /&gt;&lt;/td&gt;     ← 用户改成 300
+  &lt;td&gt;g&lt;/td&gt;
+&lt;/tr&gt;</pre>
+      <p>⚠️ 这里只是<strong>浏览器内 DOM</strong> —— 不影响 DB。</p>
+    </div>
+
+    <h4 style="font-size:14px;color:var(--blue);margin-top:14px">Step 3 · 点 "复制修改 prompt"(应用按钮变 prompt)</h4>
+    <div class="callout success">
+      <p>点击 "📋 复制修改 prompt" 按钮,JavaScript 收集所有修改,生成一段<strong>给 AI 的提示词</strong>:</p>
+      <pre>[批量编辑修改意图 · 2026-07-27 14:32]
+
+请按以下修改调用 ingredient_manager update:
+1. 食材 ing-uuid-A:
+   - quantity: 100 → 300
+2. 食材 ing-uuid-B:
+   - quantity_text: "50g" → "100g"
+
+来源:私家大厨 batch_edit.html → ingredient_manager update
+
+[给 AI 的指令]
+加载「私家大厨」技能,用 ingredient_manager.py update 子命令按上面修改。
+改完告诉我。</pre>
+    </div>
+
+    <h4 style="font-size:14px;color:var(--blue);margin-top:14px">Step 4 · 用户粘贴给 AI</h4>
+    <div class="callout key">
+      <ol>
+        <li>用户复制剪贴板</li>
+        <li>切到 AI 对话</li>
+        <li>粘贴 → AI 解析这段 prompt</li>
+        <li>AI 调 <code>ingredient_manager.py update</code> 多次</li>
+        <li>DB 实际写入</li>
+        <li>AI 回报结果</li>
+      </ol>
+    </div>
+
+    <h4 style="font-size:14px;color:var(--blue);margin-top:14px">Step 5 · 用户回 batch_edit.html 看新状态</h4>
+    <div class="callout success">
+      <p>点击"🔄 刷新"按钮 → 调 ingredient_manager.search 重新读 DB → 显示新数据。</p>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>4 · 完整流程图(2 个 step)</h2></div>
+  <div class="card-body">
+    <pre>用户                                  AI                              DB
+  │                                    │                            │
+  │  1. 打开 batch_edit.html            │                            │
+  │  (读 ingredient_manager.search)     │                            │
+  │  ← 显示 11 种食材                   │                            │
+  │                                    │                            │
+  │  2. 在 input 里改 100 → 300        │                            │
+  │  (只是浏览器 DOM,不动 DB)          │                            │
+  │                                    │                            │
+  │  3. 点 "复制修改 prompt"            │                            │
+  │  → 剪贴板有: "改 ing-A 为 300"     │                            │
+  │                                    │                            │
+  │  4. 切到 AI 对话粘贴                │                            │
+  ├────────────────────────────────────→│                            │
+  │  "帮我修改 ing-A 为 300"           │                            │
+  │                                    │  5. 调 ingredient_manager  │
+  │                                    │     update --quantity 300   │
+  │                                    ├───────────────────────────→│
+  │                                    │                            │  6. UPDATE
+  │                                    │                            │
+  │                                    │  7. 回报:"改好了"            │
+  │←────────────────────────────────────┤                            │
+  │                                    │                            │
+  │  8. 点 "刷新" → 读 DB → 看新值      │                            │
+  │                                    │                            │</pre>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>5 · 这个方案的优势 vs 劣势</h2></div>
+  <div class="card-body">
+    <div class="accept">
+      <strong>✅ 优势:</strong>
+      <ul>
+        <li><strong>遵守单工铁律</strong> — HTML 不直接调任何 AI,符合总纲 §04 原则 10</li>
+        <li><strong>符合 P1-2 已建立的"复制 prompt"心智模型</strong> — 用户已经习惯(烹饪模式"复制做菜 prompt"已用)</li>
+        <li><strong>0 配置</strong> — 用户无需安装任何本地服务</li>
+        <li><strong>可复用现有 manager CLI</strong> — Q3 argparse 重写后,prompt 解析更准</li>
+      </ul>
+    </div>
+    <div class="reject">
+      <strong>❌ 劣势:</strong>
+      <ul>
+        <li><strong>需要 2 步</strong>(用户改 → 切 AI 粘贴) —— 摩擦大于"一键保存"</li>
+        <li><strong>不能 undo</strong> — 用户改完忘了粘贴就丢了</li>
+        <li><strong>不能并发</strong> — 用户编辑期间 AI 改了同一行会冲突</li>
+      </ul>
+    </div>
+    <div class="callout key">
+      <strong>这些劣势可被缓解:</strong>
+      <ul>
+        <li>留存 localStorage(chrome.html 已用)暂存编辑状态</li>
+        <li>在 prompt 顶部加 "如已修改请忽略" 防并发</li>
+        <li>HTML 上加 "上次修改:" 时间戳,降 prompt 误用风险</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>6 · 与 P1-2 单工模式的关系</h2></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>P1-2 已建立的模式(沿用):</strong>
+      <ul>
+        <li>查看食谱 → "复制做菜 prompt" 给 AI(做菜模式)</li>
+        <li>查看食材清单 → "复制采购 prompt" 给 AI(采购清单)</li>
+        <li>烹饪完成反馈 → "复制反馈 prompt" 给 AI(评分回填)</li>
+      </ul>
+      <p>场景 2 = <strong>第 4 个"复制 prompt"</strong>(批量编辑)。</p>
+    </div>
+    <div class="callout success">
+      <strong>复用 P1-2 的"复制 prompt" JS 模板</strong>(templates/recipe_view.html 里有 doCopy() 函数,chmod 加按钮即可)。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>7 · 实施工作量估算</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>子任务</th><th>工作量</th><th>说明</th></tr>
+      <tr><td>templates/batch_edit.html</td><td>~ 200 行</td><td>3 tab + 表单 + 复制按钮(沿用 JS 模式)</td></tr>
+      <tr><td>scripts/render_batch_edit.py</td><td>~ 80 行</td><td>调 3 个 manager CLI 拼数据</td></tr>
+      <tr><td>SKILL.md 加 "批量编辑" 唤醒词</td><td>~ 10 行</td><td>对齐 V3 §📌 输出位置</td></tr>
+      <tr><td>测试</td><td>~ 30 分钟</td><td>JSON 解析 + 按钮触发</td></tr>
+      <tr><td><strong>总工作量</strong></td><td><strong>半天</strong></td><td>不依赖 Q3 argparse 修复(可并行)</td></tr>
+    </table>
+    <div class="callout key">
+      <strong>⚠️ 关键依赖:</strong>需要先修 Q3 argparse,否则 prompt 中的子命令名(<code>list</code> vs <code>list-by-step</code>)会让 AI 困惑。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>8 · 推荐顺序调整</h2></div>
+  <div class="card-body">
+    <div class="callout warn">
+      <strong>原顺序:</strong>P1-1 → P1-2 → P1-3 → ...
+    </div>
+    <div class="callout success">
+      <strong>调整后(本 session 完成后):</strong>
+      <ol>
+        <li><strong>① Q3 + Q4 argparse 重写</strong>(半天) — 治本 · Q5 场景 2 的依赖</li>
+        <li><strong>② P1 场景 1 · 数据质量报告</strong>(1-2h) — 让 13 manager 有第一个价值</li>
+        <li><strong>③ P1 场景 2 · 批量编辑 batch_edit.html</strong>(半天) — 13 manager 真"被用"</li>
+        <li><strong>④ P1-3 · Test 套件补 render_data 测试</strong>(1h)</li>
+        <li><strong>⑤ P0-4 · FAT 真跑</strong>(新会话,新 context)</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为 Q5 场景 2 编辑模式澄清 · 不入 git · 仅作 review 用<br>
+  工作目录: <code>私家大厨/phase_q5_design.html</code>
+</footer>
+
+</div>
+</body>
+</html>

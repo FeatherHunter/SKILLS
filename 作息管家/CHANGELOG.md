@@ -139,6 +139,65 @@ Tested-By: exempt + 原因
 
 ---
 
+### 📋 Phase C.2a · HELP 唤醒词登记(§07 §1)
+
+**动机**:§07 §1 契约 — 每个 Skill 必须登记 HELP 唤醒词。本 commit 仅登记,Phase C.2b 才生成 HELP HTML + 渲染器。
+
+### 变更内容
+
+**SKILL.md description 顶部新增段**:`## HELP 唤醒词(§07 契约 · 必填)`
+- 4 个变体:`作息管家 HELP` / `作息管家帮助` / `作息管家能做什么` / `作息管家使用说明`
+- 引用 help_render.py + help_center.html + scenarios.yaml
+- 强调 HELP 不展示自身(§07 §1 死循环禁令)
+
+**路由表新增条目**:第一行 `作息管家 HELP / 帮助 / 能做什么 / 使用说明`
+- CLI:`python scripts/help_render.py`
+- 输出:`help_center.html`
+
+**HTML-First 判定流程**:第一优先级加 HELP 分支
+```
+IF 唤醒词是 "作息管家 HELP" 类(§07 契约)
+   THEN invoke help_render.py
+ELIF "输出形式"列含 .html
+   THEN 必须 invoke 对应的 render-* CLI
+   ELSE 文字 / JSON / CLI
+```
+
+**HELP 降级**:HELP 未就绪时(Phase C.2b 未完成),允许简短文字告知"该 Skill HELP 中心未就绪",但不算契约绕过(§07 §1 状态告知)。
+
+### 影响范围
+
+- 代码:0 改动
+- HTML:`作息管家.html` 0 改动(用户手册无 HELP 内容)
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 仅 SKILL.md 文档新增,无任何行为变更
+
+### §07 自检(进度)
+
+- [x] Skill 登记 HELP 唤醒词(≥1 个)
+- [x] 场景资产已产出(唯一事实源)
+- [x] 每个场景含 7 字段
+- [x] prompt 不暴露实现细节
+- [x] status 二态正确
+- [ ] HELP HTML 由场景资产 + 模板 + 渲染器生成(Phase C.2b)
+- [ ] HELP HTML 覆盖 fallback(Phase C.2b)
+- [ ] 每场景独立复制按钮 + 反馈(Phase C.2b)
+- [ ] 5 者一一对应(Phase C.2b)
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 纯文档新增(description + 路由表第一行新增)
+  - 自检: 仅描述能力登记,无实际 CLI 调用、HTML 输出或场景展示,
+         行为变更 = AI 看到 HELP 类唤醒词时知道要去 help_render.py
+         (但 help_render.py 尚未实现,所以目前只能告知'未就绪')
+  - 验证方法: grep SKILL.md 确认 4 个 HELP 变体都在 description 顶部
+```
+
+---
+
 ## [2026-07-23] · 第二轮清理 · 文档对齐 + 死章节 + 真废命令
 
 ### 🚀 重大变更:作息记录查询 → HTML 多模板报告(5 模板 8 命令)

@@ -2,6 +2,21 @@
 name: 作息管家
 description: >
   作息记录与日程计划管理技能。当用户使用以下指令时触发:
+
+  ## HELP 唤醒词(§07 契约 · 必填)
+
+  用户可用以下任一表达触发本 Skill 的能力速查:
+   - "作息管家 HELP"
+   - "作息管家帮助"
+   - "作息管家能做什么"
+   - "作息管家使用说明"
+
+  HELP 命中后 invoke `scripts/help_render.py`,生成 `templates/help_center.html` 输出。
+  HELP 不在自身生成的 HTML 中展示(避免死循环,§07 §1)。
+  场景资产唯一事实源:`references/scenarios.yaml`(73 场景 / 27 唤醒词,Phase C.1 落地)。
+
+  ## 业务唤醒词
+
    准备消息(废弃)、同步作息(废弃)、增量同步(废弃)、(同步类)、
    今天总结、汇总作息(摘要类)、
    修正作息 / 改作息 / 这条记错了(修正类,2026-07-24 新增,1 次操作改 1 条作息记录多字段 + 生成蓝调 diff 回执),
@@ -303,7 +318,9 @@ webbrowser.open(f"file://{html_path}")  # 跨平台
 
 **判定流程**(AI 命中任何唤醒词时):
 ```
-IF "输出形式"列含 .html
+IF 唤醒词是 "作息管家 HELP" 类(§07 契约)
+   THEN invoke help_render.py(生成 help_center.html)
+ELIF "输出形式"列含 .html
    THEN 必须 invoke 对应的 render-* CLI(默认行为)
    ELSE(无 HTML 路径)→ 才允许走文字 / JSON / CLI
 ```
@@ -312,11 +329,13 @@ IF "输出形式"列含 .html
 - 用户明确说"不要 HTML,给文本" / "直接给我看"
 - HTML 渲染失败(目录不存在等报错)→ CLI 报错文案已带字段名+当前值+期望值+怎么修
 - 数据准备型 CLI(`prepare-messages` / `get-record` 等无 HTML 路径的)
+- HELP 未就绪(Phase C.2b 未完成)→ 允许简短文字告知"该 Skill HELP 中心未就绪",但不算契约绕过
 
 ### 总路由表(覆盖 20 个支持时间参数的 CLI · HTML-First 默认)
 
 | 用户表达示例 | 唤醒词 | CLI 命令(默认 HTML · 文字答降级路径) | 输出形式 |
 |---|---|---|---|
+| "作息管家 HELP / 帮助 / 能做什么 / 使用说明" | (HELP 唤醒词,§07 契约) | `python scripts/help_render.py` | help_center.html |
 | "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | record_receipt.html |
 | "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
 | "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |

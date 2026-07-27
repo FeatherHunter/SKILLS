@@ -146,7 +146,7 @@
 ## 4 · 进度跟踪
 
 - [x] P0-1 F1 HELP 契约落地 ✅ 38f0773 + 8aa904a + d8745d3 + 6900680 + 5dd3f9f(Phase 1.5→1.4→1.3→1.2→1.1)
-- [ ] P0-2 F2 4 细分词 section 锚点
+- [x] P0-2 F2 4 细分词(方向修正:改 SKILL.md 引导 AI 走 HTML,不加锚点)✅ b10aa53
 - [ ] P0-3 F4 跨 Skill 路由声明
 - [ ] P0-4 FAT Fresh Agent 黑盒测试
 - [ ] P1-1 F3 变体管理

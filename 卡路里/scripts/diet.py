@@ -112,19 +112,36 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
 
     meal = meal_override if meal_override else infer_meal_type(now)
     date_label = today if target_date else '今日'
-    print(f"✓ 已记录：{food_name} ({calories}卡, {protein}蛋白, {carbs}碳, {fat}脂, {grams}克)")
-    print(f"  餐次：{meal} | 条目ID：{entry_id}")
 
+    # v2.4.16:CLI 端负责打印回执(契约格式),本函数只返 dict
+    cal_goal, pro_goal, carb_goal, fat_goal = None, None, None, None
     if goal:
         cal_goal, pro_goal, carb_goal, fat_goal = goal[1], goal[2], goal[3], goal[4]
-        remaining = cal_goal - total_cal
-        print(f"  {date_label}：{total_cal}/{cal_goal}卡 | 蛋白{total_pro}/{pro_goal}克 | 碳{total_carbs}/{carb_goal}克 | 脂{total_fat}/{fat_goal}克")
-        if remaining > 0:
-            print(f"  剩余：{remaining}卡")
-        else:
-            print(f"  ⚠️ 超标：{abs(remaining)}卡")
 
-    return True
+    return {
+        'id': entry_id,
+        'date': today,
+        'time': now,
+        'food_name': food_name,
+        'meal': meal,
+        'calories': calories,
+        'protein': protein,
+        'carbs': carbs,
+        'fat': fat,
+        'grams': grams,
+        'note': note,
+        'rows_affected': 1,
+        'date_label': date_label,
+        'today_total_cal': total_cal,
+        'today_total_pro': total_pro,
+        'today_total_carbs': total_carbs,
+        'today_total_fat': total_fat,
+        'cal_goal': cal_goal,
+        'pro_goal': pro_goal,
+        'carb_goal': carb_goal,
+        'fat_goal': fat_goal,
+        'remaining_cal': (cal_goal - total_cal) if cal_goal else None,
+    }
 
 
 # 可更新的字段白名单(v2.2.0 对齐 add_meal 接口)

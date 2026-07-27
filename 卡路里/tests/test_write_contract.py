@@ -113,17 +113,14 @@ def tmp_db_empty(tmp_db_dir):
 # 写库类子命令的 stdout 必须包含 3 个契约标记
 # tuple 3 元: (cmd_args, label, known_violation_reason)
 #   - reason=None → 必须 pass(V1.0 §02 第②特性合规)
-#   - reason=str  → xfail:已知违反,等后续 commit 修(strict=True 一旦真正合规会 fail)
+#   - reason=str  → xfail:已知违反,等后续 commit 修(strict=True)
 WRITE_CONTRACTS = [
-    # weight 已修 v2.4.14:pass
-    (["weight", "70.5", "--note", "test"],  "weight",
-     None),
-    # water 违反 §02 第②特性,等后续 commit 修(v2.4.16+)
-    (["water", "500"],                      "water",
-     "v2.4.15 加 P3 时发现: water.py add_water 不返 id, calorie_tracker.py water 子命令 print 不用契约格式"),
-    # add (饮食)违反 §02 第②特性,等后续 commit 修
-    (["add", "鸡胸肉", "165", "31"],        "add",
-     "v2.4.15 加 P3 时发现: diet.add_meal 已含 rowcount, 但 calorie_tracker.py add 子命令 print 不用契约格式"),
+    # weight (v2.4.14 修)
+    (["weight", "70.5", "--note", "test"],  "weight",  None),
+    # water (v2.4.16 修)
+    (["water", "500"],                      "water",   None),
+    # add 饮食 (v2.4.16 修)
+    (["add", "鸡胸肉", "165", "31"],        "add",     None),
 ]
 
 
@@ -131,7 +128,6 @@ WRITE_CONTRACTS = [
 def test_write_contract_id_marker(cmd_args, label, known_violation, tmp_db, request):
     """V1.0 §02 第②特性:写库回执必须含 'id=' 标记"""
     if known_violation:
-        # 已知违反 — strict=True → 修好后会从 xfail 变 fail 强制再去掉 xfail
         request.applymarker(pytest.mark.xfail(reason=known_violation, strict=True))
     db_dir = tmp_db
     rc, out, err = _run_cli(*cmd_args, db_dir=db_dir)

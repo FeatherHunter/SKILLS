@@ -170,13 +170,23 @@ def main():
                 sys.exit(1)
 
             kwargs = _parse_kw_args(kw_args)
-            diet.add_meal(
+            # v2.4.16 改:符合 V1.0 §02 第②特性"回执 = ID + 时间戳 + 影响行数"
+            receipt = diet.add_meal(
                 food, calories, protein, carbs, fat, grams,
                 kwargs.get('note') or note,
                 target_date=kwargs.get('date'),
                 target_time=kwargs.get('time'),
                 meal_override=kwargs.get('meal'),
             )
+            if receipt is None:
+                sys.exit(1)
+            print(f"✓ 饮食已记录 (id={receipt['id']}, 影响 {receipt['rows_affected']} 行)")
+            print(f"  日期: {receipt['date']} {receipt['time']} | 餐次: {receipt['meal']}")
+            print(f"  {receipt['food_name']} ({receipt['calories']}卡, {receipt['protein']}蛋白, {receipt['grams']}克)")
+            if receipt['cal_goal']:
+                rem = receipt['remaining_cal'] or 0
+                marker = '剩余' if rem > 0 else '超标'
+                print(f"  {receipt['date_label']}: {receipt['today_total_cal']}/{receipt['cal_goal']}卡 | {marker} {abs(rem):.0f}卡")
 
         elif command == "delete":
             if len(sys.argv) < 3:
@@ -270,7 +280,15 @@ def main():
                 print("  示例: water 500 --date 2026-06-20")
                 sys.exit(1)
             kwargs = _parse_kw_args(sys.argv[3:])
-            water.add_water(sys.argv[2], target_date=kwargs.get('date'))
+            # v2.4.16 改:符合 V1.0 §02 第②特性"回执 = ID + 时间戳 + 影响行数"
+            receipt = water.add_water(sys.argv[2], target_date=kwargs.get('date'))
+            if receipt is None:
+                sys.exit(1)
+            print(f"✓ 饮水已记录 (id={receipt['id']}, 影响 {receipt['rows_affected']} 行)")
+            print(f"  日期: {receipt['date']} {receipt['time']}")
+            print(f"  本次: {receipt['ml']} ml")
+            date_label = '今日' if not kwargs.get('date') else receipt['date']
+            print(f"  {date_label}累计: {receipt['today_total_ml']}/{receipt['water_goal_ml']} ml | 剩余 {receipt['remaining_ml']:+} ml")
 
         elif command == "goal":
             if len(sys.argv) < 6:

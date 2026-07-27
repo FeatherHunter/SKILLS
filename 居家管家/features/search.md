@@ -92,7 +92,7 @@ python home_manager.py list --limit 100
 ### 模板与渲染器
 
 - 模板目录：`templates/`
-- 渲染器：`scripts/home_manager/html_render.py`
+- 渲染器：`scripts/render/__init__.py`(Phase 7 挪包,旧路径 `scripts/home_manager/html_render.py` 已删除)
 - 输出目录：`output/`
 
 ### 发文件给用户

@@ -380,7 +380,7 @@ AI 在 Step 5 写入前必须生成录入预览页，让用户看到即将录入
 python home_manager.py add --preview --preview-output "output/add_preview.html"
 ```
 
-模板路径：`templates/add_preview.html`。渲染器路径：`scripts/home_manager/html_render.py`。输出路径默认：`output/add_preview_YYYYMMDD_HHMMSS.html`。
+模板路径：`templates/add_preview.html`。渲染器路径：`scripts/render/__init__.py`(Phase 7 挪包)。输出路径默认：`output/add_preview_YYYYMMDD_HHMMSS.html`。
 
 ### 页面必须展示
 

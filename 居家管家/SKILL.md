@@ -15,7 +15,7 @@ description: >
   查账号、存账号、改账号（账号密码管理）、
   查异常（数据健康检查）。
   所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认；录物品/拍物品流程在写入前生成 HTML 预览供用户确认。
-metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7" } } }
+metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7", "pip": ["cryptography"] } } }
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到物品价格→询问是否记录支出；物品是食品/饮料→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -36,12 +36,12 @@ metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7" } } }
 
 1. **禁止** `git commit --no-verify` —— 会跳过 pre-commit hook 测试
 2. **禁止** 使用 git 库（`gitpython` / `simple-git` / `libgit2` 等）直接 API 调用 —— 绕过 shell，hook 不触发
-3. **必须** 通过 pre-commit hook 的 49 个 pytest 测试才能 commit
+3. **必须** 通过 pre-commit hook 的 71 个 pytest 测试才能 commit
 4. **新机器首次使用本 skill 前**，必须执行 `bash scripts/install_hooks.sh` 配置本地 hook
 
 **hook 工作机制**（SKILLS/ 是单 git 仓库，多 skill 子目录）：
 - git 仓库根：`SKILLS/.githooks/pre-commit`
-- 改动路径含 `居家管家/*` → 自动跑 `居家管家/tests/` 下的 49 个 pytest
+- 改动路径含 `居家管家/*` → 自动跑 `居家管家/tests/` 下的 71 个 pytest
 - 改动路径含 `卡路里/*` → 跑 `卡路里/tests/`
 - 其他改动（文档/HTML 手册/架构规范）→ 跳过测试
 

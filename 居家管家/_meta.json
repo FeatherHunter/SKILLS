@@ -1,7 +1,7 @@
 {
     "ownerId": "kn7dm9chfy9vn80xdcr9xq8w1s80k7bv",
     "slug": "居家管家",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "publishedAt": "",
-    "notes": "家庭物品管理系统。3张SQLite表，纯Python标准库，CLI接口。"
+    "notes": "家庭物品管理系统。5张SQLite表(items/item_locations/item_tags/categories/accounts),Python 3.7+(需 cryptography + python-iso8601),CLI接口。P1-6 起账号软删除;P0-1 起 init_db 自建 5 表;P0-4 起 master_key 8 字符起。"
 }

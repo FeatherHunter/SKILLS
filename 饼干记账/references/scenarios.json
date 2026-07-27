@@ -1,7 +1,7 @@
 {
   "_meta": {
     "skill": "饼干记账",
-    "version": "v2.3",
+    "version": "v2.4",
     "schema_version": "§07 1.0",
     "wake_words_total": 15,
     "scenarios_total": 91,
@@ -11,6 +11,44 @@
     "help_wake_words": ["饼干记账 HELP", "饼干记账 帮助", "查帮助", "能做什么"],
     "help_excluded_from_scenarios": true
   },
+
+  "_categories": [
+    {
+      "key": "write",
+      "name": "写入类",
+      "icon": "📝",
+      "desc": "记一笔新账或修改已有记录",
+      "wake_words": ["记支出", "记收入", "拍账单", "改记录"]
+    },
+    {
+      "key": "query",
+      "name": "查询类",
+      "icon": "🔍",
+      "desc": "按时间/分类/关键词查记录明细",
+      "wake_words": ["查今天", "查日期", "查范围", "查分类", "查最近", "搜备注"]
+    },
+    {
+      "key": "analyze",
+      "name": "分析类",
+      "icon": "📊",
+      "desc": "月度/对比/分类占比等结构化报表",
+      "wake_words": ["看月度", "看对比", "看分类", "看总览"]
+    },
+    {
+      "key": "stats",
+      "name": "统计类",
+      "icon": "📈",
+      "desc": "总笔数、记账天数等统计",
+      "wake_words": ["做统计"]
+    },
+    {
+      "key": "help",
+      "name": "HELP",
+      "icon": "❓",
+      "desc": "能力速查（你正在看的页面）",
+      "wake_words": []
+    }
+  ],
 
   "记支出": [
     {

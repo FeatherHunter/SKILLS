@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-饼干记账 · HELP HTML 渲染器 v1.0
+饼干记账 · HELP HTML 渲染器 v2.4
 
 按 SKILL开发总纲V1.0 §07 契约:
 - 读 references/scenarios.json (唯一事实源)
@@ -32,14 +32,28 @@ def load_scenarios() -> dict:
 
 
 def enrich_scenarios(scenarios: dict) -> dict:
-    """把场景资产包成模板期望的 payload"""
+    """把场景资产包成模板期望的 payload (v2.4: 分 5 类组织)
+
+    payload.data 结构:
+      - categories:    5 类组织(含 ww 列表 + 每个 ww 的场景)
+      - wake_words:    扁平列表(向后兼容 / 总数统计用)
+      - scenarios_total / wake_words_total / pending_total
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    meta = scenarios.get("_meta", {})
+    categories_def = scenarios.get("_categories", [])
+
+    # 按 ww 名构建索引 (ww → scenarios)
+    ww_to_scenarios = {
+        ww: scs for ww, scs in scenarios.items()
+        if not ww.startswith("_")
+    }
+
+    # 扁平 wake_words (保持向后兼容 + 总数统计)
     wake_words = []
     total = 0
     pending = 0
-    for ww, scs in scenarios.items():
-        if ww.startswith("_"):
-            continue
+    for ww, scs in ww_to_scenarios.items():
         wake_words.append({
             "name": ww,
             "scenarios": scs,
@@ -49,19 +63,47 @@ def enrich_scenarios(scenarios: dict) -> dict:
         total += len(scs)
         pending += sum(1 for s in scs if s.get("status") == "【待开发】")
 
+    # 按 _categories 组织 (v2.4)
+    categories = []
+    for cat in categories_def:
+        cat_wws = []
+        cat_total = 0
+        cat_pending = 0
+        for ww in cat.get("wake_words", []):
+            scs = ww_to_scenarios.get(ww, [])
+            cat_wws.append({
+                "name": ww,
+                "scenarios": scs,
+                "count": len(scs),
+                "pending_count": sum(1 for s in scs if s.get("status") == "【待开发】")
+            })
+            cat_total += len(scs)
+            cat_pending += sum(1 for s in scs if s.get("status") == "【待开发】")
+        categories.append({
+            "key": cat["key"],
+            "name": cat["name"],
+            "icon": cat.get("icon", ""),
+            "desc": cat.get("desc", ""),
+            "wake_words": cat_wws,
+            "ww_count": len(cat_wws),
+            "scenario_count": cat_total,
+            "pending_count": cat_pending
+        })
+
     return {
         "status": "ok",
         "data": {
             "skill": "饼干记账",
-            "version": "v2.3",
+            "version": meta.get("version", "v2.4"),
             "generated_at": now,
+            "categories": categories,
             "wake_words": wake_words,
-            "scenarios_total": total,
             "wake_words_total": len(wake_words),
+            "scenarios_total": total,
             "pending_total": pending,
             "type": "help",
-            "title": "饼干记账 · 能力速查",
-            "subtitle": "所有唤醒词 × 全部合法场景,一键复制 prompt 给 AI"
+            "title": "饼干记账 · 唤醒词速查台",
+            "subtitle": "▸ 类别 → 选唤醒词 → 复制 prompt → 贴给 AI"
         },
         "message": "HELP 场景清单"
     }

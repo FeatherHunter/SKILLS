@@ -372,7 +372,7 @@ python3 scripts/bill_inject.py search "咖啡"
 - SVG 环形图（breakdown 用）
 - 一键复制 ID 回 AI（每条记录含 ID）
 
-### Step 7：HELP 能力速查（v2.3 新增）
+### Step 7：HELP 能力速查（v2.4 升级）
 
 当用户说「饼干记账 HELP」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
 
@@ -389,10 +389,12 @@ python3 scripts/render_help.py --check
 ```
 
 **HELP HTML 契约（§07）：**
-- 来源：`references/scenarios.json`（唯一事实源）+ `templates/help.html`（模板）
-- 展示 15 个业务唤醒词 × 91 个合法场景
-- 每场景独立「📋 复制 prompt」按钮（一键复制给 AI）
-- 粘性搜索栏（按唤醒词 / 标题 / prompt 即时过滤）
+- 来源：`references/scenarios.json`（唯一事实源，含 `_categories` 元数据）+ `templates/help.html`（模板）
+- 展示 **5 类别**（📝 写入类 / 🔍 查询类 / 📊 分析类 / 📈 统计类 / ❓ HELP）× **15 唤醒词** × **91 个合法场景**
+- **3 层折叠**（类别 → 唤醒词 → 场景，全部 `<details>` 默认可点击折叠）
+- 每场景独立「📋 复制 prompt」按钮 + **iOS 风格 Toast 通知**（4.5s 自动消失）
+- 粘性搜索栏 + 「全部展开 / 全部折叠」快捷键
+- 移动端 fallback toggle（部分 Android WebView 兼容）
 - 5 状态 fallback + 移动端适配
 
 ---

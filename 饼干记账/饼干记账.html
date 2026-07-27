@@ -69,7 +69,7 @@
 <li><a href="#分类参考-8">分类参考</a></li>
 <li><a href="#错误处理-9">错误处理</a></li>
 <li><a href="#html-可视化查询v23-默认工作流-10">HTML 可视化查询（v2.3 默认工作流）</a></li>
-<li><a href="#help-能力速查v23-新增-11">HELP 能力速查（v2.3 新增）</a></li></ol></div>
+<li><a href="#help-能力速查v24-升级-11">HELP 能力速查（v2.4 升级）</a></li></ol></div>
 <p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。</p>
 <h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
 <ol>
@@ -788,7 +788,7 @@ python3 scripts/bill_inject.py search "咖啡"
 </ul>
 <h4>交付给用户</h4>
 <p>用 <code>&lt;media src="..." type="file" /&gt;</code> 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。</p>
-<h3 id="help-能力速查v23-新增-11">Step 7：HELP 能力速查（v2.3 新增）</h3>
+<h3 id="help-能力速查v24-升级-11">Step 7：HELP 能力速查（v2.4 升级）</h3>
 <p>当用户说「饼干记账 HELP」「查帮助」「能做什么」时，AI 调用 <code>scripts/render_help.py</code> 生成 HELP HTML 并交付。</p>
 <h4>调用流程</h4>
 <pre><code class="language-bash"># 默认输出
@@ -803,10 +803,12 @@ python3 scripts/render_help.py --check
 </code></pre>
 <h4>HELP HTML 契约（§07）</h4>
 <ul>
-<li>来源：<code>references/scenarios.json</code>（唯一事实源） + <code>templates/help.html</code>（模板）</li>
-<li>展示 15 个业务唤醒词 × 91 个合法场景</li>
-<li>每场景独立「📋 复制 prompt」按钮（一键复制给 AI）</li>
-<li>粘性搜索栏（按唤醒词 / 标题 / prompt 即时过滤）</li>
+<li>来源：<code>references/scenarios.json</code>（唯一事实源，含 <code>_categories</code> 元数据） + <code>templates/help.html</code>（模板）</li>
+<li>展示 <strong>5 类别</strong>（📝 写入类 / 🔍 查询类 / 📊 分析类 / 📈 统计类 / ❓ HELP）× <strong>15 唤醒词</strong> × <strong>91 个合法场景</strong></li>
+<li><strong>3 层折叠</strong>（类别 → 唤醒词 → 场景，全部 <code>&lt;details&gt;</code> 默认可点击折叠）</li>
+<li>每场景独立「📋 复制 prompt」按钮 + <strong>iOS 风格 Toast 通知</strong>（4.5s 自动消失）</li>
+<li>粘性搜索栏 + 「全部展开 / 全部折叠」快捷键</li>
+<li>移动端 fallback toggle（部分 Android WebView 兼容）</li>
 <li>5 状态 fallback + 移动端适配</li>
 </ul>
 <hr />
@@ -933,6 +935,7 @@ python3 scripts/render_help.py --check
 <footer>
   HTML 镜像手动同步于 2026-07-27 &nbsp;·&nbsp;
   源文件: <code>饼干记账/SKILL.md</code><br>
+  v2.4 升级 HELP HTML: 5 类别分门别类 + 3 层折叠 + iOS Toast + 全展/全收 + 移动端 fallback (参考卡路里 v2.4.12)<br>
   v2.3 新增: ① HTML-First 默认工作流（§04 原则 11）；② HELP 能力速查（§07 契约 · scenarios.json + help.html + render_help.py）；③ 唤醒词表加「默认输出」列；④ 场景扩充 57 → 91（覆盖离线/缺失/错误/跨年/排序/筛选组合/边界金额等）<br>
   v2.2: HTML 可视化查询（CLI <code>--json</code> + <code>bill_inject.py</code> + <code>templates/query_view.html</code>）
 </footer>

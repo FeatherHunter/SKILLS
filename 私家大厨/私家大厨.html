@@ -154,6 +154,7 @@
 <!-- ============== A. 做菜模式 ============== -->
 <div class="tab-panel active" id="tab-A">
 <h2>A. 做菜模式 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(2 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>进入交互式做菜界面。系统调取食谱全量数据,渲染做菜 HTML(带计时/份数切换/剩余时间),输出到 <code>$CHEF_OUTPUT_DIR/cooking/</code>。</p>
 
 <details class="ww" data-keywords="做菜模式 开始做菜 cooking">
@@ -204,6 +205,7 @@
 <!-- ============== B. 查看食谱 ============== -->
 <div class="tab-panel" id="tab-B">
 <h2>B. 查看食谱 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(5 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>展示食谱数据。「查看食材/步骤/营养/背景」4 个细分唤醒词是给 AI 的<strong>路由提示</strong>:AI 调 <code>recipe_render.py render &lt;菜名&gt;</code> 渲染完整 HTML(包含所有 section),用 <code>&lt;media&gt;</code> 标签推文件给用户。<strong>禁止 AI 文字截取</strong>(违反原则 11 HTML-First)。</p>
 
 <details class="ww" data-keywords="查看食谱 show render">
@@ -326,6 +328,7 @@
 <!-- ============== C. 搜索筛选 ============== -->
 <div class="tab-panel" id="tab-C">
 <h2>C. 搜索筛选 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(10 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>按菜名、分类、难度、时间、炊具等条件查找食谱。结果格式:序号 | 菜名 | 难度 | 总时间 | 状态 | 评分。</p>
 
 <details class="ww" data-keywords="搜索食谱 search 关键词">
@@ -524,6 +527,7 @@
 <!-- ============== D. 修改食谱 ============== -->
 <div class="tab-panel" id="tab-D">
 <h2>D. 修改食谱 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(9 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>修改粒度细到字段级。原则:<strong>只增不删</strong>,整道菜废弃用 <code>discard</code>(标记为已废弃),不物理删除。所有操作必走 CLI,禁直连数据库。</p>
 
 <details class="ww" data-keywords="修改食谱 update">
@@ -712,6 +716,7 @@
 <!-- ============== E. 烹饪历史 ============== -->
 <div class="tab-panel" id="tab-E">
 <h2>E. 烹饪历史 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(3 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>记录/查看/统计做菜历史。菜名或 recipe_id 都支持,脚本自动识别。</p>
 
 <details class="ww" data-keywords="记录做菜 add history">
@@ -781,6 +786,7 @@
 <!-- ============== F. 采购清单 ============== -->
 <div class="tab-panel" id="tab-F">
 <h2>F. 采购清单 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(2 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>生成可交互手机端采购 HTML(菜市场/超市/网购用)。多菜名支持(和/与/及/顿号/逗号分隔)。</p>
 
 <details class="ww" data-keywords="生成清单 shopping generate render">
@@ -839,6 +845,7 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 <!-- ============== G. 录入食谱 ============== -->
 <div class="tab-panel" id="tab-G">
 <h2>G. 录入食谱 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(2 个)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>录入新食谱。3 种入口:图片(OCR)、MD 文本、JSON 文件。所有字段必须填值或显式 <code>null</code>(L1 NOT NULL 设计)。</p>
 
 <details class="ww" data-keywords="录入食谱 add import 图片 文本">
@@ -906,6 +913,7 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 <!-- ============== H. 派生关系 ============== -->
 <div class="tab-panel" id="tab-H">
 <h2>H. 派生关系 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(2 个,v5.1 新增)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>标记一道菜基于另一道菜的变体(派生/变体/改良),形成"食谱族谱"。</p>
 
 <details class="ww" data-keywords="添加派生关系 relation 变体 改良">
@@ -967,6 +975,7 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 <!-- ============== I. 帮助 ============== -->
 <div class="tab-panel" id="tab-I">
 <h2>I. 帮助 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(1 个 · §07 HELP 契约)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p><b>HELP 唤醒词</b>展示本技能全部 35 个业务唤醒词 + 61 个合法场景(总纲 §07 强制契约)。HELP 自身不出现在该 HTML 中(防死循环)。</p>
 
 <details class="ww" data-keywords="HELP 帮助 能力速查 场景">
@@ -1007,6 +1016,7 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 <!-- ============== J. 跨 Skill 路由表 ============== -->
 <div class="tab-panel" id="tab-J">
 <h2>J. 跨 Skill 路由表 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(§03 铁律 3 · 显式声明)</span></h2>
+<p style="font-size:12px;color:var(--fg3);margin:-4px 0 10px"><b>变体方向</b>:S=同义/O=口语/F=模糊 · 详细例子见 <code>references/wake_word_variants.md</code></p>
 <p>当用户唤醒词可能路由到多个 Skill 时,本表声明归属。AI 收到跨边界提问时,<strong>严格按本表路由</strong>,<strong>禁止擅自跨 skill 调用</strong>。</p>
 
 <h3 style="font-size:15px;margin:14px 0 8px;color:var(--fg)">✅ 已确定路由(基于现有实现)</h3>

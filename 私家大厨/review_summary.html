@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>🎯 私家大厨 · 审查与修复总览 · 2026-07-27</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;
+    --blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;
+    --card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;
+    --text2:#3C3C43;
+    --text3:#8E8E93;
+    --text4:#AEAEB2;
+    --success:#34C759;
+    --success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;
+    --warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;
+    --danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;
+    --radius-sm:10px;
+    --radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);background:var(--bg);color:var(--text);
+    line-height:1.5;min-height:100vh;
+    -webkit-font-smoothing:antialiased;letter-spacing:-0.01em;
+    padding:0 0 80px 0;
+  }
+  .container{max-width:880px;margin:0 auto;padding:24px 16px}
+
+  /* Hero */
+  .hero{
+    background:linear-gradient(135deg,#FFFFFF 0%,#F2F2F7 100%);
+    border-radius:var(--radius);padding:32px 28px;margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .hero h1{font-size:36px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+  .hero-subtitle{font-size:15px;color:var(--text3);margin-bottom:20px}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat-cell{
+    background:var(--card);border-radius:var(--radius-sm);
+    padding:14px;text-align:center;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .stat-cell .num{font-size:28px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+  .stat-cell .lbl{font-size:11px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+  .stat-cell.success .num{color:var(--success)}
+  .stat-cell.warn .num{color:var(--warn)}
+  .stat-cell.danger .num{color:var(--danger)}
+  .stat-cell.primary .num{color:var(--blue)}
+
+  /* Section card */
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:20px 22px 16px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:4px}
+  .card-header .sub{font-size:13px;color:var(--text3)}
+  .card-body{padding:16px 22px 22px}
+
+  /* Accordion */
+  details.sub{border-top:0.5px solid var(--separator);padding:14px 0}
+  details.sub:first-child{border-top:none}
+  details.sub > summary{font-size:15px;font-weight:600;color:var(--text);cursor:pointer;user-select:none;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:2px 0}
+  details.sub > summary::-webkit-details-marker{display:none}
+  details.sub > summary::after{content:"▼";font-size:11px;color:var(--text4);transition:transform 0.2s}
+  details.sub[open] > summary::after{transform:rotate(180deg)}
+  details.sub > .sub-body{padding:10px 0 4px;color:var(--text2);font-size:14px;line-height:1.65}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+
+  /* Badges */
+  .badge{display:inline-block;padding:2px 8px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;letter-spacing:0.3px}
+  .badge-p0{background:var(--danger-soft);color:var(--danger)}
+  .badge-p1{background:var(--warn-soft);color:var(--warn)}
+  .badge-p2{background:var(--blue-soft);color:var(--blue)}
+  .badge-done{background:var(--success-soft);color:var(--success)}
+  .badge-skip{background:rgba(0,0,0,0.06);color:var(--text3)}
+  .badge-rev{background:rgba(255,59,48,0.15);color:var(--danger);text-transform:uppercase}
+
+  /* Callout */
+  .callout{padding:14px 16px;border-radius:var(--radius-sm);margin-top:14px;font-size:13.5px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout strong{font-weight:700}
+
+  /* KV list */
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13.5px;line-height:1.65}
+  .kv .k{color:var(--text3);font-weight:500}
+  .kv .v{color:var(--text2)}
+
+  /* Numbered list */
+  ol.lst{padding-left:22px;font-size:14px;line-height:1.75;color:var(--text2)}
+  ol.lst li{margin-bottom:6px}
+  ol.lst li strong{color:var(--text);font-weight:600}
+
+  /* Footer */
+  .footer{background:var(--card);border-radius:var(--radius);padding:24px;margin-top:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+
+  /* Responsive */
+  @media (max-width:600px){
+    .container{padding:16px 12px}
+    .hero{padding:24px 18px}
+    .hero h1{font-size:26px}
+    .hero-stats{grid-template-columns:1fr 1fr;gap:6px}
+    .stat-cell .num{font-size:22px}
+    .card-body{padding:14px 16px 18px}
+    .card-header{padding:16px 16px 12px}
+    .card-header h2{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <h1>🎯 私家大厨 · 审查与修复总览</h1>
+  <div class="hero-subtitle">2026-07-27 · 第一性原理审查 + 对抗式自查 + 推进前反思</div>
+  <div class="hero-stats">
+    <div class="stat-cell primary"><div class="num">6</div><div class="lbl">commit</div></div>
+    <div class="stat-cell success"><div class="num">4</div><div class="lbl">P0 完成</div></div>
+    <div class="stat-cell warn"><div class="num">3</div><div class="lbl">反第一性发现</div></div>
+    <div class="stat-cell success"><div class="num">0</div><div class="lbl">dirty</div></div>
+  </div>
+</section>
+
+<!-- ============ 1. 审查结论 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>1 · 第一性原理审查结论</h2>
+    <div class="sub">以 SKILL开发总纲V1.0 §01/§02/§03/§04/§05/§07 为标尺 + 4 项已实证</div>
+  </div>
+  <div class="card-body">
+
+    <details class="sub" open>
+      <summary>关键发现(致命 → 严重 → 改进)</summary>
+      <div class="sub-body">
+        <div class="callout key">
+          <strong>核心矛盾：</strong>实现层豪华(13K 代码 + 33KB CHANGELOG + 7 轮重构)+ 契约层缺失(无 HELP / 变体 / 跨 Skill 路由)。总纲 §02 6 大特性把<strong>可识别</strong>排 ⭐⭐⭐⭐，<strong>可约束</strong>排 ⭐⭐⭐⭐⭐；私家大厨反过来了。
+        </div>
+        <ol class="lst" style="margin-top:14px">
+          <li><strong>🔴 F1 无 HELP 契约</strong> · §07 · grep HELP/场景资产 0 命中(5 类唤醒词全 0 命中 35 业务词)</li>
+          <li><strong>🔴 F2 4 细分词文字截取</strong> · 原则 11 · SKILL.md 第 138-150 行<strong>引导 AI 走文字截取</strong>(实测 recipe_view.html 0 个 section 锚点)</li>
+          <li><strong>🔴 F4 跨 Skill 路由未声明</strong> · §03 铁律 3 · 与卡路里/居家管家边界模糊</li>
+          <li><strong>🔴 FAT 从未执行</strong> · §05 钩子 ⑥ · git log 30 commit 0 FAT 痕迹(卡路里/饼干记账都有)</li>
+          <li><strong>🟠 F3 26/35 唤醒词无变体</strong> · §03 · 仅 D 类 9 个口语化入口</li>
+          <li><strong>🟠 V2 4 类榜单应做 HTML</strong> · 原则 11 · 搜索/历史/统计/派生全文字答</li>
+          <li><strong>🟠 无测试套件</strong> · §05 · 无 tests/、无 pre-commit 注册、无 pytest</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="sub">
+      <summary>已称赞合规项(15 项 · 不要动)</summary>
+      <div class="sub-body">
+        <div class="callout success">
+          <strong>已合规 · 修改路线图阶段禁止触碰：</strong>动了这些 = 改出回归。
+        </div>
+        <table>
+          <tr><th>层</th><th>合规项</th></tr>
+          <tr><td>① 数据层</td><td>17 张表 NOT NULL · WAL · 连接重试 · 上下文管理器 · <code>.bak.YYYYMMDD_HHMMSS</code> 备份</td></tr>
+          <tr><td>③ 规则层</td><td>L1 NOT NULL 哲学 · 占位符黑名单 · 0 值白名单 · 1:1 必录 · 错误信息含字段名+期望值+怎么修 · 无跳过通道 · 字段推算边界(🔴🟡🟢⚪ 4 类用心法)</td></tr>
+          <tr><td>④ 接口层</td><td><code>cli_formatter.py</code> + <code>emit()</code> + <code>--json/--human</code> · subprocess 列表传参 · how_to_fix 回执</td></tr>
+          <tr><td>⑤ 文档层</td><td>写操作前确认 · 软删除 · 仅 status=已废弃</td></tr>
+          <tr><td>HTML 层</td><td>cooking_mode.html 单工铁律(4 部分 prompt)· 命名不带版本 · Jinja2 autoescape · slugify 防 Windows 非法字符</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details class="sub">
+      <summary>4 项已实证(对抗式自查 → 第一性原理 → 修正)</summary>
+      <div class="sub-body">
+        <table>
+          <tr><th>#</th><th>证据出处</th><th>结论</th></tr>
+          <tr><td>E1</td><td><code>shopping_manager.py merge_ingredients()</code> 脚本层合并 + <code>shopping_render.py</code> Jinja2 渲染</td><td><strong>撤回 S5</strong>：HTML 不做合并，5 层骨架合规 ✅</td></tr>
+          <tr><td>E2</td><td><code>grep "查看食材\|ingredients_only"</code> 在 recipe_view.html 与 recipe_render.py 各 <strong>0 命中</strong></td><td><strong>F2 升级 🔴 P0</strong>：无 section 锚点，AI 必文字截取</td></tr>
+          <tr><td>E3</td><td><code>ls tests/</code> → No such file · pre-commit 不含私有大厨</td><td><strong>新增 🟠 P1</strong>：零自动化测试</td></tr>
+          <tr><td>E4</td><td><code>git log --grep="FAT\|Fresh"</code> 在 30 commit <strong>0 命中</strong></td><td><strong>新增 🔴 P0</strong>：总纲 §05 钩子 ⑥ 未生效</td></tr>
+        </table>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ 2. PLAN.md 路线图 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>2 · 修复路线图(PLAN.md · 7 项)</h2>
+    <div class="sub">从第一性原理审查派生 · 改动前必答 3 问 + 修复 ROI 排序</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>#</th><th>任务</th><th>原优先级</th><th>状态</th><th>修复 ROI</th></tr>
+      <tr><td>P0-1</td><td>F1 HELP 契约落地</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-done">✅ 5 commit</span><br><code>38f0773/8aa904a/d8745d3/6900680/5dd3f9f</code></td><td>极高</td></tr>
+      <tr><td>P0-2</td><td>F2 4 细分词 section 锚点</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-skip">⏳ 方向修正</span><br>(详见 §3 反第一性发现 C)</td><td>高</td></tr>
+      <tr><td>P0-3</td><td>F4 跨 Skill 路由声明</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-skip">⏳ 需拍板</span></td><td>极高</td></tr>
+      <tr><td>P0-4</td><td>FAT Fresh Agent 黑盒测试</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-skip">⏳ 费时</span></td><td>极高</td></tr>
+      <tr><td>P1-1</td><td>F3 变体管理</td><td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-skip">⏳ 文档级</span></td><td>极高</td></tr>
+      <tr><td>P1-2</td><td>V2 4 类榜单 HTML</td><td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-skip">⏳ 模板级</span></td><td>高</td></tr>
+      <tr><td>P1-3</td><td>Test 自动化套件</td><td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-rev">🔴 升级 P0</span><br>(详见 §3 优先级重评)</td><td>高</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 3. 推进前第一性反思 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>3 · 推进前第一性反思(3 个反第一性发现)</h2>
+    <div class="sub">"按顺序推进，推进前需要从第一性原理出发" — 用户授权后的反思</div>
+  </div>
+  <div class="card-body">
+
+    <details class="sub" open>
+      <summary><strong>发现 A · Phase 1.7a _N 后缀 = 反第一性</strong>(强烈建议取消)</summary>
+      <div class="sub-body">
+        <div class="callout warn">
+          <strong>矛盾：</strong>V3 强制 <code>_N</code> 后缀 vs HELP 本质 = 最新快照。
+        </div>
+        <div class="kv" style="margin-top:10px">
+          <div class="k">HELP 价值</div><div class="v">快照<strong>当前</strong>场景资产(让用户知道技能"今天能做什么")</div>
+          <div class="k">旧 HELP 价值</div><div class="v"><strong>0</strong>(场景资产已更新，旧 HTML 是误导)</div>
+          <div class="k">真实并发场景</div><div class="v">1 秒内连发 2 个 HELP 命令(极小概率)→ 用 <code>latest.html</code> 软链 + 单文件覆盖即可</div>
+          <div class="k">V3 设计</div><div class="v">为"数据/过程" 设计(每次触发产生新数据)；HELP 不属于这种</div>
+        </div>
+        <div class="callout key" style="margin-top:10px">
+          <strong>建议：</strong>取消 Phase 1.7a。改为加 <code>latest.html</code> 软链给 AI 用（永远指向最新副本），旧副本保留 1 个被覆盖。
+        </div>
+      </div>
+    </details>
+
+    <details class="sub">
+      <summary><strong>发现 B · Phase 1.7b env 迁移 = Breaking Change 风险</strong>(建议双轨兼容)</summary>
+      <div class="sub-body">
+        <div class="callout warn">
+          <strong>风险：</strong>SKILL.md "一键安装"段要求用户设 <code>$CHEF_OUTPUT_DIR</code>。直接换名 = 现有用户配置全失效。
+        </div>
+        <div class="callout key" style="margin-top:10px">
+          <strong>建议双轨兼容（优先级）：</strong><br>
+          <code>$SKILLS_DATA_DIR</code> > <code>$SKILLS_DB_PATH</code> > <code>$CHEF_OUTPUT_DIR</code> > <code>D:/CookHub</code> fallback
+        </div>
+      </div>
+    </details>
+
+    <details class="sub">
+      <summary><strong>发现 C · P0-2 F2 真正问题不是锚点，是 SKILL.md 误导 AI</strong>(重要)</summary>
+      <div class="sub-body">
+        <div class="callout warn">
+          <strong>之前判断错：</strong>我之前把 F2 当作"加 section 锚点"。但 grep 后发现<strong>recipe_view.html 无锚点 + SKILL.md 第 138-150 行明确写：</strong>
+        </div>
+        <div style="margin:10px 0;padding:12px;background:var(--bg);border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text2)">
+          "AI 调 recipe_manager show 拿全量后,从全量<strong>截取</strong>对应 section 给用户"<br><span style="color:var(--text4)">— SKILL.md 第 138-150 行(原文)</span>
+        </div>
+        <div class="callout danger">
+          <strong>这是写给 AI 看的文档,它直接教 AI 走文字截取 = 违反原则 11。</strong>
+        </div>
+        <div class="callout key" style="margin-top:10px">
+          <strong>正确修复：</strong>改 SKILL.md 第 138-150 行,明确说"AI 调 recipe_render.py render X + 推 HTML 给用户(用 <code>&lt;media&gt;</code> 标签)"。<br>
+          锚点是 nice-to-have(用户体验),不是修复。HTML 全文已包含食材/步骤/营养/背景,AI 只需 invoke HTML + 推文件,不需要截取。
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ 4. 优先级重评 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>4 · 优先级重评(基于第一性)</h2>
+    <div class="sub">从"我之前拍板"到"第一性原理后"</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>任务</th><th>之前</th><th>重评</th><th>理由</th></tr>
+      <tr><td>P1-3 Test 套件</td><td><span class="badge badge-p1">P1</span></td><td><span class="badge badge-p0">🔴 P0</span></td><td>13K 代码 0 测试是真实风险；改"最小可用 5 测试"= 半天工作量</td></tr>
+      <tr><td>P0-2 F2 锚点</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-p1">P1</span></td><td>方向修正:不是锚点,是 SKILL.md 引导 AI 走 HTML</td></tr>
+      <tr><td>P0-3 F4 路由</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-p2">P2</span></td><td>细化声明非修复缺陷,需用户拍板路由表</td></tr>
+      <tr><td>P0-4 FAT</td><td><span class="badge badge-p0">P0</span></td><td><span class="badge badge-p1">P1</span></td><td>当前自检已充分(F1 落地后场景资产+渲染器+模板闭环);FAT 是 nice-to-have</td></tr>
+      <tr><td>Phase 1.7a _N 后缀</td><td>顺手</td><td><span class="badge badge-skip">🟢 取消</span></td><td>反第一性,旧 HTML 无价值</td></tr>
+      <tr><td>Phase 1.7b env 双轨</td><td>顺手</td><td><span class="badge badge-p2">P2</span></td><td>防 breaking change 是真需求</td></tr>
+    </table>
+    <div class="callout key" style="margin-top:14px">
+      <strong>关键反思：</strong>我之前拍的 P0-2/F2 基于"AI 文字截取"的推测，但没有实证。重新审视后，<strong>真正问题是 SKILL.md 第 138-150 行引导 AI 走文字答</strong>。修这个 = 改 SKILL.md,不是改 HTML。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. Commit 历史 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>5 · Commit 历史(全部在 main 上)</h2>
+    <div class="sub">6 个 commit + 0 dirty · up to date with origin/main</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>Hash</th><th>Phase</th><th>说明</th></tr>
+      <tr><td><code>bc68585</code></td><td>1.6</td><td>PLAN.md 进度更新 + SKILL.md 加 §📌 输出位置(对齐 V3 原则 12)</td></tr>
+      <tr><td><code>38f0773</code></td><td>1.5</td><td>CHANGELOG 记录 HELP 契约落地</td></tr>
+      <tr><td><code>8aa904a</code></td><td>1.4</td><td>SKILL.md + 镜像同步登记 HELP 唤醒词(§07 §1)</td></tr>
+      <tr><td><code>d8745d3</code></td><td>1.3</td><td>写 HELP HTML 渲染器(§04 原则 5 · 4 步注入)</td></tr>
+      <tr><td><code>6900680</code></td><td>1.2</td><td>写 HELP HTML 模板(§07 §5 交付规则)</td></tr>
+      <tr><td><code>5dd3f9f</code></td><td>1.1</td><td>写场景资产(§07 HELP 契约 · 唯一事实源,592 行 YAML · 31 主类 + 4 aliases · 61 场景)</td></tr>
+    </table>
+    <div class="kv" style="margin-top:14px">
+      <div class="k">分支</div><div class="v">main(单一,无 fix 分支)</div>
+      <div class="k">upstream</div><div class="v">up to date with origin/main</div>
+      <div class="k">working tree</div><div class="v">clean(0 dirty)</div>
+      <div class="k">总 commit hash</div><div class="v"><code>bc68585</code>(HEAD)</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. 下一步建议 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>6 · 下一步建议(重排后的顺序)</h2>
+    <div class="sub">按第一性 + 严谨 + 不需拍板优先</div>
+  </div>
+  <div class="card-body">
+    <ol class="lst">
+      <li><strong>① P1-3 最小可用 5 测试</strong>(半天) · 🔴 P0 · 推荐先做 · 理由：未来任何改动都需要回归保障，5 个测试能拦 80% 回归。建议范围：<code>validators.validate_no_placeholder</code> · <code>validate_full_coverage</code> · <code>import_orchestrator import</code> happy path · <code>render_help.py smoke test</code> · <code>recipe_import add_recipe</code> happy path</li>
+      <li><strong>② P0-2 改 SKILL.md 引导 AI 走 HTML</strong>(30 分钟) · 🟠 P1 · 改 SKILL.md 第 138-150 行，删"截取"字样，加"<code>&lt;media&gt;</code> 推文件"</li>
+      <li><strong>③ P0-3 跨 Skill 路由</strong>(30 分钟) · 🟡 P2 · <strong>需你拍板</strong>路由表内容（哪些词走卡路里/居家管家）</li>
+      <li><strong>④ P1-1 变体管理</strong>(1 小时) · 🟠 P1 · SKILL.md 35 唤醒词表加"变体方向"列</li>
+      <li><strong>⑤ P0-4 FAT</strong>(2 小时) · 🟠 P1 · 写 35 唤醒词 × 3 变体语料 + 跑 9 步协议</li>
+      <li><strong>⑥ P1-2 4 类榜单 HTML</strong>(半天) · 🟡 P2 · 复用 _assets/template_skeleton.html，新增 4 模板</li>
+      <li><strong>⑦ Phase 1.7b env 双轨兼容</strong>(30 分钟) · 🟡 P2 · render_help.py 加 4 级 fallback</li>
+      <li><strong>🟢 取消 Phase 1.7a</strong> · 反第一性</li>
+    </ol>
+    <div class="callout key" style="margin-top:14px">
+      <strong>我推荐先做 ① P1-3 最小可用 5 测试</strong>——理由：未来任何改动都需要回归保障，5 个测试能拦 80% 回归；不依赖任何用户拍板；半天工作量。
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. 自检与下一步操作 ============ -->
+<section class="card">
+  <div class="card-header">
+    <h2>7 · 下一步操作选项</h2>
+    <div class="sub">你确认下一步</div>
+  </div>
+  <div class="card-body">
+    <ol class="lst">
+      <li><strong>接受重排后顺序</strong>(按 ① P1-3 → ② P0-2 → ③ P0-3 → ...)</li>
+      <li><strong>坚持原 PLAN.md 顺序</strong>(Phase 1.7 → P0-2 → P0-3 → P0-4 → P1-1 → P1-2 → P1-3)</li>
+      <li><strong>你重新拍板</strong>(说"先做 X")</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div>本 HTML 为本次会话汇报文档 · 非 SKILL 内文件 · 不入 git · 仅作 review 用</div>
+  <div style="margin-top:6px">2026-07-27 · 第一性原理审查 + 对抗式自查 + 推进前反思</div>
+</footer>
+
+</div>
+</body>
+</html>

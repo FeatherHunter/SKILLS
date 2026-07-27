@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>✅ P0-3 · F4 跨 Skill 路由声明 · 全完工</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:760px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#F2F2F7 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .badge-row{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;letter-spacing:0.3px}
+  .badge-p0{background:var(--danger-soft);color:var(--danger)}
+  .badge-done{background:var(--success-soft);color:var(--success)}
+  .badge-pending{background:var(--warn-soft);color:var(--warn);border:1px dashed var(--warn)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px}
+  .card-header .sub{font-size:12px;color:var(--text3)}
+  .card-body{padding:14px 20px 18px;font-size:14px;line-height:1.65;color:var(--text2)}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .pending-row{background:rgba(255,149,0,0.06)}
+  ol{padding-left:22px;margin-top:8px}
+  ol li{margin-bottom:8px}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){
+    .container{padding:14px 10px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    .card-body{padding:12px 16px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>✅ P0-3 · F4 跨 Skill 路由声明 · 全完工</h1>
+  <div class="hero-sub">2026-07-27 · commit <code>34f4494</code> + <code>cc2a6b2</code> · 用户已拍板</div>
+  <div class="badge-row">
+    <span class="badge badge-p0">🔴 P0</span>
+    <span class="badge badge-done">✅ 已完工</span>
+    <span class="badge" style="background:var(--bg);color:var(--text2)">14 已确定 + 1 不实现</span>
+    <span class="badge" style="background:var(--bg);color:var(--text2)">~30 分钟</span>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>1 · 路线图进度</h2>
+    <div class="sub">PLAN.md · 按顺序推进</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>#</th><th>任务</th><th>状态</th></tr>
+      <tr><td>P0-1</td><td>F1 HELP 契约落地</td><td><span class="badge badge-done">✅ 5 commit</span></td></tr>
+      <tr><td>P0-2</td><td>F2 4 细分词(方向修正)</td><td><span class="badge badge-done">✅ b10aa53</span></td></tr>
+      <tr><td><strong>P0-3</strong></td><td><strong>F4 跨 Skill 路由</strong></td><td><span class="badge badge-done">✅ 34f4494 + cc2a6b2</span></td></tr>
+      <tr><td>P0-4</td><td>FAT Fresh Agent 测试</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-1</td><td>F3 变体管理</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-2</td><td>V2 4 类榜单 HTML</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-3</td><td>Test 自动化套件</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>2 · 用户 2026-07-27 拍板内容</h2>
+    <div class="sub">4 项边界确认</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>#</th><th>用户原话</th><th>归属</th><th>边界判定</th></tr>
+      <tr><td>①</td><td>查看营养 X(菜本身)</td><td><strong>私家大厨</strong></td><td>看 recipes.nutrition_info(每道菜独立);若用户说"查营养/我的营养" → 卡路里</td></tr>
+      <tr><td>②</td><td>采购清单 + 营养(联动)</td><td><strong>不联动(默认)</strong></td><td>采购清单="这次买菜要买啥";卡路里食品库="我常吃的";除非用户说"顺便存到食品库"才联动</td></tr>
+      <tr><td rowspan="2">③</td><td>炊具(做菜需要哪些)</td><td><strong>私家大厨</strong></td><td>recipes.cookware 表(做菜角度)</td></tr>
+      <tr><td>炊具(我家几个炒锅/锅在哪)</td><td><strong>居家管家</strong></td><td>实物角度</td></tr>
+      <tr><td>④</td><td>采购下单</td><td><span class="badge badge-pending">⚠️ 不实现</span></td><td>用户决策:本技能和居家管家都不实现</td></tr>
+    </table>
+    <div class="callout success">
+      <strong>✅ P0-3 完工：</strong>14 项已确定路由 + 1 项不实现声明 = 跨 Skill 路由全部清晰。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>3 · 落地改动</h2>
+    <div class="sub">2 commit · SKILL.md + 私家大厨.html</div>
+  </div>
+  <div class="card-body">
+    <div class="kv" style="display:grid;grid-template-columns:auto 1fr;gap:8px 14px">
+      <div style="color:var(--text3);font-weight:500">SKILL.md</div>
+      <div>
+        第 7 行"不管食材采购下单(那是居家管家)" → "不管(用户决策:不实现)"<br>
+        跨 Skill 路由表:
+        <ul style="margin:6px 0 0 16px">
+          <li>4 项 ⚠️ 待拍板 → 3 项 ✅ 已确定 + 1 项 ⚠️ 不实现</li>
+          <li>"炊具" 拆为 2 行(做菜需要 → 私家大厨 / 实物管理 → 居家管家)</li>
+        </ul>
+      </div>
+      <div style="color:var(--text3);font-weight:500">私家大厨.html</div>
+      <div>
+        J 段同步:
+        <ul style="margin:6px 0 0 16px">
+          <li>4 行待拍板表 → 3 行已确定表(炊具拆 2 行) + 1 个不实现 callout</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>4 · Commit 信息</h2>
+    <div class="sub"><code>34f4494</code> + <code>cc2a6b2</code> · main</div>
+  </div>
+  <div class="card-body">
+    <div style="background:var(--bg);padding:12px 14px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text2);line-height:1.55;overflow-x:auto">
+      <strong>34f4494 [feat(私家大厨)] Phase 3: 加跨 Skill 路由表</strong>(11 + 4 待拍板,初版)<br>
+      <strong>cc2a6b2 [feat(私家大厨)] Phase 3.2: 拍板 4 项边界(用户 2026-07-27 决策)</strong><br>
+        ① 查看营养 X(菜本身) → 私家大厨<br>
+        ② 采购清单 + 营养(联动) → 不联动<br>
+        ③ 炊具(做菜需要 vs 实物) → 分场景<br>
+        ④ 采购下单 → 不实现(用户决策)<br>
+      <br>
+      Tested-By: exempt(纯文档改动)
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>5 · 下一步 · P0-4 FAT</h2>
+    <div class="sub">按 PLAN.md 顺序 · 独立可做</div>
+  </div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>P0-4 · FAT Fresh Agent 黑盒测试</strong>(🔴 P0 · 2 小时 · 无需拍板)<br>
+      工作:写 35 唤醒词 × 3 变体语料 + 跑 9 步协议
+    </div>
+    <div class="callout warn">
+      <strong>或选:</strong>
+      <ol>
+        <li><strong>现在启动 P0-4</strong> · 继续推进,2h 工作量</li>
+        <li><strong>跳到 P1-3</strong> · 最小可用 5 测试,半天工作量</li>
+        <li><strong>跳到 P1-1</strong> · 变体管理,文档级</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为 P0-3 全完工汇报文档 · 不入 git · 仅作 review 用<br>
+  工作目录: <code>私家大厨/phase_p0_3.html</code>
+</footer>
+
+</div>
+</body>
+</html>

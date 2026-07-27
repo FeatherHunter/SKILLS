@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>✅ P0-2 · F2 4 细分词 · 方向修正版 · 已完工</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:760px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#F2F2F7 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .badge-row{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;letter-spacing:0.3px}
+  .badge-p0{background:var(--danger-soft);color:var(--danger)}
+  .badge-done{background:var(--success-soft);color:var(--success)}
+  .badge-skip{background:rgba(0,0,0,0.06);color:var(--text3)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px}
+  .card-header .sub{font-size:12px;color:var(--text3)}
+  .card-body{padding:14px 20px 18px;font-size:14px;line-height:1.65;color:var(--text2)}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 4px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 4px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  ol{padding-left:22px;margin-top:8px}
+  ol li{margin-bottom:8px}
+  ol li strong{color:var(--text);font-weight:600}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){
+    .container{padding:14px 10px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    .card-body{padding:12px 16px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>✅ P0-2 · F2 4 细分词 · 方向修正版 · 已完工</h1>
+  <div class="hero-sub">2026-07-27 · commit <code>b10aa53</code> · 27 insertions / 27 deletions</div>
+  <div class="badge-row">
+    <span class="badge badge-p0">🔴 P0</span>
+    <span class="badge badge-done">✅ 已完工</span>
+    <span class="badge" style="background:var(--bg);color:var(--text2)">方向修正:改 SKILL.md</span>
+    <span class="badge" style="background:var(--bg);color:var(--text2)">~30 分钟</span>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>1 · 路线图进度</h2>
+    <div class="sub">PLAN.md · 按顺序推进(原顺序)</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>#</th><th>任务</th><th>状态</th></tr>
+      <tr><td>P0-1</td><td>F1 HELP 契约落地</td><td><span class="badge badge-done">✅ 5 commit</span></td></tr>
+      <tr><td><strong>P0-2</strong></td><td><strong>F2 4 细分词(方向修正)</strong></td><td><span class="badge badge-done">✅ b10aa53</span></td></tr>
+      <tr><td>P0-3</td><td>F4 跨 Skill 路由</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P0-4</td><td>FAT Fresh Agent 测试</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-1</td><td>F3 变体管理</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-2</td><td>V2 4 类榜单 HTML</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+      <tr><td>P1-3</td><td>Test 自动化套件</td><td><span class="badge" style="background:var(--bg);color:var(--text3)">⏳ 待启动</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>2 · 改动内容</h2>
+    <div class="sub">22 处替换 · 0 'AI 截取' 字样残留</div>
+  </div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>修复方向(关键)：</strong>不是给 HTML 加锚点 · 是改写给 AI 看的契约文档(违反原则 11 HTML-First 的"截取"字样 → "推 HTML")。
+    </div>
+    <ol>
+      <li><strong>SKILL.md Line 55-57</strong>「机制说明」段：删"<strong>截取</strong>对应 section",改为"调 <code>recipe_render.py render &lt;菜名&gt;</code> 渲染完整 HTML + 用 <code>&lt;media&gt;</code> 推文件"</li>
+      <li><strong>SKILL.md Line 62-65</strong>4 个细分词描述："(AI 截取)" → "(AI 推 HTML,用户自行定位)"</li>
+      <li><strong>SKILL.md Line 423</strong>路由规则："告知 AI 只展示对应部分" → "告知 AI 推完整 HTML,<strong>禁止文字截取</strong>"</li>
+      <li><strong>私家大厨.html B 段</strong>(HTML 镜像同步,§05 硬规则)：
+        <ul style="margin-top:4px">
+          <li>B 段说明段：截取 → 推 HTML(原则 11)</li>
+          <li>4 段 cli-name：<code>recipe_manager.py show</code> → <code>recipe_render.py render</code>(6 处)</li>
+          <li>4 段 cli-body 描述："只展示 X 部分" → "推完整 HTML,用户自行定位"</li>
+          <li>4 段"读取的表"：从单 section 列表 → HTML 全量(recipes + ingredients + cooking_steps + nutrition + background)</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="callout success">
+      <strong>验证：</strong><code>grep "AI 截取" 私家大厨.html</code> → 0 命中。<code>grep -c "recipe_render.py render"</code> → 8 命中(1 说明段 + 4 cli-name + 3 其他)。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>3 · Commit 信息</h2>
+    <div class="sub"><code>b10aa53</code> · main · 2 files changed · 27+/27-</div>
+  </div>
+  <div class="card-body">
+    <div style="background:var(--bg);padding:12px 14px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text2);line-height:1.55;overflow-x:auto">
+      <strong>[feat(私家大厨)] Phase 2: 改 SKILL.md + 镜像引导 AI 走 HTML(原则 11 · 修复 F2)</strong><br>
+      <br>
+      问题: SKILL.md 第 55-57 行明确写'AI 调 recipe_manager show 拿全量后,<br>
+      从中截取对应 section 给用户',直接教 AI 走文字截取(违反原则 11 HTML-First)。<br>
+      <br>
+      修复(方向修正版,不加锚点):<br>
+        SKILL.md: Line 55-57 + 62-65 + 423<br>
+        私家大厨.html: B 段 + 4 段 cli · 22 处替换<br>
+      <br>
+      Tested-By: exempt<br>
+        豁免依据: 纯文档/契约改动,引导 AI 走 HTML 路径<br>
+        (行为变更需 FAT 验证见 P0-4)
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>4 · 验收检查</h2>
+    <div class="sub">§02 5 层自检 + §07 §10 14 项</div>
+  </div>
+  <div class="card-body">
+    <div class="callout success">
+      <strong>✅ F2(原则 11 HTML-First)修复完成：</strong>SKILL.md 不再教 AI 文字截取。AI 行为契约已对齐——"调 recipe_render.py + 推 HTML(media)"。
+    </div>
+    <ol>
+      <li>grep <code>"AI 截取"</code> SKILL.md → 0 命中 ✅</li>
+      <li>grep <code>"AI 截取"</code> 私家大厨.html → 0 命中 ✅</li>
+      <li>grep <code>"recipe_render.py render"</code> SKILL.md → ≥ 5 命中(1 机制说明 + 4 细分词描述)✅</li>
+      <li>HTML 镜像同步(§05 硬规则)✅</li>
+      <li>改动前 3 问已答 ✅</li>
+    </ol>
+    <div class="callout warn">
+      <strong>⚠️ 待 FAT 验证(P0-4)：</strong>文档契约改了,但 AI 是否真的"调 recipe_render.py + 推 HTML"需要 Fresh Agent 黑盒测试。这是 P0-4 任务。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>5 · 下一步</h2>
+    <div class="sub">按 PLAN.md 顺序 → P0-3</div>
+  </div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>P0-3 · F4 跨 Skill 路由声明</strong>(🔴 P0 · 30 分钟 · <strong>需用户拍板</strong>)
+    </div>
+    <ol>
+      <li>工作内容：SKILL.md 加"跨 Skill 路由表"段,说明哪些唤醒词路由到哪个 skill(卡路里/居家管家)</li>
+      <li>需要用户决定:每个边界场景具体归哪个 skill</li>
+      <li>模板示例已就绪(总纲 §03 铁律 3 要求)</li>
+    </ol>
+    <div class="callout warn">
+      <strong>准备好路由表内容后告诉我</strong>,我可以立即执行 P0-3。或你直接给"哪些词走 A / 哪些词走 B / 哪些词走 C"的拍板。
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为 P0-2 完工汇报文档 · 不入 git · 仅作 review 用<br>
+  工作目录: <code>私家大厨/phase_p0_2.html</code>
+</footer>
+
+</div>
+</body>
+</html>

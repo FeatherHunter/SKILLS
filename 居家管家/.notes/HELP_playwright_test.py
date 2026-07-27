@@ -47,7 +47,17 @@ async def run():
 
         # ===== Step 1: 加载页面 =====
         await page.goto(f"file://{out}")
-        await page.wait_for_load_state("networkidle")
+        await page.wait_for_load_state("domcontentloaded")
+        await page.wait_for_timeout(2000)  # 等 IIFE 渲染
+
+        # 立即截图查看错误状态
+        shot1 = SHOTS_DIR / "01_initial.png"
+        await page.screenshot(path=str(shot1), full_page=True)
+
+        # 列出 console 错误(向用户报告)
+        print(f"console errors collected so far: {len(console_errors)}")
+        for e in console_errors[:3]:
+            print(f"  - {e}")
 
         # 截图 1: 初始状态
         shot1 = SHOTS_DIR / "01_initial.png"
@@ -60,12 +70,12 @@ async def run():
         else:
             issues.append(f"✗ h1 缺失或错: {h1!r}")
 
-        # 验证 2: groups 数量
+        # 验证 2: groups 数量(P1-9c-fix 后修物品的 7 个子项合并到改物品,所以 31→24)
         groups = await page.locator(".group").count()
-        if groups == 31:
-            passed.append(f"✓ groups 渲染: {groups} 个")
+        if groups == 24:
+            passed.append(f"✓ groups 渲染: {groups} 个(去重后 24,符合总纲 03 §铁律 2)")
         else:
-            issues.append(f"✗ groups 数量: 预期 31,实际 {groups}")
+            issues.append(f"✗ groups 数量: 预期 24,实际 {groups}")
 
         # 验证 3: 默认第一组展开
         open_count = await page.locator(".group.open").count()
@@ -74,24 +84,26 @@ async def run():
         else:
             issues.append(f"✗ 默认展开数: 预期 1,实际 {open_count}")
 
-        # 验证 4: 第一个 group 是修物品(scenarios.yaml 顺序)
+        # 验证 4: 第一个 group 是查物品(用户视角高频优先)
         first_group_h2 = await page.locator(".group").first.locator("h2").text_content()
-        # 期望:查物品(用户视角高频优先),实际可能是修物品
-        issues.append(f"⚠ 第一个 group 是 {first_group_h2!r}(scenarios.yaml 首项,非用户视角高频)")
+        if "查物品" in first_group_h2:
+            passed.append(f"✓ 第一个 group 按用户视角高频: {first_group_h2!r}")
+        else:
+            issues.append(f"✗ 第一个 group 不是'查物品': {first_group_h2!r}")
 
-        # 验证 5: 场景渲染数
+        # 验证 5: 场景渲染数(sc scenarios 合并后 34→32)
         scenarios = await page.locator(".scenario").count()
-        if scenarios == 34:
+        if scenarios == 32:
             passed.append(f"✓ scenarios 渲染: {scenarios} 个")
         else:
-            issues.append(f"✗ scenarios 数量: 预期 34,实际 {scenarios}")
+            issues.append(f"✗ scenarios 数量: 预期 32,实际 {scenarios}")
 
         # 验证 6: 复制按钮
         copy_btns = await page.locator(".copy-btn").count()
-        if copy_btns == 34:
+        if copy_btns == 32:
             passed.append(f"✓ copy buttons: {copy_btns} 个")
         else:
-            issues.append(f"✗ copy buttons: 预期 34,实际 {copy_btns}")
+            issues.append(f"✗ copy buttons: 预期 32,实际 {copy_btns}")
 
         # 验证 7: prompt textContent 是否被注入
         first_prompt = await page.locator(".s-prompt").first.text_content()

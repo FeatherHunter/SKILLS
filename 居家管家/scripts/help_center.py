@@ -20,14 +20,19 @@ def build_help_payload() -> dict:
     data = yaml.safe_load(SCENARIOS.read_text(encoding="utf-8"))
     scenarios = data.get("scenarios", [])
 
-    # 按 wake_word 分组
+    # 按 wake_word 分组(保插入序,即 yaml 内出现顺序)
     grouped = {}
     for s in scenarios:
         grouped.setdefault(s["wake_word"], []).append(s)
 
+    # 显式顺序:按 yaml 出现顺序(首个出现的 wake_word 排第一)
     groups = []
-    for ww, ss in sorted(grouped.items(), key=lambda x: x[0]):
-        groups.append({"wake_word": ww, "scenarios": ss})
+    seen = set()
+    for s in scenarios:
+        ww = s["wake_word"]
+        if ww not in seen:
+            seen.add(ww)
+            groups.append({"wake_word": ww, "scenarios": grouped[ww]})
 
     return {
         "status": "ok",

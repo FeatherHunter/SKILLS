@@ -39,18 +39,14 @@ h1{font-size:24px;margin:0 0 4px}
 </head>
 <body>
 
-<!-- BUG FIX: payload script 放在 wrap 外,避免 wrap.innerHTML += 摧毁它 -->
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
-<!--SHARED-HELPERS-->
+<script><!--SHARED-HELPERS--></script>
 
 <div class="wrap">
   <div class="placeholder"></div>
 </div>
 
 <script>
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function arr(v){return Array.isArray(v)?v:[];}
-
 (function(){
   // BUG FIX: payload script 在 wrap 外,直接取兄弟节点
   const el = document.getElementById('payload');

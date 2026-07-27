@@ -1,0 +1,124 @@
+<!doctype html><html lang="zh-CN"><head>
+<meta charset="utf-8"><title>PLAN · 全面重构路线图</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--blue:#0071e3;--amber:#ff9f0a;--green:#34c759;--line:#e6e6eb}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:24px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;margin:18px 0 6px}.q{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.ok{background:#eaf7ec;border-left:3px solid #34c759;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+.no{background:#ffebee;border-left:3px solid #ff3b30;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+.pe{background:#fff8e6;border-left:3px solid #ff9f0a;padding:10px 14px;border-radius:6px;margin:8px 0;font-size:14px}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,monospace}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px;font-size:13px;font-family:ui-monospace,monospace}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}th{background:#fafafc;font-weight:600}
+.btn{display:inline-block;padding:6px 14px;background:var(--blue);color:#fff;text-decoration:none;border-radius:6px;margin:4px}
+.sev{font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--amber);color:#fff;margin-right:4px}
+</style>
+</head><body><div class="wrap">
+
+<h1>PLAN · 全面重构路线图(2026-07-27)</h1>
+<p class="sub">按你 Q1=C + Q2=A + Q3=②③④ + Q4=B 拼出的实施路径</p>
+
+<h2>你已拍板的清单</h2>
+<table>
+<thead><tr><th>问题</th><th>答</th><th>对应行动</th></tr></thead>
+<tbody>
+<tr><td>Q1 目标</td><td><b>C</b> 全面重构</td><td>按总纲 V1.0 把居家管家剩下文档写齐</td></tr>
+<tr><td>Q2 现有 commit</td><td><b>A</b> 全部保留</td><td>不 revert 任何 commit</td></tr>
+<tr><td>Q3-② prompt 改造</td><td>保留(已改 32/32)</td><td>无需后续工作</td></tr>
+<tr><td>Q3-③ 改 SKILL.md + 居家管家.html</td><td><b>要做</b></td><td>见下文 Phase 1</td></tr>
+<tr><td>Q3-④ 迁 database.md</td><td><b>要做</b></td><td>见下文 Phase 1</td></tr>
+<tr><td>Q4 工作流</td><td><b>B</b> commit log + demo</td><td>一次性 commit,最后给 Chrome demo</td></tr>
+<tr><td>Q5 产物</td><td>我自决</td><td>见"产物清单"段</td></tr>
+</tbody>
+</table>
+
+<h2>Phase 1: 文档重构(本轮核心)</h2>
+
+<div class="c">
+<h3>① <code>references/database.md</code> 老 schema 迁移</h3>
+<p><b>现状问题</b>:line ~12 写"老 <code>items.category</code> 字段保留(向后兼容)" → 实际 schema 已无该字段(P0-1 init_db 把 category 改为 nullable,生产库实测无 category 列)。</p>
+<p><b>改动</b>:</p>
+<ul>
+<li>删"老 category 字符串保留"误导段</li>
+<li>加"过渡期(已废弃)"说明</li>
+<li>列出 5 张当前实际表(items / item_locations / item_tags / categories / accounts)</li>
+<li>每个表标注 deprecated 字段(如有)</li>
+</ul>
+</div>
+
+<div class="c">
+<h3>② <code>SKILL.md</code> 主文档重构</h3>
+<p>现状漂移(实测):</p>
+<ul>
+<li>L39 / L44: "49 个 pytest" → 实测 71</li>
+<li>L18: <code>python: ">=3.7"</code> → 实测需 cryptography</li>
+<li>L38: "禁止使用 git 库" → 与 0 追踪状态无意义</li>
+<li>_meta.json version: 1.0.0 → 1.1.0(累计 P0/P1)</li>
+<li>路由表 33 行有 3 重复 + 7 update 子项已合并到"改物品"</li>
+<li>"11. <code>查物品</code> 物品搜索(默认输出 HTML)" 与 L1 / L2 重复</li>
+</ul>
+<p><b>改动</b>:</p>
+<ul>
+<li>修正所有数字(71 tests / 5 张表 / version 1.2.0)</li>
+<li>路由表清重(31 → 24)</li>
+<li>加 phase 里程碑节:Phase A(数据修复)/ Phase B(doc 一致性)/ Phase C(HELP 总纲 07)</li>
+<li>加 scenarios.yaml 7 字段契约节</li>
+<li>HELP HTML 流程节(总纲 07 §)</li>
+<li>相对时间换算 routing.py 节</li>
+</ul>
+</div>
+
+<div class="c">
+<h3>③ <code>居家管家.html</code> 用户手册重写</h3>
+<p>现状:70KB+ 手写,与 SKILL.md 不一致(总纲 04 §4.2 违反)。</p>
+<p><b>改动方案</b>:</p>
+<ul>
+<li>重写为按 wake_word 分组的速查表(和 scenarios.yaml 同源)</li>
+<li>每 wake_word 描述:意图 + 例子 + 输出形式</li>
+<li>加 "如何输入边界" "已知 limitations" 段</li>
+<li>顶部加"由 references/scenarios.yaml 渲染(总纲 07 §唯一事实源)"banner → 删除手写矛盾</li>
+</ul>
+</div>
+
+<h2>Phase 2: 测试 + 自动化(后续,不在本轮)</h2>
+<div class="pe">
+<ul>
+<li>CHANGELOG 同步 version bump</li>
+<li>SKILL.md "如何测试" 段补 Playwright/llm-seeing</li>
+<li>钩子端到端:pre-commit hook 跑 71 + 27 + Playwright</li>
+</ul>
+</div>
+
+<h2>产物清单(Q5 自决)</h2>
+<table>
+<thead><tr><th>产物</th><th>路径</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>本路线图</td><td><code>.notes/PLAN-RESTRUCTURE.html</code></td><td>让你看我要改什么</td></tr>
+<tr><td>总审查报告</td><td><code>.notes/audit-2026-07-27.html</code></td><td>现有 7 P0 + 9 P1 闭环</td></tr>
+<tr><td>HELP 截图</td><td><code>.notes/HELP_shots/01_initial.png</code> 等</td><td>闭环视觉证据</td></tr>
+<tr><td>diff 文档</td><td><code>.notes/diffs/patch-*.md</code>(累计 6 个)</td><td>每个 commit 的 patch 草案</td></tr>
+<tr><td>本轮 commit</td><td>3 个新 commit(数据库 / SKILL.md / 居家管家.html)</td><td>git log 一目了然</td></tr>
+<tr><td>最终 demo</td><td>Chrome 打开 居家管家.html(已修复版)</td><td>你 review</td></tr>
+</tbody>
+</table>
+
+<h2>为什么不先做 worktree</h2>
+<div class="q">
+<p>你说"全面重构在 main 分支上",如果将来需要回滚,直接 <code>git revert SHA..HEAD</code> 回滚这 3 个新 commit 即可。worktree 没必要(文档改动不会和其他 skill 冲突)。</p>
+</div>
+
+<h2>风险与可回滚性</h2>
+<div class="ok">
+<b>风险</b>:低。3 个文档改动都是 markdown / HTML,不涉及 schema / CLI / 测试。
+<b>回滚</b>:<code>git revert HEAD^^^..HEAD</code>(3 个新 commit)即可完整撤销。
+</div>
+
+<h2>请你确认</h2>
+<div class="q">
+<p>如果你看完路线图觉得 OK → 我直接开干,3 个 commit + Chrome demo。</p>
+<p>如果你想调整 → 现在告诉我改哪一段,我再开工。</p>
+</div>
+
+</div></body></html>

@@ -372,7 +372,7 @@ webbrowser.open(f"file://{html_path}")  # 跨平台
 **判定流程**(AI 命中任何唤醒词时):
 ```
 IF 唤醒词是 "作息管家 HELP" 类(§07 契约)
-   THEN invoke help_render.py(生成 help_center.html)
+   THEN invoke help_render.py(输出 `$SKILLS_DB_PATH/schedule_html/help/help_center_<TIMESTAMP>.html`)
 ELIF "输出形式"列含 .html
    THEN 必须 invoke 对应的 render-* CLI(默认行为)
    ELSE(无 HTML 路径)→ 才允许走文字 / JSON / CLI

@@ -7,10 +7,12 @@
 
 用法:
     python scripts/help_render.py [--out <path>]
-    # 默认写到 $SKILLS_DB_PATH/help/help_center_<timestamp>.html
+    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/help_center_<TIMESTAMP>.html
 
-输出路径:
-    SKILLS_DB_PATH/help/help_center.html(覆盖写,用户可重复触发刷新)
+输出路径(作息管家既有命名规范,与 schedule_html_render.py::_naming_path 对齐):
+    SKILLS_DB_PATH/schedule_html/help/help_center_<YYYYMMDD>_<HHMMSS>.html
+    命名格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
+    子目录: schedule_html/help/(与 record/day, plan/list 等同级)
 
 约束(§07 §5):
 - 展示全部业务唤醒词 + 全部合法场景

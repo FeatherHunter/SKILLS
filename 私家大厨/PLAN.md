@@ -151,7 +151,11 @@
 - [⚠️] P0-4 FAT Fresh Agent 黑盒测试 · 预演完成 ⚠️ 2e6028f(15 prompt 6 pass 9 fail · 待 fresh agent 真跑验证)
 - [x] P1-1 F3 变体管理 ✅ de40dac(35 唤醒词 × 3 方向标注 + references/wake_word_variants.md)
 - [x] P1-2 V2 4 类榜单 HTML ✅ adfbae2 + 54edf71(1 模板 3 type + 1 渲染器 4 子命令 + 11 唤醒词复用)
-- [ ] P1-3 Test 自动化套件
+- [x] P1-3 Test 自动化套件 ✅ 11c87b9(17 用例 + pytest.ini + .githooks 注册)
+
+---
+
+## 5 · ✅ 全部 7 任务完成 + 1 预演(待 fresh agent 真跑)
 
 > 完成后在此行追加 ✅ **和** commit hash：`- [x] P0-1 F1 ✅ abc1234`
 

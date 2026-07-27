@@ -46,7 +46,21 @@ def test_help_html_renders():
     for s in scenarios:
         grouped.setdefault(s["wake_word"], []).append(s)
     groups = [{"wake_word": w, "scenarios": ss} for w, ss in grouped.items()]
-    assert len(groups) > 30, f"应 ≥ 30 个唤醒词,实际 {len(groups)}"
+    # P1-9c-fix-2 后 7 个 update 子项合并 → 24 个唤醒词; ≥ 20 视为合规
+    assert len(groups) >= 20, f"应 ≥ 20 个唤醒词,实际 {len(groups)}"
+
+    # 核心唤醒词必须存在(防止合并过激)
+    must_have = {"查物品", "看物品", "录物品", "改物品", "盘物品", "统物品",
+                  "查过期", "看标签", "合标签", "查账号", "居家管家 帮助"}
+    actual = {g["wake_word"] for g in groups}
+    missing = must_have - actual
+    assert not missing, f"缺失核心唤醒词: {missing}"
+
+    # 合并不应出现 7 个旧 update 子项(总纲 03 §铁律 2)
+    deprecated = {"修物品", "借物品", "废物品", "移物品", "补物品", "减物品", "标物品"}
+    actual = {g["wake_word"] for g in groups}
+    leaked = deprecated & actual
+    assert not leaked, f"应已合并的 update 子项仍独立 group: {leaked}"
 
     # 所有 prompt 不暴露 CLI / DB / Python 路径(总纲 07 §2)
     for s in scenarios:

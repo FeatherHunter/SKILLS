@@ -975,7 +975,25 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     # 6. 占位符黑名单 + 0 值白名单(L2 新增)
     placeholder_errors = validate_full_no_placeholder(data) if isinstance(data, dict) else []
 
-    all_errors = coverage_errors + type_errors + step_errors + inventory_errors + category_errors + placeholder_errors
+    # 6.5 (2026-07-27 P0 修复):tips + techniques 至少 1 个(设计意图与实现统一)
+    mandatory_errors = []
+    if isinstance(data, dict):
+        if not data.get("tips") or not isinstance(data.get("tips"), list) or len(data["tips"]) == 0:
+            mandatory_errors.append({
+                "field": "tips",
+                "current_value": data.get("tips"),
+                "expected": "≥ 1 条 tips(每道菜必有小贴士)",
+                "hint": "tips 是 L1 设计意图——菜级 tips 是技能提升。建议加 1 条万能 tips(如'盐最后放,口感更鲜'或根据本菜特色)。如真无内容,明确传 null(显式表态),不要省略字段。"
+            })
+        if not data.get("techniques") or not isinstance(data.get("techniques"), list) or len(data["techniques"]) == 0:
+            mandatory_errors.append({
+                "field": "techniques",
+                "current_value": data.get("techniques"),
+                "expected": "≥ 1 条 techniques(每步都该有技法,如'切片'/'煸炒'/'勾芡')",
+                "hint": "techniques 是 L1 设计意图——技法是私有大厨的核心价值。建议加 1-3 条具体技法,标记该步骤的关键操作。"
+            })
+
+    all_errors = mandatory_errors + coverage_errors + type_errors + step_errors + inventory_errors + category_errors + placeholder_errors
 
     # 7. tips 业务规则(警告版,L2 新增)—— 不阻断,只警告
     tips_warnings = []

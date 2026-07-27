@@ -30,13 +30,15 @@ DB_DIR = DB_PATH.parent
 
 
 def _find_master_key_path(skill_dir):
-    """三层查找.master.key路径：环境变量 > 技能目录 > 父目录.db（与 db.py 三层查找保持一致）"""
+    """三层查找.master.key路径:环境变量 > 技能目录 > 父目录.db(与 db.py 保持一致)"""
     import os as _os
     env_path = _os.environ.get("SKILLS_DB_PATH")
     if env_path:
+        # env 优先:无论是否已存在,都用 env 指定的目录
+        # (与 db.py 同款修复:之前 "if exists 提前 return" 让生产 key 永远命中)
         p = Path(env_path) / ".master.key"
-        if p.exists():
-            return p
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
     p = skill_dir / ".master.key"
     if p.exists():
         return p
@@ -89,11 +91,36 @@ def verify_master_key(master_key: str) -> bool:
     return _hash_key(master_key) == stored_hash
 
 def set_master_key(master_key: str) -> dict:
-    """设置/更新 master key"""
-    if not master_key or len(master_key) < 4:
-        return {"success": False, "message": "密钥至少4个字符"}
+    """设置/更新 master key(DEPRECATED,仅保留兼容老调用)
+
+    新代码应该用:
+    - _write_master_key(master_key):首次初始化场景
+    - account_set_master(old, new):改密钥场景(必须验证旧密钥)
+    """
+    import warnings
+    warnings.warn(
+        "set_master_key() 已被弃用,改用 _write_master_key() 或 account_set_master()",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return _write_master_key(master_key)
+
+
+def _write_master_key(master_key: str) -> dict:
+    """首次初始化 master key(无需旧密钥)。
+
+    仅供 CLI 'account --action init' 首次调用;
+    改密钥必须走 account_set_master(old, new) 走密钥变更流程。
+    P0-4 补丁:把密钥长度校验从 4 字符提到 8 字符,并 chmod 0o600。
+    """
+    if not master_key or len(master_key) < 8:
+        return {"success": False, "message": "密钥至少 8 个字符"}
     MASTER_KEY_FILE.write_text(_hash_key(master_key))
-    return {"success": True, "message": "Master key 已设置"}
+    try:
+        os.chmod(MASTER_KEY_FILE, 0o600)
+    except OSError:
+        pass  # WSL/Windows 上对 chmod 支持有限
+    return {"success": True, "message": "Master key 已设置(首次初始化)"}
 
 # ── 数据库初始化 ─────────────────────────────────────────────────────────────
 

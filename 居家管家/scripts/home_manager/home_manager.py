@@ -35,7 +35,7 @@ def main():
     _scripts_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, _scripts_dir)
     from accounts import (
-        is_master_key_set, verify_master_key, set_master_key,
+        is_master_key_set, verify_master_key, _write_master_key,
         account_add, account_list, account_show, account_del, account_set_master
     )
 
@@ -464,7 +464,11 @@ def main():
             if not args.master_key:
                 print("错误：--master-key 是必填的")
                 return 1
-            result = set_master_key(args.master_key)
+            # P0-4 补丁:首次 init 走 _write_master_key;若已存在则必须用 set-master
+            if is_master_key_set():
+                print("✗ master key 已存在;改用 --action set-master 走密钥变更流程")
+                return 1
+            result = _write_master_key(args.master_key)
             print("✓ " + result["message"])
 
         elif action == "add":

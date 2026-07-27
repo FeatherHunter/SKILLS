@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>🔍 私有大厨成果 · 第二轮对抗式审查 · 2026-07-27</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#FBE9E7 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .badge-row{display:flex;flex-wrap:wrap;gap:8px}
+  .badge{display:inline-block;padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:600;letter-spacing:0.3px}
+  .badge-critical{background:var(--danger-soft);color:var(--danger)}
+  .badge-major{background:var(--warn-soft);color:var(--warn)}
+  .badge-minor{background:rgba(0,0,0,0.06);color:var(--text3)}
+  .badge-overclaim{background:rgba(255,59,48,0.15);color:var(--danger)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:0.5px solid var(--separator)}
+  .card-header h2{font-size:18px;font-weight:700;letter-spacing:-0.02em;margin-bottom:2px}
+  .card-header .sub{font-size:12px;color:var(--text3)}
+  .card-body{padding:14px 20px 18px;font-size:14px;line-height:1.65;color:var(--text2)}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout.overclaim{background:rgba(255,59,48,0.15);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  pre{background:var(--bg);padding:12px 14px;border-radius:var(--radius-sm);font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2);overflow-x:auto;margin:10px 0;line-height:1.5}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:0.5px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:0.5px solid var(--separator);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td code{background:var(--bg);padding:1px 4px;border-radius:4px;font-size:11px}
+  .bug-row{background:rgba(255,59,48,0.05)}
+  .fixed-row{background:rgba(52,199,89,0.08)}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){
+    .container{padding:14px 10px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:21px}
+    .card-body{padding:12px 16px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>🔍 第二轮对抗式审查 · 6 + 3 = 9 BUG</h1>
+  <div class="hero-sub">2026-07-27 · 第二轮 · 深挖 5 子命令实际可用性 + 跨文档一致性 + 测试有效性</div>
+  <div class="badge-row">
+    <span class="badge badge-critical">3 致命(新发现)</span>
+    <span class="badge badge-major">2 严重</span>
+    <span class="badge badge-minor">1 轻量</span>
+    <span class="badge" style="background:var(--success-soft);color:var(--success)">2 已修</span>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>0 · 第一轮已修 + 第二轮新发现</h2>
+    <div class="sub">总体 9 个 BUG(2 修 + 7 未修)</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>轮次</th><th>#</th><th>BUG</th><th>严重度</th><th>状态</th></tr>
+      <tr class="fixed-row"><td>1</td><td>#1</td><td>HTML 无 section 锚点</td><td>🔴</td><td><span class="badge" style="background:var(--success-soft);color:var(--success)">✅ b0c7108</span></td></tr>
+      <tr class="fixed-row"><td>1</td><td>#2</td><td>data_view.html 占位符 2 次</td><td>🔴</td><td><span class="badge" style="background:var(--success-soft);color:var(--success)">✅ b0c7108</span></td></tr>
+      <tr class="bug-row"><td>2</td><td><strong>#3</strong></td><td><strong>render_data search 字段名不匹配(库里有菜但 0 项)</strong></td><td>🔴</td><td><span class="badge badge-critical">❌ 未修</span></td></tr>
+      <tr class="bug-row"><td>2</td><td><strong>#4</strong></td><td><strong>relation_manager 完全不支持 --json(relations 子命令跑不通)</strong></td><td>🔴</td><td><span class="badge badge-critical">❌ 未修</span></td></tr>
+      <tr class="bug-row"><td>2</td><td><strong>#5</strong></td><td><strong>recipe_manager.search 与 .list 字段名不统一(search="results", list="recipes")</strong></td><td>🔴</td><td><span class="badge badge-critical">❌ 未修</span></td></tr>
+      <tr><td>1</td><td>#6</td><td>alias_names 字段不渲染</td><td>🟠</td><td><span class="badge badge-major">❌ 未修</span></td></tr>
+      <tr><td>1</td><td>#7</td><td>render_data 错误处理不友好</td><td>🟠</td><td><span class="badge badge-major">❌ 未修</span></td></tr>
+      <tr><td>1</td><td>#8</td><td>render_data 测试覆盖不全(relations/search 实际未测)</td><td>🟠</td><td><span class="badge badge-major">❌ 未修</span></td></tr>
+      <tr><td>2</td><td><strong>#9</strong></td><td>test_template_escapes_script_tags 假阳性(第 3 个 OR 永远为 True)</td><td>🟡</td><td><span class="badge badge-minor">❌ 未修</span></td></tr>
+    </table>
+    <div class="callout overclaim">
+      <strong>最严重自夸:</strong>第一轮报告 phase_audit.html 说"P1-2 V2 4 类榜单 HTML ✅ 完工"——<strong>实际只有 50% 子命令可用</strong>(search 因字段不匹配 0 项,relations 因 manager 不支持 --json 完全崩)。我之前"smoke test 通过"的结论**基于 happy path(库里有菜+合法子命令)**,没覆盖边界。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>1 · 🔴 致命 BUG #3:render_data search 字段名不匹配</h2>
+      <div class="sub">实测:库里有 1 个菜 → 渲染 0 项</div>
+  </div>
+  <div class="card-body">
+    <div class="callout danger">
+      <strong>实测:</strong><br>
+      <code>python3 私家大厨/scripts/render_data.py search 辣椒炒肉 --out /tmp/test.html</code><br>
+      输出: <code>✅ 已渲染: 11.4 KB · type=list · <strong>0 项</strong></code><br>
+      实际库里有 1 道菜"辣椒炒肉"!<strong>渲染结果错误</strong>
+    </div>
+    <div class="callout danger">
+      <strong>字段名差异:</strong><br>
+      <table>
+        <tr><th>CLI</th><th>返回字段</th></tr>
+        <tr><td><code>recipe_manager.py search --json</code></td><td><code>data.results</code> ❌</td></tr>
+        <tr><td><code>recipe_manager.py list --json</code></td><td><code>data.recipes</code> ✓</td></tr>
+        <tr><td><code>render_data.py::adapt_search</code> 期望</td><td><code>cli_data["recipes"]</code> ❌ 漏 <code>results</code></td></tr>
+      </table>
+    </div>
+    <div class="callout key">
+      <strong>修复:</strong>3 个选项:
+      <ol>
+        <li>改 render_data adapt_search 加 <code>"results"</code> 字段: <code>cli_data.get("recipes") or cli_data.get("items") or cli_data.get("results") or []</code></li>
+        <li>改 recipe_manager.search 统一返 <code>data.recipes</code>(与 list 一致)</li>
+        <li>两边都改:render_data 兼容 + recipe_manager 统一</li>
+      </ol>
+    </div>
+    <div class="callout overclaim">
+      <strong>影响:</strong>用户说"搜索排骨"→ AI 调 render_data → 收到"0 项"空 HTML → 体验极差。<strong>P1-2 当时说"smoke test 通过"是假阳性</strong>。
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>2 · 🔴 致命 BUG #4:relation_manager 完全不支持 --json</h2>
+      <div class="sub">实测:relations 子命令 100% 失败</div>
+  </div>
+  <div class="card-body">
+    <div class="callout danger">
+      <strong>实测:</strong><br>
+      <code>python3 私家大厨/scripts/relation_manager.py list-parent 辣椒炒肉 --json</code><br>
+      输出: <code>未找到食谱:辣椒炒肉</code> ❌(纯文本,不是 JSON)<br>
+      <code>python3 私家大厨/scripts/render_data.py relations 辣椒炒肉</code><br>
+      报: <code>❌ relations 失败: relation_manager.py 输出非 JSON</code>
+    </div>
+    <div class="callout danger">
+      <strong>关系链:</strong><br>
+      1. P1-2 改造 history_manager 加 --json(commit adfbae2)<br>
+      2. <strong>漏了 relation_manager</strong>——list-parent/list-child 函数没加 json_mode 处理<br>
+      3. render_data relations 子命令<strong>从未跑通过</strong>(我没真测)<br>
+      4. <strong>SKILL.md 路由表 line 547 写"查看派生关系 → relation_manager list-parent + list-child"</strong>——但实际跑不通,fresh agent 按 SKILL.md 走会失败
+    </div>
+    <div class="callout key">
+      <strong>修复:</strong>改 <code>scripts/relation_manager.py</code>:
+      <ol>
+        <li>所有函数(list_parent/list_child/add/update)加 json_mode 处理</li>
+        <li>错误情况(未找到食谱等)用 <code>if json_mode: emit(error(...))</code> 包裹</li>
+        <li>main() 注入 _json_mode 到 args dict(history_manager 已示范)</li>
+        <li>smoke test 跑 relations 子命令验证</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>3 · 🔴 致命 BUG #5:recipe_manager.search/list 字段名不统一</h2>
+      <div class="sub">同 1 个 manager 不同子命令返不同字段</div>
+  </div>
+  <div class="card-body">
+    <div class="callout danger">
+      <strong>字段不统一:</strong>
+      <pre>recipe_manager.py search --json → data.results[]
+recipe_manager.py list --json  → data.recipes[]</pre>
+      <strong>同 1 个文件 2 个函数,字段名不同</strong>——任何调用方都可能踩坑
+    </div>
+    <div class="callout overclaim">
+      <strong>根因:</strong>L3 阶段"三段式改造"时,2 个函数<strong>没对齐字段名</strong>。当时也没人测出,因为我之前 render_data 适配时**用 .get() 容错 2 个字段名**,掩盖了字段不一致问题。
+    </div>
+    <div class="callout key">
+      <strong>修复:</strong><strong>必须</strong>改 recipe_manager 让 search 也返 <code>data.recipes</code>。理由:
+      <ol>
+        <li>list 已经用 recipes(历史包袱)</li>
+        <li>search 改 recipes 与 list 对齐</li>
+        <li>同时改 render_data 移除 .results 兼容代码(因为已不需要)</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>4 · 🟠 严重 BUG #6:#7:#8(从第一轮继承)</h2>
+      <div class="sub">alias_names 渲染 / 错误处理 / 测试不全</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>BUG</th><th>位置</th><th>影响</th></tr>
+      <tr><td><strong>#6 alias_names 不渲染</strong></td><td><code>templates/help.html</code></td><td>用户看不到"做菜模式"还有"开始做菜"入口</td></tr>
+      <tr><td><strong>#7 render_data 错误处理</strong></td><td><code>scripts/render_data.py</code></td><td>CLI 报错时裸露 stacktrace,用户不友好</td></tr>
+      <tr><td><strong>#8 render_data 测试不全</strong></td><td><code>tests/</code></td><td>17 用例测 validators + imports,未测 render_data 实际</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>5 · 🟡 轻量 BUG #9:测试假阳性</h2>
+      <div class="sub">test_template_escapes_script_tags 第 3 个 OR 永远 True</div>
+  </div>
+  <div class="card-body">
+    <div class="callout warn">
+      <strong>代码:</strong>
+      <pre>assert "</script>" in content or "&lt;\\/script&gt;" in content <strong>or "</" in content</strong></pre>
+      第 3 个 OR 条件 <code>"</" in content</code> 对<strong>任何 HTML 都 True</strong>——因为任何 HTML 标签都以 <code>&lt;tagname&gt;</code> 形式含 <code>&lt;/</code>。
+      <strong>这测试永远 pass,不工作</strong>。
+    </div>
+    <div class="callout key">
+      <strong>修复:</strong>把第 3 个 OR 删了,只保留前 2 个有效断言。或改成更精确的检查:
+      <pre>assert "inject_data" in content or "escape" in content.lower()</pre>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>6 · 修复建议(ROI 排序 · 第二轮)</h2>
+      <div class="sub">3 个致命 BUG 优先</div>
+  </div>
+  <div class="card-body">
+    <table>
+      <tr><th>优先级</th><th>BUG</th><th>工作量</th><th>影响</th></tr>
+      <tr class="bug-row"><td>🔴 #4</td><td>relation_manager 加 --json</td><td>~ 50 行(同 history_manager 改造)</td><td><strong>最大</strong>(完全不可用)</td></tr>
+      <tr class="bug-row"><td>🔴 #3+#5</td><td>recipe_manager.search 改 data.recipes + render_data 容错</td><td>~ 5 行</td><td><strong>大</strong>(搜索 0 项假象)</td></tr>
+      <tr class="bug-row"><td>🟡 #9</td><td>测试假阳性修</td><td>1 行</td><td>小</td></tr>
+      <tr><td>🟠 #6</td><td>alias_names 渲染</td><td>5 行模板</td><td>中</td></tr>
+      <tr><td>🟠 #7</td><td>render_data 错误处理</td><td>try/except</td><td>小</td></tr>
+      <tr><td>🟠 #8</td><td>补 render_data 测试</td><td>3 文件</td><td>中(防回归)</td></tr>
+    </table>
+    <div class="callout key">
+      <strong>建议顺序:</strong>#4 → #3+#5 → #9 → #6 → #7 → #8
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header">
+    <h2>7 · 自我评估(第二轮)</h2>
+      <div class="sub">"完工" 标签 vs 实际可用</div>
+  </div>
+  <div class="card-body">
+    <div class="callout overclaim">
+      <strong>最严重自夸:</strong>第一轮报告 phase_audit.html 说"P1-2 V2 4 类榜单 HTML ✅ 完工"——<strong>实际 50% 子命令不可用</strong>。
+      <table>
+        <tr><th>子命令</th><th>状态</th><th>实测</th></tr>
+        <tr class="bug-row"><td>search</td><td>❌ 不可用</td><td>库里有菜但渲染 0 项</td></tr>
+        <tr><td>history</td><td>✅ 可用</td><td>1 项正确渲染</td></tr>
+        <tr><td>stats</td><td>✅ 可用</td><td>1 项正确渲染</td></tr>
+        <tr class="bug-row"><td>relations</td><td>❌ 完全崩</td><td>relation_manager 不支持 --json</td></tr>
+      </table>
+    </div>
+    <div class="callout warn">
+      <strong>根因:</strong>P1-2 当时"smoke test 通过" — 实际只跑了 3 个 happy path(search "排骨" 0 项/history 1 项/stats 1 项),<strong>漏了真正有数据的 search 测试 + 完全没测 relations</strong>。
+    </div>
+    <div class="callout key">
+      <strong>教训:</strong>"P1-3 17 测试通过" 是 validator + import 测试,<strong>不是 render_data 测试</strong>。我之前夸"测试套件保障回归"——<strong>实际 render_data 完全无回归保护</strong>。
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为私有大厨成果对抗式审查第二轮 · 不入 git · 仅作 review 用<br>
+  工作目录: <code>私家大厨/phase_audit.html</code>(更新版) · 前置:第一轮 b0c7108 commit 后
+</footer>
+
+</div>
+</body>
+</html>

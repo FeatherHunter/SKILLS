@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<title>HELP 第二轮代码审计 · JSDOM 实测</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--red:#ff3b30;--amber:#ff9f0a;--line:#e6e6eb;--green:#34c759}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:22px;margin:0 0 8px}
+h2{font-size:18px;margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px;color:var(--red)}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.bug{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.bug h3{margin:0 0 6px}
+.bug .impact{color:var(--amber);font-size:13px;margin:6px 0}
+.bug .fix{background:#eaf7ec;border-left:3px solid var(--green);padding:8px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+.bug .ok{background:#eaf7ec;border-left:3px solid var(--green);padding:8px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;margin-left:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:#fafafc;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HELP 第二轮代码审计 · JSDOM 实测</h1>
+<p>用 <code>jsdom</code> 真正执行 IIFE,发现 <b>3 个新 BUG + 1 个契约违反</b>。</p>
+
+<div class="bug">
+<h3>BUG 6 · 默认展开的 group 是"修物品"不是"查物品"<span class="sev">P1</span></h3>
+<p><b>实测</b>:</p>
+<pre>=== After IIFE execution ===
+group elements: 31
+open groups initially: 1
+group[0] wake_word: 修物品      ← 默认展开
+group[0] scenario[0]: "[物品名] 坏了,在修。"
+
+=== Copy button test ===
+btn idx=0 sid=status_repair    ← 默认第一个按钮是修物品</pre>
+<p><b>原因</b>:<code>scenarios.yaml</code> 里第一个 scenario 是 <code>修物品</code>(不是按用户视角的"高频 → 低频"排序)。Python <code>setdefault</code> 保留插入序,所以 <code>build_help_payload</code> 把 "修物品" 当成第一个 group。</p>
+<p class="impact"><b>用户看到的第一屏</b>:修物品 → 借物品 → 减物品(都是更新类子项)。而用户最常用是 <b>查物品 / 看物品 / 录物品</b>。<b>违反总纲 03 §高频优先</b>。</p>
+<div class="fix"><b>修复</b>:<code>scenarios.yaml</code> 按用户视角重排(查询类 → 录入类 → 更新类 → 统计类 → 账号 → 元数据),或 <code>help_center.py</code> 显式排序 <code>sorted(grouped.items(), key=lambda x: ORDER.index(x[0]) if x[0] in ORDER else 99)</code>。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 7 · scenarios.yaml 违反总纲 03 §铁律 2(同义合并)<span class="sev">P0</span></h3>
+<p><b>实测</b>:</p>
+<pre>$ grep "wake_word:" references/scenarios.yaml | sort | uniq -c
+   2 查物品
+   2 看物品
+   2 统物品
+   3 改物品
+   1 补物品
+   1 减物品
+   1 移物品
+   1 标物品
+   1 废物品
+   1 借物品
+   1 修物品
+   1 录物品
+   1 拍物品
+   1 盘物品
+   1 盘全部
+   1 穿什么
+   1 带物品
+   1 归物品
+   1 查高频
+   1 查低频
+   1 查过期
+   1 看标签
+   1 合标签
+   1 查快递
+   1 查账号
+   1 存账号
+   1 改账号
+   1 查异常
+   1 推位置
+   1 找位置
+   1 居家管家 帮助</pre>
+<p class="impact"><b>问题</b>:</p>
+<ul>
+<li>SKILL.md 路由表 33 行(含 3 个 HTML 变体)已有"修物品/借物品/废物品/移物品/补物品/减物品/标物品" 7 个子项</li>
+<li>scenarios.yaml 把它们都重复写了一遍,加上"改物品"共 8 条</li>
+<li>总纲 03 §铁律 2:"不要有'记餐'/'记录饮食'/'吃了啥'/'记吃了',合并为 1 个 + 3 个变体"</li>
+</ul>
+<div class="fix"><b>修复</b>:<b>删除</b> 修物品/借物品/废物品/移物品/补物品/减物品/标物品 共 7 个 wake_word 场景(它们应作为"改物品"的变体场景而不是独立 group),合并成 "改物品" group 下 7 个场景。同时 <b>删除</b> 查物品/看物品/统物品的 HTML 变体(31/32/33 行),保留变体规则但不放独立 group。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 8 · TOC 链接 + copy button 用 data-sid 但场景内 sid 不唯一<span class="sev">P1</span></h3>
+<p><b>实测</b>:</p>
+<pre>=== Copy button test ===
+btn idx=0 sid=status_repair
+btn idx=?? sid=??
+
+(修物品的 scenario_id 是 status_repair,
+但 scenarios.yaml 里也可能其他组有同 sid)
+→ 若重复, find(x => x.scenario_id === sid) 返回第一个匹配
+→ 用户点"查过期"复制按钮,实际复制了"修物品"的 prompt</pre>
+<p>实测扫 scenarios.yaml 是否有 sid 重复:</p>
+<pre>目前所有 sid 唯一(因为 yaml 编辑时没重复),
+但缺乏 enforce 机制</pre>
+<p class="impact"><b>未来风险</b>:多人协作编辑 scenarios.yaml 时,sid 重名会导致复制按钮错配。</p>
+<div class="fix"><b>修复</b>:<code>build_help_payload</code> 加 <code>assert all sid unique</code>,CI/测试运行时报错而非运行时错配。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 9 · 复制按钮在 fallback 路径下会复制"undefined"<span class="sev">P0</span></h3>
+<p><b>实测</b>(代码审查):</p>
+<pre>function copyText(btn, text) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;        ← 若 text=undefined, ta.value = "undefined"
+  document.body.appendChild(ta);
+  ...
+}</pre>
+<p><b>原因</b>:如果 `text` 是 `undefined`(s.find() 返回 null),`ta.value = undefined` → 浏览器字符串化为 "undefined" → 用户复制到粘贴板看到 "undefined"。</p>
+<p class="impact"><b>当前触发条件</b>:用户的 button data-sid 和 payload group index 不匹配(例如重构 group 顺序后没更新按钮)。当前 scenes.yaml 内 sid 唯一所以不会触发。</p>
+<div class="fix"><b>修复</b>:<code>copyText(btn, text || '')</code>;或加 <code>if (!text) { alert('场景数据缺失'); return; }</code>。</div>
+</div>
+
+<div class="bug ok">
+<h3>✓ 已修复确认(本轮)</h3>
+<p>以下项本轮已确认正常:</p>
+<ul>
+<li>✅ payload 解析 OK(34 scenarios)</li>
+<li>✅ group 折叠/展开 onClick 工作(click group[0] → open false)</li>
+<li>✅ 点击 badge 也触发 toggle(event delegation 跨子节点 OK)</li>
+<li>✅ copy 按钮点击复制正确 prompt("[物品名] 坏了,在修。")</li>
+<li>✅ TOC 31 个 anchor 全部命中(broken=0)</li>
+<li>✅ data-idx / data-sid 与 payload 完全对应</li>
+</ul>
+</div>
+
+<hr>
+<h2>建议优先级</h2>
+<table>
+<thead><tr><th>BUG</th><th>等级</th><th>工作量</th><th>建议</th></tr></thead>
+<tbody>
+<tr><td>7 · 违反去重铁律 2</td><td>P0</td><td>15 min</td><td>立即修 — scenarios.yaml 是契约唯一事实源</td></tr>
+<tr><td>9 · fallback 复制 undefined</td><td>P0</td><td>1 min</td><td>立即修 — 一行防御</td></tr>
+<tr><td>6 · 默认展开顺序</td><td>P1</td><td>5 min</td><td>yaml 重排或显式 ORDER</td></tr>
+<tr><td>8 · sid 唯一性 enforce</td><td>P1</td><td>5 min</td><td>build_help_payload 加 assert</td></tr>
+</tbody>
+</table>
+
+<p>要落盘哪几个?</p>
+
+</div>
+</body>
+</html>

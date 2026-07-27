@@ -312,6 +312,78 @@ Tested-By: pending-FAT
 
 ---
 
+### 🔧 Phase C.2j · 修复 escape_for_js 过度 escape JSON 结构双引号(FAT 暴露"没有任何数据")
+
+**动机**:用户报告 `作息管家_HELP_20260727_103334.html` 没有任何数据。诊断:`escape_for_js` 函数把所有 `"` 都转义成 `\"`,包括 JSON 的结构双引号(`{`, `:`, `,` 周围),导致 JSON.parse 失败,浏览器端 sections 数组为空。
+
+### 修复内容
+
+**`scripts/help_render.py` `escape_for_js()` 函数**:
+- ❌ 删除 `.replace('"', '\\"')`(错误:所有 `"` 都被 escape,JSON 结构失效)
+- ✅ 保留 `.replace("\\", "\\\\")`(防 JS 二次转义)
+- ✅ 保留 `.replace("<", "\\u003c")` + `.replace(">", "\\u003e")`(防 `</script>` 提前闭合)
+- ✅ 保留 `.replace("/", "\\/")`(总纲 §04 原则 4 习惯)
+
+### 根因分析
+
+```python
+# 旧版本(错):
+.replace('"', '\\"')  # ← 所有 " 都变 \",包括结构 "
+
+# 修复后(对):
+# 不 escape "(JSON.dumps 已处理字符串值内的 ",JS object literal 与 JSON 结构兼容)
+```
+
+修复前 JSON 嵌入:
+```
+{\"wakeword_count\": 28, ...}  ← 所有 " 被 escape,JSON.parse 失败
+```
+
+修复后 JSON 嵌入:
+```
+{"wakeword_count": 28, ...}   ← 结构 " 正常,字符串值内 " 由 json.dumps escape
+```
+
+### 嵌入语法背景
+
+```js
+window.__SCENARIOS__ = <JSON>;  ← JS object literal 语法
+```
+
+JSON 与 JS object literal 在结构语法上兼容(`{"key": "value"}`),**结构 `"` 不应 escape**(由 json.dumps 已正确处理字符串值内的 `"`)。
+
+只需 escape 防 `</script>` 提前闭合 + JS 转义歧义。
+
+### 验证
+
+```python
+# Python json.loads 模拟浏览器 JSON.parse
+raw_json = extract_from_html()
+json.loads(raw_json)
+# 修复前: JSONDecodeError at pos 1: Expecting property name enclosed in double quotes
+# 修复后: ✅ {"wakeword_count": 28, "scenario_count": 73, ...}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` `escape_for_js()` 函数
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 修复后浏览器端 JS 能正常渲染 sections,显示 28 唤醒词 + 73 场景
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 验证项: 1) 浏览器打开 help_center.html 能看到 73 场景
+           2) JSON.parse 不报错(console 无 syntax error)
+           3) 首屏统计数字正确显示(28 / 73 / 1)
+  - 验证方法: 浏览器 F12 console 检查 JSON.parse + DOM 渲染
+```
+
+---
+
 ### 🔧 Phase C.2i · HELP 路径移入 schedule_html/help/ 子目录(作息管家内部一致性)
 
 **动机**:用户建议 HELP HTML 也放到 `schedule_html/help/` 子目录,与作息管家既有 record/plan 域(`schedule_html/<domain>/<mode>/`)同级。Phase C.2h 放在 `$SKILLS_DB_PATH` 根(对标饼干记账 v2.4),但与作息管家内部约定不一致。本次同时满足作息管家内部一致性 + 跨 Skill 命名一致性。

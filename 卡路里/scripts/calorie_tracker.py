@@ -316,7 +316,15 @@ def main():
                 print(f"  旧用法 'weight 70 178' / 'weight 70 我今天吃饱了' 不再支持")
                 print(f"  请改:calorie_tracker.py weight 70 --note '<备注>'")
                 sys.exit(1)
-            weight.log_weight(sys.argv[2], note=note)
+            # v2.4.14 改:符合 V1.0 §02 第②特性 "回执 = ID + 时间戳 + 影响行数"
+            receipt = weight.log_weight(sys.argv[2], note=note)
+            if receipt is None:
+                sys.exit(1)
+            print(f"✓ 体重已记录 (id={receipt['id']}, 影响 {receipt['rows_affected']} 行)")
+            print(f"  日期: {receipt['date']} {receipt['time']}")
+            print(f"  体重: {receipt['kg']} 公斤 / BMI: {receipt['bmi']}")
+            if receipt['note']:
+                print(f"  备注: {receipt['note']}")
 
         elif command == "weight-update":
             # 2026-07-20 改:--height 参数已删除

@@ -39,15 +39,20 @@ def log_weight(weight_kg, note='', target_date=None, target_time=None):
         note: 备注
         target_date: 目标日期(YYYY-MM-DD),默认今天
         target_time: 目标时间(HH:MM:SS),默认当前
+
+    Returns(v2.4.14 改):
+        成功:dict 含 id/date/time/kg/bmi/note,满足 V1.0 §02 第②特性"回执 = ID + 时间戳 + 影响行数"
+            例:{'id': 17, 'date': '2026-07-27', 'time': '12:00:00', 'kg': 70.0, 'bmi': 22.3, 'note': '测试', 'rows_affected': 1}
+        失败:None
     """
     try:
         weight_kg = float(weight_kg)
         if weight_kg <= 0:
             print("Error: Weight must be positive")
-            return False
+            return None
     except ValueError:
         print("Error: Weight must be a number")
-        return False
+        return None
 
     # 2026-07-20 改:身高从 user_profile 读(单一来源)
     from profile import get_profile as _get_user_profile
@@ -55,7 +60,7 @@ def log_weight(weight_kg, note='', target_date=None, target_time=None):
     if not _p or not _p.get('height_cm'):
         print("Error: user_profile 未设身高,无法计算 BMI")
         print("  请先跑:calorie_tracker.py profile set 30 male --height 177")
-        return False
+        return None
     height_cm = _p['height_cm']
 
     height_m = height_cm / 100
@@ -72,15 +77,20 @@ def log_weight(weight_kg, note='', target_date=None, target_time=None):
         VALUES (?, ?, ?, ?, ?, ?)
     ''', (today, now, weight_kg, height_cm, bmi, note))
 
+    new_id = c.lastrowid
     conn.commit()
     conn.close()
 
-    print(f"✓ 体重已记录：{weight_kg}公斤")
-    if bmi:
-        print(f"  BMI：{bmi}")
-    if note:
-        print(f"  备注：{note}")
-    return True
+    # v2.4.14:CLI 端负责渲染(V1.0 §02 第②特性"写入后回执"),本函数只返 dict
+    return {
+        'id': new_id,
+        'date': today,
+        'time': now,
+        'kg': weight_kg,
+        'bmi': bmi,
+        'note': note,
+        'rows_affected': 1,
+    }
 
 
 def update_weight(weight_id, weight_kg=None, note=None):

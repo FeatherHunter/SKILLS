@@ -182,7 +182,10 @@ function renderWeeks(weeks) {
 
     // 每天的内容
     for (let dow = 1; dow <= 7; dow++) {
-      const sessions = dayMap[dow] || [];
+      // 修复 v2.4.14 契约违反:dayMap[dow] 是 day 对象数组,需平展成 sessions 数组
+      // 此前直接当作 sessions 遍历,导致多 session 全部折叠成 day.movements(undefined)"暂无动作"
+      const days = dayMap[dow] || [];
+      const sessions = days.flatMap(d => d.sessions || []);
       const display = dow === 1 ? '' : ' style="display:none"';
       html += `<div class="day-content" data-day="d${wIdx}_${dow}"${display}>`;
 

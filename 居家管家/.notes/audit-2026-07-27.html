@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 第一性对抗式审计 · 2026-07-27</title>
+<style>
+:root{
+  --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --muted:#86868b;
+  --line:#e6e6eb; --blue:#0071e3; --red:#ff3b30; --amber:#ff9f0a; --green:#34c759;
+  --code:#f2f2f7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  padding:32px 24px 80px;
+}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:14px;margin-bottom:32px}
+.meta{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:12px;margin:0 0 28px
+}
+.meta .b{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px
+}
+.meta .b .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.meta .b .v{font-size:18px;font-weight:600;margin-top:2px}
+h2{
+  font-size:20px;margin:36px 0 14px;padding-bottom:6px;
+  border-bottom:1px solid var(--line);letter-spacing:-.01em
+}
+h3{font-size:16px;margin:24px 0 8px}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:18px 20px;margin:12px 0
+}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:8px;vertical-align:middle}
+.SP0{background:#ffebe9;color:#a3151c}.SP1{background:#fff2cc;color:#8a5a00}.SP2{background:#eaf7ec;color:#1e6d2c}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:6px 14px;font-size:14px}
+.kv .k{color:var(--muted)}
+pre,code{font-family:ui-monospace,Menlo,Consolas,"Liberation Mono",monospace}
+pre{
+  background:var(--code);border:1px solid var(--line);border-radius:8px;
+  padding:10px 12px;overflow:auto;font-size:13px;line-height:1.5;margin:8px 0
+}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:13px}
+.toc{position:sticky;top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:24px}
+.toc a{color:var(--ink);text-decoration:none;display:block;padding:3px 0;font-size:14px}
+.toc a:hover{color:var(--blue)}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;background:var(--line);color:var(--muted);margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:#fafafc;font-weight:600}
+hr{border:none;border-top:1px dashed var(--line);margin:28px 0}
+.warn{background:#fff8e6;border-left:3px solid var(--amber);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+.ok{background:#eaf7ec;border-left:3px solid var(--green);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+.bad{background:#ffebee;border-left:3px solid var(--red);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+.evidence{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#444;background:#fafafc;padding:8px 10px;border-radius:6px;border:1px solid var(--line);margin:6px 0;white-space:pre-wrap}
+.copy-btn{
+  float:right;background:var(--blue);color:#fff;border:none;border-radius:6px;
+  padding:4px 10px;font-size:12px;cursor:pointer
+}
+.copy-btn:hover{filter:brightness(1.05)}
+.copy-btn:active{transform:scale(.98)}
+.section{scroll-margin-top:24px}
+.print-only{display:none}
+@media print{
+  .toc,.copy-btn{display:none}
+  body{padding:0;background:#fff}
+  .card{box-shadow:none;border-color:#ccc}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>居家管家 · 第一性对抗式审计报告</h1>
+<p class="sub">生成于 2026-07-27 · 基于实测命令 · 对照 SKILL开发总纲V1.0 全部章节</p>
+
+<div class="meta">
+  <div class="b"><div class="k">测试基线</div><div class="v">71 / 71 ✓</div></div>
+  <div class="b"><div class="k">生产 DB</div><div class="v">858 items / 289 cats</div></div>
+  <div class="b"><div class="k">git 追踪</div><div class="v" style="color:var(--red)">0 files</div></div>
+  <div class="b"><div class="k">发现 P0</div><div class="v" style="color:var(--red)">7</div></div>
+  <div class="b"><div class="k">发现 P1</div><div class="v" style="color:var(--amber)">9</div></div>
+  <div class="b"><div class="k">HELP 契约</div><div class="v" style="color:var(--red)">缺失</div></div>
+  <div class="b"><div class="k">FAT 测试</div><div class="v" style="color:var(--red)">从未跑</div></div>
+  <div class="b"><div class="k">SKILL.md 版本</div><div class="v">1.0.0</div></div>
+</div>
+
+<nav class="toc">
+  <strong>目录</strong>
+  <a href="#A">A. 5 个事实更正(推翻早期判断)</a>
+  <a href="#P0">B. 真 P0(7 条 · 实测可复现)</a>
+  <a href="#P1">C. 真 P1(9 条)</a>
+  <a href="#P2">D. P2 · 总纲符合度</a>
+  <a href="#meta">E. 元层级错误自检</a>
+  <a href="#plan">F. 落地方案 · 4 Phase × 9 Patch</a>
+  <a href="#open">G. 待你拍板的事</a>
+</nav>
+
+<!-- ===== A ===== -->
+<h2 id="A" class="section">A. 5 个事实更正(推翻早期判断)<button class="copy-btn" onclick="copy(this,'A')">复制链接</button></h2>
+
+<div class="card">
+<h3>A-1 · DB 双轨 · 跨环境必踩</h3>
+<div class="kv"><div class="k">事实</div><div><code>/mnt/d/2Study/StudyNotes/.db/home.db</code> 是 858 件生产库;<code>居家管家/.db/home.db</code> 是 0 行测试库;全靠 <code>SKILLS_DB_PATH</code> 解析。</div></div>
+<div class="kv"><div class="k">违反</div><div>总纲 02 §可识别 / §可演进</div></div>
+</div>
+
+<div class="card">
+<h3>A-2 · categories 表实际存在(init_db 不建 ≠ 表不存在)</h3>
+<div class="kv"><div class="k">事实</div><div>生产库有 289 行 categories,但 <code>init_db()</code> 不建;首次装机/重装必须额外跑 <code>category_manager init</code>。</div></div>
+<div class="kv"><div class="k">隐患</div><div>items.category 老字段仍 <code>NOT NULL</code>,但 <code>add_item</code> 不写它 → <code>IntegrityError: NOT NULL constraint failed</code>。</div></div>
+</div>
+
+<div class="card">
+<h3>A-3 · 居家管家整个目录 0 git 追踪</h3>
+<div class="kv"><div class="k">实测</div><div><code>git ls-files '居家管家/' | wc -l</code> → 0;pre-commit hook 已配置,但永不触发;11 个 commit 引用过居家管家但未 add。</div></div>
+<div class="kv"><div class="k">违反</div><div>总纲 02 §R6 commit 必跑测试 + 05 §FAT 协议</div></div>
+</div>
+
+<div class="card">
+<h3>A-4 · 测试 <code>test_cli_entry.py</code> 期望 JSON,实测也返回 JSON</h3>
+<div class="kv"><div class="k">事实</div><div><code>search --name 牛奶</code> 返回 <code>{"status":"ok","data":{...HTML 路径...}}</code>;<b>但是</b><code>data</code> 只有渲染结果描述,没有业务数据(无 items 数组)。所以仍是 P1 而非"测试会破"。</div></div>
+</div>
+
+<div class="card">
+<h3>A-5 · HTML 镜像 / SKILL.md 路由表手工双写</h3>
+<div class="kv"><div class="k">事实</div><div>SKILL.md 路由表 33 行;<code>居家管家.html</code> 是 70KB+ 用户手册手写;两者由人手维护,违反总纲 04 §原则 4(场景资产唯一事实源)。</div></div>
+</div>
+
+<!-- ===== B P0 ===== -->
+<h2 id="P0" class="section">B. 真 P0(7 条 · 实测可复现)<button class="copy-btn" onclick="copy(this,'P0')">复制链接</button></h2>
+
+<div class="card">
+<h3>P0-1 · <code>init_db()</code> 不建 categories/accounts + items.category 仍 NOT NULL <span class="sev SP0">P0</span></h3>
+<div class="kv"><div class="k">file:line</div><div><code>scripts/home_manager/db.py:80-130</code></div></div>
+<div class="evidence">$ SKILLS_DB_PATH=/tmp/clean python3 scripts/home_manager.py init
+✓ 数据库初始化完成
+$ SKILLS_DB_PATH=/tmp/clean python3 scripts/home_manager.py add --name T --category-id 137 ...
+sqlite3.OperationalError: no such table: categories</div>
+<div class="kv"><div class="k">修复</div><div>Phase 1 P1-1(<code>init_db</code> 末尾调 <code>category_manager.SCHEMA</code> + 重建 items 表放宽老字段)。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-2 · <code>update_item</code> 无硬规则:负数 quantity / 非法日期 / 单级位置 / 跨 PHOTOS_DIR 路径全部"成功" <span class="sev SP0">P0</span></h3>
+<div class="evidence">--quantity -5               → ✓ ... ×-5[在家]   (DB 真写了 -5)
+--purchase-date 'not-a-date' → ✓ ... 购买 not-a-date,过期明天
+--new-location '客厅'         → ✓ 搬到「客厅」(单级位置入 DB)
+--photo '/tmp/.../photos_evil/evil.jpg' → ✓ photo='_evil/evil.jpg' (路径裁剪残留)</div>
+<div class="kv"><div class="k">修复</div><div>Phase 1 P1-2(扩 validators.py + argparse 日期 type + 数量钳制)。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-3 · <code>category_manager --force</code> 静默毁数据(实测 858 件 FK 悬空) <span class="sev SP0">P0</span></h3>
+<div class="evidence">$ python3 scripts/category_manager.py import seed.json --force
+  (清空 289 条旧记录)
+  + [L1] 新顶级 (id=429)
+✓ 导入完成:共 1 条
+PRAGMA foreign_key_check → 858 行悬空
+所有 items 因 category_id 找不到分类而空</div>
+<div class="kv"><div class="k">修复</div><div>Phase 1 P1-3(加 <code>--yes</code> 二次确认 + FK ON DELETE SET NULL)。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-4 · <code>set_master_key()</code> 无需旧密钥即可覆盖(实测) <span class="sev SP0">P0</span></h3>
+<div class="evidence">$ set_master_key('oldpassword')  → ✓
+$ account_add(..., 'oldpassword')  → ✓
+$ set_master_key('newpassword')  → ✓  ← 不需要旧密钥!
+$ verify_master_key('oldpassword') → False
+$ account_show(..., 'newpassword') → ✗ 解密失败(孤儿)</div>
+<div class="kv"><div class="k">违反</div><div>总纲 02 §可约束 + 反模式#1 黑盒 CLI</div></div>
+<div class="kv"><div class="k">修复</div><div>Phase 2 P2-1(<code>set_master_key</code> 改名 <code>_write_master_key</code> 内部化,CLI init 走它;set-master 走 <code>account_set_master(old,new)</code> 已存在的安全版本)。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-5 · <code>.master.key</code> 模式 0o777 <span class="sev SP0">P0</span></h3>
+<div class="evidence">$ stat .db/.master.key
+  mode=0o777 (rwxrwxrwx)   ← 任何用户/服务可读</div>
+<div class="kv"><div class="k">修复</div><div>Phase 2 P2-2(写文件后 <code>os.chmod(p, 0o600)</code>,父目录 0o700)。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-6 · HTML 统计语义错(L1 不递归 / 价格双口径) <span class="sev SP0">P0</span></h3>
+<div class="evidence">生产 DB:
+  items 858 件
+  direct L1 items = 30  (848 件挂在 L2/L3)
+HTML 展示 "食物与饮品 29 件" (实际有 800+ 件间接属于它)
+价格:
+  HTML 显示 ¥32539.67 = sum(item.purchase_price)
+  真实库存价值 ¥256776.91 = sum(price × qty)</div>
+<div class="kv"><div class="k">file:line</div><div><code>scripts/home_manager/inventory_ops.py:584-590</code> L1 行 <code>JOIN items ON i.category_id=cp.id WHERE cp.lvl=1</code> 只算直接挂 L1 的</div></div>
+<div class="kv"><div class="k">修复</div><div>L1 count 用递归子查询汇总;价格改为 <code>SUM(price × qty)</code>。</div></div>
+</div>
+
+<div class="card">
+<h3>P0-7 · <code>stats --type summary</code> 在所有物品 <code>purchase_price=NULL</code> 时 TypeError 崩溃 <span class="sev SP0">P0</span></h3>
+<div class="evidence">$ UPDATE items SET purchase_price=NULL
+$ python3 scripts/home_manager.py stats --type summary
+TypeError: unsupported format string passed to NoneType.__format__</div>
+<div class="kv"><div class="k">file:line</div><div><code>inventory_ops.py:745</code> <code>priced['total_value']:.2f</code> 当 None 时崩(HTML payload 已修,CLI 文本模式没修)</div></div>
+</div>
+
+<!-- ===== C P1 ===== -->
+<h2 id="P1" class="section">C. 真 P1(9 条)<button class="copy-btn" onclick="copy(this,'P1')">复制链接</button></h2>
+
+<table>
+<thead><tr><th>#</th><th>问题</th><th>文件位置</th><th>实测证据</th></tr></thead>
+<tbody>
+<tr><td>P1-1</td><td><code>add_item</code> 事务不原子 + photo 复制先于 commit</td><td><code>item_ops.py:222-244</code></td><td>代码逻辑分析;_prepare_add_photo 在 commit 前 shutil.copy2</td></tr>
+<tr><td>P1-2</td><td><code>_category_name_cache</code> 模块级全局缓存,跨连接 stale</td><td><code>item_ops.py:20-37</code></td><td>长跑 daemon / IDE agent / cron 永不刷新</td></tr>
+<tr><td>P1-3</td><td><code>_category_condition</code> 死代码 + 魔法键 <code>'__conn__'</code></td><td><code>item_ops.py:73-78</code></td><td>grep 验证未被调用</td></tr>
+<tr><td>P1-4</td><td><code>_validate_name</code> emoji 检测不全(emoji 13+ <code>0x1FA70-0x1FAFF</code> 漏)</td><td><code>category_manager.py:42-50</code></td><td>🪑🪓🩰 等 emoji 漏网</td></tr>
+<tr><td>P1-5</td><td><code>trip</code> 模板渲染 tag 用 <code>.join(' ')</code>,其他 8 模板渲染 tag chips</td><td><code>templates/travel_trip.html:109</code></td><td>视觉不一致</td></tr>
+<tr><td>P1-6</td><td><code>account --action del</code> 不需 master-key 即可删除</td><td><code>home_manager.py:538-541</code></td><td>实测可删;与 set-master 形成强烈反差</td></tr>
+<tr><td>P1-7</td><td>SKILL.md 与生产 DB / 代码严重漂移(测试数 49 vs 71;_meta 3 表 vs 5 表;render 路径已挪)</td><td><code>SKILL.md:38-46</code> + <code>_meta.json</code></td><td>多处实测对比</td></tr>
+<tr><td>P1-8</td><td>路由表 33 行,但 <code>查物品/看物品/统物品</code> 各重复 2 次</td><td><code>SKILL.md</code> 路由表</td><td>实测 33 rows / 30 unique / 3 dup</td></tr>
+<tr><td>P1-9</td><td>无 HELP 契约(总纲 07 §) + 无相对时间换算(03 §) + FAT 从未跑(05 §)</td><td>全 skill</td><td>grep 0 命中;git log 0 Tested-By</td></tr>
+</tbody>
+</table>
+
+<!-- ===== D P2 ===== -->
+<h2 id="P2" class="section">D. 总纲符合度评估<button class="copy-btn" onclick="copy(this,'P2')">复制链接</button></h2>
+
+<table>
+<thead><tr><th>总纲章节</th><th>符合度</th><th>主要短板</th></tr></thead>
+<tbody>
+<tr><td>01 §第一性原理</td><td>8 / 10</td><td>缺 relative_to_* / HELP 资产</td></tr>
+<tr><td>02 §5 层骨架</td><td>5 / 10</td><td>①init_db 不全;②DB path 双轨;③update 无硬规则;④CLI 3 种输出契约</td></tr>
+<tr><td>03 §触发词 v2</td><td>4 / 10</td><td>无变体、无 routing、无 4 元组、路由表 33 行有重复</td></tr>
+<tr><td>04 §可视化 11 原则</td><td>7 / 10</td><td>原则 1(as_dict) / 原则 11(HTML-First)部分不满足</td></tr>
+<tr><td>05 §工程仪式</td><td>3 / 10</td><td>整个目录 0 git 追踪 + FAT 从未跑</td></tr>
+<tr><td>06 §附录</td><td>6 / 10</td><td>dev 脚本残留;config-home-manager.ts 过时</td></tr>
+<tr><td>07 §HELP</td><td>1 / 10</td><td>完全缺失</td></tr>
+</tbody>
+</table>
+
+<div class="warn">
+<b>SKILL.md 与代码漂移清单</b>(实测 7 处):
+<ol style="margin:6px 0 0;padding-left:20px;font-size:14px">
+<li>SKILL.md L39 / L44: "49 个 pytest" → 实测 71</li>
+<li>SKILL.md L18: python >=3.7 → 实测用 cryptography 第三方库(需 pip install)</li>
+<li>SKILL.md L38: "禁止使用 git 库" → 居家管家 0 git 追踪,hook 永不触发</li>
+<li>_meta.json L6: "3 张 SQLite 表" → 实测 5 张</li>
+<li>features/add.md L383 / search.md L95: "渲染器 scripts/home_manager/html_render.py" → 已挪到 scripts/render/__init__.py</li>
+<li>references/database.md L12: "老 items.category 字段保留" → 生产 DB 根本没这列</li>
+<li>SKILL.md 路由表 33 行(查物品/看物品/统物品 各重复 2 次)</li>
+</ol>
+</div>
+
+<!-- ===== E ===== -->
+<h2 id="meta" class="section">E. 元层级错误自检<button class="copy-btn" onclick="copy(this,'meta')">复制链接</button></h2>
+
+<div class="card">
+<ol style="margin:0;padding-left:20px">
+<li><b>第 1 轮</b>:没跑 pytest 就推断"测试会破" → 全部错</li>
+<li><b>第 1 轮</b>:没看 git ls-files → 漏掉"0 git 追踪"这个 P0 真相</li>
+<li><b>第 1 轮</b>:没读 db.py init_db 完整 → 漏掉"categories 不在 init_db 建"</li>
+<li><b>第 1 轮</b>:没读 SKILL.md 与 HTML 实 diff → 断言"已漂移"是对的但严重性夸大</li>
+<li><b>第 1 轮</b>:没实测命令 → 推断"CLI 只输出 HTML"是错的</li>
+<li><b>第 1 轮</b>:被 SKILL.md 自我声明(HTML 同步最高优先级)误导 → 没区分"用户纪律 vs 总纲规则"</li>
+<li><b>第 1 轮</b>:没区分"硬规则 vs 工程债务" → 把很多 P1 夸成 P0</li>
+<li><b>第 2 轮</b>:承认 P0-4 "诡异地 work",但没真复现 add_item 事务路径</li>
+<li><b>第 3 轮</b>:真跑实测后,子代理的 P0-5 "id 未 esc" 实际上是防御性编码过度推断(<code>it.id</code> 来自 INTEGER PK,不可能是字符串)</li>
+</ol>
+</div>
+
+<!-- ===== F plan ===== -->
+<h2 id="plan" class="section">F. 落地方案 · 4 Phase × 9 Patch<button class="copy-btn" onclick="copy(this,'plan')">复制链接</button></h2>
+
+<table>
+<thead><tr><th>Phase</th><th>目标</th><th>包含 Patch</th><th>验收</th></tr></thead>
+<tbody>
+<tr><td><b>1 · 防数据丢失</b></td><td>堵死所有 P0 数据风险</td><td>P1-1 / P1-2 / P1-3</td><td>隔离 DB 重放 A-1~A-3 攻击全部失败</td></tr>
+<tr><td><b>2 · 安全收紧</b></td><td>账号 + 路径 + 权限</td><td>P2-1 / P2-2 / P2-3</td><td>mode=0o600;del 需密钥;set 需旧密钥</td></tr>
+<tr><td><b>3 · 总纲对齐</b></td><td>满足 03/04/07 §</td><td>P3-1 / P3-2</td><td>相对时间生效;HELP HTML 可触发</td></tr>
+<tr><td><b>4 · 文档与可演进</b></td><td>SKILL.md / git / FAT</td><td>P4-1 / P4-2</td><td>目录入 git;hook 实测触发;Tested-By 写入</td></tr>
+</tbody>
+</table>
+
+<h3>通用前置</h3>
+<pre>make_safe_db() {
+  T=$(mktemp -d)
+  cp /mnt/d/2Study/StudyNotes/.db/home.db "$T/home.db"
+  mkdir -p "$T/photos"
+  echo "$T"
+}
+cd 居家管家 && python3 -m pytest tests/ -q   # 71/71 必须不破</pre>
+
+<h3>P1-1 · init_db 一次性建齐 5 张表</h3>
+<pre>─── db.py init_db() 末尾追加 ───
+from category_manager import SCHEMA
+cursor.executescript(SCHEMA)
+
+from accounts import TABLE_NAME
+cursor.execute(f"""CREATE TABLE IF NOT EXISTS {TABLE_NAME} (...)""")
+
+─── 放宽 items.category 老字段 ───
+PRAGMA table_info(items) → notnull=1 → 重建 items 表,category 改 nullable</pre>
+<div class="ok">验收: 隔离 DB init → add --category-id 137 → ✓ 物品已添加 (exit=0)</div>
+
+<h3>P1-2 · update_item 强制走 validators</h3>
+<pre>─── validators.py 新增 ───
+def validate_update_hard_rules(item_id, *, quantity, minus, plus,
+    purchase_date, expiration_date, new_location, add_location, photo):
+    errs = []
+    if quantity is not None and quantity < 0: errs.append("quantity ≥ 0")
+    for d in (purchase_date, expiration_date):
+        if d: date.fromisoformat(d)  # raise ValueError → exit 1
+    for loc in (new_location, add_location):
+        if loc and '/' not in loc.strip('/'): errs.append("location depth")
+
+─── home_manager.py argparse ───
+def _date_arg(s):
+    try: return date.fromisoformat(s).isoformat()
+    except ValueError: raise ArgumentTypeError(f"日期必须是 YYYY-MM-DD")</pre>
+<div class="ok">验收: update --quantity -5 → ✗ err  exit=1 ; --purchase-date 'not-a-date' → argparse exit=2</div>
+
+<h3>P1-3 · --force 加 --yes 二次确认 + FK SET NULL</h3>
+<pre>─── category_manager.py ───
+p_import.add_argument("--yes", action="store_true")
+if args.force and existing > 0 and not args.yes:
+    print("⚠️ --force 将永久删除 categories 中 N 条 + 解绑 items.category_id")
+    print("   需要 --yes 才能继续")
+    return 2
+
+─── db.py FK 声明 ───
+ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL</pre>
+<div class="bad">⚠️ 副作用: 老脚本 `category_manager.py import --force` 会 exit=2,需你确认是否有自动化调用</div>
+
+<h3>P2-1 · set_master_key 改名 _write_master_key 内部化</h3>
+<pre>def _write_master_key(master_key):   # 仅内部 helper
+    if len(master_key) < 8: return err
+    MASTER_KEY_FILE.write_text(_hash_key(master_key))
+    os.chmod(MASTER_KEY_FILE, 0o600)
+    return ok
+
+# home_manager.py account --action init 走 _write_master_key
+# set-master 必须走 account_set_master(old, new) 已存在的安全版本</pre>
+
+<h3>P2-2 · chmod 0o600 + 父目录 0o700</h3>
+<pre>MASTER_KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
+os.chmod(MASTER_KEY_FILE.parent, 0o700)
+MASTER_KEY_FILE.write_text(...); os.chmod(MASTER_KEY_FILE, 0o600)</pre>
+
+<h3>P2-3 · account_del 加 master_key + 软删除</h3>
+<pre>def account_del(platform, master_key):
+    if not verify_master_key(master_key): return err
+    UPDATE accounts SET is_deleted=1, deleted_at=now WHERE platform=?
+
+# home_manager.py account --action del 必须传 --master-key</pre>
+
+<h3>P3-1 · scripts/routing.py 相对时间换算</h3>
+<pre>def relative_to_date(expr, today=None) -> str       # 今天/昨天/前天/明天/后天/...
+def relative_to_range(expr, today=None) -> (str,str)  # 本周/上周/本月/上月
+def recent_n_days(n, today=None) -> (str,str)        # 最近 N 天
+
+# tests/test_routing.py 覆盖 12 表达式 + 跨月/跨年/闰年边界</pre>
+
+<h3>P3-2 · HELP 契约(总纲 07 §)</h3>
+<pre>─── references/scenarios.yaml(场景资产唯一事实源)───
+- wake_word: "查物品"
+  scenario_id: "search_default"
+  prompt: "请帮我查物品..."
+  status: ""  # 或 "【待开发】"
+
+─── scripts/help_center.py ───
+def build_help_payload(): ...   # yaml → dict
+
+─── templates/help_center.html ───
+每场景独立复制按钮(总纲 04 §原则 10 单工铁律 + 07 §每场景独立复制按钮)
+
+─── SKILL.md description 加 ───
+"居家管家 帮助(查能力速查表)" — HELP 唤醒词
+
+─── home_manager.py ───
+p_help = subparsers.add_parser("help")</pre>
+
+<h3>P4-1 · 居家管家目录首次 git add baseline</h3>
+<pre>git add 居家管家/{SKILL.md,居家管家.html,_meta.json,config-home-manager.ts}
+git add 居家管家/{features,references,scripts,templates,tests,pytest.ini,.gitignore}
+git add 居家管家/scripts/install_hooks.sh
+git commit -m "[居家管家] v1.0.0 baseline 入仓"</pre>
+
+<h3>P4-2 · Fresh Agent 黑盒测试</h3>
+<pre>1. 选唤醒词: 查物品 / 查过期 / 穿什么 / 居家管家 帮助
+2. fresh context(新 agent,不告诉怎么走)
+3. 只给 SKILL.md + 必要 references
+4. 每个 ≥ 3 个人类 prompt(口语/slash/略错)
+5. 捕获命令 + 输出 → 对比预期 → pass/fail
+6. pass → commit 加 Tested-By: fresh-agent-v1</pre>
+
+<!-- ===== G open ===== -->
+<h2 id="open" class="section">G. 待你拍板的事<button class="copy-btn" onclick="copy(this,'open')">复制链接</button></h2>
+
+<div class="bad">
+<b>1. P1-3 的 <code>--force</code> 处理路径</b>
+<ul style="margin:6px 0 0;padding-left:20px;font-size:14px">
+<li><b>方案 A</b>:强制 <code>--yes</code>,老调用静默失败(强安全,可能 CI 挂)</li>
+<li><b>方案 B</b>:默认 exit=2 警告(强安全,老 CI 报错退出)</li>
+<li><b>方案 C</b>:不改 CLI,但 <code>--force</code> 前自动 backup 到 <code>.bak/categories_YYYYMMDD.sql</code>(中安全,老调用无感)</li>
+</ul>
+</div>
+
+<div class="warn">
+<b>2. 是否需要我先把 P1-1 落盘</b>(已实测通过,无破坏性,P1-1 单独 commit 不影响其他 patch)?
+</div>
+
+<div class="warn">
+<b>3. 是否要把 P1-3 拆开</b>:先单独加 <code>--yes</code> 二次确认;FK SET NULL 等数据迁移放另一个 commit 让你审核?
+</div>
+
+<hr>
+<p class="sub" style="text-align:center;margin-top:32px">
+报告生成于 2026-07-27 · 共审计 5 轮 · 3 轮实测驱动 · 0 文件被修改
+</p>
+
+</div>
+
+<script>
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function copy(btn, id){
+  const url = location.origin + location.pathname + '#' + id;
+  const ta = document.createElement('textarea');
+  ta.value = url;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>{
+      const old = btn.textContent; btn.textContent='已复制 ✓';
+      setTimeout(()=>btn.textContent=old,1500);
+    });
+  } else {
+    document.execCommand('copy');
+    const old = btn.textContent; btn.textContent='已复制 ✓';
+    setTimeout(()=>btn.textContent=old,1500);
+  }
+  document.body.removeChild(ta);
+}
+</script>
+</body>
+</html>

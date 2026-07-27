@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Q-2 · A-3 验证 + P0-3 风险澄清</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--line:#e6e6eb;--blue:#0071e3;--red:#ff3b30;--amber:#ff9f0a;--green:#34c759}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;padding:32px 24px 80px;margin:0}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:30px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:10px 0}
+code,pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;margin:8px 0}
+.ok{background:#eaf7ec;border-left:3px solid var(--green);padding:10px 14px;border-radius:6px;margin:10px 0}
+.no{background:#ffebee;border-left:3px solid var(--red);padding:10px 14px;border-radius:6px;margin:10px 0}
+.pe{background:#fff8e6;border-left:3px solid var(--amber);padding:10px 14px;border-radius:6px;margin:10px 0}
+.q{color:var(--blue);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:#fafafc;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Q-2 · A-3 实测验证 + P0-3 风险澄清</h1>
+<p class="sub">2026-07-27</p>
+
+<div class="card">
+<h2>A-3 · 你让我跑 git 验证</h2>
+<p><span class="q">Q:</span> 都在仓库中,不需要 git add?</p>
+<p><b>实测结果</b>(从 WSL 跑):</p>
+<pre>$ cd 'D:\2Study\StudyNotes\SKILLS\居家管家'
+$ git rev-parse --show-toplevel
+D:/2Study/StudyNotes/SKILLS          ← git 仓库根是 SKILLS/, 不是 居家管家/
+$ git status --short
+(空)                                  ← 工作区干净
+$ git ls-files | wc -l
+55                                     ← <b>55 个文件被追踪</b>
+$ git ls-files | head -10
+.gitignore
+_meta.json
+SKILL.md
+config-home-manager.ts
+居家管家.html
+features/add.md
+features/fashion.md
+features/inventory.md
+features/search.md
+features/stats.md
+$ git log --oneline -5 -- '居家管家/'
+ceedd33 修复(居家管家): 临期查询 SQL 日期比较改用 date() 函数
+310a363 重构(居家管家): 居家管家.html 升级为用户手册版式
+eae5f16 测试(居家管家): CLI 写 + 入口集成 + schema 完整性
+50036f7 新增(居家管家): 本地 Git hooks 自动化测试
+365f6f4 测试(居家管家): 新增 pytest 测试套件</pre>
+
+<div class="ok">
+<b>我之前说错了</b>。A-3 撤回。<br>
+- 居家管家目录<b>已经被 git 追踪</b>(55 文件)<br>
+- 工作区干净 = 没有未提交改动<br>
+- 最近 5 个 commit 都引用了居家管家<br>
+- pre-commit hook <b>可以正常触发</b>
+</div>
+
+<p>之前我"git ls-files 0"是另一台环境跑的快照,可能当时未 add。现在 Windows 工作环境实测正常。</p>
+</div>
+
+<div class="card">
+<h2>P0-3 · 你说"很恐怖,现在数据库已经出现这个问题了吗?"</h2>
+<p><b>答案:你的生产数据库没问题</b>。我没动过生产。</p>
+
+<div class="ok">
+<b>实测 858 FK 悬空是怎么来的</b>:<br>
+我把生产 DB <code>cp</code> 到 <code>mktemp -d</code> 创建的临时目录,然后在临时目录里跑:<br>
+<pre>python3 scripts/category_manager.py import /tmp/seed.json --force</pre>
+这只改了临时目录里的 DB,<b>你的生产 home.db 一个字节都没动</b>(隔离 DB 命令末尾都有 <code>rm -rf "$T"</code>)。
+</div>
+
+<div class="pe">
+<b>风险等级(修正)</b>:P0(必须是,因为破坏性命令无二次确认),但<b>只在你主动跑这个命令时触发</b>。当前 100% 安全,只要你不跑 <code>import --force</code>。
+</div>
+
+<p>不过 --force 命令无保护这件事<b>仍是真问题</b>——只是当前不是"现在有问题",是"未来某次手滑会出问题"。</p>
+</div>
+
+<div class="card">
+<h2>P0-5 · 单人环境确认</h2>
+<div class="ok">
+<b>撤回 P0-5</b>。单人本地环境 0o777 不改。<br>
+这一条从待办清单移除。
+</div>
+</div>
+
+<div class="card">
+<h2>现在确认的事</h2>
+<table>
+<thead><tr><th>条</th><th>状态</th><th>备注</th></tr></thead>
+<tbody>
+<tr><td>A-1</td><td>非 P0</td><td>只是死文件,可清理</td></tr>
+<tr><td>A-2 = P0-1</td><td>必修</td><td>补 init_db</td></tr>
+<tr><td>A-3</td><td><b>撤回</b></td><td>实测 55 文件已追踪,我说错了</td></tr>
+<tr><td>A-4</td><td>= P1-2</td><td>并入 P1-2</td></tr>
+<tr><td>A-5</td><td>待 Phase 3</td><td>等 HELP HTML 做完再决定</td></tr>
+<tr><td>P0-2</td><td>必</td><td>update 硬规则</td></tr>
+<tr><td>P0-3</td><td>必(不是现在出问题)</td><td>加 --yes,但生产 DB 100% 安全</td></tr>
+<tr><td>P0-4</td><td>必</td><td>账号密钥管理</td></tr>
+<tr><td>P0-5</td><td><b>撤回</b></td><td>单人环境 0o777 没问题</td></tr>
+<tr><td>P0-6</td><td>必</td><td>SQL 递归 BUG</td></tr>
+<tr><td>P0-7</td><td>必</td><td>一行修</td></tr>
+<tr><td>P1-*</td><td>必</td><td>分批做</td></tr>
+</tbody>
+</table>
+</div>
+
+<p class="sub" style="text-align:center;color:var(--muted);margin-top:32px">
+回答我: <b>(1) 现在能不能动 P0-1 落盘</b>;<b>(2) P0-3 选 A/B/C 哪种方案</b>;<b>(3) 第一个动手的 patch 选哪个</b>
+</p>
+
+</div>
+</body>
+</html>

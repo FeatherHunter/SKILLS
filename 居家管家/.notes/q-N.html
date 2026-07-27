@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 上一轮长回复逐条处理 · 2026-07-27</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--line:#e6e6eb;--blue:#0071e3;--red:#ff3b30;--amber:#ff9f0a;--green:#34c759}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;padding:32px 24px 80px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+h2{font-size:20px;margin:36px 0 14px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;margin:20px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:10px 0}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:8px}
+.SOK{background:#eaf7ec;color:#1e6d2c}.SNO{background:#ffebe9;color:#a3151c}.SP{background:#fff2cc;color:#8a5a00}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{background:#fafafc;font-weight:600}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow:auto;font-size:13px;margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace}
+.q{color:var(--blue);font-weight:600}
+.a{color:var(--ink)}
+.row{display:grid;grid-template-columns:24px 1fr;gap:10px;margin:8px 0}
+.bullet{color:var(--muted);font-weight:700}
+.ok{background:#eaf7ec;border-left:3px solid var(--green);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+.no{background:#ffebee;border-left:3px solid var(--red);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+.pe{background:#fff8e6;border-left:3px solid var(--amber);padding:10px 14px;border-radius:6px;margin:10px 0;font-size:14px}
+ol.todo{padding-left:22px}
+ol.todo li{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>上一轮长回复 · 逐条处理</h1>
+<p class="sub">2026-07-27 · 你让我"按我们的规则开始处理"· 下面 11 条每条标注: 你的问题 / 我的回答 / 是否需要改 / 当前状态</p>
+
+<div class="card">
+<h3>处理流程</h3>
+<ol class="todo">
+<li>逐条确认 P0 是否真要修</li>
+<li>P1 中"必做"先落,"待做"标延迟</li>
+<li>每次落盘 = 1 个 commit + 重跑 pytest</li>
+<li>任何 patch 落盘前先在隔离 temp DB 重放验证</li>
+<li>所有产出的临时 HTML / diff 都在 <code>.notes/</code></li>
+</ol>
+</div>
+
+<h2>A. 事实更正类(5 条)</h2>
+
+<div class="card">
+<div class="row"><div class="bullet">A-1</div><div>
+<span class="q">Q:</span> 不是双轨,环境变量是唯一路径;<code>居家管家/.db/home.db</code> 是历史残留?<br>
+<span class="a">A:</span> 确认。<b>不是 P0</b>。删除该目录即可。
+<pre>rm -rf 居家管家/.db/</pre>
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">A-2</div><div>
+<span class="q">Q:</span> 这个表需要补充 init 代码?<br>
+<span class="a">A:</span> 是。<b>= P0-1</b>(同一件事)。补 <code>init_db()</code> 让它建齐 5 张表 + 修 items.category 老字段。
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">A-3</div><div>
+<span class="q">Q:</span> 看 git 有日志啊,0 追踪是什么意思?<br>
+<span class="a">A:</span> <code>git log</code> 显示历史 commit 提过居家管家,但 <code>git ls-files</code> 0 → <b>文件从未被 add,git 不知道它们存在</b>。pre-commit hook 看 staged diff,空 → 永不触发。<br>
+修法:<code>git add 居家管家/</code> 全部文件,1 个 baseline commit。
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">A-4</div><div>
+<span class="q">Q:</span> 没听懂。<br>
+<span class="a">A:</span> 我列错位置了。实测 <code>search</code> 命令<b>能</b>返回 JSON(测试不破),但 JSON 里只有"渲染结果描述"(HTML 路径),<b>没有 items 数据数组</b>。跨 skill 联动拿不到结构化数据。= <b>P1-2</b>,不是独立问题。
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">A-5</div><div>
+<span class="q">Q:</span> 居家管家 HELP HTML 做好后,<code>居家管家.html</code> 是不是没价值了?<br>
+<span class="a">A:</span> 是。当前 HELP HTML 未做,先保留 <code>居家管家.html</code>;Phase 3 做完 HELP 后统一决定删/留。
+</div></div>
+</div>
+
+<h2>B. P0 真实问题(7 条)</h2>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-1</div><div>
+<span class="q">Q:</span> 是 A-2 那个意思吗?<br>
+<span class="a">A:</span> 是。<b>需要修</b>。补 init_db。
+<div class="ok">即将动手: 已写好 patch 草案,等你说"动手"我再落盘。</div>
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-2</div><div>
+<span class="q">Q:</span> 需要优化代码?<br>
+<span class="a">A:</span> 是。要改 4 处:<code>update_item</code> 加 quantity 钳制 + argparse 日期 type + 位置深度校验 + photo 路径统一处理。
+<div class="pe">不是"优化",是补硬规则(总纲 02 §硬规则系统强制)。</div>
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-3</div><div>
+<span class="q">Q:</span> 858 FK 悬空什么意思? FK 是什么? 为什么加 --yes?<br>
+<span class="a">A:</span> <b>FK</b> = Foreign Key 外键。<code>items.category_id</code> 必须指向 <code>categories.id</code> 真实存在的行。<br>
+<b>悬空</b> = 指着的 id 已被删。<br>
+<b>--force</b> 把 289 行 categories 清成 1 行 → 858 件 items 指着被删的 id。<br>
+<b>为什么 --yes</b> = 防止误操作。破坏性 CLI 强制用户二次确认。
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-4</div><div>
+<span class="q">Q:</span> 应该需要修复?<br>
+<span class="a">A:</span> 是。<code>set_master_key</code> 改名 <code>_write_master_key</code> 内部化,CLI init 走它,set-master 必须验证旧密钥。
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-5</div><div>
+<span class="q">Q:</span> 0o777 可写可执行感觉没问题?<br>
+<span class="a">A:</span> 单人本地环境 = 没问题;多人/云同步 = 风险。<b>取决于你的使用场景</b>。
+<div class="pe">建议保持 0o600 标准值。如果只在本机单人用,本条可以不做。</div>
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-6</div><div>
+<span class="q">Q:</span> 是脚本代码 BUG?<br>
+<span class="a">A:</span> 是。SQL 只算 L1,不算 L2/L3 递归。<b>需要修</b>。
+<pre>当前: WHERE cp.lvl = 1    ← 只看 L1 直接挂的 30 件
+应改: 用递归 CTE 累加 L2/L3   → 显示真实 800+ 件</pre>
+</div></div>
+</div>
+
+<div class="card">
+<div class="row"><div class="bullet">P0-7</div><div>
+<span class="q">Q:</span> 需要修复?<br>
+<span class="a">A:</span> 是。一行改 <code>priced['total_value'] or 0</code>。
+</div></div>
+</div>
+
+<h2>C. P1 9 条全表</h2>
+
+<table>
+<thead><tr><th>#</th><th>问题</th><th>必做?</th><th>批</th></tr></thead>
+<tbody>
+<tr><td>P1-1</td><td>add_item 事务 + photo 先 commit</td><td>必</td><td>等 P0-2 一起</td></tr>
+<tr><td>P1-2</td><td>_category_name_cache stale</td><td>必</td><td>现在可做</td></tr>
+<tr><td>P1-3</td><td>_category_condition 死代码</td><td>必(删)</td><td>现在可做</td></tr>
+<tr><td>P1-4</td><td>emoji 检测不全</td><td>必</td><td>现在可做</td></tr>
+<tr><td>P1-5</td><td>trip 模板标签渲染</td><td>必</td><td>现在可做</td></tr>
+<tr><td>P1-6</td><td>account_del 不需密钥</td><td>必</td><td>等 P0-4 一起</td></tr>
+<tr><td>P1-7</td><td>SKILL.md 与代码漂移</td><td>必</td><td>等 P4 baseline</td></tr>
+<tr><td>P1-8</td><td>路由表 3 唤醒词重复</td><td>必</td><td>现在可做</td></tr>
+<tr><td>P1-9</td><td>HELP+routing+FAT 全无</td><td>必</td><td>等 Phase 3</td></tr>
+</tbody>
+</table>
+
+<h2>D. 等你拍板的事</h2>
+
+<div class="card">
+<h3>D-1 · P1-3 <code>--force</code> 处理路径</h3>
+<ol class="todo">
+<li><b>方案 A</b>: 强制 <code>--yes</code>,老脚本失败(强安全)</li>
+<li><b>方案 B</b>: 默认 exit=2 警告(同 A)</li>
+<li><b>方案 C</b>: 不改 CLI,但 <code>--force</code> 前自动 backup 到 <code>.bak/</code>(老调用无感)</li>
+</ol>
+<p>你需要确认: <b>有没有定时任务/cron 调用 <code>category_manager import --force</code>?</b></p>
+<ul style="margin:6px 0;padding-left:22px">
+<li>没有 → 选 A 或 B</li>
+<li>有 → 选 C(不动调用方)</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>D-2 · 是否允许我现在动手 P0-1?</h3>
+<p>已写好 patch,跑隔离 DB 重放验证 <code>init + add --category-id</code> 通过后再落盘,1 个 commit。</p>
+</div>
+
+<h2>E. 我的执行顺序建议</h2>
+
+<ol class="todo">
+<li><b>第 1 步(无风险)</b>: 删 <code>居家管家/.db/</code> 死目录 + 删 <code>scripts/check_photo*.py</code> dev 残留</li>
+<li><b>第 2 步</b>: P0-1 init_db 补齐 + items.category 改 nullable(单独 commit)</li>
+<li><b>第 3 步</b>: P0-2 update_item 硬规则(单独 commit)</li>
+<li><b>第 4 步</b>: P0-7 stats 一行修复(单独 commit)</li>
+<li><b>第 5 步</b>: P0-6 stats_summary 递归修复(单独 commit)</li>
+<li><b>第 6 步</b>: P1-3 / P1-4 / P1-5 / P1-8 一组小改(1 commit)</li>
+<li><b>第 7 步</b>: 看你对 P0-3 P0-4 的拍板,继续</li>
+</ol>
+
+<p class="sub" style="margin-top:32px;text-align:center;color:var(--muted)">
+回答我: <b>(a) 第 1 步能不能直接做</b>; <b>(b) P0-1 能不能现在动</b>; <b>(c) P0-3 选 A/B/C</b>
+</p>
+
+</div>
+</body>
+</html>

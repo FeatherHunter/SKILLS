@@ -76,7 +76,7 @@ h1{font-size:24px;margin:0 0 4px}
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
-    const isOpen = (i === 0) ? ' open' : '';
+    const isOpen = '';  // 默认全部折叠(用户主动展开想用的类别)
     html += '<div class="group' + isOpen + '" id="g-' + i + '" data-idx="' + i + '">';
     html += '<div class="group-h" data-idx="' + i + '">';
     html += '<h2>' + esc(g.wake_word) + '</h2>';

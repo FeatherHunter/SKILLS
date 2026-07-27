@@ -167,6 +167,10 @@ def main():
     p_trip = subparsers.add_parser("trip", help="旅行清单（打包/归位）")
     p_trip.add_argument("--mode", default="pack", choices=["pack", "return"],
                         help="pack=出门打包, return=回家归位")
+
+    # ── P1-9c HELP 中心(总纲 07 §)──
+    p_help = subparsers.add_parser("help", help="HELP 能力速查(总纲 07 §)")
+    p_help.add_argument("--output", default=None, help="HTML 输出路径")
     p_trip.add_argument("--output", required=True, help="HTML 输出路径")
 
     # ── tag-merge ──
@@ -450,6 +454,14 @@ def main():
             "message": "旅行清单 HTML 已生成",
         }
         return emit(payload, "travel_trip.html", args.output)
+
+    elif args.command == "help":
+        # P1-9c: HELP 中心 - 读 scenarios.yaml 渲染 help_center.html
+        from render import emit
+        from help_center import build_help_payload
+        payload = build_help_payload()
+        return emit(payload, "help_center.html", args.output,
+                     message="HELP 中心已生成(总纲 07 §)")
 
     elif args.command == "tag-merge":
         return tag_merge(from_tag=args.from_tag, to_tag=args.to_tag)

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 能力速查</title>
+<style>
+:root{
+  --bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;
+  --line:#e6e6eb;--blue:#0071e3;--amber:#ff9f0a;
+  --warn:#fff8e6;--warn-line:#ff9f0a;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+padding:32px 24px 80px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin-bottom:28px}
+.group{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:14px 0;padding:0}
+.group-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.group-h h2{margin:0;font-size:16px}
+.group-h .badge{font-size:11px;background:var(--line);padding:2px 8px;border-radius:6px;color:var(--muted)}
+.scenarios{display:none;padding:6px 18px 18px}
+.group.open .scenarios{display:block}
+.scenario{border-top:1px solid var(--line);padding:14px 0}
+.scenario:first-child{border-top:none}
+.s-title{font-weight:600;margin-bottom:6px}
+.s-dims{color:var(--muted);font-size:13px;margin-bottom:6px}
+.s-prompt{background:var(--warn);border-left:3px solid var(--warn-line);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+.s-result{color:var(--muted);font-size:13px;margin:6px 0}
+.copy-btn{float:right;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+.copy-btn:hover{filter:brightness(1.05)}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:24px;font-size:13px}
+.toc a{color:var(--ink);text-decoration:none;display:inline-block;padding:2px 6px;margin:2px 3px;background:var(--line);border-radius:4px}
+.toc a:hover{background:var(--blue);color:#fff}
+.metrics{display:flex;gap:20px;color:var(--muted);font-size:13px;margin-bottom:8px}
+.metrics span{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<!--SHARED-HELPERS-->
+
+</div>
+<script>
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function wwIdOf(ww){return 'grp-'+ww.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');}
+function toggleGroup(wwId){document.getElementById(wwId).classList.toggle('open');}
+function copyScenario(btn, prompt){
+  const ta=document.createElement('textarea');ta.value=prompt;
+  ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(()=>{
+      const old=btn.textContent;btn.textContent='已复制 ✓';
+      setTimeout(()=>btn.textContent=old,1500);
+      ta.remove();
+    }).catch(()=>{document.execCommand('copy');ta.remove();});
+  } else {
+    document.execCommand('copy');ta.remove();
+  }
+}
+function safePrompt(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r');}
+(function(){
+  // 从 <script id="payload"> 标签读 JSON(其它模板也用此模式)
+  let data;
+  try {
+    const el=document.getElementById('payload');
+    data=el?JSON.parse(el.textContent):null;
+  } catch(e) { data=null; }
+  if(!data||data.status!=='ok'||!data.data)return;
+  const d=data.data;
+  document.title=d.summary.title||'居家管家 · 能力速查';
+  const wrap=document.querySelector('.wrap');
+  let html='';
+  html+='<h1>'+esc(d.summary.title||'')+'</h1>';
+  html+='<p class="sub">'+esc(d.summary.subtitle||'')+'</p>';
+  html+='<div class="metrics">';
+  for(const m of arr(d.summary.metrics)){
+    html+='<div>'+esc(m.label)+': <span>'+esc(m.value)+'</span></div>';
+  }
+  html+='</div>';
+
+  html+='<div class="toc"><strong>跳到</strong> ';
+  for(const g of arr(d.groups)){
+    const wwId=wwIdOf(g.wake_word);
+    html+='<a href="#'+wwId+'">'+esc(g.wake_word)+'</a>';
+  }
+  html+='</div>';
+
+  for(const g of arr(d.groups)){
+    const wwId=wwIdOf(g.wake_word);
+    html+='<div class="group" id="'+wwId+'">';
+    html+='<div class="group-h" onclick="toggleGroup('+"'"+wwId+"'"+')">';
+    html+='<h2>'+esc(g.wake_word)+'</h2>';
+    html+='<span class="badge">'+g.scenarios.length+' 个场景</span>';
+    html+='</div>';
+    html+='<div class="scenarios">';
+    for(const s of g.scenarios){
+      html+='<div class="scenario">';
+      html+='<button class="copy-btn" data-prompt="'+esc(s.prompt||'')+'">复制 prompt</button>';
+      html+='<div class="s-title">'+esc(s.scenario_title||s.scenario_id)+'</div>';
+      const dims=arr(s.dimensions);
+      const dimKeys=Object.keys(dims);
+      if(dimKeys.length){html+='<div class="s-dims">维度: '+dimKeys.map(k=>k+'='+(typeof dims[k]==='object'?JSON.stringify(dims[k]):esc(dims[k]))).join('; ')+'</div>';}
+      html+='<div class="s-prompt">'+esc(s.prompt||'')+'</div>';
+      html+='<div class="s-result">预期结果: '+esc(s.result||'')+'</div>';
+      html+='</div>';
+    }
+    html+='</div></div>';
+  }
+  wrap.innerHTML+=html;
+
+  // 给所有复制按钮绑事件(避免 inline 引号转义难题)
+  wrap.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const prompt=btn.getAttribute('data-prompt')||'';
+      const old=btn.textContent;btn.textContent='已复制 ✓';
+      setTimeout(()=>btn.textContent=old,1500);
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(prompt);
+      } else {
+        const ta=document.createElement('textarea');ta.value=prompt;
+        ta.style.position='fixed';ta.style.opacity='0';
+        document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      }
+    });
+  });
+
+  const first=document.querySelector('.group');
+  if(first)first.classList.add('open');
+})();
+</script>
+</body>
+</html>

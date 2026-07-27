@@ -127,17 +127,17 @@ def inject_to_template(payload: dict, output_path: Path) -> Path:
     return output_path
 
 
-def default_output_path(query_type: str) -> Path:
-    """默认输出路径：跨平台 fallback 链
-    1. D:/Downloads (Windows 原生)
-    2. ~/Downloads (Linux/macOS 标准)
-    3. cwd (最后兜底)
+def default_output_path(query_type: str, args=None) -> Path:
+    """默认输出路径(v2.5 同步卡路里 §4.1):
+    $DATA_DIR/biscuit_accountant_html/<command_zh>_<TS>[_N].html
+    - 中文 command 名由 html_paths.resolve_command_name() 解析
+    - list 命令按参数细分(查日期/查范围/查分类)
     """
-    fname = f"饼干记账_查询_{query_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    for candidate in (Path("D:/Downloads"), Path.home() / "Downloads"):
-        if candidate.exists():
-            return candidate / fname
-    return Path.cwd() / fname
+    from html_paths import html_path, resolve_command_name
+    cn = resolve_command_name(query_type, args)
+    return html_path(cn)
+
+
 
 
 def main():
@@ -146,7 +146,7 @@ def main():
         usage="python3 scripts/bill_inject.py <query_type> [args...] [--out <path>]"
     )
     parser.add_argument("query_type", choices=list(QUERY_TYPES.keys()), help="查询类型（CLI 子命令）")
-    parser.add_argument("--out", default=None, help="输出 HTML 路径（默认写到 D:/Downloads）")
+    parser.add_argument("--out", default=None, help="输出 HTML 路径(默认 $DATA_DIR/biscuit_accountant_html/)")
 
     # 透传参数：收集 --xxx 形式的 CLI 参数
     args, extra = parser.parse_known_args()
@@ -173,7 +173,7 @@ def main():
     payload = build_payload(cli_json, args.query_type, extra)
 
     # 3. 决定输出路径
-    output_path = Path(args.out) if args.out else default_output_path(args.query_type)
+    output_path = Path(args.out) if args.out else default_output_path(args.query_type, args)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 4. 注入模板（即使 CLI 返回 error 也注入，模板会显示错误卡片）

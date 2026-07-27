@@ -5,7 +5,7 @@
 按 SKILL开发总纲V1.0 §07 契约:
 - 读 references/scenarios.json (唯一事实源)
 - 注入 templates/help.html (含占位符 <!--INJECT-DATA-->)
-- 输出 HTML 文件,默认到 D:/Downloads/
+- 输出 HTML 文件,默认 $DATA_DIR/biscuit_accountant_html/ (v2.5 同步卡路里 §4.1)
 
 用法:
     python3 scripts/render_help.py              # 默认输出
@@ -125,16 +125,12 @@ def inject_payload(template: str, payload: dict) -> str:
 
 
 def default_output_path() -> Path:
-    """默认输出路径:跨平台 fallback 链
-    1. D:/Downloads (Windows 原生)
-    2. ~/Downloads (Linux/macOS 标准)
-    3. cwd (最后兜底)
+    """默认输出路径(v2.5 同步卡路里 §4.1):
+    $DATA_DIR/biscuit_accountant_html/能力速查_<TS>[_N].html
+    复用 scripts/html_paths.html_path()
     """
-    fname = f"饼干记账_HELP_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
-    for candidate in (Path("D:/Downloads"), Path.home() / "Downloads"):
-        if candidate.exists():
-            return candidate / fname
-    return Path.cwd() / fname
+    from html_paths import html_path
+    return html_path("能力速查")
 
 
 def main():

@@ -358,7 +358,10 @@ python3 scripts/bill_inject.py search "咖啡"
 - ❌ **禁止**降级为文字答（这是 fail mode,不是 fallback）
 - 用户明确要文字 → 才走 `python3 scripts/record_bill.py summary`（无 --json）
 
-**默认输出路径**：`D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html`（跨平台 fallback：`~/Downloads` → 当前目录）
+**默认输出路径（v2.5 同步卡路里 §4.1）**：`$DATA_DIR/biscuit_accountant_html/<command_zh>_<YYYYMMDD>_<HHMMSS>[_N].html`
+  - `DATA_DIR` 跟随 `SKILLS_DB_PATH` 环境变量（fallback `D:/.db/`）
+  - 中文化 command 名：summary → 今日摘要 / monthly → 月度汇总 / overview → 收支总览
+  - 同秒冲突自动追加 `_2` / `_3` 后缀
 
 **指定输出路径**：`python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html`
 
@@ -379,7 +382,7 @@ python3 scripts/bill_inject.py search "咖啡"
 ```bash
 # 默认输出
 python3 scripts/render_help.py
-# 输出路径：D:/Downloads/饼干记账_HELP_<YYYYMMDD_HHMMSS>.html（跨平台 fallback：~/Downloads → 当前目录）
+# 输出路径（v2.5 同步卡路里 §4.1）：$DATA_DIR/biscuit_accountant_html/能力速查_<YYYYMMDD>_<HHMMSS>[_N].html
 
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html

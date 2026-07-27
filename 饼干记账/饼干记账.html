@@ -773,7 +773,7 @@ python3 scripts/bill_inject.py search "咖啡"
 </ul>
 <h4>输出路径</h4>
 <ul>
-<li>默认：<code>D:/Downloads/饼干记账_查询_&lt;type&gt;_&lt;YYYYMMDD_HHMMSS&gt;.html</code>（跨平台 fallback：<code>~/Downloads</code> → 当前目录）</li>
+<li>默认（v2.5 同步卡路里 §4.1）：<code>$DATA_DIR/biscuit_accountant_html/&lt;command_zh&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code><br>（<code>DATA_DIR</code> 跟随 <code>SKILLS_DB_PATH</code>；同秒冲突自动追加 <code>_2</code> / <code>_3</code>）</li>
 <li>自定义：<code>python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html</code></li>
 </ul>
 <h4>模板特性（<code>query_view.html</code>）</h4>
@@ -793,7 +793,7 @@ python3 scripts/bill_inject.py search "咖啡"
 <h4>调用流程</h4>
 <pre><code class="language-bash"># 默认输出
 python3 scripts/render_help.py
-# → D:/Downloads/饼干记账_HELP_&lt;YYYYMMDD_HHMMSS&gt;.html（跨平台 fallback：~/Downloads → 当前目录）
+# → $DATA_DIR/biscuit_accountant_html/能力速查_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html
 
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html
@@ -935,6 +935,7 @@ python3 scripts/render_help.py --check
 <footer>
   HTML 镜像手动同步于 2026-07-27 &nbsp;·&nbsp;
   源文件: <code>饼干记账/SKILL.md</code><br>
+  v2.5 同步卡路里 §4.1: 新增 scripts/html_paths.py;输出目录 $DATA_DIR/biscuit_accountant_html/;中文 command 名 + 冲突保护 _2/_3<br>
   v2.4 升级 HELP HTML: 5 类别分门别类 + 3 层折叠 + iOS Toast + 全展/全收 + 移动端 fallback (参考卡路里 v2.4.12)<br>
   v2.3 新增: ① HTML-First 默认工作流（§04 原则 11）；② HELP 能力速查（§07 契约 · scenarios.json + help.html + render_help.py）；③ 唤醒词表加「默认输出」列；④ 场景扩充 57 → 91（覆盖离线/缺失/错误/跨年/排序/筛选组合/边界金额等）<br>
   v2.2: HTML 可视化查询（CLI <code>--json</code> + <code>bill_inject.py</code> + <code>templates/query_view.html</code>）

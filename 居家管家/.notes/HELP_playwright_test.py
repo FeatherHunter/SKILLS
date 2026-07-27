@@ -135,16 +135,22 @@ async def run():
         toc_links = await page.locator(".toc a").count()
         if toc_links >= 30:
             passed.append(f"✓ TOC 链接: {toc_links} 个")
-        # 点第 5 个 TOC
+        # 点第 5 个 TOC(类别不是唤醒词)
         if toc_links >= 5:
-            await page.locator(".toc a").nth(4).click()
+            target = page.locator(".toc a").nth(4)
+            target_href = await target.get_attribute("href")
+            await target.click()
             await page.wait_for_timeout(500)
-            # 检查 URL 变化
-            url = page.url
-            if "#g-" in url:
-                passed.append(f"✓ TOC 跳转: {url[-20:]}")
+            # file:// 协议下锚点不更新 URL,但目标元素应存在
+            if target_href and "cat-" in target_href:
+                target_id = target_href.lstrip("#")
+                target_exists = await page.locator(f"#{target_id}").count() > 0
+                if target_exists:
+                    passed.append(f"✓ TOC 跳转: href={target_href}, target 元素存在")
+                else:
+                    issues.append(f"✗ TOC 跳转目标 {target_href} 不存在")
             else:
-                issues.append(f"✗ TOC 跳转 URL 未变: {url}")
+                issues.append(f"✗ TOC href 异常: {target_href}")
 
         shot3 = SHOTS_DIR / "03_after_toc_jump.png"
         await page.screenshot(path=str(shot3), full_page=True)

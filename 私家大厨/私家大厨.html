@@ -148,6 +148,7 @@
   <button class="tab-btn" data-tab="G">录入食谱<span class="tab-count">2</span></button>
   <button class="tab-btn" data-tab="H">派生关系<span class="tab-count">2</span></button>
   <button class="tab-btn" data-tab="I">帮助<span class="tab-count">1</span></button>
+  <button class="tab-btn" data-tab="J">跨Skill路由<span class="tab-count">15</span></button>
 </div>
 
 <!-- ============== A. 做菜模式 ============== -->
@@ -1003,9 +1004,41 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 </details>
 </div>
 
+<!-- ============== J. 跨 Skill 路由表 ============== -->
+<div class="tab-panel" id="tab-J">
+<h2>J. 跨 Skill 路由表 <span style="font-weight:400;font-size:14px;color:var(--fg3)">(§03 铁律 3 · 显式声明)</span></h2>
+<p>当用户唤醒词可能路由到多个 Skill 时,本表声明归属。AI 收到跨边界提问时,<strong>严格按本表路由</strong>,<strong>禁止擅自跨 skill 调用</strong>。</p>
+
+<h3 style="font-size:15px;margin:14px 0 8px;color:var(--fg)">✅ 已确定路由(基于现有实现)</h3>
+<table class="flow-table">
+<tr><th>用户原话</th><th>归属</th><th>判定依据</th></tr>
+<tr><td>采购清单 / 生成清单 / 排除可选</td><td><strong>私家大厨</strong></td><td>shopping_manager.py</td></tr>
+<tr><td>录入食谱 / 导入食谱</td><td><strong>私家大厨</strong></td><td>recipe_import.py + orchestrator</td></tr>
+<tr><td>做菜模式 / 开始做菜</td><td><strong>私家大厨</strong></td><td>cooking_render.py + cooking_mode.html</td></tr>
+<tr><td>查看食谱 / 查看食材 / 查看步骤 / 查看营养 / 查看背景</td><td><strong>私家大厨</strong></td><td>recipe_render.py + recipe_view.html</td></tr>
+<tr><td>记录做菜 / 查看历史 / 查看统计</td><td><strong>私家大厨</strong></td><td>history_manager.py</td></tr>
+<tr><td>添加派生关系 / 查看派生关系</td><td><strong>私家大厨</strong></td><td>relation_manager.py</td></tr>
+<tr><td>搜索食谱 / 筛选 X</td><td><strong>私家大厨</strong></td><td>recipe_manager.py</td></tr>
+<tr><td>修改 X / 废弃食谱</td><td><strong>私家大厨</strong></td><td>各 *_manager.py</td></tr>
+<tr><td>记体重 / 查体重 / 查体重趋势</td><td><strong>卡路里</strong></td><td>卡路里 body_metrics</td></tr>
+<tr><td>查热量 / 查营养 / 查营养结构 / 查健康报告</td><td><strong>卡路里</strong></td><td>卡路里主战场</td></tr>
+<tr><td>汇总作息 / 查作息 / 查日程 / 商量计划</td><td><strong>作息管家</strong></td><td>作息管家 record + plan</td></tr>
+</table>
+
+<h3 style="font-size:15px;margin:18px 0 8px;color:var(--warn)">⚠️ 待拍板路由(4 项 · 边界模糊 · 待用户拍板)</h3>
+<table class="flow-table">
+<tr><th>用户原话</th><th>推荐归属</th><th>待拍板理由</th></tr>
+<tr><td>查看营养 X(菜本身的营养)</td><td>私家大厨</td><td>recipes.nutrition_info vs 卡路里 nutrition_goal</td></tr>
+<tr><td>采购清单 + 营养(联动)</td><td>不联动</td><td>采购清单是"这次买菜",食品库是"我常吃的"</td></tr>
+<tr><td>炊具(做菜需要哪些 vs 实物管理)</td><td>私家大厨(做菜需要)/ 居家管家(实物)</td><td>recipes.cookware 表只管"做菜需要"</td></tr>
+<tr><td>采购下单</td><td>居家管家</td><td>SKILL.md 第 7 行声明不管,需核实居家管家是否实现</td></tr>
+</table>
+
+</div>
+
 <div class="footer">
-  私家大厨 · 使用手册 · 同步基线 SKILL.md v3 · 8 大功能 / 36 个唤醒词 / 17 张表<br>
-  详细变更见 SKILL.md 和 CHANGELOG.md
+  私家大厨 · 使用手册 · 同步基线 SKILL.md v3 · 9 大功能 / 36 个唤醒词 / 17 张表<br>
+  详细变更见 SKILL.md 和 CHANGELOG.md · 跨 Skill 路由见 §J
 </div>
 
 <script>

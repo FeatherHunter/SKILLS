@@ -148,7 +148,7 @@
 - [x] P0-1 F1 HELP 契约落地 ✅ 38f0773 + 8aa904a + d8745d3 + 6900680 + 5dd3f9f(Phase 1.5→1.4→1.3→1.2→1.1)
 - [x] P0-2 F2 4 细分词(方向修正:改 SKILL.md 引导 AI 走 HTML,不加锚点)✅ b10aa53
 - [x] P0-3 F4 跨 Skill 路由声明 ✅ 34f4494 + cc2a6b2(11 已确定 + 3 已确定边界 + 1 不实现)
-- [ ] P0-4 FAT Fresh Agent 黑盒测试
+- [⚠️] P0-4 FAT Fresh Agent 黑盒测试 · 预演完成 ⚠️ 2e6028f(15 prompt 6 pass 9 fail · 待 fresh agent 真跑验证)
 - [ ] P1-1 F3 变体管理
 - [ ] P1-2 V2 4 类榜单 HTML
 - [ ] P1-3 Test 自动化套件

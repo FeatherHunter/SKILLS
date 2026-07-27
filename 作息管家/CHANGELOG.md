@@ -41,6 +41,57 @@ Tested-By: exempt + 原因
 
 ---
 
+### 📋 Phase B.1 · 路由表改默认 HTML(总纲 §04 原则 11 落地)
+
+**动机**:基于对抗式审查,SKILL.md §"路由规则" 总路由表 20+ 条中 11 条默认走文本 CLI / 纯 JSON,虽然 SKILL.md 在"输出形式"列已声明 HTML 路径,但"CLI 命令"列默认走文本。AI 命中时会优先按"CLI 命令"列走文字答,违反总纲 §04 原则 11 "HTML-First"。
+
+**新增段**:`### ⭐ HTML-First 默认规则(2026-07-25 重构 · 总纲 §04 原则 11)`
+- 第一性引用总纲原话
+- 判定流程(IF HTML THEN invoke ELSE 文字)
+- 3 类例外(用户明确要文本 / HTML 失败 / 数据准备型 CLI)
+
+**修改段**:`### 总路由表`
+- 列名从 "CLI 命令" 改为 "CLI 命令(默认 HTML · 文字答降级路径)"
+- 13 条改默认:
+  - #6 查作息:`list` → `render-record-day`(文本降级 `list`)
+  - #4 今天总结:`report`/`summary` → `render-record-day`(满)/ `render-record-summary`(不满)
+  - #5 汇总作息:`range` → `render-record-range`(文本降级 `range`)
+  - #8 查作息时间轴:`timeline` → `render-record-day`(文本降级 `timeline`)
+  - #9 查作息范围:`range` → `render-record-range`
+  - #12 查日程:`list-events` → `render-list-events`(文本降级 `list-events`)
+  - #15 #16 24h 概览:`query-plans` → `render-query-plans`
+  - #17 商量计划:`upsert-plan-events` → 多轮讨论 → `render-plans-preview` 先预览 → `upsert` → `render-plan-receipt-write`
+  - #13 补计划:`ensure-plan-event` → 加 `render-plan-receipt-add <id>`
+  - #18 改计划:`update-event` → 加 `render-plan-receipt <id>`
+  - #19 删计划:`deactivate-event` → 加 `render-plan-receipt <id>`
+  - #14 复盘:`list-events` → `update-event` → 加 `render-plans-review <date>`
+  - #23 按 ID 查:`get-record` → `render-records-detail --record-id N`(文本降级 `get-record`)
+
+**影响范围**:
+- 代码:0 改动
+- HTML:`作息管家.html` 0 改动(本路由表是 AI 内部指令,用户手册无对应内容)
+- DB schema:无变化
+- 测试:0 改动(行为变更,需要 Fresh Agent 黑盒测试)
+- 向后兼容:✅ 文本 CLI 全部保留作"降级路径",`render-*` CLI 全部已存在
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 待测唤醒词: #4 #6 #8 #9 #12 #13 #14 #15 #16 #17 #18 #19 #23
+  - 人类 prompt: ≥ 3 个口语化/slash/略错 prompt
+  - 验证项: AI 命中后是否 invoke HTML 而非文字答
+  - 降级路径: 用户说"给文本"时,是否降级到对应文本 CLI
+
+如何跑 FAT:
+  1. 开新会话,只加载 SKILL.md(不告诉 agent 应该怎么走)
+  2. 测试每个核心唤醒词 × 2-3 个口语 prompt
+  3. 捕获 agent 是否调用 render-* CLI
+  4. 失败则改 SKILL.md 而非改正,循环 ≤ 3 次
+```
+
+---
+
 ## [2026-07-23] · 第二轮清理 · 文档对齐 + 死章节 + 真废命令
 
 ### 🚀 重大变更:作息记录查询 → HTML 多模板报告(5 模板 8 命令)

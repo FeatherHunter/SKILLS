@@ -297,33 +297,55 @@ webbrowser.open(f"file://{html_path}")  # 跨平台
 
 **第一性**:用户说自然语言(中文/口语/模糊),AI 必须能 1 步映射到正确的 CLI 命令 + 参数。本节是 AI 看到任何"作息/计划/查询/对比"类需求时的**总入口**。
 
-### 总路由表(覆盖 20 个支持时间参数的 CLI)
+### ⭐ HTML-First 默认规则(2026-07-25 重构 · 总纲 §04 原则 11)
 
-| 用户表达示例 | 唤醒词 | CLI 命令 | 输出形式 |
+**第一性**(总纲原话):唤醒词命中 SKILL 后,若 SKILL 声明有 HTML 输出路径,默认行为 = **invoke HTML 工作流**。文字答是 fail mode,不是 fallback。
+
+**判定流程**(AI 命中任何唤醒词时):
+```
+IF "输出形式"列含 .html
+   THEN 必须 invoke 对应的 render-* CLI(默认行为)
+   ELSE(无 HTML 路径)→ 才允许走文字 / JSON / CLI
+```
+
+**例外**(可降级为文字答):
+- 用户明确说"不要 HTML,给文本" / "直接给我看"
+- HTML 渲染失败(目录不存在等报错)→ CLI 报错文案已带字段名+当前值+期望值+怎么修
+- 数据准备型 CLI(`prepare-messages` / `get-record` 等无 HTML 路径的)
+
+### 总路由表(覆盖 20 个支持时间参数的 CLI · HTML-First 默认)
+
+| 用户表达示例 | 唤醒词 | CLI 命令(默认 HTML · 文字答降级路径) | 输出形式 |
 |---|---|---|---|
-| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段> 或 --json @file` | record_receipt.html |
-| "今天我做了什么 / 查作息" | #6 查作息 | `list [date]` | record_detail.html |
-| "昨天 / 前天 / 某天做了什么" | #6 查作息 | `list <date>` | record_detail.html |
-| "今天总结 / 给我个报告" | #4 今天总结 | `report <date>` 或 `summary <date>` | record_day.html |
-| "这一周 / 这周 / 7/13~7/19 看看" | #5 汇总作息 | `range <start> <end>` 或 `render-record-range <start> <end>` | record_range.html |
+| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | record_receipt.html |
+| "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
+| "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
+| "今天总结 / 给我个报告" | #4 今天总结 | `render-record-day <date>`(满 24h) / `render-record-summary <date>`(不满) · 文本降级 `report`/`summary` | record_day.html / record_summary.html |
+| "这一周 / 这周 / 7/13~7/19 看看" | #5 汇总作息 | `render-record-range <start> <end>` · 文本降级 `range <start> <end>` | record_range.html |
 | "详情 / 含原文 / AI 推理链" | #7 查作息详情 | `render-records-detail <date> [--record-id N]` | record_detail.html |
-| "时间轴 / 24h" | #8 查作息时间轴 | `timeline <date>` 或 `render-record-day <date>` | record_detail.html |
+| "时间轴 / 24h" | #8 查作息时间轴 | `render-record-day <date>` · 文本降级 `timeline <date>` | record_day.html |
+| "查某天 / 7/15 看了啥" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
+| "这一周 X 7天 / X 范围" | #9 查作息范围 | `render-record-range <start> <end>` · 文本降级 `range` | record_range.html |
 | "6 月 vs 7 月 / 上周 vs 这周" | #25 对比两个月 | `render-record-compare-months YYYY-MM YYYY-MM` | record_compare.html |
 | "A 段时间 vs B 段时间" | #25 对比两个月 | `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | record_compare.html |
 | "这 7 天健身什么时候做的" | (T4 类别深挖) | `render-record-category-range <start> <end> <category>` | record_category.html |
+| "7/15 健身什么时候做的(单日)" | (T4 单日) | `render-record-category <date> <category>` | record_category.html |
 | "最近状态 / 有没有异常" | (T5 异常检测) | `render-record-anomaly [--window 7]` | record_anomaly.html |
 | "准备消息 / 拉消息" | #1 准备消息 | `prepare-messages [<start> [<end>]] [--page N]` | (无 HTML,数据准备) |
-| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add` × N | (多条 record_receipt.html) |
-| "看日程 / 查日程" | #12 查日程 | `list-events <date>` 或 `render-list-events <date>` | plan_list_events.html |
-| "24h 概览 / 查多日计划" | #15 #16 | `query-plans <日期列表>` 或 `render-query-plans <日期列表>` | plan_list_events.html |
-| "商量计划 / 规划明天" | #17 商量计划 | `upsert-plan-events <date> --json @plan.json` | plan_preview.html → plan_receipt.html |
-| "补一条计划" | #13 补计划 | `ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X` | plan_receipt_add.html |
-| "改计划 / 改这条" | #18 改计划 | `update-event <id> [--title/...]` | plan_receipt.html |
-| "删计划 / 不要了" | #19 删计划 | `deactivate-event <id>` | plan_receipt.html |
-| "复盘 / 回顾今天" | #14 复盘 | `list-events <date>` → 逐条 `update-event --completion` | plan_review.html |
-| "今天有 XX 吗" | #12 + 标题 | `search-plan-event <date> --title X` 或 `--time-start` `--time-end` | (无 HTML,JSON) |
-| "按 ID 查记录" | #23 按 ID 查 | `get-record <id>` | (无 HTML,JSON) |
+| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add × N` → 各自 `render-record-receipt <id>` | (多条 record_receipt.html) |
+| "看日程 / 查日程" | #12 查日程 | `render-list-events <date>` · 文本降级 `list-events <date>` | plan_list_events.html |
+| "今天有 XX 吗(带标题)" | #12 + 标题 | `search-plan-event <date> --title X` | (无 HTML,JSON) |
+| "24h 概览 / 查多日计划" | #15 #16 | `render-query-plans <日期列表>` · 文本降级 `query-plans` | plan_list_events.html |
+| "商量计划 / 规划明天" | #17 商量计划 | 多轮讨论 → `render-plans-preview <date>`(先预览) → 用户确认 → `upsert-plan-events <date> --json @plan.json` → `render-plan-receipt-write` | plan_preview.html → plan_receipt_write.html |
+| "补一条计划" | #13 补计划 | `ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X` → `render-plan-receipt-add <id>` | plan_receipt_add.html |
+| "改计划 / 改这条" | #18 改计划 | `update-event <id> [--title/...]` → `render-plan-receipt <id>` | plan_receipt.html |
+| "删计划 / 不要了" | #19 删计划 | `deactivate-event <id>` → `render-plan-receipt <id>` | plan_receipt.html |
+| "复盘 / 回顾今天" | #14 复盘 | `list-events <date>` → 逐条 `update-event --completion` → `render-plans-review <date>` | plan_review.html |
+| "按 ID 查记录" | #23 按 ID 查 | `render-records-detail --record-id N` · 文本降级 `get-record <id>` | record_detail.html |
 | "作息状态 / 统计" | #11 查作息状态 | `status` | (无 HTML,5 行文本) |
+| "日程管家同步" | #20 | `feishu-resync <日期>` | (无 HTML,纯 CLI) |
+| "初始化数据库" | #22 | `init` | (无 HTML,管理命令) |
+| "飞书探测" | #21 | `python scripts/feishu_sync.py` | (无 HTML,探测报告) |
 
 ### 相对时间映射(高频表达 → 具体日期)
 

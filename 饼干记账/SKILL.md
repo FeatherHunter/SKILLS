@@ -1,6 +1,6 @@
 ---
 name: 饼干记账
-description: 记账技能。写入类：记支出、记收入、拍账单。查询类：查今天、查日期、查范围、查分类、查最近、搜备注。分析类：看月度、看对比、看分类、看总览。统计类：做统计。**可视化（v2.2）：** 所有查询命令支持 `--json` flag，可通过 `scripts/bill_inject.py` 注入到 `templates/query_view.html` 生成可视化 HTML 页面。
+description: 记账技能。写入类：记支出、记收入、拍账单、改记录。查询/分析类：查今天、查日期、查范围、查分类、查最近、搜备注、看月度、看对比、看分类、看总览、做统计。**所有查询/分析类唤醒词默认 invoke HTML 工作流**（scripts/bill_inject.py + templates/query_view.html），写入类保持文字回执。能力速查：说「饼干记账 HELP」/「查帮助」/「能做什么」。
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -57,23 +57,24 @@ description: 记账技能。写入类：记支出、记收入、拍账单。查�
 
 ## 唤醒词总表
 
-| 类型 | 唤醒词 | 功能 | CLI 指令 |
-|------|--------|------|----------|
-| 写入 | `记支出` | 记账（支出） | `add --amount <负数>` |
-| 写入 | `记收入` | 收入记录 | `add --amount <正数>` |
-| 写入 | `拍账单` | 图片记账 | 图片识别 → `add` |
-| 写入 | `改记录` | 修改已有记录 | `update --id <ID> [--字段 新值 ...]` |
-| 查询 | `查今天` | 今日摘要 | `summary` |
-| 查询 | `查日期` | 指定日期查询 | `list --date <YYYY-MM-DD>` |
-| 查询 | `查范围` | 日期范围查询 | `list --from <日期> --to <日期>` |
-| 查询 | `查分类` | 按分类查询 | `list --category <分类>` |
-| 查询 | `查最近` | 最近N条 | `recent --limit <N>` |
-| 查询 | `搜备注` | 搜索备注 | `search "<关键词>"` |
-| 分析 | `看月度` | 月度汇总 | `monthly --month <YYYY-MM>` |
-| 分析 | `看对比` | 周期对比 | `compare --period week/month` |
-| 分析 | `看分类` | 分类明细 | `breakdown [--from --to]` |
-| 分析 | `看总览` | 收支总览 | `overview [--month <YYYY-MM>]` |
-| 统计 | `做统计` | 记账统计 | `stats` |
+| 类型 | 唤醒词 | 功能 | CLI 指令 | 默认输出 |
+|------|--------|------|----------|----------|
+| 写入 | `记支出` | 记账（支出） | `add --amount <负数>` | 文字回执 |
+| 写入 | `记收入` | 收入记录 | `add --amount <正数>` | 文字回执 |
+| 写入 | `拍账单` | 图片记账 | 图片识别 → `add` | 文字回执 |
+| 写入 | `改记录` | 修改已有记录 | `update --id <ID> [--字段 新值 ...]` | 文字回执 |
+| 查询 | `查今天` | 今日摘要 | `summary` | **HTML（bill_inject.py）** |
+| 查询 | `查日期` | 指定日期查询 | `list --date <YYYY-MM-DD>` | **HTML** |
+| 查询 | `查范围` | 日期范围查询 | `list --from <日期> --to <日期>` | **HTML** |
+| 查询 | `查分类` | 按分类查询 | `list --category <分类>` | **HTML** |
+| 查询 | `查最近` | 最近N条 | `recent --limit <N>` | **HTML** |
+| 查询 | `搜备注` | 搜索备注 | `search "<关键词>"` | **HTML** |
+| 分析 | `看月度` | 月度汇总 | `monthly --month <YYYY-MM>` | **HTML** |
+| 分析 | `看对比` | 周期对比 | `compare --period week/month` | **HTML** |
+| 分析 | `看分类` | 分类明细 | `breakdown [--from --to]` | **HTML** |
+| 分析 | `看总览` | 收支总览 | `overview [--month <YYYY-MM>]` | **HTML** |
+| 统计 | `做统计` | 记账统计 | `stats` | **HTML** |
+| **HELP** | `饼干记账 HELP` / `查帮助` / `能做什么` | 能力速查 | `render_help.py` | **HTML（HELP 页）** |
 
 ---
 
@@ -323,30 +324,28 @@ python3 scripts/record_bill.py stats
 ✓ 已记录：餐饮 -35.00
 ```
 
-### Step 6：HTML 可视化查询（v2.2 新增）
+### Step 6：HTML 可视化查询（v2.3 · 默认工作流）
 
-当用户希望"看更直观的页面"而不是看文字时，AI 可调用 `scripts/bill_inject.py` 把查询结果注入到 `templates/query_view.html`，生成可视化 HTML 文件并交付。
+> **🎯 默认行为（§04 原则 11 HTML-First）：**
+> 所有查询/分析/统计类唤醒词命中后，AI **默认** 调用 `scripts/bill_inject.py` 生成可视化 HTML 交付给用户。
+> 文字答仅在用户**明确说**「不要 HTML」「给我文字版」「就告诉我数字」时才走。
 
-**支持 9 种查询类型：**
+**支持 9 种查询类型（全部默认 HTML）：**
 
-| 类型 | CLI 子命令 | 适用场景 |
-|---|---|---|
-| 今日摘要 | `summary` | 看今日收支 |
-| 列表 | `list` / `recent` / `search` | 看记录明细 |
-| 月度汇总 | `monthly` | 看月度分类排行 |
-| 周期对比 | `compare` | 本周 vs 上周 / 本月 vs 上月 |
-| 分类明细 | `breakdown` | 看各类支出占比（SVG 环形图） |
-| 收支总览 | `overview` | 看月度 4 个 KPI |
-| 记账统计 | `stats` | 看总笔数 / 天数 |
+| 类型 | CLI 子命令 | 适用场景 | bill_inject.py 调用 |
+|---|---|---|---|
+| 今日摘要 | `summary` | 看今日收支 | `bill_inject.py summary` |
+| 列表 | `list` / `recent` / `search` | 看记录明细 | `bill_inject.py list --date 2026-07-27` |
+| 月度汇总 | `monthly` | 看月度分类排行 | `bill_inject.py monthly --month 2026-07` |
+| 周期对比 | `compare` | 本周 vs 上周 / 本月 vs 上月 | `bill_inject.py compare --period week` |
+| 分类明细 | `breakdown` | 看各类支出占比（SVG 环形图） | `bill_inject.py breakdown --from ... --to ...` |
+| 收支总览 | `overview` | 看月度 4 个 KPI | `bill_inject.py overview --month 2026-07` |
+| 记账统计 | `stats` | 看总笔数 / 天数 | `bill_inject.py stats` |
 
-**调用流程：**
+**调用流程（AI 必走）：**
 
 ```bash
-# 1. 直接调 CLI（带 --json，遵循 {status, data, message} 契约）
-python3 scripts/record_bill.py summary --json
-python3 scripts/record_bill.py monthly --month 2026-07 --json
-
-# 2. 或用注入脚本（自动调 CLI + 注入 HTML 模板 + 输出文件）
+# 标准路径（自动调 CLI + 注入 HTML 模板 + 输出文件）
 python3 scripts/bill_inject.py summary
 python3 scripts/bill_inject.py monthly --month 2026-07
 python3 scripts/bill_inject.py breakdown --from 2026-07-01 --to 2026-07-31
@@ -354,19 +353,47 @@ python3 scripts/bill_inject.py compare --period week
 python3 scripts/bill_inject.py search "咖啡"
 ```
 
+**错误处理（§04 原则 11 反模式 #3）：**
+- HTML 生成失败 → **保留错误页 HTML** 交付给用户（bill_inject.py 自动处理）
+- ❌ **禁止**降级为文字答（这是 fail mode,不是 fallback）
+- 用户明确要文字 → 才走 `python3 scripts/record_bill.py summary`（无 --json）
+
 **默认输出路径**：`D:/Downloads/饼干记账_查询_<type>_<YYYYMMDD_HHMMSS>.html`
 
 **指定输出路径**：`python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html`
 
 **交付给用户**：用 `<media src="..." type="file" />` 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。
 
-**模板特性**：
+**模板特性（query_view.html）**：
 - 单文件离线运行（无 CDN / 无 chart.js 依赖）
 - Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）
 - 自适应桌面 + 平板 + 手机
 - 5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线
 - SVG 环形图（breakdown 用）
 - 一键复制 ID 回 AI（每条记录含 ID）
+
+### Step 7：HELP 能力速查（v2.3 新增）
+
+当用户说「饼干记账 HELP」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
+
+```bash
+# 默认输出
+python3 scripts/render_help.py
+# 输出路径：D:/Downloads/饼干记账_HELP_<YYYYMMDD_HHMMSS>.html
+
+# 指定输出
+python3 scripts/render_help.py --out /path/to/help.html
+
+# 仅校验场景资产 schema（CI 用）
+python3 scripts/render_help.py --check
+```
+
+**HELP HTML 契约（§07）：**
+- 来源：`references/scenarios.json`（唯一事实源）+ `templates/help.html`（模板）
+- 展示 15 个业务唤醒词 × 57 个合法场景
+- 每场景独立「📋 复制 prompt」按钮（一键复制给 AI）
+- 粘性搜索栏（按唤醒词 / 标题 / prompt 即时过滤）
+- 5 状态 fallback + 移动端适配
 
 ---
 

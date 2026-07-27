@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · HELP 能力速查</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --border: #e5e5ea;
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --blue: #007aff; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de;
+    --warn-bg: #fff7e6; --warn-fg: #ff9500;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --radius: 14px; --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { padding: 8px 0 24px; }
+  .eyebrow { font-size: 12px; color: var(--fg3); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  h1.title { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .subtitle { color: var(--fg2); font-size: 14px; margin-top: 6px; }
+
+  /* Search bar */
+  .search-bar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg); padding: 12px 0;
+    margin-bottom: 12px;
+  }
+  .search-input {
+    width: 100%; padding: 12px 16px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 15px; background: var(--card); color: var(--fg);
+    outline: none; transition: border-color .15s;
+    font-family: inherit;
+  }
+  .search-input:focus { border-color: var(--blue); }
+
+  /* KPI Summary */
+  .summary-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 16px;
+  }
+  .summary-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .summary-card .label { font-size: 11px; color: var(--fg2); font-weight: 500; margin-bottom: 4px; }
+  .summary-card .value { font-size: 22px; font-weight: 700; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .summary-card.blue .value { color: var(--blue); }
+  .summary-card.green .value { color: var(--green); }
+  .summary-card.orange .value { color: var(--orange); }
+
+  /* Wake word group */
+  .ww-group {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px 18px; margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .ww-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .ww-name { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .ww-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; background: var(--bg); color: var(--fg2);
+    font-variant-numeric: tabular-nums;
+  }
+  .ww-badge.pending { background: var(--warn-bg); color: var(--warn-fg); }
+
+  /* Scenario card */
+  .sc {
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 8px;
+    transition: border-color .15s;
+  }
+  .sc:hover { border-color: var(--blue); }
+  .sc.pending { border-left: 3px solid var(--orange); }
+  .sc-head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .sc-title { font-size: 14px; font-weight: 600; flex: 1; }
+  .pending-tag {
+    font-size: 10px; font-weight: 700; padding: 2px 6px;
+    border-radius: 6px; background: var(--warn-bg); color: var(--warn-fg);
+    letter-spacing: .02em;
+  }
+  .sc-dims {
+    font-size: 11px; color: var(--fg3); margin-bottom: 8px;
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .sc-dim {
+    background: var(--bg); padding: 2px 6px; border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .sc-prompt {
+    background: var(--bg); border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-bottom: 8px;
+    font-size: 14px; color: var(--fg);
+    border-left: 3px solid var(--blue);
+    word-break: break-word;
+  }
+  .sc-prompt::before { content: "💬 "; font-size: 12px; }
+  .sc-result {
+    font-size: 12px; color: var(--fg2); margin-bottom: 10px;
+    padding-left: 4px;
+  }
+  .sc-result::before { content: "→ "; color: var(--fg3); }
+  .sc-actions { display: flex; gap: 8px; }
+  .btn {
+    border: none; border-radius: var(--radius-sm);
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #0066d6; }
+  .btn-primary.copied { background: var(--green); }
+  .btn-ghost { background: var(--bg); color: var(--fg2); }
+  .btn-ghost:hover { background: var(--border); color: var(--fg); }
+
+  /* Empty / No match */
+  .empty, .no-match {
+    color: var(--fg3); font-size: 14px;
+    text-align: center; padding: 32px 16px;
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 24px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: center; color: var(--fg3); font-size: 12px;
+  }
+
+  /* Hide filtered out scenarios */
+  .sc.hidden, .ww-group.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ===== 首屏 (HERO) ===== -->
+  <div class="header">
+    <div class="eyebrow">HELP · 能力速查</div>
+    <h1 class="title" id="title">饼干记账</h1>
+    <p class="subtitle" id="subtitle">加载中...</p>
+  </div>
+
+  <!-- ===== 搜索栏 ===== -->
+  <div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 搜索唤醒词 / 场景标题 / prompt..." />
+  </div>
+
+  <!-- ===== 总览统计 ===== -->
+  <div class="summary-row" id="summaryRow"></div>
+
+  <!-- ===== 主体 (BODY) - 唤醒词分组 ===== -->
+  <main id="bodyContent"></main>
+
+  <!-- ===== 尾部 (TAIL) ===== -->
+  <div class="footer">
+    <div>由 <code>references/scenarios.json</code> 派生 · <code>scripts/render_help.py</code> 渲染</div>
+    <div style="margin-top:4px;" id="generatedAt"></div>
+  </div>
+
+</div>
+
+<!-- ===== 占位符 - 由 render_help.py 替换为 window.__DATA__ ===== -->
+<!--INJECT-DATA-->
+
+<script>
+// ===== 状态路由(§04 原则 4 - 5 状态 fallback) =====
+function showState(name) {
+  ['Empty', 'Missing', 'Error', 'Offline'].forEach(s => {
+    const el = document.getElementById('state' + s);
+    if (el) el.style.display = 'none';
+  });
+  if (name && name !== 'ok') {
+    const el = document.getElementById('state' + name);
+    if (el) el.style.display = 'block';
+  }
+}
+
+// ===== XSS 防护(§04 原则 4 #5) =====
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// ===== 主流程 =====
+try {
+  // 5 守卫(§04 原则 4):数据未注入
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    throw new Error('数据未注入');
+  }
+
+  const data = window.__DATA__;
+  if (data.status === 'error' || !data.data || !data.data.wake_words) {
+    showState('Error');
+    throw new Error(data.message || '数据不完整');
+  }
+
+  const payload = data.data;
+  const wws = payload.wake_words || [];
+
+  // 0 个唤醒词 = 空态
+  if (wws.length === 0) {
+    showState('Empty');
+    document.getElementById('bodyContent').innerHTML =
+      '<div class="empty">📭 暂无唤醒词场景</div>';
+  } else {
+    // 首屏信息
+    document.getElementById('title').textContent = esc(payload.title || '饼干记账');
+    document.getElementById('subtitle').textContent = esc(payload.subtitle || '');
+    document.getElementById('generatedAt').textContent = '生成时间: ' + esc(payload.generated_at || '');
+
+    // 总览统计
+    const summaryRow = document.getElementById('summaryRow');
+    summaryRow.innerHTML =
+      '<div class="summary-card blue"><div class="label">唤醒词</div><div class="value">' +
+      esc(payload.wake_words_total) + '</div></div>' +
+      '<div class="summary-card green"><div class="label">合法场景</div><div class="value">' +
+      esc(payload.scenarios_total) + '</div></div>' +
+      '<div class="summary-card orange"><div class="label">待开发</div><div class="value">' +
+      esc(payload.pending_total) + '</div></div>';
+
+    // 渲染每个唤醒词
+    const main = document.getElementById('bodyContent');
+    wws.forEach(ww => {
+      const group = document.createElement('div');
+      group.className = 'ww-group';
+      group.setAttribute('data-ww', ww.name);
+
+      const pendingBadge = ww.pending_count > 0
+        ? '<span class="ww-badge pending">' + ww.pending_count + ' 待开发</span>'
+        : '';
+      group.innerHTML =
+        '<div class="ww-header">' +
+          '<span class="ww-name">' + esc(ww.name) + '</span>' +
+          '<span class="ww-badge">' + ww.count + ' 场景</span>' +
+          pendingBadge +
+        '</div>';
+
+      (ww.scenarios || []).forEach(sc => {
+        const isPending = sc.status === '【待开发】';
+        const card = document.createElement('div');
+        card.className = 'sc' + (isPending ? ' pending' : '');
+        card.setAttribute('data-search', (
+          ww.name + ' ' + sc.scenario_title + ' ' + sc.prompt
+        ).toLowerCase());
+
+        // 维度徽章
+        const dims = sc.dimensions || {};
+        const dimBadges = Object.entries(dims).map(function(e) {
+          return '<span class="sc-dim">' + esc(e[0]) + ': ' + esc(String(e[1])) + '</span>';
+        }).join('');
+
+        const pendingTag = isPending
+          ? '<span class="pending-tag">【待开发】</span>'
+          : '';
+        // 安全拼接 prompt(转义后塞入 .textContent)
+        const promptSafe = document.createElement('div');
+        promptSafe.className = 'sc-prompt';
+        promptSafe.textContent = sc.prompt;
+
+        card.innerHTML =
+          '<div class="sc-head">' +
+            '<span class="sc-title">' + esc(sc.scenario_title) + '</span>' +
+            pendingTag +
+          '</div>' +
+          '<div class="sc-dims">' + dimBadges + '</div>' +
+          '<div class="sc-result">' + esc(sc.result || '') + '</div>' +
+          '<div class="sc-actions">' +
+            '<button class="btn btn-primary copy-btn" data-prompt="' + esc(sc.prompt) + '">📋 复制 prompt</button>' +
+          '</div>';
+
+        // 把 promptSafe 替换占位
+        const actions = card.querySelector('.sc-actions');
+        card.insertBefore(promptSafe, actions);
+
+        group.appendChild(card);
+      });
+
+      main.appendChild(group);
+    });
+
+    // 搜索过滤(§07 §10 大规模可用)
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function() {
+      const q = searchInput.value.trim().toLowerCase();
+      const groups = document.querySelectorAll('.ww-group');
+      let anyVisible = false;
+      groups.forEach(g => {
+        const cards = g.querySelectorAll('.sc');
+        let groupHasVisible = false;
+        cards.forEach(c => {
+          const text = c.getAttribute('data-search') || '';
+          const match = q === '' || text.indexOf(q) !== -1;
+          c.classList.toggle('hidden', !match);
+          if (match) groupHasVisible = true;
+        });
+        g.classList.toggle('hidden', !groupHasVisible);
+        if (groupHasVisible) anyVisible = true;
+      });
+
+      // 显示"无匹配"
+      let noMatch = document.getElementById('noMatch');
+      if (!anyVisible && q !== '') {
+        if (!noMatch) {
+          noMatch = document.createElement('div');
+          noMatch.id = 'noMatch';
+          noMatch.className = 'no-match';
+          document.getElementById('bodyContent').appendChild(noMatch);
+        }
+        noMatch.textContent = '🔍 无匹配: "' + q + '"';
+      } else if (noMatch) {
+        noMatch.remove();
+      }
+    });
+  }
+} catch (err) {
+  console.error('渲染失败:', err);
+  showState('Error');
+  document.getElementById('bodyContent').innerHTML =
+    '<div class="empty">❌ 加载失败: ' + esc(err.message || '') + '</div>';
+}
+
+// ===== 复制 prompt(§07 §10 + 原则 10) =====
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  const prompt = btn.getAttribute('data-prompt') || '';
+  const orig = btn.textContent;
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      btn.textContent = '✅ 已复制';
+      btn.classList.add('copied');
+      setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+    }).catch(function() {
+      fallbackCopy(prompt);
+      btn.textContent = '✅ 已复制';
+      setTimeout(function() { btn.textContent = orig; }, 2000);
+    });
+  } else {
+    fallbackCopy(prompt);
+    btn.textContent = '✅ 已复制';
+    setTimeout(function() { btn.textContent = orig; }, 2000);
+  }
+});
+
+// ===== 离线检测(§04 原则 4 - 5 状态) =====
+window.addEventListener('offline', function() { showState('Offline'); });
+window.addEventListener('online', function() {
+  const el = document.getElementById('stateOffline');
+  if (el) el.style.display = 'none';
+});
+</script>
+
+<!-- ===== 5 状态 banner(§04 原则 3 + 4) ===== -->
+<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无数据</div>
+<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 数据不完整</div>
+<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败</div>
+<div id="stateOffline" class="state-banner offline" style="display:none;">📡 离线模式</div>
+
+</body>
+</html>

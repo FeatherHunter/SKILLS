@@ -4,9 +4,8 @@
   - list:搜索/筛选/派生关系(网格卡片)
   - timeline:烹饪历史(垂直时间线)
   - dashboard:烹饪统计(4-6 KPI 卡片)
-渲染器写入:
-  <script>window.__DATA__ = {type, title, items, summary, ...};</script>
-占位符唯一 1 次(实际占位符在下面 body 末尾)。
+渲染器写入示例:script 块含 window.__DATA__ = {...}
+占位符 INJECT-DATA 唯一 1 次(实际占位符在 body 末尾)
 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -223,6 +222,7 @@
 
   // ── type=dashboard 渲染(烹饪统计)──
   function renderDashboard() {
+    document.getElementById('page-title').textContent = D.title || '数据仪表盘';
     const kpis = D.kpis || [];
     if (kpis.length === 0) {
       showState('empty', D.empty_msg || '暂无统计数据');

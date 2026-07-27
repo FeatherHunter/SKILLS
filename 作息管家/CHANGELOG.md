@@ -92,6 +92,53 @@ Tested-By: pending-FAT
 
 ---
 
+### 📋 Phase C.1 · §07 HELP 场景资产落地
+
+**动机**:对抗式审查 §07 契约 100% 缺失的最低要求 — 场景资产(唯一事实源)。本 commit 仅落地场景资产,Phase C.2 再做 HELP HTML + 渲染器。
+
+### 新增(Added)
+
+- ✅ `references/scenarios.yaml` (646 行 / 20433 bytes)
+  - 27 个唤醒词全覆盖:#0 #1 #2 #3 #4 #5 #6 #7 #8 #9 #11 #12 #13 #14 #15 #16 #17 #18 #19 #20 #21 #22 #23 #24 #25 #26 + T4 + T5
+  - 73 个场景(每唤醒词 1-5 个合法场景)
+  - 7 字段契约(wake_word / scenario_id / scenario_title / dimensions / prompt / status / result)严格遵守 §07 §2.2
+  - status 二态分布:72 个 `""` (可用) + 1 个 `【待开发】`(`record_add_illegal_category` 心法 #5 待审批路径)
+  - prompt 抽象化:不暴露 CLI / DB / Python / 模板路径,只描述用户意图
+- ✅ `.notes/_gen_scenarios.py` (生成器脚本)
+  - 一次性脚本,生成后留作"如何生成"追溯
+  - 数据结构 / 7 字段契约 / status 二态 都在脚本里体现
+
+### 影响范围
+
+- 代码:0 改动
+- HTML:0 改动
+- DB schema:无变化
+- 测试:0 改动(场景资产是文档,非代码路径)
+- 向后兼容:✅ 场景资产是新增文件,不影响现有代码
+
+### §07 自检(部分)
+
+- [x] 场景资产已产出(唯一事实源,组织方式自定)
+- [x] 每个场景含 7 字段
+- [x] prompt 不暴露 CLI / DB / Python / 模板路径
+- [x] status 二态正确(可用 vs 【待开发】)
+- [ ] HELP HTML(Phase C.2)
+- [ ] HELP 唤醒词登记(Phase C.2)
+- [ ] 渲染器(Phase C.2)
+- [ ] 5 者一一对应(Phase C.2)
+
+### Tested-By
+
+```
+Tested-By: exempt + 原因
+  - 豁免依据: 纯文档新增(新增 .yaml 数据文件 + 生成器脚本,不动现有代码)
+  - 自检: scenarios.yaml 仅作为场景清单,不影响 SKILL.md / CLI / HTML 任何行为,
+         HELP HTML 渲染器未到位,场景资产对用户无感知
+  - 验证方法: yaml.safe_load() 可解析、scenario_id 唯一、wake_word 全覆盖(27/27)
+```
+
+---
+
 ## [2026-07-23] · 第二轮清理 · 文档对齐 + 死章节 + 真废命令
 
 ### 🚀 重大变更:作息记录查询 → HTML 多模板报告(5 模板 8 命令)

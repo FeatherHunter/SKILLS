@@ -15,6 +15,21 @@ from cli_formatter import emit, parse_json_flag, error
 import validators  # 决策 3:接入 validate_relation_type
 
 
+def _resolve_recipe_id(name_or_id: str) -> str | None:
+    """接受菜名或 recipe_id,返 ID(优先精确匹配,fallback 模糊匹配)"""
+    if not name_or_id:
+        return None
+    # 先精确匹配 ID
+    r = query("SELECT id, name FROM recipes WHERE id = ?", (name_or_id,))
+    if r:
+        return r[0]["id"]
+    # fallback 模糊匹配菜名
+    r = query("SELECT id, name FROM recipes WHERE name LIKE ?", (f"%{name_or_id}%",))
+    if r:
+        return r[0]["id"]
+    return None
+
+
 def _out(json_mode: bool, status: str, data: dict = None, message: str = "", **kwargs):
     """统一 emit helper:json_mode 走 emit(JSON),否则 print(人类友好)
     L3 补漏:所有子函数用此 helper 输出,避免 print + JSON 混用"""
@@ -119,11 +134,20 @@ def add(args):
 def list_parent(args):
     """查看某食谱的父级"""
     json_mode = args.get("_json_mode", False)
-    recipe_id = args.get("<recipe_id>")
-    if not recipe_id:
-        _out(json_mode, "error", message="请提供食谱ID", error="missing_recipe_id")
+    name_or_id = args.get("<recipe_id>")
+    if not name_or_id:
+        _out(json_mode, "error", message="请提供食谱ID或菜名", error="missing_recipe_id")
         if not json_mode:
             print("错误:请提供食谱ID")
+        return False
+
+    # 接受菜名或 recipe_id(list_parent/list_child 友好接口)
+    recipe_id = _resolve_recipe_id(name_or_id)
+    if not recipe_id:
+        _out(json_mode, "error", message=f"未找到食谱:{name_or_id}",
+             error="recipe_not_found", query=name_or_id)
+        if not json_mode:
+            print(f"未找到食谱:{name_or_id}")
         return False
 
     recipe = query("SELECT name FROM recipes WHERE id = ?", (recipe_id,))

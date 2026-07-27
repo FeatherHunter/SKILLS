@@ -80,6 +80,27 @@ def test_help_html_renders():
         assert s.get("status", "") in ("", "【待开发】"), \
             f"非法 status: {s.get('status')!r}"
 
+    # P1-10 prompt 尾部填入形式(用户反馈:复制后不需删改)
+    # 无字段场景(如 inventory_all) 可保持纯意图,无需 "请填入:"
+    # 无字段场景(纯意图类)可保持简答,无 "请填入:";
+    # 一律要求足 echo=on 的人类阅读体验:尾签可填。
+    no_field_ids = {"inventory_all", "stats_summary", "outfit_pick",
+                    "lint_health", "travel_return", "help_center",
+                    "tag_list", "account_list", "search_express"}
+    for s in scenarios:
+        p = s.get("prompt", "")
+        sid = s.get("scenario_id", "")
+        if sid in no_field_ids:
+            continue  # 无字段场景可不带 tail-input
+        assert "请填入:" in p, f"prompt 缺尾部填入格式: {sid!r} → {p[:60]!r}"
+        assert "___" in p, f"prompt 缺字段占位符 ___: {sid!r}"
+        forbidden = ["[物品名]", "[位置]", "[标签]", "[状态]", "[N]", "[新值]",
+                      "[旧位置]", "[新位置]", "[数量]", "[物品名,放在",
+                      "[平台", "[用户名]", "[密码]", "[密钥]", "[日期]",
+                      "[物品清单]", "[分类(衣物", "[参考物品名]"]
+        bad = [f for f in forbidden if f in p]
+        assert not bad, f"prompt {sid!r} 含旧占位符 {bad}"
+
 
 def test_help_payload_via_skills_dir(tmp_path):
     """实际跑 `python home_manager.py help` 然后验证 payload JSON 解析成功"""

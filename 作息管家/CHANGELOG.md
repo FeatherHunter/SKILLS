@@ -312,6 +312,74 @@ Tested-By: pending-FAT
 
 ---
 
+### 🔧 Phase C.2e · 修正 HELP 命名(从 timestamp 改为覆盖写)
+
+**动机**:Phase C.2c/d 用了作息管家 record 域 `_naming_path` 模式(`help_center_<TIMESTAMP>.html`),但这是 record 域的特殊约定(数据快照归档)。HELP HTML 属于"能力速查",场景资产更新时重新渲染,**无历史快照归档需求**,应覆盖写而非带 timestamp。
+
+**重要修正**:总纲 V1.0 没有对"脚本执行后生成的 HTML 文件"定义明确的命名规则。§04 原则 9 "命名不带版本"是针对**模板文件**的命名建议,不是生成产物。所以本次修复的理由是"作息管家自身场景的合理选择",而非"符合总纲强制规则"。
+
+### 修复内容
+
+**`scripts/help_render.py`**:
+- ❌ 删 `help_naming_path()` 函数(带 timestamp + 同秒冲突保护)
+- ✅ 新增 `help_output_path()` 函数:返回 `schedule_html/help/help_center.html`(覆盖写)
+- ✅ `main()` 调用 `help_output_path()`(替代 `help_naming_path()`)
+- ✅ docstring 更新为"作息管家场景的合理选择"
+- ✅ `--out` help text 更新
+
+**`SKILL.md`**:
+- ✅ HELP 唤醒词描述:`help_center_<TIMESTAMP>.html` → `help_center.html`
+- ✅ 路由表 HELP 行"输出形式"列同步
+- ✅ HTML-First 判定流程 HELP 分支同步
+
+### 为什么 HELP 不需要 timestamp(record 域需要)
+
+| 维度 | record 域 | HELP |
+|---|---|---|
+| 数据性质 | 每天多次 add,可变(写库) | 场景资产,更新时重新渲染 |
+| 历史快照 | 需要(查询 7 天前作息) | 不需要(场景资产是最新事实) |
+| 命名约定 | `_naming_path` 带 timestamp | 覆盖写(总纲原则 9 精神) |
+| 输出方式 | 不覆盖(append 多次) | 覆盖写(场景资产更新即重渲) |
+
+### 总纲 §04 原则 9 的应用范围
+
+- ✅ **针对模板文件**:`templates/review_report.html`(一个功能 = 一个文件)
+- ❌ 不针对**生成产物**:作息管家 record 域用 `_naming_path` 是合法的(因为是数据快照)
+
+### 验证
+
+```
+$ python3 scripts/help_render.py
+{
+  "status": "ok",
+  "data": {
+    "file_path": "$SKILLS_DB_PATH/schedule_html/help/help_center.html",
+    "wakeword_count": 28,
+    "scenario_count": 73
+  }
+}
+```
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` 重构路径函数
+- HTML:`作息管家.html` 0 改动
+- DB schema:无变化
+- 测试:0 改动
+- 向后兼容:✅ 路径格式变化(从带 timestamp 到不带 timestamp),用户重复 generate 会覆盖(语义明确)
+
+### Tested-By
+
+```
+Tested-By: pending-FAT
+  - 验证项: 1) 路径不再带 timestamp
+           2) 第二次跑是否覆盖第一次(场景资产未变情况下)
+           3) 路径是否符合作息管家 HELP 场景的合理选择
+  - 验证方法: 跑 2 次 help_render.py,检查 file_path 完全一致 + mtime 更新
+```
+
+---
+
 ### 📋 Phase D.1 · 域边界声明 + 跨 Skill 路由(替代拆 Skill 方案)
 
 **动机**:Phase D 原计划是拆作息管家为 2 个 Skill(record/plan),用户决策后改为"宽 Skill + 描述清晰化"。理由:1)端到端闭环(商量→复盘)跨域,拆分会破坏流程;2)宽 Skill 内嵌紧模块是合理设计;3)风险最低,无破坏性。

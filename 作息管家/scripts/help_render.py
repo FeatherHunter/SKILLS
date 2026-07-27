@@ -7,11 +7,12 @@
 
 用法:
     python scripts/help_render.py [--out <path>]
-    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/help_center_<TIMESTAMP>.html
+    # 默认写到 $SKILLS_DB_PATH/schedule_html/help/help_center.html(覆盖写)
 
-输出路径(作息管家既有命名规范,与 schedule_html_render.py::_naming_path 对齐):
-    SKILLS_DB_PATH/schedule_html/help/help_center_<YYYYMMDD>_<HHMMSS>.html
-    命名格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(N = 同秒冲突保护)
+输出路径(总纲 §04 原则 9 · 命名不带版本 · 一个功能 = 一个文件):
+    SKILLS_DB_PATH/schedule_html/help/help_center.html
+    不带时间戳:HELP 是场景资产的一次性渲染,场景资产更新即重新 generate 覆盖,
+    不需要历史快照归档(与 record 域 _naming_path 带时间戳不同)
     子目录: schedule_html/help/(与 record/day, plan/list 等同级)
 
 约束(§07 §5):
@@ -49,25 +50,18 @@ def get_html_base_dir() -> Path:
     return Path(db_dir) / "schedule_html"
 
 
-def help_naming_path() -> Path:
-    """作息管家命名规范:<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+def help_output_path() -> Path:
+    """HELP HTML 输出路径(总纲 §04 原则 9 · 命名不带版本)
 
-    与 schedule_html_render.py::_naming_path 同款。
-    command = "help_center",subdir = "help"
+    一个功能 = 一个文件,覆盖写(场景资产更新时重新渲染)。
+    不带时间戳的原因:HELP 是场景资产的一次性渲染快照,
+    用户不需要查历史版本(场景资产本身就是最新事实)。
+    与作息管家 record 域 `_naming_path`(带时间戳,数据快照)的差异,
+    因为 HELP 不存在"历史快照归档"需求。
     """
     base = get_html_base_dir() / "help"
     base.mkdir(parents=True, exist_ok=True)
-    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    target = base / f"help_center_{stamp}.html"
-    if not target.exists():
-        return target
-    n = 2
-    while n < 1000:
-        candidate = base / f"help_center_{stamp}_{n}.html"
-        if not candidate.exists():
-            return candidate
-        n += 1
-    raise RuntimeError(f"冲突保护超过 1000 次:help_center_{stamp}")
+    return base / "help_center.html"
 
 
 def load_scenarios() -> tuple[list[dict], str | None]:
@@ -255,8 +249,8 @@ def main():
         type=str,
         default=None,
         help=(
-            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/"
-            "help_center_<YYYYMMDD>_<HHMMSS>.html,与作息管家 _naming_path 同款)"
+            "输出路径(默认: $SKILLS_DB_PATH/schedule_html/help/help_center.html,"
+            "总纲 §04 原则 9 命名不带版本)"
         ),
     )
     args = parser.parse_args()
@@ -264,7 +258,7 @@ def main():
     if args.out:
         out_path = Path(args.out)
     else:
-        out_path = help_naming_path()
+        out_path = help_output_path()
 
     result = render(out_path)
     print(json.dumps(result, ensure_ascii=False, indent=2))

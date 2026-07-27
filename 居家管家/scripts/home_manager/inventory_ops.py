@@ -742,7 +742,7 @@ def _stats_summary(conn):
     all_statuses = ["在家", "备用", "穿着中", "旅游中", "洗护中",
                     "借用中", "维修中", "已用完", "快递中", "待处理", "已废弃"]
 
-    print(f"物品总数:{total} 件  |  有价物品:{priced['priced_cnt']} 件  |  总价值:¥{priced['total_value']:.2f}")
+    print(f"物品总数:{total} 件  |  有价物品:{priced['priced_cnt']} 件  |  总价值:¥{priced['total_value'] or 0:.2f}")
     print(f"位置记录总数:{total_in_items}")
     print("-" * 40)
     print("各状态分布:")

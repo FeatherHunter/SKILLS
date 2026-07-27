@@ -71,11 +71,9 @@ def _expand_category_ids(conn, cat_id):
 
 
 def _category_condition(category_id):
-    """生成 (conditions, params) 片段:支持二级/顶级自动展开下级"""
-    ids = _expand_category_ids(_category_name_cache.get('__conn__'), category_id) \
-        if '__conn__' in _category_name_cache else None
-    # 上面这行只是占位,实际使用见下
-    return None  # 实际在函数里直接展开
+    """DEPRECATED 死代码(P1-3):实际工作的是 _category_in_clause(conn, category_id)。
+    保留空函数占位避免破坏外部 import(grep 全代码无引用,Phase 2 清理)。"""
+    return None
 
 
 def _category_in_clause(conn, category_id):

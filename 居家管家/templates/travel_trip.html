@@ -106,7 +106,7 @@ function paintAll(){
   const q=FILTER.toLowerCase();
   let visible=0;
   DATA.items.forEach(it=>{
-    const tags=arr(it.tags).join(' ');
+    const tags=arr(it.tags).map(t=>esc(t)).join(' ');
     const matchText=!q||(it.name||'').toLowerCase().includes(q)||tags.toLowerCase().includes(q);
     const matchCat=!CAT||Number(it.top_category_id)===Number(CAT);
     const match=matchText&&matchCat;

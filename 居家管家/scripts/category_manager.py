@@ -47,12 +47,10 @@ def _validate_name(name, parent_name=None, conn=None):
     if re.match(r"^\d+[\.\s\)\,\:]", n) or re.match(r"^\[\d+\]", n) or re.match(r"^（\d+）", n):
         raise ValueError(f"name 禁数字前缀: '{n}'(id 是 DB 自带编号,name 不应再加)")
 
-    # emoji 检查(覆盖常见 unicode 范围)
+    # emoji 检查(用 unicodedata.category('So') 覆盖所有 emoji,包括 13+ 新增范围)
+    import unicodedata
     for c in n:
-        cp = ord(c)
-        if (0x1F300 <= cp <= 0x1FAFF
-            or 0x2600 <= cp <= 0x27BF
-            or 0x1F000 <= cp <= 0x1F2FF):
+        if unicodedata.category(c) == 'So':
             raise ValueError(f"name 禁 emoji: '{n}'")
 
     # 同 parent 唯一

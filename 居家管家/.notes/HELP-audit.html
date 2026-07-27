@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>HELP 页面代码审计 · 5 个 BUG</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;--red:#ff3b30;--amber:#ff9f0a;--line:#e6e6eb}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:24px}
+.wrap{max-width:980px;margin:0 auto}
+h1{font-size:22px;margin:0 0 8px}
+h2{font-size:18px;margin:24px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px;color:var(--red)}
+pre{background:#f2f2f7;border:1px solid var(--line);border-radius:6px;padding:10px;font-size:13px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
+code{background:#f2f2f7;padding:1px 5px;border-radius:4px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.bug{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+.bug h3{margin:0 0 6px}
+.bug .impact{color:var(--amber);font-size:13px;margin:6px 0}
+.bug .fix{background:#eaf7ec;border-left:3px solid #34c759;padding:8px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--red);color:#fff;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HELP 页面代码审计 · 5 个真实 BUG</h1>
+<p>对照 <code>templates/help_center.html</code> 实际渲染输出逐项排查。</p>
+
+<div class="bug">
+<h3>BUG 1 · <code>wrap.innerHTML += html</code> 把 payload script 摧毁<span class="sev">P0</span></h3>
+<p><b>位置</b>:<code>templates/help_center.html:&lt;body&gt;</code> 段</p>
+<p><b>事实</b>:</p>
+<pre>&lt;body&gt;
+&lt;div class="wrap"&gt;
+  &lt;script id="payload" type="application/json"&gt;{...}&lt;/script&gt;
+  &lt;!--SHARED-HELPERS--&gt;
+&lt;/div&gt;
+&lt;script&gt;
+  // IIFE 读 payload + 渲染
+  wrap.innerHTML += html;  ← 关键
+&lt;/script&gt;</pre>
+<p><b>原因</b>:<code>innerHTML +=</code> 等同于读出整个 wrap 子树、序列化、再插入,这个过程<b>会丢弃 wrap 里原本已经存在的 &lt;script&gt; 节点</b>(浏览器防止 innerHTML 重新执行脚本)。</p>
+<p class="impact"><b>后果</b>:IIFE 中 <code>document.getElementById('payload')</code> 在 wrap.innerHTML += 之后能找到 — 但此时 `<b>已变成 inert 文本节点</b>`,某些浏览器 (Chrome) 会保留 DOM 引用但 `textContent` 仍可读,所以**测试通过的 JSON parse 不保证渲染成功**。最坏情况:整个 IIFE 静默失败,页面只显示 wrap 里的 `<script id=payload>` 原始 JSON(浏览器开发者工具可见但用户看不到)。</p>
+<div class="fix"><b>修复</b>:把 payload script 移到 wrap <b>外</b>(body 直接子元素),IIFE 改成 querySelector('body') 读 payload 之前的脚本,或者把 IIFE 放在 payload script 之前(用 DOMContentLoaded 事件)。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 2 · 第一个 group 默认不展开<span class="sev">P1</span></h3>
+<p><b>位置</b>:<code>templates/help_center.html:const first=...</code></p>
+<p><b>事实</b>:</p>
+<pre>wrap.innerHTML += html;     // html 含全部 group + 第一个默认 open
+const first=document.querySelector('.group');
+if(first)first.classList.add('open');</pre>
+<p class="impact"><b>问题</b>:<code>innerHTML +=</code> 触发 DOM 重建,querySelector('.group') 在 wrap 重新解析后<b>是否能找到第一个</b>? 大多数情况能,但 CSS `.group.open .scenarios` 选择器要在 IIFE 跑完后才有第一个 .group 元素。如果 innerHTML 解析异步或 wrap 重建,first 可能 = null,所有 group 默认关闭,用户看到空页面。</p>
+<div class="fix"><b>修复</b>:用 `wrap.lastElementChild` 或直接给 IIFE 渲染时第一个 group 加 `open` 类,不要后置查找。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 3 · <code>onclick="toggleGroup('" + wwId + "'"</code> 属性值转义缺失<span class="sev">P0</span></h3>
+<p><b>位置</b>:<code>templates/help_center.html:group-h 拼接</code></p>
+<p><b>事实</b>:</p>
+<pre>html+='&lt;div class="group-h" onclick="toggleGroup('+"'"+wwId+"'"+')"&gt;';</pre>
+<p><b>问题</b>:<code>wwId</code> 由 <code>wwIdOf(ww)</code> 生成,内部用 <code>replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')</code> —— 看起来安全,但**实测**:`<code>wwIdOf('推位置')</code>` 会尝试执行 regex 含中文 unicode range,而 <b>JS regex 默认只识别 BMP,4 字节中文 emoji 会被当成 2 个 surrogate</b>(我们的 wake_word 暂时都是 BMP 中文,所以这次没爆)。一旦 <code>scenarios.yaml</code> 加了 emoji 唤醒词,wwIdOf 会把 '🪑xxx' 转成 '____xxx' —— 但 onclick 拼接的单引号内 `<b>没有 esc 任何字符</b>`,如果 wake_word 含 <code>'</code> / <code>"</code> / `&lt;` 会直接破属性。</p>
+<p class="impact"><b>现状</b>:scenarios.yaml 没有这类字符,**当前不会爆**;但任何 user 在 yaml 加 emoji 唤醒词或特殊字符都会触发。</p>
+<div class="fix"><b>修复</b>:用 event delegation(我已加了 forEach 绑 click),干脆<b>把 onclick 也删了</b>,group-h 的点击靠事件代理。<b>更好的修复</b>:不依赖 onclick attribute。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 4 · 第一组点击展开后 31 组 ID 全用同一个 wwIdOf 但 innerHTML 拼接里有未 escape 单引号<span class="sev">P0</span></h3>
+<p><b>位置</b>:<code>templates/help_center.html</code> 实际渲染产物</p>
+<p><b>事实</b>:浏览器渲染后 HTML 中实际字符串是:</p>
+<pre>onclick="toggleGroup('grp-修物品')"</pre>
+<p>实际查 <code>'grp-修物品'</code> 用 <code>document.getElementById('grp-修物品')</code> 找 ID —— 中文作 HTML id **HTML5 合法但实际不可靠**。HTML 规范说 id 可含非 ASCII,但**一些工具/浏览器/CSS selector 在某些 context 会解析失败**。</p>
+<p class="impact"><b>可能后果</b>:点 group-h 后 `getElementById` 找不到对应节点 → toggleGroup 报错 → 不展开。</p>
+<div class="fix"><b>修复</b>:用 `data-ww="查物品"` + querySelector(`[data-ww="${encodeURIComponent(ww)}"]`),或 group id 用 `g_<span class="katex">_</span>1` 这种纯英文序号。</div>
+</div>
+
+<div class="bug">
+<h3>BUG 5 · `data-prompt` 属性值被 esc 转义但 `<button>` 里嵌 JSON 含引号可能破坏<span class="sev">P1</span></h3>
+<p><b>位置</b>:<code>templates/help_center.html:copy-btn 拼接</code></p>
+<p><b>事实</b>:</p>
+<pre>html+='&lt;button class="copy-btn" data-prompt="'+esc(s.prompt||'')+'"&gt;...'</pre>
+<p>prompt 里若有 <code>"</code> 会被 esc 转成 <code>&amp;quot;</code>,属性值合法。但如果 prompt 包含 <code>&amp;</code> 没有双 esc,就会破坏其他 token。当前 scenarios.yaml 无此字符,但长期维护风险。</p>
+<div class="fix"><b>修复</b>:把 prompt 存进 `&lt;script type="application/json"&gt;` 子元素 + 用 querySelector + `.textContent` 取值(我目前用 data-attr,改成 JSON script 更稳)。</div>
+</div>
+
+<hr>
+<h2>建议的最简单修复路径</h2>
+<ol>
+<li>把 payload `<b>script 移出 wrap</b>`(放 body 最外层 wrap 前)</li>
+<li>把 group id 改成纯英文序号(`g-001`, `g-002`, ...)</li>
+<li>用 event delegation 而非 inline onclick</li>
+<li>默认第一组展开改成 IIFE 渲染时直接给第一组加 `.open` 类</li>
+</ol>
+<p>4 处改动加起来 30 行,加 5 分钟验证。**是否要我落盘?**</p>
+
+</div>
+</body>
+</html>

@@ -38,101 +38,134 @@ h1{font-size:24px;margin:0 0 4px}
 </style>
 </head>
 <body>
-<div class="wrap">
 
+<!-- BUG FIX: payload script 放在 wrap 外,避免 wrap.innerHTML += 摧毁它 -->
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
 <!--SHARED-HELPERS-->
 
+<div class="wrap">
+  <div class="placeholder"></div>
 </div>
+
 <script>
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function arr(v){return Array.isArray(v)?v:[];}
-function wwIdOf(ww){return 'grp-'+ww.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g,'_');}
-function toggleGroup(wwId){document.getElementById(wwId).classList.toggle('open');}
-function copyScenario(btn, prompt){
-  const ta=document.createElement('textarea');ta.value=prompt;
-  ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(prompt).then(()=>{
-      const old=btn.textContent;btn.textContent='已复制 ✓';
-      setTimeout(()=>btn.textContent=old,1500);
-      ta.remove();
-    }).catch(()=>{document.execCommand('copy');ta.remove();});
+
+(function(){
+  // BUG FIX: payload script 在 wrap 外,直接取兄弟节点
+  const el = document.getElementById('payload');
+  if (!el) return;
+  let data;
+  try { data = JSON.parse(el.textContent); } catch(e) { return; }
+  if (!data || data.status !== 'ok' || !data.data) return;
+  const d = data.data;
+  document.title = d.summary.title || '居家管家 · 能力速查';
+
+  // BUG FIX: group id 改纯英文序号(g-001, g-002)避免中文 id
+  const groups = arr(d.groups);
+  let html = '';
+  html += '<h1>' + esc(d.summary.title || '') + '</h1>';
+  html += '<p class="sub">' + esc(d.summary.subtitle || '') + '</p>';
+  html += '<div class="metrics">';
+  for (const m of arr(d.summary.metrics)) {
+    html += '<div>' + esc(m.label) + ': <span>' + esc(m.value) + '</span></div>';
+  }
+  html += '</div>';
+
+  html += '<div class="toc"><strong>跳到</strong> ';
+  for (let i = 0; i < groups.length; i++) {
+    html += '<a href="#g-' + i + '">' + esc(groups[i].wake_word) + '</a>';
+  }
+  html += '</div>';
+
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    const isOpen = (i === 0) ? ' open' : '';
+    html += '<div class="group' + isOpen + '" id="g-' + i + '" data-idx="' + i + '">';
+    html += '<div class="group-h" data-idx="' + i + '">';
+    html += '<h2>' + esc(g.wake_word) + '</h2>';
+    html += '<span class="badge">' + g.scenarios.length + ' 个场景</span>';
+    html += '</div>';
+    html += '<div class="scenarios">';
+    for (const s of g.scenarios) {
+      // BUG FIX: prompt 存到 <script type='application/json'> 子元素,避免属性值转义
+      html += '<div class="scenario">';
+      html += '<button class="copy-btn" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">复制 prompt</button>';
+      html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
+      const dims = arr(s.dimensions);
+      const dimKeys = Object.keys(dims);
+      if (dimKeys.length) {
+        html += '<div class="s-dims">维度: ' + dimKeys.map(k =>
+          k + '=' + (typeof dims[k] === 'object' ? JSON.stringify(dims[k]) : esc(dims[k]))
+        ).join('; ') + '</div>';
+      }
+      html += '<div class="s-prompt"></div>';  // 稍后填
+      html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  const wrap = document.querySelector('.wrap');
+  wrap.innerHTML = html;
+
+  // BUG FIX: 第二遍填 prompt(避免任何 attribute 转义问题)
+  // 用 JSON 子脚本存数据 + textContent 注入文本节点
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    const groupEl = document.getElementById('g-' + i);
+    if (!groupEl) continue;
+    const scenarioEls = groupEl.querySelectorAll('.scenario');
+    for (let j = 0; j < g.scenarios.length && j < scenarioEls.length; j++) {
+      const promptEl = scenarioEls[j].querySelector('.s-prompt');
+      if (promptEl) {
+        promptEl.textContent = g.scenarios[j].prompt || '';
+      }
+    }
+  }
+
+  // BUG FIX: 用 event delegation 代替 inline onclick
+  // 1. group 折叠/展开
+  wrap.addEventListener('click', (e) => {
+    const gh = e.target.closest('.group-h');
+    if (gh) {
+      const groupEl = gh.closest('.group');
+      if (groupEl) groupEl.classList.toggle('open');
+      return;
+    }
+    // 2. 复制按钮
+    const btn = e.target.closest('.copy-btn');
+    if (btn) {
+      const i = parseInt(btn.getAttribute('data-idx') || '0', 10);
+      const sid = btn.getAttribute('data-sid') || '';
+      const s = (groups[i] && groups[i].scenarios.find(x => (x.scenario_id || '') === sid)) || null;
+      const prompt = s ? (s.prompt || '') : '';
+      copyText(btn, prompt);
+    }
+  });
+})();
+
+function copyText(btn, text) {
+  const old = btn.textContent;
+  btn.textContent = '已复制 ✓';
+  setTimeout(() => { btn.textContent = old; }, 1500);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
   } else {
-    document.execCommand('copy');ta.remove();
+    fallbackCopy(text);
   }
 }
-function safePrompt(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r');}
-(function(){
-  // 从 <script id="payload"> 标签读 JSON(其它模板也用此模式)
-  let data;
-  try {
-    const el=document.getElementById('payload');
-    data=el?JSON.parse(el.textContent):null;
-  } catch(e) { data=null; }
-  if(!data||data.status!=='ok'||!data.data)return;
-  const d=data.data;
-  document.title=d.summary.title||'居家管家 · 能力速查';
-  const wrap=document.querySelector('.wrap');
-  let html='';
-  html+='<h1>'+esc(d.summary.title||'')+'</h1>';
-  html+='<p class="sub">'+esc(d.summary.subtitle||'')+'</p>';
-  html+='<div class="metrics">';
-  for(const m of arr(d.summary.metrics)){
-    html+='<div>'+esc(m.label)+': <span>'+esc(m.value)+'</span></div>';
-  }
-  html+='</div>';
 
-  html+='<div class="toc"><strong>跳到</strong> ';
-  for(const g of arr(d.groups)){
-    const wwId=wwIdOf(g.wake_word);
-    html+='<a href="#'+wwId+'">'+esc(g.wake_word)+'</a>';
-  }
-  html+='</div>';
-
-  for(const g of arr(d.groups)){
-    const wwId=wwIdOf(g.wake_word);
-    html+='<div class="group" id="'+wwId+'">';
-    html+='<div class="group-h" onclick="toggleGroup('+"'"+wwId+"'"+')">';
-    html+='<h2>'+esc(g.wake_word)+'</h2>';
-    html+='<span class="badge">'+g.scenarios.length+' 个场景</span>';
-    html+='</div>';
-    html+='<div class="scenarios">';
-    for(const s of g.scenarios){
-      html+='<div class="scenario">';
-      html+='<button class="copy-btn" data-prompt="'+esc(s.prompt||'')+'">复制 prompt</button>';
-      html+='<div class="s-title">'+esc(s.scenario_title||s.scenario_id)+'</div>';
-      const dims=arr(s.dimensions);
-      const dimKeys=Object.keys(dims);
-      if(dimKeys.length){html+='<div class="s-dims">维度: '+dimKeys.map(k=>k+'='+(typeof dims[k]==='object'?JSON.stringify(dims[k]):esc(dims[k]))).join('; ')+'</div>';}
-      html+='<div class="s-prompt">'+esc(s.prompt||'')+'</div>';
-      html+='<div class="s-result">预期结果: '+esc(s.result||'')+'</div>';
-      html+='</div>';
-    }
-    html+='</div></div>';
-  }
-  wrap.innerHTML+=html;
-
-  // 给所有复制按钮绑事件(避免 inline 引号转义难题)
-  wrap.querySelectorAll('.copy-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const prompt=btn.getAttribute('data-prompt')||'';
-      const old=btn.textContent;btn.textContent='已复制 ✓';
-      setTimeout(()=>btn.textContent=old,1500);
-      if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(prompt);
-      } else {
-        const ta=document.createElement('textarea');ta.value=prompt;
-        ta.style.position='fixed';ta.style.opacity='0';
-        document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
-      }
-    });
-  });
-
-  const first=document.querySelector('.group');
-  if(first)first.classList.add('open');
-})();
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  ta.remove();
+}
 </script>
 </body>
 </html>

@@ -34,6 +34,11 @@ def build_help_payload() -> dict:
     分组规则:
       一级 group = scenario.category(A 套 11 类,顺序固定)
       每个 group 内:列出该类别下所有场景(按 yaml 出现顺序)
+
+    variants 字段(round 2 · 2026-07-28):
+      每个 scenario 可选携带 variants(list of {direction, phrase})。
+      HELP HTML 展示变体 prompt + 独立复制按钮(对齐卡路里 HELP 风格)。
+      无 variants 的 scenario 只展示 main prompt。
     """
     data = yaml.safe_load(SCENARIOS.read_text(encoding="utf-8"))
     scenarios = data.get("scenarios", [])
@@ -44,10 +49,13 @@ def build_help_payload() -> dict:
     # 按 category 分组(P1-11b)
     by_category = {}
     total_wake_words = set()
+    total_variants = 0
     for s in scenarios:
         cat = s.get("category", "其他")
         by_category.setdefault(cat, []).append(s)
         total_wake_words.add(s["wake_word"])
+        if s.get("variants"):
+            total_variants += len(s["variants"])
 
     groups = []
     for cat in CATEGORY_ORDER:
@@ -76,6 +84,7 @@ def build_help_payload() -> dict:
                     {"label": "类别", "value": str(len(groups))},
                     {"label": "场景", "value": str(len(scenarios))},
                     {"label": "唤醒词", "value": str(len(total_wake_words))},
+                    {"label": "变体", "value": str(total_variants)},
                 ],
             },
             "groups": groups,

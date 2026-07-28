@@ -26,18 +26,18 @@
 | `docs/adr/*.md` | 架构决策记录(ADR-0001/0002/0003 已落盘) |
 | `CHANGELOG.md` | 12 个 Phase 变更日志 |
 
-## 当前阶段(2026-07-28 Grilling 闭环)
+## 当前阶段(2026-07-29 Phase A-3 + Q5 + Q6 + Q7 + Phase B 全部落地)
 
-8 决策全部答完,3 份 ADR 落盘,4 个实施 Phase 待执行:
+8 决策全部答完,3 份 ADR 落盘,4 个实施 Phase **全部完成**:
 
-| Phase | 工作 | 阻力 | Tested-By |
-|---|---|---|---|
-| **A-3** | ADR-0001 · `help_render.py` 同步作息管家.html | 最小 | exempt |
-| A-2 | Q8 · 补 `AGENTS.md`(本文件) | 小 | exempt |
-| A-1 | Q5+Q6+Q7 · 路径对齐 + 复制 prompt + 内部分组 | 大 | **pending-FAT** |
-| B | pytest + FAT 验证 | — | — |
+| Phase | 工作 | 阻力 | Tested-By | 状态 |
+|---|---|---|---|---|
+| **A-3** | ADR-0001 · `help_render.py` 同步作息管家.html | 最小 | exempt | ✅ 完成(commit 6ebe69c) |
+| A-2 | Q8 · 补 `AGENTS.md`(本文件) | 小 | exempt | ✅ 完成(commit 633abc4) |
+| A-1 | Q5+Q6+Q7 · 路径对齐 + 复制 prompt + 内部分组 | 大 | pytest-pass | ✅ 完成(commit c17d490 / f092476 / faf8839 / 5952b1d / 9dfd351 / 5ceccb7 / 63cb8b6) |
+| B | pytest + FAT 验证 + CHANGELOG | — | pytest-pass | ✅ 完成(162 用例全过) |
 
-> **本文件就是 Phase A-2 的实施产物**。落地后更新此处的 "Phase A-2" 状态为"完成"。
+> **本文件已于 2026-07-29 更新**:所有 Phase 状态从"待执行"改为"完成"。下次启动新 Grilling 时,在下方追加新阶段。
 
 ## Agent 工作约定
 

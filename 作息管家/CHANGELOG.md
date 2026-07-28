@@ -4,9 +4,84 @@
 
 ---
 
+## [Unreleased] · 2026-07-29
+
+### 🚀 Phase A-3 + Q5 + Q6 + Q7 · ADR-0001/0002/0003 落地(2026-07-28 ~ 2026-07-29)
+
+**动机**:基于 2026-07-28 Grilling Session 8 决策闭环(Q1-Q8)+ 3 份 ADR(0001/0002/0003),落地 4 个实施 Phase。本次为对用户有感知的命名 / 复制 prompt / HELP 入口重构。
+
+### Phase A-3 · ADR-0001 作息管家.html 稳定入口(commit 6ebe69c)
+
+- ✅ `scripts/help_render.py` 新增 `sync_to_stable_mirror()`:render() 主流程完成后自动覆盖写根目录 `作息管家.html`
+- ✅ `data.mirror_path` 字段返回镜像路径(IDE 即开即看,无需跳 schedule_html/help/ 找最新 timestamp)
+- ✅ `作息管家.html` 从 914 行用户手册(旧)重渲为 583 行 HELP 中心(对标卡路里)
+- ✅ `tests/test_help_sync.py`:3 用例锁住 ADR-0001 契约(byte-identical + 覆盖写 + message 含镜像)
+
+### Phase A-1 · Q5 路径对齐(ADR-0002 · commit c17d490 + faf8839 + 9dfd351)
+
+**新增**:
+- ✅ `CN_COMMAND_MAP`:14 模板英文 command → 中文 command 名映射(record/plan/receipt 3 域分组)
+- ✅ `default_output_path` / `record_output_path`:全 mode 输出 `<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`
+- ✅ `tests/test_naming_cn.py`:5 用例覆盖中文 command 接受 + 冲突保护 + 14 模板映射契约
+- ✅ `tests/test_naming_migrate.py`:17 用例覆盖 14 mode 中文 command + 隐私无 pid/rid 泄露
+
+**Q5 Contract(Issue 07 · commit faf8839)**:
+- ✅ `_naming_path` 新增 contract 检查:传 `CN_COMMAND_MAP` 里的英文 key(record_day / plan_list 等)抛 `ValueError`,错误文案含字段名+当前值+期望值+修复建议
+- ✅ 不在映射里的自定义 command(unknown / 测试 fixture)仍允许,避免破坏兜底
+
+**SKILL.md 路径引用对齐(commit 5952b1d + 9dfd351)**:
+- ✅ §路由表 输出形式列:20+ 条路由全部改为中文 command(record_day.html → 查作息记录.html 等)
+- ✅ §3.1.2 HTML 输出命名规则:目录树 + 命名细则 + 14 模板中文 command 映射表 + 互斥规则
+- ✅ §3.1.3 5 模板设计:触发词路由表 + 输出路径硬绑 + 示例 bash 全部对齐
+
+### Phase A-1 · Q6 单工铁律(ADR-0002 · commit f092476)
+
+**新增**:
+- ✅ `_build_record_copy_prompt(mode, meta, records, ...)`:record 域 6 模板共享 4 部分 prompt 构造器(场景/数据/期望/来源)
+- ✅ `_build_list_events_copy_prompt(date, plan_events)`:查日程专属 4 部分 prompt
+- ✅ `render_record_day/range/compare/category/anomaly/detail/list_events` 全部 payload 增加 `copy_prompt` 字段
+- ✅ `templates/_record_engine.js` 新增 `copyPromptBlock(data)`:6 模板共享复制按钮区(📋 图标 + 4 部分 prompt 预览 + 复制按钮 + 剪贴板 API + textarea fallback)
+- ✅ `templates/schedule_list_events.html` 新增 list_events 复制按钮区
+- ✅ `tests/test_copy_prompt.py`:16 用例锁住 14 模板全有 copy_prompt / prompts + 渲染 HTML 含复制按钮 marker
+
+### Phase A-1 · Q7 内部分组(ADR-0003 · commit f092476)
+
+- ✅ `CN_COMMAND_MAP` 4 域注释分组(record 报告型 6 / plan 过程型 3 / receipt 回执型 5 / help 域独立)
+- ✅ `default_output_path` / `record_output_path` 函数体 4 域注释分组,为将来拆 record_cli/plan_cli/receipt_cli/help_render 打基础
+- ✅ `tests/test_q7_grouping.py`:5 用例锁住 4 域注释存在 + schedule_cli.py 字节 < 150KB / 行数 < 4000(ADR-0003 触发条件未满足)
+
+### Phase A-1 · HELP Toast 升级(对标卡路里 v2.4.12 · commit 5ceccb7 + 63cb8b6)
+
+- ✅ `templates/help_center.html` toast 从单元素 `<div id="toast">` 升级为多段结构(对标卡路里):
+  - 📋 icon + "已复制 <em id="toastWake">唤醒词</em>" 标题 + "粘贴给 AI(微信/飞书/任何 AI 工具),作息管家技能会自动执行这个流程,完成后你会在飞书收到 HTML" 详情 + "✓ 知道了" 关闭按钮
+  - iOS 通知风格:`backdrop-filter: blur(20px) saturate(180%)` + `cubic-bezier(0.34, 1.56, 0.64, 1)` 弹性曲线 + `#4dd96b` 绿色 em 强调
+  - 移动端适配:`@media (max-width: 640px)` + `env(safe-area-inset-bottom)` iOS 安全区
+- ✅ JS `showToast(wake)`:从父级 `.ww-block > .ww-name` 取唤醒词名 + 拼接场景标题,toast 显示"已复制 #6 查作息 · 单日查看"
+
+### 影响范围
+
+- 代码:`scripts/help_render.py` / `scripts/schedule_html_render.py` / `templates/_record_engine.js` / `templates/schedule_list_events.html` / `templates/help_center.html`
+- HTML:`作息管家.html` 自动同步(ADR-0001)
+- DB schema:无变化
+- 测试:5 个新测试文件(test_help_sync / test_naming_cn / test_naming_migrate / test_copy_prompt / test_q7_grouping),共 46 个新用例,162 全过
+- 向后兼容:✅ 旧英文 command 名调用 `_naming_path` 会报 ValueError(契约强制);15 模板新增 copy_prompt 不影响旧 payload 字段
+
+### Tested-By
+
+```
+Tested-By: pytest-pass-2026-07-29
+  - 162 用例全过(含 46 个新增 · 5 个新测试文件)
+  - e2e smoke:render-record-day / render-record-range / render-receipt / help_render 全部输出中文 command 名
+  - HELP HTML toast 浏览器检查:icon + 标题 em + 详情 + 关闭按钮 + iOS 风格 CSS 全到位
+  - Q5 Contract 故意跑英文 record_day → 报清晰 ValueError(契约生效)
+```
+
+---
+
 ## [Unreleased] · 2026-07-25
 
 ### 📋 Phase A · 文档纪律 + 删自创"强制规定"(零代码改动)
+
 
 **动机**:基于对抗式审查报告(2026-07-25),发现 SKILL.md §"强制规定" 4 条中 3 条违反总纲 V1.0 元规范。本次为最小阻力 Phase A,只动文档,不动代码 / HTML / DB / 测试。
 

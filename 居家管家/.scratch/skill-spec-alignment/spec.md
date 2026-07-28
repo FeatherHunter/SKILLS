@@ -272,13 +272,26 @@ metadata:
 
 ## Progress
 
-- [x] Commit 2 · CONTEXT.md 加 Skill 标识约定 + 通用术语引用 — 2218313
-- [x] Commit 3 · ADR-0001 扩充合并"直接覆盖" — 07c633d（revert+redo of 0595641,因 GitHub Desktop 并行推送污染了 origin/main）
-- [x] Commit 4 · SKILL.md §HTML-First 章节 — eae4592
-- [x] Commit 5 · SKILL.md frontmatter help_wake_word + §路由表 第 1 行 — 8901058
-- [x] Commit 6 · scenarios.yaml 扩 variants + tests/test_variants.py (TDD) — cfe588c
-- [x] Commit 7 · SKILL.md §FAT 协议 + 分级 Tested-By — ac90753
+> **状态说明**:6 个 commit 的**文档层**已落地,但对抗式审查发现**行为层未验证**——
+> variants 语料无消费方、HTML-First 无硬执行、FAT 协议定义者自己没跑过 FAT。
+> 下列 `[x]` 表示文档完成,实际 AI 行为改善待 round 2 修正 + fresh-agent FAT 验证。
+
+- [x·文档完成·行为待 FAT 验证] Commit 2 · CONTEXT.md 加 Skill 标识约定 + 通用术语引用 — 2218313
+- [x·文档完成·行为待 FAT 验证] Commit 3 · ADR-0001 扩充合并"直接覆盖" — 07c633d（revert+redo of 0595641,因 GitHub Desktop 并行推送污染了 origin/main）
+- [x·文档完成·行为待 FAT 验证] Commit 4 · SKILL.md §HTML-First 章节 — eae4592（软规则声明,无硬执行机制,待 round 2 加自检清单）
+- [x·文档完成·行为待 FAT 验证] Commit 5 · SKILL.md frontmatter help_wake_word + §路由表 第 1 行 — 8901058（frontmatter 字段冗余,路由表第 1 行有效）
+- [x·文档完成·行为待 FAT 验证] Commit 6 · scenarios.yaml 扩 variants + tests/test_variants.py (TDD) — cfe588c（语料入库但无消费方,待 round 2 加变体匹配逻辑）
+- [x·文档完成·行为待 FAT 验证] Commit 7 · SKILL.md §FAT 协议 + 分级 Tested-By — ac90753（协议定义者自己违反,待 round 2 真 FAT 跑一遍）
 
 **最终验证**:`python -m pytest` → 129 passed (124 原有 + 5 新增 variants 测试)。
 **偏离记录**:commit 4 插入位置改为 §核心使用原则 之后(ticket 原说 §输出位置 之前,但 §输出位置 在 §核心使用原则 之前,顺序矛盾);commit 7 后界改为 §HTML 渲染器(ticket 原说 §场景资产 之前,但本 SKILL.md 无 §场景资产 章节)。
-**待办**:fresh-agent FAT 验证(commit 4/5/7 标了 `fresh-agent-v1` 声明性,实际验证待 round 1 收尾统一执行)。
+
+## Round 2 修正计划(对抗式审查结论)
+
+- [ ] P1-4 spec.md Progress 改标注(本 commit)
+- [ ] P1-3 §HTML-First 加 fail mode 自检清单
+- [ ] P2-5 scenarios.yaml 5 个 TOP scenario 加 status: 【待开发】(变体语料未经验证)
+- [ ] P0-1 §匹配规则 加变体匹配逻辑(让 variants 真正生效)
+- [ ] HELP HTML 复制 prompt UI 对齐卡路里风格(Toast + 4 状态按钮 + 变体展示)
+- [ ] P0-2 派 fresh subagent 跑 FAT 3 核心词 × ≥3 人类 prompt
+- [ ] 根据 FAT 结果修正 commit 4/5/7 的 Tested-By 标签(reword,因已推 origin 需新 commit 说明)

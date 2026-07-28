@@ -185,6 +185,7 @@ def cmd_search(keyword: str, output_path: str = None) -> bool:
             cli_data = call_cli("recipe_manager.py", "list")
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ search 失败: {e}", file=sys.stderr)
+        sys.exit(1)
         return False
     payload = adapt_search(keyword, cli_data)
     return render_html(payload, f"search_{slugify(keyword) if keyword else 'all'}", output_path)
@@ -195,6 +196,7 @@ def cmd_history(keyword: str, output_path: str = None) -> bool:
         cli_data = call_cli("history_manager.py", "list", keyword)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ history 失败: {e}", file=sys.stderr)
+        sys.exit(1)
         return False
     payload = adapt_history(keyword, cli_data)
     return render_html(payload, f"history_{slugify(keyword)}", output_path)
@@ -205,6 +207,7 @@ def cmd_stats(keyword: str, output_path: str = None) -> bool:
         cli_data = call_cli("history_manager.py", "stats", keyword)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ stats 失败: {e}", file=sys.stderr)
+        sys.exit(1)
         return False
     payload = adapt_stats(keyword, cli_data)
     return render_html(payload, f"stats_{slugify(keyword)}", output_path)
@@ -216,6 +219,7 @@ def cmd_relations(keyword: str, output_path: str = None) -> bool:
         child = call_cli("relation_manager.py", "list-child", keyword)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ relations 失败: {e}", file=sys.stderr)
+        sys.exit(1)
         return False
     payload = adapt_relations(keyword, parent, child)
     return render_html(payload, f"relations_{slugify(keyword)}", output_path)

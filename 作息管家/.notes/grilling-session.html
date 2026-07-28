@@ -3,56 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作息管家优化重构 · 全部共识达成 · Round 6</title>
+<title>作息管家优化重构 · Spec & Issues 发布完成 · Round 8</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --fg:#1d1d1d;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;
-    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
-    --blue:#007aff;--blue2:#0a63ce;
-    --green:#34c759;--warn:#ff9500;--purple:#6b21a8;
-    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
-  }
+  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--green:#34c759;--purple:#6b21a8;--shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
   html{scroll-behavior:smooth}
   body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;padding:48px 24px 96px}
   .wrap{max-width:960px;margin:0 auto}
-  .hero{background:linear-gradient(135deg,#e8f0ff 0%,#d6e5ff 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
-  .hero .eyebrow{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .hero{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .hero .eyebrow{font-size:12px;color:var(--green);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
   .hero h1{font-size:28px;line-height:1.18;letter-spacing:-.02em;margin-bottom:8px}
   .hero .lead{font-size:14.5px;color:var(--fg2);max-width:780px;margin-bottom:14px}
   .hero .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
-  .hero .stats b{color:var(--blue2);font-variant-numeric:tabular-nums}
+  .hero .stats b{color:var(--green);font-variant-numeric:tabular-nums}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
   .card h2{font-size:13px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;font-weight:700}
   .card h3{font-size:16px;font-weight:600;color:var(--fg);margin:12px 0 8px;letter-spacing:-.01em}
   .card p{font-size:14px;color:var(--fg);margin-bottom:8px;line-height:1.7}
-  .card ul,.card ol{margin:6px 0 10px 22px;font-size:13.5px;line-height:1.7}
-  .card li{margin-bottom:3px}
   .card code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#eef0f3;padding:2px 7px;border-radius:5px;font-size:.9em;color:#1d1d1f}
   table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
   th{text-align:left;background:#fafbff;color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700}
   td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--fg);vertical-align:top}
   tr:last-child td{border-bottom:none}
-  td code{font-size:.85em}
   .progress-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:#f0f0f2;margin:12px 0 6px}
   .progress-bar .filled{background:var(--green)}
   .progress-bar .pending{background:var(--warn);opacity:.4}
   .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;letter-spacing:.04em}
   .tag.done{background:#e3f9e8;color:#1c7a30}
-  .tag.skip{background:#f0f0f2;color:#6e6e73}
-  .tag.warn{background:#fff3e0;color:#c25c00}
-  .tag.adr{background:#f3e8ff;color:var(--purple)}
   .tag.next{background:#e8f0ff;color:var(--blue2)}
-  .adr-block{background:#faf5ff;border:1px solid #d8b4fe;border-radius:12px;padding:14px 18px;margin:12px 0;font-size:13.5px}
-  .adr-block .num{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--purple);font-weight:700;font-size:12.5px}
-  .adr-block .title{font-weight:600;color:#1d1d1f;font-size:14.5px;margin:4px 0 6px}
-  .adr-block .body{color:#374151;line-height:1.7;font-size:13px}
-  .phase-list{display:grid;gap:8px;margin:14px 0}
-  .phase{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;border-left:4px solid var(--blue)}
-  .phase.next{border-left-color:var(--warn);background:#fffaf0}
-  .phase .label{font-weight:600;color:var(--blue2);font-size:14px;margin-bottom:3px}
-  .phase.next .label{color:#c25c00}
-  .phase .desc{font-size:12.5px;color:var(--fg2);line-height:1.6}
+  .tag.adr{background:#f3e8ff;color:var(--purple)}
+  .file-tree{background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0;color:#7ee787}
   .footer{margin-top:36px;padding:20px 0;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line)}
   @media(max-width:720px){body{padding:32px 16px 60px}.hero{padding:28px 22px;border-radius:18px}.hero h1{font-size:22px}.card{padding:18px 20px;border-radius:14px}}
 </style>
@@ -61,143 +41,81 @@
 <div class="wrap">
 
 <header class="hero">
-  <div class="eyebrow">全部共识达成 · Round 6 · 2026-07-28</div>
-  <h1>作息管家优化重构 · 决策闭环 · 进入实施</h1>
-  <p class="lead">Q1-Q8 全部达成共识,ADR-0001/0002/0003 已落盘。Grilling 阶段结束,进入实施阶段(改动前必答 3 问已答完)。</p>
+  <div class="eyebrow">to-spec 完成 · Round 8 · 2026-07-28</div>
+  <h1>作息管家优化重构 · Spec & Issues 发布</h1>
+  <p class="lead">本会话目标:<b>①</b> 找出作息管家与总纲的差异并重构对齐;<b>②</b> 把作息管家.html 改造为 HELP HTML 脚本直接复制。<b>Grilling + to-spec 全部完成</b>,进入实施阶段。</p>
   <div class="stats">
-    <span>📍 <b>6 回合</b> 已对话</span>
-    <span>✅ <b>8 决策</b> 全部答完</span>
-    <span>📜 <b>3 ADR</b> 已落盘</span>
-    <span>⏳ <b>4 Phase</b> 待实施</span>
+    <span>📊 <b>2 commit</b> 本次会话(633abc4 + 0f05b54)</span>
+    <span>📋 <b>1 spec + 3 issues</b> ready-for-agent</span>
+    <span>📜 <b>3 ADR</b> 落盘(0001/0002/0003)</span>
+    <span>⏳ <b>3 Phase</b> 待实施</span>
   </div>
 </header>
 
 <section class="card">
-  <h2>📊 决策全图</h2>
-  <div class="progress-bar"><div class="filled" style="width:100%"></div></div>
-  <p style="font-size:12px;color:var(--fg3);margin-top:4px">8 / 8 完成 · 100% · 进入实施</p>
+  <h2>📊 进度</h2>
+  <div class="progress-bar"><div class="filled" style="width:75%"></div><div class="pending" style="width:25%"></div></div>
+  <p style="font-size:12px;color:var(--fg3);margin-top:4px">6 / 8 任务完成 · 75% · Grilling + Spec 闭环 · 实施阶段待用户指令</p>
+</section>
 
+<section class="card">
+  <h2>✅ 全部已完成</h2>
   <table>
-    <thead><tr><th>#</th><th>决策主题</th><th>用户答案</th><th>状态</th><th>ADR</th></tr></thead>
+    <thead><tr><th>任务</th><th>产出</th><th>commit</th><th>状态</th></tr></thead>
     <tbody>
-      <tr><td>Q1</td><td>作息管家.html 风格</td><td>A · 纯 HELP 中心</td><td><span class="tag done">已答</span></td><td>—</td></tr>
-      <tr><td>Q2</td><td>作息管家.html 角色</td><td>A · 永远最新</td><td><span class="tag done">已答</span></td><td>ADR-0001</td></tr>
-      <tr><td>Q3</td><td>同步机制</td><td>A · 无 flag 自动</td><td><span class="tag done">已答</span></td><td>(同 0001)</td></tr>
-      <tr><td>Q4</td><td>数字对账执行</td><td><b>不做</b> · 开发时人工注意</td><td><span class="tag skip">跳过</span></td><td>—</td></tr>
-      <tr><td>Q5</td><td>路径对齐(15 模板)</td><td>A · 严格按总纲</td><td><span class="tag done">已答</span></td><td>ADR-0002</td></tr>
-      <tr><td>Q6</td><td>复制 prompt 范围</td><td>A · 全部 15 模板</td><td><span class="tag done">已答</span></td><td>ADR-0002</td></tr>
-      <tr><td>Q7</td><td>schedule_cli.py 拆模块</td><td>B · 暂不拆,Q5 顺便分组</td><td><span class="tag done">已答</span></td><td>ADR-0003</td></tr>
-      <tr><td>Q8</td><td>AGENTS.md 是否补</td><td>A · 简洁版引用 SKILL.md</td><td><span class="tag done">已答</span></td><td>—</td></tr>
+      <tr><td>探索 + 对账</td><td>总纲 7 章节 + 作息管家全套读完 · 三源 24/26/27 唤醒词</td><td>—</td><td><span class="tag done">完成</span></td></tr>
+      <tr><td>Grilling 闭环</td><td>8 决策全部答完 · 3 份 ADR 落盘</td><td>3 commits(在你之前会话里)</td><td><span class="tag done">完成</span></td></tr>
+      <tr><td>setup-matt-pocock-skills 落地</td><td>作息管家/AGENTS.md + docs/agents/(issue-tracker/domain) + .scratch/</td><td><code>633abc4</code></td><td><span class="tag done">完成</span></td></tr>
+      <tr><td>to-spec · spec.md + 3 issues</td><td>spec.md (142 lines) + 3 issues · ready-for-agent</td><td><code>0f05b54</code></td><td><span class="tag done">完成</span></td></tr>
     </tbody>
   </table>
 </section>
 
 <section class="card">
-  <h2>📜 已落盘 ADR(3 份)</h2>
-
-  <div class="adr-block">
-    <div class="num">ADR-0001 · accepted</div>
-    <div class="title">作息管家.html 作为 HELP HTML 的稳定入口(§04 原则 12 例外)</div>
-    <div class="body">根目录作息管家.html 作为 HELP HTML 稳定入口,help_render.py 每次跑都覆盖。schedule_html/help/作息管家_HELP_&lt;TS&gt;.html 保留历史快照。</div>
-  </div>
-
-  <div class="adr-block">
-    <div class="num">ADR-0002 · accepted</div>
-    <div class="title">严格执行总纲 §04 原则 12.A(中文 command)+ 原则 10(全部 15 模板补复制 prompt)</div>
-    <div class="body">15 模板全部对齐 §04 原则 12.A(`&lt;command_cn&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;.html`)+ 全部补"复制 prompt"按钮(超原则 10 字面)。</div>
-  </div>
-
-  <div class="adr-block">
-    <div class="num">ADR-0003 · accepted</div>
-    <div class="title">schedule_cli.py 暂不拆,等 Q5 路径对齐实施时内部分组</div>
-    <div class="body">116KB / 3053 行的 schedule_cli.py 暂不拆分。Q5 实施时在 _naming_path 函数内部按域分组,触发条件满足时再评估。</div>
-  </div>
+  <h2>📜 ADR 落盘</h2>
+  <table>
+    <thead><tr><th>ADR</th><th>主题</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>ADR-0001</td><td>作息管家.html 作为 HELP HTML 的稳定入口(§04 原则 12 例外)</td><td><span class="tag done">accepted</span></td></tr>
+      <tr><td>ADR-0002</td><td>严格执行总纲 §04 原则 12.A(中文 command)+ 原则 10(全部 15 模板补复制 prompt)</td><td><span class="tag done">accepted</span></td></tr>
+      <tr><td>ADR-0003</td><td>schedule_cli.py 暂不拆,等 Q5 路径对齐实施时内部分组</td><td><span class="tag done">accepted</span></td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section class="card">
-  <h2>📋 实施阶段(改动前必答 3 问 · 总纲 §05)</h2>
-
-  <h3>Phase A-3 · ADR-0001 落地(优先做 · 阻力最小)</h3>
-  <div class="phase-list">
-    <div class="phase next">
-      <div class="label">Phase A-3 · ADR-0001 落地 · help_render.py 同步作息管家.html</div>
-      <div class="desc">
-        <b>改动前 3 问:</b><br/>
-        1. <b>影响文件</b>:scripts/help_render.py(~20 行,加 sync_to_stable_mirror 函数);作息管家.html(自动同步,不手改)<br/>
-        2. <b>数据迁移</b>:无<br/>
-        3. <b>回滚方案</b>:git revert(单 commit,无破坏性)<br/><br/>
-        <b>预计</b>:30 分钟 · 1 commit · Tested-By:exempt(行为不变,仅加派生步骤)
-      </div>
-    </div>
-
-    <div class="phase">
-      <div class="label">Phase A-1 · Q5+Q6+Q7 实施(路径对齐 + 复制 prompt + 内部分组)</div>
-      <div class="desc">
-        <b>改动前 3 问:</b><br/>
-        1. <b>影响文件</b>:scripts/schedule_cli.py(~10 处 _naming_path 调用 + ~10 处 render_* 子命令);scripts/schedule_html_render.py(default_output_path 5 处);scripts/help_render.py(核对);SKILL.md(~20 处路径引用);作息管家.html(顶部 stats,Q1+Q2 自动同步);tests/(path 期望值 ~5 处)<br/>
-        2. <b>数据迁移</b>:无(只改文件名,DB 不变)。$SKILLS_DB_PATH/schedule_html/ 下旧文件变孤儿,建议提供迁移脚本<br/>
-        3. <b>回滚方案</b>:git revert(单 commit 风险大,失败可独立 revert)<br/><br/>
-        <b>预计</b>:2-3 小时 · 1 commit · Tested-By:<b>pending-FAT</b>(Q5+Q6 跨多 CLI,需 Fresh Agent 黑盒测试)
-      </div>
-    </div>
-
-    <div class="phase">
-      <div class="label">Phase A-2 · Q8 补 AGENTS.md</div>
-      <div class="desc">
-        <b>改动前 3 问:</b><br/>
-        1. <b>影响文件</b>:AGENTS.md(新增,~30 行,引用 SKILL.md + docs/adr/ + CHANGELOG)<br/>
-        2. <b>数据迁移</b>:无<br/>
-        3. <b>回滚方案</b>:git revert<br/><br/>
-        <b>预计</b>:15 分钟 · 1 commit · Tested-By:exempt(纯文档新增)
-      </div>
-    </div>
-
-    <div class="phase">
-      <div class="label">Phase B · 跑验证</div>
-      <div class="desc">
-        pytest tests/ · 跑 help_render.py 验证作息管家.html 自动生成 · 手动 git diff SKILL.md 引用 · FAT(Phase A-1 必跑)
-      </div>
-    </div>
-  </div>
+  <h2>📂 本次会话 commit 历史</h2>
+  <div class="file-tree">0f05b54 [作息管家] to-spec · spec.md + 3 issues 发布到 .scratch/skill-optimize/   ← 最新
+633abc4 [作息管家] Phase A-2 · setup-matt-pocock-skills 落地                   ← 上一
+(中间 3 份 ADR 在你之前会话里 commit 了)</div>
 </section>
 
 <section class="card">
-  <h2>📁 已落盘产出</h2>
-  <pre style="background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0;color:#7ee787">作息管家/
-├── docs/                              ← 新建目录
-│   └── adr/
-│       ├── 0001-help-html-stable-mirror.md
-│       ├── 0002-strict-skill-spec.md
-│       └── 0003-defer-cli-split.md
-└── .notes/
-    └── grilling-session.html          ← 本次会话状态(浏览器打开)</pre>
+  <h2>⏳ 实施阶段(待用户指令)</h2>
+  <table>
+    <thead><tr><th>Issue</th><th>Phase</th><th>工作</th><th>预计时间</th><th>Tested-By</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td><strong>A-3</strong></td><td>ADR-0001 · help_render.py 同步作息管家.html</td><td>30 min</td><td>exempt</td></tr>
+      <tr><td>02</td><td><strong>A-1</strong></td><td>Q5+Q6+Q7 · 路径对齐 + 复制 prompt + 内部分组</td><td>2-3 h</td><td><strong>pending-FAT</strong></td></tr>
+      <tr><td>03</td><td><strong>B</strong></td><td>pytest baseline + Fresh Agent 黑盒测试</td><td>—</td><td>fresh-agent-v1</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px;font-size:13px;color:var(--fg2)"><b>已发布到</b>:<code>作息管家/.scratch/skill-optimize/issues/</code> · 每个 issue 头部 <code>Status: ready-for-agent</code></p>
 </section>
 
 <section class="card">
-  <h2>⏸ 等用户决策 · 下一步</h2>
-  <p>Grilling 协议要求"达成共识前不动手"。现 <b>8/8 决策已达成共识,3 份 ADR 已落盘</b>,按总纲 §05 "动手前最后一道防线"应进入实施。</p>
-
-  <p style="margin-top:14px"><b>下一步建议(按总纲 §06 4 Phase 顺序):</b></p>
-  <ol style="margin-top:6px">
-    <li><b>Phase A-3(优先)</b>:ADR-0001 落地 · help_render.py 同步作息管家.html — 阻力最小,30 分钟完成</li>
-    <li><b>Phase A-2(并行)</b>:补 AGENTS.md — 15 分钟,纯文档</li>
-    <li><b>Phase A-1(主任务)</b>:Q5+Q6+Q7 实施 — 2-3 小时,需 Fresh Agent 黑盒测试</li>
-    <li><b>Phase B</b>:pytest + FAT 验证</li>
-  </ol>
-
-  <p style="margin-top:14px;font-size:13px;color:var(--fg2)"><b>等待你的指令:</b></p>
-  <ol style="margin-top:6px">
-    <li>回复 <code>开始 Phase A-3</code> → 实施 ADR-0001(help_render.py 同步作息管家.html)</li>
-    <li>回复 <code>开始 Phase A-2</code> → 实施 Q8(补 AGENTS.md)</li>
-    <li>回复 <code>开始 Phase A-1</code> → 实施 Q5+Q6+Q7(路径对齐 + 复制 prompt + 内部分组)</li>
-    <li>回复 <code>全部并行</code> → 一次实施 Phase A-1+A-2+A-3</li>
-    <li>回复 <code>先看作息管家.html</code> → 在浏览器打开当前作息管家.html(看现状,确认 ADR-0001 落地效果)</li>
+  <h2>📋 下一步建议</h2>
+  <ol style="margin:8px 0 0 22px;font-size:14px;line-height:1.8">
+    <li><b>开始 Phase A-3</b>(推荐,阻力最小) — 实施 ADR-0001 · <code>help_render.py</code> 加 <code>sync_to_stable_mirror()</code> 函数,30 分钟</li>
+    <li><b>开始 Phase A-1</b>(主任务) — 实施 Q5+Q6+Q7 · 2-3 小时 · 需 Fresh Agent 黑盒测试</li>
+    <li><b>全部并行</b> — 一次实施 A-3 + A-1</li>
+    <li><b>先看作息管家.html</b> — 浏览器打开验证现状</li>
   </ol>
 </section>
 
 <footer class="footer">
-  Grilling 闭环 · Round 6 · 2026-07-28 · 由 opencode 调度<br/>
-  8 决策 + 3 ADR · Grilling 阶段完成 · 待用户决策进入实施阶段
+  to-spec 完成 · Round 8 · 2026-07-28 · 由 opencode 调度<br/>
+  Grilling + Spec 闭环 · 2 commits · 3 issues ready-for-agent · 等用户指令进入实施
 </footer>
 
 </div>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>点击测试页</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: #f5f6fa;
+    user-select: none;
+    cursor: pointer;
+  }
+  #count {
+    font-size: 200px;
+    font-weight: 700;
+    color: #0067c0;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  #hint {
+    margin-top: 24px;
+    color: #888;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body onclick="document.getElementById('count').textContent = ++n">
+  <div id="count">0</div>
+  <div id="hint">单击页面任意位置，计数 +1</div>
+  <script>let n = 0;</script>
+</body>
+</html>

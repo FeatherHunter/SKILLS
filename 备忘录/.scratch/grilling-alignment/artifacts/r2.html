@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 · Grilling 对齐 · Round 2</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+
+  h2 {
+    font-size: 20px;
+    margin: 32px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-size: 14px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  h3 {
+    font-size: 15px;
+    margin: 18px 0 8px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .q-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .q-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #efeff1;
+    color: var(--muted);
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .q-tag.b { background: var(--accent-soft); color: var(--accent); }
+  .q-tag.c { background: #fff4e6; color: var(--warn); }
+  .q-tag.a { background: #e6f4ea; color: var(--good); }
+  .q-tag.d { background: #f0e8ff; color: #5e3dab; }
+
+  .ctx {
+    background: var(--code-bg);
+    border-left: 3px solid var(--line);
+    padding: 12px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .ctx strong { color: var(--text); }
+  .ctx code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12.5px;
+  }
+
+  .answer-block {
+    border: 2px solid var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, #f5faff 100%);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 14px 0 12px;
+  }
+  .answer-block .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .answer-block .verdict {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .answer-block .reason {
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  .alts {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .alts-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .alt {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13.5px;
+  }
+  .alt .alt-key {
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    width: 32px;
+  }
+  .alt .alt-text { color: var(--muted); }
+  .alt .alt-text strong { color: var(--text); }
+
+  .reply {
+    margin-top: 14px;
+    background: #fafafa;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .reply strong { color: var(--text); }
+
+  .progress {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0 4px;
+    font-size: 12px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    background: #efeff1;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .step.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .step.done { background: var(--good-soft); color: var(--good); }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  .summary-table th, .summary-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .summary-table th {
+    background: #fafafa;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .check { color: var(--good); font-weight: 700; }
+  .file-link {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+  }
+  .state-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .state-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: var(--code-bg);
+    font-size: 13px;
+  }
+  .state-card .name { font-weight: 600; color: var(--text); }
+  .state-card .desc { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🍖 备忘录 · Grilling 对齐 · Round 2</h1>
+  <div class="sub">本轮主题: B 阶段执行层关键决策(4 状态化 + YAML 修复 + CHANGELOG 数字 + 4 元组化 + commit 分片)</div>
+  <div class="badges">
+    <span class="badge good">R1 已落 3 文件</span>
+    <span class="badge good">8/8 决策已凝固</span>
+    <span class="badge">R2 / 估 5 轮 · 本轮 5 题</span>
+    <span class="badge muted">2026-07-28</span>
+  </div>
+</header>
+
+<div class="progress">
+  <div class="step done">R1 · B 范围+术语</div>
+  <div class="step active">R2 · B 执行细节</div>
+  <div class="step">R3 · A 结构文件</div>
+  <div class="step">R4 · D 工程仪式</div>
+  <div class="step">R5 · C 架构合规</div>
+</div>
+
+<h2><span class="num">①</span>R1 决策 · 已落地文件</h2>
+<div class="card">
+  <table class="summary-table">
+    <tr><th>文件</th><th>类型</th><th>内容</th></tr>
+    <tr>
+      <td><span class="file-link">备忘录/CONTEXT.md</span></td>
+      <td>术语表</td>
+      <td>唤醒词 / 场景 / 4 元 / 4 段 prompt / HTML 镜像 / 场景资产 / 【待开发】</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0001-version-sot.md</span></td>
+      <td>ADR</td>
+      <td>版本号 SoT 为 <code>SKILL.md</code>,<code>_meta.json</code> 为镜像,pre-commit 强制同步</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0002-skill-md-dedup-and-dir-merge.md</span></td>
+      <td>ADR</td>
+      <td>删 <code>SKILL.md</code> L1034 重复章节 + <code>reference/</code> → <code>references/</code></td>
+    </tr>
+  </table>
+  <div class="ctx">
+    <strong>等你看完这 3 个文件(可选,主要确认捕获无误)</strong>。若需修改可在此轮一并提,我会先改 capture 再问 R2 题。
+  </div>
+</div>
+
+<h2><span class="num">②</span>R1 决策回顾 · 8 题</h2>
+<div class="card">
+  <table class="summary-table">
+    <tr><th>#</th><th>题</th><th>你的答案</th><th>状态</th></tr>
+    <tr><td>B.1</td><td>子范围粒度</td><td>接受推荐(6 项全做)</td><td><span class="check">✓</span></td></tr>
+    <tr><td>B.2</td><td>版本号 SoT</td><td>SKILL.md 是 SoT, _meta.json 是镜像</td><td><span class="check">✓ → ADR-0001</span></td></tr>
+    <tr><td>B.3</td><td>触发词 / 唤醒词</td><td>用"唤醒词"</td><td><span class="check">✓ → CONTEXT.md</span></td></tr>
+    <tr><td>B.4</td><td>用例 / 场景</td><td>用"场景"</td><td><span class="check">✓ → CONTEXT.md</span></td></tr>
+    <tr><td>B.5</td><td>4 元组 / 4 段 prompt</td><td>显式区分(4 元 / 4 段)</td><td><span class="check">✓ → CONTEXT.md</span></td></tr>
+    <tr><td>B.6</td><td>HTML 镜像命名</td><td>正式名 "HTML 镜像" + 别名 "HELP HTML"</td><td><span class="check">✓ → CONTEXT.md</span></td></tr>
+    <tr><td>B.7</td><td>SKILL.md L927+L1034</td><td>删 L1034,保留 L927</td><td><span class="check">✓ → ADR-0002</span></td></tr>
+    <tr><td>B.8</td><td>reference/ vs references/</td><td>合并为 references/</td><td><span class="check">✓ → ADR-0002</span></td></tr>
+  </table>
+</div>
+
+<h2><span class="num">③</span>R2 决策清单(本轮 5 题)</h2>
+<div class="card">
+  <div class="q-title">本轮目标: 锁定 B 阶段的<strong>执行细节</strong>(状态命名 / YAML 修复 / 历史数字 / 4 元组化 / commit 分片)</div>
+  <div class="ctx">
+    <strong>为什么这一轮问执行层</strong>: R1 决定了"做什么",R2 决定"具体怎么做"。B 阶段涉及 6 项改动,执行细节不到位会导致返工。
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.9</span><span class="q-tag">状态</span> 4 状态 fallback 的具体命名 + 语义</div>
+  <div class="ctx">
+    <strong>总纲原 5 状态</strong>(§04 原则 3 L62-69):正常 / 空 / 缺数据 / 错误 / 离线。
+    <br>
+    <strong>你的决策</strong>:排除"离线",剩 4 个。
+    <br><br>
+    <strong>当前模板已实现的状态</strong>(memo_help.html L70-72):
+    <div class="state-grid">
+      <div class="state-card"><div class="name">empty</div><div class="desc">空(无匹配结果)</div></div>
+      <div class="state-card"><div class="name">missing_data</div><div class="desc">缺数据(字段不全)</div></div>
+      <div class="state-card"><div class="name">error</div><div class="desc">错误(异常抛出)</div></div>
+    </div>
+    <strong>未覆盖</strong>:正常(success)/ 离线(offline,已排除)
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">4 状态 = 正常 / 空 / 缺数据 / 错误,英文名 success / empty / missing_data / error</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>3 个已有英文名(<code>empty</code> / <code>missing_data</code> / <code>error</code>)不动,只补一个 <code>success</code></li>
+        <li>"离线"已排除,无需补 <code>offline</code></li>
+        <li>落地:改 5 个模板的 fallback JS,加 <code>success</code> 分支,删 <code>offline</code> 分支</li>
+        <li>总纲 §04 原则 3 要求 5 状态 → 4 状态是局部偏离,需在 R3 阶段向总纲提议(ADR)允许 skill 自定义状态数</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.9.a</div><div class="alt-text"><strong>5 状态 → 3 状态</strong>(合并"正常+空"为"有数据" / 合并"缺数据+错误"为"问题") —— 更精简但丢失语义</div></div>
+    <div class="alt"><div class="alt-key">B.9.b</div><div class="alt-text"><strong>保持 3 状态不动</strong>(empty / missing_data / error) —— 把"正常"作为默认无 label,省一个分支</div></div>
+    <div class="alt"><div class="alt-key">B.9.c</div><div class="alt-text"><strong>4 状态但改中文名</strong>(成功 / 无 / 部分缺失 / 失败) —— 偏离总纲的英文约定</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.9</code> 4 状态 success/empty/missing_data/error / <code>B.9.a</code> 3 状态 / <code>B.9.b</code> 保持 3 状态 / <code>B.9.c</code> 中文命名 / 自定义</div>
+</div>
+
+<!-- Q10 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.10</span><span class="q-tag">结构</span> <code>scenarios.yaml</code> L21+L23 重复 <code>scenarios:</code> key 修法</div>
+  <div class="ctx">
+    <strong>事实</strong>(探勘报告 B.3):
+    <pre style="background: var(--code-bg); padding: 10px; border-radius: 6px; font-size: 12.5px;"># L21
+scenarios:
+  - wake_word: ...
+# L23
+scenarios:        ← 重复 key
+  - wake_word: ...  ← 后面的会覆盖前面的(YAML 标准)
+# L377 EOF 前无换行</pre>
+    <strong>实际后果</strong>:Python <code>yaml.safe_load</code> 取后者,L21 块被静默丢弃。当前 29 场景全在 L23 块,所以**功能没坏**,但读 yaml 的人会困惑。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">删 L21 块,保留 L23 块作为单一权威</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>L23 块含 29 个场景(当前实际生效的)</li>
+        <li>L21 块可能是 v1.1.4 加 HELP 章节时的复制粘贴失误</li>
+        <li>保留 L23 块:不改 29 个场景,只清理结构</li>
+        <li>顺带修 EOF 无换行(L377 后加 \n)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.10.a</div><div class="alt-text"><strong>保留 L21,删 L23</strong> —— 反过来,但 L21 块场景数可能不是 29(需先读 L21 块才能确认)</div></div>
+    <div class="alt"><div class="alt-key">B.10.b</div><div class="alt-text"><strong>合并两块的场景到单一 <code>scenarios:</code> 下</strong> —— 去重场景(若 L21/L23 有重复 wake_word)</div></div>
+    <div class="alt"><div class="alt-key">B.10.c</div><div class="alt-text"><strong>保持现状</strong> —— 功能没坏,修了反而引入回归风险</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.10</code> 删 L21 / <code>B.10.a</code> 删 L23 / <code>B.10.b</code> 合并 / <code>B.10.c</code> 保持 / 自定义</div>
+</div>
+
+<!-- Q11 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.11</span><span class="q-tag">历史</span> CHANGELOG.md L538 "106/106 pytest 通过" 数字回溯</div>
+  <div class="ctx">
+    <strong>事实</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>v1.1.0 L538 记录 "106/106 pytest 通过"</li>
+      <li>v1.1.4 现状 174 pytest 全过(已扣除 1 预存基线失败)</li>
+      <li>v1.1.0 → v1.1.4 期间新增约 60 个 test_ 函数</li>
+    </ul>
+    <strong>本质</strong>:历史 commit 时确实是 106,后续增长是正常的。改历史数字会伪造审计轨迹。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">保留 L538 "106/106",加注释说明"v1.1.0 时为 106,后续增长"</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>历史必须真实,改数字 = 伪造</li>
+        <li>加注释让 onboarding 的人知道"现在的测试数 ≠ 当时"</li>
+        <li>v1.1.5 起在 CHANGELOG 末尾加"[v1.1.5] 累计 174/174"作为新基准线</li>
+        <li>这等于建立"CHANGELOG 末尾 = 当前实际数字"惯例,以后不会再有"哪个版本的数字对得上"问题</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.11.a</div><div class="alt-text"><strong>改 L538 为"166/166"</strong> —— 改历史数字(审计风险高)</div></div>
+    <div class="alt"><div class="alt-key">B.11.b</div><div class="alt-text"><strong>保留 L538 不动,CHANGELOG 末尾加"[累计]"段</strong> —— 同样效果,更不显眼</div></div>
+    <div class="alt"><div class="alt-key">B.11.c</div><div class="alt-text"><strong>保持现状</strong> —— 数字过时不影响功能</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.11</code> 加注释 + 末尾新基准 / <code>B.11.a</code> 改历史 / <code>B.11.b</code> 末尾段 / <code>B.11.c</code> 保持 / 自定义</div>
+</div>
+
+<!-- Q12 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.12</span><span class="q-tag">架构</span> 唤醒词 4 元组化评估 —— 备忘录当前用 2 元组,要不要升级?</div>
+  <div class="ctx">
+    <strong>总纲 §03 L22</strong>:触发词 = 动作 + 对象 + 维度(可选) + 类型(可选) = 4 元
+    <br>
+    <strong>当前 29 唤醒词</strong>(scenarios.yaml):几乎全是 2 元(动作+对象),例:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>"记备忘"(动作=记, 对象=备忘)</li>
+      <li>"搜备忘"(动作=搜, 对象=备忘)</li>
+      <li>"按时间搜备忘"(动作=搜, 对象=备忘, 维度=时间) ← 已是 3 元</li>
+      <li>"查已提醒备忘"(动作=查, 对象=备忘, 类型=已提醒) ← 已是 3 元</li>
+    </ul>
+    <strong>总纲 §03 L46</strong>:"下限 8,上限不设",即**允许多元**
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">保持现状(2-3 元混合),不强制升级到 4 元</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>总纲 L46 明确"下限 8,上限不设",**没说必须 4 元**</li>
+        <li>用户口语习惯是 2 元("记备忘"比"备忘录新增条目"自然)</li>
+        <li>强制 4 元会让唤醒词变得啰嗦,反而降低命中准确率</li>
+        <li>现状混合:核心 9 个用 2 元,扩展 20 个已是 3 元(含维度或类型)</li>
+        <li>CONTEXT.md 加词条:4 元是"可选上限"不是"强制下限"</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.12.a</div><div class="alt-text"><strong>全量升级到 4 元</strong>(动作+对象+维度+类型) —— 29 个唤醒词全重写,工作量极大</div></div>
+    <div class="alt"><div class="alt-key">B.12.b</div><div class="alt-text"><strong>核心唤醒词升级到 4 元,扩展保持 2-3 元</strong> —— 折中,但"核心"边界模糊</div></div>
+    <div class="alt"><div class="alt-key">B.12.c</div><div class="alt-text"><strong>不评估</strong> —— 4 元组是总纲给"设计新 skill"的人参考的,备忘录已经稳定,无需重审</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.12</code> 保持现状 / <code>B.12.a</code> 全量升级 / <code>B.12.b</code> 核心升级 / <code>B.12.c</code> 不评估 / 自定义</div>
+</div>
+
+<!-- Q13 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.13</span><span class="q-tag">流程</span> B 阶段改动 commit 分片策略</div>
+  <div class="ctx">
+    <strong>待改项清单</strong>(共 6+ 项):
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li><code>_meta.json</code> 版本号 1.0.0 → 1.1.4</li>
+      <li>SKILL.md 91 处"触发词" → "唤醒词"</li>
+      <li>SKILL.md 中"用例" → "场景"</li>
+      <li>SKILL.md 中"4 元组" / "4 部分" 显式区分</li>
+      <li>SKILL.md 中"HTML 镜像"统一命名</li>
+      <li>SKILL.md 删 L1034 重复章节</li>
+      <li><code>reference/</code> → <code>references/</code>(git mv)</li>
+      <li>SKILL.md 4 处路径引用同步</li>
+      <li>scenarios.yaml 删 L21 块</li>
+      <li>5 状态 → 4 状态(5 模板 JS 改)</li>
+      <li>CONTEXT.md 已有,不动</li>
+      <li>ADR-0001/0002 已写,不动</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">4 个 commit,按子主题分片</div>
+    <div class="reason">
+      <strong>理由</strong>(commit 列表):
+      <ol style="margin: 4px 0 0; padding-left: 22px;">
+        <li><code>[备忘录] v1.1.5 · B-1 基础设施补齐(CONTEXT.md + docs/adr/0001-0002 落地)</code> —— 决策文件入库(已做)</li>
+        <li><code>docs(备忘录): v1.1.5 · B-2 术语统一(触发词→唤醒词,用例→场景,HTML 镜像命名)</code> —— SKILL.md 全文 + scenarios.yaml 字段注释</li>
+        <li><code>refactor(备忘录): v1.1.5 · B-3 文件结构清理(双目录合并 + SKILL.md 章节去重 + scenarios.yaml 修复)</code> —— git mv + 章节删除 + YAML 修复</li>
+        <li><code>fix(备忘录): v1.1.5 · B-4 4 状态 fallback(5→4 模板 JS 同步 + _meta.json 升 1.1.4)</code> —— 模板代码 + 元数据</li>
+      </ol>
+      <strong>分片原则</strong>:基础设施 / 内容 / 结构 / 代码 四类分开,任一 commit 出问题可单独 revert 不影响其他。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.13.a</div><div class="alt-text"><strong>1 个大 commit</strong> —— 简单,但 12 项改动混在一起,审计差</div></div>
+    <div class="alt"><div class="alt-key">B.13.b</div><div class="alt-text"><strong>2 个 commit</strong>(B-2/B-3/B-4 合并成 1 个 + 基础设施 1 个) —— 折中</div></div>
+    <div class="alt"><div class="alt-key">B.13.c</div><div class="alt-text"><strong>每项 1 个 commit(12 个)</strong> —— 最细粒度,但 commit 历史爆炸</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.13</code> 4 个 commit / <code>B.13.a</code> 1 个 / <code>B.13.b</code> 2 个 / <code>B.13.c</code> 12 个 / 自定义</div>
+</div>
+
+<h2><span class="num">④</span>本轮回复指引</h2>
+<div class="card">
+  <div class="ctx">
+    <strong>回复格式</strong>(一次性回多题):
+    <pre style="background: var(--code-bg); padding: 10px; border-radius: 6px; font-size: 12.5px; margin: 6px 0 0;">B.9 4 状态 success/empty/missing_data/error
+B.10 删 L21
+B.11 加注释 + 末尾新基准
+B.12 保持现状
+B.13 4 个 commit</pre>
+    <strong>回完 5 题</strong>后,我会:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>把本轮 5 决策追加到 <code>CONTEXT.md</code> 或新建 <code>docs/adr/0003-b-execution-fallback.md</code></li>
+      <li>生成 <strong>Round 3</strong> HTML(主题:A 结构文件 —— frontmatter / README / pytest.ini / .scratch 范式)</li>
+      <li>Chrome 重开</li>
+    </ul>
+    <strong>可选</strong>: 如果你对 R1 落地的 3 个文件有修改意见,在回复里一并说,我会先改 capture 再继续。
+  </div>
+</div>
+
+<footer>
+  Generated by OpenCode · 备忘录 grilling session · R2 · 文件路径: <code>备忘录/.scratch/grilling-alignment/r2.html</code>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 · Grilling 对齐 · Round 3</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+
+  h2 {
+    font-size: 20px;
+    margin: 32px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-size: 14px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  h3 {
+    font-size: 15px;
+    margin: 18px 0 8px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .q-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .q-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #efeff1;
+    color: var(--muted);
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .q-tag.b { background: var(--accent-soft); color: var(--accent); }
+  .q-tag.a { background: #e6f4ea; color: var(--good); }
+  .q-tag.c { background: #fff4e6; color: var(--warn); }
+
+  .ctx {
+    background: var(--code-bg);
+    border-left: 3px solid var(--line);
+    padding: 12px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .ctx strong { color: var(--text); }
+  .ctx code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12.5px;
+  }
+
+  .answer-block {
+    border: 2px solid var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, #f5faff 100%);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 14px 0 12px;
+  }
+  .answer-block .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .answer-block .verdict {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .answer-block .reason {
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  .alts {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .alts-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .alt {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13.5px;
+  }
+  .alt .alt-key {
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    width: 36px;
+  }
+  .alt .alt-text { color: var(--muted); }
+  .alt .alt-text strong { color: var(--text); }
+
+  .reply {
+    margin-top: 14px;
+    background: #fafafa;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .reply strong { color: var(--text); }
+
+  .progress {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0 4px;
+    font-size: 12px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    background: #efeff1;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .step.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .step.done { background: var(--good-soft); color: var(--good); }
+
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  .summary-table th, .summary-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .summary-table th {
+    background: #fafafa;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .check { color: var(--good); font-weight: 700; }
+  .file-link {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin: 8px 0;
+  }
+  .compare-table th, .compare-table td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  .compare-table th {
+    background: #fafafa;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🍖 备忘录 · Grilling 对齐 · Round 3</h1>
+  <div class="sub">本轮主题: A 阶段结构文件补齐(YAML frontmatter / README.md / pytest.ini / .scratch 范式)</div>
+  <div class="badges">
+    <span class="badge good">R1+R2 已落 4 文件</span>
+    <span class="badge good">13/13 决策已凝固</span>
+    <span class="badge">R3 / 估 5 轮 · 本轮 5 题</span>
+    <span class="badge muted">2026-07-28</span>
+  </div>
+</header>
+
+<div class="progress">
+  <div class="step done">R1 · B 范围+术语</div>
+  <div class="step done">R2 · B 执行细节</div>
+  <div class="step active">R3 · A 结构文件</div>
+  <div class="step">R4 · D 工程仪式</div>
+  <div class="step">R5 · C 架构合规</div>
+</div>
+
+<h2><span class="num">①</span>累计落地文件清单</h2>
+<div class="card">
+  <table class="summary-table">
+    <tr><th>文件</th><th>类型</th><th>归属</th><th>状态</th></tr>
+    <tr>
+      <td><span class="file-link">备忘录/CONTEXT.md</span></td>
+      <td>术语表</td>
+      <td>A 项(提前落地)</td>
+      <td><span class="check">✓</span></td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0001-version-sot.md</span></td>
+      <td>ADR</td>
+      <td>A 项(提前落地)</td>
+      <td><span class="check">✓</span></td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0002-skill-md-dedup-and-dir-merge.md</span></td>
+      <td>ADR</td>
+      <td>A 项(提前落地)</td>
+      <td><span class="check">✓</span></td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0003-b-execution-fallback.md</span></td>
+      <td>ADR</td>
+      <td>A 项(提前落地)</td>
+      <td><span class="check">✓</span></td>
+    </tr>
+  </table>
+  <div class="ctx">
+    <strong>到目前为止 4 个 capture 文件</strong>(都在 R1+R2 决策阶段提前落地)。尚未 commit,会在 B.13 commit 1 一并入库。
+  </div>
+</div>
+
+<h2><span class="num">②</span>A 阶段范围对照</h2>
+<div class="card">
+  <div class="q-title">A 项总览(规范要求 vs 备忘录现状)</div>
+  <table class="compare-table">
+    <tr><th>规范要求</th><th>备忘录现状</th><th>判定</th></tr>
+    <tr>
+      <td><code>SKILL.md</code> YAML frontmatter</td>
+      <td>无 frontmatter,直接 <code># 备忘录</code> 开头</td>
+      <td><span style="color:var(--warn);font-weight:700;">不满足</span></td>
+    </tr>
+    <tr>
+      <td><code>README.md</code> 人类阅读版</td>
+      <td>无 README.md</td>
+      <td><span style="color:var(--warn);font-weight:700;">不满足</span></td>
+    </tr>
+    <tr>
+      <td><code>CONTEXT.md</code> 术语表</td>
+      <td>✓ R1 落地</td>
+      <td><span class="check">满足</span></td>
+    </tr>
+    <tr>
+      <td><code>docs/adr/</code></td>
+      <td>✓ R1+R2 落地 3 个 ADR</td>
+      <td><span class="check">满足</span></td>
+    </tr>
+    <tr>
+      <td><code>AGENTS.md</code> 含项目定位</td>
+      <td>有 AGENTS.md(13 行,内容单薄)</td>
+      <td>部分满足</td>
+    </tr>
+    <tr>
+      <td><code>.scratch/&lt;feature&gt;/</code> 问题追踪</td>
+      <td>✓ 本次 R1 创建 <code>.scratch/grilling-alignment/</code>(示范)</td>
+      <td><span class="check">满足(部分)</span></td>
+    </tr>
+    <tr>
+      <td><code>pytest.ini</code> 最小配置</td>
+      <td>无 pytest.ini(用默认配置)</td>
+      <td><span style="color:var(--warn);font-weight:700;">不满足</span></td>
+    </tr>
+  </table>
+</div>
+
+<h2><span class="num">③</span>R3 决策清单(本轮 5 题)</h2>
+<div class="card">
+  <div class="q-title">本轮目标: A 阶段剩余 5 项结构文件的具体形态</div>
+  <div class="ctx">
+    <strong>为什么先 A 再 D 再 C</strong>(P1 路线):A 是结构合规(D 依赖 A 的位置),C 是架构合规(依赖 A 的产出文件作为 ADR reference)。A 走完才进 D,最后才进 C(最重)。
+  </div>
+</div>
+
+<!-- Q14 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag a">A.1</span><span class="q-tag">frontmatter</span> SKILL.md YAML frontmatter 的具体字段</div>
+  <div class="ctx">
+    <strong>总纲要求</strong>(CONTEXT.md L13-15):frontmatter 含"领域边界声明 + 触发词表 + 钩子清单"。
+    <br><br>
+    <strong>规范 SKILL.md 范例</strong>(L1-4):
+<pre>---
+name: SKILL开发总纲V1.0
+description: ...
+---
+# 备忘录 (Memorandum)</pre>
+    <strong>当前 SKILL.md L1</strong>:
+<pre># 备忘录 (Memorandum)
+
+> 当前版本:1.1.4(2026-07-28 发布 · git tag v1.1.4)</pre>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">5 字段 frontmatter: name / version / status / description / last_updated</div>
+    <div class="reason">
+      <strong>字段设计</strong>:
+<pre>---
+name: 备忘录
+version: 1.1.5
+status: active
+description: 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪
+last_updated: 2026-07-28
+---</pre>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li><code>name</code>:与规范 <code>SKILL开发总纲V1.0</code> 范例对齐</li>
+        <li><code>version</code>:B.2 决策的 SoT,前置必备(其他工具会读)</li>
+        <li><code>status</code>:<code>active</code> / <code>deprecated</code> / <code>draft</code> 三态,标记 skill 生命周期</li>
+        <li><code>description</code>:一句话描述 skill 用途(总纲要求)</li>
+        <li><code>last_updated</code>:版本发布日期,与 version 联动</li>
+        <li>触发词表不进 frontmatter(已用 <code>scenarios.yaml</code> 单独维护,避免双源)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">A.1.a</div><div class="alt-text"><strong>仅 2 字段</strong>(name + version) —— 最小化,但 description/status 失去语义</div></div>
+    <div class="alt"><div class="alt-key">A.1.b</div><div class="alt-text"><strong>8 字段</strong>(加 owner / repo_path / git_remote / 等) —— 信息全但维护成本高</div></div>
+    <div class="alt"><div class="alt-key">A.1.c</div><div class="alt-text"><strong>触发词表进 frontmatter</strong> —— 抄总纲 L13-15 字面,但会与 scenarios.yaml 重复</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>A.1</code> 5 字段 / <code>A.1.a</code> 2 字段 / <code>A.1.b</code> 8 字段 / <code>A.1.c</code> 触发词进 frontmatter / 自定义</div>
+</div>
+
+<!-- Q15 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag a">A.2</span><span class="q-tag">README</span> <code>README.md</code> 的章节大纲</div>
+  <div class="ctx">
+    <strong>总纲要求</strong>(README.md L1-39):"人类阅读版目录(何时用 / 文件清单)"。
+    <br><br>
+    <strong>规范 README.md 当前结构</strong>:
+<pre># SKILL开发总纲V1.0 · README
+
+> 本文档是人类阅读版目录。AI/agent 请读 SKILL.md。
+
+## 这是什么
+## 何时使用
+## 文件清单
+## 状态</pre>
+    <strong>备忘录当前</strong>:无 README.md(SKILL.md 是唯一入口,人类 onboarding 直接读 1038 行 SKILL.md,负担重)。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">5 章节 README,人类 onboarding 友好</div>
+    <div class="reason">
+      <strong>章节大纲</strong>:
+      <ol style="margin: 4px 0 0; padding-left: 22px;">
+        <li><strong>这是什么</strong>:3 句话描述 skill 用途</li>
+        <li><strong>何时使用</strong>:适合场景 / 不适合场景(对照卡路里等 skill 的边界)</li>
+        <li><strong>快速开始</strong>:3 步上手(装环境 / 跑测试 / 看帮助)</li>
+        <li><strong>文件清单</strong>:目录树 + 每个文件 1 行说明</li>
+        <li><strong>状态</strong>:版本 + last_updated + 已知问题</li>
+      </ol>
+      <strong>预估行数</strong>:约 60-80 行,比 SKILL.md 短一个数量级。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">A.2.a</div><div class="alt-text"><strong>精简到 3 章节</strong>(这是什么 / 文件清单 / 状态) —— 极简,丢掉"何时使用"</div></div>
+    <div class="alt"><div class="alt-key">A.2.b</div><div class="alt-text"><strong>扩展到 8 章节</strong>(加"贡献指南 / 架构 / FAQ / 致谢") —— 完整但首次阅读门槛高</div></div>
+    <div class="alt"><div class="alt-key">A.2.c</div><div class="alt-text"><strong>不写 README,SKILL.md 加目录跳转锚点</strong> —— 改造 SKILL.md 而不新增文件</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>A.2</code> 5 章节 / <code>A.2.a</code> 3 章节 / <code>A.2.b</code> 8 章节 / <code>A.2.c</code> 不新建 / 自定义</div>
+</div>
+
+<!-- Q16 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag a">A.3</span><span class="q-tag">pytest</span> <code>pytest.ini</code> 配置项</div>
+  <div class="ctx">
+    <strong>总纲要求</strong>(§05 L211-217):pytest.ini 最小配置模板。
+    <br><br>
+    <strong>当前</strong>:无 pytest.ini,pytest 跑默认配置。当前 13 测试文件 174 测试函数全过,但缺配置 = 缺约束。
+    <br><br>
+    <strong>可能需要的配置</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li><code>testpaths = tests</code>:指定测试目录(避免 pytest 误扫 .scratch/)</li>
+      <li><code>python_files = test_*.py</code>:测试文件命名约定</li>
+      <li><code>python_classes = Test*</code>:测试类命名约定</li>
+      <li><code>python_functions = test_*</code>:测试函数命名约定</li>
+      <li><code>addopts = -ra -q</code>:默认输出选项</li>
+      <li><code>xfail_strict = true</code>:严格 xfail(当前 22 个 xfailed 会变)</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">最小化 6 项配置,不加 xfail_strict(避免破坏现有 22 xfailed)</div>
+    <div class="reason">
+      <strong>推荐配置</strong>:
+<pre>[pytest]
+testpaths = tests
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+addopts = -ra -q --strict-markers
+markers =
+    slow: marks tests as slow (deselect with '-m "not slow"')</pre>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>6 项配置都是"防误伤"型(避免 pytest 扫错文件/类/函数)</li>
+        <li><code>--strict-markers</code> 防 typos:没注册的 marker 会报错(比静默跳过更安全)</li>
+        <li>不加 <code>xfail_strict</code>:当前 22 xfailed 是历史基线,改了会出现连锁失败</li>
+        <li>不加 <code>asyncio_mode</code>:测试都是同步的</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">A.3.a</div><div class="alt-text"><strong>用 <code>pyproject.toml</code> 的 <code>[tool.pytest.ini_options]</code> 替代</strong> —— 现代化,但需要确认项目无 pyproject.toml</div></div>
+    <div class="alt"><div class="alt-key">A.3.b</div><div class="alt-text"><strong>完全照搬总纲 §05 L211-217 模板</strong> —— 严格对齐,但模板本身字段可能不全</div></div>
+    <div class="alt"><div class="alt-key">A.3.c</div><div class="alt-text"><strong>不加 pytest.ini,conftest.py 里配</strong> —— 隐藏配置,不直观</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>A.3</code> 6 项 pytest.ini / <code>A.3.a</code> pyproject.toml / <code>A.3.b</code> 照搬总纲 / <code>A.3.c</code> 不新建 / 自定义</div>
+</div>
+
+<!-- Q17 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag a">A.4</span><span class="q-tag">.scratch</span> <code>.scratch/</code> 目录范式</div>
+  <div class="ctx">
+    <strong>总纲要求</strong>(docs/agents/issue-tracker.md L7-11):<code>.scratch/&lt;feature&gt;/</code> 存工作草案 + issue tickets。
+    <br><br>
+    <strong>当前状态</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>总纲 <code>.scratch/skill-dev-manual-refactor/</code> 含 1 spec.md + 1 verify.ps1 + 8 issues</li>
+      <li>备忘录 <code>.scratch/grilling-alignment/</code> 是 R1 创建的(示范,含 r1.html + r2.html)</li>
+      <li>缺统一范式:每个 <code>.scratch/&lt;feature&gt;/</code> 应该含什么?</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">5 文件范式: spec.md / verify.ps1 / issues/ / decisions.md / artifacts/</div>
+    <div class="reason">
+      <strong>范式</strong>:
+<pre>.scratch/&lt;feature&gt;/
+├── spec.md           # 需求规格 / 设计草图
+├── verify.ps1        # 验收脚本(总纲已示范)
+├── issues/           # 问题追踪(总纲:01-xxx.md / 02-yyy.md / ...)
+├── decisions.md      # 决策日志(轻量 ADR,不进 docs/adr/)
+└── artifacts/        # 工作产物(HTML 报告 / 截图 / 中间文件)</pre>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>对照总纲 <code>skill-dev-manual-refactor/</code> 现状,补齐 5 文件结构</li>
+        <li><code>decisions.md</code> 是"轻量 ADR":临时性决策不进 docs/adr/(永久归档)</li>
+        <li><code>artifacts/</code> 是本次 grilling HTML 报告的归宿(R1/R2/R3...)</li>
+        <li>本轮 R3 决策落地后,我会把 <code>.scratch/grilling-alignment/</code> 改造为范式:</li>
+        <li style="padding-left: 4px;">spec.md = "备忘录 skill 整体重构 spec"</li>
+        <li style="padding-left: 4px;">decisions.md = R1-R5 决策摘要</li>
+        <li style="padding-left: 4px;">artifacts/ = r1.html / r2.html / r3.html ...</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">A.4.a</div><div class="alt-text"><strong>3 文件精简范式</strong>(spec.md / issues/ / artifacts/) —— 删 verify.ps1 + decisions.md</div></div>
+    <div class="alt"><div class="alt-key">A.4.b</div><div class="alt-text"><strong>完全照搬总纲现有结构</strong>(spec + verify + 8 issues) —— 不补 decisions/artifacts</div></div>
+    <div class="alt"><div class="alt-key">A.4.c</div><div class="alt-text"><strong>不固化范式</strong> —— 每个 feature 自定,不强求一致</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>A.4</code> 5 文件范式 / <code>A.4.a</code> 3 文件精简 / <code>A.4.b</code> 照搬总纲 / <code>A.4.c</code> 不固化 / 自定义</div>
+</div>
+
+<!-- Q18 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag a">A.5</span><span class="q-tag">AGENTS.md</span> <code>AGENTS.md</code> 升级(从 13 行扩到完整版)</div>
+  <div class="ctx">
+    <strong>当前 AGENTS.md</strong>(13 行,本轮 R1 落地,但内容薄):
+<pre># 备忘录 · Agent 指令
+
+本目录是 Agent 工作区。所有改动遵循 SKILL.md。
+
+## 文件清单
+- SKILL.md / CHANGELOG.md / _meta.json
+- script/ tests/ templates/ references/ reference/
+- docs/agents/
+
+## 已加载 Skill
+setup-matt-pocock-skills</pre>
+    <strong>总纲 AGENTS.md</strong>(21 行):含项目定位 + 文件清单 + skill 列表 + 路径约定。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">扩到 25-30 行,加项目定位 + 路径约定 + 决策文件位置</div>
+    <div class="reason">
+      <strong>新增内容</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li><strong>项目定位</strong>:"跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪"</li>
+        <li><strong>路径约定</strong>: SKILL.md 在根 / scripts 在 script/ / 场景资产在 references/ / 测试在 tests/</li>
+        <li><strong>决策文件位置</strong>: 永久 ADR → <code>docs/adr/</code>; 临时决策 → <code>.scratch/&lt;feature&gt;/decisions.md</code></li>
+        <li><strong>commit 格式</strong>: 引用 <code>docs/adr/0003-b-execution-fallback.md</code> 的硬规则段</li>
+        <li><strong>HTML 镜像约定</strong>: <code>备忘录.html</code> 是 SKILL.md 的镜像,自动生成,不入 commit(per .githooks/pre-commit R3 修复)</li>
+      </ul>
+      <strong>预估行数</strong>:25-30 行。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">A.5.a</div><div class="alt-text"><strong>保持 13 行不动</strong> —— AGENTS.md 是 agent 速查,精简优先;详细规则在 SKILL.md</div></div>
+    <div class="alt"><div class="alt-key">A.5.b</div><div class="alt-text"><strong>扩到 50+ 行</strong>(加架构图 / 状态机 / 上下游依赖) —— 全量级文档</div></div>
+    <div class="alt"><div class="alt-key">A.5.c</div><div class="alt-text"><strong>删 AGENTS.md,合并到 SKILL.md 顶部</strong> —— 单一文档,但失去"agent 专用入口"的清晰度</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>A.5</code> 扩到 25-30 行 / <code>A.5.a</code> 保持 13 行 / <code>A.5.b</code> 扩到 50+ / <code>A.5.c</code> 删并合并 / 自定义</div>
+</div>
+
+<h2><span class="num">④</span>本轮回复指引</h2>
+<div class="card">
+  <div class="ctx">
+    <strong>回复格式</strong>(一次性回多题):
+    <pre>A.1 5 字段
+A.2 5 章节
+A.3 6 项 pytest.ini
+A.4 5 文件范式
+A.5 扩到 25-30 行</pre>
+    <strong>回完 5 题</strong>后,我会:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>写 <code>docs/adr/0004-a-structure-files.md</code> 含 5 决策</li>
+      <li>改造 <code>.scratch/grilling-alignment/</code> 为 A.4 范式(spec.md + decisions.md + artifacts/)</li>
+      <li>生成 <strong>Round 4</strong> HTML(主题:D 工程仪式 —— FAT / Tested-By / 改动前 3 问 / 豁免矩阵)</li>
+      <li>Chrome 重开</li>
+    </ul>
+    <strong>关于 R3 决策的特殊说明</strong>:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>A.4 范式确定后,本轮 R1+R2+R3 生成的 3 个 HTML 报告会迁到 <code>artifacts/</code> 子目录</li>
+      <li>spec.md 会作为整轮 grilling 的总纲(覆盖 B+A+D+C 全部阶段)</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  Generated by OpenCode · 备忘录 grilling session · R3 · 文件路径: <code>备忘录/.scratch/grilling-alignment/artifacts/r3.html</code>
+</footer>
+
+</div>
+</body>
+</html>

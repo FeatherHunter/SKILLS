@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 · Grilling 对齐 · Round 4</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+  .badge.d { background: #f0e8ff; color: #5e3dab; }
+
+  h2 {
+    font-size: 20px;
+    margin: 32px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-size: 14px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .q-title { font-size: 16px; font-weight: 600; margin: 0 0 6px; }
+  .q-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #efeff1;
+    color: var(--muted);
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .q-tag.d { background: #f0e8ff; color: #5e3dab; }
+  .q-tag.a { background: #e6f4ea; color: var(--good); }
+  .q-tag.b { background: var(--accent-soft); color: var(--accent); }
+
+  .ctx {
+    background: var(--code-bg);
+    border-left: 3px solid var(--line);
+    padding: 12px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .ctx strong { color: var(--text); }
+  .ctx code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12.5px;
+  }
+
+  .answer-block {
+    border: 2px solid var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, #f5faff 100%);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 14px 0 12px;
+  }
+  .answer-block .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .answer-block .verdict { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .answer-block .reason { font-size: 13.5px; color: var(--text); }
+
+  .alts { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  .alts-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .alt { display: flex; gap: 10px; padding: 6px 0; font-size: 13.5px; }
+  .alt .alt-key { font-weight: 600; color: var(--text); flex-shrink: 0; width: 36px; }
+  .alt .alt-text { color: var(--muted); }
+  .alt .alt-text strong { color: var(--text); }
+
+  .reply {
+    margin-top: 14px;
+    background: #fafafa;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .reply strong { color: var(--text); }
+
+  .progress { display: flex; gap: 8px; margin: 20px 0 4px; font-size: 12px; }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    background: #efeff1;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .step.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .step.done { background: var(--good-soft); color: var(--good); }
+
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  .summary-table th, .summary-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .summary-table th {
+    background: #fafafa;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .check { color: var(--good); font-weight: 700; }
+  .file-link {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🍖 备忘录 · Grilling 对齐 · Round 4</h1>
+  <div class="sub">本轮主题: D 阶段工程仪式补齐(FAT 协议 / Tested-By 字段 / 改动前 3 问 / 豁免矩阵 / commit 分片)</div>
+  <div class="badges">
+    <span class="badge good">R1+R2+R3 已落 7 文件</span>
+    <span class="badge good">18/18 决策已凝固</span>
+    <span class="badge d">R4 / 估 5 轮 · 本轮 5 题</span>
+    <span class="badge muted">2026-07-28</span>
+  </div>
+</header>
+
+<div class="progress">
+  <div class="step done">R1 · B 范围+术语</div>
+  <div class="step done">R2 · B 执行细节</div>
+  <div class="step done">R3 · A 结构文件</div>
+  <div class="step active">R4 · D 工程仪式</div>
+  <div class="step">R5 · C 架构合规</div>
+</div>
+
+<h2><span class="num">①</span>累计落地文件清单(7 个)</h2>
+<div class="card">
+  <table class="summary-table">
+    <tr><th>文件</th><th>类型</th><th>归属</th></tr>
+    <tr>
+      <td><span class="file-link">备忘录/CONTEXT.md</span></td>
+      <td>术语表 + commit 格式约定</td>
+      <td>A · R1</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0001-version-sot.md</span></td>
+      <td>ADR · 版本号 SoT</td>
+      <td>B · R1</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0002-skill-md-dedup-and-dir-merge.md</span></td>
+      <td>ADR · SKILL.md 去重 + 目录合并</td>
+      <td>B · R1</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0003-b-execution-fallback.md</span></td>
+      <td>ADR · B 执行细节 + commit 硬规则</td>
+      <td>B · R2</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/docs/adr/0004-a-structure-files.md</span></td>
+      <td>ADR · A 阶段结构文件</td>
+      <td>A · R3</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/.scratch/grilling-alignment/spec.md</span></td>
+      <td>整体重构 spec</td>
+      <td>A.4 范式 · R3</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/.scratch/grilling-alignment/decisions.md</span></td>
+      <td>R1+R2+R3 决策日志</td>
+      <td>A.4 范式 · R3</td>
+    </tr>
+    <tr>
+      <td><span class="file-link">备忘录/.scratch/grilling-alignment/verify.ps1</span></td>
+      <td>验收脚本(占位)</td>
+      <td>A.4 范式 · R3</td>
+    </tr>
+  </table>
+</div>
+
+<h2><span class="num">②</span>D 阶段 · 总览</h2>
+<div class="card">
+  <div class="q-title">D 项总览(规范要求 vs 备忘录现状)</div>
+  <table class="summary-table">
+    <tr><th>规范要求(总纲 §05)</th><th>备忘录现状</th><th>判定</th></tr>
+    <tr>
+      <td>改动前必答 3 问</td>
+      <td>无显式 3 问段</td>
+      <td><span style="color:var(--warn);font-weight:700;">不满足</span></td>
+    </tr>
+    <tr>
+      <td>FAT 9 步协议</td>
+      <td>CHANGELOG v1.1.4 L155 写"待跑 · 用户 #4",从未跑过</td>
+      <td><span style="color:var(--warn);font-weight:700;">未跑</span></td>
+    </tr>
+    <tr>
+      <td>Tested-By 字段(commit / git notes)</td>
+      <td>commit history 全无 Tested-By</td>
+      <td><span style="color:var(--warn);font-weight:700;">未实施</span></td>
+    </tr>
+    <tr>
+      <td>FAT 豁免矩阵(SKILL.md 改字符永不豁免)</td>
+      <td>无豁免记录</td>
+      <td><span style="color:var(--warn);font-weight:700;">不明确</span></td>
+    </tr>
+  </table>
+  <div class="ctx">
+    <strong>D 阶段特殊性</strong>: D 涉及"工程仪式",与"是否做 FAT"这种<strong>用户策略</strong>问题绑定。如果用户决定"不跑 FAT",那 D 阶段可简化为"Tested-By 字段 + 3 问段 + 豁免矩阵"的文档层改动。
+  </div>
+</div>
+
+<h2><span class="num">③</span>R4 决策清单(本轮 5 题)</h2>
+<div class="card">
+  <div class="q-title">本轮目标: 锁定 D 阶段的<strong>策略选择 + 落地形态</strong></div>
+  <div class="ctx">
+    <strong>为什么这一轮涉及"是否做 FAT"</strong>: FAT 需要 fresh agent(总纲 §05 L84 定义),本仓库不一定配置了 fresh agent。先问策略,再问落地。
+  </div>
+</div>
+
+<!-- Q19 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag d">D.1</span><span class="q-tag">策略</span> FAT 协议的执行策略 —— 是否真做 FAT?</div>
+  <div class="ctx">
+    <strong>事实</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>总纲 §05 L28-53:FAT = Fresh Agent 黑盒测试,3-5 个核心唤醒词 × ≥3 个人类 prompt,循环 ≤ 3 次</li>
+      <li>总纲 §05 L74-100:FAT 豁免矩阵(涉及 SKILL.md 任何字符永不豁免)</li>
+      <li>总纲 §05 L84:Fresh Agent 需要独立 agent 配置(本仓库可能未配置)</li>
+      <li>CHANGELOG v1.1.4 L155:"用户 #4 FAT 协议(待跑 · 用户决定 FAT 时机)⏸"</li>
+      <li>CHANGELOG v1.1.4 L83-L164 多处"FAT G1 / G2 / G3 修复"标记,但实际未跑</li>
+    </ul>
+    <strong>核心权衡</strong>: FAT 是"真正的端到端验证"(人/独立 agent 测 prompt 是否真的唤醒 skill),但成本高(需要 fresh agent + 人类 prompt 收集)
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">不做 FAT,所有 commit 标 Tested-By: exempt(本仓库无 fresh agent)</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>本仓库(用户单仓库,非 monorepo)无独立 fresh agent 配置,FAT 无法自动跑</li>
+        <li>FAT 的本质是"防止 prompt 漂移导致 skill 不唤醒",但 174 pytest + 49 test_help.py + 13 test_html_delivery_checklist.py 已经覆盖"prompt → 行为"链路</li>
+        <li>174 pytest 是"白盒 + 黑盒混合":test_help.py L198-391 用 subprocess 调真 CLI,等同于 FAT 的部分效果</li>
+        <li>标记 exempt 是合规的(总纲 §05 L100:"不是所有变更都需 FAT")</li>
+        <li>未来若用户接入 fresh agent,ADR-0005 留出"激活 FAT"的迁移路径</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">D.1.a</div><div class="alt-text"><strong>做 FAT,强制 Tested-By: fresh-agent-v1</strong> —— 需要先配置 fresh agent,本仓库 1-2 天工作量</div></div>
+    <div class="alt"><div class="alt-key">D.1.b</div><div class="alt-text"><strong>混合: 关键 commit 做 FAT, 其他 exempt</strong> —— "关键"边界模糊,容易争议</div></div>
+    <div class="alt"><div class="alt-key">D.1.c</div><div class="alt-text"><strong>完全移除 CHANGELOG 中"FAT 待跑"标记</strong> —— 决定不再做 FAT,主动从规范撤退(ADR 留痕)</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>D.1</code> exempt / <code>D.1.a</code> 跑 FAT / <code>D.1.b</code> 混合 / <code>D.1.c</code> 完全撤退 / 自定义</div>
+</div>
+
+<!-- Q20 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag d">D.2</span><span class="q-tag">落地</span> Tested-By 字段加在哪里?</div>
+  <div class="ctx">
+    <strong>总纲 §05 L148-167 范例</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li><code>Tested-By: fresh-agent-v1</code> — FAT 跑过</li>
+      <li><code>Tested-By: exempt</code> — 豁免(需依据)</li>
+    </ul>
+    <strong>当前 commit history 全无 Tested-By</strong>(B.13 commit 信息全中文后开始加)
+    <br><br>
+    <strong>三种可能位置</strong>:
+    <ol style="margin: 4px 0 0; padding-left: 22px;">
+      <li><strong>commit message 行末</strong>(最显眼,git log 可见)</li>
+      <li><strong>git notes</strong>(独立 metadata,不污染 log)</li>
+      <li><strong>CHANGELOG.md</strong>(每个版本段末尾)</li>
+    </ol>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">commit message 行末 + CHANGELOG 版本段末尾(双写)</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li><strong>commit message 行末</strong>:<code>Tested-By: exempt</code>(行末加,符合总纲 L160 范例)</li>
+        <li><strong>CHANGELOG 版本段末尾</strong>:<code>**Tested-By**: exempt(无 fresh agent)</code>(人类阅读友好)</li>
+        <li>git notes 不选:不污染 log 是优点,但 git notes 不被 `git log` 默认显示,反而失去审计意义</li>
+        <li>双写看似冗余,但 commit message 给 git 工具读,CHANGELOG 给人读,两个消费者不同</li>
+        <li>v1.1.5 起的 commit 都加,B.13 commit 1 率先示范</li>
+      </ul>
+      <strong>commit 示例</strong>:
+<pre>[备忘录] v1.1.5 · B-0 决策记录入库(CONTEXT.md + docs/adr/0001-0004)
+Tested-By: exempt(无 fresh agent · 详见 ADR-0005)</pre>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">D.2.a</div><div class="alt-text"><strong>仅 commit message</strong> —— 简洁,但人类读 CHANGELOG 看不到</div></div>
+    <div class="alt"><div class="alt-key">D.2.b</div><div class="alt-text"><strong>仅 CHANGELOG</strong> —— 人类友好,但 git 工具读不到</div></div>
+    <div class="alt"><div class="alt-key">D.2.c</div><div class="alt-text"><strong>仅 git notes</strong> —— 不污染 log,但 `git log` 默认看不到</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>D.2</code> commit + CHANGELOG / <code>D.2.a</code> 仅 commit / <code>D.2.b</code> 仅 CHANGELOG / <code>D.2.c</code> git notes / 自定义</div>
+</div>
+
+<!-- Q21 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag d">D.3</span><span class="q-tag">流程</span> 改动前 3 问的形态</div>
+  <div class="ctx">
+    <strong>总纲 §05 L5-11 改动前 3 问</strong>:
+    <ol style="margin: 4px 0 0; padding-left: 22px;">
+      <li>影响哪些文件?</li>
+      <li>数据迁移?</li>
+      <li>回滚方案?</li>
+    </ol>
+    <strong>当前</strong>:SKILL.md / CHANGELOG.md 未见显式 3 问段
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">SKILL.md 顶部加 3 问段(强制模板),非强制回答但每次 commit 前肉眼自检</div>
+    <div class="reason">
+      <strong>SKILL.md 加段位置</strong>: frontmatter 之后,强制性规定之前(第 1 个 ## 章节之前)
+      <strong>段内容</strong>:
+<pre>## 改动前 3 问(总纲 §05 L5-11 · 强制肉眼自检)
+
+每次改动前必答(可不写下来,但要在脑子里过):
+
+1. **影响哪些文件?** — 列出本次改动涉及的所有文件路径
+2. **数据迁移?** — 是否需要 schema 变更 / 数据迁移 / 兼容老版本?
+3. **回滚方案?** — 如果改动有 bug,如何 revert? 是否会丢数据?
+
+豁免: 仅文档/注释/comment 改动可豁免
+(如本段本身的修订)</pre>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>加在 SKILL.md 是因为 SKILL.md 是 Agent 字面执行的依据(总纲 L13)</li>
+        <li>"强制肉眼自检"而非"强制回答":总纲 L5-11 字面是"必答",但答在哪没规定;写下来太重,不写下来又怕忘</li>
+        <li>豁免规则(仅 doc/comment)避免每次小注释改动都要 3 问</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">D.3.a</div><div class="alt-text"><strong>改用 PR description 模板</strong> —— 需要 GitHub PR 流程,本仓库 commit 直推,不适合</div></div>
+    <div class="alt"><div class="alt-key">D.3.b</div><div class="alt-text"><strong>pre-change-3-questions.sh 脚本</strong> —— 强制执行,但开发体验重,违反"轻仪式"原则</div></div>
+    <div class="alt"><div class="alt-key">D.3.c</div><div class="alt-text"><strong>不加,仅在总纲 §05 中提及</strong> —— 文档层不做,依赖开发者自觉(现状)</div></div>
+    <div class="alt"><div class="alt-key">D.3.d</div><div class="alt-text"><strong>加 SKILL.md + commit 模板</strong>(commit 前必须填 3 问) —— 双层保险</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>D.3</code> SKILL.md 加段 / <code>D.3.a</code> PR 模板 / <code>D.3.b</code> 脚本 / <code>D.3.c</code> 不加 / <code>D.3.d</code> 双层 / 自定义</div>
+</div>
+
+<!-- Q22 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag d">D.4</span><span class="q-tag">落地</span> 豁免矩阵的存放位置</div>
+  <div class="ctx">
+    <strong>总纲 §05 L74-100</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>FAT 豁免矩阵(SKILL.md 任何字符永不豁免)</li>
+      <li>其他豁免需依据</li>
+    </ul>
+    <strong>当前</strong>:无豁免记录
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">独立 ADR-0005(docs/adr/0005-d-exemptions.md),与 ADR-0003 commit 格式约束同级</div>
+    <div class="reason">
+      <strong>ADR-0005 内容骨架</strong>:
+<pre># 0005 D 阶段豁免矩阵 + 工程仪式文档
+
+## FAT 豁免
+
+| 变更类型 | 是否豁免 | 依据 |
+|---|---|---|
+| SKILL.md 任何字符改动 | ❌ 不豁免 | 总纲 §05 L100 |
+| 纯 doc/comment 改动 | ✅ 豁免 | 自定义(本 ADR) |
+| 纯测试改动 | ✅ 豁免 | 174 pytest 守护 |
+| script 改动 | ❌ 不豁免(需回归 174) | 自定义(本 ADR) |
+| templates 改动 | ❌ 不豁免(需 4 状态 fallback 守护) | B.9 决策 |
+
+## Tested-By 字段约定
+
+详见 ADR-0003 · commit 全中文段 + Tested-By 行末规则。
+
+## 改动前 3 问
+
+详见 SKILL.md 顶部 D.3 决策段。</pre>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>ADR 是"硬规则文档",独立 ADR 比放进 SKILL.md 更显眼</li>
+        <li>豁免矩阵需要"分类 + 依据"表格,SKILL.md 表格太重</li>
+        <li>ADR-0005 与 ADR-0003(commit 格式)同级,都属于"工程仪式硬规则"</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">D.4.a</div><div class="alt-text"><strong>放进 SKILL.md 一段</strong> —— 显眼,但与 A.2 README 5 章节重复</div></div>
+    <div class="alt"><div class="alt-key">D.4.b</div><div class="alt-text"><strong>放进 .scratch/grilling-alignment/decisions.md</strong> —— 轻量 ADR 性质,但永久规则不该放 .scratch</div></div>
+    <div class="alt"><div class="alt-key">D.4.c</div><div class="alt-text"><strong>放进 AGENTS.md 段</strong> —— Agent 入口,但 AGENTS.md 是"速查"不是"硬规则"</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>D.4</code> ADR-0005 / <code>D.4.a</code> SKILL.md 段 / <code>D.4.b</code> decisions.md / <code>D.4.c</code> AGENTS.md 段 / 自定义</div>
+</div>
+
+<!-- Q23 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag d">D.5</span><span class="q-tag">commit</span> D 阶段 commit 分片策略</div>
+  <div class="ctx">
+    <strong>待改项清单</strong>(D.1-D.4 决策后):
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>SKILL.md 顶部加 3 问段(D.3 决策)</li>
+      <li>CHANGELOG.md 每个版本段末尾加 Tested-By 段(D.2 决策)</li>
+      <li>docs/adr/0005-d-exemptions.md 新建(D.4 决策)</li>
+      <li>commit message 加 Tested-By 行末(D.2 决策)</li>
+      <li>可能:AGENTS.md 升级(A.5 执行的一部分,或单独 commit)</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">2 个 commit: 仪式文档入库(D 决策文件) + 仪式落地(SKILL.md / CHANGELOG)</div>
+    <div class="reason">
+      <strong>commit 列表</strong>(全中文):
+      <ol style="margin: 4px 0 0; padding-left: 22px;">
+        <li><code>[备忘录] v1.1.5 · D-0 仪式决策入库(ADR-0005 · FAT exempt + Tested-By + 3 问 + 豁免矩阵)</code> — 仅决策文件入库</li>
+        <li><code>[备忘录] v1.1.5 · D-1 仪式落地(SKILL.md 顶部 3 问段 + CHANGELOG Tested-By 行 + commit Tested-By 行末格式启用)</code> — 文档实际改动</li>
+      </ol>
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>决策与落地分开:先固化"规则是什么",再改"按规则改文件"</li>
+        <li>commit 1 与 B-0 入库合并也 OK,但保持独立更清晰</li>
+        <li>commit 2 是个分水岭:从此以后 commit 都要带 Tested-By(规则自生效)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">D.5.a</div><div class="alt-text"><strong>1 个 commit</strong>(D 决策 + 落地一并) —— 简单但 commit 内含混合改动</div></div>
+    <div class="alt"><div class="alt-key">D.5.b</div><div class="alt-text"><strong>3 个 commit</strong>(D-0 决策 / D-1 SKILL.md / D-2 CHANGELOG+commit 模板) —— 粒度更细</div></div>
+    <div class="alt"><div class="alt-key">D.5.c</div><div class="alt-text"><strong>D 不单独 commit,并入 A 阶段 commit(README.md / SKILL.md frontmatter 同期落地)</strong></div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>D.5</code> 2 个 commit / <code>D.5.a</code> 1 个 / <code>D.5.b</code> 3 个 / <code>D.5.c</code> 并入 A / 自定义</div>
+</div>
+
+<h2><span class="num">④</span>本轮回复指引</h2>
+<div class="card">
+  <div class="ctx">
+    <strong>回复格式</strong>(一次性回多题):
+    <pre>D.1 exempt
+D.2 commit + CHANGELOG
+D.3 SKILL.md 加段
+D.4 ADR-0005
+D.5 2 个 commit</pre>
+    <strong>回完 5 题</strong>后,我会:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>写 <code>docs/adr/0005-d-exemptions-and-rituals.md</code> 含 5 决策</li>
+      <li>更新 <code>.scratch/grilling-alignment/decisions.md</code> R4 段</li>
+      <li>生成 <strong>Round 5</strong> HTML(主题:C 架构合规 —— 5 层自检 / injector 决策复核 / 跨 Skill 路由)</li>
+      <li>Chrome 重开</li>
+    </ul>
+    <strong>R5 后</strong>(最后一轮):
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>写 <code>.scratch/grilling-alignment/verify.ps1</code> 完整版(对应 A.4 范式)</li>
+      <li>整体回顾 23 决策汇总</li>
+      <li>最终验收清单 + 后续执行 commit 顺序表</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  Generated by OpenCode · 备忘录 grilling session · R4 · 文件路径: <code>备忘录/.scratch/grilling-alignment/artifacts/r4.html</code>
+</footer>
+
+</div>
+</body>
+</html>

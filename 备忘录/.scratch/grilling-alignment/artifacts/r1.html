@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 · Grilling 对齐 · Round 1</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+
+  h2 {
+    font-size: 20px;
+    margin: 32px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h2 .num {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-size: 14px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .q-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .q-tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #efeff1;
+    color: var(--muted);
+    margin-right: 6px;
+    font-weight: 500;
+  }
+  .q-tag.b { background: var(--accent-soft); color: var(--accent); }
+  .q-tag.c { background: #fff4e6; color: var(--warn); }
+  .q-tag.a { background: #e6f4ea; color: var(--good); }
+  .q-tag.d { background: #f0e8ff; color: #5e3dab; }
+
+  .ctx {
+    background: var(--code-bg);
+    border-left: 3px solid var(--line);
+    padding: 12px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .ctx strong { color: var(--text); }
+  .ctx code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12.5px;
+  }
+
+  .answer-block {
+    border: 2px solid var(--accent);
+    background: linear-gradient(180deg, var(--accent-soft) 0%, #f5faff 100%);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 14px 0 12px;
+  }
+  .answer-block .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .answer-block .verdict {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .answer-block .reason {
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  .alts {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .alts-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .alt {
+    display: flex;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13.5px;
+  }
+  .alt .alt-key {
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    width: 24px;
+  }
+  .alt .alt-text { color: var(--muted); }
+  .alt .alt-text strong { color: var(--text); }
+
+  .reply {
+    margin-top: 14px;
+    background: #fafafa;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .reply strong { color: var(--text); }
+
+  .progress {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0 4px;
+    font-size: 12px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    background: #efeff1;
+    border-radius: 6px;
+    color: var(--muted);
+  }
+  .step.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .step.done { background: var(--good-soft); color: var(--good); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+  }
+
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", monospace; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🍖 备忘录 · Grilling 对齐 · Round 1</h1>
+  <div class="sub">范围: A + B + C(无离线) + D + E 全做 · 路线: P1(依赖关系升序) · 当前 Phase: <strong>B 内容一致性</strong></div>
+  <div class="badges">
+    <span class="badge good">Q1 范围 = ABCDE 已定</span>
+    <span class="badge good">Q2 路线 = P1 已定</span>
+    <span class="badge">Round 1 / 估 5 轮</span>
+    <span class="badge muted">2026-07-28</span>
+  </div>
+</header>
+
+<div class="progress">
+  <div class="step active">R1 · B 范围+术语</div>
+  <div class="step">R2 · B 内容清理</div>
+  <div class="step">R3 · A 结构文件</div>
+  <div class="step">R4 · D 工程仪式</div>
+  <div class="step">R5 · C 架构合规</div>
+</div>
+
+<h2><span class="num">①</span>探勘小结(已凝固的事实卡片)</h2>
+<div class="card">
+  <div class="ctx">
+    <strong>规范出处</strong>: <code>D:\2Study\StudyNotes\SKILLS\SKILL开发总纲V1.0\</code><br>
+    <strong>优化对象</strong>: <code>D:\2Study\StudyNotes\SKILLS\备忘录\</code><br>
+    <strong>差距总数</strong>: 50 项(规范 vs 现状) + 30+ 项不明确<br>
+    <strong>关键缺口</strong>: YAML frontmatter / <code>CONTEXT.md</code> / <code>docs/adr/</code> / <code>README.md</code> / <code>pytest.ini</code> / <code>.scratch/</code> 全缺失;<code>_meta.json</code> 版本落后;SKILL.md L927+L1034 <code>## 参考文档</code> 章节重复;<code>reference/</code> + <code>references/</code> 双目录
+  </div>
+  <div class="ctx">
+    <strong>你的明确决策(已记录,不再回问)</strong>:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>5 状态 fallback 改为 4 状态 —— <strong>不存在"离线"</strong></li>
+      <li>优化路线 P1(依赖关系升序): B → A → D → C</li>
+      <li>grilling 改多问合发 + HTML 输出 + Chrome 打开</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="num">②</span>Round 1 决策清单(本轮 8 题)</h2>
+<div class="card">
+  <div class="q-title">本轮目标: 锁住 B 项的<strong>子范围</strong>与<strong>术语</strong>两大块</div>
+  <div class="ctx">
+    <strong>为什么这一轮先问 B?</strong> 因为 B 是"内容清理 + 术语统一",先把术语钉死,后面 A/C/D 写的文档才有共同词汇。否则 4 轮之后会发现不同 ADR 用了不同术语,又得回头改。
+  </div>
+</div>
+
+<!-- Q1 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.1</span><span class="q-tag">范围</span> 子范围精修:B 项哪些粒度要落到代码/文档层?</div>
+  <div class="ctx">
+    B 项探勘到的具体子项:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li><code>_meta.json</code> 版本号从 1.0.0 升到 1.1.4(<strong>必做</strong>,因为 SKILL.md / CHANGELOG 都标 1.1.4)</li>
+      <li>SKILL.md L927 + L1034 <code>## 参考文档</code> 重复章节</li>
+      <li><code>reference/</code>(3 个 .md) + <code>references/</code>(1 个 .yaml) 双目录</li>
+      <li>术语统一:9+ 个候选(详见 Q3-Q7)</li>
+      <li><code>scenarios.yaml</code> 出现两次 <code>scenarios:</code> 键(L21 + L23)</li>
+      <li>CHANGELOG.md L538 写 "106/106 pytest 通过" vs 现状 166 test 函数,数字与现状不符</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">全部 6 项都做(包括 L538 数字回溯)</div>
+    <div class="reason">
+      <strong>理由</strong>: 6 项里只有"CHANGELOG L538 数字回溯"略带感性(改不改历史记录),但留着会让后续 onboarding 的人误判测试规模。其余 5 项都是 hard 修复,没有"做了浪费"风险。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.1.a</div><div class="alt-text"><strong>跳过 CHANGELOG L538 数字回溯</strong> —— 历史就该是历史,改它会伪造审计轨迹</div></div>
+    <div class="alt"><div class="alt-key">B.1.b</div><div class="alt-text"><strong>双目录先冻,等 R3 再决定</strong> —— reference/ 与 references/ 的合并会牵动 SKILL.md 引用路径,放到 A 阶段一起改更省事</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.1</code> 接受推荐 / <code>B.1.a</code> 跳过 L538 / <code>B.1.b</code> 双目录延后 / 自定义</div>
+</div>
+
+<!-- Q2 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.2</span><span class="q-tag">架构</span> 版本号 SoT(单一事实源)定在哪?</div>
+  <div class="ctx">
+    <strong>当前 3 处版本号不统一</strong>:
+    <table>
+      <tr><th>位置</th><th>值</th><th>角色</th></tr>
+      <tr><td><code>_meta.json</code> L3</td><td><code>1.0.0</code></td><td>结构化元数据,自动化工具可读</td></tr>
+      <tr><td><code>SKILL.md</code> L3</td><td><code>1.1.4 (2026-07-28)</code></td><td>人类阅读入口</td></tr>
+      <tr><td><code>CHANGELOG.md</code> L80</td><td><code>[1.1.4] · 2026-07-28</code></td><td>审计日志</td></tr>
+    </table>
+    <strong>根因</strong>: <code>_meta.json</code> 从 v1.0.0 起就没动过,后续 14 次版本升级全跳过了它(可能因为 v1.0.0 时代没有更新机制)。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict"><code>SKILL.md</code> 是 SoT,<code>_meta.json</code> 是镜像</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>总纲 <code>CONTEXT.md</code> L13-15 明确 "SKILL.md 是 Agent 字面执行的依据",权威性最高</li>
+        <li><code>_meta.json</code> 优势在"机器可读",但当前没有工具消费它(自动化脚本不存在)</li>
+        <li>CHANGELOG.md 是事件流日志,不是 SoT</li>
+        <li>具体落地:加一个 pre-commit 检查,<code>SKILL.md</code> 改 version 时自动同步 <code>_meta.json</code>;反过来不允许(避免双向同步的歧义)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.2.a</div><div class="alt-text"><strong><code>_meta.json</code> 是 SoT,SKILL.md 镜像</strong> —— 反过来。好处是 JSON 易解析、易校验;坏处是破坏了"SKILL.md 权威性"</div></div>
+    <div class="alt"><div class="alt-key">B.2.b</div><div class="alt-text"><strong>删 <code>_meta.json</code></strong> —— 既然没人消费它,留着只会腐化(它现在已经腐化到 1.0.0)。删除是最干净的解</div></div>
+    <div class="alt"><div class="alt-key">B.2.c</div><div class="alt-text"><strong>双 SoT + lint 强制一致</strong> —— 复杂但最严谨,适合有多消费者场景</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.2</code> SKILL.md 是 SoT / <code>B.2.a</code> 反过来 / <code>B.2.b</code> 删 _meta.json / <code>B.2.c</code> 双 SoT / 自定义</div>
+</div>
+
+<!-- Q3 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.3</span><span class="q-tag">术语</span> "触发词" vs "唤醒词" —— 用哪个?</div>
+  <div class="ctx">
+    <strong>事实</strong>: 总纲用"唤醒词"(CONTEXT.md L23),备忘录 SKILL.md 用"触发词"(91 次)。两个名词指向同一概念。
+    <br><br>
+    <strong>总纲要求</strong>: <code>CONTEXT.md</code> L23 显式 Avoid "命令、指令、关键词",但<strong>没有显式 Avoid "触发词"</strong> —— 这是规范本身的模糊地带。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">用"唤醒词",全面替换"触发词"</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>总纲 <code>CONTEXT.md</code> 用"唤醒词",权威性更高</li>
+        <li>"触发"在编程语境常指"trigger 事件",易混淆; "唤醒"是 AI agent 领域惯用词</li>
+        <li>替换成本:grep 全量替换 91 处 + scenarios.yaml 字段名(<code>wake_word</code> 已是英文对应词,无需改)</li>
+        <li>test_help.py 里 <code>test_wake_words_consistency</code> 等测试命名也是 wake_word,只改中文 SKILL.md</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.3.a</div><div class="alt-text"><strong>保留"触发词"</strong> —— 备忘录历史用习惯了,且总纲本身未禁用该词</div></div>
+    <div class="alt"><div class="alt-key">B.3.b</div><div class="alt-text"><strong>双轨:SKILL.md 用"唤醒词",CHANGELOG/历史 commit 保留"触发词"</strong> —— 妥协方案</div></div>
+    <div class="alt"><div class="alt-key">B.3.c</div><div class="alt-text"><strong>向总纲提议在 CONTEXT.md 显式 Avoid "触发词"</strong> —— 让总纲也升级,然后全仓库统一</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.3</code> 用唤醒词 / <code>B.3.a</code> 保留触发词 / <code>B.3.b</code> 双轨 / <code>B.3.c</code> 提议总纲改 / 自定义</div>
+</div>
+
+<!-- Q4 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.4</span><span class="q-tag">术语</span> "用例" vs "场景" —— 用哪个?</div>
+  <div class="ctx">
+    <strong>事实</strong>: 总纲用"场景"(CONTEXT.md L42-44),备忘录偶用"用例"(SKILL.md L1024 + 测试目录命名)。"场景"出现频率远高(>30 次)。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">用"场景","用例"全替换</div>
+    <div class="reason">
+      <strong>理由</strong>: 与总纲一致。"用例"在工程语境常指"test case",易与单元测试混淆(scenarios.yaml 的 scenarios 本就是"业务场景",不是 test case)。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.4.a</div><div class="alt-text"><strong>保留"用例"</strong> —— 备忘录用户习惯了"用例"作为业务用法示例</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.4</code> 用场景 / <code>B.4.a</code> 保留用例 / 自定义</div>
+</div>
+
+<!-- Q5 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.5</span><span class="q-tag">术语</span> "4 元组" vs "4 部分 prompt" —— 数字 4 的歧义</div>
+  <div class="ctx">
+    <strong>事实</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>总纲 <code>03</code> L22: <strong>4 元组 = 动作+对象+维度+类型</strong>(指触发词结构)</li>
+      <li>备忘录 SKILL.md L540-545: <strong>4 部分 prompt = 场景/数据/期望/来源</strong>(指 prompt 模板结构)</li>
+      <li>两者数字相同(4)、概念不同,极易混用</li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">明确两个不同名词:4 元组(触发词) / 4 段 prompt(模板)</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>数字 4 是巧合,但既然两个都用了 4,就显式区分清楚</li>
+        <li>"4 元组" → "4 元(触发词)":限定到触发词场景</li>
+        <li>"4 部分 prompt" → "4 段 prompt":与总纲 4 段式(HERO/BODY/INTERACT/TAIL)对齐</li>
+        <li>落地:CONTEXT.md 加术语表,显式标"4 元"和"4 段"是不同概念</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.5.a</div><div class="alt-text"><strong>把触发词 4 元组改名为 5 元(补 result)</strong> —— 让两者数字不再撞车;但要改总纲</div></div>
+    <div class="alt"><div class="alt-key">B.5.b</div><div class="alt-text"><strong>保持现状,在 SKILL.md 加显式注释"此处 4 部分不是 4 元组"</strong> —— 最小改动</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.5</code> 显式区分 / <code>B.5.a</code> 改名 5 元 / <code>B.5.b</code> 注释 / 自定义</div>
+</div>
+
+<!-- Q6 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.6</span><span class="q-tag">术语</span> "HTML 镜像" vs "用户手册" vs "HELP HTML" —— 同一个 <code>备忘录.html</code> 三个名字</div>
+  <div class="ctx">
+    <strong>事实</strong>: 同一个 <code>备忘录.html</code> 文件,备忘录在不同版本用三个名字:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>v1.0.9 前: "备忘录.html"(无名)</li>
+      <li>v1.0.9 ~ v1.1.3: "用户手册"(CHANGELOG L540-573)</li>
+      <li>v1.1.4 起: "HELP HTML"(SKILL.md L936 §07 契约)</li>
+    </ul>
+    <strong>总纲用词</strong>: <code>HTML 镜像</code>(CONTEXT.md L32, Avoid: 落地页、官网、演示页)
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">正式名 "HTML 镜像" + 运行时别名 "HELP HTML"</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>"HTML 镜像"是文件形态的类别名(总纲术语)</li>
+        <li>"HELP HTML"是用途别名(用户说"备忘录 HELP"时调它)</li>
+        <li>"用户手册"是 v1.0.9 的临时名,已在 v1.1.4 弃用,CHANGELOG 已废弃,不留</li>
+        <li>落地:CONTEXT.md 加词条,SKILL.md 用 "HTML 镜像(HELP HTML)" 双标一次后统一用前者</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.6.a</div><div class="alt-text"><strong>只保留"HTML 镜像"</strong> —— 不用别名,纯规范化</div></div>
+    <div class="alt"><div class="alt-key">B.6.b</div><div class="alt-text"><strong>只保留"HELP HTML"</strong> —— 贴近用户语,但偏离总纲</div></div>
+    <div class="alt"><div class="alt-key">B.6.c</div><div class="alt-text"><strong>保持现状</strong> —— 三个名字在不同语境都有人用,无需统一</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.6</code> 镜像+HELP 双名 / <code>B.6.a</code> 只镜像 / <code>B.6.b</code> 只 HELP / <code>B.6.c</code> 保持现状 / 自定义</div>
+</div>
+
+<!-- Q7 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.7</span><span class="q-tag">结构</span> SKILL.md L927 + L1034 <code>## 参考文档</code> 重复章节 —— 怎么处理?</div>
+  <div class="ctx">
+    <strong>事实</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li>L927: <code>## 参考文档</code> → 引 4 个 .md</li>
+      <li>L936-1032: 中间被 HELP 章节占据</li>
+      <li>L1034: <code>## 参考文档</code> → 引 3 个 .md(几乎重复)</li>
+    </ul>
+    <strong>历史猜测</strong>: v1.1.4 加 HELP 章节时,误把"参考文档"放两次(可能 copy-paste 失误)。
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">删 L1034 重复,保留 L927(在 HELP 前)作为唯一"参考文档"</div>
+    <div class="reason">
+      <strong>理由</strong>: L927 位置更合理(在 HELP 前,符合"先讲用法再讲手册"的阅读流)。L1034 是冗余。
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.7.a</div><div class="alt-text"><strong>合并两章,内容合一份</strong> —— 4 + 3 引用合 1 份,避免后续再分裂</div></div>
+    <div class="alt"><div class="alt-key">B.7.b</div><div class="alt-text"><strong>删 L927,保留 L1034</strong> —— 让"参考文档"在 HELP 章节之后(理由:HELP 是用户最后才看的内容,参考文档作为收尾)</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.7</code> 删 L1034 / <code>B.7.a</code> 合并 / <code>B.7.b</code> 删 L927 / 自定义</div>
+</div>
+
+<!-- Q8 -->
+<div class="card">
+  <div class="q-title"><span class="q-tag b">B.8</span><span class="q-tag">结构</span> <code>reference/</code> + <code>references/</code> 双目录 —— 合并方向?</div>
+  <div class="ctx">
+    <strong>事实</strong>:
+    <ul style="margin: 4px 0 0; padding-left: 22px;">
+      <li><code>reference/</code>: schema.md(90 行)/ examples.md(63 行)/ cron.md(23 行) —— 旧 reference</li>
+      <li><code>references/</code>: scenarios.yaml(378 行) —— 新场景资产(v1.1.4 加)</li>
+      <li>SKILL.md 中引用:两目录都被引(L928-930 + L932)</li>
+      <li>Python 引用: <code>memo_render.py:30</code> 引 <code>references/scenarios.yaml</code> </li>
+    </ul>
+  </div>
+  <div class="answer-block">
+    <div class="label">📌 我的推荐</div>
+    <div class="verdict">合并为 <code>references/</code>(复数,统一名)</div>
+    <div class="reason">
+      <strong>理由</strong>:
+      <ul style="margin: 4px 0 0; padding-left: 20px;">
+        <li>Python 已经在用 <code>references/scenarios.yaml</code>,改它影响运行时</li>
+        <li>总纲 <code>domain.md</code> 提到 <code>references/</code>(英文场景资产常用复数)</li>
+        <li><code>reference/</code> 改名 <code>references/</code>,3 个 .md 一起移过去</li>
+        <li>落地:git mv + SKILL.md 改 4 处引用 + memo_render.py 不动</li>
+      </ul>
+    </div>
+  </div>
+  <div class="alts">
+    <div class="alts-title">备选</div>
+    <div class="alt"><div class="alt-key">B.8.a</div><div class="alt-text"><strong>合并为 <code>reference/</code>(单数)</strong> —— 反过来,改 Python 端</div></div>
+    <div class="alt"><div class="alt-key">B.8.b</div><div class="alt-text"><strong>保持双目录</strong> —— 旧 reference/ 是文档类,新 references/ 是数据类,语义不同</div></div>
+  </div>
+  <div class="reply"><strong>请回复</strong>: <code>B.8</code> 合并为 references/ / <code>B.8.a</code> 合并为 reference/ / <code>B.8.b</code> 保持双目录 / 自定义</div>
+</div>
+
+<h2><span class="num">③</span>本轮回复指引</h2>
+<div class="card">
+  <div class="ctx">
+    <strong>回复格式建议</strong>(可一次性回多题):
+    <pre style="background: var(--code-bg); padding: 10px; border-radius: 6px; font-size: 12.5px; margin: 6px 0 0;">B.1 接受
+B.2 SKILL.md 是 SoT
+B.3 用唤醒词
+B.4 用场景
+B.5 显式区分
+B.6 镜像+HELP 双名
+B.7 删 L1034
+B.8 合并为 references/</pre>
+    <strong>回完 8 题</strong>后,我会:
+    <ul style="margin: 6px 0 0; padding-left: 22px;">
+      <li>把本轮的 8 个决策落到 <code>备忘录/CONTEXT.md</code> + <code>备忘录/docs/adr/0001-b-terminology.md</code> 等</li>
+      <li>生成 <strong>Round 2</strong> HTML(主题:B 内容清理收尾 + 5 状态 fallback 4 状态化 + 触发词 4 元组化评估)</li>
+      <li>用 Chrome 重新打开</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  Generated by OpenCode · 备忘录 grilling session · 文件路径: <code>备忘录/.scratch/grilling-alignment/r1.html</code>
+</footer>
+
+</div>
+</body>
+</html>

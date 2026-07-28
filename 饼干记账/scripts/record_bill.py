@@ -89,7 +89,6 @@ def cmd_add(args):
     except ValidationError as e:
         _format_validation_error(e, json_mode=getattr(args, 'json', False))
         sys.exit(1)
-        return None
     result = add_bill(
         category=record["category"],
         amount=record["amount"],
@@ -134,7 +133,6 @@ def cmd_update(args):
     except ValidationError as e:
         _format_validation_error(e, json_mode=getattr(args, 'json', False))
         sys.exit(1)
-        return
 
     # 展示 diff
     print(f"📝 当前记录(ID={record_id}):")

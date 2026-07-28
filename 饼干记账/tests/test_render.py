@@ -182,6 +182,44 @@ class TestBomBytes:
         assert raw[:3] == b"\xef\xbb\xbf", f"前 3 字节 = {raw[:3]!r}，期望 BOM"
 
 
+# ── SKILL.md 边界章节关键词校验（ticket 12）──────────────────────────────
+
+class TestSkillMdBoundarySection:
+    """SKILL.md 含 §与其他工具的边界 章节 + 关键词"""
+
+    SKILL_MD = Path(__file__).resolve().parent.parent / "SKILL.md"
+
+    def test_skill_md_contains_boundary_section(self):
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        assert "## 与其他工具的边界" in text, "SKILL.md 缺 §与其他工具的边界 章节"
+
+    def test_skill_md_contains_boundary_keywords(self):
+        """章节含关键词：SkillBoard / 独立维护 / config-cookie-accounting / 5 层骨架"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        for kw in ["SkillBoard", "独立维护", "config-cookie-accounting.ts", "5 层骨架"]:
+            assert kw in text, f"SKILL.md 缺边界关键词: {kw}"
+
+    def test_skill_md_references_categories_mapping(self):
+        """§与其他工具的边界 章节引用 references/categories-mapping.md"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        assert "references/categories-mapping.md" in text, \
+            "SKILL.md 未引用 references/categories-mapping.md"
+
+    def test_skill_md_has_section_12ab_declaration(self):
+        """§📌 输出位置 章节显式声明 §04 原则 12.A / 12.B（ticket 09）"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        assert "## 📌 输出位置" in text, "SKILL.md 缺 §📌 输出位置 章节"
+        assert "§04 原则 12.A / 12.B" in text or "12.A / 12.B" in text, \
+            "SKILL.md §📌 输出位置 缺 §04 原则 12.A / 12.B 显式声明"
+
+    def test_skill_md_help_wake_words_are_four(self):
+        """§唤醒词总表 HELP 行写 4 条唤醒词（ticket 08）"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        # HELP 行应含 4 条
+        for ww in ["饼干记账 HELP", "饼干记账 帮助", "查帮助", "能做什么"]:
+            assert ww in text, f"SKILL.md 缺 HELP 唤醒词: {ww}"
+
+
 # ── HELP HTML ──────────────────────────────────────────────────────────────
 
 class TestHelpHtmlRender:

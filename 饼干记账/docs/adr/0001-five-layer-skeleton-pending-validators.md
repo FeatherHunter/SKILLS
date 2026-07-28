@@ -26,6 +26,6 @@ accepted — 2026-07-28
 
 ## Follow-up
 
-- [ ] `validators.py` 独立化
+- [x] `validators.py` 独立化（2026-07-28 落地，见 `scripts/validators.py` + `tests/test_validators.py`）
 - [ ] FAT (Fresh Agent 黑盒) 测试记录归档
 - [ ] HTML 镜像(`饼干记账.html`)改自动生成

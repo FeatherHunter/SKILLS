@@ -163,7 +163,8 @@ class TestCheckConstraintsApplied:
         init_db()
         _run_migration(tmp_db_dir, expect_rc=0)
         sql = _bills_sql(tmp_db_dir).upper()
-        assert "AMOUNT != 0" in sql or "AMOUNT<>0" in sql or "AMOUNT != 0" in sql.upper()
+        # CHECK (amount != 0) — 容忍 SQLite 序列化空格差异（!= / <>）
+        assert "AMOUNT != 0" in sql or "AMOUNT<>0" in sql or "AMOUNT <> 0" in sql
 
     def test_check_currency_in_whitelist(self, tmp_db_dir):
         from db import init_db
@@ -181,7 +182,7 @@ class TestCheckConstraintsApplied:
         _run_migration(tmp_db_dir, expect_rc=0)
         sql = _bills_sql(tmp_db_dir).upper()
         # CHECK (ledger IS NOT NULL AND ledger != '')
-        assert "LEDGER IS NOT NULL" in sql or "LEDGER IS NOT NULL" in sql
+        assert "LEDGER IS NOT NULL" in sql
         assert "LEDGER != ''" in sql.upper() or "LEDGER<>''" in sql.upper()
 
 

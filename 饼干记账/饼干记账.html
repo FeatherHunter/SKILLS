@@ -241,13 +241,46 @@
 </tr>
 <tr>
 <td><strong>HELP</strong></td>
-<td><code>饼干记账 HELP</code> / <code>查帮助</code> / <code>能做什么</code></td>
+<td><code>饼干记账 HELP</code> / <code>饼干记账 帮助</code> / <code>查帮助</code> / <code>能做什么</code></td>
 <td>能力速查</td>
 <td><code>render_help.py</code></td>
 <td><strong>HTML（HELP 页）</strong></td>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="📌-输出位置">📌 输出位置（§04 原则 12.A / 12.B）</h2>
+<p><strong>本 Skill 走 §04 原则 12.A / 12.B</strong>，HTML 路径名规则固化如下，不可随意改动：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>§12 分类</th>
+<th>文件名规范</th>
+<th>触发命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>数据 / 过程 HTML</strong>（12.A）</td>
+<td>§12.A</td>
+<td><code>$DATA_DIR/biscuit_accountant_html/&lt;command_zh&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code></td>
+<td><code>bill_inject.py &lt;query_type&gt; [args]</code></td>
+</tr>
+<tr>
+<td><strong>HELP HTML</strong>（12.B）</td>
+<td>§12.B</td>
+<td><code>$DATA_DIR/biscuit_accountant_html/饼干记账_HELP_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code></td>
+<td><code>render_help.py</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>&lt;command_zh&gt;</code> 由 <code>scripts/html_paths.resolve_command_name()</code> 解析（如 <code>今日摘要</code> / <code>月度汇总</code> / <code>收支总览</code>）</li>
+<li>同秒冲突自动追加 <code>_2</code> / <code>_3</code> 后缀</li>
+<li><code>$DATA_DIR</code> 跟随 <code>SKILLS_DB_PATH</code> 环境变量（fallback <code>D:/.db/</code>）</li>
+<li>HELP 路径名固定以 <code>饼干记账_HELP_</code> 前缀（grep 一抓就出，便于检索历史 HELP 页）</li>
+</ul>
 <hr />
 <h2 id="使用流程-6">使用流程</h2>
 <h3>Step 1：判断输入类型</h3>
@@ -789,7 +822,7 @@ python3 scripts/bill_inject.py search "咖啡"
 <h4>交付给用户</h4>
 <p>用 <code>&lt;media src="..." type="file" /&gt;</code> 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。</p>
 <h3 id="help-能力速查v24-升级-11">Step 7：HELP 能力速查（v2.4 升级）</h3>
-<p>当用户说「饼干记账 HELP」「查帮助」「能做什么」时，AI 调用 <code>scripts/render_help.py</code> 生成 HELP HTML 并交付。</p>
+<p>当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 <code>scripts/render_help.py</code> 生成 HELP HTML 并交付。</p>
 <h4>调用流程</h4>
 <pre><code class="language-bash"># 默认输出
 python3 scripts/render_help.py
@@ -903,6 +936,36 @@ python3 scripts/render_help.py --check
 <p><strong>收入 L1(5 个):</strong> 工资、奖金、兼职、投资、其他收入</p>
 <blockquote>
 <p>旧数据中不带 <code>/</code> 的分类(如 <code>餐饮</code>、<code>交通</code>)自动视为 L1,无需迁移。</p>
+</blockquote>
+<hr />
+<h2 id="与其他工具的边界">与其他工具的边界</h2>
+<p>本 Skill 的 <strong>5 层骨架</strong>（数据层 <code>db.py</code> / 操作层 <code>analyze.py</code> / 规则层 <code>validators.py</code> / 接口层 <code>record_bill.py</code> / 文档层 <code>references/</code>+<code>templates/</code>）<strong>不含</strong> <code>config-cookie-accounting.ts</code>。</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>归属</th>
+<th>维护方</th>
+<th>与本 Skill 的关系</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config-cookie-accounting.ts</code></td>
+<td>SkillBoard 数据层视图（legacy）</td>
+<td>独立维护</td>
+<td>不在 5 层骨架内；权威分类体系以 <a href="references/categories.md"><code>references/categories.md</code></a> 为准</td>
+</tr>
+<tr>
+<td><code>references/categories-mapping.md</code></td>
+<td>本 Skill 文档层</td>
+<td>本 Skill 维护</td>
+<td>桥接 <code>config-cookie-accounting.ts</code>（9 L1）→ <code>categories.md</code>（10 L1）；仅做语义映射，不修改任何一方的字段</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>若未来澄清 <code>config-cookie-accounting.ts</code> 为废弃</strong>：需独立 spec 处理；本 Skill 当前仅做桥接文档（<code>references/categories-mapping.md</code>），不删不改 <code>config-cookie-accounting.ts</code>。</p>
 </blockquote>
 <hr />
 <h2 id="错误处理-9">错误处理</h2>

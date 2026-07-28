@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11 Tickets 一句话总结 · Round 11</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--green:#34c759;--purple:#6b21a8;--shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;padding:48px 24px 96px}
+  .wrap{max-width:920px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#f3e8ff 0%,#e8d6ff 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .hero .eyebrow{font-size:12px;color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .hero h1{font-size:26px;line-height:1.18;letter-spacing:-.02em;margin-bottom:8px}
+  .hero .lead{font-size:14px;color:var(--fg2);max-width:780px}
+  .list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;border-left:4px solid var(--blue)}
+  .item .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .item .num{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--blue2);font-weight:700;font-size:15px;min-width:36px}
+  .item .title{font-weight:600;color:var(--fg);font-size:14.5px;flex:1;margin:0 12px}
+  .item .type{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;letter-spacing:.04em}
+  .type-narrow{background:#e3f2fd;color:#0277bd}
+  .type-wide-expand{background:#fff3e0;color:#c25c00}
+  .type-wide-migrate{background:#fce4ec;color:#c2185b}
+  .type-wide-contract{background:#ffebee;color:#b71c1c}
+  .type-validation{background:#f3e5f5;color:#6a1b9a}
+  .item .desc{font-size:13.5px;color:var(--fg2);line-height:1.6;margin-top:2px}
+  .footer{margin-top:36px;padding:20px 0;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line)}
+  @media(max-width:720px){body{padding:32px 16px 60px}.hero{padding:28px 22px;border-radius:18px}.hero h1{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Round 11 · 2026-07-28 · 11 Tickets 一句话总结</div>
+  <h1>作息管家优化重构 · 11 Vertical Slice Tickets</h1>
+  <p class="lead">每条 ticket 一句话 — 按 to-tickets 第一性原理(vertical slice + tracer bullet)切分,wide refactor 走 expand-contract 序列。</p>
+</header>
+
+<div class="list">
+
+<div class="item">
+  <div class="head">
+    <span class="num">01</span>
+    <span class="title">ADR-0001 落地 · help_render.py 同步作息管家.html</span>
+    <span class="type type-narrow">narrow</span>
+  </div>
+  <div class="desc"><code>help_render.py</code> 加同步函数,跑完自动复制到根目录作息管家.html</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">02</span>
+    <span class="title">Q5 Expand · _naming_path 接受中文 command 名</span>
+    <span class="type type-wide-expand">wide-expand</span>
+  </div>
+  <div class="desc"><code>_naming_path</code> 接受中文 command 名,英文仍 fallback</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">03</span>
+    <span class="title">Q5 Migrate · record 域 6 模板路径对齐</span>
+    <span class="type type-wide-migrate">wide-migrate</span>
+  </div>
+  <div class="desc">record 域 6 个 render 子命令输出改中文文件名</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">04</span>
+    <span class="title">Q5 Migrate · plan 域 5 模板路径对齐</span>
+    <span class="type type-wide-migrate">wide-migrate</span>
+  </div>
+  <div class="desc">plan 域 5 个 render 子命令输出改中文文件名</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">05</span>
+    <span class="title">Q5 Migrate · receipt 域 2 模板路径对齐</span>
+    <span class="type type-wide-migrate">wide-migrate</span>
+  </div>
+  <div class="desc">2 个 receipt 子命令输出改中文文件名</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">06</span>
+    <span class="title">Q5 Migrate · list_events 1 模板</span>
+    <span class="type type-wide-migrate">wide-migrate</span>
+  </div>
+  <div class="desc"><code>render-list-events</code> 输出改 <code>查日程_&lt;TS&gt;.html</code></div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">07</span>
+    <span class="title">Q5 Contract · 删 _naming_path 英文 fallback</span>
+    <span class="type type-wide-contract">wide-contract</span>
+  </div>
+  <div class="desc">删 <code>_naming_path</code> 英文 fallback,英文 command 报错</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">08</span>
+    <span class="title">Q6 Expand · record_receipt 加"复制 prompt"</span>
+    <span class="type type-narrow">narrow</span>
+  </div>
+  <div class="desc"><code>record_receipt.html</code> 加"📋 复制 prompt"按钮 + 4 部分结构</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">09</span>
+    <span class="title">Q6 Migrate · 其余 14 模板补"复制 prompt"</span>
+    <span class="type type-wide-migrate">wide-migrate</span>
+  </div>
+  <div class="desc">其余 14 个 HTML 模板复用 08 模式补"复制 prompt"</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">10</span>
+    <span class="title">Q7 4 域分组</span>
+    <span class="type type-narrow">narrow</span>
+  </div>
+  <div class="desc"><code>_naming_path</code> 函数内按 record/plan/receipt/help 加注释分组</div>
+</div>
+
+<div class="item">
+  <div class="head">
+    <span class="num">11</span>
+    <span class="title">Phase B 验证</span>
+    <span class="type type-validation">validation</span>
+  </div>
+  <div class="desc"><code>pytest</code> + Fresh Agent FAT 验证 11 ticket 落地</div>
+</div>
+
+</div>
+
+<footer class="footer">
+  Round 11 · 11 Tickets 一句话总结 · 2026-07-28 · 由 opencode 调度<br/>
+  每条 ticket 均有 Status: ready-for-agent · 在 <code>作息管家/.scratch/skill-optimize/issues/</code>
+</footer>
+
+</div>
+</body>
+</html>

@@ -14,8 +14,9 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 import schedule_html_render as _render
 
 
-# 命名合规正则
-NAMING_RE = re.compile(r"^[a-z_]+_\d{8}_\d{6}(_\d+)?\.html$")
+# 命名合规正则(ADR-0002 Q5 · 总纲 §04 原则 12.A)
+# 支持中文 / 字母 / 下划线 command 名 + _YYYYMMDD_HHMMSS[_N].html
+NAMING_RE = re.compile(r"^[\u4e00-\u9fffa-zA-Z_]+_\d{8}_\d{6}(_\d+)?\.html$")
 
 
 def test_naming_basic_format(tmp_path, monkeypatch):
@@ -65,43 +66,45 @@ def test_naming_three_collision(tmp_path, monkeypatch):
 
 
 def test_record_output_path_all_modes(tmp_path, monkeypatch):
-    """record_output_path 9 个 mode 全部生成合规命名"""
+    """record_output_path 9 个 mode 全部生成合规命名(ADR-0002 Q5 · 中文 command)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    # (mode, subdir, 中文 command 名)
     modes = [
-        ("record-day", "record/day", "record_day"),
-        ("record-range", "record/range", "record_range"),
-        ("record-compare", "record/compare", "record_compare"),
-        ("record-category", "record/category", "record_category"),
-        ("record-anomaly", "record/anomaly", "record_anomaly"),
-        ("record-report", "record/day", "record_day"),  # 兼容旧 CLI
-        ("record-receipt", "record/receipt", "record_receipt"),
-        ("plan-receipt", "plan/receipt", "plan_receipt"),
-        ("record-detail", "record/detail", "record_detail"),
+        ("record-day", "record/day", "查作息记录"),
+        ("record-range", "record/range", "查作息区间"),
+        ("record-compare", "record/compare", "查作息对比"),
+        ("record-category", "record/category", "查作息类别"),
+        ("record-anomaly", "record/anomaly", "查作息异常"),
+        ("record-report", "record/day", "查作息记录"),  # 兼容旧 CLI,等价 record-day
+        ("record-receipt", "record/receipt", "记作息回执"),
+        ("plan-receipt", "plan/receipt", "改日程回执"),
+        ("record-detail", "record/detail", "作息详情"),
     ]
     for mode, subdir, command in modes:
         p = _render.record_output_path(mode, {"date": "2026-07-15"})
         assert p.parent.name == subdir.split("/")[-1], f"{mode}: subdir 错"
         assert NAMING_RE.match(p.name), f"{mode}: 命名错 {p.name}"
-        assert p.name.startswith(command + "_"), f"{mode}: command 错"
+        assert p.name.startswith(command + "_"), f"{mode}: command 错 {p.name}"
 
 
 def test_default_output_path_plan_modes(tmp_path, monkeypatch):
-    """default_output_path 7 个 plan-* mode 全部生成合规命名"""
+    """default_output_path 7 个 plan-* mode 全部生成合规命名(ADR-0002 Q5 · 中文 command)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    # (mode, meta, 中文 command 名, subdir)
     modes_meta = [
-        ("list-events", {"date": "2026-07-15"}, "plan_list", "plan/list"),
-        ("query-plans", {"dates": ["2026-07-15", "2026-07-16"]}, "plan_query", "plan/query"),
-        ("plan-preview", {"date": "2026-07-15"}, "plan_preview", "plan/list"),
-        ("plan-review", {"date": "2026-07-15"}, "plan_review", "plan/list"),
-        ("plan-receipt", {"plan_id": 5, "action": "update"}, "plan_receipt", "plan/receipt"),
-        ("plan-receipt-add", {"plan_id": 5}, "plan_receipt_add", "plan/receipt"),
-        ("plan-receipt-write", {"plan_id": 5}, "plan_receipt_write", "plan/receipt"),
+        ("list-events", {"date": "2026-07-15"}, "查日程", "plan/list"),
+        ("query-plans", {"dates": ["2026-07-15", "2026-07-16"]}, "查日程", "plan/query"),
+        ("plan-preview", {"date": "2026-07-15"}, "商量计划预览", "plan/list"),
+        ("plan-review", {"date": "2026-07-15"}, "复盘", "plan/list"),
+        ("plan-receipt", {"plan_id": 5, "action": "update"}, "改日程回执", "plan/receipt"),
+        ("plan-receipt-add", {"plan_id": 5}, "补日程回执", "plan/receipt"),
+        ("plan-receipt-write", {"plan_id": 5}, "写日程回执", "plan/receipt"),
     ]
     for mode, meta, command, subdir in modes_meta:
         meta_with_mode = {"mode": mode, **meta}
         p = _render.default_output_path(meta_with_mode)
         assert NAMING_RE.match(p.name), f"{mode}: 命名错 {p.name}"
-        assert p.name.startswith(command + "_"), f"{mode}: command 错"
+        assert p.name.startswith(command + "_"), f"{mode}: command 错 {p.name}"
         assert subdir.replace("/", "").endswith(p.parent.name) or \
             p.parent.parent.name + "/" + p.parent.name == subdir, \
             f"{mode}: subdir 错 {p.parent}"

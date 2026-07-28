@@ -321,6 +321,32 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
 # ===== 路径常量:硬绑 SKILLS_DB_PATH(破坏兼容,plan/list + plan/query 也走这里)=====
 import os
 
+
+# === 中文 command 名映射(ADR-0002 Q5 · 总纲 §04 原则 12.A)===
+# 15 模板英文 command → 中文 command 名(help 域已对齐,不在此映射)
+# 用于 `_naming_path` 输出文件名:`<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`
+# Issue 02(expand):映射表建立,英文调用方仍可工作(fallback)
+# Issue 07(contract):英文 fallback 移除,只接受中文 command 名
+CN_COMMAND_MAP = {
+    # === record 域(8) ===
+    "record_day":          "查作息记录",
+    "record_range":        "查作息区间",
+    "record_compare":      "查作息对比",
+    "record_category":     "查作息类别",
+    "record_anomaly":      "查作息异常",
+    "record_detail":       "作息详情",
+    "record_receipt":      "记作息回执",
+    "record_receipt_edit": "修正作息回执",
+    # === plan 域(6) ===
+    "plan_list":           "查日程",
+    "plan_receipt":        "改日程回执",
+    "plan_receipt_add":    "补日程回执",
+    "plan_receipt_write":  "写日程回执",
+    "plan_preview":        "商量计划预览",
+    "plan_review":         "复盘",
+}
+
+
 def _html_base_dir() -> Path:
     """延迟求值,避免模块加载时 SKILLS_DB_PATH/schedule_html 还不存在导致 RECORD_DIR 永久冻结为空"""
     db_dir = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
@@ -370,7 +396,7 @@ def _record_dir() -> Path:
 def default_output_path(meta: dict) -> Path:
     """
     按手册 §4.1 命名合规生成默认输出路径。
-    命名格式:<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+    命名格式:<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(ADR-0002 Q5)
 
     子目录:
       record-* 模式  → record/day|range|compare|category|anomaly|receipt|detail
@@ -384,22 +410,23 @@ def default_output_path(meta: dict) -> Path:
     if mode.startswith("record-"):
         return record_output_path(mode, meta)
 
+    # === plan 域(6 mode)· ADR-0002 Q5 中文 command 名 ===
     if mode == "list-events":
-        return _naming_path("plan_list", "plan/list")
+        return _naming_path(CN_COMMAND_MAP["plan_list"], "plan/list")
     if mode == "query-plans":
-        return _naming_path("plan_query", "plan/query")
+        # query-plans 与 list-events 共享 查日程 命名(同模板,同唤醒词族)
+        return _naming_path(CN_COMMAND_MAP["plan_list"], "plan/query")
     if mode == "plan-preview":
-        return _naming_path("plan_preview", "plan/list")
+        return _naming_path(CN_COMMAND_MAP["plan_preview"], "plan/list")
     if mode == "plan-review":
-        return _naming_path("plan_review", "plan/list")
+        return _naming_path(CN_COMMAND_MAP["plan_review"], "plan/list")
     if mode == "plan-receipt":
-        return _naming_path("plan_receipt", "plan/receipt")
+        return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
     if mode == "plan-receipt-add":
-        return _naming_path("plan_receipt_add", "plan/receipt")
+        return _naming_path(CN_COMMAND_MAP["plan_receipt_add"], "plan/receipt")
     if mode == "plan-receipt-write":
-        return _naming_path("plan_receipt_write", "plan/receipt")
+        return _naming_path(CN_COMMAND_MAP["plan_receipt_write"], "plan/receipt")
     return _naming_path("unknown")
-    return base / "view.html"
 
 
 # 5 模板目录映射 — M10 改用 record_output_path(meta) 自动派生,不再需要独立字典
@@ -407,7 +434,12 @@ def default_output_path(meta: dict) -> Path:
 
 
 def record_output_path(mode: str, meta: dict = None) -> Path:
-    """按手册 §4.1 命名合规(<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html)生成路径。
+    """按手册 §4.1 命名合规(<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html)生成路径。
+
+    ADR-0002 Q5:全部 record/receipt 域 mode 输出中文 command 名。
+    record 域(7):record-day/range/compare/category/anomaly/report/detail
+    receipt 域(2):record-receipt / record-receipt-edit
+    (plan-receipt 也走此函数,保持向后兼容,但实际由 plan_receipt 中文映射处理)
 
     pid/rid/action/date 等语义信息不再放 filename(避免暴露隐私 +
     避免信息冗余),这些信息保留在 payload data.meta 里。
@@ -415,27 +447,30 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
     """
     meta = meta or {}  # noqa  # 保留参数以便未来 meta 路径命名复用
 
+    # === record 域(7 mode · ADR-0002 Q5 中文 command 名)===
     if mode == "record-day":
-        return _naming_path("record_day", "record/day")
+        return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-range":
-        return _naming_path("record_range", "record/range")
+        return _naming_path(CN_COMMAND_MAP["record_range"], "record/range")
     if mode == "record-compare":
-        return _naming_path("record_compare", "record/compare")
+        return _naming_path(CN_COMMAND_MAP["record_compare"], "record/compare")
     if mode == "record-category":
-        return _naming_path("record_category", "record/category")
+        return _naming_path(CN_COMMAND_MAP["record_category"], "record/category")
     if mode == "record-anomaly":
-        return _naming_path("record_anomaly", "record/anomaly")
+        return _naming_path(CN_COMMAND_MAP["record_anomaly"], "record/anomaly")
     if mode == "record-report":
-        # 兼容旧 CLI,等价 record-day
-        return _naming_path("record_day", "record/day")
-    if mode == "record-receipt":
-        return _naming_path("record_receipt", "record/receipt")
-    if mode == "record-receipt-edit":
-        return _naming_path("record_receipt_edit", "record/receipt")
-    if mode == "plan-receipt":
-        return _naming_path("plan_receipt", "plan/receipt")
+        # 兼容旧 CLI,等价 record-day(中文 command 同)
+        return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-detail":
-        return _naming_path("record_detail", "record/detail")
+        return _naming_path(CN_COMMAND_MAP["record_detail"], "record/detail")
+    # === receipt 域(2 mode · record_receipt / record_receipt_edit)===
+    if mode == "record-receipt":
+        return _naming_path(CN_COMMAND_MAP["record_receipt"], "record/receipt")
+    if mode == "record-receipt-edit":
+        return _naming_path(CN_COMMAND_MAP["record_receipt_edit"], "record/receipt")
+    # === plan-receipt 向后兼容(也走此函数时映射到中文)===
+    if mode == "plan-receipt":
+        return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
     return _naming_path("unknown")
 
 

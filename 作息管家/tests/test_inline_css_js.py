@@ -91,9 +91,9 @@ def test_payload_still_injected(tmp_path):
 
 
 def test_filename_compliant(tmp_path):
-    """命名合规仍生效(手册 §4.1)"""
+    """命名合规仍生效(手册 §4.1 · ADR-0002 Q5 中文 command)"""
     f = _gen_html(db_path=tmp_path / "test.db")
-    assert re.match(r"^[a-z_]+_\d{8}_\d{6}\.html$", f.name), f"命名错:{f.name}"
+    assert re.match(r"^[\u4e00-\u9fffa-zA-Z_]+_\d{8}_\d{6}\.html$", f.name), f"命名错:{f.name}"
 
 
 def test_html_works_offline(tmp_path):

@@ -119,10 +119,10 @@ def test_render_record_receipt_edit_prompts():
 
 
 def test_render_record_receipt_edit_filename_compliance(tmp_path, monkeypatch):
-    """命名合规:<command>_<YYYYMMDD>_<HHMMSS>.html"""
+    """命名合规(ADR-0002 Q5 · 中文 command):<中文 command>_<YYYYMMDD>_<HHMMSS>.html"""
     import re
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
     from schedule_html_render import record_output_path
     p = record_output_path("record-receipt-edit", {"record_id": 1})
-    assert re.match(r"^[a-z_]+_\d{8}_\d{6}\.html$", p.name), p.name
-    assert p.name.startswith("record_receipt_edit_")
+    assert re.match(r"^[\u4e00-\u9fffa-zA-Z_]+_\d{8}_\d{6}\.html$", p.name), p.name
+    assert p.name.startswith("修正作息回执_")

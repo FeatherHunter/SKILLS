@@ -14,8 +14,8 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 import schedule_db as _db
 import re
 
-# 命名合规正则
-NAMING_RE = re.compile(r"^[a-z_]+_\d{8}_\d{6}(_\d+)?\.html$")
+# 命名合规正则(ADR-0002 Q5 · 总纲 §04 原则 12.A · 中文 command)
+NAMING_RE = re.compile(r"^[\u4e00-\u9fffa-zA-Z_]+_\d{8}_\d{6}(_\d+)?\.html$")
 
 
 def _seed_two_months():
@@ -158,6 +158,6 @@ def test_compare_filename_compliance(tmp_path, monkeypatch):
         "label_b": "7月", "start_b": "2026-07-01", "end_b": "2026-07-31",
     })
     assert NAMING_RE.match(p1.name), f"命名不规范:{p1.name}"
-    assert p1.name.startswith("record_compare_"), f"command 错:{p1.name}"
+    assert p1.name.startswith("查作息对比_"), f"command 错:{p1.name}"
     # 子目录是 record/compare
     assert "compare" in str(p1.parent)

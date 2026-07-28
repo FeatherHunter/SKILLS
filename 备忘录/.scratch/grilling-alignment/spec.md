@@ -64,10 +64,12 @@ B 内容一致性 ──► A 结构合规 ──► D 工程仪式 ──► C 
 
 | 阶段 | 决策 | 执行 | 入库 |
 |---|---|---|---|
-| B | ✅ 13/13 (R1+R2) | ⏳ 待执行 | ⏳ 4 commits (B.13) |
+| B | ✅ 13/13 (R1+R2) | ⏳ 待执行 | ⏳ 4 commits (B.13) · 1 已入库 |
 | A | ✅ 5/5 (R3) | ⏳ 待执行 | ⏳ 1 commit |
-| D | ⏳ 待 R4 | — | — |
-| C | ⏳ 待 R5 | — | — |
+| D | ✅ 5/5 (R4) | ⏳ 待执行 | ⏳ 2 commits |
+| C | ⏳ 大部分已在 R1-R2 完成 | — | 归入"Out of Scope" |
+
+**已发布 issue**: `issues/01-memo-skill-v1.1.5-refactor-spec.md` (`ready-for-agent`)
 
 ## 工作目录
 

@@ -75,6 +75,17 @@
 | R5 | C 架构合规(5 层自检 / injector / 跨 Skill) | 5(可能跳过 — R1-R2 已涵盖大部分) |
 | to-spec | 整体重构 spec 输出 | — |
 
+## 已发布 spec
+
+| Issue | 标题 | 阶段 | Triage |
+|---|---|---|---|
+| `issues/01-memo-skill-v1.1.5-refactor-spec.md` | 备忘录 Skill v1.1.5 整体重构(规范合规化) | B+A+D | ready-for-agent |
+
+**测试入口决策**(to-spec 第 2 步):
+- 主: CLI 子进程(`tests/test_help.py` 已用,扩到所有动态行为测试)
+- 辅助: 结构体检(单文件 `tests/test_skill_structure.py` ~30 行 ~6-8 assertion)
+- commit 全中文格式不放测试,放 `.githooks/commit-msg` hook
+
 ## 历史(不变量)
 
 - 5 状态 fallback 改为 4 状态 — **不存在所谓离线的场景** (R1 明确)

@@ -62,9 +62,8 @@ class TestSkillStructure:
             matches = list(ADR_DIR.glob(f"000{n}-*.md"))
             assert matches, f"docs/adr/000{n}-*.md 不存在"
 
-    @pytest.mark.xfail(reason="等待 ticket 01 README.md 落地(当前 v1.1.5 仅完成 ticket 02 + 03)")
     def test_readme_md_exists(self):
-        assert README_MD.exists(), "README.md 不存在(ticket 01 落地)"
+        assert README_MD.exists(), "README.md 不存在"
 
     def test_pytest_ini_exists_with_6_configs(self):
         assert PYTEST_INI.exists(), "pytest.ini 不存在"

@@ -148,7 +148,7 @@
 - [x] P0-1 F1 HELP 契约落地 ✅ 38f0773 + 8aa904a + d8745d3 + 6900680 + 5dd3f9f(Phase 1.5→1.4→1.3→1.2→1.1)
 - [x] P0-2 F2 4 细分词(方向修正:改 SKILL.md 引导 AI 走 HTML,不加锚点)✅ b10aa53
 - [x] P0-3 F4 跨 Skill 路由声明 ✅ 34f4494 + cc2a6b2(11 已确定 + 3 已确定边界 + 1 不实现)
-- [✅] P0-4 FAT Fresh Agent 黑盒测试 · 真测完成 ✅ 2e6028f + subagent 跑 5 prompt(全 5 路由 PASS,1/5 CLI 执行 PASS,主因测试用例菜不存在)
+- [✅] P0-4 FAT Fresh Agent 黑盒测试 · 真测完成 ✅ 2e6028f + subagent 跑 15 prompt(全 15 路由 PASS,13/15 CLI 执行 PASS,2/15 设计失败)
 - [✅] P0-4 FAT 模拟自洽性 ✅ 94ea645(12/15 pass · 启发式判断)
 - [x] P1-1 F3 变体管理 ✅ de40dac(35 唤醒词 × 3 方向标注 + references/wake_word_variants.md)
 - [x] P1-2 V2 4 类榜单 HTML ✅ adfbae2 + 54edf71(1 模板 3 type + 1 渲染器 4 子命令 + 11 唤醒词复用)

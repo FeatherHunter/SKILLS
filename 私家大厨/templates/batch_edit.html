@@ -1,0 +1,343 @@
+<!--
+私家大厨 · 批量编辑 HTML 模板(§04 原则 2 · 1 模板多 type)
+
+设计原则(§04 原则 10 单工铁律):
+  HTML 不能直接调 CLI / 写 DB
+  用户编辑 → 点"复制修改 prompt" → 复制 prompt 文本到剪贴板
+  用户切到 AI 对话 → 粘贴 → AI 调 ingredient_manager update
+
+类型:
+  - mode=list:列出某菜的所有项(食材/步骤/标签)
+  - 3 个 tab: 食材 / 步骤 / 标签
+  - 每个 tab 末尾"复制 prompt 按钮"
+
+数据来源(由 scripts/render_batch_edit.py 注入):
+  - 调 ingredient_manager.list 拿食材
+  - 调 step_manager.list 拿步骤
+  - 调 relation_manager / 各标签 manager 拿标签
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>📝 批量编辑 · 私家大厨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 80px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{font-size:13px;color:var(--text3)}
+
+  .tabs{display:flex;gap:4px;background:#E5E5EA;border-radius:10px;padding:2px;margin-bottom:14px;max-width:520px}
+  .tab{flex:1;padding:8px 14px;border:none;background:transparent;font-size:14px;font-weight:500;color:var(--text2);border-radius:8px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+  .tab.active{background:var(--card);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+  .tab-count{display:inline-block;background:var(--bg);color:var(--text3);font-size:11px;padding:1px 6px;border-radius:var(--radius-pill);margin-left:4px;font-weight:600}
+  .tab.active .tab-count{background:var(--blue-soft);color:var(--blue)}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:14px 18px 12px;border-bottom:1px solid var(--separator);display:flex;justify-content:space-between;align-items:center}
+  .card-header h2{font-size:16px;font-weight:700;margin:0}
+  .count{font-size:12px;color:var(--text3);font-weight:500}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;padding:8px 6px;color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--separator)}
+  td{padding:10px 6px;border-bottom:1px solid var(--separator)}
+  td.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--text3)}
+  td.muted{color:var(--text3)}
+
+  .copy-bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--separator);padding:14px 18px;display:flex;gap:10px;align-items:center;box-shadow:0 -4px 16px rgba(0,0,0,0.04);margin-top:14px;border-radius:var(--radius)}
+  .copy-btn{background:var(--blue);color:#fff;border:none;border-radius:var(--radius-pill);padding:10px 18px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all 0.15s;white-space:nowrap}
+  .copy-btn:hover{background:#0064D2}
+  .copy-btn:active{transform:scale(0.97)}
+  .copy-btn.copied{background:var(--success)}
+  .copy-hint{font-size:12px;color:var(--text3);flex:1;line-height:1.5}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:1000;max-width:80%;text-align:center}
+  .hidden{display:none !important}
+  .toast.show{opacity:1}
+  .toast.success{background:var(--success)}
+  .toast.error{background:var(--danger)}
+
+  .empty{padding:32px 20px;text-align:center;color:var(--text3);font-size:14px}
+
+  @media (max-width:600px){
+    .container{padding:14px 10px}
+    .hero h1{font-size:20px}
+    .tab{font-size:13px;padding:6px 8px}
+    .tab-count{display:none}
+    .copy-bar{flex-direction:column;align-items:stretch}
+    .copy-btn{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <section class="hero">
+    <h1 id="page-title">📝 批量编辑</h1>
+    <div class="hero-meta" id="meta">加载中...</div>
+  </section>
+
+  <!-- Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="ingredients" role="tab">🥬 食材<span class="tab-count" id="ing-count">0</span></button>
+    <button class="tab" data-tab="steps" role="tab">📝 步骤<span class="tab-count" id="step-count">0</span></button>
+    <button class="tab" data-tab="tags" role="tab">🏷️ 标签<span class="tab-count" id="tag-count">0</span></button>
+  </div>
+
+  <!-- Ingredients panel -->
+  <div class="panel active" id="panel-ingredients">
+    <div class="card">
+      <div class="card-header">
+        <h2>食材清单</h2>
+        <span class="count" id="ing-table-count">0 项</span>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>名称</th><th>用量</th><th>类别</th><th>替代</th></tr></thead>
+        <tbody id="ing-tbody"></tbody>
+      </table>
+      <div class="empty" id="ing-empty" style="display:none">这道菜没有食材</div>
+    </div>
+  </div>
+
+  <!-- Steps panel -->
+  <div class="panel" id="panel-steps">
+    <div class="card">
+      <div class="card-header">
+        <h2>烹饪步骤</h2>
+        <span class="count" id="step-table-count">0 步</span>
+      </div>
+      <table>
+        <thead><tr><th>序号</th><th>动作</th><th>时长</th><th>火候</th><th>预期</th></tr></thead>
+        <tbody id="step-tbody"></tbody>
+      </table>
+      <div class="empty" id="step-empty" style="display:none">这道菜没有步骤</div>
+    </div>
+  </div>
+
+  <!-- Tags panel -->
+  <div class="panel" id="panel-tags">
+    <div class="card">
+      <div class="card-header">
+        <h2>标签分类</h2>
+        <span class="count" id="tag-table-count">0 类</span>
+      </div>
+      <table>
+        <thead><tr><th>类别</th><th>当前值</th></tr></thead>
+        <tbody id="tag-tbody"></tbody>
+      </table>
+      <div class="empty" id="tag-empty" style="display:none">这道菜没有标签</div>
+    </div>
+  </div>
+
+  <!-- 复制 prompt 浮动栏(单工铁律 · 复制 mod 模式) -->
+  <div class="copy-bar">
+    <div class="copy-hint">
+      <strong>📋 单工模式:</strong>HTML 直接调 AI 违反 §04 原则 10。本模板生成"修改 prompt"文本,粘贴给 AI,AI 调 manager CLI 改 DB。
+    </div>
+    <button class="copy-btn" id="copy-btn">📋 复制修改 prompt</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  'use strict';
+
+  // 5 状态 fallback
+  const fallbackEl = document.createElement('div');
+  fallbackEl.id = 'state-error';
+  fallbackEl.className = 'hidden';
+  fallbackEl.style.cssText = 'background:#FEE;border-radius:14px;padding:48px 24px;text-align:center;color:#FF3B30;margin-bottom:14px';
+  fallbackEl.innerHTML = '<div style="font-size:48px;margin-bottom:12px">⚠️</div><div id="error-msg">数据加载失败</div>';
+  document.body.querySelector('.container').prepend(fallbackEl);
+
+  // §04 原则 4 #3:数据守卫
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)。请用 scripts/render_batch_edit.py 生成。';
+    fallbackEl.classList.remove('hidden');
+    return;
+  }
+  const D = window.__DATA__;
+
+  // XSS 防护
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // 1. Hero
+  document.getElementById('page-title').textContent = '📝 批量编辑 · ' + D.recipe_name;
+  document.getElementById('meta').textContent = `recipe_id: ${D.recipe_id} · 生成时间: ${D.generated_at}`;
+
+  // 2. Tabs 切换
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // 3. 食材 tab
+  const ings = D.ingredients || [];
+  document.getElementById('ing-count').textContent = ings.length;
+  document.getElementById('ing-table-count').textContent = ings.length + ' 项';
+  const ingTbody = document.getElementById('ing-tbody');
+  if (ings.length === 0) {
+    document.getElementById('ing-empty').style.display = 'block';
+  } else {
+    ings.forEach(i => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="id">${esc(i.id)}</td>
+        <td><strong>${esc(i.name)}</strong></td>
+        <td>${esc(i.quantity_text || (i.quantity + ' ' + (i.unit || '')))}</td>
+        <td>${esc(i.category || '')}</td>
+        <td class="muted">${esc(i.substitute || '无')}</td>
+      `;
+      ingTbody.appendChild(tr);
+    });
+  }
+
+  // 4. 步骤 tab
+  const steps = D.steps || [];
+  document.getElementById('step-count').textContent = steps.length;
+  document.getElementById('step-table-count').textContent = steps.length + ' 步';
+  const stepTbody = document.getElementById('step-tbody');
+  if (steps.length === 0) {
+    document.getElementById('step-empty').style.display = 'block';
+  } else {
+    steps.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="id">第 ${esc(s.sequence)} 步</td>
+        <td>${esc(s.action)}</td>
+        <td>${esc(s.duration_minutes || '?')} 分钟</td>
+        <td>${esc(s.heat_level || '-')}</td>
+        <td class="muted">${esc(s.expected_result || '')}</td>
+      `;
+      stepTbody.appendChild(tr);
+    });
+  }
+
+  // 5. 标签 tab
+  const tags = D.tags || {};
+  const tagList = Object.entries(tags);
+  document.getElementById('tag-count').textContent = tagList.length;
+  document.getElementById('tag-table-count').textContent = tagList.length + ' 类';
+  const tagTbody = document.getElementById('tag-tbody');
+  if (tagList.length === 0) {
+    document.getElementById('tag-empty').style.display = 'block';
+  } else {
+    tagList.forEach(([category, values]) => {
+      const tr = document.createElement('tr');
+      const valuesStr = Array.isArray(values) ? values.join('/') : String(values || '');
+      tr.innerHTML = `
+        <td><strong>${esc(category)}</strong></td>
+        <td>${esc(valuesStr) || '<span class="muted">无</span>'}</td>
+      `;
+      tagTbody.appendChild(tr);
+    });
+  }
+
+  // 6. 复制 prompt 按钮(单工铁律)
+  function generatePrompt() {
+    const lines = [
+      '[批量编辑 · 私家大厨]',
+      `recipe_id: ${D.recipe_id}`,
+      `recipe_name: ${D.recipe_name}`,
+      `生成时间: ${D.generated_at}`,
+      '',
+      '[用户编辑意图 · 待 AI 解析]',
+      '当前数据(从 DB 读取):',
+    ];
+
+    if (ings.length > 0) {
+      lines.push('', '## 食材清单:');
+      ings.forEach(i => {
+        lines.push(`- ${i.id} | ${i.name} | ${i.quantity_text || (i.quantity + (i.unit || ''))} | ${i.category || '?'} | 替代: ${i.substitute || '无'}`);
+      });
+    }
+    if (steps.length > 0) {
+      lines.push('', '## 烹饪步骤:');
+      steps.forEach(s => {
+        lines.push(`- 第 ${s.sequence} 步 (id: ${s.id}): ${s.action} | ${s.duration_minutes || '?'}分钟 | ${s.heat_level || '-'} | ${s.expected_result || ''}`);
+      });
+    }
+    if (tagList.length > 0) {
+      lines.push('', '## 标签分类:');
+      tagList.forEach(([cat, vals]) => {
+        const v = Array.isArray(vals) ? vals.join('/') : vals;
+        lines.push(`- ${cat}: ${v}`);
+      });
+    }
+
+    lines.push('', '[给 AI 的指令]');
+    lines.push('加载「私家大厨」技能,根据用户编辑意图(若用户已告诉我具体修改)调对应 manager:');
+    lines.push('- 食材管理: ingredient_manager.py update <ingredient_id>');
+    lines.push('- 步骤管理: step_manager.py update <step_id>');
+    lines.push('- 标签管理: category_manager / cooking_method_manager / cookware_manager / diet_tag_manager / flavor_manager / meal_type_manager / season_manager');
+    lines.push('改完告诉我修改结果。');
+
+    return lines.join('\n');
+  }
+
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    const prompt = generatePrompt();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(prompt);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = prompt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (!ok) throw new Error('execCommand 失败');
+      }
+      const btn = document.getElementById('copy-btn');
+      btn.classList.add('copied');
+      btn.textContent = '✓ 已复制';
+      showToast('✓ 已复制·粘贴给 AI 即可', 'success');
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '📋 复制修改 prompt';
+      }, 2500);
+    } catch (err) {
+      showToast('⚠️ 复制失败·请用 Ctrl+C 手动复制', 'error');
+    }
+  });
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+      t.className = 'toast';
+    }, 2500);
+  }
+});
+</script>
+
+<!--INJECT-DATA-->
+
+</body>
+</html>

@@ -17,7 +17,7 @@
 用法:
     python scripts/render_contraindication.py                           # 默认扫描 + 输出
     python scripts/render_contraindication.py --part 腰 --part 膝      # 指定部位
-    python scripts/render_contraindication.py --mock mock_contraindication.json  # 用 mock 测试
+    python scripts/render_contraindication.py --mock tests/fixtures/mock/mock_contraindication.json  # 用 mock 测试
     python scripts/render_contraindication.py --output /path/out.html
 """
 import argparse

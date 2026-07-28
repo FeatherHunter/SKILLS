@@ -10,7 +10,7 @@
 - Apple 风 + 趋势图 + 新点高亮
 
 用法:
-    python scripts/render_weight_receipt.py --mock mock_weight_receipt.json
+    python scripts/render_weight_receipt.py --mock tests/fixtures/mock/mock_weight_receipt.json
     python scripts/render_weight_receipt.py --mock <JSON> --output /path/out.html
 """
 import argparse

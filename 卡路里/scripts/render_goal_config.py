@@ -11,7 +11,7 @@
 - Apple 风:系统字体 / 浅灰底 / 主色蓝
 
 用法:
-    python scripts/render_goal_config.py --mock mock_goal_config.json
+    python scripts/render_goal_config.py --mock tests/fixtures/mock/mock_goal_config.json
     python scripts/render_goal_config.py --mock <JSON> --output /path/out.html
 """
 import argparse

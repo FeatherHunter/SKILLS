@@ -177,7 +177,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
-| `templates/process_progress.html` | 落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度) | 流程结构化 JSON(mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
+| `templates/process_progress.html` | 落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度) | 流程结构化 JSON(tests/fixtures/mock/mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
 | `templates/home_dashboard.html` | 开卡路里 / 卡路里面板 / 今日卡路里(主页 dashboard) | `analysis.dashboard(as_dict=True)` + 今日检测 | `scripts/render_home.py [--date YYYY-MM-DD]` |
 | `templates/help_center.html` | 卡路里HELP(唤醒词速查台·80 词·109 prompt·3 层折叠 + 搜索 + 一键复制) | `_triggers.py` 静态表 | `scripts/render_help_center.py` |
 

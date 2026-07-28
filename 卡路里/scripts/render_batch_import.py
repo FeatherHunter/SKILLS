@@ -11,10 +11,10 @@
 
 数据来源:
   理论上由 batch_import.py 的未来 --json-output 模式产出
-  当前用 mock_batch_import_data.json 测试
+  当前用 tests/fixtures/mock/mock_batch_import_data.json 测试
 
 用法:
-    python scripts/render_batch_import.py --input mock_batch_import_data.json
+    python scripts/render_batch_import.py --input tests/fixtures/mock/mock_batch_import_data.json
     python scripts/render_batch_import.py --input <batch_import输出.json> --output /path/out.html
 """
 import argparse

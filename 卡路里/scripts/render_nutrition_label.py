@@ -18,7 +18,7 @@
     6. 把复制内容粘到 AI 对话框,AI 自动存库
 
 用法:
-    python scripts/render_nutrition_label.py --ai-json mock_nutrition_label.json
+    python scripts/render_nutrition_label.py --ai-json tests/fixtures/mock/mock_nutrition_label.json
     python scripts/render_nutrition_label.py --ai-json <JSON> --image-meta filename=xxx.jpg  # 可选
     python scripts/render_nutrition_label.py --ai-json <JSON> --output /path/to/wizard.html
 """

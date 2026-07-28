@@ -11,10 +11,10 @@
 
 数据源:
   理论上由 sync_plan.py / 落地健身计划 / 训记覆盖等 4 步流程的 --json-output
-  当前用 mock_process_progress.json 测试
+  当前用 tests/fixtures/mock/mock_process_progress.json 测试
 
 用法:
-    python scripts/render_process_progress.py --input mock_process_progress.json
+    python scripts/render_process_progress.py --input tests/fixtures/mock/mock_process_progress.json
     python scripts/render_process_progress.py --input <流程输出.json> --output /path/out.html
 """
 import argparse

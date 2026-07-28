@@ -11,7 +11,7 @@
 - Apple 风 + 部位色板(7 色 push/pull/legs 分组,延续 workout_plan)
 
 用法:
-    python scripts/render_plan_builder.py --mock mock_plan_builder.json
+    python scripts/render_plan_builder.py --mock tests/fixtures/mock/mock_plan_builder.json
     python scripts/render_plan_builder.py --mock <plan.json> --output /path/out.html
 """
 import argparse

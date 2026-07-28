@@ -449,6 +449,36 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 
 > **fail mode 判定**:`查物品` 命中后只回一行文字"找到 3 件物品:..."而不生成 HTML = fail mode,需立即补 invoke HTML。
 
+### fail mode 自检清单(commit 前必跑)
+
+> 本清单是软规则 §HTML-First 的硬执行替代——没有代码强制,但 AI 在每次涉及 12 唤醒词的 commit 前**必须自检**,未过自检不得 commit。这是对抗式审查后补的(P1-3),解决"强约定无硬执行"的空壳问题。
+
+**自检步骤**(AI 在 commit message 的 Tested-By 字段记录结果):
+
+1. **本轮是否触发了 12 唤醒词中的任意一个?**
+   - 否 → 本清单不适用,跳过
+   - 是 → 继续
+
+2. **每个被触发的唤醒词,本轮是否 invoke 了 HTML 工作流?**
+   - 是 → PASS,记录 `html-first-pass`
+   - 否 → 进入 fail mode 处理
+
+3. **fail mode 处理(命中但未 invoke HTML)**:
+   - 检查是否有 HTML 生成失败(磁盘满 / 模板错 / 渲染异常)
+   - 失败 → 走优雅降级(结构化文本 + 错误回执),记录 `html-first-fallback + 原因`
+   - 未失败但没 invoke → **silent failure**,不得 commit,先补 invoke HTML
+
+**Tested-By 字段标法**(与 §🧪 FAT 协议 分级规则互补):
+- `html-first-pass` — 12 唤醒词命中后都 invoke 了 HTML
+- `html-first-fallback + 原因` — HTML 失败走了优雅降级
+- `html-first-n/a` — 本轮未触发 12 唤醒词(纯文档 / 纯测试改动)
+- 不标 → 视为 silent failure,等同 §8 反模式 #4
+
+**示例**:
+- 改 SKILL.md §HTML-First 章节(commit 4):`Tested-By: html-first-n/a (纯文档,未触发 12 唤醒词)`
+- 改 search 命令的 HTML 模板:`Tested-By: html-first-pass (查物品 命中后 invoke search_results.html)`
+- 查物品 命中但只回文字:`Tested-By: html-first-fail (silent failure,不得 commit)`
+
 ---
 
 ## 联动说明

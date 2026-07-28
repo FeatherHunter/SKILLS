@@ -364,22 +364,35 @@ def _html_base_dir() -> Path:
 def _naming_path(command: str, subdir: str = "") -> Path:
     """按《预置 HTML+注入数据指导手册》§4.1 生成命名合规路径。
 
-    格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+    格式: <command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(ADR-0002 Q5 · 总纲 §04 原则 12.A)
     子目录(如 "record/day", "plan/receipt")会自动 mkdir -p。
     冲突保护:文件已存在时自动追加 _2/_3/...(同秒多次生成不覆盖)。
 
     命名合规动机:避免同一天 receipt 多次生成覆盖前一份(数据丢失风险);
     跨 SKILL 一致(手册里 memo_query_20260724_103045.html 也是这个格式)。
 
+    Q5 Contract(Issue 07):若传入的 command 是 CN_COMMAND_MAP 的英文 key,
+    抛 ValueError 提示改用中文。防止 caller 忘记映射、产生旧英文命名残留。
+    不在 CN_COMMAND_MAP 里的 command(如 "unknown" / 自定义测试用)仍接受。
+
     Args:
-        command: 命令名,如 "record_receipt" / "plan_list"
-        subdir: 在 _html_base_dir() 下的子目录,可空(用 "/")分隔多级。
+        command: 中文 command 名(查作息记录 / 查日程 / 复盘 等);传 CN_COMMAND_MAP
+                 的英文 key(record_day 等)会抛 ValueError。
+        subdir: 在 _html_base_dir() 下的子目录,可空(用 "/" 分隔多级)。
                 pid/rid/action/date 等语义信息不再放 filename 里(避免暴露隐私);
                 这些信息保留在 payload data.meta 里。
 
     Returns:
         完整的绝对路径,且保证父目录存在。
     """
+    # Q5 Contract(Issue 07):英文 command 名(在 CN_COMMAND_MAP 里)→ 报错
+    if command in CN_COMMAND_MAP:
+        raise ValueError(
+            f"字段 _naming_path(command=...):当前值 '{command}' 是英文 command 名,"
+            f"ADR-0002 Q5 已迁移到中文命名,期望值 '{CN_COMMAND_MAP[command]}',"
+            f"修复建议: 改用 _naming_path(CN_COMMAND_MAP['{command}'], ...) 或直接传中文字面量"
+        )
+
     base = _html_base_dir()
     if subdir:
         base = base.joinpath(*subdir.split("/"))

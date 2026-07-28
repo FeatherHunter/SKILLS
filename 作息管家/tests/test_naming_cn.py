@@ -64,13 +64,22 @@ def test_naming_path_chinese_collision_protection(tmp_path, monkeypatch):
 
 
 def test_naming_path_english_still_works(tmp_path, monkeypatch):
-    """Issue 02 阶段:英文 command 仍能工作(向后兼容 · Issue 07 才删 fallback)"""
+    """Issue 07 contract:在 CN_COMMAND_MAP 里的英文 command 名应抛 ValueError,
+    提示改用中文;不在映射里的自定义 command 仍允许(测试场景 / unknown 兜底)。
+
+    Issue 02 阶段曾允许英文 fallback,Issue 07 contract 之后强制删 fallback,
+    防止 caller 忘记映射产生旧英文命名残留。
+    """
+    import pytest
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
-    p = _render._naming_path("record_day", "record/day")
-    # 旧英文正则仍然合规
+    # 在 CN_COMMAND_MAP 里的英文 command → 现在应抛 ValueError
+    with pytest.raises(ValueError, match="record_day"):
+        _render._naming_path("record_day", "record/day")
+    # 不在映射里的自定义 command 仍允许(测试场景 / unknown 兜底)
+    p = _render._naming_path("custom_test_cmd", "test/sub")
     legacy_re = re.compile(r"^[a-z_]+_\d{8}_\d{6}(_\d+)?\.html$")
     assert legacy_re.match(p.name)
-    assert p.name.startswith("record_day_")
+    assert p.name.startswith("custom_test_cmd_")
 
 
 # ===== 15 模板中文 command 映射契约(ADR-0002 Q5)=====

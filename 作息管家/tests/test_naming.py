@@ -20,31 +20,31 @@ NAMING_RE = re.compile(r"^[\u4e00-\u9fffa-zA-Z_]+_\d{8}_\d{6}(_\d+)?\.html$")
 
 
 def test_naming_basic_format(tmp_path, monkeypatch):
-    """_naming_path 生成 <command>_<YYYYMMDD>_<HHMMSS>.html"""
+    """_naming_path 生成 <中文 command>_<YYYYMMDD>_<HHMMSS>.html(ADR-0002 Q5)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
-    p = _render._naming_path("record_day", "record/day")
+    p = _render._naming_path("查作息记录", "record/day")
     assert NAMING_RE.match(p.name), f"格式不合法:{p.name}"
-    assert p.name.startswith("record_day_")
+    assert p.name.startswith("查作息记录_")
     # 父目录自动创建
     assert p.parent.exists()
     assert p.parent.name == "day"
 
 
 def test_naming_no_subdir(tmp_path, monkeypatch):
-    """_naming_path 不传 subdir → 直接放在 _html_base_dir 下"""
+    """_naming_path 不传 subdir → 直接放在 _html_base_dir 下(自定义 command)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
-    p = _render._naming_path("record_unknown")
+    p = _render._naming_path("custom_test_cmd")
     assert NAMING_RE.match(p.name)
     # 父目录是 schedule_html(顶层)
     assert p.parent.name == "schedule_html"
 
 
 def test_naming_collision_protection(tmp_path, monkeypatch):
-    """同秒第二次 → 文件名追加 _2"""
+    """同秒第二次 → 文件名追加 _2(中文 command 也要冲突保护)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
-    p1 = _render._naming_path("record_receipt", "record/receipt")
+    p1 = _render._naming_path("记作息回执", "record/receipt")
     p1.write_text("first", encoding="utf-8")
-    p2 = _render._naming_path("record_receipt", "record/receipt")
+    p2 = _render._naming_path("记作息回执", "record/receipt")
     assert p2 != p1
     assert p2.name.endswith("_2.html"), f"应追加 _2,实际:{p2.name}"
     # 二次写入 p2 不影响 p1
@@ -53,11 +53,11 @@ def test_naming_collision_protection(tmp_path, monkeypatch):
 
 
 def test_naming_three_collision(tmp_path, monkeypatch):
-    """同秒第三次 → _3(连续递增)"""
+    """同秒第三次 → _3(连续递增 · 中文 command 也要冲突保护)"""
     monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
     paths = []
     for _ in range(3):
-        p = _render._naming_path("plan_receipt", "plan/receipt")
+        p = _render._naming_path("改日程回执", "plan/receipt")
         p.write_text("x", encoding="utf-8")
         paths.append(p.name)
     assert paths[0].endswith(".html")

@@ -246,19 +246,14 @@ $SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\
 
 `--output <path>` 仍可绕过自动命名，直接写到指定路径（不强制走 `home_manager_html/` 子目录）。
 
-### ⚠️ 与总纲 12.X 的偏离声明
+### ⚠️ 与总纲 12.X 的偏离
 
-本 Skill 在以下三项与总纲 12.X 显式偏离，已记录原因：
+本 Skill 在以下两项与总纲 12.X 显式偏离,**详见 [ADR-0001](./docs/adr/0001-local-time-over-utc-for-html-filenames.md)**（单一真相,Q4=A 决策）：
 
-| 偏离项 | 总纲规定 | 本 Skill 取值 | 记录位置 |
-|--------|---------|--------------|---------|
-| 时区 | UTC | **本地时间**（`datetime.now()`） | [ADR-0001](./docs/adr/0001-local-time-over-utc-for-html-filenames.md) |
-| 冲突处理 | `_N` 后缀不覆盖 | **直接覆盖**（无 `_N` 后缀） | 本节 |
-| Skill 标识 | 由 Skill 自决 | `home_manager`（与 Python 包名一致） | [CONTEXT.md](./CONTEXT.md) |
+- **本地时间**(非 UTC):用户看文件名时间戳期望与钟表一致
+- **直接覆盖**(无 `_N` 后缀):本场景无保留历史输出需求,运行产物已 `.gitignore`
 
-**本地时间偏离理由**：本 Skill 面向个人家庭场景，用户看文件名时间戳期望与钟表时间一致；UTC 会让下午 5 点生成的文件名上显示成 9 点，造成 8 小时偏差引发混淆。详见 ADR-0001。
-
-**覆盖偏离理由**：本场景不存在"保留历史输出"的需求（运行产物已被 `.gitignore`），同秒同名生成直接覆盖，避免 `_1` `_2` 后缀文件泛滥。
+本节不重复 ADR 细节,如需修改偏离请改 ADR-0001 并保持 SKILL.md 引用指向。
 
 ---
 

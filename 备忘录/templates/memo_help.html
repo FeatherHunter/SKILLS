@@ -8,47 +8,53 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:24px;box-shadow:var(--shadow)}
 .eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .lead{color:var(--fg2);font-size:17px}
 .meta{margin-top:16px;color:var(--fg3);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
-.stat{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.stat b{display:block;font-size:24px;letter-spacing:-.02em}
-.stat span{color:var(--fg2);font-size:13px}
 .panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:18px}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
-.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}
-.pill.active{background:var(--soft);color:var(--blue2);border-color:#b8d8ff}
-input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}
-.group{margin:24px 0 12px;font-size:13px;font-weight:800;color:var(--fg3);text-transform:uppercase;letter-spacing:.1em}
-.scenario{background:var(--card);border-radius:18px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s}
-.scenario:hover{box-shadow:0 4px 18px rgba(0,0,0,.06)}
+
+/* ===== Level 1:功能模块(可折叠,默认折叠) ===== */
+.module{background:var(--card);border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px;overflow:hidden}
+.module>summary{padding:18px 22px;cursor:pointer;font-size:15px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s;list-style:none}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-block;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module>summary:hover::before{color:var(--blue)}
+.module-body{padding:0 22px 18px}
+
+/* ===== Level 2:场景卡片 ===== */
+.scenario{background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--line)}
+.scenario:last-child{margin-bottom:0}
 .scenario-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.chip-warn{background:#fff7e8;color:#b25b00}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;flex-shrink:0}
 .title{font-size:16px;font-weight:600;flex:1;min-width:200px}
-.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
+.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .copy-btn:hover{background:var(--blue2)}
 .copy-btn.copied{background:var(--ok)}
-.details{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
-.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0}
+
+/* ===== Level 3:场景细节(可折叠,默认折叠) ===== */
+.details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.details summary::-webkit-details-marker{display:none}
+.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
+.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
 .details summary:hover{color:var(--blue)}
 .dim{color:var(--fg2);font-size:13.5px;margin:8px 0;padding-left:14px;border-left:3px solid var(--line)}
 .dim b{color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.prompt-box{background:#1d1d1f;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
 .result-box{background:var(--soft);color:var(--fg);border-radius:14px;padding:12px 14px;margin-top:8px;white-space:pre-wrap;font-size:13.5px}
+
 .empty{text-align:center;color:var(--fg2);padding:60px 20px}
 .state-banner{display:none;padding:18px;border-radius:14px;margin-bottom:18px;text-align:center;font-weight:600}
 .state-banner.empty{background:#fff7e8;color:#b25b00}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
-.toc{background:var(--card);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:8px}
-.toc a{color:var(--fg2);text-decoration:none;font-size:13px;padding:4px 10px;border-radius:999px;background:var(--soft);transition:all .15s}
-.toc a:hover{background:var(--blue);color:#fff}
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}}
+
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}}
 </style>
 </head>
 <body>
@@ -60,28 +66,17 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padd
 <p class="meta" id="meta"></p>
 </header>
 
-<!-- 5 状态 fallback -->
+<!-- 5 状态 fallback(§07 §5) -->
 <div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
 <div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
 <div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
 
-<section class="grid" id="stats"></section>
-
-<section class="panel">
-<strong>筛选与检索</strong>
-<input id="filter" type="text" placeholder="搜索唤醒词 / 标题 / prompt 内容...">
-<div class="toolbar" id="categoryChips"></div>
-</section>
-
-<nav class="toc" id="toc"></nav>
-
 <main id="bodyContent">
-<!-- 由 JS 按分组渲染场景卡片 -->
+<!-- 由 JS 按模块-场景两层折叠渲染 -->
 </main>
 
 <footer class="panel">
-<strong>说明</strong>
-<p style="margin-top:8px;font-size:13.5px;color:var(--fg2)">
+<p style="font-size:13.5px;color:var(--fg2)">
 本页面由场景资产自动生成,改场景后重新运行 HELP 命令即可刷新。
 所有 prompt 都已剥离 CLI / 数据库 / 文件路径,纯用户意图,可直接发给 AI。
 </p>
@@ -92,36 +87,28 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padd
 <!--INJECT-DATA-->
 
 <script>
-// ===== 工具函数 =====
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function showState(name){
-  ['Empty','Missing','Error'].forEach(s=>{var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+  ['Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
   if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
 }
 
-// ===== 主流程 =====
 try{
   if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
   var data=window.__DATA__;
   var payload=data.data||{};
-
-  // 元信息
-  document.getElementById('meta').textContent=
-    `版本：${payload.version||'?'} · 场景数：${(payload.scenarios||[]).length} · 生成时间：${payload.generated_at||''}`;
+  document.getElementById('meta').textContent='版本 '+(payload.version||'?')+' · 生成时间 '+(payload.generated_at||'');
 
   if(!Array.isArray(payload.scenarios)||payload.scenarios.length===0){showState('Empty')}
   else{
     var scenarios=payload.scenarios;
-    // 5 守卫:每个场景必含 7 字段(契约 §2.2)
     var validScenarios=scenarios.filter(function(s){
       return s.wake_word&&s.scenario_id&&s.scenario_title&&s.dimensions&&s.prompt&&s.status!==undefined&&s.result!==undefined;
     });
     if(validScenarios.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
 
-    // 分组(记录类 / 查找类 / 提醒类 / 心愿类 / 批量类 / 跨 Skill / 子唤醒词)
-    var groups={
-      '记录类':[],'查找类':[],'提醒类':[],'心愿类':[],'批量类':[],'跨 Skill':[],'子唤醒词':[]
-    };
+    // 分组(7 类)
+    var groups={'记录类':[],'查找类':[],'提醒类':[],'心愿类':[],'批量类':[],'跨 Skill':[],'子唤醒词':[]};
     var subWake=['记心愿','删心愿','改心愿','记打卡','删打卡','改打卡','记情绪','删情绪','改情绪'];
     validScenarios.forEach(function(s){
       if(subWake.indexOf(s.wake_word)>=0)groups['子唤醒词'].push(s);
@@ -133,81 +120,33 @@ try{
       else groups['记录类'].push(s);
     });
 
-    // KPI
-    var statsEl=document.getElementById('stats');
-    var kpis=[
-      ['场景总数',validScenarios.length,'个'],
-      ['业务唤醒词',new Set(validScenarios.map(function(s){return s.wake_word})).size,'个'],
-      ['分组',Object.keys(groups).filter(function(g){return groups[g].length>0}).length,'类'],
-      ['【待开发】',validScenarios.filter(function(s){return s.status==='【待开发】'}).length,'个']
-    ];
-    kpis.forEach(function(k){
-      var div=document.createElement('div');div.className='stat';
-      div.innerHTML='<b>'+esc(k[0])+' '+esc(k[1])+'</b><span>'+esc(k[2])+'</span>';
-      statsEl.appendChild(div);
-    });
-
-    // 分类筛选 chip
-    var chipsEl=document.getElementById('categoryChips');
-    var allChip=document.createElement('span');allChip.className='pill active';allChip.textContent='全部('+validScenarios.length+')';allChip.dataset.group='全部';
-    chipsEl.appendChild(allChip);
+    // 渲染 Level 1:模块(默认折叠) + Level 2:场景
+    var main=document.getElementById('bodyContent');
+    main.innerHTML='';
     Object.keys(groups).forEach(function(g){
-      if(groups[g].length===0)return;
-      var chip=document.createElement('span');chip.className='pill';chip.textContent=g+'('+groups[g].length+')';chip.dataset.group=g;
-      chipsEl.appendChild(chip);
+      var items=groups[g];
+      if(items.length===0)return;
+      // Level 1:模块
+      var module=document.createElement('details');module.className='module';
+      var sum=document.createElement('summary');sum.textContent=g;
+      module.appendChild(sum);
+      var body=document.createElement('div');body.className='module-body';
+      // Level 2:场景卡片
+      items.forEach(function(s){body.appendChild(buildScenarioCard(s))});
+      module.appendChild(body);
+      main.appendChild(module);
     });
-    chipsEl.addEventListener('click',function(e){
-      if(!e.target.classList.contains('pill'))return;
-      Array.from(chipsEl.children).forEach(function(c){c.classList.remove('active')});
-      e.target.classList.add('active');
-      renderBody(groups,e.target.dataset.group,document.getElementById('filter').value.toLowerCase());
-      window.scrollTo({top:document.getElementById('toc').offsetTop-20,behavior:'smooth'});
-    });
-
-    // 搜索过滤
-    document.getElementById('filter').addEventListener('input',function(e){
-      var active=chipsEl.querySelector('.pill.active');
-      renderBody(groups,active?active.dataset.group:'全部',e.target.value.toLowerCase());
-    });
-
-    // TOC 锚点
-    var tocEl=document.getElementById('toc');
-    Object.keys(groups).forEach(function(g){
-      if(groups[g].length===0)return;
-      var a=document.createElement('a');a.href='#group-'+g;a.textContent=g+'('+groups[g].length+')';
-      tocEl.appendChild(a);
-    });
-
-    // 首次渲染
-    renderBody(groups,'全部','');
   }
 }catch(err){
   console.error('渲染失败:',err);
-  if(!document.getElementById('stateError').style.display||document.getElementById('stateError').style.display==='none')showState('Error');
+  showState('Error');
 }
 
-// ===== 渲染主体 =====
-function renderBody(groups,activeGroup,q){
-  var main=document.getElementById('bodyContent');
-  main.innerHTML='';
-  Object.keys(groups).forEach(function(g){
-    var items=groups[g].filter(function(s){
-      var matchGroup=(activeGroup==='全部')||(activeGroup===g);
-      var matchQ=!q||(s.wake_word+' '+s.scenario_title+' '+s.prompt).toLowerCase().indexOf(q)>=0;
-      return matchGroup&&matchQ;
-    });
-    if(items.length===0)return;
-    var h=document.createElement('h2');h.className='group';h.id='group-'+g;h.textContent=g+' · '+items.length+' 个场景';
-    main.appendChild(h);
-    items.forEach(function(s){main.appendChild(buildScenarioCard(s))});
-  });
-  if(main.innerHTML==='')main.innerHTML='<div class="panel empty">没有匹配场景</div>';
-}
-
-// ===== 构建单个场景卡片 =====
+// ===== Level 2:场景卡片 =====
 function buildScenarioCard(s){
   var card=document.createElement('article');card.className='scenario';
 
+  // 头部:chip + title + 复制按钮(复制按钮在末尾 · 总是可见)
   var head=document.createElement('div');head.className='scenario-head';
   var chip=document.createElement('span');chip.className='chip';chip.textContent=s.wake_word;
   var title=document.createElement('div');title.className='title';title.textContent=s.scenario_title;
@@ -216,10 +155,10 @@ function buildScenarioCard(s){
   head.appendChild(chip);head.appendChild(title);head.appendChild(btn);
   card.appendChild(head);
 
-  // 可展开详情
+  // Level 3:细节(可折叠,默认折叠)
   var details=document.createElement('details');details.className='details';
-  var summary=document.createElement('summary');summary.textContent='查看详情 · 维度 / prompt / 预期结果';
-  details.appendChild(summary);
+  var sum=document.createElement('summary');sum.textContent='查看详情 · 维度 / prompt / 预期结果';
+  details.appendChild(sum);
 
   // 维度
   var dimBlock=document.createElement('div');dimBlock.className='dim';
@@ -238,7 +177,7 @@ function buildScenarioCard(s){
 
   card.appendChild(details);
 
-  // 【待开发】标记
+  // 【待开发】标记(§07 §4)
   if(s.status==='【待开发】'){
     var warn=document.createElement('div');warn.style.cssText='margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:13px;font-weight:700';
     warn.textContent='⚠️ 【待开发】- AI 收到此 prompt 必须停止 + 告知用户,不绕过/不假装/不降级';

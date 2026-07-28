@@ -174,6 +174,46 @@
 
 全量:162/162 pytest 通过(158 → 162 · +4)
 
+### Changed(重构 · 三层折叠结构)
+
+按用户反馈重构 HELP HTML 为**三级折叠**结构(去除 KPI / 筛选 / TOC 状态摘要):
+
+| 层级 | 元素 | 默认 | 折叠后行为 |
+|---|---|---|---|
+| Level 1 | 功能模块(`<details class="module">`) | **折叠** | 只看模块标题 |
+| Level 2 | 场景卡片(头:chip + 标题 + 复制按钮) | 展开 | 看场景列表 |
+| Level 3 | 维度/prompt/result(`<details class="details">`) | **折叠** | 只看场景头 |
+
+**设计原则**:
+- 复制按钮在场景**头部**(用户:"场景的末尾有这个 复制prompt 挺好,省得我还要看详情才能复制")→ 总是可见,无需展开细节
+- 模块/细节默认折叠 → 用户点开看 → 大规模场景不显凌乱
+- 不再有 KPI 卡 / 筛选 / TOC → 总纲 §07 §5 禁止"纯状态告知列表"
+
+**清理项**(状态摘要 · 违反 §07 §5):
+- 删除 KPI 网格(场景总数 / 业务唤醒词 / 分组 / 【待开发】)
+- 删除筛选面板(搜索框 + 分类 chips)
+- 删除 TOC 锚点导航
+- 删除分组计数(记录类(5) → 记录类)
+- 删除元信息里的"场景数:N"计数(版本 + 生成时间保留为元数据)
+
+### Tests(+6 用例 · 重构守护)
+
+`tests/test_help.py:TestHelpThreeLevelCollapse` 6 个新用例:
+1. `test_template_has_level1_module_creation` — 模块用 JS createElement
+2. `test_template_has_level3_details_creation` — 细节用 JS createElement
+3. `test_modules_default_collapsed` — 模块默认折叠
+4. `test_scenario_details_default_collapsed` — 细节默认折叠
+5. `test_copy_button_visible_at_scenario_level` — 复制按钮在场景头
+6. `test_no_kpi_grid_or_filter_or_toc` — 无状态摘要元素
+7. `test_three_level_structure_via_js_simulation` — 模拟渲染 7 模块 + 29 场景
+
+`tests/test_html_user_manual.py` 同步清理:
+- 删除 `test_has_toc`(TOC 已移除)
+- 删除 `test_has_search_filter`(筛选已移除)
+- 新增 `test_no_search_or_toc`(反向守护)
+
+全量:168/168 pytest 通过(162 → 168 · +6)
+
 ### Changed
 
 - `SKILL.md`:

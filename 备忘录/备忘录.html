@@ -8,51 +8,57 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:24px;box-shadow:var(--shadow)}
 .eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .lead{color:var(--fg2);font-size:17px}
 .meta{margin-top:16px;color:var(--fg3);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}
-.stat{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.stat b{display:block;font-size:24px;letter-spacing:-.02em}
-.stat span{color:var(--fg2);font-size:13px}
 .panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:18px}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
-.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}
-.pill.active{background:var(--soft);color:var(--blue2);border-color:#b8d8ff}
-input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}
-.group{margin:24px 0 12px;font-size:13px;font-weight:800;color:var(--fg3);text-transform:uppercase;letter-spacing:.1em}
-.scenario{background:var(--card);border-radius:18px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s}
-.scenario:hover{box-shadow:0 4px 18px rgba(0,0,0,.06)}
+
+/* ===== Level 1:功能模块(可折叠,默认折叠) ===== */
+.module{background:var(--card);border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px;overflow:hidden}
+.module>summary{padding:18px 22px;cursor:pointer;font-size:15px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s;list-style:none}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-block;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module>summary:hover::before{color:var(--blue)}
+.module-body{padding:0 22px 18px}
+
+/* ===== Level 2:场景卡片 ===== */
+.scenario{background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--line)}
+.scenario:last-child{margin-bottom:0}
 .scenario-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.chip-warn{background:#fff7e8;color:#b25b00}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;flex-shrink:0}
 .title{font-size:16px;font-weight:600;flex:1;min-width:200px}
-.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
+.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .copy-btn:hover{background:var(--blue2)}
 .copy-btn.copied{background:var(--ok)}
-.details{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
-.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0}
+
+/* ===== Level 3:场景细节(可折叠,默认折叠) ===== */
+.details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.details summary::-webkit-details-marker{display:none}
+.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
+.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
 .details summary:hover{color:var(--blue)}
 .dim{color:var(--fg2);font-size:13.5px;margin:8px 0;padding-left:14px;border-left:3px solid var(--line)}
 .dim b{color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.prompt-box{background:#1d1d1f;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
 .result-box{background:var(--soft);color:var(--fg);border-radius:14px;padding:12px 14px;margin-top:8px;white-space:pre-wrap;font-size:13.5px}
+
 .empty{text-align:center;color:var(--fg2);padding:60px 20px}
 .state-banner{display:none;padding:18px;border-radius:14px;margin-bottom:18px;text-align:center;font-weight:600}
 .state-banner.empty{background:#fff7e8;color:#b25b00}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
-.toc{background:var(--card);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:8px}
-.toc a{color:var(--fg2);text-decoration:none;font-size:13px;padding:4px 10px;border-radius:999px;background:var(--soft);transition:all .15s}
-.toc a:hover{background:var(--blue);color:#fff}
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}}
+
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}}
 </style>
 </head>
 <body>
-<script>window.__DATA__ = {"status": "ok", "data": {"title": "备忘录 · HELP 使用手册", "command": "help", "generated_at": "2026-07-28 10:14:26", "version": "1.1.4", "skill": "备忘录", "scenarios": [{"wake_word": "记备忘", "scenario_id": "memo_add_basic", "scenario_title": "添加一条备忘笔记", "dimensions": {"category": "备忘(默认) / 心愿 / 打卡 / 情绪日记", "sub_category": "自由文本,AI 智能推断 1 个 2 字", "media": "可选附件(图片/音频/视频)", "due": "仅心愿生效,YYYY-MM-DD"}, "prompt": "请帮我记一下:<用户原话>\n(可选:指定分类/子分类/附件/排期日期)\n", "status": "", "result": "创建一条笔记,告诉你 ID、分类、创建时间。心愿类还会自动建飞书任务。\n"}, {"wake_word": "改备忘", "scenario_id": "memo_update_basic", "scenario_title": "修改已有笔记", "dimensions": {"id": "必填,数字 ID", "content": "新内容(可选)", "category": "新顶层分类(可选)", "sub_category": "新子分类(可选)"}, "prompt": "请帮我改一下:<笔记 ID> → <新内容/新分类>(可选)\n", "status": "", "result": "更新笔记内容/分类/子分类,告诉你更新后的字段。心愿类会同步更新飞书任务标题。\n"}, {"wake_word": "删备忘", "scenario_id": "memo_delete_basic", "scenario_title": "删除笔记", "dimensions": {"id": "必填,数字 ID,可多个", "with_reminders": "是否级联删关联提醒(默认否,有提醒则报错)", "true": "跳过二次确认(自动化用)"}, "prompt": "请帮我删掉笔记:<ID>(多个用空格分)\n", "status": "", "result": "删除笔记并告知影响行数;有关联提醒时提示用户确认是否级联删除。\n"}, {"wake_word": "备忘改分类", "scenario_id": "memo_change_category_single", "scenario_title": "修改单条笔记的顶层分类", "dimensions": {"id": "必填,数字 ID", "category": "目标分类(备忘/心愿/打卡/情绪日记)", "bulk_indicator": "原话含'都/全部/多个 ID' → 走批量版"}, "prompt": "请帮我把笔记 #<ID> 的分类改成 <新分类>\n", "status": "", "result": "改顶层分类。子分类不变(它是内容维度的二阶属性)。\n批量场景走\"批量改分类向导\",见同名条目。\n"}, {"wake_word": "备忘改子分类", "scenario_id": "memo_change_subcategory", "scenario_title": "修改单条笔记的子分类", "dimensions": {"id": "必填,数字 ID", "sub_category": "新子分类(2 字自由文本,'null' 清除)"}, "prompt": "请帮我把笔记 #<ID> 的子分类改成 <X>(或清除)\n", "status": "", "result": "修改/清除子分类,适用于所有顶层分类(子分类是自由文本)。\n"}, {"wake_word": "搜备忘", "scenario_id": "memo_search_keyword", "scenario_title": "按关键词搜索笔记", "dimensions": {"keyword": "搜索词(全文索引)", "category": "顶层分类过滤(可选)", "sub_category": "子分类过滤(可选)", "due": "按排期日期过滤(可选,YYYY-MM-DD)", "html": "生成可视化结果页"}, "prompt": "帮我搜一下:<关键词>(可选:分类/子分类/排期)\n", "status": "", "result": "列出匹配的笔记,告诉你结果数。带 --html 时生成可视化页(含筛选/复制 ID/复制回执)。\n"}, {"wake_word": "查备忘", "scenario_id": "memo_search_alias", "scenario_title": "搜备忘的别名(同义触发)", "dimensions": {"keyword": "搜索词"}, "prompt": "帮我查一下:<关键词>\n", "status": "", "result": "同\"搜备忘\"。走相同命令。\n"}, {"wake_word": "看备忘", "scenario_id": "memo_get_detail", "scenario_title": "查看单条笔记详情", "dimensions": {"id": "必填,数字 ID", "html": "生成详情页"}, "prompt": "帮我看下笔记 #<ID>\n", "status": "", "result": "显示单条笔记全部字段。带 --html 时生成详情页。\n"}, {"wake_word": "按时间搜备忘", "scenario_id": "memo_search_by_date", "scenario_title": "按日期范围搜索笔记", "dimensions": {"start": "开始日期 YYYY-MM-DD", "end": "结束日期 YYYY-MM-DD", "category": "顶层分类过滤", "html": "生成可视化结果页"}, "prompt": "帮我看下 <开始日期> 到 <结束日期> 的<可选分类>备忘\n", "status": "", "result": "列出日期范围内的笔记,按创建时间倒序。\n"}, {"wake_word": "查心愿", "scenario_id": "memo_search_wish", "scenario_title": "查所有心愿(自动带分类过滤)", "dimensions": {"keyword": "搜索词(可选)", "due": "按排期日期过滤", "html": "生成可视化页"}, "prompt": "帮我看看心愿(可选:<关键词>/<排期日期>)\n", "status": "", "result": "自动按\"心愿\"分类过滤,等同 `搜备忘 -c 心愿`。\n"}, {"wake_word": "查打卡", "scenario_id": "memo_search_checkin", "scenario_title": "查所有打卡记录", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "帮我看看打卡记录(可选:<关键词>)\n", "status": "", "result": "自动按\"打卡\"分类过滤。\n"}, {"wake_word": "查情绪", "scenario_id": "memo_search_mood", "scenario_title": "查所有情绪日记", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "帮我看看情绪日记(可选:<关键词>)\n", "status": "", "result": "自动按\"情绪日记\"分类过滤。\n"}, {"wake_word": "记提醒", "scenario_id": "memo_remind_with_note", "scenario_title": "添加笔记 + 设置提醒(两步合一)", "dimensions": {"content": "笔记内容", "remind_at": "提醒时间 YYYY-MM-DD HH:MM", "repeat_type": "一次性(默认)/每天/每周/每月/每年", "repeat_rule": "重复规则(每天:HH:MM / 每周:W HH:MM / 每月:D HH:MM / 每年:MM-DD HH:MM)"}, "prompt": "帮我记:<笔记内容>,并设个<时间>的提醒(可选:重复规则)\n", "status": "", "result": "先创建笔记,再创建关联提醒。Cron 到点触发推送。\n"}, {"wake_word": "设提醒", "scenario_id": "memo_remind_existing", "scenario_title": "给已有笔记加提醒", "dimensions": {"note_id": "笔记 ID(可选,可不关联具体笔记)", "remind_at": "提醒时间", "content": "提醒内容", "repeat_type": "重复类型(默认一次性)", "repeat_rule": "重复规则"}, "prompt": "帮我给笔记 #<ID> 设个<时间>的提醒(可选:重复规则)\n", "status": "", "result": "创建提醒,可关联或独立存在。\n"}, {"wake_word": "看提醒", "scenario_id": "memo_reminders_active", "scenario_title": "查看所有有效提醒", "dimensions": {"status": "active(默认)/dismissed", "html": "生成可视化页"}, "prompt": "帮我看看我的提醒(可选:只看已完成的)\n", "status": "", "result": "按时间排序的提醒列表。带 --html 时生成可筛选页。\n"}, {"wake_word": "查已提醒备忘", "scenario_id": "memo_completed_reminders", "scenario_title": "查询已触发的提醒与对应打卡", "dimensions": {"html": "生成可视化页"}, "prompt": "帮我看看已经完成的提醒\n", "status": "", "result": "列出已触发的提醒 + 关联打卡笔记 + 触发时间。匹配逻辑:\n一次性已通知 + 关联打卡 / 重复型有关联打卡。\n"}, {"wake_word": "完成心愿", "scenario_id": "memo_complete_wish", "scenario_title": "把心愿标记为已完成(原子操作)", "dimensions": {"ids": "心愿 ID 列表(单条或多条)", "content": "打卡内容(默认拷贝心愿原文)", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "我完成了心愿 #<ID>(可选:<打卡内容>)\n", "status": "", "result": "原子操作:删除心愿 + 新建打卡 note(同事务)。\n批量场景:先 wish-complete --html 生成向导,用户在 HTML 勾选 + 填打卡内容,采纳复制后 AI 逐条执行。\n"}, {"wake_word": "心愿排期", "scenario_id": "memo_wish_schedule", "scenario_title": "给心愿设排期日期(同步飞书 due)", "dimensions": {"ids": "心愿 ID 列表", "due": "期望完成日期 YYYY-MM-DD", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "把心愿 #<ID> 放到 <日期> 完成(批量:多个 ID 用空格分)\n", "status": "", "result": "本地设置 due + 飞书 task 同步 due(失败降级,本地优先)。\n批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,用户在 HTML 微调,采纳复制后 AI 执行。\n"}, {"wake_word": "备忘改分类", "scenario_id": "memo_batch_change_category", "scenario_title": "批量改分类(过程型 HTML 向导)", "dimensions": {"from_category": "原分类", "to_category": "建议目标分类(HTML 可改)", "bulk_indicator": "原话含'都/全部/多个 ID'", "html": "过程型 HTML(必须)"}, "prompt": "把 <原分类> 下这 N 条都改成 <新分类>\n", "status": "", "result": "生成批量改分类向导 HTML,用户在 UI 勾选 + 选目标分类 → 采纳复制 → AI 调多条 update-category。\n注:子分类不改(它是内容维度的二阶属性)。\n"}, {"wake_word": "备忘录同步", "scenario_id": "memo_sync_feishu", "scenario_title": "备忘录 ↔ 飞书双向对账", "dimensions": {"html": "生成同步报告页"}, "prompt": "帮我跑下备忘录同步(和飞书对账)\n", "status": "", "result": "3 步对账:\n1. 本地补建:本地心愿无飞书 task → 自动建\n2. 反向同步 done:飞书已完成 → 本地 complete-wish\n3. 反向同步 due:飞书 due 改 → 本地 notes.due 跟(飞书优先)\n带 --html 时生成同步报告页(11 统计字段 + 3 步折叠 + errors 高亮)。\n"}, {"wake_word": "记心愿", "scenario_id": "memo_add_wish", "scenario_title": "快速添加心愿(自动心愿分类)", "dimensions": {"content": "心愿内容", "sub_category": "自由文本", "due": "排期日期(可选)", "tasklist_guid": "飞书任务清单 GUID(可选)"}, "prompt": "我想:<心愿内容>(可选:放在 <日期> 完成)\n", "status": "", "result": "创建心愿 note,自动建飞书 task 并写回 task_guid。\n顶层分类已确定,跳过分类确认。\n"}, {"wake_word": "删心愿", "scenario_id": "memo_delete_wish", "scenario_title": "删心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID"}, "prompt": "帮我删掉心愿 #<ID>\n", "status": "", "result": "走通用删笔记流程。心愿关联的飞书 task 自动标完成。\n"}, {"wake_word": "改心愿", "scenario_id": "memo_update_wish", "scenario_title": "改心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID", "content": "新内容"}, "prompt": "帮我改心愿 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。飞书 task 标题自动同步。\n"}, {"wake_word": "记打卡", "scenario_id": "memo_add_checkin", "scenario_title": "快速添加打卡(自动打卡分类)", "dimensions": {"content": "打卡内容", "sub_category": "自由文本", "reminder_id": "关联提醒 ID(可选,溯源用)"}, "prompt": "打卡:<内容>\n", "status": "", "result": "创建打卡 note。可选关联 reminder_id(提醒触发后自动打卡时由系统填)。\n"}, {"wake_word": "删打卡", "scenario_id": "memo_delete_checkin", "scenario_title": "删打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID"}, "prompt": "帮我删掉打卡 #<ID>\n", "status": "", "result": "走通用删笔记流程。\n"}, {"wake_word": "改打卡", "scenario_id": "memo_update_checkin", "scenario_title": "改打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID", "content": "新内容"}, "prompt": "帮我改打卡 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。\n"}, {"wake_word": "记情绪", "scenario_id": "memo_add_mood", "scenario_title": "快速添加情绪日记(自动情绪日记分类)", "dimensions": {"content": "情绪内容", "sub_category": "自由文本"}, "prompt": "记一下情绪:<内容>\n", "status": "", "result": "创建情绪日记 note。\n"}, {"wake_word": "删情绪", "scenario_id": "memo_delete_mood", "scenario_title": "删情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID"}, "prompt": "帮我删掉情绪日记 #<ID>\n", "status": "", "result": "走通用删笔记流程。\n"}, {"wake_word": "改情绪", "scenario_id": "memo_update_mood", "scenario_title": "改情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID", "content": "新内容"}, "prompt": "帮我改情绪日记 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。"}]}, "message": "共 29 个场景"};</script>
+<script>window.__DATA__ = {"status": "ok", "data": {"title": "备忘录 · HELP 使用手册", "command": "help", "generated_at": "2026-07-28 10:33:36", "version": "1.1.4", "skill": "备忘录", "scenarios": [{"wake_word": "记备忘", "scenario_id": "memo_add_basic", "scenario_title": "添加一条备忘笔记", "dimensions": {"category": "备忘(默认) / 心愿 / 打卡 / 情绪日记", "sub_category": "自由文本,AI 智能推断 1 个 2 字", "media": "可选附件(图片/音频/视频)", "due": "仅心愿生效,YYYY-MM-DD"}, "prompt": "请帮我记一下:<用户原话>\n(可选:指定分类/子分类/附件/排期日期)\n", "status": "", "result": "创建一条笔记,告诉你 ID、分类、创建时间。心愿类还会自动建飞书任务。\n"}, {"wake_word": "改备忘", "scenario_id": "memo_update_basic", "scenario_title": "修改已有笔记", "dimensions": {"id": "必填,数字 ID", "content": "新内容(可选)", "category": "新顶层分类(可选)", "sub_category": "新子分类(可选)"}, "prompt": "请帮我改一下:<笔记 ID> → <新内容/新分类>(可选)\n", "status": "", "result": "更新笔记内容/分类/子分类,告诉你更新后的字段。心愿类会同步更新飞书任务标题。\n"}, {"wake_word": "删备忘", "scenario_id": "memo_delete_basic", "scenario_title": "删除笔记", "dimensions": {"id": "必填,数字 ID,可多个", "with_reminders": "是否级联删关联提醒(默认否,有提醒则报错)", "true": "跳过二次确认(自动化用)"}, "prompt": "请帮我删掉笔记:<ID>(多个用空格分)\n", "status": "", "result": "删除笔记并告知影响行数;有关联提醒时提示用户确认是否级联删除。\n"}, {"wake_word": "备忘改分类", "scenario_id": "memo_change_category_single", "scenario_title": "修改单条笔记的顶层分类", "dimensions": {"id": "必填,数字 ID", "category": "目标分类(备忘/心愿/打卡/情绪日记)", "bulk_indicator": "原话含'都/全部/多个 ID' → 走批量版"}, "prompt": "请帮我把笔记 #<ID> 的分类改成 <新分类>\n", "status": "", "result": "改顶层分类。子分类不变(它是内容维度的二阶属性)。\n批量场景走\"批量改分类向导\",见同名条目。\n"}, {"wake_word": "备忘改子分类", "scenario_id": "memo_change_subcategory", "scenario_title": "修改单条笔记的子分类", "dimensions": {"id": "必填,数字 ID", "sub_category": "新子分类(2 字自由文本,'null' 清除)"}, "prompt": "请帮我把笔记 #<ID> 的子分类改成 <X>(或清除)\n", "status": "", "result": "修改/清除子分类,适用于所有顶层分类(子分类是自由文本)。\n"}, {"wake_word": "搜备忘", "scenario_id": "memo_search_keyword", "scenario_title": "按关键词搜索笔记", "dimensions": {"keyword": "搜索词(全文索引)", "category": "顶层分类过滤(可选)", "sub_category": "子分类过滤(可选)", "due": "按排期日期过滤(可选,YYYY-MM-DD)", "html": "生成可视化结果页"}, "prompt": "帮我搜一下:<关键词>(可选:分类/子分类/排期)\n", "status": "", "result": "列出匹配的笔记,告诉你结果数。带 --html 时生成可视化页(含筛选/复制 ID/复制回执)。\n"}, {"wake_word": "查备忘", "scenario_id": "memo_search_alias", "scenario_title": "搜备忘的别名(同义触发)", "dimensions": {"keyword": "搜索词"}, "prompt": "帮我查一下:<关键词>\n", "status": "", "result": "同\"搜备忘\"。走相同命令。\n"}, {"wake_word": "看备忘", "scenario_id": "memo_get_detail", "scenario_title": "查看单条笔记详情", "dimensions": {"id": "必填,数字 ID", "html": "生成详情页"}, "prompt": "帮我看下笔记 #<ID>\n", "status": "", "result": "显示单条笔记全部字段。带 --html 时生成详情页。\n"}, {"wake_word": "按时间搜备忘", "scenario_id": "memo_search_by_date", "scenario_title": "按日期范围搜索笔记", "dimensions": {"start": "开始日期 YYYY-MM-DD", "end": "结束日期 YYYY-MM-DD", "category": "顶层分类过滤", "html": "生成可视化结果页"}, "prompt": "帮我看下 <开始日期> 到 <结束日期> 的<可选分类>备忘\n", "status": "", "result": "列出日期范围内的笔记,按创建时间倒序。\n"}, {"wake_word": "查心愿", "scenario_id": "memo_search_wish", "scenario_title": "查所有心愿(自动带分类过滤)", "dimensions": {"keyword": "搜索词(可选)", "due": "按排期日期过滤", "html": "生成可视化页"}, "prompt": "帮我看看心愿(可选:<关键词>/<排期日期>)\n", "status": "", "result": "自动按\"心愿\"分类过滤,等同 `搜备忘 -c 心愿`。\n"}, {"wake_word": "查打卡", "scenario_id": "memo_search_checkin", "scenario_title": "查所有打卡记录", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "帮我看看打卡记录(可选:<关键词>)\n", "status": "", "result": "自动按\"打卡\"分类过滤。\n"}, {"wake_word": "查情绪", "scenario_id": "memo_search_mood", "scenario_title": "查所有情绪日记", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "帮我看看情绪日记(可选:<关键词>)\n", "status": "", "result": "自动按\"情绪日记\"分类过滤。\n"}, {"wake_word": "记提醒", "scenario_id": "memo_remind_with_note", "scenario_title": "添加笔记 + 设置提醒(两步合一)", "dimensions": {"content": "笔记内容", "remind_at": "提醒时间 YYYY-MM-DD HH:MM", "repeat_type": "一次性(默认)/每天/每周/每月/每年", "repeat_rule": "重复规则(每天:HH:MM / 每周:W HH:MM / 每月:D HH:MM / 每年:MM-DD HH:MM)"}, "prompt": "帮我记:<笔记内容>,并设个<时间>的提醒(可选:重复规则)\n", "status": "", "result": "先创建笔记,再创建关联提醒。Cron 到点触发推送。\n"}, {"wake_word": "设提醒", "scenario_id": "memo_remind_existing", "scenario_title": "给已有笔记加提醒", "dimensions": {"note_id": "笔记 ID(可选,可不关联具体笔记)", "remind_at": "提醒时间", "content": "提醒内容", "repeat_type": "重复类型(默认一次性)", "repeat_rule": "重复规则"}, "prompt": "帮我给笔记 #<ID> 设个<时间>的提醒(可选:重复规则)\n", "status": "", "result": "创建提醒,可关联或独立存在。\n"}, {"wake_word": "看提醒", "scenario_id": "memo_reminders_active", "scenario_title": "查看所有有效提醒", "dimensions": {"status": "active(默认)/dismissed", "html": "生成可视化页"}, "prompt": "帮我看看我的提醒(可选:只看已完成的)\n", "status": "", "result": "按时间排序的提醒列表。带 --html 时生成可筛选页。\n"}, {"wake_word": "查已提醒备忘", "scenario_id": "memo_completed_reminders", "scenario_title": "查询已触发的提醒与对应打卡", "dimensions": {"html": "生成可视化页"}, "prompt": "帮我看看已经完成的提醒\n", "status": "", "result": "列出已触发的提醒 + 关联打卡笔记 + 触发时间。匹配逻辑:\n一次性已通知 + 关联打卡 / 重复型有关联打卡。\n"}, {"wake_word": "完成心愿", "scenario_id": "memo_complete_wish", "scenario_title": "把心愿标记为已完成(原子操作)", "dimensions": {"ids": "心愿 ID 列表(单条或多条)", "content": "打卡内容(默认拷贝心愿原文)", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "我完成了心愿 #<ID>(可选:<打卡内容>)\n", "status": "", "result": "原子操作:删除心愿 + 新建打卡 note(同事务)。\n批量场景:先 wish-complete --html 生成向导,用户在 HTML 勾选 + 填打卡内容,采纳复制后 AI 逐条执行。\n"}, {"wake_word": "心愿排期", "scenario_id": "memo_wish_schedule", "scenario_title": "给心愿设排期日期(同步飞书 due)", "dimensions": {"ids": "心愿 ID 列表", "due": "期望完成日期 YYYY-MM-DD", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "把心愿 #<ID> 放到 <日期> 完成(批量:多个 ID 用空格分)\n", "status": "", "result": "本地设置 due + 飞书 task 同步 due(失败降级,本地优先)。\n批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,用户在 HTML 微调,采纳复制后 AI 执行。\n"}, {"wake_word": "备忘改分类", "scenario_id": "memo_batch_change_category", "scenario_title": "批量改分类(过程型 HTML 向导)", "dimensions": {"from_category": "原分类", "to_category": "建议目标分类(HTML 可改)", "bulk_indicator": "原话含'都/全部/多个 ID'", "html": "过程型 HTML(必须)"}, "prompt": "把 <原分类> 下这 N 条都改成 <新分类>\n", "status": "", "result": "生成批量改分类向导 HTML,用户在 UI 勾选 + 选目标分类 → 采纳复制 → AI 调多条 update-category。\n注:子分类不改(它是内容维度的二阶属性)。\n"}, {"wake_word": "备忘录同步", "scenario_id": "memo_sync_feishu", "scenario_title": "备忘录 ↔ 飞书双向对账", "dimensions": {"html": "生成同步报告页"}, "prompt": "帮我跑下备忘录同步(和飞书对账)\n", "status": "", "result": "3 步对账:\n1. 本地补建:本地心愿无飞书 task → 自动建\n2. 反向同步 done:飞书已完成 → 本地 complete-wish\n3. 反向同步 due:飞书 due 改 → 本地 notes.due 跟(飞书优先)\n带 --html 时生成同步报告页(11 统计字段 + 3 步折叠 + errors 高亮)。\n"}, {"wake_word": "记心愿", "scenario_id": "memo_add_wish", "scenario_title": "快速添加心愿(自动心愿分类)", "dimensions": {"content": "心愿内容", "sub_category": "自由文本", "due": "排期日期(可选)", "tasklist_guid": "飞书任务清单 GUID(可选)"}, "prompt": "我想:<心愿内容>(可选:放在 <日期> 完成)\n", "status": "", "result": "创建心愿 note,自动建飞书 task 并写回 task_guid。\n顶层分类已确定,跳过分类确认。\n"}, {"wake_word": "删心愿", "scenario_id": "memo_delete_wish", "scenario_title": "删心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID"}, "prompt": "帮我删掉心愿 #<ID>\n", "status": "", "result": "走通用删笔记流程。心愿关联的飞书 task 自动标完成。\n"}, {"wake_word": "改心愿", "scenario_id": "memo_update_wish", "scenario_title": "改心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID", "content": "新内容"}, "prompt": "帮我改心愿 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。飞书 task 标题自动同步。\n"}, {"wake_word": "记打卡", "scenario_id": "memo_add_checkin", "scenario_title": "快速添加打卡(自动打卡分类)", "dimensions": {"content": "打卡内容", "sub_category": "自由文本", "reminder_id": "关联提醒 ID(可选,溯源用)"}, "prompt": "打卡:<内容>\n", "status": "", "result": "创建打卡 note。可选关联 reminder_id(提醒触发后自动打卡时由系统填)。\n"}, {"wake_word": "删打卡", "scenario_id": "memo_delete_checkin", "scenario_title": "删打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID"}, "prompt": "帮我删掉打卡 #<ID>\n", "status": "", "result": "走通用删笔记流程。\n"}, {"wake_word": "改打卡", "scenario_id": "memo_update_checkin", "scenario_title": "改打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID", "content": "新内容"}, "prompt": "帮我改打卡 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。\n"}, {"wake_word": "记情绪", "scenario_id": "memo_add_mood", "scenario_title": "快速添加情绪日记(自动情绪日记分类)", "dimensions": {"content": "情绪内容", "sub_category": "自由文本"}, "prompt": "记一下情绪:<内容>\n", "status": "", "result": "创建情绪日记 note。\n"}, {"wake_word": "删情绪", "scenario_id": "memo_delete_mood", "scenario_title": "删情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID"}, "prompt": "帮我删掉情绪日记 #<ID>\n", "status": "", "result": "走通用删笔记流程。\n"}, {"wake_word": "改情绪", "scenario_id": "memo_update_mood", "scenario_title": "改情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID", "content": "新内容"}, "prompt": "帮我改情绪日记 #<ID>:<新内容>\n", "status": "", "result": "走通用改笔记流程。"}]}, "message": "共 29 个场景"};</script>
 <div class="wrap">
 <header class="hero">
 <div class="eyebrow">Memo Help</div>
@@ -61,28 +67,17 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padd
 <p class="meta" id="meta"></p>
 </header>
 
-<!-- 5 状态 fallback -->
+<!-- 5 状态 fallback(§07 §5) -->
 <div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
 <div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
 <div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
 
-<section class="grid" id="stats"></section>
-
-<section class="panel">
-<strong>筛选与检索</strong>
-<input id="filter" type="text" placeholder="搜索唤醒词 / 标题 / prompt 内容...">
-<div class="toolbar" id="categoryChips"></div>
-</section>
-
-<nav class="toc" id="toc"></nav>
-
 <main id="bodyContent">
-<!-- 由 JS 按分组渲染场景卡片 -->
+<!-- 由 JS 按模块-场景两层折叠渲染 -->
 </main>
 
 <footer class="panel">
-<strong>说明</strong>
-<p style="margin-top:8px;font-size:13.5px;color:var(--fg2)">
+<p style="font-size:13.5px;color:var(--fg2)">
 本页面由场景资产自动生成,改场景后重新运行 HELP 命令即可刷新。
 所有 prompt 都已剥离 CLI / 数据库 / 文件路径,纯用户意图,可直接发给 AI。
 </p>
@@ -93,36 +88,28 @@ input[type=text]{width:100%;border:1px solid var(--line);border-radius:14px;padd
 <!--INJECT-DATA-->
 
 <script>
-// ===== 工具函数 =====
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function showState(name){
-  ['Empty','Missing','Error'].forEach(s=>{var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+  ['Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
   if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
 }
 
-// ===== 主流程 =====
 try{
   if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
   var data=window.__DATA__;
   var payload=data.data||{};
-
-  // 元信息
-  document.getElementById('meta').textContent=
-    `版本：${payload.version||'?'} · 场景数：${(payload.scenarios||[]).length} · 生成时间：${payload.generated_at||''}`;
+  document.getElementById('meta').textContent='版本 '+(payload.version||'?')+' · 生成时间 '+(payload.generated_at||'');
 
   if(!Array.isArray(payload.scenarios)||payload.scenarios.length===0){showState('Empty')}
   else{
     var scenarios=payload.scenarios;
-    // 5 守卫:每个场景必含 7 字段(契约 §2.2)
     var validScenarios=scenarios.filter(function(s){
       return s.wake_word&&s.scenario_id&&s.scenario_title&&s.dimensions&&s.prompt&&s.status!==undefined&&s.result!==undefined;
     });
     if(validScenarios.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
 
-    // 分组(记录类 / 查找类 / 提醒类 / 心愿类 / 批量类 / 跨 Skill / 子唤醒词)
-    var groups={
-      '记录类':[],'查找类':[],'提醒类':[],'心愿类':[],'批量类':[],'跨 Skill':[],'子唤醒词':[]
-    };
+    // 分组(7 类)
+    var groups={'记录类':[],'查找类':[],'提醒类':[],'心愿类':[],'批量类':[],'跨 Skill':[],'子唤醒词':[]};
     var subWake=['记心愿','删心愿','改心愿','记打卡','删打卡','改打卡','记情绪','删情绪','改情绪'];
     validScenarios.forEach(function(s){
       if(subWake.indexOf(s.wake_word)>=0)groups['子唤醒词'].push(s);
@@ -134,81 +121,33 @@ try{
       else groups['记录类'].push(s);
     });
 
-    // KPI
-    var statsEl=document.getElementById('stats');
-    var kpis=[
-      ['场景总数',validScenarios.length,'个'],
-      ['业务唤醒词',new Set(validScenarios.map(function(s){return s.wake_word})).size,'个'],
-      ['分组',Object.keys(groups).filter(function(g){return groups[g].length>0}).length,'类'],
-      ['【待开发】',validScenarios.filter(function(s){return s.status==='【待开发】'}).length,'个']
-    ];
-    kpis.forEach(function(k){
-      var div=document.createElement('div');div.className='stat';
-      div.innerHTML='<b>'+esc(k[0])+' '+esc(k[1])+'</b><span>'+esc(k[2])+'</span>';
-      statsEl.appendChild(div);
-    });
-
-    // 分类筛选 chip
-    var chipsEl=document.getElementById('categoryChips');
-    var allChip=document.createElement('span');allChip.className='pill active';allChip.textContent='全部('+validScenarios.length+')';allChip.dataset.group='全部';
-    chipsEl.appendChild(allChip);
+    // 渲染 Level 1:模块(默认折叠) + Level 2:场景
+    var main=document.getElementById('bodyContent');
+    main.innerHTML='';
     Object.keys(groups).forEach(function(g){
-      if(groups[g].length===0)return;
-      var chip=document.createElement('span');chip.className='pill';chip.textContent=g+'('+groups[g].length+')';chip.dataset.group=g;
-      chipsEl.appendChild(chip);
+      var items=groups[g];
+      if(items.length===0)return;
+      // Level 1:模块
+      var module=document.createElement('details');module.className='module';
+      var sum=document.createElement('summary');sum.textContent=g;
+      module.appendChild(sum);
+      var body=document.createElement('div');body.className='module-body';
+      // Level 2:场景卡片
+      items.forEach(function(s){body.appendChild(buildScenarioCard(s))});
+      module.appendChild(body);
+      main.appendChild(module);
     });
-    chipsEl.addEventListener('click',function(e){
-      if(!e.target.classList.contains('pill'))return;
-      Array.from(chipsEl.children).forEach(function(c){c.classList.remove('active')});
-      e.target.classList.add('active');
-      renderBody(groups,e.target.dataset.group,document.getElementById('filter').value.toLowerCase());
-      window.scrollTo({top:document.getElementById('toc').offsetTop-20,behavior:'smooth'});
-    });
-
-    // 搜索过滤
-    document.getElementById('filter').addEventListener('input',function(e){
-      var active=chipsEl.querySelector('.pill.active');
-      renderBody(groups,active?active.dataset.group:'全部',e.target.value.toLowerCase());
-    });
-
-    // TOC 锚点
-    var tocEl=document.getElementById('toc');
-    Object.keys(groups).forEach(function(g){
-      if(groups[g].length===0)return;
-      var a=document.createElement('a');a.href='#group-'+g;a.textContent=g+'('+groups[g].length+')';
-      tocEl.appendChild(a);
-    });
-
-    // 首次渲染
-    renderBody(groups,'全部','');
   }
 }catch(err){
   console.error('渲染失败:',err);
-  if(!document.getElementById('stateError').style.display||document.getElementById('stateError').style.display==='none')showState('Error');
+  showState('Error');
 }
 
-// ===== 渲染主体 =====
-function renderBody(groups,activeGroup,q){
-  var main=document.getElementById('bodyContent');
-  main.innerHTML='';
-  Object.keys(groups).forEach(function(g){
-    var items=groups[g].filter(function(s){
-      var matchGroup=(activeGroup==='全部')||(activeGroup===g);
-      var matchQ=!q||(s.wake_word+' '+s.scenario_title+' '+s.prompt).toLowerCase().indexOf(q)>=0;
-      return matchGroup&&matchQ;
-    });
-    if(items.length===0)return;
-    var h=document.createElement('h2');h.className='group';h.id='group-'+g;h.textContent=g+' · '+items.length+' 个场景';
-    main.appendChild(h);
-    items.forEach(function(s){main.appendChild(buildScenarioCard(s))});
-  });
-  if(main.innerHTML==='')main.innerHTML='<div class="panel empty">没有匹配场景</div>';
-}
-
-// ===== 构建单个场景卡片 =====
+// ===== Level 2:场景卡片 =====
 function buildScenarioCard(s){
   var card=document.createElement('article');card.className='scenario';
 
+  // 头部:chip + title + 复制按钮(复制按钮在末尾 · 总是可见)
   var head=document.createElement('div');head.className='scenario-head';
   var chip=document.createElement('span');chip.className='chip';chip.textContent=s.wake_word;
   var title=document.createElement('div');title.className='title';title.textContent=s.scenario_title;
@@ -217,10 +156,10 @@ function buildScenarioCard(s){
   head.appendChild(chip);head.appendChild(title);head.appendChild(btn);
   card.appendChild(head);
 
-  // 可展开详情
+  // Level 3:细节(可折叠,默认折叠)
   var details=document.createElement('details');details.className='details';
-  var summary=document.createElement('summary');summary.textContent='查看详情 · 维度 / prompt / 预期结果';
-  details.appendChild(summary);
+  var sum=document.createElement('summary');sum.textContent='查看详情 · 维度 / prompt / 预期结果';
+  details.appendChild(sum);
 
   // 维度
   var dimBlock=document.createElement('div');dimBlock.className='dim';
@@ -239,7 +178,7 @@ function buildScenarioCard(s){
 
   card.appendChild(details);
 
-  // 【待开发】标记
+  // 【待开发】标记(§07 §4)
   if(s.status==='【待开发】'){
     var warn=document.createElement('div');warn.style.cssText='margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:13px;font-weight:700';
     warn.textContent='⚠️ 【待开发】- AI 收到此 prompt 必须停止 + 告知用户,不绕过/不假装/不降级';

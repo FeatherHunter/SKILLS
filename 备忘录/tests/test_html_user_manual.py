@@ -17,19 +17,16 @@ class TestHelpHtmlReadability:
     def text(self):
         return MEMO_HTML.read_text(encoding="utf-8")
 
-    def test_has_toc(self, text):
-        """目录锚点(总纲 §04 原则 3)"""
-        assert "toc" in text, "应有目录 toc"
-
     def test_has_mobile_responsive(self, text):
         """移动端适配(总纲 §07 §5)"""
         assert "@media" in text, "缺 @media 移动适配"
         assert "max-width" in text, "缺响应式断点"
 
-    def test_has_search_filter(self, text):
-        """总纲 §07 §5:大规模场景可搜索/筛选"""
-        assert "filter" in text or "search" in text.lower(), \
-            "缺搜索/筛选"
+    def test_no_search_or_toc(self, text):
+        """总纲 §07 §5:不应有 filter / search / TOC(状态摘要违反契约)"""
+        # post-v1.1.4 重构:这些被删除
+        assert 'id="filter"' not in text, "filter 已移除"
+        assert 'id="toc"' not in text, "TOC 已移除"
 
     def test_has_5_state_fallback(self, text):
         """总纲 §04 原则 3:5 状态 fallback"""

@@ -8,6 +8,7 @@ L4 阶段:函数体迁 db.execute/query/transaction
 """
 
 import sys
+import argparse
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
@@ -147,51 +148,46 @@ def update(args):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("""用法:
-    python cookware_manager.py add <recipe_id> --name <炊具名> [--category <分类>]
-    python cookware_manager.py list <recipe_id>
-    python cookware_manager.py search <炊具名>
-    python cookware_manager.py update <cookware_id> [选项]
+    """主入口:argparse 子命令模式(§05 改动前 3 问 模板)"""
+    parser = argparse.ArgumentParser(
+        prog=__file__.rsplit("/", 1)[-1],
+        description="私有大厨 · 炊具管理(§05 改动前 3 问 argparse 模板)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 三段式(§02 L3)")
+    sub = parser.add_subparsers(dest="action", required=True, metavar="<action>")
 
-炊具分类:锅/炉/刀/其他
-炊具示例:炒锅/砂锅/烤箱/蒸笼/电饭锅/高压锅/空气炸锅
-""")
-        return
+    p_add = sub.add_parser("add", help="添加炊具")
+    p_add.add_argument("recipe_id", help="菜谱 UUID")
+    p_add.add_argument("name", help="炊具名")
+    p_add.add_argument("--category", help="类别(锅/炉/刀/其他)")
 
-    action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])
+    p_list = sub.add_parser("list", help="列出某菜谱的炊具")
+    p_list.add_argument("recipe_id", help="菜谱 UUID")
 
-    args = {}
-    i = 2
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg.startswith("--"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        else:
-            if action in ("add", "list") and "<recipe_id>" not in args:
-                args["<recipe_id>"] = arg
-            elif action == "search" and "<炊具名>" not in args:
-                args["<炊具名>"] = arg
-            elif action in ("update", "discard") and "<cookware_id>" not in args:
-                args["<cookware_id>"] = arg
-            i += 1
+    p_search = sub.add_parser("search", help="按炊具名搜索")
+    p_search.add_argument("name", help="炊具名")
 
-    if action == "add":
-        add(args)
-    elif action == "list":
-        list_items(args)
-    elif action == "search":
-        search(args)
-    elif action == "update":
-        update(args)
-    else:
-        emit(error(f"未知操作:{action}"), json_mode=json_mode)
+    p_update = sub.add_parser("update", help="更新某菜谱的炊具")
+    p_update.add_argument("recipe_id", help="菜谱 UUID")
+    p_update.add_argument("--name", help="新炊具名")
+    p_update.add_argument("--category", help="新类别")
+
+    args = parser.parse_args()
+    args_dict = vars(args).copy()
+    if args.action in ("add", "list", "update"):
+        args_dict["<recipe_id>"] = args.recipe_id
+    elif args.action == "search":
+        args_dict["<name>"] = args.name
+
+    if args.action == "add":
+        add(args_dict)
+    elif args.action == "list":
+        list_items(args_dict)
+    elif args.action == "search":
+        search(args_dict)
+    elif args.action == "update":
+        update(args_dict)
 
 
 if __name__ == "__main__":

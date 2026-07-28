@@ -8,6 +8,7 @@ L4 阶段:函数体迁 db.execute/query/transaction
 """
 
 import sys
+import argparse
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
@@ -106,52 +107,38 @@ def search(args):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("""用法:
-    python cooking_method_manager.py add <recipe_id> --method <方式>[,<方式2>,...]
-    python cooking_method_manager.py list <recipe_id>
-    python cooking_method_manager.py search <方式>
+    """主入口:argparse 子命令模式(§05 改动前 3 问 模板)"""
+    parser = argparse.ArgumentParser(
+        prog=__file__.rsplit("/", 1)[-1],
+        description="私有大厨 · 烹饪方式管理(§05 改动前 3 问 argparse 模板)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 三段式(§02 L3)")
+    sub = parser.add_subparsers(dest="action", required=True, metavar="<action>")
 
-烹饪方式:炒/蒸/煮/烤/炸/煎/焖/炖/拌/卤/熏
-""")
-        return
+    p_add = sub.add_parser("add", help="添加烹饪方式标签")
+    p_add.add_argument("recipe_id", help="菜谱 UUID")
+    p_add.add_argument("method", help="烹饪方式(炒/蒸/煮/烤/炸/煎/焖/炖/拌/卤/熏/生食)")
 
-    action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])
+    p_list = sub.add_parser("list", help="列出某菜谱的烹饪方式")
+    p_list.add_argument("recipe_id", help="菜谱 UUID")
 
-    args = {}
-    i = 2
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg.startswith("--method"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        elif arg.startswith("--"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        else:
-            if "<recipe_id>" not in args and action != "search":
-                args["<recipe_id>"] = arg
-            elif action == "search" and "<方式>" not in args:
-                args["<方式>"] = arg
-            i += 1
+    p_search = sub.add_parser("search", help="按烹饪方式搜索")
+    p_search.add_argument("method", help="烹饪方式(炒/蒸/煮/烤/炸/煎/焖/炖/拌/卤/熏/生食)")
 
-    if action == "add":
-        add(args)
-    elif action == "list":
-        list_items(args)
-    elif action == "search":
-        search(args)
-    else:
-        emit(error(f"未知操作:{action}"), json_mode=json_mode)
+    args = parser.parse_args()
+    args_dict = vars(args).copy()
+    if args.action in ("add", "list"):
+        args_dict["<recipe_id>"] = args.recipe_id
+    elif args.action == "search":
+        args_dict["<method>"] = args.method
+
+    if args.action == "add":
+        add(args_dict)
+    elif args.action == "list":
+        list_items(args_dict)
+    elif args.action == "search":
+        search(args_dict)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ L4 阶段:函数体迁 db.execute/query/transaction
 """
 
 import sys
+import argparse
 import os
 import uuid
 from db import get_connection, query, execute, transaction
@@ -295,71 +296,57 @@ def update(args):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("""用法:
-    python tip_manager.py add <recipe_id> --scope <step|ingredient|recipe> --content <内容> [选项]
-    python tip_manager.py list <recipe_id>
-    python tip_manager.py list-by-step <step_id>
-    python tip_manager.py list-by-ingredient <ingredient_id>
-    python tip_manager.py search <关键词> [--recipe-id <食谱ID>]
-    python tip_manager.py update <tip_id> [选项]
+    """主入口:argparse 子命令模式(§05 改动前 3 问 模板)"""
+    parser = argparse.ArgumentParser(
+        prog=__file__.rsplit("/", 1)[-1],
+        description="私有大厨 · 小贴士管理(§05 改动前 3 问 argparse 模板)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 三段式(§02 L3)")
+    sub = parser.add_subparsers(dest="action", required=True, metavar="<action>")
 
-选项:
-    --scope step|ingredient|recipe(必填,2026-07-22 决策 2)
-        step        → 关联步骤,需 --step_id
-        ingredient  → 关联食材,需 --ingredient_id
-        recipe      → 整道菜级,step_id/ingredient_id 都可空
-    --step_id 关联步骤ID(scope=step 时必填)
-    --ingredient_id 关联食材ID(scope=ingredient 时必填)
-    --category 分类(火候/刀工/调味/采购/设备/保存/文化/其他)
-    --content 小贴士内容
-    --priority 优先级
-""")
-        return
+    p_add = sub.add_parser("add", help="添加小贴士")
+    p_add.add_argument("recipe_id", help="菜谱 UUID")
+    p_add.add_argument("--scope", required=True, help="scope(step/ingredient/recipe)")
+    p_add.add_argument("--content", required=True, help="贴士内容")
+    p_add.add_argument("--category", required=True, help="贴士分类")
+    p_add.add_argument("--priority", required=True, type=int, help="优先级(整数)")
+    p_add.add_argument("--step_id", help="步骤 UUID(若 scope=step)")
+    p_add.add_argument("--ingredient_id", help="食材 UUID(若 scope=ingredient)")
 
-    action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])
+    p_list = sub.add_parser("list", help="列出某菜谱的贴士")
+    p_list.add_argument("recipe_id", help="菜谱 UUID")
 
-    args = {}
-    i = 2
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg.startswith("--"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        else:
-            if action == "add" and "<recipe_id>" not in args:
-                args["<recipe_id>"] = arg
-            elif action == "list" and "<recipe_id>" not in args:
-                args["<recipe_id>"] = arg
-            elif action == "search" and "<关键词>" not in args:
-                args["<关键词>"] = arg
-            elif action in ("list-by-step",) and "<step_id>" not in args:
-                args["<step_id>"] = arg
-            elif action in ("list-by-ingredient",) and "<ingredient_id>" not in args:
-                args["<ingredient_id>"] = arg
-            elif action in ("update", "disable") and "<tip_id>" not in args:
-                args["<tip_id>"] = arg
-            i += 1
+    p_list_by_step = sub.add_parser("list-by-step", help="按 step_id 列贴士")
+    p_list_by_step.add_argument("step_id", help="步骤 UUID")
 
-    if action == "add":
-        add(args)
-    elif action == "list":
-        list_items(args)
-    elif action == "list-by-step":
-        list_by_step(args)
-    elif action == "list-by-ingredient":
-        list_by_ingredient(args)
-    elif action == "search":
-        search(args)
-    elif action == "update":
-        update(args)
-    else:
-        emit(error(f"未知操作:{action}"), json_mode=json_mode)
+    p_list_by_ingredient = sub.add_parser("list-by-ingredient", help="按 ingredient_id 列贴士")
+    p_list_by_ingredient.add_argument("ingredient_id", help="食材 UUID")
+
+    p_search = sub.add_parser("search", help="按关键词搜索")
+    p_search.add_argument("--keyword", required=True, help="关键词")
+
+    args = parser.parse_args()
+    args_dict = vars(args).copy()
+    if args.action in ("add", "list"):
+        args_dict["<recipe_id>"] = args.recipe_id
+    elif args.action == "list-by-step":
+        args_dict["<step_id>"] = args.step_id
+    elif args.action == "list-by-ingredient":
+        args_dict["<ingredient_id>"] = args.ingredient_id
+    elif args.action == "search":
+        args_dict["<keyword>"] = args.keyword
+
+    if args.action == "add":
+        add(args_dict)
+    elif args.action == "list":
+        list_items(args_dict)
+    elif args.action == "list-by-step":
+        list_by_step(args_dict)
+    elif args.action == "list-by-ingredient":
+        list_by_ingredient(args_dict)
+    elif args.action == "search":
+        search(args_dict)
 
 
 if __name__ == "__main__":

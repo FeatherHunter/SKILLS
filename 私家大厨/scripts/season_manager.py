@@ -8,6 +8,7 @@ L4 阶段:函数体迁 db.execute/query/transaction(消除 conn/cursor 模式)
 """
 
 import sys
+import argparse
 import uuid
 # L4: 函数体迁 db.execute/query/transaction
 from db import get_connection, query, execute, transaction
@@ -108,48 +109,38 @@ def search(args):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("""用法:
-    python season_manager.py add <recipe_id> --season <季节>[,<季节2>,...]
-    python season_manager.py list <recipe_id>
-    python season_manager.py search <季节>
+    """主入口:argparse 子命令模式(§05 改动前 3 问 模板)"""
+    parser = argparse.ArgumentParser(
+        prog=__file__.rsplit("/", 1)[-1],
+        description="私有大厨 · 季节标签管理(§05 改动前 3 问 argparse 模板)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 三段式(§02 L3)")
+    sub = parser.add_subparsers(dest="action", required=True, metavar="<action>")
 
-季节选项:春/夏/秋/冬
-""")
-        return
+    p_add = sub.add_parser("add", help="添加季节标签")
+    p_add.add_argument("recipe_id", help="菜谱 UUID")
+    p_add.add_argument("season", help="季节(春/夏/秋/冬)")
 
-    action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])  # L3: --json 标志
+    p_list = sub.add_parser("list", help="列出某菜谱的季节")
+    p_list.add_argument("recipe_id", help="菜谱 UUID")
 
-    args = {}
-    i = 2
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg.startswith("--"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        else:
-            if i == 2:
-                if action == "search":
-                    args["<季节>"] = arg
-                else:
-                    args["<recipe_id>"] = arg
-            else:
-                args[f"arg{i}"] = arg
-            i += 1
+    p_search = sub.add_parser("search", help="按季节搜索")
+    p_search.add_argument("season", help="季节(春/夏/秋/冬)")
 
-    if action == "add":
-        add(args)
-    elif action == "list":
-        list_items(args)
-    elif action == "search":
-        search(args)
-    else:
-        emit(error(f"未知操作:{action}"), json_mode=json_mode)
+    args = parser.parse_args()
+    args_dict = vars(args).copy()
+    if args.action in ("add", "list"):
+        args_dict["<recipe_id>"] = args.recipe_id
+    elif args.action == "search":
+        args_dict["<season>"] = args.season
+
+    if args.action == "add":
+        add(args_dict)
+    elif args.action == "list":
+        list_items(args_dict)
+    elif args.action == "search":
+        search(args_dict)
 
 
 if __name__ == "__main__":

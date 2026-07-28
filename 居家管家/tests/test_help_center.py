@@ -26,10 +26,11 @@ def test_help_html_static():
     # BUG FIX 4: 不应有 wwIdOf 这种把 wake_word 直接当 id 的函数
     assert "wwIdOf" not in h, "BUG: 仍用 wake_word 当 id"
 
-    # 必含的标签/函数
-    for tag in ['<h1>', 'class="stats"', 'class="toc"',
+    # 必含的标签/函数(round 2 对齐卡路里 HELP v2 风格)
+    for tag in ['<h1>', 'class="hero"', 'class="stats"', 'class="toc"',
                 "class=\"group", "class=\"scenarios", "class=\"scenario",
-                "class=\"copy-btn", 'addEventListener', 'JSON.parse']:
+                "class=\"copy-btn", "class=\"toast", "class=\"variant-block",
+                'addEventListener', 'JSON.parse']:
         assert tag in h, f"缺少标签/函数: {tag}"
 
 

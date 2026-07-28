@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>opencode 已加载技能速查</title>
+<style>
+  :root {
+    --blue: #007AFF;
+    --blue-soft: #E8F1FF;
+    --gray-1: #1d1d1f;
+    --gray-2: #6e6e73;
+    --gray-3: #a1a1a6;
+    --gray-bg: #f5f5f7;
+    --card: #ffffff;
+    --border: #e8e8ed;
+    --tag-user: #007AFF;
+    --tag-model: #34C759;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    color: var(--gray-1);
+    background: var(--gray-bg);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  header.hero {
+    background: linear-gradient(135deg, #ffffff 0%, var(--blue-soft) 100%);
+    border-radius: 20px;
+    padding: 40px 36px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+    margin-bottom: 32px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    color: var(--gray-2);
+    font-size: 16px;
+    margin: 0 0 20px;
+  }
+  .stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: rgba(255,255,255,0.7);
+    border-radius: 12px;
+    padding: 12px 20px;
+    backdrop-filter: blur(8px);
+  }
+  .stat .num {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--blue);
+    line-height: 1.2;
+  }
+  .stat .lbl {
+    font-size: 12px;
+    color: var(--gray-2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  nav.toc {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  nav.toc h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray-2);
+    margin: 0 0 12px;
+  }
+  nav.toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  nav.toc a {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--gray-bg);
+    color: var(--gray-1);
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.15s ease;
+  }
+  nav.toc a:hover {
+    background: var(--blue);
+    color: white;
+  }
+  section.group {
+    margin-bottom: 40px;
+  }
+  .group-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .group-header .count {
+    color: var(--gray-3);
+    font-size: 14px;
+  }
+  .group-desc {
+    color: var(--gray-2);
+    font-size: 14px;
+    margin: 0 0 20px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04);
+  }
+  .card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .card-head .name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--gray-1);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .tag.user {
+    background: var(--blue-soft);
+    color: var(--tag-user);
+  }
+  .tag.model {
+    background: #E8F9EC;
+    color: var(--tag-model);
+  }
+  .tag.global {
+    background: #FFF4E0;
+    color: #B87700;
+  }
+  .desc {
+    color: var(--gray-2);
+    font-size: 13.5px;
+    margin: 0 0 12px;
+    flex: 1;
+  }
+  .usage {
+    border-top: 1px dashed var(--border);
+    padding-top: 10px;
+    margin-top: auto;
+  }
+  .usage .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--gray-3);
+    margin-bottom: 4px;
+  }
+  .usage .trigger {
+    font-size: 13px;
+    color: var(--gray-1);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--gray-bg);
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .usage .how {
+    font-size: 13px;
+    color: var(--gray-2);
+    margin-top: 6px;
+  }
+  details.example {
+    margin-top: 12px;
+    border-radius: 8px;
+    background: var(--gray-bg);
+    padding: 8px 12px;
+  }
+  details.example summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--blue);
+    font-weight: 500;
+  }
+  details.example p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--gray-2);
+  }
+  .back-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--blue);
+    color: white;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 4px 16px rgba(0,122,255,0.4);
+    font-size: 20px;
+    transition: transform 0.15s ease;
+  }
+  .back-top:hover { transform: translateY(-2px); }
+  footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--gray-3);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer code {
+    background: var(--gray-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  @media (max-width: 640px) {
+    .container { padding: 16px; }
+    header.hero { padding: 24px 20px; }
+    h1 { font-size: 24px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="hero">
+  <h1>opencode 已加载技能速查</h1>
+  <p class="subtitle">本机当前 opencode 实际加载的全部技能清单、能力与触发方式。</p>
+  <div class="stats">
+    <div class="stat"><div class="num">28</div><div class="lbl">总技能</div></div>
+    <div class="stat"><div class="num">4</div><div class="lbl">分组</div></div>
+    <div class="stat"><div class="num">5</div><div class="lbl">本机自建</div></div>
+    <div class="stat"><div class="num">20</div><div class="lbl">mattpocock/skills</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">superpowers</div></div>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ul>
+    <li><a href="#self">本机自建技能</a></li>
+    <li><a href="#mp-eng">mattpocock · Engineering</a></li>
+    <li><a href="#mp-prod">mattpocock · Productivity</a></li>
+    <li><a href="#super">superpowers 内置</a></li>
+    <li><a href="#usage">使用方法</a></li>
+  </ul>
+</nav>
+
+<section class="group" id="self">
+  <div class="group-header">
+    <h2>本机自建技能</h2>
+    <span class="count">5 个 · 个人定制工作流</span>
+  </div>
+  <p class="group-desc">你自己写的工作流技能,覆盖记账、家务、健康、视频剪辑、作息五大领域。全部通过自然语言触发,AI 解析后调用 Python CLI 完成数据库读写。</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">饼干记账</span>
+        <span class="tag global">个人</span>
+      </div>
+      <p class="desc">记账技能。支持记支出/收入/拍账单/改记录等写入操作,以及查今天/查日期/查分类/看月度/做统计等查询分析。查询类默认 invoke HTML 工作流。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"记一笔 30 午餐" / "查今天" / "看月度"</span>
+        <div class="how">自然语言直接说,系统自动识别写入还是查询。说「饼干记账 HELP」查能力速查。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">居家管家</span>
+        <span class="tag global">个人</span>
+      </div>
+      <p class="desc">家庭物品全生命周期管理。录物品/改物品/移物品/补物品/废物品/借物品/修物品,以及盘点/穿搭推荐/快递查询/账号密码管理等。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"录物品 电动牙刷" / "查物品 牙刷" / "带物品 出差"</span>
+        <div class="how">Python CLI 执行数据库读写,AI 解析自然语言和交互确认。录物品流程会生成 HTML 预览。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">卡路里</span>
+        <span class="tag global">个人</span>
+      </div>
+      <p class="desc">饮食热量、饮水、体重、运动、营养追踪与分析。覆盖记吃了/拍营养表/查热量/记体重/记运动/查健身计划/复盘本周等数十种操作。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"刚吃了 一碗米饭" / "今天卡路里" / "记体重 65kg"</span>
+        <div class="how">所有操作通过 Python CLI 写数据库,AI 负责解析自然语言。说「卡路里 HELP」查能力速查。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">智剪工坊</span>
+        <span class="tag global">个人</span>
+      </div>
+      <p class="desc">代码视频剪辑工作台,对标剪映(图形化)+ AI 扩展。30 个原子脚本 + 主体流程(阶段 0-5)。底层 ffmpeg + OpenCV + mediapipe + mmx matrix MCP。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"剪辑" / "拼接" / "字幕" / "封面" / "智剪工坊"</span>
+        <div class="how">支持剪辑/转场/调色/字幕/变速/水印/BGM/流水线/美颜/去水词/改写配音/AI 讲解/降噪/声源分离等。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">作息管家</span>
+        <span class="tag global">个人</span>
+      </div>
+      <p class="desc">作息记录与日程计划管理。支持查作息/查日程/商量计划/改计划/复盘/同步飞书日历等。新版事件型日程计划 + 飞书日历联动。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"今天总结" / "规划明天" / "改计划" / "对比两个月"</span>
+        <div class="how">所有操作通过 Python CLI 执行数据库读写。装了飞书 CLI (lark-cli) 后可一键同步到飞书日历。</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="group" id="mp-eng">
+  <div class="group-header">
+    <h2>mattpocock · Engineering</h2>
+    <span class="count">14 个 · 工程实践</span>
+  </div>
+  <p class="group-desc">来自 <code>mattpocock/skills</code> 仓库。Matt Pocock 基于"数十年工程经验"提炼的工程纪律技能。绿色"自动"标签 = 模型可主动调用,蓝色"手动"标签 = 需用户输入命令触发。</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">ask-matt</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">技能路由器。不知道该用哪个 skill 时,问它即可,会基于本仓库的全部 skill 给出推荐路径。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/ask-matt</span>
+        <div class="how">入口 skill,先问它再做事。会告诉你该走 grill-with-docs → to-spec → to-tickets → implement 哪条主线。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">setup-matt-pocock-skills</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">为当前仓库初始化配置:issue tracker(GitHub/Linear/本地 markdown)、triage 标签、文档存放路径。用其他 engineering skill 前必跑一次。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/setup-matt-pocock-skills</span>
+        <div class="how">每个 repo 跑一次即可,配置写入 repo 内,后续 skill 自动读取。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">grill-with-docs</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">严苛盘问会话,在 sharpen 计划/设计的同时构建项目领域模型(写入 CONTEXT.md 和 ADR)。本仓库最火的 skill。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/grill-with-docs</span>
+        <div class="how">做任何变更前先用它对齐意图。每次问一个问题,等你回答后再问下一个,把决策树每个分支都走完。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">to-spec</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">把当前对话内容综合成一份 spec(PRD),发布到 issue tracker。不再盘问,只综合已讨论的。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/to-spec</span>
+        <div class="how">grill-with-docs 之后用,把对齐过的意图固化成可执行的 spec 文档。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">to-tickets</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">把 plan/spec/对话拆成一组 tracer-bullet 票据,每张票据声明自己阻塞的其他票据。本地 markdown 或真实 tracker 都行。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/to-tickets</span>
+        <div class="how">to-spec 之后用,把 spec 切成可独立交付的纵向切片,带依赖关系。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">implement</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">按 spec 或一组 tickets 实现工作。在 pre-agreed seams 处用 /tdd,结尾跑 /code-review 再提交。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/implement</span>
+        <div class="how">主流程的执行环节。定期 typecheck + 单测,结束时跑全测试套件。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">triage</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">把 issues 和外部 PRs 在 triage 角色状态机里流转:categorise → verify → grill → 写 agent-ready brief。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/triage</span>
+        <div class="how">把 PR 当作"带代码的 issue"统一处理,五个 canonical triage 角色流转。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">improve-codebase-architecture</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">扫 codebase 找"deepening opportunities"(把浅模块变深),以可视化 HTML 报告呈现,然后逐个 grill。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/improve-codebase-architecture</span>
+        <div class="how">每隔几天在 ball-of-mud 形成前跑一次,救回架构。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">wayfinder</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">规划"超出单个 agent session 容量"的大型工作:在 issue tracker 上画一张 decision tickets 共享地图,逐个解决直到目的地路径清晰。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/wayfinder</span>
+        <div class="how">"plan, don't do"。先 chart the way,不直接冲目的地。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">prototype</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">建一次性原型回答设计问题:状态/逻辑问题用终端 app,UI 问题用单路由切换的多套变体。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"建个原型 sanity-check 一下" / "试一下这个 UI 长啥样"</span>
+        <div class="how">模型在合适场景主动调用。原型是 throwaway,只为回答问题。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">tdd</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">测试驱动开发 red→green→refactor 循环。什么是好测试、测试放哪、反模式、循环规则,每轮都参考。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"red-green-refactor" / "TDD" / "先写测试"</span>
+        <div class="how">implement skill 会在 pre-agreed seams 处主动调用。每次循环前+中查阅。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">diagnosing-bugs</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">硬 bug 和性能回归的诊断循环:reproduce → minimise → hypothesise → instrument → fix → regression-test。非经明确理由不可跳阶段。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"debug 这个" / "怎么不工作" / "这个很慢"</span>
+        <div class="how">用户报告 broken/throwing/failing/slow 时模型主动调用。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">research</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">后台 agent 调研一个问题,基于高可信一手资料(官方文档/源码/spec/first-party API),把发现写入 repo 内 Markdown 文件并引用来源。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"研究一下 X" / "调研 Y 的 API" / "帮我查文档"</span>
+        <div class="how">后台跑,你可以继续干活,完成后给一份带引用的 Markdown。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">domain-modeling</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">主动构建和 sharpen 项目领域模型:挑战术语、造边缘 case、写 glossary 和 ADR。区别于"读 CONTEXT.md"的被动行为。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"统一术语" / "记下这个架构决策" / grill-with-docs 内部调用</span>
+        <div class="how">在改模型时(而非消费模型时)主动调用。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">codebase-design</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">deep module 设计的共享词汇表:大量行为藏在小接口后、clean seam、可测。给所有"设计/重构模块接口"的 skill 当通用语言。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"设计这个模块接口" / "哪里放 seam" / 其他 skill 内部调用</span>
+        <div class="how">不直接用,作为词汇层被其他 skill 引用。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">code-review</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">两轴 review:Standards(是否遵循 repo 文档化的编码规范 + Fowler smell baseline)和 Spec(是否忠实实现 originating issue/PRD),双 sub-agent 并行跑后聚合。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"review since X" / "看看这个分支"</span>
+        <div class="how">implement skill 结尾自动调用,也可独立用。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">resolving-merge-conflicts</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">逐 hunk 解决 git merge/rebase 冲突,追溯每方原始意图,优先保留双方意图,绝不 --abort。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">merge/rebase 冲突时自动触发</span>
+        <div class="how">看冲突状态 → 找每方 primary source → 逐 hunk 解决 → 跑 typecheck/tests/format。</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="group" id="mp-prod">
+  <div class="group-header">
+    <h2>mattpocock · Productivity</h2>
+    <span class="count">5 个 · 通用工作流</span>
+  </div>
+  <p class="group-desc">非代码特定的工作流工具:对齐意图、跨 session 接力、教学、写 skill。</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">grill-me</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">非代码版的严苛盘问。不停地问直到决策树每个分支都解决。每问一个问题,给你推荐答案。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/grill-me</span>
+        <div class="how">思考任何决策时都用,不是代码专属。一次只问一个问题,等你回答后再问下一个。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">grilling</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">grill-me 和 grill-with-docs 背后的可复用循环。事实性问题自己查环境,决策性问题问你并等答。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">grill-me / grill-with-docs 内部调用</span>
+        <div class="how">一般不直接用,被手动 skill 包装。但你想直接 grill 时也能调用。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">handoff</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">把当前对话压缩成交接文档,让另一个 agent 接力。存到 OS 临时目录而非当前 workspace,包含"建议 skill"段落。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/handoff 下一个 session 用来干嘛</span>
+        <div class="how">不重复已在 specs/plans/ADRs/issues/commits/diffs 里的内容,只引用路径或 URL。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">teach</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">跨多个 session 教你一个新技能或概念。当前目录作为教学 workspace,学习状态在其中多个文件持久化。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/teach 想学什么</span>
+        <div class="how">stateful 请求,意图跨多 session 完成。教学进度记录在目录文件里。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">writing-great-skills</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">写/编辑 skill 的参考:vocabulary + principles 让 skill 可预测。核心是 predictability(每次走同一流程,而非产出同一输出)。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">/writing-great-skills</span>
+        <div class="how">改 skill 前先查阅,bold 术语在 GLOSSARY.md 里有完整定义。</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="group" id="super">
+  <div class="group-header">
+    <h2>superpowers 内置</h2>
+    <span class="count">3 个核心 + 多个辅助 · 全局工程纪律</span>
+  </div>
+  <p class="group-desc">来自 <code>superpowers@git+https://github.com/obra/superpowers.git</code> 插件。system prompt 顶层加载 using-superpowers,强制要求"匹配 skill 必须先 invoke 再答"。下表只列你会高频触达的核心 + 工程纪律 skill,完整列表共 15+ 个。</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">using-superpowers</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">已自动加载。所有对话开始前先走它:决定要不要 invoke skill。1% 可能适用就要 invoke,不允许 rationalize 跳过。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">自动,每条用户消息触发</span>
+        <div class="how">不需要你操心,系统已强制加载。它告诉你"红旗清单"防止偷懒跳过 skill。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">brainstorming</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">创造性工作前必跑:做 features / 建 components / 加 functionality / 改 behavior 之前先探索用户意图、需求和设计。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"加个 X 功能" / "改这个行为" / EnterPlanMode 前</span>
+        <div class="how">process skill,优先级最高。先 brainstorm 再 implementation skill。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">systematic-debugging</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">遇到 bug / 测试失败 / 非预期行为时,提议修复前必跑。系统化定位根因,不许"猜一个 fix 试试看"。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"修这个 bug" / 测试失败 / 行为奇怪</span>
+        <div class="how">rigid skill,严格按步骤走。先 reproduce → 再 diagnose → 才 propose fix。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">test-driven-development</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">实现任何 feature/bugfix 前必跑。先写测试(红)→ 再写实现(绿)→ 重构。与 mattpocock 的 tdd 互补。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">"实现 X" / "加 Y 功能" / 写代码前</span>
+        <div class="how">rigid,严格 red-green-refactor,不可省略。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">verification-before-completion</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">声称"完成/修好/通过"前必跑:必须先跑验证命令、确认输出,才可声明成功。evidence before assertions。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">即将说"搞定了" / 提交前 / 创 PR 前</span>
+        <div class="how">不许凭感觉说"应该可以了"。必须跑 lint/typecheck/tests 给证据。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">requesting-code-review</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">完成任务、实现大功能、merge 前用:验证工作满足需求。会拉一个 reviewer sub-agent 独立审。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">完成大块功能后 / merge 前</span>
+        <div class="how">与 mattpocock code-review 互补,这个偏"请求审查",那个偏"执行审查"。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">writing-plans</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">拿到 spec / 多步任务需求,动代码前用:写一份可执行的 implementation plan。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">复杂任务动代码前</span>
+        <div class="how">配合 executing-plans / subagent-driven-development 在独立 session 执行。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">dispatching-parallel-agents</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">2+ 个独立任务(无共享状态、无顺序依赖)时用:并发派多个 subagent 加速。</p>
+      <div class="usage">
+        <div class="label">触发方式</div>
+        <span class="trigger">多个独立任务可并行</span>
+        <div class="how">本会话中并发派发,适合 research / 多文件搜索等无状态任务。</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="group" id="usage">
+  <div class="group-header">
+    <h2>使用方法</h2>
+    <span class="count">三种触发路径</span>
+  </div>
+  <p class="group-desc">理解"手动"和"自动"标签的差异,以及 skill 之间的优先级,是用好这套系统的关键。</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-head">
+        <span class="name">手动触发</span>
+        <span class="tag user">手动</span>
+      </div>
+      <p class="desc">蓝色"手动"标签的 skill 必须你显式输入命令才会启动。比如 <code>/grill-with-docs</code>、<code>/tdd</code>、<code>/implement</code>。</p>
+      <div class="usage">
+        <div class="label">用法</div>
+        <span class="trigger">直接输入 /skill-name [可选参数]</span>
+        <div class="how">主要 orchestration 类 skill 都是手动,如 to-spec / to-tickets / implement / triage / handoff。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">自动触发</span>
+        <span class="tag model">自动</span>
+      </div>
+      <p class="desc">绿色"自动"标签的 skill 由模型在合适场景主动调用,你不用记。比如 brainstorming / tdd / diagnosing-bugs / research。</p>
+      <div class="usage">
+        <div class="label">用法</div>
+        <span class="trigger">自然语言描述任务,模型自行判断</span>
+        <div class="how">"加个登录功能" → brainstorming + tdd 自动启动;"这个 bug 怎么回事" → systematic-debugging + diagnosing-bugs 自动启动。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="name">优先级</span>
+        <span class="tag global">规则</span>
+      </div>
+      <p class="desc">Process skill 先于 implementation skill。"建 X" → brainstorming 先,再 implementation skill;"修 bug" → debugging 先,再 domain skill。</p>
+      <div class="usage">
+        <div class="label">顺序</div>
+        <span class="trigger">brainstorming → writing-plans → tdd → verification</span>
+        <div class="how">用户显式指令(CLAUDE.md / AGENTS.md) > superpowers skills > 默认 system prompt。优先级冲突时听用户的。</div>
+      </div>
+    </div>
+  </div>
+
+  <details class="example" open>
+    <summary>典型工作流:从想法到上线</summary>
+    <p><strong>1.</strong> 想法粗略 → <code>/ask-matt</code> 问该走哪条主线<br>
+       <strong>2.</strong> <code>/grill-with-docs</code> 盘问 sharpen 意图,顺带写 CONTEXT.md + ADR<br>
+       <strong>3.</strong> <code>/to-spec</code> 综合成 spec → <code>/to-tickets</code> 切成带依赖的票据<br>
+       <strong>4.</strong> <code>/implement</code> 执行(在 pre-agreed seams 处自动调 <code>/tdd</code>)<br>
+       <strong>5.</strong> implement 结尾自动跑 <code>code-review</code>,通过后 <code>verification-before-completion</code> 给证据<br>
+       <strong>6.</strong> 大型工作超出单 session → <code>/handoff</code> 交接给下一个 agent</p>
+  </details>
+
+  <details class="example">
+    <summary>典型工作流:修一个难 bug</summary>
+    <p><strong>1.</strong> 用户说"这个不工作" → <code>systematic-debugging</code> + <code>diagnosing-bugs</code> 自动启动<br>
+       <strong>2.</strong> reproduce → minimise → hypothesise → instrument → fix → regression-test<br>
+       <strong>3.</strong> 修复时若涉及新逻辑,<code>tdd</code> 先写测试再改<br>
+       <strong>4.</strong> <code>verification-before-completion</code> 跑测试给证据再声明修好</p>
+  </details>
+
+  <details class="example">
+    <summary>典型工作流:个人记账 / 健康追踪</summary>
+    <p><strong>1.</strong> 直接说自然语言:"刚吃了 一碗米饭 200g"<br>
+       <strong>2.</strong> 卡路里 skill 识别为写入,Python CLI 写库<br>
+       <strong>3.</strong> "今天卡路里" → 识别为查询 → invoke HTML 工作流生成可视化面板<br>
+       <strong>4.</strong> "复盘本周" → 拉一周数据生成综合复盘 HTML</p>
+  </details>
+
+</section>
+
+<footer>
+  <p>生成于 opencode session · 当前加载技能共 28+ 个 · 配置文件 <code>~/.config/opencode/opencode.json</code></p>
+  <p>更新方式:本机自建 skill 直接编辑 · mattpocock 仓库 <code>cd ~/.config/opencode/skills-repos/mattpocock-skills && git pull</code> · superpowers <code>plugin 自动更新</code></p>
+</footer>
+
+</div>
+
+<a href="#" class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑</a>
+
+</body>
+</html>

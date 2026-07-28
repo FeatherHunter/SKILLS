@@ -15,7 +15,14 @@ description: >
   查账号、存账号、改账号（账号密码管理）、
   查异常（数据健康检查）。
   所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认；录物品/拍物品流程在写入前生成 HTML 预览供用户确认。
-metadata: { "openclaw": { "emoji": "🏠", "requires": { "python": ">=3.7", "pip": ["cryptography"] } } }
+metadata:
+  openclaw:
+    emoji: 🏠
+    requires:
+      python: ">=3.7"
+      pip:
+        - cryptography
+  help_wake_word: "居家管家 帮助"
 ---
 
 ## 📘 关于 `居家管家.html`(总纲 04 §原则 4 · 镜像)
@@ -98,39 +105,40 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 
 | # | 唤醒词 | 功能 | 加载文件 | 需要物品名？ |
 |---|--------|------|----------|-------------|
-| 1 | 查物品 | 物品搜索 | features/search.md | 可选（无则列全部） |
-| 2 | 看物品 | 物品详情 | features/search.md → detail | 是（多件时让用户选） |
-| 3 | 录物品 | 文字录入 | features/add.md | 否（AI 解析描述） |
-| 4 | 拍物品 | 拍照录入 | features/add.md → 图片子流程 | 否（从图片提取） |
-| 5 | 改物品 | 通用更新 | features/update.md | 是 |
-| 6 | 移物品 | 位置移动 | features/update.md → 位置移动 | 是 |
-| 7 | 补物品 | 数量增加 | features/update.md → 数量变更 | 是 |
-| 8 | 减物品 | 数量减少 | features/update.md → 数量变更 | 是 |
-| 9 | 标物品 | 标签更新 | features/update.md → 标签更新 | 是 |
-| 10 | 废物品 | 标记废弃 | features/update.md → 状态变更 | 是 |
-| 11 | 借物品 | 标记借出 | features/update.md → 状态变更 | 是 |
-| 12 | 修物品 | 标记维修 | features/update.md → 状态变更 | 是 |
-| 13 | 盘物品 | 按位置盘点 | features/inventory.md | 是（位置） |
-| 14 | 盘全部 | 全屋盘点 | features/inventory.md | 否 |
-| 15 | 穿什么 | 穿搭推荐 | features/fashion.md | 否 |
-| 16 | 带物品 | 出门标记 | features/travel.md → 出门前 | 是 |
-| 17 | 归物品 | 回家归位 | features/travel.md → 回家后 | 否（查所有旅游中） |
-| 18 | 统物品 | 总体统计 | features/stats.md → summary | 否 |
-| 19 | 查高频 | 高频物品 | features/stats.md → frequent | 否 |
-| 20 | 查低频 | 低频物品 | features/stats.md → dormant | 否 |
-| 21 | 查过期 | 过期检查 | features/stats.md → expiring | 否 |
-| 22 | 看标签 | 列出标签 | features/tags.md → 列表 | 否 |
-| 23 | 合标签 | 合并标签 | features/tags.md → 合并 | 是（from/to） |
-| 24 | 查快递 | 快递查询 | features/search.md → 快递 | 否 |
-| 25 | 推位置 | 位置推荐 | features/add.md → Step 2.5 | 是（category-id 整数） |
-| 26 | 找位置 | 参考锚定 | features/add.md → Step 2.6 | 是（reference） |
-| 27 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
-| 28 | 存账号 | 新增账号 | accounts.py → add | 是 |
-| 29 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
-| 30 | 查异常 | 数据健康检查 | SKILL.md → Lint 检查 | 否 |
-| 31 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
-| 32 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
-| 33 | 统物品(HTML) | 总体统计(默认输出 HTML) | features/search.md → Step 4 | 否 |
+| 1 | **居家管家 帮助** | **技能速查（HELP）** | `python3 scripts/home_manager.py help`（生成 HELP HTML） | 否 |
+| 2 | 查物品 | 物品搜索 | features/search.md | 可选（无则列全部） |
+| 3 | 看物品 | 物品详情 | features/search.md → detail | 是（多件时让用户选） |
+| 4 | 录物品 | 文字录入 | features/add.md | 否（AI 解析描述） |
+| 5 | 拍物品 | 拍照录入 | features/add.md → 图片子流程 | 否（从图片提取） |
+| 6 | 改物品 | 通用更新 | features/update.md | 是 |
+| 7 | 移物品 | 位置移动 | features/update.md → 位置移动 | 是 |
+| 8 | 补物品 | 数量增加 | features/update.md → 数量变更 | 是 |
+| 9 | 减物品 | 数量减少 | features/update.md → 数量变更 | 是 |
+| 10 | 标物品 | 标签更新 | features/update.md → 标签更新 | 是 |
+| 11 | 废物品 | 标记废弃 | features/update.md → 状态变更 | 是 |
+| 12 | 借物品 | 标记借出 | features/update.md → 状态变更 | 是 |
+| 13 | 修物品 | 标记维修 | features/update.md → 状态变更 | 是 |
+| 14 | 盘物品 | 按位置盘点 | features/inventory.md | 是（位置） |
+| 15 | 盘全部 | 全屋盘点 | features/inventory.md | 否 |
+| 16 | 穿什么 | 穿搭推荐 | features/fashion.md | 否 |
+| 17 | 带物品 | 出门标记 | features/travel.md → 出门前 | 是 |
+| 18 | 归物品 | 回家归位 | features/travel.md → 回家后 | 否（查所有旅游中） |
+| 19 | 统物品 | 总体统计 | features/stats.md → summary | 否 |
+| 20 | 查高频 | 高频物品 | features/stats.md → frequent | 否 |
+| 21 | 查低频 | 低频物品 | features/stats.md → dormant | 否 |
+| 22 | 查过期 | 过期检查 | features/stats.md → expiring | 否 |
+| 23 | 看标签 | 列出标签 | features/tags.md → 列表 | 否 |
+| 24 | 合标签 | 合并标签 | features/tags.md → 合并 | 是（from/to） |
+| 25 | 查快递 | 快递查询 | features/search.md → 快递 | 否 |
+| 26 | 推位置 | 位置推荐 | features/add.md → Step 2.5 | 是（category-id 整数） |
+| 27 | 找位置 | 参考锚定 | features/add.md → Step 2.6 | 是（reference） |
+| 28 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
+| 29 | 存账号 | 新增账号 | accounts.py → add | 是 |
+| 30 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
+| 31 | 查异常 | 数据健康检查 | SKILL.md → Lint 检查 | 否 |
+| 32 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
+| 33 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
+| 34 | 统物品(HTML) | 总体统计(默认输出 HTML) | features/search.md → Step 4 | 否 |
 
 ### 匹配规则
 

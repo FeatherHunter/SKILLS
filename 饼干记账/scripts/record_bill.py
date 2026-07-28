@@ -43,6 +43,24 @@ from analyze import (
     get_today_summary, monthly_summary,
     compare_periods, get_category_breakdown
 )
+from validators import (
+    ValidationError, validate_amount, validate_category, validate_time,
+    validate_record, DEFAULTS as VALIDATOR_DEFAULTS,
+)
+
+
+def _format_validation_error(e: ValidationError, json_mode: bool = False) -> None:
+    """把 ValidationError 转成 CLI 输出（统一文字/JSON 两路）
+
+    错误信息含「字段名 + 当前值 + 期望值 + 怎么修」四要素（来自 validators.py）。
+    """
+    msg = str(e)
+    if json_mode:
+        print(json.dumps({
+            "status": "error", "data": None, "message": msg
+        }, ensure_ascii=False))
+    else:
+        print(f"✗ 参数错误：{msg}")
 
 
 def _format_record(r: dict) -> str:
@@ -57,14 +75,29 @@ def _format_record(r: dict) -> str:
 def cmd_add(args):
     """添加账单"""
     time_str = args.time or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # validators 层（expand–contract 第 1 步：新校验先跑；旧 argparse 类型校验仍保留）
+    try:
+        record = validate_record({
+            "category": args.category,
+            "amount": args.amount,
+            "time": time_str,
+            "account": args.account or VALIDATOR_DEFAULTS["account"],
+            "ledger": args.ledger or VALIDATOR_DEFAULTS["ledger"],
+            "currency": args.currency or VALIDATOR_DEFAULTS["currency"],
+            "note": args.note or VALIDATOR_DEFAULTS["note"],
+        })
+    except ValidationError as e:
+        _format_validation_error(e, json_mode=getattr(args, 'json', False))
+        sys.exit(1)
+        return None
     result = add_bill(
-        category=args.category,
-        amount=args.amount,
-        time_str=time_str,
-        account=args.account or "",
-        ledger=args.ledger or "生活",
-        currency=args.currency or "人民币",
-        note=args.note or ""
+        category=record["category"],
+        amount=record["amount"],
+        time_str=record["time"],
+        account=record["account"],
+        ledger=record["ledger"],
+        currency=record["currency"],
+        note=record["note"],
     )
     print(f"✓ 已记录：{result['category']} {result['amount']:.2f}")
     return result
@@ -88,6 +121,19 @@ def cmd_update(args):
 
     if not new_fields:
         print("✗ 没有传入任何修改字段(至少传一个: --category/--amount/--time/--account/--ledger/--currency/--note)")
+        return
+
+    # validators 层：按字段逐个校验（expand 阶段，新校验先跑）
+    try:
+        if "amount" in new_fields:
+            new_fields["amount"] = validate_amount(new_fields["amount"])
+        if "category" in new_fields:
+            new_fields["category"] = validate_category(new_fields["category"])
+        if "time" in new_fields:
+            new_fields["time"] = validate_time(new_fields["time"])
+    except ValidationError as e:
+        _format_validation_error(e, json_mode=getattr(args, 'json', False))
+        sys.exit(1)
         return
 
     # 展示 diff

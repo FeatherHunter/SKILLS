@@ -332,3 +332,34 @@ class TestHelpOutputFlag:
         )
         data = json.loads(r.stdout)
         assert data["data"]["output_path"] is None
+
+
+# ==================== 唤醒词灵活匹配(FAT G1 修复) ====================
+
+class TestHelpWakeWordFlexibility:
+    """FAT(§05 钩子 ⑥)发现 SKILL.md G1:唤醒词灵活匹配没明文。
+    修后用静态检查守护回归。
+    """
+
+    SKILL_MD = SKILL_DIR / "SKILL.md"
+
+    def test_skill_md_documents_wake_word_flexibility(self):
+        """SKILL.md §备忘录 HELP 含'灵活匹配'段"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        assert "唤醒词灵活匹配" in text, \
+            "FAT G1 修复:SKILL.md 应明文规定唤醒词灵活匹配规则"
+
+    def test_skill_md_documents_variations_examples(self):
+        """SKILL.md 含变体示例(口语化 / slash 等)"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        # 至少含 3 种变体示例
+        variations = [
+            "口语化",
+            "slash",
+            "缩字",
+            "大小写",
+            "manual",
+        ]
+        present = [v for v in variations if v in text]
+        assert len(present) >= 3, \
+            f"FAT G1 修复:SKILL.md 应含 ≥3 种变体示例,实际 {present}"

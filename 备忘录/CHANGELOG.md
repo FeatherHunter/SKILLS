@@ -139,6 +139,22 @@
 
 全量:156/156 pytest 通过(v1.1.4 首次 148 + 8 个 `--output` 用例)
 
+### Changed(post-FAT · G1 修复)
+
+- **SKILL.md §备忘录 HELP 新增"唤醒词灵活匹配"段**
+  - FAT(§05 钩子 ⑥)发现:G1 · SKILL.md 没明文规定 HELP 唤醒词的灵活匹配规则
+  - 风险:Fresh Agent 看到字面 `备忘录 HELP` 可能误判需要完全匹配 → 漏触发口语化变体
+  - 修复:加 8 种变体示例(字面 / 大小写 / 缩字 / 口语化 / slash / 英文同义) + 判定优先级 + 反例
+  - 守门:`tests/test_help.py` 加 2 个回归用例
+
+### Tests(post-FAT · +2 用例)
+
+`tests/test_help.py:TestHelpWakeWordFlexibility` 2 个新用例:
+1. `test_skill_md_documents_wake_word_flexibility` — SKILL.md 含 "灵活匹配" 段
+2. `test_skill_md_documents_variations_examples` — SKILL.md 含变体示例(口语化 / slash 等)
+
+全量:158/156 pytest 通过(148 → 158 · +8 个 `--output` + +2 个 flex)
+
 ### Changed
 
 - `SKILL.md`:

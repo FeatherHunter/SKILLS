@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup Matt Pocock Skills · SKILLS/ 根配置 · Round 7</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;--card:#fff;--line:#d2d2d7;--soft:#f5f8ff;--blue:#007aff;--blue2:#0a63ce;--green:#34c759;--warn:#ff9500;--purple:#6b21a8;--shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;padding:48px 24px 96px}
+  .wrap{max-width:960px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#f3e8ff 0%,#e8d6ff 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .hero .eyebrow{font-size:12px;color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .hero h1{font-size:28px;line-height:1.18;letter-spacing:-.02em;margin-bottom:8px}
+  .hero .lead{font-size:14.5px;color:var(--fg2);max-width:780px;margin-bottom:14px}
+  .hero .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
+  .hero .stats b{color:var(--purple);font-variant-numeric:tabular-nums}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .card h2{font-size:13px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;font-weight:700}
+  .card h3{font-size:16px;font-weight:600;color:var(--fg);margin:12px 0 8px;letter-spacing:-.01em}
+  .card p{font-size:14px;color:var(--fg);margin-bottom:8px;line-height:1.7}
+  .card code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#eef0f3;padding:2px 7px;border-radius:5px;font-size:.9em;color:#1d1d1f}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th{text-align:left;background:#fafbff;color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--fg);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td code{font-size:.85em}
+  .findings{background:#f0fbf3;border:1px solid #c2ebd1;border-radius:12px;padding:14px 18px;margin:12px 0;font-size:13.5px}
+  .findings .num{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#1c7a30;font-weight:700;font-size:12.5px}
+  .findings ul{margin:8px 0 0 22px;font-size:13px;line-height:1.7}
+  .qblock{border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:14px;background:#fafbff}
+  .qblock .num{font-size:12px;color:var(--blue2);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+  .qblock .num .badge{background:#fff3e0;color:#c25c00;padding:2px 8px;border-radius:5px;font-size:11px;letter-spacing:0;text-transform:none}
+  .qblock .body{font-size:14px;color:var(--fg);line-height:1.7;margin-bottom:12px}
+  .qblock .opts{display:grid;gap:8px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+  .opt .label{font-weight:600;color:var(--blue2);font-size:13.5px;margin-bottom:3px}
+  .opt .desc{font-size:12.5px;color:var(--fg2);line-height:1.6}
+  .opt.recommended{border-color:var(--green);background:#f0fbf3}
+  .opt.recommended .label::after{content:" · 推荐";color:var(--green);font-size:11.5px;font-weight:600}
+  .skip-block{background:#f0f0f2;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:14px 0;color:var(--fg2);font-size:13.5px}
+  .skip-block b{color:var(--fg)}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;letter-spacing:.04em}
+  .tag.skip{background:#f0f0f2;color:#6e6e73}
+  .tag.next{background:#e8f0ff;color:var(--blue2)}
+  .footer{margin-top:36px;padding:20px 0;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line)}
+  @media(max-width:720px){body{padding:32px 16px 60px}.hero{padding:28px 22px;border-radius:18px}.hero h1{font-size:22px}.card{padding:18px 20px;border-radius:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Setup Matt Pocock Skills · Round 7 · 2026-07-28</div>
+  <h1>SKILLS/ 仓库根配置</h1>
+  <p class="lead">按 <code>setup-matt-pocock-skills</code> skill 协议,配置 SKILLS/ 仓库根的 issue tracker / domain docs / AGENTS.md — 让 <code>to-spec</code> / <code>triage</code> / <code>to-tickets</code> / <code>qa</code> 等工程类 skill 能正确读写。</p>
+  <div class="stats">
+    <span>📍 <b>当前 repo</b> SKILLS/(GitHub remote)</span>
+    <span>📋 <b>3 Section</b> 待答(Section B 跳过)</span>
+    <span>⏭ <b>4 决策</b> 等用户答复</span>
+  </div>
+</header>
+
+<section class="card">
+  <h2>🔍 探索结果</h2>
+  <div class="findings">
+    <div class="num">📋 FACT:已查 SKILLS/ 仓库状态</div>
+    <ul>
+      <li><b>git remote</b>:指向 GitHub <code>FeatherHunter/SKILLS</code>(URL 含明文 token ⚠️)</li>
+      <li><b>SKILLS/ 根</b>:无 <code>AGENTS.md</code> / <code>CLAUDE.md</code> / <code>CONTEXT.md</code> / <code>.scratch/</code> / <code>docs/agents/</code></li>
+      <li><b>作息管家/AGENTS.md</b>:不存在(Q8 决定要补)</li>
+      <li><b>triage skill</b>:未安装 → Section B 跳过</li>
+      <li><b>monorepo signals</b>:无 pnpm-workspace / packages/* — 但实质 60+ SKILL 并列</li>
+      <li><b>SKILL开发总纲V1.0</b>:有完整 docs/agents/(本地 markdown + 5 triage labels + 单 context)</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card">
+  <h2>📋 决策问题</h2>
+
+  <div class="qblock">
+    <div class="num">Section A · Issue tracker <span class="badge">待答</span></div>
+    <div class="body">SKILLS/ 是 GitHub repo,但总纲项目用 Local markdown。本仓库实际用什么?</div>
+    <div class="opts">
+      <div class="opt recommended">
+        <div class="label">Local markdown · .scratch/&lt;feature&gt;/issues/NN-xxx.md</div>
+        <div class="desc">跟总纲项目完全一致;个人项目无外部协作者;不依赖 gh CLI;实施 issue 与 ADR 一起存本地。<b>推荐</b>。</div>
+      </div>
+      <div class="opt">
+        <div class="label">GitHub Issues · 用 gh CLI 操作 FeatherHunter/SKILLS</div>
+        <div class="desc">remote 指向 GitHub,gh 可用;但要跨平台考虑,token 在 URL 里是隐患。</div>
+      </div>
+      <div class="opt">
+        <div class="label">双轨 · GitHub Issues 主, .scratch/ 本地归档副本</div>
+        <div class="desc">GitHub Issues 是 source of truth,本地留副本,最安全但复杂。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qblock">
+    <div class="num">Section B · Triage labels <span class="badge skip">SKIP</span></div>
+    <div class="skip-block"><b>跳过原因:</b>triage skill 未安装。<br/>本节只在 triage skill 已安装时才运行。<br/>如未来安装 triage skill,可重新跑 setup-matt-pocock-skills。</div>
+  </div>
+
+  <div class="qblock">
+    <div class="num">Section C · Domain docs <span class="badge">待答</span></div>
+    <div class="body">单 context 还是 multi context?</div>
+    <div class="opts">
+      <div class="opt recommended">
+        <div class="label">Single context · 根 CONTEXT.md + 根 docs/adr/</div>
+        <div class="desc">默认;无 monorepo 配置文件;个人项目;每个 SKILL 的 ADR 在作息管家/docs/adr/ 等子目录下独立维护(与单 context 不冲突)。<b>推荐</b>。</div>
+      </div>
+      <div class="opt">
+        <div class="label">Multi context · 根 CONTEXT-MAP.md + 各 SKILL 子目录 CONTEXT.md</div>
+        <div class="desc">实质 monorepo(60+ SKILL),但无 monorepo 配置;多 context 会让 to-spec/triage 等 skill 变复杂;除非未来要跨 SKILL 协同,否则不必要。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qblock">
+    <div class="num">AGENTS.md vs CLAUDE.md <span class="badge">待答</span></div>
+    <div class="body">两个文件都不存在。按 skill 协议,需要用户选一个创建。</div>
+    <div class="opts">
+      <div class="opt recommended">
+        <div class="label">创建 AGENTS.md (推荐)</div>
+        <div class="desc">跟总纲项目一致(总纲用 AGENTS.md);generic name,跨工具可读(opencode/Claude/Cursor/GPT 等都识别)。</div>
+      </div>
+      <div class="opt">
+        <div class="label">创建 CLAUDE.md</div>
+        <div class="desc">Claude-specific;如果你主要用 Claude Code 可能更习惯。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qblock">
+    <div class="num">作息管家 AGENTS.md 路径(Q8 子项) <span class="badge">待答</span></div>
+    <div class="body">Q8 已答 A = 补 AGENTS.md。但路径未明确。</div>
+    <div class="opts">
+      <div class="opt recommended">
+        <div class="label">作息管家/AGENTS.md (项目根) (推荐)</div>
+        <div class="desc">跟总纲项目结构一致;agent 进入作息管家目录时自动加载;最直观。</div>
+      </div>
+      <div class="opt">
+        <div class="label">作息管家/docs/agents/AGENTS.md (mattpocock-skills 约定)</div>
+        <div class="desc">更标准(mattpocock-skills 默认 agents/ 子目录);但 agent 不一定自动加载深层路径。</div>
+      </div>
+      <div class="opt">
+        <div class="label">都写 · 根 AGENTS.md 简洁引用 + docs/agents/AGENTS.md 详版</div>
+        <div class="desc">既保留 agent 自动加载,又满足 setup-matt-pocock-skills 约定;重复维护成本小。</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<section class="card">
+  <h2>📋 回复格式</h2>
+  <p>请按 <code>Q1=X / Q2=X / Q3=X / Q4=X</code> 格式一次回完 4 题(Section B 已跳过)。</p>
+  <pre style="background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:12px 16px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:6px">Q1=A   # Local markdown
+Q2=A   # Single context
+Q3=A   # AGENTS.md
+Q4=A   # 作息管家/AGENTS.md 项目根</pre>
+  <p style="margin-top:8px">或直接一句话答复,我会解析。</p>
+</section>
+
+<footer class="footer">
+  Setup Matt Pocock Skills · Round 7 · 2026-07-28 · 由 opencode 调度<br/>
+  Section B 跳过(triage skill 未安装)· 4 决策待答 · 准备落盘
+</footer>
+
+</div>
+</body>
+</html>

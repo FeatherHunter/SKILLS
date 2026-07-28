@@ -439,7 +439,15 @@
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<!-- Toast(iOS 通知风格 · 对标卡路里 v2.4.12) -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-icon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),作息管家技能会自动执行这个流程,完成后你会在飞书收到 HTML</div>
+  </div>
+  <button class="toast-close" id="toastClose" type="button">✓ 知道了</button>
+</div>
 
 <script>
 window.__SCENARIOS__ = <!--INJECT-DATA-->;
@@ -451,12 +459,31 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  // === Toast 控制器(对标卡路里 v2.4.12 · iOS 通知风格) ===
+  // showToast(wake):wake 是被复制的唤醒词名(如 "#6 查作息" / "#14 复盘"),
+  // toast 标题显示 "已复制 #6 查作息",副标题固定提示用户粘给 AI + 飞书闭环
+  const toastEl = document.getElementById('toast');
+  const toastWakeEl = document.getElementById('toastWake');
+  const toastCloseEl = document.getElementById('toastClose');
+  let toastTimer = null;
+
+  function showToast(wake) {
+    // wake 可以是唤醒词字符串;若未传则用 "prompt" 占位
+    const wakeText = (wake && String(wake).trim()) || 'prompt';
+    if (toastWakeEl) toastWakeEl.textContent = wakeText;
+    if (toastEl) {
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      // 4.5s 自动消失(对标卡路里,够用户读完副标题)
+      toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 4500);
+    }
+  }
+  // 关闭按钮:点击立即消失
+  if (toastCloseEl) {
+    toastCloseEl.addEventListener('click', function(){
+      toastEl.classList.remove('show');
+      clearTimeout(toastTimer);
+    });
   }
   function wakeNum(wake) {
     // "#0 记作息" → "00"
@@ -563,14 +590,25 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
     const btn = e.target.closest('.copy-btn');
     if (!btn) return;
     const text = btn.getAttribute('data-prompt') || '';
+    // 找到所属场景的唤醒词(对标卡路里):toast 显示"已复制 #6 查作息"
+    let wake = '';
+    const scBlock = btn.closest('.sc-block');
+    if (scBlock) {
+      const wwEl = scBlock.querySelector('.sc-ww-name');
+      if (wwEl) wake = wwEl.textContent.trim();
+      const scTitleEl = scBlock.querySelector('.sc-title');
+      if (scTitleEl) wake += ' · ' + scTitleEl.textContent.trim();
+    }
+    showToast(wake || 'prompt');
+
     const done = function(){
       btn.textContent = '✓ 已复制';
       btn.classList.add('copied');
-      showToast('已复制 · 粘贴给 AI');
+      // toast 已在 showToast(wake) 中显示,这里只控制按钮视觉
       setTimeout(function(){
         btn.textContent = '复制 prompt';
         btn.classList.remove('copied');
-      }, 1800);
+      }, 2200);
     };
     const fallback = function(){
       const ta = document.createElement('textarea');

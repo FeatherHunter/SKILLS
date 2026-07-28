@@ -288,10 +288,37 @@ metadata:
 
 ## Round 2 修正计划(对抗式审查结论)
 
-- [ ] P1-4 spec.md Progress 改标注(本 commit)
-- [ ] P1-3 §HTML-First 加 fail mode 自检清单
-- [ ] P2-5 scenarios.yaml 5 个 TOP scenario 加 status: 【待开发】(变体语料未经验证)
-- [ ] P0-1 §匹配规则 加变体匹配逻辑(让 variants 真正生效)
-- [ ] HELP HTML 复制 prompt UI 对齐卡路里风格(Toast + 4 状态按钮 + 变体展示)
-- [ ] P0-2 派 fresh subagent 跑 FAT 3 核心词 × ≥3 人类 prompt
-- [ ] 根据 FAT 结果修正 commit 4/5/7 的 Tested-By 标签(reword,因已推 origin 需新 commit 说明)
+- [x] P1-4 spec.md Progress 改标注
+- [x] P1-3 §HTML-First 加 fail mode 自检清单
+- [x] P2-5 scenarios.yaml 5 个 TOP scenario 加 status: 【待开发】(改为 §匹配规则标待激活,不改 yaml 结构)
+- [x] P0-1 §匹配规则 加变体匹配逻辑
+- [x] HELP HTML 复制 prompt UI 对齐卡路里风格(Toast + 4 状态按钮 + 变体展示)
+- [x] P0-2 派 fresh subagent 跑 FAT 3 核心词 × ≥3 人类 prompt
+- [ ] P0-2b 修 FAT 暴露的 3 个 fail mode(容错规则 + 变体覆盖 + 混合输入提取)
+- [ ] 根据 FAT 结果修正 commit 4/5/7 的 Tested-By 标签
+
+## FAT 结果(2026-07-28 · fresh subagent · 3 核心词 × 3 prompt = 9 测试)
+
+**总成绩**:6 PASS / 3 FAIL / 1 边界。变体匹配机制对 fresh agent 可见性 3/5。
+
+### 3 个 fail mode
+
+1. **变体短语容错未定义**:看物品 P2 "那件东西的信息" vs scenarios.yaml 的"那个东西的信息"——一字之差,§匹配规则 第 5 条未说明容错规则(精确子串匹配还是支持近似?)
+2. **变体短语覆盖不足**:统物品 P3 "整体啥情况,统计一下" 未在变体清单内,fresh agent 严格按规则无法命中,需 AI 自由推断(但 SKILL.md 未授权)
+3. **混合输入的物品名提取规则缺失**:查物品 P2 "那个啥在哪,就是我上次买的蓝牙耳机" = 变体短语 + 解释从句,§匹配规则 第 3 条只说"前后文字作为物品名",未说混合输入如何提取有效参数
+
+### 6 个 PASS
+
+- 查物品 P1 "帮我找找家里的充电器" → search --name "充电器" ✅
+- 查物品 P3 "搜索物品:蓝色毛巾" → search --name "蓝色毛巾" ✅
+- 看物品 P1 "给我看看这个 ID 是 42" → detail --id 42 ✅
+- 看物品 P3 "查看物品 88" → detail --id 88 ✅
+- 统物品 P1 "家里都有啥,给我个总数" → stats --type summary ✅
+- 统物品 P2 "一共多少件东西" → stats --type summary ✅(子串包含命中)
+
+### 改进建议(fresh agent 视角)
+
+1. §匹配规则 第 5 条 加"容错规则"(精确子串 vs 近似/同义词)
+2. §变体管理 TOP 5 表格扩展示例(每方向展示 2 个,或完整列出所有变体)
+3. §匹配规则 第 3 条 加"混合输入处理"(变体短语 + 解释从句如何提取参数)
+4. §匹配规则 加"未命中变体但语义近似"的处置(fallback 到 AI 推断 vs 追问用户)

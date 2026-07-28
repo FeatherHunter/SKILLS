@@ -18,6 +18,12 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 _SCRIPT_DIR = Path(__file__).parent.resolve()
 SKILL_DIR = _SCRIPT_DIR.parent
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.json"
@@ -157,7 +163,7 @@ def main():
 
     output_path = Path(args.out) if args.out else default_output_path()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(html, encoding="utf-8")
+    output_path.write_text(html, encoding="utf-8-sig")
 
     print(f"\n✓ 已生成: {output_path}")
     print(f"  用浏览器打开即可查看。")

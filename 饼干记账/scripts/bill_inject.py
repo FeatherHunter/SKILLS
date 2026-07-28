@@ -29,6 +29,12 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
+
 _SCRIPT_DIR = Path(__file__).parent.resolve()
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
@@ -123,7 +129,8 @@ def inject_to_template(payload: dict, output_path: Path) -> Path:
         raise RuntimeError("模板中找不到 payload 注入点（<script id=\"payload\" type=\"application/json\">...</script>）")
 
     html = template.replace(old, new, 1)
-    output_path.write_text(html, encoding="utf-8")
+    # 使用 utf-8-sig 写入 BOM,兼容 Windows 记事本/PowerShell ISE 按 GBK 误判
+    output_path.write_text(html, encoding="utf-8-sig")
     return output_path
 
 

@@ -272,9 +272,13 @@ metadata:
 
 ## Progress
 
-- [ ] Commit 2 · CONTEXT.md 加 Skill 标识约定 + 通用术语引用
-- [ ] Commit 3 · ADR-0001 扩充合并"直接覆盖"
-- [ ] Commit 4 · SKILL.md §HTML-First 章节
-- [ ] Commit 5 · SKILL.md frontmatter help_wake_word + §路由表 第 1 行
-- [ ] Commit 6 · scenarios.yaml 扩 variants + tests/test_variants.py (TDD)
-- [ ] Commit 7 · SKILL.md §FAT 协议 + 分级 Tested-By
+- [x] Commit 2 · CONTEXT.md 加 Skill 标识约定 + 通用术语引用 — 2218313
+- [x] Commit 3 · ADR-0001 扩充合并"直接覆盖" — 07c633d（revert+redo of 0595641,因 GitHub Desktop 并行推送污染了 origin/main）
+- [x] Commit 4 · SKILL.md §HTML-First 章节 — eae4592
+- [x] Commit 5 · SKILL.md frontmatter help_wake_word + §路由表 第 1 行 — 8901058
+- [x] Commit 6 · scenarios.yaml 扩 variants + tests/test_variants.py (TDD) — cfe588c
+- [x] Commit 7 · SKILL.md §FAT 协议 + 分级 Tested-By — ac90753
+
+**最终验证**:`python -m pytest` → 129 passed (124 原有 + 5 新增 variants 测试)。
+**偏离记录**:commit 4 插入位置改为 §核心使用原则 之后(ticket 原说 §输出位置 之前,但 §输出位置 在 §核心使用原则 之前,顺序矛盾);commit 7 后界改为 §HTML 渲染器(ticket 原说 §场景资产 之前,但本 SKILL.md 无 §场景资产 章节)。
+**待办**:fresh-agent FAT 验证(commit 4/5/7 标了 `fresh-agent-v1` 声明性,实际验证待 round 1 收尾统一执行)。

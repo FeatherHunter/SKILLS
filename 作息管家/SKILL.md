@@ -389,31 +389,32 @@ ELIF "输出形式"列含 .html
 | 用户表达示例 | 唤醒词 | CLI 命令(默认 HTML · 文字答降级路径) | 输出形式 |
 |---|---|---|---|
 | "作息管家 HELP / 帮助 / 能做什么 / 使用说明" | (HELP 唤醒词,§07 契约) | `python scripts/help_render.py` | `$SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html` |
-| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | record_receipt.html |
-| "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
-| "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
-| "今天总结 / 给我个报告" | #4 今天总结 | `render-record-day <date>`(满 24h) / `render-record-summary <date>`(不满) · 文本降级 `report`/`summary` | record_day.html / record_summary.html |
-| "这一周 / 这周 / 7/13~7/19 看看" | #5 汇总作息 | `render-record-range <start> <end>` · 文本降级 `range <start> <end>` | record_range.html |
-| "详情 / 含原文 / AI 推理链" | #7 查作息详情 | `render-records-detail <date> [--record-id N]` | record_detail.html |
-| "时间轴 / 24h" | #8 查作息时间轴 | `render-record-day <date>` · 文本降级 `timeline <date>` | record_day.html |
-| "查某天 / 7/15 看了啥" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | record_day.html |
-| "这一周 X 7天 / X 范围" | #9 查作息范围 | `render-record-range <start> <end>` · 文本降级 `range` | record_range.html |
-| "6 月 vs 7 月 / 上周 vs 这周" | #25 对比两个月 | `render-record-compare-months YYYY-MM YYYY-MM` | record_compare.html |
-| "A 段时间 vs B 段时间" | #25 对比两个月 | `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | record_compare.html |
-| "这 7 天健身什么时候做的" | (T4 类别深挖) | `render-record-category-range <start> <end> <category>` | record_category.html |
-| "7/15 健身什么时候做的(单日)" | (T4 单日) | `render-record-category <date> <category>` | record_category.html |
-| "最近状态 / 有没有异常" | (T5 异常检测) | `render-record-anomaly [--window 7]` | record_anomaly.html |
+| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | 记作息回执.html |
+| "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | 查作息记录.html |
+| "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | 查作息记录.html |
+| "今天总结 / 给我个报告" | #4 今天总结 | `render-record-day <date>`(满 24h) / `render-record-summary <date>`(不满) · 文本降级 `report`/`summary` | 查作息记录.html / (record_summary 文本) |
+| "这一周 / 这周 / 7/13~7/19 看看" | #5 汇总作息 | `render-record-range <start> <end>` · 文本降级 `range <start> <end>` | 查作息区间.html |
+| "详情 / 含原文 / AI 推理链" | #7 查作息详情 | `render-records-detail <date> [--record-id N]` | 作息详情.html |
+| "时间轴 / 24h" | #8 查作息时间轴 | `render-record-day <date>` · 文本降级 `timeline <date>` | 查作息记录.html |
+| "查某天 / 7/15 看了啥" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | 查作息记录.html |
+| "这一周 X 7天 / X 范围" | #9 查作息范围 | `render-record-range <start> <end>` · 文本降级 `range` | 查作息区间.html |
+| "6 月 vs 7 月 / 上周 vs 这周" | #25 对比两个月 | `render-record-compare-months YYYY-MM YYYY-MM` | 查作息对比.html |
+| "A 段时间 vs B 段时间" | #25 对比两个月 | `render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>` | 查作息对比.html |
+| "这 7 天健身什么时候做的" | (T4 类别深挖) | `render-record-category-range <start> <end> <category>` | 查作息类别.html |
+| "7/15 健身什么时候做的(单日)" | (T4 单日) | `render-record-category <date> <category>` | 查作息类别.html |
+| "最近状态 / 有没有异常" | (T5 异常检测) | `render-record-anomaly [--window 7]` | 查作息异常.html |
 | "准备消息 / 拉消息" | #1 准备消息 | `prepare-messages [<start> [<end>]] [--page N]` | (无 HTML,数据准备) |
-| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add × N` → 各自 `render-record-receipt <id>` | (多条 record_receipt.html) |
-| "看日程 / 查日程" | #12 查日程 | `render-list-events <date>` · 文本降级 `list-events <date>` | plan_list_events.html |
+| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add × N` → 各自 `render-record-receipt <id>` | (多条 记作息回执.html) |
+| "看日程 / 查日程" | #12 查日程 | `render-list-events <date>` · 文本降级 `list-events <date>` | 查日程.html |
 | "今天有 XX 吗(带标题)" | #12 + 标题 | `search-plan-event <date> --title X` | (无 HTML,JSON) |
-| "24h 概览 / 查多日计划" | #15 #16 | `render-query-plans <日期列表>` · 文本降级 `query-plans` | plan_list_events.html |
-| "商量计划 / 规划明天" | #17 商量计划 | 多轮讨论 → `render-plans-preview <date>`(先预览) → 用户确认 → `upsert-plan-events <date> --json @plan.json` → `render-plan-receipt-write` | plan_preview.html → plan_receipt_write.html |
-| "补一条计划" | #13 补计划 | `ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X` → `render-plan-receipt-add <id>` | plan_receipt_add.html |
-| "改计划 / 改这条" | #18 改计划 | `update-event <id> [--title/...]` → `render-plan-receipt <id>` | plan_receipt.html |
-| "删计划 / 不要了" | #19 删计划 | `deactivate-event <id>` → `render-plan-receipt <id>` | plan_receipt.html |
-| "复盘 / 回顾今天" | #14 复盘 | `list-events <date>` → 逐条 `update-event --completion` → `render-plans-review <date>` | plan_review.html |
-| "按 ID 查记录" | #23 按 ID 查 | `render-records-detail --record-id N` · 文本降级 `get-record <id>` | record_detail.html |
+| "24h 概览 / 查多日计划" | #15 #16 | `render-query-plans <日期列表>` · 文本降级 `query-plans` | 查日程.html |
+| "商量计划 / 规划明天" | #17 商量计划 | 多轮讨论 → `render-plans-preview <date>`(先预览) → 用户确认 → `upsert-plan-events <date> --json @plan.json` → `render-plan-receipt-write` | 商量计划预览.html → 写日程回执.html |
+| "补一条计划" | #13 补计划 | `ensure-plan-event <date> --time-start HH:MM --time-end HH:MM --title X` → `render-plan-receipt-add <id>` | 补日程回执.html |
+| "改计划 / 改这条" | #18 改计划 | `update-event <id> [--title/...]` → `render-plan-receipt <id>` | 改日程回执.html |
+| "删计划 / 不要了" | #19 删计划 | `deactivate-event <id>` → `render-plan-receipt <id>` | 改日程回执.html |
+| "复盘 / 回顾今天" | #14 复盘 | `list-events <date>` → 逐条 `update-event --completion` → `render-plans-review <date>` | 复盘.html |
+| "按 ID 查记录" | #23 按 ID 查 | `render-records-detail --record-id N` · 文本降级 `get-record <id>` | 作息详情.html |
+| "修正作息 / 这条记错了" | #26 修正作息 | `amend-record <id> --field/...` → `render-record-receipt-edit <id>` | 修正作息回执.html |
 | "作息状态 / 统计" | #11 查作息状态 | `status` | (无 HTML,5 行文本) |
 | "日程管家同步" | #20 | `feishu-resync <日期>` | (无 HTML,纯 CLI) |
 | "初始化数据库" | #22 | `init` | (无 HTML,管理命令) |
@@ -623,13 +624,13 @@ AI 判断逻辑:
 
 **触发词与命令路由**：
 
-| 触发词（用户问法示例） | 命令 | 模板 | 输出路径 |
+| 触发词(用户问法示例) | 命令 | 模板 | 输出路径(ADR-0002 Q5 · 中文 command) |
 |---|---|---|---|
-| 查作息 2026-07-15 / 昨天我做了什么 | `render-record-day <date>` | T1 单日 | `record/day/<date>_record_day.html` |
-| 这一周怎么样 / 7/13~7/19 看看 | `render-record-range <start> <end>` | T2 区间 | `record/range/<start>_to_<end>_record_range.html` |
-| 6 月 vs 7 月 / 上周 vs 这周 | `render-record-compare-months <YYYY-MM> <YYYY-MM>` | T3 对比 | `record/compare/<labelA>_vs_<labelB>_record_compare.html` |
-| 这 7 天健身什么时候做的 | `render-record-category-range <start> <end> <cat>` | T4 类别深挖 | `record/category/<cat>_<start>_to_<end>_record_category.html` |
-| 最近状态 / 有没有异常 | `render-record-anomaly [--window 7]` | T5 异常 | `record/anomaly/<today>_w7_record_anomaly.html` |
+| 查作息 2026-07-15 / 昨天我做了什么 | `render-record-day <date>` | T1 单日 | `record/day/查作息记录_<TS>.html` |
+| 这一周怎么样 / 7/13~7/19 看看 | `render-record-range <start> <end>` | T2 区间 | `record/range/查作息区间_<TS>.html` |
+| 6 月 vs 7 月 / 上周 vs 这周 | `render-record-compare-months <YYYY-MM> <YYYY-MM>` | T3 对比 | `record/compare/查作息对比_<TS>.html` |
+| 这 7 天健身什么时候做的 | `render-record-category-range <start> <end> <cat>` | T4 类别深挖 | `record/category/查作息类别_<TS>.html` |
+| 最近状态 / 有没有异常 | `render-record-anomaly [--window 7]` | T5 异常 | `record/anomaly/查作息异常_<TS>.html` |
 
 **5 模板设计原则**（基于"让用户感知问题"的第一性原理）：
 
@@ -654,13 +655,17 @@ AI 判断逻辑:
 
 5 模板 HTML 全部引用共享 CSS/JS 引擎，`render-and-write` 写文件时**自动把 `_record_styles.css` 和 `_record_engine.js` 复制到输出目录**，让 HTML 离线可读。
 
-**输出路径硬绑**：`SKILLS_DB_PATH/schedule_html/record/{子目录}/<file>.html`
+**输出路径硬绑**:`SKILLS_DB_PATH/schedule_html/record/{子目录}/<中文 command>_<TS>.html`(ADR-0002 Q5)
 
-- `day/YYYY-MM-DD_record_day.html`
-- `range/YYYY-MM-DD_to_YYYY-MM-DD_record_range.html`
-- `compare/<labelA>_vs_<labelB>_record_compare.html`
-- `category/<category>_YYYY-MM-DD_to_YYYY-MM-DD_record_category.html`
-- `anomaly/YYYY-MM-DD_w<N>_record_anomaly.html`
+- `day/查作息记录_<TS>.html`
+- `range/查作息区间_<TS>.html`
+- `compare/查作息对比_<TS>.html`
+- `category/查作息类别_<TS>.html`
+- `anomaly/查作息异常_<TS>.html`
+- `detail/作息详情_<TS>.html`
+- `receipt/记作息回执_<TS>.html` / `receipt/修正作息回执_<TS>.html`
+
+(`<TS>` = `YYYYMMDD_HHMMSS`,同秒冲突保护 `_2/_3/...`)
 
 **约束**：
 
@@ -842,58 +847,90 @@ python scripts/schedule_cli.py render-list-events 2026-07-15 --out reports/my.ht
 | 程序化 JSON 调用 | `list-events` 的 JSON 输出（脚本化） |
 | 单事件精确查重（带标题） | `search-plan-event`（轻量，保留 JSON） |
 
-#### 3.1.2 HTML 输出命名规则（2026-07-23 重写 · SKILLS_DB_PATH 硬绑 · 5 模板 5 子目录）
+#### 3.1.2 HTML 输出命名规则(2026-07-29 重写 · ADR-0002 Q5 · 总纲 §04 原则 12.A · 中文 command 名)
 
-**核心原则**：按 **域 / 模式 / 日期** 三维度分目录，HTML 输出**硬绑 `SKILLS_DB_PATH`**（不传 `--out`），不与文本 CLI 输出混存。
+**核心原则**:按 **域 / 模式 / 日期** 三维度分目录,HTML 输出**硬绑 `SKILLS_DB_PATH`**(不传 `--out`),不与文本 CLI 输出混存。文件名采用 **中文 command 名**(`查作息记录` / `查日程` / `复盘` 等),与卡路里 / 饼干记账跨 Skill 一致(总纲 §04 原则 12.A)。
 
 ```
 $SKILLS_DB_PATH/schedule_html/
 ├─ record/                                ← 作息记录域(record-*)
 │  ├─ day/
-│  │  └─ plan_list_2026-07-15.html
+│  │  └─ 查作息记录_20260729_120000.html
 │  ├─ range/
-│  │  └─ plan_query_2026-07-13_to_2026-07-15.html
+│  │  └─ 查作息区间_20260729_120000.html
 │  ├─ compare/
-│  │  └─ <labelA>_vs_<labelB>_record_compare.html
+│  │  └─ 查作息对比_20260729_120000.html
 │  ├─ category/
-│  │  └─ <cat>_<start>_to_<end>_record_category.html
-│  └─ anomaly/
-│     └─ <today>_w7_record_anomaly.html
-└─ plan/                                  ← 日程计划域(plan-*)
-   ├─ list/
-   │  └─ plan_list_2026-07-15.html
-   └─ query/
-      └─ plan_query_2026-07-13_to_2026-07-15.html
+│  │  └─ 查作息类别_20260729_120000.html
+│  ├─ anomaly/
+│  │  └─ 查作息异常_20260729_120000.html
+│  ├─ detail/
+│  │  └─ 作息详情_20260729_120000.html
+│  └─ receipt/
+│     ├─ 记作息回执_20260729_120000.html
+│     └─ 修正作息回执_20260729_120000.html
+├─ plan/                                  ← 日程计划域(plan-*)
+│  ├─ list/
+│  │  ├─ 查日程_20260729_120000.html
+│  │  ├─ 商量计划预览_20260729_120000.html
+│  │  └─ 复盘_20260729_120000.html
+│  ├─ query/
+│  │  └─ 查日程_20260729_120000.html
+│  └─ receipt/
+│     ├─ 改日程回执_20260729_120000.html
+│     ├─ 补日程回执_20260729_120000.html
+│     └─ 写日程回执_20260729_120000.html
+└─ help/
+   └─ 作息管家_HELP_20260729_120000.html   ← HELP 中心(对标饼干记账命名)
 ```
 
-**命名细则**：
+**命名细则**:
 
 | 路径段 | 取值 | 来源 |
 |---|---|---|
-| `record/` 或 `plan/` | 域 | `record` 对应 `schedule_records`,`plan` 对应 `schedule_plans` |
-| `day/` `range/` `compare/` `category/` `anomaly/` | 子目录 | record 域 5 个 mode(子目录) |
-| `list/` `query/` | 子目录 | plan 域 2 个 mode(子目录) |
-| `plan_list_/plan_query_/record_day_/...` | 文件名前缀 | 与表名对齐(`plan_` for schedule_plans,无前缀 for schedule_records) |
-| `YYYY-MM-DD[_to_YYYY-MM-DD]` | 日期段 | 单日 / 区间(`_to_` 分隔) |
+| `record/` 或 `plan/` 或 `help/` | 域 | `record` 对应 `schedule_records`,`plan` 对应 `schedule_plans`,`help` 对应 HELP 中心 |
+| `day/` `range/` `compare/` `category/` `anomaly/` `detail/` `receipt/` | 子目录 | record 域 7 个 mode(子目录) |
+| `list/` `query/` `receipt/` | 子目录 | plan 域 3 个 mode(子目录) |
+| 中文 command 名(查作息记录 / 查日程 / 复盘 / ...) | 文件名前缀 | ADR-0002 Q5 · 总纲 §04 原则 12.A · 对齐卡路里/饼干记账 |
+| `<YYYYMMDD>_<HHMMSS>[_<N>]` | 时间戳段 | 同秒冲突保护 `_2/_3/...`(总纲 §04 原则 12) |
 | `.html` | 扩展名 | 单文件自包含 + 共享 CSS/JS 引擎自动复制 |
 
-**互斥规则**：
-- `record/` 域 → 禁止出现 `plan_list_/plan_query_` 前缀(互斥)
+**中文 command 名映射表(14 模板,help 域已对齐)**:
+
+| 域 | 中文 command | 对应 CLI 子命令 | 旧英文名(已弃) |
+|---|---|---|---|
+| record | `查作息记录` | `render-record-day` | record_day |
+| record | `查作息区间` | `render-record-range` | record_range |
+| record | `查作息对比` | `render-record-compare` | record_compare |
+| record | `查作息类别` | `render-record-category` | record_category |
+| record | `查作息异常` | `render-record-anomaly` | record_anomaly |
+| record | `作息详情` | `render-records-detail` | record_detail |
+| record | `记作息回执` | `render-record-receipt` | record_receipt |
+| record | `修正作息回执` | `render-record-receipt-edit` | record_receipt_edit |
+| plan | `查日程` | `render-list-events` / `render-query-plans` | plan_list / plan_query |
+| plan | `改日程回执` | `render-plan-receipt` | plan_receipt |
+| plan | `补日程回执` | `render-plan-receipt-add` | plan_receipt_add |
+| plan | `写日程回执` | `render-plan-receipt-write` | plan_receipt_write |
+| plan | `商量计划预览` | `render-plans-preview` | plan_preview |
+| plan | `复盘` | `render-plans-review` | plan_review |
+
+**互斥规则**:
+- `record/` 域 → 禁止出现 `查日程`/`改日程回执` 等 plan 域中文 command(互斥)
 - `plan/list/` 模式 → 禁止出现 `YYYY-MM-DD_to_*` 多日文件名(互斥)
 - `record/day/` 模式 → 禁止出现 `YYYY-MM-DD_to_*` 多日文件名(互斥)
-- `record/range/` 模式 → 文件名必须含 `_to_`(单日退化为 `start==end` 形式)
+- `record/range/` 模式 → 文件名不含 `_to_`(语义信息在 payload meta,不在 filename)
 
-**约束**：
+**约束**:
 - 输出目录**必须已存在**(子目录 day/range/compare/category/anomaly + plan/list/query),**不静默创建**
 - 错误文案带字段名 + 当前值 + 期望值 + 修复建议
 - 同日期/区间覆盖写(用户主动调就期望刷新)
 - 模板按 `meta.mode` 分发,缺 key 报错清晰(MODE_HANDLERS 字典)
 
-**自定义输出路径**：**不支持 `--out` 标志**(commit 5710525 决定)。用户需要把 HTML 落到非默认位置时,自己 `mv` 文件,或在 `SKILLS_DB_PATH` 环境变量里覆盖默认值。
+**自定义输出路径**:**不支持 `--out` 标志**(commit 5710525 决定)。用户需要把 HTML 落到非默认位置时,自己 `mv` 文件,或在 `SKILLS_DB_PATH` 环境变量里覆盖默认值。
 
-**示例**：
+**示例**:
 ```bash
-# 单日 → $SKILLS_DB_PATH/schedule_html/record/day/2026-07-15_record_day.html
+# 单日 → $SKILLS_DB_PATH/schedule_html/record/day/查作息记录_20260729_120000.html
 python scripts/schedule_cli.py render-record-day 2026-07-15
 
 # 区间 → record/range/2026-07-13_to_2026-07-19_record_range.html

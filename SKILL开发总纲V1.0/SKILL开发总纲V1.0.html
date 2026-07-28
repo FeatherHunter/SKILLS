@@ -272,19 +272,8 @@
 <tr><td>D · CLI 重构 + 解锁阻塞</td><td>多个 P0 阻塞于 CLI 不返回 JSON</td><td>加 <code>as_dict=True</code>(保默认 print)→ 多模板 → commit</td></tr>
 </table>
 
-<h3>C · 通用改造顺序(综合 §02 + §05)</h3>
-<ol>
-<li>画领域边界 → SKILL.md 第一段</li>
-<li>列触发词表 → v2 矩阵(见 §03)</li>
-<li>设计 schema → db.py + 索引 + .bak</li>
-<li>写硬规则 → validators.py(无跳过通道)</li>
-<li>写 CLI → argparse + <code>{status, data, message}</code></li>
-<li>写集成(如需要)→ integrations/</li>
-<li>跑自检 → 5 层 + 改动前 3 问</li>
-</ol>
-
-<h3>D · 何时<b>不</b>该做 Skill 化</h3>
-<p>单条 CRUD / 高频无视觉 / 后台管理 / 数据采集 / 一次性脚本 / 2 步内查询 → <b>都不做 Skill 化</b>。判据:唤醒词 ≥ 5 个含"多字段 + 多条目 + 视觉密度"才值得做(对应 §04 原则 0)。</p>
+<h3>C · 通用改造顺序</h3>
+<p>→ 通用改造顺序见 <a class="md-link" href="05-工程仪式.md">05 §工程实施 SOP</a>。步骤 1-2 合并可行;3-9 不能合并。</p>
 
 <h3>E · BUG 修复优先级</h3>
 <table>

@@ -50,6 +50,7 @@ def _run_cli(*args, db_dir, db_filename="calorie_data.db", timeout=15):
     r = subprocess.run(
         [sys.executable, os.path.join(SCRIPTS_DIR, "calorie_tracker.py"), *args],
         capture_output=True, text=True, timeout=timeout, env=env,
+        encoding="utf-8", errors="replace",
     )
     return r.returncode, r.stdout, r.stderr
 

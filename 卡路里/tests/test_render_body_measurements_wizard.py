@@ -20,9 +20,10 @@ def test_emit_send_protocol_prints_warning():
     import io, sys
     captured = io.StringIO()
     sys.stdout = captured
+    test_path = Path(tempfile.gettempdir()) / 'test.html'
     try:
-        rbmw.emit_send_protocol(Path('/tmp/test.html'))
+        rbmw.emit_send_protocol(test_path)
     finally:
         sys.stdout = sys.__stdout__
     assert 'ACTION=SEND_TO_USER' in captured.getvalue()
-    assert '/tmp/test.html' in captured.getvalue()
+    assert str(test_path) in captured.getvalue()

@@ -77,6 +77,7 @@ def test_body_composition_caliper_out_of_range():
                     caliper_suprailiac_mm, caliper_midaxillary_mm, body_fat_pct)
                     VALUES ('2026-07-25', 'home_caliper', 150, 10, 15, 8, 10, 8, 7, 20)""")
         conn.commit()
+    conn.close()
     os.unlink(path)
 
 
@@ -91,6 +92,7 @@ def test_body_composition_body_fat_out_of_range():
                     caliper_suprailiac_mm, caliper_midaxillary_mm, body_fat_pct)
                     VALUES ('2026-07-25', 'home_caliper', 5, 10, 15, 8, 10, 8, 7, 80)""")
         conn.commit()
+    conn.close()
     os.unlink(path)
 
 
@@ -102,6 +104,7 @@ def test_body_measurements_require_at_least_one_metric():
     with __import__('pytest').raises(sqlite3.IntegrityError):
         c.execute("INSERT INTO body_measurements (date) VALUES ('2026-07-25')")
         conn.commit()
+    conn.close()
     os.unlink(path)
 
 
@@ -113,4 +116,5 @@ def test_body_measurements_one_metric_passes():
     c.execute("INSERT INTO body_measurements (date, waist_cm) VALUES ('2026-07-25', 85)")
     conn.commit()
     assert c.execute("SELECT COUNT(*) FROM body_measurements").fetchone()[0] == 1
+    conn.close()
     os.unlink(path)

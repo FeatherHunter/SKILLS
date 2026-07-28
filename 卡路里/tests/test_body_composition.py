@@ -70,6 +70,7 @@ def test_delete_soft_deletes(tmp_db):
     conn = sqlite3.connect(tmp_db); c = conn.cursor()
     row = c.execute('SELECT is_deprecated FROM body_composition WHERE id=?', (rid,)).fetchone()
     assert row[0] == 1
+    conn.close()
 
 
 def test_as_dict_flag_works():

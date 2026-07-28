@@ -8,6 +8,7 @@ L4 阶段:函数体迁 db.execute/query/transaction
 """
 
 import sys
+import argparse
 import uuid
 from db import get_connection, query, execute, transaction
 from cli_formatter import emit, parse_json_flag, error
@@ -153,49 +154,60 @@ def update(args):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("""用法:
-    python category_manager.py add <recipe_id> --cuisine <菜系> [--region <地区>] [--country <国家>]
-    python category_manager.py list <recipe_id>
-    python category_manager.py search <菜系>
-    python category_manager.py update <recipe_id> [选项]
-""")
-        return
+    """主入口:argparse 子命令模式(§04 原则 8 argparse + §05 改动前 3 问 模板)
 
-    action = sys.argv[1]
-    json_mode = parse_json_flag(sys.argv[2:])
+    设计:
+      - argparse subparsers 自动生成 --help
+      - 保留 --json(L3 三段式)
+      - subcommand 列表:add / list / search / update
+    """
+    parser = argparse.ArgumentParser(
+        prog="category_manager.py",
+        description="私家大厨 · 菜系/地区/国家 管理(§05 改动前 3 问 模板)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--json", action="store_true", help="输出 JSON 三段式(§02 L3)")
+    sub = parser.add_subparsers(dest="action", required=True, metavar="<action>")
 
-    args = {}
-    i = 2
-    while i < len(sys.argv):
-        arg = sys.argv[i]
-        if arg.startswith("--"):
-            if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
-                i += 2
-            else:
-                args[arg] = True
-                i += 1
-        else:
-            if i == 2:
-                if action == "search":
-                    args["<菜系>"] = arg
-                else:
-                    args["<recipe_id>"] = arg
-            else:
-                args[f"arg{i}"] = arg
-            i += 1
+    # add
+    p_add = sub.add_parser("add", help="添加菜系/地区/国家")
+    p_add.add_argument("recipe_id", help="菜谱 UUID")
+    p_add.add_argument("--cuisine", required=True, help="菜系(如 湘菜)")
+    p_add.add_argument("--region", help="地区(如 中国-湖南)")
+    p_add.add_argument("--country", help="国家(如 中国)")
 
-    if action == "add":
-        add(args)
-    elif action == "list":
-        list_items(args)
-    elif action == "search":
-        search(args)
-    elif action == "update":
-        update(args)
-    else:
-        emit(error(f"未知操作:{action}"), json_mode=json_mode)
+    # list
+    p_list = sub.add_parser("list", help="列出某菜谱的菜系/地区/国家")
+    p_list.add_argument("recipe_id", help="菜谱 UUID")
+
+    # search
+    p_search = sub.add_parser("search", help="按菜系搜索")
+    p_search.add_argument("cuisine", metavar="<菜系>", help="菜系名(如 湘菜)")
+
+    # update
+    p_update = sub.add_parser("update", help="更新某菜谱的菜系/地区/国家")
+    p_update.add_argument("recipe_id", help="菜谱 UUID")
+    p_update.add_argument("--cuisine", help="新菜系")
+    p_update.add_argument("--region", help="新地区")
+    p_update.add_argument("--country", help="新国家")
+
+    args = parser.parse_args()
+    # 兼容旧 API:add/list_items 等期望 dict-like args
+    # 将 argparse Namespace 转为 dict (add 期望 "<recipe_id>")
+    args_dict = vars(args).copy()
+    if args.action in ("add", "list", "update"):
+        args_dict["<recipe_id>"] = args.recipe_id
+    elif args.action == "search":
+        args_dict["<菜系>"] = args.cuisine
+
+    if args.action == "add":
+        add(args_dict)
+    elif args.action == "list":
+        list_items(args_dict)
+    elif args.action == "search":
+        search(args_dict)
+    elif args.action == "update":
+        update(args_dict)
 
 
 if __name__ == "__main__":

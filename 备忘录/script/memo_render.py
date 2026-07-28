@@ -111,20 +111,22 @@ def _load_scenarios():
     return data
 
 
-def render_help(payload=None, name="备忘录_HELP"):
+def render_help(payload=None, name="备忘录_HELP", output_path=None):
     """渲染 HELP 使用手册页(v1.1.4 · 总纲 §07 契约)
 
-    路径形态(§04 原则 12.B):
-      $SKILLS_DATA_DIR/<skill>_html/<skill中文名>_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html
-
-    额外要求(v1.1.4 · 用户约定):
-      渲染后自动复制到 <SKILL_DIR>/备忘录.html,覆盖旧版用户手册。
-      旧"备忘录.html"(纯用户手册,475 行手维护)已被废弃。
+    路径形态:
+      1. 时间戳副本(§04 原则 12.B):
+         $SKILLS_DATA_DIR/<skill>_html/<skill中文名>_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html
+      2. Skill 根副本(**永远写**,用户 v1.1.4 额外要求):
+         <SKILL_DIR>/备忘录.html
+      3. 额外副本(可选 · `--output` CLI 旗标传入):
+         output_path(用户指定,父目录自动创建)
 
     Returns:
         dict: {
             "html_path": 时间戳副本路径,
             "skill_root_path": skill 根目录 备忘录.html 路径(已覆盖),
+            "output_path": 额外副本路径(None if 没传 --output),
             "scenario_count": 场景数,
         }
     """
@@ -148,16 +150,29 @@ def render_help(payload=None, name="备忘录_HELP"):
     # 1. 写时间戳副本(§04 原则 12.B)
     help_path = _write(name, _inject_body(template, payload))
 
-    # 2. ★ 覆盖 skill 根目录 备忘录.html(用户额外要求)
+    # 2. ★ 覆盖 skill 根目录 备忘录.html(用户额外要求 · 永远写)
     skill_root_help = SKILL_DIR / "备忘录.html"
     skill_root_help.write_text(
         Path(help_path).read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
+    # 3. 额外副本(可选 · --output CLI 旗标传入)
+    # 设计原则:额外副本 = 便捷投放点,**不**影响必写的两份
+    output_written = None
+    if output_path is not None:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            Path(help_path).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+        output_written = str(output_path)
+
     return {
         "html_path": str(help_path),
         "skill_root_path": str(skill_root_help),
+        "output_path": output_written,
         "scenario_count": len((payload.get("data") or {}).get("scenarios") or []),
     }
 

@@ -1653,10 +1653,16 @@ def main():
     p_completed.add_argument("--html", action="store_true", help="生成 HTML 已完成提醒页")
     # help (v1.1.4 · 总纲 §07 契约 · 必生成 HELP HTML)
     # 必须行为:跑命令 = 必生成 HTML + 覆盖 skill 根目录 备忘录.html
-    # 不暴露 --html / --json flag:简化调用,无歧义
+    # 不暴露 --html flag(简化调用,无歧义)
+    # --output / -o:B 方案 · 额外副本(总纲 §04 原则 12.X)
+    #   备忘录.html 永远写 · --output 是 +1 份额外投放(测试 / 分享场景)
     p_help = sub.add_parser(
         "help",
         help="HELP 唤醒词 · 必生成 HELP HTML(覆盖 skill 根目录 备忘录.html)",
+    )
+    p_help.add_argument(
+        "--output", "-o",
+        help="额外副本路径(B 方案 · 备忘录.html 仍被覆盖 · 仅追加投放)",
     )
 
     args = parser.parse_args()
@@ -1737,17 +1743,23 @@ def main():
         completed_reminders(args)
     elif args.command == "help":
         # 总纲 §07 契约:HELP 命中必 invoke HTML
-        # 用户额外要求:覆盖 skill 根目录 备忘录.html
+        # 用户额外要求:覆盖 skill 根目录 备忘录.html(永远写)
+        # --output(B 方案):额外副本,备忘录.html 不受影响
         try:
             from memo_render import render_help
-            result = render_help()
+            output_path = getattr(args, "output", None)
+            result = render_help(output_path=output_path)
+            data_out = {
+                "html_path": result["html_path"],
+                "skill_root_path": result["skill_root_path"],
+                "output_path": result["output_path"],
+                "scenario_count": result["scenario_count"],
+                "note": "已生成 HELP HTML + 覆盖 skill 根目录 备忘录.html",
+            }
+            if result["output_path"]:
+                data_out["note"] += f" + 额外副本 {result['output_path']}"
             output_json(
-                {
-                    "html_path": result["html_path"],
-                    "skill_root_path": result["skill_root_path"],
-                    "scenario_count": result["scenario_count"],
-                    "note": "已生成 HELP HTML + 覆盖 skill 根目录 备忘录.html",
-                },
+                data_out,
                 message=f"HELP 已生成 · {result['scenario_count']} 个场景",
             )
         except Exception as e:

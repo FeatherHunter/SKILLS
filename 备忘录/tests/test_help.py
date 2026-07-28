@@ -230,3 +230,105 @@ class TestOldManualDeprecated:
         # 但:我们只维护一份 HTML(即 HELP 产物),不允许人工再写一份
         # 验证:git log 不该再有手写提交到 备忘录.html(v1.1.4 之前的提交 OK)
         pass  # 静态检查:本测试通过 git 历史守护,这里只做软声明
+
+
+# ==================== --output 旗标(B 方案) ====================
+
+class TestHelpOutputFlag:
+    """--output B 方案:额外副本,备忘录.html 永远写
+
+    设计原则(用户选定 B 方案):
+    - 默认行为(无 --output):时间戳副本 + skill 根 备忘录.html(2 份)
+    - 加 --output /path:2 份 + 额外副本 /path(3 份)
+    - --output 不影响 备忘录.html(用户 v1.1.4 额外要求:永远覆盖)
+    """
+
+    def test_render_help_output_path_kwarg(self, tmp_path):
+        """render_help 接受 output_path kwarg"""
+        from memo_render import render_help
+        out = tmp_path / "extra.html"
+        r = render_help(output_path=out)
+        assert out.exists(), "--output 路径应被写入"
+        # 额外副本内容 = 时间戳副本内容
+        assert Path(r["html_path"]).read_bytes() == out.read_bytes()
+        # skill 根 备忘录.html 也写了(用户要求永远写)
+        assert Path(r["skill_root_path"]).exists()
+
+    def test_render_help_output_none_default(self):
+        """不传 output_path → 返回 output_path=None"""
+        from memo_render import render_help
+        r = render_help()
+        assert r["output_path"] is None
+
+    def test_render_help_creates_parent_dir(self, tmp_path):
+        """--output 父目录不存在时自动创建"""
+        from memo_render import render_help
+        nested = tmp_path / "a" / "b" / "c" / "extra.html"
+        r = render_help(output_path=nested)
+        assert nested.exists(), "嵌套父目录应自动创建"
+        assert r["output_path"] == str(nested)
+
+    def test_render_help_output_does_not_skip_skill_root(self, tmp_path):
+        """核心保证:加 --output 时,备忘录.html 仍被覆盖"""
+        from memo_render import render_help
+        out = tmp_path / "extra.html"
+        r = render_help(output_path=out)
+        skill_root = Path(r["skill_root_path"])
+        assert skill_root.exists(), \
+            "加了 --output,备忘录.html 仍必须被覆盖(B 方案核心)"
+
+    def test_cli_help_with_output_flag(self, tmp_path, monkeypatch):
+        """CLI:help --output /tmp/foo.html 工作"""
+        out = tmp_path / "from_cli.html"
+        monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
+             "help", "--output", str(out)],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert r.returncode == 0, f"stderr={r.stderr}"
+        data = json.loads(r.stdout)
+        assert data["status"] == "ok"
+        # CLI 报告了额外副本路径
+        assert data["data"]["output_path"] == str(out)
+        assert out.exists()
+        # 时间戳副本 + skill 根也写了(3 份)
+        assert Path(data["data"]["html_path"]).exists()
+        assert Path(data["data"]["skill_root_path"]).exists()
+
+    def test_cli_help_short_output_flag(self, tmp_path, monkeypatch):
+        """CLI:help -o /tmp/foo.html(短旗标)"""
+        out = tmp_path / "short.html"
+        monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
+             "help", "-o", str(out)],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert r.returncode == 0, f"stderr={r.stderr}"
+        data = json.loads(r.stdout)
+        assert data["data"]["output_path"] == str(out)
+
+    def test_cli_help_output_message_notes_extra_copy(self, tmp_path, monkeypatch):
+        """CLI 返回 message 提示用户额外副本已写(B 方案 UX)"""
+        out = tmp_path / "extra.html"
+        monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
+             "help", "--output", str(out)],
+            capture_output=True, text=True, timeout=30,
+        )
+        data = json.loads(r.stdout)
+        # note 字段含"额外副本"提示
+        assert "额外副本" in data["data"]["note"]
+        assert str(out) in data["data"]["note"]
+
+    def test_cli_help_without_output_no_extra_path_in_json(self, tmp_path, monkeypatch):
+        """无 --output 时,output_path 应为 None(JSON 字段为 null)"""
+        monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
+            capture_output=True, text=True, timeout=30,
+        )
+        data = json.loads(r.stdout)
+        assert data["data"]["output_path"] is None

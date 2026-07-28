@@ -938,10 +938,20 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 ### CLI
 
 ```bash
-python3 script/memo_cli.py help    # 必生成 HELP HTML + 覆盖 skill 根 备忘录.html
+python3 script/memo_cli.py help                    # 必生成 HELP HTML + 覆盖 skill 根 备忘录.html
+python3 script/memo_cli.py help --output /tmp/x    # + 额外副本 /tmp/x(备忘录.html 仍覆盖)
 ```
 
 **无 `--html` / `--json` flag**(用户约定 #3:必生成,简化调用)。
+
+**`--output` / `-o`(B 方案,1.1.4 post-审查加入)**:在两份标准副本之外**追加**一份额外副本。
+- **永远写两份**:时间戳副本 + skill 根 `备忘录.html`(用户 v1.1.4 额外要求)
+- **`--output` 是 +1 份额外投放**(给开发测试 / 单次分享用,不替换任何标准副本)
+- 父目录不存在时自动 `mkdir -p`
+- 适用场景:
+  - 跑测试不想污染 `memo_html/` 时:`--output ./test_help.html`
+  - 给同事单次分享:`--output /tmp/备忘录_manual_for_同事.html`
+  - 调试场景资产渲染:`--output /tmp/dbg.html`(同时看 skill 根版本对比)
 
 ### 历史
 

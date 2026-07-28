@@ -109,6 +109,36 @@
   - 不再有"第二份"HTML 在 skill 根目录
   - 新 `备忘录.html` = `memo_cli.py help` 产物(单一来源)
 
+### Added(post-FT · `--output` B 方案)
+
+- **`help` 子命令加 `--output` / `-o` 旗标**(总纲 §04 原则 12.X "显式 override 允许")
+- **render_help 函数加 `output_path` kwarg**
+
+**B 方案语义**(用户选定):
+- 默认(无 `--output`):写 2 份(时间戳副本 + skill 根 `备忘录.html`)
+- 加 `--output /path`:写 3 份(`备忘录.html` **永远**被覆盖,`--output` 是 +1 份额外投放)
+
+适用场景:
+- 跑测试不想污染 `memo_html/` 目录
+- 给同事单次分享 HTML(不污染历史)
+- 调试对比:skill 根 vs 自定义输出
+
+**父目录自动 mkdir**(不需要预先 `mkdir -p`)。
+
+### Tests(post-FT · +8 用例)
+
+`tests/test_help.py:TestHelpOutputFlag` 8 个新用例:
+1. `test_render_help_output_path_kwarg` — 函数级 kwarg 工作
+2. `test_render_help_output_none_default` — 默认 None
+3. `test_render_help_creates_parent_dir` — 嵌套父目录自动创建
+4. `test_render_help_output_does_not_skip_skill_root` — **核心 B 方案保证**
+5. `test_cli_help_with_output_flag` — CLI `--output` 工作
+6. `test_cli_help_short_output_flag` — 短旗标 `-o`
+7. `test_cli_help_output_message_notes_extra_copy` — UX 反馈
+8. `test_cli_help_without_output_no_extra_path_in_json` — 默认无额外字段
+
+全量:156/156 pytest 通过(v1.1.4 首次 148 + 8 个 `--output` 用例)
+
 ### Changed
 
 - `SKILL.md`:

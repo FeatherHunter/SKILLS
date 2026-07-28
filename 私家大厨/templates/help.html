@@ -333,7 +333,7 @@
         <div class="ww-name">
           <span>📌</span>
           <span>${esc(ww.name)}</span>
-          ${ww.alias_names && ww.alias_names.length > 0 ? `<span style="font-size:11px;color:var(--text3);font-weight:400">别名:${ww.alias_names.map(esc).join(' / ')}</span>` : ''}
+          ${ww.alias_names && ww.alias_names.length > 0 ? '<span style="font-size:11px;color:var(--text3);font-weight:400">别名:' + ww.alias_names.map(esc).join(' / ') + '</span>' : ''}
         </div>
         <div style="display:flex;align-items:center;gap:12px">
           <span class="ww-count">${ww.scenarios.length} 场景${ww.pending_count > 0 ? ' · <span style="color:var(--warn)">' + ww.pending_count + ' 待开发</span>' : ''}</span>

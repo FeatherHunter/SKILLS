@@ -292,6 +292,49 @@ $SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\
 
 ---
 
+## 🧪 FAT 协议（总纲 §钩子 6 · Fresh Agent 黑盒测试）
+
+> 引用 [SKILL 开发总纲 §05 工程仪式 · FAT 协议](../SKILL开发总纲V1.0/05-工程仪式.md) + [§钩子 6](../SKILL开发总纲V1.0/02-5层骨架.md)：commit 前的商用级关卡。由零上下文 agent 执行唤醒词(3-5 个核心 × 每个 ≥ 3 个人类 prompt),对比预期工作流。fail → 改 SKILL.md 不改代码,循环 ≤ 3 次。
+
+### 分级 Tested-By 规则
+
+commit message 必含 `Tested-By:` 字段,分级如下:
+
+| 改动类型 | Tested-By 取值 | 门槛 |
+|---------|---------------|------|
+| **改代码 / 数据 / CLI** | `pytest-pass-YYYY-MM-DD` | `python -m pytest` 全 PASS 即可 commit |
+| **改 SKILL.md**(触发词 / 路由表 / 说明 / frontmatter / 行为契约) | `fresh-agent-v1` | 必须 fresh agent 实际跑过 FAT 9 步 |
+| **豁免**(typo / 格式调整 / 注释) | `exempt` + 豁免依据 | 1 行说明为何豁免 |
+
+**分级理由(Q2=yes)**:接受分级而非 strict-only,因 SKILL.md 改动多属文档契约,pytest 测不到;但代码改动用 pytest 足够。分级子规则防止 SKILL.md 退化(改 SKILL.md 必 fresh agent,不能拿 pytest 充数)。
+
+### FAT 9 步协议(总纲 §05 复制)
+
+1. **选测试唤醒词** — 3-5 个核心:最高频 + 最复杂 + 最易出错
+2. **准备 fresh context** — 新会话 / 新窗口 / 新 agent(不能保留开发记忆)
+3. **最小化加载** — 只给 SKILL.md + 必要 scripts / docs(不告诉 agent 应该怎么走)
+4. **执行唤醒词** — 每个核心词用 ≥ 3 个人类 prompt 各测一次(含口语化 token / 略错语法,非 AI 风格 prompt)
+5. **捕获执行证据** — 实际调用的命令、修改的数据、产生的输出
+6. **对比预期工作流** — 开发者定义的"应该怎么走" vs 实际走的
+7. **判定 pass / fail**:
+   - ✅ PASS:工作流一致 + 输出一致 + 无意外副作用
+   - ❌ FAIL:有 step 缺失 / 调错命令 / 漏处理异常 / 输出偏差
+8. **fail → 改文档不改代码** — SKILL.md 没说清是文档问题,改 SKILL.md,再循环
+9. **人工审查** — AI 评估后,人工抽查至少 1 个测试结果(防 AI 自评漏)
+
+**循环上限**:SKILL.md 改 3 次仍未通过 → 暂停,人工介入(可能 SKILL 设计问题 / 测试选择不当 / 代码 bug)。
+
+### ⚠️ Risk C:Tested-By 流于形式
+
+**Tested-By 字段缺失 / 错误标签 / 与 commit 内容不符 = 总纲 §08 反模式之 silent failure**,需立即补全或 revert。例:
+- 改了 SKILL.md 触发词却标 `pytest-pass-2026-07-28`(应 `fresh-agent-v1`)→ silent failure
+- 改了代码却标 `fresh-agent-v1`(应 `pytest-pass`)→ 标签错配
+- 完全不标 Tested-By → 协议不完整,等同豁免依据缺失
+
+引用总纲 §08 反模式 silent failure 让 AI 有 external 压力,不流于形式。
+
+---
+
 ## HTML 渲染器（Phase 7 重构）
 
 所有 HTML 模板的注入渲染由 `scripts/render/` 包提供，与 home_manager 数据/操作层解耦：

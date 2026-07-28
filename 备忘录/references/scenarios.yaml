@@ -1,4 +1,4 @@
-# 备忘录 · 场景资产(v1.1.4)
+# 备忘录 · 场景资产(v1.1.5)
 #
 # 总纲 §07-HELP与场景完备性.md 契约:场景资产 = HELP HTML 唯一事实源
 # 字段(7 必填):
@@ -17,9 +17,7 @@
 # 守门测试:tests/test_help.py:test_scenarios_schema
 
 skill: 备忘录
-version: 1.1.4
-scenarios:
-
+version: 1.1.5
 scenarios:
 - wake_word: 记备忘
   scenario_id: memo_add_basic

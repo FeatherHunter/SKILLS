@@ -1,3 +1,11 @@
+---
+name: 备忘录
+version: 1.1.5
+status: active
+description: 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪
+last_updated: 2026-07-28
+---
+
 # 备忘录 (Memorandum)
 
 > **当前版本:1.1.4**(2026-07-28 发布 · git tag `v1.1.4`)
@@ -926,9 +934,9 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 
 ## 参考文档
 
-- 数据库结构:`reference/schema.md`
-- 对话示例:`reference/examples.md`
-- Cron 配置:`reference/cron.md`
+- 数据库结构:`references/schema.md`
+- 对话示例:`references/examples.md`
+- Cron 配置:`references/cron.md`
 - **场景资产**(v1.1.4 · 总纲 §07 契约):`references/scenarios.yaml` — HELP HTML 的唯一事实源
 
 ---
@@ -1028,11 +1036,3 @@ python3 script/memo_cli.py help --output /tmp/x    # + 额外副本 /tmp/x(备�
 
 - v1.0.9:旧 `备忘录.html`(475 行手写用户手册)已废弃
 - v1.1.4:新 `备忘录.html` = `memo_cli.py help` 自动生成的 HELP HTML
-
----
-
-## 参考文档
-
-- 数据库结构:`reference/schema.md`
-- 对话示例:`reference/examples.md`
-- Cron 配置:`reference/cron.md`

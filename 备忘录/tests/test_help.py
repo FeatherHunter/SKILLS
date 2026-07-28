@@ -59,7 +59,7 @@ class TestScenariosSchema:
 
     def test_skill_and_version_keys(self, scenarios):
         assert scenarios.get("skill") == "备忘录"
-        assert scenarios.get("version") == "1.1.4"
+        assert scenarios.get("version") == "1.1.5"
 
     def test_28_wake_words_minimum(self, scenarios):
         """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 28, 含 12 子唤醒词)"""

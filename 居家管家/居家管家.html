@@ -22,9 +22,15 @@ h1{font-size:24px;margin:0 0 4px}
 .group-h .badge{font-size:11px;background:var(--line);padding:2px 8px;border-radius:6px;color:var(--muted)}
 .scenarios{display:none;padding:6px 18px 18px}
 .group.open .scenarios{display:block}
-.scenario{border-top:1px solid var(--line);padding:14px 0}
+.scenario{border-top:1px solid var(--line);padding:0}
 .scenario:first-child{border-top:none}
-.s-title{font-weight:600;margin-bottom:6px}
+.s-head{display:flex;align-items:center;justify-content:space-between;padding:14px 0;cursor:pointer;user-select:none}
+.s-head:hover{background:#fafafc}
+.s-title{font-weight:600;flex:1}
+.s-body{display:none;padding:0 0 14px}
+.scenario.open .s-body{display:block}
+.s-chevron{font-size:12px;color:var(--muted);margin-right:8px;transition:transform .15s}
+.scenario.open .s-chevron{transform:rotate(90deg)}
 .s-dims{color:var(--muted);font-size:13px;margin-bottom:6px}
 .s-prompt{background:var(--warn);border-left:3px solid var(--warn-line);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
 .s-result{color:var(--muted);font-size:13px;margin:6px 0}
@@ -89,9 +95,13 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
     html += '</div>';
     html += '<div class="scenarios">';
     for (const s of g.scenarios) {
+      // 二级折叠:每 scenario 默认只显示标题 + 复制按钮;点标题展开详情
       html += '<div class="scenario">';
-      html += '<button class="copy-btn" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">复制 prompt</button>';
+      html += '<div class="s-head" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">';
       html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
+      html += '<button class="copy-btn" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">复制 prompt</button>';
+      html += '</div>';
+      html += '<div class="s-body">';
       html += '<div class="s-ww">唤醒词: <code>' + esc(s.wake_word || '') + '</code></div>';
       const dims = arr(s.dimensions);
       const dimKeys = Object.keys(dims);
@@ -102,7 +112,8 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
       }
       html += '<div class="s-prompt"></div>';  // 稍后填
       html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
-      html += '</div>';
+      html += '</div>';  // .s-body
+      html += '</div>';  // .scenario
     }
     html += '</div></div>';
   }
@@ -127,6 +138,8 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
 
   // BUG FIX: 用 event delegation 代替 inline onclick
   // 1. group 折叠/展开
+  // 2. scenario 折叠/展开(点 .s-head 触发,复制按钮 stopPropagation)
+  // 3. 复制按钮
   wrap.addEventListener('click', (e) => {
     const gh = e.target.closest('.group-h');
     if (gh) {
@@ -134,14 +147,21 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
       if (groupEl) groupEl.classList.toggle('open');
       return;
     }
-    // 2. 复制按钮
     const btn = e.target.closest('.copy-btn');
     if (btn) {
+      // 复制按钮独立行为,不切换 scenario
+      e.stopPropagation();
       const i = parseInt(btn.getAttribute('data-idx') || '0', 10);
       const sid = btn.getAttribute('data-sid') || '';
       const s = (groups[i] && groups[i].scenarios.find(x => (x.scenario_id || '') === sid)) || null;
       const prompt = s ? (s.prompt || '') : '';
       copyText(btn, prompt);
+      return;
+    }
+    const sh = e.target.closest('.s-head');
+    if (sh) {
+      const sc = sh.closest('.scenario');
+      if (sc) sc.classList.toggle('open');
     }
   });
 })();

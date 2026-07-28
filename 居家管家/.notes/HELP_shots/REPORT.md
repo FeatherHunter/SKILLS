@@ -2,12 +2,12 @@
 
 ## 截图清单
 
-- `00_full_page.png` (739921 bytes)
-- `01_initial.png` (73961 bytes)
-- `02_after_toggle.png` (246389 bytes)
-- `03_after_toc_jump.png` (246389 bytes)
-- `04_after_copy.png` (739921 bytes)
-- `05_mobile.png` (661925 bytes)
+- `00_full_page.png` (226968 bytes)
+- `01_initial.png` (74170 bytes)
+- `02_after_toggle.png` (112223 bytes)
+- `03_after_toc_jump.png` (112223 bytes)
+- `04_after_copy.png` (226968 bytes)
+- `05_mobile.png` (201841 bytes)
 - `07_prompt_empty.png` (1977 bytes)
 
 ## 通过项 (13)

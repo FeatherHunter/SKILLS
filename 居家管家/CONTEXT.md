@@ -5,7 +5,7 @@
 ## Language
 
 **Skill 标识**:
-Skill 在跨 Skill 共享目录里用的唯一英文标识。本 Skill 取 `home_manager`(与 Python 包名一致),HTML 输出子目录为 `home_manager_html/`。
+Skill 在跨 Skill 共享目录里用的唯一英文标识。本 Skill 取 `home_manager`(与 Python 包名一致),HTML 输出子目录为 `home_manager_html/`。(2026-07-28 grilling round 1 确认:此为本 Skill 约定,非偏离;等第 2 个 Skill 出现再升级到总纲 §CONTEXT.md。)
 _Avoid_: 中文名"居家管家"(用于 SKILL.md frontmatter / HELP 命名前缀,不作子目录名)
 
 **command_cn**:
@@ -39,3 +39,17 @@ _Avoid_: 带归物品、旅行清点
 ```
 
 HTML 输出根在 Skill 目录外,由 env 链解析:`$SKILLS_DATA_DIR` > `$SKILLS_DB_PATH` > Skill 自带 fallback。本 Skill 当前 fallback 解析到 `D:\.db\`,所以 HTML 输出实际在 `D:\.db\home_manager_html\`。
+
+## 通用术语引用
+
+本 Skill 不重复定义总纲 §CONTEXT.md 已收录的领域术语,只指向对应位置。下列 5 个通用术语的基础定义属于跨 Skill 工作(总纲 §CONTEXT.md 扩展),按 spec Q3 = C(双层)约定,本节先建指针,定义落地后跟随总纲。
+
+| 术语 | 本 Skill 用途 | 总纲 §CONTEXT.md 对应位置 |
+|------|--------------|------------------------|
+| **5 状态 fallback** | HTML 模板必含 正常 / 空 / 缺数据 / 错误 / 离线 5 状态(本 Skill 全部 10 个模板已落地) | [`占位符注入`](../SKILL开发总纲V1.0/CONTEXT.md) 第 113 行 + [`4 段式模板`](../SKILL开发总纲V1.0/CONTEXT.md) 第 117 行(术语级条目待补) |
+| **复制 prompt 按钮** | 过程型 HTML 必须让用户选择回到 AI(HTML 单工铁律 · 原则 10) | [`HTML 单工铁律`](../SKILL开发总纲V1.0/CONTEXT.md) 第 70 行(术语级条目待补) |
+| **变体 (variant)** | 唤醒词配 2-3 个等价表达,覆盖 3 方向(同义 / 口语 / 模糊),本 Skill 在 `references/scenarios.yaml` 落地 | [`变体 (variant)`](../SKILL开发总纲V1.0/CONTEXT.md) 第 31 行(已收录) |
+| **相对时间 helper** | "今天/昨天/最近 N 天"等相对时间词的统一解析(本 Skill 暂用 `scripts/routing.py` 局部实现,待总纲标准化) | 待补 |
+| **跨 Skill 路由** | 用户意图跨多个 Skill(如物品价格→饼干记账)时的路由规则,本 Skill 联动逻辑在 `图片路由/SKILL.md` | 待补 |
+
+> **状态(2026-07-28 grilling round 1)**:5 术语中,`变体` 已在总纲 §CONTEXT.md 收录;其余 4 个待总纲补录。本 Skill 不预定义,只建指针,避免与总纲同步漂移。

@@ -6,41 +6,181 @@
 <style>
 :root{
   --bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;
-  --line:#e6e6eb;--blue:#0071e3;--amber:#ff9f0a;
-  --warn:#fff8e6;--warn-line:#ff9f0a;
+  --line:#e6e6eb;--blue:#0071e3;--green:#34c759;--amber:#ff9f0a;
+  --warn:#fff8e6;--warn-line:#ff9f0a;--code-bg:#f0f0f2;
+  --shadow:0 1px 2px rgba(0,0,0,.04);
 }
-*{box-sizing:border-box}
-body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-padding:32px 24px 80px}
-.wrap{max-width:980px;margin:0 auto}
-h1{font-size:24px;margin:0 0 4px}
-.sub{color:var(--muted);margin-bottom:28px}
-.group{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:14px 0;padding:0}
-.group-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
-.group-h h2{margin:0;font-size:16px}
-.group-h .badge{font-size:11px;background:var(--line);padding:2px 8px;border-radius:6px;color:var(--muted)}
-.scenarios{display:none;padding:6px 18px 18px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--ink);
+  font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 80px;
+}
+.wrap{max-width:980px;margin:0 auto;padding:0 12px}
+
+/* === HERO(对齐卡路里紧凑风) === */
+.hero{
+  background:linear-gradient(135deg,#fafbfc,#f0f4f8);
+  padding:10px 0 6px;
+}
+.hero h1{font-size:150%;font-weight:700;letter-spacing:-.3px;line-height:1.15;margin:0 0 1px}
+.hero .sub{color:var(--blue);font-size:100%;font-weight:500;margin:0 0 4px;line-height:1.4}
+.hero .stats{margin:2px 0 0;display:flex;gap:10px;flex-wrap:wrap;font-size:100%;color:var(--muted);line-height:1.3}
+.hero .stats b{color:var(--ink);font-weight:600}
+
+/* === GROUP(L1) === */
+.group{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:3px 0;box-shadow:var(--shadow);overflow:hidden}
+.group:first-of-type{margin-top:2px}
+.group-h{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 12px;cursor:pointer;user-select:none;
+  background:#fafbfc;min-height:36px;
+  -webkit-tap-highlight-color:transparent;tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.group-h h2{margin:0;font-size:13px;font-weight:600}
+.group-h .badge{margin-left:auto;font-size:10px;font-weight:500;color:var(--muted);background:#e5e5e7;padding:1px 6px;border-radius:999px}
+.group-h::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .12s;pointer-events:none}
+.group.open .group-h::before{transform:rotate(90deg)}
+.group-h > *{pointer-events:none}
+.scenarios{display:none;padding:4px 12px 10px}
 .group.open .scenarios{display:block}
-.scenario{border-top:1px solid var(--line);padding:0}
-.scenario:first-child{border-top:none}
-.s-head{display:flex;align-items:center;justify-content:space-between;padding:14px 0;cursor:pointer;user-select:none}
-.s-head:hover{background:#fafafc}
-.s-title{font-weight:600;flex:1}
-.s-body{display:none;padding:0 0 14px}
+
+/* === SCENARIO(L2) === */
+.scenario{background:#fff;border:1px solid var(--line);border-radius:6px;margin:4px 0}
+.s-head{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:6px 10px;cursor:pointer;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.s-head::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
+.scenario.open .s-head::before{transform:rotate(90deg)}
+.s-title{font-weight:600;font-size:13px;color:var(--ink);flex:1}
+.s-ww{font-size:11px;color:var(--muted);background:#f0f0f2;padding:0 4px;border-radius:3px}
+.s-varcount{font-size:10px;color:var(--muted)}
+.s-body{display:none;padding:0 10px 8px}
 .scenario.open .s-body{display:block}
-.s-chevron{font-size:12px;color:var(--muted);margin-right:8px;transition:transform .15s}
-.scenario.open .s-chevron{transform:rotate(90deg)}
-.s-dims{color:var(--muted);font-size:13px;margin-bottom:6px}
-.s-prompt{background:var(--warn);border-left:3px solid var(--warn-line);padding:8px 12px;border-radius:6px;font-size:13px;margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
-.s-result{color:var(--muted);font-size:13px;margin:6px 0}
-.copy-btn{float:right;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
-.copy-btn:hover{filter:brightness(1.05)}
-.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:24px;font-size:13px}
-.toc a{color:var(--ink);text-decoration:none;display:inline-block;padding:2px 6px;margin:2px 3px;background:var(--line);border-radius:4px}
+.s-desc{color:var(--muted);font-size:11.5px;margin:3px 0 5px}
+.s-dims{color:var(--muted);font-size:11px;margin-bottom:4px}
+
+/* === PROMPT(对齐卡路里蓝色左边框) === */
+.s-prompt{
+  background:#f0f7ff;border-left:2px solid var(--blue);
+  padding:6px 8px;border-radius:4px;margin:4px 0;
+  font-family:"SF Mono",Consolas,monospace;font-size:11.5px;
+  white-space:pre-wrap;word-break:break-word;line-height:1.35;
+}
+.s-result{color:var(--muted);font-size:11.5px;margin:6px 0 2px}
+
+/* === VARIANTS(L3 · 对齐卡路里变体折叠) === */
+.variants-section{margin-top:6px;border-top:1px dashed var(--line);padding-top:5px}
+.variants-header{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+.variant-block{border:1px solid var(--line);border-radius:5px;margin:3px 0;background:#fcfcfd}
+.variant-block > summary{
+  padding:4px 8px;cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:5px;font-size:12px;
+  -webkit-tap-highlight-color:transparent;
+}
+.variant-block > summary::-webkit-details-marker{display:none}
+.variant-block > summary::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
+.variant-block[open] > summary::before{transform:rotate(90deg)}
+.variant-block > summary > *{pointer-events:none}
+.v-label{font-weight:500;color:var(--blue);font-size:12px}
+.v-phrase{color:var(--muted);font-size:11px;margin-left:auto}
+.v-content{padding:0 8px 6px}
+
+/* === COPY BUTTON(v2 · 4 状态反馈 · 对齐卡路里) === */
+.copy-btn{
+  font:inherit;font-size:11px;padding:4px 8px;
+  border-radius:5px;border:1px solid var(--blue);
+  background:#fff;color:var(--blue);
+  cursor:pointer;margin:3px 0;
+  transition:background .12s,color .12s,transform .15s,box-shadow .25s;
+  white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.copy-btn:hover{background:var(--blue);color:#fff}
+.copy-btn:active{transform:scale(0.94);background:var(--blue);color:#fff}
+.copy-btn.copied{
+  background:var(--green);border-color:var(--green);color:#fff;
+  transform:scale(1.05);
+  animation:copySuccess 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes copySuccess{
+  0%{transform:scale(0.94);box-shadow:0 0 0 0 rgba(52,199,89,0)}
+  50%{transform:scale(1.10);box-shadow:0 0 0 8px rgba(52,199,89,0.30)}
+  100%{transform:scale(1.05);box-shadow:0 0 0 4px rgba(52,199,89,0.18)}
+}
+.copy-main{margin-left:auto}
+
+/* === TOAST(iOS 通知风格 · 对齐卡路里) === */
+.toast{
+  position:fixed;left:50%;bottom:32px;
+  transform:translateX(-50%) scale(0.9);opacity:0;
+  background:rgba(28,28,30,0.94);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  color:#f0f0f0;border-radius:14px;
+  padding:13px 14px 13px 16px;
+  display:flex;align-items:flex-start;gap:12px;
+  max-width:480px;min-width:320px;
+  box-shadow:0 10px 32px rgba(0,0,0,0.32),0 0 0 0.5px rgba(255,255,255,0.08) inset;
+  pointer-events:none;
+  transition:opacity 0.22s ease-out,transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  z-index:9999;
+}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:22px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:13px;line-height:1.4;color:#fff;margin-bottom:3px}
+.toast-title em{font-style:normal;color:#4dd96b;font-weight:600}
+.toast-detail{font-size:11.5px;line-height:1.55;color:#c8c8cc}
+.toast-close{
+  background:rgba(255,255,255,0.10);color:#4dd96b;border:0;
+  border-radius:8px;padding:6px 10px;font-size:11px;font-weight:500;
+  font-family:inherit;cursor:pointer;white-space:nowrap;
+  margin-left:6px;flex-shrink:0;transition:background 0.12s;
+}
+.toast-close:hover{background:rgba(255,255,255,0.18)}
+.toast-close:active{transform:scale(0.96)}
+
+/* === TOC + EMPTY === */
+.toc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:12px}
+.toc a{color:var(--ink);text-decoration:none;display:inline-block;padding:2px 6px;margin:2px 3px;background:var(--line);border-radius:4px;font-size:11px}
 .toc a:hover{background:var(--blue);color:#fff}
-.metrics{display:flex;gap:20px;color:var(--muted);font-size:13px;margin-bottom:8px}
-.metrics span{color:var(--ink);font-weight:600}
+.empty{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:10px;padding:12px 0 0;margin-top:16px}
+
+/* === MOBILE(≤600px · 对齐卡路里移动端) === */
+@media(max-width:600px){
+  body{font-size:12.5px}
+  .wrap{padding:0 8px 60px}
+  .hero{padding:10px 0 6px}
+  .hero h1{font-size:16px}
+  .hero .sub{font-size:10.5px}
+  .hero .stats{gap:8px;font-size:10.5px}
+  .group-h{padding:8px 10px;font-size:12.5px}
+  .scenarios{padding:4px 10px 8px}
+  .s-head{padding:7px 9px}
+  .s-body{padding:0 9px 7px}
+  .variant-block > summary{padding:6px 8px}
+  .copy-btn{padding:5px 9px;font-size:11.5px}
+  .toast{
+    left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));
+    transform:translateX(0) scale(0.95);max-width:none;min-width:0;
+    padding:12px 12px 12px 14px;
+  }
+  .toast.show{transform:translateX(0) scale(1)}
+  .toast-icon{font-size:20px}
+  .toast-title{font-size:12.5px}
+  .toast-detail{font-size:11px}
+  body{padding-bottom:env(safe-area-inset-bottom,0)}
+}
+@media(min-width:601px) and (max-width:900px){
+  .wrap{max-width:720px}
+}
 </style>
 </head>
 <body>
@@ -48,13 +188,29 @@ h1{font-size:24px;margin:0 0 4px}
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
 <script><!--SHARED-HELPERS--></script>
 
+<div class="hero"><div class="wrap">
+  <h1>居家管家 · 能力速查</h1>
+  <div class="sub">💡 点 ▸ 类别 → 选场景 → 复制 prompt → 贴给 AI</div>
+  <div class="stats" id="heroStats"></div>
+</div></div>
+
 <div class="wrap">
-  <div class="placeholder"></div>
+<div id="mainContent"><div class="empty">加载中…</div></div>
+<footer>居家管家技能 · 能力速查 · 对齐卡路里 HELP v2 风格</footer>
+</div>
+
+<!-- Toast(iOS 通知风格 · 对齐卡路里) -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-icon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title">已复制 <em id="toastLabel">prompt</em></div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),居家管家技能会自动执行这个流程</div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
 
 <script>
 (function(){
-  // BUG FIX: payload script 在 wrap 外,直接取兄弟节点
   const el = document.getElementById('payload');
   if (!el) return;
   let data;
@@ -63,17 +219,11 @@ h1{font-size:24px;margin:0 0 4px}
   const d = data.data;
   document.title = d.summary.title || '居家管家 · 能力速查';
 
-  // BUG FIX: group id 改纯英文序号(g-001, g-002)避免中文 id
   const groups = arr(d.groups);
   let html = '';
-  html += '<h1>' + esc(d.summary.title || '') + '</h1>';
-  html += '<p class="sub">' + esc(d.summary.subtitle || '') + '</p>';
-  html += '<div class="metrics">';
-  for (const m of arr(d.summary.metrics)) {
-    html += '<div>' + esc(m.label) + ': <span>' + esc(m.value) + '</span></div>';
-  }
-  html += '</div>';
+  html += '<div class="hero-stats" id="heroStats"></div>';
 
+  // TOC
   html += '<div class="toc"><strong>跳到</strong> ';
   for (let i = 0; i < groups.length; i++) {
     html += '<a href="#cat-' + i + '">' + esc(groups[i].category) + '</a>';
@@ -82,106 +232,183 @@ h1{font-size:24px;margin:0 0 4px}
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
-    const isOpen = '';  // 默认全部折叠(P1-11a)
     const wwStr = arr(g.wake_words).join(' / ');
-    html += '<div class="group' + isOpen + '" id="cat-' + i + '" data-idx="' + i + '">';
-    html += '<div class="group-h" data-ww="' + esc(wwStr) + '" data-idx="' + i + '">';
+    html += '<div class="group" id="cat-' + i + '" data-idx="' + i + '">';
+    html += '<div class="group-h" data-idx="' + i + '">';
     html += '<h2>' + esc(g.category) + '</h2>';
-    html += '<span class="badge">' + g.scenarios.length + ' 个场景 · ' + arr(g.wake_words).length + ' 个唤醒词</span>';
+    html += '<span class="badge">' + g.scenarios.length + ' 场景 · ' + arr(g.wake_words).length + ' 唤醒词</span>';
     html += '</div>';
     html += '<div class="scenarios">';
     for (const s of g.scenarios) {
-      // 二级折叠:每 scenario 默认只显示标题 + 复制按钮;点标题展开详情
-      html += '<div class="scenario">';
-      html += '<div class="s-head" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">';
-      html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
-      html += '<button class="copy-btn" data-idx="' + i + '" data-sid="' + esc(s.scenario_id || '') + '">复制 prompt</button>';
-      html += '</div>';
-      html += '<div class="s-body">';
-      html += '<div class="s-ww">唤醒词: <code>' + esc(s.wake_word || '') + '</code></div>';
-      const dims = arr(s.dimensions);
-      const dimKeys = Object.keys(dims);
-      if (dimKeys.length) {
-        html += '<div class="s-dims">维度: ' + dimKeys.map(k =>
-          k + '=' + (typeof dims[k] === 'object' ? JSON.stringify(dims[k]) : esc(dims[k]))
-        ).join('; ') + '</div>';
-      }
-      html += '<div class="s-prompt"></div>';  // 稍后填
-      html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
-      html += '</div>';  // .s-body
-      html += '</div>';  // .scenario
+      html += renderScenario(i, s);
     }
     html += '</div></div>';
   }
 
-  const wrap = document.querySelector('.wrap');
-  wrap.innerHTML = html;
+  const mainEl = document.getElementById('mainContent');
+  mainEl.innerHTML = html;
 
-  // BUG FIX: 第二遍填 prompt(避免任何 attribute 转义问题)
-  // 用 JSON 子脚本存数据 + textContent 注入文本节点
+  // hero stats
+  const statsEl = document.getElementById('heroStats');
+  if (statsEl && d.summary.metrics) {
+    statsEl.innerHTML = d.summary.metrics.map(m =>
+      '<span><b>' + esc(m.value) + '</b> ' + esc(m.label) + '</span>'
+    ).join('');
+  }
+
+  // 第二遍填 prompt(避免 attribute 转义问题)
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
     const groupEl = document.getElementById('cat-' + i);
     if (!groupEl) continue;
     const scenarioEls = groupEl.querySelectorAll('.scenario');
     for (let j = 0; j < g.scenarios.length && j < scenarioEls.length; j++) {
-      const promptEl = scenarioEls[j].querySelector('.s-prompt');
+      const promptEl = scenarioEls[j].querySelector('.s-prompt[data-fill="main"]');
       if (promptEl) {
         promptEl.textContent = g.scenarios[j].prompt || '';
+      }
+      // 变体 prompt
+      const variantEls = scenarioEls[j].querySelectorAll('.v-prompt[data-fill]');
+      const variants = g.scenarios[j].variants || [];
+      for (let k = 0; k < variantEls.length && k < variants.length; k++) {
+        variantEls[k].textContent = variants[k].phrase || '';
       }
     }
   }
 
-  // BUG FIX: 用 event delegation 代替 inline onclick
-  // 1. group 折叠/展开
-  // 2. scenario 折叠/展开(点 .s-head 触发,复制按钮 stopPropagation)
-  // 3. 复制按钮
+  bindInteractions();
+})();
+
+function renderScenario(groupIdx, s) {
+  const variants = arr(s.variants);
+  const dims = arr(s.dimensions);
+  const dimKeys = Object.keys(dims);
+  let html = '<div class="scenario" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">';
+  html += '<div class="s-head">';
+  html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
+  html += '<span class="s-ww">' + esc(s.wake_word || '') + '</span>';
+  if (variants.length) {
+    html += '<span class="s-varcount">' + variants.length + ' 变体</span>';
+  }
+  html += '<button class="copy-btn copy-main" data-prompt-source="main" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">📋 复制 prompt</button>';
+  html += '</div>';
+  html += '<div class="s-body">';
+  if (dimKeys.length) {
+    html += '<div class="s-dims">维度: ' + dimKeys.map(k =>
+      k + '=' + (typeof dims[k] === 'object' ? JSON.stringify(dims[k]) : esc(dims[k]))
+    ).join('; ') + '</div>';
+  }
+  html += '<div class="s-prompt" data-fill="main"></div>';
+  html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
+  // 变体(对齐卡路里 L3 折叠)
+  if (variants.length) {
+    html += '<div class="variants-section"><div class="variants-header">变体 (' + variants.length + ')</div>';
+    for (const v of variants) {
+      html += '<details class="variant-block">';
+      html += '<summary><span class="v-label">' + esc(v.direction || '') + '</span>';
+      html += '<span class="v-phrase">' + esc(v.phrase || '') + '</span></summary>';
+      html += '<div class="v-content">';
+      html += '<div class="s-prompt v-prompt" data-fill="' + esc(v.phrase || '') + '"></div>';
+      html += '<button class="copy-btn" data-prompt-source="variant" data-phrase="' + esc(v.phrase || '') + '">📋 复制此变体 prompt</button>';
+      html += '</div></details>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function bindInteractions() {
+  const wrap = document.querySelector('.wrap');
   wrap.addEventListener('click', (e) => {
+    // group 折叠
     const gh = e.target.closest('.group-h');
     if (gh) {
       const groupEl = gh.closest('.group');
       if (groupEl) groupEl.classList.toggle('open');
       return;
     }
+    // 复制按钮
     const btn = e.target.closest('.copy-btn');
     if (btn) {
-      // 复制按钮独立行为,不切换 scenario
       e.stopPropagation();
-      const i = parseInt(btn.getAttribute('data-idx') || '0', 10);
-      const sid = btn.getAttribute('data-sid') || '';
-      const s = (groups[i] && groups[i].scenarios.find(x => (x.scenario_id || '') === sid)) || null;
-      const prompt = s ? (s.prompt || '') : '';
-      copyText(btn, prompt);
+      handleCopy(btn);
       return;
     }
+    // scenario 折叠
     const sh = e.target.closest('.s-head');
     if (sh) {
       const sc = sh.closest('.scenario');
       if (sc) sc.classList.toggle('open');
     }
   });
-})();
-
-function copyText(btn, text) {
-  const old = btn.textContent;
-  btn.textContent = '已复制 ✓';
-  setTimeout(() => { btn.textContent = old; }, 1500);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  } else {
-    fallbackCopy(text);
-  }
+  bindCopyButtons();
 }
 
-function fallbackCopy(text) {
+function handleCopy(btn) {
+  const source = btn.getAttribute('data-prompt-source');
+  let promptText = '';
+  let label = 'prompt';
+  if (source === 'main') {
+    const scenarioEl = btn.closest('.scenario');
+    const promptEl = scenarioEl ? scenarioEl.querySelector('.s-prompt[data-fill="main"]') : null;
+    promptText = promptEl ? promptEl.textContent : '';
+    // 找唤醒词作 label
+    const wwEl = scenarioEl ? scenarioEl.querySelector('.s-ww') : null;
+    if (wwEl) label = wwEl.textContent.trim();
+  } else if (source === 'variant') {
+    const phrase = btn.getAttribute('data-phrase') || '';
+    const variantEl = btn.closest('.variant-block');
+    const promptEl = variantEl ? variantEl.querySelector('.v-prompt[data-fill]') : null;
+    promptText = promptEl ? promptEl.textContent : phrase;
+    label = phrase;
+  }
+  copyText(btn, promptText, label);
+}
+
+function bindCopyButtons() {
+  // 兼容性:按钮 click 通过 event delegation 处理,这里不需要单独绑定
+}
+
+function copyText(btn, text, label) {
+  showToast(label || 'prompt');
+  const after = () => {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(after).catch(() => { fallback(text); after(); });
+  } else { fallback(text); after(); }
+}
+
+/* === Toast 控制器(对齐卡路里) === */
+const toastEl = document.getElementById('toast');
+const toastLabelEl = document.getElementById('toastLabel');
+const toastCloseEl = document.getElementById('toastClose');
+let toastTimer = null;
+
+function showToast(label) {
+  if (toastLabelEl) toastLabelEl.textContent = label;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
+}
+if (toastCloseEl) {
+  toastCloseEl.addEventListener('click', () => {
+    toastEl.classList.remove('show');
+    clearTimeout(toastTimer);
+  });
+}
+
+function fallback(text) {
   const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
   try { document.execCommand('copy'); } catch(e) {}
-  ta.remove();
+  document.body.removeChild(ta);
 }
 </script>
 </body>

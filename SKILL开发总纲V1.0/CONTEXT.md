@@ -37,7 +37,7 @@ HELP HTML 的唯一规范事实源,位于 `<skill>/references/scenarios.<format>
 _Avoid_: 场景列表、用例表
 
 **场景 (scenario)**:
-一个业务唤醒词在某个维度组合下的合法执行路径。最小必填 7 字段:wake_word / scenario_id / scenario_title / dimensions / prompt / status / result。
+一个业务唤醒词在某个维度组合下的合法执行路径。最小必填 7 字段:wake_word / scenario_id / scenario_title / dimensions / prompt / status / result。契约级最小必填,不准删减或重命名(§07)。
 _Avoid_: 测试用例、功能点
 
 **稳定 prompt**:

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>📊 数据质量报告</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#E3F2FD 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{font-size:13px;color:var(--text3);margin-bottom:0}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .kpi .num{font-size:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}
+  .kpi .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+  .kpi.primary .num{color:var(--blue)}
+  .kpi.success .num{color:var(--success)}
+  .kpi.warn .num{color:var(--warn)}
+  .kpi.danger .num{color:var(--danger)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:14px 18px 12px;border-bottom:1px solid var(--separator);display:flex;justify-content:space-between;align-items:center}
+  .card-header h2{font-size:16px;font-weight:700;margin:0}
+  .card-header .count{font-size:12px;color:var(--text3);font-weight:500}
+  .recipe{padding:14px 18px;border-bottom:1px solid var(--separator)}
+  .recipe:last-child{border-bottom:none}
+  .recipe-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .recipe-name{font-size:16px;font-weight:600}
+  .recipe-score{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+  .recipe-score.high{color:var(--success)}
+  .recipe-score.mid{color:var(--warn)}
+  .recipe-score.low{color:var(--danger)}
+  .recipe-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .tag{background:var(--bg);color:var(--text2);font-size:11px;font-weight:500;padding:3px 8px;border-radius:var(--radius-pill)}
+  .tag.good{background:var(--success-soft);color:var(--success)}
+  .tag.bad{background:var(--danger-soft);color:var(--danger)}
+  .missing{padding:8px 12px;background:var(--warn-soft);border-radius:var(--radius-sm);font-size:12px;color:var(--text2);line-height:1.5}
+  .missing strong{color:var(--warn)}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3);line-height:1.6}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:20px}.kpi .num{font-size:24px}.recipe-head{flex-direction:column;align-items:flex-start;gap:4px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <section class="hero">
+    <h1 id="page-title">📊 数据质量报告</h1>
+    <div class="hero-meta" id="meta">生成中...</div>
+  </section>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>每道菜详情</h2>
+      <span class="count" id="recipes-count"></span>
+    </div>
+    <div id="recipes-detail"></div>
+  </div>
+
+  <footer class="footer" id="footer">
+    数据质量报告 · 评估 5 维度:食材数量、步骤数量、贴士数量、技法数量、背景故事
+  </footer>
+
+</div>
+
+<!--INJECT-DATA-->
+<script>
+(function(){
+  'use strict';
+
+  // 5 状态 fallback(显式 hidden)
+  const fallbackEl = document.createElement('div');
+  fallbackEl.id = 'state-error';
+  fallbackEl.className = 'hidden';
+  fallbackEl.style.cssText = 'background:#FEE;border-radius:14px;padding:48px 24px;text-align:center;color:#FF3B30;margin-bottom:14px';
+  fallbackEl.innerHTML = '<div style="font-size:48px;margin-bottom:12px">⚠️</div><div id="error-msg">数据加载失败</div>';
+  document.body.querySelector('.container').prepend(fallbackEl);
+
+  // §04 原则 4 #3:数据守卫
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)';
+    fallbackEl.classList.remove('hidden');
+    return;
+  }
+  const D = window.__DATA__;
+
+  // XSS 防护
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // 1. 标题 + meta
+  document.getElementById('page-title').textContent = D.title || '📊 数据质量报告';
+  document.getElementById('meta').textContent = `生成时间:${D.generated_at} · 共评估 ${D.total_recipes} 道菜`;
+
+  // 2. KPI 卡
+  const kpis = D.kpis || [];
+  const kpiGrid = document.getElementById('kpi-grid');
+  kpis.forEach(k => {
+    const card = document.createElement('div');
+    card.className = 'kpi ' + (k.style || 'primary');
+    card.innerHTML = `<div class="num">${esc(k.value)}</div><div class="lbl">${esc(k.label)}</div>`;
+    kpiGrid.appendChild(card);
+  });
+
+  // 3. 每道菜详情(从 items 字段读)
+  const recipes = D.items || [];
+  document.getElementById('recipes-count').textContent = `${recipes.length} 道菜(按评分倒序)`;
+  const detail = document.getElementById('recipes-detail');
+
+  if (recipes.length === 0) {
+    detail.innerHTML = '<div class="recipe" style="text-align:center;color:var(--text3)">未找到菜谱</div>';
+    return;
+  }
+
+  recipes.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'recipe';
+
+    const score = r.score || 0;
+    const scoreClass = score >= 80 ? 'high' : (score >= 40 ? 'mid' : 'low');
+    const scoreLabel = score >= 80 ? '✓ 完整' : (score >= 40 ? '⚠ 部分' : '✗ 待补');
+
+    const tags = [];
+    tags.push(`<span class="tag ${r.ingredients_count >= 3 ? 'good' : 'bad'}">食材 ${r.ingredients_count} ${r.ingredients_count >= 3 ? '✓' : '✗'}</span>`);
+    tags.push(`<span class="tag ${r.steps_count >= 3 ? 'good' : 'bad'}">步骤 ${r.steps_count} ${r.steps_count >= 3 ? '✓' : '✗'}</span>`);
+    tags.push(`<span class="tag ${r.tips_count >= 1 ? 'good' : 'bad'}">tips ${r.tips_count} ${r.tips_count >= 1 ? '✓' : '✗'}</span>`);
+    tags.push(`<span class="tag ${r.techniques_count >= 1 ? 'good' : 'bad'}">techniques ${r.techniques_count} ${r.techniques_count >= 1 ? '✓' : '✗'}</span>`);
+    tags.push(`<span class="tag ${r.has_background ? 'good' : 'bad'}">背景 ${r.has_background ? '✓' : '✗'}</span>`);
+    if (r.history_count > 0) tags.push(`<span class="tag">做过 ${r.history_count} 次</span>`);
+
+    const missingArr = r.missing || [];
+    const missingHtml = missingArr.length > 0
+      ? `<div class="missing"><strong>⚠ 缺失项:</strong>${missingArr.map(m => esc(m)).join(' · ')}</div>`
+      : '';
+
+    const difficultyStr = r.difficulty ? ` · ${esc(r.difficulty)}` : '';
+    const timeStr = r.total_time ? ` · ${r.total_time} 分钟` : '';
+
+    div.innerHTML = `
+      <div class="recipe-head">
+        <div class="recipe-name">${esc(r.recipe_name)}<span style="font-size:12px;color:var(--text3);font-weight:400;margin-left:8px">${difficultyStr}${timeStr}</span></div>
+        <div class="recipe-score ${scoreClass}">${score}/100 <span style="font-size:12px;font-weight:500;color:var(--text3)">${scoreLabel}</span></div>
+      </div>
+      <div class="recipe-meta">${tags.join('')}</div>
+      ${missingHtml}
+    `;
+    detail.appendChild(div);
+  });
+
+})();
+</script>
+
+</body>
+</html>

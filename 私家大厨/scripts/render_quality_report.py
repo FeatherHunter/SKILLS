@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
 私家大厨 · 数据质量报告 HTML 渲染器
-复用 data_view.html(dashboard type)+ 内联 1 个新 "quality_cards" type
+使用独立模板 templates/data_quality_report.html(不依赖 data_view.html)
 """
 import json
-import re
 import os
 import sys
 from pathlib import Path
@@ -12,7 +11,7 @@ from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
-TEMPLATE_PATH = SKILL_DIR / "templates" / "data_view.html"
+TEMPLATE_PATH = SKILL_DIR / "templates" / "data_quality_report.html"
 
 
 def inject_data(template_html: str, payload: dict) -> str:
@@ -27,11 +26,9 @@ def inject_data(template_html: str, payload: dict) -> str:
     return template_html.replace(placeholder, script_tag, 1)
 
 
-def transform_quality_to_dashboard(report: dict) -> dict:
-    """把数据质量报告转为 data_view.html 的 dashboard type payload。
-    用 dashboard type 展示 KPI(总菜/完整/部分/待补)+ 用 items 字段携带每道菜详情。
-    """
-    # KPI 卡:总菜 / 完整 / 部分 / 最差
+def transform_quality_payload(report: dict) -> dict:
+    """把数据质量报告转为模板 payload"""
+    # KPI 卡
     kpis = [
         {"label": "总菜数", "value": str(report["total_recipes"]), "style": "primary"},
         {"label": "完整 (≥80分)", "value": str(report["summary"]["full_complete"]),
@@ -42,13 +39,30 @@ def transform_quality_to_dashboard(report: dict) -> dict:
          "style": "danger" if report["summary"]["minimal"] > 0 else "primary"},
     ]
 
+    # 每道菜直接放 items(模板会渲染)
+    items = []
+    for r in report["recipes"]:
+        items.append({
+            "recipe_name": r["recipe_name"],
+            "score": r["score"],
+            "difficulty": r.get("difficulty"),
+            "total_time": r.get("total_time_minutes"),
+            "ingredients_count": r["ingredients_count"],
+            "steps_count": r["steps_count"],
+            "tips_count": r["tips_count"],
+            "techniques_count": r["techniques_count"],
+            "has_background": r["has_background"],
+            "history_count": r.get("history_count", 0),
+            "missing": r.get("missing", []),
+        })
+
     return {
-        "type": "dashboard",
         "title": f"📊 数据质量报告 · {report['generated_at']}",
-        "kpis": kpis,
-        "items_count": report["total_recipes"],
-        "empty_msg": "未找到菜谱",
         "generated_at": report["generated_at"],
+        "total_recipes": report["total_recipes"],
+        "kpis": kpis,
+        "items": items,
+        "items_count": len(items),
     }
 
 
@@ -58,10 +72,9 @@ def render_html_report(report: dict) -> str:
         raise FileNotFoundError(f"模板不存在:{TEMPLATE_PATH}")
 
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    payload = transform_quality_to_dashboard(report)
+    payload = transform_quality_payload(report)
     output = inject_data(template, payload)
 
-    # 输出路径
     out_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub")) / "quality"
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -71,7 +84,6 @@ def render_html_report(report: dict) -> str:
 
 
 if __name__ == "__main__":
-    # 直接读 stdin JSON → 输出 HTML
     data = json.load(sys.stdin)
     out = render_html_report(data)
     print(out)

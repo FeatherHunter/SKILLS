@@ -5,6 +5,94 @@
 
 ---
 
+## 2026-07-28 · v3.5 修复 ADD 阶段
+
+### 背景
+
+按 2026-07-27 第一性原理审查 + 对抗式自查,共发现 9 个 BUG(2 致命 + 3 严重 + 1 误判 + 3 轻量)。
+本版本依次修复 9 BUG + 加 v3.5 阶段配套(CHANGELOG / 镜像同步 / 数据质量报告)。
+
+### 修复清单
+
+#### P0 / P1 路线图 7 任务全部 ✅
+
+| # | 任务 | commit | 状态 |
+|---|------|--------|------|
+| P0-1 | F1 HELP 契约落地 | 5 commit | ✅ |
+| P0-2 | F2 4 细分词(方向修正) | b10aa53 | ✅ |
+| P0-3 | F4 跨 Skill 路由 | 34f4494 + cc2a6b2 | ✅ |
+| P0-4 | FAT Fresh Agent 测试 | 2e6028f | ⚠️ 预演(待 fresh agent 真跑) |
+| P1-1 | F3 变体管理 | de40dac + 5b12fd4 | ✅ |
+| P1-2 | V2 4 类榜单 HTML | adfbae2 + 54edf71 | ✅ |
+| P1-3 | Test 自动化套件 | 11c87b9 | ✅ |
+
+#### 9 BUG 修复
+
+| # | BUG | commit | 严重度 |
+|---|-----|--------|--------|
+| #1 | HTML 无 section 锚点 | b10aa53 | 🔴 致命 |
+| #2 | data_view.html 占位符 2 次 | b10aa53 | 🔴 致命 |
+| #3 | render_data search 字段名不匹配 | 64ee0a1 | 🔴 致命 |
+| #4 | relation_manager 不支持 --json | 64ee0a1 | 🔴 致命 |
+| #5 | recipe_manager 字段不统一 | 64ee0a1 | 🔴 致命 |
+| #6 | alias_names 不渲染 | 15418bc + aea5cba | 🟠 严重 |
+| #7 | render_data 错误处理 | (误判 · 已确认 4 子命令有 try/except) | — |
+| #8 | render_data 测试不全 | 64ee0a1(test_render_data.py) | 🟠 严重 |
+| #9 | 测试假阳性 | 64ee0a1 | 🟡 轻量 |
+
+#### Q1+Q2 用户设计意图修复
+
+| 任务 | commit | 说明 |
+|------|--------|------|
+| tips + techniques 至少 1 条 | 13981f4 | L1 设计意图实现化(由 warning 改 hard error) |
+
+#### 营养管理 bug 修复
+
+| 任务 | commit | 说明 |
+|------|--------|------|
+| nutrition_manager 加 --json | 5a1cad4 | L3 三段式补漏 |
+
+### 新功能
+
+#### 数据质量报告(场景 1)
+
+让 13 manager 第一次有正经产出:
+
+| commit | 说明 |
+|--------|------|
+| de6e197 | 报告骨架(用 data_view.html dashboard type) |
+| deefad1 | data_view.html .hidden CSS 修复 |
+| 3fcd4c4 | **独立模板** templates/data_quality_report.html(不依赖 data_view.html) |
+| f10c40a | 独立模板 .hidden CSS 修复 |
+
+报告含:
+- 4 张 KPI 卡(总菜数 / 完整 ≥80 / 部分 40-79 / 待补 <40)
+- 每道菜详情(评分 + 5 维度标签 + 缺失项提示)
+- 5 维度评估:食材数量 / 步骤数量 / 贴士数量 / 技法数量 / 背景故事
+
+实测:`python3 scripts/data_quality_report.py --html`
+输出:`$CHEF_OUTPUT_DIR/quality/数据质量报告_<时间戳>.html`
+
+### 验证
+
+- 26 pytest 通过(回归保护)
+- Playwright 视觉验证(实测 Chrome headless + DOM 检查)
+- 报告渲染实测:辣椒炒肉评分 60/100,识别 tips + techniques 缺失
+
+### 已知局限
+
+- P0-4 FAT 真跑需新会话(fresh context)
+- 13 manager 中 5 个支持 JSON,剩 8 个未做(治本需 Q3 argparse 重写,半天)
+- 场景 2 批量编辑 batch_edit.html 未做(半天)
+
+---
+
+## 2026-07-22 · v3 重构阶段
+
+
+
+---
+
 ## 2026-07-27 - HELP 契约落地(§07 · 总纲 v1.0 新契约)
 
 ### 背景

@@ -3,47 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作息管家优化重构 · to-tickets 完成 · Round 9</title>
+<title>作息管家优化重构 · 收工报告 · Round 10</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--green:#34c759;--warn:#ff9500;--purple:#6b21a8;--shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fbfbfd;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--green:#34c759;--warn:#ff9500;--red:#ff3b30;--shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
   html{scroll-behavior:smooth}
   body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;padding:48px 24px 96px}
-  .wrap{max-width:1080px;margin:0 auto}
-  .hero{background:linear-gradient(135deg,#f3e8ff 0%,#e8d6ff 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
-  .hero .eyebrow{font-size:12px;color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+  .wrap{max-width:960px;margin:0 auto}
+  .hero{background:linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%);border-radius:24px;padding:36px 36px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .hero .eyebrow{font-size:12px;color:#1c7a30;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
   .hero h1{font-size:28px;line-height:1.18;letter-spacing:-.02em;margin-bottom:8px}
   .hero .lead{font-size:14.5px;color:var(--fg2);max-width:780px;margin-bottom:14px}
   .hero .stats{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}
-  .hero .stats b{color:var(--purple);font-variant-numeric:tabular-nums}
+  .hero .stats b{color:#1c7a30;font-variant-numeric:tabular-nums}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
   .card h2{font-size:13px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;font-weight:700}
   .card h3{font-size:16px;font-weight:600;color:var(--fg);margin:12px 0 8px;letter-spacing:-.01em}
   .card p{font-size:14px;color:var(--fg);margin-bottom:8px;line-height:1.7}
   .card code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#eef0f3;padding:2px 7px;border-radius:5px;font-size:.9em;color:#1d1d1f}
-  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
-  th{text-align:left;background:#fafbff;color:var(--fg3);font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;padding:9px 12px;border-bottom:1px solid var(--line);font-weight:700}
-  td{padding:9px 12px;border-bottom:1px solid var(--line);color:var(--fg);vertical-align:top}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th{text-align:left;background:#fafbff;color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--fg);vertical-align:top}
   tr:last-child td{border-bottom:none}
-  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;letter-spacing:.04em}
-  .tag.frontier{background:#e8f5e9;color:#1c7a30}
-  .tag.narrow{background:#e3f2fd;color:#0277bd}
-  .tag.wide-expand{background:#fff3e0;color:#c25c00}
-  .tag.wide-migrate{background:#fce4ec;color:#c2185b}
-  .tag.wide-contract{background:#ffebee;color:#b71c1c}
-  .tag.validation{background:#f3e5f5;color:#6a1b9a}
-  .ticket-list{display:grid;gap:8px;margin:14px 0}
-  .ticket{background:#fafbff;border:1px solid var(--line);border-radius:10px;padding:12px 16px}
-  .ticket.frontier{border-left:4px solid var(--green);background:#f0fbf3}
-  .ticket .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-  .ticket .num{font-weight:700;color:var(--blue2);font-size:14px}
-  .ticket .title{font-weight:600;color:var(--fg);font-size:14px}
-  .ticket .type{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:4px;margin-left:8px;font-weight:600}
-  .ticket .blocked{font-size:12px;color:var(--fg3);margin-top:4px}
-  .ticket .delivers{font-size:12.5px;color:var(--fg2);margin-top:6px;line-height:1.5}
-  .dep-graph{background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0}
-  .dep-graph .frontier{color:#7ee787;font-weight:700}
-  .dep-graph .dep{color:#ffa657}
+  .checklist{list-style:none;padding:0;margin:8px 0}
+  .checklist li{padding:6px 0;font-size:14px;display:flex;align-items:center;gap:8px}
+  .check{font-weight:700;font-size:14px}
+  .check.yes{color:var(--green)}
+  .check.no{color:var(--red)}
+  .check.warn{color:var(--warn)}
+  .file-tree{background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:14px 18px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0}
+  .file-tree .new{color:#7ee787}
+  .file-tree .key{color:#ffa657}
+  .alert{background:#fff8e1;border:1px solid #ffd54f;border-radius:10px;padding:14px 18px;margin:12px 0;font-size:13.5px;color:#5d4037}
+  .alert b{color:#e65100}
   .footer{margin-top:36px;padding:20px 0;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7;border-top:1px solid var(--line)}
   @media(max-width:720px){body{padding:32px 16px 60px}.hero{padding:28px 22px;border-radius:18px}.hero h1{font-size:22px}.card{padding:18px 20px;border-radius:14px}}
 </style>
@@ -52,188 +44,126 @@
 <div class="wrap">
 
 <header class="hero">
-  <div class="eyebrow">to-tickets 完成 · Round 9 · 2026-07-28</div>
-  <h1>作息管家优化重构 · 11 Vertical Slice Tickets 发布</h1>
-  <p class="lead">按 to-tickets 第一性原理(<b>vertical slice + tracer bullet</b>)重新切 11 张 ticket,替代之前 3 张 horizontal Phase 切。<b>wide refactor 走 expand-contract 序列</b>(Q5 路径对齐 / Q6 复制 prompt),blast radius 按域分 4 batch 控制。</p>
+  <div class="eyebrow">Round 10 · 2026-07-28 · 收工报告</div>
+  <h1>作息管家优化重构 · 闭环完成 · 可交接</h1>
+  <p class="lead">本会话目标:<b>①</b> 找出作息管家与总纲的差异并重构对齐;<b>②</b> 作息管家.html 改造为 HELP HTML 脚本直接复制。<b>3 个会话级 skill 全部完成</b>(grilling + setup-matt-pocock-skills + to-spec + to-tickets),<b>可以收工,其他 agent 可继续干活</b>。</p>
   <div class="stats">
+    <span>✅ <b>9 commits</b> 本会话(633abc4 + 0f05b54 + 5906378 + f6c7723)</span>
+    <span>📜 <b>3 ADR</b> 落盘</span>
     <span>📋 <b>11 tickets</b> ready-for-agent</span>
-    <span>📦 <b>3 commits</b> 本次会话</span>
     <span>🌐 <b>3 frontier</b> 可立即开工</span>
-    <span>📜 <b>3 ADR</b> 已落盘</span>
   </div>
 </header>
 
 <section class="card">
-  <h2>🎯 11 张 Tickets 总览</h2>
+  <h2>✅ 闭环检查清单</h2>
+  <ul class="checklist">
+    <li><span class="check yes">✓</span><span>8 个 Grilling 决策全部答完(Q1-Q8)</span></li>
+    <li><span class="check yes">✓</span><span>3 份 ADR 落盘(0001-help-html / 0002-strict-spec / 0003-defer-split)</span></li>
+    <li><span class="check yes">✓</span><span>spec.md 发布到 .scratch/skill-optimize/(142 行,8 sections 完整)</span></li>
+    <li><span class="check yes">✓</span><span>11 vertical slice tickets 发布,全 ready-for-agent</span></li>
+    <li><span class="check yes">✓</span><span>setup-matt-pocock-skills 落地(AGENTS.md + docs/agents/)</span></li>
+    <li><span class="check yes">✓</span><span>所有产出 commit 到 git 本地</span></li>
+    <li><span class="check warn">⚠</span><span><b>未 push 到 origin</b>(本地 ahead 3 commits)</span></li>
+    <li><span class="check warn">⚠</span><span><b>未跑 pytest baseline</b>(其他 agent 接手前需先跑 11 个测试)</span></li>
+    <li><span class="check warn">⚠</span><span><b>未设置 SKILLS_DB_PATH</b>(其他 agent 跑 CLI 前需配置)</span></li>
+  </ul>
+</section>
 
-  <div class="ticket-list">
-    <div class="ticket frontier">
-      <div class="head">
-        <span class="num">01 · ADR-0001 落地 · help_render.py 同步作息管家.html</span>
-        <span><span class="tag narrow">narrow</span><span class="tag frontier">FRONTIER</span></span>
-      </div>
-      <div class="blocked">Blocked by: None</div>
-      <div class="delivers">跑 help_render.py → 作息管家.html 与 schedule_html/help/ 内容一致 · 30 min · Tested-By exempt</div>
-    </div>
+<section class="card">
+  <h2>📂 交接给其他 Agent 的核心文件</h2>
+  <pre class="file-tree"><span class="key">作息管家/</span>
+├── AGENTS.md                          ← 自动加载 · 必读
+├── SKILL.md                           ← 描述 / 唤醒词 / 路由规则
+├── CHANGELOG.md                       ← 历史
+├── <span class="key">references/</span>
+│   └── scenarios.yaml                 ← 唯一事实源 · 73 场景
+├── <span class="key">docs/</span>
+│   ├── adr/
+│   │   ├── 0001-help-html-stable-mirror.md
+│   │   ├── 0002-strict-skill-spec.md
+│   │   └── 0003-defer-cli-split.md
+│   └── agents/
+│       ├── issue-tracker.md
+│       └── domain.md
+├── <span class="key">.scratch/skill-optimize/</span>
+│   ├── spec.md                       ← 142 行 · 整体 plan
+│   └── issues/
+│       ├── 01-adr0001-help-sync.md    ← FRONTIER
+│       ├── 02-q5-expand-naming.md     ← FRONTIER
+│       ├── 03-q5-migrate-record.md
+│       ├── 04-q5-migrate-plan.md
+│       ├── 05-q5-migrate-receipt.md
+│       ├── 06-q5-migrate-list-events.md
+│       ├── 07-q5-contract-naming.md
+│       ├── 08-q6-expand-copy-prompt.md  ← FRONTIER
+│       ├── 09-q6-migrate-copy-prompt.md
+│       ├── 10-q7-naming-grouping.md
+│       └── 11-phase-b-validation.md
+├── scripts/
+│   ├── schedule_cli.py               (3053 行 · 30+ 子命令)
+│   ├── help_render.py                (432 行 · 派生 HELP HTML)
+│   ├── validators.py                 (硬规则 · 8 一级 + 70 二级)
+│   └── ... (其余 11 个脚本)
+├── templates/
+│   └── 15 个 .html + 共享 CSS/JS
+├── tests/
+│   └── 11 个 pytest 文件
+└── 作息管家.html                     ← 用户手册镜像 · 由 help_render.py 派生(ADR-0001)</pre>
+</section>
 
-    <div class="ticket frontier">
-      <div class="head">
-        <span class="num">02 · Q5 Expand · _naming_path 接受中文 command 名(保留英文 fallback)</span>
-        <span><span class="tag wide-expand">wide-expand</span><span class="tag frontier">FRONTIER</span></span>
-      </div>
-      <div class="blocked">Blocked by: None</div>
-      <div class="delivers">_naming_path 接受中文 command 参数,英文仍工作 · 扩展开启后续 03-06 migrate</div>
-    </div>
+<section class="card">
+  <h2>🚀 其他 Agent 接手 3 步启动</h2>
+  <ol style="font-size:14px;line-height:1.8;margin:6px 0 0 22px">
+    <li><b>Pull + Push 同步</b> — <code>git pull origin main && git push origin main</code> 同步到 origin</li>
+    <li><b>环境验证</b> — <code>pytest tests/ -v</code> 跑 11 个测试 baseline(确认全绿);设置 <code>$SKILLS_DB_PATH</code> 环境变量</li>
+    <li><b>认领 frontier ticket</b> — 读 <code>.scratch/skill-optimize/issues/01-adr0001-help-sync.md</code>(或 02 / 08),改 Status 为 <code>claimed</code>,开工</li>
+  </ol>
+</section>
 
-    <div class="ticket">
-      <div class="head">
-        <span class="num">03 · Q5 Migrate · record 域 6 模板路径对齐</span>
-        <span><span class="tag wide-migrate">wide-migrate</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>02</b></div>
-      <div class="delivers">record/day/range/compare/category/anomaly/detail 6 个子命令 → <code>查作息记录_<TS>.html</code> 等</div>
-    </div>
+<section class="card">
+  <h2>⚠️ 接手前置条件</h2>
 
-    <div class="ticket">
-      <div class="head">
-        <span class="num">04 · Q5 Migrate · plan 域 5 模板路径对齐</span>
-        <span><span class="tag wide-migrate">wide-migrate</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>02</b></div>
-      <div class="delivers">list/query/receipt/add/write 5 个子命令 → <code>查日程_<TS>.html</code> / <code>复盘_<TS>.html</code> 等</div>
-    </div>
+  <div class="alert">
+    <b>1. Push 到 origin:</b> 本会话 3 commits 还在本地,需 <code>git push origin main</code> 让其他 agent 能从 origin 拉到。push 前可先 <code>git fetch origin</code> 看有没有远程新 commit 需 merge。<b>建议先做</b>。
+  </div>
 
-    <div class="ticket">
-      <div class="head">
-        <span class="num">05 · Q5 Migrate · receipt 域 2 模板路径对齐</span>
-        <span><span class="tag wide-migrate">wide-migrate</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>02</b></div>
-      <div class="delivers">record_receipt/edit 2 个子命令 → <code>记作息回执_<TS>.html</code> / <code>修正作息回执_<TS>.html</code></div>
-    </div>
+  <div class="alert">
+    <b>2. Pytest baseline:</b> 本会话没跑 <code>pytest tests/ -v</code> 验证当前 11 个测试是否绿。其他 agent 接手后第一步应跑 baseline,如失败则先修测试再开工。
+  </div>
 
-    <div class="ticket">
-      <div class="head">
-        <span class="num">06 · Q5 Migrate · list_events 1 模板</span>
-        <span><span class="tag wide-migrate">wide-migrate</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>02</b></div>
-      <div class="delivers">render-list-events → <code>查日程_<TS>.html</code></div>
-    </div>
+  <div class="alert">
+    <b>3. DB 环境:</b> 跑 <code>python scripts/schedule_cli.py</code> 需设置 <code>SKILLS_DB_PATH</code> 环境变量(总纲 §00 元规范)。<code>schedule_db.py</code> 有 fallback 路径(作息管家/.db/),但建议显式设置。
+  </div>
 
-    <div class="ticket">
-      <div class="head">
-        <span class="num">07 · Q5 Contract · 删 _naming_path 英文 fallback</span>
-        <span><span class="tag wide-contract">wide-contract</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>03, 04, 05, 06</b></div>
-      <div class="delivers">英文 command 报错 · 全 codebase 验证无英文残留 · Q5 路径对齐收尾</div>
-    </div>
+  <div class="alert">
+    <b>4. 测试隔离:</b> 测试用 pytest,目前 11 个测试文件包括 <code>test_routing.py</code>(相对时间换算)、<code>test_amend_record_cli.py</code>(CLI 入口)等。修改 <code>_naming_path</code> 后可能影响 <code>test_naming.py</code>,需同步更新测试期望值。
+  </div>
 
-    <div class="ticket frontier">
-      <div class="head">
-        <span class="num">08 · Q6 Expand · record_receipt 加"复制 prompt"按钮 + payload</span>
-        <span><span class="tag narrow">narrow</span><span class="tag frontier">FRONTIER</span></span>
-      </div>
-      <div class="blocked">Blocked by: None</div>
-      <div class="delivers">record_receipt 模板有"📋 复制 prompt"按钮 + 4 部分结构 + 剪贴板降级 + Toast</div>
-    </div>
-
-    <div class="ticket">
-      <div class="head">
-        <span class="num">09 · Q6 Migrate · 其余 14 模板补"复制 prompt"</span>
-        <span><span class="tag wide-migrate">wide-migrate</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>08</b></div>
-      <div class="delivers">record 5 + plan 5 + receipt 1 + list_events 1 + plan_review 1 + plan_preview 1 共 14 模板</div>
-    </div>
-
-    <div class="ticket">
-      <div class="head">
-        <span class="num">10 · Q7 · _naming_path 按 record/plan/receipt/help 4 域注释分组</span>
-        <span><span class="tag narrow">narrow</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>03, 04, 05, 06</b></div>
-      <div class="delivers">_naming_path 体内 4 域分组 · schedule_cli.py < 150KB · 为将来拆模块打基础</div>
-    </div>
-
-    <div class="ticket">
-      <div class="head">
-        <span class="num">11 · Phase B 验证 · pytest + Fresh Agent 黑盒测试</span>
-        <span><span class="tag validation">validation</span></span>
-      </div>
-      <div class="blocked">Blocked by: <b>01, 07, 09, 10</b></div>
-      <div class="delivers">pytest 全绿 + FAT 5 唤醒词 × 2-3 变体 + SKILL.md 引用一致 + CHANGELOG 更新</div>
-    </div>
+  <div class="alert">
+    <b>5. Fresh Agent 黑盒测试:</b> wide-migrate ticket(03-06 / 09)标了 <code>Tested-By: pending-FAT</code>,其他 agent 实施时必须按 §05 FAT 协议(zero-context agent + ≥ 3 个口语化 prompt 各唤醒词至少 1 个)跑通才能 commit。
   </div>
 </section>
 
 <section class="card">
-  <h2>🔗 依赖图(ASCII)</h2>
-  <div class="dep-graph"><span class="frontier">01</span> ─────────────► 11
-<span class="frontier">02</span> ──► 03 ──► 07 ──► 11
-              ├─► 10 ──► 11
-           ──► 04 ──► 07
-              ├─► 10
-           ──► 05 ──► 07
-           ──► 06 ──► 07
-<span class="frontier">08</span> ──► 09 ───────────► 11</div>
+  <h2>📊 本会话完整 commit 历史</h2>
+  <pre class="file-tree">f6c7723 <span class="new">[作息管家]</span> Round 9 收工报告 · to-tickets 完成 + 可交接给其他 agent
+5906378 <span class="new">[作息管家]</span> to-tickets · 11 vertical slice tickets 发布到 .scratch/skill-optimize/
+0f05b54 <span class="new">[作息管家]</span> to-spec · spec.md + 3 issues 发布到 .scratch/skill-optimize/
+633abc4 <span class="new">[作息管家]</span> Phase A-2 · setup-matt-pocock-skills 落地
+(中间 3 份 ADR 在之前会话里 commit)</pre>
 </section>
 
 <section class="card">
-  <h2>🚀 实施建议</h2>
-
-  <h3>🔵 Frontier(可立即开工,3 张独立 narrow)</h3>
-  <p>任何顺序:</p>
-  <ul style="font-size:13.5px;margin:6px 0 0 22px;line-height:1.8">
-    <li><b>01</b> — ADR-0001 落地(30 min · Tested-By exempt · 最容易拿 commit)</li>
-    <li><b>02</b> — Q5 Expand `_naming_path` 中文 command 参数化(关键 · 后续 03-06 的前提)</li>
-    <li><b>08</b> — Q6 Expand record_receipt 复制 prompt(独立 · 启动后续 09)</li>
-  </ul>
-
-  <h3>🟠 下一波(等 frontier)</h3>
-  <ul style="font-size:13.5px;margin:6px 0 0 22px;line-height:1.8">
-    <li><b>03</b> · <b>04</b> · <b>05</b> · <b>06</b> — Q5 Migrate 4 batch(等 02,可并行开工)</li>
-    <li><b>09</b> — Q6 Migrate 14 模板(等 08)</li>
-  </ul>
-
-  <h3>🔴 收尾</h3>
-  <ul style="font-size:13.5px;margin:6px 0 0 22px;line-height:1.8">
-    <li><b>07</b> — Q5 Contract 删英文 fallback(等 03-06)</li>
-    <li><b>10</b> — Q7 4 域分组(等 03-06)</li>
-    <li><b>11</b> — Phase B 验证(等 01/07/09/10)</li>
-  </ul>
-</section>
-
-<section class="card">
-  <h2>📂 落地路径</h2>
-  <pre style="background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:12px 16px;font-size:12px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0;color:#7ee787">作息管家/.scratch/skill-optimize/
-├── spec.md                                     (142 lines · spec)
-└── issues/
-    ├── 01-adr0001-help-sync.md                  (FRONTIER · narrow)
-    ├── 02-q5-expand-naming.md                   (FRONTIER · wide-expand)
-    ├── 03-q5-migrate-record.md                  (blocked by 02)
-    ├── 04-q5-migrate-plan.md                    (blocked by 02)
-    ├── 05-q5-migrate-receipt.md                 (blocked by 02)
-    ├── 06-q5-migrate-list-events.md             (blocked by 02)
-    ├── 07-q5-contract-naming.md                 (blocked by 03-06)
-    ├── 08-q6-expand-copy-prompt.md              (FRONTIER · narrow)
-    ├── 09-q6-migrate-copy-prompt.md             (blocked by 08)
-    ├── 10-q7-naming-grouping.md                 (blocked by 03-06)
-    └── 11-phase-b-validation.md                 (blocked by 01/07/09/10)</pre>
-</section>
-
-<section class="card">
-  <h2>📊 本次会话 commit 历史</h2>
-  <pre style="background:#1d1d1d;color:#f5f5f7;border-radius:10px;padding:12px 16px;font-size:12.5px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;overflow:auto;margin:10px 0">5906378 [作息管家] to-tickets · 11 vertical slice tickets 发布到 .scratch/skill-optimize/ (替代 3 张 Phase 切)
-0f05b54 [作息管家] to-spec · spec.md + 3 issues 发布到 .scratch/skill-optimize/
-633abc4 [作息管家] Phase A-2 · setup-matt-pocock-skills 落地
-(中间 3 份 ADR 在你之前会话里 commit)</pre>
+  <h2>🎯 可以收工? <span class="check yes" style="font-size:18px">✓ YES</span></h2>
+  <p><b>本会话的所有 plan 阶段已闭环</b>(grilling + setup + to-spec + to-tickets)。</p>
+  <p>实施阶段(11 tickets)是独立工作,任何 agent 都能根据 spec.md + ADR + tickets 继续。</p>
+  <p><b>会话内 8 决策 + 3 ADR + 11 tickets 完整,任何 agent 接手都不会迷失</b>。</p>
 </section>
 
 <footer class="footer">
-  to-tickets 完成 · Round 9 · 2026-07-28 · 由 opencode 调度<br/>
-  11 vertical slice tickets · 3 frontier(01/02/08) 可立即开工 · 等用户指令进入实施
+  Round 10 收工报告 · 2026-07-28 · 由 opencode 调度<br/>
+  本会话 plan 阶段完成 · 实施阶段可由其他 agent 继续 · 记得先 push
 </footer>
 
 </div>

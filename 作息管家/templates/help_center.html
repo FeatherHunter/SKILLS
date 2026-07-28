@@ -590,14 +590,18 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
     const btn = e.target.closest('.copy-btn');
     if (!btn) return;
     const text = btn.getAttribute('data-prompt') || '';
-    // 找到所属场景的唤醒词(对标卡路里):toast 显示"已复制 #6 查作息"
+    // 找到所属场景的唤醒词(对标卡路里):toast 显示"已复制 #6 查作息 · 单条添加"
+    // sc-block 自身只含 scenario_title,wake_word 在父级 .ww-block > .ww-name
     let wake = '';
     const scBlock = btn.closest('.sc-block');
     if (scBlock) {
-      const wwEl = scBlock.querySelector('.sc-ww-name');
-      if (wwEl) wake = wwEl.textContent.trim();
       const scTitleEl = scBlock.querySelector('.sc-title');
-      if (scTitleEl) wake += ' · ' + scTitleEl.textContent.trim();
+      if (scTitleEl) wake = scTitleEl.textContent.trim();
+      const wwBlock = scBlock.closest('.ww-block');
+      if (wwBlock) {
+        const wwNameEl = wwBlock.querySelector('.ww-name');
+        if (wwNameEl) wake = wwNameEl.textContent.trim() + ' · ' + wake;
+      }
     }
     showToast(wake || 'prompt');
 

@@ -32,20 +32,20 @@ test_matrix:
     expected_path: "cooking_render.py render <菜名> + 推 HTML"
     prompts:
       - variant: "同义"
-        user_input: "开火做宫保虾球"
-        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        user_input: "开火做辣椒炒肉"
+        expected_workflow: "调 cooking_render.py render 辣椒炒肉 → 推 HTML 做菜模式"
         skill_md_clear: false
         gap_analysis: "SKILL.md 唤醒词表只列'做菜模式'和'开始做菜'。'开火做'未收录,无最长匹配命中。fresh agent 走兜底 search.md,行为错误。"
 
       - variant: "口语"
-        user_input: "帮我下个厨,做宫保虾球哈"
-        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        user_input: "帮我下个厨,做辣椒炒肉哈"
+        expected_workflow: "调 cooking_render.py render 辣椒炒肉 → 推 HTML 做菜模式"
         skill_md_clear: false
         gap_analysis: "'下个厨'是'做菜'的口语,但 SKILL.md 未收录。'哈'语气词也无明确指引。fresh agent 走兜底 search.md。"
 
       - variant: "模糊"
-        user_input: "宫保虾球 走起"
-        expected_workflow: "调 cooking_render.py render 宫保虾球 → 推 HTML 做菜模式"
+        user_input: "辣椒炒肉 走起"
+        expected_workflow: "调 cooking_render.py render 辣椒炒肉 → 推 HTML 做菜模式"
         skill_md_clear: false
         gap_analysis: "'走起'= 启动/开干,但无唤醒词命中。fresh agent 走兜底 search.md → 列出菜,不会调 cooking_render。"
 
@@ -54,14 +54,14 @@ test_matrix:
     expected_path: "recipe_render.py render <菜名> + 推 HTML"
     prompts:
       - variant: "同义"
-        user_input: "搜下宫保虾球做法"
-        expected_workflow: "调 recipe_render.py render 宫保虾球 → 推 HTML"
+        user_input: "搜下辣椒炒肉做法"
+        expected_workflow: "调 recipe_render.py render 辣椒炒肉 → 推 HTML"
         skill_md_clear: false
         gap_analysis: "'搜下...做法'含两个唤醒词候选('搜索食谱'和'查看食谱')。SKILL.md R2 同长度时细分词优先,但'搜下'是'搜索'语义,易误命中。"
 
       - variant: "口语"
-        user_input: "那宫保虾球怎么做呢,给我看下"
-        expected_workflow: "调 recipe_render.py render 宫保虾球 → 推 HTML"
+        user_input: "那辣椒炒肉怎么做呢,给我看下"
+        expected_workflow: "调 recipe_render.py render 辣椒炒肉 → 推 HTML"
         skill_md_clear: true
         gap_analysis: "'怎么做' + '给我看下' → '查看食谱'语义清晰。最长匹配无歧义。"
 
@@ -98,20 +98,20 @@ test_matrix:
     expected_path: "shopping_render.py render <菜名> + 推 HTML"
     prompts:
       - variant: "同义"
-        user_input: "宫保虾球要买啥"
-        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        user_input: "辣椒炒肉要买啥"
+        expected_workflow: "调 shopping_render.py render 辣椒炒肉 → 推 HTML 采购清单"
         skill_md_clear: false
         gap_analysis: "'要买啥'≈ 采购意图,但 SKILL.md 唤醒词只列'生成清单'和'排除可选'。'要买啥'未收录,无最长匹配,走兜底 search.md → 行为错误。"
 
       - variant: "口语"
-        user_input: "帮我整下宫保虾球的购物单子"
-        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        user_input: "帮我整下辣椒炒肉的购物单子"
+        expected_workflow: "调 shopping_render.py render 辣椒炒肉 → 推 HTML 采购清单"
         skill_md_clear: false
         gap_analysis: "'整下' + '购物单子'都是口语变体,SKILL.md 未收录。走兜底 search.md → 行为错误。"
 
       - variant: "模糊"
-        user_input: "宫保虾球 采购"
-        expected_workflow: "调 shopping_render.py render 宫保虾球 → 推 HTML 采购清单"
+        user_input: "辣椒炒肉 采购"
+        expected_workflow: "调 shopping_render.py render 辣椒炒肉 → 推 HTML 采购清单"
         skill_md_clear: false
         gap_analysis: "'采购'是核心语义词,但 SKILL.md 唤醒词表里没有'采购'。无最长匹配命中,走兜底 search.md。"
 
@@ -120,20 +120,20 @@ test_matrix:
     expected_path: "history_manager.py add <菜名> + 评分/反馈"
     prompts:
       - variant: "同义"
-        user_input: "今天做了宫保虾球,4.5 星,虾很 Q"
-        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 4.5 --feedback '虾很 Q' --date today"
+        user_input: "今天做了辣椒炒肉,4.5 星,虾很 Q"
+        expected_workflow: "调 history_manager.py add 辣椒炒肉 --rating 4.5 --feedback '虾很 Q' --date today"
         skill_md_clear: true
         gap_analysis: "'记录做菜'4字命中。字段解析清晰。"
 
       - variant: "口语"
-        user_input: "哈,刚做完了宫保虾球,5 分,完美"
-        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 5.0 --feedback '完美' --date today"
+        user_input: "哈,刚做完了辣椒炒肉,5 分,完美"
+        expected_workflow: "调 history_manager.py add 辣椒炒肉 --rating 5.0 --feedback '完美' --date today"
         skill_md_clear: false
         gap_analysis: "'哈'语气词 + '刚做完'完整时间短语。唤醒词'记录做菜'4字仍在,但 fresh agent 解析时可能把'哈'误为 feedback。"
 
       - variant: "模糊"
-        user_input: "录下宫保虾球 4"
-        expected_workflow: "调 history_manager.py add 宫保虾球 --rating 4 --date today"
+        user_input: "录下辣椒炒肉 4"
+        expected_workflow: "调 history_manager.py add 辣椒炒肉 --rating 4 --date today"
         skill_md_clear: false
         gap_analysis: "'录下'≈ 记录,但 SKILL.md 未收录。'4'是评分但无'星/分'上下文。fresh agent 可能把'4'误为数量或次数。"
 
@@ -148,13 +148,13 @@ preview_summary:
     - pattern: "唤醒词变体未收录"
       count: 7
       examples:
-        - "开火做宫保虾球('开火做'未收录)"
-        - "帮我下个厨,做宫保虾球哈('下个厨'未收录)"
-        - "宫保虾球 走起('走起'未收录)"
-        - "宫保虾球要买啥('要买啥'未收录)"
-        - "帮我整下宫保虾球的购物单子('整下'/'购物单子'未收录)"
-        - "宫保虾球 采购('采购'未收录)"
-        - "录下宫保虾球 4('录下'未收录)"
+        - "开火做辣椒炒肉('开火做'未收录)"
+        - "帮我下个厨,做辣椒炒肉哈('下个厨'未收录)"
+        - "辣椒炒肉 走起('走起'未收录)"
+        - "辣椒炒肉要买啥('要买啥'未收录)"
+        - "帮我整下辣椒炒肉的购物单子('整下'/'购物单子'未收录)"
+        - "辣椒炒肉 采购('采购'未收录)"
+        - "录下辣椒炒肉 4('录下'未收录)"
     - pattern: "错字处理未说明"
       count: 1
       examples:

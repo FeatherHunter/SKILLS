@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>📊 当前进展 · 2026-07-28</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#E8F5E9 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3);margin-bottom:14px}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+  .stat{background:var(--card);border-radius:var(--radius-sm);padding:10px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .stat .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat .lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500;margin-top:2px}
+  .stat.commit{background:var(--success-soft)}
+  .stat.commit .num{color:var(--success)}
+  .stat.fix{background:var(--warn-soft)}
+  .stat.fix .num{color:var(--warn)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:14px 18px 12px;border-bottom:1px solid var(--separator)}
+  .card-header h2{font-size:16px;font-weight:700;margin:0}
+  .card-body{padding:14px 18px;font-size:13px;line-height:1.65;color:var(--text2)}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+  th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--separator)}
+  th{color:var(--text3);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px}
+  td{padding:8px 4px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:600;letter-spacing:0.3px}
+  .badge-done{background:var(--success-soft);color:var(--success)}
+  .badge-half{background:var(--warn-soft);color:var(--warn)}
+  .badge-pending{background:rgba(0,0,0,0.06);color:var(--text3)}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:20px}.stat-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>📊 当前进展 · 2026-07-28</h1>
+  <div class="hero-sub">私有大厨 PLAN.md 7 任务 + 5Q 修复 + 数据质量报告场景 1</div>
+  <div class="stat-row">
+    <div class="stat commit"><div class="num">18</div><div class="lbl">commit</div></div>
+    <div class="stat fix"><div class="num">9</div><div class="lbl">BUG 修复</div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">新增 HTML</div></div>
+    <div class="stat"><div class="num">26</div><div class="lbl">test 通过</div></div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>1 · 已完成 18 commit</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>阶段</th><th>任务</th><th>commit</th><th>状态</th></tr>
+      <tr><td>P0-1</td><td>F1 HELP 契约落地</td><td>5 commit(5dd3f9f/6900680/d8745d3/8aa904a/38f0773)</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>P0-2</td><td>F2 4 细分词(方向修正)</td><td>b10aa53</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>P0-3</td><td>F4 跨 Skill 路由</td><td>34f4494 + cc2a6b2</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>P0-4</td><td>FAT 自洽性预演</td><td>2e6028f</td><td><span class="badge badge-half">⚠️ 预演</span></td></tr>
+      <tr><td>P1-1</td><td>F3 变体管理</td><td>de40dac + 5b12fd4</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>P1-2</td><td>V2 4 类榜单 HTML</td><td>adfbae2 + 54edf71</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>P1-3</td><td>Test 自动化套件</td><td>11c87b9</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>7.3</td><td>系统性 3 致命 BUG 修复</td><td>64ee0a1</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>7.4</td><td>nutrition_manager --json</td><td>5a1cad4</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>7.5</td><td>Q1+Q2 tips/techniques 至少 1 条</td><td>13981f4</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>8</td><td>数据质量报告骨架</td><td>de6e197</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>8.1</td><td>data_view.html .hidden CSS</td><td>deefad1</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>8.2</td><td>报告重写(独立模板)</td><td>3fcd4c4</td><td><span class="badge badge-done">✅</span></td></tr>
+      <tr><td>8.3</td><td>报告模板 .hidden CSS</td><td>f10c40a</td><td><span class="badge badge-done">✅</span></td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>2 · 9 BUG 修复</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>BUG</th><th>严重度</th><th>状态</th></tr>
+      <tr><td>#1 HTML 无 section 锚点(F2 半成品)</td><td>🔴 致命</td><td>✅ b10aa53</td></tr>
+      <tr><td>#2 data_view.html 占位符 2 次</td><td>🔴 致命</td><td>✅ b10aa53</td></tr>
+      <tr><td>#3 render_data search 字段名不匹配</td><td>🔴 致命</td><td>✅ 64ee0a1</td></tr>
+      <tr><td>#4 relation_manager 不支持 --json</td><td>🔴 致命</td><td>✅ 64ee0a1</td></tr>
+      <tr><td>#5 recipe_manager 字段不统一</td><td>🔴 致命</td><td>✅ 64ee0a1</td></tr>
+      <tr><td>#6 alias_names 不渲染</td><td>🟠 严重</td><td>⏳ 未修</td></tr>
+      <tr><td>#7 render_data 错误处理</td><td>🟠 严重</td><td>⏳ 未修</td></tr>
+      <tr><td>#8 render_data 测试不全</td><td>🟠 严重</td><td>⏳ 未修</td></tr>
+      <tr><td>#9 测试假阳性</td><td>🟡 轻量</td><td>✅ 64ee0a1</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>3 · 私有大厨"内部工程"阶段完成</h2></div>
+  <div class="card-body">
+    <div class="callout" style="background:var(--success-soft);border-left:3px solid var(--success);padding:12px 14px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.65;color:var(--text2)">
+      <strong>✅ 私有大厨核心契约层(P0/P1)全部完成</strong> · 4 类榜单 HTML + HELP HTML + 变体管理 + 跨 Skill 路由 + 测试套件 + 13 manager JSON 兼容性(部分)
+    </div>
+    <ul style="font-size:13px;line-height:1.7;padding-left:22px">
+      <li><strong>数据质量报告</strong>已可运行:1 道菜评分 60/100,识别 tips + techniques 缺失 ✅</li>
+      <li><strong>26 pytest 用例</strong>全过(回归保护已建)</li>
+      <li><strong>Playwright 视觉验证</strong>已加 · 截图证实渲染正确</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>4 · 待做(按 ROI 排序)</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>优先级</th><th>任务</th><th>工作量</th><th>说明</th></tr>
+      <tr><td>🟠 P1</td><td>场景 2 · 批量编辑 batch_edit.html</td><td>半天</td><td>让 13 manager 第二次有产出(数据质量报告是第一次)</td></tr>
+      <tr><td>🟠 P1</td><td>Q3 argparse 重写(8 manager)</td><td>半天</td><td>治 Q3 #6 #7 #8;顺便修 #4 子命令命名</td></tr>
+      <tr><td>🟡 P2</td><td>剩余 13 manager 加 --json</td><td>半天</td><td>治本 L3 三段式闭合(nutrition 已修,剩 12)</td></tr>
+      <tr><td>🟡 P2</td><td>P0-4 FAT 真跑</td><td>2h</td><td>新会话,跑 references/test_prompts.yaml 15 prompt</td></tr>
+      <tr><td>🟢 P3</td><td>场景 3 · 数据导出/分享</td><td>按需</td><td>场景 3 不是优先</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>5 · 今日 commit 流水(今日 10 commit)</h2></div>
+  <div class="card-body">
+    <div style="background:var(--bg);padding:12px 14px;border-radius:8px;font-family:monospace;font-size:11px;color:var(--text2);line-height:1.55;overflow-x:auto">
+      <strong>a6ed591</strong> [chore] Phase 7.1: PLAN.md 全部 7 任务完工 🏁<br>
+      <strong>13981f4</strong> [fix] Q1+Q2 tips+techniques 至少 1 条<br>
+      <strong>64ee0a1</strong> [fix] 系统性修复 3 致命 BUG<br>
+      <strong>5a1cad4</strong> [fix] nutrition_manager --json<br>
+      <strong>de6e197</strong> [feat] 数据质量报告骨架<br>
+      <strong>deefad1</strong> [fix] data_view.html .hidden CSS<br>
+      <strong>3fcd4c4</strong> [feat] 数据质量报告重写(独立模板)<br>
+      <strong>f10c40a</strong> [fix] 报告模板 .hidden CSS<br>
+      <strong>[+ 2 居家管家 commit]</strong>(他人物理)<br>
+      <strong>[+ 1 文档 commit]</strong> Phase 阶段文档
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为阶段进度汇报 · 2026-07-28 · 私人大厨技能持续推进<br>
+  工作目录: <code>私家大厨/phase_status.html</code>
+</footer>
+
+</div>
+</body>
+</html>

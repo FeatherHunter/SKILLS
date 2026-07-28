@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>📋 接下来有哪些工作 · 2026-07-28</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#E3F2FD 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-sub{font-size:14px;color:var(--text3)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .card-header{padding:16px 20px 12px;border-bottom:1px solid var(--separator)}
+  .card-header h2{font-size:17px;font-weight:700;margin:0}
+  .card-body{padding:14px 20px 18px;font-size:13px;line-height:1.65;color:var(--text2)}
+  .callout{padding:12px 14px;border-radius:var(--radius-sm);margin:10px 0;font-size:13px;line-height:1.65}
+  .callout.key{background:var(--blue-soft);border-left:3px solid var(--blue);color:var(--text2)}
+  .callout.warn{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--text2)}
+  .callout.success{background:var(--success-soft);border-left:3px solid var(--success);color:var(--text2)}
+  .callout.danger{background:var(--danger-soft);border-left:3px solid var(--danger);color:var(--text2)}
+  .callout strong{font-weight:700}
+  code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--separator)}
+  th{color:var(--text3);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
+  td{padding:10px 6px;vertical-align:top}
+  td code{background:var(--bg);padding:1px 4px;border-radius:4px;font-size:11px}
+  .p1{background:rgba(255,59,48,0.08);font-weight:600}
+  .p2{background:rgba(255,149,0,0.05)}
+  .p3{background:rgba(0,122,255,0.05)}
+  .p4{background:rgba(0,0,0,0.03)}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:20px}.card-body{padding:12px 16px 16px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<section class="hero">
+  <h1>📋 接下来有哪些工作</h1>
+  <div class="hero-sub">2026-07-28 · 私有大厨技能 · 第一性原理排序 · 5 候选任务</div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>1 · P1 阶段后剩余 4 项辅助验收</h2></div>
+  <div class="card-body">
+    <div class="callout warn">
+      <strong>PLAN.md 底部 4 项,真实剩余:</strong>
+    </div>
+    <table>
+      <tr><th>验收项</th><th>状态</th><th>说明</th></tr>
+      <tr><td>每个 P0 commit 含 <code>Tested-By: fresh-agent-v1</code></td><td>❌ 历史 commit 改不了</td><td>改不了 brand commit。可在 CHANGELOG/PR 描述说明"已用 exempt + 对抗式审查"</td></tr>
+      <tr><td><code>git revert</code> 单个 P0 commit 不影响其他</td><td>❌ 没真测</td><td>可现在真测每个 P0 commit 单独 revert + 跑 pytest</td></tr>
+      <tr><td>CHANGELOG.md 追加本次路线图版本段</td><td>✅ b581481(已加 v3.5 段)</td><td>—</td></tr>
+      <tr><td><code>私家大厨.html</code> 镜像同步</td><td>✅ 已基本同步(36 wake_word tag · 跨 Skill 路由 3 处 · render_data 6 处)</td><td>细节复核 OK</td></tr>
+    </table>
+    <div class="callout key">
+      <strong>实际可做:</strong>第 2 项(<code>git revert</code>真测)——这是 PLAN.md 唯一未做 + 可做的
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>2 · 5 候选任务(按 ROI 排序)</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>优先级</th><th>任务</th><th>工作量</th><th>第一性原则评估</th><th>用户感知</th></tr>
+      <tr class="p1">
+        <td>🔴 P1</td>
+        <td><strong>① git revert 真测</strong>(每个 P0 commit 单独 revert + 跑 pytest)</td>
+        <td>~30 分钟</td>
+        <td>收尾 P1 阶段自检</td>
+        <td>低(内部验证)</td>
+      </tr>
+      <tr class="p2">
+        <td>🟠 P2</td>
+        <td><strong>② 场景 2 · 批量编辑 batch_edit.html</strong></td>
+        <td>~半天</td>
+        <td>让 13 manager 第二次有产出(场景 1 = 数据质量报告)· 复用"复制 prompt"模式</td>
+        <td><strong>高</strong>(场景 2 实用性最高)</td>
+      </tr>
+      <tr class="p2">
+        <td>🟠 P2</td>
+        <td><strong>③ Q3 argparse 重写(8 manager)</strong></td>
+        <td>~半天</td>
+        <td>治本 L3 三段式 · 顺手修 #7 #8 · 提供 --help 友好体验</td>
+        <td>中(CLI 用户)</td>
+      </tr>
+      <tr class="p3">
+        <td>🟡 P3</td>
+        <td><strong>④ P0-4 FAT 真跑(新会话)</strong></td>
+        <td>~2h</td>
+        <td>验证 P1-1 改完后通过率真到 95% · 本会话无法做</td>
+        <td>中(回归验证)</td>
+      </tr>
+      <tr class="p4">
+        <td>🟢 P4</td>
+        <td><strong>⑤ 场景 3 · 数据导出/分享</strong></td>
+        <td>按需</td>
+        <td>锦上添花 · 场景 1+2 完成后才有意义</td>
+        <td>低</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>3 · 我建议的推进顺序</h2></div>
+  <div class="card-body">
+    <div class="callout success">
+      <strong>推荐顺序(按 ROI + 第一性):</strong>
+    </div>
+    <ol style="font-size:14px;line-height:1.8;padding-left:22px;margin-top:8px">
+      <li><strong>① P1 阶段收尾</strong>(30 分钟) — git revert 真测 + 标注 4 项验收</li>
+      <li><strong>② 场景 2 批量编辑</strong>(半天) — 用户感知最高 · 13 manager 第二次产出</li>
+      <li><strong>③ Q3 argparse 重写</strong>(半天) — 治本 L3 · 顺便修 #7 #8</li>
+      <li><strong>④ P0-4 FAT 真跑</strong>(新会话,2h) — 验证 P1-1 效果</li>
+      <li><strong>⑤ 场景 3 导出</strong>(按需) — 锦上添花</li>
+    </ol>
+    <div class="callout key" style="margin-top:14px">
+      <strong>立即可做(本会话):</strong>① ② ③(可今天做完)
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>4 · 风险评估(按"认真商业态度")</h2></div>
+  <div class="card-body">
+    <table>
+      <tr><th>任务</th><th>风险</th><th>缓解</th></tr>
+      <tr><td>① git revert 测试</td><td>🟢 低 — 纯 git 操作,可逆</td><td>测试前做备份分支</td></tr>
+      <tr><td>② 场景 2 批量编辑</td><td>🟡 中 — 写新 HTML 模板 + 复制 prompt 逻辑</td><td>分阶段提交,每步 Playwright 验证</td></tr>
+      <tr><td>③ Q3 argparse 重写</td><td>🟠 中高 — 8 个 manager 改造,可能引入新 BUG</td><td>必须先写完整 unit test 再改代码</td></tr>
+      <tr><td>④ P0-4 FAT 真跑</td><td>🟢 低 — 跑现成测试语料</td><td>新会话即可</td></tr>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-header"><h2>5 · 等你拍板</h2></div>
+  <div class="card-body">
+    <div class="callout key">
+      <strong>选项 A(推荐):先 ① → ② → ③ → ④</strong>
+    </div>
+    <div class="callout warn">
+      <strong>选项 B:先 ② 场景 2(用户感知最强)</strong>
+    </div>
+    <div class="callout warn">
+      <strong>选项 C:暂停大改动,先做 ① P1 收尾 + 等新会话跑 ④ FAT</strong>
+    </div>
+    <div class="callout warn">
+      <strong>选项 D:你来定其他顺序</strong>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  本 HTML 为后续工作评估 · 第一性原则排序 · 2026-07-28<br>
+  工作目录: <code>私家大厨/phase_next.html</code>
+</footer>
+
+</div>
+</body>
+</html>

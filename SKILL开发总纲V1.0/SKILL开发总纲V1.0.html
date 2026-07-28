@@ -71,7 +71,7 @@
   <li><a href="#p3">第三部分 · 触发词设计 v2</a></li>
   <li><a href="#p4">第四部分 · 可视化与注入 v2</a></li>
   <li><a href="#p5">第五部分 · 工程仪式</a></li>
-  <li><a href="#p6">第六部分 · 6+1 个不可违背的钩子</a></li>
+  <li><a href="#p6">第六部分 · 7 个不可违背的钩子</a></li>
   <li><a href="#p7">第七部分 · 3 个可加载资产</a></li>
   <li><a href="#p8">第八部分 · 自我检查(动手前)</a></li>
   <li><a href="#p9">第九部分 · 附录 · 演化规则(RULE Forms)</a></li>
@@ -142,7 +142,7 @@
 
 <p><span class="pill">v2 资产化</span> v1 = 原则 + 案例,AI 每次重新设计 → 反复返工。v2 = <strong>可加载资产 + 决策树</strong>。</p>
 
-<h3>11 原则(速览)</h3>
+<h3>13 原则(速览)</h3>
 <table>
 <tr><th>#</th><th>原则</th><th>要点</th></tr>
 <tr><td>0</td><td>何时不做</td><td>单条 CRUD / 后台管理 / 数据采集 — 不做</td></tr>
@@ -156,7 +156,8 @@
 <tr><td>8</td><td>8 反模式</td><td>--force / except:pass / 魔法字符串 / 紧耦合…</td></tr>
 <tr><td>9</td><td>命名不带版本</td><td><code>review_report.html</code> ✅ <code>review_v2.html</code> ❌</td></tr>
 <tr><td>10</td><td><span class="star">⭐ HTML 单工铁律(最高)</span></td><td>HTML 无反通 LLM 路径,过程型必须设计"复制 prompt"</td></tr>
-<tr><td>11</td><td><span class="star">⭐ HTML-First(必须)</span></td><td>SKILL 命中后必须 invoke HTML 工作流,文字答是 fail mode</td></tr>
+<tr><td>11</td><td><span class="star">⭐ HTML-First(必须,与原则 10 互补)</span></td><td>SKILL 命中后必须 invoke HTML 工作流,文字答是 fail mode</td></tr>
+<tr><td>12</td><td>HTML 输出路径约定</td><td>12.A 数据/过程 + 12.B HELP,路径形态 + 冲突不覆盖</td></tr>
 </table>
 
 <p>→ 详见 <a class="md-link" href="04-可视化与注入v2.md">04-可视化与注入v2.md</a></p>
@@ -181,7 +182,7 @@
 <p>→ 详见 <a class="md-link" href="05-工程仪式.md">05-工程仪式.md</a></p>
 
 <!-- ========== P6: 6 钩子 ========== -->
-<h2 id="p6">第六部分 · 6 个不可违背的钩子</h2>
+<h2 id="p6">第六部分 · 7 个不可违背的钩子</h2>
 
 <p>这 6 条是总纲的<strong>硬规则</strong>。违反即视为改动未准备好。</p>
 

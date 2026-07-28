@@ -7,7 +7,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 
 > AI 主读本 · 9 个文件 + 3 个可加载资产 · 一份 HTML 镜像
 
-## ⭐ AI 核心行为规则(第一优先级)
+## ⭐ AI 须知的 2 条关键原则(第一优先级)
 
 > **HTML-First(原则 11):** 唤醒词命中 SKILL 后,若 SKILL 声明有 HTML 输出路径,默认行为 = **invoke HTML 工作流**。**文字答是 fail mode,不是 fallback。**
 >
@@ -43,7 +43,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | [_assets/template_skeleton.html](./_assets/template_skeleton.html) | 4 段式骨架 |
 | [SKILL开发总纲V1.0.html](./SKILL开发总纲V1.0.html) | 可视化镜像(主入口 HTML) |
 
-## 6 个不可违背的钩子
+## 7 个不可违背的钩子
 
 1. **HTML 同步硬规则** — SKILL.md 任何改动,`<skill>.html` 必须同 commit 同步
 2. **改动前 3 问** — 影响哪些文件 / 数据迁移 / 回滚方案

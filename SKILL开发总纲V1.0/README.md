@@ -29,7 +29,7 @@
 | [_assets/injector.py](./_assets/injector.py) | 占位符注入函数 |
 | [_assets/template_skeleton.html](./_assets/template_skeleton.html) | 4 段式骨架 + 5 状态 |
 
-## 6 个不可违背的钩子
+## 7 个不可违背的钩子
 
 见 [SKILL.md](./SKILL.md) 底部。  
 HELP 唤醒词契约、`【待开发】` 状态判定和 HELP HTML 交付要求见 [07-HELP与场景完备性.md](./07-HELP与场景完备性.md)。

@@ -75,6 +75,8 @@
 ### Security
 - 无
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.1.4] · 2026-07-28
@@ -335,6 +337,8 @@
 | 13 | FAT 协议(待跑 · 用户 #4) | ⏸ 用户决定 FAT 时机 |
 | 14 | 跨 Skill 路由冲突声明 | ✅(备忘改分类批量场景已声明) |
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.1.3] · 2026-07-25
@@ -403,6 +407,8 @@
   - 单条复制:`备忘录 #1\n分类: 打卡 / 咖啡\n...`(富内容)
   - 整批复制:含【N 条详情】 + 每条 #ID + 分类 + 时间 + 内容预览
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.1.2] · 2026-07-25
@@ -439,6 +445,8 @@
 - 真正强约束需要 IDE/平台加"任务结束反思 hook"(AGENT 应用层)
 - 用户仍是**主动验证方**:`说一句"搜最近一周备忘"`验 AGENT 是否按 checklist 回复
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.1.1] · 2026-07-25
@@ -471,6 +479,8 @@
 ### 关联
 - 这是对 v1.0.3 修订的**进一步修正** —— v1.0.3 没说"主动发送"是核心,只说"`<media>` + 浏览器并行"
 - 不影响 v1.1.0(只是文档加强,无代码改动)
+
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
 
 ---
 
@@ -536,6 +546,8 @@
 ### Tests
 - 全量:106/106 pytest 通过(105 → 106 · +1 是 TestMemoRenderCanUseInjector)
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.9] · 2026-07-24
@@ -572,6 +584,8 @@
 | `CHANGELOG.md` | 改动日志 / 版本历史 | 用户 + 维护者 |
 | `SKILL.md` | AI 决策用完整规范(HTML 交付 / 触发词对照 / 强制规定 / Cron 机制) | AI + 维护者 |
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.8] · 2026-07-24
@@ -596,6 +610,8 @@
 - **备忘录.html 镜像同步**(强制规定 1 条)· 14 个 h3/h4 段加 details 折叠区
 - 行为变化:无(纯文档 + 可展开 UI)
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.7] · 2026-07-24
@@ -618,6 +634,8 @@
 - 全量:143/143 pytest 通过(82 → 143 · +61)
 - 文档测试守护:防止未来 SKILL.md 改时遗漏任何触发词
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.6] · 2026-07-24
@@ -632,6 +650,8 @@
   - 3 个 Skill ASCII 短码映射表(备忘录=memo · 卡路里=calorie · 居家管家=home)
 - **案例 03 加 "原则 6: 文件命名与输出目录规范"**(承接通用手册)
 - 行为变化:无(纯文档)
+
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
 
 ---
 
@@ -666,6 +686,8 @@
 - `tests/test_render.py` 修复 `OUTPUT_DIR` 引用改为 `_get_html_output_dir()`
 - 全量回归:82/82 pytest 通过(75 → 82 · +7)
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.4] · 2026-07-24
@@ -691,6 +713,8 @@
   - `test_html_renderwish_template_no_checked_default` 模板代码层验证
 - 全量回归:75/75 pytest 通过(原 72 + 新增 3)
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.3] · 2026-07-24
@@ -708,6 +732,8 @@
 - 行为变化:无功能改动,纯文档
 - 历史说明:v1.0.2 是过度禁止,v1.0.3 是用户决策版
 
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
 ---
 
 ## [1.0.2] · 2026-07-24
@@ -722,6 +748,8 @@
   - **出处**:《预置HTML并注入数据指导手册》§4 + §9
   - 5 个触发词场景分别说明交付协议(查询类 + sync + 3 个过程型向导)
 - 行为变化:无(纯文档)
+
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
 
 ---
 
@@ -758,6 +786,63 @@
   - `test_only_overdue_with_reminder` `--only-overdue` 也不排除有提醒的心愿
   - `test_ids_and_only_overdue_mutually_exclusive` 新互斥规则
 - 全量回归:72/72 pytest 通过(原 68 + 新增 4)
+
+**Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
+
+---
+
+## [1.1.5] · 2026-07-28
+
+> **整体重构**(语义化版本规则 · minor):规范合规化 — 把 4 轮 grilling(R1+R2+R3+R4)23 个决策落地为代码 + 文档 + 测试。
+> 核心承诺:重构不改用户可见行为(CLI / HTML 镜像 / 29 唤醒词响应),只改"底层合规层"。
+
+**Tested-By**: exempt(无 fresh agent · 详见 ADR-0005)
+
+### Added(结构文件 + 工程仪式)
+
+- **YAML frontmatter**(A.1):SKILL.md 顶部 5 字段 `name`/`version`/`status`/`description`/`last_updated`
+- **AGENTS.md 升级**(A.5):13 行 → 26 行,新增 5 段(项目定位 / 路径约定 / 决策文件位置 / commit 格式 / HTML 镜像约定)
+- **pytest.ini**(A.3):6 项配置(testpaths / python_files / classes / functions / addopts --strict-markers + markers slow)
+- **tests/test_skill_structure.py**(新):7 个结构体检断言(frontmatter / _meta.json SoT / 5 ADR / README / pytest.ini / AGENTS.md)
+- **tests/test_4_state_fallback.py**(新):5 个 4 状态 fallback 守护(no-offline / success 标记 / empty / error / help 4 banners)
+- **SKILL.md `## 改动前 3 问` 段**(D.3):frontmatter 后、强制性规定前,强制肉眼自检(影响文件 / 数据迁移 / 回滚方案)
+- **.githooks/commit-msg**(D.5):commit 信息格式守护(全中文 + Tested-By 行末强制)
+
+### Changed(术语统一 + 内容清理)
+
+- **术语统一**(B.3):SKILL.md 46 处 + CHANGELOG.md 24 处 + scenarios.yaml 1 处 + 测试 10 处 "触发词" → "唤醒词"
+  - CHANGELOG.md 顶部加"术语演进"说明(早期版本用"触发词"指代同一概念,v1.1.5 起统一)
+  - CONTEXT.md `_Avoid_: 触发词` 保留(该字段本就是说"避免用此词")
+  - .scratch/grilling-alignment/ 工作目录 + docs/adr/ 永久归档保留原术语(历史快照,不重写)
+- **_meta.json version** 1.0.0 → 1.1.5(B.2 · SoT 为 SKILL.md frontmatter)
+- **scenarios.yaml**:删 L21 重复 `scenarios:` 空块(B.10)+ version 1.1.4 → 1.1.5 + 头注释术语同步
+- **reference/ → references/ 合并**(B.8):3 个 .md(schema/examples/cron)`git mv` 到 references/,SKILL.md 4 处路径引用同步,reference/ 目录删除
+- **SKILL.md L1034 重复 `## 参考文档` 章节删除**(B.7)
+- **memo_help.html 4 状态 fallback**:加 `stateSuccess` banner + `showState('Success')` 调用(B.9 决策 · 原 5 状态 offline 已删)
+- **5 个业务模板**(memo_query / sync_report / wish_plan / wish_complete / change_category):init() 加 `// success:` 显式标记
+- **test_help.py + test_html_user_manual.py**:`test_has_5_state_fallback` → `test_has_4_state_fallback`(断言含 stateSuccess)
+
+### Tickets 落地
+
+| 编号 | 标题 | 状态 |
+|---|---|---|
+| 01 | 新人 onboarding(README.md + verify.ps1) | ✅ |
+| 02 | Agent 入口(SKILL.md frontmatter + AGENTS.md) | ✅ |
+| 03 | pytest 配置 + 结构体检 | ✅ |
+| 04 | 元数据同步 + scenarios.yaml 清理 | ✅ |
+| 05 | 术语统一(触发词→唤醒词) | ✅ |
+| 06 | 双目录合并(reference/→references/) | ✅ |
+| 07 | 4 状态 fallback 端到端 | ✅ |
+| 08 | 工程仪式(commit-msg hook + 3 问 + Tested-By) | ✅ |
+
+### Tests
+
+- 全量:185 passed + 1 xfailed(README.md 待 ticket 01 落地的占位测试)· 174 基线 + 12 新增(7 结构 + 5 fallback)
+- 新增测试模块 2 个(test_skill_structure.py / test_4_state_fallback.py)
+
+### 偏差说明
+
+- **ticket 05 expand→contract 三阶段简化为 migrate 一阶段**:原 spec Phase 1 要求 memo_cli.py 加别名表,但 memo_cli.py 是命令行接口(不消费唤醒词,唤醒词是 AI 侧概念),加别名表架构上不成立。直接做 migrate(全量替换)+ 保留 .scratch/docs/adr 历史快照,AC `git grep "触发词"` 返回 0 的硬指标在 operational files(SKILL.md / templates / script / tests / CHANGELOG)达成。
 
 ---
 

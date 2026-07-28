@@ -1,0 +1,64 @@
+#!/bin/bash
+# .githooks/commit-msg
+# 备忘录 commit 信息格式守护(ADR-0003 全中文 + ADR-0005 Tested-By)
+# 拒绝非中文格式 + 缺 Tested-By 行末的 commit
+#
+# 启用:git config core.hooksPath .githooks(本仓库已设)
+# 跳过(紧急):git commit --no-verify(不推荐,违反 ADR-0005)
+
+set -e
+
+msg_file="$1"
+msg=$(cat "$msg_file")
+
+# 跳过 merge / revert / 修正(自动生成,不强制格式)
+first_line=$(echo "$msg" | head -n1)
+case "$first_line" in
+    "Merge "*|"Revert "*) exit 0 ;;
+esac
+
+errors=()
+
+# 检查 1:第一行必须含中文字符(全中文格式硬规则 ADR-0003)
+# 允许的格式:[<skill>] <主题> 或 <类型>: <skill> <主题>
+# 用 Python 检测 CJK 字符(跨 locale 可靠 · 本仓库 Python 必装)
+PY=$(command -v python3 2>/dev/null || command -v python 2>/dev/null)
+if [ -z "$PY" ]; then
+    # 兜底:无 Python 时用 byte-level 检测(任何字节 ≥ 0x80 = 非ASCII = 可能中文)
+    if ! echo "$first_line" | LC_ALL=C grep -q '[^[:print:]]'; then
+        errors+=("第一行必须含中文字符(ADR-0003 全中文硬规则 · 且无 python 兜底,byte-level 检测)")
+    fi
+else
+    if ! echo "$first_line" | $PY -c "import sys; sys.exit(0 if any(0x4e00 <= ord(c) <= 0x9fff for c in sys.stdin.read()) else 1)"; then
+        errors+=("第一行必须含中文字符(ADR-0003 全中文硬规则)")
+    fi
+fi
+
+# 检查 2:禁用英文类型前缀(fix: docs: feat: chore: 等和 fix(...) docs(...))
+if echo "$first_line" | grep -qE '^(fix|docs|feat|chore|test|refactor|build|ci|style|perf)(\(|: )'; then
+    errors+=("禁用英文类型前缀(ADR-0003 · fix:/docs:/feat:/chore: 等和 fix(...)/docs(...) 等)")
+fi
+
+# 检查 3:必须含 Tested-By 行(ADR-0005 · v1.1.5 起强制)
+if ! echo "$msg" | grep -qE '^Tested-By:'; then
+    errors+=("缺 Tested-By 行(ADR-0005 · v1.1.5 起强制 · 例:Tested-By: exempt(无 fresh agent · 详见 ADR-0005))")
+fi
+
+# 输出错误
+if [ ${#errors[@]} -gt 0 ]; then
+    echo ""
+    echo "❌ commit 信息格式检查失败:"
+    for e in "${errors[@]}"; do
+        echo "  · $e"
+    done
+    echo ""
+    echo "合规格式示例:"
+    echo "  [备忘录] v1.1.5 · <主题> · <细节(可选)>"
+    echo "  Tested-By: exempt(无 fresh agent · 详见 ADR-0005)"
+    echo ""
+    echo "详见 docs/adr/0003-b-execution-fallback.md + docs/adr/0005-d-exemptions-and-rituals.md"
+    echo "(紧急情况可用 git commit --no-verify 跳过,不推荐)"
+    exit 1
+fi
+
+exit 0

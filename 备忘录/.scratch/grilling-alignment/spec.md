@@ -69,7 +69,20 @@ B 内容一致性 ──► A 结构合规 ──► D 工程仪式 ──► C 
 | D | ✅ 5/5 (R4) | ⏳ 待执行 | ⏳ 2 commits |
 | C | ⏳ 大部分已在 R1-R2 完成 | — | 归入"Out of Scope" |
 
-**已发布 issue**: `issues/01-memo-skill-v1.1.5-refactor-spec.md` (`ready-for-agent`)
+**已发布 issue**: `issues/00-memo-skill-v1.1.5-refactor-spec.md` (parent-spec · `ready-for-agent`)
+
+**已发布 tickets**(`issues/01-...08-...md`,8 个全部 `ready-for-agent`):
+
+| 编号 | 标题 | Blocked by |
+|---|---|---|
+| 01 | 新人 onboarding 完整路径 | — |
+| 02 | Agent 入口(SKILL.md frontmatter + AGENTS.md) | — |
+| 03 | pytest 配置 + 结构体检 | — |
+| 04 | 元数据同步 + scenarios.yaml 清理 | — |
+| 05 | 术语统一(expand-contract 三阶段) | 02, 04 |
+| 06 | 双目录合并(expand-contract 两阶段) | — |
+| 07 | 4 状态 fallback 端到端 | — |
+| 08 | 工程仪式落地(commit hook + 3 问 + Tested-By) | 02, 05 |
 
 ## 工作目录
 

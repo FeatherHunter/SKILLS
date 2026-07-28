@@ -75,11 +75,19 @@
 | R5 | C 架构合规(5 层自检 / injector / 跨 Skill) | 5(可能跳过 — R1-R2 已涵盖大部分) |
 | to-spec | 整体重构 spec 输出 | — |
 
-## 已发布 spec
+## 已发布 spec + tickets
 
-| Issue | 标题 | 阶段 | Triage |
-|---|---|---|---|
-| `issues/01-memo-skill-v1.1.5-refactor-spec.md` | 备忘录 Skill v1.1.5 整体重构(规范合规化) | B+A+D | ready-for-agent |
+| 编号 | 标题 | 阶段 | 角色 | Triage | Blocked by |
+|---|---|---|---|---|---|
+| `00-...spec.md` | 备忘录 Skill v1.1.5 整体重构 | B+A+D | parent-spec | ready-for-agent | — |
+| `01-...onboarding-path.md` | 新人 onboarding 完整路径 | A-1 | ticket | ready-for-agent | — |
+| `02-...agent-entry-point.md` | Agent 入口(SKILL.md frontmatter + AGENTS.md) | A-1 | ticket | ready-for-agent | — |
+| `03-...pytest-config.md` | pytest 配置 + 结构体检 | A-1 | ticket | ready-for-agent | — |
+| `04-...metadata-scenarios.md` | 元数据同步 + scenarios.yaml 清理 | B-3 | ticket | ready-for-agent | — |
+| `05-...terminology.md` | 术语统一(expand-contract 三阶段) | B-2 | ticket(wide refactor) | ready-for-agent | 02, 04 |
+| `06-...directory-merge.md` | 双目录合并(expand-contract 两阶段) | B-3 | ticket | ready-for-agent | — |
+| `07-...4-state-fallback.md` | 4 状态 fallback 端到端 | B-4 | ticket(wide refactor) | ready-for-agent | — |
+| `08-...engineering-rituals.md` | 工程仪式落地(commit hook + 3 问 + Tested-By) | D-1 | ticket | ready-for-agent | 02, 05 |
 
 **测试入口决策**(to-spec 第 2 步):
 - 主: CLI 子进程(`tests/test_help.py` 已用,扩到所有动态行为测试)

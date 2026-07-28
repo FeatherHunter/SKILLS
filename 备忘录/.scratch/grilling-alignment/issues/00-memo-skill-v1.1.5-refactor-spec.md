@@ -6,7 +6,8 @@ created: 2026-07-28
 priority: high
 grilling: R1+R2+R3+R4 (23 决策已凝固)
 commit: bb7c64b(B-0 决策入库)
-issue: 01
+issue: 00
+role: parent-spec
 labels: [needs-agent, ready-for-agent, refactor, spec-compliance]
 ---
 

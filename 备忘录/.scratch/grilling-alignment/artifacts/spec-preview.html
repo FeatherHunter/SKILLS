@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 Skill v1.1.5 · Issue 01 Spec 预览</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+
+  h1 { font-size: 22px; margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 18px; margin: 28px 0 10px; color: var(--accent); }
+  h3 { font-size: 15px; margin: 18px 0 8px; color: var(--muted); font-weight: 600; }
+  h4 { font-size: 14px; margin: 14px 0 6px; color: var(--muted); font-weight: 600; }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .frontmatter {
+    background: #1d1d1f;
+    color: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+  .frontmatter .key { color: #79c0ff; }
+  .frontmatter .val { color: #ffa657; }
+
+  ol, ul { padding-left: 24px; margin: 8px 0; }
+  li { margin: 4px 0; font-size: 14px; }
+
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; background: #fafafa; }
+  tr:last-child td { border-bottom: none; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .check { color: var(--good); font-weight: 700; }
+  .pending { color: var(--warn); font-weight: 700; }
+  .skip { color: var(--muted); }
+  .small { font-size: 12px; color: var(--muted); }
+
+  blockquote {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>📋 备忘录 Skill v1.1.5 · Issue 01 Spec</h1>
+  <div class="sub">整体重构(规范合规化) · ready-for-agent · bb7c64b 已入库 · 23 决策已凝固</div>
+  <div class="badges">
+    <span class="badge good">triage: ready-for-agent</span>
+    <span class="badge">issue: 01</span>
+    <span class="badge muted">2026-07-28</span>
+    <span class="badge good">commit bb7c64b ✓</span>
+  </div>
+</header>
+
+<div class="card">
+  <h3 style="margin-top:0;">frontmatter</h3>
+  <div class="frontmatter">
+<span class="key">triage:</span> <span class="val">ready-for-agent</span>
+<span class="key">title:</span> <span class="val">备忘录 Skill v1.1.5 整体重构(规范合规化)</span>
+<span class="key">status:</span> <span class="val">open</span>
+<span class="key">created:</span> <span class="val">2026-07-28</span>
+<span class="key">priority:</span> <span class="val">high</span>
+<span class="key">grilling:</span> <span class="val">R1+R2+R3+R4 (23 决策已凝固)</span>
+<span class="key">commit:</span> <span class="val">bb7c64b(B-0 决策入库)</span>
+<span class="key">issue:</span> <span class="val">01</span>
+<span class="key">labels:</span> <span class="val">[needs-agent, ready-for-agent, refactor, spec-compliance]</span>
+  </div>
+</div>
+
+<h1>Problem Statement</h1>
+<div class="card">
+<p>备忘录 skill 当前 v1.1.4 已功能完整(174 pytest 通过 / 29 唤醒词覆盖 / 14 项 §07 自检全 ✅),但与 <code>SKILL开发总纲V1.0</code> 比对存在 <strong>50 项规范差距 + 30+ 项不明确</strong>:</p>
+<ol>
+  <li><strong>术语不统一</strong> — SKILL.md 用"触发词"(91 处)但总纲用"唤醒词";"用例"和"场景"混用;"4 元组"vs"4 部分"撞车;"HTML 镜像 / 用户手册 / HELP HTML"同一文件三个名字。AI agent 阅读时易混淆。</li>
+  <li><strong>必备结构文件缺失</strong> — SKILL.md 无 YAML frontmatter;无 <code>CONTEXT.md</code>;无 <code>docs/adr/</code>;无 <code>README.md</code>;无 <code>pytest.ini</code>;无 <code>.scratch/</code>。自动化工具无法消费。</li>
+  <li><strong>内容噪音</strong> — <code>_meta.json</code> 自 v1.0.0 起未跟进,落后 14 版本;SKILL.md L927 与 L1034 <code>## 参考文档</code> 章节重复;<code>reference/</code> + <code>references/</code> 双目录;<code>scenarios.yaml</code> L21+L23 重复 <code>scenarios:</code> 键。</li>
+  <li><strong>工程仪式缺失</strong> — FAT 从未跑;commit 无 <code>Tested-By</code>;SKILL.md 无"改动前 3 问"段;无豁免矩阵。</li>
+  <li><strong>架构合规部分缺失</strong> — 5 层自检清单覆盖不全;跨 Skill 路由声明不完整。</li>
+</ol>
+<p><strong>用户痛点</strong>: skill 功能 OK 但"不规范",后续 onboarding / AI agent 接入 / 自动化脚本消费都有摩擦,且每次新决策都缺乏可审计归档。</p>
+</div>
+
+<h1>Solution</h1>
+<div class="card">
+<p>执行 v1.1.5 整体重构,将 4 轮 grilling(R1+R2+R3+R4)产出的 <strong>23 个决策</strong>分阶段 commit 落地:</p>
+<table>
+  <tr><th>阶段</th><th>决策数</th><th>主要动作</th><th>落地形式</th></tr>
+  <tr><td><strong>B 内容一致性</strong></td><td>13</td><td>术语统一(7 处) / 内容清理</td><td>4 commit</td></tr>
+  <tr><td><strong>A 结构合规</strong></td><td>5</td><td>6 个新文件补齐 + AGENTS.md 升级</td><td>1 commit</td></tr>
+  <tr><td><strong>D 工程仪式</strong></td><td>5</td><td>ADR-0005 + Tested-By + 3 问 + 豁免矩阵</td><td>2 commit</td></tr>
+</table>
+<p><strong>已完成</strong>: 决策入库 commit <code>bb7c64b</code>(B-0 · 13 文件 / +2913 行)。</p>
+<p><strong>待执行</strong>: 7 个 commit(分阶段执行,每个 commit 都通过 174 pytest 守护)。</p>
+<p><strong>总验收</strong>: <code>verify.ps1</code> R5 后完整化 + 174 pytest 全过 + 0 现有功能回归。</p>
+<p><strong>核心承诺</strong>: 重构不改用户可见行为(CLI 子命令 / HTML 镜像 / 29 唤醒词响应),只改"底层合规层"。</p>
+</div>
+
+<h1>User Stories</h1>
+<div class="card">
+<p><em>50 个 user stories,分 6 个 actor 维度</em></p>
+
+<h3>备忘录主用户(17 条)</h3>
+<ol>
+  <li>As a 备忘录主用户, I want 用口语"记备忘"立刻触发记录, so that 不需要学命令格式。</li>
+  <li>As a 备忘录主用户, I want 按时间搜备忘(今天 / 昨天 / 本周 / 上周 / 本月 / 上月), so that 不用记具体日期。</li>
+  <li>As a 备忘录主用户, I want 给备忘打分类(工作 / 生活 / 学习 / 灵感), so that 后续检索清晰。</li>
+  <li>As a 备忘录主用户, I want 给分类加子分类, so that 层级结构清晰。</li>
+  <li>As a 备忘录主用户, I want 改备忘内容, so that 修正过去记录。</li>
+  <li>As a 备忘录主用户, I want 删备忘(私密 / 误录), so that 隐私和整洁。</li>
+  <li>As a 备忘录主用户, I want 改备忘的分类(事后归类)。</li>
+  <li>As a 备忘录主用户, I want 批量改分类。</li>
+  <li>As a 备忘录主用户, I want 设提醒(到期通知)。</li>
+  <li>As a 备忘录主用户, I want 查已提醒过的备忘。</li>
+  <li>As a 备忘录主用户, I want 记心愿(未来要做的)。</li>
+  <li>As a 备忘录主用户, I want 心愿排期。</li>
+  <li>As a 备忘录主用户, I want 完成心愿。</li>
+  <li>As a 备忘录主用户, I want 查打卡(连续 / 间断)。</li>
+  <li>As a 备忘录主用户, I want 记情绪。</li>
+  <li>As a 备忘录主用户, I want 查情绪趋势。</li>
+  <li>As a 备忘录主用户, I want 备忘录数据跨设备同步。</li>
+</ol>
+
+<h3>AI agent / opencode(7 条)</h3>
+<ol start="18">
+  <li>As an AI agent, I want 读 SKILL.md 顶部 YAML frontmatter 立刻知道 skill 名称 / 版本 / 状态。</li>
+  <li>As an AI agent, I want 读 <code>CONTEXT.md</code> 知道术语定义(唤醒词 / 场景 / 4 元 / 4 段 prompt), so that 不歧义。</li>
+  <li>As an AI agent, I want 读 <code>docs/adr/0001-0005</code> 知道所有历史决策与依据。</li>
+  <li>As an AI agent, I want 通过 29 个场景的稳定 prompt 字段触发 skill, so that 不暴露 CLI / DB / 路径。</li>
+  <li>As an AI agent, I want 命中"备忘录 HELP"立刻得到可视化 HTML 手册。</li>
+  <li>As an AI agent, I want HTML 镜像与 SKILL.md 同 commit 同步。</li>
+  <li>As an AI agent, I want 4 状态 fallback 覆盖所有 5 个模板。</li>
+</ol>
+
+<h3>自动化工具(5 条)</h3>
+<ol start="25">
+  <li>As an 自动化脚本, I want 读 <code>_meta.json</code> 立刻得到版本号。</li>
+  <li>As an 自动化脚本, I want <code>pytest.ini</code> 6 项配置。</li>
+  <li>As an 自动化脚本, I want <code>.githooks/commit-msg</code> 检查 commit 全中文格式。</li>
+  <li>As an 自动化脚本, I want <code>.githooks/pre-commit</code> 自动还原 <code>备忘录.html</code>。</li>
+  <li>As an 自动化脚本, I want <code>scripts/</code> 下依赖图清晰(5 层骨架)。</li>
+</ol>
+
+<h3>新人 onboarding(4 条)</h3>
+<ol start="30">
+  <li>As a 新人维护者, I want 读 <code>README.md</code> 5 章节快速上手, so that 不用读完 1038 行 SKILL.md。</li>
+  <li>As a 新人维护者, I want <code>AGENTS.md</code> 25-30 行精炼指令。</li>
+  <li>As a 新人维护者, I want 读 <code>.scratch/grilling-alignment/spec.md</code> 看整轮重构的来龙去脉。</li>
+  <li>As a 新人维护者, I want 跑 <code>verify.ps1</code> 一键验证。</li>
+</ol>
+
+<h3>技能维护者(7 条)</h3>
+<ol start="34">
+  <li>As a 技能维护者, I want 任何改动前答"影响哪些文件 / 数据迁移 / 回滚方案"3 问。</li>
+  <li>As a 技能维护者, I want 所有 commit 带 <code>Tested-By</code> 行末。</li>
+  <li>As a 技能维护者, I want <code>docs/adr/</code> 永久归档重大决策。</li>
+  <li>As a 技能维护者, I want <code>.scratch/&lt;feature&gt;/</code> 工作目录范式。</li>
+  <li>As a 技能维护者, I want FAT 协议豁免矩阵(ADR-0005 表格)。</li>
+  <li>As a 技能维护者, I want 5 状态 fallback(已改为 4 状态)模板 JS 一致。</li>
+  <li>As a 技能维护者, I want 29 场景的 7 字段契约守护测试。</li>
+</ol>
+
+<h3>跨 Skill 联动 + 规范合规(10 条)</h3>
+<ol start="41">
+  <li>As a 卡路里用户, I want 完成训练后顺手记一条备忘(联动)。</li>
+  <li>As a 饼干记账用户, I want 记完账后记一条备忘。</li>
+  <li>As a 居家管家用户, I want 物品清单变更触发备忘。</li>
+  <li>As a 作息管家用户, I want 日程完成后自动记一条备忘。</li>
+  <li>As a 总纲执行者, I want 备忘录 skill 100% 通过 §02 5 层自检清单。</li>
+  <li>As a 总纲执行者, I want §03 触发词设计 ≥ 8 + 不强制 4 元。</li>
+  <li>As a 总纲执行者, I want §04 13 原则全满足(原则 3 改为 4 状态)。</li>
+  <li>As a 总纲执行者, I want §05 工程仪式全部就位。</li>
+  <li>As a 总纲执行者, I want §07 HELP + 场景完备性 7 字段契约全满足。</li>
+  <li>As a 总纲执行者, I want ADR-0002 "无规模逃生口"100% 合规。</li>
+</ol>
+</div>
+
+<h1>Implementation Decisions</h1>
+
+<h2>模块改动清单</h2>
+<div class="card">
+
+<h3>内容模块</h3>
+<ul>
+  <li><strong><code>SKILL.md</code></strong>: 添加 YAML frontmatter(5 字段)→ 删 L1034 重复 → 91 处"触发词"→"唤醒词"→"用例"→"场景"→ 显式区分"4 元"vs"4 段 prompt"→ 统一"HTML 镜像"命名 → 顶部加"改动前 3 问"段。不改 29 唤醒词响应行为。</li>
+  <li><strong><code>CHANGELOG.md</code></strong>: L538 加注释 → 末尾建"累计 174/174"基线 → 每个版本段末尾加 <code>**Tested-By**</code> 字段。</li>
+  <li><strong><code>scenarios.yaml</code></strong>: 删 L21 重复 key → EOF 补 <code>\n</code> → 7 字段契约不变。</li>
+  <li><strong><code>_meta.json</code></strong>: <code>version</code> 从 <code>1.0.0</code> 升到 <code>1.1.4</code>。</li>
+</ul>
+
+<h3>文件系统模块</h3>
+<ul>
+  <li><strong><code>reference/</code> → <code>references/</code></strong>: 3 个 .md(git mv)→ 4 处 SKILL.md 路径引用同步 → Python 端不动。</li>
+  <li><strong>5 个 HTML 模板</strong>: fallback JS 同步改 4 状态(success / empty / missing_data / error)→ 删 <code>offline</code> 分支。</li>
+</ul>
+
+<h3>新建文件模块</h3>
+<ul>
+  <li><strong><code>README.md</code></strong>: 5 章节(这是什么 / 何时使用 / 快速开始 / 文件清单 / 状态)</li>
+  <li><strong><code>pytest.ini</code></strong>: 6 项配置(testpaths / python_files / classes / functions / addopts --strict-markers + markers 区)</li>
+  <li><strong><code>CONTEXT.md</code></strong>: 术语表(7 字段) + commit 格式约定段</li>
+  <li><strong><code>docs/adr/0001-0005.md</code></strong>: 5 个 ADR</li>
+  <li><strong><code>.scratch/grilling-alignment/</code></strong>: 5 文件范式(spec / decisions / verify / artifacts / issues)</li>
+  <li><strong><code>.githooks/commit-msg</code></strong>: commit 全中文格式检查 hook</li>
+</ul>
+
+<h3>接口与行为契约</h3>
+<ul>
+  <li><strong>CLI 接口</strong>: 29 个子命令集合不变(<code>memo_cli.py</code> 子命令签名 0 改动)。</li>
+  <li><strong>HTML 镜像同步</strong>: <code>备忘录.html</code> 在 <code>memo_cli help</code> 时自动生成并覆盖 skill 根,经 <code>.githooks/pre-commit</code> 自动还原。</li>
+  <li><strong>scenarios.yaml 7 字段契约</strong>: 守护测试 <code>test_help.py</code> L83-89 + L96-100 + L102-112 已就位。</li>
+  <li><strong>HTML 单工铁律</strong>: 过程型 HTML 含"复制 prompt"按钮,守护测试 <code>test_copy_button.py</code> 10 个 test_。</li>
+</ul>
+
+<h3>Schema 变更</h3>
+<ul>
+  <li><code>_meta.json</code>: <code>version</code> 字段值变更,结构不变。</li>
+  <li><code>scenarios.yaml</code>: 内部结构 0 变更,只删冗余 key + EOF 补换行。</li>
+  <li>无 DB schema 变更(数据库层不在本 spec 范围)。</li>
+</ul>
+
+<h3>API 契约</h3>
+<ul>
+  <li>CLI 子命令签名 0 改动。</li>
+  <li>HTML 输出 4 状态 fallback 新语义:<code>success</code>(新增) / <code>empty</code> / <code>missing_data</code> / <code>error</code>(原有),<code>offline</code>(删除)。</li>
+  <li>scenarios.yaml 字段契约 0 改动。</li>
+</ul>
+
+<h3>架构决策</h3>
+<ul>
+  <li><strong>B 阶段先行</strong>(依赖关系升序,总纲 §05 L5-11 "改动前 3 问"启发):B → A → D → C。</li>
+  <li><strong>5 状态 → 4 状态</strong>: 用户 R1 明确决策"不存在所谓离线的场景",本地偏离总纲 §04 原则 3。</li>
+  <li><strong>injector 私有 vs 共享</strong>: v1.1.0 教训固化,<strong>不重提</strong> <code>_shared/</code> 抽取。</li>
+  <li><strong>commit 全中文格式</strong>: ADR-0003 硬规则,<code>.githooks/commit-msg</code> 强制执行。</li>
+  <li><strong>Tested-By 字段</strong>: ADR-0005,commit message 行末 + CHANGELOG 双写,默认 <code>exempt</code>。</li>
+</ul>
+</div>
+
+<h1>Testing Decisions</h1>
+
+<h2>测试入口决策(2 个,第一性原理收敛)</h2>
+<div class="card">
+<blockquote>
+"理想是 1 个测试入口。本 spec 实际收敛到 2 个:1 个主入口(CLI 子进程,黑盒,最高级)+ 1 个辅助入口(结构体检,白盒,但只验静态存在性,单文件 ~30 行)。commit 全中文格式检查<strong>不放测试</strong>,放 <code>.githooks/commit-msg</code> hook。"
+</blockquote>
+
+<h3>主入口: CLI 子进程调用</h3>
+<ul>
+  <li><strong>形式</strong>: <code>subprocess.run([sys.executable, "script/memo_cli.py", "&lt;subcmd&gt;"])</code> → 断言退出码 + stdout/stderr + 输出文件存在性 + 内容模式。</li>
+  <li><strong>覆盖</strong>: 4 状态 fallback / 术语替换(行为级)/ 29 唤醒词命中 / scenarios.yaml 完整性 / HTML 镜像同步 / prompt 不暴露 CLI/DB/路径。</li>
+  <li><strong>Prior art</strong>: <code>tests/test_help.py</code> 49 个 test_ 函数已大量用 subprocess 调真 CLI(L198 / L214 / L330 / L391 等)。</li>
+  <li><strong>优点</strong>: 黑盒 / 行为级 / 稳定(CLI 是稳定契约)/ 高信号。</li>
+  <li><strong>缺点</strong>: 较慢(174 测试 16 秒跑完),可接受。</li>
+</ul>
+
+<h3>辅助入口: 结构体检(单文件)</h3>
+<ul>
+  <li><strong>形式</strong>: <code>tests/test_skill_structure.py</code> ~30 行 ~6-8 个 assertion,验静态文件存在 + 内容模式。</li>
+  <li><strong>覆盖</strong>: YAML frontmatter 存在 + <code>_meta.json</code> 版本 = SKILL.md frontmatter 版本 + <code>docs/adr/</code> 5 个 ADR 存在 + <code>README.md</code> 存在 + <code>pytest.ini</code> 存在 + <code>AGENTS.md</code> 含项目定位关键词。</li>
+  <li><strong>Prior art</strong>: 无直接先例,新文件。</li>
+  <li><strong>优点</strong>: 单文件 / 易理解 / 快速。</li>
+  <li><strong>缺点</strong>: 白盒(断言实现细节),但只验"文件存在性 + 关键字符串",不深入。</li>
+</ul>
+
+<h3>测试模块清单</h3>
+<table>
+  <tr><th>模块</th><th style="text-align:right;">测试数</th><th>覆盖范围</th></tr>
+  <tr><td><code>tests/test_help.py</code>(已就位)</td><td style="text-align:right;">49</td><td>HELP HTML 渲染 / 7 字段契约 / prompt 不暴露</td></tr>
+  <tr><td><code>tests/test_html_delivery_checklist.py</code></td><td style="text-align:right;">13</td><td>§07 §5 反模式守护</td></tr>
+  <tr><td><code>tests/test_html_user_manual.py</code></td><td style="text-align:right;">12</td><td>HTML 用户手册结构</td></tr>
+  <tr><td><code>tests/test_copy_button.py</code></td><td style="text-align:right;">10</td><td>复制 prompt 按钮(原则 10)</td></tr>
+  <tr><td><code>tests/test_wish_complete.py</code></td><td style="text-align:right;">16</td><td>心愿完成 HTML</td></tr>
+  <tr><td><code>tests/test_injector_local.py</code></td><td style="text-align:right;">17</td><td>注入器本地行为</td></tr>
+  <tr><td><code>tests/test_render.py</code></td><td style="text-align:right;">10</td><td>渲染层</td></tr>
+  <tr><td><code>tests/test_payloads.py</code></td><td style="text-align:right;">9</td><td>payload 校验</td></tr>
+  <tr><td><code>tests/test_change_category.py</code></td><td style="text-align:right;">7</td><td>改分类</td></tr>
+  <tr><td><code>tests/test_html_delivery.py</code></td><td style="text-align:right;">7</td><td>HTML 交付</td></tr>
+  <tr><td><code>tests/test_validators.py</code></td><td style="text-align:right;">7</td><td>校验层</td></tr>
+  <tr><td><code>tests/test_wish_plan.py</code></td><td style="text-align:right;">9</td><td>心愿排期</td></tr>
+  <tr><td><code>tests/conftest.py</code></td><td style="text-align:right;">0</td><td>pytest 配置 / sys.path</td></tr>
+  <tr><td><strong><code>tests/test_skill_structure.py</code>(本 spec 新建)</strong></td><td style="text-align:right;"><strong>~6-8</strong></td><td>frontmatter / _meta.json / 5 ADR / README / pytest.ini / AGENTS.md</td></tr>
+  <tr style="background:#fafafa;font-weight:700;"><td>合计</td><td style="text-align:right;">180+</td><td>(174 已有 + 6-8 新增)</td></tr>
+</table>
+
+<h3>验收脚本</h3>
+<p><code>.scratch/grilling-alignment/verify.ps1</code>(当前是占位版,R3 创建,R5 后完整化)运行后输出:</p>
+<ol>
+  <li><code>git status</code> 工作区干净检查</li>
+  <li><code>pytest tests/ --tb=short -q</code> 全过检查</li>
+  <li>CLI smoke test(<code>memo_cli help</code> 落 HTML 检查)</li>
+  <li>结构体检 <code>pytest tests/test_skill_structure.py -v</code> 全过</li>
+  <li>.githooks 路由检查</li>
+</ol>
+
+<h3>什么不算好测试(反面案例)</h3>
+<ul>
+  <li>❌ 测试内部函数(应测试"模板被渲染"而非 <code>_render_template()</code> 返回值)</li>
+  <li>❌ 测试具体行号(SKILL.md L927 / L1034 应改为"## 参考文档 章节唯一性")</li>
+  <li>❌ 测试私有状态(数据库连接对象的方法)</li>
+  <li>❌ 测试 commit 信息格式(应放 <code>.githooks/commit-msg</code> hook,不是 pytest)</li>
+</ul>
+</div>
+
+<h1>Out of Scope</h1>
+<div class="card">
+<ul>
+  <li><strong>跨 Skill <code>_shared/</code> 共享代码</strong>: v1.1.0 教训固化,<code>script/injector.py</code> 私有。</li>
+  <li><strong>历史 commit 回填 Tested-By</strong>: 历史不可改,规则自 v1.1.5 起生效。</li>
+  <li><strong>FAT 协议实跑</strong>: D.1 决策 <code>Tested-By: exempt</code>(无 fresh agent 配置)。</li>
+  <li><strong>4 元组触发词强制升级</strong>: B.12 决策保持 2-3 元混合。</li>
+  <li><strong>C 阶段 injector 复用 <code>_assets/</code></strong>: v1.1.0 私有化决策,不重提。</li>
+  <li><strong>C 阶段 5 层自检清单全跑补齐</strong>: 仅在结构体检 seam 加 ~3 个 file existence assertions。</li>
+  <li><strong>CHANGELOG 历史数字修订</strong>: B.11 决策保留 L538 "106/106" 真实数字,加注释说明。</li>
+  <li><strong>新增 skill 功能</strong>: 本 spec 是 v1.1.4 → v1.1.5 合规化,不引入新功能。</li>
+</ul>
+</div>
+
+<h1>Further Notes</h1>
+
+<h2>路线图(从 bb7c64b 到 v1.1.5 完成)</h2>
+<div class="card">
+<table>
+  <tr><th>步骤</th><th>状态</th><th>commit 信息(全中文)</th><th>涉及文件</th></tr>
+  <tr><td>1</td><td><span class="check">✓</span></td><td><code>[备忘录] v1.1.5 · B-0 决策记录入库(...)</code></td><td>13 capture 文件 · bb7c64b</td></tr>
+  <tr><td>2</td><td><span class="pending">⏳</span></td><td><code>[备忘录] v1.1.5 · B-2 术语统一(...)</code></td><td>SKILL.md / scenarios.yaml / 5 模板</td></tr>
+  <tr><td>3</td><td><span class="pending">⏳</span></td><td><code>[备忘录] v1.1.5 · B-3 文件结构清理(...)</code></td><td>reference/ → references/ / SKILL.md L1034 / scenarios.yaml L21</td></tr>
+  <tr><td>4</td><td><span class="pending">⏳</span></td><td><code>[备忘录] v1.1.5 · B-4 4 状态 fallback 收尾(...)</code></td><td>5 模板 JS / _meta.json / CHANGELOG 末尾</td></tr>
+  <tr><td>5</td><td><span class="pending">⏳</span></td><td><code>[备忘录] v1.1.5 · A-1 结构文件补齐(...)</code></td><td>README / pytest.ini / AGENTS.md / SKILL.md frontmatter</td></tr>
+  <tr><td>6</td><td><span class="pending">⏳</span></td><td><code>[备忘录] v1.1.5 · D-1 仪式落地(...)</code></td><td>SKILL.md 3 问段 / .githooks/commit-msg / CHANGELOG Tested-By</td></tr>
+</table>
+<p>每个 commit 都标 <code>Tested-By: exempt(无 fresh agent · 详见 ADR-0005)</code>。</p>
+</div>
+
+<h2>决策索引</h2>
+<div class="card">
+<table>
+  <tr><th>ADR</th><th>主题</th><th>阶段</th></tr>
+  <tr><td>0001</td><td>版本号单一事实源为 SKILL.md</td><td>B</td></tr>
+  <tr><td>0002</td><td>SKILL.md 章节去重 + 双目录合并</td><td>B</td></tr>
+  <tr><td>0003</td><td>B 执行细节 + commit 全中文硬规则</td><td>B</td></tr>
+  <tr><td>0004</td><td>A 阶段结构文件 5 决策</td><td>A</td></tr>
+  <tr><td>0005</td><td>D 阶段豁免矩阵 + 工程仪式</td><td>D</td></tr>
+</table>
+</div>
+
+<h2>关联链接</h2>
+<div class="card">
+<ul>
+  <li>4 轮 grilling 报告: <code>.scratch/grilling-alignment/artifacts/r1.html</code> / r2 / r3 / r4</li>
+  <li>整体重构 spec: <code>.scratch/grilling-alignment/spec.md</code></li>
+  <li>决策日志: <code>.scratch/grilling-alignment/decisions.md</code></li>
+  <li>验收脚本(占位): <code>.scratch/grilling-alignment/verify.ps1</code></li>
+  <li>已入库决策 commit: <code>bb7c64b</code></li>
+</ul>
+</div>
+
+<footer>
+  Generated by OpenCode · to-spec · 备忘录 grilling session · Issue 01 preview
+  <br>
+  Canonical artifact: <code>备忘录/.scratch/grilling-alignment/issues/01-memo-skill-v1.1.5-refactor-spec.md</code>
+</footer>
+
+</div>
+</body>
+</html>

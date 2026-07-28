@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备忘录 Skill v1.1.5 · Tickets 预览</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #d2d2d7;
+    --accent: #0071e3;
+    --accent-soft: #e3f0ff;
+    --good: #1a7f37;
+    --good-soft: #e6f4ea;
+    --warn: #b85c00;
+    --warn-soft: #fff4e6;
+    --purple: #5e3dab;
+    --purple-soft: #f0e8ff;
+    --code-bg: #f5f5f7;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 32px 36px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+  header h1 { font-size: 28px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.muted { background: #efeff1; color: var(--muted); }
+  .badge.purple { background: var(--purple-soft); color: var(--purple); }
+
+  .dag {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .dag pre {
+    background: var(--code-bg);
+    padding: 18px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+
+  .ticket {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--accent);
+  }
+  .ticket.wide { border-left-color: var(--warn); }
+  .ticket-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .ticket-num {
+    background: var(--accent);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .ticket.wide .ticket-num { background: var(--warn); }
+  .ticket-title { font-size: 17px; font-weight: 700; flex: 1; }
+  .ticket-tags { display: flex; gap: 6px; }
+  .ticket-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .tag-role { background: var(--accent-soft); color: var(--accent); }
+  .tag-wait { background: #efeff1; color: var(--muted); }
+  .tag-wide { background: var(--warn-soft); color: var(--warn); }
+
+  .ticket-field {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: var(--code-bg);
+    border-radius: 6px;
+    font-size: 13.5px;
+  }
+  .ticket-field strong {
+    color: var(--accent);
+    margin-right: 6px;
+    font-weight: 600;
+  }
+  .ticket-field .blocked-none { color: var(--good); font-weight: 600; }
+  .ticket-field .blocked-list { color: var(--text); }
+
+  .what-to-build {
+    background: var(--accent-soft);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .what-to-build strong { color: var(--accent); }
+
+  ul.criteria { padding-left: 22px; margin: 8px 0; }
+  ul.criteria li { margin: 4px 0; font-size: 13.5px; }
+  ul.criteria li::marker { color: var(--accent); }
+
+  h3.section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 16px 0 6px;
+  }
+
+  .parent-link {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+    font-size: 12.5px;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🎫 备忘录 Skill v1.1.5 · Tickets 预览</h1>
+  <div class="sub">8 个 vertical slice tickets · 全部 <code>ready-for-agent</code> · 由 spec <code>00-...spec.md</code> 拆分</div>
+  <div class="badges">
+    <span class="badge good">8 tickets</span>
+    <span class="badge warn">2 wide refactor (05 · 07)</span>
+    <span class="badge muted">依赖关系清晰</span>
+    <span class="badge muted">2026-07-28</span>
+  </div>
+</header>
+
+<div class="dag">
+  <h3 style="margin-top:0;">依赖关系图(谁等谁)</h3>
+  <pre>01 onboarding-path ────────────────┐
+                                    ├──► (可并发)
+02 agent-entry-point ─┬─────────────┤
+                      ├──────► 05 terminology (B-2 wide refactor)
+04 metadata-cleanup ──┘             │
+                                    │
+06 directory-merge ─────────────────┤
+                                    ├──► 08 engineering-rituals
+03 pytest-config ───────────────────┤      (commit hook + 3 问 + Tested-By)
+                                    │
+07 4-state-fallback ────────────────┘
+
+进度:01 02 03 04 06 07 可立即开始(并发)
+      05 等 02 + 04
+      08 等 02 + 05</pre>
+</div>
+
+<!-- Ticket 00 -->
+<div class="ticket" style="border-left-color: var(--purple);">
+  <div class="ticket-header">
+    <span class="ticket-num" style="background: var(--purple);">00</span>
+    <span class="ticket-title">备忘录 Skill v1.1.5 整体重构(规范合规化)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">parent-spec</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">self(00-...spec.md)</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">— 父级 spec,无 blocker</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 把 23 个 grilling 决策分阶段执行,实现 174 pytest 全过 + 0 现有功能回归 + 6 个新文件补齐 + 工程仪式就位。下游 8 个 tickets 都从这个 spec 拆出来。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>所有 8 个 ticket 完成,每个独立 commit 全中文 + Tested-By 行末</li>
+    <li>174+ pytest 全过(包含 ticket 03 新增的 test_skill_structure.py)</li>
+    <li>git status 工作区干净(commit 后)</li>
+    <li>0 现有功能回归(29 唤醒词响应行为不变)</li>
+    <li>verify.ps1 完整化后跑通 5 项检查</li>
+  </ul>
+</div>
+
+<!-- Ticket 01 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">01</span>
+    <span class="ticket-title">新人 onboarding 完整路径</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">A-1</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 新人 clone 后,通过 README.md 5 章节了解 skill,然后跑 verify.ps1 一键验证(git status / pytest / CLI smoke / 结构体检 / hook 路由)。完整上手链路从 1038 行 SKILL.md 压缩到 60-80 行 README + 1 个脚本。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>README.md 存在,含 5 章节(这是什么 / 何时使用 / 快速开始 / 文件清单 / 状态)</li>
+    <li>README.md 60-80 行</li>
+    <li>verify.ps1 从占位升级到完整版,跑通 5 检查</li>
+    <li>174+ pytest 全过</li>
+    <li>git status 无残留</li>
+  </ul>
+</div>
+
+<!-- Ticket 02 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">02</span>
+    <span class="ticket-title">Agent 入口完整路径(SKILL.md frontmatter + AGENTS.md 升级)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">A-1</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> AI agent 进入 skill 目录,从 SKILL.md 顶部 frontmatter + AGENTS.md 立刻得到完整入口信息(无需读 1038 行 SKILL.md)。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>SKILL.md frontmatter 5 字段(name / version / status / description / last_updated)</li>
+    <li>frontmatter 与 _meta.json version 一致</li>
+    <li>AGENTS.md 升级到 25-30 行(从 13 行)</li>
+    <li>AGENTS.md 含 5 段:项目定位 / 路径约定 / 决策文件位置 / commit 格式 / HTML 镜像约定</li>
+  </ul>
+</div>
+
+<!-- Ticket 03 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">03</span>
+    <span class="ticket-title">pytest 配置 + 结构体检(CI 入口)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">A-1</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> pytest 启动自动读 pytest.ini 6 项配置;新增 test_skill_structure.py 7 个断言守护结构合规。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>pytest.ini 6 项配置(testpaths / python_files / classes / functions / addopts --strict-markers / markers)</li>
+    <li>test_skill_structure.py 7 个断言</li>
+    <li>180+ 测试全过</li>
+    <li>不加 xfail_strict(防 22 xfailed 连锁失败)</li>
+  </ul>
+</div>
+
+<!-- Ticket 04 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">04</span>
+    <span class="ticket-title">元数据同步 + scenarios.yaml 清理(自动化消费)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">B-3</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 自动化工具读 _meta.json 立刻得到正确版本(从 v1.0.0 升到 v1.1.5);AI agent 解析 scenarios.yaml 拿到单一定义(删除 L21 重复 key,EOF 补换行)。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>_meta.json version = 1.1.5</li>
+    <li>scenarios.yaml 顶层只有 1 个 scenarios: key</li>
+    <li>scenarios.yaml EOF 有换行</li>
+    <li>29 个场景数量不变</li>
+    <li>174 pytest 全过</li>
+  </ul>
+</div>
+
+<!-- Ticket 05 -->
+<div class="ticket wide">
+  <div class="ticket-header">
+    <span class="ticket-num">05</span>
+    <span class="ticket-title">术语统一(expand-contract 三阶段 · wide refactor)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">B-2</span>
+      <span class="ticket-tag tag-wide">wide refactor</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-list">#02(SKILL.md frontmatter 先落地)+ #04(scenarios.yaml 已清理冗余)</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 91+ 处"触发词" → "唤醒词",分三阶段:expand(双术语共存)→ migrate(SKILL.md + 5 模板)→ contract(移除别名)。Wide refactor 不能一刀切,分阶段保证 174 pytest 全程绿。
+  </div>
+  <h3 class="section-title">Phase 1 (expand) · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>scenarios.yaml 顶层加 aliases 段(触发词: 唤醒词)</li>
+    <li>memo_cli.py 加载别名表,两个都能用</li>
+    <li>174 pytest 全过</li>
+  </ul>
+  <h3 class="section-title">Phase 2 (migrate) · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>SKILL.md 中"触发词"次数 = 0</li>
+    <li>5 模板中"触发词"次数 = 0</li>
+    <li>CHANGELOG.md 中"触发词"≤ 5(历史保留)</li>
+    <li>git grep "触发词" -- ':!CHANGELOG.md' 返回 0 行</li>
+  </ul>
+  <h3 class="section-title">Phase 3 (contract) · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>scenarios.yaml 删 aliases 段</li>
+    <li>memo_cli.py 删别名解析</li>
+    <li>"触发词"输入被显式拒绝</li>
+    <li>174+ pytest 全过</li>
+  </ul>
+</div>
+
+<!-- Ticket 06 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">06</span>
+    <span class="ticket-title">双目录合并(expand-contract 两阶段)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">B-3</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> reference/ → references/ 双目录合并,统一为 references/。两阶段:expand(3 .md 复制到 references/,reference/ 保留)→ migrate(SKILL.md 4 处引用更新 + rm reference/)。
+  </div>
+  <h3 class="section-title">Phase 1 (expand) · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>references/schema.md / examples.md / cron.md 存在(从 reference/ 复制)</li>
+    <li>reference/ 保留,3 个 .md 还在</li>
+    <li>174 pytest 全过</li>
+  </ul>
+  <h3 class="section-title">Phase 2 (contract) · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>SKILL.md 4 处引用改为 references/</li>
+    <li>reference/ 目录删除</li>
+    <li>memo_render.py 不动(已用新路径)</li>
+    <li>174 pytest 全过</li>
+  </ul>
+</div>
+
+<!-- Ticket 07 -->
+<div class="ticket wide">
+  <div class="ticket-header">
+    <span class="ticket-num">07</span>
+    <span class="ticket-title">4 状态 fallback 端到端(wide refactor · 5 模板)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">B-4</span>
+      <span class="ticket-tag tag-wide">wide refactor</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-none">None — 可立即开始(注:理论上 ticket 03 的 test_skill_structure.py 是辅助入口,但本 ticket 独立可跑)</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 5 模板 fallback JS 同步从 5 状态改为 4 状态(success / empty / missing_data / error,删除 offline)。test_help.py 新增 success 状态测试。
+  </div>
+  <h3 class="section-title">Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>5 模板都加 success 分支</li>
+    <li>5 模板都删 offline 分支</li>
+    <li>memo_render.py 适配 4 状态 payload</li>
+    <li>test_help.py 新增 ≥ 1 个 success 测试</li>
+    <li>174+ pytest 全过</li>
+    <li>git grep "offline" -- 'templates/' 'script/' 返回 0 行</li>
+  </ul>
+</div>
+
+<!-- Ticket 08 -->
+<div class="ticket">
+  <div class="ticket-header">
+    <span class="ticket-num">08</span>
+    <span class="ticket-title">工程仪式落地(commit hook + SKILL.md 3 问段 + CHANGELOG Tested-By)</span>
+    <div class="ticket-tags">
+      <span class="ticket-tag tag-role">D-1</span>
+      <span class="ticket-tag tag-wait">ready-for-agent</span>
+    </div>
+  </div>
+  <div class="ticket-field"><strong>Parent:</strong> <span class="parent-link">00-memo-skill-v1.1.5-refactor-spec.md</span></div>
+  <div class="ticket-field"><strong>Blocked by:</strong> <span class="blocked-list">#02(SKILL.md frontmatter 先落地)+ #05(术语统一后再加 3 问段)</span></div>
+  <div class="what-to-build">
+    <strong>What to build:</strong> 三层工程仪式守护:commit-msg hook 检查全中文 + Tested-By 行末;SKILL.md 顶部加"改动前 3 问"段;CHANGELOG.md 每个版本段含 Tested-By 字段。
+  </div>
+  <h3 class="section-title">commit-msg hook · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>.githooks/commit-msg 存在</li>
+    <li>输入非中文 commit → 拒绝</li>
+    <li>输入合规但缺 Tested-By → 拒绝</li>
+    <li>输入合规 + Tested-By exempt → 通过</li>
+  </ul>
+  <h3 class="section-title">SKILL.md 3 问段 · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>frontmatter 后、"## 强制性规定" 前,加 3 问段</li>
+    <li>含 3 问 + 豁免规则(仅 doc/comment)</li>
+  </ul>
+  <h3 class="section-title">CHANGELOG.md Tested-By · Acceptance criteria</h3>
+  <ul class="criteria">
+    <li>每个 [版本号] 段末尾含 Tested-By 字段</li>
+    <li>历史版本补 unknown 标记</li>
+  </ul>
+</div>
+
+<!-- Quiz section -->
+<div class="dag" style="border: 2px dashed var(--accent);">
+  <h3 style="margin-top:0;color:var(--accent);">❓ 待你确认(to-tickets 第 4 步)</h3>
+  <ul style="padding-left: 22px;">
+    <li><strong>颗粒度合理吗?</strong> 8 个 ticket,1 个 fresh context window 1-2 个 ticket 完成,符合 to-tickets skill 的"single fresh context window"原则。</li>
+    <li><strong>依赖关系对吗?</strong>
+      <ul style="padding-left: 22px; margin-top: 4px;">
+        <li>05 (术语) 等 02 + 04 — 对,frontmatter 先落地避免术语与 version 冲突;scenarios.yaml 干净后再加别名</li>
+        <li>08 (仪式) 等 02 + 05 — 对,3 问段加在 frontmatter 之后;Tested-By 与术语统一后的命名一致</li>
+        <li>其他 5 个无 blocker,可并发</li>
+      </ul>
+    </li>
+    <li><strong>需要合并/拆分吗?</strong>
+      <ul style="padding-left: 22px; margin-top: 4px;">
+        <li>候选合并: 02 + 03 + 04(都是 A-1/B-3 基础层)→ 保留独立,因为它们是不同 actor(AI agent / CI / 自动化)</li>
+        <li>候选拆分: 05 的三 phase 可拆 3 ticket → 保留单 ticket,因为是同一 wide refactor 的三阶段,合并上下文更有利</li>
+      </ul>
+    </li>
+  </ul>
+  <p style="margin-top: 16px; font-size: 13px; color: var(--muted);">
+    确认 OK 就 commit 入库(对应 B.13 commit 1 的 tickets 部分);有调整告诉我,先 commit 也行(后续 ticket 可改)。
+  </p>
+</div>
+
+<footer>
+  Generated by OpenCode · to-tickets · 备忘录 grilling session · 8 tickets preview
+  <br>
+  Canonical artifacts: <code>备忘录/.scratch/grilling-alignment/issues/00-...spec.md</code> + <code>01-...md</code> ~ <code>08-...md</code>
+</footer>
+
+</div>
+</body>
+</html>

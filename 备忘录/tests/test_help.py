@@ -499,3 +499,77 @@ class TestHelpThreeLevelCollapse:
         non_empty = {g: len(v) for g, v in groups.items() if v}
         assert total == 29, f"应渲染 29 场景,实际 {total}"
         assert len(non_empty) == 7, f"应 7 个非空模块,实际 {len(non_empty)}"
+
+# ==================== prompt 填写友好性(用户反馈) ====================
+
+class TestPromptFillInFormat:
+    """用户反馈(对抗式审查 v1.1.4):
+
+    旧 prompt 用 <开始日期> 等 <占位符>,用户需手动删 < > 再填值,体验差。
+    新设计:用 _____________ 填空线 + 括号示例 + 唤醒词锚点。
+    """
+
+    SCENARIOS = SKILL_DIR / "references" / "scenarios.yaml"
+
+    @pytest.fixture(scope="class")
+    def data(self):
+        import yaml
+        return yaml.safe_load(self.SCENARIOS.read_text(encoding="utf-8"))
+
+    def test_no_chinese_angle_placeholder(self, data):
+        """不应有 <中文占位符>(用户需手动删)"""
+        import re
+        bad = []
+        for s in data["scenarios"]:
+            placeholders = re.findall(r'<[\u4e00-\u9fff]+>', s["prompt"])
+            if placeholders:
+                bad.append((s["scenario_id"], placeholders))
+        assert not bad, f"<中文占位符>残留: {bad}"
+
+    def test_has_wake_word_anchor(self, data):
+        """prompt 应含'唤醒词:XXX'锚点(让 AI 识别 route)"""
+        missing = []
+        for s in data["scenarios"]:
+            if "唤醒词:" not in s["prompt"]:
+                missing.append(s["scenario_id"])
+        assert not missing, f"缺唤醒词锚点: {missing}"
+
+    def test_has_expected_outcome(self, data):
+        """prompt 应含'期望效果:'段(AI 知道预期)"""
+        missing = []
+        for s in data["scenarios"]:
+            if "期望效果" not in s["prompt"]:
+                missing.append(s["scenario_id"])
+        assert not missing, f"缺期望效果段: {missing}"
+
+    def test_has_fill_in_or_no_params(self, data):
+        """有参数应用 _____________ 填空;无参数显式说'无需参数' """
+        bad = []
+        for s in data["scenarios"]:
+            p = s["prompt"]
+            if "_____________" not in p and "无需参数" not in p:
+                bad.append(s["scenario_id"])
+        assert not bad, f"场景既无填空线也无无需参数声明: {bad}"
+
+    def test_prompt_describes_action_not_cli(self, data):
+        """prompt 不暴露 CLI / DB(§07 §3)"""
+        forbidden = ["memo_cli.py", "memo.db", ".py", "SELECT ", "INSERT "]
+        bad = []
+        for s in data["scenarios"]:
+            text = s["prompt"] + s.get("result", "")
+            for f in forbidden:
+                if f in text:
+                    bad.append((s["scenario_id"], f))
+        assert not bad, f"prompt/result 暴露实现细节: {bad}"
+
+    def test_format_hint_in_parentheses(self, data):
+        """填写线行应在括号内含格式说明或示例"""
+        import re
+        bad = []
+        for s in data["scenarios"]:
+            for line in s["prompt"].split("\n"):
+                if "_____________" in line:
+                    if not re.search(r'\([^)]*\)', line):
+                        bad.append((s["scenario_id"], line.strip()[:80]))
+                    break  # 每场景只检查首个填写线行
+        assert len(bad) < 5, f"填写线行缺括号示例: {bad[:5]}"

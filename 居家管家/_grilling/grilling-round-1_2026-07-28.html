@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>居家管家 · 综合询问 Round 1 · 2026-07-28</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-card: #fafafa;
+    --bg-q: #f5f5f7;
+    --border: #e5e5e7;
+    --border-strong: #d2d2d7;
+    --text: #1d1d1f;
+    --text-sub: #6e6e73;
+    --accent: #007AFF;
+    --accent-hover: #0051D5;
+    --rec: #34C759;
+    --warn: #FF9500;
+    --danger: #FF3B30;
+    --rec-bg: rgba(52, 199, 89, 0.08);
+    --warn-bg: rgba(255, 149, 0, 0.08);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 32px 24px 96px; }
+  header { padding: 24px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px; }
+  .subtitle { color: var(--text-sub); font-size: 14px; }
+  .meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; }
+  .meta-item { color: var(--text-sub); }
+  .meta-item strong { color: var(--text); font-weight: 600; }
+  h2 {
+    font-size: 22px; font-weight: 700; margin: 48px 0 16px;
+    padding-bottom: 8px; border-bottom: 2px solid var(--accent);
+    letter-spacing: -0.3px;
+  }
+  h3 { font-size: 17px; font-weight: 600; margin: 24px 0 8px; color: var(--text); }
+  p { margin: 8px 0; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-q {
+    background: var(--bg-q);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .q-num {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    width: 28px; height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  .q-title {
+    font-weight: 600;
+    font-size: 16px;
+    display: inline;
+    vertical-align: middle;
+  }
+  .q-context {
+    margin: 12px 0;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .q-context strong { color: var(--accent); }
+  .rec-box {
+    background: var(--rec-bg);
+    border: 1px solid var(--rec);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .rec-box::before { content: "推荐: "; font-weight: 700; color: var(--rec); }
+  .warn-box {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .warn-box::before { content: "注意: "; font-weight: 700; color: var(--warn); }
+  .options { margin: 14px 0; }
+  .option {
+    display: flex; align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    margin: 6px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .option:hover { border-color: var(--accent); background: #fafbff; }
+  .option input { margin-top: 3px; cursor: pointer; }
+  .option-text { flex: 1; }
+  .option-label { font-weight: 600; color: var(--text); }
+  .option-desc { color: var(--text-sub); font-size: 13px; margin-top: 2px; }
+  .option.recommended { border-color: var(--rec); background: var(--rec-bg); }
+  .option.recommended::after {
+    content: "推荐";
+    background: var(--rec);
+    color: white;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 600;
+    height: fit-content;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { background: var(--bg-q); font-weight: 600; }
+  tbody tr:hover { background: #fafbff; }
+  code, kbd {
+    background: var(--bg-q);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--bg-q);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", Consolas, monospace;
+    font-size: 13px;
+  }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0 32px;
+  }
+  .toc-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; color: var(--text-sub); }
+  .toc a { color: var(--accent); text-decoration: none; display: block; padding: 4px 0; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+  .summary {
+    background: var(--bg-card);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 48px 0 32px;
+    box-shadow: var(--shadow-md);
+  }
+  .summary h2 { margin-top: 0; }
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    margin: 6px 0;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 8px 8px 0 0;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--text-sub); }
+  details {
+    margin: 12px 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0;
+    overflow: hidden;
+  }
+  summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    background: var(--bg-q);
+    font-weight: 600;
+    user-select: none;
+  }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details > div { padding: 16px; }
+  .small { font-size: 13px; color: var(--text-sub); }
+  .footer-note {
+    margin-top: 64px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-sub);
+    font-size: 12px;
+    text-align: center;
+  }
+  .back-to-top {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--accent);
+    color: white;
+    width: 40px; height: 40px;
+    line-height: 40px;
+    text-align: center;
+    border-radius: 50%;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>居家管家 · 综合询问 Round 1</h1>
+  <div class="subtitle">用 SKILL开发总纲V1.0 当尺,审计出 10 个候选优化,现在集中问 11 题</div>
+  <div class="meta">
+    <span class="meta-item"><strong>日期</strong> 2026-07-28</span>
+    <span class="meta-item"><strong>主题</strong> 概念层(炙 1/2/3 + ADR 扩充) + 执行层(候选 1/3/4/6)</span>
+    <span class="meta-item"><strong>预估</strong> 11 题 / 5 min 答完</span>
+  </div>
+</header>
+
+<div class="toc">
+  <div class="toc-title">目录</div>
+  <a href="#audit">A · 审计摘要(4 P0 + 4 候选)</a>
+  <a href="#q1">Q1 · 炙 1 偏离 vs 约定(α/β)</a>
+  <a href="#q2">Q2 · 炙 2 A 副作用 · 接受分级 Tested-By?</a>
+  <a href="#q3">Q3 · 炙 3 通用 5 术语归属(A/B/C)</a>
+  <a href="#q4">Q4 · ADR-0001 扩充 · 把"直接覆盖"合并进来?</a>
+  <a href="#q5">Q5 · 候选 1 修 SHA 漂移 · 直接执行?</a>
+  <a href="#q6">Q6 · 候选 3 HTML-First 章节 · 写哪种契约?</a>
+  <a href="#q7">Q7 · 候选 4 TOP 5 核心词 · 选哪 5 个?</a>
+  <a href="#q8">Q8 · 候选 4 变体规则 · 3 方向怎么定义?</a>
+  <a href="#q9">Q9 · 候选 4 变体 manifest · 放哪?</a>
+  <a href="#q10">Q10 · 候选 6 HELP 唤醒词 · metadata 怎么标?</a>
+  <a href="#q11">Q11 · 执行顺序 · 4 候选串行还是分组?</a>
+  <a href="#summary">底部 · 汇总回答区</a>
+</div>
+
+<h2 id="audit">A · 审计摘要</h2>
+
+<div class="card">
+  <h3>总纲 V1.0 当尺,居家管家现状</h3>
+  <p>审计范围:<code>SKILL开发总纲V1.0/</code> 全部 + <code>居家管家/</code> 全部</p>
+  <p>审计结果:居家管家 <strong>已经</strong> 完成"原则 12 改造"(2026-07-28 commit <code>7eefe69</code>,3 个 issue 全部 resolved)。剩余 <strong>10 个候选优化</strong>(P0=4 / P1=9 / P2=10)。</p>
+
+  <h3>4 个 P0 必修项</h3>
+  <table>
+    <thead><tr><th>#</th><th>项</th><th>违反条款</th><th>工作量</th></tr></thead>
+    <tbody>
+      <tr><td>B1</td><td>HELP HTML SHA 漂移(<code>居家管家.html</code> 与 <code>build_manual.py</code> 输出不一致)</td><td>钩子 1(HTML 同步硬规则)</td><td>5 min</td></tr>
+      <tr><td>B2</td><td>缺 FAT 协议实测 + Tested-By 字段</td><td>钩子 6(Fresh Agent 黑盒测试)</td><td>1.5 h</td></tr>
+      <tr><td>B3</td><td>HELP 唤醒词未在 frontmatter 显式标注</td><td>钩子 7(HELP 唤醒词契约)</td><td>1 h</td></tr>
+      <tr><td>B4</td><td>未显式声明"HTML-First"行为契约</td><td>原则 11(HTML-First)</td><td>20 min</td></tr>
+    </tbody>
+  </table>
+
+  <h3>你挑的 4 个候选</h3>
+  <table>
+    <thead><tr><th>候选</th><th>对应 P0</th><th>做什么</th><th>工作量</th></tr></thead>
+    <tbody>
+      <tr><td>候选 1</td><td>B1</td><td>跑 <code>python3 scripts/build_manual.py</code> + verify SHA 一致</td><td>5 min</td></tr>
+      <tr><td>候选 3</td><td>B4</td><td>SKILL.md 新增 §⛓ HTML-First 章节</td><td>20 min</td></tr>
+      <tr><td>候选 4</td><td>(M2)</td><td>触发词 v2 化:TOP 5 核心 + 3 方向变体</td><td>1.5 h</td></tr>
+      <tr><td>候选 6</td><td>B3</td><td>HELP 唤醒词 frontmatter metadata + 路由表第 1 行</td><td>1 h</td></tr>
+    </tbody>
+  </table>
+
+  <p class="small">注:候选 2 (FAT 协议 + Tested-By, 1.5h) 暂不在本轮,你已选 A = 拓宽 Tested-By 定义,具体规则见 Q2。</p>
+</div>
+
+<h2 id="q1">Q1 · 炙 1:偏离 vs 约定(通俗解释)</h2>
+
+<div class="card-q">
+  <div><span class="q-num">1</span><span class="q-title">Skill 标识 = <code>home_manager</code>(英文)算不算"偏离"?</span></div>
+
+  <div class="q-context">
+    <p><strong>公司规定:</strong>所有员工必须写周报。你某周改成"项目日报" → <strong>违反规定</strong> → 这叫<strong>偏离</strong>(要写 ADR 解释)。</p>
+    <p><strong>公司没说:</strong>周报要不要写日期。你自己写了日期 → <strong>没违反任何规定</strong> → 这叫<strong>约定</strong>(放 CONTEXT 即可,不用 ADR)。</p>
+    <p><strong>映射:</strong></p>
+    <table>
+      <thead><tr><th>项</th><th>总纲规定</th><th>你做了什么</th><th>性质</th></tr></thead>
+      <tbody>
+        <tr><td>ADR-0001 本地时间</td><td>原则 12 说要用 UTC</td><td>用本地时间</td><td><strong>真偏离</strong>(违反原则 12)</td></tr>
+        <tr><td><code>home_manager</code> 标识</td><td>说"skill 要有标识",但<strong>没说必须中文还是英文</strong></td><td>用英文</td><td><strong>只是约定</strong>(没违反任何规定)</td></tr>
+        <tr><td>直接覆盖(无 _N)</td><td>原则 12 说"必须 _N 后缀"</td><td>直接覆盖</td><td><strong>真偏离</strong>(违反原则 12)</td></tr>
+      </tbody>
+    </table>
+    <p>audit 把 <code>home_manager</code> 算"偏离"是错的。它只是<strong>居家管家的本地约定</strong>,应该改叫 <code>Skill slug convention</code>(Skill 标识约定)。</p>
+  </div>
+
+  <div class="rec-box">α — 仅放居家管家 CONTEXT.md(简单),等真有第 2 个 Skill 时再考虑升级</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q1" value="alpha" checked />
+      <div class="option-text">
+        <div class="option-label">α · 仅放居家管家 CONTEXT</div>
+        <div class="option-desc">写法:CONTEXT.md 加一条 "Skill 标识 = home_manager(英文,避开中文路径问题)"。简单、立即可做。等未来第 2 个 Skill 出现,再升级到总纲通用。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q1" value="beta" />
+      <div class="option-text">
+        <div class="option-label">β · 升级到总纲通用术语</div>
+        <div class="option-desc">同时给总纲 §CONTEXT.md 提交一条 "Skill 标识 = Python 包名(英文、snake_case、避开中文路径)",所有未来 Skill 共用。变更慢但长期稳。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q2">Q2 · 炙 2 A 副作用:分级 Tested-By(已选 A)</h2>
+
+<div class="card-q">
+  <div><span class="q-num">2</span><span class="q-title">你已选 A(拓宽 Tested-By 定义),但要不要加"分级"子规则?</span></div>
+
+  <div class="q-context">
+    <p>你选 A 意味着:<strong>任何 commit 通过 pytest 都能打 <code>Tested-By: pytest-pass-2026-07-28</code></strong>,不需要 fresh agent。</p>
+    <p><strong>风险:</strong>pytest 通了 ≠ SKILL.md 没退化。</p>
+    <ul style="margin: 8px 0 8px 24px; padding: 0;">
+      <li>pytest 测的是<strong>代码契约</strong>(数据/接口/数据库)</li>
+      <li>FAT 测的是<strong>AI 能不能听懂人话</strong>(SKILL.md 触发词、路由表、措辞)</li>
+    </ul>
+    <p><strong>反例:</strong>你把"查物品"改成"搜物品",pytest 全 PASS(代码认得),但老用户说"查物品"就哑了 → <strong>只有 FAT 能抓到</strong>。</p>
+    <div class="warn-box">拓宽 A 必须配分级:改 SKILL.md → 必须 FAT;改代码 → pytest 就够。</div>
+  </div>
+
+  <div class="rec-box">接受分级子规则,日常 commit 用 pytest-pass,改 SKILL.md 必须 fresh-agent</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q2" value="yes" checked />
+      <div class="option-text">
+        <div class="option-label">接受分级子规则</div>
+        <div class="option-desc">SKILL.md §FAT 协议 写明:日常 commit(代码/数据/CLI)→ <code>Tested-By: pytest-pass-YYYY-MM-DD</code>;改 SKILL.md(触发词/路由表/说明)→ <code>Tested-By: fresh-agent-v1</code>(必须真实跑过 fresh agent)。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q2" value="no" />
+      <div class="option-text">
+        <div class="option-label">不分级,纯拓宽</div>
+        <div class="option-desc">任何 commit 通过 pytest 都合格,改 SKILL.md 也算。代价:触发词退化风险上升,只有等用户主动反馈才发现。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q3">Q3 · 炙 3:通用 5 术语归属(通俗解释)</h2>
+
+<div class="card-q">
+  <div><span class="q-num">3</span><span class="q-title">通用术语(5 状态 fallback 等)放哪?</span></div>
+
+  <div class="q-context">
+    <p><strong>公司术语表</strong>(总纲已有 28 个):会议室、白板、KPI、报销 — <strong>全公司通用</strong>。</p>
+    <p><strong>你部门术语表</strong>(居家管家 CONTEXT 5 个):command_cn、Skill 标识、出行清单、_HELP_ 保留字、12.A vs 12.B — <strong>只有居家管家用</strong>。</p>
+    <p>audit 又发现 5 个新概念:</p>
+    <table>
+      <thead><tr><th>术语</th><th>总纲原则</th><th>适用范围</th></tr></thead>
+      <tbody>
+        <tr><td><code>5 状态 fallback</code>(正常/空/缺数据/错误/离线)</td><td>原则 3</td><td>所有 Skill 模板</td></tr>
+        <tr><td><code>复制 prompt 按钮</code>(HTML 单工铁律)</td><td>原则 10</td><td>所有过程型 HTML</td></tr>
+        <tr><td><code>变体管理</code>(核心词配 2-3 变体)</td><td>钩子 3</td><td>所有 Skill 触发词</td></tr>
+        <tr><td><code>相对时间 helper</code>(今天/昨天/本周)</td><td>钩子 3</td><td>所有时间相关查询</td></tr>
+        <tr><td><code>跨 Skill 路由</code>(超出范围 → 丢隔壁)</td><td>钩子 3</td><td>多 Skill 共存</td></tr>
+      </tbody>
+    </table>
+    <p>这些和"会议室、白板"一样,是<strong>全 Skill 通用概念</strong>,不是居家管家独有。</p>
+  </div>
+
+  <div class="rec-box">C · 总纲定义通用,居家管家引用 + 家用扩展(总纲权威 + Skill 弹性,长期最稳)</div>
+
+  <div class="options">
+    <label class="option">
+      <input type="radio" name="q3" value="A" />
+      <div class="option-text">
+        <div class="option-label">A · 总纲优先</div>
+        <div class="option-desc">5 个通用术语丢回总纲 §CONTEXT.md,居家管家不重复定义。改总纲牵动所有 Skill(变更慢,但一份真相)。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q3" value="B" />
+      <div class="option-text">
+        <div class="option-label">B · Skill 各自维护</div>
+        <div class="option-desc">每个 Skill 自维护,允许重叠。每个 Skill 自治,改自己就行(变更快)。缺点:可能 5 个 Skill 各自定义不一致。</div>
+      </div>
+    </label>
+    <label class="option recommended">
+      <input type="radio" name="q3" value="C" checked />
+      <div class="option-text">
+        <div class="option-label">C · 双层(总纲基础 + Skill 扩展)</div>
+        <div class="option-desc">总纲定义通用基础,居家管家在自家 CONTEXT.md 引用 + 写家用扩展。优点:总纲权威 + Skill 弹性,长期最稳。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q4">Q4 · ADR-0001 扩充</h2>
+
+<div class="card-q">
+  <div><span class="q-num">4</span><span class="q-title">把"直接覆盖(无 _N)"合并进 ADR-0001 吗?</span></div>
+
+  <div class="q-context">
+    <p>ADR-0001 当前只记录了"本地时间" 1 个偏离。但居家管家实际有 <strong>2 个偏离</strong>(都违反原则 12):</p>
+    <ul style="margin: 8px 0 8px 24px;">
+      <li>本地时间(UTC → 本地)</li>
+      <li>直接覆盖(必须 _N → 直接覆盖)</li>
+    </ul>
+    <p>SKILL.md §📌 输出位置 现在用一节"偏离声明"分散写,容易和 ADR 失去同步。</p>
+    <p><strong>选择 A:</strong>把 2 个偏离合并写进 ADR-0001,SKILL.md §📌 输出位置 只引用 ADR,单一真相。</p>
+    <p><strong>选择 B:</strong>拆成 ADR-0001(本地时间) + ADR-0002(直接覆盖),各自独立。</p>
+  </div>
+
+  <div class="rec-box">A · 合并写进 ADR-0001(都是原则 12 偏离,同一来源,放一起更好查)</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q4" value="A" checked />
+      <div class="option-text">
+        <div class="option-label">A · 合并进 ADR-0001</div>
+        <div class="option-desc">ADR-0001 标题改成"HTML 输出命名与时间偏离(原则 12 · 12.A 本地时间 + 覆盖策略)",同时记录 2 个偏离。SKILL.md §📌 输出位置 改"见 ADR-0001"。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q4" value="B" />
+      <div class="option-text">
+        <div class="option-label">B · 拆成 ADR-0001 + ADR-0002</div>
+        <div class="option-desc">ADR-0001 保持原样;新建 ADR-0002 专门写"直接覆盖"偏离。每个偏离独立 ADR,可单独 revert。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q5">Q5 · 候选 1:修 SHA 漂移</h2>
+
+<div class="card-q">
+  <div><span class="q-num">5</span><span class="q-title">直接跑 <code>build_manual.py</code> 同步?</span></div>
+
+  <div class="q-context">
+    <p>之前审计发现:<code>居家管家.html</code> 与 <code>python3 scripts/build_manual.py</code> 预期输出哈希不一致 → 违反钩子 1(HTML 同步硬规则)。</p>
+    <p><strong>步骤:</strong></p>
+    <ol style="margin: 8px 0 8px 24px;">
+      <li>跑 <code>python3 scripts/build_manual.py</code>(生成新 HELP HTML 覆盖 居家管家.html)</li>
+      <li>跑 <code>python -m pytest tests/test_manual_sync.py -v</code>(验证 SHA 一致)</li>
+      <li><code>git add 居家管家.html</code></li>
+      <li>commit 消息:<code>[居家管家] 同步 HELP HTML 镜像(钩子 1)</code></li>
+    </ol>
+    <p>5 分钟,无风险,直接做。</p>
+  </div>
+
+  <div class="rec-box">直接执行,顺便补 Tested-By: pytest-pass-2026-07-28</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q5" value="yes" checked />
+      <div class="option-text">
+        <div class="option-label">现在执行</div>
+        <div class="option-desc">直接跑 4 步流程,完成后告诉我结果。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q5" value="no" />
+      <div class="option-text">
+        <div class="option-label">先验证一下 SHA 是不是真的漂移</div>
+        <div class="option-desc">先用 <code>python -m pytest tests/test_manual_sync.py -v</code> 看具体哪个哈希,然后再决定。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q6">Q6 · 候选 3:HTML-First 章节写哪种契约</h2>
+
+<div class="card-q">
+  <div><span class="q-num">6</span><span class="q-title">§⛓ HTML-First 章节的具体措辞强度?</span></div>
+
+  <div class="q-context">
+    <p>原则 11 要求:SKILL 命中后必须 invoke HTML,文字答是 fail mode。居家管家当前 SKILL.md 没有显式章节。</p>
+    <p>3 种措辞强度:</p>
+    <table>
+      <thead><tr><th>选项</th><th>强度</th><th>示例</th></tr></thead>
+      <tbody>
+        <tr><td>A · 软建议</td><td>"建议优先用 HTML 输出"</td><td><code>命中下列唤醒词 → 优先 invoke HTML;实在不行再文字答</code></td></tr>
+        <tr><td>B · 强约定</td><td>"必须用 HTML"</td><td><code>命中下列唤醒词 → 必须 invoke HTML,文字答视为 fail</code></td></tr>
+        <tr><td>C · 铁律</td><td>"不可文字答"</td><td><code>命中下列唤醒词 → 禁止文字答,违反此条记入 log</code></td></tr>
+      </tbody>
+    </table>
+    <p>适用唤醒词:查物品、看物品、盘物品、盘全部、统物品、查高频、查低频、查过期、查快递、穿什么、带物品、归物品(12 个过程型)</p>
+  </div>
+
+  <div class="rec-box">B · 强约定 · "必须 invoke HTML,文字答视为 fail mode"</div>
+
+  <div class="options">
+    <label class="option">
+      <input type="radio" name="q6" value="A" />
+      <div class="option-text">
+        <div class="option-label">A · 软建议</div>
+        <div class="option-desc">友好,但 AI 偷懒概率高。</div>
+      </div>
+    </label>
+    <label class="option recommended">
+      <input type="radio" name="q6" value="B" checked />
+      <div class="option-text">
+        <div class="option-label">B · 强约定(推荐)</div>
+        <div class="option-desc">明确"必须 invoke HTML,文字答 fail mode",但允许 fail 时优雅降级。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q6" value="C" />
+      <div class="option-text">
+        <div class="option-label">C · 铁律</div>
+        <div class="option-desc">最严。但居家管家没有 log 系统,无法实际落地,只是文字威慑。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q7">Q7 · 候选 4 TOP 5 核心词</h2>
+
+<div class="card-q">
+  <div><span class="q-num">7</span><span class="q-title">变体管理的 TOP 5 核心词选哪 5 个?</span></div>
+
+  <div class="q-context">
+    <p>居家管家有 33 个唤醒词,变体管理范围太大。先选 <strong>TOP 5 核心</strong>做变体(Q8 决定变体规则)。</p>
+    <p>我用 <strong>使用频率</strong> + <strong>复杂度</strong> 排了 2 个候选 TOP 5:</p>
+    <table>
+      <thead><tr><th>排名</th><th>按"频率+复杂度"排序</th><th>按"业务核心"排序</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>查物品</td><td>录物品</td></tr>
+        <tr><td>2</td><td>看物品</td><td>查物品</td></tr>
+        <tr><td>3</td><td>录物品</td><td>盘物品</td></tr>
+        <tr><td>4</td><td>盘物品</td><td>统物品</td></tr>
+        <tr><td>5</td><td>统物品</td><td>查过期</td></tr>
+      </tbody>
+    </table>
+    <p>你的审计里 audit 推荐了"查物品/看物品/录物品/盘物品/统物品"(按使用频率)。</p>
+  </div>
+
+  <div class="rec-box">采用 audit 推荐 TOP 5:查物品 / 看物品 / 录物品 / 盘物品 / 统物品</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q7" value="audit" checked />
+      <div class="option-text">
+        <div class="option-label">Audit 推荐(频率 5)</div>
+        <div class="option-desc">查物品 / 看物品 / 录物品 / 盘物品 / 统物品。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q7" value="business" />
+      <div class="option-text">
+        <div class="option-label">业务核心 5</div>
+        <div class="option-desc">录物品 / 查物品 / 盘物品 / 统物品 / 查过期 —— 把"看物品"换成"查过期",因为过期检查是居家管家独有卖点。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q7" value="custom" />
+      <div class="option-text">
+        <div class="option-label">自定义</div>
+        <div class="option-desc">在底部"备注"写你的 5 个。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q8">Q8 · 候选 4:3 方向变体怎么定义</h2>
+
+<div class="card-q">
+  <div><span class="q-num">8</span><span class="q-title">变体的"3 方向"按哪种语义定义?</span></div>
+
+  <div class="q-context">
+    <p>钩子 3 要求:每个核心词配 2-3 变体,覆盖同义 / 口语 / 模糊 3 方向。SKILL.md 只标方向不写具体话。</p>
+    <p>3 种定义方式:</p>
+    <table>
+      <thead><tr><th>方式</th><th>3 方向含义</th><th>示例("查物品")</th></tr></thead>
+      <tbody>
+        <tr><td>A · 同义/口语/模糊</td><td>同义替换 / 口语简化 / 模糊表达</td><td>同义"搜索物品" / 口语"帮我找找" / 模糊"那个啥在哪"</td></tr>
+        <tr><td>B · 词序/语序/省略</td><td>词序变体 / 语序变体 / 关键成分省略</td><td>"物品查查" / "查一下物品" / "查"</td></tr>
+        <tr><td>C · 形式/功能/情感</td><td>正式 / 非正式 / 命令式</td><td>"查询物品清单" / "找一下物品" / "看下东西"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rec-box">A · 同义/口语/模糊(钩子 3 原文措辞,符合总纲字面)</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q8" value="A" checked />
+      <div class="option-text">
+        <div class="option-label">A · 同义/口语/模糊(钩子 3 字面)</div>
+        <div class="option-desc">直接套用钩子 3 原文。SKILL.md §触发词速览表 每个核心词后标 "变体方向:同义+口语+模糊"。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q8" value="B" />
+      <div class="option-text">
+        <div class="option-label">B · 词序/语序/省略</div>
+        <div class="option-desc">更细的语言学切分,适合测试 "查一下 / 帮我查 / 物品查查" 这类。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q8" value="C" />
+      <div class="option-text">
+        <div class="option-label">C · 形式/功能/情感</div>
+        <div class="option-desc">更"用户语气"切分。缺点:与钩子 3 字面偏离,需要 ADR 解释。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q9">Q9 · 候选 4:变体 manifest 放哪</h2>
+
+<div class="card-q">
+  <div><span class="q-num">9</span><span class="q-title">变体的具体规则放哪个文件?</span></div>
+
+  <div class="q-context">
+    <p>SKILL.md 只标方向不写具体话(钩子 3 字面)。那"具体话"放哪?</p>
+    <table>
+      <thead><tr><th>选项</th><th>位置</th><th>适用</th></tr></thead>
+      <tbody>
+        <tr><td>A</td><td><code>references/variants.yaml</code></td><td>新增一个文件,类似 <code>scenarios.yaml</code> 结构</td></tr>
+        <tr><td>B</td><td>扩充 <code>references/scenarios.yaml</code> 加 variants 字段</td><td>复用现有文件</td></tr>
+        <tr><td>C</td><td><code>tests/test_variants.py</code> 用 fixture 表达</td><td>变体本身就是测试数据</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rec-box">A · 新建 references/variants.yaml(结构清晰,和 scenarios.yaml 平级)</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q9" value="A" checked />
+      <div class="option-text">
+        <div class="option-label">A · references/variants.yaml(推荐)</div>
+        <div class="option-desc">格式:<code>查物品: { 同义: [搜索物品, 找东西], 口语: [帮我找找], 模糊: [那个啥在哪] }</code>。和 scenarios.yaml 平级,加载一次全部命中。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q9" value="B" />
+      <div class="option-text">
+        <div class="option-label">B · 扩 scenarios.yaml</div>
+        <div class="option-desc">每个场景加 variants 字段。文件变大,但一处查所有上下文。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q9" value="C" />
+      <div class="option-text">
+        <div class="option-label">C · tests/test_variants.py fixture</div>
+        <div class="option-desc">变体作为测试数据。SKILL.md 不指向任何具体话,完全靠 pytest 守护。运维成本最低。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q10">Q10 · 候选 6:HELP 唤醒词 frontmatter</h2>
+
+<div class="card-q">
+  <div><span class="q-num">10</span><span class="q-title">HELP 唤醒词在 frontmatter 怎么标 + 路由表第 1 行?</span></div>
+
+  <div class="q-context">
+    <p>钩子 7 要求:每个 Skill 必须在 SKILL.md 登记 ≥ 1 HELP 唤醒词。</p>
+    <p>当前做法:居家管家 SKILL.md §路由表 第 33 行写"居家管家 帮助",frontmatter 未标注。</p>
+    <p><strong>Frontmatter metadata 字段选择:</strong></p>
+    <pre>name: 居家管家
+description: ...
+metadata:
+  help_wake_word: 居家管家 帮助</pre>
+    <p>or</p>
+    <pre>metadata:
+  help_wake_words:
+    - 居家管家 帮助
+    - 居家管家 速查
+    - 居家管家 HELP</pre>
+    <p>or</p>
+    <pre>metadata:
+  help_wake_word: 居家管家 帮助
+  速查速查: 居家管家 速查</pre>
+  </div>
+
+  <div class="rec-box">单数字段 + 路由表第 1 行:help_wake_word + 移到第 1 行</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q10" value="single_first" checked />
+      <div class="option-text">
+        <div class="option-label">单数字段 + 第 1 行(推荐)</div>
+        <div class="option-desc">metadata.help_wake_word: "居家管家 帮助"(单数);§路由表 把这一行移到第 1 行突出。优点:简单、显眼。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q10" value="multi" />
+      <div class="option-text">
+        <div class="option-label">复数字段(支持多词)</div>
+        <div class="option-desc">metadata.help_wake_words: [居家管家 帮助, 居家管家 速查](复数,数组)。便于以后加多个 HELP 唤醒词。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q10" value="single_keep" />
+      <div class="option-text">
+        <div class="option-label">单数字段,但 §路由表 保持原位置</div>
+        <div class="option-desc">只动 frontmatter,不动 §路由表 行号。最小改动,但钩子 7 "显眼"要求没满足。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="q11">Q11 · 执行顺序</h2>
+
+<div class="card-q">
+  <div><span class="q-num">11</span><span class="q-title">4 候选串行还是分组 commit?</span></div>
+
+  <div class="q-context">
+    <p>总工作量 ~3.5 h。建议执行路径:</p>
+    <table>
+      <thead><tr><th>候选</th><th>工作量</th><th>预期 commit</th></tr></thead>
+      <tbody>
+        <tr><td>候选 1(修 SHA)</td><td>5 min</td><td>[居家管家] 同步 HELP HTML 镜像(钩子 1)</td></tr>
+        <tr><td>Q1 概念调整(居家管家 CONTEXT 加 Skill 标识约定)</td><td>15 min</td><td>[居家管家] CONTEXT.md 新增 Skill 标识约定</td></tr>
+        <tr><td>Q4 ADR-0001 扩充(合并"直接覆盖")</td><td>20 min</td><td>[居家管家] ADR-0001 扩充(原则 12 双偏离合并)</td></tr>
+        <tr><td>候选 3(HTML-First 章节)+ Q6 措辞</td><td>20 min</td><td>[居家管家] SKILL.md 新增 §HTML-First 章节(原则 11)</td></tr>
+        <tr><td>候选 6(HELP 唤醒词 frontmatter)+ Q10</td><td>1 h</td><td>[居家管家] frontmatter help_wake_word + §路由表 第 1 行(钩子 7)</td></tr>
+        <tr><td>候选 4(变体管理)+ Q7/Q8/Q9</td><td>1.5 h</td><td>[居家管家] 触发词 v2 · TOP 5 变体管理(钩子 3)</td></tr>
+        <tr><td>Q2 FAT 协议(可选)</td><td>30 min</td><td>[居家管家] SKILL.md 新增 §FAT 协议 + 分级 Tested-By</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rec-box">全部串行,7 个 commit,每个独立可 revert</div>
+
+  <div class="options">
+    <label class="option recommended">
+      <input type="radio" name="q11" value="serial" checked />
+      <div class="option-text">
+        <div class="option-label">串行 7 commit(推荐)</div>
+        <div class="option-desc">每个候选 1 commit,失败独立 revert。TDD red→green 每个 commit。符合原则 7 (每 Phase 一 commit)。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q11" value="group" />
+      <div class="option-text">
+        <div class="option-label">分组 2 commit</div>
+        <div class="option-desc">第 1 commit:概念调整(Q1+Q4+ ADR-0001);第 2 commit:HTML 主线(候选 1+3+6);第 3 commit:变体管理(候选 4)。commit 少但单 commit 大。</div>
+      </div>
+    </label>
+    <label class="option">
+      <input type="radio" name="q11" value="single" />
+      <div class="option-text">
+        <div class="option-label">单 commit 全部</div>
+        <div class="option-desc">1 个大 commit "[居家管家] 综合优化(钩子 1/3/7 + 原则 11 + ADR-0001 扩充)"。commit message 详细列变更清单。优点:历史单一节点。缺点:回滚时 4 个优化绑死。</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<h2 id="summary">底部 · 汇总回答区</h2>
+
+<div class="summary">
+  <h2 style="margin-top: 0;">把你的回答汇总到下面,然后发我</h2>
+  <p class="small">每行格式:<code>Q1=alpha, Q2=yes, Q3=C, ...</code> 或自然语言描述</p>
+
+  <textarea id="answer" placeholder="例如:
+Q1 = alpha
+Q2 = yes
+Q3 = C
+Q4 = A
+Q5 = yes (直接执行)
+Q6 = B (强约定)
+Q7 = audit (频率 5)
+Q8 = A (同义/口语/模糊)
+Q9 = A (variants.yaml)
+Q10 = single_first
+Q11 = serial (7 commit)
+备注: 一切按推荐走"></textarea>
+
+  <button class="btn" onclick="copy()">复制到剪贴板</button>
+  <button class="btn btn-secondary" onclick="defaultAnswers()">填默认推荐答案</button>
+
+  <details style="margin-top: 16px;">
+    <summary>默认推荐答案(我建议)</summary>
+    <div>
+      <pre>Q1 = alpha
+Q2 = yes
+Q3 = C
+Q4 = A
+Q5 = yes
+Q6 = B
+Q7 = audit
+Q8 = A
+Q9 = A
+Q10 = single_first
+Q11 = serial</pre>
+    </div>
+  </details>
+</div>
+
+<div class="footer-note">
+  本文件路径:<code>D:\2Study\StudyNotes\SKILLS\居家管家\_grilling\grilling-round-1_2026-07-28.html</code><br />
+  烤炉:grill-with-docs + domain-modeling 技能 · 用总纲 V1.0 当尺<br />
+  打开方式:Chrome (Ctrl+O → 文件路径)
+</div>
+
+<a class="back-to-top" href="#">↑</a>
+
+<script>
+function copy() {
+  const t = document.getElementById('answer');
+  t.select();
+  document.execCommand('copy');
+  const btn = event.target;
+  btn.textContent = '已复制 ✓';
+  setTimeout(() => btn.textContent = '复制到剪贴板', 1500);
+}
+function defaultAnswers() {
+  document.getElementById('answer').value = `Q1 = alpha
+Q2 = yes
+Q3 = C
+Q4 = A
+Q5 = yes
+Q6 = B
+Q7 = audit
+Q8 = A
+Q9 = A
+Q10 = single_first
+Q11 = serial`;
+}
+</script>
+
+</div>
+</body>
+</html>

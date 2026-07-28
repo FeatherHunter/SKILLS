@@ -1651,6 +1651,13 @@ def main():
     # completed reminders
     p_completed = sub.add_parser("completed")
     p_completed.add_argument("--html", action="store_true", help="生成 HTML 已完成提醒页")
+    # help (v1.1.4 · 总纲 §07 契约 · 必生成 HELP HTML)
+    # 必须行为:跑命令 = 必生成 HTML + 覆盖 skill 根目录 备忘录.html
+    # 不暴露 --html / --json flag:简化调用,无歧义
+    p_help = sub.add_parser(
+        "help",
+        help="HELP 唤醒词 · 必生成 HELP HTML(覆盖 skill 根目录 备忘录.html)",
+    )
 
     args = parser.parse_args()
 
@@ -1728,6 +1735,23 @@ def main():
         list_reminders(args)
     elif args.command == "completed":
         completed_reminders(args)
+    elif args.command == "help":
+        # 总纲 §07 契约:HELP 命中必 invoke HTML
+        # 用户额外要求:覆盖 skill 根目录 备忘录.html
+        try:
+            from memo_render import render_help
+            result = render_help()
+            output_json(
+                {
+                    "html_path": result["html_path"],
+                    "skill_root_path": result["skill_root_path"],
+                    "scenario_count": result["scenario_count"],
+                    "note": "已生成 HELP HTML + 覆盖 skill 根目录 备忘录.html",
+                },
+                message=f"HELP 已生成 · {result['scenario_count']} 个场景",
+            )
+        except Exception as e:
+            error_json(f"HELP 生成失败: {e}")
     else:
         parser.print_help()
         error_json("未知命令")

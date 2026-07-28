@@ -1,6 +1,7 @@
 # 备忘录 (Memorandum)
 
-> **当前版本:1.1.3**(2026-07-25 发布 · 22 个 commit · git tag `v1.1.3`)
+> **当前版本:1.1.4**(2026-07-28 发布 · git tag `v1.1.4`)
+> v1.1.4:备忘录 HELP 唤醒词(总纲 §07 契约 · 场景资产 + HELP HTML + skill 根目录覆盖)
 > v1.1.3:复制按钮改造(文案简化 + 富内容 + 视觉反馈)
 > v1.1.2:HTML 交付 checklist 化(checkbox + 回复模板)
 > v1.1.1:HTML 交付规范加强(主动发送是核心,Chrome 打开是加分)
@@ -19,6 +20,8 @@
 ## 强制性规定(最高优先级)
 
 1. **HTML 同步**:该技能的所有优化和变动、脚本的所有变动都必须体现在 `备忘录.html` 上。
+   - **v1.1.4 起**:`备忘录.html` 不再手写,**由 HELP 命令自动生成并覆盖**(总纲 §07 契约 + 用户约定)。
+   - 时间戳副本:`D:\.db\memo_html\备忘录_HELP_<YYYYMMDD>_<HHMMSS>.html`(§04 原则 12.B)
 2. **优先级**:本规定优先级最高,高于所有其他规范。
 3. **用户确认**:对该技能的所有文件、脚本的任何一行修改,都需要明确得到用户的 1 次确认后才能执行。
 
@@ -194,15 +197,16 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 | 27 | 心愿排期 | 🟡 | `wish-batch-plan --html` | `wish_plan.html`(过程型) |
 | 28 | 备忘录同步 | ✅ | `sync-from-feishu --html` | `sync_report.html` |
 | - | **备忘改分类(批量)**(由"备忘改分类" + "都/全部/多 id" 触发) | 🟡 | `batch-update-category --from-category X --html` | `change_category.html`(过程型) |
+| 29 | **备忘录 HELP** | ✅ | `memo_cli.py help` | `memo_help.html`(HELP 自描述 · **不展示自身**) |
 
 ### 统计
 
 | HTML? | 数量 | 触发词 |
 |---|---|---|
-| ✅ 必须生成 HTML | 9 | 搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪 |
+| ✅ 必须生成 HTML | 10 | 搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪/备忘录 HELP |
 | 🟡 过程型 HTML | 4 | 完成心愿(完成打卡)/心愿排期/备忘改分类(批量)/(批量场景) |
 | ❌ 不生成 HTML | 15 | 记备忘/改备忘/删备忘/备忘改分类(单条)/备忘改子分类/记提醒/设提醒/记心愿/删心愿/改心愿/记打卡/删打卡/改打卡/记情绪/删情绪/改情绪 |
-| **合计** | **28** | (含 12 个子唤醒词) |
+| **合计** | **29** | (含 12 个子唤醒词) |
 
 ### AGENT 决策流程
 
@@ -219,7 +223,7 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 ### 防文档裂缝守护
 
-`tests/test_html_trigger_coverage.py` 扫描 SKILL.md + 本表,确保所有 28 个触发词在本表出现。改 SKILL.md 时自动验证。
+`tests/test_html_trigger_coverage.py` 扫描 SKILL.md + 本表,确保所有 29 个触发词(含 HELP)在本表出现。改 SKILL.md 时自动验证。
 
 ---
 
@@ -227,7 +231,7 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 私人备忘工具,支持随时记录、分类整理、时间检索、媒体附件、定时提醒和打卡追踪。
 
-**触发词**:记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿(**别名:完成打卡 · 2026-07-24 加**)、心愿排期、备忘录同步
+**触发词**:记备忘、搜备忘、查备忘、改备忘、删备忘、看备忘、按时间搜备忘、备忘改分类、备忘改子分类、记提醒、设提醒、看提醒、查已提醒备忘、完成心愿(**别名:完成打卡 · 2026-07-24 加**)、心愿排期、备忘录同步、**备忘录 HELP**(v1.1.4 加 · 总纲 §07 契约)
 
 **分类子唤醒词**(心愿/打卡/情绪日记,自带顶层分类,操作同上):
 - 记心愿、删心愿、改心愿、查心愿
@@ -875,6 +879,76 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 ```
 
 **说明**:`${SKILL_DIR}` 是占位符,部署时替换为技能实际目录的绝对路径(如 `/mnt/d/2Study/StudyNotes/SKILLS/备忘录` 或 `D:\2Study\StudyNotes\SKILLS\备忘录`)。Payload 只负责触发 skill 执行,不描述"有提醒/无提醒"的判断逻辑,该逻辑由 SKILL 内部决定。
+
+## 参考文档
+
+- 数据库结构:`reference/schema.md`
+- 对话示例:`reference/examples.md`
+- Cron 配置:`reference/cron.md`
+- **场景资产**(v1.1.4 · 总纲 §07 契约):`references/scenarios.yaml` — HELP HTML 的唯一事实源
+
+---
+
+## 备忘录 HELP(v1.1.4 · 总纲 §07 契约)
+
+### 触发词
+
+- **`备忘录 HELP`**
+
+### 行为
+
+`备忘录 HELP` 命中后:
+
+1. 读 `references/scenarios.yaml`(场景资产,HELP HTML 唯一事实源)
+2. 渲染 `templates/memo_help.html` → 产出 HELP HTML
+3. 写**时间戳副本**:`D:\.db\memo_html\备忘录_HELP_<YYYYMMDD>_<HHMMSS>.html`(§04 原则 12.B)
+4. ★ **覆盖 skill 根目录 `备忘录.html`**(用户额外要求 · 取代旧手写用户手册)
+
+### 场景资产契约(§07 §2.2)
+
+每条场景必含 7 字段:
+| 字段 | 含义 |
+|---|---|
+| `wake_word` | 关联业务唤醒词 |
+| `scenario_id` | 稳定 ID,跨版本不变 |
+| `scenario_title` | 用户可读标题 |
+| `dimensions` | 合法维度字典 |
+| `prompt` | 稳定用户意图(**不暴露** CLI / DB / Python / 模板路径) |
+| `status` | `""`(可用)或 `"【待开发】"`(禁用) |
+| `result` | 预期结果(用户视角) |
+
+### HELP HTML 必须(§07 §5)
+
+- 展示除 HELP 自身外的**全部 28 个业务唤醒词**
+- 每场景独立**复制按钮**(剪贴板 API + `execCommand` 降级)
+- 5 状态 fallback(正常 / 空 / 缺失 / 错误 / 离线)
+- 移动端 + PC 适配
+- **不展示 HELP 唤醒词自身**(避免死循环)
+
+### 守门测试
+
+`tests/test_help.py` 22 用例守护:
+- scenarios.yaml schema(7 字段齐全、ID 唯一、prompt 无实现细节)
+- 场景数 = SKILL.md 触发词数
+- render_help 产出合法 HTML(占位符、转义)
+- **skill 根目录 `备忘录.html` 被覆盖**
+- HELP HTML 不展示自身
+- CLI `help` 子命令可执行
+
+### CLI
+
+```bash
+python3 script/memo_cli.py help    # 必生成 HELP HTML + 覆盖 skill 根 备忘录.html
+```
+
+**无 `--html` / `--json` flag**(用户约定 #3:必生成,简化调用)。
+
+### 历史
+
+- v1.0.9:旧 `备忘录.html`(475 行手写用户手册)已废弃
+- v1.1.4:新 `备忘录.html` = `memo_cli.py help` 自动生成的 HELP HTML
+
+---
 
 ## 参考文档
 

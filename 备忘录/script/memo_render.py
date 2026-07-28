@@ -11,6 +11,7 @@ v1.1.0(2026-07-25) · 修复 v1.0.9 真实运行时 bug:
 输出目录(v1.0.5) · 输出 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 """
 import json
+from datetime import datetime
 from pathlib import Path
 
 from injector import inject_html, write_output  # noqa: F401 · 同目录私有模块
@@ -25,6 +26,8 @@ SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
 WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
 WISH_COMPLETE_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_complete.html"
 CHANGE_CATEGORY_TEMPLATE_PATH = SKILL_DIR / "templates" / "change_category.html"
+HELP_TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_help.html"
+SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 
 
 def _get_html_output_dir():
@@ -88,6 +91,75 @@ def render_change_category(payload, name="批量改分类"):
     """渲染批量改分类向导页(过程型 HTML)"""
     template = CHANGE_CATEGORY_TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))
+
+
+def _load_scenarios():
+    """加载 references/scenarios.yaml(场景资产 = HELP HTML 唯一事实源)
+
+    总纲 §07 §2.2 契约:每场景必含 7 字段(wake_word / scenario_id /
+    scenario_title / dimensions / prompt / status / result)。
+    """
+    if not SCENARIOS_PATH.exists():
+        raise FileNotFoundError(f"场景资产缺失: {SCENARIOS_PATH}")
+    try:
+        import yaml
+    except ImportError:
+        raise RuntimeError("缺少 pyyaml,运行 `pip install pyyaml`")
+    data = yaml.safe_load(SCENARIOS_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict) or "scenarios" not in data:
+        raise ValueError(f"scenarios.yaml 格式错误: 缺少 'scenarios' 字段")
+    return data
+
+
+def render_help(payload=None, name="备忘录_HELP"):
+    """渲染 HELP 使用手册页(v1.1.4 · 总纲 §07 契约)
+
+    路径形态(§04 原则 12.B):
+      $SKILLS_DATA_DIR/<skill>_html/<skill中文名>_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html
+
+    额外要求(v1.1.4 · 用户约定):
+      渲染后自动复制到 <SKILL_DIR>/备忘录.html,覆盖旧版用户手册。
+      旧"备忘录.html"(纯用户手册,475 行手维护)已被废弃。
+
+    Returns:
+        dict: {
+            "html_path": 时间戳副本路径,
+            "skill_root_path": skill 根目录 备忘录.html 路径(已覆盖),
+            "scenario_count": 场景数,
+        }
+    """
+    template = HELP_TEMPLATE_PATH.read_text(encoding="utf-8")
+
+    if payload is None:
+        scenarios_data = _load_scenarios()
+        payload = {
+            "status": "ok",
+            "data": {
+                "title": "备忘录 · HELP 使用手册",
+                "command": "help",
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "version": scenarios_data.get("version", ""),
+                "skill": scenarios_data.get("skill", "备忘录"),
+                "scenarios": scenarios_data.get("scenarios", []),
+            },
+            "message": f"共 {len(scenarios_data.get('scenarios', []))} 个场景",
+        }
+
+    # 1. 写时间戳副本(§04 原则 12.B)
+    help_path = _write(name, _inject_body(template, payload))
+
+    # 2. ★ 覆盖 skill 根目录 备忘录.html(用户额外要求)
+    skill_root_help = SKILL_DIR / "备忘录.html"
+    skill_root_help.write_text(
+        Path(help_path).read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    return {
+        "html_path": str(help_path),
+        "skill_root_path": str(skill_root_help),
+        "scenario_count": len((payload.get("data") or {}).get("scenarios") or []),
+    }
 
 
 def main():

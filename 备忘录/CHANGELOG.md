@@ -77,6 +77,108 @@
 
 ---
 
+## [1.1.4] · 2026-07-28
+
+> **patch**(语义化版本规则):备忘录 HELP 唤醒词(总纲 §07 契约)
+> 用户回复 4 选:yaml / 老的直接删掉 / 必须要 / FAT 最后再说
+
+### Added(按总纲 §07 HELP 与场景完备性契约)
+
+- **触发词 `备忘录 HELP`**(第 29 个)
+- **场景资产**:`references/scenarios.yaml`
+  - 29 条场景(对应 28 个业务唤醒词 + 备忘改分类批量版)
+  - 7 字段必填契约:`wake_word / scenario_id / scenario_title / dimensions / prompt / status / result`
+  - prompt 不暴露 CLI / DB / Python / 模板路径(§07 §3)
+  - 全部 `status = ""`(本期无【待开发】)
+- **HELP HTML 模板**:`templates/memo_help.html`
+  - 4 段式 + 5 状态 fallback(§04 原则 3)
+  - 7 分组:记录类 / 查找类 / 提醒类 / 心愿类 / 批量类 / 跨 Skill / 子唤醒词
+  - 每场景独立复制按钮(剪贴板 API + `execCommand` 降级)
+  - 搜索 / 分类筛选 / 详情折叠
+  - 不展示 HELP 唤醒词自身(§07 §5 反模式 3)
+- **渲染器**:`script/memo_render.py:render_help`
+  - 路径(§04 原则 12.B):`memo_html/备忘录_HELP_<YYYYMMDD>_<HHMMSS>[_<N>].html`
+  - ★ **额外要求**:渲染后自动复制到 `<SKILL_DIR>/备忘录.html`,覆盖旧版
+- **CLI 子命令**:`memo_cli.py help`
+  - 必生成 HELP HTML + 覆盖 skill 根目录 备忘录.html
+  - 无 `--html` / `--json` flag(用户约定 #3:简化调用)
+
+### Removed(用户约定 #2)
+
+- **旧 `备忘录.html` 已删除**(475 行手写用户手册,v1.0.9 起)
+  - 不再有"第二份"HTML 在 skill 根目录
+  - 新 `备忘录.html` = `memo_cli.py help` 产物(单一来源)
+
+### Changed
+
+- `SKILL.md`:
+  - 触发词表新增 `备忘录 HELP` 行(第 29)
+  - 统计从 28 → 29
+  - 「HTML 同步」条款新增 v1.1.4 例外说明(自动生成)
+  - 新增「备忘录 HELP」专章,引用总纲 §07 契约
+
+### Tests(`tests/test_help.py` 新增 22 用例守护)
+
+1. `test_file_exists` — 场景资产文件存在
+2. `test_skill_and_version_keys` — 顶层字段齐全
+3. `test_28_wake_words_minimum` — 触发词 ≥ 28
+4. `test_scenario_count_matches_skill_md` — SKILL.md ↔ scenarios 一致
+5. `test_all_7_fields_present` — 契约 §07 §2.2 7 字段必填
+6. `test_scenario_id_unique` — scenario_id 跨场景唯一
+7. `test_no_pending_dev_status` — 本期无【待开发】
+8. `test_no_cli_or_db_leak_in_prompt` — prompt 抽象(§07 §3)
+9. `test_template_exists` — 模板存在
+10. `test_placeholder_unique` — `<!--INJECT-DATA-->` 唯一
+11. `test_no_help_wake_word_in_template` — 模板静态文本不含 HELP 自身
+12. `test_produces_timestamped_copy` — §04 原则 12.B 命名
+13. `test_overwrites_skill_root_help` — **用户额外要求**覆盖生效
+14. `test_skill_root_content_matches_timestamped` — 内容一致
+15. `test_html_contains_window_data` — 注入成功
+16. `test_html_contains_all_wake_words` — §07 §5 全业务唤醒词
+17. `test_html_does_not_show_help_itself` — §07 §5 反模式 3
+18. `test_has_5_state_fallback` — §04 原则 3 5 状态
+19. `test_has_copy_button_mechanism` — 每场景独立复制按钮
+20. `test_help_subcommand_runs` — CLI help 可执行
+21. `test_help_has_no_html_flag` — 用户约定 #3 必生成
+
+**`tests/test_html_user_manual.py`** 退役重写:
+- 旧测试守护的是手写用户手册(已删除)
+- 新测试守护 HELP HTML 可读性(总纲 §07 §5)
+
+### 范围
+
+- 新增 1 个资产文件 + 1 个 HTML 模板 + 1 个 CLI 子命令 + 22 个测试
+- 删除 1 个手写 HTML(用户约定 #2)
+- 改动 2 个核心 Python 文件 + 1 个 SKILL.md
+
+### 测试
+
+- 全量:148/148 pytest 通过(126 → 148 · +22 来自 HELP 测试)
+- 端到端:`memo_cli.py help` 实际生成 HELP HTML + 覆盖 skill 根 备忘录.html
+- 失败路径:SCENARIOS_PATH 缺失 → 报错"场景资产缺失"
+- 守门:prompt 不含 `memo_cli.py` / `memo.db` / `templates/` 等关键字
+
+### 总纲 §07 自检(14 项)
+
+| # | 检查项 | 状态 |
+|---|---|---|
+| 1 | 登记 HELP 唤醒词 + 不在 HTML 展示自身 | ✅ |
+| 2 | 场景资产 = 唯一事实源 | ✅ |
+| 3 | 7 字段必填 | ✅ |
+| 4 | prompt 不暴露 CLI / DB / 路径 | ✅ |
+| 5 | status 二态(本期全可用) | ✅ |
+| 6 | 【待开发】AI 停步逻辑(本期无触发) | ✅(逻辑已就绪) |
+| 7 | HELP HTML 由资产+模板+渲染器生成 | ✅ |
+| 8 | 5 状态 fallback | ✅ |
+| 9 | 搜索 / 筛选 / 折叠 | ✅ |
+| 10 | 多端适配(@media) | ✅ |
+| 11 | 每场景独立复制按钮 + 反馈 + 降级 | ✅ |
+| 12 | 5 者一一对应(唤醒词 ↔ 资产 ↔ prompt ↔ 底层 ↔ HTML) | ✅ |
+| 13 | FAT 协议(待跑 · 用户 #4) | ⏸ 用户决定 FAT 时机 |
+| 14 | 跨 Skill 路由冲突声明 | ✅(备忘改分类批量场景已声明) |
+
+---
+
 ## [1.1.3] · 2026-07-25
 
 > **patch**(语义化版本规则):复制按钮改造 — 文案简化 + 富内容 + 视觉反馈

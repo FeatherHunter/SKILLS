@@ -84,6 +84,10 @@
 - P0-4 FAT 真跑需新会话(fresh context)
 - 13 manager 中 5 个支持 JSON,剩 8 个未做(治本需 Q3 argparse 重写,半天)
 - 场景 2 批量编辑 batch_edit.html 未做(半天)
+- **P0 commit 不可独立完全可逆**(2026-07-28 实测)
+  - SKILL.md + 镜像被 Phase 1.4 / 2 / 3 / 3.2 多次修改
+  - 单独 revert 后续 commit 会冲突
+  - **修复方向**:加 PR description 标注 commit 间依赖关系,避免"假设独立可逆"
 
 ---
 

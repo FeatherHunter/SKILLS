@@ -8,7 +8,9 @@
   - split_tags(tags)
 """
 import json
+import os
 import shlex
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -17,10 +19,76 @@ from ._shared import SHARED_JS
 # SKILL_DIR: 从本文件位置向上 3 级 = 居家管家/
 SKILL_DIR = Path(__file__).parent.parent.parent
 TEMPLATES_DIR = SKILL_DIR / "templates"
-OUTPUT_DIR = SKILL_DIR / "output"
+
+# Skill 标识(与 Python 包名一致),用于 HTML 输出子目录
+SKILL_SLUG = "home_manager"
+SKILL_CN_NAME = "居家管家"
+HTML_SUBDIR = f"{SKILL_SLUG}_html"
 
 DATA_PLACEHOLDER = "<!--INJECT-DATA-->"
 SHARED_PLACEHOLDER = "<!--SHARED-HELPERS-->"
+
+# template → command_cn 静态映射表(原则 12.A 中文前缀)
+# help_center 走 12.B 路径,不在此表
+TEMPLATE_TO_COMMAND_CN = {
+    "search_results.html": "查物品",
+    "delivery_check.html": "查快递",
+    "add_preview.html": "录物品",
+    "item_detail.html": "看物品",
+    "list_overview.html": "统物品",
+    "inventory_check.html": "盘物品",
+    "expiring_alert.html": "查过期",
+    "outfit_picker.html": "穿什么",
+    "travel_trip.html": "出行清单",
+}
+
+
+def _fallback_output_root():
+    """全局 fallback HTML 输出根:Windows → D:/.db,WSL → /mnt/d/.db
+    沿用 home_manager.db._fallback_db_dir 的策略,DB 目录与 HTML 根同级。
+    """
+    if sys.platform == 'win32':
+        return Path('D:/.db')
+    d_drive = Path('/mnt/d')
+    if d_drive.exists():
+        return d_drive / '.db'
+    raise RuntimeError(
+        'SKILLS_DATA_DIR 未设置,且 D: 盘未挂载到 /mnt/d/。'
+        '请设置 SKILLS_DATA_DIR 或 SKILLS_DB_PATH 环境变量。'
+    )
+
+
+def resolve_output_root():
+    """env 链解析 HTML 输出根:$SKILLS_DATA_DIR > $SKILLS_DB_PATH > fallback
+    (总纲 §原则 12.X env var 优先级)
+    """
+    env_data = os.environ.get("SKILLS_DATA_DIR")
+    if env_data:
+        return Path(env_data)
+    env_db = os.environ.get("SKILLS_DB_PATH")
+    if env_db:
+        return Path(env_db)
+    return _fallback_output_root()
+
+
+def _auto_output_path(template_name):
+    """根据 template_name 构造自动命名输出路径(原则 12.A / 12.B)
+    - 12.A 数据/过程:`<root>/<skill>_html/<command_cn>_<YYYYMMDD>_<HHMMSS>.html`
+    - 12.B HELP:`<root>/<skill>_html/<skill 中文名>_HELP_<YYYYMMDD>_<HHMMSS>.html`
+    时间戳用本地时间(见 ADR-0001)。冲突直接覆盖(见 SKILL.md §输出位置)。
+    """
+    root = resolve_output_root()
+    out_dir = root / HTML_SUBDIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if template_name == "help_center.html":
+        # 12.B HELP 命名
+        filename = f"{SKILL_CN_NAME}_HELP_{stamp}.html"
+    else:
+        # 12.A 数据/过程命名
+        command_cn = TEMPLATE_TO_COMMAND_CN.get(template_name, template_name.replace(".html", ""))
+        filename = f"{command_cn}_{stamp}.html"
+    return out_dir / filename
 
 
 def render_page(template_name, payload, output_path=None, message=None):
@@ -65,9 +133,7 @@ def render_page(template_name, payload, output_path=None, message=None):
     if output_path:
         out = Path(output_path)
     else:
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out = OUTPUT_DIR / f"{template_name.replace('.html', '')}_{stamp}.html"
+        out = _auto_output_path(template_name)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
     return {

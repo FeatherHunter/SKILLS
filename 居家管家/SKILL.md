@@ -200,6 +200,68 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 
 ---
 
+## 📌 输出位置
+
+本 Skill 的 HTML 输出遵循 [SKILL 开发总纲 §原则 12](../SKILL开发总纲V1.0/04-可视化与注入v2.md)（HTML 输出路径约定），分类标 12.A（数据/过程）和 12.B（HELP）。
+
+### 路径根与子目录
+
+路径根按 env 链解析（总纲 12.X 优先级）：
+
+```
+$SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\ / WSL: /mnt/d/.db/)
+```
+
+所有 HTML 输出落在 `<根>/home_manager_html/` 子目录下（Skill 标识 = `home_manager`，与 Python 包名一致）。
+
+### 12.A 数据/过程 HTML
+
+**命名形态**：`<根>/home_manager_html/<command_cn>_<YYYYMMDD>_<HHMMSS>.html`
+
+**command_cn** 中文前缀来自 render 层的 `template → command_cn` 静态映射表（继承 SKILL §触发词速览表字面）：
+
+| template | command_cn |
+|----------|-----------|
+| `search_results.html` | 查物品 |
+| `delivery_check.html` | 查快递 |
+| `add_preview.html` | 录物品 |
+| `item_detail.html` | 看物品 |
+| `list_overview.html` | 统物品 |
+| `inventory_check.html` | 盘物品 |
+| `expiring_alert.html` | 查过期 |
+| `outfit_picker.html` | 穿什么 |
+| `travel_trip.html` | 出行清单（涵盖带物品 pack + 归物品 return） |
+
+例子：`home_manager_html/查物品_20260728_171500.html`
+
+### 12.B HELP HTML
+
+**命名形态**：`<根>/home_manager_html/居家管家_HELP_<YYYYMMDD>_<HHMMSS>.html`
+
+以 `_HELP_` 为保留字（中段，可被 grep 一抓出来）。`<skill 中文名>` 前缀 = `居家管家`（SKILL.md frontmatter 声明）。
+
+例子：`home_manager_html/居家管家_HELP_20260728_171500.html`
+
+### 显式 override
+
+`--output <path>` 仍可绕过自动命名，直接写到指定路径（不强制走 `home_manager_html/` 子目录）。
+
+### ⚠️ 与总纲 12.X 的偏离声明
+
+本 Skill 在以下三项与总纲 12.X 显式偏离，已记录原因：
+
+| 偏离项 | 总纲规定 | 本 Skill 取值 | 记录位置 |
+|--------|---------|--------------|---------|
+| 时区 | UTC | **本地时间**（`datetime.now()`） | [ADR-0001](./docs/adr/0001-local-time-over-utc-for-html-filenames.md) |
+| 冲突处理 | `_N` 后缀不覆盖 | **直接覆盖**（无 `_N` 后缀） | 本节 |
+| Skill 标识 | 由 Skill 自决 | `home_manager`（与 Python 包名一致） | [CONTEXT.md](./CONTEXT.md) |
+
+**本地时间偏离理由**：本 Skill 面向个人家庭场景，用户看文件名时间戳期望与钟表时间一致；UTC 会让下午 5 点生成的文件名上显示成 9 点，造成 8 小时偏差引发混淆。详见 ADR-0001。
+
+**覆盖偏离理由**：本场景不存在"保留历史输出"的需求（运行产物已被 `.gitignore`），同秒同名生成直接覆盖，避免 `_1` `_2` 后缀文件泛滥。
+
+---
+
 ## HTML 渲染器（Phase 7 重构）
 
 所有 HTML 模板的注入渲染由 `scripts/render/` 包提供，与 home_manager 数据/操作层解耦：

@@ -5,10 +5,19 @@
   - 改 exit code 约定后 CI 脚本全错, 这里拦截
 """
 import json
+import shutil
 import subprocess
+import sys
+from pathlib import Path
 
-CLI = ["python3", "home_manager.py"]
-CWD = "/mnt/d/2Study/StudyNotes/SKILLS/居家管家/scripts"
+# 跨平台:Windows 用 python,Unix 用 python3(若 python3 不在则降级到 python)
+_PY = "python3" if sys.platform != "win32" else "python"
+if not shutil.which(_PY):
+    _PY = "python"  # 兜底
+
+CLI = [_PY, "home_manager.py"]
+# 跨平台:用 Path推导 scripts/ 目录(本测试文件在 tests/,scripts 在同级)
+CWD = str(Path(__file__).parent.parent / "scripts")
 
 
 def _run(*args):
@@ -16,6 +25,7 @@ def _run(*args):
         [*CLI, *args],
         capture_output=True, text=True, timeout=30,
         cwd=CWD,
+        encoding="utf-8", errors="replace",
     )
 
 

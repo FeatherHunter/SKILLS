@@ -160,7 +160,7 @@ class TestMemoRenderCanUseInjector:
              "render_wish_plan, render_wish_complete, render_change_category; "
              "print('ok')"],
             capture_output=True, text=True,
-            cwd="/mnt/d/2Study/StudyNotes/SKILLS/备忘录",
+            cwd=str(Path(__file__).resolve().parent.parent),
             timeout=10,
         )
         assert proc.returncode == 0, \

@@ -164,6 +164,7 @@
     }
     html += recordsCollapsible(records);
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -282,6 +283,7 @@
     }
     html += recordsCollapsible(data.records || []);
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -328,6 +330,7 @@
     }
     html += recordsCollapsible(data.records || []);
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -370,6 +373,7 @@
     }
     html += recordsCollapsible(data.records || []);
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -409,6 +413,7 @@
     }
     html += recordsCollapsible(data.records || []);
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -450,6 +455,7 @@
       html += '</ul></div>';
     }
 
+    html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;
   }
 
@@ -464,4 +470,64 @@
              (delta ? '<span style="margin-left:auto;font-size:11px;color:var(--fg3)">' + escapeHTML(delta) + '</span>' : '') +
            '</div></div>';
   }
+
+  // ===== helper: 复制 prompt 区(ADR-0002 Q6 · 总纲 §04 原则 10)=====
+  // record 域 6 模板共享:把 data.copy_prompt 渲染为带按钮的卡片
+  function copyPromptBlock(data){
+    var cp = data && data.copy_prompt;
+    if (!cp) return "";
+    var previewText = String(cp).substring(0, 200);
+    if (String(cp).length > 200) previewText += "…";
+    return '<div class="card copy-prompt-zone" style="background:linear-gradient(180deg,#f0f4ff 0%,#fff 100%);border:2px solid var(--blue);border-radius:14px;padding:18px 20px;margin:12px 0">' +
+             '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">' +
+               '<div style="flex:1;min-width:200px">' +
+                 '<h3 style="font-size:15px;font-weight:700;color:var(--fg);margin-bottom:6px">📋 复制 4 部分 prompt 给 AI</h3>' +
+                 '<pre class="copy-preview" style="background:#fff;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--fg2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.55;max-height:80px;overflow:auto;white-space:pre-wrap;margin:0">' + escapeHTML(previewText) + '</pre>' +
+               '</div>' +
+               '<button class="copy-btn-record" type="button" data-copy-prompt="1" style="background:var(--blue);color:#fff;border:none;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">复制完整 prompt</button>' +
+             '</div>' +
+           '</div>';
+  }
+
+  // 全局事件代理:点 .copy-btn-record → 复制 data.copy_prompt 到剪贴板
+  document.addEventListener("click", function(e){
+    var btn = e.target && e.target.closest ? e.target.closest(".copy-btn-record") : null;
+    if (!btn) return;
+    var payloadEl = document.getElementById("payload");
+    if (!payloadEl) return;
+    var p;
+    try { p = JSON.parse(payloadEl.textContent || "{}"); } catch(err){ return; }
+    var text = (p && p.data && p.data.copy_prompt) || "";
+    if (!text) return;
+    function done(){
+      btn.textContent = "✅ 已复制 · 粘贴给 AI";
+      btn.style.background = "var(--good)";
+      setTimeout(function(){
+        btn.textContent = "复制完整 prompt";
+        btn.style.background = "var(--blue)";
+      }, 2200);
+    }
+    function fallback(){
+      // execCommand + textarea 兜底(老浏览器 / 非 HTTPS)
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        done();
+      } catch(err){
+        btn.textContent = "✗ 复制失败";
+        btn.style.background = "var(--danger)";
+      }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(fallback);
+    } else {
+      fallback();
+    }
+  });
 })();

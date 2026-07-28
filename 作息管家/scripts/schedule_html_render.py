@@ -150,6 +150,7 @@ def render_list_events(date: str, *, include_inactive: bool = True) -> dict:
         "gap": gap,
         "feishu": feishu,
         "inactive": [e for e in all_events if e.get("is_active") == 0],
+        "copy_prompt": _build_list_events_copy_prompt(date, all_events),
         "errors": [],
     }
     return {
@@ -327,23 +328,30 @@ import os
 # 用于 `_naming_path` 输出文件名:`<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`
 # Issue 02(expand):映射表建立,英文调用方仍可工作(fallback)
 # Issue 07(contract):英文 fallback 移除,只接受中文 command 名
+#
+# 4 域分组(ADR-0003 Q7 · 为将来拆模块 record_cli/plan_cli/receipt_cli/help_render 打基础):
+# === record 域(6) === 报告型 HTML,回顾性输入(schedule_records)
+# === plan 域(2) === 过程型 HTML,预测性输入(schedule_plans)
+# === receipt 域(6) === 回执型 HTML,CRUD 后视觉反馈(record+plan 域共享)
+# === help 域(N/A) === HELP 中心(help_render.py 独立映射,不在此处)
 CN_COMMAND_MAP = {
-    # === record 域(8) ===
+    # === record 域(6) === 报告型:day/range/compare/category/anomaly/detail ===
     "record_day":          "查作息记录",
     "record_range":        "查作息区间",
     "record_compare":      "查作息对比",
     "record_category":     "查作息类别",
     "record_anomaly":      "查作息异常",
     "record_detail":       "作息详情",
+    # === plan 域(2) === 过程型:list/preview/review ===
+    "plan_list":           "查日程",
+    "plan_preview":        "商量计划预览",
+    "plan_review":         "复盘",
+    # === receipt 域(6) === 回执型:record-receipt / record-receipt-edit / plan-receipt×3 ===
     "record_receipt":      "记作息回执",
     "record_receipt_edit": "修正作息回执",
-    # === plan 域(6) ===
-    "plan_list":           "查日程",
     "plan_receipt":        "改日程回执",
     "plan_receipt_add":    "补日程回执",
     "plan_receipt_write":  "写日程回执",
-    "plan_preview":        "商量计划预览",
-    "plan_review":         "复盘",
 }
 
 
@@ -398,9 +406,11 @@ def default_output_path(meta: dict) -> Path:
     按手册 §4.1 命名合规生成默认输出路径。
     命名格式:<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(ADR-0002 Q5)
 
-    子目录:
-      record-* 模式  → record/day|range|compare|category|anomaly|receipt|detail
-      plan-* 模式    → plan/list | plan/receipt | plan/query
+    ADR-0003 Q7 · 4 域分组(为将来拆模块打基础):
+      === record 域 === → 委托 record_output_path()(下方)
+      === plan 域(6 mode)=== → plan/list | plan/query | plan/receipt
+      === receipt 域 === → 由 record_output_path 处理(record-receipt* / plan-receipt*)
+      === help 域 === → 由 help_render.py 独立处理,不在此处
 
     pid/rid/action/date 等语义信息保留在 payload data.meta 里,
     filename 的唯一职责是跨 SKILL 一致 + 同秒冲突保护。
@@ -410,7 +420,7 @@ def default_output_path(meta: dict) -> Path:
     if mode.startswith("record-"):
         return record_output_path(mode, meta)
 
-    # === plan 域(6 mode)· ADR-0002 Q5 中文 command 名 ===
+    # === plan 域(6 mode · ADR-0002 Q5 中文 command 名 · ADR-0003 Q7 分组)===
     if mode == "list-events":
         return _naming_path(CN_COMMAND_MAP["plan_list"], "plan/list")
     if mode == "query-plans":
@@ -420,6 +430,7 @@ def default_output_path(meta: dict) -> Path:
         return _naming_path(CN_COMMAND_MAP["plan_preview"], "plan/list")
     if mode == "plan-review":
         return _naming_path(CN_COMMAND_MAP["plan_review"], "plan/list")
+    # === receipt 域(plan-receipt 3 款 · 回执型,与 plan 域共享子目录)===
     if mode == "plan-receipt":
         return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
     if mode == "plan-receipt-add":
@@ -437,9 +448,10 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
     """按手册 §4.1 命名合规(<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html)生成路径。
 
     ADR-0002 Q5:全部 record/receipt 域 mode 输出中文 command 名。
-    record 域(7):record-day/range/compare/category/anomaly/report/detail
-    receipt 域(2):record-receipt / record-receipt-edit
-    (plan-receipt 也走此函数,保持向后兼容,但实际由 plan_receipt 中文映射处理)
+    ADR-0003 Q7 · 4 域分组(为将来拆模块打基础):
+      === record 域(7 mode)=== 报告型:day/range/compare/category/anomaly/report/detail
+      === receipt 域(3 mode)=== 回执型:record-receipt / record-receipt-edit / plan-receipt
+                                  (与 plan 域共享子目录约定)
 
     pid/rid/action/date 等语义信息不再放 filename(避免暴露隐私 +
     避免信息冗余),这些信息保留在 payload data.meta 里。
@@ -447,7 +459,7 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
     """
     meta = meta or {}  # noqa  # 保留参数以便未来 meta 路径命名复用
 
-    # === record 域(7 mode · ADR-0002 Q5 中文 command 名)===
+    # === record 域(7 mode · 报告型 · ADR-0002 Q5 中文 command 名)===
     if mode == "record-day":
         return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-range":
@@ -463,13 +475,13 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-detail":
         return _naming_path(CN_COMMAND_MAP["record_detail"], "record/detail")
-    # === receipt 域(2 mode · record_receipt / record_receipt_edit)===
+    # === receipt 域(3 mode · 回执型 · record+plan 共享)===
     if mode == "record-receipt":
         return _naming_path(CN_COMMAND_MAP["record_receipt"], "record/receipt")
     if mode == "record-receipt-edit":
         return _naming_path(CN_COMMAND_MAP["record_receipt_edit"], "record/receipt")
-    # === plan-receipt 向后兼容(也走此函数时映射到中文)===
     if mode == "plan-receipt":
+        # plan-receipt 也走此函数(向后兼容),实际由 plan_receipt 中文映射处理
         return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
     return _naming_path("unknown")
 
@@ -631,6 +643,109 @@ def _build_full_records(records: list) -> list:
     ]
 
 
+def _build_record_copy_prompt(mode: str, meta: dict, records: list,
+                              summary_items: list = None, extra_data: dict = None) -> str:
+    """构造 4 部分 copy prompt(record 域 6 模板共享 · ADR-0002 Q6 · 总纲 §04 原则 10)
+
+    4 部分结构(原则 10):
+      ① 场景: 用户在 HTML 中做了什么(查看某日 / 区间 / 对比 / 类别 / 异常 / 详情)
+      ② 数据: 用户看到的最终数据(分类摘要 / 时长 / 健康分 / 关键事件)
+      ③ 期望: AI 应执行什么 CLI 操作(追问 / 复盘 / 改计划 / 补漏 / 写摘要)
+      ④ 来源: HTML 数据来自哪个 CLI + 时间
+    """
+    summary_items = summary_items or []
+    extra_data = extra_data or {}
+    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    date = meta.get("date", "")
+    total_min = int(meta.get("total_minutes") or 0)
+
+    SCENE = {
+        "record-day":      f"查看了 {date} 单日作息报告(共 {len(records)} 条记录,总时长 {_fmt_dur(total_min)})",
+        "record-range":    f"查看了 {meta.get('start', date)} 至 {meta.get('end', date)} 区间作息报告"
+                           f"({len(records)} 条记录,总时长 {_fmt_dur(total_min)})",
+        "record-compare":  f"对比查看了 {meta.get('label_a', 'A')}({meta.get('start_a', '')})"
+                           f" vs {meta.get('label_b', 'B')}({meta.get('start_b', '')}) 两段作息",
+        "record-category": f"深挖了类别「{meta.get('category', '')}」在 {meta.get('start', date)}"
+                           f" 至 {meta.get('end', date)} 的分布",
+        "record-anomaly":  f"查看了最近 {meta.get('window', 7)} 天作息异常检测"
+                           f"({len(extra_data.get('anomalies', []))} 项异常)",
+        "record-detail":   f"查看了 {date} 作息详情(全 11 字段溯源,{len(records)} 条记录)",
+    }
+    scene = SCENE.get(mode, f"查看了作息报告({mode})")
+
+    cat_lines = ""
+    if summary_items:
+        top3 = summary_items[:3]
+        cat_lines = "\n".join(
+            f"  - {s.get('emoji', '')} {s['category']}:{_fmt_dur(s['total_minutes'])}({s.get('pct', 0)}%)"
+            for s in top3
+        )
+    health = extra_data.get("health") or {}
+    health_line = f"\n健康分: {health.get('score', '—')} ({health.get('label', '—')})" if health else ""
+
+    anomalies = extra_data.get("anomalies") or []
+    anomaly_line = ""
+    if anomalies:
+        red = sum(1 for a in anomalies if a.get("severity") == "red")
+        yellow = sum(1 for a in anomalies if a.get("severity") == "yellow")
+        anomaly_line = f"\n异常: 🔴 {red} 严重 · 🟡 {yellow} 警告"
+
+    EXPECT = {
+        "record-day":      f"基于今日数据,可调 schedule_cli.py render-record-day {date} 重渲,"
+                           "或调 render-plans-review 复盘今日 plan 执行情况",
+        "record-range":    "可对区间内某天做单日深挖(render-record-day),"
+                           "或对比另一段时段(render-record-compare)",
+        "record-compare":  "可深挖差异最大的类别(render-record-category-range),"
+                           "或对其中一段做异常检测(render-record-anomaly)",
+        "record-category": "可深挖另一类别做对比,或对该类别做单日时间块分析",
+        "record-anomaly":  "针对红色异常,可调 amend-record 修正历史记录,"
+                           "或调 render-plans-preview 规划调整方案",
+        "record-detail":   "可调 amend-record <id> 修正某条记录,"
+                           "或调 render-record-day 生成单日报告",
+    }
+    expect = EXPECT.get(mode, "根据报告内容决定后续 CLI 操作")
+
+    SOURCE = {
+        "record-day":      f"record_day.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+        "record-range":    f"record_range.html 生成于 {generated_at},数据来自 schedule_records WHERE date BETWEEN {meta.get('start', date)} AND {meta.get('end', date)}",
+        "record-compare":  f"record_compare.html 生成于 {generated_at},数据来自两段 schedule_records 区间",
+        "record-category": f"record_category.html 生成于 {generated_at},数据来自 schedule_records WHERE category LIKE '{meta.get('category', '')}%'",
+        "record-anomaly":  f"record_anomaly.html 生成于 {generated_at},数据来自最近 {meta.get('window', 7)} 天 schedule_records",
+        "record-detail":   f"record_detail.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+    }
+    source = SOURCE.get(mode, f"生成于 {generated_at}")
+
+    return (
+        f"① 场景: {scene}\n\n"
+        f"② 数据:{health_line}{anomaly_line}\n{cat_lines}\n\n"
+        f"③ 期望: {expect}\n\n"
+        f"④ 来源: {source}"
+    )
+
+
+def _build_list_events_copy_prompt(date: str, plan_events: list) -> str:
+    """构造 list_events(查日程)的 4 部分 copy prompt(ADR-0002 Q6)"""
+    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    active_count = sum(1 for e in plan_events if e.get("is_active", 1))
+    coverage_minutes = sum(int(e.get("duration_minutes", 0) or 0) for e in plan_events)
+    coverage_hours = coverage_minutes / 60
+    events_preview = "\n".join(
+        f"  - {e.get('time_start', '')}–{e.get('time_end', '')} {e.get('title', '')}"
+        f"({e.get('category', '—')})"
+        for e in plan_events[:8]
+    )
+    more = f"\n  ...(共 {len(plan_events)} 段,只显示前 8 段)" if len(plan_events) > 8 else ""
+    return (
+        f"① 场景: 查看了 {date} 的日程计划({len(plan_events)} 段事件,"
+        f"{active_count} 段活跃,覆盖 {coverage_hours:.1f}h)\n\n"
+        f"② 数据:\n{events_preview}{more}\n\n"
+        f"③ 期望: 可调 render-plans-review {date} 复盘,或调 update-event <id> --completion 标记完成,"
+        f"或调 render-plans-preview {date} 重新规划\n\n"
+        f"④ 来源: list_events.html 生成于 {generated_at},"
+        f"数据来自 schedule_plans WHERE date={date} AND is_active=1"
+    )
+
+
 def render_record_report(date: str) -> dict:
     """兼容旧 CLI render-record-report — 等价于 render_record_day"""
     return render_record_day(date)
@@ -704,6 +819,11 @@ def render_records_detail(date: str, record_id: int = None) -> dict:
         "selected_record": selected,
         "summary_categories_count": len(cat_minutes),
         "ai_questions": ai_questions_for_day(date, [], sleep_min, total_minutes, 0),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-detail",
+            {"date": date, "total_minutes": total_minutes},
+            records,
+        ),
         "errors": [],
     }
     return {
@@ -1466,6 +1586,12 @@ def render_record_day(date: str) -> dict:
             "label": "充足" if sleep_min >= 7*60 else ("偏短" if sleep_min >= 5*60 else "严重不足"),
         },
         "ai_questions": ai_questions_for_day(date, summary_items, sleep_min, total_minutes, compute_health_score(records)),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-day", {"date": date, "total_minutes": total_minutes},
+            records, summary_items,
+            {"health": {"score": compute_health_score(records),
+                       "label": "充足" if sleep_min >= 7*60 else ("偏短" if sleep_min >= 5*60 else "严重不足")}},
+        ),
         "errors": [],
     }
     return {
@@ -1536,6 +1662,8 @@ def render_record_range(start: str, end: str) -> dict:
         "meta": {
             "mode": "record-range",
             "start": start, "end": end, "days": days_count,
+            "date": start,
+            "total_minutes": total,
             "title": f"作息区间报告 · {start} ~ {end}",
             "subtitle": f"{days_count} 天,{len(records)} 条记录,总时长 {_fmt_dur(total)}",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1548,6 +1676,11 @@ def render_record_range(start: str, end: str) -> dict:
         "trend_chart": trend_chart,
         "health": health,
         "ai_questions": ai_questions_for_range(start, end, dim_totals, health["score"], 0),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-range",
+            {"date": start, "start": start, "end": end, "total_minutes": total},
+            records, summary_items, {"health": health},
+        ),
         "errors": [],
     }
     return {
@@ -1587,11 +1720,18 @@ def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, 
             "end_a": end_a,
             "start_b": start_b,
             "end_b": end_b,
+            "date": start_a,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "ranges": ranges,
         "diffs": diffs,
         "ai_questions": ai_questions_for_compare(ranges, diffs),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-compare",
+            {"date": start_a, "label_a": label_a, "start_a": start_a,
+             "label_b": label_b, "start_b": start_b},
+            recs_a + recs_b, [],
+        ),
         "errors": [],
     }
     return {
@@ -1652,6 +1792,8 @@ def render_record_category(category: str, start: str, end: str) -> dict:
             "category": category,         # 用户原值 "运动" → 文件名 "运动_..."
             "l1_category": l1_target,    # 映射后值 "健康" → 内部过滤用
             "start": start, "end": end,
+            "date": start,
+            "total_minutes": total,
             "title": f"类别深挖 · {l1_target} · {start} ~ {end}",
             "subtitle": f"{days_count} 天活跃,日均 {_fmt_dur(daily_avg)}",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1662,6 +1804,12 @@ def render_record_category(category: str, start: str, end: str) -> dict:
         "heatmap": matrix,
         "records": _build_full_records(cat_records),
         "ai_questions": ai_questions_for_category(l1_target, days_count, total, daily_avg),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-category",
+            {"date": start, "start": start, "end": end,
+             "category": l1_target, "total_minutes": total},
+            cat_records, [],
+        ),
         "errors": [],
     }
     return {
@@ -1723,6 +1871,7 @@ def render_record_anomaly(window_days: int = 7) -> dict:
         "meta": {
             "mode": "record-anomaly",
             "window": window_days,
+            "date": datetime.now().strftime("%Y-%m-%d"),
             "title": f"异常检测 · 最近 {window_days} 天",
             "subtitle": f"对比基线:近 30 天均值,阈值 ±20%",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1730,6 +1879,12 @@ def render_record_anomaly(window_days: int = 7) -> dict:
         "anomalies": anomalies,
         "radar_svg": radar_svg,
         "ai_questions": ai_questions_for_anomaly(anomalies, window_days),
+        "copy_prompt": _build_record_copy_prompt(
+            "record-anomaly",
+            {"date": datetime.now().strftime("%Y-%m-%d"), "window": window_days},
+            cur_records, [],
+            {"anomalies": anomalies},
+        ),
         "errors": [],
     }
     return {

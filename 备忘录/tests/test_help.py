@@ -363,3 +363,64 @@ class TestHelpWakeWordFlexibility:
         present = [v for v in variations if v in text]
         assert len(present) >= 3, \
             f"FAT G1 修复:SKILL.md 应含 ≥3 种变体示例,实际 {present}"
+
+
+# ==================== HTML 路径 SKILLS_DB_PATH 影响(G2 修复) ====================
+
+class TestHelpHtmlPathEnvVar:
+    """FAT(§05 钩子 ⑥)发现 SKILL.md G2:HTML 路径受 SKILLS_DB_PATH 影响没强调。
+    修后用静态检查守护。
+    """
+
+    SKILL_MD = SKILL_DIR / "SKILL.md"
+
+    def test_skill_md_documents_skills_db_path_influence(self):
+        """SKILL.md §HTML 输出目录规则明示 SKILLS_DB_PATH 影响"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        # 至少有一段明示路径受 SKILLS_DB_PATH 影响
+        assert "SKILLS_DB_PATH" in text and "memo_html" in text, \
+            "FAT G2 修复:SKILL.md 应明示路径受 SKILLS_DB_PATH 影响"
+
+    def test_html_output_uses_skills_db_path_when_set(self, tmp_path, monkeypatch):
+        """实测:SKILLS_DB_PATH 设置时,HTML 输出到对应子目录"""
+        # 模拟用户设置 SKILLS_DB_PATH
+        custom_dir = tmp_path / "custom_db"
+        custom_dir.mkdir()
+        monkeypatch.setenv("SKILLS_DB_PATH", str(custom_dir))
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert r.returncode == 0, f"stderr={r.stderr}"
+        data = json.loads(r.stdout)
+        html_path = Path(data["data"]["html_path"]).resolve()
+        custom_dir_resolved = custom_dir.resolve()
+        # 路径应在 custom_dir/memo_html/ 下(不是默认的 .db/memo_html/)
+        assert str(custom_dir_resolved) in str(html_path), \
+            f"SKILLS_DB_PATH 应影响 HTML 输出路径,实际 {html_path}"
+        assert "memo_html" in html_path.parts
+
+
+# ==================== 反向指引表(G3 修复) ====================
+
+class TestReverseLookupTable:
+    """FAT(§05 钩子 ⑥)发现 SKILL.md G3:缺"用户原话 → 触发词"反向指引。
+    修后用静态检查守护。
+    """
+
+    SKILL_MD = SKILL_DIR / "SKILL.md"
+
+    def test_skill_md_has_reverse_lookup_section(self):
+        """SKILL.md 含"用户原话 → 触发词 反向指引表"段"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        assert "用户原话" in text and "触发词" in text and "反向指引" in text, \
+            "FAT G3 修复:SKILL.md 应有反向指引表"
+
+    def test_reverse_lookup_table_covers_core_triggers(self):
+        """反向指引表至少覆盖 5 个核心触发词"""
+        text = self.SKILL_MD.read_text(encoding="utf-8")
+        # 核心触发词应在表中出现
+        core_triggers = ["记备忘", "搜备忘", "改备忘", "删备忘", "完成心愿", "备忘录 HELP"]
+        present = [t for t in core_triggers if t in text]
+        assert len(present) >= 5, \
+            f"反向指引表应覆盖 ≥5 个核心触发词,实际 {present}"

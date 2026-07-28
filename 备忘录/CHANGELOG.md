@@ -155,6 +155,25 @@
 
 全量:158/156 pytest 通过(148 → 158 · +8 个 `--output` + +2 个 flex)
 
+### Changed(post-FAT · G2 + G3 修复)
+
+- **SKILL.md §HTML 输出目录规则(G2 修复)**:
+  - FAT 发现:HTML 路径受 `SKILLS_DB_PATH` 影响没强调,AI 可能误用硬编码 `D:\.db\memo_html\`
+  - 修复:加"实际路径 = `<SKILLS_DB_PATH>/memo_html/`"明文 + 3 种环境示例
+- **SKILL.md 新增 §用户原话 → 触发词 反向指引表(G3 修复)**:
+  - FAT 发现:缺"用户口语 → 哪个触发词"反查表,AI 处理多义口语化表达时易误判
+  - 修复:15 行反查表(覆盖核心 6 触发词 + 9 子唤醒词场景)+ 4 步反查流程 + 3 反例
+
+### Tests(post-FAT · +4 用例)
+
+`tests/test_help.py` +4 用例:
+1. `test_skill_md_documents_skills_db_path_influence` — SKILL.md 含 G2 提示
+2. `test_html_output_uses_skills_db_path_when_set` — **实测 env var 影响路径**(集成测试)
+3. `test_skill_md_has_reverse_lookup_section` — SKILL.md 含 G3 反向指引段
+4. `test_reverse_lookup_table_covers_core_triggers` — 反向指引表覆盖 ≥5 核心触发词
+
+全量:162/162 pytest 通过(158 → 162 · +4)
+
 ### Changed
 
 - `SKILL.md`:

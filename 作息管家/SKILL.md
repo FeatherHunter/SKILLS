@@ -703,7 +703,7 @@ AI 判断逻辑:
 | 单类深挖（健身什么时候做的） | `render-record-category-range 2026-07-01 2026-07-31 健身` |
 | 异常检测（最近 7 天是否有偏差） | `render-record-anomaly --window 7` |
 
-**旧 `render-record-report` 兼容**：保留命令，`mode="record-report"` 在 `template_map` 映射到 `schedule_record_day.html`，调用 `render_record_day()` 函数，输出路径迁移到 `record/day/YYYY-MM-DD_record_day.html`。
+**旧 `render-record-report` 兼容**:保留命令,`mode="record-report"` 在 `template_map` 映射到 `schedule_record_day.html`,调用 `render_record_day()` 函数,输出路径同 `render-record-day`:`record/day/查作息记录_<TS>.html`(ADR-0002 Q5 中文 command)。
 
 **触发词与命令映射路由表**（AI 协同时优先查此表）：
 
@@ -933,16 +933,16 @@ $SKILLS_DB_PATH/schedule_html/
 # 单日 → $SKILLS_DB_PATH/schedule_html/record/day/查作息记录_20260729_120000.html
 python scripts/schedule_cli.py render-record-day 2026-07-15
 
-# 区间 → record/range/2026-07-13_to_2026-07-19_record_range.html
+# 区间 → record/range/查作息区间_<TS>.html
 python scripts/schedule_cli.py render-record-range 2026-07-13 2026-07-19
 
-# 对比 → record/compare/2026年6月_vs_2026年7月_record_compare.html
+# 对比 → record/compare/查作息对比_<TS>.html
 python scripts/schedule_cli.py render-record-compare-months 2026-06 2026-07
 
-# 类别深挖 → record/category/健身_2026-07-01_to_2026-07-31_record_category.html
+# 类别深挖 → record/category/查作息类别_<TS>.html
 python scripts/schedule_cli.py render-record-category-range 2026-07-01 2026-07-31 健身
 
-# 异常检测 → record/anomaly/2026-07-23_w7_record_anomaly.html
+# 异常检测 → record/anomaly/查作息异常_<TS>.html
 python scripts/schedule_cli.py render-record-anomaly --window 7
 ```
 

@@ -1,0 +1,268 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grilling · 第五轮 · θ 与 μ 的连锁后果</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --green-soft: #e8f5e9;
+    --orange: #ff9500; --orange-soft: #fff7e6;
+    --red: #ff3b30; --red-soft: #ffebee;
+    --purple: #af52de; --purple-soft: #f3e8fd;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 920px; margin: 0 auto;
+    padding: 60px 28px 120px;
+  }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 23px; font-weight: 600; margin-top: 56px; margin-bottom: 20px; letter-spacing: -0.02em; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; }
+  p { font-size: 15px; margin-bottom: 12px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 10px; overflow-x: auto; margin: 16px 0; font-size: 13px; line-height: 1.6; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 12px 18px; margin: 16px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  blockquote p { margin: 0; color: var(--fg2); }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+  .lead { font-size: 16px; color: var(--fg2); margin-bottom: 32px; line-height: 1.6; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 40px; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 20px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+  .scenario { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px 26px; margin: 18px 0; }
+  .scenario-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.contradiction { background: var(--red-soft); color: var(--red); }
+  .badge.gap { background: var(--orange-soft); color: var(--orange); }
+  .badge.probe { background: var(--purple-soft); color: var(--purple); }
+  .badge.locked { background: var(--green-soft); color: var(--green); }
+  .scenario h3 { margin-top: 0; }
+  .evidence { background: #f5f5f7; border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .evidence .label { font-weight: 600; color: var(--fg); margin-bottom: 4px; font-size: 13px; }
+  .vacuum { background: var(--red-soft); border-left: 3px solid var(--red); padding: 14px 18px; margin: 14px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .vacuum .label { font-weight: 600; color: var(--red); margin-bottom: 6px; font-size: 13px; }
+  .question-box { background: #fff7e6; border: 2px solid var(--orange); border-radius: 14px; padding: 20px 24px; margin: 16px 0; }
+  .question-box h3 { color: var(--orange); margin-top: 0; }
+  .option { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin: 8px 0; }
+  .option-label { font-weight: 600; color: var(--accent); margin-bottom: 4px; font-size: 14px; }
+  .option p { font-size: 14px; margin: 0; color: var(--fg2); }
+  .done-box { background: var(--green-soft); border: 1px solid var(--green); border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+  .done-box h3 { color: var(--green); margin-top: 0; }
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+  @media (max-width: 640px) {
+    body { padding: 30px 16px 80px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    .scenario, .question-box { padding: 16px 18px; }
+    table { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Grilling · 第五轮 · θ 与 μ 的连锁后果</h1>
+<p class="lead">删除附录 D 砍掉"是否该 Skill 化"的唯一判定入口 · 引发比附录 A/D 冲突更严重的判定真空</p>
+<p class="meta">会话:SKILL 开发总纲 V1.0 重构 · 已锁:A 坐标 / 删伸缩表 / git rm 架构图 / 严格 HTML / θ 删附录 D / μ HELP 一视同仁</p>
+
+<div class="toc">
+  <h4>目录</h4>
+  <ol>
+    <li><a href="#locked">已锁定决策汇总</a></li>
+    <li><a href="#vacuum">θ 的连锁后果 · 判定真空</a></li>
+    <li><a href="#s1">场景 1 · AI 接到"写个记喝水脚本"的请求,走哪条路?</a></li>
+    <li><a href="#s2">场景 2 · 附录 A 被迫独扛"是否该 Skill 化"判定</a></li>
+    <li><a href="#s3">场景 3 · 附录 A 的"不做"档 vs §02 强制 5 层</a></li>
+    <li><a href="#decisions">3 个待你拍板的决策点</a></li>
+    <li><a href="#next">下一步</a></li>
+  </ol>
+</div>
+
+<!-- ========== 已锁定 ========== -->
+<h2 id="locked">已锁定决策汇总</h2>
+
+<div class="done-box">
+  <h3>✓ 6 个决策点全部锁定</h3>
+  <table>
+    <tr><th>#</th><th>决策</th><th>选项</th></tr>
+    <tr><td>1</td><td>架构图.html</td><td>β · git rm</td></tr>
+    <tr><td>2</td><td>6/8 规则</td><td>ε · 删除(HTML 镜像删,不写入 05.md)</td></tr>
+    <tr><td>3</td><td>规模伸缩表</td><td>(I) · 删除,所有 Skill 字面 5 层 5 文件</td></tr>
+    <tr><td>4</td><td>附录 D 处理</td><td>θ · 删除附录 D</td></tr>
+    <tr><td>5</td><td>附录 A 与 D 冲突</td><td>(未明确选,D 已删,冲突消失,但 A 留下)</td></tr>
+    <tr><td>6</td><td>HELP 契约伸缩性</td><td>μ · 一视同仁,字面 A</td></tr>
+    <tr><td>交互</td><td>对话形式</td><td>I · 严格全部 HTML</td></tr>
+  </table>
+</div>
+
+<!-- ========== θ 连锁后果 ========== -->
+<h2 id="vacuum">θ 的连锁后果 · 判定真空</h2>
+
+<div class="vacuum">
+  <div class="label">θ 删了附录 D,砍掉的是什么?</div>
+  <p>附录 D 原文列了 6 种"不该 Skill 化"的情形:<strong>单条 CRUD / 高频无视觉 / 后台管理 / 数据采集 / 一次性脚本 / 2 步内查询</strong>。它是总纲里<strong>唯一</strong>告诉读者"什么时候不该用 Skill 框架"的章节。</p>
+  <p>你选 θ 删它,理由是"ADR-0002 说所有 Skill 都要 5 层,附录 D 列'不该 Skill 化' = 多余"。但这个推理有个漏洞:<strong>附录 D 不是在说"小 Skill 可简化",是在说"有些需求根本不该用 Skill 框架,该写普通脚本"</strong>。删了附录 D,不等于所有需求都该 Skill 化——而是<strong>总纲不再告诉读者"什么需求该用普通脚本"</strong>。</p>
+</div>
+
+<p>这制造了一个<strong>判定真空</strong>:删了附录 D 后,当用户的需求"不该 Skill 化"时,总纲没有指引。我用 3 个场景压测这个真空。</p>
+
+<!-- ========== 场景 1 ========== -->
+<h2 id="s1">场景 1 · AI 接到"写个记喝水脚本"的请求,走哪条路?</h2>
+
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="badge contradiction">判定真空</span>
+    <span class="badge probe">审查报告未碰</span>
+    <strong>AI 没有判定依据</strong>
+  </div>
+
+  <h3>压测</h3>
+  <p>用户对 AI 说:"帮我写个记喝水的脚本。"</p>
+
+  <table>
+    <tr><th>路径</th><th>AI 行为</th><th>θ 删附录 D 后的问题</th></tr>
+    <tr><td>路径 A · AI 默认 Skill 化</td><td>AI 按 §02 建 5 层 5 文件 + §07 HELP + §05 FAT</td><td>用户说"脚本",AI 给"Skill"。词不达意。且 80 行功能配 300 行合规</td></tr>
+    <tr><td>路径 B · AI 默认普通脚本</td><td>AI 写 1 个 .py 脚本</td><td>但总纲没告诉 AI"什么情况该走普通脚本"。AI 凭什么判?用户可能就是要 Skill 化(为统一管理 / 触发词)</td></tr>
+    <tr><td>路径 C · AI 反问用户</td><td>"你要 Skill 化还是普通脚本?"</td><td>用户大概率不知道区别。AI 也没有判定标准告诉用户"什么情况该选哪个"</td></tr>
+  </table>
+
+  <p><strong>核心问题</strong>:附录 D 不是"逃生口",是<strong>判定指南</strong>。删了它,AI 和用户都没有"是否该 Skill 化"的判定依据。总纲变成了"只管怎么写 Skill,不管该不该写"——但现实里大量需求不该 Skill 化。</p>
+
+  <p>你选 θ 的原意可能是"别给逃生口"。但 θ 的实际效果是"删掉了判定指南",不是"堵死了逃生口"。这两件事不一样。</p>
+
+  <div class="question-box">
+    <h3>决策点 7 · 判定真空怎么填</h3>
+    <p>θ 删附录 D 制造了"是否该 Skill 化"的判定真空。3 种填法:</p>
+    <div class="option">
+      <div class="option-label">ο · 附录 A 升级为"是否该 Skill 化"的唯一判定</div>
+      <p>附录 A(3 维度评估:复用频率 / 视觉密度 / 改造阻力)原来只管"已有 Skill 是否值得改造"。升级后同时管"新需求是否该 Skill 化"。S/A/B/不做 四档覆盖新建+改造。附录 A 标题改"是否该 Skill 化 + 改造优先级判据"。单一事实源。</p>
+    </div>
+    <div class="option">
+      <div class="option-label">π · §02 开头加"Skill 化判据"小节</div>
+      <p>§02 开头加一节:"什么需求该 Skill 化:≥ 5 个唤醒词含多字段+多条目+视觉密度(对应原 §04 原则 0 判据)"。这个判据原来散落在 §04 原则 0,集中到 §02 入口。附录 D 删掉后,§02 成唯一入口。</p>
+    </div>
+    <div class="option">
+      <div class="option-label">ρ · 维持真空(真删附录 D,不补)</div>
+      <p>承认总纲"只管怎么写 Skill,不管该不该写"。判定是否该 Skill 化 = 用户/AI 的常识,总纲不介入。后果:AI 接到"记喝水脚本"会硬上 5 层 5 文件(因为没有"别 Skill 化"指引)。作者接受这个后果。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 场景 2 ========== -->
+<h2 id="s2">场景 2 · 附录 A 被迫独扛"是否该 Skill 化"判定</h2>
+
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="badge gap">附录 A 责任膨胀</span>
+    <span class="badge probe">审查报告未碰</span>
+    <strong>原附录 A 只管改造,现在要管新建?</strong>
+  </div>
+
+  <p>如果你选 ο(附录 A 升级),会引出新问题。原附录 A 的 3 维度(复用频率 / 视觉密度 / 改造阻力)是为<strong>改造已有 Skill</strong>设计的——"改造阻力"维度假设已有 Skill 存在。但<strong>新建 Skill 时没有"改造阻力"可言</strong>。</p>
+
+  <table>
+    <tr><th>维度</th><th>改造场景(原附录 A)</th><th>新建场景(ο 升级后)</th><th>冲突?</th></tr>
+    <tr><td>复用频率</td><td>已有 Skill 用户每周调几次</td><td>新需求预测每周会用几次</td><td>可复用,但"预测"比"实测"难</td></tr>
+    <tr><td>视觉密度</td><td>已有 Skill 的 HTML 多字段+多条目</td><td>新需求是否需要视觉</td><td>可复用</td></tr>
+    <tr><td>改造阻力</td><td>CLI 是否容易 JSON 化</td><td><strong>无 CLI 存在,无阻力可言</strong></td><td><strong>冲突</strong></td></tr>
+  </table>
+
+  <p>所以 ο 不是简单"升级",是<strong>重写附录 A 的第三维度</strong>。新建场景的第三维度应该是"实现复杂度"或"领域边界清晰度",不是"改造阻力"。</p>
+
+  <div class="question-box">
+    <h3>决策点 8 · 附录 A 第三维度怎么改(仅当你选 ο)</h3>
+    <p>如果你选 ο,附录 A 第三维度需要分场景:</p>
+    <div class="option">
+      <div class="option-label">σ · 第三维度按场景分裂</div>
+      <p>附录 A 第三维度:改造场景用"改造阻力",新建场景用"领域边界清晰度"(需求能否画出清晰 5 层职责)。两套判据共存于附录 A。</p>
+    </div>
+    <div class="option">
+      <div class="option-label">τ · 删除第三维度,只留 2 维度</div>
+      <p>附录 A 简化为 2 维度(复用频率 + 视觉密度)。S/A/B/不做 4 档按 2 维度组合判定。简单但粒度粗。</p>
+    </div>
+  </table>
+  <p style="font-size:14px;color:var(--fg2);margin-top:8px;">如果你选 π 或 ρ,决策点 8 跳过。</p>
+</div>
+
+<!-- ========== 场景 3 ========== -->
+<h2 id="s3">场景 3 · 附录 A 的"不做"档 vs §02 强制 5 层</h2>
+
+<div class="scenario">
+  <div class="scenario-head">
+    <span class="badge contradiction">字面冲突</span>
+    <span class="badge probe">ADR-0002 的隐藏矛盾</span>
+    <strong>附录 A"不做"档 vs §02"所有 Skill 必须 5 层"</strong>
+  </div>
+
+  <h3>压测</h3>
+  <p>无论你选 ο/π/ρ,只要附录 A 保留(ο/π 都保留),它的"不做"档就和 ADR-0002 有字面冲突:</p>
+
+  <table>
+    <tr><th>来源</th><th>表述</th><th>含义</th></tr>
+    <tr><td>§02(ADR-0002 后)</td><td>"所有 Skill 必须 5 层 5 文件 + 全套自检"</td><td>没有逃生口</td></tr>
+    <tr><td>附录 A"不做"档</td><td>"低频 + 低密度 + 高阻力 → 不做"</td><td>有逃生口(不做=不 Skill 化)</td></tr>
+  </table>
+
+  <p>这两个<strong>表面冲突,实际不冲突</strong>——附录 A 的"不做"意思是"不 Skill 化"(走普通脚本),不是"Skill 可以不建 5 层"。但 A 坐标(字面自洽)下,这个逻辑必须<strong>写进总纲</strong>,否则读者看到 §02"所有 Skill 必须 5 层"再看附录 A"不做"会困惑。</p>
+
+  <div class="question-box">
+    <h3>决策点 9 · 附录 A"不做"档的措辞</h3>
+    <p>附录 A"不做"档必须和 ADR-0002 字面对齐。3 种处理:</p>
+    <div class="option">
+      <div class="option-label">υ · "不做"改"不 Skill 化"</div>
+      <p>附录 A"不做"档的措辞从"不做"改为"不 Skill 化(写普通脚本)"。字面消除"逃生口"歧义。</p>
+    </div>
+    <div class="option">
+      <div class="option-label">φ · 删除附录 A"不做"档</div>
+      <p>附录 A 只留 S/A/B 三档。"不 Skill 化"的判定交给决策点 7 的 ο/π/ρ 处理。附录 A 不再持有"不做"判定权。</p>
+    </div>
+    <div class="option">
+      <div class="option-label">χ · 附录 A 加脚注</div>
+      <p>附录 A"不做"档加脚注:"'不做'指不 Skill 化,走普通脚本。所有 Skill 化的需求都须 5 层 5 文件(§02)。"</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 决策点汇总 ========== -->
+<h2 id="decisions">3 个待你拍板的决策点</h2>
+
+<table>
+  <tr><th>#</th><th>决策点</th><th>选项</th><th>我推荐</th></tr>
+  <tr><td>7</td><td>判定真空怎么填</td><td>ο/π/ρ</td><td>π(§02 开头加"Skill 化判据",集中入口)</td></tr>
+  <tr><td>8</td><td>附录 A 第三维度(仅当选 ο)</td><td>σ/τ</td><td>跳过(我推荐 π,不触发 8)</td></tr>
+  <tr><td>9</td><td>附录 A"不做"档措辞</td><td>υ/φ/χ</td><td>υ("不做"改"不 Skill 化",字面对齐 ADR-0002)</td></tr>
+</table>
+
+<p style="font-size:14px;color:var(--fg2);">如果你选 π + υ,决策点 8 跳过,决策点 5(附录 A/D 冲突)也自动消失(D 已删,A 独扛改造判定,"不 Skill 化"由 §02 判据管)。3 个决策点收敛为 2 个有效决策。</p>
+
+<!-- ========== 下一步 ========== -->
+<h2 id="next">下一步</h2>
+
+<ol>
+  <li>你回答决策点 7(ο/π/ρ)和 9(υ/φ/χ)。决策点 8 仅当选 ο 时回答。</li>
+  <li>这 2 个一锁,我进入第六轮 grilling:跨文件一致性质疑(契约 vs 实现)——把 9 个 .md 与 HTML 镜像逐条交叉验证,找审查报告没发现的更多不一致</li>
+  <li>然后形成完整重构设计稿,获你确认后进入 writing-plans</li>
+</ol>
+
+<div class="footer">
+  Grilling · 第五轮 · θ 与 μ 连锁后果 · 2026-07-28<br>
+  已锁 6 决策 + 交互规则 · 待拍板 2 个有效决策点
+</div>
+
+</body>
+</html>

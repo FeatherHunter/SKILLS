@@ -1,0 +1,427 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Tickets · SKILL 开发总纲重构 · 8 个垂直切片</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --green-soft: #e8f5e9;
+    --orange: #ff9500; --orange-soft: #fff7e6;
+    --red: #ff3b30; --red-soft: #ffebee;
+    --purple: #af52de; --purple-soft: #f3e8fd;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 920px; margin: 0 auto;
+    padding: 60px 28px 120px;
+  }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 23px; font-weight: 600; margin-top: 56px; margin-bottom: 20px; letter-spacing: -0.02em; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; }
+  p { font-size: 15px; margin-bottom: 12px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 10px; overflow-x: auto; margin: 16px 0; font-size: 13px; line-height: 1.6; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 12px 18px; margin: 16px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  blockquote p { margin: 0; color: var(--fg2); }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+  .lead { font-size: 16px; color: var(--fg2); margin-bottom: 32px; line-height: 1.6; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 40px; }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 20px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+
+  .ticket { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px 26px; margin: 18px 0; }
+  .ticket-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.num { background: var(--accent); color: white; }
+  .badge.blocked { background: var(--orange-soft); color: var(--orange); }
+  .badge.free { background: var(--green-soft); color: var(--green); }
+  .badge.delete { background: var(--red-soft); color: var(--red); }
+  .badge.modify { background: var(--purple-soft); color: var(--purple); }
+  .badge.verify { background: var(--accent-soft); color: var(--accent); }
+  .ticket h3 { margin-top: 0; }
+  .field { margin: 10px 0; }
+  .field .label { font-weight: 600; color: var(--fg); font-size: 13px; margin-bottom: 4px; }
+  .field .val { font-size: 14px; color: var(--fg2); }
+  .acceptance { background: #f5f5f7; border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .acceptance .label { font-weight: 600; color: var(--fg); margin-bottom: 6px; font-size: 13px; }
+
+  .question-box { background: #fff7e6; border: 2px solid var(--orange); border-radius: 14px; padding: 20px 24px; margin: 24px 0; }
+  .question-box h3 { color: var(--orange); margin-top: 0; }
+
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+  @media (max-width: 640px) {
+    body { padding: 30px 16px 80px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    .ticket { padding: 16px 18px; }
+    table { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>To-Tickets · 8 个垂直切片</h1>
+<p class="lead">把 spec 拆成 tracer-bullet 垂直切片 · 每片"修一组 + 跑校验 + 可独立验证某一类不一致已清零"</p>
+<p class="meta">Feature: skill-dev-manual-refactor · 来源:spec.md(30 user stories) · 跟踪器:本地 markdown(.scratch/skill-dev-manual-refactor/issues/)</p>
+
+<div class="toc">
+  <h4>目录</h4>
+  <ol>
+    <li><a href="#method">拆分方法 · 文档工程的垂直切片适配</a></li>
+    <li><a href="#overview">8 个 ticket 总览(含阻塞边)</a></li>
+    <li><a href="#t1">T1 · 删除类(孤儿/死链/污染/越界)</a></li>
+    <li><a href="#t2">T2 · 删除规模伸缩表 + 附录 D + 6/8</a></li>
+    <li><a href="#t3">T3 · 计数修正(钩子 7 / 原则 13 / fail mode 5)</a></li>
+    <li><a href="#t4">T4 · 编号与措辞统一(铁律 4 / V3 / 原则 10/11 / 钩子格式)</a></li>
+    <li><a href="#t5">T5 · 伪代码与实现对齐(原则 5 + CSS 路径)</a></li>
+    <li><a href="#t6">T6 · §01 瘦身 + §05/§06 去重 + §07 死链声明</a></li>
+    <li><a href="#t7">T7 · HTML 镜像全量同步</a></li>
+    <li><a href="#t8">T8 · 自洽校验脚本 + 跑通</a></li>
+    <li><a href="#quiz">待你确认的 3 个问题</a></li>
+  </ol>
+</div>
+
+<!-- ========== 方法 ========== -->
+<h2 id="method">拆分方法 · 文档工程的垂直切片适配</h2>
+
+<blockquote>
+<p>to-tickets 原始规则:每个切片切穿 schema/API/UI/tests,垂直非水平。文档工程没有 schema/API/UI,适配为:</p>
+<p><strong>一个垂直切片 = 修完一组相关修改 + 跑对应校验项 + 可独立验证"这一类不一致已清零"</strong></p>
+<p>每片结束后跑 grep 校验,确认该类问题在所有文件里归零。这就是文档工程的"demoable on its own"。</p>
+</blockquote>
+
+<!-- ========== 总览 ========== -->
+<h2 id="overview">8 个 ticket 总览(含阻塞边)</h2>
+
+<table>
+  <tr><th>Ticket</th><th>标题</th><th>阻塞边</th><th>类型</th></tr>
+  <tr><td>T1</td><td>删除架构图.html + §07 死链 + HTML "6/8 通过"</td><td>None · 可立即开始</td><td>删除</td></tr>
+  <tr><td>T2</td><td>删除规模伸缩表(§01+§02)+ §06 附录 D + 附录 A"不做"档</td><td>None · 可立即开始</td><td>删除</td></tr>
+  <tr><td>T3</td><td>计数修正:钩子 6→7 / 原则 11→13 / fail mode 标题 / HTML 速览表补原则 12</td><td>T1, T2(删完才好数对)</td><td>修改</td></tr>
+  <tr><td>T4</td><td>编号与措辞统一:§03 铁律 4 / §04 V3 / 原则 10/11 互补 / 钩子格式阿拉伯化</td><td>T3(计数对齐后再统一格式)</td><td>修改</td></tr>
+  <tr><td>T5</td><td>伪代码与实现对齐:§04 原则 5 补 timeout/5MB/二次校验 + CSS 路径说明</td><td>None · 可立即开始</td><td>修改</td></tr>
+  <tr><td>T6</td><td>§01 瘦身 + §05/§06 去重(SOP+fail mode+第一性原理)+ §07 死链声明</td><td>T2(附录 D 删完才去重 F)</td><td>修改</td></tr>
+  <tr><td>T7</td><td>HTML 镜像全量同步 T1-T6 所有 .md 改动</td><td>T1, T2, T3, T4, T5, T6(所有 .md 改完才同步)</td><td>同步</td></tr>
+  <tr><td>T8</td><td>自洽校验脚本 verify.ps1 + 跑通全部校验</td><td>T7(HTML 同步完才能最终校验)</td><td>验证</td></tr>
+</table>
+
+<p><strong>关键观察</strong>:T1/T2/T5 三个可并行开始(无阻塞)。T7 是同步关卡(钩子 1 硬规则:.md 改完 HTML 必须同 commit 同步)。T8 是最终验证关卡。</p>
+
+<!-- ========== T1 ========== -->
+<h2 id="t1">T1 · 删除类(孤儿/死链/污染)</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T1</span>
+    <span class="badge free">无阻塞 · 可立即开始</span>
+    <span class="badge delete">删除</span>
+  </div>
+  <h3>删除架构图.html + §07 死链 + HTML "6/8 通过"规则</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">清除总纲里 3 类"不该存在的内容":(1) 架构图.html(孤儿文件 + 自身 3 处不一致)(2) §07 末尾两个死链(docs/superpowers/specs/ 和 plans/)(3) HTML 镜像 line 244 的"6/8 通过才能动手"(无作者意图背书的污染)。删除后 §07 末尾加"本章为 HELP 契约唯一权威,不再引用外部设计稿"。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">None — 可立即开始</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>架构图.html 文件不存在(git rm)</li>
+      <li>grep "6/8 通过" 在所有文件 = 0 结果</li>
+      <li>grep "docs/superpowers/specs" 在 §07 = 0 结果</li>
+      <li>grep "docs/superpowers/plans" 在 §07 = 0 结果</li>
+      <li>§07 末尾含"本章为 HELP 契约的唯一权威,不再引用外部设计稿"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T2 ========== -->
+<h2 id="t2">T2 · 删除规模伸缩表 + 附录 D + 附录 A"不做"档</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T2</span>
+    <span class="badge free">无阻塞 · 可立即开始</span>
+    <span class="badge delete">删除</span>
+  </div>
+  <h3>删除规模伸缩表(§01+§02)+ §06 附录 D + 附录 A"不做"档</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">执行 ADR-0002 的删除部分:(1) §01 line 48-58 规模伸缩表 + 判断标准段(2) §02 line 128-134 规模自检表 + 整节标题(3) §06 附录 D(何时不该 Skill 化)整节(4) §06 附录 A 的"不做"档,只留 S/A/B 三档。§02 5 层自检清单保留全量,加"所有 Skill 必须全跑,无规模分档(ADR-0002)"。附录编号跳过 D(不重编号)。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">None — 可立即开始</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>grep "规模伸缩\|规模自检\|微型.*3 层合并" 在所有 .md = 0 结果</li>
+      <li>grep "附录 D\|何时不该 Skill 化" 在 §06 = 0 结果</li>
+      <li>§06 附录 A 只含 S/A/B 三档,无"不做"档</li>
+      <li>§02 5 层自检清单含"所有 Skill 必须全跑,无规模分档(ADR-0002)"</li>
+      <li>§06 附录编号为 A/B/C/E/F(跳过 D)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T3 ========== -->
+<h2 id="t3">T3 · 计数修正</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T3</span>
+    <span class="badge blocked">Blocked by T1, T2</span>
+    <span class="badge modify">修改</span>
+  </div>
+  <h3>计数修正:钩子 6→7 / 原则 11→13 / fail mode 标题 / HTML 速览表补原则 12</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">统一所有计数到权威值:(1) README/SKILL.md/HTML 镜像标题"6 个不可违背的钩子"→"7 个"(2) §04 标题"11 原则"→"13 原则 (原则 0 判定 + 9 基础 + 2 铁律 + 1 约定)"(3) HTML 速览表标题"11 原则(速览)"→"13 原则(速览)" + 追加原则 12 行(4) §06 fail mode 标题"4 个"→ 删除该标题(列表在 T6 改引用 §05,此 ticket 只改标题不删列表)(5) HTML 目录"6+1 个"→"7 个"。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">T1(6/8 删完才数对 HTML), T2(附录 D 删完才数对附录数)</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>grep -c "7 个不可违背的钩子" 在 README/SKILL.md/HTML = 各 ≥1</li>
+      <li>grep "6 个不可违背的钩子\|6+1" 在所有文件 = 0 结果</li>
+      <li>§04 标题含"13 原则"</li>
+      <li>HTML 速览表标题含"13 原则"</li>
+      <li>HTML 速览表原则行数 = 13(含原则 0 和 12)</li>
+      <li>§06 不含"4 个常见 fail mode"标题</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T4 ========== -->
+<h2 id="t4">T4 · 编号与措辞统一</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T4</span>
+    <span class="badge blocked">Blocked by T3</span>
+    <span class="badge modify">修改</span>
+  </div>
+  <h3>编号与措辞统一:§03 铁律 4 / §04 V3 / 原则 10/11 互补 / 钩子格式阿拉伯化</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">(1) §03 line 98 "铁律 4"去掉连号,改"相对时间换算(2026-07-24 增)"(2) §04 line 382 原则 12 标题去"V3",改"HTML 输出路径约定(2026-07 增)"(3) §04 原则 11 标题加"与原则 10 互补"(4) §04 文档开头加原则编号体系说明(0 判定/1-9 基础/10-11 铁律/12 约定)(5) 钩子编号格式全部统一为阿拉伯数字"钩子 1/.../7" + 全名并行,§02 的"钩子 ⑥"改"钩子:Fresh Agent 验证"(6) §04 原则 10 标题在 .md 和 HTML 字字一致"⭐ HTML 单工铁律(最高优先级)"。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">T3(计数对齐后再统一格式,避免重复改)</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>grep "铁律 4" 在 §03 = 0 结果</li>
+      <li>grep "V3" 在 §04 = 0 结果</li>
+      <li>§04 原则 11 标题含"与原则 10 互补"</li>
+      <li>§04 文档开头含编号体系说明(0 判定/1-9 基础/10-11 铁律/12 约定)</li>
+      <li>grep "钩子 ⑥\|钩子⑤\|钩子①" 在所有文件 = 0 结果(圆圈数字清零)</li>
+      <li>§02 引用含"Fresh Agent 验证"(全名)</li>
+      <li>§04 原则 10 标题在 .md 和 HTML 字字一致</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T5 ========== -->
+<h2 id="t5">T5 · 伪代码与实现对齐</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T5</span>
+    <span class="badge free">无阻塞 · 可立即开始</span>
+    <span class="badge modify">修改</span>
+  </div>
+  <h3>伪代码与实现对齐:§04 原则 5 补 timeout/5MB/二次校验 + CSS 路径说明</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">§04 原则 5 伪代码(line 91-115)与 _assets/injector.py 字字对应:(1) 补 timeout=30(2) 补 5MB 数据警告(3) 补占位符二次校验。形式:4 步主体保持 + 每步下方加 # 生产防护: 注释行。同时在 §04 原则 5 SOP 步骤 5(引用 style.css 处)补 CSS 路径处理说明:拷贝/软链/内联三选一。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">None — 可立即开始</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>§04 原则 5 伪代码含 "timeout=30"</li>
+      <li>§04 原则 5 伪代码含 "5MB" 或 "5 MB"(数据大小警告)</li>
+      <li>§04 原则 5 伪代码含二次校验(count != 1 抛 ValueError)</li>
+      <li>§04 原则 5 SOP 步骤 5 含 CSS 路径三选一说明(拷贝/软链/内联)</li>
+      <li>伪代码与 injector.py 的关键参数字字对应(grep 比对)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T6 ========== -->
+<h2 id="t6">T6 · §01 瘦身 + §05/§06 去重 + §07 声明</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T6</span>
+    <span class="badge blocked">Blocked by T2</span>
+    <span class="badge modify">修改</span>
+  </div>
+  <h3>§01 瘦身 + §05/§06 去重(SOP+fail mode+第一性原理)+ §05 SOP 步骤 1 精确化</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">(1) §01 删 line 23-35(5 层结构图)+ line 37-58(5 层职责表 + 规模伸缩段,规模伸缩段 T2 已删,此处确认),瘦身到 ~30 行,只留"Skill 是什么"+ 为什么分层一句话 + HELP 引用 + 链接(2) §06 附录 C(7 步 SOP)删除,改单行引用 §05(3) §06 附录 F fail mode 列表 + 第一性原理删除,保留"为什么传统测试不够"对比表(§06 独有),其余引用 §05(4) §05 SOP 步骤 1"先读指导手册"改"先读 §02 5 层骨架确认符合 6 大特性"(5) §07 死链声明(T1 已删死链,此处确认声明在位)。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">T2(附录 D 删完才好处理附录 F 去重,避免改完 D 又动 F)</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>§01 总行数 ≤ 35 行</li>
+      <li>§01 不含 5 层结构图(ASCII 图)和 5 层职责表</li>
+      <li>§06 附录 C 改为单行引用 §05(无 7 步列表)</li>
+      <li>§06 附录 F 不含 fail mode 列表(改引用 §05)</li>
+      <li>§06 附录 F 保留"为什么传统测试不够"对比表</li>
+      <li>§05 SOP 步骤 1 含"先读 §02 5 层骨架确认符合 6 大特性"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T7 ========== -->
+<h2 id="t7">T7 · HTML 镜像全量同步</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T7</span>
+    <span class="badge blocked">Blocked by T1, T2, T3, T4, T5, T6</span>
+    <span class="badge verify">同步</span>
+  </div>
+  <h3>HTML 镜像全量同步 T1-T6 所有 .md 改动(钩子 1 硬规则)</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">把 T1-T6 对 9 个 .md 的所有改动,同步到 SKILL开发总纲V1.0.html 镜像:(1) 删"6/8 通过"(T1)(2) 删规模伸缩相关段落(T2)(3) 钩子标题 6→7 / 原则标题 11→13 / 速览表补原则 12 / 目录"6+1"→"7"(T3)(4) 原则 10 措辞"最高"→"最高优先级" / 原则 11 加"与原则 10 互补"(T4)(5) 同步 §01 瘦身 / §06 删附录 D 和附录 C/F 去重对应的 HTML 段落(T6)。钩子 1 硬规则:.md 改 HTML 必须同 commit 同步。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">T1, T2, T3, T4, T5, T6 — 所有 .md 改动完成才能同步 HTML(避免半同步)</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>HTML 镜像不含"6/8 通过"</li>
+      <li>HTML 镜像不含规模伸缩相关段落</li>
+      <li>HTML 镜像钩子标题 = "7 个不可违背的钩子"</li>
+      <li>HTML 镜像原则标题 = "13 原则"</li>
+      <li>HTML 速览表含原则 12 行,共 13 行</li>
+      <li>HTML 镜像原则 10 措辞 = "最高优先级"</li>
+      <li>HTML 镜像原则 11 含"与原则 10 互补"</li>
+      <li>HTML 目录"6+1"→"7"</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== T8 ========== -->
+<h2 id="t8">T8 · 自洽校验脚本 + 跑通</h2>
+<div class="ticket">
+  <div class="ticket-head">
+    <span class="badge num">T8</span>
+    <span class="badge blocked">Blocked by T7</span>
+    <span class="badge verify">验证</span>
+  </div>
+  <h3>自洽校验脚本 verify.ps1 + 跑通全部校验(A 坐标最终证据)</h3>
+
+  <div class="field">
+    <div class="label">What to build</div>
+    <div class="val">编写 .scratch/skill-dev-manual-refactor/verify.ps1,包含 spec Testing Decisions 的 5 个校验模块(计数/不存在/字面对应/引用闭合/新增文件)。脚本跑通后,所有校验项 PASS = A 坐标"100% 自洽"有客观证据。校验脚本本身可复用于后续 Skill 改造的文档自洽检查。</div>
+  </div>
+
+  <div class="field">
+    <div class="label">Blocked by</div>
+    <div class="val">T7(HTML 同步完才能最终校验,因为校验含 HTML 跨文件一致性)</div>
+  </div>
+
+  <div class="acceptance">
+    <div class="label">Acceptance criteria</div>
+    <ul>
+      <li>verify.ps1 存在于 .scratch/skill-dev-manual-refactor/</li>
+      <li>脚本含 5 个校验模块(计数/不存在/字面对应/引用闭合/新增文件)</li>
+      <li>脚本跑通,所有校验项 PASS(0 FAIL)</li>
+      <li>CONTEXT.md "场景"术语含"不准删减或重命名(§07)"(T4 之外的补丁,在此确认)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== 待确认 ========== -->
+<h2 id="quiz">待你确认的 3 个问题</h2>
+
+<div class="question-box">
+  <h3>Quiz · to-tickets Step 4</h3>
+
+  <p><strong>1. 粒度合适吗?</strong></p>
+  <p>8 个 ticket,每个对应一组相关修改 + 独立校验。T1/T2/T5 可并行(无阻塞),T7 是同步关卡,T8 是验证关卡。</p>
+  <ul>
+    <li>太粗?(合并某些 ticket)</li>
+    <li>太细?(拆分某个 ticket)</li>
+    <li>合适?(直接通过)</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>2. 阻塞边正确吗?</strong></p>
+  <p>关键阻塞链:T1/T2/T5(并行)→ T3 → T4 / T6(T6 阻塞 T2)→ T7 → T8。每个 ticket 只依赖真正 gate 它的 ticket。</p>
+  <ul>
+    <li>T3 阻塞 T1/T2:对(删完才数对)</li>
+    <li>T4 阻塞 T3:对(计数对齐后再统一格式)</li>
+    <li>T6 阻塞 T2:对(附录 D 删完才处理 F 去重)</li>
+    <li>T7 阻塞 T1-T6:对(所有 .md 改完才同步 HTML)</li>
+    <li>T8 阻塞 T7:对(HTML 同步完才能最终校验)</li>
+  </ul>
+
+  <p style="margin-top:16px;"><strong>3. 有该合并或拆分的吗?</strong></p>
+  <ul>
+    <li>T5(伪代码补全)是否该并入 T4(编号措辞统一)?我倾向分开——T5 是"内容补全",T4 是"格式统一",校验项不同</li>
+    <li>T6(去重)是否该拆成 T6a(§01 瘦身)+ T6b(§05/§06 去重)?我倾向不拆——两者都是"去重"主题,合并校验更高效</li>
+  </ul>
+</div>
+
+<div class="footer">
+  To-Tickets · 8 个垂直切片 · 2026-07-28<br>
+  待你确认粒度 + 阻塞边 + 合并/拆分 · 确认后写盘到 .scratch/skill-dev-manual-refactor/issues/
+</div>
+
+</body>
+</html>

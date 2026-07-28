@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grilling · 第三轮 · A 裁决复审审查报告</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --green-soft: #e8f5e9;
+    --orange: #ff9500; --orange-soft: #fff7e6;
+    --red: #ff3b30; --red-soft: #ffebee;
+    --purple: #af52de; --purple-soft: #f3e8fd;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 920px; margin: 0 auto;
+    padding: 60px 28px 120px;
+  }
+  h1 { font-size: 34px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 600; margin-top: 56px; margin-bottom: 20px; letter-spacing: -0.02em; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; }
+  h4 { font-size: 15px; font-weight: 600; margin-top: 24px; margin-bottom: 10px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 12px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 10px; overflow-x: auto; margin: 16px 0; font-size: 13px; line-height: 1.6; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 12px 18px; margin: 16px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  blockquote p { margin: 0; color: var(--fg2); }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+  .lead { font-size: 16px; color: var(--fg2); margin-bottom: 32px; line-height: 1.6; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 40px; }
+
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 20px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+
+  /* 裁决条目卡片 */
+  .verdict { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px 26px; margin: 18px 0; }
+  .verdict-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.locked { background: var(--green-soft); color: var(--green); }
+  .badge.unchanged { background: var(--accent-soft); color: var(--accent); }
+  .badge.changed { background: var(--orange-soft); color: var(--orange); }
+  .badge.decision { background: var(--red-soft); color: var(--red); }
+  .verdict h3 { margin-top: 0; }
+
+  .evidence { background: #f5f5f7; border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .evidence .label { font-weight: 600; color: var(--fg); margin-bottom: 4px; font-size: 13px; }
+  .conclusion { background: var(--green-soft); border-left: 3px solid var(--green); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .conclusion .label { font-weight: 600; color: var(--green); margin-bottom: 4px; font-size: 13px; }
+  .probe { background: var(--purple-soft); border-left: 3px solid var(--purple); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .probe .label { font-weight: 600; color: var(--purple); margin-bottom: 4px; font-size: 13px; }
+
+  /* 决策点高亮框 */
+  .decision-box { background: var(--card); border: 2px solid var(--red); border-radius: 14px; padding: 26px 30px; margin: 24px 0; }
+  .decision-box h3 { color: var(--red); margin-top: 0; }
+  .option { background: #fafafa; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin: 10px 0; }
+  .option-label { font-weight: 600; color: var(--accent); margin-bottom: 4px; font-size: 14px; }
+  .option p { font-size: 14px; margin: 0; color: var(--fg2); }
+
+  .paradox { background: #fff7e6; border-left: 3px solid var(--orange); padding: 14px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 14px; }
+  .paradox .label { font-weight: 600; color: var(--orange); margin-bottom: 6px; font-size: 13px; }
+
+  .summary-table th { white-space: nowrap; }
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+
+  @media (max-width: 640px) {
+    body { padding: 30px 16px 80px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 20px; }
+    h3 { font-size: 16px; }
+    .verdict, .decision-box { padding: 16px 18px; }
+    table { font-size: 13px; }
+    th, td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Grilling · 第三轮</h1>
+<p class="lead">用 A 裁决(总纲内部 100% 自洽)复审审查报告 15 项 · 暴露被 B 坐标系掩盖的矛盾</p>
+<p class="meta">会话:SKILL 开发总纲 V1.0 重构 · 坐标系:A(内部自洽优先) · 日期 2026-07-28</p>
+
+<div class="toc">
+  <h4>目录</h4>
+  <ol>
+    <li><a href="#ruling">A 裁决的精确含义(锁定)</a></li>
+    <li><a href="#unchanged">不受 A/B 影响 · 结论维持(8 项)</a></li>
+    <li><a href="#changed">A 坐标下结论会变(7 项)· 重点</a></li>
+    <li><a href="#decisions">2 个待你最终拍板的决策点</a></li>
+    <li><a href="#paradox">1 个边界悖论(自我指涉)</a></li>
+    <li><a href="#next">下一步</a></li>
+  </ol>
+</div>
+
+<!-- ========== A 裁决 ========== -->
+<h2 id="ruling">A 裁决的精确含义(锁定)</h2>
+
+<blockquote>
+<p>当"总纲内部 100% 自洽"(A)与"AI 读着不累"(B)冲突时,<strong>牺牲 B</strong>。</p>
+<p>具体含义:<strong>宁可文档冗长,也不允许 .md 与 HTML、伪代码与实现、计数与条目、标题与正文之间存在任何缝隙</strong>。</p>
+</blockquote>
+
+<p>这条裁决的下游后果:审查报告是在 B 坐标系(平衡认知负荷)的隐性假设下做的,换了坐标系,它的部分"需修正"判定要<strong>重判</strong>。我逐条过。</p>
+
+<!-- ========== 不变 ========== -->
+<h2 id="unchanged">不受 A/B 影响 · 结论维持(8 项)</h2>
+
+<p>这 8 项的修复动作与坐标系无关,A 下更要严格执行。直接锁定执行,不再征询。</p>
+
+<table class="summary-table">
+  <tr><th>#</th><th>问题</th><th>A 下结论</th></tr>
+  <tr><td>P0-2</td><td>HTML 速览表缺原则 12</td><td>速览表必须补全,A 下更要补</td></tr>
+  <tr><td>P0-3</td><td>钩子数 6 vs 7</td><td>统一改 7,A 下铁律</td></tr>
+  <tr><td>P2-1</td><td>§06 fail mode 标题"4 个" vs 5</td><td>改"5 个"</td></tr>
+  <tr><td>P2-3</td><td>§03"铁律 4"编号断裂</td><td>去掉连号,独立章节</td></tr>
+  <tr><td>P3-1</td><td>原则 12 标"V3"在 v2</td><td>去 V3</td></tr>
+  <tr><td>P3-4</td><td>template CSS 路径未说明</td><td>补说明(拷贝/软链/内联三选一)</td></tr>
+  <tr><td>P3-5</td><td>§02 引用"钩子 ⑥"</td><td>改全名"钩子:Fresh Agent 验证"</td></tr>
+  <tr><td>P2-4</td><td>原则 0 编号致计数混乱</td><td>加编号体系说明</td></tr>
+</table>
+
+<!-- ========== 会变 ========== -->
+<h2 id="changed">A 坐标下结论会变(7 项)</h2>
+
+<p>这是重点。B 坐标下这些项被"平衡认知负荷"软化,A 坐标下<strong>全部硬化</strong>,且其中 2 项暴露了审查报告没发现的<strong>更深层矛盾</strong>。</p>
+
+<!-- ① P0-1 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <span class="badge decision">深层矛盾</span>
+    <strong>① P0-1 · "6/8 通过"规则</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>给了 A/B 二选一:写入 05.md 或从 HTML 删除。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的结论</div>
+    <p>二选一<strong>消失</strong>。HTML 里有的规则,.md 必须有(钩子 1 字面要求)。结论锁定:<strong>写入 05.md,HTML 保留</strong>。没有讨论空间。</p>
+  </div>
+
+  <div class="probe">
+    <div class="label">domain-modeling 场景压测 · 暴露深层矛盾</div>
+    <p>审查报告只问"这条规则放哪",<strong>没问这条规则本身对不对</strong>。我用具体场景逼:</p>
+    <p>一个<strong>微型 Skill</strong>(3 层合并,1 个 .py,≤200 行,1 周写完),它的"自检清单"可能只有 5 项。按"6/8 通过才能动手",这个微型 Skill <strong>永远不能动手</strong>——因为它自检项本来就不到 8 项。</p>
+    <p>这条规则假设所有 Skill 的自检项都 ≥ 8。但 §02 的<strong>规模伸缩表</strong>明确说微型 Skill 只需 3 层合并,自检项天然少。<strong>规则与规模伸缩冲突</strong>。</p>
+    <p>所以在 A 坐标下,不能简单把"6/8"原样写入 05.md——那会制造一个<strong>新的内部不一致</strong>(6/8 规则 vs 规模伸缩表)。必须<strong>修复规则本身</strong>,让它对微型/中型/大型都自洽。</p>
+  </div>
+</div>
+
+<!-- ② P1-1 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <span class="badge decision">审查数错</span>
+    <strong>② P1-1 · 原则数标题"11" vs 13</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>建议标题改"13 原则 (10 基础 + 原则 0 + 2 铁律)"。</p>
+  </div>
+
+  <div class="probe">
+    <div class="label">A 坐标下暴露审查报告自己数错</div>
+    <p>审查报告写"10 基础"是<strong>数错了</strong>。原则 1-9 只有 <strong>9 个</strong>基础(不是 10)。审查报告把原则 0 算进基础了,但原则 0 是"何时不做"判定类,不是基础。</p>
+    <p>而且审查报告的算式漏了原则 12。原则 12 是"HTML 输出路径约定"(新增,非铁律)。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的精确计数</div>
+    <p>0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 = <strong>13 个编号</strong>。分类:</p>
+    <ul>
+      <li>原则 0 = "何时不做"(判定类,非基础)</li>
+      <li>原则 1-9 = <strong>9 个基础</strong></li>
+      <li>原则 10/11 = 2 铁律</li>
+      <li>原则 12 = HTML 输出路径约定(1 约定,非铁律)</li>
+    </ul>
+    <p>正确标题:<code>## 13 原则 (原则 0 判定 + 9 基础 + 2 铁律 + 1 约定)</code>。<strong>A 坐标下每个数字必须和正文条目一一对应。</strong></p>
+  </div>
+</div>
+
+<!-- ③ P1-4 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <span class="badge decision">需你决策</span>
+    <strong>③ P1-4 · 架构图.html 孤儿文件</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>给了 A(引用)/B(删除)二选一。理由是"内容有独立价值"。</p>
+  </div>
+
+  <div class="probe">
+    <div class="label">A 坐标下追问:架构图自身自洽吗?</div>
+    <p>A 坐标下,<strong>孤儿文件本身就是不自洽</strong>(存在于目录但无入口引用)。但更要命的是:我读了架构图.html(519 行),发现它<strong>自身就有 3 处内部不一致</strong>:</p>
+    <ul>
+      <li><strong>钩子数三处不一致</strong>:§s4 标题写"7 钩子映射"(line 355),§s3 场景 C 写"6+1 钩子"(line 343),§s2 file-card 写"6 钩子"(line 197)</li>
+      <li><strong>目录缩进错位</strong>:§s8 的子项结构错位(line 132)</li>
+      <li><strong>文件口径不一致</strong>:说"12 个文件"(line 142),但把 2 个 HTML(主镜像+架构图自己)排除在外,这个"12"和 README 的"12"口径不同</li>
+    </ul>
+    <p>所以在 A 坐标下,<strong>选"引用架构图"之前,必须先把架构图自身的 3 处不一致修掉</strong>。否则引用一个不自洽的文件,等于把不自洽传染进主入口。</p>
+    <p>B 坐标下默认"内容有独立价值"就够了。但 A 坐标下,<strong>价值不能抵消不自洽</strong>。</p>
+  </div>
+</div>
+
+<!-- ④ P1-5 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <strong>④ P1-5 · §05/§06 完全重复</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>删 §06 附录 C(7 步 SOP)+ 附录 F(fail mode 列表),改为引用 §05。保留 §06 独有的"为什么传统测试不够"对比表。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的结论 · 更激进</div>
+    <p>审查报告结论<strong>完全成立</strong>,且 A 下更激进——不允许任何两处出现"同一份列表的两份拷贝"。§06 附录 C 的 7 步 SOP、附录 F 的 fail mode 列表,必须删,改为单行引用。</p>
+  </div>
+
+  <div class="probe">
+    <div class="label">A 下额外追问:对比表真的独有吗?</div>
+    <p>§06 附录 F 有"为什么传统测试不够"对比表(§06:99-106),审查报告说保留。A 下我同意保留——但确认 §05 里真的没有。我查了:§05 没有这个对比表。<strong>但 §05:14 的"第一性原理推导"和 §06:95 的"第一性原理"文字高度重复</strong>——A 下这个也要去重,§06 改引用 §05。</p>
+  </div>
+</div>
+
+<!-- ⑤ P2-7 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <strong>⑤ P2-7 · 原则 10/11 措辞</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>从"实质性冲突"降级为"措辞改进",建议原则 11 标题加"与原则 10 互补"。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的结论 · 从可选升级为必做</div>
+    <p>A 坐标<strong>不接受"措辞"降级</strong>。"最高优先级"和"必须"如果用在两个原则上且没显式说明关系,就是<strong>语义不自洽</strong>。§04:228-234 有关系表,A 下不够,还要在原则 11 标题里显式标注。审查报告的建议在 A 下从"可选"升级为"必做"。</p>
+  </div>
+</div>
+
+<!-- ⑥ P2-8 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <span class="badge decision">需你决策</span>
+    <strong>⑥ P2-8 · §07 死链</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>给了 A(删除/归档)/B(创建 docs/)/C(标待创建)三选。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的结论 · 直接删,且更激进</div>
+    <p>A 下死链就是不自洽,必须处理。我倾向<strong>方案 A(删除)</strong>,因为:</p>
+    <ul>
+      <li>方案 B(创建 docs/)会引入新目录,增加总纲维护面</li>
+      <li>方案 C(标待创建)等于承认总纲<strong>引用了不存在的东西</strong>,这在 A 下是"承诺未兑现",仍是不自洽的一种</li>
+    </ul>
+  </div>
+
+  <div class="probe">
+    <div class="label">A 下追问:§07 为什么要引用设计稿?</div>
+    <p>审查报告没问这个。如果 §07 本身已经是"新契约权威"(它自己 line 3 说),那它<strong>不应该依赖外部设计稿来支撑自己的条款</strong>。引用设计稿暗示"这些规则的依据在别处"——但 A 坐标下,<strong>总纲的每个条款必须自证,不依赖外部文档</strong>。</p>
+    <p>所以在 A 下,我会<strong>直接删掉这两个引用</strong>,并在 §07 末尾加一句"本章为 HELP 契约的唯一权威,不再引用外部设计稿"。这比审查报告的建议更激进。</p>
+  </div>
+</div>
+
+<!-- ⑦ P3-7 -->
+<div class="verdict">
+  <div class="verdict-head">
+    <span class="badge changed">A 下硬化</span>
+    <strong>⑦ P3-7 · 伪代码 timeout</strong>
+  </div>
+
+  <div class="evidence">
+    <div class="label">B 坐标下的结论(审查报告)</div>
+    <p>降级为"文档与实现细节不同步",建议伪代码补 timeout 说明或注明"按需调整"。</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="label">A 坐标下的结论 · 伪代码必须与实现一字不差</div>
+    <p>回到第二轮问你的场景,你选了 A。所以结论锁定:<strong>伪代码必须补全 timeout/5MB 警告/二次校验,和 injector.py 一字不差</strong>。</p>
+  </div>
+
+  <div class="probe">
+    <div class="label">A 派内部优化(仍在 A 内)</div>
+    <p>A 派的隐藏代价:伪代码补全后,原则 5 从"4 步骨架"变成"4 步骨架 + 3 个生产防护"。AI 读完可能抓不住主次。<strong>A 坐标接受这个代价</strong>。但建议一个折中(仍在 A 内):伪代码主体保持 4 步,在每个步骤下方加 <code># 生产防护: timeout=30, 5MB 警告, 占位符二次校验</code> 注释行——这样既字字对应实现,又保留主次。这算 A 派内部的"如何自洽"优化,不偏离 A。</p>
+  </div>
+</div>
+
+<!-- ========== 决策点 ========== -->
+<h2 id="decisions">2 个待你最终拍板的决策点</h2>
+
+<p>其余 5 个点(原则标题精确计数、§05/§06 去重、原则 11 措辞、§07 删死链、伪代码补全)在 A 下结论已锁定,我直接执行,不再征询。<strong>只有这 2 个需要你拍板</strong>。</p>
+
+<div class="decision-box">
+  <h3>决策点 1 · 架构图.html(P1-4)</h3>
+  <p>架构图自身有 3 处不一致。A 坐标下,引用不自洽的文件 = 传染不自洽。你愿意为修复它投入工作量吗?</p>
+
+  <div class="option">
+    <div class="option-label">α · 修架构图 3 处 + 加引用入口</div>
+    <p>总纲多一个"读手册的说明书"视图。工作量:修架构图 3 处不一致 + 在 README/SKILL.md 加链接 + 主 HTML 镜像加链接。</p>
+  </div>
+  <div class="option">
+    <div class="option-label">β · git rm 架构图.html</div>
+    <p>总纲少一个视图,但 100% 自洽(没有不自洽的文件可挂)。git 历史完整保留可恢复。</p>
+  </div>
+</div>
+
+<div class="decision-box">
+  <h3>决策点 2 · "6/8 通过"规则(P0-1)</h3>
+  <p>这条规则与 §02 规模伸缩表冲突(微型 Skill 自检项 &lt; 8,永远不能动手)。A 坐标下必须修复规则本身,消除冲突。</p>
+
+  <div class="option">
+    <div class="option-label">γ · 改为"按规模伸缩的通过率"</div>
+    <p>规则改为:"自检通过率 ≥ 75% 才能动手"。微型(5 项)需过 4 项;中型(10 项)需过 8 项;大型(15 项)需过 12 项。与规模伸缩表自洽。</p>
+  </div>
+  <div class="option">
+    <div class="option-label">δ · 改为"按规模的绝对阈值"</div>
+    <p>规则改为:"微型 ≥ 4 项 / 中型 ≥ 8 项 / 大型 ≥ 12 项才能动手"。数字硬编码,但与规模伸缩表对齐。</p>
+  </div>
+  <div class="option">
+    <div class="option-label">ε · 删除"6/8 通过"规则</div>
+    <p>这条规则不是总纲硬约束,只是 HTML 早期遗留。从 HTML 删除,不写入 05.md。但 A 坐标下要确认:删除后,05.md 的自检章节是否还有"动手门槛"?如果没有,等于放弃量化门槛。</p>
+  </div>
+</div>
+
+<!-- ========== 边界悖论 ========== -->
+<h2 id="paradox">边界悖论(自我指涉)</h2>
+
+<div class="paradox">
+  <div class="label">你刚才的指令本身有个悖论</div>
+  <p>你说"全部用 HTML 展示回复",又说"文本输出精简不超过五句话"。这两条本身不冲突(HTML 是载体,文本摘要是终端预告)。但 grilling 要逼你精确——我用场景压测这个边界:</p>
+  <p><strong>场景</strong>:如果某个问题本身就是"是/否"二选一(比如决策点 1 选 α 还是 β),按 html skill 规则,列举 ≥ 3 项才触发 HTML。一个二选一问题,放 HTML 还是放终端?</p>
+  <p><strong>我的处理</strong>:本条问题因为附带对比表和背景(≥ 3 条目),走 HTML。但后续如果出现纯二选一,我会放终端,因为<strong>html skill 的触发条件是"≥ 3 项"</strong>。这是 skill 自身规则与你的"全部 HTML"指令的潜在冲突点。</p>
+  <p><strong>请你确认</strong>:你的"全部 HTML"是指<strong>(I)严格全部,哪怕一句话也写进 HTML 文件</strong>,还是<strong>(II)按 html skill 规则,长答走 HTML,短答走终端</strong>?</p>
+</div>
+
+<!-- ========== 下一步 ========== -->
+<h2 id="next">下一步</h2>
+
+<ol>
+  <li><strong>你回答决策点 1(α/β)、决策点 2(γ/δ/ε)、边界悖论(I/II)</strong></li>
+  <li>我建立 CONTEXT.md(总纲领域术语表),把已锁定的术语固化(Skill / 唤醒词 / 场景资产 / FAT / 单工铁律 / HELP / 待开发 等)</li>
+  <li>按需产出 ADR(目前预判有 2 条符合"难逆+非显然+真实权衡":① A 坐标优先级裁决本身 ② 6/8 规则的修复方向)</li>
+  <li>形成完整重构设计稿,获你确认后进入 writing-plans</li>
+</ol>
+
+<div class="footer">
+  Grilling · 第三轮 · A 裁决复审 · 2026-07-28<br>
+  坐标系:A(内部 100% 自洽优先) · 待你拍板 2 个决策点 + 1 个边界悖论
+</div>
+
+</body>
+</html>

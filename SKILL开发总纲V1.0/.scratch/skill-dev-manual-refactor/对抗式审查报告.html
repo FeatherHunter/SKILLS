@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKILL 开发总纲 V1.0 · 对抗式审查报告</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #ffffff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #f5f5f7;
+    --green: #34c759; --green-soft: #e8f5e9;
+    --orange: #ff9500; --orange-soft: #fff7e6;
+    --red: #ff3b30; --red-soft: #ffebee;
+    --purple: #af52de; --purple-soft: #f3e8fd;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg);
+    line-height: 1.75; -webkit-font-smoothing: antialiased;
+    max-width: 900px; margin: 0 auto;
+    padding: 60px 28px 120px;
+  }
+  h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
+  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 20px; letter-spacing: -0.02em; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 10px; color: var(--fg2); }
+  p { font-size: 15px; margin-bottom: 12px; }
+  strong { font-weight: 600; }
+  code { background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; color: #c7254e; }
+  pre { background: #1d1d1f; color: #f5f5f7; padding: 16px 20px; border-radius: 10px; overflow-x: auto; margin: 16px 0; font-size: 13px; line-height: 1.6; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  pre code { background: none; padding: 0; color: inherit; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--accent-soft); font-weight: 600; }
+  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 18px; margin: 16px 0; color: var(--fg2); background: var(--accent-soft); border-radius: 0 8px 8px 0; }
+  blockquote p { margin: 0; color: var(--fg2); }
+  ul, ol { margin: 12px 0 12px 24px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+  .lead { font-size: 17px; color: var(--fg2); margin-bottom: 32px; line-height: 1.6; }
+  .meta { font-size: 13px; color: var(--fg3); margin-bottom: 40px; }
+
+  /* 问题卡片 */
+  .issue { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin: 20px 0; }
+  .issue-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+  .badge.p0 { background: var(--red-soft); color: var(--red); }
+  .badge.p1 { background: var(--orange-soft); color: var(--orange); }
+  .badge.p2 { background: var(--accent-soft); color: var(--accent); }
+  .badge.p3 { background: var(--green-soft); color: var(--green); }
+  .badge.verified { background: var(--green-soft); color: var(--green); }
+  .badge.revised { background: var(--orange-soft); color: var(--orange); }
+  .badge.revoked { background: var(--red-soft); color: var(--red); }
+  .issue h3 { margin-top: 0; }
+  .issue-meta { font-size: 13px; color: var(--fg3); margin-bottom: 12px; }
+  .evidence { background: #f5f5f7; border-left: 3px solid var(--accent); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .evidence .label { font-weight: 600; color: var(--fg); margin-bottom: 4px; font-size: 13px; }
+  .verdict { background: var(--purple-soft); border-left: 3px solid var(--purple); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .verdict .label { font-weight: 600; color: var(--purple); margin-bottom: 4px; font-size: 13px; }
+  .fix { background: var(--green-soft); border-left: 3px solid var(--green); padding: 12px 16px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .fix .label { font-weight: 600; color: var(--green); margin-bottom: 4px; font-size: 13px; }
+
+  /* 自我反思 */
+  .reflection { background: var(--card); border: 2px dashed var(--orange); border-radius: 12px; padding: 24px 28px; margin: 20px 0; }
+  .reflection h3 { color: var(--orange); }
+
+  /* 目录 */
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 32px 0 48px; }
+  .toc h4 { margin-top: 0; color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { margin-left: 20px; }
+  .toc a { color: var(--fg2); text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+  .toc li { margin-bottom: 4px; font-size: 14px; }
+
+  /* 总结表 */
+  .summary-table th { white-space: nowrap; }
+  .footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--fg3); font-size: 13px; text-align: center; }
+
+  /* 移动端 */
+  @media (max-width: 640px) {
+    body { padding: 30px 16px 80px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 21px; }
+    h3 { font-size: 17px; }
+    .issue { padding: 16px 18px; }
+    table { font-size: 13px; }
+    th, td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>SKILL 开发总纲 V1.0 · 对抗式审查报告</h1>
+<p class="lead">三层对抗式审查：① 审查探索过程 · ② 审查自身结论 · ③ 审查总纲全部文档</p>
+<p class="meta">审查日期 2026-07-28 · 审查范围：9 个 .md + 3 个 _assets + 2 个 HTML（共 14 文件）· 方法：第一性原理 + 跨文件逐条交叉验证</p>
+
+<div class="toc">
+  <h4>目录</h4>
+  <ol>
+    <li><a href="#layer1">第一层 · 审查探索过程</a></li>
+    <li><a href="#layer2">第二层 · 对抗式审查自身结论</a></li>
+    <li><a href="#layer3">第三层 · 审查总纲全部文档（新发现问题）</a></li>
+    <li><a href="#priority">修正后优先级排序</a></li>
+    <li><a href="#reflection">自我反思</a></li>
+  </ol>
+</div>
+
+<!-- ========== 第一层 ========== -->
+<h2 id="layer1">第一层 · 审查探索过程</h2>
+
+<p>以下是对"我如何审查"本身的审查——探索过程是否充分、有无遗漏。</p>
+
+<h3>做得对的部分</h3>
+<ul>
+  <li><strong>全量加载</strong>：9 个 .md + 3 个 _assets + 2 个 HTML，无遗漏</li>
+  <li><strong>交叉验证</strong>：用 grep 交叉验证了关键数字（钩子数、原则数、fail mode 数）</li>
+  <li><strong>HTML 镜像验证</strong>：读取了 HTML 镜像的完整目录和关键段落</li>
+</ul>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p0">遗漏 1</span>
+    <strong>没读 架构图.html 完整内容</strong>
+  </div>
+  <p>只读了前 50 行就跳过了。该文件在 README 和 SKILL.md 中均未被引用，但存在于目录中。没有验证其内容是否与总纲一致。</p>
+  <div class="verdict">
+    <div class="label">影响</div>
+    导致后续发现"孤儿文件"问题时，对 架构图.html 的内容判断不完整。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p0">遗漏 2</span>
+    <strong>没做 HTML 与 .md 逐条对比</strong>
+  </div>
+  <p>第一轮读了 HTML 的前 100 行和 grep 结果，但没逐条对比 HTML 每一条规则是否在 .md 中有对应。如果做了，就会发现"6/8 通过才能动手"规则<strong>只存在于 HTML 中</strong>，.md 中完全没有。</p>
+  <div class="verdict">
+    <div class="label">影响</div>
+    漏掉了最严重的 P0 问题——总纲自身违反钩子 1（HTML 同步硬规则）。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p1">遗漏 3</span>
+    <strong>对 §05/§06 重叠只做了定性判断</strong>
+  </div>
+  <p>说了"高度重叠"但没逐条对比。实际有两组完全重复的内容（SOP 7 步 + FAT fail mode 5 项），比第一轮判断的更严重。</p>
+  <div class="verdict">
+    <div class="label">影响</div>
+    低估了内容冗余的严重程度，未识别出"同一份步骤列表的两份拷贝"这一结构问题。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p2">遗漏 4</span>
+    <strong>没验证 §07 引用的文档路径是否存在</strong>
+  </div>
+  <p>§07 末尾引用了 <code>docs/superpowers/specs/...</code> 和 <code>docs/superpowers/plans/...</code> 两个路径，第一轮没验证它们是否真实存在。第二轮才用 <code>ls</code> 确认 <code>docs/</code> 目录不存在。</p>
+  <div class="verdict">
+    <div class="label">影响</div>
+    死链问题被推迟到第二轮才发现。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p2">遗漏 5</span>
+    <strong>没验证 template_skeleton.html 的 CSS 路径问题</strong>
+  </div>
+  <p>骨架文件引用 <code>href="style.css"</code>（相对路径），但实际使用时 Skill 的 HTML 和 <code>_assets/style.css</code> 不在同一目录。下了"路径映射没说明"的结论，但没检查文档其他地方是否有解释。</p>
+  <div class="verdict">
+    <div class="label">影响</div>
+    结论方向可能正确（grep 未发现路径说明），但验证不充分。
+  </div>
+</div>
+
+<!-- ========== 第二层 ========== -->
+<h2 id="layer2">第二层 · 对抗式审查自身结论</h2>
+
+<p>对第一轮报告中的每一条结论，回到原始数据找反证。以下逐条判定：<strong>✅ 确认 / ⚠️ 需修正 / ❌ 推翻</strong>。</p>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge verified">✅ 确认</span>
+    <span class="badge p0">P0</span>
+    <strong>结论 1：钩子数量不一致（6 vs 7）</strong>
+  </div>
+  <div class="issue-meta">涉及文件：README.md / SKILL.md / SKILL开发总纲V1.0.html</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <table>
+      <tr><th>来源</th><th>标题表述</th><th>实际条目数</th></tr>
+      <tr><td>README.md:32</td><td>"6 个不可违背的钩子"</td><td>未列条目（引用 SKILL.md）</td></tr>
+      <tr><td>SKILL.md:46</td><td>"6 个不可违背的钩子"</td><td><strong>7 条</strong>（编号 1-7）</td></tr>
+      <tr><td>HTML:184</td><td>"6 个不可违背的钩子"</td><td><strong>7 条</strong></td></tr>
+      <tr><td>HTML:74（目录）</td><td>"6+1 个不可违背的钩子"</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <div class="verdict">
+    <div class="label">对抗质疑 → 反驳</div>
+    <p><strong>质疑</strong>：也许"6 个"指前 6 个核心钩子，第 7 个 HELP 是"附加"的？<br>
+    <strong>反驳</strong>：SKILL.md 里编号 1-7 连续，没有"核心 vs 附加"的分组标注。HTML 目录用"6+1"暗示了意图，但正文标题和 README 都没跟上。这是笔误级别的文档不一致。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    统一改为"7 个不可违背的钩子"，或用"6 个核心钩子 + 1 个 HELP 契约"并<strong>全文一致</strong>（README / SKILL.md / HTML 三处同步）。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge revised">⚠️ 需修正</span>
+    <span class="badge p1">P1</span>
+    <strong>结论 2：原则数量标注混乱</strong>
+  </div>
+  <div class="issue-meta">涉及文件：04-可视化与注入v2.md / SKILL开发总纲V1.0.html</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <ul>
+      <li><code>04:33</code> 标题：<code>## 11 原则 (10 + 1 + 1)</code></li>
+      <li>实际原则编号：0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 = <strong>13 个</strong>（含原则 0）</li>
+      <li>不含原则 0 = <strong>12 个</strong></li>
+      <li>10 + 1 + 1 = 12 ≠ 11（标题数字与算式自身矛盾）</li>
+      <li>HTML:145 标题：<code>&lt;h3&gt;11 原则(速览)&lt;/h3&gt;</code>，速览表列了原则 0-11，<strong>缺原则 12</strong></li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <div class="label">第一轮错误 → 修正</div>
+    <p><strong>第一轮说</strong>："10+1+1=12 但正文只编号到 12"——数字算错了。<br>
+    <strong>修正</strong>：标题"11 原则"是 v2 初始版本的原则数。加了原则 10/11（铁律）后应为 12，再加原则 0 和原则 12 后实际 13 个编号。标题从未更新。<br>
+    <strong>"10+1+1"的含义</strong>：10 个基础原则 + 原则 10（单工铁律）+ 原则 11（HTML-First）= 12。但这没有算原则 0 和原则 12。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li><code>04</code> 标题改为：<code>## 13 原则 (10 基础 + 原则 0 + 2 铁律)</code></li>
+      <li>HTML 速览表补充原则 12 行</li>
+      <li>HTML 标题同步改为"13 原则(速览)"</li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge revised">⚠️ 需修正</span>
+    <span class="badge p2">P2</span>
+    <strong>结论 3：原则 10 和 11 都标"最高优先级"</strong>
+  </div>
+  <div class="issue-meta">涉及文件：04-可视化与注入v2.md</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <ul>
+      <li><code>04:156</code>：<code>### 原则 10 · ⭐ HTML 单工铁律(最高优先级)</code></li>
+      <li><code>04:214</code>：<code>### 原则 11 · ⭐ HTML-First(必须)</code></li>
+      <li><code>04:228-234</code>：有明确的关系表，说明 10 管出向、11 管入向</li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <div class="label">第一轮错误 → 修正</div>
+    <p><strong>第一轮说</strong>："都标最高优先级"——过度解读。<br>
+    <strong>修正</strong>：原则 10 标"最高优先级"，原则 11 标"必须"——措辞<strong>不同</strong>。§04 <code>228-234</code> 有明确关系表，两者互补而非竞争。<br>
+    <strong>降级</strong>：从"实质性冲突"降级为"措辞可改进"。建议原则 11 加注"subordination to 原则 10"或说明两者不竞争。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    原则 11 标题改为 <code>### 原则 11 · ⭐ HTML-First（必须，与原则 10 互补）</code>，消除"两个最高"的直觉困惑。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge verified">✅ 确认</span>
+    <span class="badge p2">P2</span>
+    <strong>结论 4：FAT fail mode 数量不一致</strong>
+  </div>
+  <div class="issue-meta">涉及文件：05-工程仪式.md / 06-附录.md</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <ul>
+      <li><code>05:64</code> 标题"常见 fail mode(预警)" → 列 <strong>5 项</strong>（最后一项"人类语料缺失"在 72 行）</li>
+      <li><code>06:108</code> 标题"4 个常见 fail mode(预警)" → 列 <strong>5 项</strong>（编号 1-5）</li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <div class="label">确认</div>
+    06 的标题说 4 个，实际列了 5 个。05 的标题没说数量。两处内容几乎完全重复。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li>统一标题为"5 个常见 fail mode"</li>
+      <li><strong>删除 06 附录 F 的 fail mode 列表</strong>，改为引用 <code>05 §常见 fail mode</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge revised">⚠️ 需修正</span>
+    <span class="badge p3">P3</span>
+    <strong>结论 5：触发词下限 8 与 HELP 场景穷举的张力</strong>
+  </div>
+  <div class="issue-meta">涉及文件：03-触发词设计v2.md / 07-HELP与场景完备性.md</div>
+
+  <div class="verdict">
+    <div class="label">第一轮错误 → 修正</div>
+    <p><strong>第一轮说</strong>："8 个触发词 × 10 场景 = 80+ 条目，是巨大负担"——这不算"冲突"。<br>
+    <strong>修正</strong>：§03 的"8 个"是触发词下限，§07 的"穷举"是每个触发词下的场景数。这是两个不同维度。§07 <code>2.3</code> 说"场景示例(非强制)"，7 字段也不算重。微型 Skill 可能只有 8×2-3 = 16-24 条。<br>
+    <strong>降级</strong>：从"冲突"降级为"改进建议"——§07 缺规模伸缩机制（grep 确认 §07 无"规模"相关内容）。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    §07 增加"场景完备性的规模伸缩"表：微型 Skill 场景 ≤ 20 条可简化格式；中型 20-100 条标准格式；大型 100+ 条需分组+搜索。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge verified">✅ 确认</span>
+    <span class="badge p3">P3</span>
+    <strong>结论 6：原则 12 标注"V3"在 v2 文档中</strong>
+  </div>
+  <div class="issue-meta">涉及文件：04-可视化与注入v2.md:382</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p><code>04:382</code>：<code>### 原则 12 · HTML 输出约定(V3 · 2026-07 增)</code><br>
+    文件标题：<code># 04 · 可视化与注入 v2</code></p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    去掉"V3"版本标记，改为 <code>### 原则 12 · HTML 输出路径约定（2026-07 增）</code>。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge revised">⚠️ 需修正</span>
+    <span class="badge p3">P3</span>
+    <strong>结论 7：render_4step 硬编码 30s timeout</strong>
+  </div>
+  <div class="issue-meta">涉及文件：_assets/injector.py:87</div>
+
+  <div class="verdict">
+    <div class="label">第一轮错误 → 修正</div>
+    <p><strong>第一轮说</strong>："硬编码 30s timeout 对大型 Skill 不够"——这不算硬编码问题。<br>
+    <strong>修正</strong>：injector.py 是"可加载资产"，Skill 可以 copy 后修改。30s 是合理默认值。真正的问题是<strong>原则 5 的伪代码没写 timeout 参数，但实现里有</strong>——文档与实现细节不完整同步。<br>
+    <strong>降级</strong>：从"硬编码问题"降级为"文档与实现细节不同步"。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    原则 5 伪代码补充 <code>timeout=30</code> 参数说明，或注明"timeout 按需调整"。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge revised">⚠️ 需修正</span>
+    <span class="badge p3">P3</span>
+    <strong>结论 8：01-第一性原理.md 应合并入 02</strong>
+  </div>
+  <div class="issue-meta">涉及文件：01-第一性原理.md / 02-5层骨架.md</div>
+
+  <div class="verdict">
+    <div class="label">第一轮错误 → 修正</div>
+    <p><strong>第一轮说</strong>："01 内容过薄，可合并入 02"——忽略了 01 作为"浅入口"的认知价值。<br>
+    <strong>修正</strong>：01 的定位是"1 段话 + 1 张图，30 秒讲清 Skill 是什么"。这是新读者的认知入口，不需要 02 的详细自检清单。删掉 01 会导致新读者没有浅入口。但 01 和 02 确实有重叠（5 层结构图、规模伸缩表重复）。<br>
+    <strong>修正方向</strong>：从"合并入 02"改为"精简去重但保留"。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    删掉 01 中与 02 重复的"5 层结构图"和"规模伸缩表"，只保留"Skill 是什么"定义 + "为什么分层"一句话 + 链接到 02。01 瘦身到 ~30 行。
+  </div>
+</div>
+
+<!-- ========== 第三层 ========== -->
+<h2 id="layer3">第三层 · 审查总纲全部文档（新发现问题）</h2>
+
+<p>以下是对抗式审查中发现的<strong>第一轮完全遗漏</strong>的问题。</p>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p0">🔴 新发现 1</span>
+    <strong>HTML 镜像包含 .md 中不存在的规则（自违反钩子 1）</strong>
+  </div>
+  <div class="issue-meta">涉及文件：SKILL开发总纲V1.0.html:244 / 全部 7 个 .md</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>HTML <code>244</code> 行：</p>
+    <pre><code>&lt;p&gt;&lt;strong&gt;6/8 通过才能动手&lt;/strong&gt;。低于 6 个 = 改动未准备好,回去补。&lt;/p&gt;</code></pre>
+    <p>grep 搜索 <code>6/8</code> 在所有 .md 文件中<strong>零结果</strong>。这条"6/8 通过才能动手"规则只存在于 HTML 镜像中，.md 源文件完全没有。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    <p>这直接违反了<strong>钩子 1（HTML 同步硬规则）</strong>——"SKILL.md 任何改动，<code>&lt;skill&gt;.html</code> 必须同 commit 同步"。反过来也一样：HTML 有内容但 .md 没有 = 不同步。<br>
+    <strong>严重程度</strong>：🔴 最高。总纲自身违反自己的硬规则，是最严重的信用问题。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议（二选一）</div>
+    <ul>
+      <li><strong>方案 A</strong>：把"6/8 通过才能动手"规则写入 <code>05-工程仪式.md</code> 的自检章节，HTML 不变</li>
+      <li><strong>方案 B</strong>：如果这条规则是 HTML 早期版本的遗留、已不再适用，则从 HTML 中删除</li>
+    </ul>
+    <strong>推荐方案 A</strong>：这是一条有价值的规则，应该回写到 .md 并统一表述。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p0">🔴 新发现 2</span>
+    <strong>HTML 速览表缺少原则 12（自违反钩子 1）</strong>
+  </div>
+  <div class="issue-meta">涉及文件：SKILL开发总纲V1.0.html:145-160</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>HTML <code>145</code> 行标题 <code>&lt;h3&gt;11 原则(速览)&lt;/h3&gt;</code>，速览表（<code>148-159</code> 行）列了原则 0-11，<strong>原则 12 不在速览表里</strong>。</p>
+    <p>而 <code>04-可视化与注入v2.md</code> 中原则 12 有 80 行内容（HTML 输出路径约定 12.A/12.B）。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    HTML 镜像不完整，遗漏了原则 12 的速览行。同样违反钩子 1。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    HTML 速览表追加一行：
+    <pre><code>&lt;tr&gt;&lt;td&gt;12&lt;/td&gt;&lt;td&gt;HTML 输出路径约定&lt;/td&gt;&lt;td&gt;12.A 数据/过程 + 12.B HELP，路径形态 + 冲突不覆盖&lt;/td&gt;&lt;/tr&gt;</code></pre>
+    同时标题改为"13 原则(速览)"。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p0">🔴 新发现 3</span>
+    <strong>README 与 SKILL.md 钩子数量声明不一致</strong>
+  </div>
+  <div class="issue-meta">涉及文件：README.md:32 / SKILL.md:46</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>README.md <code>32-35</code>：</p>
+    <pre><code>## 6 个不可违背的钩子
+见 [SKILL.md](./SKILL.md) 底部。</code></pre>
+    <p>SKILL.md <code>46</code>：</p>
+    <pre><code>## 6 个不可违背的钩子
+（实际列了 7 条，编号 1-7）</code></pre>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    README 把读者引到 SKILL.md，但 SKILL.md 列了 7 个。README 自身也没列钩子清单，只做了引用。两处"6"都需要改为"7"。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    README 和 SKILL.md 标题同步改为"7 个不可违背的钩子"。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p1">🟡 新发现 4</span>
+    <strong>架构图.html 是孤儿文件</strong>
+  </div>
+  <div class="issue-meta">涉及文件：架构图.html / README.md / SKILL.md / 全部 .md</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>grep 搜索 <code>架构图</code> 在所有 .md 文件中<strong>零结果</strong>：</p>
+    <pre><code>$ grep -r "架构图" *.md
+(无输出)</code></pre>
+    <p><code>架构图.html</code> 存在于目录中，但：</p>
+    <ul>
+      <li>README.md 没提及</li>
+      <li>SKILL.md 没提及</li>
+      <li>7 个 .md 文件中没有任何一个引用它</li>
+      <li>HTML 镜像 <code>SKILL开发总纲V1.0.html</code> 也无链接指向它</li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    这是一个未被任何入口引用的孤儿文件。要么应被 README/SKILL.md 引用，要么应删除。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li><strong>方案 A</strong>：在 README.md 和 SKILL.md 的文件清单中添加 <code>架构图.html</code> 条目</li>
+      <li><strong>方案 B</strong>：如果架构图内容已过时，删除它（git 历史保留）</li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p1">🟡 新发现 5</span>
+    <strong>§05 和 §06 的内容重叠比之前判断的更严重</strong>
+  </div>
+  <div class="issue-meta">涉及文件：05-工程仪式.md / 06-附录.md</div>
+
+  <div class="evidence">
+    <div class="label">逐条对比</div>
+    <table>
+      <tr><th>内容</th><th>§05 位置</th><th>§06 位置</th><th>重叠度</th></tr>
+      <tr><td>改动前 3 问</td><td><code>05:5-11</code></td><td>—</td><td>—</td></tr>
+      <tr><td>FAT 第一性原理推导</td><td><code>05:17-27</code></td><td><code>06:93-96</code></td><td>高度重复</td></tr>
+      <tr><td>FAT 9 步协议</td><td><code>05:28-46</code></td><td>—</td><td>—</td></tr>
+      <tr><td>FAT fail mode 列表</td><td><code>05:64-72</code>（5 项）</td><td><code>06:108-116</code>（5 项）</td><td><strong>完全重复</strong></td></tr>
+      <tr><td>FAT 与单元测试协同</td><td>—</td><td><code>06:119-133</code></td><td>§06 独有</td></tr>
+      <tr><td>改 Skill SOP（7 步）</td><td><code>05:108-118</code></td><td><code>06:47-59</code>（附录 C）</td><td><strong>完全重复</strong></td></tr>
+      <tr><td>5 层自检清单</td><td><code>05:102-104</code>（引用 §02）</td><td>—</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    <p>§06 附录 C（通用改造顺序）和 §05（工程实施 SOP）是<strong>同一份 7 步列表的两份拷贝</strong>。<br>
+    §06 附录 F（FAT 协议）和 §05（FAT 协议）是<strong>同一份 FAT 描述的两份拷贝</strong>，其中 fail mode 列表完全重复。</p>
+    <p>这违反了总纲自身强调的"可演进"原则——改了一处忘了改另一处就会过期。事实上，§06 的 fail mode 标题"4 个"与实际 5 项不一致，正是因为<strong>加了第 5 项时只改了 §05 没改 §06</strong>。</p>
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li><strong>§06 附录 C</strong>：删除 7 步列表，改为 <code>→ 通用改造顺序见 [05 §工程实施 SOP](./05-工程仪式.md)</code></li>
+      <li><strong>§06 附录 F</strong>：删除 fail mode 列表和第一性原理推导，保留"为什么传统测试不够"对比表（§06 独有内容），其余引用 §05</li>
+      <li>§06 最终只保留 A/B/D/E 四个附录 + F 的对比表</li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p2">🟡 新发现 6</span>
+    <strong>§03 的"铁律 4"编号断裂</strong>
+  </div>
+  <div class="issue-meta">涉及文件：03-触发词设计v2.md:98</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>§03 前面叫"3 条去重铁律"（铁律 1/2/3，<code>52-72</code> 行），后面突然出现：</p>
+    <pre><code>## 变体到 CLI 参数的相对时间换算(铁律 4 · 2026-07-24 补)</code></pre>
+    <p>"铁律 4"不属于"去重铁律"系列——它是相对时间换算规则，主题完全不同。编号连号但主题不连号。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    读者会误以为"铁律 4"是第 4 条去重铁律。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    改为独立章节：<code>## 相对时间换算（2026-07-24 增）</code>，去掉"铁律 4"编号。
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p2">🟡 新发现 7</span>
+    <strong>原则 0 的编号体系导致计数混乱</strong>
+  </div>
+  <div class="issue-meta">涉及文件：04-可视化与注入v2.md / SKILL开发总纲V1.0.html</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <ul>
+      <li>§04 有"原则 0"（<code>04:22</code>），然后从"原则 1"开始</li>
+      <li>原则编号：0, 1, 2, ..., 12 = <strong>13 个编号</strong></li>
+      <li>标题写"11 原则"——逻辑是 13 - 原则 0 - 原则 12 = 11，但这从未在文档中说明</li>
+      <li>HTML 速览表把原则 0 也列进了表里，进一步增加困惑</li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    0-based 编号 + 不算原则 0 + 不算原则 12 = 11。逻辑上自洽但极易混淆。读者数编号有 13 个，标题说 11 个，差 2 个没有任何解释。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li>在标题后加注：<code>## 13 原则 (含原则 0 + 2 铁律，核心 10 条)</code></li>
+      <li>或在文档开头说明编号体系：<code>"原则 0 = 何时不做；原则 1-9 = 基础；原则 10-12 = 铁律/约定"</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p2">🟡 新发现 8</span>
+    <strong>§07 引用了不存在的文件路径（死链）</strong>
+  </div>
+  <div class="issue-meta">涉及文件：07-HELP与场景完备性.md:240-241</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>§07 <code>240-241</code> 行引用了两个路径：</p>
+    <pre><code>- 设计稿 → [docs/superpowers/specs/2026-07-26-skill-help-scenario-completeness-design.md](./docs/superpowers/specs/2026-07-26-skill-help-scenario-completeness-design.md)
+- 实施计划 → [docs/superpowers/plans/2026-07-26-skill-help-scenario-completeness.md](./docs/superpowers/plans/2026-07-26-skill-help-scenario-completeness.md)</code></pre>
+    <p>验证：</p>
+    <pre><code>$ ls -la "docs/"
+ls: cannot access 'docs/': No such file or directory</code></pre>
+    <p><code>docs/</code> 目录不存在，两个链接均为死链。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    §07 作为"新契约权威"章节，末尾有两个死链，降低可信度。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    <ul>
+      <li><strong>方案 A</strong>：如果设计稿/实施计划文件存在于其他位置，修正链接路径</li>
+      <li><strong>方案 B</strong>：如果文件已删除/归档，删除这两行链接或标注 <code>[已归档]</code></li>
+      <li><strong>方案 C</strong>：如果文件尚未创建，标注 <code>【待创建】</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p3">🟡 新发现 9</span>
+    <strong>§02 自检清单引用"钩子 ⑥"但钩子编号可能变化</strong>
+  </div>
+  <div class="issue-meta">涉及文件：02-5层骨架.md:181</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>§02 <code>181</code> 行：</p>
+    <pre><code>- [ ] **SKILL.md 是否通过 Fresh Agent 黑盒测试?(钩子 ⑥)**</code></pre>
+    <p>在 SKILL.md 中，FAT 验证确实是第 6 个钩子。但 HELP 契约是第 7 个钩子，未来如果有人重新编号或调整顺序，"钩子 ⑥"这个引用就会断裂。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    编号引用是脆弱的——钩子顺序变化时引用会断裂。
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    改用全名引用：<code>- [ ] **SKILL.md 是否通过 Fresh Agent 黑盒测试?(钩子：Fresh Agent 验证)**</code>
+  </div>
+</div>
+
+<div class="issue">
+  <div class="issue-header">
+    <span class="badge p3">🟡 新发现 10</span>
+    <strong>template_skeleton.html 的 CSS 路径映射未说明</strong>
+  </div>
+  <div class="issue-meta">涉及文件：_assets/template_skeleton.html:31</div>
+
+  <div class="evidence">
+    <div class="label">原始证据</div>
+    <p>骨架文件 <code>31</code> 行：</p>
+    <pre><code>&lt;link rel="stylesheet" href="style.css"&gt;</code></pre>
+    <p>这是相对路径，假设 CSS 与 HTML 在同一目录。但实际使用时：</p>
+    <ul>
+      <li><code>_assets/style.css</code> 在总纲目录下</li>
+      <li>Skill 的 HTML 模板在 <code>&lt;skill&gt;/templates/</code> 下</li>
+      <li>两者不在同一目录</li>
+    </ul>
+    <p>grep 搜索"style.css"路径说明，在所有 .md 文件中未找到路径映射指导。</p>
+  </div>
+
+  <div class="verdict">
+    <div class="label">判定</div>
+    文档没说明：Skill 使用骨架时，CSS 是拷贝过去、软链、还是内联？
+  </div>
+
+  <div class="fix">
+    <div class="label">修复建议</div>
+    在 §04 原则 5 或 §05 "写 HTML 模板 SOP" 步骤 5（"引用 style.css"）中补充说明：
+    <pre><code># CSS 路径处理（三选一）
+# 方案 A（推荐）：拷贝 _assets/style.css 到 Skill 的 templates/ 目录
+# 方案 B：软链 ln -s ../../SKILL开发总纲V1.0/_assets/style.css
+# 方案 C：将 CSS 内联到 &lt;style&gt; 标签（适合单文件分发）</code></pre>
+  </div>
+</div>
+
+<!-- ========== 优先级排序 ========== -->
+<h2 id="priority">修正后优先级排序</h2>
+
+<table class="summary-table">
+  <tr>
+    <th>优先级</th>
+    <th>#</th>
+    <th>问题</th>
+    <th>类型</th>
+    <th>结论状态</th>
+  </tr>
+  <tr>
+    <td rowspan="3">🔴 P0</td>
+    <td>1</td>
+    <td>HTML 镜像含 .md 中不存在的"6/8 通过"规则（自违反钩子 1）</td>
+    <td>文档不同步</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>HTML 速览表缺原则 12（自违反钩子 1）</td>
+    <td>文档不同步</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td>钩子数量"6" vs "7"全文不一致（README / SKILL.md / HTML）</td>
+    <td>计数错误</td>
+    <td>✅ 确认</td>
+  </tr>
+  <tr>
+    <td rowspan="2">🟡 P1</td>
+    <td>4</td>
+    <td>原则数量标题"11" vs 实际 13（含 0）/ 12（不含 0）</td>
+    <td>计数错误</td>
+    <td>⚠️ 修正</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>§05 和 §06 的 SOP 7 步 + FAT fail mode 完全重复</td>
+    <td>内容冗余</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td rowspan="5">🟡 P2</td>
+    <td>6</td>
+    <td>§06 fail mode 标题"4 个" vs 实际 5 个</td>
+    <td>计数错误</td>
+    <td>✅ 确认</td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td>架构图.html 是孤儿文件（无任何入口引用）</td>
+    <td>文档治理</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>§07 引用死链（docs/ 目录不存在）</td>
+    <td>死链</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td>§03"铁律 4"编号断裂（非去重铁律却连号）</td>
+    <td>编号混乱</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td>原则 0 编号体系导致计数混乱（13 编号 vs 标题 11）</td>
+    <td>编号混乱</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td rowspan="5">🟢 P3</td>
+    <td>11</td>
+    <td>原则 12 标注"V3"在 v2 文档中</td>
+    <td>命名混淆</td>
+    <td>✅ 确认</td>
+  </tr>
+  <tr>
+    <td>12</td>
+    <td>§07 无规模伸缩机制</td>
+    <td>改进建议</td>
+    <td>⚠️ 修正</td>
+  </tr>
+  <tr>
+    <td>13</td>
+    <td>01 与 02 内容重叠（应去重但保留 01）</td>
+    <td>去重建议</td>
+    <td>⚠️ 修正</td>
+  </tr>
+  <tr>
+    <td>14</td>
+    <td>template_skeleton.html CSS 路径映射未说明</td>
+    <td>细节缺口</td>
+    <td>🆕 新发现</td>
+  </tr>
+  <tr>
+    <td>15</td>
+    <td>§02 引用"钩子 ⑥"应改全名引用</td>
+    <td>脆弱引用</td>
+    <td>🆕 新发现</td>
+  </tr>
+</table>
+
+<!-- ========== 自我反思 ========== -->
+<h2 id="reflection">自我反思</h2>
+
+<div class="reflection">
+  <h3>第一轮审查的问题</h3>
+
+  <h4>1. "原则 10 和 11 都标最高优先级"——过度解读</h4>
+  <p>原则 11 标的是"必须"不是"最高优先级"，两者是互补关系，§04 有明确的关系表。我应该在第一轮就读到那个表。</p>
+
+  <h4>2. "01 应合并入 02"——忽略了浅入口价值</h4>
+  <p>文档分层不只是避免重复，也是给不同读者不同入口。01 作为"30 秒入门"有独立认知价值。</p>
+
+  <h4>3. 没发现 HTML 和 .md 之间的内容不同步——最严重遗漏</h4>
+  <p>第一轮读了 HTML 的前 100 行和 grep 结果，但没做逐条对比。如果做了，就会发现"6/8 通过"规则只存在于 HTML 中。这是审查方法论的根本缺陷——<strong>偏读内容找内部矛盾，没做跨文件逐条交叉验证</strong>。</p>
+
+  <h4>4. 对 §05/§06 重叠的判断太粗</h4>
+  <p>说了"高度重叠"但没逐条对比。实际有两组完全重复的内容，比第一轮判断的更严重。而且 §06 的"4 个 fail mode"标题错误，正是因为重复导致的"改一处忘另一处"。</p>
+
+  <h4>5. 没发现架构图.html 是孤儿文件</h4>
+  <p>第一轮读了它但没意识到它没被任何入口引用。审查时不应只关注文件内容，还应关注文件在文档体系中的位置——<strong>被谁引用？引用链是否闭合？</strong></p>
+</div>
+
+<div class="reflection">
+  <h3>对抗式审查的价值</h3>
+  <p>第一轮发现 7 个问题（3 确认 + 4 需修正），第二轮对抗式审查后：</p>
+  <ul>
+    <li><strong>确认</strong>：3 个结论维持不变</li>
+    <li><strong>修正</strong>：4 个结论降级或改方向</li>
+    <li><strong>新发现</strong>：10 个第一轮完全遗漏的问题</li>
+    <li><strong>推翻</strong>：0 个结论被完全推翻</li>
+  </ul>
+  <p>对抗式审查的核心动作：<strong>回到原始数据 → 对每个结论找反证 → 用 grep/ls 等工具硬验证 → 不信任"我记得"。</strong></p>
+  <p>第一轮的根本缺陷：<strong>读内容找矛盾有余，跨文件交叉验证不足</strong>。对抗式审查补上了这个缺口。</p>
+</div>
+
+<div class="footer">
+  <p>SKILL 开发总纲 V1.0 · 对抗式审查报告 · 2026-07-28</p>
+  <p>审查范围：14 文件全量 · 方法：第一性原理 + 跨文件逐条交叉验证 + 对抗式结论复审</p>
+</div>
+
+</body>
+</html>

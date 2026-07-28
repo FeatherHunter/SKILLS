@@ -144,9 +144,11 @@ def main():
             i += 1
 
     if action == "render":
-        render(args)
+        if render(args) is False:
+            sys.exit(1)
     else:
         print(f"未知操作:{action}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -116,6 +116,7 @@ function init(){
   document.getElementById('subtitle').textContent=PAYLOAD.message||'同步完成';
   document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'sync-from-feishu'}`;
   renderOverall();renderKPIs();renderSteps();renderErrors();renderReceipt();
+  // success: 同步报告已渲染
 }
 function renderOverall(){
   const d=data();const errs=(d.errors||[]).length;

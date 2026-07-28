@@ -50,6 +50,7 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 
 .empty{text-align:center;color:var(--fg2);padding:60px 20px}
 .state-banner{display:none;padding:18px;border-radius:14px;margin-bottom:18px;text-align:center;font-weight:600}
+.state-banner.success{background:#e8f7e8;color:#1a7a3a}
 .state-banner.empty{background:#fff7e8;color:#b25b00}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
@@ -66,7 +67,8 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 <p class="meta" id="meta"></p>
 </header>
 
-<!-- 5 状态 fallback(§07 §5) -->
+<!-- 4 状态 fallback(§07 §5 · B.9 决策:success/empty/missing_data/error) -->
+<div id="stateSuccess" class="state-banner success" style="display:none;">✓ 场景已加载</div>
 <div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
 <div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
 <div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
@@ -89,7 +91,7 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 <script>
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function showState(name){
-  ['Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+  ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
   if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
 }
 
@@ -136,6 +138,7 @@ try{
       module.appendChild(body);
       main.appendChild(module);
     });
+    showState('Success');
   }
 }catch(err){
   console.error('渲染失败:',err);

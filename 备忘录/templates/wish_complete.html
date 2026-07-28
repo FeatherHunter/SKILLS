@@ -97,6 +97,7 @@ function init(){
   document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'wish-complete'} · 来源：${d.source||''}`;
   if(d.default_content){document.getElementById('globalContent').value=d.default_content}
   renderKPIs();renderList();
+  // success: 心愿列表已加载,等待用户勾选完成
 }
 
 function renderKPIs(){

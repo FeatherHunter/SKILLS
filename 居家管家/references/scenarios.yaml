@@ -10,6 +10,19 @@ scenarios:
   status: ''
   result: 会列出名称匹配的物品(HTML 页面)。
   category: 找东西
+  variants:
+    - direction: 同义
+      phrase: 搜索物品
+    - direction: 同义
+      phrase: 找一下物品
+    - direction: 口语
+      phrase: 帮我找找
+    - direction: 口语
+      phrase: 看看家里有啥
+    - direction: 模糊
+      phrase: 那个啥在哪
+    - direction: 模糊
+      phrase: 我之前放哪了
 - wake_word: 查物品
   scenario_id: search_by_location
   scenario_title: 按位置搜物品
@@ -45,6 +58,19 @@ scenarios:
   status: ''
   result: 展示该物品全部字段(分类/位置/标签/购买日/过期日/备注等)。
   category: 找东西
+  variants:
+    - direction: 同义
+      phrase: 查看物品
+    - direction: 同义
+      phrase: 物品详情
+    - direction: 口语
+      phrase: 给我看看这个
+    - direction: 口语
+      phrase: 这件东西啥情况
+    - direction: 模糊
+      phrase: 那个东西的信息
+    - direction: 模糊
+      phrase: 它具体是啥
 - wake_word: 录物品
   scenario_id: add_text
   scenario_title: 文字录入物品
@@ -55,6 +81,19 @@ scenarios:
   status: ''
   result: AI 走 7 步录入流程,生成预览 HTML 让用户确认,确认后写入。
   category: 存东西
+  variants:
+    - direction: 同义
+      phrase: 登记物品
+    - direction: 同义
+      phrase: 添加物品
+    - direction: 口语
+      phrase: 帮我记一下
+    - direction: 口语
+      phrase: 家里又多了个东西
+    - direction: 模糊
+      phrase: 这个收进来
+    - direction: 模糊
+      phrase: 新到货了
 - wake_word: 拍物品
   scenario_id: add_photo
   scenario_title: 拍照录入物品
@@ -130,6 +169,19 @@ scenarios:
   status: ''
   result: 生成盘点 HTML,逐件确认状态/数量。
   category: 盘点
+  variants:
+    - direction: 同义
+      phrase: 清点物品
+    - direction: 同义
+      phrase: 核对库存
+    - direction: 口语
+      phrase: 数数这里
+    - direction: 口语
+      phrase: 这堆对一下
+    - direction: 模糊
+      phrase: 看看齐不齐
+    - direction: 模糊
+      phrase: 还剩多少
 - wake_word: 盘全部
   scenario_id: inventory_all
   scenario_title: 全屋盘点
@@ -171,6 +223,19 @@ scenarios:
   status: ''
   result: 总数 / 有价件数 / 总价值 / 状态分布 / 分类分布(HTML)。
   category: 看统计
+  variants:
+    - direction: 同义
+      phrase: 统计物品
+    - direction: 同义
+      phrase: 物品总览
+    - direction: 口语
+      phrase: 家里都有啥
+    - direction: 口语
+      phrase: 给我个总数
+    - direction: 模糊
+      phrase: 一共多少件
+    - direction: 模糊
+      phrase: 整体啥情况
 - wake_word: 查高频
   scenario_id: stats_frequent
   scenario_title: 高频物品

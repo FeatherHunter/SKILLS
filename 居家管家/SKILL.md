@@ -151,6 +151,7 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 
 | 唤醒词 | CLI 命令 |
 |--------|---------|
+| **居家管家 帮助** | `python3 scripts/home_manager.py help`（生成 HELP HTML） |
 | 查物品 | `search --name "XX"` 或 `search --location "XX"` 或 `search --tag "XX"` |
 | 看物品 | `detail --id {ID}` |
 | 录物品 | `add --name "XX" --category-id N --location "XX"` (category-id 必填,从 categories 表查) |
@@ -184,6 +185,32 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 查物品 | `search --name "XX"` 默认输出 HTML |
 | 看物品 | `detail --id {ID}` 默认输出 HTML |
 | 统物品 | `list` 默认输出 HTML |
+
+---
+
+## 🧩 变体管理（总纲 §钩子 3 · 变体）
+
+> 引用 [SKILL 开发总纲 §钩子 3](../SKILL开发总纲V1.0/03-触发词设计v2.md)：每个核心唤醒词配 2-3 个自然语言等价表达,覆盖 3 方向(同义 / 口语 / 模糊)。SKILL.md 只标方向,不写具体话(避免硬编码语料);具体话术在 `references/scenarios.yaml` 的 `variants` 字段。
+
+### TOP 5 核心唤醒词变体方向
+
+按 audit 使用频率(grilling Q7=audit),TOP 5 核心词均已配齐 3 方向变体:
+
+| 唤醒词 | 变体方向 | 变体示例(完整见 scenarios.yaml) |
+|--------|---------|------------------------------|
+| 查物品 | 同义 + 口语 + 模糊 | 搜索物品 / 帮我找找 / 那个啥在哪 |
+| 看物品 | 同义 + 口语 + 模糊 | 查看物品 / 给我看看这个 / 那个东西的信息 |
+| 录物品 | 同义 + 口语 + 模糊 | 登记物品 / 帮我记一下 / 这个收进来 |
+| 盘物品 | 同义 + 口语 + 模糊 | 清点物品 / 数数这里 / 看看齐不齐 |
+| 统物品 | 同义 + 口语 + 模糊 | 统计物品 / 家里都有啥 / 一共多少件 |
+
+### 单一事实源
+
+变体清单的唯一事实源是 `references/scenarios.yaml` 的 `variants` 字段(每个 variant = `{direction: str, phrase: str}`)。`tests/test_variants.py` 用 5 个测试锁住结构契约(direction ∈ {同义,口语,模糊} / 每 TOP 5 ≥ 2 direction / phrase 非空 / 无禁用字符)。
+
+### ⚠️ Risk B:新增 TOP 核心词需同步标注变体方向
+
+**新增 TOP 核心词时,必须同步在 `scenarios.yaml` 加 `variants` 字段,否则视为 incomplete scenario**——因为缺变体的核心词无法匹配口语化 prompt,违反钩子 3。`tests/test_variants.py` 的 TOP5 列表当前是硬编码,新增 TOP 核心词时需同步更新该列表。
 
 ---
 

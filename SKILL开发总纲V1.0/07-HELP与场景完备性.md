@@ -237,7 +237,7 @@ FAT 适用方式以 [05-工程仪式.md §FAT 协议判定矩阵](./05-工程仪
 
 - 视觉版总览 → [SKILL开发总纲V1.0.html](./SKILL开发总纲V1.0.html)
 - 主入口 → [SKILL.md](./SKILL.md)
-- 设计稿 → [docs/superpowers/specs/2026-07-26-skill-help-scenario-completeness-design.md](./docs/superpowers/specs/2026-07-26-skill-help-scenario-completeness-design.md)
-- 实施计划 → [docs/superpowers/plans/2026-07-26-skill-help-scenario-completeness.md](./docs/superpowers/plans/2026-07-26-skill-help-scenario-completeness.md)
 - 上一章 → [06-附录.md](./06-附录.md)
 - 第一性原理 → [01-第一性原理.md](./01-第一性原理.md)
+
+> 本章为 HELP 契约的唯一权威,不再引用外部设计稿。所有强制与例外条款见本章原文。

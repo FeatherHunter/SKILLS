@@ -211,22 +211,44 @@ function buildScenarioCard(s){
   return card;
 }
 
-// ===== 复制 prompt(原则 10) =====
+// ===== 复制 prompt(原则 10 · 学习卡路里 help_center 的 toast 反馈) =====
 function copyPrompt(s,btn){
   var text='【场景】'+s.scenario_title+'\n【唤醒词】'+s.wake_word+'\n【prompt】\n'+(s.prompt||'').trim()+'\n【预期结果】\n'+(s.result||'').trim();
+  // 提取唤醒词显示在 toast(确认复制对了)
+  var wakeLabel=s.wake_word||'prompt';
+  if(s.scenario_title)wakeLabel+=' · '+s.scenario_title;
+  showToast(wakeLabel);
+  var after=function(){
+    if(!btn)return;
+    var orig=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');
+    setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
+  };
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){
-      var orig=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');
-      setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
-    }).catch(function(){fallbackCopy(text,btn)});
-  }else{fallbackCopy(text,btn)}
+    navigator.clipboard.writeText(text).then(after).catch(function(){fallbackCopy(text,btn);after()});
+  }else{fallbackCopy(text,btn);after()}
 }
 function fallbackCopy(text,btn){
   var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
   try{document.execCommand('copy')}catch(e){}
   document.body.removeChild(ta);
-  var orig=btn.textContent;btn.textContent='✓ 已复制(降级)';btn.classList.add('copied');
-  setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
+}
+
+// ===== Toast 控制器(学习卡路里 help_center · iOS 通知风格) =====
+var toastEl=document.getElementById('toast');
+var toastWakeEl=document.getElementById('toastWake');
+var toastCloseEl=document.getElementById('toastClose');
+var toastTimer=null;
+function showToast(wake){
+  if(toastWakeEl)toastWakeEl.textContent=wake;
+  if(toastEl)toastEl.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
+}
+if(toastCloseEl){
+  toastCloseEl.addEventListener('click',function(){
+    if(toastEl)toastEl.classList.remove('show');
+    if(toastTimer)clearTimeout(toastTimer);
+  });
 }
 </script>
 </body>

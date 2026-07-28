@@ -55,7 +55,19 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
 
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}}
+/* === TOAST(学习卡路里 help_center · iOS 通知风格) === */
+.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:320px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:22px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:13px;line-height:1.4;color:#fff;margin-bottom:3px}
+.toast-title em{font-style:normal;color:#34c759;font-weight:600}
+.toast-detail{font-size:11.5px;line-height:1.55;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0;transition:background .12s}
+.toast-close:hover{background:rgba(255,255,255,.18)}
+.toast-close:active{transform:scale(.96)}
+
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0;padding:12px 12px 12px 14px}.toast.show{transform:translateX(0) scale(1)}.toast-icon{font-size:20px}.toast-title{font-size:12.5px}.toast-detail{font-size:11px}body{padding-bottom:env(safe-area-inset-bottom,0)}}
 </style>
 </head>
 <body>
@@ -83,6 +95,16 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 所有 prompt 都已剥离 CLI / 数据库 / 文件路径,纯用户意图,可直接发给 AI。
 </p>
 </footer>
+</div>
+
+<!-- Toast(学习卡路里 help_center · iOS 通知风格 · 复制 prompt 后浮层提示) -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-icon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),备忘录技能会自动执行这个流程,完成后你会在飞书收到 HTML</div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
 
 <!-- ===== 占位符 - 由 injector 替换为 window.__DATA__ ===== -->

@@ -147,12 +147,12 @@ class TestWishCompleteContract:
 
 class TestWishCompleteHtml:
     def test_html_flag_generates_wish_complete(self, seeded_db):
-        """端到端:wish-complete --html 生成 wish_complete_*.html"""
+        """端到端:wish-complete --html 生成 心愿完成_*.html"""
         rc, out, _ = _run_cli("wish-complete", "--html", env=seeded_db)
         assert rc == 0, f"stderr={_}"
         data = json.loads(out)
         assert "html_path" in data["data"]
-        assert "wish_complete_" in data["data"]["html_path"]
+        assert "心愿完成_" in data["data"]["html_path"]
         html_path = Path(data["data"]["html_path"])
         assert html_path.exists()
 

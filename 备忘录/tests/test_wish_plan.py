@@ -128,13 +128,13 @@ class TestWishPlanHtml:
         }
 
     def test_html_flag_generates_wish_plan(self, seeded_db):
-        """端到端:wish-batch-plan --html 生成 wish_plan_*.html"""
+        """端到端:wish-batch-plan --html 生成 心愿排期_*.html"""
         rc, out, _ = _run_cli("wish-batch-plan", "--suggest-due", "2026-07-03", "--html",
                               env=seeded_db)
         assert rc == 0, f"stderr={_}"
         data = json.loads(out)
         assert "html_path" in data["data"]
-        assert "wish_plan_" in data["data"]["html_path"]
+        assert "心愿排期_" in data["data"]["html_path"]
         from pathlib import Path
         html_path = Path(data["data"]["html_path"])
         assert html_path.exists()

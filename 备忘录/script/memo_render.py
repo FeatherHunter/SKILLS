@@ -53,13 +53,13 @@ def _write(name: str, html: str) -> str:
     return write_output(_get_html_output_dir(), name, html)
 
 
-def render_query(payload, name="memo_query"):
+def render_query(payload, name="备忘录查询"):
     """渲染查询结果页(模板 memo_query.html)"""
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))
 
 
-def render_sync_report(payload, name="sync_report"):
+def render_sync_report(payload, name="同步报告"):
     """渲染同步报告页(模板 sync_report.html)
 
     payload.data 期望字段(参考 feishu_sync.sync_from_feishu 返回):
@@ -72,19 +72,19 @@ def render_sync_report(payload, name="sync_report"):
     return _write(name, _inject_body(template, payload))
 
 
-def render_wish_plan(payload, name="wish_plan"):
+def render_wish_plan(payload, name="心愿排期"):
     """渲染心愿排期向导页(过程型 HTML)"""
     template = WISH_PLAN_TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))
 
 
-def render_wish_complete(payload, name="wish_complete"):
+def render_wish_complete(payload, name="心愿完成"):
     """渲染心愿完成向导页(过程型 HTML)"""
     template = WISH_COMPLETE_TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))
 
 
-def render_change_category(payload, name="change_category"):
+def render_change_category(payload, name="批量改分类"):
     """渲染批量改分类向导页(过程型 HTML)"""
     template = CHANGE_CATEGORY_TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))

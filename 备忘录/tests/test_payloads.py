@@ -115,7 +115,7 @@ class TestSyncReportContract:
         assert "feishu" in d["errors"][0].lower() or "not available" in d["errors"][0].lower()
 
     def test_html_flag_generates_report(self, env_with_tmp_db, monkeypatch, tmp_path):
-        """--html 应生成 sync_report_*.html,data 含 html_path"""
+        """--html 应生成 同步报告_*.html,data 含 html_path"""
         monkeypatch.setattr("feishu_sync.is_feishu_available", lambda: False)
         # 让 output/ 指向临时目录,避免污染真实输出
         monkeypatch.chdir(tmp_path)
@@ -124,7 +124,7 @@ class TestSyncReportContract:
         data = json.loads(out)
         assert data["status"] == "ok"
         assert "html_path" in data["data"]
-        assert "sync_report_" in data["data"]["html_path"]
+        assert "同步报告_" in data["data"]["html_path"]
         assert data["data"]["html_path"].endswith(".html")
         # 验证 HTML 文件实际生成
         from pathlib import Path

@@ -59,7 +59,7 @@ class TestBatchUpdateCategoryHtml:
                               "--to-category", "打卡", "--html", env=seeded_db)
         assert rc == 0
         data = json.loads(out)
-        assert "change_category_" in data["data"]["html_path"]
+        assert "批量改分类_" in data["data"]["html_path"]
         assert Path(data["data"]["html_path"]).exists()
 
     def test_html_contains_four_part_prompt(self, seeded_db):

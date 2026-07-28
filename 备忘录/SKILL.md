@@ -134,8 +134,8 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 4. **正确做法**(并行交付,举例):
    ```
    找到 3 条心愿。
-   [html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html]
-   <media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/wish_plan_20260724_HHMMSS.html" type="file" />
+   [html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/心愿排期_20260724_HHMMSS.html]
+   <media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/心愿排期_20260724_HHMMSS.html" type="file" />
    + AI 同步:用系统默认浏览器(Chrome 等)打开同一文件
    ```
 
@@ -348,9 +348,9 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 - 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)
 - 命令:`script/memo_cli.py search "关键词" [-c 顶层分类] [-s 子分类] [--html]`
 - **过滤维度**:可同时按顶层分类和子分类过滤(如 `search -c 备忘 -s 学习`)
-- **默认行为**:CLI 默认返回结构化 JSON。需要可视化时传 `--html` flag 生成 HTML 查询结果页(模板 `templates/memo_query.html`,通过 `script/memo_render.py` 注入到 `output/memo_query_*.html`)。**当前没有 `--no-html` flag**(2026-07-24 文档对齐修订)。
+- **默认行为**:CLI 默认返回结构化 JSON。需要可视化时传 `--html` flag 生成 HTML 查询结果页(模板 `templates/memo_query.html`,通过 `script/memo_render.py` 注入到 `output/备忘录查询_*.html`)。**当前没有 `--no-html` flag**(2026-07-24 文档对齐修订)。
 - **AI 推荐流程**:9 个查询类触发词(搜备忘 / 查备忘 / 看备忘 / 按时间搜备忘 / 看提醒 / 查已提醒备忘,以及子唤醒词 查心愿 / 查打卡 / 查情绪日记)在收到 JSON 后,**主动**调一次 `memo_cli.py <cmd> --html` 生成 HTML 给用户,而不是只展示 JSON 文本。理由:清单类数据"扫读 + chip 筛选 + 复制 ID/回执"在 HTML 里体验远超文字流。**例外**:用户明确说"只要 JSON" → 不传 `--html`。
-- **HTML 模板模式**:CLI 仍先取 JSON 数据,再通过 `script/memo_render.py` 注入 `templates/memo_query.html`,生成 `output/memo_query_*.html`;模板只展示数据,不直连数据库、不污染原模板
+- **HTML 模板模式**:CLI 仍先取 JSON 数据,再通过 `script/memo_render.py` 注入 `templates/memo_query.html`,生成 `output/备忘录查询_*.html`;模板只展示数据,不直连数据库、不污染原模板
 - **HTML 数据契约**:`{"status":"ok","data":{"title":"...","command":"search","generated_at":"...","items":[...]}","message":"..."}`
 - **页面能力**:首屏摘要卡、当前结果内搜索、分类/子分类 chip 筛选、排期/提醒/附件徽章、空态、复制 ID、复制查询回执
 
@@ -713,7 +713,7 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
   - 命令:`script/memo_cli.py sync-from-feishu --html`
   - 模板:`templates/sync_report.html`(独立于 `memo_query.html`)
   - 渲染器:`script/memo_render.py:render_sync_report`(复用 `_inject` 公共逻辑)
-  - 输出:`output/sync_report_YYYYMMDD_HHMMSS.html`
+  - 输出:`output/同步报告_YYYYMMDD_HHMMSS.html`
   - **页面能力**:首屏徽章总览(完全一致/补建/同步完成/due 变更/错误数)、4 个 KPI 卡(本地补建/扫 done/同步完成/扫 pending)、3 步折叠详情(本地补建/反向同步 done/反向同步 due)、errors 红色高亮、复制同步回执(11 字段结构化文本)
   - **AI 推荐流程**:跑完 `备忘录同步` 后,**主动**追加一次 `sync-from-feishu --html` 生成报告页给用户,而不是只展示 JSON 文字流。理由:11 个统计字段在卡片化 + 三步折叠视图里阅读体验远超文字
   - **数据契约**:`{"status":"ok","data":{"title":"...","command":"sync-from-feishu","generated_at":"...","backfilled":N,...,"errors":[]},"message":"..."}`(result 字段平铺到 data 下)

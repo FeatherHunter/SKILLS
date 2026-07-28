@@ -2,7 +2,7 @@
 模板注入测试(memo_render.py)
 - 占位符 <!--INJECT-DATA--> 全文件恰好 1 次
 - </ 转义防 script 断标签
-- 输出文件路径规范(output/memo_query_*.html)
+- 输出文件路径规范(output/备忘录查询_*.html)
 - 模板不被污染(原 templates/memo_query.html 不变)
 """
 import json
@@ -43,7 +43,7 @@ class TestInjection:
     def test_render_returns_path(self):
         path = render_query(self._payload())
         assert path.endswith(".html")
-        assert "memo_query_" in path
+        assert "备忘录查询_" in path
         output_dir = _get_html_output_dir()
         assert str(output_dir) in path
 
@@ -122,7 +122,7 @@ class TestSyncReportRender:
     def test_renders_to_sync_report_html(self):
         path = render_sync_report(self._payload())
         output_dir = _get_html_output_dir()
-        assert "sync_report_" in path
+        assert "同步报告_" in path
         assert path.endswith(".html")
         assert str(output_dir) in path
 

@@ -2,11 +2,11 @@
 
 总纲 §07-HELP与场景完备性.md 契约验证:
 - 场景资产 schema(7 字段齐全、ID 唯一、prompt 无实现细节)
-- 场景数量 = SKILL.md 触发词数(28 + 备忘改分类批量重复 = 29)
+- 场景数量 = SKILL.md 唤醒词数(28 + 备忘改分类批量重复 = 29)
 - render_help 产出合法 HTML(占位符、转义)
 - skill 根目录 备忘录.html 被覆盖(用户额外要求)
 - HELP HTML 不展示自身唤醒词(§07 §5 反模式 3)
-- SKILL.md 触发词与 scenarios 字段一致(防文档裂缝)
+- SKILL.md 唤醒词与 scenarios 字段一致(防文档裂缝)
 
 来源:用户回复 4 选
   1. yaml (场景资产格式)
@@ -67,7 +67,7 @@ class TestScenariosSchema:
         assert len(wake_words) >= 28, f"唤醒词数 {len(wake_words)} < 28"
 
     def test_scenario_count_matches_skill_md(self, scenarios):
-        """触发词表与 scenarios 一致(防文档裂缝)"""
+        """唤醒词表与 scenarios 一致(防文档裂缝)"""
         expected = {
             "记备忘", "搜备忘", "查备忘", "改备忘", "删备忘", "看备忘",
             "按时间搜备忘", "备忘改分类", "备忘改子分类",
@@ -404,26 +404,26 @@ class TestHelpHtmlPathEnvVar:
 # ==================== 反向指引表(G3 修复) ====================
 
 class TestReverseLookupTable:
-    """FAT(§05 钩子 ⑥)发现 SKILL.md G3:缺"用户原话 → 触发词"反向指引。
+    """FAT(§05 钩子 ⑥)发现 SKILL.md G3:缺"用户原话 → 唤醒词"反向指引。
     修后用静态检查守护。
     """
 
     SKILL_MD = SKILL_DIR / "SKILL.md"
 
     def test_skill_md_has_reverse_lookup_section(self):
-        """SKILL.md 含"用户原话 → 触发词 反向指引表"段"""
+        """SKILL.md 含"用户原话 → 唤醒词 反向指引表"段"""
         text = self.SKILL_MD.read_text(encoding="utf-8")
-        assert "用户原话" in text and "触发词" in text and "反向指引" in text, \
+        assert "用户原话" in text and "唤醒词" in text and "反向指引" in text, \
             "FAT G3 修复:SKILL.md 应有反向指引表"
 
     def test_reverse_lookup_table_covers_core_triggers(self):
-        """反向指引表至少覆盖 5 个核心触发词"""
+        """反向指引表至少覆盖 5 个核心唤醒词"""
         text = self.SKILL_MD.read_text(encoding="utf-8")
-        # 核心触发词应在表中出现
+        # 核心唤醒词应在表中出现
         core_triggers = ["记备忘", "搜备忘", "改备忘", "删备忘", "完成心愿", "备忘录 HELP"]
         present = [t for t in core_triggers if t in text]
         assert len(present) >= 5, \
-            f"反向指引表应覆盖 ≥5 个核心触发词,实际 {present}"
+            f"反向指引表应覆盖 ≥5 个核心唤醒词,实际 {present}"
 
 
 # ==================== 三层折叠结构(post-FT · v1.1.4) ====================

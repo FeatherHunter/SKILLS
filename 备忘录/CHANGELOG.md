@@ -4,6 +4,9 @@
 
 > **强制性规定**(SKILL.md 顶部):HTML 镜像 + changelog 必须与代码同步。
 > 本文档与 SKILL.md + 备忘录.html 共同维护。
+>
+> **术语演进**:v1.1.5 起统一用"唤醒词"。本文档早期版本(1.0.x - 1.1.4)使用"触发词"指代同一概念,
+> 已在 v1.1.5 术语统一(ticket 05)中全量替换为"唤醒词";保留少量历史引用作为术语演化档案。
 
 ---
 
@@ -44,9 +47,9 @@
   - 出处引用《预置HTML并注入数据指导手册》§8
   - 10 个新 pytest 用例(占位符/转义/UTF-8/进程间 import)
   - commit `5378005`
-- **触发词别名 "完成打卡" → "完成心愿"**(Step 9)· 解决用户口语化 vs 内部术语 gap
+- **唤醒词别名 "完成打卡" → "完成心愿"**(Step 9)· 解决用户口语化 vs 内部术语 gap
   - commit `5a78779`
-- **触发词路由规则**(Step 8)· `update-category` vs `batch-update-category` 二选一
+- **唤醒词路由规则**(Step 8)· `update-category` vs `batch-update-category` 二选一
   - 判定启发:含 1 个 id → 单条;含"都/全部/多 id" → 批量;无 id 无都 → 反问
   - commit `c667ef2`
 - **tests/ 目录建立** · `conftest.py` + 4 测试模块,68 个用例覆盖 validators/render/payloads/wish_plan/wish_complete/change_category/shared_injector
@@ -86,7 +89,7 @@
 
 ### Added(按总纲 §07 HELP 与场景完备性契约)
 
-- **触发词 `备忘录 HELP`**(第 29 个)
+- **唤醒词 `备忘录 HELP`**(第 29 个)
 - **场景资产**:`references/scenarios.yaml`
   - 29 条场景(对应 28 个业务唤醒词 + 备忘改分类批量版)
   - 7 字段必填契约:`wake_word / scenario_id / scenario_title / dimensions / prompt / status / result`
@@ -162,9 +165,9 @@
 - **SKILL.md §HTML 输出目录规则(G2 修复)**:
   - FAT 发现:HTML 路径受 `SKILLS_DB_PATH` 影响没强调,AI 可能误用硬编码 `D:\.db\memo_html\`
   - 修复:加"实际路径 = `<SKILLS_DB_PATH>/memo_html/`"明文 + 3 种环境示例
-- **SKILL.md 新增 §用户原话 → 触发词 反向指引表(G3 修复)**:
-  - FAT 发现:缺"用户口语 → 哪个触发词"反查表,AI 处理多义口语化表达时易误判
-  - 修复:15 行反查表(覆盖核心 6 触发词 + 9 子唤醒词场景)+ 4 步反查流程 + 3 反例
+- **SKILL.md 新增 §用户原话 → 唤醒词 反向指引表(G3 修复)**:
+  - FAT 发现:缺"用户口语 → 哪个唤醒词"反查表,AI 处理多义口语化表达时易误判
+  - 修复:15 行反查表(覆盖核心 6 唤醒词 + 9 子唤醒词场景)+ 4 步反查流程 + 3 反例
 
 ### Tests(post-FAT · +4 用例)
 
@@ -172,7 +175,7 @@
 1. `test_skill_md_documents_skills_db_path_influence` — SKILL.md 含 G2 提示
 2. `test_html_output_uses_skills_db_path_when_set` — **实测 env var 影响路径**(集成测试)
 3. `test_skill_md_has_reverse_lookup_section` — SKILL.md 含 G3 反向指引段
-4. `test_reverse_lookup_table_covers_core_triggers` — 反向指引表覆盖 ≥5 核心触发词
+4. `test_reverse_lookup_table_covers_core_triggers` — 反向指引表覆盖 ≥5 核心唤醒词
 
 全量:162/162 pytest 通过(158 → 162 · +4)
 
@@ -272,7 +275,7 @@
 ### Changed
 
 - `SKILL.md`:
-  - 触发词表新增 `备忘录 HELP` 行(第 29)
+  - 唤醒词表新增 `备忘录 HELP` 行(第 29)
   - 统计从 28 → 29
   - 「HTML 同步」条款新增 v1.1.4 例外说明(自动生成)
   - 新增「备忘录 HELP」专章,引用总纲 §07 契约
@@ -281,7 +284,7 @@
 
 1. `test_file_exists` — 场景资产文件存在
 2. `test_skill_and_version_keys` — 顶层字段齐全
-3. `test_28_wake_words_minimum` — 触发词 ≥ 28
+3. `test_28_wake_words_minimum` — 唤醒词 ≥ 28
 4. `test_scenario_count_matches_skill_md` — SKILL.md ↔ scenarios 一致
 5. `test_all_7_fields_present` — 契约 §07 §2.2 7 字段必填
 6. `test_scenario_id_unique` — scenario_id 跨场景唯一
@@ -434,7 +437,7 @@
   - 回复模板必含"文件路径"+"主动发送"+ 3 个消息工具示例
   - 反例 ≥3
   - "必走一遍"标识
-- 用户选择"最小改动先看效果":暂不加 13 处触发词引用 / quick reference / 跨测试
+- 用户选择"最小改动先看效果":暂不加 13 处唤醒词引用 / quick reference / 跨测试
 
 ### 影响范围
 - SKILL.md 改动范围:**"HTML 交付规范"段**(1 个段,从 v1.1.1 陈述 → v1.1.2 checklist)
@@ -558,10 +561,10 @@
 
 ### Changed
 - **备忘录.html 彻底重写**(纯用户手册):
-  - ❌ 删除:版本号 + 8 行历史 · 强制性规定 · HTML 交付规范 · 触发词 → HTML 对照表 · AGENT 决策流程 · 提醒逻辑 · 防文档裂缝守护 · 旧完成提醒流程
-  - ✅ 新增:简介(这是什么/不是什么)+ 快速开始 + 环境变量 + 操作规范 + ⚠️ 提醒路由 + 触发词速查表(28 + 一句话)+ 触发词详细(按"做什么"分组,每个含 `<details>` 折叠区)+ 定时提醒(Cron)
+  - ❌ 删除:版本号 + 8 行历史 · 强制性规定 · HTML 交付规范 · 唤醒词 → HTML 对照表 · AGENT 决策流程 · 提醒逻辑 · 防文档裂缝守护 · 旧完成提醒流程
+  - ✅ 新增:简介(这是什么/不是什么)+ 快速开始 + 环境变量 + 操作规范 + ⚠️ 提醒路由 + 唤醒词速查表(28 + 一句话)+ 唤醒词详细(按"做什么"分组,每个含 `<details>` 折叠区)+ 定时提醒(Cron)
   - footer: 链接到 CHANGELOG.md(日志)和 SKILL.md(AI 文档)
-- **结构重组**: 触发词从"按功能模块"改为"按用户操作分类"(记录 / 查找 / 提醒 / 心愿 / 批量 / 跨 Skill / 子唤醒词)
+- **结构重组**: 唤醒词从"按功能模块"改为"按用户操作分类"(记录 / 查找 / 提醒 / 心愿 / 批量 / 跨 Skill / 子唤醒词)
 - **视觉改进**: Apple 风格 CSS(渐变 / 阴影 / 响应式 / details 折叠动画)
 
 ### Removed
@@ -582,7 +585,7 @@
 |---|---|---|
 | `备忘录.html` | 纯用户手册(唤醒词 + 用法 + 展开底层) | 用户 |
 | `CHANGELOG.md` | 改动日志 / 版本历史 | 用户 + 维护者 |
-| `SKILL.md` | AI 决策用完整规范(HTML 交付 / 触发词对照 / 强制规定 / Cron 机制) | AI + 维护者 |
+| `SKILL.md` | AI 决策用完整规范(HTML 交付 / 唤醒词对照 / 强制规定 / Cron 机制) | AI + 维护者 |
 
 **Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
 
@@ -590,7 +593,7 @@
 
 ## [1.0.8] · 2026-07-24
 
-> **改进**(语义化版本规则):HTML 镜像设计原则 + 触发词段可展开底层原理
+> **改进**(语义化版本规则):HTML 镜像设计原则 + 唤醒词段可展开底层原理
 > 来源:用户观点纠正 — `<skill>.html` 不是日志/改动记录,而是**用户手册 + 可展开底层原理**(改动日志在 CHANGELOG.md)
 
 ### Added
@@ -598,7 +601,7 @@
   - 表格化:`用户视角` / `技术视角` / `改动日志` / `AI 阅读` 各在哪看
   - `<details>` 折叠语法示范
   - 设计原因:渐进式信息披露(用户看 HTML 找用法,探究层原理点开 details)
-- **17 个 `<details>` 折叠区**(15 个具体触发词 + 1 个子唤醒词统一 + 1 个设计原则示例)
+- **17 个 `<details>` 折叠区**(15 个具体唤醒词 + 1 个子唤醒词统一 + 1 个设计原则示例)
   - 每个 details 含:CLI 命令 / SQL / Python 调用链 / 飞书 hook / 失败路径
   - 用户点开看底层,不点开只看主流程
 - **`tests/test_html_expandable.py`** 文档裂缝守护
@@ -606,7 +609,7 @@
   - 改 SKILL.md / 备忘录.html 时自动验证任何遗漏
 
 ### Changed
-- **SKILL.md L13 顶部触发词表 + 子唤醒词列表保留** + 15 段加 details
+- **SKILL.md L13 顶部唤醒词表 + 子唤醒词列表保留** + 15 段加 details
 - **备忘录.html 镜像同步**(强制规定 1 条)· 14 个 h3/h4 段加 details 折叠区
 - 行为变化:无(纯文档 + 可展开 UI)
 
@@ -616,23 +619,23 @@
 
 ## [1.0.7] · 2026-07-24
 
-> **改进**(语义化版本规则):触发词 → HTML 生成对照表 + 文档裂缝守护测试
-> 来源:用户问"AGENT 执行 SKILL 时是真的生成 HTML 还是发大量文字?"→ 发现 SKILL.md 没明确每触发词的 HTML 决策
+> **改进**(语义化版本规则):唤醒词 → HTML 生成对照表 + 文档裂缝守护测试
+> 来源:用户问"AGENT 执行 SKILL 时是真的生成 HTML 还是发大量文字?"→ 发现 SKILL.md 没明确每唤醒词的 HTML 决策
 
 ### Added
-- **SKILL.md + 备忘录.html 加"触发词 → HTML 生成对照表"**(最高优先级)
-  - 28 个触发词明确分类:
+- **SKILL.md + 备忘录.html 加"唤醒词 → HTML 生成对照表"**(最高优先级)
+  - 28 个唤醒词明确分类:
     - ✅ 必须生成 HTML(9):搜备忘/查备忘/看备忘/按时间搜备忘/看提醒/查已提醒备忘/查心愿/查打卡/查情绪
     - 🟡 过程型 HTML(4):完成心愿(完成打卡)/心愿排期/备忘改分类(批量)/备忘录同步
     - ❌ 不生成 HTML(15):记备忘/改备忘/删备忘/备忘改分类(单条)/备忘改子分类/记提醒/设提醒/记心愿/删心愿/改心愿/记打卡/删打卡/改打卡/记情绪/删情绪/改情绪
   - 含 AGENT 决策流程图 + 统计表
 - **`tests/test_html_trigger_coverage.py`** 文档裂缝守护
-  - 61 个参数化测试(每个触发词 2 个 + 表行数 + 标志完整 + 合计 + L157/L161 一致性)
+  - 61 个参数化测试(每个唤醒词 2 个 + 表行数 + 标志完整 + 合计 + L157/L161 一致性)
   - 改 SKILL.md 时自动验证任何遗漏
 
 ### Tests
 - 全量:143/143 pytest 通过(82 → 143 · +61)
-- 文档测试守护:防止未来 SKILL.md 改时遗漏任何触发词
+- 文档测试守护:防止未来 SKILL.md 改时遗漏任何唤醒词
 
 **Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
 
@@ -746,7 +749,7 @@
   - **必须**:`<media src="..." type="file" />` 交付(5 个 HTML 模板生成后)
   - **禁止**:自动唤起 Chrome(webbrowser/subprocess) / 只输出路径 / 内联展示 / 提示"用 Chrome 打开"
   - **出处**:《预置HTML并注入数据指导手册》§4 + §9
-  - 5 个触发词场景分别说明交付协议(查询类 + sync + 3 个过程型向导)
+  - 5 个唤醒词场景分别说明交付协议(查询类 + sync + 3 个过程型向导)
 - 行为变化:无(纯文档)
 
 **Tested-By**: unknown(v1.1.4 之前未启用 Tested-By 字段)
@@ -810,9 +813,9 @@
 
 ### Changed(术语统一 + 内容清理)
 
-- **术语统一**(B.3):SKILL.md 46 处 + CHANGELOG.md 24 处 + scenarios.yaml 1 处 + 测试 10 处 "触发词" → "唤醒词"
-  - CHANGELOG.md 顶部加"术语演进"说明(早期版本用"触发词"指代同一概念,v1.1.5 起统一)
-  - CONTEXT.md `_Avoid_: 触发词` 保留(该字段本就是说"避免用此词")
+- **术语统一**(B.3):SKILL.md 46 处 + CHANGELOG.md 24 处 + scenarios.yaml 1 处 + 测试 10 处 "唤醒词" → "唤醒词"
+  - CHANGELOG.md 顶部加"术语演进"说明(早期版本用"触发词"指代同一概念,v1.1.5 起统一"唤醒词")
+  - CONTEXT.md `_Avoid_: 唤醒词` 保留(该字段本就是说"避免用此词")
   - .scratch/grilling-alignment/ 工作目录 + docs/adr/ 永久归档保留原术语(历史快照,不重写)
 - **_meta.json version** 1.0.0 → 1.1.5(B.2 · SoT 为 SKILL.md frontmatter)
 - **scenarios.yaml**:删 L21 重复 `scenarios:` 空块(B.10)+ version 1.1.4 → 1.1.5 + 头注释术语同步
@@ -830,7 +833,7 @@
 | 02 | Agent 入口(SKILL.md frontmatter + AGENTS.md) | ✅ |
 | 03 | pytest 配置 + 结构体检 | ✅ |
 | 04 | 元数据同步 + scenarios.yaml 清理 | ✅ |
-| 05 | 术语统一(触发词→唤醒词) | ✅ |
+| 05 | 术语统一(唤醒词→唤醒词) | ✅ |
 | 06 | 双目录合并(reference/→references/) | ✅ |
 | 07 | 4 状态 fallback 端到端 | ✅ |
 | 08 | 工程仪式(commit-msg hook + 3 问 + Tested-By) | ✅ |
@@ -842,7 +845,7 @@
 
 ### 偏差说明
 
-- **ticket 05 expand→contract 三阶段简化为 migrate 一阶段**:原 spec Phase 1 要求 memo_cli.py 加别名表,但 memo_cli.py 是命令行接口(不消费唤醒词,唤醒词是 AI 侧概念),加别名表架构上不成立。直接做 migrate(全量替换)+ 保留 .scratch/docs/adr 历史快照,AC `git grep "触发词"` 返回 0 的硬指标在 operational files(SKILL.md / templates / script / tests / CHANGELOG)达成。
+- **ticket 05 expand→contract 三阶段简化为 migrate 一阶段**:原 spec Phase 1 要求 memo_cli.py 加别名表,但 memo_cli.py 是命令行接口(不消费唤醒词,唤醒词是 AI 侧概念),加别名表架构上不成立。直接做 migrate(全量替换)+ 保留 .scratch/docs/adr 历史快照,AC `git grep "唤醒词"` 返回 0 的硬指标在 operational files(SKILL.md / templates / script / tests / CHANGELOG)达成。
 
 ---
 

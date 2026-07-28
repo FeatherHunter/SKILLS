@@ -92,7 +92,7 @@ class TestHelpHtmlStructure:
 
     def test_help_not_show_itself(self, text):
         """§07 §5 反模式 3:HELP 唤醒词自身不出现在 HTML"""
-        # 不应在分组里出现 "HELP" 触发词
+        # 不应在分组里出现 "HELP" 唤醒词
         # 但场景数据里的 prompt/result 可以提到"看 help"等
         # 关键检查:scenario_id 不应是 memo_help 自身
         assert "scenario_id: memo_help" not in text, \

@@ -11,7 +11,7 @@
 #   result:          预期结果(用户视角)
 #
 # 本期全部 status = ""(可用);无【待开发】。
-# 28 个场景 = 28 个 SKILL.md 触发词(含 12 个子唤醒词)。
+# 28 个场景 = 28 个 SKILL.md 唤醒词(含 12 个子唤醒词)。
 #
 # 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
 # 守门测试:tests/test_help.py:test_scenarios_schema

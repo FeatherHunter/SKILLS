@@ -74,7 +74,23 @@ description: 记账技能。写入类：记支出、记收入、拍账单、改�
 | 分析 | `看分类` | 分类明细 | `breakdown [--from --to]` | **HTML** |
 | 分析 | `看总览` | 收支总览 | `overview [--month <YYYY-MM>]` | **HTML** |
 | 统计 | `做统计` | 记账统计 | `stats` | **HTML** |
-| **HELP** | `饼干记账 HELP` / `查帮助` / `能做什么` | 能力速查 | `render_help.py` | **HTML（HELP 页）** |
+| **HELP** | `饼干记账 HELP` / `饼干记账 帮助` / `查帮助` / `能做什么` | 能力速查 | `render_help.py` | **HTML（HELP 页）** |
+
+---
+
+## 📌 输出位置（§04 原则 12.A / 12.B）
+
+> **本 Skill 走 §04 原则 12.A / 12.B**，HTML 路径名规则固化如下，不可随意改动：
+
+| 类型 | §12 分类 | 文件名规范 | 触发命令 |
+|------|----------|------------|----------|
+| **数据 / 过程 HTML**（12.A）| §12.A | `$DATA_DIR/biscuit_accountant_html/<command_zh>_<YYYYMMDD>_<HHMMSS>[_N].html` | `bill_inject.py <query_type> [args]` |
+| **HELP HTML**（12.B）| §12.B | `$DATA_DIR/biscuit_accountant_html/饼干记账_HELP_<YYYYMMDD>_<HHMMSS>[_N].html` | `render_help.py` |
+
+- `<command_zh>` 由 `scripts/html_paths.resolve_command_name()` 解析（如 `今日摘要` / `月度汇总` / `收支总览`）
+- 同秒冲突自动追加 `_2` / `_3` 后缀
+- `$DATA_DIR` 跟随 `SKILLS_DB_PATH` 环境变量（fallback `D:/.db/`）
+- HELP 路径名固定以 `饼干记账_HELP_` 前缀（grep 一抓就出，便于检索历史 HELP 页）
 
 ---
 
@@ -377,7 +393,7 @@ python3 scripts/bill_inject.py search "咖啡"
 
 ### Step 7：HELP 能力速查（v2.4 升级）
 
-当用户说「饼干记账 HELP」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
+当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
 
 ```bash
 # 默认输出
@@ -435,6 +451,19 @@ python3 scripts/render_help.py --check
 **收入 L1(5 个):** 工资、奖金、兼职、投资、其他收入
 
 > 旧数据中不带 `/` 的分类(如 `餐饮`、`交通`)自动视为 L1,无需迁移。
+
+---
+
+## 与其他工具的边界
+
+本 Skill 的 **5 层骨架**（数据层 `db.py` / 操作层 `analyze.py` / 规则层 `validators.py` / 接口层 `record_bill.py` / 文档层 `references/`+`templates/`）**不含** `config-cookie-accounting.ts`。
+
+| 文件 | 归属 | 维护方 | 与本 Skill 的关系 |
+|------|------|--------|-------------------|
+| `config-cookie-accounting.ts` | SkillBoard 数据层视图（legacy） | 独立维护 | 不在 5 层骨架内；权威分类体系以 [`references/categories.md`](references/categories.md) 为准 |
+| `references/categories-mapping.md` | 本 Skill 文档层 | 本 Skill 维护 | 桥接 `config-cookie-accounting.ts`（9 L1）→ `categories.md`（10 L1）；仅做语义映射，不修改任何一方的字段 |
+
+> **若未来澄清 `config-cookie-accounting.ts` 为废弃**：需独立 spec 处理；本 Skill 当前仅做桥接文档（`references/categories-mapping.md`），不删不改 `config-cookie-accounting.ts`。
 
 ---
 

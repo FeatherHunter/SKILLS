@@ -107,6 +107,9 @@ def enrich_scenarios(scenarios: dict) -> dict:
             "wake_words_total": len(wake_words),
             "scenarios_total": total,
             "pending_total": pending,
+            # §12.B：4 条 HELP 唤醒词（与 SKILL.md §唤醒词总表 HELP 行同步）
+            # 单列展示在 HELP 类别下（5 类别中第 5 类 wake_words=[]，避免重复计数）
+            "help_wake_words": meta.get("help_wake_words", ["饼干记账 HELP"]),
             "type": "help",
             "title": "饼干记账 · 唤醒词速查台",
             "subtitle": "▸ 类别 → 选唤醒词 → 复制 prompt → 贴给 AI"
@@ -131,12 +134,14 @@ def inject_payload(template: str, payload: dict) -> str:
 
 
 def default_output_path() -> Path:
-    """默认输出路径(v2.5 同步卡路里 §4.1):
-    $DATA_DIR/biscuit_accountant_html/能力速查_<TS>[_N].html
-    复用 scripts/html_paths.html_path()
+    """默认输出路径（§12.B 标准）:
+    $DATA_DIR/biscuit_accountant_html/饼干记账_HELP_<YYYYMMDD>_<HHMMSS>[_N].html
+
+    复用 scripts/html_paths.html_path()，传 §12.B 保留字「饼干记账_HELP」
+    （html_paths.COMMAND_NAMES["help"] 也是这个值，保持一致）。
     """
     from html_paths import html_path
-    return html_path("能力速查")
+    return html_path("饼干记账_HELP")
 
 
 def main():

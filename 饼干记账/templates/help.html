@@ -210,6 +210,19 @@
     transform: scale(1.05);
     animation: copySuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
+  /* ===== HELP 唤醒词速查列表（4 条 HELP 唤醒词） ===== */
+  .help-ww-list { padding: 6px 0; }
+  .help-ww-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; margin: 4px 0;
+    background: var(--code-bg); border-radius: var(--r-sm);
+  }
+  .help-ww-code {
+    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 14px; color: var(--accent); font-weight: 600;
+    word-break: break-all;
+  }
   @keyframes copySuccess {
     0%   { transform: scale(0.94); box-shadow: 0 0 0 0 rgba(52,199,89,0); }
     50%  { transform: scale(1.10); box-shadow: 0 0 0 8px rgba(52,199,89,0.30); }
@@ -434,7 +447,9 @@ function render() {
     return;
   }
 
-  mainEl.innerHTML = data.categories.map(renderCategory).join('');
+  mainEl.innerHTML = data.categories.map(function(cat) {
+    return renderCategory(cat, data);
+  }).join('');
 
   // 绑定复制按钮
   mainEl.querySelectorAll('.copy-btn').forEach(b => {
@@ -448,10 +463,36 @@ function render() {
 }
 
 // ===== L1 类别 =====
-function renderCategory(cat) {
+function renderCategory(cat, payload) {
   const wws = cat.wake_words || [];
-  if (!wws.length && cat.key !== 'help') {
-    return '';  // 跳过空类别 (HELP 单列)
+  // HELP 类别（第 5 类）特殊处理：cat.wake_words=[] 但应展示 4 条 HELP 唤醒词
+  // 来自 payload.help_wake_words（scenarios.json._meta.help_wake_words，与 SKILL.md §唤醒词总表同步）
+  if (cat.key === 'help') {
+    const helpWws = (payload && payload.help_wake_words) || [];
+    if (!helpWws.length) {
+      return '';  // 没数据则跳过
+    }
+    const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';
+    return '<details class="cat-block" open>' +
+      '<summary>' +
+        '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
+        desc +
+        '<span class="cat-count-pill">' + helpWws.length + ' ww</span>' +
+      '</summary>' +
+      '<div class="cat-content">' +
+        '<div class="help-ww-list">' +
+          helpWws.map(function(ww) {
+            return '<div class="help-ww-item">' +
+              '<code class="help-ww-code">' + esc(ww) + '</code>' +
+              '<button class="copy-btn" data-prompt="' + esc(ww) + '" title="复制 prompt">📋</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '</details>';
+  }
+  if (!wws.length) {
+    return '';  // 跳过其他空类别
   }
   const scCount = cat.scenario_count || 0;
   const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';

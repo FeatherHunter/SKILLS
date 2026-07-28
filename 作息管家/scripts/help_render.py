@@ -344,8 +344,30 @@ def inject_data(template: str, payload: dict) -> str:
     return out
 
 
+def sync_to_stable_mirror(rendered_html: str) -> Path:
+    """同步渲染产物到根目录 `作息管家.html`(ADR-0001 · 稳定入口)
+
+    第一性:根目录 `作息管家.html` 是 HELP HTML 的"永远最新"稳定入口 —
+    每次 help_render.py 跑完自动覆盖写,与 `schedule_html/help/作息管家_HELP_<TS>.html`
+    (历史快照,遵守总纲 §04 原则 12)并存。
+
+    总纲 §04 原则 12 "绝不覆盖 + _N 冲突保护" 在此处被 ADR-0001 显式豁免:
+    - 镜像在 SKILL_DIR 根目录(IDE 即开即看),无 timestamp,覆盖写
+    - 历史快照在 schedule_html/help/ 子目录,带 timestamp,不覆盖(原则 12)
+
+    Returns:
+        镜像 Path(已写入)。调用方应将此路径放入 data.mirror_path 字段。
+    """
+    mirror_path = SKILL_DIR / "作息管家.html"
+    mirror_path.write_text(rendered_html, encoding="utf-8")
+    return mirror_path
+
+
 def render(out_path: Path) -> dict:
-    """主渲染流程,返回 {status, data, message} 三段式"""
+    """主渲染流程,返回 {status, data, message} 三段式
+
+    ADR-0001:渲染完成后自动同步到根目录作息管家.html(无 flag,自动)。
+    """
     # 1. 加载场景资产
     scenarios, error = load_scenarios()
     if error:
@@ -383,14 +405,19 @@ def render(out_path: Path) -> dict:
             "message": f"注入失败: {type(e).__name__}: {e}",
         }
 
-    # 4. 写文件
+    # 4. 写主输出(schedule_html/help/作息管家_HELP_<TS>.html)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(rendered, encoding="utf-8")
     size_kb = out_path.stat().st_size // 1024
+
+    # 5. ADR-0001 · 同步到根目录作息管家.html(稳定入口,覆盖写)
+    mirror_path = sync_to_stable_mirror(rendered)
+
     return {
         "status": "ok" if not error else "error",
         "data": {
             "file_path": str(out_path),
+            "mirror_path": str(mirror_path),
             "size_kb": size_kb,
             "wakeword_count": payload["wakeword_count"],
             "scenario_count": payload["scenario_count"],
@@ -399,6 +426,7 @@ def render(out_path: Path) -> dict:
         "message": (
             f"✓ HELP 中心已生成: {payload['wakeword_count']} 唤醒词 / "
             f"{payload['scenario_count']} 场景 / {payload['pending_count']} 待开发 ({size_kb} KB)"
+            f" · 已同步镜像 → {mirror_path.name}"
             if not error else f"⚠ HELP 中心生成失败: {error}"
         ),
     }

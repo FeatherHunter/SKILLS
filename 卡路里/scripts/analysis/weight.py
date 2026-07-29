@@ -415,3 +415,158 @@ def weight_volatility(start_date, end_date=None, as_dict=False):
         print(f"  异常记录：无")
     print(f"  评估：{vol_label}{' ⚠️' if vol_status == 'error' else (' ✓' if vol_status == 'ok' else '')}")
     print(f"{'-'*40}")
+
+
+def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_dict=True):
+    """u4f53u91cdu52a8 v2 (Q8 spec u843du5730)
+
+    ticket 01-05 backend. u8fd4u56deu5305u542b baseline_value / baseline_sigma / thresholds /
+    points / recent_anomalies / sigma_trend / early_warning u7684dict.
+
+    u5173u952eu7b97u6cd5:detrended sigma - u75287-day rolling stdev u800cu975eabsolute stdev,
+    u907fu514du51cfu80cdu671f trend u6c61u67d3. Q8 grill u6536u655bu7684spec u51b3u7b56(+/-1.4kg u9ec4 / +/-1.9kg u7ea2u9608u503cu7531u672cu51fdu6570 sigma u6d3eu751f).
+    """
+    from datetime import datetime, timedelta
+
+    if as_dict is False:
+        return None
+
+    start_date = _parse_date(start_date)
+    end_date = _parse_date(end_date) or start_date
+
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute("""
+
+        SELECT date, weight_kg FROM weight_log
+        WHERE date >= ? AND date <= ?
+        ORDER BY date ASC
+
+    """, (start_date, end_date))
+    rows = c.fetchall()
+
+    goal_weight = None
+    try:
+        c.execute("SELECT weight_goal FROM daily_goal WHERE id = 1")
+        goal_row = c.fetchone()
+        if goal_row:
+            raw = goal_row[0]
+            if raw is not None and raw != u"":
+                try:
+                    goal_weight = float(raw)
+                except (TypeError, ValueError):
+                    goal_weight = None
+    except Exception:
+        pass
+
+    conn.close()
+
+    if not rows or len(rows) < 2:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"u8bb0u5f55u4e0du8db3({start_date} ~ {end_date}),u9700u8981u81f3u5c112u6761u8bb0u5f55",
+        }
+
+    dates = [r[0] for r in rows]
+    weights = [r[1] for r in rows]
+
+    def _rolling_sigma_7d(w):
+        if len(w) < 3:
+            return 0
+        recent = w[-7:] if len(w) >= 7 else w
+        import statistics
+        return statistics.stdev(recent) if len(recent) >= 2 else 0
+
+    baseline_sigma = _rolling_sigma_7d(weights)
+
+    if baseline_mode == "goal" and goal_weight:
+        baseline_value = goal_weight
+        sigma_for_thresholds = baseline_sigma if baseline_sigma > 0 else 0.5
+        toggle_label = f"vs u76eeu6807 {goal_weight}kg"
+    else:
+        recent_30 = weights[-30:] if len(weights) >= 30 else weights
+        import statistics
+        baseline_value = statistics.mean(recent_30)
+        sigma_for_thresholds = baseline_sigma if baseline_sigma > 0 else 0.5
+        toggle_label = f"vs u4f60u8fd1 {min(30, len(weights))} u5929u5e38u6001"
+
+    thresholds = {
+        "yellow": round(1.5 * sigma_for_thresholds, 3),
+        "red": round(2.0 * sigma_for_thresholds, 3),
+    }
+
+    points = []
+    for d, w in zip(dates, weights):
+        dev = w - baseline_value
+        abs_dev = abs(dev)
+        if abs_dev >= thresholds["red"]:
+            level = "red"
+        elif abs_dev >= thresholds["yellow"]:
+            level = "yellow"
+        else:
+            level = "normal"
+        points.append({
+            "date": d,
+            "kg": w,
+            "deviation_kg": round(dev, 2),
+            "level": level,
+        })
+
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+    cutoff = (end_dt - timedelta(days=7)).strftime("%Y-%m-%d")
+    recent_anomalies = sorted(
+        [p for p in points if p["level"] != "normal" and p["date"] >= cutoff],
+        key=lambda p: abs(p["deviation_kg"]),
+        reverse=True,
+    )
+
+    sigma_trend = []
+    import statistics
+    for i in range(len(weights)):
+        window_start = max(0, i - 6)
+        window = weights[window_start : i + 1]
+        if len(window) >= 3:
+            sigma_trend.append({
+                "week_start": dates[i],
+                "sigma_kg": round(statistics.stdev(window), 3),
+            })
+
+    last_date, last_kg = dates[-1], weights[-1]
+    last_dev = last_kg - baseline_value
+    last_abs = abs(last_dev)
+    if last_abs >= thresholds["red"]:
+        ew_level = "red"
+    elif last_abs >= thresholds["yellow"]:
+        ew_level = "yellow"
+    else:
+        ew_level = "normal"
+    if ew_level == "red":
+        ew_msg = f"u4ecau5929u504fu79bb u00b1{last_abs:.1f}kg u8d85u8fc7 2sigma u7ea2u7ebf,u503cu5f97u7d27u5f20"
+    elif ew_level == "yellow":
+        ew_msg = f"u4ecau5929u504fu79bb u00b1{last_abs:.1f}kg u8d85u8fc7 1.5sigma u9ec4u7ebf,u6ce8u610f"
+    else:
+        ew_msg = f"u4ecau5929u5728u6b63u5e38u8303u56f4u5185(u00b1{last_abs:.1f}kg)"
+    early_warning = {
+        "date": last_date,
+        "kg": last_kg,
+        "deviation_kg": round(last_dev, 2),
+        "level": ew_level,
+        "message": ew_msg,
+    }
+
+    return {
+        "status": "ok",
+        "data": {
+            "baseline_mode": baseline_mode,
+            "baseline_value": round(baseline_value, 2),
+            "baseline_sigma": round(baseline_sigma, 3),
+            "thresholds": thresholds,
+            "points": points,
+            "recent_anomalies": recent_anomalies,
+            "sigma_trend": sigma_trend,
+            "early_warning": early_warning,
+            "baseline_toggle_label": toggle_label,
+        },
+        "message": f"u6ce2u52a8u5206u6790u5b8cu6210:baseline={baseline_value:.1f}kg,sigma={baseline_sigma:.2f}kg",
+    }

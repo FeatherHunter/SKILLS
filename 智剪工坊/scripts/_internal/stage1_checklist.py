@@ -45,20 +45,20 @@ def _parse_time(t: Any) -> Optional[float]:
 
 
 def _format_ops_human(ops: Dict, voice: str) -> str:
-    """把 ops dict 转大白话描述。"""
+    """把 v3.0 video_ops dict 转大白话描述(D7 后:5 个 deprecated op 不再处理)。
+
+    Args:
+        ops: videos[i].video_ops(整段 op,不含 5 个已废弃 op)
+        voice: videos[i].video_ops.voice.mode
+
+    Returns:
+        人话描述
+    """
     if not ops:
         ops = {}
     parts = []
-    if 'trim-head' in ops and ops['trim-head'].get('on'):
-        parts.append(f"掐头 {ops['trim-head'].get('sec', '?')}s")
-    if 'trim-tail' in ops and ops['trim-tail'].get('on'):
-        parts.append(f"去尾 {ops['trim-tail'].get('sec', '?')}s")
-    if 'cut-middle' in ops and ops['cut-middle'].get('on'):
-        f, t = ops['cut-middle'].get('from', '?'), ops['cut-middle'].get('to', '?')
-        parts.append(f"切掉中间 {f}-{t}")
-    if 'pin-range' in ops and ops['pin-range'].get('on'):
-        f, t = ops['pin-range'].get('from', '?'), ops['pin-range'].get('to', '?')
-        parts.append(f"只保留 {f}-{t}")
+    # v3.0 段内 5 个 deprecated op(trim-head/tail/cut-middle/pin-range/target-duration)
+    # 全部移除——它们的语义由 time_segments 边界表达,不再在本函数处理
     if 'speed-up' in ops and ops['speed-up'].get('on'):
         parts.append(f"加速 {ops['speed-up'].get('factor', '?')}x")
     if 'slow-down' in ops and ops['slow-down'].get('on'):
@@ -83,43 +83,45 @@ def _has_any_op(ops: Dict) -> bool:
 
 
 def _detect_fuzzy(intent: Dict) -> List[Dict]:
-    """模糊项检测（D 象限）。"""
+    """模糊项检测（D 象限 · v3.0:读 video_ops.*）。"""
     fuzzy = []
 
     for v in intent.get('videos', []):
         if v.get('exclude'):
             continue
         idx = v.get('index')
-        notes = (v.get('notes') or '').strip()
+        video_ops = v.get('video_ops', {}) or {}
+        notes = (video_ops.get('notes') or '').strip()
+        voice_mode = video_ops.get('voice', {}).get('mode') if video_ops.get('voice') else None
         # D1: notes 含模糊动词 / BGM 暗示
         if notes and ('BGM' in notes or '音乐' in notes or 'bgm' in notes.lower()):
             fuzzy.append({
                 "id": f"BG{idx}",
-                "source": f"videos[{idx}].notes",
+                "source": f"videos[{idx}].video_ops.notes",
                 "raw": notes,
-                "question": f"视频 #{idx} 提到 BGM/音乐，具体怎么处理？",
+                "question": f"视频 #{idx} 提到 BGM/音乐,具体怎么处理?",
                 "ai_default": "不假设",
                 "must_ask": True,
             })
 
-        # D5: voice=keep-with-filler-removed
-        if v.get('voice') == 'keep-with-filler-removed':
+        # D5: voice=keep-with-filler-removed(D1 后从 video_ops.voice.mode 读)
+        if voice_mode == 'keep-with-filler-removed':
             fuzzy.append({
                 "id": f"FW{idx}",
-                "source": f"videos[{idx}].voice",
+                "source": f"videos[{idx}].video_ops.voice.mode",
                 "raw": "keep-with-filler-removed",
-                "question": f"视频 #{idx} 标了去水词，走完整 remove_fillers 流程吗？",
+                "question": f"视频 #{idx} 标了去水词,走完整 remove_fillers 流程吗?",
                 "ai_default": "走默认阈值",
                 "must_ask": False,
             })
 
-        # D6: 无 ops 但有 summary
-        if not _has_any_op(v.get('ops', {})) and v.get('summary'):
+        # D6: 无 video_ops 但有 summary
+        if not _has_any_op(video_ops) and v.get('summary'):
             fuzzy.append({
                 "id": f"EM{idx}",
                 "source": f"videos[{idx}]",
-                "raw": "有 summary 无 ops",
-                "question": f"视频 #{idx} ({v.get('summary')}) 啥都不动吗？",
+                "raw": "有 summary 无 video_ops",
+                "question": f"视频 #{idx} ({v.get('summary')}) 啥都不动吗?",
                 "ai_default": "keep 整段",
                 "must_ask": False,
             })
@@ -220,7 +222,7 @@ def _collect_f_out_of_scope(intent: Dict) -> List[Dict]:
 
 
 def generate_checklist(intent: Dict, workspace: Optional[Path] = None) -> str:
-    """生成操作清单 markdown。
+    """生成操作清单 markdown(D4:加载时校验 schema_version)。
 
     Args:
         intent: 解析后的 intent.json dict
@@ -228,7 +230,19 @@ def generate_checklist(intent: Dict, workspace: Optional[Path] = None) -> str:
 
     Returns:
         操作清单 markdown 文本
+
+    Raises:
+        ValueError: intent.json 的 _meta.schema_version 不是 "3.0"(D4 严格)
     """
+    # D4 兼容策略:加载时检查 schema_version,缺失或非 "3.0" 报错
+    schema_version = intent.get('_meta', {}).get('schema_version')
+    if schema_version != '3.0':
+        raise ValueError(
+            f"intent.json schema_version={schema_version!r} 不被支持,"
+            f"智剪工坊当前只支持 schema_version=\"3.0\"。"
+            f"请删除该文件后重新用 HTML 编辑器(v3.0+)创建。"
+        )
+
     project = intent.get('project', {})
     output = intent.get('output', {})
     sequences = intent.get('sequences', [])
@@ -271,8 +285,9 @@ def generate_checklist(intent: Dict, workspace: Optional[Path] = None) -> str:
         if v.get('exclude'):
             md_lines.append(f"| {idx} | `{file}` | **跳过** | - | n/a |")
             continue
-        ops = v.get('ops', {}) or {}
-        voice = v.get('voice', 'keep')
+        # v3.0:改读 video_ops,voice.mode 从 video_ops.voice 读
+        ops = v.get('video_ops', {}) or {}
+        voice = ops.get('voice', {}).get('mode', 'keep') if isinstance(ops.get('voice'), dict) else 'keep'
         human = _format_ops_human(ops, voice)
         needs_asr = voice not in ('mute', 'bgm-only')
         step = "2.1 ASR → 2.2 处理" if needs_asr else "2.2 直接处理"
@@ -300,9 +315,16 @@ def generate_checklist(intent: Dict, workspace: Optional[Path] = None) -> str:
         md_lines.append(f"| `cover.type`={cover['type']} | 用 AI 生成封面 | 阶段 4 收尾 | pending |")
     if cover.get('prompt'):
         md_lines.append(f"| `cover.prompt` | (讨论后生成) | Step 4 | pending |")
+    # v3.0 ending(D2):读 template + prompt,不再读 ending.type(已不存在)
     ending = intent.get('ending', {})
     if ending:
-        md_lines.append(f"| `ending` | 跳过（空） | - | n/a |")
+        template = ending.get('template', '')
+        prompt = ending.get('prompt', '')
+        template_preview = template[:40] + ('...' if len(template) > 40 else '')
+        md_lines.append(f"| `ending.template` | {template_preview} | 阶段 4 收尾(按 AI 路由表 §5 E 象限文本路由) | pending |")
+        if prompt:
+            prompt_preview = prompt[:40] + ('...' if len(prompt) > 40 else '')
+            md_lines.append(f"| `ending.prompt` | {prompt_preview} | 用户补充说明 | info |")
     md_lines.append("")
 
     # C. sequence

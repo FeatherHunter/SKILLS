@@ -20,7 +20,7 @@ h1{font-size:36px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center}
 button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600}
 button.ghost{background:transparent;color:var(--blue2);border:1px solid var(--line)}
-button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px}
+button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 8px 24px rgba(52,199,89,.36);z-index:9000}
 input[type=text],textarea{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit;width:100%}
 textarea{min-height:64px;resize:vertical}
 .wish{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
@@ -230,13 +230,22 @@ function copyToClipboard(t){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(()=>{
       const btn=document.querySelector('button.primary');
+      if(btn&&copyTimer){clearTimeout(copyTimer)}
       const old=btn.textContent;
       btn.textContent='✅ 已复制 · 粘贴给 AI';
-      setTimeout(()=>btn.textContent=old,2500);
-    }).catch(()=>alert('复制失败,请手动复制下方文本'));
+      copyTimer=setTimeout(()=>{btn.textContent=old},2500);
+    }).catch(()=>fallbackCopy(t));
   } else {
-    alert('浏览器不支持剪贴板 API,请手动复制下方文本');
+    fallbackCopy(t);
   }
+}
+var copyTimer=null;
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy')}catch(e){}
+  document.body.removeChild(ta);
 }
 
 init();

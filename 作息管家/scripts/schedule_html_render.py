@@ -330,9 +330,9 @@ import os
 # Issue 07(contract):英文 fallback 移除,只接受中文 command 名
 #
 # 4 域分组(ADR-0003 Q7 · 为将来拆模块 record_cli/plan_cli/receipt_cli/help_render 打基础):
-# === record 域(6) === 报告型 HTML,回顾性输入(schedule_records)
-# === plan 域(2) === 过程型 HTML,预测性输入(schedule_plans)
-# === receipt 域(6) === 回执型 HTML,CRUD 后视觉反馈(record+plan 域共享)
+# === record 域(6) === 报告型 HTML,回顾性输入(schedule_records) — day/range/compare/category/anomaly/detail
+# === plan 域(3) === 过程型 HTML,预测性输入(schedule_plans) — list/preview/review
+# === receipt 域(5) === 回执型 HTML,CRUD 后视觉反馈(record+plan 域共享) — record-receipt×2 + plan-receipt×3
 # === help 域(N/A) === HELP 中心(help_render.py 独立映射,不在此处)
 CN_COMMAND_MAP = {
     # === record 域(6) === 报告型:day/range/compare/category/anomaly/detail ===
@@ -342,11 +342,11 @@ CN_COMMAND_MAP = {
     "record_category":     "查作息类别",
     "record_anomaly":      "查作息异常",
     "record_detail":       "作息详情",
-    # === plan 域(2) === 过程型:list/preview/review ===
+    # === plan 域(3) === 过程型:list/preview/review ===
     "plan_list":           "查日程",
     "plan_preview":        "商量计划预览",
     "plan_review":         "复盘",
-    # === receipt 域(6) === 回执型:record-receipt / record-receipt-edit / plan-receipt×3 ===
+    # === receipt 域(5) === 回执型:record-receipt×2 + plan-receipt×3 ===
     "record_receipt":      "记作息回执",
     "record_receipt_edit": "修正作息回执",
     "plan_receipt":        "改日程回执",

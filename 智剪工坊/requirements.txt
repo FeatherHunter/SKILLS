@@ -13,6 +13,7 @@ edge-tts==7.2.8           # TTS 配音（改词/翻唱链路）
 faster-whisper==1.2.1     # ASR 转文字（Whisper large-v3 模型）
 huggingface-hub           # HF 模型下载（demucs/pyannote/whisper 间接依赖）
 imageio-ffmpeg==0.6.0     # ffmpeg CLI 绑定（imageio 路径下）
+jsonschema>=4.0           # intent.json v3.0 协议校验(02 工单)
 librosa==0.11.0           # 音频分析（节拍/响度检测）
 mediapipe==0.10.35        # 人脸/手势（美颜链路）
 numpy==2.4.4              # 基础数值

@@ -5078,22 +5078,47 @@
     // ============ v2.0 数据模型工具 ============
     function validateIntent(data) {
       const errors = [];
+      // === 形式校验(D1+D2+D7 形式约束) ===
+      // _meta.schema_version 必须 "3.0"
+      if (!data?._meta?.schema_version) {
+        errors.push('_meta.schema_version: 缺失');
+      } else if (data._meta.schema_version !== '3.0') {
+        errors.push(`_meta.schema_version: "${data._meta.schema_version}" 不被支持(仅接受 "3.0")`);
+      }
+      // ending.template 必填(D2)
+      if (!data?.ending?.template || !data.ending.template.trim()) {
+        errors.push('ending.template: 缺失或为空');
+      }
+      // cover.type=image 必须有 images[] (D1)
+      if (data?.cover?.type === 'image' && (!Array.isArray(data.cover.images) || data.cover.images.length === 0)) {
+        errors.push('cover.images: cover.type="image" 时必须填写至少 1 张图片路径');
+      }
+      // 5 个该消失的 op 不允许出现(D7)
+      const deprecatedOps = ['trim-head', 'trim-tail', 'cut-middle', 'pin-range', 'target-duration'];
+      data?.videos?.forEach(v => {
+        deprecatedOps.forEach(op => {
+          if (v.video_ops && Object.prototype.hasOwnProperty.call(v.video_ops, op)) {
+            errors.push(`videos[${v.index}].video_ops.${op}: 已废弃 op(D7),改由 time_segments 边界表达`);
+          }
+        });
+      });
+      // === 业务校验(原有) ===
       data?.videos?.forEach(v => {
         const segs = v.time_segments || [];
         const ids = new Set();
         segs.forEach(s => {
-          if (ids.has(s.id)) errors.push(`#${v.index}: id "${s.id}" 重复`);
+          if (ids.has(s.id)) errors.push(`videos[${v.index}].time_segments: id "${s.id}" 重复`);
           ids.add(s.id);
         });
         segs.forEach(s => {
           if (s.start_sec < 0 || s.end_sec > (v.duration_sec || 0) || s.start_sec >= s.end_sec) {
-            errors.push(`#${v.index} ${s.id}: 区间 [${s.start_sec}, ${s.end_sec}] 非法,视频时长 ${v.duration_sec}s`);
+            errors.push(`videos[${v.index}].time_segments.${s.id}: 区间 [${s.start_sec}, ${s.end_sec}] 非法,视频时长 ${v.duration_sec}s`);
           }
         });
         const sorted = [...segs].sort((a, b) => a.start_sec - b.start_sec);
         for (let i = 0; i < sorted.length - 1; i++) {
           if (sorted[i].end_sec > sorted[i + 1].start_sec) {
-            errors.push(`#${v.index}: 段 ${sorted[i].id} 与 ${sorted[i+1].id} 重叠`);
+            errors.push(`videos[${v.index}].time_segments: 段 ${sorted[i].id} 与 ${sorted[i+1].id} 重叠`);
           }
         }
         const validSegmentOps = ['mute', 'speed-up', 'slow-down', 'reverse', 'color-grade'];
@@ -5101,17 +5126,17 @@
           if (!s.ops) return;
           Object.entries(s.ops).forEach(([opName, opCfg]) => {
             if (!validSegmentOps.includes(opName)) {
-              errors.push(`#${v.index} ${s.id}: 不支持的段内 op "${opName}"`);
+              errors.push(`videos[${v.index}].time_segments.${s.id}.ops.${opName}: 不支持的段内 op "${opName}"`);
             }
             if ((opName === 'speed-up' || opName === 'slow-down') && (typeof opCfg.factor !== 'number' || opCfg.factor <= 0)) {
-              errors.push(`#${v.index} ${s.id}: ${opName} 必须有 factor > 0`);
+              errors.push(`videos[${v.index}].time_segments.${s.id}.ops.${opName}: 必须有 factor > 0`);
             }
           });
         });
         if (v.video_ops?.voice?.on) {
           const validModes = ['keep', 'keep-with-filler-removed', 'mute', 'bgm-only'];
           if (!validModes.includes(v.video_ops.voice.mode)) {
-            errors.push(`#${v.index} video_ops.voice.mode "${v.video_ops.voice.mode}" 非法`);
+            errors.push(`videos[${v.index}].video_ops.voice.mode: "${v.video_ops.voice.mode}" 非法`);
           }
         }
       });

@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "智剪工坊/intent.v3.0.schema.json",
+  "title": "智剪工坊 intent.json v3.0",
+  "description": "用户意图编辑器产出的 JSON 协议(D1-D7 决策定稿)。HTML 编辑器写入端与 Python 读取端共用此 schema。",
+  "type": "object",
+  "required": ["_meta", "ending"],
+  "additionalProperties": true,
+  "properties": {
+    "_meta": {
+      "type": "object",
+      "description": "元数据。schema_version 必须 \"3.0\";tool_version 可选;history[] 已删除(D5)。",
+      "required": ["tool", "schema_version", "revision", "created", "updated", "workspace"],
+      "properties": {
+        "tool": { "type": "string", "const": "智剪工坊" },
+        "schema_version": {
+          "type": "string",
+          "const": "3.0",
+          "description": "JSON 协议版本。AI 解析时凭它判断用 v3.0 schema 解析逻辑(D1)。"
+        },
+        "tool_version": {
+          "type": "string",
+          "description": "HTML 编辑器产品版本(可选,D1)。与 schema_version 区分。"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "每次保存 +1。"
+        },
+        "created": { "type": "string", "format": "date-time" },
+        "updated": { "type": "string", "format": "date-time" },
+        "workspace": { "type": "string", "minLength": 1 }
+      }
+    },
+
+    "project": {
+      "type": "object",
+      "properties": {
+        "name":     { "type": "string" },
+        "title":    { "type": "string" },
+        "overall_intent": { "type": "string" }
+      }
+    },
+
+    "output": {
+      "type": "object",
+      "properties": {
+        "aspect_ratio": {
+          "type": "string",
+          "enum": ["9:16", "16:9", "1:1", "3:4", "4:3", "custom"]
+        },
+        "aspect_ratio_custom": {
+          "type": "string",
+          "pattern": "^[0-9.]+:[0-9.]+$",
+          "description": "W:H 格式;aspect_ratio='custom' 时必填(D1)。"
+        },
+        "aspect_handling": {
+          "type": "string",
+          "enum": ["aspect-fit", "aspect-fill"]
+        }
+      }
+    },
+
+    "cover": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["ai", "text", "image"] },
+        "prompt": { "type": "string" },
+        "images": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "仅 cover.type='image'(多图拼版)时填写(D1)。"
+        }
+      },
+      "if": {
+        "properties": { "type": { "const": "image" } },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["images"]
+      }
+    },
+
+    "ending": {
+      "type": "object",
+      "description": "V4 重构:抛弃 6 选 1 enum,改 template + prompt 两文本字段(D2)。",
+      "required": ["template"],
+      "properties": {
+        "template": {
+          "type": "string",
+          "minLength": 1,
+          "description": "必填:HTML 选中的效果模板完整描述文本(人话,不是 ID)。"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "可选:用户的额外补充说明。"
+        }
+      }
+    },
+
+    "sequences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["videos"],
+        "properties": {
+          "title": { "type": "string" },
+          "videos": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "description": "entry.index 序列(1-based)。"
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["after", "type", "duration"],
+              "properties": {
+                "after": { "type": "integer", "minimum": 1 },
+                "type": {
+                  "type": "string",
+                  "enum": ["fade", "fade-black", "fade-white", "wipe-left", "wipe-right", "slide-up", "zoom-in", "blur", "none"]
+                },
+                "duration": { "type": "number", "minimum": 0.1 }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "videos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "index", "duration_sec"],
+        "properties": {
+          "file": { "type": "string", "minLength": 1 },
+          "index": { "type": "integer", "minimum": 1, "description": "1-based stable ID" },
+          "duration_sec": { "type": "number", "minimum": 0 },
+          "exclude": { "type": "boolean" },
+          "summary": { "type": "string" },
+          "intent": { "type": "string" },
+
+          "video_ops": {
+            "type": "object",
+            "description": "整段视频 op(整段生效,与时间窗无关)。5 个 op 已废弃(D7)。",
+            "properties": {
+              "speed-up": {
+                "type": "object",
+                "properties": {
+                  "on": { "type": "boolean" },
+                  "factor": { "type": "number", "exclusiveMinimum": 0 }
+                }
+              },
+              "slow-down": {
+                "type": "object",
+                "properties": {
+                  "on": { "type": "boolean" },
+                  "factor": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+                }
+              },
+              "reverse":  { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "mute":     { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "fade-in":  { "type": "object", "properties": { "on": { "type": "boolean" }, "sec": { "type": "number", "minimum": 0 } } },
+              "fade-out": { "type": "object", "properties": { "on": { "type": "boolean" }, "sec": { "type": "number", "minimum": 0 } } },
+              "color":    { "type": "object", "properties": { "on": { "type": "boolean" }, "style": { "type": "string" } } },
+              "add-bgm": { "type": "object", "properties": { "on": { "type": "boolean" }, "file": { "type": "string" }, "volume": { "type": "number", "minimum": 0, "maximum": 2 } } },
+              "replace-audio": { "type": "object", "properties": { "on": { "type": "boolean" }, "file": { "type": "string" } } },
+              "opening-text": { "type": "object", "properties": { "on": { "type": "boolean" }, "text": { "type": "string" }, "duration": { "type": "number", "minimum": 0 } } },
+              "insert-image": { "type": "object", "properties": { "on": { "type": "boolean" }, "file": { "type": "string" }, "at": { "type": "string" }, "duration": { "type": "number", "minimum": 0 } } },
+              "asr-transcribe": { "type": "object", "properties": { "on": { "type": "boolean" }, "model": { "type": "string" } } },
+              "asr-burn":       { "type": "object", "properties": { "on": { "type": "boolean" }, "font_size": { "type": "number", "minimum": 1 } } },
+              "asr-speaker":    { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "audio-denoise":  { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "audio-separate": { "type": "object", "properties": { "on": { "type": "boolean" }, "model": { "type": "string" } } },
+              "audio-diarize":  { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "voice-filler-removed": { "type": "object", "properties": { "on": { "type": "boolean" } } },
+              "voice": {
+                "type": "object",
+                "properties": {
+                  "on": { "type": "boolean" },
+                  "mode": { "type": "string", "enum": ["keep", "keep-with-filler-removed", "mute", "bgm-only"] }
+                }
+              },
+              "voice_note": { "type": "string" },
+              "notes":      { "type": "string" },
+              "duration":   { "type": "object", "properties": { "on": { "type": "boolean" }, "sec": { "type": "number", "minimum": 0 } }, "description": "图片专属(D1)。" }
+            },
+            "not": {
+              "anyOf": [
+                { "required": ["trim-head"] },
+                { "required": ["trim-tail"] },
+                { "required": ["cut-middle"] },
+                { "required": ["pin-range"] },
+                { "required": ["target-duration"] }
+              ],
+              "description": "D7:5 个该消失的 op 不允许在 video_ops 中出现。"
+            }
+          },
+
+          "time_segments": {
+            "type": "array",
+            "description": "片段保留。可空 = 整段保留;多个 = 取并集。",
+            "items": {
+              "type": "object",
+              "required": ["id", "start_sec", "end_sec"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^seg_[0-9]+_[0-9_a-zA-Z]+$" },
+                "label": { "type": "string" },
+                "start_sec": { "type": "number", "minimum": 0 },
+                "end_sec": { "type": "number", "exclusiveMinimum": 0 },
+                "ops": {
+                  "type": "object",
+                  "description": "段内 op(白名单:mute/speed-up/slow-down/reverse/color-grade)。",
+                  "properties": {
+                    "mute":       { "type": "object", "properties": { "on": { "type": "boolean" } } },
+                    "speed-up":   { "type": "object", "properties": { "on": { "type": "boolean" }, "factor": { "type": "number", "exclusiveMinimum": 0 } } },
+                    "slow-down":  { "type": "object", "properties": { "on": { "type": "boolean" }, "factor": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 } } },
+                    "reverse":    { "type": "object", "properties": { "on": { "type": "boolean" } } },
+                    "color-grade":{ "type": "object", "properties": { "on": { "type": "boolean" } } }
+                  },
+                  "additionalProperties": false,
+                  "description": "段内 op 白名单(§7 校验规则)。"
+                },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

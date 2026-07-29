@@ -19,6 +19,7 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.le
 .empty{padding:42px;text-align:center;color:var(--fg2)}button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.copy{background:#eef5ff;color:var(--blue2)}input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto}
 @media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.item-head{display:block}}
 </style>
+<!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
@@ -63,9 +64,7 @@ function renderItem(x){const id=x.id||x.checkin_note_id||x.reminder_id||'';const
 function receiptText(){const d=PAYLOAD.data||{};const filtered=rowsFiltered();let text=`备忘录查询回执\n命令：${d.command||''}\n结果数：${filtered.length}/${dataRows().length}\n筛选：${appState.category} ${appState.q||''}\n\n【${filtered.length} 条详情】`;filtered.forEach((x,i)=>{text+=`\n\n#${x.id||x.checkin_note_id||x.reminder_id||''} · [${esc(x.category||'未分类')}${x.sub_category?'/'+esc(x.sub_category):''}] · ${esc(x.created_at||x.checkin_at||'')}\n    ${esc((x.content||x.checkin_content||'').slice(0,80))}`;});return text}
 function renderReceipt(){document.getElementById('receipt').textContent=receiptText()}
 function copyInfo(btn){try{const raw=btn.getAttribute('data-item').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');const x=JSON.parse(raw);const id=x.id||x.checkin_note_id||x.reminder_id||'';const content=x.content||x.checkin_content||'';const cat=x.category||'未分类';const sub=x.sub_category?'/'+x.sub_category:'';const created=x.created_at||x.checkin_at||'';let text=`备忘录 #${id}\n分类: ${cat}${sub}\n创建: ${created}\n内容: ${content}\n`;if(x.due)text+=`排期: ${x.due}\n`;if(x.remind_at)text+=`提醒: ${x.remind_at}\n`;if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>{const orig=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.textContent=orig;},2000)}).catch(()=>{btn.textContent='✗ 复制失败';setTimeout(()=>{btn.textContent='复制';},2000)})}else{btn.textContent='浏览器不支持'}}catch(e){btn.textContent='✗ 复制失败';setTimeout(()=>{btn.textContent='复制';},2000)}}
-function copyReceipt(){const text=receiptText();if(!text)return;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>{const btn=document.querySelector('button.copy[data-copy-receipt]');if(btn){const o=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.textContent=o},2000)}}).catch(()=>fallbackCopy(text))}else{fallbackCopy(text)}}
-function fallbackCopy(text){const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta)}
-init();
+function copyReceipt(){const text=receiptText();if(!text)return;const btn=document.querySelector('button.copy[data-copy-receipt]');safeWriteText(text).then(function(ok){if(btn)flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)})}init();
 </script>
 </body>
 </html>

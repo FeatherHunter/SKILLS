@@ -21,14 +21,13 @@ class TestWishCopyFallback:
     EXPECTED_FILES = ["wish_plan.html", "wish_complete.html", "change_category.html"]
 
     def test_each_has_fallback_copy(self):
-        """三模板都必须有 fallbackCopy 函数(或 execCommand fallback)"""
+        """三模板都必须有 fallbackCopy 函数(或 execCommand fallback)· v1.1.5 共享化"""
         for name in self.EXPECTED_FILES:
             text = _read(name)
-            assert ("function fallbackCopy(" in text
-                    or "execCommand('copy')" in text
-                    or "execCommand(\"copy\")" in text), (
-                f"{name} 必须有复制 fallback (fallbackCopy / execCommand) — "
-                f"总纲 §04 原则 10 单工铁律 + Phase B T05"
+            # v1.1.5:共享 clipboard helper · 模板占位符由 injector 注入
+            assert ("<!--INJECT-SHARED-->" in text), (
+                f"{name} 必须有 <!--INJECT-SHARED--> 占位符 · "
+                f"fallbackCopy 由 injector.py 注入(共享脚本 _shared/clipboard.js)"
             )
 
     def test_each_has_clearTimeout_in_btn_race(self):

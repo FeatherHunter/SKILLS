@@ -46,6 +46,7 @@ pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;pad
 .notice.err{background:var(--err-soft);color:var(--err)}
 @media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.kpi{grid-template-columns:1fr}h1{font-size:30px}}
 </style>
+<!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
@@ -275,24 +276,11 @@ function copyPrompt(){
 }
 
 function copyToClipboard(t){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(t).then(()=>{
-      const btn=document.querySelector('button.primary');
-      if(btn&&copyTimer){clearTimeout(copyTimer)}
-      const old=btn.textContent;
-      btn.textContent='✅ 已复制 · 粘贴给 AI';
-      copyTimer=setTimeout(()=>{btn.textContent=old},2500);
-    }).catch(()=>fallbackCopy(t));
-  } else {
-    fallbackCopy(t);
-  }
+  const btn=document.querySelector('button.primary');
+  safeWriteText(t).then(function(ok){
+    if(btn)flashBtn(btn, ok ? '✅ 已复制 · 粘贴给 AI' : '✗ 复制失败', 2500);
+  });
 }
-var copyTimer=null;
-function fallbackCopy(text){
-  const ta=document.createElement('textarea');
-  ta.value=text;ta.style.cssText='position:fixed;left:-9999px';
-  document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy')}catch(e){}
   document.body.removeChild(ta);
 }
 

@@ -14,7 +14,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from injector import inject_html, write_output  # noqa: F401 · 同目录私有模块
+from injector import inject_html, inject_shared_js, write_output  # noqa: F401 · 同目录私有模块
 from memo_cli import DB_PATH  # noqa: E402  · 复用 memo_cli 的 DB_PATH 计算逻辑
 
 # v1.0.5:skill ASCII 短码(避免中文路径跨平台编码问题)
@@ -43,12 +43,18 @@ def _get_html_output_dir():
 
 
 def _inject_body(template: str, payload: dict) -> str:
-    """以 <body> 锚点注入(window.__DATA__ 全局变量)
+    """以 <body> 锚点注入(window.__DATA__ 全局变量)+ 共享 JS(占位符注入)
 
     4 个原模板都用 <body>(恰好 1 处) 做锚点 · 兼容 injector 占位符型
+    v1.1.5 +:额外做 <!--INJECT-SHARED--> 占位符注入(clipboard helper)
     """
     safe_payload = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    return template.replace("<body>", f"<body>\n<script>window.__DATA__ = {safe_payload};</script>", 1)
+    injected = template.replace("<body>", f"<body>\n<script>window.__DATA__ = {safe_payload};</script>", 1)
+    # v1.1.5:共享 clipboard helper 注入(单一真相源:script/_shared/clipboard.js)
+    if "<!--INJECT-SHARED-->" in injected:
+        shared_code = (SKILL_DIR / "script" / "_shared" / "clipboard.js").read_text(encoding="utf-8")
+        injected = inject_shared_js(injected, shared_code)
+    return injected
 
 
 def _write(name: str, html: str) -> str:

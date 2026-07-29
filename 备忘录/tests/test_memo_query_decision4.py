@@ -87,14 +87,18 @@ class TestMemoQueryCopyTextDefined:
     """
 
     def test_copyReceipt_self_contains_clipboard_write(self):
-        """copyReceipt 必须直接调 navigator.clipboard.writeText / execCommand"""
+        """copyReceipt 必须直接调 safeWriteText(共享 clipboard helper,v1.1.5+)"""
         idx = TEMPLATE_TEXT.find("function copyReceipt(")
         assert idx > 0, "copyReceipt 函数必须存在"
         end = TEMPLATE_TEXT.find("\n}\n", idx)
         snippet = TEMPLATE_TEXT[idx:end]
-        assert ("navigator.clipboard.writeText" in snippet
-                or "execCommand" in snippet), (
-            f"copyReceipt 必须直接调 navigator.clipboard / execCommand,但 snippet={snippet}"
+        # v1.1.5:copyReceipt 改用共享 safeWriteText(由 injector 注入 clipboard.js)
+        assert "safeWriteText" in snippet, (
+            f"copyReceipt 必须调共享 safeWriteText · 实际:{snippet}"
+        )
+        # 必须有按钮反馈(成功/失败)
+        assert ("flashBtn" in snippet or "已复制" in snippet), (
+            f"copyReceipt 必须含 flashBtn 调用(共享 helper 反馈)· 实际:{snippet}"
         )
 
     def test_no_dead_copyText_call_anymore(self):
@@ -110,7 +114,9 @@ class TestMemoQueryCopyTextDefined:
         )
 
     def test_fallbackCopy_exists(self):
-        """execCommand fallback 必须有 fallbackCopy() 函数"""
-        assert ("function fallbackCopy(" in TEMPLATE_TEXT), (
-            "execCommand fallback 必须存在 — 防飞书 webview clipboard.writeText 拒绝"
+        """execCommand fallback 必须有 fallbackCopy() 函数(共享脚本由 injector 注入)"""
+        # v1.1.5 共享化后:模板不再 inline · 由 <!--INJECT-SHARED--> 占位符 + injector 注入
+        assert ("<!--INJECT-SHARED-->" in TEMPLATE_TEXT), (
+            "memo_query.html 模板应有 <!--INJECT-SHARED--> 占位符 · "
+            "fallbackCopy 由 injector.py 注入(共享脚本 script/_shared/clipboard.js)"
         )

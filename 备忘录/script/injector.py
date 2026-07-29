@@ -58,6 +58,40 @@ def inject_html(template_text, payload, placeholder=DEFAULT_PLACEHOLDER):
     return template_text.replace(placeholder, inject_str, 1)
 
 
+SHARED_PLACEHOLDER = "<!--INJECT-SHARED-->"
+
+
+def inject_shared_js(template_text, shared_js_code,
+                     placeholder=SHARED_PLACEHOLDER):
+    """读模板 + 把共享 JS 文本 inline 注入到 placeholder 位置。
+
+    目的:让多模板共享同一份 JS 助手(总纲 §04 原则 8 反模式"每模板自己
+    escapeHTML" → 应迁共享)。当前用法:`fallbackCopy` clipboard helper。
+
+    Args:
+        template_text: HTML 模板字符串(已 read_text)
+        shared_js_code: 共享 JS 源代码(字符串)
+        placeholder: 默认 '<!--INJECT-SHARED-->';不允许为空或重复
+
+    Returns:
+        str: 注入后的 HTML 文本(共享 JS 被 <script>...</script> 包裹)
+
+    Raises:
+        ValueError: placeholder 数量 != 1
+    """
+    if not placeholder:
+        raise ValueError("placeholder 不能为空")
+    count = template_text.count(placeholder)
+    if count != 1:
+        raise ValueError(
+            f"占位符 '{placeholder}' 出现 {count} 次,期望 1"
+        )
+    # 共享 JS 也做 </ 转义(防 JS 含 </script> 提前闭合)
+    safe_code = shared_js_code.replace("</", "<\\/")
+    inject_str = f"<script>{safe_code}</script>"
+    return template_text.replace(placeholder, inject_str, 1)
+
+
 def write_output(out_dir, name, html, ts=None):
     """把 HTML 写到 out_dir/<name>_<YYYYMMDD>_<HHMMSS>[_<N>].html,返回路径。
 

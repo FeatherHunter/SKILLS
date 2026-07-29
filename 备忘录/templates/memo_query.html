@@ -6,6 +6,7 @@
 <title>备忘录查询结果</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
@@ -13,7 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.lead{color:var(--fg2);font-size:17px}.meta{margin-top:16px;color:var(--fg3);font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.stat,.panel,.item{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.stat b{display:block;font-size:24px;letter-spacing:-.02em}.stat span{color:var(--fg2);font-size:13px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}.pill.active{background:#eef5ff;color:var(--blue2);border-color:#b8d8ff}
+.stat b{display:block;font-size:22px;letter-spacing:-.02em;font-weight:800}.stat span{color:var(--fg2);font-size:13px;font-weight:600}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}.pill.active{background:#eef5ff;color:var(--blue2);border-color:#b8d8ff}
 .item{margin:12px 0}.item-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.id{color:var(--blue2);font-weight:800}.content{font-size:17px;margin:10px 0;white-space:pre-wrap}.muted{color:var(--fg2)}.small{font-size:13px;color:var(--fg3)}.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;margin:3px 5px 3px 0}.badge.warn{background:#fff7e8;color:#b25b00}.badge.ok{background:#ecfff2;color:#178a3a}
 .empty{padding:42px;text-align:center;color:var(--fg2)}button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.copy{background:#eef5ff;color:var(--blue2)}input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto}
 @media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.item-head{display:block}}
@@ -30,8 +31,10 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.le
 <section class="grid" id="stats"></section>
 <section class="panel">
 <strong>筛选与检索</strong>
-<input id="filter" placeholder="在当前结果内搜索内容、分类、日期、ID">
+<label for="filter" class="sr-only">在结果内搜索内容</label>
+<input id="filter" aria-label="在结果内搜索内容" placeholder="搜索内容(注:仅匹配 content 字段,不命中 ID / UUID)">
 <div class="toolbar" id="chips"></div>
+<div class="toolbar" id="length-mode-bar" style="display:none"><button id="lengthModeBtn" class="copy" type="button">显示全部</button><span id="lengthModeHint" class="small"></span></div>
 </section>
 <section id="list"></section>
 <section class="panel">
@@ -42,7 +45,7 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.le
 </div>
 <script>
 const PAYLOAD=window.__DATA__;
-const appState={category:'全部',q:''};
+const appState={category:'全部',q:'',showAll:false,MAX_DEFAULT:50};
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function dataRows(){const d=PAYLOAD&&PAYLOAD.data?PAYLOAD.data:{};if(Array.isArray(d))return d;if(Array.isArray(d.items))return d.items;if(d.item)return [d.item];return []}
 function init(){if(!PAYLOAD){document.getElementById('list').innerHTML='<div class="panel empty">数据未注入</div>';return}const d=PAYLOAD.data||{};document.getElementById('title').textContent=d.title||'备忘录查询结果';document.getElementById('subtitle').textContent=PAYLOAD.message||d.subtitle||'查询完成';document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||''}`;renderStats();renderChips();renderList();renderReceipt();// success: 数据加载完成,内容已渲染
@@ -53,7 +56,9 @@ function renderStats(){const rows=dataRows();const due=rows.filter(x=>x.due).len
 function renderChips(){document.getElementById('chips').innerHTML=categories().map(c=>`<span class="pill ${c===appState.category?'active':''}" onclick="setCat('${esc(c)}')">${esc(c)}</span>`).join('')}
 function setCat(c){appState.category=c;renderChips();renderList();renderReceipt()}
 document.getElementById('filter').addEventListener('input',e=>{appState.q=e.target.value;renderList();renderReceipt()});
-function renderList(){const rows=rowsFiltered();const list=document.getElementById('list');if(!rows.length){list.innerHTML='<div class="panel empty">没有匹配结果</div>';return}list.innerHTML=rows.map(renderItem).join('')}
+document.getElementById('lengthModeBtn').addEventListener('click',toggleLengthMode);
+function renderList(){const all=rowsFiltered();const totalCount=all.length;const cap=appState.showAll?totalCount:Math.min(appState.MAX_DEFAULT,totalCount);const rows=all.slice(0,cap);const list=document.getElementById('list');if(!rows.length){list.innerHTML='<div class="panel empty">没有匹配结果</div>';document.getElementById('length-mode-bar').style.display='none';return}list.innerHTML=rows.map(renderItem).join('');const bar=document.getElementById('length-mode-bar');const btn=document.getElementById('lengthModeBtn');const hint=document.getElementById('lengthModeHint');if(totalCount>appState.MAX_DEFAULT){bar.style.display='flex';btn.textContent=appState.showAll?`显示前 ${appState.MAX_DEFAULT} 条`:`显示全部 (${totalCount} 条)`;hint.textContent=appState.showAll?`已展开全部 · 滚到底可看完`: `默认仅显示前 ${appState.MAX_DEFAULT} 条`;}else{bar.style.display='none'}}
+function toggleLengthMode(){appState.showAll=!appState.showAll;renderList();renderReceipt()}
 function renderItem(x){const id=x.id||x.checkin_note_id||x.reminder_id||'';const content=x.content||x.checkin_content||x.reminder_content||x.note_content||'';const badges=[x.category,x.sub_category,x.repeat_type,x.due?`排期 ${x.due}`:'',x.remind_at?`提醒 ${x.remind_at}`:'',x.media_path?'附件':''].filter(Boolean);return `<article class="item"><div class="item-head"><div class="id">#${esc(id)}</div><button class="copy" data-item='${esc(JSON.stringify(x))}' onclick="copyInfo(this)">复制</button></div><div class="content">${esc(content)}</div><div>${badges.map(b=>`<span class="badge ${String(b).includes('排期')||String(b).includes('提醒')?'warn':''}">${esc(b)}</span>`).join('')}</div><p class="small">创建：${esc(x.created_at||x.checkin_at||'')}　更新：${esc(x.updated_at||'')}</p></article>`}
 function receiptText(){const d=PAYLOAD.data||{};const filtered=rowsFiltered();let text=`备忘录查询回执\n命令：${d.command||''}\n结果数：${filtered.length}/${dataRows().length}\n筛选：${appState.category} ${appState.q||''}\n\n【${filtered.length} 条详情】`;filtered.forEach((x,i)=>{text+=`\n\n#${x.id||x.checkin_note_id||x.reminder_id||''} · [${esc(x.category||'未分类')}${x.sub_category?'/'+esc(x.sub_category):''}] · ${esc(x.created_at||x.checkin_at||'')}\n    ${esc((x.content||x.checkin_content||'').slice(0,80))}`;});return text}
 function renderReceipt(){document.getElementById('receipt').textContent=receiptText()}

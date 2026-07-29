@@ -54,10 +54,16 @@ body{
   margin:16px 0 14px;
   box-shadow:var(--shadow-md);
   text-align:center;
+  position:relative;
+  overflow:hidden;
 }
-.status-card.ok{background:linear-gradient(180deg,#fff 0%,#f7fdf9 100%)}
-.status-card.warn{background:linear-gradient(180deg,#fff 0%,#fffbf2 100%)}
-.status-card.err{background:linear-gradient(180deg,#fff 0%,#fff5f5 100%)}
+.status-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--fg4)}
+.status-card.ok{background:linear-gradient(180deg,#fff 0%,#ebfaef 100%)}
+.status-card.ok::before{background:var(--ok)}
+.status-card.warn{background:linear-gradient(180deg,#fff 0%,#fff7e0 100%)}
+.status-card.warn::before{background:var(--warn)}
+.status-card.err{background:linear-gradient(180deg,#fff 0%,#ffe8e6 100%)}
+.status-card.err::before{background:var(--err)}
 .status-card.idle{background:linear-gradient(180deg,#fff 0%,#fafafa 100%)}
 
 .status-icon{

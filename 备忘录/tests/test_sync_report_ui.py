@@ -14,9 +14,29 @@ TEMPLATE_TEXT = TEMPLATE.read_text(encoding="utf-8")
 
 class TestSyncReportAccentBar:
     def test_status_card_has_accent_bar(self):
-        """状态卡 CSS 必含 ::before accent bar(左缘 6px)"""
-        assert ("::before" in TEMPLATE_TEXT and "6px" in TEMPLATE_TEXT), (
-            "状态卡必须有 ::before{...width:6px} 左缘 accent bar"
+        """状态卡 CSS 必含 ::before accent bar(左缘 6px,且专属状态卡)"""
+        import re
+        m = re.search(r"\.status-card::before\s*\{[^}]*\}", TEMPLATE_TEXT)
+        assert m, ".status-card::before 必须存在(专属状态卡 · 非其他 ::before)"
+        css = m.group(0)
+        # 必须 width:6px(accent bar 宽度)
+        wm = re.search(r"width:\s*([^;}\s]+)", css)
+        assert wm and wm.group(1) == "6px", (
+            f".status-card::before 必须 width:6px · 实际:{wm.group(1) if wm else 'NONE'}"
+        )
+        # 必须 left:0(左缘)
+        assert "left:0" in css, ".status-card::before 必须 left:0"
+
+    def test_status_card_ok_accent_uses_ok_color(self):
+        """.status-card.ok::before{background:var(--ok)} 必须存在"""
+        assert ".status-card.ok::before" in TEMPLATE_TEXT, (
+            "OK 状态卡 accent bar 必须用 var(--ok) 色相"
+        )
+
+    def test_status_card_err_accent_uses_err_color(self):
+        """.status-card.err::before{background:var(--err)} 必须存在"""
+        assert ".status-card.err::before" in TEMPLATE_TEXT, (
+            "err 状态卡 accent bar 必须用 var(--err) 色相"
         )
 
 

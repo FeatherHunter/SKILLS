@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>沉浸主面板 · 视觉标杆 v2</title>
+<style>
+/* ============================================================
+   卡路里 · 沉浸式设计 v2.0(2026-07-29)
+   第一性原理:让最重要的事被一眼看见。
+   - 上半部:深色沉浸 hero(数据剧场,Apple Fitness 品类感)
+   - 下半部:浅色编辑区(杂志式排版,可扫读)
+   - 强对比:深/浅、大/小、彩/灰的层级张力
+   - 仍守:统一 token、无 emoji 入标题、无脏渐变、数字等宽
+   ============================================================ */
+:root{
+  /* 深色区 token */
+  --dark:#000000;
+  --dark-2:#1c1c1e;
+  --dark-3:#2c2c2e;
+  --dark-ink:#ffffff;
+  --dark-ink2:rgba(235,235,245,.6);
+  --dark-ink3:rgba(235,235,245,.3);
+  --dark-line:rgba(255,255,255,.08);
+  --dark-lineS:rgba(255,255,255,.04);
+  /* 浅色区 token(与 v1 A 系一致,保证系统统一) */
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  /* 共享语义色 */
+  --accent:#0a84ff;
+  --accent-soft:rgba(10,132,255,.15);
+  --green:#30d158;
+  --green-soft:rgba(48,209,88,.15);
+  --orange:#ff9f0a;
+  --orange-soft:rgba(255,159,10,.15);
+  --red:#ff453a;
+  --red-soft:rgba(255,69,58,.15);
+  --pink:#ff375f;
+  --pink-soft:rgba(255,55,95,.15);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.06);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+  --r-xl:28px;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"tnum","ss01";
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 0 80px;overflow:hidden}
+
+/* ============================================================
+   深色沉浸 HERO(数据剧场)
+   ============================================================ */
+.hero-dark{
+  background:var(--dark);
+  color:var(--dark-ink);
+  padding:48px 40px 56px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-dark::before{
+  content:'';
+  position:absolute;
+  top:-40%;right:-20%;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(10,132,255,.18),transparent 55%);
+  pointer-events:none;
+}
+.hero-dark .eyebrow{
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:1.2px;
+  color:var(--accent);
+  text-transform:uppercase;
+  margin-bottom:10px;
+  position:relative;
+  display:flex;align-items:center;gap:8px;
+}
+.hero-dark .eyebrow::before{
+  content:'';
+  width:18px;height:1px;
+  background:var(--accent);
+}
+.hero-dark h1{
+  font-size:40px;
+  font-weight:700;
+  letter-spacing:-.6px;
+  line-height:1.1;
+  margin-bottom:8px;
+  position:relative;
+}
+.hero-dark .date{
+  font-size:15px;
+  color:var(--dark-ink2);
+  font-weight:400;
+  margin-bottom:32px;
+  position:relative;
+}
+
+/* 三环进度(Apple Fitness 品类感) */
+.rings{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:36px;
+  align-items:center;
+  position:relative;
+}
+.rings-svg{
+  width:200px;height:200px;
+  position:relative;
+}
+.rings-svg svg{transform:rotate(-90deg)}
+.rings-center{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+.rings-center .big{
+  font-size:42px;
+  font-weight:700;
+  letter-spacing:-1px;
+  line-height:1;
+  font-feature-settings:"tnum";
+}
+.rings-center .lbl{
+  font-size:11px;
+  color:var(--dark-ink3);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-top:4px;
+}
+.rings-legend{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.ring-item{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  align-items:center;
+}
+.ring-dot{
+  width:10px;height:10px;border-radius:50%;
+}
+.ring-item.move .ring-dot{background:var(--pink);box-shadow:0 0 12px var(--pink)}
+.ring-item.exercise .ring-dot{background:var(--green);box-shadow:0 0 12px var(--green)}
+.ring-item.stand .ring-dot{background:var(--accent);box-shadow:0 0 12px var(--accent)}
+.ring-item .name{
+  font-size:14px;
+  font-weight:600;
+  color:var(--dark-ink);
+}
+.ring-item .sub{
+  font-size:12px;
+  color:var(--dark-ink3);
+}
+.ring-item .val{
+  font-size:18px;
+  font-weight:700;
+  font-feature-settings:"tnum";
+  color:var(--dark-ink);
+  text-align:right;
+}
+.ring-item .val .unit{
+  font-size:11px;
+  color:var(--dark-ink3);
+  font-weight:400;
+  margin-left:2px;
+}
+
+/* 深色区状态条 */
+.hero-status{
+  display:flex;
+  gap:8px;
+  margin-top:32px;
+  position:relative;
+  flex-wrap:wrap;
+}
+.status-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  border:1px solid var(--dark-line);
+  font-size:12.5px;
+  font-weight:500;
+  color:var(--dark-ink2);
+}
+.status-chip.warn{
+  background:var(--orange-soft);
+  border-color:rgba(255,159,10,.3);
+  color:var(--orange);
+}
+.status-chip.good{
+  background:var(--green-soft);
+  border-color:rgba(48,209,88,.3);
+  color:var(--green);
+}
+.status-chip::before{
+  content:'';
+  width:5px;height:5px;
+  border-radius:50%;
+  background:currentColor;
+}
+
+/* ============================================================
+   浅色编辑区(杂志式)
+   ============================================================ */
+.editorial{
+  padding:40px 40px 0;
+}
+
+/* 编辑式 section 标题 */
+.edit-section{margin-bottom:48px}
+.edit-title{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:20px;
+  padding-bottom:12px;
+  border-bottom:2px solid var(--ink);
+}
+.edit-title h2{
+  font-size:24px;
+  font-weight:700;
+  letter-spacing:-.4px;
+  color:var(--ink);
+}
+.edit-title .num{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink3);
+  font-feature-settings:"tnum";
+  letter-spacing:.5px;
+}
+
+/* 大数字头条(编辑式) */
+.lead-stat{
+  display:grid;
+  grid-template-columns:1.2fr 1fr;
+  gap:32px;
+  align-items:end;
+  padding:8px 0 24px;
+  border-bottom:1px solid var(--lineS);
+  margin-bottom:24px;
+}
+.lead-stat .lead-num{
+  font-size:80px;
+  font-weight:700;
+  letter-spacing:-2.5px;
+  line-height:.9;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+}
+.lead-stat .lead-num .unit{
+  font-size:24px;
+  font-weight:500;
+  color:var(--ink3);
+  margin-left:8px;
+  letter-spacing:0;
+}
+.lead-stat .lead-num .sign{
+  color:var(--green);
+}
+.lead-stat .lead-body{
+  padding-bottom:8px;
+}
+.lead-stat .lead-label{
+  font-size:12px;
+  font-weight:600;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  margin-bottom:6px;
+}
+.lead-stat .lead-desc{
+  font-size:14px;
+  color:var(--ink2);
+  line-height:1.55;
+}
+
+/* KPI 网格(编辑式 · 无卡片边框,靠留白分隔) */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:0;
+  margin-bottom:8px;
+}
+.kpi{
+  padding:20px 18px 20px 0;
+  border-left:1px solid var(--lineS);
+  padding-left:20px;
+}
+.kpi:first-child{border-left:none;padding-left:0}
+.kpi .label{
+  font-size:11px;
+  color:var(--ink3);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:10px;
+}
+.kpi .value{
+  font-size:30px;
+  font-weight:700;
+  letter-spacing:-.8px;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  line-height:1;
+}
+.kpi .value .unit{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:500;
+  margin-left:3px;
+}
+.kpi .delta{
+  font-size:12px;
+  margin-top:8px;
+  font-weight:600;
+  font-feature-settings:"tnum";
+}
+.kpi .delta.up{color:var(--green)}
+.kpi .delta.down{color:var(--red)}
+.kpi .delta.flat{color:var(--ink3)}
+
+/* 趋势区(编辑式 · 大留白) */
+.trend-block{
+  margin-top:16px;
+}
+.trend-svg{
+  width:100%;
+  height:220px;
+  display:block;
+}
+.trend-caption{
+  display:flex;
+  justify-content:space-between;
+  margin-top:12px;
+  font-size:11px;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.trend-legend{
+  display:flex;gap:16px;
+}
+.trend-legend span{
+  display:inline-flex;align-items:center;gap:5px;
+}
+.trend-legend .swatch{
+  width:10px;height:2px;border-radius:1px;
+}
+
+/* 时间线(编辑式 · 左侧日期锚) */
+.timeline{
+  display:flex;
+  flex-direction:column;
+}
+.tl-row{
+  display:grid;
+  grid-template-columns:72px 1fr auto;
+  gap:20px;
+  padding:16px 0;
+  border-top:1px solid var(--lineS);
+  align-items:start;
+}
+.tl-row:first-child{border-top:none}
+.tl-time{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  font-family:"SF Mono",monospace;
+}
+.tl-time .ampm{
+  font-size:10px;
+  color:var(--ink3);
+  display:block;
+  font-weight:500;
+  letter-spacing:.3px;
+}
+.tl-body .tl-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:3px;
+}
+.tl-body .tl-desc{
+  font-size:13px;
+  color:var(--ink3);
+  line-height:1.5;
+}
+.tl-body .tl-tags{
+  display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;
+}
+.tl-tag{
+  font-size:10.5px;
+  padding:2px 8px;
+  border-radius:4px;
+  background:var(--bg-soft);
+  color:var(--ink2);
+  font-weight:500;
+}
+.tl-tag.pro{background:var(--green-soft);color:var(--green)}
+.tl-val{
+  font-size:16px;
+  font-weight:700;
+  font-feature-settings:"tnum";
+  text-align:right;
+  white-space:nowrap;
+}
+.tl-val.intake{color:var(--accent)}
+.tl-val.burn{color:var(--green)}
+
+/* 待办(编辑式 · 编号清单) */
+.todo-edit{
+  display:flex;
+  flex-direction:column;
+  counter-reset:todo;
+}
+.todo-item{
+  display:grid;
+  grid-template-columns:32px 1fr auto;
+  gap:16px;
+  padding:14px 0;
+  border-top:1px solid var(--lineS);
+  align-items:center;
+}
+.todo-item:first-child{border-top:none}
+.todo-item .todo-no{
+  font-size:13px;
+  font-weight:700;
+  color:var(--ink3);
+  font-feature-settings:"tnum";
+  counter-increment:todo;
+}
+.todo-item .todo-no::before{
+  content:counter(todo,decimal-leading-zero);
+}
+.todo-item.done .todo-no{
+  color:var(--green);
+}
+.todo-item.done .todo-no::before{
+  content:'✓ ';
+}
+.todo-item .todo-text{
+  font-size:15px;
+  color:var(--ink);
+  font-weight:500;
+}
+.todo-item.done .todo-text{
+  color:var(--ink3);
+  text-decoration:line-through;
+}
+.todo-item .todo-meta{
+  font-size:12px;
+  color:var(--ink3);
+  margin-top:2px;
+}
+.todo-item .pri{
+  font-size:10.5px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:4px;
+  letter-spacing:.3px;
+}
+.todo-item .pri.high{background:var(--red-soft);color:var(--red)}
+.todo-item .pri.med{background:var(--orange-soft);color:var(--orange)}
+
+/* 输入框(深色区延续 · 反色) */
+.input-block{
+  background:var(--dark-2);
+  color:var(--dark-ink);
+  border-radius:var(--r-lg);
+  padding:28px 32px;
+  margin-bottom:48px;
+}
+.input-block .ib-title{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:6px;
+}
+.input-block .ib-sub{
+  font-size:13px;
+  color:var(--dark-ink2);
+  margin-bottom:18px;
+}
+.field-dark{
+  display:flex;flex-direction:column;gap:6px;margin-bottom:14px;
+}
+.field-dark label{
+  font-size:12px;font-weight:600;
+  color:var(--dark-ink2);
+  text-transform:uppercase;letter-spacing:.4px;
+}
+.field-dark input,.field-dark select{
+  background:var(--dark-3);
+  border:1px solid var(--dark-line);
+  border-radius:var(--r-sm);
+  padding:12px 16px;
+  font-size:15px;
+  color:var(--dark-ink);
+  font-family:inherit;
+  transition:all .2s var(--ease);
+  width:100%;
+}
+.field-dark input:focus,.field-dark select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+  background:var(--dark);
+}
+.field-dark input::placeholder{color:var(--dark-ink3)}
+
+/* 快捷命令(编辑式 · 编号列表) */
+.cmd-edit{
+  display:flex;
+  flex-direction:column;
+  counter-reset:cmd;
+}
+.cmd-item{
+  display:grid;
+  grid-template-columns:40px 1fr auto;
+  gap:16px;
+  padding:14px 0;
+  border-top:1px solid var(--lineS);
+  align-items:center;
+}
+.cmd-item:first-child{border-top:none}
+.cmd-item .cmd-no{
+  font-size:11px;
+  font-weight:700;
+  color:var(--ink3);
+  font-feature-settings:"tnum";
+  counter-increment:cmd;
+}
+.cmd-item .cmd-no::before{
+  content:'/' counter(cmd,decimal-leading-zero);
+}
+.cmd-item .cmd-label{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  margin-bottom:2px;
+}
+.cmd-item .cmd-text{
+  font-size:13px;
+  color:var(--ink3);
+  font-family:"SF Mono",monospace;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.copy-mini{
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:4px 12px;
+  font-size:11px;
+  color:var(--ink2);
+  cursor:pointer;
+  font-family:inherit;
+  font-weight:600;
+  transition:all .2s var(--ease);
+}
+.copy-mini:hover{
+  background:var(--ink);
+  border-color:var(--ink);
+  color:#fff;
+}
+.copy-mini.copied{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+  animation:copySuccess .45s var(--ease-spring);
+}
+@keyframes copySuccess{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+.copy-all{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--ink);
+  color:#fff;
+  border-radius:999px;
+  padding:10px 20px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  margin-top:16px;
+  transition:all .2s var(--ease);
+}
+.copy-all:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.copy-all.copied{
+  background:var(--green);
+  animation:copySuccess .45s var(--ease-spring);
+}
+
+/* Toast */
+.toast{
+  position:fixed;
+  bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(120%);
+  background:var(--dark-2);
+  color:#fff;
+  padding:12px 20px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:var(--shadow-lg);
+  z-index:9999;
+  transition:transform .35s var(--ease-spring);
+  pointer-events:none;
+  border:1px solid var(--dark-line);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* 过渡带(深→浅的视觉缓冲) */
+.transition-band{
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--line),transparent);
+  margin:0 40px;
+}
+
+footer{
+  text-align:center;
+  color:var(--ink3);
+  font-size:12px;
+  margin-top:48px;
+  padding:24px 40px 0;
+  border-top:1px solid var(--lineS);
+}
+
+#backTop{
+  position:fixed;
+  bottom:24px;right:24px;
+  width:42px;height:42px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);
+  text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;
+  transition:opacity .2s var(--ease);
+}
+#backTop.show{opacity:1;pointer-events:auto}
+
+@media (max-width:640px){
+  .hero-dark{padding:32px 20px 40px}
+  .hero-dark h1{font-size:30px}
+  .rings{grid-template-columns:1fr;gap:24px;justify-items:center;text-align:center}
+  .rings-svg{width:180px;height:180px}
+  .rings-legend{width:100%}
+  .editorial{padding:32px 20px 0}
+  .lead-stat{grid-template-columns:1fr;gap:16px}
+  .lead-stat .lead-num{font-size:60px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:0}
+  .kpi{border-left:none;padding-left:0;padding-top:16px;border-top:1px solid var(--lineS)}
+  .kpi:first-child{border-top:none;padding-top:0}
+  .kpi:nth-child(2){border-top:none;padding-top:0}
+  .tl-row{grid-template-columns:56px 1fr auto;gap:12px}
+  .input-block{padding:20px}
+}
+@media (max-width:400px){
+  .kpi-grid{grid-template-columns:1fr}
+  .kpi{border-top:1px solid var(--lineS)!important;padding-top:14px!important}
+  .kpi:first-child{border-top:none!important}
+  .toast{left:12px;right:12px;transform:translateY(120%)}
+  .toast.show{transform:translateY(0)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- 深色沉浸 HERO -->
+<header class="hero-dark">
+  <div class="eyebrow">卡路里 · 今日</div>
+  <h1>2026 年 7 月 29 日</h1>
+  <div class="date">星期三 · 健康指标与活动概览</div>
+
+  <!-- 三环(Apple Fitness 品类感) -->
+  <div class="rings">
+    <div class="rings-svg">
+      <svg width="200" height="200" viewBox="0 0 200 200">
+        <!-- 外环 Move(粉) -->
+        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,55,95,.2)" stroke-width="16"/>
+        <circle cx="100" cy="100" r="85" fill="none" stroke="var(--pink)" stroke-width="16"
+          stroke-dasharray="534.07" stroke-dashoffset="96" stroke-linecap="round"/>
+        <!-- 中环 Exercise(绿) -->
+        <circle cx="100" cy="100" r="65" fill="none" stroke="rgba(48,209,88,.2)" stroke-width="16"/>
+        <circle cx="100" cy="100" r="65" fill="none" stroke="var(--green)" stroke-width="16"
+          stroke-dasharray="408.41" stroke-dashoffset="61" stroke-linecap="round"/>
+        <!-- 内环 Stand(蓝) -->
+        <circle cx="100" cy="100" r="45" fill="none" stroke="rgba(10,132,255,.2)" stroke-width="16"/>
+        <circle cx="100" cy="100" r="45" fill="none" stroke="var(--accent)" stroke-width="16"
+          stroke-dasharray="282.74" stroke-dashoffset="113" stroke-linecap="round"/>
+      </svg>
+      <div class="rings-center">
+        <div class="big">82%</div>
+        <div class="lbl">达成</div>
+      </div>
+    </div>
+    <div class="rings-legend">
+      <div class="ring-item move">
+        <span class="ring-dot"></span>
+        <div>
+          <div class="name">活动</div>
+          <div class="sub">摄入热量 · 目标 2,000</div>
+        </div>
+        <div class="val">1,640<span class="unit">卡</span></div>
+      </div>
+      <div class="ring-item exercise">
+        <span class="ring-dot"></span>
+        <div>
+          <div class="name">运动</div>
+          <div class="sub">消耗热量 · 目标 500</div>
+        </div>
+        <div class="val">420<span class="unit">卡</span></div>
+      </div>
+      <div class="ring-item stand">
+        <span class="ring-dot"></span>
+        <div>
+          <div class="name">缺口</div>
+          <div class="sub">热量赤字 · 目标 600</div>
+        </div>
+        <div class="val">−780<span class="unit">卡</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态条 -->
+  <div class="hero-status">
+    <span class="status-chip warn">2 项待办</span>
+    <span class="status-chip good">连续 4 天运动</span>
+    <span class="status-chip">体重 68.2 kg ↓ 1.3</span>
+    <span class="status-chip">6/7 天合规</span>
+  </div>
+</header>
+
+<div class="transition-band"></div>
+
+<!-- 浅色编辑区 -->
+<div class="editorial">
+
+  <!-- 大数字头条 -->
+  <section class="edit-section">
+    <div class="edit-title">
+      <h2>今日热量</h2>
+      <span class="num">01 / 06</span>
+    </div>
+    <div class="lead-stat">
+      <div class="lead-num"><span class="sign">−</span>780<span class="unit">卡 / 日</span></div>
+      <div class="lead-body">
+        <div class="lead-label">热量缺口</div>
+        <div class="lead-desc">摄入 1,640 卡,运动消耗 420 卡,基础代谢 1,840 卡。缺口 780 卡处于适宜区间,理论折合每周减脂 0.10 kg。距目标体重还有 3.2 kg。</div>
+      </div>
+    </div>
+
+    <!-- KPI(编辑式无卡) -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="label">摄入</div>
+        <div class="value">1,640<span class="unit">卡</span></div>
+        <div class="delta down">↓ 12% vs 昨日</div>
+      </div>
+      <div class="kpi">
+        <div class="label">运动</div>
+        <div class="value">420<span class="unit">卡</span></div>
+        <div class="delta up">↑ 8% vs 昨日</div>
+      </div>
+      <div class="kpi">
+        <div class="label">饮水</div>
+        <div class="value">1.2<span class="unit">L</span></div>
+        <div class="delta down">↓ 未达标</div>
+      </div>
+      <div class="kpi">
+        <div class="label">体重</div>
+        <div class="value">68.2<span class="unit">kg</span></div>
+        <div class="delta up">↓ 1.3 kg / 周</div>
+      </div>
+    </div>
+
+    <!-- 趋势 -->
+    <div class="trend-block">
+      <svg class="trend-svg" viewBox="0 0 1000 220" preserveAspectRatio="none">
+        <!-- 网格 -->
+        <line x1="0" y1="55" x2="1000" y2="55" stroke="var(--lineS)" stroke-width="1"/>
+        <line x1="0" y1="110" x2="1000" y2="110" stroke="var(--lineS)" stroke-width="1"/>
+        <line x1="0" y1="165" x2="1000" y2="165" stroke="var(--lineS)" stroke-width="1"/>
+        <!-- 摄入(蓝实线 + area) -->
+        <polygon points="0,220 0,80 167,100 333,70 500,110 667,90 833,75 1000,65 1000,220"
+          fill="var(--accent-soft)"/>
+        <polyline points="0,80 167,100 333,70 500,110 667,90 833,75 1000,65"
+          fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- 运动(绿虚线) -->
+        <polyline points="0,160 167,150 333,140 500,135 667,145 833,130 1000,120"
+          fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5"/>
+        <!-- 目标线 -->
+        <line x1="0" y1="90" x2="1000" y2="90" stroke="var(--ink3)" stroke-width="1" stroke-dasharray="2 4" opacity=".5"/>
+        <!-- 最新点 -->
+        <circle cx="1000" cy="65" r="5" fill="var(--accent)"/>
+        <circle cx="1000" cy="65" r="10" fill="var(--accent)" opacity=".2"/>
+      </svg>
+      <div class="trend-caption">
+        <div class="trend-legend">
+          <span><span class="swatch" style="background:var(--accent)"></span>摄入</span>
+          <span><span class="swatch" style="background:var(--green)"></span>运动</span>
+          <span><span class="swatch" style="background:var(--ink3)"></span>目标 2,000</span>
+        </div>
+        <span>近 7 天 · 07.23 – 07.29</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 时间线 -->
+  <section class="edit-section">
+    <div class="edit-title">
+      <h2>今日记录</h2>
+      <span class="num">02 / 06 · 5 条</span>
+    </div>
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-time">07:00<span class="ampm">AM</span></div>
+        <div class="tl-body">
+          <div class="tl-title">慢跑 30 分钟</div>
+          <div class="tl-desc">有氧运动 · 心率均值 142 bpm</div>
+          <div class="tl-tags"><span class="tl-tag pro">蛋白 +0g</span><span class="tl-tag">30 min</span></div>
+        </div>
+        <div class="tl-val burn">−420 卡</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">08:30<span class="ampm">AM</span></div>
+        <div class="tl-body">
+          <div class="tl-title">燕麦牛奶</div>
+          <div class="tl-desc">早餐 · 燕麦 50g + 低脂牛奶 250ml</div>
+          <div class="tl-tags"><span class="tl-tag pro">蛋白 12g</span><span class="tl-tag">碳水 45g</span></div>
+        </div>
+        <div class="tl-val intake">+320 卡</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">12:15<span class="ampm">PM</span></div>
+        <div class="tl-body">
+          <div class="tl-title">鸡胸肉沙拉</div>
+          <div class="tl-desc">午餐 · 鸡胸肉 150g + 混合蔬菜</div>
+          <div class="tl-tags"><span class="tl-tag pro">蛋白 35g</span><span class="tl-tag">低碳</span></div>
+        </div>
+        <div class="tl-val intake">+480 卡</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">15:00<span class="ampm">PM</span></div>
+        <div class="tl-body">
+          <div class="tl-title">苹果</div>
+          <div class="tl-desc">加餐 · 中等大小 1 个</div>
+          <div class="tl-tags"><span class="tl-tag">纤维 4g</span></div>
+        </div>
+        <div class="tl-val intake">+95 卡</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-time">18:45<span class="ampm">PM</span></div>
+        <div class="tl-body">
+          <div class="tl-title">三文鱼便当</div>
+          <div class="tl-desc">晚餐 · 三文鱼 120g + 糙米饭</div>
+          <div class="tl-tags"><span class="tl-tag pro">蛋白 28g</span><span class="tl-tag">Omega-3</span></div>
+        </div>
+        <div class="tl-val intake">+745 卡</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 待办(编号清单) -->
+  <section class="edit-section">
+    <div class="edit-title">
+      <h2>今日待办</h2>
+      <span class="num">03 / 06 · 2 项待完成</span>
+    </div>
+    <div class="todo-edit">
+      <div class="todo-item done">
+        <div class="todo-no"></div>
+        <div>
+          <div class="todo-text">记录饮食</div>
+          <div class="todo-meta">已记录 4 条 · 08:30 / 12:15 / 15:00 / 18:45</div>
+        </div>
+      </div>
+      <div class="todo-item">
+        <div class="todo-no"></div>
+        <div>
+          <div class="todo-text">记录饮水</div>
+          <div class="todo-meta">今日未记录 · 建议每杯即时记</div>
+        </div>
+        <span class="pri high">高</span>
+      </div>
+      <div class="todo-item done">
+        <div class="todo-no"></div>
+        <div>
+          <div class="todo-text">记录运动</div>
+          <div class="todo-meta">已记录 1 条 · 07:00 慢跑</div>
+        </div>
+      </div>
+      <div class="todo-item">
+        <div class="todo-no"></div>
+        <div>
+          <div class="todo-text">记录体重</div>
+          <div class="todo-meta">今日未记录 · 上次 07-28</div>
+        </div>
+        <span class="pri med">中</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 快速记录(深色延续块) -->
+  <section class="edit-section">
+    <div class="edit-title">
+      <h2>快速记录</h2>
+      <span class="num">04 / 06</span>
+    </div>
+    <div class="input-block">
+      <div class="ib-title">刚吃了什么</div>
+      <div class="ib-sub">输入即触发 AI 识别 · 自然语言即可</div>
+      <div class="field-dark">
+        <label>食物描述</label>
+        <input type="text" placeholder="例:一杯拿铁 + 两个鸡蛋">
+      </div>
+      <div class="field-dark">
+        <label>分量(可选)</label>
+        <input type="text" placeholder="例:中杯 / 100g / 一碗">
+      </div>
+    </div>
+  </section>
+
+  <!-- 快捷命令(编号列表) -->
+  <section class="edit-section">
+    <div class="edit-title">
+      <h2>快捷命令</h2>
+      <span class="num">05 / 06</span>
+    </div>
+    <div class="cmd-edit">
+      <div class="cmd-item">
+        <div class="cmd-no"></div>
+        <div>
+          <div class="cmd-label">记吃了</div>
+          <div class="cmd-text">记吃了 鸡胸肉沙拉 300克</div>
+        </div>
+        <button class="copy-mini" onclick="copyCmd(this,'记吃了 鸡胸肉沙拉 300克')">复制</button>
+      </div>
+      <div class="cmd-item">
+        <div class="cmd-no"></div>
+        <div>
+          <div class="cmd-label">记喝水</div>
+          <div class="cmd-text">记喝水 250毫升</div>
+        </div>
+        <button class="copy-mini" onclick="copyCmd(this,'记喝水 250毫升')">复制</button>
+      </div>
+      <div class="cmd-item">
+        <div class="cmd-no"></div>
+        <div>
+          <div class="cmd-label">记运动</div>
+          <div class="cmd-text">记运动 慢跑 30分钟</div>
+        </div>
+        <button class="copy-mini" onclick="copyCmd(this,'记运动 慢跑 30分钟')">复制</button>
+      </div>
+      <div class="cmd-item">
+        <div class="cmd-no"></div>
+        <div>
+          <div class="cmd-label">查热量</div>
+          <div class="cmd-text">查热量 三文鱼便当</div>
+        </div>
+        <button class="copy-mini" onclick="copyCmd(this,'查热量 三文鱼便当')">复制</button>
+      </div>
+    </div>
+    <button class="copy-all" id="copyAllBtn" onclick="copyAll()">复制所有命令</button>
+  </section>
+
+</div>
+
+<footer>卡路里 Skill · 沉浸式设计 v2.0 · 视觉标杆 · 2026-07-29</footer>
+
+</div>
+<a id="backTop" href="#" title="回到顶部">↑</a>
+<div class="toast" id="toast">已复制</div>
+
+<script>
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastT);
+  window.__toastT=setTimeout(()=>t.classList.remove('show'),1800);
+}
+function copyCmd(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.classList.add('copied');
+    btn.textContent='已复制';
+    showToast('已复制: '+text);
+    setTimeout(()=>{
+      btn.classList.remove('copied');
+      btn.textContent='复制';
+    },1500);
+  });
+}
+function copyAll(){
+  const cmds=['记吃了 鸡胸肉沙拉 300克','记喝水 250毫升','记运动 慢跑 30分钟','查热量 三文鱼便当'];
+  navigator.clipboard.writeText(cmds.join('\n')).then(()=>{
+    const btn=document.getElementById('copyAllBtn');
+    btn.textContent='✓ 已复制全部';
+    btn.classList.add('copied');
+    showToast('已复制 4 条命令');
+    setTimeout(()=>{
+      btn.textContent='复制所有命令';
+      btn.classList.remove('copied');
+    },2000);
+  });
+}
+const backTop=document.getElementById('backTop');
+window.addEventListener('scroll',()=>{
+  if(window.scrollY>400) backTop.classList.add('show');
+  else backTop.classList.remove('show');
+});
+backTop.addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})});
+</script>
+</body>
+</html>

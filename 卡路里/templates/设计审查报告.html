@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卡路里 HTML 模板 · 对抗式设计审查报告</title>
+<style>
+/* ============================================================
+   审查报告 · 采用统一 A 系规范(报告本身即示范)
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --purple:#af52de;
+  --purple-soft:rgba(175,82,222,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+
+/* HERO */
+.hero{padding:40px 32px 32px;margin-bottom:24px}
+.hero .eyebrow{
+  font-size:13px;font-weight:600;letter-spacing:.5px;
+  color:var(--accent);text-transform:uppercase;margin-bottom:8px;
+}
+.hero h1{
+  font-size:38px;font-weight:700;letter-spacing:-.6px;
+  line-height:1.15;color:var(--ink);margin-bottom:10px;
+}
+.hero .sub{font-size:16px;color:var(--ink3);max-width:680px}
+.hero .meta-row{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;
+}
+.hero .meta-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:999px;
+  background:var(--bg-soft);color:var(--ink2);
+  font-size:12px;font-weight:500;
+}
+.hero .meta-chip b{color:var(--ink);font-weight:600}
+
+/* 摘要卡 */
+.summary-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:12px;margin-bottom:24px;
+}
+.summary-card{
+  background:var(--card);border-radius:var(--r);
+  padding:18px 16px;box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.summary-card .num{
+  font-size:32px;font-weight:700;letter-spacing:-.8px;
+  line-height:1;font-feature-settings:"tnum";
+}
+.summary-card .num.bad{color:var(--red)}
+.summary-card .num.warn{color:var(--orange)}
+.summary-card .num.good{color:var(--green)}
+.summary-card .lbl{
+  font-size:12px;color:var(--ink3);
+  margin-top:6px;font-weight:500;
+}
+
+/* SECTION */
+.section{
+  background:var(--card);border-radius:var(--r-lg);
+  padding:28px 32px;margin-bottom:16px;
+  box-shadow:var(--shadow-sm);border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:20px;padding-bottom:14px;
+  border-bottom:1px solid var(--lineS);
+}
+.section-title h2{
+  font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--ink);
+}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+.section h3{
+  font-size:16px;font-weight:600;color:var(--ink);
+  margin:24px 0 12px;letter-spacing:-.2px;
+}
+.section h3:first-of-type{margin-top:0}
+.section p{font-size:14px;color:var(--ink2);margin-bottom:10px}
+.section p code, .section li code, td code{
+  background:var(--bg-soft);padding:1px 6px;border-radius:4px;
+  font-size:12.5px;font-family:"SF Mono",monospace;color:var(--ink);
+}
+.section ul,.section ol{margin:8px 0 14px 20px}
+.section li{font-size:14px;color:var(--ink2);margin-bottom:6px}
+
+/* 表格 */
+table{
+  width:100%;border-collapse:collapse;margin:12px 0;
+  font-size:13px;
+}
+th{
+  text-align:left;padding:10px 12px;
+  font-size:11.5px;font-weight:600;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.4px;
+  border-bottom:1px solid var(--line);
+  background:transparent;
+}
+td{
+  padding:12px;border-bottom:1px solid var(--lineS);
+  color:var(--ink2);vertical-align:top;
+}
+tr:last-child td{border-bottom:none}
+td b{color:var(--ink);font-weight:600}
+td .ok{color:var(--green);font-weight:600}
+td .no{color:var(--red);font-weight:600}
+td .warn{color:var(--orange);font-weight:600}
+
+/* 设计系标签 */
+.system-tag{
+  display:inline-block;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:6px;letter-spacing:.3px;
+}
+.system-tag.a{background:var(--accent-soft);color:var(--accent)}
+.system-tag.b{background:var(--orange-soft);color:var(--orange)}
+.system-tag.c{background:var(--purple-soft);color:var(--purple)}
+.system-tag.d{background:var(--green-soft);color:var(--green)}
+.system-tag.e{background:var(--bg-soft);color:var(--ink2)}
+
+/* 色板 */
+.swatch-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.swatch{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.swatch .box{
+  width:56px;height:56px;border-radius:10px;
+  border:1px solid var(--lineS);
+}
+.swatch .hex{font-size:10.5px;color:var(--ink3);font-family:"SF Mono",monospace}
+
+/* 对照块 */
+.vs-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;
+}
+.vs-card{
+  border-radius:var(--r);padding:16px 18px;
+  border:1px solid var(--lineS);background:var(--bg-soft);
+}
+.vs-card .vs-title{
+  font-size:13px;font-weight:600;color:var(--ink);
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.vs-card .vs-body{font-size:13px;color:var(--ink2);line-height:1.6}
+
+/* TOP/BOTTOM 卡 */
+.rank-card{
+  border-radius:var(--r);padding:20px 22px;margin-bottom:12px;
+  border:1px solid var(--lineS);background:var(--card);
+  box-shadow:var(--shadow-sm);
+}
+.rank-card.top{border-left:4px solid var(--green)}
+.rank-card.bottom{border-left:4px solid var(--red)}
+.rank-card .rank-head{
+  display:flex;align-items:baseline;gap:10px;margin-bottom:10px;
+}
+.rank-card .rank-no{
+  font-size:13px;font-weight:700;color:var(--ink3);
+  text-transform:uppercase;letter-spacing:.4px;
+}
+.rank-card .rank-file{
+  font-size:15px;font-weight:600;color:var(--ink);
+  font-family:"SF Mono",monospace;
+}
+.rank-card .rank-size{
+  font-size:12px;color:var(--ink3);margin-left:auto;
+}
+.rank-card .rank-reason{
+  font-size:13.5px;color:var(--ink2);line-height:1.65;
+}
+
+/* 第一性原理块 */
+.principle{
+  background:var(--bg-soft);border-radius:var(--r);
+  padding:18px 20px;margin:12px 0;
+  border-left:3px solid var(--accent);
+}
+.principle .principle-title{
+  font-size:14px;font-weight:600;color:var(--accent);
+  margin-bottom:6px;
+}
+.principle .principle-body{font-size:13.5px;color:var(--ink2);line-height:1.65}
+
+/* P0-P3 路线图 */
+.roadmap-item{
+  display:grid;grid-template-columns:60px 1fr auto;
+  gap:14px;align-items:start;
+  padding:14px 0;border-top:1px solid var(--lineS);
+}
+.roadmap-item:first-child{border-top:none}
+.roadmap-priority{
+  font-size:12px;font-weight:700;text-align:center;
+  padding:4px 0;border-radius:6px;letter-spacing:.3px;
+}
+.roadmap-priority.p0{background:var(--red-soft);color:var(--red)}
+.roadmap-priority.p1{background:var(--orange-soft);color:var(--orange)}
+.roadmap-priority.p2{background:var(--accent-soft);color:var(--accent)}
+.roadmap-priority.p3{background:var(--bg-soft);color:var(--ink2)}
+.roadmap-body{font-size:13.5px;color:var(--ink2);line-height:1.6}
+.roadmap-body b{color:var(--ink)}
+.roadmap-effort{
+  font-size:11.5px;color:var(--ink3);white-space:nowrap;
+  padding:3px 8px;background:var(--bg-soft);border-radius:6px;
+}
+
+/* AI 味清单 */
+.ai-smell-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:12px 0;
+}
+.ai-smell{
+  padding:14px 16px;border-radius:var(--r-sm);
+  background:var(--red-soft);border:1px solid var(--red);
+}
+.ai-smell .smell-title{
+  font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px;
+}
+.ai-smell .smell-body{font-size:12.5px;color:var(--ink2);line-height:1.55}
+
+/* 引用块 */
+.quote{
+  border-left:3px solid var(--accent);
+  padding:12px 18px;margin:14px 0;
+  background:var(--accent-soft);border-radius:0 var(--r-sm) var(--r-sm) 0;
+  font-size:13.5px;color:var(--ink2);font-style:italic;
+}
+
+footer{
+  text-align:center;color:var(--ink3);font-size:12px;
+  margin-top:32px;padding-top:20px;border-top:1px solid var(--lineS);
+}
+
+#backTop{
+  position:fixed;bottom:24px;right:24px;
+  width:42px;height:42px;border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);color:var(--ink);
+  text-decoration:none;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s var(--ease);
+}
+#backTop.show{opacity:1;pointer-events:auto}
+
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:28px 20px 24px}
+  .hero h1{font-size:28px}
+  .summary-grid{grid-template-columns:repeat(2,1fr)}
+  .section{padding:20px 18px}
+  .vs-grid{grid-template-columns:1fr}
+  .ai-smell-grid{grid-template-columns:1fr}
+  .roadmap-item{grid-template-columns:50px 1fr}
+  .roadmap-effort{grid-column:2}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="eyebrow">对抗式设计审查</div>
+  <h1>卡路里 HTML 模板 · 审美与可用性报告</h1>
+  <div class="sub">从人类设计师第一性原理出发,审查 <b style="color:var(--ink)">templates/</b> 下 35 个 HTML 文件,聚焦"好看"与"好用"两个维度。视觉层面的诊断、对照与改进路线。</div>
+  <div class="meta-row">
+    <span class="meta-chip">范围 <b>35 个 HTML</b></span>
+    <span class="meta-chip">基准 <b>home_dashboard.html (A 系)</b></span>
+    <span class="meta-chip">视角 <b>资深人类设计师</b></span>
+    <span class="meta-chip">日期 <b>2026-07-29</b></span>
+  </div>
+</header>
+
+<!-- 摘要 -->
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="num bad">4-5</div>
+    <div class="lbl">并存设计系</div>
+  </div>
+  <div class="summary-card">
+    <div class="num warn">5</div>
+    <div class="lbl">Hero 处理方式</div>
+  </div>
+  <div class="summary-card">
+    <div class="num bad">2</div>
+    <div class="lbl">输入框交互逻辑(相反)</div>
+  </div>
+  <div class="summary-card">
+    <div class="num warn">5</div>
+    <div class="lbl">复制按钮位置</div>
+  </div>
+</div>
+
+<!-- 一句话总结 -->
+<section class="section">
+  <div class="section-title"><h2>一句话总结</h2></div>
+  <div class="quote">
+    每个文件都在"模仿 Apple",但 35 个文件模仿的是 4 个不同时期的 Apple —— 有的模仿 iOS HIG,有的模仿 Apple.com 官网,有的误把 Material Design 当 Apple,有的模仿 iOS 通知中心。用户在产品内跳转时,视觉会不断"咯噔"。
+  </div>
+  <p>单点质量合格(每个文件单独看都不难看,甚至 <code>help_center</code> / <code>weight_log_receipt</code> / <code>home_dashboard</code> 做得不错),但<b>系统性失败</b>:这是典型的"AI 逐文件生成、无全局设计系统约束"的产物。</p>
+</section>
+
+<!-- 第一性原理 -->
+<section class="section">
+  <div class="section-title"><h2>第一性原理:什么是"好看又好用"</h2></div>
+
+  <h3>好看 = 克制 + 层级 + 一致</h3>
+  <div class="principle">
+    <div class="principle-title">克制</div>
+    <div class="principle-body">每个像素都要为信息传达服务。删掉渐变文字(38px 深灰渐变不可见)、删掉三色 id-card 渐变(色差极小渲染成脏白底)、删掉金银铜奖牌渐变(和健康追踪克制气质冲突)、删掉 pulse 脉冲(低频场景过度强调)。Apple 的美来自"不做的事"。</div>
+  </div>
+  <div class="principle">
+    <div class="principle-title">层级</div>
+    <div class="principle-body">用户 0.5 秒内要知道:这一页最重要的数字是什么。56px 大数字(hero-number) > 28px KPI 值 > 17px section h2 > 15px 正文 > 13px hint。每一级字号差至少 4px,字重差至少 100。当前问题:多个报告页 11px 表头 + 15px 正文,层级扁平如 Excel。</div>
+  </div>
+  <div class="principle">
+    <div class="principle-title">一致</div>
+    <div class="principle-body">同一产品内,主色只能有一个值,输入框只能有一种交互,复制按钮只能在一个位置。当前 4-5 套设计 token 并存,这不是"设计系统",是"设计联邦"。</div>
+  </div>
+
+  <h3>好用 = 可扫读 + 可预期 + 容错</h3>
+  <div class="principle">
+    <div class="principle-title">可扫读</div>
+    <div class="principle-body">数字用 <code>font-feature-settings:"tnum"</code> 等宽对齐(90% 文件已做到 ✓);时间用 <code>SF Mono</code> 等宽体;表格行有轻分隔线 <code>var(--lineS)</code> 而非无分隔(<code>workout_plan_view</code> 的问题)。</div>
+  </div>
+  <div class="principle">
+    <div class="principle-title">可预期</div>
+    <div class="principle-body">用户在 home 看到复制按钮在底部,到 weight_log 也应该在底部,到 help_center 不应该跑到 summary 层。当前 5 种位置违反预期,增加认知成本。</div>
+  </div>
+  <div class="principle">
+    <div class="principle-title">容错</div>
+    <div class="principle-body">复制成功要有反馈。当前多数文件只改文字"✓ 已复制",<code>help_center</code> 的 <code>@keyframes copySuccess</code> 弹性动画 + iOS Toast 是最佳实践,应推广到全库。</div>
+  </div>
+</section>
+
+<!-- 文件分组 -->
+<section class="section">
+  <div class="section-title"><h2>一、文件分组(35 个 · 按类型)</h2></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>类型</th><th>数量</th><th>文件</th><th>主设计系</th></tr></thead>
+    <tbody>
+      <tr><td><b>仪表盘</b></td><td>2</td><td><code>home_dashboard</code>, <code>health_dashboard</code></td><td><span class="system-tag a">A</span> <span class="system-tag b">B</span></td></tr>
+      <tr><td><b>回执</b></td><td>2</td><td><code>crud_receipt</code>, <code>weight_log_receipt</code></td><td><span class="system-tag b">B</span> <span class="system-tag a">A</span></td></tr>
+      <tr><td><b>向导</b></td><td>5</td><td><code>plan_builder_wizard</code>, <code>body_composition_wizard</code>, <code>body_measurements_wizard</code>, <code>nutrition_label_wizard</code>, <code>body_photo_log_wizard</code></td><td><span class="system-tag a">A</span>×2 <span class="system-tag b">B</span>×3</td></tr>
+      <tr><td><b>查询视图</b></td><td>5</td><td><code>food_search</code>, <code>food_library</code>, <code>food_ranking</code>, <code>weight_history</code>, <code>crud_view</code></td><td><span class="system-tag b">B</span>×5</td></tr>
+      <tr><td><b>报告</b></td><td>11</td><td><code>today_diet</code>, <code>today_meals</code>, <code>today_water</code>, <code>calorie_trend</code>, <code>calorie_deficit</code>, <code>exercise_summary</code>, <code>exercise_distribution</code>, <code>exercise_review</code>, <code>nutrition_ratio</code>, <code>lint_health</code>, <code>review_template</code></td><td><span class="system-tag b">B</span>×10 <span class="system-tag c">C</span>×1</td></tr>
+      <tr><td><b>帮助</b></td><td>1</td><td><code>help_center</code></td><td><span class="system-tag d">D</span></td></tr>
+      <tr><td><b>其他(配置/流程)</b></td><td>9</td><td><code>goal_config</code>, <code>profile_setup</code>, <code>cron_setup</code>, <code>process_progress</code>, <code>contraindication_report</code>, <code>batch_import_preview</code>, <code>body_photo_gif_planner</code>, <code>body_photo_viewer</code>, <code>workout_plan_view</code></td><td><span class="system-tag a">A</span>×4 <span class="system-tag b">B</span>×3 <span class="system-tag e">E</span>×1</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 设计系分裂 -->
+<section class="section">
+  <div class="section-title"><h2>二、核心发现:设计系分裂(最严重问题)</h2></div>
+  <p>整个模板库存在 <b>4-5 套并存的设计 token</b>。即使颜色值接近,变量名、阴影参数、字体栈、圆角 token 都不同,维护成本极高。</p>
+
+  <h3>四套设计系对照</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>维度</th><th><span class="system-tag a">A 系</span> 规范派</th><th><span class="system-tag b">B 系</span> 官网派</th><th><span class="system-tag c">C 系</span> Material 派</th><th><span class="system-tag d">D 系</span> 通知中心派</th></tr></thead>
+    <tbody>
+      <tr><td><b>文件数</b></td><td>8</td><td>22 (63%)</td><td>1</td><td>1</td></tr>
+      <tr><td><b>主色</b></td><td><code>#007aff</code> <span class="ok">✓ iOS 官方</span></td><td><code>#0071e3</code> <span class="no">✗ 差 0x2E</span></td><td><code>#007AFF</code></td><td><code>#0071e3</code></td></tr>
+      <tr><td><b>变量名</b></td><td><code>--ink/--ink2/--ink3</code></td><td><code>--fg/--fg2/--fg3</code></td><td><code>--blue</code></td><td><code>--text/--sub</code></td></tr>
+      <tr><td><b>二级灰</b></td><td><code>#3c3c43</code> <span class="ok">深·对比好</span></td><td><code>#6e6e73</code> <span class="warn">浅</span></td><td><code>#8E8E93</code> <span class="no">三级灰当二级</span></td><td><code>#6b6b6f</code></td></tr>
+      <tr><td><b>边线</b></td><td><code>rgba(60,60,67,.12)</code> <span class="ok">柔和</span></td><td><code>#d2d2d7</code> 实色</td><td><code>#e5e5e7</code></td><td><code>#e5e5e7</code></td></tr>
+      <tr><td><b>字体栈</b></td><td>含 <code>"SF Pro Display"</code> <span class="ok">✓</span></td><td><span class="no">缺 SF Pro</span></td><td>缺</td><td>缺</td></tr>
+      <tr><td><b>圆角 token</b></td><td><code>--r-sm/--r/--r-lg</code> <span class="ok">✓ 统一</span></td><td><span class="no">硬编码 12/14/16</span></td><td>14 统一</td><td>散落</td></tr>
+      <tr><td><b>阴影</b></td><td>双层极轻</td><td>第二层 16px 偏重</td><td>单层</td><td>单层</td></tr>
+      <tr><td><b>Hero</b></td><td>无背景</td><td>渐变 + 蓝竖条</td><td>—</td><td>灰蓝渐变</td></tr>
+      <tr><td><b>输入框</b></td><td>灰底→focus变白</td><td>白底→focus加蓝影</td><td>—</td><td>—</td></tr>
+      <tr><td><b>代表文件</b></td><td><code>home_dashboard</code></td><td><code>health_dashboard</code></td><td><code>review_template</code></td><td><code>help_center</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="quote">结论:35 个文件,4-5 套命名不一致的设计 token。即使颜色值接近,变量名、阴影参数、字体栈、圆角 token 都不同。这不是"设计系统",是"设计联邦"。</div>
+</section>
+
+<!-- 色板对比 -->
+<section class="section">
+  <div class="section-title"><h2>三、色板对比(主色差异肉眼可辨)</h2></div>
+  <h3>主色(四种蓝)</h3>
+  <div class="swatch-row">
+    <div class="swatch"><div class="box" style="background:#007aff"></div><div class="hex">#007aff A系</div></div>
+    <div class="swatch"><div class="box" style="background:#0071e3"></div><div class="hex">#0071e3 B系</div></div>
+    <div class="swatch"><div class="box" style="background:#007AFF"></div><div class="hex">#007AFF C系</div></div>
+    <div class="swatch"><div class="box" style="background:#0071e3"></div><div class="hex">#0071e3 D系</div></div>
+  </div>
+  <p>四种"蓝"中,A 系 <code>#007aff</code> 是 iOS System Blue 官方值,应作为唯一标准。B/C/D 系的 <code>#0071e3</code> 是 Apple.com 官网用色,在 Safari 渲染下与 <code>#007aff</code> 人眼可辨。</p>
+
+  <h3>二级灰(三种灰)</h3>
+  <div class="swatch-row">
+    <div class="swatch"><div class="box" style="background:#3c3c43"></div><div class="hex">#3c3c43 A系</div></div>
+    <div class="swatch"><div class="box" style="background:#6e6e73"></div><div class="hex">#6e6e73 B系</div></div>
+    <div class="swatch"><div class="box" style="background:#8E8E93"></div><div class="hex">#8E8E93 C系</div></div>
+  </div>
+  <p>C 系把 <code>#8E8E93</code>(三级灰)当二级灰用,在 <code>#F2F2F7</code> 背景上对比度仅 <b>2.8:1</b>,不达 WCAG AA 4.5:1 标准,正文可读性受损。</p>
+</section>
+
+<!-- 对照分析 -->
+<section class="section">
+  <div class="section-title"><h2>四、对照分析(三个关键对照对)</h2></div>
+
+  <h3>对照对 1:两个 Dashboard(最该统一却没统一)</h3>
+  <div class="vs-grid">
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag a">A</span> home_dashboard.html</div>
+      <div class="vs-body">无背景 hero · 4 列 KPI · <code>--shadow-sm</code> 极轻 · section-title 纯文字 · 字号 17px · 含 SF Pro · 移动端保 2 列</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag b">B</span> health_dashboard.html</div>
+      <div class="vs-body">渐变 hero · 2 列大卡 · <code>--shadow</code> 偏重 · h2 前蓝竖条 · 字号 16px · 缺 SF Pro · 移动端转 1 列</div>
+    </div>
+  </div>
+  <p>用户在 <code>home_dashboard</code> 看完今日概况,跳到 <code>health_dashboard</code> 看综合报告,视觉会"咯噔":蓝不一样深、灰不一样浅、卡不一样大、标题前莫名多根蓝竖条。</p>
+
+  <h3>对照对 2:两个回执(工具感 vs 产品感)</h3>
+  <div class="vs-grid">
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag b">B</span> crud_receipt.html</div>
+      <div class="vs-body">三色渐变 id-card · 42px 数字 · 灰按钮圆角 8px · Bootstrap <code>#c7254e</code> diff · 无动效 · 像 admin 面板</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag a">A</span> weight_log_receipt.html</div>
+      <div class="vs-body">绿色 radial 光晕 · 64px 大数字 · SVG 趋势折线 · 胶囊按钮 · pulse 脉冲 · 像消费级 App</div>
+    </div>
+  </div>
+  <p>同样是"操作回执",一个像数据库 admin,一个像消费级 App。<code>crud_receipt</code> 的三色渐变是典型"AI 想表示状态色但不敢用强",渲染成脏白底。</p>
+
+  <h3>对照对 3:两个向导(输入框交互相反 · 可用性事故)</h3>
+  <div class="vs-grid">
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag a">A</span> plan_builder_wizard.html (37KB)</div>
+      <div class="vs-body">渐变 hero + 渐变文字 · 38px h1 · 灰底无边框输入 · <code>.copy-preview</code> 浅底 · 1080px 宽 · 自定义折叠卡</div>
+    </div>
+    <div class="vs-card">
+      <div class="vs-title"><span class="system-tag b">B</span> body_composition_wizard.html</div>
+      <div class="vs-body">无 hero 裸 h1+emoji · 30px · 白底实边框输入 · <code>.prompt-box</code> 黑底 · 760px 窄 · 原生 details + emoji 序号</div>
+    </div>
+  </div>
+  <p><b>最严重</b>:输入框交互逻辑相反。A 系"灰底无边框 → focus 变白加边框",B 系"白底有边框 → focus 加蓝边加阴影"。用户在同一个产品里填表单,两种输入框交互,这是可用性事故。</p>
+</section>
+
+<!-- TOP/BOTTOM 3 -->
+<section class="section">
+  <div class="section-title"><h2>五、TOP 3 最好看 / BOTTOM 3 最不好看</h2></div>
+
+  <h3 style="color:var(--green)">TOP 3 最好看</h3>
+  <div class="rank-card top">
+    <div class="rank-head">
+      <span class="rank-no">TOP 1</span>
+      <span class="rank-file">help_center.html</span>
+      <span class="rank-size">18KB</span>
+    </div>
+    <div class="rank-reason">全库唯一有完整动效体系(Toast + 弹性复制 + 三角箭头旋转)。三层 <code>details</code> 嵌套,每层圆角递减(8→6→5px)层级清晰。移动端适配最细:12 条 <code>@media</code> 规则,唯一考虑 <code>env(safe-area-inset-bottom)</code> iOS 安全区。复制按钮 4 状态反馈最完整。缺点:自成体系,和全库不统一。</div>
+  </div>
+  <div class="rank-card top">
+    <div class="rank-head">
+      <span class="rank-no">TOP 2</span>
+      <span class="rank-file">weight_log_receipt.html</span>
+      <span class="rank-size">12KB</span>
+    </div>
+    <div class="rank-reason">回执的"消费感"做得到位:64px 大数字 + 绿色 radial 光晕 + SVG 趋势折线 + area fill + 最新点橙色高亮。唯一"数据可视化 + 回执"混合文件。A 系 token 完整自洽。移动端 64px→48px 退化合理。缺点:pulse 动画略浮夸,radial 光晕略重。</div>
+  </div>
+  <div class="rank-card top">
+    <div class="rank-head">
+      <span class="rank-no">TOP 3</span>
+      <span class="rank-file">home_dashboard.html</span>
+      <span class="rank-size">21KB</span>
+    </div>
+    <div class="rank-reason">CSS 头注释明确"Apple 设计语言(严格遵循)",token 体系最完整。4 KPI + Todo + Logs + Actions 四段式结构清晰。<code>.log-row</code> 用 <code>grid 44px 1fr auto</code> 三栏对齐工整。<code>#backTop</code> 毛玻璃浮层按钮细节到位。移动端 KPI 保 2 列是正确决策。缺点:无 hero 装饰略素。</div>
+  </div>
+
+  <h3 style="color:var(--red)">BOTTOM 3 最不好看</h3>
+  <div class="rank-card bottom">
+    <div class="rank-head">
+      <span class="rank-no">BOTTOM 1</span>
+      <span class="rank-file">crud_receipt.html</span>
+      <span class="rank-size">10KB</span>
+    </div>
+    <div class="rank-reason">三色 <code>.id-card</code> 渐变(<code>linear-gradient(135deg,#e8f5e8,#f0f8ff)</code> 等)色差极小,渲染成脏白底。42px 数字 + <code>font-weight:800</code> 在浅绿底上像 90 年代报表。<code>.diff-old</code> 用 <code>#c7254e</code> 是 Bootstrap 3 配色。按钮圆角 8px 和卡圆角 16px 不协调。核心:作为回执,比 weight_log_receipt 丑太多。</div>
+  </div>
+  <div class="rank-card bottom">
+    <div class="rank-head">
+      <span class="rank-no">BOTTOM 2</span>
+      <span class="rank-file">food_library.html</span>
+      <span class="rank-size">8.5KB</span>
+    </div>
+    <div class="rank-reason">纯表格 + 分页,无卡片化,无视觉层级。<code>th</code> 用 <code>position:sticky</code> 但外层无 <code>max-height</code> 支撑,sticky 形同虚设。<code>tr:hover</code> 仅 4% 透明度蓝几乎不可见。分页按钮 6px 方角和整体 14px 圆角不协调。整页"工具感"拉满,像 phpMyAdmin。食品库本该是"浏览发现",做成了"数据库列表"。</div>
+  </div>
+  <div class="rank-card bottom">
+    <div class="rank-head">
+      <span class="rank-no">BOTTOM 3</span>
+      <span class="rank-file">review_template.html</span>
+      <span class="rank-size">15KB</span>
+    </div>
+    <div class="rank-reason">全库唯一 C 系,背景 <code>#F2F2F7</code> 和其他 34 个文件都不同。引入 <code>--purple:#AF52DE</code> 是 Material Design 紫,Apple 设计语言里没有。<code>.dim.p1</code> 用 <code>#E3F2FD</code> 是 Material Light Blue 50。<code>--fg2:#8E8E93</code> 把三级灰当二级灰,对比度 2.8:1 不达标。像从另一个项目借鉴的模板,没融入设计系统。</div>
+  </div>
+</section>
+
+<!-- AI 味清单 -->
+<section class="section">
+  <div class="section-title"><h2>六、"AI 味"问题清单(过度装饰)</h2></div>
+  <p>以下是典型的"AI 觉得好看就加"的装饰,实际上要么不可见、要么和健康追踪克制气质冲突。</p>
+  <div class="ai-smell-grid">
+    <div class="ai-smell">
+      <div class="smell-title">渐变文字(不可见)</div>
+      <div class="smell-body"><code>plan_builder_wizard:84</code> <code>background:linear-gradient(180deg,#1d1d1d,#3c3c43);-webkit-background-clip:text</code> —— 深灰到浅灰渐变在 38px 标题上不可见,纯 CSS 噪音。</div>
+    </div>
+    <div class="ai-smell">
+      <div class="smell-title">radial 光晕(不可见)</div>
+      <div class="smell-body"><code>plan_builder_wizard:66</code> 300x300 <code>radial-gradient(circle,rgba(0,122,255,.08),transparent 60%)</code> 在白底上几乎看不见,增加 CSS 复杂度。</div>
+    </div>
+    <div class="ai-smell">
+      <div class="smell-title">三色 id-card 渐变(脏白底)</div>
+      <div class="smell-body"><code>crud_receipt:29</code> 三组 <code>linear-gradient(135deg,#e8f5e8,#f0f8ff)</code> 色差极小,渲染成脏白底。AI 想表达状态色但不敢用强。</div>
+    </div>
+    <div class="ai-smell">
+      <div class="smell-title">标题 emoji 滥用</div>
+      <div class="smell-body">13 个文件 <code>&lt;h1&gt;</code> 带 emoji(<code>🍽️🏃⚖️💧🥗🩺📚📸📏⏰👤🔥🍱</code>)。Apple HIG 标题是纯文字,emoji 在标题里是"AI 生成"的强烈信号。</div>
+    </div>
+    <div class="ai-smell">
+      <div class="smell-title">金银铜奖牌渐变</div>
+      <div class="smell-body"><code>food_ranking:80</code> <code>linear-gradient(135deg,#FFD700,#FFA500)</code> 金银铜渐变是游戏化设计,和健康追踪克制气质冲突。</div>
+    </div>
+    <div class="ai-smell">
+      <div class="smell-title">pulse 整卡脉冲</div>
+      <div class="smell-body"><code>weight_log_receipt:55</code> 1.5s 橙色脉冲在"记录成功"低频场景过度强调。应改为按钮态变化。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 工具感问题 -->
+<section class="section">
+  <div class="section-title"><h2>七、"工具感"问题清单(设计不足)</h2></div>
+  <h3>1. food_library.html — phpMyAdmin 即视感</h3>
+  <p>食品库本该是"浏览发现"场景,做成表格 + 分页。<code>th</code> 11px 小字 + <code>background:var(--soft)</code> 像 Excel 表头。<code>th</code> 用 sticky 但无 <code>max-height</code> 支撑,失效。hover 态仅 4% 蓝透明,不可见。</p>
+
+  <h3>2. 报告类千篇一律</h3>
+  <p><code>today_meals</code> / <code>calorie_trend</code> / <code>exercise_summary</code> 等结构都是 <code>meta-bar + h1 + sub + kpi-grid + section(table) + footer</code>,无视觉差异化。<code>th</code> 11px 像 Excel 表头不像产品。</p>
+
+  <h3>3. workout_plan_view.html 表格无边框</h3>
+  <p><code>th</code>/<code>td</code> 只有 <code>border-bottom:1px solid var(--lineS)</code>(<code>#e8e8ed</code> 几乎不可见),密集数据可读性差。</p>
+
+  <h3>4. 复制粘贴时改了 padding 没改结构</h3>
+  <p><code>crud_view</code> / <code>profile_setup</code> / <code>cron_setup</code> 开头模板几乎一字不差,但 <code>food_search</code> padding 32px vs 这三个 48px。同类页面"像但不像"。</p>
+</section>
+
+<!-- 优点 -->
+<section class="section">
+  <div class="section-title"><h2>八、已经做对的事(优点)</h2></div>
+  <ul>
+    <li><b>设计语言大方向正确</b>:90% 文件在 Apple 设计语言框架内(系统字体栈、蓝绿橙红四语义色、卡片化、轻阴影、圆角),没走 Material FAB/Drawer,也没走 Ant 密集表格。</li>
+    <li><b>数据可视化有节制</b>:SVG 折线/饼图/ring/heatmap/bar 全手写,无 Chart.js/ECharts 重库,体积小可控。<code>today_water</code> 的 ring + 7 天 bar 是全库最克制有效的可视化。</li>
+    <li><b>过程型 HTML + 复制 prompt 模式统一</b>:几乎所有向导/配置类都有 <code>.prompt-box</code> + 复制按钮,把 HTML 当"生成 prompt 的可视化编辑器",这是产品层面的正确决策。</li>
+    <li><b>移动端适配覆盖率 80%</b>:28/35 文件有 <code>@media</code> 断点。<code>weight_history</code> 有 640px + 400px 双断点。</li>
+    <li><b>tabular-nums 普遍使用</b>:90% 文件做到数字等宽对齐,数据密集型页面基本素养。</li>
+    <li><b>空状态处理</b>:多数文件有 <code>.empty</code> / <code>.log-empty</code>,不是白屏而是图标 + 标题 + 说明。</li>
+  </ul>
+</section>
+
+<!-- 改进路线图 -->
+<section class="section">
+  <div class="section-title"><h2>九、改进路线图(P0-P3)</h2></div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p0">P0</div>
+    <div class="roadmap-body">
+      <b>统一设计 token</b>:抽离 <code>_tokens.css</code> 共享文件,强制所有文件 <code>@import</code>。统一为 A 系(<code>#007aff</code> + <code>--ink/--ink2/--ink3</code> + <code>--lineS</code> + 含 SF Pro Display)。删除 C 系 <code>--purple</code>/<code>#F2F2F7</code>,删除 D 系 <code>font-size:13px</code> + <code>em/%</code> 单位。统一输入框为 A 系"灰底无边框 → focus 变白加边框"。
+      <br>理由:A 系主色是 iOS 官方值,<code>--ink2:#3c3c43</code> 对比度更好,<code>rgba</code> 边线更柔和,字体栈更准确。
+    </div>
+    <div class="roadmap-effort">1-2 天</div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p1">P1</div>
+    <div class="roadmap-body">
+      <b>统一 Hero 处理</b>:选 <code>home_dashboard</code> 的"无背景 hero + eyebrow + h1 + sub + status-pill"模式(最克制,不抢内容,移动端无需特殊处理)。删除所有 <code>linear-gradient</code> hero(<code>health_dashboard</code>/<code>food_ranking</code>/<code>exercise_review</code>/<code>plan_builder_wizard</code>/<code>weight_log_receipt</code>/<code>goal_config</code>)。删除 <code>plan_builder_wizard:84</code> 渐变文字。
+    </div>
+    <div class="roadmap-effort">0.5 天</div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p1">P1</div>
+    <div class="roadmap-body">
+      <b>统一复制按钮</b>:选 <code>weight_log_receipt</code> 的"<code>.copy-section</code> 内单按钮 + <code>.copy-preview</code> 预览"模式。删除 <code>help_center</code> summary 层 <code>.copy-main</code> 下沉设计。把 <code>help_center:176</code> 的 <code>@keyframes copySuccess</code> 弹性动画 + iOS Toast 推广到全库(把局部最优变全局最优)。
+    </div>
+    <div class="roadmap-effort">0.5 天</div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p2">P2</div>
+    <div class="roadmap-body">
+      <b>去 AI 味</b>:删除 13 个文件 <code>&lt;h1&gt;</code> 里的 emoji,改用 <code>.eyebrow</code> 小图标或纯文字。删除 <code>crud_receipt:29</code> 三色渐变改单色 <code>var(--green-soft)</code>。删除 <code>food_ranking:80</code> 金银铜渐变改实色圆圈。删除 <code>weight_log_receipt:55</code> pulse 改按钮态。
+    </div>
+    <div class="roadmap-effort">0.5 天</div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p2">P2</div>
+    <div class="roadmap-body">
+      <b>表格去工具感</b>:<code>th</code> 字号 11px→12px,<code>background:var(--soft)</code>→<code>transparent</code> + <code>border-bottom:2px solid var(--line)</code>。<code>td</code> padding 9px→14px,<code>border</code> 用 <code>var(--lineS)</code> 更轻。<code>food_library</code> 表格包进 <code>.section</code> 卡片。<code>tr:hover</code> 4% 蓝改 <code>var(--bg-soft)</code> 灰底。
+    </div>
+    <div class="roadmap-effort">1 天</div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-priority p3">P3</div>
+    <div class="roadmap-body">
+      <b>细节统一</b>:折叠箭头全库用 <code>›</code>(删 <code>help_center:93</code> 的 <code>▸</code>)。<code>review_template</code> <code>--fg2</code> 从 <code>#8E8E93</code>→<code>#6e6e73</code> 修复对比度。<code>workout_plan_view</code> <code>td border</code> 从 <code>var(--lineS)</code>→<code>var(--line)</code>。统一 <code>body padding</code> 为 <code>32px 20px 80px</code>。
+    </div>
+    <div class="roadmap-effort">0.5 天</div>
+  </div>
+
+  <div class="quote">最高 ROI:P0(统一 token)+ P1(统一 Hero + 复制按钮),2-3 天工作量,消除 80% 不一致感。P2/P3 是打磨,可后续迭代。</div>
+</section>
+
+<!-- 视觉标杆 -->
+<section class="section">
+  <div class="section-title"><h2>十、视觉标杆(统一后的最好看版本)</h2></div>
+  <p>我已设计了一个统一的今日主面板样例,位于:</p>
+  <p><code>templates/临时样例/统一主面板_视觉标杆.html</code></p>
+  <p>它融合了三个 TOP 文件的精华:</p>
+  <ul>
+    <li><b>骨架</b>:<code>home_dashboard</code> 的 4 段式(hero + KPI + todo + logs + actions)</li>
+    <li><b>大数字</b>:<code>weight_log_receipt</code> 的 56px hero-number + SVG 趋势手法(克制版,去 pulse)</li>
+    <li><b>动效</b>:<code>help_center</code> 的 <code>@keyframes copySuccess</code> 弹性复制 + iOS Toast 浮层</li>
+  </ul>
+  <p>同时严格执行统一规范:</p>
+  <ul>
+    <li>A 系 token(<code>#007aff</code> + <code>--ink/--ink2/--ink3</code> + 含 SF Pro Display)</li>
+    <li>统一 Hero(eyebrow + h1 + sub + status-pill,无渐变)</li>
+    <li>统一输入框(灰底无边框 → focus 变白加边框 + 3px 蓝阴影)</li>
+    <li>统一复制按钮(底部单按钮 + 弹性动画 + Toast)</li>
+    <li>去 emoji 入标题 / 去渐变文字 / 去三色渐变 / 去金银铜 / 去 pulse</li>
+    <li>表格卡片化 + 12px th + <code>var(--lineS)</code> 轻分隔</li>
+    <li>ring 进度 + SVG 双线趋势(蓝摄入 / 绿运动虚线)</li>
+    <li>移动端 400px 断点 + Toast 安全区适配</li>
+  </ul>
+</section>
+
+<!-- 设计师想法 -->
+<section class="section">
+  <div class="section-title"><h2>十一、设计师的私人想法</h2></div>
+
+  <h3>1. 为什么选 A 系而非 B 系</h3>
+  <p>B 系占 63%,似乎"少数服从多数"该选 B。但设计不是投票。A 系的 <code>#007aff</code> 是 iOS System Blue 官方值(开发者文档明确),<code>--ink2:#3c3c43</code> 比 B 系 <code>#6e6e73</code> 深,正文对比度更好(WCAG AA 更稳),<code>rgba(60,60,67,.12)</code> 边线比 <code>#d2d2d7</code> 实色更柔和(在白卡上有透明度过渡),字体栈含 <code>"SF Pro Display"</code> 更准确(SF Pro 是 Apple 当前屏幕字体)。A 系是"对的",B 系是"多的"。</p>
+
+  <h3>2. help_center 是个矛盾体</h3>
+  <p>它既是 TOP 1(动效体系最完整、安全区适配最细),又是"全局不统一的元凶"(自成 D 系,<code>font-size:13px</code> + <code>em/%</code> 单位全库仅此一份)。正确做法不是"贬低它",而是<b>提取它的好实践</b>(<code>copySuccess</code> 动画、Toast、<code>safe-area-inset</code>)推广到全库,同时把它的"独立体系"(<code>13px</code> 基准、<code>em/%</code> 单位)拉回 A 系。让局部最优变全局最优。</p>
+
+  <h3>3. emoji 不是不能用,是不能用在标题里</h3>
+  <p>Apple HIG 的 <code>&lt;h1&gt;</code> 是纯文字。但 emoji 可以用在 <code>.eyebrow</code>(小标签)或 <code>.icon</code>(KPI 图标位)里,作为"语义辅助"而非"装饰"。我的样例里 KPI 仍有 emoji(<code>🔥🏃⚖️📉</code>),但标题是纯文字"今日概况"。这是 Apple 的做法 —— emoji 是 label 的修饰,不是 title 的主角。</p>
+
+  <h3>4. 渐变不是不能用,是不能"不可见地用"</h3>
+  <p><code>plan_builder_wizard</code> 的深灰渐变文字、<code>weight_log_receipt</code> 的 radial 光晕,都是"加了但看不见"的 CSS 噪音。如果渐变要存在,它必须可见且有意义 —— 比如 <code>today_water</code> 的 ring 进度色从蓝到绿的过渡,是"达标"的视觉信号。不可见的渐变就该删掉,减少 CSS 体积。</p>
+
+  <h3>5. "工具感"比"AI 味"更难治</h3>
+  <p>AI 味是"加了不该加的",删掉就好(2 小时)。工具感是"少了该有的",要补结构(2 天)。<code>food_library</code> 从表格改卡片化,要重新设计信息层级;报告类从 11px 表头改 12px + 卡片包裹,要逐个文件调。这是为什么 P2 的"表格去工具感"要 1 天,比 P2"去 AI 味"的 0.5 天多一倍。</p>
+
+  <h3>6. 一个被忽视的细节:<code>font-feature-settings:"tnum"</code></h3>
+  <p>90% 文件做到了数字等宽,但 <code>help_center</code> 没有(D 系 <code>13px</code> 基准下数字对齐更敏感)。这是"数据感"的基石 —— 没有它,数字会跳动;有了它,数字像表格一样稳。统一 token 时要把这条写进 <code>_tokens.css</code> 的 <code>body</code> 里,一劳永逸。</p>
+</section>
+
+<footer>卡路里 Skill · 对抗式设计审查报告 · 采用统一 A 系规范 · 2026-07-29</footer>
+
+</div>
+<a id="backTop" href="#" title="回到顶部">↑</a>
+<script>
+const backTop=document.getElementById('backTop');
+window.addEventListener('scroll',()=>{
+  if(window.scrollY>400) backTop.classList.add('show');
+  else backTop.classList.remove('show');
+});
+backTop.addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})});
+</script>
+</body>
+</html>

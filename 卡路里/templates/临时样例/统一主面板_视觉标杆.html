@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>统一主面板 · 视觉标杆</title>
+<style>
+/* ============================================================
+   卡路里 · 统一设计系统 v1.0(视觉标杆 · 2026-07-29)
+   第一性原理:克制 = 高级。每个像素都要为信息传达服务。
+   - 主色: iOS System Blue  #007aff(唯一)
+   - 灰阶: #1d1d1d / #3c3c43 / #8e8e93(三级,对比度达标)
+   - 字体: 系统字体栈(含 SF Pro Display)
+   - 形状: 圆角 8/14/20px · 阴影极轻双层 · 留白充足
+   - 禁止: emoji 入标题 / 渐变文字 / 三色渐变 / 金银铜 / pulse
+   ============================================================ */
+:root{
+  --bg:#ffffff;
+  --bg-soft:#f5f5f7;
+  --bg-section:#fafafa;
+  --card:#ffffff;
+  --ink:#1d1d1d;
+  --ink2:#3c3c43;
+  --ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);
+  --lineS:rgba(60,60,67,.06);
+  --accent:#007aff;
+  --accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;
+  --green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;
+  --orange-soft:rgba(255,149,0,.10);
+  --red:#ff3b30;
+  --red-soft:rgba(255,59,48,.10);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --shadow-lg:0 2px 8px rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.06);
+  --r-sm:8px;
+  --r:14px;
+  --r-lg:20px;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg-section);
+  color:var(--ink);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-feature-settings:"tnum","ss01";
+}
+.wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+
+/* ====== HERO(统一 · 无渐变 · eyebrow+h1+sub+status-pill) ====== */
+.hero{
+  padding:32px 28px 28px;
+  margin-bottom:20px;
+}
+.hero .eyebrow{
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.5px;
+  color:var(--accent);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.hero h1{
+  font-size:32px;
+  font-weight:700;
+  letter-spacing:-.4px;
+  line-height:1.2;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.hero .sub{
+  font-size:15px;
+  color:var(--ink3);
+  font-weight:400;
+}
+.hero .status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 12px;
+  border-radius:999px;
+  background:var(--green-soft);
+  color:var(--green);
+  font-size:13px;
+  font-weight:600;
+  margin-top:12px;
+}
+.hero .status-pill.pending{
+  background:var(--orange-soft);
+  color:var(--orange);
+}
+.hero .status-pill::before{
+  content:'';
+  width:6px;height:6px;
+  border-radius:50%;
+  background:currentColor;
+}
+
+/* ====== HERO 数字卡(融合 weight_log_receipt 的 64px 大数字手法) ====== */
+.hero-number{
+  background:var(--card);
+  border-radius:var(--r-lg);
+  padding:28px 32px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+  border:1px solid var(--lineS);
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:24px;
+  align-items:center;
+}
+.hero-number .left .label{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink3);
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  margin-bottom:6px;
+}
+.hero-number .big{
+  font-size:56px;
+  font-weight:700;
+  letter-spacing:-1.2px;
+  line-height:1;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+}
+.hero-number .big .unit{
+  font-size:20px;
+  font-weight:500;
+  color:var(--ink3);
+  margin-left:6px;
+}
+.hero-number .left .meta{
+  font-size:13px;
+  color:var(--ink2);
+  margin-top:8px;
+}
+.hero-number .ring{
+  width:88px;height:88px;
+  position:relative;
+}
+.hero-number .ring svg{transform:rotate(-90deg)}
+.hero-number .ring .pct{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ink);
+}
+
+/* ====== KPI GRID ====== */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+.kpi{
+  background:var(--card);
+  border-radius:var(--r);
+  padding:20px 18px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+  transition:transform .2s var(--ease),box-shadow .2s var(--ease);
+}
+.kpi:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--shadow);
+}
+.kpi .label{
+  font-size:13px;
+  color:var(--ink3);
+  font-weight:500;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.kpi .icon{
+  width:18px;height:18px;
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  font-size:13px;
+}
+.kpi .main{
+  display:flex;
+  align-items:baseline;
+  gap:3px;
+}
+.kpi .value{
+  font-size:28px;
+  font-weight:700;
+  letter-spacing:-.7px;
+  color:var(--ink);
+  font-feature-settings:"tnum";
+  line-height:1;
+}
+.kpi .unit{
+  font-size:14px;
+  color:var(--ink3);
+  font-weight:500;
+}
+.kpi .detail{
+  font-size:12px;
+  color:var(--ink3);
+  margin-top:8px;
+}
+.kpi .badge{
+  display:inline-block;
+  font-size:11px;
+  font-weight:600;
+  padding:2px 8px;
+  border-radius:6px;
+  margin-left:auto;
+}
+.kpi .badge.good{background:var(--green-soft);color:var(--green)}
+.kpi .badge.ok{background:var(--accent-soft);color:var(--accent)}
+.kpi .badge.warn{background:var(--orange-soft);color:var(--orange)}
+.kpi .badge.bad{background:var(--red-soft);color:var(--red)}
+
+/* ====== SECTION(通用卡片块) ====== */
+.section{
+  background:var(--card);
+  border-radius:var(--r-lg);
+  padding:24px 28px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--lineS);
+}
+.section-title{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+.section-title h2{
+  font-size:17px;
+  font-weight:600;
+  letter-spacing:-.2px;
+  color:var(--ink);
+}
+.section-title .hint{
+  font-size:12px;
+  color:var(--ink3);
+}
+
+/* ====== TREND(融合 weight_log_receipt 的 SVG 趋势) ====== */
+.trend-svg{
+  width:100%;
+  height:180px;
+  display:block;
+}
+.trend-stats{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-top:16px;
+}
+.trend-stat{
+  padding:12px 14px;
+  background:var(--bg-soft);
+  border-radius:10px;
+}
+.trend-stat .label{
+  font-size:11px;
+  color:var(--ink3);
+  margin-bottom:4px;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+.trend-stat .value{
+  font-size:18px;
+  font-weight:700;
+  font-feature-settings:"tnum";
+}
+.trend-stat .value.good{color:var(--green)}
+.trend-stat .value.warn{color:var(--orange)}
+
+/* ====== TODO LIST ====== */
+.todo-list{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
+.todo-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:11px 14px;
+  border-top:1px solid var(--lineS);
+}
+.todo-row:first-child{border-top:none}
+.todo-row .check{
+  width:20px;height:20px;
+  border-radius:50%;
+  border:1.5px solid var(--line);
+  display:inline-flex;
+  align-items:center;justify-content:center;
+  flex-shrink:0;
+  color:transparent;
+  font-size:13px;
+  background:var(--bg-soft);
+  transition:all .2s var(--ease);
+}
+.todo-row.done .check{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+  transform:scale(1.05);
+}
+.todo-row .body{flex:1}
+.todo-row .label{
+  font-size:14px;
+  font-weight:500;
+  color:var(--ink);
+}
+.todo-row.done .label{
+  color:var(--ink3);
+  text-decoration:line-through;
+}
+.todo-row .meta{
+  font-size:11.5px;
+  color:var(--ink3);
+  margin-top:2px;
+}
+.todo-row .priority{
+  font-size:10.5px;
+  font-weight:600;
+  padding:3px 8px;
+  border-radius:999px;
+}
+.todo-row .priority.high{background:var(--red-soft);color:var(--red)}
+.todo-row .priority.medium{background:var(--orange-soft);color:var(--orange)}
+.todo-row .priority.low{background:var(--bg-soft);color:var(--ink3)}
+.todo-empty{
+  text-align:center;
+  padding:20px;
+  color:var(--ink3);
+  font-size:14px;
+}
+
+/* ====== LOG LIST ====== */
+.log-list{display:flex;flex-direction:column}
+.log-row{
+  display:grid;
+  grid-template-columns:44px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:12px 0;
+  border-top:1px solid var(--lineS);
+}
+.log-row:first-child{border-top:none}
+.log-row .name{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:15px;
+  color:var(--ink);
+  font-weight:500;
+}
+.log-row .name-nutri{
+  font-size:11.5px;
+  color:var(--ink3);
+  margin-left:6px;
+}
+.log-row .time{
+  font-size:13px;
+  color:var(--ink3);
+  font-feature-settings:"tnum";
+  font-family:"SF Mono",monospace;
+}
+.log-row .cal{
+  font-size:13px;
+  font-weight:500;
+  font-feature-settings:"tnum";
+  white-space:nowrap;
+}
+.log-row .cal-intake{color:var(--accent)}
+.log-row .cal-burn{color:var(--green)}
+.log-empty{
+  text-align:center;
+  padding:20px;
+  color:var(--ink3);
+  font-size:13px;
+}
+.log-section{margin-bottom:16px}
+.log-section:last-child{margin-bottom:0}
+.log-section-title{
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink3);
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  margin:0 0 4px 4px;
+}
+
+/* ====== 统一输入框(A 系:灰底无边框 → focus 变白加边框) ====== */
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:14px;
+}
+.field label{
+  font-size:13px;
+  font-weight:500;
+  color:var(--ink2);
+}
+.field input,.field select,.field textarea{
+  background:var(--bg-soft);
+  border:1px solid transparent;
+  border-radius:var(--r-sm);
+  padding:11px 14px;
+  font-size:15px;
+  color:var(--ink);
+  font-family:inherit;
+  transition:all .2s var(--ease);
+  width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;
+  background:var(--card);
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft);
+}
+.field input::placeholder{color:var(--ink3)}
+
+/* ====== 统一复制按钮(融合 help_center 弹性动画) ====== */
+.cmd-list{display:flex;flex-direction:column;gap:8px}
+.cmd-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  background:var(--bg-soft);
+  border-radius:var(--r-sm);
+  font-family:"SF Mono",monospace;
+  font-size:12.5px;
+  color:var(--ink2);
+  border:1px solid transparent;
+  transition:all .15s var(--ease);
+}
+.cmd-row:hover{
+  border-color:var(--line);
+  background:var(--card);
+}
+.cmd-row .label{
+  font-family:inherit;
+  font-size:14px;
+  font-weight:600;
+  color:var(--ink);
+  min-width:84px;
+  flex-shrink:0;
+}
+.cmd-row .cmd{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.copy-mini{
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:3px 10px;
+  font-size:11px;
+  color:var(--ink2);
+  cursor:pointer;
+  font-family:inherit;
+  transition:all .2s var(--ease);
+}
+.copy-mini:hover{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+.copy-mini.copied{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+  animation:copySuccess .45s var(--ease-spring);
+}
+@keyframes copySuccess{
+  0%{transform:scale(1)}
+  40%{transform:scale(1.12)}
+  100%{transform:scale(1)}
+}
+.copy-all{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--ink);
+  color:#fff;
+  border-radius:999px;
+  padding:8px 16px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  margin-top:8px;
+  transition:all .2s var(--ease);
+}
+.copy-all:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.copy-all.copied{
+  background:var(--green);
+  animation:copySuccess .45s var(--ease-spring);
+}
+
+/* ====== 统一 Toast(融合 help_center iOS 通知浮层) ====== */
+.toast{
+  position:fixed;
+  bottom:24px;left:50%;
+  transform:translateX(-50%) translateY(120%);
+  background:var(--ink);
+  color:#fff;
+  padding:12px 20px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:500;
+  box-shadow:var(--shadow-lg);
+  z-index:9999;
+  transition:transform .35s var(--ease-spring);
+  pointer-events:none;
+  white-space:nowrap;
+  max-width:90vw;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ====== EMPTY / FOOTER ====== */
+.empty{
+  text-align:center;
+  padding:48px 20px;
+  background:var(--card);
+  border-radius:var(--r-lg);
+  border:1px solid var(--lineS);
+}
+.empty .icon{font-size:40px;margin-bottom:12px;color:var(--ink3);opacity:.5}
+.empty h3{font-size:17px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.empty p{font-size:13px;color:var(--ink3)}
+
+footer{
+  text-align:center;
+  color:var(--ink3);
+  font-size:12px;
+  margin-top:32px;
+  padding-top:20px;
+  border-top:1px solid var(--lineS);
+}
+
+#backTop{
+  position:fixed;
+  bottom:24px;right:24px;
+  width:42px;height:42px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border:1px solid var(--line);
+  color:var(--ink);
+  text-decoration:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:600;
+  box-shadow:var(--shadow);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s var(--ease);
+}
+#backTop.show{opacity:1;pointer-events:auto}
+
+@media (max-width:640px){
+  .wrap{padding:20px 16px 60px}
+  .hero{padding:24px 20px 20px}
+  .hero h1{font-size:26px}
+  .hero-number{grid-template-columns:1fr;padding:22px 20px}
+  .hero-number .big{font-size:44px}
+  .hero-number .ring{width:72px;height:72px;margin:0 auto}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .section{padding:18px 20px}
+  .trend-stats{grid-template-columns:1fr}
+}
+@media (max-width:400px){
+  .kpi-grid{grid-template-columns:1fr}
+  .toast{left:12px;right:12px;transform:translateY(120%);max-width:none}
+  .toast.show{transform:translateY(0)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO(统一:eyebrow+h1+sub+status-pill,无渐变) -->
+<header class="hero">
+  <div class="eyebrow">卡路里</div>
+  <h1>今日概况</h1>
+  <div class="sub">2026-07-29 · 健康指标 · 待办与最近记录</div>
+  <div class="status-pill pending">2 项待办</div>
+</header>
+
+<!-- HERO 数字卡(融合 weight_log_receipt 大数字 + ring 进度) -->
+<div class="hero-number">
+  <div class="left">
+    <div class="label">今日摄入</div>
+    <div class="big">1,640<span class="unit">卡 / 2,000</span></div>
+    <div class="meta">还可吃 360 卡 · 距目标 82%</div>
+  </div>
+  <div class="ring">
+    <svg width="88" height="88" viewBox="0 0 88 88">
+      <circle cx="44" cy="44" r="38" fill="none" stroke="var(--bg-soft)" stroke-width="8"/>
+      <circle cx="44" cy="44" r="38" fill="none" stroke="var(--accent)" stroke-width="8"
+        stroke-dasharray="238.76" stroke-dashoffset="43" stroke-linecap="round"/>
+    </svg>
+    <div class="pct">82%</div>
+  </div>
+</div>
+
+<!-- KPI GRID (4 维) -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="label"><span class="icon">🔥</span>摄入<span class="badge warn">82%</span></div>
+    <div class="main"><span class="value">1,640</span><span class="unit">卡</span></div>
+    <div class="detail">目标 2,000 · 合规 6/7 天</div>
+  </div>
+  <div class="kpi">
+    <div class="label"><span class="icon">🏃</span>运动<span class="badge good">85%</span></div>
+    <div class="main"><span class="value">420</span><span class="unit">卡</span></div>
+    <div class="detail">6/7 天 · 连续 4 天</div>
+  </div>
+  <div class="kpi">
+    <div class="label"><span class="icon">⚖️</span>体重<span class="badge good">↓</span></div>
+    <div class="main"><span class="value">68.2</span><span class="unit">kg</span></div>
+    <div class="detail">-1.3kg · 最近 07-28</div>
+  </div>
+  <div class="kpi">
+    <div class="label"><span class="icon">📉</span>缺口<span class="badge ok">适中</span></div>
+    <div class="main"><span class="value">−780</span><span class="unit">卡</span></div>
+    <div class="detail">理论 0.10 kg/周</div>
+  </div>
+</div>
+
+<!-- TREND(融合 weight_log_receipt SVG 趋势,克制配色) -->
+<section class="section">
+  <div class="section-title">
+    <h2>近 7 天热量趋势</h2>
+    <span class="hint">蓝 = 摄入 · 绿 = 运动</span>
+  </div>
+  <svg class="trend-svg" viewBox="0 0 800 180" preserveAspectRatio="none">
+    <line x1="0" y1="45" x2="800" y2="45" stroke="var(--lineS)" stroke-width="1"/>
+    <line x1="0" y1="90" x2="800" y2="90" stroke="var(--lineS)" stroke-width="1"/>
+    <line x1="0" y1="135" x2="800" y2="135" stroke="var(--lineS)" stroke-width="1"/>
+    <polyline points="50,60 200,80 350,50 500,90 650,70 800,55"
+      fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="50,180 50,60 200,80 350,50 500,90 650,70 800,55 800,180"
+      fill="var(--accent-soft)"/>
+    <polyline points="50,140 200,130 350,120 500,115 650,125 800,110"
+      fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4"/>
+    <circle cx="800" cy="55" r="5" fill="var(--accent)"/>
+    <circle cx="800" cy="55" r="9" fill="var(--accent)" opacity=".2"/>
+  </svg>
+  <div class="trend-stats">
+    <div class="trend-stat"><div class="label">日均摄入</div><div class="value">1,720</div></div>
+    <div class="trend-stat"><div class="label">日均运动</div><div class="value good">385</div></div>
+    <div class="trend-stat"><div class="label">缺口</div><div class="value warn">−780</div></div>
+  </div>
+</section>
+
+<!-- TODO LIST -->
+<section class="section">
+  <div class="section-title">
+    <h2>今日待办</h2>
+    <span class="hint">2 项待完成</span>
+  </div>
+  <div class="todo-list">
+    <div class="todo-row done">
+      <span class="check">✓</span>
+      <div class="body">
+        <div class="label">记录饮食</div>
+        <div class="meta">已记录 4 条</div>
+      </div>
+      <span class="state"></span>
+    </div>
+    <div class="todo-row">
+      <span class="check"></span>
+      <div class="body">
+        <div class="label">记录饮水</div>
+        <div class="meta">今日未记录</div>
+      </div>
+      <span class="priority high">高</span>
+    </div>
+    <div class="todo-row done">
+      <span class="check">✓</span>
+      <div class="body">
+        <div class="label">记录运动</div>
+        <div class="meta">已记录 1 条</div>
+      </div>
+      <span class="state"></span>
+    </div>
+    <div class="todo-row">
+      <span class="check"></span>
+      <div class="body">
+        <div class="label">记录体重</div>
+        <div class="meta">今日未记录</div>
+      </div>
+      <span class="priority medium">中</span>
+    </div>
+  </div>
+</section>
+
+<!-- RECENT LOGS -->
+<section class="section">
+  <div class="section-title">
+    <h2>最近记录</h2>
+    <span class="hint">最近 5 条</span>
+  </div>
+  <div class="log-section">
+    <div class="log-section-title">饮食</div>
+    <div class="log-list">
+      <div class="log-row">
+        <div class="time">08:30</div>
+        <div class="name">燕麦牛奶<span class="name-nutri">蛋白 12g</span></div>
+        <div class="cal cal-intake">+320 卡</div>
+      </div>
+      <div class="log-row">
+        <div class="time">12:15</div>
+        <div class="name">鸡胸肉沙拉<span class="name-nutri">蛋白 35g</span></div>
+        <div class="cal cal-intake">+480 卡</div>
+      </div>
+      <div class="log-row">
+        <div class="time">15:00</div>
+        <div class="name">苹果<span class="name-nutri">蛋白 0g</span></div>
+        <div class="cal cal-intake">+95 卡</div>
+      </div>
+      <div class="log-row">
+        <div class="time">18:45</div>
+        <div class="name">三文鱼便当<span class="name-nutri">蛋白 28g</span></div>
+        <div class="cal cal-intake">+745 卡</div>
+      </div>
+    </div>
+  </div>
+  <div class="log-section">
+    <div class="log-section-title">运动</div>
+    <div class="log-list">
+      <div class="log-row">
+        <div class="time">07:00</div>
+        <div class="name">慢跑 30 分钟<span class="name-nutri">30 分钟</span></div>
+        <div class="cal cal-burn">−420 卡</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 统一输入框示例(A 系规范) -->
+<section class="section">
+  <div class="section-title">
+    <h2>快速记录</h2>
+    <span class="hint">输入即触发 AI 识别</span>
+  </div>
+  <div class="field">
+    <label>刚吃了什么</label>
+    <input type="text" placeholder="例:一杯拿铁 + 两个鸡蛋">
+  </div>
+  <div class="field">
+    <label>分量(可选)</label>
+    <input type="text" placeholder="例:中杯 / 100g">
+  </div>
+</section>
+
+<!-- QUICK ACTIONS(融合 help_center 弹性复制动画) -->
+<section class="section">
+  <div class="section-title">
+    <h2>快捷命令</h2>
+    <span class="hint">点击单条复制 · 点击底部复制全部</span>
+  </div>
+  <div class="cmd-list" id="cmdList">
+    <div class="cmd-row">
+      <span class="label">记吃了</span>
+      <span class="cmd">记吃了 鸡胸肉沙拉 300克</span>
+      <button class="copy-mini" onclick="copyCmd(this,'记吃了 鸡胸肉沙拉 300克')">复制</button>
+    </div>
+    <div class="cmd-row">
+      <span class="label">记喝水</span>
+      <span class="cmd">记喝水 250毫升</span>
+      <button class="copy-mini" onclick="copyCmd(this,'记喝水 250毫升')">复制</button>
+    </div>
+    <div class="cmd-row">
+      <span class="label">记运动</span>
+      <span class="cmd">记运动 慢跑 30分钟</span>
+      <button class="copy-mini" onclick="copyCmd(this,'记运动 慢跑 30分钟')">复制</button>
+    </div>
+    <div class="cmd-row">
+      <span class="label">查热量</span>
+      <span class="cmd">查热量 三文鱼便当</span>
+      <button class="copy-mini" onclick="copyCmd(this,'查热量 三文鱼便当')">复制</button>
+    </div>
+  </div>
+  <button class="copy-all" id="copyAllBtn" onclick="copyAll()">复制所有命令</button>
+</section>
+
+<footer>卡路里 Skill · 统一设计系统 v1.0 · 视觉标杆 · 2026-07-29</footer>
+
+</div>
+<a id="backTop" href="#" title="回到顶部">↑</a>
+<div class="toast" id="toast">已复制</div>
+
+<script>
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastT);
+  window.__toastT=setTimeout(()=>t.classList.remove('show'),1800);
+}
+function copyCmd(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.classList.add('copied');
+    btn.textContent='已复制';
+    showToast('已复制: '+text);
+    setTimeout(()=>{
+      btn.classList.remove('copied');
+      btn.textContent='复制';
+    },1500);
+  });
+}
+function copyAll(){
+  const cmds=['记吃了 鸡胸肉沙拉 300克','记喝水 250毫升','记运动 慢跑 30分钟','查热量 三文鱼便当'];
+  navigator.clipboard.writeText(cmds.join('\n')).then(()=>{
+    const btn=document.getElementById('copyAllBtn');
+    btn.textContent='✓ 已复制全部';
+    btn.classList.add('copied');
+    showToast('已复制 4 条命令');
+    setTimeout(()=>{
+      btn.textContent='复制所有命令';
+      btn.classList.remove('copied');
+    },2000);
+  });
+}
+const backTop=document.getElementById('backTop');
+window.addEventListener('scroll',()=>{
+  if(window.scrollY>400) backTop.classList.add('show');
+  else backTop.classList.remove('show');
+});
+backTop.addEventListener('click',e=>{e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})});
+</script>
+</body>
+</html>

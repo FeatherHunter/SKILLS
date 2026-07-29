@@ -1,10 +1,10 @@
-"""lib.processing — v1.1 单视频处理 + 拼接共享逻辑
+﻿"""lib.processing — v1.1 单视频处理 + 拼接共享逻辑
 
 从 executor.py v0.7 抽出，适配 v1.1 路径约定（00_智剪/粗加工/）。
 
-对外函数:
-    build_video_filter(ops, voice, ...) -> (fc_str, mappings)
-    build_cut_middle_filter(cm, target_w, target_h) -> (fc_str, mappings)
+对外函数(v3.0 · D7 修订):
+    build_video_filter(video_ops, voice, ...) -> (fc_str, mappings)
+        注:video_ops 是 videos[i].video_ops,不含 5 个 deprecated op(trim-head/tail/cut-middle/pin-range/target-duration)
     process_video(video, workspace, output_dir, ...) -> (output_path, profile_dict, success)
     xfade_concat(a_path, b_path, transition, output_path, ...) -> output_path
     concatenate_simple(paths, output_path, ...) -> output_path
@@ -147,16 +147,26 @@ def build_rotation_filter(rotation):
 def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
                        rotation=0, aspect_handling='aspect-fit'):
     """为单个视频构建 ffmpeg filter_complex。
+    v3.0:ops 是 video_ops(整段 op)。5 个该消失的 op(trim-head/tail/cut-middle/pin-range/target-duration)
+    不应出现在此处(改由 time_segments 边界表达,D7)。
 
     aspect_handling:
       - 'aspect-fill': 旋转并填满，内容最大显示（可能裁切边缘）
       - 'aspect-fit':  保持原始显示方向（不旋转），加黑边适配目标比例
     """
+    # v3.0 防御:assert 这 5 个 deprecated op 不在 video_ops 里
+    deprecated_in_video_ops = [op for op in ['trim-head', 'trim-tail', 'cut-middle', 'pin-range', 'target-duration']
+                               if ops.get(op)]
+    if deprecated_in_video_ops:
+        raise ValueError(
+            f"video_ops 包含已废弃 op {deprecated_in_video_ops} (D7)。"
+            f"改由 time_segments 边界表达。"
+        )
+
     target_w, target_h = TARGET_RESOLUTIONS.get(target_aspect, (1920, 1080))
 
-    if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        return build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
-                                        rotation=rotation, aspect_handling=aspect_handling)
+    # cut-middle 兼容层已删除(D7):build_video_filter 入口 assert 阻止
+    # 5 个 deprecated op 出现
 
     # 旋转处理（两模式差异在 scale/pad 策略，不在 counter-rotate）
     # - rotation≠0 → 永远 counter-rotate（让像素变正确方向）
@@ -171,61 +181,10 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
     v_filters = []
     a_filters = []
 
-    if 'pin-range' in ops and ops['pin-range'].get('on'):
-        pr = ops['pin-range']
-        # 解析段列表: ranges 优先,fallback 到 from/to
-        pin_segs = []
-        if 'ranges' in pr and isinstance(pr['ranges'], list) and pr['ranges']:
-            for r in pr['ranges']:
-                if not isinstance(r, dict):
-                    continue
-                f = parse_time(r.get('from', '0')) or 0
-                t = parse_time(r.get('to', '0')) or 0
-                if t > f:
-                    pin_segs.append((f, t))
-        else:
-            f = parse_time(pr.get('from', '0')) or 0
-            t = parse_time(pr.get('to', '0')) or 0
-            if t <= f:
-                t = f + 1  # 向后兼容:单段 from/to 错误时 fallback +1s
-            pin_segs.append((f, t))
-
-        if pin_segs:
-            # 排序 + 合并重叠
-            pin_segs.sort()
-            merged = [pin_segs[0]]
-            for f, t in pin_segs[1:]:
-                if f <= merged[-1][1]:
-                    merged[-1] = (merged[-1][0], max(merged[-1][1], t))
-                else:
-                    merged.append((f, t))
-
-            # 多段 → 必须用 filter_complex concat;v_filters/a_filters 是单 filter 链,放不下
-            # 标记"需要特殊处理",在下面 build filter 时把 pin-range 拆出来
-            # 简单方案: 多段时退到 aspect-fit 路径,直接生成 filter_complex
-            # 这里先记录,稍后处理
-            if len(merged) > 1:
-                # 多段 pin-range: 用 build_pin_range_multi 替代普通 filter 链
-                return _build_pin_range_multi_filter(merged, target_w, target_h,
-                                                     rotation=rotation,
-                                                     aspect_handling=aspect_handling)
-            else:
-                # 单段保持原行为
-                f, t = merged[0]
-                v_filters.append(f"trim=start={f}:end={t},setpts=PTS-STARTPTS")
-                a_filters.append(f"atrim=start={f}:end={t},asetpts=PTS-STARTPTS")
-
-    if 'trim-head' in ops and ops['trim-head'].get('on'):
-        sec = ops['trim-head'].get('sec', 0) or 0
-        if sec > 0:
-            v_filters.append(f"trim=start={sec},setpts=PTS-STARTPTS")
-            a_filters.append(f"atrim=start={sec},asetpts=PTS-STARTPTS")
-    if 'trim-tail' in ops and ops['trim-tail'].get('on'):
-        sec = ops['trim-tail'].get('sec', 0) or 0
-        if sec > 0 and input_duration and input_duration > sec:
-            keep = input_duration - sec
-            v_filters.append(f"trim=duration={keep},setpts=PTS-STARTPTS")
-            a_filters.append(f"atrim=duration={keep},asetpts=PTS-STARTPTS")
+    # D7:trim-head / trim-tail / cut-middle / pin-range / target-duration 不再在 video_ops
+    # 语义改由 time_segments 边界表达(在 process_single_video 单独处理)
+    # build_video_filter 入口已 assert 阻止这 5 个 op 出现
+    # 这里不再有任何 5-op 的处理代码
 
     factor = None
     if 'speed-up' in ops and ops['speed-up'].get('on'):
@@ -299,249 +258,6 @@ def build_video_filter(ops, voice, input_duration=None, target_aspect='16:9',
     return fc, ["[v]", "[a]"]
 
 
-def build_cut_middle_filter(cm, target_w=1920, target_h=1080, rotation=0, aspect_handling='aspect-fit'):
-    """cut-middle 的 pillarbox 专用 filter。
-
-    aspect_handling:
-      - 'aspect-fill': 旋转并填满（rotation != 0 → counter-rotate）
-      - 'aspect-fit':  保持原始显示方向（rotation == 0 → 不旋转）
-
-    支持单段（向后兼容）和多段（v1.3 新增）：
-      单段：{on: True, from: "00:00:05", to: "00:00:10"}
-      多段：{on: True, ranges: [
-        {from: "00:00:05", to: "00:00:10"},
-        {from: "00:00:20", to: "00:00:25"},
-      ]}
-    多段含义：切掉所有列出的段，剩余的 concat 起来。
-    """
-    # 解析段列表：ranges 优先；fallback 到 from/to
-    segments = []
-    if 'ranges' in cm and isinstance(cm['ranges'], list) and cm['ranges']:
-        for r in cm['ranges']:
-            if not isinstance(r, dict):
-                continue
-            f = parse_time(r.get('from', '0')) or 0
-            t = parse_time(r.get('to', '0')) or 0
-            if t > f:
-                segments.append((f, t))
-    else:
-        f = parse_time(cm.get('from', '0')) or 0
-        t = parse_time(cm.get('to', '0')) or 0
-        if t > f:
-            segments.append((f, t))
-
-    if not segments:
-        return None, None
-
-    # 排序 + 合并重叠/相邻段（保持多段语法简洁，输出仍最优）
-    segments.sort()
-    merged = [segments[0]]
-    for f, t in segments[1:]:
-        if f <= merged[-1][1]:
-            merged[-1] = (merged[-1][0], max(merged[-1][1], t))
-        else:
-            merged.append((f, t))
-
-    # 段数 = len(merged) + 1（每段切掉后剩余的连续段）
-    keep_count = len(merged) + 1
-
-    # counter-rotate（rotation≠0 时永远需要，让像素变正确方向）
-    # transpose 后 PTS 会被改变（持续时间不变，但时间戳映射变了），
-    # 所以 transpose 后必须立即 setpts=PTS-STARTPTS 归零，再 trim/setpts/scale/pad
-    if rotation != 0:
-        rot_filter = build_rotation_filter(rotation)
-        rot_pre = f"{rot_filter}setpts=PTS-STARTPTS,"
-    else:
-        rot_filter = ''
-        rot_pre = ''
-
-    # scale/pad 策略（两模式差异）
-    # - aspect-fill: scale 填满目标（可能裁切），无黑边
-    # - aspect-fit:  scale 适配，加黑边居中
-    if aspect_handling == 'aspect-fill':
-        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1"
-    else:
-        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-
-    # 构建每段的 trim
-    # keep 段: 第一个是 [0, first_cut_start], 中间是 [prev_cut_end, next_cut_start], 最后是 [last_cut_end, EOF]
-    boundaries = [0.0] + [t for _, t in merged]  # 起点列表
-    # 注意: trim=end 不指定 = 到 EOF
-    v_chains = []
-    a_chains = []
-    for i in range(keep_count):
-        seg_start = boundaries[i]
-        # 最后一段不指定 end（到 EOF）
-        if i < keep_count - 1:
-            seg_end = merged[i][0]  # 下一个 cut 起点
-            v_chains.append(
-                f"[0:v]{rot_pre}trim=start={seg_start}:end={seg_end},setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
-            )
-            a_chains.append(
-                f"[0:a]atrim=start={seg_start}:end={seg_end},asetpts=PTS-STARTPTS[a{i+1}]"
-            )
-        else:
-            v_chains.append(
-                f"[0:v]{rot_pre}trim=start={seg_start}:,setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
-            )
-            a_chains.append(
-                f"[0:a]atrim=start={seg_start}:,asetpts=PTS-STARTPTS[a{i+1}]"
-            )
-
-    # concat
-    v_labels = "".join(f"[v{i+1}]" for i in range(keep_count))
-    a_labels = "".join(f"[a{i+1}]" for i in range(keep_count))
-
-    fc = (
-        ";".join(v_chains) + ";"
-        + ";".join(a_chains) + ";"
-        + f"{v_labels}concat=n={keep_count}:v=1:a=0[outv];"
-        + f"{a_labels}concat=n={keep_count}:v=0:a=1[outa]"
-    )
-    return fc, ["[outv]", "[outa]"]
-
-
-def _build_pin_range_multi_filter(segments, target_w, target_h, rotation=0, aspect_handling='aspect-fit'):
-    """pin-range 多段专用 filter: 保留所有列出的段,concat 起来。
-
-    segments: 已排序 + 已合并的 [(from, to), ...] 列表
-    aspect_handling:
-      - 'aspect-fill': 旋转并填满（rotation != 0 → counter-rotate）
-      - 'aspect-fit':  保持原始显示方向（rotation == 0 → 不旋转）
-    """
-    if not segments:
-        return None, None
-
-    n = len(segments)
-
-    # counter-rotate
-    if rotation != 0:
-        rot_filter = build_rotation_filter(rotation)
-        rot_pre = f"{rot_filter}setpts=PTS-STARTPTS,"
-    else:
-        rot_pre = ''
-
-    # scale/pad 策略
-    if aspect_handling == 'aspect-fill':
-        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=increase:force_divisible_by=2,setsar=1"
-    else:
-        rotoscale = f"scale={target_w}:{target_h}:force_original_aspect_ratio=decrease,pad={target_w}:{target_h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1"
-
-    v_chains = []
-    a_chains = []
-    for i, (f, t) in enumerate(segments):
-        v_chains.append(
-            f"[0:v]{rot_pre}trim=start={f}:end={t},setpts=PTS-STARTPTS,{rotoscale}[v{i+1}]"
-        )
-        a_chains.append(
-            f"[0:a]atrim=start={f}:end={t},asetpts=PTS-STARTPTS[a{i+1}]"
-        )
-
-    v_labels = "".join(f"[v{i+1}]" for i in range(n))
-    a_labels = "".join(f"[a{i+1}]" for i in range(n))
-
-    fc = (
-        ";".join(v_chains) + ";"
-        + ";".join(a_chains) + ";"
-        + f"{v_labels}concat=n={n}:v=1:a=0[outv];"
-        + f"{a_labels}concat=n={n}:v=0:a=1[outa]"
-    )
-    return fc, ["[outv]", "[outa]"]
-
-
-# ========== 处理单个视频 ==========
-
-def process_video(video, workspace, output_path, target_aspect='16:9', aspect_handling='aspect-fit'):
-    """处理单个视频。返回 (output_path, profile_dict, success)。
-
-    Args:
-        video: intent.videos[i] dict
-        workspace: 工作区根目录
-        output_path: 输出 mp4 路径
-        target_aspect: 目标比例
-    """
-    idx = video.get('index', '?')
-    file = video.get('file', '')
-    src = workspace / file
-    ops = video.get('ops', {}) or {}
-    voice = video.get('voice', 'keep')
-
-    if not src.exists():
-        return output_path, {"index": idx, "error": "source missing"}, False
-
-    # v1.3.1 兼容: 统一转 Path
-    output_path = Path(output_path) if not isinstance(output_path, Path) else output_path
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    info = get_video_info(src)
-    duration = info['duration']
-    width, height = info['width'], info['height']
-    rotation = info['rotation']
-    is_portrait = bool(width and height and width < height)
-
-    target_w, target_h = TARGET_RESOLUTIONS.get(target_aspect, (1920, 1080))
-
-    # fast-path: 无 op + voice keep + 像素匹配 + 无 rotation → 直接复制
-    # 重要：如果源带 rotation metadata，fast-path 会保留 rotation，导致播放器二次旋转
-    # 所以 has_rotation_metadata=True 必须走完整转码清掉
-    if (not has_any_op(ops) and voice == 'keep'
-            and width == target_w and height == target_h
-            and rotation == 0):
-        try:
-            shutil.copy2(src, output_path)
-            return output_path, {
-                "index": idx,
-                "source_file": file,
-                "source_resolution": f"{width}x{height}",
-                "has_rotation_metadata": False,
-                "rotation_applied": 0,
-                "applied_ops": [],
-                "output_resolution": f"{width}x{height}",
-                "output_duration": duration,
-                "voice_mode": voice,
-                "output_path": str(output_path),
-                "fast_path": True,
-            }, True
-        except OSError:
-            pass  # 退回完整转码
-
-    # cut-middle 特殊
-    if 'cut-middle' in ops and ops['cut-middle'].get('on') and not ('pin-range' in ops and ops['pin-range'].get('on')):
-        fc, mappings = build_cut_middle_filter(ops['cut-middle'], target_w, target_h,
-                                               rotation=rotation, aspect_handling=aspect_handling)
-    else:
-        fc, mappings = build_video_filter(ops, voice,
-                                          input_duration=duration,
-                                          target_aspect=target_aspect,
-                                          rotation=rotation,
-                                          aspect_handling=aspect_handling)
-
-    if fc is None:
-        fc = "[0:v]copy[v];anullsrc=r=44100:cl=stereo[a]"
-        mappings = ["[v]", "[a]"]
-
-    cmd = ['ffmpeg', '-y', '-noautorotate', '-i', str(src)]  # v1.1 修复：不自动应用 metadata，由 build_video_filter 的 transpose 精确控制；patch tkhd 在末尾清 metadata
-    cmd.extend(['-filter_complex', fc])
-    for m in mappings:
-        cmd.extend(['-map', m])
-    cmd.extend(['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23'])
-    cmd.extend(['-bsf:v', 'h264_metadata=rotate=0'])
-    cmd.extend(['-metadata:s:v:0', 'rotate=0'])  # 双重保险：清 container 级 metadata
-    cmd.extend(['-c:a', 'aac', '-b:a', '128k'])
-    cmd.extend(['-max_interleave_delta', '100M'])
-    cmd.extend(['-threads', '0'])
-    # BUGFIX (智剪工坊 v1.1.1): 加 -pix_fmt yuv420p 强制 + -movflags +faststart
-    # 单视频也走 faststart + 强制 yuv420p,统一所有输出的兼容性。
-    cmd.extend(['-vsync', 'cfr', '-r', '30'])
-    cmd.extend(['-pix_fmt', 'yuv420p'])
-    cmd.extend(['-movflags', '+faststart'])
-    cmd.append(str(output_path))
-
-    rc, _, err = run(cmd, timeout=600)
-    if rc != 0:
-        return output_path, {
-            "index": idx, "error": f"ffmpeg failed: {(err or '')[:200]}"
-        }, False
-
     if not output_path.exists() or output_path.stat().st_size < 1000:
         return output_path, {
             "index": idx, "error": "output too small"
@@ -589,6 +305,18 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
         print(f'   ⚠️ patch tkhd 失败（不影响主产物）: {e}')
 
     out_info = get_video_info(output_path)
+    # v3.0:记录 time_segments 信息到 profile(供 stage2 编排层参考)
+    segments_summary = []
+    for seg in time_segments:
+        if seg.get('ops'):
+            segments_summary.append({
+                "id": seg.get('id'),
+                "label": seg.get('label', ''),
+                "start_sec": seg.get('start_sec'),
+                "end_sec": seg.get('end_sec'),
+                "ops": [k for k, op in seg.get('ops', {}).items()
+                        if isinstance(op, dict) and op.get('on')]
+            })
     profile = {
         "index": idx,
         "source_file": file,
@@ -597,6 +325,7 @@ def process_video(video, workspace, output_path, target_aspect='16:9', aspect_ha
         "rotation_applied": rotation,
         "applied_ops": [k for k, op in ops.items()
                         if isinstance(op, dict) and op.get('on')],
+        "applied_segment_ops": segments_summary,
         "output_resolution": f"{out_info['width']}x{out_info['height']}",
         "output_duration": round(out_info['duration'], 2) if out_info['duration'] else None,
         "voice_mode": voice,

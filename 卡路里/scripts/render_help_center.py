@@ -16,7 +16,9 @@
 """
 import argparse
 import json
+import shutil
 import sys
+from datetime import datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -76,7 +78,6 @@ def mirror_to_root(help_html_path: Path, skill_dir: Path) -> Path | None:
 
     # 备份旧 mirror(若存在)
     if mirror.exists():
-        from datetime import datetime
         ts = datetime.now().strftime('%Y%m%d')
         backup = archive_dir / f'卡路里_SKILL镜像_{ts}.html'
         n = 1
@@ -90,7 +91,6 @@ def mirror_to_root(help_html_path: Path, skill_dir: Path) -> Path | None:
 
     # 复制最新 HELP → mirror
     try:
-        import shutil
         shutil.copy2(str(help_html_path), str(mirror))
         return mirror
     except Exception as e:

@@ -62,14 +62,32 @@ def check_home_dashboard_prompts() -> list[str]:
 
 
 def check_help_center_payload() -> list[str]:
-    """HELP HTML __DATA__.triggers vs _triggers(若 calorie_html/ 有最新 HELP render)"""
+    """HELP HTML __DATA__.triggers vs _triggers(优先 $SKILLS_DB_PATH/calorie_html/, fallback SKILL_DIR/calorie_html/)"""
     from _triggers import TRIGGERS
     import json
+    import os
     import re
 
-    help_htmls = sorted((SKILL_DIR / 'calorie_html').glob('卡路里_HELP_*.html'), reverse=True)
+    # tier 1: 环境变量 $SKILLS_DB_PATH(手册 §4.1 · v2.4.8 设计)
+    candidates = []
+    skills_db = os.environ.get('SKILLS_DB_PATH')
+    if skills_db:
+        candidates.append(Path(skills_db) / 'calorie_html')
+    # tier 2: 仓库内 calorie_html/(传统路径,供 CI 与开发期使用)
+    candidates.append(SKILL_DIR / 'calorie_html')
+
+    help_htmls = []
+    for d in candidates:
+        if d.exists():
+            found = sorted(d.glob('卡路里_HELP_*.html'), reverse=True)
+            if found:
+                help_htmls = found
+                break
     if not help_htmls:
-        return []  # 无 render 产物,skip(由 check_decision_matrix 守护存在性)
+        return [
+            '⚠ help_center surface 跳过:未找到任何 卡路里_HELP_<TS>.html 产物。',
+            '   修复:python scripts/render_help_center.py  先生成产物,再跑 check_prompt_soak。',
+        ]
     latest = help_htmls[0]
     text = latest.read_text(encoding='utf-8')
     m = re.search(r'<script>\s*window\.__DATA__\s*=\s*(\{.*?\});?\s*</script>', text, re.DOTALL)

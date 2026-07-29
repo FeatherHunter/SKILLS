@@ -112,12 +112,15 @@ def _resolve_template_paths(tmpl_field: str) -> list[Path]:
 
 
 def _expected_mock_name(renderer_name: str | None) -> str | None:
-    """render_<name>.py → mock_<name>.json(只去 render_ 前缀)"""
+    """render_<name>.py → mock_<name>.json(去 render_ 前缀,去 .py 后缀,加 .json)"""
     if not renderer_name:
         return None
     if not renderer_name.startswith("render_"):
         return None
-    return f"mock_{renderer_name[len('render_'):]}"
+    base = renderer_name[len('render_'):]                # today_water.py
+    if base.endswith('.py'):
+        base = base[:-3]                                  # today_water
+    return f"mock_{base}.json"                            # mock_today_water.json
 
 
 def main() -> int:

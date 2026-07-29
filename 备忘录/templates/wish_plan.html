@@ -26,8 +26,8 @@ button.copy{background:#eef5ff;color:var(--blue2)}
 button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 8px 24px rgba(52,199,89,.36);z-index:9000}
 input[type=date]{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:15px;font-family:inherit}
 .wish{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
-.wish.off{opacity:.5}
-.wish.off .content{text-decoration:line-through;color:var(--fg3)}
+.wish.on{opacity:.5}
+.wish.on .content{text-decoration:line-through;color:var(--fg3)}
 .wish-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .wish-id{color:var(--blue2);font-weight:800;font-size:15px;min-width:48px}
 .wish-check{flex:none}
@@ -128,7 +128,7 @@ function renderList(){
   list.innerHTML=items().map(renderWish).join('');
   items().forEach(w=>{
     const cb=document.getElementById('cb_'+w.id);
-    if(cb) cb.addEventListener('change',e=>{document.getElementById('wish_'+w.id).classList.toggle('off',!e.target.checked)});
+    if(cb) cb.addEventListener('change',e=>{document.getElementById('wish_'+w.id).classList.toggle('on',e.target.checked)});
   });
 }
 
@@ -170,7 +170,7 @@ function applyGlobalToSelected(){
 function selectAll(on){
   items().forEach(w=>{
     const cb=document.getElementById('cb_'+w.id);
-    if(cb){cb.checked=on;document.getElementById('wish_'+w.id).classList.toggle('off',!on)}
+    if(cb){cb.checked=on;document.getElementById('wish_'+w.id).classList.toggle('on',on)}
   });
 }
 
@@ -180,7 +180,7 @@ function onlyUnset(){
     if(cb){
       const on=!w.current_due;
       cb.checked=on;
-      document.getElementById('wish_'+w.id).classList.toggle('off',!on);
+      document.getElementById('wish_'+w.id).classList.toggle('on',on);
     }
   });
 }

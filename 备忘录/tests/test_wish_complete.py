@@ -261,5 +261,7 @@ class TestWishCompleteHtml:
         assert 'class="wish ${cls}"' not in body, \
             "v1.0.4 article 不应再依赖 selected 渲染 .off class"
         # 但 event handler 应保留:用户切换 checkbox 时才动态加 .off
-        assert "classList.toggle('off'" in text, \
-            "用户切换 checkbox 时 .off class 切换逻辑应保留"
+        # v1.1.5 grill R2 视觉反转:已勾选=line-through(opacity .5)
+        # 旧 v1.0.4 注释说"未勾选 = .off" · 反用户心智;新约定是已勾选=.on
+        assert "classList.toggle('on'" in text, \
+            "v1.1.5 用户切换 checkbox 时 .on class 切换逻辑(已勾选 = line-through)"

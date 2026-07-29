@@ -144,28 +144,44 @@
 - `\n` → 用 ffmpeg textfile + 多 drawtext,或多段 drawtext
 - emoji / 繁体 / 特殊符号 → 用 `escape_drawtext()`(`video_opening.py` 已实现)
 
-## 4. cover.type 路由（阶段 4，AI 必读）
+## 4. cover.type 路由(阶段 4, AI 必读 · D1 修订)
 
 | 值 | 路由 | 备注 |
 |---|---|---|
-| `ai`（推荐）| `ai_cover.py` | atomic CLI：按 cover.prompt AI 生图 |
-| `text` | `ai_cover.py --text-only` | atomic CLI：纯文字封面（v1.3 已支持 `cover/cover_text.py` 子目录）|
-| `image` | （**当前不支持**）| AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text" |
+| `ai`(推荐) | `scripts/ai/cover.py` + `cover.prompt` | atomic CLI:按 `cover.prompt` AI 生图。详见 `references/AI封面-生图叠字两步法.md` |
+| `text` | `scripts/ai/cover.py --text-only` | atomic CLI:纯文字封面 |
+| `image` | **`scripts/ai/cover_compose/`(D1 实装)** | 多图拼版。**必须**有 `cover.images[]` 字段(D1)。详见 `references/封面合成-多图拼版PIL.md` |
 
-**`cover.type='image'` 当前不支持**（智剪工坊-意图编辑.html 没字段承载图片路径）—— AI 必须告知用户"当前不支持 type=image，请改用 ai 或 text"。
+**`cover.type='image'`**(2026-07-29 修订) ~~当前不支持~~ → **已实装**:
+- HTML 编辑器已增加 `<select>` 的 `image` 选项(D1)
+- HTML 编辑器已增加 `cover.images[]` 多图上传器
+- AI 看到 `cover.type='image'` 时,**必须**读 `cover.images[]` 取图片路径列表
+- 缺 `cover.images[]` = 校验失败(HTML `validateIntent` + JSON Schema 都拒绝)
 
-## 5. AI 文本解析 → 路由表匹配 → 用户确认（E 象限, v1.3 改）
+## 5. AI 文本解析 → 路由表匹配 → 用户确认(E 象限, v1.3 改 · D2 强化)
 
-**关键原则**: 自由文本字段（`notes` / `overall_intent` / `ending.prompt` 等）必须先匹配路由表：
+**关键原则**: 自由文本字段(`videos[i].video_ops.notes` / `project.overall_intent` / **`ending.template` + `ending.prompt`** 等)必须先匹配路由表:
 
-1. **读**: AI 读 `videos[i].notes` / `project.overall_intent`
+1. **读**: AI 读 `videos[i].video_ops.notes` / `project.overall_intent` / **`ending.template` + `ending.prompt`**
 2. **匹配**: AI 在路由表里找匹配
    - 匹配成功: 用对应 CLI 处理
    - 匹配失败: **不假装支持**,明确告诉用户"智剪工坊当前不支持 X"
 3. **确认**: AI 必须**先告知用户**匹配结果,等用户确认再调 CLI
 
-**反例**: 用户说"加个转场", AI 直接默认 `fade` → 错（用户可能想要 `zoom-in`）
+**ending 是典型 E 象限场景**(2026-07-29 强化,D2):
+- `ending.template` 是用户选中的效果模板完整描述文本(人话)
+- `ending.prompt` 是用户补充说明
+- AI **必须把 template + prompt 解析为 CLI 步骤**,不能直接复制到视频
+- **典型示例**:
+  - template="BGM 渐弱到静音,画面同步淡出" → `video_fade.py --fade-out N` + `audio/mix.py --bgm-fade-out`
+  - template="切黑屏后烧『下期见』停留 3 秒" → `video_freeze.py --padding-mode black` + `video_opening.py add`
+  - template="倒计时数字 5-4-3-2-1" → 多次 `video_opening.py add`(分段烧数字)
+
+**反例**: 用户说"加个转场", AI 直接默认 `fade` → 错(用户可能想要 `zoom-in`)
 **正例**: 用户说"加个转场", AI 列出 9 种 type 让用户选 → 对
+
+**反例(新增,ending 场景)**: template="BGM 渐弱", AI 直接在视频最后贴一行"BGM 渐弱" 文字 → 错(应解析为音频淡出 + 视频淡出)
+**正例(新增)**: template="BGM 渐弱", AI 推荐 `video_fade.py --fade-out 5` + `audio/mix.py --bgm-fade-out 5`,等用户确认后执行
 
 ## 6. 字段不在表里怎么办?
 
@@ -178,7 +194,7 @@
 AI 看到模糊需求时**必须问用户**,不擅自决定。常见模糊:
 
 - "想要动感" → 问：配 BGM？转场？调色？速度？
-- "视频太长了" → 问：剪头剪尾？cut-middle？target-duration？
+- "视频太长了" → 问：保留哪几段(time_segments 框选)？还是删掉首尾(time_segments 边界)?
 - "加滤镜" → 问：color preset 选哪个？
 - "开头加段音乐" → 问：什么音乐？音量多少？全段还是开头？
 

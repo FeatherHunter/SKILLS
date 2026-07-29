@@ -2070,6 +2070,7 @@
             <option value="">— 待定 —</option>
             <option value="ai">AI 生成</option>
             <option value="text">纯文字</option>
+            <option value="image">多图拼版(2026-07-29 实装)</option>
           </select>
         </div>
         <div class="field" id="cover-prompt-field" style="display:none">
@@ -2078,26 +2079,43 @@
             placeholder="封面 prompt 建议（直接复制改）：
 16:9 横屏封面，扁平插画风。画面主体一罐易拉罐造型的『白色可乐』——罐身经典红白配色，但罐口倒出乳白色液体（暗示其实是水）。罐子旁边放一个汉堡，上方标注『184g / 450 大卡』。背景上半部分大字『184 → 139.9』，下方小字『Day 2 · 4个月挑战』。整体：扁平设计 + 渐变 + 干净米白底色。不要真实照片，全插画。"></textarea>
         </div>
+        <!-- v3.0 (D1):cover.type=image 时必须填写 images[] -->
+        <div class="field" id="cover-images-field" style="display:none">
+          <label>拼版图片 <span class="hint">多图拼版(D1)。点选添加,选中图片将保存为 cover.images[]</span></label>
+          <div class="op-file">
+            <button type="button" data-cover-img-pick>选图片(可多选)</button>
+            <span class="op-file-name empty" data-cover-img-display>未选</span>
+          </div>
+          <input type="hidden" data-path="cover.images-json" id="cover-images-json" value="">
+        </div>
       </section>
 
       <section>
         <h2>结尾</h2>
-        <div class="field">
-          <label>类型 <span class="hint">最后 5-10 秒</span></label>
-          <select data-path="ending.type">
-            <option value="">— 待定 —</option>
-            <option value="voice-narration">口播</option>
-            <option value="music-fade">音乐淡出</option>
-            <option value="cut-to-black">切黑</option>
-            <option value="next-episode-promo">下集预告</option>
-          </select>
-        </div>
-        <div class="field" id="ending-prompt-field" style="display:none">
-          <label>描述 / 脚本 <span class="hint">口播词 / 具体要求</span></label>
-          <textarea data-path="ending.prompt" rows="2"
-            placeholder="如：'今天就到这里，明天见'"></textarea>
-        </div>
-      </section>
+        <!-- v3.0 (D2 + D3):ending 重构成 V4(template + prompt),抛弃 6 选 1 enum。
+  10 个效果模板(标题 + 描述,UX 规则:粗看标题 + 细看描述)。
+  保存时:ending.template = 选中模板的人话描述文本,ending.prompt = 用户自由输入。 -->
+      <div class="field">
+        <label>效果模板 <span class="hint">选一个(心里有数);描述让你看清单心里有数</span></label>
+        <select data-path="ending.template" id="ending-template-select">
+          <option value="">— 未选 —</option>
+          <option value="BGM 渐弱到静音,画面同步淡出,平稳收尾">🎵 音乐淡出 — BGM 渐弱到静音,画面同步淡出,平稳收尾</option>
+          <option value="画面停在最后一帧 3 秒,声音拉长同步,像定调">🖼️ 末帧定格 — 画面停在最后一帧 3 秒,声音拉长同步,像定调</option>
+          <option value="画面 0.5 秒内切黑屏,声音同步静音,干脆利落">⬛ 突然切黑 — 画面 0.5 秒内切黑屏,声音同步静音,干脆利落</option>
+          <option value="画面 + BGM 同步淡出 5 秒,烧一行字(如『下次见』)">🎵💬 淡出 + 烧字 — 画面 + BGM 同步淡出 5 秒,烧一行字(如『下次见』)</option>
+          <option value="切黑屏后烧预告文字(如『下期见』),停留 3 秒">⬛💬 切黑 + 预告卡片 — 切黑屏后烧预告文字(如『下期见』),停留 3 秒</option>
+          <option value="末帧定格 3 秒,同步烧 1-2 行主题字(电影感)">🖼️💬 定格 + 烧字 — 末帧定格 3 秒,同步烧 1-2 行主题字(电影感)</option>
+          <option value="切黑屏后烧倒计时数字 5-4-3-2-1(综艺/悬念感)">⏱️ 倒计时钩子 — 切黑屏后烧倒计时数字 5-4-3-2-1(综艺/悬念感)</option>
+          <option value="切黑屏 + 烧你写的预告文字(下期/明天见/明年回归等)">📋 自由预告卡 — 切黑屏 + 烧你写的预告文字(下期/明天见/明年回归等)</option>
+          <option value="画面自然结束,叠加口播音频(如『今天到这儿,明天见』)">🎙️ 站外口播收尾 — 画面自然结束,叠加口播音频(如『今天到这儿,明天见』)</option>
+          <option value="画面自然结束,烧『感谢观看 · 点赞关注』停留 2 秒">🙏 感谢观看 — 画面自然结束,烧『感谢观看 · 点赞关注』停留 2 秒</option>
+        </select>
+      </div>
+      <div class="field" id="ending-prompt-field" style="display:none">
+        <label>补充说明 <span class="hint">可选。对模板的微调(如时长、口播词)</span></label>
+        <textarea data-path="ending.prompt" rows="2"
+          placeholder="如:停留 5 秒,口播『今天到这儿,明天见』"></textarea>
+      </div>
       <!-- v1.22 锚点导航条 (Apple HIG minimap) - 右侧细线 + 圆点 + 当前可视区高亮 -->
       <aside class="anchor-rail" id="anchor-rail" aria-label="页面锚点导航"></aside>
 
@@ -2158,7 +2176,8 @@
     const saveBtn = document.getElementById('save-btn');
     const pickBtn = document.getElementById('pick-folder-btn');
     const coverTypeSel = document.querySelector('[data-path="cover.type"]');
-    const endingTypeSel = document.querySelector('[data-path="ending.type"]');
+    // v3.0 (D2):ending 改为 template + prompt,不再有 ending.type select
+    const endingTemplateSel = document.querySelector('[data-path="ending.template"]');
     const coverPromptField = document.getElementById('cover-prompt-field');
     const endingPromptField = document.getElementById('ending-prompt-field');
     const aspectRatioSel = document.getElementById('aspect-ratio-select');
@@ -2191,7 +2210,12 @@
     pickBtn.addEventListener('click', pickFolder);
 
     coverTypeSel.addEventListener('change', () => { coverPromptField.style.display = coverTypeSel.value ? 'block' : 'none'; });
-    endingTypeSel.addEventListener('change', () => { endingPromptField.style.display = endingTypeSel.value ? 'block' : 'none'; });
+    // v3.0 (D2):ending 改用 template select,监听显示 prompt 输入框
+    if (endingTemplateSel) {
+      endingTemplateSel.addEventListener('change', () => {
+        endingPromptField.style.display = endingTemplateSel.value ? 'block' : 'none';
+      });
+    }
     aspectRatioSel.addEventListener('change', () => {
       aspectRatioCustom.style.display = aspectRatioSel.value === 'custom' ? 'block' : 'none';
       aspectHandlingField.style.display = aspectRatioSel.value ? 'block' : 'none';
@@ -2276,8 +2300,20 @@
         const fileHandle = await dirHandle.getFileHandle('intent.json');
         const file = await fileHandle.getFile();
         existingIntent = JSON.parse(await file.text());
-        // v2.0:数据迁移 + 校验
-        existingIntent = migrateLegacyIntent(existingIntent);
+        // v3.0 (D4):不静默迁移,直接拒绝老 schema
+        //   如果 schema_version != "3.0",弹窗让用户删除重填
+        if (!existingIntent?._meta?.schema_version || existingIntent._meta.schema_version !== '3.0') {
+          const sv = existingIntent?._meta?.schema_version || '(缺失)';
+          showToast(`intent.json schema_version=${sv} 不被支持,智剪工坊当前只支持 schema_version="3.0"。请删除该文件后重新创建。`);
+          alert(
+            `intent.json 不兼容。\n\n` +
+            `检测到 schema_version=${sv}。\n` +
+            `智剪工坊当前只支持 schema_version="3.0"。\n\n` +
+            `请删除现有 intent.json,刷新页面,用编辑器重新创建。`
+          );
+          existingIntent = null;
+          throw new Error('schema_version 不兼容');
+        }
         const loadErrors = validateIntent(existingIntent);
         if (loadErrors.length > 0) {
           console.warn('intent.json 校验失败:', loadErrors);
@@ -2605,7 +2641,8 @@
           if (val != null) el.value = val;
         }
         if (coverTypeSel.value) coverPromptField.style.display = 'block';
-        if (endingTypeSel.value) endingPromptField.style.display = 'block';
+        // v3.0 (D2):用 ending.template select 替代 endingTypeSel
+        if (endingTemplateSel && endingTemplateSel.value) endingPromptField.style.display = 'block';
         if (aspectRatioSel.value === 'custom') aspectRatioCustom.style.display = 'block';
         if (aspectRatioSel.value) { aspectHandlingField.style.display = 'block'; updateAspectHandlingHint(); }
 
@@ -4575,10 +4612,10 @@
       // 封面(v1.17:未选不算'必填缺失',改 🟡)
       rows.push({ k: '封面类型', v: c.type || '(未选/待定)', missing: false, invalid: c.type === 'image', path: 'cover.type' });
       if (c.type) rows.push({ k: '封面描述', v: c.prompt, missing: c.type === 'ai' && !c.prompt, path: 'cover.prompt' });
-      // 结尾(v1.17:未选不算'必填缺失',改 🟡)
-      const endingValid = ['fade', 'freeze', 'next-day', 'next-episode-promo', 'next-week', 'text'].includes(e.type);
-      rows.push({ k: '结尾类型', v: e.type || '(未选/待定)', missing: false, invalid: e.type && !endingValid, path: 'ending.type' });
-      if (e.type) rows.push({ k: '结尾描述', v: e.prompt, missing: !e.prompt, path: 'ending.prompt' });
+      // v3.0 (D2):ending 改为 template + prompt,不再用 endingValid enum 白名单
+      const endingTemplate = e.template || '(未选/待定)';
+      rows.push({ k: '结尾模板', v: endingTemplate.length > 50 ? endingTemplate.slice(0, 50) + '...' : endingTemplate, missing: false, path: 'ending.template' });
+      if (e.prompt) rows.push({ k: '结尾补充', v: e.prompt, missing: false, path: 'ending.prompt' });
       // 工作区
       rows.push({ k: '工作区', v: data._meta?.workspace, missing: false, path: null });
 
@@ -4701,12 +4738,11 @@
       // 1. 必填缺失
       if (!p.name && !p.title) issues.push({ level: 'red', msg: '项目名/标题未填(AI 不知项目主题) — 建议:填项目代号或一句话主题' });
       if (!p.overall_intent) issues.push({ level: 'red', msg: '总意图未填(AI 调性来源) — 建议:例 "今天拍的是早餐+晨跑,主调温暖治愈,结尾安静"' });
-      // 2. cover/ending 非法值
+      // v3.0 (D1 + D2):cover.image 已实装,ending 不再有 type enum
       const c = data.cover || {};
-      if (c.type === 'image') issues.push({ level: 'red', msg: 'cover.type=image 不支持(请改 ai 或 text)' });
+      // cover.type=image 已支持(不再报错)
       const e = data.ending || {};
-      const endingValid = ['fade', 'freeze', 'next-day', 'next-episode-promo', 'next-week', 'text'];
-      if (e.type && !endingValid.includes(e.type)) issues.push({ level: 'red', msg: `ending.type=${e.type} 不在 6 种合法值中` });
+      // ending 不再有 type 字段,不再做 enum 校验
       // 2.5 封面/结尾未选(v1.17 新增 🟡 提示,非阻塞)
       if (!c.type) issues.push({ level: 'yellow', msg: '封面类型未选(默认待定) — 建议:ai / text 二选一' });
       if (!e.type) issues.push({ level: 'yellow', msg: '结尾类型未选(默认待定) — 建议:fade / freeze / text 等 6 种之一' });
@@ -4861,16 +4897,17 @@
       const now = new Date().toISOString();
       const oldRev = existingIntent?._meta?.revision || 0;
       const newRev = oldRev + 1;
-      const oldHistory = Array.isArray(existingIntent?._meta?.history) ? existingIntent._meta.history : [];
-      const newHistory = [...oldHistory, { revision: newRev, timestamp: now }];
+      // v3.0 (D5):_meta.history[] 已删除,无消费者、自引用陷阱
       const data = {
         _meta: {
-          tool: '智剪工坊', version: '0.7',
+          tool: '智剪工坊',
+          schema_version: '3.0',                              // v3.0 (D1) 必须写,Python 校验锚点
+          tool_version: '2.135',                              // v3.0 (D1) 可选,产品版本(与 schema_version 区分)
           revision: newRev,
           created: existingIntent?._meta?.created || now,
           updated: now,
           workspace: dirHandle?.name || '(unknown)',
-          history: newHistory,
+          // history: 已删除(D5)
         },
         project: {}, output: {}, sequences: [], videos: [], cover: {}, ending: {},
       };
@@ -4951,13 +4988,16 @@
 
         // 时间段(从 SegmentState 读)
         // v2.25:空 segments = 整段保留,不要在 JSON 里塞"整段保留"占位段
+        // v3.0 (bug 修复):过滤 excluded 段(spec §6.2:已删段不入 JSON)
         const st = SegmentState.getAll(i);
-        v.time_segments = st.segments.map(s => ({
-          id: s.id, label: s.label || '',
-          start_sec: s.start_sec, end_sec: s.end_sec,
-          ...(s.ops && Object.keys(s.ops).length ? { ops: s.ops } : {}),
-          ...(s.note ? { note: s.note } : {})
-        }));
+        v.time_segments = st.segments
+          .filter(s => !s.excluded)
+          .map(s => ({
+            id: s.id, label: s.label || '',
+            start_sec: s.start_sec, end_sec: s.end_sec,
+            ...(s.ops && Object.keys(s.ops).length ? { ops: s.ops } : {}),
+            ...(s.note ? { note: s.note } : {})
+          }));
         // 注释:空数组是合法的(整段保留);AI 工作流看到空数组 = 整段输出
         data.videos.push(v);
       });
@@ -4976,8 +5016,9 @@
         const notesEl = card.querySelector(`[data-video="${i}.notes"]`);
         if (notesEl && notesEl.value.trim()) ops.notes = notesEl.value.trim();
 
-        const legacyOps = ['trim-head','trim-tail','cut-middle','pin-range','target-duration',
-          'speed-up','slow-down','reverse','mute','fade-in','fade-out','color',
+        // v3.0 (D7):5 个该消失的 op(trim-head/tail/cut-middle/pin-range/target-duration)
+        //   全部移除:语义改由 time_segments 边界表达
+        const legacyOps = ['speed-up','slow-down','reverse','mute','fade-in','fade-out','color',
           'add-bgm','replace-audio','opening-text','insert-image',
           'asr-transcribe','asr-burn','asr-speaker',
           'audio-denoise','audio-separate','audio-diarize','voice-filler-removed'];
@@ -5212,7 +5253,7 @@
             const baseId = `seg_${videoIndex + 1}_`;
             const left = { ...s, end_sec: start, id: `${s.id}_L`, ops: { ...(s.ops||{}) } };
             // v2.119:mid 默认加 user op 标记为用户段(N3 判定有彩色,不会 muted 灰色)
-            const mid = { id: `${baseId}new_${Date.now()}`, label: '', start_sec: start, end_sec: end, ops: { user: { on: true, note: '' } } };
+            const mid = { id: `${baseId}new_${Date.now()}`, label: '', start_sec: start, end_sec: end, ops: {} };
             const right = { ...s, start_sec: end, id: `${s.id}_R`, ops: { ...(s.ops||{}) } };
             const newSegs = [];
             if (left.end_sec > left.start_sec) newSegs.push(left);

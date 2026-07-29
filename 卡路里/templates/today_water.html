@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 今日饮水</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#007aff;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --ring-track:#e5e5ea;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,122,255,.15); color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  /* Hero: ring + today ml */
+  .hero { display:flex; align-items:center; gap:32px; padding:8px 4px; }
+  .ring-wrap { position:relative; width:200px; height:200px; flex-shrink:0; }
+  .ring { transform:rotate(-90deg); }
+  .ring-track { stroke:var(--ring-track); fill:none; }
+  .ring-fill  { stroke:var(--accent);    fill:none; stroke-linecap:round; transition:stroke-dashoffset 0.4s ease; }
+  .ring-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+  .ring-center .num   { font-size:42px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--fg); letter-spacing:-.02em; }
+  .ring-center .unit  { font-size:13px; color:var(--fg3); margin-top:2px; }
+  .ring-center .pct   { font-size:12px; font-weight:600; margin-top:6px; padding:2px 9px; border-radius:10px; background:rgba(0,122,255,.15); color:var(--accent); }
+  .ring-center .pct.over { background:rgba(52,199,89,.15); color:var(--good); }
+  .ring-center .pct.low  { background:rgba(255,149,0,.15); color:var(--warn); }
+  .hero-side { flex:1; }
+  .hero-side .target-line { font-size:13px; color:var(--fg2); margin-bottom:10px; }
+  .hero-side .target-line strong { color:var(--fg); font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .hero-side .remain-line { font-size:14px; color:var(--fg3); }
+  .hero-side .remain-line.done { color:var(--good); font-weight:600; }
+  /* Bar chart */
+  .bar-chart { display:flex; align-items:flex-end; gap:8px; height:160px; padding:8px 4px 0; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
+  .bar { width:100%; max-width:38px; background:linear-gradient(180deg, #4da3ff 0%, var(--accent) 100%);
+         border-radius:6px 6px 2px 2px; min-height:3px; transition:height 0.3s; }
+  .bar.today { background:linear-gradient(180deg, #34c759 0%, #2aa84a 100%); }
+  .bar.over  { background:linear-gradient(180deg, #34c759 0%, #2aa84a 100%); }
+  .bar-val   { font-size:11px; color:var(--fg2); font-weight:600; font-variant-numeric:tabular-nums; }
+  .bar-day   { font-size:11px; color:var(--fg3); }
+  .bar-day.today { color:var(--accent); font-weight:700; }
+  .bar-axis  { margin-top:8px; height:1px; background:var(--border); }
+  /* Footer */
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px;
+            display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px;
+         cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width: 640px) {
+    body { padding:24px 16px 60px; }
+    .hero { flex-direction:column; gap:18px; }
+    .ring-wrap { width:180px; height:180px; }
+    .ring-center .num { font-size:36px; }
+    .section { padding:18px 18px; }
+    .bar-chart { gap:4px; }
+    .bar-col { font-size:10px; }
+    .bar-val, .bar-day { font-size:10px; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">报告型 · 进度环 + 7 天</div>
+</div>
+
+<h1>💧 今日饮水</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="section">
+  <h2>今日进度</h2>
+  <div class="hero">
+    <div class="ring-wrap">
+      <svg class="ring" width="200" height="200" viewBox="0 0 200 200">
+        <circle class="ring-track" cx="100" cy="100" r="86" stroke-width="14"/>
+        <circle class="ring-fill"  id="ringFill" cx="100" cy="100" r="86" stroke-width="14"
+                stroke-dasharray="540.35" stroke-dashoffset="540.35"/>
+      </svg>
+      <div class="ring-center">
+        <div class="num"   id="ringNum">--</div>
+        <div class="unit"  id="ringUnit">ml</div>
+        <div class="pct"   id="ringPct">--</div>
+      </div>
+    </div>
+    <div class="hero-side">
+      <div class="target-line">目标 <strong id="targetNum">--</strong> ml</div>
+      <div class="remain-line" id="remainLine">--</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>本周 7 天</h2>
+  <div class="bar-chart" id="barChart"></div>
+  <div class="bar-axis"></div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, meta } = D.data;
+  const todayMl  = summary.today_ml;
+  const targetMl = summary.target_ml;
+  const pct      = targetMl ? Math.round(todayMl / targetMl * 100) : 0;
+  const remain   = targetMl - todayMl;
+
+  document.getElementById('metaLeft').textContent = `${meta.date} · 饮水 #1`;
+  document.getElementById('sub').innerHTML = remain > 0
+    ? `查今天喝水 · ${meta.date} · 还差 <span class="pill pill-warn">${remain} ml</span>`
+    : `查今天喝水 · ${meta.date} · 已达标 <span class="pill pill-good">+${-remain} ml</span>`;
+
+  document.getElementById('ringNum').textContent  = todayMl.toLocaleString();
+  document.getElementById('targetNum').textContent = targetMl.toLocaleString();
+
+  const pctEl = document.getElementById('ringPct');
+  pctEl.textContent = pct + '%';
+  if (pct >= 100)      pctEl.className = 'pct over';
+  else if (pct < 50)   pctEl.className = 'pct low';
+
+  const remainLine = document.getElementById('remainLine');
+  if (remain > 0) {
+    remainLine.textContent = `还差 ${remain} ml(占目标 ${100 - pct}%)`;
+  } else if (remain === 0) {
+    remainLine.textContent = `已完成目标(100%)`;
+    remainLine.className = 'remain-line done';
+  } else {
+    remainLine.textContent = `超出目标 ${-remain} ml(${pct}%)`;
+    remainLine.className = 'remain-line done';
+  }
+
+  // Ring animation: stroke-dasharray / offset
+  const circumference = 2 * Math.PI * 86;
+  const offset = circumference * (1 - Math.min(1, todayMl / targetMl));
+  const ring = document.getElementById('ringFill');
+  ring.setAttribute('stroke-dasharray', circumference.toFixed(2));
+  ring.setAttribute('stroke-dashoffset', offset.toFixed(2));
+  if (pct >= 100) ring.style.stroke = 'var(--good)';
+
+  // 7-day bar chart
+  const chart  = document.getElementById('barChart');
+  const wkMl   = summary.week_ml;
+  const wkDate = summary.week_dates;
+  const maxV   = Math.max(targetMl, ...wkMl, 1);
+  const todayIso = meta.date;
+  wkMl.forEach((ml, i) => {
+    const dateStr = wkDate[i];
+    const isToday = dateStr === todayIso;
+    const h = Math.max(3, Math.round(ml / maxV * 140));
+    const over = ml > targetMl;
+    const wd = ['日','一','二','三','四','五','六'][new Date(dateStr + 'T00:00:00').getDay()];
+    chart.insertAdjacentHTML('beforeend',
+      `<div class="bar-col">` +
+      `<div class="bar-val">${ml}</div>` +
+      `<div class="bar ${isToday ? 'today' : (over ? 'over' : '')}" style="height:${h}px"></div>` +
+      `<div class="bar-day ${isToday ? 'today' : ''}">${wd}</div>` +
+      `</div>`);
+  });
+
+  document.getElementById('srcLine').textContent =
+    `📊 数据来源: calorie_data.db · food_log(💧水) · ${meta.date}`;
+  document.getElementById('copyBtn').onclick = function() {
+    const r = `今日饮水 ${meta.date}\n` +
+              `${todayMl} / ${targetMl} ml · ${pct}%\n` +
+              `本周: ${wkMl.join(' / ')} ml\n` +
+              `日期: ${wkDate.join(' / ')}`;
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

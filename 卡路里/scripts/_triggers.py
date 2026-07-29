@@ -130,9 +130,9 @@ TRIGGERS = [
         'cli': 'python scripts/calorie_tracker.py water <ml>', 'text': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了一杯水,记录饮水量。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'variants': []},
     {
-            'category': '饮食记录',     'wake_word': '查今天喝水',     'desc': '今日饮水量',
+            'category': '饮食记录',     'wake_word': '查今天喝水',     'desc': '今日饮水量(进度环 + 7 天 mini-chart)',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py summary', 'text': '请你加载技能 卡路里,执行唤醒词「查今天喝水」。\n\n我想看今天的饮水量。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_today_water.py', 'text': '请你加载技能 卡路里,执行唤醒词「查今天喝水」。\n\n我想看今天的饮水量。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'variants': []},
     {
             'category': '食品库',     'wake_word': '查热量',     'desc': '搜索食品营养成分',

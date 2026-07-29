@@ -54,6 +54,13 @@
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
   .today-row { background:rgba(0,113,227,.04); font-weight:600; }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section  { padding: 16px 20px; }
+    .table-wrap { overflow-x: auto; }
+    svg { height: 180px; }
+    td.num, th.num { font-variant-numeric: tabular-nums; }
+  }
 </style>
 </head>
 <body>
@@ -87,10 +94,12 @@
 
 <div class="section">
   <h2>每日明细</h2>
-  <table>
-    <thead><tr><th>日期</th><th>类型</th><th>实际</th><th>目标</th><th>偏差</th><th>状态</th></tr></thead>
-    <tbody id="dailyTable"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>日期</th><th>类型</th><th>实际</th><th>目标</th><th>偏差</th><th>状态</th></tr></thead>
+      <tbody id="dailyTable"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="footer">

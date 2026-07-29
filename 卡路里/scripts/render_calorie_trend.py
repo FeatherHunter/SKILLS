@@ -109,22 +109,29 @@ def build_data(start, end):
         trend_value = 0
         trend = 'flat'
 
+    s = {
+        'avg': avg,
+        'target': target,
+        'trend': trend,
+        'trend_value': trend_value,
+        'start_avg': start_avg,
+        'end_avg': end_avg,
+        'weekday_avg': weekday_avg,
+        'weekend_avg': weekend_avg,
+        'weekend_diff': weekend_diff,
+        'compliance_rate': compliance_rate,
+        'compliant_days': compliant_days,
+    }
+    # ticket 13 · 浮点精度防护(2026-07-29)
+    for k in ('trend_value', 'start_avg', 'end_avg', 'weekday_avg', 'weekend_avg', 'weekend_diff'):
+        s[k] = round(s[k], 2)
+    for s_item in series:
+        s_item['calorie'] = round(s_item['calorie'], 2)
+
     return {
         'status': 'ok',
         'data': {
-            'summary': {
-                'avg': avg,
-                'target': target,
-                'trend': trend,
-                'trend_value': trend_value,
-                'start_avg': start_avg,
-                'end_avg': end_avg,
-                'weekday_avg': weekday_avg,
-                'weekend_avg': weekend_avg,
-                'weekend_diff': weekend_diff,
-                'compliance_rate': compliance_rate,
-                'compliant_days': compliant_days,
-            },
+            'summary': s,
             'series': series,
             'meta': {
                 'start': start,

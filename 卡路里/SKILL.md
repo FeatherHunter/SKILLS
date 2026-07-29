@@ -150,6 +150,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 |---|---|---|---|
 | `templates/nutrition_label_wizard.html` | 拍营养表 | `mmx vision describe` → `add` | `scripts/render_nutrition_label.py` |
 | `templates/today_diet.html` / `today_meals.html` | 查今天吃 / 查吃的记录 | `diet.list_meals()` | `scripts/render_today_meals.py` |
+| `templates/today_water.html` | 查今天喝水(ADR-0003 · v2.4.18c) | `food_log` 中 `food_name='💧水'` 的 grams 聚合 + `daily_goal.water_goal` | `scripts/render_today_water.py [--date YYYY-MM-DD] [--mock <json>]` |
 | `templates/calorie_trend.html` | 查热量趋势 | `analysis.diet_calorie_trend(as_dict=True)` | `scripts/render_calorie_trend.py` |
 | `templates/nutrition_ratio.html` | 查营养结构 | `analysis.diet_nutrition_ratio(as_dict=True)` | `scripts/render_nutrition_ratio.py` |
 | `templates/calorie_deficit.html` | 查热量缺口 | `analysis.diet_deficit_analysis(as_dict=True)` | `scripts/render_calorie_deficit.py` |

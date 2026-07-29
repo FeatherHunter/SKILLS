@@ -201,6 +201,18 @@ UX 规则:**用户既要看到标题,也要看到描述,心里有数**。
 **md 文档层(Layer 2A)优先**,Python 编排层(Layer 2B)跟随。
 理由:md 是 AI 行为的真实契约;Python 是机器实现。AI 看 md 实现代码——先让 md 自洽,再让 Python 实现对齐 md。
 
+### D7 · 5 个该消失的 op 的处置(2026-07-29)
+
+**A · 严格删除**:`trim-head`、`trim-tail`、`cut-middle`、`pin-range`、`target-duration` 这 5 个 op **从 HTML UI checkbox 移除**,从 `video_ops` JSON 字段消失。
+语义改由 `time_segments` 边界表达:
+- `trim-head sec=N` ≡ `time_segments[0].start_sec = N`
+- `trim-tail sec=N` ≡ `time_segments[last].end_sec = duration_sec - N`
+- `cut-middle from=X to=Y` ≡ 创建相邻两个 time_segments,中间不进 JSON
+- `pin-range from=X to=Y` ≡ 单个 time_segments 区间
+- `target-duration` ≡ 拼接后时长 = 各段相加(无需声明)
+
+下游 Python(`lib/video_processing.py` 218-234, 508-509)删掉这 5 个 op 的解析逻辑。
+
 ---
 
 ## 当前项目路线(2026-07-29,用户口径)
@@ -234,22 +246,30 @@ UX 规则:**用户既要看到标题,也要看到描述,心里有数**。
 
 ## 当前阶段状态
 
-**已完成**:
+**grill-with-docs 阶段已完成**(2026-07-29)。
+
+**D1-D7 全部沉淀**:
 - D1(5 项字段定稿)
 - D2(ending V4 重构)
 - D3(10 个模板定稿)
 - D4(兼容策略)
 - D5(superpowers 归档)
+- D6(Layer 2A 优先)
+- D7(5 个该消失的 op 严格删除)
 
-**待办**(已知偏移,grill-with-docs 未覆盖):
-- 5 个该消失的 op(`trim-head`/`trim-tail`/`cut-middle`/`pin-range`/`target-duration`)的处置(A/B/C 三选一)
-- `cut-middle`/`pin-range` 的 from/to 收集 bug
-- 拆段注入的 `user` op 污染
-- 已删段未过滤
-- 段面板 `color` vs 校验白名单 `color-grade`
-- `voice-filler-removed` 连字符 vs `voice_filler_removed` 下划线
+**实现层待办**(已识别,推到 implement 阶段处理):
+- `SegmentState.addOrSplit` 注入的 `user` op 污染段 ops
+- `collectFormData` 未过滤 excluded 段
+- 段面板 `color` vs 校验白名单 `color-grade` 命名
+- `voice-filler-removed` 连字符 vs `voice_filler_removed` 下划线(D7 后部分 obsolete)
+- `_meta.tool_version` vs `_meta.schema_version` HTML 实际写入(D1 已决定)
+- 段 ID 格式 `seg_2_new_${ts}` vs 推荐格式
+- `docs/superpowers/` → `_archive/superpowers/` 实际目录移动动作
 
-**当前阶段**:grill-with-docs(语言对齐)接近完成,等用户回应"下一题"或"进入 to-spec"。
+**当前阶段 → 下一阶段**:
+- ✅ grill-with-docs(语言对齐)收官
+- ⏭️ to-spec(把 D1-D7 整合成可构建的 spec,**用户手动执行**)
+- ⏭️ to-tickets / implement(后续)
 
 ---
 

@@ -11,14 +11,14 @@
 - 场景资产:`references/scenarios.yaml`(HELP HTML 唯一事实源,29 场景 × 7 字段)
 - 参考文档:`references/`(schema.md / examples.md / cron.md)
 - HTML 模板:`templates/`(6 个:1 HELP + 1 结果型查询 + 1 同步报告 + 3 过程型向导)
-- 测试:`tests/`(13 个 test_*.py · 174 pytest 基线,入口 `pytest tests/`)
+- 测试:`tests/`(基线 pytest 入口 `pytest tests/`)
 - 工作目录:`.scratch/<feature>/`(A.4 5 文件范式:spec/verify/issues/decisions/artifacts)
 
 ## 决策文件位置
 
-- 永久 ADR → `docs/adr/0001-0005.md`(B / A / D 各阶段决策归档)
+- 永久 ADR → `docs/adr/0001-N.md`(序号持续追加,按 INDEX:ADR-0006 templates 静态扫描等)
 - 临时决策 → `.scratch/<feature>/decisions.md`(轻量 ADR,不进 docs/adr/)
-- 术语表 → `CONTEXT.md`(唤醒词 / 场景 / 4 元 / 4 段 prompt / HTML 镜像 / 场景资产 / 【待开发】)
+- 术语表 → `CONTEXT.md`(唤醒词 / 场景 / 4 元 / 4 段 prompt / HTML 镜像 / 渲染产物 / 模板静态扫描 / 搜索意图 / 场景资产 / 【待开发】)
 
 ## commit 格式
 

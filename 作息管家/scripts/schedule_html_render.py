@@ -420,9 +420,9 @@ def default_output_path(meta: dict) -> Path:
     命名格式:<中文 command>_<YYYYMMDD>_<HHMMSS>[_<N>].html(ADR-0002 Q5)
 
     ADR-0003 Q7 · 4 域分组(为将来拆模块打基础):
-      === record 域 === → 委托 record_output_path()(下方)
-      === plan 域(6 mode)=== → plan/list | plan/query | plan/receipt
-      === receipt 域 === → 由 record_output_path 处理(record-receipt* / plan-receipt*)
+      === record 域(6 mode)=== 报告型:day/range/compare/category/anomaly/detail → 委托 record_output_path()
+      === plan 域(3 mode)=== 过程型:list/preview/review → plan/list | plan/query
+      === receipt 域(5 mode)=== 回执型:record-receipt×2 + plan-receipt×3 → 由 record_output_path 处理
       === help 域 === → 由 help_render.py 独立处理,不在此处
 
     pid/rid/action/date 等语义信息保留在 payload data.meta 里,
@@ -433,7 +433,7 @@ def default_output_path(meta: dict) -> Path:
     if mode.startswith("record-"):
         return record_output_path(mode, meta)
 
-    # === plan 域(6 mode · ADR-0002 Q5 中文 command 名 · ADR-0003 Q7 分组)===
+    # === plan 域(3 mode · ADR-0002 Q5 中文 command 名 · ADR-0003 Q7 分组)===
     if mode == "list-events":
         return _naming_path(CN_COMMAND_MAP["plan_list"], "plan/list")
     if mode == "query-plans":
@@ -462,9 +462,8 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
 
     ADR-0002 Q5:全部 record/receipt 域 mode 输出中文 command 名。
     ADR-0003 Q7 · 4 域分组(为将来拆模块打基础):
-      === record 域(7 mode)=== 报告型:day/range/compare/category/anomaly/report/detail
-      === receipt 域(3 mode)=== 回执型:record-receipt / record-receipt-edit / plan-receipt
-                                  (与 plan 域共享子目录约定)
+      === record 域(6 mode)=== 报告型:day/range/compare/category/anomaly/detail(record-report 等价 record-day)
+      === receipt 域(5 mode)=== 回执型:record-receipt×2 + plan-receipt×3(与 plan 域共享子目录约定)
 
     pid/rid/action/date 等语义信息不再放 filename(避免暴露隐私 +
     避免信息冗余),这些信息保留在 payload data.meta 里。
@@ -472,7 +471,7 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
     """
     meta = meta or {}  # noqa  # 保留参数以便未来 meta 路径命名复用
 
-    # === record 域(7 mode · 报告型 · ADR-0002 Q5 中文 command 名)===
+    # === record 域(6 mode · 报告型 · ADR-0002 Q5 中文 command 名)===
     if mode == "record-day":
         return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-range":
@@ -488,7 +487,7 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-detail":
         return _naming_path(CN_COMMAND_MAP["record_detail"], "record/detail")
-    # === receipt 域(3 mode · 回执型 · record+plan 共享)===
+    # === receipt 域(5 mode · 回执型 · record+plan 共享)===
     if mode == "record-receipt":
         return _naming_path(CN_COMMAND_MAP["record_receipt"], "record/receipt")
     if mode == "record-receipt-edit":

@@ -74,6 +74,13 @@ Tested-By: pytest-pass-2026-07-29
   - e2e smoke:render-record-day / render-record-range / render-receipt / help_render 全部输出中文 command 名
   - HELP HTML toast 浏览器检查:icon + 标题 em + 详情 + 关闭按钮 + iOS 风格 CSS 全到位
   - Q5 Contract 故意跑英文 record_day → 报清晰 ValueError(契约生效)
+
+环境备注:
+  - Windows PowerShell 5.1 默认 GBK 编码会导致部分 subprocess 测试(test_amend_record_cli 等)
+    报 'gbk' codec can't decode byte 失败(28 failed),这是环境性问题(基线 861beeb 已存在,
+    非本次 diff 引入),用 `$env:PYTHONUTF8="1"; $env:PYTHONIOENCODING="utf-8"` 跑即全过。
+  - 本次未跑 Fresh Agent 黑盒测试(FAT)— Phase B 标 fresh-agent-v1 的 commits 是
+    Tested-By 标签声明(建议后续补 FAT 报告产物)。
 ```
 
 ---

@@ -140,6 +140,49 @@ def test_v2_baseline_toggle_rolling_vs_goal():
     assert result_goal["data"]["baseline_value"] == 73.0
 
 
+def test_v2_goal_sigma_uses_full_range_not_7day():
+    """01 fix: goal mode 用全程 detrended σ(不依赖时间窗)
+
+    Spec §Implementation Decisions:"goal: 全程 detrended σ(goal 不依赖时间窗)".
+    之前的实现在两种 mode 都用 7-day rolling σ(goal mode 也只用最后 7 天),
+    违反 spec. 此测试守住 fix.
+
+    数据构造:
+      - 前 7 天:85 → 90(快速减重 phase)
+      - 后 7 天:90 → 90(稳定 phase)
+    - rolling σ(后 7 天)≈ 0
+    - goal σ(全程 14 天 detrended diffs)≈ 大(因为前半段有 +5kg 跳变)
+    """
+    from analysis.weight import weight_volatility_v2
+    from unittest.mock import patch, MagicMock
+
+    test_data = (
+        [(f"2026-07-{1+i}", 85.0 + i * 0.5) for i in range(7)]  # 85.0..88.0
+        + [(f"2026-07-{8+i}", 90.0) for i in range(7)]  # 全 90
+    )
+    goal_row = (73.0,)
+
+    mock_conn = MagicMock()
+    mock_cursor = MagicMock()
+    mock_cursor.fetchall.return_value = test_data
+    mock_cursor.fetchone.return_value = goal_row
+    mock_conn.cursor.return_value = mock_cursor
+
+    with patch("analysis.weight._get_db", return_value=mock_conn):
+        result_rolling = weight_volatility_v2("2026-07-01", "2026-07-14", baseline_mode="rolling")
+        result_goal = weight_volatility_v2("2026-07-01", "2026-07-14", baseline_mode="goal")
+
+    sigma_rolling = result_rolling["data"]["baseline_sigma"]
+    sigma_goal = result_goal["data"]["baseline_sigma"]
+    # rolling(后 7 天 diff 全 0)→ 0
+    # goal(全程 13 个 diff:前半段 +0.5,后半段 0)→ σ > 0
+    assert sigma_rolling < 0.1, f"rolling sigma 应 < 0.1(后 7 天平),实得 {sigma_rolling}"
+    assert sigma_goal > 0.5, f"goal sigma 应 > 0.5(全程含大幅变化),实得 {sigma_goal}"
+    assert sigma_goal > sigma_rolling * 10, (
+        f"goal sigma 应远大于 rolling(因全程含变化),rolling={sigma_rolling}, goal={sigma_goal}"
+    )
+
+
 def test_v2_recent_anomalies_window_7_days():
     """03: recent_anomalies 只含最近 7 天"""
     from analysis.weight import weight_volatility_v2

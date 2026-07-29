@@ -417,16 +417,25 @@ def weight_volatility(start_date, end_date=None, as_dict=False):
     print(f"{'-'*40}")
 
 
+
+
+_YELLOW_SIGMA = 1.5
+_RED_SIGMA = 2.0
+
+
 def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_dict=True):
-    """u4f53u91cdu52a8 v2 (Q8 spec u843du5730)
+    """u4f53u91cdu52a8u52a8 v2 (Q8 spec u843du5730)
 
     ticket 01-05 backend. u8fd4u56deu5305u542b baseline_value / baseline_sigma / thresholds /
     points / recent_anomalies / sigma_trend / early_warning u7684dict.
 
-    u5173u952eu7b97u6cd5:detrended sigma - u75287-day rolling stdev u800cu975eabsolute stdev,
-    u907fu514du51cfu80cdu671f trend u6c61u67d3. Q8 grill u6536u655bu7684spec u51b3u7b56(+/-1.4kg u9ec4 / +/-1.9kg u7ea2u9608u503cu7531u672cu51fdu6570 sigma u6d3eu751f).
+    u5173u952eu7b97u6cd5:
+      - detrended sigma (7-day rolling stdev, u4e0du88ab u51cfu80cdu671f trend u6c61u67d3)
+      - goal mode u7528u5168u7a0b detrended sigma (per spec, u4e0du4f9du8d56u65f6u95f4u7a97)
+      - u9608u503c 1.5sigma u9ec4 / 2.0sigma u7ea2 (spec Implementation Decisions)
     """
     from datetime import datetime, timedelta
+    import statistics
 
     if as_dict is False:
         return None
@@ -439,12 +448,15 @@ def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_
     c.execute("""
 
         SELECT date, weight_kg FROM weight_log
+
         WHERE date >= ? AND date <= ?
+
         ORDER BY date ASC
 
     """, (start_date, end_date))
     rows = c.fetchall()
 
+    # goal weight
     goal_weight = None
     try:
         c.execute("SELECT weight_goal FROM daily_goal WHERE id = 1")
@@ -471,46 +483,53 @@ def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_
     dates = [r[0] for r in rows]
     weights = [r[1] for r in rows]
 
+    # === detrended sigma algorithm ===
     def _rolling_sigma_7d(w):
         if len(w) < 3:
             return 0
         recent = w[-7:] if len(w) >= 7 else w
-        import statistics
         return statistics.stdev(recent) if len(recent) >= 2 else 0
 
-    baseline_sigma = _rolling_sigma_7d(weights)
+    def _full_detrended_sigma(w):
+        """u5168u7a0b detrended sigma (u65e5u53d8u5316u7684 stdev) - spec goal mode"""
+        if len(w) < 3:
+            return 0
+        diffs = [w[i] - w[i-1] for i in range(1, len(w))]
+        return statistics.stdev(diffs) if len(diffs) >= 2 else 0
 
     if baseline_mode == "goal" and goal_weight:
         baseline_value = goal_weight
+        baseline_sigma = _full_detrended_sigma(weights)
         sigma_for_thresholds = baseline_sigma if baseline_sigma > 0 else 0.5
         toggle_label = f"vs u76eeu6807 {goal_weight}kg"
     else:
         recent_30 = weights[-30:] if len(weights) >= 30 else weights
-        import statistics
         baseline_value = statistics.mean(recent_30)
+        baseline_sigma = _rolling_sigma_7d(weights)
         sigma_for_thresholds = baseline_sigma if baseline_sigma > 0 else 0.5
         toggle_label = f"vs u4f60u8fd1 {min(30, len(weights))} u5929u5e38u6001"
 
     thresholds = {
-        "yellow": round(1.5 * sigma_for_thresholds, 3),
-        "red": round(2.0 * sigma_for_thresholds, 3),
+        "yellow": round(_YELLOW_SIGMA * sigma_for_thresholds, 3),
+        "red": round(_RED_SIGMA * sigma_for_thresholds, 3),
     }
+
+    def _level_for(abs_dev):
+        """yellow/red/normal level determination (deduped)"""
+        if abs_dev >= thresholds["red"]:
+            return "red"
+        if abs_dev >= thresholds["yellow"]:
+            return "yellow"
+        return "normal"
 
     points = []
     for d, w in zip(dates, weights):
         dev = w - baseline_value
-        abs_dev = abs(dev)
-        if abs_dev >= thresholds["red"]:
-            level = "red"
-        elif abs_dev >= thresholds["yellow"]:
-            level = "yellow"
-        else:
-            level = "normal"
         points.append({
             "date": d,
             "kg": w,
             "deviation_kg": round(dev, 2),
-            "level": level,
+            "level": _level_for(abs(dev)),
         })
 
     end_dt = datetime.strptime(end_date, "%Y-%m-%d")
@@ -521,26 +540,21 @@ def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_
         reverse=True,
     )
 
+    # === sigma_trend (per spec: 7-day rolling sigma time series) ===
     sigma_trend = []
-    import statistics
     for i in range(len(weights)):
         window_start = max(0, i - 6)
         window = weights[window_start : i + 1]
         if len(window) >= 3:
             sigma_trend.append({
-                "week_start": dates[i],
+                "date_start": dates[i],
                 "sigma_kg": round(statistics.stdev(window), 3),
             })
 
     last_date, last_kg = dates[-1], weights[-1]
     last_dev = last_kg - baseline_value
     last_abs = abs(last_dev)
-    if last_abs >= thresholds["red"]:
-        ew_level = "red"
-    elif last_abs >= thresholds["yellow"]:
-        ew_level = "yellow"
-    else:
-        ew_level = "normal"
+    ew_level = _level_for(last_abs)
     if ew_level == "red":
         ew_msg = f"u4ecau5929u504fu79bb u00b1{last_abs:.1f}kg u8d85u8fc7 2sigma u7ea2u7ebf,u503cu5f97u7d27u5f20"
     elif ew_level == "yellow":
@@ -568,5 +582,5 @@ def weight_volatility_v2(start_date, end_date=None, baseline_mode="rolling", as_
             "early_warning": early_warning,
             "baseline_toggle_label": toggle_label,
         },
-        "message": f"u6ce2u52a8u5206u6790u5b8cu6210:baseline={baseline_value:.1f}kg,sigma={baseline_sigma:.2f}kg",
+        "message": f"u6ce2u52a8u5206u6790u5b8cu6210:baseline={baseline_value:.1f}kg,u03c3={baseline_sigma:.2f}kg",
     }

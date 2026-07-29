@@ -63,6 +63,30 @@ _DOM_METHODS = {
     "setAttribute", "getAttribute", "removeAttribute",
     "appendChild", "removeChild", "insertBefore", "cloneNode",
     "preventDefault", "stopPropagation",
+    # v1.1.5 扩展:Array / String / Object / Math / Date 全方法(粗识别)
+    "isArray", "from", "of", "fill", "copyWithin",
+    "match", "matchAll", "search", "normalize",
+    "keys", "values", "entries", "assign", "create", "defineProperty",
+    "freeze", "seal", "getPrototypeOf", "setPrototypeOf",
+    "min", "max", "abs", "floor", "ceil", "round", "random", "sqrt",
+    "pow", "log", "exp", "sin", "cos", "tan", "atan2",
+    "now", "getTime", "getDate", "getDay", "getFullYear", "getMonth",
+    "parse", "stringify", "decodeURI", "decodeURIComponent",
+    "encodeURI", "encodeURIComponent",
+    "closest", "matches", "scrollIntoView", "animate",
+    "getBoundingClientRect", "contains",
+    # v1.1.5+:memo_help 兼容(DOM 文档创建 + clipboard 兜底)
+    "createElement", "createTextNode",
+    # toast / 旧 inline fallbackCopy(memo_help.html 还保留一些旧形态)
+    "toast", "showToast", "hideToast",
+    # HTMLTextAreaElement / HTMLInputElement 旧 inline 形态
+    "select", "execCommand", "rangeCount", "getSelection",
+    # v1.1.5+:本仓库共享 clipboard helper(由 injector 注入)
+    "safeWriteText", "flashBtn", "fallbackCopy",
+    # v1.1.5+:DOM 元素方法(classList.toggle 等)
+    "toggle", "add", "remove", "replace",
+    # v1.1.5+:Array.prototype 方法补全
+    "sort", "reverse", "every", "some", "flat", "flatMap", "fill",
 }
 
 
@@ -102,14 +126,26 @@ def _defined_function_names(text: str) -> set[str]:
 
 
 def lint_undefined_funcs(html: str) -> list[dict]:
-    """规则 1:inline `<script>` 内调用函数未在文件内定义 → 报警。"""
+    """规则 1:inline `<script>` 内调用函数未在文件内定义 → 报警。
+
+    v1.1.5:定义集合跨所有 <script> 块合并提取(模板内多 script 块时,
+    块 A 的 function 定义对块 B 的调用是合法的)。
+    """
     findings = []
+    # 先把所有 script 块合并成一个 body 收集定义集合
+    all_bodies = " ".join(b for _, b in _strip_script_blocks(html))
+    global_defined = _defined_function_names(all_bodies)
     for start_line, body in _strip_script_blocks(html):
-        defined = _defined_function_names(body)
+        # 块内定义 + 全局定义合并
+        defined = _defined_function_names(body) | global_defined
         # 提取 `name(` 调用
         # 排除 .method() / 'string calls' / 关键字 / 数字
         # 模式:[边界字符] + 标识符 + 空白? + (
-        calls = re.findall(r"\b([A-Za-z_$][\w$]*)\s*\(", body)
+        # v1.1.5:跳过字符串字面('...' / "...")内部的 `(` — 防止 prompt 文案里的
+        # `complete-wish(` `set-due(` `batch-update-category(` 等命令名字面触发误报
+        # 粗略处理:把字符串字面整段替换成等长空格,保留行号偏移但不报警
+        scrubbed = re.sub(r"'[^'\n]*'|\"[^\"\n]*\"", lambda m: " " * len(m.group(0)), body)
+        calls = re.findall(r"\b([A-Za-z_$][\w$]*)\s*\(", scrubbed)
         # 去重保序
         seen = set()
         ordered = []

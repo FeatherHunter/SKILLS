@@ -28,6 +28,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'home_dashboard.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from analysis import dashboard
+from _triggers import TRIGGERS
 from db import find_db_path, get_db
 
 
@@ -106,6 +107,32 @@ QUICK_ACTIONS = [
     {'label': '复盘',        'command': 'python scripts/render_review.py'},
 ]
 
+_QUICK_ACTION_WAKE_MAP = [
+    ('记录饮食',    '记吃了'),
+    ('查今日吃',    '查今天吃'),
+    ('记录运动',    '记运动'),
+    ('查健康报告',  '查健康报告'),
+    ('查热量趋势',  '查热量趋势'),
+    ('查食物排行',  '查食物排行'),
+    ('扫禁忌',      '扫禁忌'),
+    ('复盘',        '复盘'),
+]
+
+
+def _attach_prompts(actions):
+    """对每个 quick_action,按 wake_word 查 TRIGGERS,附加 prompt 字段。
+
+    prompt 优先用于前端展示与复制;command 作为 fallback。
+    """
+    wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
+    label_to_wake = dict(_QUICK_ACTION_WAKE_MAP)
+    out = []
+    for a in actions:
+        wake = label_to_wake.get(a['label'])
+        prompt = wake_to_prompt.get(wake, '') if wake else ''
+        out.append({**a, 'prompt': prompt, 'wake_word': wake})
+    return out
+
 
 def build_data(target_date: str) -> dict:
     """组装主面板数据契约"""
@@ -115,7 +142,7 @@ def build_data(target_date: str) -> dict:
         'dashboard': dash_data['data'],
         'today_status': build_today_status(target_date),
         'recent_logs': build_recent_logs(target_date),
-        'quick_actions': QUICK_ACTIONS,
+        'quick_actions': _attach_prompts(QUICK_ACTIONS),
     }
 
 

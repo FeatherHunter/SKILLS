@@ -207,3 +207,31 @@ class TestTodayWaterRenders:
             f"{fixture_name} 渲染失败:\nstdout: {r.stdout}\nstderr: {r.stderr}"
         )
         (SKILL_DIR / f"_test_water_{fixture_name}.html").unlink(missing_ok=True)
+
+
+class TestHomeDashboardRedesign:
+    """tickets 08-11 · home dashboard 4 主题"""
+
+    def test_home_dashboard_has_state_icon_css(self):
+        tpl = (SKILL_DIR / 'templates' / 'home_dashboard.html').read_text(encoding='utf-8')
+        assert '.todo-row .state' in tpl or '.state {' in tpl, '缺 .state CSS'
+
+    def test_home_dashboard_log_row_grid(self):
+        tpl = (SKILL_DIR / 'templates' / 'home_dashboard.html').read_text(encoding='utf-8')
+        assert 'grid-template-columns: 44px 1fr auto' in tpl, 'log-row grid 未收紧'
+
+    def test_home_dashboard_quick_actions_use_prompts(self):
+        """render_home 输出的 quick_actions 含 prompt 字段"""
+        import sys; sys.path.insert(0, str(SCRIPTS_DIR))
+        from render_home import _attach_prompts, QUICK_ACTIONS
+        result = _attach_prompts(QUICK_ACTIONS)
+        assert all('prompt' in a for a in result), 'quick_actions 缺 prompt 字段'
+        eat = next(a for a in result if a['label'] == '记录饮食')
+        assert '记吃了' in eat['prompt'], f"记录饮食 prompt 应含 '记吃了', 实得: {eat['prompt'][:80]}"
+
+    def test_home_dashboard_deficit_math_breakdown(self):
+        tpl = (SKILL_DIR / 'templates' / 'home_dashboard.html').read_text(encoding='utf-8')
+        # 缺口 detail 应有 TDEE + 运动 + 应烧 + 摄入 的 math breakdown
+        assert 'TDEE' in tpl and '应烧' in tpl, '缺口 KPI 缺 math breakdown'
+        # 应有 size_label badge 逻辑
+        assert 'size_label' in tpl, '缺口 KPI 缺 size_label badge 逻辑'

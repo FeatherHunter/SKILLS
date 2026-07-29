@@ -26,24 +26,24 @@ body {
   border-bottom: 0;       /* ★ 干掉 hairline,hero 与首类别直接相连 */
 }
 .hero h1 {
-  /* ★ 百分比相对 body 13px → 150% = 19.5px */
-  font-size: 150%; font-weight: 700; letter-spacing: -.3px;
+  /* ★ 百分比相对 body 13px → 220% = 28.6px */
+  font-size: 220%; font-weight: 700; letter-spacing: -.3px;
   line-height: 1.15;
   display: flex; align-items: center; gap: 6px;
   margin: 0 0 1px;        /* 紧贴 sub */
 }
 .hero .sub {
-  /* ★ 苹果蓝 · 指导性文字 · 相对 body 100% = 13px */
+  /* ★ 苹果蓝 · 指导性文字 · 相对 body 105% = 13.65px */
   color: var(--accent);
-  font-size: 100%; font-weight: 500;
+  font-size: 105%; font-weight: 500;
   margin: 0 0 4px;
   line-height: 1.4;
 }
 .hero .stats {
-  /* ★ 相对 body 100% = 13px */
+  /* ★ 相对 body 115% = 14.95px */
   margin: 2px 0 0;
   display: flex; gap: 10px; flex-wrap: wrap;
-  font-size: 100%; color: var(--sub);
+  font-size: 115%; color: var(--sub);
   line-height: 1.3;
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
@@ -55,7 +55,7 @@ body {
   background: var(--card); border-radius: 8px;
   margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
 }
-.cat-block:first-of-type { margin-top: 2px; }   /* ★ 与 hero 留 2px 视觉缓冲 */
+.cat-block:first-of-type { margin-top: 0; }   /* ★ 与 hero 无视觉缓冲,背景过渡微连续 */
 .cat-block:last-of-type { margin-bottom: 0; }
 .cat-block > summary,
 .word-card > summary,
@@ -181,7 +181,13 @@ body {
   50%  { transform: scale(1.10); box-shadow: 0 0 0 8px rgba(52, 199, 89, 0.30); }
   100% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.18); }
 }
-.copy-main { margin-left: auto; }
+/* summary 层主 prompt 复制按钮(ticket 07 · 下沉到 summary) */
+.copy-btn.copy-main {
+  background: var(--accent); color: #fff; border: none;
+  padding: 4px 12px; border-radius: 8px; font-size: 12px;
+  cursor: pointer; margin-left: auto; flex-shrink: 0;
+}
+.copy-btn.copy-main:hover { background: var(--accent); opacity: 0.88; }
 
 /* === TOAST(v2.4.12 · iOS 通知风格) === */
 .toast {
@@ -387,7 +393,7 @@ function render() {
 
   // group by category
   const byCat = {};
-  triggers.forEach(t => { (byCat[t.category] = byCat[t.category] || []).push(t); });
+  triggers.forEach((t, gi) => { (byCat[t.category] = byCat[t.category] || []).push([t, gi]); });
 
   // main
   const mainEl = document.getElementById('mainContent');
@@ -397,7 +403,7 @@ function render() {
     return `<details class="cat-block" id="cat-${escapeHTML(cat.key)}" data-cat-name="${escapeHTML(cat.name)}">` +
       `<summary><span>${cat.icon}</span><span>${escapeHTML(cat.name)}</span>` +
       `<span class="count-pill">${items.length}</span></summary>` +
-      `<div class="cat-content">${items.map(renderWordCard).join('')}</div></details>`;
+      `<div class="cat-content">${items.map(([t, gi]) => renderWordCard(t, gi)).join('')}</div></details>`;
   }).join('');
 
   bindCopyButtons();
@@ -427,7 +433,7 @@ function bindCatFallbackToggle() {
   });
 }
 
-function renderWordCard(t) {
+function renderWordCard(t, i) {
   const aliases = (t.aliases || []).map(a =>
     `<span>${escapeHTML(a)}</span>`).join('');
   const variants = t.variants || [];
@@ -436,11 +442,11 @@ function renderWordCard(t) {
     `<span class="ww-name">${escapeHTML(t.wake_word)}</span>` +
     `${aliases ? `<span class="ww-aliases">${aliases}</span>` : ''}` +
     `<span class="ww-count">${variants.length ? variants.length + '变体' : ''}</span>` +
+    `<button class="copy-btn copy-main" onclick="copyMainPrompt(${i})">📋 复制</button>` +
     `</summary><div class="word-content">` +
     `${t.desc ? `<div class="ww-desc">${escapeHTML(t.desc)}</div>` : ''}` +
     `${pm.cli ? `<div class="prompt-cli">${escapeHTML(pm.cli)}</div>` : ''}` +
     `<div class="prompt-main">${escapeHTML(pm.text)}</div>` +
-    `<button class="copy-btn copy-main" data-prompt="${escapeHTML(pm.text)}">📋 复制 prompt</button>` +
     (variants.length ? `<div class="variants-section"><div class="variants-header">变体 (${variants.length})</div>` +
       variants.map(renderVariant).join('') + `</div>` : '') +
     `</div></details>`;
@@ -462,6 +468,14 @@ function bindCopyButtons() {
     btn.__bound = true;
     btn.addEventListener('click', () => copyText(btn.dataset.prompt || '', btn));
   });
+}
+
+/* ticket 07 · summary 层主 prompt 复制按钮(读全局 trigger 索引) */
+function copyMainPrompt(i) {
+  const t = DATA && DATA.data && DATA.data.triggers && DATA.data.triggers[i];
+  const text = t && t.main_prompt ? t.main_prompt.text : '';
+  const btn = document.querySelector(`.word-card:nth-of-type(${i + 1}) .copy-btn.copy-main`) || null;
+  copyText(text, btn);
 }
 
 // search / expandAll / collapseAll / copyAll 已删除(v2.4.10)

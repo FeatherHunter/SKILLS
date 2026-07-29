@@ -5,7 +5,7 @@ A user saying 查食品库 gets an HTML page listing 200 food products by defaul
 
 **Blocked by:** 01 (test isolation), 06 (shares the new-HTML-template pattern established by 查热量 — reuses template style and render script structure).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `calorie_tracker.py list-products` default LIMIT is 200 (Q5); add `--all` flag to disable LIMIT and return all rows; add `--text` flag (paired with 04's escape hatch) to return plain text for pipeline users (R2 mitigation)
 - [ ] New file `templates/food_library.html` exists, follows the Apple-system styling; layout: header with row count + search box + pagination controls; table-style or card-grid of all food products; mobile-responsive (passes check_html_responsive.py)

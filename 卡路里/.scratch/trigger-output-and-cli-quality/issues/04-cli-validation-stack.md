@@ -5,7 +5,7 @@ When a user types `<subcommand> --help`, they get argparse usage and exit code 0
 
 **Blocked by:** 01 — test isolation infra must exist so this ticket's tests run safely.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `calorie_tracker.py` `weight-goal` subcommand no longer accepts positional `<kg> [deadline]`; it requires `--weight-goal <float>` and `--deadline <YYYY-MM-DD>` flags
 - [ ] All `calorie_tracker.py` subcommands that take numeric args use `argparse type=float` / `type=int` (covers Issue 6's `int('--days')`, `int('--help')` patterns)

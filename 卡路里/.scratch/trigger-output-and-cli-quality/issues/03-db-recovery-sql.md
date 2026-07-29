@@ -5,7 +5,7 @@ The production `calorie_data.db` is restored to a known-good state: weight_goal 
 
 **Blocked by:** None — but execution requires explicit user approval per the 卡路里 SKILL §⚠️ 强制性规定 第 3 条 ("对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认,未经确认不得执行写入操作"). AI agent MUST NOT run this SQL until user says go.
 
-**Status:** ready-for-agent (file prep); **execution-blocked** (SQL run requires user green-light)
+**Status:** resolved (file prep); **execution-blocked** (SQL run requires user green-light)
 
 - [ ] File `.scratch/trigger-output-and-cli-quality/migrations/2026-07-29_recovery.sql` exists and contains exactly:
   - A commented header explaining what the script does and why

@@ -94,6 +94,8 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=200, help="默认 200")
     parser.add_argument("--all", action="store_true", help="全量(覆盖 --limit)")
     parser.add_argument("--page-size", type=int, default=50, help="前端分页 50/页")
+    parser.add_argument("--text", action="store_true",
+                        help="Phase 3e: 纯文本输出 pipeline 友好(默认输出 HTML)")
     parser.add_argument("--output", help="输出 HTML 路径")
     args = parser.parse_args()
 
@@ -116,6 +118,19 @@ def main() -> int:
 
     out = Path(args.output) if args.output else _default_output_path()
     out.parent.mkdir(parents=True, exist_ok=True)
+
+    # Phase 3e --text:纯文本输出 pipeline 模式(对应 ticket 07 M4 + R2 缓解)
+    if args.text:
+        sys.stdout.write("# MODE=text · 适用: ... | grep / awk / wc-l 等 pipeline\n")
+        for it in items:
+            sys.stdout.write(
+                f"{it['id']:>5}  {it['product_name'][:30]:<30}  {it.get('brand', '—')[:10]:<10}  "
+                f"热 {it.get('calories', 0):>5} 蛋 {it.get('protein', 0):>4.1f}  "
+                f"脂 {it.get('fat', 0):>4.1f} 碳 {it.get('carbohydrates', 0):>5.1f}\n"
+            )
+        sys.stdout.write(f"# 共 {total_count} 条 · 本次输出 {len(items)} 条\n")
+        return 0
+
     out.write_text(html, encoding="utf-8")
     print(f"✓ HTML 已生成: {out}")
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out.absolute()}")

@@ -5,7 +5,7 @@ A user opening 查体重历史 / 对比体重 / 查体重波动 on a phone sees 
 
 **Blocked by:** 02 — the lint script must exist so this ticket's changes can be verified against the seam 6 standard.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `templates/weight_history.html` CSS includes `@media (max-width:640px)` rules that:
   - collapse `.kpi-grid { grid-template-columns: repeat(4, 1fr) }` to a single column or 2-column layout on small screens

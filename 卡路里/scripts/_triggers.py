@@ -163,7 +163,7 @@ TRIGGERS = [
     {
             'category': '食品库',     'wake_word': '查热量',     'desc': '搜索食品营养成分',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py search-product <关键词>', 'text': '请你加载技能 卡路里,执行唤醒词「查热量」。\n\n我想查某食物的热量/蛋白/碳水/脂肪。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_food_search.py --query "<关键词>"', 'text': '请你加载技能 卡路里,执行唤醒词「查热量」。\n\n我想查某食物的热量/蛋白/碳水/脂肪(ticket 06 · ADR-0005)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': ['食物名(如 元气森林 冰红茶汽水 600ml): '],
             'variants': []},
     {
@@ -181,7 +181,7 @@ TRIGGERS = [
     {
             'category': '食品库',     'wake_word': '查食品库',     'desc': '列出全部食品营养成分',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py list-products', 'text': '请你加载技能 卡路里,执行唤醒词「查食品库」。\n\n我想列出全部食品库。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_food_library.py [--limit 200 | --all]', 'text': '请你加载技能 卡路里,执行唤醒词「查食品库」。\n\n我想列出全部食品库(ticket 07 · ADR-0005 · 默认 200 行)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'fill_hints': [],
             'variants': []},
     {

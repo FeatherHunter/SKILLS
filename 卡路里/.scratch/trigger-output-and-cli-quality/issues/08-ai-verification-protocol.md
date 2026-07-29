@@ -5,7 +5,7 @@ When an AI agent receives a 卡路里 trigger that involves asserting user state
 
 **Blocked by:** None — this is a documentation change (SKILL.md + an ADR file); no code or schema changes.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `SKILL.md` §⚠️ 强制性规定 gains a new section "7. ⭐ **AI 验证协议**(v2.5 增,Issue 6 反馈)" with body text:
   > "AI 在 SKILL 内声称'用户没 X / 用户从未 Y'前,**必须**先对该 X/Y 对应的 DB 表执行 SELECT 验证。3 个 fail mode 红线示例:

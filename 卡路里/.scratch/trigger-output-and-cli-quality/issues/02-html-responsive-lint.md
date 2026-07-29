@@ -5,7 +5,7 @@ A developer can run `python scripts/check_html_responsive.py` and get a clear pa
 
 **Blocked by:** None — can start immediately (lint script is self-contained, no dependency on test infra).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `scripts/check_html_responsive.py` uses BeautifulSoup to parse every `templates/*.html`
 - [ ] It asserts each template contains `<meta name="viewport" ...>`

@@ -124,6 +124,17 @@ def usage():
 """)
 
 
+def _sub_help(args: list[str], usage_text: str) -> None:
+    """subcommand 级别 --help / -h 检测(Phase 3b · ticket 04 ticket 09 增量)
+
+    若 args 含 --help / -h,print usage + exit 0。
+    所有走 CLI 的子命令开头都用一下,实现"全 CLI 支持 --help"。
+    """
+    if "--help" in args or "-h" in args:
+        print(usage_text)
+        sys.exit(0)
+
+
 def main():
     if len(sys.argv) < 2:
         usage()
@@ -374,15 +385,35 @@ def main():
                 print(f"  备注: {receipt['note']}")
 
         elif command == "weight-history":
-            # ADR-0004 · ticket 04 增量:--help 立即返回(S2)
-            if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
-                print("用法: weight-history [天数] | --days N")
-                print("默认: 30 天体重历史(HTML)")
-                print("示例: weight-history 7  /  weight-history --days 90")
-                sys.exit(0)
+            _sub_help(sys.argv[2:],
+                "用法: weight-history [天数] | --days N\n"
+                "默认: 30 天体重历史(HTML)\n"
+                "示例: weight-history 7  /  weight-history --days 90")
             # v2.4.6:接通 render_weight_history.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
             # v2.4.8:不传 --output,由 render 走 html_path() 新规范(中文 + 时间戳)
-            days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
+            # Phase 3e 修:支持 [天数] 与 --days N,加 try/except 防 int() 崩溃(ADR-0004)
+            days = 30
+            argv_rest = sys.argv[2:]
+            i = 0
+            while i < len(argv_rest):
+                arg = argv_rest[i]
+                if arg == "--days":
+                    if i + 1 >= len(argv_rest):
+                        print("Error: --days 需要数字", file=sys.stderr)
+                        sys.exit(2)
+                    try:
+                        days = int(argv_rest[i + 1])
+                    except ValueError:
+                        print(f"Error: --days 需要数字,实得 '{argv_rest[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                elif arg.lstrip("-").isdigit():
+                    # 兼容旧接口: weight-history 7
+                    days = int(arg)
+                    i += 1
+                else:
+                    print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
+                    sys.exit(2)
             render_proc = subprocess.run(
                 [sys.executable, 'scripts/render_weight_history.py', '--days', str(days)],
                 capture_output=True, text=True, encoding='utf-8', timeout=15,
@@ -477,11 +508,57 @@ def main():
             )
 
         elif command == "exercise-summary":
-            days = int(sys.argv[2]) if len(sys.argv) > 2 else 7
+            _sub_help(sys.argv[2:],
+                "用法: exercise-summary [天数] | --days N\n默认: 7 天运动汇总")
+            # Phase 3e 修:支持 [天数] 与 --days N,加 try/except 防 int() 崩溃
+            days = 7
+            argv_rest = sys.argv[2:]
+            i = 0
+            while i < len(argv_rest):
+                arg = argv_rest[i]
+                if arg == "--days":
+                    if i + 1 >= len(argv_rest):
+                        print("Error: --days 需要数字", file=sys.stderr)
+                        sys.exit(2)
+                    try:
+                        days = int(argv_rest[i + 1])
+                    except ValueError:
+                        print(f"Error: --days 需要数字,实得 '{argv_rest[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                elif arg.lstrip("-").isdigit():
+                    days = int(arg)
+                    i += 1
+                else:
+                    print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
+                    sys.exit(2)
             exercise.print_exercise_summary(days)
 
         elif command == "history":
-            days = int(sys.argv[2]) if len(sys.argv) > 2 else 7
+            _sub_help(sys.argv[2:],
+                "用法: history [天数] | --days N\n默认: 7 天热量历史")
+            # Phase 3e 修:同上,加 try/except
+            days = 7
+            argv_rest = sys.argv[2:]
+            i = 0
+            while i < len(argv_rest):
+                arg = argv_rest[i]
+                if arg == "--days":
+                    if i + 1 >= len(argv_rest):
+                        print("Error: --days 需要数字", file=sys.stderr)
+                        sys.exit(2)
+                    try:
+                        days = int(argv_rest[i + 1])
+                    except ValueError:
+                        print(f"Error: --days 需要数字,实得 '{argv_rest[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                elif arg.lstrip("-").isdigit():
+                    days = int(arg)
+                    i += 1
+                else:
+                    print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
+                    sys.exit(2)
             calorie_history.get_calorie_history(days)
 
         elif command == "add-product":

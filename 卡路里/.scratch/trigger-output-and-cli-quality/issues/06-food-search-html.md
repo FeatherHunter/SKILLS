@@ -5,7 +5,7 @@ A user saying 查热量 "牛肉" gets an HTML page with one card per matching fo
 
 **Blocked by:** 01 — test isolation needed so render tests don't pollute prod DB.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] New file `templates/food_search.html` exists, follows the Apple-system styling already established by `food_ranking.html`, and has `@media (max-width:640px)` rules (passes check_html_responsive.py)
 - [ ] Layout: header with query echo + match count; one card per food matching the search term; each card shows 4 macros prominently + brand + source + updated_at; mobile layout is single-column stacked

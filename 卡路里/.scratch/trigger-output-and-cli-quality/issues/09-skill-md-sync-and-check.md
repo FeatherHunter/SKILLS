@@ -5,7 +5,7 @@ After all the upstream slices land, SKILL.md and the trigger-consistency checker
 
 **Blocked by:** 04 (CLI changes are stable), 05 (mobile CSS shipped), 06 (查热量 HTML shipped), 07 (查食品库 HTML shipped), 08 (AI protocol documented).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `SKILL.md` §完整 HTML 模板清单 has rows for `food_search.html` and `food_library.html` added (incremental from prior spec card-html-redesign)
 - [ ] `SKILL.md` §触发词速查表 entries for 查热量, 查食品库, 体重三件套(历史/对比/波动), 查体重目标 all reference the correct render script (CLI column updated)

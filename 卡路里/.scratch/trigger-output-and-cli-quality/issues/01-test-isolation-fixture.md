@@ -5,7 +5,7 @@ When pytest runs, every test sees a temporary DB that auto-cleans up. The produc
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `tests/conftest.py` exposes a `temp_db` session-scoped fixture that:
   - creates `<SKILLS_DB_PATH>/test_calorie_data_<pid>.db` (or under `tempfile.gettempdir()`)

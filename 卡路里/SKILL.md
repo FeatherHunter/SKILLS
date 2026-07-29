@@ -221,7 +221,8 @@ python scripts/check_trigger_consistency.py
 ### 依赖
 
 - Python >= 3.7
-- 无第三方依赖(仅用标准库 sqlite3、argparse、datetime)
+- 标准库:sqlite3、argparse、datetime、json
+- 第三方依赖(可选):`beautifulsoup4` — 仅 `scripts/check_html_responsive.py`(HTML 响应式 lint,seam 6)使用。`pip install beautifulsoup4` 即可。其它脚本不依赖。
 
 ### 配置项
 

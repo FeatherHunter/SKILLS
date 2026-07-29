@@ -435,15 +435,16 @@ def main():
                             file=sys.stderr,
                         )
                         sys.exit(2)
-                    # 老接口: positional 参数,带 deprecation warning
-                    print(f"⚠️  DEPRECATION: weight-goal {arg} ... 即将废弃(2026-10-29 删除),请改用 --weight-goal {arg}", file=sys.stderr)
+                    # 老接口: positional 参数,带 deprecation warning(指出正确迁移路径)
                     if legacy_kg is None:
+                        print(f"⚠️  DEPRECATION: weight-goal {arg} 即将废弃(2026-10-29 删除),请改用 --weight-goal {arg}", file=sys.stderr)
                         try:
                             legacy_kg = float(arg)
                         except ValueError:
                             print(f"Error: <kg> 需要数字,实得 '{arg}'", file=sys.stderr)
                             sys.exit(2)
                     else:
+                        print(f"⚠️  DEPRECATION: weight-goal {arg} 即将废弃(2026-10-29 删除),请改用 --deadline {arg}", file=sys.stderr)
                         deadline = arg  # 第二个 positional 是 deadline
                     i += 1
                 else:
@@ -543,6 +544,10 @@ def main():
                     sys.exit(2)
             # None (=--all) 转成 999999 防 SQLite LIMIT NULL 报错
             actual_limit = limit if limit is not None else 999999
+            # M4: --text 让输出明确为 plain text(给 pipeline 用);无 --text 保留现有行为
+            if text_mode:
+                # 在 stdout 顶部声明 pipeline 模式,方便 pipe 工具识别
+                print("# MODE=text · 适用: ... | grep / awk / wc-l 等 pipeline")
             product_library.list_products(actual_limit)
 
         elif command == "profile":

@@ -25,6 +25,15 @@ SKILL.md 的可视化副本,位于 skill 根目录(`<SKILL_DIR>/备忘录.html`)
 运行时别名: **HELP HTML**(用户说"备忘录 HELP"时由 `render_help` 调用生成)
 _Avoid_: 用户手册(v1.0.9 临时名,v1.1.4 已废弃)、落地页、官网、演示页
 
+**渲染产物**(render artifact):
+`templates/` 下 5 个数据 / 过程型 HTML 文件(`memo_query / sync_report / wish_plan / wish_complete / change_category`),由对应 CLI 调 `memo_render.py` 注入 `window.__DATA__` 后产出。**不是** SKILL.md 的副本,与 HTML 镜像完全独立(总纲 §04 原则 12.A 数据/过程 HTML 约定)。
+渲染产物遵守总纲 §04 全部 11 原则(占位符 / 5 状态 fallback / escapeHTML / HTML 单工铁律 / HTML-First)。
+_Avoid_: HTML 模板(笼统,易与 HTML 镜像混淆)、HTML 镜像(专指 memo_help.html,严禁类比)、模板(语义模糊,可能指 React/Vue 模板)
+
+**模板静态扫描**(template lint):
+对 `templates/*.html` 内嵌 JS 做的离线静态校验规则集合(无 Node / 浏览器依赖,Python 实现)。目的是在 pre-commit 拦截"引用未定义函数 / escape-unescape 不对称 / 单工铁律违反"三类典型 bug——模板层 JS Bug 历史上从未被 `tests/` 捕获(测试只覆盖 CLI→JSON→path 渲染管道,不覆盖浏览器行为)。
+_Avoid_: ESLint(依赖 Node / npm,本仓库不引入)、jsdom(过重,设计目标=运行时模拟而非静态扫描)
+
 **场景资产**:
 `references/scenarios.yaml` 单一事实源(总纲 §07 契约),29 个场景条目的权威定义点。不允许手工维护独立副本。
 _Avoid_: 场景列表、用例表、yaml(简称)
@@ -32,6 +41,10 @@ _Avoid_: 场景列表、用例表、yaml(简称)
 **【待开发】**:
 场景条目 `status` 字段的预留值(总纲 §07 二态)。语义:"AI 不得假装执行,必须停步 + 告知"。当前 29 场景全 `status = ""`,本术语表保留以备未来扩展。
 _Avoid_: WIP、TODO、暂未实现
+
+**搜索意图**(search intent):
+备忘录 templates 过滤框的语义范围(grill 决策 R2-4)。`memo_query.html` 的搜索框**只**匹配 `note.content` 字段,不命中 `id` / `feishu_task_guid` / `created_at` 等内部字段;**不**对 JSON 整串 substring(避免 UUID 全命中假象)。与 chip(按 category 过滤)的职责严格分离。
+_Avoid_: 全文搜索(本模板未实现)、模糊搜索(语义模糊,本术语表选精确词)
 
 ## Commit 格式约定
 

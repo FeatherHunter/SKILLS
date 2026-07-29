@@ -196,7 +196,7 @@ class TestHelpCLI:
         monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         assert r.returncode == 0, f"stderr={r.stderr}"
         data = json.loads(r.stdout)
@@ -212,7 +212,7 @@ class TestHelpCLI:
         # 解析命令行,确认没有 --html 参数
         result = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help", "--help"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, encoding='utf-8',
         )
         # --help 输出应不含 --html
         assert "--html" not in result.stdout, \
@@ -284,7 +284,7 @@ class TestHelpOutputFlag:
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
              "help", "--output", str(out)],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         assert r.returncode == 0, f"stderr={r.stderr}"
         data = json.loads(r.stdout)
@@ -303,7 +303,7 @@ class TestHelpOutputFlag:
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
              "help", "-o", str(out)],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         assert r.returncode == 0, f"stderr={r.stderr}"
         data = json.loads(r.stdout)
@@ -316,7 +316,7 @@ class TestHelpOutputFlag:
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"),
              "help", "--output", str(out)],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         data = json.loads(r.stdout)
         # note 字段含"额外副本"提示
@@ -328,7 +328,7 @@ class TestHelpOutputFlag:
         monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         data = json.loads(r.stdout)
         assert data["data"]["output_path"] is None
@@ -389,7 +389,7 @@ class TestHelpHtmlPathEnvVar:
         monkeypatch.setenv("SKILLS_DB_PATH", str(custom_dir))
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding='utf-8', timeout=30,
         )
         assert r.returncode == 0, f"stderr={r.stderr}"
         data = json.loads(r.stdout)

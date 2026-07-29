@@ -665,77 +665,178 @@ def _build_full_records(records: list) -> list:
     ]
 
 
-def _build_record_copy_prompt(mode: str, meta: dict, records: list,
-                              summary_items: list = None, extra_data: dict = None) -> str:
+# === ADR-0002 Q6 · copy_prompt 单 map + CopyPromptContext dataclass ===
+# 替代原 SCENE/EXPECT/SOURCE 三平行 dict(B3 Repeated Switches smell)
+# + 替代原 (mode, meta, records, summary_items, extra_data) 多参签名(B4 Data Clumps smell)
+#
+# 第一性:加新 mode 只需在 _COPY_PROMPT_PARTS 加一个 entry,不用动函数体
+# 调用方不再需要往 meta 塞 date/total_minutes(原 B4 meta 污染问题)
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any
+
+
+@dataclass
+class CopyPromptContext:
+    """copy_prompt 渲染上下文(ADR-0002 Q6 · B4 修复)
+
+    把原 (mode, meta, records, summary_items, extra_data) 多参打包成一个 dataclass,
+    调用方语义清晰(「喂 copy_prompt 用」),不再污染 meta。
+
+    字段说明:
+      mode: record-day / record-range / record-compare / record-category / record-anomaly / record-detail
+      date: 主日期(单日/区间起始/详情当天)
+      total_minutes: 主时长分钟数
+      records: 该 HTML 包含的 schedule_records 行(用于摘要 + 详情溯源)
+      summary_items: 分类摘要(可选,day/range/compare/category 有)
+      extra_data: 模式特有数据(可选,anomaly: anomalies / 其他: health 等)
+      range_start / range_end: 区间 mode(start/end 替代 date)
+      label_a / label_b: compare mode 的对比双方标签
+      category_name: category mode 的类别名
+      window_days: anomaly mode 的窗口天数
+    """
+    mode: str
+    date: str = ""
+    total_minutes: int = 0
+    records: List[Dict[str, Any]] = field(default_factory=list)
+    summary_items: List[Dict[str, Any]] = field(default_factory=list)
+    extra_data: Dict[str, Any] = field(default_factory=dict)
+    range_start: str = ""
+    range_end: str = ""
+    label_a: str = ""
+    label_b: str = ""
+    category_name: str = ""
+    window_days: int = 7
+
+
+# 6 个 record mode × {scene, expect, source} 三个字符串模板(B3 单 map 替代三平行 dict)
+# 加新 mode:只需在此加一个 entry,函数体不动
+_COPY_PROMPT_PARTS = {
+    "record-day": {
+        "scene":  "查看了 {date} 单日作息报告(共 {n_records} 条记录,总时长 {total_dur})",
+        "expect": "基于今日数据,可调 schedule_cli.py render-record-day {date} 重渲,"
+                  "或调 render-plans-review 复盘今日 plan 执行情况",
+        "source": "record_day.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+    },
+    "record-range": {
+        "scene":  "查看了 {range_start} 至 {range_end} 区间作息报告"
+                  "(共 {n_records} 条记录,总时长 {total_dur})",
+        "expect": "可对区间内某天做单日深挖(render-record-day),"
+                  "或对比另一段时段(render-record-compare)",
+        "source": "record_range.html 生成于 {generated_at},数据来自 schedule_records "
+                  "WHERE date BETWEEN {range_start} AND {range_end}",
+    },
+    "record-compare": {
+        "scene":  "对比查看了 {label_a}({range_start}) vs {label_b}({range_end}) 两段作息",
+        "expect": "可深挖差异最大的类别(render-record-category-range),"
+                  "或对其中一段做异常检测(render-record-anomaly)",
+        "source": "record_compare.html 生成于 {generated_at},数据来自两段 schedule_records 区间",
+    },
+    "record-category": {
+        "scene":  "深挖了类别「{category_name}」在 {range_start} 至 {range_end} 的分布",
+        "expect": "可深挖另一类别做对比,或对该类别做单日时间块分析",
+        "source": "record_category.html 生成于 {generated_at},"
+                  "数据来自 schedule_records WHERE category LIKE '{category_name}%'",
+    },
+    "record-anomaly": {
+        "scene":  "查看了最近 {window_days} 天作息异常检测"
+                  "({n_anomalies} 项异常)",
+        "expect": "针对红色异常,可调 amend-record 修正历史记录,"
+                  "或调 render-plans-preview 规划调整方案",
+        "source": "record_anomaly.html 生成于 {generated_at},"
+                  "数据来自最近 {window_days} 天 schedule_records",
+    },
+    "record-detail": {
+        "scene":  "查看了 {date} 作息详情(全 11 字段溯源,{n_records} 条记录)",
+        "expect": "可调 amend-record <id> 修正某条记录,"
+                  "或调 render-record-day 生成单日报告",
+        "source": "record_detail.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+    },
+}
+
+
+def _build_record_copy_prompt(ctx_or_mode, meta=None, records=None,
+                              summary_items=None, extra_data=None) -> str:
     """构造 4 部分 copy prompt(record 域 6 模板共享 · ADR-0002 Q6 · 总纲 §04 原则 10)
 
+    支持两种签名(向后兼容):
+      1. 新签名: _build_record_copy_prompt(CopyPromptContext(...))
+      2. 旧签名: _build_record_copy_prompt(mode, meta, records, summary_items, extra_data)
+         (deprecated · 由 render_record_* 调用方迁移到 CopyPromptContext)
+
     4 部分结构(原则 10):
-      ① 场景: 用户在 HTML 中做了什么(查看某日 / 区间 / 对比 / 类别 / 异常 / 详情)
+      ① 场景: 用户在 HTML 中做了什么
       ② 数据: 用户看到的最终数据(分类摘要 / 时长 / 健康分 / 关键事件)
-      ③ 期望: AI 应执行什么 CLI 操作(追问 / 复盘 / 改计划 / 补漏 / 写摘要)
+      ③ 期望: AI 应执行什么 CLI 操作
       ④ 来源: HTML 数据来自哪个 CLI + 时间
     """
-    summary_items = summary_items or []
-    extra_data = extra_data or {}
+    # === 签名分发(向后兼容) ===
+    # 新签名:CopyPromptContext dataclass
+    if isinstance(ctx_or_mode, CopyPromptContext):
+        ctx = ctx_or_mode
+    else:
+        # 旧签名:拆 (mode, meta, records, summary_items, extra_data)
+        # 提取 _COPY_PROMPT_PARTS 需要的字段(不污染 meta)
+        mode = ctx_or_mode
+        records = records or []
+        summary_items = summary_items or []
+        extra_data = extra_data or {}
+        ctx = CopyPromptContext(
+            mode=mode,
+            date=(meta or {}).get("date", ""),
+            total_minutes=int((meta or {}).get("total_minutes") or 0),
+            records=records,
+            summary_items=summary_items,
+            extra_data=extra_data,
+            range_start=(meta or {}).get("start", (meta or {}).get("date", "")),
+            range_end=(meta or {}).get("end", ""),
+            label_a=(meta or {}).get("label_a", "A"),
+            label_b=(meta or {}).get("label_b", "B"),
+            category_name=(meta or {}).get("category", ""),
+            window_days=int((meta or {}).get("window", 7)),
+        )
+
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    date = meta.get("date", "")
-    total_min = int(meta.get("total_minutes") or 0)
+    parts = _COPY_PROMPT_PARTS.get(ctx.mode, {
+        "scene": "查看了作息报告({mode})".format(mode=ctx.mode),
+        "expect": "根据报告内容决定后续 CLI 操作",
+        "source": f"生成于 {generated_at}",
+    })
 
-    SCENE = {
-        "record-day":      f"查看了 {date} 单日作息报告(共 {len(records)} 条记录,总时长 {_fmt_dur(total_min)})",
-        "record-range":    f"查看了 {meta.get('start', date)} 至 {meta.get('end', date)} 区间作息报告"
-                           f"({len(records)} 条记录,总时长 {_fmt_dur(total_min)})",
-        "record-compare":  f"对比查看了 {meta.get('label_a', 'A')}({meta.get('start_a', '')})"
-                           f" vs {meta.get('label_b', 'B')}({meta.get('start_b', '')}) 两段作息",
-        "record-category": f"深挖了类别「{meta.get('category', '')}」在 {meta.get('start', date)}"
-                           f" 至 {meta.get('end', date)} 的分布",
-        "record-anomaly":  f"查看了最近 {meta.get('window', 7)} 天作息异常检测"
-                           f"({len(extra_data.get('anomalies', []))} 项异常)",
-        "record-detail":   f"查看了 {date} 作息详情(全 11 字段溯源,{len(records)} 条记录)",
+    # === 字段填充 ===
+    fill = {
+        "date":         ctx.date,
+        "range_start":  ctx.range_start or ctx.date,
+        "range_end":    ctx.range_end or ctx.date,
+        "label_a":      ctx.label_a or "A",
+        "label_b":      ctx.label_b or "B",
+        "category_name":ctx.category_name,
+        "window_days":  ctx.window_days,
+        "n_records":    len(ctx.records),
+        "n_anomalies":  len(ctx.extra_data.get("anomalies", [])),
+        "total_dur":    _fmt_dur(ctx.total_minutes),
+        "generated_at": generated_at,
     }
-    scene = SCENE.get(mode, f"查看了作息报告({mode})")
+    scene  = parts["scene"].format(**fill)
+    expect = parts["expect"]
+    source = parts["source"].format(**fill)
 
+    # === ② 数据:分类摘要 top 3 + 健康分(如有) + 异常计数 ===
     cat_lines = ""
-    if summary_items:
-        top3 = summary_items[:3]
+    if ctx.summary_items:
+        top3 = ctx.summary_items[:3]
         cat_lines = "\n".join(
             f"  - {s.get('emoji', '')} {s['category']}:{_fmt_dur(s['total_minutes'])}({s.get('pct', 0)}%)"
             for s in top3
         )
-    health = extra_data.get("health") or {}
+    health = ctx.extra_data.get("health") or {}
     health_line = f"\n健康分: {health.get('score', '—')} ({health.get('label', '—')})" if health else ""
 
-    anomalies = extra_data.get("anomalies") or []
+    anomalies = ctx.extra_data.get("anomalies") or []
     anomaly_line = ""
     if anomalies:
         red = sum(1 for a in anomalies if a.get("severity") == "red")
         yellow = sum(1 for a in anomalies if a.get("severity") == "yellow")
         anomaly_line = f"\n异常: 🔴 {red} 严重 · 🟡 {yellow} 警告"
-
-    EXPECT = {
-        "record-day":      f"基于今日数据,可调 schedule_cli.py render-record-day {date} 重渲,"
-                           "或调 render-plans-review 复盘今日 plan 执行情况",
-        "record-range":    "可对区间内某天做单日深挖(render-record-day),"
-                           "或对比另一段时段(render-record-compare)",
-        "record-compare":  "可深挖差异最大的类别(render-record-category-range),"
-                           "或对其中一段做异常检测(render-record-anomaly)",
-        "record-category": "可深挖另一类别做对比,或对该类别做单日时间块分析",
-        "record-anomaly":  "针对红色异常,可调 amend-record 修正历史记录,"
-                           "或调 render-plans-preview 规划调整方案",
-        "record-detail":   "可调 amend-record <id> 修正某条记录,"
-                           "或调 render-record-day 生成单日报告",
-    }
-    expect = EXPECT.get(mode, "根据报告内容决定后续 CLI 操作")
-
-    SOURCE = {
-        "record-day":      f"record_day.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
-        "record-range":    f"record_range.html 生成于 {generated_at},数据来自 schedule_records WHERE date BETWEEN {meta.get('start', date)} AND {meta.get('end', date)}",
-        "record-compare":  f"record_compare.html 生成于 {generated_at},数据来自两段 schedule_records 区间",
-        "record-category": f"record_category.html 生成于 {generated_at},数据来自 schedule_records WHERE category LIKE '{meta.get('category', '')}%'",
-        "record-anomaly":  f"record_anomaly.html 生成于 {generated_at},数据来自最近 {meta.get('window', 7)} 天 schedule_records",
-        "record-detail":   f"record_detail.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
-    }
-    source = SOURCE.get(mode, f"生成于 {generated_at}")
 
     return (
         f"① 场景: {scene}\n\n"
@@ -1684,7 +1785,6 @@ def render_record_range(start: str, end: str) -> dict:
         "meta": {
             "mode": "record-range",
             "start": start, "end": end, "days": days_count,
-            "date": start,
             "total_minutes": total,
             "title": f"作息区间报告 · {start} ~ {end}",
             "subtitle": f"{days_count} 天,{len(records)} 条记录,总时长 {_fmt_dur(total)}",
@@ -1742,7 +1842,6 @@ def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, 
             "end_a": end_a,
             "start_b": start_b,
             "end_b": end_b,
-            "date": start_a,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "ranges": ranges,
@@ -1814,7 +1913,6 @@ def render_record_category(category: str, start: str, end: str) -> dict:
             "category": category,         # 用户原值 "运动" → 文件名 "运动_..."
             "l1_category": l1_target,    # 映射后值 "健康" → 内部过滤用
             "start": start, "end": end,
-            "date": start,
             "total_minutes": total,
             "title": f"类别深挖 · {l1_target} · {start} ~ {end}",
             "subtitle": f"{days_count} 天活跃,日均 {_fmt_dur(daily_avg)}",
@@ -1893,7 +1991,6 @@ def render_record_anomaly(window_days: int = 7) -> dict:
         "meta": {
             "mode": "record-anomaly",
             "window": window_days,
-            "date": datetime.now().strftime("%Y-%m-%d"),
             "title": f"异常检测 · 最近 {window_days} 天",
             "subtitle": f"对比基线:近 30 天均值,阈值 ±20%",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

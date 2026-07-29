@@ -45,7 +45,7 @@ def _diff_report(wake: str, surface: str, a: str, b: str) -> list[str]:
 def check_home_dashboard_prompts() -> list[str]:
     """render_home quick_actions vs _triggers"""
     from _triggers import TRIGGERS
-    from render_home import _attach_prompts, QUICK_ACTIONS, _QUICK_ACTION_WAKE_MAP
+    from render_home import _attach_prompts, QUICK_ACTIONS
     wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
     issues = []
     for a in _attach_prompts(QUICK_ACTIONS):

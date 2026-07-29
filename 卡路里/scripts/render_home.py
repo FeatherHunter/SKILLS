@@ -97,25 +97,14 @@ def build_recent_logs(target_date: str, limit: int = 5) -> dict:
 
 
 QUICK_ACTIONS = [
-    {'label': '记录饮食',    'command': 'python scripts/calorie_tracker.py add ...'},
-    {'label': '查今日吃',    'command': 'python scripts/calorie_tracker.py summary'},
-    {'label': '记录运动',    'command': 'python scripts/exercise_tracker.py add ...'},
-    {'label': '查健康报告',  'command': 'python scripts/render_health_dashboard.py --days 7'},
-    {'label': '查热量趋势',  'command': 'python scripts/render_health_dashboard.py --days 30'},
-    {'label': '查食物排行',  'command': 'python scripts/render_food_ranking.py --all'},
-    {'label': '扫禁忌',      'command': 'python scripts/render_contraindication.py'},
-    {'label': '复盘',        'command': 'python scripts/render_review.py'},
-]
-
-_QUICK_ACTION_WAKE_MAP = [
-    ('记录饮食',    '记吃了'),
-    ('查今日吃',    '查今天吃'),
-    ('记录运动',    '记运动'),
-    ('查健康报告',  '查健康报告'),
-    ('查热量趋势',  '查热量趋势'),
-    ('查食物排行',  '查食物排行'),
-    ('扫禁忌',      '扫禁忌'),
-    ('复盘',        '复盘'),
+    {'label': '记录饮食',    'wake_word': '记吃了',       'command': 'python scripts/calorie_tracker.py add ...'},
+    {'label': '查今日吃',    'wake_word': '查今天吃',     'command': 'python scripts/calorie_tracker.py summary'},
+    {'label': '记录运动',    'wake_word': '记运动',       'command': 'python scripts/exercise_tracker.py add ...'},
+    {'label': '查健康报告',  'wake_word': '查健康报告',   'command': 'python scripts/render_health_dashboard.py --days 7'},
+    {'label': '查热量趋势',  'wake_word': '查热量趋势',   'command': 'python scripts/render_health_dashboard.py --days 30'},
+    {'label': '查食物排行',  'wake_word': '查食物排行',   'command': 'python scripts/render_food_ranking.py --all'},
+    {'label': '扫禁忌',      'wake_word': '扫禁忌',       'command': 'python scripts/render_contraindication.py'},
+    {'label': '复盘',        'wake_word': '复盘',         'command': 'python scripts/render_review.py'},
 ]
 
 
@@ -125,10 +114,9 @@ def _attach_prompts(actions):
     prompt 优先用于前端展示与复制;command 作为 fallback。
     """
     wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
-    label_to_wake = dict(_QUICK_ACTION_WAKE_MAP)
     out = []
     for a in actions:
-        wake = label_to_wake.get(a['label'])
+        wake = a.get('wake_word', '')
         prompt = wake_to_prompt.get(wake, '') if wake else ''
         out.append({**a, 'prompt': prompt, 'wake_word': wake})
     return out

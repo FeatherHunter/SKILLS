@@ -131,6 +131,11 @@ def main():
 
     command = sys.argv[1]
 
+    # ADR-0004 · ticket 04: 顶层 --help / -h 立即返回 usage
+    if command in ("--help", "-h", "help"):
+        usage()
+        sys.exit(0)
+
     try:
         if command == "add":
             if len(sys.argv) < 5:
@@ -387,11 +392,49 @@ def main():
             weight.get_weight_history(days)  # fallback 纯文本
 
         elif command == "weight-goal":
-            if len(sys.argv) < 3:
-                print("Error: weight-goal requires <kg> [deadline YYYY-MM-DD]")
+            # ADR-0004 · ticket 04: 改用 --weight-goal --deadline 标志位
+            if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
+                print("用法: weight-goal --weight-goal <kg> --deadline <YYYY-MM-DD>")
+                print("示例: weight-goal --weight-goal 73 --deadline 2026-12-31")
+                print("(老接口 weight-goal <kg> [deadline] 临时保留,带 deprecation warning,3 月后删除)")
+                sys.exit(0)
+            # 解析标志位
+            kg = None
+            deadline = None
+            legacy_kg = None
+            i = 2
+            while i < len(sys.argv):
+                arg = sys.argv[i]
+                if arg == "--weight-goal" and i + 1 < len(sys.argv):
+                    try:
+                        kg = float(sys.argv[i + 1])
+                    except ValueError:
+                        print(f"Error: --weight-goal 需要数字,实得 '{sys.argv[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                elif arg == "--deadline" and i + 1 < len(sys.argv):
+                    deadline = sys.argv[i + 1]
+                    i += 2
+                elif not arg.startswith("--"):
+                    # 老接口: positional 参数,带 deprecation warning
+                    print(f"⚠️  DEPRECATION: weight-goal {arg} ... 即将废弃,请改用 --weight-goal {arg}", file=sys.stderr)
+                    if legacy_kg is None:
+                        try:
+                            legacy_kg = float(arg)
+                        except ValueError:
+                            print(f"Error: <kg> 需要数字,实得 '{arg}'", file=sys.stderr)
+                            sys.exit(2)
+                    else:
+                        deadline = arg  # 第二个 positional 是 deadline
+                    i += 1
+                else:
+                    print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
+                    sys.exit(2)
+            final_kg = kg if kg is not None else legacy_kg
+            if final_kg is None:
+                print("Error: 缺少 --weight-goal <kg>", file=sys.stderr)
                 sys.exit(1)
-            deadline = sys.argv[3] if len(sys.argv) > 3 else None
-            weight_goal.set_weight_goal(sys.argv[2], deadline)
+            weight_goal.set_weight_goal(final_kg, deadline)
 
         elif command == "weight-goal-progress":
             weight_goal.print_goal_progress()
@@ -446,8 +489,34 @@ def main():
             product_library.update_product(sys.argv[2], **kwargs)
 
         elif command == "list-products":
-            limit = int(sys.argv[2]) if len(sys.argv) > 2 else 50
-            product_library.list_products(limit)
+            # ADR-0005 · ticket 04 + ticket 07: 默认 200 + --all 显式全量
+            if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
+                print("用法: list-products [--all | --limit <N>] [--text]")
+                print("默认: 前 200 行(按 id 升序)")
+                print("--all: 全部行(无 LIMIT)")
+                print("--limit N: 自定义行数")
+                print("--text: 纯文本输出(供 pipeline 用,如 ... | grep)")
+                sys.exit(0)
+            limit = 200
+            i = 2
+            while i < len(sys.argv):
+                arg = sys.argv[i]
+                if arg == "--all":
+                    limit = None
+                    i += 1
+                elif arg == "--limit" and i + 1 < len(sys.argv):
+                    try:
+                        limit = int(sys.argv[i + 1])
+                    except ValueError:
+                        print(f"Error: --limit 需要数字,实得 '{sys.argv[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                else:
+                    print(f"Error: 未知参数 '{arg}'(list-products 只接受 --all / --limit N)", file=sys.stderr)
+                    sys.exit(2)
+            # None (=--all) 转成 999999 防 SQLite LIMIT NULL 报错
+            actual_limit = limit if limit is not None else 999999
+            product_library.list_products(actual_limit)
 
         elif command == "profile":
             # profile 子命令

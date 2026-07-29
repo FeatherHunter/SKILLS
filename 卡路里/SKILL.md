@@ -38,6 +38,12 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
    - **写库回执必有 ID** — V1.0 §02 第②特性"ID + 时间戳 + 影响行数"是 Verifiable 的硬规则
 
    验证脚本:`scripts/check_write_contract.py`(待加 V2.4.15) — 扫所有子命令,确保每个写库类 CLI 都 print id+timestamp+rows_affected。
+
+7. ⭐ **AI 验证协议(v2.5 增,Issue 6 反馈)**:AI 在 SKILL 内声称"用户没 X / 用户从未 Y"前,**必须**先对该 X/Y 对应的 DB 表执行 SELECT 验证。3 个 fail mode 红线示例:
+   - (a) **写脏数据后断言原值** — 如 `daily_goal.weight_goal` 被某次 `weight-goal --help` 误写为字符串 `'--help'`,AI 应先 SELECT 看到字符串就识别为损坏数据,而不是回写字符串或假装"原值是 None"。
+   - (b) **空值误判'从未设过'** — `NULL` / `0` / 空字符串 ≠ "从未设过";可能是过期数据 / 损坏数据 / 字段尚未初始化。
+   - (c) **类型误判** — 当 DB 返回非预期类型(如字符串而非数字)时,AI 不得假设其为 0 或"未设"。
+   - 违反 = 协议 fail mode,等同 HTML-First 反模式(第 4 条)。详见 ADR-0007。
 5. ⭐ **Wizard Verify 决策铁则(v2.4.3 增,用户实测反馈)**:对 `记围度` / `记体脂` 等**配置型 wizard** 的 trigger,AI **必须**根据用户输入决定走哪条流程:
 
    | 场景 | 触发 | AI 行为 | 命令模板 |
@@ -62,6 +68,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 - **起床确认不提卡路里**:唤醒词场景的确认语中不出现"卡路里"三字,直接问"要不要记录"
 - **只建议不自动修改**:Lint 检查发现问题后列出清单,让用户决定
 - ⭐ **HTML-First(V1.3 原则 11)**:AI 收到 trigger 词后,先查 §已实现模板表 是否有对应 HTML。有则**强制 invoke HTML**(渲染 → 打开),无则可文字答。详见 §⚠️ 强制性规定 第 4 条 + §已实现模板表 强制 trigger 列。
+- ⭐ **AI 验证协议(v2.5 增,ADR-0007)**:AI 声称"用户没 X"前必先 SELECT 验证。空值 ≠ "从未设过",写脏 ≠ "原值是 None",类型错 ≠ "视为 0"。详见 §⚠️ 强制性规定 第 7 条。
 
 ### 📚 nutrition_products 数据治理原则(2026-06-30 共识)
 
@@ -155,6 +162,8 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/nutrition_ratio.html` | 查营养结构 | `analysis.diet_nutrition_ratio(as_dict=True)` | `scripts/render_nutrition_ratio.py` |
 | `templates/calorie_deficit.html` | 查热量缺口 | `analysis.diet_deficit_analysis(as_dict=True)` | `scripts/render_calorie_deficit.py` |
 | `templates/food_ranking.html` | 查食物排行 / 查高热量榜 / 查低热量榜 / 查频繁吃榜 / 查高碳水榜 / 查高蛋白榜 | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
+| `templates/food_search.html` | 查热量(ADR-0005 · ticket 06) | `nutrition_products` LIKE 搜索 | `scripts/render_food_search.py --query "<term>"` |
+| `templates/food_library.html` | 查食品库(ADR-0005 · ticket 07) | `nutrition_products` 列表 + 客户端搜索/分页 | `scripts/render_food_library.py [--limit 200 | --all]` |
 | `templates/weight_history.html` | 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 (4 mode) | `analysis.weight_*` 系列 | `scripts/render_weight_history.py [--mode]` |
 | `templates/exercise_summary.html` | 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势 (4 mode) | `exercise_tracker.py summary/stats/trend/list` | `scripts/render_exercise_summary.py` |
 | `templates/exercise_distribution.html` | 查运动分布 / 查运动贡献 | `analysis.exercise_*` | `scripts/render_exercise_distribution.py` |
@@ -228,6 +237,7 @@ python scripts/check_trigger_consistency.py
 | 环境变量 | 说明 |
 |---------|------|
 | `SKILLS_DB_PATH` | 数据库文件所在目录 |
+| `SKILLS_DB_PATH_TEST` | (v2.5 增,ADR-0006)测试用临时 DB 目录。`tests/conftest.py` 的 `temp_db` fixture 自动设置;**生产 `calorie_data.db` 永不被测试触碰**。 |
 
 DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.db/` 文件夹 → 自动创建 `.db/` 目录。
 
@@ -291,10 +301,10 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查热量 | 搜索食品营养成分 | `python scripts/calorie_tracker.py search-product` |
+| 查热量 | 搜索食品营养成分(HTML · ticket 06 · ADR-0005) | `python scripts/render_food_search.py --query "<term>"` |
 | 存食品 | 添加食品营养成分表到库 | `python scripts/calorie_tracker.py add-product` |
 | 改食品 | 更新食品营养成分 | `python scripts/calorie_tracker.py update-product` |
-| 查食品库 | 列出全部食品营养成分 | `python scripts/calorie_tracker.py list-products` |
+| 查食品库 | 列出全部食品营养成分(HTML · ticket 07 · ADR-0005 · 默认 200 行 / --all 全量) | `python scripts/render_food_library.py [--limit 200 \| --all]` |
 | 批量导入 | 批量录入/更新食品库 | `python scripts/batch_import.py import` |
 | 校验批量 | 只校验 JSONL 不写入 | `python scripts/batch_import.py validate` |
 | 查食品库去重 | 全库去重检查 | `python scripts/batch_import.py dedupe` |

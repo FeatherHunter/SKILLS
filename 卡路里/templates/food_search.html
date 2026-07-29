@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 食物热量查询</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.7; color: var(--fg); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 20px 100px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+  .sub { font-size: 14px; color: var(--fg3); margin-top: 4px; }
+
+  .search-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .search-box input { flex: 1; min-width: 160px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; }
+  .search-box .count { font-size: 13px; color: var(--fg2); }
+
+  .food-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .food-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; }
+  .food-card .name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .food-card .brand { font-size: 12px; color: var(--fg3); margin-bottom: 8px; }
+  .food-card .macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .food-card .macro { background: var(--soft); border-radius: 8px; padding: 6px 8px; text-align: center; }
+  .food-card .macro .m-label { font-size: 10px; color: var(--fg3); margin-bottom: 2px; }
+  .food-card .macro .m-value { font-size: 14px; font-weight: 700; }
+  .food-card .source { font-size: 11px; color: var(--fg3); margin-top: 8px; }
+
+  .empty { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; color: var(--fg2); }
+
+  .footer { margin-top: 20px; padding: 12px 16px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
+
+  /* ticket 06 · mobile responsive */
+  @media (max-width:640px) {
+    body { padding: 20px 14px 80px; }
+    h1 { font-size: 22px; }
+    .food-card .macros { grid-template-columns: repeat(2, 1fr); }
+    .search-box { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🍱 食物热量查询</h1>
+    <p class="sub" id="metaSub">查询中…</p>
+  </header>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="输入食物关键词,如 牛肉 / 鸡胸 / 可乐" />
+    <span class="count" id="matchCount">— 匹配 —</span>
+  </div>
+
+  <div id="results" class="food-grid"></div>
+
+  <div class="footer">
+    📂 数据源:calorie_data.db · nutrition_products · ticket 06 / ADR-0005
+  </div>
+
+</div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function() {
+  const DATA = window.__DATA__ || { data: { items: [], query: '' } };
+  const items = DATA.data.items || [];
+  const query = DATA.data.query || '';
+
+  document.getElementById('metaSub').textContent =
+    '查询关键词:' + query + ' · 匹配 ' + items.length + ' 条';
+  document.getElementById('matchCount').textContent = items.length + ' 个匹配';
+
+  const results = document.getElementById('results');
+  if (items.length === 0) {
+    results.innerHTML = '<div class="empty">无匹配食物。请尝试其他关键词,或先用 <code>存食品</code> 添加。</div>';
+    return;
+  }
+
+  results.innerHTML = items.map(function(it) {
+    const macros = [
+      { label: '热量', value: (it.calories != null ? it.calories.toFixed(0) : '—') + ' 卡' },
+      { label: '蛋白', value: (it.protein != null ? it.protein.toFixed(1) : '—') + ' g' },
+      { label: '脂肪', value: (it.fat != null ? it.fat.toFixed(1) : '—') + ' g' },
+      { label: '碳水', value: (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + ' g' },
+    ];
+    return '<div class="food-card">'
+      + '<div class="name">' + escape(it.product_name) + '</div>'
+      + '<div class="brand">' + escape(it.brand || '—') + '</div>'
+      + '<div class="macros">' + macros.map(function(m) {
+          return '<div class="macro"><div class="m-label">' + m.label + '</div><div class="m-value">' + m.value + '</div></div>';
+        }).join('') + '</div>'
+      + '<div class="source">来源:' + escape(it.source || '未知') + (it.updated_at ? ' · 更新于 ' + it.updated_at : '') + '</div>'
+      + '</div>';
+  }).join('');
+
+  function escape(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  // 客户端实时过滤(查询框输入)
+  const searchInput = document.getElementById('searchInput');
+  searchInput.value = query;
+  searchInput.addEventListener('input', function() {
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = items.filter(function(it) {
+      return it.product_name.toLowerCase().includes(q);
+    });
+    document.getElementById('matchCount').textContent = filtered.length + ' 个匹配';
+    results.innerHTML = filtered.length === 0
+      ? '<div class="empty">实时过滤无匹配。</div>'
+      : filtered.map(function(it) {
+          const macros = [
+            { label: '热量', value: (it.calories != null ? it.calories.toFixed(0) : '—') + ' 卡' },
+            { label: '蛋白', value: (it.protein != null ? it.protein.toFixed(1) : '—') + ' g' },
+            { label: '脂肪', value: (it.fat != null ? it.fat.toFixed(1) : '—') + ' g' },
+            { label: '碳水', value: (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + ' g' },
+          ];
+          return '<div class="food-card">'
+            + '<div class="name">' + escape(it.product_name) + '</div>'
+            + '<div class="brand">' + escape(it.brand || '—') + '</div>'
+            + '<div class="macros">' + macros.map(function(m) {
+                return '<div class="macro"><div class="m-label">' + m.label + '</div><div class="m-value">' + m.value + '</div></div>';
+              }).join('') + '</div>'
+            + '<div class="source">来源:' + escape(it.source || '未知') + '</div>'
+            + '</div>';
+        }).join('');
+  });
+})();
+</script>
+</body>
+</html>

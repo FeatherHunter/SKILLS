@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 食品库</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.65; color: var(--fg); background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 20px 100px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  header { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 24px; font-weight: 700; }
+  .meta { font-size: 13px; color: var(--fg3); margin-top: 4px; }
+
+  .search-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .search-box input { flex: 1; min-width: 160px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-family: inherit; }
+  .search-box .btn { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .search-box .btn:hover { background: #0051a8; }
+  .search-box .count { font-size: 13px; color: var(--fg2); margin-left: auto; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; background: var(--card); border: 1px solid var(--border); border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { background: var(--soft); font-weight: 600; font-size: 11.5px; color: var(--fg2); position: sticky; top: 0; }
+  tr:hover td { background: rgba(0,113,227,.04); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+  .pagination button { padding: 6px 12px; border: 1px solid var(--border); background: var(--card); border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .pagination button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .footer { margin-top: 20px; padding: 12px 16px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
+
+  /* ticket 07 · mobile responsive */
+  @media (max-width:640px) {
+    body { padding: 20px 14px 80px; }
+    h1 { font-size: 20px; }
+    .search-box { flex-direction: column; align-items: stretch; }
+    .search-box .count { margin-left: 0; }
+    th, td { padding: 7px 8px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>📚 食品营养库</h1>
+    <p class="meta" id="metaSub">— 条记录 · 客户端搜索 + 分页</p>
+  </header>
+
+  <div class="search-box">
+    <input type="search" id="searchInput" placeholder="搜索食品名 / 品牌…(回车应用)" />
+    <button class="btn" id="copyPrompt">📋 复制 prompt</button>
+    <span class="count" id="matchCount">—</span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="foodTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>食品名</th>
+          <th>品牌</th>
+          <th class="num">热量</th>
+          <th class="num">蛋白</th>
+          <th class="num">脂肪</th>
+          <th class="num">碳水</th>
+          <th class="num">钠</th>
+        </tr>
+      </thead>
+      <tbody id="foodBody"></tbody>
+    </table>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+
+  <div class="footer">
+    📂 数据源:calorie_data.db · nutrition_products · ticket 07 / ADR-0005
+  </div>
+
+</div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function() {
+  const DATA = window.__DATA__ || { data: { items: [], total_count: 0, page_size: 50 } };
+  const allItems = DATA.data.items || [];
+  const totalCount = DATA.data.total_count || allItems.length;
+  const pageSize = DATA.data.page_size || 50;
+  let currentPage = 1;
+  let currentQuery = '';
+
+  const foodBody = document.getElementById('foodBody');
+  const matchCount = document.getElementById('matchCount');
+  const metaSub = document.getElementById('metaSub');
+  const paginationEl = document.getElementById('pagination');
+  const searchInput = document.getElementById('searchInput');
+  const copyBtn = document.getElementById('copyPrompt');
+
+  metaSub.textContent = totalCount + ' 条记录 · 客户端搜索 + 分页';
+
+  function escape(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function render() {
+    const filtered = currentQuery
+      ? allItems.filter(it =>
+          (it.product_name || '').toLowerCase().includes(currentQuery) ||
+          (it.brand || '').toLowerCase().includes(currentQuery)
+        )
+      : allItems;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+
+    matchCount.textContent = filtered.length + ' 个匹配 · 第 ' + currentPage + '/' + totalPages + ' 页';
+
+    if (filtered.length === 0) {
+      foodBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:32px; color:var(--fg2);">无匹配。</td></tr>';
+      paginationEl.innerHTML = '';
+      return;
+    }
+
+    foodBody.innerHTML = pageItems.map(it =>
+      '<tr>'
+      + '<td>' + it.id + '</td>'
+      + '<td>' + escape(it.product_name) + '</td>'
+      + '<td>' + escape(it.brand || '—') + '</td>'
+      + '<td class="num">' + (it.calories != null ? it.calories.toFixed(0) : '—') + '</td>'
+      + '<td class="num">' + (it.protein != null ? it.protein.toFixed(1) : '—') + '</td>'
+      + '<td class="num">' + (it.fat != null ? it.fat.toFixed(1) : '—') + '</td>'
+      + '<td class="num">' + (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + '</td>'
+      + '<td class="num">' + (it.sodium != null ? it.sodium.toFixed(0) : '—') + '</td>'
+      + '</tr>'
+    ).join('');
+
+    // 分页控件
+    let phtml = '';
+    phtml += '<button ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">‹ 上一页</button>';
+    const maxBtn = 5;
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, startPage + maxBtn - 1);
+    for (let p = startPage; p <= endPage; p++) {
+      phtml += '<button class="' + (p === currentPage ? 'active' : '') + '" data-page="' + p + '">' + p + '</button>';
+    }
+    phtml += '<button ' + (currentPage === totalPages ? 'disabled' : '') + ' data-page="' + (currentPage + 1) + '">下一页 ›</button>';
+    paginationEl.innerHTML = phtml;
+    paginationEl.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => { currentPage = parseInt(b.dataset.page, 10); render(); });
+    });
+  }
+
+  // 搜索
+  searchInput.addEventListener('input', () => {
+    currentQuery = searchInput.value.trim().toLowerCase();
+    currentPage = 1;
+    render();
+  });
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      currentQuery = searchInput.value.trim().toLowerCase();
+      render();
+    }
+  });
+
+  // 总纲钩子 5 · ticket 06/07 自查发现:过程型 HTML 必须有"复制 prompt"按钮
+  copyBtn.addEventListener('click', () => {
+    const prompt = currentQuery
+      ? `查食品库 "${currentQuery}"  ·  ${totalCount} 条记录,当前筛选命中 ${document.getElementById('matchCount').textContent}`
+      : `查食品库 · ${totalCount} 条记录全部列出`;
+    const ta = document.createElement('textarea');
+    ta.value = prompt;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    const orig = copyBtn.textContent;
+    copyBtn.textContent = '✓ 已复制';
+    setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

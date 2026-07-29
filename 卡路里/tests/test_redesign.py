@@ -352,12 +352,22 @@ class TestCrossPagePromptConsistency:
     """ticket 15 · D7 · 跨页面 prompt 一致性"""
 
     def test_check_prompt_soak_passes(self):
-        """scripts/check_prompt_soak.py 自检 exit 0"""
-        import subprocess, sys
+        """scripts/check_prompt_soak.py 自检 exit 0
+
+        ticket 04 增量:temp_db fixture 把 SKILLS_DB_PATH 改为 temp 目录,
+        导致 check_prompt_soak tier 1 找不到 HELP 文件。本测试显式恢复
+        原始 SKILLS_DB_PATH(env.pop 后再 set 用户的 D:.db 路径),让 tier 1 生效。
+        """
+        import subprocess, sys, os
+        env = os.environ.copy()
+        env.pop("SKILLS_DB_PATH", None)
+        # tier 1 依赖此 env(手册 §4.1 · v2.4.8)
+        env["SKILLS_DB_PATH"] = r"D:\2Study\StudyNotes\.db"
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / 'check_prompt_soak.py')],
             cwd=SKILL_DIR, capture_output=True, text=True,
             encoding='utf-8', errors='replace', timeout=30,
+            env=env,
         )
         assert r.returncode == 0, (
             f'check_prompt_soak.py exit {r.returncode}\n{r.stdout}\n{r.stderr}'

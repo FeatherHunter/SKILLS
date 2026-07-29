@@ -123,8 +123,9 @@ def main() -> int:
     if args.text:
         sys.stdout.write("# MODE=text · 适用: ... | grep / awk / wc-l 等 pipeline\n")
         for it in items:
+            brand = it.get('brand') or '—'
             sys.stdout.write(
-                f"{it['id']:>5}  {it['product_name'][:30]:<30}  {it.get('brand', '—')[:10]:<10}  "
+                f"{it['id']:>5}  {(it.get('product_name') or '')[:30]:<30}  {brand[:10]:<10}  "
                 f"热 {it.get('calories', 0):>5} 蛋 {it.get('protein', 0):>4.1f}  "
                 f"脂 {it.get('fat', 0):>4.1f} 碳 {it.get('carbohydrates', 0):>5.1f}\n"
             )

@@ -142,3 +142,46 @@ def test_food_library_has_search_box_with_prompt_copy(temp_db, tmp_path):
     assert "复制" in html or "copy" in html.lower(), (
         "应有 '复制 prompt' 按钮(总纲钩子 5 要求)"
     )
+
+
+def test_food_library_text_mode_handles_null_brand(temp_db, tmp_path):
+    """Phase 3e.2: --text 输出不能因 brand IS NULL crash
+
+    实测:diet/蔬果/调味品类多数 brand 为 NULL,旧实现 it.get('brand','—')[:10]
+    因 dict.get 没覆盖 None 值会抛 TypeError。
+    """
+    import sqlite3
+    conn = sqlite3.connect(str(temp_db))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM nutrition_products")
+    rows = [
+        ("有品牌_1", "可口可乐", 100.0, 5.0, 2.0, 10.0, 50.0),
+        ("无品牌_1", None,        100.0, 5.0, 2.0, 10.0, 50.0),
+        ("无品牌_2", None,        200.0, 8.0, 3.0, 15.0, 80.0),
+        ("无品牌_3", "",          300.0, 10.0, 5.0, 20.0, 100.0),
+        ("有品牌_2", "百事",       150.0, 6.0, 2.5, 12.0, 60.0),
+    ]
+    for name, brand, cal, prot, fat, carb, sod in rows:
+        cur.execute(
+            "INSERT INTO nutrition_products"
+            "(product_name, brand, calories, protein, fat, carbohydrates, sodium) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (name, brand, cal, prot, fat, carb, sod),
+        )
+    conn.commit()
+    conn.close()
+
+    r = subprocess.run(
+        [sys.executable, str(RENDER), "--text", "--limit", "10"],
+        cwd=SKILL_DIR, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+        env={**os.environ}, check=False,
+    )
+    assert r.returncode == 0, f"--text 应 exit 0,实得 {r.returncode}, stderr={r.stderr}"
+    # 过滤 header + footer:仅算产品行(数字开头 + 4 空格分隔)
+    import re
+    data_lines = [l for l in r.stdout.splitlines() if l and not l.startswith("#")]
+    # 过滤掉空行
+    data_lines = [l for l in data_lines if l.strip()]
+    assert len(data_lines) == 5, f"应输出 5 行数据,实得 {len(data_lines)}: {data_lines}"
+    assert "—" in r.stdout, "NULL brand 应显示 —"

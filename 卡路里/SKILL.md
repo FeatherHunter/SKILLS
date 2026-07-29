@@ -59,6 +59,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 - **起床确认不提卡路里**:唤醒词场景的确认语中不出现"卡路里"三字,直接问"要不要记录"
 - **只建议不自动修改**:Lint 检查发现问题后列出清单,让用户决定
 - ⭐ **HTML-First(V1.3 原则 11)**:AI 收到 trigger 词后,先查 §已实现模板表 是否有对应 HTML。有则**强制 invoke HTML**(渲染 → 打开),无则可文字答。详见 §⚠️ 强制性规定 第 4 条 + §已实现模板表 强制 trigger 列。
+- ⭐ **不存 deprecation 库存(v2.5.5 增,ADR-0004 supersede)**:卡路里所有破坏性变更**立即生效**,不写 `--legacy-positional` 之类的逃生口。老脚本必须随 schema 升级而升级。详见 ADR-0004 附录"CLI 演进史"。
 - ⭐ **AI 验证协议(v2.5 增,ADR-0007)**:AI 声称"用户没 X"前必先 SELECT 验证。空值 ≠ "从未设过",写脏 ≠ "原值是 None",类型错 ≠ "视为 0"。详见 §⚠️ 强制性规定 第 7 条。
 
 ### 📚 nutrition_products 数据治理原则(2026-06-30 共识)
@@ -1063,7 +1064,7 @@ python scripts/calorie_tracker.py weight 70 --note "吃饱了"       # 带备注
 # 旧用法 'weight 70 178' / 'weight 70 吃饱了' 都不再支持
 python scripts/calorie_tracker.py weight-update 5 --weight 69.5   # 修改体重记录(按ID)
 python scripts/calorie_tracker.py weight-history 30              # 最近30天体重
-python scripts/calorie_tracker.py weight-goal 73 2026-12-31      # 设置体重目标 + 截止日期
+python scripts/calorie_tracker.py weight-goal --weight-goal 73 --deadline 2026-12-31    # 设置体重目标 + 截止日期(v2.5.5 起仅 flag 形式)
 python scripts/calorie_tracker.py weight-goal-progress           # 查看体重目标进度
 ```
 

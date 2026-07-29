@@ -429,18 +429,14 @@ def main():
             weight.get_weight_history(days)  # fallback 纯文本
 
         elif command == "weight-goal":
-            # ADR-0004 · ticket 04: --weight-goal --deadline 标志位
-            # 默认拒绝 positional;--legacy-positional 临时 escape hatch,2026-10-29 删除
+            # ADR-0004 v2.5.5 · ticket 10: --weight-goal --deadline 标志位
+            # v2.5.5 起不存 deprecation 库存:positional 参数立即拒绝,无 --legacy-positional 逃生口
             if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
                 print("用法: weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>]")
                 print("示例: weight-goal --weight-goal 73 --deadline 2026-12-31")
-                print("")
-                print("老接口(2026-10-29 删除):weight-goal --legacy-positional <kg> [deadline]")
                 sys.exit(0)
-            legacy_mode = False
             kg = None
             deadline = None
-            legacy_kg = None
             i = 2
             while i < len(sys.argv):
                 arg = sys.argv[i]
@@ -454,39 +450,23 @@ def main():
                 elif arg == "--deadline" and i + 1 < len(sys.argv):
                     deadline = sys.argv[i + 1]
                     i += 2
-                elif arg == "--legacy-positional":
-                    legacy_mode = True
-                    i += 1
                 elif not arg.startswith("--"):
-                    if not legacy_mode:
-                        print(
-                            f"Error: 拒绝 positional 参数 '{arg}'。"
-                            f"请用 --weight-goal <kg> [--deadline <date>]。"
-                            f"或显式加 --legacy-positional 使用老接口(2026-10-29 删除,见 ADR-0004)。",
-                            file=sys.stderr,
-                        )
-                        sys.exit(2)
-                    # 老接口: positional 参数,带 deprecation warning(指出正确迁移路径)
-                    if legacy_kg is None:
-                        print(f"⚠️  DEPRECATION: weight-goal {arg} 即将废弃(2026-10-29 删除),请改用 --weight-goal {arg}", file=sys.stderr)
-                        try:
-                            legacy_kg = float(arg)
-                        except ValueError:
-                            print(f"Error: <kg> 需要数字,实得 '{arg}'", file=sys.stderr)
-                            sys.exit(2)
-                    else:
-                        print(f"⚠️  DEPRECATION: weight-goal {arg} 即将废弃(2026-10-29 删除),请改用 --deadline {arg}", file=sys.stderr)
-                        deadline = arg  # 第二个 positional 是 deadline
-                    i += 1
+                    # v2.5.5 起,positional 立即拒绝(无 deprecation 库存)
+                    print(
+                        f"Error: 拒绝 positional 参数 '{arg}'。"
+                        f"请用 --weight-goal <kg> [--deadline <date>]"
+                        f"(v2.5.5 起不存 deprecation 库存,见 ADR-0004)。",
+                        file=sys.stderr,
+                    )
+                    sys.exit(2)
                 else:
                     print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
                     sys.exit(2)
-            final_kg = kg if kg is not None else legacy_kg
-            if final_kg is None:
+            if kg is None:
                 print(f"Error: 缺少 --weight-goal <kg>", file=sys.stderr)
                 sys.exit(1)
             # SKILL §⚠️ #6 写库回执契约
-            receipt = weight_goal.set_weight_goal(final_kg, deadline)
+            receipt = weight_goal.set_weight_goal(kg, deadline)
             print(f"✓ 体重目标已设定:{receipt['weight_goal']} kg"
                   + (f" | 目标日期:{receipt['deadline']}" if receipt['deadline'] else ""))
             print(f"id={receipt['id']} | 日期 {receipt['updated_at']} | 影响 {receipt['rows_affected']} 行")

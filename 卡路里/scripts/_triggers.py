@@ -243,7 +243,7 @@ TRIGGERS = [
     {
             'category': '体重',     'wake_word': '设体重目标',     'desc': '设置体重目标 + 截止日期',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal <kg> [deadline YYYY-MM-DD]', 'text': '请你加载技能 卡路里,执行唤醒词「设体重目标」。\n\n我要设减重/增重目标(kg + 可选截止日期)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/calorie_tracker.py weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>]', 'text': '请你加载技能 卡路里,执行唤醒词「设体重目标」。\n\n我要设减重/增重目标(kg + 可选截止日期,v2.5.5 起仅 flag 形式)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': ['目标体重 kg: ', '截止日期 YYYY-MM-DD(选填): '],
             'variants': []},
     {

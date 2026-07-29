@@ -65,18 +65,16 @@ def test_weight_goal_rejects_non_numeric_kg():
     )
 
 
-def test_weight_goal_positional_legacy_still_works():
-    """weight-goal <kg> <deadline> 老接口仍可用(带 deprecation warning)"""
+def test_weight_goal_rejects_positional_args():
+    """v2.5.5 起,positional 参数立即被拒(无 deprecation 库存)"""
     r = _run_cli("weight-goal", "73", "2026-12-31")
-    # 老接口要么 exit 0(写库成功),要么 exit 非 0(显示 deprecation warning 后报错)
-    # 我们只断言 deprecation warning 出现
+    # v2.5.5 ADR-0004 哲学:不存 deprecation 库存,positional 应被立即拒绝
+    assert r.returncode != 0, (
+        f"positional 参数应被拒绝(退出码非 0),实得 {r.returncode}"
+    )
     combined = r.stdout + r.stderr
-    assert ("deprecated" in combined.lower() or
-            "即将废弃" in combined or
-            "legacy" in combined.lower() or
-            r.returncode != 0 or
-            "id=" in r.stdout), (
-        f"老接口应给 deprecation 提示或拒绝,实得: {combined[:200]}"
+    assert "拒绝 positional" in combined or "请用 --weight-goal" in combined, (
+        f"应含拒绝提示与新接口指引,实得: {combined[:200]}"
     )
 
 

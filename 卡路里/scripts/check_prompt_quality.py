@@ -42,8 +42,12 @@ BAD_PATTERNS = [
 ]
 
 
-def check_one(label: str, text: str, errors: list, warnings: list):
-    """校验单条 prompt"""
+def check_one(label: str, text: str, errors: list, warnings: list, must_contain: list[str] | None = None):
+    """校验单条 prompt
+
+    Args:
+        must_contain: 若提供,要求 text 包含其中每个关键词(ticket 14 · 记吃了 4-step flow 守护)
+    """
     # 规则 1: 必须以"加载技能"开头(head)
     if not text.strip().startswith('请你加载技能'):
         errors.append(f'[{label}] head 错误: 必须以"请你加载技能..."开头')
@@ -60,6 +64,12 @@ def check_one(label: str, text: str, errors: list, warnings: list):
         if m:
             errors.append(f'[{label}] 流程型违规 "{pat}":{why} — 匹配:{m.group()!r}')
 
+    # 规则 7 (ticket 14): must_contain 关键词守护(若 trigger 声明了)
+    if must_contain:
+        for kw in must_contain:
+            if kw not in text:
+                errors.append(f'[{label}] 缺少必备关键词 "{kw}"(must_contain 守护)')
+
 
 def main():
     errors = []
@@ -67,11 +77,12 @@ def main():
 
     for t in TRIGGERS:
         wake = t['wake_word']
-        check_one(f'main/{wake}', t['main_prompt']['text'], errors, warnings)
+        must = t.get('must_contain')  # ticket 14 · 可选 must_contain 字段
+        check_one(f'main/{wake}', t['main_prompt']['text'], errors, warnings, must_contain=must)
 
         for v in t.get('variants', []):
             label = v['label']
-            check_one(f'v/{wake}/{label}', v['prompt'], errors, warnings)
+            check_one(f'v/{wake}/{label}', v['prompt'], errors, warnings, must_contain=must)
 
     # 输出
     n_main = len(TRIGGERS)

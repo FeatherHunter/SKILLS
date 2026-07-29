@@ -150,6 +150,23 @@ def main():
 
     issues = []
 
+    # ticket 03 · ADR-0002: 校验 _triggers.py 中 alias_of 关系(指向已存在的 wake_word)
+    sys.path.insert(0, str(RENDER_DIR))
+    try:
+        from _triggers import TRIGGERS as _TRIG
+        all_wakes = {t['wake_word'] for t in _TRIG}
+        for t in _TRIG:
+            ao = t.get('alias_of')
+            if ao is None:
+                continue
+            if ao not in all_wakes:
+                issues.append(
+                    f'[_triggers.py alias_of] wake_word="{t["wake_word"]}" 的 '
+                    f'alias_of="{ao}" 未在 TRIGGERS 中找到(必须指向已存在的 wake_word)'
+                )
+    except Exception as e:
+        issues.append(f'[_triggers.py 导入失败] {e}')
+
     # 对照 1: HTML 模板表 ⊆ frontmatter
     only_html = html - fm
     if only_html:

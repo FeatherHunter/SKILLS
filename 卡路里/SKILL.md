@@ -277,7 +277,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记吃了 | 记录饮食(库匹配/图片识别/外部搜索统一入口) | `python scripts/calorie_tracker.py add` |
+| 记吃了 | 记录饮食(4 步流程:查食品库 → 展示营养 → 用户确认 → 写库;ml/g 单位区分) | `python scripts/calorie_tracker.py add` |
 | 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `python scripts/calorie_tracker.py add` |
 | 删吃的 | 删除饮食记录 | `python scripts/calorie_tracker.py delete` |
 | 改吃的 | 修改已记录饮食(8 字段) | `python scripts/calorie_tracker.py update-meal <id> [--grams] [--food] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note]` |

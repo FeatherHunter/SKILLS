@@ -87,9 +87,11 @@ TRIGGERS = [
     {
             'category': '饮食记录',     'wake_word': '记吃了',     'desc': '把一条饮食写入 food_log,并回执 HTML',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注]', 'text': '请你加载技能 卡路里,执行唤醒词「记吃了」。\n\n我刚吃了一顿,需要写进 food_log,先告诉我你拿到了哪些字段(食物名/热量/蛋白/碳水/脂肪/克数/备注),需要我补什么再写。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'variants': [{
-        'label': '记吃了 [补录历史]', 'cli': 'python scripts/calorie_tracker.py add ... --date 2026-07-20 --time 12:30', 'prompt': '请你加载技能 卡路里,执行唤醒词「记吃了 [补录历史]」。\n\n刚想起来要补录之前的某次饮食(不是现在刚吃的)。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/calorie_tracker.py add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注]',
+        'text': '请你加载技能 卡路里,执行唤醒词「记吃了」。\n\n我刚吃了一顿,需要写进 food_log。\n\nAI 流程:\n1. 在食品库查询食物名(如 "元气森林 冰红茶汽水")。\n2. 若命中:展示营养数据(每 100g 的热量/蛋白/碳水/脂肪),等我确认后写库。\n3. 若无命中:区分单位(ml vs g),如必要请我提供克数或包装营养数据,标注估算来源。\n4. 完成后给 1 句话总结,不需要过多文字解释。'},
+        'must_contain': ['食品库', '确认', '单位'],
+        'variants': [{
+        'label': '记吃了 [补录历史]', 'cli': 'python scripts/calorie_tracker.py add ... --date 2026-07-20 --time 12:30', 'prompt': '请你加载技能 卡路里,执行唤醒词「记吃了 [补录历史]」。\n\n刚想起来要补录之前的某次饮食(不是现在刚吃的)。同样走"查食品库 → 展示营养 → 用户确认 → 写库"4 步流程,单位 ml 与 g 区分。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
     {
             'category': '饮食记录',     'wake_word': '拍营养表',     'desc': '图片识别营养成分表并记录',
             'main_prompt': {
@@ -113,6 +115,7 @@ TRIGGERS = [
         'label': '查今天吃 昨天', 'cli': 'python scripts/render_today_diet.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查今天吃 昨天」。\n\n我要看昨天的饮食摘要。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
     {
             'category': '饮食记录',     'wake_word': '查吃的记录',     'desc': '今日逐条饮食记录(list)',
+            'alias_of': '查今天吃',  # ADR-0002 · ticket 03: 查吃的记录 是 查今天吃 的 alias
             'main_prompt': {
         'cli': 'python scripts/render_today_meals.py', 'text': '请你加载技能 卡路里,执行唤醒词「查吃的记录」。\n\n我想看今天吃的明细(逐条/不是摘要)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'variants': [{

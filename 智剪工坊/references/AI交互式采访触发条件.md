@@ -39,7 +39,7 @@
 - `output.aspect_ratio`（除非用 16:9 默认）
 - `videos[].file`（至少 1 个）
 - `cover.type`（如果用 cover 必填）
-- `ending.type`（如果用 ending 必填）
+- `ending.template`(v3.0 必填,D2:取代旧 `ending.type`)
 
 ---
 

@@ -7,9 +7,7 @@
 
 | 用户说的 | 实际指 | 路由 |
 |---|---|---|
-| "剪头/剪尾" | trim-head / trim-tail | `scripts/video/trim.py` (旧 `processing.py` v1.7 改名) |
-| "去掉中间" | cut-middle | `scripts/video/trim.py` (旧 `processing.py` v1.7 改名) |
-| "保留某段" | pin-range | `scripts/video/trim.py` (旧 `processing.py` v1.7 改名) |
+| "剪头/剪尾/去掉中间/保留某段" | `videos[i].time_segments[]` 边界(D7) | `scripts/video/trim.py`(整段 trim) + 用户在 timeline 上框选 time_segments |
 | "加转场" | sequences[].transitions | `scripts/video/xfade.py` |
 | "加 BGM" | audio-mix | `scripts/audio/mix.py` |
 | "变声" | audio-voice | `scripts/audio/voice.py` |

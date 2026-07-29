@@ -281,8 +281,8 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `python scripts/calorie_tracker.py add` |
 | 删吃的 | 删除饮食记录 | `python scripts/calorie_tracker.py delete` |
 | 改吃的 | 修改已记录饮食(8 字段) | `python scripts/calorie_tracker.py update-meal <id> [--grams] [--food] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note]` |
-| 查今天吃 | 今日饮食摘要 | `python scripts/calorie_tracker.py summary` |
-| 查吃的记录 | 今日逐条饮食记录 | `python scripts/calorie_tracker.py list` |
+| 查今天吃 | 今日饮食摘要(单日,合并 `查吃的记录` alias,ADR-0002) | `python scripts/render_today_diet.py` |
+| 查吃的记录 | (alias of `查今天吃`,ADR-0002 · 同走 today_diet;跨多日区间走 `render_today_meals.py`) | 同 `查今天吃` |
 | 查热量历史 | 最近 N 天热量摄入历史 | `python scripts/calorie_tracker.py history` |
 | 记喝水 | 记录饮水量 | `python scripts/calorie_tracker.py water` |
 | 查今天喝水 | 今日饮水量 | `python scripts/calorie_tracker.py summary` |

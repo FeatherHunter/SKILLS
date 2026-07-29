@@ -115,12 +115,12 @@ TRIGGERS = [
         'label': '查今天吃 昨天', 'cli': 'python scripts/render_today_diet.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查今天吃 昨天」。\n\n我要看昨天的饮食摘要。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
     {
             'category': '饮食记录',     'wake_word': '查吃的记录',     'desc': '今日逐条饮食记录(list)',
-            'alias_of': '查今天吃',  # ADR-0002 · ticket 03: 查吃的记录 是 查今天吃 的 alias
+            'alias_of': '查今天吃',  # ADR-0002 · ticket 03+04: 查吃的记录 = 查今天吃 的 alias,主 prompt 同源
             'main_prompt': {
-        'cli': 'python scripts/render_today_meals.py', 'text': '请你加载技能 卡路里,执行唤醒词「查吃的记录」。\n\n我想看今天吃的明细(逐条/不是摘要)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_today_diet.py', 'text': '请你加载技能 卡路里,执行唤醒词「查吃的记录」。\n\n我想看今天吃的明细(逐条/不是摘要)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'variants': [{
-        'label': '查吃的记录 昨天', 'cli': 'python scripts/render_today_meals.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 昨天」。\n\n我要看昨天的逐条饮食记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查吃的记录 7/1 到 7/14', 'cli': 'python scripts/render_today_meals.py --start 2026-07-01 --end 2026-07-14', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 7/1 到 7/14」。\n\n我给出明确日期区间,你看区间生成列表。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'label': '查吃的记录 昨天', 'cli': 'python scripts/render_today_diet.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 昨天」。\n\n我要看昨天的逐条饮食记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
+        'label': '查吃的记录 7/1 到 7/14', 'cli': 'python scripts/render_today_meals.py --start 2026-07-01 --end 2026-07-14', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 7/1 到 7/14」。\n\n我给出明确日期区间,你看区间生成列表(跨多日时切到 today_meals 模板)。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
     {
             'category': '饮食记录',     'wake_word': '查热量历史',     'desc': '最近 N 天热量摄入历史',
             'main_prompt': {

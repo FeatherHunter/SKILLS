@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智剪工坊 · 两份 mock JSON 对比报告</title>
+<style>
+  :root {
+    --bg: #F2F2F7; --card: #FFFFFF; --label: #1C1C1E; --secondary: #8E8E93;
+    --tertiary: #C7C7CC; --border: #E5E5EA;
+    --blue: #007AFF; --red: #FF3B30; --orange: #FF9500; --green: #34C759;
+    --gray-fill: #EFEFF4;
+    --red-bg: rgba(255,59,48,0.08);
+    --orange-bg: rgba(255,149,0,0.08);
+    --green-bg: rgba(52,199,89,0.08);
+    --blue-bg: rgba(0,122,255,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--label); line-height: 1.65;
+    padding: 32px 20px 80px; -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .meta { font-size: 13px; color: var(--secondary); line-height: 1.7; }
+  .meta strong { color: var(--label); font-weight: 500; }
+  .lead {
+    background: var(--card); padding: 16px 20px; border-radius: 14px;
+    margin-bottom: 24px; font-size: 14px; line-height: 1.7;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    border-left: 3px solid var(--blue);
+  }
+  section {
+    background: var(--card); padding: 22px 24px; border-radius: 14px;
+    margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  h2 { font-size: 19px; font-weight: 600; margin-bottom: 14px; letter-spacing: -0.3px;
+       display: flex; align-items: center; gap: 10px; }
+  h2 .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px; font-family: ui-monospace, monospace; color: #fff; }
+  h2 .badge.ok { background: var(--green); }
+  h2 .badge.warn { background: var(--orange); }
+  h2 .badge.bad { background: var(--red); }
+  h3 { font-size: 15px; font-weight: 600; margin: 18px 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--gray-fill); color: var(--secondary); font-weight: 500; font-size: 12px; }
+  td code { background: var(--gray-fill); padding: 1px 5px; border-radius: 3px; font-family: ui-monospace, SF Mono, monospace; font-size: 12px; }
+  .status { font-weight: 600; font-size: 12px; white-space: nowrap; }
+  .status.ok { color: var(--green); }
+  .status.warn { color: var(--orange); }
+  .status.bad { color: var(--red); }
+  .status.low { color: var(--secondary); }
+  .finding {
+    border-radius: 10px; padding: 12px 14px; margin: 10px 0; font-size: 13px; line-height: 1.6;
+  }
+  .finding.red { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .finding.orange { background: var(--orange-bg); border-left: 3px solid var(--orange); }
+  .finding.green { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .finding.blue { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+  .finding .tag { font-size: 11px; font-weight: 600; font-family: ui-monospace, monospace; margin-right: 6px; }
+  .finding .tag.red { color: var(--red); }
+  .finding .tag.orange { color: var(--orange); }
+  .finding .tag.green { color: var(--green); }
+  .finding .tag.blue { color: var(--blue); }
+  pre {
+    background: #1d1d1f; color: #f5f5f7; padding: 14px 16px;
+    border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.55; margin: 8px 0;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  .src-link { font-size: 11px; color: var(--blue); font-family: ui-monospace, monospace; }
+  .file-tabs {
+    display: flex; gap: 6px; margin: 10px 0;
+  }
+  .file-tabs .file {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font-size: 12px; font-family: ui-monospace, monospace;
+    color: var(--label); cursor: pointer;
+  }
+  .file-tabs .file:hover { border-color: var(--blue); }
+  .diff-table { font-size: 12.5px; }
+  .diff-table .col { width: 35%; }
+  .diff-table .src-col { width: 15%; }
+  footer { text-align: center; color: var(--tertiary); font-size: 12px; margin-top: 32px; }
+  .legend {
+    display: flex; gap: 16px; margin: 10px 0; font-size: 12px; color: var(--secondary); flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>智剪工坊 · 两份 mock JSON 对比报告</h1>
+  <div class="meta">
+    <strong>对照双方:</strong>
+    · <code>2026-07-29-mock-html-actual.json</code> — 追溯 <code>智剪工坊-意图编辑.html</code> 的 <code>collectFormData()</code> 与 <code>SegmentState</code> 实际产出<br>
+    · <code>2026-07-29-mock-spec-ideal.json</code> — 遵循 <code>docs/superpowers/specs/2026-07-25-video-time-segment-model.html</code> §4/§5 理想产出<br>
+    <strong>生成时间:</strong> 2026-07-29 · grill-with-docs 第一性原理阶段 · 对抗式审查结果
+  </div>
+</header>
+
+<div class="lead">
+  <strong>核心结论:</strong>两份 mock 数据完整对照后发现 <strong>5 个差异根因</strong> + <strong>1 个语义歧义</strong>。<br>
+  · HTML 实际 mock 含 <code>_meta.version: "0.7"</code> / 无 <code>schema_version</code> / 含 <code>history[]</code>(共 3 处不一致)<br>
+  · HTML 实际 mock 含 <code>output.aspect_ratio_custom</code>(spec 无)<br>
+  · HTML 实际 mock 的 <code>video_ops</code> 多出 <strong>5 个该消失的 op</strong>(<code>trim-head</code>/<code>trim-tail</code>/<code>cut-middle</code>/<code>pin-range</code>/<code>target-duration</code>),且 <code>cut-middle</code> / <code>pin-range</code> 的 from/to 值<strong>未收集</strong>(致命 bug)<br>
+  · HTML 实际 mock 的段多了 <strong><code>user</code> op</strong>(拆段产生的内部标记)和 <strong>已删段</strong>(未过滤)<br>
+  · HTML 表单与 spec 枚举值不一致:<code>cover.type</code> / <code>ending.type</code>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> 对齐</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> 部分对齐(命名/范围)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> 严重不对齐</div>
+</div>
+
+<!-- ===================== 一、_meta ===================== -->
+<section>
+  <h2>一、<code>_meta</code> 顶层元数据 <span class="badge warn">部分对齐</span></h2>
+  <table class="diff-table">
+    <thead><tr>
+      <th class="src-col">代码定位</th>
+      <th class="col">字段</th>
+      <th class="col">HTML 实际 mock</th>
+      <th class="col">spec 理想 mock</th>
+      <th class="src-col">状态</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="src-link">html:4867-4876</span></td>
+        <td><code>tool</code></td>
+        <td><code>"智剪工坊"</code></td>
+        <td><code>"智剪工坊"</code></td>
+        <td><span class="status ok">✅</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:4868</span></td>
+        <td><code>version</code></td>
+        <td><code>"0.7"</code> ← HTML 硬编码</td>
+        <td><span style="color:var(--red)">不存在</span>(spec 不列此字段)</td>
+        <td><span class="status bad">❌</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:无<Br>spec:§4 _meta</span></td>
+        <td><code>schema_version</code></td>
+        <td><span style="color:var(--red)">不存在</span>(collectFormData 不写)</td>
+        <td><code>"3.0"</code> ← spec 明确要求</td>
+        <td><span class="status bad">❌</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:4869</span></td>
+        <td><code>revision</code></td>
+        <td><code>7</code>(number)</td>
+        <td><code>7</code>(number)</td>
+        <td><span class="status ok">✅</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:4870</span></td>
+        <td><code>created</code> / <code>updated</code></td>
+        <td>ISO 8601 字符串</td>
+        <td>ISO 8601 字符串</td>
+        <td><span class="status ok">✅</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:4872</span></td>
+        <td><code>workspace</code></td>
+        <td>folder name 字符串</td>
+        <td>folder name 字符串</td>
+        <td><span class="status ok">✅</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:4864-4865</span></td>
+        <td><code>history[]</code></td>
+        <td><code>[{revision, timestamp}, ...]</code> 7 条</td>
+        <td><span style="color:var(--red)">不存在</span></td>
+        <td><span class="status warn">⚠️</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #1</span>
+    HTML 实际 mock 中 <code>_meta.version = "0.7"</code> 是 HTML 硬编码字符串,spec 不要求此字段。相反 spec 要求的 <code>schema_version: "3.0"</code> 在 collectFormData 中<strong>完全不写</strong>(仅在 <code>migrateLegacyIntent</code> 加载旧文件时设置)。这意味着:<strong>新存的 intent.json 没有 <code>schema_version</code></strong>,下游 Python 无法用 <code>schema_version</code> 区分版本。
+  </div>
+  <div class="finding orange">
+    <span class="tag orange">关键发现 #2</span>
+    <code>history[]</code> 数组是 HTML 实际独有(spec 没列),含 7 条 <code>{revision, timestamp}</code>。若 spec 要求严格匹配,此字段需要从 HTML 中移除或纳入 spec。
+  </div>
+</section>
+
+<!-- ===================== 二、project / output / cover / ending ===================== -->
+<section>
+  <h2>二、<code>project</code> / <code>output</code> / <code>cover</code> / <code>ending</code> <span class="badge warn">部分对齐</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr><td>html:2022</td><td><code>project.name</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2026</td><td><code>project.title</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2031</td><td><code>project.overall_intent</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2036</td><td><code>output.aspect_ratio</code></td><td>"16:9"</td><td>"16:9"</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2045</td><td><code>output.aspect_ratio_custom</code></td><td>""(空字符串)<br><strong>HTML 独有</strong></td><td><span style="color:var(--red)">不存在</span>(spec 不列)</td><td><span class="status warn">⚠️</span></td></tr>
+      <tr><td>html:2050</td><td><code>output.aspect_handling</code></td><td>"aspect-fit"</td><td>"aspect-fit"</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2069-2072</td><td><code>cover.type</code> 枚举</td><td><code>"ai" | "text"</code>(HTML 只 2 选项)</td><td><code>"ai"|"text"|"image"</code>(spec 列 3 选项)</td><td><span class="status warn">⚠️</span></td></tr>
+      <tr><td>html:2077</td><td><code>cover.prompt</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:2087-2092</td><td><code>ending.type</code> 枚举</td><td><code>"voice-narration"|"music-fade"|"cut-to-black"|"next-episode-promo"</code></td><td><code>"fade"|"freeze"|"text"|...</code>(spec 用不同名字)</td><td><span class="status bad">❌</span></td></tr>
+      <tr><td>html:2097</td><td><code>ending.prompt</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #3</span>
+    <strong><code>cover.type</code> 和 <code>ending.type</code> 枚举值与 spec 不同</strong>。spec §4 写 <code>cover.type: "ai|text|image"</code>,但 HTML `<select>` 选项只有 <code>"" | "ai" | "text"</code>(2069-2073)。spec §4 写 <code>ending.type: "fade|freeze|text|..."</code>,但 HTML 实际是 <code>"voice-narration"|"music-fade"|"cut-to-black"|"next-episode-promo"</code>。<strong>spec 是理想蓝图,HTML 实现走的是另一套命名。</strong>
+  </div>
+  <div class="finding orange">
+    <span class="tag orange">关键发现 #4</span>
+    <code>output.aspect_ratio_custom</code> 字段是 HTML 表单独有(用于"自定义比例"),spec §4 没列出。下游 Python 需要决定:是否解析此字段,或忽略。
+  </div>
+</section>
+
+<!-- ===================== 三、sequences ===================== -->
+<section>
+  <h2>三、<code>sequences</code> <span class="badge ok">对齐</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr><td>html:4929-4934</td><td><code>title</code></td><td>"正片段"</td><td>"正片段"</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4931</td><td><code>videos[]</code></td><td>entry.index 序列 [1, 2]</td><td>entry.index 序列 [1, 2]</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4924</td><td><code>transitions[].after</code></td><td>videoEntry.index</td><td>videoEntry.index</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4898</td><td><code>transitions[].type</code></td><td>"fade"</td><td>"fade"</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4899</td><td><code>transitions[].duration</code></td><td>0.5(number)</td><td>0.5(number)</td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--secondary);margin-top:10px;">✅ <code>sequences</code> 结构完全对齐 spec §4。</p>
+</section>
+
+<!-- ===================== 四、videos[] 顶层 ===================== -->
+<section>
+  <h2>四、<code>videos[]</code> 顶层字段 <span class="badge ok">部分对齐</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr><td>html:4942</td><td><code>file</code></td><td>"DJI_001.MP4"</td><td>"DJI_001.MP4"</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4942</td><td><code>index</code></td><td>1(number, stable ID)</td><td>1(number, stable ID)</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4942</td><td><code>duration_sec</code></td><td>60(number)</td><td>60(number)</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4943</td><td><code>exclude</code></td><td><strong>缺失</strong>(未被勾选时不写)</td><td><code>false</code> (显式 false)</td><td><span class="status warn">⚠️</span></td></tr>
+      <tr><td>html:4944-4947</td><td><code>summary</code> / <code>intent</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4974</td><td><code>notes</code>(原顶层)</td><td><strong>移入 video_ops.notes</strong></td><td><code>video_ops.notes</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4972</td><td><code>voice</code>(原顶层)</td><td><strong>移入 video_ops.voice</strong></td><td><code>video_ops.voice.mode</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4975</td><td><code>voice_note</code>(原顶层)</td><td><strong>移入 video_ops.voice_note</strong></td><td><code>video_ops.voice_note</code></td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding orange">
+    <span class="tag orange">次要发现</span>
+    <code>exclude: false</code> 在 HTML 实际 mock 中<strong>缺失</strong>(只有 <code>entry.excluded === true</code> 时才设置,4943)。但 spec 实际是"空 = 默认保留",所以 HTML 行为符合 spec §5 字段对照表的"可空 = 默认"原则。✅ 实质对齐,只差显式默认值。
+  </div>
+</section>
+
+<!-- ===================== 五、video_ops(最严重的偏移) ===================== -->
+<section>
+  <h2>五、<code>video_ops</code> 内容对比 <span class="badge bad">严重不对齐</span></h2>
+  <p style="font-size:13px;color:var(--secondary);margin-bottom:12px;">
+    HTML 实际 mock 的 <code>video_ops</code> 含 <strong>26 个 key</strong>;spec 理想 mock 含 <strong>21 个 key</strong>。差异在 5 个 op 的去留 + 4 个语义不一致。
+  </p>
+
+  <h3>5.1 共有(但数值/结构对齐)</h3>
+  <table class="diff-table">
+    <thead><tr><th>op</th><th>HTML 实际结构</th><th>spec 理想结构</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>voice</code></td><td><code>{on, mode}</code> string enum</td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>voice_note</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>notes</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>speed-up</code></td><td><code>{on, factor}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>slow-down</code></td><td><code>{on, factor}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>reverse</code></td><td><code>{on}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>mute</code></td><td><code>{on}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>fade-in</code></td><td><code>{on, sec}</code></td><td>同(spec §5 留 video_ops)</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>fade-out</code></td><td><code>{on, sec}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>color</code></td><td><code>{on, style}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>add-bgm</code></td><td><code>{on, file, volume}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>replace-audio</code></td><td><code>{on, file}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>opening-text</code></td><td><code>{on, text, duration}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>insert-image</code></td><td><code>{on, file, at, duration}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>asr-transcribe</code></td><td><code>{on, model}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>asr-burn</code></td><td><code>{on, font_size}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>asr-speaker</code></td><td><code>{on}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>audio-denoise</code></td><td><code>{on}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>audio-separate</code></td><td><code>{on, model}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>audio-diarize</code></td><td><code>{on}</code></td><td>同</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>voice-filler-removed</code></td><td><code>{on}</code>(HTML 全用连字符)</td><td>同(连字符)</td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 spec 独有</h3>
+  <table class="diff-table">
+    <thead><tr><th>op</th><th>spec 理想结构</th><th>HTML 实际</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>duration</code>(图片专属)</td><td><code>{on, sec}</code></td><td><span style="color:var(--red)">不存在</span></td><td><span class="status warn">⚠️</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 HTML 实际独有(5 个该消失的 op) <span class="badge bad">致命</span></h3>
+  <table class="diff-table">
+    <thead><tr><th>op</th><th>HTML 实际结构</th><th>spec §5 / §12 规定</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr style="background:var(--red-bg)">
+        <td><code>trim-head</code></td>
+        <td><code>{on, sec}</code>(3)</td>
+        <td rowspan="5" style="font-size:12px;color:var(--red);">
+          §5 字段对照表 + §12 「不做」明确写:<br>
+          <strong>不引入 cut-middle / pin-range / trim-head / trim-tail</strong>,由 <code>time_segments</code> 边界等价表达。<br>
+          <br>
+          target-duration 同理 —— 拼接后时长 = 各段相加,无需声明。
+        </td>
+        <td rowspan="5"><span class="status bad">❌ ❌ ❌ ❌ ❌</span></td>
+      </tr>
+      <tr style="background:var(--red-bg)"><td><code>trim-tail</code></td><td><code>{on, sec}</code>(5)</td></tr>
+      <tr style="background:var(--red-bg)"><td><code>cut-middle</code></td><td><code>{on}</code> <strong>缺 from/to ⚠️</strong></td></tr>
+      <tr style="background:var(--red-bg)"><td><code>pin-range</code></td><td><code>{on}</code> <strong>缺 from/start ⚠️</strong></td></tr>
+      <tr style="background:var(--red-bg)"><td><code>target-duration</code></td><td><code>{on, sec}</code>(30)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #5(致命 bug)</span>
+    <strong><code>cut-middle</code> 和 <code>pin-range</code> 的 from/to 值在 HTML 实际产出中丢失</strong>。<br>
+    原因追溯:<code>renderOpRowRange</code>(html:2900)使用 <code>data-op-val="cut-from"</code> 和 <code>data-op-val="cut-to"</code>(不同于 op 名),而 <code>collectVideoOpsForVideo</code>(html:4984-5032)的 switch 块<strong>完全不处理</strong>这两个 key。<br>
+    结果:HTML 表单上用户填的 <code>10秒到40秒</code> 数据,提交时被静默丢弃,只剩 <code>{on: true}</code>。<br>
+    spec §5 要求这 5 个 op 完全消失(用 <code>time_segments</code> 边界代替),但 HTML 即使临时保留它们,也从没正确收集它们的 from/to。<strong>这是 collectVideoOpsForVideo 实现层的双重 bug。</strong>
+  </div>
+</section>
+
+<!-- ===================== 六、time_segments ===================== -->
+<section>
+  <h2>六、<code>time_segments[]</code> 内容 <span class="badge bad">严重不对齐</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr><td>html:4956</td><td><code>id</code></td><td><code>"seg_2_new_1753796400000"</code><br>(拆段产生,带毫秒戳)</td><td><code>"seg_1_1"</code><br>(标准格式)</td><td><span class="status warn">⚠️</span></td></tr>
+      <tr><td>html:4956</td><td><code>label</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4957</td><td><code>start_sec</code> / <code>end_sec</code></td><td>number</td><td>number</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:4958</td><td><code>ops</code></td><td>可能含 <code>user</code> 内部标记</td><td>仅含 <code>mute/speed-up/slow-down/reverse/color-grade</code></td><td><span class="status bad">❌</span></td></tr>
+      <tr><td>html:4959</td><td><code>note</code></td><td>string</td><td>string</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><span class="src-link">html:5208-5212</span><br>(未过滤)</td><td>excluded 段</td><td><strong>含已删段</strong>(不写 <code>excluded</code> 字段,所以看起来"正常")</td><td><strong>不含已删段</strong>(spec §6.2 阶段 G)</td><td><span class="status bad">❌</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #6(致命 bug)</span>
+    <strong>拆段产生的 <code>user</code> op 污染段 ops,触发 validateIntent 白名单校验失败。</strong><br>
+    代码定位:<code>SegmentState.addOrSplit</code>(5190)在拆段时硬编码注入 <code>ops: { user: { on: true, note: '' } }</code>。<br>
+    <code>validateIntent</code>(5099-5110)白名单仅 <code>['mute','speed-up','slow-down','reverse','color-grade']</code>。<br>
+    结果:<strong>用户在 timeline 上做一次拆段操作后保存,validateIntent 必报错</strong>(但 JSON 仍写入)。<br>
+    spec §7 校验规则根本没想到会有这种"内部 op"。
+  </div>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #7(致命 bug)</span>
+    <strong>已删段(用户标记删除的)仍出现在 JSON 中</strong>。<br>
+    代码定位:<code>SegmentState.delete</code>(5208-5212)只设 <code>seg.excluded = true</code> 而不移除。<code>collectFormData</code>(4954-4960)用 <code>.map()</code> 构造新对象过滤了 <code>excluded</code> key,但<strong>不过滤 excluded 段本身</strong>。<br>
+    HTML 实际 mock 中 <code>seg_2_3</code>(已删段)被原样写出,只是没有 <code>excluded</code> 标志。<br>
+    spec §6.2 阶段 G 明确写「<strong>已删段不入 JSON</strong>」。
+  </div>
+
+  <div class="finding orange">
+    <span class="tag orange">次要发现</span>
+    段 ID 格式不统一:HTML <code>addOrSplit</code> 产生 <code>"seg_2_new_${Date.now()}"</code>(带毫秒戳),而 spec §4 推荐 <code>"seg_${videoIdx}_${n}"</code>。<br>
+    这是实现选择(spec 说"建议",非硬约束)。
+  </div>
+</section>
+
+<!-- ===================== 七、color vs color-grade ===================== -->
+<section>
+  <h2>七、段 ops 中的 <code>color</code> vs <code>color-grade</code> <span class="badge bad">致命</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="src-link">html:5248<br>(SEGMENT_OPS_SCHEMA)</span></td>
+        <td>段面板配置</td>
+        <td><code>"color": {on: true, preset: "warm"}</code></td>
+        <td><code>"color-grade": {on: true}</code></td>
+        <td><span class="status bad">❌ 名称不同</span></td>
+      </tr>
+      <tr>
+        <td><span class="src-link">html:5099-5105<br>(validateIntent 白名单)</span></td>
+        <td>段白名单</td>
+        <td><code>['mute','speed-up','slow-down','reverse','color-grade']</code></td>
+        <td>同(spec §7)</td>
+        <td><span class="status ok">✅</span> (但与上面矛盾)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">关键发现 #8(致命)</span>
+    HTML <code>SEGMENT_OPS_SCHEMA</code>(5248)段面板中<strong>注册了名为 <code>color</code> 的 op</strong>,而 <code>validateIntent</code>(5099)的白名单是 <code>color-grade</code>。<br>
+    <strong>结果:用户在段面板加"调色"→ 写入 <code>seg.ops.color</code> → 校验时 <code>color</code> 不在白名单 → validateIntent 报错</strong>。<br>
+    spec §4 video_ops 用 <code>color</code>,spec §7 段内用 <code>color-grade</code>——<strong>spec 自己也不一致</strong>。
+  </div>
+</section>
+
+<!-- ===================== 八、voice-filler-removed 命名 ===================== -->
+<section>
+  <h2>八、<code>voice-filler-removed</code> 命名 <span class="badge warn">次要</span></h2>
+  <table class="diff-table">
+    <thead><tr><th class="src-col">代码定位</th><th class="col">字段</th><th class="col">HTML 实际 mock</th><th class="col">spec 理想 mock</th><th class="src-col">状态</th></tr></thead>
+    <tbody>
+      <tr><td>html:4983<br>(legacyOps 整段)</td><td>video_ops 内</td><td><code>"voice-filler-removed"</code>(连字符)</td><td><code>"voice-filler-removed"</code>(连字符)</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>html:5255<br>(SEGMENT_OPS_SCHEMA)</td><td>段内键名</td><td><code>"voice_filler_removed:"</code>(下划线)</td><td><strong>无对应</strong>(spec 不在段内)</td><td><span class="status warn">⚠️</span></td></tr>
+    </tbody>
+  </table>
+  <div class="finding orange">
+    <span class="tag orange">次要发现</span>
+    同一概念在 video_ops(连字符)和 段 ops(下划线)两种拼写。segment 处实际不会写入(spec 不允许),但 HTML 提供配置入口,若用户启用,会写出 <code>voice_filler_removed</code>(下划线)。
+  </div>
+</section>
+
+<!-- ===================== 九、汇总 ===================== -->
+<section>
+  <h2>九、偏移清单汇总(按严重度) <span class="badge bad">8 个致命 + 5 个次要</span></h2>
+  <table class="diff-table">
+    <thead><tr><th>#</th><th>严重度</th><th>偏移</th><th>位置</th></tr></thead>
+    <tbody>
+      <tr style="background:var(--red-bg)"><td>5</td><td class="sev red">🔴 致命</td><td><code>cut-middle</code> / <code>pin-range</code> 的 from/to 值<strong>未收集</strong>,静默丢失</td><td>html:4984-5032 缺 case</td></tr>
+      <tr style="background:var(--red-bg)"><td>6</td><td class="sev red">🔴 致命</td><td>拆段注入的 <code>user</code> op 污染段 ops,validateIntent 必报错</td><td>html:5190</td></tr>
+      <tr style="background:var(--red-bg)"><td>7</td><td class="sev red">🔴 致命</td><td>已删段(excluded=true)未从 JSON 过滤</td><td>html:4954-4960</td></tr>
+      <tr style="background:var(--red-bg)"><td>8</td><td class="sev red">🔴 致命</td><td>段面板 <code>color</code> ≠ 校验白名单 <code>color-grade</code>,段内调色必报错</td><td>html:5248 vs html:5099</td></tr>
+      <tr style="background:var(--red-bg)"><td>spec-1</td><td class="sev red">🔴 致命</td><td>5 个该消失的 op(<code>trim-head/tail/cut-middle/pin-range/target-duration</code>)仍进 video_ops</td><td>html:4983 + spec §5/§12</td></tr>
+      <tr style="background:var(--red-bg)"><td>1</td><td class="sev red">🔴 致命</td><td><code>_meta.schema_version</code> 缺失,下游无法判断版本</td><td>html:4867-4876</td></tr>
+      <tr style="background:var(--red-bg)"><td>3</td><td class="sev red">🔴 致命</td><td><code>cover.type</code> / <code>ending.type</code> 枚举值与 spec 不一致</td><td>html:2069-2073 + html:2087-2093</td></tr>
+      <tr style="background:var(--red-bg)"><td>spec-2</td><td class="sev red">🔴 spec 自相矛盾</td><td><code>color</code>(§4 video_ops) vs <code>color-grade</code>(§7 段内)</td><td>spec 内部</td></tr>
+      <tr><td>2</td><td class="sev orange">🟡 次要</td><td><code>_meta.history[]</code> 是 HTML 独有,spec 没列</td><td>html:4864-4865</td></tr>
+      <tr><td>4</td><td class="sev orange">🟡 次要</td><td><code>output.aspect_ratio_custom</code> 是 HTML 独有</td><td>html:2045</td></tr>
+      <tr><td>8-naming</td><td class="sev orange">🟡 次要</td><td><code>voice-filler-removed</code> 连字符 vs <code>voice_filler_removed</code> 下划线</td><td>html:4983 vs 5255</td></tr>
+      <tr><td>—</td><td class="sev orange">🟡 次要</td><td><code>exclude: false</code> HTML 不显式输出</td><td>html:4943</td></tr>
+      <tr><td>—</td><td class="sev orange">🟡 次要</td><td>段 ID 格式 <code>seg_2_new_${ts}</code> vs spec 推荐 <code>seg_${idx}_${n}</code></td><td>html:5190</td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding blue">
+    <span class="tag blue">总结</span>
+    本次对抗式审查共发现 <strong>13 个偏移</strong>(8 致命 / 5 次要)。<br>
+    <strong>致命偏移处理优先级:</strong><br>
+    1. 必先修的 schema 漏洞(#5 cut/pin 丢值、#6 user op 污染、#7 已删段未过滤、#8 color/color-grade 矛盾)<br>
+    2. 必先补的版本标识(#1 缺 schema_version)<br>
+    3. 必先对齐的 op 集合(spec-1:5 个该消失的 op)<br>
+    4. 必先统一的枚举(#3 cover.type / ending.type 与 spec 对齐)<br>
+    5. 必先修正的 spec 内部矛盾(spec-2:color vs color-grade)<br>
+    <br>
+    <strong>次要偏移</strong>(#2 history / #4 aspect_ratio_custom / 命名 / 段 ID 格式)可在主流程跑通后批量处理。
+  </div>
+</section>
+
+<footer>
+  智剪工坊 · grill-with-docs · 对抗式审查 · 2026-07-29<br>
+  对比依据:<code>2026-07-29-mock-html-actual.json</code> ↔ <code>2026-07-29-mock-spec-ideal.json</code>
+</footer>
+
+</div>
+</body>
+</html>

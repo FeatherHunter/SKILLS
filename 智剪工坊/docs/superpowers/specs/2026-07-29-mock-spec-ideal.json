@@ -1,0 +1,113 @@
+{
+  "_meta": {
+    "tool": "智剪工坊",
+    "schema_version": "3.0",
+    "revision": 7,
+    "created": "2026-07-28T10:00:00.000Z",
+    "updated": "2026-07-29T12:00:00.000Z",
+    "workspace": "三亚旅行vlog"
+  },
+  "project": {
+    "name": "Day 2 三亚日出",
+    "title": "三亚三天两夜 · Day 2",
+    "overall_intent": "整体治愈轻松风,突出美食与海滩的悠闲感,结尾留个小钩子引向 Day 3"
+  },
+  "output": {
+    "aspect_ratio": "16:9",
+    "aspect_handling": "aspect-fit"
+  },
+  "cover": {
+    "type": "ai",
+    "prompt": "横版 16:9 封面,扁平插画风。画面是一个俯瞰镜头:沙滩上的早餐桌,一杯椰子水、半份芒果糯米饭,背景是三亚湾的蔚蓝海水与海平面上的朝阳。整体明亮、清新、早餐感。"
+  },
+  "ending": {
+    "type": "music-fade",
+    "prompt": "BGM 渐弱到静音,最后 2 秒黑屏白字『Day 3 预告 · 明早 8 点见』"
+  },
+  "sequences": [
+    {
+      "title": "正片段",
+      "videos": [1, 2],
+      "transitions": [
+        { "after": 1, "type": "fade", "duration": 0.5 }
+      ]
+    }
+  ],
+  "videos": [
+    {
+      "file": "DJI_001.MP4",
+      "index": 1,
+      "duration_sec": 60,
+      "exclude": false,
+      "summary": "海边日出延时拍摄,带原声海浪",
+      "intent": "掐头掐尾,中间一段想做 2 倍速,留 5 秒慢动作特写",
+      "video_ops": {
+        "voice": { "on": true, "mode": "keep-with-filler-removed" },
+        "voice_note": "原声海浪偏大,降噪后保留环境音",
+        "notes": "开篇第一个镜头,色彩调暖,营造清晨感",
+        "speed-up": { "on": true, "factor": 2 },
+        "slow-down": { "on": true, "factor": 0.5 },
+        "reverse": { "on": true },
+        "mute": { "on": true },
+        "fade-in": { "on": true, "sec": 1 },
+        "fade-out": { "on": true, "sec": 1 },
+        "color": { "on": true, "style": "warm" },
+        "add-bgm": { "on": true, "file": "summer_bgm.mp3", "volume": 0.3 },
+        "replace-audio": { "on": true, "file": "narration_day2.wav" },
+        "opening-text": { "on": true, "text": "Day 2 · 三亚", "duration": 3 },
+        "insert-image": { "on": true, "file": "logo_watermark.png", "at": "0:02", "duration": 4 },
+        "asr-transcribe": { "on": true, "model": "medium" },
+        "asr-burn": { "on": true, "font_size": 24 },
+        "asr-speaker": { "on": true },
+        "audio-denoise": { "on": true },
+        "audio-separate": { "on": true, "model": "htdemucs_ft" },
+        "audio-diarize": { "on": true },
+        "voice-filler-removed": { "on": true }
+      },
+      "time_segments": [
+        {
+          "id": "seg_1_1",
+          "label": "加速段",
+          "start_sec": 10,
+          "end_sec": 35,
+          "ops": {
+            "speed-up": { "on": true, "factor": 2 }
+          },
+          "note": "日出主体加速 2 倍"
+        },
+        {
+          "id": "seg_1_2",
+          "label": "日出主体",
+          "start_sec": 35,
+          "end_sec": 50,
+          "ops": {
+            "mute": { "on": true }
+          },
+          "note": "配后期旁白"
+        }
+      ]
+    },
+    {
+      "file": "IMG_20260729_080722.jpg",
+      "index": 2,
+      "duration_sec": 4,
+      "exclude": false,
+      "summary": "海鲜市场拍摄的照片",
+      "intent": "配 4 秒静态展示,配海鲜文字说明",
+      "video_ops": {
+        "voice": { "on": true, "mode": "bgm-only" },
+        "voice_note": "",
+        "notes": "图片素材,只放 4 秒静态",
+        "color": { "on": true, "style": "cinematic" },
+        "mute": { "on": true },
+        "opening-text": { "on": true, "text": "海鲜大餐", "duration": 3 },
+        "audio-denoise": { "on": true },
+        "asr-transcribe": { "on": true, "model": "tiny" },
+        "asr-burn": { "on": true, "font_size": 32 },
+        "voice-filler-removed": { "on": true },
+        "duration": { "on": true, "sec": 4 }
+      },
+      "time_segments": []
+    }
+  ]
+}

@@ -209,6 +209,41 @@ class TestTodayWaterRenders:
         (SKILL_DIR / f"_test_water_{fixture_name}.html").unlink(missing_ok=True)
 
 
+# ============= ticket 07 · HELP HTML ergonomics =============
+
+class TestHelpCenterErgonomics:
+    """ticket 07 · HELP HTML ergonomics"""
+    def test_help_center_copy_main_btn_visible(self):
+        """summary 层有 .copy-btn.copy-main"""
+        # 不真跑 render_help_center(无 mock),只验证模板包含 .copy-btn.copy-main 类
+        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
+        assert '.copy-btn.copy-main' in tpl, 'help_center.html 缺 .copy-btn.copy-main CSS'
+        assert 'copyMainPrompt' in tpl, 'help_center.html 缺 copyMainPrompt JS 函数'
+
+    def test_help_center_hero_font_upscaled(self):
+        """h1/stats/sub 字号上调"""
+        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
+        # 至少 h1 含 220% 或 36px 或类似放大值
+        assert ('220%' in tpl or '36px' in tpl or 'calc(28px' in tpl), 'h1 字号未上调'
+
+    def test_triggers_have_fill_hints_field(self):
+        """每个 TRIGGER 都有 fill_hints 字段(默认空 list)"""
+        import sys; sys.path.insert(0, str(SCRIPTS_DIR))
+        from _triggers import TRIGGERS
+        for t in TRIGGERS:
+            assert 'fill_hints' in t, f'trigger {t["wake_word"]} 缺 fill_hints 字段'
+            assert isinstance(t['fill_hints'], list)
+        # 输入型 trigger 应有非空 fill_hints
+        eat = next(t for t in TRIGGERS if t['wake_word'] == '记吃了')
+        assert eat['fill_hints'], '记吃了 应有非空 fill_hints'
+        assert any('食物' in h for h in eat['fill_hints'])
+        water = next(t for t in TRIGGERS if t['wake_word'] == '记喝水')
+        assert water['fill_hints'], '记喝水 应有非空 fill_hints'
+        # 查询型应空
+        search = next(t for t in TRIGGERS if t['wake_word'] == '查今天吃')
+        assert search['fill_hints'] == [], '查今天吃 fill_hints 应为空'
+
+
 class TestTodayDiet6Kpi:
     """ticket 12 · 今日饮食 6 KPI + mobile"""
 

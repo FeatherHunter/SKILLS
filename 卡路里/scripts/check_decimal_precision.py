@@ -34,7 +34,20 @@ import sys
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
-HTML_DIR = SKILL_DIR / "calorie_html"
+
+
+def _resolve_html_dir() -> Path:
+    """优先 $SKILLS_DB_PATH/calorie_html(手册 §4.1 · v2.4.8 设计),fallback SKILL_DIR/calorie_html/"""
+    import os
+    sdb = os.environ.get('SKILLS_DB_PATH')
+    if sdb:
+        cand = Path(sdb) / 'calorie_html'
+        if cand.exists():
+            return cand
+    return SKILL_DIR / 'calorie_html'
+
+
+HTML_DIR = _resolve_html_dir()
 
 # 字段白名单:dotted path → 列表中每个 item 的 sub-key(可选)
 PRECISION_FIELDS: list[tuple[str, str | None]] = [

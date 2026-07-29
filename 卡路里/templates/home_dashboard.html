@@ -235,6 +235,9 @@ body{
   color:var(--ink3);
   text-decoration:line-through;
 }
+/* Q4 决策落地(ticket 16 · 2026-07-29):保留 .todo-row .meta 文案(不删)。
+   理由:state icon 只表"完成/未完成"二态,meta 提供"已记录 N 条"的具体上下文。
+   二者互补:icon = 视觉快照,meta = 数字细节。完全删 meta 会让 user 不知"未完成"是 0 条还是少几条。 */
 .todo-row .meta{
   font-size:11.5px;
   color:var(--ink3);

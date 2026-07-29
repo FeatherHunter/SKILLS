@@ -28,6 +28,11 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
 # 约束(check_prompt_quality.py 强制):
 #   - body 必须非空(避免"按流程执行"这类空话)
 #   - 整条 prompt 由 _prompt_skeleton() 包裹(不允许手写)
+#
+# Q1 决策落地(ticket 16 · 2026-07-29):fill_hints 是独立字段,不合并进 body。
+#   理由:body 是给用户看的场景说明(用户视角),fill_hints 是 AI 提示用户补字段的占位符(AI 视角)。
+#   二者语义不同,合并会让 body 变成混合视角的杂烩。独立字段 + check_prompt_quality 守护
+#   (触发 must_contain 关键词校验时仍校验 body,不校验 fill_hints)。
 
 def _prompt_skeleton(wake: str, variant: str | None = None, body: str = '', fill_hints: list[str] | None = None) -> str:
     """prompt 模板骨架:head(用户对 AI 的请求)+ body(场景细节,不指导流程)

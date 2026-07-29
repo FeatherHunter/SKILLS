@@ -346,3 +346,35 @@ class TestHelpMirrorRename:
         backups = list(archive.glob('卡路里_SKILL镜像_*.html'))
         assert len(backups) == 1
         assert backups[0].read_text(encoding='utf-8') == 'OLD SKILL.md MIRROR'
+
+
+class TestCrossPagePromptConsistency:
+    """ticket 15 · D7 · 跨页面 prompt 一致性"""
+
+    def test_check_prompt_soak_passes(self):
+        """scripts/check_prompt_soak.py 自检 exit 0"""
+        import subprocess, sys
+        r = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'check_prompt_soak.py')],
+            cwd=SKILL_DIR, capture_output=True, text=True,
+            encoding='utf-8', errors='replace', timeout=30,
+        )
+        assert r.returncode == 0, (
+            f'check_prompt_soak.py exit {r.returncode}\n{r.stdout}\n{r.stderr}'
+        )
+
+    def test_home_dashboard_quick_action_prompts_match_triggers(self):
+        """每个 quick_action.prompt 与 _triggers main_prompt.text 字节相同"""
+        import sys; sys.path.insert(0, str(SCRIPTS_DIR))
+        from render_home import _attach_prompts, QUICK_ACTIONS
+        from _triggers import TRIGGERS
+        wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
+        for a in _attach_prompts(QUICK_ACTIONS):
+            wake = a.get('wake_word')
+            assert wake, f'quick_action {a["label"]} 缺 wake_word'
+            assert wake in wake_to_prompt, f'wake_word={wake} 不在 TRIGGERS'
+            assert a['prompt'] == wake_to_prompt[wake], (
+                f'quick_action {a["label"]}: prompt 与 _triggers 不一致\n'
+                f'  dashboard: {a["prompt"][:80]!r}\n'
+                f'  triggers:  {wake_to_prompt[wake][:80]!r}'
+            )

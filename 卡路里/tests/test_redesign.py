@@ -209,6 +209,36 @@ class TestTodayWaterRenders:
         (SKILL_DIR / f"_test_water_{fixture_name}.html").unlink(missing_ok=True)
 
 
+class TestTodayDiet6Kpi:
+    """ticket 12 · 今日饮食 6 KPI + mobile"""
+
+    def test_today_diet_6_kpi_render(self):
+        r = _run_script(
+            str(SCRIPTS_DIR / "render_today_diet.py"),
+            "--mock", str(MOCK_DIR / "mock_today_diet.json"),
+            "--output", str(SKILL_DIR / "_test_diet.html"),
+        )
+        assert r.returncode == 0, f"render failed: {r.stderr}"
+        html = (SKILL_DIR / "_test_diet.html").read_text(encoding="utf-8")
+        try:
+            payload = _extract_payload(html)
+            assert payload is not None and payload["status"] == "ok"
+            s = payload["data"]["summary"]
+            assert "record_count" in s, "summary 缺 record_count"
+            assert isinstance(s["record_count"], int)
+            # 6 个 KPI 关键字段都应存在
+            for k in ("calorie", "protein_g", "carb_g", "fat_g", "water_ml", "record_count"):
+                assert k in s, f"summary 缺 {k}"
+        finally:
+            (SKILL_DIR / "_test_diet.html").unlink(missing_ok=True)
+
+    def test_today_diet_template_has_6_kpi_grid(self):
+        tpl = (SKILL_DIR / "templates" / "today_diet.html").read_text(encoding="utf-8")
+        assert 'repeat(3,1fr)' in tpl, 'KPI 桌面 grid 未改 3 列'
+        assert 'record_count' in tpl or '记录数' in tpl, '模板缺 record_count / 记录数'
+        assert 'table-wrap' in tpl or 'overflow-x: auto' in tpl, '缺 table-wrap overflow'
+
+
 class TestHomeDashboardRedesign:
     """tickets 08-11 · home dashboard 4 主题"""
 

@@ -125,6 +125,7 @@ def build_data(day):
             'summary': {
                 'calorie':        total_cal,
                 'target':         goal['calorie_goal'],
+                'record_count':   len(meals),
                 'protein_g':      total_prot,
                 'protein_target': goal['protein_goal'],
                 'protein_pct':    pct(total_prot, goal['protein_goal']),

@@ -4,6 +4,7 @@
     "summary": {
       "calorie": 1456,
       "target": 1800,
+      "record_count": 10,
       "protein_g": 78,
       "protein_target": 120,
       "protein_pct": 65,

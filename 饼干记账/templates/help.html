@@ -20,58 +20,59 @@
   :root {
     --bg: #f5f6f7; --card: #fff; --text: #1c1c1e; --sub: #6b6b6f;
     --accent: #0071e3; --green: #34c759; --orange: #ff9500;
-    --code-bg: #f0f0f2; --border: #e5e5e7; --warn-bg: #fff7e6; --warn-fg: #ff9500;
-    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
-    --r: 8px; --r-sm: 6px; --r-lg: 14px;
+    --code-bg: #f0f0f2; --border: #e5e5e7; --shadow: 0 1px 2px rgba(0,0,0,.04);
   }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body {
     background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+    font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased;
     min-height: 100vh; padding: 0 0 80px;
   }
-  .container { max-width: 920px; margin: 0 auto; padding: 0 16px 40px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
 
-  /* ===== HERO ===== */
+  /* ===== HERO (紧凑 · 对齐卡路里 v2.4.12) ===== */
   .hero {
     background: linear-gradient(135deg, #fafbfc, #f0f4f8);
-    padding: 16px 0 12px;
+    padding: 10px 0 2px;
+    border-bottom: 0;
   }
   .hero h1 {
-    font-size: 20px; font-weight: 700; letter-spacing: -.3px;
-    line-height: 1.15; margin: 0 0 2px;
+    font-size: 220%; font-weight: 700; letter-spacing: -.3px;
+    line-height: 1.15; margin: 0 0 1px;
   }
   .hero .sub {
-    color: var(--accent); font-size: 13px; font-weight: 500;
-    margin: 0 0 6px;
+    color: var(--accent); font-size: 105%; font-weight: 500;
+    margin: 0 0 4px;
+    line-height: 1.4;
   }
   .hero .stats {
-    margin: 4px 0 0; display: flex; gap: 12px; flex-wrap: wrap;
-    font-size: 12px; color: var(--sub);
+    margin: 2px 0 0; display: flex; gap: 12px; flex-wrap: wrap;
+    font-size: 115%; color: var(--sub);
+    line-height: 1.3;
   }
   .hero .stats b { color: var(--text); font-weight: 600; }
 
-  /* ===== STICKY CONTROLS ===== */
+  /* ===== CONTROLS (紧凑 · 对齐卡路里 v2.4.12) ===== */
   .controls {
     position: sticky; top: 0; z-index: 10;
-    background: var(--bg); padding: 10px 0;
-    margin: 0 -16px 12px; padding-left: 16px; padding-right: 16px;
+    background: var(--bg); padding: 8px 0;
+    margin: 0 -12px 8px; padding-left: 12px; padding-right: 12px;
     border-bottom: 1px solid var(--border);
-    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
   }
   .controls input[type="search"] {
-    flex: 1; min-width: 180px; padding: 9px 12px;
-    border: 1px solid var(--border); border-radius: var(--r);
-    font-size: 14px; background: var(--card); color: var(--text);
+    flex: 1; min-width: 160px; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12.5px; background: var(--card); color: var(--text);
     outline: none; transition: border-color .15s;
     font-family: inherit;
   }
   .controls input[type="search"]:focus { border-color: var(--accent); }
   .controls button {
-    border: 1px solid var(--border); border-radius: var(--r);
-    background: var(--card); color: var(--text); padding: 9px 12px;
-    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card); color: var(--text); padding: 7px 10px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
     transition: background .12s, color .12s, transform .15s, box-shadow .25s;
     font-family: inherit;
     -webkit-tap-highlight-color: transparent;
@@ -81,17 +82,18 @@
   .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
   .controls button:active { transform: scale(0.96); }
 
-  /* ===== L1 CATEGORY ===== */
+  /* ===== L1 CATEGORY (紧凑 · 对齐卡路里 v2.4.12) ===== */
   .cat-block {
-    background: var(--card); border-radius: var(--r);
-    margin: 8px 0; box-shadow: var(--shadow); overflow: hidden;
+    background: var(--card); border-radius: 8px;
+    margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
   }
+  .cat-block:first-of-type { margin-top: 0; }
+  .cat-block:last-of-type { margin-bottom: 0; }
   .cat-block > summary {
     cursor: pointer; list-style: none;
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; font-size: 15px; font-weight: 600;
-    min-height: 40px;
-    background: #fafbfc;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px; font-size: 13px; font-weight: 600;
+    background: #fafbfc; min-height: 36px;
     -webkit-tap-highlight-color: transparent;
     tap-highlight-color: transparent;
     touch-action: manipulation;
@@ -110,20 +112,19 @@
   .cat-count-pill {
     font-size: 10px; font-weight: 500;
     color: var(--sub); background: #e5e5e7;
-    padding: 2px 8px; border-radius: 999px;
-    font-variant-numeric: tabular-nums;
+    padding: 1px 6px; border-radius: 999px;
   }
-  .cat-content { padding: 6px 14px 12px; }
+  .cat-content { padding: 4px 12px 10px; }
 
-  /* ===== L2 WAKE WORD ===== */
+  /* ===== L2 WAKE WORD (紧凑 · 对齐卡路里 v2.4.12) ===== */
   .ww-block {
     background: #fff; border: 1px solid var(--border);
-    border-radius: var(--r-sm); margin: 6px 0;
+    border-radius: 6px; margin: 4px 0;
   }
   .ww-block > summary {
-    padding: 8px 12px; cursor: pointer; list-style: none;
+    padding: 6px 10px; cursor: pointer; list-style: none;
     display: flex; align-items: center; gap: 8px;
-    font-size: 14px; font-weight: 600;
+    font-size: 13px; font-weight: 600;
     -webkit-tap-highlight-color: transparent;
     tap-highlight-color: transparent;
     touch-action: manipulation;
@@ -142,18 +143,18 @@
     margin-left: auto; font-size: 11px; color: var(--sub);
     font-weight: 400;
   }
-  .ww-content { padding: 0 12px 8px; }
+  .ww-content { padding: 0 10px 8px; }
 
   /* ===== L3 SCENARIO ===== */
   .sc-block {
-    border: 1px solid var(--border); border-radius: var(--r-sm);
-    margin: 6px 0; background: #fcfcfd;
+    border: 1px solid var(--border); border-radius: 6px;
+    margin: 3px 0; background: #fcfcfd;
   }
   .sc-block.pending { border-left: 3px solid var(--orange); }
   .sc-block > summary {
-    padding: 6px 10px; cursor: pointer; list-style: none;
+    padding: 4px 8px; cursor: pointer; list-style: none;
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    font-size: 13px;
+    font-size: 12px;
     -webkit-tap-highlight-color: transparent;
     tap-highlight-color: transparent;
     touch-action: manipulation;
@@ -171,18 +172,17 @@
   .sc-dim {
     font-size: 10px; color: var(--sub); background: var(--bg);
     padding: 1px 6px; border-radius: 4px;
-    font-variant-numeric: tabular-nums;
   }
   .sc-pending-tag {
     font-size: 9px; font-weight: 700; padding: 2px 6px;
-    border-radius: 4px; background: var(--warn-bg); color: var(--warn-fg);
+    border-radius: 4px; background: #fff7e6; color: #ff9500;
   }
-  .sc-content { padding: 0 10px 8px; }
+  .sc-content { padding: 0 8px 6px; }
   .sc-prompt {
     background: #f0f7ff; border-left: 2px solid var(--accent);
-    padding: 8px 10px; border-radius: 4px; margin: 6px 0;
-    font-family: "SF Mono", Consolas, monospace; font-size: 12.5px;
-    word-break: break-word; line-height: 1.5;
+    padding: 6px 8px; border-radius: 4px; margin: 4px 0;
+    font-family: "SF Mono", Consolas, monospace; font-size: 11.5px;
+    word-break: break-word; line-height: 1.35;
     white-space: pre-wrap;
   }
   .sc-prompt::before { content: "💬 "; }
@@ -192,12 +192,12 @@
   }
   .sc-result::before { content: "→ "; color: var(--sub); }
 
-  /* ===== COPY BUTTON (4 状态反馈) ===== */
+  /* ===== COPY BUTTON (4 状态反馈 · 对齐卡路里 v2.4.12) ===== */
   .copy-btn {
-    font: inherit; font-size: 12px; padding: 5px 10px;
+    font: inherit; font-size: 11px; padding: 4px 8px;
     border-radius: 5px; border: 1px solid var(--accent);
     background: #fff; color: var(--accent);
-    cursor: pointer; margin: 4px 0;
+    cursor: pointer; margin: 3px 0;
     transition: background .12s, color .12s, transform .15s, box-shadow .25s;
     white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
@@ -216,7 +216,7 @@
   .help-ww-item {
     display: flex; align-items: center; gap: 10px;
     padding: 8px 12px; margin: 4px 0;
-    background: var(--code-bg); border-radius: var(--r-sm);
+    background: var(--code-bg); border-radius: 6px;
   }
   .help-ww-code {
     flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -276,43 +276,55 @@
   .toast-close:hover { background: rgba(255,255,255,0.18); }
   .toast-close:active { transform: scale(0.96); }
 
-  /* ===== EMPTY / NO MATCH / FOOTER ===== */
+  /* ===== EMPTY / NO MATCH / FOOTER (紧凑 · 对齐卡路里 v2.4.12) ===== */
   .empty, .no-match {
-    text-align: center; padding: 32px 16px;
-    color: var(--sub); font-size: 14px;
-    background: var(--card); border-radius: var(--r);
+    text-align: center; padding: 24px; color: var(--sub); font-size: 13px;
+    background: var(--card); border-radius: 8px;
     box-shadow: var(--shadow); margin: 12px 0;
   }
   footer {
-    text-align: center; color: var(--sub); font-size: 11px;
-    padding: 16px 0 0; margin-top: 16px;
-    border-top: 1px solid var(--border);
+    text-align: center; color: var(--sub); font-size: 10px;
+    padding: 12px 0 0; margin-top: 16px;
   }
 
   /* Hidden (search filter) */
   .cat-block.hidden, .ww-block.hidden, .sc-block.hidden { display: none; }
 
-  /* ===== MOBILE (≤600px) ===== */
+  /* === MOBILE (≤600px) === */
   @media (max-width: 600px) {
-    body { font-size: 13px; }
-    .container { padding: 0 12px 60px; }
-    .hero h1 { font-size: 17px; }
-    .hero .sub { font-size: 11.5px; }
-    .hero .stats { gap: 8px; font-size: 11.5px; }
-    .controls { gap: 6px; }
-    .controls input[type="search"] { font-size: 13px; padding: 8px 10px; }
-    .controls button { font-size: 11px; padding: 8px 10px; }
-    .cat-block > summary { padding: 9px 12px; font-size: 14px; }
-    .ww-block > summary { padding: 7px 10px; font-size: 13px; }
-    .sc-block > summary { padding: 6px 10px; font-size: 12px; }
+    body { font-size: 12.5px; }
+    .container { padding: 0 8px 60px; }
+    .hero { padding: 8px 0 5px; }
+    .hero h1 { font-size: 18px; }
+    .hero .sub { font-size: 11px; }
+    .hero .stats { gap: 8px; font-size: 11px; }
+    .controls { margin: 6px -8px 8px; padding-left: 8px; padding-right: 8px; }
+    .controls input[type="search"] { font-size: 12.5px; padding: 7px 10px; }
+    .controls button { font-size: 11px; padding: 7px 8px; }
+    .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
+    .cat-content { padding: 4px 10px 8px; }
+    .ww-block > summary { padding: 7px 9px; }
+    .ww-content { padding: 0 9px 7px; }
+    .sc-block > summary { padding: 6px 8px; }
+    .sc-content { padding: 0 8px 6px; }
+    .copy-btn { padding: 5px 9px; font-size: 11.5px; }
     .toast {
       left: 12px; right: 12px;
       bottom: calc(12px + env(safe-area-inset-bottom, 0));
       transform: translateX(0) scale(0.95);
       max-width: none; min-width: 0;
+      padding: 12px 12px 12px 14px;
     }
     .toast.show { transform: translateX(0) scale(1); }
+    .toast-icon { font-size: 20px; }
+    .toast-title { font-size: 12.5px; }
+    .toast-detail { font-size: 11px; }
     body { padding-bottom: env(safe-area-inset-bottom, 0); }
+  }
+
+  /* === TABLET (601-900px) === */
+  @media (min-width: 601px) and (max-width: 900px) {
+    .container { max-width: 720px; }
   }
 </style>
 </head>

@@ -138,6 +138,7 @@
   }
   .ww-block[open] > summary::before { transform: rotate(90deg); }
   .ww-block > summary > * { pointer-events: none; }
+  .ww-block > summary > .copy-btn.copy-main { pointer-events: auto; }
   .ww-name { color: var(--text); }
   .ww-count {
     margin-left: auto; font-size: 11px; color: var(--sub);
@@ -210,6 +211,13 @@
     transform: scale(1.05);
     animation: copySuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+  /* summary 层主 prompt 复制按钮(对齐卡路里 ticket 07) */
+  .copy-btn.copy-main {
+    background: var(--accent); color: #fff; border: none;
+    padding: 4px 12px; border-radius: 8px; font-size: 12px;
+    cursor: pointer; margin-left: auto; flex-shrink: 0;
+  }
+  .copy-btn.copy-main:hover { background: var(--accent); opacity: 0.88; }
 
   /* ===== HELP 唤醒词速查列表（4 条 HELP 唤醒词） ===== */
   .help-ww-list { padding: 6px 0; }
@@ -436,6 +444,27 @@ function doCopy(btn) {
   }
 }
 
+// 供 summary 层 onclick 调用(对齐卡路里 ticket 07)
+function doCopyBtn(btn) {
+  const prompt = btn.getAttribute('data-prompt') || '';
+  const wwBlock = btn.closest('.ww-block');
+  let wake = '';
+  if (wwBlock) wake = wwBlock.querySelector('.ww-name')?.textContent.trim() || '';
+  showToast(wake || 'prompt');
+  const after = () => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(after).catch(() => { fallbackCopy(prompt); after(); });
+  } else {
+    fallbackCopy(prompt);
+    after();
+  }
+}
+
 // ===== 渲染 =====
 function render() {
   const data = getPayload();
@@ -480,28 +509,7 @@ function renderCategory(cat, payload) {
   // HELP 类别（第 5 类）特殊处理：cat.wake_words=[] 但应展示 4 条 HELP 唤醒词
   // 来自 payload.help_wake_words（scenarios.json._meta.help_wake_words，与 SKILL.md §唤醒词总表同步）
   if (cat.key === 'help') {
-    const helpWws = (payload && payload.help_wake_words) || [];
-    if (!helpWws.length) {
-      return '';  // 没数据则跳过
-    }
-    const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';
-    return '<details class="cat-block" open>' +
-      '<summary>' +
-        '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
-        desc +
-        '<span class="cat-count-pill">' + helpWws.length + ' ww</span>' +
-      '</summary>' +
-      '<div class="cat-content">' +
-        '<div class="help-ww-list">' +
-          helpWws.map(function(ww) {
-            return '<div class="help-ww-item">' +
-              '<code class="help-ww-code">' + esc(ww) + '</code>' +
-              '<button class="copy-btn" data-prompt="' + esc(ww) + '" title="复制 prompt">📋</button>' +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
-      '</details>';
+    return '';
   }
   if (!wws.length) {
     return '';  // 跳过其他空类别
@@ -512,7 +520,7 @@ function renderCategory(cat, payload) {
     '<summary>' +
       '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
       desc +
-      '<span class="cat-count-pill">' + wws.length + ' ww · ' + scCount + ' 场景</span>' +
+      '<span class="cat-count-pill">' + wws.length + '</span>' +
     '</summary>' +
     '<div class="cat-content">' + wws.map(renderWakeWord).join('') + '</div>' +
     '</details>';
@@ -522,10 +530,12 @@ function renderCategory(cat, payload) {
 function renderWakeWord(ww) {
   const scs = ww.scenarios || [];
   const pending = ww.pending_count || 0;
+  const mainPrompt = scs.length ? (scs[0].prompt || '') : '';
   return '<details class="ww-block">' +
     '<summary>' +
       '<span class="ww-name">' + esc(ww.name) + '</span>' +
-      '<span class="ww-count">' + scs.length + ' 场景' + (pending ? ' · ' + pending + ' 待开发' : '') + '</span>' +
+      '<span class="ww-count">' + scs.length + '</span>' +
+      '<button class="copy-btn copy-main" data-prompt="' + esc(mainPrompt) + '" onclick="event.preventDefault(); event.stopPropagation(); doCopyBtn(this)">📋 复制</button>' +
     '</summary>' +
     '<div class="ww-content">' + scs.map(renderScenario).join('') + '</div>' +
     '</details>';

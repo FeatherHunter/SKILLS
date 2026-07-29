@@ -34,6 +34,50 @@ def test_help_html_static():
         assert tag in h, f"缺少标签/函数: {tag}"
 
 
+def test_help_html_fold_mechanism():
+    """折叠机制回归守护(2026-07-29 修复:querySelector('.wrap') 委托失效 bug)
+
+    根因:旧版用 <div class="group-h"> + JS classList.toggle('open') 事件委托,
+    且委托绑在 document.querySelector('.wrap'),而页面有 2 个 .wrap(hero 一个、
+    主内容一个),querySelector 返回第一个(hero),导致主内容区的 group-h/s-head
+    点击事件永不触发 → 一级、二级都无法展开折叠,违反总纲 §07 §148
+    ("dimensions/result/prompt 详情可以折叠但必须能展开查看")。
+
+    修复:对齐卡路里/作息管家,改用原生 <details>/<summary>,折叠由浏览器内核处理,
+    零 JS 也能展开;复制按钮移出 summary 放入 s-body,避免 summary toggle 冲突。
+
+    本测试用纯字符串断言守护此修复,防止回归(无需浏览器/jsdom)。
+    """
+    h = HELP_HTML.read_text(encoding="utf-8")
+
+    # 1. 折叠用原生 details(浏览器内核处理,不靠 JS 委托)
+    assert "details class=\"group\"" in h, "L1 group 应为原生 <details class=\"group\">"
+    assert "details class=\"scenario\"" in h, "L2 scenario 应为原生 <details class=\"scenario\">"
+    assert "<summary>" in h, "应有 <summary>"
+
+    # 2. 旧的 div+JS 委托模式必须彻底消失(根因消除)
+    # 注意:用精确匹配(class= / CSS 选择器 .group-h),避免误伤注释/文档里的 "s-head" 文本
+    assert 'class="group-h"' not in h, "BUG: 仍有 class=\"group-h\"(应改用 <summary>)"
+    assert 'class="s-head"' not in h, "BUG: 仍有 class=\"s-head\"(应改用 <summary>)"
+    assert ".group-h" not in h, "BUG: CSS 仍有 .group-h 选择器"
+    assert ".s-head{" not in h and ".s-head " not in h and ".s-head\n" not in h, "BUG: CSS 仍有 .s-head 选择器"
+    assert "classList.toggle('open'" not in h, "BUG: 仍用 classList.toggle('open') JS 委托"
+    # 关键:不再有绑错容器的 querySelector('.wrap') 委托
+    assert "querySelector('.wrap')" not in h, "BUG: 仍用 querySelector('.wrap') 委托(会命中 hero wrap 导致主内容区点击失效)"
+
+    # 3. 复制按钮不应在 <summary> 内(避免点击触发 details toggle 冲突)
+    #    模板里 summary 闭合后才出现 copy-btn
+    for sm in _all_summaries(h):
+        assert "copy-btn" not in sm, "BUG: copy-btn 不应在 <summary> 内(会与 details toggle 冲突)"
+
+
+def _all_summaries(h: str) -> list:
+    """从模板字符串里抽出所有 <summary>...</summary> 片段(用于断言 copy-btn 不在其中)"""
+    import re
+    return re.findall(r"<summary>(.*?)</summary>", h, re.DOTALL)
+
+
+
 def test_help_html_renders():
     """用 Python 模拟 IIFE 关键路径,确认渲染产出"""
     import yaml, json

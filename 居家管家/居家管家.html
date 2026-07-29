@@ -30,38 +30,43 @@ body{
 .hero .stats{margin:2px 0 0;display:flex;gap:10px;flex-wrap:wrap;font-size:100%;color:var(--muted);line-height:1.3}
 .hero .stats b{color:var(--ink);font-weight:600}
 
-/* === GROUP(L1) === */
+/* === GROUP(L1 · 原生 details,对齐卡路里/作息管家) === */
 .group{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:3px 0;box-shadow:var(--shadow);overflow:hidden}
 .group:first-of-type{margin-top:2px}
-.group-h{
+.group > summary{
+  list-style:none;cursor:pointer;user-select:none;
   display:flex;align-items:center;gap:6px;
-  padding:7px 12px;cursor:pointer;user-select:none;
+  padding:7px 12px;
   background:#fafbfc;min-height:36px;
   -webkit-tap-highlight-color:transparent;tap-highlight-color:transparent;
   touch-action:manipulation;
 }
-.group-h h2{margin:0;font-size:13px;font-weight:600}
-.group-h .badge{margin-left:auto;font-size:10px;font-weight:500;color:var(--muted);background:#e5e5e7;padding:1px 6px;border-radius:999px}
-.group-h::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .12s;pointer-events:none}
-.group.open .group-h::before{transform:rotate(90deg)}
-.group-h > *{pointer-events:none}
-.scenarios{display:none;padding:4px 12px 10px}
-.group.open .scenarios{display:block}
+.group > summary::-webkit-details-marker,
+.group > summary::marker{display:none}
+.group > summary::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .12s;pointer-events:none}
+.group[open] > summary::before{transform:rotate(90deg)}
+.group > summary > *{pointer-events:none}
+.group > summary h2{margin:0;font-size:13px;font-weight:600}
+.group > summary .badge{margin-left:auto;font-size:10px;font-weight:500;color:var(--muted);background:#e5e5e7;padding:1px 6px;border-radius:999px}
+.scenarios{padding:4px 12px 10px}
 
-/* === SCENARIO(L2) === */
+/* === SCENARIO(L2 · 原生 details) === */
 .scenario{background:#fff;border:1px solid var(--line);border-radius:6px;margin:4px 0}
-.s-head{
+.scenario > summary{
+  list-style:none;cursor:pointer;user-select:none;
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  padding:6px 10px;cursor:pointer;user-select:none;
+  padding:6px 10px;
   -webkit-tap-highlight-color:transparent;
 }
-.s-head::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
-.scenario.open .s-head::before{transform:rotate(90deg)}
+.scenario > summary::-webkit-details-marker,
+.scenario > summary::marker{display:none}
+.scenario > summary::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
+.scenario[open] > summary::before{transform:rotate(90deg)}
+.scenario > summary > *{pointer-events:none}
 .s-title{font-weight:600;font-size:13px;color:var(--ink);flex:1}
 .s-ww{font-size:11px;color:var(--muted);background:#f0f0f2;padding:0 4px;border-radius:3px}
 .s-varcount{font-size:10px;color:var(--muted)}
-.s-body{display:none;padding:0 10px 8px}
-.scenario.open .s-body{display:block}
+.s-body{padding:0 10px 8px}
 .s-desc{color:var(--muted);font-size:11.5px;margin:3px 0 5px}
 .s-dims{color:var(--muted);font-size:11px;margin-bottom:4px}
 
@@ -161,9 +166,9 @@ footer{text-align:center;color:var(--muted);font-size:10px;padding:12px 0 0;marg
   .hero h1{font-size:16px}
   .hero .sub{font-size:10.5px}
   .hero .stats{gap:8px;font-size:10.5px}
-  .group-h{padding:8px 10px;font-size:12.5px}
+  .group > summary{padding:8px 10px;font-size:12.5px}
   .scenarios{padding:4px 10px 8px}
-  .s-head{padding:7px 9px}
+  .scenario > summary{padding:7px 9px}
   .s-body{padding:0 9px 7px}
   .variant-block > summary{padding:6px 8px}
   .copy-btn{padding:5px 9px;font-size:11.5px}
@@ -237,16 +242,16 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
     const wwStr = arr(g.wake_words).join(' / ');
-    html += '<div class="group" id="cat-' + i + '" data-idx="' + i + '">';
-    html += '<div class="group-h" data-idx="' + i + '">';
+    html += '<details class="group" id="cat-' + i + '" data-idx="' + i + '">';
+    html += '<summary>';
     html += '<h2>' + esc(g.category) + '</h2>';
     html += '<span class="badge">' + g.scenarios.length + ' 场景 · ' + arr(g.wake_words).length + ' 唤醒词</span>';
-    html += '</div>';
+    html += '</summary>';
     html += '<div class="scenarios">';
     for (const s of g.scenarios) {
       html += renderScenario(i, s);
     }
-    html += '</div></div>';
+    html += '</div></details>';
   }
 
   const mainEl = document.getElementById('mainContent');
@@ -287,15 +292,14 @@ function renderScenario(groupIdx, s) {
   const variants = arr(s.variants);
   const dims = arr(s.dimensions);
   const dimKeys = Object.keys(dims);
-  let html = '<div class="scenario" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">';
-  html += '<div class="s-head">';
-  html += '<div class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</div>';
+  let html = '<details class="scenario" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">';
+  html += '<summary>';
+  html += '<span class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</span>';
   html += '<span class="s-ww">' + esc(s.wake_word || '') + '</span>';
   if (variants.length) {
     html += '<span class="s-varcount">' + variants.length + ' 变体</span>';
   }
-  html += '<button class="copy-btn copy-main" data-prompt-source="main" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">📋 复制 prompt</button>';
-  html += '</div>';
+  html += '</summary>';
   html += '<div class="s-body">';
   if (dimKeys.length) {
     html += '<div class="s-dims">维度: ' + dimKeys.map(k =>
@@ -304,6 +308,7 @@ function renderScenario(groupIdx, s) {
   }
   html += '<div class="s-prompt" data-fill="main"></div>';
   html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
+  html += '<button class="copy-btn copy-main" data-prompt-source="main" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">📋 复制 prompt</button>';
   // 变体(对齐卡路里 L3 折叠)
   if (variants.length) {
     html += '<div class="variants-section"><div class="variants-header">变体 (' + variants.length + ')</div>';
@@ -318,33 +323,22 @@ function renderScenario(groupIdx, s) {
     }
     html += '</div>';
   }
-  html += '</div></div>';
+  html += '</div></details>';
   return html;
 }
 
 function bindInteractions() {
-  const wrap = document.querySelector('.wrap');
-  wrap.addEventListener('click', (e) => {
-    // group 折叠
-    const gh = e.target.closest('.group-h');
-    if (gh) {
-      const groupEl = gh.closest('.group');
-      if (groupEl) groupEl.classList.toggle('open');
-      return;
-    }
-    // 复制按钮
+  // 折叠交给原生 <details>/<summary>(对齐卡路里/作息管家);
+  // 此处只做复制按钮的事件委托,且绑在 #mainContent(正确容器,
+  // 旧版误绑到 .wrap 的第一个 = hero wrap,导致主内容区点击全失效)。
+  const mainEl = document.getElementById('mainContent');
+  if (!mainEl) return;
+  mainEl.addEventListener('click', (e) => {
     const btn = e.target.closest('.copy-btn');
-    if (btn) {
-      e.stopPropagation();
-      handleCopy(btn);
-      return;
-    }
-    // scenario 折叠
-    const sh = e.target.closest('.s-head');
-    if (sh) {
-      const sc = sh.closest('.scenario');
-      if (sc) sc.classList.toggle('open');
-    }
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    handleCopy(btn);
   });
   bindCopyButtons();
 }

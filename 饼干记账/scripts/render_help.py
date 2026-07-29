@@ -170,6 +170,11 @@ def main():
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8-sig")
 
+    # 同步一份到 SKILL 根目录(SKILL.md L10 强制要求)
+    skill_root_copy = SKILL_DIR / "饼干记账.html"
+    skill_root_copy.write_text(html, encoding="utf-8-sig")
+    print(f"✓ 已同步: {skill_root_copy}  (SKILL.md L10 镜像)")
+
     print(f"\n✓ 已生成: {output_path}")
     print(f"  用浏览器打开即可查看。")
     return 0

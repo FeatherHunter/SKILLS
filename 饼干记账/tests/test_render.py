@@ -272,3 +272,90 @@ class TestHelpHtmlRender:
             f"HELP 文件名应以 '饼干记账_HELP_' 开头，实际: {fname}"
         assert "能力速查" not in fname, \
             f"HELP 文件名不应含 '能力速查'，实际: {fname}"
+
+    def test_help_html_no_sc_dim(self, tmp_db_dir):
+        """v15 落地契约：渲染输出不含 .sc-dim（维度标签不再渲染）"""
+        rc, out, err, html_path = _run_render_help(tmp_db_dir)
+        text = html_path.read_text(encoding="utf-8-sig")
+        assert 'class="sc-dim"' not in text, \
+            "v15 模板应不再渲染 .sc-dim 维度标签（v15 设计契约）"
+        assert 'class="sc-title"' in text, \
+            "v15 模板应继续渲染 .sc-title 场景标题（防止模板被破坏到不渲染）"
+
+    def test_help_html_root_mirror_synced(self, tmp_db_dir):
+        """v15 落地契约：render_help.py 末尾 auto-copy 把同一份 HTML 写到 SKILL 根目录的 饼干记账.html
+
+        守 SKILL.md L10 的"功能变更必须同步更新"——从规则下沉为代码。
+        用 setup/teardown 备份/恢复根目录的真实文件，不污染 skill 根目录。
+        """
+        # --- setup: 备份根目录 饼干记账.html (如果存在) ---
+        skill_root = Path(__file__).resolve().parent.parent
+        root_html = skill_root / "饼干记账.html"
+        backup = tmp_db_dir / "饼干记账.html.backup"
+        had_root_file = root_html.exists()
+        if had_root_file:
+            backup.write_bytes(root_html.read_bytes())
+
+        try:
+            # --- act: 跑 render_help.py 不传 --out,触发 auto-copy 到根目录 ---
+            env = os.environ.copy()
+            env["SKILLS_DB_PATH"] = str(tmp_db_dir)
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["PYTHONUTF8"] = "1"
+            result = subprocess.run(
+                [sys.executable, str(RENDER_HELP)],
+                capture_output=True, text=True,
+                encoding="utf-8", env=env, timeout=30,
+            )
+            assert result.returncode == 0, f"render_help 失败: {result.stderr}"
+            assert "已同步" in result.stdout, (
+                f"render_help.py stdout 应含 '已同步' 字样（auto-copy 工作证明），实际: {result.stdout}"
+            )
+
+            # --- assert: 根目录文件存在 + BOM + 无 .sc-dim + payload 跟 timestamped 一致 ---
+            assert root_html.exists(), "auto-copy 后 skill 根目录 饼干记账.html 应存在"
+
+            root_raw = root_html.read_bytes()
+            assert root_raw[:3] == b"\xef\xbb\xbf", (
+                f"根目录 饼干记账.html 缺 UTF-8 BOM（前 3 字节 = {root_raw[:3]!r}）"
+            )
+            root_text = root_raw.decode("utf-8-sig")
+            assert 'class="sc-dim"' not in root_text, \
+                "auto-copy 到根目录的文件也应是 v15 布局（无 .sc-dim）"
+
+            # 从 stdout 的 "已生成" 行解析 timestamped 文件名,跟根目录对比 payload
+            ts_fname = None
+            for line in result.stdout.splitlines():
+                if "已生成" in line:
+                    last_part = line.replace("\\", "/").rsplit("/", 1)[-1].strip()
+                    for suffix in [".", ",", ")", "]"]:
+                        if last_part.endswith(suffix):
+                            last_part = last_part[:-1]
+                    if last_part.endswith(".html"):
+                        ts_fname = last_part
+                        break
+            assert ts_fname, f"未从 stdout 解析到 timestamped 文件名: {result.stdout}"
+
+            # timestamped 文件路径
+            html_dir = skill_root.parent / "biscuit_accountant_html"  # via html_paths.find_db_path
+            # 实际 html_dir 来自 find_db_path() = $SKILLS_DB_PATH 父目录 / SKILL_HTML_NAME_html
+            # SKILLS_DB_PATH=tmp_db_dir,所以 html_dir = tmp_db_dir / "biscuit_accountant_html"
+            ts_path = tmp_db_dir / "biscuit_accountant_html" / ts_fname
+            assert ts_path.exists(), f"timestamped 文件不存在: {ts_path}"
+
+            # 提取两边的 payload 段(从 <script id="payload"> 到 </script>)对比
+            import re
+            payload_re = re.compile(r'<script id="payload"[^>]*>(.*?)</script>', re.DOTALL)
+            ts_payload = payload_re.search(ts_path.read_text(encoding="utf-8-sig"))
+            root_payload = payload_re.search(root_text)
+            assert ts_payload, "timestamped 文件缺 <script id=\"payload\">"
+            assert root_payload, "根目录文件缺 <script id=\"payload\">"
+            assert ts_payload.group(1) == root_payload.group(1), (
+                "根目录 饼干记账.html 的 payload 段必须跟 timestamped 文件的 payload 段字节一致"
+            )
+        finally:
+            # --- teardown: 恢复备份（无论测试成功失败） ---
+            if had_root_file:
+                root_html.write_bytes(backup.read_bytes())
+            elif root_html.exists():
+                root_html.unlink()

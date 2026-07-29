@@ -1,1007 +1,680 @@
+﻿﻿<!--
+  ============================================================================
+  饼干记账 · HELP HTML 模板 · v2.4
+  5 类分门别类 + 3 层折叠 + Toast + 移动端 fallback
+  ============================================================================
+  使用:
+    1. 复制此文件
+    2. render_help.py 读 scenarios.json → 注入 payload → 替换 INJECT-DATA 占位符
+    3. 输出到 D:/Downloads/饼干记账_HELP_<timestamp>.html (跨平台 fallback)
+  ============================================================================
+-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>饼干记账 — Skill HTML 镜像</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>📚 饼干记账 · 唤醒词速查台</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b; --bg: #fafafa;
-    --card: #ffffff; --border: #d2d2d7; --accent: #0071e3;
-    --code-bg: #1d1d1f; --code-fg: #f5f5f7;
+    --bg: #f5f6f7; --card: #fff; --text: #1c1c1e; --sub: #6b6b6f;
+    --accent: #0071e3; --green: #34c759; --orange: #ff9500;
+    --code-bg: #f0f0f2; --border: #e5e5e7; --shadow: 0 1px 2px rgba(0,0,0,.04);
   }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
   body {
+    background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    line-height: 1.75; color: var(--fg); background: var(--bg);
-    max-width: 920px; margin: 0 auto; padding: 80px 32px 120px;
-    -webkit-font-smoothing: antialiased;
+    font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
   }
-  h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 8px; }
-  h2 { font-size: 26px; font-weight: 600; margin-top: 56px; margin-bottom: 18px;
-        letter-spacing: -0.02em; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  h3 { font-size: 19px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; letter-spacing: -0.01em; }
-  h4 { font-size: 16px; font-weight: 600; margin-top: 22px; margin-bottom: 8px; color: var(--fg2); }
-  p { font-size: 15px; margin-bottom: 14px; }
-  strong { font-weight: 600; }
-  em { color: var(--fg2); font-style: normal; }
-  code { background: var(--card); padding: 2px 7px; border-radius: 4px;
-         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px;
-         color: #c7254e; border: 1px solid var(--border); }
-  pre { background: var(--code-bg); color: var(--code-fg); padding: 18px 22px;
-         border-radius: 12px; overflow-x: auto; margin: 18px 0; font-size: 13.5px;
-         line-height: 1.65; }
-  pre code { background: none; padding: 0; color: inherit; border: none; }
-  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { padding: 10px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { background: var(--card); font-weight: 600; }
-  blockquote { border-left: 3px solid var(--accent); padding: 10px 0 10px 20px;
-               margin: 16px 0; color: var(--fg2); }
-  blockquote p { color: var(--fg2); margin-bottom: 0; }
-  ul, ol { margin: 14px 0 14px 28px; }
-  li { margin-bottom: 4px; font-size: 15px; }
-  .lead { font-size: 18px; color: var(--fg2); margin-bottom: 30px; line-height: 1.55; }
-  .meta { font-size: 12.5px; color: var(--fg3); margin-bottom: 36px;
-          padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-  .toc { background: var(--card); border: 1px solid var(--border);
-         border-radius: 12px; padding: 18px 22px; margin: 24px 0 36px; }
-  .toc h4 { margin-top: 0; color: var(--fg2); font-size: 12.5px;
-            text-transform: uppercase; letter-spacing: 0.08em; }
-  .toc ol { margin-left: 22px; }
-  .toc a { color: var(--fg); text-decoration: none; }
-  .toc a:hover { color: var(--accent); }
-  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-  .pill { display: inline-block; background: var(--card); color: var(--fg2);
-           padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 6px;
-           border: 1px solid var(--border); }
-  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
-             color: var(--fg3); font-size: 12px; text-align: center; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
+
+  /* ===== HERO (紧凑 · 对齐卡路里 v2.4.12) ===== */
+  .hero {
+    background: #f4f4f6;                  /* v11 保留 v9/v10 极淡灰,作为整块背景容纳标题+搜索栏 */
+    padding: 24px 0 16px;                 /* v10 24/0/0 → v11 24/0/16:搜索栏下方给 16px 留白再出 hero */
+    border-bottom: 0;
+  }
+  .hero .container { padding-bottom: 0; }  /* v10 关键修复:v11 search 已在 container 内,无需再设 container 底 padding */
+
+  .hero h1 {
+    font-size: 190%; font-weight: 700; letter-spacing: -.4px;
+    line-height: 1.18; margin: 0 0 4px;                         /* v8: 1.15→1.18, 2px→4px */
+  }
+  .hero .sub {
+    color: var(--accent); font-size: 12.5px; font-weight: 500;
+    margin: 0 0 6px;                                             /* v8: 4px→6px */
+    line-height: 1.45;
+    word-spacing: 4px;
+  }
+  .hero .sub .arrow {                  /* 新增:箭头单独样式 */
+    display: inline-block;
+    margin: 0 2px;
+    color: var(--orange);
+    font-weight: 600;
+  }
+  .hero .stats {
+    margin: 2px 0 0; display: flex; gap: 8px; flex-wrap: wrap;  /* v7: 4px→2px */
+    font-size: 12px; color: var(--sub);
+    line-height: 1.3;
+  }
+  .hero .stats span {                   /* 数字卡片化,深底更明显 */
+    background: rgba(0,0,0,.05);
+    border: 1px solid rgba(0,0,0,.06);
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .hero .stats b { color: var(--text); font-weight: 700; font-size: 13px; }   /* ↑ 600→700 加粗,加 13px */
+
+  /* ===== CONTROLS (紧凑 · 对齐卡路里 v2.4.12) ===== */
+  .controls {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    margin: 14px 0 0;                              /* v11: 合并到 hero 内,只保留顶部 14px 间距,去掉 sticky/独立色块/边框/负 margin */
+  }
+  .controls input[type="search"] {
+    flex: 1; min-width: 160px; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12.5px; background: var(--card); color: var(--text);
+    outline: none; transition: border-color .15s;
+    font-family: inherit;
+  }
+  .controls input[type="search"]:focus { border-color: var(--accent); }
+  .controls button {
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card); color: var(--text); padding: 7px 10px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: background .12s, color .12s, transform .15s, box-shadow .25s;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .controls button:active { transform: scale(0.96); }
+
+  /* ===== L1 CATEGORY (紧凑 · 对齐卡路里 v2.4.12) ===== */
+  .cat-block {
+    background: var(--card); border-radius: 8px;
+    margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .cat-block:first-of-type { margin-top: 0; }
+  .cat-block:last-of-type { margin-bottom: 0; }
+  .cat-block > summary {
+    cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px; font-size: 13px; font-weight: 600;
+    background: #fafbfc; min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .cat-block > summary::-webkit-details-marker { display: none; }
+  .cat-block > summary::before {
+    content: '▸'; font-size: 11px; color: var(--sub);
+    transition: transform .12s; flex-shrink: 0; pointer-events: none;
+  }
+  .cat-block[open] > summary::before { transform: rotate(90deg); }
+  .cat-block > summary > * { pointer-events: none; }
+  .cat-name { flex: 1; }
+  .cat-desc { font-size: 11px; color: var(--sub); font-weight: 400; }
+  .cat-count-pill {
+    font-size: 10px; font-weight: 500;
+    color: var(--sub); background: #e5e5e7;
+    padding: 1px 6px; border-radius: 999px;
+  }
+  .cat-content { padding: 4px 12px 10px; }
+
+  /* ===== L2 WAKE WORD (紧凑 · 对齐卡路里 v2.4.12) ===== */
+  .ww-block {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 6px; margin: 4px 0;
+  }
+  .ww-block > summary {
+    padding: 6px 10px; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .ww-block > summary::-webkit-details-marker { display: none; }
+  .ww-block > summary::before {
+    content: '▸'; font-size: 10px; color: var(--sub);
+    transition: transform .12s; flex-shrink: 0; pointer-events: none;
+  }
+  .ww-block[open] > summary::before { transform: rotate(90deg); }
+  .ww-block > summary > * { pointer-events: none; }
+  .ww-name { color: var(--text); }
+  .ww-count {
+    margin-left: auto; font-size: 11px; color: var(--sub);
+    font-weight: 400;
+  }
+  .ww-content { padding: 0 10px 8px; }
+
+  /* ===== L3 SCENARIO ===== */
+  .sc-block {
+    border: 1px solid var(--border); border-radius: 6px;
+    margin: 3px 0; background: #fcfcfd;
+  }
+  .sc-block.pending { border-left: 3px solid var(--orange); }
+  .sc-block > summary {
+    padding: 4px 8px; cursor: pointer; list-style: none;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font-size: 12px;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .sc-block > summary::-webkit-details-marker { display: none; }
+  .sc-block > summary::before {
+    content: '▸'; font-size: 9px; color: var(--sub);
+    transition: transform .12s; flex-shrink: 0; pointer-events: none;
+  }
+  .sc-block[open] > summary::before { transform: rotate(90deg); }
+  .sc-block > summary > * { pointer-events: none; }
+  .sc-title { font-weight: 500; color: var(--accent); font-size: 13px; flex: 1; }
+  .sc-dim {
+    font-size: 10px; color: var(--sub); background: var(--bg);
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .sc-pending-tag {
+    font-size: 9px; font-weight: 700; padding: 2px 6px;
+    border-radius: 4px; background: #fff7e6; color: #ff9500;
+  }
+  .sc-content { padding: 0 8px 6px; }
+  .sc-prompt {
+    background: #f0f7ff; border-left: 2px solid var(--accent);
+    padding: 6px 8px; border-radius: 4px; margin: 4px 0;
+    font-family: "SF Mono", Consolas, monospace; font-size: 11.5px;
+    word-break: break-word; line-height: 1.35;
+    white-space: pre-wrap;
+  }
+  .sc-prompt::before { content: "💬 "; }
+  .sc-result {
+    font-size: 12px; color: var(--sub); margin: 6px 0 8px;
+    padding-left: 4px;
+  }
+  .sc-result::before { content: "→ "; color: var(--sub); }
+
+  /* ===== COPY BUTTON (4 状态反馈 · 对齐卡路里 v2.4.12) ===== */
+  .copy-btn {
+    font: inherit; font-size: 11px; padding: 4px 8px;
+    border-radius: 5px; border: 1px solid var(--accent);
+    background: #fff; color: var(--accent);
+    cursor: pointer; margin: 3px 0;
+    transition: background .12s, color .12s, transform .15s, box-shadow .25s;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
+  }
+  .copy-btn:hover { background: var(--accent); color: #fff; }
+  .copy-btn:active { transform: scale(0.94); background: var(--accent); color: #fff; }
+  .copy-btn.copied {
+    background: var(--green); border-color: var(--green); color: #fff;
+    transform: scale(1.05);
+    animation: copySuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  /* sc-block summary 折叠态复制按钮(v12 需求:按钮在名字右边,展开后不显示) */
+  .sc-block > summary .copy-btn {
+    background: var(--accent); color: #fff; border: none;
+    padding: 3px 9px; border-radius: 6px; font-size: 11px;
+    cursor: pointer; margin-left: auto; flex-shrink: 0;
+    pointer-events: auto;        /* 覆盖 summary > * 的 pointer-events: none */
+  }
+  .sc-block > summary .copy-btn:hover { opacity: 0.85; }
+  .sc-block[open] > summary .copy-btn { display: none; }   /* 展开后整行没有复制按钮 */
+
+  /* ===== HELP 唤醒词速查列表（4 条 HELP 唤醒词） ===== */
+  .help-ww-list { padding: 6px 0; }
+  .help-ww-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; margin: 4px 0;
+    background: var(--code-bg); border-radius: 6px;
+  }
+  .help-ww-code {
+    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 14px; color: var(--accent); font-weight: 600;
+    word-break: break-all;
+  }
+  @keyframes copySuccess {
+    0%   { transform: scale(0.94); box-shadow: 0 0 0 0 rgba(52,199,89,0); }
+    50%  { transform: scale(1.10); box-shadow: 0 0 0 8px rgba(52,199,89,0.30); }
+    100% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(52,199,89,0.18); }
+  }
+
+  /* ===== TOAST (iOS 风格通知) ===== */
+  .toast {
+    position: fixed; left: 50%; bottom: 32px;
+    transform: translateX(-50%) scale(0.9);
+    opacity: 0;
+    background: rgba(28,28,30,0.94);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    color: #f0f0f0;
+    border-radius: 14px;
+    padding: 13px 14px 13px 16px;
+    display: flex; align-items: flex-start; gap: 12px;
+    max-width: 480px; min-width: 320px;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
+    pointer-events: none;
+    transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 9999;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    pointer-events: auto;
+  }
+  .toast-icon { font-size: 22px; line-height: 1; padding-top: 1px; flex-shrink: 0; }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title {
+    font-weight: 600; font-size: 13px; line-height: 1.4;
+    color: #fff; margin-bottom: 3px;
+  }
+  .toast-title em {
+    font-style: normal; color: #4dd96b; font-weight: 600;
+  }
+  .toast-detail { font-size: 11.5px; line-height: 1.55; color: #c8c8cc; }
+  .toast-close {
+    background: rgba(255,255,255,0.10);
+    color: #4dd96b;
+    border: 0; border-radius: 8px;
+    padding: 6px 10px; font-size: 11px; font-weight: 500;
+    font-family: inherit; cursor: pointer;
+    white-space: nowrap;
+    margin-left: 6px; flex-shrink: 0;
+    transition: background 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .toast-close:hover { background: rgba(255,255,255,0.18); }
+  .toast-close:active { transform: scale(0.96); }
+
+  /* ===== EMPTY / NO MATCH / FOOTER (紧凑 · 对齐卡路里 v2.4.12) ===== */
+  .empty, .no-match {
+    text-align: center; padding: 24px; color: var(--sub); font-size: 13px;
+    background: var(--card); border-radius: 8px;
+    box-shadow: var(--shadow); margin: 12px 0;
+  }
+  footer {
+    text-align: center; color: var(--sub); font-size: 10px;
+    padding: 12px 0 0; margin-top: 16px;
+  }
+
+  /* Hidden (search filter) */
+  .cat-block.hidden, .ww-block.hidden, .sc-block.hidden { display: none; }
+
+  /* === MOBILE (≤600px) === */
+  @media (max-width: 600px) {
+    body { font-size: 12.5px; }
+    .container { padding: 0 8px 60px; }
+    .hero { padding: 20px 0 14px; }           /* v11: 20/0/0 → 20/0/14 搜索栏下加 14px 留白 */
+    .hero .container { padding-bottom: 0; }   /* v10: 移动 container 内部 padding-bottom 60px → 0 */
+    .hero h1 { font-size: 21px; }
+    .hero .sub { font-size: 12px; }
+    .hero .stats { gap: 6px; font-size: 11.5px; }
+    .controls { margin: 12px 0 0; }                                /* v11: 合并到 hero 内,顶部 12px 间距 */
+    .controls input[type="search"] { font-size: 12.5px; padding: 7px 10px; }
+    .controls button { font-size: 11px; padding: 7px 8px; }
+    .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
+    .cat-content { padding: 4px 10px 8px; }
+    .ww-block > summary { padding: 7px 9px; }
+    .ww-content { padding: 0 9px 7px; }
+    .sc-block > summary {
+      display: flex;                                      /* v15: 去掉 dims 后回到 flex 布局,3 个元素就够 */
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 6px;
+      padding: 8px 10px;                                  /* v13: 加大内边距,手指好按 */
+    }
+    .sc-title {
+      flex: 1 1 0%;                                       /* 标题吃满中间剩余宽度 */
+      min-width: 0;
+      font-size: 12.5px;
+      text-align: left;                                   /* v15: 明确左对齐 */
+    }
+    .sc-pending-tag {
+      font-size: 9px; padding: 1px 5px;                  /* 跟在标题右边 */
+      flex: 0 0 auto;
+    }
+    .sc-block > summary .copy-btn {
+      flex: 0 0 auto;
+      margin-left: auto;                                  /* 推到最右 */
+      padding: 5px 10px; font-size: 11px;
+    }
+    .sc-content { padding: 0 10px 8px; text-align: left; }              /* v15: 明确左对齐 */
+    .sc-prompt { font-size: 11px; line-height: 1.4; padding: 6px 9px; text-align: left; }
+    .sc-result { font-size: 11.5px; line-height: 1.4; margin: 6px 0 6px; text-align: left; }
+    .toast {
+      left: 12px; right: 12px;
+      bottom: calc(12px + env(safe-area-inset-bottom, 0));
+      transform: translateX(0) scale(0.95);
+      max-width: none; min-width: 0;
+      padding: 12px 12px 12px 14px;
+    }
+    .toast.show { transform: translateX(0) scale(1); }
+    .toast-icon { font-size: 20px; }
+    .toast-title { font-size: 12.5px; }
+    .toast-detail { font-size: 11px; }
+    body { padding-bottom: env(safe-area-inset-bottom, 0); }
+  }
+
+  /* === TABLET (601-900px) === */
+  @media (min-width: 601px) and (max-width: 900px) {
+    .container { max-width: 720px; }
+  }
 </style>
 </head>
 <body>
-<div class="toc"><h4>目录</h4><ol><li><a href="#强制性规定-最高优先级-1">强制性规定（最高优先级）</a></li>
-<li><a href="#操作规范-强制-2">操作规范（强制）</a></li>
-<li><a href="#安装与配置-3">安装与配置</a></li>
-<li><a href="#功能概述-4">功能概述</a></li>
-<li><a href="#唤醒词总表-5">唤醒词总表</a></li>
-<li><a href="#使用流程-6">使用流程</a></li>
-<li><a href="#命令行参考-7">命令行参考</a></li>
-<li><a href="#分类参考-8">分类参考</a></li>
-<li><a href="#错误处理-9">错误处理</a></li>
-<li><a href="#html-可视化查询v23-默认工作流-10">HTML 可视化查询（v2.3 默认工作流）</a></li>
-<li><a href="#help-能力速查v24-升级-11">HELP 能力速查（v2.4 升级）</a></li></ol></div>
-<p><strong>🔗 联动提示：</strong> 完成本技能主操作后，检查技能路由器（<code>图片路由/SKILL.md</code>）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。</p>
-<h2 id="强制性规定-最高优先级-1">强制性规定（最高优先级）</h2>
-<ol>
-<li><strong>该技能的所有优化和变动、脚本的所有变动都要体现在 <code>饼干记账.html</code> 上</strong> — HTML 是技能的可视化手册，任何功能变更必须同步更新</li>
-<li><strong>本规定优先级最高</strong>，高于下方所有操作规范</li>
-<li><strong>对该技能的所有文件、脚本的任何一行修改都需要明确得到用户的 1 次确认</strong> — 禁止未经确认的自动修改</li>
-</ol>
-<hr />
-<h2 id="操作规范-强制-2">操作规范（强制）</h2>
-<ul>
-<li>所有数据操作通过 CLI（<code>scripts/record_bill.py</code>），禁止直连数据库</li>
-<li>只读操作（查询/分析/统计）不需确认；写入操作（记支出/记收入/拍账单/改记录）需用户确认</li>
-<li>不支持删除已有记录；修改功能见「改记录」流程</li>
-<li>金额必须明确，不能猜测</li>
-</ul>
-<hr />
-<h2 id="安装与配置-3">安装与配置</h2>
-<h3>依赖</h3>
-<ul>
-<li>Python 3.x（系统自带 sqlite3）</li>
-</ul>
-<h3>配置项</h3>
-<table>
-<thead>
-<tr>
-<th>环境变量</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>SKILLS_DB_PATH</code></td>
-<td>数据库目录</td>
-</tr>
-</tbody>
-</table>
-<h3>一键安装</h3>
-<pre><code>请帮我初始化饼干记账技能：
-1. 检查 Python 环境
-2. 引导我配置环境变量
-3. 显示当前环境变量配置
-4. 告诉我如何更改数据目录
-</code></pre>
-<hr />
-<h2 id="功能概述-4">功能概述</h2>
-<ul>
-<li><strong>文字记账</strong>：解析自然语言，提取金额、分类、备注</li>
-<li><strong>图片记账</strong>：看图识别账单金额，用户确认后记录</li>
-<li><strong>查询统计</strong>：今日/指定日期/日期范围/分类查询</li>
-<li><strong>分析报表</strong>：月度汇总、周期对比、分类明细、收支总览</li>
-</ul>
-<hr />
-<h2 id="唤醒词总表-5">唤醒词总表</h2>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>唤醒词</th>
-<th>功能</th>
-<th>CLI 指令</th>
-<th>默认输出</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>写入</td>
-<td><code>记支出</code></td>
-<td>记账（支出）</td>
-<td><code>add --amount &lt;负数&gt;</code></td>
-<td>文字回执</td>
-</tr>
-<tr>
-<td>写入</td>
-<td><code>记收入</code></td>
-<td>收入记录</td>
-<td><code>add --amount &lt;正数&gt;</code></td>
-<td>文字回执</td>
-</tr>
-<tr>
-<td>写入</td>
-<td><code>拍账单</code></td>
-<td>图片记账</td>
-<td>图片识别 → <code>add</code></td>
-<td>文字回执</td>
-</tr>
-<tr>
-<td>写入</td>
-<td><code>改记录</code></td>
-<td>修改已有记录</td>
-<td><code>update --id &lt;ID&gt; [--字段 新值 ...]</code></td>
-<td>文字回执</td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>查今天</code></td>
-<td>今日摘要</td>
-<td><code>summary</code></td>
-<td><strong>HTML</strong>（<code>bill_inject.py</code>）</td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>查日期</code></td>
-<td>指定日期查询</td>
-<td><code>list --date &lt;YYYY-MM-DD&gt;</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>查范围</code></td>
-<td>日期范围查询</td>
-<td><code>list --from &lt;日期&gt; --to &lt;日期&gt;</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>查分类</code></td>
-<td>按分类查询</td>
-<td><code>list --category &lt;分类&gt;</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>查最近</code></td>
-<td>最近N条</td>
-<td><code>recent --limit &lt;N&gt;</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>查询</td>
-<td><code>搜备注</code></td>
-<td>搜索备注</td>
-<td><code>search "&lt;关键词&gt;"</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>分析</td>
-<td><code>看月度</code></td>
-<td>月度汇总</td>
-<td><code>monthly --month &lt;YYYY-MM&gt;</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>分析</td>
-<td><code>看对比</code></td>
-<td>周期对比</td>
-<td><code>compare --period week/month</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>分析</td>
-<td><code>看分类</code></td>
-<td>分类明细</td>
-<td><code>breakdown [--from --to]</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>分析</td>
-<td><code>看总览</code></td>
-<td>收支总览</td>
-<td><code>overview [--month &lt;YYYY-MM&gt;]</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td>统计</td>
-<td><code>做统计</code></td>
-<td>记账统计</td>
-<td><code>stats</code></td>
-<td><strong>HTML</strong></td>
-</tr>
-<tr>
-<td><strong>HELP</strong></td>
-<td><code>饼干记账 HELP</code> / <code>饼干记账 帮助</code> / <code>查帮助</code> / <code>能做什么</code></td>
-<td>能力速查</td>
-<td><code>render_help.py</code></td>
-<td><strong>HTML（HELP 页）</strong></td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="📌-输出位置">📌 输出位置（§04 原则 12.A / 12.B）</h2>
-<p><strong>本 Skill 走 §04 原则 12.A / 12.B</strong>，HTML 路径名规则固化如下，不可随意改动：</p>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>§12 分类</th>
-<th>文件名规范</th>
-<th>触发命令</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>数据 / 过程 HTML</strong>（12.A）</td>
-<td>§12.A</td>
-<td><code>$DATA_DIR/biscuit_accountant_html/&lt;command_zh&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code></td>
-<td><code>bill_inject.py &lt;query_type&gt; [args]</code></td>
-</tr>
-<tr>
-<td><strong>HELP HTML</strong>（12.B）</td>
-<td>§12.B</td>
-<td><code>$DATA_DIR/biscuit_accountant_html/饼干记账_HELP_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code></td>
-<td><code>render_help.py</code></td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li><code>&lt;command_zh&gt;</code> 由 <code>scripts/html_paths.resolve_command_name()</code> 解析（如 <code>今日摘要</code> / <code>月度汇总</code> / <code>收支总览</code>）</li>
-<li>同秒冲突自动追加 <code>_2</code> / <code>_3</code> 后缀</li>
-<li><code>$DATA_DIR</code> 跟随 <code>SKILLS_DB_PATH</code> 环境变量（fallback <code>D:/.db/</code>）</li>
-<li>HELP 路径名固定以 <code>饼干记账_HELP_</code> 前缀（grep 一抓就出，便于检索历史 HELP 页）</li>
-</ul>
-<hr />
-<h2 id="使用流程-6">使用流程</h2>
-<h3>Step 1：判断输入类型</h3>
-<table>
-<thead>
-<tr>
-<th>输入类型</th>
-<th>处理方式</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>纯文字</td>
-<td>直接匹配唤醒词，解析金额、分类、备注</td>
-</tr>
-<tr>
-<td>纯图片（无文字）</td>
-<td>进入「拍账单」流程，识别图片内容，展示结果，用户确认后记账</td>
-</tr>
-<tr>
-<td>图片+文字</td>
-<td>看图判断金额，用户文字作为备注或分类提示</td>
-</tr>
-</tbody>
-</table>
-<h3>Step 2：匹配唤醒词</h3>
-<p>用户输入 → 匹配上述 14 个唤醒词之一 → 进入对应功能流程。</p>
-<p><strong>自然语言别名映射（AI 解析时同时匹配）：</strong></p>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>路由到</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"花了X"、"付了"、"消费"、"买了"</td>
-<td>→ <code>记支出</code></td>
-</tr>
-<tr>
-<td>"收到X"、"进账"、"工资"、"赚了"</td>
-<td>→ <code>记收入</code></td>
-</tr>
-<tr>
-<td>"截图"、"发照片"</td>
-<td>→ <code>拍账单</code></td>
-</tr>
-<tr>
-<td>"改下"、"改记录"、"改成X"、"改X"、"修正"、"编辑"</td>
-<td>→ <code>改记录</code></td>
-</tr>
-<tr>
-<td>"今天花了多少"、"今日支出"、"查账"</td>
-<td>→ <code>查今天</code></td>
-</tr>
-<tr>
-<td>"昨天花了多少"、"5月1号的账"</td>
-<td>→ <code>查日期</code></td>
-</tr>
-<tr>
-<td>"这周的账"、"上周消费"、"5月1到10号"</td>
-<td>→ <code>查范围</code></td>
-</tr>
-<tr>
-<td>"餐饮类的记录"、"交通花了多少"</td>
-<td>→ <code>查分类</code></td>
-</tr>
-<tr>
-<td>"最近的记录"、"最近5条"</td>
-<td>→ <code>查最近</code></td>
-</tr>
-<tr>
-<td>"找一下XX"、"有没有XX的记录"</td>
-<td>→ <code>搜备注</code></td>
-</tr>
-<tr>
-<td>"这个月消费"、"本月支出"、"月度汇总"</td>
-<td>→ <code>看月度</code></td>
-</tr>
-<tr>
-<td>"这周和上周比"、"本月和上月比"</td>
-<td>→ <code>看对比</code></td>
-</tr>
-<tr>
-<td>"各类支出占比"、"分类明细"</td>
-<td>→ <code>看分类</code></td>
-</tr>
-<tr>
-<td>"收支情况"、"本月收支"</td>
-<td>→ <code>看总览</code></td>
-</tr>
-<tr>
-<td>"记了多少笔"、"记账情况"</td>
-<td>→ <code>做统计</code></td>
-</tr>
-</tbody>
-</table>
-<h3>Step 3：解析参数</h3>
-<h4>记支出</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"午饭35"</td>
-<td>分类=餐饮/外卖/午餐, 金额=-35</td>
-</tr>
-<tr>
-<td>"奶茶25"</td>
-<td>分类=餐饮/咖啡奶茶/奶茶, 金额=-25</td>
-</tr>
-<tr>
-<td>"打车20用支付宝"</td>
-<td>分类=出行/网约车, 金额=-20, 账户=支付宝</td>
-</tr>
-<tr>
-<td>"洗发水80"</td>
-<td>分类=居家/日用品(默认,如上下文有"理发/发廊"则→穿着/洗护), 金额=-80</td>
-</tr>
-<tr>
-<td>"昨天买书58"</td>
-<td>分类=玩乐/影音游戏/书籍影视(默认,如上下文有"教材/考试/备考"则→学习/书籍), 金额=-58, 时间=昨天</td>
-</tr>
-<tr>
-<td>"记账到旅行账本"</td>
-<td>账本=旅行</td>
-</tr>
-</tbody>
-</table>
-<p><strong>文字解析关键词：</strong>
-- "花了 / 付了 / 消费 / 支出 / 买了" → 负数金额
-- 未指定时间 → 默认当前时间
-- 未指定分类 → 根据内容推断，告知用户可纠正
-- 分类参考 <code>references/categories.md</code>(L1/L2/L3 三级 + 歧义词智能判断)</p>
-<h4>记收入</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"工资8000"</td>
-<td>分类=工资/基本工资, 金额=+8000</td>
-</tr>
-<tr>
-<td>"绩效3000"</td>
-<td>分类=工资/绩效, 金额=+3000</td>
-</tr>
-<tr>
-<td>"项目奖金5000"</td>
-<td>分类=奖金/项目奖金, 金额=+5000</td>
-</tr>
-<tr>
-<td>"副业赚了2000"</td>
-<td>分类=兼职/副业, 金额=+2000</td>
-</tr>
-<tr>
-<td>"基金分红300"</td>
-<td>分类=投资/分红, 金额=+300</td>
-</tr>
-<tr>
-<td>"红包100"</td>
-<td>分类=其他收入/红包, 金额=+100</td>
-</tr>
-</tbody>
-</table>
-<p><strong>文字解析关键词：</strong>
-- "收到 / 收入 / 进账 / 工资 / 赚了" → 正数金额</p>
-<h4>拍账单</h4>
-<table>
-<thead>
-<tr>
-<th>用户输入</th>
-<th>处理方式</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>发截图/账单图片</td>
-<td>识别金额，展示结果，用户确认后记录</td>
-</tr>
-<tr>
-<td>发模糊图片</td>
-<td>描述看到的内容，请用户确认金额</td>
-</tr>
-<tr>
-<td>发非账单图片</td>
-<td>告知非账单，询问是否手动输入</td>
-</tr>
-</tbody>
-</table>
-<p><strong>图片识别规则：</strong>
-1. 优先取「实付 / 实收 / 已支付 / 需付」金额
-2. 其次取「合计 / 总计 / 总额 / 应付」金额
-3. 忽略：单品价格、优惠减免、配送费、税额、找零
-4. 无法判断时，描述看到的内容并请用户确认</p>
-<h4>改记录</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"把那条午饭改成 38"</td>
-<td>id=查最近匹配项, amount=-38</td>
-</tr>
-<tr>
-<td>"改备注加牛奶"</td>
-<td>id=用户指定或查最近匹配, note="原备注+牛奶"</td>
-</tr>
-<tr>
-<td>"ID=123 改成分类=交通"</td>
-<td>id=123, category=交通</td>
-</tr>
-<tr>
-<td>"把刚记的那笔改一下"</td>
-<td>id=查最近第 1 条,字段待用户告知</td>
-</tr>
-</tbody>
-</table>
-<p><strong>改记录流程(AI 层负责 diff + 确认):</strong>
-1. 通过 <code>查最近</code> / <code>查日期</code> / <code>搜备注</code> 定位目标记录的 ID(必要时把候选展示给用户挑)
-2. 用户告知要改哪些字段、改成什么 → AI 计算 原值 → 新值 的 diff
-3. <strong>展示 diff 给用户,等待"确认"</strong>(未确认前不调 update CLI)
-4. 用户回复「确认」→ AI 调 <code>update --id &lt;ID&gt; [...新字段]</code>
-5. CLI 返回结果 → AI 反馈「已修改」</p>
-<p><strong>确认模板:</strong></p>
-<pre><code>📝 待修改(ID=123):
-  分类:    餐饮     →  餐饮(未改)
-  金额:    -35.00   →  -38.00
-  备注:    午饭     →  午饭+牛奶
-确认改?(回复「确认」或「取消」)
-</code></pre>
-<h4>查今天</h4>
-<p>无参数。返回今日 count / expense / income / net。</p>
-<h4>查日期</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"查昨天"</td>
-<td>--date = 昨天日期</td>
-</tr>
-<tr>
-<td>"5月1号的账"</td>
-<td>--date = 2026-05-01</td>
-</tr>
-<tr>
-<td>"上周五花了多少"</td>
-<td>--date = 计算后的日期</td>
-</tr>
-</tbody>
-</table>
-<h4>查范围</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"这周的账"</td>
-<td>--from 本周一 --to 今天</td>
-</tr>
-<tr>
-<td>"上周消费"</td>
-<td>--from 上周一 --to 上周日</td>
-</tr>
-<tr>
-<td>"5月1到10号"</td>
-<td>--from 2026-05-01 --to 2026-05-10</td>
-</tr>
-</tbody>
-</table>
-<h4>查分类</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"餐饮类的记录"</td>
-<td>--category 餐饮</td>
-</tr>
-<tr>
-<td>"交通花了多少"</td>
-<td>--category 交通</td>
-</tr>
-</tbody>
-</table>
-<p>注意：此命令返回该分类下的逐条记录。如需分类汇总统计，使用「看分类」。</p>
-<h4>查最近</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"最近5条"</td>
-<td>--limit 5</td>
-</tr>
-<tr>
-<td>"最近的记录"</td>
-<td>--limit 10（默认）</td>
-</tr>
-</tbody>
-</table>
-<h4>搜备注</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"搜午饭"</td>
-<td>keyword = 午饭</td>
-</tr>
-<tr>
-<td>"有没有咖啡的记录"</td>
-<td>keyword = 咖啡</td>
-</tr>
-</tbody>
-</table>
-<h4>看月度</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"本月汇总"</td>
-<td>--month = 当前月（YYYY-MM）</td>
-</tr>
-<tr>
-<td>"3月份的账"</td>
-<td>--month = 2026-03</td>
-</tr>
-</tbody>
-</table>
-<p>返回：支出/收入/净额 + 分类明细。</p>
-<h4>看对比</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"这周和上周比"</td>
-<td>--period week</td>
-</tr>
-<tr>
-<td>"本月和上月比"</td>
-<td>--period month</td>
-</tr>
-</tbody>
-</table>
-<p>返回：本期/上期的支出/收入/净额 + 变化率。</p>
-<h4>看分类</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"各类支出占比"</td>
-<td>无参数，默认本月</td>
-</tr>
-<tr>
-<td>"5月的分类明细"</td>
-<td>--from 2026-05-01 --to 2026-05-31</td>
-</tr>
-</tbody>
-</table>
-<p>返回：各分类总支出/占比/笔数/均值。</p>
-<h4>看总览</h4>
-<table>
-<thead>
-<tr>
-<th>用户说</th>
-<th>解析结果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"本月收支"</td>
-<td>--month = 当前月（默认）</td>
-</tr>
-<tr>
-<td>"3月收支情况"</td>
-<td>--month = 2026-03</td>
-</tr>
-</tbody>
-</table>
-<p>返回：笔数/支出/收入/净额。</p>
-<h4>做统计</h4>
-<p>无参数。返回总笔数、记账天数、首笔时间、最近记录时间。</p>
-<h3>Step 4：执行指令</h3>
-<pre><code class="language-bash"># 记支出(多级分类:L1/L2/L3 用 / 分隔)
-python3 scripts/record_bill.py add --category 餐饮/外卖/午餐 --amount -35.0 --note &quot;午饭&quot;
-python3 scripts/record_bill.py add --category 餐饮/咖啡奶茶/奶茶 --amount -25.0
 
-# 改记录(按 ID)
-python3 scripts/record_bill.py update --id 123 --note &quot;午饭+牛奶&quot;
-python3 scripts/record_bill.py update --id 123 --amount -38.0 --category 餐饮
-python3 scripts/record_bill.py update --id 123 --amount -50 --account 微信 --ledger 餐饮
+<div class="hero"><div class="container">
+  <h1>📚 饼干记账 · 唤醒词速查台</h1>
+  <div class="sub">💡 类别<span class="arrow">→</span>选唤醒词<span class="arrow">→</span>展开场景<span class="arrow">→</span>复制 prompt<span class="arrow">→</span>贴给 AI</div>
+  <div class="stats" id="heroStats"></div>
+  <div class="controls">
+    <input type="search" id="searchInput" placeholder="🔍 搜索唤醒词 / 场景标题 / prompt..." />
+    <button id="expandAll" type="button">📂 全部展开</button>
+    <button id="collapseAll" type="button">📁 全部折叠</button>
+  </div>
+</div></div>
 
-# 记收入
-python3 scripts/record_bill.py add --category 工资/基本工资 --amount 8000.0 --note &quot;5月工资&quot;
+<div class="container">
+  <main id="mainContent"><div class="empty">加载中…</div></main>
 
-# 查今天
-python3 scripts/record_bill.py summary
+  <footer>
+    由 <code>references/scenarios.json</code> 派生 ·
+    <code>scripts/render_help.py</code> 渲染 · v2.4
+    <div id="generatedAt" style="margin-top:4px;"></div>
+  </footer>
+</div>
 
-# 查日期
-python3 scripts/record_bill.py list --date 2026-05-27
+<!-- ===== TOAST (iOS 风格) ===== -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-icon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
+    <div class="toast-detail">粘贴给 AI（微信/飞书/任何 AI 工具），饼干记账技能会自动执行</div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
 
-# 查范围
-python3 scripts/record_bill.py list --from 2026-05-01 --to 2026-05-31
 
-# 查分类
-python3 scripts/record_bill.py list --category 餐饮
 
-# 查最近
-python3 scripts/record_bill.py recent --limit 10
+<script id="payload" type="application/json">{"status": "ok", "data": {"skill": "饼干记账", "version": "v2.4", "generated_at": "2026-07-30 00:43:37", "categories": [{"key": "write", "name": "写入类", "icon": "📝", "desc": "记一笔新账或修改已有记录", "wake_words": [{"name": "记支出", "scenarios": [{"wake_word": "记支出", "scenario_id": "expense_food_default", "scenario_title": "餐饮类支出(AI 推断分类)", "dimensions": {"分类": "餐饮/外卖/午餐", "时间": "今天", "账户": "(未指定)"}, "prompt": "午饭花了 35 块", "status": "", "result": "自动识别为餐饮类支出 35 元,记录成功"}, {"wake_word": "记支出", "scenario_id": "expense_transport", "scenario_title": "出行类支出 + 账户", "dimensions": {"分类": "出行/网约车", "时间": "今天", "账户": "支付宝"}, "prompt": "打车 20 用支付宝付的", "status": "", "result": "记录一笔 20 元出行支出,账户为支付宝"}, {"wake_word": "记支出", "scenario_id": "expense_default_category", "scenario_title": "未指定分类(AI 推断并告知)", "dimensions": {"分类": "AI 推断", "时间": "今天"}, "prompt": "洗发水 80", "status": "", "result": "AI 推断为居家/日用品,记录 80 元支出,提示用户可纠正分类"}, {"wake_word": "记支出", "scenario_id": "expense_with_date", "scenario_title": "补记昨天支出", "dimensions": {"时间": "昨天", "分类": "玩乐/书籍影视"}, "prompt": "昨天买书 58", "status": "", "result": "补记昨天一笔 58 元买书支出,分类为玩乐/书籍影视"}, {"wake_word": "记支出", "scenario_id": "expense_with_ledger", "scenario_title": "指定账本记账", "dimensions": {"账本": "旅行"}, "prompt": "在旅行账本记一笔打车 50", "status": "", "result": "记录 50 元支出到旅行账本"}, {"wake_word": "记支出", "scenario_id": "expense_ambiguous_amount", "scenario_title": "金额不明确(AI 必须确认)", "dimensions": {"金额": "模糊"}, "prompt": "午饭花了点钱", "status": "", "result": "AI 必须询问具体金额,不能猜测"}, {"wake_word": "记支出", "scenario_id": "expense_zero_amount", "scenario_title": "0 元支出(边界/退款)", "dimensions": {"金额": "0"}, "prompt": "刚才那笔午饭退款 35,冲掉 0 元", "status": "", "result": "允许记录 0 元支出,用于对冲/退款场景,提示用户确认"}, {"wake_word": "记支出", "scenario_id": "expense_large_amount", "scenario_title": "极大金额(边界)", "dimensions": {"金额": "≥ 10000"}, "prompt": "换电脑 12800", "status": "", "result": "正常记录极大金额,提示用户确认分类"}, {"wake_word": "记支出", "scenario_id": "expense_decimal_precision", "scenario_title": "小数金额(精度边界)", "dimensions": {"金额": "小数 2 位"}, "prompt": "咖啡 35.55", "status": "", "result": "保留 2 位小数,正确存储与显示"}], "count": 9, "pending_count": 0}, {"name": "记收入", "scenarios": [{"wake_word": "记收入", "scenario_id": "income_salary", "scenario_title": "工资到账", "dimensions": {"分类": "工资/基本工资"}, "prompt": "工资 8000 到了", "status": "", "result": "记录一笔 8000 元工资收入"}, {"wake_word": "记收入", "scenario_id": "income_bonus", "scenario_title": "项目奖金", "dimensions": {"分类": "奖金/项目奖金"}, "prompt": "项目奖金 5000", "status": "", "result": "记录一笔 5000 元项目奖金"}, {"wake_word": "记收入", "scenario_id": "income_sidejob", "scenario_title": "副业/兼职收入", "dimensions": {"分类": "兼职/副业"}, "prompt": "副业赚了 2000", "status": "", "result": "记录一笔 2000 元副业收入"}, {"wake_word": "记收入", "scenario_id": "income_investment", "scenario_title": "基金分红", "dimensions": {"分类": "投资/分红"}, "prompt": "基金分红 300", "status": "", "result": "记录一笔 300 元基金分红"}, {"wake_word": "记收入", "scenario_id": "income_redpacket", "scenario_title": "红包收入", "dimensions": {"分类": "其他收入/红包"}, "prompt": "收到红包 100", "status": "", "result": "记录一笔 100 元红包收入"}, {"wake_word": "记收入", "scenario_id": "income_large_amount", "scenario_title": "极大金额收入（边界）", "dimensions": {"金额": "≥ 100000"}, "prompt": "项目尾款 15 万到账", "status": "", "result": "记录大额收入,提示用户核对"}, {"wake_word": "记收入", "scenario_id": "income_currency_other", "scenario_title": "外币收入", "dimensions": {"货币": "非人民币"}, "prompt": "美元稿费 500 美金", "status": "", "result": "记录外币收入,按当时汇率换算显示"}], "count": 7, "pending_count": 0}, {"name": "拍账单", "scenarios": [{"wake_word": "拍账单", "scenario_id": "snap_clear_bill", "scenario_title": "清晰账单图片(自动识别)", "dimensions": {"图片清晰度": "高", "金额可见": "是"}, "prompt": "[发一张外卖账单截图]", "status": "", "result": "识别金额展示给用户,用户确认后记一笔支出"}, {"wake_word": "拍账单", "scenario_id": "snap_blurry_bill", "scenario_title": "模糊账单图片", "dimensions": {"图片清晰度": "低"}, "prompt": "[发一张模糊的支付截图]", "status": "", "result": "描述看到的内容,请用户口头确认金额,不自动猜测"}, {"wake_word": "拍账单", "scenario_id": "snap_non_bill", "scenario_title": "非账单图片", "dimensions": {"图片内容": "非账单"}, "prompt": "[发一张风景照片]", "status": "", "result": "告知用户图片不是账单,询问是否改为手动输入"}, {"wake_word": "拍账单", "scenario_id": "snap_multi_amount", "scenario_title": "多金额账单(优先实付)", "dimensions": {"金额字段": "实付/合计/总计同时存在"}, "prompt": "[发一张有优惠 + 合计 + 实付的账单]", "status": "", "result": "按规则优先取实付金额,忽略优惠/配送费"}, {"wake_word": "拍账单", "scenario_id": "snap_partial_visible", "scenario_title": "部分可见账单(遮挡 / 截断)", "dimensions": {"图片": "部分可见"}, "prompt": "[发一张金额被手指遮住一半的截图]", "status": "", "result": "描述可见信息,请用户口头补全被遮挡金额"}, {"wake_word": "拍账单", "scenario_id": "snap_zero_amount", "scenario_title": "0 元账单(会员免费 / 免单)", "dimensions": {"金额": "0"}, "prompt": "[发一张会员免单的账单截图]", "status": "", "result": "识别 0 元,询问是否仍要记账"}], "count": 6, "pending_count": 0}, {"name": "改记录", "scenarios": [{"wake_word": "改记录", "scenario_id": "update_amount", "scenario_title": "修改金额", "dimensions": {"字段": "amount"}, "prompt": "把刚才那笔午饭改成 38 块", "status": "", "result": "定位最近一笔午饭,展示 diff,确认后修改金额为 38"}, {"wake_word": "改记录", "scenario_id": "update_category", "scenario_title": "修改分类", "dimensions": {"字段": "category"}, "prompt": "把 ID=123 那条改成分类交通", "status": "", "result": "按 ID 定位,展示分类 diff,确认后修改"}, {"wake_word": "改记录", "scenario_id": "update_note", "scenario_title": "修改备注(追加)", "dimensions": {"字段": "note", "模式": "追加"}, "prompt": "改备注加一句牛奶", "status": "", "result": "追加备注内容,原备注保留"}, {"wake_word": "改记录", "scenario_id": "update_multi_fields", "scenario_title": "多字段一起改", "dimensions": {"字段": "amount + category + account"}, "prompt": "把 ID=123 改成金额 -50 分类餐饮 账户微信", "status": "", "result": "展示多字段 diff,确认后一次性修改"}, {"wake_word": "改记录", "scenario_id": "update_id_not_found", "scenario_title": "ID 不存在", "dimensions": {"ID": "无效"}, "prompt": "把 ID=99999 改成 50", "status": "", "result": "提示记录不存在,询问用户重新查询"}, {"wake_word": "改记录", "scenario_id": "update_to_zero", "scenario_title": "改成 0 元（边界）", "dimensions": {"字段": "amount", "新值": "0"}, "prompt": "把那笔午饭改成 0", "status": "", "result": "允许改成 0,用于标记已退款/作废,展示 diff 请用户确认"}, {"wake_word": "改记录", "scenario_id": "update_sign_flip", "scenario_title": "改金额正负翻转（支出改收入）", "dimensions": {"字段": "amount", "翻转": "是"}, "prompt": "把 ID=123 的 -50 改成 +50", "status": "", "result": "支持金额正负翻转,展示 diff 并提醒可能影响分类语义"}], "count": 7, "pending_count": 0}], "ww_count": 4, "scenario_count": 29, "pending_count": 0}, {"key": "query", "name": "查询类", "icon": "🔍", "desc": "按时间/分类/关键词查记录明细", "wake_words": [{"name": "查今天", "scenarios": [{"wake_word": "查今天", "scenario_id": "query_today_normal", "scenario_title": "今日正常查询", "dimensions": {"数据": "正常", "今日": "有支出/收入"}, "prompt": "今天花了多少", "status": "", "result": "默认输出 HTML 页面,展示今日笔数 / 支出 / 收入 / 净额"}, {"wake_word": "查今天", "scenario_id": "query_today_empty", "scenario_title": "今日无任何记录", "dimensions": {"数据": "空"}, "prompt": "今天花了多少(但今天还没记账)", "status": "", "result": "HTML 页面显示空态:今日暂无记录"}, {"wake_word": "查今天", "scenario_id": "query_today_income_only", "scenario_title": "今日只有收入", "dimensions": {"今日": "只有进账"}, "prompt": "今天收支情况(只有一笔红包)", "status": "", "result": "HTML 显示支出 0,收入 X,净额 +X"}, {"wake_word": "查今天", "scenario_id": "query_today_data_missing", "scenario_title": "今日数据缺失(DB 部分字段为空)", "dimensions": {"数据": "缺失"}, "prompt": "今天花了多少(有记录但部分缺金额字段)", "status": "", "result": "HTML 显示缺失态:记录存在但关键字段缺失,提示用户修复"}, {"wake_word": "查今天", "scenario_id": "query_today_offline", "scenario_title": "今日查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "今天花了多少(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存数据,提示可能过期"}], "count": 5, "pending_count": 0}, {"name": "查日期", "scenarios": [{"wake_word": "查日期", "scenario_id": "query_date_yesterday", "scenario_title": "查昨天", "dimensions": {"时间": "昨天"}, "prompt": "昨天花了多少", "status": "", "result": "默认输出 HTML 页面,展示昨天记录明细"}, {"wake_word": "查日期", "scenario_id": "query_date_specific", "scenario_title": "查具体日期", "dimensions": {"时间": "2026-05-01"}, "prompt": "5 月 1 号的账", "status": "", "result": "HTML 页面展示 5 月 1 日的所有记录"}, {"wake_word": "查日期", "scenario_id": "query_date_relative", "scenario_title": "查相对日期(上周五)", "dimensions": {"时间": "上周五"}, "prompt": "上周五花了多少", "status": "", "result": "AI 换算成具体日期,展示那一天记录"}, {"wake_word": "查日期", "scenario_id": "query_date_no_record", "scenario_title": "指定日期无记录", "dimensions": {"数据": "空"}, "prompt": "查 2025-01-01 那天的账", "status": "", "result": "HTML 显示空态:该日暂无记录"}, {"wake_word": "查日期", "scenario_id": "query_date_fuzzy", "scenario_title": "查模糊日期(前两天)", "dimensions": {"时间": "模糊(前两天)"}, "prompt": "前两天花了多少", "status": "", "result": "AI 智能换算为具体日期范围,展示对应记录"}, {"wake_word": "查日期", "scenario_id": "query_date_cross_year", "scenario_title": "查跨年日期", "dimensions": {"时间": "跨年"}, "prompt": "2024 年 12 月 30 号的账", "status": "", "result": "HTML 正确处理跨年,展示跨年记录"}], "count": 6, "pending_count": 0}, {"name": "查范围", "scenarios": [{"wake_word": "查范围", "scenario_id": "query_range_this_week", "scenario_title": "查本周", "dimensions": {"时间": "本周"}, "prompt": "这周的账", "status": "", "result": "HTML 展示本周一至今天的所有记录"}, {"wake_word": "查范围", "scenario_id": "query_range_last_week", "scenario_title": "查上周", "dimensions": {"时间": "上周"}, "prompt": "上周消费情况", "status": "", "result": "HTML 展示上周一至上周日的记录"}, {"wake_word": "查范围", "scenario_id": "query_range_custom", "scenario_title": "查自定义区间", "dimensions": {"时间": "2026-05-01 ~ 2026-05-10"}, "prompt": "5 月 1 到 10 号的账", "status": "", "result": "HTML 展示指定区间内记录"}, {"wake_word": "查范围", "scenario_id": "query_range_cross_month", "scenario_title": "跨月区间", "dimensions": {"时间": "2026-04-25 ~ 2026-05-05"}, "prompt": "4 月 25 到 5 月 5 号的账", "status": "", "result": "HTML 正确处理跨月,展示完整区间"}, {"wake_word": "查范围", "scenario_id": "query_range_double_compare", "scenario_title": "双区间对比(5月 vs 6月)", "dimensions": {"时间": "双区间对比"}, "prompt": "5 月和 6 月的账对比一下", "status": "", "result": "HTML 展示双区间并列对比 + 变化率"}, {"wake_word": "查范围", "scenario_id": "query_range_cross_year", "scenario_title": "跨年区间", "dimensions": {"时间": "2024-12-25 ~ 2025-01-05"}, "prompt": "2024 年 12 月 25 到 2025 年 1 月 5 号的账", "status": "", "result": "HTML 正确处理跨年,展示完整跨年区间"}, {"wake_word": "查范围", "scenario_id": "query_range_data_missing", "scenario_title": "区间内数据缺失", "dimensions": {"数据": "缺失"}, "prompt": "上周的账(部分记录缺字段)", "status": "", "result": "HTML 显示缺失态:记录存在但关键字段缺失"}], "count": 7, "pending_count": 0}, {"name": "查分类", "scenarios": [{"wake_word": "查分类", "scenario_id": "query_category_food", "scenario_title": "查餐饮类记录", "dimensions": {"分类": "餐饮"}, "prompt": "餐饮类的所有记录", "status": "", "result": "HTML 展示餐饮分类下的逐条记录"}, {"wake_word": "查分类", "scenario_id": "query_category_transport", "scenario_title": "查交通类支出", "dimensions": {"分类": "出行"}, "prompt": "交通花了多少", "status": "", "result": "HTML 展示出行分类下的逐条记录(注意:仅记录明细,汇总用看分类)"}, {"wake_word": "查分类", "scenario_id": "query_category_sublevel", "scenario_title": "查多级分类", "dimensions": {"分类": "餐饮/咖啡奶茶"}, "prompt": "看奶茶的所有记录", "status": "", "result": "HTML 筛选 L3 分类 = 奶茶的记录"}, {"wake_word": "查分类", "scenario_id": "query_category_empty", "scenario_title": "该分类无记录", "dimensions": {"数据": "空"}, "prompt": "宠物类的记录", "status": "", "result": "HTML 显示空态:该分类暂无记录"}, {"wake_word": "查分类", "scenario_id": "query_category_with_date", "scenario_title": "分类 + 日期组合筛选", "dimensions": {"分类": "餐饮", "时间": "2026-05-01 ~ 2026-05-31"}, "prompt": "5 月餐饮类的记录", "status": "", "result": "HTML 展示 5 月餐饮类的逐条记录(分类+日期组合筛选)"}, {"wake_word": "查分类", "scenario_id": "query_category_with_account", "scenario_title": "分类 + 账户组合筛选", "dimensions": {"分类": "出行", "账户": "支付宝"}, "prompt": "支付宝扣的交通费", "status": "", "result": "HTML 展示支付宝支付的出行类逐条记录"}, {"wake_word": "查分类", "scenario_id": "query_category_data_missing", "scenario_title": "分类数据缺失(部分记录缺分类字段)", "dimensions": {"数据": "缺失"}, "prompt": "餐饮类的记录(部分老记录无分类)", "status": "", "result": "HTML 显示缺失态:已分类记录 + 缺失提示"}], "count": 7, "pending_count": 0}, {"name": "查最近", "scenarios": [{"wake_word": "查最近", "scenario_id": "query_recent_5", "scenario_title": "最近 5 条", "dimensions": {"条数": "5"}, "prompt": "最近 5 条记录", "status": "", "result": "HTML 展示最近 5 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_default", "scenario_title": "最近 10 条(默认)", "dimensions": {"条数": "10(默认)"}, "prompt": "最近的记录", "status": "", "result": "HTML 展示最近 10 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_20", "scenario_title": "最近 20 条", "dimensions": {"条数": "20"}, "prompt": "看一下最近 20 条", "status": "", "result": "HTML 展示最近 20 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_empty", "scenario_title": "库为空", "dimensions": {"数据": "空"}, "prompt": "最近记录(全新用户)", "status": "", "result": "HTML 显示空态:暂无任何记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_sort_amount_desc", "scenario_title": "按金额降序排", "dimensions": {"排序": "金额降序"}, "prompt": "最近记录按金额从大到小排", "status": "", "result": "HTML 按金额降序展示最近 N 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_sort_amount_asc", "scenario_title": "按金额升序排", "dimensions": {"排序": "金额升序"}, "prompt": "最近记录按金额从小到大排", "status": "", "result": "HTML 按金额升序展示最近 N 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_data_insufficient", "scenario_title": "数据不足(只 1-2 条)", "dimensions": {"数据": "不足"}, "prompt": "最近 10 条(实际只有 1-2 条)", "status": "", "result": "HTML 显示数据不足态:返回实际数量,提示用户继续记账"}], "count": 7, "pending_count": 0}, {"name": "搜备注", "scenarios": [{"wake_word": "搜备注", "scenario_id": "search_keyword_multi", "scenario_title": "关键词命中多条", "dimensions": {"关键词": "午饭", "命中": "多条"}, "prompt": "搜一下午饭", "status": "", "result": "HTML 展示所有备注含'午饭'的记录"}, {"wake_word": "搜备注", "scenario_id": "search_keyword_one", "scenario_title": "关键词命中 1 条", "dimensions": {"关键词": "生日蛋糕", "命中": "1 条"}, "prompt": "有没有生日蛋糕的记录", "status": "", "result": "HTML 展示唯一匹配记录"}, {"wake_word": "搜备注", "scenario_id": "search_keyword_none", "scenario_title": "关键词无命中", "dimensions": {"关键词": "外星人", "命中": "0"}, "prompt": "搜外星人", "status": "", "result": "HTML 显示空态:无匹配记录"}, {"wake_word": "搜备注", "scenario_id": "search_partial_match", "scenario_title": "关键词部分匹配", "dimensions": {"关键词": "奶"}, "prompt": "搜'奶'", "status": "", "result": "HTML 展示备注含'奶'的所有记录(如奶茶/牛奶/酸奶)"}, {"wake_word": "搜备注", "scenario_id": "search_special_char", "scenario_title": "特殊字符搜索", "dimensions": {"关键词": "特殊字符"}, "prompt": "搜 C++ 的记录", "status": "", "result": "HTML 正确转义特殊字符,展示匹配记录"}], "count": 5, "pending_count": 0}], "ww_count": 6, "scenario_count": 37, "pending_count": 0}, {"key": "analyze", "name": "分析类", "icon": "📊", "desc": "月度/对比/分类占比等结构化报表", "wake_words": [{"name": "看月度", "scenarios": [{"wake_word": "看月度", "scenario_id": "monthly_current", "scenario_title": "本月汇总", "dimensions": {"月份": "当月"}, "prompt": "这个月消费汇总", "status": "", "result": "HTML 展示本月支出/收入/净额 + 分类排行"}, {"wake_word": "看月度", "scenario_id": "monthly_specific", "scenario_title": "指定月份汇总", "dimensions": {"月份": "2026-03"}, "prompt": "3 月份的账", "status": "", "result": "HTML 展示 3 月汇总"}, {"wake_word": "看月度", "scenario_id": "monthly_empty", "scenario_title": "指定月份无记录", "dimensions": {"月份": "2024-01", "数据": "空"}, "prompt": "看 2024 年 1 月的汇总", "status": "", "result": "HTML 显示空态:该月暂无记录"}, {"wake_word": "看月度", "scenario_id": "monthly_cross_year", "scenario_title": "跨年月度汇总", "dimensions": {"月份": "2025-12"}, "prompt": "看 2025 年 12 月的汇总", "status": "", "result": "HTML 正确处理跨年,展示 2025-12 月度数据"}, {"wake_word": "看月度", "scenario_id": "monthly_offline", "scenario_title": "月度汇总(离线态)", "dimensions": {"网络": "离线"}, "prompt": "看月度汇总(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存月度数据,提示可能过期"}], "count": 5, "pending_count": 0}, {"name": "看对比", "scenarios": [{"wake_word": "看对比", "scenario_id": "compare_week", "scenario_title": "周对比(本周 vs 上周)", "dimensions": {"对比周期": "week"}, "prompt": "这周和上周比怎么样", "status": "", "result": "HTML 展示本周/上周支出/收入/净额 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_month", "scenario_title": "月对比(本月 vs 上月)", "dimensions": {"对比周期": "month"}, "prompt": "本月和上月比", "status": "", "result": "HTML 展示本月/上月数据 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_no_last_period", "scenario_title": "上期数据缺失", "dimensions": {"上期": "无数据"}, "prompt": "新用户看月度对比(上月无记录)", "status": "", "result": "HTML 优雅展示:本期有数据,上期为 0 / 无"}, {"wake_word": "看对比", "scenario_id": "compare_double_range", "scenario_title": "双区间对比(5月 vs 6月)", "dimensions": {"对比方式": "双区间"}, "prompt": "5 月和 6 月的支出对比", "status": "", "result": "HTML 展示双区间并列数据 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_cross_year", "scenario_title": "跨年对比(2024年12月 vs 2025年1月)", "dimensions": {"时间": "跨年"}, "prompt": "2024 年 12 月和 2025 年 1 月对比", "status": "", "result": "HTML 正确处理跨年对比,展示完整数据"}, {"wake_word": "看对比", "scenario_id": "compare_same_period_last_year", "scenario_title": "去年同期对比", "dimensions": {"对比方式": "去年同期"}, "prompt": "这个月和去年同期比", "status": "", "result": "HTML 展示本期 vs 去年同期数据 + 变化率"}], "count": 6, "pending_count": 0}, {"name": "看分类", "scenarios": [{"wake_word": "看分类", "scenario_id": "breakdown_current_month", "scenario_title": "本月分类明细", "dimensions": {"时间": "本月"}, "prompt": "各类支出占比", "status": "", "result": "HTML 展示本月各分类总支出/占比/笔数/均值,含 SVG 环形图"}, {"wake_word": "看分类", "scenario_id": "breakdown_range", "scenario_title": "指定区间分类明细", "dimensions": {"时间": "2026-05-01 ~ 2026-05-31"}, "prompt": "5 月的分类明细", "status": "", "result": "HTML 展示 5 月各分类占比 + 环形图"}, {"wake_word": "看分类", "scenario_id": "breakdown_single_category", "scenario_title": "仅 1 个分类(占比 100%)", "dimensions": {"分类数": "1"}, "prompt": "只看餐饮支出占比(只记过餐饮)", "status": "", "result": "HTML 正确展示单分类 100% 占比,不除零"}, {"wake_word": "看分类", "scenario_id": "breakdown_with_account", "scenario_title": "按账户看分类占比", "dimensions": {"维度": "账户 + 分类"}, "prompt": "支付宝各类支出占比", "status": "", "result": "HTML 按账户过滤后展示分类占比"}, {"wake_word": "看分类", "scenario_id": "breakdown_data_missing", "scenario_title": "分类数据缺失(部分记录缺分类)", "dimensions": {"数据": "缺失"}, "prompt": "看分类明细(部分老记录无分类)", "status": "", "result": "HTML 显示缺失态:已分类占比 + 缺失数据提示"}], "count": 5, "pending_count": 0}, {"name": "看总览", "scenarios": [{"wake_word": "看总览", "scenario_id": "overview_current", "scenario_title": "本月收支总览", "dimensions": {"月份": "当月"}, "prompt": "本月收支情况", "status": "", "result": "HTML 展示 4 个 KPI:笔数 / 支出 / 收入 / 净额"}, {"wake_word": "看总览", "scenario_id": "overview_specific", "scenario_title": "指定月份总览", "dimensions": {"月份": "2026-03"}, "prompt": "3 月收支情况", "status": "", "result": "HTML 展示 3 月 4 个 KPI"}, {"wake_word": "看总览", "scenario_id": "overview_empty", "scenario_title": "指定月份无记录", "dimensions": {"月份": "未来月份", "数据": "空"}, "prompt": "看 2027 年 1 月的总览", "status": "", "result": "HTML 显示空态:该月暂无记录"}, {"wake_word": "看总览", "scenario_id": "overview_offline", "scenario_title": "总览查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "本月收支情况(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存数据,提示可能过期"}], "count": 4, "pending_count": 0}], "ww_count": 4, "scenario_count": 20, "pending_count": 0}, {"key": "stats", "name": "统计类", "icon": "📈", "desc": "总笔数、记账天数等统计", "wake_words": [{"name": "做统计", "scenarios": [{"wake_word": "做统计", "scenario_id": "stats_long_term", "scenario_title": "长期用户统计", "dimensions": {"总笔数": "≥ 100", "天数": "≥ 90"}, "prompt": "我记账情况怎么样", "status": "", "result": "HTML 展示总笔数 / 记账天数 / 首笔时间 / 最近记录时间"}, {"wake_word": "做统计", "scenario_id": "stats_new_user", "scenario_title": "全新用户(0 笔)", "dimensions": {"总笔数": "0"}, "prompt": "做统计(还没记过账)", "status": "", "result": "HTML 显示空态:总笔数 0,尚无记录"}, {"wake_word": "做统计", "scenario_id": "stats_just_started", "scenario_title": "刚开始记账", "dimensions": {"总笔数": "1-10"}, "prompt": "做统计(刚开始记账)", "status": "", "result": "HTML 展示少量笔数的统计"}, {"wake_word": "做统计", "scenario_id": "stats_data_incomplete", "scenario_title": "统计数据不完整(部分记录缺字段)", "dimensions": {"数据": "缺失"}, "prompt": "做统计(部分老记录缺金额/分类)", "status": "", "result": "HTML 显示缺失态:总笔数包含缺失,提示用户修复"}, {"wake_word": "做统计", "scenario_id": "stats_offline", "scenario_title": "统计查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "做统计(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存统计,提示可能过期"}], "count": 5, "pending_count": 0}], "ww_count": 1, "scenario_count": 5, "pending_count": 0}, {"key": "help", "name": "HELP", "icon": "❓", "desc": "能力速查（你正在看的页面）", "wake_words": [], "ww_count": 0, "scenario_count": 0, "pending_count": 0}], "wake_words": [{"name": "记支出", "scenarios": [{"wake_word": "记支出", "scenario_id": "expense_food_default", "scenario_title": "餐饮类支出(AI 推断分类)", "dimensions": {"分类": "餐饮/外卖/午餐", "时间": "今天", "账户": "(未指定)"}, "prompt": "午饭花了 35 块", "status": "", "result": "自动识别为餐饮类支出 35 元,记录成功"}, {"wake_word": "记支出", "scenario_id": "expense_transport", "scenario_title": "出行类支出 + 账户", "dimensions": {"分类": "出行/网约车", "时间": "今天", "账户": "支付宝"}, "prompt": "打车 20 用支付宝付的", "status": "", "result": "记录一笔 20 元出行支出,账户为支付宝"}, {"wake_word": "记支出", "scenario_id": "expense_default_category", "scenario_title": "未指定分类(AI 推断并告知)", "dimensions": {"分类": "AI 推断", "时间": "今天"}, "prompt": "洗发水 80", "status": "", "result": "AI 推断为居家/日用品,记录 80 元支出,提示用户可纠正分类"}, {"wake_word": "记支出", "scenario_id": "expense_with_date", "scenario_title": "补记昨天支出", "dimensions": {"时间": "昨天", "分类": "玩乐/书籍影视"}, "prompt": "昨天买书 58", "status": "", "result": "补记昨天一笔 58 元买书支出,分类为玩乐/书籍影视"}, {"wake_word": "记支出", "scenario_id": "expense_with_ledger", "scenario_title": "指定账本记账", "dimensions": {"账本": "旅行"}, "prompt": "在旅行账本记一笔打车 50", "status": "", "result": "记录 50 元支出到旅行账本"}, {"wake_word": "记支出", "scenario_id": "expense_ambiguous_amount", "scenario_title": "金额不明确(AI 必须确认)", "dimensions": {"金额": "模糊"}, "prompt": "午饭花了点钱", "status": "", "result": "AI 必须询问具体金额,不能猜测"}, {"wake_word": "记支出", "scenario_id": "expense_zero_amount", "scenario_title": "0 元支出(边界/退款)", "dimensions": {"金额": "0"}, "prompt": "刚才那笔午饭退款 35,冲掉 0 元", "status": "", "result": "允许记录 0 元支出,用于对冲/退款场景,提示用户确认"}, {"wake_word": "记支出", "scenario_id": "expense_large_amount", "scenario_title": "极大金额(边界)", "dimensions": {"金额": "≥ 10000"}, "prompt": "换电脑 12800", "status": "", "result": "正常记录极大金额,提示用户确认分类"}, {"wake_word": "记支出", "scenario_id": "expense_decimal_precision", "scenario_title": "小数金额(精度边界)", "dimensions": {"金额": "小数 2 位"}, "prompt": "咖啡 35.55", "status": "", "result": "保留 2 位小数,正确存储与显示"}], "count": 9, "pending_count": 0}, {"name": "记收入", "scenarios": [{"wake_word": "记收入", "scenario_id": "income_salary", "scenario_title": "工资到账", "dimensions": {"分类": "工资/基本工资"}, "prompt": "工资 8000 到了", "status": "", "result": "记录一笔 8000 元工资收入"}, {"wake_word": "记收入", "scenario_id": "income_bonus", "scenario_title": "项目奖金", "dimensions": {"分类": "奖金/项目奖金"}, "prompt": "项目奖金 5000", "status": "", "result": "记录一笔 5000 元项目奖金"}, {"wake_word": "记收入", "scenario_id": "income_sidejob", "scenario_title": "副业/兼职收入", "dimensions": {"分类": "兼职/副业"}, "prompt": "副业赚了 2000", "status": "", "result": "记录一笔 2000 元副业收入"}, {"wake_word": "记收入", "scenario_id": "income_investment", "scenario_title": "基金分红", "dimensions": {"分类": "投资/分红"}, "prompt": "基金分红 300", "status": "", "result": "记录一笔 300 元基金分红"}, {"wake_word": "记收入", "scenario_id": "income_redpacket", "scenario_title": "红包收入", "dimensions": {"分类": "其他收入/红包"}, "prompt": "收到红包 100", "status": "", "result": "记录一笔 100 元红包收入"}, {"wake_word": "记收入", "scenario_id": "income_large_amount", "scenario_title": "极大金额收入（边界）", "dimensions": {"金额": "≥ 100000"}, "prompt": "项目尾款 15 万到账", "status": "", "result": "记录大额收入,提示用户核对"}, {"wake_word": "记收入", "scenario_id": "income_currency_other", "scenario_title": "外币收入", "dimensions": {"货币": "非人民币"}, "prompt": "美元稿费 500 美金", "status": "", "result": "记录外币收入,按当时汇率换算显示"}], "count": 7, "pending_count": 0}, {"name": "拍账单", "scenarios": [{"wake_word": "拍账单", "scenario_id": "snap_clear_bill", "scenario_title": "清晰账单图片(自动识别)", "dimensions": {"图片清晰度": "高", "金额可见": "是"}, "prompt": "[发一张外卖账单截图]", "status": "", "result": "识别金额展示给用户,用户确认后记一笔支出"}, {"wake_word": "拍账单", "scenario_id": "snap_blurry_bill", "scenario_title": "模糊账单图片", "dimensions": {"图片清晰度": "低"}, "prompt": "[发一张模糊的支付截图]", "status": "", "result": "描述看到的内容,请用户口头确认金额,不自动猜测"}, {"wake_word": "拍账单", "scenario_id": "snap_non_bill", "scenario_title": "非账单图片", "dimensions": {"图片内容": "非账单"}, "prompt": "[发一张风景照片]", "status": "", "result": "告知用户图片不是账单,询问是否改为手动输入"}, {"wake_word": "拍账单", "scenario_id": "snap_multi_amount", "scenario_title": "多金额账单(优先实付)", "dimensions": {"金额字段": "实付/合计/总计同时存在"}, "prompt": "[发一张有优惠 + 合计 + 实付的账单]", "status": "", "result": "按规则优先取实付金额,忽略优惠/配送费"}, {"wake_word": "拍账单", "scenario_id": "snap_partial_visible", "scenario_title": "部分可见账单(遮挡 / 截断)", "dimensions": {"图片": "部分可见"}, "prompt": "[发一张金额被手指遮住一半的截图]", "status": "", "result": "描述可见信息,请用户口头补全被遮挡金额"}, {"wake_word": "拍账单", "scenario_id": "snap_zero_amount", "scenario_title": "0 元账单(会员免费 / 免单)", "dimensions": {"金额": "0"}, "prompt": "[发一张会员免单的账单截图]", "status": "", "result": "识别 0 元,询问是否仍要记账"}], "count": 6, "pending_count": 0}, {"name": "改记录", "scenarios": [{"wake_word": "改记录", "scenario_id": "update_amount", "scenario_title": "修改金额", "dimensions": {"字段": "amount"}, "prompt": "把刚才那笔午饭改成 38 块", "status": "", "result": "定位最近一笔午饭,展示 diff,确认后修改金额为 38"}, {"wake_word": "改记录", "scenario_id": "update_category", "scenario_title": "修改分类", "dimensions": {"字段": "category"}, "prompt": "把 ID=123 那条改成分类交通", "status": "", "result": "按 ID 定位,展示分类 diff,确认后修改"}, {"wake_word": "改记录", "scenario_id": "update_note", "scenario_title": "修改备注(追加)", "dimensions": {"字段": "note", "模式": "追加"}, "prompt": "改备注加一句牛奶", "status": "", "result": "追加备注内容,原备注保留"}, {"wake_word": "改记录", "scenario_id": "update_multi_fields", "scenario_title": "多字段一起改", "dimensions": {"字段": "amount + category + account"}, "prompt": "把 ID=123 改成金额 -50 分类餐饮 账户微信", "status": "", "result": "展示多字段 diff,确认后一次性修改"}, {"wake_word": "改记录", "scenario_id": "update_id_not_found", "scenario_title": "ID 不存在", "dimensions": {"ID": "无效"}, "prompt": "把 ID=99999 改成 50", "status": "", "result": "提示记录不存在,询问用户重新查询"}, {"wake_word": "改记录", "scenario_id": "update_to_zero", "scenario_title": "改成 0 元（边界）", "dimensions": {"字段": "amount", "新值": "0"}, "prompt": "把那笔午饭改成 0", "status": "", "result": "允许改成 0,用于标记已退款/作废,展示 diff 请用户确认"}, {"wake_word": "改记录", "scenario_id": "update_sign_flip", "scenario_title": "改金额正负翻转（支出改收入）", "dimensions": {"字段": "amount", "翻转": "是"}, "prompt": "把 ID=123 的 -50 改成 +50", "status": "", "result": "支持金额正负翻转,展示 diff 并提醒可能影响分类语义"}], "count": 7, "pending_count": 0}, {"name": "查今天", "scenarios": [{"wake_word": "查今天", "scenario_id": "query_today_normal", "scenario_title": "今日正常查询", "dimensions": {"数据": "正常", "今日": "有支出/收入"}, "prompt": "今天花了多少", "status": "", "result": "默认输出 HTML 页面,展示今日笔数 / 支出 / 收入 / 净额"}, {"wake_word": "查今天", "scenario_id": "query_today_empty", "scenario_title": "今日无任何记录", "dimensions": {"数据": "空"}, "prompt": "今天花了多少(但今天还没记账)", "status": "", "result": "HTML 页面显示空态:今日暂无记录"}, {"wake_word": "查今天", "scenario_id": "query_today_income_only", "scenario_title": "今日只有收入", "dimensions": {"今日": "只有进账"}, "prompt": "今天收支情况(只有一笔红包)", "status": "", "result": "HTML 显示支出 0,收入 X,净额 +X"}, {"wake_word": "查今天", "scenario_id": "query_today_data_missing", "scenario_title": "今日数据缺失(DB 部分字段为空)", "dimensions": {"数据": "缺失"}, "prompt": "今天花了多少(有记录但部分缺金额字段)", "status": "", "result": "HTML 显示缺失态:记录存在但关键字段缺失,提示用户修复"}, {"wake_word": "查今天", "scenario_id": "query_today_offline", "scenario_title": "今日查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "今天花了多少(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存数据,提示可能过期"}], "count": 5, "pending_count": 0}, {"name": "查日期", "scenarios": [{"wake_word": "查日期", "scenario_id": "query_date_yesterday", "scenario_title": "查昨天", "dimensions": {"时间": "昨天"}, "prompt": "昨天花了多少", "status": "", "result": "默认输出 HTML 页面,展示昨天记录明细"}, {"wake_word": "查日期", "scenario_id": "query_date_specific", "scenario_title": "查具体日期", "dimensions": {"时间": "2026-05-01"}, "prompt": "5 月 1 号的账", "status": "", "result": "HTML 页面展示 5 月 1 日的所有记录"}, {"wake_word": "查日期", "scenario_id": "query_date_relative", "scenario_title": "查相对日期(上周五)", "dimensions": {"时间": "上周五"}, "prompt": "上周五花了多少", "status": "", "result": "AI 换算成具体日期,展示那一天记录"}, {"wake_word": "查日期", "scenario_id": "query_date_no_record", "scenario_title": "指定日期无记录", "dimensions": {"数据": "空"}, "prompt": "查 2025-01-01 那天的账", "status": "", "result": "HTML 显示空态:该日暂无记录"}, {"wake_word": "查日期", "scenario_id": "query_date_fuzzy", "scenario_title": "查模糊日期(前两天)", "dimensions": {"时间": "模糊(前两天)"}, "prompt": "前两天花了多少", "status": "", "result": "AI 智能换算为具体日期范围,展示对应记录"}, {"wake_word": "查日期", "scenario_id": "query_date_cross_year", "scenario_title": "查跨年日期", "dimensions": {"时间": "跨年"}, "prompt": "2024 年 12 月 30 号的账", "status": "", "result": "HTML 正确处理跨年,展示跨年记录"}], "count": 6, "pending_count": 0}, {"name": "查范围", "scenarios": [{"wake_word": "查范围", "scenario_id": "query_range_this_week", "scenario_title": "查本周", "dimensions": {"时间": "本周"}, "prompt": "这周的账", "status": "", "result": "HTML 展示本周一至今天的所有记录"}, {"wake_word": "查范围", "scenario_id": "query_range_last_week", "scenario_title": "查上周", "dimensions": {"时间": "上周"}, "prompt": "上周消费情况", "status": "", "result": "HTML 展示上周一至上周日的记录"}, {"wake_word": "查范围", "scenario_id": "query_range_custom", "scenario_title": "查自定义区间", "dimensions": {"时间": "2026-05-01 ~ 2026-05-10"}, "prompt": "5 月 1 到 10 号的账", "status": "", "result": "HTML 展示指定区间内记录"}, {"wake_word": "查范围", "scenario_id": "query_range_cross_month", "scenario_title": "跨月区间", "dimensions": {"时间": "2026-04-25 ~ 2026-05-05"}, "prompt": "4 月 25 到 5 月 5 号的账", "status": "", "result": "HTML 正确处理跨月,展示完整区间"}, {"wake_word": "查范围", "scenario_id": "query_range_double_compare", "scenario_title": "双区间对比(5月 vs 6月)", "dimensions": {"时间": "双区间对比"}, "prompt": "5 月和 6 月的账对比一下", "status": "", "result": "HTML 展示双区间并列对比 + 变化率"}, {"wake_word": "查范围", "scenario_id": "query_range_cross_year", "scenario_title": "跨年区间", "dimensions": {"时间": "2024-12-25 ~ 2025-01-05"}, "prompt": "2024 年 12 月 25 到 2025 年 1 月 5 号的账", "status": "", "result": "HTML 正确处理跨年,展示完整跨年区间"}, {"wake_word": "查范围", "scenario_id": "query_range_data_missing", "scenario_title": "区间内数据缺失", "dimensions": {"数据": "缺失"}, "prompt": "上周的账(部分记录缺字段)", "status": "", "result": "HTML 显示缺失态:记录存在但关键字段缺失"}], "count": 7, "pending_count": 0}, {"name": "查分类", "scenarios": [{"wake_word": "查分类", "scenario_id": "query_category_food", "scenario_title": "查餐饮类记录", "dimensions": {"分类": "餐饮"}, "prompt": "餐饮类的所有记录", "status": "", "result": "HTML 展示餐饮分类下的逐条记录"}, {"wake_word": "查分类", "scenario_id": "query_category_transport", "scenario_title": "查交通类支出", "dimensions": {"分类": "出行"}, "prompt": "交通花了多少", "status": "", "result": "HTML 展示出行分类下的逐条记录(注意:仅记录明细,汇总用看分类)"}, {"wake_word": "查分类", "scenario_id": "query_category_sublevel", "scenario_title": "查多级分类", "dimensions": {"分类": "餐饮/咖啡奶茶"}, "prompt": "看奶茶的所有记录", "status": "", "result": "HTML 筛选 L3 分类 = 奶茶的记录"}, {"wake_word": "查分类", "scenario_id": "query_category_empty", "scenario_title": "该分类无记录", "dimensions": {"数据": "空"}, "prompt": "宠物类的记录", "status": "", "result": "HTML 显示空态:该分类暂无记录"}, {"wake_word": "查分类", "scenario_id": "query_category_with_date", "scenario_title": "分类 + 日期组合筛选", "dimensions": {"分类": "餐饮", "时间": "2026-05-01 ~ 2026-05-31"}, "prompt": "5 月餐饮类的记录", "status": "", "result": "HTML 展示 5 月餐饮类的逐条记录(分类+日期组合筛选)"}, {"wake_word": "查分类", "scenario_id": "query_category_with_account", "scenario_title": "分类 + 账户组合筛选", "dimensions": {"分类": "出行", "账户": "支付宝"}, "prompt": "支付宝扣的交通费", "status": "", "result": "HTML 展示支付宝支付的出行类逐条记录"}, {"wake_word": "查分类", "scenario_id": "query_category_data_missing", "scenario_title": "分类数据缺失(部分记录缺分类字段)", "dimensions": {"数据": "缺失"}, "prompt": "餐饮类的记录(部分老记录无分类)", "status": "", "result": "HTML 显示缺失态:已分类记录 + 缺失提示"}], "count": 7, "pending_count": 0}, {"name": "查最近", "scenarios": [{"wake_word": "查最近", "scenario_id": "query_recent_5", "scenario_title": "最近 5 条", "dimensions": {"条数": "5"}, "prompt": "最近 5 条记录", "status": "", "result": "HTML 展示最近 5 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_default", "scenario_title": "最近 10 条(默认)", "dimensions": {"条数": "10(默认)"}, "prompt": "最近的记录", "status": "", "result": "HTML 展示最近 10 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_20", "scenario_title": "最近 20 条", "dimensions": {"条数": "20"}, "prompt": "看一下最近 20 条", "status": "", "result": "HTML 展示最近 20 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_empty", "scenario_title": "库为空", "dimensions": {"数据": "空"}, "prompt": "最近记录(全新用户)", "status": "", "result": "HTML 显示空态:暂无任何记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_sort_amount_desc", "scenario_title": "按金额降序排", "dimensions": {"排序": "金额降序"}, "prompt": "最近记录按金额从大到小排", "status": "", "result": "HTML 按金额降序展示最近 N 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_sort_amount_asc", "scenario_title": "按金额升序排", "dimensions": {"排序": "金额升序"}, "prompt": "最近记录按金额从小到大排", "status": "", "result": "HTML 按金额升序展示最近 N 条记录"}, {"wake_word": "查最近", "scenario_id": "query_recent_data_insufficient", "scenario_title": "数据不足(只 1-2 条)", "dimensions": {"数据": "不足"}, "prompt": "最近 10 条(实际只有 1-2 条)", "status": "", "result": "HTML 显示数据不足态:返回实际数量,提示用户继续记账"}], "count": 7, "pending_count": 0}, {"name": "搜备注", "scenarios": [{"wake_word": "搜备注", "scenario_id": "search_keyword_multi", "scenario_title": "关键词命中多条", "dimensions": {"关键词": "午饭", "命中": "多条"}, "prompt": "搜一下午饭", "status": "", "result": "HTML 展示所有备注含'午饭'的记录"}, {"wake_word": "搜备注", "scenario_id": "search_keyword_one", "scenario_title": "关键词命中 1 条", "dimensions": {"关键词": "生日蛋糕", "命中": "1 条"}, "prompt": "有没有生日蛋糕的记录", "status": "", "result": "HTML 展示唯一匹配记录"}, {"wake_word": "搜备注", "scenario_id": "search_keyword_none", "scenario_title": "关键词无命中", "dimensions": {"关键词": "外星人", "命中": "0"}, "prompt": "搜外星人", "status": "", "result": "HTML 显示空态:无匹配记录"}, {"wake_word": "搜备注", "scenario_id": "search_partial_match", "scenario_title": "关键词部分匹配", "dimensions": {"关键词": "奶"}, "prompt": "搜'奶'", "status": "", "result": "HTML 展示备注含'奶'的所有记录(如奶茶/牛奶/酸奶)"}, {"wake_word": "搜备注", "scenario_id": "search_special_char", "scenario_title": "特殊字符搜索", "dimensions": {"关键词": "特殊字符"}, "prompt": "搜 C++ 的记录", "status": "", "result": "HTML 正确转义特殊字符,展示匹配记录"}], "count": 5, "pending_count": 0}, {"name": "看月度", "scenarios": [{"wake_word": "看月度", "scenario_id": "monthly_current", "scenario_title": "本月汇总", "dimensions": {"月份": "当月"}, "prompt": "这个月消费汇总", "status": "", "result": "HTML 展示本月支出/收入/净额 + 分类排行"}, {"wake_word": "看月度", "scenario_id": "monthly_specific", "scenario_title": "指定月份汇总", "dimensions": {"月份": "2026-03"}, "prompt": "3 月份的账", "status": "", "result": "HTML 展示 3 月汇总"}, {"wake_word": "看月度", "scenario_id": "monthly_empty", "scenario_title": "指定月份无记录", "dimensions": {"月份": "2024-01", "数据": "空"}, "prompt": "看 2024 年 1 月的汇总", "status": "", "result": "HTML 显示空态:该月暂无记录"}, {"wake_word": "看月度", "scenario_id": "monthly_cross_year", "scenario_title": "跨年月度汇总", "dimensions": {"月份": "2025-12"}, "prompt": "看 2025 年 12 月的汇总", "status": "", "result": "HTML 正确处理跨年,展示 2025-12 月度数据"}, {"wake_word": "看月度", "scenario_id": "monthly_offline", "scenario_title": "月度汇总(离线态)", "dimensions": {"网络": "离线"}, "prompt": "看月度汇总(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存月度数据,提示可能过期"}], "count": 5, "pending_count": 0}, {"name": "看对比", "scenarios": [{"wake_word": "看对比", "scenario_id": "compare_week", "scenario_title": "周对比(本周 vs 上周)", "dimensions": {"对比周期": "week"}, "prompt": "这周和上周比怎么样", "status": "", "result": "HTML 展示本周/上周支出/收入/净额 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_month", "scenario_title": "月对比(本月 vs 上月)", "dimensions": {"对比周期": "month"}, "prompt": "本月和上月比", "status": "", "result": "HTML 展示本月/上月数据 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_no_last_period", "scenario_title": "上期数据缺失", "dimensions": {"上期": "无数据"}, "prompt": "新用户看月度对比(上月无记录)", "status": "", "result": "HTML 优雅展示:本期有数据,上期为 0 / 无"}, {"wake_word": "看对比", "scenario_id": "compare_double_range", "scenario_title": "双区间对比(5月 vs 6月)", "dimensions": {"对比方式": "双区间"}, "prompt": "5 月和 6 月的支出对比", "status": "", "result": "HTML 展示双区间并列数据 + 变化率"}, {"wake_word": "看对比", "scenario_id": "compare_cross_year", "scenario_title": "跨年对比(2024年12月 vs 2025年1月)", "dimensions": {"时间": "跨年"}, "prompt": "2024 年 12 月和 2025 年 1 月对比", "status": "", "result": "HTML 正确处理跨年对比,展示完整数据"}, {"wake_word": "看对比", "scenario_id": "compare_same_period_last_year", "scenario_title": "去年同期对比", "dimensions": {"对比方式": "去年同期"}, "prompt": "这个月和去年同期比", "status": "", "result": "HTML 展示本期 vs 去年同期数据 + 变化率"}], "count": 6, "pending_count": 0}, {"name": "看分类", "scenarios": [{"wake_word": "看分类", "scenario_id": "breakdown_current_month", "scenario_title": "本月分类明细", "dimensions": {"时间": "本月"}, "prompt": "各类支出占比", "status": "", "result": "HTML 展示本月各分类总支出/占比/笔数/均值,含 SVG 环形图"}, {"wake_word": "看分类", "scenario_id": "breakdown_range", "scenario_title": "指定区间分类明细", "dimensions": {"时间": "2026-05-01 ~ 2026-05-31"}, "prompt": "5 月的分类明细", "status": "", "result": "HTML 展示 5 月各分类占比 + 环形图"}, {"wake_word": "看分类", "scenario_id": "breakdown_single_category", "scenario_title": "仅 1 个分类(占比 100%)", "dimensions": {"分类数": "1"}, "prompt": "只看餐饮支出占比(只记过餐饮)", "status": "", "result": "HTML 正确展示单分类 100% 占比,不除零"}, {"wake_word": "看分类", "scenario_id": "breakdown_with_account", "scenario_title": "按账户看分类占比", "dimensions": {"维度": "账户 + 分类"}, "prompt": "支付宝各类支出占比", "status": "", "result": "HTML 按账户过滤后展示分类占比"}, {"wake_word": "看分类", "scenario_id": "breakdown_data_missing", "scenario_title": "分类数据缺失(部分记录缺分类)", "dimensions": {"数据": "缺失"}, "prompt": "看分类明细(部分老记录无分类)", "status": "", "result": "HTML 显示缺失态:已分类占比 + 缺失数据提示"}], "count": 5, "pending_count": 0}, {"name": "看总览", "scenarios": [{"wake_word": "看总览", "scenario_id": "overview_current", "scenario_title": "本月收支总览", "dimensions": {"月份": "当月"}, "prompt": "本月收支情况", "status": "", "result": "HTML 展示 4 个 KPI:笔数 / 支出 / 收入 / 净额"}, {"wake_word": "看总览", "scenario_id": "overview_specific", "scenario_title": "指定月份总览", "dimensions": {"月份": "2026-03"}, "prompt": "3 月收支情况", "status": "", "result": "HTML 展示 3 月 4 个 KPI"}, {"wake_word": "看总览", "scenario_id": "overview_empty", "scenario_title": "指定月份无记录", "dimensions": {"月份": "未来月份", "数据": "空"}, "prompt": "看 2027 年 1 月的总览", "status": "", "result": "HTML 显示空态:该月暂无记录"}, {"wake_word": "看总览", "scenario_id": "overview_offline", "scenario_title": "总览查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "本月收支情况(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存数据,提示可能过期"}], "count": 4, "pending_count": 0}, {"name": "做统计", "scenarios": [{"wake_word": "做统计", "scenario_id": "stats_long_term", "scenario_title": "长期用户统计", "dimensions": {"总笔数": "≥ 100", "天数": "≥ 90"}, "prompt": "我记账情况怎么样", "status": "", "result": "HTML 展示总笔数 / 记账天数 / 首笔时间 / 最近记录时间"}, {"wake_word": "做统计", "scenario_id": "stats_new_user", "scenario_title": "全新用户(0 笔)", "dimensions": {"总笔数": "0"}, "prompt": "做统计(还没记过账)", "status": "", "result": "HTML 显示空态:总笔数 0,尚无记录"}, {"wake_word": "做统计", "scenario_id": "stats_just_started", "scenario_title": "刚开始记账", "dimensions": {"总笔数": "1-10"}, "prompt": "做统计(刚开始记账)", "status": "", "result": "HTML 展示少量笔数的统计"}, {"wake_word": "做统计", "scenario_id": "stats_data_incomplete", "scenario_title": "统计数据不完整(部分记录缺字段)", "dimensions": {"数据": "缺失"}, "prompt": "做统计(部分老记录缺金额/分类)", "status": "", "result": "HTML 显示缺失态:总笔数包含缺失,提示用户修复"}, {"wake_word": "做统计", "scenario_id": "stats_offline", "scenario_title": "统计查询(离线态)", "dimensions": {"网络": "离线"}, "prompt": "做统计(网络断开)", "status": "", "result": "HTML 显示离线态:展示本地缓存统计,提示可能过期"}], "count": 5, "pending_count": 0}], "wake_words_total": 15, "scenarios_total": 91, "pending_total": 0, "help_wake_words": ["饼干记账 HELP", "饼干记账 帮助", "查帮助", "能做什么"], "type": "help", "title": "饼干记账 · 唤醒词速查台", "subtitle": "▸ 类别 → 选唤醒词 → 复制 prompt → 贴给 AI"}, "message": "HELP 场景清单"}</script>
 
-# 搜备注
-python3 scripts/record_bill.py search &quot;午饭&quot;
 
-# 看月度
-python3 scripts/record_bill.py monthly --month 2026-05
 
-# 看对比
-python3 scripts/record_bill.py compare --period week
+<script>
+// ===== XSS 防护 =====
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
 
-# 看分类
-python3 scripts/record_bill.py breakdown
-python3 scripts/record_bill.py breakdown --from 2026-05-01 --to 2026-05-31
+// ===== 主流程: 读 payload =====
+function getPayload() {
+  // 兼容 §04 渲染器标准 + 本 skill 注入器模式
+  let data = window.__DATA__;
+  if (typeof data !== 'object' || data === null) {
+    const el = document.getElementById('payload');
+    if (el && el.textContent) {
+      try { data = JSON.parse(el.textContent); } catch(e) { return null; }
+    }
+  }
+  return data && data.data ? data.data : null;
+}
 
-# 看总览
-python3 scripts/record_bill.py overview
-python3 scripts/record_bill.py overview --month 2026-05
+// ===== Toast 控制器 =====
+const toastEl = document.getElementById('toast');
+const toastWakeEl = document.getElementById('toastWake');
+const toastCloseEl = document.getElementById('toastClose');
+let toastTimer = null;
+function showToast(wake) {
+  if (toastWakeEl) toastWakeEl.textContent = wake;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
+}
+if (toastCloseEl) {
+  toastCloseEl.addEventListener('click', () => {
+    toastEl.classList.remove('show');
+    clearTimeout(toastTimer);
+  });
+}
 
-# 做统计
-python3 scripts/record_bill.py stats
-</code></pre>
-<h3>Step 5：回复用户</h3>
-<pre><code>✓ 已记录：餐饮 -35.00
-</code></pre>
-<h3 id="html-可视化查询v23-默认工作流-10">Step 6：HTML 可视化查询（v2.3 默认工作流）</h3>
-<blockquote>
-<p><strong>🎯 默认行为（§04 原则 11 HTML-First）：</strong><br>
-所有查询/分析/统计类唤醒词命中后，AI <strong>默认</strong> 调用 <code>scripts/bill_inject.py</code> 生成可视化 HTML 交付给用户。<br>
-文字答仅在用户<strong>明确说</strong>「不要 HTML」「给我文字版」「就告诉我数字」时才走。</p>
-</blockquote>
-<h4>支持 9 种查询类型（全部默认 HTML）</h4>
-<table>
-<thead>
-<tr>
-<th>类型</th>
-<th>CLI 子命令</th>
-<th>适用场景</th>
-<th>bill_inject.py 调用</th>
-</tr>
-</thead>
-<tbody>
-<tr><td>今日摘要</td><td><code>summary</code></td><td>看今日收支</td><td><code>bill_inject.py summary</code></td></tr>
-<tr><td>列表</td><td><code>list</code> / <code>recent</code> / <code>search</code></td><td>看记录明细</td><td><code>bill_inject.py list --date 2026-07-27</code></td></tr>
-<tr><td>月度汇总</td><td><code>monthly</code></td><td>看月度分类排行</td><td><code>bill_inject.py monthly --month 2026-07</code></td></tr>
-<tr><td>周期对比</td><td><code>compare</code></td><td>本周 vs 上周 / 本月 vs 上月</td><td><code>bill_inject.py compare --period week</code></td></tr>
-<tr><td>分类明细</td><td><code>breakdown</code></td><td>看各类支出占比（SVG 环形图）</td><td><code>bill_inject.py breakdown --from ... --to ...</code></td></tr>
-<tr><td>收支总览</td><td><code>overview</code></td><td>看月度 4 个 KPI</td><td><code>bill_inject.py overview --month 2026-07</code></td></tr>
-<tr><td>记账统计</td><td><code>stats</code></td><td>看总笔数 / 天数</td><td><code>bill_inject.py stats</code></td></tr>
-</tbody>
-</table>
-<h4>调用流程（AI 必走）</h4>
-<pre><code class="language-bash"># 标准路径（自动调 CLI + 注入 HTML 模板 + 输出文件）
-python3 scripts/bill_inject.py summary
-python3 scripts/bill_inject.py monthly --month 2026-07
-python3 scripts/bill_inject.py breakdown --from 2026-07-01 --to 2026-07-31
-python3 scripts/bill_inject.py compare --period week
-python3 scripts/bill_inject.py search "咖啡"
-</code></pre>
-<h4>错误处理（§04 原则 11 反模式 #3）</h4>
-<ul>
-<li>HTML 生成失败 → <strong>保留错误页 HTML</strong> 交付给用户（<code>bill_inject.py</code> 自动处理）</li>
-<li>❌ <strong>禁止</strong>降级为文字答（这是 fail mode,不是 fallback）</li>
-<li>用户明确要文字 → 才走 <code>python3 scripts/record_bill.py summary</code>（无 <code>--json</code>）</li>
-</ul>
-<h4>输出路径</h4>
-<ul>
-<li>默认（v2.5 同步卡路里 §4.1）：<code>$DATA_DIR/biscuit_accountant_html/&lt;command_zh&gt;_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html</code><br>（<code>DATA_DIR</code> 跟随 <code>SKILLS_DB_PATH</code>；同秒冲突自动追加 <code>_2</code> / <code>_3</code>）</li>
-<li>自定义：<code>python3 scripts/bill_inject.py summary --out C:/Users/xxx/Desktop/x.html</code></li>
-</ul>
-<h4>模板特性（<code>query_view.html</code>）</h4>
-<ul>
-<li>单文件离线运行（无 CDN / 无 chart.js 依赖）</li>
-<li>Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）</li>
-<li>自适应桌面 + 平板 + 手机</li>
-<li>5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线</li>
-<li>SVG 环形图（breakdown 用）</li>
-<li>单模板 + JS 动态分发 9 种查询类型</li>
-<li>一键复制 ID 回 AI（每条记录含 ID）</li>
-</ul>
-<h4>交付给用户</h4>
-<p>用 <code>&lt;media src="..." type="file" /&gt;</code> 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。</p>
-<h3 id="help-能力速查v24-升级-11">Step 7：HELP 能力速查（v2.4 升级）</h3>
-<p>当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 <code>scripts/render_help.py</code> 生成 HELP HTML 并交付。</p>
-<h4>调用流程</h4>
-<pre><code class="language-bash"># 默认输出
-python3 scripts/render_help.py
-# → $DATA_DIR/biscuit_accountant_html/饼干记账_HELP_&lt;YYYYMMDD&gt;_&lt;HHMMSS&gt;[_N].html
+// ===== 复制 =====
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function doCopy(btn) {
+  const prompt = btn.getAttribute('data-prompt') || '';
+  const card = btn.closest('.sc-block');
+  let wake = '';
+  if (card) {
+    const ww = card.closest('.ww-block');
+    if (ww) wake = ww.querySelector('.ww-name')?.textContent.trim() || '';
+  }
+  showToast(wake || 'prompt');
+  const after = () => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(after).catch(() => { fallbackCopy(prompt); after(); });
+  } else {
+    fallbackCopy(prompt);
+    after();
+  }
+}
 
-# 指定输出
-python3 scripts/render_help.py --out /path/to/help.html
+// 供 summary 层 onclick 调用(对齐卡路里 ticket 07)
+function doCopyBtn(btn) {
+  const prompt = btn.getAttribute('data-prompt') || '';
+  const wwBlock = btn.closest('.ww-block');
+  let wake = '';
+  if (wwBlock) wake = wwBlock.querySelector('.ww-name')?.textContent.trim() || '';
+  showToast(wake || 'prompt');
+  const after = () => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(after).catch(() => { fallbackCopy(prompt); after(); });
+  } else {
+    fallbackCopy(prompt);
+    after();
+  }
+}
 
-# 仅校验场景资产 schema（CI 用）
-python3 scripts/render_help.py --check
-</code></pre>
-<h4>HELP HTML 契约（§07）</h4>
-<ul>
-<li>来源：<code>references/scenarios.json</code>（唯一事实源，含 <code>_categories</code> 元数据） + <code>templates/help.html</code>（模板）</li>
-<li>展示 <strong>5 类别</strong>（📝 写入类 / 🔍 查询类 / 📊 分析类 / 📈 统计类 / ❓ HELP）× <strong>15 唤醒词</strong> × <strong>91 个合法场景</strong></li>
-<li><strong>3 层折叠</strong>（类别 → 唤醒词 → 场景，<strong>默认全部折叠</strong>，点击 <code>&lt;summary&gt;</code> 展开）</li>
-<li>每场景独立「📋 复制 prompt」按钮 + <strong>iOS 风格 Toast 通知</strong>（4.5s 自动消失）</li>
-<li>粘性搜索栏 + 「全部展开 / 全部折叠」快捷键</li>
-<li>移动端 fallback toggle（部分 Android WebView 兼容）</li>
-<li>5 状态 fallback + 移动端适配</li>
-</ul>
-<hr />
-<h2 id="命令行参考-7">命令行参考</h2>
-<p>共 10 个子命令：</p>
-<table>
-<thead>
-<tr>
-<th>子命令</th>
-<th>说明</th>
-<th>必需参数</th>
-<th>可选参数</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>add</code></td>
-<td>添加账单</td>
-<td><code>--category</code>, <code>--amount</code></td>
-<td><code>--time</code>, <code>--account</code>, <code>--ledger</code>, <code>--currency</code>, <code>--note</code></td>
-</tr>
-<tr>
-<td><code>update</code></td>
-<td>修改账单</td>
-<td><code>--id</code> (必需)</td>
-<td><code>--category</code>, <code>--amount</code>, <code>--time</code>, <code>--account</code>, <code>--ledger</code>, <code>--currency</code>, <code>--note</code>(至少传一个)</td>
-</tr>
-<tr>
-<td><code>list</code></td>
-<td>查询记录</td>
-<td>（无）</td>
-<td><code>--date</code>, <code>--from</code>+<code>--to</code>, <code>--category</code>, <strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>search</code></td>
-<td>搜索备注</td>
-<td><code>keyword</code>（位置参数）</td>
-<td><strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>summary</code></td>
-<td>今日摘要</td>
-<td>（无）</td>
-<td><strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>monthly</code></td>
-<td>月度汇总</td>
-<td><code>--month</code></td>
-<td><strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>compare</code></td>
-<td>周期对比</td>
-<td>（无）</td>
-<td><code>--period</code> (week/month, 默认 week), <strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>recent</code></td>
-<td>最近N条</td>
-<td>（无）</td>
-<td><code>--limit</code> (默认 10), <strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>breakdown</code></td>
-<td>分类明细</td>
-<td>（无）</td>
-<td><code>--from</code>, <code>--to</code>, <strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>overview</code></td>
-<td>收支总览</td>
-<td>（无）</td>
-<td><code>--month</code> (默认当月), <strong><code>--json</code></strong></td>
-</tr>
-<tr>
-<td><code>stats</code></td>
-<td>记账统计</td>
-<td>（无）</td>
-<td><strong><code>--json</code></strong></td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>JSON 契约</strong>：所有查询命令加 <code>--json</code> 后输出 <code>{status: "ok"|"error", data: {...}, message: "..."}</code> 三段式。<code>bill_inject.py</code> 用此契约注入 HTML 模板。写入类命令（<code>add</code>/<code>update</code>）不支持 <code>--json</code>，保持纯文本输出。</p>
-</blockquote>
-<hr />
-<h2 id="分类参考-8">分类参考</h2>
-<p>分类采用 <strong>L1/L2/L3 三级</strong> 结构(支出)/ <strong>L1/L2 二级</strong> 结构(收入),用 <code>/</code> 分隔(如 <code>餐饮/外卖/午餐</code>)。</p>
-<p><strong>AI 解析必读 <code>references/categories.md</code> 的「分类心法」章节</strong> — 心法包含 5 个判断维度(主体/目的/对象/工具vs体验/谁付费)和边界示例。<strong>不要"关键词查表",要按意图推场景。</strong> 关键词表只在心法覆盖不到时兜底。</p>
-<p><strong>支出 L1(10 个):</strong> 餐饮、居家、穿着、出行、玩乐、学习、健康、社交、宠物、其他</p>
-<p><strong>收入 L1(5 个):</strong> 工资、奖金、兼职、投资、其他收入</p>
-<blockquote>
-<p>旧数据中不带 <code>/</code> 的分类(如 <code>餐饮</code>、<code>交通</code>)自动视为 L1,无需迁移。</p>
-</blockquote>
-<hr />
-<h2 id="与其他工具的边界">与其他工具的边界</h2>
-<p>本 Skill 的 <strong>5 层骨架</strong>（数据层 <code>db.py</code> / 操作层 <code>analyze.py</code> / 规则层 <code>validators.py</code> / 接口层 <code>record_bill.py</code> / 文档层 <code>references/</code>+<code>templates/</code>）<strong>不含</strong> <code>config-cookie-accounting.ts</code>。</p>
-<table>
-<thead>
-<tr>
-<th>文件</th>
-<th>归属</th>
-<th>维护方</th>
-<th>与本 Skill 的关系</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>config-cookie-accounting.ts</code></td>
-<td>SkillBoard 数据层视图（legacy）</td>
-<td>独立维护</td>
-<td>不在 5 层骨架内；权威分类体系以 <a href="references/categories.md"><code>references/categories.md</code></a> 为准</td>
-</tr>
-<tr>
-<td><code>references/categories-mapping.md</code></td>
-<td>本 Skill 文档层</td>
-<td>本 Skill 维护</td>
-<td>桥接 <code>config-cookie-accounting.ts</code>（9 L1）→ <code>categories.md</code>（10 L1）；仅做语义映射，不修改任何一方的字段</td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>若未来澄清 <code>config-cookie-accounting.ts</code> 为废弃</strong>：需独立 spec 处理；本 Skill 当前仅做桥接文档（<code>references/categories-mapping.md</code>），不删不改 <code>config-cookie-accounting.ts</code>。</p>
-</blockquote>
-<hr />
-<h2 id="错误处理-9">错误处理</h2>
-<table>
-<thead>
-<tr>
-<th>场景</th>
-<th>处理方式</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>图片模糊/看不清金额</td>
-<td>描述看到的内容，请用户确认</td>
-</tr>
-<tr>
-<td>图片非账单</td>
-<td>告知用户并询问是否手动输入</td>
-</tr>
-<tr>
-<td>未指定分类</td>
-<td>根据内容推断，告知用户可纠正</td>
-</tr>
-<tr>
-<td>金额不明确</td>
-<td>请用户确认，不自动猜测</td>
-</tr>
-</tbody>
-</table>
-<footer>
-  HTML 镜像手动同步于 2026-07-27 &nbsp;·&nbsp;
-  源文件: <code>饼干记账/SKILL.md</code><br>
-  v2.5 同步卡路里 §4.1: 新增 scripts/html_paths.py;输出目录 $DATA_DIR/biscuit_accountant_html/;中文 command 名 + 冲突保护 _2/_3<br>
-  v2.4 升级 HELP HTML: 5 类别分门别类 + 3 层折叠 + iOS Toast + 全展/全收 + 移动端 fallback (参考卡路里 v2.4.12)<br>
-  v2.3 新增: ① HTML-First 默认工作流（§04 原则 11）；② HELP 能力速查（§07 契约 · scenarios.json + help.html + render_help.py）；③ 唤醒词表加「默认输出」列；④ 场景扩充 57 → 91（覆盖离线/缺失/错误/跨年/排序/筛选组合/边界金额等）<br>
-  v2.2: HTML 可视化查询（CLI <code>--json</code> + <code>bill_inject.py</code> + <code>templates/query_view.html</code>）
-</footer>
+// ===== 渲染 =====
+function render() {
+  const data = getPayload();
+  const mainEl = document.getElementById('mainContent');
+  const statsEl = document.getElementById('heroStats');
+
+  if (!data || !data.categories) {
+    mainEl.innerHTML = '<div class="empty">❌ 数据加载失败</div>';
+    return;
+  }
+
+  statsEl.innerHTML =
+    '<span><b>' + esc(data.categories.length) + '</b> 类别</span>' +
+    '<span><b>' + esc(data.wake_words_total) + '</b> 唤醒词</span>' +
+    '<span><b>' + esc(data.scenarios_total) + '</b> 场景</span>';
+
+  document.getElementById('generatedAt').textContent = '生成时间: ' + esc(data.generated_at || '');
+
+  if (!data.categories.length) {
+    mainEl.innerHTML = '<div class="empty">📭 暂无类别</div>';
+    return;
+  }
+
+  mainEl.innerHTML = data.categories.map(function(cat) {
+    return renderCategory(cat, data);
+  }).join('');
+
+  // 绑定复制按钮
+  mainEl.querySelectorAll('.copy-btn').forEach(b => {
+    if (b.__bound) return;
+    b.__bound = true;
+    b.addEventListener('click', () => doCopy(b));
+  });
+
+  // 移动端 fallback toggle (部分 Android WebView 兼容)
+  bindFallbackToggle(mainEl);
+}
+
+// ===== L1 类别 =====
+function renderCategory(cat, payload) {
+  const wws = cat.wake_words || [];
+  // HELP 类别（第 5 类）特殊处理：cat.wake_words=[] 但应展示 4 条 HELP 唤醒词
+  // 来自 payload.help_wake_words（scenarios.json._meta.help_wake_words，与 SKILL.md §唤醒词总表同步）
+  if (cat.key === 'help') {
+    return '';
+  }
+  if (!wws.length) {
+    return '';  // 跳过其他空类别
+  }
+  const scCount = cat.scenario_count || 0;
+  const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';
+  return '<details class="cat-block">' +
+    '<summary>' +
+      '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
+      desc +
+      '<span class="cat-count-pill">' + wws.length + '</span>' +
+    '</summary>' +
+    '<div class="cat-content">' + wws.map(renderWakeWord).join('') + '</div>' +
+    '</details>';
+}
+
+// ===== L2 唤醒词 =====
+function renderWakeWord(ww) {
+  const scs = ww.scenarios || [];
+  return '<details class="ww-block">' +
+    '<summary>' +
+      '<span class="ww-name">' + esc(ww.name) + '</span>' +
+      '<span class="ww-count">' + scs.length + '</span>' +
+    '</summary>' +
+    '<div class="ww-content">' + scs.map(renderScenario).join('') + '</div>' +
+    '</details>';
+}
+
+// ===== L3 场景 =====
+function renderScenario(sc) {
+  const isPending = sc.status === '【待开发】';
+  return '<details class="sc-block' + (isPending ? ' pending' : '') + '" data-search="' +
+    esc((sc.scenario_title || '') + ' ' + (sc.prompt || '')) + '">' +
+    '<summary>' +
+      '<span class="sc-title">' + esc(sc.scenario_title || '') + '</span>' +
+      (isPending ? '<span class="sc-pending-tag">【待开发】</span>' : '') +
+      '<button type="button" class="copy-btn copy-sc" data-prompt="' + esc(sc.prompt || '') + '" onclick="event.preventDefault(); event.stopPropagation(); doCopyBtn(this)">📋 复制</button>' +
+    '</summary>' +
+    '<div class="sc-content">' +
+      '<div class="sc-prompt">' + esc(sc.prompt || '') + '</div>' +
+      '<div class="sc-result">' + esc(sc.result || '') + '</div>' +
+    '</div>' +
+    '</details>';
+}
+
+// ===== 全部展开 / 折叠 =====
+function setAllDetails(open) {
+  document.querySelectorAll('#mainContent details').forEach(d => { d.open = open; });
+}
+document.getElementById('expandAll').addEventListener('click', () => setAllDetails(true));
+document.getElementById('collapseAll').addEventListener('click', () => setAllDetails(false));
+
+// ===== 搜索过滤 =====
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.trim().toLowerCase();
+  const cats = document.querySelectorAll('.cat-block');
+  let anyVisible = false;
+  cats.forEach(cat => {
+    const wws = cat.querySelectorAll('.ww-block');
+    let catHasVisible = false;
+    wws.forEach(ww => {
+      const scs = ww.querySelectorAll('.sc-block');
+      let wwHasVisible = false;
+      scs.forEach(sc => {
+        let match = q === '';
+        if (!match) {
+          const text = sc.getAttribute('data-search') || '';
+          match = text.toLowerCase().indexOf(q) !== -1;
+        }
+        sc.classList.toggle('hidden', !match);
+        if (match) wwHasVisible = true;
+      });
+      ww.classList.toggle('hidden', !wwHasVisible);
+      if (wwHasVisible) catHasVisible = true;
+    });
+    cat.classList.toggle('hidden', !catHasVisible);
+    if (catHasVisible) anyVisible = true;
+  });
+  let noMatch = document.getElementById('noMatch');
+  if (!anyVisible && q !== '') {
+    if (!noMatch) {
+      noMatch = document.createElement('div');
+      noMatch.id = 'noMatch';
+      noMatch.className = 'no-match';
+      document.getElementById('mainContent').appendChild(noMatch);
+    }
+    noMatch.textContent = '🔍 无匹配: "' + q + '"';
+  } else if (noMatch) {
+    noMatch.remove();
+  }
+});
+
+// ===== 移动端 fallback toggle (§卡路里 v2.4.10 抗审查修) =====
+// 部分 Android WebView / 旧 iOS Safari 上 native <details> 因 tap-highlight / 子元素吞噬
+// 偶发不响应。监听 click, 50ms 后若状态没翻, 则强制翻。
+function bindFallbackToggle(scope) {
+  scope.querySelectorAll('.cat-block > summary, .ww-block > summary, .sc-block > summary').forEach(sum => {
+    if (sum.__bound_fb) return;
+    sum.__bound_fb = true;
+    sum.addEventListener('click', () => {
+      const det = sum.parentElement;
+      const wasOpen = det.open;
+      setTimeout(() => {
+        if (det.open === wasOpen) det.open = !wasOpen;
+      }, 50);
+    }, { passive: true });
+  });
+}
+
+// ===== 启动 =====
+try {
+  render();
+} catch (err) {
+  document.getElementById('mainContent').innerHTML =
+    '<div class="empty">❌ 渲染失败: ' + esc(err.message || '') + '</div>';
+  console.error(err);
+}
+
+// ===== 离线检测 =====
+window.addEventListener('offline', () => {
+  const t = document.createElement('div');
+  t.textContent = '📡 当前离线,页面可能过期';
+  t.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:8px;background:#fff7e6;color:#ff9500;text-align:center;font-size:12px;z-index:9999;';
+  document.body.appendChild(t);
+});
+</script>
+
 </body>
 </html>

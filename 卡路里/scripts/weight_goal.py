@@ -35,6 +35,9 @@ def set_weight_goal(weight_goal, deadline=None):
     Args:
         weight_goal: 目标体重（kg）
         deadline: 目标日期（YYYY-MM-DD），可选
+
+    Returns:
+        dict 含 id / updated_at / rows_affected,供 CLI 写回执契约(SKILL §⚠️ #6)
     """
     conn = _get_db()
     c = conn.cursor()
@@ -43,15 +46,24 @@ def set_weight_goal(weight_goal, deadline=None):
         SET weight_goal = ?, goal_deadline = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
     ''', (weight_goal, deadline))
-    if c.rowcount == 0:
+    rows_affected = c.rowcount
+    if rows_affected == 0:
         c.execute('''
             INSERT INTO daily_goal (id, weight_goal, goal_deadline)
             VALUES (1, ?, ?)
         ''', (weight_goal, deadline))
+        rows_affected = c.rowcount
     conn.commit()
+    c.execute("SELECT id, updated_at FROM daily_goal WHERE id = 1")
+    row = c.fetchone()
     conn.close()
-    print(f"✓ 体重目标已设定：{weight_goal} kg"
-          + (f" | 目标日期：{deadline}" if deadline else ""))
+    return {
+        "id": row[0],
+        "updated_at": row[1],
+        "rows_affected": rows_affected,
+        "weight_goal": weight_goal,
+        "deadline": deadline,
+    }
 
 
 def get_weight_goal():

@@ -52,26 +52,45 @@ def _query_products(query: str) -> list[dict]:
 
 
 def _default_output_path(query: str) -> Path:
-    """默认输出路径:calorie_html/查热量_<TS>.html"""
+    """默认输出路径:calorie_html/查热量_<TS>.html
+
+    S8:同秒冲突自动追加 _2 / _3 后缀(SKILL.md §"同秒冲突")
+    """
     import os
     skills_db = os.environ.get("SKILLS_DB_PATH")
     if skills_db:
         base = Path(skills_db) / "calorie_html"
     else:
-        # fallback:与 calorie_data.db 同级的 calorie_html/(如 D:\2Study\StudyNotes\.db\calorie_html)
         base = db_mod.find_db_path(SKILL_DIR).parent / "calorie_html"
     base.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_q = re.sub(r"[^\w\u4e00-\u9fff]+", "_", query)[:20]
-    return base / f"查热量_{safe_q}_{ts}.html"
+    base_name = f"查热量_{safe_q}_{ts}.html"
+    out = base / base_name
+    suffix = 2
+    while out.exists():
+        out = base / f"查热量_{safe_q}_{ts}_{suffix}.html"
+        suffix += 1
+    return out
 
 
 def _inject_data(html: str, data: dict) -> str:
-    """把 data 注入到 window.__DATA__ 占位符"""
+    """把 data 注入到 window.__DATA__ 占位符
+
+    S8:断言占位符唯一出现(SKILL.md §"占位符唯一"硬规则)。
+    模板若出现 0 或 ≥2 次,直接报错,避免 silent data loss。
+    """
+    count = html.count("<!--INJECT-DATA-->")
+    if count != 1:
+        raise ValueError(
+            f"templates/food_search.html 占位符 <!--INJECT-DATA--> 出现 {count} 次,"
+            f"应为恰好 1 次(SKILL.md § 占位符唯一 规则)。"
+        )
     payload = json.dumps(data, ensure_ascii=False, default=str)
     return html.replace(
         "<!--INJECT-DATA-->",
         f'<script>window.__DATA__ = {payload};</script>',
+        1,  # 只替换第一个
     )
 
 

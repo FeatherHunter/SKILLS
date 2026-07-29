@@ -55,7 +55,11 @@ def _prompt_skeleton(wake: str, variant: str | None = None, body: str = '', fill
         raise ValueError(f'_prompt_skeleton body 必须非空(wake={wake}, variant={variant})')
     # variant label 已含 wake 前缀(约定),不再拼 wake
     name = variant if variant else wake
-    head = f"请你加载技能 卡路里,执行唤醒词「{name}」。"
+    head = (
+        f"请你加载技能 卡路里,执行唤醒词「{name}」。\n\n"
+        f"⚠️ §⚠️ 第 7 条 AI 验证协议:本 prompt 涉及'用户状态'断言时,"
+        f"必须先 SELECT DB 验证(空值 ≠ '从未',损坏值 ≠ '原值',类型错 ≠ '视为 0')。"
+    )
     if fill_hints:
         body += '\n\n' + '\n'.join(fill_hints)
     tail = "完成后给 1 句话总结,不需要过多文字解释。"

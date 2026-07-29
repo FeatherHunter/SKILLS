@@ -53,7 +53,10 @@ def _query_products(limit: int) -> tuple[list[dict], int]:
 
 
 def _default_output_path() -> Path:
-    """默认输出路径:calorie_html/查食品库_<TS>.html"""
+    """默认输出路径:calorie_html/查食品库_<TS>.html
+
+    S8:同秒冲突自动追加 _2 / _3 后缀(SKILL.md §"同秒冲突")
+    """
     skills_db = os.environ.get("SKILLS_DB_PATH")
     if skills_db:
         base = Path(skills_db) / "calorie_html"
@@ -61,14 +64,28 @@ def _default_output_path() -> Path:
         base = db_mod.find_db_path(SKILL_DIR).parent / "calorie_html"
     base.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return base / f"查食品库_{ts}.html"
+    base_name = f"查食品库_{ts}.html"
+    out = base / base_name
+    suffix = 2
+    while out.exists():
+        out = base / f"查食品库_{ts}_{suffix}.html"
+        suffix += 1
+    return out
 
 
 def _inject_data(html: str, data: dict) -> str:
+    """S8:占位符唯一性校验(SKILL.md §"占位符唯一")"""
+    count = html.count("<!--INJECT-DATA-->")
+    if count != 1:
+        raise ValueError(
+            f"templates/food_library.html 占位符 <!--INJECT-DATA--> 出现 {count} 次,"
+            f"应为恰好 1 次(SKILL.md § 占位符唯一 规则)。"
+        )
     payload = json.dumps(data, ensure_ascii=False, default=str)
     return html.replace(
         "<!--INJECT-DATA-->",
         f'<script>window.__DATA__ = {payload};</script>',
+        1,
     )
 
 

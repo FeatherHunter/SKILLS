@@ -149,12 +149,12 @@ WRITE_CONTRACTS = [
      "v2.4.17 扩 P3: goal stdout 缺 YYYY-MM-DD",
      "v2.4.17 扩 P3: goal stdout 缺 '影响' 字样",
      None),
-    (["weight-goal", "75", "2026-12-31"],
-     "weight-goal",
-     "v2.4.17 扩 P3: weight-goal stdout 缺 id=",
-     None,  # '目标日期：2026-12-31' 命中 YYYY-MM-DD → 合规
-     "v2.4.17 扩 P3: weight-goal stdout 缺 '影响' 字样",
-     None),
+(["weight-goal", "--legacy-positional", "75", "2026-12-31"],
+      "weight-goal",
+      None,  # ticket 04 增量:weight-goal 现已写回执契约(id= + 日期 + 影响 行),合规
+      None,
+      None,
+      None),
     (["add-product", "x", "x", "0", "0", "0", "0", "0", "0", "0", "0"],
      "add-product",
      "v2.4.17 扩 P3: add-product stdout 缺 id=/时间/影响",

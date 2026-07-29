@@ -43,16 +43,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
    - (a) **写脏数据后断言原值** — 如 `daily_goal.weight_goal` 被某次 `weight-goal --help` 误写为字符串 `'--help'`,AI 应先 SELECT 看到字符串就识别为损坏数据,而不是回写字符串或假装"原值是 None"。
    - (b) **空值误判'从未设过'** — `NULL` / `0` / 空字符串 ≠ "从未设过";可能是过期数据 / 损坏数据 / 字段尚未初始化。
    - (c) **类型误判** — 当 DB 返回非预期类型(如字符串而非数字)时,AI 不得假设其为 0 或"未设"。
-   - 违反 = 协议 fail mode,等同 HTML-First 反模式(第 4 条)。详见 ADR-0007。
-5. ⭐ **Wizard Verify 决策铁则(v2.4.3 增,用户实测反馈)**:对 `记围度` / `记体脂` 等**配置型 wizard** 的 trigger,AI **必须**根据用户输入决定走哪条流程:
-
-   | 场景 | 触发 | AI 行为 | 命令模板 |
-   |---|---|---|---|
-   | **场景 1**(主动填) | 用户说 "记围度" / "记体脂" 但**没给数据** | render 脚本**不传预填 args**(空 wizard)→ 用户手动填 → 复制 prompt → AI 调 CLI | `python scripts/render_body_measurements_wizard.py` |
-   | **场景 2**(预填 verify) ⭐ | 用户说 "记围度 胸 95 腰 80 臀 100..." **给数据** | render 脚本**传预填 args**(wizard 已填好)→ 用户打开 verify → 复制 prompt → AI 调 CLI | `python scripts/render_body_measurements_wizard.py --date 2026-07-26 --chest-cm 95 --waist-cm 80 ...` |
-   | 场景 3(信任) | 用户**明确说** "直接录" / "我信你" | 跳过 wizard,直接调 `body_measurements.py add` 写库 + 返回 crud_receipt.html 回执 | `python scripts/body_measurements.py add ...` |
-
-   **禁止**:**不**判断用户场景就**直接调 CLI** 写库(跳过 verify)— 即使数据看起来对。这是 v2.4.2 → v2.4.3 修复的根因:用户实测反馈 "我的维度 XXXXXXX" 后 AI 应走场景 2(预填 verify)而不是直接 CLI。违反 = 协议 fail mode。
+- 违反 = 协议 fail mode,等同 HTML-First 反模式(第 4 条)。详见 ADR-0007。
 
 ---
 

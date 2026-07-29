@@ -78,7 +78,10 @@ def test_render_food_search_exits_zero(temp_db, tmp_path):
 
 
 def test_food_search_html_has_cards_and_data(temp_db, tmp_path):
-    """生成的 HTML 含 ≥5 food cards + window.__DATA__ 含 query='牛肉'"""
+    """生成的 HTML 含 ≥5 food cards + window.__DATA__ 含 query='牛肉'
+
+    S7 修:不仅断言 JSON items 长度,还断言 HTML DOM 实际渲染卡片节点。
+    """
     import sqlite3, os
     conn = sqlite3.connect(str(temp_db))
     cur = conn.cursor()
@@ -116,3 +119,13 @@ def test_food_search_html_has_cards_and_data(temp_db, tmp_path):
         assert "牛肉" in it["product_name"], (
             f"items 含非牛肉: {it['product_name']}"
         )
+
+    # S7 增量:静态 HTML 含 JS 渲染 hook(cards 由 JS 在客户端渲染,不在 server 输出)
+    assert "function renderCard" in html or "renderCard(" in html, (
+        "HTML 应含 renderCard 函数定义(客户端 JS 渲染卡片)"
+    )
+    assert 'id="results"' in html, "HTML 应含 id=results 容器(JS 填充目标)"
+    # 检查 JS 实际会渲染所有 items
+    assert "items.map(function" in html or "items.map(it =>" in html or "items.map(function(it)" in html, (
+        "HTML 应有 items.map(...) 把 data.items 渲染成 DOM"
+    )

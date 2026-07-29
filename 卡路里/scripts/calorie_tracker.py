@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """卡路里 - CLI 入口
 
 业务逻辑拆分到各领域模块（每个 ≤ 350 行）：
@@ -374,6 +374,12 @@ def main():
                 print(f"  备注: {receipt['note']}")
 
         elif command == "weight-history":
+            # ADR-0004 · ticket 04 增量:--help 立即返回(S2)
+            if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
+                print("用法: weight-history [天数] | --days N")
+                print("默认: 30 天体重历史(HTML)")
+                print("示例: weight-history 7  /  weight-history --days 90")
+                sys.exit(0)
             # v2.4.6:接通 render_weight_history.py(V1.3 §04 协议 — 有 HTML 模板必走 HTML)
             # v2.4.8:不传 --output,由 render 走 html_path() 新规范(中文 + 时间戳)
             days = int(sys.argv[2]) if len(sys.argv) > 2 else 30
@@ -392,13 +398,15 @@ def main():
             weight.get_weight_history(days)  # fallback 纯文本
 
         elif command == "weight-goal":
-            # ADR-0004 · ticket 04: 改用 --weight-goal --deadline 标志位
+            # ADR-0004 · ticket 04: --weight-goal --deadline 标志位
+            # 默认拒绝 positional;--legacy-positional 临时 escape hatch,2026-10-29 删除
             if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
-                print("用法: weight-goal --weight-goal <kg> --deadline <YYYY-MM-DD>")
+                print("用法: weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>]")
                 print("示例: weight-goal --weight-goal 73 --deadline 2026-12-31")
-                print("(老接口 weight-goal <kg> [deadline] 临时保留,带 deprecation warning,3 月后删除)")
+                print("")
+                print("老接口(2026-10-29 删除):weight-goal --legacy-positional <kg> [deadline]")
                 sys.exit(0)
-            # 解析标志位
+            legacy_mode = False
             kg = None
             deadline = None
             legacy_kg = None
@@ -415,9 +423,20 @@ def main():
                 elif arg == "--deadline" and i + 1 < len(sys.argv):
                     deadline = sys.argv[i + 1]
                     i += 2
+                elif arg == "--legacy-positional":
+                    legacy_mode = True
+                    i += 1
                 elif not arg.startswith("--"):
+                    if not legacy_mode:
+                        print(
+                            f"Error: 拒绝 positional 参数 '{arg}'。"
+                            f"请用 --weight-goal <kg> [--deadline <date>]。"
+                            f"或显式加 --legacy-positional 使用老接口(2026-10-29 删除,见 ADR-0004)。",
+                            file=sys.stderr,
+                        )
+                        sys.exit(2)
                     # 老接口: positional 参数,带 deprecation warning
-                    print(f"⚠️  DEPRECATION: weight-goal {arg} ... 即将废弃,请改用 --weight-goal {arg}", file=sys.stderr)
+                    print(f"⚠️  DEPRECATION: weight-goal {arg} ... 即将废弃(2026-10-29 删除),请改用 --weight-goal {arg}", file=sys.stderr)
                     if legacy_kg is None:
                         try:
                             legacy_kg = float(arg)
@@ -432,9 +451,13 @@ def main():
                     sys.exit(2)
             final_kg = kg if kg is not None else legacy_kg
             if final_kg is None:
-                print("Error: 缺少 --weight-goal <kg>", file=sys.stderr)
+                print(f"Error: 缺少 --weight-goal <kg>", file=sys.stderr)
                 sys.exit(1)
-            weight_goal.set_weight_goal(final_kg, deadline)
+            # SKILL §⚠️ #6 写库回执契约
+            receipt = weight_goal.set_weight_goal(final_kg, deadline)
+            print(f"✓ 体重目标已设定:{receipt['weight_goal']} kg"
+                  + (f" | 目标日期:{receipt['deadline']}" if receipt['deadline'] else ""))
+            print(f"id={receipt['id']} | 日期 {receipt['updated_at']} | 影响 {receipt['rows_affected']} 行")
 
         elif command == "weight-goal-progress":
             weight_goal.print_goal_progress()
@@ -489,7 +512,7 @@ def main():
             product_library.update_product(sys.argv[2], **kwargs)
 
         elif command == "list-products":
-            # ADR-0005 · ticket 04 + ticket 07: 默认 200 + --all 显式全量
+            # ADR-0005 · ticket 04 + ticket 07: 默认 200 + --all 显式全量 + --text escape hatch
             if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
                 print("用法: list-products [--all | --limit <N>] [--text]")
                 print("默认: 前 200 行(按 id 升序)")
@@ -498,11 +521,15 @@ def main():
                 print("--text: 纯文本输出(供 pipeline 用,如 ... | grep)")
                 sys.exit(0)
             limit = 200
+            text_mode = False  # ticket 07 M4: --text 真 flag
             i = 2
             while i < len(sys.argv):
                 arg = sys.argv[i]
                 if arg == "--all":
                     limit = None
+                    i += 1
+                elif arg == "--text":
+                    text_mode = True  # 标记,当前实现下与默认行为一致,未来若切 HTML 渲染则用
                     i += 1
                 elif arg == "--limit" and i + 1 < len(sys.argv):
                     try:
@@ -512,7 +539,7 @@ def main():
                         sys.exit(2)
                     i += 2
                 else:
-                    print(f"Error: 未知参数 '{arg}'(list-products 只接受 --all / --limit N)", file=sys.stderr)
+                    print(f"Error: 未知参数 '{arg}'(list-products 只接受 --all / --limit N / --text)", file=sys.stderr)
                     sys.exit(2)
             # None (=--all) 转成 999999 防 SQLite LIMIT NULL 报错
             actual_limit = limit if limit is not None else 999999

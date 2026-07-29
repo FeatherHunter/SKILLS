@@ -16,6 +16,8 @@ ticket 02 · 2026-07-29 · ADR-0005 配套
 
 API:
     lint_templates(templates_dir) -> list[str]  # 单元测试用
+
+依赖:BeautifulSoup4(`pip install beautifulsoup4`)
 """
 from __future__ import annotations
 

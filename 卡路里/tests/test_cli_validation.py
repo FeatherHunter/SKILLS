@@ -32,10 +32,13 @@ def _run_cli(*args: str, timeout: int = 30) -> subprocess.CompletedProcess:
 
 
 def test_help_exits_zero_with_usage():
-    """任意子命令 --help → exit 0 + stdout 含 usage"""
+    """任意子命令 --help → exit 0 + stdout 含 usage/用法"""
     r = _run_cli("--help")
     assert r.returncode == 0, f"--help exit={r.returncode}, stderr={r.stderr}"
-    assert "usage:" in r.stdout.lower(), f"--help stdout 应含 'usage:': {r.stdout[:200]}"
+    # 中英文都接受("用法" / "usage:")
+    assert "用法" in r.stdout or "usage:" in r.stdout.lower(), (
+        f"--help stdout 应含用法说明: {r.stdout[:200]}"
+    )
 
 
 def test_weight_goal_help_exits_zero():
@@ -56,7 +59,8 @@ def test_weight_goal_rejects_non_numeric_kg():
         f"传 abc 应报错,实得 exit={r.returncode}, stdout={r.stdout}"
     )
     err = (r.stderr + r.stdout).lower()
-    assert "invalid" in err or "type" in err or "float" in err, (
+    assert ("invalid" in err or "type" in err or "float" in err
+            or "数字" in (r.stderr + r.stdout)), (
         f"stderr/stdout 应含类型错误关键词: {r.stderr[:200]}"
     )
 
@@ -129,28 +133,4 @@ def test_list_products_all_returns_everything(temp_db):
     assert len(lines) == 250, f"--all 应返回 250 行,实得 {len(lines)}"
 
 
-def test_help_exits_zero_with_usage():
-    """任意子命令 --help → exit 0 + stdout 含 usage/用法"""
-    r = _run_cli("--help")
-    assert r.returncode == 0, f"--help exit={r.returncode}, stderr={r.stderr}"
-    text = r.stdout.lower()
-    # 中英文都接受("用法" / "usage:")
-    assert "用法" in r.stdout or "usage:" in text, (
-        f"--help 应含用法说明: {r.stdout[:200]}"
-    )
-
-
-def test_weight_goal_rejects_non_numeric_kg():
-    """weight-goal --weight-goal abc → exit 非 0 + stderr 含类型错误"""
-    r = _run_cli("weight-goal", "--weight-goal", "abc", "--deadline", "2026-12-31")
-    assert r.returncode != 0, (
-        f"传 abc 应报错,实得 exit={r.returncode}, stdout={r.stdout}"
-    )
-    # 中英文都接受
-    combined = r.stderr + r.stdout
-    assert (
-        "invalid" in combined.lower()
-        or "type" in combined.lower()
-        or "float" in combined.lower()
-        or "数字" in combined
-    ), f"应含类型错误关键词: {combined[:300]}"
+# S7:历史遗留重复函数已删除(L34/132 重复、L52/143 重复)

@@ -89,28 +89,33 @@
     return;
   }
 
-  results.innerHTML = items.map(function(it) {
+  function renderCard(it, showUpdatedAt) {
     const macros = [
       { label: '热量', value: (it.calories != null ? it.calories.toFixed(0) : '—') + ' 卡' },
       { label: '蛋白', value: (it.protein != null ? it.protein.toFixed(1) : '—') + ' g' },
       { label: '脂肪', value: (it.fat != null ? it.fat.toFixed(1) : '—') + ' g' },
       { label: '碳水', value: (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + ' g' },
     ];
+    let source = '来源:' + escape(it.source || '未知');
+    if (showUpdatedAt && it.updated_at) source += ' · 更新于 ' + it.updated_at;
     return '<div class="food-card">'
       + '<div class="name">' + escape(it.product_name) + '</div>'
       + '<div class="brand">' + escape(it.brand || '—') + '</div>'
       + '<div class="macros">' + macros.map(function(m) {
           return '<div class="macro"><div class="m-label">' + m.label + '</div><div class="m-value">' + m.value + '</div></div>';
         }).join('') + '</div>'
-      + '<div class="source">来源:' + escape(it.source || '未知') + (it.updated_at ? ' · 更新于 ' + it.updated_at : '') + '</div>'
+      + '<div class="source">' + source + '</div>'
       + '</div>';
-  }).join('');
+  }
 
   function escape(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+
+  // 初始渲染(显示 updated_at)
+  results.innerHTML = items.map(function(it) { return renderCard(it, true); }).join('');
 
   // 客户端实时过滤(查询框输入)
   const searchInput = document.getElementById('searchInput');
@@ -121,24 +126,10 @@
       return it.product_name.toLowerCase().includes(q);
     });
     document.getElementById('matchCount').textContent = filtered.length + ' 个匹配';
+    // 过滤时不显示 updated_at(实时场景,源信息冗余)
     results.innerHTML = filtered.length === 0
       ? '<div class="empty">实时过滤无匹配。</div>'
-      : filtered.map(function(it) {
-          const macros = [
-            { label: '热量', value: (it.calories != null ? it.calories.toFixed(0) : '—') + ' 卡' },
-            { label: '蛋白', value: (it.protein != null ? it.protein.toFixed(1) : '—') + ' g' },
-            { label: '脂肪', value: (it.fat != null ? it.fat.toFixed(1) : '—') + ' g' },
-            { label: '碳水', value: (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + ' g' },
-          ];
-          return '<div class="food-card">'
-            + '<div class="name">' + escape(it.product_name) + '</div>'
-            + '<div class="brand">' + escape(it.brand || '—') + '</div>'
-            + '<div class="macros">' + macros.map(function(m) {
-                return '<div class="macro"><div class="m-label">' + m.label + '</div><div class="m-value">' + m.value + '</div></div>';
-              }).join('') + '</div>'
-            + '<div class="source">来源:' + escape(it.source || '未知') + '</div>'
-            + '</div>';
-        }).join('');
+      : filtered.map(function(it) { return renderCard(it, false); }).join('');
   });
 })();
 </script>

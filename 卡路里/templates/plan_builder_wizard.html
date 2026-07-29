@@ -857,7 +857,7 @@ function renderWeekDetail(idx) {
               );
             }).join('');
             const movementTable = movements.length > 0
-              ? '<table class="movement-table"><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>组休</th><th></th></tr></thead><tbody>' + movementRows + '</tbody></table>'
+              ? '<div class="table-wrap"><table class="movement-table"><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>组休</th><th></th></tr></thead><tbody>' + movementRows + '</tbody></table></div>'
               : '';
             return (
               '<div class="session-card">' +

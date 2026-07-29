@@ -209,7 +209,7 @@ function renderWeeks(weeks) {
 
         const movements = sess.movements || [];
         if (movements.length) {
-          html += '<table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>';
+          html += '<div class="table-wrap"><table><thead><tr><th>动作</th><th>部位</th><th>组数 × 次数</th><th>重量</th><th>休息</th></tr></thead><tbody>';
           movements.forEach(m => {
             const name = m.name || '';
             const part = m.part || '';
@@ -232,7 +232,7 @@ function renderWeeks(weeks) {
             html += `<td>${escapeHTML(rest)}</td>`;
             html += '</tr>';
           });
-          html += '</tbody></table>';
+          html += '</tbody></table></div>';
         } else {
           html += '<p style="color:var(--ink3);padding:12px 0">暂无动作</p>';
         }

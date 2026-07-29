@@ -45,6 +45,17 @@
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .copy-row { display:flex; gap:8px; align-items:center; }
   .copy-row .btn { flex-shrink:0; }
+  /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .section { padding:16px 18px; border-radius:12px; }
+    .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+    .food-card .macros { grid-template-columns:1fr 1fr; }
+  }
+  /* table 在小屏内滚 */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
 </style>
 </head>
 <body>

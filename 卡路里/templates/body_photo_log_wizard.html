@@ -81,6 +81,17 @@
   .file-list { margin-top: 12px; font-size: 13px; color: var(--fg); }
   .file-list .file-item { padding: 4px 0; display: flex; align-items: center; gap: 8px; }
   .file-list .file-item .remove { color: var(--red); cursor: pointer; }
+  /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .section { padding:16px 18px; border-radius:12px; }
+    .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+    .food-card .macros { grid-template-columns:1fr 1fr; }
+  }
+  /* table 在小屏内滚 */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
 </style>
 </head>
 <body>

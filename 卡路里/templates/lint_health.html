@@ -55,6 +55,17 @@
   .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .section { padding:16px 18px; border-radius:12px; }
+    .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+    .food-card .macros { grid-template-columns:1fr 1fr; }
+  }
+  /* table 在小屏内滚 */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
 </style>
 </head>
 <body>

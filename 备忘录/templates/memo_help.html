@@ -72,6 +72,7 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 
 @media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0;padding:12px 12px 12px 14px}.toast.show{transform:translateX(0) scale(1)}.toast-icon{font-size:20px}.toast-title{font-size:12.5px}.toast-detail{font-size:11px}body{padding-bottom:env(safe-area-inset-bottom,0)}}
 </style>
+<!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
@@ -229,15 +230,9 @@ function copyPrompt(s,btn){
     var orig=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');
     setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
   };
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(after).catch(function(){fallbackCopy(text,btn);after()});
-  }else{fallbackCopy(text,btn);after()}
+  safeWriteText(text).then(function(ok){if(ok){after()}else{fallbackCopy(text);after()}})
 }
-function fallbackCopy(text,btn){
-  var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
-  try{document.execCommand('copy')}catch(e){}
-  document.body.removeChild(ta);
-}
+
 
 // ===== Toast 控制器(学习卡路里 help_center · iOS 通知风格) =====
 var toastEl=document.getElementById('toast');

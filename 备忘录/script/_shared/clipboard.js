@@ -1,6 +1,6 @@
 /* 共享 clipboard helper · 单一真相源
  *
- * 由 injector.py 在 render 阶段 inline 注入到所有 templates/ 模板(占位符
+ * 由 injector.py 在 render 阶段 inline 注入到所有结果型 HTML 模板(占位符
  * <!--INJECT-SHARED-->)。任何模板都不应再 inline 重复实现 fallbackCopy /
  * copyTimer · 修改只改此文件即可全局生效。
  *

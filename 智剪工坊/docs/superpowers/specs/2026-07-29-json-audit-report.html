@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智剪工坊 · JSON 对照报告(HTML 实际输出 vs spec)</title>
+<style>
+  :root {
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --label: #1C1C1E;
+    --secondary: #8E8E93;
+    --tertiary: #C7C7CC;
+    --border: #E5E5EA;
+    --blue: #007AFF;
+    --red: #FF3B30;
+    --orange: #FF9500;
+    --green: #34C759;
+    --gray-fill: #EFEFF4;
+    --red-bg: rgba(255,59,48,0.08);
+    --orange-bg: rgba(255,149,0,0.08);
+    --green-bg: rgba(52,199,89,0.08);
+    --blue-bg: rgba(0,122,255,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--label);
+    line-height: 1.65;
+    padding: 32px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .meta { font-size: 13px; color: var(--secondary); line-height: 1.7; }
+  .meta strong { color: var(--label); font-weight: 500; }
+  .lead {
+    background: var(--card); padding: 16px 20px; border-radius: 14px;
+    margin-bottom: 24px; font-size: 14px; color: var(--label);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    border-left: 3px solid var(--blue);
+  }
+  .lead strong { color: var(--blue); }
+  section {
+    background: var(--card); padding: 22px 24px; border-radius: 14px;
+    margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  h2 { font-size: 19px; font-weight: 600; margin-bottom: 14px; letter-spacing: -0.3px;
+       display: flex; align-items: center; gap: 10px; }
+  h2 .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 10px; font-family: ui-monospace, monospace; }
+  h2 .badge.ok { background: var(--green); color: #fff; }
+  h2 .badge.warn { background: var(--orange); color: #fff; }
+  h2 .badge.bad { background: var(--red); color: #fff; }
+  h3 { font-size: 15px; font-weight: 600; margin: 18px 0 8px; color: var(--label); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 4px; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--gray-fill); color: var(--secondary); font-weight: 500; font-size: 12px; }
+  td code { background: var(--gray-fill); padding: 1px 5px; border-radius: 3px; font-family: ui-monospace, SF Mono, monospace; font-size: 12px; }
+  .status { font-weight: 600; font-size: 12px; white-space: nowrap; }
+  .status.ok { color: var(--green); }
+  .status.warn { color: var(--orange); }
+  .status.bad { color: var(--red); }
+  .status.low { color: var(--secondary); }
+  .finding {
+    border-radius: 10px; padding: 12px 14px; margin: 10px 0;
+    font-size: 13px; line-height: 1.6;
+  }
+  .finding.red { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .finding.orange { background: var(--orange-bg); border-left: 3px solid var(--orange); }
+  .finding.green { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .finding.blue { background: var(--blue-bg); border-left: 3px solid var(--blue); }
+  .finding .tag { font-size: 11px; font-weight: 600; font-family: ui-monospace, monospace; margin-right: 6px; }
+  .finding .tag.red { color: var(--red); }
+  .finding .tag.orange { color: var(--orange); }
+  .finding .tag.green { color: var(--green); }
+  .finding .tag.blue { color: var(--blue); }
+  pre {
+    background: #1d1d1f; color: #f5f5f7; padding: 14px 16px;
+    border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.55;
+    margin: 8px 0;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; }
+  .summary-table th, .summary-table td { font-size: 12.5px; }
+  .summary-table .sev { font-weight: 600; }
+  .summary-table .sev.red { color: var(--red); }
+  .summary-table .sev.orange { color: var(--orange); }
+  .summary-table .sev.green { color: var(--secondary); }
+  .check { color: var(--green); font-weight: 600; }
+  .cross { color: var(--red); font-weight: 600; }
+  .q {
+    background: linear-gradient(135deg, rgba(0,122,255,0.06), rgba(175,82,222,0.06));
+    border: 1px solid rgba(0,122,255,0.2); border-radius: 14px;
+    padding: 20px 24px; margin-top: 24px;
+  }
+  .q h2 { margin-bottom: 10px; }
+  .q .options { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .q .opt {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 13px; cursor: default; transition: border-color 0.15s;
+  }
+  .q .opt:hover { border-color: var(--blue); }
+  .q .opt .lbl { font-weight: 600; color: var(--blue); margin-right: 8px; }
+  .q .opt.rec { border-color: var(--green); background: var(--green-bg); }
+  .q .opt.rec .lbl { color: var(--green); }
+  footer { text-align: center; color: var(--tertiary); font-size: 12px; margin-top: 32px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>智剪工坊 · JSON 对照报告</h1>
+  <div class="meta">
+    <strong>对照双方:</strong> HTML 实际生成的 JSON(<code>collectFormData</code> / <code>collectVideoOpsForVideo</code> / <code>validateIntent</code> / <code>SegmentState</code>) ↔ spec <code>docs/superpowers/specs/2026-07-25-video-time-segment-model.html</code> §4/§5/§7/§12<br>
+    <strong>调查方法:</strong> 从 HTML 表单上能填的字段出发,逐个追踪它进没进 JSON、进了哪个字段、是否落在 spec 规定的位置<br>
+    <strong>生成时间:</strong> 2026-07-29 · grill-with-docs 第一性原理阶段
+  </div>
+</header>
+
+<div class="lead">
+  <strong>核心结论:</strong>HTML 的 JSON 输出是 <strong>v3.0 外壳 + v1.x 内核的混合体</strong>。外壳(<code>video_ops</code> / <code>time_segments</code> 双字段)对齐 spec,但内核——<code>video_ops</code> 里塞了 5 个该删的 op、段 ops 命名与校验白名单打架、<code>schema_version</code> 没写——这些是真正"不对齐规范"的地方。<strong>没有信息遗漏</strong>(HTML 上所有可填字段都进了 JSON),问题全是<strong>位置 / 命名 / 存在性</strong>问题。
+</div>
+
+<!-- ===================== 一、顶层结构 ===================== -->
+<section>
+  <h2>一、顶层结构 <span class="badge warn">部分对齐</span></h2>
+  <table>
+    <thead><tr><th>spec §4 字段</th><th>HTML 实际输出</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>_meta</code></td><td>4867:<code>{tool, version:'0.7', revision, created, updated, workspace, history}</code></td><td><span class="status warn">⚠️ 缺 <code>schema_version</code></span></td></tr>
+      <tr><td><code>project</code></td><td>2022-2031:<code>name</code> / <code>title</code> / <code>overall_intent</code> via <code>data-path</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>output</code></td><td>2036-2050:<code>aspect_ratio</code> / <code>aspect_ratio_custom</code> / <code>aspect_handling</code></td><td><span class="status warn">⚠️ 多 <code>aspect_ratio_custom</code></span></td></tr>
+      <tr><td><code>cover</code></td><td>2069-2077:<code>type</code> / <code>prompt</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>ending</code></td><td>2087-2097:<code>type</code> / <code>prompt</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>sequences</code></td><td>4881-4938:从 <code>data-seq-next</code>/<code>data-seq-trans</code>/<code>data-seq-dur</code> 重建</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>videos</code></td><td>4941-4962</td><td><span class="status ok">✅ 外壳对齐</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">发现 1 · 遗漏</span>
+    <code>_meta.schema_version</code> 在 <code>collectFormData</code> 里<strong>根本没写</strong>。只有 <code>migrateLegacyIntent</code>(5147)在迁移旧文件时才设。这意味着:<strong>新版 HTML 保存出的 JSON,<code>_meta</code> 里没有 <code>schema_version</code> 字段</strong>——spec §4 明确要求 <code>"schema_version": "3.0"</code>。下游 Python 想靠它判版本会落空。
+  </div>
+</section>
+
+<!-- ===================== 二、videos[] 顶层 ===================== -->
+<section>
+  <h2>二、<code>videos[]</code> 顶层字段 <span class="badge ok">部分对齐</span></h2>
+  <table>
+    <thead><tr><th>spec §4 字段</th><th>HTML 实际输出</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>file</code> / <code>index</code> / <code>duration_sec</code> / <code>exclude</code></td><td>4942-4943</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>summary</code> / <code>intent</code></td><td>4944-4947 via <code>data-video</code></td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>video_ops</code>(对象)</td><td>4950 调 <code>collectVideoOpsForVideo</code></td><td><span class="status ok">✅ 外壳</span></td></tr>
+      <tr><td><code>time_segments</code>(数组)</td><td>4954-4960 从 <code>SegmentState</code> 读</td><td><span class="status ok">✅ 外壳</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding green">
+    <span class="tag green">发现 2 · 对齐</span>
+    <code>voice</code> / <code>voice_note</code> / <code>notes</code> 三个字段。spec §5 迁移表明确说它们要从 video 顶层移到 <code>video_ops</code> 下。HTML 实际:<code>collectVideoOpsForVideo</code>(4972-4977)确实把它们收进 <code>video_ops.voice</code> / <code>video_ops.voice_note</code> / <code>video_ops.notes</code>——✅ 对齐。HTML 表单 <code>data-video</code> attribute 名仍叫 <code>${i}.voice</code> / <code>${i}.notes</code>(2785/2702),这只是 DOM 命名,不影响 JSON,可忽略。
+  </div>
+</section>
+
+<!-- ===================== 三、video_ops 内容 ===================== -->
+<section>
+  <h2>三、<code>video_ops</code> 内容 <span class="badge bad">严重偏移</span></h2>
+  <p style="font-size:13px;color:var(--secondary);margin-bottom:12px;">
+    spec §5 字段对照表规定:<strong><code>trim-head</code> / <code>trim-tail</code> / <code>cut-middle</code> / <code>pin-range</code> / <code>target-duration</code> 这 5 个 op 应当消失</strong>(由 <code>time_segments</code> 边界等价表达)。
+  </p>
+  <p style="font-size:13px;color:var(--secondary);margin-bottom:12px;">
+    但 <code>collectVideoOpsForVideo</code>(4979-4983)的 <code>legacyOps</code> 数组<strong>原封不动包含全部 22 个 op</strong>,包括这 5 个该消失的:
+  </p>
+<pre><code>const legacyOps = ['trim-head','trim-tail','cut-middle','pin-range','target-duration',
+  'speed-up','slow-down','reverse','mute','fade-in','fade-out','color',
+  'add-bgm','replace-audio','opening-text','insert-image',
+  'asr-transcribe','asr-burn','asr-speaker',
+  'audio-denoise','audio-separate','audio-diarize','voice-filler-removed'];</code></pre>
+
+  <div class="finding red">
+    <span class="tag red">发现 3 · 偏移</span>
+    用户在 HTML 上勾选 <code>trim-head</code>/<code>trim-tail</code>/<code>cut-middle</code>/<code>pin-range</code>/<code>target-duration</code>,这些 op 仍会被序列化进 <code>video_ops</code>——<strong>直接违反 spec §5/§12</strong>。spec §12 明确写「不引入 cut-middle/pin-range/trim-head/trim-tail(被新结构替代)」。
+  </div>
+
+  <div class="finding orange">
+    <span class="tag orange">发现 4 · 偏移 + spec 自身歧义</span>
+    <code>fade-in</code>/<code>fade-out</code>。spec §5 说「视频首尾淡入淡出归 <code>video_ops.fade-in/out</code>(整段型)」——这两个<strong>该留</strong>在 video_ops。HTML 实际留在 video_ops ✅。但 spec §7 校验规则 <code>validSegmentOps</code> 里<strong>也列了</strong> <code>fade-in/out</code>?不,§7 写的是 <code>['mute','speed-up','slow-down','reverse','color-grade']</code>——<strong>spec 自相矛盾</strong>(§5 留 fade-in/out 在 video_ops,但 §7 没把它们列进段内合法 op,也没列进 video_ops 合法清单,因为 §7 压根没校验 video_ops 的 op 名)。这点 spec 自身有歧义。
+  </div>
+
+  <div class="finding red">
+    <span class="tag red">发现 5 · 偏移</span>
+    <code>color</code> vs <code>color-grade</code>。<strong>三处命名不统一</strong>:spec §4 video_ops 用 <code>color</code>;spec §7 段内合法 op 用 <code>color-grade</code>;HTML <code>collectVideoOpsForVideo</code>(4994-4995)用 <code>color</code>+<code>style</code>;<code>SEGMENT_OPS_SCHEMA</code>(5248)段内用 <code>color</code>+<code>preset</code>。
+  </div>
+
+  <div class="finding orange">
+    <span class="tag orange">发现 6 · 偏移</span>
+    <code>voice-filler-removed</code> vs <code>voice_filler_removed</code>。HTML <code>legacyOps</code>(4983)用连字符 <code>voice-filler-removed</code>;<code>SEGMENT_OPS_SCHEMA</code>(5255)用下划线 <code>voice_filler_removed</code>。<strong>段内与整段 op 同一概念两种拼写</strong>。
+  </div>
+
+  <div class="finding orange">
+    <span class="tag orange">发现 7 · 偏移</span>
+    <code>opening-text</code> / <code>insert-image</code>。spec §5 标注「待实现」+ §12「不引入 opening-text/insert-image 的 event 表达(留待 Phase H)」。但 HTML <code>legacyOps</code>(4981)<strong>已包含并实现</strong>(5004-5017 收集 <code>text</code>/<code>duration</code>/<code>file</code>/<code>at</code>)。HTML 跑在了 spec 前面。
+  </div>
+</section>
+
+<!-- ===================== 四、time_segments ===================== -->
+<section>
+  <h2>四、<code>time_segments[]</code> 内容 <span class="badge warn">基本对齐</span></h2>
+  <table>
+    <thead><tr><th>spec §4 字段</th><th>HTML 实际输出</th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code> / <code>label</code> / <code>start_sec</code> / <code>end_sec</code></td><td>4955-4957</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>ops</code>(可选对象)</td><td>4958 仅在非空时写</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td><code>note</code>(可选)</td><td>4959</td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding green">
+    <span class="tag green">发现 8 · 对齐</span>
+    <code>excluded</code> 段的处理。<code>SegmentState.delete</code>(5208-5212)把段标记为 <code>seg.excluded = true</code> 而非移除;但 <code>collectFormData</code>(4954)<code>SegmentState.getAll(i).segments.map(...)</code> <strong>构造的是新对象</strong>,只挑了 <code>id/label/start_sec/end_sec/ops/note</code>,<strong>没带 <code>excluded</code></strong>。所以删除段<strong>确实不进 JSON</strong> ✅(spec §6.2 阶段 G:「已删段不入 JSON」)。内存里 <code>SegmentState</code> 仍保留它们用于"恢复"——这是对的。
+  </div>
+
+  <div class="finding red">
+    <span class="tag red">发现 9 · 偏移 / 疑似 bug</span>
+    <code>user</code> op 拖留。<code>SegmentState.addOrSplit</code>(5190)在拆段时给 mid 段注入 <code>ops: { user: { on: true, note: '' } }</code>。这个 <code>user</code> op <strong>spec 里不存在</strong>(§7 <code>validSegmentOps</code> 不含 <code>user</code>),但 <code>validateIntent</code>(5099-5105)会校验段内 op 合法性——<code>user</code> 不在白名单,<strong>每次拆段后保存都会触发校验错误</strong>。这是个 bug:拆段产生的标记 op 污染了输出 schema。
+  </div>
+
+  <div class="finding green">
+    <span class="tag green">发现 10 · 死代码(无害)</span>
+    <code>collectTimeSegmentsForVideo</code>(5036-5046)定义了但<strong>无人调用</strong>。<code>collectFormData</code> 直接用 <code>SegmentState.getAll</code>。无害,但说明重构留了尾巴,建议清理。
+  </div>
+</section>
+
+<!-- ===================== 五、校验规则 ===================== -->
+<section>
+  <h2>五、校验规则(spec §7 vs HTML <code>validateIntent</code>) <span class="badge warn">有矛盾</span></h2>
+  <table>
+    <thead><tr><th>spec §7 规则</th><th>HTML <code>validateIntent</code></th><th>状态</th></tr></thead>
+    <tbody>
+      <tr><td>规则1:id 唯一</td><td>5083-5087</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>规则2:区间合法</td><td>5088-5092</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>规则3:段不重叠</td><td>5093-5098</td><td><span class="status ok">✅</span></td></tr>
+      <tr><td>规则4:段内 op 合法<br>(<code>mute</code>/<code>speed-up</code>/<code>slow-down</code>/<code>reverse</code>/<code>color-grade</code>)</td><td>5099-5110,<strong>白名单 <code>['mute','speed-up','slow-down','reverse','color-grade']</code></strong></td><td><span class="status ok">✅ 与 spec §7 一致</span></td></tr>
+      <tr><td>规则5:voice.mode 合法</td><td>5111-5116</td><td><span class="status ok">✅</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding red">
+    <span class="tag red">发现 11 · 矛盾(发现 5 的后果)</span>
+    校验白名单用 <code>color-grade</code>,但 <code>SEGMENT_OPS_SCHEMA</code>(5248)段面板实际能配置的是 <code>color</code>(不是 <code>color-grade</code>)。用户在段面板加"调色"→ 写入 <code>seg.ops.color</code> → 校验时 <code>color</code> 不在白名单 → <strong>校验报错</strong>。这是发现 5 的后果:命名三处不统一导致校验误杀。
+  </div>
+
+  <div class="finding orange">
+    <span class="tag orange">发现 12 · 遗漏</span>
+    <code>validateIntent</code> <strong>不校验 <code>video_ops</code> 里的 op 名</strong>。spec §7 也没要求,但 spec §12 列了"不引入"清单。当前 HTML 会让 <code>trim-head</code>/<code>cut-middle</code> 等违规 op 静默通过。
+  </div>
+</section>
+
+<!-- ===================== 六、遗漏排查 ===================== -->
+<section>
+  <h2>六、HTML 表单上能填、但 JSON 里没收的信息(遗漏排查) <span class="badge ok">无遗漏</span></h2>
+  <table>
+    <thead><tr><th>HTML 字段</th><th>进 JSON?</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td><code>project.name</code>/<code>title</code>/<code>overall_intent</code></td><td><span class="check">✅</span> via data-path 4877</td><td></td></tr>
+      <tr><td><code>output.aspect_ratio</code>/<code>aspect_ratio_custom</code>/<code>aspect_handling</code></td><td><span class="check">✅</span></td><td><code>aspect_ratio_custom</code> spec 无</td></tr>
+      <tr><td><code>cover.type</code>/<code>prompt</code></td><td><span class="check">✅</span></td><td></td></tr>
+      <tr><td><code>ending.type</code>/<code>prompt</code></td><td><span class="check">✅</span></td><td></td></tr>
+      <tr><td><code>videos[].summary</code>/<code>intent</code>/<code>notes</code></td><td><span class="check">✅</span> 4944-4947</td><td>notes 进 video_ops.notes ✅</td></tr>
+      <tr><td><code>videos[].voice</code>/<code>voice_note</code></td><td><span class="check">✅</span> 4972-4975</td><td>进 video_ops ✅</td></tr>
+      <tr><td>22 个 <code>data-op</code> checkbox</td><td><span class="check">✅</span> 4984-5031</td><td><strong>含 5 个该删的 ❌</strong></td></tr>
+      <tr><td><code>data-op-val</code> 各参数</td><td><span class="check">✅</span> 4988-5027</td><td></td></tr>
+      <tr><td><code>data-op-note</code>(每个 op 的备注)</td><td><span class="check">✅</span> 5029-5030</td><td>spec §4 没显式定义 op 级 note,但不冲突</td></tr>
+      <tr><td><code>data-seq-next</code>/<code>trans</code>/<code>dur</code>/<code>title</code></td><td><span class="check">✅</span> 4881-4937</td><td></td></tr>
+      <tr><td>段 <code>label</code>/<code>ops</code>/<code>note</code></td><td><span class="check">✅</span> 5804-5861 → SegmentState → 4955</td><td></td></tr>
+      <tr><td><code>data-bgm-display</code>/<code>replace-display</code>/<code>insert-img-display</code></td><td><span class="check">✅</span> 4997-5012</td><td>文件名进 op.file</td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding green">
+    <span class="tag green">发现 13 · 无遗漏</span>
+    HTML 表单上所有可填字段都进了 JSON,<strong>没有"填了没存"的信息丢失</strong>。问题不在遗漏,而在<strong>存放位置 / 命名不对齐 spec</strong>。
+  </div>
+</section>
+
+<!-- ===================== 七、偏移清单汇总 ===================== -->
+<section>
+  <h2>七、偏移清单汇总(按严重度) <span class="badge bad">13 项</span></h2>
+  <table class="summary-table">
+    <thead><tr><th>#</th><th>严重度</th><th>偏移</th><th>位置</th></tr></thead>
+    <tbody>
+      <tr><td>3</td><td class="sev red">🔴 高</td><td>5 个该消失的 op(<code>trim-head</code>/<code>trim-tail</code>/<code>cut-middle</code>/<code>pin-range</code>/<code>target-duration</code>)仍进 <code>video_ops</code></td><td>4979-4983</td></tr>
+      <tr><td>9</td><td class="sev red">🔴 高</td><td>拆段注入的 <code>user</code> op 污染段 ops,触发校验误杀</td><td>5190</td></tr>
+      <tr><td>11 / 5</td><td class="sev red">🔴 高</td><td><code>color</code> vs <code>color-grade</code> 三处命名不统一,段面板加调色必报校验错</td><td>5248 vs 5099 vs spec §4/§7</td></tr>
+      <tr><td>1</td><td class="sev orange">🟡 中</td><td><code>_meta.schema_version</code> 新存文件不写</td><td>4867</td></tr>
+      <tr><td>6</td><td class="sev orange">🟡 中</td><td><code>voice-filler-removed</code>(连字符)vs <code>voice_filler_removed</code>(下划线)</td><td>4983 vs 5255</td></tr>
+      <tr><td>7</td><td class="sev orange">🟡 中</td><td><code>opening-text</code>/<code>insert-image</code> 已实现但 spec 标"待实现/Phase H"</td><td>4981 vs spec §12</td></tr>
+      <tr><td>4</td><td class="sev green">🟢 低</td><td>spec 自身 <code>fade-in/out</code> 归属歧义(§5 留 video_ops,§7 不校验)</td><td>spec 内部</td></tr>
+      <tr><td>10</td><td class="sev green">🟢 低</td><td><code>collectTimeSegmentsForVideo</code> 死代码</td><td>5036</td></tr>
+      <tr><td>—</td><td class="sev green">🟢 低</td><td><code>output.aspect_ratio_custom</code> spec 未定义</td><td>2045</td></tr>
+    </tbody>
+  </table>
+
+  <div class="finding blue" style="margin-top:16px;">
+    <span class="tag blue">核心结论</span>
+    <strong>没有信息遗漏</strong>,全是<strong>位置 / 命名 / 存在性</strong>问题。3 个高严重度偏移(#3 / #9 / #11)是必须先解决的——它们会让生成的 JSON 违反自家 spec,下游 Python 无法可靠解析。其余 6 个中低严重度偏移可在高优先项之后批量处理。
+  </div>
+</section>
+
+<!-- ===================== 待确认决策 ===================== -->
+<div class="q">
+  <h2>📋 待确认决策:5 个 legacy op 的处置</h2>
+  <p style="font-size:13px;color:var(--secondary);line-height:1.7;">
+    spec §5/§12 明确 <code>trim-head</code> / <code>trim-tail</code> / <code>cut-middle</code> / <code>pin-range</code> / <code>target-duration</code> 应当<strong>从 <code>video_ops</code> 消失</strong>,由 <code>time_segments</code> 的边界等价表达(例:<code>trim-head sec=5</code> → <code>time_segments[0].start_sec = 5</code>)。<br><br>
+    但 HTML 当前仍把这 5 个 op 序列化进 <code>video_ops</code>,且 HTML UI 上这 5 个 op 的 checkbox 还存在(1032-1046 图片灰显样式还引用它们),意味着用户仍能勾选。<br><br>
+    <strong>请选择处置方案:</strong>
+  </p>
+  <div class="options">
+    <div class="opt rec">
+      <span class="lbl">A · 严格删除(推荐)</span>
+      UI 上这 5 个 checkbox 也一并移除,用户只能用 timeline 框选表达"掐头/去尾/切中间/只保留"。彻底贯彻 spec 的"几何方式表达保留片段"。<code>collectVideoOpsForVideo</code> 的 <code>legacyOps</code> 剔除这 5 个;<code>migrateLegacyIntent</code> 把旧文件里的这 5 个 op 转成 <code>time_segments</code> 边界。
+    </div>
+    <div class="opt">
+      <span class="lbl">B · 保留 UI 入口,转换输出</span>
+      UI 上保留这 5 个 checkbox(老用户习惯),但保存时把它们<strong>转换</strong>成 <code>time_segments</code> 边界,<code>video_ops</code> 里不出现。UI 是糖,JSON 是规范。
+    </div>
+    <div class="opt">
+      <span class="lbl">C · 暂缓</span>
+      这 5 个 op 先不动(保留在 video_ops),本次只处理别的偏移。代价是 JSON 仍不符合 spec,下游 Python 还得兼容它们。
+    </div>
+  </div>
+</div>
+
+<footer>
+  智剪工坊 · grill-with-docs · 第一性原理对照报告 · 2026-07-29
+</footer>
+
+</div>
+</body>
+</html>

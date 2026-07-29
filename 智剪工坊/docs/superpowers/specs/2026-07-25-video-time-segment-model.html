@@ -103,11 +103,19 @@ blockquote {
     "overall_intent": "&lt;总调性描述,可选&gt;"<br>
   },<br>
   "output": {<br>
-    "aspect_ratio": "&lt;如 9:16 或 16:9,可选&gt;",<br>
+    "aspect_ratio": "&lt;如 9:16 或 16:9 或 custom,可选&gt;",<br>
+    "aspect_ratio_custom": "&lt;W:H 格式;仅 aspect_ratio='custom' 时必填&gt;",<br>
     "aspect_handling": "&lt;aspect-fit | aspect-fill,可选&gt;"<br>
   },<br>
-  "cover":  { "type": "ai|text|image", "prompt": "&lt;封面描述&gt;" },<br>
-  "ending": { "type": "fade|freeze|text|&lt;6 种之一&gt;", "prompt": "&lt;结尾描述&gt;" },</p>
+  "cover":  {<br>
+    "type": "ai | text | image",<br>
+    "prompt": "&lt;封面描述&gt;",<br>
+    "images": ["&lt;路径&gt;"]    // 仅 type="image"(多图拼版)时填写<br>
+  },<br>
+  "ending": {<br>
+    "template": "&lt;必填:选中的效果模板完整描述文本&gt;",<br>
+    "prompt": "&lt;可选:用户的额外补充说明&gt;"<br>
+  },</p>
 <p>  // ── 视频间拼接顺序 ──<br>
   "sequences": [<br>
     {<br>

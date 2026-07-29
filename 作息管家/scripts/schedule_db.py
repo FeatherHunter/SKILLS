@@ -159,9 +159,12 @@ def init_db():
         )
     ''')
 
-    # 旧版日程计划表（每天24小时，每小时一个计划描述，2026-06-29 已被事件型 schema 取代）
+    # 旧版日程计划表(每天24小时,每小时一个计划描述,2026-06-29 已被事件型 schema 取代)
+    # 保留以兼容历史数据,但 init_db 立即调用 _ensure_new_plans_schema 创建新版表
+    # (修复:FAT 2026-07-29 暴露,只创建旧表会导致新版 CRUD 触发 _ensure_new_plans_schema
+    # 时 CREATE TABLE IF NOT EXISTS 跳过整个 CREATE,新表仍缺 time_start 等列)
     c.execute('''
-        CREATE TABLE IF NOT EXISTS schedule_plans (
+        CREATE TABLE IF NOT EXISTS schedule_plans_legacy_2026_06_29 (
             date TEXT PRIMARY KEY,
             hour_0_planned TEXT,
             hour_1_planned TEXT,
@@ -191,6 +194,16 @@ def init_db():
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+
+    # 迁移:把旧版 schedule_plans 改名为 schedule_plans_legacy_2026_06_29(仅首次)
+    try:
+        c.execute("ALTER TABLE schedule_plans RENAME TO schedule_plans_legacy_2026_06_29")
+    except sqlite3.OperationalError:
+        # 表不存在或已是新名,跳过
+        pass
+
+    # 立即创建新版 schedule_plans(time_start / id / completion 等列)
+    _ensure_new_plans_schema(conn)
 
     conn.commit()
     conn.close()

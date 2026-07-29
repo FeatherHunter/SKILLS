@@ -1347,13 +1347,18 @@ def cmd_search_plan_event(args):
 
 def cmd_ensure_plan_event(args):
     """
-    缺则建：查日期+时段是否存在，不存在则 INSERT
+    缺则建:查日期+时段是否存在,不存在则 INSERT
     用法:
       python schedule_cli.py ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y]
+      或:
+      python schedule_cli.py ensure-plan-event --date <日期> --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y]
     输出 JSON: {"action": "found"/"created", "id": N}
+
+    第一性:既支持位置参数 (date 作为第一个非 flag 参数) 也支持 --date flag,
+    否则用户两种用法都会撞到 "日期格式非法:'--date'"(2026-07-29 FAT 暴露)。
     """
     import json
-    title = notes = category = time_start = time_end = None
+    title = notes = category = time_start = time_end = date = None
     clean_args = []
     i = 0
     while i < len(args):
@@ -1367,13 +1372,18 @@ def cmd_ensure_plan_event(args):
             notes = args[i + 1]; i += 2
         elif args[i] == "--category" and i + 1 < len(args):
             category = args[i + 1]; i += 2
+        elif args[i] == "--date" and i + 1 < len(args):
+            date = args[i + 1]; i += 2  # 2026-07-29 修复:--date flag 支持
         else:
             clean_args.append(args[i]); i += 1
-    if not clean_args or not title or not time_start or not time_end:
-        print(json.dumps({"error": "用法: ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题>"}, ensure_ascii=False))
+    if not date and clean_args:
+        # 位置参数回退(兼容原 CLI 用法)
+        date = clean_args[0]
+    if not date or not title or not time_start or not time_end:
+        print(json.dumps({"error": "用法: ensure-plan-event <日期> --time-start HH:MM --time-end HH:MM --title <标题> [--notes X] [--category Y] [--date YYYY-MM-DD]"}, ensure_ascii=False))
         return
     try:
-        date = _normalize_date(clean_args[0])
+        date = _normalize_date(date)
     except ValueError as e:
         print(json.dumps({"error": str(e)}, ensure_ascii=False))
         return

@@ -11,8 +11,9 @@ description: >
   音频降噪、降噪、噪声处理、
   声源分离、提取人声、人声分离、
   说话人分离、区分说话人、多人对话、谁说了什么。
-  包含 30 个原子脚本 + 主体流程(阶段 0-5:项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾)。
-  底层:ffmpeg + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
+包含 30 个原子脚本 + 主体流程(阶段 0-5:项目初始化 / 意图对齐 / 粗加工 / 模板 / 收尾)。
+   底层:ffmpeg + OpenCV + mediapipe + mmx matrix MCP(免费 AI 能力)。
+   协议层:intent.json v3.0(D1-D7 定稿)→ `references/intent_v3.schema.json`(强制校验)+ `references/AI路由表-意图JSON字段枚举.md`(AI 必读)。AI 加载后必须读路由表。
 triggers:
   - 剪辑
   - 剪切
@@ -644,7 +645,7 @@ venv 只隔离 Python 包,**不隔离模型** - 这样多个 skill 共享同一�
 | `references/审查-用户交互循环.md` | 粗加工审查 + 精加工审查协议(v1.12 新)| AI 进行审查时 |
 | `references/二次加工-复用工作流.md` | 粗加工备份 + 新会话复用(v1.12 新)| 粗加工完成时 + 新会话检测时 |
 | `references/电影感剪辑-变速倒放多机位.md` | 推镜头/慢动作/倒放 | 路由命中cinematic时 |
-| `references/精剪-剪头剪尾保留段切中间.md` | pin-range/cut-middle多段 | 路由命中cut时 |
+| `references/精剪-剪头剪尾保留段切中间.md` | time_segments 多段保留(D7 后取代 pin-range/cut-middle) | 路由命中 cut/trim 时 |
 | `references/调色预设-18种预设LUT风格迁移.md` | 13种color preset | 路由命中color时 |
 | `references/图片转视频-静态图KenBurns效果.md` | image_to_video+KenBurns | 路由命中photo时 |
 | `references/字幕文字-Whisper烧字幕片头变声.md` | 字幕/文字叠加/opening-text + **Whisper 转录 + ASR 链路** | 路由命中 text / asr / whisper / 语音转文字 时 |
@@ -921,7 +922,7 @@ output_path = f"{workspace}/成片/{slugify(project.title)}.mp4"
 
 ### 2. **per-video 音频同步是必须, 不是可选**
 
-`trim` / `pin-range` / `cut-middle` 后视频流 `setpts=PTS-STARTPTS` 归零了 PTS, **但音频流原始 PTS 范围未归零, 音画不同步**。必须同步 trim 音频并 `asetpts=PTS-STARTPTS`。
+任何 trim 类操作(包括 v3.0 的 `time_segments` 边界 / 段内 `ops.mute` / `ops.speed-up` 等)后,视频流 `setpts=PTS-STARTPTS` 归零了 PTS,**但音频流原始 PTS 范围未归零, 音画不同步**。必须同步 trim 音频并 `asetpts=PTS-STARTPTS`。
 
 ✅ **已在 `scripts/ai/fillers.py cut_video` 第 262 行实现**(`asetpts=PTS-STARTPTS`)。
    其他 trim 工具仍需注意 audio 同步。
@@ -930,24 +931,37 @@ output_path = f"{workspace}/成片/{slugify(project.title)}.mp4"
 
 `process_video` 末尾自动调 `video_normalize`, 输出统一 30fps / yuv420p / aac 44100 stereo。
 
-### 4. **ending.type 路由**(v1.3 修订, v1.10 扩展)
+### 4. **ending 文本路由**(v3.0 重构 · 2026-07-29)
+
+> **不再有 `ending.type` enum**。`ending` 字段由两个文本字段构成:
+> - `ending.template`(**必填**)—— HTML 选中的效果模板完整描述文本(人话)
+> - `ending.prompt`(**可选**)—— 用户补充说明
+>
+> **AI 路由**:读 `ending.template`,按 `references/AI路由表-意图JSON字段枚举.md §3 ending 文本路由` 把模板文本解析为执行步骤,**不直接复制模板到视频**。
+
+| template 含... | 推荐 CLI |
+|---|---|
+| 「淡出」「渐弱」「BGM 渐弱」 | `video_fade.py --fade-out N` + `audio/mix.py --bgm-fade-out` |
+| 「定格」「末帧停留」 | `video_freeze.py --freeze N` |
+| 「切黑」「黑屏」 | `video_freeze.py --padding-mode black` |
+| 「烧字」「字幕打」「文字停留」 | `asr/burn_subtitle.py` 或 `video_opening.py add` |
+| 「下期」「明天见」「预告」 | `video_opening.py add`(黑屏源 + 文字) |
+| 「倒计时」 | 多段 `video_opening.py add`(数字 5-4-3-2-1) |
+| 「口播」「声音说」 | `audio/mix.py`(叠加口播音频层) |
+| 「BGM 渐弱 + 黑屏 + 烧字」 | 串联上述多个 CLI |
+
+反例(AI 必避):
+- ❌ 直接把 `ending.template` 文本贴到视频(踩转义陷阱)
+- ❌ 看到 `ending.type` 字段(已不存在)
+- ❌ 手写 ffmpeg drawtext(用 `video_opening.py add` 替代)
+
+### 5. **cover.type 路由**(v3.0 修订 · 2026-07-29)
 
 | 值 | 路由 | 备注 |
 |---|---|---|
-| `fade` | `video_fade.py --fade-out N` | 视频结尾淡出 |
-| `freeze` | `video_freeze.py --freeze N --padding-mode {clone\|black}` | 最后一帧定格 |
-| `next-day` | `video_opening.py add` + 黑屏源 | 黑屏 + 文字 |
-| `next-episode-promo` | `video_opening.py add` + 黑屏源 | 下期预告(黑屏 + 预告文字) |
-| `next-week` | 同 `next-episode-promo` | 下周预告 |
-| `text` | `asr/burn_subtitle.py` + srt | 烧结尾文字 |
-
-### 5. **cover.type 路由**(v1.20 更新)
-
-| 值 | 路由 | 备注 |
-|---|---|---|
-| `ai`(推荐)| `ai_cover.py` | 按 cover.prompt AI 生图 |
-| `text` | `ai_cover.py --text-only` | 纯文字封面 |
-| `image` | **`cover_compose/`** (v1.20 新增) | 多图拼版 — 见 `references/封面合成-多图拼版PIL.md` |
+| `ai`(推荐)| `scripts/ai/cover.py` | 按 `cover.prompt` AI 生图。详见 `references/AI封面-生图叠字两步法.md` |
+| `text` | `scripts/ai/cover.py --text-only` | 纯文字封面 |
+| `image` | **`scripts/ai/cover_compose/`**(v1.20 起实装) | 多图拼版。**必须**有 `cover.images[]` 字段(D1)。详见 `references/封面合成-多图拼版PIL.md` |
 
 > 💡 **多行标题旁注**：`--title-main` / `--title-sub` 只支持**1 行**文本。
 > 如果要做"4 行 DAY15 标题"这种多行排版，绕道 2 个方案：
@@ -998,11 +1012,11 @@ output_path = f"{workspace}/成片/{slugify(project.title)}.mp4"
 
 | 象限 | 内容 | 例子 |
 |---|---|---|
-| A. per-video 操作 | 每个视频单独处理 | trim-head / pin-range / cut-middle / color / fade-in / fade-out |
-| B. project-level 操作 | 项目整体 | target-length / output.bgm / output.bgm_match_mode |
+| A. per-video 操作 | 每个视频单独处理 | video_ops.speed-up / video_ops.color / video_ops.fade-in / video_ops.fade-out / time_segments[].ops.mute |
+| B. project-level 操作 | 项目整体 | output.aspect_ratio_custom / output.aspect_handling / ending.template + ending.prompt |
 | C. sequence 约束 | 视频播放顺序 | sequences[].videos / sequences[].transitions |
 | D. 模糊项 / 待澄清 | 必须问用户 | 动感是什么意思?滤镜哪个? |
-| E. AI 文本解析 | 自由文本 → 路由 | notes / overall_intent / ending.prompt |
+| E. AI 文本解析 | 自由文本 → 路由 | video_ops.notes / project.overall_intent / **ending.template + ending.prompt**(D2 ending 文本路由) |
 | F. 未覆盖字段 | 明确说不支持 | 直播 / 多轨音频 / 实时 |
 
 ---

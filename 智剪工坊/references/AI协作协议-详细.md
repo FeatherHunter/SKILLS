@@ -34,18 +34,38 @@ AI 看到模糊需求时**必须问用户**, 不擅自决定。常见模糊:
 - "加滤镜" → 问: color preset 选哪个？
 - "开头加段音乐" → 问: 什么音乐？音量多少？全段还是开头？
 
-### 3.1 ending.type 不在路由表时(v1.10 新增)
+### 3.1 ending 文本路由(2026-07-29 重写 · D2 V4)
 
-当 ending.type 是 `next-episode-promo` / `next-week` / 其他自定义类型时:
+> **不再有 `ending.type` 字段**。`ending` 由两个文本字段构成:
+> - `ending.template`(**必填**)—— HTML 选中的效果模板完整描述文本(人话)
+> - `ending.prompt`(**可选**)—— 用户补充说明
 
-1. **AI 必须 fallback 到 `next-day` 实现**(黑屏 + 文字)
-2. **AI 必须在回复里明确告知用户**:"ending.type X 不在标准路由表, 已 fallback 到 next-day"
-3. **AI 禁止手写 ffmpeg drawtext 命令**(踩转义陷阱,用 `scripts/video/opening.py add` 替代)
+**AI 处理规则**:
 
-ending.prompt 含特殊字符时:
+1. **必须读 `ending.template`**,不要读 `ending.type`(已不存在)
+2. **不要直接复制模板文本到视频**(踩转义陷阱)
+3. **必须按 §5 E 象限文本路由** 把 template 解析为执行步骤
+4. **AI 无法从 template 推断路由时**(如"自定义结尾""花式收尾") → **必须问用户** D 象限列 D 象限)
+5. **禁止手写 ffmpeg drawtext 命令** → 用 `scripts/video/opening.py add` 替代
 
+**template 语义 → CLI 映射**(详见 SKILL.md §4):
+- 「淡出 / 渐弱 / BGM 渐弱」 → `video_fade.py` + `audio/mix.py`
+- 「定格 / 末帧停留」 → `video_freeze.py`
+- 「切黑 / 黑屏」 → `video_freeze.py --padding-mode black`
+- 「烧字 / 字幕打 / 文字停留」 → `asr/burn_subtitle.py` 或 `video_opening.py add`
+- 「下期 / 明天见 / 预告」 → `video_opening.py add`
+- 「倒计时」 → 多段 `video_opening.py add`
+- 「口播 / 声音说」 → `audio/mix.py`
+- 「BGM + 黑屏 + 烧字」组合 → 串联多个 CLI
+
+**特殊字符处理**(ending.template / ending.prompt 中含):
 - `\n` → AI 必须分行渲染(用 ffmpeg textfile + 多 drawtext,或多段 drawtext)
-- emoji / 繁体 / 特殊符号 → AI 必须用 `escape_drawtext()`(opening.py 已实现)
+- emoji / 繁体 / 特殊符号 → AI 必须用 `escape_drawtext()`(`video_opening.py` 已实现)
+
+**反例**(AI 必避):
+- ❌ 直接把 `ending.template` 文本贴到视频(踩转义陷阱)
+- ❌ 看到 `ending.type` 字段(已不存在)
+- ❌ "fallback 到 next-day"(已没有 fallback 概念)
 
 ### 3.2 AI 主动决策 vs 必须问的边界(v1.10 新增)
 

@@ -52,8 +52,8 @@ blockquote {
 2. <strong>用户认知负担</strong>:用户必须先理解每个 op 的时间窗语义,才能正确选择;但用户实际想说"我要这段 / 我要这段静音 / 我要这段加速",这些应直接表达。<br>
 3. <strong>JSON 不支持"保留多段"</strong>:用户实际是"我要保留 [2,55] 但跳过 [31,33]",现行 schema 只能通过 4 个 op 组合表达,语义模糊。<br>
 4. <strong>op 数量过多</strong>:22 个 op 让 AI 工作流 switch-case 复杂度指数级上升,误用概率高。</p>
-<h2>1.5 设计决策记录(2026-07-25 多轮审查收敛)</h2>
-<p>经过 6 轮对抗式审查 + 用户多次明确选择,以下决策已定版:</p>
+<h2>1.5 设计决策记录</h2>
+<p><strong>2026-07-25 多轮审查收敛</strong>(本文档初始版本):</p>
 <p>1. <strong>JSON 字段收敛到 2 类</strong>:`video_ops`(整段) + `time_segments`(片段;带可选 `ops`)。`range_ops.events` 字段被<strong>删除</strong>(段 op 直接挂在段内)。<br>
 2. <strong>三分类被否决</strong>:`video_ops` / `video_events` / `time_segments` 三分被第二轮对抗审查推翻,因为 op 跨界难以归类。最终统一为 2 类。<br>
 3. <strong>UI 流程定版</strong>:<br>
@@ -65,6 +65,18 @@ blockquote {
    - 删除段 = 灰色 + 删除线 + 半透明<br>
    - op 信息不染色(避免视觉密度过大),<strong>hover 气泡</strong>显示完整 op 摘要<br>
 5. <strong>段 ≤ 8 时颜色最优</strong>,超过 8 时循环但不报错(用户实际操作中极少超过 8 段)。</p>
+
+<p><strong>2026-07-29 grill-with-docs 阶段决策(D1-D7)</strong>:</p>
+<ul>
+<li><strong>D1 · 5 项 JSON 字段定稿</strong>:`output.aspect_ratio_custom` 纳入 spec;`cover.type` 扩到 `ai/text/image`;`cover.images[]` 新增;`_meta.schema_version` 必填 `"3.0"`;`_meta.tool_version` 可选;`_meta.history[]` 删除。</li>
+<li><strong>D2 · ending V4 重构</strong>:抛弃 6 选 1 enum,改为 `{template, prompt}` 两文本字段。原理:枚举退守 / HTML 是 UX 不是 schema / AI 路由推迟 / 可演进 10 年。</li>
+<li><strong>D3 · 10 个 ending 模板</strong>:UX 规则——既看标题又看描述。已定稿,见 §4 ending 注释。</li>
+<li><strong>D4 · 兼容策略</strong>:只支持 v3.0,加载老 schema 报错"请删除重填",不做自动迁移。</li>
+<li><strong>D5 · superpowers 归档</strong>:`docs/superpowers/` 全部移到 `_archive/superpowers/`。</li>
+<li><strong>D6 · 重构顺序</strong>:md 文档层(Layer 2A)优先,Python 编排层(Layer 2B)跟随。</li>
+<li><strong>D7 · 5 个该消失的 op 严格删除</strong>:`trim-head` / `trim-tail` / `cut-middle` / `pin-range` / `target-duration` 从 HTML UI 与 JSON 都移除,语义改由 `time_segments` 边界表达(详见 §4 video_ops 注释)。</li>
+</ul>
+<p>详细 reasoning 见 `docs/superpowers/specs/2026-07-29-grill-with-docs-handoff.md`。</p>
 <h2>2. 设计目标</h2>
 <p>1. 让用户<strong>用几何方式表达"我要保留哪些片段"</strong> —— 拖框、命名、删段。<br>
 2. 让用户<strong>用效果方式表达"我对某区间做什么"</strong> —— 选静音/加速/反转。<br>
@@ -89,12 +101,14 @@ blockquote {
   "$schema": "智剪工坊 intent v3.0",
   "$comment": "JSON schema 由 HTML 校验;以下为示例结构",
 <p>  "_meta": {<br>
-    "tool": "智剪工坊",<br>
-    "schema_version": "3.0",<br>
-    "revision": 1,<br>
+    "tool": "智剪工坊",                  // 必须<br>
+    "schema_version": "3.0",              // 必须,字符串(JSON 协议版本)<br>
+    "tool_version": "2.135",              // 可选,字符串(HTML 编辑器产品版本)<br>
+    "revision": 1,                        // 必须,int,每次保存 +1<br>
     "created": "&lt;ISO 8601&gt;",<br>
     "updated": "&lt;ISO 8601&gt;",<br>
     "workspace": "&lt;folder name&gt;"<br>
+    // 注:旧版 history[] 数组已删除(D5)。无消费者、spec 不要求、自引用陷阱。<br>
   },</p>
 <p>  // ── 项目级配置(与视频条目平行) ──<br>
   "project": {<br>
@@ -161,6 +175,13 @@ blockquote {
         "notes":            "&lt;自由文本,视频整体备注&gt;",</p>
 <p>        // 图片专属<br>
         "duration":         { "on": true, "sec": 3 }<br>
+        // 注(D7):以下 5 个 op 已废弃,不进 JSON,语义改由 time_segments 边界表达:<br>
+        //   trim-head / trim-tail / cut-middle / pin-range / target-duration<br>
+        //   trim-head sec=N    ≡ time_segments[0].start_sec = N<br>
+        //   trim-tail sec=N    ≡ time_segments[last].end_sec = duration_sec - N<br>
+        //   cut-middle [X, Y]  ≡ 创建相邻两个 time_segments,中间不进 JSON<br>
+        //   pin-range [X, Y]   ≡ 单个 time_segments 区间<br>
+        //   target-duration N  ≡ 拼接后时长 = 各段相加(无需声明)<br>
       },</p>
 <p>      // ── 片段保留(可空 = 整段输出;多个 = 取并集) ──<br>
       //    段级 op 直接挂在 ops 里(op 是段的属性,不是独立数组)<br>
@@ -184,6 +205,8 @@ blockquote {
 </code></pre></p>
 <h2>5. 字段对照表(原 schema → 新 schema)</h2>
 <p>> 经多轮审查,<strong>`range_ops.events` 字段已被删除</strong>(段 op 直接挂 `time_segments[].ops`)。op 跨界归类困难,所以"段上的 op"和"段本身"合并存储。</p>
+<p><strong>2026-07-29 修订(D7)</strong>:以下 5 个 op <strong>不再进 JSON</strong>,HTML UI 也已删除对应 checkbox。语义由 `time_segments` 边界表达(详见 §4 video_ops 注释):<br>
+&nbsp;&nbsp;• `trim-head` / `trim-tail` / `cut-middle` / `pin-range` / `target-duration`</p>
 <p>| 原字段 | 新字段 | 迁移路径 |<br>
 |---|---|---|<br>
 | `videos[].ops` (平铺 22 op) | <strong>删除</strong> | 按语义拆分到 `video_ops` / `time_segments[].ops` / 消失 |<br>

@@ -200,16 +200,18 @@ class TestCopyFallback:
 # ============================================================
 
 class TestLintTemplatesDir:
-    def test_runs_on_real_memo_query_and_finds_L61_copyText(self):
-        """钉死决策点:memo_query.html L61 `copyText is not defined` —— lint 必须发现。"""
+    def test_runs_on_real_memo_query_and_lint_passes(self):
+        """T02 修复后:memo_query.html 不应在 lint 中报警(说明 Bug 全清)。"""
         tmpl_dir = Path(__file__).parent.parent / "templates"
         html = (tmpl_dir / "memo_query.html").read_text(encoding="utf-8")
-        findings = lint_undefined_funcs(html)
+        findings = (lint_undefined_funcs(html)
+                    + lint_escape_asymmetry(html)
+                    + lint_copy_fallback(html))
+        # 注意:memo_query.html L61 `copyText is not defined` 已被 copyReceipt 自包含修复
+        # 现不应再有 "copyText" 在未定义函数列表里
         names = [f["name"] for f in findings if f.get("name")]
-        # memo_query L61 调 copyText(receiptText()) 但全文只有 copyToClipboard / copyInfo 等
-        assert "copyText" in names, (
-            f"lint 漏报 memo_query.html 的 copyText 未定义引用 — spec 决策 B1"
-            f"未修前的契约。findings={findings}"
+        assert "copyText" not in names, (
+            f"memo_query.html 仍残留 copyText() 未定义调用 — T02 修复回潮。{findings}"
         )
 
 

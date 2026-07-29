@@ -64,9 +64,45 @@ def render_html(data):
     return template.replace('<!--INJECT-DATA-->', inject, 1)
 
 
+def mirror_to_root(help_html_path: Path, skill_dir: Path) -> Path | None:
+    """ADR-0001 · ticket 05: 把最新 HELP render 复制到 <skill_dir>/卡路里.html 根镜像
+
+    旧 镜像(若存在)先备份到 .scratch/card-html-redesign/archive/。
+    返回 mirror 路径(失败返回 None)。
+    """
+    mirror = skill_dir / '卡路里.html'
+    archive_dir = skill_dir / '.scratch' / 'card-html-redesign' / 'archive'
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    # 备份旧 mirror(若存在)
+    if mirror.exists():
+        from datetime import datetime
+        ts = datetime.now().strftime('%Y%m%d')
+        backup = archive_dir / f'卡路里_SKILL镜像_{ts}.html'
+        n = 1
+        while backup.exists():
+            backup = archive_dir / f'卡路里_SKILL镜像_{ts}_{n}.html'
+            n += 1
+        try:
+            mirror.replace(backup)
+        except Exception as e:
+            print(f'⚠ mirror 备份失败(继续覆盖): {e}', file=sys.stderr)
+
+    # 复制最新 HELP → mirror
+    try:
+        import shutil
+        shutil.copy2(str(help_html_path), str(mirror))
+        return mirror
+    except Exception as e:
+        print(f'⚠ mirror 复制失败: {e}', file=sys.stderr)
+        return None
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染卡路里唤醒词速查台 HTML')
     p.add_argument('--output', help='输出文件路径(默认走 html_path 新规范)')
+    p.add_argument('--no-mirror', action='store_true',
+                   help='跳过 ADR-0001 根镜像步骤(调试用)')
     args = p.parse_args()
 
     try:
@@ -79,6 +115,12 @@ def main():
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '卡路里_HELP')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
+
+    # ADR-0001 · ticket 05: 自动镜像到根目录 卡路里.html
+    if not args.no_mirror:
+        mirror = mirror_to_root(out_path, SKILL_DIR)
+        if mirror:
+            print(f'   镜像 → {mirror}')
 
     sm = data['data']['summary']
     print(f'✅ {out_path}')

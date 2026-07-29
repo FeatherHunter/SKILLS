@@ -20,7 +20,7 @@
 | ③ 可恢复 Recoverable | 原子事务(BEGIN → COMMIT);`.bak` 备份 + `git revert` 回滚;软删除 `is_deprecated=1`(不 DELETE) |
 | ④ 可约束 Constrainable | 硬规则 `validators.py` 早失败 + 错误信息含字段名 + 当前值 + 期望值 + 怎么修;**无 `--force` 跳过通道**;NOT NULL 严格 |
 | ⑤ 可联动 Composable | 所有 CLI 输出 `{status, data, message}` 三段式 JSON(--as_dict 标志切换);稳定字段名;飞书回执可被其他 skill 引用 |
-| ⑥ 可演进 Evolve-able | 5 层骨架(每个文件单一职责);HTML 镜像(SKILL.md ↔ 卡路里.html 同 commit);版本号 bump;schema migration(独立 .bak + git commit 备份)|
+| ⑥ 可演进 Evolve-able | 5 层骨架(每个文件单一职责);`卡路里.html` 由 `render_help_center.py` 自动产出(ADR-0001 · 退役旧 SKILL.md 镜像契约);版本号 bump;schema migration(独立 .bak + git commit 备份)|
 
 ## 8 反模式检查
 
@@ -179,7 +179,7 @@ def validate_measurement_input(args) -> None:
 - §触发词速查表 加 4 行为 2 个新 trigger 列(查 + 记/改/删归类共用 HTML 行)
 - §完整 HTML 模板清单 加 2 行(body_composition_wizard + body_measurements_wizard)
 - §核心原则 加"V1.0 §02 第 ⑤ 可联动"对照说明
-- `卡路里.html` 镜像同步
+- `卡路里.html` 由 `render_help_center.py` 自动产出(ADR-0001 · 2026-07-29 退役旧 SKILL.md 镜像契约,无需手动 sync)
 
 ### HTML Wizard(过程型 HTML + §04 单工铁律)
 

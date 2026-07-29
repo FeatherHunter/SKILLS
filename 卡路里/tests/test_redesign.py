@@ -300,3 +300,49 @@ class TestHomeDashboardRedesign:
         assert 'TDEE' in tpl and '应烧' in tpl, '缺口 KPI 缺 math breakdown'
         # 应有 size_label badge 逻辑
         assert 'size_label' in tpl, '缺口 KPI 缺 size_label badge 逻辑'
+
+
+class TestHelpMirrorRename:
+    """ticket 05 · ADR-0001 HELP render → 卡路里.html 根镜像"""
+
+    def test_render_help_center_has_no_mirror_flag(self):
+        """--no-mirror flag 存在"""
+        import subprocess, sys
+        r = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'render_help_center.py'), '--help'],
+            cwd=SKILL_DIR, capture_output=True, text=True,
+            encoding='utf-8', errors='replace', timeout=15,
+        )
+        assert r.returncode == 0
+        assert '--no-mirror' in r.stdout, 'render_help_center 缺 --no-mirror flag'
+
+    def test_mirror_to_root_function_exists(self):
+        """mirror_to_root 函数可导入"""
+        import sys; sys.path.insert(0, str(SCRIPTS_DIR))
+        from render_help_center import mirror_to_root
+        assert callable(mirror_to_root)
+
+    def test_mirror_creates_root_html(self, tmp_path):
+        """mirror_to_root 把 help html 复制到 skill_dir/卡路里.html"""
+        import sys; sys.path.insert(0, str(SCRIPTS_DIR))
+        from render_help_center import mirror_to_root
+        # 准备一个假 skill_dir(tmp_path)
+        fake_skill = tmp_path / 'fakeskill'
+        fake_skill.mkdir()
+        # 放一个旧的 mirror(模拟 SKILL.md 镜像)
+        old_mirror = fake_skill / '卡路里.html'
+        old_mirror.write_text('OLD SKILL.md MIRROR', encoding='utf-8')
+        # 准备新 HELP html
+        help_html = tmp_path / '卡路里_HELP_test.html'
+        help_html.write_text('NEW HELP RENDER', encoding='utf-8')
+        # 执行
+        result = mirror_to_root(help_html, fake_skill)
+        assert result is not None
+        assert result.name == '卡路里.html'
+        assert result.read_text(encoding='utf-8') == 'NEW HELP RENDER'
+        # 旧 mirror 备份到 archive
+        archive = fake_skill / '.scratch' / 'card-html-redesign' / 'archive'
+        assert archive.exists()
+        backups = list(archive.glob('卡路里_SKILL镜像_*.html'))
+        assert len(backups) == 1
+        assert backups[0].read_text(encoding='utf-8') == 'OLD SKILL.md MIRROR'

@@ -313,6 +313,16 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
             "<script>\n" + js_text + "\n</script>"
         )
 
+    # 模板里 <script src="_copy_prompt_helper.js"></script> →
+    # 内联共享复制 prompt helper(ADR-0002 Q6 · _record_engine.js + schedule_list_events.html 共用)
+    helper_src = '<script src="_copy_prompt_helper.js"></script>'
+    if helper_src in injected:
+        helper_text = (TEMPLATE_DIR / "_copy_prompt_helper.js").read_text(encoding="utf-8")
+        injected = injected.replace(
+            helper_src,
+            "<script>\n" + helper_text + "\n</script>"
+        )
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")
 

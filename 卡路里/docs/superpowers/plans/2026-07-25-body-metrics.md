@@ -943,7 +943,7 @@ cd 卡路里 && git add scripts/body_measurements.py tests/test_body_measurement
   - frontmatter `触发词:` 加 8 个
   - §触发词速查表 加 2 段:`📏 身体成分` + `📐 围度`
   - §完整 HTML 模板清单 加 2 行
-- Modify: `卡路里.html`(镜像同步)
+- Modify: `卡路里.html`(由 `render_help_center.py` 自动产出,ADR-0001 后无需手动镜像同步)
 - Modify: `scripts/check_trigger_consistency.py`(自动检测)
 
 - [ ] **Step 1: 加 trigger 词 + 检查脚本**
@@ -985,9 +985,10 @@ cd 卡路里 && git add scripts/body_measurements.py tests/test_body_measurement
 对应 SKILL.md 唤醒词:记体脂 / 查体脂 / 查体脂趋势
 ```
 
-- [ ] **Step 2: 卡路里.html 镜像同步**
+- [ ] **Step 2: 卡路里.html 镜像同步(ADR-0001 后由 render_help_center.py 自动产出)**
 
 加章节"v2.4.0 body_composition + body_measurements(体脂钳 + 围度)"。
+执行 `python scripts/render_help_center.py` 即自动同步根目录 `卡路里.html`(无需手动 cp)。
 
 - [ ] **Step 3: 跑一致性脚本**
 
@@ -1002,6 +1003,7 @@ Expected: ✅ 三边一致
 ```bash
 cd 卡路里 && git add SKILL.md 卡路里.html && git commit -m "📚 文档(卡路里): SKILL.md + 镜像 加 body_metrics 8 trigger (V1.0 §03 v2 矩阵)"
 ```
+(注:ADR-0001 后 `卡路里.html` 是 render 产物,不再是 SKILL.md 镜像)
 
 ---
 

@@ -280,10 +280,12 @@ def test_all_14_render_payloads_have_copy_prompt():
 COPY_BTN_MARKERS = [
     "复制 prompt",       # help_center / 计划类
     "复制 4 部分 prompt",  # plan_preview
-    "复制完整 prompt",    # receipt 类(act-btn)
+    "复制完整 prompt",    # receipt 类(act-btn) + 共享 helper(.copy-prompt-btn)
     "data-prompt-key",   # receipt 类的 JS hook
     "copy-btn",          # help_center class
     "act-btn",           # receipt class
+    "copy-prompt-btn",   # 共享 helper(_copy_prompt_helper.js) class
+    "copy-prompt-zone",  # 共享 helper 区 class
 ]
 
 

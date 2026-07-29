@@ -46,7 +46,8 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.le
 </div>
 <script>
 const PAYLOAD=window.__DATA__;
-const appState={category:'全部',q:'',showAll:false,MAX_DEFAULT:50};
+const MAX_DEFAULT=50;
+const appState={category:'全部',q:'',showAll:false};
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function dataRows(){const d=PAYLOAD&&PAYLOAD.data?PAYLOAD.data:{};if(Array.isArray(d))return d;if(Array.isArray(d.items))return d.items;if(d.item)return [d.item];return []}
 function init(){if(!PAYLOAD){document.getElementById('list').innerHTML='<div class="panel empty">数据未注入</div>';return}const d=PAYLOAD.data||{};document.getElementById('title').textContent=d.title||'备忘录查询结果';document.getElementById('subtitle').textContent=PAYLOAD.message||d.subtitle||'查询完成';document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||''}`;renderStats();renderChips();renderList();renderReceipt();// success: 数据加载完成,内容已渲染

@@ -393,11 +393,10 @@ function init(){
   }
 
   /* ----- meta 行 ----- */
-  var CMD_CN = {'sync-from-feishu':'同步飞书'};
-  function cnCmd(c){return (CMD_CN[c]||c)}
+  function commandToChinese(c){return c==='sync-from-feishu'?'同步飞书':c}
   var metaParts = [];
   if(d.generated_at) metaParts.push('<span>' + fmtTime(d.generated_at) + '</span>');
-  if(d.command) metaParts.push('<span>' + esc(cnCmd(d.command)) + '</span>');
+  if(d.command) metaParts.push('<span>' + esc(commandToChinese(d.command)) + '</span>');
   meta.innerHTML = metaParts.join('');
 
   /* ----- KPI 网格 ----- */

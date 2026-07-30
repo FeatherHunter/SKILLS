@@ -602,3 +602,169 @@ def test_render_replay_cross_domain():
     assert o_c["plan_duration_minutes"] == 30
     assert o_c["actual_duration_minutes"] == 60
     assert o_c["ratio"] == 2.0, f"ratio 应 = 2.0 (60/30),实际 {o_c['ratio']}"
+
+
+# ---- T06 AI 洞察段 (Spec: .scratch/replay-start-end/spec.md § 4 段叙事) ----
+# Issue: .scratch/replay-start-end/issues/06-ai-insights.md
+
+def test_render_replay_ai_insights():
+    """T06 · ai_insights 3 字段:anomalies + periodic_compare + suggestions (mock 算法)"""
+    # === Fixture:跨 14 天制造数据 ===
+    # 工作分类大幅异常 + 维持(睡眠)骤降 + 健康骤降
+    # 前 7 天:工作 60min/天 + 维持.睡眠 480min/天 + 健康.运动 30min/天
+    # 后 7 天:工作 120min/天(+100%) + 维持.睡眠 240min/天(-50%) + 健康.运动 0min/天(-100%)
+    for d in range(1, 8):
+        _db.add_record_full(
+            date=f"2026-07-{d:02d}", time_start="09:00", time_end="10:00",
+            duration_minutes=60, activity="代码", category="工作.AI调优",
+            source_contents="x", source_timestamps="09:00", analysis_reasoning="x",
+        )
+        _db.add_record_full(
+            date=f"2026-07-{d:02d}", time_start="00:00", time_end="08:00",
+            duration_minutes=480, activity="睡觉", category="维持.睡眠",
+            source_contents="x", source_timestamps="00:00", analysis_reasoning="x",
+        )
+        _db.add_record_full(
+            date=f"2026-07-{d:02d}", time_start="18:00", time_end="18:30",
+            duration_minutes=30, activity="健身", category="健康.运动",
+            source_contents="x", source_timestamps="18:00", analysis_reasoning="x",
+        )
+    for d in range(8, 15):
+        _db.add_record_full(
+            date=f"2026-07-{d:02d}", time_start="09:00", time_end="11:00",
+            duration_minutes=120, activity="代码", category="工作.AI调优",
+            source_contents="x", source_timestamps="09:00", analysis_reasoning="x",
+        )
+        _db.add_record_full(
+            date=f"2026-07-{d:02d}", time_start="00:00", time_end="04:00",
+            duration_minutes=240, activity="睡觉", category="维持.睡眠",
+            source_contents="x", source_timestamps="00:00", analysis_reasoning="x",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-01", "2026-07-14")
+    d = result["data"]
+    ai = d["ai_insights"]
+
+    # === anomalies ===
+    anomalies = ai["anomalies"]
+    assert isinstance(anomalies, list)
+    # 维持.睡眠 后 7 天均 240min / 前 7 天均 480min → ratio=0.5 (异常下降)
+    # 实际上 ratio = current/baseline,baseline 是基线
+    # 我们的算法:current 是后 7 天均,baseline 是前 7 天均 → 240/480=0.5
+    sleep_anomaly = next((a for a in anomalies if a["category"] == "维持.睡眠"), None)
+    assert sleep_anomaly is not None, "维持.睡眠 应触发异常(骤降 50%)"
+    # 异常检测 ratio 阈值:≥2.0 high / 1.5-2.0 medium (T06 spec)
+    # 下降场景:ratio < 1.0 也算异常(severity 按 1/ratio 算)
+    assert sleep_anomaly["ratio"] < 1.0, "睡眠应低于基线"
+    assert sleep_anomaly["severity"] in ("high", "medium"), \
+        f"睡眠骤降应标记 high/medium,实际 {sleep_anomaly['severity']}"
+
+    # === periodic_compare (本区间 vs 前半段 baseline · pragmatic 实现)===
+    pc = ai["periodic_compare"]
+    assert isinstance(pc, list)
+    # pragmatic: 当前 fixtures 没历史数据, baseline = 区间前半段
+    # 后续 LLM 接入时按 spec 扩展为 last_week / last_month / last_year
+    assert len(pc) > 0, "periodic_compare 应至少 1 条"
+    # 每条 schema: {category, period, current_period, previous_period, delta_pct}
+    for item in pc:
+        assert "category" in item
+        assert "period" in item
+        assert "current_period" in item
+        assert "previous_period" in item
+        assert "delta_pct" in item
+
+    # === suggestions ===
+    suggestions = ai["suggestions"]
+    assert isinstance(suggestions, list)
+    # 睡眠骤降应触发建议
+    sleep_suggestion = next(
+        (s for s in suggestions if "睡眠" in s.get("text", "") or "sleep" in s.get("trigger", "").lower()),
+        None,
+    )
+    assert sleep_suggestion is not None, "睡眠异常应触发至少 1 条建议"
+
+
+# ---- T07 5 状态 fallback 完整 (Spec: .scratch/replay-start-end/spec.md § 5 状态 fallback) ----
+# Issue: .scratch/replay-start-end/issues/07-status-fallback.md
+# T01 已实现 ok + empty;T07 补完 incomplete / error / offline 3 种
+
+def test_render_replay_status_incomplete_record_only():
+    """T07 · incomplete 状态:单域有数据(只有 record 无 plan)→ status='incomplete'"""
+    # 灌 3 条 record,0 条 plan
+    for h in [9, 14, 20]:
+        _db.add_record_full(
+            date="2026-07-15", time_start=f"{h:02d}:00", time_end=f"{h+1:02d}:00",
+            duration_minutes=60, activity="测试", category="工作.AI调优",
+            source_contents="x", source_timestamps="x", analysis_reasoning="x",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    assert result["status"] == "incomplete", f"应有 record 但无 plan → incomplete,实际 {result['status']}"
+    d = result["data"]
+    # plan 聚合段应标 incomplete 标记
+    assert d["plan_aggregate"].get("incomplete") is True, "plan 域缺失应标 incomplete=True"
+    # record 域正常有数据
+    assert d["record_aggregate"]["summary_items"] != [] or d["meta"]["total_records"] > 0
+
+
+def test_render_replay_status_incomplete_plan_only():
+    """T07 · incomplete 状态:只有 plan 无 record → status='incomplete'"""
+    # 灌 2 条 plan(completion 全 NULL → 未复盘),0 条 record
+    for i in range(2):
+        result = _db.ensure_plan_event(
+            date="2026-07-15", time_start=f"{9+i:02d}:00", time_end=f"{10+i:02d}:00",
+            title=f"计划{i}", category="工作.AI调优",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    assert result["status"] == "incomplete", f"应有 plan 但无 record → incomplete,实际 {result['status']}"
+    d = result["data"]
+    # record 域缺失应标 incomplete
+    assert d["record_aggregate"].get("incomplete") is True, "record 域缺失应标 incomplete=True"
+    # plan 域正常有数据
+    assert d["plan_aggregate"]["completion_distribution"]["未复盘"] >= 1
+
+
+def test_render_replay_status_error(monkeypatch):
+    """T07 · error 状态:数据库 ConnectionError → status='error' + message 明确"""
+    from schedule_html_render import render_replay
+    import schedule_db as _db
+
+    def boom_get_connection(*args, **kwargs):
+        raise ConnectionError("模拟 DB 故障:无法连接 schedule.db")
+
+    monkeypatch.setattr(_db, "get_connection", boom_get_connection)
+    result = render_replay("2026-07-15", "2026-07-15")
+    assert result["status"] == "error", f"DB 错误应 → error,实际 {result['status']}"
+    assert result["data"] is None, "error 状态 data 应 = None"
+    assert "ConnectionError" in result.get("message", "") or "数据库" in result.get("message", "") or "DB" in result.get("message", ""), \
+        f"message 应说明错误原因,实际 {result.get('message', '')}"
+
+
+def test_render_replay_status_offline(monkeypatch):
+    """T07 · offline 状态:网络探测失败 → status='offline' (HTML 仍可查看)"""
+    # 灌 record + plan(避免 empty / incomplete 触发,只让 offline 触发)
+    _db.add_record_full(
+        date="2026-07-15", time_start="10:00", time_end="11:00",
+        duration_minutes=60, activity="测试", category="工作.AI调优",
+        source_contents="x", source_timestamps="x", analysis_reasoning="x",
+    )
+    _db.ensure_plan_event(
+        date="2026-07-15", time_start="14:00", time_end="15:00",
+        title="计划", category="工作.AI调优",
+    )
+
+    from schedule_html_render import render_replay
+
+    # monkeypatch check_offline 返回 False(网络不通)
+    monkeypatch.setattr("schedule_html_render.check_offline", lambda: False)
+    result = render_replay("2026-07-15", "2026-07-15")
+    assert result["status"] == "offline", f"网络不通 → offline,实际 {result['status']}"
+    # offline 状态仍可查看(data 不为 None)
+    assert result["data"] is not None, "offline 状态 data 应仍可查看"
+    assert result["data"]["meta"]["total_records"] >= 1
+    # 状态徽章字段存在
+    assert result["data"]["meta"].get("status_badge") == "📡 offline"

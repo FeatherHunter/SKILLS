@@ -149,3 +149,85 @@ with sync_playwright() as p:
 | 概念原则(第一性原理 / 不存 deprecation 库存) | `01-第一性原理.md` |
 
 **平时不读** — 日常修 BUG / 加 trigger / 改模板,总纲已内化,不必每次翻。
+
+## Windows PowerShell 5.1 注意事项(2026-07-30 实战教训)
+
+> opencode 在 win32 平台使用 **PowerShell 5.1**(非 bash,非 pwsh)。下面是踩过的坑,后续必看。
+
+### 1. **永远用双引号包整段命令,变量内插别拆开**
+
+```powershell
+# ✅ 正确
+powershell -NoProfile -Command "Get-ChildItem 'D:\2Study\foo'"
+
+# ❌ 错误(变量被工具解析为空,导致命令被切成 4 行,前 3 行报 "is not recognized")
+powershell -NoProfile -Command "$dir='D:\...'; if (-not (Test-Path $dir)) { ... }"
+```
+
+根因:工具在把命令拼到 shell 之前会做参数替换,`$dir=...` 被吃成空 → 残余 `=...` 进入 shell 被解析为 cmdlet 名。
+
+### 2. **不要在 `-Command` 里用分号串多语句 + 变量 + 条件**
+
+5.1 解析复杂 `if/else/foreach` 在 `-Command "..."` 单字符串里容易乱码。**拆成多行 here-doc 或直接用临时 `.ps1` 脚本**。
+
+```powershell
+# ✅ 复杂逻辑走临时脚本
+$tmp = 'C:\Users\辰辰洋洋\AppData\Local\Temp\opencode\foo.ps1'
+Set-Content -LiteralPath $tmp -Value @'
+if (Test-Path "D:\foo") { ... }
+'@
+& $tmp
+```
+
+### 3. **路径含中文或空格 → 一律 `-LiteralPath` + 双引号**
+
+```powershell
+# ✅
+Test-Path -LiteralPath "D:\2Study\SKILLS\卡路里\作者的笔记"
+New-Item -ItemType Directory -Path "D:\2Study\SKILLS\卡路里\作者的笔记" -Force
+
+# ❌(中文路径 + -Path 偶尔触发通配符展开)
+Test-Path -Path 'D:\2Study\SKILLS\卡路里'
+```
+
+### 4. **避免 here-string (`@'...'@`) 中混用 `$` 变量**
+
+```powershell
+# ❌ $f 在 here-string 里仍会展开,但 opencode 工具链可能先一步把它换成空串
+$tmp = "D:\foo"
+@"
+Get-Content $tmp
+"@
+# 输出:Get-Content  ← $tmp 被吃掉
+```
+
+**对策**:here-string 里要引用路径,先把变量拼到外层字符串,或用 `& "path with spaces.ps1" args` 调脚本。
+
+### 5. **`&&` 不存在,用 `cmd1; if ($?) { cmd2 }`**
+
+```powershell
+# ❌
+python foo.py && python bar.py   # bash 语法,5.1 不认
+
+# ✅
+python foo.py; if ($?) { python bar.py }
+```
+
+### 6. **别用 `cd`,用 `workdir` 参数**
+
+opencode bash 工具自带 `workdir` 参数,不要在 `-Command` 里 `Set-Location`,否则下次调用又会回到默认目录。
+
+### 7. **如需先看 PowerShell 版本**
+
+```powershell
+powershell -NoProfile -Command "$PSVersionTable.PSVersion"
+# 应显示 5.1.xxxxx
+```
+
+### 8. **opencode 临时目录**
+
+`C:\Users\辰辰洋洋\AppData\Local\Temp\opencode` 已存在且可写,可放心落临时 `.ps1` / `.html` / 截图等。
+
+### 9. **如果命令反复报 "is not recognized",先看错误行首有没有 `=xxx` 或孤立变量**
+
+这是工具链把命令里某段吃掉后留下的残骸。**改写命令结构**(拆变量、换 here-string、改 `-File` 调脚本)即可,不必调 PowerShell。

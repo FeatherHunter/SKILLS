@@ -2028,7 +2028,22 @@ def render_record_anomaly(window_days: int = 7) -> dict:
     }
 
 
-def render_replay(start: str, end: str) -> dict:
+def check_offline() -> bool:
+    """T07 · 网络连通性探测(offline 状态判定)
+
+    当前实现:简单的 timeout 1s 检测(避免阻塞)。
+    返回 True = 在线,False = 离线。
+    后续可替换为 feishu_probe() 调用。
+    """
+    import socket
+    try:
+        socket.create_connection(("8.8.8.8", 53), timeout=1).close()
+        return True
+    except OSError:
+        return False
+
+
+def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
     """Phase E · 复盘 start-end · 跨域 dual-domain 分析(任意 start-end 区间)
 
     4 段叙事骨架(T03-T06 各自填充实数据):
@@ -2038,23 +2053,36 @@ def render_replay(start: str, end: str) -> dict:
       - ai_insights:      mock 异常检测 + 周期对比 + 建议 (T06 填充)
       - copy_prompt:      4 部分结构(单工铁律,总纲 §04 原则 10)
 
-    T01 骨架阶段: 仅实现 payload 骨架 + 5 状态 fallback (empty/ok)。
-    T07 补完: error/incomplete/offline 3 种状态。
+    5 状态 fallback(T01 + T07):
+      - empty: 两域都空(刚装完数据库)
+      - incomplete: 单域有数据(缺失域标 incomplete=True + 友好提示)
+      - ok: 两域数据完整
+      - error: DB 错误(ConnectionError 等)
+      - offline: 网络不通(单文件 HTML 仍可查看,主流程不依赖网络)
 
     Args:
         start: 起始日期 YYYY-MM-DD
         end:   结束日期 YYYY-MM-DD (含)
+        ai_engine: AI 洞察引擎,默认 "mock"(规则生成,无需外部 LLM)。
 
     Returns:
-        {"status": "ok" | "empty", "data": payload, "message": str}
+        {"status": "ok"|"empty"|"incomplete"|"error"|"offline", "data": payload|None, "message": str}
     """
     from schedule_db import _normalize_date, get_records_range, get_plan_events_range
 
     start = _normalize_date(start)
     end = _normalize_date(end)
 
-    records = get_records_range(start, end)
-    plans = get_plan_events_range(start, end, include_inactive=False)
+    # === T07 error 状态:DB 异常 catch ===
+    try:
+        records = get_records_range(start, end)
+        plans = get_plan_events_range(start, end, include_inactive=False)
+    except Exception as e:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"数据库查询失败: {type(e).__name__}: {e}",
+        }
 
     total_records = len(records)
     total_minutes = sum((r.get("duration_minutes") or 0) for r in records)
@@ -2078,6 +2106,9 @@ def render_replay(start: str, end: str) -> dict:
         build_24h_heatmap, cat_emoji, cat_color, fmt_dur,
     )
     HEALTH_DIMS = ["维持", "健康", "工作", "学习", "调整", "日常", "投入"]
+
+    has_records = total_records > 0
+    has_plans = len(plans) > 0
 
     cat_minutes = aggregate_by_category(records)
     sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
@@ -2280,26 +2311,197 @@ def render_replay(start: str, end: str) -> dict:
         "overrun_plans": overrun_plans,
     }
 
-    # 5 状态 fallback(空数据 → empty)
-    if total_records == 0 and len(plans) == 0:
+    # === T06 · AI 洞察段(mock 算法,接口预留 ai_engine="mock"|"llm")===
+    # pragmatic:当前 fixtures 没有过去数据,baseline = 区间前半段均值,current = 后半段
+    # spec aspirational:上周/上月/上年同期对比 → 后续 LLM 接入时拉历史 DB
+    anomalies: list[dict] = []
+    periodic_compare: list[dict] = []
+    suggestions: list[dict] = []
+
+    if records:
+        # 按分类统计总时长
+        cat_total_min: dict[str, int] = {}
+        cat_date_min: dict[str, dict[str, int]] = {}  # cat -> {date -> mins}
+        for r in records:
+            cat = r.get("category", "")
+            mins = r.get("duration_minutes") or 0
+            d_str = r.get("date", "")
+            cat_total_min[cat] = cat_total_min.get(cat, 0) + mins
+            cat_date_min.setdefault(cat, {})
+            cat_date_min[cat][d_str] = cat_date_min[cat].get(d_str, 0) + mins
+
+        # 区间按日期拆分前后半
+        sorted_dates = sorted({r.get("date", "") for r in records if r.get("date")})
+        n_days = len(sorted_dates)
+        if n_days >= 2:
+            half = n_days // 2
+            baseline_dates = set(sorted_dates[:half])
+            current_dates = set(sorted_dates[half:])
+
+            # === anomalies:每分类 baseline vs current ratio ===
+            for cat, total_min in cat_total_min.items():
+                date_min = cat_date_min[cat]
+                baseline_mins = sum(m for d, m in date_min.items() if d in baseline_dates)
+                current_mins = sum(m for d, m in date_min.items() if d in current_dates)
+                if baseline_mins == 0 and current_mins == 0:
+                    continue
+                # ratio = current / baseline(baseline=0 用 total/2 兜底)
+                base_val = baseline_mins if baseline_mins > 0 else max(1, total_min // 2)
+                ratio = current_mins / base_val
+                # 高阈值:ratio >= 2.0 或 ratio <= 0.5(异常下降)
+                # 中阈值:1.5 <= ratio < 2.0 或 0.67 <= ratio < 0.5 的镜像
+                severity = None
+                if ratio >= 2.0 or ratio <= 0.5:
+                    severity = "high"
+                elif ratio >= 1.5 or (0.4 < ratio <= 0.67):
+                    severity = "medium"
+                if severity:
+                    anomalies.append({
+                        "category": cat,
+                        "current_value": current_mins,
+                        "baseline_value": baseline_mins,
+                        "ratio": round(ratio, 2),
+                        "severity": severity,
+                        "direction": "up" if ratio >= 1.0 else "down",
+                    })
+
+            # === periodic_compare:每分类 本区间 vs 前半段 baseline ===
+            for cat, total_min in cat_total_min.items():
+                date_min = cat_date_min[cat]
+                baseline_mins = sum(m for d, m in date_min.items() if d in baseline_dates)
+                current_mins = sum(m for d, m in date_min.items() if d in current_dates)
+                if baseline_mins == 0:
+                    delta_pct = 100.0 if current_mins > 0 else 0.0
+                else:
+                    delta_pct = round((current_mins - baseline_mins) / baseline_mins * 100, 1)
+                periodic_compare.append({
+                    "category": cat,
+                    "period": "current_vs_first_half",
+                    "current_period": current_mins,
+                    "previous_period": baseline_mins,
+                    "delta_pct": delta_pct,
+                })
+
+            # === suggestions:基于 anomalies 触发规则生成器(5-8 条)===
+            for a in anomalies:
+                cat = a["category"]
+                ratio = a["ratio"]
+                direction = a["direction"]
+                severity = a["severity"]
+                # 规则 1:工作骤增
+                if cat.startswith("工作") and direction == "up" and ratio >= 1.5:
+                    suggestions.append({
+                        "trigger": f"工作时长骤增 +{int((ratio-1)*100)}%",
+                        "text": f"⚠️ {cat} 时长比上半期增加 {int((ratio-1)*100)}%,建议调整时间块或减少会议。",
+                        "severity": severity,
+                    })
+                # 规则 2:维持(睡眠)骤降
+                elif cat.startswith("维持") and direction == "down" and ratio <= 0.67:
+                    pct = int((1 - ratio) * 100)
+                    suggestions.append({
+                        "trigger": f"维持(睡眠)骤降 -{pct}%",
+                        "text": f"😴 {cat} 时长比上半期下降 {pct}%,建议关注作息规律。",
+                        "severity": severity,
+                    })
+                # 规则 3:健康骤降
+                elif cat.startswith("健康") and direction == "down" and ratio <= 0.67:
+                    pct = int((1 - ratio) * 100)
+                    suggestions.append({
+                        "trigger": f"健康投入骤降 -{pct}%",
+                        "text": f"🏃 {cat} 时长比上半期下降 {pct}%,建议恢复运动习惯。",
+                        "severity": severity,
+                    })
+                # 规则 4:学习骤降
+                elif cat.startswith("学习") and direction == "down" and ratio <= 0.67:
+                    pct = int((1 - ratio) * 100)
+                    suggestions.append({
+                        "trigger": f"学习投入骤降 -{pct}%",
+                        "text": f"📖 {cat} 时长比上半期下降 {pct}%,建议重启学习节奏。",
+                        "severity": severity,
+                    })
+                # 规则 5:调整(娱乐)骤增
+                elif cat.startswith("调整") and direction == "up" and ratio >= 1.5:
+                    suggestions.append({
+                        "trigger": f"调整(娱乐)骤增 +{int((ratio-1)*100)}%",
+                        "text": f"🎮 {cat} 时长比上半期增加 {int((ratio-1)*100)}%,建议控制娱乐时长。",
+                        "severity": severity,
+                    })
+                # 规则 6:通用 — 任意方向显著变化
+                else:
+                    arrow = "↑" if direction == "up" else "↓"
+                    pct = abs(int((ratio - 1) * 100)) if direction == "up" else abs(int((1 - ratio) * 100))
+                    suggestions.append({
+                        "trigger": f"{cat} {arrow}{pct}%",
+                        "text": f"📊 {cat} 时长较上半期变化 {arrow}{pct}%,建议关注持续性。",
+                        "severity": severity,
+                    })
+
+    ai_insights = {
+        "anomalies": anomalies,
+        "periodic_compare": periodic_compare,
+        "suggestions": suggestions,
+    }
+
+    # === T07 · 5 状态 fallback 完整 ===
+    # offline 探测(主流程不依赖网络,但标记状态)
+    online = check_offline()
+    status_badge = "📡 offline" if not online else None  # None = 不强制标 offline,留给下游判定
+
+    # 空骨架 payload(各状态共用基础)
+    def _make_meta(extra: dict) -> dict:
+        base = {
+            "mode": "replay",
+            "start": start, "end": end, "days": days_count,
+            "total_records": total_records, "total_minutes": total_minutes,
+            "title": f"区间复盘 · {start} ~ {end}",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status_badge": status_badge,
+        }
+        base.update(extra)
+        return base
+
+    def _make_record_aggregate(incomplete: bool = False) -> dict:
+        base_ra = {
+            "summary_items": summary_items, "trend": trend_filtered,
+            "heatmap": heatmap, "dim_totals": build_dimension_aggregates(records),
+            "top_n_visible": min(TOP_N_VISIBLE, len(summary_items)),
+            "top_n_total": len(summary_items),
+            "incomplete": incomplete,
+        }
+        return base_ra
+
+    def _make_plan_aggregate(incomplete: bool = False) -> dict:
+        base_pa = {
+            "completion_distribution": completion_distribution,
+            "completion_by_category": completion_by_category,
+            "completion_rate": round(overall_rate, 3),
+            "incomplete": incomplete,
+        }
+        return base_pa
+
+    def _make_cross_domain() -> dict:
+        return {
+            "planned_actual_pairs": planned_actual_pairs,
+            "unexecuted_plans": unexecuted_plans,
+            "unexpected_records": unexpected_records,
+            "overrun_plans": overrun_plans,
+        }
+
+    # empty: 两域都空
+    if not has_records and not has_plans:
         return {
             "status": "empty",
             "data": {
-                "meta": {
-                    "mode": "replay",
-                    "start": start,
-                    "end": end,
-                    "days": days_count,
-                    "total_records": 0,
-                    "total_minutes": 0,
-                    "title": f"区间复盘 · {start} ~ {end}",
+                "meta": _make_meta({
+                    "total_records": 0, "total_minutes": 0,
                     "subtitle": f"{days_count} 天 · 无数据",
-                    "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                },
+                    "status_badge": status_badge or "📭 empty",
+                }),
                 "record_aggregate": {
                     "summary_items": [], "trend": [], "heatmap": [],
                     "top_n_visible": 0, "top_n_total": 0,
                     "dim_totals": {d: 0 for d in HEALTH_DIMS},
+                    "incomplete": False,
                 },
                 "plan_aggregate": {
                     "completion_distribution": {
@@ -2308,38 +2510,42 @@ def render_replay(start: str, end: str) -> dict:
                     },
                     "completion_by_category": [],
                     "completion_rate": 0.0,
+                    "incomplete": False,
                 },
                 "cross_domain": {
-                    "planned_actual_pairs": [],
-                    "unexecuted_plans": [],
-                    "unexpected_records": [],
-                    "overrun_plans": [],
+                    "planned_actual_pairs": [], "unexecuted_plans": [],
+                    "unexpected_records": [], "overrun_plans": [],
                 },
                 "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
-                "copy_prompt": _build_replay_copy_prompt(
-                    start, end, total_records, total_minutes, 0, 0
-                ),
+                "copy_prompt": _build_replay_copy_prompt(start, end, 0, 0, 0, 0),
                 "errors": [],
             },
             "message": f"📭 {start} ~ {end} 区间无数据(空态)",
         }
 
+    # incomplete: 单域有数据 → 缺失域标 incomplete=True
+    if has_records and not has_plans:
+        subtitle = f"{days_count} 天 · {total_records} 条记录 · 0 条计划(计划域缺失)"
+        msg = f"⚠️ {start} ~ {end} 区间只有作息记录,无日程计划(计划域 incomplete)"
+    elif has_plans and not has_records:
+        subtitle = f"{days_count} 天 · 0 条记录 · {len(plans)} 条计划(记录域缺失)"
+        msg = f"⚠️ {start} ~ {end} 区间只有日程计划,无作息记录(记录域 incomplete)"
+    else:
+        subtitle = f"{days_count} 天 · {total_records} 条记录 · {total_minutes} 分钟"
+        msg = f"✓ {start} ~ {end} 区间复盘数据已生成"
+
     payload = {
-        "meta": {
-            "mode": "replay",
-            "start": start,
-            "end": end,
-            "days": days_count,
-            "total_records": total_records,
-            "total_minutes": total_minutes,
-            "title": f"区间复盘 · {start} ~ {end}",
-            "subtitle": f"{days_count} 天 · {total_records} 条记录 · {total_minutes} 分钟",
-            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        },
-        "record_aggregate": record_aggregate,
-        "plan_aggregate": plan_aggregate,
-        "cross_domain": cross_domain,
-        "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
+        "meta": _make_meta({
+            "total_records": total_records, "total_minutes": total_minutes,
+            "subtitle": subtitle,
+            "status_badge": status_badge or (
+                "⚠️ incomplete" if (has_records != has_plans) else "✅ ok"
+            ),
+        }),
+        "record_aggregate": _make_record_aggregate(incomplete=not has_records),
+        "plan_aggregate": _make_plan_aggregate(incomplete=not has_plans),
+        "cross_domain": _make_cross_domain(),
+        "ai_insights": ai_insights,
         "copy_prompt": _build_replay_copy_prompt(
             start, end, total_records, total_minutes,
             sum(1 for p in plans if p.get("completion") == "已完成"),
@@ -2347,10 +2553,19 @@ def render_replay(start: str, end: str) -> dict:
         ),
         "errors": [],
     }
+
+    # 5 状态判定优先级:incomplete > offline > ok
+    if has_records != has_plans:
+        status = "incomplete"
+    elif not online:
+        status = "offline"
+    else:
+        status = "ok"
+
     return {
-        "status": "ok",
+        "status": status,
         "data": payload,
-        "message": f"✓ {start} ~ {end} 区间复盘数据已生成(T01 骨架,T03-T06 待填充实数据)",
+        "message": msg,
     }
 
 

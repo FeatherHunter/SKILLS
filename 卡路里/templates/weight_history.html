@@ -50,9 +50,13 @@
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
   .table-wrap table thead th:nth-child(3),
   .table-wrap table tbody td:nth-child(3) { width:20%; white-space:nowrap; }
-  /* V2.5.2: 注 列 25% → 18%(24 行里 23 行空,25% 太浪费;
-     18% × 380 = 68px 刚好装下 "晨起空腹" 4 字 + padding) */
-  th.note, td.note { width:18%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* V2.5.2: 注 列 25% → 12%(用户: '注 列还是太宽,文字左右都有空白')
+     12% × 380 = 45.6px - '晨起空腹' 4 字约 44px,基本贴合内容宽度 */
+  th.note, td.note { width:12%; overflow:visible; text-overflow:clip; white-space:nowrap; }
+  /* V2.5.4 fix: nth-child(5) 兜底 — 兼容旧数据 th 没 note class(同 kg 列 nth-child(3) 模式)
+     overflow:visible 让 '晨起空腹' 等较长 note 溢出到右侧 section padding 区域,不 ellipsis 截断 */
+  .table-wrap table thead th:nth-child(5),
+  .table-wrap table tbody td:nth-child(5) { width:12%; overflow:visible; text-overflow:clip; white-space:nowrap; }
   th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
   th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
   tr:last-child td { border-bottom:none; }

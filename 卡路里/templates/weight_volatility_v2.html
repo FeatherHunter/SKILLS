@@ -23,15 +23,19 @@
   h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
   .sub { font-size: 13px; color: var(--fg3); margin-top: 4px; }
 
-  /* KPI 卡片(诊断) */
-  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
-  .kpi-label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
-  .kpi-value { font-size: 32px; font-weight: 700; }
-  .kpi-extra { font-size: 13px; color: var(--fg2); margin-top: 6px; }
+  /* KPI 卡片(诊断 + 趋势 + 早警告) */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .kpi-label { font-size: 11px; color: var(--fg2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+  .kpi-value { font-size: 24px; font-weight: 700; }
+  .kpi-extra { font-size: 12px; color: var(--fg2); margin-top: 6px; }
   .kpi-pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 8px; }
   .pill-normal { background: rgba(52,199,89,.15); color: var(--good); }
   .pill-yellow { background: rgba(255,149,0,.15); color: var(--warn); }
   .pill-red { background: rgba(255,59,48,.15); color: var(--bad); }
+  .pill-trend-up { background: rgba(255,59,48,.15); color: var(--bad); }
+  .pill-trend-down { background: rgba(52,199,89,.15); color: var(--good); }
+  .pill-trend-flat { background: rgba(0,113,227,.15); color: var(--accent); }
 
   /* Canvas 主图 */
   .chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
@@ -39,9 +43,20 @@
   .chart-wrap { width: 100%; }
   canvas#chart { width: 100%; height: 360px; display: block; }
 
-  /* 异常列表留位(ticket 03 填) */
+  /* 异常列表 */
   .anomalies { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
-  .anomalies h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .anomalies h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .anomalies h2 .count { font-size: 12px; color: var(--fg2); font-weight: 400; }
+  .empty-state { padding: 24px; text-align: center; color: var(--good); font-size: 14px; }
+  .empty-state::before { content: "✓ "; }
+  .anomaly-item { display: grid; grid-template-columns: 100px 1fr 80px 70px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .anomaly-item:last-child { border-bottom: none; }
+  .anomaly-date { font-size: 13px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+  .anomaly-food { font-size: 14px; }
+  .anomaly-dev { font-size: 13px; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .anomaly-level { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .anomaly-red { background: rgba(255,59,48,.15); color: var(--bad); }
+  .anomaly-yellow { background: rgba(255,149,0,.15); color: var(--warn); }
 
   .footer { margin-top: 20px; padding: 12px 16px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
 
@@ -49,8 +64,10 @@
   @media (max-width:640px) {
     body { padding: 20px 14px 80px; }
     h1 { font-size: 22px; }
-    .kpi-value { font-size: 26px; }
+    .kpi-grid { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 20px; }
     canvas#chart { height: 280px; }
+    .anomaly-item { grid-template-columns: 1fr; gap: 4px; }
   }
 </style>
 </head>
@@ -59,35 +76,59 @@
 
   <header>
     <h1>📊 体重波动 v2</h1>
-    <p class="sub" id="metaSub">ticket 02 · Dashboard 单页(诊断)</p>
+    <p class="sub" id="metaSub">ticket 03 · 完整 dashboard(诊断 / 趋势 / 早警告)</p>
   </header>
 
-  <!-- KPI 卡 #1: 诊断(use case A) -->
-  <section class="kpi" id="kpi-diagnosis">
-    <div class="kpi-label" id="kpiLabel">诊断 · 今日 vs 近期常态</div>
-    <div class="kpi-value">
-      <span id="kpiValue">—</span>
-      <span class="kpi-pill" id="kpiPill">测量中</span>
-    </div>
-    <div class="kpi-extra" id="kpiExtra">vs <span id="kpiBaseline">—</span></div>
-  </section>
+  <!-- 3 张 KPI 卡(诊断 / 趋势 / 早警告) -->
+  <div class="kpi-grid">
+
+    <!-- KPI #1: 诊断(use case A) -->
+    <section class="kpi" id="kpi-diagnosis">
+      <div class="kpi-label">诊断 · 今天 vs 近期</div>
+      <div class="kpi-value">
+        <span id="kpiValue">—</span>
+        <span class="kpi-pill" id="kpiPill">测量中</span>
+      </div>
+      <div class="kpi-extra" id="kpiExtra">vs <span id="kpiBaseline">—</span></div>
+    </section>
+
+    <!-- KPI #2: 趋势(use case B) -->
+    <section class="kpi" id="kpi-trend">
+      <div class="kpi-label">趋势 · 近 7 天 σ</div>
+      <div class="kpi-value">
+        <span id="kpiSigma">—</span>
+        <span class="kpi-pill" id="kpiSigmaTrend">—</span>
+      </div>
+      <div class="kpi-extra" id="kpiSigmaExtra">σ 趋势</div>
+    </section>
+
+    <!-- KPI #3: 早警告(use case C) -->
+    <section class="kpi" id="kpi-early-warning">
+      <div class="kpi-label">早警告 · 今日</div>
+      <div class="kpi-value">
+        <span id="kpiEWTxt">—</span>
+      </div>
+      <div class="kpi-extra" id="kpiEWExtra">—</div>
+    </section>
+
+  </div>
 
   <!-- Canvas 主图 -->
   <section class="chart-section">
-    <h2>体重折线 + ±σ 带</h2>
+    <h2>体重折线 + ±σ 带 + 目标线</h2>
     <div class="chart-wrap">
       <canvas id="chart" width="800" height="360"></canvas>
     </div>
   </section>
 
-  <!-- 异常列表(ticket 03 填) -->
+  <!-- 异常点列表(ticket 03 完整实现) -->
   <section class="anomalies" id="anomalies">
-    <h2>最近异常点</h2>
-    <div id="anomaliesList">— ticket 03 填 —</div>
+    <h2>最近异常点 <span class="count" id="anomaliesCount">—</span></h2>
+    <div id="anomaliesList"></div>
   </section>
 
   <div class="footer">
-    ticket 02 · weight_volatility_v2 Dashboard 单页(诊断 + Canvas + σ 带)
+    ticket 03 · 完整 dashboard(3 KPIs + Canvas + 异常列表)
   </div>
 
 </div>
@@ -98,7 +139,7 @@
 (function() {
   const DATA = window.__DATA__ || { data: { points: [], baseline_value: 0, baseline_sigma: 0, thresholds: {}, recent_anomalies: [], sigma_trend: [], early_warning: {} } };
 
-  // 填 KPI 诊断
+  // ========== KPI #1: 诊断 ==========
   const ew = DATA.data.early_warning || {};
   const kpiValue = document.getElementById('kpiValue');
   const kpiPill = document.getElementById('kpiPill');
@@ -107,7 +148,6 @@
 
   if (ew.kg != null) {
     kpiValue.textContent = ew.kg.toFixed(1) + ' kg';
-    // spec AC: "今天 X kg vs 近期常态 Y ± Z kg" + 1 句解读
     const baseline = DATA.data.baseline_value;
     const sigma = DATA.data.baseline_sigma || 0;
     const dev = Math.abs(ew.deviation_kg || 0);
@@ -125,11 +165,72 @@
     }
   }
 
-  // Canvas 绘图
+  // ========== KPI #2: 趋势(7-day rolling σ slope) ==========
+  const kpiSigma = document.getElementById('kpiSigma');
+  const kpiSigmaTrend = document.getElementById('kpiSigmaTrend');
+  const kpiSigmaExtra = document.getElementById('kpiSigmaExtra');
+  const sigmaTrend = DATA.data.sigma_trend || [];
+  if (sigmaTrend.length >= 2) {
+    const recent = sigmaTrend.slice(-7);
+    const recentSigma = recent[recent.length - 1].sigma_kg;
+    const earlierSigma = recent[0].sigma_kg;
+    kpiSigma.textContent = recentSigma.toFixed(2) + ' kg';
+    const change = recentSigma - earlierSigma;
+    if (change < -0.05) {
+      kpiSigmaTrend.textContent = '↓ σ 缩小';
+      kpiSigmaTrend.className = 'kpi-pill pill-trend-down';
+    } else if (change > 0.05) {
+      kpiSigmaTrend.textContent = '↑ σ 扩大';
+      kpiSigmaTrend.className = 'kpi-pill pill-trend-up';
+    } else {
+      kpiSigmaTrend.textContent = '→ σ 平稳';
+      kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
+    }
+    kpiSigmaExtra.textContent = `较 ${earlierSigma.toFixed(2)} kg(7 天前)`;
+  } else if (sigmaTrend.length === 1) {
+    kpiSigma.textContent = sigmaTrend[0].sigma_kg.toFixed(2) + ' kg';
+    kpiSigmaTrend.textContent = '— 数据不足';
+    kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
+    kpiSigmaExtra.textContent = '需 2+ 数据点算趋势';
+  }
+
+  // ========== KPI #3: 早警告 ==========
+  const kpiEWTxt = document.getElementById('kpiEWTxt');
+  const kpiEWExtra = document.getElementById('kpiEWExtra');
+  if (ew.kg != null) {
+    kpiEWTxt.textContent = ew.message || (ew.level === 'red' ? '异常' : ew.level === 'yellow' ? '注意' : '正常');
+    kpiEWExtra.textContent = `今日 ${ew.kg}kg 偏离 baseline ${(DATA.data.baseline_value || 0).toFixed(1)}kg ${ew.deviation_kg >= 0 ? '+' : ''}${ew.deviation_kg || 0}kg`;
+  }
+
+  // ========== 异常点列表 ==========
+  const anomaliesList = document.getElementById('anomaliesList');
+  const anomaliesCount = document.getElementById('anomaliesCount');
+  const recent = DATA.data.recent_anomalies || [];
+
+  if (recent.length === 0) {
+    anomaliesList.innerHTML = '<div class="empty-state">过去 7 天无异常</div>';
+    anomaliesCount.textContent = '(0)';
+  } else {
+    anomaliesCount.textContent = `(${recent.length} 条按偏离度排序)`;
+    // 用真实 recent_anomalies 数据循环渲染
+    let html = '';
+    for (const a of recent) {
+      const levelClass = a.level === 'red' ? 'anomaly-red' : 'anomaly-yellow';
+      const devSign = a.deviation_kg >= 0 ? '+' : '';
+      html += `<div class="anomaly-item">`
+        + `<div class="anomaly-date">${a.date}</div>`
+        + `<div class="anomaly-food">${a.kg}kg</div>`
+        + `<div class="anomaly-dev">${devSign}${a.deviation_kg}kg</div>`
+        + `<div class="anomaly-level ${levelClass}">${a.level === 'red' ? '🔴 红' : '🟡 黄'}</div>`
+        + `</div>`;
+    }
+    anomaliesList.innerHTML = html;
+  }
+
+  // ========== Canvas 绘图 ==========
   const canvas = document.getElementById('chart');
   if (canvas && DATA.data.points && DATA.data.points.length > 0) {
     const ctx = canvas.getContext('2d');
-    // review fix:防止 buffer height 默认 150 拉伸(display 360),显式 set canvas.width/height
     const W = canvas.width = canvas.offsetWidth;
     const H = canvas.height = 360;
     const PAD = 40;
@@ -139,7 +240,6 @@
     const sigma = DATA.data.baseline_sigma;
     const yellow = DATA.data.thresholds.yellow || 0;
     const red = DATA.data.thresholds.red || 0;
-    // goal 从 daily_goal.weight_goal 拿(spec §Implementation Decisions toggle baseline)
     const goal = DATA.data.goal_weight || null;
 
     const weights = points.map(p => p.kg);
@@ -159,19 +259,17 @@
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
 
-    // ±σ band(spec:yellow tint for ±1.5σ, red tint for ±2σ)
-    // yellow band: ±1.5σ
+    // ±σ band(yellow + red)
     if (yellow > 0) {
       ctx.fillStyle = 'rgba(255,149,0,0.10)';
       ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
     }
-    // red band: ±2σ
     if (red > 0 && red > yellow) {
       ctx.fillStyle = 'rgba(255,59,48,0.10)';
       ctx.fillRect(PAD, y(baseline + red), W - 2*PAD, y(baseline - red) - y(baseline + red));
     }
 
-    // baseline 线(滚动 30 天均值,灰色虚线)
+    // baseline 线(灰虚线)
     ctx.strokeStyle = '#86868b';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 3]);
@@ -181,7 +279,7 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 目标线(goal,绿色虚线) — ticket 02 AC 明确要求
+    // 目标线(绿虚线)
     if (goal && goal >= minY && goal <= maxY) {
       ctx.strokeStyle = '#34c759';
       ctx.lineWidth = 1.5;
@@ -210,7 +308,7 @@
     });
     ctx.stroke();
 
-    // 异常点(points 标记)
+    // 异常点
     points.forEach((p, i) => {
       if (p.level === 'red') {
         ctx.fillStyle = '#ff3b30';
@@ -230,7 +328,6 @@
       }
     });
 
-    // σ 标签
     if (yellow > 0) {
       ctx.fillStyle = '#ff9500';
       ctx.font = '10px -apple-system, sans-serif';

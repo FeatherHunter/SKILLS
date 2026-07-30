@@ -247,6 +247,22 @@ UX 规则:**用户既要看到标题,也要看到描述,心里有数**。
 
 ---
 
+## D11 · 最高指导原则:本次重构的纲领(2026-07-29 grill 第 3 题)
+
+> **"本次重构要实现的就是**:HTML 开发完善 → 用户编辑产生正确 JSON → 用户和 AI 确认 JSON 已好 → AI 按工作流指引开始解析 JSON → AI 调用 atomic CLI 和 py 脚本对视频处理。**不会出现 'python 完全不处理' 的情况**。如果发现哪里出现一点小 bug,我们安排修复。"
+
+**解读**:
+- **HTML** 负责 UI 收集 + 写正确 JSON(本工单 #08 已落地)
+- **JSON** 协议层是契约(spec §4 + `intent_v3.schema.json`,工单 #01/02 已落地)
+- **md 文档**(Layer 2A)是 AI 行为的真实契约(工单 #03/04/05 已落地)
+- **AI** 按 md 指引 + atomic CLI 文档,**自己组合 ffmpeg 命令**(**不是** lib/video_processing.py 自动编排)
+- **Python `lib/video_processing.py`** 负责**整段 video_ops** 的编排(不是段内,段内由 AI 组合)
+- **atomic CLI**(`scripts/audio/*.py`、`scripts/video/*.py` 等)是单 op 工具
+- **任何 "python 不处理" 的判断都是错的**——要么 lib/video_processing.py 处理整段,要么 AI 看 md 自己组合 atomic CLI
+- **任何小 bug 必须修复**,不留尾巴
+
+---
+
 ## 当前项目路线(2026-07-29,用户口径)
 
 按用户原话:

@@ -82,5 +82,42 @@ Thumbs.db
 # 居家管家加密密钥目录(Fernet master key 等敏感数据,不入库)
 居家管家/.db/
 
+# 作息管家 schedule_html 运行时输出目录(每次渲染生成的 HTML 镜像,不入库)
+作息管家/.db/schedule_html/
+
+# 卡路里 calorie_html 进程输入 JSON(运行时交互中间产物,不入库)
+卡路里/calorie_html/
+
+# 卡路里 .scratch 工作区临时调试产物(一次性 debug/verify/reproduce 脚本 + 截图,不入库)
+# 注:.scratch/<feature>/agent-brief.md / .scratch/<feature>/issues/*.md / .scratch/<feature>/sample-h3.html
+#     等已成型的工件(spec/ticket/镜像)仍需入库,见下放行规则。
+
+# card-html-redesign archive 重复副本(与 _1.html 完全相同,无信息增量,不入库)
+卡路里/.scratch/card-html-redesign/archive/*_2.html
+
+卡路里/.scratch/**/debug_*.py
+卡路里/.scratch/**/fix_*.py
+卡路里/.scratch/**/verify_*.py
+卡路里/.scratch/**/measure_*.py
+卡路里/.scratch/**/reproduce_*.py
+卡路里/.scratch/**/reproduce.py
+卡路里/.scratch/**/regenerate.py
+卡路里/.scratch/**/grab_*.py
+卡路里/.scratch/**/check_*.py
+卡路里/.scratch/**/check-*.png
+卡路里/.scratch/**/repro-*.png
+卡路里/.scratch/**/scrolled-*.png
+卡路里/.scratch/**/sample-*.html
+卡路里/.scratch/**/sample-v2*.html
+卡路里/.scratch/**/sample-v25*.html
+卡路里/.scratch/**/体重_趋势_V*.html
+卡路里/.scratch/**/user_screenshots.py
+卡路里/.scratch/**/USER_*.png
+卡路里/.scratch/**/V2_*.png
+卡路里/.scratch/**/V3_*.png
+卡路里/.scratch/**/V4_*.png
+卡路里/.scratch/**/FINAL_*.png
+卡路里/.scratch/**/iphone_*.png
+
 # Local git worktrees
 .worktrees/

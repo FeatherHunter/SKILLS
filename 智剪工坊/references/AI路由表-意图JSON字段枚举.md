@@ -41,7 +41,7 @@
 | `videos[i].video_ops.voice_note` | 数组 | string | 任意 | 音轨补充说明 |
 | `videos[i].video_ops.notes` | 数组 | string | 任意自然语言 | 视频整体备注 |
 | `videos[i].time_segments[]` | 数组 | object | 见 §2 段内 op | 片段保留(可空 = 整段保留) |
-| `videos[i].time_segments[].ops` | 数组 | object | `mute` / `speed-up` / `slow-down` / `reverse` / `color-grade`(白名单) | 段内 op。**不在白名单 = 报错**(HTML `validateIntent` 拒绝) |
+| `videos[i].time_segments[].ops` | 数组 | object | `mute` / `speed-up` / `slow-down` / `reverse` / `color`(白名单) | 段内 op。**不在白名单 = 报错**(HTML `validateIntent` 拒绝) |
 | ~~`videos[i].ops` 平铺 22 op~~ | ~~已废弃(D7)~~ | — | ~~不存在~~ | D7:22 个 op 已迁入 `video_ops` 顶层或 `time_segments[].ops`,5 个该消失的 op(`trim-head`/`trim-tail`/`cut-middle`/`pin-range`/`target-duration`)完全删除 |
 | `sequences[i].videos` | 数组 | int[] | entry.index 序列(D1:从 string[] 改为 int[]) | 强制播放顺序 |
 | `sequences[i].transitions` | 数组 | object[] | `{after, type, duration}` 列表 | sequence 内部转场 |
@@ -89,10 +89,10 @@
 | `videos[i].time_segments[j].ops.speed-up` | `video_speed.py` + `trim` | `on=true, factor>1` | `{on: bool, factor: float}`(应用到该段) |
 | `videos[i].time_segments[j].ops.slow-down` | `video_speed.py` + `trim` | `on=true, factor<1` | `{on: bool, factor: float}` |
 | `videos[i].time_segments[j].ops.reverse` | `video_reverse.py` + `trim` | `on=true` | `{on: bool}` |
-| `videos[i].time_segments[j].ops.color-grade` | `video_color.py` + `trim` | `on=true` | `{on: bool, preset: str}` |
+| `videos[i].time_segments[j].ops.color` | `video_color.py` + `trim` | `on=true` | `{on: bool, preset: str}` |
 
 **不在白名单的段内 op** = 校验拒绝(HTML `validateIntent` + JSON Schema)。常见误用:
-- `color` (无 `-grade` 后缀) → 拒绝,应改为 `color-grade`
+- `color-grade` 误写 → 拒绝,正确写法是 `color`(不带后缀)
 - `user` (HTML 拆段内部标记) → 拒绝,不应出现
 - 其他(opening-text 等) → 拒绝,应改在 `video_ops` 顶层
 

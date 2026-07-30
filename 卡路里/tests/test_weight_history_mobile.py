@@ -96,40 +96,24 @@ def test_table_uses_fixed_layout():
 
 
 def test_table_mobile_keeps_note_column_visible():
-    """修复: mobile @media 表格 note 列应可见(不 hide)
-    用户原话:'晨起空腹几个字' 必须完整可见.
-    """
+    """v2.5.28: '注' 列已被用户决定删除。
+    此处改为确保 mobile 表格能正常展示 4 列(日期 / BMI / 体重 / vs 上次)。"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    m = re.search(r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{", html)
-    if m:
-        start = m.end()
-        depth = 1
-        i = start
-        while depth > 0 and i < len(html):
-            if html[i] == '{':
-                depth += 1
-            elif html[i] == '}':
-                depth -= 1
-            i += 1
-        body = html[start:i-1]
-        # 不应 hide note(th 或 td 都不可 display:none)
-        for sel in ["th.note", "td.note"]:
-            assert not re.search(rf"\.table-wrap\s+table\s+{sel}[^}}]*display\s*:\s*none", body), (
-                f"mobile 不应 hide {sel}(违背用户 BUG 2)"
-            )
+    # 4 列数据可显示 = 注 列对应的 CSS 不再参与,实际表格只剩 4 列 th/td
+    text = RENDER.read_text(encoding="utf-8")
+    assert "<th>注</th>" not in text, "v2.5.28: table_header 不应再含 '注' 列"
 
 
 def test_table_header_includes_note_column():
-    """修复: table_header 必须有 <th>注</th>(否则 note td 没对应 th,布局错位)"""
-    # 静态模板的 table_header 是 JS 动态拼的
-    # 改测 render script: build_trend_summary 等的 table_header 必须含 注
+    """v2.5.28: '注' 列已删除,改为验证 4 列结构:日期 / BMI / 体重 / vs上次"""
     text = RENDER.read_text(encoding="utf-8")
-    # 应有 5 个 <th> 包含 日期/BMI/体重/vs 上次/注
     matches = re.findall(r"<th[^>]*>([^<]+)</th>", text)
     headers_seen = " ".join(matches)
-    assert "注" in headers_seen, (
-        f"render script 的 table_header 必须含 '注' 列,实得: {headers_seen[:200]}"
+    assert "注" not in headers_seen, (
+        f"v2.5.28: render script table_header 不应再含 '注' 列(实得: {headers_seen[:200]})"
     )
+    assert "日期" in headers_seen and "BMI" in headers_seen, "table_header 应含 日期 + BMI"
+    assert "体重" in headers_seen and "vs 上次" in headers_seen, "table_header 应含 体重 + vs上次"
 
 
 # ====== Lint integration ======
@@ -486,6 +470,41 @@ def test_chart_labels_are_bold():
     assert re.search(r'<text[^>]*fill="#86868b"[^>]*font-weight="700"', text), (
         "Y 轴 tick 文字应加粗"
     )
+
+
+def test_bmi_abnormal_text_explains_status():
+    """v2.5.28: 当前 BMI 异常时,文案应说明是超重还是过轻(原 '异常' 太笼统)"""
+    from render_weight_history import build_trend_summary
+    # 超重场景:27.7 实际渲染
+    summary = build_trend_summary([], 90.0, 86.9, -4.0, -0.31, 27.7)
+    extra = summary["k4"]["extra"]
+    assert "超重" in extra or "≥24" in extra, (
+        f"BMI=27.7 应提示超重(实得: {extra})"
+    )
+    assert "ff9500" in extra, f"超重应使用橙色 #ff9500(实得: {extra})"
+
+    # 正常场景:22
+    summary = build_trend_summary([], 70.0, 70.0, 0, 0, 22.0)
+    extra = summary["k4"]["extra"]
+    assert "正常" in extra and "34c759" in extra, f"BMI=22 应绿色 + '正常'(实得: {extra})"
+
+    # 过轻场景:17
+    summary = build_trend_summary([], 50.0, 50.0, 0, 0, 17.0)
+    extra = summary["k4"]["extra"]
+    assert "过轻" in extra and "ff3b30" in extra, f"BMI=17 应红色 + '过轻'(实得: {extra})"
+
+
+def test_percent_change_colored_by_direction():
+    """v2.5.28: 变化率 -X% / +X% 应有颜色编码(减重绿、增重红、持平灰)"""
+    from render_weight_history import build_trend_summary
+    # 减重场景
+    summary = build_trend_summary([], 90.0, 86.0, -4.0, -0.31, 27.7)
+    extra = summary["k2"]["extra"]
+    assert "34c759" in extra and "-4.4" in extra, f"减重应绿色 -4.4%(实得: {extra})"
+    # 增重场景(round: 4/86.0=4.65%)
+    summary = build_trend_summary([], 86.0, 90.0, 4.0, 0.31, 27.7)
+    extra = summary["k2"]["extra"]
+    assert "ff3b30" in extra and "+4" in extra, f"增重应红色 +X%(实得: {extra})"
 
 
 def test_note_column_narrower_on_mobile():
@@ -1185,22 +1204,19 @@ def test_body_and_bmi_columns_size_to_content(tmp_path):
           const headers = Array.from(document.querySelectorAll('.table-wrap thead th'));
           const byText = (text) => headers.find(h => h.textContent.trim() === text);
           return {
+            count: headers.length,
             bmi: byText('BMI') ? Math.round(byText('BMI').getBoundingClientRect().width) : null,
             weight: byText('体重') ? Math.round(byText('体重').getBoundingClientRect().width) : null,
             delta: byText('vs 上次') ? Math.round(byText('vs 上次').getBoundingClientRect().width) : null,
-            note: byText('注') ? Math.round(byText('注').getBoundingClientRect().width) : null,
           };
         }""")
         browser.close()
 
-    # 自适应内容:BMI 容纳 "29.3" + padding ~ 22+12 = 34px,但 fixed table 会均分剩余空间,
-    # 实际值 ~107px(见 inspector 测量)。断言 ">= 30" 确保是真实宽度,不是 0 缩。
+    # v2.5.28: '注' 列删除,只剩 4 列(日期 / BMI / 体重 / vs上次)
+    assert info["count"] == 4, f"v2.5.28: 表头应有 4 列,实得 {info['count']}"
     assert info["bmi"] >= 30, info
     assert info["weight"] >= 30, info
-    # vs上次 chip 紧:60px 上限,实测 60。
     assert info["delta"] <= 75, info
-    # 注 列保留
-    assert info["note"] >= 30, info
 
 
 def test_date_column_does_not_regress_on_desktop(tmp_path):

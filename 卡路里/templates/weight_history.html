@@ -47,8 +47,9 @@
   .legend .target-badge.bad { background:rgba(255,59,48,.12); color:var(--bad); }
   table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
   th.date, td.date { width:16%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
-  /* V2.5.26: BMI / 体重 / vs上次 / 注 列改为内容自适应 + nowrap,
-     多宽算多宽,加上 padding,不再受固定百分比拉伸 */
+  /* V2.5.28: 注 列删除(用户: '直接删除')。
+     仅保留 4 列:日期 / BMI / 体重 / vs上次。
+     旧 th.note/td.note CSS 仍保留以防外部引用,不再使用。 */
   th.num, td.num { width:auto; white-space:nowrap; }
   th.kg, td.kg { width:auto; white-space:nowrap; }
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
@@ -94,6 +95,8 @@
     .table-wrap table { font-size:11px; }
     /* V2.1 fix: 不再用 word-break:break-all(否则 '90.9 kg' 换行成 '90.9 k\\ng') */
     .table-wrap table th, .table-wrap table td { padding:6px 6px; white-space:nowrap; }
+    /* V2.5.28: 隐藏 注 列(用户决定删除);旧 td.note 不会渲染,规则仅兜底 */
+    .table-wrap table th.note, .table-wrap table td.note { display:none; }
     /* V2.5.26: 覆盖 mobile 块内的 table 通用 font:11px,date 列需要更小 */
     .table-wrap table th.date, .table-wrap table td:first-child { font-size:10px !important; }
     .table-wrap table td.note { white-space:normal; overflow:hidden; text-overflow:ellipsis; }
@@ -324,7 +327,6 @@
       `<td class="num kg">${p.kg} kg</td>` +
       // V2.5.3: chip 包 <span class="delta-chip">,td.delta 保持 table-cell 占满 column
       (p.delta !== undefined ? `<td class="delta"><span class="delta-chip ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</span></td>` : '') +
-      (p.note ? `<td class="note">${p.note}</td>` : `<td></td>`) +
       `</tr>`);
   });
 

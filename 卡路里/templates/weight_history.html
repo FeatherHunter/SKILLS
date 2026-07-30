@@ -50,7 +50,9 @@
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
   .table-wrap table thead th:nth-child(3),
   .table-wrap table tbody td:nth-child(3) { width:20%; white-space:nowrap; }
-  th.note, td.note { width:25%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* V2.5.2: 注 列 25% → 18%(24 行里 23 行空,25% 太浪费;
+     18% × 380 = 68px 刚好装下 "晨起空腹" 4 字 + padding) */
+  th.note, td.note { width:18%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
   th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
   tr:last-child td { border-bottom:none; }
@@ -86,7 +88,10 @@
     /* L1 fix: 表格 line-height 紧凑(原 1.6 太散) */
     .table-wrap table tbody tr { line-height:1.4; }
     /* M2 fix: delta 列 chip 化(裸数字 → 圆角 badge) */
-    .table-wrap table .delta { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; }
+    /* V2.5.3 fix: chip 用 .delta-chip span 包裹,td.delta 保持 table-cell 占满 column
+       (旧 td.delta { display:inline-block } 让 td 塌陷成 chip 宽度,vs上次 header 57px / cell 31px 错位) */
+    .table-wrap table td.delta { padding:6px 6px; text-align:right; }
+    .table-wrap table .delta-chip { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; }
     .table-wrap table .delta-up { background:rgba(255,59,48,.12); color:var(--bad); }
     .table-wrap table .delta-down { background:rgba(52,199,89,.12); color:var(--good); }
     .table-wrap table .delta-flat { background:rgba(0,113,227,.08); color:var(--fg2); }
@@ -186,6 +191,10 @@
   if (m !== 'compare' && items.length > 0) {
     const svg = document.getElementById('chart');
     const W = 800, H = 260, PAD = 30;
+    // V2.5.1: mobile 上加大字号 + 加粗曲线(用户: '曲线在手机上看太小')
+    const isMobile = window.innerWidth < 640;
+    const labelFontSize = isMobile ? 12 : 10;
+    const lineStrokeWidth = isMobile ? 3 : 2.5;
     const weights = items.map(i => i.kg);
     let minW = Math.min(...weights), maxW = Math.max(...weights);
     const range = (maxW - minW) || 1;
@@ -202,7 +211,7 @@
     for (let v = minY; v <= maxY; v += Math.max(1, Math.round((maxY - minY) / 5))) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
-        `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}kg</text>`);
+        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b">${v}kg</text>`);
     }
     // V2.4 fix: target 线只在 [minY, maxY] 范围内渲染
     // 用户减肥期 target 远低于数据,直接画会让数据线被压扁。
@@ -211,19 +220,19 @@
     if (target && targetInRange) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
-        `<text x="${W - 4}" y="${y(target) - 3}" font-size="10" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
+        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
     }
     let line = `M ${x(0)},${y(items[0].kg)}`;
     items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.kg)}`; });
     svg.insertAdjacentHTML('beforeend',
-      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="2.5"/>`);
+      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="${lineStrokeWidth}"/>`);
     items.forEach((p, i) => {
       const isAnomaly = p.anomaly === true;
       svg.insertAdjacentHTML('beforeend',
         `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}"/>`);
       if (i === items.length - 1) {
         svg.insertAdjacentHTML('beforeend',
-          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="10" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
+          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
       }
     });
 
@@ -266,7 +275,8 @@
       `<tr><td>${p.date}</td>` +
       (p.bmi !== undefined ? `<td class="num">${p.bmi}</td>` : '') +
       `<td class="num kg">${p.kg} kg</td>` +
-      (p.delta !== undefined ? `<td class="delta ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</td>` : '') +
+      // V2.5.3: chip 包 <span class="delta-chip">,td.delta 保持 table-cell 占满 column
+      (p.delta !== undefined ? `<td class="delta"><span class="delta-chip ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</span></td>` : '') +
       (p.note ? `<td class="note">${p.note}</td>` : `<td></td>`) +
       `</tr>`);
   });

@@ -234,21 +234,24 @@ def test_thead_sticky_on_scroll_mobile():
 
 
 def test_delta_column_styled_as_chip():
-    """M2: delta 列应该有 chip 视觉(border-radius + padding)"""
+    """M2: delta 列应该有 chip 视觉(border-radius + padding)
+
+    V2.5.3: chip 视觉现在在 .delta-chip span(不是 td.delta),
+    td.delta 保持 table-cell + right-align 让 chip 右贴 column 右边缘。
+    """
     html = TEMPLATE.read_text(encoding="utf-8")
-    # review fix: 之前是 dead test(只 pass),改为真实 assertion
-    # td.delta 规则应同时有 display:inline-block + border-radius + padding(完整 chip 三件套)
-    m = re.search(r"td\.delta\s*\{([^}]*)\}", html)
-    if m:
-        body = m.group(1)
-        has_chip_props = (
-            "inline-block" in body
-            and "border-radius" in body
-            and "padding" in body
-        )
-        assert has_chip_props, (
-            f"M2 td.delta 应有 chip 三件套(inline-block + border-radius + padding),实得: {body}"
-        )
+    body_clean = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
+    m = re.search(r"\.delta-chip\s*\{([^}]*)\}", body_clean)
+    assert m, "缺 .delta-chip CSS 规则"
+    body = m.group(1)
+    has_chip_props = (
+        "inline-block" in body
+        and "border-radius" in body
+        and "padding" in body
+    )
+    assert has_chip_props, (
+        f"V2.5.3 .delta-chip 应有 chip 三件套(inline-block + border-radius + padding),实得: {body}"
+    )
 
 
 # ============= M3: KPI mobile 字号调 =============
@@ -423,6 +426,167 @@ def test_target_line_renders_even_below_data_range():
 
     assert not desktop_info["desktopSvgGoalLineExists"] and desktop_info["desktopBadgeExists"], (
         f"V2 修复在 desktop 1280 上未生效(回归): {desktop_info}"
+    )
+
+
+# ============= V2.5: 用户第二轮反馈 (2026-07-30) =============
+# 问题 1: chart 在手机上看太小 - Y 轴文字/曲线/当前值文字都偏小
+# 问题 2: 注 列宽 25% 太宽(24 行里 23 行空)
+# 问题 3: vs上次 header 和 chip 没对齐(td.delta display:inline-block 塌陷)
+
+
+def test_chart_mobile_text_size_larger_than_desktop():
+    """V2.5.1: mobile SVG 字号应比 desktop 大(用户: '曲线在手机上看太小')"""
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # JS 应有 isMobile 检测 + 大字号 fallback
+    assert "isMobile" in text or "innerWidth" in text, (
+        "V2.5.1: JS 应检测 mobile viewport 给 SVG 加大字号"
+    )
+
+
+def test_chart_mobile_stroke_wider_than_desktop():
+    """V2.5.1: mobile SVG stroke-width 应比 desktop 大(用户: '曲线粗度太小')"""
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # JS 应有 stroke-width mobile fallback:isMobile ? M : D,M > D
+    m = re.search(r"isMobile\s*\?\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)", text)
+    assert m, (
+        "V2.5.1: JS 缺 isMobile ? M : D 的 stroke-width/字号分支"
+    )
+    mobile_v = float(m.group(1))
+    desktop_v = float(m.group(2))
+    assert mobile_v > desktop_v, (
+        f"V2.5.1: mobile 值 ({mobile_v}) 应 > desktop ({desktop_v})"
+    )
+
+
+def test_note_column_narrower_on_mobile():
+    """V2.5.2: 注 列 mobile 宽度应 < 25%(用户: '注 列太宽了')"""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    # mobile @media 内或主样式里注 列宽
+    # 在主 CSS 里:th.note, td.note { width:... }
+    m = re.search(r"th\.note\s*,\s*td\.note\s*\{[^}]*width\s*:\s*(\d+)%", html)
+    if m:
+        w = int(m.group(1))
+        assert w <= 20, (
+            f"V2.5.2: 注 列宽 ({w}%) 应 ≤ 20%(24 行里 23 行空,太宽浪费)"
+        )
+
+
+def test_delta_cell_uses_table_cell_not_inline_block():
+    """V2.5.3: td.delta 不应是 display:inline-block(否则塌陷,vs上次列错位)
+
+    用户反馈: 'vs 上次和下面的内容应该对齐' - 实测 header 57px / cell 31px 不齐。
+    根因: td.delta { display:inline-block } 让 td 收缩到 chip 宽度,无视 column 宽度。
+    修复: chip 用 <span class='delta'> 包裹,td 保持 table-cell 占满 column。
+    """
+    html = TEMPLATE.read_text(encoding="utf-8")
+    # 任何形式的 td.delta { display:inline-block } 都不应有
+    body_clean = re.sub(r"/\*.*?\*/", "", html, flags=re.DOTALL)
+    td_delta_inline = re.search(r"td\s*\.?\s*delta\s*\{[^}]*display\s*:\s*inline-block", body_clean)
+    assert not td_delta_inline, (
+        f"V2.5.3: td.delta 不应 display:inline-block(会让 td 塌陷,vs上次列 57→31px)。\n"
+        f"应改: chip 包 <span class='delta'>,td 保持 table-cell 占满 column。"
+    )
+
+
+def test_delta_chip_uses_span_wrapper_in_js():
+    """V2.5.3: JS 渲染 delta 时应包 <span class='delta-chip'>,让 td 保持 table-cell"""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    # V2.5.3 期望:<td class="delta"><span class="delta-chip ${cls}">${val}</span></td>
+    # 旧(待修复):<td class="delta ${cls}">${val}</td>
+    has_span = re.search(r'<td[^>]*>\s*<span\s+class=["\']delta-chip', html)
+    has_old_bad = re.search(r'<td[^>]*class=["\']delta\s+', html)
+    assert has_span, (
+        f"V2.5.3: JS delta 渲染应包 <span class='delta-chip'>"
+    )
+    assert not has_old_bad, (
+        f"V2.5.3: 不应再有 <td class='delta delta-up'>...</td> 旧形式"
+    )
+
+
+# ============= V2.5 集成: 实测对齐 + 视觉 =============
+
+
+def test_phone_xr_delta_cell_occupies_full_column():
+    """V2.5.3 集成: iPhone XR 上 td.delta 应吃满 column(57px),不是 chip 宽度(31px)
+
+    之前 td.delta { display:inline-block } 让 td 塌陷成 31px,
+    header th 是 57px,导致 'vs 上次' 与 chip 不对齐。
+    """
+    from playwright.sync_api import sync_playwright
+    from pathlib import Path
+    import json
+
+    sample = SKILL_DIR / "templates" / "weight_history.html"
+    sample_path = Path(".scratch/phone-repro/sample-v25.html")
+    sample_path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "status": "ok",
+        "data": {
+            "summary": {
+                "subtitle": "test",
+                "k1": {"label":"a","value":"1","extra":""},
+                "k2": {"label":"a","value":"1","extra":""},
+                "k3": {"label":"a","value":"1","extra":""},
+                "k4": {"label":"a","value":"1","extra":""},
+                "table_header": "<tr><th>日期</th><th class='num'>BMI</th><th class='num kg'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
+            },
+            "items": [{"date": "2026-07-01", "kg": 90.9, "bmi": 29.0, "delta": 1.0, "note": ""}],
+            "target": 69.9,
+            "meta": {"start": "2026-07-01", "end": "2026-07-01", "days": 1, "today": "2026-07-01"},
+            "mode": "trend"
+        }
+    }
+    html_content = sample.read_text(encoding="utf-8")
+    html_content = html_content.replace(
+        "<!--INJECT-DATA-->",
+        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        1
+    )
+    sample_path.write_text(html_content, encoding="utf-8")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(
+            viewport={"width": 414, "height": 896},
+            device_scale_factor=2, is_mobile=True,
+        )
+        page = ctx.new_page()
+        page.goto(f"file:///{sample_path.resolve()}")
+        page.wait_for_load_state("networkidle")
+        info = page.evaluate("""() => {
+          const header = Array.from(document.querySelectorAll('.table-wrap table thead th')).find(th => th.textContent.trim().includes('vs'));
+          const cell = document.querySelector('.table-wrap table tbody tr td.delta, .table-wrap table tbody tr td:has(.delta)');
+          const chip = cell ? cell.querySelector('.delta') : null;
+          if (!header || !cell) return { error: 'not found' };
+          const hR = header.getBoundingClientRect();
+          const cR = cell.getBoundingClientRect();
+          const chipR = chip ? chip.getBoundingClientRect() : null;
+          return {
+            headerWidth: hR.width,
+            cellWidth: cR.width,
+            cellDisplay: getComputedStyle(cell).display,
+            chipWidth: chipR ? chipR.width : null,
+            // header 和 cell 右边缘应一致(列对齐)
+            headerRight: hR.right,
+            cellRight: cR.right,
+            rightEdgeDiff: Math.abs(hR.right - cR.right),
+          };
+        }""")
+        browser.close()
+
+    assert "error" not in info, f"Playwright 失败: {info}"
+    assert info["cellDisplay"] != "inline-block", (
+        f"V2.5.3: td 不应是 inline-block(会让列塌陷)。display={info['cellDisplay']}"
+    )
+    # cell 宽度应 ≈ header 宽度(table-layout:fixed 列对齐)
+    width_diff_pct = abs(info["cellWidth"] - info["headerWidth"]) / info["headerWidth"]
+    assert width_diff_pct < 0.05, (
+        f"V2.5.3: cell 宽度 ({info['cellWidth']}px) 应 ≈ header 宽度 ({info['headerWidth']}px)。"
+        f"否则 'vs 上次' header 与 chip 内容列错位。"
+    )
+    assert info["rightEdgeDiff"] < 2, (
+        f"V2.5.3: header 和 cell 右边缘应一致,差 {info['rightEdgeDiff']}px"
     )
 
 

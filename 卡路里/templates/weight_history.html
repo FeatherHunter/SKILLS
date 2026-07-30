@@ -30,15 +30,17 @@
   .kpi .extra.good { color:var(--good); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  /* H1 fix: SVG 高度用 clamp(响应式 + 保底 180-280),不纯 auto(否则 100px 太矮)。
-     preserveAspectRatio="xMidYMid meet" 让 X/Y 等比缩放(在 SVG 上设置,见下)。 */
-  svg { width:100%; height:clamp(180px, 30vw, 280px); display:block; text-rendering: geometricPrecision; }
+  svg { width:100%; height:clamp(220px, 35vw, 380px); display:block; text-rendering: geometricPrecision; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; }
   .legend .a { background:var(--accent); height:2px; }
   .legend .b { background:transparent; border-top:2px dashed var(--warn); height:0; }
   .legend .c { background:transparent; border-top:2px dashed var(--good); height:0; }
+  .legend .d { background:transparent; border-top:2px dashed #8e8e93; height:0; }
+  .legend .trend-rate-badge { padding:3px 10px; border-radius:10px; background:var(--soft); color:var(--fg2); font-weight:600; font-variant-numeric:tabular-nums; }
+  .legend .trend-rate-badge.good { background:rgba(52,199,89,.15); color:var(--good); }
+  .legend .trend-rate-badge.bad { background:rgba(255,59,48,.12); color:var(--bad); }
   /* V2.4 fix: target 不在数据范围时显示距离 badge */
   .legend .target-badge { padding:3px 10px; border-radius:10px; background:rgba(255,149,0,.12); color:var(--warn); font-weight:600; font-variant-numeric:tabular-nums; }
   .legend .target-badge.good { background:rgba(52,199,89,.15); color:var(--good); }
@@ -130,7 +132,7 @@
 
 <div class="section" id="chartSection">
   <h2 id="chartTitle">体重曲线</h2>
-  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet"></svg>
+  <svg id="chart" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"></svg>
   <div class="legend" id="legend"></div>
 </div>
 
@@ -194,7 +196,7 @@
   // 折线图(适用于 trend/history/volatility)
   if (m !== 'compare' && items.length > 0) {
     const svg = document.getElementById('chart');
-    const W = 800, H = 260, PAD = 30;
+    const W = 800, H = 500, PAD = 30;
     // V2.5.1: mobile 上加大字号 + 加粗曲线(用户: '曲线在手机上看太小')
     const isMobile = window.innerWidth < 640;
     const labelFontSize = isMobile ? 12 : 10;
@@ -206,8 +208,9 @@
     // 旧 H3 fix 让 target=69.9 < minW=86.9 时把 Y 轴扩到 [68,93],
     // 数据线挤顶部 30%,看起来"几乎看不见"。
     // 新设计: target 用 SVG 下方 badge 显示"还差 Xkg"距离。
-    let minY = Math.floor(minW - range * 0.2);
-    let maxY = Math.ceil(maxW + range * 0.2);
+    const axisPadding = Math.max(0.5, range * 0.05);
+    let minY = Math.floor(minW - axisPadding);
+    let maxY = Math.ceil(maxW + axisPadding);
     const xStep = (W - 2*PAD) / Math.max(1, items.length - 1);
     const x = i => PAD + i * xStep;
     const y = v => H - PAD - (v - minY) / (maxY - minY) * (H - 2*PAD);
@@ -226,22 +229,57 @@
         `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
         `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
     }
+    if (items.length >= 7) {
+      let movingAverageLine = '';
+      for (let i = 6; i < items.length; i++) {
+        const average = items.slice(i - 6, i + 1).reduce((sum, item) => sum + item.kg, 0) / 7;
+        movingAverageLine += `${i === 6 ? 'M' : ' L'} ${x(i)},${y(average)}`;
+      }
+      svg.insertAdjacentHTML('beforeend',
+        `<path d="${movingAverageLine}" fill="none" stroke="#8e8e93" stroke-width="2" stroke-dasharray="8,5" opacity="0.9" vector-effect="non-scaling-stroke" aria-label="7 天移动平均线"/>`);
+    }
     let line = `M ${x(0)},${y(items[0].kg)}`;
     items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.kg)}`; });
     svg.insertAdjacentHTML('beforeend',
-      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="${lineStrokeWidth}"/>`);
+      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="${lineStrokeWidth}" vector-effect="non-scaling-stroke"/>`);
     items.forEach((p, i) => {
       const isAnomaly = p.anomaly === true;
       svg.insertAdjacentHTML('beforeend',
-        `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}"/>`);
+        `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}" vector-effect="non-scaling-stroke"/>`);
       if (i === items.length - 1) {
         svg.insertAdjacentHTML('beforeend',
           `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
       }
     });
+    const extrema = [
+      { label: '最高', value: maxW, index: weights.indexOf(maxW), color: '#ff3b30', dy: -16 },
+      { label: '最低', value: minW, index: weights.indexOf(minW), color: '#34c759', dy: 22 },
+    ];
+    extrema.forEach(entry => {
+      const pointX = x(entry.index);
+      const pointY = y(entry.value);
+      const anchor = pointX > W - 100 ? 'end' : pointX < 100 ? 'start' : 'middle';
+      const textX = pointX + (anchor === 'end' ? -10 : anchor === 'start' ? 10 : 0);
+      svg.insertAdjacentHTML('beforeend',
+        `<g class="chart-extremum" aria-label="${entry.label}体重 ${entry.value}kg">` +
+        `<circle cx="${pointX}" cy="${pointY}" r="7" fill="${entry.color}" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
+        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700">${entry.label} ${entry.value}kg</text>` +
+        `</g>`);
+    });
 
     // V2.4 fix: target 不在范围时,SVG 下方 badge 显示"目标 Xkg, 还差 Ykg"
     let legendHtml = `<span><i class="a"></i> 体重</span>`;
+    if (items.length >= 7) {
+      legendHtml += `<span><i class="d"></i> 7 天均线</span>`;
+    }
+    const firstItem = items[0];
+    const lastItem = items[items.length - 1];
+    const elapsedDays = Math.max(1, Math.round((Date.parse(lastItem.date) - Date.parse(firstItem.date)) / 86400000));
+    const dailyRate = (lastItem.kg - firstItem.kg) / elapsedDays;
+    const rateArrow = dailyRate < 0 ? '↓' : dailyRate > 0 ? '↑' : '→';
+    const rateClass = dailyRate < 0 ? 'good' : dailyRate > 0 ? 'bad' : '';
+    const rateSign = dailyRate > 0 ? '+' : '';
+    legendHtml += `<span class="trend-rate-badge ${rateClass}" aria-label="体重变化率">${rateArrow} ${rateSign}${dailyRate.toFixed(2)} kg/天</span>`;
     if (target) {
       const lastKg = items[items.length - 1].kg;
       const diff = (lastKg - target);

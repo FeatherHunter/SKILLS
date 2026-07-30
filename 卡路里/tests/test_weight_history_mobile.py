@@ -18,6 +18,7 @@ weight-history-table-mobile-redesign · 2026-07-30
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -843,3 +844,164 @@ def test_phone_xr_chart_y_axis_no_expansion():
         f"V2.4 修复未生效:Y 轴最小值 {y_min}kg 仍包含 target 区域。"
         f"应 ≥ 80(数据驱动)而非降到 68(扩 target)。labels={labels}"
     )
+
+
+CHART_FIXTURE = SKILL_DIR / ".scratch" / "weight-history-mobile-fixes" / "chart-fixture.json"
+
+
+def _render_chart_fixture(tmp_path):
+    output = tmp_path / "weight-history-chart.html"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RENDER),
+            "--mock",
+            str(CHART_FIXTURE),
+            "--output",
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return output
+
+
+@pytest.mark.parametrize(
+    ("viewport", "expected_height"),
+    [
+        ({"width": 375, "height": 667, "is_mobile": True}, 220),
+        ({"width": 768, "height": 1024, "is_mobile": False}, 768 * 0.35),
+        ({"width": 1280, "height": 800, "is_mobile": False}, 380),
+    ],
+)
+def test_rendered_chart_uses_large_canvas(tmp_path, viewport, expected_height):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(
+            viewport={"width": viewport["width"], "height": viewport["height"]},
+            device_scale_factor=2,
+            is_mobile=viewport["is_mobile"],
+        )
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        chart = page.evaluate("""() => {
+          const svg = document.querySelector('#chart');
+          const rect = svg.getBoundingClientRect();
+          const viewBox = svg.viewBox.baseVal;
+          return {
+            height: rect.height,
+            viewBoxRatio: viewBox.width / viewBox.height,
+          };
+        }""")
+        browser.close()
+
+    assert chart["viewBoxRatio"] <= 1.7
+    assert chart["height"] == pytest.approx(expected_height, abs=1)
+
+
+def test_rendered_chart_keeps_data_prominent_and_stroke_readable(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(
+            viewport={"width": 375, "height": 667},
+            device_scale_factor=2,
+            is_mobile=True,
+        )
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        chart = page.evaluate("""() => {
+          const svg = document.querySelector('#chart');
+          const line = svg.querySelector('path[stroke="#0071e3"]');
+          const matrix = line.getScreenCTM();
+          const style = getComputedStyle(line);
+          const strokeWidth = parseFloat(style.strokeWidth);
+          const scale = Math.hypot(matrix.a, matrix.b);
+          const effectiveStrokeWidth = style.vectorEffect === 'non-scaling-stroke'
+            ? strokeWidth
+            : strokeWidth * scale;
+          return {
+            dataHeightRatio: line.getBBox().height / svg.viewBox.baseVal.height,
+            effectiveStrokeWidth,
+          };
+        }""")
+        browser.close()
+
+    assert chart["dataHeightRatio"] >= 0.6
+    assert chart["effectiveStrokeWidth"] >= 2.5
+
+
+def test_rendered_chart_shows_moving_average_and_daily_rate(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 375, "height": 667}, is_mobile=True)
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        trend = page.evaluate("""() => {
+          const movingAverage = document.querySelector('[aria-label="7 天移动平均线"]');
+          const rate = document.querySelector('[aria-label="体重变化率"]');
+          const rect = movingAverage ? movingAverage.getBoundingClientRect() : null;
+          return {
+            movingAverageExists: !!movingAverage,
+            movingAverageWidth: rect ? rect.width : 0,
+            movingAverageDash: movingAverage ? getComputedStyle(movingAverage).strokeDasharray : '',
+            rateText: rate ? rate.textContent.trim() : '',
+          };
+        }""")
+        browser.close()
+
+    assert trend["movingAverageExists"]
+    assert trend["movingAverageWidth"] > 0
+    assert trend["movingAverageDash"] not in {"", "none"}
+    assert trend["rateText"] == "↓ -0.31 kg/天"
+
+
+def test_rendered_chart_marks_highest_and_lowest_weights(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 375, "height": 667}, is_mobile=True)
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        extrema = page.evaluate("""() => {
+          const highest = document.querySelector('[aria-label="最高体重 91.9kg"]');
+          const lowest = document.querySelector('[aria-label="最低体重 86.9kg"]');
+          const inspect = element => {
+            if (!element) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+              width: rect.width,
+              height: rect.height,
+              fill: getComputedStyle(element.querySelector('circle')).fill,
+              text: element.querySelector('text').textContent.trim(),
+            };
+          };
+          return { highest: inspect(highest), lowest: inspect(lowest) };
+        }""")
+        browser.close()
+
+    assert extrema["highest"] is not None
+    assert extrema["lowest"] is not None
+    assert extrema["highest"]["width"] > 0 and extrema["highest"]["height"] > 0
+    assert extrema["lowest"]["width"] > 0 and extrema["lowest"]["height"] > 0
+    assert extrema["highest"]["fill"] == "rgb(255, 59, 48)"
+    assert extrema["lowest"]["fill"] == "rgb(52, 199, 89)"
+    assert extrema["highest"]["text"] == "最高 91.9kg"
+    assert extrema["lowest"]["text"] == "最低 86.9kg"

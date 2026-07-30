@@ -2116,6 +2116,47 @@ def render_replay(start: str, end: str) -> dict:
         "dim_totals": build_dimension_aggregates(records),
     }
 
+    # === T04 · plan 聚合段 ===
+    # 6 类 completion 分布 + 按分类拆解 + 整体完成率
+    COMPLETION_KEYS = ["已完成", "已完成(超时)", "部分完成",
+                       "未完成", "未完成(不可抗力)", "未复盘"]
+    completion_distribution = {k: 0 for k in COMPLETION_KEYS}
+    by_category: dict[str, dict[str, int]] = {}  # cat -> {completion_key: count}
+    for p in plans:
+        comp = p.get("completion")
+        key = comp if comp in COMPLETION_KEYS[:5] else "未复盘"
+        completion_distribution[key] += 1
+        cat = p.get("category") or "(未分类)"
+        if cat not in by_category:
+            by_category[cat] = {k: 0 for k in COMPLETION_KEYS}
+        by_category[cat][key] += 1
+
+    # 按分类拆解:[{category, total, completed, completion_rate}]
+    completion_by_category = []
+    for cat, dist in by_category.items():
+        total = sum(dist.values())
+        # 已完成 = "已完成" 类(按时完成,不包含超时/部分完成)
+        completed = dist["已完成"]
+        rate = (completed / total) if total > 0 else 0.0
+        completion_by_category.append({
+            "category": cat, "total": total, "completed": completed,
+            "completion_rate": round(rate, 3),
+        })
+    # 按 total 降序
+    completion_by_category.sort(key=lambda c: -c["total"])
+
+    # 整体完成率:已完成 / (已完成 + 未完成) 二分
+    total_events = len(plans)
+    completed_count = sum(1 for p in plans if p.get("completion") == "已完成")
+    not_completed = sum(1 for p in plans if p.get("completion") in ("未完成", "未完成(不可抗力)"))
+    overall_rate = (completed_count / (completed_count + not_completed)) if (completed_count + not_completed) > 0 else 0.0
+
+    plan_aggregate = {
+        "completion_distribution": completion_distribution,
+        "completion_by_category": completion_by_category,
+        "completion_rate": round(overall_rate, 3),
+    }
+
     # 5 状态 fallback(空数据 → empty)
     if total_records == 0 and len(plans) == 0:
         return {
@@ -2173,14 +2214,7 @@ def render_replay(start: str, end: str) -> dict:
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
         "record_aggregate": record_aggregate,
-        "plan_aggregate": {
-            "completion_distribution": {
-                "已完成": 0, "已完成(超时)": 0, "部分完成": 0,
-                "未完成": 0, "未完成(不可抗力)": 0, "未复盘": 0,
-            },
-            "completion_by_category": [],
-            "completion_rate": 0.0,
-        },
+        "plan_aggregate": plan_aggregate,
         "cross_domain": {
             "planned_actual_pairs": [],
             "unexecuted_plans": [],

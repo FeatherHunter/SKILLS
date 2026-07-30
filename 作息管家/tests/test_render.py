@@ -434,3 +434,93 @@ def test_render_record_range_interval_length_bug_regression():
     # 锁定修复已落地
     assert 'days.length + " 天"' in js_text, \
         "_record_engine.js 缺 'days.length + \" 天\"' (区间长度修复未落地)"
+
+
+# ---- T04 plan 聚合段 (Spec: .scratch/replay-start-end/spec.md § 4 段叙事) ----
+# Issue: .scratch/replay-start-end/issues/04-plan-aggregate.md
+
+def test_render_replay_plan_aggregate_distribution():
+    """T04 · plan_aggregate.completion_distribution 6 类分布 dict"""
+    # 灌 6 种 completion 的 plan
+    completion_list = [
+        ("已完成", "工作.AI调优"),
+        ("已完成", "健康.运动"),
+        ("已完成(超时)", "工作.开发"),
+        ("部分完成", "学习.读书"),
+        ("未完成", "调整.游戏"),
+        ("未完成(不可抗力)", "日常.杂事"),
+    ]
+    for i, (comp, cat) in enumerate(completion_list):
+        result = _db.ensure_plan_event(
+            date="2026-07-15", time_start=f"{8+i:02d}:00",
+            time_end=f"{8+i:02d}:30", title=f"计划 {i}", category=cat,
+        )
+        pid = result["id"]
+        _db.update_plan_event(pid, {"completion": comp, "completion_note": ""})
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    d = result["data"]
+    pa = d["plan_aggregate"]
+    dist = pa["completion_distribution"]
+    assert dist["已完成"] == 2, f"已完成 = 2,实际 {dist['已完成']}"
+    assert dist["已完成(超时)"] == 1
+    assert dist["部分完成"] == 1
+    assert dist["未完成"] == 1
+    assert dist["未完成(不可抗力)"] == 1
+    assert dist["未复盘"] == 0, f"未复盘 = 0,实际 {dist['未复盘']}"
+    # 6 项总和 = 总计划数
+    assert sum(dist.values()) == 6
+
+
+def test_render_replay_plan_aggregate_by_category():
+    """T04 · plan_aggregate.completion_by_category 按分类拆解"""
+    # 灌 2 类计划,每类 2 条
+    for i in range(2):
+        result = _db.ensure_plan_event(
+            date="2026-07-15", time_start=f"{8+i:02d}:00",
+            time_end=f"{8+i:02d}:30", title=f"工作{i}", category="工作.AI调优",
+        )
+        _db.update_plan_event(result["id"], {"completion": "已完成"})
+    for i in range(2):
+        result = _db.ensure_plan_event(
+            date="2026-07-15", time_start=f"{10+i:02d}:00",
+            time_end=f"{10+i:02d}:30", title=f"健康{i}", category="健康.运动",
+        )
+        _db.update_plan_event(result["id"], {"completion": "已完成(超时)"})
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    d = result["data"]
+    pa = d["plan_aggregate"]
+    by_cat = pa["completion_by_category"]
+    # by_cat: [{category, total, completed, completion_rate}]
+    assert len(by_cat) == 2
+    cat_work = next(c for c in by_cat if c["category"] == "工作.AI调优")
+    cat_health = next(c for c in by_cat if c["category"] == "健康.运动")
+    assert cat_work["total"] == 2 and cat_work["completed"] == 2
+    assert cat_work["completion_rate"] == 1.0
+    assert cat_health["total"] == 2 and cat_health["completed"] == 0
+    assert cat_health["completion_rate"] == 0.0
+
+
+def test_render_replay_plan_aggregate_completion_rate():
+    """T04 · plan_aggregate.completion_rate 整体完成率 %(已完成 / (已完成 + 未完成) 二分)"""
+    # 3 条:2 已完成 + 1 未完成 → 完成率 = 2/3
+    for i in range(2):
+        result = _db.ensure_plan_event(
+            date="2026-07-15", time_start=f"{8+i:02d}:00",
+            time_end=f"{8+i:02d}:30", title=f"完{i}", category="工作.AI调优",
+        )
+        _db.update_plan_event(result["id"], {"completion": "已完成"})
+    result = _db.ensure_plan_event(
+        date="2026-07-15", time_start="14:00", time_end="14:30",
+        title="未完", category="工作.开发",
+    )
+    _db.update_plan_event(result["id"], {"completion": "未完成", "completion_note": "忘了"})
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    pa = result["data"]["plan_aggregate"]
+    rate = pa["completion_rate"]
+    assert abs(rate - (2/3)) < 0.01, f"完成率应 ≈ 0.666,实际 {rate}"

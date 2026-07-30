@@ -76,7 +76,7 @@
   <section class="chart-section">
     <h2>体重折线 + ±σ 带</h2>
     <div class="chart-wrap">
-      <canvas id="chart"></canvas>
+      <canvas id="chart" width="800" height="360"></canvas>
     </div>
   </section>
 
@@ -107,7 +107,11 @@
 
   if (ew.kg != null) {
     kpiValue.textContent = ew.kg.toFixed(1) + ' kg';
-    kpiBaseline.textContent = 'baseline ' + DATA.data.baseline_value.toFixed(1) + ' kg';
+    // spec AC: "今天 X kg vs 近期常态 Y ± Z kg" + 1 句解读
+    const baseline = DATA.data.baseline_value;
+    const sigma = DATA.data.baseline_sigma || 0;
+    const dev = Math.abs(ew.deviation_kg || 0);
+    kpiBaseline.textContent = `${baseline.toFixed(1)} ± ${sigma.toFixed(2)} kg`;
     kpiExtra.firstChild.textContent = 'vs ' + (DATA.data.baseline_toggle_label || 'baseline') + ' ';
     if (ew.level === 'red') {
       kpiPill.textContent = '🔴 异常';
@@ -125,8 +129,9 @@
   const canvas = document.getElementById('chart');
   if (canvas && DATA.data.points && DATA.data.points.length > 0) {
     const ctx = canvas.getContext('2d');
+    // review fix:防止 buffer height 默认 150 拉伸(display 360),显式 set canvas.width/height
     const W = canvas.width = canvas.offsetWidth;
-    const H = canvas.height;
+    const H = canvas.height = 360;
     const PAD = 40;
 
     const points = DATA.data.points;
@@ -134,10 +139,13 @@
     const sigma = DATA.data.baseline_sigma;
     const yellow = DATA.data.thresholds.yellow || 0;
     const red = DATA.data.thresholds.red || 0;
+    // goal 从 daily_goal.weight_goal 拿(spec §Implementation Decisions toggle baseline)
+    const goal = DATA.data.goal_weight || null;
 
     const weights = points.map(p => p.kg);
-    const minW = Math.min(...weights, baseline);
-    const maxW = Math.max(...weights, baseline);
+    const yValues = goal ? [baseline, goal, ...weights] : [baseline, ...weights];
+    const minW = Math.min(...yValues);
+    const maxW = Math.max(...yValues);
     const range = (maxW - minW) || 1;
     const minY = Math.floor(minW - range * 0.2);
     const maxY = Math.ceil(maxW + range * 0.2);
@@ -151,15 +159,19 @@
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
 
-    // ±σ band
-    ctx.fillStyle = 'rgba(0,113,227,0.08)';
-    ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
+    // ±σ band(spec:yellow tint for ±1.5σ, red tint for ±2σ)
+    // yellow band: ±1.5σ
+    if (yellow > 0) {
+      ctx.fillStyle = 'rgba(255,149,0,0.10)';
+      ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
+    }
+    // red band: ±2σ
     if (red > 0 && red > yellow) {
-      ctx.fillStyle = 'rgba(0,113,227,0.04)';
+      ctx.fillStyle = 'rgba(255,59,48,0.10)';
       ctx.fillRect(PAD, y(baseline + red), W - 2*PAD, y(baseline - red) - y(baseline + red));
     }
 
-    // baseline 线
+    // baseline 线(滚动 30 天均值,灰色虚线)
     ctx.strokeStyle = '#86868b';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 3]);
@@ -168,6 +180,23 @@
     ctx.lineTo(W - PAD, y(baseline));
     ctx.stroke();
     ctx.setLineDash([]);
+
+    // 目标线(goal,绿色虚线) — ticket 02 AC 明确要求
+    if (goal && goal >= minY && goal <= maxY) {
+      ctx.strokeStyle = '#34c759';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(PAD, y(goal));
+      ctx.lineTo(W - PAD, y(goal));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#34c759';
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(`目标 ${goal}kg`, W - PAD - 4, y(goal) - 4);
+      ctx.textAlign = 'left';
+    }
 
     // 体重折线
     ctx.strokeStyle = '#0071e3';
@@ -181,7 +210,7 @@
     });
     ctx.stroke();
 
-    // 异常点
+    // 异常点(points 标记)
     points.forEach((p, i) => {
       if (p.level === 'red') {
         ctx.fillStyle = '#ff3b30';
@@ -203,9 +232,10 @@
 
     // σ 标签
     if (yellow > 0) {
-      ctx.fillStyle = '#86868b';
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.fillText('±1.5σ', W - PAD - 30, y(baseline + yellow) - 4);
+      ctx.fillStyle = '#ff9500';
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('±1.5σ', PAD + 4, y(baseline + yellow) - 4);
     }
   }
 })();

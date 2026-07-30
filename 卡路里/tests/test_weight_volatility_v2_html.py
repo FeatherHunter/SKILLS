@@ -24,7 +24,6 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = SKILL_DIR / "templates"
-RENDER = SKILL_DIR / "scripts" / "render_weight_volatility_v2.py"
 TEMPLATE = TEMPLATES_DIR / "weight_volatility_v2.html"
 
 
@@ -73,40 +72,38 @@ def test_weight_volatility_v2_template_has_inject_data_placeholder():
 
 
 def test_weight_volatility_v2_template_has_kpi_card():
-    """02: 至少 1 张 KPI 卡(诊断)"""
+    """02: 至少 1 张 KPI 卡(诊断),含 spec 要求的元素 id"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    # 至少 1 个 KPI 标识(class 或 id)
-    assert "kpi" in html.lower(), "缺 KPI 标记"
-    # 含 baseline_value 占位符
-    assert "baseline_value" in html or "baseline" in html, "缺 baseline 引用"
+    # spec AC 要求 KPI 含 "今天 X kg vs baseline Y ± Z kg"
+    assert 'id="kpiValue"' in html, "缺 KPI 数值 id"
+    assert 'id="kpiBaseline"' in html, "缺 KPI baseline id"
+    assert 'id="kpiPill"' in html, "缺 KPI 等级 pill id"
+    # review fix:KPI 卡应显示 ±σ 范围(不是只 baseline)
+    assert "±" in html, "KPI 卡应显示 ±σ 范围"
 
 
 def test_weight_volatility_v2_template_canvas_render_acceptance():
-    """02: 视觉:demo 时 render 默认数据后,Canvas 内可见 baseline / 体重线 / ±σ 带阴影
-
-    Canvas 渲染是 JS 端,静态 HTML 验证 JS 代码存在 + 含关键绘制函数。
-    """
+    """02: review fix — Canvas JS 必须含关键绘制函数(不是仅 API 字符串 grep)"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    # JS 必须在 <script> 块内
-    assert "<script>" in html or "<script " in html
-    # 含 Canvas 绘制 API
-    assert "canvas" in html.lower()
-    # 关键 Canvas API 调用
-    canvas_apis = ["getContext", "fillRect", "fillText", "stroke", "beginPath", "moveTo"]
-    found_apis = [api for api in canvas_apis if api in html]
-    assert len(found_apis) >= 3, (
-        f"Canvas 绘制 API 覆盖不足,找到 {len(found_apis)} 个: {found_apis}"
-    )
+    # 关键绘制:baseline 虚线 + 体重折线 + ±σ band + 目标线
+    # 1. baseline 虚线(setLineDash + moveTo + lineTo)
+    assert "setLineDash" in html, "缺 baseline 虚线绘制"
+    # 2. ±σ band(fillRect,黄色 + 红色)
+    assert "rgba(255,149,0," in html, "缺 ±1.5σ yellow band"
+    assert "rgba(255,59,48," in html, "缺 ±2σ red band"
+    # 3. 目标线(绿色虚线)— ticket 02 AC 明确要求
+    assert "34c759" in html or "rgba(52,199,89," in html, "缺目标线(goal 绿色虚线)"
+    # 4. 缓冲尺寸显式(防 Q7 stretch bug 回退)
+    assert 'width="800"' in html, "缺 canvas width 显式"
+    assert 'height="360"' in html, "缺 canvas height 显式"
 
 
-def test_weight_volatility_v2_template_uses_spec_data_fields():
-    """02: 含 spec §Implementation Decisions 要求的 data 字段占位符"""
+def test_weight_volatility_v2_template_uses_ticket02_fields():
+    """02: ticket 02 实际用到的字段(baseline + thresholds + early_warning)"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    # 这些字段都得在 JS 或 HTML 中被引用
-    required_fields = [
+    required_ticket_02_fields = [
         "baseline_value", "baseline_sigma",
-        "thresholds", "points", "recent_anomalies", "sigma_trend",
-        "early_warning", "baseline_toggle_label",
+        "thresholds", "points", "early_warning",
     ]
-    missing = [f for f in required_fields if f not in html]
-    assert not missing, f"模板缺 spec data 字段: {missing}"
+    missing = [f for f in required_ticket_02_fields if f not in html]
+    assert not missing, f"ticket 02 字段缺失: {missing}"

@@ -472,26 +472,31 @@ def test_chart_labels_are_bold():
     )
 
 
-def test_bmi_abnormal_text_explains_status():
-    """v2.5.28: 当前 BMI 异常时,文案应说明是超重还是过轻(原 '异常' 太笼统)"""
+def test_bmi_uses_china_4_tier_standard():
+    """v2.5.29: 中国 WS/T 428-2013 标准 4 档
+    < 18.5 偏瘦(蓝) | 18.5-24 正常(绿) | 24-28 超重(橙) | ≥ 28 肥胖(红)"""
     from render_weight_history import build_trend_summary
-    # 超重场景:27.7 实际渲染
-    summary = build_trend_summary([], 90.0, 86.9, -4.0, -0.31, 27.7)
-    extra = summary["k4"]["extra"]
-    assert "超重" in extra or "≥24" in extra, (
-        f"BMI=27.7 应提示超重(实得: {extra})"
-    )
-    assert "ff9500" in extra, f"超重应使用橙色 #ff9500(实得: {extra})"
-
-    # 正常场景:22
-    summary = build_trend_summary([], 70.0, 70.0, 0, 0, 22.0)
-    extra = summary["k4"]["extra"]
-    assert "正常" in extra and "34c759" in extra, f"BMI=22 应绿色 + '正常'(实得: {extra})"
-
-    # 过轻场景:17
-    summary = build_trend_summary([], 50.0, 50.0, 0, 0, 17.0)
-    extra = summary["k4"]["extra"]
-    assert "过轻" in extra and "ff3b30" in extra, f"BMI=17 应红色 + '过轻'(实得: {extra})"
+    cases = [
+        # (bmi, expected_label_keyword, expected_color, scenario)
+        (17.0, "偏瘦", "0a84ff", "BMI=17 偏瘦 → 蓝"),
+        (18.4, "偏瘦", "0a84ff", "BMI=18.4 临界偏瘦 → 蓝"),
+        (18.5, "正常", "34c759", "BMI=18.5 临界正常 → 绿"),
+        (22.0, "正常", "34c759", "BMI=22 标准正常 → 绿"),
+        (23.99, "正常", "34c759", "BMI=23.99 临界正常(中国 <24)→ 绿"),
+        (24.1, "超重", "ff9500", "BMI=24.1 临界超重 → 橙"),
+        (27.7, "超重", "ff9500", "BMI=27.7 用户实况超重 → 橙"),
+        (28.0, "肥胖", "ff3b30", "BMI=28 临界肥胖 → 红"),
+        (32.0, "肥胖", "ff3b30", "BMI=32 肥胖 I 级 → 红"),
+    ]
+    for bmi, keyword, color, scenario in cases:
+        summary = build_trend_summary([], 70.0, 70.0, 0, 0, bmi)
+        extra = summary["k4"]["extra"]
+        assert keyword in extra, (
+            f"{scenario}:应含 '{keyword}'(实得: {extra})"
+        )
+        assert color in extra, (
+            f"{scenario}:应使用 #{color}(实得: {extra})"
+        )
 
 
 def test_percent_change_colored_by_direction():

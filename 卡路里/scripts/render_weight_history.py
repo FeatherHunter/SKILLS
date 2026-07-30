@@ -162,15 +162,18 @@ def build_trend_summary(items, start_avg, end_avg, delta, daily_rate, bmi):
     direction = '↓ 下降' if delta < -0.1 else '↑ 上升' if delta > 0.1 else '→ 持平'
     pct = round(delta / start_avg * 100, 1) if start_avg else 0
     color_cls = 'good' if delta < 0 else 'bad'
-    # v2.5.28: BMI 文字 + 颜色。正常 18.5-24 绿,超重 ≥24 橙,过轻 <18.5 红。
+    # v2.5.29: 中国 WS/T 428-2013 标准 4 档。
+    # < 18.5 偏瘦(蓝) | 18.5-24 正常(绿) | 24-28 超重(橙) | ≥ 28 肥胖(红)
     if bmi is None:
         bmi_extra = '—'
-    elif 18.5 <= bmi <= 24:
+    elif bmi < 18.5:
+        bmi_extra = f'<span style="color:#0a84ff">偏瘦 (&lt;18.5,需增重)</span>'
+    elif bmi < 24:
         bmi_extra = '<span style="color:#34c759">正常 (18.5-24)</span>'
-    elif bmi > 24:
-        bmi_extra = f'<span style="color:#ff9500">超重 (≥24,需关注)</span>'
+    elif bmi < 28:
+        bmi_extra = f'<span style="color:#ff9500">超重 (24-28,需关注)</span>'
     else:
-        bmi_extra = f'<span style="color:#ff3b30">过轻 (&lt;18.5)</span>'
+        bmi_extra = f'<span style="color:#ff3b30">肥胖 (≥28,需干预)</span>'
     # v2.5.28: 百分比变化染色。减重绿、增重红、持平灰
     if pct < 0:
         pct_html = f'<span style="color:#34c759;font-weight:600">{pct:+}%</span>'

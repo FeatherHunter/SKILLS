@@ -61,11 +61,11 @@
 
   /* ticket 05 · Issue 3/4/5 修复:mobile-first 断点 + 4 polish 改动 */
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 8px 80px; max-width:none; }
     .kpi-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
     /* M3 fix: KPI value 字号缩到 17px(防 173px/卡 贴边) */
     .kpi .value { font-size:17px; }
-    .section { padding:16px 18px; border-radius:12px; }
+    .section { padding:16px 8px; border-radius:12px; }
     .section h2 { font-size:15px; }
     .footer { flex-direction:column; gap:8px; align-items:flex-start; }
     /* H2 fix: note 列 padding 6px 6px(原 6px 4px 太挤 4 字符) */

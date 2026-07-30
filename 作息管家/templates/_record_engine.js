@@ -251,7 +251,7 @@
     }
 
     var html = "";
-    html += statBlock("", days + " 天", "区间长度", "");
+    html += statBlock("", days.length + " 天", "区间长度", "");
     html += statBlock("", (data.total_records || 0) + " 条", "总记录数", "");
     if (health) {
       var hs = health.score || 0;

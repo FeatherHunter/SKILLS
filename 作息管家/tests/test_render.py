@@ -16,7 +16,8 @@ schedule_db.get_connection → in-memory conn(每次新 conn + 重建 schema)。
 import sys
 from pathlib import Path
 
-SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
+SKILL_DIR = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = SKILL_DIR / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import schedule_db as _db
@@ -320,3 +321,116 @@ def test_render_replay_filename_overwrite_protect():
             p1.unlink()
     finally:
         schedule_html_render.datetime = original_dt
+
+
+# ---- T03 record 聚合段 (Spec: .scratch/replay-start-end/spec.md § 4 段叙事) ----
+# Issue: .scratch/replay-start-end/issues/03-record-aggregate.md
+
+def test_render_replay_record_aggregate_top_n_fold():
+    """T03 · Top-N 折叠:53 cat-row 默认折叠为 Top 10 + visible_count 字段"""
+    # 灌 15 类不同 category 的 record(全部走 validators 白名单:工作/维持/健康/学习/休闲/日常)
+    cats = ["工作.AI调优", "工作.会议", "工作.文案", "工作.开发", "工作.剪辑",
+            "健康.运动", "健康.健身", "健康.冥想", "健康.保健",
+            "学习.读书", "学习.技术",
+            "调整.游戏", "调整.视频",
+            "维持.睡眠", "维持.用餐", "日常.杂事"]
+    for i, cat in enumerate(cats):
+        _db.add_record_full(
+            date="2026-07-15", time_start=f"{8 + i:02d}:00",
+            time_end=f"{8 + i:02d}:30", duration_minutes=30,
+            activity=f"测试 {cat}", category=cat,
+            source_contents="x", source_timestamps="x",
+            analysis_reasoning="x",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    d = result["data"]
+    ra = d["record_aggregate"]
+    assert "summary_items" in ra
+    items = ra["summary_items"]
+    assert len(items) == 16, f"summary_items 应返回所有 16 类,实际 {len(items)}"
+    # Top-N 折叠:默认 10,字段标记
+    assert ra.get("top_n_visible") == 10, "Top-N 默认可见数应 = 10"
+    assert ra.get("top_n_total") == 16, f"总 cat-row 数应 = 16,实际 {ra.get('top_n_total')}"
+    # 按 total_minutes 降序(工作时间最长)
+    assert items[0]["total_minutes"] >= items[-1]["total_minutes"]
+
+
+def test_render_replay_record_aggregate_7d_trend():
+    """T03 · 7 维趋势数组(维持/健康/工作/学习/调整/日常/投入)"""
+    # 跨 3 天灌 record
+    for day_offset, day in enumerate(["2026-07-13", "2026-07-14", "2026-07-15"]):
+        _db.add_record_full(
+            date=day, time_start="10:00", time_end="11:00", duration_minutes=60,
+            activity="工作", category="工作.AI调优",
+            source_contents="x", source_timestamps="x", analysis_reasoning="x",
+        )
+        _db.add_record_full(
+            date=day, time_start="22:00", time_end="23:00", duration_minutes=60,
+            activity="睡眠", category="维持.睡眠",
+            source_contents="x", source_timestamps="x", analysis_reasoning="x",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-13", "2026-07-15")
+    d = result["data"]
+    ra = d["record_aggregate"]
+    assert "trend" in ra
+    trend = ra["trend"]
+    assert isinstance(trend, list)
+    assert len(trend) > 0
+    # 每条 trend 是 {dim, series: [{date, mins, color}, ...]}
+    for t in trend:
+        assert "dim" in t
+        assert "series" in t
+        assert t["dim"] in ("维持", "健康", "工作", "学习", "调整", "日常", "投入")
+        for pt in t["series"]:
+            assert "date" in pt
+            assert "mins" in pt
+
+
+def test_render_replay_record_aggregate_24h_heatmap():
+    """T03 · 24h × N 天热力图"""
+    for h in [9, 14, 20]:
+        _db.add_record_full(
+            date="2026-07-15", time_start=f"{h:02d}:00", time_end=f"{h+1:02d}:00",
+            duration_minutes=60, activity="测试", category="工作.AI调优",
+            source_contents="x", source_timestamps="x", analysis_reasoning="x",
+        )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    d = result["data"]
+    ra = d["record_aggregate"]
+    assert "heatmap" in ra
+    heatmap = ra["heatmap"]
+    assert isinstance(heatmap, list)
+    # 1 天 × 24 小时矩阵
+    assert len(heatmap) >= 1, f"heatmap 至少 1 天,实际 {len(heatmap)}"
+    for day in heatmap:
+        assert "date" in day
+        assert "hours" in day
+        assert len(day["hours"]) == 24, f"每天 24 小时,实际 {len(day['hours'])}"
+
+
+def test_render_record_range_interval_length_bug_regression():
+    """T03 · 09 bug 回归护栏:'_record_engine.js' 中 '区间长度' 必须用 days.length
+
+    历史 bug:schedule_record_range.html 经 _record_engine.js 渲染时,
+    `days + " 天"` 把 30 个日期 join 为超长字符串(实际:226px 高度,占满首屏)。
+    修复:改为 `days.length + " 天"`(数组长度)。
+
+    静态 JS 源码检查:直接 grep templates/_record_engine.js:
+    - 不允许 `days + " 天"`(旧 bug)
+    - 必含 `days.length + " 天"`(修复后)
+    """
+    js_path = SKILL_DIR / "templates" / "_record_engine.js"
+    js_text = js_path.read_text(encoding="utf-8")
+
+    # 锁定旧 bug 不复发
+    assert 'days + " 天"' not in js_text, \
+        "_record_engine.js 含 'days + \" 天\"' (历史 bug 已回退,30 个日期 join 字符串)"
+    # 锁定修复已落地
+    assert 'days.length + " 天"' in js_text, \
+        "_record_engine.js 缺 'days.length + \" 天\"' (区间长度修复未落地)"

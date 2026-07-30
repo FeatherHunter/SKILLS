@@ -2071,6 +2071,51 @@ def render_replay(start: str, end: str) -> dict:
         except ValueError:
             days_count = 1
 
+    # === T03 · record 聚合段 ===
+    # 复用 calculations 模块算法:summary_items / trend / heatmap
+    from calculations import (
+        aggregate_by_category, build_dimension_aggregates, build_trend_series,
+        build_24h_heatmap, cat_emoji, cat_color, fmt_dur,
+    )
+    HEALTH_DIMS = ["维持", "健康", "工作", "学习", "调整", "日常", "投入"]
+
+    cat_minutes = aggregate_by_category(records)
+    sorted_cats = sorted(cat_minutes.items(), key=lambda x: -x[1])
+    TOP_N_VISIBLE = 10  # 默认 Top 10 + "展开全部" 按钮(T08 视觉打磨会实现按钮交互)
+    summary_items = [
+        {
+            "category": cat, "emoji": cat_emoji(cat), "color": cat_color(cat),
+            "total_minutes": int(mins), "duration_text": fmt_dur(int(mins)),
+            "pct": round((mins / total_minutes * 100) if total_minutes else 0.0, 1),
+        }
+        for cat, mins in sorted_cats
+    ]
+
+    trend_series = [
+        {"dim": d, "series": build_trend_series(records, d)}
+        for d in HEALTH_DIMS
+    ]
+    # T03 7 维趋势仅取非空 dim(T08 视觉打磨会扩展为 SVG 多色折线)
+    trend_filtered = [t for t in trend_series if t["series"]]
+
+    heatmap_matrix, heatmap_dates = (build_24h_heatmap(records) if records else ([], []))
+    # heatmap_matrix: [[{cat, mins, color} for h in 24] for d in N]
+    # heatmap_dates: [date_str for d in N](build_24h_heatmap 返回 tuple)
+    # 转为 [{date, hours: [{cat, mins, color}]}] 结构供前端使用
+    heatmap = []
+    for i, day_24h in enumerate(heatmap_matrix):
+        day_date = heatmap_dates[i] if i < len(heatmap_dates) else ""
+        heatmap.append({"date": day_date, "hours": day_24h})
+
+    record_aggregate = {
+        "summary_items": summary_items,
+        "top_n_visible": min(TOP_N_VISIBLE, len(summary_items)),
+        "top_n_total": len(summary_items),
+        "trend": trend_filtered,
+        "heatmap": heatmap,
+        "dim_totals": build_dimension_aggregates(records),
+    }
+
     # 5 状态 fallback(空数据 → empty)
     if total_records == 0 and len(plans) == 0:
         return {
@@ -2087,7 +2132,11 @@ def render_replay(start: str, end: str) -> dict:
                     "subtitle": f"{days_count} 天 · 无数据",
                     "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 },
-                "record_aggregate": {"summary_items": [], "trend": [], "heatmap": []},
+                "record_aggregate": {
+                    "summary_items": [], "trend": [], "heatmap": [],
+                    "top_n_visible": 0, "top_n_total": 0,
+                    "dim_totals": {d: 0 for d in HEALTH_DIMS},
+                },
                 "plan_aggregate": {
                     "completion_distribution": {
                         "已完成": 0, "已完成(超时)": 0, "部分完成": 0,
@@ -2123,7 +2172,7 @@ def render_replay(start: str, end: str) -> dict:
             "subtitle": f"{days_count} 天 · {total_records} 条记录 · {total_minutes} 分钟",
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         },
-        "record_aggregate": {"summary_items": [], "trend": [], "heatmap": []},
+        "record_aggregate": record_aggregate,
         "plan_aggregate": {
             "completion_distribution": {
                 "已完成": 0, "已完成(超时)": 0, "部分完成": 0,

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{{ title }}</title>
+<style>
+/* === Phase E · 复盘 start-end · 骨架 CSS (T01) ===
+ * T08 视觉打磨阶段会扩展(4 卡总览 + 4 段叙事完整样式 + 移动端适配)
+ * T01 骨架只确保 inject_into_template 的 inline CSS/JS 锚点能命中,
+ * 渲染出"HTML 自包含 + payload 注入"的最小可行产物
+ */
+*,*::before,*::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+:root {
+  --fg: #1d1d1f;
+  --fg2: #6e6e73;
+  --fg3: #86868b;
+  --bg: #f5f5f7;
+  --card: #fff;
+  --line: #d2d2d7;
+  --soft: #f0f4ff;
+  --blue: #007aff;
+  --good: #34c759;
+  --warn: #ff9500;
+  --danger: #ff3b30;
+  --mute: #9b9ba0;
+}
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--fg);
+  line-height: 1.65; -webkit-font-smoothing: antialiased;
+  padding-bottom: 60px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 32px 24px 96px; }
+.offline {
+  background: rgba(255, 204, 0, 0.15);
+  border: 1px solid rgba(255, 149, 0, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 16px;
+  text-align: center; color: #a25b00; font-size: 12px;
+}
+.hero {
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+  border-radius: 24px; padding: 28px 32px; margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 36px rgba(0,0,0,.06);
+}
+.hero h1 {
+  font-size: 28px; line-height: 1.2; letter-spacing: -.025em;
+  margin-bottom: 6px;
+}
+.hero .lead {
+  font-size: 14px; color: var(--fg2); max-width: 780px;
+  margin-bottom: 8px;
+}
+.hero .meta {
+  margin-top: 8px; color: var(--fg3); font-size: 11px;
+}
+.empty {
+  padding: 60px 20px; text-align: center; color: var(--fg2);
+  background: var(--card); border-radius: 14px;
+  font-size: 15px;
+}
+#root { margin-top: 8px; }
+.footer {
+  margin-top: 32px; text-align: center; color: var(--fg3); font-size: 11px;
+}
+.footer code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px; color: var(--fg2);
+  background: var(--soft); padding: 1px 6px; border-radius: 4px;
+}
+@media (max-width: 760px) {
+  .wrap { padding: 20px 12px 60px; }
+  .hero { padding: 20px 18px; border-radius: 18px; }
+  .hero h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="offline">📡 本页面是作息管家的离线 HTML 报告 — 单文件自包含,无外部依赖,可直接保存或转发</div>
+<header class="hero">
+  <div style="font-size:11px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">区间复盘</div>
+  <h1 id="page-title">…</h1>
+  <p class="lead" id="page-subtitle">加载中…</p>
+  <div class="meta" id="page-meta">由作息管家 · schedule_cli render-replay 生成 · T01 骨架版本</div>
+</header>
+<div id="root">
+  <!-- T01 骨架: 仅显示空态占位(T08 视觉打磨会替换为 4 段叙事完整渲染) -->
+  <div class="empty" id="empty-state">⏳ 正在加载 4 段叙事数据…(T03-T06 落地后填充)</div>
+</div>
+<div class="footer">数据源:<code>schedule_records</code> + <code>schedule_plans</code> · 模板:<code>{{ template_name }}</code> · 输出:<code>SKILLS_DB_PATH/schedule_html/replay/</code></div>
+</div>
+<script id="payload" type="application/json"></script>
+<script>
+/* Phase E · schedule_replay.html 骨架渲染 (T01)
+ * 完整 4 段叙事渲染由 T03-T06 落地后填充
+ * T01 阶段: 仅从 payload 读取 meta 填充 hero 标题/副标题/状态徽章
+ */
+(function(){
+  "use strict";
+  function safeJSON(s){ try { return JSON.parse(s); } catch(e){ return null; } }
+  function el(id){ return document.getElementById(id); }
+  function setText(id, t){ var e = el(id); if (e) e.textContent = t; }
+
+  var raw = el("payload");
+  if (!raw) return;
+  var data = safeJSON(raw.textContent || "");
+  if (!data || !data.meta) return;
+
+  var meta = data.meta;
+  setText("page-title", meta.title || ("区间复盘 · " + meta.start + " ~ " + meta.end));
+  setText("page-subtitle", meta.subtitle || (meta.days + " 天 · " + meta.total_records + " 条记录"));
+
+  // T01 状态徽章: 顶部 hero 区显示 ok/empty/incomplete/error/offline
+  // 完整 5 状态 fallback 由 T07 补完,本处仅渲染 ok/empty 两条路径
+  var statusBadge = "✅ ok";
+  if (meta.total_records === 0 && meta.total_minutes === 0) {
+    statusBadge = "📭 empty";
+  }
+  var metaEl = el("page-meta");
+  if (metaEl) {
+    metaEl.textContent = statusBadge + " · 由作息管家 · schedule_cli render-replay 生成 · T01 骨架版本";
+  }
+
+  // T01 骨架: 替换 empty-state 占位文本
+  var empty = el("empty-state");
+  if (empty) {
+    empty.textContent = "📊 4 段叙事(record 聚合 / plan 聚合 / 跨域对比 / AI 洞察)等待 T03-T06 落地填充";
+  }
+})();
+</script>
+</body>
+</html>

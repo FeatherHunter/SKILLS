@@ -58,6 +58,11 @@
   .anomaly-red { background: rgba(255,59,48,.15); color: var(--bad); }
   .anomaly-yellow { background: rgba(255,149,0,.15); color: var(--warn); }
 
+  /* toggle 按钮 */
+  .toggle-btn { padding: 4px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--fg2); cursor: pointer; font-family: inherit; }
+  .toggle-btn:hover { background: var(--soft); }
+  .toggle-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
   .footer { margin-top: 20px; padding: 12px 16px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
 
   /* ticket 02 mobile responsive */
@@ -116,8 +121,12 @@
   <!-- Canvas 主图 -->
   <section class="chart-section">
     <h2>体重折线 + ±σ 带 + 目标线</h2>
-    <div class="chart-wrap">
+    <div class="chart-wrap" style="position:relative">
       <canvas id="chart" width="800" height="360"></canvas>
+      <div style="position:absolute; top:8px; right:12px; display:flex; gap:4px;">
+        <button id="toggleRolling" class="toggle-btn active" type="button">vs 近期常态</button>
+        <button id="toggleGoal" class="toggle-btn" type="button">vs 目标</button>
+      </div>
     </div>
   </section>
 
@@ -137,204 +146,249 @@
 
 <script>
 (function() {
-  const DATA = window.__DATA__ || { data: { points: [], baseline_value: 0, baseline_sigma: 0, thresholds: {}, recent_anomalies: [], sigma_trend: [], early_warning: {} } };
+  const DATA = window.__DATA__ || { data: { points: [], baseline_value: 0, baseline_sigma: 0, thresholds: {}, recent_anomalies: [], sigma_trend: [], early_warning: {}, goal_weight: null } };
 
-  // ========== KPI #1: 诊断 ==========
-  const ew = DATA.data.early_warning || {};
-  const kpiValue = document.getElementById('kpiValue');
-  const kpiPill = document.getElementById('kpiPill');
-  const kpiExtra = document.getElementById('kpiExtra');
-  const kpiBaseline = document.getElementById('kpiBaseline');
-
-  if (ew.kg != null) {
-    kpiValue.textContent = ew.kg.toFixed(1) + ' kg';
-    const baseline = DATA.data.baseline_value;
-    const sigma = DATA.data.baseline_sigma || 0;
-    const dev = Math.abs(ew.deviation_kg || 0);
-    kpiBaseline.textContent = `${baseline.toFixed(1)} ± ${sigma.toFixed(2)} kg`;
-    kpiExtra.firstChild.textContent = 'vs ' + (DATA.data.baseline_toggle_label || 'baseline') + ' ';
-    if (ew.level === 'red') {
-      kpiPill.textContent = '🔴 异常';
-      kpiPill.className = 'kpi-pill pill-red';
-    } else if (ew.level === 'yellow') {
-      kpiPill.textContent = '🟡 注意';
-      kpiPill.className = 'kpi-pill pill-yellow';
-    } else {
-      kpiPill.textContent = '🟢 正常';
-      kpiPill.className = 'kpi-pill pill-normal';
-    }
+  // ========== ticket 04: baseline toggle 状态(URL > localStorage > default rolling) ==========
+  function getInitialMode() {
+    // URL param 优先
+    const params = new URLSearchParams(window.location.search);
+    const urlMode = params.get('baseline');
+    if (urlMode === 'rolling' || urlMode === 'goal') return urlMode;
+    // localStorage 次之
+    try {
+      const lsMode = localStorage.getItem('weight_baseline_mode');
+      if (lsMode === 'rolling' || lsMode === 'goal') return lsMode;
+    } catch (e) { /* localStorage may be disabled */ }
+    // 默认 rolling
+    return 'rolling';
   }
 
-  // ========== KPI #2: 趋势(7-day rolling σ slope) ==========
-  const kpiSigma = document.getElementById('kpiSigma');
-  const kpiSigmaTrend = document.getElementById('kpiSigmaTrend');
-  const kpiSigmaExtra = document.getElementById('kpiSigmaExtra');
-  const sigmaTrend = DATA.data.sigma_trend || [];
-  if (sigmaTrend.length >= 2) {
-    const recent = sigmaTrend.slice(-7);
-    const recentSigma = recent[recent.length - 1].sigma_kg;
-    const earlierSigma = recent[0].sigma_kg;
-    kpiSigma.textContent = recentSigma.toFixed(2) + ' kg';
-    const change = recentSigma - earlierSigma;
-    if (change < -0.05) {
-      kpiSigmaTrend.textContent = '↓ σ 缩小';
-      kpiSigmaTrend.className = 'kpi-pill pill-trend-down';
-    } else if (change > 0.05) {
-      kpiSigmaTrend.textContent = '↑ σ 扩大';
-      kpiSigmaTrend.className = 'kpi-pill pill-trend-up';
-    } else {
-      kpiSigmaTrend.textContent = '→ σ 平稳';
+  function persistMode(mode) {
+    try {
+      localStorage.setItem('weight_baseline_mode', mode);
+    } catch (e) { /* ignore */ }
+    // 同时 sync URL,不刷页
+    const url = new URL(window.location.href);
+    url.searchParams.set('baseline', mode);
+    window.history.replaceState({}, '', url);
+  }
+
+  // 当前 mode 状态(供 render 使用)
+  let currentMode = getInitialMode();
+
+  // ========== Render 函数(可被 toggle 调用) ==========
+  function render() {
+    const d = DATA.data;
+    const useRolling = currentMode === 'rolling';
+    const baseline = useRolling ? d.baseline_value : (d.goal_weight || d.baseline_value);
+    const sigma = d.baseline_sigma;
+    const yellow = d.thresholds.yellow || 0;
+    const red = d.thresholds.red || 0;
+    const goal = d.goal_weight || null;
+    const toggleLabel = useRolling ? d.baseline_toggle_label : `vs 目标 ${d.goal_weight || '?'}kg`;
+
+    // === KPI #1 诊断 ===
+    const ew = d.early_warning || {};
+    if (ew.kg != null) {
+      document.getElementById('kpiValue').textContent = ew.kg.toFixed(1) + ' kg';
+      document.getElementById('kpiBaseline').textContent = `${baseline.toFixed(1)} ± ${sigma.toFixed(2)} kg`;
+      const extraEl = document.getElementById('kpiExtra');
+      if (extraEl.firstChild) extraEl.firstChild.textContent = 'vs ' + toggleLabel + ' ';
+      const pill = document.getElementById('kpiPill');
+      if (ew.level === 'red') {
+        pill.textContent = '🔴 异常';
+        pill.className = 'kpi-pill pill-red';
+      } else if (ew.level === 'yellow') {
+        pill.textContent = '🟡 注意';
+        pill.className = 'kpi-pill pill-yellow';
+      } else {
+        pill.textContent = '🟢 正常';
+        pill.className = 'kpi-pill pill-normal';
+      }
+    }
+
+    // === KPI #2 趋势(7-day rolling σ slope) ===
+    const sigmaTrend = d.sigma_trend || [];
+    const kpiSigma = document.getElementById('kpiSigma');
+    const kpiSigmaTrend = document.getElementById('kpiSigmaTrend');
+    const kpiSigmaExtra = document.getElementById('kpiSigmaExtra');
+    if (sigmaTrend.length >= 2) {
+      const recent = sigmaTrend.slice(-7);
+      const recentSigma = recent[recent.length - 1].sigma_kg;
+      const earlierSigma = recent[0].sigma_kg;
+      kpiSigma.textContent = recentSigma.toFixed(2) + ' kg';
+      const change = recentSigma - earlierSigma;
+      if (change < -0.05) {
+        kpiSigmaTrend.textContent = '↓ σ 缩小';
+        kpiSigmaTrend.className = 'kpi-pill pill-trend-down';
+      } else if (change > 0.05) {
+        kpiSigmaTrend.textContent = '↑ σ 扩大';
+        kpiSigmaTrend.className = 'kpi-pill pill-trend-up';
+      } else {
+        kpiSigmaTrend.textContent = '→ σ 平稳';
+        kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
+      }
+      kpiSigmaExtra.textContent = `较 ${earlierSigma.toFixed(2)} kg(7 天前)`;
+    } else if (sigmaTrend.length === 1) {
+      kpiSigma.textContent = sigmaTrend[0].sigma_kg.toFixed(2) + ' kg';
+      kpiSigmaTrend.textContent = '— 数据不足';
       kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
-    }
-    kpiSigmaExtra.textContent = `较 ${earlierSigma.toFixed(2)} kg(7 天前)`;
-  } else if (sigmaTrend.length === 1) {
-    kpiSigma.textContent = sigmaTrend[0].sigma_kg.toFixed(2) + ' kg';
-    kpiSigmaTrend.textContent = '— 数据不足';
-    kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
-    kpiSigmaExtra.textContent = '需 2+ 数据点算趋势';
-  }
-
-  // ========== KPI #3: 早警告 ==========
-  const kpiEWTxt = document.getElementById('kpiEWTxt');
-  const kpiEWExtra = document.getElementById('kpiEWExtra');
-  if (ew.kg != null) {
-    kpiEWTxt.textContent = ew.message || (ew.level === 'red' ? '异常' : ew.level === 'yellow' ? '注意' : '正常');
-    kpiEWExtra.textContent = `今日 ${ew.kg}kg 偏离 baseline ${(DATA.data.baseline_value || 0).toFixed(1)}kg ${ew.deviation_kg >= 0 ? '+' : ''}${ew.deviation_kg || 0}kg`;
-  }
-
-  // ========== 异常点列表 ==========
-  const anomaliesList = document.getElementById('anomaliesList');
-  const anomaliesCount = document.getElementById('anomaliesCount');
-  const recent = DATA.data.recent_anomalies || [];
-
-  if (recent.length === 0) {
-    anomaliesList.innerHTML = '<div class="empty-state">过去 7 天无异常</div>';
-    anomaliesCount.textContent = '(0)';
-  } else {
-    anomaliesCount.textContent = `(${recent.length} 条按偏离度排序)`;
-    // 用真实 recent_anomalies 数据循环渲染
-    let html = '';
-    for (const a of recent) {
-      const levelClass = a.level === 'red' ? 'anomaly-red' : 'anomaly-yellow';
-      const devSign = a.deviation_kg >= 0 ? '+' : '';
-      html += `<div class="anomaly-item">`
-        + `<div class="anomaly-date">${a.date}</div>`
-        + `<div class="anomaly-food">${a.kg}kg</div>`
-        + `<div class="anomaly-dev">${devSign}${a.deviation_kg}kg</div>`
-        + `<div class="anomaly-level ${levelClass}">${a.level === 'red' ? '🔴 红' : '🟡 黄'}</div>`
-        + `</div>`;
-    }
-    anomaliesList.innerHTML = html;
-  }
-
-  // ========== Canvas 绘图 ==========
-  const canvas = document.getElementById('chart');
-  if (canvas && DATA.data.points && DATA.data.points.length > 0) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width = canvas.offsetWidth;
-    const H = canvas.height = 360;
-    const PAD = 40;
-
-    const points = DATA.data.points;
-    const baseline = DATA.data.baseline_value;
-    const sigma = DATA.data.baseline_sigma;
-    const yellow = DATA.data.thresholds.yellow || 0;
-    const red = DATA.data.thresholds.red || 0;
-    const goal = DATA.data.goal_weight || null;
-
-    const weights = points.map(p => p.kg);
-    const yValues = goal ? [baseline, goal, ...weights] : [baseline, ...weights];
-    const minW = Math.min(...yValues);
-    const maxW = Math.max(...yValues);
-    const range = (maxW - minW) || 1;
-    const minY = Math.floor(minW - range * 0.2);
-    const maxY = Math.ceil(maxW + range * 0.2);
-    const yRange = maxY - minY || 1;
-
-    const xStep = (W - 2*PAD) / Math.max(1, points.length - 1);
-    const x = i => PAD + i * xStep;
-    const y = v => H - PAD - (v - minY) / yRange * (H - 2*PAD);
-
-    // 清空
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, W, H);
-
-    // ±σ band(yellow + red)
-    if (yellow > 0) {
-      ctx.fillStyle = 'rgba(255,149,0,0.10)';
-      ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
-    }
-    if (red > 0 && red > yellow) {
-      ctx.fillStyle = 'rgba(255,59,48,0.10)';
-      ctx.fillRect(PAD, y(baseline + red), W - 2*PAD, y(baseline - red) - y(baseline + red));
+      kpiSigmaExtra.textContent = '需 2+ 数据点算趋势';
     }
 
-    // baseline 线(灰虚线)
-    ctx.strokeStyle = '#86868b';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(PAD, y(baseline));
-    ctx.lineTo(W - PAD, y(baseline));
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // === KPI #3 早警告 ===
+    const kpiEWTxt = document.getElementById('kpiEWTxt');
+    const kpiEWExtra = document.getElementById('kpiEWExtra');
+    if (ew.kg != null) {
+      kpiEWTxt.textContent = ew.message || (ew.level === 'red' ? '异常' : ew.level === 'yellow' ? '注意' : '正常');
+      kpiEWExtra.textContent = `今日 ${ew.kg}kg 偏离 baseline ${baseline.toFixed(1)}kg ${ew.deviation_kg >= 0 ? '+' : ''}${ew.deviation_kg || 0}kg`;
+    }
 
-    // 目标线(绿虚线)
-    if (goal && goal >= minY && goal <= maxY) {
-      ctx.strokeStyle = '#34c759';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 4]);
+    // === 异常点列表 ===
+    const anomaliesList = document.getElementById('anomaliesList');
+    const anomaliesCount = document.getElementById('anomaliesCount');
+    const recent = d.recent_anomalies || [];
+
+    if (recent.length === 0) {
+      anomaliesList.innerHTML = '<div class="empty-state">过去 7 天无异常</div>';
+      anomaliesCount.textContent = '(0)';
+    } else {
+      anomaliesCount.textContent = `(${recent.length} 条按偏离度排序)`;
+      let html = '';
+      for (const a of recent) {
+        const levelClass = a.level === 'red' ? 'anomaly-red' : 'anomaly-yellow';
+        const devSign = a.deviation_kg >= 0 ? '+' : '';
+        html += `<div class="anomaly-item">`
+          + `<div class="anomaly-date">${a.date}</div>`
+          + `<div class="anomaly-food">${a.kg}kg</div>`
+          + `<div class="anomaly-dev">${devSign}${a.deviation_kg}kg</div>`
+          + `<div class="anomaly-level ${levelClass}">${a.level === 'red' ? '🔴 红' : '🟡 黄'}</div>`
+          + `</div>`;
+      }
+      anomaliesList.innerHTML = html;
+    }
+
+    // === Canvas 绘图 ===
+    const canvas = document.getElementById('chart');
+    if (canvas && d.points && d.points.length > 0) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.offsetWidth;
+      const H = canvas.height = 360;
+      const PAD = 40;
+
+      const points = d.points;
+      const weights = points.map(p => p.kg);
+      const yValues = goal ? [baseline, goal, ...weights] : [baseline, ...weights];
+      const minW = Math.min(...yValues);
+      const maxW = Math.max(...yValues);
+      const range = (maxW - minW) || 1;
+      const minY = Math.floor(minW - range * 0.2);
+      const maxY = Math.ceil(maxW + range * 0.2);
+      const yRange = maxY - minY || 1;
+
+      const xStep = (W - 2*PAD) / Math.max(1, points.length - 1);
+      const x = i => PAD + i * xStep;
+      const y = v => H - PAD - (v - minY) / yRange * (H - 2*PAD);
+
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+
+      // ±σ band
+      if (yellow > 0) {
+        ctx.fillStyle = 'rgba(255,149,0,0.10)';
+        ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
+      }
+      if (red > 0 && red > yellow) {
+        ctx.fillStyle = 'rgba(255,59,48,0.10)';
+        ctx.fillRect(PAD, y(baseline + red), W - 2*PAD, y(baseline - red) - y(baseline + red));
+      }
+
+      // baseline 线
+      ctx.strokeStyle = '#86868b';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
       ctx.beginPath();
-      ctx.moveTo(PAD, y(goal));
-      ctx.lineTo(W - PAD, y(goal));
+      ctx.moveTo(PAD, y(baseline));
+      ctx.lineTo(W - PAD, y(baseline));
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = '#34c759';
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(`目标 ${goal}kg`, W - PAD - 4, y(goal) - 4);
-      ctx.textAlign = 'left';
-    }
 
-    // 体重折线
-    ctx.strokeStyle = '#0071e3';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    points.forEach((p, i) => {
-      const px = x(i);
-      const py = y(p.kg);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    });
-    ctx.stroke();
-
-    // 异常点
-    points.forEach((p, i) => {
-      if (p.level === 'red') {
-        ctx.fillStyle = '#ff3b30';
+      // 目标线
+      if (goal && goal >= minY && goal <= maxY) {
+        ctx.strokeStyle = '#34c759';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
         ctx.beginPath();
-        ctx.arc(x(i), y(p.kg), 5, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.level === 'yellow') {
-        ctx.fillStyle = '#ff9500';
-        ctx.beginPath();
-        ctx.arc(x(i), y(p.kg), 4, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = '#0071e3';
-        ctx.beginPath();
-        ctx.arc(x(i), y(p.kg), 3, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(PAD, y(goal));
+        ctx.lineTo(W - PAD, y(goal));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#34c759';
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`目标 ${goal}kg`, W - PAD - 4, y(goal) - 4);
+        ctx.textAlign = 'left';
       }
-    });
 
-    if (yellow > 0) {
-      ctx.fillStyle = '#ff9500';
-      ctx.font = '10px -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('±1.5σ', PAD + 4, y(baseline + yellow) - 4);
+      // 体重折线
+      ctx.strokeStyle = '#0071e3';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      points.forEach((p, i) => {
+        const px = x(i);
+        const py = y(p.kg);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      // 异常点
+      points.forEach((p, i) => {
+        if (p.level === 'red') {
+          ctx.fillStyle = '#ff3b30';
+          ctx.beginPath();
+          ctx.arc(x(i), y(p.kg), 5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.level === 'yellow') {
+          ctx.fillStyle = '#ff9500';
+          ctx.beginPath();
+          ctx.arc(x(i), y(p.kg), 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#0071e3';
+          ctx.beginPath();
+          ctx.arc(x(i), y(p.kg), 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      if (yellow > 0) {
+        ctx.fillStyle = '#ff9500';
+        ctx.font = '10px -apple-system, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('±1.5σ', PAD + 4, y(baseline + yellow) - 4);
+      }
     }
+
+    // === Toggle 按钮状态 ===
+    document.getElementById('toggleRolling').className = (currentMode === 'rolling' ? 'toggle-btn active' : 'toggle-btn');
+    document.getElementById('toggleGoal').className = (currentMode === 'goal' ? 'toggle-btn active' : 'toggle-btn');
   }
+
+  // === Toggle event handlers(ticket 04) ===
+  document.getElementById('toggleRolling').addEventListener('click', function() {
+    currentMode = 'rolling';
+    persistMode('rolling');
+    render();
+  });
+  document.getElementById('toggleGoal').addEventListener('click', function() {
+    currentMode = 'goal';
+    persistMode('goal');
+    render();
+  });
+
+  // === 初始 render ===
+  render();
 })();
 </script>
 </body>

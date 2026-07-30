@@ -30,15 +30,19 @@
   .kpi .extra.good { color:var(--good); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  /* ticket 05 · Issue 3/4/5 修复:SVG 高度 clamp,适配手机屏幕 */
-  svg { width:100%; height:clamp(180px, 40vh, 320px); display:block; }
+  /* BUG fix: SVG 高度用 auto(由 viewBox 比例推出),不再用 40vh clamp(原触发 mobile 垂直拉伸)。
+     preserveAspectRatio="xMidYMid meet" 让 X/Y 等比缩放(在 SVG 上设置,见下)。 */
+  svg { width:100%; height:auto; display:block; text-rendering: geometricPrecision; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; }
   .legend .a { background:var(--accent); height:2px; }
   .legend .b { background:transparent; border-top:2px dashed var(--warn); height:0; }
   .legend .c { background:transparent; border-top:2px dashed var(--good); height:0; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
+  table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
+  th.date, td.date { width:25%; }
+  th.num, td.num { width:15%; }
+  th.note, td.note { width:25%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
   th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
   tr:last-child td { border-bottom:none; }
@@ -63,6 +67,10 @@
     .section { padding:16px 18px; border-radius:12px; }
     .section h2 { font-size:15px; }
     .footer { flex-direction:column; gap:8px; align-items:flex-start; }
+    /* BUG fix 2 review: mobile 表格列宽(保 note 列,fit 4 列满宽,不 hide) */
+    .table-wrap table { font-size:11px; }
+    .table-wrap table th, .table-wrap table td { padding:6px 4px; word-break:break-all; }
+    /* 不 hide note 列(用户 BUG 2 明确说"晨起空腹"要可见);列宽重排,note 列仍占空间 */
   }
   @media (max-width:400px) {
     .kpi-grid { grid-template-columns:1fr; }
@@ -92,7 +100,7 @@
 
 <div class="section" id="chartSection">
   <h2 id="chartTitle">体重曲线</h2>
-  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet"></svg>
   <div class="legend" id="legend"></div>
 </div>
 

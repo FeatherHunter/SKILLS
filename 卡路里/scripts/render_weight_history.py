@@ -121,22 +121,22 @@ def empty_summary(mode):
                         'k2':{ 'label':'平均体重','value':'—','extra':''},
                         'k3':{ 'label':'波动','value':'—','extra':''},
                         'k4':{ 'label':'BMR 估算','value':'—','extra':''},
-                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"},
+                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"},
         'trend':      {'subtitle':'', 'k1':{ 'label':'当前体重','value':'—','extra':''},
                         'k2':{ 'label':'区间变化','value':'—','extra':''},
                         'k3':{ 'label':'日均变化','value':'—','extra':''},
                         'k4':{ 'label':'BMI','value':'—','extra':''},
-                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"},
+                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"},
         'volatility': {'subtitle':'', 'k1':{ 'label':'记录数','value':'—','extra':''},
                         'k2':{ 'label':'标准差','value':'—','extra':''},
                         'k3':{ 'label':'波动评估','value':'—','extra':''},
                         'k4':{ 'label':'异常次数','value':'—','extra':''},
-                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"},
+                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"},
         'compare':    {'subtitle':'', 'k1':{ 'label':'前期','value':'—','extra':''},
                         'k2':{ 'label':'后期','value':'—','extra':''},
                         'k3':{ 'label':'变化','value':'—','extra':''},
                         'k4':{ 'label':'日均','value':'—','extra':''},
-                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"},
+                        'table_header':"<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"},
     }[mode]
 
 
@@ -154,7 +154,7 @@ def build_history_summary(items, avg, delta_range):
         'k2': {'label':'平均体重', 'value':f'{avg} kg', 'extra':f'最低 {min(i["kg"] for i in items)} · 最高 {max(i["kg"] for i in items)}'},
         'k3': {'label':'波动', 'value':f'{delta_range} kg', 'extra':'极小波动' if delta_range < 0.5 else '正常波动' if delta_range < 1.0 else '较大波动'},
         'k4': {'label':'BMR 估算', 'value':f'{bmr} 卡', 'extra':'<span style="color:#34c759">标准</span>' if bmr > 1500 else '偏低'},
-        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
     }
 
 
@@ -168,7 +168,7 @@ def build_trend_summary(items, start_avg, end_avg, delta, daily_rate, bmi):
         'k2': {'label':f'{len(items)} 天变化', 'value':f'{delta:+} kg', 'extra':f'{pct:+}%'},
         'k3': {'label':'日均变化', 'value':f'{daily_rate:+.3f} kg/天', 'extra':'<span style="color:#34c759">减重方向</span>' if daily_rate < 0 else '稳定'},
         'k4': {'label':'当前 BMI', 'value':str(bmi), 'extra':'正常范围(18.5-24)' if 18.5 <= bmi <= 24 else '异常'},
-        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
     }
 
 
@@ -180,7 +180,7 @@ def build_volatility_summary(items, std, anomalies):
         'k2': {'label':'标准差', 'value':f'{std} kg', 'extra':'健康波动 < 0.3'},
         'k3': {'label':'波动评估', 'value':eval_, 'extra':'<span style="color:#34c759">稳定</span>' if std < 0.3 else '<span style="color:#ff9500">关注</span>'},
         'k4': {'label':'异常次数', 'value':str(len(anomalies)), 'extra':'与均值偏差 ≥2σ'},
-        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
     }
 
 
@@ -198,7 +198,7 @@ def build_compare_summary(before, after):
         'k2': {'label':f'后期均值', 'value':f'{after_avg} kg', 'extra':f'{len(after)} 天'},
         'k3': {'label':'变化', 'value':f'{delta:+} kg', 'extra':'<span style="color:#34c759">减重</span>' if delta < 0 else '<span style="color:#ff3b30">增重</span>'},
         'k4': {'label':'日均', 'value':f'{daily_rate:+.3f} kg/天', 'extra':'对比'},
-        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th></tr>"
+        'table_header': "<tr><th>日期</th><th class='num'>BMI</th><th class='num'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
     }
 
 

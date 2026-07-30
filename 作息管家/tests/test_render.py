@@ -237,3 +237,86 @@ def test_helpers_directly():
     assert "② 数据" in base
     assert f"id={target['id']}" in base
     assert "④ 来源" in base
+
+
+# ---- 复盘 start-end (跨域 dual-domain · Phase E) ----
+# Spec: .scratch/replay-start-end/spec.md
+# Issue: .scratch/replay-start-end/issues/01-skeleton.md (T01)
+
+def test_render_replay_empty():
+    """T01 · 区间无数据 → status='empty' + payload meta 正确"""
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-17")
+    assert result["status"] == "empty", f"期望 empty, 实际 {result['status']}"
+    d = result["data"]
+    assert d["meta"]["mode"] == "replay"
+    assert d["meta"]["start"] == "2026-07-15"
+    assert d["meta"]["end"] == "2026-07-17"
+    assert d["meta"]["days"] == 3
+    assert d["meta"]["total_records"] == 0
+    assert d["meta"]["total_minutes"] == 0
+    # errors 字段必须存在(便于 5 状态 fallback 统一契约)
+    assert "errors" in d
+    assert d["errors"] == []
+
+
+def test_render_replay_basic_ok():
+    """T01 · 1 条 record + 1 条 plan → status='ok' + 4 段叙事字段骨架存在"""
+    insert_test_records("2026-07-15", count=1)
+    insert_test_plan("2026-07-15", "14:00", "15:00", "测试", "工作.AI调优")
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    assert result["status"] == "ok"
+    d = result["data"]
+    assert d["meta"]["mode"] == "replay"
+    assert d["meta"]["total_records"] == 1
+    # 4 段叙事字段骨架(T03-T06 各自填充实数据,T01 仅骨架)
+    assert "record_aggregate" in d
+    assert "plan_aggregate" in d
+    assert "cross_domain" in d
+    assert "ai_insights" in d
+    assert "copy_prompt" in d
+
+
+def test_render_replay_filename_default():
+    """T01 · default_output_path({mode:replay}) → 路径含 '区间复盘_' 前缀 + subdir"""
+    from schedule_html_render import default_output_path
+    p = default_output_path({"mode": "replay"})
+    name = p.name
+    # 中文 command 名 + 时间戳 (永不覆盖在 _naming_path 内已保护)
+    assert name.startswith("区间复盘_"), f"filename 应以'区间复盘_'开头,实际 {name}"
+    # 时间戳格式 YYYYMMDD_HHMMSS
+    assert len(name) == len("区间复盘_20260730_120000.html")
+    # subdir 隔离(replay/)
+    assert "replay" in str(p.parent).replace("\\", "/").split("schedule_html/")[-1]
+
+
+def test_render_replay_filename_overwrite_protect():
+    """T01 · 同秒两次调 _naming_path → 第二个加 _2 后缀(永不覆盖)"""
+    from schedule_html_render import _naming_path, CN_COMMAND_MAP
+    cmd = CN_COMMAND_MAP["replay"]
+    # 用 monkeypatch 锁住 datetime.now,确保同秒
+    import datetime as _dt
+    class FrozenDateTime(_dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 7, 30, 12, 0, 0)
+    import schedule_html_render
+    original_dt = schedule_html_render.datetime
+    schedule_html_render.datetime = FrozenDateTime
+    try:
+        p1 = _naming_path(cmd, "replay")
+        p2 = _naming_path(cmd, "replay")
+        # 确保父目录存在(以便 _2 路径可创建)
+        p1.parent.mkdir(parents=True, exist_ok=True)
+        p1.touch()
+        try:
+            p3 = _naming_path(cmd, "replay")
+            assert p3 != p1, "第二次应生成不同路径"
+            assert "_2." in p3.name or p3.name.endswith("_2.html"), \
+                f"第三次应加 _2 后缀,实际 {p3.name}"
+        finally:
+            p1.unlink()
+    finally:
+        schedule_html_render.datetime = original_dt

@@ -343,6 +343,7 @@ import os
 # === record 域(6) === 报告型 HTML,回顾性输入(schedule_records) — day/range/compare/category/anomaly/detail
 # === plan 域(3) === 过程型 HTML,预测性输入(schedule_plans) — list/preview/review
 # === receipt 域(5) === 回执型 HTML,CRUD 后视觉反馈(record+plan 域共享) — record-receipt×2 + plan-receipt×3
+# === 跨域 域(1) === Phase E · 复盘 start-end · dual-domain 分析(record + plan 跨域 review + AI 洞察)
 # === help 域(N/A) === HELP 中心(help_render.py 独立映射,不在此处)
 CN_COMMAND_MAP = {
     # === record 域(6) === 报告型:day/range/compare/category/anomaly/detail ===
@@ -362,6 +363,12 @@ CN_COMMAND_MAP = {
     "plan_receipt":        "改日程回执",
     "plan_receipt_add":    "补日程回执",
     "plan_receipt_write":  "写日程回执",
+    # === 跨域 域(1) === Phase E · 复盘 start-end · 跨 record+plan 双域分析报告 ===
+    # 注意:与 plan_review("复盘") 在"复盘"语义同源,但产品边界严格区分:
+    #   plan_review = 单日 plan 域 completion 写库
+    #   replay      = 任意区间 dual-domain 分析报告(record + plan + 跨域 + AI)
+    # 中文 command 名 = "区间复盘"(避免 _naming_path 重复映射),详见 .scratch/replay-start-end/spec.md
+    "replay":              "区间复盘",
 }
 
 
@@ -433,6 +440,7 @@ def default_output_path(meta: dict) -> Path:
       === record 域(6 mode)=== 报告型:day/range/compare/category/anomaly/detail → 委托 record_output_path()
       === plan 域(3 mode)=== 过程型:list/preview/review → plan/list | plan/query
       === receipt 域(5 mode)=== 回执型:record-receipt×2 + plan-receipt×3 → 由 record_output_path 处理
+      === 跨域 域(1 mode)=== Phase E · 复盘 start-end · dual-domain 分析 · replay/
       === help 域 === → 由 help_render.py 独立处理,不在此处
 
     pid/rid/action/date 等语义信息保留在 payload data.meta 里,
@@ -442,6 +450,10 @@ def default_output_path(meta: dict) -> Path:
 
     if mode.startswith("record-"):
         return record_output_path(mode, meta)
+
+    # === 跨域 域(1 mode · Phase E · 复盘 start-end · dual-domain 分析 · 独立 subdir)===
+    if mode == "replay":
+        return _naming_path(CN_COMMAND_MAP["replay"], "replay")
 
     # === plan 域(3 mode · ADR-0002 Q5 中文 command 名 · ADR-0003 Q7 分组)===
     if mode == "list-events":
@@ -497,6 +509,9 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         return _naming_path(CN_COMMAND_MAP["record_day"], "record/day")
     if mode == "record-detail":
         return _naming_path(CN_COMMAND_MAP["record_detail"], "record/detail")
+    # === 跨域 域(1 mode · Phase E · 复盘 start-end · dual-domain 分析)===
+    if mode == "replay":
+        return _naming_path(CN_COMMAND_MAP["replay"], "replay")
     # === receipt 域(5 mode · 回执型 · record+plan 共享)===
     if mode == "record-receipt":
         return _naming_path(CN_COMMAND_MAP["record_receipt"], "record/receipt")

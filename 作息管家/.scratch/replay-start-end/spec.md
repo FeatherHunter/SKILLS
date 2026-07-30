@@ -143,8 +143,8 @@
 2. **新模板 `templates/schedule_replay.html`** —— 复用 `_record_engine.js` 渲染框架,但独立模板文件(因为 4 段叙事 vs 单日/单域范式根本不同)。
 3. **新渲染函数 `render_replay(start, end)`** —— 位于 `scripts/schedule_html_render.py`,与 `render_record_day` / `render_record_range` / `render_plans_review` 同级。
 4. **新 CLI 命令 `render-replay --start YYYY-MM-DD --end YYYY-MM-DD`** —— 位于 `scripts/schedule_cli.py`,委托 `render_replay`。
-5. **新文件名 `复盘_<YYYYMMDD>_<HHMMSS>.html`** —— 不带区间(默认用户通过 HTML 头部 meta 看到 start-end,避免长路径)。遵守 ADR-0002 Q5(中文 command 名)+ ADR-0002 Q7(永不覆盖 + _N 冲突保护)。
-6. **新 CN_COMMAND_MAP 条目** `"replay": "复盘"` —— 在 `schedule_html_render.py` 已有 4 域分组内的"跨域"组(新增第 5 组)。
+5. **新文件名 `区间复盘_<YYYYMMDD>_<HHMMSS>.html`** —— 不带区间(默认用户通过 HTML 头部 meta 看到 start-end,避免长路径)。**`复盘_<TS>.html`(14 复盘) vs `区间复盘_<TS>.html`(新工作流)** 在 subdir 隔离 + 中文前缀双重区分,杜绝文件系统冲突。遵守 ADR-0002 Q5(中文 command 名)+ ADR-0002 Q7(永不覆盖 + _N 冲突保护)。
+6. **新 CN_COMMAND_MAP 条目** `"replay": "区间复盘"` —— 在 `schedule_html_render.py` 已有 4 域分组内的"跨域"组(新增第 5 组)。**避免与 `"plan_review": "复盘"`(14 复盘)撞车**，两个工作流共享"复盘"语义但中文 command 名严格区分。
 7. **ADR-0003 精神遵循** —— 不拆 `schedule_cli.py` / `schedule_html_render.py`,只在 `CN_COMMAND_MAP` 加新条目 + 域分组注释。
 
 ### 数据契约

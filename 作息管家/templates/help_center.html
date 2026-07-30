@@ -35,7 +35,7 @@
     letter-spacing: -.01em;
     min-height: 100vh; padding-bottom: 60px;
   }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; min-width: 0; }
 
   /* ===== HERO ===== */
   .hero {
@@ -74,10 +74,10 @@
     border-bottom: 1px solid var(--line);
   }
   .toolbar-row {
-    display: flex; gap: 8px; align-items: center;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   }
   .toolbar input {
-    flex: 1; padding: 10px 14px;
+    flex: 1 1 160px; min-width: 0; padding: 10px 14px;
     border: 1px solid var(--line); border-radius: var(--r-md);
     background: var(--card); font-size: 14px; color: var(--fg);
     font-family: inherit; outline: none;
@@ -114,6 +114,7 @@
     list-style: none; cursor: pointer; user-select: none;
     padding: 24px 28px;
     display: flex; align-items: center; gap: 16px;
+    flex-wrap: wrap;
     transition: background .15s;
   }
   .cat-block > summary:hover { background: rgba(0,0,0,.02); }
@@ -137,7 +138,7 @@
     background: var(--soft); border-radius: var(--r-md);
     flex-shrink: 0;
   }
-  .cat-body { flex: 1; min-width: 0; }
+  .cat-body { flex: 1 1 240px; min-width: 0; }
   .cat-name {
     font-size: 20px; font-weight: 600; color: var(--fg);
     letter-spacing: -.02em; line-height: 1.25;
@@ -148,6 +149,7 @@
   }
   .cat-meta {
     display: flex; gap: 6px; flex-shrink: 0;
+    flex-wrap: wrap; justify-content: flex-end;
   }
   .cat-pill {
     font-size: 12px; font-weight: 500; color: var(--fg2);

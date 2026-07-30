@@ -46,8 +46,8 @@
   .legend .target-badge.good { background:rgba(52,199,89,.15); color:var(--good); }
   .legend .target-badge.bad { background:rgba(255,59,48,.12); color:var(--bad); }
   table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
-  th.date, td.date { width:25%; }
-  th.num, td.num { width:15%; }
+  th.date, td.date { width:22%; }
+  th.num, td.num { width:16%; }
   th.kg, td.kg { width:20%; white-space:nowrap; }
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
   .table-wrap table thead th:nth-child(3),
@@ -103,9 +103,6 @@
     .table-wrap table .delta-flat { background:rgba(0,113,227,.08); color:var(--fg2); }
     /* L3 fix: 空态(无数据)显示提示 */
     .table-wrap .empty-state { padding:20px; text-align:center; color:var(--fg3); }
-  }
-  @media (max-width:400px) {
-    .kpi-grid { grid-template-columns:1fr; }
   }
   /* ticket 05 · Issue 3/4/5 修复:table-wrap 包装让 table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }

@@ -13,9 +13,11 @@ import os
 import re
 import subprocess
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
+import sqlite3
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
@@ -211,3 +213,86 @@ def test_v2_recent_anomalies_window_7_days():
         assert anomaly["date"] >= "2026-07-22", (
             f"recent_anomaly date {anomaly['date']} 不在最近 7 天内"
         )
+
+
+# ============= ticket 05:CLI + --text + 触发词 =============
+
+
+def _seed_weight_data(temp_db, days=20):
+    """在 temp_db 注入 N 天 daily 体重数据(v2 render 测试用)"""
+    conn = sqlite3.connect(str(temp_db))
+    cur = conn.cursor()
+    cur.execute("DELETE FROM weight_log")
+    for i in range(days):
+        d = (date.today() - timedelta(days=days - i - 1)).strftime("%Y-%m-%d")
+        kg = 88.0 + (i % 3) * 0.2 - (i // 5) * 0.3  # 小幅波动
+        cur.execute(
+            "INSERT INTO weight_log(date, time, weight_kg) VALUES (?, '12:00:00', ?)",
+            (d, kg),
+        )
+    conn.commit()
+    conn.close()
+
+
+def test_v2_render_exits_zero(temp_db, tmp_path):
+    """05: seam 4 test 2 — render_weight_volatility_v2.py exit 0 + HTML 生成"""
+    import os
+    RENDER = Path(__file__).resolve().parent.parent / "scripts" / "render_weight_volatility_v2.py"
+    assert RENDER.exists(), f"render 脚本缺失: {RENDER}"
+    _seed_weight_data(temp_db, days=20)
+
+    out = tmp_path / "food_v2.html"
+    r = subprocess.run(
+        [sys.executable, str(RENDER), "--output", str(out)],
+        cwd=SKILL_DIR, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+        env={**os.environ},
+    )
+    assert r.returncode == 0, f"render exit {r.returncode}, stderr={r.stderr[:300]}"
+    assert out.exists(), f"output HTML 不存在: {out}"
+    assert "ACTION=SEND_TO_USER" in r.stdout, f"stdout 应含 ACTION=SEND_TO_USER: {r.stdout[:300]}"
+
+
+def test_v2_does_not_write_db(temp_db, tmp_path):
+    """05: seam 4 test 7 — 跑 render 后 weight_log 记录数不变(纯只读)"""
+    import os
+    RENDER = Path(__file__).resolve().parent.parent / "scripts" / "render_weight_volatility_v2.py"
+    _seed_weight_data(temp_db, days=20)
+
+    conn = sqlite3.connect(str(temp_db))
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM weight_log")
+    before = cur.fetchone()[0]
+    conn.close()
+
+    r = subprocess.run(
+        [sys.executable, str(RENDER), "--output", str(tmp_path / "x.html")],
+        cwd=SKILL_DIR, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+        env={**os.environ},
+    )
+    conn = sqlite3.connect(str(temp_db))
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM weight_log")
+    after = cur.fetchone()[0]
+    conn.close()
+    assert before == after, f"weight_log 变化:before={before}, after={after}"
+
+
+def test_v2_text_mode_emits_plain_text(temp_db, tmp_path):
+    """05: seam 4 test 8 — `--text` exit 0 + stdout 非 HTML"""
+    import os
+    RENDER = Path(__file__).resolve().parent.parent / "scripts" / "render_weight_volatility_v2.py"
+    _seed_weight_data(temp_db, days=20)
+
+    r = subprocess.run(
+        [sys.executable, str(RENDER), "--text"],
+        cwd=SKILL_DIR, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=30,
+        env={**os.environ},
+    )
+    assert r.returncode == 0, f"--text exit {r.returncode}, stderr={r.stderr[:300]}"
+    assert "<!DOCTYPE" not in r.stdout and "<html" not in r.stdout, (
+        f"--text 模式应非 HTML: {r.stdout[:200]}"
+    )
+    assert "MODE=text" in r.stdout, f"--text 应有 MODE 标识: {r.stdout[:200]}"

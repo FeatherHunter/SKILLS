@@ -119,5 +119,9 @@ Thumbs.db
 卡路里/.scratch/**/FINAL_*.png
 卡路里/.scratch/**/iphone_*.png
 
+# 仓库根 .scratch/ 调试目录(各 skill 共用的临时调试产物,与 skill 下的 .scratch/ 同性质)
+# 注:作息管家/.scratch/<feature>/spec.md 等已成型的 spec 工件走下方「选择性放行」规则
+.scratch/
+
 # Local git worktrees
 .worktrees/

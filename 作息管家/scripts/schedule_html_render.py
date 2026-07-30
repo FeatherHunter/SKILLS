@@ -2028,6 +2028,140 @@ def render_record_anomaly(window_days: int = 7) -> dict:
     }
 
 
+def render_replay(start: str, end: str) -> dict:
+    """Phase E · 复盘 start-end · 跨域 dual-domain 分析(任意 start-end 区间)
+
+    4 段叙事骨架(T03-T06 各自填充实数据):
+      - record_aggregate: 分类时长 / 7 维趋势 / 24h 热力图 (T03 填充)
+      - plan_aggregate:   completion 6 类分布 + 分类拆解 (T04 填充)
+      - cross_domain:     planned_actual_pairs / unexecuted / unexpected / overrun (T05 填充)
+      - ai_insights:      mock 异常检测 + 周期对比 + 建议 (T06 填充)
+      - copy_prompt:      4 部分结构(单工铁律,总纲 §04 原则 10)
+
+    T01 骨架阶段: 仅实现 payload 骨架 + 5 状态 fallback (empty/ok)。
+    T07 补完: error/incomplete/offline 3 种状态。
+
+    Args:
+        start: 起始日期 YYYY-MM-DD
+        end:   结束日期 YYYY-MM-DD (含)
+
+    Returns:
+        {"status": "ok" | "empty", "data": payload, "message": str}
+    """
+    from schedule_db import _normalize_date, get_records_range, get_plan_events_range
+
+    start = _normalize_date(start)
+    end = _normalize_date(end)
+
+    records = get_records_range(start, end)
+    plans = get_plan_events_range(start, end, include_inactive=False)
+
+    total_records = len(records)
+    total_minutes = sum((r.get("duration_minutes") or 0) for r in records)
+    days = sorted({r.get("date", "") for r in records} | {p.get("date", "") for p in plans})
+    days_count = len(days) if days else 1
+
+    # 5 状态 fallback(空数据 → empty)
+    if total_records == 0 and len(plans) == 0:
+        return {
+            "status": "empty",
+            "data": {
+                "meta": {
+                    "mode": "replay",
+                    "start": start,
+                    "end": end,
+                    "days": days_count,
+                    "total_records": 0,
+                    "total_minutes": 0,
+                    "title": f"区间复盘 · {start} ~ {end}",
+                    "subtitle": f"{days_count} 天 · 无数据",
+                    "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                },
+                "record_aggregate": {"summary_items": [], "trend": [], "heatmap": []},
+                "plan_aggregate": {
+                    "completion_distribution": {
+                        "已完成": 0, "已完成(超时)": 0, "部分完成": 0,
+                        "未完成": 0, "未完成(不可抗力)": 0, "未复盘": 0,
+                    },
+                    "completion_by_category": [],
+                    "completion_rate": 0.0,
+                },
+                "cross_domain": {
+                    "planned_actual_pairs": [],
+                    "unexecuted_plans": [],
+                    "unexpected_records": [],
+                    "overrun_plans": [],
+                },
+                "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
+                "copy_prompt": _build_replay_copy_prompt(
+                    start, end, total_records, total_minutes, 0, 0
+                ),
+                "errors": [],
+            },
+            "message": f"📭 {start} ~ {end} 区间无数据(空态)",
+        }
+
+    payload = {
+        "meta": {
+            "mode": "replay",
+            "start": start,
+            "end": end,
+            "days": days_count,
+            "total_records": total_records,
+            "total_minutes": total_minutes,
+            "title": f"区间复盘 · {start} ~ {end}",
+            "subtitle": f"{days_count} 天 · {total_records} 条记录 · {total_minutes} 分钟",
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+        "record_aggregate": {"summary_items": [], "trend": [], "heatmap": []},
+        "plan_aggregate": {
+            "completion_distribution": {
+                "已完成": 0, "已完成(超时)": 0, "部分完成": 0,
+                "未完成": 0, "未完成(不可抗力)": 0, "未复盘": 0,
+            },
+            "completion_by_category": [],
+            "completion_rate": 0.0,
+        },
+        "cross_domain": {
+            "planned_actual_pairs": [],
+            "unexecuted_plans": [],
+            "unexpected_records": [],
+            "overrun_plans": [],
+        },
+        "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
+        "copy_prompt": _build_replay_copy_prompt(
+            start, end, total_records, total_minutes,
+            sum(1 for p in plans if p.get("completion") == "已完成"),
+            len(plans),
+        ),
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ {start} ~ {end} 区间复盘数据已生成(T01 骨架,T03-T06 待填充实数据)",
+    }
+
+
+def _build_replay_copy_prompt(start: str, end: str, total_records: int,
+                              total_minutes: int, completed_events: int,
+                              total_events: int) -> str:
+    """T01 · copy_prompt 4 部分结构(单工铁律,总纲 §04 原则 10)骨架。
+
+    T08 视觉打磨阶段会完善 prompt 内容(参考 record-range 的 _build_record_copy_prompt)。
+    T01 仅给骨架,让契约不空。
+    """
+    completion_rate = (completed_events / total_events * 100) if total_events else 0.0
+    return (
+        f"① 场景: 复盘 {start} ~ {end} 区间的作息与计划执行情况\n"
+        f"② 数据: {total_records} 条记录,总时长 {total_minutes} 分钟,"
+        f"计划完成 {completed_events}/{total_events} ({completion_rate:.1f}%)\n"
+        f"③ 用户原话: 请帮我复盘这一段\n"
+        f"④ 来源: schedule_replay.html 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
+        f"数据源 schedule_records + schedule_plans"
+    )
+
+
 def render_and_write(payload: dict, output_path: Path = None) -> dict:
     """渲染 + 写入文件,返回 {status, data:{file_path, bytes}, message}"""
     template_map = {
@@ -2047,6 +2181,8 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "record-category": "schedule_record_category.html",
         "record-anomaly":  "schedule_record_anomaly.html",
         "record-detail":   "schedule_record_detail.html",  # 详情页(人工智能推理溯源)
+        # === Phase E · 复盘 start-end · 跨域 dual-domain 分析 ===
+        "replay":          "schedule_replay.html",
     }
     mode = payload.get("data", {}).get("meta", {}).get("mode", "list-events")
     template_name = template_map.get(mode)

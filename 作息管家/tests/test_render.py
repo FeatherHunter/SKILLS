@@ -524,3 +524,81 @@ def test_render_replay_plan_aggregate_completion_rate():
     pa = result["data"]["plan_aggregate"]
     rate = pa["completion_rate"]
     assert abs(rate - (2/3)) < 0.01, f"完成率应 ≈ 0.666,实际 {rate}"
+
+
+# ---- T05 跨域对比段 (Spec: .scratch/replay-start-end/spec.md § 4 段叙事) ----
+# Issue: .scratch/replay-start-end/issues/05-cross-domain.md
+
+def test_render_replay_cross_domain():
+    """T05 · cross_domain 4 类清单(planning_actual_pairs + unexecuted + unexpected + overrun)"""
+    # === Fixture ===
+    # 1) planned_actual_pairs: plan 14:00-15:00 (60min) + record 14:00-15:00 (60min) → pair
+    plan_a = _db.ensure_plan_event(
+        date="2026-07-15", time_start="14:00", time_end="15:00",
+        title="下午编程", category="工作.AI调优",
+    )["id"]
+    _db.add_record_full(
+        date="2026-07-15", time_start="14:00", time_end="15:00",
+        duration_minutes=60, activity="编程", category="工作.AI调优",
+        source_contents="x", source_timestamps="14:00", analysis_reasoning="x",
+    )
+
+    # 2) unexecuted_plans: plan 10:00-11:00 完成状态 "未完成" → 未执行
+    plan_b = _db.ensure_plan_event(
+        date="2026-07-15", time_start="10:00", time_end="11:00",
+        title="未做", category="健康.运动",
+    )["id"]
+    _db.update_plan_event(plan_b, {"completion": "未完成", "completion_note": "忘了"})
+
+    # 3) unexpected_records: record 16:00-17:00 无对应 plan
+    _db.add_record_full(
+        date="2026-07-15", time_start="16:00", time_end="17:00",
+        duration_minutes=60, activity="临时散步", category="调整.游戏",
+        source_contents="x", source_timestamps="16:00", analysis_reasoning="x",
+    )
+
+    # 4) overrun_plans: plan 20:00-20:30 (30min) + record 20:00-21:00 (60min) → 2x overrun
+    plan_c = _db.ensure_plan_event(
+        date="2026-07-15", time_start="20:00", time_end="20:30",
+        title="阅读", category="学习.读书",
+    )["id"]
+    _db.add_record_full(
+        date="2026-07-15", time_start="20:00", time_end="21:00",
+        duration_minutes=60, activity="深度阅读", category="学习.读书",
+        source_contents="x", source_timestamps="20:00", analysis_reasoning="x",
+    )
+
+    from schedule_html_render import render_replay
+    result = render_replay("2026-07-15", "2026-07-15")
+    d = result["data"]
+    cd = d["cross_domain"]
+
+    # === planned_actual_pairs ===
+    pairs = cd["planned_actual_pairs"]
+    assert len(pairs) >= 1, f"planned_actual_pairs 应至少 1 条,实际 {len(pairs)}"
+    pair_a = next(p for p in pairs if p["plan_id"] == plan_a)
+    assert pair_a["plan_duration_minutes"] == 60
+    assert pair_a["actual_duration_minutes"] == 60
+    assert pair_a["delta_minutes"] == 0
+
+    # === unexecuted_plans ===
+    unexec = cd["unexecuted_plans"]
+    assert any(u["plan_id"] == plan_b for u in unexec), "plan_b(未完成) 应在 unexecuted_plans"
+    u_b = next(u for u in unexec if u["plan_id"] == plan_b)
+    assert u_b["completion"] == "未完成"
+    assert u_b["title"] == "未做"
+
+    # === unexpected_records ===
+    unexpected = cd["unexpected_records"]
+    assert len(unexpected) >= 1
+    u_rec = next(r for r in unexpected if r["activity"] == "临时散步")
+    assert u_rec["category"] == "调整.游戏"
+
+    # === overrun_plans ===
+    overrun = cd["overrun_plans"]
+    assert any(o["plan_id"] == plan_c for o in overrun), \
+        "plan_c(2x overrun) 应在 overrun_plans"
+    o_c = next(o for o in overrun if o["plan_id"] == plan_c)
+    assert o_c["plan_duration_minutes"] == 30
+    assert o_c["actual_duration_minutes"] == 60
+    assert o_c["ratio"] == 2.0, f"ratio 应 = 2.0 (60/30),实际 {o_c['ratio']}"

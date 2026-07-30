@@ -2157,6 +2157,129 @@ def render_replay(start: str, end: str) -> dict:
         "completion_rate": round(overall_rate, 3),
     }
 
+    # === T05 · 跨域对比段 ===
+    # 4 类清单:planned_actual_pairs + unexecuted_plans + unexpected_records + overrun_plans
+    # 算法核心:按 (date, plan_id) 做 record 聚合 → plan vs 实际时长对比
+    from datetime import datetime as _dt, time as _time
+    def _hhmm_to_min(s: str) -> int:
+        """'HH:MM' → 从 00:00 起的分钟数(字符串解析避免 datetime 慢路径)"""
+        try:
+            h, m = s.strip().split(":")
+            return int(h) * 60 + int(m)
+        except Exception:
+            return 0
+
+    def _plan_duration_min(p: dict) -> int:
+        return max(0, _hhmm_to_min(p.get("time_end", "00:00")) - _hhmm_to_min(p.get("time_start", "00:00")))
+
+    # 按 date 分组 records(便于同日期 plan 配对)
+    records_by_date: dict[str, list[dict]] = {}
+    for r in records:
+        records_by_date.setdefault(r.get("date", ""), []).append(r)
+
+    planned_actual_pairs: list[dict] = []
+    unexecuted_plans: list[dict] = []
+    unexpected_records: list[dict] = []
+    overrun_plans: list[dict] = []
+
+    UNEXECUTED_COMPLETIONS = {"未完成", "未完成(不可抗力)", "部分完成"}
+    OVERRUN_RATIO = 1.2  # 实际超出计划 20% 触发 overrun 标注
+
+    for p in plans:
+        pid = p["id"]
+        p_date = p.get("date", "")
+        p_start = _hhmm_to_min(p.get("time_start", "00:00"))
+        p_end = _hhmm_to_min(p.get("time_end", "00:00"))
+        plan_dur = max(0, p_end - p_start)
+
+        # 同日期 record 时间重叠 → 计算实际时长(取交集)
+        same_date_records = records_by_date.get(p_date, [])
+        actual_dur = 0
+        for r in same_date_records:
+            r_start = _hhmm_to_min(r.get("time_start", "00:00"))
+            r_end = _hhmm_to_min(r.get("time_end", "00:00"))
+            overlap_start = max(p_start, r_start)
+            overlap_end = min(p_end, r_end)
+            if overlap_end > overlap_start:
+                actual_dur += (overlap_end - overlap_start)
+
+        comp = p.get("completion")
+        # 1. planned_actual_pairs:plan 完成状态任意 + 同日有时间重叠的 record
+        if actual_dur > 0:
+            planned_actual_pairs.append({
+                "plan_id": pid, "title": p.get("title", ""),
+                "plan_duration_minutes": plan_dur,
+                "actual_duration_minutes": actual_dur,
+                "delta_minutes": actual_dur - plan_dur,
+                "completion": comp,
+            })
+
+        # 2. unexecuted_plans:plan 存在但完成状态 ∈ {未完成 / 未完成(不可抗力) / 部分完成}
+        if comp in UNEXECUTED_COMPLETIONS:
+            unexecuted_plans.append({
+                "plan_id": pid, "title": p.get("title", ""),
+                "time_start": p.get("time_start", ""),
+                "time_end": p.get("time_end", ""),
+                "category": p.get("category", ""),
+                "completion": comp,
+                "completion_note": p.get("completion_note", "") or "",
+            })
+
+        # 3 & 4. overrun_plans:record 总时长超出 plan 20%(无论 plan 完成状态)
+        if plan_dur > 0:
+            # 取所有跟 plan 时间重叠的 record 的总 duration
+            record_total_dur = 0
+            for r in same_date_records:
+                r_start = _hhmm_to_min(r.get("time_start", "00:00"))
+                r_end = _hhmm_to_min(r.get("time_end", "00:00"))
+                if max(p_start, r_start) < min(p_end, r_end):
+                    # 用 record 的 duration_minutes 字段(优先) 或 从时间区间算
+                    dur = r.get("duration_minutes")
+                    if dur is None:
+                        dur = max(0, r_end - r_start)
+                    record_total_dur += dur
+            if record_total_dur > 0:
+                ratio = record_total_dur / plan_dur
+                if ratio >= OVERRUN_RATIO:
+                    overrun_plans.append({
+                        "plan_id": pid, "title": p.get("title", ""),
+                        "plan_duration_minutes": plan_dur,
+                        "actual_duration_minutes": record_total_dur,
+                        "ratio": round(ratio, 2),
+                        "severity": "high" if ratio >= 1.5 else "medium",
+                    })
+
+    # 5. unexpected_records:record 无对应 plan
+    for r in records:
+        r_date = r.get("date", "")
+        r_start = _hhmm_to_min(r.get("time_start", "00:00"))
+        r_end = _hhmm_to_min(r.get("time_end", "00:00"))
+        matched = False
+        for p in plans:
+            if p.get("date", "") != r_date:
+                continue
+            p_start = _hhmm_to_min(p.get("time_start", "00:00"))
+            p_end = _hhmm_to_min(p.get("time_end", "00:00"))
+            if max(p_start, r_start) < min(p_end, r_end):
+                matched = True
+                break
+        if not matched:
+            unexpected_records.append({
+                "record_id": r.get("id"),
+                "time_start": r.get("time_start", ""),
+                "time_end": r.get("time_end", ""),
+                "category": r.get("category", ""),
+                "activity": r.get("activity", ""),
+                "duration_minutes": r.get("duration_minutes") or 0,
+            })
+
+    cross_domain = {
+        "planned_actual_pairs": planned_actual_pairs,
+        "unexecuted_plans": unexecuted_plans,
+        "unexpected_records": unexpected_records,
+        "overrun_plans": overrun_plans,
+    }
+
     # 5 状态 fallback(空数据 → empty)
     if total_records == 0 and len(plans) == 0:
         return {
@@ -2215,12 +2338,7 @@ def render_replay(start: str, end: str) -> dict:
         },
         "record_aggregate": record_aggregate,
         "plan_aggregate": plan_aggregate,
-        "cross_domain": {
-            "planned_actual_pairs": [],
-            "unexecuted_plans": [],
-            "unexpected_records": [],
-            "overrun_plans": [],
-        },
+        "cross_domain": cross_domain,
         "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
         "copy_prompt": _build_replay_copy_prompt(
             start, end, total_records, total_minutes,

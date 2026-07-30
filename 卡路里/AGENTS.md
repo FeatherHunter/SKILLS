@@ -133,3 +133,19 @@ with sync_playwright() as p:
 ## 触发词更新
 
 每次 BUG 修完,需在 `_triggers.py` 对应 trigger 的 cli 字段更新(如改 render script),然后 `python scripts/render_help_center.py` 重 render。详见 ADR-0001 SoT 链。
+
+## 何时参考 SKILL开发总纲V1.0
+
+> `D:\2Study\StudyNotes\SKILLS\SKILL开发总纲V1.0\` 是 **meta-skill 开发规范**(5-层骨架 / 触发词设计 / HTML-First / 工程仪式 / HELP 等 7 个 hook)。
+> 卡路里 **已遵循** 这些规范(7 hook / SoT 链 / HTML 同步),不需要每次再读。
+
+**只在以下情况参考总纲**:
+| 场景 | 看什么 |
+|---|---|
+| 重构 skill 架构 / 5-层骨架 | `02-5层骨架.md` |
+| 设计/调整 trigger 词 | `03-触发词设计v2.md` |
+| 设计新 HTML 模板 / 改 rendering | `04-可视化与注入v2.md` |
+| 新增 ticket 涉及 skill 级决策(HTML 同步 / SoT 链) | `05-工程仪式.md` + `07-HELP与场景完备性.md` |
+| 概念原则(第一性原理 / 不存 deprecation 库存) | `01-第一性原理.md` |
+
+**平时不读** — 日常修 BUG / 加 trigger / 改模板,总纲已内化,不必每次翻。

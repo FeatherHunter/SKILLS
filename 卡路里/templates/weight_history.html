@@ -223,7 +223,7 @@
     for (let v = minY; v <= maxY; v += Math.max(1, Math.round((maxY - minY) / 5))) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
-        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b">${v}kg</text>`);
+        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b" font-weight="700">${v}kg</text>`);
     }
     // V2.4 fix: target 线只在 [minY, maxY] 范围内渲染
     // 用户减肥期 target 远低于数据,直接画会让数据线被压扁。
@@ -232,7 +232,7 @@
     if (target && targetInRange) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
-        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
+        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end" font-weight="700">目标 ${target}kg</text>`);
     }
     if (items.length >= 7) {
       let movingAverageLine = '';
@@ -253,7 +253,7 @@
         `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}" vector-effect="non-scaling-stroke"/>`);
       if (i === items.length - 1) {
         svg.insertAdjacentHTML('beforeend',
-          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
+          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="700">${p.kg}kg</text>`);
       }
     });
     const extrema = [
@@ -268,7 +268,7 @@
       svg.insertAdjacentHTML('beforeend',
         `<g class="chart-extremum" aria-label="${entry.label}体重 ${entry.value}kg">` +
         `<circle cx="${pointX}" cy="${pointY}" r="7" fill="${entry.color}" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
-        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700">${entry.label} ${entry.value}kg</text>` +
+        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700" style="font-weight: 800">${entry.label} ${entry.value}kg</text>` +
         `</g>`);
     });
 

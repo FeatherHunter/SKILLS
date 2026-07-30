@@ -46,12 +46,18 @@
   .legend .target-badge.good { background:rgba(52,199,89,.15); color:var(--good); }
   .legend .target-badge.bad { background:rgba(255,59,48,.12); color:var(--bad); }
   table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
-  th.date, td.date { width:23%; }
-  th.num, td.num { width:16%; }
-  th.kg, td.kg { width:20%; white-space:nowrap; }
+  th.date, td.date { width:16%; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+  /* V2.5.26: BMI / 体重 / vs上次 / 注 列改为内容自适应 + nowrap,
+     多宽算多宽,加上 padding,不再受固定百分比拉伸 */
+  th.num, td.num { width:auto; white-space:nowrap; }
+  th.kg, td.kg { width:auto; white-space:nowrap; }
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
   .table-wrap table thead th:nth-child(3),
-  .table-wrap table tbody td:nth-child(3) { width:20%; white-space:nowrap; }
+  .table-wrap table tbody td:nth-child(3) { width:auto; white-space:nowrap; }
+  /* V2.5.26: vs上次 列固定一个合适的窄宽度(容纳 "−1.6" chip + padding),
+     避免 width:auto 在 fixed table-layout 下被均分放大 */
+  .table-wrap table thead th:nth-child(4),
+  .table-wrap table tbody td:nth-child(4) { width:60px; white-space:nowrap; }
   /* V2.5.2: 注 列 25% → 12%(用户: '注 列还是太宽,文字左右都有空白')
      12% × 380 = 45.6px - '晨起空腹' 4 字约 44px,基本贴合内容宽度 */
   th.note, td.note { width:12%; overflow:visible; text-overflow:clip; white-space:nowrap; }
@@ -88,6 +94,8 @@
     .table-wrap table { font-size:11px; }
     /* V2.1 fix: 不再用 word-break:break-all(否则 '90.9 kg' 换行成 '90.9 k\\ng') */
     .table-wrap table th, .table-wrap table td { padding:6px 6px; white-space:nowrap; }
+    /* V2.5.26: 覆盖 mobile 块内的 table 通用 font:11px,date 列需要更小 */
+    .table-wrap table th.date, .table-wrap table td:first-child { font-size:10px !important; }
     .table-wrap table td.note { white-space:normal; overflow:hidden; text-overflow:ellipsis; }
     /* M1 fix: sticky thead(24 行表滚 1168px 高时表头跟随) */
     .table-wrap thead th { position:sticky; top:0; background:var(--card); z-index:1; }
@@ -196,7 +204,7 @@
     const W = 800, H = 500, PAD = 30;
     // V2.5.1: mobile 上加大字号 + 加粗曲线(用户: '曲线在手机上看太小')
     const isMobile = window.innerWidth < 640;
-    const labelFontSize = isMobile ? 12 : 10;
+    const labelFontSize = isMobile ? 20 : 18;
     const lineStrokeWidth = isMobile ? 3 : 2.5;
     const weights = items.map(i => i.kg);
     let minW = Math.min(...weights), maxW = Math.max(...weights);
@@ -215,7 +223,7 @@
     for (let v = minY; v <= maxY; v += Math.max(1, Math.round((maxY - minY) / 5))) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
-        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b">${v}kg</text>`);
+        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b" font-weight="700">${v}kg</text>`);
     }
     // V2.4 fix: target 线只在 [minY, maxY] 范围内渲染
     // 用户减肥期 target 远低于数据,直接画会让数据线被压扁。
@@ -224,7 +232,7 @@
     if (target && targetInRange) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
-        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
+        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end" font-weight="700">目标 ${target}kg</text>`);
     }
     if (items.length >= 7) {
       let movingAverageLine = '';
@@ -245,7 +253,7 @@
         `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}" vector-effect="non-scaling-stroke"/>`);
       if (i === items.length - 1) {
         svg.insertAdjacentHTML('beforeend',
-          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="600">${p.kg}kg</text>`);
+          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="700">${p.kg}kg</text>`);
       }
     });
     const extrema = [
@@ -260,7 +268,7 @@
       svg.insertAdjacentHTML('beforeend',
         `<g class="chart-extremum" aria-label="${entry.label}体重 ${entry.value}kg">` +
         `<circle cx="${pointX}" cy="${pointY}" r="7" fill="${entry.color}" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
-        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700">${entry.label} ${entry.value}kg</text>` +
+        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700" style="font-weight: 800">${entry.label} ${entry.value}kg</text>` +
         `</g>`);
     });
 

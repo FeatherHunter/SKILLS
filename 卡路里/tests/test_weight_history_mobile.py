@@ -472,6 +472,22 @@ def test_chart_label_font_size_increased_to_20_18():
     )
 
 
+def test_chart_labels_are_bold():
+    """v2.5.27: Y 轴 / 目标 / 当前点 / 最高最低 文字加粗(font-weight ≥ 700)"""
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # 必须有 4 处加粗:Y 轴 tick / 目标 / 当前点 / 极值
+    bold_count = text.count('font-weight="700"')
+    assert bold_count >= 4, (
+        f"chart 标签应有 ≥ 4 处 font-weight=700(实得 {bold_count})"
+    )
+    # 极值文字额外加 style="font-weight: 800" 用于最显眼
+    assert "font-weight: 800" in text, "极值(最高/最低)文字应额外加 font-weight: 800"
+    # Y 轴 tick 必带 font-weight="700"
+    assert re.search(r'<text[^>]*fill="#86868b"[^>]*font-weight="700"', text), (
+        "Y 轴 tick 文字应加粗"
+    )
+
+
 def test_note_column_narrower_on_mobile():
     """V2.5.2: 注 列 mobile 宽度应 < 25%(用户: '注 列太宽了')"""
     html = TEMPLATE.read_text(encoding="utf-8")

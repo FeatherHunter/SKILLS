@@ -29,7 +29,7 @@ TEMPLATE = SKILL_DIR / "templates" / "weight_history.html"
 RENDER = SKILL_DIR / "scripts" / "render_weight_history.py"
 
 
-# ============= BUG 1: chart 垂直拉伸修复 =============
+# ====== BUG 1: chart 垂直拉伸修复 ======
 
 
 def test_svg_uses_preserve_aspect_ratio_not_none():
@@ -81,7 +81,7 @@ def test_svg_text_rendering_precise():
             pass
 
 
-# ============= BUG 2: 表格 note 列在 mobile 可见 =============
+# ====== BUG 2: 表格 note 列在 mobile 可见 ======
 
 
 def test_table_uses_fixed_layout():
@@ -132,7 +132,7 @@ def test_table_header_includes_note_column():
     )
 
 
-# ============= Lint integration =============
+# ====== Lint integration ======
 
 
 def test_weight_history_lint_passes():
@@ -143,7 +143,7 @@ def test_weight_history_lint_passes():
     assert errors == [], f"weight_history.html 不通过 lint: {errors}"
 
 
-# ============= H1: SVG 高度合理 =============
+# ====== H1: SVG 高度合理 ======
 
 
 def test_svg_height_uses_responsive_clamp():
@@ -166,7 +166,7 @@ def test_svg_height_uses_responsive_clamp():
             )
 
 
-# ============= H2: note 列 padding 修复 =============
+# ====== H2: note 列 padding 修复 ======
 
 
 def test_table_cells_have_reduced_horizontal_padding():
@@ -197,7 +197,7 @@ def test_table_cells_have_reduced_horizontal_padding():
         )
 
 
-# ============= H3: 目标线 JS guard 修复 =============
+# ====== H3: 目标线 JS guard 修复 ======
 
 
 def test_svg_height_allows_min_height_above_content():
@@ -205,7 +205,7 @@ def test_svg_height_allows_min_height_above_content():
     保留 test_svg_height_uses_responsive_clamp(强 regex + 数字断言)即可"""
 
 
-# ============= M1: sticky thead =============
+# ====== M1: sticky thead ======
 
 
 def test_thead_sticky_on_scroll_mobile():
@@ -231,7 +231,7 @@ def test_thead_sticky_on_scroll_mobile():
     )
 
 
-# ============= M2: delta chip 化 =============
+# ====== M2: delta chip 化 ======
 
 
 def test_delta_column_styled_as_chip():
@@ -255,7 +255,7 @@ def test_delta_column_styled_as_chip():
     )
 
 
-# ============= M3: KPI mobile 字号调 =============
+# ====== M3: KPI mobile 字号调 ======
 
 
 def test_kpi_mobile_font_size_smaller():
@@ -283,7 +283,7 @@ def test_kpi_mobile_font_size_smaller():
             )
 
 
-# ============= L1: table line-height =============
+# ====== L1: table line-height ======
 
 
 def test_table_line_height_compact_mobile():
@@ -308,7 +308,7 @@ def test_table_line_height_compact_mobile():
             assert lh <= 1.5, f"mobile table line-height 应 ≤ 1.5,实得 {lh}"
 
 
-# ============= L3: empty state =============
+# ====== L3: empty state ======
 
 
 def test_table_shows_empty_state_when_no_data():
@@ -326,7 +326,7 @@ def test_table_shows_empty_state_when_no_data():
     )
 
 
-# ============= H3 集成测试: 模拟用户数据 + 验证目标线渲染 =============
+# ====== H3 集成测试: 模拟用户数据 + 验证目标线渲染 ======
 
 
 def test_target_line_renders_even_below_data_range():
@@ -430,7 +430,7 @@ def test_target_line_renders_even_below_data_range():
     )
 
 
-# ============= V2.5: 用户第二轮反馈 (2026-07-30) =============
+# ====== V2.5: 用户第二轮反馈 (2026-07-30) ======
 # 问题 1: chart 在手机上看太小 - Y 轴文字/曲线/当前值文字都偏小
 # 问题 2: 注 列宽 25% 太宽(24 行里 23 行空)
 # 问题 3: vs上次 header 和 chip 没对齐(td.delta display:inline-block 塌陷)
@@ -457,6 +457,18 @@ def test_chart_mobile_stroke_wider_than_desktop():
     desktop_v = float(m.group(2))
     assert mobile_v > desktop_v, (
         f"V2.5.1: mobile 值 ({mobile_v}) 应 > desktop ({desktop_v})"
+    )
+
+
+def test_chart_label_font_size_increased_to_16_14():
+    """v2.5.24: Y 轴 / 最高最低 / 当前点 字号 mobile 16 / desktop 14(原 12/10)"""
+    text = TEMPLATE.read_text(encoding="utf-8")
+    m = re.search(r"labelFontSize\s*=\s*isMobile\s*\?\s*(\d+)\s*:\s*(\d+)", text)
+    assert m, "JS 缺 labelFontSize = isMobile ? M : D 的字号分支"
+    mobile_v = int(m.group(1))
+    desktop_v = int(m.group(2))
+    assert mobile_v == 16 and desktop_v == 14, (
+        f"labelFontSize 应为 mobile=16, desktop=14,实得 mobile={mobile_v}, desktop={desktop_v}"
     )
 
 
@@ -505,7 +517,7 @@ def test_delta_chip_uses_span_wrapper_in_js():
     )
 
 
-# ============= V2.5 集成: 实测对齐 + 视觉 =============
+# ====== V2.5 集成: 实测对齐 + 视觉 ======
 
 
 def test_phone_xr_delta_cell_occupies_full_column():
@@ -591,7 +603,7 @@ def test_phone_xr_delta_cell_occupies_full_column():
     )
 
 
-# ============= BUG V2: mobile "kg" 换行 + chart Y 轴扩张 =============
+# ====== BUG V2: mobile "kg" 换行 + chart Y 轴扩张 ======
 # 用户反馈 (2026-07-30) 在手机上看:
 #   1) "kg" 单位换行成 "90.9 k\ng" - word-break: break-all 引起
 #   2) Chart Y 轴扩到含 target(86.9 数据 + 69.9 target → Y 轴 68-93)→
@@ -685,7 +697,7 @@ def test_chart_shows_target_distance_badge():
     )
 
 
-# ============= V2 集成: phone viewport 真实测量 =============
+# ====== V2 集成: phone viewport 真实测量 ======
 
 
 def test_phone_xr_kg_cell_no_wrap():
@@ -1114,7 +1126,7 @@ def test_date_column_shrinks_on_iphone_xr(tmp_path):
         }""")
         browser.close()
 
-    # 工单 01 用户原意 "日期列宽度降低 10%" — v2.5.20 baseline iPhone XR 实测 ~109px,
+# 工单 01 用户原意 "日期列宽度降低 10%" — v2.5.20 baseline iPhone XR 实测 ~109px,
     # 调整后应 ≤ 88px(用户进一步要求更窄),并保证所有行 "2026-07-30" 不被截断。
     assert date_cell["headerWidth"] <= 88, date_cell
     assert date_cell["cellFit"]

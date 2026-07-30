@@ -46,7 +46,7 @@
   .legend .target-badge.good { background:rgba(52,199,89,.15); color:var(--good); }
   .legend .target-badge.bad { background:rgba(255,59,48,.12); color:var(--bad); }
   table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; }
-  th.date, td.date { width:19%; }
+th.date, td.date { width:19%; }
   th.num, td.num { width:17%; }
   th.kg, td.kg { width:20%; white-space:nowrap; }
   /* V2 fix: 体重列(nth-child(3))宽度强制 20% — 兼容旧数据(th 可能没 kg class) */
@@ -196,7 +196,7 @@
     const W = 800, H = 500, PAD = 30;
     // V2.5.1: mobile 上加大字号 + 加粗曲线(用户: '曲线在手机上看太小')
     const isMobile = window.innerWidth < 640;
-    const labelFontSize = isMobile ? 12 : 10;
+    const labelFontSize = isMobile ? 16 : 14;
     const lineStrokeWidth = isMobile ? 3 : 2.5;
     const weights = items.map(i => i.kg);
     let minW = Math.min(...weights), maxW = Math.max(...weights);

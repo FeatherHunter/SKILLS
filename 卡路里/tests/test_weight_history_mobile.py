@@ -1115,8 +1115,8 @@ def test_date_column_shrinks_on_iphone_xr(tmp_path):
         browser.close()
 
     # 工单 01 用户原意 "日期列宽度降低 10%" — v2.5.20 baseline iPhone XR 实测 ~109px,
-    # 调整后应 ≤ 98px(109 × 0.9),并保证所有行 "2026-07-30" 不被截断。
-    assert date_cell["headerWidth"] <= 98, date_cell
+    # 调整后应 ≤ 88px(用户进一步要求更窄),并保证所有行 "2026-07-30" 不被截断。
+    assert date_cell["headerWidth"] <= 88, date_cell
     assert date_cell["cellFit"]
 
 

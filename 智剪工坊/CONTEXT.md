@@ -213,6 +213,38 @@ UX 规则:**用户既要看到标题,也要看到描述,心里有数**。
 
 下游 Python(`lib/video_processing.py` 218-234, 508-509)删掉这 5 个 op 的解析逻辑。
 
+### D8 · 段内调色 op 命名:`color` 而非 `color-grade`(2026-07-29 grill 第 1 题)
+
+**段内 op 调色命名统一为 `color`**(不带 `-grade` 后缀)。理由:
+1. HTML `SEGMENT_OPS_SCHEMA.color` 现状生产 `color`,改 HTML 改 1 行 vs 改 spec + JSON Schema 改 2 行 + HTML 验证全链路 — 成本最低
+2. `color-grade` 的 `grade` 后缀语义模糊(中文读者第一反应"等级"而非"调色"),违反 **SPEC 是给人看的**原则
+3. 命名统一后:HTML / spec / JSON Schema 三方零冲突
+4. 统一真相源 = `color`,spec §7 白名单同步改为 `color`
+
+**迁移**:
+- spec §7 `validSegmentOps` 从 `['mute', 'speed-up', 'slow-down', 'reverse', 'color-grade']` 改 `['mute', 'speed-up', 'slow-down', 'reverse', 'color']`
+- `references/intent_v3.schema.json` `time_segments[].ops.additionalProperties: false` 白名单同步:`color-grade` 改 `color`
+- `lib/video_processing.py` `build_video_filter` 不受影响(读 `ops.color`,不读 op 名)
+- HTML `SEGMENT_OPS_SCHEMA` 不动(已写 `color`)
+
+### D9 · 段 ID 格式:`seg_${videoIdx}_${n}`(2026-07-29 grill 第 2 题)
+
+**段 ID 格式统一为 `seg_${videoIdx}_${n}`**(v 1-based 视频索引,n 是段在该视频内的序号,从 1 递增)。理由:
+1. spec §4 已有推荐格式,JSON Schema pattern 强制 `^seg_[0-9]+_[0-9]+$`(D4 老 schema 拒绝 → 无历史负担)
+2. `seg_2_3` 比 `seg_2_new_1753796400000` 易读、AI 友好、天然排序
+3. JSON 恢复流程只 spread 整个对象,id 原样保留,**格式不影响恢复**
+4. 实现:HTML `SegmentState` 加 `nextN` 计数器,`addOrSplit` 用 `seg_${videoIdx}_${nextN}` 取代 `${baseId}new_${Date.now()}`
+
+**迁移**:
+- `references/intent_v3.schema.json` `time_segments[].id.pattern` 从 `^seg_[0-9]+_[0-9_a-zA-Z]+$` 加强制 `^seg_[0-9]+_[0-9]+$`
+- HTML `SegmentState.addOrSplit`:新段 id 改为 `seg_${videoIndex+1}_${nextN}`(v 是 videoEntries index +1,与 `seg_${videoIdx}` 习惯一致)
+- HTML `SegmentState` 初始化加 `nextN: 1` 字段,从已有 segments 的最大 n + 1 继续
+- 下游 Python `lib/video_processing.py` 不受影响(只读 id,不解析格式)
+
+**JSON 恢复验证**(无需改任何代码):
+- JSON `[{id: "seg_1_1", ...}, {id: "seg_1_2", ...}]` 加载 → HTML 直接 spread 进 SegmentState → 后续 UI 渲染/编辑按 id 查 segments
+- 格式与新增完全无关,只关心 id 字符串本身
+
 ---
 
 ## 当前项目路线(2026-07-29,用户口径)

@@ -1005,3 +1005,136 @@ def test_rendered_chart_marks_highest_and_lowest_weights(tmp_path):
     assert extrema["lowest"]["fill"] == "rgb(52, 199, 89)"
     assert extrema["highest"]["text"] == "最高 91.9kg"
     assert extrema["lowest"]["text"] == "最低 86.9kg"
+
+
+@pytest.mark.parametrize(
+    "viewport",
+    [
+        {"width": 375, "height": 667, "is_mobile": True, "label": "iPhone SE 375"},
+        {"width": 393, "height": 852, "is_mobile": True, "label": "iPhone 15 393"},
+        {"width": 414, "height": 896, "is_mobile": True, "label": "iPhone XR 414"},
+    ],
+)
+def test_kpi_grid_stays_two_columns_on_all_mobile_widths(tmp_path, viewport):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(
+            viewport={"width": viewport["width"], "height": viewport["height"]},
+            device_scale_factor=2,
+            is_mobile=viewport["is_mobile"],
+        )
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        grid = page.evaluate("""() => {
+          const grid = document.querySelector('.kpi-grid');
+          if (!grid) return null;
+          const cards = Array.from(grid.querySelectorAll('.kpi'));
+          const rects = cards.map(card => card.getBoundingClientRect());
+          const widths = rects.map(rect => Math.round(rect.width));
+          const heights = rects.map(rect => Math.round(rect.height));
+          return {
+            columnCount: widths.length,
+            widthSpread: Math.max(...widths) - Math.min(...widths),
+            heightSpread: Math.max(...heights) - Math.min(...heights),
+          };
+        }""")
+        browser.close()
+
+    assert grid["columnCount"] == 4
+    assert grid["widthSpread"] <= 2
+    assert grid["heightSpread"] <= 2
+
+
+def test_kpi_grid_is_four_columns_on_desktop(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 1280, "height": 800})
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        grid = page.evaluate("""() => {
+          const cards = Array.from(document.querySelectorAll('.kpi-grid .kpi'));
+          const widths = cards.map(card => Math.round(card.getBoundingClientRect().width));
+          return { count: cards.length, widths };
+        }""")
+        browser.close()
+
+    assert grid["count"] == 4
+    assert max(grid["widths"]) - min(grid["widths"]) <= 2, grid["widths"]
+
+
+def test_date_column_shrinks_on_iphone_xr(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(
+            viewport={"width": 414, "height": 896},
+            device_scale_factor=2,
+            is_mobile=True,
+        )
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        date_cell = page.evaluate("""() => {
+          const header = Array.from(document.querySelectorAll('.table-wrap thead th')).find(
+            node => node.textContent.trim() === '日期'
+          );
+          if (!header) return null;
+          const headerRect = header.getBoundingClientRect();
+          const sampleText = document.createElement('span');
+          sampleText.textContent = '2026-07-30';
+          sampleText.style.cssText = 'visibility:hidden;position:absolute;white-space:nowrap;font:11px -apple-system';
+          document.body.appendChild(sampleText);
+          const sampleWidth = sampleText.getBoundingClientRect().width;
+          sampleText.remove();
+          const rows = Array.from(document.querySelectorAll('.table-wrap tbody tr')).slice(0, 3);
+          const cellFit = rows.every(row => {
+            const cell = row.querySelector('td');
+            if (!cell) return false;
+            return cell.scrollWidth <= cell.clientWidth + 1;
+          });
+          return {
+            headerWidth: headerRect.width,
+            sampleTextWidth: sampleWidth,
+            cellFit,
+          };
+        }""")
+        browser.close()
+
+    # 与 v2.5.20 (25%) 对比:调整后宽度应明显小于调整前 ~109px(实测 25%=>109px, 23%=>101px)。
+    assert date_cell["headerWidth"] <= 102, date_cell
+    assert date_cell["cellFit"]
+
+
+def test_date_column_does_not_regress_on_desktop(tmp_path):
+    from playwright.sync_api import sync_playwright
+
+    output = _render_chart_fixture(tmp_path)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        context = browser.new_context(viewport={"width": 1280, "height": 800})
+        page = context.new_page()
+        page.goto(output.resolve().as_uri())
+        page.wait_for_load_state("networkidle")
+        info = page.evaluate("""() => {
+          const header = Array.from(document.querySelectorAll('.table-wrap thead th')).find(
+            node => node.textContent.trim() === '日期'
+          );
+          return { headerWidth: Math.round(header.getBoundingClientRect().width) };
+        }""")
+        browser.close()
+
+    # 1280 桌面上日期列宽 ≈ 23% × (1280 - section padding);v2.5.20 25% 时代码为 25% × table_width。
+    # 调整后不应回到 25% 的 222px。最差也是体重列 (kg) 0.2× table + 共享份额。
+    assert info["headerWidth"] >= 70
+    assert info["headerWidth"] <= 220
+

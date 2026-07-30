@@ -1,5 +1,5 @@
 ---
-Status: needs-info
+Status: ready-for-agent
 Slug: weight-history-mobile-fixes-02-chart-mobile-large
 Created: 2026-07-30
 Source: /triage session · user request 2026-07-30 · chart 移动端放大
@@ -20,56 +20,96 @@ Category: enhancement
 
 ### 现状(v2.5.20)
 - SVG height: `clamp(180px, 30vw, 280px)`(line 35)
-  - iPhone SE 375:180px
-  - iPhone XR 414:180px
-  - iPad 768:230px(30vw)
-  - Desktop:280px
-- Y 轴文字:`font-size: 12px`(mobile)/ 10px(desktop)(V2.5.1)
-- 折线 stroke:`3`(mobile)/ 2.5(desktop)(V2.5.1)
+- viewBox: `0 0 800 260`(比例 3.077:1,横宽竖短)
+- preserveAspectRatio: `xMidYMid meet`
+- Y 轴 padding: `range * 0.2`(数据 5kg → Y 轴 8kg,数据占 62.5%)
+- 折线 stroke-width: 3(被 viewBox scale 0.475 缩小到 1.4 CSS px)
 - "86.9kg" 当前值:`font-size: 12px`
-- Badge "距目标还差 +Xkg":在 SVG 外
 
-### 用户的"小气"感来源
+### 实测 Playwright(2026-07-30 v4 file)
 
-1. **SVG 占手机屏比例低**:414×896 viewport,SVG 只占 180px = 20% 屏高
-2. **曲线细节被压缩**:86.9-91.9(5kg span)在 85-93(8kg Y轴)里只占 30% 垂直空间
-3. **数据线虽然加粗了**,但整体仍"细长"
+```
+SVG 容器(物理 box):414 × 180px
+viewBox:            800 × 260   (比例 3.077:1)
+scale = min(414/800, 180/260) = 0.475
+实际 chart 内容渲染:414 × 123.5px   ← 124px not 180px!
+上下各留 letterbox:   28.2px       ← 56px 空白浪费
+chart 占屏高比 = 13.8%
+stroke-width 渲染:1.4 CSS px(被 viewBox scale 缩小)
+```
 
-### 候选方案
+### 用户的"小气"感 3 重根因
 
-| 方案 | 思路 | 优 | 劣 |
-|---|---|---|---|
-| **A. 加高 SVG** | mobile clamp 上限 280→400 | 实现简单 | 太长页面,需要滚动 |
-| **B. 用更大 viewBox** | 让数据范围占更大比例 | 数据视觉更突出 | 修改 JS |
-| **C. 缩窄 Y 轴 padding** | 0.2 → 0.05 让数据填满 Y 轴 | 数据视觉饱满 | Y 轴数字变密 |
-| **D. SVG 占满屏宽 + 更高比例** | height:50vh, 配合 A | 视觉冲击力大 | 太长 |
-| **E. 切换到 Canvas 大图** | 类似 weight_volatility_v2 那样 Canvas | 可控 | 重写 |
-| **F. 多 subplot(数据+7天均值双线)** | 信息密度高 | 加信息 | 复杂 |
+1. **letterbox 浪费 56px** — 实际 chart 124px 不是 180px
+2. **数据线被缩成 1.4 CSS px** — 看不清
+3. **Y 轴 padding 浪费 37.5% 垂直空间**
 
-## What's needed from you (@maintainer)
+### 用户决策 (2026-07-30 14:30)
 
-请决策:
+- ✅ **一次性搞定**(L1 + L2 + L3 一起做)
+- ✅ **桌面同步**
 
-1. **大到什么程度**?比如:
-   - (a) 适度:SVG 高度 180→240(mobile 占屏 27%)
-   - (b) 激进:SVG 高度 180→320(mobile 占屏 36%)
-   - (c) 动态:根据数据 range 自动选(数据 range 大→SVG 大)
+## Proposed fix
 
-2. **数据范围怎么处理**?
-   - (i) 当前 Y 轴 padding 0.2(数据 86.9-91.9 → Y 轴 85-93,占 30% 空间)
-   - (ii) 缩窄 padding 0.05(Y 轴 86.5-92,数据占 80% 空间) ← 视觉上更"大"
-   - (iii) 不变 padding,只加 SVG 高度 → 上下空白更多
+### L1: 修复 viewBox 比例 + 消除 letterbox
 
-3. **桌面是否同步**?
-   - (x) 桌面保持现状(只 mobile 放大)
-   - (y) 桌面也加大(全局一致)
+```css
+/* 旧:180/280/320 横宽竖短 */
+svg { width:100%; height:clamp(220px, 35vw, 380px); }
+```
+
+```html
+<!-- 旧:800×260 (3.08:1 横宽) -->
+<svg id="chart" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"></svg>
+```
+
+新高度 mobile 220 / tablet 35vw / desktop 380,与新 viewBox 800×500 (1.6:1) 匹配。
+
+### L2: Y 轴 padding 收紧 + non-scaling-stroke
+
+```js
+/* Y 轴 padding 0.2 → 0.05(数据占 80% 空间) */
+let minY = Math.floor(minW - range * 0.05);
+let maxY = Math.ceil(maxW + range * 0.05);
+```
+
+```html
+<!-- 数据线 + 数据点加 non-scaling-stroke / non-scaling-size -->
+<path d="..." vector-effect="non-scaling-stroke" stroke-width="3"/>
+<circle ... vector-effect="non-scaling-size" r="4"/>
+```
+
+这样 stroke-width=3 在 mobile 渲染时**真正是 3 CSS px**,不再被 viewBox scale 缩小。
+
+### L3: 视觉故事化(信息密度)
+
+1. **7 天移动平均线** — 抹平日波动,显示真实趋势
+   - 灰虚线,稍细于主数据线
+2. **变化率箭头** — legend 加 "↓ -0.13 kg/天" 趋势方向
+3. **最大/最小标注** — 红/绿 dot + 文字
+   - 最高 91.9kg + 最低 86.9kg
+4. **目标线** — V2.4 已有(target 在数据范围时显示)
+
+## Acceptance criteria
+
+- [ ] `python -m pytest tests/test_weight_history_mobile.py` 全过
+- [ ] viewBox 比例 ≤ 1.7(原 3.08)
+- [ ] SVG height: mobile 220 / tablet 35vw / desktop 380
+- [ ] Y 轴 padding ≤ 0.1(原 0.2)
+- [ ] 数据线在 mobile 渲染 stroke-width ≥ 2.5 CSS px(原 1.4)
+- [ ] 7 天 MA 折线存在且可视
+- [ ] max/min 标注点存在
+- [ ] 变化率 badge 在 legend 区
+- [ ] desktop 1280 实测视觉也"放大"
+- [ ] 移动端 + 桌面端表现一致
 
 ## Blocked by
 
-- 等用户回答上述 3 个问题
+- None
 
 ## Notes
 
-- 当前 v2.5.20 已加 stroke-width 和 font-size,但用户仍觉得"小"
-- 根因可能是"整体画布太小",不是"线太细"
-- 需要权衡:页面总长度 vs 单元素视觉冲击力
+- 用户明确"一次性搞定,不怕复杂"
+- 桌面同步 = mobile 改的 L1/L2/L3 同样应用到 desktop
+- 同步后需要测试 mobile + desktop 两个 viewport
+- Y 轴 padding 收紧后,数据可能"贴边"(e.g. 86.9 是最小值时贴 Y 轴底部)— 加 0.5 buffer 避免贴边

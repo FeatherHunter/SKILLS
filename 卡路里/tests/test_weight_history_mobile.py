@@ -326,28 +326,37 @@ def test_table_shows_empty_state_when_no_data():
 
 
 def test_target_line_renders_even_below_data_range():
-    """H3 集成: 当 target < minY(用户减肥期常见)时目标线应渲染
+    """V2 设计: target < minY 时不在 SVG 内画线(避免压扁数据),
+    改在 SVG 下方 badge 显示"目标 Xkg, 还差 Ykg"。
 
-    用 Playwright 模拟用户实际数据(86.9 vs 目标 73)验证目标线出现。
+    集成: 数据 86.9、目标 73 时:
+      - SVG 内不应有绿色虚线目标线(targetInRange = false)
+      - legend 应有 'target-badge' 元素说明距离
     """
     from playwright.sync_api import sync_playwright
     from pathlib import Path
+    import json
 
-    # 写 sample HTML 注入用户数据
     sample = SKILL_DIR / "templates" / "weight_history.html"
     sample_path = Path(".scratch/weight-history-table-mobile-redesign/sample-h3.html")
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "status": "ok",
         "data": {
-            "summary": {"subtitle": "test", "k1": {"label":"a","value":"1","extra":""}, "k2": {"label":"a","value":"1","extra":""}, "k3": {"label":"a","value":"1","extra":""}, "k4": {"label":"a","value":"1","extra":""}, "table_header": "<tr><th>日</th><th>kg</th></tr>"},
+            "summary": {
+                "subtitle": "test",
+                "k1": {"label":"a","value":"1","extra":""},
+                "k2": {"label":"a","value":"1","extra":""},
+                "k3": {"label":"a","value":"1","extra":""},
+                "k4": {"label":"a","value":"1","extra":""},
+                "table_header": "<tr><th>日</th></tr>"
+            },
             "items": [{"date": "2026-07-30", "kg": 86.9, "bmi": 27.7, "delta": -0.1, "note": ""}],
             "target": 73.0,
             "meta": {"start": "2026-07-30", "end": "2026-07-30", "days": 1, "today": "2026-07-30"},
             "mode": "trend"
         }
     }
-    import json
     html_content = sample.read_text(encoding="utf-8")
     html_content = html_content.replace(
         "<!--INJECT-DATA-->",
@@ -365,22 +374,31 @@ def test_target_line_renders_even_below_data_range():
         info = page.evaluate("""() => {
           const svg = document.querySelector('svg#chart');
           if (!svg) return { error: 'no svg' };
-          // 找绿色虚线(目标线)
+          // V2: target 远低于数据时不应在 SVG 内画绿色虚线
           const allLines = Array.from(svg.querySelectorAll('line'));
           const goalLine = allLines.find(el => {
             const s = getComputedStyle(el);
             return s.stroke.includes('rgb(52, 199, 89)') || s.strokeDasharray.includes('6, 3');
           });
+          const legend = document.getElementById('legend');
+          const badge = legend ? legend.querySelector('.target-badge') : null;
           return {
-            goalLineExists: !!goalLine,
-            goalLineY: goalLine ? parseFloat(goalLine.getAttribute('y1')) : null,
+            svgGoalLineExists: !!goalLine,
+            targetBadgeExists: !!badge,
+            targetBadgeText: badge ? badge.textContent.trim() : null,
           };
         }""")
         browser.close()
 
-    assert info["goalLineExists"], (
-        f"H3 修复未生效:目标线未渲染。{info}—"
-        f"用户 86.9kg + 目标 73kg,JS guard 应扩 Y 轴含 target。"
+    # V2 设计: target 远低于数据 → SVG 内不画线,改用 badge
+    assert not info["svgGoalLineExists"], (
+        f"V2 修复未生效:target 远低于数据时仍在 SVG 内画线(会让数据被压扁): {info}"
+    )
+    assert info["targetBadgeExists"], (
+        f"V2 修复未生效:target 远低于数据时缺 badge(用户看不到目标): {info}"
+    )
+    assert "目标" in (info["targetBadgeText"] or "") or "还差" in (info["targetBadgeText"] or ""), (
+        f"V2 badge 文案错(应有 '目标' 或 '还差'): {info}"
     )
 
     # 同一数据 + desktop 1280x800: 应同等修复(无回归)
@@ -397,11 +415,267 @@ def test_target_line_renders_even_below_data_range():
             const s = getComputedStyle(el);
             return s.stroke.includes('rgb(52, 199, 89)') || s.strokeDasharray.includes('6, 3');
           });
-          // review fix: 验证 desktop 也不回归(目标线必须渲染)
-          return { desktopGoalLineExists: !!goalLine };
+          const legend = document.getElementById('legend');
+          const badge = legend ? legend.querySelector('.target-badge') : null;
+          return { desktopSvgGoalLineExists: !!goalLine, desktopBadgeExists: !!badge };
         }""")
         browser.close()
 
-    assert desktop_info["desktopGoalLineExists"], (
-        f"H3 修复在 desktop 1280 上未生效,目标线未渲染(回归): {desktop_info}"
+    assert not desktop_info["desktopSvgGoalLineExists"] and desktop_info["desktopBadgeExists"], (
+        f"V2 修复在 desktop 1280 上未生效(回归): {desktop_info}"
+    )
+
+
+# ============= BUG V2: mobile "kg" 换行 + chart Y 轴扩张 =============
+# 用户反馈 (2026-07-30) 在手机上看:
+#   1) "kg" 单位换行成 "90.9 k\ng" - word-break: break-all 引起
+#   2) Chart Y 轴扩到含 target(86.9 数据 + 69.9 target → Y 轴 68-93)→
+#      数据线挤在顶部 30%,看起来"几乎看不清楚"
+#   3) Table 体重列宽 15% 装不下 "90.9 kg"
+
+
+def test_mobile_no_word_break_break_all():
+    """V2.1 fix: mobile @media 不应 word-break:break-all(否则 kg 换行)"""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    m = re.search(r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{", html)
+    if not m:
+        pytest.fail("缺 mobile @media 块")
+    start = m.end()
+    depth = 1
+    i = start
+    while depth > 0 and i < len(html):
+        if html[i] == '{':
+            depth += 1
+        elif html[i] == '}':
+            depth -= 1
+        i += 1
+    body = html[start:i-1]
+    # 不应有 word-break:break-all(忽略 /* ... */ 注释)
+    body_no_comments = re.sub(r"/\*.*?\*/", "", body, flags=re.DOTALL)
+    assert "word-break:break-all" not in body_no_comments and "word-break: break-all" not in body_no_comments, (
+        f"mobile 不应 word-break:break-all(导致 kg 换行成 '90.9 k\\\\ng'):\n{body_no_comments[:400]}"
+    )
+
+
+def test_weight_column_wider_than_other_num_columns():
+    """V2.2 fix: 体重列宽应 ≥ BMI/vs上次(因 '90.9 kg' 比 BMI 数字宽)"""
+    html = TEMPLATE.read_text(encoding="utf-8")
+    # 找 column widths
+    date_m = re.search(r"th\.date\s*,\s*td\.date\s*\{\s*width\s*:\s*(\d+)%", html)
+    num_m = re.search(r"th\.num\s*,\s*td\.num\s*\{\s*width\s*:\s*(\d+)%", html)
+    note_m = re.search(r"th\.note\s*,\s*td\.note\s*\{\s*width\s*:\s*(\d+)%", html)
+    kg_m = re.search(r"th\.kg\s*,\s*td\.kg\s*\{\s*width\s*:\s*(\d+)%", html)
+    assert num_m, "缺 th.num/td.num 列宽定义"
+    num_w = int(num_m.group(1))
+    if kg_m:
+        kg_w = int(kg_m.group(1))
+        assert kg_w > num_w, (
+            f"体重列宽 ({kg_w}%) 应 > num 列宽 ({num_w}%,BMI 和 vs上次) - "
+            f"否则 '90.9 kg' 装不下"
+        )
+
+
+def test_template_renders_weight_with_kg_class():
+    """V2.3 fix: 体重 td 应有 'kg' class(让 column-width rule 命中)"""
+    # 实际渲染 weight td 的代码在 weight_history.html 模板的 JS 里
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # pattern: <td class="num">${p.kg} kg</td> (旧) vs <td class="num kg">${p.kg} kg</td> (新)
+    m = re.search(r'<td\s+class="num(?:\s+kg)?"\s*>\s*\$\{p\.kg\}', text)
+    assert m, "模板找不到体重 td 渲染代码"
+    classes = m.group(0).split('"')[1].split()
+    assert "kg" in classes, (
+        f"体重 td 缺 kg class(无法命中 th.kg 列宽规则): {m.group(0)}"
+    )
+    # 同时 render script 的 table_header 应有 <th class="num kg">体重</th>
+    render_text = RENDER.read_text(encoding="utf-8")
+    header_m = re.search(r"<th\s+class='num\s+kg'>体重</th>", render_text)
+    assert header_m, (
+        f"render script 的 table_header 体重 th 缺 kg class: {render_text[:300]}"
+    )
+
+
+def test_chart_y_axis_does_not_expand_for_target():
+    """V2.4 fix: chart Y 轴不应扩到含 target(数据线会被压扁)
+
+    用户实际数据: 86.9-91.9 范围 + 目标 69.9。
+    旧 H3 fix 把 Y 轴扩到 68-93,数据线挤顶部 30%。
+    新设计: Y 轴保持数据范围,target 用 badge 显示距离。
+    """
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # JS 不应有 minY = Math.floor(target - range * 0.2) 这种扩张逻辑
+    assert "target - range" not in text and "target -range" not in text, (
+        "V2.4: JS 不应基于 target 扩张 minY(导致数据线被压扁)"
+    )
+
+
+def test_chart_shows_target_distance_badge():
+    """V2.4 fix: target 不在数据范围时,SVG 下方应有 '目标 Xkg, 还差 Ykg' badge
+
+    用户数据 86.9 vs 目标 69.9,差 17.0kg - 应显示在 SVG 下方。
+    """
+    text = TEMPLATE.read_text(encoding="utf-8")
+    # 应有 "目标" 和 "还差" 文案
+    assert "目标" in text and "还差" in text, (
+        "V2.4: 应有 '目标 Xkg, 还差 Ykg' badge 显示 target 距离数据点的距离"
+    )
+
+
+# ============= V2 集成: phone viewport 真实测量 =============
+
+
+def test_phone_xr_kg_cell_no_wrap():
+    """V2 集成: iPhone XR (414x896) 上 '90.9 kg' 单元格不应换行
+
+    用 Playwright 真实测量 td 的 clientHeight(2 行 = > 1.5x 字号)。
+    """
+    from playwright.sync_api import sync_playwright
+    from pathlib import Path
+
+    # 注入用户真实数据
+    sample = SKILL_DIR / "templates" / "weight_history.html"
+    sample_path = Path(".scratch/phone-repro/sample-v2.html")
+    sample_path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "status": "ok",
+        "data": {
+            "summary": {
+                "subtitle": "起始 90.9 → 结束 86.9 · 日均 -0.133 kg",
+                "k1": {"label": "当前体重", "value": "86.9 kg", "extra": "↓ 4.0 kg"},
+                "k2": {"label": "24 天变化", "value": "-4.0 kg", "extra": "-4.4%"},
+                "k3": {"label": "日均变化", "value": "-0.133 kg/天", "extra": '<span class="delta-down">↓ 减重方向</span>'},
+                "k4": {"label": "当前 BMI", "value": "27.7", "extra": "异常"},
+                "table_header": "<tr><th>日期</th><th class='num'>BMI</th><th class='num kg'>体重</th><th class='num'>vs 上次</th><th>注</th></tr>"
+            },
+            "items": [
+                {"date": "2026-07-01", "kg": 90.9, "bmi": 29.0, "delta": 0, "note": ""},
+                {"date": "2026-07-02", "kg": 91.9, "bmi": 29.3, "delta": 1.0, "note": ""},
+                {"date": "2026-07-03", "kg": 90.3, "bmi": 28.8, "delta": -1.6, "note": ""},
+                {"date": "2026-07-30", "kg": 86.9, "bmi": 27.7, "delta": -0.1, "note": "晨起空腹"},
+            ],
+            "target": 69.9,
+            "meta": {"start": "2026-06-30", "end": "2026-07-30", "days": 24, "today": "2026-07-30"},
+            "mode": "trend"
+        }
+    }
+    import json
+    html_content = sample.read_text(encoding="utf-8")
+    html_content = html_content.replace(
+        "<!--INJECT-DATA-->",
+        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        1
+    )
+    sample_path.write_text(html_content, encoding="utf-8")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(
+            viewport={"width": 414, "height": 896},
+            device_scale_factor=2,
+            is_mobile=True,
+            has_touch=True,
+        )
+        page = ctx.new_page()
+        page.goto(f"file:///{sample_path.resolve()}")
+        page.wait_for_load_state("networkidle")
+        info = page.evaluate("""() => {
+          const cells = Array.from(document.querySelectorAll('.table-wrap table tbody tr td.num.kg, .table-wrap table tbody tr td:nth-child(3)'));
+          const firstKg = cells[0];
+          if (!firstKg) return { error: 'no kg cell' };
+          const r = firstKg.getBoundingClientRect();
+          const style = getComputedStyle(firstKg);
+          const padTop = parseFloat(style.paddingTop) || 0;
+          const padBot = parseFloat(style.paddingBottom) || 0;
+          const lh = parseFloat(style.lineHeight);
+          const contentHeight = r.height - padTop - padBot;
+          // 1 行内容 ≈ line-height;2 行 ≈ 2 × line-height
+          // 用 1.5 × line-height 作为"是否换行"阈值
+          return {
+            text: firstKg.textContent.trim(),
+            width: r.width,
+            height: r.height,
+            contentHeight,
+            fontSize: style.fontSize,
+            lineHeight: style.lineHeight,
+            wraps: contentHeight > lh * 1.5,
+          };
+        }""")
+        browser.close()
+
+    assert "error" not in info, f"Playwright 测试失败: {info}"
+    assert not info["wraps"], (
+        f"V2 集成失败:'{info['text']}' 在 mobile 上换行。"
+        f"width={info['width']}px, height={info['height']}px, "
+        f"font-size={info['fontSize']}, line-height={info['lineHeight']}"
+    )
+
+
+def test_phone_xr_chart_y_axis_no_expansion():
+    """V2 集成: iPhone XR 上 chart Y 轴不应扩到含 target
+
+    数据 86.9-91.9,目标 69.9。Y 轴应在 [84, 94] 左右(数据驱动),
+    不是 [68, 93](扩到含 target)。
+    """
+    from playwright.sync_api import sync_playwright
+    from pathlib import Path
+    import json
+
+    sample = SKILL_DIR / "templates" / "weight_history.html"
+    sample_path = Path(".scratch/phone-repro/sample-v2.html")
+    data = {
+        "status": "ok",
+        "data": {
+            "summary": {
+                "subtitle": "test",
+                "k1": {"label": "a", "value": "1", "extra": ""},
+                "k2": {"label": "a", "value": "1", "extra": ""},
+                "k3": {"label": "a", "value": "1", "extra": ""},
+                "k4": {"label": "a", "value": "1", "extra": ""},
+                "table_header": "<tr><th>日</th></tr>"
+            },
+            "items": [{"date": f"2026-07-{i+1:02d}", "kg": 90 - i*0.3, "bmi": 28, "delta": 0, "note": ""} for i in range(5)],
+            "target": 69.9,
+            "meta": {"start": "2026-07-01", "end": "2026-07-05", "days": 5, "today": "2026-07-05"},
+            "mode": "trend"
+        }
+    }
+    html_content = sample.read_text(encoding="utf-8")
+    html_content = html_content.replace(
+        "<!--INJECT-DATA-->",
+        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        1
+    )
+    sample_path.write_text(html_content, encoding="utf-8")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(
+            viewport={"width": 414, "height": 896},
+            device_scale_factor=2,
+            is_mobile=True,
+        )
+        page = ctx.new_page()
+        page.goto(f"file:///{sample_path.resolve()}")
+        page.wait_for_load_state("networkidle")
+        # 读取 SVG 中所有 Y 轴 labels 的 kg 值
+        info = page.evaluate("""() => {
+          const svg = document.querySelector('svg#chart');
+          if (!svg) return { error: 'no svg' };
+          const labels = Array.from(svg.querySelectorAll('text')).map(t => t.textContent);
+          const kgLabels = labels.filter(l => l.match(/kg$/)).map(l => parseFloat(l));
+          return { kgLabels };
+        }""")
+        browser.close()
+
+    assert "error" not in info, f"Playwright 失败: {info}"
+    labels = info["kgLabels"]
+    assert labels, f"未找到 Y 轴 kg 标签: {info}"
+    y_min = min(labels)
+    y_max = max(labels)
+    # 数据范围 90 - 89.4(5 items,0.3 间隔) ≈ [88.5, 91]
+    # 加上 20% padding: [87.7, 91.8] 大约 floor 87, ceil 92
+    # 旧 bug: 扩到 68-93(因 69.9 < 88.5)
+    # 修复: Y 轴应在数据范围内
+    assert y_min >= 80, (
+        f"V2.4 修复未生效:Y 轴最小值 {y_min}kg 仍包含 target 区域。"
+        f"应 ≥ 80(数据驱动)而非降到 68(扩 target)。labels={labels}"
     )

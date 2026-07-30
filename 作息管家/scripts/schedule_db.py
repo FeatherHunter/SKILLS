@@ -936,6 +936,51 @@ def list_plan_events(date: str, include_inactive: bool = False) -> list[dict]:
         conn.close()
 
 
+def get_plan_events_range(start: str, end: str, include_inactive: bool = False) -> list[dict]:
+    """Phase E · 复盘 start-end 区间查询
+
+    查询 [start, end] 区间(含两端)所有日程事件,按 date ASC, time_start ASC。
+    跨域 dual-domain 分析的基础 query,被 schedule_html_render.render_replay 调用。
+
+    Args:
+        start: 起始日期 YYYY-MM-DD (含)
+        end:   结束日期 YYYY-MM-DD (含)
+        include_inactive: 默认 False (仅 is_active=1)
+
+    Returns:
+        list of dict, 每条含全部 schedule_plans 字段(同 list_plan_events)
+    """
+    start = _normalize_date(start)
+    end = _normalize_date(end)
+    conn = get_connection()
+    try:
+        _ensure_new_plans_schema(conn)
+        c = conn.cursor()
+        cols = ("id", "date", "time_start", "time_end", "title", "notes", "category",
+                "feishu_event_id", "last_synced_at", "is_active", "completion", "completion_note")
+        if include_inactive:
+            c.execute(f'''
+                SELECT {", ".join(cols)}
+                FROM schedule_plans
+                WHERE date >= ? AND date <= ?
+                ORDER BY date, time_start
+            ''', (start, end))
+        else:
+            c.execute(f'''
+                SELECT {", ".join(cols)}
+                FROM schedule_plans
+                WHERE date >= ? AND date <= ? AND is_active = 1
+                ORDER BY date, time_start
+            ''', (start, end))
+        rows = c.fetchall()
+        return [
+            dict(zip(cols, r))
+            for r in rows
+        ]
+    finally:
+        conn.close()
+
+
 def search_plan_event(date: str, title: str,
                        time_start: str | None = None,
                        time_end: str | None = None) -> dict | None:

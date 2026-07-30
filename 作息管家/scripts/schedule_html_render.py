@@ -2059,7 +2059,17 @@ def render_replay(start: str, end: str) -> dict:
     total_records = len(records)
     total_minutes = sum((r.get("duration_minutes") or 0) for r in records)
     days = sorted({r.get("date", "") for r in records} | {p.get("date", "") for p in plans})
-    days_count = len(days) if days else 1
+    # days_count: 有数据用实际天数,空数据按 start-end 区间长度计算(总纲 §04 原则 11)
+    if days:
+        days_count = len(days)
+    else:
+        from datetime import date as _date, timedelta as _td
+        try:
+            s = _date.fromisoformat(start)
+            e = _date.fromisoformat(end)
+            days_count = max(1, (e - s).days + 1)
+        except ValueError:
+            days_count = 1
 
     # 5 状态 fallback(空数据 → empty)
     if total_records == 0 and len(plans) == 0:

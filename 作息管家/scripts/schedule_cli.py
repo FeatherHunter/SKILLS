@@ -760,6 +760,8 @@ def main(argv=None):
         cmd_render_record_day(args)
     elif cmd == "render-record-range":
         cmd_render_record_range(args)
+    elif cmd == "render-replay":
+        cmd_render_replay(args)
     elif cmd == "render-record-compare":
         cmd_render_record_compare(args)
     elif cmd == "render-record-compare-months":
@@ -2367,6 +2369,60 @@ def cmd_render_record_range(args):
     print(_json.dumps(r, ensure_ascii=False, indent=2))
 
 
+def cmd_render_replay(args):
+    """Phase E · render-replay <开始> <结束> · 跨域 dual-domain 分析
+
+    复用 _render_record_cmd 的渲染 + 写入流程,但兼容 empty 状态
+    (区间无数据 → 仍生成空态 HTML,友好提示而非假装成功)。
+    T01 仅做骨架;T03-T06 填充 4 段叙事;T07 补 5 状态 fallback 完整版。
+    """
+    from schedule_html_render import render_replay, render_and_write
+    from pathlib import Path as _P
+
+    if len(args) < 2:
+        print(_json.dumps({
+            "status": "error",
+            "message": "用法: render-replay <开始> <结束>",
+            "example": "render-replay 2026-07-01 2026-07-30",
+        }, ensure_ascii=False))
+        return
+
+    payload = render_replay(args[0], args[1])
+    # empty 状态: 仍生成空态 HTML(让用户能看到友好提示)
+    if payload.get("status") in ("ok", "empty"):
+        try:
+            # render_and_write 期望 outer payload 结构 {data:{meta:...}, ...}
+            # render_replay 返回的 payload 已经是 outer 形式
+            result = render_and_write(payload)
+        except Exception as e:
+            print(_json.dumps({
+                "status": "error",
+                "message": f"渲染失败: {type(e).__name__}: {e}",
+            }, ensure_ascii=False))
+            return
+        if result.get("status") != "ok":
+            print(_json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        fp = _P(result["data"]["file_path"])
+        print(_json.dumps({
+            "status": payload["status"],  # 保留 ok / empty 原始状态
+            "data": {
+                "file_path": str(fp),
+                "bytes": fp.stat().st_size,
+                "size_kb": result["data"]["size_kb"],
+                "mode": "replay",
+                "start": args[0],
+                "end": args[1],
+                "days": payload["data"]["meta"]["days"],
+                "total_records": payload["data"]["meta"]["total_records"],
+            },
+            "message": result.get("message", ""),
+        }, ensure_ascii=False, indent=2))
+        return
+    # error 状态: 直接返回
+    print(_json.dumps(payload, ensure_ascii=False, indent=2))
+
+
 def cmd_render_record_compare(args):
     """render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>"""
     from schedule_html_render import render_record_compare
@@ -3035,6 +3091,7 @@ HTML 渲染(可视化查询结果):
   render-record-report <date>              [兼容] 单日报告 HTML(同 render-record-day)
   render-record-day <date>                  单日报告 HTML(4段+健康分+AI钩子)
   render-record-range <开始> <结束>           区间报告 HTML(7维趋势+健康分+AI钩子)
+  render-replay <开始> <结束>                  [Phase E] 跨域区间复盘 HTML(record + plan + 跨域对比 + AI洞察,4段叙事)
   render-record-compare <labelA> <startA> <endA> <labelB> <startB> <endB>   两段对比报告 HTML(7维差异+AI钩子)
   render-record-compare-months <YYYY-MM> <YYYY-MM>  整月对比报告 HTML(如 2026-06 vs 2026-07)
   render-record-category <日期> <category>    单日单类深挖 HTML(24h×1day热力图)

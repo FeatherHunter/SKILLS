@@ -30,9 +30,9 @@
   .kpi .extra.good { color:var(--good); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  /* BUG fix: SVG 高度用 auto(由 viewBox 比例推出),不再用 40vh clamp(原触发 mobile 垂直拉伸)。
+  /* H1 fix: SVG 高度用 clamp(响应式 + 保底 180-280),不纯 auto(否则 100px 太矮)。
      preserveAspectRatio="xMidYMid meet" 让 X/Y 等比缩放(在 SVG 上设置,见下)。 */
-  svg { width:100%; height:auto; display:block; text-rendering: geometricPrecision; }
+  svg { width:100%; height:clamp(180px, 30vw, 280px); display:block; text-rendering: geometricPrecision; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; }
@@ -59,18 +59,29 @@
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .mode-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
 
-  /* ticket 05 · Issue 3/4/5 修复:mobile-first 断点 */
+  /* ticket 05 · Issue 3/4/5 修复:mobile-first 断点 + 4 polish 改动 */
   @media (max-width:640px) {
     body { padding:20px 14px 80px; }
     .kpi-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
-    .kpi .value { font-size:20px; }
+    /* M3 fix: KPI value 字号缩到 17px(防 173px/卡 贴边) */
+    .kpi .value { font-size:17px; }
     .section { padding:16px 18px; border-radius:12px; }
     .section h2 { font-size:15px; }
     .footer { flex-direction:column; gap:8px; align-items:flex-start; }
-    /* BUG fix 2 review: mobile 表格列宽(保 note 列,fit 4 列满宽,不 hide) */
+    /* H2 fix: note 列 padding 6px 6px(原 6px 4px 太挤 4 字符) */
     .table-wrap table { font-size:11px; }
-    .table-wrap table th, .table-wrap table td { padding:6px 4px; word-break:break-all; }
-    /* 不 hide note 列(用户 BUG 2 明确说"晨起空腹"要可见);列宽重排,note 列仍占空间 */
+    .table-wrap table th, .table-wrap table td { padding:6px 6px; word-break:break-all; }
+    /* M1 fix: sticky thead(24 行表滚 1168px 高时表头跟随) */
+    .table-wrap thead th { position:sticky; top:0; background:var(--card); z-index:1; }
+    /* L1 fix: 表格 line-height 紧凑(原 1.6 太散) */
+    .table-wrap table tbody tr { line-height:1.4; }
+    /* M2 fix: delta 列 chip 化(裸数字 → 圆角 badge) */
+    .table-wrap table .delta { display:inline-block; padding:2px 8px; border-radius:10px; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; }
+    .table-wrap table .delta-up { background:rgba(255,59,48,.12); color:var(--bad); }
+    .table-wrap table .delta-down { background:rgba(52,199,89,.12); color:var(--good); }
+    .table-wrap table .delta-flat { background:rgba(0,113,227,.08); color:var(--fg2); }
+    /* L3 fix: 空态(无数据)显示提示 */
+    .table-wrap .empty-state { padding:20px; text-align:center; color:var(--fg3); }
   }
   @media (max-width:400px) {
     .kpi-grid { grid-template-columns:1fr; }
@@ -166,10 +177,17 @@
     const svg = document.getElementById('chart');
     const W = 800, H = 260, PAD = 30;
     const weights = items.map(i => i.kg);
-    const minW = Math.min(...weights), maxW = Math.max(...weights);
+    let minW = Math.min(...weights), maxW = Math.max(...weights);
     const range = (maxW - minW) || 1;
-    const minY = Math.floor(minW - range * 0.2);
-    const maxY = Math.ceil(maxW + range * 0.2);
+    let minY = Math.floor(minW - range * 0.2);
+    let maxY = Math.ceil(maxW + range * 0.2);
+    // H3 fix: 用户减肥期 target 经常 < minW,自动扩 Y 轴含 target
+    // math fix: 扩完 Y 轴后重新算 range(否则数据点挤到顶部/底部)
+    if (target && target < minY) {
+      minY = Math.floor(target - range * 0.2);
+    } else if (target && target > maxY) {
+      maxY = Math.ceil(target + range * 0.2);
+    }
     const xStep = (W - 2*PAD) / Math.max(1, items.length - 1);
     const x = i => PAD + i * xStep;
     const y = v => H - PAD - (v - minY) / (maxY - minY) * (H - 2*PAD);
@@ -179,7 +197,7 @@
         `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
         `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}kg</text>`);
     }
-    if (target && target > minY && target < maxY) {
+    if (target) {
       svg.insertAdjacentHTML('beforeend',
         `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
         `<text x="${W - 4}" y="${y(target) - 3}" font-size="10" fill="#34c759" text-anchor="end">目标 ${target}kg</text>`);
@@ -213,13 +231,18 @@
 
   // 表格行
   const tb = document.getElementById('tableBody');
+  if (items.length === 0) {
+    // L3 fix: 空态提示
+    tb.insertAdjacentHTML('beforeend',
+      '<tr><td colspan="5" class="empty-state">暂无数据</td></tr>');
+  }
   items.forEach(p => {
     const deltaCls = p.delta > 0 ? 'delta-up' : p.delta < 0 ? 'delta-down' : 'delta-flat';
     tb.insertAdjacentHTML('beforeend',
       `<tr><td>${p.date}</td>` +
       (p.bmi !== undefined ? `<td class="num">${p.bmi}</td>` : '') +
       `<td class="num">${p.kg} kg</td>` +
-      (p.delta !== undefined ? `<td class="num ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</td>` : '') +
+      (p.delta !== undefined ? `<td class="delta ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</td>` : '') +
       (p.note ? `<td>${p.note}</td>` : '') +
       `</tr>`);
   });

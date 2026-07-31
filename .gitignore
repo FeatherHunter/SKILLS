@@ -85,6 +85,9 @@ Thumbs.db
 # 作息管家 schedule_html 运行时输出目录(每次渲染生成的 HTML 镜像,不入库)
 作息管家/.db/schedule_html/
 
+# 作息管家 playwright 测试截图产物(tests/test_replay_*.py 等视觉测试落盘的 PNG,不入库)
+作息管家/tests/screenshots/
+
 # 卡路里 calorie_html 进程输入 JSON(运行时交互中间产物,不入库)
 卡路里/calorie_html/
 

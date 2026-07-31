@@ -120,7 +120,7 @@ def _trig_to_scene(t: dict) -> dict:
         'subfunction':         SUBFUNC_LEGACY.get(legacy_cat, '既有唤醒词'),
         'output_type':         'result',
         'html_template':       '',
-        'data_source':         main.get('cli', ''),
+        'data_source':         main.get('cli', '') or '',
         'prompt_template':     main.get('text', ''),
         'user_intent':         t.get('desc', ''),
         'data_fields':         [],

@@ -1,51 +1,90 @@
-# Domain Docs
+# 卡路里 · Domain Docs（领域文档协议）
 
-engineering skills 在探索代码库时应如何消费本仓库的领域文档。
+engineering skills 在探索卡路里技能时如何消费领域文档。本文件是仓库根 `docs/agents/domain.md` 在卡路里技能内的子协议。
 
-## 探索之前,先读这些
+## 探索之前，先读这些
 
-- 仓库根目录的 **`CONTEXT.md`**;或
-- 如果存在仓库根目录的 **`CONTEXT-MAP.md`**,它会指向每个 context 各自的 `CONTEXT.md`。读取与你正在处理的话题相关的那些。
-- **`docs/adr/`** —— 阅读触及你即将工作区域的 ADR。在 multi-context 仓库中,还要检查 `src/<context>/docs/adr/` 中 context 级别的决策。
+### 单上下文仓库布局
 
-如果其中任何文件不存在,**静默继续**。不要标记它们的缺失;不要预先建议创建它们。`/domain-modeling` skill(经 `/grill-with-docs` 和 `/improve-codebase-architecture` 触达)会在术语或决策真正被解决时按需创建它们。
+本仓库（`FeatherHunter/SKILLS`）是单上下文布局：
+
+```
+/
+├── CONTEXT.md                              ← 仓库根术语表
+├── docs/adr/                                ← 仓库级 ADR
+├── docs/agents/                             ← 工程 skill 配置
+│   ├── issue-tracker.md
+│   ├── triage-labels.md
+│   └── domain.md
+└── <技能名>/                                ← 平级技能
+    ├── AGENTS.md                            ← 技能级 AI 入口
+    ├── CONTEXT.md                           ← 技能级术语
+    ├── docs/agents/                         ← 技能级 skill 配置
+    ├── docs/adr/                            ← 技能级 ADR（按需）
+    └── .scratch/                            ← 工作目录
+```
+
+### 探索卡路里技能时应读
+
+1. **`D:\2Study\StudyNotes\SKILLS\卡路里\CONTEXT.md`** —— 卡路里技能术语表
+2. **`D:\2Study\StudyNotes\SKILLS\CONTEXT.md`** —— 仓库根术语表（如果有跨技能概念）
+3. **`D:\2Study\StudyNotes\SKILLS\卡路里\docs\adr\`** —— 卡路里技能级 ADR
+4. **`D:\2Study\StudyNotes\SKILLS\docs\adr\`** —— 仓库根 ADR（如果有跨技能决策）
+
+## 卡路里的 ADR（已存在）
+
+| ADR | 主题 |
+|---|---|
+| ADR-0001 | HELP HTML 作为根目录 mirror |
+| ADR-0004 | CLI flag 校验 |
+| ADR-0005 | Tested-By 行末规则 |
+| ADR-0006 | 测试 DB 隔离 |
+| ADR-0007 | AI 验证协议 |
 
 ## 文件结构
 
-单一上下文仓库(大多数仓库):
-
 ```
-/
-├── CONTEXT.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
-```
-
-多上下文仓库(根目录存在 `CONTEXT-MAP.md`):
-
-```
-/
-├── CONTEXT-MAP.md
-├── docs/adr/                          ← 系统级决策
-└── src/
-    ├── ordering/
-    │   ├── CONTEXT.md
-    │   └── docs/adr/                  ← context 专属决策
-    └── billing/
-        ├── CONTEXT.md
-        └── docs/adr/
+D:\2Study\StudyNotes\SKILLS\卡路里\
+├── CONTEXT.md                              ← 技能术语表
+├── AGENTS.md                              ← AI 协作入口
+├── SKILL.md                               ← 技能说明书（AI 加载技能时阅读）
+├── 卡路里.html                              ← HELP HTML（用户视角）
+├── _meta.json
+├── config-calorie.ts
+├── 健身计划.html
+├── 作者的笔记/
+│   └── 卡路里场景设计.md                   ← 个人查看版
+├── body_photos_gif/
+├── calorie_data.db
+├── calorie_html/
+├── docs/
+│   ├── adr/                               ← 卡路里级 ADR
+│   ├── agents/
+│   │   ├── issue-tracker.md               ← GitHub Issues 协议
+│   │   ├── triage-labels.md               ← 5 状态 + 2 分类
+│   │   └── domain.md                       ← 本文件
+│   └── superpowers/
+├── references/
+├── scripts/                                ← CLI + 渲染脚本
+├── templates/                              ← HTML 模板
+└── .scratch/                               ← 工作目录
+    ├── wayfinder-v1.0-help-redesign.md    ← wayfinder 决策地图
+    ├── help-scenario-redesign.md           ← 命名规范 + 想法记录
+    ├── cross-skill/                        ← 联动协议（最后开发）
+    ├── tickets/                            ← 11 个实现 ticket
+    └── research/                            ← 11 份 CLI 现状研究报告
 ```
 
 ## 使用 glossary 的词汇
 
-当你的输出提到一个领域概念(在 issue 标题、重构提案、假设、测试名中)时,使用 `CONTEXT.md` 中定义的术语。不要漂移到 glossary 明确避免的同义词。
-
-如果你需要的概念还不在 glossary 里,那是一个信号 —— 要么你在发明项目不用的语言(重新考虑),要么真的存在缺口(记下来交给 `/domain-modeling`)。
+引用卡路里技能概念时，使用 `卡路里/CONTEXT.md` 中定义的术语（如「卡路里缺口」「TDEE」「看稳不稳」）。
 
 ## 标记 ADR 冲突
 
-如果你的输出与某个已有 ADR 相冲突,请显式指出,而不是静默覆盖:
+如果你的输出与 ADR-0001 / ADR-0004 / ADR-0005 / ADR-0006 / ADR-0007 冲突：
 
-> _Contradicts ADR-0007 (event-sourced orders) —— 但值得重新讨论,因为……_
+> _Contradicts ADR-0007 (AI 验证协议) —— 但值得重新讨论，因为……_
+
+## 文件历史
+
+本文件原内容（迁移前快照）描述本地 markdown 协议。2026-07-30 按用户决策升级为 GitHub Issues 协议，与仓库根 `docs/agents/domain.md` 同步。

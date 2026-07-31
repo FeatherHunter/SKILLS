@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>卡路里 · 技能协同 L6 增强版</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; max-width: 980px; margin: 24px auto; padding: 0 16px; color: #1f2328; background: #fafbfc; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  h2 { font-size: 18px; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #d0d7de; }
+  .subtitle { color: #656d76; font-size: 13px; margin-bottom: 24px; }
+  .group { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .group-header { background: #f6f8fa; padding: 10px 16px; font-weight: 600; font-size: 15px; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center; }
+  .count { background: #1f2328; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .scenario { padding: 14px 16px; border-bottom: 1px solid #eaeef2; }
+  .scenario:last-child { border-bottom: none; }
+  .scenario-name { font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #0969da; }
+  .scenario-desc { font-size: 13px; color: #656d76; margin-bottom: 8px; }
+  .scenario-data { font-size: 12px; color: #1f2328; background: #f6f8fa; padding: 8px 10px; border-radius: 4px; }
+  .scenario-data strong { color: #656d76; font-weight: 600; }
+  .enhanced::before { content: "✨ 增强版"; display: inline-block; background: #ffd33d; color: #1f2328; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .summary { text-align: center; color: #656d76; font-size: 13px; padding: 16px; }
+</style>
+</head>
+<body>
+
+<h1>🛠 卡路里 · 技能协同（L6 增强版）</h1>
+<div class="subtitle">v1.0 第一性原理版 · L6 = 7 场景 · 全部增强型 · 含呈现数据</div>
+
+<div class="group">
+  <div class="group-header">增强版场景<span class="count">7</span></div>
+
+  <div class="scenario enhanced">
+    <div class="scenario-name">L6.1 跨技能汇总 dashboard</div>
+    <div class="scenario-desc">所有技能数据汇总</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：6 张 KPI 卡（卡路里 / 作息 / 记账 / 备忘 / 居家 / 私家大厨） · 各技能状态标识（绿 / 黄 / 红） · 今日亮点 / 警示 · 一句话总结</div>
+  </div>
+
+  <div class="scenario enhanced">
+    <div class="scenario-name">L6.2 跨技能趋势</div>
+    <div class="scenario-desc">多技能综合趋势</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：多折线（体重 / 饮食 / 运动 / 睡眠） · 趋势相关性矩阵 · 趋势异常提示 · 一句话总结</div>
+  </div>
+
+  <div class="scenario enhanced">
+    <div class="scenario-name">L6.3 跨技能对比</div>
+    <div class="scenario-desc">不同时间段跨技能对比</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：本周 vs 上周 / 上月跨技能对比表 · 最大变化维度（升 / 降 TOP 3） · 跨技能关联洞察 · 一句话总结</div>
+  </div>
+
+  <div class="scenario enhanced">
+    <div class="scenario-name">L6.4 跨技能诊断</div>
+    <div class="scenario-desc">AI 跨技能分析</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：5-10 条跨技能洞察 · 诊断优先级排序 · 关联原因追溯（A 技能异常是否由 B 技能引起） · 一句话总结</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-name">L6.5 跨技能预警</div>
+    <div class="scenario-desc">多技能异常检测</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：各技能异常列表（卡路里 / 作息 / 记账 / 备忘 / 居家 / 私家大厨） · 异常严重程度排序 · 联动预警（如"摄入异常 → 提醒查食谱"） · 一句话总结</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-name">L6.6 跨技能目标追踪</div>
+    <div class="scenario-desc">多技能目标联动</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：各技能目标列表（卡路里减 X kg / 作息睡 8h / 记账省 Y 元 / ...） · 目标完成率对比 · 目标冲突提示（如"减重目标 vs 健身增肌目标冲突"） · 一句话总结</div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-name">L6.7 跨技能综合评分</div>
+    <div class="scenario-desc">用户整体健康 / 生活评分</div>
+    <div class="scenario-data"><strong>呈现数据</strong>：综合评分（0-100） · 各技能分项评分（卡路里 / 作息 / 记账 / 备忘 / 居家 / 私家大厨） · 历史评分趋势 · 提升建议（最弱一项） · 一句话总结</div>
+  </div>
+</div>
+
+<div class="summary">L6 = 7 场景 · 4 增强 + 3 新增 · 第一性原理审查通过</div>
+
+</body>
+</html>

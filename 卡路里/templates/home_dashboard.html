@@ -483,15 +483,15 @@ footer{
 <!-- 缺口公式条(全宽 · 横向展示 TDEE 数学) -->
 <div class="deficit-formula" id="deficitFormula" style="display:none">
   <div class="legend">📉 热量缺口公式 · 决定体重变化速度</div>
-  <div class="term tdee-bmr"><span class="num" id="formulaTDEE">—</span><span class="lbl">基础代谢 TDEE</span></div>
-  <div class="op">+</div>
-  <div class="term exercise"><span class="num" id="formulaExercise">—</span><span class="lbl">运动消耗</span></div>
-  <div class="op">=</div>
-  <div class="term total-burn"><span class="num" id="formulaTotalBurn">—</span><span class="lbl">应烧总热</span></div>
-  <div class="op">−</div>
-  <div class="term intake"><span class="num" id="formulaIntake">—</span><span class="lbl">实际摄入</span></div>
-  <div class="op">=</div>
-  <div class="term deficit pos"><span class="num" id="formulaDeficit">—</span><span class="lbl">缺口 千卡/日</span></div>
+  <div class="row tdee"><span class="lbl">基础代谢 TDEE</span><span class="num" id="formulaTDEE">—</span></div>
+  <div class="op op-1">+</div>
+  <div class="row ex"><span class="lbl">运动消耗</span><span class="num" id="formulaExercise">—</span></div>
+  <div class="op op-2">=</div>
+  <div class="row tot"><span class="lbl">应烧总热</span><span class="num" id="formulaTotalBurn">—</span></div>
+  <div class="op op-3">−</div>
+  <div class="row int"><span class="lbl">实际摄入</span><span class="num" id="formulaIntake">—</span></div>
+  <div class="divider"></div>
+  <div class="row def pos"><span class="lbl">缺口 千卡/日</span><span class="num" id="formulaDeficit">—</span></div>
   <div class="summary" id="formulaSummary"></div>
 </div>
 

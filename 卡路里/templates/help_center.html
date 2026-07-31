@@ -10,6 +10,7 @@
   --bg:#f5f6f7; --card:#fff; --text:#1c1c1e; --sub:#6b6b6f;
   --accent:#0071e3; --green:#34c759; --border:#e5e5e7;
   --code-bg:#f0f0f2; --shadow:0 1px 2px rgba(0,0,0,.04);
+  --orange:#ff9500; --purple:#af52de; --gray:#8e8e93;
 }
 html { scroll-behavior: smooth; }
 body {
@@ -19,28 +20,25 @@ body {
 }
 .container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
 
-/* === HERO (紧凑 · v2.4.10 终版) === */
+/* === HERO === */
 .hero {
   background: linear-gradient(135deg, #fafbfc, #f0f4f8);
   padding: 10px 0 2px;
-  border-bottom: 0;       /* ★ 干掉 hairline,hero 与首类别直接相连 */
+  border-bottom: 0;
 }
 .hero h1 {
-  /* ★ 百分比相对 body 13px → 220% = 28.6px */
   font-size: 220%; font-weight: 700; letter-spacing: -.3px;
   line-height: 1.15;
   display: flex; align-items: center; gap: 6px;
-  margin: 0 0 1px;        /* 紧贴 sub */
+  margin: 0 0 1px;
 }
 .hero .sub {
-  /* ★ 苹果蓝 · 指导性文字 · 相对 body 105% = 13.65px */
   color: var(--accent);
   font-size: 105%; font-weight: 500;
   margin: 0 0 4px;
   line-height: 1.4;
 }
 .hero .stats {
-  /* ★ 相对 body 115% = 14.95px */
   margin: 2px 0 0;
   display: flex; gap: 10px; flex-wrap: wrap;
   font-size: 115%; color: var(--sub);
@@ -48,21 +46,18 @@ body {
 }
 .hero .stats b { color: var(--text); font-weight: 600; }
 
-/* === STICKY CONTROLS 已删除(v2.4.10) === */
-
 /* === CATEGORY (L1) === */
 .cat-block {
   background: var(--card); border-radius: 8px;
   margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
 }
-.cat-block:first-of-type { margin-top: 0; }   /* ★ 与 hero 无视觉缓冲,背景过渡微连续 */
+.cat-block:first-of-type { margin-top: 0; }
 .cat-block:last-of-type { margin-bottom: 0; }
 .cat-block > summary,
-.word-card > summary,
-.variant-block > summary {
+.sub-block > summary,
+.scene-card {
   cursor: pointer; list-style: none;
   display: flex; align-items: center; gap: 6px;
-  /* === 移动端点击硬化(v2.4.10 抗审查修 · L1+L2+L3 全覆盖) === */
   -webkit-tap-highlight-color: transparent;
   tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -70,20 +65,22 @@ body {
   user-select: none;
 }
 .cat-block > summary::-webkit-details-marker,
-.word-card > summary::-webkit-details-marker,
-.variant-block > summary::-webkit-details-marker { display: none; }
+.sub-block > summary::-webkit-details-marker { display: none; }
 .cat-block > summary::before,
-.word-card > summary::before,
-.variant-block > summary::before {
+.sub-block > summary::before {
+  content: '▸'; font-size: 10px; color: var(--sub);
+  transition: transform .12s;
   pointer-events: none;
 }
+.cat-block[open] > summary::before,
+.sub-block[open] > summary::before { transform: rotate(90deg); }
 .cat-block > summary > *,
-.word-card > summary > *,
-.variant-block > summary > * { pointer-events: none; }
-/* ticket 07:summary 层复制按钮需可点击(覆盖上面 pointer-events:none) */
+.sub-block > summary > * { pointer-events: none; }
+
+/* ticket 07 兼容:summary 层复制按钮需可点击(覆盖上面 pointer-events:none) */
 .word-card > summary > .copy-btn.copy-main { pointer-events: auto; }
 
-/* === L1 cat-block 专属样式 === */
+/* === L1 cat 样式 === */
 .cat-block > summary {
   padding: 7px 12px; font-size: 13px; font-weight: 600;
   background: #fafbfc;
@@ -101,67 +98,92 @@ body {
 }
 .cat-content { padding: 4px 12px 10px; }
 
-/* === WAKE WORD (L2) === */
-.word-card {
+/* === SUBFUNCTION (L2) === */
+.sub-block {
   background: #fff; border: 1px solid var(--border);
   border-radius: 6px; margin: 4px 0;
 }
-.word-card > summary {
-  padding: 6px 10px; cursor: pointer; list-style: none;
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+.sub-block > summary {
+  padding: 5px 10px; font-size: 12.5px; font-weight: 500;
+  color: var(--text);
+  background: #fcfcfd;
+  min-height: 28px;
 }
-.word-card > summary::-webkit-details-marker { display: none; }
-.word-card > summary::before {
+.sub-block > summary::before {
   content: '▸'; font-size: 9px; color: var(--sub);
   transition: transform .12s;
 }
-.word-card[open] > summary::before { transform: rotate(90deg); }
-.ww-name { font-weight: 600; font-size: 13px; color: var(--text); }
-.ww-aliases { font-size: 11px; color: var(--sub); }
-.ww-aliases span { background: #f0f0f2; padding: 0 4px; border-radius: 3px; margin-right: 3px; }
-.ww-count { margin-left: auto; font-size: 10px; color: var(--sub); }
-.word-content { padding: 0 10px 8px; }
-.ww-desc { color: var(--sub); font-size: 11.5px; margin: 3px 0 5px; }
-
-/* === MAIN PROMPT === */
-.prompt-main {
-  background: #f0f7ff; border-left: 2px solid var(--accent);
-  padding: 6px 8px; border-radius: 4px; margin: 4px 0;
-  font-family: "SF Mono", Consolas, monospace; font-size: 11.5px;
-  white-space: pre-wrap; word-break: break-word; line-height: 1.35;
+.sub-block[open] > summary::before { transform: rotate(90deg); }
+.sub-block > summary .sub-count {
+  margin-left: auto; font-size: 10px; color: var(--sub);
+  font-weight: 400;
 }
-.prompt-cli {
+.sub-content { padding: 4px 10px 8px; }
+
+/* === SCENE CARD (L3 平铺) === */
+.scene-card {
+  display: flex; flex-direction: column; gap: 4px;
+  background: #fff;
+  padding: 7px 9px 8px;
+  margin: 4px 0;
+  border: 1px solid #f0f0f2;
+  border-radius: 5px;
+  cursor: default;     /* 不可整体点击(只有按钮可点) */
+  -webkit-user-select: text;
+  user-select: text;
+}
+.scene-header {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.scene-name { font-weight: 600; font-size: 12.5px; color: var(--text); }
+.scene-wake {
+  font-size: 10.5px; color: var(--sub);
+  background: #f0f0f2; padding: 1px 5px; border-radius: 3px;
+  font-family: "SF Mono", Consolas, monospace;
+}
+.scene-output {
+  font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+  font-weight: 500; text-transform: uppercase; letter-spacing: .3px;
+}
+.scene-output.process { background: #fff3e0; color: var(--orange); }
+.scene-output.result  { background: #e3f2fd; color: var(--accent); }
+.scene-output.receipt { background: #e8f5e9; color: var(--green); }
+.scene-ext {
+  font-size: 9.5px; color: var(--orange); font-weight: 500;
+}
+.scene-desc {
+  font-size: 11.5px; color: var(--sub); line-height: 1.45;
+}
+.scene-cli {
   background: var(--code-bg); padding: 3px 6px;
   border-radius: 4px; font-family: "SF Mono", Consolas, monospace;
-  font-size: 11px; display: inline-block;
-  margin: 2px 0; word-break: break-all; line-height: 1.3;
+  font-size: 10.5px; color: var(--text);
+  word-break: break-all; line-height: 1.35;
+  align-self: flex-start;
+  max-width: 100%;
 }
+.scene-actions {
+  display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
+  margin-top: 1px;
+}
+.scene-prompt-preview {
+  background: #f0f7ff; border-left: 2px solid var(--accent);
+  padding: 5px 7px; border-radius: 4px; margin-top: 3px;
+  font-family: "SF Mono", Consolas, monospace; font-size: 10.5px;
+  white-space: pre-wrap; word-break: break-word; line-height: 1.4;
+  color: #1c1c1e;
+  max-height: 0; overflow: hidden;
+  transition: max-height .18s ease;
+}
+.scene-card.expanded .scene-prompt-preview { max-height: 800px; }
+.scene-prompt-toggle {
+  font-size: 10px; color: var(--accent); cursor: pointer;
+  background: none; border: none; padding: 0;
+  font-family: inherit;
+}
+.scene-prompt-toggle:hover { text-decoration: underline; }
 
-/* === VARIANTS (L3) === */
-.variants-section {
-  margin-top: 6px; border-top: 1px dashed var(--border); padding-top: 5px;
-}
-.variants-header {
-  font-size: 10px; color: var(--sub); font-weight: 600;
-  margin-bottom: 4px; text-transform: uppercase; letter-spacing: .3px;
-}
-.variant-block {
-  border: 1px solid var(--border); border-radius: 5px;
-  margin: 3px 0; background: #fcfcfd;
-}
-.variant-block > summary {
-  padding: 4px 8px; cursor: pointer; list-style: none;
-  display: flex; align-items: center; gap: 5px; font-size: 12px;
-}
-.variant-block > summary::-webkit-details-marker { display: none; }
-.variant-block > summary::before {
-  content: '▸'; font-size: 9px; color: var(--sub); transition: transform .12s;
-}
-.variant-block[open] > summary::before { transform: rotate(90deg); }
-.v-label { font-weight: 500; color: var(--accent); font-size: 12px; }
-.v-content { padding: 0 8px 6px; }
-
-/* === COPY BUTTON(v2.4.12 · 4 状态反馈) === */
+/* === COPY BUTTON === */
 .copy-btn {
   font: inherit; font-size: 11px; padding: 4px 8px;
   border-radius: 5px; border: 1px solid var(--accent);
@@ -183,7 +205,11 @@ body {
   50%  { transform: scale(1.10); box-shadow: 0 0 0 8px rgba(52, 199, 89, 0.30); }
   100% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.18); }
 }
-/* summary 层主 prompt 复制按钮(ticket 07 · 下沉到 summary) */
+.copy-btn-sm {
+  padding: 3px 7px; font-size: 10.5px;
+}
+
+/* ticket 07 兼容:summary 层主 prompt 复制按钮 */
 .copy-btn.copy-main {
   background: var(--accent); color: #fff; border: none;
   padding: 4px 12px; border-radius: 8px; font-size: 12px;
@@ -191,7 +217,7 @@ body {
 }
 .copy-btn.copy-main:hover { background: var(--accent); opacity: 0.88; }
 
-/* === TOAST(v2.4.12 · iOS 通知风格) === */
+/* === TOAST === */
 .toast {
   position: fixed; left: 50%; bottom: 32px;
   transform: translateX(-50%) scale(0.9);
@@ -241,7 +267,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
   margin-left: 6px; flex-shrink: 0;
-  transition: background 0.12s;
+  transition: background .12s;
 }
 .toast-close:hover { background: rgba(255, 255, 255, 0.18); }
 .toast-close:active { transform: scale(0.96); }
@@ -263,18 +289,15 @@ footer {
   .hero h1 { font-size: 18px; }
   .hero .sub { font-size: 11px; }
   .hero .stats { gap: 8px; font-size: 11px; }
-  .controls { margin: 6px -8px 8px; padding-left: 8px; padding-right: 8px; }
-  .controls input[type="search"] { font-size: 12.5px; padding: 7px 10px; }
-  .controls button { font-size: 11px; padding: 7px 8px; }
   .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
   .cat-content { padding: 4px 10px 8px; }
-  .word-card > summary { padding: 7px 9px; }
-  .word-content { padding: 0 9px 7px; }
-  .ww-aliases span { display: inline-block; margin-bottom: 2px; }
-  .variant-block > summary { padding: 6px 8px; }
+  .sub-block > summary { padding: 6px 9px; font-size: 12px; }
+  .sub-content { padding: 4px 9px 7px; }
+  .scene-card { padding: 6px 8px 7px; }
+  .scene-name { font-size: 12px; }
+  .scene-wake { font-size: 10px; }
   .copy-btn { padding: 5px 9px; font-size: 11.5px; }
-  /* ticket 07 · summary 层主 prompt 复制按钮在窄屏下收缩 */
-  .copy-btn.copy-main { padding: 4px 8px; font-size: 11px; }
+  .copy-btn-sm { padding: 4px 8px; font-size: 11px; }
   .toast {
     left: 12px; right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0));
@@ -286,7 +309,6 @@ footer {
   .toast-icon { font-size: 20px; }
   .toast-title { font-size: 12.5px; }
   .toast-detail { font-size: 11px; }
-  /* iOS Safari 安全区 */
   body { padding-bottom: env(safe-area-inset-bottom, 0); }
 }
 
@@ -300,16 +322,16 @@ footer {
 
 <div class="hero"><div class="container">
   <h1>📚 卡路里 · 唤醒词速查台</h1>
-  <div class="sub">💡 点 ▸ 类别 → 选唤醒词 → 复制 prompt → 贴给 AI</div>
+  <div class="sub">💡 点 ▸ 类别 → 选子功能 → 复制 prompt → 贴给 AI</div>
   <div class="stats" id="heroStats"></div>
 </div></div>
 
 <div class="container">
 <main id="mainContent"><div class="empty">加载中…</div></main>
-<footer>卡路里技能 · 唤醒词速查台 · v2.4.12 · 2026-07-26</footer>
+<footer id="footer"></footer>
 </div>
 
-<!-- Toast(v2.4.12 新增 · iOS 通知风格) -->
+<!-- Toast(iOS 通知风格) -->
 <div id="toast" class="toast" role="status" aria-live="polite">
   <div class="toast-icon">📋</div>
   <div class="toast-body">
@@ -318,12 +340,14 @@ footer {
   </div>
   <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
-</div>
 
 <!--INJECT-DATA-->
 
 <script>
+/* === v3.0 · 2 层(分类 + 子功能) + 平铺场景(无变体) === */
 const DATA = window.__DATA__ && window.__DATA__.status === 'ok' ? window.__DATA__ : null;
+const META = DATA ? DATA.meta : null;
+const SOURCE = META ? META.source : 'unknown';
 
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -332,17 +356,8 @@ function escapeHTML(s) {
 }
 
 function copyText(text, btn) {
-  // 找出最近的 wake_word 显示给 toast(用于确认复制对了)
-  let wake = '';
-  const card = btn?.closest('.word-card, .variant-block');
-  if (card) {
-    const wwName = card.querySelector('.ww-name');
-    if (wwName) wake = wwName.textContent.trim();
-    const vLabel = card.querySelector('.v-label');
-    if (vLabel) wake += ' · ' + vLabel.textContent.trim();
-  }
+  let wake = btn && btn.dataset ? (btn.dataset.wake || '') : '';
   showToast(wake || 'prompt');
-
   const after = () => {
     if (!btn) return;
     const orig = btn.textContent;
@@ -355,7 +370,15 @@ function copyText(text, btn) {
   } else { fallback(text); after(); }
 }
 
-/* === Toast 控制器(v2.4.12 新增) === */
+function fallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.csssheet = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+/* === Toast 控制器 === */
 const toastEl = document.getElementById('toast');
 const toastWakeEl = document.getElementById('toastWake');
 const toastCloseEl = document.getElementById('toastClose');
@@ -373,55 +396,110 @@ if (toastCloseEl) {
     clearTimeout(toastTimer);
   });
 }
-function fallback(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
-  document.body.removeChild(ta);
+
+function toggleScenePrompt(btn) {
+  const card = btn.closest('.scene-card');
+  if (card) card.classList.toggle('expanded');
+}
+
+function renderScene(scene, sceneIndex) {
+  const extTag = scene.depends_on_external
+    ? '<span class="scene-ext" title="依赖外部技能/接口(P4 最后开发)">🔗 联动</span>'
+    : '';
+  const cli = scene.data_source
+    ? `<div class="scene-cli">${escapeHTML(scene.data_source)}</div>`
+    : '';
+  return `<div class="scene-card">` +
+    `<div class="scene-header">` +
+      `<span class="scene-name">${escapeHTML(scene.name)}</span>` +
+      `<span class="scene-wake">${escapeHTML(scene.wake_word)}</span>` +
+      `<span class="scene-output ${escapeHTML(scene.output_type || 'result')}">${escapeHTML(scene.output_type || 'result')}</span>` +
+      extTag +
+    `</div>` +
+    (scene.user_intent ? `<div class="scene-desc">${escapeHTML(scene.user_intent)}</div>` : '') +
+    cli +
+    `<div class="scene-actions">` +
+      `<button class="copy-btn copy-btn-sm" data-prompt-index="${sceneIndex}" data-wake="${escapeHTML(scene.wake_word)}">📋 复制 prompt</button>` +
+      `<button class="scene-prompt-toggle" onclick="toggleScenePrompt(this)">👁 查看 prompt 文本</button>` +
+    `</div>` +
+    `<div class="scene-prompt-preview">${escapeHTML(scene.prompt)}</div>` +
+  `</div>`;
+}
+
+function renderSubBlock(subName, subScenes, sceneBaseIndex) {
+  return `<details class="sub-block" open>` +
+    `<summary><span>${escapeHTML(subName)}</span>` +
+    `<span class="sub-count">${subScenes.length} 场景</span></summary>` +
+    `<div class="sub-content">` +
+      subScenes.map((s, i) => renderScene(s, sceneBaseIndex + i)).join('') +
+    `</div></details>`;
 }
 
 function render() {
   if (!DATA) {
-    document.getElementById('mainContent').innerHTML =
-      '<div class="empty">❌ 数据加载失败</div>';
+    document.getElementById('mainContent').innerHTML = '<div class="empty">❌ 数据加载失败</div>';
     return;
   }
-  const { summary, categories, triggers } = DATA.data;
+  const { summary, categories, scenes } = DATA.data;
 
   // hero stats
   document.getElementById('heroStats').innerHTML =
-    `<span><b>${summary.total_categories}</b> 类别</span>` +
-    `<span><b>${summary.total_wake_words}</b> 唤醒词</span>` +
-    `<span><b>${summary.total_prompts}</b> prompt</span>`;
+    `<span><b>${summary.total_categories}</b> 分类</span>` +
+    `<span><b>${summary.total_scenes}</b> 场景</span>` +
+    `<span><b>${summary.total_prompts}</b> prompt</span>` +
+    `<span style="color:var(--gray)">· 数据源:${SOURCE}</span>`;
 
-  // group by category
-  const byCat = {};
-  triggers.forEach((t, gi) => { (byCat[t.category] = byCat[t.category] || []).push([t, gi]); });
+  // group by category → subfunction
+  const byCat = {};   // cat → sub → scenes[]
+  const indexOf = {}; // key → global scene index
+  scenes.forEach((s, i) => {
+    indexOf[s.key] = i;
+    (byCat[s.category] = byCat[s.category] || {})[s.subfunction] = (byCat[s.category][s.subfunction] || []).concat([s]);
+  });
 
-  // main
-  const mainEl = document.getElementById('mainContent');
-  mainEl.innerHTML = categories.map(cat => {
-    const items = byCat[cat.name] || [];
-    if (!items.length) return '';
-    return `<details class="cat-block" id="cat-${escapeHTML(cat.key)}" data-cat-name="${escapeHTML(cat.name)}">` +
-      `<summary><span>${cat.icon}</span><span>${escapeHTML(cat.name)}</span>` +
-      `<span class="count-pill">${items.length}</span></summary>` +
-      `<div class="cat-content">${items.map(([t, gi]) => renderWordCard(t, gi)).join('')}</div></details>`;
-  }).join('');
+  // 排序:category 顺序固定,subfunction 按 order 升序,scene 按 order 升序
+  const catOrder = categories.map(c => c.name);
+  const rendered = [];
+  for (const cat of categories) {
+    const subs = byCat[cat.name] || {};
+    const subNames = Object.keys(subs).sort((a, b) => {
+      const oa = Math.min(...subs[a].map(s => s.order ?? 9999));
+      const ob = Math.min(...subs[b].map(s => s.order ?? 9999));
+      return oa - ob;
+    });
+    let runningIndex = 0;
+    // 起始 base index for this cat
+    const catScenes = subNames.flatMap(n => subs[n]);
+    const baseIndex = scenes.indexOf(catScenes[0]);
+    const subHtml = subNames.map(n => {
+      const subScenes = subs[n].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+      const subBase = scenes.indexOf(subScenes[0]);
+      return renderSubBlock(n, subScenes, subBase);
+    }).join('');
+    const totalScenes = catScenes.length;
+    rendered.push(
+      `<details class="cat-block" id="cat-${escapeHTML(cat.key)}" data-cat-name="${escapeHTML(cat.name)}" open>` +
+        `<summary><span>${escapeHTML(cat.icon)}</span><span>${escapeHTML(cat.name)}</span>` +
+        `<span class="count-pill">${totalScenes}</span></summary>` +
+        `<div class="cat-content">${subHtml}</div></details>`
+    );
+  }
+
+  document.getElementById('mainContent').innerHTML = rendered.join('') || '<div class="empty">暂无场景</div>';
+
+  // 数据源标记(footer)
+  if (META) {
+    document.getElementById('footer').textContent =
+      `卡路里 · 唤醒词速查台 · 数据源:${META.source} · 渲染时间:${META.rendered_at || ''}`;
+  }
 
   bindCopyButtons();
-  bindCatFallbackToggle();   /* v2.4.10 · 移动端 L1 展开兜底 */
+  bindFallbackToggle();
 }
 
-/* === 移动端 L1+L2+L3 展开兜底(v2.4.10 抗审查修) ===
-   背景:某些 Android WebView / 旧 iOS Safari 上 native <details> toggle
-   会因 tap-highlight / 子元素吞噬 / 300ms 延迟 而偶发不响应。
-   这里监听 summary 的 click,如果 50ms 后状态没翻,就强制翻。
-   v2.4.10 扩展:从 L1 扩到 L1+L2+L3。 */
-function bindCatFallbackToggle() {
-  const sums = document.querySelectorAll(
-    '.cat-block > summary, .word-card > summary, .variant-block > summary');
+function bindFallbackToggle() {
+  /* 移动端 WebView 偶发 <details> 不响应 click,50ms 兜底 */
+  const sums = document.querySelectorAll('.cat-block > summary, .sub-block > summary');
   sums.forEach(sum => {
     if (sum.__bound_fb) return;
     sum.__bound_fb = true;
@@ -429,62 +507,34 @@ function bindCatFallbackToggle() {
       const det = sum.parentElement;
       const wasOpen = det.open;
       setTimeout(() => {
-        if (det.open === wasOpen) {
-          det.open = !wasOpen;
-        }
+        if (det.open === wasOpen) det.open = !wasOpen;
       }, 50);
     }, { passive: true });
   });
 }
 
-function renderWordCard(t, i) {
-  const aliases = (t.aliases || []).map(a =>
-    `<span>${escapeHTML(a)}</span>`).join('');
-  const variants = t.variants || [];
-  const pm = t.main_prompt || {cli:'', text:''};
-  return `<details class="word-card"><summary>` +
-    `<span class="ww-name">${escapeHTML(t.wake_word)}</span>` +
-    `${aliases ? `<span class="ww-aliases">${aliases}</span>` : ''}` +
-    `<span class="ww-count">${variants.length ? variants.length + '变体' : ''}</span>` +
-    `<button class="copy-btn copy-main" onclick="event.preventDefault(); event.stopPropagation(); copyMainPrompt(${i})">📋 复制</button>` +
-    `</summary><div class="word-content">` +
-    `${t.desc ? `<div class="ww-desc">${escapeHTML(t.desc)}</div>` : ''}` +
-    `${pm.cli ? `<div class="prompt-cli">${escapeHTML(pm.cli)}</div>` : ''}` +
-    `<div class="prompt-main">${escapeHTML(pm.text)}</div>` +
-    (variants.length ? `<div class="variants-section"><div class="variants-header">变体 (${variants.length})</div>` +
-      variants.map(renderVariant).join('') + `</div>` : '') +
-    `</div></details>`;
-}
-
-function renderVariant(v) {
-  return `<details class="variant-block">` +
-    `<summary><span class="v-label">${escapeHTML(v.label)}</span></summary>` +
-    `<div class="v-content">` +
-    `${v.cli ? `<div class="prompt-cli">${escapeHTML(v.cli)}</div>` : ''}` +
-    `<div class="prompt-main">${escapeHTML(v.prompt)}</div>` +
-    `<button class="copy-btn" data-prompt="${escapeHTML(v.prompt)}">📋 复制此变体 prompt</button>` +
-    `</div></details>`;
-}
-
 function bindCopyButtons() {
   document.querySelectorAll('.copy-btn').forEach(btn => {
     if (btn.__bound) return;
-    // ticket 07:summary 层 .copy-main 走 onclick=copyMainPrompt(i),不在此绑定
+    // ticket 07 兼容:summary 层 .copy-main 走 onclick=copyMainPrompt(i),不在此绑定
     if (btn.classList.contains('copy-main')) return;
     btn.__bound = true;
-    btn.addEventListener('click', () => copyText(btn.dataset.prompt || '', btn));
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.promptIndex || '-1', 10);
+      const s = DATA.data.scenes[idx];
+      const text = s ? s.prompt : '';
+      copyText(text, btn);
+    });
   });
 }
 
-/* ticket 07 · summary 层主 prompt 复制按钮(读全局 trigger 索引) */
+/* ticket 07 兼容:summary 层主 prompt 复制按钮(读全局 trigger 索引) */
 function copyMainPrompt(i) {
   const t = DATA && DATA.data && DATA.data.triggers && DATA.data.triggers[i];
   const text = t && t.main_prompt ? t.main_prompt.text : '';
   const btn = document.querySelector(`.word-card:nth-of-type(${i + 1}) .copy-btn.copy-main`) || null;
   copyText(text, btn);
 }
-
-// search / expandAll / collapseAll / copyAll 已删除(v2.4.10)
 
 render();
 </script>

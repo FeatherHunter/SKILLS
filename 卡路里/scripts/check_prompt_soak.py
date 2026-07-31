@@ -98,8 +98,19 @@ def check_help_center_payload() -> list[str]:
     except json.JSONDecodeError as e:
         return [f'⚠ {latest.name} JSON parse fail: {e}']
 
-    rendered = {t['wake_word']: t['main_prompt']['text']
-                for t in payload.get('data', {}).get('triggers', [])}
+    rendered = {}
+    # v3.0+ · 读 scenes 字段(新 4 层架构用 scenes,旧 3 层用 triggers)
+    for s in payload.get('data', {}).get('scenes', []):
+        w = s.get('wake_word')
+        if not w: continue
+        # 新 schema 字段是 prompt_template;旧 schema 字段是 prompt(融合模式兜底)
+        rendered[w] = s.get('prompt_template') or s.get('prompt') or ''
+    # 兼容老的 triggers 字段(check_decision_matrix 旧版仍使用)
+    for t in payload.get('data', {}).get('triggers', []):
+        w = t.get('wake_word')
+        if not w: continue
+        if w not in rendered:  # 不覆盖 scenes 已有
+            rendered[w] = (t.get('main_prompt') or {}).get('text', '')
     wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
     issues = []
     for wake, src in wake_to_prompt.items():

@@ -38,6 +38,9 @@ SCENE_DIR   = SKILL_DIR / '.scratch' / 'scene_data'
 SCHEMA_PATH = SCENE_DIR / 'schema.json'
 
 # 命名规范 v1.0 · 禁技术词(从 .scratch/help-scenario-redesign.md 抄录)
+# 注:每条 prompt 是否需要 §⚠️ 第 7 条 AI 验证协议,已在 ADR-0007 + 2026-07-31 用户决策中
+# 改由 SKILL.md §⚠️ 第 7 条 守门(per-prompt 不再硬塞提醒)。
+# check_scene_data.py 反向守护:scene_data prompt 含 §⚠️ 那段 → 报错(禁止回退)。
 TECH_WORDS = {
     'v2', 'v1', 'v3', 'v0',
     'widget', 'WIDGET',
@@ -79,10 +82,11 @@ VERB_FIRST = {
 
 NAME_MAX = 12          # 主名 ≤ 12 字
 PROMPT_REQUIRED = [
-    '§⚠️ 第 7 条 AI 验证协议',  # AI 验证协议(必含,无论主 prompt 还是 variant)
-    '完成后给 1 句话总结',       # 收尾语
+    '完成后给 1 句话总结',         # 收尾语(必须)
 ]
+# 反向守护:per-prompt 不再贴 §⚠️ 那段(SKILL.md §⚠️ 第 7 条 守门即可)
 PROMPT_FORBIDDEN = [
+    r'§⚠️ 第 7 条 AI 验证协议',  # 防止回退到旧 skeleton
     r'按流程执行',                # 流程型空话
     r'略',                       # 占位
 ]

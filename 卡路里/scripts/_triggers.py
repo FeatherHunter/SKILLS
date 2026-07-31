@@ -86,16 +86,9 @@ CATEGORIES = [
 # ===== 80 唤醒词 × ~2 用法 = ~150 prompt =====
 TRIGGERS = [
     {
-            'category': '主页',     'wake_word': '开卡路里', 'aliases': ['卡路里面板'],     'desc': '把今日主页仪表盘渲染成 HTML:今日 KPI + 待办 + 最近 7 天小图',
+            'category': '主页',     'wake_word': '看今日主页', 'aliases': ['开卡路里', '卡路里面板', '今日卡路里'],     'desc': '把今日主页仪表盘渲染成 HTML:今日 4 维 KPI + 待办 + 最近 7 天小图',
             'main_prompt': {
-        'cli': 'python scripts/render_home.py', 'text': '请你加载技能 卡路里,执行唤醒词「开卡路里」。\n\n我想看今日主页 dashboard(KPI 卡片 + 今日目标完成度 + 最近 7 天趋势小图 + 待办事项)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '开卡路里 [指定日期]', 'cli': 'python scripts/render_home.py --date 2026-07-20', 'prompt': '请你加载技能 卡路里,执行唤醒词「开卡路里 [指定日期]」。\n\n我要看过去某一天(不是今天)的主页 dashboard。\n\n完成后给 1 句话总结,不需要过多文字解释。', 'fill_hints': ['日期 YYYY-MM-DD: ']}]},
-    {
-            'category': '主页',     'wake_word': '今日卡路里',     'desc': '打开今日 dashboard(默认今日)',
-            'main_prompt': {
-        'cli': 'python scripts/render_home.py', 'text': '请你加载技能 卡路里,执行唤醒词「今日卡路里」。\n\n跟"开卡路里"一样,看今日总览。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_home.py', 'text': '请你加载技能 卡路里,执行唤醒词「看今日主页」。\n\n我想看今天主页 dashboard:今日 4 维 KPI(热量/蛋白/饮水/运动)+ 今日目标完成度 + 最近 7 天趋势小图 + 待办事项。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'fill_hints': [],
             'variants': []},
     {

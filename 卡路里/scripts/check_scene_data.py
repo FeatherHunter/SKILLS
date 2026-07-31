@@ -198,7 +198,7 @@ def validate_scene(scene: dict, file_label: str, all_wake_words: dict[str, str])
     errors += [f'[html_template] {x}' for x in check_path_exists(scene.get('html_template', ''), 'html_template')]
     data_src = scene.get('data_source', '')
     if data_src and not data_src.endswith('.html'):
-        # 当 data_source 是 .py CLI(可能带 `python ` 前缀,见 ticket #29)或 Python 函数路径
+        # 当 data_source 是 .py CLI(可能带 `python ` 前缀,见 ADR-0008)或 Python 函数路径
         # 约定:.py 脚本须带 `python ` 前缀;Python 函数直接写模块名
         stripped = data_src.removeprefix('python ').strip() if data_src.startswith('python ') else data_src
         if stripped.endswith('.py') or '.' in Path(stripped).name:

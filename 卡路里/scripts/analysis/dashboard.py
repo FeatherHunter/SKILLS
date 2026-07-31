@@ -45,6 +45,22 @@ def dashboard(start_date, end_date=None, as_dict=False):
         ]:
             try:
                 dims[name] = fn()
+
+                # 2026-07-31 fix: 单日 dashboard 时,weight.change_kg 改为"今日第一条 − 昨日第一条"
+                # 原语义:"今日最后 − 今日第一"(同日内多次称重)对单次称重无意义,显示 0.0kg 误导
+                # 新语义:跨日对比,反映真实体重变化趋势
+                if (name == 'weight'
+                        and start_date == end_date
+                        and dims[name].get('status') == 'ok'
+                        and dims[name]['data'].get('first_weight') is not None):
+                    from datetime import date, timedelta
+                    yesterday = (date.fromisoformat(start_date) - timedelta(days=1)).isoformat()
+                    yest_trend = __import__('analysis.weight', fromlist=['weight_trend']).weight_trend(yesterday, yesterday, as_dict=True)
+                    if (yest_trend.get('status') == 'ok'
+                            and yest_trend['data'].get('first_weight') is not None):
+                        today_first = dims[name]['data']['first_weight']
+                        yest_first = yest_trend['data']['first_weight']
+                        dims[name]['data']['change_kg'] = round(today_first - yest_first, 1)
             except Exception as e:
                 dims[name] = {"status": "error", "data": None, "message": str(e)}
 

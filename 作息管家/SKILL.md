@@ -469,6 +469,38 @@ ELIF "输出形式"列含 .html
 | "看下 7 月 1 号" | ① 7 月 1 日 ② 7 月 1 周(7/1~7/7) | **默认按单日 7 月 1 日**,不需要反问 |
 | "健身做得怎么样" | ① record 域"健康.健身"分类 ② plan 域"健身"计划复盘 | **按上下文判断**:若用户刚说"作息"→ record;若刚说"日程"→ plan |
 
+### 复盘 start-end 唤醒词(Phase E · 2026-07-30 新增 · ADR-0005)
+
+**底层 = 任意 start-end 区间**(schedule_records + schedule_plans 双域聚合),**上层 = 7 个预置时间维度 + 自由区间语法**:
+
+| 预置唤醒词 | 实际起止 | 工作流 | 模板 |
+|---|---|---|---|
+| "复盘本周" | 本周一~周日 | 复盘 start-end | schedule_replay.html |
+| "复盘上周" | 上周一~周日 | 复盘 start-end | schedule_replay.html |
+| "复盘本月" | 本月 1 日~末日 | 复盘 start-end | schedule_replay.html |
+| "复盘上月" | 上月 1 日~末日 | 复盘 start-end | schedule_replay.html |
+| "复盘今年" | 本年 1 月 1 日~今 | 复盘 start-end | schedule_replay.html |
+| "复盘上年" | 上年 1 月 1 日~12 月 31 日 | 复盘 start-end | schedule_replay.html |
+| "复盘 [区间]" | 自由 start-end | 复盘 start-end | schedule_replay.html |
+
+**自由区间语法**(用户提非预置):
+- `YYYY-MM-DD~YYYY-MM-DD` (例:"复盘 2026-07-13~2026-07-19")
+- `MM/DD~MM/DD` (例:"复盘 7/13~7/19")
+- `过去 N 天` (例:"复盘过去 30 天")
+- `YYYY Qn` (例:"复盘 2026 Q3")
+
+**与 14 复盘区分**:
+- "复盘" / "复盘今天" / "复盘昨天" / "复盘 YYYY-MM-DD" → **14 复盘** (单日 plan 域 completion 写库)
+- "复盘本周/上月/本年" + "复盘 [区间]" → **复盘 start-end** (跨域 dual-domain)
+- 裸词 "复盘" 默认走 14 复盘 (向后兼容, A 方案)
+
+**5 状态 fallback**(总纲 §04 原则 4):
+- `ok`: 两域数据完整
+- `empty`: 两域都空
+- `incomplete`: 单域有数据 (缺失域标 "⚠️ 数据不全")
+- `error`: 数据库错误
+- `offline`: 网络不通 (HTML 仍可查看,顶部 offline 横幅)
+
 **反问格式**:`您是想看 A 还是 B?(我推荐 A 因为...)`
 
 ### 路由失败处理

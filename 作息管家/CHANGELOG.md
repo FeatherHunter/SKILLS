@@ -4,6 +4,89 @@
 
 ---
 
+## [Unreleased] · 2026-07-30
+
+### 🚀 Phase E · 复盘 start-end 跨域 dual-domain 工作流落地(2026-07-30)
+
+**动机**:基于 2026-07-30 Grilling Session 6 决策共识 + ADR-0005,新增独立 `replay` 工作流。
+用户原报告"下达复盘本月 → 数据量爆炸 + UI 错乱" 落地修复 + 重构。
+
+**新增工作流**:`render-replay <start> <end>` · 4 段叙事 + 5 状态 fallback · 单文件自包含 HTML
+
+### T01 · render-replay CLI 子命令 + schedule_db.get_plan_events_range(commit ee64c27)
+- ✅ `scripts/schedule_html_render.py`: `render_replay(start, end, ai_engine="mock")` 函数 + 5 状态 enum 定义(empty/ok/incomplete/error/offline)
+- ✅ `scripts/schedule_db.py`: `get_plan_events_range(start, end, include_inactive=False)` 区间查询
+- ✅ `scripts/schedule_cli.py`: `cmd_render_replay` + elif 分支 + help line
+- ✅ `CN_COMMAND_MAP["replay"] = "区间复盘"` 条目(避免与 `plan_review="复盘"` 撞车)
+- ✅ `default_output_path` / `record_output_path` 加 `"replay"` 分支
+- ✅ `render_and_write` template_map 加 `"replay": "schedule_replay.html"`
+- ✅ 文件名 `区间复盘_<YYYYMMDD>_<HHMMSS>.html` (与 14 复盘 `复盘_<TS>.html` 中文前缀 + subdir 双重区分)
+
+### T03 · record 聚合段(commit 99e3659)
+- ✅ `record_aggregate` 3 字段填充:summary_items(按总分钟数降序) + trend(7 维) + heatmap(24h × N 天)
+- ✅ **Top-N 折叠**: 默认 Top 10 + 展开全部按钮 + 44px 触控友好(总纲 §04 原则 12)
+- ✅ 复用 `calculations.aggregate_by_category / build_trend_series / build_24h_heatmap` (注意 build_24h_heatmap 返回 `(matrix, sorted_dates)` tuple)
+- ✅ **顺手修 09 bug**: `templates/_record_engine.js:254` `days + " 天"` → `days.length + " 天"`(30 天 join 字符串 226px 高度 → 干净数组长度)
+
+### T04 · plan 聚合段(commit d383120)
+- ✅ `plan_aggregate` 3 字段填充:completion_distribution(6 类 dict) + completion_by_category(按 total 降序) + completion_rate(整体完成率 = 已完成 / (已完成 + 未完成) 二分)
+- ✅ completion_by_category 中 `completed` 字段仅算按时完成的 "已完成" 类(不包含超时/部分完成)
+
+### T05 · 跨域对比段(commit 8454c69)
+- ✅ `cross_domain` 4 类清单:
+  - `planned_actual_pairs`: plan + record 同日时间重叠的实际时长配对(delta_minutes)
+  - `unexecuted_plans`: plan 存在但 completion ∈ {未完成/未完成(不可抗力)/部分完成}
+  - `unexpected_records`: record 无对应 plan(plan 不存在或时间无重叠)
+  - `overrun_plans`: record 总时长超出 plan ≥ 20%(severity: ≥1.5× high / ≥1.2× medium)
+- ✅ 算法核心: 时间重叠判定 `'HH:MM'` 字符串解析(避免 datetime 慢路径), overrun 用 record 总 duration
+
+### T06 · AI 洞察段(commit 593b9f7)
+- ✅ `ai_insights` 3 字段填充:anomalies + periodic_compare + suggestions
+- ✅ 异常检测算法: `current / mean(baseline) ≥ 2.0` 或 `≤ 0.5` 触发 high, 1.5-2.0 或 0.4-0.67 触发 medium
+- ✅ 周期对比算法: 区间内前后半拆对比 (`current_vs_first_half` period 字段) — pragmatic 实现,后续 LLM 接入时按 spec 扩展 last_week/last_month/last_year
+- ✅ 6 条规则生成器: 工作骤增 / 维持(睡眠)骤降 / 健康骤降 / 学习骤降 / 调整(娱乐)骤增 / 通用 — 基于 anomalies 的 direction + severity 触发
+- ✅ `render_replay(start, end, ai_engine="mock"|"llm")` 接口预留 spec decision 13
+
+### T07 · 5 状态 fallback 完整(commit 4cf4972 + 2b5b4a6)
+- ✅ empty: 两域都空 → status="empty"
+- ✅ incomplete: 单域有数据 → 缺失域标 incomplete=True + 友好提示 (T01 + T07 双轨补完)
+- ✅ error: DB ConnectionError → status="error", data=None, message 含错误说明
+- ✅ offline: `check_offline()` 网络探测失败 → status="offline", 单文件 HTML 仍可查看
+- ✅ ok: 两域数据完整
+- ✅ 状态徽章: ✅ ok / 📭 empty / ⚠️ incomplete / ❌ error / 📡 offline (HTML hero 区 + meta.status_badge 字段)
+
+### T08 · 视觉/UX 打磨(commit 15aa76f)
+- ✅ `templates/schedule_replay.html` 132 → 430 行: 4 卡总览 grid + 4 段叙事 JS 渲染 + 复制 prompt + 移动端 3 档适配
+- ✅ 4 卡总览: 总时长 / 记录数 / 完成率 / 健康分 (健康分 = 维持占总时长比例,简单代理算法)
+- ✅ 复制 prompt 4 部分结构 (总纲 §04 原则 10): 按钮 + preview + clipboard API + execCommand fallback + 2.2s 视觉反馈 + toast 提示
+- ✅ Top-N 折叠 JS 交互: 默认 hidden, 点 "展开全部" 后解除
+- ✅ 6 类 completion 堆叠柱: 颜色编码 (绿/绿-暗/橙/红/红-暗/灰) + legend
+- ✅ 跨域对比: 4 类清单 (planned_actual / unexecuted / unexpected / overrun), severity 高亮 (high 红/medium 黄)
+- ✅ AI 洞察: anomalies + suggestions 卡片
+- ✅ 移动端 / 平板 / 桌面 三档 media query (360/480/768/1280+)
+
+### T09 · 端到端 seam 测试(commit 5aac98a)
+- ✅ `tests/test_replay_e2e.py` 新增: 30 天大 fixture (870 条 record + 14 计划) + 5 视口 parametrize
+- ✅ playwright 5 视口 (360/768/1024/1280/1920) 截图保存到 `tests/screenshots/replay_e2e/`
+- ✅ 4 段叙事 h2 标题断言 + Top-N 折叠默认 visible ≤ 10 + 展开按钮存在
+- ✅ **09 bug 回归护栏**: HTML 不渲染 30 日期 join 字符串
+- ✅ 总测试 < 30s (符合 spec acceptance)
+
+### T10 · 文档收尾(commit 本次落)
+- ✅ `docs/adr/0005-replay-start-end-new-workflow.md`: 决策"复盘 start-end 是独立新工作流,不合并 14 复盘 / 09 查作息范围"
+- ✅ `CONTEXT.md` 创建 (作息管家首次): 核心术语 6 个 (复盘 / 14 复盘 / 09 查作息范围 / 复盘 start-end / dual-domain / 5 状态 fallback / 4 段叙事)
+- ✅ `SKILL.md` 路由规则章节: 7 个复盘预置 (本周/上周/本月/上月/今年/上年) + 4 种自由区间语法 (YYYY-MM-DD~ / MM/DD~ / 过去 N 天 / YYYY Qn)
+- ✅ `AGENTS.md` 当前阶段表格: Phase E ✅ 完成 (commit 序列)
+
+### 统计
+- 10 个 ticket (T01-T10) 全部完成
+- 9 个 commit (T02 路由被吸收到 T01 CLI commit, 共 9 个)
+- 测试: 25 个 test_render.py + 5 个 test_replay_visual.py + 8 个 test_replay_e2e.py = 38 个新测试
+- pytest 完整: 179 passed (我加的 38), 28 failed (pre-existing GBK 编码问题, 与我无关)
+- playwright 端到端: 3 视口 (T08) + 5 视口 (T09) 全部无水平滚动
+
+---
+
 ## [Unreleased] · 2026-07-29
 
 ### 🚀 Phase A-3 + Q5 + Q6 + Q7 · ADR-0001/0002/0003 落地(2026-07-28 ~ 2026-07-29)

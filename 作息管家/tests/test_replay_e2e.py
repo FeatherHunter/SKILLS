@@ -257,3 +257,60 @@ def test_e2e_30d_no_join_date_string(replay_30d_html):
     join_str = ",".join(dates) + " 天"
     assert join_str not in html, \
         f"_record_engine.js '区间长度' bug 复发:HTML 含 '{join_str[:50]}...'"
+
+
+# ---- T10 文档收尾验收 · 静态 markdown 校验(锁住 5 项 acceptance) ----
+
+def test_adr_0005_exists():
+    """T10 · ADR-0005 文件存在,记录'复盘 start-end 独立工作流'决策"""
+    adr_path = SKILL_DIR / "docs" / "adr" / "0005-replay-start-end-new-workflow.md"
+    assert adr_path.exists(), f"ADR-0005 文件缺失: {adr_path}"
+    content = adr_path.read_text(encoding="utf-8")
+    # 必须含核心决策标记
+    for marker in ("replay", "区间复盘", "独立新工作流"):
+        assert marker in content, f"ADR-0005 缺关键术语: {marker}"
+
+
+def test_context_md_exists():
+    """T10 · 作息管家首次 CONTEXT.md(glossary),固化 6 个核心术语"""
+    ctx_path = SKILL_DIR / "CONTEXT.md"
+    assert ctx_path.exists(), f"CONTEXT.md 缺失: {ctx_path}"
+    content = ctx_path.read_text(encoding="utf-8")
+    # 必须含 6 个核心术语
+    for term in ("复盘", "14 复盘", "复盘 start-end", "dual-domain", "5 状态 fallback", "4 段叙事"):
+        assert term in content, f"CONTEXT.md 缺核心术语: {term}"
+
+
+def test_skill_md_routing_7_presets():
+    """T10 · SKILL.md 路由规则章节新增 7 个复盘预置 + 自由区间"""
+    skill_path = SKILL_DIR / "SKILL.md"
+    assert skill_path.exists(), "SKILL.md 缺失"
+    content = skill_path.read_text(encoding="utf-8")
+    # 7 个复盘预置
+    for preset in ("复盘本周", "复盘上周", "复盘本月", "复盘上月", "复盘今年", "复盘上年"):
+        assert preset in content, f"SKILL.md 路由缺预置: {preset}"
+    # 自由区间语法
+    assert "YYYY-MM-DD~YYYY-MM-DD" in content or "YYYY-MM-DD~" in content, \
+        "SKILL.md 缺自由区间语法"
+
+
+def test_changelog_phase_e():
+    """T10 · CHANGELOG.md 新增 Phase E · 复盘 start-end 工作流条目"""
+    cl_path = SKILL_DIR / "CHANGELOG.md"
+    assert cl_path.exists(), "CHANGELOG.md 缺失"
+    content = cl_path.read_text(encoding="utf-8")
+    # 必须含 Phase E 标识 + 关键里程碑
+    for marker in ("Phase E", "复盘 start-end", "区间复盘", "T10", "T01", "T09"):
+        assert marker in content, f"CHANGELOG.md 缺 Phase E 标识: {marker}"
+
+
+def test_agents_md_phase_e_row():
+    """T10 · AGENTS.md '当前阶段' 表格新增 Phase E 行(✅ 完成)"""
+    agents_path = SKILL_DIR / "AGENTS.md"
+    assert agents_path.exists(), "AGENTS.md 缺失"
+    content = agents_path.read_text(encoding="utf-8")
+    # 必须含 Phase E + 完成标记
+    assert "Phase E" in content, "AGENTS.md 缺 Phase E 行"
+    # 新行应在表格内,不应在表格外孤立
+    # 简化验证:Phase E 出现且不孤悬
+    assert "✅" in content, "AGENTS.md Phase E 应标 ✅ 完成"

@@ -26,18 +26,21 @@
 | `docs/adr/*.md` | 架构决策记录(ADR-0001/0002/0003 已落盘) |
 | `CHANGELOG.md` | 12 个 Phase 变更日志 |
 
-## 当前阶段(2026-07-29 Phase A-3 + Q5 + Q6 + Q7 + Phase B 全部落地)
+## 当前阶段(2026-07-30 Phase E 全部落地 · 2026-07-29 Phase A-3 + Q5 + Q6 + Q7 + Phase B 全部落地)
 
-8 决策全部答完,3 份 ADR 落盘,4 个实施 Phase **全部完成**:
+8 决策全部答完 → 6 决策(Phase E 复盘 start-end 6 决策)全部答完,4 份 ADR(0001/0002/0003/0004/0005)落盘,5 个实施 Phase **全部完成**:
 
 | Phase | 工作 | 阻力 | Tested-By | 状态 |
 |---|---|---|---|---|
-| **A-3** | ADR-0001 · `help_render.py` 同步作息管家.html | 最小 | exempt | ✅ 完成(commit 6ebe69c) |
+| **E** | **复盘 start-end 跨域 dual-domain 工作流** (ADR-0005) | 大 | pytest-pass + playwright-e2e | ✅ **完成(commit ee64c27 / 99e3659 / d383120 / 8454c69 / 593b9f7 / 4cf4972 / 2b5b4a6 / 15aa76f / 5aac98a)** |
+| A-3 | ADR-0001 · `help_render.py` 同步作息管家.html | 最小 | exempt | ✅ 完成(commit 6ebe69c) |
 | A-2 | Q8 · 补 `AGENTS.md`(本文件) | 小 | exempt | ✅ 完成(commit 633abc4) |
 | A-1 | Q5+Q6+Q7 · 路径对齐 + 复制 prompt + 内部分组 | 大 | pytest-pass | ✅ 完成(commit c17d490 / f092476 / faf8839 / 5952b1d / 9dfd351 / 5ceccb7 / 63cb8b6) |
 | B | pytest + FAT 验证 + CHANGELOG | — | pytest-pass | ✅ 完成(162 用例全过) |
 
-> **本文件已于 2026-07-29 更新**:所有 Phase 状态从"待执行"改为"完成"。下次启动新 Grilling 时,在下方追加新阶段。
+> **本文件已于 2026-07-30 更新**:新增 Phase E 表格行,所有 Phase 状态从"待执行"改为"完成"。下次启动新 Grilling 时,在下方追加新阶段。
+> 
+> **Phase E 关键产出**:4 段叙事 (record_aggregate / plan_aggregate / cross_domain / ai_insights) + 5 状态 fallback (ok/empty/incomplete/error/offline) + 7 复盘预置 (本周/上周/本月/上月/今年/上年/自由区间) + 视觉打磨 (4 卡 + 复制 prompt + 移动端适配) + 端到端 seam 测试 (30 天大 fixture + 5 视口 playwright)。
 
 ## Agent 工作约定
 

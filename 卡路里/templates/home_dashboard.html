@@ -330,12 +330,16 @@ body{
   margin:0 0 4px 4px;
 }
 
-/* ====== DEFICIT FORMULA (TDEE 横向公式条) ====== */
+/* ====== DEFICIT FORMULA (TDEE 横向公式条 · 桌面) ====== */
 .deficit-formula {
   display: grid;
   grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
+  grid-template-areas:
+    "legend legend legend legend legend legend legend legend legend"
+    "tdee op-1 ex op-2 tot op-3 int op-4 def"
+    "summary summary summary summary summary summary summary summary summary";
   align-items: center;
-  gap: 6px 8px;
+  gap: 10px 8px;
   padding: 20px 16px;
   background: var(--card);
   border-radius: var(--r-lg);
@@ -343,16 +347,16 @@ body{
   margin: 16px 0;
 }
 .deficit-formula .legend {
-  grid-column: 1 / -1;
+  grid-area: legend;
   text-align: center;
   font-size: 11px;
   color: var(--ink3);
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  margin-bottom: 4px;
   font-weight: 600;
+  margin-bottom: 2px;
 }
-.deficit-formula .term {
+.deficit-formula .row {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -360,7 +364,7 @@ body{
   text-align: center;
   min-width: 0;
 }
-.deficit-formula .term .num {
+.deficit-formula .row .num {
   font-size: 22px;
   font-weight: 700;
   font-family: "SF Mono", Consolas, monospace;
@@ -368,7 +372,7 @@ body{
   letter-spacing: -0.5px;
   line-height: 1;
 }
-.deficit-formula .term .lbl {
+.deficit-formula .row .lbl {
   font-size: 11px;
   color: var(--ink3);
   white-space: nowrap;
@@ -380,16 +384,25 @@ body{
   text-align: center;
   font-family: "SF Mono", Consolas, monospace;
 }
-.deficit-formula .term.tdee-bmr .num { color: var(--ink); }
-.deficit-formula .term.exercise .num { color: var(--green); }
-.deficit-formula .term.total-burn .num { color: var(--ink); }
-.deficit-formula .term.intake .num { color: var(--orange); }
-.deficit-formula .term.deficit .num { color: var(--red); font-size: 26px; }
-.deficit-formula .term.deficit.pos .num { color: var(--red); }
-.deficit-formula .term.deficit.neg .num { color: var(--green); }
-.deficit-formula .term.deficit.zero .num { color: var(--ink3); }
+.deficit-formula .op.op-1 { grid-area: op-1; }
+.deficit-formula .op.op-2 { grid-area: op-2; }
+.deficit-formula .op.op-3 { grid-area: op-3; }
+.deficit-formula .op.op-4 { grid-area: op-4; }
+.deficit-formula .row.tdee { grid-area: tdee; }
+.deficit-formula .row.ex   { grid-area: ex; }
+.deficit-formula .row.tot  { grid-area: tot; }
+.deficit-formula .row.int  { grid-area: int; }
+.deficit-formula .row.def  { grid-area: def; }
+.deficit-formula .row.tdee .num,
+.deficit-formula .row.tot  .num { color: var(--ink); }
+.deficit-formula .row.ex   .num { color: var(--green); }
+.deficit-formula .row.int  .num { color: var(--orange); }
+.deficit-formula .row.def  .num { color: var(--red); font-size: 26px; }
+.deficit-formula .row.def.neg .num { color: var(--green); }
+.deficit-formula .row.def.zero .num { color: var(--ink3); }
+.deficit-formula .divider { display: none; }
 .deficit-formula .summary {
-  grid-column: 1 / -1;
+  grid-area: summary;
   text-align: center;
   font-size: 13px;
   color: var(--ink2);
@@ -405,17 +418,65 @@ body{
 .deficit-formula .summary .kg.up { color: var(--red); }
 .deficit-formula .summary .kg.flat { color: var(--ink3); }
 
-/* Mobile: 公式条改成 3 行 2 组 */
+/* ====== Mobile: 公式条变成 receipt 式 ====== */
 @media (max-width: 600px) {
   .deficit-formula {
-    grid-template-columns: 1fr auto 1fr;
-    gap: 10px 8px;
-    padding: 14px 12px;
+    display: block;
+    grid-template-areas: none;
+    padding: 14px 16px;
   }
-  .deficit-formula .term .num { font-size: 18px; }
-  .deficit-formula .term.deficit .num { font-size: 22px; }
-  .deficit-formula .op { font-size: 18px; }
-  .deficit-formula .legend { font-size: 10px; }
+  .deficit-formula .legend {
+    text-align: center;
+    font-size: 10px;
+    color: var(--ink3);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .deficit-formula .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+  }
+  .deficit-formula .row .num {
+    font-size: 16px;
+    text-align: right;
+    font-family: "SF Mono", Consolas, monospace;
+    font-weight: 700;
+    font-feature-settings: "tnum";
+    min-width: 80px;
+    letter-spacing: 0;
+  }
+  .deficit-formula .row .lbl {
+    font-size: 13px;
+    color: var(--ink);
+    flex: 1;
+  }
+  .deficit-formula .row.def .num {
+    font-size: 18px;
+  }
+  .deficit-formula .op {
+    font-size: 13px;
+    color: var(--sub);
+    text-align: center;
+    font-family: "SF Mono", Consolas, monospace;
+    padding: 2px 0;
+  }
+  .deficit-formula .divider {
+    display: block;
+    border-top: 1px dashed var(--line);
+    margin: 4px 0;
+  }
+  .deficit-formula .summary {
+    text-align: center;
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: var(--bg-soft);
+    border-radius: 8px;
+    font-size: 13px;
+    border-top: none;
+  }
 }
 
 /* ====== EMPTY / ERROR / FOOTER ====== */
@@ -626,7 +687,7 @@ function render() {
     </div>
   `;
 
-  // 缺口公式条(全宽,横向展示)
+// 缺口公式条(全宽,横向展示)
   const formula = document.getElementById('deficitFormula');
   if (df.bmr != null && df.avg_exercise_burn != null && df.avg_intake != null) {
     formula.style.display = '';
@@ -636,7 +697,7 @@ function render() {
     document.getElementById('formulaIntake').textContent = fmtInt(df.avg_intake);
     const deficitEl = document.getElementById('formulaDeficit');
     deficitEl.textContent = (df.avg_deficit > 0 ? '−' : '+') + fmtInt(Math.abs(df.avg_deficit));
-    deficitEl.parentElement.className = 'term deficit ' + (df.avg_deficit > 0 ? 'pos' : df.avg_deficit < 0 ? 'neg' : 'zero');
+    deficitEl.parentElement.className = 'row def ' + (df.avg_deficit > 0 ? 'pos' : df.avg_deficit < 0 ? 'neg' : 'zero');
     const summary = document.getElementById('formulaSummary');
     if (df.kg_equivalent != null && df.days_count) {
       const kgSign = df.kg_equivalent > 0 ? '减重' : df.kg_equivalent < 0 ? '增重' : '持平';
@@ -645,9 +706,9 @@ function render() {
     } else {
       summary.textContent = '';
     }
-    } else {
-      formula.style.display = 'none';
-    }
+  } else {
+    formula.style.display = 'none';
+  }
 
   // TODO LIST
   const todoContainer = document.getElementById('todoContainer');

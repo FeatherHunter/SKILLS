@@ -330,76 +330,93 @@ body{
   margin:0 0 4px 4px;
 }
 
-/* ====== QUICK ACTIONS ====== */
-.cmd-list{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+/* ====== DEFICIT FORMULA (TDEE 横向公式条) ====== */
+.deficit-formula {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 20px 16px;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--lineS);
+  margin: 16px 0;
 }
-.cmd-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 14px;
-  background:var(--bg-soft);
-  border-radius:var(--r-sm);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Mono","Menlo",monospace;
-  font-size:12.5px;
-  color:var(--ink2);
-  border:1px solid transparent;
-  transition:all .15s ease;
+.deficit-formula .legend {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  font-weight: 600;
 }
-.cmd-row:hover{
-  border-color:var(--line);
-  background:var(--card);
+.deficit-formula .term {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  min-width: 0;
 }
-.cmd-row .label{
-  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-  font-size:14px;
-  font-weight:600;
-  color:var(--ink);
-  min-width:84px;
-  flex-shrink:0;
+.deficit-formula .term .num {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: "SF Mono", Consolas, monospace;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
-.cmd-row .cmd{
-  flex:1;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+.deficit-formula .term .lbl {
+  font-size: 11px;
+  color: var(--ink3);
+  white-space: nowrap;
 }
-.cmd-row .copy-mini{
-  background:transparent;
-  border:1px solid var(--line);
-  border-radius:6px;
-  padding:3px 10px;
-  font-size:11px;
-  color:var(--ink2);
-  cursor:pointer;
-  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-  transition:all .15s;
+.deficit-formula .op {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--ink3);
+  text-align: center;
+  font-family: "SF Mono", Consolas, monospace;
 }
-.cmd-row .copy-mini:hover{
-  background:var(--accent);
-  border-color:var(--accent);
-  color:#fff;
+.deficit-formula .term.tdee-bmr .num { color: var(--ink); }
+.deficit-formula .term.exercise .num { color: var(--green); }
+.deficit-formula .term.total-burn .num { color: var(--ink); }
+.deficit-formula .term.intake .num { color: var(--orange); }
+.deficit-formula .term.deficit .num { color: var(--red); font-size: 26px; }
+.deficit-formula .term.deficit.pos .num { color: var(--red); }
+.deficit-formula .term.deficit.neg .num { color: var(--green); }
+.deficit-formula .term.deficit.zero .num { color: var(--ink3); }
+.deficit-formula .summary {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink2);
+  padding-top: 12px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--lineS);
 }
+.deficit-formula .summary .kg {
+  font-weight: 600;
+  color: var(--green);
+  font-family: "SF Mono", Consolas, monospace;
+}
+.deficit-formula .summary .kg.up { color: var(--red); }
+.deficit-formula .summary .kg.flat { color: var(--ink3); }
 
-/* ====== COPY ALL ====== */
-.copy-all{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  background:var(--ink);
-  color:#fff;
-  border-radius:999px;
-  padding:8px 16px;
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  border:none;
-  margin-top:8px;
+/* Mobile: 公式条改成 3 行 2 组 */
+@media (max-width: 600px) {
+  .deficit-formula {
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px 8px;
+    padding: 14px 12px;
+  }
+  .deficit-formula .term .num { font-size: 18px; }
+  .deficit-formula .term.deficit .num { font-size: 22px; }
+  .deficit-formula .op { font-size: 18px; }
+  .deficit-formula .legend { font-size: 10px; }
 }
-.copy-all.copied{background:var(--green)}
 
 /* ====== EMPTY / ERROR / FOOTER ====== */
 .empty{
@@ -463,6 +480,21 @@ footer{
 <!-- KPI GRID (结果型 · 4 维) -->
 <div class="kpi-grid" id="kpiGrid"></div>
 
+<!-- 缺口公式条(全宽 · 横向展示 TDEE 数学) -->
+<div class="deficit-formula" id="deficitFormula" style="display:none">
+  <div class="legend">📉 热量缺口公式 · 决定体重变化速度</div>
+  <div class="term tdee-bmr"><span class="num" id="formulaTDEE">—</span><span class="lbl">基础代谢 TDEE</span></div>
+  <div class="op">+</div>
+  <div class="term exercise"><span class="num" id="formulaExercise">—</span><span class="lbl">运动消耗</span></div>
+  <div class="op">=</div>
+  <div class="term total-burn"><span class="num" id="formulaTotalBurn">—</span><span class="lbl">应烧总热</span></div>
+  <div class="op">−</div>
+  <div class="term intake"><span class="num" id="formulaIntake">—</span><span class="lbl">实际摄入</span></div>
+  <div class="op">=</div>
+  <div class="term deficit pos"><span class="num" id="formulaDeficit">—</span><span class="lbl">缺口 千卡/日</span></div>
+  <div class="summary" id="formulaSummary"></div>
+</div>
+
 <!-- TODO LIST (过程型 · AI 协同模式) -->
 <section class="section">
   <div class="section-title">
@@ -486,16 +518,6 @@ footer{
     <div class="log-section-title">🏃 运动</div>
     <div id="exerciseLog"></div>
   </div>
-</section>
-
-<!-- QUICK ACTIONS (辅助) -->
-<section class="section">
-  <div class="section-title">
-    <h2>快捷命令</h2>
-    <span class="hint">点击单条复制 · 点击底部复制全部</span>
-  </div>
-  <div class="cmd-list" id="cmdList"></div>
-  <button class="copy-all" id="copyAllBtn" onclick="copyAllCommands()">复制所有命令</button>
 </section>
 
 <footer>卡路里 Skill · 主面板 · 2026-07-23</footer>
@@ -549,7 +571,7 @@ function render() {
     return;
   }
 
-  const { date, dashboard: D, today_status, recent_logs, quick_actions } = DATA.data;
+  const { date, dashboard: D, today_status, recent_logs } = DATA.data;
 
   // HERO
   document.getElementById('heroTitle').textContent = `${date} 卡路里`;
@@ -601,9 +623,31 @@ function render() {
     <div class="kpi">
       <div class="label"><span class="icon">📉</span>缺口<span class="badge ${df.size_label === '过大' ? 'warn' : df.size_label === '适中' ? 'ok' : df.size_label === '适宜' ? 'good' : 'ok'}">${escapeHTML(df.size_label || '')}</span></div>
       <div class="main"><span class="value">${df.avg_deficit != null ? (df.avg_deficit > 0 ? '−' : '+') : '−'}${df.avg_deficit != null ? fmtInt(Math.abs(df.avg_deficit)) : '—'}</span><span class="unit">卡/日</span></div>
-      <div class="detail">${df.bmr != null && df.avg_exercise_burn != null && df.avg_intake != null ? `TDEE ${fmtInt(df.bmr)} + 运动 ${fmtInt(df.avg_exercise_burn)} = 应烧 ${fmtInt(df.bmr + df.avg_exercise_burn)} vs 摄入 ${fmtInt(df.avg_intake)}` : '—'}${df.kg_equivalent != null && df.days_count ? (df.days_count === 1 ? ` · 理论 ${Math.abs(df.kg_equivalent).toFixed(2)} kg(本日)` : ` · 理论 ${Math.abs(df.kg_equivalent).toFixed(2)} kg(${df.days_count} 天) · 折合 ${(Math.round(Math.abs(df.kg_equivalent) * 7 / df.days_count * 100) / 100).toFixed(2)} kg/周`) : ''}</div>
     </div>
   `;
+
+  // 缺口公式条(全宽,横向展示)
+  const formula = document.getElementById('deficitFormula');
+  if (df.bmr != null && df.avg_exercise_burn != null && df.avg_intake != null) {
+    formula.style.display = '';
+    document.getElementById('formulaTDEE').textContent = fmtInt(df.bmr);
+    document.getElementById('formulaExercise').textContent = fmtInt(df.avg_exercise_burn);
+    document.getElementById('formulaTotalBurn').textContent = fmtInt(df.bmr + df.avg_exercise_burn);
+    document.getElementById('formulaIntake').textContent = fmtInt(df.avg_intake);
+    const deficitEl = document.getElementById('formulaDeficit');
+    deficitEl.textContent = (df.avg_deficit > 0 ? '−' : '+') + fmtInt(Math.abs(df.avg_deficit));
+    deficitEl.parentElement.className = 'term deficit ' + (df.avg_deficit > 0 ? 'pos' : df.avg_deficit < 0 ? 'neg' : 'zero');
+    const summary = document.getElementById('formulaSummary');
+    if (df.kg_equivalent != null && df.days_count) {
+      const kgSign = df.kg_equivalent > 0 ? '减重' : df.kg_equivalent < 0 ? '增重' : '持平';
+      const kgClass = df.kg_equivalent > 0 ? 'down' : df.kg_equivalent < 0 ? 'up' : 'flat';
+      summary.innerHTML = `→ 理论体重变化 · <span class="kg ${kgClass}">${kgSign} ${Math.abs(df.kg_equivalent).toFixed(2)} kg</span> · ${df.days_count === 1 ? '本日' : df.days_count + ' 天'}`;
+    } else {
+      summary.textContent = '';
+    }
+    } else {
+      formula.style.display = 'none';
+    }
 
   // TODO LIST
   const todoContainer = document.getElementById('todoContainer');
@@ -670,52 +714,6 @@ function render() {
   } else {
     exerciseLog.innerHTML = '<div class="log-empty">暂无运动记录</div>';
   }
-
-  // QUICK ACTIONS — 完整可复制的命令列表(prompt 优先,fallback command)
-  const cmdList = document.getElementById('cmdList');
-  cmdList.innerHTML = quick_actions.map((a, i) => `
-    <div class="cmd-row">
-      <span class="label">${escapeHTML(a.label)}</span>
-      <span class="cmd">${escapeHTML(a.prompt || a.command)}</span>
-      <button class="copy-mini" onclick="copyCmd(${i})">复制</button>
-    </div>
-  `).join('');
-  window.__CMDS__ = quick_actions.map(a => a.prompt || a.command);
-}
-
-function copyCmd(i) {
-  const cmd = window.__CMDS__[i];
-  if (!cmd) return;
-  navigator.clipboard.writeText(cmd).then(() => {
-    const btns = document.querySelectorAll('.copy-mini');
-    const btn = btns[i];
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = '已复制';
-    btn.style.background = 'var(--green)';
-    btn.style.color = '#fff';
-    btn.style.borderColor = 'var(--green)';
-    setTimeout(() => {
-      btn.textContent = orig;
-      btn.style.background = '';
-      btn.style.color = '';
-      btn.style.borderColor = '';
-    }, 1500);
-  });
-}
-
-function copyAllCommands() {
-  const cmds = window.__CMDS__ || [];
-  const text = cmds.join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyAllBtn');
-    btn.textContent = '✓ 已复制全部';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = '复制所有命令';
-      btn.classList.remove('copied');
-    }, 2000);
-  });
 }
 
 render();

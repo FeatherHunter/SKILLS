@@ -435,9 +435,11 @@ body{
   }
   .deficit-formula .row {
     display: flex;
+    flex-direction: row;            /* 显式覆盖桌面 column */
     justify-content: space-between;
     align-items: baseline;
     padding: 7px 0;
+    width: 100%;
   }
   .deficit-formula .row .num {
     font-size: 16px;
@@ -447,11 +449,13 @@ body{
     font-feature-settings: "tnum";
     min-width: 80px;
     letter-spacing: 0;
+    flex-shrink: 0;
   }
   .deficit-formula .row .lbl {
     font-size: 13px;
     color: var(--ink);
     flex: 1;
+    text-align: left;
   }
   .deficit-formula .row.def .num {
     font-size: 18px;

@@ -77,7 +77,7 @@ BIASED_WORDS = {
 VERB_FIRST = {
     '看', '记', '改', '删', '定', '设', '调', '找', '扫', '审', '批',
     '对比', '比', '复盘', '总结', '同步', '落地', '批量', '扫描', '校验',
-    '存', '取', '推', '开', '关', '重', '暂停',
+    '存', '取', '推', '开', '关', '重', '暂停', '一键',
 }
 
 NAME_MAX = 12          # 主名 ≤ 12 字
@@ -139,10 +139,10 @@ def check_verb_first(name: str) -> list[str]:
     # 复盘 / 报告 / 概览类例外(以这些词开头的允许名词短语)
     if main.startswith(('复盘', '报告', '概览', '分析', '趋势', '排行', '总览')):
         return []
-    # 取首字符
-    first_char = main[0]
-    if first_char not in VERB_FIRST:
-        return [f'主名 "{main}" 首字 "{first_char}" 不在优先动词表(命名规范 R2 动词在前)']
+    # 取首词(前缀最长匹配,支持双字动词:暂停/对比/批量/一键)
+    matched = max((v for v in VERB_FIRST if main.startswith(v)), key=len, default=None)
+    if matched is None:
+        return [f'主名 "{main}" 首词不在优先动词表(命名规范 R2 动词在前)']
     return []
 
 

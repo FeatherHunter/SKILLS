@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>diagnosing-bugs 技能解析 · Feedback Loop 优先的诊断哲学</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(248,81,73,0.08) 0%, rgba(210,153,34,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(248,81,73,0.15);
+    border: 1px solid rgba(248,81,73,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--red); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--red);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--orange); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 6 Phase 时间线 ===== */
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--red) 0%, var(--orange) 50%, var(--green) 100%);
+  }
+  .tl-phase {
+    position: relative;
+    padding-left: 80px;
+    margin-bottom: 32px;
+  }
+  .tl-phase::before {
+    content: attr(data-num);
+    position: absolute;
+    left: 0; top: 0;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .tl-phase.p1::before { background: var(--red); color: #0e1116; border-color: var(--red); font-size: 13px; }
+  .tl-phase.p2::before { background: var(--orange); color: #0e1116; border-color: var(--orange); }
+  .tl-phase.p3::before { background: var(--yellow); color: #0e1116; border-color: var(--yellow); }
+  .tl-phase.p4::before { background: var(--accent); color: #0e1116; border-color: var(--accent); }
+  .tl-phase.p5::before { background: var(--green); color: #0e1116; border-color: var(--green); }
+  .tl-phase.p6::before { background: var(--purple); color: #0e1116; border-color: var(--purple); }
+  .tl-phase .pname {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .tl-phase.p1 .pname { color: var(--red); }
+  .tl-phase.p2 .pname { color: var(--orange); }
+  .tl-phase.p3 .pname { color: var(--yellow); }
+  .tl-phase.p4 .pname { color: var(--accent); }
+  .tl-phase.p5 .pname { color: var(--green); }
+  .tl-phase.p6 .pname { color: var(--purple); }
+  .tl-phase .pdesc { color: var(--muted); font-size: 13px; }
+  .tl-phase .pbody {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #c9d1d9;
+  }
+
+  /* ===== Feedback Loop 10 种 ===== */
+  .loops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .loop-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .loop-card .n {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--red);
+    font-size: 11px;
+  }
+  .loop-card .name { color: var(--text); font-weight: 600; margin-top: 4px; }
+  .loop-card .ex { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .loop-card.last { border-left-color: var(--purple); }
+  .loop-card.last .n { color: var(--purple); }
+
+  /* ===== 4 个 Tightness 标准 ===== */
+  .tightness {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .tight-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--panel);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .tight-row .badge-t {
+    background: var(--red);
+    color: #0e1116;
+    width: 100px;
+    padding: 4px 0;
+    border-radius: 4px;
+    text-align: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .tight-row .desc { font-size: 13px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(248,81,73,0.08), rgba(210,153,34,0.08));
+    border-left: 3px solid var(--red);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--orange);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 04 / 21 篇</span>
+  <h1>diagnosing-bugs · <span class="accent">Feedback Loop 优先</span> 的诊断哲学</h1>
+  <div class="subtitle">"Build the right feedback loop, and the bug is 90% fixed."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 4 文件三角色</h2>
+  <div class="file-tree">
+    <span class="dir">diagnosing-bugs/</span><br>
+    ├── <span class="file">SKILL.md</span>               <span class="note">← 134 行 · 6 个阶段的诊断纪律</span><br>
+    ├── <span class="dir">scripts/</span><br>
+    │   └── <span class="file">hitl-loop.template.sh</span>   <span class="note">← HITL(人工在环)bash 脚本模板 · 41 行</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Diagnosing Bugs"</span>
+  </div>
+
+  <p>这是<strong>第一次出现 scripts/ 目录</strong>。SKILL.md 第 29 行明确提到"HITL bash script · Last resort",配套的就是 hitl-loop.template.sh —— 一个让"人类点击"也能变成结构化捕获的脚本模板。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 6 阶段时间线</h2>
+
+  <div class="timeline">
+    <div class="tl-phase p1" data-num="★">
+      <div class="pname">Phase 1 · Build a feedback loop</div>
+      <div class="pdesc">整个技能的核心。其他阶段都是机械执行。</div>
+      <div class="pbody">
+        SKILL.md 第 14 行原话:<strong>"This is the skill. Everything else is mechanical."</strong><br>
+        如果你对这个 bug 有一个<strong>紧的</strong> pass/fail 信号,二分会/假设/插桩都只是消化这个信号。<br>
+        没有信号,瞪再多代码也救不了你。
+      </div>
+    </div>
+
+    <div class="tl-phase p2" data-num="2">
+      <div class="pname">Phase 2 · Reproduce + minimise</div>
+      <div class="pdesc">让 loop 跑红,然后剪到最小。</div>
+      <div class="pbody">
+        一刀一刀剪 inputs/callers/config,每次剪完跑一遍 loop —— 只留承重的部分。<br>
+        <strong>最小 repro 会成为 Phase 5 的回归测试</strong>。
+      </div>
+    </div>
+
+    <div class="tl-phase p3" data-num="3">
+      <div class="pname">Phase 3 · Hypothesise · 生成 3-5 个 ranked 假设</div>
+      <div class="pdesc">单一假设会锚在"第一个看起来合理"的想法。</div>
+      <div class="pbody">
+        每条假设必须 <strong>falsifiable</strong>:<br>
+        格式:"如果 X 是因,改 Y 会让 bug 消失 / 改 Z 会让它加重"。<br>
+        排完序先给用户看 —— 他们常有一票否决的领域知识。
+      </div>
+    </div>
+
+    <div class="tl-phase p4" data-num="4">
+      <div class="pname">Phase 4 · Instrument</div>
+      <div class="pdesc">每个探针映射到 Phase 3 的具体预测。</div>
+      <div class="pbody">
+        工具偏好:Debugger/REPL > 边界日志 > 永远不"全打日志再 grep"。<br>
+        每个 debug 日志<strong>带唯一前缀</strong> <code>[DEBUG-a4f2]</code>,清场时一条 grep 搞定。
+      </div>
+    </div>
+
+    <div class="tl-phase p5" data-num="5">
+      <div class="pname">Phase 5 · Fix + regression test</div>
+      <div class="pdesc">先写测试,再写修复 —— 但只在有正确 seam 时。</div>
+      <div class="pbody">
+        <strong>"If no correct seam exists, that itself is the finding."</strong><br>
+        没有能锁定 bug 的 seam,是架构问题,不是测试问题。
+      </div>
+    </div>
+
+    <div class="tl-phase p6" data-num="6">
+      <div class="pname">Phase 6 · Cleanup + post-mortem</div>
+      <div class="pdesc">完成前 checklist + 反向追问"如何预防"。</div>
+      <div class="pbody">
+        5 项硬性清理:原始 repro 不再复现 + 回归测试 pass + [DEBUG-*] 全删 + 一次性原型删 + 假设写进 commit。<br>
+        然后问"什么本可以预防这条 bug"。如果是架构问题 → hand off 给 <code>/improve-codebase-architecture</code>。
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 阶段 1 的特殊地位</div>
+    <p>SKILL.md 第 14 行用一句极不寻常的话标注 Phase 1:<strong>"This is the skill."</strong><br>
+    它把所有 6 阶段当成 1 个框架,但把 90% 的力气压在<strong>唯一不可替代</strong>的那一步 —— 构造一个红得起来的 feedback loop。<br>
+    其他 5 个阶段再多理论也比不上一条 <code>pytest test_bug.py</code> 跑得红。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Phase 1 详解 · 10 种 Feedback Loop</h2>
+  <p>SKILL.md 第 18–29 行按推荐顺序列出 10 种构造方法。从最便宜的失败测试,到最后的 HITL bash。</p>
+
+  <div class="loops-grid">
+    <div class="loop-card">
+      <div class="n">① 首选</div>
+      <div class="name">Failing test</div>
+      <div class="ex">unit / integration / e2e 任一 seam 上能写测试,就写</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">②</div>
+      <div class="name">Curl / HTTP script</div>
+      <div class="ex">对着跑着的 dev server 跑 curl</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">③</div>
+      <div class="name">CLI invocation + diff snapshot</div>
+      <div class="ex">fixture 输入,stdout 和已知好快照 diff</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">④</div>
+      <div class="name">Headless browser</div>
+      <div class="ex">Playwright / Puppeteer 驱动 UI,断言 DOM/console/network</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">⑤</div>
+      <div class="name">Replay captured trace</div>
+      <div class="ex">真实网络请求 / payload / event log 落盘,隔离重放</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">⑥</div>
+      <div class="name">Throwaway harness</div>
+      <div class="ex">只起一个服务、mock 依赖,单函数调用直达 bug 路径</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">⑦</div>
+      <div class="name">Property / fuzz loop</div>
+      <div class="ex">"有时输出错"就 1000 次随机输入,找失败模式</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">⑧</div>
+      <div class="name">Bisection harness</div>
+      <div class="ex">bug 出现在两个状态之间 → 自动化"启动状态 X,检查,重复"</div>
+    </div>
+    <div class="loop-card">
+      <div class="n">⑨</div>
+      <div class="name">Differential loop</div>
+      <div class="ex">同输入跑老版本 vs 新版本, diff 输出</div>
+    </div>
+    <div class="loop-card last">
+      <div class="n">⑩ 末路</div>
+      <div class="name">HITL bash script</div>
+      <div class="ex">人工必须点击 → 用 scripts/hitl-loop.template.sh 把他们驱动起来</div>
+    </div>
+  </div>
+
+  <h3>hitl-loop.template.sh 怎么用</h3>
+  <pre><code># 模板(第 17-27 行)给出两个 helper:
+step "instruction"          → 展示指令,等待 Enter
+capture VAR "question"      → 展示问题,把回答写入 VAR
+
+# 用户编辑中间的 step/capture,然后:
+$ bash hitl-loop.sh
+>>> Open the app at http://localhost:3000 and sign in.
+    [Enter when done] 
+>>> Click the 'Export' button. Did it throw an error? (y/n)
+    > y
+>>> Paste the error message (or 'none'):
+    > TypeError: ...
+--- Captured ---
+ERRORED=y
+ERROR_MSG=TypeError: ...</code></pre>
+  <p>捕获的值以 <code>KEY=VALUE</code> 输出,agent 可以直接解析 —— 让"人类点击"也能变成<strong>结构化数据</strong>。</p>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Tightness · Loop 的 4 项硬指标</h2>
+  <p>SKILL.md 第 53–59 行给出 Phase 1 的完成标准。<strong>一个 loop 必须同时满足 4 项才能算"tight"</strong>:</p>
+
+  <div class="tightness">
+    <div class="tight-row">
+      <div class="badge-t">RED-CAPABLE</div>
+      <div class="desc">能驱动<strong>真实的 bug 代码路径</strong>,断言用户<strong>描述的确切症状</strong>。修复后能从红变绿。<br>
+        ⚠️ 不是"不报错" —— 必须能逮住这个具体的 bug。</div>
+    </div>
+    <div class="tight-row">
+      <div class="badge-t">DETERMINISTIC</div>
+      <div class="desc">每次跑同一个判定。Flaky bug:钉一个<strong>高复现率</strong>(见下面 50%/1% 的对比)。</div>
+    </div>
+    <div class="tight-row">
+      <div class="badge-t">FAST</div>
+      <div class="desc">秒级,不是分钟级。30 秒的 flaky loop 比没 loop 好一点点;2 秒的确定 loop 是调试超能力。</div>
+    </div>
+    <div class="tight-row">
+      <div class="badge-t">AGENT-RUNNABLE</div>
+      <div class="desc">无人值守可跑。人类在环只能通过 hitl-loop.template.sh。</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>第 60 行原话:</strong><br>
+    "If you catch yourself reading code to build a theory before this command exists, <strong>stop</strong> — jumping straight to a hypothesis is the exact failure this skill prevents."<br>
+    没有 red-capable 命令 → 没有 Phase 2。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 不可复现 bug · "提升复现率"</h2>
+  <p>SKILL.md 第 44–45 行对非确定性 bug 给了一个反直觉的目标:</p>
+  <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;">
+    <p style="color:var(--text);font-size:14px;">目标<strong>不是干净的 repro</strong>,而是<strong style="color:var(--orange)">更高的复现率</strong>。</p>
+    <p style="color:var(--muted);font-size:13px;">把触发器循环 100 次,加并行、加压力、缩小时间窗、注入 sleeps。<br>
+    <strong>50% 的 flake 可调试,1% 的不能</strong> —— 一边调一边把复现率拉到能调试为止。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> Phase 3 · Falsifiable Hypothesis</h2>
+  <p>SKILL.md 第 86–91 行要求每个假设都能被证伪。</p>
+
+  <pre><code>格式: "If &lt;X&gt; is the cause, then &lt;changing Y&gt; will make the bug disappear
+       / &lt;changing Z&gt; will make it worse."
+
+例: If caching is the cause, then disabling cache will make it disappear;
+    if it's a race, then injecting sleep will make it worse.</code></pre>
+
+  <h3>三个关键约束</h3>
+  <ol style="color:#c9d1d9;line-height:2;">
+    <li><strong>3-5 个 ranked</strong> —— 不是 1 个,不是 10 个</li>
+    <li><strong>必须能 falsify</strong> —— "我赌这条",而不是"也许是那条"</li>
+    <li><strong>先给用户看</strong> —— 用户的领域知识可能瞬间重新排名,或者他们已经排除过几条</li>
+  </ol>
+
+  <p>如果用户 AFK,主控用自己排的顺序继续。</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Phase 5 · "没有 Seam 本身就是发现"</h2>
+  <p>SKILL.md 第 110–114 行有一段非常关键的判断逻辑:</p>
+
+  <div class="callout">
+    <strong>原文:</strong><br>
+    "A correct seam is one where the test exercises the <strong>real bug pattern</strong> as it occurs at the call site.<br>
+    If the only available seam is too shallow ... a regression test there gives false confidence.<br>
+    <strong>If no correct seam exists, that itself is the finding.</strong>"
+  </div>
+
+  <p>翻译过来:<strong>没有能锁定 bug 的测试位,本身就是测试报告里最重要的一项发现</strong>。这是用 bug 当架构探针 —— bug 找不到 seam,说明代码结构有问题。这种情况下要 flag 给 Phase 6 的 post-mortem,转给 <code>/improve-codebase-architecture</code>。</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span> Phase 6 · Post-Mortem Checklist</h2>
+  <p>SKILL.md 第 126–134 行的 checklist 是<strong>强制</strong>的:</p>
+
+  <table>
+    <thead>
+      <tr><th>检查项</th><th>目的</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>原始 repro 不再复现</td><td>重新跑 Phase 1 的 loop</td></tr>
+      <tr><td>回归测试通过(或者没 seam 已被记录)</td><td>保护未来</td></tr>
+      <tr><td>所有 <code>[DEBUG-...]</code> 已删除</td><td>一条 grep 搞定</td></tr>
+      <tr><td>一次性原型已删</td><td>别留垃圾</td></tr>
+      <tr><td>正确假设写进 commit / PR message</td><td>下一个调试者能学</td></tr>
+    </tbody>
+  </table>
+
+  <h3>"什么能预防这条 bug?"</h3>
+  <p>这是 SKILL.md 第 134 行末尾的反问:<strong>"Make the recommendation <em>after</em> the fix is in, not before — you have more information now than when you started."</strong><br>
+  修复完之后再建议架构改动 —— 因为这时候信息最完整。</p>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Feedback-First Diagnosis · 反馈优先</div>
+    <div class="ptn-desc">不是"先读代码想理论",而是"先造一个能红起来的 loop"。Phase 1 被升格为整个技能的核心。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">10 Loops Escalation · 10 种升级路径</div>
+    <div class="ptn-desc">从最便宜的"失败测试"开始,逐级升级到 HITL bash。给 agent 一条穷举式的"我还有什么办法"路径。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">4-Criteria Tightness · 4 项硬指标</div>
+    <div class="ptn-desc">loop 必须同时满足 red-capable / deterministic / fast / agent-runnable 才能进 Phase 2。把"好 loop"量化为可勾选项。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Reproduction Rate Maximisation · 复现率最大化</div>
+    <div class="ptn-desc">对 flaky bug,目标不是"消除不确定性",而是"提升到能调"。50% 可调试,1% 不能。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Falsifiable Hypothesis · 可证伪假设</div>
+    <div class="ptn-desc">每个假设必须能用一句 "If X, then Y" 表达。不让 vibe 充当理论。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Debug Log Tagging · 日志前缀打码</div>
+    <div class="ptn-desc">所有 debug 日志带唯一前缀 <code>[DEBUG-a4f2]</code>,清场一条 grep。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Seam-as-Finding · 缺失 Seam 即发现</div>
+    <div class="ptn-desc">找不到能锁定 bug 的测试 seam 是<strong>架构问题</strong>,不是测试问题。bug 当作架构探针。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Post-Mortem Architecture Hand-off</div>
+    <div class="ptn-desc">修复完之后,反向问"如何预防"。若是架构问题 → hand off 给 <code>/improve-codebase-architecture</code>。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给 debug 流程的启示</div>
+    <p>1. <strong>反馈 loop 比理论重要</strong>:先有红,再说为什么红。<br>
+       2. <strong>loop 要"tight"</strong>:四象限定 red-capable / deterministic / fast / agent-runnable。<br>
+       3. <strong>假设要可证伪</strong>:"If X then Y" 一句话能讲清。<br>
+       4. <strong>debug 日志要打码</strong>:带前缀,清场一次搞定。<br>
+       5. <strong>flaky bug 不是要消除,而是要提升复现率</strong>:50% 可调试,1% 不能。<br>
+       6. <strong>没 seam 本身就是发现</strong>:bug 当架构探针。<br>
+       7. <strong>在 fix 之后再建议架构改动</strong>:信息最完整时再判断。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  diagnosing-bugs 解析 · 文件数 3 · 总行数 ~178 · 6 阶段 · 10 loop · 4 tight criteria · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

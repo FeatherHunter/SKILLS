@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ask-matt 技能解析 · 路由式 Skill 设计原理</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(88,166,255,0.08) 0%, rgba(188,140,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(88,166,255,0.15);
+    border: 1px solid rgba(88,166,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent-2); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 路由拓扑图 ===== */
+  .router-canvas {
+    background: radial-gradient(circle at 50% 30%, rgba(88,166,255,0.05) 0%, transparent 60%),
+                var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    min-height: 580px;
+    position: relative;
+    overflow: hidden;
+  }
+  .router-canvas .legend {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: rgba(14,17,22,0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--muted);
+    z-index: 5;
+  }
+  .router-canvas .legend b { color: var(--text); }
+  .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+
+  /* ===== 决策树 ===== */
+  .decision-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .dt-node {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin: 8px auto;
+    text-align: center;
+    max-width: 360px;
+    font-size: 14px;
+    transition: all 0.25s;
+  }
+  .dt-node.question { border-color: var(--yellow); }
+  .dt-node.answer { border-color: var(--green); background: rgba(63,185,80,0.08); }
+  .dt-node.action { border-color: var(--accent); background: rgba(88,166,255,0.08); font-weight: 600; }
+  .dt-arrow {
+    width: 0; height: 24px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .dt-arrow::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0;
+    width: 2px; height: 100%;
+    background: var(--muted);
+    transform: translateX(-50%);
+  }
+  .dt-arrow::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -1px;
+    width: 0; height: 0;
+    border: 6px solid transparent;
+    border-top-color: var(--muted);
+    transform: translateX(-50%);
+  }
+  .dt-branch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 8px 0;
+  }
+  .dt-branch .col { display: flex; flex-direction: column; }
+  .dt-branch .label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+  .dt-branch .yes { color: var(--green); }
+  .dt-branch .no { color: var(--orange); }
+
+  /* ===== Smart Zone 示意 ===== */
+  .smart-zone {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .zone-bar {
+    position: relative;
+    height: 56px;
+    background: linear-gradient(90deg, #f85149 0%, #d29922 30%, #3fb950 30%, #3fb950 60%, #d29922 60%, #f85149 100%);
+    border-radius: 8px;
+    margin: 24px 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .zone-bar .marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    text-shadow: 0 0 4px #000;
+  }
+  .zone-bar .marker.smart { left: 45%; }
+  .zone-bar .marker.degraded { right: 12%; }
+  .zone-bar .marker.left { left: 8%; }
+
+  /* ===== 技能卡片 ===== */
+  .skill-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 8px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .skill-card:hover { transform: translateX(4px); border-color: var(--accent); }
+  .skill-card .name { font-family: "JetBrains Mono", Consolas, monospace; color: var(--accent-2); font-weight: 600; }
+  .skill-card .role { font-size: 12px; color: var(--muted); }
+
+  /* ===== 标签徽章 ===== */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-right: 6px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .badge.router { background: rgba(88,166,255,0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .badge.flow { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid var(--green); }
+  .badge.onramp { background: rgba(240,136,62,0.15); color: var(--orange); border: 1px solid var(--orange); }
+  .badge.vocab { background: rgba(188,140,255,0.15); color: var(--purple); border: 1px solid var(--purple); }
+  .badge.standalone { background: rgba(57,197,207,0.15); color: var(--teal); border: 1px solid var(--teal); }
+  .badge.health { background: rgba(247,120,186,0.15); color: var(--pink); border: 1px solid var(--pink); }
+
+  /* ===== 洞察框 ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(88,166,255,0.08), rgba(188,140,255,0.08));
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .insight p { margin: 4px 0; }
+
+  /* SVG 样式 */
+  svg.flow-svg { width: 100%; height: auto; max-height: 700px; }
+  .flow-svg .node rect {
+    fill: var(--panel);
+    stroke: var(--border);
+    stroke-width: 1.5;
+    transition: all 0.2s;
+  }
+  .flow-svg .node:hover rect {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+  .flow-svg .node text {
+    fill: var(--text);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .flow-svg .node .desc { fill: var(--muted); font-size: 10px; font-family: sans-serif; }
+  .flow-svg .edge {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.5;
+    marker-end: url(#arrow);
+  }
+  .flow-svg .edge.main { stroke: var(--green); stroke-width: 2.5; }
+  .flow-svg .edge.onramp { stroke: var(--orange); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .flow-svg .edge.return { stroke: var(--purple); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  .flow-svg .node.main rect { stroke: var(--green); }
+  .flow-svg .node.onramp rect { stroke: var(--orange); }
+  .flow-svg .node.standalone rect { stroke: var(--teal); }
+  .flow-svg .node.vocab rect { stroke: var(--purple); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 01 / 21 篇</span>
+  <h1>ask-matt · <span class="accent">路由器型</span> 技能的设计原理</h1>
+  <div class="subtitle">Router over skills · "我不知道该用哪个 — 那就问"</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单与构成</h2>
+  <p>ask-matt 是整个仓库里<span style="color:var(--accent)">文件最少</span>的技能之一 —— 总共只有一个 SKILL.md 和一个 agent 配置。少,是因为它本身不解决问题,只解决"我该用哪个 skill"。</p>
+  <div class="file-tree">
+    <span class="dir">ask-matt/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 78 行,核心路由文档,定义七大类技能拓扑</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← Codex CLI agent 配置:display_name + allow_implicit_invocation:false</span>
+  </div>
+
+  <h3>SKILL.md 关键元数据</h3>
+  <div class="kv">
+    <div class="k">name</div><div class="v"><code>ask-matt</code></div>
+    <div class="k">description</div><div class="v">"Ask which skill or flow fits your situation. A router over the skills in this repo."</div>
+    <div class="k">disable-model-invocation</div><div class="v"><code style="color:var(--red)">true</code> — 模型不能自动加载,只能用户显式触发</div>
+  </div>
+
+  <h3>openai.yaml 的设计含义</h3>
+  <pre><code>interface:
+  display_name: "Ask Matt"
+  short_description: "Find the right skill or workflow"
+policy:
+  allow_implicit_invocation: false  ← 显式触发,不能被模型推理时自动拉起</code></pre>
+  <p><code>allow_implicit_invocation: false</code> 表达了一个非常重要的产品决策:这个技能是"用户主动求助",不是"模型自动调度"。如果你让模型自己决定什么时候调用 ask-matt,它会没事就问一遍 —— 噪声太大。把它锁成显式入口,用户只有在"我真的不知道该用啥"时才召唤它。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 七大类别 — 整张路由地图</h2>
+  <p>SKILL.md 用七个标题把 22 个技能组织成一张拓扑图。这不是按"功能相似"分的,而是按"<strong>在哪个阶段被触发</strong>"分的。</p>
+
+  <svg class="flow-svg" viewBox="0 0 1100 620">
+    <defs>
+      <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+        <path d="M0,0 L0,6 L9,3 z" fill="#8b949e"/>
+      </marker>
+    </defs>
+
+    <!-- MAIN FLOW -->
+    <g class="node main">
+      <rect x="60" y="120" width="180" height="50" rx="8"/>
+      <text x="150" y="143">grill-with-docs</text>
+      <text x="150" y="158" class="desc">idea → ship · 第 1 步</text>
+    </g>
+    <g class="node main">
+      <rect x="280" y="120" width="140" height="50" rx="8"/>
+      <text x="350" y="143">handoff</text>
+      <text x="350" y="158" class="desc">桥梁 · 跨会话</text>
+    </g>
+    <g class="node main">
+      <rect x="460" y="120" width="160" height="50" rx="8"/>
+      <text x="540" y="143">to-spec → to-tickets</text>
+      <text x="540" y="158" class="desc">多会话建分支</text>
+    </g>
+    <g class="node main">
+      <rect x="660" y="120" width="160" height="50" rx="8"/>
+      <text x="740" y="143">implement + tdd</text>
+      <text x="740" y="158" class="desc">构建 + 红绿循环</text>
+    </g>
+    <g class="node main">
+      <rect x="860" y="120" width="160" height="50" rx="8"/>
+      <text x="940" y="143">code-review</text>
+      <text x="940" y="158" class="desc">Standards + Spec</text>
+    </g>
+
+    <path class="edge main" d="M240,145 L280,145"/>
+    <path class="edge main" d="M420,145 L460,145"/>
+    <path class="edge main" d="M620,145 L660,145"/>
+    <path class="edge main" d="M820,145 L860,145"/>
+
+    <!-- STANDALONE BRANCH -->
+    <g class="node standalone">
+      <rect x="60" y="240" width="180" height="50" rx="8"/>
+      <text x="150" y="263">grill-me</text>
+      <text x="150" y="278" class="desc">无 codebase 也能用</text>
+    </g>
+    <g class="node standalone">
+      <rect x="60" y="310" width="180" height="50" rx="8"/>
+      <text x="150" y="333">prototype</text>
+      <text x="150" y="348" class="desc">一次性 throwaway</text>
+    </g>
+    <g class="node standalone">
+      <rect x="60" y="380" width="180" height="50" rx="8"/>
+      <text x="150" y="403">research</text>
+      <text x="150" y="418" class="desc">后台调研 · cited</text>
+    </g>
+    <g class="node standalone">
+      <rect x="60" y="450" width="180" height="50" rx="8"/>
+      <text x="150" y="473">teach</text>
+      <text x="150" y="488" class="desc">多会话学习</text>
+    </g>
+    <g class="node standalone">
+      <rect x="60" y="520" width="180" height="50" rx="8"/>
+      <text x="150" y="543">writing-great-skills</text>
+      <text x="150" y="558" class="desc">写作元技能</text>
+    </g>
+
+    <!-- ON-RAMPS -->
+    <g class="node onramp">
+      <rect x="350" y="240" width="160" height="50" rx="8"/>
+      <text x="430" y="263">triage</text>
+      <text x="430" y="278" class="desc">堆积的 issues</text>
+    </g>
+    <g class="node onramp">
+      <rect x="350" y="310" width="160" height="50" rx="8"/>
+      <text x="430" y="333">diagnosing-bugs</text>
+      <text x="430" y="348" class="desc">死循环的 bug</text>
+    </g>
+    <g class="node onramp">
+      <rect x="350" y="380" width="160" height="50" rx="8"/>
+      <text x="430" y="403">wayfinder</text>
+      <text x="430" y="418" class="desc">巨型迷雾项目</text>
+    </g>
+    <g class="node onramp">
+      <rect x="350" y="450" width="160" height="50" rx="8"/>
+      <text x="430" y="473">resolving-merge-conflicts</text>
+      <text x="430" y="488" class="desc">冲突中 rebase</text>
+    </g>
+
+    <!-- 词汇底层 -->
+    <g class="node vocab">
+      <rect x="630" y="380" width="180" height="50" rx="8"/>
+      <text x="720" y="403">domain-modeling</text>
+      <text x="720" y="418" class="desc">领域术语 + ADR</text>
+    </g>
+    <g class="node vocab">
+      <rect x="630" y="450" width="180" height="50" rx="8"/>
+      <text x="720" y="473">codebase-design</text>
+      <text x="720" y="488" class="desc">深度模块词汇</text>
+    </g>
+
+    <!-- HEALTH -->
+    <g class="node onramp">
+      <rect x="860" y="240" width="180" height="50" rx="8"/>
+      <text x="950" y="263">improve-codebase-arch</text>
+      <text x="950" y="278" class="desc">代码库健康巡检</text>
+    </g>
+
+    <!-- PRECONDITION -->
+    <g class="node standalone">
+      <rect x="860" y="450" width="180" height="50" rx="8"/>
+      <text x="950" y="473">setup-matt-pocock-skills</text>
+      <text x="950" y="488" class="desc">首次运行前置配置</text>
+    </g>
+
+    <!-- 汇聚箭头 -->
+    <path class="edge onramp" d="M510,265 C560,265 580,220 660,150"/>
+    <path class="edge onramp" d="M510,335 C560,335 580,220 700,150"/>
+    <path class="edge onramp" d="M510,405 L630,405"/>
+
+    <!-- 区域标签 -->
+    <text x="150" y="100" text-anchor="middle" fill="#8b949e" font-size="11" letter-spacing="2">MAIN FLOW · 主流程</text>
+    <text x="150" y="225" text-anchor="middle" fill="#39c5cf" font-size="11" letter-spacing="2">STANDALONE · 独立技能</text>
+    <text x="430" y="225" text-anchor="middle" fill="#f0883e" font-size="11" letter-spacing="2">ON-RAMPS · 上路匝道</text>
+    <text x="720" y="365" text-anchor="middle" fill="#bc8cff" font-size="11" letter-spacing="2">VOCABULARY · 词汇底层</text>
+    <text x="950" y="225" text-anchor="middle" fill="#f778ba" font-size="11" letter-spacing="2">CODEBASE HEALTH</text>
+    <text x="950" y="365" text-anchor="middle" fill="#39c5cf" font-size="11" letter-spacing="2">PRECONDITION</text>
+  </svg>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 主流程决策树 — 用户到底怎么走?</h2>
+  <p>SKILL.md 第 13 行起的 "The main flow: idea → ship" 是一棵精心设计的决策树,引导用户从"我有想法"走到"产品上线"。</p>
+
+  <div class="decision-tree">
+    <div class="dt-node question">用户带着一个想法走进来</div>
+    <div class="dt-arrow"></div>
+    <div class="dt-node question">有 codebase 吗?</div>
+    <div class="dt-branch">
+      <div class="col">
+        <div class="label yes">是 → 留痕</div>
+        <div class="dt-node action">→ grill-with-docs</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node" style="font-size:12px;color:var(--muted)">状态保留到 CONTEXT.md / ADR</div>
+      </div>
+      <div class="col">
+        <div class="label no">否 → 无状态</div>
+        <div class="dt-node action">→ grill-me</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node" style="font-size:12px;color:var(--muted)">同一 primitive,不落盘</div>
+      </div>
+    </div>
+
+    <div class="dt-arrow" style="height:32px"></div>
+    <div class="dt-node question">每个问题都能在对话里解决?</div>
+    <div class="dt-branch">
+      <div class="col">
+        <div class="label no">否 · 需要可运行的答案</div>
+        <div class="dt-node action">→ /handoff out<br>→ /prototype</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node" style="font-size:12px;color:var(--purple)">→ /handoff back 重新接回</div>
+      </div>
+      <div class="col">
+        <div class="label yes">是 · 继续走</div>
+        <div class="dt-node" style="font-size:12px;color:var(--muted)">直接进入第 3 步判断</div>
+      </div>
+    </div>
+
+    <div class="dt-arrow" style="height:32px"></div>
+    <div class="dt-node question">这是一个跨多会话的工程?</div>
+    <div class="dt-branch">
+      <div class="col">
+        <div class="label yes">是 · 多会话</div>
+        <div class="dt-node action">to-spec</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node action">to-tickets</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node" style="font-size:12px;color:var(--muted)">每张 ticket 单独 implement</div>
+      </div>
+      <div class="col">
+        <div class="label no">否 · 单会话</div>
+        <div class="dt-node action">→ /implement</div>
+        <div class="dt-arrow"></div>
+        <div class="dt-node" style="font-size:12px;color:var(--muted)">同窗口内立即构建</div>
+      </div>
+    </div>
+
+    <div class="dt-arrow"></div>
+    <div class="dt-node action">无论哪条路径 → /implement 内部驱动 /tdd</div>
+    <div class="dt-arrow"></div>
+    <div class="dt-node action">→ /code-review (Standards + Spec 双轴)</div>
+    <div class="dt-arrow"></div>
+    <div class="dt-node answer">→ commit · ship</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Smart Zone — 上下文窗口的安全区</h2>
+  <p>第 32 行引入了一个非常硬核的概念:<strong>smart zone</strong>。Matt 引用了 aihero.dev 的定义,把上下文窗口分成能推理清楚的区段和已经退化的区段。</p>
+
+  <div class="smart-zone">
+    <div class="zone-bar">
+      <div class="marker left">0 tokens</div>
+      <div class="marker smart">SMART ZONE · ~120k</div>
+      <div class="marker degraded">DEGRADED · 模型开始胡说</div>
+    </div>
+    <p style="color:var(--muted);font-size:13px">
+      规则:<strong>步骤 1–3 必须留在一个完整的上下文窗口里</strong>(grill-with-docs → to-tickets),不要中途 compact。<br>
+      一旦快到 smart zone 上限 → /handoff 写到文件,在新会话里继续。
+    </p>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>这条规则不是元数据,是 ask-matt <strong>强制写入流程</strong>的硬约束。把"什么时候该换会话"从经验变成规则,新手也能照着做。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 七大类 · 角色对照表</h2>
+
+  <div class="skill-card">
+    <div>
+      <span class="badge flow">主流程</span>
+      <span class="name">grill-with-docs</span>
+    </div>
+    <div class="role">有 codebase 的反复访谈 · 留下 CONTEXT.md + ADR 痕迹</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge flow">主流程</span>
+      <span class="name">implement / tdd / code-review</span>
+    </div>
+    <div class="role">构建环节的三件套:TDD 切片 → 标准化 + 规格双轴评审</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge flow">主流程</span>
+      <span class="name">to-spec / to-tickets</span>
+    </div>
+    <div class="role">把对话压缩成可构建的 spec,再拆成有阻塞边的 ticket</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge onramp">上路匝道</span>
+      <span class="name">triage</span>
+    </div>
+    <div class="role">外部 issues / 外部 PR 进栈 → 产出可直接 implement 的 ticket</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge onramp">上路匝道</span>
+      <span class="name">diagnosing-bugs</span>
+    </div>
+    <div class="role">死循环的 bug · 先要 tight feedback loop 才动手</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge onramp">上路匝道</span>
+      <span class="name">wayfinder</span>
+    </div>
+    <div class="role">巨型模糊项目 · 输出"决策 ticket 地图",不直接交付</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge onramp">上路匝道</span>
+      <span class="name">resolving-merge-conflicts</span>
+    </div>
+    <div class="role">正在 rebase / merge 时的冲突拆解</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge vocab">词汇底层</span>
+      <span class="name">domain-modeling</span>
+    </div>
+    <div class="role">术语 / ADR 的唯一事实源</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge vocab">词汇底层</span>
+      <span class="name">codebase-design</span>
+    </div>
+    <div class="role">深度模块词汇 · 给 tdd / improve-codebase-arch 提供统一语言</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge health">健康巡检</span>
+      <span class="name">improve-codebase-architecture</span>
+    </div>
+    <div class="role">产出"加深候选清单" → 喂回 grill-with-docs</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge standalone">独立</span>
+      <span class="name">grill-me / prototype / research / teach / writing-great-skills</span>
+    </div>
+    <div class="role">不在主流程上的工具,可随时插队</div>
+  </div>
+  <div class="skill-card">
+    <div>
+      <span class="badge standalone">前置</span>
+      <span class="name">setup-matt-pocock-skills</span>
+    </div>
+    <div class="role">首次运行配 issue tracker + triage 标签 + 文档布局</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 三种"跨会话"工具 — 它们的本质差异</h2>
+  <p>SKILL.md 在 "Crossing sessions" 一节对比了三种"上下文穿越"工具:</p>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <thead>
+      <tr style="background:var(--panel-2);">
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">工具</th>
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">走向</th>
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">历史保留</th>
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">适用场景</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--border)"><code>handoff</code></td>
+        <td style="padding:10px;border:1px solid var(--border)"><strong>分叉</strong> · 写文件 + 开新会话引用</td>
+        <td style="padding:10px;border:1px solid var(--border)">完整 markdown 落盘</td>
+        <td style="padding:10px;border:1px solid var(--border)">进入 /prototype 这种需要干净上下文的支线</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--border)"><code>compact</code></td>
+        <td style="padding:10px;border:1px solid var(--border)"><strong>续写</strong> · 内置摘要</td>
+        <td style="padding:10px;border:1px solid var(--border)">被压成 summary,原文丢失</td>
+        <td style="padding:10px;border:1px solid var(--border)">阶段间有意暂停时</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--border)">新会话</td>
+        <td style="padding:10px;border:1px solid var(--border)"><strong>清零</strong> · 不带历史</td>
+        <td style="padding:10px;border:1px solid var(--border)">无</td>
+        <td style="padding:10px;border:1px solid var(--border)">完全无关任务(慎用)</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"Don't compact mid-phase — the agent can lose its way" 是这条对比最关键的告诫。<strong>阶段内不要 compact</strong>,因为模型会在收尾时引用已经被摘要掉的上下文,产生幻觉。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 为什么 ask-matt 是 router 而不是 monolith</h2>
+
+  <h3>单一职责原则</h3>
+  <p>ask-matt 自己<span style="color:var(--accent)">不做任何实际工作</span>。它不读代码、不写代码、不调试。它只回答一个问题:<em>"这种情况,我应该叫谁?"</em>。这让它可以被随时打断、随时替换。</p>
+
+  <h3>声明式而非命令式</h3>
+  <p>SKILL.md 用大量"if X then Y"句式,而不是"先做 X 再做 Y"。这是 router 的典型写法 —— <strong>表达的是决策拓扑,不是执行流</strong>。模型自己根据当前状态决定走哪条分支。</p>
+
+  <h3>元数据里埋钉子</h3>
+  <p><code>disable-model-invocation: true</code> 和 <code>allow_implicit_invocation: false</code> 这两条配置互为冗余,是为了适配<strong>两个不同的平台</strong>(Claude Code 用 frontmatter,Codex 用 YAML)。同一个意图,在两个不同配置里都写了 —— 这就是 <strong>跨平台 skill 设计</strong> 的典型手法。</p>
+
+  <h3>决策树用文字而非代码</h3>
+  <p>整篇 SKILL.md 没有一行可执行代码。这是有意的:模型读 markdown 比读代码更准,文字里的"if/then"反而比 if-else 链更稳。</p>
+
+  <h3>flow / on-ramp / vocab · 三层抽象</h3>
+  <p>它把 22 个技能压成三个层次:</p>
+  <ul style="color:#c9d1d9;">
+    <li><strong>flow</strong>(主流程) — 用户大部分时间走的路</li>
+    <li><strong>on-ramp</strong>(上路匝道) — 突发事件汇入主流程的入口</li>
+    <li><strong>vocabulary</strong>(词汇底层) — 被其他技能默默引用的术语层</li>
+  </ul>
+  <p>这种分类本身就是一份<span style="color:var(--accent)">心智模型(Mental Model)</span>,让用户能"看图选路"。</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式总结</h2>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <thead>
+      <tr style="background:var(--panel-2);">
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">设计模式</th>
+        <th style="text-align:left;padding:10px;border:1px solid var(--border)">在 ask-matt 的体现</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Router Pattern</td><td style="padding:10px;border:1px solid var(--border)">唯一职责 = 告诉用户该用哪个技能</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Topological Classification</td><td style="padding:10px;border:1px solid var(--border)">七大类按"触发时机"而非"功能"分类</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Explicit-Only Invocation</td><td style="padding:10px;border:1px solid var(--border)">disable-model-invocation: true</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Cross-Platform Redundancy</td><td style="padding:10px;border:1px solid var(--border)">frontmatter + openai.yaml 双份配置同义</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Decision Tree in Prose</td><td style="padding:10px;border:1px solid var(--border)">无代码,用文字 "if-then" 表达路径</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Smart Zone as Rule</td><td style="padding:10px;border:1px solid var(--border)">把"何时换上下文"从经验升格为硬规则</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Vocabulary Layer Separation</td><td style="padding:10px;border:1px solid var(--border)">domain-modeling / codebase-design 单列底层</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border)">Mental Model over API</td><td style="padding:10px;border:1px solid var(--border)">用"flow / on-ramp"等比喻,不用类名</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 — 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给 Skill 作者的启示</div>
+    <p>1. <strong>不要把 router 写厚</strong>:它越短,用户越敢用。<br>
+       2. <strong>分类优于罗列</strong>:把同质技能压成"flow / on-ramp / vocab"三层,而不是 22 个并列项。<br>
+       3. <strong>禁掉模型自调用</strong>:router 不该是模型脑补出来的。<br>
+       4. <strong>写"何时不用我"</strong>:SKILL.md 第 40 行写明 "don't triage tickets /to-tickets produced" —— 边界比功能更重要。<br>
+       5. <strong>把经验升格为规则</strong>:"smart zone ~120k" 是个数字,但它把"何时 compact"从玄学变成可执行判断。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  ask-matt 解析 · 文件数 2 · 总行数 ~83 · 解析生成于 matt技能解析 项目 · 配色暗色 GitHub 风格
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>domain-modeling 技能解析 · 主动 discipline + 单页纪律</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 文件结构对比 ===== */
+  .ctx-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .ctx-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .ctx-card.single { border-color: var(--teal); }
+  .ctx-card.multi { border-color: var(--orange); }
+  .ctx-card .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  .ctx-card.single .badge { background: rgba(57,197,207,0.2); color: var(--teal); }
+  .ctx-card.multi .badge { background: rgba(240,136,62,0.2); color: var(--orange); }
+  .ctx-card .desc { font-size: 13px; color: var(--muted); }
+
+  /* ===== 5 个行为 ===== */
+  .behavior-list {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .behavior {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: var(--panel);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .behavior .num {
+    background: var(--accent);
+    color: #0e1116;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .behavior .title { font-weight: 600; color: var(--text); }
+  .behavior .ex { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .behavior .quote {
+    color: var(--accent);
+    font-style: italic;
+    font-size: 12px;
+    margin-top: 6px;
+    padding-left: 10px;
+    border-left: 2px solid var(--accent);
+  }
+
+  /* ===== ADR 3 原则 ===== */
+  .adr-principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .principle-pill {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--purple);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .principle-pill .pp-n {
+    background: var(--purple);
+    color: #0e1116;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .principle-pill .pp-title {
+    font-weight: 700;
+    color: var(--purple);
+    margin-bottom: 6px;
+  }
+  .principle-pill .pp-desc { color: var(--muted); font-size: 12px; }
+
+  /* ===== ADR 模板 ===== */
+  .adr-tmpl {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+  .adr-tmpl .label { color: var(--green); font-weight: 700; margin-bottom: 8px; }
+  .adr-tmpl pre { background: #0e1116; border-color: var(--green); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 05 / 21 篇</span>
+  <h1>domain-modeling · <span class="accent">主动的领域纪律</span></h1>
+  <div class="subtitle">Active Discipline · CONTEXT.md 不是 spec,是词汇表</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 5 文件三角色</h2>
+  <div class="file-tree">
+    <span class="dir">domain-modeling/</span><br>
+    ├── <span class="file">SKILL.md</span>               <span class="note">← 74 行 · 主流程 · 5 个行为 + ADR 三原则</span><br>
+    ├── <span class="file">CONTEXT-FORMAT.md</span>      <span class="note">← 60 行 · 词汇表格式规范 + 单/多 context 处理</span><br>
+    ├── <span class="file">ADR-FORMAT.md</span>          <span class="note">← 47 行 · ADR 模板 + 何时写 ADR</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Domain Modeling"</span>
+  </div>
+
+  <p>三个 markdown 文件分三角色:<strong>SKILL.md 是流程</strong> · <strong>CONTEXT-FORMAT.md 是词汇表格式</strong> · <strong>ADR-FORMAT.md 是决策记录格式</strong>。这种"主文档 + 格式附录"的结构让主文档可以保持精炼。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 关键边界 · "主动" vs "消费"</h2>
+  <p>SKILL.md 第 8 行用一段极重要的澄清划清边界:</p>
+
+  <div class="callout">
+    <strong>"This is the <em>active</em> discipline — challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise."</strong><br><br>
+    <strong>"Merely <em>reading</em> CONTEXT.md for vocabulary is not this skill — that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it."</strong>
+  </div>
+
+  <p>翻译:domain-modeling <strong>不是</strong>"读一下 CONTEXT.md",那是任何 skill 都能做的习惯。这个技能只在<strong>改变模型</strong>时被召唤 —— 提出新术语、澄清模糊概念、写决策记录。</p>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>这条边界写得很死,因为模型被消费时不需要这个技能;只有模型在<strong>被修改</strong>时才需要。把"读"和"改"分开,让模型 invocation 次数收敛到真正必要的时刻。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 文件结构 · 单 / 多 Context</h2>
+
+  <div class="ctx-compare">
+    <div class="ctx-card single">
+      <span class="badge">SINGLE · 大多数仓库</span>
+      <div class="desc">单一 <code>CONTEXT.md</code> 在仓库根。</div>
+      <pre style="margin-top:12px;background:#0e1116;">/
+├── CONTEXT.md
+├── docs/
+│   └── adr/
+│       ├── 0001-event-sourced-orders.md
+│       └── 0002-postgres-for-write-model.md
+└── src/</pre>
+    </div>
+
+    <div class="ctx-card multi">
+      <span class="badge">MULTI · 微服务 / 多模块</span>
+      <div class="desc">根目录有 <code>CONTEXT-MAP.md</code>,每个 context 自己有 <code>CONTEXT.md</code> + <code>docs/adr/</code>。</div>
+      <pre style="margin-top:12px;background:#0e1116;">/
+├── CONTEXT-MAP.md
+├── docs/adr/                  ← 跨 context 决策
+├── src/ordering/
+│   ├── CONTEXT.md
+│   └── docs/adr/             ← context 内决策
+└── src/billing/
+    ├── CONTEXT.md
+    └── docs/adr/</pre>
+    </div>
+  </div>
+
+  <h3>懒创建原则</h3>
+  <p>SKILL.md 第 40 行:<strong>"Create files lazily — only when you have something to write."</strong></p>
+  <ul style="color:#c9d1d9;">
+    <li>没 <code>CONTEXT.md</code> → 等第一个术语解决时创建</li>
+    <li>没 <code>docs/adr/</code> → 等第一个 ADR 需要时创建</li>
+  </ul>
+  <p>这是<strong>避免空文件</strong>的纪律 —— 没东西写就别建文件,免得空文件演变成"假装存在"的幻觉。</p>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 5 个会话期行为</h2>
+  <p>SKILL.md 第 42–67 行给出 5 个具体动作,任何对话中遇到就触发:</p>
+
+  <div class="behavior-list">
+    <div class="behavior">
+      <div class="num">1</div>
+      <div>
+        <div class="title">Challenge against the glossary</div>
+        <div class="ex">当用户用到的术语和 <code>CONTEXT.md</code> 冲突时,立即指出来。</div>
+        <div class="quote">"你的 glossary 定义 cancellation 为 X,但你似乎说 Y —— 哪个对?"</div>
+      </div>
+    </div>
+
+    <div class="behavior">
+      <div class="num">2</div>
+      <div>
+        <div class="title">Sharpen fuzzy language</div>
+        <div class="ex">当用户用模糊或过载的词时,提出精确的标准术语。</div>
+        <div class="quote">"你说 account —— 指 Customer 还是 User? 这是两件不同的事。"</div>
+      </div>
+    </div>
+
+    <div class="behavior">
+      <div class="num">3</div>
+      <div>
+        <div class="title">Discuss concrete scenarios</div>
+        <div class="ex">讨论领域关系时,造场景压测边界条件,逼用户精确划清概念边界。</div>
+      </div>
+    </div>
+
+    <div class="behavior">
+      <div class="num">4</div>
+      <div>
+        <div class="title">Cross-reference with code</div>
+        <div class="ex">用户说"这玩意是这么工作的",去核对代码是不是这么说。</div>
+        <div class="quote">"你的代码把整个 Order 取消,但你刚才说可以部分取消 —— 哪个对?"</div>
+      </div>
+    </div>
+
+    <div class="behavior">
+      <div class="num">5</div>
+      <div>
+        <div class="title">Update CONTEXT.md inline · 即时更新</div>
+        <div class="ex">术语解决后<strong>立刻</strong>写进 <code>CONTEXT.md</code>,不要攒批。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> CONTEXT.md · 词汇表的纪律</h2>
+
+  <h3>CONTEXT.md 不是什么</h3>
+  <p>SKILL.md 第 64 行写得非常死:</p>
+  <div class="callout">
+    <strong>"CONTEXT.md should be totally devoid of implementation details. Do not treat CONTEXT.md as a spec, a scratch pad, or a repository for implementation decisions. It is a glossary and nothing else."</strong>
+  </div>
+
+  <h3>词条格式(CONTEXT-FORMAT.md)</h3>
+  <pre><code># {Context Name}
+
+{1-2 句说明这个 context 是啥、为什么存在}
+
+## Language
+
+**Order**:
+{1-2 句定义这个词是什么}
+_Avoid_: Purchase, transaction
+
+**Invoice**:
+向客户发出的、要求付款的请求。
+_Avoid_: Bill, payment request
+
+**Customer**:
+下订单的个人或组织。
+_Avoid_: Client, buyer, account</code></pre>
+
+  <h3>4 条规则</h3>
+  <ol style="color:#c9d1d9;line-height:2;">
+    <li><strong>Be opinionated.</strong> 同概念有多个词 → 选一个,其他列在 <code>_Avoid_</code></li>
+    <li><strong>Keep definitions tight.</strong> 1-2 句。定义<strong>它是什么</strong>,不是<strong>它做什么</strong></li>
+    <li><strong>Only include terms specific to this project's context.</strong> 通用编程概念(timeout / error type / utility pattern)<strong>不属于</strong>词汇表</li>
+    <li><strong>Group terms under subheadings</strong> when natural clusters emerge</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">06</span> ADR · 三原则 + 极简模板</h2>
+
+  <h3>三原则(全部为真才写)</h3>
+  <div class="adr-principles">
+    <div class="principle-pill">
+      <div class="pp-n">1</div>
+      <div class="pp-title">Hard to reverse</div>
+      <div class="pp-desc">改变主意的代价有实质意义</div>
+    </div>
+    <div class="principle-pill">
+      <div class="pp-n">2</div>
+      <div class="pp-title">Surprising without context</div>
+      <div class="pp-desc">未来读者会问"他们为啥这么做?"</div>
+    </div>
+    <div class="principle-pill">
+      <div class="pp-n">3</div>
+      <div class="pp-title">Real trade-off</div>
+      <div class="pp-desc">有真正的备选 + 选了它有具体理由</div>
+    </div>
+  </div>
+
+  <p>任何一条不满足 → 不写 ADR(可逆的事直接反悔就好,不意外的事没人会问,没替代方案的事没什么好记)。</p>
+
+  <h3>ADR 模板(ADR-FORMAT.md)</h3>
+  <div class="adr-tmpl">
+    <div class="label">极度极简的模板</div>
+    <pre><code># {Short title of the decision}
+
+{1-3 句:背景是什么,我们决定啥,为啥。}</code></pre>
+    <p style="color:var(--muted);margin-top:8px;font-size:13px;">"An ADR can be a single paragraph. The value is in recording <em>that</em> a decision was made and <em>why</em> — not in filling out sections."</p>
+  </div>
+
+  <h3>可选 section(只在真有用时)</h3>
+  <table>
+    <thead>
+      <tr><th>Section</th><th>什么时候</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Status frontmatter (proposed / accepted / deprecated / superseded by NNNN)</td><td>决策会被重新审视时</td></tr>
+      <tr><td>Considered Options</td><td>被拒绝的备选值得记住</td></tr>
+      <tr><td>Consequences</td><td>不明显的下游影响</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 什么算 ADR 候选? · ADR-FORMAT.md § What qualifies</h2>
+  <p>把"三原则"翻译成具体例子:</p>
+
+  <ul style="color:#c9d1d9;line-height:2;">
+    <li>✅ <strong>架构形状</strong>:"我们用 monorepo" / "写模型是事件溯源,读模型投影到 Postgres"</li>
+    <li>✅ <strong>context 间集成模式</strong>:"Ordering 和 Billing 通过领域事件通信,不用同步 HTTP"</li>
+    <li>✅ <strong>有锁定的技术选型</strong>:数据库、消息总线、auth provider、部署目标(swap 要花一个季度的)</li>
+    <li>✅ <strong>边界 / 范围决策</strong>:"Customer 数据归 Customer context;其他 context 只用 ID 引用"</li>
+    <li>✅ <strong>明显偏离常识的故意</strong>:"我们用手写 SQL 不用 ORM,因为 X"</li>
+    <li>✅ <strong>代码里看不到的约束</strong>:"合规要求不能用 AWS" / "响应时间必须 < 200ms 因为合作伙伴 API 合约"</li>
+    <li>✅ <strong>非显而易见的拒绝备选</strong>:"考虑了 GraphQL 选 REST,因为微妙理由" —— 否则 6 个月后会有人又提议 GraphQL</li>
+  </ul>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>第 44 行特别强调"<strong>explicit no-s are as valuable as the yes-s</strong>"。<br>
+    写 ADR 不光记"我们用了 X",还要记"<strong>我们刻意拒绝了 Y</strong>"。这两个信息合起来,让下一个工程师不会去"修"被刻意设计的样子。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Active vs Consumptive Discipline · 主动 vs 消费</div>
+    <div class="ptn-desc">区分"读 CONTEXT.md"(任何 skill 都能做的习惯)和"建 domain model"(需要专门技能)。避免 model 在没必要的时机被引用。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Glossary + ADR 双层</div>
+    <div class="ptn-desc">CONTEXT.md 是"什么" = 词汇表;ADR 是"为什么" = 决策记录。两者职责严格分开。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Lazy File Creation</div>
+    <div class="ptn-desc">没东西写就不建文件。第一条术语出现才建 CONTEXT.md,第一个 ADR 需要才建 docs/adr/。避免空文件演变成"假装存在"。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Single vs Multi Context Detection</div>
+    <div class="ptn-desc">根据是否存在 CONTEXT-MAP.md 自动判断仓库是单 context 还是多 context。skill 不让用户配置,而是自动推断。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Avoid List · 禁用清单</div>
+    <div class="ptn-desc">每个词条下都列 _Avoid_: 替代词。强制词表统一。和 codebase-design 的 Avoid-List 同源思路。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Define IS not DO · 定义是什么不是做什么</div>
+    <div class="ptn-desc">词条定义"这个概念是什么",不是"这个概念做什么"。保持词汇表的纯领域性,避免变成实现说明。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">3-Criteria ADR Trigger</div>
+    <div class="ptn-desc">只有 hard-to-reverse / surprising-without-context / real-trade-off 三条都成立才写 ADR。把"什么时候写文档"从模糊变成可决策。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Minimalist ADR Template</div>
+    <div class="ptn-desc">模板就 1 行 title + 1-3 句正文。可选 sections 也只在"真有用"时加。把"模板的复杂度"降到最低。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Inline Update · 即时更新</div>
+    <div class="ptn-desc">术语解决后立刻写进 CONTEXT.md,不攒批。把"记录"嵌入到对话流里,不让它变成收尾任务。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给领域文档设计的启示</div>
+    <p>1. <strong>区分"读"和"改"</strong>:消费模型不需要技能,改模型才召唤。<br>
+       2. <strong>词汇表不是 spec</strong>:保持纯领域性,不让实现细节污染。<br>
+       3. <strong>写文档配三原则</strong>:三条件都成立才写,避免文档变成噪音。<br>
+       4. <strong>模板极简化</strong>:1-3 句话就够,别让模板吓跑用户。<br>
+       5. <strong>避免清单显式列出</strong>:不仅记"用 X",还要记"不用 Y"。<br>
+       6. <strong>懒建文件</strong>:没东西不建,避免空文件幻觉。<br>
+       7. <strong>即时更新</strong>:术语解决当下写,不要攒批。<br>
+       8. <strong>多 context 自动推断</strong>:让 skill 自己探测仓库结构,而不是让用户配置。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  domain-modeling 解析 · 文件数 4 · 总行数 ~181 · 5 行为 · 3 原则 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

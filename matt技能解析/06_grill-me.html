@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>grill-me + grilling 技能解析 · 极简 wrapper + 共用 primitive</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 两个技能的对比卡 ===== */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .skill-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .skill-card.wrapper { border-color: var(--teal); }
+  .skill-card.primitive { border-color: var(--purple); }
+  .skill-card .role {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    margin-bottom: 12px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .skill-card.wrapper .role { background: rgba(57,197,207,0.2); color: var(--teal); }
+  .skill-card.primitive .role { background: rgba(188,140,255,0.2); color: var(--purple); }
+  .skill-card .name { font-size: 22px; font-weight: 700; }
+  .skill-card .line-count { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  /* ===== 完整 SKILL.md 展示 ===== */
+  .full-doc {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 5 条核心规则 ===== */
+  .rule-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0;
+  }
+  .rule-card .n {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--orange);
+    font-size: 12px;
+  }
+  .rule-card .body { color: var(--text); font-size: 13px; margin-top: 4px; }
+
+  /* ===== 决策树遍历可视化 ===== */
+  .tree-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  /* tree */
+  svg.tree-svg { width: 100%; height: auto; max-height: 480px; }
+  svg.tree-svg circle { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+  svg.tree-svg circle.answered { fill: rgba(63,185,80,0.2); stroke: var(--green); }
+  svg.tree-svg circle.pending { fill: rgba(248,81,73,0.15); stroke: var(--red); }
+  svg.tree-svg text.q { fill: var(--text); font-size: 11px; font-family: sans-serif; }
+  svg.tree-svg text.qnum { fill: var(--accent); font-size: 10px; font-weight: 700; }
+  svg.tree-svg path { fill: none; stroke: var(--border); stroke-width: 1.2; }
+  svg.tree-svg path.active { stroke: var(--orange); stroke-width: 2; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 06 / 21 篇</span>
+  <h1>grill-me × grilling · <span class="accent">极简 wrapper + 共用 primitive</span></h1>
+  <div class="subtitle">Two skills, one primitive · 7 行 + 12 行 = 一个完整的"反复访谈"机制</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 两个技能共享一个 primitive</h2>
+
+  <div class="compare">
+    <div class="skill-card wrapper">
+      <span class="role">WRAPPER · 无状态包装</span>
+      <div class="name">grill-me</div>
+      <div class="line-count">7 行 SKILL.md + 5 行 yaml = <strong style="color:var(--teal)">12 行</strong></div>
+      <p style="margin-top:14px;color:var(--muted);font-size:13px;">
+        <strong>productivity/grill-me/</strong><br>
+        没有 codebase 时使用 · 不落盘 ·<br>
+        一句话:"Run a /grilling session"
+      </p>
+    </div>
+
+    <div class="skill-card primitive">
+      <span class="role">PRIMITIVE · 反复访谈的核心</span>
+      <div class="name">grilling</div>
+      <div class="line-count">12 行 SKILL.md + 3 行 yaml = <strong style="color:var(--purple)">15 行</strong></div>
+      <p style="margin-top:14px;color:var(--muted);font-size:13px;">
+        <strong>productivity/grilling/</strong><br>
+        真正干活的 12 行规则:<br>
+        决策树遍历 / 一次一问 / 推荐答案 / 等确认
+      </p>
+    </div>
+  </div>
+
+  <div class="file-tree">
+    <span class="dir">productivity/</span><br>
+    ├── <span class="dir">grill-me/</span>               <span class="note">← wrapper · 7 行 · 用于"没有 codebase"场景</span><br>
+    │   ├── <span class="file">SKILL.md</span><br>
+    │   └── <span class="dir">agents/</span> / openai.yaml<br>
+    └── <span class="dir">grilling/</span>               <span class="note">← primitive · 12 行 · 真正的反复访谈核心</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">SKILL.md</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="dir">agents/</span> / openai.yaml
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>这两个技能共同呈现"<strong>极简 wrapper + 共用 primitive</strong>"模式。<br>
+    <strong>grill-me</strong> = 入口 · 用户触发 · 7 行 · 只说"请跑 grilling"<br>
+    <strong>grilling</strong> = 算法 · 真正干活的 12 条规则<br>
+    一个无状态、一个干活的分工,就像 REST 路由 vs service 实现。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span> grill-me SKILL.md · 全文 7 行</h2>
+
+  <div class="full-doc">---
+name: grill-me
+description: A relentless interview to sharpen a plan or design.
+disable-model-invocation: true
+---
+
+Run a `/grilling` session.</div>
+
+  <h3>每一行的作用</h3>
+  <div class="kv">
+    <div class="k">name</div><div class="v"><code>grill-me</code></div>
+    <div class="k">description</div><div class="v">一句话:"A relentless interview to sharpen a plan or design."</div>
+    <div class="k">disable-model-invocation</div><div class="v"><code style="color:var(--red)">true</code> — 用户显式触发</div>
+    <div class="k">正文</div><div class="v">"<strong>Run a `/grilling` session.</strong>"</div>
+  </div>
+
+  <p>这可能是整个仓库里<strong>最便宜的技能</strong>。7 行,2 行元数据 + 1 句正文。但它做的事很清晰:把"grill-me"这个用户可调用的名字,映射到 "grilling" 这个原始动作。</p>
+
+  <p><code>allow_implicit_invocation: false</code> 在 openai.yaml 里出现 —— 两边都用同样的"显式触发"配置。<strong>这种模式在 ask-matt 也出现过一次</strong>:同一意图,在两个不同配置文件中重复声明,以适配不同平台。</p>
+</section>
+
+<section>
+  <h2><span class="num">03</span> grilling SKILL.md · 全文 12 行</h2>
+
+  <div class="full-doc">---
+name: grilling
+description: Grill the user relentlessly about a plan, decision, or idea.
+---
+
+Interview me relentlessly about every aspect of this until we reach
+a shared understanding. Walk down each branch of the decision tree,
+resolving dependencies between decisions one-by-one. For each question,
+provide your recommended answer.
+
+Ask the questions one at a time, waiting for feedback on each question
+before continuing. Asking multiple questions at once is bewildering.
+
+If a *fact* can be found by exploring the environment (filesystem, tools,
+etc.), look it up rather than asking me. The *decisions*, though, are mine
+— put each one to me and wait for my answer.
+
+Do not act on it until I confirm we have reached a shared understanding.</div>
+
+  <h3>5 条核心规则</h3>
+
+  <div class="rule-card">
+    <div class="n">① RELENTLESS</div>
+    <div class="body">"<strong>Interview me relentlessly about every aspect of this until we reach a shared understanding.</strong>"<br>
+    反复访谈,直到达成共识。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">② DECISION-TREE TRAVERSAL</div>
+    <div class="body">"<strong>Walk down each branch of the decision tree, resolving dependencies between decisions one-by-one.</strong>"<br>
+    一根一根走决策树分支,逐条解决依赖。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">③ RECOMMENDED ANSWER</div>
+    <div class="body">"<strong>For each question, provide your recommended answer.</strong>"<br>
+    每个问题都要给出推荐答案,不是开放式问。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">④ ONE AT A TIME</div>
+    <div class="body">"<strong>Ask the questions one at a time, waiting for feedback before continuing.</strong>"<br>
+    一次一个问题。<strong>"Asking multiple questions at once is bewildering."</strong></div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">⑤ FACT vs DECISION</div>
+    <div class="body">"<strong>事实自查,决策问人</strong>"。能查到的事实(file / 工具结果)就自己查,<strong>决策必须问用户</strong>。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">⑥ WAIT FOR CONFIRM</div>
+    <div class="body">"<strong>Do not act on it until I confirm we have reached a shared understanding.</strong>"<br>
+    用户确认前不行动。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 决策树遍历 · 视觉化</h2>
+
+  <div class="tree-vis">
+    <svg class="tree-svg" viewBox="0 0 1100 360">
+      <!-- Root -->
+      <circle cx="550" cy="40" r="22" class="answered"/>
+      <text x="550" y="44" text-anchor="middle" class="qnum">ROOT</text>
+      <text x="550" y="80" text-anchor="middle" class="q">"我要做 X"</text>
+
+      <!-- Branch 1 -->
+      <path class="active" d="M550,62 L240,140"/>
+      <circle cx="200" cy="170" r="20" class="answered"/>
+      <text x="200" y="174" text-anchor="middle" class="qnum">Q1</text>
+      <text x="200" y="210" text-anchor="middle" class="q">谁用?</text>
+
+      <circle cx="320" cy="170" r="20" class="answered"/>
+      <text x="320" y="174" text-anchor="middle" class="qnum">Q2</text>
+      <text x="320" y="210" text-anchor="middle" class="q">什么场景?</text>
+
+      <path d="M220,170 L320,170"/>
+
+      <!-- Branch 2 -->
+      <path class="active" d="M550,62 L860,140"/>
+      <circle cx="800" cy="170" r="20" class="pending"/>
+      <text x="800" y="174" text-anchor="middle" class="qnum">Q3</text>
+      <text x="800" y="210" text-anchor="middle" class="q">怎么衡量?</text>
+
+      <circle cx="920" cy="170" r="20" class="pending"/>
+      <text x="920" y="174" text-anchor="middle" class="qnum">Q4</text>
+      <text x="920" y="210" text-anchor="middle" class="q">何时截止?</text>
+
+      <path d="M820,170 L920,170"/>
+
+      <!-- Bottom: shared understanding -->
+      <path class="active" d="M260,250 L840,250" stroke-dasharray="4 3"/>
+      <circle cx="550" cy="280" r="22" class="answered"/>
+      <text x="550" y="284" text-anchor="middle" class="qnum">GO</text>
+      <text x="550" y="320" text-anchor="middle" class="q">用户确认共识 → 才能动手</text>
+    </svg>
+    <p style="color:var(--muted);font-size:12px;text-align:center;margin-top:8px;">
+      🔵 蓝色 = 已答 · 🟢 绿 = 推荐答案可采纳 · 🔴 红 = 待答 · 橙色 = 活跃路径
+    </p>
+  </div>
+
+  <div class="callout">
+    <strong>关键设计:</strong><br>
+    决策被组织成<strong>树</strong>而非列表。grill 不是问 10 个独立问题,而是<strong>逐分支走</strong>,先根后叶。<br>
+    <strong>推荐答案</strong>是另一个隐藏强项 —— 模型给出意见,用户只需"是 / 否 / 改成 X",而不是从零回答。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> "Fact 自查 vs Decision 问人" · 边界设计</h2>
+
+  <p>grilling 的第 4 段(第 10 行)划了一条非常关键的边界:</p>
+
+  <pre><code>If a *fact* can be found by exploring the environment (filesystem, tools,
+etc.), look it up rather than asking me. The *decisions*, though, are mine
+— put each one to me and wait for my answer.</code></pre>
+
+  <h3>这条规则解决了什么?</h3>
+  <table>
+    <thead>
+      <tr><th>类别</th><th>处理方式</th><th>示例</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Fact</strong>(可观测)</td>
+        <td>查环境</td>
+        <td>"我们用的是 Postgres 还是 MySQL?" → 自己 cat config</td>
+      </tr>
+      <tr>
+        <td><strong>Decision</strong>(用户主权)</td>
+        <td>问用户</td>
+        <td>"订单要不要支持 partial cancel?" → 一定要用户答</td>
+      </tr>
+      <tr>
+        <td><strong>Recommendation</strong>(建议)</td>
+        <td>模型给推荐</td>
+        <td>"我建议选 X,因为 Y" → 用户接受/拒绝</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>这条边界防止"无聊问题占用 token"。如果模型问"这个项目用什么框架?",然后用户回"React" —— 这是浪费。<br>
+    能查的就查,把对话窗口留给真正需要人类判断的<strong>决策</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> "Do not act until I confirm" · 最后一关</h2>
+
+  <p>grilling 最后一句(第 12 行)是一道<strong>硬关卡</strong>:</p>
+
+  <pre><code>Do not act on it until I confirm we have reached a shared understanding.</code></pre>
+
+  <p>这不是软建议。这是 <strong>"共享理解达成"</strong> 作为行动闸门。</p>
+  <ul style="color:#c9d1d9;">
+    <li>模型不能边访谈边写代码</li>
+    <li>不能边访谈边 git commit</li>
+    <li>不能边访谈边调用工具</li>
+    <li>只能问,等用户说"OK 我们对齐了",才能进下一阶段</li>
+  </ul>
+
+  <p>这条规则让 grilling 技能<strong>天然适合作为 to-spec 的前置</strong> —— ask-matt 主流程里 grilling-with-docs 就用同样的 primitive。</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Wrapper + Primitive Pairing · Wrapper + Primitive 配对</div>
+    <div class="ptn-desc">grill-me = 7 行 wrapper,grilling = 12 行 primitive。两个技能共同构成一个完整机制,各司其职。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Decision Tree Traversal · 决策树遍历</div>
+    <div class="ptn-desc">访谈不按列表,而按<strong>决策树的分支</strong>走。先根后叶,逐条解决依赖。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">One Question at a Time</div>
+    <div class="ptn-desc">一次一个问题。"Asking multiple questions at once is bewildering" —— 这条规则保护用户认知不被淹没。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Recommended Answer · 推荐答案</div>
+    <div class="ptn-desc">每个问题都附推荐答案,把用户决策从"开放回答"变成"接受/拒绝/微调",省认知。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Fact vs Decision Boundary</div>
+    <div class="ptn-desc">明确划清"自查 vs 问人"。事实查环境,决策问用户。避免 token 浪费在无聊问题上。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Confirmation Gate · 确认闸门</div>
+    <div class="ptn-desc">"Do not act until I confirm we have reached a shared understanding." 共识未达成前不行动。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Cross-Platform Redundancy (复现)</div>
+    <div class="ptn-desc">和 ask-matt 一样,disable-model-invocation: true + allow_implicit_invocation: false 双份配置。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给访谈 / 调研技能设计的启示</div>
+    <p>1. <strong>wrapper + primitive 配对</strong>:一个技能做入口,一个技能做逻辑。<br>
+       2. <strong>一次一问</strong>:多问同时 = bewildering(用户懵)。<br>
+       3. <strong>推荐答案</strong>:把"开放问答"变成"接受/拒绝"。<br>
+       4. <strong>事实自查,决策问人</strong>:省 token,保护用户注意力。<br>
+       5. <strong>决策树遍历,不列表</strong>:先根后叶,逐条解决依赖。<br>
+       6. <strong>确认闸门</strong>:用户没确认前不动手,把访谈和行动硬分开。<br>
+       7. <strong>7 行也是有效的技能</strong>:只要它清晰指派到一个 primitive。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  grill-me + grilling 解析 · 总文件 4 · 总行数 27 · 6 条规则 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

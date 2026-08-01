@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>codebase-design 技能解析 · 深度模块词汇体系</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent-2); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== Glossary ===== */
+  .glossary {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .term {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 6px;
+    padding: 14px 16px;
+    transition: transform 0.15s;
+  }
+  .term:hover { transform: translateX(4px); }
+  .term .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--accent-2);
+    font-size: 15px;
+  }
+  .term .def { color: var(--text); font-size: 13px; margin: 8px 0; }
+  .term .avoid { color: var(--red); font-size: 12px; }
+  .term .avoid::before { content: '✗ 不要说: '; }
+
+  /* ===== Deep vs Shallow SVG ===== */
+  .module-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .module-vis svg { width: 100%; height: auto; }
+
+  /* ===== Dependency Categories ===== */
+  .dep-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .dep-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.15s;
+  }
+  .dep-card:hover { transform: translateY(-2px); }
+  .dep-card .cat {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+  }
+  .dep-card .tag-cat {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .dep-card.c1 .tag-cat { background: rgba(63,185,80,0.2); color: var(--green); }
+  .dep-card.c2 .tag-cat { background: rgba(57,197,207,0.2); color: var(--teal); }
+  .dep-card.c3 .tag-cat { background: rgba(240,136,62,0.2); color: var(--orange); }
+  .dep-card.c4 .tag-cat { background: rgba(248,81,73,0.2); color: var(--red); }
+  .dep-card .ex { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  /* ===== Sub-agent 设计模式 ===== */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .agent-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .agent-card .num {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--orange);
+    font-size: 14px;
+  }
+  .agent-card .brief { color: var(--text); font-size: 13px; margin-top: 6px; }
+
+  /* ===== Principle ===== */
+  .principle {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0;
+  }
+  .principle .name {
+    font-weight: 700;
+    color: var(--green);
+    font-family: "JetBrains Mono", monospace;
+  }
+  .principle .desc { color: var(--text); font-size: 13px; margin-top: 4px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 03 / 21 篇</span>
+  <h1>codebase-design · <span class="accent">深度模块词汇体系</span></h1>
+  <div class="subtitle">Deep Modules · Glossary for design vocabulary · 3 文件 = 3 角色</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 三文件三角色</h2>
+  <div class="file-tree">
+    <span class="dir">codebase-design/</span><br>
+    ├── <span class="file">SKILL.md</span>               <span class="note">← 114 行 · 词汇表 + 原则 · 主入口</span><br>
+    ├── <span class="file">DEEPENING.md</span>           <span class="note">← 37 行 · 依赖分类 + seam 纪律 + replace-don't-layer 测试</span><br>
+    ├── <span class="file">DESIGN-IT-TWICE.md</span>     <span class="note">← 44 行 · 并行 sub-agent 探索多个接口方案</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Codebase Design"</span>
+  </div>
+
+  <h3>为什么是 3 个文件而不是 1 个?</h3>
+  <p>SKILL.md 第 14 行写得很清楚:"<strong>Consistent language is the whole point.</strong>"。三个文件是同一套词汇的不同用法面:</p>
+  <ul style="color:#c9d1d9;">
+    <li><strong>SKILL.md</strong> = 词汇<strong>定义</strong>(module / interface / seam / adapter / depth / leverage / locality)</li>
+    <li><strong>DEEPENING.md</strong> = 词汇<strong>用法 1</strong>:遇到一个浅模块,怎么把它加深</li>
+    <li><strong>DESIGN-IT-TWICE.md</strong> = 词汇<strong>用法 2</strong>:第一次设计的接口大概率不是最好的,并行 sub-agent 拉几个出来比一比</li>
+  </ul>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>这个技能<span style="color:var(--accent-2)">自己不解决任何问题</span>,只提供<strong>一套统一的术语表</strong>。<br>
+    它被 tdd / improve-codebase-architecture / code-review 默默引用,保证这些技能讨论"深度"时用的是同一个意思。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 词汇表 · 7 个核心术语</h2>
+  <p>SKILL.md 第 14–29 行定义 7 个术语。<strong>每个术语都附带"不要用 XX 代替"</strong>的禁令 —— 这就是"consistent language"的执行机制。</p>
+
+  <div class="glossary">
+    <div class="term">
+      <div class="name">Module · 模块</div>
+      <div class="def">任何有 interface + implementation 的东西。<strong>故意 scale-agnostic</strong>:函数 / 类 / 包 / 跨层切片都行。</div>
+      <div class="avoid">unit, component, service</div>
+    </div>
+    <div class="term">
+      <div class="name">Interface · 接口</div>
+      <div class="def">调用方需要知道的一切:类型签名 + 不变式 + 顺序约束 + 错误模式 + 必要配置 + 性能特征。</div>
+      <div class="avoid">API, signature(太窄,只指类型层)</div>
+    </div>
+    <div class="term">
+      <div class="name">Implementation · 实现</div>
+      <div class="def">模块里的代码。注意和 Adapter 区别:一个东西可以是"小 adapter + 大 implementation"(PG repo),或"大 adapter + 小 implementation"(in-memory fake)。</div>
+      <div class="avoid">—</div>
+    </div>
+    <div class="term">
+      <div class="name">Depth · 深度</div>
+      <div class="def"><strong>接口处的杠杆率</strong>:调用方(和测试)每学 1 单位接口能驱动多少行为。模块 deep = 小接口后藏着大行为;模块 shallow = 接口和实现一样复杂。</div>
+      <div class="avoid">—</div>
+    </div>
+    <div class="term">
+      <div class="name">Seam · 接缝</div>
+      <div class="def">(Michael Feathers)可以不改这一处就改变行为的地方 —— 模块 interface 居住的位置。<strong>位置</strong>是独立的设计决策。</div>
+      <div class="avoid">boundary(与 DDD bounded context 冲突)</div>
+    </div>
+    <div class="term">
+      <div class="name">Adapter · 适配器</div>
+      <div class="def">在 seam 处满足 interface 的具体东西。描述<strong>角色</strong>(填哪个槽),不描述<strong>实体</strong>(里面是什么)。</div>
+      <div class="avoid">—</div>
+    </div>
+    <div class="term">
+      <div class="name">Leverage · 杠杆</div>
+      <div class="def">深度给调用方带来的好处:每学 1 单位接口获得更多能力。1 个实现给 N 个调用点和 M 个测试付账。</div>
+      <div class="avoid">—</div>
+    </div>
+    <div class="term">
+      <div class="name">Locality · 内聚性</div>
+      <div class="def">深度给维护者带来的好处:变更 / bug / 知识 / 验证都集中在一处,而不是散在调用方。改一次修好所有地方。</div>
+      <div class="avoid">—</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"Avoid: API / signature / boundary" 这类<strong>禁用清单</strong>是这个词汇表的灵魂。语言决定思维 —— 用 boundary 你就会把 module 想成 DDD 的 bounded context;用 seam 你就会想"在哪里切开"。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Deep vs Shallow · 视觉对比</h2>
+  <p>SKILL.md 第 30–58 行用 ASCII 图直接画出两种模块。让我把它做成可交互对比:</p>
+
+  <div class="module-vis">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div>
+        <h3 style="color:var(--green);margin:0 0 12px;">✅ Deep Module · 深度模块</h3>
+        <svg viewBox="0 0 360 240" style="background:#0e1116;border-radius:8px;border:1px solid var(--green);">
+          <rect x="20" y="20" width="320" height="40" rx="4" fill="rgba(63,185,80,0.15)" stroke="#3fb950" stroke-width="2"/>
+          <text x="180" y="40" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="11">Small Interface</text>
+          <text x="180" y="54" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">few methods · simple params</text>
+
+          <rect x="20" y="64" width="320" height="156" rx="4" fill="rgba(63,185,80,0.08)" stroke="#3fb950" stroke-width="2"/>
+          <text x="180" y="140" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="13" font-weight="700">Deep Implementation</text>
+          <text x="180" y="160" text-anchor="middle" fill="#c9d1d9" font-family="JetBrains Mono" font-size="11">complex logic hidden</text>
+
+          <text x="180" y="195" text-anchor="middle" fill="#c9d1d9" font-family="JetBrains Mono" font-size="10">┌─ callers ─────────┐</text>
+          <text x="180" y="210" text-anchor="middle" fill="#c9d1d9" font-family="JetBrains Mono" font-size="10">│  N call sites     │</text>
+        </svg>
+        <p style="color:var(--muted);font-size:12px;text-align:center;margin-top:8px;">小接口 + 大行为 = 杠杆率高,所有调用方受益</p>
+      </div>
+
+      <div>
+        <h3 style="color:var(--red);margin:0 0 12px;">❌ Shallow Module · 浅模块</h3>
+        <svg viewBox="0 0 360 240" style="background:#0e1116;border-radius:8px;border:1px solid var(--red);">
+          <rect x="20" y="20" width="320" height="80" rx="4" fill="rgba(248,81,73,0.12)" stroke="#f85149" stroke-width="2"/>
+          <text x="180" y="40" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="11">Large Interface</text>
+          <text x="180" y="54" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">many methods · complex params</text>
+          <text x="180" y="80" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">需要的不变式多 · 调用方累</text>
+
+          <rect x="20" y="104" width="320" height="116" rx="4" fill="rgba(248,81,73,0.05)" stroke="#f85149" stroke-width="2"/>
+          <text x="180" y="160" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="13" font-weight="700">Thin Implementation</text>
+          <text x="180" y="180" text-anchor="middle" fill="#c9d1d9" font-family="JetBrains Mono" font-size="11">just passes through</text>
+
+          <text x="180" y="215" text-anchor="middle" fill="#c9d1d9" font-family="JetBrains Mono" font-size="10">几乎没价值 · 删了更好</text>
+        </svg>
+        <p style="color:var(--muted);font-size:12px;text-align:center;margin-top:8px;">大接口 + 小实现 = 杠杆率低,只是封装了一层</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 4 大原则 · The Principles</h2>
+
+  <div class="principle">
+    <div class="name">① Depth is a property of the INTERFACE, not the implementation</div>
+    <div class="desc">深模块的内部可以由小而可 mock 的部分组成 —— 但它们不是 interface 的一部分。模块可以有 <strong>internal seams</strong>(私有,只供自己测试用),也可以有 <strong>external seam</strong>(在 interface 处)。</div>
+  </div>
+
+  <div class="principle">
+    <div class="name">② The Deletion Test · 删除测试</div>
+    <div class="desc">想象<strong>删除这个模块</strong>。如果复杂度消失 → 它是 pass-through,该删。如果复杂度在 N 个调用方那里复现 → 它确实有价值。</div>
+  </div>
+
+  <div class="principle">
+    <div class="name">③ The interface is the test surface · 接口就是测试面</div>
+    <div class="desc">调用方和测试跨越同一条 seam。如果你想测"越过 interface",说明模块形状错了。</div>
+  </div>
+
+  <div class="principle">
+    <div class="name">④ One adapter = hypothetical seam. Two adapters = real seam.</div>
+    <div class="desc">除非确实有变化跨越它,否则不要引入 seam。一个 adapter 的 seam 只是间接层。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 4 类依赖 · 决定怎么测</h2>
+  <p>DEEPENING.md 第 5–25 行定义了 4 类依赖。每类的<strong>测试策略</strong>不同。</p>
+
+  <div class="dep-grid">
+    <div class="dep-card c1">
+      <div class="cat">In-process<span class="tag-cat">永远可深化</span></div>
+      <p style="color:#c9d1d9;font-size:13px;margin:6px 0;">纯计算、内存状态、无 I/O。</p>
+      <div class="ex">→ 直接合并模块,通过新 interface 测。无需 adapter。</div>
+    </div>
+    <div class="dep-card c2">
+      <div class="cat">Local-substitutable<span class="tag-cat">本地可替代</span></div>
+      <p style="color:#c9d1d9;font-size:13px;margin:6px 0;">依赖有本地测试替身(PGLite 替 Postgres、in-memory FS)。</p>
+      <div class="ex">→ 替身存在即可深化。用替身在测试套件里跑。seam 是 internal,不在 external interface。</div>
+    </div>
+    <div class="dep-card c3">
+      <div class="cat">Remote but owned<span class="tag-cat">自有远程</span></div>
+      <p style="color:#c9d1d9;font-size:13px;margin:6px 0;">自己的服务跨网络(微服务 / 内部 API)。</p>
+      <div class="ex">→ 在 seam 定义 port。深模块持有逻辑,transport 作 adapter 注入。测试用 in-memory adapter,生产用 HTTP/gRPC/queue adapter。</div>
+    </div>
+    <div class="dep-card c4">
+      <div class="cat">True external<span class="tag-cat">真外部</span></div>
+      <p style="color:#c9d1d9;font-size:13px;margin:6px 0;">你不能控制的第三方(Stripe / Twilio)。</p>
+      <div class="ex">→ 深模块<strong>把外部依赖当作注入的 port</strong>接受;测试提供 mock adapter。</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>4 类不是等级,而是<strong>测试手段不同</strong>。In-process 永远可深化,但 external 永远需要 mock — 你不能测 Stripe 真的扣你信用卡。这种"<strong>可行性矩阵</strong>"的写法,比"按场景分"更可执行。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> Replace, Don't Layer · 测试策略</h2>
+  <p>DEEPENING.md 第 32–37 行有一条很反直觉的测试规则:</p>
+
+  <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;">
+    <h3 style="margin:0 0 12px;color:var(--green);">替换,不要叠加</h3>
+    <ul style="color:#c9d1d9;line-height:2;">
+      <li>旧的对浅模块的单测,在深模块 interface 测试存在之后 → <strong>是废品,删掉</strong></li>
+      <li>新测试写在深模块的 interface 处</li>
+      <li>测试断言<strong>通过 interface 观察到的结果</strong>,不验内部状态</li>
+      <li>测试应该<strong>活过内部重构</strong> —— 它们描述行为,不是实现</li>
+    </ul>
+    <p style="color:var(--red);font-size:13px;margin-top:12px;">
+      ⚠️ 如果一个测试在实现改变时也必须改,那它<strong>测过了 interface</strong>。
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Design It Twice · 并行 sub-agent 探索</h2>
+  <p>DESIGN-IT-TWICE.md 第 19–39 行给出一个极端的做法:用 3+ 个并行 sub-agent 各自给出"激进不同"的接口方案。</p>
+
+  <div class="agents-grid">
+    <div class="agent-card" style="border-color:var(--green);">
+      <div class="num">Agent 1 · 极简派</div>
+      <div class="brief">"Minimize the interface — aim for 1–3 entry points max. Maximise leverage per entry point."<br><span style="color:var(--muted);font-size:11px;">目标:每个入口点杠杆率最大</span></div>
+    </div>
+    <div class="agent-card" style="border-color:var(--accent);">
+      <div class="num">Agent 2 · 灵活派</div>
+      <div class="brief">"Maximise flexibility — support many use cases and extension."<br><span style="color:var(--muted);font-size:11px;">目标:支持多种用例 + 扩展</span></div>
+    </div>
+    <div class="agent-card" style="border-color:var(--orange);">
+      <div class="num">Agent 3 · 默认派</div>
+      <div class="brief">"Optimise for the most common caller — make the default case trivial."<br><span style="color:var(--muted);font-size:11px;">目标:最常见调用方零摩擦</span></div>
+    </div>
+    <div class="agent-card" style="border-color:var(--purple);">
+      <div class="num">Agent 4 · Ports派</div>
+      <div class="brief">"Design around ports & adapters for cross-seam dependencies."<br><span style="color:var(--muted);font-size:11px;">目标:跨 seam 依赖用 ports & adapters</span></div>
+    </div>
+  </div>
+
+  <h3>每个 sub-agent 必须输出 5 件事</h3>
+  <ol style="color:#c9d1d9;line-height:2;">
+    <li><strong>Interface</strong> — 类型、方法、参数 + 不变式、顺序、错误模式</li>
+    <li><strong>Usage example</strong> — 调用方怎么用</li>
+    <li><strong>Implementation 藏在 seam 后面</strong></li>
+    <li><strong>Dependency strategy + adapters</strong>(DEEPENING.md 分类)</li>
+    <li><strong>Trade-offs</strong> — 杠杆高在哪、低在哪</li>
+  </ol>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>DESIGN-IT-TWICE 的核心论断:"<strong>你第一个想法几乎从来不是最好的</strong>"。所以并行拉 3+ 个方案,在 depth / locality / seam placement 三个维度上对比。<br>
+    最后<strong>主控要给出有立场的推荐</strong>,不是菜单 —— "the user wants a strong read, not a menu"。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 拒绝的 framing · "Rejected"</h2>
+  <p>SKILL.md 第 105–110 行专门列了一个"被拒绝的框架"清单 —— 告诉你<strong>不要用</strong>什么:</p>
+
+  <table>
+    <thead>
+      <tr><th>被拒绝</th><th>为什么不</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Depth = 实现行数 / 接口行数</strong>(Ousterhout)</td>
+        <td>奖励"灌水 implementation"。我们用 depth-as-leverage 替代。</td>
+      </tr>
+      <tr>
+        <td><strong>"Interface" = TS interface 关键字 或 public 方法</strong></td>
+        <td>太窄。interface 包含所有调用方需要知道的事实。</td>
+      </tr>
+      <tr>
+        <td><strong>"Boundary"</strong></td>
+        <td>和 DDD bounded context 撞词。改说 seam 或 interface。</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Vocabulary-as-Skill · 词汇即技能</div>
+    <div class="ptn-desc">技能不解决问题,只提供统一术语。被其他技能(tdd / improve-codebase-architecture / code-review)默默引用。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Avoid-List · 禁用清单</div>
+    <div class="ptn-desc">每个术语都附 "Avoid: 替代词"。强制词表统一,避免"boundary" / "interface" / "API" 这些被滥用的词造成歧义。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Glossary + Methodology + Comparison 三文件</div>
+    <div class="ptn-desc">SKILL.md = 词汇表 · DEEPENING.md = 方法论 · DESIGN-IT-TWICE.md = 比较模式。3 文件分 3 角色,而不是塞一个长文件。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Feasibility Matrix · 可行性矩阵</div>
+    <div class="ptn-desc">4 类依赖按"能否深化 + 怎么测"分类,提供一张可查的表。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Replace-Don't-Layer · 替换不要叠加</div>
+    <div class="ptn-desc">深化后,旧的浅模块测试直接删。不让旧测试和新测试并存造成"两层保险"的假象。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Seam Discipline · 接缝纪律</div>
+    <div class="ptn-desc">1 adapter = 假设的 seam · 2 adapter = 真正的 seam。强迫"接缝"必须有实在变化支撑。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Three-Dimension Comparison · 三维度对比</div>
+    <div class="ptn-desc">多个方案在 depth / locality / seam placement 三个维度对比,然后给出有立场的推荐。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给词汇体系设计的启示</div>
+    <p>1. <strong>技能可以是词汇</strong>:不解决问题的技能有价值,如果它提供统一术语。<br>
+       2. <strong>每个术语配禁用清单</strong>:只定义不够,要禁止"差不多但不一样"的词。<br>
+       3. <strong>3 文件分 3 角色</strong>:glossary / methodology / pattern,而不是一个长文件。<br>
+       4. <strong>测试要"能活过重构"</strong>:测实现 = 失败,测行为 = 成功。<br>
+       5. <strong>设计要"做两遍"</strong>:第一个想法从来不是最好的,并行拉多个方案再对比。<br>
+       6. <strong>推荐要有立场</strong>:"strong read, not a menu"。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  codebase-design 解析 · 文件数 4 · 总行数 ~195 · 7 术语 + 4 原则 + 4 依赖分类 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

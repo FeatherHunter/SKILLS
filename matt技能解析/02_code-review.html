@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>code-review 技能解析 · 双轴独立评审原理</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(88,166,255,0.08) 0%, rgba(63,185,80,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(88,166,255,0.15);
+    border: 1px solid rgba(88,166,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent-2); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 双轴图 ===== */
+  .axes-canvas {
+    background: radial-gradient(circle at 50% 50%, rgba(88,166,255,0.05) 0%, transparent 60%),
+                var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .quadrant {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .quad {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .quad:hover { transform: translateY(-4px); }
+  .quad.pass { border-color: var(--green); background: rgba(63,185,80,0.08); }
+  .quad.fail { border-color: var(--red); background: rgba(248,81,73,0.08); }
+  .quad .verdict { font-size: 28px; font-weight: 700; margin: 8px 0; }
+  .quad .verdict.pass-c { color: var(--green); }
+  .quad .verdict.fail-c { color: var(--red); }
+  .quad .desc { color: var(--muted); font-size: 12px; }
+  .quad .axis { font-family: "JetBrains Mono", monospace; color: var(--accent); font-size: 13px; }
+
+  /* ===== 流程图 ===== */
+  .process-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step-row { display: flex; align-items: stretch; gap: 16px; margin-bottom: 12px; }
+  .step {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .step .n {
+    background: var(--accent);
+    color: #0e1116;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    margin-right: 8px;
+  }
+  .step .title { font-weight: 600; color: var(--text); }
+  .step .desc { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .step.parallel {
+    border-color: var(--orange);
+    background: rgba(240,136,62,0.05);
+  }
+  .step.parallel .n { background: var(--orange); }
+  .step.agg {
+    border-color: var(--green);
+    background: rgba(63,185,80,0.05);
+  }
+  .step.agg .n { background: var(--green); }
+
+  /* ===== Smell 卡片 ===== */
+  .smell-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .smell {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--purple);
+    border-radius: 6px;
+    padding: 14px 16px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .smell:hover { transform: translateX(4px); border-left-color: var(--accent); }
+  .smell .name {
+    font-weight: 700;
+    color: var(--purple);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+  }
+  .smell .what { color: var(--text); font-size: 13px; margin-top: 6px; }
+  .smell .fix { color: var(--green); font-size: 12px; margin-top: 8px; }
+  .smell .fix::before { content: '→ '; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(88,166,255,0.08), rgba(188,140,255,0.08));
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .insight p { margin: 4px 0; }
+
+  /* ===== 表格 ===== */
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+  /* ===== 设计模式卡片 ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .pattern-card .ptn-desc { color: var(--text); }
+  .pattern-card .ptn-why { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+  /* 解读气泡 */
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 02 / 21 篇</span>
+  <h1>code-review · <span class="accent">双轴独立评审</span> 的设计原理</h1>
+  <div class="subtitle">Two-Axis Code Review · Standards × Spec · 拒绝跨轴重新排序</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单与构成</h2>
+  <div class="file-tree">
+    <span class="dir">code-review/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 89 行,定义两轴 + 12 smell + 5 步流程</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name:"Code Review"</span>
+  </div>
+  <p>几乎和 ask-matt 一样的体量 —— <strong>因为它本身也不写代码,只驱动两个 sub-agent</strong>。所有真正干活的逻辑都在两个并行 sub-agent 各自的 prompt 里。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 核心设计 · 两轴独立 + 并行 sub-agent</h2>
+
+  <h3>为什么要拆两轴?</h3>
+  <p>SKILL.md 第 82 行起的 "Why two axes" 是整篇的灵魂。一个提交可能:</p>
+
+  <div class="axes-canvas">
+    <div class="quadrant">
+      <div class="quad pass">
+        <div class="axis">Standards 轴</div>
+        <div class="verdict pass-c">PASS</div>
+        <div class="desc">符合 CODING_STANDARDS.md</div>
+      </div>
+      <div class="quad fail">
+        <div class="axis">Spec 轴</div>
+        <div class="verdict fail-c">FAIL</div>
+        <div class="desc">issue 问的是 A,代码做的是 B</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin:8px 0;">
+      ↑ "守规矩地做错了事" — <strong>最常见的失败模式,却最容易被合并</strong> ↑
+    </div>
+    <div class="quadrant">
+      <div class="quad fail">
+        <div class="axis">Standards 轴</div>
+        <div class="verdict fail-c">FAIL</div>
+        <div class="desc">代码风格违反项目规范</div>
+      </div>
+      <div class="quad pass">
+        <div class="axis">Spec 轴</div>
+        <div class="verdict pass-c">PASS</div>
+        <div class="desc">功能 100% 对应 issue 要求</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--muted);font-size:12px;margin:8px 0;">
+      ↑ "做对了事但很丑" — <strong>快完成时容易妥协放行</strong> ↑
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>合并成一个分数会<strong>让一轴掩盖另一轴</strong>。"Standards 9 分 + Spec 3 分 = 平均 6 分"这种总结掩盖了 Spec 已经完蛋的事实。两轴分开报告,既不掩盖,也不做跨轴排序。</p>
+  </div>
+
+  <h3>为什么并行?</h3>
+  <p>SKILL.md 第 11 行明确说:"<strong>并行运行,避免互相污染上下文</strong>"。两个 sub-agent 互相看不到对方报告,所以不会因为 Standards 那边的 5 个小问题下意识把 Spec 的关键缺失稀释掉。这是<strong>用架构隔离偏见</strong>。</p>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 5 步流程</h2>
+
+  <div class="process-flow">
+    <div class="step-row">
+      <div class="step">
+        <span class="n">1</span>
+        <span class="title">Pin the fixed point</span>
+        <div class="desc">用户给一个 commit / branch / tag → <code>git diff &lt;fp&gt;...HEAD</code> (三 dot,merge-base 对比)<br>
+        <strong>先 git rev-parse 验证 + diff 非空</strong>,失败要在 sub-agent 之前拦住</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step">
+        <span class="n">2</span>
+        <span class="title">Identify the spec source</span>
+        <div class="desc">查找 spec 来源,优先级: commit 引用的 issue → 用户传的路径 → docs/specs/.scratch/ → 问用户<br>
+        没有 spec → Spec sub-agent 跳过,最终报告注明</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step">
+        <span class="n">3</span>
+        <span class="title">Identify standards sources</span>
+        <div class="desc">仓库里任何"代码该怎么写"的文档(CODING_STANDARDS.md 等)<br>
+        <strong>叠加 12 项 smell 基线</strong>(Fowler Refactoring ch.3),仓库规范优先于基线</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step parallel">
+        <span class="n">4</span>
+        <span class="title">Spawn both sub-agents in parallel</span>
+        <div class="desc"><strong>单条消息 + 两个 Agent tool call</strong> · general-purpose sub-agent<br>
+        Standards sub-agent: 拿 diff + 仓库标准 + smell 基线 → 报告违规/可疑处<br>
+        Spec sub-agent: 拿 diff + spec → 报告缺失/越权/错位<br>
+        双方都要求 &lt; 400 words</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step agg">
+        <span class="n">5</span>
+        <span class="title">Aggregate</span>
+        <div class="desc"><code>## Standards</code> 和 <code>## Spec</code> 两节,原文或轻度清理<br>
+        <strong>不合并 / 不重新排序</strong> — 这是分离存在的意义<br>
+        末尾一行汇总:每轴的发现数 + 最严重一项,但<strong>不挑跨轴冠军</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 12 项代码味道 · Smell Baseline</h2>
+  <p>这一段是 SKILL.md 第 38–56 行最厚的部分。Matt 引用 Fowler《重构》ch.3 的 12 个 smell,把它们当成"<strong>仓库零文档时也必须执行的最低标准</strong>"。</p>
+
+  <div class="callout">
+    <strong>关键规则 (第 40–41 行):</strong><br>
+    ① 仓库规范永远覆盖基线 — 仓库白名单说"允许",基线就要闭嘴<br>
+    ② 始终是 judgment call — 每个 smell 都标 "(可能)",不是硬性违规<br>
+    ③ 跳过工具已经强制的事 (比如 lint 已经拦的格式问题)
+  </div>
+
+  <div class="smell-grid">
+    <div class="smell">
+      <div class="name">Mysterious Name</div>
+      <div class="what">函数/变量/类型名看不出做什么或装什么</div>
+      <div class="fix">改名;想不出诚实名字 → 设计本身含糊</div>
+    </div>
+    <div class="smell">
+      <div class="name">Duplicated Code</div>
+      <div class="what">同一逻辑形状出现在多个 hunk / 文件</div>
+      <div class="fix">抽出共享形状,两边都调它</div>
+    </div>
+    <div class="smell">
+      <div class="name">Feature Envy</div>
+      <div class="what">方法伸手去拿别人对象的数据多于自己的</div>
+      <div class="fix">把这个方法挪到被羡慕的对象上</div>
+    </div>
+    <div class="smell">
+      <div class="name">Data Clumps</div>
+      <div class="what">同样几个字段/参数总是一起出现(一个类型想出生)</div>
+      <div class="fix">打包成一个类型,传这一个</div>
+    </div>
+    <div class="smell">
+      <div class="name">Primitive Obsession</div>
+      <div class="what">用原始类型/string 顶替一个本应有自己类型的领域概念</div>
+      <div class="fix">给概念一个小类型</div>
+    </div>
+    <div class="smell">
+      <div class="name">Repeated Switches</div>
+      <div class="what">同一个 type 的 switch / if 级联在多处出现</div>
+      <div class="fix">换成多态,或两处共享一张 map</div>
+    </div>
+    <div class="smell">
+      <div class="name">Shotgun Surgery</div>
+      <div class="what">一个逻辑改动要散弹式改许多文件</div>
+      <div class="fix">把总是一起改的东西聚成一个模块</div>
+    </div>
+    <div class="smell">
+      <div class="name">Divergent Change</div>
+      <div class="what">一个文件/模块为几个无关理由反复修改</div>
+      <div class="fix">拆开,让每个模块只为一个原因变</div>
+    </div>
+    <div class="smell">
+      <div class="name">Speculative Generality</div>
+      <div class="what">为 spec 没要求的需求提前加抽象/参数/钩子</div>
+      <div class="fix">删掉;真有需求时再 inline 回来</div>
+    </div>
+    <div class="smell">
+      <div class="name">Message Chains</div>
+      <div class="what">很长的 <code>a.b().c().d()</code> 链,调用方不该知道</div>
+      <div class="fix">把这条链藏到第一个对象的一个方法里</div>
+    </div>
+    <div class="smell">
+      <div class="name">Middle Man</div>
+      <div class="what">类/函数基本只是继续往下委托</div>
+      <div class="fix">干掉,直接调真正的目标</div>
+    </div>
+    <div class="smell">
+      <div class="name">Refused Bequest</div>
+      <div class="what">子类/实现方忽略或覆写继承下来的大部分</div>
+      <div class="fix">丢掉继承,改用组合</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 两轴流程图 · 谁做什么</h2>
+
+  <svg viewBox="0 0 1100 460" style="width:100%;height:auto;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;">
+    <defs>
+      <marker id="cr-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3 z" fill="#8b949e"/>
+      </marker>
+    </defs>
+
+    <!-- 中央控制 -->
+    <rect x="450" y="20" width="200" height="50" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+    <text x="550" y="42" fill="#58a6ff" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700">code-review (主控)</text>
+    <text x="550" y="58" fill="#8b949e" text-anchor="middle" font-size="10">拿到 diff · 准备两份 prompt</text>
+
+    <!-- 平行 sub-agent -->
+    <rect x="100" y="140" width="280" height="80" rx="8" fill="#161b22" stroke="#f0883e" stroke-width="2"/>
+    <text x="240" y="165" fill="#f0883e" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700">Standards sub-agent</text>
+    <text x="240" y="185" fill="#c9d1d9" text-anchor="middle" font-size="11">检查每条违规:仓库标准 → 引用 file + rule</text>
+    <text x="240" y="200" fill="#c9d1d9" text-anchor="middle" font-size="11">检查每个 smell:名字 → 引用 hunk</text>
+    <text x="240" y="215" fill="#8b949e" text-anchor="middle" font-size="10">硬违规 vs judgment call 分别标注 · &lt; 400 words</text>
+
+    <rect x="720" y="140" width="280" height="80" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+    <text x="860" y="165" fill="#3fb950" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700">Spec sub-agent</text>
+    <text x="860" y="185" fill="#c9d1d9" text-anchor="middle" font-size="11">(a) 缺失或部分实现的需求</text>
+    <text x="860" y="200" fill="#c9d1d9" text-anchor="middle" font-size="11">(b) 越权 — spec 没要的行为(scope creep)</text>
+    <text x="860" y="215" fill="#c9d1d9" text-anchor="middle" font-size="11">(c) 看似实现但实现错的 · &lt; 400 words</text>
+
+    <path d="M530,70 L340,140" stroke="#f0883e" stroke-width="1.5" fill="none" marker-end="url(#cr-arrow)" stroke-dasharray="3 3"/>
+    <path d="M570,70 L860,140" stroke="#3fb950" stroke-width="1.5" fill="none" marker-end="url(#cr-arrow)" stroke-dasharray="3 3"/>
+
+    <!-- 上下文隔离符号 -->
+    <text x="550" y="105" text-anchor="middle" fill="#8b949e" font-size="11" font-style="italic">↑ 单条消息 + 两个并行 Agent 调用 ↑</text>
+    <text x="550" y="120" text-anchor="middle" fill="#8b949e" font-size="10">互相看不到对方报告 — 用架构隔离偏见</text>
+
+    <!-- 返回 -->
+    <path d="M340,220 L530,290" stroke="#f0883e" stroke-width="1.5" fill="none" marker-end="url(#cr-arrow)"/>
+    <path d="M860,220 L570,290" stroke="#3fb950" stroke-width="1.5" fill="none" marker-end="url(#cr-arrow)"/>
+
+    <rect x="450" y="290" width="200" height="50" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+    <text x="550" y="312" fill="#58a6ff" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700">聚合 (Aggregate)</text>
+    <text x="550" y="328" fill="#8b949e" text-anchor="middle" font-size="10">不合并 · 不重新排序</text>
+
+    <!-- 最终输出 -->
+    <rect x="350" y="380" width="400" height="60" rx="8" fill="#161b22" stroke="#bc8cff" stroke-width="2"/>
+    <text x="550" y="405" fill="#bc8cff" text-anchor="middle" font-family="JetBrains Mono" font-size="13" font-weight="700">最终报告</text>
+    <text x="550" y="423" fill="#c9d1d9" text-anchor="middle" font-size="11">## Standards   ## Spec   各 axis 最严重项 + 总数</text>
+
+    <path d="M550,340 L550,380" stroke="#8b949e" stroke-width="1.5" fill="none" marker-end="url(#cr-arrow)"/>
+  </svg>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 三层"先决条件"的兜底</h2>
+  <p>SKILL.md 在多个地方都埋了"前置失败就停"的检查:</p>
+
+  <table>
+    <thead>
+      <tr><th>阶段</th><th>兜底检查</th><th>为什么</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>启动</td>
+        <td><code>docs/agents/issue-tracker.md</code> 存在?</td>
+        <td>没装就跑 /setup-matt-pocock-skills,避免 sub-agent 找不到 spec 来源</td>
+      </tr>
+      <tr>
+        <td>第 1 步</td>
+        <td><code>git rev-parse &lt;fixed-point&gt;</code> + diff 非空</td>
+        <td>"bad ref or empty diff should fail here — not inside two parallel sub-agents"</td>
+      </tr>
+      <tr>
+        <td>第 2 步</td>
+        <td>spec 来源按优先级回溯 → 找不到就问用户</td>
+        <td>用户说"没有 spec" → Spec sub-agent 跳过 + 报告注明,而不是编造</td>
+      </tr>
+      <tr>
+        <td>第 3 步</td>
+        <td>仓库标准 > smell 基线</td>
+        <td>仓库白名单豁免,基线让位</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight">
+    <div class="label">★ 关键设计哲学</div>
+    <p>"<strong>A bad ref or empty diff should fail here — not inside two parallel sub-agents.</strong>"<br>
+    翻译:失败要发生在<strong>昂贵的事开始之前</strong>。sub-agent 调用贵、慢、可能误导结果。一次性 git rev-parse 就能挡住的失败,绝不能让它溜进 sub-agent。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 12 smell 的"判定哲学"</h2>
+
+  <h3>每个 smell 都是 heuristic,不是 rule</h3>
+  <p>SKILL.md 第 41 行写得很死:"Always a judgement call. Each smell is a labelled heuristic ('possible Feature Envy'), never a hard violation"。</p>
+
+  <h3>三层优先级</h3>
+  <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;">
+    <ol style="color:#c9d1d9;line-height:2;">
+      <li><strong>工具强制层</strong>(lint / typecheck / formatter) — 直接跳过,sub-agent 不要再报一遍</li>
+      <li><strong>仓库文档层</strong>(CODING_STANDARDS.md) — <span style="color:var(--red)">硬违规</span>,必须 cite file + rule</li>
+      <li><strong>Smell 基线层</strong>(Fowler 12 项) — <span style="color:var(--yellow)">judgment call</span>,必须标 "possible"</li>
+    </ol>
+  </div>
+
+  <h3>"what → fix" 双行结构</h3>
+  <p>每个 smell 的描述都是两行:</p>
+  <pre><code>**Mysterious Name** — [what it is]
+→ [how to fix it]</code></pre>
+  <p>这迫使 sub-agent 不光指出问题,还得知道<strong>怎么救</strong>。把"识别 + 修复"绑定,避免出现"指出 smell 但不告诉怎么改"的尴尬。</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Two-Axis Independence · 双轴独立</div>
+    <div class="ptn-desc">把"代码好不好"和"代码对不对"拆成两个独立 sub-agent,互不通信。聚合时不跨轴排序。</div>
+    <div class="ptn-why">避免一轴掩盖另一轴;避免 reviewer 用"风格 9 分"稀释"功能 3 分"的警报</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Sub-Agent as Scoped Worker</div>
+    <div class="ptn-desc">主 skill 只负责协调,所有真活都外包给 general-purpose sub-agent。Skill 自己不读 diff、不写报告。</div>
+    <div class="ptn-why">让 skill 文件保持 < 100 行;让 sub-agent 各自拥有干净的上下文</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Fail-Fast Gating · 前置失败拦截</div>
+    <div class="ptn-desc">昂贵的 sub-agent 调用前,用便宜的 git rev-parse / diff -q / 文件存在性检查先行。</div>
+    <div class="ptn-why">省时、省 token、避免 sub-agent 拿到坏输入后产出误导结论</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Layered Authority · 三层优先级</div>
+    <div class="ptn-desc">工具强制 &gt; 仓库文档 &gt; smell 基线。每一层都用自己的标注(hard / judgement / possible)。</div>
+    <div class="ptn-why">避免双标(同一问题两套规则);让 reviewer 知道哪条是死的哪条是软的</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Baseline Always On · 永远存在的基线</div>
+    <div class="ptn-desc">仓库即便没有任何文档,12 smell 基线也会跑。仓库文档只能豁免,不能覆盖。</div>
+    <div class="ptn-why">保证零文档项目也能被审查;让标准有下限</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Spec Resolution Hierarchy · Spec 来源回溯</div>
+    <div class="ptn-desc">按 4 级优先级找 spec 来源:commit 引用的 issue → 用户传的路径 → docs/specs → 问用户。找不到就明确跳过,不编。</div>
+    <div class="ptn-why">让 Spec 轴"诚实地说我不知道",比假装审过更可信</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Word Budget on Sub-Agent</div>
+    <div class="ptn-desc">两个 sub-agent 都被显式要求 "Under 400 words"。</div>
+    <div class="ptn-why">逼 sub-agent 摘要;省 token;逼着只报最有价值的问题</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 — 我们可以抄什么?</h2>
+
+  <div class="insight">
+    <div class="label">★ 给 review 流程设计的启示</div>
+    <p>1. <strong>评审要拆维度</strong>:一次只审一个轴,合并 = 掩盖。<br>
+       2. <strong>主 skill 是协调器,不是执行器</strong>:把重活外包给 sub-agent,自己只做调度。<br>
+       3. <strong>先 git rev-parse 再 sub-agent</strong>:挡在贵的事前面。<br>
+       4. <strong>永远有兜底基线</strong>:仓库零文档也能评审。<br>
+       5. <strong>smell 要带 fix</strong>:只说"这有 smell"不够,要说"改成这样"。<br>
+       6. <strong>heuristic 必须标 "possible"</strong>:不让模型把判断当判决。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  code-review 解析 · 文件数 2 · 89 行 · 12 smell · 2 sub-agents · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

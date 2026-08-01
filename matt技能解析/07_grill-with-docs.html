@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>grill-with-docs 技能解析 · Wrapping primitive + 域文档</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 完整 SKILL.md 展示 ===== */
+  .full-doc {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-2);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 与 grill-me 对比 ===== */
+  .compare-table {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .compare-table table { width: 100%; }
+  .compare-table td.cmpr-cell { padding: 16px; }
+  .compare-table tr:hover { background: rgba(88,166,255,0.05); }
+
+  /* ===== 三个技能的嵌套关系 ===== */
+  .nested-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .nest-box {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 8px 0;
+    background: var(--panel);
+  }
+  .nest-box.outer { border-color: var(--accent-2); background: rgba(188,140,255,0.05); }
+  .nest-box.middle { border-color: var(--accent); background: rgba(88,166,255,0.05); }
+  .nest-box.inner { border-color: var(--green); background: rgba(63,185,80,0.05); }
+  .nest-box .label {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .nest-box.outer .label { color: var(--accent-2); }
+  .nest-box.middle .label { color: var(--accent); }
+  .nest-box.inner .label { color: var(--green); }
+  .nest-box .desc { font-size: 13px; color: var(--muted); }
+  .nest-box .role { font-size: 11px; color: var(--text); margin-top: 4px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 07 / 21 篇</span>
+  <h1>grill-with-docs · <span class="accent">带落痕的反复访谈</span></h1>
+  <div class="subtitle">"Run a /grilling session, using the /domain-modeling skill."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 7 行 wrapper</h2>
+  <div class="file-tree">
+    <span class="dir">grill-with-docs/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 7 行 · wrapper,组合 grilling + domain-modeling</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Grill with Docs"</span>
+  </div>
+
+  <p>和 grill-me 是<strong>对称双胞胎</strong> —— 几乎一模一样,只有一行关键差异。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 全文 7 行</h2>
+
+  <div class="full-doc">---
+name: grill-with-docs
+description: A relentless interview to sharpen a plan or design,
+             which also creates docs (ADR's and glossary) as we go.
+disable-model-invocation: true
+---
+
+Run a `/grilling` session, using the `/domain-modeling` skill.</div>
+
+  <p>这是整个仓库里<strong>性价比最高的技能</strong>:7 行 SKILL.md,组合了两个已有技能,产生一个全新的、有落痕的访谈流程。</p>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 与 grill-me 的精确对比</h2>
+
+  <div class="compare-table">
+    <table>
+      <thead>
+        <tr style="background:var(--panel-2);">
+          <th style="padding:12px;text-align:left;color:var(--accent);">维度</th>
+          <th style="padding:12px;text-align:left;color:var(--teal);">grill-me</th>
+          <th style="padding:12px;text-align:left;color:var(--accent-2);">grill-with-docs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cmpr-cell"><strong>正文</strong></td>
+          <td class="cmpr-cell"><code style="color:var(--teal);">Run a `/grilling` session.</code></td>
+          <td class="cmpr-cell"><code style="color:var(--accent-2);">Run a `/grilling` session, <strong>using the `/domain-modeling` skill</strong>.</code></td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>行数</strong></td>
+          <td class="cmpr-cell">7</td>
+          <td class="cmpr-cell">7</td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>是否有落痕</strong></td>
+          <td class="cmpr-cell">❌ 无状态</td>
+          <td class="cmpr-cell">✅ 边访谈边写 CONTEXT.md + ADR</td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>使用场景</strong></td>
+          <td class="cmpr-cell">没有 codebase</td>
+          <td class="cmpr-cell">有 codebase,要落痕</td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>disable-model-invocation</strong></td>
+          <td class="cmpr-cell"><code>true</code></td>
+          <td class="cmpr-cell"><code>true</code></td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>allow_implicit_invocation</strong></td>
+          <td class="cmpr-cell"><code>false</code></td>
+          <td class="cmpr-cell"><code>false</code></td>
+        </tr>
+        <tr>
+          <td class="cmpr-cell"><strong>核心 primitive</strong></td>
+          <td class="cmpr-cell">grilling</td>
+          <td class="cmpr-cell">grilling + domain-modeling</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>两个技能的<strong>差异</strong>只有一句:<strong>"using the /domain-modeling skill"</strong>。<br>
+    多 7 个词 → 多一份完整的领域文档落盘。这种"<strong>加一行换一个特性</strong>"的设计,把"无状态访谈"和"带落痕访谈"用最小成本分开,极具复用性。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 三个技能的嵌套关系</h2>
+  <p>grill-with-docs 的本质是:<strong>把 grilling 和 domain-modeling 串起来</strong>。画出来就是这种嵌套:</p>
+
+  <div class="nested-vis">
+    <div class="nest-box outer">
+      <div class="label">🌳 grill-with-docs</div>
+      <div class="desc">"Run a grilling session, using domain-modeling"</div>
+      <div class="role">入口:用户输入 /grill-with-docs</div>
+      <div style="margin-top:12px;">
+        <div class="nest-box middle">
+          <div class="label">🔥 grilling</div>
+          <div class="desc">12 行 · 决策树遍历 / 一次一问 / 推荐答案 / 等确认</div>
+          <div class="role">算法:逐分支问问题,达成共识前不动</div>
+          <div style="margin-top:12px;">
+            <div class="nest-box inner">
+              <div class="label">📚 domain-modeling</div>
+              <div class="desc">74 行 + 60 行 + 47 行 · 5 个行为 + ADR 三原则</div>
+              <div class="role">副驱动:每次术语解决立即写 CONTEXT.md / 决定写就写 ADR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>从下往上看:</p>
+  <ul style="color:#c9d1d9;">
+    <li><strong>domain-modeling</strong> 提供"如何记词汇表 + ADR"的纪律</li>
+    <li><strong>grilling</strong> 提供"如何反复访谈、达成共识"的核心动作</li>
+    <li><strong>grill-with-docs</strong> 把两者合起来:<strong>边访谈边落痕</strong></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 落痕机制 · 什么时候写文件</h2>
+
+  <p>grilling 提供"对话流",domain-modeling 提供"何时落盘"。两者在每次访谈回合的协作:</p>
+
+  <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <h4 style="color:var(--accent);margin:0 0 8px;">grilling 负责</h4>
+        <ul style="color:#c9d1d9;font-size:13px;line-height:2;">
+          <li>提出下一个问题</li>
+          <li>附带推荐答案</li>
+          <li>等用户答</li>
+          <li>检查是否达成共识</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color:var(--green);margin:0 0 8px;">domain-modeling 负责</h4>
+        <ul style="color:#c9d1d9;font-size:13px;line-height:2;">
+          <li>用术语挑战用户措辞</li>
+          <li>锐化模糊概念</li>
+          <li>把解决的术语立即写进 CONTEXT.md</li>
+          <li>符合三原则时建议写 ADR</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>关键不变量:</strong>grilling 的 "Do not act until I confirm" 闸门照样生效 —— 写文件也是"行动",所以<strong>用户必须先确认共识</strong>,domain-modeling 才能落盘。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 为什么有"with docs"这个变体?</h2>
+
+  <p>ask-matt 主流程里讲得很清楚:</p>
+  <blockquote style="border-left:3px solid var(--accent-2);padding-left:14px;color:#c9d1d9;margin:12px 0;">
+    "<strong>/grill-with-docs</strong> — sharpen the idea by interview. Start here when you <strong>have a codebase</strong>: it's stateful, retaining what it learns in <code>CONTEXT.md</code> and ADRs. (No codebase? Use <strong>/grill-me</strong> — see Standalone.)"
+  </blockquote>
+
+  <p>翻译:</p>
+  <table>
+    <thead>
+      <tr><th>场景</th><th>用谁</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>有 codebase,需要保留访谈成果</td><td><strong>grill-with-docs</strong></td></tr>
+      <tr><td>没 codebase,纯头脑风暴</td><td><strong>grill-me</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>同一套访谈动作,因为"有没有 codebase"分两条路。有 codebase 的对话天然有"留痕需求" —— 你下次再回到这个仓库,需要重新加载上下文。grill-with-docs 把这件事<strong>外包给 domain-modeling 落盘</strong>,而 grilling 本身专注访谈。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Composition by Reference · 引用组合</div>
+    <div class="ptn-desc">grill-with-docs 不复制任何代码,只用一句 "using the /domain-modeling skill" 引用另一个技能。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">One-Line Differentiation · 一行差异化</div>
+    <div class="ptn-desc">和 grill-me 只差一句,但产生"无状态 vs 落痕"完全不同的产品形态。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Two-Primitive Pairing · 双 Primitive 配对</div>
+    <div class="ptn-desc">grilling(算法) + domain-modeling(纪律) = grill-with-docs。Skill 作为"组合点"而非"实现细节"。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Stateless vs Stateful Pairing</div>
+    <div class="ptn-desc">grill-me 是 stateless,grill-with-docs 是 stateful。两个形态分别覆盖不同入口。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Document-as-Side-Effect</div>
+    <div class="ptn-desc">文档是访谈的<strong>副作用</strong>,而不是另一项工作。domain-modeling 在访谈回合中即时触发。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Confirmation Gate Preserved · 闸门保持</div>
+    <div class="ptn-desc">grilling 的"Do not act until I confirm"在 grill-with-docs 里仍然生效。文档落盘也受此约束。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给 Skill 组合设计的启示</div>
+    <p>1. <strong>技能可以组合</strong>:7 行 wrapper + 12 行 primitive + 74 行 discipline = 完整产品。<br>
+       2. <strong>一行差异 = 一个新特性</strong>:加 "using X" 就能把无状态变有状态。<br>
+       3. <strong>不复制代码</strong>:用引用,不要 import 内容。<br>
+       4. <strong>文档是副作用,不是任务</strong>:边访谈边落盘,不另开"写文档"阶段。<br>
+       5. <strong>闸门沿用</strong>:组合新技能时,核心 primitive 的不变量要保留。<br>
+       6. <strong>命名"with X"表达差异</strong>:grill-with-docs / grill-me 一目了然。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  grill-with-docs 解析 · 文件数 2 · 7 行 SKILL.md · grilling × domain-modeling 组合 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

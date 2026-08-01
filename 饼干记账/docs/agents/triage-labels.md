@@ -1,19 +1,32 @@
-# Triage Labels
+# Triage 标签 · 饼干记账
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this Skill's issue tracker (本地 markdown, 以 issue 文件 frontmatter / 状态行记录).
+本目录的 triage 标签按仓库根协议统一映射到 GitHub Issues（详见 `D:\2Study\StudyNotes\SKILLS\docs\agents\triage-labels.md`）。
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
+## 分类（每个 issue 必带 1 个）
 
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
+| 角色 | GitHub Label | 含义 |
+| --- | --- | --- |
+| `bug` | `bug` | 现有行为有缺陷 |
+| `enhancement` | `enhancement` | 新功能或改进 |
 
-## How status is recorded in markdown
+## 状态（每个 issue 必带 1 个）
 
-- 每个 issue 文件顶端写一行：`Status: needs-triage`（或上述 5 个标签之一）
-- 编号连续递增（`01-`, `02-`, …）
-- 关闭 issue 时改为 `Status: wontfix` 或在 `## Answer` 后归入 `ready-for-human`
+| 角色 | GitHub Label | 含义 |
+| --- | --- | --- |
+| `needs-triage` | `needs-triage` | 维护者需要评估 |
+| `needs-info` | `needs-info` | 等报告人补充信息 |
+| `ready-for-agent` | `ready-for-agent` | 已规格化，可交 AFK agent 执行 |
+| `ready-for-human` | `ready-for-human` | 需人工实施 |
+| `wontfix` | `wontfix` | 不会处理 |
+
+## 技能命名空间（每个 issue 必带 1 个）
+
+| 技能目录 | GitHub Label |
+| --- | --- |
+| `饼干记账/` | `skill:饼干记账` |
+
+## 维护规则
+
+- 完整协议与 PAT 安全备注见仓库根 `docs/agents/triage-labels.md`
+- 本目录只维护本技能相关的 skill-namespace 映射
+- 修改实际字符串后，`/triage` 与 `/to-tickets` 会自动同步读根文件

@@ -1,30 +1,44 @@
-# Issue tracker:本地 Markdown
+# SKILL开发总纲V1.0 · 问题追踪协议
 
-本仓库的 issues 和 specs(你可能称之为 PRD)以 markdown 文件形式存于 `.scratch/` 目录。
+本目录的问题（issue）与规格（PRD）按仓库根协议统一发布到 **GitHub Issues**（`FeatherHunter/SKILLS`）。本文件是仓库根 `docs/agents/issue-tracker.md` 在 SKILL开发总纲V1.0 内的子协议说明。
 
-## 约定
+> 完整协议与 PAT 安全备注见 `D:\2Study\StudyNotes\SKILLS\docs\agents\issue-tracker.md`。
 
-- 每个 feature 一个目录:`.scratch/<feature-slug>/`
-- spec 文件:`.scratch/<feature-slug>/spec.md`
-- 实施 issue 每条一个文件:`.scratch/<feature-slug>/issues/<NN>-<slug>.md`,从 `01` 开始编号——绝不合并成单个 tickets 文件
-- triage 状态记录在每个 issue 文件顶部的 `Status:` 行(角色字符串见 `triage-labels.md`)
-- 评论和对话历史追加到文件底部 `## Comments` 标题下
+## SKILL开发总纲V1.0 的分区标识
 
-## 当 skill 说"发布到 issue tracker"
+| 字段 | 值 |
+|---|---|
+| 标题前缀 | `[SKILL开发总纲V1.0]` |
+| 技能 label | `skill:SKILL开发总纲V1.0` |
+| 分类 label | `bug` / `enhancement` |
+| 状态 label | `needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix` |
 
-在 `.scratch/<feature-slug>/` 下新建文件(必要时创建目录)。
+新建 issue 时**必须**同时携带 1 个 `skill:SKILL开发总纲V1.0` label + 1 个分类 label + 1 个状态 label。
 
-## 当 skill 说"拉取相关 ticket"
+## 跨技能协调
 
-读取被引用路径的文件。用户通常直接传路径或 issue 编号。
+总纲项目下的 issue 多为**跨技能协调 / 协议规范**类（如 HTML 交付规范、commit 格式、HTML 镜像约定等），影响所有技能。新建 issue 时建议同时携带 `cross-skill` label，便于跨技能检索。
 
-## 寻路操作(wayfinding)
+## 命令示例（总纲场景）
 
-供 `/wayfinder` 使用。**map** 是一个文件,对应每个 ticket 一个 **child** 文件。
+```bash
+gh issue create \
+  --title "[SKILL开发总纲V1.0] <标题>" \
+  --body-file <(cat <<'EOF'
+## 背景
+...
+## 影响范围
+...
+## 任务
+...
+EOF
+) \
+  --label "skill:SKILL开发总纲V1.0,cross-skill,<分类>,<状态>"
 
-- **Map**:`.scratch/<effort>/map.md` — Notes / Decisions-so-far / Fog 正文
-- **Child ticket**:`.scratch/<effort>/issues/NN-<slug>.md`,从 `01` 编号,正文写问题。`Type:` 行记录 ticket 类型(`research`/`prototype`/`grilling`/`task`);`Status:` 行记录 `claimed`/`resolved`
-- **阻塞**:`Blocked by: NN, NN` 行靠近顶部。当它列出的每个文件都 `resolved` 时,ticket 解除阻塞
-- **Frontier**:扫描 `.scratch/<effort>/issues/`,找开放、未阻塞、未认领的文件;编号最小者胜
-- **认领**:开工前先设 `Status: claimed` 并保存
-- **解决**:在 `## Answer` 标题下追加答案,设 `Status: resolved`,然后把上下文指针(gist + 链接)追加到 map.md 的 Decisions-so-far
+gh issue list --state open --label "skill:SKILL开发总纲V1.0"
+gh issue list --state open --label "cross-skill"
+```
+
+## 文件历史说明
+
+本文件原内容描述"本地 Markdown"（`.scratch/`），是仓库迁移到 GitHub Issues 之前的快照。2026-08-01 按用户决策升级为 GitHub Issues 协议，与仓库根同步。

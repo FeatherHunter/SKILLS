@@ -1,30 +1,38 @@
-# Issue 跟踪:本地 Markdown
+# 智剪工坊 · 问题追踪协议
 
-本仓库的 Issue 与 spec(你可能称之为 PRD)以 markdown 文件形式存放在 `.scratch/` 下。
+本目录的问题（issue）与规格（PRD）按仓库根协议统一发布到 **GitHub Issues**（`FeatherHunter/SKILLS`）。本文件是仓库根 `docs/agents/issue-tracker.md` 在智剪工坊技能内的子协议说明。
 
-## 约定
+> 完整协议与 PAT 安全备注见 `D:\2Study\StudyNotes\SKILLS\docs\agents\issue-tracker.md`。
 
-- 每个功能一个目录:`.scratch/<功能名-slug>/`
-- spec 文件为 `.scratch/<功能名-slug>/spec.md`
-- 实现类 Issue 每张工单一文件,放在 `.scratch/<功能名-slug>/issues/<NN>-<slug>.md`,从 `01` 开始编号 —— 不要把多张工单合并到一个文件
-- Triage 状态以文件顶部附近的 `Status:` 行记录(角色字符串见 `triage-labels.md`)
-- 评论与对话历史追加到文件底部,置于 `## Comments` 标题之下
+## 智剪工坊的分区标识
 
-## 当技能要求「发布到 issue 跟踪」时
+| 字段 | 值 |
+|---|---|
+| 标题前缀 | `[智剪工坊]` |
+| 技能 label | `skill:智剪工坊` |
+| 分类 label | `bug` / `enhancement` |
+| 状态 label | `needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix` |
 
-在 `.scratch/<功能名-slug>/` 下新建文件(如目录不存在则创建)。
+新建 issue 时**必须**同时携带 1 个 `skill:智剪工坊` label + 1 个分类 label + 1 个状态 label。
 
-## 当技能要求「获取相关工单」时
+## 命令示例（智剪工坊场景）
 
-读取所引用路径的文件。用户通常会直接传入路径或 issue 编号。
+```bash
+gh issue create \
+  --title "[智剪工坊] <标题>" \
+  --body-file <(cat <<'EOF'
+## 背景
+...
+## 任务
+...
+EOF
+) \
+  --label "skill:智剪工坊,<分类>,<状态>"
 
-## Wayfinder 操作
+gh issue list --state open --label "skill:智剪工坊"
+gh issue list --state open --label "ready-for-agent"
+```
 
-供 `/wayfinder` 使用。**map(地图)** 是一个文件,每个 **child(子工单)** 各占一文件。
+## 文件历史说明
 
-- **Map**:`.scratch/<effort>/map.md` —— 包含 Notes / Decisions-so-far / Fog 主体。
-- **Child 工单**:`.scratch/<effort>/issues/NN-<slug>.md`,从 `01` 开始编号,正文中写明问题。用 `Type:` 行记录工单类型(`research`/`prototype`/`grilling`/`task`);用 `Status:` 行记录 `claimed`/`resolved`。
-- **阻塞**:文件顶部附近的 `Blocked by: NN, NN` 行。当它列出的每个文件都为 `resolved` 时,该工单即解除阻塞。
-- **Frontier**:扫描 `.scratch/<effort>/issues/`,找出处于 open、未阻塞、未认领状态的文件;编号最小者优先。
-- **认领(Claim)**:开始任何工作前,先置 `Status: claimed` 并保存。
-- **解决(Resolve)**:在 `## Answer` 标题下追加答案,置 `Status: resolved`,然后把上下文指针(gist + 链接)追加到 `map.md` 的 Decisions-so-far 中。
+本文件原内容描述"本地 Markdown"（`.scratch/`），是仓库迁移到 GitHub Issues 之前的快照。2026-08-01 按用户决策升级为 GitHub Issues 协议，与仓库根同步。

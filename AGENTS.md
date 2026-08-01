@@ -37,4 +37,4 @@ GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]
 
 ### Domain docs
 
-单上下文仓库布局，根 `CONTEXT.md` + 根 `docs/adr/` 存仓库级术语与决策；各技能通过 `CONTEXT-MAP.md` 索引到各自的 `CONTEXT.md`。详见 `docs/agents/domain.md`。
+单仓库多上下文布局，根 `CONTEXT.md` + 根 `CONTEXT-MAP.md` 索引到各技能子目录的 `CONTEXT.md`。详见 `docs/agents/domain.md`。

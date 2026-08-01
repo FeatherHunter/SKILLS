@@ -1,4 +1,4 @@
-# Triage 标签 · SKILL开发总纲V1.0
+# Triage 标签 · 作息管家
 
 本目录的 triage 标签按仓库根协议统一映射到 GitHub Issues（详见 `D:\2Study\StudyNotes\SKILLS\docs\agents\triage-labels.md`）。
 
@@ -23,11 +23,7 @@
 
 | 技能目录 | GitHub Label |
 | --- | --- |
-| `SKILL开发总纲V1.0/` | `skill:SKILL开发总纲V1.0` |
-
-## 跨技能主题（可选）
-
-总纲项目下的 issue 多为跨技能协调/协议规范类，建议同时携带 `cross-skill` label。
+| `作息管家/` | `skill:作息管家` |
 
 ## 维护规则
 

@@ -1,39 +1,22 @@
-# Domain Docs
+# 领域文档 · 饼干记账
 
-How the engineering skills should consume this Skill's domain documentation when exploring the codebase.
+本目录的领域文档布局按仓库根协议（详见 `D:\2Study\StudyNotes\SKILLS\docs\agents\domain.md`）。
 
-## Before exploring, read these
+## 探索之前，先读这些
 
-- **`CONTEXT.md`** at the Skill root (`饼干记账/CONTEXT.md`)
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. For this Skill, the folder is `饼干记账/docs/adr/`.
+按顺序（根协议定义）：
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+1. 仓库根 `CONTEXT-MAP.md` — 索引本仓库所有技能子目录的 `CONTEXT.md`
+2. `饼干记账/CONTEXT.md` — 本技能的术语表与领域概念定义
+3. `饼干记账/docs/adr/`（若有）— 本技能专属决策
+4. 仓库根 `docs/adr/`（若有）— 仓库级决策
 
-## File structure
+若上述任一文件不存在，**静默继续**。
 
-Single-context Skill (this Skill):
+## 本仓库布局
 
-```
-饼干记账/
-├── CONTEXT.md
-├── docs/
-│   ├── agents/    ← issue-tracker.md / triage-labels.md / domain.md
-│   └── adr/       ← architecture decision records
-├── scripts/       ← Python CLI + 数据层 + 操作层
-├── references/    ← categories.md / scenarios.json / scenarios.md
-├── templates/     ← query_view.html / help.html
-├── backups/       ← CSV 迁移备份 (gitignored)
-└── SKILL.md       ← 主契约
-```
+本仓库是**单仓库多上下文**：根 `CONTEXT.md` + 根 `CONTEXT-MAP.md` 索引到各技能子目录的 `CONTEXT.md`。每个技能是一个独立的领域上下文。
 
-## Use the glossary's vocabulary
+## 范围标识
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+每个 issue 标题必须以 `[饼干记账]` 开头，并携带 `skill:饼干记账` label。

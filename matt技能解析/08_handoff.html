@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>handoff 技能解析 · 跨会话上下文压缩桥</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(88,166,255,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(88,166,255,0.15);
+    border: 1px solid rgba(88,166,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent-2); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 完整 SKILL.md ===== */
+  .full-doc {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 5 条核心规则 ===== */
+  .rule-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0;
+  }
+  .rule-card .n {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .rule-card .body { color: var(--text); font-size: 13px; margin-top: 4px; }
+  .rule-card .danger { color: var(--red); font-size: 12px; margin-top: 4px; }
+
+  /* ===== Handoff 文档模板示例 ===== */
+  .tmpl {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    line-height: 1.7;
+  }
+  .tmpl h1, .tmpl h2 { color: var(--accent); font-family: sans-serif; }
+  .tmpl h1 { font-size: 18px; margin: 0 0 12px; }
+  .tmpl h2 { font-size: 14px; margin: 16px 0 8px; border: none; padding: 0; }
+
+  /* ===== Bridge Visualization ===== */
+  .bridge-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .session-box {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    width: 200px;
+    margin: 0 auto;
+  }
+  .session-box.from { border-color: var(--orange); }
+  .session-box.to { border-color: var(--teal); }
+  .session-box .label {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .session-box.from .label { color: var(--orange); }
+  .session-box.to .label { color: var(--teal); }
+  .session-box .desc { font-size: 12px; color: var(--muted); }
+  .session-box .state { font-size: 11px; color: var(--text); margin-top: 4px; }
+
+  /* ===== 路径策略对比 ===== */
+  .paths {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .path-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .path-card.win { border-color: var(--red); }
+  .path-card.tmp { border-color: var(--green); }
+  .path-card .ptitle { font-weight: 700; margin-bottom: 8px; }
+  .path-card.win .ptitle { color: var(--red); }
+  .path-card.tmp .ptitle { color: var(--green); }
+  .path-card .example { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .path-card .verdict { margin-top: 12px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; font-size: 12px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(88,166,255,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 08 / 21 篇</span>
+  <h1>handoff · <span class="accent">跨会话的上下文桥</span></h1>
+  <div class="subtitle">"Compact the current conversation into a handoff document for another agent to pick up."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 极简</h2>
+  <div class="file-tree">
+    <span class="dir">handoff/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 16 行 · 5 条规则 + argument-hint</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Handoff"</span>
+  </div>
+  <p>整个仓库里"功能/行数比"最高的技能之一。16 行覆盖了一个完整的跨会话压缩协议。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 全文 16 行</h2>
+
+  <div class="full-doc">---
+name: handoff
+description: Compact the current conversation into a handoff document for another agent to pick up.
+argument-hint: "What will the next session be used for?"
+disable-model-invocation: true
+---
+
+Write a handoff document summarising the current conversation so a fresh
+agent can continue the work. Save to the temporary directory of the user's
+OS - not the current workspace.
+
+Include a "suggested skills" section in the document, which suggests skills
+that the agent should invoke.
+
+Do not duplicate content already captured in other artifacts (specs, plans,
+ADRs, issues, commits, diffs). Reference them by path or URL instead.
+
+Redact any sensitive information, such as API keys, passwords, or personally
+identifiable information.
+
+If the user passed arguments, treat them as a description of what the next
+session will focus on and tailor the doc accordingly.</div>
+
+  <h3>5 个关键元数据</h3>
+  <div class="kv">
+    <div class="k">name</div><div class="v"><code>handoff</code></div>
+    <div class="k">description</div><div class="v">"Compact the current conversation into a handoff document for another agent to pick up."</div>
+    <div class="k"><strong>argument-hint</strong></div><div class="v">"What will the next session be used for?"</div>
+    <div class="k">disable-model-invocation</div><div class="v"><code style="color:var(--red)">true</code></div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ argument-hint</div>
+    <p>这是 <strong>argument-hint</strong> 在我们已解析技能里的<strong>首次出现</strong>。<br>
+    它提示用户:<em>"输入这个技能时,告诉我下一会话要干嘛"</em>。把这句当作<strong>下一会话的目标描述</strong>,handoff 文档会据此定制。<br>
+    这是一种"为下一个 agent 写 README"的工程化做法。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 5 条规则详解</h2>
+
+  <div class="rule-card">
+    <div class="n">① SAVE TO OS TEMP DIR</div>
+    <div class="body">"<strong>Save to the temporary directory of the user's OS - not the current workspace.</strong>"</div>
+    <div class="danger">为什么不是工作区?工作区里已经有 specs / ADRs / commits。handoff 是<strong>会话间</strong>的桥,不该污染仓库。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">② SUGGESTED SKILLS SECTION</div>
+    <div class="body">"<strong>Include a 'suggested skills' section</strong> in the document, which suggests skills that the agent should invoke."<br>
+    下一个 agent 一加载就能看到:你该用什么 skill。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">③ NO DUPLICATION</div>
+    <div class="body">"<strong>Do not duplicate content already captured in other artifacts</strong> (specs, plans, ADRs, issues, commits, diffs). <strong>Reference them by path or URL instead.</strong>"</div>
+    <div class="danger">避免"摘要的摘要" —— 引用,不复制。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">④ REDACT SENSITIVE</div>
+    <div class="body">"<strong>Redact any sensitive information</strong>, such as API keys, passwords, or personally identifiable information."</div>
+    <div class="danger">脱敏硬规则。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">⑤ TAILOR VIA ARGUMENTS</div>
+    <div class="body">"<strong>If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.</strong>"<br>
+    用户传参 → 下一会话目标描述 → 文档针对性裁剪。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Bridge 可视化 · 两个会话的桥</h2>
+
+  <div class="bridge-vis">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
+      <div class="session-box from">
+        <div class="label">SESSION A · 当前</div>
+        <div class="desc">token 快到 smart zone 上限</div>
+        <div class="state">上下文:80k tokens · 工作进行中</div>
+      </div>
+
+      <div class="session-box to">
+        <div class="label">SESSION B · 下一个</div>
+        <div class="desc">全新 session · 全空白上下文</div>
+        <div class="state">context: 0 tokens · 等待接手</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:24px 0;">
+      <svg width="80%" height="80" viewBox="0 0 800 80" style="max-width:600px;">
+        <defs>
+          <marker id="bridge-arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto">
+            <path d="M0,0 L0,8 L10,4 z" fill="#58a6ff"/>
+          </marker>
+        </defs>
+        <rect x="320" y="20" width="160" height="40" rx="8" fill="rgba(88,166,255,0.15)" stroke="#58a6ff" stroke-width="2"/>
+        <text x="400" y="38" text-anchor="middle" fill="#58a6ff" font-family="JetBrains Mono" font-size="11" font-weight="700">handoff.md</text>
+        <text x="400" y="52" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">临时目录 · 脱敏 · 引用不复制</text>
+        <path d="M160,40 L320,40" stroke="#58a6ff" stroke-width="2" fill="none" marker-end="url(#bridge-arrow)" stroke-dasharray="4 3"/>
+        <path d="M480,40 L640,40" stroke="#58a6ff" stroke-width="2" fill="none" marker-end="url(#bridge-arrow)" stroke-dasharray="4 3"/>
+      </svg>
+      <p style="color:var(--muted);font-size:13px;margin-top:8px;">
+        handoff.md 作为<strong>唯一载体</strong>,让新会话拿到继续工作的最小可行上下文
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 路径策略 · 为什么写到 OS 临时目录?</h2>
+
+  <div class="paths">
+    <div class="path-card win">
+      <div class="ptitle">❌ 工作区 (current workspace)</div>
+      <pre style="background:#0e1116;border-color:var(--red);font-size:12px;">.scratch/handoff.md
+.handoff/session-2026-08-01.md
+docs/handoff/...</pre>
+      <div class="verdict" style="color:var(--red);">
+        <strong>为什么不行:</strong><br>
+        · 污染仓库(commit 时要清理)<br>
+        · 容易和 spec / ADR 混淆<br>
+        · 多人协作时不该共享
+      </div>
+    </div>
+
+    <div class="path-card tmp">
+      <div class="ptitle">✅ OS 临时目录</div>
+      <pre style="background:#0e1116;border-color:var(--green);font-size:12px;">macOS:  /tmp/handoff-YYYYMMDD-HHMM.md
+Linux:  /tmp/handoff-YYYYMMDD-HHMM.md
+Win:    %TEMP%\handoff-YYYYMMDD-HHMM.md</pre>
+      <div class="verdict" style="color:var(--green);">
+        <strong>为什么对:</strong><br>
+        · OS 级别干净,不和 git 交互<br>
+        · 重启自动清,不残留<br>
+        · 跨工作区可用(同一台机器)
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> handoff 文档应该长什么样?</h2>
+  <p>5 条规则组合在一起,生成的 handoff 文档大概是这样(示意):</p>
+
+  <div class="tmpl">
+    <h1># Handoff · &lt;DATE&gt; · &lt;NEXT_SESSION_PURPOSE&gt;</h1>
+
+    <h2>Context</h2>
+    <p>[1-2 段:上次会话在做什么,为什么要切走]</p>
+
+    <h2>Current State</h2>
+    <ul>
+      <li>已完成:[...引用 commit / spec / ADR,不重复内容]</li>
+      <li>进行中:[...在哪,下一步是什么]</li>
+      <li>卡住:[...已知障碍 + 已排除的方案]</li>
+    </ul>
+
+    <h2>Suggested Skills</h2>
+    <ul>
+      <li><code>/implement</code> — 用于继续实现 ticket #N</li>
+      <li><code>/diagnosing-bugs</code> — 用于 Phase 1 还在跑的 bug 调查</li>
+      <li><code>/to-spec</code> — 若需要把这次访谈落成 spec</li>
+    </ul>
+
+    <h2>References</h2>
+    <ul>
+      <li>spec: <code>docs/specs/feature-x.md</code></li>
+      <li>ADR: <code>docs/adr/0007-event-sourcing.md</code></li>
+      <li>PR: <a href="...">github.com/.../pull/42</a></li>
+      <li>commit: <code>a4f2c1d</code></li>
+    </ul>
+
+    <h2>Decisions Made</h2>
+    <ul>
+      <li>[决策 1]:因为 [理由]</li>
+      <li>[决策 2]:因为 [理由]</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <strong>关键原则:</strong>references 里的所有 path / URL,下一个 agent 一加载就能 <code>cat</code> / <code>open</code> 看到原文。handoff.md 自己<strong>不复制</strong>那些内容,只做<strong>索引 + 决策摘要</strong>。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 与 ask-matt 主流程的交叉引用</h2>
+  <p>在 ask-matt 主流程里,handoff 出现 3 次:</p>
+
+  <ol style="color:#c9d1d9;line-height:2.2;">
+    <li><strong>主流程 Step 2:</strong>"detour through a prototype, bridged by /handoff in both directions"</li>
+    <li><strong>Crossing sessions:</strong>"when a thread is full or you need to branch off (e.g. into a /prototype session)"</li>
+    <li><strong>Standalone-like:</strong>配合 /prototype / implement 等多场景使用</li>
+  </ol>
+
+  <p>三处都强调"<strong>在 fork 之前 / 之后</strong>"两个方向用同一个 handoff:出去时压缩,进来时恢复。</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Bridge Pattern · 桥接模式</div>
+    <div class="ptn-desc">跨会话靠"一份 markdown 文件"当桥。本会话写,新会话读。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Argument-Hint for Tailoring</div>
+    <div class="ptn-desc"><code>argument-hint</code> 字段提示用户传"下个会话用途"。文档据此裁剪,不是通用模板。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Reference, Don't Duplicate · 引用不复制</div>
+    <div class="ptn-desc">spec / ADR / commit 都已经存在,只引用 path / URL,不复制内容。避免"摘要的摘要"失真。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">OS Temp Directory · OS 临时目录</div>
+    <div class="ptn-desc">不写工作区,写 OS 临时目录。避免污染仓库,自动清理,跨工作区。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Suggested Skills Section</div>
+    <div class="ptn-desc">handoff 文档必含 "Suggested Skills" 一节。新 agent 一加载就知道用哪些 skill。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Redaction as Hard Rule</div>
+    <div class="ptn-desc">API keys / passwords / PII 必须脱敏。不是建议,是硬规则。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Explicit-Only Invocation</div>
+    <div class="ptn-desc"><code>disable-model-invocation: true</code> + <code>allow_implicit_invocation: false</code>。handoff 不能被模型脑补出来,只能用户显式触发。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给跨会话工具设计的启示</div>
+    <p>1. <strong>argument-hint 让用户参与设计</strong>:技能参数是用户和下一个 agent 之间的契约。<br>
+       2. <strong>写到 OS 临时目录</strong>:不污染仓库,不进 git,自动清理。<br>
+       3. <strong>引用不复制</strong>:让已有 spec / ADR / commit 担任"内容源",handoff 只做索引。<br>
+       4. <strong>Suggested Skills 让接手更顺</strong>:新 agent 一加载就知道用哪些 skill。<br>
+       5. <strong>脱敏是硬规则</strong>:不是建议。<br>
+       6. <strong>显式触发</strong>:handoff 不能脑补。<br>
+       7. <strong>和 compact 划清</strong>:handoff 是 fork,compact 是 continue。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  handoff 解析 · 文件数 2 · 16 行 SKILL.md · 5 条规则 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

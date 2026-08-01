@@ -23,7 +23,7 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
 本文件当前 80 个 wake_word 为**旧版运行时数据**(v2.x 时代)。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
-已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39(2026-08-01)。
+已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 29(2026-08-01)。
 **Phase 2 同步时按 scene-data 替换本文件对应分类**,当前勿据此文件判断"最终场景设计"。
 
 """

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matt Pocock Skills 全集解析 · 设计哲学总览</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 64px 24px 48px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(88,166,255,0.10) 0%, rgba(188,140,255,0.10) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .top-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(88,166,255,0.15);
+    border: 1px solid rgba(88,166,255,0.4);
+    border-radius: 99px;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+  }
+  h1 { margin: 0 0 16px; font-size: 44px; letter-spacing: -1px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 16px; max-width: 720px; margin: 0 auto; }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 32px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: rgba(20,20,30,0.5);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 22px;
+    min-width: 100px;
+  }
+  .stat .num { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 18px; margin: 28px 0 14px; color: var(--accent-2); }
+  p { margin: 10px 0; color: #c9d1d9; }
+
+  /* ===== Skill Grid ===== */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .skill-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    transition: transform 0.15s, border-color 0.15s;
+    text-decoration: none;
+    color: var(--text);
+    display: block;
+  }
+  .skill-card:hover { transform: translateX(4px); }
+  .skill-card.router { border-left-color: var(--accent); }
+  .skill-card.flow { border-left-color: var(--green); }
+  .skill-card.onramp { border-left-color: var(--orange); }
+  .skill-card.vocab { border-left-color: var(--purple); }
+  .skill-card.health { border-left-color: var(--pink); }
+  .skill-card.standalone { border-left-color: var(--teal); }
+  .skill-card.meta { border-left-color: var(--yellow); }
+  .skill-card .n {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .skill-card .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .skill-card .desc { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .skill-card .meta-info {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .skill-card .meta-info .badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* ===== 全景图 ===== */
+  .panorama-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  svg.pano-svg { width: 100%; height: auto; max-height: 700px; }
+  .pano-svg rect { fill: rgba(20,20,30,0.8); stroke-width: 1.5; }
+  .pano-svg text { fill: var(--text); font-family: "JetBrains Mono", monospace; font-size: 11px; text-anchor: middle; }
+  .pano-svg text.title { font-weight: 700; font-size: 13px; }
+  .pano-svg text.desc { fill: var(--muted); font-size: 10px; font-family: sans-serif; }
+  .pano-svg line { stroke-width: 2; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(88,166,255,0.08), rgba(188,140,255,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== 设计哲学表 ===== */
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 12px; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-tag">MATT POCOCK SKILLS · DEEP DIVE</div>
+  <h1><span class="accent">21 篇解析</span> · 完整设计哲学</h1>
+  <p class="subtitle">对 mattpocock/skills 仓库全部活跃技能的逐文件深度解析。每个技能独立 HTML 报告 + 一份总览本文,涵盖词汇 / 流程 / 设计模式 / 可借鉴要点。</p>
+  <div class="stats">
+    <div class="stat">
+      <div class="num">21</div>
+      <div class="lbl">活跃技能</div>
+    </div>
+    <div class="stat">
+      <div class="num">~60</div>
+      <div class="lbl">总文件</div>
+    </div>
+    <div class="stat">
+      <div class="num">~1,500</div>
+      <div class="lbl">总行数</div>
+    </div>
+    <div class="stat">
+      <div class="num">7</div>
+      <div class="lbl">设计类别</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <h2>01 · 仓库结构</h2>
+  <p><code>C:\Users\辰辰洋洋\.config\opencode\skills-repos\mattpocock-skills\skills\</code> 下分两目录:</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">
+    <div style="background:var(--panel-2);padding:16px;border-radius:8px;border:1px solid var(--border);">
+      <h3 style="margin:0 0 8px;color:var(--accent);">engineering/ (16 个)</h3>
+      <ul style="color:#c9d1d9;font-size:13px;line-height:1.9;margin:0;padding-left:18px;">
+        <li>ask-matt · code-review · codebase-design</li>
+        <li>diagnosing-bugs · domain-modeling</li>
+        <li>grill-with-docs · implement</li>
+        <li>improve-codebase-architecture</li>
+        <li>prototype · research</li>
+        <li>resolving-merge-conflicts</li>
+        <li>setup-matt-pocock-skills · tdd</li>
+        <li>to-spec · to-tickets · triage · wayfinder</li>
+      </ul>
+    </div>
+    <div style="background:var(--panel-2);padding:16px;border-radius:8px;border:1px solid var(--border);">
+      <h3 style="margin:0 0 8px;color:var(--pink);">productivity/ (5 个)</h3>
+      <ul style="color:#c9d1d9;font-size:13px;line-height:1.9;margin:0;padding-left:18px;">
+        <li>grill-me · grilling</li>
+        <li>handoff · teach</li>
+        <li>writing-great-skills</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>另有三个目录未解析</strong> —— <code>deprecated/</code> · <code>in-progress/</code> · <code>misc/</code> · <code>personal/</code>,共 24 个,但不属于本次"<strong>活跃</strong>"范围。
+  </div>
+</section>
+
+<section>
+  <h2>02 · 全景图 · 21 个技能按类别分布</h2>
+
+  <div class="panorama-vis">
+    <svg class="pano-svg" viewBox="0 0 1100 700">
+      <!-- ===== MAIN FLOW (绿色) ===== -->
+      <text x="200" y="40" class="title" fill="#3fb950">MAIN FLOW</text>
+      <text x="200" y="55" class="desc">主流程:idea → ship</text>
+
+      <rect x="80" y="80" width="160" height="50" rx="6" stroke="#3fb950"/>
+      <text x="160" y="103" fill="#3fb950">grill-with-docs</text>
+      <text x="160" y="120" class="desc">访谈 · 落痕</text>
+
+      <rect x="280" y="80" width="140" height="50" rx="6" stroke="#3fb950"/>
+      <text x="350" y="103" fill="#3fb950">prototype</text>
+      <text x="350" y="120" class="desc">throwaway 探针</text>
+
+      <rect x="460" y="80" width="140" height="50" rx="6" stroke="#3fb950"/>
+      <text x="530" y="103" fill="#3fb950">to-spec</text>
+      <text x="530" y="120" class="desc">对话 → spec</text>
+
+      <rect x="640" y="80" width="140" height="50" rx="6" stroke="#3fb950"/>
+      <text x="710" y="103" fill="#3fb950">to-tickets</text>
+      <text x="710" y="120" class="desc">拆 tracer bullets</text>
+
+      <rect x="820" y="80" width="140" height="50" rx="6" stroke="#3fb950"/>
+      <text x="890" y="103" fill="#3fb950">implement</text>
+      <text x="890" y="120" class="desc">执行编排</text>
+
+      <rect x="1000" y="80" width="100" height="50" rx="6" stroke="#3fb950"/>
+      <text x="1050" y="103" fill="#3fb950">code-review</text>
+      <text x="1050" y="120" class="desc">双轴</text>
+
+      <line x1="240" y1="105" x2="280" y2="105" stroke="#3fb950"/>
+      <line x1="420" y1="105" x2="460" y2="105" stroke="#3fb950"/>
+      <line x1="600" y1="105" x2="640" y2="105" stroke="#3fb950"/>
+      <line x1="780" y1="105" x2="820" y2="105" stroke="#3fb950"/>
+      <line x1="960" y1="105" x2="1000" y2="105" stroke="#3fb950"/>
+
+      <text x="600" y="160" class="desc">→ /tdd 在 implement 内部驱动</text>
+
+      <!-- ===== ON-RAMPS (橙色) ===== -->
+      <text x="200" y="220" class="title" fill="#f0883e">ON-RAMPS</text>
+      <text x="200" y="235" class="desc">突发事件汇入主流程</text>
+
+      <rect x="40" y="260" width="120" height="50" rx="6" stroke="#f0883e"/>
+      <text x="100" y="283" fill="#f0883e">diagnosing-bugs</text>
+      <text x="100" y="300" class="desc">6 阶段 debug</text>
+
+      <rect x="180" y="260" width="120" height="50" rx="6" stroke="#f0883e"/>
+      <text x="240" y="283" fill="#f0883e">resolving-merge</text>
+      <text x="240" y="300" class="desc">冲突解决</text>
+
+      <rect x="320" y="260" width="120" height="50" rx="6" stroke="#f0883e"/>
+      <text x="380" y="283" fill="#f0883e">wayfinder</text>
+      <text x="380" y="300" class="desc">巨型项目</text>
+
+      <rect x="460" y="260" width="120" height="50" rx="6" stroke="#f0883e"/>
+      <text x="520" y="283" fill="#f0883e">triage</text>
+      <text x="520" y="300" class="desc">Issue 状态机</text>
+
+      <line x1="100" y1="260" x2="160" y2="130" stroke="#f0883e" stroke-dasharray="3 3"/>
+      <line x1="240" y1="260" x2="350" y2="130" stroke="#f0883e" stroke-dasharray="3 3"/>
+      <line x1="380" y1="260" x2="710" y2="130" stroke="#f0883e" stroke-dasharray="3 3"/>
+      <line x1="520" y1="260" x2="890" y2="130" stroke="#f0883e" stroke-dasharray="3 3"/>
+
+      <!-- ===== ROUTER (蓝色) ===== -->
+      <text x="950" y="220" class="title" fill="#58a6ff">ROUTER</text>
+      <rect x="900" y="240" width="120" height="50" rx="6" stroke="#58a6ff"/>
+      <text x="960" y="263" fill="#58a6ff">ask-matt</text>
+      <text x="960" y="280" class="desc">路由器</text>
+
+      <!-- ===== VOCAB (紫色) ===== -->
+      <text x="200" y="370" class="title" fill="#bc8cff">VOCABULARY</text>
+      <text x="200" y="385" class="desc">词汇底层,被默默引用</text>
+
+      <rect x="80" y="410" width="160" height="50" rx="6" stroke="#bc8cff"/>
+      <text x="160" y="433" fill="#bc8cff">codebase-design</text>
+      <text x="160" y="450" class="desc">deep module 词汇</text>
+
+      <rect x="280" y="410" width="160" height="50" rx="6" stroke="#bc8cff"/>
+      <text x="360" y="433" fill="#bc8cff">domain-modeling</text>
+      <text x="360" y="450" class="desc">领域 + ADR</text>
+
+      <rect x="480" y="410" width="100" height="50" rx="6" stroke="#bc8cff"/>
+      <text x="530" y="433" fill="#bc8cff">tdd</text>
+      <text x="530" y="450" class="desc">红绿循环</text>
+
+      <!-- ===== STANDALONE (青色) ===== -->
+      <text x="200" y="500" class="title" fill="#39c5cf">STANDALONE</text>
+      <text x="200" y="515" class="desc">不在主流程上,随时可用</text>
+
+      <rect x="40" y="540" width="100" height="50" rx="6" stroke="#39c5cf"/>
+      <text x="90" y="563" fill="#39c5cf">grill-me</text>
+      <text x="90" y="580" class="desc">无状态访谈</text>
+
+      <rect x="160" y="540" width="100" height="50" rx="6" stroke="#39c5cf"/>
+      <text x="210" y="563" fill="#39c5cf">handoff</text>
+      <text x="210" y="580" class="desc">跨会话桥</text>
+
+      <rect x="280" y="540" width="100" height="50" rx="6" stroke="#39c5cf"/>
+      <text x="330" y="563" fill="#39c5cf">research</text>
+      <text x="330" y="580" class="desc">后台调研</text>
+
+      <rect x="400" y="540" width="100" height="50" rx="6" stroke="#39c5cf"/>
+      <text x="450" y="563" fill="#39c5cf">teach</text>
+      <text x="450" y="580" class="desc">教学 workspace</text>
+
+      <rect x="520" y="540" width="120" height="50" rx="6" stroke="#39c5cf"/>
+      <text x="580" y="563" fill="#39c5cf">grilling</text>
+      <text x="580" y="580" class="desc">访谈 primitive</text>
+
+      <!-- ===== HEALTH (粉色) ===== -->
+      <text x="750" y="370" class="title" fill="#f778ba">HEALTH</text>
+      <rect x="720" y="390" width="200" height="50" rx="6" stroke="#f778ba"/>
+      <text x="820" y="413" fill="#f778ba">improve-codebase-arch</text>
+      <text x="820" y="430" class="desc">架构巡检</text>
+
+      <!-- ===== META (黄色) ===== -->
+      <text x="950" y="370" class="title" fill="#d29922">META</text>
+      <rect x="720" y="540" width="200" height="50" rx="6" stroke="#d29922"/>
+      <text x="820" y="563" fill="#d29922">writing-great-skills</text>
+      <text x="820" y="580" class="desc">元技能</text>
+
+      <rect x="950" y="540" width="160" height="50" rx="6" stroke="#d29922"/>
+      <text x="1030" y="563" fill="#d29922">setup-matt-pocock</text>
+      <text x="1030" y="580" class="desc">仓库级脚手架</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2>03 · 全部技能索引(21 个)</h2>
+
+  <div class="skill-grid">
+
+    <a href="01_ask-matt.html" class="skill-card router">
+      <div class="n">01</div>
+      <div class="name">ask-matt</div>
+      <div class="desc">路由器 · 告诉用户该用哪个技能</div>
+      <div class="meta-info">
+        <span class="badge">router</span>
+        <span class="badge">78 行</span>
+        <span class="badge">2 文件</span>
+      </div>
+    </a>
+
+    <a href="02_code-review.html" class="skill-card flow">
+      <div class="n">02</div>
+      <div class="name">code-review</div>
+      <div class="desc">双轴独立评审 · Standards + Spec</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">89 行</span>
+        <span class="badge">12 smell</span>
+      </div>
+    </a>
+
+    <a href="03_codebase-design.html" class="skill-card vocab">
+      <div class="n">03</div>
+      <div class="name">codebase-design</div>
+      <div class="desc">深度模块词汇体系 · module/seam/depth</div>
+      <div class="meta-info">
+        <span class="badge">vocab</span>
+        <span class="badge">195 行</span>
+        <span class="badge">3 文件</span>
+      </div>
+    </a>
+
+    <a href="04_diagnosing-bugs.html" class="skill-card onramp">
+      <div class="n">04</div>
+      <div class="name">diagnosing-bugs</div>
+      <div class="desc">Feedback Loop 优先 · 6 阶段 debug</div>
+      <div class="meta-info">
+        <span class="badge">onramp</span>
+        <span class="badge">178 行</span>
+        <span class="badge">10 loops</span>
+      </div>
+    </a>
+
+    <a href="05_domain-modeling.html" class="skill-card vocab">
+      <div class="n">05</div>
+      <div class="name">domain-modeling</div>
+      <div class="desc">主动领域纪律 · CONTEXT.md + ADR</div>
+      <div class="meta-info">
+        <span class="badge">vocab</span>
+        <span class="badge">181 行</span>
+        <span class="badge">3 文件</span>
+      </div>
+    </a>
+
+    <a href="06_grill-me.html" class="skill-card standalone">
+      <div class="n">06</div>
+      <div class="name">grill-me × grilling</div>
+      <div class="desc">极简 wrapper + 共用 primitive</div>
+      <div class="meta-info">
+        <span class="badge">standalone</span>
+        <span class="badge">27 行</span>
+        <span class="badge">2 技能合分析</span>
+      </div>
+    </a>
+
+    <a href="07_grill-with-docs.html" class="skill-card flow">
+      <div class="n">07</div>
+      <div class="name">grill-with-docs</div>
+      <div class="desc">带落痕的反复访谈</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">7 行</span>
+        <span class="badge">grilling+domain</span>
+      </div>
+    </a>
+
+    <a href="08_handoff.html" class="skill-card standalone">
+      <div class="n">08</div>
+      <div class="name">handoff</div>
+      <div class="desc">跨会话上下文桥 · OS 临时目录</div>
+      <div class="meta-info">
+        <span class="badge">standalone</span>
+        <span class="badge">16 行</span>
+        <span class="badge">5 规则</span>
+      </div>
+    </a>
+
+    <a href="09_implement.html" class="skill-card flow">
+      <div class="n">09</div>
+      <div class="name">implement</div>
+      <div class="desc">5 句话定义完整实现流程</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">15 行</span>
+        <span class="badge">编排者</span>
+      </div>
+    </a>
+
+    <a href="10_improve-codebase-architecture.html" class="skill-card health">
+      <div class="n">10</div>
+      <div class="name">improve-codebase-architecture</div>
+      <div class="desc">视觉化深度候选清单 · HTML 报告</div>
+      <div class="meta-info">
+        <span class="badge">health</span>
+        <span class="badge">194 行</span>
+        <span class="badge">3 阶段</span>
+      </div>
+    </a>
+
+    <a href="11_prototype.html" class="skill-card flow">
+      <div class="n">11</div>
+      <div class="name">prototype</div>
+      <div class="desc">一次性抛掷的代码探针 · LOGIC/UI</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">217 行</span>
+        <span class="badge">2 分支</span>
+      </div>
+    </a>
+
+    <a href="12_research.html" class="skill-card standalone">
+      <div class="n">12</div>
+      <div class="name">research</div>
+      <div class="desc">后台调研 + 一手资料</div>
+      <div class="meta-info">
+        <span class="badge">standalone</span>
+        <span class="badge">12 行</span>
+        <span class="badge">3 大职责</span>
+      </div>
+    </a>
+
+    <a href="13_resolving-merge-conflicts.html" class="skill-card onramp">
+      <div class="n">13</div>
+      <div class="name">resolving-merge-conflicts</div>
+      <div class="desc">保留意图的冲突解决 · never --abort</div>
+      <div class="meta-info">
+        <span class="badge">onramp</span>
+        <span class="badge">14 行</span>
+        <span class="badge">5 步骤</span>
+      </div>
+    </a>
+
+    <a href="14_setup-matt-pocock-skills.html" class="skill-card meta">
+      <div class="n">14</div>
+      <div class="name">setup-matt-pocock-skills</div>
+      <div class="desc">仓库级脚手架 · 4 tracker 选项</div>
+      <div class="meta-info">
+        <span class="badge">meta</span>
+        <span class="badge">116 行</span>
+        <span class="badge">8 文件</span>
+      </div>
+    </a>
+
+    <a href="15_tdd.html" class="skill-card vocab">
+      <div class="n">15</div>
+      <div class="name">tdd</div>
+      <div class="desc">红绿循环 + Seam 纪律 · tracer bullet</div>
+      <div class="meta-info">
+        <span class="badge">vocab</span>
+        <span class="badge">172 行</span>
+        <span class="badge">3 文件</span>
+      </div>
+    </a>
+
+    <a href="16_teach.html" class="skill-card standalone">
+      <div class="n">16</div>
+      <div class="name">teach</div>
+      <div class="desc">状态化教学 workspace · 3 支柱</div>
+      <div class="meta-info">
+        <span class="badge">standalone</span>
+        <span class="badge">140 行</span>
+        <span class="badge">7 文件结构</span>
+      </div>
+    </a>
+
+    <a href="17_to-spec.html" class="skill-card flow">
+      <div class="n">17</div>
+      <div class="name">to-spec</div>
+      <div class="desc">对话 → 可构建 spec · synthesis</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">75 行</span>
+        <span class="badge">7 节模板</span>
+      </div>
+    </a>
+
+    <a href="18_to-tickets.html" class="skill-card flow">
+      <div class="n">18</div>
+      <div class="name">to-tickets</div>
+      <div class="desc">Tracer-Bullet 切片 + Blocked-by</div>
+      <div class="meta-info">
+        <span class="badge">flow</span>
+        <span class="badge">105 行</span>
+        <span class="badge">双模板</span>
+      </div>
+    </a>
+
+    <a href="19_triage.html" class="skill-card onramp">
+      <div class="n">19</div>
+      <div class="name">triage</div>
+      <div class="desc">Issue 状态机 · 2 类 + 5 状态</div>
+      <div class="meta-info">
+        <span class="badge">onramp</span>
+        <span class="badge">112 行</span>
+        <span class="badge">5 文件</span>
+      </div>
+    </a>
+
+    <a href="20_wayfinder.html" class="skill-card onramp">
+      <div class="n">20</div>
+      <div class="name">wayfinder</div>
+      <div class="desc">巨型项目决策地图 · Plan don't do</div>
+      <div class="meta-info">
+        <span class="badge">onramp</span>
+        <span class="badge">128 行</span>
+        <span class="badge">4 ticket 类型</span>
+      </div>
+    </a>
+
+    <a href="21_writing-great-skills.html" class="skill-card meta">
+      <div class="n">21</div>
+      <div class="name">writing-great-skills</div>
+      <div class="desc">元技能 · Predictability 之根</div>
+      <div class="meta-info">
+        <span class="badge">meta</span>
+        <span class="badge">83 行</span>
+        <span class="badge">6 failure modes</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section>
+  <h2>04 · 跨技能反复出现的设计模式</h2>
+
+  <h3>① Router + Primitive 配对</h3>
+  <p><code>ask-matt</code> / <code>grill-me</code> = 极简 wrapper,引导到 <code>grilling</code> primitive。<br>
+  用最小代码做到"<strong>入口分离 + 逻辑共用</strong>"。</p>
+
+  <h3>② Wrapper + 组合引用</h3>
+  <p><code>grill-with-docs</code> = 7 行 wrapper,组合 <code>grilling</code> + <code>domain-modeling</code>。<br>
+  "<strong>一行差异</strong>"产生新特性(无状态 vs 落痕)。</p>
+
+  <h3>③ Explicit-Only Invocation</h3>
+  <p><code>disable-model-invocation: true</code> + <code>allow_implicit_invocation: false</code><br>
+  ask-matt / grill-me / handoff / implement / to-spec / to-tickets / setup / writing-great / diagnose / improve-codebase / triage / wayfinder / teach 等都强制<strong>显式触发</strong>。</p>
+
+  <h3>④ Avoid-List · 禁用清单</h3>
+  <p>codebase-design / domain-modeling / improve-codebase-architecture 都配 <code>_Avoid_</code>。<br>
+  <strong>"Consistent language is the whole point"</strong>。</p>
+
+  <h3>⑤ OS 临时目录</h3>
+  <p>handoff / improve-codebase-architecture / research 都写到 <code>$TMPDIR</code>/<code>/tmp</code>/<code>%TEMP%</code>。<br>
+  <strong>不污染仓库,不进 git,自动清理</strong>。</p>
+
+  <h3>⑥ "Confirm Before Write" · 写前确认</h3>
+  <p>setup-matt-pocock-skills · to-spec · to-tickets · triage 都"<strong>让用户审稿后才写</strong>"。<br>
+  写文件是终局动作,必须用户看过。</p>
+
+  <h3>⑦ Pre-Agreed Seam</h3>
+  <p>codebase-design / implement / tdd / to-spec / to-tickets 共享"<strong>测试位置在写之前就约定</strong>"。<br>
+  同一思想在 5 处表达。</p>
+
+  <h3>⑧ Reference, Don't Duplicate</h3>
+  <p>handoff · to-spec · to-tickets 都"<strong>不复制</strong>已有 spec / ADR / commit 内容,只引用 path / URL"。<br>
+  避免"摘要的摘要"失真。</p>
+
+  <h3>⑨ "User Perspective, Not Implementation"</h3>
+  <p>to-spec · to-tickets 都要求用<strong>用户视角</strong>描述,不是 layer-by-layer 实现。<br>
+  spec/ticket 是<strong>意图存档</strong>,不是<strong>结构快照</strong>。</p>
+
+  <h3>⑩ "Trust + Confirm Before Action"</h3>
+  <p>triage 的 quick state override · resolve-merge 的"never --abort"<br>
+  用户直接指令 → <strong>信任</strong> · 但 action 前 <strong>confirm</strong>。</p>
+
+  <h3>⑪ "Inline Templates"</h3>
+  <p>to-spec · to-tickets 把<strong>模板直接放在 SKILL.md</strong>,不引用外部文件。<br>
+  模型一眼看到,无需跳转。</p>
+
+  <h3>⑫ "Progressive Disclosure"</h3>
+  <p>codebase-design 的 3 文件结构 · improve-codebase-architecture 的 HTML-REPORT.md · setup 的多个 tracker 模板。<br>
+  <strong>主 SKILL.md + 附录</strong>分层。</p>
+</section>
+
+<section>
+  <h2>05 · 5 大跨技能哲学</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>哲学</th>
+        <th>体现位置</th>
+        <th>核心表述</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Predictability</strong></td>
+        <td>writing-great-skills (根 virtue)</td>
+        <td>同 process,不同 output。LLM 是随机系统,skill 是约束器。</td>
+      </tr>
+      <tr>
+        <td><strong>Vocabulary Discipline</strong></td>
+        <td>codebase-design / domain-modeling / improve-codebase-architecture</td>
+        <td>用专门术语,禁用近似词。语言决定思维。</td>
+      </tr>
+      <tr>
+        <td><strong>Context Hygiene</strong></td>
+        <td>ask-matt / handoff / smart zone</td>
+        <td>步骤 1-3 留在一个 unbroken context。超 smart zone → handoff。</td>
+      </tr>
+      <tr>
+        <td><strong>Tracers, Not Slices</strong></td>
+        <td>tdd / to-tickets / wayfinder</td>
+        <td>vertical 切片 / 每发探路 / 决策不交付</td>
+      </tr>
+      <tr>
+        <td><strong>Plan, Don't Do</strong></td>
+        <td>wayfinder (主) · writing-great-skills (元)</td>
+        <td>产出决策不产出交付物。"想动手"= 边界信号。</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>06 · 三组对照设计</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>对照</th>
+        <th>差异点</th>
+        <th>哲学</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>grill-me</strong> vs <strong>grill-with-docs</strong></td>
+        <td>一句 "using /domain-modeling"</td>
+        <td>无状态 vs 落痕</td>
+      </tr>
+      <tr>
+        <td><strong>to-spec</strong> vs <strong>grill-with-docs</strong></td>
+        <td>"Do NOT interview" vs "interview relentlessly"</td>
+        <td>合成 vs 访谈</td>
+      </tr>
+      <tr>
+        <td><strong>implement</strong> vs <strong>tdd</strong></td>
+        <td>"编排者" vs "红绿循环"</td>
+        <td>调度 vs 执行</td>
+      </tr>
+      <tr>
+        <td><strong>research</strong> vs <strong>teach</strong></td>
+        <td>"background agent" vs "stateful workspace"</td>
+        <td>任务级 vs 长期</td>
+      </tr>
+      <tr>
+        <td><strong>setup-matt-pocock</strong> vs <strong>writing-great-skills</strong></td>
+        <td>"scaffold 仓库" vs "scaffold 技能"</td>
+        <td>实例级 vs 元级</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>07 · 阅读路径建议</h2>
+
+  <h3>新手路径(顺序)</h3>
+  <ol style="color:#c9d1d9;font-size:14px;line-height:2;">
+    <li><strong>01 ask-matt</strong> — 看整体拓扑</li>
+    <li><strong>21 writing-great-skills</strong> — 理解设计哲学</li>
+    <li><strong>09 implement</strong> — 看主流程核心</li>
+    <li><strong>17 to-spec</strong> + <strong>18 to-tickets</strong> — 看 spec 怎么合成、tickets 怎么拆</li>
+    <li><strong>15 tdd</strong> + <strong>03 codebase-design</strong> — 看测试和词汇体系</li>
+  </ol>
+
+  <h3>老手路径(跳跃)</h3>
+  <ul style="color:#c9d1d9;font-size:14px;line-height:2;">
+    <li>想写 skill → <strong>21 writing-great-skills</strong></li>
+    <li>想 debug 难 bug → <strong>04 diagnosing-bugs</strong></li>
+    <li>想规划巨型项目 → <strong>20 wayfinder</strong></li>
+    <li>想接 issue queue → <strong>19 triage</strong></li>
+    <li>想理解 spec → ticket → code 全链路 → 17 → 18 → 09</li>
+  </ul>
+</section>
+
+<section>
+  <h2>08 · 总结 · 整体设计哲学</h2>
+
+  <div class="insight">
+    <div class="label">★ 一句话总结</div>
+    <p>Matt 的 skills 是一个<strong>高度模块化、约定式、可验证</strong>的工程化系统。每个技能:</p>
+    <ul style="color:#c9d1d9;line-height:1.9;">
+      <li><strong>单一职责</strong> — 每个技能只做一件事,且说清楚做什么</li>
+      <li><strong>可预测过程</strong> — 即使 LLM 是随机的,skill 让过程可重复</li>
+      <li><strong>词汇纪律</strong> — 用 codebase-design / domain-modeling 共享语言</li>
+      <li><strong>状态化留痕</strong> — CONTEXT.md / ADR / learning-records / map,跨会话持续</li>
+      <li><strong>边界硬化</strong> — never --abort · never invent · never duplicate</li>
+      <li><strong>显式触发</strong> — 不让模型脑补调用</li>
+    </ul>
+  </div>
+
+  <p style="margin-top:24px;">
+    这 21 篇解析只是起点。每个技能都值得反复咀嚼,因为它们的设计哲学可以应用到<strong>任何</strong>"让模型更可预测"的领域 —— 不仅是软件工程,还有教学、研究、协作工具等。
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Matt Pocock Skills 全集解析 · 21 篇 · 总览文档 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

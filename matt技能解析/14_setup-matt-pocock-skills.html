@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>setup-matt-pocock-skills 技能解析 · 仓库级脚手架</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(247,120,186,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(247,120,186,0.15);
+    border: 1px solid rgba(247,120,186,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--pink);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--pink); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--pink);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 5 阶段 ===== */
+  .stages {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .stage {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .stage.s1 { border-color: var(--orange); }
+  .stage.s2 { border-color: var(--accent); }
+  .stage.s3 { border-color: var(--yellow); }
+  .stage.s4 { border-color: var(--green); }
+  .stage.s5 { border-color: var(--purple); }
+  .stage .head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .stage .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .stage.s1 .n { background: var(--orange); }
+  .stage.s2 .n { background: var(--accent); }
+  .stage.s3 .n { background: var(--yellow); }
+  .stage.s4 .n { background: var(--green); }
+  .stage.s5 .n { background: var(--purple); }
+  .stage .name { font-weight: 700; }
+  .stage.s1 .name { color: var(--orange); }
+  .stage.s2 .name { color: var(--accent); }
+  .stage.s3 .name { color: var(--yellow); }
+  .stage.s4 .name { color: var(--green); }
+  .stage.s5 .name { color: var(--purple); }
+  .stage .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== 4 种 issue tracker ===== */
+  .trackers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .tracker {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .tracker .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .tracker .tool { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .tracker .when { font-size: 12px; color: var(--text); }
+
+  /* ===== Agent skills Block ===== */
+  .agents-block {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 12px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    line-height: 1.7;
+  }
+  .agents-block .section { color: var(--accent); font-weight: 700; }
+  .agents-block .sub { color: var(--green); font-weight: 700; margin-left: 8px; }
+
+  /* ===== 5 canonical labels ===== */
+  .labels-grid {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+  .label-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    border: 1px solid var(--border);
+    align-items: center;
+    font-size: 13px;
+  }
+  .label-row .l { font-family: "JetBrains Mono", monospace; color: var(--accent); }
+  .label-row .d { color: var(--text); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(247,120,186,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--pink);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--pink);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--pink);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 14 / 21 篇</span>
+  <h1>setup-matt-pocock-skills · <span class="accent">仓库级脚手架</span></h1>
+  <div class="subtitle">"Scaffold the per-repo configuration that the engineering skills assume."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 8 文件</h2>
+  <div class="file-tree">
+    <span class="dir">setup-matt-pocock-skills/</span><br>
+    ├── <span class="file">SKILL.md</span>                   <span class="note">← 116 行 · 5 阶段流程</span><br>
+    ├── <span class="file">issue-tracker-github.md</span>     <span class="note">← 45 行 · GitHub tracker 模板 · 含 wayfinder gh api</span><br>
+    ├── <span class="file">issue-tracker-gitlab.md</span>     <span class="note">← GitLab tracker 模板</span><br>
+    ├── <span class="file">issue-tracker-local.md</span>      <span class="note">← 本地 markdown tracker 模板</span><br>
+    ├── <span class="file">triage-labels.md</span>            <span class="note">← 15 行 · 5 canonical roles</span><br>
+    ├── <span class="file">domain.md</span>                  <span class="note">← 51 行 · domain doc consumer rules</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>这是仓库里<strong>文件数最多的技能</strong>之一 —— 因为 setup 本身要产出多种"目标状态"模板。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 5 阶段流程</h2>
+
+  <div class="stages">
+    <div class="stage s1">
+      <div class="head">
+        <div class="n">1</div>
+        <div class="name">Explore</div>
+      </div>
+      <div class="desc">
+        <strong>先看现状,不假设。</strong>查 <code>git remote -v</code> / <code>AGENTS.md</code> / <code>CONTEXT.md</code> / <code>docs/adr/</code> / <code>docs/agents/</code> / <code>.scratch/</code> / 是否装了 <code>triage</code> / 单仓还是 monorepo。
+      </div>
+    </div>
+
+    <div class="stage s2">
+      <div class="head">
+        <div class="n">2</div>
+        <div class="name">Present findings and ask</div>
+      </div>
+      <div class="desc">
+        <strong>三节,顺序问。</strong><br>
+        · <strong>Section A — Issue tracker</strong>:GitHub / GitLab / Local / Other<br>
+        · <strong>Section B — Triage labels</strong>(仅 triage 装了才跑)<br>
+        · <strong>Section C — Domain docs</strong>(仅 monorepo 信号才问)<br>
+        每节<strong>推荐答案打头</strong>,用户可以一键接受。
+      </div>
+    </div>
+
+    <div class="stage s3">
+      <div class="head">
+        <div class="n">3</div>
+        <div class="name">Confirm and edit</div>
+      </div>
+      <div class="desc">
+        <strong>让用户审稿。</strong>展示草稿,允许编辑后才写。<br>
+        "Let them edit before writing" —— 写文件是终局动作,必须用户看过。
+      </div>
+    </div>
+
+    <div class="stage s4">
+      <div class="head">
+        <div class="n">4</div>
+        <div class="name">Write</div>
+      </div>
+      <div class="desc">
+        <strong>选文件:CLAUDE.md &gt; AGENTS.md &gt; 让用户选。</strong><br>
+        <strong>绝不</strong>创建重复的 <code>## Agent skills</code> block,in-place 更新。<br>
+        <strong>绝不</strong>覆盖周围用户编辑。
+      </div>
+    </div>
+
+    <div class="stage s5">
+      <div class="head">
+        <div class="n">5</div>
+        <div class="name">Done</div>
+      </div>
+      <div class="desc">
+        <strong>告诉用户完成 + 哪些 skill 现在会读这些文件。</strong><br>
+        可以随时改 <code>docs/agents/*.md</code>,无需重跑。
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 4 种 Issue Tracker 选项</h2>
+
+  <div class="trackers">
+    <div class="tracker" style="border-color:var(--accent);">
+      <div class="name">GitHub</div>
+      <div class="tool"><code>gh</code> CLI</div>
+      <div class="when">默认推荐 · <code>git remote</code> 指向 GitHub 时</div>
+    </div>
+    <div class="tracker" style="border-color:var(--orange);">
+      <div class="name">GitLab</div>
+      <div class="tool"><code>glab</code> CLI</div>
+      <div class="when"><code>git remote</code> 指向 GitLab 时(自托管也算)</div>
+    </div>
+    <div class="tracker" style="border-color:var(--green);">
+      <div class="name">Local markdown</div>
+      <div class="tool"><code>.scratch/&lt;feature&gt;/</code> 文件</div>
+      <div class="when">独立项目 · 没 remote · solo</div>
+    </div>
+    <div class="tracker" style="border-color:var(--purple);">
+      <div class="name">Other</div>
+      <div class="tool">自由格式</div>
+      <div class="when">Jira / Linear 等 · 用户写一段描述</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 默认姿势</div>
+    <p>第 42 行写得很清楚:<strong>"these skills were designed for GitHub."</strong><br>
+    所以默认姿势:<code>git remote</code> 指 GitHub → 自动推 GitHub;指 GitLab → 自动推 GitLab;其他 → 才问用户。<br>
+    这种"<strong>探测 → 推荐 → 让用户接受</strong>"的层级设计减少询问次数。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> "## Agent skills" block 模板</h2>
+  <p>setup 写进 CLAUDE.md 或 AGENTS.md 的标准块:</p>
+
+  <div class="agents-block">
+## Agent skills
+
+### Issue tracker
+
+[one-line summary of where issues are tracked]. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+[one-line summary of the label vocabulary]. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+[one-line summary of layout — "single-context" or "multi-context"]. See `docs/agents/domain.md`.
+  </div>
+
+  <p>只有当 <code>triage</code> 装了才写 <code>### Triage labels</code> —— 缺哪个 section 跳哪个,绝不塞空块。</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 5 个 Canonical Triage Roles</h2>
+
+  <div class="labels-grid">
+    <div class="label-row" style="background:var(--panel-2);font-weight:700;">
+      <div>mattpocock/skills 中的 label</div>
+      <div>本仓库实际 label</div>
+      <div>含义</div>
+    </div>
+    <div class="label-row">
+      <div class="l"><code>needs-triage</code></div>
+      <div class="l"><code>needs-triage</code></div>
+      <div class="d">Maintainer 需要评估</div>
+    </div>
+    <div class="label-row">
+      <div class="l"><code>needs-info</code></div>
+      <div class="l"><code>needs-info</code></div>
+      <div class="d">等待报告者补充信息</div>
+    </div>
+    <div class="label-row">
+      <div class="l"><code>ready-for-agent</code></div>
+      <div class="l"><code>ready-for-agent</code></div>
+      <div class="d">完整规格 · AFK agent 可接手</div>
+    </div>
+    <div class="label-row">
+      <div class="l"><code>ready-for-human</code></div>
+      <div class="l"><code>ready-for-human</code></div>
+      <div class="d">需要人工实现</div>
+    </div>
+    <div class="label-row">
+      <div class="l"><code>wontfix</code></div>
+      <div class="l"><code>wontfix</code></div>
+      <div class="d">不会处理</div>
+    </div>
+  </div>
+
+  <p>当用户仓库已有 label 习惯(比如用 <code>bug:triage</code> 替代 <code>needs-triage</code>),<strong>改右列</strong>让 triage 沿用现成的,避免重复。</p>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 文件选择规则 · 严格优先级</h2>
+  <p>SKILL.md 第 74–82 行写了硬规则:</p>
+
+  <pre><code>Pick the file to edit:
+1. CLAUDE.md 存在 → 编辑它
+2. 否则 AGENTS.md 存在 → 编辑它
+3. 否则 → 问用户要建哪个
+Never create AGENTS.md when CLAUDE.md already exists.
+If ## Agent skills block 已存在 → in-place 更新,不追加。</code></pre>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"<strong>Never create AGENTS.md when CLAUDE.md already exists</strong>" 是非对称的反感重复规则。<br>
+    一个仓库一个真相源 —— 让用户后续维护时知道只编辑一处。<br>
+    这种"<strong>反复制</strong>"的设计保护了一致性。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> domain.md · 沉默消费规则</h2>
+  <p>domain.md 第 11 行写了一条非常微妙的规则:</p>
+
+  <pre><code>If any of these files don't exist, <strong>proceed silently</strong>.
+Don't flag their absence; don't suggest creating them upfront.
+The /domain-modeling skill ... creates them lazily when terms or
+decisions actually get resolved.</code></pre>
+
+  <p>翻译:domain doc 不存在 → <strong>沉默继续</strong>,不要主动建议建。<br>
+    <strong>建文件的时机</strong>是"<em>terms or decisions actually get resolved</em>" ——<br>
+    这呼应了 domain-modeling 技能的<strong>lazy creation</strong>原则。</p>
+
+  <h3>4 条消费规则</h3>
+  <ol style="color:#c9d1d9;line-height:2;">
+    <li>开始探索前先读 <code>CONTEXT.md</code> 或 <code>CONTEXT-MAP.md</code></li>
+    <li>读 <code>docs/adr/</code> 相关决策;多 context 时也读 <code>src/&lt;context&gt;/docs/adr/</code></li>
+    <li>输出用 glossary 里的词汇 · 不要用被 _Avoid_ 列出的同义词</li>
+    <li>发现 ADR 冲突 → 显式标记 "<em>Contradicts ADR-0007 ... but worth reopening because ...</em>"</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">08</span> GitHub tracker · Wayfinder 集成</h2>
+  <p>issue-tracker-github.md 第 36–44 行展示了 <strong>wayfinder</strong> 用 <code>gh api</code> 的具体操作:</p>
+
+  <pre><code>- Map: 一张 issue 标 wayfinder:map · 持有 Notes / Decisions-so-far
+- Child ticket: 子 issue · 通过 sub-issues 关联
+- Blocking: 用 native issue dependencies(gh api POST blocked_by)
+- Frontier query: 列出 map 的开放子 issue · 过滤掉有 blocker 的
+- Claim: gh issue edit &lt;n&gt; --add-assignee @me
+- Resolve: comment → close → 在 map 上追加 context pointer</code></pre>
+
+  <p>这是<strong>issue tracker 的使用规范</strong>,不只定义"issue 在哪",还定义了"<strong>issue 怎么被 skill 操作</strong>"。这是仓库级 setup 的精髓 —— 让所有 skill 共享一个一致的操作协议。</p>
+</section>
+
+<section>
+  <h2><span class="num">09</span> "PRs as a request surface" 标志</h2>
+
+  <p>第 49 行一个微妙细节:</p>
+
+  <pre><code>PRs as a request surface: no. (Set to yes if this repo treats external
+PRs as feature requests; /triage reads this flag.)</code></pre>
+
+  <p>这是一个<strong>默认 off 的功能开关</strong>,setup 不会主动提它:<br>
+  · <strong>off</strong>(默认):外部 PR 走正常 review,不当作 feature request 排队<br>
+  · <strong>on</strong>:外部 PR 走 triage queue,和 issues 共享 labels<br>
+  · <strong>setup 不主动问</strong>,只是文档里写"想用改这里"</p>
+
+  <div class="callout">
+    <strong>设计哲学:</strong>"<strong>leave it off and don't raise it</strong>"。<br>
+    默认 off + 不主动提 = <strong>opt-in feature</strong>,不被默认配置淹没。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Per-Repo Scaffolding · 仓库级脚手架</div>
+    <div class="ptn-desc">技能不是无状态规则,而是把仓库配置成它期望的样子。Setup 写完后,其他 skill 才能工作。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Prompt-Driven, Not Script</div>
+    <div class="ptn-desc">第 15 行:"<strong>This is a prompt-driven skill, not a deterministic script.</strong>" — setup 不是 TS 文件,是和用户一起探索+写。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Lead with Recommendation · 推荐打头</div>
+    <div class="ptn-desc">每节都把推荐答案放第一句,用户可一键接受。"Lead each section with the recommended answer"。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Section Skipping · 智能跳过</div>
+    <div class="ptn-desc">没装 triage → 跳 Section B;不是 monorepo → 跳 Section C。绝不问没用的问题。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Anti-Duplication Rules</div>
+    <div class="ptn-desc">"Never create AGENTS.md when CLAUDE.md exists" · "in-place update, not append"。一条真相源。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Silent Defaults · 沉默默认</div>
+    <div class="ptn-desc">domain doc 不存在 → 沉默继续,不主动建议建。"proceed silently" —— lazy creation。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Opt-In Features Default Off</div>
+    <div class="ptn-desc">"PRs as a request surface" 默认 off,不主动提。避免默认配置淹没可选特性。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Seed Templates as Annex</div>
+    <div class="ptn-desc">每个目标状态(github/gitlab/local/triage-labels/domain)一个 seed 文件。主 SKILL.md + 附录结构。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Confirmation Before Write</div>
+    <div class="ptn-desc">"Let them edit before writing" — 写文件是终局动作,必须用户看过草稿。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">11</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给仓库级 setup 的启示</div>
+    <p>1. <strong>先探后写</strong>:setup 不是一个 TS 脚本,是一个 prompt-driven 流程。<br>
+       2. <strong>推荐打头</strong>:用户能一键接受。<br>
+       3. <strong>智能跳过</strong>:没装 triage 不问 label,不是 monorepo 不问 layout。<br>
+       4. <strong>严格优先级</strong>:CLAUDE.md &gt; AGENTS.md &gt; 让用户选。<br>
+       5. <strong>不复制</strong>:in-place 更新 · never create duplicate。<br>
+       6. <strong>沉默默认</strong>:缺文件不主动建议建,留给 lazy creation。<br>
+       7. <strong>opt-in 默认 off</strong>:可选特性不淹没默认配置。<br>
+       8. <strong>主 + 附录</strong>:主 SKILL.md 写流程,各目标状态用 seed 文件。<br>
+       9. <strong>写前确认</strong>:让用户编辑草稿后才写文件。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  setup-matt-pocock-skills 解析 · 文件数 8 · SKILL.md 116 行 · 5 阶段 · 4 tracker 选项 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

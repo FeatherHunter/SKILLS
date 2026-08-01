@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wayfinder 技能解析 · 巨型项目的决策地图</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 4 种 ticket 类型 ===== */
+  .ticket-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .tt {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .tt.r { border-color: var(--accent); }
+  .tt.p { border-color: var(--pink); }
+  .tt.g { border-color: var(--green); }
+  .tt.t { border-color: var(--orange); }
+  .tt .name { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .tt.r .name { color: var(--accent); }
+  .tt.p .name { color: var(--pink); }
+  .tt.g .name { color: var(--green); }
+  .tt.t .name { color: var(--orange); }
+  .tt .mode {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    margin-bottom: 8px;
+  }
+  .tt .mode.afk { background: rgba(88,166,255,0.2); color: var(--accent); }
+  .tt .mode.hitl { background: rgba(247,120,186,0.2); color: var(--pink); }
+  .tt .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== Fog vs Ticket ===== */
+  .fog-vs-ticket {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .ft-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .ft {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .ft.fog { border-color: var(--purple); }
+  .ft.tk { border-color: var(--green); }
+  .ft .name { font-weight: 700; margin-bottom: 8px; }
+  .ft.fog .name { color: var(--purple); }
+  .ft.tk .name { color: var(--green); }
+  .ft .test { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+
+  /* ===== Map Body 模板 ===== */
+  .map-tmpl {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    line-height: 1.7;
+  }
+  .map-tmpl h1 { color: var(--accent); font-family: sans-serif; font-size: 16px; margin: 14px 0 6px; }
+  .map-tmpl h2 { color: var(--accent); font-family: sans-serif; font-size: 14px; margin: 12px 0 6px; border: none; padding: 0; }
+  .map-tmpl .comment { color: var(--muted); font-style: italic; }
+  .map-tmpl .closed { color: var(--green); }
+
+  /* ===== 两种 invocation ===== */
+  .invo-compare {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .invo {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .invo.chart { border-color: var(--orange); }
+  .invo.work { border-color: var(--green); }
+  .invo .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .invo.chart .name { color: var(--orange); }
+  .invo.work .name { color: var(--green); }
+  .invo ol { color: var(--text); font-size: 13px; line-height: 1.8; padding-left: 18px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 20 / 21 篇</span>
+  <h1>wayfinder · <span class="accent">巨型项目的决策地图</span></h1>
+  <div class="subtitle">"Plan a huge chunk of work — more than one agent session can hold."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 128 行 · 复杂技能</h2>
+  <div class="file-tree">
+    <span class="dir">wayfinder/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 128 行 · Map + 4 ticket 类型 + 2 invocation 模式</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>这是仓库里最复杂的单文件 SKILL.md。处理"<strong>超出单次会话容量</strong>"的巨型项目。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 核心哲学 · Plan, Don't Do</h2>
+
+  <div class="callout">
+    <strong>SKILL.md §13:</strong>"Wayfinder is <strong>planning by default</strong>: each ticket resolves a decision, and the map is done when the way is clear — <strong>nothing left to decide before someone goes and does the thing.</strong>"<br><br>
+    "<strong>The pull to just do the work</strong> is usually the signal you've reached the edge of the map and it's time to hand off."
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 决策不交付</div>
+    <p>wayfinder 产出的是<strong>决策</strong>,不是<strong>交付物</strong>。<br>
+    想"开始动手做"的冲动 = <strong>地图边界</strong>的信号,该 hand off 了。<br>
+    这是和 to-spec / implement 的<strong>根本区别</strong> —— wayfinder 永远不做交付。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 4 种 Ticket 类型</h2>
+
+  <div class="ticket-types">
+    <div class="tt r">
+      <span class="mode afk">AFK</span>
+      <div class="name">🔍 Research</div>
+      <div class="desc">读文档 / 第三方 API / 本地资源来 surface 一个事实。交给 <code>/research</code> subagent。当需要<strong>当前工作目录之外</strong>的知识时用。</div>
+    </div>
+    <div class="tt p">
+      <span class="mode hitl">HITL</span>
+      <div class="name">🛠️ Prototype</div>
+      <div class="desc">造一个廉价粗糙的具体 artifact(大纲 / 草图 / stub / UI / logic code via <code>/prototype</code>)让讨论能 react。链接 prototype 作为 asset。</div>
+    </div>
+    <div class="tt g">
+      <span class="mode hitl">HITL</span>
+      <div class="name">💬 Grilling</div>
+      <div class="desc"><code>/grilling</code> + <code>/domain-modeling</code> 一次一问。<strong>默认 case</strong>。</div>
+    </div>
+    <div class="tt t">
+      <span class="mode hitl" style="background:rgba(240,136,62,0.2);color:var(--orange);">HITL or AFK</span>
+      <div class="name">⚙️ Task</div>
+      <div class="desc">必须做才能决策的手动工作。注册服务 / 配置 access / 移动数据。<strong>唯一"做"而不是"决策"的类型</strong>。</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ HITL vs AFK 区分</div>
+    <p>§75:"<strong>HITL</strong> = human in the loop · 由人通过对话参与才能解决。模型<em>永远不能</em>代人那方(给自己回答的 grilling agent 违反这条)。"<br>
+    这种<strong>伦理边界</strong>清晰:用户是<em>另一方</em>,不是<em>可以替代</em>的对象。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Fog of War · 战雾</h2>
+  <p>SKILL.md §82–94 行是 wayfinder 最具特色的概念。</p>
+
+  <div class="fog-vs-ticket">
+    <div class="ft-compare">
+      <div class="ft fog">
+        <div class="name">🌫️ Not Yet Specified · 战雾</div>
+        <p style="color:var(--text);font-size:13px;">
+          你能<strong>感觉到</strong>有决策要来,但<strong>问不出来</strong>。<br>
+          写成松散描述,等前沿推进时 graduate 成 tickets。<br>
+          <strong>范围内</strong>,只是<strong>不够清晰</strong>。
+        </p>
+        <div class="test">测试:"现在能精确说出问题吗?" —— 不能 → fog</div>
+      </div>
+      <div class="ft tk">
+        <div class="name">🎫 Ticket</div>
+        <p style="color:var(--text);font-size:13px;">
+          问题<strong>已经够清晰</strong>,即使被 block。<br>
+          写在 issue tracker,被 blocker 锁定。<br>
+          <strong>范围内 + 够清晰</strong>。
+        </p>
+        <div class="test">测试:"现在能精确说出问题吗?" —— 能 → ticket</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:16px;">
+      <strong>SKILL.md §88:</strong>"<strong>Fog or ticket? The test is whether you can state the question precisely now — not whether you can answer it now.</strong>"<br>
+      分流测试:<strong>能问清楚吗</strong>(不问能不能答)。
+    </div>
+  </div>
+
+  <h3>为什么"先问清楚再 ticket" 重要?</h3>
+  <p>第 91 行:<strong>"Don't pre-slice the fog into ticket-sized pieces: it's coarser than a ticket, and one patch may graduate into several tickets, or none, once the frontier reaches it."</strong></p>
+
+  <p>把 fog 切成 ticket 大小是常见错误。Fog 是<strong>粗粒度</strong>的,一块 fog 可能 graduate 成多张 tickets 或零张 ticket。强行切成 ticket 会过早收敛边界。</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span> Map 模板 · 5 节</h2>
+
+  <div class="map-tmpl">
+    <h1># Map · &lt;Effort Name&gt;</h1>
+
+    <h2>## Destination</h2>
+    <span class="comment">&lt;到达地图末尾是什么样 —— spec / decision / change。每会话开始前对齐到这个。&gt;</span>
+
+    <h2>## Notes</h2>
+    <span class="comment">&lt;领域;每会话要查的 skills;这个 effort 的 standing preferences&gt;</span>
+
+    <h2>## Decisions so far</h2>
+    <span class="comment">&lt;!-- index —— 每张 closed ticket 一行:足够判断相关性,然后 zoom 链接看 ticket 里的细节 --&gt;</span>
+    <div class="closed">- [<ticket title>](link) — <one-line gist of the answer></div>
+
+    <h2>## Not yet specified</h2>
+    <span class="comment">&lt;!-- 见 "Fog of war": 范围内的战雾,还没法 ticket;前沿推进时 graduate --&gt;</span>
+
+    <h2>## Out of scope</h2>
+    <span class="comment">&lt;!-- 见 "Out of scope": 被目的地排除的工作;closed,永不 graduate --&gt;</span>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> Out of Scope · 范围外</h2>
+
+  <p>SKILL.md §95–102 行:<strong>Out of scope ≠ Fog</strong>。</p>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;">
+    <thead>
+      <tr style="background:var(--panel-2);">
+        <th style="padding:10px;text-align:left;color:var(--accent);">维度</th>
+        <th style="padding:10px;text-align:left;color:var(--accent);">Fog</th>
+        <th style="padding:10px;text-align:left;color:var(--accent);">Out of Scope</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:10px;border:1px solid var(--border);">与目的地关系</td><td style="padding:10px;border:1px solid var(--border);"><strong style="color:var(--purple);">范围内</strong> · 战雾会清除</td><td style="padding:10px;border:1px solid var(--border);"><strong style="color:var(--red);">范围外</strong> · 永不 graduate</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">清晰度</td><td style="padding:10px;border:1px solid var(--border);">不够清晰</td><td style="padding:10px;border:1px solid var(--border);">清晰被排除</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">如何处理</td><td style="padding:10px;border:1px solid var(--border);">等前沿推进 → graduate</td><td style="padding:10px;border:1px solid var(--border);">关掉 · 不进 Decisions-so-far</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">何时回归</td><td style="padding:10px;border:1px;border:1px solid var(--border);">fog 清除时</td><td style="padding:10px;border:1px solid var(--border);">目的地被<strong>重新绘制</strong>时,作为新 effort</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 两种 Invocation 模式</h2>
+
+  <div class="invo-compare">
+    <div class="invo chart">
+      <div class="name">📐 Chart the map · 制图</div>
+      <ol>
+        <li><strong>Name the destination</strong> —— 跑 <code>/grilling</code> + <code>/domain-modeling</code> 定 destination</li>
+        <li><strong>Map the frontier</strong> —— breadth-first 烧烤 · 散开看整个空间</li>
+        <li><strong>Create the map</strong>(标 <code>wayfinder:map</code>) · Destination + Notes 填好,Decisions-so-far 空,fog 写到 Not yet specified</li>
+        <li><strong>Create tickets</strong> 你现在能指定的 · 第二 pass 连 edges</li>
+        <li><strong>Fire research subagents</strong> · 并行解决 research ticket</li>
+        <li><strong>Stop</strong> —— 制图是一个 session 的工作 · <strong>hand-resolves nothing</strong></li>
+      </ol>
+    </div>
+
+    <div class="invo work">
+      <div class="name">🚀 Work through the map · 走图</div>
+      <ol>
+        <li>Load the <strong>map</strong>(低分辨率视图,不是每个 ticket)</li>
+        <li>Choose the ticket · 用户指定或第一个 frontier ticket · <strong>claim it</strong>(assign to self)</li>
+        <li>Resolve it · zoom as needed · 用 Notes 里写的 skills</li>
+        <li>Record resolution · post resolution comment · close issue · append context pointer</li>
+        <li>新浮现 tickets(create-then-wire)· fog graduate · 必要时 rule out of scope</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ One Per Session</div>
+    <p>§105:<strong>"never resolve more than one ticket per session — with the exception of research tickets."</strong><br>
+    每次会话只解决一个 ticket · research tickets 例外(可以批量)。<br>
+    <strong>这是 <code>smart zone</code> 限制的具体应用</strong>。每 ticket 是单 session 容量。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> Refer by Name</h2>
+
+  <p>§17:"<strong>In everything the human reads — narration, the map's Decisions-so-far — refer to it by that name, never by a bare id, number, or slug.</strong>"</p>
+
+  <pre><code># Bad: 一墙的 #42, #43, #44 完全不可读
+# Good: 用 ticket title,id 在 name 内
+
+- [Switch to Postgres 17 logical replication](#42) — DDL replication
+  added natively in PG17; trigger-based only needed pre-17.</code></pre>
+
+  <div class="callout">
+    <strong>哲学:</strong>"A wall of <code>#42, #43, #44</code> is illegible; <strong>names read at a glance</strong>."<br>
+    id/URL 不消失,但<strong>嵌在名字里</strong>,不替代名字。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> Claim + Native Blocking</h2>
+
+  <p>§67:<strong>"A session claims a ticket by assigning it to the dev driving the map, first, before any work, so concurrent sessions skip it. That assignee <em>is</em> the claim: an open, unassigned ticket is unclaimed."</strong></p>
+
+  <p>§69:"<strong>Blocking uses the tracker's native dependency relationship</strong> — essential because it renders the frontier <em>visually</em> in the tracker's own UI, so the human sees what's takeable without opening the map."</p>
+
+  <div class="insight">
+    <div class="label">★ UI as Truth</div>
+    <p>用 <strong>native tracker blocking</strong>(不是 body convention)的原因:<br>
+    native blocking 在 tracker 的 UI 里<strong>视觉化</strong>展示 frontier。<br>
+    用户不需要打开 map 也能看到"能接什么"。<br>
+    <strong>把真理放在 UI 里</strong> —— 让浏览比阅读更快。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Plan Don't Do · 规划不做</div>
+    <div class="ptn-desc">产出决策不产出交付物。想动手 = 地图边界,hand off。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Decision Ticket</div>
+    <div class="ptn-desc">每个 ticket 解决一个<strong>决策</strong>。不是 build slice。回答即关闭。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Map as Index · Map 是索引</div>
+    <div class="ptn-desc">Map 是 index 不存内容。Decisions-so-far = 一行 gist + 链接到 ticket。决策只存一处。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Fog of War · 战雾</div>
+    <div class="ptn-desc">Not yet specified = 范围内但不清晰。测试:能问清问题吗?不能 → fog。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Out of Scope ≠ Fog</div>
+    <div class="ptn-desc">范围外 vs 不清晰,两件不同的事。各自有独立区域。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">HITL vs AFK</div>
+    <div class="ptn-desc">Ticket 类型分两种模式。HITL = 人在环,AFK = 模型独走。伦理边界:模型不代人那方。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Native Tracker Blocking</div>
+    <div class="ptn-desc">用 tracker native 依赖关系,不在 body 里写 convention。UI 视觉化 frontier。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Claim = Assignee</div>
+    <div class="ptn-desc">Ticket 的 assignee 就是 claim。未分配的 ticket = 未声明。first-write 就 assign。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Refer by Name</div>
+    <div class="ptn-desc">不用 #42,用 ticket title。id 嵌名字里,不替代名字。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">One Ticket Per Session</div>
+    <div class="ptn-desc">每 session 一个 ticket(research 例外)。smart zone 限制的具体应用。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Destination First</div>
+    <div class="ptn-desc">制图先定 destination。它锁定 scope,所有 ticket 都向它对齐。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">11</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给巨型项目治理的启示</div>
+    <p>1. <strong>Plan Don't Do</strong>:产出决策不产出交付物。模型定位要清晰。<br>
+       2. <strong>Map as Index</strong>:map 不存内容,只索引 + 链接。决策只存一处。<br>
+       3. <strong>Fog vs Out of Scope</strong>:战雾是"清晰但还没做",out-of-scope 是"做了但不在范围"。<br>
+       4. <strong>HITL 边界</strong>:模型不代人那方,伦理清楚。<br>
+       5. <strong>Native UI as Truth</strong>:用 tracker 的原生依赖,让 UI 视觉化 frontier。<br>
+       6. <strong>Claim = Assignee</strong>:未分配 = 未声明,first-write 即 claim。<br>
+       7. <strong>Name > ID</strong>:用名字,id 嵌名字里。<br>
+       8. <strong>One Per Session</strong>:smart zone 限制的具体应用。<br>
+       9. <strong>Destination First</strong>:制图先定目的地,锁 scope。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  wayfinder 解析 · 文件数 2 · SKILL.md 128 行 · 4 ticket 类型 · 2 invocation 模式 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

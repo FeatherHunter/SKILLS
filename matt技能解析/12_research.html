@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>research 技能解析 · 后台调研 + 一手资料</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(57,197,207,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(57,197,207,0.15);
+    border: 1px solid rgba(57,197,207,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--teal);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--teal); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--teal);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 完整 SKILL.md ===== */
+  .full-doc {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 3 大职责 ===== */
+  .duty {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+    border-radius: 6px;
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .duty .n {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 12px;
+  }
+  .duty .body { color: var(--text); font-size: 13px; margin-top: 6px; }
+
+  /* ===== 来源分级 ===== */
+  .source-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .source-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .source-card.trust { border-color: var(--green); }
+  .source-card.untrust { border-color: var(--red); }
+  .source-card .name {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .source-card.trust .name { color: var(--green); }
+  .source-card.untrust .name { color: var(--red); }
+  .source-card ul { color: var(--text); font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.9; }
+
+  /* ===== 并行工作流 ===== */
+  .parallel-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .lane {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+  }
+  .lane.foreground { border-color: var(--orange); }
+  .lane.background { border-color: var(--teal); }
+  .lane .label {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .lane.foreground .label { color: var(--orange); }
+  .lane.background .label { color: var(--teal); }
+  .lane .desc { color: var(--text); font-size: 13px; }
+  .lane .what { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+  /* ===== 报告示例 ===== */
+  .report-tmpl {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    line-height: 1.7;
+  }
+  .report-tmpl h1 { color: var(--accent); font-family: sans-serif; font-size: 18px; margin: 0 0 12px; }
+  .report-tmpl h2 { color: var(--accent); font-family: sans-serif; font-size: 14px; margin: 14px 0 6px; border: none; padding: 0; }
+  .report-tmpl .cite { color: var(--teal); }
+  .report-tmpl .claim { color: var(--text); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(57,197,207,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--teal);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--teal);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--teal);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 12 / 21 篇</span>
+  <h1>research · <span class="accent">后台调研 + 一手资料</span></h1>
+  <div class="subtitle">"Investigate the question against primary sources — official docs, source code, specs, first-party APIs."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 极简</h2>
+  <div class="file-tree">
+    <span class="dir">research/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 12 行 · 后台 agent + 3 大职责</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Research"</span>
+  </div>
+  <p>3 大职责说清楚,12 行收尾。整仓库和 grill-me 一样极简,但内涵截然不同 —— 这个是"<strong>把人最痛的事外包给后台</strong>"。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 全文 12 行</h2>
+
+  <div class="full-doc">---
+name: research
+description: Investigate a question against high-trust primary sources
+             and capture the findings as a Markdown file in the repo.
+             Use when the user wants a topic researched, docs or API
+             facts gathered, or reading legwork delegated to a background agent.
+---
+
+Spin up a **background agent** to do the research, so you keep working
+while it reads.
+
+Its job:
+
+1. Investigate the question against **primary sources** — official docs,
+   source code, specs, first-party APIs — not a secondary write-up of them.
+   Follow every claim back to the source that owns it.
+
+2. Write the findings to a single Markdown file, citing each claim's source.
+
+3. Save it where the repo already keeps such notes; match the existing
+   convention, and if there is none, put it somewhere sensible and say where.</div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 3 大职责</h2>
+
+  <div class="duty">
+    <div class="n">① 一手资源</div>
+    <div class="body">"<strong>Investigate the question against primary sources</strong> — official docs, source code, specs, first-party APIs — not a secondary write-up of them. Follow every claim back to the source that owns it."<br>
+    <strong style="color:var(--red);">拒绝二手报道</strong>。每个 claim 都要追到 owner。</div>
+  </div>
+
+  <div class="duty">
+    <div class="n">② 引用每个 claim</div>
+    <div class="body">"<strong>Write the findings to a single Markdown file, citing each claim's source.</strong>"<br>
+    报告里每条断言都要带 source URL / 路径 / 行号。</div>
+  </div>
+
+  <div class="duty">
+    <div class="n">③ 匹配已有约定</div>
+    <div class="body">"<strong>Save it where the repo already keeps such notes;</strong> match the existing convention, and if there is none, put it somewhere sensible and say where."<br>
+    不发明新约定 · 不发明新目录 · 没约定时挑个合理位置并告诉用户。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> "Primary Sources" 的分级</h2>
+  <p>SKILL.md 第 10 行列举的"primary sources"有明确范围:</p>
+
+  <div class="source-grid">
+    <div class="source-card trust">
+      <div class="name">✅ 一手资源(High Trust)</div>
+      <ul>
+        <li>官方文档 (Official docs)</li>
+        <li>源代码 (Source code)</li>
+        <li>规范 (Specs / RFC)</li>
+        <li>一手 API (First-party APIs)</li>
+      </ul>
+    </div>
+    <div class="source-card untrust">
+      <div class="name">❌ 二手资源(不要)</div>
+      <ul>
+        <li>博客对博客的转述</li>
+        <li>Stack Overflow 答案</li>
+        <li>第三方教程</li>
+        <li>"10 个必知"列表文章</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"<strong>Follow every claim back to the source that owns it.</strong>"<br>
+    这句话是 research 技能的<strong>核心纪律</strong>。<br>
+    模型常常引用"<strong>听说</strong>React 这样这样" —— research 不允许这种模糊引用。<br>
+    每个 claim 必须能追到 owner。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 后台 agent · 并行不阻塞主流程</h2>
+  <p>SKILL.md 第 6 行:<strong>"Spin up a background agent to do the research, so you keep working while it reads."</strong></p>
+
+  <div class="parallel-flow">
+    <div class="row">
+      <div class="lane foreground">
+        <div class="label">⚡ FOREGROUND · 你</div>
+        <div class="desc">主对话在跑,继续做别的事</div>
+        <div class="what">不被 research 阻塞</div>
+      </div>
+      <div class="lane background">
+        <div class="label">🔄 BACKGROUND · research agent</div>
+        <div class="desc">读文档、查代码、写 markdown</div>
+        <div class="what">完成后产出文件</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;text-align:center;color:var(--muted);font-size:13px;">
+      ↓ 同时跑 · 不互相阻塞 ↓
+    </div>
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:12px;text-align:center;">
+      <strong style="color:var(--green);">完成后:markdown 文件出现在仓库约定位置</strong>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 输出文件示例</h2>
+  <p>一个 research 产出的 markdown 大概长这样(示意):</p>
+
+  <div class="report-tmpl">
+    <h1># Research · Postgres 17 Logical Replication Behavior</h1>
+
+    <p style="color:var(--muted);font-size:11px;margin-bottom:12px;">
+      Saved to: docs/research/postgres-17-logical-replication.md<br>
+      Date: 2026-08-01 · Sources cited: 7 · Primary sources only: ✅
+    </p>
+
+    <h2>Question</h2>
+    <p>Does Postgres 17 logical replication support DDL changes, and how does it differ from trigger-based replication?</p>
+
+    <h2>Findings</h2>
+
+    <p>
+      <span class="claim">Postgres 17 (released Sept 2024) added native DDL replication to logical replication via the</span>
+      <span class="claim"><code>ALTER PUBLICATION ... SET PUBLISH</code> command and the</span>
+      <span class="claim"><code>wal_level=logical</code> setting.</span>
+      <span class="cite">[source: PostgreSQL 17 Release Notes, postgresql.org/docs/17/release-17.html]</span>
+    </p>
+
+    <p>
+      <span class="claim">Prior to 17, only DML changes (INSERT/UPDATE/DELETE) were replicated; DDL required pglogical or manual schema sync.</span>
+      <span class="cite">[source: postgresql.org/docs/17/logical-replication.html §DDL Replication Caveats]</span>
+    </p>
+
+    <p>
+      <span class="claim">Replication slots track per-subscriber LSN and automatically advance.</span>
+      <span class="cite">[source: src/backend/replication/slot.c, line 1247-1290]</span>
+    </p>
+
+    <h2>Open questions</h2>
+    <p>None — all claims traced to source.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> "Match existing convention" 的实际做法</h2>
+
+  <p>第 12 行第三条要求:<strong>写到仓库已有约定</strong>。常见约定:</p>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;">
+    <thead>
+      <tr style="background:var(--panel-2);">
+        <th style="padding:10px;text-align:left;color:var(--accent);">约定</th>
+        <th style="padding:10px;text-align:left;color:var(--accent);">路径</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:10px;border:1px solid var(--border);">docs/research/...</td><td style="padding:10px;border:1px solid var(--border);">最常见 · 适合长篇调研</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">.scratch/research/...</td><td style="padding:10px;border:1px solid var(--border);">临时性,不入主分支</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">adr/...</td><td style="padding:10px;border:1px solid var(--border);">当研究产出变成决策</td></tr>
+      <tr><td style="padding:10px;border:1px solid var(--border);">CONTEXT.md</td><td style="padding:10px;border:1px solid var(--border);">新术语/定义入词汇表</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>没约定时:</strong>模型自己挑个合理位置,并在产出里<strong>明确告诉用户</strong>放哪了。否则用户找不到。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Background Agent · 后台 Agent 委派</div>
+    <div class="ptn-desc">Spin up background agent 调研 → 主对话不被阻塞。<strong>把阅读外包</strong>。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Primary Sources Only · 仅一手资源</div>
+    <div class="ptn-desc">拒绝二手报道。每个 claim 必须追到 owner。这是<strong>可验证性</strong>的硬约束。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Citation Per Claim · 每条都引用</div>
+    <div class="ptn-desc">不是文末放 bibliography,而是<strong>行内</strong>引。每个 claim 旁带 source。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Convention Match · 适配已有约定</div>
+    <div class="ptn-desc">不发明新约定 · 不发明新目录。没约定时告知用户放在哪。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Single Markdown Output</div>
+    <div class="ptn-desc">单个 markdown 文件作为交付物。简单、可读、可分享。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Reading-Legwork Delegation</div>
+    <div class="ptn-desc">把人最痛的事("我去读 30 篇 RFC")外包给模型,人保留判断和决策权。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给调研流程设计的启示</div>
+    <p>1. <strong>后台 agent 并行</strong>:阅读不阻塞主对话。<br>
+       2. <strong>一手 vs 二手</strong>:拒绝二手报道,所有 claim 追到 owner。<br>
+       3. <strong>行内引用</strong>:每条断言旁标 source,不是文末 bibliography。<br>
+       4. <strong>匹配已有约定</strong>:不发明新结构,没约定就告知。<br>
+       5. <strong>单文件交付</strong>:一个 markdown 搞定一切。<br>
+       6. <strong>外包阅读,保留决策</strong>:模型干苦力,人做判断。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  research 解析 · 文件数 2 · 12 行 SKILL.md · 3 大职责 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

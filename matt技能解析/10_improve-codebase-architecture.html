@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>improve-codebase-architecture 技能解析 · 视觉化深度候选清单</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(247,120,186,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(247,120,186,0.15);
+    border: 1px solid rgba(247,120,186,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--pink);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--pink); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--pink);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 3 阶段流程 ===== */
+  .stages {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .stage-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    transition: transform 0.2s;
+  }
+  .stage-card:hover { transform: translateX(4px); }
+  .stage-card.s1 { border-color: var(--orange); }
+  .stage-card.s2 { border-color: var(--accent); }
+  .stage-card.s3 { border-color: var(--green); }
+  .stage-card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .stage-card .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .stage-card.s1 .n { background: var(--orange); }
+  .stage-card.s2 .n { background: var(--accent); }
+  .stage-card.s3 .n { background: var(--green); }
+  .stage-card .name { font-size: 17px; font-weight: 700; }
+  .stage-card.s1 .name { color: var(--orange); }
+  .stage-card.s2 .name { color: var(--accent); }
+  .stage-card.s3 .name { color: var(--green); }
+  .stage-card .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== 候选卡片模板 ===== */
+  .candidate-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+  }
+  .candidate-card .row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .candidate-card .ttl { font-size: 18px; font-weight: 700; flex: 1; }
+  .badge-rec {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .badge-rec.strong { background: rgba(63,185,80,0.2); color: var(--green); }
+  .badge-rec.worth { background: rgba(210,153,34,0.2); color: var(--yellow); }
+  .badge-rec.spec { background: rgba(139,148,158,0.2); color: var(--muted); }
+  .badge-cat {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    background: rgba(88,166,255,0.15);
+    color: var(--accent);
+  }
+
+  /* ===== Before/After 视觉化 ===== */
+  .ba-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 12px 0;
+  }
+  .ba {
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .ba.before { border-color: var(--red); }
+  .ba.after { border-color: var(--green); }
+  .ba .label {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .ba.before .label { color: var(--red); }
+  .ba.after .label { color: var(--green); }
+
+  /* ===== 4 种 Diagram 类型 ===== */
+  .diag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .diag {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .diag .name { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--accent); font-size: 13px; }
+  .diag .when { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* ===== 词表强制 ===== */
+  .vocab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .vocab-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .vocab-card.use { border-color: var(--green); }
+  .vocab-card.avoid { border-color: var(--red); }
+  .vocab-card .head { font-family: "JetBrains Mono", monospace; font-weight: 700; margin-bottom: 8px; }
+  .vocab-card.use .head { color: var(--green); }
+  .vocab-card.avoid .head { color: var(--red); }
+  .vocab-card ul { color: var(--text); font-size: 13px; margin: 4px 0; padding-left: 18px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(247,120,186,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--pink);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--pink);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--pink);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 10 / 21 篇</span>
+  <h1>improve-codebase-architecture · <span class="accent">视觉化深度候选清单</span></h1>
+  <div class="subtitle">Scan → HTML Report → Grilling · 把架构候选变成可看的卡片</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 大型技能</h2>
+  <div class="file-tree">
+    <span class="dir">improve-codebase-architecture/</span><br>
+    ├── <span class="file">SKILL.md</span>               <span class="note">← 71 行 · 3 阶段流程 + 词汇要求</span><br>
+    ├── <span class="file">HTML-REPORT.md</span>          <span class="note">← 123 行 · HTML 报告完整设计指南</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Improve Codebase Architecture"</span>
+  </div>
+  <p>目前看到的<strong>文件最大</strong>的技能 —— 但它把"如何生成一份好 HTML 报告"完全拆成第二个文件。这种"主 SKILL + 详细附录"的结构让主 SKILL 保持 71 行可读。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 3 阶段流程</h2>
+
+  <div class="stages">
+    <div class="stage-card s1">
+      <div class="head">
+        <div class="n">1</div>
+        <div class="name">Explore</div>
+      </div>
+      <div class="desc">
+        <strong>先 scope 再 scan · YAGNI。</strong><br>
+        用户已指方向 → 直接进入;否则 <code>git log --oneline</code> 找出<strong>热点</strong>(频繁改的代码区)。<br>
+        用 <code>Agent(subagent_type=Explore)</code> 有机探索,问 5 个问题:
+        <ol style="color:#c9d1d9;margin-top:8px;font-size:13px;">
+          <li>理解一个概念需要在多个小模块间跳来跳去?</li>
+          <li>哪些模块 shallow(接口和实现一样复杂)?</li>
+          <li>纯函数为了可测被抽出,但 bug 藏在调用方式(无 locality)?</li>
+          <li>紧耦合模块越过 seam 泄漏?</li>
+          <li>哪些部分没测,或难以通过当前 interface 测?</li>
+        </ol>
+        对怀疑对象跑<strong>deletion test</strong>:删它 → 复杂度集中还是搬家?"集中"才是想要的信号。
+      </div>
+    </div>
+
+    <div class="stage-card s2">
+      <div class="head">
+        <div class="n">2</div>
+        <div class="name">Present candidates as an HTML report</div>
+      </div>
+      <div class="desc">
+        <strong>写到 OS 临时目录</strong>(不污染仓库):<br>
+        <code>&lt;tmpdir&gt;/architecture-review-&lt;timestamp&gt;.html</code><br><br>
+        自动打开:<code>xdg-open</code> / <code>open</code> / <code>start</code>(按平台)。<br><br>
+        <strong>技术栈:</strong>Tailwind via CDN + Mermaid via CDN。<br>
+        Mermaid 用于关系图(graph-shaped);手绘 SVG/div 用于"更编辑性"的(mass、cross-section)。<br>
+        <strong>每张候选卡</strong>必含:Files / Problem / Solution / Benefits / Before-After / Recommendation badge。<br>
+        <strong>必须有 Top Recommendation</strong>(立场)。
+      </div>
+    </div>
+
+    <div class="stage-card s3">
+      <div class="head">
+        <div class="n">3</div>
+        <div class="name">Grilling loop</div>
+      </div>
+      <div class="desc">
+        用户挑一张候选 → 跑 <code>/grilling</code> 走决策树。<br>
+        边访谈边调 <code>/domain-modeling</code>:<br>
+        · 起新模块名不在 CONTEXT.md → 加进 CONTEXT.md(懒建)<br>
+        · 锐化模糊术语 → 立刻更新 CONTEXT.md<br>
+        · 用户用承重理由拒绝候选 → 提议 ADR(避免下次再提议)<br>
+        · 想探索多个 interface 方案 → 调 <code>/codebase-design</code> 的 design-it-twice
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 候选卡片模板</h2>
+  <p>HTML-REPORT.md 第 40–55 行严格定义每张候选卡片的结构:</p>
+
+  <div class="candidate-card">
+    <div class="row">
+      <div class="ttl">Collapse the Order intake pipeline</div>
+      <span class="badge-rec strong">STRONG</span>
+      <span class="badge-cat">ports & adapters</span>
+    </div>
+
+    <div class="kv">
+      <div class="k">Files</div>
+      <div class="v"><code>src/orders/intake/OrderHandler.ts</code> · <code>OrderValidator.ts</code> · <code>OrderRepo.ts</code> · <code>PricingClient.ts</code></div>
+    </div>
+
+    <div class="ba-grid">
+      <div class="ba before">
+        <div class="label">BEFORE</div>
+        <svg viewBox="0 0 240 120" style="width:100%;height:80px;">
+          <rect x="10" y="40" width="50" height="40" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="35" y="65" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="9">Handler</text>
+          <rect x="80" y="40" width="50" height="40" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="105" y="65" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="9">Validator</text>
+          <rect x="150" y="40" width="80" height="40" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="190" y="65" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="9">Pricing</text>
+          <path d="M60,60 L80,60 M130,60 L150,60" stroke="#f85149" stroke-width="1.5" fill="none"/>
+        </svg>
+        <p style="color:var(--muted);font-size:11px;text-align:center;">3 shallow modules · 串行调用</p>
+      </div>
+      <div class="ba after">
+        <div class="label">AFTER</div>
+        <svg viewBox="0 0 240 120" style="width:100%;height:80px;">
+          <rect x="10" y="20" width="220" height="80" rx="4" fill="rgba(63,185,80,0.15)" stroke="#3fb950" stroke-width="2"/>
+          <text x="120" y="50" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="11" font-weight="700">Deep OrderIntake module</text>
+          <text x="120" y="68" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="9">small interface · tests at the seam</text>
+          <text x="120" y="83" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="9">3 adapters justify the seam</text>
+        </svg>
+        <p style="color:var(--muted);font-size:11px;text-align:center;">1 deep module · 隐藏复杂度</p>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <p style="color:var(--text);font-size:13px;"><strong>Problem:</strong> Order intake is shallow — interface nearly matches the implementation; pricing leaks across the seam.</p>
+      <p style="color:var(--text);font-size:13px;"><strong>Solution:</strong> Deepen: one interface, one place to test. Move validator + repo + pricing into a deep OrderIntake module.</p>
+      <div style="background:var(--panel);padding:10px;border-radius:6px;border:1px solid var(--border);margin-top:10px;">
+        <strong style="color:var(--green);font-size:12px;">WINS</strong>
+        <ul style="margin:6px 0;color:var(--text);font-size:13px;line-height:1.9;">
+          <li>Locality: bugs concentrate in one module</li>
+          <li>Leverage: one interface, N call sites</li>
+          <li>Interface shrinks; implementation absorbs wrappers</li>
+          <li>Delete 4 shallow wrappers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Recommendation Badge 三档</h2>
+  <p>每个候选有一个<strong>推荐强度</strong>的徽章,三种颜色对应三个立场:</p>
+
+  <div class="diag-grid">
+    <div class="diag" style="border-left:3px solid var(--green);">
+      <div class="name">Strong · 强烈推荐</div>
+      <div class="when" style="color:var(--green);">emerald 色徽章 · 优先做</div>
+    </div>
+    <div class="diag" style="border-left:3px solid var(--yellow);">
+      <div class="name">Worth exploring · 值得探索</div>
+      <div class="when" style="color:var(--yellow);">amber 色徽章 · 看时间</div>
+    </div>
+    <div class="diag" style="border-left:3px solid var(--muted);">
+      <div class="name">Speculative · 投机性</div>
+      <div class="when" style="color:var(--muted);">slate 色徽章 · 别投时间</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 4 种 Diagram 模式</h2>
+  <p>HTML-REPORT.md 第 58–92 行给出 4 种 diagram 类型。强调"<strong>不要每张图都一个样</strong>",变化本身就是要点。</p>
+
+  <div class="diag-grid">
+    <div class="diag">
+      <div class="name">① Mermaid flowchart</div>
+      <div class="when">依赖图 / 调用流 · "X 调 Y 调 Z,看这一团乱"</div>
+    </div>
+    <div class="diag">
+      <div class="name">② Hand-built boxes</div>
+      <div class="when">Mermaid 排版打架时 · 想做出"加粗 deep module + 灰化内部"的感觉</div>
+    </div>
+    <div class="diag">
+      <div class="name">③ Cross-section · 横截面</div>
+      <div class="when">分层浅薄:6 层啥都不做 → 1 层承担</div>
+    </div>
+    <div class="diag">
+      <div class="name">④ Mass diagram · 体积图</div>
+      <div class="when">"interface 和 implementation 一样宽":两个矩形,一宽一窄</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>关键约束(HTML-REPORT.md §105):</strong>"Lean editorial, not corporate-dashboard. ... diagrams should read as schematic, not as UI."<br>
+    报告是<strong>杂志式</strong>的,不是仪表盘式的。留白多、节制色彩。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 强制词表 · Use / Avoid</h2>
+  <p>HTML-REPORT.md §108-121 行给出了<strong>比 codebase-design 更严格</strong>的词汇强制:</p>
+
+  <div class="vocab-grid">
+    <div class="vocab-card use">
+      <div class="head">✅ 必须用</div>
+      <ul>
+        <li>module, interface, implementation</li>
+        <li>depth, deep, shallow</li>
+        <li>seam, adapter, leverage, locality</li>
+      </ul>
+    </div>
+    <div class="vocab-card avoid">
+      <div class="head">❌ 永远不要</div>
+      <ul>
+        <li>component, service, unit (for module)</li>
+        <li>API, signature (for interface)</li>
+        <li>boundary (for seam)</li>
+        <li>layer, wrapper (for module, when you mean module)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>推荐的 phrase</h3>
+  <ul style="color:#c9d1d9;font-size:13px;line-height:2;">
+    <li>"<em>Order intake module is shallow — interface nearly matches the implementation.</em>"</li>
+    <li>"<em>Pricing leaks across the seam.</em>"</li>
+    <li>"<em>Deepen: one interface, one place to test.</em>"</li>
+    <li>"<em>Two adapters justify the seam: HTTP in prod, in-memory in tests.</em>"</li>
+  </ul>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>§121 行写得很死:<strong>"Don't write 'easier to maintain' or 'cleaner code' — those terms aren't in the glossary and don't earn their place."</strong><br>
+    把"<strong>空洞收益话术</strong>"明确禁用 —— 逼所有 win 都用词表里的术语。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> ADR 冲突的处理</h2>
+  <p>SKILL.md §56 行处理了一个棘手情况:</p>
+
+  <pre><code>if a candidate contradicts an existing ADR, only surface it when the
+friction is real enough to warrant revisiting the ADR. Mark it clearly
+in the card (e.g. a warning callout: "contradicts ADR-0007 — but worth
+reopening because…"). Don't list every theoretical refactor an ADR
+forbids.</code></pre>
+
+  <h3>决策树</h3>
+  <ol style="color:#c9d1d9;line-height:2;">
+    <li>候选和 ADR 冲突?</li>
+    <li>↓ 是</li>
+    <li>摩擦真实到要重审 ADR?</li>
+    <li>↓ 是 → 在卡片上 <strong style="color:var(--yellow);">amber callout</strong> 标记,说明原因</li>
+    <li>↓ 否 → 不列出来</li>
+  </ol>
+  <p>避免"<strong>每个理论上被 ADR 禁止的重构</strong>"都列出来 —— 否则报告会被噪音淹没。</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Vocabulary Inheritance · 词汇继承</div>
+    <div class="ptn-desc">强制使用 codebase-design 词汇(domain-modeling 词汇在报告里同样适用)。三个技能共享一个语言。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Visual Report as Output · 视觉报告即产出</div>
+    <div class="ptn-desc">不写 README,写 HTML 报告。Tailwind + Mermaid CDN,自动打开 OS 默认浏览器。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Before / After as Centerpiece</div>
+    <div class="ptn-desc">每张候选的<strong>核心是 before/after 对比</strong>"If a sentence could be a bullet, make it a bullet. If a bullet could be cut, cut it."</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Diagram Variety · 变化本身是设计</div>
+    <div class="ptn-desc">4 种 diagram 模式(Mermaid / 手绘 / 横截面 / 体积)交替使用。避免报告视觉同质。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Anti-Corporate Tone</div>
+    <div class="ptn-desc">杂志式排版,留白多,色彩节制。仪表盘风格被明确拒绝。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">OS Temp File · 写临时目录</div>
+    <div class="ptn-desc">不污染仓库。和 handoff 一致:进程间协作的东西不进 git。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Top Recommendation · 必须有立场</div>
+    <div class="ptn-desc">末尾必须给 Top Recommendation。"Don't hedge, don't throat-clear, don't 'it's worth noting that…'"</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">ADR Conflict Surfacing</div>
+    <div class="ptn-desc">和 ADR 冲突 → 真摩擦才标,假冲突不列。amber callout 标记 reopen 理由。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Skill Composition in Stage 3</div>
+    <div class="ptn-desc">Stage 3 调三个其他技能:<code>/grilling</code> + <code>/domain-modeling</code> + <code>/codebase-design</code>。Skill 作为编排节点。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给架构巡检设计的启示</div>
+    <p>1. <strong>scope before scan</strong>:先确定扫哪里(YAGNI),不要漫天扫描。<br>
+       2. <strong>hot-spot 由 git log 找</strong>:常改的代码区才是值得深化的。<br>
+       3. <strong>visual report > text report</strong>:架构候选用 HTML + before/after 图。<br>
+       4. <strong>diagram 要有变化</strong>:4 种类型交替,避免视觉同质化。<br>
+       5. <strong>词汇强制</strong>:禁用 "easier / cleaner",逼用词表术语。<br>
+       6. <strong>必须有立场</strong>:Top Recommendation + 3 档推荐强度。<br>
+       7. <strong>多技能编排</strong>:Stage 3 同时调 3 个其他 skill。<br>
+       8. <strong>写到临时目录</strong>:不污染仓库。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  improve-codebase-architecture 解析 · 文件数 3 · 总行数 ~194 · 3 阶段 · 4 diagram · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

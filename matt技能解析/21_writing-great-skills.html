@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>writing-great-skills 技能解析 · 元技能 · 如何写出可预测的 skill</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(188,140,255,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(188,140,255,0.15);
+    border: 1px solid rgba(188,140,255,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent-2);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--accent-2); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--accent-2);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== Trade-off 卡 ===== */
+  .tradeoff {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .to {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .to.model { border-color: var(--accent); }
+  .to.user { border-color: var(--pink); }
+  .to .name { font-family: "JetBrains Mono", monospace; font-weight: 700; margin-bottom: 8px; }
+  .to.model .name { color: var(--accent); }
+  .to.user .name { color: var(--pink); }
+  .to .cost { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .to .mech { font-size: 12px; color: var(--text); }
+
+  /* ===== 信息层级 ===== */
+  .ladder {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .rung {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .rung.r1 { border-color: var(--accent); }
+  .rung.r2 { border-color: var(--green); }
+  .rung.r3 { border-color: var(--purple); }
+  .rung .n {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    color: #0e1116;
+    flex-shrink: 0;
+  }
+  .rung.r1 .n { background: var(--accent); }
+  .rung.r2 .n { background: var(--green); }
+  .rung.r3 .n { background: var(--purple); }
+  .rung .name { font-weight: 700; }
+  .rung.r1 .name { color: var(--accent); }
+  .rung.r2 .name { color: var(--green); }
+  .rung.r3 .name { color: var(--purple); }
+  .rung .desc { font-size: 13px; color: var(--text); }
+
+  /* ===== Failure Modes ===== */
+  .failures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .failure {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    border-left: 3px solid var(--red);
+  }
+  .failure .name { font-weight: 700; font-family: "JetBrains Mono", monospace; color: var(--red); font-size: 13px; }
+  .failure .desc { font-size: 12px; color: var(--text); margin-top: 6px; }
+  .failure .def { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* ===== Leading Words 转换 ===== */
+  .lw-trans {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .lw-row {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .lw-row .before { color: var(--red); font-family: "JetBrains Mono", monospace; }
+  .lw-row .arrow { color: var(--muted); padding: 0 12px; }
+  .lw-row .after { color: var(--green); font-family: "JetBrains Mono", monospace; font-weight: 700; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(188,140,255,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--accent-2);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--accent-2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent-2);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 21 / 21 篇</span>
+  <h1>writing-great-skills · <span class="accent">元技能 · Predictability 之根</span></h1>
+  <div class="subtitle">"A skill exists to wrangle determinism out of a stochastic system."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 元技能</h2>
+  <div class="file-tree">
+    <span class="dir">writing-great-skills/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 83 行 · 元技能 · 教人写好 skill</span><br>
+    ├── <span class="file">GLOSSARY.md</span>        <span class="note">← bold terms 完整定义</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>这是仓库里<strong>唯一</strong>的元技能 —— 不解决具体问题,而是告诉你"如何写出好的 skill"。GLOSSARY.md 给所有 bold 术语完整定义。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> Root Virtue · 可预测性</h2>
+
+  <div class="callout">
+    <strong>SKILL.md §7:</strong>"A skill exists to wrangle determinism out of a stochastic system. <strong>Predictability</strong> — the agent taking the same <em>process</em> every run, not producing the same output — is the <strong>root virtue</strong>; every lever below serves it."
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Predictability ≠ Same Output</div>
+    <p><strong>可预测</strong>不等于<strong>同样输出</strong>。可预测 = 同样的<strong>过程</strong>,但输出随上下文合理变化。<br>
+    LLM 是随机系统,skill 的存在是为了<strong>约束这个随机性</strong>到<strong>可预测的过程</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 两种 Invocation · Context vs Cognitive</h2>
+
+  <div class="tradeoff">
+    <div class="to model">
+      <div class="name">⚙️ Model-Invoked</div>
+      <div class="cost">Cost: <strong style="color:var(--accent);">Context Load</strong> · description 每轮都在窗口里</div>
+      <div class="mech">omit <code>disable-model-invocation</code> · 写 model-facing description · 触发短语丰富</div>
+    </div>
+    <div class="to user">
+      <div class="name">👤 User-Invoked</div>
+      <div class="cost">Cost: <strong style="color:var(--pink);">Cognitive Load</strong> · 你要记住它存在</div>
+      <div class="mech"><code>disable-model-invocation: true</code> · description 变 human-facing 一行摘要</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>§20:</strong>"When user-invoked skills multiply past what you can remember, that piled-up cognitive load is cured by a <strong>router skill</strong>: one user-invoked skill that names the others and when to reach for each."<br>
+    <em>这正是 ask-matt 的存在原因!</em>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Description 写作 · 3 条原则</h2>
+  <p>SKILL.md §26–28 行:</p>
+
+  <ol style="color:#c9d1d9;font-size:13px;line-height:2;">
+    <li><strong style="color:var(--accent);">Front-load leading word</strong> —— description 前置技能的核心词</li>
+    <li><strong style="color:var(--green);">One trigger per branch</strong> —— 同义 branch 是重复,合并</li>
+    <li><strong style="color:var(--purple);">Cut identity already in body</strong> —— description 只保留 triggers + "其他 skill 需要时"</li>
+  </ol>
+
+  <div class="insight">
+    <div class="label">★ Description 比 body 还严</div>
+    <p>"Every word increases context load, so a description <strong>earns even harder pruning than the body</strong>"<br>
+    Description 每轮都占 token,所以<strong>比 body 更要狠心修剪</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 信息层级 · 3 层阶梯</h2>
+
+  <div class="ladder">
+    <div class="rung r1">
+      <div class="n">1</div>
+      <div>
+        <div class="name">In-skill step · SKILL.md 主层</div>
+        <div class="desc"><strong>有序动作</strong> · agent 做什么,顺序。每步以 <strong>completion criterion</strong> 结尾 —— 可检查,可能穷举。<br>
+        模糊 criterion → <strong>premature completion</strong>(没做完就当做完)。</div>
+      </div>
+    </div>
+
+    <div class="rung r2">
+      <div class="n">2</div>
+      <div>
+        <div class="name">In-skill reference · SKILL.md 内参考</div>
+        <div class="desc">定义、规则、事实 · 按需查阅。合法 flat peer-set(同一层多规则),不是设计问题。<em>本技能就全是 reference。</em></div>
+      </div>
+    </div>
+
+    <div class="rung r3">
+      <div class="n">3</div>
+      <div>
+        <div class="name">External reference · 外部参考</div>
+        <div class="desc">推出 SKILL.md 到单独文件 · <strong>context pointer</strong> 触发时加载。<br>
+        跨度:从 sibling 文件(<code>GLOSSARY.md</code>)到完全外部资源。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Progressive Disclosure · 渐进披露:</strong><br>
+    把内容沿阶梯往下推,让顶层保持可读。<br>
+    <strong>branching 是干净的披露测试</strong> —— 每条 branch 需要的 inline,只有部分需要的走 pointer。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 何时拆分 · 2 种 cut</h2>
+
+  <table>
+    <thead>
+      <tr><th>拆分方式</th><th>何时</th><th>代价</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong style="color:var(--accent);">By invocation</strong></td>
+        <td>有 distinct leading word 应自主触发 / 其他 skill 要 reach</td>
+        <td>新 description 占 context</td>
+      </tr>
+      <tr>
+        <td><strong style="color:var(--green);">By sequence</strong></td>
+        <td>后续步骤诱惑 agent 跳过当前步骤(premature completion)</td>
+        <td>藏起来让 agent 专注当前</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Leading Words · Pretraining 词的力量</h2>
+
+  <div class="lw-trans">
+    <p style="color:var(--text);font-size:13px;margin-bottom:16px;">
+      <strong>Leading word</strong> = 模型<em>预训练</em>里已经存在的紧凑概念。<br>
+      在文本里反复出现 → 累积定义 → 用最少 token 锚定整块行为。
+    </p>
+
+    <div class="lw-row">
+      <span class="before">"fast, deterministic, low-overhead"</span>
+      <span class="arrow">→</span>
+      <span class="after">tight</span>
+      <span style="color:var(--muted);font-size:12px;display:block;margin-top:4px;">
+        一个 pretraining 词(<em>tight</em> loop)替代多个描述
+      </span>
+    </div>
+
+    <div class="lw-row">
+      <span class="before">"a loop you believe in"</span>
+      <span class="arrow">→</span>
+      <span class="after">red</span>
+      <span style="color:var(--muted);font-size:12px;display:block;margin-top:4px;">
+        把模糊的"我相信"换成<strong>可观察的二元状态</strong>(红 / 绿)
+      </span>
+    </div>
+
+    <div class="lw-row">
+      <span class="before">"be thorough"</span>
+      <span class="arrow">→</span>
+      <span class="after">relentless</span>
+      <span style="color:var(--muted);font-size:12px;display:block;margin-top:4px;">
+        weak leading word → <strong>stronger word</strong>,not different technique
+      </span>
+    </div>
+
+    <p style="color:var(--muted);font-size:12px;margin-top:16px;">
+      §72:"<strong>Assume every skill is carrying restatements that leading words retire — go find them.</strong>"
+    </p>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 双赢</div>
+    <p>§72:"<strong>You win twice over: fewer tokens, and a sharper hook for the agent to hang its thinking on.</strong>"<br>
+    Leading word 不只省 token,还让模型在描述里看到同一词时<strong>更可靠触发</strong>。<br>
+    当 word 出现在 prompt / docs / code / description 里 —— 模型建立强关联。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 6 种 Failure Modes</h2>
+
+  <div class="failures">
+    <div class="failure">
+      <div class="name">Premature Completion</div>
+      <div class="desc">步骤没真做完就当做完。注意滑到"<em>being done</em>"。</div>
+      <div class="def"><strong>防御:</strong> 锐化 completion criterion → 必要时按 sequence 拆分。</div>
+    </div>
+    <div class="failure">
+      <div class="name">Duplication</div>
+      <div class="desc">同义多处出现。维护成本 + token + 在层级上虚高。</div>
+      <div class="def"><strong>防御:</strong> Single source of truth。</div>
+    </div>
+    <div class="failure">
+      <div class="name">Sediment</div>
+      <div class="desc">陈旧层因"加安全删危险"沉淀下来。</div>
+      <div class="def"><strong>防御:</strong> Pruning discipline。</div>
+    </div>
+    <div class="failure">
+      <div class="name">Sprawl</div>
+      <div class="desc">即使每行都活且 unique,也太长。</div>
+      <div class="def"><strong>防御:</strong> 阶梯 + 按 branch / sequence 拆分。</div>
+    </div>
+    <div class="failure">
+      <div class="name">No-op</div>
+      <div class="desc">说了句模型默认就遵守的。等于花钱说废话。</div>
+      <div class="def"><strong>测试:</strong> 它改变默认行为了吗?</div>
+    </div>
+    <div class="failure">
+      <div class="name">Negation</div>
+      <div class="desc">"别想大象"反而命名大象,让它更可达。</div>
+      <div class="def"><strong>防御:</strong> 说<em>做什么</em>,不说<em>不做什么</em>。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> Pruning · 修剪纪律</h2>
+  <p>SKILL.md §55–59 行给出 3 条:</p>
+
+  <ul style="color:#c9d1d9;font-size:13px;line-height:2;">
+    <li><strong>Single source of truth</strong> · 一个权威地点,改一处即可</li>
+    <li><strong>每行检查 relevance</strong> · 还和技能做的事相关吗</li>
+    <li><strong>整句删除 no-ops</strong> · 不是删字,是删整句。"Most prose that fails should go, not be rewritten."</li>
+  </ul>
+
+  <div class="callout">
+    <strong>设计哲学:</strong>pruning 不只是删冗余 —— 它是"<strong>默认失败的命运</strong>"。<br>
+    §81:"<strong>The default fate of any skill without a pruning discipline</strong>."<br>
+    没有修剪纪律的技能 = 注定膨胀。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Predictability as Root Virtue</div>
+    <div class="ptn-desc">"Predictability = same process, not same output"。所有 lever 都服务它。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Context vs Cognitive Load</div>
+    <div class="ptn-desc">两种 invocation 的核心 trade-off。Model-invoked 付 context,user-invoked 付 cognitive。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Description Harder Pruning</div>
+    <div class="ptn-desc">Description 每轮占 token,比 body 更要狠修剪。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Information Hierarchy · 3 层</div>
+    <div class="ptn-desc">In-skill step > In-skill reference > External reference。push too little / too much 是核心 tension。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Progressive Disclosure</div>
+    <div class="ptn-desc">沿阶梯往下推。Branch 决定 inline vs pointer。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Completion Criterion · 可检查</div>
+    <div class="ptn-desc">每步以 completion criterion 结尾。可检查 + 可能穷举。模糊 = premature completion 邀请。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Leading Word as Token</div>
+    <div class="ptn-desc">一个 pretraining 词替代多个描述。省 token + 增强 trigger 关联性。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">6 Failure Modes as Diagnostic</div>
+    <div class="ptn-desc">6 种失败模式作为诊断工具。每个有防御措施。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Negation Backfires</div>
+    <div class="ptn-desc">禁止某物反而命名它。说<em>做什么</em>,不说<em>不做什么</em>。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">11</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给 Skill 作者的终极启示</div>
+    <p>1. <strong>Predictability 是 root virtue</strong>:same process, not same output。<br>
+       2. <strong>两 load 必择一</strong>:context load(model-invoked)或 cognitive load(user-invoked)。<br>
+       3. <strong>Description 修剪 > body</strong>:每轮占 token。<br>
+       4. <strong>3 层阶梯</strong>:step > reference > external,branch 决定 inline/pointer。<br>
+       5. <strong>Completion Criterion 可检查</strong>:模糊 = premature completion 邀请。<br>
+       6. <strong>Leading word 替代多个描述</strong>:pretraining 词 = 双赢(省 token + 强 trigger)。<br>
+       7. <strong>6 Failure Modes</strong>:每个有防御,可作为诊断工具。<br>
+       8. <strong>Sediment 是默认命运</strong>:没 pruning 必膨胀。<br>
+       9. <strong>Negation 反向</strong>:说<em>做</em>什么,不说<em>不</em>做什么。<br>
+       10. <strong>Router 解认知负担</strong>:user-invoked 太多 → 写一个 router(如 ask-matt)。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  writing-great-skills 解析 · 文件数 3 · SKILL.md 83 行 · 元技能 · 解析生成于 matt技能解析 项目 · 21 篇 Matt 技能全部解析完成 🎉
+</footer>
+
+</body>
+</html>

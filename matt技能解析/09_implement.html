@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>implement 技能解析 · 实现编排者</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(63,185,80,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(63,185,80,0.15);
+    border: 1px solid rgba(63,185,80,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--green);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--green); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--green);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 完整 SKILL.md ===== */
+  .full-doc {
+    background: #0e1116;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+  }
+
+  /* ===== 5 步骤 ===== */
+  .step-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .step-box {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    position: relative;
+  }
+  .step-box .n {
+    background: var(--green);
+    color: #0e1116;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    margin-right: 8px;
+  }
+  .step-box .title { font-weight: 600; color: var(--text); }
+  .step-box .desc { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .step-box.outer { border-color: var(--green); }
+  .step-box.outer .n { background: var(--green); }
+  .step-box.outer .title { color: var(--green); }
+
+  /* ===== 频率节奏表 ===== */
+  .cadence {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .cad-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .cad-row .label {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--accent);
+    width: 130px;
+    flex-shrink: 0;
+  }
+  .cad-row .freq {
+    background: var(--orange);
+    color: #0e1116;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+    flex-shrink: 0;
+  }
+  .cad-row .desc { font-size: 13px; color: var(--muted); }
+
+  /* ===== 编排可视化 ===== */
+  .orch-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .orch-stage {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .orch-stage.main { border-color: var(--green); }
+  .orch-stage .who { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .orch-stage.main .who { color: var(--green); }
+  .orch-stage .what { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(63,185,80,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--green);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 09 / 21 篇</span>
+  <h1>implement · <span class="accent">5 句话定义完整实现流程</span></h1>
+  <div class="subtitle">"Implement the work · /tdd where possible · typecheck often · /code-review · commit"</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 15 行 SKILL.md</h2>
+  <div class="file-tree">
+    <span class="dir">implement/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 15 行 · 5 行正文 · 5 个动作</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Implement"</span>
+  </div>
+  <p>和 handoff / grill-me 一样极简 —— 15 行定义了"怎么把 spec 变成代码"的完整流程。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 全文 15 行</h2>
+
+  <div class="full-doc">---
+name: implement
+description: "Implement a piece of work based on a spec or set of tickets."
+disable-model-invocation: true
+---
+
+Implement the work described by the user in the spec or tickets.
+
+Use /tdd where possible, at pre-agreed seams.
+
+Run typechecking regularly, single test files regularly, and the full test
+suite once at the end.
+
+Once done, use /code-review to review the work.
+
+Commit your work to the current branch.</div>
+
+  <div class="insight">
+    <div class="label">★ 极简主义极致</div>
+    <p>15 行 → 5 句正文 → <strong>5 个动作</strong>。<br>
+    这种"<strong>动词开头 + 频率词</strong>"的写法,把流程压缩成可背诵的口诀:<br>
+    <em>Implement → TDD where possible → typecheck often → review → commit</em>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 5 个动作拆解</h2>
+
+  <div class="step-flow">
+    <div class="step-row">
+      <div class="step-box outer">
+        <span class="n">1</span>
+        <span class="title">Implement the work</span>
+        <div class="desc">按 spec / tickets 描述的实现。用户/前置 skill 已经把要做什么定下来了,这是执行环节。</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-box">
+        <span class="n">2</span>
+        <span class="title">Use /tdd where possible, at pre-agreed seams</span>
+        <div class="desc"><strong>"where possible"</strong> 不是 hard requirement。<br>
+        <strong>"at pre-agreed seams"</strong> 是关键 —— 只有<strong>之前约定好的 seam</strong>才能用 TDD,不能临时发明 seam。</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-box">
+        <span class="n">3</span>
+        <span class="title">Typecheck + 单文件测试经常跑</span>
+        <div class="desc">见下节"频率节奏"。</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-box">
+        <span class="n">4</span>
+        <span class="title">Once done, use /code-review</span>
+        <div class="desc">实现完后跑双轴 review(Standards + Spec),再决定能不能 commit。</div>
+      </div>
+    </div>
+
+    <div class="step-row">
+      <div class="step-box">
+        <span class="n">5</span>
+        <span class="title">Commit your work</span>
+        <div class="desc">最后一步:commit 到当前分支。<strong>review 之后才 commit</strong>,不是 review 之前。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 频率节奏 · "regularly" 的精确定义</h2>
+  <p>SKILL.md 第 11 行只给了"regularly"这种模糊词,但<strong>它规定了三种不同频率</strong>:</p>
+
+  <div class="cadence">
+    <div class="cad-row">
+      <div class="label">typecheck</div>
+      <div class="freq">REGULARLY</div>
+      <div class="desc">每次写完一个功能块就跑。最便宜,频率最高。</div>
+    </div>
+    <div class="cad-row">
+      <div class="label">single test files</div>
+      <div class="freq">REGULARLY</div>
+      <div class="desc">写完一个测试 / 改完相关文件就跑。中等频率。</div>
+    </div>
+    <div class="cad-row">
+      <div class="label">full test suite</div>
+      <div class="freq">ONCE AT END</div>
+      <div class="desc"><strong style="color:var(--orange)">只在最后跑一次</strong>。最贵,频率最低。</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>为什么这样分级?</strong><br>
+    · <strong>typecheck</strong>:2-10 秒。写到关键函数就跑,防类型漂移。<br>
+    · <strong>单文件测试</strong>:5-30 秒。每改完一处就验证因果链。<br>
+    · <strong>全 suite</strong>:分钟级。<strong>不能经常跑</strong>,否则反馈环断掉。<strong>只在最后跑一次</strong>,作为整盘验证。<br>
+    这种"<strong>成本 → 频率</strong>"的对应是实现流程的核心节拍。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 编排关系 · implement 在哪里</h2>
+
+  <p>implement 在主流程里是个<strong>编排者</strong>,自己不写测试细节、不写 review 细节,而是<strong>驱动</strong>其他子技能。</p>
+
+  <div class="orch-vis">
+    <div class="orch-stage main">
+      <div class="who">🎯 implement · 主编排</div>
+      <div class="what">15 行 · 只做调度,不写代码细节</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+      <div class="orch-stage">
+        <div class="who" style="color:var(--accent);">→ /tdd</div>
+        <div class="what">在合适 seam 写测试-实现-重构循环</div>
+      </div>
+      <div class="orch-stage">
+        <div class="who" style="color:var(--orange);">→ typecheck / test</div>
+        <div class="what">用不同频率跑验证</div>
+      </div>
+      <div class="orch-stage">
+        <div class="who" style="color:var(--accent-2);">→ /code-review</div>
+        <div class="what">commit 前的双轴评审</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;text-align:center;color:var(--muted);font-size:13px;">
+      ↓ 最后 ↓
+    </div>
+    <div class="orch-stage" style="border-color:var(--green);">
+      <div class="who" style="color:var(--green);">git commit</div>
+      <div class="what">代码进入仓库</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> "where possible" 和 "pre-agreed seams" 的设计</h2>
+
+  <p>SKILL.md 第 9 行两个修饰语非常关键:</p>
+
+  <pre><code>Use /tdd where possible, at pre-agreed seams.</code></pre>
+
+  <h3>"where possible"</h3>
+  <p>TDD 不是硬要求。某些改动(重构 / 命名修正 / 单行 typo)用 TDD 不合理。<strong>判断权给执行者</strong>。</p>
+
+  <h3>"at pre-agreed seams"</h3>
+  <p>这是从 <strong>codebase-design</strong> 借来的概念:seam 不能临时发明。<strong>在 to-spec / to-tickets 阶段就约好了 seam</strong>(这是怎么测的边界),实现时只在这些 seam 上做 TDD。</p>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"pre-agreed" 这个词防止了"<strong>事后补测试</strong>"的常见陷阱:<br>
+    实现写完了,再想"诶,我能写个测试吗?" —— 这时你已经<strong>为测试而调整设计</strong>了。Seam 必须在<strong>写代码之前</strong>就约好。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> "Once done, use /code-review" 的位置意义</h2>
+
+  <p>第 13 行:<strong>"Once done, use /code-review to review the work."</strong></p>
+
+  <p>这条规则把 <code>code-review</code> 锁定到 commit 前:<br>
+    ❌ 边写边 review(浪费 token)<br>
+    ✅ 实现完才 review(整盘检查)<br>
+    ✅ review 通过才 commit<br>
+    ❌ review 不过 → 修 → 再 review → commit</p>
+
+  <div class="callout">
+    <strong>位置即流程:</strong>"Once done" 这个词把 review 钉在 commit 之前的<strong>最后一道关</strong>。这和 ask-matt 主流程里"<code>/implement</code> 关闭前跑 <code>/code-review</code>"完全对齐 —— <strong>两个文档互相印证</strong>。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Orchestrator, Not Executor · 编排者而非执行者</div>
+    <div class="ptn-desc">implement 自己不写测试细节、不写 review 细节,只是<strong>驱动</strong>其他子技能。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Verb-First Imperatives · 动词开头祈使句</div>
+    <div class="ptn-desc">每行一个动词开头:Implement / Use / Run / Once done, use / Commit。<strong>动词即指令</strong>。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Cost-Frequency Mapping · 成本 → 频率</div>
+    <div class="ptn-desc">typecheck(快)经常跑 · 单 test(中)经常跑 · 全 suite(慢)只在最后。频率倒挂成本。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Soft Constraints · 软约束</div>
+    <div class="ptn-desc">"where possible" 让执行者有判断空间。不把所有约束都写成 hard rule。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Pre-Agreed Seams · 预先约好的 Seam</div>
+    <div class="ptn-desc">不允许实现时临时发明 seam。Seam 必须在 to-spec / to-tickets 阶段定下来。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Review-Before-Commit · 评审后才 Commit</div>
+    <div class="ptn-desc">/code-review 在 commit 前一道关,而不是事后补救。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Explicit-Only Invocation</div>
+    <div class="ptn-desc">disable-model-invocation: true。实现不能脑补,用户必须显式触发。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给实现流程设计的启示</div>
+    <p>1. <strong>编排者而非执行者</strong>:实现流程不需要自己懂 TDD 细节,只需要驱动 /tdd。<br>
+       2. <strong>动词开头,5 句搞定</strong>:implement → TDD → typecheck → review → commit。<br>
+       3. <strong>成本决定频率</strong>:快检验经常跑,慢检验只在最后。<br>
+       4. <strong>软约束留判断空间</strong>:"where possible" 比 "always" 更诚实。<br>
+       5. <strong>Seam 预先约</strong>:测试边界不能在实现时临时发明。<br>
+       6. <strong>Review 在 commit 前</strong>:不是事后补救,是最后一道关。<br>
+       7. <strong>显式触发</strong>:实现不能脑补。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  implement 解析 · 文件数 2 · 15 行 SKILL.md · 5 步流程 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

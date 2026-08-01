@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>to-spec 技能解析 · 对话 → 可构建 spec 的合成器</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(63,185,80,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(63,185,80,0.15);
+    border: 1px solid rgba(63,185,80,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--green);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--green); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--green);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 3 步骤 ===== */
+  .step-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .step-card.s1 { border-color: var(--orange); }
+  .step-card.s2 { border-color: var(--accent); }
+  .step-card.s3 { border-color: var(--green); }
+  .step-card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .step-card .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step-card.s1 .n { background: var(--orange); }
+  .step-card.s2 .n { background: var(--accent); }
+  .step-card.s3 .n { background: var(--green); }
+  .step-card .name { font-weight: 700; }
+  .step-card.s1 .name { color: var(--orange); }
+  .step-card.s2 .name { color: var(--accent); }
+  .step-card.s3 .name { color: var(--green); }
+  .step-card .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== Spec 模板 7 节 ===== */
+  .spec-tmpl {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    line-height: 1.7;
+  }
+  .spec-tmpl h3 { color: var(--accent); font-family: sans-serif; font-size: 15px; margin: 14px 0 6px; }
+  .spec-tmpl p { font-family: sans-serif; color: var(--text); }
+  .spec-tmpl .user-story {
+    background: var(--panel);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 4px 0;
+    border-left: 3px solid var(--accent);
+    font-size: 12px;
+  }
+
+  /* ===== Seam 原则 ===== */
+  .seam-rules {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .seam-rule {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .seam-rule .icon {
+    background: var(--accent);
+    color: #0e1116;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .seam-rule .text { font-size: 13px; }
+
+  /* ===== 何时有/无 snippet ===== */
+  .exc {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 0;
+  }
+  .exc.no { border-color: var(--red); }
+  .exc.yes { border-color: var(--green); }
+  .exc .head { font-family: "JetBrains Mono", monospace; font-weight: 700; margin-bottom: 8px; }
+  .exc.no .head { color: var(--red); }
+  .exc.yes .head { color: var(--green); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(63,185,80,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--green);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 17 / 21 篇</span>
+  <h1>to-spec · <span class="accent">对话 → 可构建 spec 的合成器</span></h1>
+  <div class="subtitle">"Turn the current conversation into a spec ... no interview, just synthesis."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 75 行 + 内置完整 spec 模板</h2>
+  <div class="file-tree">
+    <span class="dir">to-spec/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 75 行 · 3 步流程 + 完整 spec 模板(7 节)</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "To Spec"</span>
+  </div>
+  <p>整篇 SKILL.md 一半是流程,一半是<strong>完整的 spec 模板</strong>。这是 inline 模板的范例 —— 不引用外部文件,直接展示给模型看。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 关键边界 · "Do NOT interview"</h2>
+  <p>SKILL.md 第 7 行用大写重申边界:</p>
+
+  <div class="callout">
+    <strong>"This skill takes the current conversation context and codebase understanding and produces a spec ... <strong style="color:var(--red);">Do NOT interview the user</strong> — just synthesize what you already know."</strong>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 与 grill-me 的关键区别</div>
+    <p>to-spec 和 grill-me / grill-with-docs 看似都"用对话产生文档",但<strong>方向相反</strong>:<br>
+    · <strong>grill-me</strong>:模型<em>问</em>,用户<em>答</em> —— 生成共享理解<br>
+    · <strong>to-spec</strong>:模型<em>合成</em>,用户<em>不参与</em> —— 把已知信息变成 spec<br>
+    这种"<strong>边界硬化</strong>"防止模型在 to-spec 里又开始问用户问题。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 3 步流程</h2>
+
+  <div class="step-flow">
+    <div class="step-card s1">
+      <div class="head">
+        <div class="n">1</div>
+        <div class="name">Explore the repo</div>
+      </div>
+      <div class="desc"><strong>先理解代码库当前状态。</strong>若还没探过的话。<br>
+        用 <strong>domain glossary 词汇</strong>(CONTEXT.md)贯穿 spec;尊重该区域的 ADR。<br>
+        <em>和 codebase-design / domain-modeling 共享同套语言。</em></div>
+    </div>
+
+    <div class="step-card s2">
+      <div class="head">
+        <div class="n">2</div>
+        <div class="name">Sketch out the seams</div>
+      </div>
+      <div class="desc"><strong>草拟测试 seams。</strong>优先复用已有 seam · 选尽可能高的 seam · 新 seam 也越高越好。<br>
+        <strong>少 seam 多好</strong> —— 理想是 1 个 seam。<br>
+        <strong>和用户确认</strong>这些 seam 符合期望。<br>
+        <em>这一步是 to-spec 唯一一处需要用户参与的环节。</em></div>
+    </div>
+
+    <div class="step-card s3">
+      <div class="head">
+        <div class="n">3</div>
+        <div class="name">Write + Publish + Label</div>
+      </div>
+      <div class="desc"><strong>按模板写 spec,发布到 issue tracker,打 ready-for-agent label。</strong><br>
+        不需要额外 triage —— 已经是 agent-ready 状态。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Seam 三原则</h2>
+
+  <div class="seam-rules">
+    <div class="seam-rule">
+      <div class="icon">1</div>
+      <div class="text"><strong>复用优先</strong> · "Existing seams should be preferred to new ones."</div>
+    </div>
+    <div class="seam-rule">
+      <div class="icon">2</div>
+      <div class="text"><strong>尽量高</strong> · "Use the highest seam possible."</div>
+    </div>
+    <div class="seam-rule">
+      <div class="icon">3</div>
+      <div class="text"><strong>越少越好</strong> · "The fewer seams across the codebase, the better - the ideal number is one."</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>为什么 seam 越少越好?</strong><br>
+    codebase-design 的"<strong>deep module</strong>"原则 —— 一个大接口后藏一个复杂实现,胜过多个小接口。<br>
+    Seam 越少,实现越深,测试越集中。
+  </div>
+</section>
+
+<section>
+  h2  <h2><span class="num">05</span> Spec 完整模板 · 7 节</h2>
+
+  <div class="spec-tmpl">
+    <h3>## Problem Statement</h3>
+    <p>用户面对的问题,从用户视角。</p>
+
+    <h3>## Solution</h3>
+    <p>解决方案,从用户视角。</p>
+
+    <h3>## User Stories</h3>
+    <p style="color:var(--muted);font-size:12px;">LONG, numbered list。每个格式:<code>As an &lt;actor&gt;, I want a &lt;feature&gt;, so that &lt;benefit&gt;</code></p>
+    <div class="user-story">1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending</div>
+    <div class="user-story">2. As a mobile bank customer, I want to see recent transactions, so that I can ...</div>
+    <div class="user-story">3. As a bank employee, I want to ...</div>
+    <p style="color:var(--muted);font-size:12px;">...几十条上百条 ... 穷举所有角度</p>
+
+    <h3>## Implementation Decisions</h3>
+    <p>列出已做的实现决策:将构建/修改的模块 · 接口修改 · 技术澄清 · 架构决策 · schema 变化 · API 合约 · 特定交互</p>
+
+    <h3>## Testing Decisions</h3>
+    <p>什么算好测试 · 哪些模块测 · 同类测试的 prior art(代码库里相似的)</p>
+
+    <h3>## Out of Scope</h3>
+    <p>明确<strong>不在范围内</strong>的事。</p>
+
+    <h3>## Further Notes</h3>
+    <p>任何其它备注。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 代码片段规则 · "Do NOT include file paths"</h2>
+  <p>SKILL.md 第 55 行给出重要的规则:</p>
+
+  <div class="exc no">
+    <div class="head">❌ Do NOT include</div>
+    <ul style="color:var(--text);font-size:13px;line-height:1.9;margin:6px 0;">
+      <li>具体的 <strong>文件路径</strong>(可能很快过时)</li>
+      <li>代码 <strong>snippets</strong>(同上)</li>
+    </ul>
+  </div>
+
+  <div class="exc yes">
+    <div class="head">✅ Exception · 唯一例外</div>
+    <p style="color:var(--text);font-size:13px;">
+      如果 <strong>prototype 产出的 snippet</strong> 编码了一个<strong>比散文更精确的决策</strong>(state machine / reducer / schema / type shape),可以 inline 到相关决策中,并<strong>简短注明"来自 prototype"</strong>。<br>
+      只保留<strong>决策丰富的部分</strong> —— 不是完整可运行的 demo。
+    </p>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 为什么禁具体路径</div>
+    <p>文件路径在 PR 后就过时。spec 是"<strong>意图的存档</strong>",不是"<strong>当前结构的快照</strong>"。<br>
+    唯一例外:prototype 已经把决策<strong>硬化</strong>成代码。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> "Ready-for-agent" label</h2>
+
+  <p>第 19 行:<strong>"Apply the ready-for-agent triage label - no need for additional triage."</strong></p>
+
+  <p>这意味着 to-spec 输出的 spec <strong>直接进 agent-ready 队列</strong>,跳过 triage 流程。<br>
+    这是一个隐含的"信任圈":<br>
+    · model 自己写的 spec = model 自己要执行的 spec<br>
+    · 不需要外部人类 / agent 再 review 一遍</p>
+
+  <div class="callout">
+    <strong>隐含流程:</strong><br>
+    grill-with-docs (用户访谈) → to-spec (合成 spec) → to-tickets (拆 ticket) → implement (执行)<br>
+    每一步的输出都自动进入下一步的"可执行"队列。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Synthesis, Not Interview · 合成而非访谈</div>
+    <div class="ptn-desc">明确划清边界:不向用户问新问题,把已知信息压成 spec。和 grill-me 方向相反。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Seam Sketching · Seam 草图</div>
+    <div class="ptn-desc">写 spec 前先确定测试 seam,优先复用,越少越好。和 implement / tdd 共享 seam 纪律。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Inline Template</div>
+    <div class="ptn-desc">模板直接写在 SKILL.md 里,不引用外部文件。模型立即可读,无需跳转。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">User Story Extensiveness</div>
+    <div class="ptn-desc">"LONG, numbered list" —— 用户故事要穷举所有角度,不留死角。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">No Path/Code · 禁路径禁代码</div>
+    <div class="ptn-desc">spec 是意图存档,不是结构快照。唯一例外是 prototype 硬化的决策。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Auto Ready-for-Agent</div>
+    <div class="ptn-desc">model 自己生成的 spec → 直接打 ready-for-agent → 跳过 triage。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">User Perspective · 用户视角</div>
+    <div class="ptn-desc">Problem / Solution 节都明确说"from the user's perspective"。技术语言留给 Implementation。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给文档合成技能的启示</div>
+    <p>1. <strong>合成而非访谈</strong>:明确边界,避免越界问用户。<br>
+       2. <strong>Seam 提前草拟</strong>:写之前先定测试边界,spec 才有可执行性。<br>
+       3. <strong>模板内联</strong>:直接写在 SKILL.md,模型一眼看到。<br>
+       4. <strong>用户故事要 LONG</strong>:穷举,不留盲点。<br>
+       5. <strong>不写路径不写代码</strong>:spec 是意图,不是快照。<br>
+       6. <strong>Prototype 决策例外</strong>:被 prototype 硬化的代码可以 inline。<br>
+       7. <strong>ready-for-agent 直通</strong>:自己生成的 spec 直接进入执行队列。<br>
+       8. <strong>Problem / Solution 用用户视角</strong>:Implementation 才用技术语言。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  to-spec 解析 · 文件数 2 · SKILL.md 75 行 · 3 步流程 · 7 节模板 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

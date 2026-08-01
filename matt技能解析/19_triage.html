@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>triage 技能解析 · Issue 状态机 + Agent Brief</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(210,153,34,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(210,153,34,0.15);
+    border: 1px solid rgba(210,153,34,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--yellow); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--yellow);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== State Machine ===== */
+  .state-machine {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  svg.state-svg { width: 100%; height: auto; max-height: 360px; }
+  .state-circle {
+    fill: var(--panel);
+    stroke: var(--border);
+    stroke-width: 2;
+  }
+  .state-circle.triage { stroke: var(--yellow); }
+  .state-circle.info { stroke: var(--orange); }
+  .state-circle.agent { stroke: var(--green); }
+  .state-circle.human { stroke: var(--accent); }
+  .state-circle.wontfix { stroke: var(--red); }
+  .state-text { fill: var(--text); font-size: 12px; font-family: JetBrains Mono, monospace; text-anchor: middle; }
+  .state-arrow { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#sm-arrow); }
+  .state-arrow.return { stroke: var(--orange); stroke-dasharray: 4 3; }
+
+  /* ===== Roles ===== */
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .role-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .role-card.cat { border-color: var(--purple); }
+  .role-card.state { border-color: var(--accent); }
+  .role-card .head { font-family: "JetBrains Mono", monospace; font-weight: 700; margin-bottom: 8px; }
+  .role-card.cat .head { color: var(--purple); }
+  .role-card.state .head { color: var(--accent); }
+  .role-list { list-style: none; padding: 0; margin: 0; }
+  .role-list li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .role-list li:last-child { border: none; }
+  .role-list .nm { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--accent); }
+  .role-list .desc { color: var(--muted); font-size: 12px; }
+
+  /* ===== 5 步骤 ===== */
+  .steps {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .step.s1 { border-color: var(--orange); }
+  .step.s2 { border-color: var(--yellow); }
+  .step.s3 { border-color: var(--accent); }
+  .step.s4 { border-color: var(--purple); }
+  .step.s5 { border-color: var(--green); }
+  .step .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step.s1 .n { background: var(--orange); }
+  .step.s2 .n { background: var(--yellow); }
+  .step.s3 .n { background: var(--accent); }
+  .step.s4 .n { background: var(--purple); }
+  .step.s5 .n { background: var(--green); }
+  .step .name { font-weight: 700; color: var(--text); }
+  .step .desc { color: var(--text); font-size: 13px; margin-top: 4px; }
+
+  /* ===== Disclaimer ===== */
+  .disclaimer {
+    background: rgba(210,153,34,0.1);
+    border: 2px solid var(--yellow);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: var(--yellow);
+    text-align: center;
+  }
+
+  /* ===== Wontfix 分类 ===== */
+  .wontfix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .wontfix {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .wontfix .name { font-weight: 700; margin-bottom: 6px; }
+  .wontfix .name.done { color: var(--green); }
+  .wontfix .name.rejbug { color: var(--orange); }
+  .wontfix .name.rejen { color: var(--red); }
+  .wontfix .action { font-size: 12px; color: var(--muted); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(210,153,34,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--yellow);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--yellow);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 19 / 21 篇</span>
+  <h1>triage · <span class="accent">Issue 状态机 + Agent Brief</span></h1>
+  <div class="subtitle">"Move issues and external PRs through a state machine of triage roles."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 5 文件</h2>
+  <div class="file-tree">
+    <span class="dir">triage/</span><br>
+    ├── <span class="file">SKILL.md</span>             <span class="note">← 112 行 · 角色 + 5 步流程 + 三桶展示</span><br>
+    ├── <span class="file">AGENT-BRIEF.md</span>      <span class="note">← Agent brief 写作规范</span><br>
+    ├── <span class="file">OUT-OF-SCOPE.md</span>     <span class="note">← .out-of-scope/ 知识库使用规范</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>主 SKILL.md 写流程,两个附录是"<strong>特殊场景</strong>"的深入规则(agent brief 怎么写 · KB 怎么维护)。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 角色体系 · 2 类 + 5 状态</h2>
+
+  <div class="role-grid">
+    <div class="role-card cat">
+      <div class="head">CATEGORY · 2 个</div>
+      <ul class="role-list">
+        <li>
+          <div class="nm">bug</div>
+          <div class="desc">东西坏了</div>
+        </li>
+        <li>
+          <div class="nm">enhancement</div>
+          <div class="desc">新特性或改进</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="role-card state">
+      <div class="head">STATE · 5 个</div>
+      <ul class="role-list">
+        <li>
+          <div class="nm">needs-triage</div>
+          <div class="desc">maintainer 需要评估</div>
+        </li>
+        <li>
+          <div class="nm">needs-info</div>
+          <div class="desc">等待报告者补充信息</div>
+        </li>
+        <li>
+          <div class="nm">ready-for-agent</div>
+          <div class="desc">完整规格 · AFK agent 可接手</div>
+        </li>
+        <li>
+          <div class="nm">ready-for-human</div>
+          <div class="desc">需要人工实现</div>
+        </li>
+        <li>
+          <div class="nm">wontfix</div>
+          <div class="desc">不会处理</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 双轴标签</div>
+    <p>第 41 行:"<strong>Every triaged issue should carry exactly one category role and one state role.</strong>"<br>
+    每个 issue = 1 个 category + 1 个 state。<br>
+    如果 state 之间冲突 → 标记并问 maintainer。<br>
+    这是<strong>正交标签系统</strong>的设计。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 状态机可视化</h2>
+
+  <div class="state-machine">
+    <svg class="state-svg" viewBox="0 0 900 320">
+      <defs>
+        <marker id="sm-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#8b949e"/>
+        </marker>
+      </defs>
+
+      <!-- Center: needs-triage -->
+      <circle cx="450" cy="160" r="60" class="state-circle triage"/>
+      <text x="450" y="155" class="state-text" style="font-weight:700;">needs-triage</text>
+      <text x="450" y="172" class="state-text" style="font-size:10px;fill:#8b949e;">maintainer eval</text>
+
+      <!-- needs-info -->
+      <circle cx="200" cy="160" r="50" class="state-circle info"/>
+      <text x="200" y="155" class="state-text" style="font-weight:700;">needs-info</text>
+      <text x="200" y="172" class="state-text" style="font-size:10px;fill:#8b949e;">wait reporter</text>
+
+      <!-- ready-for-agent -->
+      <circle cx="700" cy="80" r="55" class="state-circle agent"/>
+      <text x="700" y="75" class="state-text" style="font-weight:700;">ready-for-agent</text>
+      <text x="700" y="92" class="state-text" style="font-size:10px;fill:#8b949e;">AFK agent grabs</text>
+
+      <!-- ready-for-human -->
+      <circle cx="700" cy="240" r="55" class="state-circle human"/>
+      <text x="700" y="235" class="state-text" style="font-weight:700;">ready-for-human</text>
+      <text x="700" y="252" class="state-text" style="font-size:10px;fill:#8b949e;">human implements</text>
+
+      <!-- wontfix -->
+      <circle cx="450" cy="50" r="45" class="state-circle wontfix"/>
+      <text x="450" y="46" class="state-text" style="font-weight:700;">wontfix</text>
+      <text x="450" y="62" class="state-text" style="font-size:10px;fill:#8b949e;">closed</text>
+
+      <!-- Arrows -->
+      <path class="state-arrow" d="M400,160 L250,160"/>
+      <path class="state-arrow" d="M250,150 Q300,100 430,75"/>
+      <path class="state-arrow" d="M485,115 L640,90"/>
+      <path class="state-arrow" d="M485,200 L640,235"/>
+
+      <!-- Return from needs-info -->
+      <path class="state-arrow return" d="M200,200 Q300,260 430,200"/>
+
+      <!-- Labels -->
+      <text x="310" y="140" fill="#8b949e" font-size="10" text-anchor="middle">needs more</text>
+      <text x="320" y="155" fill="#8b949e" font-size="10" text-anchor="middle">info</text>
+
+      <text x="565" y="115" fill="#8b949e" font-size="10" text-anchor="middle">brief attached</text>
+      <text x="565" y="220" fill="#8b949e" font-size="10" text-anchor="middle">needs judgment</text>
+
+      <!-- Disclaimer at bottom -->
+      <rect x="50" y="290" width="800" height="22" rx="4" fill="rgba(210,153,34,0.15)" stroke="#d29922"/>
+      <text x="450" y="305" fill="#d29922" text-anchor="middle" font-family="JetBrains Mono" font-size="10">&gt; This was generated by AI during triage.</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 强制 Disclaimer</h2>
+
+  <div class="disclaimer">&gt; This was generated by AI during triage.</div>
+
+  <p>SKILL.md 第 13–17 行:<strong>"Every comment or issue posted to the issue tracker during triage must start with this disclaimer"</strong></p>
+
+  <div class="insight">
+    <div class="label">★ AI 标注是底线</div>
+    <p>AI 介入协作工具时,<strong>必须自报身份</strong>。这条规则防止"AI 假装人类贡献"造成信任崩塌。<br>
+    和 ask-matt 的"<strong>disable-model-invocation</strong>"同源 —— 透明性优先。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 5 步流程 · Triage 一个 issue</h2>
+
+  <div class="steps">
+    <div class="step s1">
+      <div class="n">1</div>
+      <div>
+        <div class="name">Gather context</div>
+        <div class="desc">读完整 issue/PR(body / comments / labels / author / dates;PR 加 diff)。解析已有 triage notes,不要重问已解决问题。<br>
+        用 domain glossary 探代码库。<br>
+        跑两个检查:<br>
+        <strong>(a) Redundancy</strong> — 按<em>领域概念</em>搜索(不只是措辞),已实现 = wontfix。<br>
+        <strong>(b) Prior rejection</strong> — 读 <code>.out-of-scope/*.md</code>,找相似项。</div>
+      </div>
+    </div>
+
+    <div class="step s2">
+      <div class="n">2</div>
+      <div>
+        <div class="name">Recommend</div>
+        <div class="desc">告诉 maintainer 推荐 category + state,带理由。<br>
+        加相关代码摘要 + 是否已实现。<br>
+        <strong>等指示</strong>。</div>
+      </div>
+    </div>
+
+    <div class="step s3">
+      <div class="n">3</div>
+      <div>
+        <div class="name">Verify the claim</div>
+        <div class="desc"><strong>任何 grilling 之前先验证 claim 站得住。</strong><br>
+        bug:从 reporter 步骤复现。<br>
+        PR:确认 diff 做了它说的事 —— checkout,跑相关测试。<br>
+        报告:confirmed(带 code path) / failed / insufficient detail(强 needs-info)。<br>
+        <em>confirmed verification = 强 agent brief。</em></div>
+      </div>
+    </div>
+
+    <div class="step s4">
+      <div class="n">4</div>
+      <div>
+        <div class="name">Grill (if needed)</div>
+        <div class="desc">如果请求需要 flesh out,跑 <code>/grilling</code> + <code>/domain-modeling</code>。<br>
+        一次一问 · 锐化领域术语 · 决策落地时更新 CONTEXT.md / ADR inline。</div>
+      </div>
+    </div>
+
+    <div class="step s5">
+      <div class="n">5</div>
+      <div>
+        <div class="name">Apply the outcome</div>
+        <div class="desc">5 种 outcome 不同动作(见下节)。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 5 种 outcome 的不同动作</h2>
+
+  <table>
+    <thead>
+      <tr><th>Outcome</th><th>动作</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code style="color:var(--green);">ready-for-agent</code></td>
+        <td>发<strong>agent brief</strong> comment (AGENT-BRIEF.md)</td>
+      </tr>
+      <tr>
+        <td><code style="color:var(--accent);">ready-for-human</code></td>
+        <td>同 brief 结构,但<strong>注明为何不能委托</strong>(判断 / 外部访问 / 设计决策 / 手工测试)</td>
+      </tr>
+      <tr>
+        <td><code style="color:var(--orange);">needs-info</code></td>
+        <td>发 triage notes 模板</td>
+      </tr>
+      <tr>
+        <td><code style="color:var(--red);">wontfix</code></td>
+        <td>关 issue · comment 取决于<em>为什么</em>:</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>3 种 wontfix 的细分</h3>
+  <div class="wontfix-grid">
+    <div class="wontfix">
+      <div class="name done">Already implemented</div>
+      <div class="action">指出代码在哪。<strong>不要</strong>写 <code>.out-of-scope/</code>(那是给"被拒绝的",不是"已实现的")。</div>
+    </div>
+    <div class="wontfix">
+      <div class="name rejbug">Rejected (bug)</div>
+      <div class="action">礼貌解释 + close。</div>
+    </div>
+    <div class="wontfix">
+      <div class="name rejen">Rejected (enhancement)</div>
+      <div class="action">写 <code>.out-of-scope/</code> · comment 链接 · close。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> "Show what needs attention" 三桶</h2>
+  <p>SKILL.md 第 58–66 行规定 query 时的展示格式,<strong>三桶,oldest first</strong>:</p>
+
+  <ol style="color:#c9d1d9;font-size:13px;line-height:2;">
+    <li><strong style="color:var(--orange);">Unlabeled</strong> —— 从未 triage 过</li>
+    <li><strong style="color:var(--yellow);">needs-triage</strong> —— 评估进行中</li>
+    <li><strong style="color:var(--accent);">needs-info</strong> + 自上次 triage 报告者有活动 —— 需要重新评估</li>
+  </ol>
+
+  <p>PR(若在范围内)也进这三桶,每行标 <code>[PR]</code> / <code>[issue]</code>。<br>
+    <strong>只展示 external PR</strong>(tracker 配置定义 external),内部合作者的 PR 不算 triage 工作。<br>
+    显式 named PR 例外。</p>
+
+  <div class="callout">
+    <strong>设计哲学:</strong>"<strong>Discovery surfaces only external PRs.</strong>"<br>
+    主动建议只看"需要关注的";用户主动说要的 PR 永远处理。<br>
+    <strong>这种"默认窄、显式宽"</strong>的设计模式减少噪声。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> Quick State Override</h2>
+  <p>第 88–90 行处理一个微妙的场景:</p>
+
+  <pre><code>If the maintainer says "move #42 to ready-for-agent", <strong>trust them</strong>
+and apply the role directly. Confirm what you're about to do (role
+changes, comment, close), then act. Skip grilling.
+
+If moving to ready-for-agent without a grilling session,
+ask whether they want to write an agent brief.</code></pre>
+
+  <p>两条关键规则:<br>
+  · 用户直接指令 → <strong>信任</strong>(不必 grilling)<br>
+  · 移动到 ready-for-agent 但没 grilled → <strong>问</strong>要不要写 brief</p>
+
+  <div class="insight">
+    <div class="label">★ Trust + Ask · 信任加追问</div>
+    <p>"trust + confirm before action" 是另一条反复出现的设计模式:<br>
+    用户指令 → 信任 → 但<strong>确认动作</strong>(role 改 / comment / close)→ 再做。<br>
+    用户没 grilled 就跳到 ready-for-agent → <strong>主动追问</strong> brief。<br>
+    这种"<strong>信任但确认</strong>"的设计保护用户意图,同时避免模型脑补。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Two-Axis Labels · 双轴标签</div>
+    <div class="ptn-desc">每个 issue = 1 category + 1 state。正交标签,不互相替换。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Mandatory Disclaimer · 强制 AI 标注</div>
+    <div class="ptn-desc">每条评论带 "&gt; This was generated by AI during triage." 透明性底线。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Verify Before Grill</div>
+    <div class="ptn-desc">grilling 之前先 verify claim。复现 bug / checkout PR 跑测试。confirmed = 强 brief。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Redundancy by Domain Concept</div>
+    <div class="ptn-desc">搜索"已实现"时按<em>领域概念</em>,不是按措辞。措辞不同可能描述同一个东西。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Wontfix Sub-Categorization</div>
+    <div class="ptn-desc">wontfix 不是单一动作 —— Already implemented / Rejected bug / Rejected enhancement 三种不同处理。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">.out-of-scope/ as Rejection KB</div>
+    <div class="ptn-desc">只存"被拒绝的 enhancement"。Already implemented 不算(那是"已实现的")。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Trust + Confirm Before Action</div>
+    <div class="ptn-desc">用户直接指令 → 信任,但 action 前 confirm。Ready-for-agent 没 grilled → 主动问 brief。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Discovery Surfaces Only External</div>
+    <div class="ptn-desc">主动查询只看 external PR。Explicitly named 永远处理。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">PR = Issue + Code</div>
+    <div class="ptn-desc">PR 是 issue 的特殊形态。同状态机,少量 deltas(看 diff / 跑测试)。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给协作工具状态设计的启示</div>
+    <p>1. <strong>双轴正交标签</strong>:category × state,每个对象 2 标签。<br>
+       2. <strong>强制 AI 标注</strong>:每条 AI 写的评论必须自报身份。<br>
+       3. <strong>Verify before grill</strong>:grilling 之前先验证 claim。<br>
+       4. <strong>按概念搜</strong>,不按措辞。<br>
+       5. <strong>Wontfix 细分</strong>:已实现 vs 拒绝 bug vs 拒绝 enhancement。<br>
+       6. <strong>.out-of-scope/ 只存拒绝</strong>,不存"已实现"。<br>
+       7. <strong>Trust + Confirm</strong>:用户直接指令信任,但 action 前 confirm。<br>
+       8. <strong>Discovery 默认窄</strong>:外部 PR 才显示;explicit 永远显示。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  triage 解析 · 文件数 4 · SKILL.md 112 行 · 2 categories + 5 states · 5 步流程 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

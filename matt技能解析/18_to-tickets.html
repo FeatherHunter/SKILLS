@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>to-tickets 技能解析 · Tracer-Bullet 切片 + Blocked-by 边</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(210,153,34,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(210,153,34,0.15);
+    border: 1px solid rgba(210,153,34,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--yellow); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--yellow);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 5 步流程 ===== */
+  .step-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .step-card.s1 { border-color: var(--orange); }
+  .step-card.s2 { border-color: var(--accent); }
+  .step-card.s3 { border-color: var(--green); }
+  .step-card.s4 { border-color: var(--purple); }
+  .step-card.s5 { border-color: var(--red); }
+  .step-card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .step-card .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step-card.s1 .n { background: var(--orange); }
+  .step-card.s2 .n { background: var(--accent); }
+  .step-card.s3 .n { background: var(--green); }
+  .step-card.s4 .n { background: var(--purple); }
+  .step-card.s5 .n { background: var(--red); }
+  .step-card .name { font-weight: 700; }
+  .step-card.s1 .name { color: var(--orange); }
+  .step-card.s2 .name { color: var(--accent); }
+  .step-card.s3 .name { color: var(--green); }
+  .step-card.s4 .name { color: var(--purple); }
+  .step-card.s5 .name { color: var(--red); }
+  .step-card .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== Vertical Slice ===== */
+  .slice-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .slice-compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .slice-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .slice-card.bad { border-color: var(--red); }
+  .slice-card.good { border-color: var(--green); }
+  .slice-card .name { font-family: "JetBrains Mono", monospace; font-weight: 700; margin-bottom: 8px; }
+  .slice-card.bad .name { color: var(--red); }
+  .slice-card.good .name { color: var(--green); }
+
+  /* ===== Ticket Graph ===== */
+  .ticket-graph {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .ticket-node {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    width: 180px;
+    text-align: center;
+    margin: 8px;
+  }
+  .ticket-node .ttitle {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .ticket-node .tblocked {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ===== Expand-Contract ===== */
+  .ec-flow {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(210,153,34,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--yellow);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--yellow);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 18 / 21 篇</span>
+  <h1>to-tickets · <span class="accent">Tracer-Bullet 切片 + Blocked-by 边</span></h1>
+  <div class="subtitle">"Break a plan, spec, or conversation into a set of tracer-bullet vertical slices."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 105 行 + 双模板</h2>
+  <div class="file-tree">
+    <span class="dir">to-tickets/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 105 行 · 5 步流程 + 2 个 ticket 模板(local / issue)</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "To Tickets"</span>
+  </div>
+  <p>和 to-spec 一样,把<strong>模板直接 inline</strong>到 SKILL.md,模型一眼看到。105 行中约一半是模板。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 5 步流程</h2>
+
+  <div class="step-flow">
+    <div class="step-card s1">
+      <div class="head">
+        <div class="n">1</div>
+        <div class="name">Gather context</div>
+      </div>
+      <div class="desc">从当前对话收集上下文。用户可传 spec 路径 / issue number / URL 作参数 —— 抓取并读全文 + 评论。</div>
+    </div>
+
+    <div class="step-card s2">
+      <div class="head">
+        <div class="n">2</div>
+        <div class="name">Explore the codebase (optional)</div>
+      </div>
+      <div class="desc">若没探过就探。Ticket 标题描述用 domain glossary 词汇。尊重 ADR。<br>
+        <strong>寻找 prefactor 机会:</strong><em>"Make the change easy, then make the easy change."</em></div>
+    </div>
+
+    <div class="step-card s3">
+      <div class="head">
+        <div class="n">3</div>
+        <div class="name">Draft vertical slices</div>
+      </div>
+      <div class="desc">拆 <strong>tracer bullet</strong> tickets。每片:<br>
+        · <strong>窄但完整的路径</strong>穿过每层(schema / API / UI / tests)<br>
+        · 完成时可独立 demo 或验证<br>
+        · <strong>单次 fresh context window 能装下</strong><br>
+        · 任何 prefactor 先做<br>
+        标注 <strong>blocked by</strong> edges。</div>
+    </div>
+
+    <div class="step-card s4">
+      <div class="head">
+        <div class="n">4</div>
+        <div class="name">Quiz the user</div>
+      </div>
+      <div class="desc">给用户展示拆解 · 问:<br>
+        · 粒度对吗(太粗 / 太细)<br>
+        · blocking edges 对吗<br>
+        · 要合并 / 拆分吗<br>
+        <strong>iterate until approved</strong>。</div>
+    </div>
+
+    <div class="step-card s5">
+      <div class="head">
+        <div class="n">5</div>
+        <div class="name">Publish to the configured tracker</div>
+      </div>
+      <div class="desc">按依赖顺序发布(无 blocker 的先)。<br>
+        · <strong>Local</strong>: <code>.scratch/&lt;feature&gt;/issues/NN-slug.md</code> · 用本地模板<br>
+        · <strong>Real tracker</strong>: 一张 issue 一 ticket · 用 native blocking 关系<br>
+        默认打 <code>ready-for-agent</code> · <strong>Do NOT close / modify parent issue</strong>。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Tracer Bullet · 垂直 vs 水平</h2>
+
+  <div class="slice-vis">
+    <div class="slice-compare">
+      <div class="slice-card bad">
+        <div class="name">❌ Horizontal · 横向</div>
+        <svg viewBox="0 0 240 120" style="width:100%;height:80px;margin:8px 0;">
+          <rect x="10" y="10" width="220" height="22" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="120" y="25" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="10">Schema T1</text>
+          <rect x="10" y="40" width="220" height="22" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="120" y="55" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="10">Schema T2</text>
+          <rect x="10" y="70" width="220" height="22" rx="4" fill="rgba(248,81,73,0.15)" stroke="#f85149"/>
+          <text x="120" y="85" text-anchor="middle" fill="#f85149" font-family="JetBrains Mono" font-size="10">API T3 ...</text>
+        </svg>
+        <p style="color:var(--muted);font-size:11px;">一层一层做</p>
+      </div>
+      <div class="slice-card good">
+        <div class="name">✅ Vertical · 垂直</div>
+        <svg viewBox="0 0 240 120" style="width:100%;height:80px;margin:8px 0;">
+          <rect x="10" y="10" width="50" height="100" rx="4" fill="rgba(63,185,80,0.15)" stroke="#3fb950"/>
+          <text x="35" y="60" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">slice</text>
+          <text x="35" y="74" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">1</text>
+          <rect x="75" y="10" width="50" height="100" rx="4" fill="rgba(63,185,80,0.15)" stroke="#3fb950"/>
+          <text x="100" y="60" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">slice</text>
+          <text x="100" y="74" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">2</text>
+          <rect x="140" y="10" width="50" height="100" rx="4" fill="rgba(63,185,80,0.15)" stroke="#3fb950"/>
+          <text x="165" y="60" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">slice</text>
+          <text x="165" y="74" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="10">3</text>
+        </svg>
+        <p style="color:var(--muted);font-size:11px;">每片跨所有层</p>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:12px;">
+      每片完成后可<strong>独立 demo / 验证</strong> · 不需要等其他层
+    </p>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Prefactor First</div>
+    <p>SKILL.md §23:<strong>"Make the change easy, then make the easy change."</strong><br>
+    在拆 tracer bullet 之前,先看能否 <strong>prefactor</strong> —— 预先重构让实现更容易。<br>
+    比如先抽出接口 / 先建假数据。<br>
+    这种"先修路再开车"的思路,把阻力放在 ticket 系统的<strong>边界外</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> Blocked-by Edges · 依赖图</h2>
+
+  <p>每个 ticket 标注其他 ticket 的 blockers。<strong>无 blockers 的 ticket 立刻可启动</strong>。</p>
+
+  <div class="ticket-graph">
+    <svg viewBox="0 0 800 220" style="width:100%;height:auto;">
+      <defs>
+        <marker id="tg-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#58a6ff"/>
+        </marker>
+      </defs>
+
+      <!-- T1: no blockers -->
+      <rect x="40" y="80" width="140" height="60" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+      <text x="110" y="105" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="12" font-weight="700">T1 — Schema</text>
+      <text x="110" y="125" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">Blocked by: None</text>
+
+      <!-- T2: blocked by T1 -->
+      <rect x="220" y="20" width="140" height="60" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+      <text x="290" y="45" text-anchor="middle" fill="#58a6ff" font-family="JetBrains Mono" font-size="12" font-weight="700">T2 — API</text>
+      <text x="290" y="65" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">Blocked by: T1</text>
+
+      <!-- T3: blocked by T1 -->
+      <rect x="220" y="140" width="140" height="60" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+      <text x="290" y="165" text-anchor="middle" fill="#58a6ff" font-family="JetBrains Mono" font-size="12" font-weight="700">T3 — UI</text>
+      <text x="290" y="185" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">Blocked by: T1</text>
+
+      <!-- T4: blocked by T2 and T3 -->
+      <rect x="420" y="80" width="160" height="60" rx="8" fill="#161b22" stroke="#bc8cff" stroke-width="2"/>
+      <text x="500" y="105" text-anchor="middle" fill="#bc8cff" font-family="JetBrains Mono" font-size="12" font-weight="700">T4 — E2E test</text>
+      <text x="500" y="125" text-anchor="middle" fill="#8b949e" font-family="JetBrains Mono" font-size="10">Blocked by: T2, T3</text>
+
+      <!-- Edges -->
+      <path d="M180,100 L220,50" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#tg-arrow)"/>
+      <path d="M180,110 L220,170" stroke="#58a6ff" stroke-width="1.5" fill="none" marker-end="url(#tg-arrow)"/>
+      <path d="M360,50 L420,95" stroke="#bc8cff" stroke-width="1.5" fill="none" marker-end="url(#tg-arrow)"/>
+      <path d="M360,170 L420,125" stroke="#bc8cff" stroke-width="1.5" fill="none" marker-end="url(#tg-arrow)"/>
+
+      <!-- Frontier label -->
+      <rect x="620" y="60" width="160" height="100" rx="8" fill="rgba(63,185,80,0.1)" stroke="#3fb950" stroke-dasharray="4 3"/>
+      <text x="700" y="90" text-anchor="middle" fill="#3fb950" font-family="JetBrains Mono" font-size="12" font-weight="700">FRONTIER</text>
+      <text x="700" y="115" text-anchor="middle" fill="#8b949e" font-family="sans-serif" font-size="11">tickets whose</text>
+      <text x="700" y="130" text-anchor="middle" fill="#8b949e" font-family="sans-serif" font-size="11">blockers are done</text>
+      <text x="700" y="148" text-anchor="middle" fill="#8b949e" font-family="sans-serif" font-size="10" font-style="italic">(here: T1)</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> Wide Refactor 例外 · Expand-Contract</h2>
+
+  <p>SKILL.md 第 40 行用一段极长的文字处理"垂直切片不适用的场景":</p>
+
+  <div class="ec-flow">
+    <p style="color:var(--text);font-size:14px;">
+      <strong style="color:var(--orange);">Wide refactor</strong> = 一个<strong>机械改动</strong>(重命名列 / 改共享类型),其 <strong>blast radius</strong> 横扫整个代码库。<br>
+      一刀下去破坏几千调用点,<strong>任何垂直切片都无法单独绿</strong>。
+    </p>
+
+    <h3>解法:Expand-Contract 序列</h3>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;">
+      <div class="step-card s1" style="padding:14px;">
+        <div class="head">
+          <div class="n">1</div>
+          <div class="name" style="color:var(--orange);">Expand</div>
+        </div>
+        <div class="desc" style="font-size:12px;">新形式<strong>加在旧形式旁边</strong>,什么都不破坏。</div>
+      </div>
+
+      <div class="step-card s2" style="padding:14px;">
+        <div class="head">
+          <div class="n">2</div>
+          <div class="name" style="color:var(--accent);">Migrate (batches)</div>
+        </div>
+        <div class="desc" style="font-size:12px;">按 blast radius 分批迁移(per package / per directory),每批一张 ticket,被 expand block。<strong>CI 一直绿</strong>,因为旧形式还在。</div>
+      </div>
+
+      <div class="step-card s3" style="padding:14px;">
+        <div class="head">
+          <div class="n">3</div>
+          <div class="name" style="color:var(--green);">Contract</div>
+        </div>
+        <div class="desc" style="font-size:12px;">删旧形式。被每个 migrate batch block。<strong>当所有调用方都迁移完后</strong>做。</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>极限情况:</strong>如果批次也不能单独绿 → 序列仍在,但让它们<strong>共享一个 integration branch</strong>,所有 batch 都 block 一张 "integrate-and-verify" ticket。<strong>绿只在那张上承诺</strong>。
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 双模板 · Local / Real Tracker</h2>
+
+  <h3>Local 文件模板</h3>
+  <pre><code># &lt;NN&gt; — &lt;Ticket title&gt;
+
+**What to build:** the end-to-end behaviour this ticket makes work,
+from the user's perspective — not a layer-by-layer implementation list.
+
+**Blocked by:** the numbers/titles of the tickets that gate this one,
+or "None — can start immediately".
+
+**Status:** ready-for-agent
+
+- [ ] Acceptance criterion 1
+- [ ] Acceptance criterion 2</code></pre>
+
+  <h3>Issue Tracker 模板</h3>
+  <pre><code>## Parent
+A reference to the parent issue on the tracker (if applicable).
+
+## What to build
+The end-to-end behaviour this ticket makes work, from the user's perspective.
+
+## Acceptance criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+## Blocked by
+- A reference to each blocking ticket, or "None — can start immediately".</code></pre>
+
+  <div class="insight">
+    <div class="label">★ 双模板共性</div>
+    <p>两个模板都强调"<strong>from the user's perspective, not layer-by-layer implementation</strong>"。<br>
+    这是 tracer bullet 哲学的延续 —— 测用户行为,不测实现细节。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Tracer Bullet Slice · 示踪子弹切片</div>
+    <div class="ptn-desc">每片跨所有层,完成时可独立 demo,装进一个 fresh context window。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Blocked-by Edges</div>
+    <div class="ptn-desc">每 ticket 显式标注依赖,允许无依赖的 ticket 立即启动。Work the frontier = 找无 blocker 的票。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Prefactor First</div>
+    <div class="ptn-desc">"Make the change easy, then make the easy change" —— 先修路再开车。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Expand-Contract for Wide Refactors</div>
+    <div class="ptn-desc">不适合切片的大改动用 expand → migrate batches → contract 序列。CI 一直绿(直到最后)。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">User Quiz Until Approved</div>
+    <div class="ptn-desc">拆解 → 用户审 → iterate 直到批准。发布前最后一道关。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Dependency-Order Publishing</div>
+    <div class="ptn-desc">按依赖顺序发布(无 blocker 的先),让 edges 引用真实 identifier。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Don't Close Parent</div>
+    <div class="ptn-desc">永远不关 / 改 parent issue —— 用户拥有 parent,模型只管子 ticket。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">User Perspective in Description</div>
+    <div class="ptn-desc">"What to build" 用用户视角,不用 layer-by-layer 实现描述。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给 ticket 设计的启示</div>
+    <p>1. <strong>Tracer Bullet</strong>:垂直切片,每片完整跨所有层。<br>
+       2. <strong>Fresh Context Window Sized</strong>:每片能装进一个新会话。<br>
+       3. <strong>Prefactor First</strong>:先修路再开车。<br>
+       4. <strong>Blocked-by Edges</strong>:依赖显式,可并行识别。<br>
+       5. <strong>Work the Frontier</strong>:找无 blocker 的票。<br>
+       6. <strong>Expand-Contract</strong>:大改动的安全序列。<br>
+       7. <strong>User Quiz</strong>:发布前让用户批准。<br>
+       8. <strong>Dependency-Order Publishing</strong>:blocker 先,被 block 的后。<br>
+       9. <strong>Parent 不可动</strong>:模型只管子 ticket,不碰 parent。<br>
+       10. <strong>用户视角描述</strong>:不写 layer-by-layer 实现。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  to-tickets 解析 · 文件数 2 · SKILL.md 105 行 · 5 步流程 · 2 模板 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

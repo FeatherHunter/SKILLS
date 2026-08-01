@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>teach 技能解析 · 状态化教学 workspace</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(247,120,186,0.08) 0%, rgba(57,197,207,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(247,120,186,0.15);
+    border: 1px solid rgba(247,120,186,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--pink);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--pink); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--pink);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== Workspace 结构 ===== */
+  .workspace-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .ws-box {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ws-box.kind { border-color: var(--purple); }
+  .ws-box.lessons { border-color: var(--accent); }
+  .ws-box.reference { border-color: var(--teal); }
+  .ws-box.resources { border-color: var(--yellow); }
+  .ws-box.records { border-color: var(--orange); }
+  .ws-box.assets { border-color: var(--green); }
+  .ws-box.notes { border-color: var(--pink); }
+  .ws-box .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ws-box.kind .name { color: var(--purple); }
+  .ws-box.lessons .name { color: var(--accent); }
+  .ws-box.reference .name { color: var(--teal); }
+  .ws-box.resources .name { color: var(--yellow); }
+  .ws-box.records .name { color: var(--orange); }
+  .ws-box.assets .name { color: var(--green); }
+  .ws-box.notes .name { color: var(--pink); }
+  .ws-box .role { font-size: 13px; color: var(--muted); flex: 1; }
+
+  /* ===== 3 大支柱 ===== */
+  .pillar {
+    background: var(--panel-2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 12px 0;
+  }
+  .pillar.knowledge { border-color: var(--accent); }
+  .pillar.skills { border-color: var(--green); }
+  .pillar.wisdom { border-color: var(--purple); }
+  .pillar .name { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .pillar.knowledge .name { color: var(--accent); }
+  .pillar.skills .name { color: var(--green); }
+  .pillar.wisdom .name { color: var(--purple); }
+
+  /* ===== Fluency vs Storage ===== */
+  .fs-compare {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .fs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .fs {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .fs.fluency { border-color: var(--orange); }
+  .fs.storage { border-color: var(--green); }
+  .fs .name { font-weight: 700; margin-bottom: 6px; }
+  .fs.fluency .name { color: var(--orange); }
+  .fs.storage .name { color: var(--green); }
+  .fs .ex { color: var(--muted); font-size: 12px; margin-top: 6px; font-style: italic; }
+
+  /* ===== ZPD ===== */
+  .zpd-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .zpd-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    height: 56px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin: 16px 0;
+  }
+  .zpd-zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0e1116;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .zpd-zone.cant { background: var(--red); color: white; }
+  .zpd-zone.proximal { background: var(--green); }
+  .zpd-zone.easy { background: var(--yellow); color: #0e1116; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(247,120,186,0.08), rgba(57,197,207,0.08));
+    border-left: 3px solid var(--pink);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--pink);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--pink);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 16 / 21 篇</span>
+  <h1>teach · <span class="accent">状态化教学 workspace</span></h1>
+  <div class="subtitle">"Treat the current directory as a teaching workspace."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 7 文件</h2>
+  <div class="file-tree">
+    <span class="dir">teach/</span><br>
+    ├── <span class="file">SKILL.md</span>                       <span class="note">← 140 行 · 教学哲学 + workspace 结构</span><br>
+    ├── <span class="file">MISSION-FORMAT.md</span>              <span class="note">← mission 模板</span><br>
+    ├── <span class="file">RESOURCES-FORMAT.md</span>            <span class="note">← resource 列表模板</span><br>
+    ├── <span class="file">LEARNING-RECORD-FORMAT.md</span>      <span class="note">← 学习记录模板(类 ADR)</span><br>
+    ├── <span class="file">GLOSSARY-FORMAT.md</span>             <span class="note">← 词汇表模板</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>目前看到的<strong>最完整</strong>教学技能。SKILL.md + 4 个格式附录,把"教学"这个模糊行为变成<strong>可复现的工程化过程</strong>。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 关键元数据</h2>
+  <div class="kv">
+    <div class="k">name</div><div class="v"><code>teach</code></div>
+    <div class="k">description</div><div class="v">"Teach the user a new skill or concept, <strong>within this workspace</strong>."</div>
+    <div class="k"><strong>argument-hint</strong></div><div class="v">"What would you like to learn about?"</div>
+    <div class="k">disable-model-invocation</div><div class="v"><code style="color:var(--red)">true</code></div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Stateful Request</div>
+    <p>SKILL.md 第 8 行:<strong>"This is a stateful request - they intend to learn the topic over multiple sessions."</strong><br>
+    teach 是仓库里第一个明确<strong>状态化</strong>的技能。<br>
+    不是单回合对话,是<strong>跨会话</strong>的学习旅程。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Workspace 结构 · 7 类文件</h2>
+  <p>teach 把当前目录当作学习 workspace,7 类文件各有分工:</p>
+
+  <div class="workspace-vis">
+    <div class="ws-box kind">
+      <div class="name">MISSION.md</div>
+      <div class="role">用户<strong>为什么</strong>想学这个。所有教学围绕此。</div>
+    </div>
+    <div class="ws-box reference">
+      <div class="name">./reference/*.html</div>
+      <div class="role">速查材料 · cheat sheets / syntax / algorithms / yoga poses / glossaries</div>
+    </div>
+    <div class="ws-box resources">
+      <div class="name">RESOURCES.md</div>
+      <div class="role">高质量学习资源列表(用于 acquire knowledge)</div>
+    </div>
+    <div class="ws-box records">
+      <div class="name">./learning-records/*.md</div>
+      <div class="role"><strong>类 ADR · 关键洞察 + 难修正的教训</strong>,驱动未来 session</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">./lessons/*.html</div>
+      <div class="role">主要交付物 · 一个 HTML 教一件小事</div>
+    </div>
+    <div class="ws-box assets">
+      <div class="name">./assets/*</div>
+      <div class="role"><strong>复用优先</strong>:stylesheets / quiz widgets / simulators</div>
+    </div>
+    <div class="ws-box notes">
+      <div class="name">NOTES.md</div>
+      <div class="role">agent 的 scratchpad · 用户偏好 · working notes</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 三大支柱 · Knowledge / Skills / Wisdom</h2>
+  <p>SKILL.md §Philosophy:<strong>"To learn at a deep level, the user needs three things:"</strong></p>
+
+  <div class="pillar knowledge">
+    <div class="name">📚 Knowledge</div>
+    <p style="color:var(--text);font-size:13px;">从高质量、高信任的资源捕获。</p>
+    <p style="color:var(--muted);font-size:12px;">"<strong>Never trust your parametric knowledge.</strong>" 模型自己的参数知识不可信。</p>
+  </div>
+
+  <div class="pillar skills">
+    <div class="name">🎯 Skills</div>
+    <p style="color:var(--text);font-size:13px;">通过 highly-relevant 交互式课程获得。</p>
+    <p style="color:var(--muted);font-size:12px;">基于 knowledge,设计成 interactive feedback loop。</p>
+  </div>
+
+  <div class="pillar wisdom">
+    <div class="name">💡 Wisdom</div>
+    <p style="color:var(--text);font-size:13px;">与其他学习者 / 实践者互动获得。</p>
+    <p style="color:var(--muted);font-size:12px;">模型可以试着答,但最终<strong>delegate 到社区</strong>(论坛 / subreddit / 实体课)。</p>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Wisdom 必须 delegate</div>
+    <p>SKILL.md 第 117 行:"<strong>your default posture should be to attempt to answer — but to ultimately delegate to a community.</strong>"<br>
+    模型对 wisdom 类问题<strong>不要编</strong>。<br>
+    推荐社区 / 论坛 / 实体班。<br>
+    尊重用户"不想加入社区"的偏好。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> Fluency vs Storage · 关键认知区分</h2>
+
+  <div class="fs-compare">
+    <div class="fs-grid">
+      <div class="fs fluency">
+        <div class="name">⚡ Fluency Strength</div>
+        <p style="color:var(--text);font-size:13px;">当下提取知识的速度。</p>
+        <div class="ex">"我能立刻答出来" —— 可能给人<strong>虚假的精通感</strong></div>
+      </div>
+      <div class="fs storage">
+        <div class="name">🧠 Storage Strength</div>
+        <p style="color:var(--text);font-size:13px;">长期保留。</p>
+        <div class="ex">真正的目标</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;color:var(--muted);font-size:13px;">
+      <strong>设计课程要建立 storage strength,办法:</strong>
+    </div>
+    <ul style="color:#c9d1d9;font-size:13px;line-height:2;margin-top:8px;">
+      <li><strong>Retrieval practice</strong> · 从记忆回忆</li>
+      <li><strong>Spacing</strong> · 时间分布练习</li>
+      <li><strong>Interleaving</strong> · 混合相关主题(仅技能练习)</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> Zone of Proximal Development (ZPD)</h2>
+  <p>SKILL.md 第 81–89 行引入 Vygotsky 的 ZPD 概念:<strong>"challenged 'just enough'"</strong></p>
+
+  <div class="zpd-vis">
+    <div class="zpd-bar">
+      <div class="zpd-zone cant">❌ CAN'T<br><span style="font-size:10px;">too hard</span></div>
+      <div class="zpd-zone proximal">✅ ZPD<br><span style="font-size:10px;">just right</span></div>
+      <div class="zpd-zone easy">❌ TOO EASY<br><span style="font-size:10px;">no growth</span></div>
+    </div>
+    <p style="color:var(--muted);font-size:13px;">每个 lesson 都要落在用户的 <strong style="color:var(--green);">ZPD 区间</strong> —— 不太难,不太简单。</p>
+  </div>
+
+  <h3>怎么算 ZPD?</h3>
+  <p>读 learning-records(用户已经会什么)+ 推断 mission(用户想走到哪) → 找出"下一步该学什么"。</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Lesson 设计原则</h2>
+  <p>SKILL.md 第 47–61 行规定 lesson 的 6 条设计:</p>
+
+  <div class="rule-list">
+    <div class="ws-box lessons">
+      <div class="name">① 单一自含 HTML</div>
+      <div class="role">一个 HTML 教一件小事 · 命名 <code>0001-name.html</code> 自增</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">② Beautiful / Tufte</div>
+      <div class="role">typography 干净 · 用户会回看 review</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">③ Short + Quick</div>
+      <div class="role">working memory 很小 · 不超载</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">④ Single Tangible Win</div>
+      <div class="role">给用户一个具体可构建的成果</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">⑤ Anchor Links</div>
+      <div class="role">HTML anchors 链到其他 lesson + reference</div>
+    </div>
+    <div class="ws-box lessons">
+      <div class="name">⑥ Recommend Primary Source</div>
+      <div class="role">每个 lesson 推荐一个高质量 primary resource</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>关于 quiz 设计 (§110):</strong><br>
+    "<strong>For quizzes, each answer should be exactly the same number of words (and characters, if possible). Don't give the user any clues about the answer through formatting.</strong>"<br>
+    答案字数相同 → 不给格式线索。<strong>desirable difficulty</strong> 的具体应用。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> Assets 复用优先</h2>
+
+  <div class="callout">
+    <strong>SKILL.md §67:</strong>"<strong>Reuse is the default, not the exception.</strong><br>
+    Before authoring a lesson, read ./assets/ and build from the components already there.<br>
+    When a lesson needs something new and reusable, write it as a component in ./assets/ and link to it — never inline code a future lesson would duplicate."
+  </div>
+
+  <p>第 69 行:<strong>"A shared stylesheet is the first component every workspace earns: every lesson links it, so the lessons look like one consistent course rather than a pile of one-offs."</strong></p>
+
+  <div class="insight">
+    <div class="label">★ 学习是渐进投资</div>
+    <p>workspace 随着时间<strong>长出</strong> component 库,课程视觉风格一致。<br>
+    <strong>不是先做完美再开课</strong>,而是<strong>做一门就赚一个 component</strong>。<br>
+    这是"先求有,后求好"的工程化应用。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> Mission · 教学的根本</h2>
+
+  <p>SKILL.md 第 75–79 行写得很死:</p>
+
+  <pre><code>If the user is unclear about the mission, or the MISSION.md is not populated,
+your first job should be <strong>question the user on why they want to learn this.</strong>
+
+Failing to understand the mission will mean knowledge acquisition is
+not grounded in real-world goals. Lessons will feel too abstract.
+You will have no way of judging what the user should do next.</code></pre>
+
+  <h3>Mission 可变</h3>
+  <p>"Missions may change as the user develops more skills and knowledge. This is normal - make sure to update the MISSION.md and add a learning record to capture the change. <strong>Confirm with the user before changing the mission.</strong>"</p>
+
+  <p>变更 mission 要 <strong>确认 + 写学习记录</strong>。又一次体现"决策留痕"的纪律。</p>
+</section>
+
+<section>
+  h2  <h2><span class="num">10</span> 参考文档 vs Lesson</h2>
+
+  <p>第 124–136 行划了一条非常关键的边界:</p>
+
+  <div style="background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;">
+    <ul style="color:#c9d1d9;line-height:2;">
+      <li><strong>Lessons</strong> rarely revisited later —— 用过就丢</li>
+      <li><strong>Reference documents</strong> <em>will</em> be revisited —— 速查的精华</li>
+      <li>Reference 是 lesson 的<strong>压缩本质</strong>,quick reference 格式</li>
+      <li>适合 reference 的:语法 / 算法 / yoga poses / exercises / glossaries</li>
+    </ul>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Glossary 是 reference 的最高形态</div>
+    <p>第 136 行:"<strong>Glossaries, in particular, are an essential reference. Once one is created, it should be adhered to in every lesson.</strong>"<br>
+    Glossary 一旦建,所有 lesson 都得用。这呼应了 codebase-design / domain-modeling 的 "<strong>Avoid-List</strong>" 纪律。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">11</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Workspace-as-State · Workspace 即状态</div>
+    <div class="ptn-desc">技能自己建文件目录,把状态留在工作区。跨会话可继续。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Lesson = Single Win</div>
+    <div class="ptn-desc">每堂课一件事 · working memory 不超载 · 立刻有产出。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Reference Reuse Pattern</div>
+    <div class="ptn-desc">lesson 看过就丢,reference 反复回看。分清两个产物形态。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Component Library Earning</div>
+    <div class="ptn-desc">每堂课赚一个 reusable component,workspace 越长越一致。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Knowledge-Skills-Wisdom · 三层</div>
+    <div class="ptn-desc">知识从资源,技能从交互,智慧从社区。三层严格区分。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Storage over Fluency</div>
+    <div class="ptn-desc">课程要建立 long-term retention,用 desirable difficulty。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">ZPD Targeting</div>
+    <div class="ptn-desc">每堂课在用户的 zone of proximal development。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Wisdom Delegate · Wisdom 委派</div>
+    <div class="ptn-desc">智慧问题不编,delegate 给真实社区。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Mission as Anchor · Mission 是锚</div>
+    <div class="ptn-desc">所有教学围绕 mission;mission 变了要确认 + 记录。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">12</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给教学设计的启示</div>
+    <p>1. <strong>Workspace 即状态</strong>:跨会话教学必须有落痕。<br>
+       2. <strong>三大支柱</strong>:Knowledge / Skills / Wisdom 严格区分。<br>
+       3. <strong>Wisdom delegate</strong>:不编,推社区。<br>
+       4. <strong>Fluency ≠ Mastery</strong>:课程要建立 storage strength。<br>
+       5. <strong>ZPD 锚定</strong>:每堂课都"just enough challenging"。<br>
+       6. <strong>Single Win</strong>:每堂课给一个具体产出。<br>
+       7. <strong>Reference 复用</strong>:速查材料比 lesson 留得更久。<br>
+       8. <strong>Component 渐进</strong>:每次赚一个,workspace 越长越好。<br>
+       9. <strong>Mission 锚</strong>:教学围绕"为什么",mission 变要确认。<br>
+       10. <strong>Never trust parametric knowledge</strong>:模型自己的知识不可信。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  teach 解析 · 文件数 6 · SKILL.md 140 行 · 7 文件结构 · 3 支柱 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

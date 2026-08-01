@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>resolving-merge-conflicts 技能解析 · 保留意图的冲突解决</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(248,81,73,0.08) 0%, rgba(88,166,255,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(248,81,73,0.15);
+    border: 1px solid rgba(248,81,73,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--red); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--red);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--orange); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 5 步骤 ===== */
+  .steps {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .step-card {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .step-card.s1 { border-color: var(--orange); }
+  .step-card.s2 { border-color: var(--accent); }
+  .step-card.s3 { border-color: var(--green); }
+  .step-card.s4 { border-color: var(--purple); }
+  .step-card.s5 { border-color: var(--red); }
+  .step-card .head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .step-card .n {
+    background: var(--orange);
+    color: #0e1116;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step-card.s1 .n { background: var(--orange); }
+  .step-card.s2 .n { background: var(--accent); }
+  .step-card.s3 .n { background: var(--green); }
+  .step-card.s4 .n { background: var(--purple); }
+  .step-card.s5 .n { background: var(--red); }
+  .step-card .name { font-weight: 700; }
+  .step-card.s1 .name { color: var(--orange); }
+  .step-card.s2 .name { color: var(--accent); }
+  .step-card.s3 .name { color: var(--green); }
+  .step-card.s4 .name { color: var(--purple); }
+  .step-card.s5 .name { color: var(--red); }
+  .step-card .desc { color: var(--text); font-size: 13px; }
+
+  /* ===== 冲突场景 ===== */
+  .conflict-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .conflict-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .side {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .side.ours { border-color: var(--orange); }
+  .side.theirs { border-color: var(--accent); }
+  .side.resolved { border-color: var(--green); }
+  .side .head {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .side.ours .head { color: var(--orange); }
+  .side.theirs .head { color: var(--accent); }
+  .side.resolved .head { color: var(--green); }
+  .side pre { background: #0e1116; font-size: 11px; margin: 0; }
+  .side .intent {
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: var(--panel-2);
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* ===== 硬规则 ===== */
+  .hard-rule {
+    background: rgba(248,81,73,0.08);
+    border: 2px solid var(--red);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hard-rule .icon {
+    background: var(--red);
+    color: #0e1116;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .hard-rule .text { font-size: 14px; }
+  .hard-rule strong { color: var(--red); }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(248,81,73,0.08), rgba(88,166,255,0.08));
+    border-left: 3px solid var(--red);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--red);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 13 / 21 篇</span>
+  <h1>resolving-merge-conflicts · <span class="accent">保留意图的冲突解决</span></h1>
+  <div class="subtitle">"Always resolve; never --abort."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 14 行</h2>
+  <div class="file-tree">
+    <span class="dir">resolving-merge-conflicts/</span><br>
+    ├── <span class="file">SKILL.md</span>           <span class="note">← 14 行 · 5 步流程 + 两条硬规则</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>   <span class="note">← display_name: "Resolving Merge Conflicts"</span>
+  </div>
+  <p>14 行 + 3 行 yaml。整仓库最简洁的"<strong>场景技能</strong>"之一 —— 因为合并冲突的核心规则极少,几乎是常识的精炼。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 5 步骤详解</h2>
+
+  <div class="steps">
+    <div class="step-card s1">
+      <div class="head">
+        <div class="n">1</div>
+        <div class="name">See the current state</div>
+      </div>
+      <div class="desc"><strong>看当前状态。</strong>查 git 历史 + 冲突文件。<br>
+        命令:<code>git status</code> · <code>git log --oneline</code> · <code>git diff</code> · 看冲突标记 <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> / <code>=======</code> / <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code></div>
+    </div>
+
+    <div class="step-card s2">
+      <div class="head">
+        <div class="n">2</div>
+        <div class="name">Find the primary sources</div>
+      </div>
+      <div class="desc"><strong>找原始意图。</strong>理解每个改动为什么做、原意图是什么。<br>
+        查:commit messages · PR · 原始 issue / ticket。<br>
+        <em>这一步是 SKILL.md 的关键 —— 体现 research 技能的 "primary sources" 哲学在冲突场景下的应用。</em></div>
+    </div>
+
+    <div class="step-card s3">
+      <div class="head">
+        <div class="n">3</div>
+        <div class="name">Resolve each hunk</div>
+      </div>
+      <div class="desc"><strong>解决每块冲突。</strong><br>
+        · <span style="color:var(--green);">可能时保留双方意图</span><br>
+        · <span style="color:var(--orange);">不兼容时选符合 merge 目标的,记录 trade-off</span><br>
+        · <span style="color:var(--red);">不要发明新行为</span><br>
+        · <span style="color:var(--red);">永远解决;永远不 --abort</span></div>
+    </div>
+
+    <div class="step-card s4">
+      <div class="head">
+        <div class="n">4</div>
+        <div class="name">Run automated checks</div>
+      </div>
+      <div class="desc"><strong>发现并跑自动检查。</strong>通常: typecheck → tests → format。<br>
+        修任何 merge 引起的破坏。</div>
+    </div>
+
+    <div class="step-card s5">
+      <div class="head">
+        <div class="n">5</div>
+        <div class="name">Finish the merge / rebase</div>
+      </div>
+      <div class="desc"><strong>完成 merge / rebase。</strong>stage 全部 + commit。<br>
+        rebase 场景 → 持续直到所有 commit 都 rebase。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 两条硬规则</h2>
+
+  <div class="hard-rule">
+    <div class="icon">RULE 1</div>
+    <div class="text"><strong>Do not invent new behaviour.</strong> 冲突解决只搬运两边已有意图,不要借机"修"或"改进"。</div>
+  </div>
+
+  <div class="hard-rule">
+    <div class="icon">RULE 2</div>
+    <div class="text"><strong>Always resolve; never --abort.</strong> 永远解决冲突,不能用 <code>git merge --abort</code> 逃跑。</div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>"<strong>Never --abort</strong>" 是最反直觉的硬规则。<br>
+    开发者遇到大冲突常常想 <code>--abort</code> 撤回,这不是处理,而是<strong>逃避</strong>。<br>
+    SKILL.md 把"必须解决"写入硬规则 —— 即使问题很难,也必须正面面对。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 冲突场景可视化</h2>
+
+  <div class="conflict-vis">
+    <div class="conflict-grid">
+      <div class="side ours">
+        <div class="head">OURS · branch A</div>
+<pre><code>function calcPrice(items) {
+  const subtotal = items
+    .reduce((s, i) =&gt; s + i.price, 0);
+  return subtotal * TAX_RATE;
+}</code></pre>
+        <div class="intent">意图: 用 reduce + 显式 TAX_RATE</div>
+      </div>
+
+      <div class="side theirs">
+        <div class="head">THEIRS · branch B</div>
+<pre><code>function calcPrice(items) {
+  return items.reduce(
+    (s, i) =&gt; s + i.price, 0
+  ) * getCurrentTaxRate();
+}</code></pre>
+        <div class="intent">意图: 用 getCurrentTaxRate() · 动态税率</div>
+      </div>
+
+      <div class="side resolved">
+        <div class="head">RESOLVED</div>
+<pre><code>function calcPrice(items) {
+  return items.reduce(
+    (s, i) =&gt; s + i.price, 0
+  ) * getCurrentTaxRate();
+}</code></pre>
+        <div class="intent">保留 theirs 的动态税率 + ours 的 reduce 形式</div>
+      </div>
+    </div>
+  </div>
+
+  <p>这是"<strong>preserve both intents where possible</strong>"的典型例子 —— 选 theirs 的核心逻辑(动态税率),保留 ours 的 reduce 形式。</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span> 不兼容时怎么选?</h2>
+  <p>SKILL.md 第 10 行:<strong>"Where incompatible, pick the one matching the merge's stated goal and note the trade-off."</strong></p>
+
+  <table>
+    <thead>
+      <tr><th>场景</th><th>如何选</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>两者语义相同,只写法不同</td><td>选更现代 / 更一致于 base 的写法</td></tr>
+      <tr><td>两者逻辑不兼容</td><td>看 merge commit message 写的目标 → 选符合目标的</td></tr>
+      <tr><td>目标不明</td><td>看最近的 base 用了哪种 → 沿用</td></tr>
+      <tr><td>怎么都判断不出</td><td>向用户提问 — 不要脑补</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>关键:</strong>无论选哪个,<strong>"note the trade-off"</strong> —— 在 commit message 里写明你选了什么、放弃了什么、未来可能需要复查。这是给下一个开发者的<strong>痕迹</strong>。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> Step 4 · "Discover" 的含义</h2>
+  <p>SKILL.md 第 12 行用了 "<strong>Discover</strong> the project's automated checks",不是 "run"。</p>
+
+  <p>这种用词区别很关键:<br>
+  · <strong>Run</strong> = 假设你知道跑什么<br>
+  · <strong>Discover</strong> = 去项目里<strong>找</strong>项目实际定义了什么</p>
+
+  <h3>可能的形式</h3>
+  <ul style="color:#c9d1d9;font-size:13px;line-height:2;">
+    <li><code>package.json</code> 的 <code>scripts</code></li>
+    <li><code>Makefile</code> / <code>justfile</code> / <code>pyproject.toml</code></li>
+    <li><code>.github/workflows/ci.yml</code>(CI 上跑什么)</li>
+    <li><code>.pre-commit-config.yaml</code></li>
+    <li>README 里的 "Running tests" / "Dev workflow" 节</li>
+  </ul>
+
+  <p>这呼应了 codebase-design 里的"<strong>借用项目已有约定</strong>"哲学 —— 不发明新的命令或工具。</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Primary Sources · 原始意图</div>
+    <div class="ptn-desc">Step 2:每个冲突都要追到 commit message / PR / issue。不靠脑补意图。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Preserve Both Intents</div>
+    <div class="ptn-desc">Step 3 第一选项:保留双方意图。不兼容才取舍。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">No Invention · 不发明</div>
+    <div class="ptn-desc">冲突解决不是借机改进功能的地方。仅搬运两边已有代码。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Never --abort</div>
+    <div class="ptn-desc">硬规则。逃避不是处理。必须正面解决。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Discover, Don't Assume</div>
+    <div class="ptn-desc">Step 4 用 "discover" 而非 "run"。先去项目里找再跑。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Note Trade-offs · 记录取舍</div>
+    <div class="ptn-desc">不兼容时选了哪条 + 放弃哪条 + 何时复查 → commit message。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给冲突解决流程的启示</div>
+    <p>1. <strong>追原始意图</strong>:不看代码猜,看 commit / PR / issue 知意图。<br>
+       2. <strong>保留双方</strong>:能保留都保留,实在不行才取舍。<br>
+       3. <strong>不发明</strong>:冲突解决不是改进时机。<br>
+       4. <strong>绝不 --abort</strong>:逃避不是处理。<br>
+       5. <strong>discover 而非 run</strong>:先去项目里找检查工具。<br>
+       6. <strong>记录 trade-off</strong>:commit message 是下一个开发者的线索。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  resolving-merge-conflicts 解析 · 文件数 2 · 14 行 SKILL.md · 5 步骤 · 2 硬规则 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

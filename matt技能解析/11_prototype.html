@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>prototype 技能解析 · 一次性抛掷的代码探针</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(210,153,34,0.08) 0%, rgba(63,185,80,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(210,153,34,0.15);
+    border: 1px solid rgba(210,153,34,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--yellow); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--yellow);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 两个分支对比 ===== */
+  .branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .branch-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .branch-card.logic { border-color: var(--accent); }
+  .branch-card.ui { border-color: var(--pink); }
+  .branch-card .name {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .branch-card.logic .name { color: var(--accent); }
+  .branch-card.ui .name { color: var(--pink); }
+  .branch-card .quote {
+    background: var(--panel);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border-left: 3px solid currentColor;
+    margin: 12px 0;
+    font-style: italic;
+    font-size: 13px;
+  }
+
+  /* ===== 6 条通用规则 ===== */
+  .rule-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 10px 0;
+  }
+  .rule-card .n {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--yellow);
+    font-size: 12px;
+  }
+  .rule-card .body { color: var(--text); font-size: 13px; margin-top: 4px; }
+
+  /* ===== TUI 帧 ===== */
+  .tui-frame {
+    background: #0a0e14;
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    color: #c9d1d9;
+    margin: 12px 0;
+  }
+  .tui-frame .header { color: var(--green); font-weight: 700; }
+  .tui-frame .key { background: var(--panel-2); padding: 1px 6px; border-radius: 3px; color: var(--accent); }
+  .tui-frame .field { color: var(--yellow); }
+  .tui-frame .dim { color: var(--muted); }
+
+  /* ===== 抗模式 ===== */
+  .anti {
+    background: rgba(248,81,73,0.08);
+    border: 1px solid var(--red);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .anti::before { content: '✗ '; color: var(--red); font-weight: 700; }
+
+  /* ===== Variant 切换 ===== */
+  .variant-vis {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .variant-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .variant {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--panel);
+    text-align: center;
+  }
+  .variant.a { border-color: var(--pink); }
+  .variant.b { border-color: var(--accent); }
+  .variant.c { border-color: var(--green); }
+  .variant .name { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  .variant.a .name { color: var(--pink); }
+  .variant.b .name { color: var(--accent); }
+  .variant.c .name { color: var(--green); }
+  .variant .layout {
+    height: 100px;
+    background: var(--panel-2);
+    border: 1px dashed var(--border);
+    margin: 12px 0;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .variant .layout.different { color: var(--text); }
+
+  /* ===== 浮动切换条 ===== */
+  .switcher {
+    position: relative;
+    height: 200px;
+    background: var(--panel);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin: 16px 0;
+    padding: 12px;
+  }
+  .switcher-bar {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(20,20,30,0.95);
+    border: 1px solid var(--accent);
+    border-radius: 99px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .switcher-bar .arrow { color: var(--accent); font-weight: 700; cursor: pointer; }
+  .switcher-bar .label { color: var(--text); }
+  .switcher-bar .label .v { color: var(--accent); font-weight: 700; }
+  .switcher-bar .name { color: var(--muted); font-size: 11px; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(210,153,34,0.08), rgba(63,185,80,0.08));
+    border-left: 3px solid var(--yellow);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--yellow);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 11 / 21 篇</span>
+  <h1>prototype · <span class="accent">一次性抛掷的代码探针</span></h1>
+  <div class="subtitle">"A prototype is throwaway code that answers a question. The question decides the shape."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 三文件两分支</h2>
+  <div class="file-tree">
+    <span class="dir">prototype/</span><br>
+    ├── <span class="file">SKILL.md</span>       <span class="note">← 26 行 · 路由 + 6 条通用规则</span><br>
+    ├── <span class="file">LOGIC.md</span>       <span class="note">← 79 行 · Logic 分支(状态模型 / 业务逻辑)· 7 步流程 + 5 抗模式</span><br>
+    ├── <span class="file">UI.md</span>          <span class="note">← 112 行 · UI 分支(界面外观)· 6 步流程 + 4 抗模式</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+
+  <p>三文件两分支结构是 prototype 的招牌设计。<strong>SKILL.md 只做路由</strong>(选 LOGIC.md 还是 UI.md),<strong>真正干活的两条路径各占一文件</strong>。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 路由决策 · "the question decides the shape"</h2>
+  <p>SKILL.md 第 8 行第一句:<strong>"A prototype is throwaway code that answers a question. The question decides the shape."</strong></p>
+
+  <div class="branches">
+    <div class="branch-card logic">
+      <div class="name">→ LOGIC.md</div>
+      <div class="quote">"Does this logic / state model feel right?"</div>
+      <p style="font-size:13px;color:var(--muted);">
+        问题:业务逻辑 / 状态转换 / 数据形态<br>
+        输出:<strong>最小 TUI</strong> · 用户按键 → 看状态变化<br>
+        关键:逻辑隔离到<strong>可移植模块</strong>,TUI 是薄壳
+      </p>
+    </div>
+
+    <div class="branch-card ui">
+      <div class="name">→ UI.md</div>
+      <div class="quote">"What should this look like?"</div>
+      <p style="font-size:13px;color:var(--muted);">
+        问题:界面外观 / 布局 / 信息层次<br>
+        输出:<strong>多个 variant</strong> · URL ?variant= · 浮动切换条<br>
+        关键:variant 必须<strong>结构上</strong>不同,不是只改色
+      </p>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ 设计哲学</div>
+    <p>SKILL.md 第 17 行特别警告:"<strong>getting this wrong wastes the whole prototype.</strong>"<br>
+    选错分支不是小问题 —— 你的整个 prototype 都白做。<br>
+    如果用户不在 + 问题含糊 → 默认根据周围代码(后端模块 → LOGIC;页面/组件 → UI),并在 prototype 顶部<strong>明确写出假设</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 6 条通用规则 · 两条分支都遵守</h2>
+  <p>SKILL.md 第 19–26 行给出 6 条无论哪个分支都执行的规则:</p>
+
+  <div class="rule-card">
+    <div class="n">① THROWAWAY FROM DAY ONE</div>
+    <div class="body"><strong>从第一天起就是 throwaway,标记清楚。</strong>位置靠近被原型的模块,但命名让陌生人能看出是 prototype 不是 production。<br>throwaway UI route 走项目已用的 routing 约定,不发明新顶层结构。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">② ONE COMMAND TO RUN</div>
+    <div class="body"><strong>一条命令启动。</strong>用项目已有的任务运行器(pnpm / Makefile / justfile)。用户不用记路径。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">③ NO PERSISTENCE BY DEFAULT</div>
+    <div class="body"><strong>默认无持久化。</strong>状态在内存里。除非问题<strong>就是</strong>持久化,否则不要接数据库。问题涉及 DB 时,接 scratch DB 或本地文件,文件名带 "PROTOTYPE — wipe me"。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">④ SKIP THE POLISH</div>
+    <div class="body"><strong>跳过抛光。</strong>无测试、无错误处理(除了让它跑起来)、无抽象。目的是快速学到东西。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">⑤ SURFACE THE STATE</div>
+    <div class="body"><strong>让状态可见。</strong>每次操作(逻辑)或变体切换(UI)后,打印/渲染全部相关状态,让用户看见变了什么。</div>
+  </div>
+
+  <div class="rule-card">
+    <div class="n">⑥ CAPTURE IT WHEN DONE</div>
+    <div class="body"><strong>完成后捕获。</strong>把验证过的决策融入真实代码 → 把原型本身作为<strong>一手资料</strong>提交到 throwaway 分支(不在 main) → 在 issue 上留指针。<br>main 只保留<strong>验证过的决策</strong>,不保留 prototype 过程。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> LOGIC 分支 · 7 步流程</h2>
+  <p>LOGIC.md 第 14–71 行定义了完整的 logic prototype 流程。最具特色的是第 3 步:<strong>"Isolate the logic in a portable module"</strong>。</p>
+
+  <h3>逻辑形状选择</h3>
+  <table>
+    <thead>
+      <tr><th>形状</th><th>适用</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Pure reducer</strong> — <code>(state, action) => state</code></td><td>离散事件 + 单一状态</td></tr>
+      <tr><td><strong>State machine</strong> — 显式 states + transitions</td><td>哪些动作"现在合法"是问题的一部分</td></tr>
+      <tr><td><strong>小集合的 pure functions</strong></td><td>无隐式当前状态,只是变换</td></tr>
+      <tr><td><strong>Class/module with method surface</strong></td><td>逻辑确实拥有持续内部状态</td></tr>
+    </tbody>
+  </table>
+
+  <h3>隔离原则</h3>
+  <p>LOGIC.md §37:<strong>"Keep it pure: no I/O, no terminal code, no console.log for control flow."</strong></p>
+  <p>逻辑模块只往一个方向依赖 TUI。TUI 调用逻辑,反过来不依赖。这让<strong>验证过的逻辑可以脱离原型被提取</strong>到真实模块。</p>
+
+  <h3>TUI 帧设计</h3>
+  <div class="tui-frame">
+<span class="dim">$ pnpm run prototype:order-state</span><br><br>
+<span class="header">═══ Current State ═══</span><br>
+&nbsp;<span class="field">orderId</span>:       ord_a4f2<br>
+&nbsp;<span class="field">status</span>:        pending_payment<br>
+&nbsp;<span class="field">items</span>:         2<br>
+&nbsp;<span class="field">createdAt</span>:     <span class="dim">2026-08-01T14:23:00Z</span><br>
+&nbsp;<span class="field">paidAt</span>:        <span class="dim">null</span><br><br>
+<span class="header">═══ Keys ═══</span><br>
+<span class="key">[a]</span> add item  <span class="key">[p]</span> mark paid  <span class="key">[c]</span> cancel  <span class="key">[r]</span> refund  <span class="key">[q]</span> quit<br>
+</div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> LOGIC 5 个抗模式</h2>
+  <p>LOGIC.md §73–78 行明确禁止 5 种行为:</p>
+
+  <div class="anti">Don't add tests. A prototype that needs tests is no longer a prototype.</div>
+  <div class="anti">Don't wire it to the real database. Use an in-memory store unless the question is specifically about persistence.</div>
+  <div class="anti">Don't generalise. No "what if we wanted to support X later." The prototype answers one question.</div>
+  <div class="anti">Don't blur the logic and the TUI together. If the reducer / state machine references console.log, prompts, or terminal escape codes, it's no longer portable.</div>
+  <div class="anti">Don't ship the TUI shell into production. The shell is optimised for being driven by hand from a terminal. The logic module behind it is the bit worth keeping.</div>
+
+  <div class="callout">
+    <strong>关键设计:</strong>"<strong>Test</strong>" 在 prototype 语境里是脏词。一旦需要测试,它就不是 prototype 了。
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> UI 分支 · 两种 Sub-shape</h2>
+  <p>UI.md 第 14–32 行明确说:<strong>优先 A,B 是最后手段</strong>。</p>
+
+  <table>
+    <thead>
+      <tr><th>Sub-shape</th><th>场景</th><th>做法</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong style="color:var(--green);">A · 调整个已有页面</strong>(首选)</td><td>已有 route 或能自然嵌入</td><td><code>?variant=</code> URL 参数 + 同一 route + 真实数据</td></tr>
+      <tr><td><strong style="color:var(--orange);">B · 新建页面</strong>(最后手段)</td><td>确实没有归属页面</td><td>throwaway route 走项目已有约定 · 名字含 "prototype"</td></tr>
+    </tbody>
+  </table>
+
+  <div class="insight">
+    <div class="label">★ 关键哲学</div>
+    <p>UI.md §16:<strong>"A UI prototype is much easier to judge when it's butting up against the rest of the app — real header, real sidebar, real data, real density. A throwaway route on its own is a vacuum: every variant looks fine in isolation."</strong><br>
+    一个空路由 = 美学真空,什么都好看。塞进真实上下文,设计问题才暴露。<strong>优先嵌入</strong>。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> UI 流程 · 多个 Radically Different Variants</h2>
+
+  <h3>Step 1 · 默认 3 个 variant</h3>
+  <p>"Default to 3 variants. More than 5 stops being radically different and starts being noise — cap there."</p>
+
+  <h3>Step 2 · "结构上"不同</h3>
+  <p>§54:<strong>"Three slightly-tweaked card grids isn't a UI prototype, it's wallpaper."</strong><br>
+  如果两个 variant 出来太像,重新做一个,并明确告诉模型 "do not use a card grid"。</p>
+
+  <div class="variant-vis">
+    <div class="variant-grid">
+      <div class="variant a">
+        <div class="name">Variant A</div>
+        <div class="layout different">单列 · 长滚动<br>sidebar 集成在主轴</div>
+        <div style="color:var(--muted);font-size:11px;">layout: linear</div>
+      </div>
+      <div class="variant b">
+        <div class="name">Variant B</div>
+        <div class="layout different">左右分栏<br>sidebar 独立</div>
+        <div style="color:var(--muted);font-size:11px;">layout: sidebar</div>
+      </div>
+      <div class="variant c">
+        <div class="name">Variant C</div>
+        <div class="layout different">网格 + 卡片<br>3 列均分</div>
+        <div style="color:var(--muted);font-size:11px;">layout: grid</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Step 3 · 切换条设计</h3>
+  <p>固定底部中央的小条:<strong>左箭头 / variant 标签 / 右箭头</strong>。</p>
+
+  <div class="switcher">
+    <div style="color:var(--muted);font-size:12px;text-align:center;padding-top:60px;">页面内容区(被评估的 design)</div>
+    <div class="switcher-bar">
+      <span class="arrow">‹</span>
+      <span class="label"><span class="v">B</span> — <span class="name">Sidebar layout</span></span>
+      <span class="arrow">›</span>
+    </div>
+  </div>
+
+  <p>UI.md §87-90 行规定关键行为:</p>
+  <ul style="color:#c9d1d9;font-size:13px;line-height:1.9;">
+    <li>点击箭头 → 更新 URL search param → <strong>可分享、可刷新保留</strong></li>
+    <li>键盘 <code>←</code> <code>→</code> 也切换,但 input / textarea / contenteditable 聚焦时<strong>不抢键</strong></li>
+    <li>视觉明显区别于页面(高对比 pill / 阴影)<strong>不是被评估的设计</strong></li>
+    <li><strong>生产构建隐藏</strong> — <code>process.env.NODE_ENV !== 'production'</code> 之类</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">08</span> UI 4 个抗模式</h2>
+
+  <div class="anti">Variants that differ only in colour or copy. That's a tweak, not a prototype. Real variants disagree about structure.</div>
+  <div class="anti">Sharing too much code between variants. A shared Header is fine; a shared Layout defeats the point. Each variant should be free to throw out the layout.</div>
+  <div class="anti">Wiring variants to real mutations. Read-only prototypes are fine. If a variant needs to mutate, point it at a stub.</div>
+  <div class="anti">Promoting the prototype directly to production. The variant code was written under prototype constraints (no tests, minimal error handling). Rewrite it properly when you fold it in.</div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Question Decides Shape · 问题决定形状</div>
+    <div class="ptn-desc">先看问题(logic vs UI),再看工具。选错分支浪费整个 prototype。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Throwaway From Day One</div>
+    <div class="ptn-desc">从一开始就是 throwaway。命名 / 位置 / 注释都明确标记。避免"无意识活成生产代码"。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Portable Logic Module · 可移植逻辑模块</div>
+    <div class="ptn-desc">LOGIC:纯模块(无 IO/terminal),可以被提取到真实代码。<strong>TUI 是薄壳</strong>。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Existing Context Default · 默认嵌入</div>
+    <div class="ptn-desc">UI:优先 sub-shape A(嵌入已有页面)。空路由是美学真空,什么都好看,什么问题都不暴露。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Radically Different · 结构上不同</div>
+    <div class="ptn-desc">Variant 不只是改色 / 改文案。结构、信息层次、主操作都要不同。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Switcher as First-Class · 切换器是一等公民</div>
+    <div class="ptn-desc">URL ?variant= + 浮动切换条。键盘 + 鼠标双支持。生产构建隐藏。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Capture as Primary Source · 原型作为一手资料</div>
+    <div class="ptn-desc">main 只留验证过的决策。prototype 全集进 throwaway 分支,作为决策依据的原始档案。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Anti-Patterns Explicit · 抗模式显式列出</div>
+    <div class="ptn-desc">LOGIC 5 个 + UI 4 个抗模式。把"常见走偏"写出来,模型少走弯路。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给原型设计的启示</div>
+    <p>1. <strong>问题决定形状</strong>:先选 LOGIC / UI,别乱套。<br>
+       2. <strong>一天起就是 throwaway</strong>:命名 / 位置 / 注释标记。<br>
+       3. <strong>一条命令启动</strong>:用项目已有任务运行器。<br>
+       4. <strong>默认无持久化</strong>:除非问题就是持久化。<br>
+       5. <strong>跳过抛光</strong>:无测试、无抽象。<br>
+       6. <strong>逻辑隔离</strong>:pure module + 薄壳 TUI,可被提取。<br>
+       7. <strong>嵌入优于新建</strong>:UI prototype 优先塞进已有页面。<br>
+       8. <strong>Variant 必须结构上不同</strong>:不是改色。<br>
+       9. <strong>切换器是公民</strong>:URL + 浮动 + 键盘 + 生产隐藏。<br>
+       10. <strong>prototype 进 throwaway 分支</strong>:作为决策依据的档案,main 不留。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  prototype 解析 · 文件数 4 · 总行数 ~217 · 2 分支 · 6 通用规则 · 9 抗模式 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

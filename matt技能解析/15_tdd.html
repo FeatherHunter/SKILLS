@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tdd 技能解析 · 红绿循环 + Seam 纪律</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #161b22;
+    --panel-2: #1c232c;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --accent-2: #d2a8ff;
+    --green: #3fb950;
+    --orange: #f0883e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --pink: #f778ba;
+    --teal: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(180deg, #0e1116 0%, #161b22 100%);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  header {
+    padding: 48px 24px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(248,81,73,0.08) 0%, rgba(63,185,80,0.08) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(248,81,73,0.15);
+    border: 1px solid rgba(248,81,73,0.4);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  h1 { margin: 0 0 8px; font-size: 32px; letter-spacing: -0.5px; }
+  h1 .accent { color: var(--green); }
+  .subtitle { color: var(--muted); font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 80px; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h2 .num {
+    background: var(--green);
+    color: #0e1116;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  h3 { font-size: 16px; margin: 24px 0 12px; color: var(--accent); }
+  p { margin: 8px 0; color: #c9d1d9; }
+  code, pre {
+    font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  code { padding: 2px 6px; font-size: 13px; color: var(--pink); }
+  pre { padding: 16px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 8px 16px; margin: 12px 0; }
+  .kv .k { color: var(--muted); font-size: 13px; }
+  .kv .v { color: var(--text); }
+  .file-tree {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+  .file-tree .dir { color: var(--accent); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); margin-left: 12px; }
+
+  /* ===== 红绿循环 ===== */
+  .rg-cycle {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .rg-vis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .rg-step {
+    width: 140px;
+    height: 100px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: #0e1116;
+    text-align: center;
+  }
+  .rg-step.red { background: var(--red); color: white; }
+  .rg-step.green { background: var(--green); color: #0e1116; }
+  .rg-step .n { font-size: 24px; font-weight: 700; }
+  .rg-step .label { font-size: 11px; margin-top: 4px; }
+  .rg-arrow {
+    color: var(--accent);
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  /* ===== 抗模式 ===== */
+  .anti {
+    background: rgba(248,81,73,0.08);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 10px 0;
+  }
+  .anti .name { font-family: "JetBrains Mono", monospace; font-weight: 700; color: var(--red); font-size: 14px; }
+  .anti .desc { color: var(--text); font-size: 13px; margin-top: 6px; }
+  .anti .tell { color: var(--muted); font-size: 12px; margin-top: 6px; font-style: italic; }
+
+  /* ===== 对比代码 ===== */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .compare-card {
+    background: var(--panel-2);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .compare-card.good { border-color: var(--green); }
+  .compare-card.bad { border-color: var(--red); }
+  .compare-card .head {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .compare-card.good .head { color: var(--green); }
+  .compare-card.bad .head { color: var(--red); }
+
+  /* ===== Seam 决策 ===== */
+  .seam-decide {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+
+  /* ===== Vertical vs Horizontal ===== */
+  .slice-compare {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+
+  /* ===== Mock 边界 ===== */
+  .mock-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .mock-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .mock-card.mock-ok { border-color: var(--green); }
+  .mock-card.mock-no { border-color: var(--red); }
+  .mock-card .name {
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .mock-card.mock-ok .name { color: var(--green); }
+  .mock-card.mock-no .name { color: var(--red); }
+  .mock-card ul { color: var(--text); font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.9; }
+
+  /* ===== Insight ===== */
+  .insight {
+    background: linear-gradient(135deg, rgba(248,81,73,0.08), rgba(63,185,80,0.08));
+    border-left: 3px solid var(--green);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .insight .label {
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* ===== Pattern ===== */
+  .pattern-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+  }
+  .pattern-card .ptn-name {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .callout {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 10px 0;
+  }
+  .callout strong { color: var(--text); }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px;
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="tag">Matt Skills 解析 · 第 15 / 21 篇</span>
+  <h1>tdd · <span class="accent">红绿循环 + Seam 纪律</span></h1>
+  <div class="subtitle">"TDD is the red → green loop. This skill makes that loop produce tests worth keeping."</div>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="num">01</span> 文件清单 · 三文件</h2>
+  <div class="file-tree">
+    <span class="dir">tdd/</span><br>
+    ├── <span class="file">SKILL.md</span>       <span class="note">← 36 行 · 核心循环 + seam + 抗模式 + 规则</span><br>
+    ├── <span class="file">tests.md</span>       <span class="note">← 77 行 · 好测试 vs 坏测试示例</span><br>
+    ├── <span class="file">mocking.md</span>     <span class="note">← 59 行 · 何时 mock + 可 mock 设计</span><br>
+    └── <span class="dir">agents/</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">openai.yaml</span>
+  </div>
+  <p>主 SKILL.md 是"循环纪律",两个附录是"具体判例"(好/坏测试 + mock 边界)。</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> 红 → 绿循环可视化</h2>
+
+  <div class="rg-cycle">
+    <div class="rg-vis">
+      <div class="rg-step red">
+        <div class="n">①</div>
+        <div class="label">RED</div>
+        <div style="font-size:10px;margin-top:4px;">写失败测试</div>
+      </div>
+      <div class="rg-arrow">→</div>
+      <div class="rg-step green">
+        <div class="n">②</div>
+        <div class="label">GREEN</div>
+        <div style="font-size:10px;margin-top:4px;">最少代码让它通过</div>
+      </div>
+      <div class="rg-arrow">⟲</div>
+      <div style="color:var(--muted);font-size:12px;text-align:center;width:160px;">
+        <strong style="color:var(--accent);">Refactor 在循环外</strong><br>
+        留给 code-review
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Refactoring 不在循环里</div>
+    <p>SKILL.md 第 36 行:<strong>"Refactoring is not part of the loop. It belongs to the review stage (see the code-review skill), not the red → green implementation cycle."</strong><br>
+    把红绿循环和重构<strong>分离</strong>。<br>
+    红绿只关心"测试 + 最小实现",重构归 review。<br>
+    这样循环不会被重构打断。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span> 3 条循环规则</h2>
+
+  <div class="rule-list">
+    <div class="anti" style="border-left:3px solid var(--green);">
+      <div class="name" style="color:var(--green);">① RED BEFORE GREEN</div>
+      <div class="desc">先写失败测试,再写<strong>仅够通过</strong>的代码。<strong>不要</strong>为未来测试留位置,不加投机特性。</div>
+    </div>
+    <div class="anti" style="border-left:3px solid var(--accent);">
+      <div class="name" style="color:var(--accent);">② ONE SLICE AT A TIME</div>
+      <div class="desc">一个 seam,一个测试,一个最小实现。每个循环。</div>
+    </div>
+    <div class="anti" style="border-left:3px solid var(--purple);">
+      <div class="name" style="color:var(--purple);">③ NO REFACTORING IN LOOP</div>
+      <div class="desc">重构归 review,不在红绿循环里。</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span> 3 个抗模式</h2>
+
+  <div class="anti">
+    <div class="name">❌ Implementation-Coupled · 实现耦合</div>
+    <div class="desc">Mock 内部协作者,测私有方法,通过旁路(查数据库)验证。</div>
+    <div class="tell">症状:重构没改行为,但测试挂了。</div>
+  </div>
+
+  <div class="anti">
+    <div class="name">❌ Tautological · 同义反复</div>
+    <div class="desc">期望值用代码自己重算:<code>expect(add(a,b)).toBe(a+b)</code>。测试由构造保证通过,永远不同意代码。</div>
+    <div class="tell">期望值必须从独立 truth source 来 —— 已知好字面量 / worked example / spec。</div>
+  </div>
+
+  <div class="anti">
+    <div class="name">❌ Horizontal Slicing · 横向切片</div>
+    <div class="desc">先写所有测试,再写所有实现。"批量测试验证<strong>想象</strong>的行为"。</div>
+    <div class="tell">你在测"东西的形状",不是用户行为;测试结构先行于实现理解。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> Vertical vs Horizontal · 切片对比</h2>
+
+  <div class="slice-compare">
+    <div class="compare">
+      <div class="compare-card bad">
+        <div class="head">❌ Horizontal · 横向</div>
+        <pre style="background:#0e1116;color:var(--red);"><code>test1, test2, test3, ...
+        ↓
+[write all implementation]</code></pre>
+        <p style="color:var(--muted);font-size:12px;">commit to test structure before understanding implementation</p>
+      </div>
+      <div class="compare-card good">
+        <div class="head">✅ Vertical · 垂直</div>
+        <pre style="background:#0e1116;color:var(--green);"><code>test1 → impl1
+test2 → impl2  (each informed by prior cycle)
+test3 → impl3</code></pre>
+        <p style="color:var(--muted);font-size:12px;">each test is a <strong>tracer bullet</strong> responding to what the last cycle taught you</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Tracer Bullet · 示踪子弹</div>
+    <p>第 30 行的 "<strong>tracer bullet</strong>" 是一个比喻:<br>
+    每一轮红绿都像一颗子弹,<strong>打进去 + 看轨迹 + 调整方向</strong>。<br>
+    横向切片 = 先造一堆子弹再开火(弹道未知)。<br>
+    垂直切片 = 每发都是探路,根据前一发修正下一发。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> 好测试 vs 坏测试 · 代码对比</h2>
+
+  <h3>① 实现耦合</h3>
+  <div class="compare">
+    <div class="compare-card good">
+      <div class="head">✅ GOOD · 测行为</div>
+      <pre><code>test("user can checkout with valid cart", async () =&gt; {
+  const cart = createCart();
+  cart.add(product);
+  const result = await checkout(cart, paymentMethod);
+  expect(result.status).toBe("confirmed");
+});</code></pre>
+    </div>
+    <div class="compare-card bad">
+      <div class="head">❌ BAD · 测内部调用</div>
+      <pre><code>test("checkout calls paymentService.process", async () =&gt; {
+  const mockPayment = jest.mock(paymentService);
+  await checkout(cart, payment);
+  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
+});</code></pre>
+    </div>
+  </div>
+
+  <h3>② 同义反复</h3>
+  <div class="compare">
+    <div class="compare-card bad">
+      <div class="head">❌ BAD · 重算期望</div>
+      <pre><code>test("calculateTotal sums line items", () =&gt; {
+  const items = [{ price: 10 }, { price: 5 }];
+  const expected = items.reduce((sum, i) =&gt; sum + i.price, 0);
+  expect(calculateTotal(items)).toBe(expected);
+});</code></pre>
+    </div>
+    <div class="compare-card good">
+      <div class="head">✅ GOOD · 已知字面量</div>
+      <pre><code>test("calculateTotal sums line items", () =&gt; {
+  expect(calculateTotal([{ price: 10 }, { price: 5 }])).toBe(15);
+});</code></pre>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Seam 纪律 · 测试在哪</h2>
+  <p>SKILL.md 第 18–24 行给出核心 seam 概念:</p>
+
+  <div class="seam-decide">
+    <p><strong>Seam</strong> = 你测试所在的<strong>公共边界</strong> —— 在接口处观察行为,不钻到内部。</p>
+    <pre><code>Tests live at seams, never against internals.
+
+Test only at pre-agreed seams.
+Before writing any test, write down the seams under test and
+confirm them with the user. No test is written at an unconfirmed
+seam.
+
+Ask: "What's the public interface, and which seams should we test?"</code></pre>
+  </div>
+
+  <div class="insight">
+    <div class="label">★ Pre-Agreed Seam</div>
+    <p>"<strong>Pre-agreed seam</strong>" 是 tdd 技能和 implement 技能共享的硬规则:<br>
+    测试位置必须在<strong>写测试之前</strong>就和用户约定好。<br>
+    这和 codebase-design 的"<strong>interface is the test surface</strong>"是同一思想的两次表达。</p>
+  </div>
+</section>
+
+<section>
+  h2  <h2><span class="num">08</span> mocking.md · 系统边界才 mock</h2>
+
+  <div class="mock-grid">
+    <div class="mock-card mock-ok">
+      <div class="name">✅ 可以 mock</div>
+      <ul>
+        <li>外部 API(支付 / 邮件)</li>
+        <li>数据库(有时候,首选 test DB)</li>
+        <li>时间 / 随机性</li>
+        <li>文件系统(有时候)</li>
+      </ul>
+    </div>
+    <div class="mock-card mock-no">
+      <div class="name">❌ 不要 mock</div>
+      <ul>
+        <li>你自己的类 / 模块</li>
+        <li>内部协作者</li>
+        <li>任何你控制的东西</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>可 mock 设计 · 依赖注入</h3>
+  <div class="compare">
+    <div class="compare-card good">
+      <div class="head">✅ 易 mock</div>
+      <pre><code>function processPayment(order, paymentClient) {
+  return paymentClient.charge(order.total);
+}</code></pre>
+    </div>
+    <div class="compare-card bad">
+      <div class="head">❌ 难 mock</div>
+      <pre><code>function processPayment(order) {
+  const client = new StripeClient(process.env.STRIPE_KEY);
+  return client.charge(order.total);
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>可 mock 设计 · SDK-style 接口</h3>
+  <p>每个外部操作一个函数,而不是一个通用 fetcher 加 condition:</p>
+
+  <div class="compare">
+    <div class="compare-card good">
+      <div class="head">✅ GOOD · 每端点一个函数</div>
+      <pre><code>const api = {
+  getUser:    (id) =&gt; fetch(`/users/${id}`),
+  getOrders:  (userId) =&gt; fetch(`/users/${userId}/orders`),
+  createOrder:(data) =&gt; fetch('/orders', { method: 'POST', body: data }),
+};</code></pre>
+    </div>
+    <div class="compare-card bad">
+      <div class="head">❌ BAD · 通用 fetcher</div>
+      <pre><code>const api = {
+  fetch: (endpoint, options) =&gt; fetch(endpoint, options),
+};
+// Mock 需要内部条件逻辑</code></pre>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">09</span> 关键设计模式</h2>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Red-Green as Discipline · 红绿即纪律</div>
+    <div class="ptn-desc">不是流程,是纪律。SKILL.md 第 8 行强调"Every section applies on every cycle"。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Pre-Agreed Seam · 预先约定测试边界</div>
+    <div class="ptn-desc">测之前先约 seam。没约定的 seam 不写测试。和 implement 共享同一硬规则。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Tracer Bullet · 示踪子弹</div>
+    <div class="ptn-desc">每轮红绿 = 一发探路子弹。垂直切片,横向验证想象。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Test Behavior, Not Implementation</div>
+    <div class="ptn-desc">测 WHAT,不是 HOW。重构不挂测试。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Independent Truth Source · 独立期望源</div>
+    <div class="ptn-desc">期望值不能由代码重算。要从字面量 / worked example / spec 来。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Refactor Outside Loop · 重构出循环</div>
+    <div class="ptn-desc">重构属于 code-review,不属于红绿循环。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">Mock at System Boundary · 系统边界才 Mock</div>
+    <div class="ptn-desc">Mock 你的依赖,不是你的实现。可 mock 是一种设计属性。</div>
+  </div>
+
+  <div class="pattern-card">
+    <div class="ptn-name">SDK-Style Interface for Mockability</div>
+    <div class="ptn-desc">每个外部操作一个函数,而不是通用 fetcher。Mock 简单,类型清晰。</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">10</span> 启发 · 我们可以抄什么?</h2>
+  <div class="insight">
+    <div class="label">★ 给测试设计的启示</div>
+    <p>1. <strong>循环纪律</strong>:红绿每轮都重新读所有规则。<br>
+       2. <strong>Seam 预先约</strong>:测试边界不是写到一半才决定。<br>
+       3. <strong>垂直切片</strong>:每发都是 tracer bullet。<br>
+       4. <strong>测行为不测实现</strong>:重构不挂。<br>
+       5. <strong>独立期望源</strong>:期望值不能由代码重算。<br>
+       6. <strong>重构出循环</strong>:留给 code-review。<br>
+       7. <strong>系统边界才 mock</strong>:你的实现不 mock。<br>
+       8. <strong>可 mock 是一种设计属性</strong>:依赖注入 + SDK-style 接口。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  tdd 解析 · 文件数 4 · 总行数 ~172 · 3 循环规则 · 3 抗模式 · 解析生成于 matt技能解析 项目
+</footer>
+
+</body>
+</html>

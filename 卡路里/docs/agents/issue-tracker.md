@@ -66,16 +66,16 @@
 
 ```bash
 gh issue create \
-  --title "[卡路里] 主页 14 场景的 prompt 与触发词落地" \
+  --title "[卡路里] 主页 9 场景的 prompt 与触发词落地" \
   --body-file <(cat <<'EOF'
 ## 背景
-按 wayfinder 决策地图，卡路里 v1.0 共 514 场景，分 11 分类。本 ticket 对应主页 14 场景。
+按 wayfinder 决策地图，卡路里 v1.0 共 ~502 场景（2026-08-01 恢复口径），分 11 分类。本 ticket 对应主页 9 场景。
 
 ## 任务
 详见 卡路里/.scratch/tickets/01-主页.md
 
 ## 子任务
-- 14 个触发词写入 scripts/_triggers.py
+- 9 个触发词写入 scripts/_triggers.py
 - 每个场景 prompt 撰写完成
 - 与主页 widget 数据对接
 EOF

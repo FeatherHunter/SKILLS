@@ -20,6 +20,26 @@ Issues 以本地 markdown 文件形式存放在 `.scratch/<feature>/` 目录下�
 - SoT 链:`scripts/_triggers.py`(data)+ `templates/help_center.html`(presentation)→ `calorie_html/卡路里_HELP_<TS>.html`(artifact)→ `卡路里.html`(根 mirror)。
 - 旧 101KB SKILL.md 镜像契约退役(详见 `docs/adr/0001-help-html-as-root-mirror.md`)。
 
+### ⚠️ v1.0 场景重构期(2026-08-01 起 · 必读)
+
+> **当前处于 v1.0 场景重设计阶段,`_triggers.py` 内 80 个 wake_word 是旧版运行时数据,不代表最终设计。**
+
+**场景设计的唯一权威 = `.scratch/scene-index-recovered.md`**(每个场景含名称/描述/呈现数据 + 用户确认记录)。
+
+**空白 agent 拿到 issue 后按此顺序**:
+1. 读 `.scratch/scene-index-recovered.md` 对应分类章节(§1-§11)— 该分类的全部场景设计 + 用户已确认的决策
+2. 读对应 `tickets/NN-分类.md`(每个 ticket 已含「权威清单」指针 + Success Criteria)
+3. 按 schema `.scratch/scene_data/schema.json` 把场景填进 `.scratch/scene_data/NN-分类.json`(13 字段)
+4. `python scripts/check_scene_data.py --only <分类>` 校验通过
+5. **用户逐条确认后才同步**到 `scripts/_triggers.py`(最高优先级原则,不允许跳过)
+6. 同步后跑 `python scripts/render_help_center.py` 重 render 卡路里.html
+
+**已确认分类**(2026-08-01):主页 9 / 饮食 66 / 体重 58 / 运动 40(合计 173)。
+**未确认分类**:健身计划 / 目标管理(已落盘 JSON 待同步)/ 基础信息 / 身体细节 / 身材照片 / 分析 / 技能协同。
+
+**数字口径**(回答"有多少场景"时必须区分):
+- 声称数 ~515(恢复文档表格) / 已确认数 173 / 已落盘 JSON 29(主页 9 + 目标管理 28 有重叠)
+
 ## 视觉与 BUG 排查工作流(2026-07-30)
 
 > 任何涉及 **HTML / CSS 渲染 / mobile 适配 / 视觉 BUG** 的工作,按以下顺序。

@@ -76,8 +76,13 @@ def add_water(ml, target_date=None, target_time=None):
 
     # v2.4.16:CLI 端负责打印回执(契约格式),本函数只返 dict
     water_goal = None
-    if goal_row and len(goal_row) > 6 and goal_row[6]:
-        water_goal = goal_row[6]
+    if goal_row:
+        # ticket 06 · P2 修复:旧代码 goal_row[6] 索引错位(daily_goal 实际 water_goal 在末位),
+        # 改用 Row 命名访问,避免列序漂移
+        try:
+            water_goal = goal_row['water_goal']
+        except (IndexError, KeyError):
+            water_goal = goal_row[-1] if len(goal_row) > 8 else None
 
     return {
         'id': entry_id,

@@ -109,7 +109,16 @@ SUBFUNC_LEGACY = {
 
 
 def _trig_to_scene(t: dict) -> dict:
-    """把旧 TRIGGERS 格式转 v3 scene 格式(去变体,平铺)"""
+    """把旧 TRIGGERS 格式转 v3 scene 格式(去变体,平铺)
+
+    Phase 2 新增:若 trigger 已是新 13 字段 scene 格式(含 output_type / prompt_template),
+    直接透传(不再走 legacy 转换),保证 --runtime 模式与 scene_data 等价。
+    """
+    if 'output_type' in t and 'prompt_template' in t:
+        scene = dict(t)
+        scene.setdefault('_legacy', False)
+        return scene
+
     legacy_cat = t.get('category', '')
     main = t.get('main_prompt', {}) or {}
     return {

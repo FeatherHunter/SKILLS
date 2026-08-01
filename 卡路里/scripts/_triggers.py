@@ -20,7 +20,10 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
   - 修改 cli:必须更新 SKILL.md §触发词速查表 + 本文件 + render_*.py docstring
 
 ⚠️ **2026-08-01 场景体系重构中(Phase 2 数据填充)**
-本文件当前 80 个 wake_word 为**旧版运行时数据**(v2.x 时代)。
+本文件旧版 80 个 wake_word(v2.x 时代)已部分替换:
+- ✅ **目标管理 25 场景已同步**(2026-08-02 · ticket #7):25 条新 13 字段 scene 格式
+  (category='目标管理', 含 output_type/html_template/data_fields 等,render_help_center 透传)
+- ⏳ 其余分类仍为旧版运行时数据,待各自分类 ticket 同步。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
 已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 29 / 基础信息 4 / 身体细节 13(2026-08-01)。
@@ -88,10 +91,11 @@ CATEGORIES = [
     ('🧬', '身体成分',      'body_comp'),
     ('📏', '围度',          'body_measure'),
     ('📸', '身材照片',      'body_photo'),
+    ('🎯', '目标管理',      'goal'),
 ]
 
 
-# ===== 80 唤醒词 × ~2 用法 = ~150 prompt =====
+# ===== 101 唤醒词(80 旧 + 25 目标管理新场景) =====
 TRIGGERS = [
     {
             'category': '主页',     'wake_word': '看今日主页', 'aliases': ['开卡路里', '卡路里面板', '今日卡路里'],     'desc': '把今日主页仪表盘渲染成 HTML:今日 4 维 KPI + 待办 + 最近 7 天小图',
@@ -255,18 +259,6 @@ TRIGGERS = [
                 {'label': '查体重波动 v2 --text', 'cli': 'python scripts/render_weight_volatility_v2.py --text', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重波动 v2 --text」。\n\n纯文本模式输出(给 pipeline 用,无 HTML)。'},
             ]
     },
-    {
-            'category': '体重',     'wake_word': '设体重目标',     'desc': '设置体重目标 + 截止日期',
-            'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>]', 'text': '请你加载技能 卡路里,执行唤醒词「设体重目标」。\n\n我要设减重/增重目标(kg + 可选截止日期,v2.5.5 起仅 flag 形式)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['目标体重 kg: ', '截止日期 YYYY-MM-DD(选填): '],
-            'variants': []},
-    {
-            'category': '体重',     'wake_word': '查体重目标',     'desc': '体重目标达成进度',
-            'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal-progress', 'text': '请你加载技能 卡路里,执行唤醒词「查体重目标」。\n\n我想看体重目标的完成进度。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
     {
             'category': '运动',     'wake_word': '记运动',     'desc': '记录运动消耗',
             'main_prompt': {
@@ -443,17 +435,255 @@ TRIGGERS = [
             'fill_hints': [],
             'variants': []},
     {
-            'category': '综合',     'wake_word': '设营养目标',     'desc': '设置每日营养目标',
+            'category': '目标管理',     'wake_word': '定营养目标',     'desc': '设每日 4 项宏量营养目标',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]', 'text': '请你加载技能 卡路里,执行唤醒词「设营养目标」。\n\n我要改每日 4 大宏量(热量/蛋白/碳水/脂肪)+ 饮水目标。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['每日热量 卡: ', '蛋白 g: ', '碳水 g: ', '脂肪 g: ', '饮水 ml(选填): '],
-            'variants': []},
+        'cli': 'python scripts/calorie_tracker.py goal', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_nutrition', 'name': '定营养目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/calorie_tracker.py goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '设每日 4 项宏量营养目标', 'data_fields': ['calorie_goal', 'protein_goal', 'carbs_goal', 'fat_goal', 'water_goal'],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '综合',     'wake_word': '查营养目标',     'desc': '查看当前每日营养目标',
+            'category': '目标管理',     'wake_word': '定营养目标(自动算)',     'desc': '按档案 + 策略自动算每日营养目标',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py get-goal', 'text': '请你加载技能 卡路里,执行唤醒词「查营养目标」。\n\n我想看当前的营养目标。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'nutrition_goal.recommend_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向(cut / maintain / bulk)自动算出 4 项营养目标。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_nutrition_auto', 'name': '定营养目标(自动算)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'nutrition_goal.recommend_nutrition_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向(cut / maintain / bulk)自动算出 4 项营养目标。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '按档案 + 策略自动算每日营养目标', 'data_fields': ['tdee', 'recommend', 'weekly_rate', 'macros_4', 'basis', 'plan_reasons'],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标',     'desc': '设定体重目标值与可选截止日期',
+            'main_prompt': {
+        'cli': 'python scripts/calorie_tracker.py weight-goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(kg + 可选截止日期,v2.5.5 起仅 flag 形式)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight', 'name': '定体重目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/calorie_tracker.py weight-goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(kg + 可选截止日期,v2.5.5 起仅 flag 形式)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '设定体重目标值与可选截止日期', 'data_fields': ['current_weight', 'target_weight', 'deadline', 'delta_kg', 'suggested_rate'],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标(自动算截止)',     'desc': '按速率推算截止日期的体重目标',
+            'main_prompt': {
+        'cli': 'weight_goal.set_weight_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n想设目标 kg + 期望速率 → 自动推算合理截止日 + 校验速率合理性(不超 ±1000 kcal/天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight_auto_deadline', 'name': '定体重目标(自动算截止)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'weight_goal.set_weight_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n想设目标 kg + 期望速率 → 自动推算合理截止日 + 校验速率合理性(不超 ±1000 kcal/天)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '按速率推算截止日期的体重目标', 'data_fields': ['current_weight', 'target_weight', 'est_deadline', 'rate_check'],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标(含起始日)',     'desc': '完整 setup 体重目标含起始日',
+            'main_prompt': {
+        'cli': 'weight_goal.set_weight_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n想完整 setup 体重目标:目标 kg + 起始日 + 截止日 + 起点体重(默认取历史最早一次)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight_with_start', 'name': '定体重目标(含起始日)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'weight_goal.set_weight_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n想完整 setup 体重目标:目标 kg + 起始日 + 截止日 + 起点体重(默认取历史最早一次)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '完整 setup 体重目标含起始日', 'data_fields': ['weight_goal', 'goal_deadline', 'start_date', 'start_weight'],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '目标管理',     'wake_word': '定饮水目标',     'desc': '设每日饮水目标',
+            'main_prompt': {
+        'cli': 'nutrition_goal.set_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设每天饮水目标(ml)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_water', 'name': '定饮水目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'nutrition_goal.set_nutrition_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设每天饮水目标(ml)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '设每日饮水目标', 'data_fields': ['water_goal'],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '目标管理',     'wake_word': '定饮水目标(自动算)',     'desc': '按体重推算饮水目标推荐值',
+            'main_prompt': {
+        'cli': 'nutrition_goal.recommend_water_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按体重(ml/kg)+ 季节推算饮水目标推荐值。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_water_auto', 'name': '定饮水目标(自动算)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'nutrition_goal.recommend_water_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按体重(ml/kg)+ 季节推算饮水目标推荐值。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '按体重推算饮水目标推荐值', 'data_fields': ['weight_kg', 'season', 'recommended_water_ml'],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '目标管理',     'wake_word': '一键定全套目标',     'desc': '一键设定营养+体重+饮水全套目标',
+            'main_prompt': {
+        'cli': 'nutrition_goal.recommend_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键落 3 类目标(营养 + 体重 + 饮水),基于档案自动算 → 给我看 → 我一键采纳。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_full_kit', 'name': '一键定全套目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'nutrition_goal.recommend_nutrition_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键落 3 类目标(营养 + 体重 + 饮水),基于档案自动算 → 给我看 → 我一键采纳。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '一键设定营养+体重+饮水全套目标', 'data_fields': ['calorie_goal', 'protein_goal', 'carbs_goal', 'fat_goal', 'water_goal', 'weight_goal'],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '目标管理',     'wake_word': '看今日目标',     'desc': '看今日营养 4 项 + 饮水共 5 项目标完成度（体重为累计目标，引导到看体重目标进度）',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日目标」。\n\n我想看今日 4 项目标值/实际/完成度(热量/蛋白/饮水/运动)+ 一句话总结。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_today', 'name': '看今日目标', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日目标」。\n\n我想看今日 4 项目标值/实际/完成度(热量/蛋白/饮水/运动)+ 一句话总结。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今日营养 4 项 + 饮水共 5 项目标完成度（体重为累计目标，引导到看体重目标进度）', 'data_fields': ['calorie_goal', 'protein_goal', 'carbs_goal', 'fat_goal', 'water_goal', 'actual', 'pct'],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '目标管理',     'wake_word': '看本周目标',     'desc': '看本周目标完成度汇总',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周目标」。\n\n我想看本周累计目标完成度(7 天汇总)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_week', 'name': '看本周目标', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周目标」。\n\n我想看本周累计目标完成度(7 天汇总)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周目标完成度汇总', 'data_fields': ['daily_avg', 'daily_target', 'week_total', 'week_target'],
+            'depends_on_external': False, 'order': 9},
+    {
+            'category': '目标管理',     'wake_word': '看营养目标进度',     'desc': '看 4 项营养目标进度',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition', 'text': '请你加载技能 卡路里,执行唤醒词「看营养目标进度」。\n\n我想看 4 项营养目标(卡/蛋白/碳/脂)的完成进度条 + 完成度 % + 缺口。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_nutrition_progress', 'name': '看营养目标进度', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看营养目标进度」。\n\n我想看 4 项营养目标(卡/蛋白/碳/脂)的完成进度条 + 完成度 % + 缺口。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看 4 项营养目标进度', 'data_fields': ['calorie_rate', 'protein_rate', 'carbs_rate', 'fat_rate', 'calorie_gap'],
+            'depends_on_external': False, 'order': 10},
+    {
+            'category': '目标管理',     'wake_word': '看体重目标进度',     'desc': '看体重目标进度含预估达成',
+            'main_prompt': {
+        'cli': 'python scripts/calorie_tracker.py weight-goal-progress', 'text': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标当前/差距/剩余天数/预估达成日。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_weight_progress', 'name': '看体重目标进度', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/calorie_tracker.py weight-goal-progress', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标当前/差距/剩余天数/预估达成日。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重目标进度含预估达成', 'data_fields': ['current', 'target', 'delta', 'pct', 'predict_date', 'days_left', 'suggested_rate'],
+            'depends_on_external': False, 'order': 11},
+    {
+            'category': '目标管理',     'wake_word': '看饮水目标进度',     'desc': '看饮水目标进度',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode water', 'text': '请你加载技能 卡路里,执行唤醒词「看饮水目标进度」。\n\n我想看今日饮水累计/目标/完成度。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_water_progress', 'name': '看饮水目标进度', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode water', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看饮水目标进度」。\n\n我想看今日饮水累计/目标/完成度。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看饮水目标进度', 'data_fields': ['cumulative', 'target', 'pct', 'remaining_ml'],
+            'depends_on_external': False, 'order': 12},
+    {
+            'category': '目标管理',     'wake_word': '看目标对比实际',     'desc': '看目标线 vs 实际线折线对比',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode vs_actual', 'text': '请你加载技能 卡路里,执行唤醒词「看目标对比实际」。\n\n我想看目标线 vs 实际线折线对比 + 偏差分析(默认最近 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_vs_actual', 'name': '看目标对比实际', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode vs_actual', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标对比实际」。\n\n我想看目标线 vs 实际线折线对比 + 偏差分析(默认最近 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看目标线 vs 实际线折线对比', 'data_fields': ['daily_calorie_goal', 'daily_calorie_actual', 'deviation_pct'],
+            'depends_on_external': False, 'order': 13},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成度',     'desc': '查看全部目标完成度 + 缺口绝对值 + 总评分',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode completion', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成度」。\n\n我想看 4 项完成度汇总 + 总评分。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion', 'name': '看目标完成度（含缺口）', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode completion', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成度」。\n\n我想看 4 项完成度汇总 + 总评分。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '查看全部目标完成度 + 缺口绝对值 + 总评分', 'data_fields': ['pct', 'gap', 'total_score'],
+            'depends_on_external': False, 'order': 14},
+    {
+            'category': '目标管理',     'wake_word': '看即将到期的目标',     'desc': '看即将到期的目标列表',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode weight --expiring 14', 'text': '请你加载技能 卡路里,执行唤醒词「看即将到期的目标」。\n\n我想看 14 天内到期的体重目标列表 + 剩余天数 + 当前进度 + 紧迫度。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_expiring', 'name': '看即将到期的目标', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode weight --expiring 14', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看即将到期的目标」。\n\n我想看 14 天内到期的体重目标列表 + 剩余天数 + 当前进度 + 紧迫度。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看即将到期的目标列表', 'data_fields': ['weight_goal', 'deadline', 'days_left', 'current_weight', 'completion_pct', 'urgency'],
+            'depends_on_external': False, 'order': 15},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成率(按周)',     'desc': '看本周营养目标每日完成率',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition --period week', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按周)」。\n\n我想看本周(7 天 × 5 宏)每日完成率柱状图 + 达标天数。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion_rate_week', 'name': '看目标完成率(按周)', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按周)」。\n\n我想看本周(7 天 × 5 宏)每日完成率柱状图 + 达标天数。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周营养目标每日完成率', 'data_fields': ['week_daily_rate', 'week_complete_days', 'week_avg_rate'],
+            'depends_on_external': False, 'order': 16},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成率(按月)',     'desc': '看本月营养目标每日完成率',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition --period month', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按月)」。\n\n我想看本月(30 天 × 5 宏)每日完成率柱状图 + 达标天数。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion_rate_month', 'name': '看目标完成率(按月)', 'subfunction': 'G2 看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition --period month', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按月)」。\n\n我想看本月(30 天 × 5 宏)每日完成率柱状图 + 达标天数。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月营养目标每日完成率', 'data_fields': ['month_daily_rate', 'month_complete_days', 'month_avg_rate'],
+            'depends_on_external': False, 'order': 17},
+    {
+            'category': '目标管理',     'wake_word': '改营养目标',     'desc': '改某项或全部营养目标',
+            'main_prompt': {
+        'cli': 'python scripts/calorie_tracker.py goal', 'text': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想改某项营养目标(全量改,4 必 + 1 选饮水)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_nutrition', 'name': '改营养目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/calorie_tracker.py goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想改某项营养目标(全量改,4 必 + 1 选饮水)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '改某项或全部营养目标', 'data_fields': ['old_calorie_goal', 'new_calorie_goal', 'old_protein_goal', 'new_protein_goal', 'old_water_goal', 'new_water_goal'],
+            'depends_on_external': False, 'order': 18},
+    {
+            'category': '目标管理',     'wake_word': '改体重目标',     'desc': '改体重目标含截止日',
+            'main_prompt': {
+        'cli': 'python scripts/calorie_tracker.py weight-goal', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想改体重目标值(可选保留截止日不变)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_weight', 'name': '改体重目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/calorie_tracker.py weight-goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想改体重目标值(可选保留截止日不变)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '改体重目标含截止日', 'data_fields': ['old_weight_goal', 'new_weight_goal', 'old_deadline', 'new_deadline'],
+            'depends_on_external': False, 'order': 19},
+    {
+            'category': '目标管理',     'wake_word': '改饮水目标',     'desc': '单独改饮水目标',
+            'main_prompt': {
+        'cli': 'nutrition_goal.update_water_goal', 'text': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想只改饮水目标,其他 4 项宏量保持不变。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_water', 'name': '改饮水目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'nutrition_goal.update_water_goal', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想只改饮水目标,其他 4 项宏量保持不变。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '单独改饮水目标', 'data_fields': ['old_water_goal', 'new_water_goal'],
+            'depends_on_external': False, 'order': 20},
+    {
+            'category': '目标管理',     'wake_word': '暂停所有目标',     'desc': '临时暂停全部目标',
+            'main_prompt': {
+        'cli': 'goal_manager.pause_all_goals', 'text': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),后续可解冻。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_pause_all', 'name': '暂停所有目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'goal_manager.pause_all_goals', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),后续可解冻。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '临时暂停全部目标', 'data_fields': ['paused', 'note', 'restore_hint'],
+            'depends_on_external': False, 'order': 21},
+    {
+            'category': '目标管理',     'wake_word': '重启所有目标',     'desc': '从暂停恢复全部目标',
+            'main_prompt': {
+        'cli': 'goal_manager.resume_all_goals', 'text': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想解冻全部目标(从暂停恢复)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_resume_all', 'name': '重启所有目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'goal_manager.resume_all_goals', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想解冻全部目标(从暂停恢复)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '从暂停恢复全部目标', 'data_fields': ['resume_state', 'resumed_at'],
+            'depends_on_external': False, 'order': 22},
+    {
+            'category': '目标管理',     'wake_word': '看目标历史完成',     'desc': '看历史目标完成情况',
+            'main_prompt': {
+        'cli': 'goal_history.list_completed_goals', 'text': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史达成/未达成的目标列表(按时间排序,简版 G4)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_history_complete', 'name': '看目标历史完成', 'subfunction': '新增', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'goal_history.list_completed_goals', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史达成/未达成的目标列表(按时间排序,简版 G4)。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看历史目标完成情况', 'data_fields': ['goal_history', 'completed_count', 'incomplete_count'],
+            'depends_on_external': False, 'order': 23},
+    {
+            'category': '目标管理',     'wake_word': '看目标预测达成',     'desc': '预测目标达成日 + 置信度（体重部分复用对比体重 B1 的预测）',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode predict', 'text': '请你加载技能 卡路里,执行唤醒词「看目标预测达成」。\n\n我想看按当前趋势预测的目标达成日 + 置信度。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_predict', 'name': '看目标预测达成', 'subfunction': '新增', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode predict', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标预测达成」。\n\n我想看按当前趋势预测的目标达成日 + 置信度。\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '预测目标达成日 + 置信度（体重部分复用对比体重 B1 的预测）', 'data_fields': ['predict_date', 'confidence'],
+            'depends_on_external': False, 'order': 24},
     {
             'category': '综合',     'wake_word': '查健康报告',     'desc': '四维度综合健康仪表盘',
             'main_prompt': {

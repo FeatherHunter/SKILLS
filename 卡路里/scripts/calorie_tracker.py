@@ -317,6 +317,24 @@ def main():
                 sys.argv[6] if len(sys.argv) > 6 else None,
             )
 
+        elif command == "get-goal":
+            # ticket 06 · P0 空挂修复:业务函数已有,CLI 层接通(get-goal 之前不存在)
+            goal = nutrition_goal.get_nutrition_goal()
+            if goal is None:
+                print("⚠️ 未设置营养目标(请先执行 goal <热量> <蛋白> <碳水> <脂肪> [饮水ml])")
+                sys.exit(0)
+            cols = ['id', 'calorie_goal', 'protein_goal', 'carbs_goal', 'fat_goal',
+                    'weight_goal', 'goal_deadline', 'water_goal', 'updated_at']
+            print("✓ 当前目标:")
+            for name, val in zip(cols, goal):
+                if name == 'id':
+                    continue
+                label = {'calorie_goal': '热量', 'protein_goal': '蛋白', 'carbs_goal': '碳水',
+                         'fat_goal': '脂肪', 'water_goal': '饮水', 'weight_goal': '体重目标',
+                         'goal_deadline': '截止', 'updated_at': '更新时间'}.get(name, name)
+                unit = ' 卡' if name == 'calorie_goal' else (' g' if name in ('protein_goal', 'carbs_goal', 'fat_goal') else (' ml' if name == 'water_goal' else ' kg' if name == 'weight_goal' else ''))
+                print(f"  {label}: {val if val is not None else '未设'}{unit if val is not None else ''}")
+
         elif command == "weight":
             # 2026-07-20 改:身高从 user_profile 读,note 用 --note 标志(强制)
             if len(sys.argv) < 3:

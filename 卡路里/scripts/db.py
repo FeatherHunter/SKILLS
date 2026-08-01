@@ -209,6 +209,10 @@ def init_db(db_path):
         c.execute('ALTER TABLE daily_goal ADD COLUMN water_goal INTEGER DEFAULT 2000')
     except Exception:
         pass
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN goal_paused INTEGER DEFAULT 0')
+    except Exception:
+        pass
 
     # 迁移：nutrition_products 表新增 source / is_deprecated（食品库扩展 · 2026-06-30）
     _existing_cols_p = {

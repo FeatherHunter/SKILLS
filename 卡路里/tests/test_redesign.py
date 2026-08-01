@@ -351,18 +351,34 @@ class TestHelpMirrorRename:
 class TestCrossPagePromptConsistency:
     """ticket 15 · D7 · 跨页面 prompt 一致性"""
 
-    def test_check_prompt_soak_passes(self):
-        """scripts/check_prompt_soak.py 自检 exit 0
+    def test_check_prompt_soak_passes(self, tmp_path):
+        """scripts/check_prompt_soak.py 自检 exit 0(自渲染模式)
 
-        ticket 04 增量:temp_db fixture 把 SKILLS_DB_PATH 改为 temp 目录,
-        导致 check_prompt_soak tier 1 找不到 HELP 文件。本测试显式恢复
-        原始 SKILLS_DB_PATH(env.pop 后再 set 用户的 D:.db 路径),让 tier 1 生效。
+        2026-08-01 重构:不再对比用户数据目录(外部状态——别的 session 渲染
+        HELP 会让代码没变的 commit 挂掉),改为自渲染:
+        1. tmp_path 设 SKILLS_DB_PATH
+        2. render_help_center.py --runtime(纯净 _triggers SoT,无 scene_data merge)
+        3. check_prompt_soak tier 1 读 tmp 渲染产物 -> 与 _triggers 对比
+        守护对象 = render 管线不篡改 prompt(纯逻辑不变量),不受开发期
+        scene_data 覆盖 / 外部渲染影响 -> commit 不再被设计期过渡态阻塞。
         """
         import subprocess, sys, os
         env = os.environ.copy()
         env.pop("SKILLS_DB_PATH", None)
-        # tier 1 依赖此 env(手册 §4.1 · v2.4.8)
-        env["SKILLS_DB_PATH"] = r"D:\2Study\StudyNotes\.db"
+        env["SKILLS_DB_PATH"] = str(tmp_path)
+        # 自渲染:--runtime 纯净 SoT;--no-mirror 不写仓库根 mirror(避免污染工作区)
+        r = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / 'render_help_center.py'), '--runtime', '--no-mirror'],
+            cwd=SKILL_DIR, capture_output=True, text=True,
+            encoding='utf-8', errors='replace', timeout=60,
+            env=env,
+        )
+        assert r.returncode == 0, (
+            f'render_help_center.py exit {r.returncode}\n{r.stdout}\n{r.stderr}'
+        )
+        rendered = list((tmp_path / 'calorie_html').glob('*.html'))
+        assert rendered, '自渲染未产出 HELP HTML'
+        # soak:读 tmp(tier 1) -> 与 _triggers 对比(同源 -> 必一致)
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / 'check_prompt_soak.py')],
             cwd=SKILL_DIR, capture_output=True, text=True,

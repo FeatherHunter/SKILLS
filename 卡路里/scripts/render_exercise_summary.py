@@ -307,6 +307,11 @@ def main():
             break
     args.window = window
 
+    # 筛选场景(有备注/按分类)无窗口参数时默认最近 30 天(2026-08-02 对抗审查:
+    # 原实现解析成"今天"导致 0 条;筛选视图意图 = 看一段记录,非单日)
+    if (args.has_note or args.category) and not (window or args.days or args.from_date):
+        args.days = 30
+
     s, e = resolve_window(window, days=args.days, from_date=args.from_date, to_date=args.to_date)
     scene = _scene_name(args)
     mode = 'records' if (args.mode == 'records' or args.has_note or args.category) else 'summary'

@@ -445,11 +445,18 @@ function renderScene(s, i) {
     ? '<span class="scene-ext" title="依赖外部技能/接口(P4 最后开发)">🔗</span>'
     : '';
   const empty = '';  // 让 flex gap 撑开
+  // output_type 中文标签(2026-08-02 用户拍板)
+  const otLabels = { process: '过程', result: '结果', receipt: '回执' };
+  const otLabel = otLabels[s.output_type] || s.output_type || '结果';
+  // wake_word 与 name 相同时不重复展示(2026-08-02 用户拍板)
+  const wakeSpan = s.wake_word && s.wake_word !== s.name
+    ? `<span class="scene-wake">${escapeHTML(s.wake_word || s.name || '')}</span>`
+    : '';
   return `<details class="scene-card" data-key="${escapeHTML(s.key || '')}" data-cat="${escapeHTML(s.category || '')}" data-sub="${escapeHTML(s.subfunction || '')}">` +
     `<summary>` +
       `<span class="scene-name">${escapeHTML(s.name || '')}</span>` +
-      `<span class="scene-wake">${escapeHTML(s.wake_word || s.name || '')}</span>` +
-      `<span class="scene-output ${escapeHTML(s.output_type || 'result')}">${escapeHTML(s.output_type || 'result')}</span>` +
+      wakeSpan +
+      `<span class="scene-output ${escapeHTML(s.output_type || 'result')}">${escapeHTML(otLabel)}</span>` +
       extTag +
       `<button class="copy-btn copy-main" data-prompt-index="${i}" data-wake="${escapeHTML(s.wake_word || s.name || '')}">📋 复制</button>` +
     `</summary>` +
@@ -500,9 +507,9 @@ function render() {
   const blocks = categories.map(cat => {
     const subs = byCat[cat.name] || {};
     const subNames = Object.keys(subs).sort((a, b) => {
-      const oa = Math.min(...subs[a].map(([s]) => s.order ?? 9999));
-      const ob = Math.min(...subs[b].map(([s]) => s.order ?? 9999));
-      return oa - ob;
+      const ia = Math.min(...subs[a].map(([, idx]) => idx));
+      const ib = Math.min(...subs[b].map(([, idx]) => idx));
+      return ia - ib;
     });
     const totalScenes = subNames.reduce((n, sn) => n + subs[sn].length, 0);
     if (!totalScenes) return '';

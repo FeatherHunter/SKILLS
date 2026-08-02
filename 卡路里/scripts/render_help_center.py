@@ -107,6 +107,12 @@ SUBFUNC_LEGACY = {
     '身材照片':  '既有唤醒词',
 }
 
+# 分类 → 子功能显式顺序(2026-08-02 用户拍板:基础信息 = 设置资料 → 看档案 → 改档案)
+# 中文字典序不可靠(改<看<设),按此表排序;未列出的子功能按插入序(字典序兜底)
+SUBFUNC_ORDER = {
+    '基础信息': ['设置资料', '看档案', '改资料'],
+}
+
 
 def _trig_to_scene(t: dict) -> dict:
     """把旧 TRIGGERS 格式转 v3 scene 格式(去变体,平铺)
@@ -200,9 +206,17 @@ def build_data(mode: str = 'merged') -> dict:
         source = 'merged(scene_data + _triggers.py)'
 
     # 按 (category, subfunction, order) 排序
+    # subfunction 用显式顺序表(SUBFUNC_ORDER)替代中文字典序(2026-08-02)
+    def _sub_key(s):
+        order_list = SUBFUNC_ORDER.get(s.get('category', ''), [])
+        sub = s.get('subfunction', '')
+        if sub in order_list:
+            return (order_list.index(sub), sub)
+        return (len(order_list), sub)  # 未配置的子功能排在表后,字典序兜底
+
     scenes.sort(key=lambda s: (
         s.get('category', '~'),
-        s.get('subfunction', '~'),
+        *_sub_key(s),
         s.get('order', 9999),
         s.get('name', ''),
     ))

@@ -180,6 +180,38 @@ def init_db(db_path):
     # 索引
     c.execute('CREATE INDEX IF NOT EXISTS idx_food_log_date ON food_log(date)')
 
+    # 迁移：food_log 表新增 sodium/sugar/fiber（2026-08-02 · ticket #10 · 分析 A5 钠糖纤维场景）
+    # 值域：mg/g（钠 mg，糖/纤维 g），按「每 100g 含量 × grams / 100」从 nutrition_products 回填
+    _existing_cols_food = {
+        row[1] for row in c.execute('PRAGMA table_info(food_log)').fetchall()
+    }
+    for _col, _type in [
+        ('sodium_mg', 'REAL'),
+        ('sugar_g', 'REAL'),
+        ('fiber_g', 'REAL'),
+    ]:
+        if _col not in _existing_cols_food:
+            c.execute(f'ALTER TABLE food_log ADD COLUMN {_col} {_type}')
+    # 回填（幂等：只回填 NULL 的行；按食品名匹配 nutrition_products 每 100g 值 × 克数 / 100）
+    c.execute('''
+        UPDATE food_log
+        SET sodium_mg = ROUND(
+                (SELECT n.sodium FROM nutrition_products n
+                 WHERE n.product_name = food_log.food_name AND n.is_deprecated = 0
+                 ORDER BY n.id DESC LIMIT 1) * food_log.grams / 100.0, 1),
+            sugar_g   = ROUND(
+                (SELECT n.sugar FROM nutrition_products n
+                 WHERE n.product_name = food_log.food_name AND n.is_deprecated = 0
+                 ORDER BY n.id DESC LIMIT 1) * food_log.grams / 100.0, 1),
+            fiber_g   = ROUND(
+                (SELECT n.dietary_fiber FROM nutrition_products n
+                 WHERE n.product_name = food_log.food_name AND n.is_deprecated = 0
+                 ORDER BY n.id DESC LIMIT 1) * food_log.grams / 100.0, 1)
+        WHERE food_log.sodium_mg IS NULL
+           OR food_log.sugar_g IS NULL
+           OR food_log.fiber_g IS NULL
+    ''')
+
     # 迁移：entries → food_log 改名（2026-07-12）
     _existing_tables = {row[0] for row in c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
     if 'entries' in _existing_tables and 'food_log' not in _existing_tables:
@@ -221,6 +253,7 @@ def init_db(db_path):
     _products_new_cols = [
         ('source', "TEXT DEFAULT '未知'"),
         ('is_deprecated', 'INTEGER DEFAULT 0'),
+        ('category', "TEXT DEFAULT ''"),   # 查食品(按分类) · ticket #3
     ]
     for _col, _type in _products_new_cols:
         if _col not in _existing_cols_p:

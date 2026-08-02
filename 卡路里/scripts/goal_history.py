@@ -43,7 +43,9 @@ def _daily_actual(start_date, end_date):
         GROUP BY date
     ''', (start_date, end_date)).fetchall()
     conn.close()
-    return {r['date']: {'cal': r['cal'], 'pro': r['pro'], 'carb': r['carb'], 'fat': r['fat']} for r in rows}
+    # round 聚合值,避免浮点噪声(686.6600000000001 · R6 2026-08-02 对抗审查)
+    return {r['date']: {'cal': round(r['cal'], 1), 'pro': round(r['pro'], 1),
+                        'carb': round(r['carb'], 1), 'fat': round(r['fat'], 1)} for r in rows}
 
 
 def list_completed_goals(days=30):

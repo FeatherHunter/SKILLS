@@ -85,12 +85,12 @@ def _pct(actual, goal):
 
 
 def _items_from_actual(actual, goal, keys, labels, units):
-    """组装通用 items 列表"""
+    """组装通用 items 列表(actual 取整,避免浮点噪声 · R7/R6)"""
     items = []
     for k, label, unit in zip(keys, labels, units):
         g = goal.get(f'{k}_goal')
         a = actual.get(k, 0)
-        items.append({'label': label, 'unit': unit, 'goal': g, 'actual': a, 'pct': _pct(a, g)})
+        items.append({'label': label, 'unit': unit, 'goal': g, 'actual': round(a, 1), 'pct': _pct(a, g)})
     return items
 
 
@@ -102,12 +102,20 @@ def build_mode_today(goal):
         ['热量', '蛋白', '碳水', '脂肪', '饮水'],
         ['卡', 'g', 'g', 'g', 'ml'],
     )
+    # R7 信息唯一性:summary 只给一句话建议,不重复进度条数值
+    pcts = [(it['label'], it['pct']) for it in items if it['pct'] is not None]
+    if not pcts:
+        summary = '未设营养目标'
+    else:
+        low = min(pcts, key=lambda x: x[1])
+        high = max(pcts, key=lambda x: x[1])
+        summary = f'完成最好的是{high[0]}({high[1]}%),最需补的是{low[0]}({low[1]}%)'
     return {
         'mode': 'today',
         'title': '看今日目标',
         'subtitle': '营养 4 项 + 饮水 · 目标值/实际/完成度（体重为累计目标,看体重目标进度）',
         'items': items,
-        'summary': '今日目标完成度: 热量 ' + (f'{items[0]["pct"]}%' if items[0]['pct'] is not None else '未设目标'),
+        'summary': summary,
     }
 
 
@@ -241,7 +249,7 @@ def build_mode_vs_actual(goal, days=30):
         pct = _pct(a['calorie'], g)
         rows.append({
             'date': d,
-            'actual': a['calorie'],
+            'actual': round(a['calorie'], 1),
             'goal': g or '—',
             'deviation': {'bar': min(pct, 150) if pct is not None else 0, 'text': f'{pct}%' if pct is not None else '—'},
         })

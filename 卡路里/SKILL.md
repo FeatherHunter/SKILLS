@@ -153,7 +153,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/calorie_trend.html` | 查热量趋势 | `analysis.diet_calorie_trend(as_dict=True)` | `scripts/render_calorie_trend.py` |
 | `templates/nutrition_ratio.html` | 查营养结构 | `analysis.diet_nutrition_ratio(as_dict=True)` | `scripts/render_nutrition_ratio.py` |
 | `templates/calorie_deficit.html` | 查热量缺口 | `analysis.diet_deficit_analysis(as_dict=True)` | `scripts/render_calorie_deficit.py` |
-| `templates/food_ranking.html` | 查食物排行 / 查高热量榜 / 查低热量榜 / 查频繁吃榜 / 查高碳水榜 / 查高蛋白榜 | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
+| `templates/food_ranking.html` | 看高热量榜 / 看低热量榜 / 看频繁吃榜 / 看高碳水榜 / 看高蛋白榜 / 看高热量榜（最近 30 天）/ 看高热量榜（本月）/ 看高热量榜（自定义）/ 看低热量榜（最近 30 天）/ 看低热量榜（本月）/ 看低热量榜（自定义）/ 看频繁吃榜（最近 30 天）/ 看频繁吃榜（本月）/ 看频繁吃榜（自定义）/ 看高碳水榜（最近 30 天）/ 看高碳水榜（本月）/ 看高碳水榜（自定义）/ 看高蛋白榜（最近 30 天）/ 看高蛋白榜（本月）/ 看高蛋白榜（自定义） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
 | `templates/food_search.html` | 查热量(ADR-0005 · ticket 06) | `nutrition_products` LIKE 搜索 | `scripts/render_food_search.py --query "<term>"` |
 | `templates/food_library.html` | 查食品库(ADR-0005 · ticket 07) | `nutrition_products` 列表 + 客户端搜索/分页 | `scripts/render_food_library.py [--limit 200 | --all]` |
 | `templates/weight_history.html` | 看本周体重、看上周体重、看本月体重、看上月体重、看最近 7 天体重、看最近 90 天体重、看某段时间体重、看体重曲线、看体重曲线（带目标）、看体重曲线（带里程碑）、看体重曲线（带异常点）、看最近 90 天体重曲线、看最近 180 天体重曲线、看最近 365 天体重曲线、看某段时间体重曲线、看「有备注」的体重记录 | `analysis.weight_*` 系列 | `scripts/render_weight_history.py [--mode]` |
@@ -182,7 +182,14 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/profile_setup.html` | (设置档案 · 配置辅助页) | `profile.get/set` | `scripts/render_profile_setup.py [--live]` |
 | `templates/cron_setup.html` | 开启定时复盘 / 关闭定时复盘 | `mavis cron list/create/delete` (AI 自动查状态) | `scripts/render_cron_setup.py` |
 | `templates/crud_view.html` | 查档案 / 查定时复盘 | `profile.get` / `mavis cron list` | `scripts/render_crud_view.py` |
-| `templates/crud_receipt.html` | 删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-profile-set/--live-profile-activity/--live-profile-update]` |
+| `templates/crud_receipt.html` | 记一餐 / 记一餐（含备注） / 补记饮食 / 批量补记饮食 / 记喝水 / 复制昨日饮食 / 改饮食记录 / 改某日饮食 / 删饮食记录 / 删一餐 / 删某日饮食 / 批量删饮食 / 存食品 / 改食品 / 下架食品 / 改体重记录 / 改运动记录 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-diet-add/--live-diet-batch/--live-diet-copy/--live-diet-update/--live-diet-update-date/--live-diet-delete/--live-diet-delete-meal/--live-diet-delete-date/--live-diet-delete-range/--live-water-add/--live-product-add/--live-product-update/--live-product-deprecate/--live-profile-set/--live-profile-activity/--live-profile-update]` |
+
+| `templates/diet_review.html` | 饮食复盘（本周）/ 饮食复盘（本月）/ 饮食复盘（最近 90 天）/ 饮食复盘（今年）/ 饮食复盘（自定义时间） | `food_log` 聚合(总热量/日均/总蛋白/趋势/高频 TOP5) | `scripts/render_diet_review.py --type {week,month,quarter,year,range}` |
+| `templates/diet_overview.html` | 看饮食总览 | `food_log` 周期累计(本周/本月 + 趋势,不含今日) | `scripts/render_diet_overview.py` |
+| `templates/nutrition_detail.html` | 看营养素深度 | `food_log × nutrition_products`(纤维/钠/糖 vs 推荐) | `scripts/render_nutrition_detail.py [--days N]` |
+| `templates/meal_distribution.html` | 看早餐（最近 7 天）/ 看午餐（最近 7 天）/ 看晚餐（最近 7 天）/ 看加餐（最近 7 天）/ 看全部餐别分布（最近 7 天） | `food_log` 按餐别时间窗聚合 | `scripts/render_meal_distribution.py --meal {breakfast,lunch,dinner,snack,all}` |
+| `templates/source_stats.html` | 看食品来源统计 | `nutrition_products` GROUP BY source | `scripts/render_source_stats.py` |
+| `templates/dedupe_report.html` | 看食品库（去重） | `nutrition_products` 重复组 | `scripts/render_dedupe_report.py` |
 | `templates/body_photo_log_wizard.html` | (记身材照 · 配置辅助页,飞书交互用) | 无(纯配置) | `scripts/render_body_photo_log_wizard.py` |
 | `templates/body_photo_viewer.html` | 查身材照(单图子路径) | `body_photos` 单行 | `scripts/render_body_photo_viewer.py --id N` |
 | `templates/body_photo_gif_planner.html` | 生成身材照GIF（规划器 · 框选裁剪 · 内部工具） | `body_photos` 多行 + base64 | `scripts/render_body_photo_gif_planner.py` |

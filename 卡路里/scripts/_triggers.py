@@ -352,13 +352,13 @@ TRIGGERS = [
             'user_intent': '看今日饮水总量与目标进度', 'data_fields': ["total_ml", "goal_ml", "remaining_ml", "cups"],
             'depends_on_external': False, 'order': 9},
     {
-            'category': '饮食',     'wake_word': '看「有备注」的饮食记录',     'desc': '看「有备注」的饮食记录',
+            'category': '饮食',     'wake_word': '看有备注的饮食记录',     'desc': '看「有备注」的饮食记录',
             'main_prompt': {
-        'cli': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看「有备注」的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
+        'cli': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看有备注的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'diet_view_with_note', 'name': '看「有备注」的饮食记录', 'subfunction': '看饮食', 'output_type': 'result',
-            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看「有备注」的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看有备注的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
             'user_intent': '查看带备注的饮食记录', 'data_fields': ["date", "meal", "food_name", "grams", "calories", "protein", "note"],
             'depends_on_external': False, 'order': 10},
     {

@@ -437,7 +437,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定营养目标',     'desc': '设每日 4 项宏量营养目标',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py goal', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。若热量明显低于我的基础代谢(BMR),请提示我注意。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标数值(请按实际替换,不知道的可以空着):\n热量(卡):____\n蛋白(g):____\n碳水(g):____\n脂肪(g):____\n饮水(ml):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。若热量明显低于我的基础代谢(BMR),请提示我注意。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标数值(请按实际替换,不知道的可以空着):\n热量(卡):____\n蛋白(g):____\n碳水(g):____\n脂肪(g):____\n饮水(ml):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_nutrition', 'name': '定营养目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -447,7 +447,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定营养目标(自动算)',     'desc': '按档案 + 策略自动算每日营养目标',
             'main_prompt': {
-        'cli': 'nutrition_goal.recommend_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向自动算出 4 项营养目标。若我未提供方向或档案信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____'},
+        'cli': 'python scripts/render_goal_config.py --recommend <减脂/维持/增肌>', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向自动算出 4 项营养目标。若我未提供方向或档案信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_nutrition_auto', 'name': '定营养目标(自动算)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -457,7 +457,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定体重目标',     'desc': '设定体重目标值与可选截止日期',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight', 'name': '定体重目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -467,7 +467,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定体重目标(自动算截止)',     'desc': '按速率推算截止日期的体重目标',
             'main_prompt': {
-        'cli': 'weight_goal.set_weight_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight_auto_deadline', 'name': '定体重目标(自动算截止)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -477,7 +477,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定体重目标(含起始日)',     'desc': '完整 setup 体重目标含起始日',
             'main_prompt': {
-        'cli': 'weight_goal.set_weight_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight_with_start', 'name': '定体重目标(含起始日)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -487,7 +487,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定饮水目标',     'desc': '设每日饮水目标',
             'main_prompt': {
-        'cli': 'nutrition_goal.set_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设定每天饮水目标(ml)。完成后给 1 句话总结,不需要过多文字解释。\n\n我的饮水目标(ml):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设定每天饮水目标(ml)。完成后给 1 句话总结,不需要过多文字解释。\n\n我的饮水目标(ml):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_water', 'name': '定饮水目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -497,7 +497,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定饮水目标(自动算)',     'desc': '按体重推算饮水目标推荐值',
             'main_prompt': {
-        'cli': 'nutrition_goal.recommend_water_goal', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按我的体重(ml/kg)自动推算饮水目标推荐值,并和旧目标对比。请显示计算依据、推荐值、旧值与新值对比。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重(kg,选填,默认取最新记录):____'},
+        'cli': 'python scripts/render_goal_config.py --recommend <减脂/维持/增肌>', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按我的体重(ml/kg)自动推算饮水目标推荐值,并和旧目标对比。请显示计算依据、推荐值、旧值与新值对比。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重(kg,选填,默认取最新记录):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_water_auto', 'name': '定饮水目标(自动算)', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -507,7 +507,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '一键定全套目标',     'desc': '一键设定营养+体重+饮水全套目标',
             'main_prompt': {
-        'cli': 'nutrition_goal.recommend_nutrition_goal', 'text': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键设定 3 类目标(营养 + 体重 + 饮水),基于我的档案自动计算,先给我看每类目标值与依据说明,等我确认后再采纳。若我的档案(身高/年龄/活动量)未设置、无体重记录或信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____\n我的体重目标(kg,选填):____\n截止日期(选填):____'},
+        'cli': 'python scripts/render_goal_config.py --recommend <减脂/维持/增肌>', 'text': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键设定 3 类目标(营养 + 体重 + 饮水),基于我的档案自动计算,先给我看每类目标值与依据说明,等我确认后再采纳。若我的档案(身高/年龄/活动量)未设置、无体重记录或信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____\n我的体重目标(kg,选填):____\n截止日期(选填):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_full_kit', 'name': '一键定全套目标', 'subfunction': 'G1 定目标', 'output_type': 'receipt',
@@ -547,7 +547,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '看体重目标进度',     'desc': '看体重目标进度含预估达成',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal-progress', 'text': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标进度:当前体重、目标值、差值(Δ)、完成百分比、预测达成日、剩余天数和建议速率。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_goal_progress.py --mode weight_progress', 'text': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标进度:当前体重、目标值、差值(Δ)、完成百分比、预测达成日、剩余天数和建议速率。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_view_weight_progress', 'name': '看体重目标进度', 'subfunction': 'G2 看目标', 'output_type': 'result',
@@ -617,7 +617,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '改营养目标',     'desc': '改某项或全部营养目标',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py goal', 'text': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想修改营养目标(热量/蛋白/碳水/脂肪/饮水),可同时改多项。请显示每项改前值与改后值,并预估修改后的影响(热量缺口/预算变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n热量(卡)新目标值:____\n蛋白(g)新目标值:____\n碳水(g)新目标值:____\n脂肪(g)新目标值:____\n饮水(ml)新目标值:____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想修改营养目标(热量/蛋白/碳水/脂肪/饮水),可同时改多项。请显示每项改前值与改后值,并预估修改后的影响(热量缺口/预算变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n热量(卡)新目标值:____\n蛋白(g)新目标值:____\n碳水(g)新目标值:____\n脂肪(g)新目标值:____\n饮水(ml)新目标值:____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_modify_nutrition', 'name': '改营养目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
@@ -627,7 +627,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '改体重目标',     'desc': '改体重目标含截止日',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-goal', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_modify_weight', 'name': '改体重目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
@@ -637,7 +637,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '改饮水目标',     'desc': '单独改饮水目标',
             'main_prompt': {
-        'cli': 'nutrition_goal.update_water_goal', 'text': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想单独修改饮水目标,其他营养目标保持不变。请显示改前值与改后值。完成后给 1 句话总结,不需要过多文字解释。\n\n饮水目标(ml):____'},
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想单独修改饮水目标,其他营养目标保持不变。请显示改前值与改后值。完成后给 1 句话总结,不需要过多文字解释。\n\n饮水目标(ml):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_modify_water', 'name': '改饮水目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
@@ -647,7 +647,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '暂停所有目标',     'desc': '临时暂停全部目标',
             'main_prompt': {
-        'cli': 'goal_manager.pause_all_goals', 'text': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),记录照常,仅目标暂停。请显示暂停状态、说明和恢复入口提示。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/goal_manager.py pause', 'text': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),记录照常,仅目标暂停。请显示暂停状态、说明和恢复入口提示。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_pause_all', 'name': '暂停所有目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
@@ -657,7 +657,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '重启所有目标',     'desc': '从暂停恢复全部目标',
             'main_prompt': {
-        'cli': 'goal_manager.resume_all_goals', 'text': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想从暂停恢复全部目标(营养 + 体重 + 饮水)。请显示重启状态。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/goal_manager.py resume', 'text': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想从暂停恢复全部目标(营养 + 体重 + 饮水)。请显示重启状态。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_resume_all', 'name': '重启所有目标', 'subfunction': 'G3 改目标', 'output_type': 'receipt',
@@ -667,7 +667,7 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '看目标历史完成',     'desc': '看历史目标完成情况',
             'main_prompt': {
-        'cli': 'goal_history.list_completed_goals', 'text': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史目标达成情况:每日达成列表(按时间排序)+ 完成/未完成天数统计(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。\n\n回看天数(选填,默认 30):____'},
+        'cli': 'python scripts/render_goal_progress.py --mode history', 'text': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史目标达成情况:每日达成列表(按时间排序)+ 完成/未完成天数统计(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。\n\n回看天数(选填,默认 30):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_view_history_complete', 'name': '看目标历史完成', 'subfunction': '新增', 'output_type': 'result',

@@ -344,7 +344,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 看今日目标 | 今日 5 项(热量/蛋白/碳水/脂肪/饮水)目标/实际/完成度 | `python scripts/render_goal_progress.py --mode today` |
 | 看本周目标 | 日均 vs 日目标 + 周总量 vs 周目标 | `python scripts/render_goal_progress.py --mode week` |
 | 看营养目标进度 | 4 项宏量进度条 + 完成度% + 缺口 | `python scripts/render_goal_progress.py --mode nutrition` |
-| 看体重目标进度 | 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率 | `python scripts/calorie_tracker.py weight-goal-progress` |
+| 看体重目标进度 | 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率 | `python scripts/render_goal_progress.py --mode weight_progress` |
 | 看饮水目标进度 | 累计/目标/完成度 + 剩余 ml | `python scripts/render_goal_progress.py --mode water` |
 | 看目标对比实际 | 目标线 vs 实际线 + 偏差 + 时间窗口(默认 30 天) | `python scripts/render_goal_progress.py --mode vs_actual` |
 | 看目标完成度 | 5 项完成度% + 缺口 + 总评分 | `python scripts/render_goal_progress.py --mode completion` |
@@ -366,7 +366,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 看目标历史完成 | 每日达成列表 + 完成/未完成天数统计 | `AI 路由: goal_history.list_completed_goals` |
+| 看目标历史完成 | 每日达成列表 + 完成/未完成天数统计 | `python scripts/render_goal_progress.py --mode history` |
 | 看目标预测达成 | 预测达成日 + 置信度(体重部分复用对比体重预测) | `python scripts/render_goal_progress.py --mode predict` |
 
 ### 🏃 运动

@@ -121,25 +121,45 @@ def build_live_profile_activity(level: str) -> dict:
     return _profile_receipt('update', old, new, kpis, '设活动量', result['updated_at'][:16].replace('T', ' '))
 
 
-def build_live_profile_update(field: str, value: str) -> dict:
-    """改档案:写库 + 组装回执(呈现:改前/改后 + 影响提示)"""
+def build_live_profile_update(field_value_pairs):
+    """改档案:一次改多字段 + 组装合并回执(呈现:改前/改后 + 影响提示)
+
+    Args:
+        field_value_pairs: [(field, value), ...] 成对列表(支持多字段一行一条)
+    """
     import profile
 
     old = profile.get_profile()
-    result = profile.update_profile_field(field, value)
+    results = []
+    for field, value in field_value_pairs:
+        results.append(profile.update_profile_field(field, value))
     new = profile.get_profile()
 
+    # 影响提示注入 new_record(逐字段显示在 diff 新值下方)
+    # 注意:update_profile_field 的 field 是别名(height/activity),new_record 键是列名(height_cm/activity_level)
+    _FIELD_TO_COL = {'height': 'height_cm', 'activity': 'activity_level'}
+    impact_map = {}
+    for r in results:
+        if r.get('impact'):
+            col = _FIELD_TO_COL.get(r['field'], r['field'])
+            impact_map[col] = r['impact']
+    new = {**new, **{f'__impact_{k}': v for k, v in impact_map.items()}}
+
+    # KPI:字段数 / 改前 / 改后 / 更新时间(多字段时显示首字段对比)
+    first = results[0]
+    last = results[-1]
+    multi = len(results) > 1
     kpis = [
-        {'label': '字段', 'value': result['label'],
-         'extra': f"field={result['field']}"},
-        {'label': '改前', 'value': str(result['old_value']),
+        {'label': '字段', 'value': f"{len(results)} 项" if multi else first['label'],
+         'extra': '、'.join(r['label'] for r in results) if multi else f"field={first['field']}"},
+        {'label': '改前', 'value': '见下方对比' if multi else str(first['old_value']),
          'extra': '—'},
-        {'label': '改后', 'value': str(result['new_value']),
+        {'label': '改后', 'value': '见下方对比' if multi else str(first['new_value']),
          'extra': '—'},
-        {'label': '更新时间', 'value': result['updated_at'][:16].replace('T', ' '),
+        {'label': '更新时间', 'value': last['updated_at'][:16].replace('T', ' '),
          'extra': 'id=1'},
     ]
-    return _profile_receipt('update', old, new, kpis, '改档案', result['updated_at'][:16].replace('T', ' '))
+    return _profile_receipt('update', old, new, kpis, '改档案', last['updated_at'][:16].replace('T', ' '))
 
 
 def main():
@@ -157,14 +177,17 @@ def main():
     p.add_argument('--height', type=float, help='设置档案:身高(cm)')
     p.add_argument('--activity', help='设置档案:活动量档位')
     p.add_argument('--note', help='设置档案:备注')
-    p.add_argument('--field', help='改档案字段(height/age/gender/activity/note)')
-    p.add_argument('--value', help='改档案新值')
+    p.add_argument('--field', action='append', help='改档案字段(height/age/gender/activity/note,可多次)')
+    p.add_argument('--value', action='append', help='改档案新值(与 --field 成对,可多次)')
     p.add_argument('--output')
     args = p.parse_args()
 
-    if args.live_profile_update and (not args.field or args.value is None):
-        print('❌ --live-profile-update 需要 --field 与 --value', file=sys.stderr)
-        return 1
+    if args.live_profile_update:
+        fields = args.field or []
+        values = args.value or []
+        if not fields or len(fields) != len(values):
+            print('❌ --live-profile-update 需要成对的 --field 与 --value(可多对)', file=sys.stderr)
+            return 1
     if args.live_profile_set and (args.age is None and args.gender is None and
                                   args.height is None and args.activity is None):
         print('❌ --live-profile-set 至少需要 --age/--gender/--height/--activity 之一', file=sys.stderr)
@@ -180,7 +203,7 @@ def main():
         elif args.live_profile_activity:
             data = build_live_profile_activity(args.live_profile_activity)
         else:
-            data = build_live_profile_update(args.field, args.value)
+            data = build_live_profile_update(list(zip(fields, values)))
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

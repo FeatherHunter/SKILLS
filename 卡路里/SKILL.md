@@ -424,7 +424,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 |--------|------|-----|
 | 设置档案 | 填 4 项(身高/年龄/性别/活动量);**采访式引导 = AI 默认交互**:用户没说全时逐项问 + 按日常情况推荐活动量 | `python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>`(写库 + 回执) |
 | 设活动量 | 只设活动量(5 档),显示系数变化与影响 | `python scripts/render_crud_receipt.py --live-profile-activity <level>` |
-| 改档案 | 单字段/多字段修改(身高/年龄/性别/活动量/备注),改前/改后对比 + 影响提示 | `python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y>` |
+| 改档案 | 单字段/多字段修改(身高/年龄/性别/活动量/备注),改前/改后对比 + 影响提示 | `python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> [--field <X2> --value <Y2> ...]` |
 | 查档案 | 查看完整档案(含活动量/最新体重/BMI/BMR/TDEE + 系数说明) | `python scripts/render_crud_view.py --entity profile` |
 
 ### 📋 复盘(2026-07-15 新增)
@@ -776,7 +776,7 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 > **设置档案**:AI 采访式引导逐项询问(或 profile_setup.html --live 配置页辅助) → 执行 `render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>`(写库 + 回执)
 > **设活动量**:`calorie_tracker.py profile activity <level>`(5 档,显示系数 旧→新 + 影响)
-> **改档案**:`calorie_tracker.py profile update --field <X> --value <Y>`(多字段可多次调用,显示改前/改后 + 影响提示,回执 crud_receipt.html)
+> **改档案**:`render_crud_receipt.py --live-profile-update --field <X> --value <Y>`(可多对 --field/--value,一次生成合并回执,逐字段显示改前/改后 + 影响提示)
 
 | 用户说法 | 触发方式 |
 |---|---|
@@ -1101,7 +1101,7 @@ python scripts/calorie_tracker.py water 500                      # 记录饮水 
 python scripts/calorie_tracker.py profile set 30 male --height 177 --activity moderate --note "默认值"  # 全量设置(2026-08-02 加 --activity)
 python scripts/render_crud_receipt.py --live-profile-set --age 30 --gender male --height 177 --activity moderate  # 设置档案(写库+回执)
 python scripts/render_crud_receipt.py --live-profile-activity <level>  # 设活动量(写库+回执)
-python scripts/render_crud_receipt.py --live-profile-update --field height --value 180  # 改档案(写库+回执)
+python scripts/render_crud_receipt.py --live-profile-update --field height --value 180 --field activity --value active  # 改档案多字段(写库+合并回执)
 python scripts/calorie_tracker.py profile activity <level>       # 只设活动量(纯文本,底层)
 python scripts/calorie_tracker.py profile update --field height --value 180   # 单字段更新(改档案)
 python scripts/calorie_tracker.py profile get       # JSON 输出
@@ -1714,7 +1714,7 @@ AI 看到错误时按此表处理:
 
 - **设置档案**:`render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>`(写库 + 回执 HTML)
 - **设活动量**:`profile activity <level>` - 单字段设置,显示 系数旧→新 + TDEE 影响
-- **改档案**:`profile update --field <X> --value <Y>` - 单字段/多字段修改,显示改前/改后 + 影响提示(改身高→BMI 重算;改活动量→TDEE 系数变化)
+- **改档案**:`render_crud_receipt.py --live-profile-update --field <X> --value <Y>`(可多对) - 一次写库生成合并回执,逐字段 改前/改后 + 影响提示
 - **查档案**:`render_crud_view.py --entity profile` - 档案字段(含活动量)+ 最新体重 + BMI/BMR/TDEE(含系数说明)
 
 ### 📋 综合:查健康报告 / 查卡路里数据
@@ -1748,7 +1748,7 @@ AI 看到错误时按此表处理:
 
 **改档案**:
 1. 先确认当前旧值(`profile get`)
-2. 调 `render_crud_receipt.py --live-profile-update --field <X> --value <Y>`(写库 + 回执 HTML,多字段可多次调用)
+2. 调 `render_crud_receipt.py --live-profile-update --field <X> --value <Y>`(可追加多对 --field/--value,一次写库生成一个合并回执 HTML)
 3. 回执 HTML(呈现:改前/改后对比 + 影响提示:改身高→BMI 重算,改活动量→TDEE 系数变化)
 
 **查档案**:

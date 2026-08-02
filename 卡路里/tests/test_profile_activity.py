@@ -145,6 +145,29 @@ def test_update_profile_field_age_string(profile_env):
         prof.update_profile_field("age", "abc")
 
 
+def test_live_profile_update_multi_field(profile_env):
+    """改档案多字段:一次改多项,影响提示逐字段注入 __impact_ 键(对抗审查 #8 修复)"""
+    import render_crud_receipt
+    prof = profile_env
+    prof.set_profile(age=30, gender="male", height_cm=177, activity_level="moderate")
+    data = render_crud_receipt.build_live_profile_update(
+        [("height", "180"), ("activity", "active"), ("age", "35")])
+    new_record = data["data"]["new_record"]
+    # 3 字段全改 + 影响提示注入
+    assert new_record["height_cm"] == 180.0
+    assert new_record["activity_level"] == "active"
+    assert new_record["age"] == 35
+    assert "BMI" in new_record["__impact_height_cm"]
+    assert "1.725" in new_record["__impact_activity_level"]
+    # 无影响提示的字段不注入
+    assert "__impact_note" not in new_record
+    # KPI 显示 3 项
+    assert data["data"]["context"]["kpis"][0]["value"] == "3 项"
+    # 落库验证
+    p = prof.get_profile()
+    assert p["height_cm"] == 180.0 and p["activity_level"] == "active" and p["age"] == 35
+
+
 def test_set_profile_with_activity(profile_env):
     """profile set --activity 透传"""
     prof = profile_env

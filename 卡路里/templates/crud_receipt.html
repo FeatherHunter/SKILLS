@@ -165,14 +165,17 @@
     const keys = Object.keys(new_record);
     keys.forEach(k => {
       if (k === 'id' || k === 'note' || k === 'created_at' || k === 'updated_at') return;
+      if (k.startsWith('__impact_')) return;  // 影响提示由下方按字段映射渲染
       const oldV = old_record[k];
       const newV = new_record[k];
       if (oldV === newV) return;
+      const impact = new_record['__impact_' + k];
       diffList.insertAdjacentHTML('beforeend',
         `<div class="diff-row">` +
         `<div><div class="diff-label">${k}</div><div class="diff-old">${oldV === null || oldV === undefined ? '—' : oldV}</div></div>` +
         `<div class="diff-arrow">→</div>` +
-        `<div><div class="diff-label">新值</div><div class="diff-new">${newV === null || newV === undefined ? '—' : newV}</div></div>` +
+        `<div><div class="diff-label">新值</div><div class="diff-new">${newV === null || newV === undefined ? '—' : newV}</div>` +
+        (impact ? `<div class="diff-impact" style="font-size:11px;color:var(--fg2);margin-top:4px;">${impact}</div>` : '') +
         `</div>`);
     });
   }

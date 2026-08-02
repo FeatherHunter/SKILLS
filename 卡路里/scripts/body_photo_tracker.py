@@ -47,13 +47,92 @@ def get_db():
     return _get_db_conn(DB_PATH)
 
 
+# ===== 多标签模型(2026-08-02 · ticket #10 决策:字符串编码,逗号分隔) =====
+# tag 列存 '正面,侧面,背部' 形式的逗号分隔串(方案 2,0 schema 变更,见研究报告 §2.6)。
+# 语义:改照片标签 = 覆盖整套 / 加照片标签 = 追加(判重) / 删照片标签 = 移除(至少保留 1 个)。
+TAG_SEP = ','
+TAG_MAX_LEN = 20          # 单个标签长度上限(沿用旧硬规则)
+TAG_MAX_COUNT = 10        # 单张照片标签数量上限(串长保护)
+
+
+def parse_tags(tag_str):
+    """'正面, 侧面' → ['正面', '侧面'](去空白/去空项/去重保序)"""
+    seen = set()
+    out = []
+    for t in (tag_str or '').split(TAG_SEP):
+        t = t.strip()
+        if not t:
+            continue
+        if t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out
+
+
+def serialize_tags(tags):
+    """['正面', '侧面'] → '正面,侧面'"""
+    return TAG_SEP.join(tags)
+
+
+def validate_tags(tags):
+    """校验标签列表(多标签硬规则):非空 + 单个长度 ≤ 20 + 数量 ≤ 10"""
+    if not tags:
+        raise ValueError("标签必填,当前是空列表")
+    for t in tags:
+        if len(t) > TAG_MAX_LEN:
+            raise ValueError(f"标签太长({len(t)} > {TAG_MAX_LEN}): {t!r}")
+    if len(tags) > TAG_MAX_COUNT:
+        raise ValueError(f"标签数量太多({len(tags)} > {TAG_MAX_COUNT})")
+    return tags
+
+
+def tags_contain(tag_str, tag):
+    """tag 串是否包含指定标签(多标签包含匹配,替代旧精确等值)"""
+    return tag in parse_tags(tag_str)
+
+
+def get_photo_row(photo_id):
+    """按 id 取照片行(含 tag 解析),不存在返回 None"""
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, date, time, photo_path, tag, note, created_at FROM body_photos WHERE id = ?",
+        (photo_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    d = dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note', 'created_at'], row))
+    d['tag_list'] = parse_tags(d['tag'])
+    return d
+
+
+def days_since_tag_photo(tag, before_date=None):
+    """距 before_date 之前最近一张含该标签照片的天数(规律拍照提示用)
+
+    before_date 必传:查该日期之前(不含当天)最近一张含 tag 的照片。
+    返回 None = 之前没有同标签照片。
+    """
+    from datetime import date as _date
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, tag, date FROM body_photos WHERE date < ? ORDER BY date DESC, time DESC",
+        (before_date,))
+    for pid, ptag, d in cur.fetchall():
+        if tags_contain(ptag, tag):
+            conn.close()
+            delta = (_date.fromisoformat(before_date) - _date.fromisoformat(d)).days
+            return delta if delta >= 0 else None
+    conn.close()
+    return None
+
+
 def add_photos(photo_paths, tag, note=''):
-    """添加照片记录"""
-    # 硬规则(2026-07-17 加):tag 必填 + 长度 ≤ 20
-    if not tag or not tag.strip():
-        raise ValueError(f"tag 必填,当前是空字符串")
-    if len(tag) > 20:
-        raise ValueError(f"tag 太长({len(tag)} > 20): {tag!r}")
+    """添加照片记录(2026-08-02 支持多标签:tag 可传 '正面,侧面')"""
+    # 硬规则(2026-07-17 加,2026-08-02 改多标签):标签非空 + 单个长度 ≤ 20 + 数量 ≤ 10
+    tags = validate_tags(parse_tags(tag))
+    tag_serialized = serialize_tags(tags)
     # 软规则:note 推荐非空(但不强制)
     if not note:
         print(f"[HINT] note 为空,推荐补充(便于后续搜索)")
@@ -91,58 +170,64 @@ def add_photos(photo_paths, tag, note=''):
         cur.execute("""
             INSERT INTO body_photos (date, time, photo_path, tag, note)
             VALUES (?, ?, ?, ?, ?)
-        """, (today, now, dest_name, tag, note))
+        """, (today, now, dest_name, tag_serialized, note))
         photo_id = cur.lastrowid
         conn.commit()
         conn.close()
 
         added.append((photo_id, dest_name))
-        print(f"✓ 已添加照片 #{photo_id}: {dest_name} (标签: {tag})")
+        print(f"✓ 已添加照片 #{photo_id}: {dest_name} (标签: {tag_serialized})")
 
     return added
 
 
-def list_photos(days=7, tag=None):
-    """查询照片列表"""
+def list_photos(days=7, tag=None, date_from=None, date_to=None, limit=100):
+    """查询照片列表(2026-08-02 加 --date-from/--date-to/--limit + 标签包含匹配)"""
     conn = get_db()
     cur = conn.cursor()
 
-    # 计算起始日期
-    from datetime import timedelta
-    start_date = (date.today() - timedelta(days=days)).isoformat()
+    # 构建 WHERE
+    where = []
+    params = []
+    if date_from:
+        where.append("date >= ?")
+        params.append(date_from)
+    if date_to:
+        where.append("date <= ?")
+        params.append(date_to)
+    if not date_from and not date_to:
+        from datetime import timedelta
+        start_date = (date.today() - timedelta(days=days)).isoformat()
+        where.append("date >= ?")
+        params.append(start_date)
 
-    # 构建查询
-    if tag:
-        cur.execute("""
-            SELECT id, date, time, photo_path, tag, note, created_at
-            FROM body_photos
-            WHERE date >= ? AND tag = ?
-            ORDER BY date DESC, time DESC
-        """, (start_date, tag))
-    else:
-        cur.execute("""
-            SELECT id, date, time, photo_path, tag, note, created_at
-            FROM body_photos
-            WHERE date >= ?
-            ORDER BY date DESC, time DESC
-        """, (start_date,))
-
-    rows = cur.fetchall()
+    # 标签筛选:多标签包含匹配(取全部行后内存过滤,避免 LIKE 边界问题)
+    sql = f"""
+        SELECT id, date, time, photo_path, tag, note, created_at
+        FROM body_photos
+        WHERE {' AND '.join(where)}
+        ORDER BY date DESC, time DESC
+    """
+    rows = cur.execute(sql, params).fetchall()
     conn.close()
 
+    if tag:
+        rows = [r for r in rows if tags_contain(r[4], tag)]
+    rows = rows[:limit] if limit else rows
+
     if not rows:
-        print(f"最近{days}天没有身材照片记录")
+        print(f"没有匹配的身材照片记录(最近{days}天/tag={tag or '-'}/范围={date_from or '-'}~{date_to or '-'})")
         return []
 
-    print(f"\n身材照片记录（最近{days}天）：{len(rows)}张")
+    print(f"\n身材照片记录:共 {len(rows)} 张")
     print("-" * 70)
-    print(f"{'ID':>4} | {'日期':>10} | {'时间':>8} | {'标签':>8} | {'文件':20} | 备注")
+    print(f"{'ID':>4} | {'日期':>10} | {'时间':>8} | {'标签':>12} | {'文件':20} | 备注")
     print("-" * 70)
 
     for r in rows:
         photo_id, p_date, p_time, photo_path, p_tag, p_note, created = r
         time_str = p_time[:8] if p_time else ''
-        print(f"{photo_id:>4} | {p_date:>10} | {time_str:>8} | {p_tag:>8} | {photo_path:20} | {p_note or ''}")
+        print(f"{photo_id:>4} | {p_date:>10} | {time_str:>8} | {p_tag:>12} | {photo_path:20} | {p_note or ''}")
 
     print("-" * 70)
     return rows
@@ -183,23 +268,91 @@ def delete_photo(photo_id):
 
 
 def update_tag(photo_id, new_tag):
-    """修改照片标签"""
+    """修改照片标签(覆盖整套 · 2026-08-02 支持多标签 '正面,侧面')"""
     conn = get_db()
     cur = conn.cursor()
 
     # 检查照片是否存在
-    cur.execute("SELECT id FROM body_photos WHERE id = ?", (photo_id,))
-    if not cur.fetchone():
+    cur.execute("SELECT id, tag FROM body_photos WHERE id = ?", (photo_id,))
+    row = cur.fetchone()
+    if not row:
         print(f"Error: 照片 #{photo_id} 不存在")
         conn.close()
         return False
 
+    old_tag = row[1]
+    tags = validate_tags(parse_tags(new_tag))
+    new_serialized = serialize_tags(tags)
+
     # 更新标签
-    cur.execute("UPDATE body_photos SET tag = ? WHERE id = ?", (new_tag, photo_id))
+    cur.execute("UPDATE body_photos SET tag = ? WHERE id = ?", (new_serialized, photo_id))
     conn.commit()
     conn.close()
 
-    print(f"✓ 已更新照片 #{photo_id} 标签为: {new_tag}")
+    print(f"✓ 已更新照片 #{photo_id} 标签: {old_tag!r} → {new_serialized!r}")
+    return True
+
+
+def tag_add(photo_id, tag):
+    """加照片标签:追加(不覆盖已有),已存在则判重提示(no-op)"""
+    photo = get_photo_row(photo_id)
+    if not photo:
+        print(f"Error: 照片 #{photo_id} 不存在")
+        return False
+
+    tags = validate_tags(parse_tags(tag))
+    if len(tags) != 1:
+        print(f"Error: 加标签一次只加 1 个,收到 {len(tags)} 个: {tags!r}")
+        return False
+    new_tag = tags[0]
+
+    existing = photo['tag_list']
+    if new_tag in existing:
+        print(f"⚠ 标签「{new_tag}」已存在(照片 #{photo_id} 当前标签: {photo['tag']}),无需添加")
+        return False
+
+    existing.append(new_tag)
+    new_serialized = serialize_tags(existing)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE body_photos SET tag = ? WHERE id = ?", (new_serialized, photo_id))
+    conn.commit()
+    conn.close()
+
+    print(f"✓ 已为照片 #{photo_id} 追加标签「{new_tag}」→ 当前标签: {new_serialized}")
+    return True
+
+
+def tag_remove(photo_id, tag):
+    """删照片标签:移除单个标签(至少保留 1 个,删空报错拒绝)"""
+    photo = get_photo_row(photo_id)
+    if not photo:
+        print(f"Error: 照片 #{photo_id} 不存在")
+        return False
+
+    tags = parse_tags(tag)
+    if len(tags) != 1:
+        print(f"Error: 删标签一次只删 1 个,收到 {len(tags)} 个: {tags!r}")
+        return False
+    rm_tag = tags[0]
+
+    existing = photo['tag_list']
+    if rm_tag not in existing:
+        print(f"⚠ 标签「{rm_tag}」不存在(照片 #{photo_id} 当前标签: {photo['tag']}),无需删除")
+        return False
+    if len(existing) <= 1:
+        print(f"Error: 照片 #{photo_id} 只有「{rm_tag}」1 个标签,每张照片至少保留 1 个标签(删空语义 2026-08-02)")
+        return False
+
+    existing.remove(rm_tag)
+    new_serialized = serialize_tags(existing)
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE body_photos SET tag = ? WHERE id = ?", (new_serialized, photo_id))
+    conn.commit()
+    conn.close()
+
+    print(f"✓ 已为照片 #{photo_id} 移除标签「{rm_tag}」→ 当前标签: {new_serialized}")
     return True
 
 
@@ -280,7 +433,7 @@ def generate_gif(tag, start_date=None, end_date=None, days=None,
         # 显式按 ID + 顺序(占位符 ? 顺序展开)
         placeholders = ','.join('?' * len(photo_ids))
         cur.execute(f"""
-            SELECT id, photo_path, date, time
+            SELECT id, photo_path, date, time, tag
             FROM body_photos
             WHERE id IN ({placeholders})
             ORDER BY CASE id {' '.join(f'WHEN {i} THEN {idx}' for idx, i in enumerate(photo_ids))} END
@@ -290,13 +443,15 @@ def generate_gif(tag, start_date=None, end_date=None, days=None,
         rows_dict = {r[0]: r for r in rows}
         rows = [rows_dict[i] for i in photo_ids if i in rows_dict]
     else:
+        # 多标签包含匹配(2026-08-02:tag 可能是 '正面,侧面' 串,取全量后内存过滤)
         cur.execute("""
-            SELECT id, photo_path, date, time
+            SELECT id, photo_path, date, time, tag
             FROM body_photos
-            WHERE tag = ? AND date >= ? AND date <= ?
+            WHERE date >= ? AND date <= ?
             ORDER BY date ASC, time ASC
-        """, (tag, start_date, end_date))
-        rows = cur.fetchall()
+        """, (start_date, end_date))
+        all_rows = cur.fetchall()
+        rows = [r for r in all_rows if tags_contain(r[4], tag)]
     conn.close()
 
     if not rows:
@@ -308,7 +463,7 @@ def generate_gif(tag, start_date=None, end_date=None, days=None,
 
     # 加载 + 处理图片
     images = []
-    for photo_id, photo_path, photo_date, photo_time in rows:
+    for photo_id, photo_path, photo_date, photo_time, _tag in rows:
         file_path = photos_dir / photo_path
         if not file_path.exists():
             print(f"  ⚠ 跳过(ID={photo_id}): 文件不存在 {file_path}")
@@ -441,17 +596,30 @@ def main():
 
     # list
     p_list = subparsers.add_parser('list', help='查询照片')
-    p_list.add_argument('--days', type=int, default=7, help='查询天数')
-    p_list.add_argument('--tag', help='按标签筛选')
+    p_list.add_argument('--days', type=int, default=7, help='查询天数(未给日期范围时生效)')
+    p_list.add_argument('--tag', help='按标签筛选(包含匹配)')
+    p_list.add_argument('--date-from', dest='date_from', help='起始日期 YYYY-MM-DD')
+    p_list.add_argument('--date-to', dest='date_to', help='结束日期 YYYY-MM-DD')
+    p_list.add_argument('--limit', type=int, default=100, help='最多返回条数(默认 100)')
 
     # delete
     p_delete = subparsers.add_parser('delete', help='删除照片')
     p_delete.add_argument('id', type=int, help='照片ID')
 
-    # tag
-    p_tag = subparsers.add_parser('tag', help='修改标签')
+    # tag(覆盖整套,多标签)
+    p_tag = subparsers.add_parser('tag', help='修改照片标签(覆盖整套,可多标签逗号分隔)')
     p_tag.add_argument('id', type=int, help='照片ID')
-    p_tag.add_argument('new_tag', help='新标签')
+    p_tag.add_argument('new_tag', help='新标签(多个用逗号分隔,如 正面,侧面)')
+
+    # tag-add(追加)
+    p_tag_add = subparsers.add_parser('tag-add', help='加照片标签(追加,不覆盖已有)')
+    p_tag_add.add_argument('id', type=int, help='照片ID')
+    p_tag_add.add_argument('tag', help='要追加的标签')
+
+    # tag-remove(移除)
+    p_tag_remove = subparsers.add_parser('tag-remove', help='删照片标签(移除单个,至少保留 1 个)')
+    p_tag_remove.add_argument('id', type=int, help='照片ID')
+    p_tag_remove.add_argument('tag', help='要移除的标签')
 
     # gif
     p_gif = subparsers.add_parser('gif', help='生成GIF(v2.3.0 增强)')
@@ -479,11 +647,16 @@ def main():
     if args.cmd == 'add':
         add_photos(args.photos, args.tag, args.note)
     elif args.cmd == 'list':
-        list_photos(days=args.days, tag=args.tag)
+        list_photos(days=args.days, tag=args.tag, date_from=args.date_from,
+                    date_to=args.date_to, limit=args.limit)
     elif args.cmd == 'delete':
         delete_photo(args.id)
     elif args.cmd == 'tag':
         update_tag(args.id, args.new_tag)
+    elif args.cmd == 'tag-add':
+        tag_add(args.id, args.tag)
+    elif args.cmd == 'tag-remove':
+        tag_remove(args.id, args.tag)
     elif args.cmd == 'gif':
         generate_gif(
             tag=args.tag,

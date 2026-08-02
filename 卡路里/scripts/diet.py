@@ -251,6 +251,245 @@ def delete_meal(entry_id):
     return True
 
 
+def copy_meals(from_date, to_date=None):
+    """复制某日饮食到另一日(复制昨日饮食 · D1.8)
+
+    只复制食物记录(排除 💧水),保持 time 不变。
+    目标日已有同名同时间记录则跳过(防重复)。
+
+    Returns:
+        dict{ok, copied, skipped, from_date, to_date}
+    """
+    if to_date is None:
+        to_date = date.today().isoformat()
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT time, food_name, grams, calories, protein, carbs, fat, note
+        FROM food_log WHERE date = ? AND food_name != '💧水' ORDER BY time
+    ''', (from_date,))
+    rows = c.fetchall()
+    copied = skipped = 0
+    for time_, food, grams, cal, pro, carb, fat, note in rows:
+        c.execute('''
+            SELECT COUNT(*) FROM food_log
+            WHERE date = ? AND time = ? AND food_name = ?
+        ''', (to_date, time_, food))
+        if c.fetchone()[0] > 0:
+            skipped += 1
+            continue
+        c.execute('''
+            INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (to_date, time_, food, grams, cal, pro, carb, fat, note))
+        copied += 1
+    conn.commit()
+    conn.close()
+    return {'ok': True, 'copied': copied, 'skipped': skipped,
+            'from_date': from_date, 'to_date': to_date}
+
+
+def add_meals_batch(entries):
+    """批量补记饮食(D1.4 · 一次录多餐)
+
+    Args:
+        entries: list of dict,每项含 date/time/food_name/grams/calories/protein/carbs/fat/note
+                 (calories/protein 必填,其余可缺省)
+
+    Returns:
+        dict{ok, added, skipped, failed, failures: [(index, reason), ...]}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    added = skipped = 0
+    failures = []
+    for i, e in enumerate(entries):
+        try:
+            food = str(e.get('food_name', '')).strip()
+            cal = float(e.get('calories', 0))
+            pro = float(e.get('protein', 0))
+            if not food or cal < 0 or pro < 0:
+                skipped += 1
+                failures.append((i, '食物名必填,营养值不能为负'))
+                continue
+            c.execute('''
+                INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                str(e.get('date', date.today().isoformat())),
+                str(e.get('time', datetime.now().strftime('%H:%M:%S'))),
+                food,
+                float(e.get('grams', 100) or 100),
+                cal, pro,
+                float(e.get('carbs', 0) or 0),
+                float(e.get('fat', 0) or 0),
+                str(e.get('note', '') or ''),
+            ))
+            added += 1
+        except (ValueError, TypeError) as ex:
+            skipped += 1
+            failures.append((i, f'数值非法: {ex}'))
+    conn.commit()
+    conn.close()
+    return {'ok': True, 'added': added, 'skipped': skipped, 'failed': len(failures),
+            'failures': failures}
+
+
+def update_meals_by_date(target_date, **kwargs):
+    """改某日饮食(D2.2 · 按日期批量更新)
+
+    对目标日全部食物记录(排除 💧水)应用相同字段更新。
+    支持字段同 update_meal(_MEAL_UPDATABLE)。
+
+    Returns:
+        dict{ok, matched, updated, before: [..], after: [..], changed_fields}
+    """
+    bad = set(kwargs) - _MEAL_UPDATABLE
+    if bad:
+        return {"ok": False, "error": f"不支持字段: {sorted(bad)}; 支持: {sorted(_MEAL_UPDATABLE)}"}
+    if not kwargs:
+        return {"ok": False, "error": "至少传 1 个字段"}
+
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT id FROM food_log WHERE date = ? AND food_name != ?',
+              (target_date, '💧水'))
+    ids = [r[0] for r in c.fetchall()]
+    if not ids:
+        conn.close()
+        return {"ok": True, "matched": 0, "updated": 0, "before": [], "after": [],
+                "changed_fields": []}
+
+    # 改前快照
+    before = []
+    for i in ids:
+        c.execute('SELECT food_name, grams, calories, protein, carbs, fat, note, time FROM food_log WHERE id = ?', (i,))
+        before.append(dict(zip(('food_name', 'grams', 'calories', 'protein', 'carbs', 'fat', 'note', 'time'), c.fetchone())))
+
+    typed = {}
+    for k, v in kwargs.items():
+        if k in ('grams', 'calories', 'protein', 'carbs', 'fat'):
+            try:
+                v = float(v)
+            except (ValueError, TypeError):
+                conn.close()
+                return {"ok": False, "error": f"{k} 必须是数字: {v}"}
+            if v < 0:
+                conn.close()
+                return {"ok": False, "error": f"{k} 不能为负: {v}"}
+        typed[k] = v
+
+    updates = ', '.join(f"{k} = ?" for k in typed)
+    params = list(typed.values())
+    c.execute(f"UPDATE food_log SET {updates} WHERE date = ? AND food_name != ?",
+              params + [target_date, '💧水'])
+    conn.commit()
+
+    after = []
+    for i in ids:
+        c.execute('SELECT food_name, grams, calories, protein, carbs, fat, note, time FROM food_log WHERE id = ?', (i,))
+        after.append(dict(zip(('food_name', 'grams', 'calories', 'protein', 'carbs', 'fat', 'note', 'time'), c.fetchone())))
+    conn.close()
+    return {"ok": True, "matched": len(ids), "updated": len(ids),
+            "before": before, "after": after, "changed_fields": sorted(typed)}
+
+
+def delete_meals_by_date(target_date):
+    """删某日饮食(D2.5 · 一整天清空,排除 💧水)
+
+    Returns:
+        dict{ok, deleted, date}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM food_log WHERE date = ? AND food_name != ?",
+              (target_date, '💧水'))
+    n = c.fetchone()[0]
+    c.execute("DELETE FROM food_log WHERE date = ? AND food_name != ?",
+              (target_date, '💧水'))
+    conn.commit()
+    conn.close()
+    return {'ok': True, 'deleted': n, 'date': target_date}
+
+
+def delete_meals_by_range(start_date, end_date):
+    """批量删饮食(D2.6 · 按日期范围,排除 💧水)
+
+    Returns:
+        dict{ok, deleted, start, end}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM food_log WHERE date BETWEEN ? AND ? AND food_name != ?",
+              (start_date, end_date, '💧水'))
+    n = c.fetchone()[0]
+    c.execute("DELETE FROM food_log WHERE date BETWEEN ? AND ? AND food_name != ?",
+              (start_date, end_date, '💧水'))
+    conn.commit()
+    conn.close()
+    return {'ok': True, 'deleted': n, 'start': start_date, 'end': end_date}
+
+
+def delete_meals_by_type(target_date, meal_type):
+    """删一餐(D2.4 · 按餐别删某日某餐)
+
+    餐别按时间窗推断(与 infer_meal_type 同口径):
+      早餐 6-10 / 午餐 10-14 / 下午茶 14-18 / 晚餐 18-22 / 夜宵 其他
+    支持 4 类聚合(与餐别分布同口径):加餐 = 下午茶 + 夜宵
+
+    Returns:
+        dict{ok, deleted, date, meal}
+    """
+    windows = {
+        '早餐': (6, 10), '午餐': (10, 14), '下午茶': (14, 18),
+        '晚餐': (18, 22), '夜宵': (0, 6),
+        '加餐': (14, 22, 0, 6),  # 复合:下午茶 + 夜宵
+    }
+    if meal_type not in windows:
+        return {"ok": False, "error": f"餐别必须是 {'/'.join(windows)} 之一"}
+    lo, hi = windows[meal_type][0], windows[meal_type][1]
+    conn = _get_db()
+    c = conn.cursor()
+    if meal_type == '加餐':
+        lo2, hi2 = windows[meal_type][2], windows[meal_type][3]
+        c.execute('''
+            SELECT COUNT(*) FROM food_log
+            WHERE date = ? AND food_name != ? AND (
+                (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?)
+                OR (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?))
+        ''', (target_date, '💧水', lo, hi, lo2, hi2))
+        n = c.fetchone()[0]
+        c.execute('''
+            DELETE FROM food_log
+            WHERE date = ? AND food_name != ? AND (
+                (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?)
+                OR (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?))
+        ''', (target_date, '💧水', lo, hi, lo2, hi2))
+    elif lo < hi:
+        c.execute('''
+            SELECT COUNT(*) FROM food_log
+            WHERE date = ? AND food_name != ? AND CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?
+        ''', (target_date, '💧水', lo, hi))
+        n = c.fetchone()[0]
+        c.execute('''
+            DELETE FROM food_log
+            WHERE date = ? AND food_name != ? AND CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?
+        ''', (target_date, '💧水', lo, hi))
+    else:  # 夜宵 0-6(跨日窗)
+        c.execute('''
+            SELECT COUNT(*) FROM food_log
+            WHERE date = ? AND food_name != ? AND (CAST(strftime('%H', time) AS INT) >= ? OR CAST(strftime('%H', time) AS INT) < ?)
+        ''', (target_date, '💧水', lo, hi))
+        n = c.fetchone()[0]
+        c.execute('''
+            DELETE FROM food_log
+            WHERE date = ? AND food_name != ? AND (CAST(strftime('%H', time) AS INT) >= ? OR CAST(strftime('%H', time) AS INT) < ?)
+        ''', (target_date, '💧水', lo, hi))
+    conn.commit()
+    conn.close()
+    return {'ok': True, 'deleted': n, 'date': target_date, 'meal': meal_type}
+
+
 def list_meals(target_date=None):
     """列出某日所有饮食记录（默认今日）"""
     if target_date is None:

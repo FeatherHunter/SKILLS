@@ -89,7 +89,7 @@
   </div>
   <div class="table-wrap"><table>
     <thead>
-      <tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num">碳水</th><th class="num">脂肪</th></tr>
+      <tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num">碳水</th><th class="num">脂肪</th><th>备注</th></tr>
     </thead>
     <tbody id="mealTable"></tbody>
   </table></div>
@@ -112,7 +112,9 @@
 
   document.getElementById('metaLeft').textContent =
     `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;
-  document.getElementById('sub').textContent = `查吃的记录 · 共 ${items.length} 条食物明细`;
+  document.getElementById('sub').textContent =
+    (summary.with_note ? `看「有备注」的饮食记录 · 共 ${summary.note_count} 条带备注` :
+     `查吃的记录 · 共 ${items.length} 条食物明细`);
 
   // 4 KPI
   document.getElementById('kCnt').textContent = items.length;
@@ -157,9 +159,11 @@
         `<td class="num">${p.calorie}</td>` +
         `<td class="num">${prot}</td>` +
         `<td class="num">${carb}</td>` +
-        `<td class="num">${fat}</td></tr>`);
+        `<td class="num">${fat}</td>` +
+        `<td>${p.note ? esc(p.note) : ''}</td></tr>`);
     });
   }
+  function esc(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   renderRows('__all__');
   sel.onchange = () => renderRows(sel.value);
 

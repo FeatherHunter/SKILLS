@@ -51,6 +51,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .copy-preview{background:var(--bg-soft);border-radius:12px;padding:16px 18px;font-family:"SF Mono",monospace;font-size:12px;line-height:1.65;color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;border:1px solid var(--lineS)}
 .note-row{background:var(--card);border-radius:12px;padding:14px 18px;margin-top:12px;border:1px solid var(--lineS);font-size:13px;color:var(--ink2);display:flex;align-items:center;gap:10px}
 .note-row .lbl{color:var(--ink3);font-size:12px}
+.tags{display:flex;gap:6px;justify-content:center;margin-top:12px;position:relative;z-index:1}
+.tag{display:inline-block;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:600;background:var(--orange-soft);color:var(--orange)}
+.tag.meta-tag{background:var(--accent-soft);color:var(--accent)}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
 @keyframes pulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,.7)}70%{transform:scale(1.15);box-shadow:0 0 0 12px rgba(255,149,0,0)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,0)}}
 .pulse{animation:pulse 1.5s ease-out}
@@ -61,9 +64,10 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <div class="wrap">
 <div class="receipt" id="receipt">
 <div class="check"></div>
-<div class="label">已记录体重</div>
+<div class="label" id="labelText">已记录体重</div>
 <div class="weight" id="weightBig">?<span class="unit">kg</span></div>
 <div class="meta" id="meta">加载中…</div>
+<div class="tags" id="tagRow" style="display:none"></div>
 </div>
 <section class="section">
 <div class="section-title">
@@ -74,6 +78,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>
 </svg>
 <div class="trend-stats">
+<div class="trend-stat"><div class="label">距上次</div><div class="value" id="statDeltaLast">--</div></div>
 <div class="trend-stat"><div class="label">距目标</div><div class="value" id="statDiff">--</div></div>
 <div class="trend-stat"><div class="label">平均</div><div class="value" id="statAvg">--</div></div>
 <div class="trend-stat"><div class="label">趋势</div><div class="value" id="statTrend">--</div></div>
@@ -106,11 +111,25 @@ function renderReceipt(){
   const metaParts=[];
   metaParts.push((r.date||'?')+' '+(r.time||''));
   if(r.bmi)metaParts.push('<span class="bmi">BMI '+(r.bmi||'?')+'</span>');
+  // 补录标识 + 距今天数(2026-08-02 · 补录体重呈现数据)
+  if(SUMMARY.backfill&&SUMMARY.backfill.days_ago!==undefined){
+    metaParts.push('<span class="bmi">补录 · 距今 '+SUMMARY.backfill.days_ago+' 天</span>');
+  }
   document.getElementById('meta').innerHTML=metaParts.join(' &nbsp;·&nbsp; ');
   if(r.note){
     document.getElementById('noteRow').style.display='flex';
     document.getElementById('noteText').textContent=r.note;
   }
+  // 备注分类标签 + 补录/目标徽标(2026-08-02)
+  const tagRow=document.getElementById('tagRow');
+  let tagsHtml='';
+  if(r.tag)tagsHtml+='<span class="tag">'+r.tag+'</span>';
+  if(SUMMARY.backfill&&SUMMARY.backfill.days_ago!==undefined)tagsHtml+='<span class="tag meta-tag">补录记录</span>';
+  if(SUMMARY.weight_goal&&SUMMARY.weight_goal.target)tagsHtml+='<span class="tag meta-tag">目标 '+SUMMARY.weight_goal.target+'kg</span>';
+  if(tagsHtml){tagRow.innerHTML=tagsHtml;tagRow.style.display='flex';}
+  // 补录场景标题
+  const lbl=document.getElementById('labelText');
+  if(SUMMARY.backfill)lbl.textContent='已补录体重';
   const receipt=document.getElementById('receipt');
   if(receipt){receipt.classList.add('pulse');setTimeout(()=>receipt.classList.remove('pulse'),2000);}
   updatePreview();
@@ -181,19 +200,28 @@ function renderTrend(){
   }
   document.getElementById('statTrend').textContent=trend;
   document.getElementById('statTrend').className='value '+(trendCls||'');
+  // 距上次(2026-08-02 · 记体重呈现数据「距上次」)
+  const dlEl=document.getElementById('statDeltaLast');
+  if(SUMMARY.delta_last!==undefined&&SUMMARY.delta_last!==null){
+    const dl=SUMMARY.delta_last;
+    dlEl.textContent=(dl>0?'+':'')+dl+'kg';
+    dlEl.className='value '+(dl>0?'warn':'good');
+  }
 }
 
 function updatePreview(){
   const r=SUMMARY.new_record||{};
   const g=SUMMARY.weight_goal||{};
-  let p='已记录体重(回执):\n\n';
+  let p=(SUMMARY.backfill?'已补录体重(回执)':'已记录体重(回执)')+':\n\n';
   p+='  '+r.date+' '+r.time+' | '+r.weight_kg+'kg | BMI '+(r.bmi||'?')+'\n';
+  if(SUMMARY.backfill)p+='  补录标识: 距今 '+SUMMARY.backfill.days_ago+' 天\n';
   if(r.note)p+='  备注: '+r.note+'\n';
+  if(SUMMARY.delta_last!==undefined&&SUMMARY.delta_last!==null)p+='  较上次: '+(SUMMARY.delta_last>0?'+':'')+SUMMARY.delta_last+'kg\n';
   if(g.target){
     p+='\n  体重目标: '+g.target+'kg (距今 '+(g.days_left||'?')+'天)\n';
     p+='  距离: '+(r.weight_kg-g.target).toFixed(1)+'kg\n';
   }
-  p+='\n数据来源: 记体重回执 v1 · render_weight_receipt.py · '+new Date().toISOString().split('T')[0];
+  p+='\n数据来源: 记体重回执 v2 · render_weight_receipt.py · '+new Date().toISOString().split('T')[0];
   document.getElementById('copyPreview').textContent=p;
 }
 

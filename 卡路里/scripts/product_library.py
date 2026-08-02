@@ -132,7 +132,7 @@ def update_product(product_id, **kwargs):
     """
     allowed_fields = ['product_name', 'brand', 'calories', 'protein', 'fat',
                       'saturated_fat', 'carbohydrates', 'sugar', 'dietary_fiber',
-                      'sodium', 'note']
+                      'sodium', 'note', 'category', 'is_deprecated']
 
     update_data = {k: v for k, v in kwargs.items() if k in allowed_fields and v is not None}
 
@@ -169,6 +169,84 @@ def update_product(product_id, **kwargs):
     for k, v in update_data.items():
         print(f"  {k}: {v}")
     return True
+
+
+def deprecate_product(product_id):
+    """下架食品(D4.5 · ticket #3):把 is_deprecated 标为 1
+
+    标废弃后,搜索/列表/去重均不再出现;保留数据供溯源。
+    """
+    try:
+        product_id = int(product_id)
+    except (ValueError, TypeError):
+        return {"ok": False, "error": "Product ID 必须是数字"}
+
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT product_name FROM nutrition_products WHERE id = ?', (product_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return {"ok": False, "error": f"Product ID {product_id} not found"}
+    name = row[0]
+    c.execute('UPDATE nutrition_products SET is_deprecated = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+              (product_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "id": product_id, "name": name}
+
+
+def list_products_by_category(category):
+    """按分类查食品(D4.2 · ticket #3):category 精确匹配
+
+    Args:
+        category: 分类名(如 饮料/主食/蛋白类/水果/零食 ...)
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT id, product_name, brand, calories, protein, fat, saturated_fat,
+               carbohydrates, sugar, dietary_fiber, sodium, category, source, updated_at
+        FROM nutrition_products
+        WHERE is_deprecated = 0 AND category = ?
+        ORDER BY product_name
+    ''', (category,))
+    rows = c.fetchall()
+    conn.close()
+
+    if not rows:
+        print(f"未找到分类「{category}」的食品")
+        return []
+
+    print(f"\n分类「{category}」共 {len(rows)} 个食品：")
+    print("-" * 90)
+    print(f"{'ID':>3} | {'产品名称':20} | {'品牌':10} | {'热量':>5} | {'蛋白':>5} | {'脂':>4} | {'碳':>5} | {'钠':>6} | 来源")
+    print("-" * 90)
+    for row in rows:
+        id_, name, brand, cal, pro, fat_, sat_fat, carb, sugar, fiber, sodium, cat, source, updated = row
+        brand = brand or '-'
+        print(f"{id_:>3} | {name:20} | {brand:10} | {cal:>5} | {pro:>5} | {fat_:>4} | {carb:>5} | {sodium:>6} | {source}")
+    print("-" * 90)
+    return rows
+
+
+def source_stats():
+    """看食品来源统计(D4.9 · ticket #3):按来源分组计数
+
+    Returns:
+        list of Row: (source, count)
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT source, COUNT(*) FROM nutrition_products
+        WHERE is_deprecated = 0
+        GROUP BY source ORDER BY COUNT(*) DESC
+    ''')
+    rows = c.fetchall()
+    total = sum(r[1] for r in rows)
+    conn.close()
+    return rows, total
 
 
 def list_products(limit=50):

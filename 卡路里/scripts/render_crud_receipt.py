@@ -57,6 +57,26 @@ FIELD_LABELS = {
     'note': '备注',
     'weight_kg': '体重',
     'bmi': 'BMI',
+    # 饮食记录(ticket #3 · 2026-08-02)
+    'food_name': '食物名',
+    'grams': '克数',
+    'calories': '热量',
+    'protein': '蛋白',
+    'carbs': '碳水',
+    'fat': '脂肪',
+    'time': '时间',
+    'date': '日期',
+    'meal': '餐别',
+    # 食品库(ticket #3 · 2026-08-02)
+    'product_name': '食品名',
+    'brand': '品牌',
+    'saturated_fat': '饱和脂肪',
+    'carbohydrates': '碳水',
+    'sugar': '糖',
+    'dietary_fiber': '膳食纤维',
+    'sodium': '钠',
+    'category': '分类',
+    'source': '来源',
 }
 
 
@@ -239,6 +259,232 @@ def build_live_profile_update(field_value_pairs):
                             last['updated_at'][:16].replace('T', ' '), summary)
 
 
+# ==================== 饮食记录 live 模式(ticket #3 · 2026-08-02) ====================
+
+def _diet_receipt(op: str, record_id, old_record: dict, new_record: dict,
+                  entity_label: str, action_at: str, summary: str = '',
+                  kpis: list | None = None) -> dict:
+    """组装饮食回执数据契约(与 profile 回执同构,复用 crud_receipt.html)"""
+    return {
+        'status': 'ok',
+        'data': {
+            'op': op,
+            'record_id': record_id,
+            'old_record': old_record or {},
+            'new_record': new_record or {},
+            'context': {'kpis': kpis or []},
+            'meta': {
+                'action_at': action_at,
+                'entity_type': entity_label,
+            },
+            'summary': summary,
+        },
+        'message': f'已生成{entity_label} 回执',
+    }
+
+
+def build_live_diet_add(food, calories, protein, carbs='0', fat='0', grams='100',
+                        note='', target_date=None, target_time=None, meal=None):
+    """记一餐 / 记一餐(含备注) / 补记饮食:写库 + 回执(呈现:食物/克数/营养 + 餐别 + 时间 + 一句话)"""
+    import diet
+    r = diet.add_meal(food, calories, protein, carbs, fat, grams, note,
+                      target_date=target_date, target_time=target_time,
+                      meal_override=meal)
+    if r is None:
+        raise ValueError('记一餐失败(数值校验不过)')
+    new_record = {
+        'food_name': r['food_name'], 'grams': r['grams'], 'calories': r['calories'],
+        'protein': r['protein'], 'carbs': r['carbs'], 'fat': r['fat'],
+        'note': r['note'] or '', 'meal': r['meal'], 'time': r['time'], 'date': r['date'],
+    }
+    date_label = '今日' if not target_date else r['date']
+    summary = (f"{r['food_name']}({r['grams']}g, {r['calories']}卡)已记入{date_label} {r['meal']} "
+               f"({r['time'][:5]})")
+    if r['cal_goal']:
+        rem = r['remaining_cal'] or 0
+        marker = '剩余' if rem > 0 else '超标'
+        summary += f";{date_label}累计 {r['today_total_cal']}/{r['cal_goal']}卡,{marker} {abs(rem):.0f}卡"
+    return _diet_receipt('create', r['id'], {}, new_record, '记一餐',
+                         f"{r['date']} {r['time']}", summary)
+
+
+def build_live_diet_batch(input_path):
+    """批量补记饮食:写库 + 回执(呈现:写入/跳过/失败条数 + 失败明细)"""
+    import json as _json
+    from pathlib import Path as _P
+    import diet
+    p = _P(input_path)
+    if not p.exists():
+        raise FileNotFoundError(f'批量补记输入文件不存在: {input_path}')
+    entries = _json.loads(p.read_text(encoding='utf-8'))
+    if not isinstance(entries, list):
+        raise ValueError('批量补记 JSON 顶层必须是数组(每项一餐)')
+    r = diet.add_meals_batch(entries)
+    new_record = {'写入': r['added'], '跳过': r['skipped'], '失败': r['failed']}
+    summary = f"批量补记完成:写入 {r['added']} 条"
+    if r['skipped']:
+        summary += f",跳过 {r['skipped']} 条"
+    if r['failed']:
+        summary += f",失败 {r['failed']} 条"
+    fail_detail = ';'.join(f"第{idx+1}条:{reason}" for idx, reason in r['failures'][:5])
+    if fail_detail:
+        summary += f";{fail_detail}"
+    return _diet_receipt('create', 0, {}, new_record, '批量补记饮食',
+                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_diet_copy(from_date, to_date=None):
+    """复制昨日饮食:写库 + 回执(呈现:复制条数/跳过条数)"""
+    import diet
+    from datetime import date as _date, timedelta as _td
+    if not from_date:
+        from_date = (_date.today() - _td(days=1)).isoformat()
+    r = diet.copy_meals(from_date, to_date)
+    new_record = {'from': r['from_date'], 'to': r['to_date'],
+                  '复制': r['copied'], '跳过': r['skipped']}
+    summary = f"已从 {r['from_date']} 复制 {r['copied']} 条到 {r['to_date']}"
+    if r['skipped']:
+        summary += f"(同日同食物已存在,跳过 {r['skipped']} 条)"
+    return _diet_receipt('create', 0, {}, new_record, '复制昨日饮食',
+                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_diet_update(entry_id, **kwargs):
+    """改饮食记录:写库 + 回执(呈现:改前/改后 + 影响字段)"""
+    import diet
+    r = diet.update_meal(entry_id, **kwargs)
+    if not r['ok']:
+        raise ValueError(r['error'])
+    b, a = r['before'], r['after']
+    new_record = {k: v for k, v in a.items() if k != 'id'}
+    old_record = {k: v for k, v in b.items() if k != 'id'}
+    summary = f"已改 {a['food_name']}:{'、'.join(r['changed'])}"
+    return _diet_receipt('update', entry_id, old_record, new_record, '改饮食记录',
+                         f"{a['date']} {a['time']}", summary)
+
+
+def build_live_diet_update_date(target_date, **kwargs):
+    """改某日饮食:按日期批量改 + 回执(呈现:命中条数/改前/改后)"""
+    import diet
+    r = diet.update_meals_by_date(target_date, **kwargs)
+    if not r['ok']:
+        raise ValueError(r['error'])
+    summary = f"改某日饮食:{target_date} 命中 {r['matched']} 条,已更新 {r['updated']} 条"
+    if r['changed_fields']:
+        summary += f"(字段:{'、'.join(r['changed_fields'])})"
+    return _diet_receipt('update', 0, {}, {'date': target_date, '命中': r['matched'], '更新': r['updated']},
+                         '改某日饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_diet_delete(entry_id):
+    """删饮食记录:写库 + 回执(呈现:删除前快照/确认回执)"""
+    import diet
+    conn = diet._get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, date, time, food_name, grams, calories, protein, carbs, fat, note FROM food_log WHERE id = ?', (entry_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        raise ValueError(f'记录 {entry_id} 不存在')
+    keys = ('id', 'date', 'time', 'food_name', 'grams', 'calories', 'protein', 'carbs', 'fat', 'note')
+    old_record = dict(zip(keys, row))
+    old_record.pop('id', None)
+    diet.delete_meal(entry_id)
+    summary = f"已删除 {old_record['food_name']}({old_record['calories']}卡, {old_record['date']} {old_record['time'][:5]})"
+    return _diet_receipt('delete', entry_id, old_record, {}, '删饮食记录',
+                         f"{old_record['date']} {old_record['time']}", summary)
+
+
+def build_live_diet_delete_meal(target_date, meal_type):
+    """删一餐:按餐别删 + 回执(呈现:餐别选择/删除条数)"""
+    import diet
+    r = diet.delete_meals_by_type(target_date, meal_type)
+    if not r['ok']:
+        raise ValueError(r['error'])
+    summary = f"已删除 {target_date} {meal_type} 的 {r['deleted']} 条记录"
+    return _diet_receipt('delete', 0, {}, {'date': r['date'], '餐别': r['meal'], '删除': r['deleted']},
+                         '删一餐', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_diet_delete_date(target_date):
+    """删某日饮食:一整天清空 + 回执(呈现:删除条数/日期)"""
+    import diet
+    r = diet.delete_meals_by_date(target_date)
+    summary = f"已清空 {r['date']} 的 {r['deleted']} 条饮食记录"
+    return _diet_receipt('delete', 0, {}, {'date': r['date'], '删除': r['deleted']},
+                         '删某日饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_diet_delete_range(start_date, end_date):
+    """批量删饮食:按日期范围删 + 回执(呈现:时间范围/删除条数/确认回执)"""
+    import diet
+    r = diet.delete_meals_by_range(start_date, end_date)
+    summary = f"已删除 {r['start']} ~ {r['end']} 的 {r['deleted']} 条饮食记录"
+    return _diet_receipt('delete', 0, {}, {'start': r['start'], 'end': r['end'], '删除': r['deleted']},
+                         '批量删饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_water_add(ml, target_date=None):
+    """记喝水:写库 + 回执(呈现:累计今日饮水量/距目标 + 一句话)"""
+    import water
+    r = water.add_water(ml, target_date=target_date)
+    if r is None:
+        raise ValueError('记喝水失败(ml 校验不过)')
+    date_label = '今日' if not target_date else r['date']
+    summary = (f"已记录饮水 {r['ml']}ml,{date_label}累计 {r['today_total_ml']}/{r['water_goal_ml']}ml "
+               f"(剩余 {r['remaining_ml']:+}ml)")
+    new_record = {'ml': r['ml'], '累计': r['today_total_ml'], '目标': r['water_goal_ml'],
+                  '剩余': r['remaining_ml'], 'date': r['date'], 'time': r['time']}
+    return _diet_receipt('create', r['id'], {}, new_record, '记喝水',
+                         f"{r['date']} {r['time']}", summary)
+
+
+def build_live_product_add(name, brand, calories, protein, fat, saturated_fat,
+                           carbohydrates, sugar, dietary_fiber, sodium, note=''):
+    """存食品:写库 + 回执(呈现:写入回执 + 名称)"""
+    import product_library
+    ok = product_library.add_product(name, brand, calories, protein, fat, saturated_fat,
+                                     carbohydrates, sugar, dietary_fiber, sodium, note)
+    if not ok:
+        raise ValueError('存食品失败')
+    new_record = {'product_name': name, 'brand': brand or '', 'calories': calories,
+                  'protein': protein, 'fat': fat, 'carbohydrates': carbohydrates}
+    summary = f"已存入食品库「{name}」(热量 {calories} 卡/100g)"
+    return _diet_receipt('create', 0, {}, new_record, '存食品',
+                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_product_update(product_id, **kwargs):
+    """改食品:写库 + 回执(呈现:改前/改后)"""
+    import product_library
+    conn = product_library._get_db()
+    c = conn.cursor()
+    c.execute('SELECT product_name FROM nutrition_products WHERE id = ?', (product_id,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        raise ValueError(f'食品 {product_id} 不存在')
+    old_name = row[0]
+    ok = product_library.update_product(product_id, **kwargs)
+    if not ok:
+        raise ValueError('改食品失败')
+    summary = f"已更新「{old_name}」:{'、'.join(kwargs)}"
+    return _diet_receipt('update', product_id, {'product_name': old_name}, dict(kwargs),
+                         '改食品', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
+def build_live_product_deprecate(product_id):
+    """下架食品:标废弃 + 回执(呈现:标废弃回执 + 提示已下架)"""
+    import product_library
+    r = product_library.deprecate_product(product_id)
+    if not r['ok']:
+        raise ValueError(r['error'])
+    summary = f"「{r['name']}」已下架,搜索/查询/导入去重不再出现"
+    return _diet_receipt('update', r['id'], {'product_name': r['name']},
+                         {'product_name': r['name'], 'is_deprecated': 1, '提示': '已下架'},
+                         '下架食品', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染 CRUD 操作回执 HTML')
     g = p.add_mutually_exclusive_group(required=True)
@@ -249,17 +495,50 @@ def main():
                    help='实读 DB 设活动量(sedentary/light/moderate/active/very_active)')
     g.add_argument('--live-profile-update', action='store_true',
                    help='实读 DB 改档案(需 --field/--value)')
+    # 饮食记录 live 模式(ticket #3 · 2026-08-02)
+    g.add_argument('--live-diet-add', action='store_true',
+                   help='记一餐/补记饮食:写库 + 回执(flag 后接位置参数 food cal pro,可选 --carbs/--fat/--grams/--note/--date/--time/--meal)')
+    g.add_argument('--live-diet-batch', action='store_true',
+                   help='批量补记饮食:从 --input JSON 数组写库 + 回执')
+    g.add_argument('--live-diet-copy', action='store_true',
+                   help='复制昨日饮食:写库 + 回执(--from/--to 可选)')
+    g.add_argument('--live-diet-update', action='store_true',
+                   help='改饮食记录:写库 + 回执(flag 后接 <id> + 字段)')
+    g.add_argument('--live-diet-update-date', action='store_true',
+                   help='改某日饮食:按日期批量改 + 回执(flag 后接 <date> + 字段)')
+    g.add_argument('--live-diet-delete', action='store_true',
+                   help='删饮食记录:写库 + 回执(flag 后接 <id>)')
+    g.add_argument('--live-diet-delete-meal', action='store_true',
+                   help='删一餐:按餐别删 + 回执(flag 后接 <date> <餐别>)')
+    g.add_argument('--live-diet-delete-date', action='store_true',
+                   help='删某日饮食:一整天清空 + 回执(flag 后接 <date>)')
+    g.add_argument('--live-diet-delete-range', action='store_true',
+                   help='批量删饮食:按日期范围删 + 回执(flag 后接 <start> <end>)')
+    g.add_argument('--live-water-add', action='store_true',
+                   help='记喝水:写库 + 回执(flag 后接 <ml>,可选 --date)')
+    g.add_argument('--live-product-add', action='store_true',
+                   help='存食品:写库 + 回执(flag 后接 11 个营养字段)')
+    g.add_argument('--live-product-update', action='store_true',
+                   help='改食品:写库 + 回执(flag 后接 <id> + 字段)')
+    g.add_argument('--live-product-deprecate', action='store_true',
+                   help='下架食品:标废弃 + 回执(flag 后接 <id>)')
     p.add_argument('--age', type=int, help='设置档案:年龄')
     p.add_argument('--gender', help='设置档案:male/female')
     p.add_argument('--height', type=float, help='设置档案:身高(cm)')
     p.add_argument('--activity', help='设置档案:活动量档位')
-    p.add_argument('--note', help='设置档案:备注')
-    p.add_argument('--field', action='append', help='改档案字段(height/age/gender/activity/note,可多次)')
+    p.add_argument('--note', help='设置档案:备注 / 记一餐:备注')
+    p.add_argument('--field', action='append', help='改档案/改食品字段(可多次)')
     p.add_argument('--value', action='append', help='改档案新值(与 --field 成对,可多次)')
+    p.add_argument('--date', help='记一餐/记喝水:日期 YYYY-MM-DD')
+    p.add_argument('--time', help='记一餐:时间 HH:MM')
+    p.add_argument('--meal', help='记一餐:餐别(早餐/午餐/下午茶/晚餐/夜宵)')
+    p.add_argument('--from', dest='from_date', help='复制昨日饮食:来源日期')
+    p.add_argument('--to', dest='to_date', help='复制昨日饮食:目标日期')
+    p.add_argument('--input', help='批量补记:JSON 文件路径')
     p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--reason', help='AI 映射/推荐理由(设活动量:语义→档位;设置档案:采访推荐 · 2026-08-02 R6)')
     p.add_argument('--output')
-    args = p.parse_args()
+    args, extra = p.parse_known_args()
 
     # ⭐ 思考链强制校验(2026-08-02 用户拍板):live 模式必传 + 有效性校验,防止 AI 偷懒
     if not args.mock and not _chain_valid(args.chain):
@@ -281,14 +560,35 @@ def main():
         return 1
 
     # 输出名与场景关联 + 类型后缀(2026-08-02 用户拍板:HTML 名 = 场景名_类型)
-    if args.live_profile_set:
-        cmd_name, ot = '设置档案', 'receipt'
-    elif args.live_profile_activity:
-        cmd_name, ot = '设活动量', 'receipt'
-    elif args.live_profile_update:
-        cmd_name, ot = '改档案', 'receipt'
-    else:
-        cmd_name, ot = '操作回执', None
+    _LIVE_NAMES = {
+        'live_profile_set': ('设置档案', 'receipt'),
+        'live_profile_activity': ('设活动量', 'receipt'),
+        'live_profile_update': ('改档案', 'receipt'),
+        'live_diet_add': ('记一餐', 'receipt'),
+        'live_diet_batch': ('批量补记饮食', 'receipt'),
+        'live_diet_copy': ('复制昨日饮食', 'receipt'),
+        'live_diet_update': ('改饮食记录', 'receipt'),
+        'live_diet_update_date': ('改某日饮食', 'receipt'),
+        'live_diet_delete': ('删饮食记录', 'receipt'),
+        'live_diet_delete_meal': ('删一餐', 'receipt'),
+        'live_diet_delete_date': ('删某日饮食', 'receipt'),
+        'live_diet_delete_range': ('批量删饮食', 'receipt'),
+        'live_water_add': ('记喝水', 'receipt'),
+        'live_product_add': ('存食品', 'receipt'),
+        'live_product_update': ('改食品', 'receipt'),
+        'live_product_deprecate': ('下架食品', 'receipt'),
+    }
+    active = None
+    for flag_name in ('live_profile_set', 'live_profile_activity', 'live_profile_update',
+                      'live_diet_add', 'live_diet_batch', 'live_diet_copy',
+                      'live_diet_update', 'live_diet_update_date', 'live_diet_delete',
+                      'live_diet_delete_meal', 'live_diet_delete_date', 'live_diet_delete_range',
+                      'live_water_add', 'live_product_add', 'live_product_update',
+                      'live_product_deprecate'):
+        if getattr(args, flag_name.replace('-', '_')):
+            active = flag_name
+            break
+    cmd_name, ot = _LIVE_NAMES.get(active, ('操作回执', None))
 
     try:
         if args.mock:
@@ -299,6 +599,173 @@ def main():
                                           note=args.note, reason=args.reason or '')
         elif args.live_profile_activity:
             data = build_live_profile_activity(args.live_profile_activity, reason=args.reason or '')
+        elif args.live_profile_update:
+            data = build_live_profile_update(list(zip(fields, values)))
+        elif args.live_diet_add:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-add') + 1:]
+            pos = []
+            kw = {}
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--'):
+                    k = rest[i][2:]
+                    if i + 1 < len(rest) and not rest[i+1].startswith('--'):
+                        kw[k] = rest[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    pos.append(rest[i])
+                    i += 1
+            if len(pos) < 3:
+                print('❌ --live-diet-add 需要 <food> <calories> <protein> [carbs] [fat] [grams] [note]',
+                      file=sys.stderr)
+                return 1
+            food, cal, pro = pos[0], pos[1], pos[2]
+            data = build_live_diet_add(food, cal, pro,
+                                       carbs=pos[3] if len(pos) > 3 else kw.get('carbs', '0'),
+                                       fat=pos[4] if len(pos) > 4 else kw.get('fat', '0'),
+                                       grams=pos[5] if len(pos) > 5 else kw.get('grams', '100'),
+                                       note=pos[6] if len(pos) > 6 else (kw.get('note') or ''),
+                                       target_date=kw.get('date'), target_time=kw.get('time'),
+                                       meal=kw.get('meal'))
+        elif args.live_diet_batch:
+            data = build_live_diet_batch(args.input)
+        elif args.live_diet_copy:
+            data = build_live_diet_copy(args.from_date, args.to_date)
+        elif args.live_diet_update:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-update') + 1:]
+            entry_id = None
+            kw = {}
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--'):
+                    k = rest[i][2:]
+                    if i + 1 < len(rest) and not rest[i+1].startswith('--'):
+                        kw[k] = rest[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    if entry_id is None:
+                        entry_id = rest[i]
+                    i += 1
+            if entry_id is None:
+                print('❌ --live-diet-update 需要 <id>', file=sys.stderr)
+                return 1
+            _FMAP = {'grams': 'grams', 'food': 'food_name', 'calories': 'calories',
+                     'protein': 'protein', 'carbs': 'carbs', 'fat': 'fat',
+                     'date': 'date', 'time': 'time', 'note': 'note'}
+            data = build_live_diet_update(entry_id, **{_FMAP[k]: v for k, v in kw.items() if k in _FMAP})
+        elif args.live_diet_update_date:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-update-date') + 1:]
+            target_date = None
+            kw = {}
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--'):
+                    k = rest[i][2:]
+                    if i + 1 < len(rest) and not rest[i+1].startswith('--'):
+                        kw[k] = rest[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    if target_date is None:
+                        target_date = rest[i]
+                    i += 1
+            if not target_date or not kw:
+                print('❌ --live-diet-update-date 需要 <date> + 至少 1 个字段', file=sys.stderr)
+                return 1
+            _FMAP = {'grams': 'grams', 'food': 'food_name', 'calories': 'calories',
+                     'protein': 'protein', 'carbs': 'carbs', 'fat': 'fat',
+                     'date': 'date', 'time': 'time', 'note': 'note'}
+            data = build_live_diet_update_date(target_date, **{_FMAP[k]: v for k, v in kw.items() if k in _FMAP})
+        elif args.live_diet_delete:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-delete') + 1:]
+            entry_id = rest[0] if rest else None
+            if entry_id is None or entry_id.startswith('--'):
+                print('❌ --live-diet-delete 需要 <id>', file=sys.stderr)
+                return 1
+            data = build_live_diet_delete(entry_id)
+        elif args.live_diet_delete_meal:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-delete-meal') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if len(pos) < 2:
+                print('❌ --live-diet-delete-meal 需要 <date> <餐别>', file=sys.stderr)
+                return 1
+            data = build_live_diet_delete_meal(pos[0], pos[1])
+        elif args.live_diet_delete_date:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-delete-date') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if not pos:
+                print('❌ --live-diet-delete-date 需要 <date>', file=sys.stderr)
+                return 1
+            data = build_live_diet_delete_date(pos[0])
+        elif args.live_diet_delete_range:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-diet-delete-range') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if len(pos) < 2:
+                print('❌ --live-diet-delete-range 需要 <start> <end>', file=sys.stderr)
+                return 1
+            data = build_live_diet_delete_range(pos[0], pos[1])
+        elif args.live_water_add:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-water-add') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if not pos:
+                print('❌ --live-water-add 需要 <ml>', file=sys.stderr)
+                return 1
+            data = build_live_water_add(pos[0], target_date=args.date)
+        elif args.live_product_add:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-product-add') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if len(pos) < 11:
+                print('❌ --live-product-add 需要 <name> <brand> <cal> <pro> <fat> <sat> <carb> <sugar> <fiber> <sodium> [note]',
+                      file=sys.stderr)
+                return 1
+            data = build_live_product_add(pos[0], pos[1], float(pos[2]), float(pos[3]), float(pos[4]),
+                                          float(pos[5]) or None, float(pos[6]), float(pos[7]) or None,
+                                          float(pos[8]) or None, float(pos[9]),
+                                          pos[10] if len(pos) > 10 else '')
+        elif args.live_product_update:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-product-update') + 1:]
+            pid = None
+            kw = {}
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--'):
+                    k = rest[i][2:]
+                    if i + 1 < len(rest) and not rest[i+1].startswith('--'):
+                        kw[k] = rest[i+1]
+                        i += 2
+                    else:
+                        i += 1
+                else:
+                    if pid is None:
+                        pid = rest[i]
+                    i += 1
+            if pid is None or not kw:
+                print('❌ --live-product-update 需要 <id> + 至少 1 个字段', file=sys.stderr)
+                return 1
+            data = build_live_product_update(pid, **kw)
+        elif args.live_product_deprecate:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-product-deprecate') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            if not pos:
+                print('❌ --live-product-deprecate 需要 <id>', file=sys.stderr)
+                return 1
+            data = build_live_product_deprecate(pos[0])
         else:
             data = build_live_profile_update(list(zip(fields, values)))
         # AI 思考链注入 meta(复制日志带出 · 2026-08-02)
@@ -312,7 +779,9 @@ def main():
                 i = argv.index('--output')
                 argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
             data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
-            data['data']['meta']['source'] = 'user_profile (写库回执)'
+            src = 'food_log (写库回执)' if active.startswith(('live_diet', 'live_water')) else (
+                  'nutrition_products (写库回执)' if active.startswith('live_product') else 'user_profile (写库回执)')
+            data['data']['meta']['source'] = src
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

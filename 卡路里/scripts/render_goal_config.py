@@ -200,6 +200,14 @@ def main():
             source='daily_goal + food_log(昨日)',
             chain=args.chain,
         )
+        # 场景化标题(2026-08-02 用户验收 #1:定营养目标不应显示「营养/体重目标」)
+        data['page_title'] = {
+            '定营养目标': '营养目标',
+            '改营养目标': '营养目标 · 修改',
+            '定饮水目标': '饮水目标',
+            '改饮水目标': '饮水目标 · 修改',
+        }.get(scene_name, '目标配置')
+        data['scene'] = scene_name
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

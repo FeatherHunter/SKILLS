@@ -329,7 +329,10 @@ def cmd_import(args):
 # ==============================================================================
 
 def cmd_validate(args):
-    """validate 子命令:只校验不写"""
+    """validate 子命令:只校验不写
+
+    --json-output <path> 时,写出结构化结果(供 render_batch_import.py 渲染 · ticket #3)
+    """
     file_path = Path(args.file)
     if not file_path.exists():
         print(f"❌ 文件不存在: {file_path}")
@@ -342,15 +345,36 @@ def cmd_validate(args):
     print(f"   JSON 解析失败: {len(parse_errors)}")
 
     valid = 0
+    runs = []
     for line_num, rec in records:
         ok, err = validate_record(rec)
         if ok:
             valid += 1
+            runs.append({'line': line_num, 'status': 'ok', 'name': rec.get('product_name', ''),
+                         'reason': ''})
         else:
             name = rec.get('product_name', '<unknown>')
+            runs.append({'line': line_num, 'status': 'failed', 'name': name, 'reason': err})
             print(f"   ❌ 第 {line_num} 行: {name} - {err}")
 
     print(f"\n   校验通过: {valid} / {len(records)}")
+
+    if getattr(args, 'json_output', None):
+        out = {
+            'status': 'ok',
+            'summary': {
+                'jsonl_path': str(file_path),
+                'total': len(records),
+                'added': 0, 'updated': 0, 'skipped': 0,
+                'failed': len(runs) - valid + len(parse_errors),
+            },
+            'runs': runs + [{'line': ln, 'status': 'failed', 'name': '(解析失败)', 'reason': msg}
+                            for ln, msg in parse_errors],
+        }
+        Path(args.json_output).write_text(
+            json.dumps(out, ensure_ascii=False), encoding='utf-8')
+        print(f"   📄 结构化结果: {args.json_output}")
+
     return 0 if valid == len(records) else 1
 
 
@@ -456,6 +480,7 @@ def main():
     # validate
     val = subparsers.add_parser('validate', help='只校验不导入')
     val.add_argument('file', help='JSONL 文件路径')
+    val.add_argument('--json-output', help='结构化结果 JSON 路径(供 render_batch_import.py · ticket #3)')
 
     # dedupe
     subparsers.add_parser('dedupe', help='全库去重检查')

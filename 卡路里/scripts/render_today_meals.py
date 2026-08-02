@@ -2,8 +2,13 @@
 # -*- coding: utf-8 -*-
 """render_today_meals.py — 吃的记录 HTML 渲染器(报告型 · 详细列表)
 
-对应 SKILL.md 唤醒词: 查吃的记录
+对应 SKILL.md 唤醒词: 查吃的记录 / 看本周饮食 / 看上周饮食 / 看本月饮食 / 看上月饮食 / 看最近 7 天饮食 / 看最近 30 天饮食 / 看某段时间饮食 / 看「有备注」的饮食记录
 对应模板: templates/today_meals.html
+
+v1.0 扩展(ticket #3):
+  --week current|last   自然周(周一到周日)
+  --month current|last  自然月
+  --with-note           只看有备注的记录(看「有备注」的饮食记录)
 """
 import argparse, json, sys
 from datetime import date, timedelta
@@ -24,15 +29,38 @@ def _load_data(input_path):
     return raw
 
 
-def build_data(start, end):
+def _natural_week(week: str) -> tuple[str, str]:
+    """自然周(周一到周日)起止日期"""
+    today = date.today()
+    if week == 'last':
+        today = today - timedelta(days=7)
+    start = today - timedelta(days=today.weekday())
+    end = start + timedelta(days=6)
+    return start.isoformat(), end.isoformat()
+
+
+def _natural_month(month: str) -> tuple[str, str]:
+    """自然月起止日期"""
+    today = date.today()
+    if month == 'last':
+        first = today.replace(day=1) - timedelta(days=1)
+        return first.replace(day=1).isoformat(), first.isoformat()
+    start = today.replace(day=1)
+    nxt = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    end = nxt - timedelta(days=1)
+    return start.isoformat(), end.isoformat()
+
+
+def build_data(start, end, with_note=False):
     """从 food_log 取 [start,end] 区间所有食物记录"""
     from db import find_db_path
     import sqlite3
     db_path = find_db_path(SKILL_DIR)
     conn = sqlite3.connect(str(db_path))
     cur = conn.cursor()
-    cur.execute('''
-        SELECT date, time, food_name, grams, calories, protein, carbs, fat,
+    note_cond = "AND note IS NOT NULL AND note != ''" if with_note else ''
+    cur.execute(f'''
+        SELECT date, time, food_name, grams, calories, protein, carbs, fat, note,
           CASE
             WHEN time IS NOT NULL AND CAST(strftime('%H', time) AS INT) BETWEEN 5 AND 10 THEN 'breakfast'
             WHEN time IS NOT NULL AND CAST(strftime('%H', time) AS INT) BETWEEN 11 AND 14 THEN 'lunch'
@@ -40,12 +68,12 @@ def build_data(start, end):
             ELSE 'snack'
           END AS meal_type
         FROM food_log
-        WHERE date BETWEEN ? AND ?
+        WHERE date BETWEEN ? AND ? {note_cond}
         ORDER BY date DESC, time DESC
     ''', (start, end))
     items = []
     for row in cur.fetchall():
-        d, t, fn, g, c, p, cb, f, mt = row
+        d, t, fn, g, c, p, cb, f, note, mt = row
         items.append({
             'date': d, 'time': t or '—',
             'food_name': fn or '—',
@@ -55,6 +83,7 @@ def build_data(start, end):
             'protein': float(p) if p else 0,
             'carb':  float(cb) if cb else 0,
             'fat':   float(f) if f else 0,
+            'note': note or '',
         })
     conn.close()
 
@@ -63,7 +92,7 @@ def build_data(start, end):
     total_prot = sum(float(i['protein'] or 0) for i in items)
     total_carb = sum(float(i['carb'] or 0) for i in items)
     total_fat = sum(float(i['fat'] or 0) for i in items)
-    water = sum(float(i['grams'] or 0) for i in items if '💧' in (i['food_name'] or ''))
+    water = sum(float(i['grams'] or 0) for i in items if (i['food_name'] or '') == '💧水')
     avg_cal = round(total_cal / max(1, days), 1)
     avg_water = round(water / max(1, days), 0)
 
@@ -74,9 +103,13 @@ def build_data(start, end):
                 'total_calorie': total_cal,
                 'avg_calorie': avg_cal,
                 'total_protein': total_prot,
+                'total_carb': total_carb,
+                'total_fat': total_fat,
                 'protein_target': 120,
                 'total_water': water,
                 'avg_water': avg_water,
+                'with_note': with_note,
+                'note_count': sum(1 for i in items if i['note']),
             },
             'items': items,
             'meta': {'start': start, 'end': end, 'days': days, 'today': date.today().isoformat()},
@@ -98,17 +131,24 @@ def main():
     p.add_argument('--start')
     p.add_argument('--end')
     p.add_argument('--days', type=int, default=3)
+    p.add_argument('--week', choices=['current', 'last'], help='自然周(周一到周日)')
+    p.add_argument('--month', choices=['current', 'last'], help='自然月')
+    p.add_argument('--with-note', action='store_true', help='只看有备注的记录')
     p.add_argument('--mock')
     p.add_argument('--output')
     args = p.parse_args()
-    if not args.start or not args.end:
+    if args.week:
+        s, e = _natural_week(args.week)
+    elif args.month:
+        s, e = _natural_month(args.month)
+    elif not args.start or not args.end:
         end_d = date.today()
         start_d = end_d - timedelta(days=args.days - 1)
         s, e = start_d.isoformat(), end_d.isoformat()
     else:
         s, e = args.start, args.end
     try:
-        data = _load_data(args.mock) if args.mock else build_data(s, e)
+        data = _load_data(args.mock) if args.mock else build_data(s, e, with_note=args.with_note)
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

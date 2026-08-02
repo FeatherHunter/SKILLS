@@ -6,9 +6,10 @@ ticket 06 · ADR-0005 部分 · Issue 1 修复
 
 CLI:
     python scripts/render_food_search.py --query <term> [--output <path>]
+    python scripts/render_food_search.py --category <分类> [--output <path>]   # 查食品(按分类) · ticket #3
 
-查询 nutrition_products 表,匹配 product_name LIKE '%<term>%',渲染成
-templates/food_search.html,注入 window.__DATA__。
+查询 nutrition_products 表,匹配 product_name LIKE '%<term>%' 或 category 精确匹配,
+渲染成 templates/food_search.html,注入 window.__DATA__。
 
 输出默认:<SKILLS_DB_PATH 或 fallback>/calorie_html/查热量_<YYYYMMDD>_<HHMMSS>.html
 """
@@ -39,11 +40,32 @@ def _query_products(query: str) -> list[dict]:
         c = conn.cursor()
         c.execute(
             "SELECT id, product_name, brand, calories, protein, fat, carbohydrates, "
-            "saturated_fat, sugar, dietary_fiber, sodium, source, updated_at "
+            "saturated_fat, sugar, dietary_fiber, sodium, source, category, updated_at "
             "FROM nutrition_products "
             "WHERE is_deprecated = 0 AND product_name LIKE ? "
             "ORDER BY updated_at DESC",
             (f"%{query}%",),
+        )
+        rows = c.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def _query_by_category(category: str) -> list[dict]:
+    """按分类查食品(ticket #3 · D4.2)"""
+    db_path = db_mod.find_db_path(SKILL_DIR)
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        c = conn.cursor()
+        c.execute(
+            "SELECT id, product_name, brand, calories, protein, fat, carbohydrates, "
+            "saturated_fat, sugar, dietary_fiber, sodium, source, category, updated_at "
+            "FROM nutrition_products "
+            "WHERE is_deprecated = 0 AND category = ? "
+            "ORDER BY product_name",
+            (category,),
         )
         rows = c.fetchall()
         return [dict(r) for r in rows]
@@ -96,15 +118,25 @@ def _inject_data(html: str, data: dict) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="渲染食物热量查询 HTML")
-    parser.add_argument("--query", required=True, help="查询关键词")
+    parser.add_argument("--query", help="查询关键词")
+    parser.add_argument("--category", help="按分类查询(查食品(按分类) · ticket #3)")
     parser.add_argument("--output", help="输出 HTML 路径(默认 calorie_html/查热量_<TS>.html)")
     args = parser.parse_args()
 
-    items = _query_products(args.query)
+    if args.category:
+        items = _query_by_category(args.category)
+        mode = f"category:{args.category}"
+        q = f"分类_{args.category}"
+    else:
+        if not args.query:
+            parser.error("需要 --query 或 --category 之一")
+        items = _query_products(args.query)
+        mode = args.query
+        q = args.query
     data = {
         "status": "ok",
         "data": {
-            "query": args.query,
+            "query": mode,
             "items": items,
             "match_count": len(items),
             "generated_at": datetime.now().isoformat(),
@@ -115,7 +147,7 @@ def main() -> int:
     html = TEMPLATE_PATH.read_text(encoding="utf-8")
     html = _inject_data(html, data)
 
-    out = Path(args.output) if args.output else _default_output_path(args.query)
+    out = Path(args.output) if args.output else _default_output_path(q)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
     print(f"✓ HTML 已生成: {out}")

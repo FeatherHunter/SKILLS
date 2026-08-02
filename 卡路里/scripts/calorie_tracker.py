@@ -19,7 +19,7 @@
 
 import subprocess
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 if sys.platform == 'win32':
@@ -85,9 +85,17 @@ def usage():
 命令：
   add <食物> <卡路里> <蛋白质> [碳水] [脂肪] [克数] [备注]
                                    添加食物记录（可用 --date / --time / --meal 补录历史）
+  copy-meals [--from D] [--to D]   复制某日饮食到另一日(默认昨天→今天)
+  add-meal-batch --input <json>    批量补记饮食(一次录多餐)
   delete <id>                       删除记录
   update-meal <id> [--grams <克数>] [--food <食物名>] [--note <备注>]
                                    更新饮食记录（克数/食物名/备注）
+  update-meals-by-date <date> [--field value ...]
+                                   按日期批量改某日饮食
+  delete-meal-by-type <date> <餐别> 删一餐(早餐/午餐/下午茶/晚餐/夜宵/加餐)
+  delete-meals-by-date <date>       删某日饮食(一整天清空)
+  delete-meals-by-range <start> <end>
+                                   按日期范围批量删饮食
   list                              列出今日记录
   summary                           今日摘要
   goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]
@@ -109,6 +117,7 @@ def usage():
                                    添加食品营养成分表
   search-product <关键词>           搜索营养成分
   update-product <id> [--字段 值]   更新营养成分
+  deprecate-product <id>            下架食品(标废弃,查询不再出现)
   list-products [数量]              列出所有营养成分
 
 示例：
@@ -624,6 +633,131 @@ def main():
                 # 在 stdout 顶部声明 pipeline 模式,方便 pipe 工具识别
                 print("# MODE=text · 适用: ... | grep / awk / wc-l 等 pipeline")
             product_library.list_products(actual_limit)
+
+        elif command == "copy-meals":
+            # 复制昨日饮食(D1.8 · ticket #3)
+            _sub_help(sys.argv[2:],
+                "用法: copy-meals [--from YYYY-MM-DD] [--to YYYY-MM-DD]\n"
+                "默认: 从昨天复制到今天(可显式指定)\n"
+                "示例: copy-meals / copy-meals --from 2026-08-01 --to 2026-08-02")
+            kwargs = _parse_kw_args(sys.argv[2:])
+            from_date = kwargs.get('from')
+            to_date = kwargs.get('to')
+            if not from_date:
+                from_date = (date.today() - timedelta(days=1)).isoformat()
+            result = diet.copy_meals(from_date, to_date)
+            print(f"✓ 已复制饮食 (影响 {result['copied']} 行,跳过 {result['skipped']} 行)")
+            print(f"  {result['from_date']} → {result['to_date']}")
+            print(f"id=n/a | 日期 {date.today().isoformat()} | 影响 {result['copied']} 行")
+
+        elif command == "add-meal-batch":
+            # 批量补记饮食(D1.4 · ticket #3):一次录多餐
+            _sub_help(sys.argv[2:],
+                "用法: add-meal-batch --input <json>\n"
+                "JSON = 数组,每项 {date?, time?, food_name, grams?, calories, protein, carbs?, fat?, note?}\n"
+                "示例: add-meal-batch --input /tmp/batch.json")
+            kwargs = _parse_kw_args(sys.argv[2:])
+            input_path = kwargs.get('input')
+            if not input_path:
+                print("Error: add-meal-batch 需要 --input <json>", file=sys.stderr)
+                sys.exit(1)
+            import json as _json
+            from pathlib import Path as _Path
+            p = _Path(input_path)
+            if not p.exists():
+                print(f"Error: 输入文件不存在: {p}", file=sys.stderr)
+                sys.exit(1)
+            entries = _json.loads(p.read_text(encoding='utf-8'))
+            if not isinstance(entries, list):
+                print("Error: JSON 顶层必须是数组(每项一餐)", file=sys.stderr)
+                sys.exit(1)
+            result = diet.add_meals_batch(entries)
+            print(f"✓ 批量补记完成 (写入 {result['added']} 行 / 跳过 {result['skipped']} / 失败 {result['failed']})")
+            for idx, reason in result['failures']:
+                print(f"  ✗ 第 {idx + 1} 条跳过: {reason}")
+            print(f"id=n/a | 日期 {date.today().isoformat()} | 影响 {result['added']} 行")
+
+        elif command == "update-meals-by-date":
+            # 改某日饮食(D2.2 · ticket #3):按日期定位批量改
+            _sub_help(sys.argv[2:],
+                "用法: update-meals-by-date <date> [--field value ...]\n"
+                "支持字段同 update-meal(至少 1 个): --grams/--food/--calories/--protein/--carbs/--fat/--date/--time/--note\n"
+                "示例: update-meals-by-date 2026-08-01 --note 修正")
+            if len(sys.argv) < 3:
+                print("Error: update-meals-by-date 需要 <date>", file=sys.stderr)
+                sys.exit(1)
+            parsed = _parse_kw_args(sys.argv[3:])
+            field_map = {
+                'grams': 'grams', 'food': 'food_name', 'calories': 'calories',
+                'protein': 'protein', 'carbs': 'carbs', 'fat': 'fat',
+                'date': 'date', 'time': 'time', 'note': 'note',
+            }
+            unknown = set(parsed) - set(field_map)
+            if unknown:
+                print(f"Error: 不识别的字段: {sorted(unknown)}", file=sys.stderr)
+                sys.exit(1)
+            kwargs = {field_map[k]: v for k, v in parsed.items() if k in field_map}
+            result = diet.update_meals_by_date(sys.argv[2], **kwargs)
+            if not result["ok"]:
+                print(f"Error: {result['error']}", file=sys.stderr)
+                sys.exit(1)
+            print(f"✓ 命中 {result['matched']} 条,已更新 {result['updated']} 条")
+            print(f"  改动字段: {result['changed_fields']}")
+
+        elif command == "delete-meal-by-type":
+            # 删一餐(D2.4 · ticket #3):按餐别删
+            _sub_help(sys.argv[2:],
+                "用法: delete-meal-by-type <date> <餐别>\n"
+                "餐别: 早餐 / 午餐 / 下午茶 / 晚餐 / 夜宵 / 加餐(=下午茶+夜宵)\n"
+                "示例: delete-meal-by-type 2026-08-01 早餐")
+            if len(sys.argv) < 4:
+                print("Error: delete-meal-by-type 需要 <date> <餐别>", file=sys.stderr)
+                sys.exit(1)
+            result = diet.delete_meals_by_type(sys.argv[2], sys.argv[3])
+            if not result["ok"]:
+                print(f"Error: {result['error']}", file=sys.stderr)
+                sys.exit(1)
+            print(f"✓ 已删除 {result['deleted']} 条 ({result['date']} {result['meal']})")
+            print(f"id=n/a | 日期 {result['date']} | 影响 {result['deleted']} 行")
+
+        elif command == "delete-meals-by-date":
+            # 删某日饮食(D2.5 · ticket #3):一整天清空
+            _sub_help(sys.argv[2:],
+                "用法: delete-meals-by-date <date>\n"
+                "示例: delete-meals-by-date 2026-08-01")
+            if len(sys.argv) < 3:
+                print("Error: delete-meals-by-date 需要 <date>", file=sys.stderr)
+                sys.exit(1)
+            result = diet.delete_meals_by_date(sys.argv[2])
+            print(f"✓ 已删除 {result['deleted']} 条 ({result['date']})")
+            print(f"id=n/a | 日期 {result['date']} | 影响 {result['deleted']} 行")
+
+        elif command == "delete-meals-by-range":
+            # 批量删饮食(D2.6 · ticket #3):按日期范围删
+            _sub_help(sys.argv[2:],
+                "用法: delete-meals-by-range <start> <end>\n"
+                "示例: delete-meals-by-range 2026-07-01 2026-07-14")
+            if len(sys.argv) < 4:
+                print("Error: delete-meals-by-range 需要 <start> <end>", file=sys.stderr)
+                sys.exit(1)
+            result = diet.delete_meals_by_range(sys.argv[2], sys.argv[3])
+            print(f"✓ 已删除 {result['deleted']} 条 ({result['start']} ~ {result['end']})")
+            print(f"id=n/a | 日期 {result['start']} | 影响 {result['deleted']} 行")
+
+        elif command == "deprecate-product":
+            # 下架食品(D4.5 · ticket #3):标废弃
+            _sub_help(sys.argv[2:],
+                "用法: deprecate-product <product_id>\n"
+                "示例: deprecate-product 3")
+            if len(sys.argv) < 3:
+                print("Error: deprecate-product 需要 <product_id>", file=sys.stderr)
+                sys.exit(1)
+            result = product_library.deprecate_product(sys.argv[2])
+            if not result['ok']:
+                print(f"Error: {result['error']}", file=sys.stderr)
+                sys.exit(1)
+            print(f"✓ 已下架「{result['name']}」 (id={result['id']}, 影响 1 行)")
+            print(f"  提示: 该食品已标记下架,查询/搜索/导入去重不再出现")
 
         elif command == "profile":
             # profile 子命令

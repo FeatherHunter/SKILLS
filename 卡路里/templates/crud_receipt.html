@@ -140,9 +140,9 @@
   const { op, record_id, old_record, new_record, context, meta } = D.data;
 
   document.getElementById('metaLeft').textContent = meta.action_at;
-  const opLabels = {add:'新增', update:'修改', delete:'删除'};
-  const opColors = {add:'good', update:'warn', delete:'bad'};
-  const opIcons  = {add:'✓', update:'✎', delete:'✕'};
+  const opLabels = {add:'新增', create:'新增', update:'修改', delete:'删除'};
+  const opColors = {add:'good', create:'good', update:'warn', delete:'bad'};
+  const opIcons  = {add:'✓', create:'✓', update:'✎', delete:'✕'};
   const opLabel = opLabels[op] || op;
   const opClass = opColors[op] || 'good';
   const opIcon  = opIcons[op]  || '✓';
@@ -179,12 +179,23 @@
   }
 
   // diff 卡(只 update 模式;字段用中文标签 · 2026-08-02 用户拍板)
-  const FIELD_LABELS = {height_cm:'身高', age:'年龄', gender:'性别', activity_level:'活动量', note:'备注', weight_kg:'体重', bmi:'BMI'};
+  // 2026-08-02 扩充(ticket #3 饮食):食物/克数/热量/蛋白/碳水/脂肪/餐别/时间 + 食品库字段
+  const FIELD_LABELS = {height_cm:'身高', age:'年龄', gender:'性别', activity_level:'活动量', note:'备注', weight_kg:'体重', bmi:'BMI',
+    food_name:'食物名', grams:'克数', calories:'热量', protein:'蛋白', carbs:'碳水', fat:'脂肪',
+    meal:'餐别', time:'时间', date:'日期', ml:'饮水量', from:'来源日期', to:'目标日期',
+    start:'开始日期', end:'结束日期',
+    product_name:'食品名', brand:'品牌', saturated_fat:'饱和脂肪', carbohydrates:'碳水',
+    sugar:'糖', dietary_fiber:'膳食纤维', sodium:'钠', category:'分类', source:'来源',
+    is_deprecated:'下架状态', updated_at:'更新时间', created_at:'创建时间'};
   const ACT_LABELS = {sedentary:'久坐', light:'轻度活动', moderate:'中度活动', active:'活跃', very_active:'高度活跃'};
+  const UNIT_LABELS = {grams:'g', calories:'卡', protein:'g', carbs:'g', fat:'g', ml:'ml', sodium:'mg'};
   function fmtVal(k, v) {
     if (k === 'activity_level') return ACT_LABELS[v] || v;
     if (k === 'gender') return v === 'male' ? '男' : v === 'female' ? '女' : v;
-    return v === null || v === undefined ? '—' : v;
+    if (k === 'is_deprecated') return v == 1 ? '已下架' : '正常';
+    if (v === null || v === undefined) return '—';
+    const unit = UNIT_LABELS[k];
+    return unit ? `${v} ${unit}` : v;
   }
   if (op === 'update' && old_record && new_record) {
     const diffCard = document.getElementById('diffCard');
@@ -192,7 +203,7 @@
     const diffList = document.getElementById('diffList');
     const keys = Object.keys(new_record);
     keys.forEach(k => {
-      if (k === 'id' || k === 'note' || k === 'created_at' || k === 'updated_at') return;
+      if (k === 'id' || k === 'created_at' || k === 'updated_at') return;
       if (k.startsWith('__impact_')) return;  // 影响提示由下方按字段映射渲染
       const oldV = old_record[k];
       const newV = new_record[k];
@@ -209,6 +220,48 @@
         (impact ? `<div class="diff-impact">${impact}</div>` : ''));
     });
     // 无实际变更行 → 不显示空白的字段变更卡(2026-08-02 用户反馈:重复设置相同值时空卡)
+    if (diffList.children.length === 0) {
+      diffCard.style.display = 'none';
+    }
+  } else if (op === 'delete' && old_record && Object.keys(old_record).length) {
+    // 删除前快照(2026-08-02 · ticket #3:删饮食记录/删一餐/删某日/批量删 的「删除前快照」承诺)
+    const diffCard = document.getElementById('diffCard');
+    diffCard.style.display = 'block';
+    const diffList = document.getElementById('diffList');
+    Object.keys(old_record).forEach(k => {
+      if (k === 'id' || k === 'created_at' || k === 'updated_at') return;
+      if (k.startsWith('__impact_')) return;
+      const v = old_record[k];
+      if (v === null || v === undefined || v === '' || v === 0) return;
+      const label = FIELD_LABELS[k] || k;
+      diffList.insertAdjacentHTML('beforeend',
+        `<div class="diff-row">` +
+        `<div><div class="diff-label">${label}</div><div class="diff-old">${fmtVal(k, v)}</div></div>` +
+        `<div class="diff-arrow">→</div>` +
+        `<div><div class="diff-label">已删除</div><div class="diff-new">—</div></div>` +
+        `</div>`);
+    });
+    if (diffList.children.length === 0) {
+      diffCard.style.display = 'none';
+    }
+  } else if (op === 'create' && new_record && Object.keys(new_record).length) {
+    // 新增内容(ticket #3:记一餐/记喝水/存食品 的「食物名/克数/营养 + 餐别 + 时间」承诺)
+    const diffCard = document.getElementById('diffCard');
+    diffCard.style.display = 'block';
+    const diffList = document.getElementById('diffList');
+    Object.keys(new_record).forEach(k => {
+      if (k === 'id' || k === 'created_at' || k === 'updated_at') return;
+      if (k.startsWith('__impact_')) return;
+      const v = new_record[k];
+      if (v === null || v === undefined || v === '' || v === 0) return;
+      const label = FIELD_LABELS[k] || k;
+      diffList.insertAdjacentHTML('beforeend',
+        `<div class="diff-row">` +
+        `<div><div class="diff-label">${label}</div><div class="diff-new" style="text-decoration:none;color:var(--fg);font-weight:600">${fmtVal(k, v)}</div></div>` +
+        `<div class="diff-arrow" style="visibility:hidden">→</div>` +
+        `<div></div>` +
+        `</div>`);
+    });
     if (diffList.children.length === 0) {
       diffCard.style.display = 'none';
     }

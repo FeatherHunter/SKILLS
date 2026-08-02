@@ -41,6 +41,7 @@ def build_parser():
     )
     p.add_argument('--ai-json', required=True,
                    help='mmx vision describe 输出 JSON 文件路径')
+    p.add_argument('--date', help='指定日期 YYYY-MM-DD(扫描营养表(指定日期) · ticket #3)')
     p.add_argument('--output', help='输出文件路径(默认 /tmp)')
     return p
 
@@ -121,6 +122,8 @@ def main():
 
     try:
         data = load_ai_output(ai_json_path)
+        if args.date:
+            data['ai_output']['date'] = args.date  # 扫描营养表(指定日期) · ticket #3
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

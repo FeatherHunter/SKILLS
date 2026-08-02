@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 看身材照</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:860px; margin:0 auto; padding:40px 20px 80px;
+         -webkit-font-smoothing:antialiased; }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--accent); color:#fff; font-weight:700; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.025em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:20px; }
+  /* KPI 行 */
+  .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:3px; }
+  .kpi .value { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  /* 筛选栏 */
+  .filter-bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--card);
+                border:1px solid var(--border); border-radius:14px; padding:12px 16px; margin-bottom:16px; }
+  .tag-chip { font-size:12px; padding:4px 12px; border-radius:12px; border:1px solid var(--border);
+              background:var(--card); cursor:pointer; color:var(--fg2); }
+  .tag-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+  .filter-bar input { border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; max-width:120px; }
+  .filter-bar .lbl { font-size:12px; color:var(--fg3); }
+  /* 照片网格 */
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .cell { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .cell .imgwrap { position:relative; aspect-ratio:3/4; background:var(--soft); }
+  .cell img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cell .broken { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--fg3); font-size:13px; }
+  .cell .meta { padding:8px 10px; font-size:11px; color:var(--fg2); }
+  .cell .meta .tags span { display:inline-block; background:rgba(0,113,227,.12); color:var(--accent);
+                           border-radius:8px; padding:0 6px; margin-right:3px; font-size:10px; }
+  .cell .meta .date { margin-top:2px; font-weight:600; color:var(--fg); }
+  .empty { text-align:center; padding:60px 20px; color:var(--fg3); }
+  /* Footer 按钮 */
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:flex-end; }
+  .footer .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
+         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary:hover { background:#005bb0; }
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .kpi-row { gap:8px; }
+    .kpi { padding:10px 12px; }
+    .kpi .value { font-size:17px; }
+    .filter-bar { padding:10px 12px; }
+    .footer .btn-group { justify-content:stretch; }
+    .footer .btn-group .btn { flex:1 1 45%; min-height:44px; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">结果型 · 看身材照</div>
+</div>
+
+<h1>📸 看身材照</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">照片总数</div><div class="value" id="kpiTotal">--</div></div>
+  <div class="kpi"><div class="label">标签数</div><div class="value" id="kpiTags">--</div></div>
+  <div class="kpi"><div class="label">距上次拍照</div><div class="value" id="kpiDays">--</div></div>
+</div>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">📷 没有符合条件的照片</div>
+
+<div class="footer">
+  <div class="btn-group">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const d = D.data;
+  const meta = d.meta;
+  document.getElementById('metaLeft').textContent = meta.action_at;
+  document.getElementById('sub').textContent =
+    `共 ${d.total_count} 张` + (d.filters.tag ? ` · 标签「${d.filters.tag}」` : '') +
+    (d.filters.date_from || d.filters.date_to ? ` · ${d.filters.date_from || '…'} ~ ${d.filters.date_to || '…'}` : '');
+
+  document.getElementById('kpiTotal').textContent = d.total_count;
+  document.getElementById('kpiTags').textContent = (d.tag_counts || []).length;
+  document.getElementById('kpiDays').textContent =
+    d.days_since_last === null ? '—' : d.days_since_last + ' 天';
+
+  // 筛选栏:标签 chips + 日期范围
+  const fbar = document.getElementById('filterBar');
+  (d.tag_counts || []).forEach(tc => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip' + (d.filters.tag === tc.tag ? ' active' : '');
+    chip.textContent = `${tc.tag} ${tc.count}`;
+    chip.title = `筛选标签「${tc.tag}」`;
+    fbar.appendChild(chip);
+  });
+  if ((d.tag_counts || []).length === 0) {
+    const span = document.createElement('span');
+    span.className = 'lbl';
+    span.textContent = '暂无标签';
+    fbar.appendChild(span);
+  }
+
+  // 网格
+  const grid = document.getElementById('grid');
+  (d.photos || []).forEach(p => {
+    const img = p.photo_data_base64
+      ? `<img src="${p.photo_data_base64}" alt="照片 ${p.id}" loading="lazy">`
+      : `<div class="broken">📷 无图${p.file_exists === false ? ' · 文件缺失' : ''}</div>`;
+    const tags = (p.tag_list || []).map(t => `<span>${t}</span>`).join('');
+    grid.insertAdjacentHTML('beforeend',
+      `<div class="cell">
+         <div class="imgwrap">${img}</div>
+         <div class="meta">
+           <div class="tags">${tags}</div>
+           <div class="date">#${p.id} · ${p.date} ${p.time || ''}</div>
+           ${p.note ? '<div class="tags" style="margin-top:2px">📝 ' + p.note + '</div>' : ''}
+         </div>
+       </div>`);
+  });
+  if (!(d.photos || []).length) document.getElementById('empty').style.display = 'block';
+
+  // 复制工具
+  function showToast(msg) {
+    let t = document.getElementById('copyToast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'copyToast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;' +
+        'font-size:13px;z-index:999;max-width:86vw;text-align:center;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(t._timer); t._timer = setTimeout(() => { t.style.display = 'none'; }, 3200);
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+  function copyText(text, btn, okMsg) {
+    const after = () => {
+      const orig = btn.textContent; btn.textContent = '✓ 已复制';
+      setTimeout(() => btn.textContent = orig, 2000); showToast(okMsg);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
+    } else { fallbackCopy(text); after(); }
+  }
+  function buildDataText() {
+    const lines = [`看身材照(${meta.action_at})`, ''];
+    lines.push(`照片总数:${d.total_count} · 标签数:${(d.tag_counts || []).length}` +
+      (d.days_since_last !== null ? ` · 距上次拍照:${d.days_since_last} 天` : ''));
+    lines.push('标签计数:' + (d.tag_counts || []).map(tc => `${tc.tag}×${tc.count}`).join(' '));
+    lines.push('');
+    (d.photos || []).forEach(p => {
+      lines.push(`#${p.id} ${p.date} ${p.time || ''} | ${(p.tag_list || []).join('、') || '无标签'}` +
+        (p.note ? ` | ${p.note}` : ''));
+    });
+    return lines.join('\n');
+  }
+  function buildLogText() {
+    const lines = [`[看身材照 排障日志]`, ''];
+    lines.push(`唤醒词: ${meta.wake_word || '(未知)'}`);
+    lines.push(`渲染命令: ${meta.render_cmd || '(未知)'}`);
+    lines.push(`数据来源: ${meta.source || '(未知)'}`);
+    lines.push(`操作时间: ${meta.action_at || '(未知)'}`);
+    lines.push('');
+    lines.push('AI 思考链:');
+    lines.push(meta.chain || '(未注入 · 渲染时未传 --chain)');
+    lines.push('');
+    lines.push('筛选条件: ' + JSON.stringify(d.filters));
+    lines.push('原始数据:');
+    lines.push(JSON.stringify((d.photos || []).map(({photo_data_base64, ...rest}) => rest), null, 2));
+    return lines.join('\n');
+  }
+  document.getElementById('copyDataBtn').onclick = function() {
+    copyText(buildDataText(), this, '看身材照 数据复制成功 ✓');
+  };
+  document.getElementById('copyLogBtn').onclick = function() {
+    copyText(buildLogText(), this, '排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');
+  };
+})();
+</script>
+
+</body>
+</html>

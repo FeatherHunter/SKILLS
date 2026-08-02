@@ -3,14 +3,21 @@
 """render_exercise_summary.py — 运动报表 HTML(看类 17 场景一体 · v1.0)
 
 对应 SKILL.md 唤醒词(17 个):
-  - 看今日运动/看昨日运动            → --mode records --today/--yesterday
-  - 看本周/上周/本月/上月运动         → --mode summary --week/--last-week/--month/--last-month
-  - 看最近 7/30/60 天运动             → --mode summary --days 7/30/60
-  - 看最近 180/365 天运动(降采样)     → --mode summary --days 180/365 --downsample 3/week
-  - 看某段时间运动                    → --mode summary --from <F> --to <T>
-  - 看运动记录（有备注）              → --mode records --has-note
-  - 看运动记录（按力量筛选）          → --mode records --category 力量
-  - 看运动记录（按有氧筛选）          → --mode records --category 有氧
+  - 看今日运动            → --mode records --today
+  - 看昨日运动            → --mode records --yesterday
+  - 看本周运动            → --mode summary --week
+  - 看上周运动            → --mode summary --last-week
+  - 看本月运动            → --mode summary --month
+  - 看上月运动            → --mode summary --last-month
+  - 看最近 7 天运动        → --mode summary --days 7
+  - 看最近 30 天运动       → --mode summary --days 30
+  - 看某段时间运动         → --mode summary --from <F> --to <T>
+  - 看最近 60 天运动       → --mode summary --days 60
+  - 看最近 180 天运动      → --mode summary --days 180 --downsample 3
+  - 看最近 365 天运动      → --mode summary --days 365 --downsample week
+  - 看运动记录（有备注）    → --mode records --has-note
+  - 看运动记录（按力量筛选）→ --mode records --category 力量
+  - 看运动记录（按有氧筛选）→ --mode records --category 有氧
 对应模板: templates/exercise_summary.html
 
 2026-08-02 · ticket #5 运动 · R3 --chain 强制 + R5 <场景名>_结果_TS.html

@@ -162,7 +162,12 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/weight_review.html` | 体重复盘（本周）、体重复盘（本月）、体重复盘（最近 90 天）、体重复盘（今年）、体重复盘（自定义时间）、看里程碑回溯 | `weight_log` | `scripts/render_weight_review.py --type` |
 | `templates/weight_batch_receipt.html` | 批量补录体重 | `weight_log` | `scripts/render_weight_receipt.py --live-batch` |
 | `templates/weight_log_receipt.html` | 记体重、记体重（含备注）、补录体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py --live` |
-| `templates/exercise_summary.html` | 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势 (4 mode) | `exercise_tracker.py summary/stats/trend/list` | `scripts/render_exercise_summary.py` |
+| `templates/exercise_summary.html` | 看今日运动 / 看昨日运动 / 看本周运动 / 看上周运动 / 看本月运动 / 看上月运动 / 看最近 7 天运动 / 看最近 30 天运动 / 看某段时间运动 / 看最近 60 天运动 / 看最近 180 天运动 / 看最近 365 天运动 / 看运动记录（有备注）/ 看运动记录（按力量筛选）/ 看运动记录（按有氧筛选） | `exercise_log + daily_goal.exercise_goal` | `scripts/render_exercise_summary.py` |
+| `templates/exercise_goal_view.html` | 看今日运动（vs 目标）/ 看本周运动（vs 目标） | `exercise_log + daily_goal.exercise_goal` | `scripts/render_exercise_goal_view.py --period` |
+| `templates/exercise_strength.html` | 看力量训练总览 | `exercise_log` | `scripts/render_exercise_strength.py` |
+| `templates/exercise_cardio.html` | 看有氧训练总览 | `exercise_log` | `scripts/render_exercise_cardio.py` |
+| `templates/exercise_trend.html` | 看运动趋势 | `exercise_log` | `scripts/render_exercise_trend.py` |
+| `templates/exercise_recap.html` | 运动复盘（本周）/ 运动复盘（本月）/ 运动复盘（最近 90 天）/ 运动复盘（今年）/ 运动复盘（自定义时间） | `exercise_log` | `scripts/render_exercise_recap.py --period` |
 | `templates/exercise_distribution.html` | 查运动分布 / 查运动贡献 | `analysis.exercise_*` | `scripts/render_exercise_distribution.py` |
 | `templates/exercise_review.html` | 计划复盘（本周） / 计划复盘（本月） / 计划复盘（全部） | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
 | `templates/workout_plan_view.html` | 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式 · 2026-08-02 ticket #6) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {full,week,today,overview,vs,completion,missed,movement}` |

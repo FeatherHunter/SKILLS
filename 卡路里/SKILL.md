@@ -390,16 +390,40 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 看早餐（最近 7 天）/ 看午餐（最近 7 天）/ 看晚餐（最近 7 天）/ 看加餐（最近 7 天） | 单餐别明细 + 日均 + 一句话 | `python scripts/render_meal_distribution.py --meal <breakfast\|lunch\|dinner\|snack> --days 7 --chain <思考链>` |
 | 看全部餐别分布（最近 7 天） | 各餐别热量占比 + 明细 | `python scripts/render_meal_distribution.py --meal all --days 7 --chain <思考链>` |
 
-### ⚖️ 体重
+### ⚖️ 体重(58 场景 · 2026-08-02 ticket #4 落地)
 
-| 唤醒词 | 功能 | CLI |
-|--------|------|-----|
-| 记体重 | 记录体重(2026-07-20 改:身高从 user_profile 读;note 用 --note 标志) | `python scripts/calorie_tracker.py weight` |
-| 改体重记录 | 修改历史体重记录 | `python scripts/calorie_tracker.py weight-update` |
-| 查体重历史 | 体重历史记录 | `python scripts/calorie_tracker.py weight-history` |
-| 查体重趋势 | 体重趋势分析 | `AI 路由(Python API)` |
-| 对比体重 | 两时间段体重对比 | `AI 路由(Python API)` |
-| 查体重波动 | 体重波动分析 | `AI 路由(Python API)` |
+**量体重(5)**:记体重 / 记体重（含备注）/ 补录体重 / 批量补录体重 / 看今日体重
+**改体重记录(5)**:改体重记录 / 改某日体重 / 删体重记录 / 删某日体重 / 批量删体重
+**看体重明细(7)**:看本周体重 / 看上周体重 / 看本月体重 / 看上月体重 / 看最近 7 天体重 / 看最近 90 天体重 / 看某段时间体重
+**看体重曲线(10)**:看体重曲线 / 看体重曲线（带目标）/ 看体重曲线（带里程碑）/ 看体重曲线（带异常点）/ 看本月体重曲线 / 看上月体重曲线 / 看最近 90 天体重曲线 / 看最近 180 天体重曲线 / 看最近 365 天体重曲线 / 看某段时间体重曲线
+**看体重稳不稳(5)**:看体重稳不稳（增强版）/ 看本月波动 / 看最近 90 天波动 / 看最近 180 天波动 / 看波动异常点
+**看体重备注(1)**:看「有备注」的体重记录
+**对比体重(18)**:对比体重：最近 30 天 vs 之前 30 天 / 对比体重：自定义两段时间 / 对比体重：本周 vs 上周 / 对比体重：本月 vs 上月 / 对比体重：近 N 天 vs 上一个 N 天 / 对比体重：今天 vs 一年前今天 / 对比体重：今天 vs 半年前今天 / 对比体重：今天 vs 三月前今天 / 对比体重：当前 vs 目标体重 / 对比体重：当前 vs 平台期首日 / 对比体重：当前 vs 历史最低 / 对比体重：当前 vs 历史最高 / 对比体重：减重 5kg 那天 vs 今天 / 对比体重：减重 10kg 那天 vs 今天 / 对比体重：当前 vs 入夏最低 / 对比体重：当前 vs 入冬最低 / 对比体重：运动多 vs 运动少的两个月 / 对比体重：工作日 vs 周末
+**体重复盘(7)**:看体重总览 / 体重复盘（本周）/ 体重复盘（本月）/ 体重复盘（最近 90 天）/ 体重复盘（今年）/ 体重复盘（自定义时间）/ 看里程碑回溯
+
+**交互规则(2026-08-02 用户拍板 · 规则落地本段,不写进 prompt)**:
+- 改体重记录 / 删体重记录:用户未指明记录 → 列出最近候选(日期/体重/备注)供选择;删除前**快照确认**再删
+- 补录体重:目标日已有记录 → 提示冲突(已有值 vs 新值),询问覆盖/保留后写入
+- 批量补录体重:用户给「连续天数 + 起始体重」→ AI 生成每日条目;已有记录自动跳过并计入跳过数
+- 删某日体重 / 批量删体重:删除前告知命中条数 → 用户确认 → 删除
+- 对比体重：本周 vs 上周:每段记录数 ≥3 才显示对比,否则「样本不足」提示
+- 对比体重：今天 vs 一年前/半年前/三月前:同期对比 ±3 天容差;未命中 → 容差命中说明(实际取到哪条/无数据)
+- 对比体重：当前 vs 平台期首日:平台期 = 至少连续 14 天波动 ≤ ±0.5kg;取最近一次;统计第几次 + 历史平均突破耗时
+- 对比体重：减重 5/10kg 那天:里程碑 = 从历史最高起累计减重 N kg 的第一个达标日;未达成 → 提示当前已减多少
+- 对比体重：当前 vs 入夏/入冬最低:入夏 = 当年 6/1-8/31;入冬 = 12/1-次年 2/28(最近一个冬天)
+- 对比体重：运动多 vs 运动少的两个月:极端月 = 运动总量最高/最低的自然月;睡眠数据只读外部技能(作息管家),缺失标注「缺失(外部技能未记录)」
+- 「对比体重」裸词 = 「对比体重：最近 30 天 vs 之前 30 天」(A1)的别名
+
+**核心 CLI**(详情见 §CLI 手册体重节):
+- 记体重 / 补录体重:render_weight_receipt.py --live --kg <kg> [--note] [--date](chain 强制)
+- 批量补录体重:render_weight_receipt.py --live-batch --input <jsonl>(写入/跳过/失败条数+明细回执)
+- 改/删体重:render_crud_receipt.py --live-weight-update / --live-weight-delete <id|date|start end>(命中条数/快照/undo_cli)
+- 明细/曲线/备注:render_weight_history.py --mode history|trend|notes + --week/--month/--days/--show-target/--show-milestones/--show-anomalies
+- 对比体重 18:render_weight_compare.py --scenario <a1|a2|...|d4> --chain
+- 总览/今日:render_weight_dashboard.py --view overview|today --chain
+- 复盘/里程碑:render_weight_review.py --type week|month|90d|year|range|milestones --chain
+- 稳不稳/异常点:render_weight_volatility_v2.py [--days N] [--view full|anomalies-only]
+- 文本兜底:calorie_tracker.py weight [--date] / weight-update [--date] / weight-delete / weight-batch --input
 
 ### 🎯 目标管理(2026-08-02 新增 · 25 场景)
 

@@ -331,34 +331,50 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
 - macOS:`brew install python@3.12` / `brew install node`;Linux:发行版包管理器(apt/dnf/pacman)
 - **并行原则**:多个独立缺失(如 Python + Node)→ 并行给出/执行安装,不要串行等待
 - **禁止编造规则**:所有行为约束以 SKILL.md 为唯一依据;SKILL.md 未禁止的操作(如 winget)不自行发明「禁止」借口
+- **winget 探测协议(2026-08-02 对抗审查 · 防「不是内部或外部命令」)**:执行 winget 前先定位:
+  ① `Get-Command winget` → ② 探测 `%LOCALAPPDATA%\Microsoft\WindowsApps\winget.exe`(常见于 App Installer 已装但不在 PATH)
+  找不到可用 winget → 直接转手动指引,不硬跑
+- **安装后 PATH 刷新协议(2026-08-02 对抗审查 · 防「装完仍失败→误判重装→死循环」)**:任何 winget/安装器装完 Python/Node,**当前会话 PATH 不会刷新**,同会话立刻验证必然失败。必须:
+  ① 通过 `cmd /c "python --version"` 用新解析的 PATH 验证,或
+  ② 用刚安装的完整路径直接验证(如 `D:\0Tools\Python313\python.exe --version`),或
+  ③ 提示用户「新开终端再验证」
+  **禁止**在安装后同会话直接 `python --version` 判失败
 - 任何一步失败 → 报告页标 err/warn + 在「待办指引」给具体下一步,不静默跳过
 - 完成后生成初始化报告页(init-report CLI)+ 逐项验证清单
 
 **逐步流程**:
 
 1. **Python 运行环境**(3.10+ 必装):
-   - 检测(全面探测,防误判):`python --version` → `py -3 --version`(Windows)→ 常见自定义路径探测(`D:\0Tools\Python3*` 等)→ `winget list Python`(Windows)
-   - 找到可用 Python 且 ≥3.10 → 直接用它的路径执行后续步骤(不需要它进 PATH)
-   - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
-   - 验证:重跑 `python --version` 确认 ≥3.10
+   - 检测(全面探测,防误判;注意 `py -3` 依赖注册表不可靠,不作为判据):`python --version` → 常见自定义路径探测(`D:\0Tools\Python3*` / `C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 的 python.exe 直接跑)→ `winget list Python`(按上述 winget 探测协议)
+   - **找到可用 Python 且 ≥3.10 → 直接用它的完整路径执行后续步骤**(不需要它进 PATH;路径探测优先于 PATH 命令,防 Store 占位符误判)
+   - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(按 winget 探测协议定位;用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
+   - 验证(按 PATH 刷新协议):用安装路径直接跑 `python.exe --version`,或 `cmd /c "python --version"`,或提示用户新开终端;确认 ≥3.10 才进入下一步
 2. **数据存储(SQLite + FTS5)**(Python 内置,验证即可):
    - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
    - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5);不用 SQLite 文件之外的其他方案
-3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装,不再视为纯可选):
+3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装 + **强烈建议配置**,不默认跳过):
    - 检测:`python script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
    - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
-   - 未安装 → 逐步指引:
-     a. 检测 Node.js:`node --version`(需 ≥ 18);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(用户同意后 AI 执行;winget 不可用 → nodejs.org 手动)
-     b. 安装:`npm install -g @larksuite/cli`(**AI 直接执行**,npm 无需 GUI)
-     c. 验证:`npm view @larksuite/cli version` ≥ 1.0.59 且 `lark-cli --version` 可执行
+   - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务(可在飞书里管理/提醒)、备忘录同步(双向对账)。**不配 = 心愿→飞书、备忘录同步 两个核心功能不可用**,不是「少一个可有可无的附加项」
+   - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
+      a. 检测 Node.js:`node --version`(需 ≥ 18;注意 PATH 刷新协议 —— 可用 `cmd /c "node --version"` 或探测 `%APPDATA%\npm\node.exe` 等路径);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(按 winget 探测协议定位;winget 不可用 → nodejs.org 手动)
+      b. 安装:`npm install -g @larksuite/cli`(**AI 直接执行**,npm 无需 GUI;若 npm 不在 PATH → 用 winget 装完 Node 的完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
+      c. 验证:`npm view @larksuite/cli version` ≥ 1.0.59 且 `lark-cli --version` 可执行(同样注意 PATH 刷新)
    - 已装未授权 → 指引 `lark-cli auth login`(用户扫码/网页授权,此步必须用户本人操作);`check` 的 auth 字段应转 available
-   - 用户拒绝安装/授权 → 标 warn(不阻断),但**明确告知**:心愿→飞书、备忘录同步 两个功能不可用
-4. **环境变量**(SKILLS_DB_PATH / MEMO_MEDIA_DIR):
+   - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
+4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR):
+   - **先告诉用户数据在哪**:备忘录数据 = 1 个 SQLite 文件(DB)+ 媒体文件目录。默认位置:
+     - Windows:`D:\.db\memo.db` + `media\`
+     - Linux/macOS:`~/.local/share/memo/memo.db`(无 /mnt/d 时)+ `media\`
+   - **再说明为什么配**:设 `SKILLS_DB_PATH` 可把数据放到用户自己的目录(如 D:\MyData),便于备份/迁移;不设则用默认位置,功能不受影响
    - 检测:读环境变量,为空则未配置
-   - 未配置 → 引导设置(用户级持久化):
-     - Windows:`setx SKILLS_DB_PATH "D:\.db"`(示例) / `setx MEMO_MEDIA_DIR "D:\media"`
+   - 未配置 → 询问用户偏好 → 按用户选择设置(用户级持久化):
+     - 用户指定目录 → 用用户给的路径设置
+     - 用户无偏好 → **保持默认,不强制设置**(默认位置已可用,避免把用户数据引到作者路径)
+   - 若用户要求配置,AI 给出该平台的设置命令:
+     - Windows:`setx SKILLS_DB_PATH "用户指定路径"` / `setx MEMO_MEDIA_DIR "用户指定路径"`(示例,用用户路径替换)
      - macOS/Linux:写入 ~/.zshrc 或 ~/.bashrc 后 `source`
-     - 不设置也可用(有默认回落),但建议设置专属目录
+   - ⚠️ **禁止把作者机器约定路径(如 D:/.db、D:/media)作为示例塞给用户** —— 用户路径应由用户决定
 5. **数据库初始化**:
    - 检测:数据表是否就绪(通过 memo_cli 任意命令试探,如 `search ""` 不报错即就绪)
    - 未就绪 → 引导建表(复用 memo_cli 内部初始化逻辑,不暴露 SQL 路径;AI 调用初始化后验证)
@@ -367,10 +383,10 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - 无法在会话内验证 → 标 warn + 在待办指引给宿主差异说明
 7. **过程 HTML + 回执**:以上全部完成后,调用 `memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;再给一句话总结
    - `--data` 数据契约:`{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps:[str]}], "verify":[str]}`
-   - status 取值:ok=就绪 / warn=可选缺失(用户拒绝飞书、cron 未验证等)/ err=必装缺失(Python、数据库等)
-   - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 飞书已授权(若选装)/ 环境变量已配置 / HELP 页面可打开
+    - status 取值:ok=就绪 / warn=可选缺失(cron 未验证等)/ err=必装缺失(Python、数据库等);**用户拒绝飞书 → 标 err 级醒目提示(核心功能残缺),但流程不阻断**
+   - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 飞书已授权(强烈建议,用户明确拒绝才可不勾)/ 数据位置已确认(默认或自定义)/ HELP 页面可打开
 8. **承诺↔兑现**:prompt 说的每项 → 报告页必须有对应物(检查项/待办/验证清单);缺失即流程断裂
-9. **飞书拒绝不阻断**:用户明确拒绝安装飞书 → 标 warn,初始化照常完成(但「备忘录同步/心愿→飞书」不可用,如实告知)
+9. **飞书强烈建议 + 拒绝不阻断**:飞书是核心联动能力,默认引导安装;**只有用户明确拒绝才跳过**,且报告页醒目标注「心愿→飞书、备忘录同步 不可用」,后续想用说「配置飞书」即可补装
 
 **⚠️ Cron 任务特性**:
 - 当有待提醒事项时 → 通过 message 工具发送到 QQ
@@ -381,8 +397,8 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
 
 | 变量名 | 必填 | 说明 | 默认 |
 |--------|------|------|------|
-| `SKILLS_DB_PATH` | 否 | 数据库根目录(统一配置) | 父目录 .db/ 层层找 |
-| `MEMO_MEDIA_DIR` | 否 | 媒体文件目录 | `media` |
+| `SKILLS_DB_PATH` | 否 | 数据库根目录(多技能统一配置) | Windows `D:/.db` · Linux/macOS `~/.local/share/memo`(WSL 有 /mnt/d 则 `/mnt/d/.db`) |
+| `MEMO_MEDIA_DIR` | 否 | 媒体文件目录 | `media`(相对当前工作目录) |
 
 **注**:
 - 没有 `MEMO_FEISHU_USER_OPEN_ID` -- 飞书 task assignee 自动从 `lark-cli auth status` 读取(lark-cli 已登录的用户就是 assignee)

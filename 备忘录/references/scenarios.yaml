@@ -511,8 +511,8 @@ scenarios:
 
     SQLite(含 FTS5): Python 内置免装,需确认 FTS5 可用(全文搜索依赖)
 
-    @larksuite/cli(飞书 CLI,bin 名 lark-cli) >=1.0.59: 官方包,可选,仅「心愿→飞书」「备忘录同步」需要;安装 npm
-    install -g @larksuite/cli,授权 lark-cli auth login;未装/未授权自动降级
+    @larksuite/cli(飞书 CLI,bin 名 lark-cli) >=1.0.59: 强烈建议(核心联动:心愿→飞书、备忘录同步);安装 npm
+    install -g @larksuite/cli,授权 lark-cli auth login;用户明确拒绝才可跳过,跳过则上述两个功能不可用
 
     SKILLS_DB_PATH: 可选环境变量,数据库根目录(多技能共用)。不设时默认:Windows D:/.db / Linux(含 WSL)~/.local/share/memo(或
     /mnt/d/.db)

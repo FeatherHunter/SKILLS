@@ -321,17 +321,25 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**核心:引导式环境搭建(bootstrap)—— 检测 → 安装/配置 → 验证 → 下一步,假设用户环境可能什么都没做,每步必须给出可执行指引,不允许只报告「缺什么」而不给「怎么装」。**
 
-**执行原则**:
-- 每步:先检测 → 缺失/未就绪 → 给出**具体安装/配置指引**(命令级)→ 引导用户执行 → 验证通过 → 下一步
-- 用户同意后 AI 可代为执行安装命令(权限允许时);否则给出命令让用户自行执行
+**执行原则**(v1.2.0 · 2026-08-02 对抗审查修订 · 修复「检测误判」+「零自动化」+「编造规则」):
+- 每步:先检测 → 缺失/未就绪 → **优先自动化安装**(包管理器,用户同意后 AI 直接执行)→ 自动失败 → 给手动指引 → 验证 → 下一步
+- **检测必须全面,禁止误判「没装」**:PATH 命令找不到 ≠ 没装。必须依次探测:① PATH 命令 → ② py launcher(Windows `py -3 --version`)→ ③ 常见自定义安装路径(Windows: `D:\0Tools\Python3*` / `C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*`;macOS: `/usr/local/bin/python3` / Homebrew)→ ④ 包管理器查询(`winget list Python` / `brew list python`)。全部找不到才算「没装」
+- **自动安装优先(Windows)**:用户同意后,AI 应直接用包管理器安装,不甩给用户手动下安装包:
+  - Python:`winget install Python.Python.3.12 --scope user`(或 3.11/3.13)
+  - Node.js:`winget install OpenJS.NodeJS.LTS --scope user`
+  - 包管理器不可用(无 winget)或安装失败 → 才给手动指引(python.org / nodejs.org 下载,勾选 Add to PATH)
+- macOS:`brew install python@3.12` / `brew install node`;Linux:发行版包管理器(apt/dnf/pacman)
+- **并行原则**:多个独立缺失(如 Python + Node)→ 并行给出/执行安装,不要串行等待
+- **禁止编造规则**:所有行为约束以 SKILL.md 为唯一依据;SKILL.md 未禁止的操作(如 winget)不自行发明「禁止」借口
 - 任何一步失败 → 报告页标 err/warn + 在「待办指引」给具体下一步,不静默跳过
 - 完成后生成初始化报告页(init-report CLI)+ 逐项验证清单
 
 **逐步流程**:
 
 1. **Python 运行环境**(3.10+ 必装):
-   - 检测:`python --version`(或 `python3 --version`)
-   - 缺失 → 指引安装:Windows 从 python.org 下载 3.10+ 安装包(安装时勾选「Add to PATH」);macOS `brew install python@3.10`;Linux 发行版包管理器
+   - 检测(全面探测,防误判):`python --version` → `py -3 --version`(Windows)→ 常见自定义路径探测(`D:\0Tools\Python3*` 等)→ `winget list Python`(Windows)
+   - 找到可用 Python 且 ≥3.10 → 直接用它的路径执行后续步骤(不需要它进 PATH)
+   - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
    - 验证:重跑 `python --version` 确认 ≥3.10
 2. **数据存储(SQLite + FTS5)**(Python 内置,验证即可):
    - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
@@ -340,10 +348,10 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - 检测:`python script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
    - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
    - 未安装 → 逐步指引:
-     a. 检测 Node.js:`node --version`(需 ≥ 18);未装 → 先装 Node LTS(nodejs.org 或包管理器)
-     b. 安装:`npm install -g @larksuite/cli`(Windows 生成 %APPDATA%\npm\lark-cli.cmd)
+     a. 检测 Node.js:`node --version`(需 ≥ 18);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(用户同意后 AI 执行;winget 不可用 → nodejs.org 手动)
+     b. 安装:`npm install -g @larksuite/cli`(**AI 直接执行**,npm 无需 GUI)
      c. 验证:`npm view @larksuite/cli version` ≥ 1.0.59 且 `lark-cli --version` 可执行
-   - 已装未授权 → 指引 `lark-cli auth login`(用户扫码/网页授权);`check` 的 auth 字段应转 available
+   - 已装未授权 → 指引 `lark-cli auth login`(用户扫码/网页授权,此步必须用户本人操作);`check` 的 auth 字段应转 available
    - 用户拒绝安装/授权 → 标 warn(不阻断),但**明确告知**:心愿→飞书、备忘录同步 两个功能不可用
 4. **环境变量**(SKILLS_DB_PATH / MEMO_MEDIA_DIR):
    - 检测:读环境变量,为空则未配置

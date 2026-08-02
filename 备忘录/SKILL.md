@@ -351,6 +351,7 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
    - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5)
 3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装 + **强烈建议配置**,不默认跳过):
+   - **官方文档(遇到问题先查)**:https://open.feishu.cn/document/mcp_open_tools/feishu-cli-let-ai-actually-do-your-work-in-feishu(安装/授权/FAQ 全在;官方安装指南:https://open.feishu.cn/document/no_class/mcp-archive/feishu-cli-installation-guide.md)
    - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
    - ⚠️ **包名陷阱**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
    - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务、备忘录同步(双向对账)。**不配 = 这两个核心功能不可用**
@@ -359,9 +360,14 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       b. 安装 CLI:`npm install -g @larksuite/cli`(**AI 直接执行**;npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
       c. **安装 CLI SKILL**:`npx -y skills add https://open.feishu.cn --skill -y`(**AI 直接执行**)—— 官方 Required,跳过会导致快捷命令不可用
       d. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
-   - **配置 app**:`lark-cli config init --new`(AI 可代做,引导用户浏览器完成)
+   - **配置 app(先让用户选场景)**:
       - **app = agent**:飞书平台中应用(app)就是 AI agent 的载体,同一概念(appId 形如 `cli_xxx`)。对用户如实说明:「将在飞书创建一个 AI 应用(agent 身份),备忘录通过它调用飞书」
-      - 若在 OPENCLAW_HOME/HERMES_HOME 已设的环境运行,CLI 会拒绝 init,此时改用 `lark-cli config bind` 绑定环境已有 app
+      - **必须先于 auth login**:无 app 配置时 `auth login` 直接失败(not_configured)
+      - **场景 A · 用户从未创建过 app** → `lark-cli config init --new`(AI 可代做,引导用户浏览器完成,创建新 app)
+      - **场景 B · 用户已有 app** → 用户提供 App ID + App Secret,非交互配置:
+        - 引导用户到飞书开放平台开发者后台(open.feishu.cn)→ 应用列表 → 找到自己的应用 → 复制 App ID 和 App Secret
+        - 配置:`echo "<App Secret>" | lark-cli config init --app-id "<App ID>" --app-secret-stdin`(Secret 从 stdin 读,不暴露进程列表)
+      - 若在 OPENCLAW_HOME/HERMES_HOME 已设的环境运行,CLI 会拒绝 init,改用 `config bind` 绑定环境已有 app
    - **用户授权(必须用户本人操作)**:
       - **必须完成,不可按官方「可选」跳过**:此步开启「以你的身份操作」模式(AI 访问你的个人数据、以你名义执行);备忘录的飞书联动(心愿→飞书任务、备忘录同步)依赖你的用户身份(任务 assignee 是你,同步按你的 open_id 匹配),跳过 = 这两个核心功能不可用
       - **执行**:`lark-cli auth login --recommend` —— AI 运行命令,提取授权链接发给用户,用户打开链接在飞书中确认(扫码/网页);`--recommend` 自动推荐所需权限

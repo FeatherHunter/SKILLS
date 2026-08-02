@@ -370,7 +370,8 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       - 若在 OPENCLAW_HOME/HERMES_HOME 已设的环境运行,CLI 会拒绝 init,改用 `config bind` 绑定环境已有 app
    - **用户授权(必须用户本人操作)**:
       - **必须完成,不可按官方「可选」跳过**:此步开启「以你的身份操作」模式(AI 访问你的个人数据、以你名义执行);备忘录的飞书联动(心愿→飞书任务、备忘录同步)依赖你的用户身份(任务 assignee 是你,同步按你的 open_id 匹配),跳过 = 这两个核心功能不可用
-      - **执行**:`lark-cli auth login --recommend` —— AI 运行命令,提取授权链接发给用户,用户打开链接在飞书中确认(扫码/网页);`--recommend` 自动推荐所需权限
+      - **执行**:`lark-cli auth login --domain task,calendar --recommend` —— AI 运行命令,提取授权链接发给用户,用户打开链接在飞书中确认(扫码/网页);`--domain` 按需授予对应域权限,`--recommend` 自动推荐所需权限
+      - **备忘录需要的权限域**:`task`(心愿→飞书任务、备忘录同步,必授)+ `calendar`(日程,若用户要用飞书日历);缺哪个域补哪个:`lark-cli auth login --domain <缺的域>`
       - **对用户讲清**:「这一步让备忘录以你的身份在飞书创建/同步任务;跳过则心愿→飞书、备忘录同步不可用」
       - 授权验证:
         a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`

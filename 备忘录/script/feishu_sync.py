@@ -43,10 +43,10 @@ _USER_OPEN_ID_FAILED = False
 
 
 def _get_user_open_id() -> Optional[str]:
-    """从 lark-cli auth 读取当前 user open_id（带缓存）
+    """从 lark-cli auth status 读取当前 user open_id（带缓存）
 
     第一性原则：
-      - lark-cli auth login 后的 identity 是真值源
+      - lark-cli auth login 后的 identity 是真值源(auth status 输出 identities.user.openId)
       - 备忘录不再要求设置 MEMO_FEISHU_USER_OPEN_ID 环境变量
       - 模块级缓存避免每次 add 心愿都 sub-process
       - 失败一次后标记失败,不再重复探测
@@ -673,7 +673,10 @@ def main():
 
     if args.command == "check":
         ok = is_feishu_available()
-        print(json.dumps({"available": ok, "cli_path": get_lark_cli_path()}, ensure_ascii=False, indent=2))
+        # auth:是否已授权用户身份(auth status 有 openId = 已授权 · 2026-08-02 补)
+        auth = bool(_get_user_open_id())
+        print(json.dumps({"available": ok, "cli_path": get_lark_cli_path(), "auth": auth},
+                         ensure_ascii=False, indent=2))
     elif args.command == "add":
         result = add_wish_sync(args.memo_id, args.content, args.category, args.tasklist_guid)
         print(json.dumps(result, ensure_ascii=False, indent=2))

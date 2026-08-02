@@ -358,9 +358,14 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务(可在飞书里管理/提醒)、备忘录同步(双向对账)。**不配 = 心愿→飞书、备忘录同步 两个核心功能不可用**,不是「少一个可有可无的附加项」
    - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
       a. 检测 Node.js:`node --version`(需 ≥ 18;注意 PATH 刷新协议 —— 可用 `cmd /c "node --version"` 或探测 `%APPDATA%\npm\node.exe` 等路径);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(按 winget 探测协议定位;winget 不可用 → nodejs.org 手动)
-      b. 安装:`npm install -g @larksuite/cli`(**AI 直接执行**,npm 无需 GUI;若 npm 不在 PATH → 用 winget 装完 Node 的完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
-      c. 验证:`npm view @larksuite/cli version` ≥ 1.0.59 且 `lark-cli --version` 可执行(同样注意 PATH 刷新)
-   - 已装未授权 → 指引 `lark-cli auth login`(用户扫码/网页授权,此步必须用户本人操作);`check` 的 auth 字段应转 available
+      b. 安装(官方推荐优先):`npx @larksuite/cli@latest install`(一行完成安装 + 创建/选择 app 配置;AI 可代为执行);或 `npm install -g @larksuite/cli`(仅装包,需另行 config init;若 npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
+      c. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
+   - **授权(两步,官方文档 · 2026-08-02 校准)**:
+      ① `lark-cli config init`(初始化 app 配置 · 创建/选择飞书应用 · AI 可代做;`--new` 新建)
+      ② `lark-cli auth login`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做)
+     - 授权验证:`lark-cli auth status` → `identities.user.openId` 存在即已授权(这正是 feishu_sync.py 读取的字段)
+     - 权限不足(FAQ):`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
+     - 授权码过期(FAQ):重跑 `lark-cli auth login`
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
 4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR):
    - **先告诉用户数据在哪**:备忘录数据 = 1 个 SQLite 文件(DB)+ 媒体文件目录。默认位置:

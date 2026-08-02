@@ -116,10 +116,10 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 |---|---|---|---|
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/review_template.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
-| `templates/workout_plan_view.html` | 查健身计划 | DB 直接 query workout_plans + workout_plan_config | `python scripts/render_workout_plan.py [--review]`（已规范化，340 → 201 行） |
+| `templates/workout_plan_view.html` | 看本周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {...}` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `python scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/food_ranking.html` | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `python scripts/render_food_ranking.py --category / --all` |
-| `templates/exercise_review.html` | 复盘训练 | `exercise_review.py --format json` | `python scripts/render_exercise_review_html.py [--days]` |
+| `templates/exercise_review.html` | 计划复盘（本周/本月/全部） | `exercise_review.py --format json` | `python scripts/render_exercise_review_html.py [--days]` |
 
 ### 模板设计原则（与《手册》第 7 节对齐）
 
@@ -562,20 +562,40 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 运动复盘（今年） | 同本周(今年) | `--period year` |
 | 运动复盘（自定义时间） | 同本周(自定义) | `--period range --from <F> --to <T>` |
 
-### 🏋️ 健身计划
+### 🏋️ 健身计划(29 场景 · 2026-08-02 ticket #6 落地)
+
+**定训练计划(5)**:定训练计划 / 复制训练计划 / 定休息日 / 加训练动作 / 定一周计划
+**看训练计划(7)**:看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际
+**改训练计划(5)**:改训练计划 / 改某天训练 / 删某天训练 / 改动作 / 撤销训练计划
+**落地训练(5)**:落地训练 / 落地到本周末 / 落地到本月底 / 同步到训记 / 拉训记实绩
+**计划复盘(6)**:计划复盘（本周）/ 计划复盘（本月）/ 计划复盘（全部）/ 看计划完成率 / 看未完成训练 / 看动作完成率
+**安全检查(1)**:扫禁忌
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查健身计划 | 查看训练计划 HTML 页面(DB 数据驱动,含今日复盘 section) | `python scripts/render_workout_plan.py` |
-| 制定健身计划 | AI 采访式对话 → 校验 → 写入 | `AI 路由(无 CLI)` |
-| 落地健身计划 | 将某天计划执行(补计划 + 记心愿 + 训记推送) | `组合:补计划 + 记心愿 + 训记推送` → **HTML:`process_progress.html`** |
-| 卡路里同步 | 批量落地 3 天 + 调「回写训记」 | `组合:落地健身计划 × 3 + 回写训记` → **HTML:`process_progress.html`** |
-| 回写训记 | 拉训记数据回写 exercise_log(幂等) | `python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` → **HTML:`process_progress.html`** |
-| 训记-覆盖X日的训练计划 | 用卡路里 plan 覆盖训记某天训练 | `python scripts/xunji_bridge.py overlay-plan --date <DATE>` → **HTML:`process_progress.html`** |
-| 改健身计划 | AI 对话定位意图 → 改/增/删时段、调整周次 | `AI 路由 → python scripts/plan_generator.py` |
-| 复盘训练 | 对指定时间段做 plan vs 实绩对比 | `python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` |
-| 扫禁忌 | 检测 plan/DB 中禁忌动作(腰/膝/肩) · **2026-07-23 起支持 HTML 可视化报告** | `python scripts/scan_contraindications.py [--part {腰\|膝\|肩\|all}] [--strict]` · HTML:`python scripts/render_contraindication.py [--part ...] [--output <path>]` |
-| 审计动作名 | 扫描 plan 里非训记官方动作名(push-plan 前必跑) | `python scripts/audit_plan_names.py [--strict] [--fix-suggestions]` |
+| 定训练计划 | AI 采访式对话(目标/经验/频率/部位)→ 预览确认 → 写入回执 | `AI 路由 → plan_generator.write_plan()` · 预览:`python scripts/render_plan_builder.py --mock <plan.json>` |
+| 复制训练计划 | 复制整计划/某周为新模板 | `plan_generator.copy_plan()/copy_week()` |
+| 定休息日 | 标记某天休息(或取消) | `plan_generator.update_session(is_rest_day=)` |
+| 加训练动作 | 给某天/时段加动作(默认所有周) | `plan_generator.add_session()` |
+| 定一周计划 | 快速设置一周 7 天安排 | `plan_generator.write_plan()` |
+| 看本周/下周/上周/指定周计划 | 单周 7 天表 + 完成度 | `python scripts/render_workout_plan.py --mode week --week <N>` |
+| 看今天练什么 | 今日动作 + 实时完成进度(接 exercise_log) | `python scripts/render_workout_plan.py --mode today` |
+| 看计划概览 | KPI(总周数/完成率/训练日/动作数)+ 每周完成率 | `python scripts/render_workout_plan.py --mode overview` |
+| 看计划 vs 实际 | 完成度 + 偏差 + 动作级对比表 | `python scripts/render_workout_plan.py --mode vs --start <D1> --end <D2>` |
+| 改训练计划 | 改 config 字段(标题/总周数/开始日期/描述) | `plan_generator.update_config()` |
+| 改某天训练 | 改某天时段/动作/组数 | `plan_generator.update_session()` |
+| 删某天训练 | 删某天(快照确认 → 回执) | `plan_generator.delete_day()/delete_session()` |
+| 改动作 | 替换动作/改组数(默认所有周) | `plan_generator.update_session(movements=)` |
+| 撤销训练计划 | 删整个计划(确认 → 回执) | `plan_generator.delete_plan()` |
+| 落地训练 | 4 步落地(补计划/记心愿/推送/回写)+ 逐动作确认 | `python scripts/sync_plan.py --days 1` · 进度:`render_process_progress.py` |
+| 落地到本周末/月底 | 批量落地到周日/月末 | `python scripts/sync_plan.py --days <N>` |
+| 同步到训记 | Step 3 单做(审计动作名前置) | `python scripts/xunji_bridge.py push-plan --date <D>` |
+| 拉训记实绩 | Step 4 单做(回写 exercise_log) | `python scripts/xunji_bridge.py backfill --date <D>` |
+| 计划复盘（本周/本月/全部） | 完成率/训练日/消耗 + 趋势 + 对比 | `python scripts/render_exercise_review_html.py --days 7 / --start --end` |
+| 看计划完成率 | 每周完成率折线 | `python scripts/render_workout_plan.py --mode completion` |
+| 看未完成训练 | 漏练日期 + 应练动作 | `python scripts/render_workout_plan.py --mode missed --days <N>` |
+| 看动作完成率 | 动作 TOP 榜 | `python scripts/render_workout_plan.py --mode movement --days <N>` |
+| 扫禁忌 | 禁忌动作扫描(腰/膝/肩)+ 替代建议 | `python scripts/render_contraindication.py [--part {腰\|膝\|肩}]` |
 
 ### 📊 分析
 
@@ -885,16 +905,15 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 ---
 
-###### 复盘训练(已实现 · render_exercise_review_html.py)
+###### 计划复盘（本周/本月/全部）(已实现 · render_exercise_review_html.py)
 
 | 用户说法 | CLI 参数 |
 |---|---|
-| `复盘训练` | `--days 7`(默认) |
-| `复盘训练 今天` | `--start 今天 --end 今天` |
-| `复盘训练 昨天` | `--start 昨天 --end 昨天` |
-| `复盘训练 前天` | `--start 前天 --end 前天` |
-| `复盘训练 这周` | `--days 7` |
-| `复盘训练 7/1 到 7/14` | `--start 2026-07-01 --end 2026-07-14` |
+| `计划复盘（本周）` | `--days 7`(默认) |
+| `计划复盘（本月）` | `--start <月初> --end <今天>` |
+| `计划复盘（全部）` | `--start <计划起始> --end <今天>` |
+| `计划复盘 今天` | `--start 今天 --end 今天` |
+| `计划复盘 7/1 到 7/14` | `--start 2026-07-01 --end 2026-07-14` |
 
 ---
 
@@ -1426,7 +1445,7 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "记运动" vs "查运动记录" | "记"=新增,"查"=查询 |
 | "记吃的" vs "改吃的" | "记"=新增,"改"=修改已有记录 |
 | "记体重" vs "看体重目标进度" | "记"=新增记录,"看"=查询进度 |
-| "制定健身计划" vs "落地健身计划" | 前者是对话制定,后者是执行到当天 |
+| "定训练计划" vs "落地训练" | 前者是对话制定,后者是执行到当天 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量,后者显式指定 |
 | "定营养目标" vs "定体重目标" | 营养=calorie/protein/carbs/fat/water_goal 5 字段;体重=weight_goal+deadline 2 字段 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量,后者显式指定 |
@@ -1676,10 +1695,12 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
 用户做完一组就告诉 AI 一组数据,AI 逐条 add。**绝对不要**等做完 N 组再汇总成一条记录。
 
-### 🏋️ 健身计划:查 / 制定 / 改 / 落地 / 同步
+### 🏋️ 健身计划(29 场景 · 2026-08-02 ticket #6 落地)
 
-- **查健身计划**:`python scripts/render_workout_plan.py` 输出 Apple 风格 HTML
-- **制定健身计划**:AI 4 轮对话制→ 产出 JSON → `plan_generator.write_plan()` 写入
+**看训练计划(7)**:看本周/下周/上周/指定周计划 = `python scripts/render_workout_plan.py --mode week --week <N>`(N 由当前周推算:本周=当前,下周=N+1,上周=N-1);看今天练什么 = `--mode today`(接 exercise_log 实时完成);看计划概览 = `--mode overview`;看计划 vs 实际 = `--mode vs --start <D1> --end <D2>`
+- **循环计划周次语义**:加/改动作默认作用于**所有周**(填空明确时才按指定周);看周计划时 `--week` 必须传用户想要的周次
+
+- **定训练计划**:AI 4 轮对话制(目标/经验/频率/部位)→ 产出 JSON → `plan_generator.write_plan()` 写入
   ```
   贯穿规则:
     A. 安全止损 - 制止明显不安全的要求(如"每天 50 组胸")
@@ -1709,9 +1730,23 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     AI 推荐候选动作 → 用户确认 + 主备关系
     AI 校验:角度多样性/器材匹配/训记库中验证
     确认 → 生成 JSON → validate_plan() → write_plan()
+    → 生成预览 HTML(render_plan_builder.py --mock <plan.json>)给用户看,确认后 write_plan() 写库 + 回执
   ```
-- **改健身计划**:AI 对话定位意图 → 一个唤醒词覆盖所有写操作(改时段/加时段/删时段/调整周/改配置)
-- **复盘训练**:`python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比(完成率 / 漏做 / 超额 / 异常)。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。
+- **复制训练计划**:整计划 = `plan_generator.copy_plan(new_title=)`(单计划模型:另存为新标题);单周 = `plan_generator.copy_week(from_wn, to_wn)`
+- **定休息日**:用户说"周X休息" → `plan_generator.update_session(wn, dow, si, is_rest_day=1)`;取消休息 = `is_rest_day=0`。改前先查当天现状,回执显示改前/改后
+- **加训练动作**:定位 (week, day) → 现有时段:movements 数组 append;无时段:`plan_generator.add_session()`。**默认所有周都加**(用户指定"第 N 周"才限单周)
+- **定一周计划**:用户给"周一胸、周三腿…" → AI 解析为 7 天安排 → 空天 = 休息 → `plan_generator.write_plan()` 写入该周
+- **改训练计划**:config 字段(标题/总周数/开始日期/描述)= `plan_generator.update_config(field=)`;改 start_date 会影响周次计算,回执须提示
+- **改某天训练**:定位日期 → 当天 sessions 现状 → `plan_generator.update_session(wn, dow, si, **fields)` → 回执改前/改后
+- **删某天训练**:先查当天快照给用户确认 → 整周天 = `plan_generator.delete_day(wn, dow)`;单时段 = `plan_generator.delete_session(wn, dow, si)` → 确认回执
+- **改动作**:定位 (week, day, session) 内旧动作名 → movements 里替换 name/sets → `plan_generator.update_session(movements=)`. **默认所有周都改**
+- **撤销训练计划**:先给用户看计划概要(标题/总周数/起始日)确认 → `plan_generator.delete_plan()` → 删除回执 + 提示"可用定训练计划重新制定"
+- **计划复盘（本周/本月/全部）**:`python scripts/render_exercise_review_html.py`(本周=`--days 7`,本月=`--start <月初> --end <今天>`,全部=`--start <计划起始> --end <今天>`),数据来自 `exercise_review.py`(含完成率/训练日/消耗/异常)
+- **看计划完成率**:`python scripts/render_workout_plan.py --mode completion`(每周完成率)
+- **看未完成训练**:`python scripts/render_workout_plan.py --mode missed --days <N>`(默认 28)
+- **看动作完成率**:`python scripts/render_workout_plan.py --mode movement --days <N>`(默认 28)
+- **扫禁忌**:`python scripts/render_contraindication.py [--part {腰|膝|肩}]`(默认 all,输出禁忌动作 + 替代建议 HTML)
+- **复盘训练**(旧词已并入计划复盘):`python scripts/exercise_review.py [--start <DATE> --end <DATE>] [--today] [--yesterday] [--day-before-yesterday] [--days <N>]` → 对 [start, end] 范围内每一天做 plan vs 实绩对比(完成率 / 漏做 / 超额 / 异常)。AI 路由负责解析"今日/昨天/前天/这周/X-Y"等口语化时间 → `--start` / `--end`。
   ```
   参数:
     --start      <DATE>       开始日期
@@ -1727,9 +1762,9 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     - 计划组数 vs 实做组数
     - 完成率
     - 异常项:完成率 < 50% / 超额 > 130% / 计划未做 / 计划休息但实做
-  使用场景:晚上 10 点卡路里同步 → 触发"复盘训练" → 看 plan vs 实绩差距 → 决定要不要改健身计划。
+  使用场景:晚上 10 点卡路里同步 → 触发"落地到本周末" → 看 plan vs 实绩差距 → 决定要不要改训练计划。
   ```
-- **落地健身计划**:将指定日期的训练计划落地到作息/备忘/训记三个系统。执行必须全部完成三步,逐 session 独立执行,某条失败跳过继续。
+- **落地训练**:将指定日期的训练计划落地到作息/备忘/训记三个系统。执行必须全部完成三步,逐 session 独立执行,某条失败跳过继续。**落地前逐动作跟用户确认(做了吗/重量/组数,可跳过/替换),确认后调 `python scripts/sync_plan.py --days 1`;落地到本周末/月底 = `sync_plan.py --days <N>`(N=到周日/月末的天数,今天已是边界则只落地今天)。进度 HTML = render_process_progress.py 注入 4 步结果(已补计划/已记心愿/已推送/已回写)。**
   ```
   Step 1 · 数据准备
     调 workout_plan.get_day_plan(日期)。
@@ -1798,9 +1833,10 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     ⚠️ 训记推送 3/4(S3 超时,重新调落地可重试)
   ```
 
-- **卡路里同步**:批量落地 N 天(含飞书日历 + 心愿 + 训记推送)+ 训记回写。
+- **落地到本周末 / 落地到本月底**(旧词"卡路里同步"已并入):批量落地 N 天(含飞书日历 + 心愿 + 训记推送)+ 训记回写。
   2026-07-20 改:一键脚本(sync_plan.py)封装 4 步,加 `--start-offset` 默认 0=今天;
   Step 4 训记回写默认 `--days 1`(只回写今天已打勾的;周末补练用 `--backfill-days 3`)。
+  **N 的计算**:落地到本周末 = 今天到周日天数;落地到本月底 = 今天到月末天数;今天已是周日/月末 → N=1(只落地今天)。
 
   **快捷命令(2026-07-20 新增,推荐)**:
   ```
@@ -1810,9 +1846,9 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
   ```
   把跨 4 个工具的拼装下沉到脚本里,避免每次 AI 重新组装 + 漏步骤。
 
-  **手动流程(仅 AI 路径没装好 sync_plan.sh 时用)**:
+   **手动流程(仅 AI 路径没装好 sync_plan.sh 时用)**:
   ```
-  前置:KEY 检查同「落地健身计划」Step 4
+  前置:KEY 检查同「落地训练」Step 4
     检查 XUNJI_TRAINS_KEY(优先,兼容 XUNJI_API_KEY)。
     未配置 → 调 `python scripts/xunji_bridge.py key status` 让用户看状态,
             再用 `python scripts/xunji_bridge.py key set <KEY>` 设置。
@@ -1820,7 +1856,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
   Step 1 · 批量落地(按天循环,顺序执行)
     默认从今天起 3 天(--start-offset 0, --days 3;用户可改)。
-    对每天调「落地健身计划」完整流程(补计划+记心愿+训记推送 3 步,不能跳)。
+    对每天调「落地训练」完整流程(补计划+记心愿+训记推送 3 步,不能跳)。
     每天完成后汇报:
       「第 N/3 天 ✅ 补计划 4 条 / 心愿 4 条 / 训记 4 条」
 
@@ -1842,7 +1878,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     训记回写 ✅ 新增 0 条,更新 0 条(用户还没打勾)
   ```
 
-- **回写训记**:`python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` → 拉训记数据回写 exercise_log(幂等)。
+- **拉训记实绩**(旧词"回写训记"已并入):`python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]` → 拉训记数据回写 exercise_log(幂等)。
   ```
   行为:
     调训记 fetch(include_full_data=true)
@@ -1854,13 +1890,13 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     --date <DATE>  单日(默认今天)
     --days N           范围 [date-N+1, date](默认 1)
 
-  前置:KEY 检查同「落地健身计划」Step 4(XUNJI_TRAINS_KEY)
+  前置:KEY 检查同「落地训练」Step 4(XUNJI_TRAINS_KEY)
 
   使用场景:
-    - 「卡路里同步」Step 2 自动调(--days 1,只回写今天打勾的;
-      如果用户在 W2 周末补练一次,再手动 --days 3 把周末 3 天补回来)
-    - 晚上 6 点已同步过、8 点又有新训练 → 「回写训记」单独跑(--days 1)
-    - 周末补练漏写 → 「回写训记 --date <DATE> --days <N>」(回看 N 天)
+    - 「落地训练/落地到本周末」Step 4 自动调(--days 1,只回写今天打勾的;
+      如果用户在周末补练一次,再手动 --days 3 把周末 3 天补回来)
+    - 晚上 6 点已同步过、8 点又有新训练 → 「拉训记实绩」单独跑(--days 1)
+    - 周末补练漏写 → 「拉训记实绩 --date <DATE> --days <N>」(回看 N 天)
 
   末尾输出(JSON):
     {
@@ -1884,13 +1920,35 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
     }
   ```
 
-- **训记-覆盖X日的训练计划**:用卡路里 plan 覆盖训记某天**已有**训练(localid 已有 + start/end=0,**等同新建语义**)。
+- **同步到训记**(落地 Step 3 单做):把某天的计划推送到训记 App。**前置:审计动作名**——推送前先检查 plan 里的动作名训记能否识别。
+  ```
+  Step 1 · 审计动作名(前置校验)
+    调 `python scripts/audit_plan_names.py --strict`(扫描 plan 里非训记官方动作名)。
+    有识别不了的动作 → 先告诉用户哪些动作名有问题,等用户决定(改名/跳过)后再推;
+    全部可识别 → 继续。
+
+  Step 2 · 推送
+    调 `python scripts/xunji_bridge.py push-plan --date <DATE>`(日期默认今天)。
+    该命令内部完成(同「落地训练」Step 4):
+      1 读 workout_plans 中当天的所有 session
+      2 转成训记 res[] 格式(schema_version / client_request_id 幂等键 / movements 只留 name+sets)
+      3 调 POST /api_upsert_trains_for_llm_v2
+      4 多 session 间自动等 45s(限频)
+      5 输出每 session ok/fail 状态,JSON 格式
+    ⏱ 约 3 分钟/天。
+
+  Step 3 · 结果汇报
+    给用户看同步结果:推了几条、每条成功/失败、哪些动作名有问题。
+    ⚠ push-plan 报 ok=true 不够:响应里 res.trains 经常是空数组(训记 v2 API 响应缺陷),
+      verified=False 时必须 `fetch --full --date X` 二次确认才能算成功。
+  ```
+- **训记-覆盖X日的训练计划**(底层工具,非 29 场景唤醒词;AI 在「同步到训记」遇到训记已有同名训练时可选用):用卡路里 plan 覆盖训记某天**已有**训练(localid 已有 + start/end=0,**等同新建语义**)。
   ```
   适用场景:
     - 训记那天的训练已经在(可能手建,可能 push-plan 建过),想用卡路里 plan 同步内容
-    - 注意:跟「落地健身计划」的区别 -- 落地走 push-plan(新建 localid=0),
-            本触发词走 overlay-plan(更新 localid 已有)
-  跟「落地健身计划」Step 1/2/3 的区别:
+    - 注意:跟「落地训练」的区别 -- 落地走 push-plan(新建 localid=0),
+             本工具走 overlay-plan(更新 localid 已有)
+  跟「落地训练」Step 1/2/3 的区别:
     - 训记-覆盖只动训记,不动作息/备忘
     - 不调「补计划」、不调「记心愿」
 

@@ -126,10 +126,13 @@
     lines.push(`渲染命令: ${meta.render_cmd || '(未知)'}`);
     lines.push(`数据来源: ${meta.source || '(未知)'}`);
     lines.push(`渲染时间: ${meta.fetched_at || '(未知)'}`);
+    // AI 思考链:固定字段,未注入时显式标注(2026-08-02 修复:缺失不应整段消失)
+    lines.push('');
     if (meta.chain) {
-      lines.push('');
       lines.push(`AI 思考链:`);
       lines.push(meta.chain);
+    } else {
+      lines.push(`AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)`);
     }
     if (raw && Object.keys(raw).length > 0) {
       lines.push('');

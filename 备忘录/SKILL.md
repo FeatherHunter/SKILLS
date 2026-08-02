@@ -317,64 +317,60 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 > v1.2.0:快速开始 prompt 与 Init 场景(首次使用)统一为**唯一入口**。原 prompt 暴露 `script/init.sql` 路径违反 prompt 契约(§07 §3),已废弃。AI 收到「首次使用 / 初始化 / 新手」均走同一初始化流程,诊断复用现有命令,不新增 CLI 子命令。
 
-### 首次使用行为规范(v1.2.0 · #8 经验落地:交互规则落 SKILL.md,不只靠 prompt)
+### 首次使用行为规范
 
-AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**核心:引导式环境搭建(bootstrap)—— 检测 → 安装/配置 → 验证 → 下一步,假设用户环境可能什么都没做,每步必须给出可执行指引,不允许只报告「缺什么」而不给「怎么装」。**
+AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**核心:引导式环境搭建 —— 检测 → 安装/配置 → 验证 → 下一步,假设用户环境可能什么都没做,每步必须给出可执行指引,不允许只报告「缺什么」而不给「怎么装」。**
 
-**⚠️ 执行前提(2026-08-02 对抗审查补 · 防相对路径断裂)**:
-- **先定位 SKILL 目录**:找到包含 `script/memo_cli.py` 的目录(技能部署目录),记为 `${SKILL_DIR}`(如 `D:\Users\xxx\.minimax\skills\备忘录`)
-- 下文所有相对路径(`script/feishu_sync.py` / `script/init.sql` / `memo_cli.py` 等)均基于 `${SKILL_DIR}` 执行
-- 定位方式:AI 自身加载 SKILL.md 时已知技能目录;不确定时向用户询问技能安装位置,或用文件系统搜索 `memo_cli.py`
+**执行前提**:
+- **先定位 SKILL 目录**:找到包含 `script/memo_cli.py` 的目录,记为 `${SKILL_DIR}`(AI 加载 SKILL.md 时已知技能目录;不确定时询问用户或搜索 `memo_cli.py`)
+- 下文所有相对路径均基于 `${SKILL_DIR}` 执行
 
-**执行原则**(v1.2.0 · 2026-08-02 对抗审查修订 · 修复「检测误判」+「零自动化」+「编造规则」):
+**执行原则**:
 - 每步:先检测 → 缺失/未就绪 → **优先自动化安装**(包管理器,用户同意后 AI 直接执行)→ 自动失败 → 给手动指引 → 验证 → 下一步
-- **检测必须全面,禁止误判「没装」**:PATH 命令找不到 ≠ 没装。必须依次探测:① PATH 命令 → ② py launcher(Windows `py -3 --version`)→ ③ 常见自定义安装路径(Windows: `D:\0Tools\Python3*` / `C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*`;macOS: `/usr/local/bin/python3` / Homebrew)→ ④ 包管理器查询(`winget list Python` / `brew list python`)。全部找不到才算「没装」
-- **自动安装优先(Windows)**:用户同意后,AI 应直接用包管理器安装,不甩给用户手动下安装包:
+- **检测必须全面,禁止误判「没装」**:PATH 命令找不到 ≠ 没装。依次探测:① PATH 命令 → ② 常见自定义安装路径(`C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 等)→ ③ 包管理器查询(`winget list Python` / `brew list python`)。全部找不到才算「没装」
+- **自动安装优先(Windows)**:用户同意后直接用包管理器安装:
   - Python:`winget install Python.Python.3.12 --scope user`(或 3.11/3.13)
   - Node.js:`winget install OpenJS.NodeJS.LTS --scope user`
-  - 包管理器不可用(无 winget)或安装失败 → 才给手动指引(python.org / nodejs.org 下载,勾选 Add to PATH)
+  - 包管理器不可用或安装失败 → 才给手动指引(python.org / nodejs.org 下载,勾选 Add to PATH)
 - macOS:`brew install python@3.12` / `brew install node`;Linux:发行版包管理器(apt/dnf/pacman)
-- **并行原则**:多个独立缺失(如 Python + Node)→ 并行给出/执行安装,不要串行等待
-- **禁止编造规则**:所有行为约束以 SKILL.md 为唯一依据;SKILL.md 未禁止的操作(如 winget)不自行发明「禁止」借口
-- **winget 探测协议(2026-08-02 对抗审查 · 防「不是内部或外部命令」)**:执行 winget 前先定位:
-  ① `Get-Command winget` → ② 探测 `%LOCALAPPDATA%\Microsoft\WindowsApps\winget.exe`(常见于 App Installer 已装但不在 PATH)
-  找不到可用 winget → 直接转手动指引,不硬跑
-- **安装后 PATH 刷新协议(2026-08-02 对抗审查 · 防「装完仍失败→误判重装→死循环」)**:任何 winget/安装器装完 Python/Node,**当前会话 PATH 不会刷新**,同会话立刻验证必然失败。必须:
-  ① 通过 `cmd /c "python --version"` 用新解析的 PATH 验证,或
-  ② 用刚安装的完整路径直接验证(如 `%LOCALAPPDATA%\Programs\Python\Python312\python.exe --version`),或
-  ③ 提示用户「新开终端再验证」
-  **禁止**在安装后同会话直接 `python --version` 判失败
+- **并行原则**:多个独立缺失(如 Python + Node)→ 并行执行安装,不要串行等待
+- **禁止编造规则**:所有行为约束以 SKILL.md 为唯一依据;SKILL.md 未禁止的操作不自行发明「禁止」借口
+- **winget 探测协议**:执行 winget 前先定位:① `Get-Command winget` → ② 探测 `%LOCALAPPDATA%\Microsoft\WindowsApps\winget.exe`;找不到可用 winget → 转手动指引
+- **安装后 PATH 刷新协议**:任何安装器装完 Python/Node,**当前会话 PATH 不会刷新**,同会话立刻验证必然失败。必须:① `cmd /c "python --version"` 用新解析的 PATH 验证,或 ② 用刚安装的完整路径直接验证,或 ③ 提示用户「新开终端再验证」;**禁止**在安装后同会话直接 `python --version` 判失败
 - 任何一步失败 → 报告页标 err/warn + 在「待办指引」给具体下一步,不静默跳过
 - 完成后生成初始化报告页(init-report CLI)+ 逐项验证清单
 
 **逐步流程**:
 
 1. **Python 运行环境**(3.10+ 必装):
-   - 检测(全面探测,防误判;注意 `py -3` 依赖注册表不可靠,不作为判据):`python --version` → 常见自定义路径探测(`C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 的 python.exe 直接跑;不要探测具体机器约定路径)→ `winget list Python`(按上述 winget 探测协议)
-   - **找到可用 Python 且 ≥3.10 → 直接用它的完整路径执行后续步骤**(不需要它进 PATH;路径探测优先于 PATH 命令,防 Store 占位符误判)
-   - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(按 winget 探测协议定位;用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
+   - 检测:`python --version` → 常见自定义路径探测(`C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 的 python.exe 直接跑)→ `winget list Python`
+   - **找到可用 Python 且 ≥3.10 → 直接用它的完整路径执行后续步骤**(不需要它进 PATH)
+   - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
    - 验证(按 PATH 刷新协议):用安装路径直接跑 `python.exe --version`,或 `cmd /c "python --version"`,或提示用户新开终端;确认 ≥3.10 才进入下一步
 2. **数据存储(SQLite + FTS5)**(Python 内置,验证即可):
    - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
-   - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5);不用 SQLite 文件之外的其他方案
+   - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5)
 3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装 + **强烈建议配置**,不默认跳过):
    - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
-   - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
-   - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务(可在飞书里管理/提醒)、备忘录同步(双向对账)。**不配 = 心愿→飞书、备忘录同步 两个核心功能不可用**,不是「少一个可有可无的附加项」
-   - 未安装 → **直接引导安装**(默认路径,不问「要不要装」;官方安装指南 · 2026-08-02 校准):
-      a. 检测 Node.js:`node --version`(需 ≥ 18;注意 PATH 刷新协议 —— 可用 `cmd /c "node --version"` 或探测 `%APPDATA%\npm\node.exe` 等路径);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(按 winget 探测协议定位;winget 不可用 → nodejs.org 手动)
-      b. 安装 CLI:`npm install -g @larksuite/cli`(**AI 直接执行**;若 npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
-      c. **安装 CLI SKILL(官方 Required · 2026-08-02 补)**:`npx -y skills add https://open.feishu.cn --skill -y`(**AI 直接执行**)—— 官方明确「Required」,跳过会导致快捷命令(+shortcuts)不可用
+   - ⚠️ **包名陷阱**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
+   - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务、备忘录同步(双向对账)。**不配 = 这两个核心功能不可用**
+   - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
+      a. 检测 Node.js:`node --version`(需 ≥ 18;可用 `cmd /c "node --version"` 或探测 `%APPDATA%\npm\node.exe` 等路径);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(winget 不可用 → nodejs.org 手动)
+      b. 安装 CLI:`npm install -g @larksuite/cli`(**AI 直接执行**;npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
+      c. **安装 CLI SKILL**:`npx -y skills add https://open.feishu.cn --skill -y`(**AI 直接执行**)—— 官方 Required,跳过会导致快捷命令不可用
       d. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
-   - **授权(两步,官方安装指南 · 2026-08-02 校准)**:
-       ① `lark-cli config init --new`(初始化 app 配置 · **创建/选择飞书开放平台的应用(app),不是创建 agent** · AI 可代做,引导用户浏览器完成)
-       ② `lark-cli auth login --recommend`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做;`--recommend` 自动推荐所需权限,官方推荐)
-     - 授权验证(两步,防「token 过期仍报已授权」):
-       a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
-       b. **真实 API 探测**(2026-08-02 补):跑一次 `lark-cli task +get-my-tasks`(只读 · 已实测可用),返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 按 FAQ 重授权
-     - 权限不足(FAQ):`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
-     - 授权码过期(FAQ):重跑 `lark-cli auth login`
-   - ⚠️ **不要引导创建「agent」**(2026-08-02 补):官方安装流程「designed for AI Agents」指**面向 AI 工具使用**,config init 创建的是飞书**应用(app)**,skills add 安装的是**CLI 技能包(skill)** —— 两者都不是「新建一个 agent」;AI 不应引导用户去飞书后台创建 agent 类实体
+   - **配置 app**:`lark-cli config init --new`(AI 可代做,引导用户浏览器完成)
+      - **app = agent**:飞书平台中应用(app)就是 AI agent 的载体,同一概念(appId 形如 `cli_xxx`)。对用户如实说明:「将在飞书创建一个 AI 应用(agent 身份),备忘录通过它调用飞书」
+      - 若在 OPENCLAW_HOME/HERMES_HOME 已设的环境运行,CLI 会拒绝 init,此时改用 `lark-cli config bind` 绑定环境已有 app
+   - **用户授权(必须用户本人操作)**:
+      - **必须完成,不可按官方「可选」跳过**:此步开启「以你的身份操作」模式(AI 访问你的个人数据、以你名义执行);备忘录的飞书联动(心愿→飞书任务、备忘录同步)依赖你的用户身份(任务 assignee 是你,同步按你的 open_id 匹配),跳过 = 这两个核心功能不可用
+      - **执行**:`lark-cli auth login --recommend` —— AI 运行命令,提取授权链接发给用户,用户打开链接在飞书中确认(扫码/网页);`--recommend` 自动推荐所需权限
+      - **对用户讲清**:「这一步让备忘录以你的身份在飞书创建/同步任务;跳过则心愿→飞书、备忘录同步不可用」
+      - 授权验证:
+        a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
+        b. 真实 API 探测:`lark-cli task +get-my-tasks`,返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 按 FAQ 重授权
+      - 权限不足:`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
+      - 授权码过期:重跑 `lark-cli auth login`
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
 4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR) —— **主动告知,不强制配置**:
    - **告知数据在哪**(知情权):备忘录的所有数据 = 1 个 SQLite 文件(memo.db)+ 媒体目录。默认位置(客观事实):
@@ -388,8 +384,8 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - ⚠️ **禁止把作者机器约定路径(如 D:/.db、D:/media)作为推荐** —— 只能作为「默认位置」客观陈述;AI 也不自作主张推荐其他具体路径(如 D:\MyData),路径应由用户主动决定
 5. **数据库初始化**:
    - 检测:数据表是否就绪(通过 memo_cli 任意命令试探,如 `${SKILL_DIR}/script/memo_cli.py search ""` 不报错即就绪)
-   - 未就绪 → 建表(memo_cli **无内建建表入口** · 2026-08-02 对抗审查确认):
-     - AI 执行:`python -c "import sqlite3;c=sqlite3.connect('<DB 路径>');c.executescript(open(r'${SKILL_DIR}/script/init.sql',encoding='utf-8').read())"`
+    - 未就绪 → 建表(memo_cli 无内建建表入口):
+      - AI 执行:`python -c "import sqlite3;c=sqlite3.connect('<DB 路径>');c.executescript(open(r'${SKILL_DIR}/script/init.sql',encoding='utf-8').read())"`
      - DB 路径 = 第 4 步确定的位置(SKILLS_DB_PATH 或默认位置)+ `memo.db`
    - 建表后验证:重跑 `search ""` 应返回 `{"status":"ok",...}`(不再报 no such table)
 6. **提醒调度(Cron)**:

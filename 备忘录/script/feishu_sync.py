@@ -673,7 +673,7 @@ def main():
 
     if args.command == "check":
         ok = is_feishu_available()
-        # auth:是否已授权用户身份(auth status 有 openId = 已授权 · 2026-08-02 补)
+        # auth:是否已授权用户身份(auth status 有 openId = 已授权)
         auth = bool(_get_user_open_id())
         print(json.dumps({"available": ok, "cli_path": get_lark_cli_path(), "auth": auth},
                          ensure_ascii=False, indent=2))

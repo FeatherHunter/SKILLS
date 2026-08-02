@@ -17,7 +17,7 @@
 # 无 order 字段:组内序 = 书写序(#31 Q4)。
 # 共享校验:script/validate_scenarios.py(测试 + 渲染前双触发,#31 Q7)。
 # 复制契约:复制按钮直接复制 prompt 纯文本(自含唤醒词锚点,不加标签头 · 卡路里同型)。
-# DB fallback:Windows D:/.db · Linux(无 /mnt/d)~/.local/share/memo(2026-08-02 加)。
+# DB fallback:Windows D:/.db · Linux(无 /mnt/d)~/.local/share/memo。
 #
 # 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
 

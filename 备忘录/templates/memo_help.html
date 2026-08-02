@@ -264,9 +264,12 @@ function buildScenarioCard(s){
   return card;
 }
 
-// ===== 复制 prompt(原则 10 · 学习卡路里 help_center 的 toast 反馈) =====
+// ===== 复制 prompt(原则 10 · 学习卡路里 help_center · 直接复制纯 prompt 文本) =====
+// 第一性:prompt 自含「(唤醒词:XXX)」路由锚点 + 期望效果段,使命 = 让 AI 找到
+// SKILL.md 对应流程;复制内容 = prompt 本身,不加【场景】/【唤醒词】/【预期结果】
+// 标签(参考卡路里 help_center.js: s.prompt_template 直接复制 · 2026-08-02 拍板)
 function copyPrompt(s,btn){
-  var text='【场景】'+s.scenario_title+'\n【唤醒词】'+s.wake_word+'\n【prompt】\n'+(s.prompt||'').trim()+'\n【预期结果】\n'+(s.result||'').trim();
+  var text=(s.prompt||'').trim();
   // 提取唤醒词显示在 toast(确认复制对了)
   var wakeLabel=s.wake_word||'prompt';
   if(s.scenario_title)wakeLabel+=' · '+s.scenario_title;

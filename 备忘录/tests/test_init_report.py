@@ -128,7 +128,8 @@ class TestInitPromptContract:
                 if s["scenario_id"] == "memo_init_setup"][0]
         assert "初始化报告页" in init["prompt"], \
             "Init prompt 应承诺生成初始化报告页(承诺↔兑现,#8 A3)"
-        assert "检查结果清单" in init["prompt"], "prompt 应承诺检查清单"
+        assert "带我浏览" in init["prompt"], \
+            "prompt 应承诺完成后带用户浏览功能(承诺↔兑现)"
 
     def test_prompt_no_cli_leak(self, data):
         init = [s for s in data["scenarios"]

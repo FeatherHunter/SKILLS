@@ -361,18 +361,20 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
    - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
    - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务(可在飞书里管理/提醒)、备忘录同步(双向对账)。**不配 = 心愿→飞书、备忘录同步 两个核心功能不可用**,不是「少一个可有可无的附加项」
-   - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
+   - 未安装 → **直接引导安装**(默认路径,不问「要不要装」;官方安装指南 · 2026-08-02 校准):
       a. 检测 Node.js:`node --version`(需 ≥ 18;注意 PATH 刷新协议 —— 可用 `cmd /c "node --version"` 或探测 `%APPDATA%\npm\node.exe` 等路径);未装 → **自动安装** `winget install OpenJS.NodeJS.LTS --scope user`(按 winget 探测协议定位;winget 不可用 → nodejs.org 手动)
-      b. 安装(官方推荐优先):`npx @larksuite/cli@latest install`(一行完成安装 + 创建/选择 app 配置;AI 可代为执行);或 `npm install -g @larksuite/cli`(仅装包,需另行 config init;若 npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
-      c. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
-   - **授权(两步,官方文档 · 2026-08-02 校准)**:
-       ① `lark-cli config init`(初始化 app 配置 · 创建/选择飞书应用 · AI 可代做;`--new` 新建)
-       ② `lark-cli auth login`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做)
+      b. 安装 CLI:`npm install -g @larksuite/cli`(**AI 直接执行**;若 npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
+      c. **安装 CLI SKILL(官方 Required · 2026-08-02 补)**:`npx -y skills add https://open.feishu.cn --skill -y`(**AI 直接执行**)—— 官方明确「Required」,跳过会导致快捷命令(+shortcuts)不可用
+      d. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
+   - **授权(两步,官方安装指南 · 2026-08-02 校准)**:
+       ① `lark-cli config init --new`(初始化 app 配置 · **创建/选择飞书开放平台的应用(app),不是创建 agent** · AI 可代做,引导用户浏览器完成)
+       ② `lark-cli auth login --recommend`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做;`--recommend` 自动推荐所需权限,官方推荐)
      - 授权验证(两步,防「token 过期仍报已授权」):
        a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
        b. **真实 API 探测**(2026-08-02 补):跑一次 `lark-cli task +get-my-tasks`(只读 · 已实测可用),返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 按 FAQ 重授权
      - 权限不足(FAQ):`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
      - 授权码过期(FAQ):重跑 `lark-cli auth login`
+   - ⚠️ **不要引导创建「agent」**(2026-08-02 补):官方安装流程「designed for AI Agents」指**面向 AI 工具使用**,config init 创建的是飞书**应用(app)**,skills add 安装的是**CLI 技能包(skill)** —— 两者都不是「新建一个 agent」;AI 不应引导用户去飞书后台创建 agent 类实体
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
 4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR) —— **主动告知,不强制配置**:
    - **告知数据在哪**(知情权):备忘录的所有数据 = 1 个 SQLite 文件(memo.db)+ 媒体目录。默认位置(客观事实):

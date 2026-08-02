@@ -1430,43 +1430,395 @@ TRIGGERS = [
     },
 
     {
-            'category': '运动',     'wake_word': '记运动',     'desc': '记录运动消耗',
-            'main_prompt': {
-        'cli': 'python scripts/exercise_tracker.py add --date YYYY-MM-DD --type <类型> --calories <卡> [--minutes N] [--reps N]', 'text': '请你加载技能 卡路里,执行唤醒词「记运动」。\n\n我做了一项运动,记录运动类型 + 消耗热量 + 可选时长/次数。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['运动类型(如 跑步/力量/瑜伽): ', '消耗热量 卡(选填,可由 AI 估): '],
-            'variants': []},
+            'category': '运动',     'wake_word': '记运动',     'desc': '记录一次运动(类型/时长/消耗/时间)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-add --type <T> --calories <C> [--minutes <M>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记运动」。\n\n我做了运动,请记下来。记录后给我看:类型/时长/消耗/时间(热量按估算的会标注)。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n热量(卡,选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_add', 'name': '记运动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-add --type <T> --calories <C> [--minutes <M>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记运动」。\n\n我做了运动,请记下来。记录后给我看:类型/时长/消耗/时间(热量按估算的会标注)。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n热量(卡,选填):____',
+            'user_intent': '记录一次运动(类型/时长/消耗/时间)', 'data_fields': ["exercise_type", "duration_minutes", "calories_burned", "time", "is_estimated"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '运动',     'wake_word': '改运动记录',     'desc': '更新运动记录',
-            'main_prompt': {
-        'cli': 'python scripts/exercise_tracker.py update --id <id> [--type] [--calories] [--minutes] ...', 'text': '请你加载技能 卡路里,执行唤醒词「改运动记录」。\n\n我要改某条运动记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+            'category': '运动',     'wake_word': '记运动（含备注）',     'desc': '记录一次运动并附带备注',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-add --type <T> --calories <C> [--minutes <M>] --note <N> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记运动（含备注）」。\n\n我做了运动,请连同备注一起记下来。记录后给我看:类型/时长/消耗/时间/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n热量(卡,选填):____\n备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_add_note', 'name': '记运动（含备注）', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-add --type <T> --calories <C> [--minutes <M>] --note <N> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记运动（含备注）」。\n\n我做了运动,请连同备注一起记下来。记录后给我看:类型/时长/消耗/时间/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n热量(卡,选填):____\n备注:____',
+            'user_intent': '记录一次运动并附带备注', 'data_fields': ["exercise_type", "duration_minutes", "calories_burned", "note", "time"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '运动',     'wake_word': '查运动记录',     'desc': '查询运动记录(mode=records)',
-            'main_prompt': {
-        'cli': 'python scripts/render_exercise_summary.py --mode records --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查运动记录」。\n\n我想看最近 N 天的运动明细(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查运动记录 30 天', 'cli': 'python scripts/render_exercise_summary.py --mode records --days 30', 'prompt': '请你加载技能 卡路里,执行唤醒词「查运动记录 30 天」。\n\n时间窗口固定最近 30 天。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+            'category': '运动',     'wake_word': '记力量训练',     'desc': '记录力量训练(每组一行)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-add-strength --type <T> --sets <N> --load <KG> --reps <R> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记力量训练」。\n\n我练了力量训练,请记下来。记录后给我看:每个动作的 N 组 × kg × reps + 总消耗。完成后给 1 句话总结,不需要过多文字解释。\n\n动作名:____\n组数:____\n单组重量(kg):____\n每组次数:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_add_strength', 'name': '记力量训练', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-add-strength --type <T> --sets <N> --load <KG> --reps <R> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记力量训练」。\n\n我练了力量训练,请记下来。记录后给我看:每个动作的 N 组 × kg × reps + 总消耗。完成后给 1 句话总结,不需要过多文字解释。\n\n动作名:____\n组数:____\n单组重量(kg):____\n每组次数:____',
+            'user_intent': '记录力量训练(每组一行)', 'data_fields': ["exercise_type", "set_index", "load_kg", "reps", "calories_burned"],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '运动',     'wake_word': '查运动汇总',     'desc': '运动汇总统计(mode=summary)',
-            'main_prompt': {
-        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查运动汇总」。\n\n我想看最近 N 天运动总消耗 + 总时长 + 活跃天数(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查运动汇总 7 月', 'cli': 'python scripts/render_exercise_summary.py --mode summary --start 2026-07-01 --end 2026-07-31', 'prompt': '请你加载技能 卡路里,执行唤醒词「查运动汇总 7 月」。\n\n整月查询,7 月 1 号到 7 月底。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+            'category': '运动',     'wake_word': '记有氧运动',     'desc': '记录有氧运动(时长/距离/配速/心率)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-add --type <T> --category 有氧 --minutes <M> --distance <KM> [--avg-hr <BPM>] [--max-hr <BPM>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记有氧运动」。\n\n我做了有氧运动,请记下来。记录后给我看:时长/距离/配速/平均心率 + 最高心率(如手环有)+ 消耗。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n距离(km,选填):____\n平均心率(选填):____\n最高心率(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_add_cardio', 'name': '记有氧运动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-add --type <T> --category 有氧 --minutes <M> --distance <KM> [--avg-hr <BPM>] [--max-hr <BPM>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记有氧运动」。\n\n我做了有氧运动,请记下来。记录后给我看:时长/距离/配速/平均心率 + 最高心率(如手环有)+ 消耗。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n时长(分钟):____\n距离(km,选填):____\n平均心率(选填):____\n最高心率(选填):____',
+            'user_intent': '记录有氧运动(时长/距离/配速/心率)', 'data_fields': ["exercise_type", "duration_minutes", "distance_km", "avg_heart_rate", "max_heart_rate", "pace"],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '运动',     'wake_word': '查运动类型',     'desc': '运动类型统计(力量/有氧/柔韧/日常)',
-            'main_prompt': {
-        'cli': 'python scripts/render_exercise_summary.py --mode stats --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查运动类型」。\n\n我想看 4 类运动(力量/有氧/柔韧/日常)的占比(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+            'category': '运动',     'wake_word': '记日常活动',     'desc': '记录日常活动(步数/消耗/时段)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-add-daily --type <T> [--steps <N>] [--period <时段>] --minutes <M> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记日常活动」。\n\n我做了日常活动(家务/通勤/走路等),请记下来。记录后给我看:步数(如手环有)/消耗/时段。完成后给 1 句话总结,不需要过多文字解释。\n\n活动类型:____\n步数(选填):____\n时段(上午/下午/晚上,选填):____\n时长(分钟):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_add_daily', 'name': '记日常活动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-add-daily --type <T> [--steps <N>] [--period <时段>] --minutes <M> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记日常活动」。\n\n我做了日常活动(家务/通勤/走路等),请记下来。记录后给我看:步数(如手环有)/消耗/时段。完成后给 1 句话总结,不需要过多文字解释。\n\n活动类型:____\n步数(选填):____\n时段(上午/下午/晚上,选填):____\n时长(分钟):____',
+            'user_intent': '记录日常活动(步数/消耗/时段)', 'data_fields': ["exercise_type", "steps", "period", "duration_minutes", "calories_burned"],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '运动',     'wake_word': '查运动趋势',     'desc': '运动热量趋势(mode=trend,面积图)',
-            'main_prompt': {
-        'cli': 'python scripts/render_exercise_summary.py --mode trend --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查运动趋势」。\n\n我想看每日运动消耗的面积图(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+            'category': '运动',     'wake_word': '补记运动',     'desc': '补录历史某天的运动',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-backfill --date <D> --type <T> --calories <C> [--minutes <M>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「补记运动」。\n\n我忘了记某天的运动,请补录到指定日期。记录后给我看:类型/时长/消耗/补录日期 + 补录标识。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n日期:____\n时长(分钟):____\n热量(卡,选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_backfill', 'name': '补记运动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-backfill --date <D> --type <T> --calories <C> [--minutes <M>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记运动」。\n\n我忘了记某天的运动,请补录到指定日期。记录后给我看:类型/时长/消耗/补录日期 + 补录标识。完成后给 1 句话总结,不需要过多文字解释。\n\n运动类型:____\n日期:____\n时长(分钟):____\n热量(卡,选填):____',
+            'user_intent': '补录历史某天的运动', 'data_fields': ["date", "exercise_type", "duration_minutes", "calories_burned", "is_backfill"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '运动',     'wake_word': '批量补记运动',     'desc': '一次补录多天的运动',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-batch-add --items "<日期 类型 时长 热量;...>" --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量补记运动」。\n\n我要一次性补录多天的运动,每条含日期/类型/时长/热量。全部处理后给我看:写入/跳过/失败条数 + 失败原因。完成后给 1 句话总结,不需要过多文字解释。\n\n批量数据(每行一条:日期 类型 时长(分钟) 热量(卡)):\n____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_batch_add', 'name': '批量补记运动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-batch-add --items "<日期 类型 时长 热量;...>" --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量补记运动」。\n\n我要一次性补录多天的运动,每条含日期/类型/时长/热量。全部处理后给我看:写入/跳过/失败条数 + 失败原因。完成后给 1 句话总结,不需要过多文字解释。\n\n批量数据(每行一条:日期 类型 时长(分钟) 热量(卡)):\n____',
+            'user_intent': '一次补录多天的运动', 'data_fields': ["written_count", "skipped_count", "failed_count", "failures"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '运动',     'wake_word': '复制昨日运动',     'desc': '把昨天的运动复制到今天(或指定日期)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-copy --target <D> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「复制昨日运动」。\n\n我想把昨天的运动记录复制到今天(或指定日期)。复制后给我看:复制条数/跳过条数。完成后给 1 句话总结,不需要过多文字解释。\n\n复制到哪一天(选填,默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_copy', 'name': '复制昨日运动', 'subfunction': '记运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-copy --target <D> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「复制昨日运动」。\n\n我想把昨天的运动记录复制到今天(或指定日期)。复制后给我看:复制条数/跳过条数。完成后给 1 句话总结,不需要过多文字解释。\n\n复制到哪一天(选填,默认今天):____',
+            'user_intent': '把昨天的运动复制到今天(或指定日期)', 'data_fields': ["copied_count", "skipped_count", "target_date"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '运动',     'wake_word': '改运动记录',     'desc': '修改一条运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-update --id <ID> [--field <X> --value <Y>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改运动记录」。\n\n我要改一条运动记录。改完后给我看:改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(选填,如「最近一条」或日期):____\n要改的字段(类型/时长/热量/日期/备注):____\n新值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_update', 'name': '改运动记录', 'subfunction': '改运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-update --id <ID> [--field <X> --value <Y>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改运动记录」。\n\n我要改一条运动记录。改完后给我看:改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(选填,如「最近一条」或日期):____\n要改的字段(类型/时长/热量/日期/备注):____\n新值:____',
+            'user_intent': '修改一条运动记录', 'data_fields': ["id", "old_record", "new_record"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '运动',     'wake_word': '改某日运动',     'desc': '按日期修改运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-update-day --date <D> [--field <X> --value <Y>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某日运动」。\n\n我要改某一天的运动记录。改完后给我看:命中条数/改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要改的字段:____\n新值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_update_day', 'name': '改某日运动', 'subfunction': '改运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-update-day --date <D> [--field <X> --value <Y>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日运动」。\n\n我要改某一天的运动记录。改完后给我看:命中条数/改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要改的字段:____\n新值:____',
+            'user_intent': '按日期修改运动记录', 'data_fields': ["date", "matched_count", "old_record", "new_record"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '运动',     'wake_word': '删运动记录',     'desc': '删除一条运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-delete --id <ID> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删运动记录」。\n\n我要删一条运动记录。删除后给我看:删除前快照 + 确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_delete', 'name': '删运动记录', 'subfunction': '改运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-delete --id <ID> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删运动记录」。\n\n我要删一条运动记录。删除后给我看:删除前快照 + 确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '删除一条运动记录', 'data_fields': ["id", "snapshot"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '运动',     'wake_word': '删某日运动',     'desc': '删除某天全部运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-delete-day --date <D> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删某日运动」。\n\n我要删某一天的全部运动记录。删除后给我看:删除条数/日期。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_delete_day', 'name': '删某日运动', 'subfunction': '改运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-delete-day --date <D> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删某日运动」。\n\n我要删某一天的全部运动记录。删除后给我看:删除条数/日期。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____',
+            'user_intent': '删除某天全部运动记录', 'data_fields': ["date", "deleted_count"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '运动',     'wake_word': '批量删运动',     'desc': '删除一个时间范围内的运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_receipt.py --live-delete-range --from <F> --to <T> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量删运动」。\n\n我要删除一个时间范围内的运动记录。删除后给我看:时间范围/删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_delete_range', 'name': '批量删运动', 'subfunction': '改运动', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_exercise_receipt.py --live-delete-range --from <F> --to <T> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量删运动」。\n\n我要删除一个时间范围内的运动记录。删除后给我看:时间范围/删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____',
+            'user_intent': '删除一个时间范围内的运动记录', 'data_fields': ["start_date", "end_date", "deleted_count"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '运动',     'wake_word': '看今日运动',     'desc': '看今天运动明细和累计',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode records --today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日运动」。\n\n我想看今天运动明细:记录表格 + 今日累计消耗/时长(vs 每日运动目标,如有)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_today', 'name': '看今日运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode records --today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日运动」。\n\n我想看今天运动明细:记录表格 + 今日累计消耗/时长(vs 每日运动目标,如有)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天运动明细和累计', 'data_fields': ["date", "records", "total_calories", "total_minutes", "exercise_goal"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '运动',     'wake_word': '看昨日运动',     'desc': '看昨天运动明细和累计',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode records --yesterday', 'text': '请你加载技能 卡路里,执行唤醒词「看昨日运动」。\n\n我想看昨天运动明细:记录表格 + 昨日累计消耗/时长(vs 每日运动目标,如有)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_yesterday', 'name': '看昨日运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode records --yesterday', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看昨日运动」。\n\n我想看昨天运动明细:记录表格 + 昨日累计消耗/时长(vs 每日运动目标,如有)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看昨天运动明细和累计', 'data_fields': ["date", "records", "total_calories", "total_minutes", "exercise_goal"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '运动',     'wake_word': '看本周运动',     'desc': '看本周运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周运动」。\n\n我想看本周运动(周一到今天):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_week', 'name': '看本周运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周运动」。\n\n我想看本周运动(周一到今天):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '运动',     'wake_word': '看上周运动',     'desc': '看上周运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --last-week', 'text': '请你加载技能 卡路里,执行唤醒词「看上周运动」。\n\n我想看上周运动(周一至周日):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_last_week', 'name': '看上周运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --last-week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上周运动」。\n\n我想看上周运动(周一至周日):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上周运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '运动',     'wake_word': '看本月运动',     'desc': '看本月运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --month', 'text': '请你加载技能 卡路里,执行唤醒词「看本月运动」。\n\n我想看本月运动(1 号到今天):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_month', 'name': '看本月运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --month', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月运动」。\n\n我想看本月运动(1 号到今天):记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '运动',     'wake_word': '看上月运动',     'desc': '看上月运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --last-month', 'text': '请你加载技能 卡路里,执行唤醒词「看上月运动」。\n\n我想看上月运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_last_month', 'name': '看上月运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --last-month', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上月运动」。\n\n我想看上月运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上月运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '运动',     'wake_word': '看最近 7 天运动',     'desc': '看最近 7 天运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 7 天运动」。\n\n我想看最近 7 天运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_7d', 'name': '看最近 7 天运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --days 7', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 7 天运动」。\n\n我想看最近 7 天运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '运动',     'wake_word': '看最近 30 天运动',     'desc': '看最近 30 天运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 30 天运动」。\n\n我想看最近 30 天运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_30d', 'name': '看最近 30 天运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --days 30', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 30 天运动」。\n\n我想看最近 30 天运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '运动',     'wake_word': '看某段时间运动',     'desc': '看一段自定义时间的运动汇总',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --from <F> --to <T>', 'text': '请你加载技能 卡路里,执行唤醒词「看某段时间运动」。\n\n我想看一段自定义时间的运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_range', 'name': '看某段时间运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --from <F> --to <T>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某段时间运动」。\n\n我想看一段自定义时间的运动:记录表格 + 总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____',
+            'user_intent': '看一段自定义时间的运动汇总', 'data_fields': ["start_date", "end_date", "records", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '运动',     'wake_word': '看今日运动（vs 目标）',     'desc': '看今天运动目标达成情况(完成度/差额/判断)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_goal_view.py --period today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况:大进度环(完成度)+ 距目标差额 + 达标/未达标判断 + 一句话。如果还没设过每日运动消耗目标,先问我目标值,记下后再展示。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_today_vs_goal', 'name': '看今日运动（vs 目标）', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况:大进度环(完成度)+ 距目标差额 + 达标/未达标判断 + 一句话。如果还没设过每日运动消耗目标,先问我目标值,记下后再展示。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天运动目标达成情况(完成度/差额/判断)', 'data_fields': ["exercise_goal", "actual", "completion_pct", "gap", "achieved", "summary"],
+            'depends_on_external': False, 'order': 9},
+    {
+            'category': '运动',     'wake_word': '看本周运动（vs 目标）',     'desc': '看本周运动目标达成情况(完成度/差额/判断)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_goal_view.py --period week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况:大进度环(完成度)+ 距目标差额 + 达标/未达标判断 + 一句话。如果还没设过每日运动消耗目标,先问我目标值,记下后再展示。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_week_vs_goal', 'name': '看本周运动（vs 目标）', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况:大进度环(完成度)+ 距目标差额 + 达标/未达标判断 + 一句话。如果还没设过每日运动消耗目标,先问我目标值,记下后再展示。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周运动目标达成情况(完成度/差额/判断)', 'data_fields': ["exercise_goal", "week_goal", "actual", "completion_pct", "gap", "achieved", "summary"],
+            'depends_on_external': False, 'order': 10},
+    {
+            'category': '运动',     'wake_word': '看运动记录（有备注）',     'desc': '看带备注的运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode records --has-note', 'text': '请你加载技能 卡路里,执行唤醒词「看运动记录（有备注）」。\n\n我想看带备注的运动记录:表格(日期/类型/时长/消耗/备注)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_notes', 'name': '看运动记录（有备注）', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode records --has-note', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看运动记录（有备注）」。\n\n我想看带备注的运动记录:表格(日期/类型/时长/消耗/备注)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看带备注的运动记录', 'data_fields': ["records", "note"],
+            'depends_on_external': False, 'order': 11},
+    {
+            'category': '运动',     'wake_word': '看运动记录（按力量筛选）',     'desc': '看力量训练记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode records --category 力量', 'text': '请你加载技能 卡路里,执行唤醒词「看运动记录（按力量筛选）」。\n\n我想看力量训练记录:表格(日期/动作/组数/重量/次数)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_strength', 'name': '看运动记录（按力量筛选）', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode records --category 力量', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看运动记录（按力量筛选）」。\n\n我想看力量训练记录:表格(日期/动作/组数/重量/次数)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看力量训练记录', 'data_fields': ["records", "set_index", "load_kg", "reps"],
+            'depends_on_external': False, 'order': 12},
+    {
+            'category': '运动',     'wake_word': '看运动记录（按有氧筛选）',     'desc': '看有氧运动记录',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode records --category 有氧', 'text': '请你加载技能 卡路里,执行唤醒词「看运动记录（按有氧筛选）」。\n\n我想看有氧运动记录:表格(日期/类型/时长/距离/配速)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_cardio', 'name': '看运动记录（按有氧筛选）', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode records --category 有氧', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看运动记录（按有氧筛选）」。\n\n我想看有氧运动记录:表格(日期/类型/时长/距离/配速)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看有氧运动记录', 'data_fields': ["records", "distance_km", "pace"],
+            'depends_on_external': False, 'order': 13},
+    {
+            'category': '运动',     'wake_word': '看最近 60 天运动',     'desc': '看最近 60 天运动(每天一行)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 60', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 60 天运动」。\n\n我想看最近 60 天运动(每天一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_60d', 'name': '看最近 60 天运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --days 60', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 60 天运动」。\n\n我想看最近 60 天运动(每天一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 60 天运动(每天一行)', 'data_fields': ["start_date", "end_date", "daily_rows", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 14},
+    {
+            'category': '运动',     'wake_word': '看最近 180 天运动',     'desc': '看最近 180 天运动(每 3 天降采样)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 180 --downsample 3', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 180 天运动」。\n\n我想看最近 180 天运动(每 3 天降采样一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_180d', 'name': '看最近 180 天运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --days 180 --downsample 3', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 180 天运动」。\n\n我想看最近 180 天运动(每 3 天降采样一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 180 天运动(每 3 天降采样)', 'data_fields': ["start_date", "end_date", "downsample_rows", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 15},
+    {
+            'category': '运动',     'wake_word': '看最近 365 天运动',     'desc': '看最近 365 天运动(每周降采样)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_summary.py --mode summary --days 365 --downsample week', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 365 天运动」。\n\n我想看最近 365 天运动(每周降采样一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_view_365d', 'name': '看最近 365 天运动', 'subfunction': '看运动', 'output_type': 'result',
+            'html_template': 'templates/exercise_summary.html', 'data_source': 'python scripts/render_exercise_summary.py --mode summary --days 365 --downsample week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 365 天运动」。\n\n我想看最近 365 天运动(每周降采样一行):总时长/总消耗/日均 + 运动天数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 365 天运动(每周降采样)', 'data_fields': ["start_date", "end_date", "downsample_rows", "total_calories", "total_minutes", "daily_avg", "active_days"],
+            'depends_on_external': False, 'order': 16},
+    {
+            'category': '运动',     'wake_word': '看运动类型分布',     'desc': '看运动类型分布(饼图+占比)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_distribution.py --mode distribution', 'text': '请你加载技能 卡路里,执行唤醒词「看运动类型分布」。\n\n我想看运动类型分布:饼图 + 各类(力量/有氧/柔韧/日常)条数/消耗/占比%。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_distribution', 'name': '看运动类型分布', 'subfunction': '运动分析', 'output_type': 'result',
+            'html_template': 'templates/exercise_distribution.html', 'data_source': 'python scripts/render_exercise_distribution.py --mode distribution', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看运动类型分布」。\n\n我想看运动类型分布:饼图 + 各类(力量/有氧/柔韧/日常)条数/消耗/占比%。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看运动类型分布(饼图+占比)', 'data_fields': ["distribution", "counts", "calories", "percentages"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '运动',     'wake_word': '看力量训练总览',     'desc': '看力量训练按动作聚合的总览',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_strength.py', 'text': '请你加载技能 卡路里,执行唤醒词「看力量训练总览」。\n\n我想看力量训练总览:按动作聚合的表(总组数/总重量/次数)+ 重量轨迹小图。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_strength_overview', 'name': '看力量训练总览', 'subfunction': '运动分析', 'output_type': 'result',
+            'html_template': 'templates/exercise_strength.html', 'data_source': 'python scripts/render_exercise_strength.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看力量训练总览」。\n\n我想看力量训练总览:按动作聚合的表(总组数/总重量/次数)+ 重量轨迹小图。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看力量训练按动作聚合的总览', 'data_fields': ["action", "total_sets", "total_weight", "total_reps", "weight_trend"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '运动',     'wake_word': '看有氧训练总览',     'desc': '看有氧训练按类型聚合的总览',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_cardio.py', 'text': '请你加载技能 卡路里,执行唤醒词「看有氧训练总览」。\n\n我想看有氧训练总览:按类型聚合的表(次数/总时长/总距离/平均配速)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_cardio_overview', 'name': '看有氧训练总览', 'subfunction': '运动分析', 'output_type': 'result',
+            'html_template': 'templates/exercise_cardio.html', 'data_source': 'python scripts/render_exercise_cardio.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看有氧训练总览」。\n\n我想看有氧训练总览:按类型聚合的表(次数/总时长/总距离/平均配速)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看有氧训练按类型聚合的总览', 'data_fields': ["exercise_type", "count", "total_minutes", "total_distance", "avg_pace"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '运动',     'wake_word': '看运动趋势',     'desc': '看运动趋势(每日时长/消耗/每周频次)',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_trend.py [--days 30]', 'text': '请你加载技能 卡路里,执行唤醒词「看运动趋势」。\n\n我想看运动趋势:折线图(每日时长/每日消耗/每周频次)+ 汇总。完成后给 1 句话总结,不需要过多文字解释。\n\n时间窗口(天,选填,默认 30):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_trend', 'name': '看运动趋势', 'subfunction': '运动分析', 'output_type': 'result',
+            'html_template': 'templates/exercise_trend.html', 'data_source': 'python scripts/render_exercise_trend.py [--days 30]', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看运动趋势」。\n\n我想看运动趋势:折线图(每日时长/每日消耗/每周频次)+ 汇总。完成后给 1 句话总结,不需要过多文字解释。\n\n时间窗口(天,选填,默认 30):____',
+            'user_intent': '看运动趋势(每日时长/消耗/每周频次)', 'data_fields': ["daily_minutes", "daily_calories", "weekly_frequency", "summary"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '运动',     'wake_word': '运动复盘（本周）',     'desc': '看本周运动复盘',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_recap.py --period week', 'text': '请你加载技能 卡路里,执行唤醒词「运动复盘（本周）」。\n\n我想看本周运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_recap_week', 'name': '运动复盘（本周）', 'subfunction': '运动复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_recap.html', 'data_source': 'python scripts/render_exercise_recap.py --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「运动复盘（本周）」。\n\n我想看本周运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周运动复盘', 'data_fields': ["total_minutes", "total_calories", "frequency", "type_distribution", "trend", "top_movements"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '运动',     'wake_word': '运动复盘（本月）',     'desc': '看本月运动复盘',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_recap.py --period month', 'text': '请你加载技能 卡路里,执行唤醒词「运动复盘（本月）」。\n\n我想看本月运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_recap_month', 'name': '运动复盘（本月）', 'subfunction': '运动复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_recap.html', 'data_source': 'python scripts/render_exercise_recap.py --period month', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「运动复盘（本月）」。\n\n我想看本月运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月运动复盘', 'data_fields': ["total_minutes", "total_calories", "frequency", "type_distribution", "trend", "top_movements"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '运动',     'wake_word': '运动复盘（最近 90 天）',     'desc': '看最近 90 天运动复盘',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_recap.py --period 90d', 'text': '请你加载技能 卡路里,执行唤醒词「运动复盘（最近 90 天）」。\n\n我想看最近 90 天运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_recap_90d', 'name': '运动复盘（最近 90 天）', 'subfunction': '运动复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_recap.html', 'data_source': 'python scripts/render_exercise_recap.py --period 90d', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「运动复盘（最近 90 天）」。\n\n我想看最近 90 天运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 90 天运动复盘', 'data_fields': ["total_minutes", "total_calories", "frequency", "type_distribution", "trend", "top_movements"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '运动',     'wake_word': '运动复盘（今年）',     'desc': '看今年运动复盘',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_recap.py --period year', 'text': '请你加载技能 卡路里,执行唤醒词「运动复盘（今年）」。\n\n我想看今年运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_recap_year', 'name': '运动复盘（今年）', 'subfunction': '运动复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_recap.html', 'data_source': 'python scripts/render_exercise_recap.py --period year', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「运动复盘（今年）」。\n\n我想看今年运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今年运动复盘', 'data_fields': ["total_minutes", "total_calories", "frequency", "type_distribution", "trend", "top_movements"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '运动',     'wake_word': '运动复盘（自定义时间）',     'desc': '看自定义时间的运动复盘',
+        'main_prompt': {
+        'cli': 'python scripts/render_exercise_recap.py --period range --from <F> --to <T>', 'text': '请你加载技能 卡路里,执行唤醒词「运动复盘（自定义时间）」。\n\n我想看一段自定义时间的运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'exercise_recap_range', 'name': '运动复盘（自定义时间）', 'subfunction': '运动复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_recap.html', 'data_source': 'python scripts/render_exercise_recap.py --period range --from <F> --to <T>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「运动复盘（自定义时间）」。\n\n我想看一段自定义时间的运动复盘:KPI(总时长/总消耗/运动频次/类型)+ 趋势小图 + 高频运动。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期:____\n结束日期:____',
+            'user_intent': '看自定义时间的运动复盘', 'data_fields': ["start_date", "end_date", "total_minutes", "total_calories", "frequency", "type_distribution", "trend", "top_movements"],
+            'depends_on_external': False, 'order': 4},
     {
             'category': '健身计划',     'wake_word': '看本周计划',     'desc': '本周训练日历(7 天表 + 完成度)',
             'main_prompt': {

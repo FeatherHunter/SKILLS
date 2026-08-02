@@ -42,6 +42,12 @@ Issues 以本地 markdown 文件形式存放在 `.scratch/<feature>/` 目录下�
 - 已落盘 JSON 34(主页 9 + 目标管理 25;其余分类由实施 session 填)
 - **已同步 `_triggers.py`**:目标管理 25(2026-08-02 · ticket #7;其余分类待各自实施 session)
 
+### 📌 Prompt 定稿存档与防修改(2026-08-02 · 用户拍板)
+
+- **定稿 prompt 的权威只读快照 = `docs/scene-prompts/NN-分类.md`**(git 提交),并以全文贴在对应 GitHub issue 评论存档。
+- **防修改约定**:prompt 一旦定稿,`_triggers.py` / `.scratch/scene_data/*.json` 只是衍生副本;**修改 prompt 必须重新经用户逐条确认**,不得由 agent 单方改动。
+- 分类 issue 开发完毕前,该分类的 `docs/scene-prompts/NN-分类.md` 必须存在且与用户确认一致(验收项之一)。
+
 ## 视觉与 BUG 排查工作流(2026-07-30)
 
 > 任何涉及 **HTML / CSS 渲染 / mobile 适配 / 视觉 BUG** 的工作,按以下顺序。

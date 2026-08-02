@@ -118,6 +118,17 @@ def build_data(entity_type):
 
 
 
+
+
+def _quote_arg(a: str) -> str:
+    """参数加引号(含空格/引号/特殊字符时),保证 render_cmd 可复制直接执行(2026-08-02)"""
+    if not a:
+        return '""'
+    if any(ch in a for ch in (' ', '"', "'", '\\', '&', '|', '>', '<', '(', ')')):
+        return '"' + a.replace('"', '\\"') + '"'
+    return a
+
+
 def _chain_valid(chain):
     """思考链有效性校验(2026-08-02 用户拍板):非空 + 含步骤特征 + 拒绝偷懒占位"""
     chain = (chain or '').strip()
@@ -169,7 +180,8 @@ def main():
         if '--output' in argv:
             i = argv.index('--output')
             argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
-        meta['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(argv)
+        # 含空格/特殊字符的参数加引号(2026-08-02 修复:render_cmd 必须可复制直接执行)
+        meta['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

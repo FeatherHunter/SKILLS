@@ -30,7 +30,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_receipt.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path, html_scene_path  # noqa
-from render_crud_view import _chain_valid  # 思考链校验单一来源(2026-08-02)
+from render_crud_view import _chain_valid, _quote_arg  # 校验+引号单一来源(2026-08-02)
 
 
 def _load_data(input_path):
@@ -311,7 +311,7 @@ def main():
             if '--output' in argv:
                 i = argv.index('--output')
                 argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
-            data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(argv)
+            data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
             data['data']['meta']['source'] = 'user_profile (写库回执)'
         html = render_html(data)
     except Exception as e:

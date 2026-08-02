@@ -225,6 +225,15 @@ def test_chain_required_live_modes(profile_env, capsys):
     assert render_crud_receipt._chain_valid("1.解析→2.写库→3.回执") is True
 
 
+def test_quote_arg(profile_env):
+    """render_cmd 参数引号:含空格值必须加引号,保证可复制直接执行(2026-08-02)"""
+    import render_crud_view
+    assert render_crud_view._quote_arg("2026-08-02 设置档案") == '"2026-08-02 设置档案"'
+    assert render_crud_view._quote_arg("177") == "177"
+    assert render_crud_view._quote_arg("") == '""'
+    assert render_crud_view._quote_arg("a&b") == '"a&b"'
+
+
 def test_set_profile_with_activity(profile_env):
     """profile set --activity 透传"""
     prof = profile_env

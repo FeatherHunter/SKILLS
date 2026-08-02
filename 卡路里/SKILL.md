@@ -2,7 +2,7 @@
 name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能。
-  触发词:开卡路里(打开卡路里 / 打开面板 / 今天主页)、卡路里面板(同"开卡路里")、今日卡路里(今天的卡路里 / 今天整体情况)、记吃了(刚吃了 / 刚才吃了 / 吃了点 / 吃了)、拍营养表(识别营养表 / 看营养成分 / 扫包装)、删吃的(删掉刚才那餐 / 删个记录 / 去掉这个)、改吃的(改一下记录 / 纠正一下 / 改个食物)、查今天吃(今天吃了啥 / 今天饮食 / 今天摄入)、查吃的记录(吃的明细 / 吃过的食物 / 饮食明细)、查热量历史(热量历史 / 卡路里历史 / 摄入趋势)、记喝水(喝了一杯水 / 记录饮水量 / 喝了多少水)、查今天喝水(今天喝了多少 / 饮水量)、查热量(查食物热量 / 这个多少卡 / 食物卡路里)、存食品(存个食品 / 加新食物 / 库加个东西)、改食品(改食品数据 / 更新这个食物)、查食品库(食品库 / 所有食物 / 食物列表)、批量导入(批量录入 / 一次导很多 / 批量加)、校验批量(检查能不能导入 / 校验文件 / 试一下)、查食品库去重(食品库去重 / 库重复检查 / 检查重复)、记体重(刚称了 / 测了体重 / 体重)、记体重（含备注）(记体重时带备注)、补录体重(补记体重 / 补称体重)、批量补录体重(批量补体重 / 一次补多天)、改体重记录(改一下体重记录 / 纠正体重 / 改那个秤的)、改某日体重(改那天的体重 / 改当天体重)、删体重记录(删体重 / 删除某条体重)、删某日体重(删那天体重 / 删当天体重)、批量删体重(批量删体重记录 / 一次删多天)、查体重历史(体重记录 / 历史体重 / 体重列表)、查体重趋势(体重变化 / 体重曲线 / 体重折线)、对比体重(对比两段体重 / 体重差异)、查体重波动(体重波动 / 体重起伏 / 体重稳定吗)、定营养目标(设目标卡路里 / 调整目标)、定营养目标(自动算)(按档案自动算营养目标)、定体重目标(设体重目标 / 目标体重 / 想减到 X 公斤)、定体重目标(自动算截止)(自动算截止日 / 推算截止日)、定体重目标(含起始日)(完整设置体重目标)、定饮水目标(设饮水目标)、定饮水目标(自动算)(按体重自动算饮水)、一键定全套目标(定全套目标 / 全套目标)、看今日目标(今日目标 / 今天目标)、看本周目标(本周目标 / 周目标进度)、看营养目标进度(营养目标进度)、看体重目标进度(体重目标进度 / 目标进度)、看饮水目标进度(饮水目标进度)、看目标对比实际(目标对比实际 / 目标 vs 实际)、看目标完成度(目标完成度 / 完成度 / 缺口)、看即将到期的目标(即将到期目标 / 目标到期)、看目标完成率(按周)(周完成率)、看目标完成率(按月)(月完成率)、改营养目标(改目标卡路里 / 调整营养目标)、改体重目标(调整体重目标)、改饮水目标(改饮水)、暂停所有目标(暂停目标 / 冻结目标)、重启所有目标(重启目标 / 解冻目标)、看目标历史完成(目标历史完成)、看目标预测达成(预测达成日 / 目标预测)、记运动(做了运动 / 刚运动 / 记录运动)、改运动记录(改一下运动记录 / 改运动)、查运动记录(运动记录 / 运动明细)、查运动汇总(运动汇总 / 运动总量)、查运动类型(运动分类 / 什么类型运动 / 力量有氧占比)、查运动趋势(运动趋势 / 每日运动 / 运动面积图)、查健身计划(看健身计划 / 我的训练计划 / 今天练啥)、查询健身计划(同"查健身计划")、制定健身计划(做一份计划 / 帮我设计训练 / 健身规划)、改健身计划(改计划 / 调整训练 / 改时间)、落地健身计划(今天执行 / 把计划做了 / 训练今天)、卡路里同步(同步训练 / 批量落地 / 把前几天补上)、训记-覆盖X日的训练计划(覆盖那天训练 / 用卡路里覆盖训记 / 训记那天的计划)、回写训记(同步训记 / 拉训记数据 / 从训记拉过来)、复盘训练(训练复盘 / 练得怎么样 / 计划 vs 实际)、扫禁忌(检查安全 / 看我这计划有没有问题 / 扫伤害)、审计动作名(动作名检查 / 推送前检查 / 训记能识别吗)、查热量趋势(每日热量 / 卡路里摄入趋势 / 摄入曲线)、查营养结构(营养比例 / 营养占比 / 蛋白质占比)、查热量缺口(热量缺口 / 摄入 vs 消耗 / 收支)、查食物排行(食物榜 / TOP 食物)、查高热量榜(高热量食物 / 最胖食物 / 热量炸弹)、查低热量榜(低热量食物 / 最瘦食物 / 健康食物)、查频繁吃榜(常吃的 / 吃最多 / 经常吃啥)、查高碳水榜(高碳水 / 碳水最高 / 最碳水)、查高蛋白榜(高蛋白 / 蛋白最高 / 最蛋白)、查运动分布(运动分布 / 力量有氧占比 / 运动类型占比)、查运动贡献(运动贡献 / 运动在缺口里的占比)、查健康报告(健康报告 / 综合报告 / 健康仪表盘)、查卡路里数据(数据健康检查 / 检查数据 / 数据 lint)、设置档案(设个人信息 / 填身高年龄)、设活动量(改活动量 / 活动量设置 / 调活动量)、改档案(改个人信息 / 修改档案 / 更新档案)、查档案(我的档案 / 个人信息)、复盘(做复盘 / 拉一份复盘 / 看看这周)、复盘今日(今天复盘)、复盘本周(本周复盘 / 周复盘 / 这周怎么样)、复盘本月(月复盘 / 这个月总结)、复盘本年(年复盘 / 今年总结)、复盘日期范围(某段时间复盘 / 自定义日期复盘)、开启定时复盘(开定时 / 自动复盘 / 每天自动)、关闭定时复盘(关定时 / 停复盘 / 别自动复盘)、查定时复盘(定时复盘配置 / cron 状态 / 复盘设置)、记体脂（皮褶钳）(测了体脂 / 测皮褶钳 / 皮褶钳测了 / 体脂数据)、记体脂（外部测量）(健身房测体脂 / 医院测体脂 / InBody / 外部设备体脂)、记围度(量了围度 / 测围度 / 围度数据)、补记体脂(补录体脂 / 补记某天体脂)、补记围度(补录围度 / 补记某天围度)、看体脂(历史体脂 / 体脂记录 / 我体脂多少)、看体脂趋势(体脂走势 / 体脂下降了吗 / 体脂率趋势)、看围度(历史围度 / 围度记录)、看围度趋势(围度走势 / 哪个部位变了 / 围度下降)、对比体脂(体脂对比 / 两段体脂比较)、对比围度(围度对比 / 两次围度比较)、删体脂(删掉某条体脂)、删围度(删掉某条围度)、记身材照(存身材照 / 加照片 / 新照)、查身材照(看身材照 / 浏览照片 / 历史身材)、生成身材照GIF(做个 GIF / 生成对比图 / 身材变化 GIF)、删身材照(删张照片 / 去掉某张)、改照片标签(改标签 / 换 tag / 照片改 tag)、加照片标签(追加标签 / 多一个标签 / 再加个标签)、删照片标签(移除标签 / 去掉某个标签 / 删个标签)、对比两张照片(对比照片 / 两张照片对比 / 并排对比)、下架食品(把食品下架 / 标记废弃)、查食品库(食品库 / 所有食物 / 食物列表)、看食品库(看食品库 / 查所有食品 / 食品一览)、看饮食总览(饮食总览 / 一段时间饮食概览)、饮食复盘(饮食复盘 / 拉饮食复盘)、看全部餐别分布(餐别分布 / 餐次分布 / 早餐午餐晚餐夜宵)、看加餐(看加餐记录)、看午餐(看午餐记录)、看早餐(看早餐记录)、看晚餐(看晚餐记录)、看营养素深度(营养素深度 / 营养详情)、看食品来源统计(食品来源统计 / 来源分布)、看「有备注」的饮食记录(看有备注的饮食 / 备注饮食)、看上周饮食(上周饮食 / 上周吃了啥)、看上月饮食(上月饮食)、看最近 30 天饮食(最近30天饮食 / 30天饮食)、看最近 7 天饮食(最近7天饮食 / 7天饮食)、看本周饮食(本周饮食 / 这周吃了啥)、看本月饮食(本月饮食 / 这个月吃了啥)、看某段时间饮食(某段时间饮食 / 时间段饮食)、分析分类 154 个新场景(分析分类 / 营养分析 / 综合分析 / 趋势分析 / 异常分析 / 预测分析 / 饮食分析 / 体重分析)、卡路里HELP(卡路里帮助 / 卡路里速查 / 卡路里 help / 卡路里帮助文档)
+  触发词:开卡路里(打开卡路里 / 打开面板 / 今天主页)、卡路里面板(同"开卡路里")、今日卡路里(今天的卡路里 / 今天整体情况)、记吃了(刚吃了 / 刚才吃了 / 吃了点 / 吃了)、拍营养表(识别营养表 / 看营养成分 / 扫包装)、删吃的(删掉刚才那餐 / 删个记录 / 去掉这个)、改吃的(改一下记录 / 纠正一下 / 改个食物)、查今天吃(今天吃了啥 / 今天饮食 / 今天摄入)、查吃的记录(吃的明细 / 吃过的食物 / 饮食明细)、查热量历史(热量历史 / 卡路里历史 / 摄入趋势)、记喝水(喝了一杯水 / 记录饮水量 / 喝了多少水)、查今天喝水(今天喝了多少 / 饮水量)、记一餐(刚吃了一顿 / 记一下吃的 / 记顿饭)、记一餐（含备注）(记一餐带备注 / 记饭加备注)、补记饮食(补录饮食 / 补记吃的东西)、批量补记饮食(一次补多餐 / 批量补录饮食)、扫描营养表(识别营养表 / 看营养成分 / 扫包装)、扫描营养表（指定日期）(扫描营养表补某天 / 拍营养表指定日期)、复制昨日饮食(照抄昨天 / 复制昨天的饭)、改饮食记录(改一下饮食记录 / 改吃的记录)、改某日饮食(改那天的饮食 / 改当天饮食)、删饮食记录(删饮食记录 / 删除某条吃的)、删一餐(删掉那餐 / 删某餐)、删某日饮食(删那天饮食 / 清空那天的吃的)、批量删饮食(批量删吃的 / 一次删多天饮食)、看今日饮食(今天饮食 / 今天吃了啥 / 今天摄入)、看昨日饮食(昨天饮食 / 昨天吃了啥)、看本周饮食(本周饮食 / 这周吃了什么)、看上周饮食(上周饮食 / 上礼拜吃了什么)、看本月饮食(本月饮食 / 这个月吃了什么)、看上月饮食(上月饮食 / 上个月吃了什么)、看最近 7 天饮食(最近七天饮食 / 近 7 天吃了啥)、看最近 30 天饮食(最近三十天饮食 / 近一个月吃了什么)、看某段时间饮食(某段时间饮食 / 自定义日期饮食)、看今日喝水(今天喝了多少 / 饮水量)、看「有备注」的饮食记录(带备注的饮食 / 看备注记录)、查食品(查食物热量 / 这个多少卡 / 食物卡路里)、查食品（按分类）(按分类查食品 / 查某类食物)、存食品(存个食品 / 加新食物 / 库加个东西)、改食品(改食品数据 / 更新这个食物)、下架食品(食品下架 / 弃用这个食品)、看食品库（去重）(食品库去重 / 库重复检查 / 检查重复)、批量导入食品(批量导入 / 批量录入 / 一次导很多 / 批量加)、校验批量导入(校验批量 / 检查能不能导入 / 校验文件 / 试一下)、看食品来源统计(食品来源统计 / 库来源分布)、看营养结构(营养比例 / 营养占比 / 蛋白质占比)、看今日营养(今天营养 / 今日营养完成度)、看饮食总览(饮食总览 / 本周本月饮食累计)、看营养素深度(营养素深度 / 纤维钠糖摄入)、看高热量榜(高热量食物 / 最胖食物 / 热量炸弹)、看低热量榜(低热量食物 / 最瘦食物 / 健康食物)、看频繁吃榜(常吃的 / 吃最多 / 经常吃啥)、看高碳水榜(高碳水 / 碳水最高 / 最碳水)、看高蛋白榜(高蛋白 / 蛋白最高 / 最蛋白)、看高热量榜（最近 30 天）(近30天高热量榜)、看高热量榜（本月）(本月高热量榜)、看高热量榜（自定义）(自定义高热量榜 / 某段高热量榜)、看低热量榜（最近 30 天）(近30天低热量榜)、看低热量榜（本月）(本月低热量榜)、看低热量榜（自定义）(自定义低热量榜)、看频繁吃榜（最近 30 天）(近30天频繁吃榜)、看频繁吃榜（本月）(本月频繁吃榜)、看频繁吃榜（自定义）(自定义频繁吃榜)、看高碳水榜（最近 30 天）(近30天高碳水榜)、看高碳水榜（本月）(本月高碳水榜)、看高碳水榜（自定义）(自定义高碳水榜)、看高蛋白榜（最近 30 天）(近30天高蛋白榜)、看高蛋白榜（本月）(本月高蛋白榜)、看高蛋白榜（自定义）(自定义高蛋白榜)、饮食复盘（本周）(本周饮食复盘 / 饮食周复盘)、饮食复盘（本月）(本月饮食复盘 / 饮食月复盘)、饮食复盘（最近 90 天）(近90天饮食复盘 / 饮食季度复盘)、饮食复盘（今年）(今年饮食复盘 / 饮食年复盘)、饮食复盘（自定义时间）(自定义饮食复盘 / 某段饮食复盘)、看早餐（最近 7 天）(最近七天早餐 / 早餐吃了啥)、看午餐（最近 7 天）(最近七天午餐 / 午餐吃了啥)、看晚餐（最近 7 天）(最近七天晚餐 / 晚餐吃了啥)、看加餐（最近 7 天）(最近七天加餐 / 加餐吃了啥)、看全部餐别分布（最近 7 天）(餐别分布 / 各餐别占比)、查热量(查食物热量 / 这个多少卡 / 食物卡路里)、存食品(存个食品 / 加新食物 / 库加个东西)、改食品(改食品数据 / 更新这个食物)、查食品库(食品库 / 所有食物 / 食物列表)、批量导入(批量录入 / 一次导很多 / 批量加)、校验批量(检查能不能导入 / 校验文件 / 试一下)、查食品库去重(食品库去重 / 库重复检查 / 检查重复)、记体重(刚称了 / 称了体重)、记体重（含备注）(记体重带备注 / 晨起空腹)、补录体重(补录昨天的体重 / 补体重)、批量补录体重(批量补体重 / 一次补多天)、看今日体重(今天多重 / 今日体重)、改体重记录(改那条体重 / 纠正体重)、改某日体重(改那天体重 / 改某天体重)、删体重记录(删掉那条体重 / 删除体重记录)、删某日体重(删某天体重 / 删那天的体重)、批量删体重(批量删体重 / 删一段体重)、看本周体重(本周体重 / 这周体重)、看上周体重(上周体重 / 上礼拜体重)、看本月体重(本月体重 / 这个月体重)、看上月体重(上月体重 / 上个月体重)、看最近 7 天体重(近7天体重 / 最近七天体重)、看最近 90 天体重(近90天体重 / 最近九十天体重)、看某段时间体重(某段时间体重 / 自定义日期体重)、看体重曲线(体重曲线 / 体重折线)、看体重曲线（带目标）(体重曲线带目标 / 目标线)、看体重曲线（带里程碑）(体重曲线带里程碑 / 里程碑点)、看体重曲线（带异常点）(体重曲线带异常 / 异常点)、看本月体重曲线(本月体重曲线 / 这个月曲线)、看上月体重曲线(上月体重曲线 / 上个月曲线)、看最近 90 天体重曲线(近90天曲线)、看最近 180 天体重曲线(近180天曲线 / 半年曲线)、看最近 365 天体重曲线(近365天曲线 / 一年曲线)、看某段时间体重曲线(某段曲线 / 自定义曲线)、看体重稳不稳（增强版）(体重稳不稳 / 体重稳定吗 / 体重波动分析)、看本月波动(本月波动 / 这个月稳不稳)、看最近 90 天波动(近90天波动)、看最近 180 天波动(近180天波动 / 半年波动)、看波动异常点(波动异常 / 异常点)、看「有备注」的体重记录(带备注的体重 / 体重备注)、对比体重：最近 30 天 vs 之前 30 天(对比体重 / 前后30天对比)、对比体重：自定义两段时间(自定义对比体重 / 两段对比)、对比体重：本周 vs 上周(本周上周对比)、对比体重：本月 vs 上月(本月上月对比)、对比体重：近 N 天 vs 上一个 N 天(近N天上N天对比)、对比体重：今天 vs 一年前今天(今天一年前对比 / 一年前体重)、对比体重：今天 vs 半年前今天(半年前体重 / 半年对比)、对比体重：今天 vs 三月前今天(三月前体重 / 三个月对比)、对比体重：当前 vs 目标体重(当前目标对比 / 距目标)、对比体重：当前 vs 平台期首日(平台期 / 平台期对比)、对比体重：当前 vs 历史最低(历史最低对比 / 最低体重)、对比体重：当前 vs 历史最高(历史最高对比 / 最高体重)、对比体重：减重 5kg 那天 vs 今天(减重5kg那天 / 5kg里程碑)、对比体重：减重 10kg 那天 vs 今天(减重10kg那天 / 10kg里程碑)、对比体重：当前 vs 入夏最低(入夏最低 / 夏天最低)、对比体重：当前 vs 入冬最低(入冬最低 / 冬天最低)、对比体重：运动多 vs 运动少的两个月(运动多运动少对比 / 极端月)、对比体重：工作日 vs 周末(工作日周末对比)、看体重总览(体重总览 / 体重综合)、体重复盘（本周）(本周体重复盘 / 体重周复盘)、体重复盘（本月）(本月体重复盘 / 体重月复盘)、体重复盘（最近 90 天）(近90天体重复盘)、体重复盘（今年）(今年体重复盘 / 体重年复盘)、体重复盘（自定义时间）(自定义体重复盘)、看里程碑回溯(里程碑 / 体重里程碑)、定营养目标(设目标卡路里 / 调整目标)、定营养目标(自动算)(按档案自动算营养目标)、定体重目标(设体重目标 / 目标体重 / 想减到 X 公斤)、定体重目标(自动算截止)(自动算截止日 / 推算截止日)、定体重目标(含起始日)(完整设置体重目标)、定饮水目标(设饮水目标)、定饮水目标(自动算)(按体重自动算饮水)、一键定全套目标(定全套目标 / 全套目标)、看今日目标(今日目标 / 今天目标)、看本周目标(本周目标 / 周目标进度)、看营养目标进度(营养目标进度)、看体重目标进度(体重目标进度 / 目标进度)、看饮水目标进度(饮水目标进度)、看目标对比实际(目标对比实际 / 目标 vs 实际)、看目标完成度(目标完成度 / 完成度 / 缺口)、看即将到期的目标(即将到期目标 / 目标到期)、看目标完成率(按周)(周完成率)、看目标完成率(按月)(月完成率)、改营养目标(改目标卡路里 / 调整营养目标)、改体重目标(调整体重目标)、改饮水目标(改饮水)、暂停所有目标(暂停目标 / 冻结目标)、重启所有目标(重启目标 / 解冻目标)、看目标历史完成(目标历史完成)、看目标预测达成(预测达成日 / 目标预测)、记运动(做了运动 / 刚运动 / 记录运动)、改运动记录(改一下运动记录 / 改运动)、查运动记录(运动记录 / 运动明细)、查运动汇总(运动汇总 / 运动总量)、查运动类型(运动分类 / 什么类型运动 / 力量有氧占比)、查运动趋势(运动趋势 / 每日运动 / 运动面积图)、查热量趋势(每日热量 / 卡路里摄入趋势 / 摄入曲线)、查营养结构(营养比例 / 营养占比 / 蛋白质占比)、查热量缺口(热量缺口 / 摄入 vs 消耗 / 收支)、查食物排行(食物榜 / TOP 食物)、查高热量榜(高热量食物 / 最胖食物 / 热量炸弹)、查低热量榜(低热量食物 / 最瘦食物 / 健康食物)、查频繁吃榜(常吃的 / 吃最多 / 经常吃啥)、查高碳水榜(高碳水 / 碳水最高 / 最碳水)、查高蛋白榜(高蛋白 / 蛋白最高 / 最蛋白)、查运动分布(运动分布 / 力量有氧占比 / 运动类型占比)、查运动贡献(运动贡献 / 运动在缺口里的占比)、查健康报告(健康报告 / 综合报告 / 健康仪表盘)、查卡路里数据(数据健康检查 / 检查数据 / 数据 lint)、设置档案(设个人信息 / 填身高年龄)、设活动量(改活动量 / 活动量设置 / 调活动量)、改档案(改个人信息 / 修改档案 / 更新档案)、查档案(我的档案 / 个人信息)、复盘(做复盘 / 拉一份复盘 / 看看这周)、复盘今日(今天复盘)、复盘本周(本周复盘 / 周复盘 / 这周怎么样)、复盘本月(月复盘 / 这个月总结)、复盘本年(年复盘 / 今年总结)、复盘日期范围(某段时间复盘 / 自定义日期复盘)、开启定时复盘(开定时 / 自动复盘 / 每天自动)、关闭定时复盘(关定时 / 停复盘 / 别自动复盘)、查定时复盘(定时复盘配置 / cron 状态 / 复盘设置)、记体脂（皮褶钳）(测了体脂 / 测皮褶钳 / 皮褶钳测了 / 体脂数据)、记体脂（外部测量）(健身房测体脂 / 医院测体脂 / InBody / 外部设备体脂)、记围度(量了围度 / 测围度 / 围度数据)、补记体脂(补录体脂 / 补记某天体脂)、补记围度(补录围度 / 补记某天围度)、看体脂(历史体脂 / 体脂记录 / 我体脂多少)、看体脂趋势(体脂走势 / 体脂下降了吗 / 体脂率趋势)、看围度(历史围度 / 围度记录)、看围度趋势(围度走势 / 哪个部位变了 / 围度下降)、对比体脂(体脂对比 / 两段体脂比较)、对比围度(围度对比 / 两次围度比较)、删体脂(删掉某条体脂)、删围度(删掉某条围度)、记身材照(存身材照 / 加照片 / 新照)、查身材照(看身材照 / 浏览照片 / 历史身材)、生成身材照GIF(做个 GIF / 生成对比图 / 身材变化 GIF)、删身材照(删张照片 / 去掉某张)、改照片标签(改标签 / 换 tag / 照片改 tag)、加照片标签(追加标签 / 多一个标签 / 再加个标签)、删照片标签(移除标签 / 去掉某个标签 / 删个标签)、对比两张照片(对比照片 / 两张照片对比 / 并排对比)、下架食品(把食品下架 / 标记废弃)、查食品库(食品库 / 所有食物 / 食物列表)、看食品库(看食品库 / 查所有食品 / 食品一览)、看饮食总览(饮食总览 / 一段时间饮食概览)、饮食复盘(饮食复盘 / 拉饮食复盘)、看全部餐别分布(餐别分布 / 餐次分布 / 早餐午餐晚餐夜宵)、看加餐(看加餐记录)、看午餐(看午餐记录)、看早餐(看早餐记录)、看晚餐(看晚餐记录)、看营养素深度(营养素深度 / 营养详情)、看食品来源统计(食品来源统计 / 来源分布)、看「有备注」的饮食记录(看有备注的饮食 / 备注饮食)、看上周饮食(上周饮食 / 上周吃了啥)、看上月饮食(上月饮食)、看最近 30 天饮食(最近30天饮食 / 30天饮食)、看最近 7 天饮食(最近7天饮食 / 7天饮食)、看本周饮食(本周饮食 / 这周吃了啥)、看本月饮食(本月饮食 / 这个月吃了啥)、看某段时间饮食(某段时间饮食 / 时间段饮食)、分析分类 154 个新场景(分析分类 / 营养分析 / 综合分析 / 趋势分析 / 异常分析 / 预测分析 / 饮食分析 / 体重分析)、卡路里HELP(卡路里帮助 / 卡路里速查 / 卡路里 help / 卡路里帮助文档)、看本周计划(本周训练 / 这周练什么)、看下周计划(下周练什么 / 下周训练)、看上周计划(上周训练 / 上周练了啥)、看指定周计划(第 N 周计划 / 看某一周)、看今天练什么(今天练什么 / 今天训练)、看计划概览(计划概览 / 训练计划总览)、看计划 vs 实际(计划对实际 / 计划完成对比)、定训练计划(做计划 / 制定训练计划 / 帮我设计训练)、复制训练计划(复制计划 / 计划复制)、定休息日(设休息日 / 休息日设置)、加训练动作(加动作 / 新增动作 / 计划加动作)、定一周计划(一周安排 / 周计划设置)、改训练计划(改计划 / 调整训练 / 改时间)、改某天训练(改某天 / 改那天训练)、删某天训练(删某天 / 删那天训练)、改动作(换动作 / 替换动作 / 改训练动作)、撤销训练计划(删计划 / 删除训练计划 / 取消计划)、落地训练(落地今天 / 执行训练 / 今天执行)、落地到本周末(落地本周 / 本周末落地)、落地到本月底(落地本月 / 本月底落地)、同步到训记(推送训记 / 推训记 / 训记同步)、拉训记实绩(拉训记 / 训记回写 / 回写训记)、计划复盘（本周）(周复盘 / 本周复盘)、计划复盘（本月）(月复盘 / 本月复盘)、计划复盘（全部）(全部复盘 / 总复盘)、看计划完成率(完成率 / 计划完成率)、看未完成训练(漏练 / 未练的训练 / 没练的)、看动作完成率(动作完成率 / 动作排行)、扫禁忌(检查安全 / 看我这计划有没有问题 / 扫伤害)
 metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "python": ">=3.7" } } }
 ---
 
@@ -143,7 +143,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 
 ### 完整 HTML 模板清单(V1.3 原则 11 · 2026-07-25 扩)
 
-> 26 个 HTML 模板中 **24 个**有对应 trigger 词(强制走 HTML);**2 个**为内部工具(无 trigger)。
+> 48 行模板清单:每行可对应 1+ 个 trigger 词(强制走 HTML);无 trigger 的为配置辅助页/内部工具(如 body_photo_log_wizard / gif_planner 规划器)。
 
 | 模板 | 强制 trigger(走 HTML) | 数据源 | 渲染器 |
 |---|---|---|---|
@@ -156,12 +156,17 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/food_ranking.html` | 查食物排行 / 查高热量榜 / 查低热量榜 / 查频繁吃榜 / 查高碳水榜 / 查高蛋白榜 | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
 | `templates/food_search.html` | 查热量(ADR-0005 · ticket 06) | `nutrition_products` LIKE 搜索 | `scripts/render_food_search.py --query "<term>"` |
 | `templates/food_library.html` | 查食品库(ADR-0005 · ticket 07) | `nutrition_products` 列表 + 客户端搜索/分页 | `scripts/render_food_library.py [--limit 200 | --all]` |
-| `templates/weight_history.html` | 查体重历史 / 查体重趋势 / 对比体重 / 查体重波动 (4 mode) | `analysis.weight_*` 系列 | `scripts/render_weight_history.py [--mode]` |
+| `templates/weight_history.html` | 看本周体重、看上周体重、看本月体重、看上月体重、看最近 7 天体重、看最近 90 天体重、看某段时间体重、看体重曲线、看体重曲线（带目标）、看体重曲线（带里程碑）、看体重曲线（带异常点）、看最近 90 天体重曲线、看最近 180 天体重曲线、看最近 365 天体重曲线、看某段时间体重曲线、看「有备注」的体重记录 | `analysis.weight_*` 系列 | `scripts/render_weight_history.py [--mode]` |
+| `templates/weight_compare.html` | 对比体重：最近 30 天 vs 之前 30 天、对比体重：自定义两段时间、对比体重：本周 vs 上周、对比体重：本月 vs 上月、对比体重：近 N 天 vs 上一个 N 天、对比体重：今天 vs 一年前今天、对比体重：今天 vs 半年前今天、对比体重：今天 vs 三月前今天、对比体重：当前 vs 目标体重、对比体重：当前 vs 平台期首日、对比体重：当前 vs 历史最低、对比体重：当前 vs 历史最高、对比体重：减重 5kg 那天 vs 今天、对比体重：减重 10kg 那天 vs 今天、对比体重：当前 vs 入夏最低、对比体重：当前 vs 入冬最低、对比体重：运动多 vs 运动少的两个月、对比体重：工作日 vs 周末 | `analysis.weight_compare` | `scripts/render_weight_compare.py --scenario` |
+| `templates/weight_dashboard.html` | 看体重总览、看今日体重 | `weight_log + daily_goal.weight_goal` | `scripts/render_weight_dashboard.py --view` |
+| `templates/weight_review.html` | 体重复盘（本周）、体重复盘（本月）、体重复盘（最近 90 天）、体重复盘（今年）、体重复盘（自定义时间）、看里程碑回溯 | `weight_log` | `scripts/render_weight_review.py --type` |
+| `templates/weight_batch_receipt.html` | 批量补录体重 | `weight_log` | `scripts/render_weight_receipt.py --live-batch` |
+| `templates/weight_log_receipt.html` | 记体重、记体重（含备注）、补录体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py --live` |
 | `templates/exercise_summary.html` | 查运动记录 / 查运动汇总 / 查运动类型 / 查运动趋势 (4 mode) | `exercise_tracker.py summary/stats/trend/list` | `scripts/render_exercise_summary.py` |
 | `templates/exercise_distribution.html` | 查运动分布 / 查运动贡献 | `analysis.exercise_*` | `scripts/render_exercise_distribution.py` |
-| `templates/exercise_review.html` | 复盘训练 | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
-| `templates/workout_plan_view.html` | 查健身计划 / 查询健身计划 | DB 直接 query workout_plans | `python scripts/render_workout_plan.py [--review]` |
-| `templates/plan_builder_wizard.html` | 制定健身计划 / 改健身计划 / 落地健身计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
+| `templates/exercise_review.html` | 计划复盘（本周） / 计划复盘（本月） / 计划复盘（全部） | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
+| `templates/workout_plan_view.html` | 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式 · 2026-08-02 ticket #6) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {full,week,today,overview,vs,completion,missed,movement}` |
+| `templates/plan_builder_wizard.html` | 定训练计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/lint_health.html` | 查卡路里数据 | `lint_health()` | `scripts/render_lint_health.py` |
 | `templates/goal_config.html` | 定营养目标 / 定饮水目标 / 改营养目标 / 改饮水目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
@@ -172,7 +177,14 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/profile_setup.html` | (设置档案 · 配置辅助页) | `profile.get/set` | `scripts/render_profile_setup.py [--live]` |
 | `templates/cron_setup.html` | 开启定时复盘 / 关闭定时复盘 | `mavis cron list/create/delete` (AI 自动查状态) | `scripts/render_cron_setup.py` |
 | `templates/crud_view.html` | 查档案 / 查定时复盘 | `profile.get` / `mavis cron list` | `scripts/render_crud_view.py` |
-| `templates/crud_receipt.html` | 删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 改照片标签 / 删身材照 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-profile-set/--live-profile-activity/--live-profile-update]` |
+| `templates/crud_receipt.html` | 删吃的 / 改吃的 / 改食品 / 存食品 / 改体重记录 / 改运动记录 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-profile-set/--live-profile-activity/--live-profile-update]` |
+| `templates/body_photo_log_wizard.html` | (记身材照 · 配置辅助页,飞书交互用) | 无(纯配置) | `scripts/render_body_photo_log_wizard.py` |
+| `templates/body_photo_viewer.html` | 查身材照(单图子路径) | `body_photos` 单行 | `scripts/render_body_photo_viewer.py --id N` |
+| `templates/body_photo_gif_planner.html` | 生成身材照GIF（规划器 · 框选裁剪 · 内部工具） | `body_photos` 多行 + base64 | `scripts/render_body_photo_gif_planner.py` |
+| `templates/body_photo_receipt.html` | 记身材照 / 删身材照 / 改照片标签 / 加照片标签 / 删照片标签 | `body_photos` 写库回执(缩略图/diff) | `scripts/render_body_photo_receipt.py --live-*` |
+| `templates/body_photo_gallery.html` | 查身材照(浏览网格) | `body_photos` 列表 + 计数 | `scripts/render_body_photo_gallery.py` |
+| `templates/body_photo_compare.html` | 对比两张照片 | `body_photos` 两行并排 | `scripts/render_body_photo_compare.py` |
+| `templates/body_photo_gif_result.html` | 生成身材照GIF(结果) | GIF 文件 + 合成信息 | `scripts/render_body_photo_gif_result.py` |
 | `templates/weight_log_receipt.html` | 记体重 | `weight.log_weight()` + 趋势图 | `scripts/render_weight_receipt.py` |
 | `templates/body_photo_viewer.html` | (查身材照 · 子页)| `body_photo_tracker.get_photo(id)` | `scripts/render_body_photo_viewer.py --id N` |
 | `templates/body_photo_log_wizard.html` | 记身材照 | 纯配置型(无需 DB,用户填 → 生成 prompt) | `scripts/render_body_photo_log_wizard.py` |
@@ -185,7 +197,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/batch_import_preview.html` | 批量导入 / 校验批量 | `batch_import.validate` JSONL | `scripts/render_batch_import.py` |
 | `templates/review_template.html` | 复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围 | `review_cli.gen` enriched JSON | `scripts/render_review.py --range / --type` |
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
-| `templates/process_progress.html` | 落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划(4 步流程进度) | 流程结构化 JSON(tests/fixtures/mock/mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
+| `templates/process_progress.html` | 落地训练 / 落地到本周末 / 落地到本月底(4 步流程进度 · 2026-08-02 ticket #6) | 流程结构化 JSON(tests/fixtures/mock/mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
 | `templates/home_dashboard.html` | 开卡路里 / 卡路里面板 / 今日卡路里(主页 dashboard) | `analysis.dashboard(as_dict=True)` + 今日检测 | `scripts/render_home.py [--date YYYY-MM-DD]` |
 | `templates/help_center.html` | 卡路里HELP(唤醒词速查台·80 词·109 prompt·3 层折叠 + 搜索 + 一键复制) | `_triggers.py` 静态表 | `scripts/render_help_center.py` |
 
@@ -282,31 +294,101 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 卡路里面板 | 同"开卡路里" | `python scripts/render_home.py [--date YYYY-MM-DD]` |
 | 今日卡路里 | 同"开卡路里",默认今日 | `python scripts/render_home.py` |
 
-### 🍚 饮食记录
+### 🍚 饮食(2026-08-02 新增 · 68 场景 · ticket #3)
+
+> 场景数量与场景名已定稿;prompt 定稿见 `docs/scene-prompts/02-饮食.md`(修改须重新用户确认)。
+> **交互规则(常驻,AI 执行本分类任一场景必须遵守)**:
+> - 信息缺失才补问:用户表达清晰直接执行;缺失的克数/营养/日期顶多做几句确认(记/补记类)
+> - 改/删类用户没指明是哪条时:先列最近记录让用户选 → 改前/删除前给快照确认 → 操作 → 回执(同 #9 身体细节格式)
+> - 写库类走 `render_crud_receipt.py --live-*`(写库 + 回执 HTML 一体,必须带 --chain 思考链)
+> - 看类走 HTML 渲染(有模板必走 HTML,§⚠️ 强制性规定 第 4 条)
+> - 记喝水:用户说「几杯」按一杯约 250ml 折算;只说杯子大小先问确认
+> - 记一餐:先在食品库查食物 → 命中展示每 100g 营养确认 → 未命中补克数/包装营养(标注估算来源)→ 写库(4 步流程落 SKILL.md §记一餐)
+
+#### 记饮食(8)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 记吃了 | 记录饮食(4 步流程:查食品库 → 展示营养 → 用户确认 → 写库;ml/g 单位区分) | `python scripts/calorie_tracker.py add` |
-| 拍营养表 | 图片识别营养成分表并记录 | `mmx vision describe` → `python scripts/calorie_tracker.py add` |
-| 删吃的 | 删除饮食记录 | `python scripts/calorie_tracker.py delete` |
-| 改吃的 | 修改已记录饮食(8 字段) | `python scripts/calorie_tracker.py update-meal <id> [--grams] [--food] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note]` |
-| 查今天吃 | 今日饮食摘要(单日,合并 `查吃的记录` alias,ADR-0002) | `python scripts/render_today_diet.py` |
-| 查吃的记录 | (alias of `查今天吃`,ADR-0002 · 同走 today_diet;跨多日区间走 `render_today_meals.py`) | 同 `查今天吃` |
-| 查热量历史 | 最近 N 天热量摄入历史 | `python scripts/calorie_tracker.py history` |
-| 记喝水 | 记录饮水量 | `python scripts/calorie_tracker.py water` |
-| 查今天喝水 | 今日饮水量 | `python scripts/calorie_tracker.py summary` |
+| 记一餐 | 记录一餐(查库确认 → 写库 → 回执) | `python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --chain <思考链>` |
+| 记一餐（含备注） | 记录一餐 + 备注 | 同上 + `[备注]` |
+| 补记饮食 | 补录某天饮食(冲突提示) | `python scripts/render_crud_receipt.py --live-diet-add ... --date <日期> --time <时间> --meal <餐别> --chain <思考链>` |
+| 批量补记饮食 | 一次录多餐(JSON 数组) | `python scripts/render_crud_receipt.py --live-diet-batch --input <meals.json> --chain <思考链>` |
+| 扫描营养表 | 拍照识别营养成分表(wizard 确认) | `mmx vision describe <图片>` → `python scripts/render_nutrition_label.py --ai-json <json>` → 确认后 `python scripts/calorie_tracker.py add` |
+| 扫描营养表（指定日期） | 拍 + 补录指定日期 | 同上 + `--date <日期>` |
+| 记喝水 | 记录饮水(多杯解析) | `python scripts/render_crud_receipt.py --live-water-add <ml> [--date <日期>] --chain <思考链>` |
+| 复制昨日饮食 | 昨天/某天 → 今天/某天 | `python scripts/render_crud_receipt.py --live-diet-copy [--from <日期>] [--to <日期>] --chain <思考链>` |
 
-### 🏷️ 食品库
+#### 改饮食(6)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 查热量 | 搜索食品营养成分(HTML · ticket 06 · ADR-0005) | `python scripts/render_food_search.py --query "<term>"` |
-| 存食品 | 添加食品营养成分表到库 | `python scripts/calorie_tracker.py add-product` |
-| 改食品 | 更新食品营养成分 | `python scripts/calorie_tracker.py update-product` |
-| 查食品库 | 列出全部食品营养成分(HTML · ticket 07 · ADR-0005 · 默认 200 行 / --all 全量) | `python scripts/render_food_library.py [--limit 200 \| --all]` |
-| 批量导入 | 批量录入/更新食品库 | `python scripts/batch_import.py import` |
-| 校验批量 | 只校验 JSONL 不写入 | `python scripts/batch_import.py validate` |
-| 查食品库去重 | 全库去重检查 | `python scripts/batch_import.py dedupe` |
+| 改饮食记录 | 改某条(先列候选 → 快照 → 改) | `python scripts/render_crud_receipt.py --live-diet-update <id> [--food] [--grams] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note] --chain <思考链>` |
+| 改某日饮食 | 按日期批量改(命中条数/改前/改后) | `python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain <思考链>` |
+| 删饮食记录 | 删某条(快照确认 → 回执) | `python scripts/render_crud_receipt.py --live-diet-delete <id> --chain <思考链>` |
+| 删一餐 | 删某天某餐(5+1 类) | `python scripts/render_crud_receipt.py --live-diet-delete-meal <日期> <餐别> --chain <思考链>` |
+| 删某日饮食 | 清空某天 | `python scripts/render_crud_receipt.py --live-diet-delete-date <日期> --chain <思考链>` |
+| 批量删饮食 | 按日期范围删 | `python scripts/render_crud_receipt.py --live-diet-delete-range <开始> <结束> --chain <思考链>` |
+
+#### 看饮食(11)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看今日饮食 | 今日按餐别分组明细 + 累计 vs 目标 | `python scripts/render_today_diet.py --chain <思考链>` |
+| 看昨日饮食 | 昨日明细 | `python scripts/render_today_diet.py --date <昨天> --chain <思考链>` |
+| 看本周饮食 | 本周自然周明细 + 汇总 | `python scripts/render_today_meals.py --week current --chain <思考链>` |
+| 看上周饮食 | 上周自然周 | `python scripts/render_today_meals.py --week last --chain <思考链>` |
+| 看本月饮食 | 本月自然月 | `python scripts/render_today_meals.py --month current --chain <思考链>` |
+| 看上月饮食 | 上月自然月 | `python scripts/render_today_meals.py --month last --chain <思考链>` |
+| 看最近 7 天饮食 | 滚动 7 天 | `python scripts/render_today_meals.py --days 7 --chain <思考链>` |
+| 看最近 30 天饮食 | 滚动 30 天(按日汇总) | `python scripts/render_today_meals.py --days 30 --chain <思考链>` |
+| 看某段时间饮食 | 自定义区间 | `python scripts/render_today_meals.py --start <开始> --end <结束> --chain <思考链>` |
+| 看今日喝水 | 累计/距目标/每杯时间/进度环 | `python scripts/render_today_water.py --chain <思考链>` |
+| 看「有备注」的饮食记录 | 带备注的记录表 | `python scripts/render_today_meals.py --with-note --days <N> --chain <思考链>` |
+
+#### 查食品(9)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 查食品 | 查食物营养(名称/品牌/分类/热量/蛋白/碳水/脂肪/来源) | `python scripts/render_food_search.py --query <关键词>` |
+| 查食品（按分类） | 按分类查食品库 | `python scripts/render_food_search.py --category <分类>` |
+| 存食品 | 添加营养数据到库(每 100g) | `python scripts/render_crud_receipt.py --live-product-add <名称> <品牌> <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注] --chain <思考链>` |
+| 改食品 | 改食品库某条 | `python scripts/render_crud_receipt.py --live-product-update <id> [--字段 新值 ...] --chain <思考链>` |
+| 下架食品 | 标废弃(查询/搜索/去重不再出现) | `python scripts/render_crud_receipt.py --live-product-deprecate <id> --chain <思考链>` |
+| 看食品库（去重） | 全库重复组检查 + 处理建议 | `python scripts/render_dedupe_report.py` |
+| 批量导入食品 | JSONL 批量导入(预览确认) | `python scripts/render_batch_import.py --input <preview.json>` → 确认后 `python scripts/batch_import.py import <file.jsonl>` |
+| 校验批量导入 | 只校验不写入(失败原因) | `python scripts/batch_import.py validate <file.jsonl> --json-output <out.json>` → `python scripts/render_batch_import.py --input <out.json>` |
+| 看食品来源统计 | 按来源分组计数 + 占比 | `python scripts/render_source_stats.py` |
+
+#### 看营养(4)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看营养结构 | 蛋白/碳水/脂肪占比 + 实际 vs 目标 | `python scripts/render_nutrition_ratio.py --days 7 --chain <思考链>` |
+| 看今日营养 | 4 项营养实际 vs 目标 + 完成度 | `python scripts/render_today_diet.py --chain <思考链>` |
+| 看饮食总览 | 本周/本月累计 + 趋势(不含今日) | `python scripts/render_diet_overview.py --chain <思考链>` |
+| 看营养素深度 | 纤维/钠/糖 vs 推荐(缺数据标注) | `python scripts/render_nutrition_detail.py --days 7 --chain <思考链>` |
+
+#### 看排行(20 · 5 榜 × 4 窗口)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看高热量榜 / 看低热量榜 / 看频繁吃榜 / 看高碳水榜 / 看高蛋白榜 | TOP10(默认 7 天) | `python scripts/render_food_ranking.py --category <high_calorie\|low_calorie\|frequent\|high_carb\|high_protein> --top-n 10 --days 7 --chain <思考链>` |
+| 5 榜 ×（最近 30 天） | TOP10 · 滚动 30 天 | 同上 + `--days 30` |
+| 5 榜 ×（本月） | TOP10 · 自然月 | 同上 + `--start <月初> --end <月末>` |
+| 5 榜 ×（自定义） | TOP10 · 自定义区间 | 同上 + `--start <开始> --end <结束>` |
+
+#### 饮食复盘(5)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 饮食复盘（本周/本月/最近 90 天/今年/自定义时间） | 总热量/日均/总蛋白 + 趋势 + 高频 TOP5 + 一句话 | `python scripts/render_diet_review.py --type <week\|month\|quarter\|year\|range> [--start <开始> --end <结束>] --chain <思考链>` |
+
+#### 餐别分布(5)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看早餐（最近 7 天）/ 看午餐（最近 7 天）/ 看晚餐（最近 7 天）/ 看加餐（最近 7 天） | 单餐别明细 + 日均 + 一句话 | `python scripts/render_meal_distribution.py --meal <breakfast\|lunch\|dinner\|snack> --days 7 --chain <思考链>` |
+| 看全部餐别分布（最近 7 天） | 各餐别热量占比 + 明细 | `python scripts/render_meal_distribution.py --meal all --days 7 --chain <思考链>` |
 
 ### ⚖️ 体重
 
@@ -928,13 +1010,35 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 ### 📸 身材照片
 
-| 唤醒词 | 功能 | CLI |
-|--------|------|-----|
-| 记身材照 | 记录身材照片 | `python scripts/body_photo_tracker.py add` → **HTML:`body_photo_log_wizard.html`** |
-| 查身材照 | 查看照片历史(浏览 + 选 + 裁剪 + 调细节 一站式)| `python scripts/body_photo_tracker.py list` → **HTML:`body_photo_gif_planner.html`(v2.3.1 兼任 gallery,单图 → `body_photo_viewer.html`)** |
-| 删身材照 | 删除照片 | `python scripts/body_photo_tracker.py delete` → **HTML:`crud_receipt.html`** |
-| 改照片标签 | 修改照片标签 | `python scripts/body_photo_tracker.py tag` → **HTML:`crud_receipt.html`** |
-| 生成身材照GIF | 生成身材变化 GIF(框选裁剪 + 速度/水印/过渡)| `python scripts/body_photo_tracker.py gif --tag X --photo-id ... --crops '...'` → **HTML:`body_photo_gif_planner.html`** |
+| 唤醒词 | 功能 | CLI | HTML |
+|--------|------|-----|------|
+| 记身材照 | 存一张/含备注/批量存照片(发图或路径双模式) | `render_body_photo_receipt.py --live-add <照片...> --tag <标签> [--note <备注>] --chain "..."` | `body_photo_receipt.html`(回执,内嵌缩略图) |
+| 查身材照 | 浏览照片网格(时间/标签筛选 + 总数/标签计数/距上次拍照) | `render_body_photo_gallery.py [--days N \| --start D --end D] [--tag X] --chain "..."` | `body_photo_gallery.html`(结果) |
+| 对比两张照片 | 两张并排对比(日期/间隔/标签/备注) | `render_body_photo_compare.py --id1 N --id2 M --chain "..."` | `body_photo_compare.html`(结果) |
+| 生成身材照GIF | 时间段多张合成变化 GIF(帧数/首末日期) | `render_body_photo_gif_result.py --tag X [--start D --end D \| --days N \| --photo-id N ...] --chain "..."` | `body_photo_gif_result.html`(结果) |
+| 删身材照 | 删除照片(先列候选 → 快照确认 → 回执,物理删不可恢复) | `render_body_photo_receipt.py --live-delete --id N --chain "..."` | `body_photo_receipt.html`(回执) |
+| 改照片标签 | 标签覆盖整套(可多个) | `render_body_photo_receipt.py --live-tag-set --id N --tag-list "正面,侧面" --chain "..."` | `body_photo_receipt.html`(回执) |
+| 加照片标签 | 追加标签(可多个,判重) | `render_body_photo_receipt.py --live-tag-add --id N --tag 正面 --chain "..."` | `body_photo_receipt.html`(回执) |
+| 删照片标签 | 移除标签(可多个,至少保留 1 个) | `render_body_photo_receipt.py --live-tag-remove --id N --tag 正面 --chain "..."` | `body_photo_receipt.html`(回执) |
+
+#### 📱 手机/飞书发图录入规则(2026-08-02 · ticket #10 · 必读)
+
+> 第一性:照片本体 = 数据;路径只是电脑上的表达。手机上「发文字」与「发图片」是两条独立消息,**顺序不定**。
+
+**双模式输入**:
+- **发图模式**(手机/飞书·主):用户直接发照片 → AI 把收到的图片保存为本地文件(消息附件自带路径;只有 URL 则先下载到临时目录)→ 作为 `--live-add` 输入
+- **路径模式**(电脑·辅):用户给文件路径 → 直接用
+
+**分离到达处理**:
+1. 文字先到(如「接下来有张照片」)→ AI 确认并**等待图片**,不催、不卡流程
+2. 图片先到 → AI 先收图,等待/追问文字上下文(标签/备注/意图)
+3. **同一轮对话内用户发的所有图片 = 本次要存的照片**(除非用户另有说明);连发多张 = 批量存
+4. 标签是硬规则必填(筛选/对比的第一性维度)→ 缺标签逐张追问
+
+**多标签模型(字符串编码)**:
+- 存储:`tag` 列逗号分隔,如 `正面,侧面`(单个标签 ≤ 20 字,单张 ≤ 10 个)
+- 语义分层(一字之差别混淆):`改` = 覆盖整套 / `加` = 追加(判重) / `删` = 移除(至少保留 1 个,删空报错;想清空全部用「改照片标签」)
+- 筛选/对比按「包含匹配」:含该标签的照片都算
 
 #### 身材照 GIF `--crops` JSON schema(v2.3.0)
 
@@ -1163,10 +1267,25 @@ python scripts/exercise_tracker.py trend --days 7
 
 ### 身材照片
 ```bash
-python scripts/body_photo_tracker.py add photo1.jpg photo2.jpg --tag 正面 --note "早起"
-python scripts/body_photo_tracker.py list --days 30 --tag 正面
+# 写操作统一走 live 渲染器(写库 + 回执 HTML 一体,--chain 强制)
+python scripts/render_body_photo_receipt.py --live-add photo1.jpg --tag 正面 --note "早起" --chain "1.解析→2.写库→3.回执"
+python scripts/render_body_photo_receipt.py --live-add p1.jpg p2.jpg --tag 正面,侧面 --chain "..."
+python scripts/render_body_photo_receipt.py --live-delete --id 1 --chain "..."
+python scripts/render_body_photo_receipt.py --live-tag-set --id 1 --tag-list "正面,侧面" --chain "..."
+python scripts/render_body_photo_receipt.py --live-tag-add --id 1 --tag 背部 --chain "..."
+python scripts/render_body_photo_receipt.py --live-tag-remove --id 1 --tag 正面 --chain "..."
+# 查询/结果
+python scripts/render_body_photo_gallery.py --days 30 --chain "..."
+python scripts/render_body_photo_gallery.py --start 2026-07-01 --end 2026-07-31 --tag 正面 --chain "..."
+python scripts/render_body_photo_compare.py --id1 1 --id2 2 --chain "..."
+python scripts/render_body_photo_gif_result.py --tag 正面 --days 90 --chain "..."
+# 底层 CLI(纯写/纯查,供 live 渲染器内部调用)
+python scripts/body_photo_tracker.py add photo1.jpg --tag 正面
+python scripts/body_photo_tracker.py list --days 30 --tag 正面 --date-from 2026-07-01 --date-to 2026-07-31
 python scripts/body_photo_tracker.py delete 1
-python scripts/body_photo_tracker.py tag 1 侧面
+python scripts/body_photo_tracker.py tag 1 正面,侧面
+python scripts/body_photo_tracker.py tag-add 1 背部
+python scripts/body_photo_tracker.py tag-remove 1 正面
 python scripts/body_photo_tracker.py gif --tag 正面 --start 2026-01-01 --end 2026-05-30
 ```
 
@@ -1217,6 +1336,8 @@ dashboard(start, end)                      # 综合四维度仪表盘
 | "定营养目标" vs "定体重目标" | 营养=calorie/protein/carbs/fat/water_goal 5 字段;体重=weight_goal+deadline 2 字段 |
 | "查食物排行" vs "查高热量榜" | 前者默认高热量,后者显式指定 |
 | "记身材照" vs "查身材照" | "记"=新增,"查"=查询 |
+| "改照片标签" vs "加照片标签" vs "删照片标签" | 改=覆盖整套(可多个);加=追加(判重);删=移除(至少保留 1 个) |
+| "生成身材照GIF" vs "对比两张照片" | 前者=动态(多张合成 GIF);后者=静态(两张并排) |
 | "我的身材照" | 默认 → 查身材照(浏览);若用户说"记我的身材照"则 记身材照 |
 | "设置档案" vs "改档案" | 设置=填全量 4 项(采访式引导);改=单字段/多字段修改,走 `profile update --field` |
 | "设活动量" vs "改档案(活动量)" | 设活动量=只改活动量 1 项(走 `profile activity`);改档案=可同时改多项 |

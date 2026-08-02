@@ -27,6 +27,8 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
   (category='基础信息', 新 13 字段 scene 格式,替换旧综合分类 设置档案/查档案)
 - ✅ **身体细节 13 场景已同步**(2026-08-02 · ticket #9):记体脂（皮褶钳）/记体脂（外部测量）/记围度/补记体脂/补记围度/看体脂/看体脂趋势/看围度/看围度趋势/对比体脂/对比围度/删体脂/删围度
   (category='身体细节', 新 13 字段 scene 格式,替换旧身体成分/围度 8 条)
+- ✅ **身材照片 10 场景已同步**(2026-08-02 · ticket #10):8 条唯一触发词(记身材照×3 / 查身材照 / 对比两张照片 / 生成身材照GIF / 删身材照 / 改照片标签 / 加照片标签 / 删照片标签)
+  (category='身材照片', 新 13 字段 scene 格式;记身材照 3 场景同唤醒词,merge 时按 (wake_word, key) 去重保 3 卡)
 - ⏳ 其余分类仍为旧版运行时数据,待各自分类 ticket 同步。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
@@ -108,161 +110,1325 @@ TRIGGERS = [
             'fill_hints': [],
             'variants': []},
     {
-            'category': '饮食记录',     'wake_word': '记吃了',     'desc': '把一条饮食写入 food_log,并回执 HTML',
+            'category': '饮食',     'wake_word': '记一餐',     'desc': '记一餐',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注]',
-        'text': '请你加载技能 卡路里,执行唤醒词「记吃了」。\n\n我刚吃了一顿,需要写进 food_log。\n\nAI 流程:\n1. 在食品库查询食物名(如 "元气森林 冰红茶汽水")。\n2. 若命中:展示营养数据(每 100g 的热量/蛋白/碳水/脂肪),等我确认后写库。\n3. 若无命中:区分单位(ml vs g),如必要请我提供克数或包装营养数据,标注估算来源。\n4. 完成后给 1 句话总结,不需要过多文字解释。'},
-        'must_contain': ['食品库', '确认', '单位'],
-        'fill_hints': ['食物名称(必填): ', '克数(选填,默认按食品库每 100g): '],
-        'variants': [{
-        'label': '记吃了 [补录历史]', 'cli': 'python scripts/calorie_tracker.py add ... --date 2026-07-20 --time 12:30', 'prompt': '请你加载技能 卡路里,执行唤醒词「记吃了 [补录历史]」。\n\n刚想起来要补录之前的某次饮食(不是现在刚吃的)。同样走"查食品库 → 展示营养 → 用户确认 → 写库"4 步流程,单位 ml 与 g 区分。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记一餐」。\n\n我刚吃了一顿,帮我记录。如果我没说全克数或营养,问我补齐。记录后给我看:食物名/克数/热量/蛋白/碳水/脂肪 + 餐别 + 时间 + 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n克数(选填,默认按食品库每 100g):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_add_meal', 'name': '记一餐', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记一餐」。\n\n我刚吃了一顿,帮我记录。如果我没说全克数或营养,问我补齐。记录后给我看:食物名/克数/热量/蛋白/碳水/脂肪 + 餐别 + 时间 + 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n克数(选填,默认按食品库每 100g):____',
+            'user_intent': '记录刚吃的一餐食物与营养', 'data_fields': ["food_name", "grams", "calories", "protein", "carbs", "fat", "meal", "time"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '饮食记录',     'wake_word': '拍营养表',     'desc': '图片识别营养成分表并记录',
+            'category': '饮食',     'wake_word': '记一餐（含备注）',     'desc': '记一餐（含备注）',
             'main_prompt': {
-        'cli': 'mmx vision describe <图片> → python scripts/calorie_tracker.py add', 'text': '请你加载技能 卡路里,执行唤醒词「拍营养表」。\n\n我拍了食物包装的营养表图片,你识别后写入 food_log。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记一餐（含备注）」。\n\n我刚吃了一顿,要连同备注一起记录(如「加了辣酱」「食堂打的」)。如果我没说全克数或营养,问我补齐。记录后给我看:食物名/克数/热量/蛋白/碳水/脂肪 + 餐别 + 时间 + 备注。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n克数(选填,默认按食品库每 100g):____\n备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_add_meal_note', 'name': '记一餐（含备注）', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记一餐（含备注）」。\n\n我刚吃了一顿,要连同备注一起记录(如「加了辣酱」「食堂打的」)。如果我没说全克数或营养,问我补齐。记录后给我看:食物名/克数/热量/蛋白/碳水/脂肪 + 餐别 + 时间 + 备注。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n克数(选填,默认按食品库每 100g):____\n备注:____',
+            'user_intent': '记录一餐并附上备注', 'data_fields': ["food_name", "grams", "calories", "protein", "carbs", "fat", "meal", "time", "note"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '饮食记录',     'wake_word': '删吃的',     'desc': '删除饮食记录(生成 crud_receipt 回执)',
+            'category': '饮食',     'wake_word': '补记饮食',     'desc': '补记饮食',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py delete <id>', 'text': '请你加载技能 卡路里,执行唤醒词「删吃的」。\n\n我想删某条饮食记录,告诉我是哪条。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --date <日期> --time <时间> --meal <餐别> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「补记饮食」。\n\n我要补录之前某天的饮食(不是现在吃的)。如果我没说全克数或营养,问我补齐。记录后给我看:食物/克数/营养 + 补录日期 + 补录标识,若当天已有相同食物请提示我冲突。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n日期(YYYY-MM-DD):____\n时间(选填):____\n克数(选填,默认按食品库每 100g):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_backfill', 'name': '补记饮食', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-add <食物> <热量> <蛋白> [碳水] [脂肪] [克数] [备注] --date <日期> --time <时间> --meal <餐别> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记饮食」。\n\n我要补录之前某天的饮食(不是现在吃的)。如果我没说全克数或营养,问我补齐。记录后给我看:食物/克数/营养 + 补录日期 + 补录标识,若当天已有相同食物请提示我冲突。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____\n日期(YYYY-MM-DD):____\n时间(选填):____\n克数(选填,默认按食品库每 100g):____',
+            'user_intent': '补录之前某天的饮食', 'data_fields': ["food_name", "grams", "calories", "protein", "date", "time", "meal"],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '饮食记录',     'wake_word': '改吃的',     'desc': '修改已记录饮食(8 字段)',
+            'category': '饮食',     'wake_word': '批量补记饮食',     'desc': '批量补记饮食',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py update-meal <id> [--grams] [--food] [--calories] [--protein] [--carbs] [--fat] [--date] [--time] [--note]', 'text': '请你加载技能 卡路里,执行唤醒词「改吃的」。\n\n我想改某条饮食记录的一个字段(食物/克数/热量/蛋白/碳水/脂肪/日期/时间/备注)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-batch --input <meals.json> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量补记饮食」。\n\n我要一次补录多餐(不同日期/不同餐别),一行一餐地说。写之前先给我看整理好的清单,确认无误再写入。完成后给我看:写入条数/跳过条数/失败条数 + 失败明细。完成后给 1 句话总结,不需要过多文字解释。\n\n每行一餐(日期/时间/食物/克数/营养,换行分隔):\n____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_backfill_batch', 'name': '批量补记饮食', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-batch --input <meals.json> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量补记饮食」。\n\n我要一次补录多餐(不同日期/不同餐别),一行一餐地说。写之前先给我看整理好的清单,确认无误再写入。完成后给我看:写入条数/跳过条数/失败条数 + 失败明细。完成后给 1 句话总结,不需要过多文字解释。\n\n每行一餐(日期/时间/食物/克数/营养,换行分隔):\n____',
+            'user_intent': '一次批量补录多餐饮食', 'data_fields': ["date", "time", "food_name", "grams", "calories", "protein", "carbs", "fat"],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '饮食记录',     'wake_word': '查今天吃',     'desc': '今日饮食摘要(4 餐)',
+            'category': '饮食',     'wake_word': '扫描营养表',     'desc': '扫描营养表',
             'main_prompt': {
-        'cli': 'python scripts/render_today_diet.py', 'text': '请你加载技能 卡路里,执行唤醒词「查今天吃」。\n\n我想看今天按餐次组织的吃了什么清单。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查今天吃 昨天', 'cli': 'python scripts/render_today_diet.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查今天吃 昨天」。\n\n我要看昨天的饮食摘要。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'text': '请你加载技能 卡路里,执行唤醒词「扫描营养表」。\n\n我拍了食物包装的营养成分表图片,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后写进饮食记录。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_scan_label', 'name': '扫描营养表', 'subfunction': '记饮食', 'output_type': 'process',
+            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「扫描营养表」。\n\n我拍了食物包装的营养成分表图片,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后写进饮食记录。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____',
+            'user_intent': '拍照识别营养成分表并记录', 'data_fields': ["calories", "protein", "carbs", "fat", "sugar", "sodium", "fiber"],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '饮食记录',     'wake_word': '查吃的记录',     'desc': '今日逐条饮食记录(list)',
-            'alias_of': '查今天吃',  # ADR-0002 · ticket 03+04: 查吃的记录 = 查今天吃 的 alias,主 prompt 同源
+            'category': '饮食',     'wake_word': '扫描营养表（指定日期）',     'desc': '扫描营养表（指定日期）',
             'main_prompt': {
-        'cli': 'python scripts/render_today_diet.py', 'text': '请你加载技能 卡路里,执行唤醒词「查吃的记录」。\n\n我想看今天吃的明细(逐条/不是摘要)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查吃的记录 昨天', 'cli': 'python scripts/render_today_diet.py --date 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 昨天」。\n\n我要看昨天的逐条饮食记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查吃的记录 7/1 到 7/14', 'cli': 'python scripts/render_today_meals.py --start 2026-07-01 --end 2026-07-14', 'prompt': '请你加载技能 卡路里,执行唤醒词「查吃的记录 7/1 到 7/14」。\n\n我给出明确日期区间,你看区间生成列表(跨多日时切到 today_meals 模板)。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'text': '请你加载技能 卡路里,执行唤醒词「扫描营养表（指定日期）」。\n\n我拍了食物包装的营养成分表图片,要补录到指定日期。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 指定日期),我确认后按该日期写进饮食记录。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_scan_label_date', 'name': '扫描营养表（指定日期）', 'subfunction': '记饮食', 'output_type': 'process',
+            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「扫描营养表（指定日期）」。\n\n我拍了食物包装的营养成分表图片,要补录到指定日期。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 指定日期),我确认后按该日期写进饮食记录。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____',
+            'user_intent': '拍照识别营养表并补录到指定日期', 'data_fields': ["calories", "protein", "carbs", "fat", "date"],
+            'depends_on_external': False, 'order': 5},
     {
-            'category': '饮食记录',     'wake_word': '查热量历史',     'desc': '最近 N 天热量摄入历史',
+            'category': '饮食',     'wake_word': '记喝水',     'desc': '记喝水',
             'main_prompt': {
-        'cli': 'python scripts/render_calorie_trend.py --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查热量历史」。\n\n我想看最近 N 天每日热量摄入趋势(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查热量历史 30 天', 'cli': 'python scripts/render_calorie_trend.py --days 30', 'prompt': '请你加载技能 卡路里,执行唤醒词「查热量历史 30 天」。\n\n时间窗口固定最近 30 天。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_crud_receipt.py --live-water-add <ml> [--date <日期>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了水,帮我记录。如果我说「喝了几杯」,请按一杯约 250ml 折算成总量;如果我只说了杯子大小,先问我确认。记录后给我看:本次 ml + 今日累计/目标 + 距目标进度。完成后给 1 句话总结,不需要过多文字解释。\n\n喝水量(ml,或「几杯」):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_log_water', 'name': '记喝水', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-water-add <ml> [--date <日期>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了水,帮我记录。如果我说「喝了几杯」,请按一杯约 250ml 折算成总量;如果我只说了杯子大小,先问我确认。记录后给我看:本次 ml + 今日累计/目标 + 距目标进度。完成后给 1 句话总结,不需要过多文字解释。\n\n喝水量(ml,或「几杯」):____',
+            'user_intent': '记录一次饮水(含多杯解析)', 'data_fields': ["ml", "today_total_ml", "water_goal_ml", "remaining_ml"],
+            'depends_on_external': False, 'order': 6},
     {
-            'category': '饮食记录',     'wake_word': '记喝水',     'desc': '记录饮水量',
+            'category': '饮食',     'wake_word': '复制昨日饮食',     'desc': '复制昨日饮食',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py water <ml>', 'text': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了一杯水,记录饮水量。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['饮水量 ml: '],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-copy [--from <来源日期>] [--to <目标日期>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「复制昨日饮食」。\n\n我要把昨天(或指定某天)吃的东西原样复制到今天(或指定某天),省得重新记。复制完成后给我看:复制条数/跳过条数(同时间同食物已存在则跳过)。完成后给 1 句话总结,不需要过多文字解释。\n\n来源日期(选填,默认昨天):____\n目标日期(选填,默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_copy_yesterday', 'name': '复制昨日饮食', 'subfunction': '记饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-copy [--from <来源日期>] [--to <目标日期>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「复制昨日饮食」。\n\n我要把昨天(或指定某天)吃的东西原样复制到今天(或指定某天),省得重新记。复制完成后给我看:复制条数/跳过条数(同时间同食物已存在则跳过)。完成后给 1 句话总结,不需要过多文字解释。\n\n来源日期(选填,默认昨天):____\n目标日期(选填,默认今天):____',
+            'user_intent': '一键把昨天的饮食复制到今天', 'data_fields': ["copied", "skipped", "from_date", "to_date"],
+            'depends_on_external': False, 'order': 7},
     {
-            'category': '饮食记录',     'wake_word': '查今天喝水',     'desc': '今日饮水量(进度环 + 7 天 mini-chart)',
+            'category': '饮食',     'wake_word': '改饮食记录',     'desc': '改饮食记录',
             'main_prompt': {
-        'cli': 'python scripts/render_today_water.py', 'text': '请你加载技能 卡路里,执行唤醒词「查今天喝水」。\n\n我想看今天的饮水量。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-update <id> [--food <食物>] [--grams <克数>] [--calories <热量>] [--protein <蛋白>] [--carbs <碳水>] [--fat <脂肪>] [--date <日期>] [--time <时间>] [--note <备注>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改饮食记录」。\n\n我要改某条饮食记录。如果我没说清是哪条,请先列出最近的记录让我选。改之前先给我看这条记录的当前内容,改完后给我看:改前/改后 + 改动字段。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(如「最近一条」或日期+食物):____\n要改的字段(食物/克数/热量/蛋白/碳水/脂肪/日期/时间/备注):____\n新值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_update_record', 'name': '改饮食记录', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-update <id> [--food <食物>] [--grams <克数>] [--calories <热量>] [--protein <蛋白>] [--carbs <碳水>] [--fat <脂肪>] [--date <日期>] [--time <时间>] [--note <备注>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改饮食记录」。\n\n我要改某条饮食记录。如果我没说清是哪条,请先列出最近的记录让我选。改之前先给我看这条记录的当前内容,改完后给我看:改前/改后 + 改动字段。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(如「最近一条」或日期+食物):____\n要改的字段(食物/克数/热量/蛋白/碳水/脂肪/日期/时间/备注):____\n新值:____',
+            'user_intent': '修改某条饮食记录的字段', 'data_fields': ["food_name", "grams", "calories", "protein", "carbs", "fat", "note"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '食品库',     'wake_word': '查热量',     'desc': '搜索食品营养成分',
+            'category': '饮食',     'wake_word': '改某日饮食',     'desc': '改某日饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_food_search.py --query "<关键词>"', 'text': '请你加载技能 卡路里,执行唤醒词「查热量」。\n\n我想查某食物的热量/蛋白/碳水/脂肪(ticket 06 · ADR-0005)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['食物名(如 元气森林 冰红茶汽水 600ml): '],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录,改完后给我看:命中条数/改前/改后。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_update_by_date', 'name': '改某日饮食', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录,改完后给我看:命中条数/改前/改后。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____',
+            'user_intent': '按日期批量修改当天饮食记录', 'data_fields': ["date", "matched", "updated", "changed_fields"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '食品库',     'wake_word': '存食品',     'desc': '添加食品营养成分到库',
+            'category': '饮食',     'wake_word': '删饮食记录',     'desc': '删饮食记录',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py add-product <名称> <品牌> <热量> <蛋白质> <脂肪> <饱和脂肪> <碳水> <糖> <膳食纤维> <钠>', 'text': '请你加载技能 卡路里,执行唤醒词「存食品」。\n\n我要把新食品的营养数据存入食品库,告诉你必填字段(名称/品牌/热量/蛋白/脂肪/饱和脂肪/碳水/糖/膳食纤维/钠)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['食品名: ', '品牌: ', '热量(每 100g/ml): ', '蛋白质: ', '脂肪: ', '饱和脂肪: ', '碳水: ', '糖: ', '膳食纤维: ', '钠: '],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-delete <id> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删饮食记录」。\n\n我要删一条饮食记录。如果我没说清是哪条,请先列出最近的几条让我选。删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_delete_record', 'name': '删饮食记录', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-delete <id> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删饮食记录」。\n\n我要删一条饮食记录。如果我没说清是哪条,请先列出最近的几条让我选。删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '删除一条饮食记录', 'data_fields': ["id", "food_name", "calories", "date", "snapshot"],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '食品库',     'wake_word': '改食品',     'desc': '更新食品营养数据',
+            'category': '饮食',     'wake_word': '删一餐',     'desc': '删一餐',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py update-product <id> [--calories] [--protein] ...', 'text': '请你加载技能 卡路里,执行唤醒词「改食品」。\n\n我想改某条食品库的某个字段。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['食品 id: ', '要改的字段(如 热量/蛋白质/...): ', '新值: '],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-delete-meal <日期> <餐别> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删一餐」。\n\n我要删某天某一餐的全部记录(如删掉今天的早餐)。如果我没说日期默认今天。删除前告诉我这一餐有几条,确认后删除,给我看:餐别 + 删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n餐别(早餐/午餐/下午茶/晚餐/夜宵/加餐):____\n日期(选填,默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_delete_by_meal', 'name': '删一餐', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-delete-meal <日期> <餐别> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删一餐」。\n\n我要删某天某一餐的全部记录(如删掉今天的早餐)。如果我没说日期默认今天。删除前告诉我这一餐有几条,确认后删除,给我看:餐别 + 删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n餐别(早餐/午餐/下午茶/晚餐/夜宵/加餐):____\n日期(选填,默认今天):____',
+            'user_intent': '按餐别删除某天的一餐记录', 'data_fields': ["date", "meal", "deleted"],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '食品库',     'wake_word': '查食品库',     'desc': '列出全部食品营养成分',
+            'category': '饮食',     'wake_word': '删某日饮食',     'desc': '删某日饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_food_library.py [--limit 200 | --all]', 'text': '请你加载技能 卡路里,执行唤醒词「查食品库」。\n\n我想列出全部食品库(ticket 07 · ADR-0005 · 默认 200 行)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-delete-date <日期> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删某日饮食」。\n\n我要清空某一天的整日饮食记录。删除前告诉我那天有几条,确认后删除,给我看:日期 + 删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_delete_by_date', 'name': '删某日饮食', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-delete-date <日期> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删某日饮食」。\n\n我要清空某一天的整日饮食记录。删除前告诉我那天有几条,确认后删除,给我看:日期 + 删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____',
+            'user_intent': '清空某一天的整日饮食记录', 'data_fields': ["date", "deleted"],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '食品库',     'wake_word': '批量导入',     'desc': '批量录入/更新食品库',
+            'category': '饮食',     'wake_word': '批量删饮食',     'desc': '批量删饮食',
             'main_prompt': {
-        'cli': 'python scripts/batch_import.py import <file.jsonl>', 'text': '请你加载技能 卡路里,执行唤醒词「批量导入」。\n\n我有一个 JSONL 文件要批量录入食品库。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-delete-range <开始> <结束> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量删饮食」。\n\n我要按日期范围批量删除饮食记录。删除前告诉我这个范围有几条,确认后删除,给我看:时间范围 + 删除条数 + 确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_delete_by_range', 'name': '批量删饮食', 'subfunction': '改饮食', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-delete-range <开始> <结束> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量删饮食」。\n\n我要按日期范围批量删除饮食记录。删除前告诉我这个范围有几条,确认后删除,给我看:时间范围 + 删除条数 + 确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '按日期范围批量删除饮食记录', 'data_fields': ["start", "end", "deleted"],
+            'depends_on_external': False, 'order': 5},
     {
-            'category': '食品库',     'wake_word': '校验批量',     'desc': '只校验 JSONL 不写入',
+            'category': '饮食',     'wake_word': '看今日饮食',     'desc': '看今日饮食',
             'main_prompt': {
-        'cli': 'python scripts/batch_import.py validate <file.jsonl>', 'text': '请你加载技能 卡路里,执行唤醒词「校验批量」。\n\n我要先校验我的 JSONL 文件能不能导入(不真正写入)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_today', 'name': '看今日饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天按餐别分组的饮食明细', 'data_fields': ["meal", "food_name", "grams", "calories", "protein", "carbs", "fat", "goal"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '体重',     'wake_word': '记体重',     'desc': '记录体重(身高自动从 user_profile 读)',
+            'category': '饮食',     'wake_word': '看昨日饮食',     'desc': '看昨日饮食',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight <kg> [--note "<备注>"]', 'text': '请你加载技能 卡路里,执行唤醒词「记体重」。\n\n我刚称了体重,记录一下。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['体重 kg: '],
-            'variants': []},
+        'cli': 'python scripts/render_today_diet.py --date <昨天> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看昨日饮食」。\n\n我想看昨天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 当日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_yesterday', 'name': '看昨日饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --date <昨天> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看昨日饮食」。\n\n我想看昨天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 当日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看昨天按餐别分组的饮食明细', 'data_fields': ["meal", "food_name", "grams", "calories", "protein", "carbs", "fat", "goal"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '体重',     'wake_word': '改体重记录',     'desc': '修改历史体重记录',
+            'category': '饮食',     'wake_word': '看本周饮食',     'desc': '看本周饮食',
             'main_prompt': {
-        'cli': 'python scripts/calorie_tracker.py weight-update <id> [--weight <kg>] [--note <备注>]', 'text': '请你加载技能 卡路里,执行唤醒词「改体重记录」。\n\n我要改某条历史体重记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_today_meals.py --week current --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看本周饮食」。\n\n我想看本周(周一到今天)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_this_week', 'name': '看本周饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --week current --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周饮食」。\n\n我想看本周(周一到今天)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周自然周的饮食明细与汇总', 'data_fields': ["date", "food_name", "calories", "protein", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '体重',     'wake_word': '查体重历史',     'desc': '体重历史记录(mode=history)',
+            'category': '饮食',     'wake_word': '看上周饮食',     'desc': '看上周饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_history.py --mode history --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「查体重历史」。\n\n我想看最近 N 天每天的体重列表(默认 30 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查体重历史 上周', 'cli': 'python scripts/render_weight_history.py --mode history --days 7', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重历史 上周」。\n\n时间窗口固定最近 7 天。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查体重历史 7/1 到 7/31', 'cli': 'python scripts/render_weight_history.py --mode history --start 2026-07-01 --end 2026-07-31', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重历史 7/1 到 7/31」。\n\n我要看整月体重列表。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_today_meals.py --week last --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看上周饮食」。\n\n我想看上周(上一个自然周)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_last_week', 'name': '看上周饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --week last --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上周饮食」。\n\n我想看上周(上一个自然周)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上周自然周的饮食明细与汇总', 'data_fields': ["date", "food_name", "calories", "protein", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '体重',     'wake_word': '查体重趋势',     'desc': '把体重画成折线图,看涨跌 + 起止差 + 异常点',
+            'category': '饮食',     'wake_word': '看本月饮食',     'desc': '看本月饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_history.py --mode trend --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「查体重趋势」。\n\n我想看体重折线图,带起止对比和异常点高亮。默认最近 30 天,如果我说"上周"就是 7 天,"最近 90 天"就是 90 天,"7 月"就是当月整月。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查体重趋势 上周', 'cli': 'python scripts/render_weight_history.py --mode trend --days 7', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重趋势 上周」。\n\n时间窗口固定最近 7 天。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查体重趋势 昨天', 'cli': 'python scripts/render_weight_history.py --mode trend --start 2026-07-25 --end 2026-07-25', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重趋势 昨天」。\n\n单日查询,要看那一天的体重数据卡片。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查体重趋势 7/1 到 7/14', 'cli': 'python scripts/render_weight_history.py --mode trend --start 2026-07-01 --end 2026-07-14', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重趋势 7/1 到 7/14」。\n\n我给出明确日期区间,你按区间生成折线图。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查体重趋势 7 月', 'cli': 'python scripts/render_weight_history.py --mode trend --start 2026-07-01 --end 2026-07-31', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重趋势 7 月」。\n\n整月查询,7 月 1 号到 7 月底。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '查体重趋势 最近 90 天', 'cli': 'python scripts/render_weight_history.py --mode trend --days 90', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重趋势 最近 90 天」。\n\n时间窗口固定最近 90 天。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_today_meals.py --month current --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看本月饮食」。\n\n我想看本月(自然月)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均(天数多时按日汇总)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_this_month', 'name': '看本月饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --month current --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月饮食」。\n\n我想看本月(自然月)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均(天数多时按日汇总)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月自然月的饮食明细与汇总', 'data_fields': ["date", "food_name", "calories", "protein", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '体重',     'wake_word': '对比体重',     'desc': '两时间段体重对比(mode=compare)',
+            'category': '饮食',     'wake_word': '看上月饮食',     'desc': '看上月饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_history.py --mode compare --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重」。\n\n我想对比两段时间的体重差异(默认 30 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '对比体重 7/1 到 7/31', 'cli': 'python scripts/render_weight_history.py --mode compare --start 2026-07-01 --end 2026-07-31', 'prompt': '请你加载技能 卡路里,执行唤醒词「对比体重 7/1 到 7/31」。\n\n我要对比 7 月整月内前后两段体重。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_today_meals.py --month last --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看上月饮食」。\n\n我想看上月(上一个自然月)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均(天数多时按日汇总)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_last_month', 'name': '看上月饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --month last --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上月饮食」。\n\n我想看上月(上一个自然月)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均(天数多时按日汇总)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上月自然月的饮食明细与汇总', 'data_fields': ["date", "food_name", "calories", "protein", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 5},
     {
-            'category': '体重',     'wake_word': '查体重波动',     'desc': '体重波动分析(标准差 + 异常点,mode=volatility)',
+            'category': '饮食',     'wake_word': '看最近 7 天饮食',     'desc': '看最近 7 天饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_history.py --mode volatility --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「查体重波动」。\n\n我想看体重波动大小 + 异常点(默认 30 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_today_meals.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 7 天饮食」。\n\n我想看最近 7 天(滚动窗口)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_7d', 'name': '看最近 7 天饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 7 天饮食」。\n\n我想看最近 7 天(滚动窗口)的饮食明细:逐条列表 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天滚动窗口的饮食明细', 'data_fields': ["date", "food_name", "calories", "protein", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 6},
     {
-            'category': '体重',
-            'wake_word': '查体重波动 v2',
-            'desc': '体重波动 dashboard v2(诊断 / 趋势 / 早警告 + Canvas + baseline toggle)',
+            'category': '饮食',     'wake_word': '看最近 30 天饮食',     'desc': '看最近 30 天饮食',
             'main_prompt': {
-                'cli': 'python scripts/render_weight_volatility_v2.py [--start YYYY-MM-DD] [--end YYYY-MM-DD] [--baseline rolling|goal]',
-                'text': '请你加载技能 卡路里,执行唤醒词「查体重波动 v2」。\n\n我想看体重波动 dashboard v2:3 张 KPI 卡(诊断 / 趋势 / 早警告)+ Canvas 主图(±σ 带 + 目标线)+ 异常列表。基线可在「近期常态」与「目标」之间切换。\n\n完成后给 1 句话总结,不需要过多文字解释。'
-            },
-            'fill_hints': [],
-            'variants': [
-                {'label': '查体重稳定性', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重稳定性」。\n\n体重波动 v2 的别名,含义相同。'},
-                {'label': '查体重波动 v2 --text', 'cli': 'python scripts/render_weight_volatility_v2.py --text', 'prompt': '请你加载技能 卡路里,执行唤醒词「查体重波动 v2 --text」。\n\n纯文本模式输出(给 pipeline 用,无 HTML)。'},
-            ]
+        'cli': 'python scripts/render_today_meals.py --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 30 天饮食」。\n\n我想看最近 30 天(滚动窗口)的饮食:按日汇总 + 总热量/日均/总蛋白/日均(天数多时降采样)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_30d', 'name': '看最近 30 天饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 30 天饮食」。\n\n我想看最近 30 天(滚动窗口)的饮食:按日汇总 + 总热量/日均/总蛋白/日均(天数多时降采样)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天滚动窗口的饮食汇总', 'data_fields': ["date", "calories", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '饮食',     'wake_word': '看某段时间饮食',     'desc': '看某段时间饮食',
+            'main_prompt': {
+        'cli': 'python scripts/render_today_meals.py --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看某段时间饮食」。\n\n我想看自定义日期区间的饮食明细:逐条列表 + 区间起止 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_range', 'name': '看某段时间饮食', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某段时间饮食」。\n\n我想看自定义日期区间的饮食明细:逐条列表 + 区间起止 + 总热量/日均/总蛋白/日均。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义日期区间的饮食明细', 'data_fields': ["start", "end", "date", "food_name", "calories", "total_calorie", "avg_calorie"],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '饮食',     'wake_word': '看今日喝水',     'desc': '看今日喝水',
+            'main_prompt': {
+        'cli': 'python scripts/render_today_water.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日喝水」。\n\n我想看今天的饮水:累计饮水量/距目标/每杯时间 + 进度条。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_water', 'name': '看今日喝水', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_water.html', 'data_source': 'python scripts/render_today_water.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日喝水」。\n\n我想看今天的饮水:累计饮水量/距目标/每杯时间 + 进度条。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今日饮水总量与目标进度', 'data_fields': ["total_ml", "goal_ml", "remaining_ml", "cups"],
+            'depends_on_external': False, 'order': 9},
+    {
+            'category': '饮食',     'wake_word': '看「有备注」的饮食记录',     'desc': '看「有备注」的饮食记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看「有备注」的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_view_with_note', 'name': '看「有备注」的饮食记录', 'subfunction': '看饮食', 'output_type': 'result',
+            'html_template': 'templates/today_meals.html', 'data_source': 'python scripts/render_today_meals.py --with-note --days <N> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看「有备注」的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
+            'user_intent': '查看带备注的饮食记录', 'data_fields': ["date", "meal", "food_name", "grams", "calories", "protein", "note"],
+            'depends_on_external': False, 'order': 10},
+    {
+            'category': '饮食',     'wake_word': '查食品',     'desc': '查食品',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_search.py --query <关键词>', 'text': '请你加载技能 卡路里,执行唤醒词「查食品」。\n\n我想查某食物的营养数据:名称/品牌/分类/热量/蛋白/碳水/脂肪/来源。如果没查到精确的,给我相近的几条。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_search', 'name': '查食品', 'subfunction': '查食品', 'output_type': 'result',
+            'html_template': 'templates/food_search.html', 'data_source': 'python scripts/render_food_search.py --query <关键词>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查食品」。\n\n我想查某食物的营养数据:名称/品牌/分类/热量/蛋白/碳水/脂肪/来源。如果没查到精确的,给我相近的几条。完成后给 1 句话总结,不需要过多文字解释。\n\n食物名称:____',
+            'user_intent': '查询食物的营养数据', 'data_fields': ["product_name", "brand", "calories", "protein", "carbs", "fat", "source"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '饮食',     'wake_word': '查食品（按分类）',     'desc': '查食品（按分类）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_search.py --category <分类>', 'text': '请你加载技能 卡路里,执行唤醒词「查食品（按分类）」。\n\n我想按分类查食品库(如 饮料/主食/蛋白类/水果/零食):列出该分类全部食品 + 营养数据,按分类分组展示。完成后给 1 句话总结,不需要过多文字解释。\n\n分类名称:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_search_category', 'name': '查食品（按分类）', 'subfunction': '查食品', 'output_type': 'result',
+            'html_template': 'templates/food_search.html', 'data_source': 'python scripts/render_food_search.py --category <分类>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查食品（按分类）」。\n\n我想按分类查食品库(如 饮料/主食/蛋白类/水果/零食):列出该分类全部食品 + 营养数据,按分类分组展示。完成后给 1 句话总结,不需要过多文字解释。\n\n分类名称:____',
+            'user_intent': '按分类浏览食品库', 'data_fields': ["category", "product_name", "brand", "calories", "protein"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '饮食',     'wake_word': '存食品',     'desc': '存食品',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-product-add <名称> <品牌> <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「存食品」。\n\n我要把新食品的营养数据存进食品库(每 100g 为基准)。告诉我必填字段:名称/品牌/热量/蛋白/脂肪/饱和脂肪/碳水/糖/纤维/钠/来源。存完后给我看:写入回执 + 名称 + 各营养值。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称:____\n品牌:____\n热量(每 100g):____\n蛋白:____\n脂肪:____\n饱和脂肪(选填):____\n碳水:____\n糖(选填):____\n纤维(选填):____\n钠:____\n来源(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_add', 'name': '存食品', 'subfunction': '查食品', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-product-add <名称> <品牌> <热量> <蛋白> <脂肪> <饱和脂肪> <碳水> <糖> <纤维> <钠> [备注] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「存食品」。\n\n我要把新食品的营养数据存进食品库(每 100g 为基准)。告诉我必填字段:名称/品牌/热量/蛋白/脂肪/饱和脂肪/碳水/糖/纤维/钠/来源。存完后给我看:写入回执 + 名称 + 各营养值。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称:____\n品牌:____\n热量(每 100g):____\n蛋白:____\n脂肪:____\n饱和脂肪(选填):____\n碳水:____\n糖(选填):____\n纤维(选填):____\n钠:____\n来源(选填):____',
+            'user_intent': '把新食品的营养数据存入食品库', 'data_fields': ["product_name", "brand", "calories", "protein", "fat", "carbohydrates", "sodium", "source"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '饮食',     'wake_word': '改食品',     'desc': '改食品',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-product-update <id> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改食品」。\n\n我要改食品库里某条食品的营养数据。如果我没说清是哪条,先列出相近的几条让我选。改前给我看原值,改后给我看:改前/改后。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称或编号:____\n要改的字段(热量/蛋白/脂肪/碳水/糖/钠/品牌等):____\n新值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_update', 'name': '改食品', 'subfunction': '查食品', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-product-update <id> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改食品」。\n\n我要改食品库里某条食品的营养数据。如果我没说清是哪条,先列出相近的几条让我选。改前给我看原值,改后给我看:改前/改后。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称或编号:____\n要改的字段(热量/蛋白/脂肪/碳水/糖/钠/品牌等):____\n新值:____',
+            'user_intent': '修改食品库中某条食品的数据', 'data_fields': ["product_name", "brand", "calories", "protein", "fat", "carbohydrates", "sodium"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '饮食',     'wake_word': '下架食品',     'desc': '下架食品',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-product-deprecate <id> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「下架食品」。\n\n我要把食品库里的某条食品下架(标废弃,以后查询/搜索/导入去重都不再出现)。先确认是哪条,下架后给我回执并提示「已下架」。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称或编号:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_deprecate', 'name': '下架食品', 'subfunction': '查食品', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-product-deprecate <id> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「下架食品」。\n\n我要把食品库里的某条食品下架(标废弃,以后查询/搜索/导入去重都不再出现)。先确认是哪条,下架后给我回执并提示「已下架」。完成后给 1 句话总结,不需要过多文字解释。\n\n食品名称或编号:____',
+            'user_intent': '下架食品库中的某条食品', 'data_fields': ["id", "product_name", "is_deprecated"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '饮食',     'wake_word': '看食品库（去重）',     'desc': '看食品库（去重）',
+            'main_prompt': {
+        'cli': 'python scripts/render_dedupe_report.py', 'text': '请你加载技能 卡路里,执行唤醒词「看食品库（去重）」。\n\n我想检查食品库有没有重复的食品(同名同品牌多条)。给我看:重复组列表/重复条数/处理建议。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_dedupe', 'name': '看食品库（去重）', 'subfunction': '查食品', 'output_type': 'result',
+            'html_template': 'templates/dedupe_report.html', 'data_source': 'python scripts/render_dedupe_report.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看食品库（去重）」。\n\n我想检查食品库有没有重复的食品(同名同品牌多条)。给我看:重复组列表/重复条数/处理建议。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '检查食品库中的重复条目', 'data_fields': ["product_name", "brand", "count", "ids"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '饮食',     'wake_word': '批量导入食品',     'desc': '批量导入食品',
+            'main_prompt': {
+        'cli': 'python scripts/render_batch_import.py --input <preview.json> → 确认后 python scripts/batch_import.py import <file.jsonl>', 'text': '请你加载技能 卡路里,执行唤醒词「批量导入食品」。\n\n我有一个食品数据文件(每行一条:名称/热量/蛋白/脂肪/碳水/钠/来源等)要批量导入食品库。先给我看导入预览(导入条数/跳过条数/失败明细),我确认后再真正写入。完成后给 1 句话总结,不需要过多文字解释。\n\n文件路径:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_batch_import', 'name': '批量导入食品', 'subfunction': '查食品', 'output_type': 'process',
+            'html_template': 'templates/batch_import_preview.html', 'data_source': 'python scripts/render_batch_import.py --input <preview.json> → 确认后 python scripts/batch_import.py import <file.jsonl>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量导入食品」。\n\n我有一个食品数据文件(每行一条:名称/热量/蛋白/脂肪/碳水/钠/来源等)要批量导入食品库。先给我看导入预览(导入条数/跳过条数/失败明细),我确认后再真正写入。完成后给 1 句话总结,不需要过多文字解释。\n\n文件路径:____',
+            'user_intent': '批量导入食品数据到食品库', 'data_fields': ["product_name", "calories", "protein", "fat", "carbohydrates", "sodium", "source"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '饮食',     'wake_word': '校验批量导入',     'desc': '校验批量导入',
+            'main_prompt': {
+        'cli': 'python scripts/batch_import.py validate <file.jsonl> --json-output <out.json> → python scripts/render_batch_import.py --input <out.json>', 'text': '请你加载技能 卡路里,执行唤醒词「校验批量导入」。\n\n我有一个食品数据文件(每行一条),只想先校验能不能导入,不真正写入。给我看:通过条数/失败条数 + 每条失败原因。完成后给 1 句话总结,不需要过多文字解释。\n\n文件路径:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_batch_validate', 'name': '校验批量导入', 'subfunction': '查食品', 'output_type': 'result',
+            'html_template': 'templates/batch_import_preview.html', 'data_source': 'python scripts/batch_import.py validate <file.jsonl> --json-output <out.json> → python scripts/render_batch_import.py --input <out.json>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「校验批量导入」。\n\n我有一个食品数据文件(每行一条),只想先校验能不能导入,不真正写入。给我看:通过条数/失败条数 + 每条失败原因。完成后给 1 句话总结,不需要过多文字解释。\n\n文件路径:____',
+            'user_intent': '预校验批量导入文件能否通过', 'data_fields': ["line", "name", "status", "reason"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '饮食',     'wake_word': '看食品来源统计',     'desc': '看食品来源统计',
+            'main_prompt': {
+        'cli': 'python scripts/render_source_stats.py', 'text': '请你加载技能 卡路里,执行唤醒词「看食品来源统计」。\n\n我想看食品库的食品来源分布(按来源分组计数):每个来源多少条 + 占比 + 总数。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'food_source_stats', 'name': '看食品来源统计', 'subfunction': '查食品', 'output_type': 'result',
+            'html_template': 'templates/source_stats.html', 'data_source': 'python scripts/render_source_stats.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看食品来源统计」。\n\n我想看食品库的食品来源分布(按来源分组计数):每个来源多少条 + 占比 + 总数。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看食品库按来源分组的统计', 'data_fields': ["source", "count", "pct", "total"],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '饮食',     'wake_word': '看营养结构',     'desc': '看营养结构',
+            'main_prompt': {
+        'cli': 'python scripts/render_nutrition_ratio.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看营养结构」。\n\n我想看最近一段时间(默认 7 天)的蛋白/碳水/脂肪占比:饼图 + 实际 vs 目标。如果我要看别的窗口会告诉你。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'nutrition_ratio', 'name': '看营养结构', 'subfunction': '看营养', 'output_type': 'result',
+            'html_template': 'templates/nutrition_ratio.html', 'data_source': 'python scripts/render_nutrition_ratio.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看营养结构」。\n\n我想看最近一段时间(默认 7 天)的蛋白/碳水/脂肪占比:饼图 + 实际 vs 目标。如果我要看别的窗口会告诉你。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
+            'user_intent': '看蛋白碳水脂肪的营养占比', 'data_fields': ["protein_pct", "carb_pct", "fat_pct", "goal"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '饮食',     'wake_word': '看今日营养',     'desc': '看今日营养',
+            'main_prompt': {
+        'cli': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'nutrition_today', 'name': '看今日营养', 'subfunction': '看营养', 'output_type': 'result',
+            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今日 4 项营养完成度', 'data_fields': ["calories", "protein", "carbs", "fat", "goal", "pct"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '饮食',     'wake_word': '看饮食总览',     'desc': '看饮食总览',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_overview.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看饮食总览」。\n\n我想看周期累计的饮食总览:本周/本月累计(总热量/日均/总蛋白)+ 趋势小图(不含今日,今日看主页)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'nutrition_overview', 'name': '看饮食总览', 'subfunction': '看营养', 'output_type': 'result',
+            'html_template': 'templates/diet_overview.html', 'data_source': 'python scripts/render_diet_overview.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看饮食总览」。\n\n我想看周期累计的饮食总览:本周/本月累计(总热量/日均/总蛋白)+ 趋势小图(不含今日,今日看主页)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周本月累计饮食总览', 'data_fields': ["week_total", "month_total", "avg_cal", "trend"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '饮食',     'wake_word': '看营养素深度',     'desc': '看营养素深度',
+            'main_prompt': {
+        'cli': 'python scripts/render_nutrition_detail.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看营养素深度」。\n\n我想看微量营养素摄入:纤维/钠/糖 vs 推荐值(时间范围默认最近 7 天)。食品库没有的按缺数据标注。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'nutrition_detail', 'name': '看营养素深度', 'subfunction': '看营养', 'output_type': 'result',
+            'html_template': 'templates/nutrition_detail.html', 'data_source': 'python scripts/render_nutrition_detail.py --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看营养素深度」。\n\n我想看微量营养素摄入:纤维/钠/糖 vs 推荐值(时间范围默认最近 7 天)。食品库没有的按缺数据标注。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
+            'user_intent': '看纤维钠糖等微量营养素摄入', 'data_fields': ["fiber", "sodium", "sugar", "target", "missing_foods"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '饮食',     'wake_word': '看高热量榜',     'desc': '看高热量榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高热量榜」。\n\n我想看最近一段时间(默认 7 天)热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_calorie', 'name': '看高热量榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高热量榜」。\n\n我想看最近一段时间(默认 7 天)热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看高热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '饮食',     'wake_word': '看低热量榜',     'desc': '看低热量榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看低热量榜」。\n\n我想看最近一段时间(默认 7 天)热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_low_calorie', 'name': '看低热量榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看低热量榜」。\n\n我想看最近一段时间(默认 7 天)热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看低热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '饮食',     'wake_word': '看频繁吃榜',     'desc': '看频繁吃榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜」。\n\n我想看最近一段时间(默认 7 天)吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_frequent', 'name': '看频繁吃榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜」。\n\n我想看最近一段时间(默认 7 天)吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最常吃的食物 TOP10', 'data_fields': ["rank", "food_name", "count", "last_date"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '饮食',     'wake_word': '看高碳水榜',     'desc': '看高碳水榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高碳水榜」。\n\n我想看最近一段时间(默认 7 天)碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_carb', 'name': '看高碳水榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高碳水榜」。\n\n我想看最近一段时间(默认 7 天)碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看高碳水食物 TOP10', 'data_fields': ["rank", "food_name", "carbs"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '饮食',     'wake_word': '看高蛋白榜',     'desc': '看高蛋白榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜」。\n\n我想看最近一段时间(默认 7 天)蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_protein', 'name': '看高蛋白榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜」。\n\n我想看最近一段时间(默认 7 天)蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看高蛋白食物 TOP10', 'data_fields': ["rank", "food_name", "protein"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '饮食',     'wake_word': '看高热量榜（最近 30 天）',     'desc': '看高热量榜（最近 30 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高热量榜（最近 30 天）」。\n\n我想看最近 30 天热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_calorie_30d', 'name': '看高热量榜（最近 30 天）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高热量榜（最近 30 天）」。\n\n我想看最近 30 天热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天高热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '饮食',     'wake_word': '看高热量榜（本月）',     'desc': '看高热量榜（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高热量榜（本月）」。\n\n我想看本月(自然月)热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_calorie_month', 'name': '看高热量榜（本月）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高热量榜（本月）」。\n\n我想看本月(自然月)热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月高热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '饮食',     'wake_word': '看高热量榜（自定义）',     'desc': '看高热量榜（自定义）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高热量榜（自定义）」。\n\n我想看自定义日期区间热量最高的食物 TOP 10:排名/食物/热量 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_calorie_custom', 'name': '看高热量榜（自定义）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高热量榜（自定义）」。\n\n我想看自定义日期区间热量最高的食物 TOP 10:排名/食物/热量 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间高热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories", "start", "end"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '饮食',     'wake_word': '看低热量榜（最近 30 天）',     'desc': '看低热量榜（最近 30 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看低热量榜（最近 30 天）」。\n\n我想看最近 30 天热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_low_calorie_30d', 'name': '看低热量榜（最近 30 天）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看低热量榜（最近 30 天）」。\n\n我想看最近 30 天热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天低热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '饮食',     'wake_word': '看低热量榜（本月）',     'desc': '看低热量榜（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看低热量榜（本月）」。\n\n我想看本月(自然月)热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_low_calorie_month', 'name': '看低热量榜（本月）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看低热量榜（本月）」。\n\n我想看本月(自然月)热量最低的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月低热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories"],
+            'depends_on_external': False, 'order': 9},
+    {
+            'category': '饮食',     'wake_word': '看低热量榜（自定义）',     'desc': '看低热量榜（自定义）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看低热量榜（自定义）」。\n\n我想看自定义日期区间热量最低的食物 TOP 10:排名/食物/热量 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_low_calorie_custom', 'name': '看低热量榜（自定义）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category low_calorie --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看低热量榜（自定义）」。\n\n我想看自定义日期区间热量最低的食物 TOP 10:排名/食物/热量 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间低热量食物 TOP10', 'data_fields': ["rank", "food_name", "calories", "start", "end"],
+            'depends_on_external': False, 'order': 10},
+    {
+            'category': '饮食',     'wake_word': '看频繁吃榜（最近 30 天）',     'desc': '看频繁吃榜（最近 30 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（最近 30 天）」。\n\n我想看最近 30 天吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_frequent_30d', 'name': '看频繁吃榜（最近 30 天）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（最近 30 天）」。\n\n我想看最近 30 天吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天最常吃的食物 TOP10', 'data_fields': ["rank", "food_name", "count", "last_date"],
+            'depends_on_external': False, 'order': 11},
+    {
+            'category': '饮食',     'wake_word': '看频繁吃榜（本月）',     'desc': '看频繁吃榜（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（本月）」。\n\n我想看本月(自然月)吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_frequent_month', 'name': '看频繁吃榜（本月）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（本月）」。\n\n我想看本月(自然月)吃得最多的食物 TOP 10:排名/食物/频次/最近一次。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月最常吃的食物 TOP10', 'data_fields': ["rank", "food_name", "count", "last_date"],
+            'depends_on_external': False, 'order': 12},
+    {
+            'category': '饮食',     'wake_word': '看频繁吃榜（自定义）',     'desc': '看频繁吃榜（自定义）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（自定义）」。\n\n我想看自定义日期区间吃得最多的食物 TOP 10:排名/食物/频次/最近一次 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_frequent_custom', 'name': '看频繁吃榜（自定义）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category frequent --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看频繁吃榜（自定义）」。\n\n我想看自定义日期区间吃得最多的食物 TOP 10:排名/食物/频次/最近一次 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间最常吃的食物 TOP10', 'data_fields': ["rank", "food_name", "count", "last_date", "start", "end"],
+            'depends_on_external': False, 'order': 13},
+    {
+            'category': '饮食',     'wake_word': '看高碳水榜（最近 30 天）',     'desc': '看高碳水榜（最近 30 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（最近 30 天）」。\n\n我想看最近 30 天碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_carb_30d', 'name': '看高碳水榜（最近 30 天）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（最近 30 天）」。\n\n我想看最近 30 天碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天高碳水食物 TOP10', 'data_fields': ["rank", "food_name", "carbs"],
+            'depends_on_external': False, 'order': 14},
+    {
+            'category': '饮食',     'wake_word': '看高碳水榜（本月）',     'desc': '看高碳水榜（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（本月）」。\n\n我想看本月(自然月)碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_carb_month', 'name': '看高碳水榜（本月）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（本月）」。\n\n我想看本月(自然月)碳水最高的食物 TOP 10:排名/食物/碳水。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月高碳水食物 TOP10', 'data_fields': ["rank", "food_name", "carbs"],
+            'depends_on_external': False, 'order': 15},
+    {
+            'category': '饮食',     'wake_word': '看高碳水榜（自定义）',     'desc': '看高碳水榜（自定义）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（自定义）」。\n\n我想看自定义日期区间碳水最高的食物 TOP 10:排名/食物/碳水 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_carb_custom', 'name': '看高碳水榜（自定义）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_carb --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高碳水榜（自定义）」。\n\n我想看自定义日期区间碳水最高的食物 TOP 10:排名/食物/碳水 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间高碳水食物 TOP10', 'data_fields': ["rank", "food_name", "carbs", "start", "end"],
+            'depends_on_external': False, 'order': 16},
+    {
+            'category': '饮食',     'wake_word': '看高蛋白榜（最近 30 天）',     'desc': '看高蛋白榜（最近 30 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（最近 30 天）」。\n\n我想看最近 30 天蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_protein_30d', 'name': '看高蛋白榜（最近 30 天）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（最近 30 天）」。\n\n我想看最近 30 天蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天高蛋白食物 TOP10', 'data_fields': ["rank", "food_name", "protein"],
+            'depends_on_external': False, 'order': 17},
+    {
+            'category': '饮食',     'wake_word': '看高蛋白榜（本月）',     'desc': '看高蛋白榜（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（本月）」。\n\n我想看本月(自然月)蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_protein_month', 'name': '看高蛋白榜（本月）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --start <月初> --end <月末> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（本月）」。\n\n我想看本月(自然月)蛋白最高的食物 TOP 10:排名/食物/蛋白。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月高蛋白食物 TOP10', 'data_fields': ["rank", "food_name", "protein"],
+            'depends_on_external': False, 'order': 18},
+    {
+            'category': '饮食',     'wake_word': '看高蛋白榜（自定义）',     'desc': '看高蛋白榜（自定义）',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（自定义）」。\n\n我想看自定义日期区间蛋白最高的食物 TOP 10:排名/食物/蛋白 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_high_protein_custom', 'name': '看高蛋白榜（自定义）', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --category high_protein --top-n 10 --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看高蛋白榜（自定义）」。\n\n我想看自定义日期区间蛋白最高的食物 TOP 10:排名/食物/蛋白 + 区间起止。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间高蛋白食物 TOP10', 'data_fields': ["rank", "food_name", "protein", "start", "end"],
+            'depends_on_external': False, 'order': 19},
+    {
+            'category': '饮食',     'wake_word': '饮食复盘（本周）',     'desc': '饮食复盘（本周）',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_review.py --type week --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「饮食复盘（本周）」。\n\n我想看本周饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_review_week', 'name': '饮食复盘（本周）', 'subfunction': '饮食复盘', 'output_type': 'result',
+            'html_template': 'templates/diet_review.html', 'data_source': 'python scripts/render_diet_review.py --type week --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「饮食复盘（本周）」。\n\n我想看本周饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周饮食复盘小结', 'data_fields': ["total_cal", "avg_cal", "total_protein", "avg_protein", "top5", "trend"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '饮食',     'wake_word': '饮食复盘（本月）',     'desc': '饮食复盘（本月）',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_review.py --type month --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「饮食复盘（本月）」。\n\n我想看本月饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_review_month', 'name': '饮食复盘（本月）', 'subfunction': '饮食复盘', 'output_type': 'result',
+            'html_template': 'templates/diet_review.html', 'data_source': 'python scripts/render_diet_review.py --type month --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「饮食复盘（本月）」。\n\n我想看本月饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月饮食复盘小结', 'data_fields': ["total_cal", "avg_cal", "total_protein", "avg_protein", "top5", "trend"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '饮食',     'wake_word': '饮食复盘（最近 90 天）',     'desc': '饮食复盘（最近 90 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_review.py --type quarter --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「饮食复盘（最近 90 天）」。\n\n我想看最近 90 天饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_review_90d', 'name': '饮食复盘（最近 90 天）', 'subfunction': '饮食复盘', 'output_type': 'result',
+            'html_template': 'templates/diet_review.html', 'data_source': 'python scripts/render_diet_review.py --type quarter --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「饮食复盘（最近 90 天）」。\n\n我想看最近 90 天饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 90 天饮食复盘小结', 'data_fields': ["total_cal", "avg_cal", "total_protein", "avg_protein", "top5", "trend"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '饮食',     'wake_word': '饮食复盘（今年）',     'desc': '饮食复盘（今年）',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_review.py --type year --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「饮食复盘（今年）」。\n\n我想看今年饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_review_year', 'name': '饮食复盘（今年）', 'subfunction': '饮食复盘', 'output_type': 'result',
+            'html_template': 'templates/diet_review.html', 'data_source': 'python scripts/render_diet_review.py --type year --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「饮食复盘（今年）」。\n\n我想看今年饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今年饮食复盘小结', 'data_fields': ["total_cal", "avg_cal", "total_protein", "avg_protein", "top5", "trend"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '饮食',     'wake_word': '饮食复盘（自定义时间）',     'desc': '饮食复盘（自定义时间）',
+            'main_prompt': {
+        'cli': 'python scripts/render_diet_review.py --type range --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「饮食复盘（自定义时间）」。\n\n我想看自定义日期区间的饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论 + 区间。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'diet_review_range', 'name': '饮食复盘（自定义时间）', 'subfunction': '饮食复盘', 'output_type': 'result',
+            'html_template': 'templates/diet_review.html', 'data_source': 'python scripts/render_diet_review.py --type range --start <开始> --end <结束> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「饮食复盘（自定义时间）」。\n\n我想看自定义日期区间的饮食复盘:总热量/日均/总蛋白/日均 + 趋势 + 高频 TOP5 + 一句话结论 + 区间。完成后给 1 句话总结,不需要过多文字解释。\n\n开始日期(YYYY-MM-DD):____\n结束日期(YYYY-MM-DD):____',
+            'user_intent': '看自定义区间的饮食复盘小结', 'data_fields': ["total_cal", "avg_cal", "total_protein", "avg_protein", "top5", "trend", "start", "end"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '饮食',     'wake_word': '看早餐（最近 7 天）',     'desc': '看早餐（最近 7 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_meal_distribution.py --meal breakfast --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看早餐（最近 7 天）」。\n\n我想看最近 7 天早餐的饮食:明细表 + 早餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'meal_dist_breakfast', 'name': '看早餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
+            'html_template': 'templates/meal_distribution.html', 'data_source': 'python scripts/render_meal_distribution.py --meal breakfast --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看早餐（最近 7 天）」。\n\n我想看最近 7 天早餐的饮食:明细表 + 早餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天早餐饮食明细', 'data_fields': ["date", "food_name", "calories", "avg_cal", "meal"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '饮食',     'wake_word': '看午餐（最近 7 天）',     'desc': '看午餐（最近 7 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_meal_distribution.py --meal lunch --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看午餐（最近 7 天）」。\n\n我想看最近 7 天午餐的饮食:明细表 + 午餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'meal_dist_lunch', 'name': '看午餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
+            'html_template': 'templates/meal_distribution.html', 'data_source': 'python scripts/render_meal_distribution.py --meal lunch --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看午餐（最近 7 天）」。\n\n我想看最近 7 天午餐的饮食:明细表 + 午餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天午餐饮食明细', 'data_fields': ["date", "food_name", "calories", "avg_cal", "meal"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '饮食',     'wake_word': '看晚餐（最近 7 天）',     'desc': '看晚餐（最近 7 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_meal_distribution.py --meal dinner --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看晚餐（最近 7 天）」。\n\n我想看最近 7 天晚餐的饮食:明细表 + 晚餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'meal_dist_dinner', 'name': '看晚餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
+            'html_template': 'templates/meal_distribution.html', 'data_source': 'python scripts/render_meal_distribution.py --meal dinner --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看晚餐（最近 7 天）」。\n\n我想看最近 7 天晚餐的饮食:明细表 + 晚餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天晚餐饮食明细', 'data_fields': ["date", "food_name", "calories", "avg_cal", "meal"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '饮食',     'wake_word': '看加餐（最近 7 天）',     'desc': '看加餐（最近 7 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_meal_distribution.py --meal snack --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看加餐（最近 7 天）」。\n\n我想看最近 7 天加餐(下午茶+夜宵)的饮食:明细表 + 加餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'meal_dist_snack', 'name': '看加餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
+            'html_template': 'templates/meal_distribution.html', 'data_source': 'python scripts/render_meal_distribution.py --meal snack --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看加餐（最近 7 天）」。\n\n我想看最近 7 天加餐(下午茶+夜宵)的饮食:明细表 + 加餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天加餐饮食明细', 'data_fields': ["date", "food_name", "calories", "avg_cal", "meal"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '饮食',     'wake_word': '看全部餐别分布（最近 7 天）',     'desc': '看全部餐别分布（最近 7 天）',
+            'main_prompt': {
+        'cli': 'python scripts/render_meal_distribution.py --meal all --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看全部餐别分布（最近 7 天）」。\n\n我想看最近 7 天各餐别(早餐/午餐/晚餐/加餐)的分布对比:明细表 + 各餐别热量占比 + 占比%。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'meal_dist_all', 'name': '看全部餐别分布（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
+            'html_template': 'templates/meal_distribution.html', 'data_source': 'python scripts/render_meal_distribution.py --meal all --days 7 --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看全部餐别分布（最近 7 天）」。\n\n我想看最近 7 天各餐别(早餐/午餐/晚餐/加餐)的分布对比:明细表 + 各餐别热量占比 + 占比%。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天全部餐别分布对比', 'data_fields': ["meal", "count", "calories", "pct"],
+            'depends_on_external': False, 'order': 4},
+
+    {
+            'category': '体重',     'wake_word': '记体重',     'desc': '记录今天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_receipt.py --live --kg <kg> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记体重」。\n\n我刚称了体重,帮我记录今天的体重。记录后请给我看:体重值、记录时间、BMI、与上次体重的差距、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_log', 'name': '记体重', 'subfunction': '量体重', 'output_type': 'receipt',
+            'html_template': 'templates/weight_log_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live --kg <kg> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体重」。\n\n我刚称了体重,帮我记录今天的体重。记录后请给我看:体重值、记录时间、BMI、与上次体重的差距、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____',
+            'user_intent': '记录今天的体重', 'data_fields': ['weight_kg', 'bmi', 'delta_last', 'goal_diff', 'date', 'time'],
+            'depends_on_external': False, 'order': 0
     },
+    {
+            'category': '体重',     'wake_word': '记体重（含备注）',     'desc': '记录今天的体重并带备注',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_receipt.py --live --kg <kg> --note <备注> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记体重（含备注）」。\n\n我刚称了体重,记录今天的体重并带上备注(如 晨起空腹/运动后/睡前)。记录后请给我看:体重值、记录时间、BMI、备注、备注分类标签、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____\n备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_log_note', 'name': '记体重（含备注）', 'subfunction': '量体重', 'output_type': 'receipt',
+            'html_template': 'templates/weight_log_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live --kg <kg> --note <备注> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体重（含备注）」。\n\n我刚称了体重,记录今天的体重并带上备注(如 晨起空腹/运动后/睡前)。记录后请给我看:体重值、记录时间、BMI、备注、备注分类标签、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____\n备注:____',
+            'user_intent': '记录今天的体重并带备注', 'data_fields': ['weight_kg', 'bmi', 'note', 'note_tag', 'goal_diff', 'date', 'time'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '补录体重',     'desc': '补录过去某天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_receipt.py --live --kg <kg> --date <YYYY-MM-DD> --chain "1.解析→2.查冲突→3.写库→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「补录体重」。\n\n我要补录过去某天的体重(不是今天)。补录后请给我看:日期、体重值、BMI、补录标识、距今天数。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____\n日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_backfill', 'name': '补录体重', 'subfunction': '量体重', 'output_type': 'receipt',
+            'html_template': 'templates/weight_log_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live --kg <kg> --date <YYYY-MM-DD> --chain "1.解析→2.查冲突→3.写库→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补录体重」。\n\n我要补录过去某天的体重(不是今天)。补录后请给我看:日期、体重值、BMI、补录标识、距今天数。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____\n日期(YYYY-MM-DD):____',
+            'user_intent': '补录过去某天的体重', 'data_fields': ['weight_kg', 'bmi', 'date', 'days_ago', 'backfill_flag', 'conflict'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '批量补录体重',     'desc': '一次补录多天体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。记录完成后请给我看:写入条数、跳过条数、失败条数与失败明细。完成后给 1 句话总结,不需要过多文字解释。\n\n多天体重(每行一条: 日期 体重):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_backfill_batch', 'name': '批量补录体重', 'subfunction': '量体重', 'output_type': 'receipt',
+            'html_template': 'templates/weight_batch_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。记录完成后请给我看:写入条数、跳过条数、失败条数与失败明细。完成后给 1 句话总结,不需要过多文字解释。\n\n多天体重(每行一条: 日期 体重):____',
+            'user_intent': '一次补录多天体重', 'data_fields': ['wrote', 'skipped', 'failed', 'fail_details', 'items'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '看今日体重',     'desc': '看今天的体重数据',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_dashboard.py --view today --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日体重」。\n\n我想看今天的体重数据:今天的体重值、与上次体重的差距、一句话点评。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_today', 'name': '看今日体重', 'subfunction': '量体重', 'output_type': 'result',
+            'html_template': 'templates/weight_dashboard.html', 'data_source': 'python scripts/render_weight_dashboard.py --view today --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日体重」。\n\n我想看今天的体重数据:今天的体重值、与上次体重的差距、一句话点评。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天的体重数据', 'data_fields': ['weight_kg', 'delta_last', 'summary', 'date'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '改体重记录',     'desc': '修改某条体重记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-update --id <ID> --weight <kg> --note <备注> --chain "1.定位→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改体重记录」。\n\n我要改某条体重记录(体重值或备注)。改完后请给我看:改前/改后对比 + 影响字段(如 BMI 变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(最近一条/日期/编号):____\n新体重(kg):____\n新备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_update', 'name': '改体重记录', 'subfunction': '改体重记录', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-update --id <ID> --weight <kg> --note <备注> --chain "1.定位→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改体重记录」。\n\n我要改某条体重记录(体重值或备注)。改完后请给我看:改前/改后对比 + 影响字段(如 BMI 变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的记录(最近一条/日期/编号):____\n新体重(kg):____\n新备注:____',
+            'user_intent': '修改某条体重记录', 'data_fields': ['id', 'weight_kg', 'note', 'old_record', 'new_record', 'bmi'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '改某日体重',     'desc': '按日期修改某天的体重记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> --chain "1.定位→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_update_by_date', 'name': '改某日体重', 'subfunction': '改体重记录', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> --chain "1.定位→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____',
+            'user_intent': '按日期修改某天的体重记录', 'data_fields': ['date', 'hit_count', 'old_record', 'new_record', 'weight_kg', 'note'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '删体重记录',     'desc': '删除一条体重记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-delete --id <ID> --chain "1.定位→2.快照→3.删除→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删体重记录」。\n\n我要删一条体重记录。删除后请给我看:确认回执(含被删记录的内容)。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(最近一条/日期/编号):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_delete', 'name': '删体重记录', 'subfunction': '改体重记录', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-delete --id <ID> --chain "1.定位→2.快照→3.删除→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删体重记录」。\n\n我要删一条体重记录。删除后请给我看:确认回执(含被删记录的内容)。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(最近一条/日期/编号):____',
+            'user_intent': '删除一条体重记录', 'data_fields': ['id', 'snapshot', 'date', 'weight_kg', 'confirm'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '删某日体重',     'desc': '删除某一天的体重记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-delete --date <YYYY-MM-DD> --chain "1.定位→2.快照→3.删除→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删某日体重」。\n\n我要删某一天的全部体重记录。删除后请给我看:删除条数、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_delete_by_date', 'name': '删某日体重', 'subfunction': '改体重记录', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-delete --date <YYYY-MM-DD> --chain "1.定位→2.快照→3.删除→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删某日体重」。\n\n我要删某一天的全部体重记录。删除后请给我看:删除条数、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____',
+            'user_intent': '删除某一天的体重记录', 'data_fields': ['date', 'deleted_count', 'snapshot', 'confirm'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '批量删体重',     'desc': '按日期范围批量删除体重记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-delete --start <S> --end <E> --chain "1.定位→2.快照→3.删除→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量删体重」。\n\n我要按日期范围批量删除体重记录。删除后请给我看:时间范围、删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_delete_batch', 'name': '批量删体重', 'subfunction': '改体重记录', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-delete --start <S> --end <E> --chain "1.定位→2.快照→3.删除→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量删体重」。\n\n我要按日期范围批量删除体重记录。删除后请给我看:时间范围、删除条数。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____',
+            'user_intent': '按日期范围批量删除体重记录', 'data_fields': ['start', 'end', 'deleted_count', 'snapshot', 'confirm'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '看本周体重',     'desc': '看本周自然周的体重明细',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --week current', 'text': '请你加载技能 卡路里,执行唤醒词「看本周体重」。\n\n我想看本周(自然周,周一开始)的体重明细:每日记录表格 + 周均值 + 周净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_week', 'name': '看本周体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --week current', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周体重」。\n\n我想看本周(自然周,周一开始)的体重明细:每日记录表格 + 周均值 + 周净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周自然周的体重明细', 'data_fields': ['week', 'items', 'avg', 'net_change', 'summary'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '看上周体重',     'desc': '看上周体重明细并与本周对比',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --week last', 'text': '请你加载技能 卡路里,执行唤醒词「看上周体重」。\n\n我想看上周(自然周)的体重明细:每日记录表格 + 周均值 + 周净变化,并和本周对比一下。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_last_week', 'name': '看上周体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --week last', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上周体重」。\n\n我想看上周(自然周)的体重明细:每日记录表格 + 周均值 + 周净变化,并和本周对比一下。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上周体重明细并与本周对比', 'data_fields': ['week', 'items', 'avg', 'net_change', 'vs_this_week'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '看本月体重',     'desc': '看本月自然月的体重明细',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --month current', 'text': '请你加载技能 卡路里,执行唤醒词「看本月体重」。\n\n我想看本月(自然月)的体重明细:每日记录表格 + 月均值 + 月净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_month', 'name': '看本月体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --month current', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月体重」。\n\n我想看本月(自然月)的体重明细:每日记录表格 + 月均值 + 月净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月自然月的体重明细', 'data_fields': ['month', 'items', 'avg', 'net_change', 'summary'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '看上月体重',     'desc': '看上个月体重明细并与本月对比',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --month last', 'text': '请你加载技能 卡路里,执行唤醒词「看上月体重」。\n\n我想看上个月(自然月)的体重明细:每日记录表格 + 月均值 + 月净变化,并和本月对比一下。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_last_month', 'name': '看上月体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --month last', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上月体重」。\n\n我想看上个月(自然月)的体重明细:每日记录表格 + 月均值 + 月净变化,并和本月对比一下。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上个月体重明细并与本月对比', 'data_fields': ['month', 'items', 'avg', 'net_change', 'vs_this_month'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 7 天体重',     'desc': '看最近 7 天的体重明细',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 7 天体重」。\n\n我想看最近 7 天(滚动)的体重明细:每日记录表格 + 均值 + 净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_7d', 'name': '看最近 7 天体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --days 7', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 7 天体重」。\n\n我想看最近 7 天(滚动)的体重明细:每日记录表格 + 均值 + 净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 7 天的体重明细', 'data_fields': ['days', 'items', 'avg', 'net_change', 'summary'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 90 天体重',     'desc': '看最近 90 天的体重明细(每周一行)',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --days 90', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 90 天体重」。\n\n我想看最近 90 天的体重明细:按每周一行降采样显示 + 均值/净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_90d', 'name': '看最近 90 天体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 90 天体重」。\n\n我想看最近 90 天的体重明细:按每周一行降采样显示 + 均值/净变化 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 90 天的体重明细(每周一行)', 'data_fields': ['days', 'items', 'avg', 'net_change', 'summary'],
+            'depends_on_external': False, 'order': 5
+    },
+    {
+            'category': '体重',     'wake_word': '看某段时间体重',     'desc': '看自定义时间段的体重明细',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode history --start <S> --end <E>', 'text': '请你加载技能 卡路里,执行唤醒词「看某段时间体重」。\n\n我想看某段时间(自定义起止日期)的体重明细:每日记录表格 + 区间统计(均值/净变化)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_detail_range', 'name': '看某段时间体重', 'subfunction': '看体重明细', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode history --start <S> --end <E>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某段时间体重」。\n\n我想看某段时间(自定义起止日期)的体重明细:每日记录表格 + 区间统计(均值/净变化)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____',
+            'user_intent': '看自定义时间段的体重明细', 'data_fields': ['start', 'end', 'items', 'avg', 'net_change', 'summary'],
+            'depends_on_external': False, 'order': 6
+    },
+    {
+            'category': '体重',     'wake_word': '看体重曲线',     'desc': '看默认 30 天的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「看体重曲线」。\n\n我想看体重曲线(默认最近 30 天):折线图 + KPI(当前体重/区间起始/区间结束/区间变化/日均速率/趋势方向)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve', 'name': '看体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 30', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重曲线」。\n\n我想看体重曲线(默认最近 30 天):折线图 + KPI(当前体重/区间起始/区间结束/区间变化/日均速率/趋势方向)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看默认 30 天的体重曲线', 'data_fields': ['days', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '看体重曲线（带目标）',     'desc': '看体重曲线并叠加目标线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 30 --show-target', 'text': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带目标）」。\n\n我想看最近 30 天的体重曲线,并把我的目标体重画成目标线:折线图 + 目标线 + 当前距目标的差距 + KPI(当前/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_target', 'name': '看体重曲线（带目标）', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 30 --show-target', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带目标）」。\n\n我想看最近 30 天的体重曲线,并把我的目标体重画成目标线:折线图 + 目标线 + 当前距目标的差距 + KPI(当前/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重曲线并叠加目标线', 'data_fields': ['days', 'items', 'target', 'goal_diff', 'current', 'delta', 'daily_rate'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '看体重曲线（带里程碑）',     'desc': '看体重曲线并标注里程碑点',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 30 --show-milestones', 'text': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带里程碑）」。\n\n我想看最近 30 天的体重曲线,并在上面标出里程碑点(如减重 5kg/10kg 达成的那天):折线图 + 里程碑点 + 达成日期 + KPI。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_milestone', 'name': '看体重曲线（带里程碑）', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 30 --show-milestones', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带里程碑）」。\n\n我想看最近 30 天的体重曲线,并在上面标出里程碑点(如减重 5kg/10kg 达成的那天):折线图 + 里程碑点 + 达成日期 + KPI。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重曲线并标注里程碑点', 'data_fields': ['days', 'items', 'milestones', 'current', 'delta', 'daily_rate'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '看体重曲线（带异常点）',     'desc': '看体重曲线并标注异常点',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 30 --show-anomalies', 'text': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带异常点）」。\n\n我想看最近 30 天的体重曲线,并标出异常点(与正常波动偏差较大的记录):折线图 + 异常点红圈标注 + 异常点说明 + KPI。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_anomaly', 'name': '看体重曲线（带异常点）', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 30 --show-anomalies', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重曲线（带异常点）」。\n\n我想看最近 30 天的体重曲线,并标出异常点(与正常波动偏差较大的记录):折线图 + 异常点红圈标注 + 异常点说明 + KPI。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重曲线并标注异常点', 'data_fields': ['days', 'items', 'anomalies', 'current', 'delta', 'daily_rate'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '看本月体重曲线',     'desc': '看本月自然月的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --month current', 'text': '请你加载技能 卡路里,执行唤醒词「看本月体重曲线」。\n\n我想看本月(自然月)的体重曲线:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_month', 'name': '看本月体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --month current', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月体重曲线」。\n\n我想看本月(自然月)的体重曲线:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月自然月的体重曲线', 'data_fields': ['month', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '看上月体重曲线',     'desc': '看上个月自然月的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --month last', 'text': '请你加载技能 卡路里,执行唤醒词「看上月体重曲线」。\n\n我想看上个月(自然月)的体重曲线:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_last_month', 'name': '看上月体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --month last', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上月体重曲线」。\n\n我想看上个月(自然月)的体重曲线:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看上个月自然月的体重曲线', 'data_fields': ['month', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 5
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 90 天体重曲线',     'desc': '看最近 90 天的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 90', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 90 天体重曲线」。\n\n我想看最近 90 天的体重曲线(每 3 天降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_90d', 'name': '看最近 90 天体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 90 天体重曲线」。\n\n我想看最近 90 天的体重曲线(每 3 天降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 90 天的体重曲线', 'data_fields': ['days', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 6
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 180 天体重曲线',     'desc': '看最近 180 天的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 180', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 180 天体重曲线」。\n\n我想看最近 180 天的体重曲线(每周降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_180d', 'name': '看最近 180 天体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 180', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 180 天体重曲线」。\n\n我想看最近 180 天的体重曲线(每周降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 180 天的体重曲线', 'data_fields': ['days', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 7
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 365 天体重曲线',     'desc': '看最近 365 天的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --days 365', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 365 天体重曲线」。\n\n我想看最近 365 天的体重曲线(每月降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_365d', 'name': '看最近 365 天体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --days 365', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 365 天体重曲线」。\n\n我想看最近 365 天的体重曲线(每月降采样显示):折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 365 天的体重曲线', 'data_fields': ['days', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 8
+    },
+    {
+            'category': '体重',     'wake_word': '看某段时间体重曲线',     'desc': '看自定义时间段的体重曲线',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode trend --start <S> --end <E>', 'text': '请你加载技能 卡路里,执行唤醒词「看某段时间体重曲线」。\n\n我想看某段时间(自定义起止日期)的体重曲线,跨度大时自动降采样:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_curve_range', 'name': '看某段时间体重曲线', 'subfunction': '看体重曲线', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode trend --start <S> --end <E>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某段时间体重曲线」。\n\n我想看某段时间(自定义起止日期)的体重曲线,跨度大时自动降采样:折线图 + KPI(当前/起止/变化/速率/趋势)。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____',
+            'user_intent': '看自定义时间段的体重曲线', 'data_fields': ['start', 'end', 'items', 'current', 'delta', 'daily_rate', 'trend'],
+            'depends_on_external': False, 'order': 9
+    },
+    {
+            'category': '体重',     'wake_word': '看体重稳不稳（增强版）',     'desc': '看最近 30 天体重波动是否稳定',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_volatility_v2.py', 'text': '请你加载技能 卡路里,执行唤醒词「看体重稳不稳（增强版）」。\n\n我想看最近 30 天我的体重稳不稳:3 项指标(日均波动/标准差/异常次数)+ 波动主图(带正常波动范围带)+ 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_vol', 'name': '看体重稳不稳（增强版）', 'subfunction': '看体重稳不稳', 'output_type': 'result',
+            'html_template': 'templates/weight_volatility_v2.html', 'data_source': 'python scripts/render_weight_volatility_v2.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重稳不稳（增强版）」。\n\n我想看最近 30 天我的体重稳不稳:3 项指标(日均波动/标准差/异常次数)+ 波动主图(带正常波动范围带)+ 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 30 天体重波动是否稳定', 'data_fields': ['std', 'avg_daily_delta', 'anomaly_count', 'points', 'anomalies', 'baseline'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '看本月波动',     'desc': '看本月自然月的体重波动',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_volatility_v2.py --start <月初> --end <月末>', 'text': '请你加载技能 卡路里,执行唤醒词「看本月波动」。\n\n我想看本月(自然月)体重波动:3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_vol_month', 'name': '看本月波动', 'subfunction': '看体重稳不稳', 'output_type': 'result',
+            'html_template': 'templates/weight_volatility_v2.html', 'data_source': 'python scripts/render_weight_volatility_v2.py --start <月初> --end <月末>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月波动」。\n\n我想看本月(自然月)体重波动:3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月自然月的体重波动', 'data_fields': ['month', 'std', 'avg_daily_delta', 'anomaly_count', 'points', 'anomalies'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 90 天波动',     'desc': '看最近 90 天的体重波动',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_volatility_v2.py --days 90', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 90 天波动」。\n\n我想看最近 90 天的体重波动(降采样显示):3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_vol_90d', 'name': '看最近 90 天波动', 'subfunction': '看体重稳不稳', 'output_type': 'result',
+            'html_template': 'templates/weight_volatility_v2.html', 'data_source': 'python scripts/render_weight_volatility_v2.py --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 90 天波动」。\n\n我想看最近 90 天的体重波动(降采样显示):3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 90 天的体重波动', 'data_fields': ['days', 'std', 'avg_daily_delta', 'anomaly_count', 'points', 'anomalies'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '看最近 180 天波动',     'desc': '看最近 180 天的体重波动',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_volatility_v2.py --days 180', 'text': '请你加载技能 卡路里,执行唤醒词「看最近 180 天波动」。\n\n我想看最近 180 天的体重波动(降采样显示):3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_vol_180d', 'name': '看最近 180 天波动', 'subfunction': '看体重稳不稳', 'output_type': 'result',
+            'html_template': 'templates/weight_volatility_v2.html', 'data_source': 'python scripts/render_weight_volatility_v2.py --days 180', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看最近 180 天波动」。\n\n我想看最近 180 天的体重波动(降采样显示):3 项指标(日均波动/标准差/异常次数)+ 波动主图 + 异常点列表 + 一句话判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看最近 180 天的体重波动', 'data_fields': ['days', 'std', 'avg_daily_delta', 'anomaly_count', 'points', 'anomalies'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '看波动异常点',     'desc': '只看体重波动中的异常点',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_volatility_v2.py --view anomalies-only', 'text': '请你加载技能 卡路里,执行唤醒词「看波动异常点」。\n\n我想只看体重波动中的异常点:异常点列表(日期/体重/偏差幅度/偏离方向)+ 可能原因 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_vol_anomalies', 'name': '看波动异常点', 'subfunction': '看体重稳不稳', 'output_type': 'result',
+            'html_template': 'templates/weight_volatility_v2.html', 'data_source': 'python scripts/render_weight_volatility_v2.py --view anomalies-only', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看波动异常点」。\n\n我想只看体重波动中的异常点:异常点列表(日期/体重/偏差幅度/偏离方向)+ 可能原因 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '只看体重波动中的异常点', 'data_fields': ['anomalies', 'reasons', 'summary'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '看「有备注」的体重记录',     'desc': '看带备注的体重记录及备注分类',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_history.py --mode notes --days 30', 'text': '请你加载技能 卡路里,执行唤醒词「看「有备注」的体重记录」。\n\n我想看所有带备注的体重记录:表格(日期/体重/备注/与前后均值对比)+ 备注分类分布(如 晨起空腹/运动后/睡前 各有多少条)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_notes', 'name': '看「有备注」的体重记录', 'subfunction': '看体重备注', 'output_type': 'result',
+            'html_template': 'templates/weight_history.html', 'data_source': 'python scripts/render_weight_history.py --mode notes --days 30', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看「有备注」的体重记录」。\n\n我想看所有带备注的体重记录:表格(日期/体重/备注/与前后均值对比)+ 备注分类分布(如 晨起空腹/运动后/睡前 各有多少条)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看带备注的体重记录及备注分类', 'data_fields': ['items', 'note_tags', 'tag_distribution', 'summary'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：最近 30 天 vs 之前 30 天',     'desc': '对比最近 30 天与之前 30 天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：最近 30 天 vs 之前 30 天」。\n\n我想对比最近 30 天和之前 30 天两段体重。请给我看:两段各自的均值/起始体重/终止体重/段内变化/段内波动 + 两段差值(Δkg)/变化方向/速率差(g/天)/速度判断(快了/慢了/持平)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_30d', 'name': '对比体重：最近 30 天 vs 之前 30 天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：最近 30 天 vs 之前 30 天」。\n\n我想对比最近 30 天和之前 30 天两段体重。请给我看:两段各自的均值/起始体重/终止体重/段内变化/段内波动 + 两段差值(Δkg)/变化方向/速率差(g/天)/速度判断(快了/慢了/持平)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比最近 30 天与之前 30 天的体重', 'data_fields': ['seg1', 'seg2', 'avg', 'delta_kg', 'rate_diff', 'speed_judge', 'volatility'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：自定义两段时间',     'desc': '自定义两段时间对比体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a2 --start-a <S1> --end-a <E1> --start-b <S2> --end-b <E2> --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：自定义两段时间」。\n\n我想自定义两段日期对比体重。请给我看:两段各自的均值/起始体重/终止体重/段内变化/段内波动 + 两段差值(Δkg)/变化方向/速率差(g/天)/速度判断。完成后给 1 句话总结,不需要过多文字解释。\n\n第一段起止(YYYY-MM-DD):____ ~ ____\n第二段起止(YYYY-MM-DD):____ ~ ____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_custom', 'name': '对比体重：自定义两段时间', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a2 --start-a <S1> --end-a <E1> --start-b <S2> --end-b <E2> --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：自定义两段时间」。\n\n我想自定义两段日期对比体重。请给我看:两段各自的均值/起始体重/终止体重/段内变化/段内波动 + 两段差值(Δkg)/变化方向/速率差(g/天)/速度判断。完成后给 1 句话总结,不需要过多文字解释。\n\n第一段起止(YYYY-MM-DD):____ ~ ____\n第二段起止(YYYY-MM-DD):____ ~ ____',
+            'user_intent': '自定义两段时间对比体重', 'data_fields': ['seg1', 'seg2', 'avg', 'delta_kg', 'rate_diff', 'speed_judge', 'volatility'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：本周 vs 上周',     'desc': '对比本周与上周的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a3 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：本周 vs 上周」。\n\n我想对比本周和上周的体重(自然周对齐)。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_week', 'name': '对比体重：本周 vs 上周', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a3 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：本周 vs 上周」。\n\n我想对比本周和上周的体重(自然周对齐)。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比本周与上周的体重', 'data_fields': ['seg1', 'seg2', 'sample_ok', 'avg', 'delta_kg', 'rate_diff', 'speed_judge'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：本月 vs 上月',     'desc': '对比本月与上月的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a4 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：本月 vs 上月」。\n\n我想对比本月和上月的体重(自然月对齐)。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_month', 'name': '对比体重：本月 vs 上月', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a4 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：本月 vs 上月」。\n\n我想对比本月和上月的体重(自然月对齐)。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比本月与上月的体重', 'data_fields': ['seg1', 'seg2', 'avg', 'delta_kg', 'rate_diff', 'speed_judge', 'volatility'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：近 N 天 vs 上一个 N 天',     'desc': '对比近 N 天与之前同样 N 天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a5 --n <N> --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：近 N 天 vs 上一个 N 天」。\n\n我想对比最近 N 天和之前同样 N 天(滚动窗口)的体重,N 由我指定。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。\n\nN(天数):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_ndays', 'name': '对比体重：近 N 天 vs 上一个 N 天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a5 --n <N> --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：近 N 天 vs 上一个 N 天」。\n\n我想对比最近 N 天和之前同样 N 天(滚动窗口)的体重,N 由我指定。请给我看:两段各自的均值/起始/终止/段内变化/段内波动 + 差值(Δkg)/方向/速率差/速度判断。完成后给 1 句话总结,不需要过多文字解释。\n\nN(天数):____',
+            'user_intent': '对比近 N 天与之前同样 N 天的体重', 'data_fields': ['n_days', 'seg1', 'seg2', 'avg', 'delta_kg', 'rate_diff', 'speed_judge'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：今天 vs 一年前今天',     'desc': '对比今天与一年前同一天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a6 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 一年前今天」。\n\n我想对比今天的体重和一年前同一天的体重。请给我看:当前体重/一年前同日体重/差值(Δkg)/方向/一年变化/容差命中说明/一年内区间段均值。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_1y', 'name': '对比体重：今天 vs 一年前今天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a6 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 一年前今天」。\n\n我想对比今天的体重和一年前同一天的体重。请给我看:当前体重/一年前同日体重/差值(Δkg)/方向/一年变化/容差命中说明/一年内区间段均值。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比今天与一年前同一天的体重', 'data_fields': ['current', 'year_ago', 'delta_kg', 'direction', 'tolerance_hit', 'period_avg'],
+            'depends_on_external': False, 'order': 5
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：今天 vs 半年前今天',     'desc': '对比今天与半年前同一天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a7 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 半年前今天」。\n\n我想对比今天的体重和半年前同一天的体重。请给我看:当前体重/半年前同日体重/差值(Δkg)/方向/容差命中说明/半年内区间段均值。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_6m', 'name': '对比体重：今天 vs 半年前今天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a7 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 半年前今天」。\n\n我想对比今天的体重和半年前同一天的体重。请给我看:当前体重/半年前同日体重/差值(Δkg)/方向/容差命中说明/半年内区间段均值。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比今天与半年前同一天的体重', 'data_fields': ['current', 'past', 'delta_kg', 'direction', 'tolerance_hit', 'period_avg'],
+            'depends_on_external': False, 'order': 6
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：今天 vs 三月前今天',     'desc': '对比今天与三月前同一天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario a8 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 三月前今天」。\n\n我想对比今天的体重和三个月前同一天的体重。请给我看:当前体重/三月前同日体重/差值(Δkg)/方向/容差命中说明/三个月内区间段均值。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_3m', 'name': '对比体重：今天 vs 三月前今天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario a8 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：今天 vs 三月前今天」。\n\n我想对比今天的体重和三个月前同一天的体重。请给我看:当前体重/三月前同日体重/差值(Δkg)/方向/容差命中说明/三个月内区间段均值。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比今天与三月前同一天的体重', 'data_fields': ['current', 'past', 'delta_kg', 'direction', 'tolerance_hit', 'period_avg'],
+            'depends_on_external': False, 'order': 7
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 目标体重',     'desc': '对比当前体重与目标体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario b1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 目标体重」。\n\n我想对比当前体重和目标体重。请给我看:当前体重/目标体重/差值(Δkg)/已完成百分比/预计达成日期(按当前速率推算)/当前 BMI/目标 BMI/是否达标判断。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_target', 'name': '对比体重：当前 vs 目标体重', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario b1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 目标体重」。\n\n我想对比当前体重和目标体重。请给我看:当前体重/目标体重/差值(Δkg)/已完成百分比/预计达成日期(按当前速率推算)/当前 BMI/目标 BMI/是否达标判断。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与目标体重', 'data_fields': ['current', 'target', 'delta_kg', 'pct_done', 'eta', 'current_bmi', 'target_bmi', 'verdict'],
+            'depends_on_external': False, 'order': 8
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 平台期首日',     'desc': '对比当前体重与最近一次平台期首日',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario b8 --chain "1.识别→2.读DB→3.平台期识别→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 平台期首日」。\n\n请自动识别我最近一次平台期,并对比当前体重和平台期首日的体重。请给我看:当前体重/平台期首日体重/平台期持续天数/突破平台期后的变化(Δkg)/这是我第几次平台期/历史平台期平均突破耗时。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_plateau', 'name': '对比体重：当前 vs 平台期首日', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario b8 --chain "1.识别→2.读DB→3.平台期识别→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 平台期首日」。\n\n请自动识别我最近一次平台期,并对比当前体重和平台期首日的体重。请给我看:当前体重/平台期首日体重/平台期持续天数/突破平台期后的变化(Δkg)/这是我第几次平台期/历史平台期平均突破耗时。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与最近一次平台期首日', 'data_fields': ['current', 'plateau_start', 'plateau_days', 'delta_after', 'plateau_count', 'avg_break_days'],
+            'depends_on_external': False, 'order': 9
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 历史最低',     'desc': '对比当前体重与历史最低',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 历史最低」。\n\n请自动定位我历史最低的体重并和当前对比。请给我看:当前体重/历史最低体重 + 日期/差值(Δ)/距历史最低的天数/一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_min', 'name': '对比体重：当前 vs 历史最低', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e1 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 历史最低」。\n\n请自动定位我历史最低的体重并和当前对比。请给我看:当前体重/历史最低体重 + 日期/差值(Δ)/距历史最低的天数/一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与历史最低', 'data_fields': ['current', 'min_kg', 'min_date', 'delta_kg', 'days_since', 'summary'],
+            'depends_on_external': False, 'order': 10
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 历史最高',     'desc': '对比当前体重与历史最高',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e2 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 历史最高」。\n\n请自动定位我历史最高的体重并和当前对比。请给我看:当前体重/历史最高体重 + 日期/已下降多少(Δ)/下降速率/一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_max', 'name': '对比体重：当前 vs 历史最高', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e2 --chain "1.识别→2.读DB→3.对比→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 历史最高」。\n\n请自动定位我历史最高的体重并和当前对比。请给我看:当前体重/历史最高体重 + 日期/已下降多少(Δ)/下降速率/一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与历史最高', 'data_fields': ['current', 'max_kg', 'max_date', 'delta_kg', 'rate', 'summary'],
+            'depends_on_external': False, 'order': 11
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：减重 5kg 那天 vs 今天',     'desc': '对比减重 5kg 达成日与今天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e3 --delta 5 --chain "1.识别→2.读DB→3.反查里程碑→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：减重 5kg 那天 vs 今天」。\n\n请反查我减重 5kg 达成的那一天,和今天对比。请给我看:当前体重/减重 5kg 那天的体重与日期/从那天到今天的用时/期间速率/这段轨迹。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_5kg', 'name': '对比体重：减重 5kg 那天 vs 今天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e3 --delta 5 --chain "1.识别→2.读DB→3.反查里程碑→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：减重 5kg 那天 vs 今天」。\n\n请反查我减重 5kg 达成的那一天,和今天对比。请给我看:当前体重/减重 5kg 那天的体重与日期/从那天到今天的用时/期间速率/这段轨迹。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比减重 5kg 达成日与今天的体重', 'data_fields': ['current', 'milestone_kg', 'milestone_date', 'elapsed_days', 'rate', 'trajectory'],
+            'depends_on_external': False, 'order': 12
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：减重 10kg 那天 vs 今天',     'desc': '对比减重 10kg 达成日与今天的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e3 --delta 10 --chain "1.识别→2.读DB→3.反查里程碑→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：减重 10kg 那天 vs 今天」。\n\n请反查我减重 10kg 达成的那一天,和今天对比。请给我看:当前体重/减重 10kg 那天的体重与日期/从那天到今天的用时/期间速率/这段轨迹。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_10kg', 'name': '对比体重：减重 10kg 那天 vs 今天', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e3 --delta 10 --chain "1.识别→2.读DB→3.反查里程碑→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：减重 10kg 那天 vs 今天」。\n\n请反查我减重 10kg 达成的那一天,和今天对比。请给我看:当前体重/减重 10kg 那天的体重与日期/从那天到今天的用时/期间速率/这段轨迹。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比减重 10kg 达成日与今天的体重', 'data_fields': ['current', 'milestone_kg', 'milestone_date', 'elapsed_days', 'rate', 'trajectory'],
+            'depends_on_external': False, 'order': 13
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 入夏最低',     'desc': '对比当前体重与入夏最低',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e5 --chain "1.识别→2.读DB→3.季节定位→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 入夏最低」。\n\n请定位我今年夏天的体重最低点并和当前对比。请给我看:当前体重/入夏最低体重 + 日期/差值(Δ)/距那天多少天。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_summer', 'name': '对比体重：当前 vs 入夏最低', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e5 --chain "1.识别→2.读DB→3.季节定位→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 入夏最低」。\n\n请定位我今年夏天的体重最低点并和当前对比。请给我看:当前体重/入夏最低体重 + 日期/差值(Δ)/距那天多少天。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与入夏最低', 'data_fields': ['current', 'season_min_kg', 'season_min_date', 'delta_kg', 'days_since'],
+            'depends_on_external': False, 'order': 14
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：当前 vs 入冬最低',     'desc': '对比当前体重与入冬最低',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario e6 --chain "1.识别→2.读DB→3.季节定位→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 入冬最低」。\n\n请定位我最近一个冬天的体重最低点并和当前对比。请给我看:当前体重/入冬最低体重 + 日期/差值(Δ)/距那天多少天。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_winter', 'name': '对比体重：当前 vs 入冬最低', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario e6 --chain "1.识别→2.读DB→3.季节定位→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：当前 vs 入冬最低」。\n\n请定位我最近一个冬天的体重最低点并和当前对比。请给我看:当前体重/入冬最低体重 + 日期/差值(Δ)/距那天多少天。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比当前体重与入冬最低', 'data_fields': ['current', 'season_min_kg', 'season_min_date', 'delta_kg', 'days_since'],
+            'depends_on_external': False, 'order': 15
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：运动多 vs 运动少的两个月',     'desc': '对比运动最多与最少两个月的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario c5 --chain "1.识别→2.读DB→3.选极端月→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：运动多 vs 运动少的两个月」。\n\n请自动选出我运动量最高和最低的两个月对比体重。请给我看:运动最高月 vs 最低月的各自体重均值/段内变化/运动总量/差值(Δkg)/速率差,并附上两个月的摄入热量与睡眠时长作对照。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_exercise', 'name': '对比体重：运动多 vs 运动少的两个月', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario c5 --chain "1.识别→2.读DB→3.选极端月→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：运动多 vs 运动少的两个月」。\n\n请自动选出我运动量最高和最低的两个月对比体重。请给我看:运动最高月 vs 最低月的各自体重均值/段内变化/运动总量/差值(Δkg)/速率差,并附上两个月的摄入热量与睡眠时长作对照。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比运动最多与最少两个月的体重', 'data_fields': ['high_month', 'low_month', 'avg', 'delta_kg', 'rate_diff', 'calories', 'sleep', 'exercise_total'],
+            'depends_on_external': False, 'order': 16
+    },
+    {
+            'category': '体重',     'wake_word': '对比体重：工作日 vs 周末',     'desc': '对比工作日与周末的体重',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_compare.py --scenario d4 --chain "1.识别→2.读DB→3.周内聚合→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比体重：工作日 vs 周末」。\n\n请把最近一周的体重按 工作日(周一至周五)和 周末(周六周日)分组对比。请给我看:工作日均值/周末均值/差值(Δkg)/工作日波动 vs 周末波动/一致率。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_cmp_weekend', 'name': '对比体重：工作日 vs 周末', 'subfunction': '对比体重', 'output_type': 'result',
+            'html_template': 'templates/weight_compare.html', 'data_source': 'python scripts/render_weight_compare.py --scenario d4 --chain "1.识别→2.读DB→3.周内聚合→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体重：工作日 vs 周末」。\n\n请把最近一周的体重按 工作日(周一至周五)和 周末(周六周日)分组对比。请给我看:工作日均值/周末均值/差值(Δkg)/工作日波动 vs 周末波动/一致率。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '对比工作日与周末的体重', 'data_fields': ['weekday_avg', 'weekend_avg', 'delta_kg', 'weekday_vol', 'weekend_vol', 'agreement_rate'],
+            'depends_on_external': False, 'order': 17
+    },
+    {
+            'category': '体重',     'wake_word': '看体重总览',     'desc': '看体重综合总览',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_dashboard.py --view overview --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看体重总览」。\n\n我想看体重综合总览:5 项指标(当前体重/近 7 天变化/距历史最低/距目标/波动等级)+ 最近 7 天趋势小图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_overview', 'name': '看体重总览', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_dashboard.html', 'data_source': 'python scripts/render_weight_dashboard.py --view overview --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重总览」。\n\n我想看体重综合总览:5 项指标(当前体重/近 7 天变化/距历史最低/距目标/波动等级)+ 最近 7 天趋势小图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重综合总览', 'data_fields': ['current', 'delta_7d', 'diff_min', 'diff_target', 'vol_level', 'trend_7d', 'summary'],
+            'depends_on_external': False, 'order': 0
+    },
+    {
+            'category': '体重',     'wake_word': '体重复盘（本周）',     'desc': '复盘本周的体重变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --type week --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「体重复盘（本周）」。\n\n我想看本周的体重复盘:本周变化(Δkg)/周均值/与上周对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_review_week', 'name': '体重复盘（本周）', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --type week --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「体重复盘（本周）」。\n\n我想看本周的体重复盘:本周变化(Δkg)/周均值/与上周对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '复盘本周的体重变化', 'data_fields': ['delta_kg', 'avg', 'vs_last_period', 'trend', 'summary'],
+            'depends_on_external': False, 'order': 1
+    },
+    {
+            'category': '体重',     'wake_word': '体重复盘（本月）',     'desc': '复盘本月的体重变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --type month --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「体重复盘（本月）」。\n\n我想看本月的体重复盘:本月变化(Δkg)/月均值/与上月对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_review_month', 'name': '体重复盘（本月）', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --type month --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「体重复盘（本月）」。\n\n我想看本月的体重复盘:本月变化(Δkg)/月均值/与上月对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '复盘本月的体重变化', 'data_fields': ['delta_kg', 'avg', 'vs_last_period', 'trend', 'summary'],
+            'depends_on_external': False, 'order': 2
+    },
+    {
+            'category': '体重',     'wake_word': '体重复盘（最近 90 天）',     'desc': '复盘最近 90 天的体重变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --type 90d --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「体重复盘（最近 90 天）」。\n\n我想看最近 90 天的体重复盘:期间变化(Δkg)/均值/与上一段 90 天对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_review_90d', 'name': '体重复盘（最近 90 天）', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --type 90d --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「体重复盘（最近 90 天）」。\n\n我想看最近 90 天的体重复盘:期间变化(Δkg)/均值/与上一段 90 天对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '复盘最近 90 天的体重变化', 'data_fields': ['delta_kg', 'avg', 'vs_last_period', 'trend', 'summary'],
+            'depends_on_external': False, 'order': 3
+    },
+    {
+            'category': '体重',     'wake_word': '体重复盘（今年）',     'desc': '复盘今年的体重变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --type year --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「体重复盘（今年）」。\n\n我想看今年的体重复盘:全年变化(Δkg)/年度均值/月度趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_review_year', 'name': '体重复盘（今年）', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --type year --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「体重复盘（今年）」。\n\n我想看今年的体重复盘:全年变化(Δkg)/年度均值/月度趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '复盘今年的体重变化', 'data_fields': ['delta_kg', 'avg', 'monthly_trend', 'summary'],
+            'depends_on_external': False, 'order': 4
+    },
+    {
+            'category': '体重',     'wake_word': '体重复盘（自定义时间）',     'desc': '复盘自定义时间段的体重变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --start <S> --end <E> --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「体重复盘（自定义时间）」。\n\n我想看某段时间的体重复盘(自定义起止日期):期间变化(Δkg)/均值/与上一段等长区间对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_review_range', 'name': '体重复盘（自定义时间）', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --start <S> --end <E> --chain "1.识别→2.读DB→3.复盘→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「体重复盘（自定义时间）」。\n\n我想看某段时间的体重复盘(自定义起止日期):期间变化(Δkg)/均值/与上一段等长区间对比 + 趋势图 + 一句话。完成后给 1 句话总结,不需要过多文字解释。\n\n起止日期(YYYY-MM-DD):____ ~ ____',
+            'user_intent': '复盘自定义时间段的体重变化', 'data_fields': ['start', 'end', 'delta_kg', 'avg', 'vs_last_period', 'trend', 'summary'],
+            'depends_on_external': False, 'order': 5
+    },
+    {
+            'category': '体重',     'wake_word': '看里程碑回溯',     'desc': '看历史达成的体重里程碑',
+            'main_prompt': {
+        'cli': 'python scripts/render_weight_review.py --type milestones --chain "1.识别→2.读DB→3.回溯→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看里程碑回溯」。\n\n我想看所有达成过的体重里程碑:表格(里程碑名/日期/体重/用时)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'w_milestones', 'name': '看里程碑回溯', 'subfunction': '体重复盘', 'output_type': 'result',
+            'html_template': 'templates/weight_review.html', 'data_source': 'python scripts/render_weight_review.py --type milestones --chain "1.识别→2.读DB→3.回溯→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看里程碑回溯」。\n\n我想看所有达成过的体重里程碑:表格(里程碑名/日期/体重/用时)+ 一句话。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看历史达成的体重里程碑', 'data_fields': ['milestones', 'summary'],
+            'depends_on_external': False, 'order': 6
+    },
+
     {
             'category': '运动',     'wake_word': '记运动',     'desc': '记录运动消耗',
             'main_prompt': {
@@ -302,72 +1468,295 @@ TRIGGERS = [
             'fill_hints': [],
             'variants': []},
     {
-            'category': '健身计划',     'wake_word': '查健身计划', 'aliases': ['查询健身计划'],     'desc': '查看训练计划 HTML 页面(DB 数据驱动)',
+            'category': '健身计划',     'wake_word': '看本周计划',     'desc': '本周训练日历(7 天表 + 完成度)',
             'main_prompt': {
-        'cli': 'python scripts/render_workout_plan.py', 'text': '请你加载技能 卡路里,执行唤醒词「查健身计划」。\n\n我想看完整健身计划 + 今日复盘 section。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '查健身计划 --review', 'cli': 'python scripts/render_workout_plan.py --review', 'prompt': '请你加载技能 卡路里,执行唤醒词「查健身计划 --review」。\n\n我要看健身计划 + 今日复盘 section。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_workout_plan.py --week <N>', 'text': '请你加载技能 卡路里,执行唤醒词「看本周计划」。\n\n我想看本周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及本周整体完成度。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_this_week', 'name': '看本周计划', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --week <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周计划」。\n\n我想看本周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及本周整体完成度。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看本周的训练日历和完成度', 'data_fields': ["week_number", "days", "sessions", "movements", "completion_rate"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '健身计划',     'wake_word': '制定健身计划',     'desc': 'AI 采访式对话 → 校验 → 写入',
+            'category': '健身计划',     'wake_word': '看下周计划',     'desc': '下周训练日历预览(含待练状态)',
             'main_prompt': {
-        'cli': 'AI 路由 → python scripts/plan_generator.py', 'text': '请你加载技能 卡路里,执行唤醒词「制定健身计划」。\n\n我要新设一份完整健身计划,从目标/经验/频率/部位几个维度跟我聊。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_workout_plan.py --week <N+1>', 'text': '请你加载技能 卡路里,执行唤醒词「看下周计划」。\n\n我想看下周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及下周整体完成度(还没练的显示为待练)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_next_week', 'name': '看下周计划', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --week <N+1>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看下周计划」。\n\n我想看下周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及下周整体完成度(还没练的显示为待练)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想预览下周的训练安排', 'data_fields': ["week_number", "days", "sessions", "movements", "completion_rate"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '健身计划',     'wake_word': '改健身计划',     'desc': 'AI 对话定位意图 → 改/增/删时段、调整周次',
+            'category': '健身计划',     'wake_word': '看上周计划',     'desc': '上周训练日历 + 完成率回顾',
             'main_prompt': {
-        'cli': 'AI 路由 → python scripts/plan_generator.py', 'text': '请你加载技能 卡路里,执行唤醒词「改健身计划」。\n\n我要改既有计划(增删动作/调整周次/改时段等),先问你确认意图。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_workout_plan.py --week <N-1>', 'text': '请你加载技能 卡路里,执行唤醒词「看上周计划」。\n\n我想看上周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及上周完成率回顾(哪些练了、哪些漏了)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_last_week', 'name': '看上周计划', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --week <N-1>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看上周计划」。\n\n我想看上周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及上周完成率回顾(哪些练了、哪些漏了)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想回顾上周的训练安排和完成率', 'data_fields': ["week_number", "days", "sessions", "movements", "completion_rate"],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '健身计划',     'wake_word': '落地健身计划',     'desc': '把某天的健身计划执行一次:补计划 + 写心愿 + 推训记',
+            'category': '健身计划',     'wake_word': '看指定周计划',     'desc': '指定周次训练日历',
             'main_prompt': {
-        'cli': 'python scripts/render_process_progress.py --input <json>', 'text': '请你加载技能 卡路里,执行唤醒词「落地健身计划」。\n\n我要把今天(某天)的计划真正执行一次,过程走完后给我看进度页。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_workout_plan.py --week <N>', 'text': '请你加载技能 卡路里,执行唤醒词「看指定周计划」。\n\n我想看某一周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及该周完成度。完成后给 1 句话总结,不需要过多文字解释。\n\n周次(如第 3 周):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_week', 'name': '看指定周计划', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --week <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看指定周计划」。\n\n我想看某一周的训练日历:7 天表格(周一至周日,含休息日行)、每天的训练时段和动作,以及该周完成度。完成后给 1 句话总结,不需要过多文字解释。\n\n周次(如第 3 周):____',
+            'user_intent': '我想查看指定周次的训练安排', 'data_fields': ["week_number", "days", "sessions", "movements", "completion_rate"],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '健身计划',     'wake_word': '卡路里同步',     'desc': '批量回填最近 3 天:每条 plan 都推训记 + 拉训记实际数据回写',
+            'category': '健身计划',     'wake_word': '看今天练什么',     'desc': '今日动作/组数/重量 + 实时完成进度',
             'main_prompt': {
-        'cli': 'python scripts/render_process_progress.py --input <json>', 'text': '请你加载技能 卡路里,执行唤醒词「卡路里同步」。\n\n最近 3 天的计划都还没真正落地,我要批量执行一次(推训记 + 拉训记回写),给我看总体进度页。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_workout_plan.py --today', 'text': '请你加载技能 卡路里,执行唤醒词「看今天练什么」。\n\n我想看今天要练的动作(动作/组数/重量),以及每个动作的实时完成情况:已完成、剩余组数、完成百分比。如果今天休息或计划还没开始,请明确告诉我。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_today', 'name': '看今天练什么', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今天练什么」。\n\n我想看今天要练的动作(动作/组数/重量),以及每个动作的实时完成情况:已完成、剩余组数、完成百分比。如果今天休息或计划还没开始,请明确告诉我。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看今天练什么以及练到哪了', 'data_fields': ["sessions", "movements", "sets_done", "sets_remaining", "completion_rate"],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '健身计划',     'wake_word': '回写训记',     'desc': '拉训记数据回写 exercise_log(幂等)',
+            'category': '健身计划',     'wake_word': '看计划概览',     'desc': '计划总览 KPI + 每周完成率列表',
             'main_prompt': {
-        'cli': 'python scripts/xunji_bridge.py backfill [--date <DATE>] [--days <N>]', 'text': '请你加载技能 卡路里,执行唤醒词「回写训记」。\n\n我要从训记拉取已完成的训练,写入运动记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '回写训记 最近 7 天', 'cli': 'python scripts/xunji_bridge.py backfill --days 7', 'prompt': '请你加载技能 卡路里,执行唤醒词「回写训记 最近 7 天」。\n\n时间窗口固定最近 7 天的训记实绩。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'python scripts/render_workout_plan.py --overview', 'text': '请你加载技能 卡路里,执行唤醒词「看计划概览」。\n\n我想看整个健身计划的概览:总周数、整体完成率、训练日数、动作总数几个关键数字,以及每周完成率列表。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_overview', 'name': '看计划概览', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --overview', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看计划概览」。\n\n我想看整个健身计划的概览:总周数、整体完成率、训练日数、动作总数几个关键数字,以及每周完成率列表。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看训练计划的总体概览和每周完成情况', 'data_fields': ["total_weeks", "completion_rate", "training_days", "total_movements", "weekly_rates"],
+            'depends_on_external': False, 'order': 5},
     {
-            'category': '健身计划',     'wake_word': '训记-覆盖X日的训练计划',     'desc': '用卡路里 plan 覆盖训记某天训练',
+            'category': '健身计划',     'wake_word': '看计划 vs 实际',     'desc': '计划 vs 实际对比(完成度/偏差/动作级表)',
             'main_prompt': {
-        'cli': 'python scripts/xunji_bridge.py overlay-plan --date <DATE>', 'text': '请你加载技能 卡路里,执行唤醒词「训记-覆盖X日的训练计划」。\n\n我要把卡路里的计划推到训记覆盖同一天的安排。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_workout_plan.py --vs-actual --start <D1> --end <D2>', 'text': '请你加载技能 卡路里,执行唤醒词「看计划 vs 实际」。\n\n我想对比一段时间里计划和实际完成:整体完成度、偏差,以及动作级对比表(动作/计划组数/实际组数/偏差百分比)。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认本周,可给日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_vs_actual', 'name': '看计划 vs 实际', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --vs-actual --start <D1> --end <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看计划 vs 实际」。\n\n我想对比一段时间里计划和实际完成:整体完成度、偏差,以及动作级对比表(动作/计划组数/实际组数/偏差百分比)。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认本周,可给日期):____',
+            'user_intent': '我想对比计划训练量和实际完成量的差距', 'data_fields': ["completion_rate", "deviation", "movement_rows", "start_date", "end_date"],
+            'depends_on_external': False, 'order': 6},
     {
-            'category': '健身计划',     'wake_word': '复盘训练',     'desc': '对指定时间段做 plan vs 实绩对比',
+            'category': '健身计划',     'wake_word': '定训练计划',     'desc': 'AI 采访式创建计划(预览确认 → 写入回执)',
             'main_prompt': {
-        'cli': 'python scripts/render_exercise_review_html.py --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「复盘训练」。\n\n我要对比健身计划 vs 实际完成情况(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '复盘训练 今天', 'cli': 'python scripts/render_exercise_review_html.py --start 2026-07-26 --end 2026-07-26', 'prompt': '请你加载技能 卡路里,执行唤醒词「复盘训练 今天」。\n\n我要看今天 vs 计划的对比。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '复盘训练 这周', 'cli': 'python scripts/render_exercise_review_html.py --days 7', 'prompt': '请你加载技能 卡路里,执行唤醒词「复盘训练 这周」。\n\n我要看本周 vs 计划的对比(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'plan_generator.write_plan', 'text': '请你加载技能 卡路里,执行唤醒词「定训练计划」。\n\n我想制定一份新的健身计划,根据我的目标和训练情况来安排(标题/总周数/起始日)。如果我没说清楚我的目标和训练情况,请先问我。请先给我看完整计划预览,我确认后再保存,保存后给我回执。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_set', 'name': '定训练计划', 'subfunction': '定训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/plan_builder_wizard.html', 'data_source': 'plan_generator.write_plan', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定训练计划」。\n\n我想制定一份新的健身计划,根据我的目标和训练情况来安排(标题/总周数/起始日)。如果我没说清楚我的目标和训练情况,请先问我。请先给我看完整计划预览,我确认后再保存,保存后给我回执。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想根据我的目标和情况定制一份训练计划', 'data_fields': ["goal", "experience", "frequency", "target_parts", "title", "total_weeks", "start_date"],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '健身计划',     'wake_word': '扫禁忌',     'desc': '检测 plan/DB 中禁忌动作(腰/膝/肩)',
+            'category': '健身计划',     'wake_word': '复制训练计划',     'desc': '复制整计划或某周作为模板',
             'main_prompt': {
-        'cli': 'python scripts/render_contraindication.py', 'text': '请你加载技能 卡路里,执行唤醒词「扫禁忌」。\n\n我要扫出健身计划/数据库里可能伤腰/膝/肩的动作(默认全身位)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': [{
-        'label': '扫禁忌 腰', 'cli': 'python scripts/render_contraindication.py --part 腰', 'prompt': '请你加载技能 卡路里,执行唤醒词「扫禁忌 腰」。\n\n只要扫腰部相关禁忌动作。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '扫禁忌 膝', 'cli': 'python scripts/render_contraindication.py --part 膝', 'prompt': '请你加载技能 卡路里,执行唤醒词「扫禁忌 膝」。\n\n只要扫膝部相关禁忌动作。\n\n完成后给 1 句话总结,不需要过多文字解释。'}, {
-        'label': '扫禁忌 肩', 'cli': 'python scripts/render_contraindication.py --part 肩', 'prompt': '请你加载技能 卡路里,执行唤醒词「扫禁忌 肩」。\n\n只要扫肩部相关禁忌动作。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
+        'cli': 'plan_generator.copy_week', 'text': '请你加载技能 卡路里,执行唤醒词「复制训练计划」。\n\n我想把现有训练计划复制一份作为模板(可以复制整个计划或某一周)。请告诉我复制了哪些内容、新计划/新周的标题或周次。完成后给 1 句话总结,不需要过多文字解释。\n\n要复制的周次(选填,空=整个计划):____\n新标题(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_copy', 'name': '复制训练计划', 'subfunction': '定训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.copy_week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「复制训练计划」。\n\n我想把现有训练计划复制一份作为模板(可以复制整个计划或某一周)。请告诉我复制了哪些内容、新计划/新周的标题或周次。完成后给 1 句话总结,不需要过多文字解释。\n\n要复制的周次(选填,空=整个计划):____\n新标题(选填):____',
+            'user_intent': '我想复制一份训练计划作为新模板', 'data_fields': ["copied_weeks", "new_title", "source_week"],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '健身计划',     'wake_word': '审计动作名',     'desc': '扫描 plan 里非训记官方动作名(push-plan 前必跑)',
+            'category': '健身计划',     'wake_word': '定休息日',     'desc': '标记某天为休息日(或取消)',
             'main_prompt': {
-        'cli': 'python scripts/audit_plan_names.py [--strict] [--fix-suggestions]', 'text': '请你加载技能 卡路里,执行唤醒词「审计动作名」。\n\n推送训记前我先确认 plan 里的动作名都能映射。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'plan_generator.update_session', 'text': '请你加载技能 卡路里,执行唤醒词「定休息日」。\n\n我想把某一天的训练标记为休息日(或取消休息)。完成后给我设置回执,显示改动的是哪天、改前和改后的状态。完成后给 1 句话总结,不需要过多文字解释。\n\n日期或周次+星期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_set_rest', 'name': '定休息日', 'subfunction': '定训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.update_session', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定休息日」。\n\n我想把某一天的训练标记为休息日(或取消休息)。完成后给我设置回执,显示改动的是哪天、改前和改后的状态。完成后给 1 句话总结,不需要过多文字解释。\n\n日期或周次+星期:____',
+            'user_intent': '我想把某天标记为休息日', 'data_fields': ["date", "is_rest_day", "before", "after"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '健身计划',     'wake_word': '加训练动作',     'desc': '给某天/时段加动作(组数/重量)',
+            'main_prompt': {
+        'cli': 'plan_generator.add_session', 'text': '请你加载技能 卡路里,执行唤醒词「加训练动作」。\n\n我想给计划里的某一天或某个训练时段加训练动作,包括动作名、组数和重量。如果计划是每周循环的,告诉我加在哪一周,不说就所有周都加。完成后给我回执,显示新增的动作/组数/重量。完成后给 1 句话总结,不需要过多文字解释。\n\n加到哪天(如 周三):____\n加到第几周(选填,空=所有周):____\n时段(选填):____\n动作名:____\n组数:____\n重量(kg,选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_add_movement', 'name': '加训练动作', 'subfunction': '定训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.add_session', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「加训练动作」。\n\n我想给计划里的某一天或某个训练时段加训练动作,包括动作名、组数和重量。如果计划是每周循环的,告诉我加在哪一周,不说就所有周都加。完成后给我回执,显示新增的动作/组数/重量。完成后给 1 句话总结,不需要过多文字解释。\n\n加到哪天(如 周三):____\n加到第几周(选填,空=所有周):____\n时段(选填):____\n动作名:____\n组数:____\n重量(kg,选填):____',
+            'user_intent': '我想给训练计划加一个新动作', 'data_fields': ["week_number", "day_of_week", "session_label", "movement", "sets", "weight_kg"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '健身计划',     'wake_word': '定一周计划',     'desc': '快速设置一周 7 天安排',
+            'main_prompt': {
+        'cli': 'plan_generator.write_plan', 'text': '请你加载技能 卡路里,执行唤醒词「定一周计划」。\n\n我想快速设置某一周的训练安排,告诉我这周每天(周一至周日)练什么或休息,只想练其中几天也没关系,空着的天按休息处理。完成后给我设置回执,显示这 7 天的安排。完成后给 1 句话总结,不需要过多文字解释。\n\n第几周(默认本周):____\n一周安排(如:周一胸、周三腿,没说的天按休息):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_set_week', 'name': '定一周计划', 'subfunction': '定训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.write_plan', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定一周计划」。\n\n我想快速设置某一周的训练安排,告诉我这周每天(周一至周日)练什么或休息,只想练其中几天也没关系,空着的天按休息处理。完成后给我设置回执,显示这 7 天的安排。完成后给 1 句话总结,不需要过多文字解释。\n\n第几周(默认本周):____\n一周安排(如:周一胸、周三腿,没说的天按休息):____',
+            'user_intent': '我想快速设置一周七天的训练安排', 'data_fields': ["week_number", "day_schedule", "rest_days"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '健身计划',     'wake_word': '改训练计划',     'desc': '改计划配置字段(改前/改后 + 影响)',
+            'main_prompt': {
+        'cli': 'plan_generator.update_config', 'text': '请你加载技能 卡路里,执行唤醒词「改训练计划」。\n\n我想改训练计划的某个字段(如标题、总周数、开始日期、描述)。改完给我看改前/改后对比,并提示影响(如改开始日期会影响周次计算)。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的字段(标题/总周数/开始日期/描述,可改多个):____\n新值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_update', 'name': '改训练计划', 'subfunction': '改训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.update_config', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改训练计划」。\n\n我想改训练计划的某个字段(如标题、总周数、开始日期、描述)。改完给我看改前/改后对比,并提示影响(如改开始日期会影响周次计算)。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的字段(标题/总周数/开始日期/描述,可改多个):____\n新值:____',
+            'user_intent': '我想修改训练计划的某个配置字段', 'data_fields': ["field", "before", "after"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '健身计划',     'wake_word': '改某天训练',     'desc': '改某天训练安排(改前/改后)',
+            'main_prompt': {
+        'cli': 'plan_generator.update_session', 'text': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。改完给我看改了哪些、改前和改后。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要改的内容:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_update_day', 'name': '改某天训练', 'subfunction': '改训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.update_session', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。改完给我看改了哪些、改前和改后。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要改的内容:____',
+            'user_intent': '我想修改某一天的训练安排', 'data_fields': ["date", "field", "before", "after"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '健身计划',     'wake_word': '删某天训练',     'desc': '删某天训练(快照确认 → 回执)',
+            'main_prompt': {
+        'cli': 'plan_generator.delete_session', 'text': '请你加载技能 卡路里,执行唤醒词「删某天训练」。\n\n我想删掉某一天的训练安排(或某天的某个训练时段)。删除前先让我确认,确认后删除,给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要删的时段(选填,空=删整天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_delete_day', 'name': '删某天训练', 'subfunction': '改训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.delete_session', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删某天训练」。\n\n我想删掉某一天的训练安排(或某天的某个训练时段)。删除前先让我确认,确认后删除,给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n日期:____\n要删的时段(选填,空=删整天):____',
+            'user_intent': '我想删除某天的训练安排', 'data_fields': ["date", "snapshot", "deleted_sessions"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '健身计划',     'wake_word': '改动作',     'desc': '替换动作(改前/改后 + 组数变化)',
+            'main_prompt': {
+        'cli': 'plan_generator.update_session', 'text': '请你加载技能 卡路里,执行唤醒词「改动作」。\n\n我想把计划里的某个动作换成另一个动作(或改它的组数)。如果计划是每周循环的,告诉我要改哪一周,不说就所有周都改。改完给我看改前/改后动作和组数变化。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的周(选填,空=所有周):____\n原动作:____\n新动作:____\n组数(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_update_movement', 'name': '改动作', 'subfunction': '改训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.update_session', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改动作」。\n\n我想把计划里的某个动作换成另一个动作(或改它的组数)。如果计划是每周循环的,告诉我要改哪一周,不说就所有周都改。改完给我看改前/改后动作和组数变化。完成后给 1 句话总结,不需要过多文字解释。\n\n要改的周(选填,空=所有周):____\n原动作:____\n新动作:____\n组数(选填):____',
+            'user_intent': '我想替换计划里的某个动作', 'data_fields': ["date", "old_movement", "new_movement", "sets_before", "sets_after"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '健身计划',     'wake_word': '撤销训练计划',     'desc': '删除整个计划(确认 → 回执 + 提示)',
+            'main_prompt': {
+        'cli': 'plan_generator.delete_plan', 'text': '请你加载技能 卡路里,执行唤醒词「撤销训练计划」。\n\n我想删除整个训练计划(所有周次和配置)。删除前先让我确认,确认后删除,给我删除回执和提示(删除后如何重新制定)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_delete', 'name': '撤销训练计划', 'subfunction': '改训练计划', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'plan_generator.delete_plan', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「撤销训练计划」。\n\n我想删除整个训练计划(所有周次和配置)。删除前先让我确认,确认后删除,给我删除回执和提示(删除后如何重新制定)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想删除整个训练计划', 'data_fields': ["plan_summary", "deleted_config", "deleted_rows"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '健身计划',     'wake_word': '落地训练',     'desc': '4 步落地(补计划/记心愿/推送/回写)',
+            'main_prompt': {
+        'cli': 'python scripts/sync_plan.py --days 1', 'text': '请你加载技能 卡路里,执行唤醒词「落地训练」。\n\n我想把某天的训练计划真正落地执行:补计划到日历、记心愿、推送到训记、拉取训记实绩 4 步全流程,逐动作确认实际做的重量和组数。给我看 4 步进度和每步结果(已补计划/已记心愿/已推送/已回写),以及完成度。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_execute', 'name': '落地训练', 'subfunction': '落地训练', 'output_type': 'process',
+            'html_template': 'templates/process_progress.html', 'data_source': 'python scripts/sync_plan.py --days 1', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「落地训练」。\n\n我想把某天的训练计划真正落地执行:补计划到日历、记心愿、推送到训记、拉取训记实绩 4 步全流程,逐动作确认实际做的重量和组数。给我看 4 步进度和每步结果(已补计划/已记心愿/已推送/已回写),以及完成度。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____',
+            'user_intent': '我想把某天的训练计划完整落地执行', 'data_fields': ["date", "step1_created", "step2_added", "step3_pushed", "step4_backfilled", "completion"],
+            'depends_on_external': True, 'order': 0},
+    {
+            'category': '健身计划',     'wake_word': '落地到本周末',     'desc': '批量落地到本周末(跨天汇总)',
+            'main_prompt': {
+        'cli': 'python scripts/sync_plan.py --days <N>', 'text': '请你加载技能 卡路里,执行唤醒词「落地到本周末」。\n\n我想把从今天到周日所有训练日一次落地执行(补计划/记心愿/推训记/回写),如果今天已是周日就只落地今天。请给我看跨天列表、每一步的汇总(已补计划/已记心愿/已推送/已回写)和总完成度。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_execute_weekend', 'name': '落地到本周末', 'subfunction': '落地训练', 'output_type': 'process',
+            'html_template': 'templates/process_progress.html', 'data_source': 'python scripts/sync_plan.py --days <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「落地到本周末」。\n\n我想把从今天到周日所有训练日一次落地执行(补计划/记心愿/推训记/回写),如果今天已是周日就只落地今天。请给我看跨天列表、每一步的汇总(已补计划/已记心愿/已推送/已回写)和总完成度。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想把本周剩余训练日批量落地', 'data_fields': ["days", "day_summaries", "step_totals", "completion"],
+            'depends_on_external': True, 'order': 1},
+    {
+            'category': '健身计划',     'wake_word': '落地到本月底',     'desc': '批量落地到本月底(跨天汇总)',
+            'main_prompt': {
+        'cli': 'python scripts/sync_plan.py --days <N>', 'text': '请你加载技能 卡路里,执行唤醒词「落地到本月底」。\n\n我想把从今天到本月底所有训练日一次落地执行(补计划/记心愿/推训记/回写),如果今天已是月底就只落地今天。请给我看跨天列表、每一步的汇总(已补计划/已记心愿/已推送/已回写)和总完成度。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_execute_month', 'name': '落地到本月底', 'subfunction': '落地训练', 'output_type': 'process',
+            'html_template': 'templates/process_progress.html', 'data_source': 'python scripts/sync_plan.py --days <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「落地到本月底」。\n\n我想把从今天到本月底所有训练日一次落地执行(补计划/记心愿/推训记/回写),如果今天已是月底就只落地今天。请给我看跨天列表、每一步的汇总(已补计划/已记心愿/已推送/已回写)和总完成度。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想把本月剩余训练日批量落地', 'data_fields': ["days", "day_summaries", "step_totals", "completion"],
+            'depends_on_external': True, 'order': 2},
+    {
+            'category': '健身计划',     'wake_word': '同步到训记',     'desc': '推 plan 到训记(前置审计动作名)',
+            'main_prompt': {
+        'cli': 'python scripts/xunji_bridge.py push-plan --date <D>', 'text': '请你加载技能 卡路里,执行唤醒词「同步到训记」。\n\n我想把某天的训练计划推送到训记 App(落地流程里的训记推送这一步单独做)。推送前先检查计划里的动作名训记能否识别,有识别不了的先告诉我。完成后给我同步结果:推了几条、每条成功/失败、哪些动作名有问题。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_sync_xunji', 'name': '同步到训记', 'subfunction': '落地训练', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/xunji_bridge.py push-plan --date <D>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「同步到训记」。\n\n我想把某天的训练计划推送到训记 App(落地流程里的训记推送这一步单独做)。推送前先检查计划里的动作名训记能否识别,有识别不了的先告诉我。完成后给我同步结果:推了几条、每条成功/失败、哪些动作名有问题。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____',
+            'user_intent': '我想把训练计划推送到训记', 'data_fields': ["date", "pushed_count", "results", "unrecognized_movements"],
+            'depends_on_external': True, 'order': 3},
+    {
+            'category': '健身计划',     'wake_word': '拉训记实绩',     'desc': '拉训记实绩回写 exercise_log',
+            'main_prompt': {
+        'cli': 'python scripts/xunji_bridge.py backfill --date <D>', 'text': '请你加载技能 卡路里,执行唤醒词「拉训记实绩」。\n\n我想把训记 App 里的实际训练数据拉回来,写进卡路里的运动记录(落地流程里的回写这一步单独做)。请给我看回写结果:新增几条、更新几条、跳过几条,以及有没有冲突需要处理。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_backfill_xunji', 'name': '拉训记实绩', 'subfunction': '落地训练', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/xunji_bridge.py backfill --date <D>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「拉训记实绩」。\n\n我想把训记 App 里的实际训练数据拉回来,写进卡路里的运动记录(落地流程里的回写这一步单独做)。请给我看回写结果:新增几条、更新几条、跳过几条,以及有没有冲突需要处理。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(默认今天):____',
+            'user_intent': '我想把训记里的实际训练拉回卡路里', 'data_fields': ["date", "inserted", "updated", "skipped", "conflicts"],
+            'depends_on_external': True, 'order': 4},
+    {
+            'category': '健身计划',     'wake_word': '计划复盘（本周）',     'desc': '本周复盘(KPI + 趋势 + 上周对比)',
+            'main_prompt': {
+        'cli': 'python scripts/render_exercise_review_html.py --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「计划复盘（本周）」。\n\n我想复盘本周的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本周与上周的对比。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_review_week', 'name': '计划复盘（本周）', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_review.html', 'data_source': 'python scripts/render_exercise_review_html.py --days 7', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「计划复盘（本周）」。\n\n我想复盘本周的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本周与上周的对比。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想复盘本周训练完成情况', 'data_fields': ["completion_rate", "training_days", "calories_burned", "trend", "delta_vs_last_week"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '健身计划',     'wake_word': '计划复盘（本月）',     'desc': '本月复盘(KPI + 趋势 + 上月对比)',
+            'main_prompt': {
+        'cli': 'python scripts/render_exercise_review_html.py --start <D1> --end <D2>', 'text': '请你加载技能 卡路里,执行唤醒词「计划复盘（本月）」。\n\n我想复盘本月的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本月与上月的对比。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_review_month', 'name': '计划复盘（本月）', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_review.html', 'data_source': 'python scripts/render_exercise_review_html.py --start <D1> --end <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「计划复盘（本月）」。\n\n我想复盘本月的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本月与上月的对比。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想复盘本月训练完成情况', 'data_fields': ["completion_rate", "training_days", "calories_burned", "trend", "delta_vs_last_month"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '健身计划',     'wake_word': '计划复盘（全部）',     'desc': '全部复盘(总完成率 + 高频动作)',
+            'main_prompt': {
+        'cli': 'python scripts/render_exercise_review_html.py --start <D1> --end <D2>', 'text': '请你加载技能 卡路里,执行唤醒词「计划复盘（全部）」。\n\n我想复盘整个训练计划:总完成率,以及做得最多的动作(高频动作)排名。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_review_all', 'name': '计划复盘（全部）', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/exercise_review.html', 'data_source': 'python scripts/render_exercise_review_html.py --start <D1> --end <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「计划复盘（全部）」。\n\n我想复盘整个训练计划:总完成率,以及做得最多的动作(高频动作)排名。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想复盘整个训练计划的总完成率和高频动作', 'data_fields': ["total_completion_rate", "top_movements"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '健身计划',     'wake_word': '看计划完成率',     'desc': '每周完成率折线趋势',
+            'main_prompt': {
+        'cli': 'python scripts/render_workout_plan.py --completion', 'text': '请你加载技能 卡路里,执行唤醒词「看计划完成率」。\n\n我想看训练计划的完成率趋势:每周完成率的折线图,能看出哪周完成得好、哪周掉下来了。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_completion_rate', 'name': '看计划完成率', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --completion', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看计划完成率」。\n\n我想看训练计划的完成率趋势:每周完成率的折线图,能看出哪周完成得好、哪周掉下来了。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看每周训练完成率的变化趋势', 'data_fields': ["weekly_completion", "trend"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '健身计划',     'wake_word': '看未完成训练',     'desc': '漏练日期 + 应练动作列表',
+            'main_prompt': {
+        'cli': 'python scripts/render_workout_plan.py --missed --days <N>', 'text': '请你加载技能 卡路里,执行唤醒词「看未完成训练」。\n\n我想看哪些天的训练没完成(漏练):漏练的日期,以及那天本该练的动作列表。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认最近 4 周):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_missed', 'name': '看未完成训练', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --missed --days <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看未完成训练」。\n\n我想看哪些天的训练没完成(漏练):漏练的日期,以及那天本该练的动作列表。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认最近 4 周):____',
+            'user_intent': '我想看哪些训练日漏练了', 'data_fields': ["missed_dates", "planned_movements"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '健身计划',     'wake_word': '看动作完成率',     'desc': '动作完成率 TOP 榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_workout_plan.py --movement-rate --days <N>', 'text': '请你加载技能 卡路里,执行唤醒词「看动作完成率」。\n\n我想看每个动作的完成率排名:哪些动作完成得好、哪些经常没做。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认最近 4 周):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_movement_rate', 'name': '看动作完成率', 'subfunction': '计划复盘', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --movement-rate --days <N>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看动作完成率」。\n\n我想看每个动作的完成率排名:哪些动作完成得好、哪些经常没做。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(默认最近 4 周):____',
+            'user_intent': '我想看各动作的完成率排名', 'data_fields': ["movement_ranking", "completion_rate"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '健身计划',     'wake_word': '扫禁忌',     'desc': '禁忌动作扫描(腰/膝/肩 + 替代建议)',
+            'main_prompt': {
+        'cli': 'python scripts/render_contraindication.py', 'text': '请你加载技能 卡路里,执行唤醒词「扫禁忌」。\n\n我想检查训练计划里有没有伤腰/膝/肩的禁忌动作(默认全身位,也可以指定部位)。请列出有风险的动作、原因,以及推荐的替代动作。完成后给 1 句话总结,不需要过多文字解释。\n\n部位(腰/膝/肩,选填,默认全部):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_contraindication', 'name': '扫禁忌', 'subfunction': '安全检查', 'output_type': 'result',
+            'html_template': 'templates/contraindication_report.html', 'data_source': 'python scripts/render_contraindication.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「扫禁忌」。\n\n我想检查训练计划里有没有伤腰/膝/肩的禁忌动作(默认全身位,也可以指定部位)。请列出有风险的动作、原因,以及推荐的替代动作。完成后给 1 句话总结,不需要过多文字解释。\n\n部位(腰/膝/肩,选填,默认全部):____',
+            'user_intent': '我想检查训练计划里的禁忌动作', 'data_fields': ["part", "hits", "severity", "safe_variants"],
+            'depends_on_external': False, 'order': 0},
     {
             'category': '分析',     'wake_word': '查热量趋势',     'desc': '热量摄入趋势',
             'main_prompt': {
@@ -886,35 +2275,105 @@ TRIGGERS = [
             'user_intent': '我想删除一条围度记录', 'data_fields': ['id', 'date', 'measurements', 'snapshot'],
             'depends_on_external': False, 'order': 1},
     {
-            'category': '身材照片',     'wake_word': '记身材照',     'desc': '记录身材照片',
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '存一张身材照(发图/路径双模式)',
             'main_prompt': {
-        'cli': 'python scripts/body_photo_log_wizard.py → 用户填路径 → add', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要给身材照加一条入库记录(日期/时间/路径/标签/备注)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['照片路径: ', '标签(如 正面/侧面/背部): '],
-            'variants': []},
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 距上次同标签拍照间隔了几天(规律拍照提醒)。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_single', 'name': '存一张照片', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 距上次同标签拍照间隔了几天(规律拍照提醒)。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____',
+            'user_intent': '存一张身材照并预览回执', 'data_fields': ['photo_path', 'tag_list', 'date', 'distance_days', 'note'],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '身材照片',     'wake_word': '查身材照',     'desc': '查看照片历史(浏览 + 选 + 裁剪 + 调细节)',
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '存一张带备注的身材照',
             'main_prompt': {
-        'cli': 'python scripts/render_body_photo_gif_planner.py --tag 正面', 'text': '请你加载技能 卡路里,执行唤醒词「查身材照」。\n\n我要浏览身材照(可筛选 + 裁剪 + 生成 GIF)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片> --tag <标签> --note <备注> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照并附备注(比如当时的状态/饮食阶段)。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 备注 + 距上次同标签拍照间隔。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____\n备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_note', 'name': '存照片（含备注）', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片> --tag <标签> --note <备注> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照并附备注(比如当时的状态/饮食阶段)。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 备注 + 距上次同标签拍照间隔。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____\n备注:____',
+            'user_intent': '存一张带备注的身材照', 'data_fields': ['photo_path', 'tag_list', 'date', 'note', 'distance_days'],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '身材照片',     'wake_word': '生成身材照GIF',     'desc': '生成身材变化 GIF',
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '批量存多张身材照(逐张状态明细)',
             'main_prompt': {
-        'cli': 'python scripts/render_body_photo_gif_planner.py --tag X --photo-id ...', 'text': '请你加载技能 卡路里,执行唤醒词「生成身材照GIF」。\n\n我要把多张身材照生成变化 GIF。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片1> <照片2> ... --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要一次性存多张身材照(可连发多张照片,或给多个路径)。每张照片可以单独指定标签(如"这张是侧面"),没指定的用我给的默认标签。存完后给我看:每张照片的缩略图 + 标签 + 状态(成功/跳过/失败+原因)+ 汇总成功张数。完成后给 1 句话总结,不需要过多文字解释。\n\n默认标签(如 正面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_batch', 'name': '批量存照片', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片1> <照片2> ... --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要一次性存多张身材照(可连发多张照片,或给多个路径)。每张照片可以单独指定标签(如"这张是侧面"),没指定的用我给的默认标签。存完后给我看:每张照片的缩略图 + 标签 + 状态(成功/跳过/失败+原因)+ 汇总成功张数。完成后给 1 句话总结,不需要过多文字解释。\n\n默认标签(如 正面):____',
+            'user_intent': '批量存多张身材照并看逐张结果', 'data_fields': ['photo_path', 'tag_list', 'status', 'reason', 'batch_count'],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '身材照片',     'wake_word': '删身材照',     'desc': '删除身材照片',
+            'category': '身材照片',     'wake_word': '查身材照',     'desc': '浏览身材照(网格 + 时间/标签筛选 + 计数)',
             'main_prompt': {
-        'cli': 'python scripts/body_photo_tracker.py delete <id>', 'text': '请你加载技能 卡路里,执行唤醒词「删身材照」。\n\n我要删某张照片。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_body_photo_gallery.py [--days <N> | --start <D> --end <D>] [--tag <标签>] --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「查身材照」。\n\n我想浏览身材照:照片网格 + 按时间/标签筛选 + 照片总数/各标签计数 + 距上次拍照多少天。时间可以用天数(如最近 30 天)、某个日期(如 7月1日)、或一段范围(如 6月1日~7月1日);没填默认最近 90 天。完成后给 1 句话总结,不需要过多文字解释。\n\n时间(最近 N 天 / 某日期 / 某范围,选填):____\n标签(选填,如 正面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_list', 'name': '看身材照', 'subfunction': '看身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_gallery.html', 'data_source': 'python scripts/render_body_photo_gallery.py [--days <N> | --start <D> --end <D>] [--tag <标签>] --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查身材照」。\n\n我想浏览身材照:照片网格 + 按时间/标签筛选 + 照片总数/各标签计数 + 距上次拍照多少天。时间可以用天数(如最近 30 天)、某个日期(如 7月1日)、或一段范围(如 6月1日~7月1日);没填默认最近 90 天。完成后给 1 句话总结,不需要过多文字解释。\n\n时间(最近 N 天 / 某日期 / 某范围,选填):____\n标签(选填,如 正面):____',
+            'user_intent': '浏览身材照并按时间/标签筛选', 'data_fields': ['photos', 'tag_counts', 'total_count', 'days_since_last', 'filters'],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '身材照片',     'wake_word': '改照片标签',     'desc': '修改照片标签',
+            'category': '身材照片',     'wake_word': '对比两张照片',     'desc': '两张照片并排对比(间隔天数/标签/备注)',
             'main_prompt': {
-        'cli': 'python scripts/body_photo_tracker.py tag <id> <new_tag>', 'text': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要改某张照片的 tag。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_body_photo_compare.py --id1 <ID> --id2 <ID> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比两张照片」。\n\n我想把两张身材照并排对比。可以说日期(如"月初 vs 月底")、编号,或让我从最近的照片里选。并排显示:两张照片 + 各自拍摄日期 + 间隔天数 + 各自标签/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n照片 1(日期/编号/留空):____\n照片 2(日期/编号/留空):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_compare', 'name': '对比两张照片', 'subfunction': '比身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_compare.html', 'data_source': 'python scripts/render_body_photo_compare.py --id1 <ID> --id2 <ID> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比两张照片」。\n\n我想把两张身材照并排对比。可以说日期(如"月初 vs 月底")、编号,或让我从最近的照片里选。并排显示:两张照片 + 各自拍摄日期 + 间隔天数 + 各自标签/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n照片 1(日期/编号/留空):____\n照片 2(日期/编号/留空):____',
+            'user_intent': '并排对比两张身材照看变化', 'data_fields': ['photo1', 'photo2', 'interval_days', 'tag_list', 'note'],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身材照片',     'wake_word': '生成身材照GIF',     'desc': '时间段多张照片合成变化 GIF(帧数/首末日期)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_gif_result.py --tag <标签> [--start <D> --end <D> | --days <N> | --photo-id <ID> ...] --chain "1.识别→2.选照片→3.合成→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「生成身材照GIF」。\n\n我要把一段时间的多张身材照合成变化 GIF。请先确认照片范围(标签/时间),生成后给我看:GIF 预览 + 文件位置 + 时间跨度 + 帧数 + 合成照片总数 + 首末日期。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面):____\n时间范围(如 最近3个月 / 起始日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_gif', 'name': '生成身材照 GIF', 'subfunction': '比身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_gif_result.html', 'data_source': 'python scripts/render_body_photo_gif_result.py --tag <标签> [--start <D> --end <D> | --days <N> | --photo-id <ID> ...] --chain "1.识别→2.选照片→3.合成→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「生成身材照GIF」。\n\n我要把一段时间的多张身材照合成变化 GIF。请先确认照片范围(标签/时间),生成后给我看:GIF 预览 + 文件位置 + 时间跨度 + 帧数 + 合成照片总数 + 首末日期。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面):____\n时间范围(如 最近3个月 / 起始日期):____',
+            'user_intent': '把一段时间的身材照合成变化 GIF', 'data_fields': ['gif_path', 'time_span', 'frames', 'photo_count', 'first_date', 'last_date'],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '删身材照',     'desc': '删除照片(先列候选 → 快照确认 → 回执)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-delete --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删身材照」。\n\n我要删一张身材照(删除后无法恢复)。如果我没说清是哪张,请先列出最近的几张照片(缩略图+日期+标签)让我选。确认后,删除前先给我看这张照片的内容(快照),确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的照片(选填,如「最近一张」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_delete', 'name': '删身材照', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-delete --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删身材照」。\n\n我要删一张身材照(删除后无法恢复)。如果我没说清是哪张,请先列出最近的几张照片(缩略图+日期+标签)让我选。确认后,删除前先给我看这张照片的内容(快照),确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的照片(选填,如「最近一张」或日期):____',
+            'user_intent': '删除一张身材照(带快照确认)', 'data_fields': ['id', 'date', 'tag_list', 'snapshot', 'photo_path'],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '改照片标签',     'desc': '标签覆盖整套(可多个,改前/改后对比)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,改完后给我看:改前/改后对比 + 新的完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_set', 'name': '改照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,改完后给我看:改前/改后对比 + 新的完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____',
+            'user_intent': '把照片标签换成整套新标签', 'data_fields': ['tag_before', 'tag_after', 'tag_list'],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身材照片',     'wake_word': '加照片标签',     'desc': '追加标签(可多个,判重提示)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-add --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「加照片标签」。\n\n我要给某张照片追加标签(不覆盖已有,可一次加多个)。如果某个标签已经存在,请提示我。加完后给我看:新增后完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要加的标签(可多个,逗号分隔):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_add', 'name': '加照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-add --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「加照片标签」。\n\n我要给某张照片追加标签(不覆盖已有,可一次加多个)。如果某个标签已经存在,请提示我。加完后给我看:新增后完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要加的标签(可多个,逗号分隔):____',
+            'user_intent': '给照片追加一个或多个标签', 'data_fields': ['tag_added', 'tag_list', 'duplicate'],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身材照片',     'wake_word': '删照片标签',     'desc': '移除标签(可多个,至少保留 1 个)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-remove --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删照片标签」。\n\n我要从某张照片上移除标签(其余保留,可一次删多个)。请先告诉我这张照片当前有哪些标签,删完后给我看:删除前/删除后列表。每张照片至少保留 1 个标签,删空会提示我;想清空全部标签请用「改照片标签」。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要删的标签(可多个,逗号分隔):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_remove', 'name': '删照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-remove --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删照片标签」。\n\n我要从某张照片上移除标签(其余保留,可一次删多个)。请先告诉我这张照片当前有哪些标签,删完后给我看:删除前/删除后列表。每张照片至少保留 1 个标签,删空会提示我;想清空全部标签请用「改照片标签」。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要删的标签(可多个,逗号分隔):____',
+            'user_intent': '从照片上移除一个或多个标签', 'data_fields': ['tag_removed', 'tag_before', 'tag_after'],
+            'depends_on_external': False, 'order': 3},
     {
             'category': '基础信息',     'wake_word': '设置档案',     'desc': '设置基础档案(身高/年龄/性别/活动量,含采访式引导)',
             'main_prompt': {

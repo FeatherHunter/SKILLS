@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_plan_builder.py — 健身计划预览 wizard HTML 渲染器
 
-对应 SKILL.md 唤醒词:制定健身计划 / 改健身计划
+对应 SKILL.md 唤醒词:定训练计划
 
 设计原则:
 - 过程型 HTML(AI 协同模式 · 原则 10)

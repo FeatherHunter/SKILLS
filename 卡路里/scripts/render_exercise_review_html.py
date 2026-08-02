@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_exercise_review_html.py — 渲染训练复盘 HTML
 
-对应 SKILL.md 唤醒词:`复盘训练`（HTML 可视化版）
+对应 SKILL.md 唤醒词:计划复盘（本周） / 计划复盘（本月） / 计划复盘（全部）
 
 设计:7 天完成率热力图 + 每日明细表 + 异常天高亮
 模板:templates/exercise_review.html

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_process_progress.py — 4 步流程进度可视化 HTML 渲染器
 
-对应 SKILL.md 唤醒词:落地健身计划 / 卡路里同步 / 回写训记 / 训记-覆盖X日的训练计划
+对应 SKILL.md 唤醒词:落地训练 / 落地到本周末 / 落地到本月底
 
 设计原则:
 - 过程型 HTML(AI 协同模式 · 原则 10 · 复制"从哪步继续" prompt)

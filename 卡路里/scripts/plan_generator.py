@@ -396,3 +396,105 @@ def insert_week(wn):
     conn.commit()
     conn.close()
     return {'inserted_at_week': wn}
+
+
+def delete_plan():
+    """删除整个训练计划(撤销训练计划场景 · 2026-08-02 ticket #6)。
+
+    删除 workout_plan_config + workout_plans 全部数据。
+    返回: {deleted_config, deleted_rows, plan_summary}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT title, total_weeks, start_date FROM workout_plan_config WHERE id=1')
+    cfg = c.fetchone()
+    summary = {
+        'title': cfg[0] if cfg else None,
+        'total_weeks': cfg[1] if cfg else None,
+        'start_date': cfg[2] if cfg else None,
+    }
+    c.execute('SELECT COUNT(*) FROM workout_plans')
+    deleted_rows = c.fetchone()[0]
+    c.execute('DELETE FROM workout_plans')
+    c.execute('DELETE FROM workout_plan_config')
+    conn.commit()
+    conn.close()
+    return {
+        'deleted_config': summary,
+        'deleted_rows': deleted_rows,
+        'plan_summary': summary,
+    }
+
+
+def copy_plan(new_title=None):
+    """复制整个训练计划(复制训练计划场景 · 2026-08-02 ticket #6)。
+
+    单计划模型(workout_plan_config 仅 id=1 一行):复制 = 另存为新标题,
+    内容(全部周)原样保留,标题/描述替换为新标题。
+    返回: {new_title, total_weeks, copied_rows}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT title, version, description, total_weeks, start_date FROM workout_plan_config WHERE id=1')
+    cfg = c.fetchone()
+    if not cfg:
+        conn.close()
+        return {'new_title': None, 'total_weeks': 0, 'copied_rows': 0}
+
+    old_title, version, description, total_weeks, start_date = cfg
+    new_title = new_title or f'{old_title or "健身计划"} 副本'
+
+    # 读全部周数据
+    c.execute('''
+        SELECT week_number, day_of_week, session_index, session_label,
+               time_start, time_end, is_rest_day, total_sets, movements
+        FROM workout_plans ORDER BY week_number, day_of_week, session_index
+    ''')
+    rows = c.fetchall()
+
+    # 清空(单计划模型:复制 = 覆盖为新标题)
+    c.execute('DELETE FROM workout_plans')
+    c.execute('DELETE FROM workout_plan_config')
+
+    c.execute('''
+        INSERT INTO workout_plan_config (id, title, version, description, total_weeks, start_date)
+        VALUES (1, ?, ?, ?, ?, ?)
+    ''', (new_title, version or 'v1', description or '', total_weeks, start_date))
+    for r in rows:
+        c.execute('''
+            INSERT INTO workout_plans
+                (week_number, day_of_week, session_index, session_label,
+                 time_start, time_end, is_rest_day, total_sets, movements)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', tuple(r))
+    copied_rows = len(rows)
+    conn.commit()
+    conn.close()
+    return {'new_title': new_title, 'total_weeks': total_weeks, 'copied_rows': copied_rows}
+
+
+def delete_day(wn, dow):
+    """删除某一天的所有训练时段(删某天训练场景 · 2026-08-02 ticket #6)。
+
+    与 delete_session(删单个时段)不同:本函数删除 (week_number, day_of_week) 的全部 session。
+    返回: {week_number, day_of_week, deleted_sessions}
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT session_index, session_label FROM workout_plans
+        WHERE week_number=? AND day_of_week=? ORDER BY session_index
+    ''', (wn, dow))
+    rows = c.fetchall()
+    snapshot = [{'session_index': r[0], 'session_label': r[1]} for r in rows]
+    c.execute('DELETE FROM workout_plans WHERE week_number=? AND day_of_week=?', (wn, dow))
+    affected = c.rowcount
+    conn.commit()
+    conn.close()
+    return {
+        'week_number': wn,
+        'day_of_week': dow,
+        'deleted_sessions': len(snapshot),
+        'snapshot': snapshot,
+        'deleted': affected,
+    }

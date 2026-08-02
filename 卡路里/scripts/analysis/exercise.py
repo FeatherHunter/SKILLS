@@ -318,6 +318,7 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
             'sessions': session_labels,
             'plan_total_sets': plan_total_sets,
             'actual_total_sets': actual_total_sets,
+            'calories_burned': sum(v['calories'] for v in actual.values()),  # 2026-08-02 ticket #6:复盘消耗 KPI
             'completion_rate': completion_rate,
             'anomalies': anomalies,
             'note': note,
@@ -343,6 +344,7 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
         'total_days': len(results),
         'train_days': sum(1 for r in results.values() if not r.get('is_rest_day')),
         'rest_days': sum(1 for r in results.values() if r.get('is_rest_day')),
+        'total_calories': sum(r.get('calories_burned') or 0 for r in results.values()),
     }
 
     if as_dict or silent:

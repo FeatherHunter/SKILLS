@@ -7,7 +7,7 @@
 <style>
 :root{
   --bg:#fbfbfd;--card:#fff;--ink:#1d1d1f;--ink2:#6e6e73;--ink3:#86868b;
-  --line:#d2d2d7;--lineS:#e8e8ed;--accent:#0071e3;
+  --line:#d2d2d7;--lineS:#e8e8ed;--accent:#0071e3;--green:#34c759;--red:#ff3b30;--amber:#ff9500;
   --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.04);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -73,12 +73,44 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 .anomalies li{padding:5px 0;color:var(--ink2);font-size:13px}
 .no-review{color:var(--ink3);font-style:italic;font-size:13px}
 
+/* KPI CARDS (overview) */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.kpi-card{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;font-weight:500;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:600;color:var(--ink);line-height:1}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:4px}
+
+/* PROGRESS BAR */
+.progress{background:var(--lineS);border-radius:99px;height:8px;overflow:hidden;margin-top:8px}
+.progress-fill{background:var(--green);height:100%;border-radius:99px;transition:width .3s}
+.progress-fill.low{background:var(--amber)}
+.progress-fill.danger{background:var(--red)}
+
+/* WEEKLY LIST (overview/completion) */
+.week-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--lineS)}
+.week-row:last-child{border-bottom:none}
+.week-name{font-size:14px;font-weight:600;min-width:70px}
+.week-rate{font-size:15px;font-weight:600;min-width:60px;text-align:right}
+.week-bar{flex:1}
+
+/* VS TABLE */
+.dev-pos{color:var(--green);font-weight:600}
+.dev-neg{color:var(--red);font-weight:600}
+.dev-zero{color:var(--ink3)}
+
+/* MISSED / MOVEMENT */
+.missed-card{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:18px 22px;margin-bottom:12px;box-shadow:var(--shadow)}
+.missed-date{font-size:15px;font-weight:600;margin-bottom:6px}
+.chip{display:inline-block;font-size:11px;background:var(--bg);border:1px solid var(--lineS);padding:2px 8px;border-radius:99px;margin:2px 4px 2px 0;color:var(--ink2)}
+.rank-num{font-weight:600;min-width:28px;display:inline-block}
+
 @media(max-width:640px){
   .app{padding:20px 12px 48px}
   .session{padding:16px 14px}
   .header h1{font-size:26px}
   td{padding:10px 4px;font-size:12px}
   td:first-child{min-width:120px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
 </head>
@@ -90,6 +122,13 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
     <p id="planSubtitle">加载中...</p>
   </div>
   <div id="reviewContainer"></div>
+  <div id="todayContainer"></div>
+  <div id="kpiContainer"></div>
+  <div id="weekListContainer"></div>
+  <div id="vsContainer"></div>
+  <div id="completionContainer"></div>
+  <div id="missedContainer"></div>
+  <div id="movementContainer"></div>
   <div class="tabs" id="weekTabs"></div>
   <div id="weeksContainer"></div>
 </div>
@@ -109,6 +148,11 @@ function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;','<': '&lt;','>': '&gt;','"': '&quot;',"'": '&#39;'
   }[c]));
+}
+
+function fmtRate(rate) {
+  if (rate === null || rate === undefined) return '—';
+  return Math.round(rate) + '%';
 }
 
 function renderHeader(config) {
@@ -146,8 +190,212 @@ function renderReview(review) {
   html += '</div>';
   if (anomalies.length) {
     html += '<ul class="anomalies">';
-    anomalies.forEach(a => { html += `<li>${escapeHTML(a)}</li>`; });
+    anomalies.forEach(a => { html += `<li>${escapeHTML(typeof a === 'string' ? a : (a.msg || ''))}</li>`; });
     html += '</ul>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: today ====== */
+function renderToday(data) {
+  const container = document.getElementById('todayContainer');
+  if (data.mode !== 'today') { container.innerHTML = ''; return; }
+  if (data.unstarted) {
+    container.innerHTML = `<div class="session rest-day"><h3>计划尚未开始</h3><p>起始日 ${escapeHTML(data.start_date || '')}</p></div>`;
+    return;
+  }
+  if (data.is_rest) {
+    container.innerHTML = `<div class="session rest-day"><h3>今天休息日</h3><p>主动恢复,不练力量</p></div>`;
+    return;
+  }
+  const comp = data.completion || {};
+  let html = '<div class="review-section">';
+  html += `<h2>💪 今天练什么 · ${data.date || ''}</h2>`;
+  if (comp.rate != null) {
+    html += `<div class="review-stat"><span class="stat-label">完成度</span>`;
+    html += `<span class="stat-value">${fmtRate(comp.rate)}</span></div>`;
+    html += `<p style="color:var(--ink2);font-size:13px">已完成 ${comp.done_sets || 0} 组 · 剩余 ${comp.remaining_sets || 0} 组</p>`;
+    const cls = comp.rate >= 100 ? '' : (comp.rate >= 50 ? 'low' : 'danger');
+    html += `<div class="progress"><div class="progress-fill ${cls}" style="width:${Math.min(comp.rate,100)}%"></div></div>`;
+  }
+  html += '</div>';
+  (data.sessions || []).forEach(sess => {
+    if (sess.is_rest_day) return;
+    const ts = sess.time_start || '';
+    const te = sess.time_end || '';
+    html += '<div class="session"><div class="sess-head">';
+    html += `<span class="sess-name">${escapeHTML(sess.session_label)}</span>`;
+    if (ts && te) html += `<span class="sess-time">${escapeHTML(ts)}-${escapeHTML(te)}</span>`;
+    html += '</div><div class="table-wrap"><table><thead><tr><th>动作</th><th>部位</th><th>计划</th><th>已完成</th><th>进度</th></tr></thead><tbody>';
+    (sess.movements || []).forEach(m => {
+      const color = PART_COLORS[m.part] || '#6e6e73';
+      const done = m.sets_done || 0;
+      const total = m.sets || 0;
+      const rate = total ? Math.round(done / total * 100) : 0;
+      html += '<tr>';
+      html += `<td><strong>${escapeHTML(m.name)}</strong></td>`;
+      html += `<td><span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(m.part || '')}</span></td>`;
+      html += `<td>${m.sets} 组${m.reps ? ' × ' + escapeHTML(m.reps) : ''}${m.weight ? ' · ' + escapeHTML(m.weight + (m.unit || 'kg')) : ''}</td>`;
+      html += `<td><strong>${done}</strong>/${total}</td>`;
+      html += `<td><span style="color:${done >= total ? 'var(--green)' : (done > 0 ? 'var(--amber)' : 'var(--ink3)')};font-weight:600">${rate}%</span></td>`;
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+/* ====== MODE: overview ====== */
+function renderOverview(data) {
+  const container = document.getElementById('kpiContainer');
+  if (data.mode !== 'overview') { container.innerHTML = ''; return; }
+  const k = data.kpi || {};
+  const cards = [
+    ['总周数', k.total_weeks ?? '—', '周循环计划'],
+    ['整体完成率', fmtRate(k.overall_rate), '计划 vs 实做'],
+    ['训练日', k.training_days ?? '—', '计划内训练天数'],
+    ['训练时段', k.total_sessions ?? '—', '全部 session 数'],
+    ['动作总数', k.total_movements ?? '—', '计划内动作条目'],
+  ];
+  let html = '<div class="kpi-grid">';
+  cards.forEach(([label, value, sub]) => {
+    html += `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
+  });
+  html += '</div>';
+  html += '<div class="review-section"><h2>📊 每周完成率</h2>';
+  if ((data.weekly_rates || []).length) {
+    data.weekly_rates.forEach(w => {
+      const rate = w.completion_rate;
+      const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+      const pct = Math.min(rate ?? 0, 100);
+      html += `<div class="week-row"><span class="week-name">第 ${w.week_number} 周</span>`;
+      html += `<div class="week-bar"><div class="progress"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+      html += `<span class="week-rate">${fmtRate(rate)}</span></div>`;
+    });
+  } else {
+    html += '<p class="no-review">暂无计划数据</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: week (单周完成度提示) ====== */
+function renderWeekHint(data) {
+  const container = document.getElementById('weekListContainer');
+  if (data.mode !== 'week' || !data.completion) { container.innerHTML = ''; return; }
+  const comp = data.completion;
+  const rate = comp.completion_rate;
+  const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+  let html = '<div class="review-section"><h2>📅 本周完成度</h2>';
+  if (rate != null) {
+    html += `<div class="review-stat"><span class="stat-label">完成率</span><span class="stat-value">${fmtRate(rate)}</span></div>`;
+    html += `<p style="color:var(--ink2);font-size:13px">计划 ${comp.plan_sets} 组 · 实做 ${comp.actual_sets} 组 · ${comp.plan_days} 个训练日</p>`;
+    html += `<div class="progress"><div class="progress-fill ${cls}" style="width:${Math.min(rate,100)}%"></div></div>`;
+  } else {
+    html += '<p class="no-review">该周无计划数据</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: vs ====== */
+function renderVs(data) {
+  const container = document.getElementById('vsContainer');
+  if (data.mode !== 'vs') { container.innerHTML = ''; return; }
+  const rate = data.completion_rate;
+  const dev = data.deviation;
+  const devCls = dev > 0 ? 'dev-pos' : (dev < 0 ? 'dev-neg' : 'dev-zero');
+  let html = `<div class="review-section"><h2>⚖️ 计划 vs 实际 · ${data.start_date} ~ ${data.end_date}</h2>`;
+  html += `<div class="review-stat"><span class="stat-label">完成度</span><span class="stat-value">${fmtRate(rate)}</span></div>`;
+  if (dev !== null && dev !== undefined) {
+    html += `<p style="font-size:13px;color:var(--ink2)">偏差 <strong class="${devCls}">${dev > 0 ? '+' : ''}${dev}%</strong></p>`;
+  }
+  html += '</div>';
+  html += '<div class="review-section"><h2>📋 动作级对比</h2>';
+  if ((data.movement_rows || []).length) {
+    html += '<div class="table-wrap"><table><thead><tr><th>动作</th><th>计划组数</th><th>实际组数</th><th>偏差</th></tr></thead><tbody>';
+    data.movement_rows.forEach(r => {
+      const dCls = r.deviation_pct > 0 ? 'dev-pos' : (r.deviation_pct < 0 ? 'dev-neg' : 'dev-zero');
+      const devTxt = r.deviation_pct === null ? '—' : `${r.deviation_pct > 0 ? '+' : ''}${r.deviation_pct}%`;
+      html += '<tr>';
+      html += `<td><strong>${escapeHTML(r.movement)}</strong></td>`;
+      html += `<td>${r.plan_sets}</td><td><strong>${r.actual_sets}</strong></td>`;
+      html += `<td class="${dCls}">${devTxt}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<p class="no-review">范围内无计划或实绩数据</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: completion (折线) ====== */
+function renderCompletion(data) {
+  const container = document.getElementById('completionContainer');
+  if (data.mode !== 'completion') { container.innerHTML = ''; return; }
+  const weekly = data.weekly || [];
+  let html = '<div class="review-section"><h2>📈 每周完成率趋势</h2>';
+  if (weekly.length) {
+    weekly.forEach(w => {
+      const rate = w.completion_rate;
+      const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+      const pct = Math.min(rate ?? 0, 100);
+      html += `<div class="week-row"><span class="week-name">第 ${w.week_number} 周</span>`;
+      html += `<div class="week-bar"><div class="progress"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+      html += `<span class="week-rate">${fmtRate(rate)}</span></div>`;
+    });
+  } else {
+    html += '<p class="no-review">暂无完成率数据</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: missed ====== */
+function renderMissed(data) {
+  const container = document.getElementById('missedContainer');
+  if (data.mode !== 'missed') { container.innerHTML = ''; return; }
+  const missed = data.missed || [];
+  let html = `<div class="review-section"><h2>⚠️ 未完成训练 · 最近 ${data.days || 28} 天</h2>`;
+  if (missed.length) {
+    html += `<p style="color:var(--ink2);font-size:13px;margin-bottom:10px">共 ${missed.length} 天漏练</p>`;
+    missed.forEach(m => {
+      html += '<div class="missed-card">';
+      html += `<div class="missed-date">${m.date} · ${m.dow_label} <span style="color:var(--ink3);font-weight:400;font-size:12px">第 ${m.plan_week} 周</span></div>`;
+      html += `<p style="font-size:12.5px;color:var(--ink2);margin-bottom:8px">计划 ${m.plan_sets} 组 · 实做 ${m.done_sets} 组</p>`;
+      (m.movements || []).forEach(name => {
+        html += `<span class="chip">${escapeHTML(name)}</span>`;
+      });
+      html += '</div>';
+    });
+  } else {
+    html += '<p class="no-review">最近没有漏练 🎉</p>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ====== MODE: movement (TOP 榜) ====== */
+function renderMovement(data) {
+  const container = document.getElementById('movementContainer');
+  if (data.mode !== 'movement') { container.innerHTML = ''; return; }
+  const ranking = data.ranking || [];
+  let html = `<div class="review-section"><h2>🏆 动作完成率 TOP · 最近 ${data.days || 28} 天</h2>`;
+  if (ranking.length) {
+    html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>动作</th><th>完成率</th><th>实做/计划</th></tr></thead><tbody>';
+    ranking.forEach((r, i) => {
+      const cls = r.rate >= 100 ? 'dev-pos' : (r.rate >= 50 ? '' : 'dev-neg');
+      html += '<tr>';
+      html += `<td><span class="rank-num">${i + 1}</span></td>`;
+      html += `<td><strong>${escapeHTML(r.movement)}</strong></td>`;
+      html += `<td class="${cls}" style="font-weight:600">${fmtRate(r.rate)}</td>`;
+      html += `<td>${r.done_sets}/${r.plan_sets}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<p class="no-review">暂无动作数据</p>';
   }
   html += '</div>';
   container.innerHTML = html;
@@ -163,7 +411,6 @@ function renderWeekTabs(weeks) {
 function renderWeeks(weeks) {
   const container = document.getElementById('weeksContainer');
   container.innerHTML = weeks.map((w, wIdx) => {
-    // 按 day_of_week 分组 sessions
     const dayMap = {};
     w.days.forEach(d => {
       dayMap[d.day_of_week] = dayMap[d.day_of_week] || [];
@@ -172,7 +419,6 @@ function renderWeeks(weeks) {
 
     let html = `<div class="week ${wIdx === 0 ? 'active' : ''}" data-wk="${w.week_number}">`;
 
-    // Day tabs (周一到周日)
     html += `<div class="day-tabs" id="dayTabs_w${w.week_number}">`;
     for (let dow = 1; dow <= 7; dow++) {
       const active = dow === 1 ? ' active' : '';
@@ -180,10 +426,7 @@ function renderWeeks(weeks) {
     }
     html += '</div>';
 
-    // 每天的内容
     for (let dow = 1; dow <= 7; dow++) {
-      // 修复 v2.4.14 契约违反:dayMap[dow] 是 day 对象数组,需平展成 sessions 数组
-      // 此前直接当作 sessions 遍历,导致多 session 全部折叠成 day.movements(undefined)"暂无动作"
       const days = dayMap[dow] || [];
       const sessions = days.flatMap(d => d.sessions || []);
       const display = dow === 1 ? '' : ' style="display:none"';
@@ -245,7 +488,6 @@ function renderWeeks(weeks) {
     return html;
   }).join('');
 
-  // Tab 切换交互
   bindWeekTabs();
   bindDayTabs();
 }
@@ -292,10 +534,21 @@ function bindDayTabs() {
     return;
   }
 
-  renderHeader(data.config);
+  renderHeader(data.config || {});
   renderReview(data.review);
-  renderWeekTabs(data.weeks);
-  renderWeeks(data.weeks);
+  renderToday(data);
+  renderOverview(data);
+  renderVs(data);
+  renderCompletion(data);
+  renderMissed(data);
+  renderMovement(data);
+  renderWeekHint(data);
+
+  const weeks = data.weeks || [];
+  if (weeks.length) {
+    renderWeekTabs(weeks);
+    renderWeeks(weeks);
+  }
 })();
 </script>
 

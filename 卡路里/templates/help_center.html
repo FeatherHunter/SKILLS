@@ -437,7 +437,8 @@ function renderSceneDetail(s) {
   const cli = s.data_source ? `<div class="cli">${escapeHTML(s.data_source)}</div>` : '';
   const intent = s.user_intent ? `<div class="intent">${escapeHTML(s.user_intent)}</div>` : '';
   const prompt = s.prompt_template ? `<pre class="prompt-pre">${escapeHTML(s.prompt_template)}</pre>` : '';
-  return `<div class="scene-detail">${intent}${cli}${prompt}${meta}</div>`;
+  // 顺序(2026-08-02 用户拍板):intent → prompt → meta(📦/🎨/📋) → cli(可复制命令)
+  return `<div class="scene-detail">${intent}${prompt}${meta}${cli}</div>`;
 }
 
 function renderScene(s, i) {

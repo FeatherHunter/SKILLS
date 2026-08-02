@@ -29,6 +29,8 @@ from render_body_photo_gif_planner import embed_photo_as_base64  # noqa
 
 def build(id1, id2, embed=True):
     import body_photo_tracker as bpt
+    import db as db_mod
+    db_mod.init_db(str(db_mod.find_db_path(SKILL_DIR, "calorie_data.db")))  # 幂等自愈(2026-08-02)
     p1 = bpt.get_photo_row(id1)
     if not p1:
         raise ValueError(f"照片 #{id1} 不存在")

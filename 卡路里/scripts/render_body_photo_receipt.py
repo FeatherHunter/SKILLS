@@ -48,6 +48,12 @@ def _tracker():
     return bpt
 
 
+def _ensure_db():
+    """幂等建表自愈:新环境/缺表时渲染器不再 no such table(2026-08-02 第 4 层审查)"""
+    import db as db_mod
+    db_mod.init_db(str(db_mod.find_db_path(SKILL_DIR, "calorie_data.db")))
+
+
 def embed_photo_base64(photo, max_dim=500):
     """缩略图 base64(复用 viewer 实现,图片不存在时静默降级)"""
     import render_body_photo_gif_planner as gp
@@ -62,6 +68,7 @@ def embed_photo_base64(photo, max_dim=500):
 # ===== 各 action 的 live 构建器 =====
 
 def build_live_add(photo_paths, tag, note=''):
+    _ensure_db()
     """存照片(一张/含备注/批量):复制文件 + 写库 + 组装回执
 
     呈现数据:照片缩略图预览 / 日期 / 标签 / 距上次同标签拍照间隔;
@@ -124,6 +131,7 @@ def build_live_add(photo_paths, tag, note=''):
 
 
 def build_live_delete(photo_id):
+    _ensure_db()
     """删身材照:删除前快照(含缩略图)→ 物理删 + 回执"""
     bpt = _tracker()
     snapshot = bpt.get_photo_row(photo_id)
@@ -175,6 +183,7 @@ def _tag_op_data(photo_id, before, after, scene, wake_word, summary, no_change):
 
 
 def build_live_tag_set(photo_id, tag_list):
+    _ensure_db()
     """改照片标签:覆盖整套。改前/改后 + 完整标签列表"""
     bpt = _tracker()
     photo = bpt.get_photo_row(photo_id)
@@ -191,6 +200,7 @@ def build_live_tag_set(photo_id, tag_list):
 
 
 def build_live_tag_add(photo_id, tag):
+    _ensure_db()
     """加照片标签:追加(判重,支持逗号分隔多个)。新增后完整标签列表 + 判重提示"""
     bpt = _tracker()
     photo = bpt.get_photo_row(photo_id)
@@ -211,6 +221,7 @@ def build_live_tag_add(photo_id, tag):
 
 
 def build_live_tag_remove(photo_id, tag):
+    _ensure_db()
     """删照片标签:移除(至少保留 1 个)。删除前/删除后列表"""
     bpt = _tracker()
     photo = bpt.get_photo_row(photo_id)

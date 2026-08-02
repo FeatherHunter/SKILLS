@@ -34,6 +34,8 @@ from render_crud_view import _chain_valid, _quote_arg  # noqa
 def build(tag, start=None, end=None, days=None, photo_ids=None,
           width=400, height=600, duration=500, transition='cut'):
     import body_photo_tracker as bpt
+    import db as db_mod
+    db_mod.init_db(str(db_mod.find_db_path(SKILL_DIR, "calorie_data.db")))  # 幂等自愈(2026-08-02)
 
     gif_path = bpt.generate_gif(
         tag=tag, start_date=start, end_date=end, days=days, photo_ids=photo_ids,

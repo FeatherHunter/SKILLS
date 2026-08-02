@@ -38,6 +38,7 @@ def list_all_photos(date_from=None, date_to=None, limit=500):
     """取照片元数据(按日期倒序);文件缺失项标注,供前端降级显示"""
     import db as db_mod
     db_path = db_mod.find_db_path(SKILL_DIR, "calorie_data.db")
+    db_mod.init_db(str(db_path))  # 幂等:新环境缺表时自愈(2026-08-02 第 4 层审查)
     where, params = [], []
     if date_from:
         where.append('date >= ?'); params.append(date_from)

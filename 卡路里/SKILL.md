@@ -327,7 +327,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 > - 看类走 HTML 渲染(有模板必走 HTML,§⚠️ 强制性规定 第 4 条)
 > - 「看今日目标」的体重是累计目标,引导用户到「看体重目标进度」,不算今日完成度
 
-#### G1 定目标(8)
+#### 定目标(8)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
@@ -340,7 +340,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `python scripts/render_goal_recommend.py --water-only` |
 | 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌>` |
 
-#### G2 看目标(10)
+#### 看目标(10)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
@@ -355,7 +355,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 看目标完成率(按周) | 本周 7 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period week` |
 | 看目标完成率(按月) | 本月 30 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period month` |
 
-#### G3 改目标(5)
+#### 改目标(5)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
@@ -365,7 +365,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `python scripts/render_goal_status.py --status paused` |
 | 重启所有目标 | 从暂停恢复全部目标 | `python scripts/render_goal_status.py --status resumed` |
 
-#### 新增(2)
+#### 看目标(续)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>体脂 · 卡路里</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 760px; margin: 0 auto; padding: 32px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .kpi-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .kpi { flex: 1; min-width: 90px; background: var(--soft); border-radius: 10px; padding: 10px 12px; text-align: center; }
+  .kpi .v { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .kpi .l { font-size: 12px; color: var(--fg3); margin-top: 2px; }
+  .kpi .v.down { color: var(--green); }
+  .kpi .v.up { color: var(--red); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: 13px; cursor: pointer; color: var(--fg2); }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--fg3); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .empty { text-align: center; color: var(--fg3); padding: 24px 0; font-size: 14px; }
+  .tip { background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--fg2); }
+  .note { font-size: 12px; color: var(--fg3); margin-top: 6px; }
+  .delta { font-weight: 700; }
+  .delta.neg { color: var(--green); }
+  .delta.pos { color: var(--red); }
+  .current { display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; font-size: 12px; margin-left: 6px; }
+  canvas { width: 100%; height: 220px; display: block; }
+  .bar { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
+  .bar div { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
+  .bar div span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--fg3); }
+</style>
+</head>
+<body>
+
+<h1 id="sceneTitle">体脂</h1>
+<p class="sub" id="sceneSub"></p>
+
+<div id="listMode">
+  <div class="card">
+    <h2>当前体脂 <span class="current" id="curBadge"></span></h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v" id="curBf">—</div><div class="l">体脂率 %</div></div>
+      <div class="kpi"><div class="v" id="curDate">—</div><div class="l">测量日期</div></div>
+      <div class="kpi"><div class="v" id="curSrc">—</div><div class="l">来源</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>来源筛选</h2>
+    <div class="chips" id="srcChips"></div>
+    <div class="tip">来源不可直接对比:皮褶钳(家测)与健身房 InBody/医院设备口径不同,趋势请在单一来源内看。</div>
+  </div>
+  <div class="card">
+    <h2>历史记录</h2>
+    <div id="histTableWrap"></div>
+  </div>
+</div>
+
+<div id="trendMode" style="display:none">
+  <div class="card">
+    <h2>来源切换</h2>
+    <div class="chips" id="trendSrcChips"></div>
+  </div>
+  <div class="card">
+    <h2>趋势 KPI</h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">区间变化 Δ</div></div>
+      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">平均值</div></div>
+      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">最低</div></div>
+      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">最高</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>折线图</h2>
+    <div class="bar" id="trendBar"></div>
+    <p class="note" id="trendNote"></p>
+  </div>
+</div>
+
+<div id="compareMode" style="display:none">
+  <div class="card">
+    <h2>对比结果</h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v" id="cDelta">—</div><div class="l">均值差 Δ</div></div>
+      <div class="kpi"><div class="v" id="cPct">—</div><div class="l">变化率</div></div>
+    </div>
+    <p class="note" id="cNote"></p>
+  </div>
+  <div class="card">
+    <h2>两段时间</h2>
+    <table>
+      <thead><tr><th></th><th>均值</th><th>最低</th><th>最高</th><th>记录数</th></tr></thead>
+      <tbody id="cBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!--INJECT-DATA-->
+<script>
+const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+const D = DATA && DATA.data || {};
+const SRC_LABELS = D.source_labels || {};
+
+function esc(s) { return String(s == null ? '—' : s); }
+
+if (D.mode === 'list') {
+  document.getElementById('sceneTitle').textContent = '看体脂';
+  document.getElementById('sceneSub').textContent = '历史记录 + 来源筛选';
+  document.getElementById('listMode').style.display = '';
+  const cur = D.current;
+  if (cur) {
+    document.getElementById('curBf').textContent = cur.body_fat_pct;
+    document.getElementById('curDate').textContent = cur.date;
+    document.getElementById('curSrc').textContent = SRC_LABELS[cur.source] || cur.source;
+    document.getElementById('curBadge').textContent = '最新';
+  }
+  const chips = document.getElementById('srcChips');
+  const groups = D.filter.groups || [];
+  const active = D.filter.active;
+  const mkChip = (v, label, n) => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (v === active ? ' active' : '');
+    c.textContent = `${label} (${n})`;
+    c.onclick = () => { location.search = v && v !== 'all' ? `?source=${v}` : '?'; };
+    return c;
+  };
+  chips.appendChild(mkChip('all', '全部', (groups.reduce((s, g) => s + g.n, 0))));
+  groups.forEach(g => chips.appendChild(mkChip(g.value, g.label, g.n)));
+  const wrap = document.getElementById('histTableWrap');
+  if (!D.rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; }
+  else {
+    let html = '<table><thead><tr><th>日期</th><th>体脂率</th><th>来源</th><th>备注</th></tr></thead><tbody>';
+    D.rows.forEach(r => {
+      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.body_fat_pct)}%</td><td>${esc(SRC_LABELS[r.source] || r.source)}</td><td>${esc(r.note)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+}
+
+if (D.mode === 'trend') {
+  document.getElementById('sceneTitle').textContent = '看体脂趋势';
+  document.getElementById('sceneSub').textContent = `折线(单来源: ${SRC_LABELS[D.source] || D.source}) + KPI`;
+  document.getElementById('trendMode').style.display = '';
+  const kpi = D.kpi || {};
+  const dEl = document.getElementById('tDelta');
+  dEl.textContent = kpi.delta == null ? '—' : kpi.delta;
+  if (kpi.delta != null) { dEl.classList.add(kpi.delta < 0 ? 'down' : 'up'); }
+  document.getElementById('tAvg').textContent = kpi.avg == null ? '—' : kpi.avg;
+  document.getElementById('tMin').textContent = kpi.min == null ? '—' : kpi.min;
+  document.getElementById('tMax').textContent = kpi.max == null ? '—' : kpi.max;
+  const chips = document.getElementById('trendSrcChips');
+  Object.keys(SRC_LABELS).forEach(s => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (s === D.source ? ' active' : '');
+    c.textContent = SRC_LABELS[s];
+    c.onclick = () => { location.search = `?mode=trend&source=${s}`; };
+    chips.appendChild(c);
+  });
+  const bar = document.getElementById('trendBar');
+  if (!D.rows.length) {
+    document.getElementById('trendNote').textContent = '该来源暂无趋势数据';
+  } else {
+    const vals = D.rows.map(r => r.avg_pct);
+    const mx = Math.max(...vals), mn = Math.min(...vals);
+    const rng = (mx - mn) || 1;
+    D.rows.forEach(r => {
+      const h = 8 + ((r.avg_pct - mn) / rng) * 160;
+      const div = document.createElement('div');
+      div.style.height = h + 'px';
+      div.innerHTML = `<span>${r.avg_pct}</span>`;
+      div.title = `${r.date}: ${r.avg_pct}% (n=${r.n})`;
+      bar.appendChild(div);
+    });
+    document.getElementById('trendNote').textContent =
+      `${D.rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[D.source] || D.source}`;
+  }
+}
+
+if (D.mode === 'compare') {
+  document.getElementById('sceneTitle').textContent = '对比体脂';
+  document.getElementById('sceneSub').textContent = D.same_source_note || '两次测量对比';
+  document.getElementById('compareMode').style.display = '';
+  const dEl = document.getElementById('cDelta');
+  dEl.textContent = D.delta == null ? '—' : D.delta;
+  if (D.delta != null) { dEl.classList.add(D.delta < 0 ? 'down' : 'up'); }
+  document.getElementById('cPct').textContent = D.pct_change == null ? '—' : D.pct_change + '%';
+  document.getElementById('cNote').textContent =
+    `第 1 段 ${D.period1.start} ~ ${D.period1.end} · 第 2 段 ${D.period2.start} ~ ${D.period2.end} · 来源: ${D.source === 'all' ? '全部(不可直接比)' : (SRC_LABELS[D.source] || D.source)}`;
+  const body = document.getElementById('cBody');
+  [['第 1 段', D.period1], ['第 2 段', D.period2]].forEach(([label, p]) => {
+    body.innerHTML += `<tr><td><strong>${label}</strong></td><td>${esc(p.avg_pct)}</td><td>${esc(p.min_pct)}</td><td>${esc(p.max_pct)}</td><td>${esc(p.n)}</td></tr>`;
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>围度 · 卡路里</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
+    --green: #34c759;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 760px; margin: 0 auto; padding: 32px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .kpi-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .kpi { flex: 1; min-width: 90px; background: var(--soft); border-radius: 10px; padding: 10px 12px; text-align: center; }
+  .kpi .v { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .kpi .l { font-size: 12px; color: var(--fg3); margin-top: 2px; }
+  .kpi .v.down { color: var(--green); }
+  .kpi .v.up { color: var(--red); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: 13px; cursor: pointer; color: var(--fg2); }
+  .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--fg3); font-weight: 500; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  .empty { text-align: center; color: var(--fg3); padding: 24px 0; font-size: 14px; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll table { min-width: 560px; }
+  .tip { background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--fg2); }
+  .note { font-size: 12px; color: var(--fg3); margin-top: 6px; }
+  .delta { font-weight: 700; }
+  .delta.neg { color: var(--green); }
+  .delta.pos { color: var(--red); }
+  .bar { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
+  .bar div { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
+  .bar div span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--fg3); }
+</style>
+</head>
+<body>
+
+<h1 id="sceneTitle">围度</h1>
+<p class="sub" id="sceneSub"></p>
+
+<div id="listMode">
+  <div class="card">
+    <h2>部位筛选</h2>
+    <div class="chips" id="metricChips"></div>
+    <div class="tip">只看某部位的历史:选中部位后仅显示该部位非空的测量日。</div>
+  </div>
+  <div class="card">
+    <h2>历史记录</h2>
+    <div id="histTableWrap"></div>
+  </div>
+</div>
+
+<div id="trendMode" style="display:none">
+  <div class="card">
+    <h2>趋势 KPI</h2>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">区间变化 Δ</div></div>
+      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">平均值</div></div>
+      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">最低</div></div>
+      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">最高</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>折线图</h2>
+    <div class="bar" id="trendBar"></div>
+    <p class="note" id="trendNote"></p>
+  </div>
+</div>
+
+<div id="compareMode" style="display:none">
+  <div class="card">
+    <h2>13 项围度变化</h2>
+    <div id="compareWrap"></div>
+  </div>
+</div>
+
+<!--INJECT-DATA-->
+<script>
+const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+const D = DATA && DATA.data || {};
+
+function esc(s) { return String(s == null ? '—' : s); }
+function deltaClass(v) { return v < 0 ? 'neg' : (v > 0 ? 'pos' : ''); }
+function deltaSign(v) { return v > 0 ? '+' + v : v; }
+
+if (D.mode === 'list') {
+  document.getElementById('sceneTitle').textContent = '看围度';
+  document.getElementById('sceneSub').textContent = '历史记录 + 部位筛选';
+  document.getElementById('listMode').style.display = '';
+  const chips = document.getElementById('metricChips');
+  const all = document.createElement('button');
+  all.className = 'chip' + (!D.filter.active ? ' active' : '');
+  all.textContent = '全部';
+  all.onclick = () => { location.search = '?'; };
+  chips.appendChild(all);
+  (D.filter.items || []).forEach(it => {
+    const c = document.createElement('button');
+    c.className = 'chip' + (it.value === D.filter.active ? ' active' : '');
+    c.textContent = `${it.label} (${it.n})`;
+    c.onclick = () => { location.search = `?metric=${it.value}`; };
+    chips.appendChild(c);
+  });
+  const wrap = document.getElementById('histTableWrap');
+  if (!D.rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; }
+  else {
+    let html = '<table><thead><tr><th>日期</th>';
+    const cols = Object.keys(D.metric_labels);
+    cols.forEach(c => { html += `<th>${D.metric_labels[c]}(cm)</th>`; });
+    html += '<th>备注</th></tr></thead><tbody>';
+    D.rows.forEach(r => {
+      html += `<tr><td>${esc(r.date)}</td>`;
+      cols.forEach(c => { html += `<td>${r[c] == null ? '—' : esc(r[c])}</td>`; });
+      html += `<td>${esc(r.note)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
+  }
+}
+
+if (D.mode === 'trend') {
+  document.getElementById('sceneTitle').textContent = '看围度趋势';
+  document.getElementById('sceneSub').textContent = `${D.metric_label} 走势(最近 ${D.days} 天)`;
+  document.getElementById('trendMode').style.display = '';
+  const kpi = D.kpi || {};
+  const dEl = document.getElementById('tDelta');
+  dEl.textContent = kpi.delta == null ? '—' : kpi.delta;
+  if (kpi.delta != null) { dEl.classList.add(kpi.delta < 0 ? 'down' : 'up'); }
+  document.getElementById('tAvg').textContent = kpi.avg == null ? '—' : kpi.avg;
+  document.getElementById('tMin').textContent = kpi.min == null ? '—' : kpi.min;
+  document.getElementById('tMax').textContent = kpi.max == null ? '—' : kpi.max;
+  const bar = document.getElementById('trendBar');
+  if (!D.rows.length) {
+    document.getElementById('trendNote').textContent = '该部位暂无趋势数据';
+  } else {
+    const vals = D.rows.map(r => r.avg_val);
+    const mx = Math.max(...vals), mn = Math.min(...vals);
+    const rng = (mx - mn) || 1;
+    D.rows.forEach(r => {
+      const h = 8 + ((r.avg_val - mn) / rng) * 160;
+      const div = document.createElement('div');
+      div.style.height = h + 'px';
+      div.innerHTML = `<span>${r.avg_val}</span>`;
+      div.title = `${r.date}: ${r.avg_val}cm`;
+      bar.appendChild(div);
+    });
+    document.getElementById('trendNote').textContent = `${D.rows.length} 个测量日 · ${D.metric_label}`;
+  }
+}
+
+if (D.mode === 'compare') {
+  document.getElementById('sceneTitle').textContent = '对比围度';
+  document.getElementById('sceneSub').textContent = `${D.date1} vs ${D.date2}`;
+  document.getElementById('compareMode').style.display = '';
+  const wrap = document.getElementById('compareWrap');
+  if (D.error) { wrap.innerHTML = `<div class="empty">${esc(D.error)}</div>`; }
+  else if (!D.deltas || !D.deltas.length) { wrap.innerHTML = '<div class="empty">两个日期无共同可对比部位</div>'; }
+  else {
+    let html = `<div class="tip">共 ${D.n_compared} 项可对比(变化最大在前)</div><table><thead><tr><th>部位</th><th>${esc(D.date1)}(cm)</th><th>${esc(D.date2)}(cm)</th><th>Δ(cm)</th><th>变化率</th></tr></thead><tbody>`;
+    D.deltas.forEach(d => {
+      html += `<tr><td>${d.label}</td><td>${d.before}</td><td>${d.after}</td>` +
+              `<td class="delta ${deltaClass(d.delta)}">${deltaSign(d.delta)}</td>` +
+              `<td class="delta ${deltaClass(d.delta)}">${d.pct == null ? '—' : deltaSign(d.pct) + '%'}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+}
+</script>
+</body>
+</html>

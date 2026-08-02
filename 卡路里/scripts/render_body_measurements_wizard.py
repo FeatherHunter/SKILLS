@@ -128,6 +128,7 @@ def main():
               'left_arm_cm','right_arm_cm','left_forearm_cm','right_forearm_cm']:
         p.add_argument(f'--{f.replace("_","-")}', dest=f, type=float,
                        help=f'预填 {f}(cm)')
+    p.add_argument('--metric', help='trend 视图部位(cli 名,如 waist-cm;trend 视图必填)')
     p.add_argument('--note', help='预填 note')
     args = p.parse_args()
 

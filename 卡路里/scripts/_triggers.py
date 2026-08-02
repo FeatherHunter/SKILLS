@@ -812,7 +812,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_comp_list', 'name': '看体脂', 'subfunction': '看身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --view list --source <皮褶钳/健身房/医院/全部>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode list --source <皮褶钳/健身房/医院/全部>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '我想看历史体脂记录并可按来源筛选', 'data_fields': ['date', 'body_fat_pct', 'source', 'source_filter', 'current'],
             'depends_on_external': False, 'order': 0},
     {
@@ -822,7 +822,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_comp_trend', 'name': '看体脂趋势', 'subfunction': '看身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --view trend --source <默认最近来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode trend --source <默认最近来源> --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '我想看体脂率趋势(默认最近来源,可切换)', 'data_fields': ['source', 'trend', 'delta', 'avg', 'min'],
             'depends_on_external': False, 'order': 1},
     {
@@ -832,7 +832,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_meas_list', 'name': '看围度', 'subfunction': '看身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --view list --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode list --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '我想看历史围度记录并可按部位筛选', 'data_fields': ['date', 'measurements', 'metric_filter'],
             'depends_on_external': False, 'order': 2},
     {
@@ -842,7 +842,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_meas_trend', 'name': '看围度趋势', 'subfunction': '看身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --view trend --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode trend --metric <部位> --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '我想看某部位围度的变化趋势', 'data_fields': ['metric', 'trend', 'delta_summary'],
             'depends_on_external': False, 'order': 3},
     {
@@ -852,7 +852,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_comp_compare', 'name': '对比体脂', 'subfunction': '比身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/body_composition.py compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> --source <来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> --source <来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____',
             'user_intent': '我想对比两段时间的体脂变化', 'data_fields': ['period1', 'period2', 'delta', 'pct_change', 'source'],
             'depends_on_external': False, 'order': 0},
     {
@@ -862,7 +862,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_meas_compare', 'name': '对比围度', 'subfunction': '比身体细节', 'output_type': 'result',
-            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/body_measurements.py compare --date1 <D1> --date2 <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____',
             'user_intent': '我想对比两个日期的围度变化', 'data_fields': ['date1', 'date2', 'deltas'],
             'depends_on_external': False, 'order': 1},
     {
@@ -872,7 +872,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_comp_delete', 'name': '删体脂', 'subfunction': '删身体细节', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/body_composition.py delete --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_body_delete_receipt.py --entity composition --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
             'user_intent': '我想删除一条体脂记录', 'data_fields': ['id', 'date', 'body_fat_pct', 'source', 'snapshot'],
             'depends_on_external': False, 'order': 0},
     {
@@ -882,7 +882,7 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': [],
             'key': 'body_meas_delete', 'name': '删围度', 'subfunction': '删身体细节', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/body_measurements.py delete --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_body_delete_receipt.py --entity measurements --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
             'user_intent': '我想删除一条围度记录', 'data_fields': ['id', 'date', 'measurements', 'snapshot'],
             'depends_on_external': False, 'order': 1},
     {

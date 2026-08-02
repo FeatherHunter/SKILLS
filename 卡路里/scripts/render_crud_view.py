@@ -106,7 +106,8 @@ def build_data(entity_type):
                 'raw': {**prof_d, 'weight': weight_d} if weight_d else prof_d,
                 'meta': {
                     'fetched_at': datetime.now().isoformat(timespec='seconds')[:16].replace('T', ' '),
-                    'source': 'user_profile + weight_log (latest)'
+                    'source': 'user_profile + weight_log (latest)',
+                    'wake_word': '查档案',   # 自描述:渲染器知道自己在服务哪个唤醒词(2026-08-02)
                 }
             },
             'message': '已生成查档案 报告'
@@ -134,13 +135,18 @@ def main():
         else:
             print('❌ 需要 --mock 或 --entity', file=sys.stderr)
             return 1
-        # 调试元数据注入(不进 UI,复制日志可带出)
+        # 调试元数据注入(不进 UI,复制日志可带出;2026-08-02 自描述改进)
         meta = data['data']['meta']
         if args.chain:
             meta['chain'] = args.chain
-        if args.wake_word:
+        if args.wake_word:   # 显式传参覆盖渲染器自推断
             meta['wake_word'] = args.wake_word
-        meta['render_cmd'] = ' '.join(sys.argv[1:])
+        # 完整可复现命令:python scripts/render_crud_view.py <args>(含脚本名,2026-08-02)
+        argv = sys.argv[1:]
+        if '--output' in argv:
+            i = argv.index('--output')
+            argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
+        meta['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(argv)
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

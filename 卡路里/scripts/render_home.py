@@ -64,6 +64,28 @@ def build_today_status(target_date: str) -> dict:
     delta_7d = round(latest_kg - prev[0], 1) if latest_kg is not None and prev else None
     goal_diff = round(latest_kg - goal_kg, 1) if latest_kg is not None and goal_kg is not None else None
 
+    # 健身计划待办对接(2026-08-02 · ticket #6 Success Criteria #5):今日有训练计划但实绩不足 → 待办
+    workout_todo = False
+    try:
+        from workout_plan import calc_plan_week, get_plan_config
+        cfg = get_plan_config()
+        if cfg:
+            td = date.fromisoformat(target_date)
+            wn = calc_plan_week(td, cfg)
+            if wn is not None:
+                c.execute('''
+                    SELECT COALESCE(SUM(total_sets),0) FROM workout_plans
+                    WHERE week_number=? AND day_of_week=? AND is_rest_day=0
+                ''', (wn, td.isoweekday()))
+                plan_sets = c.fetchone()[0]
+                if plan_sets > 0:
+                    c.execute('SELECT COUNT(*) FROM exercise_log WHERE date = ?', (target_date,))
+                    done_sets = c.fetchone()[0]
+                    if done_sets < plan_sets:
+                        workout_todo = True
+    except Exception:
+        pass  # 计划未配置/异常时静默跳过,不影响主页
+
     conn.close()
 
     todo = []
@@ -75,6 +97,8 @@ def build_today_status(target_date: str) -> dict:
         todo.append({'key': 'exercise', 'label': '记录运动', 'priority': 'low'})
     if weight_count == 0:
         todo.append({'key': 'weight', 'label': '记录体重', 'priority': 'low'})
+    if workout_todo:
+        todo.append({'key': 'workout', 'label': '完成今日训练', 'priority': 'high'})
 
     return {
         'food': {'count': food_count, 'calories': int(food_cal)},
@@ -82,6 +106,7 @@ def build_today_status(target_date: str) -> dict:
         'exercise': {'count': exercise_count, 'calories': int(exercise_cal)},
         'weight': {'count': weight_count, 'latest_kg': latest_kg, 'goal_kg': goal_kg,
                    'goal_diff': goal_diff, 'delta_7d': delta_7d},
+        'workout': {'todo': workout_todo},
         'todo': todo,
     }
 

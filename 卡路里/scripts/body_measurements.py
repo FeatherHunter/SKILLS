@@ -1,6 +1,6 @@
 """body_measurements CLI(V1.0 §02 第 ④ 接口层)
 
-4 子命令: add / list / delete / trend
+5 子命令: add / list / delete / trend / compare(2026-08-02 · ticket #9 对比围度)
 V1.0 §02 第 ⑧ 反模式消除: --as-dict 返回 {status, data, message}
 V1.0 §02 第 ① 数据层: 13 围度列(chest/waist/abdomen/hip/thigh×2/calf×2/arm×2/forearm×2/shoulder)
 """
@@ -67,9 +67,14 @@ def cmd_list(args):
     try:
         cur = c.cursor()
         params = []
-        sql = "SELECT id, date FROM body_measurements WHERE is_deprecated = 0"
+        all_cols = ['id', 'date'] + MEASUREMENT_FIELDS + ['note']
+        sql = "SELECT " + ', '.join(all_cols) + " FROM body_measurements WHERE is_deprecated = 0"
         date_from = getattr(args, 'date_from', None)
         date_to = getattr(args, 'date_to', None)
+        metric = getattr(args, 'metric', None)
+        if metric:
+            col = METRIC_CLI[metric]
+            sql += f" AND {col} IS NOT NULL"
         if date_from and date_to:
             sql += " AND date >= ? AND date <= ?"
             params.extend([date_from, date_to])
@@ -78,10 +83,14 @@ def cmd_list(args):
             sql += " AND date >= ?"
             params.append(since)
         sql += " ORDER BY date DESC, id DESC"
+        limit = getattr(args, 'limit', None)
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
         cur.execute(sql, params)
-        rows = [dict(zip(['id', 'date'], r)) for r in cur.fetchall()]
+        rows = [dict(zip(all_cols, r)) for r in cur.fetchall()]
         return {'status': 'ok', 'data': rows,
-                'message': f'共 {len(rows)} 条 body_measurements'}
+                'message': f'共 {len(rows)} 条 body_measurements' + (f' (metric={metric})' if metric else '')}
     finally:
         c.close()
 
@@ -122,6 +131,40 @@ def cmd_trend(args):
         c.close()
 
 
+def cmd_compare(args):
+    """对比两个日期的围度:13 项各自的 Δ(取两日期各最近一条)"""
+    c = _get_conn()
+    try:
+        cur = c.cursor()
+        def _snapshot(day):
+            cols = ['id'] + MEASUREMENT_FIELDS
+            r = cur.execute(f"""
+                SELECT {', '.join(cols)} FROM body_measurements
+                WHERE is_deprecated = 0 AND date = ?
+                ORDER BY id DESC LIMIT 1
+            """, (day,)).fetchone()
+            if not r:
+                return None
+            return dict(zip(cols, r))
+        snap1 = _snapshot(args.date1)
+        snap2 = _snapshot(args.date2)
+        if not snap1:
+            return {'status': 'fail', 'data': None, 'message': f'{args.date1} 无围度记录'}
+        if not snap2:
+            return {'status': 'fail', 'data': None, 'message': f'{args.date2} 无围度记录'}
+        deltas = {}
+        for f in MEASUREMENT_FIELDS:
+            v1, v2 = snap1.get(f), snap2.get(f)
+            if v1 is not None and v2 is not None:
+                deltas[f] = {'before': v1, 'after': v2, 'delta': round(v2 - v1, 2)}
+        return {'status': 'ok', 'data': {
+            'date1': args.date1, 'date2': args.date2,
+            'deltas': deltas, 'n_compared': len(deltas),
+        }, 'message': f'对比完成:共 {len(deltas)} 项可对比'}
+    finally:
+        c.close()
+
+
 def build_parser():
     p = argparse.ArgumentParser(description='body_measurements CLI')
     p.add_argument('--as-dict', action='store_true', help='输出 JSON (V1.0 第 ⑧ 反模式消除)')
@@ -138,6 +181,8 @@ def build_parser():
     pl.add_argument('--days', type=int, default=30)
     pl.add_argument('--date-from', dest='date_from')
     pl.add_argument('--date-to', dest='date_to')
+    pl.add_argument('--metric', choices=list(METRIC_CLI.keys()), help='按部位筛选(只返回该部位非空的记录)')
+    pl.add_argument('--limit', type=int, help='最多返回条数')
     pl.set_defaults(func=cmd_list)
 
     pd = sub.add_parser('delete', help='软删除围度记录')
@@ -148,13 +193,19 @@ def build_parser():
     pt.add_argument('--metric', choices=list(METRIC_CLI.keys()))
     pt.add_argument('--days', type=int, default=30)
     pt.set_defaults(func=cmd_trend)
+
+    pc = sub.add_parser('compare', help='对比两个日期围度(13 项 Δ)')
+    pc.add_argument('--date1', required=True)
+    pc.add_argument('--date2', required=True)
+    pc.set_defaults(func=cmd_compare)
     return p
 
 
 _ADD_FLAGS = {'--date'} | {f'--{cli}' for cli in METRIC_CLI} | {'--note'}
-_LIST_FLAGS = {'--date-from', '--date-to'}
+_LIST_FLAGS = {'--date-from', '--date-to', '--limit'}
 _DELETE_FLAGS = {'--id'}
 _TREND_FLAGS = {'--metric', '--days'}
+_COMPARE_FLAGS = {'--date1', '--date2'}
 
 
 def _infer_subcommand(argv):
@@ -163,6 +214,8 @@ def _infer_subcommand(argv):
         return 'add'
     if flags & _DELETE_FLAGS:
         return 'delete'
+    if flags & _COMPARE_FLAGS:
+        return 'compare'
     if flags & _LIST_FLAGS:
         return 'list'
     if flags & _TREND_FLAGS:
@@ -174,7 +227,7 @@ def parse_args(argv=None):
     parser = build_parser()
     if argv is None:
         argv = sys.argv[1:]
-    subcmds = {'add', 'list', 'delete', 'trend'}
+    subcmds = {'add', 'list', 'delete', 'trend', 'compare'}
     as_dict = '--as-dict' in argv
     argv = [a for a in argv if a != '--as-dict']
     if argv and argv[0] not in subcmds:

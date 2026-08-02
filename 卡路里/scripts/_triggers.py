@@ -25,6 +25,8 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
   (category='目标管理', 含 output_type/html_template/data_fields 等,render_help_center 透传)
 - ✅ **基础信息 4 场景已同步**(2026-08-02 · ticket #8):设置档案 / 设活动量 / 改档案 / 查档案
   (category='基础信息', 新 13 字段 scene 格式,替换旧综合分类 设置档案/查档案)
+- ✅ **身体细节 13 场景已同步**(2026-08-02 · ticket #9):记体脂（皮褶钳）/记体脂（外部测量）/记围度/补记体脂/补记围度/看体脂/看体脂趋势/看围度/看围度趋势/对比体脂/对比围度/删体脂/删围度
+  (category='身体细节', 新 13 字段 scene 格式,替换旧身体成分/围度 8 条)
 - ⏳ 其余分类仍为旧版运行时数据,待各自分类 ticket 同步。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
@@ -90,8 +92,7 @@ CATEGORIES = [
     ('📊', '分析',          'analysis'),
     ('📋', '综合',          'general'),
     ('🔄', '复盘',          'review'),
-    ('🧬', '身体成分',      'body_comp'),
-    ('📏', '围度',          'body_measure'),
+    ('🧬', '身体细节',      'body_detail'),
     ('📸', '身材照片',      'body_photo'),
     ('🎯', '目标管理',      'goal'),
     ('🛠', '基础信息',      'profile'),
@@ -755,53 +756,135 @@ TRIGGERS = [
             'fill_hints': [],
             'variants': []},
     {
-            'category': '身体成分',     'wake_word': '记体脂',     'desc': '皮褶钳测 7 点(Jackson-Pollock 自动算体脂率)',
+            'category': '身体细节',     'wake_word': '记体脂（皮褶钳）',     'desc': '皮褶钳测 7 点(Jackson-Pollock 自动算体脂率)',
             'main_prompt': {
-        'cli': 'python scripts/body_composition.py add ... → HTML:body_composition_wizard.html', 'text': '请你加载技能 卡路里,执行唤醒词「记体脂」。\n\n我用皮褶钳测了 7 点(胸/腹/大腿/三头/肩胛下/髂上/腋中 mm),给我算体脂率。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['胸 mm: ', '腹 mm: ', '大腿 mm: ', '三头 mm: ', '肩胛下 mm: ', '髂上 mm: ', '腋中 mm: '],
-            'variants': []},
+        'cli': 'python scripts/body_composition.py add ...', 'text': '请你加载技能 卡路里,执行唤醒词「记体脂（皮褶钳）」。\n\n我用皮褶钳测了 7 点(胸/腹/大腿/三头/肩胛下/髂上/腋中 mm),请按 Jackson-Pollock 7 点法帮我算体脂率并记录。如果我没说性别/年龄,请先问我。完成后给 1 句话总结,不需要过多文字解释。\n\n7 点皮褶厚度(mm):\n胸:____\n腹:____\n大腿:____\n三头:____\n肩胛下:____\n髂上:____\n腋中:____\n性别(男/女):____\n年龄:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_add_caliper', 'name': '记体脂（皮褶钳）', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --caliper-chest-mm <C> --caliper-abdominal-mm <A> --caliper-thigh-mm <T> --caliper-tricep-mm <T> --caliper-subscapular-mm <S> --caliper-suprailiac-mm <I> --caliper-midaxillary-mm <M> --age <A> --sex <男/女>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体脂（皮褶钳）」。\n\n我用皮褶钳测了 7 点(胸/腹/大腿/三头/肩胛下/髂上/腋中 mm),请按 Jackson-Pollock 7 点法帮我算体脂率并记录。如果我没说性别/年龄,请先问我。完成后给 1 句话总结,不需要过多文字解释。\n\n7 点皮褶厚度(mm):\n胸:____\n腹:____\n大腿:____\n三头:____\n肩胛下:____\n髂上:____\n腋中:____\n性别(男/女):____\n年龄:____',
+            'user_intent': '我想用手持皮褶钳测 7 点并自动算体脂率存档', 'data_fields': ['caliper_chest_mm', 'caliper_abdominal_mm', 'caliper_thigh_mm', 'caliper_tricep_mm', 'caliper_subscapular_mm', 'caliper_suprailiac_mm', 'caliper_midaxillary_mm', 'body_fat_pct', 'age', 'sex', 'source'],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '身体成分',     'wake_word': '查体脂',     'desc': '历史体脂记录',
+            'category': '身体细节',     'wake_word': '记体脂（外部测量）',     'desc': '外部设备(健身房/医院/其他)测体脂率',
             'main_prompt': {
-        'cli': 'python scripts/render_body_composition_wizard.py → list 视图', 'text': '请你加载技能 卡路里,执行唤醒词「查体脂」。\n\n我想看历史体脂测量记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_composition.py add --source gym ...', 'text': '请你加载技能 卡路里,执行唤醒词「记体脂（外部测量）」。\n\n我用外部设备(健身房 InBody/医院/其他)测了体脂率,请帮我记录体脂率和来源、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(健身房/医院/其他):____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_add_external', 'name': '记体脂（外部测量）', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --source <健身房/医院/其他> --body-fat-pct <P> --date <D>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体脂（外部测量）」。\n\n我用外部设备(健身房 InBody/医院/其他)测了体脂率,请帮我记录体脂率和来源、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(健身房/医院/其他):____\n日期:____',
+            'user_intent': '我想记录外部设备(健身房/医院)测的体脂率', 'data_fields': ['body_fat_pct', 'source', 'date'],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '身体成分',     'wake_word': '查体脂趋势',     'desc': '体脂率时间线',
+            'category': '身体细节',     'wake_word': '记围度',     'desc': '13 部位围度入库:上身 5 + 下身 4 + 手臂 4,cm 单位',
             'main_prompt': {
-        'cli': 'python scripts/body_composition.py trend', 'text': '请你加载技能 卡路里,执行唤醒词「查体脂趋势」。\n\n我想看体脂率走势时间线。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_measurements.py add ...', 'text': '请你加载技能 卡路里,执行唤醒词「记围度」。\n\n我量了身体围度,请帮我记录 13 项围度(胸/腰/腹/臀/肩/大腿/小腿/手臂/前臂,左+右),量了哪项填哪项,没量的留空。完成后给 1 句话总结,不需要过多文字解释。\n\n胸围(cm):____\n腰围(cm):____\n腹围(cm):____\n臀围(cm):____\n肩围(cm):____\n左大腿(cm):____\n右大腿(cm):____\n左小腿(cm):____\n右小腿(cm):____\n左上臂(cm):____\n右上臂(cm):____\n左前臂(cm):____\n右前臂(cm):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_add', 'name': '记围度', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --chest-cm <C> --waist-cm <W> --abdomen-cm <A> --hip-cm <H> --shoulder-cm <S> --left-thigh-cm <LT> --right-thigh-cm <RT> --left-calf-cm <LC> --right-calf-cm <RC> --left-arm-cm <LA> --right-arm-cm <RA> --left-forearm-cm <LF> --right-forearm-cm <RF>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记围度」。\n\n我量了身体围度,请帮我记录 13 项围度(胸/腰/腹/臀/肩/大腿/小腿/手臂/前臂,左+右),量了哪项填哪项,没量的留空。完成后给 1 句话总结,不需要过多文字解释。\n\n胸围(cm):____\n腰围(cm):____\n腹围(cm):____\n臀围(cm):____\n肩围(cm):____\n左大腿(cm):____\n右大腿(cm):____\n左小腿(cm):____\n右小腿(cm):____\n左上臂(cm):____\n右上臂(cm):____\n左前臂(cm):____\n右前臂(cm):____',
+            'user_intent': '我想记录身体围度(13 项,可部分填写)', 'data_fields': ['chest_cm', 'waist_cm', 'abdomen_cm', 'hip_cm', 'shoulder_cm', 'left_thigh_cm', 'right_thigh_cm', 'left_calf_cm', 'right_calf_cm', 'left_arm_cm', 'right_arm_cm', 'left_forearm_cm', 'right_forearm_cm', 'date'],
+            'depends_on_external': False, 'order': 2},
     {
-            'category': '身体成分',     'wake_word': '删体脂',     'desc': '软删除体脂记录',
+            'category': '身体细节',     'wake_word': '补记体脂',     'desc': '补录历史某天体脂(冲突提示 + 循环补其他日期)',
             'main_prompt': {
-        'cli': 'python scripts/body_composition.py delete <id> → HTML:crud_receipt.html', 'text': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删某条体脂记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_composition.py add --date <D> ...', 'text': '请你加载技能 卡路里,执行唤醒词「补记体脂」。\n\n我要补录之前某天的体脂测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(皮褶钳/健身房/医院/其他):____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_backfill', 'name': '补记体脂', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --date <D> --body-fat-pct <P> --source <皮褶钳/健身房/医院/其他>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记体脂」。\n\n我要补录之前某天的体脂测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(皮褶钳/健身房/医院/其他):____\n日期:____',
+            'user_intent': '我想补录过去某天的体脂测量', 'data_fields': ['date', 'body_fat_pct', 'source', 'conflict'],
+            'depends_on_external': False, 'order': 3},
     {
-            'category': '围度',     'wake_word': '记围度',     'desc': '13 部位围度入库:上身 5 + 下身 4 + 手臂 4,cm 单位',
+            'category': '身体细节',     'wake_word': '补记围度',     'desc': '补录历史某天围度(冲突提示 + 循环补其他日期)',
             'main_prompt': {
-        'cli': 'python scripts/render_body_measurements_wizard.py [--chest-cm ...]', 'text': '请你加载技能 卡路里,执行唤醒词「记围度」。\n\n我想录入 13 部位围度(胸/腰/臀/大腿/小腿/手臂/前臂/颈/肩,左+右)。如果我已经给了具体数字就用它们,如果没给就让我看到空 form。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-        'fill_hints': ['胸围 cm: ', '腰围 cm: ', '臀围 cm: ', '其他部位选填(大腿/小腿/手臂/前臂/颈/肩,左+右) cm: '],
-            'variants': []},
+        'cli': 'python scripts/body_measurements.py add --date <D> ...', 'text': '请你加载技能 卡路里,执行唤醒词「补记围度」。\n\n我要补录之前某天的围度测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n各围度(cm,量了哪项填哪项):\n胸围:____\n腰围:____\n腹围:____\n臀围:____\n肩围:____\n左大腿:____\n右大腿:____\n左小腿:____\n右小腿:____\n左上臂:____\n右上臂:____\n左前臂:____\n右前臂:____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_backfill', 'name': '补记围度', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --date <D> --waist-cm <W> --hip-cm <H>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记围度」。\n\n我要补录之前某天的围度测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n各围度(cm,量了哪项填哪项):\n胸围:____\n腰围:____\n腹围:____\n臀围:____\n肩围:____\n左大腿:____\n右大腿:____\n左小腿:____\n右小腿:____\n左上臂:____\n右上臂:____\n左前臂:____\n右前臂:____\n日期:____',
+            'user_intent': '我想补录过去某天的围度测量', 'data_fields': ['date', 'chest_cm', 'waist_cm', 'abdomen_cm', 'hip_cm', 'shoulder_cm', 'conflict'],
+            'depends_on_external': False, 'order': 4},
     {
-            'category': '围度',     'wake_word': '查围度',     'desc': '历史围度记录',
+            'category': '身体细节',     'wake_word': '看体脂',     'desc': '历史体脂记录 + 来源筛选',
             'main_prompt': {
-        'cli': 'python scripts/render_body_measurements_wizard.py → list 视图', 'text': '请你加载技能 卡路里,执行唤醒词「查围度」。\n\n我想看历史围度测量记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_composition.py list [--source <s>]', 'text': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_list', 'name': '看体脂', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --view list --source <皮褶钳/健身房/医院/全部>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看历史体脂记录并可按来源筛选', 'data_fields': ['date', 'body_fat_pct', 'source', 'source_filter', 'current'],
+            'depends_on_external': False, 'order': 0},
     {
-            'category': '围度',     'wake_word': '查围度趋势',     'desc': '单围度时间线',
+            'category': '身体细节',     'wake_word': '看体脂趋势',     'desc': '体脂率时间线(默认最近来源,可切换)',
             'main_prompt': {
-        'cli': 'python scripts/body_measurements.py trend --metric <col>', 'text': '请你加载技能 卡路里,执行唤醒词「查围度趋势」。\n\n我想看某一部位围度走势时间线。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_composition.py trend [--source <s>]', 'text': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_trend', 'name': '看体脂趋势', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --view trend --source <默认最近来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看体脂率趋势(默认最近来源,可切换)', 'data_fields': ['source', 'trend', 'delta', 'avg', 'min'],
+            'depends_on_external': False, 'order': 1},
     {
-            'category': '围度',     'wake_word': '删围度',     'desc': '软删除围度记录',
+            'category': '身体细节',     'wake_word': '看围度',     'desc': '历史围度记录 + 部位筛选',
             'main_prompt': {
-        'cli': 'python scripts/body_measurements.py delete <id> → HTML:crud_receipt.html', 'text': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删某条围度记录。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/body_measurements.py list [--metric <col>]', 'text': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_list', 'name': '看围度', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --view list --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看历史围度记录并可按部位筛选', 'data_fields': ['date', 'measurements', 'metric_filter'],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身体细节',     'wake_word': '看围度趋势',     'desc': '单围度时间线(先选部位)',
+            'main_prompt': {
+        'cli': 'python scripts/body_measurements.py trend --metric <col>', 'text': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_trend', 'name': '看围度趋势', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --view trend --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看某部位围度的变化趋势', 'data_fields': ['metric', 'trend', 'delta_summary'],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '身体细节',     'wake_word': '对比体脂',     'desc': '两段时间体脂对比(注明同来源)',
+            'main_prompt': {
+        'cli': 'python scripts/body_composition.py compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> [--source <s>]', 'text': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_compare', 'name': '对比体脂', 'subfunction': '比身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/body_composition.py compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> --source <来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____',
+            'user_intent': '我想对比两段时间的体脂变化', 'data_fields': ['period1', 'period2', 'delta', 'pct_change', 'source'],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '对比围度',     'desc': '两个日期围度对比(13 项 Δ)',
+            'main_prompt': {
+        'cli': 'python scripts/body_measurements.py compare --date1 <D1> --date2 <D2>', 'text': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_compare', 'name': '对比围度', 'subfunction': '比身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/body_measurements.py compare --date1 <D1> --date2 <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____',
+            'user_intent': '我想对比两个日期的围度变化', 'data_fields': ['date1', 'date2', 'deltas'],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身体细节',     'wake_word': '删体脂',     'desc': '软删除体脂记录(先列候选 → 快照确认 → 回执)',
+            'main_prompt': {
+        'cli': 'python scripts/body_composition.py delete --id <ID>', 'text': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_delete', 'name': '删体脂', 'subfunction': '删身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/body_composition.py delete --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '我想删除一条体脂记录', 'data_fields': ['id', 'date', 'body_fat_pct', 'source', 'snapshot'],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '删围度',     'desc': '软删除围度记录(先列候选 → 快照确认 → 回执)',
+            'main_prompt': {
+        'cli': 'python scripts/body_measurements.py delete --id <ID>', 'text': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_delete', 'name': '删围度', 'subfunction': '删身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/body_measurements.py delete --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '我想删除一条围度记录', 'data_fields': ['id', 'date', 'measurements', 'snapshot'],
+            'depends_on_external': False, 'order': 1},
     {
             'category': '身材照片',     'wake_word': '记身材照',     'desc': '记录身材照片',
             'main_prompt': {

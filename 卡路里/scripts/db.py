@@ -16,7 +16,7 @@ from pathlib import Path
 
 # V1.0 §02 第 ⑧ 反模式"魔法字符串"消除:body_composition.source 用集中常量
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from source_constants import SOURCE_HOME_CALIPER, SOURCE_HOSPITAL
+from source_constants import SOURCE_HOME_CALIPER, SOURCE_HOSPITAL, SOURCE_GYM, SOURCE_CHOICES
 
 
 DB_FILENAME = "calorie_data.db"
@@ -417,6 +417,53 @@ def init_db(db_path):
         )
     ''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_date ON body_composition(date)')
+
+    # 迁移:body_composition.source CHECK 加 gym(2026-08-02 · ticket #9 记体脂（外部测量）)
+    # SQLite 无法改 CHECK → 检测旧 CHECK(不含 gym)则表重建 + 数据迁移
+    _bc_sql = c.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name='body_composition'"
+    ).fetchone()
+    if _bc_sql and _bc_sql[0] and SOURCE_GYM not in _bc_sql[0]:
+        c.execute("""
+            CREATE TABLE body_composition_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                source TEXT NOT NULL CHECK (source IN ({choices})),
+                age INTEGER,
+                sex TEXT CHECK (sex IN ('male', 'female')),
+                caliper_chest_mm REAL NOT NULL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),
+                caliper_abdominal_mm REAL NOT NULL CHECK (caliper_abdominal_mm > 0 AND caliper_abdominal_mm < 100),
+                caliper_thigh_mm REAL NOT NULL CHECK (caliper_thigh_mm > 0 AND caliper_thigh_mm < 100),
+                caliper_tricep_mm REAL NOT NULL CHECK (caliper_tricep_mm > 0 AND caliper_tricep_mm < 100),
+                caliper_subscapular_mm REAL NOT NULL CHECK (caliper_subscapular_mm > 0 AND caliper_subscapular_mm < 100),
+                caliper_suprailiac_mm REAL NOT NULL CHECK (caliper_suprailiac_mm > 0 AND caliper_suprailiac_mm < 100),
+                caliper_midaxillary_mm REAL NOT NULL CHECK (caliper_midaxillary_mm > 0 AND caliper_midaxillary_mm < 100),
+                body_fat_pct REAL NOT NULL CHECK (body_fat_pct >= 0 AND body_fat_pct <= 60),
+                calculated_at TEXT,
+                note TEXT DEFAULT '',
+                is_deprecated INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """.format(choices=', '.join(repr(s) for s in SOURCE_CHOICES)))
+        c.execute('''
+            INSERT INTO body_composition_new (
+                id, date, source, age, sex,
+                caliper_chest_mm, caliper_abdominal_mm, caliper_thigh_mm, caliper_tricep_mm,
+                caliper_subscapular_mm, caliper_suprailiac_mm, caliper_midaxillary_mm,
+                body_fat_pct, calculated_at, note, is_deprecated, created_at, updated_at
+            ) SELECT id, date, source, age, sex,
+                caliper_chest_mm, caliper_abdominal_mm, caliper_thigh_mm, caliper_tricep_mm,
+                caliper_subscapular_mm, caliper_suprailiac_mm, caliper_midaxillary_mm,
+                body_fat_pct, calculated_at, note, is_deprecated, created_at, updated_at
+            FROM body_composition
+        ''')
+        c.execute('DROP TABLE body_composition')
+        c.execute('ALTER TABLE body_composition_new RENAME TO body_composition')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_date ON body_composition(date)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_source ON body_composition(source)')
+    else:
+        c.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_source ON body_composition(source)')
 
     # body_measurements — 围度（2026-07-25，V1.0 §02 第 ① 数据层）
     # 13 围度记录级必填(date + ≥1 围度)，列级 NULL OK + 条件 CHECK

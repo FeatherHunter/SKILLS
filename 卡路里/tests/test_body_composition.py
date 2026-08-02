@@ -56,7 +56,7 @@ def test_add_missing_caliper_fails(tmp_db):
 
 def test_list_returns_recent(tmp_db):
     bc.cmd_add(_valid_args())
-    args = bc.parse_args(['--days', '30'])
+    args = bc.parse_args(['trend', '--days', '30'])
     result = bc.cmd_list(args)
     assert result['status'] == 'ok'
     assert len(result['data']) >= 1
@@ -76,3 +76,50 @@ def test_delete_soft_deletes(tmp_db):
 def test_as_dict_flag_works():
     args = bc.parse_args(['--as-dict'])
     assert args.as_dict is True
+
+def test_list_source_filter(tmp_db):
+    bc.cmd_add(_valid_args(date='2026-07-20'))
+    bc.cmd_add(_valid_args(date='2026-07-25', source='gym'))
+    args = bc.parse_args(['list', '--days', '30', '--source', 'gym'])
+    result = bc.cmd_list(args)
+    assert result['status'] == 'ok'
+    assert len(result['data']) == 1
+    assert result['data'][0]['source'] == 'gym'
+
+
+def test_trend_default_uses_latest_source(tmp_db):
+    bc.cmd_add(_valid_args(date='2026-07-20'))
+    bc.cmd_add(_valid_args(date='2026-07-25', source='gym'))
+    args = bc.parse_args(['trend', '--days', '30'])
+    result = bc.cmd_trend(args)
+    assert result['status'] == 'ok'
+    assert 'source=gym' in result['message']
+
+
+def test_trend_explicit_source(tmp_db):
+    bc.cmd_add(_valid_args(date='2026-07-20'))
+    bc.cmd_add(_valid_args(date='2026-07-25', source='gym'))
+    args = bc.parse_args(['trend', '--days', '30', '--source', 'home_caliper'])
+    result = bc.cmd_trend(args)
+    assert result['status'] == 'ok'
+    assert 'source=home_caliper' in result['message']
+    assert len(result['data']) == 1
+
+
+def test_compare_two_periods(tmp_db):
+    bc.cmd_add(_valid_args(date='2026-07-10', body_fat_pct=20.0))
+    bc.cmd_add(_valid_args(date='2026-07-20', body_fat_pct=19.0))
+    bc.cmd_add(_valid_args(date='2026-07-28', body_fat_pct=18.0))
+    args = bc.parse_args(['--start1', '2026-07-01', '--end1', '2026-07-15',
+                          '--start2', '2026-07-21', '--end2', '2026-07-31'])
+    result = bc.cmd_compare(args)
+    assert result['status'] == 'ok'
+    d = result['data']
+    assert d['period1']['n'] == 1 and d['period1']['avg_pct'] == 20.0
+    assert d['period2']['n'] == 1 and d['period2']['avg_pct'] == 18.0
+    assert d['delta'] == -2.0
+
+
+def test_add_gym_source_succeeds(tmp_db):
+    result = bc.cmd_add(_valid_args(source='gym'))
+    assert result['status'] == 'ok'

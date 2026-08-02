@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_body_measurements_wizard.py — 记围度 wizard HTML 渲染器(v2.4.2)
 
-对应 SKILL.md 唤醒词:记围度 / 查围度 / 查围度趋势
+对应 SKILL.md 唤醒词:记围度 / 补记围度 / 看围度 / 看围度趋势 / 对比围度
 
 数据源:body_measurements 表最近 1 条(注入 wizard 顶部"上次"摘要,
 不自动填 input — 避免混淆"新/旧"值,用户主动点"复制上次"按钮)
@@ -118,6 +118,8 @@ def emit_send_protocol(output_path: Path):
 def main():
     p = argparse.ArgumentParser(description='渲染记围度 wizard HTML')
     p.add_argument('--output', help='输出文件路径')
+    p.add_argument('--view', choices=['form', 'list', 'trend', 'compare'], default='form',
+                   help='视图:form=录入表单(默认) / list=历史列表 / trend=趋势 / compare=对比(2026-08-02 ticket #9)')
     # 预填 args(场景 2:用户已给维度数字,AI 帮预填到 input)
     p.add_argument('--date', help='预填日期(YYYY-MM-DD)')
     p.add_argument('--tag', help='预填 tag')

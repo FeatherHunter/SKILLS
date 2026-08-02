@@ -1,6 +1,6 @@
 """body_composition CLI(V1.0 §02 第 ④ 接口层)
 
-4 子命令: add / list / delete / trend
+5 子命令: add / list / delete / trend / compare(2026-08-02 · ticket #9 对比体脂)
 V1.0 §02 第 ⑧ 反模式消除: source 用 source_constants 常量
 V1.0 §02 第 ⑧ 反模式消除: --as-dict 返回 {status, data, message}
 """
@@ -73,6 +73,10 @@ def cmd_list(args):
         sql = "SELECT id, date, source, body_fat_pct, note FROM body_composition WHERE is_deprecated = 0"
         date_from = getattr(args, 'date_from', None)
         date_to = getattr(args, 'date_to', None)
+        src = getattr(args, 'source', None)
+        if src:
+            sql += " AND source = ?"
+            params.append(src)
         if date_from and date_to:
             sql += " AND date >= ? AND date <= ?"
             params.extend([date_from, date_to])
@@ -81,10 +85,14 @@ def cmd_list(args):
             sql += " AND date >= ?"
             params.append(since)
         sql += " ORDER BY date DESC, id DESC"
+        limit = getattr(args, 'limit', None)
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
         cur.execute(sql, params)
         rows = [dict(zip(['id', 'date', 'source', 'body_fat_pct', 'note'], r)) for r in cur.fetchall()]
         return {'status': 'ok', 'data': rows,
-                'message': f'共 {len(rows)} 条 body_composition'}
+                'message': f'共 {len(rows)} 条 body_composition' + (f' (source={src})' if src else '')}
     finally:
         c.close()
 
@@ -102,20 +110,70 @@ def cmd_delete(args):
         c.close()
 
 
+def _latest_source(c):
+    """最近一次测量使用的 source(单来源趋势默认值)"""
+    row = c.execute("""
+        SELECT source FROM body_composition
+        WHERE is_deprecated = 0
+        ORDER BY date DESC, id DESC LIMIT 1
+    """).fetchone()
+    return row[0] if row else None
+
+
 def cmd_trend(args):
     c = _get_conn()
     try:
         cur = c.cursor()
+        src = getattr(args, 'source', None)
+        if not src:
+            src = _latest_source(c) or SOURCE_HOME_CALIPER
         since = (date.today() - timedelta(days=args.days)).isoformat()
         cur.execute("""
             SELECT date, AVG(body_fat_pct) AS avg_pct, COUNT(*) AS n
             FROM body_composition
             WHERE is_deprecated = 0 AND date >= ? AND source = ?
             GROUP BY date ORDER BY date ASC
-        """, (since, args.source))
+        """, (since, src))
         rows = [dict(zip(['date', 'avg_pct', 'n'], r)) for r in cur.fetchall()]
         return {'status': 'ok', 'data': rows,
-                'message': f'共 {len(rows)} 天体脂率趋势 (source={args.source})'}
+                'message': f'共 {len(rows)} 天体脂率趋势 (source={src})'}
+    finally:
+        c.close()
+
+
+def cmd_compare(args):
+    """对比两段时间的体脂:各自均值/最低/记录数 + Δ + 变化率(注明同来源)"""
+    c = _get_conn()
+    try:
+        cur = c.cursor()
+        src = getattr(args, 'source', None)
+        def _period(start, end):
+            params = [start, end]
+            sql = """
+                SELECT AVG(body_fat_pct) AS avg_pct, MIN(body_fat_pct) AS min_pct,
+                       COUNT(*) AS n
+                FROM body_composition
+                WHERE is_deprecated = 0 AND date >= ? AND date <= ?
+            """
+            if src:
+                sql += " AND source = ?"
+                params.append(src)
+            r = cur.execute(sql, params).fetchone()
+            return {'avg_pct': r[0], 'min_pct': r[1], 'n': r[2]}
+        p1 = _period(args.start1, args.end1)
+        p2 = _period(args.start2, args.end2)
+        delta = None
+        pct_change = None
+        if p1['avg_pct'] is not None and p2['avg_pct'] is not None:
+            delta = round(p2['avg_pct'] - p1['avg_pct'], 2)
+            if p1['avg_pct']:
+                pct_change = round((p2['avg_pct'] - p1['avg_pct']) / p1['avg_pct'] * 100, 2)
+        return {'status': 'ok', 'data': {
+            'period1': p1, 'period2': p2,
+            'delta': delta, 'pct_change': pct_change,
+            'source': src or 'all',
+            'same_source_note': '对比需同来源才有意义' if not src else f'同来源 {src} 对比',
+        }, 'message': '对比完成'}
     finally:
         c.close()
 
@@ -146,6 +204,8 @@ def build_parser():
     pl.add_argument('--days', type=int, default=30)
     pl.add_argument('--date-from', dest='date_from')
     pl.add_argument('--date-to', dest='date_to')
+    pl.add_argument('--source', choices=SOURCE_CHOICES, help='按来源筛选')
+    pl.add_argument('--limit', type=int, help='最多返回条数')
     pl.set_defaults(func=cmd_list)
 
     pd = sub.add_parser('delete', help='软删除体脂记录')
@@ -153,9 +213,17 @@ def build_parser():
     pd.set_defaults(func=cmd_delete)
 
     pt = sub.add_parser('trend', help='体脂趋势')
-    pt.add_argument('--source', default=SOURCE_HOME_CALIPER, choices=SOURCE_CHOICES)
+    pt.add_argument('--source', choices=SOURCE_CHOICES, help='默认=最近使用来源')
     pt.add_argument('--days', type=int, default=30)
     pt.set_defaults(func=cmd_trend)
+
+    pc = sub.add_parser('compare', help='对比两段时间体脂(同来源才有意义)')
+    pc.add_argument('--start1', required=True)
+    pc.add_argument('--end1', required=True)
+    pc.add_argument('--start2', required=True)
+    pc.add_argument('--end2', required=True)
+    pc.add_argument('--source', choices=SOURCE_CHOICES, help='限定同来源(默认全部)')
+    pc.set_defaults(func=cmd_compare)
     return p
 
 
@@ -167,9 +235,10 @@ _ADD_FLAGS = {'--date', '--source', '--caliper-chest', '--caliper-chest-mm',
               '--caliper-suprailiac', '--caliper-suprailiac-mm',
               '--caliper-midaxillary', '--caliper-midaxillary-mm',
               '--body-fat-pct', '--calculated-at', '--age', '--sex'}
-_LIST_FLAGS = {'--date-from', '--date-to'}
+_LIST_FLAGS = {'--date-from', '--date-to', '--limit'}
 _DELETE_FLAGS = {'--id'}
-_TREND_FLAGS = {'--source', '--days'}
+_TREND_FLAGS = {'--days'}
+_COMPARE_FLAGS = {'--start1', '--end1', '--start2', '--end2'}
 
 
 def _infer_subcommand(argv):
@@ -178,6 +247,8 @@ def _infer_subcommand(argv):
         return 'add'
     if flags & _DELETE_FLAGS:
         return 'delete'
+    if flags & _COMPARE_FLAGS:
+        return 'compare'
     if flags & _LIST_FLAGS:
         return 'list'
     if flags & _TREND_FLAGS:
@@ -189,7 +260,7 @@ def parse_args(argv=None):
     parser = build_parser()
     if argv is None:
         argv = sys.argv[1:]
-    subcmds = {'add', 'list', 'delete', 'trend'}
+    subcmds = {'add', 'list', 'delete', 'trend', 'compare'}
     as_dict = '--as-dict' in argv
     argv = [a for a in argv if a != '--as-dict']
     if argv and argv[0] not in subcmds:

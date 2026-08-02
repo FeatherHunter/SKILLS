@@ -48,3 +48,29 @@ def test_list_returns(tmp_db):
     result = bm.cmd_list(args)
     assert result['status'] == 'ok'
     assert len(result['data']) >= 1
+
+def test_list_returns_13_columns(tmp_db):
+    bm.cmd_add(bm.parse_args(['--date', '2026-07-20', '--waist-cm', '85', '--hip-cm', '95']))
+    result = bm.cmd_list(bm.parse_args(['list', '--days', '30']))
+    assert result['status'] == 'ok'
+    row = result['data'][0]
+    assert 'waist_cm' in row and 'chest_cm' in row and 'shoulder_cm' in row
+
+
+def test_list_metric_filter(tmp_db):
+    bm.cmd_add(bm.parse_args(['--date', '2026-07-20', '--waist-cm', '85']))
+    bm.cmd_add(bm.parse_args(['--date', '2026-07-25', '--hip-cm', '94']))
+    result = bm.cmd_list(bm.parse_args(['list', '--days', '30', '--metric', 'waist-cm']))
+    assert result['status'] == 'ok'
+    assert len(result['data']) == 1
+    assert result['data'][0]['waist_cm'] == 85.0
+
+
+def test_compare_two_dates(tmp_db):
+    bm.cmd_add(bm.parse_args(['--date', '2026-07-20', '--waist-cm', '85', '--hip-cm', '95']))
+    bm.cmd_add(bm.parse_args(['--date', '2026-07-25', '--waist-cm', '83', '--hip-cm', '94']))
+    result = bm.cmd_compare(bm.parse_args(['--date1', '2026-07-20', '--date2', '2026-07-25']))
+    assert result['status'] == 'ok'
+    d = result['data']
+    assert d['deltas']['waist_cm']['delta'] == -2.0
+    assert d['n_compared'] == 2

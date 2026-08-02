@@ -217,6 +217,11 @@ body {
   -webkit-tap-highlight-color: transparent;
   margin-left: auto;
   flex-shrink: 0;
+  /* R8 移动端优先(2026-08-02 · ticket #5 对抗审查:375px 下仅 25.6px < 44px 触控目标) */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .copy-btn.copy-main { /* ticket 07 兼容:summary 行复制按钮 */ }
 .copy-btn:hover { background: var(--accent); color: #fff; }

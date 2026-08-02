@@ -67,6 +67,10 @@
     .section { padding:16px 18px; border-radius:12px; }
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
     .food-card .macros { grid-template-columns:1fr 1fr; }
+    /* 饼图容器移动端自适应(2026-08-02 · ticket #5 对抗审查:220px 固定宽溢出 375px) */
+    .pie-pair { grid-template-columns:1fr; gap:20px; }
+    .pie { width:180px; height:180px; }
+    .pie-half { overflow:hidden; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }

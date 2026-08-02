@@ -208,6 +208,10 @@
         `</div>` +
         (impact ? `<div class="diff-impact">${impact}</div>` : ''));
     });
+    // 无实际变更行 → 不显示空白的字段变更卡(2026-08-02 用户反馈:重复设置相同值时空卡)
+    if (diffList.children.length === 0) {
+      diffCard.style.display = 'none';
+    }
   }
 
   // context 卡(今日累计)

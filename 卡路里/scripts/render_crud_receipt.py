@@ -148,6 +148,12 @@ def build_live_profile_set(age=None, gender=None, height=None, activity=None, no
     summary = (f"档案已{'设置' if is_first else '更新'}:身高{new.get('height_cm')}cm / 年龄{new.get('age')} / "
                f"性别{'男' if new.get('gender')=='male' else '女' if new.get('gender')=='female' else '—'} / "
                f"活动量 {label}(系数×{factor})")
+    # 无实际变化检测(2026-08-02 用户反馈:重复设置相同值 → 回执应明确告知,不假装变更)
+    if not is_first:
+        _SKIP = {'created_at', 'updated_at', 'id'}
+        changed = any(old.get(k) != new.get(k) for k in new if k not in _SKIP and not k.startswith('__impact_'))
+        if not changed:
+            summary += ";以上值与当前档案一致,未产生实际变化"
     if reason:
         summary += f";推荐理由:{reason}"
     return _profile_receipt(op, old, new_disp, [], '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)

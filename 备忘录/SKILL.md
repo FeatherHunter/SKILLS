@@ -321,6 +321,11 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**核心:引导式环境搭建(bootstrap)—— 检测 → 安装/配置 → 验证 → 下一步,假设用户环境可能什么都没做,每步必须给出可执行指引,不允许只报告「缺什么」而不给「怎么装」。**
 
+**⚠️ 执行前提(2026-08-02 对抗审查补 · 防相对路径断裂)**:
+- **先定位 SKILL 目录**:找到包含 `script/memo_cli.py` 的目录(技能部署目录),记为 `${SKILL_DIR}`(如 `D:\Users\xxx\.minimax\skills\备忘录`)
+- 下文所有相对路径(`script/feishu_sync.py` / `script/init.sql` / `memo_cli.py` 等)均基于 `${SKILL_DIR}` 执行
+- 定位方式:AI 自身加载 SKILL.md 时已知技能目录;不确定时向用户询问技能安装位置,或用文件系统搜索 `memo_cli.py`
+
 **执行原则**(v1.2.0 · 2026-08-02 对抗审查修订 · 修复「检测误判」+「零自动化」+「编造规则」):
 - 每步:先检测 → 缺失/未就绪 → **优先自动化安装**(包管理器,用户同意后 AI 直接执行)→ 自动失败 → 给手动指引 → 验证 → 下一步
 - **检测必须全面,禁止误判「没装」**:PATH 命令找不到 ≠ 没装。必须依次探测:① PATH 命令 → ② py launcher(Windows `py -3 --version`)→ ③ 常见自定义安装路径(Windows: `D:\0Tools\Python3*` / `C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*`;macOS: `/usr/local/bin/python3` / Homebrew)→ ④ 包管理器查询(`winget list Python` / `brew list python`)。全部找不到才算「没装」
@@ -336,7 +341,7 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
   找不到可用 winget → 直接转手动指引,不硬跑
 - **安装后 PATH 刷新协议(2026-08-02 对抗审查 · 防「装完仍失败→误判重装→死循环」)**:任何 winget/安装器装完 Python/Node,**当前会话 PATH 不会刷新**,同会话立刻验证必然失败。必须:
   ① 通过 `cmd /c "python --version"` 用新解析的 PATH 验证,或
-  ② 用刚安装的完整路径直接验证(如 `D:\0Tools\Python313\python.exe --version`),或
+  ② 用刚安装的完整路径直接验证(如 `%LOCALAPPDATA%\Programs\Python\Python312\python.exe --version`),或
   ③ 提示用户「新开终端再验证」
   **禁止**在安装后同会话直接 `python --version` 判失败
 - 任何一步失败 → 报告页标 err/warn + 在「待办指引」给具体下一步,不静默跳过
@@ -345,7 +350,7 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
 **逐步流程**:
 
 1. **Python 运行环境**(3.10+ 必装):
-   - 检测(全面探测,防误判;注意 `py -3` 依赖注册表不可靠,不作为判据):`python --version` → 常见自定义路径探测(`D:\0Tools\Python3*` / `C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 的 python.exe 直接跑)→ `winget list Python`(按上述 winget 探测协议)
+   - 检测(全面探测,防误判;注意 `py -3` 依赖注册表不可靠,不作为判据):`python --version` → 常见自定义路径探测(`C:\Python3*` / `%LOCALAPPDATA%\Programs\Python\Python3*` 的 python.exe 直接跑;不要探测具体机器约定路径)→ `winget list Python`(按上述 winget 探测协议)
    - **找到可用 Python 且 ≥3.10 → 直接用它的完整路径执行后续步骤**(不需要它进 PATH;路径探测优先于 PATH 命令,防 Store 占位符误判)
    - 确认缺失 → 自动安装:`winget install Python.Python.3.12 --scope user`(按 winget 探测协议定位;用户同意后 AI 执行);winget 不可用 → 手动指引 python.org 下载(勾选 Add to PATH)
    - 验证(按 PATH 刷新协议):用安装路径直接跑 `python.exe --version`,或 `cmd /c "python --version"`,或提示用户新开终端;确认 ≥3.10 才进入下一步
@@ -353,7 +358,7 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
    - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5);不用 SQLite 文件之外的其他方案
 3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装 + **强烈建议配置**,不默认跳过):
-   - 检测:`python script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
+   - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
    - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
    - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务(可在飞书里管理/提醒)、备忘录同步(双向对账)。**不配 = 心愿→飞书、备忘录同步 两个核心功能不可用**,不是「少一个可有可无的附加项」
    - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
@@ -381,12 +386,15 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
      - macOS/Linux:写入 ~/.zshrc 或 ~/.bashrc 后 `source`
    - ⚠️ **禁止把作者机器约定路径(如 D:/.db、D:/media)作为示例塞给用户** —— 用户路径应由用户决定
 5. **数据库初始化**:
-   - 检测:数据表是否就绪(通过 memo_cli 任意命令试探,如 `search ""` 不报错即就绪)
-   - 未就绪 → 引导建表(复用 memo_cli 内部初始化逻辑,不暴露 SQL 路径;AI 调用初始化后验证)
+   - 检测:数据表是否就绪(通过 memo_cli 任意命令试探,如 `${SKILL_DIR}/script/memo_cli.py search ""` 不报错即就绪)
+   - 未就绪 → 建表(memo_cli **无内建建表入口** · 2026-08-02 对抗审查确认):
+     - AI 执行:`python -c "import sqlite3;c=sqlite3.connect('<DB 路径>');c.executescript(open(r'${SKILL_DIR}/script/init.sql',encoding='utf-8').read())"`
+     - DB 路径 = 第 4 步确定的位置(SKILLS_DB_PATH 或默认位置)+ `memo.db`
+   - 建表后验证:重跑 `search ""` 应返回 `{"status":"ok",...}`(不再报 no such table)
 6. **提醒调度(Cron)**:
    - 说明:提醒由宿主平台定时任务触发(Windows 任务计划程序 / macOS launchd / Linux crontab),调用提醒检查命令
    - 无法在会话内验证 → 标 warn + 在待办指引给宿主差异说明
-7. **过程 HTML + 回执**:以上全部完成后,调用 `memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;再给一句话总结
+7. **过程 HTML + 回执**:以上全部完成后,调用 `${SKILL_DIR}/script/memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;再给一句话总结
    - `--data` 数据契约:`{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps:[str]}], "verify":[str]}`
     - status 取值:ok=就绪 / warn=可选缺失(cron 未验证等)/ err=必装缺失(Python、数据库等);**用户拒绝飞书 → 标 err 级醒目提示(核心功能残缺),但流程不阻断**
    - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 飞书已授权(强烈建议,用户明确拒绝才可不勾)/ 数据位置已确认(默认或自定义)/ HELP 页面可打开

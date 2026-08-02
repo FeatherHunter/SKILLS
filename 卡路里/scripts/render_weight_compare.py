@@ -81,15 +81,31 @@ def main():
     try:
         data, err = run_scenario(args.scenario, **kw)
         if err:
-            print(f'❌ {err}', file=sys.stderr)
-            return 1
-        data['scenario'] = args.scenario
-        data['scenario_label'] = label
-        data['title'] = label
-        data['summary'] = _summary_line(args.scenario, data)
-        data['meta'] = {'generated_at': date.today().isoformat(),
-                        'chain': args.chain.strip(),
-                        'wake_word': label}
+            # 2026-08-02 ticket #4 对抗审查修复:数据缺失(未设目标/无平台期/样本不足)也要产出 HTML
+            # (第 5 层「呈现数据承诺 → HTML 对应物」闭环;AI 拿提示页引导用户下一步)
+            data = {
+                'scenario': args.scenario,
+                'scenario_label': label,
+                'title': label,
+                'subtitle': f'无法完成对比 · {date.today().isoformat()}',
+                'sample_warning': err,
+                'kpis': [],
+                'seg_a': None,
+                'seg_b': None,
+                'compare': None,
+                'extra_rows': [{'label': '下一步', 'value': '请先按提示补齐数据后重试(如「定体重目标」)'}],
+                'summary': err,
+                'meta': {'generated_at': date.today().isoformat(),
+                         'chain': args.chain.strip(), 'wake_word': label},
+            }
+        else:
+            data['scenario'] = args.scenario
+            data['scenario_label'] = label
+            data['title'] = label
+            data['summary'] = _summary_line(args.scenario, data)
+            data['meta'] = {'generated_at': date.today().isoformat(),
+                            'chain': args.chain.strip(),
+                            'wake_word': label}
         argv = sys.argv[1:]
         if '--output' in argv:
             i = argv.index('--output')

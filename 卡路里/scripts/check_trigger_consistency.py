@@ -27,28 +27,43 @@ SKILL_MD = SKILL_DIR / "SKILL.md"
 RENDER_DIR = SKILL_DIR / "scripts"
 
 
-def parse_frontmatter_triggers(text: str) -> set:
+def parse_frontmatter_triggers(text: str, known_wake_words: set | None = None) -> set:
     """提取 frontmatter 触发词
 
     v2.4.13 起:支持"主词(口语变体)"形式(如 `记吃了(刚吃了 / 刚才吃了 ...)`),内部用 `、` 分隔各主词,
     主词后括号内是口语变体注释,提取主词时跳过括号内容做规范化。
+
+    2026-08-02 ticket #4 修复:词本身含括号的场景名(记体重（含备注）/看体重曲线（带目标）/体重复盘（本周）/
+    定体重目标(自动算截止))不能被当口语变体剥掉。解法 = 数据驱动锚点:传入 _triggers.py 的 wake_word 全集,
+    条目以某个已知 wake_word 开头 → 该 wake_word 即主词;否则回退剥所有括号(旧 legacy 词)。
     """
     m = re.search(r'触发词:([^\n]+)', text)
     if not m:
         return set()
     out = set()
+    known = sorted(known_wake_words or [], key=len, reverse=True)  # 长词优先(带括号的比不带的长)
     for t in m.group(1).split('、'):
         t = t.strip()
         if not t:
             continue
-        # 去括号(口语变体)
+        if known:
+            hit = next((k for k in known if t == k or t.startswith(k + '(') or t.startswith(k + '（')), None)
+            if hit:
+                out.add(hit)
+                continue
+        # 回退:剥所有括号(旧 legacy 词,无词内括号)
         t = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
         if t:
             out.add(t)
     return out
 
 
-def parse_html_template_triggers(text: str) -> set:
+def _strip_variant_parens(t: str) -> str:
+    """去口语变体括号(内容含 / 才剥),词本身括号保留(记体重（含备注）)"""
+    return re.sub(r'[（(][^）)]*[/／][^）)]*[）)]', '', t).strip()
+
+
+def parse_html_template_triggers(text: str, known_wake_words: set | None = None) -> set:
     sec = re.search(
         r'### 完整 HTML 模板清单.*?(?=^---|\n## |\Z)',
         text, re.DOTALL | re.MULTILINE,
@@ -56,6 +71,7 @@ def parse_html_template_triggers(text: str) -> set:
     if not sec:
         return set()
     triggers = set()
+    known = sorted(known_wake_words or [], key=len, reverse=True)
     for line in sec.group(0).split('\n'):
         if not line.startswith('| `templates/') and not line.startswith('| `process_progress') \
                 and not line.startswith('| `home_dashboard'):
@@ -66,10 +82,21 @@ def parse_html_template_triggers(text: str) -> set:
         cell = cols[2]
         for part in re.split(r'[/／、\n|]+', cell):
             t = part.strip().strip('`').strip()
-            t = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
             if not t:
                 continue
-            triggers.add(t)
+            # 2026-08-02 ticket #4:锚点优先(词本身含括号的场景名),回退只剥口语变体,再回退剥所有括号(旧 legacy 注释)
+            if known:
+                hit = next((k for k in known if t == k or t.startswith(k + '(') or t.startswith(k + '（')), None)
+                if hit:
+                    triggers.add(hit)
+                    continue
+            t2 = _strip_variant_parens(t)
+            if t2 and t2 != t:
+                triggers.add(t2)
+                continue
+            t3 = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
+            if t3:
+                triggers.add(t3)
     return triggers
 
 
@@ -82,20 +109,31 @@ TRIGGER_ALIASES = {
 }
 
 
+_KNOWN_WAKE = None  # 2026-08-02 ticket #4:docstring 解析的已知 wake_word 锚点(词本身含括号的场景名)
+
+
 def normalize_trigger(t: str) -> str:
-    """标准化 trigger 字符串(去反引号/括号/别名映射)"""
-    t = t.strip()
-    # 去所有反引号
-    t = t.replace('`', '').strip()
-    # 去括号注释
-    t = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
-    # alias 映射
-    t = TRIGGER_ALIASES.get(t, t)
-    return t
+    """标准化 trigger 字符串(去反引号/括号/别名映射)
+
+    2026-08-02 ticket #4:已知 wake_word 锚点优先(记体重（含备注）等词内括号不再被剥),
+    回退只剥口语变体括号,再回退剥所有括号(旧 legacy 注释)。
+    """
+    t = t.strip().replace('`', '').strip()
+    if _KNOWN_WAKE:
+        hit = next((k for k in _KNOWN_WAKE if t == k or t.startswith(k + '(') or t.startswith(k + '（')), None)
+        if hit:
+            return TRIGGER_ALIASES.get(hit, hit)
+    t2 = _strip_variant_parens(t).strip()
+    if t2 and t2 != t:
+        return TRIGGER_ALIASES.get(t2, t2)
+    t3 = re.sub(r'[（(][^）)]*[）)]', '', t).strip()
+    return TRIGGER_ALIASES.get(t3, t3)
 
 
-def parse_render_docstring_triggers() -> dict:
+def parse_render_docstring_triggers(known_wake_words=None) -> dict:
     """支持 A/B 两种 docstring 格式(行级匹配,不跨行)"""
+    global _KNOWN_WAKE
+    _KNOWN_WAKE = known_wake_words or None
     results = {}
     for f in sorted(RENDER_DIR.glob('render_*.py')):
         text = f.read_text(encoding='utf-8')
@@ -144,9 +182,15 @@ def parse_render_docstring_triggers() -> dict:
 
 def main():
     text = SKILL_MD.read_text(encoding='utf-8')
-    fm = parse_frontmatter_triggers(text)
-    html = parse_html_template_triggers(text)
-    render_map = parse_render_docstring_triggers()
+    sys.path.insert(0, str(RENDER_DIR))
+    try:
+        from _triggers import TRIGGERS as _TRIG
+        _known = {t['wake_word'] for t in _TRIG}
+    except Exception:
+        _known = None
+    fm = parse_frontmatter_triggers(text, known_wake_words=_known)
+    html = parse_html_template_triggers(text, known_wake_words=_known)
+    render_map = parse_render_docstring_triggers(known_wake_words=_known)
 
     issues = []
 

@@ -688,14 +688,14 @@ TRIGGERS = [
             'user_intent': '预测目标达成日 + 置信度（体重部分复用对比体重 B1 的预测）', 'data_fields': ['predict_date', 'confidence'],
             'depends_on_external': False, 'order': 24},
     {
-            'category': '综合',     'wake_word': '查健康报告',     'desc': '四维度综合健康仪表盘',
+            'category': '分析',     'wake_word': '查健康报告',     'desc': '四维度综合健康仪表盘',
             'main_prompt': {
         'cli': 'python scripts/render_health_dashboard.py --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查健康报告」。\n\n我要看 4 维健康仪表盘(热量/营养/运动/体重综合,默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'fill_hints': [],
             'variants': [{
         'label': '查健康报告 本月', 'cli': 'python scripts/render_health_dashboard.py --start 2026-07-01 --end 2026-07-26', 'prompt': '请你加载技能 卡路里,执行唤醒词「查健康报告 本月」。\n\n我要看本月 1 号到今天的健康报告。\n\n完成后给 1 句话总结,不需要过多文字解释。'}]},
     {
-            'category': '综合',     'wake_word': '查卡路里数据',     'desc': '数据健康检查(lint_health)',
+            'category': '分析',     'wake_word': '查卡路里数据',     'desc': '数据健康检查(lint_health)',
             'main_prompt': {
         'cli': 'python scripts/render_lint_health.py', 'text': '请你加载技能 卡路里,执行唤醒词「查卡路里数据」。\n\n我要检查数据库的健康性。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
             'fill_hints': [],

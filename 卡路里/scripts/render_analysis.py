@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_analysis.py — 分析 154 场景统一渲染器(ticket #10)
 
-对应 SKILL.md 唤醒词:分析分类 154 个新场景(A1-A6 + 单点)
+服务:分析分类 154 个场景(A1-A6 + 单点;唤醒词见 SKILL.md frontmatter / _triggers.py category='分析')
 
 7 视图:
   --view combined    A1 组合分析 + A5 宏量交叉   模板 combined_analysis.html

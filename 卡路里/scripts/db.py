@@ -245,6 +245,10 @@ def init_db(db_path):
         c.execute('ALTER TABLE daily_goal ADD COLUMN goal_paused INTEGER DEFAULT 0')
     except Exception:
         pass
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN exercise_goal INTEGER')  # 2026-08-02 · ticket #5 运动:每日运动消耗目标(卡)
+    except Exception:
+        pass
 
     # 迁移：nutrition_products 表新增 source / is_deprecated（食品库扩展 · 2026-06-30）
     _existing_cols_p = {
@@ -293,6 +297,10 @@ def init_db(db_path):
         ('load_kg', 'REAL'),
         ('reps', 'INTEGER'),  # 2026-07-13 补:exercise.py:53 写入时用到,原 DDL 漏声明
         ('updated_at', 'TEXT'),  # 2026-07-13 补:xunji_adapter:97 UPDATE 用到,原 DDL 漏声明(SQLite 限制:DATETIME 默认值需应用层设)
+        ('steps', 'INTEGER'),  # 2026-08-02 · ticket #5 运动:记日常活动(步数)
+        ('max_heart_rate', 'INTEGER'),  # 2026-08-02 · ticket #5 运动:记有氧运动(最高心率)
+        ('is_deleted', 'INTEGER DEFAULT 0'),  # 2026-08-02 · ticket #5 运动:软删除(删/批量删)
+        ('is_backfill', 'INTEGER DEFAULT 0'),  # 2026-08-02 · ticket #5 运动:补录标识(补记/批量补记)
     ]
     for _col, _type in _exercise_log_new_cols:
         if _col not in _existing_cols:

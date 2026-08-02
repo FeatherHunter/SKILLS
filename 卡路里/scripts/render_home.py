@@ -157,6 +157,22 @@ def _streak(target_date: str) -> dict:
     return {'current': cur, 'longest': longest}
 
 
+def _week_trend(target_date: str, days: int = 7) -> dict:
+    """最近 N 天趋势(饮食热量 + 体重)供主页趋势小图"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    d = date.fromisoformat(target_date)
+    trend = []
+    for i in range(days - 1, -1, -1):
+        ds = (d - timedelta(days=i)).isoformat()
+        row = conn.execute('SELECT COALESCE(SUM(calories),0) FROM food_log WHERE date = ?', (ds,)).fetchone()
+        cal = row[0]
+        wrow = conn.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time DESC LIMIT 1', (ds,)).fetchone()
+        trend.append({'date': ds, 'calories': cal, 'weight': wrow[0] if wrow else None})
+    conn.close()
+    return trend
+
+
 def _period_range(period: str, target_date: str) -> tuple:
     """周期范围:week=本周一..今天;month=本月1号..今天"""
     d = date.fromisoformat(target_date)
@@ -360,7 +376,58 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
     }
 
     # 各 section 视图数据(R6 呈现数据完整性 · ticket #2)
-    if view == 'diet':
+    if view == 'overview':
+        # 权威清单 §1:6 张 KPI 卡(饮食/运动/体重/目标/进度/连续)+ 趋势小图 + 一句话
+        goal = _goal_row() or {}
+        act = _today_actual(target_date)
+        ex = _today_exercise(target_date)
+        w = data['today_status']['weight']
+        st = _streak(target_date)
+        goal_items = [
+            {'label': '热量', 'goal': goal.get('calorie_goal'), 'actual': act['calorie'],
+             'pct': _pct(act['calorie'], goal.get('calorie_goal'))},
+            {'label': '蛋白', 'goal': goal.get('protein_goal'), 'actual': act['protein'],
+             'pct': _pct(act['protein'], goal.get('protein_goal'))},
+            {'label': '饮水', 'goal': goal.get('water_goal'), 'actual': act['water'],
+             'pct': _pct(act['water'], goal.get('water_goal'))},
+            {'label': '运动', 'goal': goal.get('exercise_goal'), 'actual': ex['burn'],
+             'pct': _pct(ex['burn'], goal.get('exercise_goal'))},
+        ]
+        done = sum(1 for it in goal_items if it['pct'] is not None and it['pct'] >= 100)
+        progress_pct = round(done / len(goal_items) * 100) if goal_items else 0
+        kpis = [
+            {'key': 'diet', 'label': '饮食', 'icon': '🔥', 'value': act['calorie'], 'unit': '卡',
+             'detail': f"目标 {goal.get('calorie_goal') or '—'} 卡",
+             'pct': _pct(act['calorie'], goal.get('calorie_goal'))},
+            {'key': 'exercise', 'label': '运动', 'icon': '🏃', 'value': ex['burn'], 'unit': '卡',
+             'detail': f"{ex['minutes'] or 0} 分钟 · {ex['count'] or 0} 条",
+             'pct': _pct(ex['burn'], goal.get('exercise_goal'))},
+            {'key': 'weight', 'label': '体重', 'icon': '⚖️', 'value': w['latest_kg'] if w['latest_kg'] is not None else '—', 'unit': 'kg',
+             'detail': (f"距目标 {w['goal_diff']:+.1f} kg" if w['goal_diff'] is not None else '未设目标')
+                       + (f" · Δ7天 {w['delta_7d']:+.1f} kg" if w['delta_7d'] is not None else ''),
+             'pct': None},
+            {'key': 'goal', 'label': '目标', 'icon': '🎯', 'value': f"{done}/4", 'unit': '项达标',
+             'detail': '热量/蛋白/饮水/运动', 'pct': progress_pct},
+            {'key': 'progress', 'label': '进度', 'icon': '📊', 'value': f"{progress_pct}%", 'unit': '',
+             'detail': f"今日记录 {data['today_status']['todo'] and len(data['today_status']['todo']) or 0} 项待办",
+             'pct': progress_pct},
+            {'key': 'streak', 'label': '连续', 'icon': '🔥', 'value': st['current'], 'unit': '天',
+             'detail': f"历史最长 {st['longest']} 天", 'pct': None},
+        ]
+        # 一句话总结(R6 · 基于实际状态)
+        parts = []
+        if act['calorie'] > 0:
+            cp = _pct(act['calorie'], goal.get('calorie_goal'))
+            parts.append(f"已摄入 {act['calorie']:,} 卡" + (f"(目标 {cp}%)" if cp is not None else ''))
+        if ex['count'] > 0:
+            parts.append(f"运动消耗 {ex['burn']:,} 卡")
+        if w['latest_kg'] is not None:
+            parts.append(f"体重 {w['latest_kg']} kg")
+        summary = ' · '.join(parts) + ('。' if parts else '今天还没有记录,从记一餐开始吧。')
+        if st['current'] >= 3:
+            summary += f' 已连续记录 {st["current"]} 天!'
+        data['home'] = {'kpis': kpis, 'trend': _week_trend(target_date), 'summary': summary}
+    elif view == 'diet':
         goal = _goal_row() or {}
         act = _today_actual(target_date)
         data['diet'] = {

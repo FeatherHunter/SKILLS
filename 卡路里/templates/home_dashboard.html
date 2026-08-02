@@ -531,6 +531,16 @@ footer{
 }
 
 /* ====== SECTION 视图卡片(ticket #2 · 2026-08-02) ====== */
+.trend-chart{
+  background:var(--card);border-radius:var(--r-lg);box-shadow:var(--shadow);
+  padding:18px 20px;margin-bottom:20px;
+}
+.trend-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-top:6px}
+.kpi .bar{height:4px;border-radius:2px;background:var(--lineS);margin-top:6px;overflow:hidden}
+.kpi .bar i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.kpi .bar i.good{background:var(--green)}
+.kpi .bar i.warn{background:var(--orange)}
+.kpi .bar i.bad{background:var(--red)}
 .copy-actions{display:flex;gap:12px;justify-content:center;margin:20px 0 4px}
 .copy-actions .btn{
   min-height:44px;padding:0 22px;border:none;border-radius:12px;cursor:pointer;
@@ -578,6 +588,9 @@ footer{
 
 <!-- KPI GRID (结果型 · 6 维 · ticket #2) -->
 <div class="kpi-grid" id="kpiGrid"></div>
+
+<!-- 最近 7 天趋势小图(权威清单 §1 · ticket #2) -->
+<div class="trend-chart" id="trendChart"></div>
 
 <!-- SECTION 视图:今日维度聚焦(ticket #2 · R6 呈现数据完整性) -->
 <section class="section" id="secDiet" style="display:none">
@@ -702,8 +715,8 @@ function card(label, value, unit, sub, p) {
 
 function renderSection(view, date) {
   const d = DATA.data;
-  // 隐藏 KPI/缺口/待办/最近记录(仅 overview 显示)
-  ['kpiGrid','deficitFormula','todoSection','recentSection'].forEach(id => {
+  // 隐藏 KPI/趋势/缺口/待办/最近记录(仅 overview 显示)
+  ['kpiGrid','trendChart','deficitFormula','todoSection','recentSection'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -849,43 +862,46 @@ function render() {
     pill.textContent = `${todoCount} 项待办`;
   }
 
-  // 4 KPI GRID
-  const cal = D.calorie || {};
-  const ex = D.exercise || {};
-  const wt = D.weight || {};
+  // 6 KPI GRID + 趋势小图(权威清单 §1 · 2026-08-02 ticket #2)
+  const home = DATA.data.home || {};
   const df = D.deficit || {};
+  const kpis = home.kpis || [];
+  const trend = home.trend || [];
+  if (kpis.length) {
+    document.getElementById('kpiGrid').innerHTML = kpis.map(k => `
+      <div class="kpi">
+        <div class="label"><span class="icon">${k.icon}</span>${k.label}${k.pct != null ? `<span class="badge ${barClass(k.pct)}">${k.pct}%</span>` : ''}</div>
+        <div class="main"><span class="value">${escapeHTML(String(k.value))}</span><span class="unit">${escapeHTML(k.unit || '')}</span></div>
+        ${k.pct != null ? `<div class="bar"><i class="${barClass(k.pct)}" style="width:${Math.min(100,k.pct)}%"></i></div>` : ''}
+        <div class="detail">${escapeHTML(k.detail || '')}</div>
+      </div>
+    `).join('');
 
-  const calPct = pct(cal.avg_cal, cal.cal_goal);
-  const exBadge = (ex.coverage_pct != null)
-    ? (ex.coverage_pct >= 70 ? ['good', `${ex.coverage_pct}%`] : ex.coverage_pct >= 40 ? ['warn', `${ex.coverage_pct}%`] : ['bad', `${ex.coverage_pct}%`])
-    : ['ok', '—'];
-  const wtBadge = (() => {
-    if (wt.trend === 'down') return ['good', '↓'];
-    if (wt.trend === 'up') return ['warn', '↑'];
-    return ['ok', '→'];
-  })();
+    // 趋势小图(最近 7 天饮食热量 · 内联 SVG)
+    const trendEl = document.getElementById('trendChart');
+    if (trendEl) {
+      const calData = trend.map(t => t.calories || 0);
+      const max = Math.max(...calData, 1);
+      const W = 300, H = 60, bw = W / Math.max(trend.length, 1);
+      const pts = calData.map((v, i) => `${(i * bw + bw / 2).toFixed(1)},${(H - (v / max) * (H - 8) - 4).toFixed(1)}`).join(' ');
+      trendEl.innerHTML = `
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:60px">
+          <polyline points="${pts}" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <g fill="#007aff">
+            ${calData.map((v, i) => `<circle cx="${(i * bw + bw / 2).toFixed(1)}" cy="${(H - (v / max) * (H - 8) - 4).toFixed(1)}" r="3"/>`).join('')}
+          </g>
+        </svg>
+        <div class="trend-labels">${trend.map(t => `<span>${t.date.slice(5)}</span>`).join('')}</div>`;
+    }
 
-  document.getElementById('kpiGrid').innerHTML = `
-    <div class="kpi">
-      <div class="label"><span class="icon">🔥</span>摄入<span class="badge ${statusBadge(calPct, 100, true)[0]}">${calPct != null ? calPct + '%' : ''}</span></div>
-      <div class="main"><span class="value">${fmtInt(cal.avg_cal)}</span><span class="unit">卡/日</span></div>
-      <div class="detail">目标 ${fmtInt(cal.cal_goal)} · 合规 ${cal.compliance_days || 0}/${cal.days_count || 0} 天</div>
-    </div>
-    <div class="kpi">
-      <div class="label"><span class="icon">🏃</span>运动<span class="badge ${exBadge[0]}">${exBadge[1]}</span></div>
-      <div class="main"><span class="value">${fmtInt(ex.avg_calories_per_day)}</span><span class="unit">卡/日</span></div>
-      <div class="detail">${ex.days_with_exercise || 0}/${ex.total_days || 0} 天 · 连续 ${ex.longest_streak_days || 0} 天</div>
-    </div>
-    <div class="kpi">
-      <div class="label"><span class="icon">⚖️</span>体重<span class="badge ${wtBadge[0]}">${wtBadge[1]}</span></div>
-      <div class="main"><span class="value">${today_status.weight.latest_kg != null ? today_status.weight.latest_kg.toFixed(1) : (wt.avg_weight != null ? wt.avg_weight.toFixed(1) : '—')}</span><span class="unit">kg</span></div>
-      <div class="detail">${today_status.weight.goal_diff != null ? '距目标 ' + (today_status.weight.goal_diff > 0 ? '+' : '') + today_status.weight.goal_diff.toFixed(1) + 'kg' : '距目标 —'} · Δ7天 ${today_status.weight.delta_7d != null ? (today_status.weight.delta_7d > 0 ? '+' : '') + today_status.weight.delta_7d.toFixed(1) + 'kg' : '—'}</div>
-    </div>
-    <div class="kpi">
-      <div class="label"><span class="icon">📉</span>缺口<span class="badge ${df.size_label === '过大' ? 'warn' : df.size_label === '适中' ? 'ok' : df.size_label === '适宜' ? 'good' : 'ok'}">${escapeHTML(df.size_label || '')}</span></div>
-      <div class="main"><span class="value">${df.avg_deficit != null ? (df.avg_deficit > 0 ? '−' : '+') : '−'}${df.avg_deficit != null ? fmtInt(Math.abs(df.avg_deficit)) : '—'}</span><span class="unit">卡/日</span></div>
-    </div>
-  `;
+    // 一句话总结(R6 · overview 顶部)
+    const summary = document.createElement('div');
+    summary.className = 'view-summary';
+    summary.textContent = home.summary || '';
+    document.getElementById('heroTitle').insertAdjacentElement('afterend', summary);
+  } else {
+    document.getElementById('kpiGrid').innerHTML = '';
+  }
 
 // 缺口公式条(全宽,横向展示)
   const formula = document.getElementById('deficitFormula');

@@ -301,10 +301,13 @@ class TestHomeDashboardRedesign:
 
     def test_home_dashboard_deficit_math_breakdown(self):
         tpl = (SKILL_DIR / 'templates' / 'home_dashboard.html').read_text(encoding='utf-8')
-        # 缺口 detail 应有 TDEE + 运动 + 应烧 + 摄入 的 math breakdown
+        # 缺口 detail 应有 TDEE + 运动 + 应烧 + 摄入 的 math breakdown(2026-08-02 ticket #2:4 KPI 卡 → 6 KPI 卡,缺口公式条保留)
         assert 'TDEE' in tpl and '应烧' in tpl, '缺口 KPI 缺 math breakdown'
-        # 应有 size_label badge 逻辑
-        assert 'size_label' in tpl, '缺口 KPI 缺 size_label badge 逻辑'
+        # 公式条应有 缺口 输出 + 理论体重变化(替代旧 size_label badge · ticket #2)
+        assert 'formulaDeficit' in tpl, '缺口公式条缺缺口输出'
+        assert 'formulaSummary' in tpl, '缺口公式条缺理论体重变化'
+        # 6 KPI 卡口径(ticket #2):饮食/运动/体重/目标/进度/连续
+        assert '连续' in tpl and '目标' in tpl and '进度' in tpl, '6 KPI 卡缺维度'
 
 
 class TestHelpMirrorRename:

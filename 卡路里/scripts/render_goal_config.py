@@ -106,7 +106,35 @@ def build_live_data(water_only=False, modify_nutrition=False, modify_water=False
 
     if water_only:
         data['water_only'] = True
+
+    # prompt 承诺「热量明显低于 BMR 时提示」(第一性原理 #3 · 2026-08-02 对抗审查)
+    cal = current_goal.get('calorie_goal')
+    bmr = _estimate_bmr()
+    if cal and bmr:
+        data['bmr_warning'] = {
+            'bmr': bmr,
+            'calorie_goal': cal,
+            'below': cal < bmr,
+            'text': f'热量目标 {cal} 卡低于基础代谢 BMR {bmr} 卡,长期可能影响健康,建议上调或咨询专业意见'
+                    if cal < bmr else f'热量目标 {cal} 卡 ≥ BMR {bmr} 卡,在安全范围内',
+        }
     return data
+
+
+def _estimate_bmr():
+    """估算 BMR(Mifflin-St Jeor,档案缺失用默认值)"""
+    from db import find_db_path, get_db
+    from analysis._utils import get_activity_factor
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    prof = conn.execute('SELECT age, gender, height_cm FROM user_profile WHERE id = 1').fetchone()
+    w = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date DESC LIMIT 1').fetchone()
+    conn.close()
+    age = prof['age'] if prof and prof['age'] else 30
+    gender = prof['gender'] if prof and prof['gender'] else 'male'
+    h = prof['height_cm'] if prof and prof['height_cm'] else 175
+    w_kg = w[0] if w else 70
+    return round(10 * w_kg + 6.25 * h - 5 * age + (5 if gender == 'male' else -161))
 
 
 def normalize(data: dict) -> dict:
@@ -118,6 +146,7 @@ def normalize(data: dict) -> dict:
         'weight_progress': data.get('weight_progress') if isinstance(data.get('weight_progress'), dict) else None,
         'diff': data.get('diff'),
         'water_only': data.get('water_only', False),
+        'bmr_warning': data.get('bmr_warning'),
     }
 
 

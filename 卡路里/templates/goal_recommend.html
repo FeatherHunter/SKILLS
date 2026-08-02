@@ -123,13 +123,13 @@ function renderMissing(){
   document.getElementById('missing').innerHTML='⚠️ 档案缺: '+R.missing.join(' / ')+' — 已用默认值估算,建议先设置档案';
 }
 function buildAdoptPrompt(){
-  let p='我已确认推荐目标,请帮我写入数据库。\n\n';
-  p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
-  p+='  --calorie_goal '+GOAL.calorie_goal+'\n';
-  p+='  --protein_goal '+GOAL.protein_goal+'\n';
-  p+='  --carbs_goal '+GOAL.carbs_goal+'\n';
-  p+='  --fat_goal '+GOAL.fat_goal+'\n';
-  p+='  --water_goal '+GOAL.water_goal+'\n\n';
+  let p='我已确认推荐目标,请按「定营养目标(自动算)」流程写入数据库。\n\n';
+  p+='营养目标:\n';
+  p+='  热量 '+GOAL.calorie_goal+' 卡\n';
+  p+='  蛋白 '+GOAL.protein_goal+' g\n';
+  p+='  碳水 '+GOAL.carbs_goal+' g\n';
+  p+='  脂肪 '+GOAL.fat_goal+' g\n';
+  p+='  饮水 '+GOAL.water_goal+' ml\n\n';
   if(R.plan_reasons)p+='推荐理由:\n'+R.plan_reasons.map(x=>'  - '+x).join('\n')+'\n\n';
   p+='数据来源: 目标推荐 v1 · render_goal_recommend.py · '+new Date().toISOString().split('T')[0];
   return p;

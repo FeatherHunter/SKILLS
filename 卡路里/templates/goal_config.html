@@ -81,6 +81,10 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <h3>📊 昨日 vs 新目标 (mini chart)</h3>
 <div id="chartRows"></div>
 </div>
+<div class="weight-progress" id="bmrWarning" style="display:none;background:var(--orange-soft);margin-top:14px">
+<h3 style="color:var(--orange)">⚠️ BMR 低值提示</h3>
+<p id="bmrWarningText" style="font-size:13px;color:var(--ink2);margin-top:6px"></p>
+</div>
 </section>
 <section class="section" id="weightSection" style="display:none">
 <div class="section-title">
@@ -102,7 +106,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <section class="copy-section">
 <h2>复制配置指令</h2>
 <p class="sub">
-HTML 不能直接修改数据库 · 请把下方文本粘到 AI 对话框,AI 会调用 <code>nutrition_goal.set_nutrition_goal</code> / <code>weight_goal.set_weight_goal</code> 写入 daily_goal 表。
+把下方文本粘到 AI 对话框,AI 会按你的配置写入目标。
 - <strong>采纳配置</strong> = 数据无误,调 CLI 写入
 - <strong>仅营养</strong> = 只改 5 项营养,保留体重目标
 - <strong>仅体重</strong> = 只改体重目标
@@ -214,18 +218,30 @@ function renderDiff(){
   }).join('');
   document.getElementById('diffRows').innerHTML=rows;
 }
+function renderBmrWarning(){
+  const W=DATA&&DATA.data&&DATA.data.bmr_warning?DATA.data.bmr_warning:null;
+  if(!W)return;
+  document.getElementById('bmrWarning').style.display='block';
+  document.getElementById('bmrWarningText').textContent=W.text;
+  if(!W.below){
+    // 安全: 转绿色确认样式(语义映射可审计: AI 检查过 BMR)
+    const box=document.getElementById('bmrWarning');
+    box.style.background='var(--green-soft)';
+    box.querySelector('h3').style.color='var(--green)';
+    box.querySelector('h3').textContent='✅ BMR 安全确认';
+  }
+}
 function buildAdoptPrompt(){
-  let p='我已调整营养和体重目标,请帮我写入数据库。\n\n';
-  p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
-  p+='  --calorie_goal '+state.calorie_goal+'\n';
-  p+='  --protein_goal '+state.protein_goal+'\n';
-  p+='  --carbs_goal '+state.carbs_goal+'\n';
-  p+='  --fat_goal '+state.fat_goal+'\n';
-  p+='  --water_goal '+state.water_goal+'\n\n';
+  let p='我已调整目标配置,请按「定营养目标」流程写入数据库。\n\n';
+  p+='营养目标:\n';
+  p+='  热量 '+state.calorie_goal+' 卡\n';
+  p+='  蛋白 '+state.protein_goal+' g\n';
+  p+='  碳水 '+state.carbs_goal+' g\n';
+  p+='  脂肪 '+state.fat_goal+' g\n';
+  p+='  饮水 '+state.water_goal+' ml\n\n';
   if(WEIGHT){
-    p+='体重目标 (调用 weight_goal.set_weight_goal):\n';
-    p+='  --weight_goal '+WEIGHT.target+'\n';
-    p+='  --deadline '+(CURRENT.goal_deadline||'未设置')+'\n\n';
+    p+='体重目标:\n';
+    p+='  '+WEIGHT.target+' kg'+(CURRENT.goal_deadline?' (截止 '+CURRENT.goal_deadline+')':'')+'\n\n';
   }
   p+='当前值 vs 昨日实际:\n';
   ACTIVE_FIELDS.forEach(f=>{
@@ -238,22 +254,21 @@ function buildAdoptPrompt(){
 }
 function buildNutritionPrompt(){
   let p='我只想调整营养目标,体重目标保持不变。\n\n';
-  p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
-  p+='  --calorie_goal '+state.calorie_goal+'\n';
-  p+='  --protein_goal '+state.protein_goal+'\n';
-  p+='  --carbs_goal '+state.carbs_goal+'\n';
-  p+='  --fat_goal '+state.fat_goal+'\n';
-  p+='  --water_goal '+state.water_goal+'\n\n';
-  p+='体重目标保持现状: weight_goal='+(WEIGHT?WEIGHT.target:CURRENT.weight_goal||'?')+'kg, deadline='+(CURRENT.goal_deadline||'未设置')+'\n\n';
+  p+='营养目标:\n';
+  p+='  热量 '+state.calorie_goal+' 卡\n';
+  p+='  蛋白 '+state.protein_goal+' g\n';
+  p+='  碳水 '+state.carbs_goal+' g\n';
+  p+='  脂肪 '+state.fat_goal+' g\n';
+  p+='  饮水 '+state.water_goal+' ml\n\n';
+  p+='体重目标保持现状: '+(WEIGHT?(WEIGHT.target+' kg'):(CURRENT.weight_goal?CURRENT.weight_goal+' kg':'未设'))+' · deadline='+(CURRENT.goal_deadline||'未设置')+'\n\n';
   p+='数据来源: 目标配置 v1 · render_goal_config.py';
   return p;
 }
 function buildWeightPrompt(){
   if(!WEIGHT)return buildAdoptPrompt();
   let p='我只想调整体重目标,营养目标保持不变。\n\n';
-  p+='体重目标 (调用 weight_goal.set_weight_goal):\n';
-  p+='  --weight_goal '+WEIGHT.target+'\n';
-  p+='  --deadline '+(CURRENT.goal_deadline||'未设置')+'\n\n';
+  p+='体重目标:\n';
+  p+='  '+WEIGHT.target+' kg'+(CURRENT.goal_deadline?' (截止 '+CURRENT.goal_deadline+')':'')+'\n\n';
   p+='营养目标保持现状: 热量 '+state.calorie_goal+'卡 · 蛋白 '+state.protein_goal+'g · 碳水 '+state.carbs_goal+'g · 脂肪 '+state.fat_goal+'g · 水 '+state.water_goal+'ml\n\n';
   p+='数据来源: 目标配置 v1 · render_goal_config.py';
   return p;
@@ -284,6 +299,7 @@ renderHeader();
 renderSliders();
 renderWeight();
 renderDiff();
+renderBmrWarning();
 updateMiniChart();
 updatePreview();
 

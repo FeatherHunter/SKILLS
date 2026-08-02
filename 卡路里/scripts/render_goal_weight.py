@@ -55,6 +55,15 @@ def build_data(mode='basic'):
         data['subtitle'] = '目标 kg + 可选截止日期'
         if current is not None and current_goal:
             data['delta_kg'] = round(current - current_goal, 1)
+            # 建议速率: Δkg / 剩余天数(默认 90 天窗口),标注合理带 0.25~1.0 kg/周
+            days = 90
+            rate = round(abs(current - current_goal) / (days / 7), 2)
+            ok = 0.25 <= rate <= 1.0
+            data['rate_check'] = {
+                'ok': ok,
+                'text': f'按 Δ{abs(data["delta_kg"]):.1f}kg / {days}天 估算约 {rate} kg/周'
+                        + ('(合理带 0.25~1.0 kg/周 ✅)' if ok else '(超出合理带 0.25~1.0 kg/周,建议调整目标或延期)'),
+            }
         data['fields'] = [
             {'key': 'weight-goal', 'label': '目标体重', 'unit': 'kg', 'placeholder': '如 70'},
             {'key': 'deadline', 'label': '截止日期', 'unit': '', 'placeholder': '如 2026-12-31(选填)'},

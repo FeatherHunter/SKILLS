@@ -139,17 +139,33 @@
     return lines.join('\n');
   }
 
+  // 复制工具:clipboard API + textarea execCommand fallback(2026-08-02 修复 file:// 无反应)
+  function copyText(text, btn) {
+    const after = () => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ 已复制';
+      setTimeout(() => btn.textContent = orig, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
+    } else { fallbackCopy(text); after(); }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
   document.getElementById('copyDataBtn').onclick = function() {
-    navigator.clipboard.writeText(buildDataText()).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+    copyText(buildDataText(), this);
   };
   document.getElementById('copyLogBtn').onclick = function() {
-    navigator.clipboard.writeText(buildLogText()).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制日志', 2000);
-    });
+    copyText(buildLogText(), this);
   };
 })();
 </script>

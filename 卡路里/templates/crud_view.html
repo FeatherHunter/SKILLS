@@ -140,11 +140,28 @@
   }
 
   // 复制工具:clipboard API + textarea execCommand fallback(2026-08-02 修复 file:// 无反应)
-  function copyText(text, btn) {
+  // toast 提示:复制数据 → "XXX 复制成功";复制日志 → 提示可发给开发者(2026-08-02 用户拍板)
+  function showToast(msg) {
+    let t = document.getElementById('copyToast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'copyToast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;' +
+        'font-size:13px;z-index:999;max-width:86vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.2);';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.display = 'none'; }, 3200);
+  }
+  function copyText(text, btn, okMsg) {
     const after = () => {
       const orig = btn.textContent;
       btn.textContent = '✓ 已复制';
       setTimeout(() => btn.textContent = orig, 2000);
+      showToast(okMsg);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
@@ -162,10 +179,10 @@
   }
 
   document.getElementById('copyDataBtn').onclick = function() {
-    copyText(buildDataText(), this);
+    copyText(buildDataText(), this, '查档案 数据复制成功 ✓');
   };
   document.getElementById('copyLogBtn').onclick = function() {
-    copyText(buildLogText(), this);
+    copyText(buildLogText(), this, '排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');
   };
 })();
 </script>

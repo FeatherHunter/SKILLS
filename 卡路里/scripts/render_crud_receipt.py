@@ -208,7 +208,16 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '操作回执')
+    # 输出名与场景关联(2026-08-02 用户拍板:HTML 名可识别场景)
+    if args.live_profile_set:
+        cmd_name = '设置档案'
+    elif args.live_profile_activity:
+        cmd_name = '设活动量'
+    elif args.live_profile_update:
+        cmd_name = '改档案'
+    else:
+        cmd_name = '操作回执'
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, cmd_name)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     d = data['data']

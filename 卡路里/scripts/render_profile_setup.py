@@ -106,7 +106,7 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '档案设置')
+    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '设置档案')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')

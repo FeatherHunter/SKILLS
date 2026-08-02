@@ -27,6 +27,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_config.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
+from render_goal_common import build_meta, chain_valid, scene_path  # noqa: E402
 
 
 def build_parser():
@@ -41,6 +42,7 @@ def build_parser():
     p.add_argument('--water-only', action='store_true', help='只显示饮水目标(定饮水目标)')
     p.add_argument('--modify-nutrition', action='store_true', help='改营养目标: 带改前/改后 + 影响预估')
     p.add_argument('--modify-water', action='store_true', help='改饮水目标: 带改前/改后')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径')
     return p
 
@@ -134,6 +136,24 @@ def render_html(data: dict) -> str:
 def main():
     args = build_parser().parse_args()
 
+    # R3 思考链强制(live 模式必传,防 AI 偷懒 · 2026-08-02 对齐 #8)
+    if not args.mock and not chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.调CLI读DB→3.计算目标"', file=sys.stderr)
+        return 2
+
+    # R4 自描述:按参数推断场景名(唤醒词)
+    if args.modify_nutrition:
+        scene_name, output_type = '改营养目标', 'receipt'
+    elif args.modify_water:
+        scene_name, output_type = '改饮水目标', 'receipt'
+    elif args.water_only:
+        scene_name, output_type = '定饮水目标', 'receipt'
+    else:
+        scene_name, output_type = '定营养目标', 'receipt'
+
     try:
         if args.mock:
             data = normalize(load_data(Path(args.mock)))
@@ -145,12 +165,19 @@ def main():
                 modify_water=args.modify_water,
             ))
             label = 'live'
+        # R1 视图分离:meta 不进 UI(复制日志带出)
+        data['meta'] = build_meta(
+            wake_word=scene_name,
+            source='daily_goal + food_log(昨日)',
+            chain=args.chain,
+        )
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'目标配置_{label}')
+    # R5 命名:<场景名>_<类型中文>_<TS>.html
+    out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 

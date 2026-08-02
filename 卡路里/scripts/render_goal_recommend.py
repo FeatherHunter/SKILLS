@@ -24,6 +24,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_recommend.html'
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
 from nutrition_goal import recommend_nutrition_goal, recommend_water_goal  # noqa: E402
+from render_goal_common import build_meta, chain_valid, scene_path  # noqa: E402
 
 
 PROFILE_MAP = {'减脂': 'cut', '维持': 'maintain', '增肌': 'bulk', 'cut': 'cut',
@@ -89,20 +90,44 @@ def main():
     p.add_argument('--profile', default='cut', help='推荐方向: 减脂/维持/增肌(或 cut/maintain/bulk)')
     p.add_argument('--water-only', action='store_true', help='仅推荐饮水目标(定饮水目标(自动算))')
     p.add_argument('--full-kit', action='store_true', help='一键定全套目标模式(营养+饮水,体重目标由 AI 确认)')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
+
+    # R3 思考链强制(live 模式必传)
+    if not chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.读档案→3.算TDEE/推荐"', file=sys.stderr)
+        return 2
+
+    # R4 自描述:场景名推断
+    if args.full_kit:
+        scene_name, output_type = '一键定全套目标', 'receipt'
+    elif args.water_only:
+        scene_name, output_type = '定饮水目标(自动算)', 'receipt'
+    else:
+        scene_name, output_type = '定营养目标(自动算)', 'receipt'
 
     try:
         data = build_data(profile=args.profile, water_only=args.water_only)
         if args.full_kit:
             data['title'] = '一键定全套目标'
             data['subtitle'] = '营养 + 饮水自动推荐(体重目标请确认后由 AI 写入)'
+        # R1 视图分离:meta 不进 UI(复制日志带出)
+        data['meta'] = build_meta(
+            wake_word=scene_name,
+            source='user_profile + weight_log + recommend_nutrition_goal',
+            chain=args.chain,
+        )
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '目标推荐')
+    # R5 命名:<场景名>_<类型中文>_<TS>.html
+    out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     cg = data.get('current_goal', {})

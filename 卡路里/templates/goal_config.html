@@ -45,7 +45,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
 .copy-section code{background:var(--bg-soft);padding:1px 6px;border-radius:4px;font-size:12px;font-family:"SF Mono",monospace}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
 .btn:hover{opacity:.85}
 .btn.primary{background:var(--ink);color:#fff}
 .btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
@@ -111,6 +111,10 @@ HTML 不能直接修改数据库 · 请把下方文本粘到 AI 对话框,AI 会
 <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳全部配置</button>
 <button class="btn secondary" id="btnNutrition" onclick="copyNutrition()">🥗 仅营养</button>
 <button class="btn warning" id="btnWeight" onclick="copyWeight()">⚖️ 仅体重</button>
+</div>
+<div class="btn-row" style="margin-top:6px">
+<button class="btn secondary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
+<button class="btn secondary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
 </div>
 <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
 </section>
@@ -282,6 +286,52 @@ renderWeight();
 renderDiff();
 updateMiniChart();
 updatePreview();
+
+// R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
+const META=(DATA&&DATA.data&&DATA.data.meta)||{};
+function buildDataText(){
+  const lines=['目标配置'+(META.fetched_at?' ('+META.fetched_at+')':''),''];
+  ACTIVE_FIELDS.forEach(f=>lines.push(`${f.label}: ${state[f.key]}${f.unit}`));
+  if(WEIGHT)lines.push(`体重: 当前 ${WEIGHT.current}kg → 目标 ${WEIGHT.target}kg (${WEIGHT.days_left}天)`);
+  const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;
+  if(DIFF&&DIFF.items&&DIFF.items.length){
+    lines.push('');
+    DIFF.items.forEach(it=>lines.push(`改前 ${it.label}: ${it.old!=null?it.old:'未设'} → 改后 ${it.new!=null?it.new:'待定'}`));
+  }
+  return lines.join('\n');
+}
+function buildLogText(){
+  const lines=['[目标配置 排障日志]',''];
+  lines.push(`唤醒词: ${META.wake_word||'(未知)'}`);
+  lines.push(`渲染命令: ${META.render_cmd||'(未知)'}`);
+  lines.push(`数据来源: ${META.source||'(未知)'}`);
+  lines.push(`渲染时间: ${META.fetched_at||'(未知)'}`);
+  lines.push('');
+  if(META.chain){lines.push('AI 思考链:');lines.push(META.chain);}
+  else{lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)');}
+  lines.push('');
+  lines.push('原始数据:');
+  lines.push(JSON.stringify(DATA&&DATA.data?DATA.data:null,null,2));
+  return lines.join('\n');
+}
+function showToast(msg){
+  let t=document.getElementById('copyToast');
+  if(!t){t=document.createElement('div');t.id='copyToast';t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;max-width:80vw';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},2000);
+}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else { fallbackCopy(text,done); }
+  function fallbackCopy(txt,ok){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+  }
+}
+function copyData(){doCopy(buildDataText(),'copyDataBtn','目标配置 数据复制成功 ✓');}
+function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
 </script>
 </body>
 </html>

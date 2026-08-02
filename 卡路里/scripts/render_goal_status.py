@@ -24,6 +24,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_status.html'
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
 import goal_manager  # noqa: E402
+from render_goal_common import build_meta, chain_valid, scene_path  # noqa: E402
 
 
 def build_data(status='paused'):
@@ -63,17 +64,37 @@ def render_html(data: dict) -> str:
 def main():
     p = argparse.ArgumentParser(description='渲染目标状态 HTML(状态型)')
     p.add_argument('--status', default='paused', choices=['paused', 'resumed'])
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
+    # R3 思考链强制(live 模式必传)
+    if not chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.调goal_manager→3.生成回执"', file=sys.stderr)
+        return 2
+
+    # R4 自描述:场景名推断
+    scene_name = '暂停所有目标' if args.status == 'paused' else '重启所有目标'
+    output_type = 'receipt'
+
     try:
         data = build_data(status=args.status)
+        # R1 视图分离:meta 不进 UI(复制日志带出)
+        data['meta'] = build_meta(
+            wake_word=scene_name,
+            source='daily_goal.goal_paused(goal_manager)',
+            chain=args.chain,
+        )
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '目标状态')
+    # R5 命名:<场景名>_<类型中文>_<TS>.html
+    out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')

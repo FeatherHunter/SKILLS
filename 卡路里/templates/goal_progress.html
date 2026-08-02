@@ -43,8 +43,13 @@ td .mini-bar i{display:block;height:100%;border-radius:3px;background:var(--acce
 .kpi .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
 .kpi .value small{font-size:12px;color:var(--ink3);font-weight:400}
 .empty{padding:24px;text-align:center;color:var(--ink3);font-size:14px}
+.copy-row{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit;flex:1;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.btn:hover{opacity:.85}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+#copyToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;max-width:80vw}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;border-top:1px solid rgba(60,60,67,.08);margin-top:28px}
-@media(max-width:640px){.wrap{padding:16px 12px 48px}.hero{padding:22px 18px 18px}.hero h1{font-size:22px}.section{padding:16px 14px}.row{grid-template-columns:1fr;gap:6px}.row .num{text-align:left}.section-title{flex-direction:column;gap:4px}}
+@media(max-width:640px){.wrap{padding:16px 12px 48px}.hero{padding:22px 18px 18px}.hero h1{font-size:22px}.section{padding:16px 14px}.row{grid-template-columns:1fr;gap:6px}.row .num{text-align:left}.section-title{flex-direction:column;gap:4px}.copy-row{flex-direction:column}.btn{width:100%}}
 </style>
 </head>
 <body>
@@ -58,6 +63,10 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
   <div class="section"><p class="empty">数据加载中…</p></div>
 </div>
 <p class="summary" id="summary"></p>
+<div class="copy-row">
+  <button class="btn" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
+  <button class="btn" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
+</div>
 <footer>卡路里 Skill · 目标进度 · result-type</footer>
 </div>
 <!--INJECT-DATA-->
@@ -108,6 +117,51 @@ function renderTable(){
 document.getElementById('main-content').innerHTML=
   renderKpis()+renderRows()+renderTable();
 if(D.summary){document.getElementById('summary').textContent=D.summary;}
+
+// R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
+const META=D.meta||{};
+function buildDataText(){
+  const lines=[(D.title||'目标进度')+(META.fetched_at?' ('+META.fetched_at+')':''),''];
+  (D.kpis||[]).forEach(k=>lines.push(`${k.label}: ${k.value}${k.unit?' '+k.unit:''}`));
+  (D.items||[]).forEach(it=>{
+    const v=it.actual!=null?it.actual:it.goal;
+    lines.push(`${it.label}: ${v!=null?v:'—'}${it.unit?' '+it.unit:''}${it.pct!=null?' ('+it.pct+'%)':''}`);
+  });
+  if(D.summary)lines.push('',D.summary);
+  return lines.join('\n');
+}
+function buildLogText(){
+  const lines=[`[${D.title||'目标进度'} 排障日志]`,''];
+  lines.push(`唤醒词: ${META.wake_word||'(未知)'}`);
+  lines.push(`渲染命令: ${META.render_cmd||'(未知)'}`);
+  lines.push(`数据来源: ${META.source||'(未知)'}`);
+  lines.push(`渲染时间: ${META.fetched_at||'(未知)'}`);
+  lines.push('');
+  if(META.chain){lines.push('AI 思考链:');lines.push(META.chain);}
+  else{lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)');}
+  lines.push('');
+  lines.push('原始数据:');
+  lines.push(JSON.stringify(D,null,2));
+  return lines.join('\n');
+}
+function showToast(msg){
+  let t=document.getElementById('copyToast');
+  if(!t){t=document.createElement('div');t.id='copyToast';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},2000);
+}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else { fallbackCopy(text,done); }
+  function fallbackCopy(txt,ok){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+  }
+}
+function copyData(){doCopy(buildDataText(),'copyDataBtn',`${D.title||'目标进度'} 数据复制成功 ✓`);}
+function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
 </script>
 </body>
 </html>

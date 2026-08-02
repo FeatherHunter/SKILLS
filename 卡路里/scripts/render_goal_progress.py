@@ -42,6 +42,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
 from nutrition_goal import get_nutrition_goal  # noqa: E402
 import goal_history  # noqa: E402
+from render_goal_common import build_meta, chain_valid, scene_path  # noqa: E402
 
 
 def _get_goal_row():
@@ -496,8 +497,34 @@ def main():
     p.add_argument('--period', choices=['week', 'month'], help='nutrition 模式周期(完成率)')
     p.add_argument('--expiring', type=int, default=14, help='weight 模式紧迫窗口天数(默认 14)')
     p.add_argument('--days', type=int, default=30, help='vs_actual 时间窗口天数(默认 30)')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
+
+    # R3 思考链强制(live 模式必传)
+    if not chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.读目标与记录→3.计算完成度"', file=sys.stderr)
+        return 2
+
+    # R4 自描述:场景名推断(mode → 场景名/类型)
+    SCENE = {
+        'today': ('看今日目标', 'result'),
+        'week': ('看本周目标', 'result'),
+        'nutrition': ('看营养目标进度', 'result'),
+        'water': ('看饮水目标进度', 'result'),
+        'vs_actual': ('看目标对比实际', 'result'),
+        'completion': ('看目标完成度', 'result'),
+        'weight': ('看即将到期的目标', 'result'),
+        'weight_progress': ('看体重目标进度', 'result'),
+        'history': ('看目标历史完成', 'result'),
+        'predict': ('看目标预测达成', 'result'),
+    }
+    scene_name, output_type = SCENE[args.mode]
+    if args.mode == 'nutrition' and args.period:
+        scene_name = '看目标完成率(按周)' if args.period == 'week' else '看目标完成率(按月)'
 
     goal = _get_goal_row() or {}
     try:
@@ -521,12 +548,24 @@ def main():
             data = build_mode_history(goal, days=args.days)
         elif args.mode == 'predict':
             data = build_mode_predict(goal)
+        # R1 视图分离:meta 不进 UI(复制日志带出)
+        data['meta'] = build_meta(
+            wake_word=scene_name,
+            source='daily_goal + food_log/exercise_log/weight_log 聚合',
+            chain=args.chain,
+            extra={'mode': args.mode,
+                   'period': args.period if args.period else None,
+                   'days': args.days if args.mode in ('vs_actual', 'history') else None,
+                   'expiring': args.expiring if args.mode == 'weight' else None},
+        )
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '目标进度')
+    # R5 命名:<场景名>_<类型中文>_<TS>.html
+    out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')
     print(f'   mode={args.mode}' + (f' period={args.period}' if args.period else '')

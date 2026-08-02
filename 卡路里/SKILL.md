@@ -331,46 +331,46 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/render_goal_config.py --live` |
-| 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `python scripts/render_goal_recommend.py --profile <减脂/维持/增肌>` |
-| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/render_goal_weight.py --mode basic` |
-| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `python scripts/render_goal_weight.py --mode auto_deadline` |
-| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `python scripts/render_goal_weight.py --mode with_start` |
-| 定饮水目标 | 每天饮水目标(ml) | `python scripts/render_goal_config.py --live --water-only` |
-| 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `python scripts/render_goal_recommend.py --water-only` |
-| 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌>` |
+| 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/render_goal_config.py --live --chain <思考链>` |
+| 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `python scripts/render_goal_recommend.py --profile <减脂/维持/增肌> --chain <思考链>` |
+| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/render_goal_weight.py --mode basic --chain <思考链>` |
+| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `python scripts/render_goal_weight.py --mode auto_deadline --chain <思考链>` |
+| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `python scripts/render_goal_weight.py --mode with_start --chain <思考链>` |
+| 定饮水目标 | 每天饮水目标(ml) | `python scripts/render_goal_config.py --live --water-only --chain <思考链>` |
+| 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `python scripts/render_goal_recommend.py --water-only --chain <思考链>` |
+| 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌> --chain <思考链>` |
 
 #### 看目标(10)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 看今日目标 | 今日 5 项(热量/蛋白/碳水/脂肪/饮水)目标/实际/完成度 | `python scripts/render_goal_progress.py --mode today` |
-| 看本周目标 | 日均 vs 日目标 + 周总量 vs 周目标 | `python scripts/render_goal_progress.py --mode week` |
-| 看营养目标进度 | 4 项宏量进度条 + 完成度% + 缺口 | `python scripts/render_goal_progress.py --mode nutrition` |
-| 看体重目标进度 | 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率 | `python scripts/render_goal_progress.py --mode weight_progress` |
-| 看饮水目标进度 | 累计/目标/完成度 + 剩余 ml | `python scripts/render_goal_progress.py --mode water` |
-| 看目标对比实际 | 目标线 vs 实际线 + 偏差 + 时间窗口(默认 30 天) | `python scripts/render_goal_progress.py --mode vs_actual` |
-| 看目标完成度 | 5 项完成度% + 缺口 + 总评分 | `python scripts/render_goal_progress.py --mode completion` |
-| 看即将到期的目标 | 到期目标列表(默认 14 天内)+ 紧迫度 | `python scripts/render_goal_progress.py --mode weight --expiring 14` |
-| 看目标完成率(按周) | 本周 7 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period week` |
-| 看目标完成率(按月) | 本月 30 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period month` |
+| 看今日目标 | 今日 5 项(热量/蛋白/碳水/脂肪/饮水)目标/实际/完成度 | `python scripts/render_goal_progress.py --mode today --chain <思考链>` |
+| 看本周目标 | 日均 vs 日目标 + 周总量 vs 周目标 | `python scripts/render_goal_progress.py --mode week --chain <思考链>` |
+| 看营养目标进度 | 4 项宏量进度条 + 完成度% + 缺口 | `python scripts/render_goal_progress.py --mode nutrition --chain <思考链>` |
+| 看体重目标进度 | 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率 | `python scripts/render_goal_progress.py --mode weight_progress --chain <思考链>` |
+| 看饮水目标进度 | 累计/目标/完成度 + 剩余 ml | `python scripts/render_goal_progress.py --mode water --chain <思考链>` |
+| 看目标对比实际 | 目标线 vs 实际线 + 偏差 + 时间窗口(默认 30 天) | `python scripts/render_goal_progress.py --mode vs_actual --chain <思考链>` |
+| 看目标完成度 | 5 项完成度% + 缺口 + 总评分 | `python scripts/render_goal_progress.py --mode completion --chain <思考链>` |
+| 看即将到期的目标 | 到期目标列表(默认 14 天内)+ 紧迫度 | `python scripts/render_goal_progress.py --mode weight --expiring 14 --chain <思考链>` |
+| 看目标完成率(按周) | 本周 7 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period week --chain <思考链>` |
+| 看目标完成率(按月) | 本月 30 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period month --chain <思考链>` |
 
 #### 改目标(5)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/render_goal_config.py --modify-nutrition` |
-| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/render_goal_weight.py --mode modify` |
-| 改饮水目标 | 只改饮水目标,其他不变 | `python scripts/render_goal_config.py --modify-water` |
-| 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `python scripts/render_goal_status.py --status paused` |
-| 重启所有目标 | 从暂停恢复全部目标 | `python scripts/render_goal_status.py --status resumed` |
+| 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/render_goal_config.py --modify-nutrition --chain <思考链>` |
+| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/render_goal_weight.py --mode modify --chain <思考链>` |
+| 改饮水目标 | 只改饮水目标,其他不变 | `python scripts/render_goal_config.py --modify-water --chain <思考链>` |
+| 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `python scripts/render_goal_status.py --status paused --chain <思考链>` |
+| 重启所有目标 | 从暂停恢复全部目标 | `python scripts/render_goal_status.py --status resumed --chain <思考链>` |
 
 #### 看目标(续)
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 看目标历史完成 | 每日达成列表 + 完成/未完成天数统计 | `python scripts/render_goal_progress.py --mode history` |
-| 看目标预测达成 | 预测达成日 + 置信度(体重部分复用对比体重预测) | `python scripts/render_goal_progress.py --mode predict` |
+| 看目标历史完成 | 每日达成列表 + 完成/未完成天数统计 | `python scripts/render_goal_progress.py --mode history --chain <思考链>` |
+| 看目标预测达成 | 预测达成日 + 置信度(体重部分复用对比体重预测) | `python scripts/render_goal_progress.py --mode predict --chain <思考链>` |
 
 ### 🏃 运动
 

@@ -34,7 +34,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .copy-section h2{font-size:17px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
 .copy-section .sub{font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.6}
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
 .btn:hover{opacity:.85}
 .btn.primary{background:var(--ink);color:#fff}
 .btn.copied{background:var(--green)!important;color:#fff!important}
@@ -64,6 +64,8 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <p class="sub">确认无误后,复制下方指令发给 AI,AI 会调用写库。</p>
 <div class="btn-row">
 <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳</button>
+<button class="btn secondary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
+<button class="btn secondary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
 </div>
 <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
 </section>
@@ -129,6 +131,52 @@ renderKpis();
 renderFields();
 renderResult();
 document.getElementById('copyPreview').textContent=buildPrompt();
+
+// R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
+const META=D.meta||{};
+function buildDataText(){
+  const lines=[(D.title||'体重目标')+(META.fetched_at?' ('+META.fetched_at+')':''),''];
+  if(D.current_weight!=null)lines.push(`当前体重: ${D.current_weight} kg`);
+  if(D.target_weight!=null)lines.push(`目标: ${D.target_weight} kg`);
+  if(D.deadline!=null)lines.push(`截止: ${D.deadline}`);
+  if(D.suggested_rate!=null)lines.push(`建议速率: ${D.suggested_rate} kg/周`);
+  const values={};
+  document.querySelectorAll('#fields input').forEach(i=>{values[i.dataset.key]=i.value.trim();});
+  (D.fields||[]).forEach(f=>lines.push(`${f.label}: ${values[f.key]||f.placeholder}`));
+  return lines.join('\n');
+}
+function buildLogText(){
+  const lines=[`[${D.title||'体重目标'} 排障日志]`,''];
+  lines.push(`唤醒词: ${META.wake_word||'(未知)'}`);
+  lines.push(`渲染命令: ${META.render_cmd||'(未知)'}`);
+  lines.push(`数据来源: ${META.source||'(未知)'}`);
+  lines.push(`渲染时间: ${META.fetched_at||'(未知)'}`);
+  lines.push('');
+  if(META.chain){lines.push('AI 思考链:');lines.push(META.chain);}
+  else{lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)');}
+  lines.push('');
+  lines.push('原始数据:');
+  lines.push(JSON.stringify(D,null,2));
+  return lines.join('\n');
+}
+function showToast(msg){
+  let t=document.getElementById('copyToast');
+  if(!t){t=document.createElement('div');t.id='copyToast';t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;max-width:80vw';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},2000);
+}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else { fallbackCopy(text,done); }
+  function fallbackCopy(txt,ok){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+  }
+}
+function copyData(){doCopy(buildDataText(),'copyDataBtn',`${D.title||'体重目标'} 数据复制成功 ✓`);}
+function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
 </script>
 </body>
 </html>

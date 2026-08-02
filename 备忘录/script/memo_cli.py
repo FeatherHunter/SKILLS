@@ -30,16 +30,19 @@ DB_FILENAME = "memo.db"
 
 
 def _fallback_db_dir():
-    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    """全局 fallback DB 目录(两平台默认 · 2026-08-02 新增 Linux 系统盘路径):
+      Windows → D:/.db
+      WSL(Linux 且 /mnt/d 存在) → /mnt/d/.db
+      纯 Linux(无 /mnt/d) → ~/.local/share/memo(XDG 规范)
+    """
     if sys.platform == 'win32':
         return Path('D:/.db')
     d_drive = Path('/mnt/d')
     if d_drive.exists():
         return d_drive / '.db'
-    raise RuntimeError(
-        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
-        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
-    )
+    home_db = Path.home() / '.local' / 'share' / 'memo'
+    home_db.mkdir(parents=True, exist_ok=True)
+    return home_db
 
 # 两层查找DB路径：环境变量 SKILLS_DB_PATH > D:\.db\
 def _find_db_path(skill_dir, db_filename):

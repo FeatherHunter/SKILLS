@@ -17,6 +17,7 @@
 # 无 order 字段:组内序 = 书写序(#31 Q4)。
 # 共享校验:script/validate_scenarios.py(测试 + 渲染前双触发,#31 Q7)。
 # 复制契约:复制按钮直接复制 prompt 纯文本(自含唤醒词锚点,不加标签头 · 卡路里同型)。
+# DB fallback:Windows D:/.db · Linux(无 /mnt/d)~/.local/share/memo(2026-08-02 加)。
 #
 # 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
 
@@ -513,9 +514,10 @@ scenarios:
     @larksuite/cli(飞书 CLI,bin 名 lark-cli) >=1.0.59: 官方包,可选,仅「心愿→飞书」「备忘录同步」需要;安装 npm
     install -g @larksuite/cli,授权 lark-cli auth login;未装/未授权自动降级
 
-    SKILLS_DB_PATH: 可选环境变量,数据库根目录(不设回落 D:/.db)
+    SKILLS_DB_PATH: 可选环境变量,数据库根目录(多技能共用)。不设时默认:Windows D:/.db / Linux(含 WSL)~/.local/share/memo(或
+    /mnt/d/.db)
 
-    MEMO_MEDIA_DIR: 可选环境变量,媒体目录(本机约定绝对路径,如 D:/media)
+    MEMO_MEDIA_DIR: 可选环境变量,媒体文件目录(不设默认 media)
 
     Cron 提醒调度: 可选,宿主平台定时调提醒检查;推送渠道(QQ/飞书/微信)由宿主选择
 

@@ -1755,7 +1755,8 @@ AI 看到错误时按此表处理:
 3. 回执 HTML(呈现:改前/改后对比 + 影响提示:改身高→BMI 重算,改活动量→TDEE 系数变化)
 
 **查档案**:
-1. 调 `render_crud_view.py --entity profile` → HTML(呈现:档案字段含活动量 + 最新体重 + BMI/BMR/TDEE 含系数说明)
+1. 调 `render_crud_view.py --entity profile --wake-word 查档案 --chain "1.识别唤醒词→2.调CLI读DB→3.算BMI/BMR/TDEE"` → HTML(呈现:档案字段含活动量 + 最新体重 + BMI/BMR/TDEE 含系数说明)
+2. **--chain 注入约定(2026-08-02 拍板)**:AI 执行时用 `--chain` 附上处理步骤,`--wake-word` 附唤醒词;不进 UI,用户点「复制日志」可带出,用于排障对比
 
 ---
 

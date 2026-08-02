@@ -6,6 +6,10 @@
   - 查档案   → 显示 user_profile 字段(含活动量/系数/TDEE)
   - 查定时复盘 → 显示 mavis cron 任务配置
 对应模板: templates/crud_view.html
+
+调试支持(2026-08-02 用户拍板):
+  --chain <文本>   AI 思考链注入(meta.chain,不进 UI;「复制日志」按钮可带出)
+  UI 隐藏原始数据/数据来源(用户视图干净);「复制日志」含 原始数据/来源/时间/思考链
 """
 import argparse, json, sys
 from datetime import datetime
@@ -76,7 +80,7 @@ def build_data(entity_type):
                 'entity': {
                     'type': '用户档案 + 体重',
                     'title': '👤 查档案',
-                    'subtitle': 'user_profile 基础信息 + weight_log 最新体重',
+                    'subtitle': '我的档案 + 最新体重',
                     'section_title': '档案 + 当前体重'
                 },
                 'kpis': [
@@ -115,6 +119,8 @@ def main():
     p = argparse.ArgumentParser(description='渲染状态查看 HTML(查档案/查定时复盘)')
     p.add_argument('--entity', choices=['profile','cron'], help='DB 实体类型(与 --mock 二选一)')
     p.add_argument('--mock', help='mock JSON(与 --entity 二选一)')
+    p.add_argument('--chain', help='AI 思考链(注入 meta.chain,供「复制日志」带出 · 2026-08-02)')
+    p.add_argument('--wake-word', help='唤醒词(注入 meta.wake_word,供「复制日志」带出)')
     p.add_argument('--output')
     args = p.parse_args()
     try:
@@ -128,6 +134,13 @@ def main():
         else:
             print('❌ 需要 --mock 或 --entity', file=sys.stderr)
             return 1
+        # 调试元数据注入(不进 UI,复制日志可带出)
+        meta = data['data']['meta']
+        if args.chain:
+            meta['chain'] = args.chain
+        if args.wake_word:
+            meta['wake_word'] = args.wake_word
+        meta['render_cmd'] = ' '.join(sys.argv[1:])
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

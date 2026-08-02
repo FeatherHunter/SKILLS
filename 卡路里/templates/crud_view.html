@@ -35,12 +35,7 @@
   .key-val:last-child { border-bottom:none; }
   .key-val .key { color:var(--fg2); }
   .key-val .val { font-weight:600; font-variant-numeric:tabular-nums; }
-  pre.json { background:#1d1d1f; color:#f5f5f7; padding:18px 22px; border-radius:12px; overflow-x:auto; font-size:12.5px; line-height:1.6; margin-top:12px; }
-  pre.json .k { color:#ff9500; }
-  pre.json .v { color:#34c759; }
-  pre.json .s { color:#5ac8fa; }
-  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
-  .footer .src { font-size:12px; color:var(--fg3); }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:flex-end; align-items:center; }
   .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .copy-row { display:flex; gap:8px; align-items:center; }
@@ -77,15 +72,10 @@
   <div id="detailList"></div>
 </div>
 
-<div class="section" id="jsonSection" style="display:none">
-  <h2>原始数据</h2>
-  <pre class="json" id="jsonPre"></pre>
-</div>
-
 <div class="footer">
-  <div class="src" id="srcLine">📊 数据来源:--</div>
   <div class="copy-row">
-    <button class="btn" id="copyJsonBtn">📋 复制 JSON</button>
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
@@ -120,23 +110,45 @@
       `<div class="key-val"><span class="key">${f.key}</span><span class="val">${f.value}</span></div>`);
   });
 
-  // 原始 JSON(可选)
-  if (raw && Object.keys(raw).length > 0) {
-    document.getElementById('jsonSection').style.display = 'block';
-    const formatted = JSON.stringify(raw, null, 2)
-      .replace(/"([^"]+)":/g, '"<span class="k">$1</span>":')
-      .replace(/: "([^"]+)"/g, ': "<span class="v">$1</span>"')
-      .replace(/: (\d+)/g, ': <span class="v">$1</span>')
-      .replace(/: (true|false)/g, ': <span class="v">$1</span>');
-    document.getElementById('jsonPre').innerHTML = formatted;
+  // 复制数据:用户关心信息的人类可读文本(2026-08-02 用户拍板)
+  function buildDataText() {
+    const lines = [`${entity.title}(${meta.fetched_at})`, ''];
+    kpis.forEach(k => lines.push(`${k.label}: ${k.value}${k.extra ? ' ' + k.extra : ''}`));
+    lines.push('');
+    fields.forEach(f => lines.push(`${f.key}: ${f.value}`));
+    return lines.join('\n');
   }
 
-  document.getElementById('srcLine').textContent = `📊 数据来源:${meta.source} · ${meta.fetched_at}`;
+  // 复制日志:排障信息(原始数据/来源/时间/渲染参数/AI 思考链)(2026-08-02 用户拍板)
+  function buildLogText() {
+    const lines = [`[${entity.title} 排障日志]`, ''];
+    lines.push(`唤醒词: ${meta.wake_word || '(未知)'}`);
+    lines.push(`渲染命令: ${meta.render_cmd || '(未知)'}`);
+    lines.push(`数据来源: ${meta.source || '(未知)'}`);
+    lines.push(`渲染时间: ${meta.fetched_at || '(未知)'}`);
+    if (meta.chain) {
+      lines.push('');
+      lines.push(`AI 思考链:`);
+      lines.push(meta.chain);
+    }
+    if (raw && Object.keys(raw).length > 0) {
+      lines.push('');
+      lines.push(`原始数据:`);
+      lines.push(JSON.stringify(raw, null, 2));
+    }
+    return lines.join('\n');
+  }
 
-  document.getElementById('copyJsonBtn').onclick = function() {
-    navigator.clipboard.writeText(JSON.stringify(raw, null, 2)).then(() => {
+  document.getElementById('copyDataBtn').onclick = function() {
+    navigator.clipboard.writeText(buildDataText()).then(() => {
       this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制 JSON', 2000);
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+  document.getElementById('copyLogBtn').onclick = function() {
+    navigator.clipboard.writeText(buildLogText()).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制日志', 2000);
     });
   };
 })();

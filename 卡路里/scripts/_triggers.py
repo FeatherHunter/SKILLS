@@ -4174,6 +4174,144 @@ TRIGGERS = [
             'html_template': 'templates/combined_analysis.html', 'data_source': 'python scripts/render_analysis.py --view six --date <YYYY-MM-DD>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看每日 6 因素综合」。\n\n我想看某一天的全维度健康快照(体重/饮食/运动/饮水/体脂/围度):6 维 KPI 卡 + 各维趋势小图 + 异常标注 + vs 昨日对比 + 一句话洞察;没有体脂/围度数据时自动降级为 4 维。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____',
             'user_intent': '看单日全维度健康快照', 'data_fields': ['weight_kg', 'calories', 'exercise_kcal', 'water_ml', 'body_fat_pct', 'waist_cm'],
             'depends_on_external': False, 'order': 153},
+    {
+            'category': "复盘",     'wake_word': "今日复盘",     'desc': "当日复盘",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py --type day", 'text': "请你加载技能 卡路里,执行唤醒词「今日复盘」。\n\n我要看当日复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "关闭定时复盘",     'desc': "删除 cron",
+            'main_prompt': {
+        'cli': "mavis cron delete ...", 'text': "请你加载技能 卡路里,执行唤醒词「关闭定时复盘」。\n\n我要关掉每天自动复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "复盘",     'desc': "生成 8 维度复盘报告 HTML + 可选飞书发送",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py", 'text': "请你加载技能 卡路里,执行唤醒词「复盘」。\n\n我要看一份复盘报告,默认最近 7 天,带 8 个维度(热量/营养/运动/体重/饮水/缺口/目标/周对比)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "复盘日期范围",     'desc': "自定义日期范围复盘",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py --range 2026-07-01:2026-07-14", 'text': "请你加载技能 卡路里,执行唤醒词「复盘日期范围」。\n\n我要看任意起止日期的复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "开启定时复盘",     'desc': "启动 cron(默认 23:00 / 过去 7 天)",
+            'main_prompt': {
+        'cli': "mavis cron create ...", 'text': "请你加载技能 卡路里,执行唤醒词「开启定时复盘」。\n\n我要设每天自动跑复盘(默认 23:00 跑过去 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "本周复盘",     'desc': "本周复盘(本周一-今天)",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py --type week", 'text': "请你加载技能 卡路里,执行唤醒词「本周复盘」。\n\n我要看本周一-今天的复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "本年复盘",     'desc': "本年复盘(今年 1/1-今天)",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py --type year", 'text': "请你加载技能 卡路里,执行唤醒词「本年复盘」。\n\n我要看今年 1/1 - 今天的复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "本月复盘",     'desc': "本月复盘(本月 1 号-今天)",
+            'main_prompt': {
+        'cli': "python scripts/render_review.py --type month", 'text': "请你加载技能 卡路里,执行唤醒词「本月复盘」。\n\n我要看本月 1 号-今天的复盘。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查低热量榜",     'desc': "低热量健康 TOP5",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7 --category low_calorie", 'text': "请你加载技能 卡路里,执行唤醒词「查低热量榜」。\n\n我想看热量最低的 5 个健康食物(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查健康报告",     'desc': "四维度综合健康仪表盘",
+            'main_prompt': {
+        'cli': "python scripts/render_health_dashboard.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查健康报告」。\n\n我要看 4 维健康仪表盘(热量/营养/运动/体重综合,默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': [{"label": "查健康报告 本月", "cli": "python scripts/render_health_dashboard.py --start 2026-07-01 --end 2026-07-26", "prompt": "请你加载技能 卡路里,执行唤醒词「查健康报告 本月」。\n\n我要看本月 1 号到今天的健康报告。\n\n完成后给 1 句话总结,不需要过多文字解释。"}]},
+    {
+            'category': "分析",     'wake_word': "查卡路里数据",     'desc': "数据健康检查(lint_health)",
+            'main_prompt': {
+        'cli': "python scripts/render_lint_health.py", 'text': "请你加载技能 卡路里,执行唤醒词「查卡路里数据」。\n\n我要检查数据库的健康性。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "复盘",     'wake_word': "查定时复盘",     'desc': "查看当前定时复盘配置",
+            'main_prompt': {
+        'cli': "mavis cron list", 'text': "请你加载技能 卡路里,执行唤醒词「查定时复盘」。\n\n我想看当前定时复盘配置。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查热量缺口",     'desc': "热量缺口分析(摄入 vs 运动 vs TDEE)",
+            'main_prompt': {
+        'cli': "python scripts/render_calorie_deficit.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查热量缺口」。\n\n我想看摄入 vs 运动消耗的缺口(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查热量趋势",     'desc': "热量摄入趋势",
+            'main_prompt': {
+        'cli': "python scripts/render_calorie_trend.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查热量趋势」。\n\n我想看每日热量摄入趋势(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': [{"label": "查热量趋势 上周", "cli": "python scripts/render_calorie_trend.py --days 7", "prompt": "请你加载技能 卡路里,执行唤醒词「查热量趋势 上周」。\n\n时间窗口/参数语境:查热量趋势 上周。\n\n完成后给 1 句话总结,不需要过多文字解释。"}, {"label": "查热量趋势 7 月", "cli": "python scripts/render_calorie_trend.py --start 2026-07-01 --end 2026-07-31", "prompt": "请你加载技能 卡路里,执行唤醒词「查热量趋势 7 月」。\n\n时间窗口/参数语境:查热量趋势 7 月。\n\n完成后给 1 句话总结,不需要过多文字解释。"}, {"label": "查热量趋势 最近 30 天", "cli": "python scripts/render_calorie_trend.py --days 30", "prompt": "请你加载技能 卡路里,执行唤醒词「查热量趋势 最近 30 天」。\n\n时间窗口/参数语境:查热量趋势 最近 30 天。\n\n完成后给 1 句话总结,不需要过多文字解释。"}]},
+    {
+            'category': "分析",     'wake_word': "查营养结构",     'desc': "营养素占比分析",
+            'main_prompt': {
+        'cli': "python scripts/render_nutrition_ratio.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查营养结构」。\n\n我想看蛋白/碳水/脂肪占比(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': [{"label": "查营养结构 7 月", "cli": "python scripts/render_nutrition_ratio.py --start 2026-07-01 --end 2026-07-31", "prompt": "请你加载技能 卡路里,执行唤醒词「查营养结构 7 月」。\n\n时间窗口/参数语境:查营养结构 7 月。\n\n完成后给 1 句话总结,不需要过多文字解释。"}]},
+    {
+            'category': "分析",     'wake_word': "查运动分布",     'desc': "运动类型分布",
+            'main_prompt': {
+        'cli': "python scripts/render_exercise_distribution.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查运动分布」。\n\n我想看 4 类运动(力量/有氧/柔韧/日常)的时间/消耗分布(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查运动贡献",     'desc': "运动对热量缺口的贡献占比",
+            'main_prompt': {
+        'cli': "python scripts/render_exercise_distribution.py --days 7 --mode contribution", 'text': "请你加载技能 卡路里,执行唤醒词「查运动贡献」。\n\n我想看运动在热量缺口里的占比(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查频繁吃榜",     'desc': "最常吃的食物 TOP5",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7 --category frequent", 'text': "请你加载技能 卡路里,执行唤醒词「查频繁吃榜」。\n\n我想看吃最多次的食物(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查食物排行",     'desc': "食物排行榜(默认高热量榜)",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查食物排行」。\n\n我想看 TOP 食物热量榜(默认高热量,默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查高热量榜",     'desc': "热量炸弹 TOP5",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7 --category high_calorie", 'text': "请你加载技能 卡路里,执行唤醒词「查高热量榜」。\n\n我想看热量最高的 5 个食物(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查高碳水榜",     'desc': "高碳水食物 TOP5",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7 --category high_carb", 'text': "请你加载技能 卡路里,执行唤醒词「查高碳水榜」。\n\n我想看碳水最高的 5 个食物(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "分析",     'wake_word': "查高蛋白榜",     'desc': "高蛋白食物 TOP5",
+            'main_prompt': {
+        'cli': "python scripts/render_food_ranking.py --days 7 --category high_protein", 'text': "请你加载技能 卡路里,执行唤醒词「查高蛋白榜」。\n\n我想看蛋白最高的 5 个食物(默认 7 天)。\n\n完成后给 1 句话总结,不需要过多文字解释。"},
+        'fill_hints': [],
+            'variants': []},
+    {
+            'category': "饮食",     'wake_word': "看「有备注」的饮食记录",     'desc': "看「有备注」的饮食记录",
+            'main_prompt': {
+        'cli': "python scripts/render_today_meals.py --with-note --days <N> --chain \"1.识别→2.读DB→3.渲染\"", 'text': "请你加载技能 卡路里,执行唤醒词「看「有备注」的饮食记录」。\n\n我想看带备注的饮食记录(如「加了辣酱」「食堂打的」):表(日期/餐别/食物/克数/热量/蛋白/备注)。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____"},
+        'fill_hints': [],
+            'variants': []},
 ]
 
 

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 整体趋势</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:56px 24px 80px; -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
+  .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
+  svg { width:100%; height:clamp(220px, 45vh, 360px); display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:16px; height:2px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th { color:var(--fg2); font-weight:500; font-size:12px; }
+  tr:last-child td { border-bottom:none; }
+  .insight { background:var(--soft); border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:4px; }
+  .insight b { color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section  { padding: 14px 16px; }
+    body { padding: 40px 14px 60px; }
+    .table-wrap { overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">整体趋势 · 多指标归一化</div>
+</div>
+
+<h1 id="title">--</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid" id="kpis"></div>
+
+<div class="section">
+  <h2>多指标同图(归一化 0-100)</h2>
+  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+  <div class="legend" id="legend"></div>
+  <div style="font-size:11px;color:var(--fg3);margin-top:8px">90 天以上自动月度聚合降采样;红点为异常日标注</div>
+</div>
+
+<div class="section" id="periodSection" style="display:none">
+  <h2>周期对比</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>指标</th><th id="periodCurHead">--</th><th id="periodPrevHead">--</th></tr></thead>
+      <tbody id="periodTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="insight" id="insight">--</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  document.getElementById('metaLeft').textContent = `${D.start} ~ ${D.end} · 共 ${D.days} 天`;
+  document.getElementById('title').textContent = `看整体趋势(${D.group_label})`;
+  document.getElementById('sub').textContent = `多指标归一化同图 · ${D.window} 窗口`;
+  document.getElementById('insight').innerHTML = `<b>💡 一句话洞察:</b> ${D.insight || '--'}`;
+
+  const kpiBox = document.getElementById('kpis');
+  (D.metrics || []).forEach(m => {
+    const st = D.stats?.[m.field] || {};
+    kpiBox.insertAdjacentHTML('beforeend',
+      `<div class="kpi"><div class="label">${m.label}</div><div class="value">${st.min ?? '—'} ~ ${st.max ?? '—'}</div><div class="extra">原始值范围</div></div>`);
+  });
+
+  // 多折线(归一化)
+  const svg = document.getElementById('chart');
+  const W = 800, H = 260, PAD = 34;
+  const colors = ['#0071e3', '#ff9500', '#34c759', '#ff3b30', '#af52de', '#5ac8fa'];
+  const legend = document.getElementById('legend');
+  const data = D.monthly || D.norm || [];
+  (D.metrics || []).forEach((m, j) => {
+    const vals = data.map(p => p[m.field]).filter(v => v !== null && v !== undefined);
+    if (vals.length < 2) return;
+    legend.insertAdjacentHTML('beforeend', `<span><i style="background:${colors[j % 6]}"></i> ${m.label}</span>`);
+    const X = i => PAD + i / (data.length - 1) * (W - PAD * 2);
+    const Y = v => H - PAD - v / 100 * (H - PAD * 2);
+    let d = '';
+    data.forEach((p, i) => {
+      if (p[m.field] === null || p[m.field] === undefined) return;
+      d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[m.field]).toFixed(1)}`;
+    });
+    svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${colors[j % 6]}" stroke-width="2" opacity="0.9"/>`);
+  });
+
+  // 异常日标注(红点)
+  (D.anomaly || []).forEach(d => {
+    const idx = data.findIndex(p => p.date === d || p.month === d);
+    if (idx < 0) return;
+    const X = i => PAD + i / (data.length - 1) * (W - PAD * 2);
+    svg.insertAdjacentHTML('beforeend', `<circle cx="${X(idx)}" cy="${PAD}" r="4" fill="#ff3b30"><title>${d}</title></circle>`);
+  });
+  if (data.length === 0) {
+    svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">窗口内无数据</text>`);
+  }
+
+  // 周期对比
+  const pc = D.period_compare;
+  if (pc) {
+    document.getElementById('periodSection').style.display = '';
+    document.getElementById('periodCurHead').textContent = pc.label.split(' vs ')[0] || '本周期';
+    document.getElementById('periodPrevHead').textContent = pc.label.split(' vs ')[1] || '上周期';
+    const t = document.getElementById('periodTable');
+    (D.metrics || []).forEach(m => {
+      const cur = pc.current?.[m.field], prev = pc.prev?.[m.field];
+      const delta = (cur !== null && cur !== undefined && prev !== null && prev !== undefined) ? (cur - prev) : null;
+      t.insertAdjacentHTML('beforeend',
+        `<tr><td>${m.label}</td><td>${cur ?? '—'}</td><td>${prev ?? (pc.goal?.[m.field] ?? '—')}</td></tr>`);
+    });
+  }
+
+  document.getElementById('srcLine').textContent = `📊 整体趋势 · ${D.group_label} · render_analysis.py --view trend`;
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(JSON.stringify({ group: D.group_label, insight: D.insight, period_compare: D.period_compare }, null, 2))
+      .then(() => { document.getElementById('copyBtn').textContent = '✅ 已复制'; })
+      .catch(() => { document.getElementById('copyBtn').textContent = '复制失败'; });
+    setTimeout(() => { document.getElementById('copyBtn').textContent = '📋 复制数据'; }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

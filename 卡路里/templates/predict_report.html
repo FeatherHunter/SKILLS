@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 预测模拟</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:56px 24px 80px; -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
+  .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
+  svg { width:100%; height:clamp(220px, 45vh, 360px); display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:16px; height:2px; background:#0071e3; }
+  .legend .band { width:16px; height:10px; background:rgba(0,113,227,.18); border-radius:2px; }
+  .assume { font-size:12.5px; color:var(--fg2); background:var(--soft); border-radius:10px; padding:10px 14px; }
+  .insight { background:var(--soft); border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:4px; }
+  .insight b { color:var(--accent); }
+  .degrade { background:rgba(255,149,0,.1); border:1px solid rgba(255,149,0,.3); border-radius:14px; padding:16px 20px; margin-bottom:16px; font-size:13.5px; color:#9a6b00; }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section  { padding: 14px 16px; }
+    body { padding: 40px 14px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">预测模拟</div>
+</div>
+
+<h1 id="title">--</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="degrade" id="degrade" style="display:none"></div>
+
+<div id="content">
+  <div class="kpi-grid" id="kpis"></div>
+
+  <div class="section">
+    <h2>预测/模拟轨迹</h2>
+    <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+    <div class="legend">
+      <span><i></i> 预测值</span>
+      <span><span class="band"></span> 置信区间</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>假设说明</h2>
+    <div class="assume" id="assume">--</div>
+  </div>
+</div>
+
+<div class="insight" id="insight">--</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  document.getElementById('metaLeft').textContent = (D.start || '--') + ' ~ ' + (D.end || '--') + ' · 基于 ' + (D.days || 0) + ' 天数据';
+  document.getElementById('title').textContent = D.title || '预测';
+  document.getElementById('sub').textContent = D.rate_note || D.assumption || '';
+  document.getElementById('insight').innerHTML = `<b>💡 一句话洞察:</b> ${D.insight || '--'}`;
+
+  if (D.degraded) {
+    const d = document.getElementById('degrade');
+    d.style.display = '';
+    d.textContent = '⚠️ ' + (D.degrade_msg || '数据不足,无法预测');
+    document.getElementById('content').style.display = 'none';
+    document.getElementById('insight').style.display = 'none';
+    return;
+  }
+
+  const kpiBox = document.getElementById('kpis');
+  const kpi = (label, value, extra) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="extra">${extra || ''}</div></div>`;
+
+  if (D.forecast) {
+    // 预测折线 + 置信带
+    const svg = document.getElementById('chart');
+    const W = 800, H = 260, PAD = 40;
+    const pts = D.forecast.points || [];
+    const vals = pts.flatMap(p => [p.lo, p.hi, p.value]);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const X = i => PAD + i / (Math.max(pts.length - 1, 1)) * (W - PAD * 2);
+    const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+    // 置信带
+    let band = '';
+    pts.forEach((p, i) => { band += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.hi).toFixed(1)}`; });
+    let band2 = '';
+    [...pts].reverse().forEach((p, i) => { band2 += `${i === 0 ? 'L' : 'L'}${X(pts.length - 1 - i).toFixed(1)},${Y(p.lo).toFixed(1)}`; });
+    if (pts.length > 1) {
+      svg.insertAdjacentHTML('beforeend', `<path d="${band} ${band2} Z" fill="rgba(0,113,227,0.12)"/>`);
+      let d = '';
+      pts.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`; });
+      svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2.5"/>`);
+      pts.forEach((p, i) => svg.insertAdjacentHTML('beforeend',
+        `<circle cx="${X(i)}" cy="${Y(p.value)}" r="3" fill="#0071e3"><title>${p.date} ${p.value}</title></circle>`));
+    } else {
+      svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">预测点数不足</text>`);
+    }
+  }
+
+  if (D.kind === 'weight_forecast' || D.kind === 'weight_target') {
+    kpiBox.innerHTML = kpi('当前体重', esc(D.current) + ' kg', '最新记录')
+      + kpi('当前速率', (D.rate_per_week >= 0 ? '+' : '') + esc(D.rate_per_week) + ' kg/周', D.kind === 'weight_target' ? '' : '线性外推')
+      + (D.kind === 'weight_target'
+         ? kpi('预计达成', esc(D.eta), D.days_left + ' 天后') + kpi('可行性', D.feasible ? '✅ 健康范围' : '⚠️ 超范围', '0.5-1.0 kg/周')
+         : kpi('预测终点', esc(D.forecast.points.at(-1).value) + ' kg', D.forecast.points.at(-1).date) + kpi('置信带', esc(D.forecast.points.at(-1).lo) + '~' + esc(D.forecast.points.at(-1).hi), '95%'));
+  } else if (D.kind === 'weight_sim_cut') {
+    kpiBox.innerHTML = kpi('当前体重', esc(D.current) + ' kg', '')
+      + kpi('每天多减', '-' + esc(D.cut_kcal) + ' 卡', `新缺口 ${D.new_deficit} 卡`)
+      + kpi('预期速率', (D.weekly_loss >= 0 ? '-' : '+') + esc(Math.abs(D.weekly_loss)) + ' kg/周', D.feasible ? '✅ 健康' : '⚠️ 超健康范围')
+      + kpi('90 天预期', esc(D.forecast.points.at(-1).value) + ' kg', '轨迹见上图');
+  } else if (D.kind === 'weight_sim_target') {
+    kpiBox.innerHTML = kpi('当前体重', esc(D.current) + ' kg', '')
+      + kpi('目标减重', '-' + esc(D.target_loss) + ' kg / ' + D.days_target + ' 天', `每周 ${D.weekly_rate} kg`)
+      + kpi('所需缺口', esc(D.needed_deficit) + ' 卡/天', '= 7700 卡/kg')
+      + kpi('可行性', D.feasible ? '✅ 可行' : '⚠️ 不可行', '0.5-1.0 kg/周 安全范围');
+  } else if (D.kind === 'calorie_forecast') {
+    kpiBox.innerHTML = kpi('当前日均', esc(D.current) + ' 卡', `日变化 ${D.daily_rate} 卡/天`)
+      + kpi('目标', esc(D.goal) + ' 卡', 'daily_goal 表')
+      + kpi('预测终点', esc(D.forecast.points.at(-1).value) + ' 卡', D.forecast.points.at(-1).date)
+      + kpi('偏离', esc(Math.round(D.forecast.points.at(-1).value - (D.goal || 0))) + ' 卡', 'vs 目标');
+  } else if (D.kind === 'calorie_goal') {
+    kpiBox.innerHTML = kpi('日均摄入', esc(D.avg) + ' 卡', '')
+      + kpi('目标', esc(D.goal) + ' 卡', '')
+      + kpi('差距', (D.gap >= 0 ? '+' : '') + esc(D.gap) + ' 卡', '')
+      + kpi('达成状态', D.on_target ? '✅ 在目标内' : '⚠️ 偏离', '±10% 判定');
+  } else if (D.kind === 'calorie_deficit') {
+    kpiBox.innerHTML = kpi('日均缺口', (D.avg_deficit >= 0 ? '+' : '') + esc(D.avg_deficit) + ' 卡', '')
+      + kpi('每周预估', (D.weekly_loss >= 0 ? '+' : '-') + esc(Math.abs(D.weekly_loss)) + ' kg', '7700 卡/kg')
+      + kpi('健康范围', '-300 ~ -500 卡/天', '')
+      + kpi('判定', (D.weekly_loss > -0.3 && D.weekly_loss < 0) || (D.avg_deficit < 0 && D.avg_deficit >= -500) ? '✅ 合理' : '⚠️ 需调整', '');
+  } else if (D.kind === 'calorie_stability') {
+    kpiBox.innerHTML = kpi('日均摄入', esc(D.avg) + ' 卡', '')
+      + kpi('波动 σ', esc(D.sigma) + ' 卡', 'σ>300 = 不稳定')
+      + kpi('稳定性', D.stable ? '✅ 稳定' : '⚠️ 波动大', '预测可信度')
+      + kpi('参考', 'σ ≤ 300 卡', '判据');
+  }
+
+  document.getElementById('assume').textContent = D.assumption || '--';
+  document.getElementById('srcLine').textContent = `📊 预测模拟 · ${D.title} · render_analysis.py --view predict`;
+
+  function esc(s) { return String(s ?? '—'); }
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(JSON.stringify({ title: D.title, insight: D.insight, assumption: D.assumption, forecast: D.forecast }, null, 2))
+      .then(() => { document.getElementById('copyBtn').textContent = '✅ 已复制'; })
+      .catch(() => { document.getElementById('copyBtn').textContent = '复制失败'; });
+    setTimeout(() => { document.getElementById('copyBtn').textContent = '📋 复制数据'; }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

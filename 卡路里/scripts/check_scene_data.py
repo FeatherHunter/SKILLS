@@ -74,13 +74,17 @@ BIASED_WORDS = {
 }
 
 # 动词在前 · 允许的动词(主名 ≥ 2 字时首词应在表内,允许例外:复盘/报告/概览)
+# 2026-08-02 健身计划(ticket #6)扩充:复制/加/撤销/拉/计划复盘(名词+复盘例外)
 VERB_FIRST = {
     '看', '查', '记', '改', '删', '定', '设', '调', '找', '扫', '审', '批',
     '对比', '比', '复盘', '总结', '同步', '落地', '批量', '扫描', '校验',
     '存', '取', '推', '开', '关', '重', '暂停', '一键', '补', '补记',
+    '生成', '加',   # 2026-08-02 · ticket #10:身材照片 生成身材照GIF / 加照片标签(权威清单定稿名,同 #8 补「查」)
+    '下架',         # 2026-08-02 · ticket #3:饮食 下架食品(权威清单定稿名)
+    '复制',         # 2026-08-02 · ticket #3:饮食 复制昨日饮食(权威清单定稿名,同 #6 计划 复制)
 }
 
-NAME_MAX = 12          # 主名 ≤ 12 字
+NAME_MAX = 14          # 主名 ≤ 14 字(权威清单「看最近 180 天体重曲线」=13 字)
 PROMPT_REQUIRED = [
     '完成后给 1 句话总结',         # 收尾语(必须)
 ]
@@ -88,7 +92,7 @@ PROMPT_REQUIRED = [
 PROMPT_FORBIDDEN = [
     r'§⚠️ 第 7 条 AI 验证协议',  # 防止回退到旧 skeleton
     r'按流程执行',                # 流程型空话
-    r'略',                       # 占位
+    r'(?m)^\s*略\s*$',           # 占位(整行只有"略";缩略图等合法词不受影响 · 2026-08-02 ticket #10)
 ]
 
 
@@ -116,28 +120,49 @@ def check_tech_words(name: str) -> list[str]:
 
 
 def check_biased_words(name: str) -> list[str]:
-    return [f'含偏置词 "{w}" ({hint})' for w, hint in BIASED_WORDS.items() if w in name]
+    """偏置词检查 — 只查主名(「：」对比系列的后缀是里程碑/对象描述,如 减重 5kg 那天,不查)
+    2026-08-02 分析 ticket #10 豁免:模拟减重(每天-300卡)/ 我的减重速度合理吗 等为
+    §10 用户确认名(2026-08-01 定稿),「减重」在此处为领域中性术语,不视为偏置。
+    """
+    main = re.split(r'[（(：]', name, maxsplit=1)[0].strip()
+    if main.startswith(('模拟减重', '我的减重速度')):
+        return []
+    return [f'含偏置词 "{w}" ({hint})' for w, hint in BIASED_WORDS.items() if w in main]
 
 
 def check_name_length(name: str) -> list[str]:
     issues = []
-    main = name.split('(')[0].strip()
+    # 主名 = 「(」「（」或「：」之前(权威清单「对比体重：…」系列,主名仍须 ≤12)
+    main = re.split(r'[（(：]', name, maxsplit=1)[0].strip()
     if len(main) > NAME_MAX:
         issues.append(f'主名 {len(main)} 字 > {NAME_MAX} 字上限 (="{main}")')
-    # 括号补充
+    # 括号补充(≤8 字;2026-08-02 分析 ticket #10 放宽至 12:长指标组名如「体重+摄入+运动+缺口」为 §10 用户确认名)
     paren = re.findall(r'[(（](.+?)[)）]', name)
     for p in paren:
-        if len(p) > 8:
-            issues.append(f'括号补充 {len(p)} 字 > 8 字上限 (="{p}")')
+        if len(p) > 12:
+            issues.append(f'括号补充 {len(p)} 字 > 12 字上限 (="{p}")')
+    # 「：」后缀(对比体重系列,≤18 字)
+    suffix = re.split(r'[（(：]', name, maxsplit=1)[1] if '：' in name.split('（')[0] and '：' in name else ''
+    if suffix:
+        suffix = suffix.split('(')[0].strip()
+        if len(suffix) > 18:
+            issues.append(f'对比后缀 {len(suffix)} 字 > 18 字上限 (="{suffix}")')
     return issues
 
 
 def check_verb_first(name: str) -> list[str]:
-    main = name.split('(')[0].strip()
+    main = name.split('（')[0].split('(')[0].split('：')[0].strip()
     if not main:
         return ['场景名为空']
-    # 复盘 / 报告 / 概览类例外(以这些词开头的允许名词短语)
-    if main.startswith(('复盘', '报告', '概览', '分析', '趋势', '排行', '总览')):
+    # 复盘 / 报告 / 概览类例外(以这些词开头的允许名词短语;或名词短语以这些词结尾,如 体重复盘/饮食复盘)
+    # 2026-08-02 分析 ticket #10 豁免(§10 决策 #10):诊断/预测/模拟/摄入/综合 = 用户确认的
+    # 问题句式与名词短语场景名(诊断类问题句式保留;A6 预测/模拟;摄入预测;综合健康评估)
+    if (main.startswith(('复盘', '报告', '概览', '分析', '趋势', '排行', '总览',
+                         '诊断', '预测', '模拟', '摄入', '综合'))
+            or main.endswith(('复盘', '总览'))):
+        return []
+    # 分析 A4 综合诊断 8 场景:场景名即问法(为什么我没瘦 / 我的减重速度合理吗 / 我这个月做得好的…)
+    if re.match(r'^(为什么|怎么|哪|我)', main):
         return []
     # 取首词(前缀最长匹配,支持双字动词:暂停/对比/批量/一键)
     matched = max((v for v in VERB_FIRST if main.startswith(v)), key=len, default=None)

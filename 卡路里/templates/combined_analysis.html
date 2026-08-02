@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 组合分析</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+    --b:#ff9500;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:56px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
+  .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
+  svg { width:100%; height:clamp(200px, 42vh, 340px); display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:16px; height:2px; }
+  .legend .a { background:var(--accent); }
+  .legend .b { border-top:2px dashed var(--b); background:transparent; height:0; }
+  .legend .reg { border-top:2px dotted var(--good); background:transparent; height:0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th { color:var(--fg2); font-weight:500; font-size:12px; }
+  tr:last-child td { border-bottom:none; }
+  .insight { background:var(--soft); border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:4px; }
+  .insight b { color:var(--accent); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section  { padding: 14px 16px; }
+    body { padding: 40px 14px 60px; }
+    .table-wrap { overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">组合分析 · 双轴+相关</div>
+</div>
+
+<h1 id="title">--</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">相关系数 r</div><div class="value" id="kpiR">--</div><div class="extra" id="kpiRExtra">--</div></div>
+  <div class="kpi"><div class="label">A 均值</div><div class="value" id="kpiA">--</div><div class="extra" id="kpiAExtra">--</div></div>
+  <div class="kpi"><div class="label">B 均值</div><div class="value" id="kpiB">--</div><div class="extra" id="kpiBExtra">--</div></div>
+  <div class="kpi"><div class="label">对齐样本</div><div class="value" id="kpiN">--</div><div class="extra">双侧有数据的天数</div></div>
+</div>
+
+<div class="section">
+  <h2>双轴走势</h2>
+  <svg id="dualChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div class="legend">
+    <span><i class="a"></i> <span id="legA">--</span></span>
+    <span><i class="b"></i> <span id="legB">--</span></span>
+    <span><i class="reg"></i> 回归线(散点图)</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>散点图 + 回归</h2>
+  <svg id="scatterChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+</div>
+
+<div class="section" id="lagSection">
+  <h2>延迟相关性(前 N 天 B 值 vs 当日 A 值)</h2>
+  <table>
+    <thead><tr><th>滞后天数</th><th>相关系数 r</th><th>解读</th></tr></thead>
+    <tbody id="lagTable"></tbody>
+  </table>
+</div>
+
+<div class="section" id="stratSection">
+  <h2>分层对比</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>分组</th><th>天数</th><th>A 净变化</th><th>B 均值</th></tr></thead>
+      <tbody id="stratTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="insight" id="insight">--</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  const A = D.labels.a, B = D.labels.b;
+  document.getElementById('metaLeft').textContent = `${D.start} ~ ${D.end} · 共 ${D.days} 天`;
+  document.getElementById('title').textContent = `看 ${A.replace('(kg)','').replace('(卡)','').replace('(g)','').replace('(ml)','').replace('(%)','')} vs ${B.replace('(kg)','').replace('(卡)','').replace('(g)','').replace('(ml)','').replace('(%)','')}`;
+  document.getElementById('sub').textContent = `${A} vs ${B} · ${D.window} 窗口`;
+
+  const r = D.correlation.r;
+  document.getElementById('kpiR').textContent = r === null || r === undefined ? '—' : r.toFixed(3);
+  document.getElementById('kpiRExtra').textContent = r === null ? '数据不足' : (Math.abs(r)>=0.5?'强相关':Math.abs(r)>=0.3?'中等相关':'弱相关');
+  document.getElementById('kpiA').textContent = D.a_avg ?? '—';
+  document.getElementById('kpiAExtra').textContent = `Δ ${D.a_delta ?? 0 >= 0 ? '+' : ''}${D.a_delta ?? 0} · ${D.a_count} 天`;
+  document.getElementById('kpiB').textContent = D.b_avg ?? '—';
+  document.getElementById('kpiBExtra').textContent = `Δ ${D.b_delta ?? 0 >= 0 ? '+' : ''}${D.b_delta ?? 0} · ${D.b_count} 天`;
+  document.getElementById('kpiN').textContent = D.correlation.n;
+
+  document.getElementById('legA').textContent = A;
+  document.getElementById('legB').textContent = B;
+
+  // 双轴折线
+  const svg = document.getElementById('dualChart');
+  const W = 800, H = 240, PAD = 34;
+  const line = D.line || [];
+  if (line.length === 0) {
+    svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">窗口内无数据</text>`);
+  } else {
+    const xs = line.map(p => new Date(p.date).getTime());
+    const aVals = line.map(p => p.a).filter(v => v !== null && v !== undefined);
+    const bVals = line.map(p => p.b).filter(v => v !== null && v !== undefined);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const aMin = Math.min(...aVals), aMax = Math.max(...aVals);
+    const bMin = Math.min(...bVals), bMax = Math.max(...bVals);
+    const X = x => PAD + (x - xMin) / (xMax - xMin || 1) * (W - PAD * 2);
+    const YA = v => H - PAD - (v - aMin) / (aMax - aMin || 1) * (H - PAD * 2);
+    const YB = v => H - PAD - (v - bMin) / (bMax - bMin || 1) * (H - PAD * 2);
+    const path = (f, getY) => line.filter(f).map((p, i) => `${i === 0 ? 'M' : 'L'}${X(new Date(p.date).getTime()).toFixed(1)},${getY(p).toFixed(1)}`).join(' ');
+    const aPath = path(p => p.a !== null && p.a !== undefined, p => YA(p.a));
+    const bPath = path(p => p.b !== null && p.b !== undefined, p => YB(p.b));
+    if (aPath) svg.insertAdjacentHTML('beforeend', `<path d="${aPath}" fill="none" stroke="#0071e3" stroke-width="2" opacity="0.9"/>`);
+    if (bPath) svg.insertAdjacentHTML('beforeend', `<path d="${bPath}" fill="none" stroke="#ff9500" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`);
+    line.forEach(p => {
+      if (p.a !== null && p.a !== undefined) svg.insertAdjacentHTML('beforeend', `<circle cx="${X(new Date(p.date).getTime())}" cy="${YA(p.a)}" r="2.4" fill="#0071e3"/>`);
+      if (p.b !== null && p.b !== undefined) svg.insertAdjacentHTML('beforeend', `<circle cx="${X(new Date(p.date).getTime())}" cy="${YB(p.b)}" r="2.4" fill="#ff9500"/>`);
+    });
+  }
+
+  // 散点 + 回归
+  const sc = document.getElementById('scatterChart');
+  const pts = D.scatter || [];
+  if (pts.length === 0) {
+    sc.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">无对齐样本,无法画散点</text>`);
+  } else {
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const yMin = Math.min(...ys), yMax = Math.max(...ys);
+    const X = x => PAD + (x - xMin) / (xMax - xMin || 1) * (W - PAD * 2);
+    const Y = y => H - PAD - (y - yMin) / (yMax - yMin || 1) * (H - PAD * 2);
+    pts.forEach(p => sc.insertAdjacentHTML('beforeend',
+      `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.5" fill="#0071e3" opacity="0.6"/>`));
+    if (D.regression) {
+      const { slope, intercept } = D.regression;
+      const y0 = slope * xMin + intercept, y1 = slope * xMax + intercept;
+      sc.insertAdjacentHTML('beforeend', `<line x1="${X(xMin)}" y1="${Y(y0)}" x2="${X(xMax)}" y2="${Y(y1)}" stroke="#34c759" stroke-width="2" stroke-dasharray="4 3"/>`);
+      sc.insertAdjacentHTML('beforeend', `<text x="${PAD + 6}" y="${PAD + 12}" fill="#34c759" font-size="12">y = ${slope}x ${intercept >= 0 ? '+' : ''}${intercept}</text>`);
+    }
+  }
+
+  // 滞后相关
+  const lagT = document.getElementById('lagTable');
+  const lag = D.lag || [];
+  if (lag.length === 0) {
+    document.getElementById('lagSection').style.display = 'none';
+  } else {
+    lag.forEach(l => {
+      const rv = l.r === null ? '—' : l.r.toFixed(3);
+      const note = l.r === null ? '样本不足' : Math.abs(l.r) >= 0.3 ? '存在延迟关联' : '关联弱';
+      lagT.insertAdjacentHTML('beforeend', `<tr><td>前 ${l.lag} 天</td><td>${rv}</td><td>${note}</td></tr>`);
+    });
+  }
+
+  // 分层
+  const st = D.strat || {};
+  const stratT = document.getElementById('stratTable');
+  const rows = st.rows || [];
+  const extras = st.extra || [];
+  if (rows.length === 0 && extras.length === 0) {
+    document.getElementById('stratSection').style.display = 'none';
+  } else {
+    rows.forEach(r => {
+      stratT.insertAdjacentHTML('beforeend',
+        `<tr><td>${r.label}${r.note ? ` <span style="color:var(--warn);font-size:11px">(${r.note})</span>` : ''}</td><td>${r.days ?? '—'}</td><td>${r.a_delta === undefined || r.a_delta === null ? '—' : (r.a_delta >= 0 ? '+' : '') + r.a_delta}</td><td>${r.b_avg ?? '—'}</td></tr>`);
+    });
+    if (extras.length) {
+      extras.forEach(e => stratT.insertAdjacentHTML('beforeend',
+        `<tr><td colspan="4" style="color:var(--fg2);font-size:12px">${e.replace(/</g, '&lt;')}</td></tr>`));
+    }
+  }
+
+  // 超标日标注(看体重 vs 摄入)
+  const over = D.over_limit_days || [];
+  const buckets = D.deficit_buckets || [];
+  let extraNote = '';
+  if (over.length) extraNote += `<span class="pill pill-warn">⚠ 超标日 ${over.length} 天</span>`;
+  if (buckets.length) extraNote += buckets.map(b => `<span class="pill pill-info">${b.label}: ${b.days}天</span>`).join(' ');
+  if (extraNote) {
+    document.querySelector('.meta-bar .left').insertAdjacentHTML('afterend', `<div style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap">${extraNote}</div>`);
+  }
+
+  document.getElementById('insight').innerHTML = `<b>💡 一句话洞察:</b> ${D.insight || '--'}`;
+  document.getElementById('srcLine').textContent = `📊 组合分析 · ${A} vs ${B} · render_analysis.py --view combined`;
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(JSON.stringify({ insight: D.insight, correlation: D.correlation, regression: D.regression, strat: D.strat }, null, 2))
+      .then(() => { document.getElementById('copyBtn').textContent = '✅ 已复制'; })
+      .catch(() => { document.getElementById('copyBtn').textContent = '复制失败'; });
+    setTimeout(() => { document.getElementById('copyBtn').textContent = '📋 复制数据'; }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

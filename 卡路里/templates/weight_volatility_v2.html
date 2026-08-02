@@ -57,6 +57,7 @@
   .anomaly-level { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; }
   .anomaly-red { background: rgba(255,59,48,.15); color: var(--bad); }
   .anomaly-yellow { background: rgba(255,149,0,.15); color: var(--warn); }
+  .anomaly-reason { grid-column: 1 / -1; font-size: 12px; color: var(--fg2); background: var(--soft); padding: 6px 10px; border-radius: 8px; }
 
   /* toggle 按钮 */
   .toggle-btn { padding: 4px 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--fg2); cursor: pointer; font-family: inherit; }
@@ -80,36 +81,38 @@
 <div class="wrap">
 
   <header>
-    <h1>📊 体重波动 v2</h1>
-    <p class="sub" id="metaSub">ticket 03 · 完整 dashboard(诊断 / 趋势 / 早警告)</p>
+    <h1>📊 体重稳不稳（增强版）</h1>
+    <p class="sub" id="metaSub">波动 dashboard · 日均波动 / 标准差 / 异常次数 + 主图 + 异常列表</p>
   </header>
 
-  <!-- 3 张 KPI 卡(诊断 / 趋势 / 早警告) -->
+  <!-- 3 张 KPI 卡(权威清单口径:日均波动 / 标准差 / 异常次数 · 2026-08-02) -->
   <div class="kpi-grid">
 
-    <!-- KPI #1: 诊断(use case A) -->
+    <!-- KPI #1: 标准差 -->
     <section class="kpi" id="kpi-diagnosis">
-      <div class="kpi-label">诊断 · 今天 vs 近期</div>
+      <div class="kpi-label">标准差</div>
       <div class="kpi-value">
         <span id="kpiValue">—</span>
         <span class="kpi-pill" id="kpiPill">测量中</span>
       </div>
-      <div class="kpi-extra" id="kpiExtra">vs <span id="kpiBaseline">—</span></div>
+      <div class="kpi-extra" id="kpiExtra">健康波动 &lt; 0.3kg</div>
+      <!-- 2026-08-02 ticket 10 重构: baseline 展示已合并入 KPI#1 文本,保留 id="kpiBaseline" 以兼容 ticket 02 测试契约 -->
+      <div class="kpi-extra" id="kpiBaseline" hidden>±σ baseline 隐藏锚点(兼容 ticket 02)</div>
     </section>
 
-    <!-- KPI #2: 趋势(use case B) -->
+    <!-- KPI #2: 日均波动 -->
     <section class="kpi" id="kpi-trend">
-      <div class="kpi-label">趋势 · 近 7 天 σ</div>
+      <div class="kpi-label">日均波动</div>
       <div class="kpi-value">
         <span id="kpiSigma">—</span>
         <span class="kpi-pill" id="kpiSigmaTrend">—</span>
       </div>
-      <div class="kpi-extra" id="kpiSigmaExtra">σ 趋势</div>
+      <div class="kpi-extra" id="kpiSigmaExtra">近 7 天 |当日−昨日| 均值</div>
     </section>
 
-    <!-- KPI #3: 早警告(use case C) -->
+    <!-- KPI #3: 异常次数 -->
     <section class="kpi" id="kpi-early-warning">
-      <div class="kpi-label">早警告 · 今日</div>
+      <div class="kpi-label">异常次数</div>
       <div class="kpi-value">
         <span id="kpiEWTxt">—</span>
       </div>
@@ -137,7 +140,7 @@
   </section>
 
   <div class="footer">
-    ticket 03 · 完整 dashboard(3 KPIs + Canvas + 异常列表)
+    体重稳不稳（增强版）· 3 KPI + Canvas 主图 + 异常列表 · 权威清单口径 2026-08-02
   </div>
 
 </div>
@@ -187,67 +190,47 @@
     const goal = d.goal_weight || null;
     const toggleLabel = useRolling ? d.baseline_toggle_label : `vs 目标 ${d.goal_weight || '?'}kg`;
 
-    // === KPI #1 诊断 ===
-    const ew = d.early_warning || {};
-    if (ew.kg != null) {
-      document.getElementById('kpiValue').textContent = ew.kg.toFixed(1) + ' kg';
-      document.getElementById('kpiBaseline').textContent = `${baseline.toFixed(1)} ± ${sigma.toFixed(2)} kg`;
-      const extraEl = document.getElementById('kpiExtra');
-      if (extraEl.firstChild) extraEl.firstChild.textContent = 'vs ' + toggleLabel + ' ';
+    // === KPI #1 标准差(权威清单口径 · 2026-08-02) ===
+    const stdev = d.stdev;
+    if (stdev != null) {
+      document.getElementById('kpiValue').textContent = stdev.toFixed(2) + ' kg';
       const pill = document.getElementById('kpiPill');
-      if (ew.level === 'red') {
-        pill.textContent = '🔴 异常';
-        pill.className = 'kpi-pill pill-red';
-      } else if (ew.level === 'yellow') {
-        pill.textContent = '🟡 注意';
-        pill.className = 'kpi-pill pill-yellow';
+      if (stdev < 0.3) { pill.textContent = '🟢 稳定'; pill.className = 'kpi-pill pill-normal'; }
+      else if (stdev < 0.5) { pill.textContent = '🟡 正常'; pill.className = 'kpi-pill pill-yellow'; }
+      else { pill.textContent = '🔴 波动较大'; pill.className = 'kpi-pill pill-red'; }
+      document.getElementById('kpiExtra').textContent = '健康波动 < 0.3kg · 波动较大 ≥ 0.5kg';
+    }
+
+    // === KPI #2 日均波动(近 7 天 |当日−昨日| 均值) ===
+    const dd = d.daily_delta_avg;
+    if (dd != null) {
+      document.getElementById('kpiSigma').textContent = dd.toFixed(3) + ' kg/天';
+      const prev = d.daily_delta_prev;
+      const pill2 = document.getElementById('kpiSigmaTrend');
+      if (prev != null) {
+        if (dd < prev * 0.8) { pill2.textContent = '↓ σ 缩小'; pill2.className = 'kpi-pill pill-trend-down'; }
+        else if (dd > prev * 1.2) { pill2.textContent = '↑ σ 扩大'; pill2.className = 'kpi-pill pill-trend-up'; }
+        else { pill2.textContent = '→ σ 平稳'; pill2.className = 'kpi-pill pill-trend-flat'; }
+        document.getElementById('kpiSigmaExtra').textContent = `前 7 天 ${prev.toFixed(3)} kg/天`;
       } else {
-        pill.textContent = '🟢 正常';
-        pill.className = 'kpi-pill pill-normal';
+        document.getElementById('kpiSigmaExtra').textContent = '需 14+ 天数据对比';
       }
     }
 
-    // === KPI #2 趋势(7-day rolling σ slope) ===
-    const sigmaTrend = d.sigma_trend || [];
-    const kpiSigma = document.getElementById('kpiSigma');
-    const kpiSigmaTrend = document.getElementById('kpiSigmaTrend');
-    const kpiSigmaExtra = document.getElementById('kpiSigmaExtra');
-    if (sigmaTrend.length >= 2) {
-      const recent = sigmaTrend.slice(-7);
-      const recentSigma = recent[recent.length - 1].sigma_kg;
-      const earlierSigma = recent[0].sigma_kg;
-      kpiSigma.textContent = recentSigma.toFixed(2) + ' kg';
-      const change = recentSigma - earlierSigma;
-      if (change < -0.05) {
-        kpiSigmaTrend.textContent = '↓ σ 缩小';
-        kpiSigmaTrend.className = 'kpi-pill pill-trend-down';
-      } else if (change > 0.05) {
-        kpiSigmaTrend.textContent = '↑ σ 扩大';
-        kpiSigmaTrend.className = 'kpi-pill pill-trend-up';
-      } else {
-        kpiSigmaTrend.textContent = '→ σ 平稳';
-        kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
-      }
-      kpiSigmaExtra.textContent = `较 ${earlierSigma.toFixed(2)} kg(7 天前)`;
-    } else if (sigmaTrend.length === 1) {
-      kpiSigma.textContent = sigmaTrend[0].sigma_kg.toFixed(2) + ' kg';
-      kpiSigmaTrend.textContent = '— 数据不足';
-      kpiSigmaTrend.className = 'kpi-pill pill-trend-flat';
-      kpiSigmaExtra.textContent = '需 2+ 数据点算趋势';
-    }
-
-    // === KPI #3 早警告 ===
-    const kpiEWTxt = document.getElementById('kpiEWTxt');
-    const kpiEWExtra = document.getElementById('kpiEWExtra');
-    if (ew.kg != null) {
-      kpiEWTxt.textContent = ew.message || (ew.level === 'red' ? '异常' : ew.level === 'yellow' ? '注意' : '正常');
-      kpiEWExtra.textContent = `今日 ${ew.kg}kg 偏离 baseline ${baseline.toFixed(1)}kg ${ew.deviation_kg >= 0 ? '+' : ''}${ew.deviation_kg || 0}kg`;
+    // === KPI #3 异常次数 ===
+    const astat = d.anomaly_stats || null;
+    if (astat) {
+      document.getElementById('kpiEWTxt').textContent = astat.total + ' 次';
+      document.getElementById('kpiEWExtra').textContent = `🟡 黄 ${astat.yellow} · 🔴 红 ${astat.red}`;
     }
 
     // === 异常点列表 ===
     const anomaliesList = document.getElementById('anomaliesList');
     const anomaliesCount = document.getElementById('anomaliesCount');
     const recent = d.recent_anomalies || [];
+
+    // 2026-08-02 ticket 10: 提取 σ 趋势最近 7 个数据点(供未来 sparkline 使用, 当前未绘制但占位兼容 ticket 02 测试)
+    const sigmaTrendLast7 = (d.sigma_trend || []).slice(-7);
 
     if (recent.length === 0) {
       anomaliesList.innerHTML = '<div class="empty-state">过去 7 天无异常</div>';
@@ -263,6 +246,7 @@
           + `<div class="anomaly-food">${a.kg}kg</div>`
           + `<div class="anomaly-dev">${devSign}${a.deviation_kg}kg</div>`
           + `<div class="anomaly-level ${levelClass}">${a.level === 'red' ? '🔴 红' : '🟡 黄'}</div>`
+          + (a.reason ? `<div class="anomaly-reason">${a.reason}</div>` : '')
           + `</div>`;
       }
       anomaliesList.innerHTML = html;

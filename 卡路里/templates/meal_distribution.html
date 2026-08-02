@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 餐别分布</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:760px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  .dist-wrap { display:flex; align-items:center; gap:24px; }
+  .dist-list { flex:1; }
+  .dist-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .dist-row:last-child { border-bottom:none; }
+  .dist-label { flex:0 0 44px; font-weight:600; }
+  .dist-track { flex:1; height:10px; background:var(--soft); border-radius:5px; overflow:hidden; }
+  .dist-fill { height:100%; border-radius:5px; background:var(--accent); }
+  .dist-num { flex:0 0 90px; text-align:right; color:var(--fg2); font-variant-numeric:tabular-nums; }
+  .one-line { background:rgba(0,113,227,.08); border:1px solid rgba(0,113,227,.25); border-radius:10px; padding:12px 16px; font-size:13.5px; color:var(--accent); font-weight:500; margin-bottom:16px; }
+  .meal-tag { display:inline-block; padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--soft); color:var(--fg2); }
+  .meal-tag.breakfast { background:rgba(255,149,0,.12); color:var(--warn); }
+  .meal-tag.lunch { background:rgba(0,113,227,.12); color:var(--accent); }
+  .meal-tag.dinner { background:rgba(88,86,214,.12); color:#5856d6; }
+  .meal-tag.snack { background:rgba(52,199,89,.12); color:var(--good); }
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .section { padding:16px 18px; border-radius:12px; }
+    .dist-wrap { flex-direction:column; align-items:stretch; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<h1>🍽️ 餐别分布</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="one-line" id="oneLine">--</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">餐数</div><div class="value" id="kCnt">--</div></div>
+  <div class="kpi"><div class="label" id="kAvgLabel">日均热量</div><div class="value" id="kAvg">--</div></div>
+</div>
+
+<div class="section" id="distSection" style="display:none">
+  <h2>餐别热量占比</h2>
+  <div class="dist-wrap">
+    <div class="dist-list" id="distList"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>明细</h2>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>日期</th><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th></tr>
+    </thead>
+    <tbody id="mealTable"></tbody>
+  </table></div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, items, dist, view, meta } = D.data;
+  document.getElementById('sub').textContent =
+    `${meta.meal_label}分布 · ${meta.start} ~ ${meta.end} · ${meta.days} 天`;
+  document.getElementById('oneLine').textContent = summary.one_line;
+  document.getElementById('kCnt').textContent = summary.total + ' 餐';
+  if (view === 'all') {
+    document.getElementById('kAvgLabel').textContent = '日均热量';
+    document.getElementById('kAvg').textContent = summary.avg + ' 卡';
+  } else {
+    document.getElementById('kAvgLabel').textContent = '日均热量';
+    document.getElementById('kAvg').textContent = summary.avg + ' 卡';
+  }
+
+  if (view === 'all' && dist.length) {
+    document.getElementById('distSection').style.display = 'block';
+    const list = document.getElementById('distList');
+    dist.forEach(x => {
+      list.insertAdjacentHTML('beforeend',
+        `<div class="dist-row">
+           <span class="dist-label">${x.label}</span>
+           <div class="dist-track"><div class="dist-fill" style="width:${Math.max(x.pct, 1)}%"></div></div>
+           <span class="dist-num">${x.count} 餐 · ${x.cal} 卡 · ${x.pct}%</span>
+         </div>`);
+    });
+  }
+
+  const tb = document.getElementById('mealTable');
+  items.forEach(p => {
+    const cls = ['breakfast','lunch','dinner','snack'].includes(p.meal) ? p.meal : '';
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${p.date}</td><td>${p.time}</td>` +
+      `<td><span class="meal-tag ${cls}">${p.meal === 'breakfast' ? '早餐' : p.meal === 'lunch' ? '午餐' : p.meal === 'dinner' ? '晚餐' : '加餐'}</span></td>` +
+      `<td>${p.food}</td><td class="num">${p.grams}g</td><td class="num">${p.cal}</td><td class="num">${p.pro.toFixed(1)}g</td></tr>`);
+  });
+
+  document.getElementById('srcLine').textContent = `📊 数据来源:food_log · 餐别时间窗推断 · ${meta.start} → ${meta.end}`;
+  document.getElementById('copyBtn').onclick = function() {
+    let r = `${meta.meal_label}分布 ${meta.start} ~ ${meta.end}\n`;
+    r += `${summary.one_line}\n`;
+    items.forEach(p => { r += `${p.date} ${p.time} ${p.food} ${p.grams}g = ${p.cal}卡\n`; });
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

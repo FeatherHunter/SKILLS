@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>对比体重 · 卡路里</title>
+<style>
+:root{
+  --bg:#f5f5f7;--card:#fff;
+  --ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);--lineS:rgba(60,60,67,.06);
+  --accent:#0071e3;--good:#34c759;--warn:#ff9500;--bad:#ff3b30;--soft:#f5f5f7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:13px;color:var(--ink3);margin-bottom:20px}
+.badge{display:inline-block;padding:3px 10px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:600;margin-bottom:12px}
+.warn-banner{background:rgba(255,149,0,.12);color:#b25000;border-radius:12px;padding:12px 16px;font-size:13px;margin-bottom:16px;display:none}
+.section{background:var(--card);border-radius:18px;padding:22px 26px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.section h2{font-size:15px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section h2 .tag{font-size:11px;color:var(--ink3);font-weight:500}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--lineS);border-radius:14px;padding:14px 16px}
+.kpi .label{font-size:11px;color:var(--ink2);margin-bottom:5px}
+.kpi .value{font-size:22px;font-weight:700;font-feature-settings:"tnum"}
+.kpi .value.good{color:var(--good)}.kpi .value.warn{color:var(--warn)}.kpi .value.bad{color:var(--bad)}
+.kpi .extra{font-size:11px;color:var(--ink3);margin-top:3px}
+.vs-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch}
+.seg{background:var(--soft);border-radius:14px;padding:16px 18px}
+.seg .seg-label{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between}
+.seg .seg-label .range{color:var(--ink3);font-weight:500;font-size:11px}
+.seg .big{font-size:26px;font-weight:700;margin-bottom:10px;font-feature-settings:"tnum"}
+.seg .rows{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}
+.seg .row .lbl{font-size:10.5px;color:var(--ink3);margin-bottom:1px}
+.seg .row .val{font-size:13px;font-weight:600;font-feature-settings:"tnum"}
+.vs-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:64px}
+.vs-mid .arrow{font-size:26px;font-weight:800;line-height:1}
+.vs-mid .dkg{font-size:15px;font-weight:700}
+.vs-mid .speed{font-size:11px;color:var(--ink3);text-align:center}
+.judge-line{background:linear-gradient(135deg,#f0f7ff,#fff);border:1px solid rgba(0,113,227,.14);border-radius:14px;padding:14px 18px;font-size:14px;font-weight:600;margin-bottom:14px}
+.judge-line .lbl{font-size:11px;color:var(--ink2);font-weight:500;margin-bottom:4px}
+.extra-card{margin-bottom:14px}
+.extra-card h2{font-size:15px;font-weight:600;margin-bottom:12px}
+.extra-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.extra-row{background:var(--soft);border-radius:12px;padding:12px 14px}
+.extra-row .lbl{font-size:11px;color:var(--ink3);margin-bottom:3px}
+.extra-row .val{font-size:14px;font-weight:600;font-feature-settings:"tnum"}
+.summary{background:var(--card);border-radius:14px;padding:16px 18px;margin-bottom:14px;border:1px solid var(--lineS);font-size:14px}
+.summary .lbl{font-size:11px;color:var(--ink3);margin-bottom:4px}
+.footer{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--card);border-radius:12px;border:1px solid var(--lineS)}
+.footer .src{font-size:11px;color:var(--ink3)}
+.btn{border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:12px;color:var(--ink);min-height:36px}
+.btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:640px){
+  .wrap{padding:20px 10px 60px}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .vs-grid{grid-template-columns:1fr;gap:10px}
+  .vs-mid{flex-direction:row;padding:8px 0}
+  .section{padding:16px 12px}
+  .footer{flex-direction:column;gap:8px;align-items:flex-start}
+  .extra-rows{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<span class="badge" id="scenarioBadge">对比体重</span>
+<h1 id="title">对比体重</h1>
+<p class="sub" id="subtitle">--</p>
+<div class="warn-banner" id="warnBanner"></div>
+<div class="kpi-grid" id="kpis"></div>
+<div class="judge-line" id="judgeLine" style="display:none">
+  <div class="lbl">速度判断</div>
+  <span id="judgeText"></span>
+</div>
+<div class="section">
+  <h2>两段对比 <span class="tag" id="segTag">--</span></h2>
+  <div class="vs-grid">
+    <div class="seg" id="segA">
+      <div class="seg-label"><span id="segALabel">--</span><span class="range" id="segARange">--</span></div>
+      <div class="big" id="segAAvg">--</div>
+      <div class="rows" id="segARows"></div>
+    </div>
+    <div class="vs-mid">
+      <div class="arrow" id="vsArrow">↔</div>
+      <div class="dkg" id="vsDkg">--</div>
+      <div class="speed" id="vsSpeed">--</div>
+    </div>
+    <div class="seg" id="segB">
+      <div class="seg-label"><span id="segBLabel">--</span><span class="range" id="segBRange">--</span></div>
+      <div class="big" id="segBAvg">--</div>
+      <div class="rows" id="segBRows"></div>
+    </div>
+  </div>
+</div>
+<div class="extra-card" id="extraCard" style="display:none">
+  <h2>补充对照</h2>
+  <div class="extra-rows" id="extraRows"></div>
+</div>
+<div class="summary" id="summaryCard" style="display:none">
+  <div class="lbl">总结</div>
+  <span id="summaryText"></span>
+</div>
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源 --</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+</div>
+<!--INJECT-DATA-->
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const d = D.data;
+  document.getElementById('title').textContent = d.title || '对比体重';
+  document.getElementById('subtitle').textContent = d.subtitle || '';
+  if (d.sample_warning) {
+    const w = document.getElementById('warnBanner');
+    w.textContent = '⚠ ' + d.sample_warning;
+    w.style.display = 'block';
+  }
+  const kpis = document.getElementById('kpis');
+  (d.kpis || []).forEach(k => {
+    kpis.insertAdjacentHTML('beforeend',
+      `<div class="kpi"><div class="label">${k.label}</div>` +
+      `<div class="value ${k.cls||''}">${k.value}</div>` +
+      (k.extra ? `<div class="extra">${k.extra}</div>` : '') + `</div>`);
+  });
+  function segRows(el, seg) {
+    const html = [
+      ['起始', seg.start_kg], ['终止', seg.end_kg],
+      ['段内变化', seg.net_change], ['段内波动', seg.volatility]
+    ].map(([l, v]) =>
+      `<div class="row"><div class="lbl">${l}</div><div class="val">${v === undefined || v === null ? '—' : v}</div></div>`)
+      .join('');
+    el.innerHTML = html;
+  }
+  if (d.seg_a) {
+    document.getElementById('segALabel').textContent = d.seg_a.label;
+    document.getElementById('segARange').textContent = d.seg_a.range || '';
+    document.getElementById('segAAvg').textContent = (d.seg_a.avg === undefined || d.seg_a.avg === null) ? '—' : d.seg_a.avg + ' kg';
+    segRows(document.getElementById('segARows'), d.seg_a);
+  }
+  if (d.seg_b) {
+    document.getElementById('segBLabel').textContent = d.seg_b.label;
+    document.getElementById('segBRange').textContent = d.seg_b.range || '';
+    document.getElementById('segBAvg').textContent = (d.seg_b.avg === undefined || d.seg_b.avg === null) ? '—' : d.seg_b.avg + ' kg';
+    segRows(document.getElementById('segBRows'), d.seg_b);
+  }
+  if (d.compare) {
+    const c = d.compare;
+    const down = c.direction === '下降' || c.direction === '减重';
+    document.getElementById('vsArrow').textContent = down ? '↓' : c.direction === '上升' || c.direction === '增重' ? '↑' : '→';
+    document.getElementById('vsArrow').style.color = down ? 'var(--good)' : c.direction === '上升' ? 'var(--bad)' : 'var(--ink3)';
+    document.getElementById('vsDkg').textContent = (c.delta_kg > 0 ? '+' : '') + c.delta_kg + ' kg';
+    document.getElementById('vsSpeed').textContent = c.rate_diff_g !== undefined && c.rate_diff_g !== null ? c.rate_diff_g + ' g/天' : '';
+    if (c.speed) {
+      document.getElementById('judgeText').textContent =
+        `变化${c.direction || ''} ${c.delta_kg > 0 ? '+' : ''}${c.delta_kg} kg · 速率差 ${c.rate_diff_g} g/天 · ${c.speed}`;
+      document.getElementById('judgeLine').style.display = 'block';
+    }
+  }
+  if (d.extra_rows && d.extra_rows.length) {
+    const er = document.getElementById('extraRows');
+    d.extra_rows.forEach(r => {
+      er.insertAdjacentHTML('beforeend',
+        `<div class="extra-row"><div class="lbl">${r.label}</div><div class="val">${r.value === undefined || r.value === null ? '—' : r.value}</div></div>`);
+    });
+    document.getElementById('extraCard').style.display = 'block';
+  }
+  if (d.summary) {
+    document.getElementById('summaryText').textContent = d.summary;
+    document.getElementById('summaryCard').style.display = 'block';
+  }
+  document.getElementById('srcLine').textContent = '📊 数据来源:weight_log · ' + (d.scenario_label || '') + ' · ' + (d.meta && d.meta.generated_at || new Date().toISOString().split('T')[0]);
+  document.getElementById('copyBtn').onclick = function() {
+    let r = (d.title || '对比体重') + '\n';
+    if (d.sample_warning) r += '⚠ ' + d.sample_warning + '\n';
+    (d.kpis || []).forEach(k => { r += `  ${k.label}: ${k.value}${k.extra ? ' (' + k.extra + ')' : ''}\n`; });
+    if (d.compare) r += `  Δ: ${d.compare.delta_kg} kg · ${d.compare.speed || ''}\n`;
+    if (d.summary) r += d.summary + '\n';
+    const after = () => { this.textContent = '✓ 已复制'; setTimeout(() => this.textContent = '📋 复制数据', 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(r).then(after);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = r; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); after(); } catch(e) {}
+      document.body.removeChild(ta);
+    }
+  };
+})();
+</script>
+</body>
+</html>

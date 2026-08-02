@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 食品库去重</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1d; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:760px; margin:0 auto; padding:48px 24px 80px;
+         -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .banner { border-radius:12px; padding:14px 18px; font-size:14px; font-weight:600; margin-bottom:16px; }
+  .banner.ok { background:rgba(52,199,89,.12); color:var(--good); }
+  .banner.warn { background:rgba(255,149,0,.12); color:var(--warn); }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
+  th { background:var(--soft); font-weight:500; font-size:11px; color:var(--fg2); }
+  tr:last-child td { border-bottom:none; }
+  .advice { font-size:12px; color:var(--fg2); background:var(--soft); border-radius:8px; padding:10px 14px; margin-top:14px; line-height:1.7; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width:640px) {
+    body { padding:20px 14px 80px; }
+    h1 { font-size:22px; }
+    .section { padding:16px 18px; border-radius:12px; }
+    .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<h1>📦 食品库去重</h1>
+<p class="sub" id="sub">--</p>
+
+<div class="banner" id="banner">--</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">重复组</div><div class="value" id="kGrp">--</div></div>
+  <div class="kpi"><div class="label">冗余行</div><div class="value" id="kRows">--</div></div>
+  <div class="kpi"><div class="label">库内食品</div><div class="value" id="kTotal">--</div></div>
+</div>
+
+<div class="section">
+  <h2>重复组列表</h2>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>食品名</th><th>品牌</th><th class="num">条数</th><th>ID</th></tr>
+    </thead>
+    <tbody id="dupTable"></tbody>
+  </table></div>
+  <div class="advice" id="advice"></div>
+</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    return;
+  }
+  const { summary, items, meta } = D.data;
+  document.getElementById('sub').textContent = `看食品库（去重）· ${meta.today}`;
+  const banner = document.getElementById('banner');
+  if (summary.clean) {
+    banner.className = 'banner ok';
+    banner.textContent = '✅ 食品库无重复,数据干净';
+  } else {
+    banner.className = 'banner warn';
+    banner.textContent = `⚠ 发现 ${summary.groups} 组重复,共 ${summary.duplicate_rows} 条冗余记录`;
+  }
+  document.getElementById('kGrp').textContent = summary.groups;
+  document.getElementById('kRows').textContent = summary.duplicate_rows;
+  document.getElementById('kTotal').textContent = summary.total_products.toLocaleString();
+
+  const tb = document.getElementById('dupTable');
+  items.forEach(g => {
+    tb.insertAdjacentHTML('beforeend',
+      `<tr><td>${g.name}</td><td>${g.brand || '—'}</td><td class="num">${g.count}</td><td>${g.ids.join(', ')}</td></tr>`);
+  });
+  document.getElementById('advice').textContent =
+    summary.clean ? '无需处理。' :
+    '处理建议:保留营养数据最完整的一条,其余可用「下架食品」标废弃(软删,数据保留可溯源);或「改食品」合并数据后下架多余条目。';
+
+  document.getElementById('srcLine').textContent = `📊 数据来源:nutrition_products · product_name+brand 分组`;
+  document.getElementById('copyBtn').onclick = function() {
+    let r = `食品库去重 (${meta.today})\n`;
+    r += `重复组 ${summary.groups} | 冗余行 ${summary.duplicate_rows}\n`;
+    items.forEach(g => { r += `${g.name} (${g.brand || '无品牌'}): ${g.count} 条 → ID ${g.ids.join(', ')}\n`; });
+    navigator.clipboard.writeText(r).then(() => {
+      this.textContent = '✓ 已复制';
+      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 · 健康报告</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --bg:#fafafa;
+    --card:#fff; --border:#d2d2d7; --accent:#0071e3;
+    --good:#34c759; --warn:#ff9500; --bad:#ff3b30; --soft:#f5f5f7;
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+         line-height:1.6; color:var(--fg); background:var(--bg);
+         max-width:920px; margin:0 auto; padding:56px 24px 80px; -webkit-font-smoothing:antialiased; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
+  .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
+  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
+  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
+  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
+  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
+  .kpi .value { font-size:22px; font-weight:700; }
+  .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
+  .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
+  .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
+  svg { width:100%; height:clamp(180px, 38vh, 300px); display:block; }
+  .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend i { display:inline-block; width:16px; height:2px; background:#0071e3; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { padding:9px 12px; text-align:left; border-bottom:1px solid var(--border); }
+  th { color:var(--fg2); font-weight:500; font-size:12px; }
+  tr:last-child td { border-bottom:none; }
+  .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
+  .insight { background:var(--soft); border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:4px; }
+  .insight b { color:var(--accent); }
+  .gauge { height:14px; background:var(--soft); border-radius:7px; overflow:hidden; margin:8px 0 4px; }
+  .gauge i { display:block; height:100%; border-radius:7px; background:linear-gradient(90deg,#ff3b30,#ff9500,#34c759); }
+  .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .meta-bar .left { font-size:12px; color:var(--fg2); }
+  .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .footer .src { font-size:12px; color:var(--fg3); }
+  .btn { border:1px solid var(--border); background:var(--card); padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); }
+  .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section  { padding: 14px 16px; }
+    body { padding: 40px 14px 60px; }
+    .table-wrap { overflow-x:auto; }
+  }
+</style>
+</head>
+<body>
+
+<!--INJECT-DATA-->
+
+<div class="meta-bar">
+  <div class="left" id="metaLeft">--</div>
+  <div class="type-badge">健康报告</div>
+</div>
+
+<h1 id="title">--</h1>
+<p class="sub" id="sub">--</p>
+
+<div id="fullBlock" style="display:none">
+  <div class="kpi-grid" id="fullKpis"></div>
+  <div class="section">
+    <h2>各维度走势(摄入/运动/体重/饮水/缺口)</h2>
+    <svg id="fullChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+    <div class="legend">
+      <span><i style="background:#0071e3"></i> 摄入</span>
+      <span><i style="background:#ff9500"></i> 运动</span>
+      <span><i style="background:#34c759"></i> 体重</span>
+      <span><i style="background:#af52de"></i> 饮水</span>
+      <span><i style="background:#ff3b30"></i> 缺口</span>
+    </div>
+  </div>
+  <div class="section" id="anomalySection">
+    <h2>异常天标注</h2>
+    <div id="anomalyList" style="font-size:13px;color:var(--fg2)"></div>
+  </div>
+  <div class="section">
+    <h2>建议</h2>
+    <div id="suggestion" style="font-size:13.5px"></div>
+  </div>
+</div>
+
+<div id="singleBlock" style="display:none">
+  <div class="kpi-grid" id="singleKpis"></div>
+  <div class="section" id="singleChartSection" style="display:none">
+    <h2>历史轨迹</h2>
+    <svg id="singleChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="section" id="singleTableSection" style="display:none">
+    <h2 id="singleTableTitle">--</h2>
+    <div class="table-wrap">
+      <table>
+        <thead id="singleTableHead"></thead>
+        <tbody id="singleTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="section" id="milestoneSection" style="display:none">
+    <h2>分类里程碑</h2>
+    <div id="milestoneList" style="font-size:13px;color:var(--fg2)"></div>
+  </div>
+</div>
+
+<div class="insight" id="insight">--</div>
+
+<div class="footer">
+  <div class="src" id="srcLine">📊 数据来源:--</div>
+  <button class="btn" id="copyBtn">📋 复制数据</button>
+</div>
+
+<script>
+(function(){
+  const D = window.__DATA__;
+  document.getElementById('metaLeft').textContent = `${D.start} ~ ${D.end} · 共 ${D.days} 天`;
+  document.getElementById('sub').textContent = `${D.window} 窗口`;
+  const titles = { full: '健康报告', bmi: 'BMI 报告', tdee: 'TDEE 报告', bmr: 'BMR 报告',
+                   protein: '蛋白质摄入报告', water: '水分摄入报告', score: '综合评分',
+                   trend: '健康趋势', compare: '健康报告(含对比)' };
+  document.getElementById('title').textContent = titles[D.kind] || '健康报告';
+  document.getElementById('insight').innerHTML = `<b>💡 一句话洞察:</b> ${D.insight || '--'}`;
+  const esc = s => String(s ?? '—').replace(/</g, '&lt;');
+  const kpi = (label, value, extra) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="extra">${extra || ''}</div></div>`;
+
+  // ---- full ----
+  if (D.kind === 'full') {
+    document.getElementById('fullBlock').style.display = '';
+    document.getElementById('fullKpis').innerHTML = (D.kpis || []).map(k =>
+      kpi(k.label, esc(k.value), k.delta !== null && k.delta !== undefined ? `Δ ${k.delta >= 0 ? '+' : ''}${k.delta}` : '')).join('');
+    const svg = document.getElementById('fullChart');
+    const W = 800, H = 240, PAD = 34;
+    const s = D.series || [];
+    const draw = (field, color, min, max) => {
+      const vals = s.map(p => p[field]).filter(v => v !== null && v !== undefined);
+      if (vals.length < 2) return;
+      const mn = min !== undefined ? min : Math.min(...vals);
+      const mx = max !== undefined ? max : Math.max(...vals);
+      const X = i => PAD + i / (s.length - 1 || 1) * (W - PAD * 2);
+      const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+      let d = '';
+      s.forEach((p, i) => { if (p[field] === null || p[field] === undefined) return;
+        d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[field]).toFixed(1)}`; });
+      svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`);
+    };
+    draw('calories', '#0071e3'); draw('exercise_kcal', '#ff9500');
+    draw('weight_kg', '#34c759'); draw('water_ml', '#af52de'); draw('deficit', '#ff3b30');
+    const an = D.anomaly_days || [];
+    document.getElementById('anomalySection').style.display = an.length ? '' : 'none';
+    document.getElementById('anomalyList').innerHTML = an.map(a => `· ${a.date}: ${a.notes.join('、')}`).join('<br>');
+    document.getElementById('suggestion').textContent = D.suggestion || '--';
+  }
+
+  // ---- single kinds ----
+  if (['bmi','tdee','bmr','protein','water','score','trend','compare'].includes(D.kind)) {
+    document.getElementById('singleBlock').style.display = '';
+    const sk = document.getElementById('singleKpis');
+    if (D.kind === 'bmi') {
+      sk.innerHTML = kpi('当前 BMI', esc(D.current), D.category)
+        + kpi('BMI 分类', esc(D.category), '偏瘦<18.5 正常<24.9 超重<28 肥胖≥28')
+        + kpi('身高', esc(D.height) + ' cm', '用于计算')
+        + kpi('采样点', D.history.length, '历史轨迹');
+      document.getElementById('singleChartSection').style.display = '';
+      const svg = document.getElementById('singleChart');
+      const W = 800, H = 220, PAD = 34;
+      const h = D.history || [];
+      if (h.length >= 2) {
+        const xs = h.map(p => new Date(p.date).getTime());
+        const vals = h.map(p => p.bmi);
+        const mn = Math.min(...vals), mx = Math.max(...vals);
+        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
+        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+        let d = '';
+        h.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.bmi).toFixed(1)}`; });
+        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
+        h.forEach((p, i) => svg.insertAdjacentHTML('beforeend', `<circle cx="${X(i)}" cy="${Y(p.bmi)}" r="2.5" fill="#0071e3"/>`));
+      }
+      document.getElementById('milestoneSection').style.display = (D.milestones || []).length ? '' : 'none';
+      document.getElementById('milestoneList').innerHTML = (D.milestones || []).map(m => `· ${m.date}: ${m.from} → ${m.to}`).join('<br>');
+    }
+    if (D.kind === 'tdee') {
+      sk.innerHTML = kpi('TDEE', esc(D.tdee) + ' 卡/天', `BMR × ${D.factor}`)
+        + kpi('日均摄入', esc(D.cal_avg ?? '—') + ' 卡', '窗口均值')
+        + kpi('静态缺口', (D.deficit >= 0 ? '+' : '') + esc(D.deficit) + ' 卡', '摄入 − TDEE(不含运动)')
+        + kpi('计算假设', `BMR × 活动系数 ${D.factor}`, 'Mifflin-St Jeor');
+    }
+    if (D.kind === 'bmr') {
+      sk.innerHTML = kpi('BMR', esc(D.bmr) + ' 卡/天', `TDEE ÷ ${D.factor}`)
+        + kpi('TDEE', esc(D.tdee) + ' 卡/天', 'BMR × 活动系数')
+        + kpi('低于 BMR 天数', D.under_bmr_days, '危险信号')
+        + kpi('危险信号', D.under_bmr_days >= 3 ? '⚠️ 连续多日低于 BMR' : '暂无', '长期低摄入掉代谢');
+      const ul = D.under_bmr_list || [];
+      if (ul.length) {
+        document.getElementById('singleTableSection').style.display = '';
+        document.getElementById('singleTableTitle').textContent = '低于 BMR 的日期';
+        document.getElementById('singleTableHead').innerHTML = '<tr><th>日期</th><th>摄入(卡)</th></tr>';
+        document.getElementById('singleTable').innerHTML = ul.map(([d, c]) => `<tr><td>${d}</td><td>${c}</td></tr>`).join('');
+      }
+    }
+    if (D.kind === 'protein') {
+      sk.innerHTML = kpi('日均蛋白', esc(D.avg) + ' g', '窗口均值')
+        + kpi('目标', '≥' + esc(D.target) + ' g', '体重 × 1.2')
+        + kpi('达标率', esc(D.rate ?? '—') + '%', `按日目标 ${D.p_goal} g`)
+        + kpi('采样天数', D.series.length, '历史轨迹');
+      document.getElementById('singleChartSection').style.display = '';
+      const svg = document.getElementById('singleChart');
+      const W = 800, H = 220, PAD = 34;
+      const s = D.series || [];
+      const vals = s.map(p => p.protein).filter(v => v !== null && v !== undefined);
+      if (vals.length >= 2) {
+        const mn = Math.min(...vals, D.target), mx = Math.max(...vals, D.target);
+        const X = i => PAD + i / (s.length - 1) * (W - PAD * 2);
+        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+        let d = '';
+        s.forEach((p, i) => { if (p.protein === null || p.protein === undefined) return;
+          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.protein).toFixed(1)}`; });
+        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
+        svg.insertAdjacentHTML('beforeend', `<line x1="${PAD}" y1="${Y(D.target)}" x2="${W - PAD}" y2="${Y(D.target)}" stroke="#ff9500" stroke-dasharray="5 4"/>`);
+        svg.insertAdjacentHTML('beforeend', `<text x="${PAD + 4}" y="${Y(D.target) - 6}" fill="#ff9500" font-size="11">目标 ${D.target} g</text>`);
+      }
+    }
+    if (D.kind === 'water') {
+      sk.innerHTML = kpi('日均饮水', esc(D.avg ?? '—') + ' ml', '窗口均值')
+        + kpi('目标', esc(D.goal) + ' ml', 'daily_goal 表')
+        + kpi('达标天数', D.days_ok + '/' + D.days, '≥ 目标')
+        + kpi('达标率', esc(D.rate ?? '—') + '%', '');
+      document.getElementById('singleChartSection').style.display = '';
+      const svg = document.getElementById('singleChart');
+      const W = 800, H = 220, PAD = 34;
+      const s = D.series || [];
+      const vals = s.map(p => p.water_ml).filter(v => v !== null && v !== undefined);
+      if (vals.length >= 2) {
+        const mn = Math.min(...vals, D.goal), mx = Math.max(...vals, D.goal);
+        const X = i => PAD + i / (s.length - 1) * (W - PAD * 2);
+        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+        let d = '';
+        s.forEach((p, i) => { if (p.water_ml === null || p.water_ml === undefined) return;
+          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.water_ml).toFixed(1)}`; });
+        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
+        svg.insertAdjacentHTML('beforeend', `<line x1="${PAD}" y1="${Y(D.goal)}" x2="${W - PAD}" y2="${Y(D.goal)}" stroke="#ff9500" stroke-dasharray="5 4"/>`);
+      }
+    }
+    if (D.kind === 'score') {
+      const total = D.total;
+      sk.innerHTML = kpi('综合评分', total + ' 分', total >= 80 ? '优秀' : total >= 60 ? '良好' : '待改进')
+        + `<div class="kpi"><div class="label">仪表盘</div><div class="gauge" style="margin-top:6px"><i style="width:${total}%"></i></div><div class="extra" style="margin-top:6px">0-100 综合健康评分</div></div>`
+        + kpi('最低分项', esc(Object.entries(D.items).sort((a,b) => a[1] - b[1])[0]?.[0] ?? '—'), Object.entries(D.items).sort((a,b) => a[1] - b[1])[0]?.[1] + ' 分')
+        + kpi('分项数', Object.keys(D.items).length, '饮食/运动/体重/饮水/体脂/围度');
+      document.getElementById('singleTableSection').style.display = '';
+      document.getElementById('singleTableTitle').textContent = '分项分数';
+      document.getElementById('singleTableHead').innerHTML = '<tr><th>维度</th><th>分数</th><th>条形</th></tr>';
+      document.getElementById('singleTable').innerHTML = Object.entries(D.items).map(([k, v]) =>
+        `<tr><td>${k}</td><td>${v}</td><td><div class="bar-wrap" style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1;background:var(--soft);height:8px;border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${v}%;background:${v >= 80 ? '#34c759' : v >= 60 ? '#ff9500' : '#ff3b30'}"></i></div></div></td></tr>`).join('');
+      document.getElementById('singleChartSection').style.display = '';
+      const svg = document.getElementById('singleChart');
+      const W = 800, H = 220, PAD = 34;
+      const h = D.history || [];
+      const vals = h.map(p => p.score).filter(v => v !== null && v !== undefined);
+      if (vals.length >= 2) {
+        const mn = Math.min(...vals), mx = Math.max(...vals);
+        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
+        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+        let d = '';
+        h.forEach((p, i) => { if (p.score === null || p.score === undefined) return;
+          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.score).toFixed(1)}`; });
+        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#34c759" stroke-width="2"/>`);
+      }
+    }
+    if (D.kind === 'trend') {
+      sk.innerHTML = kpi('走势判断', D.direction === '上升' ? '↗ 上升' : D.direction === '下降' ? '↘ 下降' : '→ 平稳', '前后段对比')
+        + kpi('前段均分', esc(D.first_half ?? '—'), '前半窗口')
+        + kpi('后段均分', esc(D.second_half ?? '—'), '后半窗口')
+        + kpi('拐点数', D.inflections?.length ?? 0, '方向反转点');
+      document.getElementById('singleChartSection').style.display = '';
+      const svg = document.getElementById('singleChart');
+      const W = 800, H = 220, PAD = 34;
+      const h = D.trend || [];
+      const vals = h.map(p => p.score).filter(v => v !== null && v !== undefined);
+      if (vals.length >= 2) {
+        const mn = Math.min(...vals), mx = Math.max(...vals);
+        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
+        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
+        let d = '';
+        h.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.score).toFixed(1)}`; });
+        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
+        (D.inflections || []).forEach(inf => {
+          const idx = h.findIndex(p => p.date === inf);
+          if (idx < 0) return;
+          svg.insertAdjacentHTML('beforeend', `<circle cx="${X(idx)}" cy="${Y(h[idx].score)}" r="5" fill="none" stroke="#ff9500" stroke-width="2"><title>拐点 ${inf}</title></circle>`);
+        });
+      }
+    }
+    if (D.kind === 'compare') {
+      sk.innerHTML = kpi('对比窗口', `${D.prev_start} ~ ${D.prev_end}`, '上周期')
+        + kpi('变化最大项', esc(D.top3?.[0]?.label ?? '—'), (D.top3?.[0]?.delta >= 0 ? '+' : '') + esc(D.top3?.[0]?.delta ?? '') + esc(D.top3?.[0]?.unit ?? ''))
+        + kpi('对比维度', D.deltas.length, '摄入/运动/体重/饮水/缺口/蛋白');
+      document.getElementById('singleTableSection').style.display = '';
+      document.getElementById('singleTableTitle').textContent = '逐项 Δ 对比';
+      document.getElementById('singleTableHead').innerHTML = '<tr><th>维度</th><th>本周期</th><th>上周期</th><th>Δ</th></tr>';
+      document.getElementById('singleTable').innerHTML = (D.deltas || []).map(d =>
+        `<tr><td>${d.label}</td><td>${d.current}${d.unit}</td><td>${d.prev}${d.unit}</td><td class="${d.delta > 0 ? 'num' : 'num'}" style="color:${d.delta >= 0 ? 'var(--bad)' : 'var(--good)'}">${d.delta >= 0 ? '+' : ''}${d.delta}${d.unit}</td></tr>`).join('');
+    }
+  }
+
+  document.getElementById('srcLine').textContent = `📊 健康报告 · ${titles[D.kind]} · render_analysis.py --view report`;
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(JSON.stringify({ kind: D.kind, insight: D.insight, kpis: D.kpis || D.total || D.bmi || D.tdee || null, deltas: D.deltas }, null, 2))
+      .then(() => { document.getElementById('copyBtn').textContent = '✅ 已复制'; })
+      .catch(() => { document.getElementById('copyBtn').textContent = '复制失败'; });
+    setTimeout(() => { document.getElementById('copyBtn').textContent = '📋 复制数据'; }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

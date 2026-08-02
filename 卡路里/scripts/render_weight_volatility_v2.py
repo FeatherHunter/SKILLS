@@ -81,6 +81,15 @@ def _augment_kpis(data: dict) -> dict:
         data['stdev'] = 0
         data['daily_delta_avg'] = 0
         data['anomaly_stats'] = {'total': 0, 'yellow': 0, 'red': 0}
+    # 一句话判断(2026-08-02 · 呈现数据「+ 一句话」)
+    std = data['stdev']
+    astat = data['anomaly_stats']
+    if std < 0.3 and astat['total'] == 0:
+        data['summary'] = f"体重很稳:标准差 {std:.2f}kg,无异常点,日均波动 {data['daily_delta_avg']:.3f}kg"
+    elif std < 0.5:
+        data['summary'] = f"体重基本稳定:标准差 {std:.2f}kg,异常 {astat['total']} 次(黄 {astat['yellow']}/红 {astat['red']})"
+    else:
+        data['summary'] = f"体重波动较大:标准差 {std:.2f}kg,异常 {astat['total']} 次(黄 {astat['yellow']}/红 {astat['red']}),建议关注饮食与饮水"
     return data
 
 

@@ -189,10 +189,17 @@ def build_data(start, end, mode='history', show_target=False, show_milestones=Fa
 
 
 def build_notes_summary(items):
-    """看「有备注」的体重记录:表 + 备注分类分布"""
+    """看「有备注」的体重记录:表 + 备注分类分布 + vs 前后均值(呈现数据)"""
     from weight import note_tag
     tags = {}
-    for it in items:
+    # vs 前后均值:每条的 kg 与「前后各 3 条(不含自身)均值」之差(2026-08-02 · 呈现数据补齐)
+    n = len(items)
+    for idx, it in enumerate(items):
+        window = items[max(0, idx - 3):idx] + items[idx + 1:min(n, idx + 4)]
+        if window:
+            it['vs_avg'] = round(it['kg'] - statistics.mean([w['kg'] for w in window]), 2)
+        else:
+            it['vs_avg'] = None
         tag = note_tag(it['note'])
         tags[tag] = tags.get(tag, 0) + 1
     dist = ' · '.join(f'{k} {v}' for k, v in sorted(tags.items(), key=lambda x: -x[1]))

@@ -65,6 +65,7 @@
   .toggle-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
   .footer { margin-top: 20px; padding: 12px 16px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
+  .summary-line { margin-top: 14px; padding: 12px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; font-size: 13px; color: var(--fg2); text-align: center; }
 
   /* ticket 02 mobile responsive */
   @media (max-width:640px) {
@@ -139,6 +140,10 @@
     <div id="anomaliesList"></div>
   </section>
 
+  <div class="summary-line" id="summaryLine" style="display:none">
+    <span id="summaryText"></span>
+  </div>
+
   <div class="footer">
     体重稳不稳（增强版）· 3 KPI + Canvas 主图 + 异常列表 · 权威清单口径 2026-08-02
   </div>
@@ -189,7 +194,7 @@
 
   // ========== Render 函数(可被 toggle 调用) ==========
   function render() {
-    const d = DATA.data;
+    const d = DATA.data || DATA;  // 2026-08-02:兼容裸 data 注入(渲染器注入即裸 data)
     const useRolling = currentMode === 'rolling';
     const baseline = useRolling ? d.baseline_value : (d.goal_weight || d.baseline_value);
     const sigma = d.baseline_sigma;
@@ -258,6 +263,12 @@
           + `</div>`;
       }
       anomaliesList.innerHTML = html;
+    }
+
+    // === 一句话判断(2026-08-02 · 呈现数据「+ 一句话」) ===
+    if (d.summary) {
+      document.getElementById('summaryText').textContent = d.summary;
+      document.getElementById('summaryLine').style.display = 'block';
     }
 
     // === Canvas 绘图 ===

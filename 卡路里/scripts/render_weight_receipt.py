@@ -138,8 +138,21 @@ def build_live_receipt(kg, note='', target_date=None):
         'goal_diff': goal_diff,
         'weight_goal': {'target': goal} if goal else None,
         'backfill': {'days_ago': days_ago} if is_backfill else None,
+        # 一句话(2026-08-02 · 呈现数据「一句话」)
+        'one_line': _one_line(receipt, dl, goal_diff, is_backfill, days_ago),
     }
     return normalize({'summary': summary, 'history': history})
+
+
+def _one_line(receipt, dl, goal_diff, is_backfill, days_ago):
+    parts = [f"已记录 {receipt['kg']}kg(BMI {receipt['bmi']})"]
+    if dl is not None:
+        parts.append(f"较上次{'+' if dl > 0 else ''}{dl}kg")
+    if goal_diff is not None:
+        parts.append(f"距目标{'+' if goal_diff > 0 else ''}{goal_diff}kg")
+    if is_backfill:
+        parts.append(f"补录 · 距今 {days_ago} 天")
+    return ' · '.join(parts)
 
 
 def build_live_batch(items):

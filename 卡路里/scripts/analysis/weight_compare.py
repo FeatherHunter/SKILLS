@@ -86,14 +86,20 @@ def _rate(seg):
 
 
 def compare_pair(a, b, label_a, label_b):
-    """两段对比:Δkg/方向/速率差 g/天/速度判断"""
+    """两段对比:Δkg/方向/速率差 g/天/速度判断
+
+    速度语义(2026-08-02 对抗审查修复):减重速度 = -net_change/days(正值=下降快)。
+    后段速度 - 前段速度:正 = 后段更快,负 = 后段更慢,|差| ≤ 0.005 kg/天 = 持平。
+    """
     delta = round(b['avg'] - a['avg'], 2)
     direction = '下降' if delta < -0.05 else ('上升' if delta > 0.05 else '持平')
-    ra, rb = _rate(a), _rate(b)
-    rate_diff_g = round((rb - ra) * 1000)
-    if abs(rate_diff_g) <= 5:
+    speed_a = -_rate(a)
+    speed_b = -_rate(b)
+    diff = speed_b - speed_a
+    rate_diff_g = round(diff * 1000)
+    if abs(diff) <= 0.005:
         speed = '持平'
-    elif rb < ra:
+    elif diff < 0:
         speed = '慢了'
     else:
         speed = '快了'

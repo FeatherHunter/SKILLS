@@ -325,10 +325,10 @@
     document.getElementById('chartSection').style.display = 'none';
   }
 
-  // 表格头(notes 模式由 JS 动态追加备注列 · 2026-08-02)
+  // 表格头(notes 模式由 JS 动态追加备注列 + vs 前后列 · 2026-08-02)
   let tableHeader = summary.table_header;
   if (summary.show_note_col && !tableHeader.includes('备注')) {
-    tableHeader = tableHeader.replace('</tr>', "<th class='note'>备注</th></tr>");
+    tableHeader = tableHeader.replace('</tr>', "<th class='note'>备注</th><th class='num'>vs 前后</th></tr>");
   }
   document.getElementById('tableHead').innerHTML = tableHeader;
 
@@ -348,6 +348,7 @@
       // V2.5.3: chip 包 <span class="delta-chip">,td.delta 保持 table-cell 占满 column
       (p.delta !== undefined ? `<td class="delta"><span class="delta-chip ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</span></td>` : '') +
       (m === 'notes' ? `<td class="note">${p.note || ''}</td>` : '') +
+      (m === 'notes' ? `<td class="num">${p.vs_avg !== undefined && p.vs_avg !== null ? (p.vs_avg >= 0 ? '+' : '') + p.vs_avg : '—'}</td>` : '') +
       `</tr>`);
   });
 

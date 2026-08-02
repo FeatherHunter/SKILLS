@@ -8,6 +8,9 @@ __pycache__/
 # (按需 git add templates/*_report_*.html 才能进 git)
 *_report_*.html
 
+# 测试运行落盘产物(tests/*_plan_*.html 由 test_workout_plan_modes.py 每次 pytest 生成)
+tests/_plan_*.html
+
 # 临时测试 HTML（v2/v3 test 等中间产物）
 *_v*_test.html
 

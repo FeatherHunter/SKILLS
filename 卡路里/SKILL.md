@@ -313,11 +313,61 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 查体重趋势 | 体重趋势分析 | `AI 路由(Python API)` |
 | 对比体重 | 两时间段体重对比 | `AI 路由(Python API)` |
 | 查体重波动 | 体重波动分析 | `AI 路由(Python API)` |
-| 定体重目标 | 设定体重目标和截止日期 | `python scripts/calorie_tracker.py weight-goal` |
-| 定体重目标(自动算截止) | 按速率推算截止日 | `weight_goal.set_weight_goal`(AI 算截止) |
-| 定体重目标(含起始日) | 完整 setup 体重目标 | `weight_goal.set_weight_goal`(AI 补起始日) |
-| 看体重目标进度 | 体重目标达成进度 | `python scripts/calorie_tracker.py weight-goal-progress` |
-| 看即将到期的目标 | 14 天内到期目标 | `python scripts/render_goal_progress.py --mode weight --expiring 14` |
+
+### 🎯 目标管理(2026-08-02 新增 · 25 场景)
+
+> 目标 = 用户的「终点」;闭环 = 定 → 看进度 → 改(+ 到期 + 预测)。
+> 场景数量与场景名已定稿;prompt 定稿见 `docs/scene-prompts/06-目标管理.md`(修改须重新用户确认)。
+> **交互规则(常驻,AI 执行本分类任一场景必须遵守)**:
+> - 信息缺失才补问:用户表达清晰直接执行,不强制采访式引导;需要补的信息顶多做几句确认
+> - 定/改类写库前给回执(改前/改后),自动算类给出依据与推荐理由再采纳
+> - 看类走 HTML 渲染(有模板必走 HTML,§⚠️ 强制性规定 第 4 条)
+> - 「看今日目标」的体重是累计目标,引导用户到「看体重目标进度」,不算今日完成度
+
+#### G1 定目标(8)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/calorie_tracker.py goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]` |
+| 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `AI 路由: nutrition_goal.recommend_nutrition_goal` |
+| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/calorie_tracker.py weight-goal --weight-goal <kg> [--deadline <日期>]` |
+| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `AI 路由: weight_goal.set_weight_goal`(AI 算截止) |
+| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `AI 路由: weight_goal.set_weight_goal`(AI 补起始日) |
+| 定饮水目标 | 每天饮水目标(ml) | `AI 路由: nutrition_goal.set_nutrition_goal` |
+| 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `AI 路由: nutrition_goal.recommend_water_goal` |
+| 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `AI 路由: nutrition_goal.recommend_nutrition_goal`(全套) |
+
+#### G2 看目标(10)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看今日目标 | 今日 5 项(热量/蛋白/碳水/脂肪/饮水)目标/实际/完成度 | `python scripts/render_goal_progress.py --mode today` |
+| 看本周目标 | 日均 vs 日目标 + 周总量 vs 周目标 | `python scripts/render_goal_progress.py --mode week` |
+| 看营养目标进度 | 4 项宏量进度条 + 完成度% + 缺口 | `python scripts/render_goal_progress.py --mode nutrition` |
+| 看体重目标进度 | 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率 | `python scripts/calorie_tracker.py weight-goal-progress` |
+| 看饮水目标进度 | 累计/目标/完成度 + 剩余 ml | `python scripts/render_goal_progress.py --mode water` |
+| 看目标对比实际 | 目标线 vs 实际线 + 偏差 + 时间窗口(默认 30 天) | `python scripts/render_goal_progress.py --mode vs_actual` |
+| 看目标完成度 | 5 项完成度% + 缺口 + 总评分 | `python scripts/render_goal_progress.py --mode completion` |
+| 看即将到期的目标 | 到期目标列表(默认 14 天内)+ 紧迫度 | `python scripts/render_goal_progress.py --mode weight --expiring 14` |
+| 看目标完成率(按周) | 本周 7 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period week` |
+| 看目标完成率(按月) | 本月 30 天每日完成率柱状 + 达标天数 | `python scripts/render_goal_progress.py --mode nutrition --period month` |
+
+#### G3 改目标(5)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/calorie_tracker.py goal <新值...>` |
+| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/calorie_tracker.py weight-goal --weight-goal <新kg> [--deadline <日期>]` |
+| 改饮水目标 | 只改饮水目标,其他不变 | `AI 路由: nutrition_goal.update_water_goal` |
+| 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `AI 路由: goal_manager.pause_all_goals` |
+| 重启所有目标 | 从暂停恢复全部目标 | `AI 路由: goal_manager.resume_all_goals` |
+
+#### 新增(2)
+
+| 唤醒词 | 功能 | CLI |
+|--------|------|-----|
+| 看目标历史完成 | 每日达成列表 + 完成/未完成天数统计 | `AI 路由: goal_history.list_completed_goals` |
+| 看目标预测达成 | 预测达成日 + 置信度(体重部分复用对比体重预测) | `python scripts/render_goal_progress.py --mode predict` |
 
 ### 🏃 运动
 
@@ -365,12 +415,6 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 定营养目标 | 设置每日营养目标 | `python scripts/calorie_tracker.py goal` |
-| 定营养目标(自动算) | 按档案自动算 4 项 | `nutrition_goal.recommend_nutrition_goal` |
-| 看今日目标 | 今日 5 项目标完成度 | `python scripts/render_goal_progress.py --mode today` |
-| 看营养目标进度 | 4 项宏量进度条 | `python scripts/render_goal_progress.py --mode nutrition` |
-| 看目标对比实际 | 目标线 vs 实际线 | `python scripts/render_goal_progress.py --mode vs_actual` |
-| 看目标完成度 | 完成度% + 缺口 + 总评分 | `python scripts/render_goal_progress.py --mode completion` |
 | 查健康报告 | 四维度综合健康仪表盘 | `AI 路由(Python API)` |
 | 查卡路里数据 | 数据健康检查 | `AI 路由(无 CLI)` → **HTML:`lint_health.html`(强制,V1.3 原则 11)** |
 

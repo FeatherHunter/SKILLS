@@ -115,6 +115,11 @@
   <div class="bar-axis"></div>
 </div>
 
+<div class="section" id="cupsSection">
+  <h2>今日每杯</h2>
+  <div id="cupsList"></div>
+</div>
+
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
   <button class="btn" id="copyBtn">📋 复制数据</button>
@@ -187,6 +192,18 @@
 
   document.getElementById('srcLine').textContent =
     `📊 数据来源: calorie_data.db · food_log(💧水) · ${meta.date}`;
+
+  // 今日每杯(看今日喝水 呈现数据 · ticket #3)
+  const cups = summary.cups || [];
+  const cupsList = document.getElementById('cupsList');
+  if (cups.length === 0) {
+    cupsList.innerHTML = '<div style="font-size:13px;color:var(--fg3)">今天还没有喝水记录</div>';
+  } else {
+    cupsList.innerHTML = cups.map(c =>
+      `<div style="display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px solid var(--border);font-size:13px">` +
+      `<span style="color:var(--fg2)">${c.time}</span><span style="font-weight:600">${c.ml} ml</span></div>`
+    ).join('');
+  }
   document.getElementById('copyBtn').onclick = function() {
     const r = `今日饮水 ${meta.date}\n` +
               `${todayMl} / ${targetMl} ml · ${pct}%\n` +

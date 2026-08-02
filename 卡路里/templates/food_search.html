@@ -31,6 +31,7 @@
   .food-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; }
   .food-card .name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
   .food-card .brand { font-size: 12px; color: var(--fg3); margin-bottom: 8px; }
+.food-card .cat { display:inline-block; font-size:11px; font-weight:600; color:var(--accent); background:rgba(0,113,227,.1); border-radius:6px; padding:1px 8px; margin-bottom:6px; }
   .food-card .macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .food-card .macro { background: var(--soft); border-radius: 8px; padding: 6px 8px; text-align: center; }
   .food-card .macro .m-label { font-size: 10px; color: var(--fg3); margin-bottom: 2px; }
@@ -97,8 +98,11 @@
       { label: '碳水', value: (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + ' g' },
     ];
     let source = '来源:' + escape(it.source || '未知');
+    let catTag = '';
+    if (it.category) catTag = '<div class="cat">' + escape(it.category) + '</div>';
     if (showUpdatedAt && it.updated_at) source += ' · 更新于 ' + it.updated_at;
     return '<div class="food-card">'
+      + catTag
       + '<div class="name">' + escape(it.product_name) + '</div>'
       + '<div class="brand">' + escape(it.brand || '—') + '</div>'
       + '<div class="macros">' + macros.map(function(m) {

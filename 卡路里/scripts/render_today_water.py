@@ -53,6 +53,14 @@ def build_data(day):
     """, (day,))
     today_ml = int(cur.fetchone()[0] or 0)
 
+    # 今日每杯明细(看今日喝水 呈现数据 · ticket #3)
+    cur.execute("""
+        SELECT time, grams FROM food_log
+        WHERE date = ? AND food_name = '💧水'
+        ORDER BY time
+    """, (day,))
+    cups = [{'time': (t or '')[:5], 'ml': int(g or 0)} for t, g in cur.fetchall()]
+
     # 7 天(含今天,最早 6 天前)
     week_ml: list[int] = []
     week_dates: list[str] = []
@@ -76,6 +84,7 @@ def build_data(day):
                 'target_ml':  target_ml,
                 'week_ml':    week_ml,
                 'week_dates': week_dates,
+                'cups':       cups,
             },
             'meta': {
                 'date':  day,

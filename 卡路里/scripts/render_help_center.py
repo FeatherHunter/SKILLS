@@ -115,8 +115,12 @@ SUBFUNC_ORDER = {
     '目标管理': ['定目标', '看目标', '改目标'],
     # 身体细节:记 → 看 → 比 → 删(2026-08-02 · ticket #9)
     '身体细节': ['记身体细节', '看身体细节', '比身体细节', '删身体细节'],
+    # 身材照片:存 → 看 → 比 → 管(2026-08-02 · ticket #10)
+    '身材照片': ['存身材照', '看身材照', '比身材照', '管身材照'],
     # 饮食:记 → 改 → 看 → 查 → 营养 → 排行 → 复盘 → 餐别(2026-08-02 · ticket #3)
     '饮食': ['记饮食', '改饮食', '看饮食', '查食品', '看营养', '看排行', '饮食复盘', '餐别分布'],
+    # 健身计划:定 → 看 → 改 → 落地 → 复盘 → 检查(2026-08-02 · ticket #6 用户拍板)
+    '健身计划': ['定训练计划', '看训练计划', '改训练计划', '落地训练', '计划复盘', '安全检查'],
 }
 
 
@@ -180,17 +184,20 @@ def merge_scenes(scene_data: list[dict], triggers: list[dict]) -> list[dict]:
     """合并策略:
        - scene_data 优先(用户确认过的新 schema)
        - triggers 补齐(老 wake_word 全部留下,标记 _legacy)
-       - 同 wake_word: scene_data 覆盖 triggers
+       - 合并键 = (wake_word, key):同唤醒词但不同场景(如 记身材照 × 3)
+         各自独立成卡(2026-08-02 · ticket #10);同键时 scene_data 覆盖 triggers
     """
-    by_wake = {}
+    def _key(s):
+        return (s.get('wake_word', ''), s.get('key', s.get('name', '')))
+    by_key = {}
     # 先放 triggers(老)
     for t in triggers:
-        by_wake[t['wake_word']] = t
+        by_key[_key(t)] = t
     # 再覆盖 scene_data(新)
     for s in scene_data:
         s['_legacy'] = False
-        by_wake[s['wake_word']] = s
-    return list(by_wake.values())
+        by_key[_key(s)] = s
+    return list(by_key.values())
 
 
 def build_data(mode: str = 'merged') -> dict:

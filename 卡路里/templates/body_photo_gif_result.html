@@ -66,6 +66,7 @@
 
 <div class="info-grid">
   <div class="info"><div class="label">合成照片总数</div><div class="value" id="vCount">--</div></div>
+  <div class="info"><div class="label">帧数</div><div class="value" id="vFrames">--</div></div>
   <div class="info"><div class="label">时间跨度</div><div class="value" id="vSpan">--</div></div>
   <div class="info"><div class="label">首张日期</div><div class="value" id="vFirst">--</div></div>
   <div class="info"><div class="label">末张日期</div><div class="value" id="vLast">--</div></div>
@@ -101,6 +102,7 @@
   }
 
   document.getElementById('vCount').textContent = g.photo_count + ' 张';
+  document.getElementById('vFrames').textContent = g.frame_count !== undefined && g.frame_count !== null ? g.frame_count + ' 帧' : '—';
   document.getElementById('vSpan').textContent = (g.first_date && g.last_date) ? `${g.first_date} ~ ${g.last_date}` : '—';
   document.getElementById('vFirst').textContent = g.first_date || '—';
   document.getElementById('vLast').textContent = g.last_date || '—';
@@ -143,6 +145,7 @@
       '',
       `标签: ${g.tag}`,
       `合成照片: ${g.photo_count} 张`,
+      `帧数: ${g.frame_count !== undefined ? g.frame_count : '—'}`,
       `时间跨度: ${g.first_date} ~ ${g.last_date}`,
       `首张: ${g.first_date} · 末张: ${g.last_date}`,
       `文件: ${g.path}`,

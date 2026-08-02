@@ -39,14 +39,25 @@ Issues 以本地 markdown 文件形式存放在 `.scratch/<feature>/` 目录下�
 
 **数字口径**(回答"有多少场景"时):
 - **总数 446**(11 分类全部定稿,2026-08-01 核算)
-- 已落盘 JSON 56(主页 9 + 目标管理 25 + 基础信息 4 + 身体细节 13;其余分类由实施 session 填)
-- **已同步 `_triggers.py`**:目标管理 25(ticket #7)+ 基础信息 4(ticket #8)+ 身体细节 13(ticket #9 · 2026-08-02);其余分类待各自实施 session
+- 已落盘 JSON 210(主页 9 + 目标管理 25 + 基础信息 4 + 身体细节 13 + 分析 154 + 健身计划 29 实施中;其余分类由实施 session 填)
+- **已同步 `_triggers.py`**:目标管理 25(ticket #7)+ 基础信息 4(ticket #8)+ 身体细节 13(ticket #9 · 2026-08-02);其余分类待各自实施 session(分析 154 已入 scene_data + prompt 草案,待用户逐条确认后同步 · ticket #11)
 
 ### 📌 Prompt 定稿存档与防修改(2026-08-02 · 用户拍板)
 
 - **定稿 prompt 的权威只读快照 = `docs/scene-prompts/NN-分类.md`**(git 提交),并以全文贴在对应 GitHub issue 评论存档。
 - **防修改约定**:prompt 一旦定稿,`_triggers.py` / `.scratch/scene_data/*.json` 只是衍生副本;**修改 prompt 必须重新经用户逐条确认**,不得由 agent 单方改动。
 - 分类 issue 开发完毕前,该分类的 `docs/scene-prompts/NN-分类.md` 必须存在且与用户确认一致(验收项之一)。
+
+## 🤝 多 session 并行协作规范(2026-08-02 · 用户拍板)
+
+> 当前多个 session 并行开发不同分类(运动 04 / 健身计划 05 / 身材照片 09 / 分析 11 等),共享同一工作区与 git 仓库。**遵守以下 6 条,防止篡改与冲突。**
+
+1. **原子工作单元完成立即 commit**:精确 `git add <自己的文件>`(**禁止 `git add -A` / `git add .`**——工作区混有他人半成品,全量 add 会卷走未完成改动),提交信息带 `Tested-By:` 行。
+2. **开工前检查**:`git status --short` + `git log --oneline -10`,知晓工作区与最近提交,判断他人进度。
+3. **关键节点自检**:`git diff HEAD -- <自己的文件>` 应为空(验证未被篡改);`.scratch/` 下自己的文档(不在 git)检查关键词片段 + `LastWriteTime`。
+4. **发现他人改动先读后动**:`git log -- <文件>` + `git diff HEAD -- <文件>` 读清意图,再决定是否适配;**不覆盖、不回退他人提交**。
+5. **共享文件只做增量追加**:db.py / check_scene_data.py / _triggers.py / SKILL.md 等公共文件,只追加(新列/新豁免/新条目),不动他人已提交代码块。
+6. **冲突征兆 = 停止并报告**:`git status` 里自己的文件出现 `M`(他人改了我的文件)、或 `git diff` 出现对方删改我代码块的迹象 → 停下,向用户报告后再处理。
 
 ## 视觉与 BUG 排查工作流(2026-07-30)
 
